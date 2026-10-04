@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Walang maipapadala",
   "notifUnerreichbar": "Hindi pa nakumpirmang atas (hindi maabot)",
   "loeschenSicher": "Sigurado bang tanggalin?",
+  "entfernenSicher": "Sigurado bang aalisin?",
   "gruppeDelMitglieder": "Ang mga miyembro ng grupong ito ay hindi na kabilang sa anumang grupo.",
   "gruppeDelTreffpunkte": "Aalisin ang mga pagtitipon ng grupong ito.",
   "ohneGruppeTitle": "WALANG GRUPO SA PAGLILINGKOD SA LARANGAN",

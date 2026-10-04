@@ -479,6 +479,7 @@ export default {
   "toastPlanNichts": "לא היה מה לשלוח",
   "notifUnerreichbar": "מטלות שלא אושרו (לא ניתן ליצור קשר)",
   "loeschenSicher": "למחוק באמת?",
+  "entfernenSicher": "להסיר באמת?",
   "gruppeDelMitglieder": "חברי הקבוצה הזו לא ישויכו עוד לשום קבוצה.",
   "gruppeDelTreffpunkte": "המפגשים לשירות של הקבוצה הזו יבוטלו.",
   "ohneGruppeTitle": "ללא קבוצת שירות",

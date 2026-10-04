@@ -2297,8 +2297,8 @@ export const KATALOG = [
     id: 'oz-planen-vorbei-ohne-austragen',
     datei: 'src/planen/ZeugnisPlan.tsx',
     regel: 'Aus einer vergangenen Schicht wird niemand mehr ausgetragen — sie bleibt als Rückblick stehen.',
-    suchen: '      {!vorbei && (\n        <button\n          type="button"\n          className="oz-raus"',
-    ersetzen: '      {(\n        <button\n          type="button"\n          className="oz-raus"',
+    suchen: '      {!vorbei && (\n        <EntfernenKnopf\n          className="oz-raus"',
+    ersetzen: '      {(\n        <EntfernenKnopf\n          className="oz-raus"',
   },
   /* ---- Zurück am Handy, Menüfuß (4.10.2026) ---- */
   {
@@ -2370,8 +2370,9 @@ export const KATALOG = [
     id: 'abwesenheit-fragt-nach',
     datei: 'src/components/AbwesenheitEntfernen.tsx',
     regel: 'Eine Abwesenheit zu löschen fragt erst nach („Wirklich löschen?") — ein einzelner Tipp löscht nicht.',
-    suchen: '      onClick={entfernen.onClick}',
-    ersetzen: "      onClick={() => dispatch({ type: 'removeAbsence', id })}",
+    suchen: "  return <EntfernenKnopf className={className} onEntfernen={() => dispatch({ type: 'removeAbsence', id })} />",
+    ersetzen:
+      "  return <button type=\"button\" className={className} onClick={() => dispatch({ type: 'removeAbsence', id })}>✕</button>",
   },
   {
     id: 'profil-wort-unsichtbar',
@@ -2440,11 +2441,50 @@ export const KATALOG = [
     ersetzen: "    ...(t.aus?.length ? { aus: t.aus } : {}),",
   },
   {
-    id: 'oz-streichen-fragt-nach',
+    id: 'entfernen-fragt-nach',
     datei: 'src/components/EntfernenKnopf.tsx',
     regel: 'Ein ✕ fragt erst nach („Wirklich löschen?") — ein einzelner Tipp entfernt nichts.',
     suchen: '      onClick={entfernen.onClick}',
     ersetzen: '      onClick={onEntfernen}',
+  },
+  {
+    id: 'entfernen-frage-je-art',
+    datei: 'src/components/EntfernenKnopf.tsx',
+    regel: 'Was nur herausgenommen wird (Person, Sprache, Konto), fragt „Wirklich entfernen?" — nicht „Wirklich löschen?".',
+    suchen: '      {entfernen.armed ? (frage ?? t.loeschenSicher) : \'✕\'}',
+    ersetzen: "      {entfernen.armed ? t.loeschenSicher : '✕'}",
+  },
+  {
+    id: 'gruppenbesuch-fragt-nach',
+    datei: 'src/planen/GruppenbesuchePlan.tsx',
+    regel: 'Einen Gruppenbesuch zu löschen fragt erst nach — ein einzelner Tipp löscht nicht.',
+    suchen:
+      "          <EntfernenKnopf className=\"fs-remove\" onEntfernen={() => dispatch({ type: 'besuchEntfernen', id: besuch.id })} />",
+    ersetzen:
+      "          <button type=\"button\" className=\"fs-remove\" aria-label={t.a11yRemove} onClick={() => dispatch({ type: 'besuchEntfernen', id: besuch.id })}>✕</button>",
+  },
+  {
+    id: 'dienst-loeschen-fragt-nach',
+    datei: 'src/einstellungen/ServicesPanel.tsx',
+    regel: 'Einen Dienst zu löschen fragt erst nach — und die Wache über alle Lösch-Knöpfe merkt einen ohne Rückfrage.',
+    suchen:
+      "            <EntfernenKnopf className=\"svc-remove\" onEntfernen={() => dispatch({ type: 'removeService', key: service.key })} />",
+    ersetzen:
+      "            <button type=\"button\" className=\"svc-remove\" aria-label={t.a11yRemove} onClick={() => dispatch({ type: 'removeService', key: service.key })}>✕</button>",
+  },
+  {
+    id: 'zuteilung-entfernen-fragt-nach',
+    datei: 'src/planen/AssignSheet.tsx',
+    regel: '„Entfernen" im Zuteilungsblatt fragt erst nach — wer zugesagt hatte, bekäme sofort eine Nachricht.',
+    suchen: '              onClick={entfernen.onClick}',
+    ersetzen: "              onClick={() => dispatch({ type: 'assign', name: '' })}",
+  },
+  {
+    id: 'partner-entfernen-fragt-nach',
+    datei: 'src/planen/MeetingSection.tsx',
+    regel: 'Den Partner eines Schülerteils abzuschalten fragt erst nach — mit dem Platz geht, wer dort steht.',
+    suchen: '      onClick={entfernen.onClick}',
+    ersetzen: '      onClick={umschalten}',
   },
   {
     id: 'oz-faellt-aus-sichtbar',

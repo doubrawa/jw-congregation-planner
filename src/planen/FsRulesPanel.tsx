@@ -3,6 +3,7 @@ import { FS_TIME_OPTIONS } from '../data/fs'
 import { useT } from '../i18n/useT'
 import type { FsRule } from '../data/types'
 import { WOCHENTAGE_AB_MONTAG, wochentagNameAusWd } from './wochentage'
+import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { Switch } from '../components/Switch'
 import './planen.css'
 
@@ -89,14 +90,7 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
                       ))}
                     </select>
                   </div>
-                  <button
-                    type="button"
-                    className="fs-remove"
-                    aria-label={t.a11yRemove}
-                    onClick={() => dispatch({ type: 'fsRuleRemove', id: rule.id })}
-                  >
-                    ✕
-                  </button>
+                  <EntfernenKnopf className="fs-remove" onEntfernen={() => dispatch({ type: 'fsRuleRemove', id: rule.id })} />
                 </div>
 
                 <div className="fsr-line">

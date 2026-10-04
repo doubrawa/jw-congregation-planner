@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Gönderilecek bir şey yoktu",
   "notifUnerreichbar": "Onaylanmamış görevler (ulaşılamıyor)",
   "loeschenSicher": "Gerçekten silinsin mi?",
+  "entfernenSicher": "Gerçekten çıkarılsın mı?",
   "gruppeDelMitglieder": "Bu grubun üyeleri artık hiçbir gruba bağlı olmayacak.",
   "gruppeDelTreffpunkte": "Bu grubun tarla buluşmaları kaldırılacak.",
   "ohneGruppeTitle": "TARLA HİZMETİ GRUBU YOK",

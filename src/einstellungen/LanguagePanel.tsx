@@ -1,4 +1,5 @@
 import { useApp } from '../app/context'
+import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { langLabel, useLangNames } from '../i18n/langnames'
 import { useT } from '../i18n/useT'
 
@@ -31,14 +32,11 @@ export function LanguagePanel() {
         {state.progLangs.map((code) => (
           <span key={code} className="proglang-chip">
             {label(code)}
-            <button
-              type="button"
+            <EntfernenKnopf
               className="proglang-chip-x"
-              aria-label={t.a11yRemove}
-              onClick={() => dispatch({ type: 'removeProgLang', code })}
-            >
-              ✕
-            </button>
+              frage={t.entfernenSicher}
+              onEntfernen={() => dispatch({ type: 'removeProgLang', code })}
+            />
           </span>
         ))}
         <button

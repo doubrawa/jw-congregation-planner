@@ -363,6 +363,7 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
       weeks: [woche('2026-09-07', 'Anton Alt', ROLE_OWN_SPEAKER)],
     })
     fireEvent.click(knopf(container, t.entfernen))
+    fireEvent.click(knopf(container, t.entfernenSicher))
     expect(dispatch).toHaveBeenCalledWith({ type: 'assign', name: '', rolle: ROLE_GUEST_SPEAKER })
   })
 
@@ -371,7 +372,20 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
     ;(w.mid.sections[0]!.items[0] as PartItem).names[0]!.name = 'Anton Alt'
     const { container, dispatch } = zeige(SEL_SCHUELER, { weeks: [w] })
     fireEvent.click(knopf(container, t.entfernen))
+    fireEvent.click(knopf(container, t.entfernenSicher))
     expect(dispatch).toHaveBeenCalledWith({ type: 'assign', name: '' })
+  })
+
+  it('„Entfernen" fragt erst nach — wer zugesagt hatte, bekäme sofort eine Nachricht', () => {
+    const w = woche('2026-09-07')
+    ;(w.mid.sections[0]!.items[0] as PartItem).names[0]!.name = 'Anton Alt'
+    const { container, dispatch } = zeige(SEL_SCHUELER, { weeks: [w] })
+    fireEvent.click(knopf(container, t.entfernen))
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'assign' }))
+    // Ein Tipp daneben bricht ab.
+    fireEvent.blur(knopf(container, t.entfernenSicher))
+    expect(knopf(container, t.entfernenSicher)).toBeUndefined()
+    expect(knopf(container, t.entfernen)).toBeDefined()
   })
 })
 

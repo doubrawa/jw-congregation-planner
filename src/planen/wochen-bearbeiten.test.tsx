@@ -233,19 +233,26 @@ describe('Weitere Termine der Woche (T63)', () => {
     expect(patches(dispatch, 'terminUpdate')).toContainEqual({ place: undefined })
   })
 
-  it('ein Termin lässt sich entfernen', () => {
+  it('ein Termin lässt sich entfernen — erst nach der Rückfrage', () => {
     const { container, dispatch } = zeige('termine', { weeks: [woche({ termine: [termin()] })] })
+    fireEvent.click(container.querySelector('.fs-remove')!)
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'terminRemove', id: 'x1' })
     fireEvent.click(container.querySelector('.fs-remove')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'terminRemove', id: 'x1' })
   })
 
-  it('mehrere Termine je Woche — jeder für sich bedienbar', () => {
+  it('mehrere Termine je Woche — jeder für sich bedienbar, auch die Rückfrage', () => {
     const { container, dispatch } = zeige('termine', {
       weeks: [woche({ termine: [termin({ id: 'x1' }), termin({ id: 'x2', title: 'Zweiter' })] })],
     })
     expect(container.querySelectorAll('.sonder')).toHaveLength(2)
-    fireEvent.click([...container.querySelectorAll('.fs-remove')][1]!)
+    const x = () => [...container.querySelectorAll('.fs-remove')][1]!
+    fireEvent.click(x())
+    // Geschärft ist nur das ✕ des zweiten Termins.
+    expect([...container.querySelectorAll('.fs-remove.is-armed')]).toEqual([x()])
+    fireEvent.click(x())
     expect(dispatch).toHaveBeenCalledWith({ type: 'terminRemove', id: 'x2' })
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'terminRemove', id: 'x1' })
   })
 
   it('die Liste bleibt beim Tippen in ihrer Reihenfolge — sonst spränge das Feld weg', () => {

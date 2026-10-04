@@ -497,8 +497,10 @@ describe('Konten ohne verknüpfte Person', () => {
     expect(werte).toContain('p-b')
   })
 
-  it('oder entfernen', () => {
+  it('oder entfernen — erst nach der Rückfrage', () => {
     const { container, dispatch } = zeige({ members: WAISE })
+    fireEvent.click(container.querySelector('.pers-orphans .svc-remove')!)
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'removeMember', userId: 'u9' })
     fireEvent.click(container.querySelector('.pers-orphans .svc-remove')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'removeMember', userId: 'u9' })
   })

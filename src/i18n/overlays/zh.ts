@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "没有需要发送的内容",
   "notifUnerreichbar": "未确认的任务（无法联系）",
   "loeschenSicher": "确定删除？",
+  "entfernenSicher": "确定移除？",
   "gruppeDelMitglieder": "这个小组的成员将不再属于任何小组。",
   "gruppeDelTreffpunkte": "这个小组的传道前聚会将被删除。",
   "ohneGruppeTitle": "未分配传道小组",

@@ -170,6 +170,9 @@ function TerminePanel() {
  * Zurückstellen holt nichts zurück. Unter Windows genügte dafür bis zum
  * 3.10.2026 eine Pfeiltaste auf dem Auswahlfeld. Gezählt wird mit derselben
  * Rechnung wie im Reducer (`ozWegBeiTagwechsel`).
+ *
+ * Das ✕ fragt ebenso nach (`EntfernenKnopf`): Mit dem Termin gehen alle seine
+ * Schichten und Einträge.
  */
 function TerminZeile({ termin }: { termin: OzTermin }) {
   const { state, dispatch } = useApp()
@@ -216,14 +219,7 @@ function TerminZeile({ termin }: { termin: OzTermin }) {
             ))}
           </select>
         </div>
-        <button
-          type="button"
-          className="fs-remove"
-          aria-label={t.a11yRemove}
-          onClick={() => dispatch({ type: 'ozTerminRemove', id: termin.id })}
-        >
-          ✕
-        </button>
+        <EntfernenKnopf className="fs-remove" onEntfernen={() => dispatch({ type: 'ozTerminRemove', id: termin.id })} />
       </div>
       {wechsel && (
         <div className="oz-rueckfrage" role="alert">
@@ -361,7 +357,11 @@ function SchichtZeile({ schicht, kandidaten, heute }: { schicht: OzSchicht; kand
   )
 }
 
-/** Eine eingetragene Person: ihr Name, der Stand ihrer Zusage, und beim Kommenden das Austragen. */
+/**
+ * Eine eingetragene Person: ihr Name, der Stand ihrer Zusage, und beim
+ * Kommenden das Austragen — mit Rückfrage, denn wer zugesagt hatte, bekommt
+ * sofort „Zuteilung zurückgezogen".
+ */
 function EintragChip({ eintrag, vorbei, abwesend }: { eintrag: OzEintrag; vorbei: boolean; abwesend: boolean }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
@@ -376,14 +376,11 @@ function EintragChip({ eintrag, vorbei, abwesend }: { eintrag: OzEintrag; vorbei
       <span dir="auto">{person ? displayName(person) : t.offenWort}</span>
       <span className="sr-only">{t[ZUSAGE_LABEL[stufe]]}</span>
       {!vorbei && (
-        <button
-          type="button"
+        <EntfernenKnopf
           className="oz-raus"
-          aria-label={t.a11yRemove}
-          onClick={() => dispatch({ type: 'ozAustragen', id: eintrag.id })}
-        >
-          ✕
-        </button>
+          frage={t.entfernenSicher}
+          onEntfernen={() => dispatch({ type: 'ozAustragen', id: eintrag.id })}
+        />
       )}
     </span>
   )

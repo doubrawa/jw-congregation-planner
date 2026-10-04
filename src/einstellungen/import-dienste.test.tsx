@@ -281,9 +281,13 @@ describe('Hilfsdienste anlegen, zählen, löschen', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'changeServiceCount', key: 'mik', delta: -1 })
   })
 
-  it('ein Dienst lässt sich löschen', () => {
+  it('ein Dienst lässt sich löschen — erst nach der Rückfrage', () => {
     const { container, dispatch } = zeige('dienste')
-    fireEvent.click(zeilen(container)[0]!.querySelector('.svc-remove')!)
+    const x = () => zeilen(container)[0]!.querySelector('.svc-remove')!
+    fireEvent.click(x())
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'removeService', key: 'mik' })
+    expect(x().textContent).toBe(t.loeschenSicher)
+    fireEvent.click(x())
     expect(dispatch).toHaveBeenCalledWith({ type: 'removeService', key: 'mik' })
   })
 

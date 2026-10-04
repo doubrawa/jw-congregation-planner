@@ -479,6 +479,7 @@ export default {
   "toastPlanNichts": "بھیجنے کے لیے کچھ نہیں تھا",
   "notifUnerreichbar": "غیر تصدیق شدہ ذمہ داریاں (رابطہ ممکن نہیں)",
   "loeschenSicher": "واقعی حذف کریں؟",
+  "entfernenSicher": "واقعی ہٹائیں؟",
   "gruppeDelMitglieder": "اِس گروپ کے ارکان پھر کسی گروپ سے تعلق نہیں رکھیں گے۔",
   "gruppeDelTreffpunkte": "اِس گروپ کے مُنادی کے اِجلاس ختم ہو جائیں گے۔",
   "ohneGruppeTitle": "مُنادی کے گروپ کے بغیر",

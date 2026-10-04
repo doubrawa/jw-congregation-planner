@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Nebylo co odeslat",
   "notifUnerreichbar": "Nepotvrzené úkoly (nedostupní)",
   "loeschenSicher": "Opravdu odstranit?",
+  "entfernenSicher": "Opravdu odebrat?",
   "gruppeDelMitglieder": "Členové této skupiny pak nebudou přiřazeni k žádné skupině.",
   "gruppeDelTreffpunkte": "Schůzky před službou této skupiny odpadnou.",
   "ohneGruppeTitle": "BEZ SLUŽEBNÍ SKUPINY",

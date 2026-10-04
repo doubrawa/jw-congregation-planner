@@ -1,6 +1,7 @@
 import { useApp } from '../app/context'
 import { istAngemeldet } from '../app/eigene-person'
 import { AbsencePanel } from '../components/AbsencePanel'
+import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { useZweiTipp } from '../components/useZweiTipp'
 import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
 import { familyMembers, initials, namensDublette, personCompare, personLabel, serviceQualKey } from '../data/helpers'
@@ -207,16 +208,11 @@ export function PersonDetail({ person }: { person: Person }) {
               {family.map((m) => (
                 <span key={m.id} className="fam-chip">
                   {personLabel(m)}
-                  <button
-                    type="button"
+                  <EntfernenKnopf
                     className="fam-remove"
-                    aria-label={t.a11yRemove}
-                    onClick={() =>
-                      dispatch({ type: 'setFamily', id: person.id, memberId: m.id, add: false })
-                    }
-                  >
-                    ✕
-                  </button>
+                    frage={t.entfernenSicher}
+                    onEntfernen={() => dispatch({ type: 'setFamily', id: person.id, memberId: m.id, add: false })}
+                  />
                 </span>
               ))}
             </div>

@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Non c’era nulla da inviare",
   "notifUnerreichbar": "Incarichi non confermati (non raggiungibili)",
   "loeschenSicher": "Eliminare davvero?",
+  "entfernenSicher": "Rimuovere davvero?",
   "gruppeDelMitglieder": "I membri di questo gruppo non apparterranno più a nessun gruppo.",
   "gruppeDelTreffpunkte": "Le adunanze per il servizio di questo gruppo verranno eliminate.",
   "ohneGruppeTitle": "SENZA GRUPPO DI SERVIZIO",

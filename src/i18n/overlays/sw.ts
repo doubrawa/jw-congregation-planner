@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Hakukuwa na chochote cha kutuma",
   "notifUnerreichbar": "Migawo isiyothibitishwa (hawapatikani)",
   "loeschenSicher": "Futa kweli?",
+  "entfernenSicher": "Ondoa kweli?",
   "gruppeDelMitglieder": "Washiriki wa kikundi hiki hawatakuwa tena katika kikundi chochote.",
   "gruppeDelTreffpunkte": "Mikutano ya utumishi ya kikundi hiki itaondolewa.",
   "ohneGruppeTitle": "BILA KIKUNDI CHA UTUMISHI",

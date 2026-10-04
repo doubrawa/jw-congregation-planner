@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Tidak ada yang perlu dikirim",
   "notifUnerreichbar": "Tugas belum dikonfirmasi (tidak terjangkau)",
   "loeschenSicher": "Yakin hapus?",
+  "entfernenSicher": "Yakin keluarkan?",
   "gruppeDelMitglieder": "Anggota kelompok ini tidak akan lagi termasuk dalam kelompok mana pun.",
   "gruppeDelTreffpunkte": "Pertemuan untuk dinas lapangan kelompok ini akan dihapus.",
   "ohneGruppeTitle": "TANPA KELOMPOK DINAS LAPANGAN",

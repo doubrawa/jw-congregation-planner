@@ -1,4 +1,5 @@
 import { useApp } from '../app/context'
+import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { personCompare, personLabel } from '../data/helpers'
 import { useT } from '../i18n/useT'
 
@@ -60,14 +61,11 @@ export function OrphanAccounts() {
               ))}
             </select>
             {member.userId !== state.userId && (
-              <button
-                type="button"
+              <EntfernenKnopf
                 className="svc-remove"
-                aria-label={t.a11yRemove}
-                onClick={() => dispatch({ type: 'removeMember', userId: member.userId })}
-              >
-                ✕
-              </button>
+                frage={t.entfernenSicher}
+                onEntfernen={() => dispatch({ type: 'removeMember', userId: member.userId })}
+              />
             )}
           </div>
         </div>

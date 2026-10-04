@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
 import { Chevron } from '../components/Chevron'
+import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { isQualified, serviceQualKey } from '../data/helpers'
 import { fill, useT } from '../i18n/useT'
 import type { Service } from '../data/types'
@@ -90,14 +91,7 @@ export function ServicesPanel() {
             >
               +
             </button>
-            <button
-              type="button"
-              className="svc-remove"
-              aria-label={t.a11yRemove}
-              onClick={() => dispatch({ type: 'removeService', key: service.key })}
-            >
-              ✕
-            </button>
+            <EntfernenKnopf className="svc-remove" onEntfernen={() => dispatch({ type: 'removeService', key: service.key })} />
           </div>
         </div>
       ))}

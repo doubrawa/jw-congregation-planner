@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Il n’y avait rien à envoyer",
   "notifUnerreichbar": "Attributions non confirmées (injoignables)",
   "loeschenSicher": "Vraiment supprimer\u00a0?",
+  "entfernenSicher": "Vraiment retirer\u00a0?",
   "gruppeDelMitglieder": "Les membres de ce groupe ne seront plus rattachés à aucun groupe.",
   "gruppeDelTreffpunkte": "Les réunions pour la prédication de ce groupe sont supprimées.",
   "ohneGruppeTitle": "SANS GROUPE DE PRÉDICATION",

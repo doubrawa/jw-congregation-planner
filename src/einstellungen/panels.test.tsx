@@ -414,7 +414,12 @@ describe('Sprache', () => {
     const { container, dispatch } = zeige('lang', { progLangs: ['en', 'es'] })
     const chips = [...container.querySelectorAll('.proglang-chip')]
     expect(chips).toHaveLength(2)
-    fireEvent.click(chips[0]!.querySelector('.proglang-chip-x')!)
+    const x = () => chips[0]!.querySelector('.proglang-chip-x')!
+    fireEvent.click(x())
+    // Erst die Rückfrage — herausgenommen, nicht gelöscht.
+    expect(dispatch).not.toHaveBeenCalled()
+    expect(x().textContent).toBe(t.entfernenSicher)
+    fireEvent.click(x())
     expect(dispatch).toHaveBeenCalledWith({ type: 'removeProgLang', code: 'en' })
   })
 

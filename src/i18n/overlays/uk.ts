@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Не було чого надсилати",
   "notifUnerreichbar": "Непідтверджені завдання (немає зв’язку)",
   "loeschenSicher": "Точно видалити?",
+  "entfernenSicher": "Точно прибрати?",
   "gruppeDelMitglieder": "Члени цієї групи більше не належатимуть до жодної групи.",
   "gruppeDelTreffpunkte": "Зустрічі для служіння цієї групи буде видалено.",
   "ohneGruppeTitle": "БЕЗ ГРУПИ ДЛЯ СЛУЖІННЯ",

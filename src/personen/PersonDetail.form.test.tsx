@@ -263,6 +263,9 @@ describe('Familie / Haushalt', () => {
       persons: [person({ fam: 'f1' }), { ...COHN, fam: 'f1' }],
     })
     fireEvent.click(container.querySelector('.fam-remove')!)
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'setFamily' }))
+    expect(container.querySelector('.fam-remove')?.textContent).toBe(t.entfernenSicher)
+    fireEvent.click(container.querySelector('.fam-remove')!)
     expect(dispatch).toHaveBeenCalledWith({
       type: 'setFamily', id: 'p-a', memberId: 'p-c', add: false,
     })

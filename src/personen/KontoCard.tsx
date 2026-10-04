@@ -1,4 +1,5 @@
 import { useApp } from '../app/context'
+import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { copyText } from '../lib/clipboard'
 import { sendInviteMails } from '../lib/invite'
 import { congAppCode } from '../i18n/langs'
@@ -89,14 +90,11 @@ export function KontoCard({ person }: { person: Person }) {
             {self && <span className="mem-du">{t.duMarker}</span>}
           </span>
           {!self && (
-            <button
-              type="button"
+            <EntfernenKnopf
               className="svc-remove"
-              aria-label={t.a11yRemove}
-              onClick={() => dispatch({ type: 'removeMember', userId: member.userId })}
-            >
-              ✕
-            </button>
+              frage={t.entfernenSicher}
+              onEntfernen={() => dispatch({ type: 'removeMember', userId: member.userId })}
+            />
           )}
         </div>
       ) : invite ? (
@@ -126,14 +124,7 @@ export function KontoCard({ person }: { person: Person }) {
               <button type="button" className="konto-link" onClick={() => void copyCode(invite.code)}>
                 {t.kopierenBtn}
               </button>
-              <button
-                type="button"
-                className="svc-remove"
-                aria-label={t.a11yRemove}
-                onClick={() => dispatch({ type: 'removeInvite', id: invite.id })}
-              >
-                ✕
-              </button>
+              <EntfernenKnopf className="svc-remove" onEntfernen={() => dispatch({ type: 'removeInvite', id: invite.id })} />
             </div>
           </div>
         </>

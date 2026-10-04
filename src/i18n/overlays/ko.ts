@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "보낼 것이 없었습니다",
   "notifUnerreichbar": "확인되지 않은 임명 (연락 불가)",
   "loeschenSicher": "정말 삭제할까요?",
+  "entfernenSicher": "정말 제외할까요?",
   "gruppeDelMitglieder": "이 집단의 구성원은 더 이상 어느 집단에도 속하지 않게 됩니다.",
   "gruppeDelTreffpunkte": "이 집단의 야외 봉사 모임은 없어집니다.",
   "ohneGruppeTitle": "야외 봉사 집단 없음",

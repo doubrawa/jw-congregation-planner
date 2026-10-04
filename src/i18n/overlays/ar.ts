@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "لم يكن هناك ما يُرسَل",
   "notifUnerreichbar": "تعيينات غير مؤكَّدة (تعذَّر الوصول)",
   "loeschenSicher": "حذف فعلاً؟",
+  "entfernenSicher": "إزالة فعلاً؟",
   "gruppeDelMitglieder": "لن يعود أعضاء هذا الفريق منتمين إلى أي فريق.",
   "gruppeDelTreffpunkte": "ستُلغى اجتماعات خدمة الحقل الخاصة بهذا الفريق.",
   "ohneGruppeTitle": "بلا فريق خدمة الحقل",

@@ -219,8 +219,10 @@ describe('Eine Regel bearbeiten', () => {
     ])
   })
 
-  it('eine Regel lässt sich löschen', () => {
+  it('eine Regel lässt sich löschen — erst nach der Rückfrage', () => {
     const { container, dispatch } = zeige('rules')
+    fireEvent.click(container.querySelector('.fs-remove')!)
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'fsRuleRemove', id: 'r1' })
     fireEvent.click(container.querySelector('.fs-remove')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsRuleRemove', id: 'r1' })
   })

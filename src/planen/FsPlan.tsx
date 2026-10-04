@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
 import { BesuchsMarke } from '../components/BesuchsMarke'
+import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { treffpunktTagLabel, treffpunktTitel } from '../components/treffpunkt-beschriftung'
 import { FS_TIME_OPTIONS, fsLeiterZuteilung, fsWeekConflicts, nachWochentag } from '../data/fs'
 import { useT } from '../i18n/useT'
@@ -129,14 +130,7 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
                   ))}
                 </select>
                 <div className="fs-edit-title">{title(inst)}</div>
-                <button
-                  type="button"
-                  className="fs-remove"
-                  aria-label={t.a11yRemove}
-                  onClick={() => dispatch({ type: 'fsInstRemove', wi, id: inst.id })}
-                >
-                  ✕
-                </button>
+                <EntfernenKnopf className="fs-remove" onEntfernen={() => dispatch({ type: 'fsInstRemove', wi, id: inst.id })} />
               </div>
               <BesuchsMarke woche={kennung} grp={inst.grp} />
               <input

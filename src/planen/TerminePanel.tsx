@@ -1,4 +1,5 @@
 import { useApp } from '../app/context'
+import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import type { Termin } from '../data/types'
 import { useT } from '../i18n/useT'
 import { versatzAbMontag, wdAusVersatz } from '../data/meeting-dates'
@@ -26,7 +27,7 @@ import { VERSAETZE, wochentagName } from './wochentage'
  * | Wochentage | `Intl` über `LOCALES` — wie im Sonderwochen-Block |
  * | „Wochentag" / „Uhrzeit" | `a11yWeekday` / `a11yTime` |
  * | Ort | `fsOrtPh` (dasselbe Feld führen die Treffpunkte) |
- * | Hinzufügen / Entfernen | `hinzufuegen` / `a11yRemove` |
+ * | Hinzufügen / Entfernen | `hinzufuegen` / `a11yRemove`, Rückfrage `loeschenSicher` (`EntfernenKnopf`) |
  * | „kein Tag" | ein Gedankenstrich — in jeder Schrift derselbe |
  *
  * Die Bezeichnung selbst bleibt unübersetzt: Es sind die Worte des Planers,
@@ -60,14 +61,7 @@ export function TerminePanel() {
               aria-label={t.nameLbl}
               onChange={(e) => setzen(termin.id, { title: e.target.value })}
             />
-            <button
-              type="button"
-              className="fs-remove"
-              aria-label={t.a11yRemove}
-              onClick={() => dispatch({ type: 'terminRemove', id: termin.id })}
-            >
-              ✕
-            </button>
+            <EntfernenKnopf className="fs-remove" onEntfernen={() => dispatch({ type: 'terminRemove', id: termin.id })} />
           </div>
 
           <div className="sonder-row sonder-row--termin">

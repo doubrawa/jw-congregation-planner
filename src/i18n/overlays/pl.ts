@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Nie było nic do wysłania",
   "notifUnerreichbar": "Niepotwierdzone zadania (brak kontaktu)",
   "loeschenSicher": "Na pewno usunąć?",
+  "entfernenSicher": "Na pewno usunąć?",
   "gruppeDelMitglieder": "Członkowie tej grupy nie będą już przypisani do żadnej grupy.",
   "gruppeDelTreffpunkte": "Zbiórki do służby tej grupy zostaną usunięte.",
   "ohneGruppeTitle": "BEZ GRUPY SŁUŻBY",

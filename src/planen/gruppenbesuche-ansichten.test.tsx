@@ -111,10 +111,19 @@ describe('Besuch hinzufügen', () => {
 })
 
 describe('Ein Besuch in der Liste', () => {
-  it('lässt sich entfernen', () => {
+  it('lässt sich entfernen — erst nach der Rückfrage (4.10.2026)', () => {
     const b = besuch(W1)
     const { container, dispatch } = zeige({ gruppenbesuche: [b], fsWeeks: leiterInW1('Manfred Albrecht', MANFRED.id) })
     fireEvent.click(zeile(container).querySelector(`button[aria-label="${t.a11yRemove}"]`)!)
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'besuchEntfernen', id: b.id })
+    const geschaerft = zeile(container).querySelector('.fs-remove.is-armed')
+    expect(geschaerft?.textContent).toBe(t.loeschenSicher)
+    // Ein Tipp daneben bricht ab …
+    fireEvent.blur(geschaerft!)
+    expect(zeile(container).querySelector('.fs-remove.is-armed')).toBeNull()
+    // … und erst der zweite Tipp hintereinander entfernt.
+    fireEvent.click(zeile(container).querySelector(`button[aria-label="${t.a11yRemove}"]`)!)
+    fireEvent.click(zeile(container).querySelector('.fs-remove.is-armed')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'besuchEntfernen', id: b.id })
   })
 

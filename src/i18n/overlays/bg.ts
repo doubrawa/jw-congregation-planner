@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Нямаше какво да се изпрати",
   "notifUnerreichbar": "Непотвърдени назначения (няма връзка)",
   "loeschenSicher": "Наистина ли да се изтрие?",
+  "entfernenSicher": "Наистина ли да се премахне?",
   "gruppeDelMitglieder": "Членовете на тази група вече няма да принадлежат към никоя група.",
   "gruppeDelTreffpunkte": "Сбирките на тази група отпадат.",
   "ohneGruppeTitle": "БЕЗ ГРУПА ЗА ПРОПОВЕДНА СЛУЖБА",

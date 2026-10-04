@@ -480,6 +480,7 @@ export default {
   "notifErsatzGesucht": "Substitute needed",
   "notifErsatzGefunden": "Substitute found",
   "loeschenSicher": "Really delete?",
+  "entfernenSicher": "Really remove?",
   "gruppeDelMitglieder": "The members of this group will no longer be assigned to any group.",
   "gruppeDelTreffpunkte": "This group’s field service meetings will be removed.",
   "ohneGruppeTitle": "NO FIELD SERVICE GROUP",

@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Không có gì để gửi",
   "notifUnerreichbar": "Phân công chưa xác nhận (không liên lạc được)",
   "loeschenSicher": "Thực sự xóa?",
+  "entfernenSicher": "Thực sự gỡ bỏ?",
   "gruppeDelMitglieder": "Các thành viên của nhóm này sẽ không còn thuộc nhóm nào.",
   "gruppeDelTreffpunkte": "Các buổi nhóm rao giảng của nhóm này sẽ bị xóa.",
   "ohneGruppeTitle": "CHƯA CÓ NHÓM RAO GIẢNG",

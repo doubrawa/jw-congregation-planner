@@ -415,6 +415,9 @@ export const DE = {
     nameDoppelt: 'Diesen Namen trägt bereits {name}. Ergänze den Vornamen, damit beide unterscheidbar sind.',
     // Predigtdienstgruppe löschen (Zwei-Tipp-Bestätigung) und Warnung „ohne Gruppe"
     loeschenSicher: 'Wirklich löschen?',
+    // Dasselbe für das, was nur herausgenommen wird (`EntfernenKnopf`): eine
+    // Person aus einer Schicht, eine Sprache aus dem Programm, ein Konto.
+    entfernenSicher: 'Wirklich entfernen?',
     gruppeDelMitglieder: 'Die Mitglieder dieser Gruppe sind danach keiner Gruppe mehr zugeordnet.',
     gruppeDelTreffpunkte: 'Die Treffpunkte dieser Gruppe entfallen.',
     ohneGruppeTitle: 'OHNE PREDIGTDIENSTGRUPPE',

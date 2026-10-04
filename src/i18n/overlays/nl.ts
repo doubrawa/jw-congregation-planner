@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Er was niets te versturen",
   "notifUnerreichbar": "Onbevestigde toewijzingen (niet bereikbaar)",
   "loeschenSicher": "Echt verwijderen?",
+  "entfernenSicher": "Echt weghalen?",
   "gruppeDelMitglieder": "De leden van deze groep horen daarna bij geen enkele groep meer.",
   "gruppeDelTreffpunkte": "De velddienstbijeenkomsten van deze groep vervallen.",
   "ohneGruppeTitle": "ZONDER VELDDIENSTGROEP",

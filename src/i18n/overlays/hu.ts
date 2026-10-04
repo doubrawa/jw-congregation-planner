@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Nem volt mit elküldeni",
   "notifUnerreichbar": "Meg nem erősített feladatok (nem elérhető)",
   "loeschenSicher": "Biztosan törlöd?",
+  "entfernenSicher": "Biztosan eltávolítod?",
   "gruppeDelMitglieder": "A csoport tagjai ezután egyik csoporthoz sem tartoznak.",
   "gruppeDelTreffpunkte": "A csoport szántóföldi összejövetelei megszűnnek.",
   "ohneGruppeTitle": "SZÁNTÓFÖLDI CSOPORT NÉLKÜL",

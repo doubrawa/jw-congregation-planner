@@ -286,15 +286,21 @@ describe('Planen: die übrige Bedienung', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'ozTerminUpdate', id: 't1', patch: { bis: '16:00' } })
   })
 
-  it('ein Termin lässt sich streichen', () => {
+  it('ein Termin lässt sich löschen — erst nach der Rückfrage, denn mit ihm gehen alle Einträge', () => {
     const { container, dispatch } = planen()
+    fireEvent.click(container.querySelector('.fsr-row .fs-remove')!)
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'ozTerminRemove', id: 't1' })
+    expect(container.querySelector('.fsr-row .fs-remove')?.textContent).toBe(t.loeschenSicher)
     fireEvent.click(container.querySelector('.fsr-row .fs-remove')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'ozTerminRemove', id: 't1' })
   })
 
-  it('ein Eintrag lässt sich austragen', () => {
+  it('ein Eintrag lässt sich austragen — erst nach der Rückfrage', () => {
     const e = eintrag(ANNA.id)
     const { container, dispatch } = planen({ ozEintraege: [e] })
+    fireEvent.click(container.querySelector('.oz-person .oz-raus')!)
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'ozAustragen', id: e.id })
+    expect(container.querySelector('.oz-person .oz-raus')?.textContent).toBe(t.entfernenSicher)
     fireEvent.click(container.querySelector('.oz-person .oz-raus')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'ozAustragen', id: e.id })
   })

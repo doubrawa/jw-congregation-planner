@@ -479,6 +479,7 @@ export default {
   "toastPlanNichts": "چیزی برای ارسال نبود",
   "notifUnerreichbar": "وظایف تأییدنشده (در دسترس نیستند)",
   "loeschenSicher": "واقعاً حذف شود؟",
+  "entfernenSicher": "واقعاً برداشته شود؟",
   "gruppeDelMitglieder": "اعضای این گروه دیگر به هیچ گروهی تعلق نخواهند داشت.",
   "gruppeDelTreffpunkte": "جلسات خدمت موعظهٔ این گروه حذف می‌شوند.",
   "ohneGruppeTitle": "بدون گروه موعظه",

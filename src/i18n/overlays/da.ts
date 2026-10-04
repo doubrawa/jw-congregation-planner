@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Der var ikke noget at sende",
   "notifUnerreichbar": "Ubekræftede opgaver (kan ikke kontaktes)",
   "loeschenSicher": "Vil du slette?",
+  "entfernenSicher": "Vil du fjerne?",
   "gruppeDelMitglieder": "Medlemmerne af denne gruppe hører derefter ikke længere til nogen gruppe.",
   "gruppeDelTreffpunkte": "Denne gruppes samlinger bortfalder.",
   "ohneGruppeTitle": "UDEN TJENESTEGRUPPE",

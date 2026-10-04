@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Δεν υπήρχε τίποτα να σταλεί",
   "notifUnerreichbar": "Μη επιβεβαιωμένες αναθέσεις (χωρίς επικοινωνία)",
   "loeschenSicher": "Σίγουρα διαγραφή;",
+  "entfernenSicher": "Σίγουρα αφαίρεση;",
   "gruppeDelMitglieder": "Τα μέλη αυτού του ομίλου δεν θα ανήκουν πλέον σε κανέναν όμιλο.",
   "gruppeDelTreffpunkte": "Οι συναθροίσεις για υπηρεσία αγρού αυτού του ομίλου καταργούνται.",
   "ohneGruppeTitle": "ΧΩΡΙΣ ΟΜΙΛΟ ΥΠΗΡΕΣΙΑΣ ΑΓΡΟΥ",

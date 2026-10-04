@@ -249,8 +249,10 @@ describe('Treffpunkte planen', () => {
     })
   })
 
-  it('ein Treffpunkt lässt sich aus der Woche entfernen', () => {
+  it('ein Treffpunkt lässt sich aus der Woche entfernen — erst nach der Rückfrage', () => {
     const { container, dispatch } = buehne('fs', { fsWeeks: [[inst()]] })
+    fireEvent.click(container.querySelector('.fs-remove')!)
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'fsInstRemove', wi: 0, id: 'f1' })
     fireEvent.click(container.querySelector('.fs-remove')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsInstRemove', wi: 0, id: 'f1' })
   })

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { Sheet } from '../components/Sheet'
+import { useZweiTipp } from '../components/useZweiTipp'
 import { herkunftVon, isSong, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER, rolleBasis, slotsOf } from '../data/helpers'
 import { LOAD_RADIUS, type WeekLoad } from '../data/auslastung'
 import { fsLeaderValue } from '../data/fs'
@@ -129,6 +130,20 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
     [state, sel, abwesend, t, tu],
   )
 
+  /*
+   * Entfernen setzt den Redner-Platz auf seinen Ausgangszustand zurück
+   * (`guestBase` ist beim eigenen Redner „Gastredner"). Der leere Platz ist
+   * damit wieder auswärtig — so kommt er aus dem Import, und so bleibt er von
+   * der Auto-Zuteilung unberührt: den Redner vereinbart man, man verlost ihn
+   * nicht.
+   *
+   * **Mit Rückfrage** (4.10.2026): Wer zugesagt hatte, bekommt sofort
+   * „Zuteilung zurückgezogen" — ein Fehltipp ließe sich nicht zurückholen.
+   */
+  const entfernen = useZweiTipp(() =>
+    dispatch(guest ? { type: 'assign', name: '', rolle: guestBase } : { type: 'assign', name: '' }),
+  )
+
   const pick = (cand: Candidate) => {
     if (cand.absent) {
       dispatch({ type: 'showToast', text: fill(t.toastAbsentP, { name: cand.name }) })
@@ -165,19 +180,13 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
                 {t.s89Open}
               </button>
             )}
-            {/* Entfernen setzt den Redner-Platz auf seinen Ausgangszustand
-                zurück (`guestBase` ist beim eigenen Redner „Gastredner").
-                Der leere Platz ist damit wieder auswärtig — so kommt er aus
-                dem Import, und so bleibt er von der Auto-Zuteilung
-                unberührt: den Redner vereinbart man, man verlost ihn nicht. */}
             <button
               type="button"
-              className="sheet-remove"
-              onClick={() =>
-                dispatch(guest ? { type: 'assign', name: '', rolle: guestBase } : { type: 'assign', name: '' })
-              }
+              className={entfernen.armed ? 'sheet-remove entfernen is-armed' : 'sheet-remove'}
+              onClick={entfernen.onClick}
+              onBlur={entfernen.onBlur}
             >
-              {t.entfernen}
+              {entfernen.armed ? t.entfernenSicher : t.entfernen}
             </button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
+import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import {
   besuchsGruppe,
   besuchsTreffpunktText,
@@ -211,14 +212,7 @@ function BesuchZeile({
         <span className="gb-woche">{besuchsWocheText(besuch.woche, state.lang)}</span>
         <span className="gb-gruppe">{besuchsGruppe(besuch, state.groups, tu)}</span>
         {!vorbei && (
-          <button
-            type="button"
-            className="fs-remove"
-            aria-label={t.a11yRemove}
-            onClick={() => dispatch({ type: 'besuchEntfernen', id: besuch.id })}
-          >
-            ✕
-          </button>
+          <EntfernenKnopf className="fs-remove" onEntfernen={() => dispatch({ type: 'besuchEntfernen', id: besuch.id })} />
         )}
       </div>
       {stand.treffpunkte.map((inst) => (

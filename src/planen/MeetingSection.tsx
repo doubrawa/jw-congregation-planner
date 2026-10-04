@@ -1,5 +1,7 @@
 import { Fragment, useRef, useState } from 'react'
-import { useApp } from '../app/context'
+import { useApp, useAppDispatch } from '../app/context'
+import { EntfernenKnopf } from '../components/EntfernenKnopf'
+import { useZweiTipp } from '../components/useZweiTipp'
 import { movableIndices } from '../data/meeting-edit'
 import { istSchuelerteil } from '../data/aux-class'
 import { rolleMitHerkunft, istArt, isGuestRole, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
@@ -21,6 +23,37 @@ import { SONG_WORD } from '../../supabase/functions/_shared/i18n/translate-data.
 import { useT } from '../i18n/useT'
 import type { PartItem, Section, SlotAssignment } from '../data/types'
 import { SlotChip } from './SlotChip'
+
+/**
+ * Den Partner eines Schülerteils an- oder abschalten.
+ *
+ * **Abschalten fragt nach** (4.10.2026): Mit dem Platz geht, wer dort zugeteilt
+ * ist — und hatte er zugesagt, bekommt er sofort „Zuteilung zurückgezogen".
+ * Anschalten nimmt nichts weg und geht mit einem Tipp.
+ */
+function PartnerKnopf({ si, ii, hasPartner }: { si: number; ii: number; hasPartner: boolean }) {
+  const dispatch = useAppDispatch()
+  const { t } = useT()
+  const umschalten = () => dispatch({ type: 'togglePartner', si, ii })
+  const entfernen = useZweiTipp(umschalten)
+  if (!hasPartner) {
+    return (
+      <button type="button" className="partner-toggle" onClick={umschalten}>
+        {t.partnerHinzu}
+      </button>
+    )
+  }
+  return (
+    <button
+      type="button"
+      className={entfernen.armed ? 'partner-toggle entfernen is-armed' : 'partner-toggle'}
+      onClick={entfernen.onClick}
+      onBlur={entfernen.onBlur}
+    >
+      {entfernen.armed ? t.entfernenSicher : t.partnerEntfernen}
+    </button>
+  )
+}
 
 /**
  * Die Minuten eines LAC-Punkts — **direkt eingeben**.
@@ -381,15 +414,7 @@ export function MeetingSection({
                 </div>
               </Fragment>
             ))}
-            {canPartner && (
-              <button
-                type="button"
-                className="partner-toggle"
-                onClick={() => dispatch({ type: 'togglePartner', si, ii })}
-              >
-                {hasPartner ? t.partnerEntfernen : t.partnerHinzu}
-              </button>
-            )}
+            {canPartner && <PartnerKnopf si={si} ii={ii} hasPartner={hasPartner} />}
             {editable && (
               <div className="lac-edit">
                 {/*
@@ -406,14 +431,7 @@ export function MeetingSection({
                   onSetzen={(wert) => dispatch({ type: 'lacMinuten', si, ii, mins: wert })}
                 />
                 <span className="lac-spacer" />
-                <button
-                  type="button"
-                  className="lac-remove"
-                  aria-label={t.a11yRemove}
-                  onClick={() => dispatch({ type: 'lacRemove', si, ii })}
-                >
-                  ✕
-                </button>
+                <EntfernenKnopf className="lac-remove" onEntfernen={() => dispatch({ type: 'lacRemove', si, ii })} />
               </div>
             )}
             </div>

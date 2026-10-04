@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Ei ollut mitään lähetettävää",
   "notifUnerreichbar": "Vahvistamattomat tehtävät (ei tavoiteta)",
   "loeschenSicher": "Poistetaanko?",
+  "entfernenSicher": "Otetaanko pois?",
   "gruppeDelMitglieder": "Tämän ryhmän jäsenet eivät sen jälkeen kuulu mihinkään ryhmään.",
   "gruppeDelTreffpunkte": "Tämän ryhmän kenttäkokoukset poistuvat.",
   "ohneGruppeTitle": "ILMAN PALVELUSRYHMÄÄ",

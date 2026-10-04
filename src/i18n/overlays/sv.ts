@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Det fanns inget att skicka",
   "notifUnerreichbar": "Obekräftade uppgifter (ej nåbara)",
   "loeschenSicher": "Vill du verkligen ta bort?",
+  "entfernenSicher": "Vill du verkligen ta bort?",
   "gruppeDelMitglieder": "Medlemmarna i den här gruppen tillhör sedan ingen grupp längre.",
   "gruppeDelTreffpunkte": "Den här gruppens möten för tjänst tas bort.",
   "ohneGruppeTitle": "UTAN TJÄNSTEGRUPP",

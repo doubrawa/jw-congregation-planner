@@ -9,6 +9,13 @@ Versammlungseinstellungen pflegen.
 > beschrieben und gelten für dich genauso. Dieses Handbuch ergänzt die
 > **Planer‑Funktionen**.
 
+> **Löschen fragt immer nach.** Der erste Tipp auf **✕** (oder **Entfernen**)
+> zeigt **Wirklich löschen?** – bei dem, was nur herausgenommen wird, etwa eine
+> Person aus einer Schicht, **Wirklich entfernen?**. Erst der zweite Tipp führt
+> es aus; ein Tipp daneben bricht ab. So geht nichts durch einen Fehltipp
+> verloren, und niemand bekommt versehentlich die Nachricht, dass seine
+> Zuteilung zurückgezogen ist.
+
 ---
 
 ## Inhalt

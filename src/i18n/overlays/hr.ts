@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Nije bilo ništa za poslati",
   "notifUnerreichbar": "Nepotvrđeni zadaci (nedostupni)",
   "loeschenSicher": "Zaista izbrisati?",
+  "entfernenSicher": "Zaista ukloniti?",
   "gruppeDelMitglieder": "Članovi ove grupe tada više neće pripadati nijednoj grupi.",
   "gruppeDelTreffpunkte": "Sastanci za službu ove grupe otpadaju.",
   "ohneGruppeTitle": "BEZ GRUPE ZA SLUŽBU PROPOVIJEDANJA",

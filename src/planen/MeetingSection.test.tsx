@@ -469,8 +469,11 @@ describe('„Unser Leben als Christ" ist der einzige bearbeitbare Abschnitt', ()
     expect(dispatch).toHaveBeenCalledWith({ type: 'lacMove', si: 0, ii: 0, dir: 1 })
   })
 
-  it('Löschen entfernt den Punkt', () => {
+  it('Löschen entfernt den Punkt — erst nach der Rückfrage', () => {
     const { container, dispatch } = zeige(lac())
+    fireEvent.click(container.querySelector('.lac-remove')!)
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'lacRemove', si: 0, ii: 0 })
+    expect(container.querySelector('.lac-remove')?.textContent).toBe(t.loeschenSicher)
     fireEvent.click(container.querySelector('.lac-remove')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'lacRemove', si: 0, ii: 0 })
   })
@@ -521,9 +524,12 @@ describe('Der Gesprächspartner-Platz lässt sich an- und abschalten', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'togglePartner', si: 0, ii: 0 })
   })
 
-  it('mit Partner das Entfernen', () => {
-    const { container } = zeige(gespraech(true))
-    expect(knopf(container, t.partnerEntfernen)).toBeTruthy()
+  it('mit Partner das Entfernen — erst nach der Rückfrage, denn mit dem Platz geht, wer dort steht', () => {
+    const { container, dispatch } = zeige(gespraech(true))
+    fireEvent.click(knopf(container, t.partnerEntfernen))
+    expect(dispatch).not.toHaveBeenCalled()
+    fireEvent.click(knopf(container, t.entfernenSicher))
+    expect(dispatch).toHaveBeenCalledWith({ type: 'togglePartner', si: 0, ii: 0 })
   })
 
   it('an einem Punkt ohne Schulungs-Platz gibt es den Schalter gar nicht', () => {

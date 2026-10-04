@@ -101,8 +101,11 @@ describe('Zustand 1: Person hat schon ein Konto', () => {
     expect(container.querySelector('.konto-mail')?.textContent).toContain(t.kontoVerknuepft)
   })
 
-  it('die Verknüpfung lässt sich lösen', () => {
+  it('die Verknüpfung lässt sich lösen — erst nach der Rückfrage', () => {
     const { container, dispatch } = zeige(person(), { members: MITGLIED })
+    fireEvent.click(container.querySelector('.svc-remove')!)
+    expect(dispatch).not.toHaveBeenCalled()
+    expect(container.querySelector('.svc-remove')?.textContent).toBe(t.entfernenSicher)
     fireEvent.click(container.querySelector('.svc-remove')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'removeMember', userId: 'u9' })
   })
@@ -198,8 +201,11 @@ describe('Zustand 2: es liegt ein offener Code', () => {
     expect(decodeURIComponent(window.location.href)).toContain('ABC12345')
   })
 
-  it('der Code lässt sich zurückziehen', () => {
+  it('der Code lässt sich zurückziehen — erst nach der Rückfrage', () => {
     const { container, dispatch } = zeige(person(), { invites: CODE })
+    fireEvent.click(container.querySelector('.svc-remove')!)
+    expect(dispatch).not.toHaveBeenCalled()
+    expect(container.querySelector('.svc-remove')?.textContent).toBe(t.loeschenSicher)
     fireEvent.click(container.querySelector('.svc-remove')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'removeInvite', id: 'i1' })
   })

@@ -12,9 +12,21 @@ import './components.css'
  * ✕ eine Pille mit Text (`.entfernen.is-armed` in `components.css`); die Form
  * davor bringt `className` mit, sie ist je Liste eine andere.
  *
+ * `frage` ist für das, was nur herausgenommen wird, nicht gelöscht — eine
+ * Person aus einer Schicht, eine Sprache aus dem Programm: „Wirklich
+ * entfernen?" (`entfernenSicher`).
+ *
  * Ein eigener Baustein, weil jede Zeile ihren eigenen Zustand braucht.
  */
-export function EntfernenKnopf({ className, onEntfernen }: { className: string; onEntfernen: () => void }) {
+export function EntfernenKnopf({
+  className,
+  onEntfernen,
+  frage,
+}: {
+  className: string
+  onEntfernen: () => void
+  frage?: string
+}) {
   const { t } = useT()
   const entfernen = useZweiTipp(onEntfernen)
   return (
@@ -26,7 +38,7 @@ export function EntfernenKnopf({ className, onEntfernen }: { className: string; 
       onClick={entfernen.onClick}
       onBlur={entfernen.onBlur}
     >
-      {entfernen.armed ? t.loeschenSicher : '✕'}
+      {entfernen.armed ? (frage ?? t.loeschenSicher) : '✕'}
     </button>
   )
 }

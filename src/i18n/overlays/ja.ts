@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "送るものはありませんでした",
   "notifUnerreichbar": "未確認の割り当て（連絡不可）",
   "loeschenSicher": "本当に削除？",
+  "entfernenSicher": "本当に外す？",
   "gruppeDelMitglieder": "このグループのメンバーはどのグループにも属さなくなります。",
   "gruppeDelTreffpunkte": "このグループの野外奉仕の集まりはなくなります。",
   "ohneGruppeTitle": "野外奉仕グループなし",

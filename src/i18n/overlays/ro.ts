@@ -480,6 +480,7 @@ export default {
   "toastPlanNichts": "Nu era nimic de trimis",
   "notifUnerreichbar": "Însărcinări neconfirmate (fără contact)",
   "loeschenSicher": "Chiar ștergi?",
+  "entfernenSicher": "Chiar elimini?",
   "gruppeDelMitglieder": "Membrii acestei grupe nu vor mai aparține niciunei grupe.",
   "gruppeDelTreffpunkte": "Întrunirile pentru serviciu ale acestei grupe vor fi eliminate.",
   "ohneGruppeTitle": "FĂRĂ GRUPĂ DE SERVICIU",
