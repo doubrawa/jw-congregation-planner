@@ -259,7 +259,8 @@ describe('Die Gruppenbesuche im Predigtdienst (T120, Phase 2)', () => {
     fireEvent.change(container.querySelector('.gb-besucher select')!, { target: { value: AUFSEHER.id } })
     expect(knopf.disabled).toBe(false)
     fireEvent.click(knopf)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'besucheVerteilen', pid: AUFSEHER.id })
+    // Ohne Besuche das erste Wochenende, und kein Monat ausgelassen.
+    expect(dispatch).toHaveBeenCalledWith({ type: 'besucheVerteilen', pid: AUFSEHER.id, wochenende: 1, auslassen: [] })
   })
 })
 

@@ -417,6 +417,23 @@ describe('Gruppenbesuche (T120)', () => {
     expect(data.saveWeek).not.toHaveBeenCalled()
   })
 
+  it('ein verlegter Besuch geht hinaus — samt beiden Wochen, der alten und der neuen', () => {
+    const weeks = buildDemoWeeks()
+    const fsWeeks = buildDemoFsWeeks()
+    const verlegt = { ...B1, woche: '2026-09-21' }
+    // Der Reducer ändert beide Wochen: aus der alten geht der Besucher, in die neue tritt er.
+    const naechste = fsWeeks.map((w, i) => (i === 1 || i === 2 ? [...w] : w))
+    persist(st({ weeks, fsWeeks, gruppenbesuche: [B1, B2] }), st({ weeks, fsWeeks: naechste, gruppenbesuche: [verlegt, B2] }), {
+      type: 'besuchAendern',
+      id: 'b1',
+      patch: { woche: '2026-09-21' },
+    })
+    expect(data.saveGruppenbesuche).toHaveBeenCalledWith('c1', [verlegt], [])
+    expect(data.saveFsWeek).toHaveBeenCalledTimes(2)
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', weeks[1]?.start, naechste[1])
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', weeks[2]?.start, naechste[2])
+  })
+
   it('ein entfernter Besuch wird gelöscht, nicht überschrieben', () => {
     const weeks = buildDemoWeeks()
     const fsWeeks = buildDemoFsWeeks()

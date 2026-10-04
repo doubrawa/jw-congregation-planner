@@ -125,6 +125,68 @@ describe('Einzelne Besuche', () => {
   })
 })
 
+/**
+ * **Weniger starr** (4.10.2026): verteilen am gewählten Wochenende, Monate
+ * auslassen, und an jedem kommenden Besuch Woche und Gruppe ändern.
+ */
+describe('Wochenende, Monate auslassen, Besuch verlegen', () => {
+  const mit = () => reducer(zustand(), { type: 'besuchHinzufuegen', woche: '2026-09-14', grp: 'g2', pid: 'p5' })
+
+  it('„Reihum verteilen" am gewählten Wochenende, ohne die ausgelassenen Monate', () => {
+    const next = reducer(zustand(), { type: 'besucheVerteilen', pid: 'p5', wochenende: 3, auslassen: ['2026-10'] })
+    expect(next.gruppenbesuche.map((b) => `${b.woche} ${b.grp}`).slice(0, 3)).toEqual([
+      '2026-09-14 g1', // Sa 19.9. — das dritte Wochenende
+      '2026-11-16 g2', // Oktober ausgelassen; Sa 21.11.
+      '2026-12-14 g3',
+    ])
+    expect(next.gruppenbesuche).toHaveLength(5)
+    expect(leiter(next, '2026-09-14', 'g1')).toBe('Konrad Sommer')
+  })
+
+  it('in eine andere Woche: dort tritt der Besucher an, die alte wird frei', () => {
+    const s = mit()
+    const id = s.gruppenbesuche[0]!.id
+    const next = reducer(s, { type: 'besuchAendern', id, patch: { woche: '2026-09-21' } })
+    expect(next.gruppenbesuche).toEqual([{ id, woche: '2026-09-21', grp: 'g2', pid: 'p5' }])
+    expect(leiter(next, '2026-09-14', 'g2')).toBe('')
+    expect(leiter(next, '2026-09-21', 'g2')).toBe('Konrad Sommer')
+  })
+
+  it('zu einer anderen Gruppe ebenso — und die Zusage am alten Treffpunkt verfällt', () => {
+    let s = mit()
+    const id = s.gruppenbesuche[0]!.id
+    const alt = fsTaskKey('2026-09-14', 'r5')
+    s = { ...s, confirmations: { [alt]: 'bestätigt' } }
+    expect(leiter(s, '2026-09-14', 'g2')).toBe('Konrad Sommer')
+    // Gegenprobe: Eine Änderung anderswo lässt die Zusage stehen.
+    expect(reducer(s, { type: 'besuchHinzufuegen', woche: '2026-09-21', grp: 'g3', pid: 'p5' }).confirmations[alt]).toBe('bestätigt')
+    const next = reducer(s, { type: 'besuchAendern', id, patch: { grp: 'g1' } })
+    expect(next.gruppenbesuche[0]).toMatchObject({ id, woche: '2026-09-14', grp: 'g1' })
+    expect(leiter(next, '2026-09-14', 'g2')).toBe('')
+    expect(leiter(next, '2026-09-14', 'g1')).toBe('Konrad Sommer')
+    expect(next.confirmations[alt]).toBeUndefined()
+  })
+
+  it('wo die Gruppe in der Woche schon besucht wird: nichts — so auch die Datenbank', () => {
+    let s = mit()
+    s = reducer(s, { type: 'besuchHinzufuegen', woche: '2026-09-21', grp: 'g2', pid: 'p5' })
+    const erster = s.gruppenbesuche.find((b) => b.woche === '2026-09-14')!
+    expect(reducer(s, { type: 'besuchAendern', id: erster.id, patch: { woche: '2026-09-21' } })).toBe(s)
+  })
+
+  it('ohne Änderung, ohne Besuch, in Vergangenes oder aus Vergangenem: nichts', () => {
+    const s = mit()
+    const id = s.gruppenbesuche[0]!.id
+    expect(reducer(s, { type: 'besuchAendern', id, patch: { woche: '2026-09-14', grp: 'g2' } })).toBe(s)
+    expect(reducer(s, { type: 'besuchAendern', id: 'b-weg', patch: { grp: 'g1' } })).toBe(s)
+    // Die Woche vor der ersten ist um.
+    expect(reducer(s, { type: 'besuchAendern', id, patch: { woche: '2026-08-31' } })).toBe(s)
+    // Ist der Besuch selbst vorbei, bleibt er als Rückblick stehen.
+    vi.setSystemTime(new Date(2026, 8, 21, 9, 0))
+    expect(reducer(s, { type: 'besuchAendern', id, patch: { woche: '2026-09-28' } })).toBe(s)
+  })
+})
+
 describe('Wege ohne eigene Aktion', () => {
   it('der Import trägt einen vorgemerkten Besuch in die neue Woche ein', () => {
     const s = zustand({ gruppenbesuche: [besuch('2026-10-12', 'g2')] })

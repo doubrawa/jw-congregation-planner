@@ -223,4 +223,39 @@ describe('Gruppenbesuche', () => {
     expect(container.querySelectorAll('.gb-zeile')).toHaveLength(0)
     expect(container.textContent).toContain(t.gbLeer)
   })
+
+  it('drittes Wochenende, Oktober ausgelassen → verteilt; dann einen Besuch verlegen und zu einer anderen Gruppe geben', () => {
+    const { container } = zeige(PlanenScreen, {
+      screen: 'planen',
+      tab: 'fs',
+      fsBereich: 'gruppenbesuche',
+      planner: true,
+      gruppenbesuche: [],
+    })
+    fireEvent.change(container.querySelector('.gb-besucher select')!, { target: { value: 'p1' } })
+    fireEvent.change(container.querySelector(`select[aria-label="${t.gbWochenende}"]`)!, { target: { value: '3' } })
+    const oktober = [...container.querySelectorAll('.gb-monat')].find((m) => m.getAttribute('aria-label') === 'Oktober 2026')!
+    fireEvent.click(oktober)
+    klick(container, t.gbVerteilen)
+
+    const wochen = () =>
+      [...container.querySelectorAll<HTMLSelectElement>(`.gb-zeile select[aria-label="${t.gbWoche}"]`)].map((s) => s.value)
+    // Je Monat das dritte Wochenende; der Oktober bleibt leer.
+    expect(wochen()).toEqual(['2026-09-14', '2026-11-16', '2026-12-14', '2027-01-11', '2027-02-15'])
+    const monatskarten = [...container.querySelectorAll('.panel-label')].map((l) => l.textContent)
+    expect(monatskarten).toContain('November 2026')
+    expect(monatskarten).not.toContain('Oktober 2026')
+
+    // Den Septemberbesuch eine Woche später …
+    const ersteWoche = container.querySelector<HTMLSelectElement>(`.gb-zeile select[aria-label="${t.gbWoche}"]`)!
+    fireEvent.change(ersteWoche, { target: { value: '2026-09-21' } })
+    expect(wochen()[0]).toBe('2026-09-21')
+    // … und zu einer anderen Gruppe.
+    const ersteGruppe = container.querySelector<HTMLSelectElement>(`.gb-zeile select[aria-label="${t.gbGruppe}"]`)!
+    const vorher = ersteGruppe.value
+    const andere = [...ersteGruppe.options].find((o) => o.value !== vorher && !o.disabled)!.value
+    fireEvent.change(ersteGruppe, { target: { value: andere } })
+    expect(container.querySelector<HTMLSelectElement>(`.gb-zeile select[aria-label="${t.gbGruppe}"]`)!.value).toBe(andere)
+    expect(wochen()).toHaveLength(5)
+  })
 })

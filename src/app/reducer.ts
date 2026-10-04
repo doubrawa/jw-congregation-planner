@@ -1105,6 +1105,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         groups: state.groups,
         lage,
         pid: action.pid,
+        wochenende: action.wochenende,
+        auslassen: action.auslassen,
         // Wie die Regeln des Grundplans: eindeutig und lesbar (`fsRuleAdd`).
         neueId: () => `b${crypto.randomUUID()}`,
       })
@@ -1138,6 +1140,22 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         fsWeeks: besuchAustragen(state.fsWeeks, wochenKennungen(state), besuch),
         toast: toastKey(state, 'toastBesuchDel'),
       }
+    }
+    case 'besuchAendern': {
+      // Woche oder Gruppe eines Besuchs ändern (4.10.2026): Der Besucher geht
+      // aus den Treffpunkten, die er bisher leitete, und tritt in die der neuen
+      // Woche und Gruppe — wie beim Wechsel des Besuchers.
+      const alt = state.gruppenbesuche.find((b) => b.id === action.id)
+      if (!alt) return state
+      const neu = { ...alt, ...action.patch }
+      if (neu.woche === alt.woche && neu.grp === alt.grp) return state
+      // Dieselbe Gruppe in derselben Woche gibt es nur einmal (so auch die Datenbank).
+      if (state.gruppenbesuche.some((b) => b !== alt && b.woche === neu.woche && b.grp === neu.grp)) return state
+      // Vergangenes bleibt als Rückblick, und dorthin verlegt wird auch nicht.
+      const lage = besuchsLage(state)
+      if (besuchStand(alt, lage).art === 'vorbei' || besuchStand(neu, lage).art === 'vorbei') return state
+      const fsWeeks = besuchEintragen(besuchAustragen(state.fsWeeks, lage.kennungen, alt), lage.kennungen, neu, state.persons)
+      return { ...state, gruppenbesuche: nachWoche(state.gruppenbesuche.map((b) => (b === alt ? neu : b))), fsWeeks }
     }
     case 'besuchBesucher': {
       const alt = state.gruppenbesuche.find((b) => b.id === action.id)

@@ -18,6 +18,37 @@
   color: var(--mut);
 }
 
+/* Welches Wochenende „Reihum verteilen" nimmt (4.10.2026). */
+.gb-wochenende {
+  margin-top: 12px;
+}
+
+/* Die Monate zum Auslassen: an = es gibt einen Besuch, aus = durchgestrichen. */
+.gb-monate {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.gb-monat {
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid var(--bord2);
+  border-radius: var(--r-pill);
+  font-size: calc(12px * var(--fs));
+  font-weight: 600;
+  color: var(--mut);
+  text-decoration: line-through;
+}
+
+.gb-monat.is-an {
+  border-color: transparent;
+  background: var(--tAcc);
+  color: var(--ink);
+  text-decoration: none;
+}
+
 /* Ein Besuch: Woche und Gruppe, darunter Treffpunkte, Besucher und Probleme. */
 .gb-zeile {
   padding: 10px 0;
@@ -35,6 +66,21 @@
 .gb-kopf {
   display: flex;
   align-items: baseline;
+  gap: 8px;
+}
+
+/* Ein kommender Besuch: Woche und Gruppe als Auswahl, das ✕ daneben. */
+.gb-kopf--wahl {
+  align-items: center;
+}
+
+.gb-wahl {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  /* minmax(0, 1fr) wie beim Hinzufügen: sonst schöbe eine lange Woche das
+     Raster über die Karte hinaus. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
 }
 

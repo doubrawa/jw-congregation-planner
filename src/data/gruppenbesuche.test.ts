@@ -8,8 +8,12 @@ import {
   besuchHatKonflikt,
   besuchsMonat,
   besuchStand,
+  besuchsWochenAuswahl,
+  besuchsWochenende,
   nachWoche,
+  verteilenMonate,
   VERTEILEN_MONATE,
+  vorgabeWochenende,
   type BesuchsLage,
 } from './gruppenbesuche'
 import { emptyQualifications } from './helpers'
@@ -240,6 +244,95 @@ describe('Reihum verteilen', () => {
 
   it('ohne Gruppen gibt es nichts zu verteilen', () => {
     expect(verteilen([], { groups: [] })).toEqual([])
+  })
+})
+
+/**
+ * **Weniger starr** (4.10.2026): „Er nimmt ja momentan immer das erste
+ * Wochenende im Monat — das ist auch nicht gut", und „mal Monate auslassen".
+ */
+describe('Reihum verteilen: Wochenende und ausgelassene Monate', () => {
+  let n = 0
+  const neueId = () => `w${++n}`
+  const verteilen = (extra: Partial<Parameters<typeof besucheVerteilen>[0]> = {}) =>
+    besucheVerteilen({ besuche: [], groups: GRUPPEN, lage: lage(), pid: KONRAD.id, neueId, heute: HEUTE, ...extra })
+  const wochenVon = (b: Gruppenbesuch[]) => b.map((x) => x.woche)
+
+  it('am dritten Wochenende jedes Monats', () => {
+    expect(wochenVon(verteilen({ wochenende: 3 }))).toEqual([
+      '2026-09-14', // Sa 19.9.
+      '2026-10-12', // Sa 17.10.
+      '2026-11-16', // Sa 21.11.
+      '2026-12-14', // Sa 19.12.
+      '2027-01-11', // Sa 16.1.
+      '2027-02-15', // Sa 20.2.
+    ])
+  })
+
+  it('am letzten — auch in Monaten mit fünf Samstagen', () => {
+    expect(wochenVon(verteilen({ wochenende: 'letztes' }))).toEqual([
+      '2026-09-21', // Sa 26.9.
+      '2026-10-26', // Sa 31.10. — der fünfte
+      '2026-11-23', // Sa 28.11.
+      '2026-12-21', // Sa 26.12.
+      '2027-01-25', // Sa 30.1. — der fünfte
+      '2027-02-22', // Sa 27.2.
+    ])
+  })
+
+  it('geht es am gewählten nicht, das nächstgelegene — bei gleichem Abstand das spätere', () => {
+    // Konrad ist am dritten Samstag im September weg: das vierte, nicht das zweite.
+    const urlaub: Absence = { id: 'a', personId: 'p5', userId: null, from: '2026-09-19', to: '2026-09-19', reason: '' }
+    const [erster] = verteilen({ wochenende: 3, lage: lage(wochen(), [urlaub]) })
+    expect(erster).toMatchObject({ woche: '2026-09-21', grp: 'g1' })
+  })
+
+  it('das erste ist die Vorgabe — wie bis zum 4.10.2026', () => {
+    // Am ersten Samstag liegt der Versammlungstreffpunkt; es trifft den zweiten.
+    expect(wochenVon(verteilen()).slice(0, 2)).toEqual(['2026-09-07', '2026-10-05'])
+    expect(wochenVon(verteilen({ wochenende: 1 })).slice(0, 2)).toEqual(['2026-09-07', '2026-10-05'])
+  })
+
+  it('ein ausgelassener Monat bleibt leer — die Reihe rückt nach', () => {
+    const neu = verteilen({ auslassen: ['2026-10', '2027-01'] })
+    expect(neu.map((b) => `${b.woche} ${b.grp}`)).toEqual([
+      '2026-09-07 g1',
+      // Oktober ausgelassen: Gruppe 2 kommt im November, nicht erst in einem Jahr.
+      '2026-11-09 g2',
+      '2026-12-07 g3',
+      '2027-02-08 g4',
+    ])
+  })
+
+  it('die Monate des Verteilens: sechs ab dem nach dem jüngsten Besuch, frühestens ab dem laufenden', () => {
+    expect(verteilenMonate([], HEUTE)).toEqual(['2026-09', '2026-10', '2026-11', '2026-12', '2027-01', '2027-02'])
+    expect(verteilenMonate([besuch('2026-10-12', 'g3')], HEUTE)[0]).toBe('2026-11')
+    // Ein jüngster Besuch, der schon vorbei ist, schiebt nichts nach hinten.
+    expect(verteilenMonate([besuch('2026-03-09', 'g1')], HEUTE)[0]).toBe('2026-09')
+  })
+
+  it('die Vorgabe folgt dem jüngsten Besuch — ein unten angelegter setzt sie', () => {
+    expect(vorgabeWochenende([])).toBe(1)
+    expect(vorgabeWochenende([besuch('2026-09-07', 'g1'), besuch('2026-10-12', 'g2')])).toBe(3)
+    expect(besuchsWochenende('2026-09-21')).toBe(4) // der vierte und letzte im September
+    expect(besuchsWochenende('2026-10-26')).toBe('letztes') // der fünfte im Oktober
+    expect(besuchsWochenende('2026-09-28')).toBe(1) // Sa 3.10. — der erste im Oktober
+  })
+})
+
+describe('Die Wochen zur Wahl', () => {
+  it('ein halbes Jahr ab dieser Woche', () => {
+    const w = besuchsWochenAuswahl('2026-09-07')
+    expect(w).toHaveLength(VERTEILEN_MONATE * 5)
+    expect(w[0]).toBe('2026-09-07')
+    expect(w.at(-1)).toBe('2027-03-29')
+  })
+
+  it('liegt der Besuch weiter hinten, reicht die Liste bis einen Monat dahinter', () => {
+    const w = besuchsWochenAuswahl('2026-09-07', '2027-06-07')
+    expect(w).toContain('2027-06-07')
+    expect(w.at(-1)).toBe('2027-07-05')
+    expect(new Set(w).size).toBe(w.length)
   })
 })
 

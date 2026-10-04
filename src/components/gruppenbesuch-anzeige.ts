@@ -41,6 +41,11 @@ export function besucherName(besuch: Pick<Gruppenbesuch, 'pid'>, persons: readon
   return person ? displayName(person) : ''
 }
 
+/** Ein Monat („2026-10") kurz, für die Schalter zum Auslassen: „Okt.". */
+export function besuchsMonatKurz(monat: string, lang: Lang): string {
+  return datumsFormat(lang, 'monatKurz').format(fromIso(`${monat}-01`))
+}
+
 /** Besuche nach Monat ihres Wochenendes gruppiert, in der Reihenfolge, in der sie kommen. */
 export function nachMonat<T extends { besuch: Gruppenbesuch }>(eintraege: readonly T[]): { monat: string; eintraege: T[] }[] {
   return gruppiertNach(eintraege, (e) => besuchsMonat(e.besuch.woche)).map(([monat, liste]) => ({ monat, eintraege: liste }))

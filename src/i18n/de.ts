@@ -67,6 +67,13 @@ export const DE = {
     // Großgeschrieben wie `autoZuteilen` — der Knopf daneben in derselben Zeile.
     gbVerteilen: 'REIHUM VERTEILEN',
     gbVerteilenHint: 'Ein Besuch je Monat, die Gruppen der Reihe nach – für die nächsten sechs Monate. Wochen, in denen sich die Gruppe nicht trifft oder der Besucher abwesend ist, lässt die Verteilung aus.',
+    // Welches Wochenende „Reihum verteilen" nimmt, und welche Monate es
+    // auslässt (4.10.2026). Die Zahl steht hinter der Bezeichnung — keine
+    // Sprache muss eine Ordnungszahl bilden.
+    gbWochenende: 'Wochenende im Monat', gbWochenendeNr: 'Wochenende im Monat: {n}',
+    gbWochenendeLetztes: 'Letztes Wochenende im Monat',
+    gbMonate: 'Monate',
+    gbMonateHint: 'Tippe einen Monat an, um ihn auszulassen – die Gruppen rücken nach.',
     gbLeer: 'Noch keine Besuche geplant.',
     gbVorgemerkt: 'vorgemerkt', gbVorbei: 'vorbei',
     gbVorgemerktHint: 'Die Woche ist noch nicht geladen. Eingetragen wird, sobald ihr Programm importiert ist.',

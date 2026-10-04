@@ -14,6 +14,7 @@ import {
   type Dispatch,
 } from 'react'
 import type { FontScale } from '../data/constants'
+import type { Wochenende } from '../data/gruppenbesuche'
 import type { Abschnitt } from './deeplink'
 import type {
   Anlass,
@@ -328,10 +329,13 @@ export type AppAction =
    * Woche geladen ist (`data/gruppenbesuche.ts`) — Zusage, Erinnerung und
    * Entzug laufen dann über den Treffpunkt.
    */
-  // Ein Besuch je Monat, die Gruppen der Reihe nach (`besucheVerteilen`).
-  | { type: 'besucheVerteilen'; pid: string }
+  // Ein Besuch je Monat, die Gruppen der Reihe nach (`besucheVerteilen`) — am
+  // gewählten Wochenende, ohne die ausgelassenen Monate („2026-12").
+  | { type: 'besucheVerteilen'; pid: string; wochenende?: Wochenende; auslassen?: string[] }
   | { type: 'besuchHinzufuegen'; woche: string; grp: string; pid: string }
   | { type: 'besuchEntfernen'; id: string }
+  // Einen Besuch in eine andere Woche oder zu einer anderen Gruppe verlegen.
+  | { type: 'besuchAendern'; id: string; patch: Partial<Pick<Gruppenbesuch, 'woche' | 'grp'>> }
   // Ein anderer Besucher für diesen einen Besuch.
   | { type: 'besuchBesucher'; id: string; pid: string }
   // Der Besucher übernimmt die Treffpunkte der Gruppe, auch wenn dort schon

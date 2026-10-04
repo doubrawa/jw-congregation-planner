@@ -6084,6 +6084,49 @@ Die Testversammlung („Probeversammlung Talheim", `4d994685-…`) ist danach
 samt Konten wieder entfernt; für den nächsten Lauf legt
 `testversammlung-anlegen.mjs` eine neue an.
 
+**Nachtrag (4. Oktober 2026) — nach dem ersten Durchsehen durch den Betreiber:**
+
+- **Redner auswärts ganz entfernt** (Phase 4 zurückgebaut): Reiter, Planungs-
+  Karte, Zusagen, Erinnerungen und „Plan senden" dafür; `schema.sql` löscht
+  `vortraege_auswaerts` samt Zeilen (`drop table … cascade`) und räumt deren
+  Zusagen, Mitteilungen und Versand-Tagebuch ab. Der Aufgaben-Schlüssel `va|`
+  ist damit wieder unbekannt. In der Mitgliedsrechte-Probe bleiben die
+  Nummern 22–27 frei, damit datierte Notizen weiter passen.
+- **„Familien reihum" entfernt** — „Mir fällt keine sinnvolle Planung dazu
+  ein." Weitere Pläne kennen nur noch den Königreichssaal, die Wahl beim
+  Anlegen entfällt: „+ Neuer Plan" legt ihn an und öffnet ihn gleich.
+  `schema.sql` löscht die Familienpläne samt Einträgen, die Spalten
+  `plaene.vorlage`, `plan_eintraege.person_id` und `mahlzeit`; ein Eintrag je
+  Plan und Woche (`plan_eintraege_woche`). Probe-Fälle 30–32 frei.
+- **Zeugnisgeben: eine Schicht streichen** — „Es kann ja sein, dass mal eine
+  Woche nichts stattfindet." Das ✕ an der Schicht fragt nach, dann steht sie
+  für alle mit „Fällt aus" da (beim Planen mit „Wiederherstellen"). Gemerkt
+  als `oz_termine.aus` (Tage, wie `fs_rules.aus`); die Datenbank weist
+  Einträge an gestrichenen Tagen ab (`oz_faellt_aus`) und räumt beim Streichen
+  auch die ab, die die App des Planers nicht kannte (Trigger
+  `oz_ausfall_raeumen`) — sonst erinnerte `send-reminders` an eine Schicht,
+  die ausfällt.
+- **Predigtdienst:** Die Reiter klebten beim Ansehen ohne Abstand am
+  Wochendatum; jetzt 14 px wie überall (`.fs-bereich-tabs`).
+- **Löschen fragt immer nach** — „Generell soll beim Löschen in der App vorher
+  gefragt werden." Ein Baustein `EntfernenKnopf` (zwei Tipps, „Wirklich
+  löschen?" bzw. „Wirklich entfernen?") an zwölf ✕, dazu „Entfernen" im
+  Zuteilungsblatt und „Partner entfernen". Eine Wache am Quelltext
+  (`tests/entfernen-fragt-nach.test.ts`) hält neue Lösch-Knöpfe ohne Rückfrage
+  auf.
+- **Gruppenbesuche weniger starr:** „Wochenende im Monat" (1–4 oder das
+  letzte; Vorgabe: das des jüngsten Besuchs, also auch eines unten
+  angelegten), Monate zum Auslassen vor dem Verteilen (die Reihe rückt nach),
+  und an jedem kommenden Besuch Woche und Gruppe als Auswahl
+  (`besuchAendern`).
+
+**Ausrollen in dieser Reihenfolge:** Functions `send-plan`, `send-reminders`,
+`substitute` deployen → `schema.sql` einspielen → Push. Das neue Frontend
+fragt `oz_termine.aus` ab; vor dem Schema fände es die Spalte nicht und zeigte
+keine Termine. Ein altes Frontend am neuen Schema verliert nur Anzeigen
+(Redner auswärts, die Pläne bis zum Neuladen) — das tut es in jeder
+Reihenfolge.
+
 ---
 
 ## Was bewusst offen bleibt

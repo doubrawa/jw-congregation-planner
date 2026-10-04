@@ -614,6 +614,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'besucheVerteilen':
     case 'besuchHinzufuegen':
     case 'besuchEntfernen':
+    case 'besuchAendern':
     case 'besuchBesucher':
     case 'besuchUebernehmen':
     case 'besucheLeeren':

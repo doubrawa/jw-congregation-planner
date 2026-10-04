@@ -9,6 +9,7 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
+import { besuchsMonatKurz } from '../components/gruppenbesuch-anzeige'
 import { fsSetLeader, genFsWeek } from '../data/fs'
 import { tagNach } from '../data/meeting-dates'
 import { dict } from '../i18n/ui'
@@ -208,5 +209,99 @@ describe('Was an einem Besuch nicht aufgeht — an der Zeile und im Banner', () 
     expect(probleme(container)).toContain(t.gbBesucherWaehlen)
     // Ohne Besucher gibt es nichts einzutragen.
     expect(knopf(zeile(container), t.gbEintragen)).toBeUndefined()
+  })
+})
+
+/**
+ * **Weniger starr** (4.10.2026): „Er nimmt ja momentan immer das erste
+ * Wochenende im Monat", „mal Monate auslassen", und „bei bestehenden Terminen
+ * auch die Woche und Gruppe editieren".
+ */
+describe('Wochenende und Monate beim Verteilen', () => {
+  const verteilen = (c: Element) =>
+    [...c.querySelectorAll<HTMLButtonElement>('.plan-auto-btn--primary')].find((b) => b.textContent === t.gbVerteilen)!
+  const wochenende = (c: Element) => c.querySelector<HTMLSelectElement>(`select[aria-label="${t.gbWochenende}"]`)!
+  const monate = (c: Element) => [...c.querySelectorAll<HTMLButtonElement>('.gb-monat')]
+  const mitBesuch = () => zeige({ gruppenbesuche: [besuch(W1)], fsWeeks: leiterInW1('Manfred Albrecht', MANFRED.id) })
+
+  it('das Wochenende folgt dem jüngsten Besuch, bis der Planer selbst wählt', () => {
+    // W1 ist die Woche des dritten Samstags im September (19.9.).
+    const { container, dispatch } = mitBesuch()
+    expect(wochenende(container).value).toBe('3')
+    expect([...wochenende(container).options].map((o) => o.textContent)).toEqual([
+      ...[1, 2, 3, 4].map((n) => fill(t.gbWochenendeNr, { n })),
+      t.gbWochenendeLetztes,
+    ])
+    fireEvent.change(wochenende(container), { target: { value: 'letztes' } })
+    fireEvent.click(verteilen(container))
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'besucheVerteilen', wochenende: 'letztes' }))
+  })
+
+  it('ohne Besuch das erste — wie bis zum 4.10.2026', () => {
+    expect(wochenende(zeige().container).value).toBe('1')
+  })
+
+  it('sechs Monate nach dem jüngsten Besuch; ein angetippter fällt aus, ein zweites Tippen holt ihn zurück', () => {
+    const { container, dispatch } = mitBesuch()
+    expect(monate(container).map((m) => m.getAttribute('aria-label'))).toEqual([
+      'Oktober 2026',
+      'November 2026',
+      'Dezember 2026',
+      'Januar 2027',
+      'Februar 2027',
+      'März 2027',
+    ])
+    // Sichtbar steht der Monat kurz — wie kurz, sagt `Intl` je Sprache.
+    expect(monate(container).map((m) => m.textContent)).toEqual(
+      ['2026-10', '2026-11', '2026-12', '2027-01', '2027-02', '2027-03'].map((m) => besuchsMonatKurz(m, 'de')),
+    )
+    expect(monate(container).every((m) => m.getAttribute('aria-pressed') === 'true')).toBe(true)
+
+    fireEvent.click(monate(container)[2]!)
+    expect(monate(container)[2]!.getAttribute('aria-pressed')).toBe('false')
+    fireEvent.click(verteilen(container))
+    expect(dispatch).toHaveBeenCalledWith({ type: 'besucheVerteilen', pid: MANFRED.id, wochenende: 3, auslassen: ['2026-12'] })
+
+    fireEvent.click(monate(container)[2]!)
+    expect(monate(container)[2]!.getAttribute('aria-pressed')).toBe('true')
+  })
+})
+
+describe('Einen Besuch ändern', () => {
+  const wahl = (z: Element, label: string) => z.querySelector<HTMLSelectElement>(`select[aria-label="${label}"]`)!
+  const zeilen = (c: Element) => [...c.querySelectorAll('.gb-zeile')]
+  const ANDERE = demo.groups.find((g) => g.id !== GRP)!
+
+  it('Woche und Gruppe stehen zur Wahl — ein Wechsel geht als „besuchAendern" hinaus', () => {
+    const b = besuch(W1)
+    const { container, dispatch } = zeige({ gruppenbesuche: [b], fsWeeks: leiterInW1('Manfred Albrecht', MANFRED.id) })
+    expect(wahl(zeile(container), t.gbWoche).value).toBe(W1)
+    expect(wahl(zeile(container), t.gbGruppe).value).toBe(GRP)
+    fireEvent.change(wahl(zeile(container), t.gbWoche), { target: { value: KENN[2] } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'besuchAendern', id: b.id, patch: { woche: KENN[2] } })
+    fireEvent.change(wahl(zeile(container), t.gbGruppe), { target: { value: ANDERE.id } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'besuchAendern', id: b.id, patch: { grp: ANDERE.id } })
+  })
+
+  it('gesperrt ist, was es schon gibt: dieselbe Gruppe in einer Woche, dieselbe Woche für eine Gruppe', () => {
+    const a = besuch(W1, MANFRED.id, 'b-a')
+    const spaeter = besuch(KENN[3]!, MANFRED.id, 'b-s')
+    const nachbar = { ...besuch(W1, MANFRED.id, 'b-n'), grp: ANDERE.id }
+    const { container } = zeige({ gruppenbesuche: [a, nachbar, spaeter] })
+    const z = zeilen(container).find((x) => wahl(x, t.gbWoche).value === W1 && wahl(x, t.gbGruppe).value === GRP)!
+    const woche = (w: string) => [...wahl(z, t.gbWoche).options].find((o) => o.value === w)!
+    expect(woche(KENN[3]!).disabled).toBe(true) // dort wird die Gruppe schon besucht
+    expect(woche(KENN[2]!).disabled).toBe(false)
+    const gruppe = (g: string) => [...wahl(z, t.gbGruppe).options].find((o) => o.value === g)!
+    expect(gruppe(ANDERE.id).disabled).toBe(true) // die andere Gruppe hat in W1 schon ihren Besuch
+  })
+
+  it('ein vergangener Besuch nennt Woche und Gruppe nur — und hat kein ✕', () => {
+    vi.setSystemTime(new Date(2026, 8, 28, 9, 0))
+    const { container } = zeige({ gruppenbesuche: [besuch(W1)] })
+    expect(zeile(container).classList.contains('is-vorbei')).toBe(true)
+    expect(zeile(container).querySelector('select')).toBeNull()
+    expect(zeile(container).querySelector('.gb-woche')?.textContent).toBeTruthy()
+    expect(zeile(container).querySelector('.fs-remove')).toBeNull()
   })
 })

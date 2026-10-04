@@ -477,6 +477,20 @@ im Buch *Organisiert, Jehovas Willen zu tun*, Kapitel 5). Unter
   in denen sich die Gruppe nicht trifft (etwa am ersten Samstag, wenn dort ein
   Versammlungstreffpunkt ist) oder der Besucher abwesend ist, lässt die
   Verteilung aus. Monate, die schon einen Besuch haben, bleiben, wie sie sind.
+- **Wochenende im Monat** legt fest, welches Wochenende die Verteilung nimmt:
+  das erste bis vierte oder das letzte. Geht es dort nicht, nimmt sie das
+  nächstgelegene, eher ein späteres als ein früheres. Vorgegeben ist das
+  Wochenende des jüngsten Besuchs: Legst du unten einen Besuch am dritten
+  Wochenende an, verteilt „Reihum verteilen" danach ebenfalls am dritten.
+- **Monate auslassen**: Darunter stehen die sechs Monate, die verteilt werden.
+  Tippe einen an, und er bleibt ohne Besuch – etwa, wenn der Besucher in dem
+  Monat verhindert ist. Die Gruppen rücken nach: Wer in dem ausgelassenen
+  Monat dran gewesen wäre, kommt im nächsten.
+- **Woche und Gruppe ändern**: An jedem kommenden Besuch stehen Woche und
+  Gruppe zur Auswahl. Der Besucher geht dann aus den bisherigen Treffpunkten
+  und leitet die neuen. Hatte er dort schon zugesagt, verfällt diese Zusage.
+  Gesperrt ist, was es schon gibt: eine Woche, in der die Gruppe bereits
+  besucht wird.
 - **Besuch hinzufügen** unten legt einen einzelnen Besuch an, **✕** entfernt
   ihn — der Treffpunkt ist dann wieder frei. **Leeren** entfernt alle
   kommenden Besuche (zwei Tipps).
@@ -490,7 +504,7 @@ im Buch *Organisiert, Jehovas Willen zu tun*, Kapitel 5). Unter
 | --- | --- |
 | Den Treffpunkt leitet schon jemand anders | **Übernehmen** — der Besucher leitet. Hatte der andere zugesagt, bekommt er sofort die Nachricht, dass die Zuteilung zurückgezogen ist. |
 | Der Treffpunkt hat noch keinen Leiter | **Eintragen** — etwa, wenn der Treffpunkt erst nach dem Besuch im Grundplan entstand. |
-| Die Gruppe trifft sich in dieser Woche nicht | Besuch entfernen und eine andere Woche wählen. |
+| Die Gruppe trifft sich in dieser Woche nicht | Am Besuch eine andere Woche wählen. |
 | Der Besucher ist abwesend | Anderen Besucher wählen oder die Woche ändern. |
 
 Konflikte der Gruppenbesuche nennt auch die **Planungs‑Karte auf der

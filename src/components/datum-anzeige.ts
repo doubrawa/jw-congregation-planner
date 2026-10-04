@@ -24,6 +24,8 @@ const FORMATE = {
   tagMonatJahr: { day: 'numeric', month: 'long', year: 'numeric' },
   /** „Oktober 2026" */
   monatJahr: { month: 'long', year: 'numeric' },
+  /** „Okt." — für die Monate zum Auslassen bei den Gruppenbesuchen */
+  monatKurz: { month: 'short' },
 } as const satisfies Record<string, Intl.DateTimeFormatOptions>
 
 export type DatumsFormat = keyof typeof FORMATE
