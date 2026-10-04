@@ -402,6 +402,14 @@ Drei Dinge, auf die du dich verlassen kannst:
 
 Darunter steht, wann für diese Woche zuletzt etwas hinausging.
 
+**Nach dem Senden können sich Verkündiger selbst eintragen.** Was in der Woche
+noch unbesetzt ist, sehen sie unter „Meine Aufgaben" im Bereich **FREIE
+PLÄTZE** – jeder nur, wofür er einen Aufgabenbereich hat und an dem Tag nicht
+abwesend ist. Schulungsaufgaben, den öffentlichen Vortrag und die Reinigung
+bietet die App nicht an. Wer zuerst tippt, ist eingetragen und hat damit
+zugesagt; eine Mitteilung bekommst du dafür nicht, im Plan steht sein Name mit
+grünem Punkt. Willst du einen Platz selbst besetzen, tu es vor dem Senden.
+
 > **Eine Ausnahme wartet nicht auf den Knopf.** Nimmst du jemandem eine Aufgabe
 > weg, die er **schon bestätigt** hatte, erfährt er das sofort („Zuteilung
 > zurückgezogen"). Wer zugesagt hat, bereitet vor — er soll nicht weiter für

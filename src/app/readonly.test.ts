@@ -42,6 +42,8 @@ describe('isViewAction', () => {
     'removePerson',
     'confirmTask',
     'declineTask',
+    // Einen freien Platz übernehmen schreibt (über die Edge Function) — offline nicht.
+    'platzUebernehmen',
     'addAbsence',
     'removeAbsence',
     'markAllRead',

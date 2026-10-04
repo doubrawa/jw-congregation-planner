@@ -62,6 +62,7 @@ vi.mock('../lib/data', async (importActual) => ({
   substituteTake: vi.fn(),
   substituteWithdraw: vi.fn(),
   sendPlanEntzug: vi.fn(),
+  platzFuellen: vi.fn(),
 }))
 
 import * as data from '../lib/data'
@@ -1891,10 +1892,12 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
    * Beide Einträge haben in `persist.ts` einen Grund; ein dritter soll nicht
    * nebenbei entstehen.
    */
-  it('nur die zwei begründeten Aktionen umgehen den Wochen-Schreibweg', () => {
+  it('nur die drei begründeten Aktionen umgehen den Wochen-Schreibweg', () => {
+    // Seit dem 4.10.2026 auch `platzUebernehmen`: Den offenen Platz trägt wie
+    // beim Einspringen die Edge Function ein.
     const liste = /const OHNE_WOCHENSCHREIBEN[^=]*=[^[]*\[([^\]]*)\]/.exec(roh(PERSIST))?.[1]
     const namen = (liste ?? '').split(',').map((n) => n.trim().replace(/'/g, '')).filter(Boolean)
-    expect(namen).toEqual(['hydrate', 'takeSubstitute'])
+    expect(namen).toEqual(['hydrate', 'takeSubstitute', 'platzUebernehmen'])
   })
 
   it('und die Ausnahmen sind wirklich welche', () => {

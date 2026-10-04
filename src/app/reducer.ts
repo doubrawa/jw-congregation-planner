@@ -7,6 +7,7 @@
 import { syncAuxSlots } from '../data/aux-class'
 import { buildAbsences } from '../data/absence'
 import { eintraegeImZeitraum, eintragSetzen, gruppenVerteilen, planNachDatum, taktVon, taktWechseln } from '../data/weitere-plaene'
+import { offenePlaetze, platzAuswahl } from '../data/offene-plaetze'
 import { dienstAusWochenEntfernen, dienstBereichEntfernen, dienstZusagenKeys, ohneDienstZusagen } from '../data/dienste'
 import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
 import { eigenePerson } from './eigene-person'
@@ -284,10 +285,24 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
         .filter((req) => !istVorbei(req.at)) // niemand springt für gestern ein
         .map((req) => markieren(req, req.key))
     : []
+  // Unbesetzte Plätze gesendeter Wochen, die ich übernehmen kann (4.10.2026).
+  // Nicht im Blatt beim Öffnen: Ein Angebot ist keine Pflicht wie eine
+  // Zuteilung, und ein Gesuch drängt mehr als ein leerer Platz.
+  const offen = me
+    ? offenePlaetze(
+        weeks,
+        state.services,
+        state.sentLog,
+        me,
+        state.congregation.times,
+        buildAbsences(state.absences, weeks, state.congregation.times),
+      ).map((platz) => markieren(platz, platz.key))
+    : []
   return {
     ...state,
     myTasks,
     substituteReqs,
+    offenePlaetze: offen,
     // Das Blatt beim Öffnen zeigt beides: unbestätigte Zuteilungen und offene
     // Ersatzgesuche (T69). Ein Gesuch erreichte bis dahin nur, wer von selbst
     // unter „Aufgaben" nachsah oder über einen Push hereinkam — die übrigen
@@ -408,6 +423,10 @@ function ableitungsQuellen(s: AppState): readonly unknown[] {
     s.confirmations,
     s.congregation.times,
     s.absences,
+    // „Plan gesendet" gibt die freien Plätze einer Woche frei (`offenePlaetze`).
+    // Heute ändert es sich nur beim Laden — der Wächter verlangt es trotzdem:
+    // Was die Ableitung liest, steht hier.
+    s.sentLog,
   ]
 }
 
@@ -1443,6 +1462,25 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         confirmations: { ...state.confirmations, [action.key]: 'bestätigt' },
         myTaskId: null,
         toast: toastKey(state, clash ? 'toastUebernommenKonflikt' : 'toastUebernommen'),
+      }
+    }
+    case 'platzUebernehmen': {
+      // Nur, was angeboten ist — dieselbe Liste, aus der der Knopf stammt. Ein
+      // veralteter Tipp (inzwischen vergeben, Plan zurückgezogen) ändert nichts.
+      // Geschrieben wird serverseitig (`persist` → `platzFuellen`); hier steht
+      // nur, was der Bildschirm bis zum nächsten Laden zeigt.
+      const platz = state.offenePlaetze.find((p) => p.key === action.key)
+      const me = eigenePerson(state)
+      const sel = platzAuswahl(state.weeks, state.services, action.key)
+      if (!platz || !me || !sel) return state
+      const weeks = assignSlot(state.weeks, sel, displayName(me), undefined, me.id)
+      if (weeks === state.weeks) return state
+      return {
+        ...state,
+        weeks,
+        // Wer sich selbst einträgt, hat zugesagt — wie beim Einspringen.
+        confirmations: { ...state.confirmations, [action.key]: 'bestätigt' },
+        toast: toastKey(state, platz.schonHeute.length > 0 ? 'toastUebernommenKonflikt' : 'toastPlatzUebernommen'),
       }
     }
     case 'openS89':

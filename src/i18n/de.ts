@@ -355,6 +355,12 @@ export const DE = {
     ersatzHint: 'Wenn du einen Hilfsdienst absagst, wird automatisch ein Ersatz aus dem Kreis der Qualifizierten gesucht.',
     einspringenTitle: 'EINSPRINGEN', einspringenHint: 'Für diese Hilfsdienste wird ein Ersatz gesucht — kannst du übernehmen?',
     uebernehmen: 'Übernehmen',
+    // Freie Plätze unter „Meine Aufgaben" (4.10.2026): unbesetzte Plätze
+    // gesendeter Wochen, für die man den Aufgabenbereich hat. Der Titel ist das
+    // Wort des Zeugnisgebens (`ozFreiePlaetze`) — dieselbe Sache, dasselbe Wort.
+    freiePlaetzeTitle: 'FREIE PLÄTZE',
+    freiePlaetzeHint: 'Hier ist noch niemand eingeteilt, und du hast den Aufgabenbereich dafür. Wer zuerst übernimmt, ist eingetragen und hat damit zugesagt.',
+    toastPlatzUebernommen: 'Danke! Du bist eingetragen',
     // Die drei Stufen des Ampel-Punkts im Planen — Legende und Screenreader
     // („Gebet: Jörg Roth wartet auf Bestätigung"). Aus Sicht des Planers,
     // deshalb nicht `verhindertChip`: Der steht beim Eingeteilten selbst und

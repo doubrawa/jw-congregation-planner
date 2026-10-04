@@ -249,6 +249,25 @@ Tipp auf **Übernehmen** trägt dich ein und bestätigt die Aufgabe gleich mit.
 Es gilt: **wer zuerst tippt.** War jemand schneller, verschwindet der Eintrag –
 dann ist der Dienst schon besetzt.
 
+### Freie Plätze übernehmen
+
+Ist im Programm ein Platz **noch gar nicht besetzt**, den du übernehmen
+könntest, steht er unter **Meine Aufgaben** im Bereich **FREIE PLÄTZE** – aber
+erst, wenn der Koordinator den Plan der Woche gesendet hat. Vorher plant er
+noch, und ein leerer Platz hieße nichts.
+
+![Freie Plätze unter Meine Aufgaben](screenshots/verkuendiger-freie-plaetze.png)
+
+Angeboten wird nur, wofür du einen **Aufgabenbereich** hast, was noch kommt und
+wo du an dem Tag nicht abwesend bist. **Nicht** dabei sind Schulungsaufgaben
+(die teilt der Koordinator mit Lektion und Partner zu), der öffentliche Vortrag
+und die Reinigung.
+
+Wie beim Einspringen steht vorher darunter, was du an dem Tag schon hast. Ein
+Tipp auf **Übernehmen** trägt dich ein und bestätigt gleich mit. Auch hier gilt:
+**wer zuerst tippt.** War jemand schneller, lädt die App neu, und der Platz ist
+weg.
+
 ### Das S‑89-Formular
 
 Bei Schulungsaufgaben (Bibellesung, Gespräche beginnen, Interesse fördern …)

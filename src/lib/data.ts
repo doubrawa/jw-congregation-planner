@@ -1527,6 +1527,24 @@ export function substituteTake(taskKey: string): void {
 }
 
 /**
+ * Einen **offenen Platz selbst übernehmen** (4.10.2026) — Edge Function
+ * `substitute`, Aufruf 'fill'. Serverseitig aus demselben Grund wie das
+ * Einspringen: Wochen und Bestätigungen schreibt sonst nur der Planer.
+ *
+ * Schlägt es fehl — jemand war schneller, der Platz wird nicht mehr angeboten
+ * —, wird **nachgeladen** statt nur gemeldet (`konfliktMelder`). Mit `run()`
+ * stünde man hier weiter eingetragen, wo längst ein anderer steht.
+ */
+export function platzFuellen(taskKey: string): void {
+  if (!supabase) return
+  void supabase.functions.invoke('substitute', { body: { action: 'fill', taskKey } }).then(({ error }) => {
+    if (!error) return
+    console.error('[substitute/fill]', error.message)
+    konfliktMelder?.()
+  })
+}
+
+/**
  * Ersatzgesuch zurückziehen: „Doch bestätigen" nach einer Absage. Die Zeilen
  * „Ersatz gesucht" stehen in den Glocken der Angepingten — fremde Zeilen, die
  * nur der Server entfernen kann (RLS). Die eigene Bestätigung schreibt

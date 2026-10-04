@@ -6202,6 +6202,27 @@ samt Konten wieder entfernt; für den nächsten Lauf legt
   `public/logo-klein.svg` für Favicon, Kopfzeile am Handy (22 px) und
   Seitenleiste (40 px), im Offline-Cache der Hülle (`sw.js`). Anmeldung und
   App-Icons bleiben 4-6-8. Handbuch-Bilder neu aufgenommen.
+- **Freie Plätze selbst übernehmen** — „Wo sieht man in der App, welche
+  Zuteilungen noch frei sind, bei denen ich einspringen könnte, weil ich auch
+  diesen Aufgabenbereich machen darf?" Bis dahin nirgends (Einspringen gab es
+  nur für abgesagte Hilfsdienste). Zuschnitt des Betreibers: Hilfsdienste und
+  Programmpunkte, erst nach „Plan senden", **direkt eintragen** ohne Rückfrage,
+  keine Schulungsaufgaben, keine Mitteilung an die Admins. Unter „Meine
+  Aufgaben" steht unter dem Einspringen „FREIE PLÄTZE" (`offenePlaetze`,
+  abgeleitet wie die Ersatzgesuche): leer, gesendete Woche, Zusammenkunft
+  kommt und fällt nicht aus, Bereich vorhanden (Brüder-Platz: Bruder), nicht
+  abwesend, nicht schon im selben Punkt; ohne Rednerplatz und Reinigung. Ein
+  Tipp (`platzUebernehmen`) trägt ein und sagt zu — geschrieben von der Edge
+  Function `substitute`, Aufruf `fill` (`fuellen.ts`), die jede Regel noch
+  einmal prüft und mit Vergleiche-und-Tausche auf `updated_at` schreibt;
+  scheitert es, lädt die App nach (`konfliktMelder`). Die Regel für
+  Programmpunkte und die Menge der Schulungsbereiche stehen geteilt in
+  `_shared/freie-plaetze.ts` (vorher in `aux-class.ts`). Die Entwicklerseite
+  hat dafür ein Versand-Tagebuch der ersten Woche (`demoVersand`).
+
+**Freie Plätze ausrollen:** erst `substitute` deployen, dann pushen. Das neue
+Frontend ruft `fill`; die alte Function wiese den Aufruf mit 400 ab, und die App
+meldete nur einen Speicherfehler. Kein Schema betroffen.
 
 **Mitteilungen ausrollen:** erst `schema.sql` (oder nur den Block
 `notify_planners`), dann pushen. Das neue Frontend schickt bei einer Absage den

@@ -300,6 +300,23 @@ describe('substitute: Authentifizierung', () => {
   })
 })
 
+describe('substitute: der Aufruf „fill" hat seinen eigenen Weg (4.10.2026)', () => {
+  it('ein Programmpunkt-Schlüssel kommt dort an — und ein Fremder wird abgewiesen, ohne zu schreiben', async () => {
+    // Über den Weg der drei Hilfsdienst-Aufrufe endete derselbe Schlüssel mit
+    // 400 (siehe unten). Ein 403 heißt: `fuellen.ts` hat ihn bekommen.
+    const res = await call({ action: 'fill', taskKey: `${WI}|mid|part|k1|0` }, { auth: U_FOREIGN })
+    expect(res.status).toBe(403)
+    await expect(res.json()).resolves.toEqual({ error: 'forbidden' })
+    expect(writes).toEqual([])
+  })
+
+  it('ohne Anmeldung bleibt es bei 401 — die Prüfung steht vor jeder Weiche', async () => {
+    const res = await call({ action: 'fill', taskKey: `${WI}|mid|part|k1|0` }, { auth: null })
+    expect(res.status).toBe(401)
+    expect(writes).toEqual([])
+  })
+})
+
 describe('substitute: ungültige Anfragen', () => {
   it('Aufgaben-Key wird abgelehnt — nur Hilfsdienste laufen über diese Function', async () => {
     // Programmpunkte teilt der Planer zu; ein Aufgaben-Key (6 Teile, „part")

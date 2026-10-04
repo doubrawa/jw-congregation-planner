@@ -47,6 +47,7 @@ import {
   substituteTake,
   substituteWithdraw,
   sendPlanEntzug,
+  platzFuellen,
 } from '../lib/data'
 import { helperKeyParts } from '../data/planning'
 import { namensDublette } from '../data/helpers'
@@ -343,8 +344,10 @@ const GEBUENDELT: readonly AppAction['type'][] = [
  *   würde gelöscht.
  * - `takeSubstitute` schreibt die Edge Function: Wochen und Bestätigungen sind
  *   planer-only, der Einspringende dürfte es selbst gar nicht.
+ * - `platzUebernehmen` aus demselben Grund (4.10.2026): Einen offenen Platz
+ *   trägt die Edge Function ein, nicht der Verkündiger selbst.
  */
-const OHNE_WOCHENSCHREIBEN: readonly AppAction['type'][] = ['hydrate', 'takeSubstitute']
+const OHNE_WOCHENSCHREIBEN: readonly AppAction['type'][] = ['hydrate', 'takeSubstitute', 'platzUebernehmen']
 
 /**
  * Nach einem Löschen die **Nachrücker** neu nummerieren.
@@ -859,6 +862,10 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // Nicht clientseitig speichern (Wochen/Bestätigungen sind planer-only) —
       // die Edge Function trägt ein und benachrichtigt Ursprungsperson + Planer.
       substituteTake(action.key)
+      break
+    case 'platzUebernehmen':
+      // Ebenso: Den offenen Platz trägt die Edge Function ein, samt Zusage.
+      platzFuellen(action.key)
       break
     case 'changeReminder':
     case 'toggleReminderRepeat':

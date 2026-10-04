@@ -75,6 +75,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     confirmOpen: false,
     myTaskId: null,
     substituteReqs: [],
+    offenePlaetze: [],
     s89: null,
     reminders: { ...DEMO_REMINDERS },
     lang: 'de',

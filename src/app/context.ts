@@ -15,6 +15,7 @@ import {
 } from 'react'
 import type { FontScale } from '../data/constants'
 import type { Wochenende } from '../data/gruppenbesuche'
+import type { OffenerPlatz } from '../data/offene-plaetze'
 import type { Abschnitt } from './deeplink'
 import type {
   Anlass,
@@ -244,6 +245,7 @@ export interface AppState {
   // `confirmations` je Platz (`zusageStatus`).
   myTasks: MyTask[]
   substituteReqs: SubstituteReq[] // offene Ersatzgesuche für mich (Einspringen)
+  offenePlaetze: OffenerPlatz[] // unbesetzte Plätze, die ich übernehmen kann (4.10.2026)
 
   /* ---- Ansichtszustand: was gerade offen ist ---------------------------- */
   notifOpen: boolean
@@ -442,6 +444,7 @@ export type AppAction =
   | { type: 'openMyTask'; id: string } // eigenes Aufgaben-Aktions-Sheet öffnen
   | { type: 'closeMyTask' }
   | { type: 'takeSubstitute'; key: string } // Hilfsdienst-Ersatz übernehmen
+  | { type: 'platzUebernehmen'; key: string } // einen offenen Platz selbst übernehmen (4.10.2026)
   | { type: 'openS89'; payload: S89Payload }
   | { type: 'closeS89' }
   // LAC-Bearbeitung (Planen, aktuelle Woche + Tab)

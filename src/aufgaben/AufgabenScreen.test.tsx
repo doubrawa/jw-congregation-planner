@@ -199,6 +199,52 @@ describe('Einspringen', () => {
 })
 
 /**
+ * **Freie Plätze** (4.10.2026): unbesetzte Plätze gesendeter Wochen, für die
+ * ich den Aufgabenbereich habe — gebaut wie das Einspringen, ein Tipp trägt
+ * direkt ein. Welche Plätze es sind, entscheidet `offenePlaetze`
+ * (`offene-plaetze.test.ts`); hier geht es um die Karte.
+ */
+describe('Freie Plätze', () => {
+  const frei = (over: Partial<AppState['offenePlaetze'][number]> = {}): AppState['offenePlaetze'][number] => ({
+    key: '2026-09-07|mid|part|k1|0', title: '', rolle: 'Gebet',
+    date: 'Dienstag, 8. September · 19:00', at: null, schonHeute: [], ...over,
+  })
+  const karte = (c: HTMLElement) => c.querySelector('[data-bereich="freie-plaetze"]')
+
+  it('ohne freie Plätze steht die Karte gar nicht da', () => {
+    expect(karte(zeige().container)).toBeNull()
+  })
+
+  it('ein Platz nennt Aufgabe und Termin, die Karte erklärt die Regel', () => {
+    const { container } = zeige({ offenePlaetze: [frei(), frei({ key: 'k2', title: 'Platzhalter-Thema', rolle: undefined })] })
+    const k = karte(container)!
+    expect(k.querySelector('.panel-label')?.textContent).toBe(t.freiePlaetzeTitle)
+    expect(k.querySelector('.panel-hint')?.textContent).toBe(t.freiePlaetzeHint)
+    const titel = [...k.querySelectorAll('.auf-sub-title')].map((e) => e.textContent)
+    expect(titel).toEqual(['Gebet', 'Platzhalter-Thema'])
+    expect(k.querySelector('.auf-sub-meta')?.textContent).toContain('8. September')
+  })
+
+  it('was ich an dem Tag schon habe, steht vor dem Übernehmen da', () => {
+    const { container } = zeige({ offenePlaetze: [frei({ schonHeute: [{ text: 'Leiter', lang: 'u' }] })] })
+    expect(karte(container)!.querySelector('.auf-sub-warn')?.textContent).toContain('Leiter')
+  })
+
+  it('„Übernehmen" trägt mich in genau diesen Platz ein', () => {
+    const { container, dispatch } = zeige({ offenePlaetze: [frei()] })
+    fireEvent.click(karte(container)!.querySelector('.auf-sub-btn')!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'platzUebernehmen', key: '2026-09-07|mid|part|k1|0' })
+  })
+
+  it('steht unter dem Einspringen — ein Gesuch drängt mehr als ein freier Platz', () => {
+    const { container } = zeige({ substituteReqs: [gesuch()], offenePlaetze: [frei()] })
+    const karten = [...container.querySelectorAll('.auf-sub')]
+    expect(karten).toHaveLength(2)
+    expect(karten[1]).toBe(karte(container))
+  })
+})
+
+/**
  * **Ein Klick auf „Ersatz gesucht" landet beim Einspringen, nicht oben** (T109).
  *
  * Eine eigene Seite dafür hat der Betreiber verworfen — sie wäre fast immer

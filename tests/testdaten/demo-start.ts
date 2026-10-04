@@ -23,7 +23,9 @@ import { aufgabenAbgeleitet } from '../../src/app/reducer'
 import { asFontScale, asTheme, type FontScale } from '../../src/data/constants'
 import { fsLeiterBinden } from '../../src/data/fs'
 import { pidsNachtragen } from '../../src/data/namensbindung'
-import type { FsBereich, Lang, MeetingTab, Screen, Theme } from '../../src/data/types'
+import { offeneMeldungen } from '../../src/data/plan-versand'
+import { sentKey } from '../../src/data/planning'
+import type { FsBereich, Lang, MeetingTab, Screen, SentLog, Theme } from '../../src/data/types'
 import { CONG_TO_JW } from '../../src/i18n/langs'
 import { buildDemoConfirmations } from './demo-zusagen'
 import {
@@ -148,6 +150,18 @@ export function parseDebugHash(hash: string, jetzt = Date.now()): DebugHash | nu
 }
 
 /**
+ * **Der Plan der ersten Woche ist gesendet** (4.10.2026): Jeder Platz, den
+ * „Plan senden" verschicken würde, steht im Versand-Tagebuch. Erst danach
+ * bietet „Meine Aufgaben" die freien Plätze dieser Woche an — ohne Tagebuch
+ * gäbe es auf der Seite nichts davon zu sehen. Mit der echten Uhr (Tests)
+ * liegt die Woche zurück, und das Tagebuch bleibt leer.
+ */
+function demoVersand(s: AppState): SentLog {
+  const meldungen = offeneMeldungen(s.weeks[0], undefined, s.services, s.confirmations, {}, s.congregation.times)
+  return Object.fromEntries(meldungen.map((m) => [sentKey(m.key, m.name), '2026-09-06T18:00:00.000Z']))
+}
+
+/**
  * Startzustand der Entwicklerseite: der Demo-Bestand, dazu was der Hash
  * verlangt. Ohne `s=` beginnt sie auf dem Start-Bildschirm, angemeldet ist
  * niemand — wer die Anmeldemaske sehen will, nennt sie (`#s=login`).
@@ -179,6 +193,7 @@ export function entwicklerStart(hash: string = location.hash): AppState {
     plaene: DEMO_PLAENE,
     planEintraege: demoPlanEintraege(),
     confirmations: { ...basis.confirmations, ...DEMO_OZ_ZUSAGEN },
+    sentLog: demoVersand(basis),
     screen: debug?.screen ?? 'start',
     tab: debug?.tab ?? basis.tab,
     fsBereich: debug?.fsBereich ?? basis.fsBereich,

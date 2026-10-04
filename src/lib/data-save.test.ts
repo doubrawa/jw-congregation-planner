@@ -53,10 +53,12 @@ import {
   saveService,
   saveSettings,
   saveWeek,
+  setKonfliktMelder,
   setSchreibfehlerMelder,
   substituteSeek,
   substituteTake,
   substituteWithdraw,
+  platzFuellen,
 } from './data'
 import type { Group, Person, Service, Week } from '../data/types'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
@@ -411,10 +413,26 @@ describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
     expect(melder).toHaveBeenCalledTimes(1)
   })
 
+  it('ein freier Platz, den der Server abweist, lädt nach — statt nur zu melden (4.10.2026)', async () => {
+    // Mit bloßer Meldung stünde man hier weiter eingetragen, wo längst ein
+    // anderer steht. Der Konflikt-Melder lädt nach (store.tsx).
+    const melder = vi.fn()
+    const konflikt = vi.fn()
+    setSchreibfehlerMelder(melder)
+    setKonfliktMelder(konflikt)
+    chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: null, error: { message: 'slot-taken' } }))
+    platzFuellen('k1')
+    await abwarten()
+    expect(konflikt).toHaveBeenCalledTimes(1)
+    expect(melder).not.toHaveBeenCalled()
+    setKonfliktMelder(null)
+  })
+
   it.each([
     ['Einspringen', () => substituteTake('k1'), 'take'],
     ['Ersatzsuche', () => substituteSeek('k1'), 'seek'],
     ['Zurückziehen', () => substituteWithdraw('k1'), 'withdraw'],
+    ['Freier Platz', () => platzFuellen('k1'), 'fill'],
   ])('%s schickt keine Versammlung mit — die liest der Server selbst (S10)', async (_name, ruf, action) => {
     // Der Server nahm die Versammlung früher aus diesem Rumpf. Ein angehängtes
     // `#` schnitt dort die folgenden Filter ab, und ein einfaches Mitglied

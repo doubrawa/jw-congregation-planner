@@ -136,6 +136,38 @@ export function AufgabenScreen() {
         </div>
       )}
 
+      {/*
+        Freie Plätze (4.10.2026): unbesetzte Plätze gesendeter Wochen, für die
+        ich den Aufgabenbereich habe. Gebaut wie das Einspringen darüber; der
+        Tipp trägt direkt ein (`platzUebernehmen` → Edge Function).
+      */}
+      {state.offenePlaetze.length > 0 && (
+        <div className="panel panel--pb14 auf-sub" data-farbe="petrol" data-bereich="freie-plaetze">
+          <h2 className="panel-label">{t.freiePlaetzeTitle}</h2>
+          <p className="panel-hint">{t.freiePlaetzeHint}</p>
+          {state.offenePlaetze.map((platz) => (
+            <div key={platz.key} className="auf-sub-row">
+              <div>
+                <div className="auf-sub-title">{aufgabenLabel(platz, i18n)}</div>
+                <div className="auf-sub-meta">{aufgabenTp(platz, i18n)(platz.date)}</div>
+                {platz.schonHeute.length > 0 && (
+                  <div className="auf-sub-warn">
+                    {t.sheetSchonHeute}: {zuteilungenText(platz.schonHeute, i18n)}
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                className="auf-sub-btn"
+                onClick={() => dispatch({ type: 'platzUebernehmen', key: platz.key })}
+              >
+                {t.uebernehmen}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <AbsencePanel personId={state.personId} entries={eigeneAbwesenheiten} listLabel={t.deineEintraege} />
     </section>
   )

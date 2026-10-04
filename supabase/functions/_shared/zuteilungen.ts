@@ -35,6 +35,10 @@ export interface Slot {
   /** Person-Id der Zuteilung — stabile Identität statt Name-Match. */
   pid?: string
   rolle?: string
+  /** Aufgabenbereich, den der Platz verlangt (`QualificationKey` im Client). */
+  bereichsKey?: string
+  /** Nur ein Bruder kann den Platz übernehmen. */
+  male?: boolean
 }
 
 /** Ein Treffpunkt einer Woche (FsInstance im Client). */

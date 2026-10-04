@@ -71,6 +71,11 @@ SHOTS=(
   # ohne angemeldete Person gibt es keine.
   "verkuendiger-start|s=start&pl=0&me=p9"
   "verkuendiger-aufgaben|s=aufgaben&pl=0&me=p9"
+  # Freie Plätze (4.10.2026): als p7 — er hat den Ordner-Bereich, und die
+  # Ordner-Plätze der ersten Woche sind offen; deren Plan gilt auf der
+  # Entwicklerseite als gesendet (`demoVersand`). Höher, weil die Karte unter
+  # den Aufgaben steht.
+  "verkuendiger-freie-plaetze|s=aufgaben&pl=0&me=p7|${W}x1800"
   "verkuendiger-profil|s=profil&pl=0&me=p9"
   # Angemeldet als p9 (Gruppe 1): zeigt die Treffpunkte der EIGENEN Gruppe —
   # fremde Gruppen stehen hier bewusst nicht (siehe fsVisible in src/data/fs.ts).

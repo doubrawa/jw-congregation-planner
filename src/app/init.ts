@@ -73,6 +73,7 @@ export function initialState(): AppState {
     confirmOpen: false,
     myTaskId: null,
     substituteReqs: [],
+    offenePlaetze: [],
     s89: null,
     reminders: STANDARD_ERINNERUNGEN,
     lang: getInitialLang(),
