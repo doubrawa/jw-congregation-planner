@@ -68,7 +68,7 @@ function erzeuger(): Record<string, string> {
 }
 
 describe('Formen der task_key — bekannt im Schema', () => {
-  it('es sind genau diese sechs Vorlagen', () => {
+  it('es sind genau diese fünf Vorlagen', () => {
     /*
      * Die Tabelle steht wörtlich so über `task_gehoert_mir` in
      * `supabase/schema.sql`. Ändert sich hier etwas, muss es dort mit — sonst
@@ -86,9 +86,6 @@ describe('Formen der task_key — bekannt im Schema', () => {
      * `oz|<Montag>|<Eintrag>`. Ohne seinen Zweig in `task_gehoert_mir` liefe
      * die Form dort als „unbekannt" durch, und jedes Mitglied hätte fremde
      * Einträge bestätigen oder absagen können.
-     *
-     * **Die sechste** sind die Vorträge auswärts (T120, Phase 4):
-     * `va|<Montag>|<Vortrag>` — aus demselben Grund mit eigenem Zweig.
      */
     expect(erzeuger()).toEqual({
       punktKey: '<>|<>|<>|<>|<>', // stabile Kennung des Punkts (T37)
@@ -96,7 +93,6 @@ describe('Formen der task_key — bekannt im Schema', () => {
       helferKey: '<>|<>|helper|<>|<>',
       fsKey: 'fs|<>|<>',
       ozKey: 'oz|<>|<>',
-      vaKey: 'va|<>|<>',
     })
   })
 

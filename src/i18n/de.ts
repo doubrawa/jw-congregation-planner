@@ -109,25 +109,13 @@ export const DE = {
     toastOzEingetragen: 'Eingetragen · damit hast du zugesagt',
     toastOzAusgetragen: 'Ausgetragen',
     toastOzAbgesagt: 'Abgesagt · der Platz ist wieder frei, die Admins sind informiert',
-    // Redner auswärts (T120, Phase 4): Vorträge eigener Redner in anderen
-    // Versammlungen. Einen Namen für den Plan nennen die Schriften nicht
-    // (od Kap. 7 Abs. 14 kennt nur die Redner aus umliegenden Versammlungen);
-    // „Redner" ist dasselbe Wort wie die Rolle am Vortragsplatz.
-    vaTab: 'Redner auswärts',
-    vaTitel: 'Vorträge in anderen Versammlungen',
-    vaHinweis: 'An diesem Tag steht der Redner der eigenen Zusammenkunft nicht zur Verfügung. Er bestätigt den Vortrag wie jede andere Aufgabe.',
-    vaLeer: 'Noch keine Vorträge eingetragen.',
-    vaHinzufuegen: 'Vortrag hinzufügen',
-    vaNummer: 'Vortrag Nr. {n}', vaNummerLbl: 'Vortrag Nr.',
-    vaKonfliktZusammenkunft: '{name} ist an diesem Tag in der eigenen Zusammenkunft eingeteilt',
-    toastVaAdd: 'Vortrag eingetragen', toastVaDel: 'Vortrag entfernt',
     // Weitere Pläne (T120, Phase 5): Ankündigungen ohne Zuteilung. Die Vorlage
     // „Königreichssaal" heißt wie `saal`; gemessen am od Kap. 11 Abs. 10 („Im
     // Allgemeinen wechseln sich die Predigtdienstgruppen mit der Saalreinigung
     // ab"). „Familien reihum" ist keine Wendung der Schriften, sondern sagt, was
     // der Plan tut; das Beispiel stammt aus od Kap. 5 Abs. 55–63.
     navWeiterePlaene: 'Weitere Pläne',
-    wpHinweis: 'Ankündigungen ohne Zuteilung: Niemand muss etwas bestätigen, und es gibt keine Erinnerung. Gruppenbesuche und öffentliches Zeugnisgeben stehen unter Predigtdienst, die Redner auswärts unter Zusammenkünfte.',
+    wpHinweis: 'Ankündigungen ohne Zuteilung: Niemand muss etwas bestätigen, und es gibt keine Erinnerung. Gruppenbesuche und öffentliches Zeugnisgeben stehen unter Predigtdienst.',
     wpNeu: '+ NEUER PLAN', wpNeuTitel: 'Neuer Plan',
     wpAktuell: 'AKTUELL', wpEntwuerfe: 'ENTWÜRFE', wpAbgeschlossen: 'ABGESCHLOSSEN',
     wpKeine: 'Zurzeit gibt es keine weiteren Pläne.',
@@ -419,8 +407,6 @@ export const DE = {
     // Konfliktprüfungen (Planen)
     konflikteTitle: 'MÖGLICHE KONFLIKTE',
     konfliktAbsent: '{name} ist abwesend, aber eingeteilt · {tab}',
-    // Der Redner spricht an dem Tag in einer anderen Versammlung (T120, Phase 4).
-    konfliktAuswaerts: '{name} hält an diesem Tag einen Vortrag auswärts, ist aber eingeteilt · {tab}',
     konfliktDouble: '{name} ist {n}× in einer Zusammenkunft · {tab}',
     konfliktHelperTask: '{name} hat Hilfsdienst und Aufgabe am selben Tag · {tab}',
     // Zählzeile der Warnung „mehrfach vergebene feste Rollen" (Personen).

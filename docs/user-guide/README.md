@@ -32,12 +32,12 @@ dadurch bleiben Bilder und App immer konsistent. Mit Namen als Argumenten
 
 ### Hash der Entwicklerseite (siehe `tests/testdaten/demo-start.ts` → `parseDebugHash`)
 
-`#s=<screen>&tab=<mid|we|fs|va|wp>&fb=<treffpunkte|gruppenbesuche|zeugnis|grundplan>&pl=<0|1>&p=<personId>&me=<personId>&t=<theme>&l=<lang>&c=<congLang>`
+`#s=<screen>&tab=<mid|we|fs|wp>&fb=<treffpunkte|gruppenbesuche|zeugnis|grundplan>&pl=<0|1>&p=<personId>&me=<personId>&t=<theme>&l=<lang>&c=<congLang>`
 
 | Parameter | Bedeutung |
 | --- | --- |
 | `s`   | Bildschirm: `login`, `start`, `programm`, `aufgaben`, `planen`, `personen`, `einstellungen`, `profil` |
-| `tab` | Reiter in Programm/Planen: `mid` (unter der Woche), `we` (Wochenende), `fs` (Predigtdienst), `va` (Redner auswärts; Vorträge bringt nur die Entwicklerseite mit), `wp` (Weitere Pläne; ebenso nur die Entwicklerseite) |
+| `tab` | Reiter in Programm/Planen: `mid` (unter der Woche), `we` (Wochenende), `fs` (Predigtdienst), `wp` (Weitere Pläne; Pläne bringt nur die Entwicklerseite mit) |
 | `fb`  | Reiter im Predigtdienst: `treffpunkte`, `gruppenbesuche` (Besuche des Dienstaufsehers; nur die Entwicklerseite bringt welche mit), `zeugnis` (öffentliches Zeugnisgeben; ebenso nur die Entwicklerseite), `grundplan` (nur beim Planen) |
 | `pl`  | Rechte erzwingen: `0` = Verkündiger‑Ansicht, `1` = Planer |
 | `p`   | **Ausgewählte** Person‑Id — auf der Personen‑Seite öffnet es deren Detail |
@@ -67,7 +67,6 @@ Ende automatisch auf; du musst nichts extra tun.
 | `verkuendiger-gruppenaufseher.png` | `s=planen&tab=fs&pl=0&me=p1` | verkuendiger |
 | `verkuendiger-gruppenbesuche.png` | `s=programm&tab=fs&fb=gruppenbesuche&pl=0&me=p9` | verkuendiger |
 | `verkuendiger-zeugnis.png` | `s=programm&tab=fs&fb=zeugnis&pl=0&me=p9` (Höhe 1500) | verkuendiger |
-| `verkuendiger-redner-auswaerts.png` | `s=programm&tab=va&pl=0&me=p6` | verkuendiger |
 | `verkuendiger-weitere-plaene.png` | `s=programm&tab=wp&pl=0&me=p9` (Höhe 1400) | verkuendiger |
 | `planer-start.png` | `s=start&me=p9` (Höhe 1300) | planer |
 | `planer-aufgaben.png` | `s=aufgaben&me=p9` | (Reserve) |
@@ -76,7 +75,6 @@ Ende automatisch auf; du musst nichts extra tun.
 | `planer-plan-senden.png` | `s=planen&tab=fs` (Höhe 2100) | planer |
 | `planer-gruppenbesuche.png` | `s=planen&tab=fs&fb=gruppenbesuche&me=p6` (Höhe 1500) | planer |
 | `planer-zeugnis.png` | `s=planen&tab=fs&fb=zeugnis&me=p6` (Höhe 2100) | planer |
-| `planer-redner-auswaerts.png` | `s=planen&tab=va&me=p6` (Höhe 1800) | planer |
 | `planer-weitere-plaene.png` | `s=planen&tab=wp&me=p6` | planer |
 | `planer-personen.png` | `s=personen` | planer |
 | `planer-person-detail.png` | `s=personen&p=p1` | planer |

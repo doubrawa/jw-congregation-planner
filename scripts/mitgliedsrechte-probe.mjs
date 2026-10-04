@@ -52,9 +52,8 @@
  * Richtlinie offen, sondern die ganze Kodierung.
  *
  * **Seit dem 3. Oktober 2026 misst sie auch die Rechte aus T120** — die Pläne
- * der Versammlung. Dort geht es öfter ums **Sehen** als ums Schreiben: Wer
- * wann wohin zum Vortrag fährt, und wer bei „Familien reihum" Gastgeber ist,
- * geht nicht die ganze Versammlung an.
+ * der Versammlung. Dort geht es öfter ums **Sehen** als ums Schreiben: Wer bei
+ * „Familien reihum" Gastgeber ist, geht nicht die ganze Versammlung an.
  *
  *  11. einen Gruppenbesuch anlegen                      → abgewiesen
  *  12. einen Gruppenbesuch sehen                        → sichtbar
@@ -67,12 +66,6 @@
  *  19. denselben mit falschem Montag im Schlüssel       → abgewiesen
  *  20. einen fremden Eintrag löschen                    → abgewiesen
  *  21. den eigenen löschen (Absagen gibt den Platz frei) → durch
- *  22. einen fremden Vortrag auswärts sehen             → unsichtbar
- *  23. den eigenen sehen                                → sichtbar
- *  24. einen Vortrag anlegen                            → abgewiesen
- *  25. den eigenen verlegen                             → abgewiesen
- *  26. einen fremden Vortrag bestätigen                 → abgewiesen
- *  27. den eigenen bestätigen                           → durch
  *  28. einen Plan im Entwurf sehen                      → unsichtbar
  *  29. den veröffentlichten Königreichssaal sehen       → sichtbar
  *  30. „Familien reihum" ohne eigenen Haushalt          → unsichtbar
@@ -81,8 +74,12 @@
  *  33. einen Plan anlegen                               → abgewiesen
  *  34. sich als Gastgeber in einen fremden Plan setzen  → abgewiesen
  *
- * Anders als (1)–(10) findet die Probe dafür **keinen Bestand** vor: Termine,
- * Vorträge und Pläne gibt es in der Probeversammlung nicht von selbst. Der
+ * (22)–(27) maßen die Redner auswärts, die es vom 3. bis 4.10.2026 gab. Die
+ * Nummern bleiben frei, damit Protokolle und Notizen von damals weiter auf
+ * dieselben Fälle zeigen.
+ *
+ * Anders als (1)–(10) findet die Probe dafür **keinen Bestand** vor: Termine
+ * und Pläne gibt es in der Probeversammlung nicht von selbst. Der
  * Planer legt sie an — im Jahr 2099, jede Kennung mit dem Kennzeichen des
  * Laufs —, und am Ende räumt die Probe genau diese Zeilen wieder weg, auch
  * nach einem Fehler mittendrin. **Drei Dinge ändert sie dafür vorübergehend
@@ -337,11 +334,6 @@ export function ozSchluessel(datum, id) {
   return `oz|${montagDerWoche(datum)}|${id}`
 }
 
-/** Aufgaben-Schlüssel eines Vortrags auswärts — Spiegel von `vaTaskKey`. */
-export function vaSchluessel(datum, id) {
-  return `va|${montagDerWoche(datum)}|${id}`
-}
-
 /**
  * **Was die Probe für T120 anlegt** — und was das Mitglied zu schreiben
  * versucht. Rein, damit der Test prüfen kann, dass jede Zeile die Regeln der
@@ -374,10 +366,7 @@ export function t120Anlage({ marke, versammlung: c, tag0, planerPid, mitgliedPid
   const oz = (name, wochen, person, selbst) => ({
     id: id(name), congregation_id: c, termin_id: termin.id, datum: montag(wochen), person_id: person, selbst,
   })
-  const vortrag = (name, wochen, person) => ({
-    id: id(name), congregation_id: c, datum: sonntag(wochen), zeit: '10:00', versammlung: marke, nummer: null, person_id: person,
-  })
-  const plan = (name, vorlage, entwurf) => ({
+  const plan =(name, vorlage, entwurf) => ({
     id: id(name), congregation_id: c, vorlage, name: marke, von: tag0, bis: sonntag(0), entwurf,
   })
   const eintrag = (name, planId, { grp = null, person = null, mahlzeit = null } = {}) => ({
@@ -405,10 +394,6 @@ export function t120Anlage({ marke, versammlung: c, tag0, planerPid, mitgliedPid
     // Der eigene Eintrag unter dem Montag einer anderen Woche: dieselbe Art in
     // fremder Schreibweise (`task_gehoert_mir` vergleicht den Montag).
     ozFalscherMontag: ozSchluessel(montag(0), ozZugeteilt.id),
-    vaFremd: vortrag('va-fremd', 0, planerPid),
-    vaEigen: vortrag('va-eigen', 1, mitgliedPid),
-    vaVersuch: vortrag('va-versuch', 2, mitgliedPid),
-    vaVerlegtAuf: sonntag(3),
     plaene,
     eintraege: {
       entwurf: [eintrag('e-entwurf', plaene.entwurf.id, { grp: gruppe })],
@@ -691,57 +676,6 @@ async function zeugnisProben(k, a, ich, spaeter) {
 }
 
 /**
- * (22)–(27) Redner auswärts (Phase 4): sehen nur der Redner und die Planer,
- * schreiben nur die Planer — auch der Redner verlegt seinen Vortrag nicht
- * selbst; bestätigen nur der Redner.
- */
-async function rednerProben(k, a) {
-  const { planer, mitglied } = k
-  const anlage = await anlegen(planer, 'vortraege_auswaerts', [a.vaFremd, a.vaEigen])
-  let gelesen = null
-  const sieht = (id) => async () => {
-    gelesen ??= await mitglied.rest(`vortraege_auswaerts?select=id&id=in.(${a.vaFremd.id},${a.vaEigen.id})`)
-    return { status: gelesen.status, sichtbar: zeilenVon(gelesen).some((z) => z.id === id) }
-  }
-  await leseVersuch(k, 22, 'einen fremden Vortrag auswärts sehen', anlage, sieht(a.vaFremd.id), false, [
-    'AUCH DAS!',
-    'unsichtbar — vortraege_auswaerts_select greift',
-  ])
-  await leseVersuch(k, 23, 'den eigenen Vortrag auswärts sehen', anlage, sieht(a.vaEigen.id), true, [
-    'der Redner sieht ihn',
-    'ZU STRENG — der Redner sieht seinen Vortrag nicht',
-  ])
-  await schreibVersuch(k, 24, 'einen Vortrag auswärts anlegen', 'vortraege_auswaerts', a.vaVersuch, false, ['AUCH DAS!', 'abgewiesen — nur Planer'])
-
-  const was25 = 'den eigenen Vortrag verlegen'
-  if (anlage.ok) {
-    const s = await mitglied.rest(`vortraege_auswaerts?id=eq.${a.vaEigen.id}`, 'PATCH', { datum: a.vaVerlegtAuf }, 'return=minimal')
-    const l = await planer.rest(`vortraege_auswaerts?select=datum&id=eq.${a.vaEigen.id}`)
-    const e = bewerteVersuch(s.status, zeilenVon(l)[0]?.datum === a.vaVerlegtAuf, false, {
-      leseStatus: l.status,
-      woerter: ['GEÄNDERT', 'nicht geändert'],
-    })
-    k.ergebnis(25, was25, e, e.durch ? 'AUCH DAS!' : 'abgewiesen — nur Planer')
-    // Verlegt muss er zurück: (27) bestätigt ihn unter seinem Montag.
-    if (e.durch || e.vielleichtDurch) {
-      const zurueck = await planer.rest(`vortraege_auswaerts?id=eq.${a.vaEigen.id}`, 'PATCH', { datum: a.vaEigen.datum }, 'return=minimal')
-      console.log(zurueck.status < 400 ? '      (zurückverlegt)' : `      !! Vortrag blieb verlegt (${zurueck.status}) !!`)
-    }
-  } else {
-    k.kaputt(25, was25, anlage.grund, false)
-  }
-
-  const bestaetigen = [
-    [26, 'einen fremden Vortrag auswärts bestätigen', vaSchluessel(a.vaFremd.datum, a.vaFremd.id), false, ['AUCH DAS!', 'abgewiesen — der va-Zweig in task_gehoert_mir greift']],
-    [27, 'den eigenen Vortrag auswärts bestätigen', vaSchluessel(a.vaEigen.datum, a.vaEigen.id), true, ['der Weg steht offen', 'ZU STRENG — der Redner kann nicht zusagen']],
-  ]
-  for (const [nr, was, key, erwartet, folge] of bestaetigen) {
-    if (anlage.ok) await bestaetigung(k, nr, was, key, erwartet, folge)
-    else k.kaputt(nr, was, anlage.grund, erwartet)
-  }
-}
-
-/**
  * Jemand aus dem Haushalt des Mitglieds — für (32). Teilt niemand ihn, zieht
  * das Mitglied für die Dauer der Probe mit einer Probe-Person in einen
  * Probe-Haushalt; `spaeter` stellt den Haushalt wieder her und räumt beide weg.
@@ -852,7 +786,6 @@ async function t120Aufraeumen(k, spaeter) {
     ['die Bestätigungen', () => mitglied.rest(`confirmations?user_id=eq.${mitglied.uid}&task_key=like.*${marke}*`, 'DELETE', undefined, 'return=minimal')],
     ['die Plan-Einträge', weg('plan_eintraege')],
     ['die Pläne', weg('plaene')],
-    ['die Vorträge', weg('vortraege_auswaerts')],
     ['die Zeugnis-Einträge', weg('oz_eintraege')],
     ['der Termin', weg('oz_termine')],
     ['die Gruppenbesuche', weg('gruppenbesuche')],
@@ -908,7 +841,6 @@ async function t120Proben(k) {
   try {
     await gruppenbesucheProben(k, a)
     await zeugnisProben(k, a, ich, spaeter)
-    await rednerProben(k, a)
     await plaeneProben(k, a, ich, gast, spaeter)
   } finally {
     await t120Aufraeumen(k, spaeter)

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useApp } from '../app/context'
-import { useAbwesend, useAuswaerts } from '../app/useAbwesend'
+import { useAbwesend } from '../app/useAbwesend'
 import { idAufloeser } from '../data/helpers'
 import { kennungVon, weekConflicts, type Conflict } from '../data/planning'
 import type { MeetingKey, Person } from '../data/types'
@@ -49,11 +49,9 @@ export function machBetrifft(persons: Person[], conflicts: Conflict[]): (z: Zuge
 export function useKonflikte(tab: MeetingKey): Konflikte {
   const { state } = useApp()
   const abwesend = useAbwesend()
-  // Die Redner auswärts eigens: Das Banner nennt bei ihnen den Grund (T120).
-  const auswaerts = useAuswaerts()
   const { weeks, week, persons, services } = state
   return useMemo(() => {
-    const liste = weekConflicts(weeks, week, persons, services, tab, abwesend, auswaerts)
+    const liste = weekConflicts(weeks, week, persons, services, tab, abwesend)
     return { liste, betrifft: machBetrifft(persons, liste) }
-  }, [weeks, week, persons, services, tab, abwesend, auswaerts])
+  }, [weeks, week, persons, services, tab, abwesend])
 }

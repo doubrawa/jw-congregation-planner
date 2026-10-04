@@ -40,8 +40,8 @@ export function wochenDesMonats(weeks: readonly Pick<Week, 'start'>[], monat: st
 }
 
 /**
- * „September 2026" in der Sprache des Lesers — auch die Überschriften der
- * Pläne (Gruppenbesuche, Redner auswärts) nehmen diese eine Fassung.
+ * „September 2026" in der Sprache des Lesers — auch die Monatsüberschriften
+ * der Gruppenbesuche nehmen diese eine Fassung.
  */
 export function monatsName(monat: string, lang: Lang): string {
   const tag = fromIso(`${monat}-01`)

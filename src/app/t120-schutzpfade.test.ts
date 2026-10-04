@@ -41,7 +41,7 @@ import { buildFsWeeks } from '../data/fs'
 import { besuchEintragen } from '../data/gruppenbesuche'
 import { DE as t } from '../i18n/de'
 import { fill } from '../i18n/useT'
-import type { Gruppenbesuch, OzEintrag, OzTermin, PlanEintrag, VortragAuswaerts, WeitererPlan } from '../data/types'
+import type { Gruppenbesuch, OzEintrag, OzTermin, PlanEintrag, WeitererPlan } from '../data/types'
 
 /* Die Uhr steht auf Montag, 7. September 2026. */
 const MITTWOCH: OzTermin = { id: 't-mi', wd: 3, von: '10:00', bis: '12:00', ort: 'Marktplatz', plaetze: 2 }
@@ -54,7 +54,6 @@ const oz = (datum: string, pid: string, selbst = false): OzEintrag => ({
   pid,
   selbst,
 })
-const VORTRAG: VortragAuswaerts = { id: 'v1', datum: '2026-09-13', zeit: '10:00', versammlung: 'Beispielheim', nummer: 12, pid: 'p6' }
 const SAAL: WeitererPlan = { id: 'pl-s', vorlage: 'saal', name: 'Winterdienst', von: '2026-09-07', bis: '2026-10-04', entwurf: true }
 const FAMILIEN: WeitererPlan = { id: 'pl-f', vorlage: 'familien', name: '', von: '2026-09-22', bis: '2026-09-27', entwurf: false }
 const GAST: PlanEintrag = { id: 'e-gast', planId: 'pl-f', datum: '2026-09-22', grp: null, pid: 'p1', mahlzeit: 'mittag' }
@@ -77,7 +76,6 @@ function zustand(over: Partial<AppState> = {}): AppState {
     gruppenbesuche: [BESUCH],
     ozTermine: [MITTWOCH],
     ozEintraege: [oz(NAECHSTER_MITTWOCH, 'p1')],
-    auswaerts: [VORTRAG],
     plaene: [SAAL, FAMILIEN],
     planEintraege: [GAST],
     confirmations: {},
@@ -142,10 +140,6 @@ describe('Abgelehnt: derselbe Zustand, nichts geschrieben', () => {
     ['Austragen eines Eintrags, den es nicht gibt', {}, { type: 'ozAustragen', id: 'e-weg' }],
     ['einen Termin ändern, den es nicht gibt', {}, { type: 'ozTerminUpdate', id: 't-weg', patch: { ort: 'Bahnhof' } }],
     ['einen Termin streichen, den es nicht gibt', {}, { type: 'ozTerminRemove', id: 't-weg' }],
-    // Redner auswärts
-    ['einen Redner setzen bei einem Vortrag, den es nicht gibt', {}, { type: 'vaRedner', id: 'v-weg', pid: 'p6' }],
-    ['denselben Redner noch einmal setzen', {}, { type: 'vaRedner', id: VORTRAG.id, pid: 'p6' }],
-    ['einen Vortrag streichen, den es nicht gibt', {}, { type: 'vaRemove', id: 'v-weg' }],
     // Weitere Pläne
     ['einen Plan mit vergebener Kennung anlegen', {}, { type: 'wpPlanAnlegen', plan: { ...SAAL, name: 'Doppelt' } }],
     ['einen Plan ändern, den es nicht gibt', {}, { type: 'wpPlanAendern', id: 'pl-weg', patch: { name: 'X' } }],
@@ -179,7 +173,6 @@ describe('Nichts zu tun: nur eine Meldung, nichts geschrieben', () => {
     fsWeeks: s.fsWeeks,
     ozTermine: s.ozTermine,
     ozEintraege: s.ozEintraege,
-    auswaerts: s.auswaerts,
     plaene: s.plaene,
     planEintraege: s.planEintraege,
     confirmations: s.confirmations,

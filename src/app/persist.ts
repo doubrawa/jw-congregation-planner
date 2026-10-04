@@ -8,7 +8,6 @@
 import { fsTaskKeyWoche } from '../data/fs'
 import { type EntzogeneZusage, entzogeneZusagen } from '../data/plan-versand'
 import { ozEntzogeneZusagen } from '../data/zeugnis'
-import { vaEntzogeneZusagen } from '../data/auswaerts'
 import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { eigenePerson } from './eigene-person'
 import {
@@ -42,7 +41,6 @@ import {
   savePlaene,
   savePlanEintraege,
   saveSettings,
-  saveVortraegeAuswaerts,
   saveWeek,
   substituteSeek,
   substituteTake,
@@ -537,17 +535,6 @@ function zeugnisSpeichern(congId: string, prev: AppState, next: AppState): void 
 }
 
 /**
- * Vorträge auswärts (T120, Phase 4): je Vortrag nur, was sich geändert hat
- * (neue Referenz), gelöscht nur, was hier gestrichen wurde — wie die
- * Gruppenbesuche. Hier wird geklickt, nicht getippt: Es geht sofort hinaus.
- */
-function vortraegeSpeichern(congId: string, prev: AppState, next: AppState): void {
-  if (next.auswaerts === prev.auswaerts) return
-  const { geaendert, entfernt } = zeilenAenderung(prev.auswaerts, next.auswaerts)
-  if (geaendert.length || entfernt.length) saveVortraegeAuswaerts(congId, geaendert, entfernt)
-}
-
-/**
  * Weitere Pläne (T120, Phase 5): Pläne gebündelt, Einträge sofort — und vor
  * einem Eintrag immer erst der Plan, auf den er zeigt (wie beim Zeugnisgeben;
  * die Schreibschicht hält die Reihenfolge in `planNacheinander`).
@@ -642,11 +629,6 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'ozAutoAssign':
     case 'ozLeeren':
       zeugnisSpeichern(congId, prev, next)
-      break
-    case 'vaAdd':
-    case 'vaRedner':
-    case 'vaRemove':
-      vortraegeSpeichern(congId, prev, next)
       break
     case 'wpPlanAnlegen':
     case 'wpPlanAendern':
@@ -991,8 +973,6 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         eigenePerson(prev)?.id,
       ),
     )
-    // Und an die vierte: Vorträge auswärts (Phase 4), gestrichen oder umbesetzt.
-    entzogen.push(...vaEntzogeneZusagen(prev.auswaerts, next.auswaerts, next.persons, prev.confirmations))
     // Der Regelfall: nichts verloren, nichts zu schicken.
     if (entzogen.length > 0) sendPlanEntzug(entzogen)
   }

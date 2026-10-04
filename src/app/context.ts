@@ -30,7 +30,6 @@ import type {
   OzEintrag,
   OzTermin,
   PlanEintrag,
-  VortragAuswaerts,
   WeitererPlan,
   Invite,
   Lang,
@@ -95,7 +94,6 @@ export interface HydratePayload {
   gruppenbesuche: Gruppenbesuch[]
   ozTermine: OzTermin[]
   ozEintraege: OzEintrag[]
-  auswaerts: VortragAuswaerts[]
   plaene: WeitererPlan[]
   planEintraege: PlanEintrag[]
   absences: Absence[]
@@ -196,12 +194,6 @@ export interface AppState {
    */
   ozTermine: OzTermin[]
   ozEintraege: OzEintrag[]
-  /**
-   * Vorträge eigener Redner in anderen Versammlungen (T120, Phase 4),
-   * aufsteigend nach Tag. Ein Verkündiger bekommt nur seine eigenen (RLS);
-   * Planer alle.
-   */
-  auswaerts: VortragAuswaerts[]
   /**
    * Weitere Pläne (T120, Phase 5): Ankündigungen ohne Zuteilung. Ein Mitglied
    * bekommt nur, was es sehen darf (RLS: veröffentlicht, und bei „Familien
@@ -366,14 +358,6 @@ export type AppAction =
   | { type: 'ozAutoAssign' }
   // Alle künftigen, zugeteilten Einträge entfernen; Selbst-Eingetragene bleiben.
   | { type: 'ozLeeren' }
-  /*
-   * Redner auswärts (T120, Phase 4) — nur Planer. Ein Vortrag wird angelegt,
-   * sein Redner gewechselt oder er wird gestrichen; Tag, Ort und Nummer ändert
-   * man durch Streichen und neu Anlegen (der Schlüssel hängt am Montag).
-   */
-  | { type: 'vaAdd'; vortrag: Omit<VortragAuswaerts, 'id'> }
-  | { type: 'vaRedner'; id: string; pid: string | null }
-  | { type: 'vaRemove'; id: string }
   /*
    * Weitere Pläne (T120, Phase 5) — nur Planer. Die Kennung eines neuen Plans
    * vergibt der Bildschirm, damit er ihn gleich öffnen kann.

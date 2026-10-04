@@ -870,14 +870,6 @@ export const KATALOG = [
     ersetzen: "const NACHLADEN_DARF_SPRINGEN: ReadonlySet<MeetingTab> = new Set<MeetingTab>(['mid', 'we', 'edit', 'fs'])",
   },
   {
-    id: 'nachladen-laesst-redner-auswaerts-stehen',
-    datei: 'src/app/reducer.ts',
-    // Die Redner auswärts haben keine Woche (T120, Phase 4).
-    regel: 'Ein stilles Nachladen wirft nicht aus den Rednern auswärts in eine Zusammenkunft.',
-    suchen: "const NACHLADEN_DARF_SPRINGEN: ReadonlySet<MeetingTab> = new Set<MeetingTab>(['mid', 'we', 'edit'])",
-    ersetzen: "const NACHLADEN_DARF_SPRINGEN: ReadonlySet<MeetingTab> = new Set<MeetingTab>(['mid', 'we', 'edit', 'va'])",
-  },
-  {
     id: 'nachladen-laesst-weitere-plaene-stehen',
     datei: 'src/app/reducer.ts',
     // Das Menü führt ohne Reiterwahl zu den Weiteren Plänen (T120, Phase 5).
@@ -1975,8 +1967,8 @@ export const KATALOG = [
     id: 'oz-karte-zaehlt-mit',
     datei: 'src/dashboard/PlanungsKarte.tsx',
     regel: 'Hat das öffentliche Zeugnisgeben noch etwas offen, sagt die Planungs-Karte nicht „Alles zugeteilt".',
-    suchen: ' && besuchsKonflikte === 0 && !zeugnisZuTun && !vortraegeZuTun) {',
-    ersetzen: ' && besuchsKonflikte === 0 && !vortraegeZuTun) {',
+    suchen: ' && besuchsKonflikte === 0 && !zeugnisZuTun) {',
+    ersetzen: ' && besuchsKonflikte === 0) {',
   },
   {
     id: 'oz-freie-plaetze-im-fenster',
@@ -2032,77 +2024,6 @@ export const KATALOG = [
     datei: 'supabase/schema.sql',
     regel: 'Einen Eintrag im öffentlichen Zeugnisgeben bestätigt nur, wem er gehört.',
     suchen: '         and e.person_id = meine\n',
-    ersetzen: '',
-  },
-  /* ---- Redner auswärts (T120, Phase 4) ---- */
-  {
-    id: 'va-zusage-verfaellt-mit-rednerwechsel',
-    datei: 'src/app/reducer.ts',
-    regel: 'Bekommt ein Vortrag einen anderen Redner, verfällt die Zusage des alten — der neue erbt sie nicht.',
-    suchen: '  const fertig = ohneVerwaisteVortragsZusagen(state, bereinigt)',
-    ersetzen: '  const fertig = bereinigt',
-  },
-  {
-    id: 'va-redner-fehlt-in-eigener-zusammenkunft',
-    datei: 'src/app/reducer.ts',
-    regel: 'Wer an dem Tag auswärts spricht, wird in der eigenen Zusammenkunft nicht automatisch eingeteilt.',
-    suchen: '  return nichtVerfuegbar(buildAbsences(absences, weeks, zeiten), buildAuswaerts(auswaerts, weeks, zeiten))',
-    ersetzen: '  return buildAbsences(absences, weeks, zeiten)',
-  },
-  {
-    id: 'va-nicht-verfuegbar-an-der-oberflaeche',
-    datei: 'src/app/useAbwesend.ts',
-    regel: 'Zuteilungs-Blatt und Engpass-Banner zählen den Redner auswärts als nicht verfügbar.',
-    suchen: '    () => nichtVerfuegbar(buildAbsences(absences, weeks, congregation.times), auswaerts),',
-    ersetzen: '    () => buildAbsences(absences, weeks, congregation.times),',
-  },
-  {
-    id: 'va-konflikt-nennt-den-grund',
-    datei: 'src/data/planning.ts',
-    regel: 'Das Banner der Zusammenkunft nennt den Redner auswärts mit seinem Grund, nicht als abwesend.',
-    suchen: '      if (istAbwesend(auswaerts, b.kennung, wi, tb)) {',
-    ersetzen: '      if (false) {',
-  },
-  {
-    id: 'va-konflikt-eigene-zusammenkunft',
-    datei: 'src/data/auswaerts.ts',
-    regel: 'Der Plan nennt den Redner, der am selben Tag in der eigenen Zusammenkunft eingeteilt ist.',
-    suchen: "    if (aufgaben.length > 0) out.push({ vortrag: v, name, art: 'zusammenkunft', aufgaben })",
-    ersetzen: '',
-  },
-  {
-    id: 'va-reiter-nur-mit-kommendem-vortrag',
-    datei: 'src/data/auswaerts.ts',
-    regel: 'Beim Ansehen steht der Reiter nur, wenn ein Vortrag noch kommt — ein leerer Reiter nützt niemandem.',
-    suchen: '  return planen ? planner : vortraege.some((v) => !vaVorbei(v, heute))',
-    ersetzen: '  return planen ? planner : vortraege.length > 0',
-  },
-  {
-    id: 'va-entzug-meldet-dem-redner',
-    datei: 'src/app/persist.ts',
-    regel: 'Wird ein bestätigter Vortrag gestrichen oder umbesetzt, erfährt es der Redner sofort.',
-    suchen: '    entzogen.push(...vaEntzogeneZusagen(prev.auswaerts, next.auswaerts, next.persons, prev.confirmations))',
-    ersetzen: '',
-  },
-  {
-    id: 'va-karte-zaehlt-mit',
-    datei: 'src/dashboard/PlanungsKarte.tsx',
-    regel: 'Haben die Redner auswärts noch etwas offen, sagt die Planungs-Karte nicht „Alles zugeteilt".',
-    suchen: ' && !zeugnisZuTun && !vortraegeZuTun) {',
-    ersetzen: ' && !zeugnisZuTun) {',
-  },
-  {
-    id: 'va-erinnerung',
-    datei: 'supabase/functions/send-reminders/index.ts',
-    regel: 'Der Redner wird an seinen Vortrag auswärts erinnert, bis er bestätigt.',
-    suchen: '      for (const pend of offeneVortraegeAuswaerts(vortraege, namen, conf, todayUTC)) {',
-    ersetzen: '      for (const pend of [] as ReturnType<typeof offeneVortraegeAuswaerts>) {',
-  },
-  {
-    id: 'va-schema-eigener-vortrag',
-    datei: 'supabase/schema.sql',
-    regel: 'Einen Vortrag auswärts bestätigt nur sein Redner.',
-    suchen: '         and v.person_id = meine\n',
     ersetzen: '',
   },
   /* ---- Weitere Pläne (T120, Phase 5) ---- */
@@ -2271,13 +2192,6 @@ export const KATALOG = [
     ersetzen: '    return { error }',
   },
   {
-    id: 'ersatz-ohne-redner-auswaerts',
-    datei: 'supabase/functions/substitute/index.ts',
-    regel: 'Wer am Tag auswärts einen Vortrag hält, bekommt kein „Ersatz gesucht" — die App zeigt es ihm ja auch nicht.',
-    suchen: ' && !auswaerts.has(p.id)',
-    ersetzen: '',
-  },
-  {
     id: 'person-weg-eintraege-weg',
     datei: 'src/app/reducer.ts',
     regel: 'Geht eine Person, gehen ihre Einträge im Zeugnisgeben mit — wie in der Datenbank (on delete cascade).',
@@ -2320,13 +2234,6 @@ export const KATALOG = [
     suchen: '      setOffen(id)\n',
     ersetzen: '',
   },
-  {
-    id: 'senden-richtige-function',
-    datei: 'src/planen/PlanSendenPanel.tsx',
-    regel: '„Plan senden" im Zeugnisgeben schickt das Zeugnisgeben — nicht die Vorträge auswärts.',
-    suchen: 'senden={sendZeugnisPlan} tag={tag} />',
-    ersetzen: 'senden={sendAuswaertsPlan} tag={tag} />',
-  },
   /* ---- Testlücken 6–11 T120 geschlossen (3.10.2026) ---- */
   {
     id: 'erinnerung-oz-nur-faellig',
@@ -2338,29 +2245,12 @@ export const KATALOG = [
       "      for (const pend of offeneZeugnisEintraege(ozEintraege, ozTermine, namen, conf, todayUTC)) {\n        const days = tageBisTermin(pend.woche, pend.offset, todayUTC)\n        if (days === null) continue\n        const kind = dueKind(rem, days) ?? 'repeat'\n",
   },
   {
-    id: 'erinnerung-va-nur-faellig',
-    datei: 'supabase/functions/send-reminders/index.ts',
-    regel: 'Ein Vortrag auswärts erinnert nur an den eingestellten Tagen — nicht jeden Tag bis zum Vortrag.',
-    suchen:
-      '      for (const pend of offeneVortraegeAuswaerts(vortraege, namen, conf, todayUTC)) {\n        const days = tageBisTermin(pend.woche, pend.offset, todayUTC)\n        if (days === null) continue\n        const kind = dueKind(rem, days)\n',
-    ersetzen:
-      "      for (const pend of offeneVortraegeAuswaerts(vortraege, namen, conf, todayUTC)) {\n        const days = tageBisTermin(pend.woche, pend.offset, todayUTC)\n        if (days === null) continue\n        const kind = dueKind(rem, days) ?? 'repeat'\n",
-  },
-  {
     id: 'erinnerung-oz-tabelle-fehlt',
     datei: 'supabase/functions/send-reminders/index.ts',
     regel: 'Fehlen die Tabellen des Zeugnisgebens, erinnert der Lauf trotzdem an alles andere.',
     suchen:
       "      ]).catch((err): [OzTerminRow[], OzEintragRow[]] => {\n        console.error(`oz_termine/oz_eintraege nicht lesbar: ${(err as Error).message}`)\n        return [[], []]\n      })",
     ersetzen: '      ])',
-  },
-  {
-    id: 'erinnerung-va-tabelle-fehlt',
-    datei: 'supabase/functions/send-reminders/index.ts',
-    regel: 'Fehlt die Tabelle der Vorträge auswärts, erinnert der Lauf trotzdem an alles andere.',
-    suchen:
-      "        .catch((err): VortragAuswaertsRow[] => {\n          console.error(`vortraege_auswaerts nicht lesbar: ${(err as Error).message}`)\n          return []\n        })\n",
-    ersetzen: '',
   },
   {
     id: 'erinnerung-fs-tabelle-fehlt',
@@ -2415,14 +2305,6 @@ export const KATALOG = [
     ersetzen: "  return naechste ? naechste.tab : 'mid'",
   },
   {
-    id: 'thema-va-bleibt',
-    datei: 'src/app/reducer.ts',
-    regel:
-      'Wer auf „Redner auswärts" steht, bleibt beim Menüpunkt „Zusammenkünfte" dort — gefragt über das Thema, nicht über eine Liste der Reiter.',
-    suchen: "            : action.thema === 'zusammenkuenfte' && themaVon(state.tab) !== 'zusammenkuenfte'",
-    ersetzen: "            : action.thema === 'zusammenkuenfte' && !['mid', 'we', 'edit'].includes(state.tab)",
-  },
-  {
     id: 'montag-utc-in-jeder-zone',
     datei: 'supabase/functions/_shared/zuteilungen.ts',
     regel:
@@ -2445,20 +2327,6 @@ export const KATALOG = [
       'Der Wochentag eines Eintrags zählt in der Datenbank wie im Client (0 = Sonntag) — sonst wiese sie jeden Eintrag an einem Sonntagstermin ab.',
     suchen: '  if extract(dow from new.datum)::int <> termin.wd then',
     ersetzen: '  if extract(isodow from new.datum)::int <> termin.wd then',
-  },
-  {
-    id: 'va-rolle-uebersetzt',
-    datei: 'src/programm/AuswaertsAnsicht.tsx',
-    regel: 'Die Rolle „Redner" steht in der Sprache des Lesers da, nicht kanonisch deutsch.',
-    suchen: '{redner && <div className="va-rolle">{tu(VA_ROLLE)}</div>}',
-    ersetzen: '{redner && <div className="va-rolle">{VA_ROLLE}</div>}',
-  },
-  {
-    id: 'va-versammlung-uebersetzt',
-    datei: 'src/components/auswaerts-anzeige.ts',
-    regel: 'Die Versammlung eines Vortrags steht in der Sprache des Lesers da („Cong. …"), nicht als „Vers. …".',
-    suchen: "  return v.versammlung ? tu(`Vers. ${v.versammlung}`) : ''",
-    ersetzen: "  return v.versammlung ? `Vers. ${v.versammlung}` : ''",
   },
   {
     id: 'oz-planen-mehr-wochen',

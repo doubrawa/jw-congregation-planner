@@ -94,9 +94,6 @@ SHOTS=(
   # abwesend), freie Plätze und die ersten Wochen. Hoch genug für alles bis zu
   # den Schichten der zweiten Woche.
   "planer-zeugnis|s=planen&tab=fs&fb=zeugnis&me=p6|${W}x2100"
-  # Redner auswärts (T120, Phase 4): zwei Konflikte (Vorsitz bzw. Leiter in
-  # der eigenen Zusammenkunft), die Monate bis November und das Formular.
-  "planer-redner-auswaerts|s=planen&tab=va&me=p6|${W}x1800"
   # Weitere Pläne (T120, Phase 5): die Liste — Familien reihum und Winterdienst
   # aktuell, die Grundreinigung als Entwurf. Einen Plan öffnet kein Hash.
   "planer-weitere-plaene|s=planen&tab=wp&me=p6"
@@ -118,10 +115,6 @@ SHOTS=(
   # Simon hat den Aufgabenbereich: freie Plätze mit „+ Eintragen", und am
   # 19. September ist er zugeteilt — Bestätigen oder Absagen.
   "verkuendiger-zeugnis|s=programm&tab=fs&fb=zeugnis&pl=0&me=p9|${W}x1500"
-  # Jonas (p6) hält am 11. Oktober einen Vortrag auswärts und hat noch nicht
-  # bestätigt. Die Entwicklerseite hat keine Datenbank und damit keine Zeilen-
-  # rechte — sie zeigt auch die Vorträge der anderen, die er im Betrieb nicht sieht.
-  "verkuendiger-redner-auswaerts|s=programm&tab=va&pl=0&me=p6"
   # Simon (p9) ist am 24. September Gastgeber (DU) und in Gruppe 1: Er sieht
   # Familien reihum und den Winterdienst mit „Deine Gruppe ist dran", den
   # Entwurf nicht. Hoch genug für beide Pläne.

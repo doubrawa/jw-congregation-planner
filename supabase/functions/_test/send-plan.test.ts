@@ -157,8 +157,6 @@ let gelesen: string[]
 /** Öffentliches Zeugnisgeben (T120): Termine und Einträge, wie sie in der Datenbank stehen. */
 let ozTermine: unknown[]
 let ozEintraege: { id: string; termin_id: string; datum: string; person_id: string; selbst: boolean }[]
-/** Vorträge auswärts (T120, Phase 4). */
-let vortraege: { id: string; datum: string; zeit: string; versammlung: string; person_id: string | null }[]
 
 const { writesTo, zeilenIn } = schreibZugriff(() => writes)
 
@@ -234,12 +232,6 @@ const fakeFetch = async (
     const ab = decodeURIComponent(/[?&]datum=gte\.([^&]*)/.exec(path)?.[1] ?? '')
     return jsonRes(fremd ? [] : ozEintraege.filter((e) => (!nurZugeteilt || !e.selbst) && e.datum >= ab))
   }
-  if (path.startsWith('vortraege_auswaerts')) {
-    // Die Filter zählen: nur mit Redner, nur ab heute.
-    const nurMitRedner = /[?&]person_id=not\.is\.null/.test(path)
-    const ab = decodeURIComponent(/[?&]datum=gte\.([^&]*)/.exec(path)?.[1] ?? '')
-    return jsonRes(fremd ? [] : vortraege.filter((v) => (!nurMitRedner || v.person_id) && v.datum >= ab))
-  }
   if (path.startsWith('weeks')) {
     const start = filterWert(path, 'start')
     return jsonRes(start === WOCHE && !fremd ? [{ start: WOCHE, data: woche }] : [])
@@ -286,7 +278,6 @@ beforeEach(() => {
   gelesen = []
   ozTermine = []
   ozEintraege = []
-  vortraege = []
   resetPush()
 })
 
@@ -433,67 +424,6 @@ describe('Plan senden im öffentlichen Zeugnisgeben', () => {
   })
 })
 
-/* ---- Redner auswärts (T120, Phase 4) -------------------------------------- */
-
-describe('Plan senden bei den Vorträgen auswärts', () => {
-  // `time` kommt aus der Datenbank mit Sekunden — der Termin nennt sie ohne.
-  const vortrag = (id: string, person_id: string | null, datum = '2026-09-13') => ({
-    id,
-    datum,
-    zeit: '10:00:00',
-    versammlung: 'Beispielheim',
-    person_id,
-  })
-  const auswaerts = () => ruf({ action: 'auswaerts' })
-
-  it('der Redner erfährt es — mit Termin, Versammlung und Rolle, und das Tagebuch merkt es sich', async () => {
-    vortraege = [vortrag('v1', 'p-anna')]
-    const res = await auswaerts()
-    expect(res.status).toBe(200)
-    expect(await res.json()).toMatchObject({ personen: 1, aufgaben: 1, ohneKonto: [] })
-    expect(zeilenIn('notifications')).toEqual([
-      expect.objectContaining({
-        user_id: U_ANNA,
-        title: TITEL_ZUTEILUNG,
-        body: 'Sonntag, 13. September · 10:00 · Vers. Beispielheim: Redner',
-        task_key: 'va|2026-09-07|v1',
-      }),
-    ])
-    expect(zeilenIn('assignment_log')).toEqual([
-      expect.objectContaining({ task_key: 'va|2026-09-07|v1', name: 'Anna Berg', person_id: 'p-anna', user_id: U_ANNA }),
-    ])
-  })
-
-  it('nicht, wer bestätigt hat oder schon gemeldet ist — gelesen nur für die Wochen der Vorträge', async () => {
-    vortraege = [vortrag('v1', 'p-anna'), vortrag('v2', 'p-bernd', '2026-09-20')]
-    confirmations = [{ task_key: 'va|2026-09-07|v1', status: 'bestätigt' }]
-    log = [{ task_key: 'va|2026-09-14|v2', name: 'Bernd Cohn' }]
-    expect(await (await auswaerts()).json()).toMatchObject({ personen: 0, aufgaben: 0 })
-    const muster = new Set(gelesen.flatMap((pfad) => likeMuster(pfad, 'task_key')))
-    expect([...muster].sort()).toEqual(['va|2026-09-07|*', 'va|2026-09-14|*'])
-  })
-
-  it('ein Vortrag ohne Redner oder einer, der vorbei ist, geht nicht hinaus', async () => {
-    vortraege = [vortrag('v1', null), vortrag('v2', 'p-anna', '2026-09-06')]
-    expect(await (await auswaerts()).json()).toMatchObject({ personen: 0, aufgaben: 0 })
-    expect(writesTo('notifications')).toEqual([])
-  })
-
-  it('nur ein Planer darf — auch kein Gruppenaufseher', async () => {
-    vortraege = [vortrag('v1', 'p-anna')]
-    authUser = U_MITGLIED
-    expect((await auswaerts()).status).toBe(403)
-    authUser = U_AUFSEHER
-    expect((await auswaerts()).status).toBe(403)
-    expect(writesTo('notifications')).toEqual([])
-  })
-
-  it('eine unbekannte Aktion bleibt eine falsche Anfrage', async () => {
-    expect((await ruf({ action: 'vortraege' })).status).toBe(400)
-    expect((await ruf({})).status).toBe(400)
-  })
-})
-
 /* ---- Nicht zweimal ------------------------------------------------------- */
 
 describe('Was schon gemeldet ist, bleibt liegen', () => {
@@ -568,6 +498,9 @@ describe('Senden darf nur ein Planer der eigenen Versammlung', () => {
 
   it('eine unbekannte Aktion wird abgewiesen', async () => {
     expect((await ruf({ action: 'irgendwas' })).status).toBe(400)
+    // Die Vorträge auswärts (3. bis 4.10.2026) sind wieder entfernt — ein
+    // Browser-Tab von damals bekommt dieselbe Antwort.
+    expect((await ruf({ action: 'auswaerts' })).status).toBe(400)
     expect(writes).toEqual([])
   })
 

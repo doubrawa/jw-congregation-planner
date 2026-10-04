@@ -1,21 +1,16 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { vaTaskKey, vaTerminText } from '../src/data/auswaerts'
 import { fromIso, tagNach } from '../src/data/meeting-dates'
 import { ozDatum, ozSchicht, ozTaskKey, ozTerminText } from '../src/data/zeugnis'
 import type { OzTermin } from '../src/data/types'
-import {
-  offeneVortraegeAuswaerts,
-  offeneZeugnisEintraege,
-  ozWoche,
-} from '../supabase/functions/_shared/zuteilungen.ts'
+import { offeneZeugnisEintraege, ozWoche } from '../supabase/functions/_shared/zuteilungen.ts'
 
 /**
- * **Zeugnis und Vortrag: drei Laufzeiten, ein Montag** (T120).
+ * **Zeugnisgeben: drei Laufzeiten, ein Montag** (T120).
  *
- * `oz|<montag>|<id>` und `va|<montag>|<id>` nennen den Montag der Woche, in der
- * der Tag liegt. Den bildet jede Laufzeit selbst:
+ * `oz|<montag>|<id>` nennt den Montag der Woche, in der der Tag liegt. Den
+ * bildet jede Laufzeit selbst:
  *
  * - der **Client** über die Ortszeit (`montagVon`: örtlicher Mittag, `setDate`),
  * - die **Functions** über UTC (`montagUndVersatz` in `_shared/zuteilungen.ts`)
@@ -72,7 +67,6 @@ const VORHER = Date.UTC(2026, 0, 1)
 
 const termin = (wd: number): OzTermin => ({ id: 't1', wd, von: '10:00', bis: '12:00', ort: 'Marktplatz', plaetze: 2 })
 const ozZeile = (datum: string) => ({ id: 'e1', termin_id: 't1', datum, person_id: 'p1', selbst: false })
-const vaZeile = (datum: string) => ({ id: 'v1', datum, zeit: '10:00:00', versammlung: 'Beispielheim', person_id: 'p1' })
 const NAMEN = new Map([['p1', 'Anna Beispiel']])
 
 describe.each(ZONEN)('Zeitzone %s', (zone, versatzMinuten) => {
@@ -92,26 +86,18 @@ describe.each(ZONEN)('Zeitzone %s', (zone, versatzMinuten) => {
   it.each(RAENDER)('%s → %s (%s)', (tag, montag) => {
     // Client und Function nennen denselben Montag …
     expect(ozTaskKey({ id: 'e1', datum: tag })).toBe(`oz|${montag}|e1`)
-    expect(vaTaskKey({ id: 'v1', datum: tag })).toBe(`va|${montag}|v1`)
     expect(ozWoche(tag)).toBe(montag)
     const [oz] = offeneZeugnisEintraege([ozZeile(tag)], [termin(fromIso(tag).getDay())], NAMEN, new Map(), VORHER)
-    const [va] = offeneVortraegeAuswaerts([vaZeile(tag)], NAMEN, new Map(), VORHER)
     expect(oz?.key).toBe(`oz|${montag}|e1`)
-    expect(va?.key).toBe(`va|${montag}|v1`)
     // … und denselben Termin: „Meine Aufgaben" und die Erinnerung lesen sich gleich.
     expect(oz?.eintrag.datum).toBe(ozTerminText(tag, termin(0)))
-    expect(va?.eintrag.datum).toBe(vaTerminText({ datum: tag, zeit: '10:00', versammlung: 'Beispielheim' }))
   })
 
   it.each(RAENDER)('%s: eine Zusage aus dem Client kennt die Function', (tag) => {
     // Der Ablauf über die Grenze hinweg: Der Bruder bestätigt im Browser, der
     // Versand am nächsten Morgen sucht die Zusage — und erinnert nicht mehr.
-    const zusagen = new Map([
-      [ozTaskKey({ id: 'e1', datum: tag }), 'bestätigt'],
-      [vaTaskKey({ id: 'v1', datum: tag }), 'bestätigt'],
-    ])
+    const zusagen = new Map([[ozTaskKey({ id: 'e1', datum: tag }), 'bestätigt']])
     expect(offeneZeugnisEintraege([ozZeile(tag)], [termin(fromIso(tag).getDay())], NAMEN, zusagen, VORHER)).toEqual([])
-    expect(offeneVortraegeAuswaerts([vaZeile(tag)], NAMEN, zusagen, VORHER)).toEqual([])
   })
 
   it('Neujahr steht als Freitag im Termin, nicht als Donnerstag', () => {
@@ -130,13 +116,13 @@ describe.each(ZONEN)('Zeitzone %s', (zone, versatzMinuten) => {
 const SCHEMA = readFileSync(join(process.cwd(), 'supabase/schema.sql'), 'utf8')
 
 /**
- * Der Zweig von `task_gehoert_mir` für eine Schlüsselform — bis zu seinem
- * eigenen `end if;` am Zeilenanfang, nicht bis zum ersten (`if meine is null
- * then return false; end if;` steht gleich in der zweiten Zeile).
+ * Der Zweig von `task_gehoert_mir` für `oz|` — bis zu seinem eigenen `end if;`
+ * am Zeilenanfang, nicht bis zum ersten (`if meine is null then return false;
+ * end if;` steht gleich in der zweiten Zeile).
  */
-function zweig(form: 'oz' | 'va'): string {
-  const ab = SCHEMA.indexOf(`  if n = 3 and teile[1] = '${form}' then`)
-  if (ab < 0) throw new Error(`Zweig für ${form}| in task_gehoert_mir nicht gefunden — Probe nachziehen`)
+function zweig(): string {
+  const ab = SCHEMA.indexOf("  if n = 3 and teile[1] = 'oz' then")
+  if (ab < 0) throw new Error('Zweig für oz| in task_gehoert_mir nicht gefunden — Probe nachziehen')
   return SCHEMA.slice(ab, SCHEMA.indexOf('\n  end if;', ab))
 }
 
@@ -149,16 +135,15 @@ function sqlWochentag(einheit: string, tag: string): number {
 }
 
 /** `to_char(x.datum - (extract(<einheit> from x.datum)::int - <n>), 'YYYY-MM-DD') = teile[2]`, nachgerechnet. */
-function sqlMontag(form: 'oz' | 'va', tag: string): string {
-  const m = /to_char\((\w+)\.datum - \(extract\((\w+) from \1\.datum\)::int - (\d+)\), 'YYYY-MM-DD'\) = teile\[2\]/.exec(zweig(form))
-  if (!m) throw new Error(`Montagsrechnung im Zweig ${form}| hat eine neue Form — Probe nachziehen`)
+function sqlMontag(tag: string): string {
+  const m = /to_char\((\w+)\.datum - \(extract\((\w+) from \1\.datum\)::int - (\d+)\), 'YYYY-MM-DD'\) = teile\[2\]/.exec(zweig())
+  if (!m) throw new Error('Montagsrechnung im Zweig oz| hat eine neue Form — Probe nachziehen')
   return tagNach(tag, -(sqlWochentag(m[2]!, tag) - Number(m[3])))
 }
 
 describe('Datenbank: task_gehoert_mir bildet denselben Montag', () => {
   it.each(RAENDER)('%s → %s (%s)', (tag, montag) => {
-    expect(sqlMontag('oz', tag)).toBe(montag)
-    expect(sqlMontag('va', tag)).toBe(montag)
+    expect(sqlMontag(tag)).toBe(montag)
   })
 })
 

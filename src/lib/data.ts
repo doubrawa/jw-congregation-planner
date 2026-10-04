@@ -30,7 +30,6 @@ import type {
   MeetingTimes,
   OzEintrag,
   OzTermin,
-  VortragAuswaerts,
   WeitererPlan,
   PlanEintrag,
   Member,
@@ -150,39 +149,6 @@ function ozEintragToRow(e: OzEintrag, congregationId: string) {
   }
 }
 
-/** Redner auswärts (T120, Phase 4): ein Vortrag, eine Zeile. */
-interface VortragAuswaertsRow {
-  id: string
-  datum: string
-  zeit: string
-  versammlung: string
-  nummer: number | null
-  person_id: string | null
-}
-
-function vortragAuswaertsFromRow(r: VortragAuswaertsRow): VortragAuswaerts {
-  return {
-    id: r.id,
-    datum: r.datum,
-    // `time` kommt als „10:00:00" — die App führt „10:00".
-    zeit: kurzeZeit(r.zeit, '10:00'),
-    versammlung: r.versammlung,
-    nummer: r.nummer,
-    pid: r.person_id,
-  }
-}
-
-function vortragAuswaertsToRow(v: VortragAuswaerts, congregationId: string) {
-  return {
-    id: v.id,
-    congregation_id: congregationId,
-    datum: v.datum,
-    zeit: v.zeit,
-    versammlung: v.versammlung,
-    nummer: v.nummer,
-    person_id: v.pid,
-  }
-}
 
 /** Weitere Pläne (T120, Phase 5): ein Plan, eine Zeile. */
 interface PlanRow {
@@ -623,7 +589,6 @@ export interface CongregationData {
   /** Öffentliches Zeugnisgeben (T120): Termine und die Einträge ab `OZ_RUECKBLICK_TAGE` zurück. */
   ozTermine: OzTermin[]
   ozEintraege: OzEintrag[]
-  auswaerts: VortragAuswaerts[]
   /** Weitere Pläne (T120, Phase 5), deren Zeitraum frühestens ein Vierteljahr zurück endet. */
   plaene: WeitererPlan[]
   planEintraege: PlanEintrag[]
@@ -685,7 +650,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .order('start', { ascending: false })
     .limit(WEEK_LIMIT)
 
-  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, ozTerminRows, ozEintragRows, auswaertsRows, planRows, planEintragRows] = await Promise.all([
+  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, ozTerminRows, ozEintragRows, planRows, planEintragRows] = await Promise.all([
     supabase.from('congregations').select(CONG_SPALTEN.join(', ')).eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
@@ -741,14 +706,6 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       .eq('congregation_id', congregationId)
       .gte('datum', ozLadeAb())
       .order('datum'),
-    // Redner auswärts (T120, Phase 4): ab einem Vierteljahr zurück — der Plan
-    // zeigt die letzten als „vorbei". Ein Verkündiger bekommt nur seine (RLS).
-    supabase
-      .from('vortraege_auswaerts')
-      .select('id, datum, zeit, versammlung, nummer, person_id')
-      .eq('congregation_id', congregationId)
-      .gte('datum', ozLadeAb())
-      .order('datum'),
     // Weitere Pläne (T120, Phase 5): was frühestens ein Vierteljahr zurück
     // endet — die abgeschlossenen stehen beim Planen noch eine Weile als
     // Rückblick da. Ein Mitglied bekommt nur, was es sehen darf (RLS).
@@ -790,8 +747,6 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // Ebenso das öffentliche Zeugnisgeben (T120, Phase 3).
   if (ozTerminRows.error) console.error('[oz_termine]', ozTerminRows.error.message)
   if (ozEintragRows.error) console.error('[oz_eintraege]', ozEintragRows.error.message)
-  // Und die Vorträge auswärts (Phase 4).
-  if (auswaertsRows.error) console.error('[vortraege_auswaerts]', auswaertsRows.error.message)
   // Und die weiteren Pläne (Phase 5).
   if (planRows.error) console.error('[plaene]', planRows.error.message)
   if (planEintragRows.error) console.error('[plan_eintraege]', planEintragRows.error.message)
@@ -890,7 +845,6 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     gruppenbesuche: ((besuchRows.data ?? []) as GruppenbesuchRow[]).map(gruppenbesuchFromRow),
     ozTermine: ((ozTerminRows.data ?? []) as OzTerminRow[]).map(ozTerminFromRow),
     ozEintraege: ((ozEintragRows.data ?? []) as OzEintragRow[]).map(ozEintragFromRow),
-    auswaerts: ((auswaertsRows.data ?? []) as VortragAuswaertsRow[]).map(vortragAuswaertsFromRow),
     plaene: planListe,
     planEintraege: ((planEintragRows.data ?? []) as PlanEintragRow[])
       .map(planEintragFromRow)
@@ -1298,19 +1252,6 @@ export function saveOzEintraege(congregationId: string, neu: OzEintrag[], entfer
 }
 
 /**
- * Vorträge auswärts (T120, Phase 4) — wie die Gruppenbesuche: geschrieben wird,
- * was dieser Planer angelegt oder geändert hat, gelöscht, was er gestrichen hat.
- */
-export function saveVortraegeAuswaerts(
-  congregationId: string,
-  vortraege: VortragAuswaerts[],
-  entfernt: string[] = [],
-): void {
-  if (!supabase) return
-  void zeilenRun(loeschenDannSchreiben(supabase, 'vortraege_auswaerts', congregationId, vortraege, entfernt, vortragAuswaertsToRow))
-}
-
-/**
  * Weitere Pläne (T120, Phase 5): Pläne und Einträge in **einer** Schlange.
  * Ein neuer Eintrag zeigt auf einen Plan, der womöglich noch im Bündel wartet
  * („Neuer Plan" und gleich „Reihum verteilen"); der Plan geht deshalb vorher
@@ -1606,17 +1547,8 @@ export function sendZeugnisPlan(heute: string): Promise<PlanVersand | null> {
   return planSenden({ action: 'zeugnis', heute })
 }
 
-/**
- * „Plan senden" bei den Vorträgen auswärts (T120, Phase 4): jeder Redner, der
- * einen kommenden Vortrag noch nicht bestätigt hat und davon noch nichts weiß.
- * Wie beim Zeugnisgeben über alle kommenden Vorträge, nicht je Woche.
- */
-export function sendAuswaertsPlan(heute: string): Promise<PlanVersand | null> {
-  return planSenden({ action: 'auswaerts', heute })
-}
-
-/** Der eine Aufruf hinter den drei „Plan senden" — bis zum 3.10.2026 dreimal abgeschrieben. */
-async function planSenden(body: { action: 'plan' | 'zeugnis' | 'auswaerts'; heute: string; weekStart?: string }): Promise<PlanVersand | null> {
+/** Der eine Aufruf hinter den „Plan senden" — bis zum 3.10.2026 dreimal abgeschrieben. */
+async function planSenden(body: { action: 'plan' | 'zeugnis'; heute: string; weekStart?: string }): Promise<PlanVersand | null> {
   if (!supabase) return null
   const { data, error } = await supabase.functions.invoke('send-plan', { body })
   if (error) {

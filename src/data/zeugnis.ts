@@ -380,8 +380,7 @@ export function ozEntzogeneZusagen(
  * Die eigenen Einträge als **Aufgaben** — das Gegenstück zu `deriveMyFsTasks`
  * für das öffentliche Zeugnisgeben. Vergangenes fällt heraus wie dort
  * (`MyTask.at` ist der Kalendertag; die Liste filtert danach). Die Rolle steht
- * kanonisch deutsch (`OZ_DIENST`), übersetzt wird beim Anzeigen — wie bei den
- * Vorträgen auswärts.
+ * kanonisch deutsch (`OZ_DIENST`), übersetzt wird beim Anzeigen.
  */
 export function deriveMyOzTasks(
   termine: readonly OzTermin[],

@@ -14,8 +14,6 @@ import { AutoAssignPanel } from './AutoAssignPanel'
 import { S89Bogen } from './S89Bogen'
 import { FsBereichTabs } from './FsBereichTabs'
 import { aktiverFsBereich } from './fs-bereiche'
-import { useVaKonflikte, useVaReiter } from '../components/useVaReiter'
-import { AuswaertsPlan } from './AuswaertsPlan'
 import { WeiterePlaenePlan } from './WeiterePlaenePlan'
 import { GruppenbesuchePlan } from './GruppenbesuchePlan'
 import { ZeugnisPlan } from './ZeugnisPlan'
@@ -39,13 +37,9 @@ import './planen.css'
  * Predigtdienstes. Welches gerade gezeigt wird, sagt der Reiter (`themaVon`).
  */
 export function PlanenScreen() {
-  const { state, dispatch } = useApp()
+  const { state } = useApp()
   const myFsGroup = aufseherGruppe(state.planner, state.groups, state.personId)
   const fsOverseer = !state.planner && myFsGroup !== null
-  const va = useVaReiter()
-  // Einmal gerechnet und hinuntergereicht: Der Streifen zeichnet den Körper
-  // dreimal, und jede Instanz rechnete sonst selbst.
-  const vaKonflikte = useVaKonflikte()
 
   // Die Weiteren Pläne (T120, Phase 5) sind ein eigenes Thema ohne Woche.
   // Planen darf sie nur ein Planer; der Gruppenaufseher landet hier gar nicht
@@ -55,26 +49,6 @@ export function PlanenScreen() {
       <section className="screen">
         <ThemaKopf thema="weitere" />
         <WeiterePlaenePlan />
-      </section>
-    )
-  }
-
-  // Die Redner auswärts (T120, Phase 4) haben keine Woche — ohne Streifen,
-  // aber mit den Reitern der Zusammenkünfte, unter denen sie stehen.
-  if (va.aktiv && !fsOverseer) {
-    return (
-      <section className="screen">
-        <ThemaKopf thema="zusammenkuenfte" />
-        <MeetingTabs
-          className="plan-tabs"
-          tab={state.tab}
-          week={state.weeks[state.week]}
-          showEdit={state.weeks.length > 0}
-          showVa
-          vaKonflikte={vaKonflikte.length}
-          onChange={(tab) => dispatch({ type: 'setTab', tab })}
-        />
-        <AuswaertsPlan konflikte={vaKonflikte} />
       </section>
     )
   }
@@ -104,13 +78,13 @@ export function PlanenScreen() {
   // nächste Woche — und übernimmt das Wischen.
   return (
     <WeekStrip>
-      <PlanenBody vaKonflikte={vaKonflikte.length} />
+      <PlanenBody />
     </WeekStrip>
   )
 }
 
 /** Planung EINER Woche; welche, sagt der Zustand (im Streifen überschrieben). */
-function PlanenBody({ vaKonflikte }: { vaKonflikte: number }) {
+function PlanenBody() {
   const { state, dispatch } = useApp()
   const { t } = useT()
   // Anzeige in der Programmsprache des Nutzers (Sprachvariante, falls geholt);
@@ -123,8 +97,6 @@ function PlanenBody({ vaKonflikte }: { vaKonflikte: number }) {
   const fsOverseer = !state.planner && myFsGroup !== null
   const isFs = state.tab === 'fs' || fsOverseer
   const thema = isFs ? 'predigtdienst' : 'zusammenkuenfte'
-  // Der Reiter „Redner auswärts" steht beim Planen für jeden Planer da (T120).
-  const va = useVaReiter()
 
   // Noch keine Wochen (z. B. frisch eingerichtete Versammlung) → Hinweis. Im
   // Predigtdienst bleibt der Grundplan erreichbar.
@@ -133,17 +105,6 @@ function PlanenBody({ vaKonflikte }: { vaKonflikte: number }) {
       <section className="screen">
         <ThemaKopf thema={thema} />
         {isFs && <FsBereichTabs />}
-        {/* Die Redner auswärts brauchen keine Woche — ihr Reiter bleibt
-            erreichbar, auch bevor die erste importiert ist. */}
-        {!isFs && va.sichtbar && (
-          <MeetingTabs
-            className="plan-tabs"
-            tab={state.tab}
-            showVa
-            vaKonflikte={vaKonflikte}
-            onChange={(tab) => dispatch({ type: 'setTab', tab })}
-          />
-        )}
         <div className="panel panel--lead" data-farbe="neutral">
           <h2 className="panel-label">{t.keineWochenTitel}</h2>
           <p className="prog-meta">{t.keineWochenHinweis}</p>
@@ -191,8 +152,6 @@ function PlanenBody({ vaKonflikte }: { vaKonflikte: number }) {
           tab={state.tab}
           week={rawWeek}
           showEdit
-          showVa={va.sichtbar}
-          vaKonflikte={vaKonflikte}
           onChange={(tab) => dispatch({ type: 'setTab', tab })}
         />
       )}

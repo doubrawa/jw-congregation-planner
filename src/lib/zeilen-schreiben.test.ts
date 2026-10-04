@@ -49,11 +49,10 @@ import {
   saveGruppenbesuche,
   saveOzEintraege,
   saveOzTermine,
-  saveVortraegeAuswaerts,
   setKonfliktMelder,
   setSchreibfehlerMelder,
 } from './data'
-import type { FsRule, Gruppenbesuch, OzEintrag, OzTermin, VortragAuswaerts } from '../data/types'
+import type { FsRule, Gruppenbesuch, OzEintrag, OzTermin } from '../data/types'
 
 const termin: OzTermin = { id: 't1', wd: 3, von: '10:00', bis: '12:00', ort: 'Marktplatz', plaetze: 2 }
 const eintrag = (id: string, pid = 'x1'): OzEintrag => ({ id, terminId: 't1', datum: '2026-09-09', pid, selbst: false })
@@ -151,7 +150,6 @@ describe('Öffentliches Zeugnisgeben: was die Datenbank abweist', () => {
 
 describe('Die übrigen Tabellen „eine Zeile je …"', () => {
   const besuch: Gruppenbesuch = { id: 'b1', woche: '2026-10-05', grp: 'g1', pid: 'p1' }
-  const vortrag: VortragAuswaerts = { id: 'v1', datum: '2026-09-13', zeit: '10:00', versammlung: 'B', nummer: null, pid: 'p1' }
   const regel = { id: 'r1', grp: null, wd: 6, time: '09:30', place: 'Saal', monthly: 0, skipCong: false } as FsRule
 
   it('zwei Planer, dieselbe Gruppe in derselben Woche: der zweite lädt nach', async () => {
@@ -162,9 +160,9 @@ describe('Die übrigen Tabellen „eine Zeile je …"', () => {
     expect(schreibfehler).not.toHaveBeenCalled()
   })
 
-  it('ein Redner, den es nicht mehr gibt (23503): nachladen', async () => {
-    db.zustand.abweisen = () => ({ code: '23503', message: 'vortraege_auswaerts_person_fk' })
-    saveVortraegeAuswaerts('c1', [vortrag])
+  it('ein Besucher, den es nicht mehr gibt (23503): nachladen', async () => {
+    db.zustand.abweisen = () => ({ code: '23503', message: 'gruppenbesuche_person_fk' })
+    saveGruppenbesuche('c1', [besuch])
     await ruhe()
     expect(konflikt).toHaveBeenCalledTimes(1)
   })

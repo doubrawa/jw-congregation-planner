@@ -1330,7 +1330,7 @@ export function kennungVon(name: string, pid?: string): string {
  * zeigt sie in den Quadraten.
  */
 
-export type ConflictKind = 'absent' | 'auswaerts' | 'double' | 'helperTask' | 'fsAbsent' | 'fsDouble'
+export type ConflictKind = 'absent' | 'double' | 'helperTask' | 'fsAbsent' | 'fsDouble'
 
 export interface Conflict {
   kind: ConflictKind
@@ -1436,13 +1436,6 @@ export function weekConflicts(
   services: Service[],
   tab?: MeetingKey,
   abwesend: AbsenceSet = KEINE_ABWESENHEIT,
-  /**
-   * Wer an dem Tag als Redner in einer anderen Versammlung spricht (T120,
-   * Phase 4, `buildAuswaerts`). Steht er trotzdem in der eigenen Zusammenkunft,
-   * nennt das Banner diesen Grund statt „abwesend" — auch wenn `abwesend` ihn
-   * mitzählt (die Auto-Zuteilung fragt nur das Ob).
-   */
-  auswaerts: AbsenceSet = KEINE_ABWESENHEIT,
 ): Conflict[] {
   const week = weeks[wi]
   if (!week) return []
@@ -1456,17 +1449,13 @@ export function weekConflicts(
   const tabs = (tab ? [tab] : MEETING_TABS).filter((tb) => !istAusgefallen(week, tb))
   const belegt = new Map(tabs.map((tb) => [tb, belegungen(week[tb], services, werIst)] as const))
 
-  // absent: in dieser Woche abwesend, aber eingeteilt — oder an dem Tag als
-  // Redner auswärts (T120): derselbe Konflikt, ein anderer Grund.
+  // absent: in dieser Woche abwesend, aber eingeteilt
   for (const [tb, { programm, helper }] of belegt) {
     const gesehen = new Set<string>()
     for (const b of [...programm, ...helper]) {
       if (gesehen.has(b.kennung)) continue
       gesehen.add(b.kennung)
-      if (!nachId.has(b.kennung)) continue
-      if (istAbwesend(auswaerts, b.kennung, wi, tb)) {
-        conflicts.push({ kind: 'auswaerts', name: b.name, kennung: b.kennung, tab: tb })
-      } else if (istAbwesend(abwesend, b.kennung, wi, tb)) {
+      if (nachId.has(b.kennung) && istAbwesend(abwesend, b.kennung, wi, tb)) {
         conflicts.push({ kind: 'absent', name: b.name, kennung: b.kennung, tab: tb })
       }
     }

@@ -31,7 +31,6 @@ import {
   buildDemoWeeks,
   CONGREGATION,
   DEMO_ABSENCES,
-  DEMO_AUSWAERTS,
   DEMO_FS_RULES,
   DEMO_GROUPS,
   DEMO_GRUPPENBESUCHE,
@@ -47,7 +46,6 @@ import {
   DEMO_PLANNER,
   DEMO_SERVICES,
   DEMO_UNBESTAETIGT,
-  DEMO_VA_ZUSAGEN,
 } from './testdaten'
 
 /**
@@ -108,7 +106,7 @@ export interface DebugHash {
    * **eigenen** Predigtdienstgruppe.
    */
   me?: string
-  tab?: MeetingTab // Programm/Planen-Tab (mid|we|fs|va|wp) — für Doku-Screenshots
+  tab?: MeetingTab // Programm/Planen-Tab (mid|we|fs|wp) — für Doku-Screenshots
   fsBereich?: FsBereich // fb=<treffpunkte|gruppenbesuche|zeugnis|grundplan> — Reiter im Predigtdienst (T120)
   planner?: boolean // Rechte erzwingen (pl=0 Verkündiger, pl=1 Planer)
   shot?: boolean // Screenshot-Modus: Spaltenschatten aus (randloses Zuschneiden)
@@ -137,7 +135,7 @@ export function parseDebugHash(hash: string, jetzt = Date.now()): DebugHash | nu
   const me = p.get('me')
   if (me) out.me = me
   const tab = p.get('tab')
-  if (tab === 'mid' || tab === 'we' || tab === 'fs' || tab === 'va' || tab === 'wp') out.tab = tab
+  if (tab === 'mid' || tab === 'we' || tab === 'fs' || tab === 'wp') out.tab = tab
   const fb = p.get('fb')
   if (fb === 'treffpunkte' || fb === 'gruppenbesuche' || fb === 'zeugnis' || fb === 'grundplan') out.fsBereich = fb
   const pl = p.get('pl')
@@ -177,12 +175,10 @@ export function entwicklerStart(hash: string = location.hash): AppState {
     persons: basis.persons.map((p) =>
       DEMO_OZ_PERSONEN.includes(p.id) ? { ...p, priv: { ...p.priv, zeugnis: true } } : p,
     ),
-    // Redner auswärts (T120, Phase 4) ebenso — samt Zusagen.
-    auswaerts: DEMO_AUSWAERTS,
     // Und die Weiteren Pläne (Phase 5).
     plaene: DEMO_PLAENE,
     planEintraege: demoPlanEintraege(),
-    confirmations: { ...basis.confirmations, ...DEMO_OZ_ZUSAGEN, ...DEMO_VA_ZUSAGEN },
+    confirmations: { ...basis.confirmations, ...DEMO_OZ_ZUSAGEN },
     screen: debug?.screen ?? 'start',
     tab: debug?.tab ?? basis.tab,
     fsBereich: debug?.fsBereich ?? basis.fsBereich,

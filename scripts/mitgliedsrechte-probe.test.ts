@@ -14,14 +14,12 @@ import {
   slotSchluessel,
   t120Anlage,
   tagPlus,
-  vaSchluessel,
   wochentag,
   zugangAus,
 } from './mitgliedsrechte-probe.mjs'
 import { helferKey, punktKey } from '../src/data/planning'
 import { isQualified, serviceQualKey } from '../src/data/helpers'
 import { montagVon } from '../src/data/meeting-dates'
-import { vaTaskKey } from '../src/data/auswaerts'
 import { ozTaskKey } from '../src/data/zeugnis'
 import type { PartItem, Person } from '../src/data/types'
 
@@ -269,7 +267,7 @@ describe('T120: Tage und Schlüssel wie in der App', () => {
   /*
     Dieselbe Gefahr wie beim Programmschlüssel oben: Ein Schlüssel, der um
     einen Tag verrutscht, beträfe keinen Eintrag. Die Bestätigung des eigenen
-    Eintrags (18, 27) schiene dann „ZU STRENG" abgewiesen, die fremde (17, 26)
+    Eintrags (18) schiene dann „ZU STRENG" abgewiesen, die fremde (17)
     „abgewiesen — greift", und beides wäre nicht gemessen.
   */
   const tage = (von: string, anzahl: number) => Array.from({ length: anzahl }, (_, i) => tagPlus(von, i))
@@ -293,10 +291,9 @@ describe('T120: Tage und Schlüssel wie in der App', () => {
     }
   })
 
-  it('Zeugnis- und Vortragsschlüssel wie ozTaskKey und vaTaskKey', () => {
+  it('Zeugnisschlüssel wie ozTaskKey', () => {
     for (const datum of ['2099-01-05', '2099-01-11', '2026-10-04', '2026-10-25']) {
       expect(ozSchluessel(datum, 'z1')).toBe(ozTaskKey({ id: 'z1', datum }))
-      expect(vaSchluessel(datum, 'v1')).toBe(vaTaskKey({ id: 'v1', datum }))
     }
   })
 })
@@ -363,7 +360,7 @@ describe('T120: die Anlage erfüllt die Regeln der Datenbank, die mit den Rechte
   })
 
   it('jede Kennung trägt das Kennzeichen — daran findet das Aufräumen genau diese Zeilen', () => {
-    const ids = [a.termin, ...oz, a.vaFremd, a.vaEigen, a.vaVersuch, ...Object.values(a.plaene), a.haushalt, a.planVersuch, ...eintraege, a.besuch!, a.besuchVersuch!].map((z) => z.id)
+    const ids = [a.termin, ...oz, ...Object.values(a.plaene), a.haushalt, a.planVersuch, ...eintraege, a.besuch!, a.besuchVersuch!].map((z) => z.id)
     expect(ids.every((id) => id.startsWith(`${marke}-`))).toBe(true)
     expect(new Set(ids).size).toBe(ids.length)
   })
@@ -386,11 +383,6 @@ describe('T120: die Anlage erfüllt die Regeln der Datenbank, die mit den Rechte
     expect(a.ozFalscherMontag.split('|')[0]).toBe('oz')
     expect(a.ozFalscherMontag.split('|')[2]).toBe(a.ozZugeteilt.id)
     expect(wochentag(a.ozFalscherMontag.split('|')[1]!)).toBe(1)
-  })
-
-  it('Vorträge an einem Sonntag; verlegt wird auf einen anderen Tag', () => {
-    for (const v of [a.vaFremd, a.vaEigen, a.vaVersuch]) expect(wochentag(v.datum)).toBe(0)
-    expect(a.vaVerlegtAuf).not.toBe(a.vaEigen.datum)
   })
 
   it('der fremde Gastgeber in (30) ist, wen die Probe gefunden hat — ohne Angabe der Planer', () => {

@@ -130,7 +130,6 @@ describe('Das dritte Thema', () => {
         gruppenbesuche: [],
         ozTermine: [],
         ozEintraege: [],
-        auswaerts: [],
         plaene: [],
         planEintraege: [],
         absences: [],

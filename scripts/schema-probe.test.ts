@@ -386,7 +386,6 @@ const LAEUFE: Record<string, Lauf[]> = {
         // T120: die Anlage des Planers, die Versuche des Mitglieds, das Aufräumen.
         'POST gruppenbesuche', 'GET gruppenbesuche', 'DELETE gruppenbesuche',
         'POST oz_termine', 'POST oz_eintraege', 'DELETE oz_eintraege', 'DELETE oz_termine', 'PATCH persons',
-        'POST vortraege_auswaerts', 'GET vortraege_auswaerts', 'PATCH vortraege_auswaerts', 'DELETE vortraege_auswaerts',
         'POST plaene', 'GET plaene', 'DELETE plaene', 'POST plan_eintraege', 'GET plan_eintraege', 'DELETE plan_eintraege',
         'POST households', 'DELETE households', 'POST persons', 'DELETE persons',
         // (6) und (6b): der Meldeweg eines Mitglieds seit dem 24.9.2026.
@@ -579,7 +578,7 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
 
   it('mitgliedsrechte-probe (T120): räumt alles weg, was es angelegt hat — die Person des Mitglieds ist wie vorher', async () => {
     const { tabellen, ausgabe, aufrufe } = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
-    for (const t of ['gruppenbesuche', 'oz_termine', 'oz_eintraege', 'vortraege_auswaerts', 'plaene', 'plan_eintraege']) {
+    for (const t of ['gruppenbesuche', 'oz_termine', 'oz_eintraege', 'plaene', 'plan_eintraege']) {
       expect((tabellen[t] ?? []).filter(istProbe), t).toEqual([])
     }
     expect((tabellen.confirmations ?? []).filter((z) => String(z.task_key).includes('PROBE-'))).toEqual([])

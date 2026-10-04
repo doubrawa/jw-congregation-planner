@@ -180,8 +180,6 @@ let reminders: { first: number; last: number; repeat: boolean }
 /** Öffentliches Zeugnisgeben (T120): Termine und Einträge, wie sie in der Datenbank stehen. */
 let ozTermine: unknown[]
 let ozEintraege: { id: string; termin_id: string; datum: string; person_id: string; selbst: boolean }[]
-/** Vorträge auswärts (T120, Phase 4). */
-let vortraege: { id: string; datum: string; zeit: string; versammlung: string; person_id: string | null }[]
 /**
  * Tabellen, die es (noch) nicht gibt — das Schema ist nicht eingespielt.
  *
@@ -221,13 +219,6 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     const ab = decodeURIComponent(/[?&]datum=gte\.([^&]*)/.exec(path)?.[1] ?? '')
     const bis = decodeURIComponent(/[?&]datum=lte\.([^&]*)/.exec(path)?.[1] ?? '9999')
     return jsonRes(ozEintraege.filter((e) => (!nurZugeteilt || !e.selbst) && e.datum >= ab && e.datum <= bis))
-  }
-  if (path.startsWith('vortraege_auswaerts')) {
-    // Ebenso: nur mit Redner, nur im Fenster.
-    const nurMitRedner = /[?&]person_id=not\.is\.null/.test(path)
-    const ab = decodeURIComponent(/[?&]datum=gte\.([^&]*)/.exec(path)?.[1] ?? '')
-    const bis = decodeURIComponent(/[?&]datum=lte\.([^&]*)/.exec(path)?.[1] ?? '9999')
-    return jsonRes(vortraege.filter((v) => (!nurMitRedner || v.person_id) && v.datum >= ab && v.datum <= bis))
   }
   if (path.startsWith('confirmations')) return jsonRes(confirmations)
   if (path.startsWith('members')) return jsonRes(MEMBERS)
@@ -303,7 +294,6 @@ beforeEach(() => {
   reminders = { first: 7, last: 1, repeat: true }
   ozTermine = []
   ozEintraege = []
-  vortraege = []
   fehlendeTabellen = new Set()
   resetPush()
 })
@@ -809,9 +799,8 @@ describe('send-reminders: öffentliches Zeugnisgeben (T120)', () => {
     expect(previewFor(await run(), U_PLANER)).toBeUndefined()
   })
 
-  it.each(['oz_termine', 'oz_eintraege'])('fehlt %s, laufen Zusammenkünfte und Vorträge weiter', async (tabelle) => {
+  it.each(['oz_termine', 'oz_eintraege'])('fehlt %s, laufen die Zusammenkünfte weiter', async (tabelle) => {
     weeks = [{ start: WEEK_START, data: { mid: midMeeting() } }]
-    vortraege = [{ id: 'v1', datum: '2026-09-13', zeit: '10:00:00', versammlung: 'Beispielheim', person_id: 'p-max' }]
     ozEintraege = [eintrag()]
     fehlendeTabellen.add(tabelle)
     const log = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -820,95 +809,8 @@ describe('send-reminders: öffentliches Zeugnisgeben (T120)', () => {
       expect(r.ok).toBe(true)
       const body = previewFor(r, U_MAX)?.body ?? ''
       expect(body).toContain('Schatzgraben')
-      expect(body).toContain('Vers. Beispielheim')
       expect(body).not.toContain('Öffentliches Zeugnisgeben')
       expect(log).toHaveBeenCalledWith(expect.stringContaining('oz_termine/oz_eintraege nicht lesbar'))
-    } finally {
-      log.mockRestore()
-    }
-  })
-})
-
-describe('send-reminders: Vorträge auswärts (T120, Phase 4)', () => {
-  // Sonntag, 13. September — sechs Tage nach „heute" (Montag): an Wiederholungstagen fällig.
-  const vortrag = (patch: Partial<(typeof vortraege)[number]> = {}) => ({
-    id: 'v1',
-    datum: '2026-09-13',
-    zeit: '10:00:00',
-    versammlung: 'Beispielheim',
-    person_id: 'p-max',
-    ...patch,
-  })
-
-  beforeEach(() => {
-    weeks = [] // nur der Vortrag soll in der Erinnerung stehen
-  })
-
-  it('erinnert den Redner, solange er nicht bestätigt hat — mit Tag, Uhrzeit und Versammlung', async () => {
-    vortraege = [vortrag()]
-    expect(previewFor(await run(), U_MAX)?.body).toBe('Sonntag, 13. September · 10:00 · Vers. Beispielheim: Redner')
-  })
-
-  it('wer bestätigt hat, nicht — und ein Vortrag ohne Redner erinnert niemanden', async () => {
-    vortraege = [vortrag()]
-    confirmations = [{ task_key: `va|${WEEK_START}|v1`, status: 'bestätigt' }]
-    expect(previewFor(await run(), U_MAX)).toBeUndefined()
-    confirmations = []
-    vortraege = [vortrag({ person_id: null })]
-    expect((await run()).preview ?? []).toEqual([])
-  })
-
-  it('am Tag der ersten Erinnerung geht auch die Glocke — mit dem Schlüssel des Vortrags', async () => {
-    vortraege = [vortrag({ datum: '2026-09-14' })] // genau 7 Tage = `first`
-    await live()
-    const glocke = writesTo('notifications')
-      .filter((w) => w.method === 'POST')
-      .flatMap((w) => (Array.isArray(w.body) ? w.body : [w.body])) as Record<string, unknown>[]
-    expect(glocke).toEqual([expect.objectContaining({ task_key: 'va|2026-09-14|v1' })])
-  })
-
-  // Dieselben Ränder wie beim Zeugnisgeben (3.10.2026).
-  it('ohne Wiederholung nur an den beiden Haupttagen — dazwischen schweigt sie', async () => {
-    vortraege = [vortrag()] // Sonntag: sechs Tage weg, weder `first` noch `last`
-    reminders = { first: 7, last: 1, repeat: false }
-    expect(previewFor(await run(), U_MAX)).toBeUndefined()
-    // Gegenprobe: Mit Wiederholung kommt sie.
-    reminders = { first: 7, last: 1, repeat: true }
-    expect(previewFor(await run(), U_MAX)).toBeDefined()
-  })
-
-  it('am Tag des Vortrags selbst schweigt sie (last = 1)', async () => {
-    vortraege = [vortrag({ datum: '2026-09-07' })] // heute
-    expect(previewFor(await run(), U_MAX)).toBeUndefined()
-    // Gegenprobe: Mit „am Tag" (last = 0) kommt sie.
-    reminders = { first: 7, last: 0, repeat: true }
-    expect(previewFor(await run(), U_MAX)).toBeDefined()
-  })
-
-  it('ein Redner ohne Push-Abo wird am letzten Erinnerungstag den Planern gemeldet — nur dann', async () => {
-    vortraege = [vortrag({ person_id: 'p-nina', datum: '2026-09-08' })] // Dienstag: einen Tag weg = `last`
-    expect(previewFor(await run(), U_PLANER)?.body).toBe(
-      `${alsFreitext('Nina Nolink')} — Dienstag, 8. September · 10:00 · Vers. Beispielheim: Redner`,
-    )
-    vortraege = [vortrag({ person_id: 'p-nina' })] // Sonntag: ein Wiederholungstag
-    expect(previewFor(await run(), U_PLANER)).toBeUndefined()
-  })
-
-  it('fehlt die Tabelle, laufen Zusammenkünfte und Zeugnisgeben weiter', async () => {
-    weeks = [{ start: WEEK_START, data: { mid: midMeeting() } }]
-    ozTermine = [{ id: 't-mi', wd: 3, von: '10:00:00', bis: '12:00:00', ort: 'Marktplatz' }]
-    ozEintraege = [{ id: 'e1', termin_id: 't-mi', datum: '2026-09-09', person_id: 'p-max', selbst: false }]
-    vortraege = [vortrag()]
-    fehlendeTabellen.add('vortraege_auswaerts')
-    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
-    try {
-      const r = await run()
-      expect(r.ok).toBe(true)
-      const body = previewFor(r, U_MAX)?.body ?? ''
-      expect(body).toContain('Schatzgraben')
-      expect(body).toContain('Öffentliches Zeugnisgeben')
-      expect(body).not.toContain('Beispielheim')
-      expect(log).toHaveBeenCalledWith(expect.stringContaining('vortraege_auswaerts nicht lesbar'))
     } finally {
       log.mockRestore()
     }

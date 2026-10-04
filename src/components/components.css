@@ -575,22 +575,6 @@ select {
   line-height: 1;
 }
 
-/* Die Zahl möglicher Konflikte am Reiter „Redner auswärts" (T120) — in der
-   Farbe des Konflikt-Banners, damit sie auch ohne den Reiter auffällt. */
-.meeting-tab-zahl {
-  display: inline-block;
-  min-width: calc(18px * var(--fs));
-  margin-inline-start: 6px;
-  padding: 0 5px;
-  border-radius: var(--r-pill);
-  background: var(--wein);
-  color: var(--onAcc);
-  font-size: calc(10.5px * var(--fs));
-  font-weight: 700;
-  line-height: calc(18px * var(--fs));
-  text-align: center;
-}
-
 /* ---- Weitere Termine der Woche (T63) --------------------------------------
    Ankündigungen, keine Zuteilungen: kein Chip, kein Status, kein Antippen.
    Bezeichnung und Ort sind die Worte des Planers und stehen unübersetzt da —

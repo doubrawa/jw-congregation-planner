@@ -668,47 +668,6 @@ describe('Eine Zeile je Woche, in der etwas zu tun ist', () => {
     })
   })
 
-  describe('die Redner auswärts stehen dabei (T120, Phase 4)', () => {
-    const vortrag = (id: string, datum: string, pid: string | null) => ({
-      id,
-      datum,
-      zeit: '10:00',
-      versammlung: 'Beispielheim',
-      nummer: null,
-      pid,
-    })
-
-    it('mit Konflikten, Vorträgen ohne Redner und dem Versand — auch Monate voraus', () => {
-      // Bruno spricht am 8. November auswärts, ist an dem Tag aber abwesend
-      // und weiß noch nichts; der Vortrag im Dezember hat noch keinen Redner.
-      const weeks = WOCHEN.map(besetzt)
-      const { container, dispatch } = planer({
-        weeks,
-        confirmations: allesBestaetigt(weeks),
-        auswaerts: [vortrag('v1', '2026-11-08', 'p-b'), vortrag('v2', '2026-12-06', null)],
-        absences: [{ id: 'u', personId: 'p-b', userId: null, from: '2026-11-08', to: '2026-11-08', reason: '' }],
-      })
-      expect(container.querySelector('.dash-plan-text')).toBeNull()
-      const zeile = [...container.querySelectorAll('.dash-plan-woche')].find((z) => z.textContent?.includes(t.vaTab))!
-      expect(chip(zeile, 'konflikte')?.n).toBe('1')
-      expect(chip(zeile, 'offen')).toEqual({ titel: t.offeneTitle, n: '1' })
-      expect(chip(zeile, 'senden')?.n).toBe('1')
-      fireEvent.click(zeile)
-      expect(dispatch).toHaveBeenCalledWith({ type: 'setTab', tab: 'va' })
-      expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte' })
-    })
-
-    it('bestätigt und besetzt: „Alles zugeteilt"', () => {
-      const weeks = WOCHEN.map(besetzt)
-      const { container } = planer({
-        weeks,
-        confirmations: { ...allesBestaetigt(weeks), 'va|2026-11-02|v1': 'bestätigt' },
-        auswaerts: [vortrag('v1', '2026-11-08', 'p-b')],
-      })
-      expect(container.querySelector('.dash-plan-text')?.textContent).toBe(t.dashAllesZugeteilt)
-    })
-  })
-
   it('ist nichts zu tun, schrumpft sie auf eine Zeile „Alles zugeteilt"', () => {
     const weeks = WOCHEN.map(besetzt)
     const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks) })

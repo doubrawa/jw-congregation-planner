@@ -162,29 +162,6 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     expect(rumpf).toContain('e.congregation_id = cong')
   })
 
-  it('einen Vortrag auswärts bestätigt nur sein Redner (T120, Phase 4)', () => {
-    // Derselbe Grund wie beim Zeugnisgeben: ohne eigenen Zweig der Durchlass.
-    // Die Woche im Schlüssel muss zum Tag des Vortrags passen — sonst bestätigte
-    // ein Schlüssel mit erfundener Woche denselben Vortrag ein zweites Mal.
-    const fn = funktionsRuempfe(schema).get('task_gehoert_mir') ?? ''
-    const zweig = fn.indexOf("if n = 3 and teile[1] = 'va' then")
-    const durchlass = fn.indexOf("if n < 3 or teile[2] not in ('mid', 'we') then return true;")
-    expect(zweig).toBeGreaterThan(-1)
-    expect(durchlass).toBeGreaterThan(zweig)
-    const rumpf = fn.slice(zweig, durchlass)
-    expect(rumpf).toContain('v.person_id = meine')
-    expect(rumpf).toContain('v.congregation_id = cong')
-    expect(rumpf).toContain('= teile[2]')
-  })
-
-  it('Vorträge auswärts sieht nur der Redner selbst — und die Planer (T120, Phase 4)', () => {
-    const lesen = richtlinien(schema).get('vortraege_auswaerts_select') ?? ''
-    expect(lesen).toContain('public.is_planner()')
-    expect(lesen).toContain('person_id = public.my_person_id()')
-    // Schreiben nur Planer.
-    expect(richtlinien(schema).get('vortraege_auswaerts_write') ?? '').toContain('public.is_planner()')
-  })
-
   it('Weitere Pläne: Entwürfe sieht nur ein Planer, Familien reihum nur, wer darin steht (T120, Phase 5)', () => {
     const fn = funktionsRuempfe(schema).get('plan_sichtbar') ?? ''
     // Die Funktion liest dieselbe Tabelle, deren Richtlinie sie ist — ohne
@@ -296,6 +273,26 @@ describe('kein Altbestand mehr im Schema', () => {
     const fn = funktionsRuempfe(schema).get('mein_anzeigename') ?? ''
     expect(fn).toContain("btrim(p.fn || ' ' || p.ln)")
     expect(fn).not.toContain('coalesce')
+  })
+
+  it('die Redner auswärts sind weg — Tabelle, Richtlinien und Schlüsselzweig (4.10.2026)', () => {
+    expect(treffer(schema, TABELLEN)).not.toContain('vortraege_auswaerts')
+    expect([...richtlinien(schema).keys()].filter((r) => r.startsWith('vortraege_auswaerts'))).toEqual([])
+    expect(funktionsRuempfe(schema).get('task_gehoert_mir') ?? '').not.toContain("teile[1] = 'va'")
+    // Eine bestehende Datenbank verliert die Tabelle beim nächsten Einspielen.
+    expect(normiert(schema)).toContain('drop table if exists public.vortraege_auswaerts cascade;')
+  })
+
+  it('das Aufräumen steht hinter den Tabellen, aus denen es löscht', () => {
+    // Auf einer frischen Datenbank liefe ein `delete from` vor seinem
+    // `create table` ins Leere — und das Einspielen bräche dort ab.
+    for (const m of schema.matchAll(/^delete from public\.(\w+)/gm)) {
+      const angelegt = schema.indexOf(`create table if not exists public.${m[1]} (`)
+      expect(angelegt, m[1]).toBeGreaterThan(-1)
+      expect(angelegt, m[1]).toBeLessThan(m.index)
+    }
+    // Gegenprobe: Es gibt solche Zeilen überhaupt.
+    expect([...schema.matchAll(/^delete from public\.(\w+)/gm)].length).toBeGreaterThan(0)
   })
 })
 

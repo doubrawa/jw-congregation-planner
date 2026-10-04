@@ -121,21 +121,6 @@ Uhrzeit und wer dabei ist.
 - **Absagen** gibt deinen Platz wieder frei, damit ihn jemand anders übernehmen
   kann; die Admins erfahren es.
 
-### Redner auswärts
-
-Hältst du öffentliche Vorträge in **anderen** Versammlungen, stehen sie unter
-**Zusammenkünfte** im Reiter **Redner auswärts** – sobald einer ansteht. Du
-siehst nur deine eigenen: Tag, Uhrzeit, Versammlung und, wo eingetragen, die
-Nummer der Gliederung.
-
-![Redner auswärts](screenshots/verkuendiger-redner-auswaerts.png)
-
-- **Bestätigen** wie jede andere Aufgabe – hier oder unter „Meine Aufgaben".
-  Bis dahin erinnert dich die App, wie bei jeder anderen Zuteilung.
-- **Ich bin verhindert**: Der Vortrag bleibt stehen, die Admins erfahren es mit
-  Tag und Versammlung und kümmern sich um einen anderen Redner.
-- An dem Tag teilt dich die Planung in der eigenen Zusammenkunft nicht ein.
-
 ### Weitere Pläne
 
 Gibt es einen Plan, der dich betrifft, steht im Menü **Weitere Pläne**. Dort

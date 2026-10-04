@@ -294,15 +294,15 @@ describe('loadCongregationData', () => {
 })
 
 /**
- * **Die sechs Tabellen aus T120** — Gruppenbesuche, Zeugnis-Termine und
- * -Einträge, Vorträge auswärts, Weitere Pläne und ihre Einträge.
+ * **Die fünf Tabellen aus T120** — Gruppenbesuche, Zeugnis-Termine und
+ * -Einträge, Weitere Pläne und ihre Einträge.
  *
  * Bis zum 3.10.2026 lief keine ihrer Zuordnungen je in einem Test: Der Stub
  * gab für sie nichts zurück, also blieb `…FromRow` stumm. Ein falscher
  * Spaltenname wäre erst im Betrieb aufgefallen — als leerer Plan.
  */
 describe('loadCongregationData: die Pläne aus T120', () => {
-  const T120 = ['gruppenbesuche', 'oz_termine', 'oz_eintraege', 'vortraege_auswaerts', 'plaene', 'plan_eintraege']
+  const T120 = ['gruppenbesuche', 'oz_termine', 'oz_eintraege', 'plaene', 'plan_eintraege']
 
   /** Normale Antworten plus je eine Zeile der neuen Tabellen — einzelne per Argument überschreiben. */
   function mitPlaenen(over: Partial<Record<string, Array<{ data: unknown; error: unknown }>>> = {}) {
@@ -310,9 +310,6 @@ describe('loadCongregationData: die Pläne aus T120', () => {
       gruppenbesuche: [{ data: [{ id: 'b1', woche: '2026-10-05', grp: 'g1', person_id: 'p1' }], error: null }],
       oz_termine: [{ data: [{ id: 't1', wd: 3, von: '10:00:00', bis: '12:30:00', ort: 'Marktplatz', plaetze: 2 }], error: null }],
       oz_eintraege: [{ data: [{ id: 'e1', termin_id: 't1', datum: '2026-09-09', person_id: 'p1', selbst: true }], error: null }],
-      vortraege_auswaerts: [
-        { data: [{ id: 'v1', datum: '2026-09-13', zeit: '14:30:00', versammlung: 'Beispielheim', nummer: 12, person_id: null }], error: null },
-      ],
       plaene: [{ data: [{ id: 'pl1', vorlage: 'saal', name: 'Winterdienst', von: '2026-09-07', bis: '2026-11-29', entwurf: false }], error: null }],
       plan_eintraege: [
         {
@@ -343,9 +340,6 @@ describe('loadCongregationData: die Pläne aus T120', () => {
     expect(d.gruppenbesuche).toEqual([{ id: 'b1', woche: '2026-10-05', grp: 'g1', pid: 'p1' }])
     expect(d.ozTermine).toEqual([{ id: 't1', wd: 3, von: '10:00', bis: '12:30', ort: 'Marktplatz', plaetze: 2 }])
     expect(d.ozEintraege).toEqual([{ id: 'e1', terminId: 't1', datum: '2026-09-09', pid: 'p1', selbst: true }])
-    expect(d.auswaerts).toEqual([
-      { id: 'v1', datum: '2026-09-13', zeit: '14:30', versammlung: 'Beispielheim', nummer: 12, pid: null },
-    ])
     expect(d.plaene).toEqual([
       { id: 'pl1', vorlage: 'saal', name: 'Winterdienst', von: '2026-09-07', bis: '2026-11-29', entwurf: false },
     ])
@@ -353,7 +347,7 @@ describe('loadCongregationData: die Pläne aus T120', () => {
     expect(d.planEintraege).toEqual([{ id: 'pe1', planId: 'pl1', datum: '2026-09-07', grp: 'g1', pid: null, mahlzeit: null }])
   })
 
-  it('jede der sechs Abfragen nennt die eigene Versammlung', async () => {
+  it('jede der fünf Abfragen nennt die eigene Versammlung', async () => {
     mitPlaenen()
     await loadCongregationData('u1')
     for (const tabelle of T120) {
@@ -361,13 +355,12 @@ describe('loadCongregationData: die Pläne aus T120', () => {
     }
   })
 
-  it('Einträge, Vorträge und Pläne ab einem Vierteljahr zurück — Besuche, Termine und Plan-Einträge ohne Grenze', async () => {
+  it('Einträge und Pläne ab einem Vierteljahr zurück — Besuche, Termine und Plan-Einträge ohne Grenze', async () => {
     mitPlaenen()
     await loadCongregationData('u1')
     // 91 Tage vor Montag, dem 7. September 2026.
     const gte = (tabelle: string) => store.filter.find(([t, m]) => t === tabelle && m === 'gte')
     expect(gte('oz_eintraege')).toEqual(['oz_eintraege', 'gte', 'datum', '2026-06-08'])
-    expect(gte('vortraege_auswaerts')).toEqual(['vortraege_auswaerts', 'gte', 'datum', '2026-06-08'])
     // Bei den Plänen zählt das Ende: Ein laufender Plan kann lange vorher begonnen haben.
     expect(gte('plaene')).toEqual(['plaene', 'gte', 'bis', '2026-06-08'])
     expect(gte('gruppenbesuche')).toBeUndefined()
@@ -387,7 +380,6 @@ describe('loadCongregationData: die Pläne aus T120', () => {
       gruppenbesuche: res.data.gruppenbesuche,
       oz_termine: res.data.ozTermine,
       oz_eintraege: res.data.ozEintraege,
-      vortraege_auswaerts: res.data.auswaerts,
       plaene: res.data.plaene,
       plan_eintraege: res.data.planEintraege,
     }

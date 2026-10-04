@@ -254,7 +254,6 @@ describe('Freitextfelder tragen dir="auto"', () => {
     'langSearchPh': 'Suchfeld — nichts, was gespeichert wird',
     'suchen': 'Suchfeld — nichts, was gespeichert wird',
     'liedNrPh': 'Liednummer — eine Zahl',
-    'vaNummerLbl': 'Nummer einer Vortragsgliederung — eine Zahl',
   }
 
   /** Jedes `<input type="text">` (bzw. `<textarea>`) samt seiner Attribute. */

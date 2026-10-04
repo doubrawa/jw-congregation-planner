@@ -25,7 +25,7 @@ import {
   type Abweichungen,
 } from './planung.ts'
 import { makeTr } from './i18n/translate.ts'
-import { fsKey, helferKey, ozKey, punktKey, ratgeberKey, vaKey } from './aufgaben-schluessel.ts'
+import { fsKey, helferKey, ozKey, punktKey, ratgeberKey } from './aufgaben-schluessel.ts'
 
 /* ---- Datenmodell (Teilmengen der Client-Typen aus src/data/types.ts) ---- */
 
@@ -573,67 +573,6 @@ export function offeneZeugnisEintraege(
       woche: tag.montag,
       offset: tag.offset,
       eintrag: { datum, label: OZ_DIENST },
-    })
-  }
-  return out
-}
-
-/* ---- Redner auswärts (T120, Phase 4) -------------------------------------- */
-
-/**
- * „Redner" — die Rolle eines Vortrags auswärts, kanonisch deutsch. Dasselbe
- * Wort wie `ROLE_OWN_SPEAKER` im Client (ein Test hält beide gleich); der
- * Fragment-Übersetzer kennt es längst.
- */
-export const VA_ROLLE = 'Redner'
-
-/**
- * Termin eines Vortrags auswärts: „Sonntag, 8. November · 10:00 · Vers.
- * Südstadt". Die Versammlung steht in der Form, die der Übersetzer schon kennt
- * (`Vers. <Name>`, wie die Herkunft eines Gastredners). Eine Fassung für Client
- * und Functions.
- */
-export function vaTerminText(montag: string, offset: number, zeit: string, versammlung: string): string {
-  return fsTerminText(montag, offset, zeit.slice(0, 5), versammlung ? `Vers. ${versammlung}` : '')
-}
-
-/** Ein Vortrag auswärts, wie die Functions ihn aus `vortraege_auswaerts` lesen. */
-export interface VortragAuswaertsRow {
-  id: string
-  datum: string
-  zeit: string
-  versammlung: string
-  person_id: string | null
-}
-
-/**
- * **Unbestätigte Vorträge auswärts** — nur die mit Redner und nur, was noch
- * ansteht. Wer zugeteilt ist, erfährt es über „Plan senden" und wird erinnert,
- * bis er bestätigt — wie bei jedem anderen Platz. Der Client rechnet seine
- * Vorschau mit dieser Funktion (siehe `offeneZeugnisEintraege`).
- */
-export function offeneVortraegeAuswaerts(
-  vortraege: readonly VortragAuswaertsRow[],
-  namen: ReadonlyMap<string, string>,
-  conf: ReadonlyMap<string, string>,
-  heuteUTC: number,
-): Array<Pending & { woche: string; offset: number; eintrag: Eintrag }> {
-  const out: Array<Pending & { woche: string; offset: number; eintrag: Eintrag }> = []
-  for (const v of vortraege) {
-    if (!v.person_id) continue
-    const tag = montagUndVersatz(v.datum)
-    if (!tag) continue
-    const key = vaKey(tag.montag, v.id)
-    if (conf.has(key)) continue
-    if (terminVorbei(tag.montag, tag.offset, heuteUTC)) continue
-    out.push({
-      name: namen.get(v.person_id) ?? '',
-      pid: v.person_id,
-      label: VA_ROLLE,
-      key,
-      woche: tag.montag,
-      offset: tag.offset,
-      eintrag: { datum: vaTerminText(tag.montag, tag.offset, v.zeit, v.versammlung), label: VA_ROLLE },
     })
   }
   return out

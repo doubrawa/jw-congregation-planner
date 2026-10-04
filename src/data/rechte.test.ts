@@ -110,7 +110,7 @@ describe('Wer welches Thema planen darf (T120)', () => {
   it('die Treffpunkte gehören zum Predigtdienst, die Weiteren Pläne zu sich, alle anderen Reiter zu den Zusammenkünften', () => {
     expect(themaVon('fs')).toBe('predigtdienst')
     expect(themaVon('wp')).toBe('weitere')
-    for (const tab of ['mid', 'we', 'edit', 'va'] as const) expect(themaVon(tab)).toBe('zusammenkuenfte')
+    for (const tab of ['mid', 'we', 'edit'] as const) expect(themaVon(tab)).toBe('zusammenkuenfte')
   })
 
   it('der Planer plant alle drei Themen', () => {

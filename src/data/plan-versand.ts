@@ -292,9 +292,8 @@ function platzNochDa(nachher: Week | undefined, key: string, fsLeer: boolean): b
   // die Nachricht lieber zurück als sie fälschlich zu unterdrücken.
   if (!teile) return true
   if (teile.art === 'fs') return !fsLeer
-  // Pläne ohne Zusammenkunft (öffentliches Zeugnisgeben, Vorträge auswärts)
-  // haben eigene Entzüge und kommen hier nicht vor — aber auch nicht
-  // wegfiltern, wenn doch.
+  // Pläne ohne Zusammenkunft (öffentliches Zeugnisgeben) haben eigene Entzüge
+  // und kommen hier nicht vor — aber auch nicht wegfiltern, wenn doch.
   if (!('tab' in teile)) return true
   if (!nachher) return false
   if (istAusgefallen(nachher, teile.tab)) return false
@@ -325,9 +324,8 @@ export function zuletztGesendet(sentLog: SentLog, weekStart: string): string | n
 
 /**
  * Der jüngste Zeitstempel im Versand-Tagebuch unter den Schlüsseln, die
- * `gehoert` annimmt — für die Woche wie für die Pläne ohne Woche
- * (Zeugnisgeben `oz|`, Vorträge auswärts `va|`). Stand bis zum 3.10.2026
- * dreimal als eigene Schleife da.
+ * `gehoert` annimmt — für die Woche wie für das Zeugnisgeben (`oz|`), einen
+ * Plan ohne Woche. Stand bis zum 3.10.2026 dreimal als eigene Schleife da.
  */
 export function neuesterVersand(sentLog: SentLog, gehoert: (schluessel: string) => boolean): string | null {
   let neuster: string | null = null

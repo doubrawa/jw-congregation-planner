@@ -61,7 +61,6 @@ function makeState(over: Partial<AppState> = {}): AppState {
     gruppenbesuche: [],
     ozTermine: [],
     ozEintraege: [],
-    auswaerts: [],
     plaene: [],
     planEintraege: [],
     absences: [...DEMO_ABSENCES],
@@ -269,25 +268,6 @@ describe('navigate nach Thema (T120)', () => {
     it('aus den Weiteren Plänen gilt dasselbe', () => {
       expect(zuDenZusammenkuenften({ week: 0, tab: 'wp' }, 9)).toMatchObject({ week: 0, tab: 'we' })
     })
-  })
-
-  it('„Redner auswärts" gehört zu den Zusammenkünften — der Menüpunkt lässt den Reiter stehen', () => {
-    // Ein Reiter des eigenen Themas ist kein Grund zum Zurücksetzen — gefragt
-    // über `themaVon`, nicht über eine Liste der Zusammenkunfts-Reiter.
-    for (const screen of ['programm', 'planen'] as const) {
-      const next = reducer(makeState({ planner: true, tab: 'va', screen }), {
-        type: 'navigate', screen, thema: 'zusammenkuenfte',
-      })
-      expect(next.tab, screen).toBe('va')
-    }
-    // Auch der Verkündiger, der seine Vorträge ansieht.
-    const verkuendiger = makeState({ planner: false, personId: 'p9', groups: [], tab: 'va', screen: 'programm' })
-    expect(reducer(verkuendiger, { type: 'navigate', screen: 'programm', thema: 'zusammenkuenfte' }).tab).toBe('va')
-  })
-
-  it('„Redner auswärts" gibt es nur in Programm und Planen — woanders zurück auf die Zusammenkunft', () => {
-    const next = reducer(makeState({ planner: true, tab: 'va', screen: 'programm' }), { type: 'navigate', screen: 'personen' })
-    expect(next).toMatchObject({ screen: 'personen', tab: 'mid' })
   })
 
   it('wer schon bei den Zusammenkünften ist, behält seinen Reiter', () => {
@@ -1479,7 +1459,6 @@ describe('hydrate / setDataStatus', () => {
     gruppenbesuche: [],
     ozTermine: [],
     ozEintraege: [],
-    auswaerts: [],
     plaene: [],
     planEintraege: [],
     absences: [],
@@ -1618,20 +1597,6 @@ describe('hydrate / setDataStatus', () => {
       expect(s).toMatchObject({ screen: 'planen', tab: 'fs', terminGewaehlt: false })
       const nachgeladen = reducer(s, { type: 'hydrate', payload: { ...payload, weeks: wochen } })
       expect(nachgeladen).toMatchObject({ screen: 'planen', tab: 'fs' })
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-
-  it('lässt die Redner auswärts stehen — sie haben keine Woche, zu der man springen könnte (T120)', () => {
-    const wochen = buildDemoWeeks().slice(0, 3).map((w) => ({ ...w }))
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date(2026, 8, 16, 10))
-    try {
-      // Ohne eigene Wahl — so käme ein künftiger Weg dorthin, der nicht über den Reiter führt.
-      const s = makeState({ screen: 'planen', tab: 'va', terminGewaehlt: false, weeks: wochen, week: 0 })
-      const nachgeladen = reducer(s, { type: 'hydrate', payload: { ...payload, weeks: wochen } })
-      expect(nachgeladen).toMatchObject({ screen: 'planen', tab: 'va' })
     } finally {
       vi.useRealTimers()
     }

@@ -248,11 +248,6 @@
   background: var(--acc);
 }
 
-/* Vortrag auswärts (T120): in der Farbe des Reiters „Redner auswärts". */
-.plan-conflict-dot[data-kind='auswaerts'] {
-  background: var(--pet);
-}
-
 /* Offene Zuteilung: Präfix (Zusammenkunft) in Akzentfarbe, Aufgabe dunkel. */
 .plan-open-row {
   display: flex;

@@ -9,7 +9,6 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
-import { deriveMyVaTasks } from '../data/auswaerts'
 import { emptyQualifications } from '../data/helpers'
 import { deriveMyOzTasks } from '../data/zeugnis'
 import { APP_LANGS, isRTL } from './langs'
@@ -29,7 +28,6 @@ import type {
   S89Payload,
   Screen,
   Service,
-  VortragAuswaerts,
   Week,
   WeitererPlan,
 } from '../data/types'
@@ -788,11 +786,10 @@ describe('Rechts-nach-links', () => {
  * **Die Pläne in einer fremden Sprache** (3.10.2026).
  *
  * Die Durchgänge oben kannten die Pläne nicht: Der Bestand hatte keinen Termin
- * fürs Zeugnisgeben, keinen Vortrag auswärts, keinen Besuch und keinen weiteren
- * Plan — keine ihrer Ansichten ging auf. Dabei tragen gerade sie kanonisch
- * deutsche Daten in die Anzeige: den Dienst „Öffentliches Zeugnisgeben", die
- * Rolle „Redner", die Versammlung als „Vers. …" und in „Meine Aufgaben" Termine
- * mit deutschem Wochentag und Monat.
+ * fürs Zeugnisgeben, keinen Besuch und keinen weiteren Plan — keine ihrer
+ * Ansichten ging auf. Dabei tragen gerade sie kanonisch deutsche Daten in die
+ * Anzeige: den Dienst „Öffentliches Zeugnisgeben" und in „Meine Aufgaben"
+ * Termine mit deutschem Wochentag und Monat.
  *
  * Die Uhr steht auf Montag, 7. September 2026. Die Ansichten zeigen nur, was
  * noch kommt; mit der echten Uhr wäre der Bestand irgendwann vorbei und die
@@ -804,7 +801,6 @@ describe('Die Pläne (T120) in einer fremden Sprache', () => {
     { id: 'e1', terminId: 't1', datum: '2026-09-09', pid: ICH.id, selbst: false },
     { id: 'e2', terminId: 't1', datum: '2026-09-16', pid: ANDER.id, selbst: true },
   ]
-  const VORTRAG: VortragAuswaerts = { id: 'v1', datum: '2026-09-13', zeit: '10:00', versammlung: 'Kalvo', nummer: 12, pid: ICH.id }
   const BESUCH: Gruppenbesuch = { id: 'b1', woche: '2026-09-07', grp: 'g1', pid: ICH.id }
   const SAAL: WeitererPlan = { id: 'pl-s', vorlage: 'saal', name: 'Vexo', von: '2026-09-07', bis: '2026-10-04', entwurf: false }
   const FAMILIEN: WeitererPlan = { id: 'pl-f', vorlage: 'familien', name: 'Quabo', von: '2026-09-07', bis: '2026-09-13', entwurf: false }
@@ -813,15 +809,14 @@ describe('Die Pläne (T120) in einer fremden Sprache', () => {
     { id: 'pe2', planId: FAMILIEN.id, datum: '2026-09-08', grp: null, pid: ICH.id, mahlzeit: 'mittag' },
   ]
 
-  /** Alle vier Pläne — die eigenen Aufgaben daraus so abgeleitet wie in der App. */
+  /** Alle drei Pläne — die eigenen Aufgaben daraus so abgeleitet wie in der App. */
   const PLAENE: Partial<AppState> = {
     ozTermine: [OZ_TERMIN],
     ozEintraege: OZ_EINTRAEGE,
-    auswaerts: [VORTRAG],
     gruppenbesuche: [BESUCH],
     plaene: [SAAL, FAMILIEN],
     planEintraege: PLAN_EINTRAEGE,
-    myTasks: [AUFGABE, ...deriveMyOzTasks([OZ_TERMIN], OZ_EINTRAEGE, ICH.id, {}), ...deriveMyVaTasks([VORTRAG], ICH.id, {})],
+    myTasks: [AUFGABE, ...deriveMyOzTasks([OZ_TERMIN], OZ_EINTRAEGE, ICH.id, {})],
   }
 
   /** Einen Plan auf der Planen-Seite öffnen — das merkt sich der Baustein selbst, nicht der Zustand. */
@@ -837,13 +832,11 @@ describe('Die Pläne (T120) in einer fremden Sprache', () => {
     ['Zeugnisgeben planen', { screen: 'planen', tab: 'fs', fsBereich: 'zeugnis' }, '.oz-person'],
     ['Gruppenbesuche ansehen', { screen: 'programm', tab: 'fs', fsBereich: 'gruppenbesuche' }, '.gb-zeile'],
     ['Gruppenbesuche planen', { screen: 'planen', tab: 'fs', fsBereich: 'gruppenbesuche' }, '.gb-besucher'],
-    ['Redner auswärts ansehen', { screen: 'programm', tab: 'va' }, '.va-zeile'],
-    ['Redner auswärts planen', { screen: 'planen', tab: 'va' }, '.va-redner-zeile'],
     ['Weitere Pläne ansehen', { screen: 'programm', tab: 'wp' }, '.wp-liste'],
     ['Weitere Pläne planen', { screen: 'planen', tab: 'wp' }, '.wp-karte'],
     ['Königreichssaal geöffnet', { screen: 'planen', tab: 'wp' }, '.wp-zeile', oeffne('Vexo')],
     ['Familien reihum geöffnet', { screen: 'planen', tab: 'wp' }, '.wp-zeile', oeffne('Quabo')],
-    ['Meine Aufgaben mit Zeugnis und Vortrag', { screen: 'aufgaben' }, '.auf-title'],
+    ['Meine Aufgaben mit Zeugnis', { screen: 'aufgaben' }, '.auf-title'],
     // Mit etwas zu tun ist die Karte ein Block (`.dash-planung`), sonst ein Knopf.
     ['Start mit der Planungs-Karte', { screen: 'start' }, '.dash-planung'],
   ]
@@ -859,7 +852,7 @@ describe('Die Pläne (T120) in einer fremden Sprache', () => {
    * Kanonisch deutsch aus den Daten der Pläne — kein Wörterbuchwert, deshalb
    * eigens gesucht. Ohne Monatsnamen: „September" heißt auf Englisch genauso.
    */
-  const KANONISCH = ['Öffentliches Zeugnisgeben', 'Redner', 'Vers.', 'Montag', 'Dienstag', 'Mittwoch', 'Sonntag']
+  const KANONISCH = ['Öffentliches Zeugnisgeben', 'Montag', 'Dienstag', 'Mittwoch', 'Sonntag']
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })

@@ -5,9 +5,8 @@
 //
 //   { action: 'seek', congregationId, taskKey }
 //     Nach „Ich kann nicht" bei einem Hilfsdienst: benachrichtigt alle
-//     qualifizierten Personen (gleicher Dienst, am Tag weder abwesend noch als
-//     Redner auswärts) per In-App-Mitteilung + Web-Push, dass ein Ersatz
-//     gesucht wird.
+//     qualifizierten Personen (gleicher Dienst, am Tag nicht abwesend) per
+//     In-App-Mitteilung + Web-Push, dass ein Ersatz gesucht wird.
 //     Auslösen darf nur, wer in dem Slot steht oder für ihn abgesagt hat.
 //
 //   { action: 'take', congregationId, taskKey }
@@ -146,29 +145,6 @@ function abwesendeAm(absences: Absence[], tagISO: string | null): ReadonlySet<st
   return out
 }
 
-/**
- * Wer an diesem Tag als Redner in einer anderen Versammlung spricht (T120,
- * Phase 4) — er steht der eigenen Zusammenkunft so wenig zur Verfügung wie ein
- * Abwesender. Die App blendet ihm das Gesuch deshalb aus (`nichtDa` im
- * Reducer); erreichte ihn die Meldung trotzdem, fände er in der App nichts
- * dazu. Bis zum 3.10.2026 fragte die Suche hier nur die Abwesenheiten.
- *
- * Fehlt die Tabelle (Schema noch nicht eingespielt), fehlt niemand: Die Suche
- * soll an einem nachgezogenen Schema nicht scheitern.
- */
-async function rednerAuswaertsAm(cong: string, tagISO: string | null): Promise<ReadonlySet<string>> {
-  if (!tagISO) return new Set()
-  const zeilen = await rest
-    .get<{ person_id: string | null }[]>(
-      `vortraege_auswaerts?select=person_id&congregation_id=eq.${wert(cong)}` +
-        `&datum=eq.${wert(tagISO)}&person_id=not.is.null`,
-    )
-    .catch((err: unknown) => {
-      console.error(`vortraege_auswaerts nicht lesbar: ${(err as Error).message}`)
-      return []
-    })
-  return new Set(zeilen.flatMap((z) => (z.person_id ? [z.person_id] : [])))
-}
 interface Member {
   user_id: string
   person_id: string | null
@@ -463,7 +439,6 @@ Deno.serve(async (req: Request) => {
 
       const declinedBy = slot.name ?? ''
       const abwesende = abwesendeAm(absences, tagISO)
-      const auswaerts = await rednerAuswaertsAm(cong, tagISO)
       /*
        * Der Absagende selbst wird nicht gefragt — **über die Id**, wo der Platz
        * eine trägt.
@@ -477,7 +452,7 @@ Deno.serve(async (req: Request) => {
       const istAbsager = (p: Person): boolean =>
         slot.pid ? p.id === slot.pid : displayName(p) === declinedBy
       const peers = persons
-        .filter((p) => p.priv?.[qualKey] && !abwesende.has(p.id) && !auswaerts.has(p.id) && !istAbsager(p))
+        .filter((p) => p.priv?.[qualKey] && !abwesende.has(p.id) && !istAbsager(p))
         .map((p) => kontoFuer(p.id, displayName(p)))
         .filter((u): u is string => Boolean(u) && u !== userId)
       await notifyUsers(

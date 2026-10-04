@@ -1,7 +1,7 @@
 // =============================================================================
 // Supabase Edge Function: send-plan — „Plan senden"
 // =============================================================================
-// Vier Aktionen (Aufruf mit Nutzer-JWT, supabase.functions.invoke):
+// Drei Aktionen (Aufruf mit Nutzer-JWT, supabase.functions.invoke):
 //
 //   { action: 'plan', weekStart, heute? }
 //     Der Planer hat eine Woche fertig und gibt sie frei. Jede eingeteilte
@@ -19,12 +19,6 @@
 //     kommenden Schichten, nicht je Woche. Wer sich selbst eingetragen hat,
 //     weiß Bescheid und hat damit zugesagt. Versand, Tagebuch und „je Person
 //     eine Nachricht" wie bei der Woche (`versenden`).
-//
-//   { action: 'auswaerts', heute? }
-//     „Plan senden" bei den Vorträgen auswärts (T120, Phase 4): Jeder Redner,
-//     der einen kommenden Vortrag noch nicht bestätigt hat und davon noch
-//     nichts weiß, bekommt eine Nachricht — über alle kommenden Vorträge, wie
-//     beim Zeugnisgeben.
 //
 //   { action: 'entzug', entzuege: [{ taskKey, name, pid?, label?, datum? }, …] }
 //     Eine oder mehrere bereits **bestätigte** Zuteilungen wurden zurückgezogen
@@ -79,7 +73,6 @@ import {
   kanonisch,
   nachSprache,
   offeneDerWoche,
-  offeneVortraegeAuswaerts,
   offeneZeugnisEintraege,
   type OzEintragRow,
   type OzTerminRow,
@@ -90,7 +83,6 @@ import {
   tagebuchSchluessel,
   uebersetzerFuer,
   uebersetzt,
-  type VortragAuswaertsRow,
   type Week,
 } from '../_shared/zuteilungen.ts'
 import { bibelbuecherLaden } from '../_shared/i18n/translate.ts'
@@ -355,8 +347,8 @@ async function nurEigeneTreffpunkte<T extends { taskKey: string }>(
 }
 
 /**
- * Zusagen und Versand-Tagebuch eines Plans ohne Woche — öffentliches
- * Zeugnisgeben (`oz|<Montag>|…`) und Vorträge auswärts (`va|<Montag>|…`).
+ * Zusagen und Versand-Tagebuch des öffentlichen Zeugnisgebens
+ * (`oz|<Montag>|…`), eines Plans ohne Woche.
  *
  * **Nur für die Wochen dieser Einträge** — dieselbe Sparsamkeit wie bei der
  * Woche (`jeWoche`): Beide Tabellen wachsen, gebraucht werden ein paar Wochen.
@@ -365,7 +357,6 @@ async function nurEigeneTreffpunkte<T extends { taskKey: string }>(
  */
 async function zusagenUndTagebuch(
   cong: string,
-  art: 'oz' | 'va',
   daten: readonly string[],
 ): Promise<{ conf: Map<string, string>; schonGemeldet: Set<string> }> {
   const wochen = [...new Set(daten.map(ozWoche).filter(Boolean))]
@@ -373,7 +364,7 @@ async function zusagenUndTagebuch(
     const teile = await Promise.all(
       wochen.map((w) =>
         rest.get<T[]>(
-          `${tabelle}?select=${spalten}&congregation_id=eq.${wert(cong)}` + `&task_key=like.${wert(`${art}|${w}|*`)}`,
+          `${tabelle}?select=${spalten}&congregation_id=eq.${wert(cong)}` + `&task_key=like.${wert(`oz|${w}|*`)}`,
         ),
       ),
     )
@@ -400,7 +391,7 @@ Deno.serve(async (req: Request) => {
     const payload = (await req.json().catch(() => null)) as
       | ({ action?: string; weekStart?: string; heute?: string; entzuege?: EntzugRumpf[] } & EntzugRumpf)
       | null
-    const aktionen = ['plan', 'entzug', 'zeugnis', 'auswaerts']
+    const aktionen = ['plan', 'entzug', 'zeugnis']
     if (!payload?.action || !aktionen.includes(payload.action)) {
       return json({ error: 'bad-request' }, 400)
     }
@@ -516,30 +507,9 @@ Deno.serve(async (req: Request) => {
             `&selbst=is.false&datum=gte.${wert(ab)}`,
         ),
       ])
-      const { conf, schonGemeldet } = await zusagenUndTagebuch(cong, 'oz', eintraege.map((e) => e.datum))
+      const { conf, schonGemeldet } = await zusagenUndTagebuch(cong, eintraege.map((e) => e.datum))
       const namen = new Map(persons.map((p) => [p.id, personDisplayName(p.fn, p.ln)]))
       const offen = offeneZeugnisEintraege(eintraege, termine, namen, conf, heute)
-      return await versenden(
-        cong,
-        offen.filter((p) => !schonGemeldet.has(tagebuchSchluessel(p.key, p.name))),
-        kontoFuer,
-        empfaengerFuer,
-        personByName,
-      )
-    }
-
-    /* ---- Aktion: Vorträge auswärts senden (T120, Phase 4) ---- */
-    if (payload.action === 'auswaerts') {
-      const heute = heuteUtc(payload.heute)
-      const ab = new Date(heute).toISOString().slice(0, 10)
-      // Nur Vorträge mit Redner und nur Kommendes.
-      const vortraege = await rest.get<VortragAuswaertsRow[]>(
-        `vortraege_auswaerts?select=id,datum,zeit,versammlung,person_id&congregation_id=eq.${wert(cong)}` +
-          `&person_id=not.is.null&datum=gte.${wert(ab)}`,
-      )
-      const { conf, schonGemeldet } = await zusagenUndTagebuch(cong, 'va', vortraege.map((v) => v.datum))
-      const namen = new Map(persons.map((p) => [p.id, personDisplayName(p.fn, p.ln)]))
-      const offen = offeneVortraegeAuswaerts(vortraege, namen, conf, heute)
       return await versenden(
         cong,
         offen.filter((p) => !schonGemeldet.has(tagebuchSchluessel(p.key, p.name))),

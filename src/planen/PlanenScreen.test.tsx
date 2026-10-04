@@ -137,12 +137,11 @@ describe('Der Kopf', () => {
 })
 
 describe('Die Reiter', () => {
-  it('die Zusammenkünfte haben vier: beide Zusammenkünfte, Redner auswärts und Bearbeiten', () => {
+  it('die Zusammenkünfte haben drei: beide Zusammenkünfte und Bearbeiten', () => {
     // Die Treffpunkte waren bis T120 ein vierter Reiter; sie sind jetzt das
-    // Thema Predigtdienst und stehen im Menü. Seit Phase 4 stehen dafür die
-    // Redner auswärts hier — beim Planen für jeden Planer, auch ohne Vortrag.
+    // Thema Predigtdienst und stehen im Menü.
     const { container } = zeige()
-    expect(reiter(container)).toEqual(['Dienstag', 'Sonntag', t.vaTab, '✎'])
+    expect(reiter(container)).toEqual(['Dienstag', 'Sonntag', '✎'])
   })
 
   it('der Predigtdienst hat vier: Treffpunkte der Woche, Gruppenbesuche, öffentliches Zeugnisgeben und Grundplan', () => {
@@ -152,10 +151,8 @@ describe('Die Reiter', () => {
 
   it('ein Reiterwechsel schlägt durch', () => {
     const { container, dispatch } = zeige()
-    fireEvent.click([...seite(container).querySelectorAll('.plan-tabs .meeting-tab')][3]!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'setTab', tab: 'edit' })
     fireEvent.click([...seite(container).querySelectorAll('.plan-tabs .meeting-tab')][2]!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'setTab', tab: 'va' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'setTab', tab: 'edit' })
   })
 
   it('eine verlegte Zusammenkunft trägt ihren echten Tag im Reiter (T30)', () => {

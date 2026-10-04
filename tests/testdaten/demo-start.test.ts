@@ -157,14 +157,6 @@ describe('entwicklerStart – was der Hash der Entwicklerseite verlangt', () => 
     expect(demoZustand().plaene).toEqual([])
   })
 
-  it('ebenso die Redner auswärts, samt Zusagen — und tab=va öffnet ihren Reiter (T120, Phase 4)', () => {
-    const seite = entwicklerStart('#s=planen&tab=va')
-    expect(seite.tab).toBe('va')
-    expect(seite.auswaerts.length).toBeGreaterThan(0)
-    expect(Object.keys(seite.confirmations).some((k) => k.startsWith('va|'))).toBe(true)
-    expect(demoZustand().auswaerts).toEqual([])
-  })
-
   it('fs=<Faktor> setzt die Schriftgröße — nur Stufen der Skala', () => {
     expect(entwicklerStart('#s=profil&fs=1.45').fontScale).toBe(1.45)
     expect(entwicklerStart('#s=profil&fs=1.1').fontScale).toBe(1) // nicht auf der Skala

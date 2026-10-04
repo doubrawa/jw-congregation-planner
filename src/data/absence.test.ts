@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildAbsences, buildAuswaerts, istAbwesend, istAbwesendAm, nichtVerfuegbar } from './absence'
+import { buildAbsences, istAbwesend, istAbwesendAm } from './absence'
 import { MEETING_TABS } from './helpers'
 
 /** Fehlt jemand in dieser Woche — in mindestens einer Zusammenkunft? */
@@ -122,41 +122,5 @@ describe('Abwesend an einem bestimmten Tag (Treffpunkte)', () => {
   it('gilt nur für die eigene Person', () => {
     expect(istAbwesendAm(liste, 'p2', new Date(2026, 8, 12, 12))).toBe(false)
     expect(istAbwesendAm(liste, undefined, new Date(2026, 8, 12, 12))).toBe(false)
-  })
-})
-
-describe('Redner auswärts am Tag einer eigenen Zusammenkunft (T120, Phase 4)', () => {
-  it('trifft genau die Zusammenkunft an dem Tag — nicht die ganze Woche', () => {
-    // Sonntag, 13.9.: das Wochenende der Woche 0; der Dienstag bleibt frei.
-    const set = buildAuswaerts([{ datum: '2026-09-13', pid: 'p1' }], wochen(2), MEETINGS)
-    expect(istAbwesend(set, 'p1', 0, 'we')).toBe(true)
-    expect(istAbwesend(set, 'p1', 0, 'mid')).toBe(false)
-    expect(inWocheAbwesend(set, 'p1', 1)).toBe(false)
-  })
-
-  it('ein Vortrag an einem Tag ohne eigene Zusammenkunft sperrt nichts', () => {
-    const samstag = buildAuswaerts([{ datum: '2026-09-12', pid: 'p1' }], wochen(2), MEETINGS)
-    expect(samstag.size).toBe(0)
-  })
-
-  it('ein Vortrag ohne Redner sperrt niemanden', () => {
-    expect(buildAuswaerts([{ datum: '2026-09-13', pid: null }], wochen(2), MEETINGS).size).toBe(0)
-  })
-
-  it('der verlegte Tag zählt, nicht der Rhythmus', () => {
-    // Das Wochenende der Woche 0 liegt ausnahmsweise am Samstag (T30).
-    const verlegt = [woche({ start: '2026-09-07', dev: { we: { wd: 6, time: '18:00' } } })]
-    const set = buildAuswaerts([{ datum: '2026-09-12', pid: 'p1' }], verlegt, MEETINGS)
-    expect(istAbwesend(set, 'p1', 0, 'we')).toBe(true)
-  })
-
-  it('nicht verfügbar ist, wer abwesend ist oder auswärts spricht', () => {
-    const abwesend = buildAbsences([abw({ personId: 'p2', from: '2026-09-08', to: '2026-09-08' })], wochen(1), MEETINGS)
-    const auswaerts = buildAuswaerts([{ datum: '2026-09-13', pid: 'p1' }], wochen(1), MEETINGS)
-    const beides = nichtVerfuegbar(abwesend, auswaerts)
-    expect(istAbwesend(beides, 'p1', 0, 'we')).toBe(true)
-    expect(istAbwesend(beides, 'p2', 0, 'mid')).toBe(true)
-    // Ohne Vorträge bleibt es dieselbe Menge — kein neues Objekt bei jedem Rechnen.
-    expect(nichtVerfuegbar(abwesend, new Set())).toBe(abwesend)
   })
 })

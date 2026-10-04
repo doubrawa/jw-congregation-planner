@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildAbsences, buildAuswaerts, nichtVerfuegbar } from './absence'
+import { buildAbsences } from './absence'
 import { syncAuxSlots } from './aux-class'
 import {
   buildDemoWeeks,
@@ -909,19 +909,6 @@ describe('Konfliktprüfungen (Planen)', () => {
     const abwesend = buildAbsences(DEMO_ABSENCES, weeks, CONGREGATION.times)
     const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES, undefined, abwesend)
     expect(conflicts).toContainEqual({ kind: 'absent', name: 'Ulrich Lang', kennung: kennungFuer('Ulrich Lang'), tab: 'mid' })
-  })
-
-  it('nennt den Redner auswärts mit seinem Grund — einmal, nicht noch als abwesend (T120)', () => {
-    // Helmut Vogel hat am Sonntag, 20.9. (Woche 1), den Vorsitz und hält am
-    // selben Tag einen Vortrag in einer anderen Versammlung. Die Planung fragt
-    // „verfügbar?" mit der Vereinigung (`nichtVerfuegbar`), das Banner nennt
-    // den Grund aus der eigenen Menge.
-    const weeks = buildDemoWeeks()
-    const auswaerts = buildAuswaerts([{ datum: '2026-09-20', pid: 'p4' }], weeks, CONGREGATION.times)
-    const nicht = nichtVerfuegbar(buildAbsences(DEMO_ABSENCES, weeks, CONGREGATION.times), auswaerts)
-    const conflicts = weekConflicts(weeks, 1, DEMO_PERSONS, DEMO_SERVICES, 'we', nicht, auswaerts)
-    const vogel = conflicts.filter((c) => c.name === 'Helmut Vogel')
-    expect(vogel).toEqual([{ kind: 'auswaerts', name: 'Helmut Vogel', kennung: kennungFuer('Helmut Vogel'), tab: 'we' }])
   })
 
   it('meldet niemanden abwesend, dessen Zeitraum die Woche nicht trifft', () => {

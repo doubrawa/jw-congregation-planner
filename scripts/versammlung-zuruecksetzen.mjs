@@ -163,8 +163,6 @@ export const LEEREN = [
   'gruppenbesuche',
   // Die Einträge des öffentlichen Zeugnisgebens (T120) ebenso: Planung.
   'oz_eintraege',
-  // Und die Vorträge auswärts (T120, Phase 4).
-  'vortraege_auswaerts',
   // Und die Weiteren Pläne (Phase 5) — die Einträge zuerst, sie zeigen auf die Pläne.
   'plan_eintraege',
   'plaene',

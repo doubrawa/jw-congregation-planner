@@ -514,31 +514,6 @@ create table if not exists public.oz_eintraege (
 create index if not exists oz_eintraege_congregation_idx
   on public.oz_eintraege (congregation_id, datum);
 
--- Redner auswärts (T120, Phase 4): Vorträge eigener Redner in anderen
--- Versammlungen — das Gegenstück zu den Rednern, die aus umliegenden
--- Versammlungen kommen (od Kap. 7 Abs. 14). Eine Zeile je Vortrag; der Redner
--- bestätigt ihn wie jede andere Aufgabe (`va|<montag>|<id>`).
-create table if not exists public.vortraege_auswaerts (
-  -- `text` wie bei `fs_rules`: Die Kennung vergibt der Client (`v<uuid>`).
-  id              text primary key check (id <> ''),
-  congregation_id uuid not null references public.congregations (id) on delete cascade,
-  datum           date not null,
-  zeit            time not null,                    -- Beginn der Zusammenkunft dort
-  versammlung     text not null default '',         -- Freitext, wie die Herkunft eines Gastredners
-  nummer          smallint check (nummer is null or nummer between 1 and 999),  -- Nummer des Vortrags
-  -- Der Redner; null heißt „später zuteilen" — und ebenso, wenn seine Person
-  -- gelöscht wurde. Der Vortrag bleibt dann stehen, und der Planer setzt einen
-  -- anderen ein.
-  person_id       uuid,
-  created_at      timestamptz not null default now(),
-
-  constraint vortraege_auswaerts_person_fk foreign key (person_id, congregation_id)
-    references public.persons (id, congregation_id) on delete set null (person_id)
-);
-
-create index if not exists vortraege_auswaerts_congregation_idx
-  on public.vortraege_auswaerts (congregation_id, datum);
-
 -- Weitere Pläne (T120, Phase 5): Ankündigungen ohne Zuteilung — niemand
 -- bestätigt etwas, niemand wird erinnert. Zwei feste Vorlagen:
 --   saal      Königreichssaal, je Woche eine Predigtdienstgruppe. Gemessen am
@@ -655,6 +630,19 @@ create table if not exists public.invites (
 
 create index if not exists invites_congregation_idx
   on public.invites (congregation_id);
+
+-- ---------------------------------------------------------------------------
+-- Entfernt: Redner auswärts (T120, Phase 4 — vom 3. bis 4.10.2026)
+-- ---------------------------------------------------------------------------
+-- Der Plan ist wieder aus der App genommen. Mit der Tabelle gehen ihre
+-- Richtlinien und ihr Index. Ihre Aufgaben-Schlüssel (`va|<montag>|<id>`)
+-- gehören danach zu nichts mehr: Zusagen, Glocken-Mitteilungen und
+-- Tagebucheinträge dazu gehen mit. Ein zweiter Lauf findet nichts mehr; der
+-- Block kann fort, sobald er überall eingespielt ist.
+drop table if exists public.vortraege_auswaerts cascade;
+delete from public.confirmations where task_key like 'va|%';
+delete from public.notifications where task_key like 'va|%';
+delete from public.assignment_log where task_key like 'va|%';
 
 -- ---------------------------------------------------------------------------
 -- RLS-Hilfsfunktionen (security definer, um Rekursion über members zu vermeiden)
@@ -826,7 +814,9 @@ $$;
 --   <woche>|<mid|we>|helper|<dienst>|<pos>    Hilfsdienst
 --   fs|<montag>|<instanzId>                   Treffpunkt-Leitung
 --   oz|<montag>|<eintragId>                   Öffentliches Zeugnisgeben (T120)
---   va|<montag>|<vortragId>                   Vortrag auswärts (T120)
+--
+-- `va|<montag>|<vortragId>` (Vortrag auswärts) gab es vom 3. bis 4.10.2026; die
+-- Form ist mit dem Plan gegangen und seither eine unbekannte.
 --
 -- **Unbekannte Formen bleiben erlaubt.** Eine zu strenge Richtlinie bricht das
 -- Bestätigen fast lautlos (der Client schreibt fire-and-forget); eine erfundene
@@ -891,21 +881,6 @@ begin
          and e.id = teile[3]
          and e.person_id = meine
          and to_char(e.datum - (extract(isodow from e.datum)::int - 1), 'YYYY-MM-DD') = teile[2]
-    );
-  end if;
-
-  -- Vortrag auswärts (T120): dieselbe Form, nachgeschlagen am Vortrag. Gehört
-  -- er niemandem (noch nicht zugeteilt), gehört er auch niemandem zum
-  -- Bestätigen.
-  if n = 3 and teile[1] = 'va' then
-    if meine is null then return false; end if;
-    return exists (
-      select 1
-        from public.vortraege_auswaerts v
-       where v.congregation_id = cong
-         and v.id = teile[3]
-         and v.person_id = meine
-         and to_char(v.datum - (extract(isodow from v.datum)::int - 1), 'YYYY-MM-DD') = teile[2]
     );
   end if;
 
@@ -1249,24 +1224,6 @@ drop policy if exists oz_eintraege_selbst_raus on public.oz_eintraege;
 create policy oz_eintraege_selbst_raus on public.oz_eintraege
   for delete
   using (congregation_id = public.my_congregation_id() and person_id = public.my_person_id());
-
--- Redner auswärts: Planer sehen und pflegen alles. Ein Redner sieht **seine**
--- Vorträge — sonst niemand: Wer wann wohin fährt, geht die Versammlung nichts
--- an (die Vorlage: „sichtbar für Eingeteilte und Admins").
-alter table public.vortraege_auswaerts enable row level security;
-
-drop policy if exists vortraege_auswaerts_select on public.vortraege_auswaerts;
-create policy vortraege_auswaerts_select on public.vortraege_auswaerts
-  for select using (
-    congregation_id = public.my_congregation_id()
-    and (public.is_planner() or person_id = public.my_person_id())
-  );
-
-drop policy if exists vortraege_auswaerts_write on public.vortraege_auswaerts;
-create policy vortraege_auswaerts_write on public.vortraege_auswaerts
-  for all
-  using (congregation_id = public.my_congregation_id() and public.is_planner())
-  with check (congregation_id = public.my_congregation_id() and public.is_planner());
 
 -- Weitere Pläne: Planer pflegen alles. Sehen darf ein Mitglied, was
 -- `plan_sichtbar` freigibt — einen Entwurf nie.
