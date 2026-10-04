@@ -347,21 +347,30 @@ describe('Der Gruppenaufseher plant nur seine eigene Gruppe', () => {
     inst({ id: 'f2', grp: 'g2', time: '10:00' }),
     inst({ id: 'f3', grp: null, time: '10:30' }),
   ]]
+  // Wirklich Gruppenaufseher: kein Admin, aber Aufseher von Gruppe 1. Bis zum
+  // 4.10.2026 stand hier ein Admin mit `onlyGroup` — seit `FsPlan` die Rechte
+  // selbst liest, wäre das ein Admin, der nur eine Gruppe sieht.
+  const AUFSEHER: Partial<AppState> = {
+    planner: false,
+    zuteiler: false,
+    personId: 'p-a',
+    groups: [{ ...GRUPPEN[0]!, overseerId: 'p-a' }, GRUPPEN[1]!],
+  }
 
   it('sieht die fremde Gruppe und den Versammlungstreffpunkt gar nicht', () => {
-    const { container } = buehne('fs', { fsWeeks: beide }, 'g1')
+    const { container } = buehne('fs', { fsWeeks: beide, ...AUFSEHER }, 'g1')
     expect([...container.querySelectorAll('.fs-edit-title')].map((x) => x.textContent)).toEqual([
       'Gruppe 1',
     ])
   })
 
   it('sein Banner zählt nur seine offenen Leitungen', () => {
-    const { container } = buehne('fs', { fsWeeks: beide }, 'g1')
+    const { container } = buehne('fs', { fsWeeks: beide, ...AUFSEHER }, 'g1')
     expect(container.querySelector('.plan-banner-count')?.textContent).toBe('1')
   })
 
   it('„Leeren" und „Automatisch" wirken nur auf seine Gruppe', () => {
-    const { container, dispatch } = buehne('fs', { fsWeeks: beide }, 'g1')
+    const { container, dispatch } = buehne('fs', { fsWeeks: beide, ...AUFSEHER }, 'g1')
     fireEvent.click(container.querySelector('.plan-auto-btn--primary')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsAutoAssign', onlyGroup: 'g1' })
     const knopf = leerenKnoepfe(container)[0]!
@@ -370,8 +379,16 @@ describe('Der Gruppenaufseher plant nur seine eigene Gruppe', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsClear', onlyGroup: 'g1' })
   })
 
+  it('Zeit, Ort und Entfernen stehen an seinem Treffpunkt — er ändert ihn, nicht nur den Leiter (4.10.2026)', () => {
+    const { container } = buehne('fs', { fsWeeks: beide, ...AUFSEHER }, 'g1')
+    const zeile = container.querySelector('.fs-edit-row')!
+    expect(zeile.querySelector('.fs-select--time')).not.toBeNull()
+    expect(zeile.querySelector('.fs-input')).not.toBeNull()
+    expect(zeile.querySelector('.fs-remove')).not.toBeNull()
+  })
+
   it('ein neuer Treffpunkt gehört automatisch seiner Gruppe — die Wahl entfällt', () => {
-    const { container, dispatch } = buehne('fs', { fsWeeks: beide }, 'g1')
+    const { container, dispatch } = buehne('fs', { fsWeeks: beide, ...AUFSEHER }, 'g1')
     // Ohne Gruppen-Auswahl: er kann gar keine andere wählen.
     const auswahlen = [...container.querySelectorAll('.fs-add .fs-select')]
     expect(auswahlen.every((s) => s.getAttribute('aria-label') !== t.fsVers)).toBe(true)
@@ -379,7 +396,7 @@ describe('Der Gruppenaufseher plant nur seine eigene Gruppe', () => {
     expect(dispatch.mock.calls.find((c) => c[0].type === 'fsInstAdd')![0].inst.grp).toBe('g1')
   })
 
-  it('der Planer dagegen wählt die Gruppe — Versammlung oder eine der angelegten', () => {
+  it('der Admin dagegen wählt die Gruppe — Versammlung oder eine der angelegten', () => {
     const { container } = buehne('fs', { fsWeeks: beide })
     const wahl = [...container.querySelectorAll('.fs-add .fs-select')].find(
       (s) => s.getAttribute('aria-label') === t.fsVers,
@@ -387,5 +404,48 @@ describe('Der Gruppenaufseher plant nur seine eigene Gruppe', () => {
     expect([...wahl.querySelectorAll('option')].map((o) => o.textContent)).toEqual([
       t.fsVers, 'Gruppe 1', 'Gruppe 2',
     ])
+  })
+})
+
+describe('Der Planer besetzt Treffpunkte, ändert sie aber nicht (4.10.2026)', () => {
+  const inst = (over: Partial<FsInstance> = {}): FsInstance =>
+    ({ id: 'f1', ruleId: 'r1', wd: 6, time: '09:30', place: 'Saal', leader: '', grp: null, ...over }) as FsInstance
+  const woche = [[
+    inst({ id: 'f1', grp: 'g1' }),
+    inst({ id: 'f2', grp: 'g2', time: '10:00', place: 'Am Markt' }),
+  ]]
+  const PLANER: Partial<AppState> = { planner: false, zuteiler: true, personId: null }
+
+  it('sieht alle Gruppen und setzt überall den Leiter — Zeit und Ort stehen als Text', () => {
+    const { container, dispatch } = buehne('fs', { fsWeeks: woche, ...PLANER })
+    expect([...container.querySelectorAll('.fs-edit-title')].map((x) => x.textContent)).toEqual(['Gruppe 1', 'Gruppe 2'])
+    // Nichts, was den Treffpunkt ändert …
+    expect(container.querySelector('.fs-select--time')).toBeNull()
+    expect(container.querySelector('.fs-edit-row .fs-input')).toBeNull()
+    expect(container.querySelector('.fs-remove')).toBeNull()
+    expect(container.querySelector('.fs-add')).toBeNull()
+    // … aber Zeit und Ort zum Ansehen, und der Leiter-Platz zum Zuteilen.
+    expect([...container.querySelectorAll('.fs-edit-time')].map((x) => x.textContent)).toEqual(['09:30', '10:00'])
+    expect(container.textContent).toContain('Am Markt')
+    expect(container.querySelectorAll('.slot-chip')).toHaveLength(2)
+    // „Automatisch" für alle Gruppen.
+    fireEvent.click(container.querySelector('.plan-auto-btn--primary')!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'fsAutoAssign', onlyGroup: null })
+  })
+
+  it('ist er zugleich Gruppenaufseher, ändert er seine Gruppe — und nur sie', () => {
+    const { container } = buehne('fs', {
+      fsWeeks: woche,
+      ...PLANER,
+      personId: 'p-a',
+      groups: [{ ...GRUPPEN[0]!, overseerId: 'p-a' }, GRUPPEN[1]!],
+    })
+    const zeilen = [...container.querySelectorAll('.fs-edit-row')]
+    expect(zeilen).toHaveLength(2)
+    expect(zeilen[0]!.querySelector('.fs-select--time')).not.toBeNull()
+    expect(zeilen[1]!.querySelector('.fs-select--time')).toBeNull()
+    // Anlegen in seiner Gruppe — ohne Wahl.
+    const auswahlen = [...container.querySelectorAll('.fs-add .fs-select')]
+    expect(auswahlen.every((s) => s.getAttribute('aria-label') !== t.fsVers)).toBe(true)
   })
 })

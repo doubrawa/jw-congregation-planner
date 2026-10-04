@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "Les réunions pour la prédication de ce groupe sont supprimées.",
   "ohneGruppeTitle": "SANS GROUPE DE PRÉDICATION",
   "ohneGruppeHint": "Chaque proclamateur appartient à un groupe de prédication. Sans rattachement, la personne ne voit pas dans le programme les réunions pour la prédication des groupes. Touche un nom pour choisir le groupe.",
+  "rollePlaner": "Planificateur",
+  "rechteHint": "Les planificateurs font les attributions et envoient les plannings. Les admins peuvent aussi modifier les plannings eux-mêmes, les personnes et les paramètres.",
+  "fsSendenOffen": "Attributions de ton groupe pas encore annoncées : {n}",
+  "fsSendenAlle": "Toutes les personnes assignées de ton groupe sont au courant.",
 } satisfies Partial<Dict>

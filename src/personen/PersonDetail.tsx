@@ -12,7 +12,7 @@ import type { Person } from '../data/types'
 import { KontoCard } from './KontoCard'
 import { PersonTimeline } from './PersonTimeline'
 import { privLabel } from './priv-label'
-import { PlannerToggle, PrivToggle } from './PrivToggle'
+import { PrivToggle, RechteToggles } from './PrivToggle'
 
 /**
  * Personen-Detail: Stammdaten, Geschlecht/Rolle/Gruppe, die Aufgabenbereich-
@@ -268,7 +268,7 @@ export function PersonDetail({ person }: { person: Person }) {
         {WT_ROLE_ORDER.map((key) => (
           <PrivToggle key={key} qkey={key} label={privLabel(t, key)} person={person} update={update} bruderLabel={t.bruder} />
         ))}
-        <PlannerToggle person={person} update={update} />
+        <RechteToggles person={person} update={update} />
       </div>
 
       {istAngemeldet(state) && <KontoCard person={person} />}

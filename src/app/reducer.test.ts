@@ -41,6 +41,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     theme: 'weiss',
     fontScale: 1,
     planner: DEMO_PLANNER,
+    zuteiler: false,
     congregation: { ...CONGREGATION },
     congregationId: null,
     userId: null,
@@ -208,6 +209,22 @@ describe('navigate (Rechteprüfung)', () => {
     const s = makeState({ planner: true })
     const next = reducer(s, { type: 'navigate', screen: 'programm', woche: { wi: 1, tab: 'edit' } })
     expect(next).toMatchObject({ screen: 'programm', week: 1, tab: 'mid' })
+  })
+
+  it('… und nur für den Admin: Der Planer plant die Zusammenkunft statt sie zu bearbeiten (4.10.2026)', () => {
+    const admin = reducer(makeState({ planner: true }), { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'edit' } })
+    expect(admin).toMatchObject({ screen: 'planen', tab: 'edit' })
+    const s = makeState({ planner: false, zuteiler: true })
+    const next = reducer(s, { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'edit' } })
+    expect(next).toMatchObject({ screen: 'planen', week: 1, tab: 'mid' })
+  })
+
+  it('der Planer kommt ins Planen aller Themen — Personen und Einstellungen bleiben zu (4.10.2026)', () => {
+    const s = makeState({ planner: false, zuteiler: true })
+    expect(reducer(s, { type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte' }).screen).toBe('planen')
+    expect(reducer(s, { type: 'navigate', screen: 'planen', thema: 'weitere' })).toMatchObject({ screen: 'planen', tab: 'wp' })
+    expect(reducer(s, { type: 'navigate', screen: 'personen' }).screen).toBe('programm')
+    expect(reducer(s, { type: 'navigate', screen: 'einstellungen' }).screen).toBe('programm')
   })
 
   it('entfernt eine namenlose selektierte Person beim Navigieren', () => {
@@ -505,10 +522,10 @@ describe('Personen', () => {
     const s = makeState({
       userId: 'me',
       members: [
-        { userId: 'u1', email: 'u1@x', personId: target.id, planner: false },
-        { userId: 'me', email: 'me@x', personId: target.id, planner: false },
+        { userId: 'u1', email: 'u1@x', personId: target.id, planner: false, zuteiler: false },
+        { userId: 'me', email: 'me@x', personId: target.id, planner: false, zuteiler: false },
       ],
-      invites: [{ id: 'i1', code: 'ABC', personId: target.id, planner: false }],
+      invites: [{ id: 'i1', code: 'ABC', personId: target.id, planner: false, zuteiler: false }],
     })
     const next = reducer(s, { type: 'updatePerson', id: target.id, patch: { plannerVorgemerkt: true } })
     expect(next.members.find((m) => m.userId === 'u1')!.planner).toBe(true)
@@ -519,8 +536,8 @@ describe('Personen', () => {
   it('removePerson löst Gruppen-, Konto- und Code-Referenzen', () => {
     const s = makeState({
       groups: [{ id: 'g1', name: 'G1', overseerId: 'p1', assistantId: 'p6' }],
-      members: [{ userId: 'u1', email: 'u1@x', personId: 'p1', planner: true }],
-      invites: [{ id: 'i1', code: 'ABC', personId: 'p1', planner: false }],
+      members: [{ userId: 'u1', email: 'u1@x', personId: 'p1', planner: true, zuteiler: false }],
+      invites: [{ id: 'i1', code: 'ABC', personId: 'p1', planner: false, zuteiler: false }],
     })
     const next = reducer(s, { type: 'removePerson', id: 'p1' })
     expect(next.persons.some((p) => p.id === 'p1')).toBe(false)
@@ -661,12 +678,12 @@ describe('Versammlung / Mitglieder / Einladungen', () => {
     })
   })
   it('updateMember / removeMember', () => {
-    const s = makeState({ members: [{ userId: 'u1', email: 'u1@x', personId: null, planner: false }] })
+    const s = makeState({ members: [{ userId: 'u1', email: 'u1@x', personId: null, planner: false, zuteiler: false }] })
     expect(reducer(s, { type: 'updateMember', userId: 'u1', patch: { planner: true } }).members[0].planner).toBe(true)
     expect(reducer(s, { type: 'removeMember', userId: 'u1' }).members).toEqual([])
   })
   it('addInvite / removeInvite', () => {
-    const inv = { id: 'i1', code: 'ABC', personId: null, planner: false }
+    const inv = { id: 'i1', code: 'ABC', personId: null, planner: false, zuteiler: false }
     expect(reducer(makeState(), { type: 'addInvite', invite: inv }).invites).toContainEqual(inv)
     expect(reducer(makeState({ invites: [inv] }), { type: 'removeInvite', id: 'i1' }).invites).toEqual([])
   })

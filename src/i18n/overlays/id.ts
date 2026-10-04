@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "Pertemuan untuk dinas lapangan kelompok ini akan dihapus.",
   "ohneGruppeTitle": "TANPA KELOMPOK DINAS LAPANGAN",
   "ohneGruppeHint": "Setiap penyiar termasuk dalam kelompok dinas lapangan. Tanpa kelompok, orang itu tidak melihat pertemuan untuk dinas lapangan kelompok di program. Ketuk nama untuk menetapkan kelompok.",
+  "rollePlaner": "Perencana",
+  "rechteHint": "Perencana membagikan tugas dan mengirim rencana. Admin juga dapat mengubah rencana itu sendiri, orang-orang, dan pengaturan.",
+  "fsSendenOffen": "Tugas di kelompok Anda yang belum diberitahukan kepada siapa pun: {n}",
+  "fsSendenAlle": "Semua yang mendapat tugas di kelompok Anda sudah tahu.",
 } satisfies Partial<Dict>

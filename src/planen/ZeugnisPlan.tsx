@@ -80,7 +80,9 @@ export function ZeugnisPlan() {
 
   return (
     <>
-      <TerminePanel />
+      {/* Die Termine sind der Plan — die pflegt der Admin. Der Planer besetzt
+          die Schichten darin (4.10.2026). */}
+      {state.planner && <TerminePanel />}
 
       {state.ozTermine.length > 0 && (
         <>
@@ -305,13 +307,17 @@ function SchichtZeile({ schicht, kandidaten, heute }: { schicht: OzSchicht; kand
   const wahl = kandidaten.filter((p) => !drin.has(p.id) && !istAbwesendAm(state.absences, p.id, amTag))
   const ausfall = (aus: boolean) => dispatch({ type: 'ozSchichtAus', terminId: schicht.termin.id, datum: schicht.datum, aus })
 
+  // Eine Schicht streichen oder zurückholen ändert den Plan — das tut der
+  // Admin (die Ausnahme steht an seinem Termin, `oz_termine.aus`).
+  const darfStreichen = !vorbei && state.planner
+
   if (schicht.gestrichen) {
     return (
       <div className={vorbei ? 'oz-schicht is-gestrichen is-vorbei' : 'oz-schicht is-gestrichen'}>
         <SchichtKopf
           schicht={schicht}
           ausfallAktion={
-            !vorbei && (
+            darfStreichen && (
               <button type="button" className="btn-outline oz-zurueckholen" onClick={() => ausfall(false)}>
                 {t.wiederherstellen}
               </button>
@@ -326,7 +332,7 @@ function SchichtZeile({ schicht, kandidaten, heute }: { schicht: OzSchicht; kand
     <div className={vorbei ? 'oz-schicht is-vorbei' : 'oz-schicht'}>
       <SchichtKopf
         schicht={schicht}
-        aktion={!vorbei && <EntfernenKnopf className="fs-remove oz-streichen" onEntfernen={() => ausfall(true)} />}
+        aktion={darfStreichen && <EntfernenKnopf className="fs-remove oz-streichen" onEntfernen={() => ausfall(true)} />}
       />
       <div className="oz-plaetze">
         {schicht.eintraege.map((eintrag) => (

@@ -5,11 +5,12 @@ import { WeekStrip } from '../components/WeekStrip'
 import { WeekNav } from '../components/WeekNav'
 import { AusfallBanner, MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { hatAuxKlasse } from '../data/aux-class'
-import { istAusgefallen, mtab, aufseherGruppe } from '../data/helpers'
+import { istAusgefallen, mtab } from '../data/helpers'
 import { countOpenSlots } from '../data/planning'
+import { rechteVon } from '../data/rechte'
 import { fill, useProgWeek, useT } from '../i18n/useT'
 import { ConflictsBanner, EngpassBanner, FsConflictsBanner, OpenSlotsBanner } from './PlanBanners'
-import { PlanSendenPanel } from './PlanSendenPanel'
+import { GruppeSendenPanel, PlanSendenPanel } from './PlanSendenPanel'
 import { AutoAssignPanel } from './AutoAssignPanel'
 import { S89Bogen } from './S89Bogen'
 import { FsBereichTabs } from './FsBereichTabs'
@@ -38,13 +39,15 @@ import './planen.css'
  */
 export function PlanenScreen() {
   const { state } = useApp()
-  const myFsGroup = aufseherGruppe(state.planner, state.groups, state.personId)
-  const fsOverseer = !state.planner && myFsGroup !== null
+  const rechte = rechteVon(state)
+  // Nur die eigene Gruppe sieht, wer Gruppenaufseher ist und nicht zuteilt:
+  // Admin und Planer besetzen die Treffpunkte aller Gruppen.
+  const fsOverseer = !rechte.zuteilen && rechte.gruppe !== null
 
   // Die Weiteren Pläne (T120, Phase 5) sind ein eigenes Thema ohne Woche.
-  // Planen darf sie nur ein Planer; der Gruppenaufseher landet hier gar nicht
-  // (`navigate` schickt ihn ins Ansehen).
-  if (state.tab === 'wp' && state.planner) {
+  // Planen dürfen sie Admin und Planer (der Planer verteilt die Gruppen); der
+  // Gruppenaufseher landet hier gar nicht (`navigate` schickt ihn ins Ansehen).
+  if (state.tab === 'wp' && rechte.zuteilen) {
     return (
       <section className="screen">
         <ThemaKopf thema="weitere" />
@@ -64,7 +67,9 @@ export function PlanenScreen() {
         <ThemaKopf thema="predigtdienst" />
         <FsBereichTabs />
         {bereich === 'grundplan' ? (
-          <FsRulesPanel onlyGroup={fsOverseer ? myFsGroup : null} />
+          // Den Grundplan ändert der Admin ganz, der Gruppenaufseher seine
+          // Gruppe — auch, wenn er zugleich Planer ist (`fsBereiche`).
+          <FsRulesPanel onlyGroup={rechte.admin ? null : rechte.gruppe} />
         ) : bereich === 'zeugnis' ? (
           <ZeugnisPlan />
         ) : (
@@ -92,9 +97,10 @@ function PlanenBody() {
   const rawWeek = state.weeks[state.week]
   const { week, tpw } = useProgWeek(rawWeek)
 
-  // Gruppenaufseher (ohne volle Planer-Rechte): nur Treffpunkte der eigenen Gruppe.
-  const myFsGroup = aufseherGruppe(state.planner, state.groups, state.personId)
-  const fsOverseer = !state.planner && myFsGroup !== null
+  // Gruppenaufseher, der nicht zuteilt: nur Treffpunkte der eigenen Gruppe.
+  const rechte = rechteVon(state)
+  const myFsGroup = rechte.gruppe
+  const fsOverseer = !rechte.zuteilen && myFsGroup !== null
   const isFs = state.tab === 'fs' || fsOverseer
   const thema = isFs ? 'predigtdienst' : 'zusammenkuenfte'
 
@@ -113,9 +119,9 @@ function PlanenBody() {
     )
   }
 
-  // Die Bearbeiten-Ansicht (T64) gibt es nur für Planer — der Gruppenaufseher
-  // sieht ohnehin nur seine Treffpunkte.
-  const isEdit = state.tab === 'edit' && !fsOverseer
+  // Die Bearbeiten-Ansicht (T64) gibt es nur für den Admin: Anlass,
+  // Sonderwoche und Termine ändern den Plan, sie teilen nichts zu (4.10.2026).
+  const isEdit = state.tab === 'edit' && rechte.admin
   const tab = mtab(state.tab)
   const meeting = week[tab]
   const rawMeeting = rawWeek[tab]
@@ -151,7 +157,7 @@ function PlanenBody() {
           className="plan-tabs"
           tab={state.tab}
           week={rawWeek}
-          showEdit
+          showEdit={rechte.admin}
           onChange={(tab) => dispatch({ type: 'setTab', tab })}
         />
       )}
@@ -165,8 +171,9 @@ function PlanenBody() {
           {/* Derselbe Knopf wie bei den Zusammenkünften: er gibt die **ganze**
               Woche frei, Treffpunkte eingeschlossen. Er steht in beiden
               Ansichten, weil ein Planer die Woche in beiden fertig machen kann
-              — und nicht zweimal senden muss. */}
-          <PlanSendenPanel />
+              — und nicht zweimal senden muss. Der Gruppenaufseher, der nicht
+              zuteilt, sendet nur die Treffpunkte seiner Gruppe (4.10.2026). */}
+          {fsOverseer && myFsGroup ? <GruppeSendenPanel gruppe={myFsGroup} /> : <PlanSendenPanel />}
         </>
       ) : (
         <>

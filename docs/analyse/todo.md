@@ -6219,6 +6219,30 @@ samt Konten wieder entfernt; für den nächsten Lauf legt
   Programmpunkte und die Menge der Schulungsbereiche stehen geteilt in
   `_shared/freie-plaetze.ts` (vorher in `aux-class.ts`). Die Entwicklerseite
   hat dafür ein Versand-Tagebuch der ersten Woche (`demoVersand`).
+- **Rechte-Stufe „Planer" neben „Admin"** — „Bei feste Rollen muss es noch
+  mehr geben. Planer sollen Zuteilungen machen dürfen, aber nur Admins dürfen
+  die Pläne ändern und alles andere." Dazu: „Die Gruppenaufseher und deren
+  Gehilfen dürfen die Gruppen-Treffpunkte auch editieren und nicht nur die
+  Zuteilungen dafür machen." Zuschnitt des Betreibers: Der Planer teilt überall
+  zu, dazu die vier Grenzfälle Vortragsthema + Lieder, Partner am Schülerteil,
+  Besucher eines Gruppenbesuchs, Gruppen der Weiteren Pläne; er sendet und
+  bekommt die Meldungen an die Planer. Der Gruppenaufseher ändert und sendet die
+  Treffpunkte seiner Gruppe — geändert hatte er sie schon vorher, nur sagte es
+  das Handbuch nicht, und die Datenbank ließ jede Gruppe zu. Daten:
+  `members.zuteiler`, `invites.zuteiler`, `persons.zuteiler_vorgemerkt`
+  (Schalter „Planer" unter Feste Rollen). Weil Zuteilen und Plan ändern
+  dieselbe Zeile schreiben, zieht der Server die Grenze: Wochen eines
+  Nicht-Admins gehen über die neue Edge Function `zuteilen`
+  (`_shared/zuteilen-grenze.ts`, geprüft an den echten Reducer-Aktionen),
+  Treffpunkte prüft der Trigger `fs_weeks_pruefen`, Gruppenbesuche
+  `gruppenbesuche_pruefen`, der Rest `darf_zuteilen()` in den Richtlinien.
+  `send-plan`, `substitute` und `send-reminders` kennen die Stufe.
+
+**Rechte-Stufe ausrollen:** `schema.sql` einspielen → Functions `zuteilen`
+(neu), `send-plan`, `substitute`, `send-reminders` deployen → Push. Das neue
+Frontend und die neuen Functions lesen `zuteiler`; an einer Datenbank ohne die
+Spalte schlüge jede Abfrage danach fehl. Alte Clients der Gruppenaufseher
+schreiben ihre Treffpunkte weiter direkt — der Trigger prüft sie ebenso.
 
 **Freie Plätze ausrollen:** erst `substitute` deployen, dann pushen. Das neue
 Frontend ruft `fill`; die alte Function wiese den Aufruf mit 400 ab, und die App

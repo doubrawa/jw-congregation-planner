@@ -7,6 +7,7 @@ import { useKalendertag } from '../app/useKalendertag'
 import { Zeitleiste, type ZeitZeile } from '../components/Zeitleiste'
 import { abwesenheitsArt, zeitleisteDatum } from '../components/zeitleiste-gemeinsam'
 import { fromIso } from '../data/meeting-dates'
+import { rechteVon } from '../data/rechte'
 import { LOCALES } from '../i18n/langs'
 import { relativeDayLabel } from '../i18n/relative-time'
 import { aufgabenLabel, aufgabenTp, fill, useT } from '../i18n/useT'
@@ -63,7 +64,8 @@ export function DashboardScreen() {
     .toLocaleDateString(LOCALES[state.lang], { weekday: 'long', day: 'numeric', month: 'long' })
     .toUpperCase()
 
-  const unread = sichtbareMitteilungen(state.notifs, state.planner).filter((n) => !n.read).length
+  const { zuteilen } = rechteVon(state)
+  const unread = sichtbareMitteilungen(state.notifs, zuteilen).filter((n) => !n.read).length
   const toConfirm = state.myTasks.filter((task) => task.status === 'offen').length
 
   /*
@@ -114,9 +116,9 @@ export function DashboardScreen() {
         {me?.fn ?? ''}
       </h1>
 
-      {/* Der Planer sieht seine Arbeit zuerst (T95). Wer nicht plant, dürfte
-          den Screen dahinter gar nicht betreten. */}
-      {state.planner && <PlanungsKarte />}
+      {/* Wer zuteilt — Admin oder Planer —, sieht seine Arbeit zuerst (T95).
+          Wer nicht plant, dürfte den Screen dahinter gar nicht betreten. */}
+      {zuteilen && <PlanungsKarte />}
 
       {/* Der Leerzustand heißt: wirklich nichts geplant — nicht „nichts in den
           nächsten zwei Wochen". Steht etwas dahinter, nennt die Leiste es

@@ -50,10 +50,12 @@
 // jedes Umsortieren eine Nachricht hinaus. Der Planer entscheidet, wann der
 // Plan steht.
 //
-// Sicherheit: Aufrufer muss per JWT eingeloggter **Planer** sein — oder, nur für
-// den Entzug einer Treffpunkt-Leitung seiner Gruppe, deren Aufseher. Die
-// Versammlung kommt aus seiner Mitgliedszeile, nie aus dem Rumpf; jeder Wert
-// geht durch `wert()` in den Pfad (sonst beendet ein `#` die Abfrage still).
+// Sicherheit: Aufrufer muss per JWT eingeloggt sein und zuteilen dürfen — Admin
+// oder Planer (`members.planner`/`zuteiler`, 4.10.2026). Der Gruppenaufseher
+// sendet nur, was seine Gruppe betrifft: den Plan der Woche für ihre
+// Treffpunkte und den Entzug einer Leitung dort. Die Versammlung kommt aus
+// seiner Mitgliedszeile, nie aus dem Rumpf; jeder Wert geht durch `wert()` in
+// den Pfad (sonst beendet ein `#` die Abfrage still).
 //
 // Secrets: VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT (wie
 //   send-reminders), APP_URL optional. SUPABASE_URL / SERVICE_ROLE_KEY automatisch.
@@ -398,17 +400,19 @@ Deno.serve(async (req: Request) => {
 
     // Die Versammlung stammt aus der Mitgliedszeile des Aufrufers, nie aus dem
     // Rumpf — sonst schickte ein beliebiges Konto Nachrichten in fremde
-    // Versammlungen. Und schreiben darf hier nur ein Planer — bis auf den
-    // Entzug einer Treffpunkt-Leitung, den auch der Aufseher ihrer Gruppe
-    // auslöst (`nurEigeneTreffpunkte`).
-    const eigene = await rest.get<MemberRow[]>(
-      `members?select=user_id,person_id,planner,congregation_id&user_id=eq.${wert(userId)}`,
+    // Versammlungen. Senden darf, wer zuteilt: Admin und Planer (4.10.2026).
+    // Der Gruppenaufseher sendet die Treffpunkte **seiner** Gruppe — den Plan
+    // der Woche nur für sie und den Entzug einer Leitung dort
+    // (`nurEigeneTreffpunkte`); das Zeugnisgeben gar nicht.
+    const eigene = await rest.get<(MemberRow & { zuteiler?: boolean })[]>(
+      `members?select=user_id,person_id,planner,zuteiler,congregation_id&user_id=eq.${wert(userId)}`,
     )
-    const mich = eigene[0] as (MemberRow & { congregation_id?: string }) | undefined
+    const mich = eigene[0] as (MemberRow & { zuteiler?: boolean; congregation_id?: string }) | undefined
     const cong = mich?.congregation_id
     if (!cong) return json({ error: 'no-congregation' }, 403)
-    const aufseherVon = mich?.planner ? null : await geleiteteGruppen(cong, mich?.person_id ?? null)
-    if (aufseherVon && (payload.action !== 'entzug' || aufseherVon.size === 0)) {
+    const darfZuteilen = Boolean(mich?.planner || mich?.zuteiler)
+    const aufseherVon = darfZuteilen ? null : await geleiteteGruppen(cong, mich?.person_id ?? null)
+    if (aufseherVon && (payload.action === 'zeugnis' || aufseherVon.size === 0)) {
       return json({ error: 'forbidden' }, 403)
     }
 
@@ -596,9 +600,21 @@ Deno.serve(async (req: Request) => {
       heuteUtc(payload.heute),
     )
 
+    // Der Gruppenaufseher sendet nur die Treffpunkte seiner Gruppe — erkannt
+    // an der Gruppe des Treffpunkts in dieser Woche.
+    const eigeneTreffpunkte = aufseherVon
+      ? new Set((fsRows[0]?.data ?? []).filter((i) => i.grp != null && aufseherVon.has(i.grp)).map((i) => i.id))
+      : null
+    const zuSenden = eigeneTreffpunkte
+      ? offen.filter((p) => {
+          const teile = schluesselTeile(p.key)
+          return teile?.art === 'fs' && eigeneTreffpunkte.has(teile.instId)
+        })
+      : offen
+
     // Was schon gemeldet wurde, bleibt liegen. Sonst schickte ein zweiter Druck
     // nach einer kleinen Nachbesserung allen dieselbe Nachricht erneut.
-    const neu = offen.filter((p) => !schonGemeldet.has(tagebuchSchluessel(p.key, p.name)))
+    const neu = zuSenden.filter((p) => !schonGemeldet.has(tagebuchSchluessel(p.key, p.name)))
     return await versenden(cong, neu, kontoFuer, empfaengerFuer, personByName)
   } catch (err) {
     // Nur in die Logs, nicht in die Antwort: die REST-Fehler tragen Pfad und

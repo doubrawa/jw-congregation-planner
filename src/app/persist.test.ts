@@ -47,7 +47,7 @@ vi.mock('../lib/data', async (importActual) => ({
   saveFsWeek: vi.fn(),
   saveGroupRow: vi.fn(),
   saveInvite: vi.fn(),
-  saveInvitePlanner: vi.fn(),
+  saveInviteRechte: vi.fn(),
   saveMemberRow: vi.fn(),
   saveOzEintraege: vi.fn(),
   saveOzTermine: vi.fn(),
@@ -74,6 +74,10 @@ function st(over: Partial<AppState> = {}): AppState {
   return {
     congregationId: 'c1',
     userId: 'u1',
+    // Ein Admin: Die Fälle hier schreiben Wochen unmittelbar. Wer nicht Admin
+    // ist, schreibt sie über die Function `zuteilen` (eigener Fall unten).
+    planner: true,
+    zuteiler: false,
     personId: 'p9',
     week: 0,
     tab: 'mid',
@@ -142,7 +146,7 @@ describe('Zuteilen', () => {
     })
     const next = st()
     persist(prev, next, { type: 'assign', name: 'A' })
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0], false)
     expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [VERFALLEN])
   })
 
@@ -162,7 +166,23 @@ describe('Zuteilen', () => {
     const prev = st({ confirmations: { [VERFALLEN]: 'bestätigt' } })
     const next = st()
     persist(prev, next, { type: 'autoAssign' })
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0], false)
+    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [VERFALLEN])
+  })
+
+  /*
+   * **Wer nicht Admin ist, schreibt seine Wochen über `zuteilen`** (Rechte-
+   * Stufe „Planer", 4.10.2026). Wochen schreibt laut RLS nur der Admin; der
+   * Planer käme dort gar nicht an — und dass er nur zugeteilt hat, prüft allein
+   * die Function. Gefragt wird am Recht, nicht an der Aktion: Dieselbe Zuteilung
+   * geht beim Admin unmittelbar in die Tabelle.
+   */
+  it('beim Planer geht dieselbe Woche über die Function, die Zusagen räumt er selbst ab', () => {
+    const prev = st({ planner: false, zuteiler: true, confirmations: { [VERFALLEN]: 'bestätigt' } })
+    const next = st({ planner: false, zuteiler: true })
+    persist(prev, next, { type: 'autoAssign' })
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0], true)
+    // Zusagen löschen darf der Planer selbst (RLS `confirmations_delete_planner`).
     expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [VERFALLEN])
   })
 
@@ -794,7 +814,7 @@ describe('LAC / Import / Vortrag', () => {
     ] as AppAction[]) {
       vi.clearAllMocks()
       persist(st(), next, action)
-      expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
+      expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0], false)
     }
   })
 
@@ -802,13 +822,13 @@ describe('LAC / Import / Vortrag', () => {
     const neu = { range: 'Neu' } as Week
     const next = st({ weeks: [...buildDemoWeeks(), neu] })
     persist(st(), next, { type: 'addImportedWeek', week: neu })
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks.at(-1))
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks.at(-1), false)
   })
 
   it('mergeWeekAlt speichert die betroffene Woche', () => {
     const next = st()
     persist(st(), next, { type: 'mergeWeekAlt', wi: 1, alt: {} })
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[1])
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[1], false)
   })
 })
 
@@ -911,7 +931,7 @@ describe('Personen (inkl. Debounce)', () => {
 
     vi.advanceTimersByTime(600)
     expect(data.saveWeek).toHaveBeenCalledTimes(1)
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', neuer2)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', neuer2, false)
   })
 
   /*
@@ -967,7 +987,7 @@ describe('Personen (inkl. Debounce)', () => {
       const { a, next } = mitDublette()
       persist(
         st(),
-        { ...next, members: [{ userId: 'm1', email: '', personId: a.id, planner: true }] },
+        { ...next, members: [{ userId: 'm1', email: '', personId: a.id, planner: true, zuteiler: false }] },
         { type: 'updatePerson', id: a.id, patch: { plannerVorgemerkt: true } },
       )
       expect(data.saveMemberRow).toHaveBeenCalledTimes(1)
@@ -977,12 +997,23 @@ describe('Personen (inkl. Debounce)', () => {
   it('updatePerson mit Planer-Recht spiegelt Konten/Codes sofort', () => {
     const p = DEMO_PERSONS[0]
     const next = st({
-      members: [{ userId: 'm1', email: '', personId: p.id, planner: true }, { userId: 'u1', email: '', personId: p.id, planner: true }],
-      invites: [{ id: 'i1', code: 'A', personId: p.id, planner: true }],
+      members: [{ userId: 'm1', email: '', personId: p.id, planner: true, zuteiler: false }, { userId: 'u1', email: '', personId: p.id, planner: true, zuteiler: false }],
+      invites: [{ id: 'i1', code: 'A', personId: p.id, planner: true, zuteiler: false }],
     })
     persist(st(), next, { type: 'updatePerson', id: p.id, patch: { plannerVorgemerkt: true } })
     expect(data.saveMemberRow).toHaveBeenCalledTimes(1) // eigenes Konto (u1) ausgenommen
-    expect(data.saveInvitePlanner).toHaveBeenCalledWith('i1', true)
+    expect(data.saveInviteRechte).toHaveBeenCalledWith(next.invites[0]!)
+  })
+
+  it('updatePerson mit Planer-Recht (zuteiler) spiegelt ebenso — dieselbe Zeile, beide Rechte', () => {
+    const p = DEMO_PERSONS[0]!
+    const next = st({
+      members: [{ userId: 'm1', email: '', personId: p.id, planner: false, zuteiler: true }],
+      invites: [{ id: 'i1', code: 'A', personId: p.id, planner: false, zuteiler: true }],
+    })
+    persist(st(), next, { type: 'updatePerson', id: p.id, patch: { zuteilerVorgemerkt: true } })
+    expect(data.saveMemberRow).toHaveBeenCalledWith(next.members[0]!)
+    expect(data.saveInviteRechte).toHaveBeenCalledWith(next.invites[0]!)
   })
 
   it('navigate löscht eine namenlose entfernte Person und flusht', () => {
@@ -994,7 +1025,7 @@ describe('Personen (inkl. Debounce)', () => {
 
   it('removePerson löscht die Zeile und löst Konto-Verknüpfungen', () => {
     persist(
-      st({ members: [{ userId: 'm1', email: '', personId: 'p1', planner: false }] }),
+      st({ members: [{ userId: 'm1', email: '', personId: 'p1', planner: false, zuteiler: false }] }),
       st(),
       { type: 'removePerson', id: 'p1' },
     )
@@ -1381,7 +1412,7 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     expect(data.saveWeek).not.toHaveBeenCalled()
     vi.advanceTimersByTime(600)
     expect(data.saveWeek).toHaveBeenCalledTimes(1) // nur die eine geänderte
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', weeks[1])
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', weeks[1], false)
   })
 
   it('zwei Zeitänderungen kurz nacheinander schreiben jede Woche einmal — mit dem letzten Stand (T118)', () => {
@@ -1397,7 +1428,7 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     persist(mit(w1, '18:30'), mit(w2, '18:15'), { type: 'updateCongregation', patch: { times: zeiten('18:15') } })
     vi.advanceTimersByTime(600)
     expect(data.saveWeek).toHaveBeenCalledTimes(1)
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', w2[1])
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', w2[1], false)
   })
 
   it('updateCongregation ohne Zeitänderung schreibt keine Woche', () => {
@@ -1435,16 +1466,16 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
 
     expect(data.saveSettings).toHaveBeenCalled()
     expect(data.saveWeek).toHaveBeenCalledTimes(geaendert.length)
-    for (const w of geaendert) expect(data.saveWeek).toHaveBeenCalledWith('c1', w)
+    for (const w of geaendert) expect(data.saveWeek).toHaveBeenCalledWith('c1', w, false)
   })
 
   it('updateMember / removeMember / addInvite / removeInvite', () => {
-    const m = { userId: 'm1', email: '', personId: null, planner: true }
+    const m = { userId: 'm1', email: '', personId: null, planner: true, zuteiler: false }
     persist(st({ members: [m] }), st({ members: [m] }), { type: 'updateMember', userId: 'm1', patch: { planner: true } })
     expect(data.saveMemberRow).toHaveBeenCalledWith(m)
     persist(st(), st(), { type: 'removeMember', userId: 'm1' })
     expect(data.deleteMemberRow).toHaveBeenCalledWith('m1')
-    const inv = { id: 'i1', code: 'A', personId: null, planner: false }
+    const inv = { id: 'i1', code: 'A', personId: null, planner: false, zuteiler: false }
     persist(st(), st(), { type: 'addInvite', invite: inv })
     expect(data.saveInvite).toHaveBeenCalledWith('c1', inv)
     persist(st(), st(), { type: 'removeInvite', id: 'i1' })

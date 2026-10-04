@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "Întrunirile pentru serviciu ale acestei grupe vor fi eliminate.",
   "ohneGruppeTitle": "FĂRĂ GRUPĂ DE SERVICIU",
   "ohneGruppeHint": "Fiecare vestitor aparține unei grupe de serviciu. Fără grupă, persoana nu vede în program întrunirile pentru serviciu ale grupelor. Atinge un nume pentru a stabili grupa.",
+  "rollePlaner": "Planificator",
+  "rechteHint": "Planificatorii fac repartizările și trimit planurile. Adminul poate modifica, în plus, planurile însele, persoanele și setările.",
+  "fsSendenOffen": "Sarcini din grupa ta încă necomunicate: {n}",
+  "fsSendenAlle": "Toți cei desemnați din grupa ta au fost anunțați.",
 } satisfies Partial<Dict>

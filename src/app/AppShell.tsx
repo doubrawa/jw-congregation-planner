@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { useDialogFocus } from '../components/useDialogFocus'
-import { initials, aufseherGruppe } from '../data/helpers'
+import { initials } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
-import { darfPlanen, erlaubteScreens, themaVon } from '../data/rechte'
+import { darfPlanen, erlaubteScreens, rechteVon, themaVon } from '../data/rechte'
 import { weiterePlaeneImMenue } from '../data/weitere-plaene'
 import { vorzulegen } from './reducer'
 import { LOCALES } from '../i18n/langs'
@@ -98,9 +98,8 @@ export function AppShell() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [menuOpen])
 
-  const fsOverseer =
-    aufseherGruppe(state.planner, state.groups, state.personId) !== null
-  const navScreens = erlaubteScreens(state.planner, fsOverseer)
+  const rechte = rechteVon(state)
+  const navScreens = erlaubteScreens(rechte)
 
   // Deep-Link-Hash beim Start entfernen (nur wenn es einer ist), damit ein
   // Reload nicht erneut springt — Debug-Hashes (#s=…) bleiben unberührt.
@@ -177,7 +176,7 @@ export function AppShell() {
     state.screen === 'programm' || state.screen === 'planen' ? themaVon(state.tab) : null
   const zuThema = (thema: Thema) => {
     setMenuOpen(false)
-    const planen = state.planModus && darfPlanen(state.planner, fsOverseer, thema)
+    const planen = state.planModus && darfPlanen(rechte, thema)
     dispatch({ type: 'navigate', screen: planen ? 'planen' : 'programm', thema })
   }
   const eintrag = (screen: Screen, label: string): NavEintrag => ({
@@ -195,7 +194,7 @@ export function AppShell() {
   const verwaltung = (['personen', 'einstellungen'] as const).filter((s) => navScreens.includes(s))
   const weiterePlaeneSichtbar = weiterePlaeneImMenue({
     plaene: state.plaene,
-    planner: state.planner,
+    planner: rechte.zuteilen,
     heute: fromIso(tag),
   })
   const abschnitte: NavAbschnitt[] = [
@@ -210,8 +209,9 @@ export function AppShell() {
       eintraege: [
         themaEintrag('zusammenkuenfte', t.navZusammenkuenfte),
         themaEintrag('predigtdienst', t.tabFs),
-        // Weitere Pläne (T120, Phase 5): für Planer immer, sonst erst, wenn es
-        // etwas anzusehen gibt — ein leeres Thema wäre nur eine Sackgasse.
+        // Weitere Pläne (T120, Phase 5): für Admin und Planer immer, sonst
+        // erst, wenn es etwas anzusehen gibt — ein leeres Thema wäre nur eine
+        // Sackgasse.
         ...(weiterePlaeneSichtbar ? [themaEintrag('weitere', t.navWeiterePlaene)] : []),
       ],
     },
@@ -228,7 +228,7 @@ export function AppShell() {
       : []),
   ]
   const congSub = fill(t.congLabel, { name: state.congregation.name })
-  const roleLabel = state.planner ? t.rolleKoordinator : t.rolleVerkuendiger
+  const roleLabel = rechte.admin ? t.rolleKoordinator : rechte.zuteilen ? t.rollePlaner : t.rolleVerkuendiger
   // Der Fuß steht zweimal da — in der Seitenleiste und im Menü des Handys.
   const fuss = (
     <SidebarFooter
@@ -375,7 +375,7 @@ export function AppShell() {
 function NotifChip() {
   const { state, dispatch } = useApp()
   const { t } = useT()
-  const unread = sichtbareMitteilungen(state.notifs, state.planner).filter((n) => !n.read).length
+  const unread = sichtbareMitteilungen(state.notifs, rechteVon(state).zuteilen).filter((n) => !n.read).length
   return (
     <button
       type="button"

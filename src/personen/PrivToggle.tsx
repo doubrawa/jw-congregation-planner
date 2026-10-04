@@ -1,7 +1,7 @@
 import { useApp } from '../app/context'
 import { istBruderBereichBeiSchwester, privWert } from '../data/helpers'
 import { useT } from '../i18n/useT'
-import type { Person } from '../data/types'
+import type { Member, Person } from '../data/types'
 import { Switch } from '../components/Switch'
 
 
@@ -60,11 +60,60 @@ export function PrivToggle({
 }
 
 /**
- * Planer-Recht (Feste Rollen): sieht Planen/Personen/Einstellungen. Wird in
- * verknüpfte Konten gespiegelt; das eigene Recht ist gesperrt (sonst könnte
- * sich der letzte Planer selbst aussperren).
+ * Die Rechte einer Person (Feste Rollen): **Planer** und **Admin** (4.10.2026).
+ *
+ * Der Planer teilt zu und sendet; der Admin darf alles — Planen, Personen,
+ * Einstellungen. Beide werden in verknüpfte Konten gespiegelt; das eigene
+ * Recht ist gesperrt (sonst könnte sich der letzte Admin selbst aussperren).
+ * Der Planer-Schalter steht bei einem Admin an und gesperrt: Das Recht hat er
+ * ohnehin, und ein Schalter, der „aus" zeigt, behauptete das Gegenteil.
  */
-export function PlannerToggle({ person, update }: { person: Person; update: UpdatePerson }) {
+export function RechteToggles({ person, update }: { person: Person; update: UpdatePerson }) {
+  const { t } = useT()
+  return (
+    <>
+      {/* Aufsteigend: erst das kleinere Recht, dann das, das es einschließt. */}
+      <ZuteilerToggle person={person} update={update} />
+      <PlannerToggle person={person} update={update} />
+      <p className="panel-hint">{t.rechteHint}</p>
+    </>
+  )
+}
+
+/** Die Konten einer Person und ob eines davon das eigene ist. */
+function kontenVon(members: readonly Member[], userId: string | null, person: Person) {
+  const konten = members.filter((m) => m.personId === person.id)
+  return { konten, self: konten.some((m) => m.userId === userId) }
+}
+
+/** Planer-Recht (zuteilen und senden) — siehe `RechteToggles`. */
+function ZuteilerToggle({ person, update }: { person: Person; update: UpdatePerson }) {
+  const { state } = useApp()
+  const { t } = useT()
+  const { konten, self } = kontenVon(state.members, state.userId, person)
+  // Wie beim Admin entscheidet das Konto, sobald es eines gibt.
+  const admin = konten.length > 0 ? konten.some((m) => m.planner) : Boolean(person.plannerVorgemerkt)
+  const eigen = konten.length > 0 ? konten.some((m) => m.zuteiler) : Boolean(person.zuteilerVorgemerkt)
+  const gesperrt = self || admin
+  return (
+    <div className={gesperrt ? 'priv-row priv-row--locked' : 'priv-row'}>
+      <span className="priv-label">{t.rollePlaner}</span>
+      <Switch
+        on={admin || eigen}
+        label={t.rollePlaner}
+        disabled={gesperrt}
+        onToggle={() => update({ zuteilerVorgemerkt: !eigen })}
+      />
+    </div>
+  )
+}
+
+/**
+ * Admin-Recht (Feste Rollen): sieht Planen/Personen/Einstellungen. Wird in
+ * verknüpfte Konten gespiegelt; das eigene Recht ist gesperrt (sonst könnte
+ * sich der letzte Admin selbst aussperren).
+ */
+function PlannerToggle({ person, update }: { person: Person; update: UpdatePerson }) {
   const { state } = useApp()
   const { t } = useT()
   /**
@@ -82,8 +131,7 @@ export function PlannerToggle({ person, update }: { person: Person; update: Upda
    * selbst „Admin: aus" — und war Admin. Deshalb entscheidet hier jetzt das
    * Konto, und die Vormerkung trägt nur noch, wo es keines gibt.
    */
-  const konten = state.members.filter((m) => m.personId === person.id)
-  const self = konten.some((m) => m.userId === state.userId)
+  const { konten, self } = kontenVon(state.members, state.userId, person)
   const on = konten.length > 0 ? konten.some((m) => m.planner) : Boolean(person.plannerVorgemerkt)
   return (
     <div className={self ? 'priv-row priv-row--locked' : 'priv-row'}>

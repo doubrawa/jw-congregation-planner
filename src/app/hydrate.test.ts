@@ -19,6 +19,7 @@ const mockClear = vi.mocked(clearSnapshot)
 const emptyData: CongregationData = {
   congregation: { name: 'K', hall: '', times: STANDARD_ZEITEN },
   planner: true,
+  zuteiler: false,
   personId: null,
   persons: [],
   services: [],

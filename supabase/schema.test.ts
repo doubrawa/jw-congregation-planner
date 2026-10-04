@@ -162,20 +162,22 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     expect(rumpf).toContain('e.congregation_id = cong')
   })
 
-  it('Weitere Pläne: Entwürfe sieht nur ein Planer, Veröffentlichtes die eigene Versammlung (T120, Phase 5)', () => {
+  it('Weitere Pläne: Entwürfe sehen nur Admin und Planer, Veröffentlichtes die eigene Versammlung (T120, Phase 5)', () => {
     const fn = funktionsRuempfe(schema).get('plan_sichtbar') ?? ''
     // Die Funktion liest dieselbe Tabelle, deren Richtlinie sie ist — ohne
     // `security definer` liefe sie in die Rekursion.
     expect(fn).toContain('security definer')
-    expect(fn).toContain('public.is_planner()')
+    // Der Planer verteilt die Gruppen, bevor der Admin veröffentlicht (4.10.2026).
+    expect(fn).toContain('public.darf_zuteilen()')
     expect(fn).toContain('not p.entwurf')
     expect(fn).toContain('p.congregation_id = public.my_congregation_id()')
     const r = richtlinien(schema)
     expect(r.get('plaene_select') ?? '').toContain('public.plan_sichtbar(id)')
     expect(r.get('plan_eintraege_select') ?? '').toContain('public.plan_sichtbar(plan_id)')
-    // Schreiben nur Planer.
+    // Den Plan pflegt nur der Admin; die Gruppen darin verteilt auch der Planer.
     expect(r.get('plaene_write') ?? '').toContain('public.is_planner()')
-    expect(r.get('plan_eintraege_write') ?? '').toContain('public.is_planner()')
+    expect(r.get('plaene_write') ?? '').not.toContain('darf_zuteilen')
+    expect(r.get('plan_eintraege_write') ?? '').toContain('public.darf_zuteilen()')
   })
 
   it('selbst eintragen nur mit Aufgabenbereich, nur für sich, nur als „selbst" (T120)', () => {
@@ -217,14 +219,15 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     )
   })
 
-  it('eine Verhinderungs-Meldung geht nur an Planer (T89)', () => {
+  it('eine Verhinderungs-Meldung geht an Admins und Planer (T89, 4.10.2026)', () => {
     // Seit dem 24.9.2026 legt `notify_planners` die Zeilen an: Ein Verkündiger
     // sieht in `members` nur sich selbst und kann die Planer nicht adressieren.
     const fn = funktionsRuempfe(schema).get('notify_planners') ?? ''
     expect(fn).toContain('security definer')
-    expect(fn).toContain('and m.planner')
-    // Alles außer der Verhinderung bleibt Planern vorbehalten.
-    expect(fn).toContain("kind <> 'verhindert' and not public.is_planner()")
+    // Wer zuteilt, sucht auch den Ersatz.
+    expect(fn).toContain('and (m.planner or m.zuteiler)')
+    // Alles außer der Verhinderung bleibt Admins und Planern vorbehalten.
+    expect(fn).toContain("kind <> 'verhindert' and not public.darf_zuteilen()")
   })
 
   it('die Verhinderung trägt ihren Aufgaben-Schlüssel — gekürzt, mit Vorgabe, ohne alte Fassung daneben (4.10.2026)', () => {
@@ -246,6 +249,106 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     const rumpf = richtlinien(schema).get('notifications_insert') ?? ''
     expect(rumpf).toContain('public.is_planner()')
     expect(rumpf).not.toContain('verhindert')
+  })
+
+  describe('Rechte-Stufen Admin, Planer, Gruppenaufseher (4.10.2026)', () => {
+    const r = () => richtlinien(schema)
+    const fn = (name: string) => funktionsRuempfe(schema).get(name) ?? ''
+
+    it('das Planer-Recht steht am Konto, an der Einladung und als Vormerkung an der Person — auch nachträglich', () => {
+      expect(tabelle('members')).toMatch(/^\s*zuteiler\s+boolean not null default false/m)
+      expect(tabelle('invites')).toMatch(/^\s*zuteiler\s+boolean not null default false/m)
+      expect(tabelle('persons')).toMatch(/^\s*zuteiler_vorgemerkt\s+boolean not null default false/m)
+      const text = normiert(schema)
+      expect(text).toContain('alter table public.members add column if not exists zuteiler boolean not null default false;')
+      expect(text).toContain('alter table public.invites add column if not exists zuteiler boolean not null default false;')
+      expect(text).toContain('alter table public.persons add column if not exists zuteiler_vorgemerkt boolean not null default false;')
+      // Wer mit einem Code beitritt, bekommt das vorgemerkte Recht.
+      expect(fn('redeem_invite')).toContain('inv.planner, inv.zuteiler')
+    })
+
+    it('darf_zuteilen fragt Admin oder Planer, eigene_gruppen Aufseher oder Gehilfe — beide als security definer', () => {
+      expect(fn('darf_zuteilen')).toContain('security definer')
+      expect(fn('darf_zuteilen')).toContain('select planner or zuteiler from public.members where user_id = auth.uid()')
+      expect(fn('eigene_gruppen')).toContain('security definer')
+      expect(fn('eigene_gruppen')).toContain('g.overseer_id = m.person_id or g.assistant_id = m.person_id')
+    })
+
+    it('Wochen schreibt unmittelbar nur der Admin — der Planer kommt über die Function `zuteilen`', () => {
+      // Erlaubte die Richtlinie dem Planer das Schreiben, wäre die Grenze
+      // `nurZuteilungen` umgangen: Er schriebe die Woche direkt.
+      const rumpf = r().get('weeks_write') ?? ''
+      expect(rumpf).toContain('public.is_planner()')
+      expect(rumpf).not.toContain('darf_zuteilen')
+      expect(rumpf).not.toContain('zuteiler')
+    })
+
+    it('Treffpunkte: der Grundplan nur für die eigene Gruppe, Versammlungstreffpunkte nur der Admin', () => {
+      const rumpf = r().get('fs_rules_write') ?? ''
+      expect(rumpf).toContain('public.is_planner() or grp = any (public.eigene_gruppen())')
+      expect(rumpf).not.toContain('is_group_overseer')
+      expect(rumpf).not.toContain('darf_zuteilen')
+    })
+
+    it('Treffpunkt-Wochen: schreiben dürfen Admin, Planer und Gruppenaufseher, löschen nur der Admin — und der Trigger prüft', () => {
+      const alle = r()
+      expect(alle.get('fs_weeks_write') ?? '').toMatch(/for all .*public\.is_planner\(\)/)
+      expect(alle.get('fs_weeks_write') ?? '').not.toContain('is_group_overseer')
+      expect(alle.get('fs_weeks_einfuegen') ?? '').toMatch(/for insert .*public\.darf_zuteilen\(\) or public\.is_group_overseer\(\)/)
+      expect(alle.get('fs_weeks_aendern') ?? '').toMatch(/for update .*public\.darf_zuteilen\(\) or public\.is_group_overseer\(\)/)
+      expect(normiert(schema)).toContain(
+        'create trigger fs_weeks_pruefen before insert or update on public.fs_weeks for each row execute function public.fs_weeks_pruefen();',
+      )
+      const pruefen = fn('fs_weeks_pruefen')
+      expect(pruefen).toContain('if auth.uid() is null or public.is_planner() then return new;')
+      // Ein Upsert kommt als INSERT an — verglichen wird mit der bestehenden Woche.
+      expect(pruefen).toContain('where f.congregation_id = new.congregation_id and f.start = new.start;')
+      expect(pruefen).toContain("raise exception 'nur-eigene-gruppe' using errcode = '42501';")
+      const fremde = fn('fs_fremde')
+      // Der Planer darf bei fremden Gruppen nur den Leiter setzen — der ganze
+      // Ausdruck, nicht ein Teil davon: Ein Abzug mehr (`- 'time'`) enthielte
+      // den Teil weiterhin, und die Probe ginge durch.
+      expect(fremde).toContain("case when ohne_leiter then e.i - 'leader' - 'lpid' - 'lext' else e.i - 'lpid' end")
+      // Fremd ist alles außerhalb der eigenen Gruppen, Versammlungstreffpunkte eingeschlossen.
+      expect(fremde).toContain("where e.i ->> 'grp' is null or not ((e.i ->> 'grp') = any (eigene::text[]))")
+      // Die Reihenfolge der Liste zählt nicht.
+      expect(fremde).toContain("order by e.i ->> 'id'")
+    })
+
+    it('Gruppenbesuche: der Planer wechselt nur den Besucher', () => {
+      const alle = r()
+      expect(alle.get('gruppenbesuche_write') ?? '').toContain('public.is_planner()')
+      expect(alle.get('gruppenbesuche_besucher') ?? '').toMatch(/for update .*public\.darf_zuteilen\(\)/)
+      expect(alle.get('gruppenbesuche_besucher_upsert') ?? '').toMatch(/for insert .*public\.darf_zuteilen\(\)/)
+      const pruefen = fn('gruppenbesuche_pruefen')
+      expect(pruefen).toContain('new.woche is distinct from bisher.woche')
+      expect(pruefen).toContain('new.grp is distinct from bisher.grp')
+      // Anlegen kann der Planer keinen Besuch.
+      expect(pruefen).toContain("if not found then raise exception 'nur-besucher'")
+      expect(normiert(schema)).toContain(
+        'create trigger gruppenbesuche_pruefen before insert or update on public.gruppenbesuche for each row execute function public.gruppenbesuche_pruefen();',
+      )
+    })
+
+    it('Zeugnis-Schichten besetzen Admin und Planer, die Termine nur der Admin', () => {
+      expect(r().get('oz_eintraege_planer') ?? '').toContain('public.darf_zuteilen()')
+      expect(r().get('oz_termine_write') ?? '').toContain('public.is_planner()')
+      expect(r().get('oz_termine_write') ?? '').not.toContain('darf_zuteilen')
+    })
+
+    it('Zusagen eines neu besetzten Platzes räumen Admin und Planer überall, der Gruppenaufseher bei den Treffpunkten', () => {
+      expect(r().get('confirmations_delete_planner') ?? '').toContain(
+        "public.darf_zuteilen() or (public.is_group_overseer() and task_key like 'fs|%')",
+      )
+    })
+
+    it('Personen, Gruppen, Dienste, Versammlung, Mitglieder und Einladungen bleiben beim Admin', () => {
+      for (const name of ['persons_write', 'groups_write', 'services_write', 'congregations_update', 'members_update', 'invites_all', 'households_write']) {
+        const rumpf = r().get(name) ?? ''
+        expect(rumpf, name).toContain('public.is_planner()')
+        expect(rumpf, name).not.toContain('darf_zuteilen')
+      }
+    })
   })
 
   it('eine Abwesenheit gilt nur der eigenen Person (T97)', () => {

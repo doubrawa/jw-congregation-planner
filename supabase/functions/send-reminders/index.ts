@@ -305,8 +305,8 @@ Deno.serve(async (req: Request) => {
         klient.get<{ task_key: string; status: string }[]>(
           `confirmations?select=task_key,status&congregation_id=eq.${wert(cong.id)}`,
         ),
-        klient.get<{ user_id: string; person_id: string | null; planner: boolean }[]>(
-          `members?select=user_id,person_id,planner&congregation_id=eq.${wert(cong.id)}`,
+        klient.get<{ user_id: string; person_id: string | null; planner: boolean; zuteiler?: boolean }[]>(
+          `members?select=user_id,person_id,planner,zuteiler&congregation_id=eq.${wert(cong.id)}`,
         ),
         klient.get<{ id: string; fn: string; ln: string }[]>(
           `persons?select=id,fn,ln&congregation_id=eq.${wert(cong.id)}`,
@@ -497,7 +497,8 @@ Deno.serve(async (req: Request) => {
           return gebaut
         }
         for (const m of members) {
-          if (!m.planner) continue
+          // Admins und Planer: Wer zuteilt, spricht den Unerreichbaren an (4.10.2026).
+          if (!m.planner && !m.zuteiler) continue
           if (sentToday.has(`${m.user_id}|planner`)) {
             skipped++
             continue

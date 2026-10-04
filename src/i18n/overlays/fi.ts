@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "Tämän ryhmän kenttäkokoukset poistuvat.",
   "ohneGruppeTitle": "ILMAN PALVELUSRYHMÄÄ",
   "ohneGruppeHint": "Jokainen julistaja kuuluu palvelusryhmään. Ilman ryhmää henkilö ei näe ohjelmassa ryhmien kenttäkokouksia. Valitse ryhmä napauttamalla nimeä.",
+  "rollePlaner": "Suunnittelija",
+  "rechteHint": "Suunnittelijat jakavat tehtävät ja lähettävät suunnitelmat. Admin voi lisäksi muuttaa itse suunnitelmia, henkilöitä ja asetuksia.",
+  "fsSendenOffen": "Ryhmäsi tehtävät, joista ei ole vielä ilmoitettu kenellekään: {n}",
+  "fsSendenAlle": "Kaikki ryhmäsi tehtävien saajat tietävät asiasta.",
 } satisfies Partial<Dict>

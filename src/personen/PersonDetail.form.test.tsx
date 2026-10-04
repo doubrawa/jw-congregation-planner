@@ -304,10 +304,12 @@ describe('Vollständigkeitsprobe: jeder Bereich hat seinen Schalter', () => {
     expect(schalterLabels(container, t.hilfsdienste)).not.toContain('Reinigung')
   })
 
-  it('jede feste Wachtturm-Rolle steht in ihrer eigenen Karte', () => {
+  it('jede feste Wachtturm-Rolle steht in ihrer eigenen Karte — dazu die beiden Rechte', () => {
     const { container } = zeige(person())
-    // Die Karte trägt zusätzlich den Planer-Schalter.
-    expect(schalterLabels(container, t.wtRollenLabel).length).toBe(WT_ROLE_ORDER.length + 1)
+    // Die Karte trägt zusätzlich die Rechte: Planer und Admin (4.10.2026).
+    const labels = schalterLabels(container, t.wtRollenLabel)
+    expect(labels).toHaveLength(WT_ROLE_ORDER.length + 2)
+    expect(labels.slice(-2)).toEqual([t.rollePlaner, t.planerLbl])
   })
 
   it('ein Schalter schreibt genau seinen Bereich', () => {

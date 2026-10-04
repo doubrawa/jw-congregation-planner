@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import { useApp } from '../app/context'
-import { aufseherGruppe } from '../data/helpers'
-import { darfPlanen, themaVon } from '../data/rechte'
+import { darfPlanen, rechteVon, themaVon } from '../data/rechte'
 import type { Thema } from '../data/types'
 import { useT } from '../i18n/useT'
 import './components.css'
@@ -24,7 +23,7 @@ export function ThemaKopf({ zusatz, thema: vorgegeben }: { zusatz?: ReactNode; t
   const { state, dispatch } = useApp()
   const { t } = useT()
   const thema = vorgegeben ?? themaVon(state.tab)
-  const fsOverseer = aufseherGruppe(state.planner, state.groups, state.personId) !== null
+  const rechte = rechteVon(state)
   const titel =
     thema === 'predigtdienst' ? t.tabFs : thema === 'weitere' ? t.navWeiterePlaene : t.navZusammenkuenfte
   const planen = state.screen === 'planen'
@@ -34,7 +33,7 @@ export function ThemaKopf({ zusatz, thema: vorgegeben }: { zusatz?: ReactNode; t
         <h1 className="screen-title">{titel}</h1>
         {zusatz}
       </div>
-      {darfPlanen(state.planner, fsOverseer, thema) && (
+      {darfPlanen(rechte, thema) && (
         <div className="modus-schalter" role="group" aria-label={titel}>
           <button
             type="button"

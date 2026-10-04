@@ -40,6 +40,7 @@ export function initialState(): AppState {
     theme: getInitialTheme(),
     fontScale: getInitialFontScale(),
     planner: false,
+    zuteiler: false,
     congregation: { name: '', hall: '', times: STANDARD_ZEITEN },
     congregationId: null,
     userId: null,

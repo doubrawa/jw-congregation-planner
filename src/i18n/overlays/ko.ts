@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "이 집단의 야외 봉사 모임은 없어집니다.",
   "ohneGruppeTitle": "야외 봉사 집단 없음",
   "ohneGruppeHint": "각 전도인은 야외 봉사 집단에 속합니다. 집단이 지정되지 않으면 프로그램에서 집단의 야외 봉사 모임을 볼 수 없습니다. 이름을 눌러 집단을 지정하십시오.",
+  "rollePlaner": "계획 담당자",
+  "rechteHint": "계획 담당자는 임명을 하고 계획을 보냅니다. 관리자는 계획 자체와 사람, 설정도 변경할 수 있습니다.",
+  "fsSendenOffen": "내 집단에서 아직 아무에게도 전달되지 않은 임명: {n}",
+  "fsSendenAlle": "내 집단에서 임명을 받은 모든 사람이 알고 있습니다.",
 } satisfies Partial<Dict>

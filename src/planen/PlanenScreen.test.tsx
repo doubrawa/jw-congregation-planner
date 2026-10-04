@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import {
   AppDispatchContext,
@@ -392,5 +392,114 @@ describe('Der Besucher bleibt sichtbar (T120)', () => {
     expect(feld.value).toBe(AUFSEHER.id)
     // Als Vorgabe für neue Besuche gilt er dagegen nicht.
     expect(container.querySelector<HTMLSelectElement>('.gb-besucher select')!.value).toBe('')
+  })
+})
+
+/**
+ * **Der Planer teilt zu, ändert den Plan aber nicht** (Rechte-Stufe „Planer",
+ * 4.10.2026). Was den Plan selbst ändert, steht bei ihm nicht da: der
+ * Bearbeiten-Reiter, eigene Punkte, Reihenfolge und Minuten, der Grundplan.
+ * Was zum Zuteilen gehört, schon — auch die vier Grenzfälle, die der Betreiber
+ * ihm zugesprochen hat. Die Grenze zieht der Server (`zuteilen`); stünde hier
+ * ein Knopf, den er nicht drücken darf, lüde die App beim Drücken bloß nach.
+ */
+/** Montag der Testwoche: Was gesendet werden kann, liegt noch vor einem. */
+function amMontagDerTestwoche() {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9, 0))
+  })
+  afterEach(() => vi.useRealTimers())
+}
+
+describe('Der Planer teilt zu, ändert den Plan aber nicht (4.10.2026)', () => {
+  amMontagDerTestwoche()
+  const ALS_PLANER: Partial<AppState> = { planner: false, zuteiler: true }
+  const lac: Section = {
+    label: 'UNSER LEBEN ALS CHRIST', kind: 'lac', farbe: 'wein',
+    items: [{ iid: 'l1', title: 'Örtliche Bedürfnisse', meta: '15 Min.', mins: 15, names: [{ name: 'Olaf Overseer', pid: 'p-ov', bereichsKey: 'besprechung' }] }],
+  }
+  const vortrag: Section = {
+    label: 'ÖFFENTLICHER VORTRAG', kind: 'vortrag', farbe: 'petrol',
+    items: [{ iid: 'v1', title: 'Ein Thema', names: [{ name: '', rolle: 'Gastredner', bereichsKey: 'vortrag' }] }],
+  }
+  const mitLac = (): Week => {
+    const w = woche()
+    w.mid.sections.push(lac)
+    w.we.sections.push(vortrag)
+    return w
+  }
+
+  it('die Zusammenkünfte ohne den Bearbeiten-Reiter', () => {
+    const { container } = zeige({ ...ALS_PLANER })
+    expect(reiter(container)).toEqual(['Dienstag', 'Sonntag'])
+  })
+
+  it('ein stehengebliebener „edit"-Reiter führt ihn nicht in die Bearbeitung', () => {
+    // Gegenprobe: beim Admin steht dort der Anlass der Woche.
+    expect(seite(zeige({ tab: 'edit' }).container).querySelector('.woche-anlass')).not.toBeNull()
+    cleanup()
+    const { container } = zeige({ ...ALS_PLANER, tab: 'edit' })
+    expect(seite(container).querySelector('.woche-anlass')).toBeNull()
+    expect(seite(container).querySelector('.plan-tabs')).not.toBeNull()
+  })
+
+  it('keine eigenen Punkte, keine Reihenfolge, keine Minuten — der Admin sieht sie', () => {
+    const admin = zeige({ weeks: [mitLac()] })
+    expect(seite(admin.container).querySelector('.lac-move')).not.toBeNull()
+    expect(seite(admin.container).querySelector('.lac-edit')).not.toBeNull()
+    expect(seite(admin.container).querySelector('.lac-add-row')).not.toBeNull()
+    cleanup()
+    const planer = zeige({ ...ALS_PLANER, weeks: [mitLac()] })
+    const s = seite(planer.container)
+    expect(s.querySelector('.lac-move')).toBeNull()
+    expect(s.querySelector('.lac-edit')).toBeNull()
+    expect(s.querySelector('.lac-add-row')).toBeNull()
+    // Den Platz darin teilt er aber zu.
+    expect(s.textContent).toContain('Olaf Overseer')
+  })
+
+  it('der Partner am Schülerteil und das Vortragsthema gehören zum Zuteilen (Grenzfälle)', () => {
+    const { container } = zeige({ ...ALS_PLANER, weeks: [mitLac()] })
+    expect(seite(container).querySelector('.partner-toggle')).not.toBeNull()
+    cleanup()
+    const am = zeige({ ...ALS_PLANER, weeks: [mitLac()], tab: 'we' })
+    expect(seite(am.container).querySelector('.talk-title-input')).not.toBeNull()
+  })
+
+  it('„Plan senden" steht auch bei ihm', () => {
+    const { container } = zeige({ ...ALS_PLANER, weeks: [mitLac()] })
+    expect(seite(container).querySelector('.plan-senden')).not.toBeNull()
+    expect(seite(container).textContent).toContain(t.planSenden)
+  })
+
+  it('im Predigtdienst kein Grundplan — es gibt dort nichts zuzuteilen', () => {
+    const { container } = zeige({ ...ALS_PLANER, tab: 'fs' })
+    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.privZeugnis])
+  })
+
+  it('ist er zugleich Gruppenaufseher, pflegt er den Grundplan seiner Gruppe', () => {
+    const { container } = zeige({ ...ALS_PLANER, personId: AUFSEHER.id, tab: 'fs' })
+    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.privZeugnis, t.fsGrundplan])
+  })
+})
+
+describe('Der Gruppenaufseher sendet die Treffpunkte seiner Gruppe (4.10.2026)', () => {
+  amMontagDerTestwoche()
+  it('mit eigenem Knopf — nur was seine Gruppe betrifft', () => {
+    const { container } = zeige({
+      planner: false,
+      personId: AUFSEHER.id,
+      tab: 'fs',
+      weeks: [woche()],
+      fsWeeks: [[
+        { id: 'f1', ruleId: 'r1', grp: 'g1', wd: 6, time: '09:30', place: 'Saal', leader: 'Paula Planer', lpid: PLANER.id },
+        { id: 'f2', ruleId: 'r2', grp: 'g2', wd: 6, time: '10:00', place: 'Park', leader: 'Olaf Overseer', lpid: AUFSEHER.id },
+      ]],
+    })
+    const box = seite(container).querySelector('.plan-senden')!
+    expect(box.textContent).toContain(t.fsSendenOffen.replace('{n}', '1'))
+    expect(box.textContent).toContain('Paula Planer')
+    expect(box.textContent).not.toContain('Olaf Overseer')
   })
 })

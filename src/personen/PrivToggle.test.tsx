@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
-import { PlannerToggle, PrivToggle } from './PrivToggle'
+import { PrivToggle, RechteToggles } from './PrivToggle'
 import { emptyQualifications } from '../data/helpers'
 import type { Member, Person } from '../data/types'
  import {
@@ -132,43 +132,74 @@ describe('PrivToggle — Hinweis auf Brüder-Bereiche (F4)', () => {
 })
 
 /**
- * Der Admin-Schalter zeigt das **wirksame** Recht.
+ * Die Rechte-Schalter zeigen das **wirksame** Recht — Planer und Admin
+ * (4.10.2026).
  *
- * Es steht an zwei Stellen: `persons.planner` ist die Vormerkung für die
- * Einladung, `members.planner` das, wonach App und Datenbank entscheiden. Wer
- * die Vormerkung anzeigt, zeigt bei jedem, dessen Person aus dem NWS-Import
+ * Es steht an zwei Stellen: `persons.planner_vorgemerkt` bzw.
+ * `zuteiler_vorgemerkt` ist die Vormerkung für die Einladung, `members.planner`
+ * bzw. `zuteiler` das, wonach App und Datenbank entscheiden. Wer die
+ * Vormerkung anzeigt, zeigt bei jedem, dessen Person aus dem NWS-Import
  * stammt, „aus" — auch beim Betreiber selbst, der sehr wohl Admin ist.
  */
-describe('PlannerToggle — welches der beiden Rechte gilt', () => {
-  const konto = (userId: string, personId: string | null, planner: boolean): Member =>
-    ({ userId, email: `${userId}@example.org`, personId, planner })
+describe('RechteToggles — welches der beiden Rechte gilt', () => {
+  const konto = (userId: string, personId: string | null, rechte: { planner?: boolean; zuteiler?: boolean }): Member => ({
+    userId,
+    email: `${userId}@example.org`,
+    personId,
+    planner: rechte.planner ?? false,
+    zuteiler: rechte.zuteiler ?? false,
+  })
 
-  const zeige = (over: Partial<AppState>, p: Person = person()) =>
+  const zeige = (over: Partial<AppState>, p: Person = person(), update = vi.fn()) =>
     render(
       <Buehne state={{ ...demoZustand(), userId: 'u-ich', ...over }}>
-        <PlannerToggle person={p} update={() => {}} />
+        <RechteToggles person={p} update={update} />
       </Buehne>,
     )
+  const schalter = (r: ReturnType<typeof zeige>, name: 'Admin' | 'Planer') =>
+    r.getByRole('switch', { name }) as HTMLButtonElement
 
   it('nimmt das Konto, nicht die Vormerkung an der Person', () => {
     // Genau der gemeldete Fall: `persons.planner` false (der Personen-Import
     // schreibt die Spalte nicht), das Konto hat das Recht trotzdem.
-    const { getByRole } = zeige({ members: [konto('u-fremd', 'p', true)] })
-    expect(getByRole('switch').getAttribute('aria-checked')).toBe('true')
+    const r = zeige({ members: [konto('u-fremd', 'p', { planner: true })] })
+    expect(schalter(r, 'Admin').getAttribute('aria-checked')).toBe('true')
   })
 
-  it('ohne Konto trägt die Vormerkung an der Person', () => {
+  it('ohne Konto trägt die Vormerkung an der Person — für beide Rechte', () => {
     // Für Eingeladene, die sich noch nicht angemeldet haben — sie sollen das
     // Recht ab der ersten Anmeldung haben.
-    const { getByRole } = zeige({ members: [] }, { ...person(), plannerVorgemerkt: true })
-    expect(getByRole('switch').getAttribute('aria-checked')).toBe('true')
+    const admin = zeige({ members: [] }, { ...person(), plannerVorgemerkt: true })
+    expect(schalter(admin, 'Admin').getAttribute('aria-checked')).toBe('true')
+    cleanup()
+    const planer = zeige({ members: [] }, { ...person(), zuteilerVorgemerkt: true })
+    expect(schalter(planer, 'Planer').getAttribute('aria-checked')).toBe('true')
+    expect(schalter(planer, 'Admin').getAttribute('aria-checked')).toBe('false')
   })
 
-  it('am eigenen Konto ist der Schalter gesperrt', () => {
+  it('ein Planer-Konto: Planer an, Admin aus — und der Schalter nimmt das Recht wieder', () => {
+    const update = vi.fn()
+    const r = zeige({ members: [konto('u-fremd', 'p', { zuteiler: true })] }, person(), update)
+    expect(schalter(r, 'Planer').getAttribute('aria-checked')).toBe('true')
+    expect(schalter(r, 'Admin').getAttribute('aria-checked')).toBe('false')
+    fireEvent.click(schalter(r, 'Planer'))
+    expect(update).toHaveBeenCalledWith({ zuteilerVorgemerkt: false })
+  })
+
+  it('ein Admin hat das Planer-Recht ohnehin: an und gesperrt', () => {
+    // Ein Schalter „Planer: aus" bei einem Admin behauptete, er dürfe nicht
+    // zuteilen — und ihn auszuschalten nähme ihm nichts.
+    const r = zeige({ members: [konto('u-fremd', 'p', { planner: true })] })
+    expect(schalter(r, 'Planer').getAttribute('aria-checked')).toBe('true')
+    expect(schalter(r, 'Planer').disabled).toBe(true)
+  })
+
+  it('am eigenen Konto sind beide Schalter gesperrt', () => {
     // Sonst nimmt sich jemand mit einem Fingertipp den Zugang zu Planen,
     // Personen und Einstellungen — zurückgeben könnte ihn nur ein zweiter
     // Admin. Die Datenbank zieht dieselbe Grenze (`user_id <> auth.uid()`).
-    const { getByRole } = zeige({ members: [konto('u-ich', 'p', true)] })
-    expect((getByRole('switch') as HTMLButtonElement).disabled).toBe(true)
+    const r = zeige({ members: [konto('u-ich', 'p', { planner: true })] })
+    expect(schalter(r, 'Admin').disabled).toBe(true)
+    expect(schalter(r, 'Planer').disabled).toBe(true)
   })
 })

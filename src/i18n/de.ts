@@ -13,6 +13,10 @@ export const DE = {
     // des Admin-Abschnitts und die erste Stellung des Schalters Ansehen/Planen.
     navZusammenkuenfte: 'Zusammenkünfte', navVerwaltung: 'Verwaltung', ansehen: 'Ansehen',
     abmelden: 'Abmelden', rolleKoordinator: 'Admin', rolleVerkuendiger: 'Verkündiger',
+    // Die Rechte-Stufe zwischen Verkündiger und Admin (4.10.2026): teilt zu und
+    // sendet, ändert die Pläne aber nicht. Steht im Kopf und als Schalter unter
+    // „Feste Rollen".
+    rollePlaner: 'Planer',
     // Zwei-Tipp-Bestätigung beim Abmelden (AbmeldenKnopf), wie `loeschenSicher`.
     abmeldenSicher: 'Wirklich abmelden?',
     // Offline-Stand (lib/snapshot.ts): {m} = Zeitpunkt der Momentaufnahme
@@ -375,6 +379,9 @@ export const DE = {
     planSenden: 'Plan senden',
     planSendenOffen: 'Noch niemandem mitgeteilte Zuteilungen dieser Woche: {n}',
     planSendenAlle: 'Alle Eingeteilten dieser Woche wissen Bescheid.',
+    // Dasselbe für den Gruppenaufseher: nur die Treffpunkte seiner Gruppe.
+    fsSendenOffen: 'Noch niemandem mitgeteilte Zuteilungen deiner Gruppe: {n}',
+    fsSendenAlle: 'Alle Eingeteilten deiner Gruppe wissen Bescheid.',
     planSendenZuletzt: 'Zuletzt gesendet {zeit}',
     planSendenOhneKonto: 'Ohne App-Konto — bitte persönlich Bescheid geben: {namen}',
     toastPlanGesendet: 'Benachrichtigte Personen: {n}',
@@ -426,6 +433,7 @@ export const DE = {
     stErneut: 'ERNEUT VERSUCHEN', stLeer: 'Versammlung ist noch leer',
     stLeerText: 'Es sind noch keine Daten hinterlegt. Bitte wende dich an einen Admin.',
     keinePersonOpt: '— keine Person —', planerLbl: 'Admin', duMarker: ' (du)',
+    rechteHint: 'Planer teilen zu und senden die Pläne. Admins ändern auch die Pläne selbst, die Personen und die Einstellungen.',
     // Kennzeichen am eigenen Platz in den Programm-Ansichten: dasselbe Wort wie
     // `duMarker`, als Chip — in Großbuchstaben, wo die Schrift welche kennt.
     chipDu: 'DU',

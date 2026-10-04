@@ -38,8 +38,8 @@ import '../components/gruppenbesuche.css'
 const RUECKBLICK_WOCHEN = 8
 
 /**
- * **Gruppenbesuche des Dienstaufsehers** beim Planen (T120, Phase 2) — nur für
- * Planer.
+ * **Gruppenbesuche des Dienstaufsehers** beim Planen (T120, Phase 2) — für
+ * Admin und Planer; der Planer wechselt nur den Besucher (4.10.2026).
  *
  * Oben der Besucher für neue Besuche und „Reihum verteilen", darunter die
  * Konflikte und die Besuche Monat für Monat. Jeder Besuch nennt seine
@@ -104,73 +104,82 @@ export function GruppenbesuchePlan() {
   const [neueWoche, setNeueWoche] = useState(dieseWoche)
   const [neueGruppe, setNeueGruppe] = useState(state.groups[0]?.id ?? '')
 
+  // Besuche anlegen, verteilen, verlegen und streichen ist der Plan — das tut
+  // der Admin. Der Planer wechselt den Besucher eines geplanten Besuchs und
+  // trägt ihn in die Treffpunkte ein (Grenzfall des Betreibers, 4.10.2026).
+  const admin = state.planner
+
   return (
     <>
-      <div className="panel panel--pb16" data-farbe="neutral">
-        <h2 className="panel-label">{t.gbTitel}</h2>
-        <p className="panel-hint">{t.gbWirkung}</p>
-        <label className="gb-besucher">
-          <span className="gb-feld">{t.gbBesucher}</span>
-          <select className="fs-select" value={besucher} onChange={(e) => setBesucher(e.target.value)}>
-            <option value="">{t.gbBesucherWaehlen}</option>
-            {kandidaten.map((p) => (
-              <option key={p.id} value={p.id}>
-                {displayName(p)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <p className="panel-hint">{t.gbBesucherHint}</p>
-        <select
-          className="fs-select gb-wochenende"
-          value={String(wochenende)}
-          aria-label={t.gbWochenende}
-          onChange={(e) => setWahlWochenende(e.target.value === 'letztes' ? 'letztes' : (Number(e.target.value) as Wochenende))}
-        >
-          {WOCHENENDEN.map((w) => (
-            <option key={w} value={String(w)}>
-              {w === 'letztes' ? t.gbWochenendeLetztes : fill(t.gbWochenendeNr, { n: w })}
-            </option>
-          ))}
-        </select>
-        <div className="gb-monate" role="group" aria-label={t.gbMonate}>
-          {monate.map((monat) => {
-            const an = !ausgelassen.includes(monat)
-            return (
-              <button
-                key={monat}
-                type="button"
-                className={an ? 'gb-monat is-an' : 'gb-monat'}
-                aria-pressed={an}
-                aria-label={monatsName(monat, state.lang)}
-                onClick={() => umschalten(monat)}
-              >
-                {besuchsMonatKurz(monat, state.lang)}
-              </button>
-            )
-          })}
-        </div>
-        <p className="panel-hint">{t.gbMonateHint}</p>
-      </div>
+      {admin && (
+        <>
+          <div className="panel panel--pb16" data-farbe="neutral">
+            <h2 className="panel-label">{t.gbTitel}</h2>
+            <p className="panel-hint">{t.gbWirkung}</p>
+            <label className="gb-besucher">
+              <span className="gb-feld">{t.gbBesucher}</span>
+              <select className="fs-select" value={besucher} onChange={(e) => setBesucher(e.target.value)}>
+                <option value="">{t.gbBesucherWaehlen}</option>
+                {kandidaten.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {displayName(p)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="panel-hint">{t.gbBesucherHint}</p>
+            <select
+              className="fs-select gb-wochenende"
+              value={String(wochenende)}
+              aria-label={t.gbWochenende}
+              onChange={(e) => setWahlWochenende(e.target.value === 'letztes' ? 'letztes' : (Number(e.target.value) as Wochenende))}
+            >
+              {WOCHENENDEN.map((w) => (
+                <option key={w} value={String(w)}>
+                  {w === 'letztes' ? t.gbWochenendeLetztes : fill(t.gbWochenendeNr, { n: w })}
+                </option>
+              ))}
+            </select>
+            <div className="gb-monate" role="group" aria-label={t.gbMonate}>
+              {monate.map((monat) => {
+                const an = !ausgelassen.includes(monat)
+                return (
+                  <button
+                    key={monat}
+                    type="button"
+                    className={an ? 'gb-monat is-an' : 'gb-monat'}
+                    aria-pressed={an}
+                    aria-label={monatsName(monat, state.lang)}
+                    onClick={() => umschalten(monat)}
+                  >
+                    {besuchsMonatKurz(monat, state.lang)}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="panel-hint">{t.gbMonateHint}</p>
+          </div>
 
-      <div className="plan-auto">
-        <AutoAssignRow
-          label={t.fsGruppenbesucheTab}
-          aktion={t.gbVerteilen}
-          bereit={besucher !== ''}
-          automatisch={() =>
-            besucher &&
-            dispatch({
-              type: 'besucheVerteilen',
-              pid: besucher,
-              wochenende,
-              auslassen: ausgelassen.filter((m) => monate.includes(m)),
-            })
-          }
-          leeren={() => dispatch({ type: 'besucheLeeren' })}
-        />
-      </div>
-      <p className="plan-hint">{t.gbVerteilenHint}</p>
+          <div className="plan-auto">
+            <AutoAssignRow
+              label={t.fsGruppenbesucheTab}
+              aktion={t.gbVerteilen}
+              bereit={besucher !== ''}
+              automatisch={() =>
+                besucher &&
+                dispatch({
+                  type: 'besucheVerteilen',
+                  pid: besucher,
+                  wochenende,
+                  auslassen: ausgelassen.filter((m) => monate.includes(m)),
+                })
+              }
+              leeren={() => dispatch({ type: 'besucheLeeren' })}
+            />
+          </div>
+          <p className="plan-hint">{t.gbVerteilenHint}</p>
+        </>
+      )}
       {/* Die Punkte an den Besuchern sind die Zusagen ihrer Treffpunkte. */}
       <ZusageLegende />
 
@@ -210,33 +219,35 @@ export function GruppenbesuchePlan() {
         </div>
       ))}
 
-      <div className="panel panel--pb16 fs-add" data-farbe="neutral2">
-        <h2 className="panel-label">{t.gbHinzufuegen}</h2>
-        <div className="fs-add-grid">
-          <select className="fs-select" value={neueWoche} aria-label={t.gbWoche} onChange={(e) => setNeueWoche(e.target.value)}>
-            {wochen.map((w) => (
-              <option key={w} value={w}>
-                {besuchsWocheText(w, state.lang)}
-              </option>
-            ))}
-          </select>
-          <select className="fs-select" value={neueGruppe} aria-label={t.gbGruppe} onChange={(e) => setNeueGruppe(e.target.value)}>
-            {state.groups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {tu(g.name)}
-              </option>
-            ))}
-          </select>
+      {admin && (
+        <div className="panel panel--pb16 fs-add" data-farbe="neutral2">
+          <h2 className="panel-label">{t.gbHinzufuegen}</h2>
+          <div className="fs-add-grid">
+            <select className="fs-select" value={neueWoche} aria-label={t.gbWoche} onChange={(e) => setNeueWoche(e.target.value)}>
+              {wochen.map((w) => (
+                <option key={w} value={w}>
+                  {besuchsWocheText(w, state.lang)}
+                </option>
+              ))}
+            </select>
+            <select className="fs-select" value={neueGruppe} aria-label={t.gbGruppe} onChange={(e) => setNeueGruppe(e.target.value)}>
+              {state.groups.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {tu(g.name)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            className="fs-add-btn"
+            disabled={!besucher || !neueGruppe}
+            onClick={() => dispatch({ type: 'besuchHinzufuegen', woche: neueWoche, grp: neueGruppe, pid: besucher })}
+          >
+            {t.hinzufuegen}
+          </button>
         </div>
-        <button
-          type="button"
-          className="fs-add-btn"
-          disabled={!besucher || !neueGruppe}
-          onClick={() => dispatch({ type: 'besuchHinzufuegen', woche: neueWoche, grp: neueGruppe, pid: besucher })}
-        >
-          {t.hinzufuegen}
-        </button>
-      </div>
+      )}
     </>
   )
 }
@@ -279,7 +290,9 @@ function BesuchZeile({
 
   return (
     <div className={vorbei ? 'gb-zeile is-vorbei' : 'gb-zeile'}>
-      {vorbei ? (
+      {/* Woche und Gruppe verlegt oder streicht nur der Admin; der Planer
+          sieht sie, wie sie geplant sind. */}
+      {vorbei || !state.planner ? (
         <div className="gb-kopf">
           <span className="gb-woche">{besuchsWocheText(besuch.woche, state.lang)}</span>
           <span className="gb-gruppe">{besuchsGruppe(besuch, state.groups, tu)}</span>

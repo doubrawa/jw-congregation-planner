@@ -44,7 +44,7 @@ import {
   saveFsWeek,
   saveGroupRow,
   saveInvite,
-  saveInvitePlanner,
+  saveInviteRechte,
   saveMemberRow,
   saveOzTermine,
   savePerson,
@@ -231,7 +231,7 @@ describe('Insert-Schreiber', () => {
     expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ id: 'a2', user_id: null }))
   })
   it('saveInvite → invites insert', () => {
-    saveInvite('c1', { id: 'i1', code: 'ABC', personId: 'p1', planner: false })
+    saveInvite('c1', { id: 'i1', code: 'ABC', personId: 'p1', planner: false, zuteiler: false })
     expect(chain.from).toHaveBeenCalledWith('invites')
     expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ id: 'i1', code: 'ABC' }))
   })
@@ -299,12 +299,13 @@ describe('Update-Schreiber', () => {
       aux_class: false,
     })
   })
-  it('saveMemberRow / saveInvitePlanner', () => {
-    saveMemberRow({ userId: 'u1', email: '', personId: 'p1', planner: true })
+  it('saveMemberRow / saveInviteRechte — beide Rechte in derselben Zeile', () => {
+    saveMemberRow({ userId: 'u1', email: '', personId: 'p1', planner: true, zuteiler: false })
     expect(chain.from).toHaveBeenCalledWith('members')
+    expect(chain.update).toHaveBeenCalledWith({ person_id: 'p1', planner: true, zuteiler: false })
     expect(chain.eq).toHaveBeenCalledWith('user_id', 'u1')
-    saveInvitePlanner('i1', true)
-    expect(chain.update).toHaveBeenCalledWith({ planner: true })
+    saveInviteRechte({ id: 'i1', code: 'ABC', personId: 'p1', planner: false, zuteiler: true })
+    expect(chain.update).toHaveBeenCalledWith({ planner: false, zuteiler: true })
     expect(chain.eq).toHaveBeenCalledWith('id', 'i1')
   })
 })

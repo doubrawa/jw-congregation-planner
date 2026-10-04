@@ -20,8 +20,8 @@ import type { AppAction } from './context'
  * Verkündiger erzeugen lokal nur diese eine Sorte — der Import, die andere
  * Quelle lokaler Zeilen, ist Admin-Sache. Deshalb genügt `local`.
  */
-export function sichtbareMitteilungen(notifs: readonly Notification[], planner: boolean): readonly Notification[] {
-  return planner ? notifs : notifs.filter((n) => !n.local)
+export function sichtbareMitteilungen(notifs: readonly Notification[], zuteilen: boolean): readonly Notification[] {
+  return zuteilen ? notifs : notifs.filter((n) => !n.local)
 }
 
 /**
@@ -44,7 +44,8 @@ export const ERSATZ_GESUCHT = 'Ersatz gesucht'
 
 /** Was `mitteilungsZiel` vom Zustand braucht. */
 export interface ZielLage {
-  readonly planner: boolean
+  /** Darf zuteilen — Admin oder Planer (4.10.2026): Beide bekommen die Meldungen an die Planer. */
+  readonly zuteilen: boolean
   readonly weeks: readonly Week[]
   readonly myTasks: readonly MyTask[]
 }
@@ -70,11 +71,11 @@ export interface ZielLage {
 export function mitteilungsZiel(n: Notification, lage: ZielLage): AppAction[] {
   if (n.title === ERSATZ_GESUCHT) return [{ type: 'navigate', screen: 'aufgaben', abschnitt: 'einspringen' }]
   const teile = n.taskId ? schluesselTeile(n.taskId) : null
-  if (lage.planner && AN_DIE_PLANER.has(n.title)) return wocheZeigen('planen', teile, lage.weeks)
+  if (lage.zuteilen && AN_DIE_PLANER.has(n.title)) return wocheZeigen('planen', teile, lage.weeks)
   if (n.taskId && lage.myTasks.some((t) => t.id === n.taskId)) {
     return [{ type: 'navigate', screen: 'aufgaben' }, { type: 'openMyTask', id: n.taskId }]
   }
-  if (teile) return wocheZeigen(lage.planner ? 'planen' : 'programm', teile, lage.weeks)
+  if (teile) return wocheZeigen(lage.zuteilen ? 'planen' : 'programm', teile, lage.weeks)
   return [{ type: 'navigate', screen: 'aufgaben' }]
 }
 

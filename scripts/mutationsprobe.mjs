@@ -900,19 +900,175 @@ export const KATALOG = [
     // Wer welchen Bildschirm betreten darf, entscheidet inzwischen
     // `erlaubteScreens` in `data/rechte.ts` — der Shell blieb nur das Zeichnen.
     datei: 'src/data/rechte.ts',
-    regel: 'Der Gruppenaufseher sieht Planen, aber nicht Personen.',
-    // Die Mutation nimmt den Abzug weg und gibt ihm die Personen mit dazu.
-    suchen: "  if (fsAufseher) return ALLE.filter((s) => s !== 'personen' && s !== 'einstellungen')",
-    ersetzen: "  if (fsAufseher) return ALLE.filter((s) => s !== 'einstellungen')",
+    // Seit dem 4.10.2026 dieselbe Zeile für Planer und Gruppenaufseher.
+    regel: 'Planer und Gruppenaufseher sehen Planen, aber nicht Personen.',
+    // Die Mutation nimmt den Abzug weg und gibt ihnen die Personen mit dazu.
+    suchen: "  if (r.zuteilen || r.gruppe !== null) return ALLE.filter((s) => s !== 'personen' && s !== 'einstellungen')",
+    ersetzen: "  if (r.zuteilen || r.gruppe !== null) return ALLE.filter((s) => s !== 'einstellungen')",
   },
   {
     id: 'nav-gruppenaufseher-ohne-einstellungen',
     datei: 'src/data/rechte.ts',
     // Bis T120 bekam er sie für den Grundplan seiner Gruppe; der steht seitdem
     // im Predigtdienst. Ein Rest-Eintrag führte in eine leere Seite.
-    regel: 'Der Gruppenaufseher sieht keine Einstellungen — sein Grundplan steht im Predigtdienst.',
-    suchen: "  if (fsAufseher) return ALLE.filter((s) => s !== 'personen' && s !== 'einstellungen')",
-    ersetzen: "  if (fsAufseher) return ALLE.filter((s) => s !== 'personen')",
+    regel: 'Planer und Gruppenaufseher sehen keine Einstellungen — die gehören dem Admin.',
+    suchen: "  if (r.zuteilen || r.gruppe !== null) return ALLE.filter((s) => s !== 'personen' && s !== 'einstellungen')",
+    ersetzen: "  if (r.zuteilen || r.gruppe !== null) return ALLE.filter((s) => s !== 'personen')",
+  },
+  // ── Rechte-Stufe „Planer" (4.10.2026) ──────────────────────────────────────
+  // Zuteilen und Plan ändern sind dieselbe Zeile. Die Grenze zieht der Server:
+  // die Edge Function `zuteilen` für die Wochen, die Datenbank für Treffpunkte,
+  // Zeugnis-Einträge, Weitere Pläne und Gruppenbesuche.
+  {
+    id: 'grenze-titel-nur-frei',
+    datei: 'supabase/functions/_shared/zuteilen-grenze.ts',
+    regel: 'Der Planer setzt nur die Titel, die zum Zuteilen gehören (Vortragsthema) — keinen anderen Programmpunkt.',
+    suchen: '      if (frei.has(`${tab}|${si}|${ii}`)) delete item.title\n',
+    ersetzen: '      delete item.title\n',
+  },
+  {
+    id: 'grenze-nur-partner-platz',
+    datei: 'supabase/functions/_shared/zuteilen-grenze.ts',
+    regel: 'Der Planer schaltet den Partner-Platz — keinen anderen Platz nimmt er weg.',
+    suchen: "    .filter((s) => !(istObjekt(s) && s.bereichsKey === 'schulungPartner'))\n",
+    ersetzen: '    .filter(() => false)\n',
+  },
+  {
+    id: 'grenze-lieder-nur-am-wochenende',
+    datei: 'supabase/functions/_shared/zuteilen-grenze.ts',
+    regel: 'Die Liednummer setzt der Planer am Wochenende — unter der Woche ist ein Titel ein Titel.',
+    suchen: "      else if (tab === 'we' && typeof item.title === 'string') item.title = ohneLiednummer(item.title)\n",
+    ersetzen: "      else if (typeof item.title === 'string') item.title = item.title.replace(/[A-Za-z0-9 ·]/g, '')\n",
+  },
+  {
+    id: 'zuteilen-prueft-die-grenze',
+    datei: 'supabase/functions/zuteilen/woche.ts',
+    regel: 'Die Function schreibt die Woche eines Planers nur, wenn er bloß zugeteilt hat.',
+    suchen: "  if (!ich.planner && !nurZuteilungen(jetzt.data, data)) return json({ error: 'nur-zuteilen' }, 403)",
+    ersetzen: '  if (false) return json({}, 403)',
+  },
+  {
+    id: 'zuteilen-nur-mit-recht',
+    datei: 'supabase/functions/zuteilen/woche.ts',
+    regel: 'Ein Verkündiger schreibt über `zuteilen` keine Woche.',
+    suchen: '  if (!ich || !(ich.planner || ich.zuteiler)) return json({ error: \'forbidden\' }, 403)',
+    ersetzen: "  if (!ich) return json({ error: 'forbidden' }, 403)",
+  },
+  {
+    id: 'persist-planer-ueber-zuteilen',
+    datei: 'src/app/persist.ts',
+    regel: 'Wer nicht Admin ist, schreibt Wochen über die Function `zuteilen` — die Tabelle ließe ihn nicht.',
+    suchen: '    geaenderteWochenSpeichern(congId, prev.weeks, next.weeks, GEBUENDELT.includes(action.type), !next.planner)',
+    ersetzen: '    geaenderteWochenSpeichern(congId, prev.weeks, next.weeks, GEBUENDELT.includes(action.type), false)',
+  },
+  {
+    id: 'rechte-admin-hat-planer-schalter-an',
+    datei: 'src/personen/PrivToggle.tsx',
+    regel: 'Beim Admin steht der Planer-Schalter an — er hat das Recht ohnehin.',
+    suchen: '        on={admin || eigen}\n',
+    ersetzen: '        on={eigen}\n',
+  },
+  {
+    id: 'ersatz-gefunden-auch-an-planer',
+    datei: 'supabase/functions/substitute/index.ts',
+    regel: '„Ersatz gefunden" erreicht Admins und Planer — wer zuteilt, sucht den Ersatz.',
+    suchen: '      ...members.filter((m) => m.planner || m.zuteiler).map((m) => m.user_id),',
+    ersetzen: '      ...members.filter((m) => m.planner).map((m) => m.user_id),',
+  },
+  {
+    id: 'unerreichbar-auch-an-planer',
+    datei: 'supabase/functions/send-reminders/index.ts',
+    regel: 'Wer nicht erreichbar ist, nennt die Erinnerung auch dem Planer.',
+    suchen: '          if (!m.planner && !m.zuteiler) continue',
+    ersetzen: '          if (!m.planner) continue',
+  },
+  {
+    id: 'schema-wochen-nur-admin',
+    datei: 'supabase/schema.sql',
+    regel: 'Wochen schreibt unmittelbar nur der Admin — der Planer kommt über `zuteilen`, sonst wäre die Grenze umgangen.',
+    suchen:
+      '  using (congregation_id = public.my_congregation_id() and public.is_planner())\n  with check (congregation_id = public.my_congregation_id() and public.is_planner());\n\n-- Abwesenheiten',
+    ersetzen:
+      '  using (congregation_id = public.my_congregation_id() and public.darf_zuteilen())\n  with check (congregation_id = public.my_congregation_id() and public.darf_zuteilen());\n\n-- Abwesenheiten',
+  },
+  {
+    id: 'schema-treffpunkt-planer-nur-leiter',
+    datei: 'supabase/schema.sql',
+    regel: 'Bei fremden Gruppen setzt der Planer nur den Leiter eines Treffpunkts.',
+    suchen: "    jsonb_agg(case when ohne_leiter then e.i - 'leader' - 'lpid' - 'lext' else e.i - 'lpid' end order by e.i ->> 'id'),",
+    ersetzen: "    jsonb_agg(case when ohne_leiter then e.i - 'leader' - 'lpid' - 'lext' - 'time' - 'place' else e.i - 'lpid' end order by e.i ->> 'id'),",
+  },
+  {
+    id: 'schema-aufseher-fremde-leiter',
+    datei: 'supabase/schema.sql',
+    regel: 'Der Gruppenaufseher setzt keinen Leiter einer fremden Gruppe — nur die Person-Id einer Bindung zählt nicht.',
+    suchen: "    jsonb_agg(case when ohne_leiter then e.i - 'leader' - 'lpid' - 'lext' else e.i - 'lpid' end order by e.i ->> 'id'),",
+    ersetzen: "    jsonb_agg(case when ohne_leiter then e.i - 'leader' - 'lpid' - 'lext' else e.i - 'lpid' - 'leader' end order by e.i ->> 'id'),",
+  },
+  {
+    id: 'schema-grundplan-eigene-gruppe',
+    datei: 'supabase/schema.sql',
+    regel: 'Den Grundplan pflegt der Gruppenaufseher nur für seine Gruppe.',
+    suchen:
+      '  using (congregation_id = public.my_congregation_id() and (public.is_planner() or grp = any (public.eigene_gruppen())))',
+    ersetzen: '  using (congregation_id = public.my_congregation_id() and (public.is_planner() or public.is_group_overseer()))',
+  },
+  {
+    id: 'oz-termine-nur-admin',
+    datei: 'src/planen/ZeugnisPlan.tsx',
+    regel: 'Die Termine des Zeugnisgebens pflegt der Admin — der Planer besetzt die Schichten.',
+    suchen: '      {state.planner && <TerminePanel />}',
+    ersetzen: '      {<TerminePanel />}',
+  },
+  {
+    id: 'gb-planen-nur-admin',
+    datei: 'src/planen/GruppenbesuchePlan.tsx',
+    regel: 'Besuche anlegen und verteilen nur der Admin — der Planer wechselt den Besucher.',
+    suchen: '  const admin = state.planner\n',
+    ersetzen: '  const admin = true\n',
+  },
+  {
+    id: 'gb-verlegen-nur-admin',
+    datei: 'src/planen/GruppenbesuchePlan.tsx',
+    regel: 'Woche und Gruppe eines Besuchs verlegt oder streicht nur der Admin.',
+    suchen: '      {vorbei || !state.planner ? (',
+    ersetzen: '      {vorbei ? (',
+  },
+  {
+    id: 'wp-plan-aendern-nur-admin',
+    datei: 'src/planen/WeiterePlaenePlan.tsx',
+    regel: 'Name, Zeitraum, Takt, Veröffentlichen und Löschen eines Plans nur beim Admin — der Planer verteilt die Gruppen.',
+    suchen: '  if (!state.planner) {\n',
+    ersetzen: '  if (false) {\n',
+  },
+  {
+    id: 'wp-anlegen-nur-admin',
+    datei: 'src/planen/WeiterePlaenePlan.tsx',
+    regel: 'Einen Weiteren Plan legt nur der Admin an.',
+    suchen: '      {state.planner && (\n        <button type="button" className="fs-add-btn wp-neu" onClick={anlegen}>',
+    ersetzen: '      {(\n        <button type="button" className="fs-add-btn wp-neu" onClick={anlegen}>',
+  },
+  {
+    id: 'plan-senden-auch-beim-planer',
+    datei: 'src/planen/PlanSendenPanel.tsx',
+    regel: '„Plan senden" steht bei jedem, der zuteilt — auch beim Planer.',
+    suchen: '  if (!rechteVon(state).zuteilen || state.staleAt) return null\n  if (!week) return null',
+    ersetzen: '  if (!state.planner || state.staleAt) return null\n  if (!week) return null',
+  },
+  {
+    id: 'rechte-planer-ist-kein-admin',
+    datei: 'src/data/rechte.ts',
+    // Die Stufe „Planer" (4.10.2026): zuteilen ja, den Plan ändern nein.
+    regel: 'Das Planer-Recht macht niemanden zum Admin.',
+    suchen: '    admin: s.planner,\n',
+    ersetzen: '    admin: s.planner || s.zuteiler,\n',
+  },
+  {
+    id: 'rechte-admin-teilt-zu',
+    datei: 'src/data/rechte.ts',
+    regel: 'Der Admin teilt zu, auch ohne das Planer-Recht eigens zu tragen.',
+    suchen: '    zuteilen: s.planner || s.zuteiler,\n',
+    ersetzen: '    zuteilen: s.zuteiler,\n',
   },
   {
     id: 'nachladen-laesst-predigtdienst-stehen',
@@ -980,8 +1136,8 @@ export const KATALOG = [
     id: 'planen-gruppenaufseher-nur-predigtdienst',
     datei: 'src/data/rechte.ts',
     regel: 'Der Gruppenaufseher plant nur den Predigtdienst — eine Zusammenkunft sieht er bloß an.',
-    suchen: "  return planner || (fsAufseher && thema === 'predigtdienst')",
-    ersetzen: '  return planner || fsAufseher',
+    suchen: "  return r.zuteilen || (r.gruppe !== null && thema === 'predigtdienst')",
+    ersetzen: '  return r.zuteilen || r.gruppe !== null',
   },
   {
     id: 'nav-deeplink-rechte',
@@ -1141,9 +1297,45 @@ export const KATALOG = [
   {
     id: 'planen-aufseher-ohne-bearbeiten',
     datei: 'src/planen/PlanenScreen.tsx',
-    regel: 'Der Gruppenaufseher kommt nicht in die Bearbeiten-Ansicht der Woche (T64).',
-    suchen: "const isEdit = state.tab === 'edit' && !fsOverseer",
+    // Seit dem 4.10.2026 nur der Admin — auch der Planer nicht.
+    regel: 'Nur der Admin kommt in die Bearbeiten-Ansicht der Woche (T64) — Gruppenaufseher und Planer nicht.',
+    suchen: "const isEdit = state.tab === 'edit' && rechte.admin",
     ersetzen: "const isEdit = state.tab === 'edit'",
+  },
+  {
+    id: 'planen-planer-ohne-bearbeiten-reiter',
+    datei: 'src/planen/PlanenScreen.tsx',
+    regel: 'Den Reiter „Bearbeiten" sieht nur der Admin.',
+    suchen: '          showEdit={rechte.admin}',
+    ersetzen: '          showEdit',
+  },
+  {
+    id: 'navigate-planer-ohne-bearbeiten',
+    datei: 'src/app/reducer.ts',
+    regel: 'Ein Sprung in „Bearbeiten" führt den Planer in die Zusammenkunft, nicht in die Bearbeitung.',
+    suchen: "        edit: screen === 'planen' && rechte.admin,",
+    ersetzen: "        edit: screen === 'planen',",
+  },
+  {
+    id: 'planen-planer-ohne-umbau',
+    datei: 'src/planen/MeetingSection.tsx',
+    regel: 'Eigene Punkte, Reihenfolge und Minuten stehen nur beim Admin — der Planer teilt zu.',
+    suchen: '  const darfUmbauen = rechteVon(state).admin\n',
+    ersetzen: '  const darfUmbauen = true\n',
+  },
+  {
+    id: 'fs-planer-aendert-nur-leiter',
+    datei: 'src/planen/FsPlan.tsx',
+    regel: 'Zeit, Ort und Entfernen eines Treffpunkts nur für Admin und Aufseher seiner Gruppe — der Planer setzt den Leiter.',
+    suchen: '    rechte.admin || (rechte.gruppe !== null && inst.grp === rechte.gruppe)\n',
+    ersetzen: '    true\n',
+  },
+  {
+    id: 'fs-grundplan-nicht-beim-planer',
+    datei: 'src/planen/fs-bereiche.ts',
+    regel: 'Den Grundplan sieht beim Planen nur, wer ihn ändern darf — der Planer allein nicht.',
+    suchen: '  const grundplan = planen && (rechte.admin || rechte.gruppe !== null)\n',
+    ersetzen: '  const grundplan = planen\n',
   },
   {
     id: 'datumswaehler-untergrenze',
@@ -1266,16 +1458,16 @@ export const KATALOG = [
   {
     id: 'schema-verhindert-nur-an-planer',
     datei: 'supabase/schema.sql',
-    regel: 'Eine Verhinderungs-Meldung geht nur an Planer (S3) — nicht an jeden Empfänger der Versammlung.',
+    regel: 'Eine Verhinderungs-Meldung geht nur an Admins und Planer (S3) — nicht an jeden Empfänger der Versammlung.',
     // Seit dem 24.9.2026 in `notify_planners`, nicht mehr in der Richtlinie.
-    suchen: '     and m.planner;',
+    suchen: '     and (m.planner or m.zuteiler);',
     ersetzen: '     and true;',
   },
   {
     id: 'schema-nur-verhinderung-fuer-jeden',
     datei: 'supabase/schema.sql',
-    regel: 'Über notify_planners meldet ein Verkündiger nur eine Verhinderung — Import und „Plan gesendet" bleiben Planern.',
-    suchen: "  if kind <> 'verhindert' and not public.is_planner() then",
+    regel: 'Über notify_planners meldet ein Verkündiger nur eine Verhinderung — Import und „Plan gesendet" bleiben Admins und Planern.',
+    suchen: "  if kind <> 'verhindert' and not public.darf_zuteilen() then",
     ersetzen: '  if false then',
   },
 
@@ -1363,17 +1555,31 @@ export const KATALOG = [
   {
     id: 'plan-nur-planer',
     datei: 'supabase/functions/send-plan/index.ts',
-    regel: 'Nachrichten an die ganze Versammlung darf nur ein Planer auslösen.',
-    suchen: "    if (aufseherVon && (payload.action !== 'entzug' || aufseherVon.size === 0)) {",
+    regel: 'Nachrichten an die ganze Versammlung darf nur auslösen, wer zuteilt — Admin oder Planer.',
+    suchen: "    if (aufseherVon && (payload.action === 'zeugnis' || aufseherVon.size === 0)) {",
     ersetzen: '    if (false) {',
+  },
+  {
+    id: 'plan-planer-darf-senden',
+    datei: 'supabase/functions/send-plan/index.ts',
+    regel: 'Der Planer sendet wie der Admin (4.10.2026).',
+    suchen: '    const darfZuteilen = Boolean(mich?.planner || mich?.zuteiler)',
+    ersetzen: '    const darfZuteilen = Boolean(mich?.planner)',
+  },
+  {
+    id: 'plan-aufseher-nur-eigene-gruppe',
+    datei: 'supabase/functions/send-plan/index.ts',
+    regel: 'Der Gruppenaufseher sendet nur die Treffpunkte seiner Gruppe — nicht die Zusammenkünfte, nicht eine fremde Gruppe.',
+    suchen: '    const zuSenden = eigeneTreffpunkte\n',
+    ersetzen: '    const zuSenden = false\n',
   },
   {
     id: 'plan-nicht-zweimal',
     datei: 'supabase/functions/send-plan/index.ts',
     regel: 'Gesendet wird nur, was das Tagebuch noch nicht kennt — sonst kommt nach jeder Nachbesserung alles erneut.',
     suchen:
-      '    const neu = offen.filter((p) => !schonGemeldet.has(tagebuchSchluessel(p.key, p.name)))',
-    ersetzen: '    const neu = offen',
+      '    const neu = zuSenden.filter((p) => !schonGemeldet.has(tagebuchSchluessel(p.key, p.name)))',
+    ersetzen: '    const neu = zuSenden',
   },
   {
     id: 'plan-je-person-eine',
@@ -1526,8 +1732,8 @@ export const KATALOG = [
   {
     id: 'planung-nur-beim-planer',
     datei: 'src/dashboard/DashboardScreen.tsx',
-    regel: 'Die Planungs-Karte steht nur beim Planer — sie führt in einen Screen, den sonst niemand betreten darf.',
-    suchen: '{state.planner && <PlanungsKarte />}',
+    regel: 'Die Planungs-Karte steht nur bei Admin und Planer — sie führt in einen Screen, den sonst niemand betreten darf.',
+    suchen: '{zuteilen && <PlanungsKarte />}',
     ersetzen: '{<PlanungsKarte />}',
   },
   {
@@ -2663,8 +2869,15 @@ export const KATALOG = [
     id: 'oz-wiederherstellen-nur-kommendes',
     datei: 'src/planen/ZeugnisPlan.tsx',
     regel: 'Zurückholen lässt sich nur eine kommende Schicht — eine vergangene bleibt, wie sie war.',
-    suchen: '            !vorbei && (\n              <button type="button" className="btn-outline oz-zurueckholen"',
-    ersetzen: '            (\n              <button type="button" className="btn-outline oz-zurueckholen"',
+    suchen: '  const darfStreichen = !vorbei && state.planner\n',
+    ersetzen: '  const darfStreichen = state.planner\n',
+  },
+  {
+    id: 'oz-streichen-nur-admin',
+    datei: 'src/planen/ZeugnisPlan.tsx',
+    regel: 'Eine Schicht streicht nur der Admin — der Planer besetzt sie (4.10.2026).',
+    suchen: '  const darfStreichen = !vorbei && state.planner\n',
+    ersetzen: '  const darfStreichen = !vorbei\n',
   },
   {
     id: 'oz-schema-faellt-aus',
@@ -2802,9 +3015,9 @@ export const KATALOG = [
     id: 'mitteilung-planer-vor-eigener-aufgabe',
     datei: 'src/app/mitteilungen.ts',
     regel: 'Eine Absage führt den Planer ins Planen, auch wenn es seine eigene Aufgabe war — als Planer sucht er Ersatz.',
-    suchen: "  if (lage.planner && AN_DIE_PLANER.has(n.title)) return wocheZeigen('planen', teile, lage.weeks)",
+    suchen: "  if (lage.zuteilen && AN_DIE_PLANER.has(n.title)) return wocheZeigen('planen', teile, lage.weeks)",
     ersetzen:
-      "  if (lage.planner && AN_DIE_PLANER.has(n.title) && !lage.myTasks.some((t) => t.id === n.taskId)) return wocheZeigen('planen', teile, lage.weeks)",
+      "  if (lage.zuteilen && AN_DIE_PLANER.has(n.title) && !lage.myTasks.some((t) => t.id === n.taskId)) return wocheZeigen('planen', teile, lage.weeks)",
   },
   {
     id: 'mitteilung-woche-der-aufgabe',

@@ -55,6 +55,8 @@ interface PersonRow {
   fn: string
   ln: string
   planner_vorgemerkt: boolean
+  /** Fehlt, solange `schema.sql` vom 4.10.2026 nicht eingespielt ist. */
+  zuteiler_vorgemerkt?: boolean
   role: string
   female: boolean
   tel: string
@@ -333,6 +335,7 @@ interface MemberRow {
   user_id: string
   person_id: string | null
   planner: boolean
+  zuteiler: boolean
   email: string
 }
 
@@ -341,6 +344,7 @@ interface InviteRow {
   code: string
   person_id: string | null
   planner: boolean
+  zuteiler: boolean
 }
 
 const asRole = (r: string): Role => (ROLE_ORDER.includes(r as Role) ? (r as Role) : 'verkuendiger')
@@ -357,6 +361,7 @@ function personFromRow(r: PersonRow): Person {
     fn: r.fn,
     ln: r.ln,
     plannerVorgemerkt: r.planner_vorgemerkt || undefined,
+    zuteilerVorgemerkt: r.zuteiler_vorgemerkt || undefined,
     role: asRole(r.role),
     female: r.female || undefined,
     tel: r.tel,
@@ -374,6 +379,7 @@ function personToRow(p: Person, congregationId: string) {
     fn: p.fn,
     ln: p.ln,
     planner_vorgemerkt: Boolean(p.plannerVorgemerkt),
+    zuteiler_vorgemerkt: Boolean(p.zuteilerVorgemerkt),
     role: p.role,
     female: Boolean(p.female),
     tel: p.tel,
@@ -592,6 +598,7 @@ function fensterAnfang(juengste: string | undefined): string {
 export interface CongregationData {
   congregation: Congregation
   planner: boolean
+  zuteiler: boolean
   personId: string | null
   persons: Person[]
   services: Service[]
@@ -635,7 +642,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
 
   const { data: member, error: memberErr } = await supabase
     .from('members')
-    .select('congregation_id, person_id, planner')
+    .select('congregation_id, person_id, planner, zuteiler')
     .eq('user_id', userId)
     .maybeSingle()
   if (memberErr) return { ok: false, reason: 'error', message: memberErr.message }
@@ -680,8 +687,8 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     notifAbfrage(supabase, congregationId),
     supabase.from('confirmations').select('task_key, status').eq('congregation_id', congregationId),
     // Nicht-Planer sehen per RLS nur die eigene Zeile bzw. keine Einladungen
-    supabase.from('members').select('user_id, person_id, planner, email').eq('congregation_id', congregationId).order('created_at'),
-    supabase.from('invites').select('id, code, person_id, planner').eq('congregation_id', congregationId).is('redeemed_by', null).order('created_at'),
+    supabase.from('members').select('user_id, person_id, planner, zuteiler, email').eq('congregation_id', congregationId).order('created_at'),
+    supabase.from('invites').select('id, code, person_id, planner, zuteiler').eq('congregation_id', congregationId).is('redeemed_by', null).order('created_at'),
     supabase.from('fs_rules').select('*').eq('congregation_id', congregationId).order('created_at'),
     fsWochenAbfrage,
     // Versand-Tagebuch: welcher Platz wurde wann gemeldet. Der
@@ -851,6 +858,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   const data: CongregationData = {
     congregation: { name: c?.name ?? '', hall: c?.hall ?? '', times: zeiten },
     planner: Boolean(member.planner),
+    zuteiler: Boolean(member.zuteiler),
     personId: (member.person_id as string | null) ?? null,
     persons: personList,
     services: serviceList,
@@ -879,12 +887,14 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       email: r.email,
       personId: r.person_id,
       planner: r.planner,
+      zuteiler: r.zuteiler,
     })),
     invites: ((invites.data ?? []) as InviteRow[]).map((r) => ({
       id: r.id,
       code: r.code,
       personId: r.person_id,
       planner: r.planner,
+      zuteiler: r.zuteiler,
     })),
     sentLog: Object.fromEntries(
       ((sentLogRows.data ?? []) as { task_key: string; name: string; sent_at: string }[]).map(
@@ -1066,9 +1076,13 @@ export function setKonfliktMelder(fn: Konfliktmelder | null): void {
  * zusätzliche Umlauf kostet nur in dem Fall etwas, in dem sonst etwas
  * verlorenginge.
  */
-async function schreibeWoche(congregationId: string, woche: string, week: Week): Promise<void> {
+async function schreibeWoche(congregationId: string, woche: string, week: Week, nurZuteilen: boolean): Promise<void> {
   if (!supabase) return
   const stand = wochenStand.get(woche)
+  if (nurZuteilen) {
+    await zuteilenSchreiben(woche, stand, week)
+    return
+  }
 
   if (stand === undefined) {
     const { data, error } = await supabase
@@ -1136,10 +1150,46 @@ async function schreibeWoche(congregationId: string, woche: string, week: Week):
 }
 
 /**
+ * **Die Woche eines Planers** (Rechte-Stufe „Planer", 4.10.2026) — über die
+ * Edge Function `zuteilen`, nicht über die Tabelle.
+ *
+ * Wochen schreibt laut RLS nur der Admin: Zuteilen und Plan ändern sind
+ * dieselbe Zeile, und dass einer nur zugeteilt hat, kann allein die Function
+ * prüfen (`nurZuteilungen`). Der Stand geht mit und kommt neu zurück — damit
+ * gilt der Konfliktschutz aus T39 auch hier. Ein Planer legt keine Woche an
+ * (das tut der Import); ohne bekannten Stand gibt es nichts zu schreiben.
+ *
+ * Jede Abweisung heißt „hier ist ein anderer Stand als dort": 409, weil ein
+ * anderer schneller war, 403, weil die geladene Woche nicht mehr die der
+ * Datenbank ist. Beides löst nur Nachladen — wie beim Füllen eines freien
+ * Platzes (`platzFuellen`).
+ */
+async function zuteilenSchreiben(woche: string, stand: string | undefined, week: Week): Promise<void> {
+  if (!supabase) return
+  if (stand === undefined) {
+    konfliktMelder?.()
+    return
+  }
+  const { data, error } = await supabase.functions.invoke('zuteilen', {
+    body: { action: 'woche', woche, stand, data: week },
+  })
+  if (error) {
+    console.error('[zuteilen]', error.message)
+    konfliktMelder?.()
+    return
+  }
+  const neu = (data as { stand?: unknown } | null)?.stand
+  if (typeof neu === 'string') wochenStand.set(woche, neu)
+}
+
+/**
  * Eine Woche speichern. Welche Zeile gemeint ist, sagt ihre eigene Kennung —
  * kein Index von außen mehr (T66).
+ *
+ * `nurZuteilen`: Der Schreibende ist Planer, aber nicht Admin — die Woche geht
+ * über `zuteilen` (siehe `zuteilenSchreiben`).
  */
-export function saveWeek(congregationId: string, week: Week): void {
+export function saveWeek(congregationId: string, week: Week, nurZuteilen = false): void {
   if (!supabase) return
   // Ohne Kennung gibt es keine Zeile, die gemeint sein könnte. Hier stand bis
   // T66 die Platzhalter-Prüfung; sie hatte denselben Zweck — nichts schreiben,
@@ -1149,7 +1199,7 @@ export function saveWeek(congregationId: string, week: Week): void {
   const vorher = wochenKette.get(woche) ?? Promise.resolve()
   // `catch` vor dem Anhängen: ein Fehlschlag darf die Kette nicht abreißen
   // lassen, sonst schriebe diese Woche nie wieder.
-  const naechster = vorher.then(() => schreibeWoche(congregationId, woche, week).catch(() => {}))
+  const naechster = vorher.then(() => schreibeWoche(congregationId, woche, week, nurZuteilen).catch(() => {}))
   wochenKette.set(woche, naechster)
 }
 
@@ -1293,10 +1343,17 @@ export function savePlanEintraege(congregationId: string, eintraege: PlanEintrag
   planNacheinander(() => loeschenDannSchreiben(client, 'plan_eintraege', congregationId, eintraege, entfernt, planEintragToRow))
 }
 
-/** Materialisierte Treffpunkte einer Woche (Kennung → FsInstance[]). */
+/**
+ * Materialisierte Treffpunkte einer Woche (Kennung → FsInstance[]).
+ *
+ * Eine Abweisung des Triggers `fs_weeks_pruefen` (42501: der Gruppenaufseher
+ * änderte eine fremde Gruppe, der Planer mehr als den Leiter) entsteht nur auf
+ * einem veralteten Stand — die Oberfläche bietet beides nicht an. Darum lädt
+ * sie nach (`zeilenRun`), statt bloß einen Fehler zu melden.
+ */
 export function saveFsWeek(congregationId: string, woche: string, insts: FsInstance[]): void {
   if (!supabase || !woche) return
-  void run(
+  void zeilenRun(
     supabase
       .from('fs_weeks')
       .upsert(
@@ -1772,7 +1829,7 @@ export function saveMemberRow(member: Member): void {
   void run(
     supabase
       .from('members')
-      .update({ person_id: member.personId, planner: member.planner })
+      .update({ person_id: member.personId, planner: member.planner, zuteiler: member.zuteiler })
       .eq('user_id', member.userId),
   )
 }
@@ -1782,10 +1839,10 @@ export function deleteMemberRow(userId: string): void {
   void run(supabase.from('members').delete().eq('user_id', userId))
 }
 
-/** Planer-Flag eines offenen Codes nachziehen (Person-Recht geändert). */
-export function saveInvitePlanner(id: string, planner: boolean): void {
+/** Rechte eines offenen Codes nachziehen (das vorgemerkte Recht der Person hat sich geändert). */
+export function saveInviteRechte(invite: Invite): void {
   if (!supabase) return
-  void run(supabase.from('invites').update({ planner }).eq('id', id))
+  void run(supabase.from('invites').update({ planner: invite.planner, zuteiler: invite.zuteiler }).eq('id', invite.id))
 }
 
 export function saveInvite(congregationId: string, invite: Invite): void {
@@ -1797,6 +1854,7 @@ export function saveInvite(congregationId: string, invite: Invite): void {
       code: invite.code,
       person_id: invite.personId,
       planner: invite.planner,
+      zuteiler: invite.zuteiler,
     }),
   )
 }

@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "这个小组的传道前聚会将被删除。",
   "ohneGruppeTitle": "未分配传道小组",
   "ohneGruppeHint": "每位传道员都属于一个传道小组。没有分配小组的人在节目表中看不到各小组的传道前聚会。点按姓名即可设定小组。",
+  "rollePlaner": "安排人",
+  "rechteHint": "安排人负责分配并发送计划。管理员还可以更改计划本身、人员和设置。",
+  "fsSendenOffen": "你的小组中尚未通知任何人的分配：{n}",
+  "fsSendenAlle": "你的小组中所有被分配的人都已知悉。",
 } satisfies Partial<Dict>

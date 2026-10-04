@@ -125,7 +125,7 @@ describe('Die Liste', () => {
     // Mit Konto, damit die Marke „Ohne App-Konto" hier nicht mitspricht — die
     // hat ihre eigenen Zeilen weiter unten.
     const alleMitKonto: Member[] = PERSONEN.map((pp, i) => ({
-      userId: `u${i}`, personId: pp.id, email: '', planner: false,
+      userId: `u${i}`, personId: pp.id, email: '', planner: false, zuteiler: false,
     }))
     const { container } = zeige({ members: alleMitKonto })
     expect(zeilen(container)[2]!.querySelector('.pers-sub')?.textContent).toBe(
@@ -146,7 +146,7 @@ describe('Die Liste', () => {
    * dagegen da, während er ihn macht.
    */
   describe('Ohne App-Konto', () => {
-    const MIT_KONTO: Member[] = [{ userId: 'u9', personId: 'p-b', email: 'b@x.de', planner: false }]
+    const MIT_KONTO: Member[] = [{ userId: 'u9', personId: 'p-b', email: 'b@x.de', planner: false, zuteiler: false }]
     const sub = (c: HTMLElement, i: number) =>
       zeilen(c)[i]!.querySelector('.pers-sub')?.textContent ?? ''
 
@@ -165,7 +165,7 @@ describe('Die Liste', () => {
         dieselbe Menge treffen, sonst nennt die Liste nach dem Senden Namen,
         die vorher unmarkiert dastanden.
       */
-      const code: Invite[] = [{ id: 'i1', code: 'ABC123', personId: 'p-a', planner: false }]
+      const code: Invite[] = [{ id: 'i1', code: 'ABC123', personId: 'p-a', planner: false, zuteiler: false }]
       const { container } = zeige({ members: MIT_KONTO, invites: code })
       expect(sub(container, 0)).toContain('Ohne App-Konto')
     })
@@ -174,7 +174,7 @@ describe('Die Liste', () => {
       // Gegenprobe: Sonst wäre die Zeile oben auch dann grün, wenn sie immer
       // dastünde.
       const alle: Member[] = PERSONEN.map((pp, i) => ({
-        userId: `u${i}`, personId: pp.id, email: '', planner: false,
+        userId: `u${i}`, personId: pp.id, email: '', planner: false, zuteiler: false,
       }))
       const { container } = zeige({ members: alle })
       expect(container.textContent).not.toContain('Ohne App-Konto')
@@ -375,9 +375,9 @@ describe('Warnung: ohne Predigtdienstgruppe', () => {
 })
 
 describe('Alle ohne Konto einladen', () => {
-  const MITGLIED: Member[] = [{ userId: 'u9', personId: 'p-b', email: 'b@x.de', planner: false }]
+  const MITGLIED: Member[] = [{ userId: 'u9', personId: 'p-b', email: 'b@x.de', planner: false, zuteiler: false }]
   const OFFENER_CODE: Invite[] = [
-    { id: 'i1', code: 'ABC123', personId: 'p-c', planner: false },
+    { id: 'i1', code: 'ABC123', personId: 'p-c', planner: false, zuteiler: false },
   ]
 
   it('ohne angemeldetes Konto gibt es den Knopf gar nicht — niemand, der einlädt (Entwicklerseite)', () => {
@@ -435,7 +435,7 @@ describe('Alle ohne Konto einladen', () => {
 
   it('hat schon jeder ein Konto, sagt es das — statt lautlos nichts zu tun', async () => {
     const alleVersorgt: Member[] = PERSONEN.map((p, i) => ({
-      userId: `u${i}`, personId: p.id, email: '', planner: false,
+      userId: `u${i}`, personId: p.id, email: '', planner: false, zuteiler: false,
     }))
     const { container, dispatch } = zeige({ members: alleVersorgt })
     fireEvent.click(knopf(container, t.alleEinladen))
@@ -456,7 +456,7 @@ describe('Alle ohne Konto einladen', () => {
 })
 
 describe('Konten ohne verknüpfte Person', () => {
-  const WAISE: Member[] = [{ userId: 'u9', personId: null, email: 'wer@example.org', planner: false }]
+  const WAISE: Member[] = [{ userId: 'u9', personId: null, email: 'wer@example.org', planner: false, zuteiler: false }]
 
   it('stehen ganz oben — sonst übersieht man sie', () => {
     const { container } = zeige({ members: WAISE })
@@ -488,7 +488,7 @@ describe('Konten ohne verknüpfte Person', () => {
       also auch nicht wieder lösen.
     */
     const { container } = zeige({
-      members: [...WAISE, { userId: 'u8', personId: 'p-a', email: 'a@x.de', planner: false }],
+      members: [...WAISE, { userId: 'u8', personId: 'p-a', email: 'a@x.de', planner: false, zuteiler: false }],
     })
     const auswahl = container.querySelector<HTMLSelectElement>('.pers-orphans .mem-select')!
     const werte = [...auswahl.options].map((o) => o.value)
@@ -507,7 +507,7 @@ describe('Konten ohne verknüpfte Person', () => {
 
   it('das eigene Konto lässt sich nicht entfernen — man sperrte sich selbst aus', () => {
     const { container } = zeige({
-      members: [{ userId: 'u1', personId: null, email: 'ich@example.org', planner: true }],
+      members: [{ userId: 'u1', personId: null, email: 'ich@example.org', planner: true, zuteiler: false }],
       userId: 'u1',
     })
     expect(container.querySelector('.pers-orphans .svc-remove')).toBeNull()

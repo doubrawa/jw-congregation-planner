@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "Denne gruppes samlinger bortfalder.",
   "ohneGruppeTitle": "UDEN TJENESTEGRUPPE",
   "ohneGruppeHint": "Hver forkynder hører til en tjenestegruppe. Uden tilknytning ser personen ingen gruppers samlinger i programmet. Tryk på et navn for at vælge gruppen.",
+  "rollePlaner": "Planlægger",
+  "rechteHint": "Planlæggere fordeler opgaverne og sender planerne. En admin kan også ændre selve planerne, personerne og indstillingerne.",
+  "fsSendenOffen": "Opgaver i din gruppe, der endnu ikke er meddelt nogen: {n}",
+  "fsSendenAlle": "Alle med opgaver i din gruppe er informeret.",
 } satisfies Partial<Dict>

@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "Sastanci za službu ove grupe otpadaju.",
   "ohneGruppeTitle": "BEZ GRUPE ZA SLUŽBU PROPOVIJEDANJA",
   "ohneGruppeHint": "Svaki objavitelj pripada grupi za službu propovijedanja. Bez nje osoba u programu ne vidi sastanke za službu grupa. Dodirni ime da odrediš grupu.",
+  "rollePlaner": "Planer",
+  "rechteHint": "Planeri dodjeljuju zadatke i šalju planove. Admin može mijenjati i same planove, osobe i postavke.",
+  "fsSendenOffen": "Zadaci u tvojoj grupi koji još nikome nisu priopćeni: {n}",
+  "fsSendenAlle": "Svi zaduženi iz tvoje grupe su obaviješteni.",
 } satisfies Partial<Dict>

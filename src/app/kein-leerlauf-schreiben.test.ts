@@ -73,7 +73,7 @@ vi.mock('../lib/data', async (importActual) => ({
   saveFsWeek: vi.fn(),
   saveGroupRow: vi.fn(),
   saveInvite: vi.fn(),
-  saveInvitePlanner: vi.fn(),
+  saveInviteRechte: vi.fn(),
   saveMemberRow: vi.fn(),
   saveOzEintraege: vi.fn(),
   saveOzTermine: vi.fn(),
@@ -122,7 +122,7 @@ function ladung(): HydratePayload {
     congLang: 'de',
     progLangs: [],
     auxClass: true,
-    members: [{ userId: 'u1', personId: DEMO_PERSONS[0]!.id, planner: true, email: 'a@b.c' }],
+    members: [{ userId: 'u1', personId: DEMO_PERSONS[0]!.id, planner: true, zuteiler: false, email: 'a@b.c' }],
     invites: [],
   }
 }

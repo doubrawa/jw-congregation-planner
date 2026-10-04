@@ -217,3 +217,35 @@ describe('Planen', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpPlanLoeschen', id: 'pl-e' })
   })
 })
+
+/**
+ * **Der Planer verteilt die Gruppen, den Plan pflegt der Admin** (Rechte-Stufe
+ * „Planer", 4.10.2026 — einer der vier Grenzfälle des Betreibers). Name,
+ * Zeitraum, Takt, Veröffentlichen und Löschen ändern den Plan; die Einträge
+ * darin sind die Zuteilung.
+ */
+describe('Der Planer in den Weiteren Plänen (4.10.2026)', () => {
+  const alsPlaner = () => zeige(PlanenScreen, { screen: 'planen', planner: false, zuteiler: true })
+  const oeffnen = (c: HTMLElement, name: string) =>
+    fireEvent.click([...c.querySelectorAll('.wp-karte')].find((k) => k.textContent?.includes(name))!)
+
+  it('legt keinen Plan an — sieht aber auch die Entwürfe, um darin zu verteilen', () => {
+    const { container } = alsPlaner()
+    expect(container.querySelector('.wp-neu')).toBeNull()
+    expect(container.textContent).toContain('Grundreinigung')
+  })
+
+  it('verteilt und setzt einzelne Wochen — ohne Name, Zeitraum, Takt, Veröffentlichen und Löschen', () => {
+    const { container, dispatch } = alsPlaner()
+    oeffnen(container, 'Winterdienst')
+    expect(container.querySelector('input[type="text"]')).toBeNull()
+    expect(container.querySelector('.wp-veroeffentlichen')).toBeNull()
+    expect(knopf(container, t.wpLoeschen)).toBeUndefined()
+    expect(container.textContent).toContain('Winterdienst')
+    fireEvent.click(knopf(container, t.gbVerteilen)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'wpGruppenVerteilen', planId: 'pl-s', abGruppe: 'g1' })
+    const wochen = [...container.querySelectorAll(`.wp-zeile select[aria-label="${t.gbGruppe}"]`)] as HTMLSelectElement[]
+    fireEvent.change(wochen[0]!, { target: { value: 'g1' } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-09-07', grp: 'g1' })
+  })
+})

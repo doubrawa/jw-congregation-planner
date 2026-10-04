@@ -77,7 +77,7 @@ function zeige(over: Partial<AppState> = {}) {
     absences: [...DEMO_ABSENCES],
     notifs: [...DEMO_NOTIFICATIONS],
     myTasks: [...DEMO_MY_TASKS],
-    members: [{ userId: 'u1', personId: DEMO_PERSONS[0]!.id, planner: true, email: 'a@b.c' }],
+    members: [{ userId: 'u1', personId: DEMO_PERSONS[0]!.id, planner: true, zuteiler: false, email: 'a@b.c' }],
     week: 0,
     tab: 'mid',
     ...over,

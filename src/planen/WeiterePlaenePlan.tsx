@@ -54,9 +54,13 @@ export function WeiterePlaenePlan() {
       <div className="panel panel--pb16" data-farbe="neutral">
         <p className="panel-hint">{t.wpHinweis}</p>
       </div>
-      <button type="button" className="fs-add-btn wp-neu" onClick={anlegen}>
-        {t.wpNeu}
-      </button>
+      {/* Einen Plan legt der Admin an; der Planer verteilt darin die Gruppen
+          (4.10.2026). */}
+      {state.planner && (
+        <button type="button" className="fs-add-btn wp-neu" onClick={anlegen}>
+          {t.wpNeu}
+        </button>
+      )}
       {state.plaene.length === 0 && <p className="wp-leer">{t.wpKeine}</p>}
       {ABSCHNITTE.map((stand) => {
         const imAbschnitt = state.plaene.filter((p) => planStand(p, heute) === stand)
@@ -104,6 +108,29 @@ function PlanBearbeiten({ plan, onZurueck }: { plan: WeitererPlan; onZurueck: ()
     onZurueck()
   })
   const locale = LOCALES[state.lang]
+
+  // Name, Zeitraum, Takt, Veröffentlichen und Löschen sind der Plan selbst —
+  // die ändert der Admin. Der Planer sieht sie und verteilt die Gruppen.
+  if (!state.planner) {
+    return (
+      <>
+        <button type="button" className="wp-zurueck" onClick={onZurueck}>
+          {`‹ ${t.navWeiterePlaene}`}
+        </button>
+        <div className="panel panel--pb16" data-farbe="neutral">
+          <div className="wp-karte-kopf">
+            <h2 className="panel-label">{t.saal}</h2>
+            {plan.entwurf && <span className="wp-marke">{t.wpEntwurf}</span>}
+          </div>
+          <p className="wp-karte-name" dir="auto">
+            {plan.name || t.wpOhneName}
+          </p>
+          <p className="wp-karte-zeitraum">{zeitraumText(plan, state.lang)}</p>
+        </div>
+        <SaalSpannen plan={plan} />
+      </>
+    )
+  }
 
   return (
     <>

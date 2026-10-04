@@ -56,3 +56,9 @@ verify_jwt = false
 # aus dem Rumpf.
 [functions.send-plan]
 verify_jwt = true
+
+# Schreibweg der Rechte-Stufe „Planer": prüft selbst über /auth/v1/user, wer da
+# ruft, verlangt Planer- oder Admin-Recht und schreibt nur, was die Grenze
+# `nurZuteilungen` durchlässt. Die Versammlung kommt aus der Mitgliedszeile.
+[functions.zuteilen]
+verify_jwt = true

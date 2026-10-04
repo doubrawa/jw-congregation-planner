@@ -138,6 +138,9 @@ const rest: Rest = {
     stand = `${stand}+1`
     return true
   },
+  async patchZeilen<T>(path: string, body: unknown): Promise<T[] | null> {
+    return (await this.patchIf(path, body)) ? ([{ updated_at: stand }] as T[]) : []
+  },
   async userId(): Promise<string | null> {
     return null
   },

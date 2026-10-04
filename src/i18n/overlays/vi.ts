@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "Các buổi nhóm rao giảng của nhóm này sẽ bị xóa.",
   "ohneGruppeTitle": "CHƯA CÓ NHÓM RAO GIẢNG",
   "ohneGruppeHint": "Mỗi người công bố thuộc một nhóm rao giảng. Nếu chưa có nhóm, người đó sẽ không thấy các buổi nhóm rao giảng của các nhóm trong chương trình. Chạm vào một tên để chọn nhóm.",
+  "rollePlaner": "Người lập kế hoạch",
+  "rechteHint": "Người lập kế hoạch giao nhiệm vụ và gửi kế hoạch. Admin còn có thể thay đổi chính kế hoạch, mọi người và phần cài đặt.",
+  "fsSendenOffen": "Nhiệm vụ trong nhóm của bạn chưa được báo cho ai: {n}",
+  "fsSendenAlle": "Mọi người được giao nhiệm vụ trong nhóm của bạn đều đã biết.",
 } satisfies Partial<Dict>

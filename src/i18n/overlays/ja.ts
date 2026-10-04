@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "このグループの野外奉仕の集まりはなくなります。",
   "ohneGruppeTitle": "野外奉仕グループなし",
   "ohneGruppeHint": "各伝道者は野外奉仕グループに属します。グループがないと、プログラムにグループの野外奉仕の集まりが表示されません。名前をタップしてグループを設定してください。",
+  "rollePlaner": "計画担当",
+  "rechteHint": "計画担当は割り当てを行い、計画を送信します。管理者はさらに、計画そのもの、人物、設定も変更できます。",
+  "fsSendenOffen": "あなたのグループでまだ誰にも伝えられていない割り当て: {n}",
+  "fsSendenAlle": "あなたのグループで割り当てられた人には全員伝わっています。",
 } satisfies Partial<Dict>

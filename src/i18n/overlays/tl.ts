@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "Aalisin ang mga pagtitipon ng grupong ito.",
   "ohneGruppeTitle": "WALANG GRUPO SA PAGLILINGKOD SA LARANGAN",
   "ohneGruppeHint": "Ang bawat mamamahayag ay kabilang sa isang grupo sa paglilingkod sa larangan. Kung walang grupo, hindi makikita ng tao sa programa ang mga pagtitipon ng mga grupo. I-tap ang isang pangalan para itakda ang grupo.",
+  "rollePlaner": "Tagaplano",
+  "rechteHint": "Ang mga tagaplano ay nag-aatas at nagpapadala ng mga plano. Ang admin ay puwede ring magbago ng mismong mga plano, mga tao, at mga setting.",
+  "fsSendenOffen": "Mga atas sa grupo mo na hindi pa naipapaalam kaninuman: {n}",
+  "fsSendenAlle": "Alam na ng lahat ng may atas sa grupo mo.",
 } satisfies Partial<Dict>

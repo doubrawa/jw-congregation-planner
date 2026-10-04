@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "This group’s field service meetings will be removed.",
   "ohneGruppeTitle": "NO FIELD SERVICE GROUP",
   "ohneGruppeHint": "Every publisher belongs to a field service group. Without one, the person sees no group field service meetings in the program. Tap a name to set the group.",
+  "rollePlaner": "Planner",
+  "rechteHint": "Planners make assignments and send the plans. Admins can also change the plans themselves, the people and the settings.",
+  "fsSendenOffen": "Assignments in your group not yet announced to anyone: {n}",
+  "fsSendenAlle": "Everyone assigned in your group has been told.",
 } satisfies Partial<Dict>

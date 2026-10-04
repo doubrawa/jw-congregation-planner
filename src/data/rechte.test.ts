@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { darfPlanen, erlaubteScreens, themaVon } from './rechte'
-import type { Screen } from './types'
+import { darfPlanen, erlaubteScreens, nurZuteilen, rechteVon, themaVon, type Rechte } from './rechte'
+import type { Group, Screen } from './types'
 
 /**
  * **Wer welchen Bildschirm sehen darf — die einzige Stelle, also auch die
@@ -48,15 +48,47 @@ const ALLE_SCREENS = Object.keys({
  */
 const NICHT_ANSTEUERBAR: Screen[] = ['login']
 
+/** Die vier Lagen, um die es geht (4.10.2026: drei Stufen und eine Gruppe). */
+const ADMIN: Rechte = { admin: true, zuteilen: true, gruppe: null }
+const PLANER: Rechte = { admin: false, zuteilen: true, gruppe: null }
+const AUFSEHER: Rechte = { admin: false, zuteilen: false, gruppe: 'g1' }
+const PLANER_UND_AUFSEHER: Rechte = { admin: false, zuteilen: true, gruppe: 'g1' }
+const VERKUENDIGER: Rechte = { admin: false, zuteilen: false, gruppe: null }
+
+describe('Die Rechte aus dem Zustand', () => {
+  const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-auf', assistantId: 'p-geh' }]
+  const von = (planner: boolean, zuteiler: boolean, personId: string | null) =>
+    rechteVon({ planner, zuteiler, groups: GRUPPEN, personId })
+
+  it('der Admin darf zuteilen und ist nie auf eine Gruppe beschränkt — auch nicht als Gruppenaufseher', () => {
+    expect(von(true, false, 'p-auf')).toEqual(ADMIN)
+  })
+
+  it('der Planer teilt zu, ohne Admin zu sein', () => {
+    expect(von(false, true, null)).toEqual(PLANER)
+    expect(nurZuteilen(PLANER)).toBe(true)
+    expect(nurZuteilen(ADMIN)).toBe(false)
+  })
+
+  it('Aufseher und Gehilfe behalten ihre Gruppe, auch als Planer', () => {
+    expect(von(false, false, 'p-auf')).toEqual(AUFSEHER)
+    expect(von(false, false, 'p-geh')).toEqual(AUFSEHER)
+    expect(von(false, true, 'p-geh')).toEqual(PLANER_UND_AUFSEHER)
+  })
+
+  it('wer nichts davon ist, ist Verkündiger', () => {
+    expect(von(false, false, 'p-irgendwer')).toEqual(VERKUENDIGER)
+    expect(nurZuteilen(VERKUENDIGER)).toBe(false)
+  })
+})
+
 describe('Wer welchen Bildschirm sehen darf', () => {
-  it('der Planer sieht alles — bis auf die Anmeldung', () => {
-    expect([...erlaubteScreens(true, false)]).toEqual(
-      ALLE_SCREENS.filter((s) => !NICHT_ANSTEUERBAR.includes(s)),
-    )
+  it('der Admin sieht alles — bis auf die Anmeldung', () => {
+    expect([...erlaubteScreens(ADMIN)]).toEqual(ALLE_SCREENS.filter((s) => !NICHT_ANSTEUERBAR.includes(s)))
   })
 
   it('der Verkündiger sieht Planen, Personen und Einstellungen nicht', () => {
-    const erlaubt = erlaubteScreens(false, false)
+    const erlaubt = erlaubteScreens(VERKUENDIGER)
     expect(erlaubt).not.toContain('planen')
     expect(erlaubt).not.toContain('personen')
     expect(erlaubt).not.toContain('einstellungen')
@@ -64,48 +96,34 @@ describe('Wer welchen Bildschirm sehen darf', () => {
     expect([...erlaubt]).toEqual(['start', 'programm', 'aufgaben', 'profil'])
   })
 
-  it('der Gruppenaufseher bekommt Planen dazu — die Einstellungen nicht mehr', () => {
-    // Dort nur die Treffpunkte seiner eigenen Gruppe — das entscheidet der
-    // jeweilige Bildschirm über `onlyGroup`, nicht diese Regel. Die
-    // Einstellungen brauchte er bis T120 allein für den Grundplan seiner
-    // Gruppe; der steht seitdem im Predigtdienst.
-    const erlaubt = erlaubteScreens(false, true)
-    expect(erlaubt).toContain('planen')
-    expect(erlaubt).not.toContain('einstellungen')
-    expect([...erlaubt]).toEqual(['start', 'programm', 'aufgaben', 'planen', 'profil'])
-  })
-
-  it('die Personenliste bleibt dem Gruppenaufseher verschlossen', () => {
-    // Die eine Ausnahme in der Ausnahme, und die leiseste: Sie unterscheidet
-    // ihn vom Planer. Fiele sie weg, sähe er die Kontaktdaten der ganzen
-    // Versammlung — die Richtlinien der Datenbank halten ihn dann zwar noch
-    // auf, aber die Oberfläche böte es an.
-    expect(erlaubteScreens(false, true)).not.toContain('personen')
-  })
-
-  it('das Planer-Recht sticht das Aufseher-Recht, nicht umgekehrt', () => {
-    expect(erlaubteScreens(true, true)).toEqual(erlaubteScreens(true, false))
+  it('Planer und Gruppenaufseher bekommen Planen dazu — Personen und Einstellungen nicht', () => {
+    // „Nur Admins dürfen die Pläne ändern und alles andere" (Betreiber,
+    // 4.10.2026): Personen und Einstellungen gehören zu dem „alles andere".
+    // Fiele die Ausnahme weg, sähen sie die Kontaktdaten der ganzen
+    // Versammlung — die Datenbank hielte sie zwar noch auf, aber die
+    // Oberfläche böte es an.
+    for (const r of [PLANER, AUFSEHER, PLANER_UND_AUFSEHER]) {
+      expect([...erlaubteScreens(r)]).toEqual(['start', 'programm', 'aufgaben', 'planen', 'profil'])
+    }
   })
 
   it('die Reihenfolge ist die der Navigation und für alle dieselbe', () => {
     // `AppShell` baut die Navigationsleiste direkt aus dieser Liste. Käme sie
     // je Rolle in anderer Reihenfolge, sprängen die Einträge beim Wechsel.
     const reihenfolge = (s: readonly Screen[]) => s.map((x) => ALLE_SCREENS.indexOf(x))
-    for (const menge of [
-      erlaubteScreens(true, false),
-      erlaubteScreens(false, true),
-      erlaubteScreens(false, false),
-    ]) {
+    for (const r of [ADMIN, PLANER, AUFSEHER, VERKUENDIGER]) {
+      const menge = erlaubteScreens(r)
       expect(reihenfolge(menge)).toEqual([...reihenfolge(menge)].sort((a, b) => a - b))
     }
   })
 })
 
-describe('Wer welches Thema planen darf (T120)', () => {
+describe('Wer welches Thema planen darf (T120, 4.10.2026)', () => {
   /*
-    Das Menü führt nach Themen — Zusammenkünfte, Predigtdienst —, und jedes
-    Thema hat zwei Seiten: Ansehen und Planen. Den Schalter dazwischen sieht nur,
-    wer das Thema planen darf; der Reducer lenkt alle anderen beim Planen ab.
+    Das Menü führt nach Themen — Zusammenkünfte, Predigtdienst, Weitere Pläne —,
+    und jedes Thema hat zwei Seiten: Ansehen und Planen. Den Schalter
+    dazwischen sieht nur, wer das Thema planen darf; der Reducer lenkt alle
+    anderen beim Planen ab.
   */
   it('die Treffpunkte gehören zum Predigtdienst, die Weiteren Pläne zu sich, alle anderen Reiter zu den Zusammenkünften', () => {
     expect(themaVon('fs')).toBe('predigtdienst')
@@ -113,24 +131,24 @@ describe('Wer welches Thema planen darf (T120)', () => {
     for (const tab of ['mid', 'we', 'edit'] as const) expect(themaVon(tab)).toBe('zusammenkuenfte')
   })
 
-  it('der Planer plant alle drei Themen', () => {
-    expect(darfPlanen(true, false, 'zusammenkuenfte')).toBe(true)
-    expect(darfPlanen(true, false, 'predigtdienst')).toBe(true)
-    expect(darfPlanen(true, false, 'weitere')).toBe(true)
+  it('Admin und Planer planen alle drei Themen — der Planer zuteilend', () => {
+    for (const r of [ADMIN, PLANER, PLANER_UND_AUFSEHER]) {
+      for (const thema of ['zusammenkuenfte', 'predigtdienst', 'weitere'] as const) expect(darfPlanen(r, thema)).toBe(true)
+    }
   })
 
   it('der Gruppenaufseher plant nur den Predigtdienst', () => {
     // Eine Zusammenkunft teilt er nicht ein — er sähe sonst den Schalter und
     // landete beim Antippen auf einem Plan, den er nicht ändern darf.
-    expect(darfPlanen(false, true, 'predigtdienst')).toBe(true)
-    expect(darfPlanen(false, true, 'zusammenkuenfte')).toBe(false)
-    expect(darfPlanen(false, true, 'weitere')).toBe(false)
+    expect(darfPlanen(AUFSEHER, 'predigtdienst')).toBe(true)
+    expect(darfPlanen(AUFSEHER, 'zusammenkuenfte')).toBe(false)
+    expect(darfPlanen(AUFSEHER, 'weitere')).toBe(false)
   })
 
   it('der Verkündiger plant nichts', () => {
-    expect(darfPlanen(false, false, 'zusammenkuenfte')).toBe(false)
-    expect(darfPlanen(false, false, 'predigtdienst')).toBe(false)
-    expect(darfPlanen(false, false, 'weitere')).toBe(false)
+    for (const thema of ['zusammenkuenfte', 'predigtdienst', 'weitere'] as const) {
+      expect(darfPlanen(VERKUENDIGER, thema)).toBe(false)
+    }
   })
 })
 
@@ -139,7 +157,7 @@ describe('Die Liste dahinter bleibt vollständig', () => {
     `ALLE` in `rechte.ts` ist eine handgeschriebene Abschrift des Typs
     `Screen` — dieselbe Sorte Liste, in die sich jeder neue Eintrag selbst
     eintragen muss. Vergisst man ihn, ist der Bildschirm für **jeden**
-    unerreichbar, auch für den Planer: `navigate` lässt nur durch, was in der
+    unerreichbar, auch für den Admin: `navigate` lässt nur durch, was in der
     erlaubten Menge steht, und leitet sonst wortlos auf „Programm" um. Nichts
     schlüge fehl, der Knopf täte bloß nichts.
 
@@ -147,10 +165,8 @@ describe('Die Liste dahinter bleibt vollständig', () => {
     genau den Bildschirm, der fehlt.
   */
   it('jeder Screen ist entweder erlaubt oder ausdrücklich nicht ansteuerbar', () => {
-    const erreichbar = new Set(erlaubteScreens(true, false))
-    const vergessen = ALLE_SCREENS.filter(
-      (s) => !erreichbar.has(s) && !NICHT_ANSTEUERBAR.includes(s),
-    )
+    const erreichbar = new Set(erlaubteScreens(ADMIN))
+    const vergessen = ALLE_SCREENS.filter((s) => !erreichbar.has(s) && !NICHT_ANSTEUERBAR.includes(s))
     expect(vergessen, 'fehlt in ALLE (rechte.ts) — für niemanden erreichbar').toEqual([])
   })
 

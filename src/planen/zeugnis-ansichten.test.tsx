@@ -400,3 +400,32 @@ describe('Eine Schicht streichen', () => {
     expect(knopf(container, t.ozEintragen)).toHaveLength(3)
   })
 })
+
+/**
+ * **Der Planer besetzt die Schichten, ändert aber den Plan nicht** (Rechte-
+ * Stufe „Planer", 4.10.2026). Die Termine sind der Plan; welche Schicht
+ * ausfällt, steht an ihrem Termin (`oz_termine.aus`). Beides pflegt der Admin
+ * — die Datenbank lässt den Planer dort gar nicht schreiben.
+ */
+describe('Der Planer im öffentlichen Zeugnisgeben (4.10.2026)', () => {
+  const alsPlaner = (over: Partial<AppState> = {}) =>
+    zeige(PlanenScreen, { screen: 'planen', planner: false, zuteiler: true, ...over })
+
+  it('teilt zu, verteilt automatisch und sendet — wie der Admin', () => {
+    const { container } = alsPlaner()
+    expect(container.querySelectorAll('select.oz-zuteilen').length).toBeGreaterThan(0)
+    expect(container.querySelector('.plan-auto-btn--primary')).not.toBeNull()
+  })
+
+  it('keine Termine anlegen oder ändern — und keine Schicht streichen oder zurückholen', () => {
+    const { container } = alsPlaner({ ozTermine: [MITTWOCH, { ...MITTWOCH, id: 't2', aus: ['2026-09-16'] }] })
+    expect(knopf(container, t.ozTerminAdd)).toEqual([])
+    expect(container.querySelector('.oz-streichen')).toBeNull()
+    expect(knopf(container, t.wiederherstellen)).toEqual([])
+    // Gegenprobe beim Admin.
+    cleanup()
+    const admin = zeige(PlanenScreen, { screen: 'planen', planner: true })
+    expect(knopf(admin.container, t.ozTerminAdd)).toHaveLength(1)
+    expect(admin.container.querySelector('.oz-streichen')).not.toBeNull()
+  })
+})

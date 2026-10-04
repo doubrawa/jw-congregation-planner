@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "Mikutano ya utumishi ya kikundi hiki itaondolewa.",
   "ohneGruppeTitle": "BILA KIKUNDI CHA UTUMISHI",
   "ohneGruppeHint": "Kila mhubiri yuko katika kikundi cha utumishi. Bila kikundi, mtu huyo haoni katika programu mikutano ya utumishi ya vikundi. Gusa jina ili kuweka kikundi.",
+  "rollePlaner": "Mpangaji",
+  "rechteHint": "Wapangaji hugawa migawo na kutuma mipango. Admin anaweza pia kubadili mipango yenyewe, watu, na mipangilio.",
+  "fsSendenOffen": "Migawo ya kikundi chako ambayo bado haijajulishwa mtu yeyote: {n}",
+  "fsSendenAlle": "Wote waliopewa migawo katika kikundi chako wamejulishwa.",
 } satisfies Partial<Dict>

@@ -28,6 +28,7 @@ export function makeInvite(person: Person): Invite {
     code: generateInviteCode(),
     personId: person.id,
     planner: Boolean(person.plannerVorgemerkt),
+    zuteiler: Boolean(person.zuteilerVorgemerkt),
   }
 }
 

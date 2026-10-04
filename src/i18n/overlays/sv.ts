@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "Den här gruppens möten för tjänst tas bort.",
   "ohneGruppeTitle": "UTAN TJÄNSTEGRUPP",
   "ohneGruppeHint": "Varje förkunnare tillhör en tjänstegrupp. Utan grupp ser personen inga gruppers möten för tjänst i programmet. Tryck på ett namn för att välja grupp.",
+  "rollePlaner": "Planerare",
+  "rechteHint": "Planerare delar ut uppgifterna och skickar planerna. En admin kan också ändra själva planerna, personerna och inställningarna.",
+  "fsSendenOffen": "Uppgifter i din grupp som ännu inte har meddelats någon: {n}",
+  "fsSendenAlle": "Alla som har uppgifter i din grupp är informerade.",
 } satisfies Partial<Dict>

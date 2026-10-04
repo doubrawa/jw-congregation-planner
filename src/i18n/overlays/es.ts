@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "Se eliminarán las reuniones para el servicio de este grupo.",
   "ohneGruppeTitle": "SIN GRUPO PARA EL SERVICIO DEL CAMPO",
   "ohneGruppeHint": "Cada publicador pertenece a un grupo para el servicio del campo. Sin asignación, la persona no ve en el programa las reuniones para el servicio de los grupos. Toca un nombre para asignar el grupo.",
+  "rollePlaner": "Planificador",
+  "rechteHint": "Los planificadores hacen las asignaciones y envían los programas. Los admins también pueden cambiar los propios programas, las personas y la configuración.",
+  "fsSendenOffen": "Asignaciones de tu grupo aún sin comunicar: {n}",
+  "fsSendenAlle": "Todos los asignados de tu grupo ya lo saben.",
 } satisfies Partial<Dict>

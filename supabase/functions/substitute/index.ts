@@ -155,6 +155,8 @@ interface Member {
   user_id: string
   person_id: string | null
   planner: boolean
+  /** Planer-Recht (4.10.2026): Er sucht Ersatz wie der Admin, also erfährt er „Ersatz gefunden". */
+  zuteiler?: boolean
 }
 interface Sub {
   /** Primärschlüssel — darüber wird ein abgelaufenes Abo abbestellt. */
@@ -316,7 +318,7 @@ Deno.serve(async (req: Request) => {
 
     const [members, weekRows, services, persons, subsRows, congRows, absences] = await Promise.all([
       rest.get<Member[]>(
-        `members?select=user_id,person_id,planner&congregation_id=eq.${wert(cong)}`,
+        `members?select=user_id,person_id,planner,zuteiler&congregation_id=eq.${wert(cong)}`,
       ),
       // `start` aus der **Spalte**, nicht aus dem Blob (T66): die Kennung steht
       // dort, `data.start` ist nur noch Beifang und könnte jederzeit wegfallen.
@@ -568,7 +570,8 @@ Deno.serve(async (req: Request) => {
       : persons.find((p) => displayName(p) === originalName)
     const recipients = [
       ...(originalPerson ? [kontoFuer(originalPerson.id, displayName(originalPerson))].filter(Boolean) as string[] : []),
-      ...members.filter((m) => m.planner).map((m) => m.user_id),
+      // Admins und Planer — wer zuteilt, sucht auch den Ersatz (4.10.2026).
+      ...members.filter((m) => m.planner || m.zuteiler).map((m) => m.user_id),
     ]
     await notifyUsers(
       cong,

@@ -35,6 +35,9 @@ const U_NINA = 'user-nina' // Konto, aber KEIN Push-Abo → nicht erreichbar
 const U_PLANER = 'user-planer'
 // „Otto Ohnekonto" hat gar kein Konto → ebenfalls nicht erreichbar
 
+/** Je Fall frisch aus `MEMBERS` — ein Fall darf ein Konto dazunehmen. */
+let members: Array<{ user_id: string; person_id: string; planner: boolean; zuteiler?: boolean }>
+
 const MEMBERS = [
   { user_id: U_MAX, person_id: 'p-max', planner: false },
   { user_id: U_NINA, person_id: 'p-nina', planner: false },
@@ -221,7 +224,7 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     return jsonRes(ozEintraege.filter((e) => (!nurZugeteilt || !e.selbst) && e.datum >= ab && e.datum <= bis))
   }
   if (path.startsWith('confirmations')) return jsonRes(confirmations)
-  if (path.startsWith('members')) return jsonRes(MEMBERS)
+  if (path.startsWith('members')) return jsonRes(members)
   if (path.startsWith('persons')) return jsonRes(persons)
   if (path.startsWith('services')) return jsonRes(SERVICES)
   if (path.startsWith('push_subscriptions')) return jsonRes(subs)
@@ -290,6 +293,7 @@ beforeEach(() => {
   confirmations = []
   reminderLog = []
   subs = [...SUBS]
+  members = [...MEMBERS]
   persons = [...PERSONS]
   reminders = { first: 7, last: 1, repeat: true }
   ozTermine = []
@@ -521,6 +525,13 @@ describe('send-reminders: Planer-Meldung nur für nicht Erreichbare', () => {
     week.mid.sections[0].items[4].names = [{ name: '' }]
     const r = await run()
     expect(previewFor(r, U_PLANER)).toBeUndefined()
+  })
+
+  it('auch ein Planer bekommt sie — wer zuteilt, spricht die Unerreichbaren an (4.10.2026)', async () => {
+    members = [...MEMBERS, { user_id: 'user-zuteiler', person_id: 'p-zut', planner: false, zuteiler: true }]
+    subs = [...SUBS, { id: 's9', user_id: 'user-zuteiler', endpoint: 'https://push.test/zut', p256dh: 'k', auth: 'a' }]
+    const r = await run()
+    expect(previewFor(r, 'user-zuteiler')?.title).toBe('Unbestätigte Zuteilungen (nicht erreichbar)')
   })
 
   it('nur am letzten Erinnerungstag, nicht an Wiederholungstagen', async () => {

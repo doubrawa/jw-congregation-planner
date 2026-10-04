@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "A csoport szántóföldi összejövetelei megszűnnek.",
   "ohneGruppeTitle": "SZÁNTÓFÖLDI CSOPORT NÉLKÜL",
   "ohneGruppeHint": "Minden hírnök egy szántóföldi csoporthoz tartozik. Csoport nélkül a személy nem látja a programban a csoportok szántóföldi összejöveteleit. Érints meg egy nevet a csoport beállításához.",
+  "rollePlaner": "Tervező",
+  "rechteHint": "A tervezők kiosztják a feladatokat és elküldik a terveket. Az admin ezenfelül magukat a terveket, a személyeket és a beállításokat is módosíthatja.",
+  "fsSendenOffen": "A csoportod feladatai, amelyekről még senkit sem értesítettünk: {n}",
+  "fsSendenAlle": "A csoportodban mindenki tud a feladatáról.",
 } satisfies Partial<Dict>

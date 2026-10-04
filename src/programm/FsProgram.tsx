@@ -4,6 +4,7 @@ import { BesuchsMarke } from '../components/BesuchsMarke'
 import { treffpunktTagLabel, treffpunktTitel } from '../components/treffpunkt-beschriftung'
 import { fsLeiterZuteilung, fsVisible, nachWochentag } from '../data/fs'
 import { gehoertZu } from '../data/helpers'
+import { rechteVon } from '../data/rechte'
 import { useT } from '../i18n/useT'
 import { DruckWahl } from './DruckWahl'
 
@@ -39,7 +40,8 @@ export function FsProgram() {
     state.persons,
     state.groups,
     state.personId,
-    state.planner,
+    // Wer zuteilt, sieht die Treffpunkte aller Gruppen — er besetzt sie.
+    rechteVon(state).zuteilen,
   )
 
   if (insts.length === 0) {

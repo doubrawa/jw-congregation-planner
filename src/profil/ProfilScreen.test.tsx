@@ -57,7 +57,7 @@ const ICH: Person = {
   id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger', female: false,
   tel: '', mail: '', priv: emptyQualifications(),
 }
-const MITGLIED: Member[] = [{ userId: 'u1', personId: 'p-a', email: 'anton@example.org', planner: false }]
+const MITGLIED: Member[] = [{ userId: 'u1', personId: 'p-a', email: 'anton@example.org', planner: false, zuteiler: false }]
 
 function zeige(over: Partial<AppState> = {}) {
   const dispatch = vi.fn()

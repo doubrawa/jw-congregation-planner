@@ -90,6 +90,33 @@ Aufgaben legt dir die App ohnehin beim Öffnen vor.
   Schalter nur dort, die Verwaltung gar nicht, und die Startseite wie
   Verkündiger, ohne Planungs‑Karte.
 
+### Wer darf was: Planer und Admin
+
+Es gibt zwei Rechte, die du unter **Personen › Feste Rollen** vergibst:
+**Planer** und **Admin**. Der Planer teilt zu und sendet die Pläne; der Admin
+darf zusätzlich die Pläne selbst ändern und alles Übrige. Ein Admin hat das
+Planer-Recht ohnehin – bei ihm steht der Schalter **Planer** an und lässt sich
+nicht umlegen.
+
+| | Verkündiger | Gruppenaufseher und Gehilfe | Planer | Admin |
+| --- | --- | --- | --- | --- |
+| Programmpunkte, Hilfsdienste, Ratgeber zuteilen | – | – | ✓ | ✓ |
+| Vortragsthema, Lieder, Partner am Schülerteil | – | – | ✓ | ✓ |
+| Treffpunkt-Leiter zuteilen | – | seine Gruppe | alle | alle |
+| Treffpunkte ändern: Zeit, Ort, hinzufügen, entfernen, Grundplan | – | seine Gruppe | – | alle |
+| Schichten im öffentlichen Zeugnisgeben besetzen | sich selbst | – | ✓ | ✓ |
+| Gruppenbesuche: Besucher wechseln | – | – | ✓ | ✓ |
+| Weitere Pläne: Gruppen verteilen | – | – | ✓ | ✓ |
+| **Plan senden** | – | Treffpunkte seiner Gruppe | ✓ | ✓ |
+| Bearbeiten‑Reiter (Anlass, Sonderwoche, Termine), Punkte unter „Unser Leben als Christ" anlegen, verschieben, Minuten | – | – | – | ✓ |
+| Termine des Zeugnisgebens, Gruppenbesuche planen, Weitere Pläne anlegen | – | – | – | ✓ |
+| Programm importieren, Personen, Abwesenheiten anderer, Einstellungen, Mitglieder, Einladungen | – | – | – | ✓ |
+
+Die Meldungen an die Planer – eine **Verhinderung**, **Ersatz gefunden**,
+**unbestätigte Zuteilungen** – bekommen Admins und Planer: Wer zuteilt, sucht
+auch den Ersatz. Was einem Planer nicht zusteht, zeigt die App ihm gar nicht
+erst an; die Datenbank weist es zusätzlich ab.
+
 ---
 
 ## 2. Planen: Zuteilungen vornehmen
@@ -450,9 +477,12 @@ in der der Knopf steht. Jede Änderung setzt die Wochenpläne neu auf.
 
 Unter **Treffpunkte** kannst du dann pro Woche Uhrzeit, Ort und **Leiter**
 anpassen oder einen einmaligen Treffpunkt ergänzen. **Gruppenaufseher** können die
-Treffpunkte **ihrer** Gruppe selbst planen, ohne vollen Planer‑Zugang – den
-Schalter **Planen** sehen sie nur im Predigtdienst, und im Grundplan nur die
-Karte ihrer Gruppe.
+Treffpunkte **ihrer** Gruppe selbst planen, ohne Admin zu sein – Uhrzeit, Ort,
+Leiter, zusätzliche Treffpunkte und den Grundplan ihrer Gruppe. Den Schalter
+**Planen** sehen sie nur im Predigtdienst, im Grundplan nur die Karte ihrer
+Gruppe, und mit **Plan senden** benachrichtigen sie die Leiter ihrer Gruppe.
+Ein **Planer** besetzt die Leiter aller Gruppen; Uhrzeit und Ort stehen bei ihm
+als Text da, und den Grundplan sieht er nicht.
 
 > **Wer sieht was.** Einen Gruppentreffpunkt zeigt das Programm nur den
 > Verkündigern **dieser** Gruppe (und ihrem Aufseher). Versammlungstreffpunkte
@@ -698,8 +728,11 @@ Im Detail legst du fest:
   Hand – die Automatik lässt ihn aus.
 - **Hilfsdienste** – dasselbe für die Dienste (Ton, Mikrofone, Ordner …), als
   eigener Bereich darunter. Beide Listen stehen alphabetisch.
+- **Feste Rollen** – der feste Wachtturm‑Studium‑Leiter und sein Vertreter,
+  dazu die Rechte **Planer** und **Admin** (siehe „Wer darf was" in Abschnitt 1).
+  Ohne Konto werden sie vorgemerkt und gelten ab der ersten Anmeldung.
 - **Konto & Einladung** – hier lädst du eine Person zur App‑Nutzung ein (Code bzw.
-  Einladungs‑E‑Mail) und vergibst bei Bedarf **Planer‑Rechte**.
+  Einladungs‑E‑Mail).
 
 Wird eine Person umbenannt, zieht die App den neuen Namen automatisch durch alle
 bereits geplanten Wochen.

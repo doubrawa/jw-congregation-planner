@@ -470,13 +470,13 @@ Zwei Dinge, die du wissen solltest:
 ## 10. Wenn du Gruppenaufseher bist
 
 Bist du **Aufseher oder Gehilfe** einer Predigtdienstgruppe, kannst du die
-**Treffpunkte deiner Gruppe** selbst planen — ohne vollen Planer‑Zugang. Der
-Koordinator trägt das bei der Gruppe ein; danach steht im **Predigtdienst** oben
+**Treffpunkte deiner Gruppe** selbst planen und senden — ohne Admin zu sein. Der
+Admin trägt das bei der Gruppe ein; danach steht im **Predigtdienst** oben
 rechts der Schalter **Ansehen / Planen**. Beim Planen gibt es zwei Reiter:
 
 | Reiter | Was du dort siehst |
 | --- | --- |
-| **Treffpunkte** | Ausschließlich die Treffpunkte **deiner** Gruppe, Woche für Woche: Leiter eintragen, **Automatisch zuteilen** und **Leeren** (beides wirkt nur auf deine Gruppe) und bei Bedarf ein zusätzlicher Treffpunkt für diese eine Woche. |
+| **Treffpunkte** | Ausschließlich die Treffpunkte **deiner** Gruppe, Woche für Woche: **Uhrzeit** und **Ort** ändern, einen Treffpunkt für diese Woche **entfernen** oder einen zusätzlichen **ergänzen**, Leiter eintragen, **Automatisch zuteilen** und **Leeren** (beides wirkt nur auf deine Gruppe). Darunter **Plan senden**: Es benachrichtigt die Leiter deiner Gruppe, die davon noch nichts wissen. |
 | **Grundplan** | Nur den **Grundplan deiner Gruppe** — die Regel, nach der ihr euch regelmäßig trefft: Wochentag, Uhrzeit, Ort und ob sie jede Woche gilt oder z. B. jeden ersten im Monat. |
 
 Wechselst du zwischendurch zu den Zusammenkünften, siehst du sie nur an; zurück

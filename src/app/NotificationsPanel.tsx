@@ -10,6 +10,7 @@ import { loadNotifications } from '../lib/data'
 import { loadAndHydrate } from './hydrate'
 import { mitteilungsZiel, sichtbareMitteilungen } from './mitteilungen'
 import { relativeZeit } from '../i18n/zeit'
+import { rechteVon } from '../data/rechte'
 
 /** Mitteilungen-Overlay (Kopf-Chip öffnet); Backdrop-Klick oder Escape schließt. */
 export function NotificationsPanel() {
@@ -21,7 +22,8 @@ export function NotificationsPanel() {
 
   useEscape(() => dispatch({ type: 'closeNotifs' }))
 
-  const sichtbar = sichtbareMitteilungen(state.notifs, state.planner)
+  const { zuteilen } = rechteVon(state)
+  const sichtbar = sichtbareMitteilungen(state.notifs, zuteilen)
   /*
    * **„Alle löschen" fragt einmal nach** — wie Person löschen und Leeren
    * (`useZweiTipp`). Es löscht die eigenen Zeilen in der Datenbank, und
@@ -129,7 +131,7 @@ export function NotificationsPanel() {
            */
           const oeffnen = () => {
             if (!notif.read && !state.staleAt) dispatch({ type: 'mitteilungGelesen', id: notif.id })
-            for (const aktion of mitteilungsZiel(notif, state)) dispatch(aktion)
+            for (const aktion of mitteilungsZiel(notif, { zuteilen, weeks: state.weeks, myTasks: state.myTasks })) dispatch(aktion)
           }
           return (
             <div key={notif.id} className={notif.read ? 'notif-row' : 'notif-row is-unread'}>

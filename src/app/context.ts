@@ -86,6 +86,8 @@ export interface HydratePayload {
   empty: boolean // Versammlung hat noch keine Personen/Wochen
   congregation: Congregation
   planner: boolean
+  /** Planer-Recht (4.10.2026). Einer Momentaufnahme von davor fehlt es. */
+  zuteiler?: boolean
   personId: string | null
   persons: Person[]
   services: Service[]
@@ -149,7 +151,14 @@ export interface AppState {
   lang: Lang // App-Sprache (UI)
 
   /* ---- Sitzung und Rechte ----------------------------------------------- */
-  planner: boolean // Rechte: Planen/Personen/Einstellungen sichtbar
+  planner: boolean // „Admin": darf alles — Planen, Personen, Einstellungen
+  /**
+   * „Planer" (4.10.2026): teilt zu und sendet, ändert die Pläne aber nicht.
+   * Gefragt wird fast nie danach allein, sondern über `darfZuteilen` (der
+   * Admin darf es ohnehin) und `nurZuteilen` (Planer, aber nicht Admin) in
+   * `data/rechte.ts`.
+   */
+  zuteiler: boolean
   // Persistenz (Supabase); null bis zur Hydration — und ohne Datenbank
   // (Entwicklerseite) für immer. Konto-Funktionen fragen nach `userId`.
   congregationId: string | null
@@ -415,7 +424,7 @@ export type AppAction =
   | { type: 'updateGroup'; id: string; patch: Partial<Pick<Group, 'overseerId' | 'assistantId'>> }
   | { type: 'updateCongregation'; patch: Partial<Congregation> } // speichert automatisch (debounced)
   // Mitglieder & Einladungen (nur Planer)
-  | { type: 'updateMember'; userId: string; patch: Partial<Pick<Member, 'personId' | 'planner'>> }
+  | { type: 'updateMember'; userId: string; patch: Partial<Pick<Member, 'personId' | 'planner' | 'zuteiler'>> }
   | { type: 'removeMember'; userId: string }
   | { type: 'addInvite'; invite: Invite }
   | { type: 'removeInvite'; id: string }

@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "Zbiórki do służby tej grupy zostaną usunięte.",
   "ohneGruppeTitle": "BEZ GRUPY SŁUŻBY",
   "ohneGruppeHint": "Każdy głosiciel należy do grupy służby. Bez przypisania dana osoba nie widzi w programie zbiórek grup. Dotknij imienia, aby ustawić grupę.",
+  "rollePlaner": "Planista",
+  "rechteHint": "Planiści przydzielają zadania i wysyłają plany. Admin może też zmieniać same plany, osoby i ustawienia.",
+  "fsSendenOffen": "Zadania w twojej grupie, których jeszcze nikomu nie przekazano: {n}",
+  "fsSendenAlle": "Wszyscy wyznaczeni w twojej grupie zostali powiadomieni.",
 } satisfies Partial<Dict>

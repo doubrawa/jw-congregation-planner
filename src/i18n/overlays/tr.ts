@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "Bu grubun tarla buluşmaları kaldırılacak.",
   "ohneGruppeTitle": "TARLA HİZMETİ GRUBU YOK",
   "ohneGruppeHint": "Her müjdeci bir tarla hizmeti grubuna bağlıdır. Grubu olmayan kişi programda grupların tarla buluşmalarını görmez. Grubu belirlemek için bir ada dokun.",
+  "rollePlaner": "Planlayıcı",
+  "rechteHint": "Planlayıcılar görevleri dağıtır ve planları gönderir. Admin ayrıca planların kendisini, kişileri ve ayarları da değiştirebilir.",
+  "fsSendenOffen": "Grubunda henüz kimseye bildirilmemiş görevler: {n}",
+  "fsSendenAlle": "Grubunda görev alan herkes bilgilendirildi.",
 } satisfies Partial<Dict>

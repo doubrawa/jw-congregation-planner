@@ -45,6 +45,7 @@ const U_BERND = 'user-bernd'
 const U_FREMD = 'user-fremd' // Planer einer ANDEREN Versammlung
 const U_MITGLIED = 'user-mitglied' // Mitglied ohne Planer-Recht
 const U_AUFSEHER = 'user-aufseher' // leitet Gruppe g1, kein Planer
+const U_ZUTEILER = 'user-zuteiler' // Planer (4.10.2026): teilt zu und sendet, ist nicht Admin
 const U_TIM_A = 'user-tim-a' // zwei Konten, ein Anzeigename
 const U_TIM_B = 'user-tim-b'
 
@@ -54,6 +55,7 @@ const MEMBERS = [
   { user_id: U_BERND, person_id: 'p-bernd', planner: false, congregation_id: CONG },
   { user_id: U_MITGLIED, person_id: 'p-mit', planner: false, congregation_id: CONG },
   { user_id: U_AUFSEHER, person_id: 'p-aufseher', planner: false, congregation_id: CONG },
+  { user_id: U_ZUTEILER, person_id: 'p-zut', planner: false, zuteiler: true, congregation_id: CONG },
   { user_id: U_FREMD, person_id: 'p-fremd', planner: true, congregation_id: 'cong-2' },
   { user_id: U_TIM_A, person_id: 'p-tim-a', planner: false, congregation_id: CONG },
   // ZULETZT: Über den Namen gewinnt der letzte Eintrag. Am Namen allein landete
@@ -414,13 +416,20 @@ describe('Plan senden im öffentlichen Zeugnisgeben', () => {
     expect(zeilenIn('assignment_log')).toEqual([expect.objectContaining({ task_key: 'oz|2026-09-07|e1', name: 'Karl Onto' })])
   })
 
-  it('nur ein Planer darf — auch kein Gruppenaufseher', async () => {
+  it('nur wer zuteilt, darf — auch kein Gruppenaufseher', async () => {
     ozEintraege = [eintrag('e1', 'p-anna')]
     authUser = U_MITGLIED
     expect((await zeugnis()).status).toBe(403)
     authUser = U_AUFSEHER
     expect((await zeugnis()).status).toBe(403)
     expect(writesTo('notifications')).toEqual([])
+  })
+
+  it('der Planer sendet die Schichten wie der Admin (4.10.2026)', async () => {
+    ozEintraege = [eintrag('e1', 'p-anna')]
+    authUser = U_ZUTEILER
+    expect((await zeugnis()).status).toBe(200)
+    expect(zeilenIn('assignment_log')).toEqual([expect.objectContaining({ task_key: 'oz|2026-09-07|e1' })])
   })
 })
 
@@ -671,11 +680,45 @@ describe('Eine zurückgezogene Zusage erreicht den Betroffenen sofort', () => {
       expect(zeilen[0]).toMatchObject({ user_id: U_ANNA, title: TITEL_ENTZUG })
     })
 
-    it('nicht für eine fremde Gruppe, nicht für eine Zusammenkunft — und keinen Plan', async () => {
+    it('nicht für eine fremde Gruppe, nicht für eine Zusammenkunft', async () => {
       expect((await fsEntzug('r2')).status).toBe(403)
       expect((await entzug()).status).toBe(403)
-      expect((await plan()).status).toBe(403)
       expect(writes).toEqual([])
+    })
+
+    /*
+     * **„Plan senden" für seine Gruppe** (4.10.2026). Er ändert Zeit, Ort und
+     * Leiter seiner Treffpunkte selbst; ohne eigenen Versand erfuhr ein neuer
+     * Leiter es erst durch die Erinnerung. Gesendet wird nur, was seine Gruppe
+     * betrifft — dieselbe Woche trägt Zusammenkünfte und eine fremde Gruppe,
+     * und beides bleibt liegen, für den Admin.
+     */
+    it('sendet den Plan nur für die Treffpunkte seiner Gruppe', async () => {
+      const res = await plan()
+      expect(res.status).toBe(200)
+      expect(zeilenIn('assignment_log').map((z) => z.task_key)).toEqual([`fs|${WOCHE}|r1`])
+      expect(zeilenIn('notifications').map((z) => z.user_id)).toEqual([U_BERND])
+    })
+  })
+
+  describe('der Planer (4.10.2026)', () => {
+    beforeEach(() => {
+      authUser = U_ZUTEILER
+      fsWoche = [
+        { id: 'r1', grp: 'g1', wd: 6, time: '09:30', place: 'Saal', leader: 'Bernd Cohn', lpid: 'p-bernd' },
+        { id: 'r2', grp: 'g2', wd: 6, time: '10:00', place: 'Park', leader: 'Bernd Cohn', lpid: 'p-bernd' },
+      ]
+    })
+
+    it('sendet die ganze Woche wie der Admin — Zusammenkünfte und alle Treffpunkte', async () => {
+      expect((await plan()).status).toBe(200)
+      expect(zeilenIn('assignment_log').map((z) => z.task_key).sort()).toEqual(
+        [KEY_ANNA, KEY_BERND, KEY_OHNE, `fs|${WOCHE}|r1`, `fs|${WOCHE}|r2`].sort(),
+      )
+    })
+
+    it('meldet den Entzug einer Zusammenkunft wie der Admin', async () => {
+      expect((await entzug()).status).toBe(200)
     })
   })
 

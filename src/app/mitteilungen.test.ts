@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { describe, expect, it } from 'vitest'
 import { fsKey, helferKey, ozKey, punktKey, ratgeberKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
+import { rechteVon } from '../data/rechte'
 import type { MyTask, Notification, Week } from '../data/types'
 import { NOTIF_TITLE_KEY } from '../i18n/ui'
 import { demoZustand } from '../../tests/testdaten/demo-start'
@@ -30,7 +31,7 @@ describe('sichtbareMitteilungen', () => {
 
 /** Zwei geladene Wochen; alles andere liegt außerhalb des Ladefensters. */
 const WOCHEN = [{ start: '2026-09-07' }, { start: '2026-09-14' }] as Week[]
-const lage = (over: Partial<ZielLage> = {}): ZielLage => ({ planner: false, weeks: WOCHEN, myTasks: [], ...over })
+const lage = (over: Partial<ZielLage> = {}): ZielLage => ({ zuteilen: false, weeks: WOCHEN, myTasks: [], ...over })
 const aufgabe = (id: string): MyTask => ({ id, title: '', date: '', at: null, status: 'offen', s89: null })
 
 const PUNKT = punktKey('2026-09-14', 'mid', 'k3f9x', 0)
@@ -53,45 +54,45 @@ describe('mitteilungsZiel — ein Tipp führt dorthin, wo die Mitteilung herkomm
     const n = zeile({ type: 'zuteilung', title: ERSATZ_GESUCHT, taskId: HILFSDIENST })
     const ziel = [{ type: 'navigate', screen: 'aufgaben', abschnitt: 'einspringen' }]
     expect(mitteilungsZiel(n, lage())).toEqual(ziel)
-    expect(mitteilungsZiel(n, lage({ planner: true }))).toEqual(ziel)
+    expect(mitteilungsZiel(n, lage({ zuteilen: true }))).toEqual(ziel)
   })
 
   it('eine Absage führt den Planer in die Woche der Aufgabe, in ihre Zusammenkunft', () => {
-    expect(mitteilungsZiel(zeile({ taskId: PUNKT }), lage({ planner: true }))).toEqual([
+    expect(mitteilungsZiel(zeile({ taskId: PUNKT }), lage({ zuteilen: true }))).toEqual([
       { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'mid' } },
     ])
-    expect(mitteilungsZiel(zeile({ taskId: HILFSDIENST }), lage({ planner: true }))).toEqual([
+    expect(mitteilungsZiel(zeile({ taskId: HILFSDIENST }), lage({ zuteilen: true }))).toEqual([
       { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'we' } },
     ])
-    expect(mitteilungsZiel(zeile({ taskId: ratgeberKey('2026-09-07', 'mid') }), lage({ planner: true }))).toEqual([
+    expect(mitteilungsZiel(zeile({ taskId: ratgeberKey('2026-09-07', 'mid') }), lage({ zuteilen: true }))).toEqual([
       { type: 'navigate', screen: 'planen', woche: { wi: 0, tab: 'mid' } },
     ])
   })
 
   it('… auch wenn er selbst abgesagt hat: Als Planer sucht er Ersatz, statt sein Blatt zu sehen', () => {
-    const ziel = mitteilungsZiel(zeile({ taskId: PUNKT }), lage({ planner: true, myTasks: [aufgabe(PUNKT)] }))
+    const ziel = mitteilungsZiel(zeile({ taskId: PUNKT }), lage({ zuteilen: true, myTasks: [aufgabe(PUNKT)] }))
     expect(ziel).toEqual([{ type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'mid' } }])
   })
 
   it('… ein Treffpunkt: seine Woche im Predigtdienst, Reiter Treffpunkte', () => {
-    expect(mitteilungsZiel(zeile({ taskId: TREFFPUNKT }), lage({ planner: true }))).toEqual([
+    expect(mitteilungsZiel(zeile({ taskId: TREFFPUNKT }), lage({ zuteilen: true }))).toEqual([
       { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'fs' } },
       { type: 'setFsBereich', bereich: 'treffpunkte' },
     ])
   })
 
   it('… das öffentliche Zeugnisgeben: sein Reiter — es hat keine Wochenleiste', () => {
-    expect(mitteilungsZiel(zeile({ taskId: ZEUGNIS }), lage({ planner: true }))).toEqual([
+    expect(mitteilungsZiel(zeile({ taskId: ZEUGNIS }), lage({ zuteilen: true }))).toEqual([
       { type: 'navigate', screen: 'planen', thema: 'predigtdienst' },
       { type: 'setFsBereich', bereich: 'zeugnis' },
     ])
   })
 
   it('… eine Woche außerhalb des Ladefensters: wenigstens ihr Thema', () => {
-    expect(mitteilungsZiel(zeile({ taskId: FERN }), lage({ planner: true }))).toEqual([
+    expect(mitteilungsZiel(zeile({ taskId: FERN }), lage({ zuteilen: true }))).toEqual([
       { type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte' },
     ])
-    expect(mitteilungsZiel(zeile({ taskId: fsKey('2027-03-01', 'i1') }), lage({ planner: true }))).toEqual([
+    expect(mitteilungsZiel(zeile({ taskId: fsKey('2027-03-01', 'i1') }), lage({ zuteilen: true }))).toEqual([
       { type: 'navigate', screen: 'planen', thema: 'predigtdienst' },
       { type: 'setFsBereich', bereich: 'treffpunkte' },
     ])
@@ -99,7 +100,7 @@ describe('mitteilungsZiel — ein Tipp führt dorthin, wo die Mitteilung herkomm
 
   it.each([...AN_DIE_PLANER])('„%s" ohne Schlüssel: Planen › Zusammenkünfte', (title) => {
     // Import, Sammelmeldung, Ersatz gefunden — und Absagen von vor dem 4.10.2026.
-    expect(mitteilungsZiel(zeile({ title, taskId: undefined }), lage({ planner: true }))).toEqual([
+    expect(mitteilungsZiel(zeile({ title, taskId: undefined }), lage({ zuteilen: true }))).toEqual([
       { type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte' },
     ])
   })
@@ -114,7 +115,7 @@ describe('mitteilungsZiel — ein Tipp führt dorthin, wo die Mitteilung herkomm
     // inzwischen ein anderer. Die Woche zeigt, wer.
     const n = zeile({ type: 'zuteilung', title: 'Neue Zuteilung', taskId: PUNKT })
     expect(mitteilungsZiel(n, lage())).toEqual([{ type: 'navigate', screen: 'programm', woche: { wi: 1, tab: 'mid' } }])
-    expect(mitteilungsZiel(n, lage({ planner: true }))).toEqual([
+    expect(mitteilungsZiel(n, lage({ zuteilen: true }))).toEqual([
       { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'mid' } },
     ])
   })
@@ -157,7 +158,10 @@ describe('Ablauf: Glocke offen → Tipp → angekommen', () => {
     ...over,
   })
   const tippen = (s: AppState, n: Notification): AppState =>
-    mitteilungsZiel(n, s).reduce<AppState>((z, aktion) => reducer(z, aktion), s)
+    mitteilungsZiel(n, { zuteilen: rechteVon(s).zuteilen, weeks: s.weeks, myTasks: s.myTasks }).reduce<AppState>(
+      (z, aktion) => reducer(z, aktion),
+      s,
+    )
 
   it('der Planer landet bei der Absage in ihrer Woche', () => {
     const s = offen({ planner: true })

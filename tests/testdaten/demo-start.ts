@@ -110,7 +110,9 @@ export interface DebugHash {
   me?: string
   tab?: MeetingTab // Programm/Planen-Tab (mid|we|fs|wp) — für Doku-Screenshots
   fsBereich?: FsBereich // fb=<treffpunkte|gruppenbesuche|zeugnis|grundplan> — Reiter im Predigtdienst (T120)
-  planner?: boolean // Rechte erzwingen (pl=0 Verkündiger, pl=1 Planer)
+  planner?: boolean // Rechte erzwingen (pl=0 Verkündiger, pl=1 Admin, pl=2 Planer)
+  /** `pl=2`: Planer — teilt zu und sendet, ändert die Pläne nicht (4.10.2026). */
+  zuteiler?: boolean
   shot?: boolean // Screenshot-Modus: Spaltenschatten aus (randloses Zuschneiden)
   staleAt?: number // Offline-Stand vortäuschen (stale=<Stunden alt>) — Banner + nur lesen
 }
@@ -142,6 +144,10 @@ export function parseDebugHash(hash: string, jetzt = Date.now()): DebugHash | nu
   if (fb === 'treffpunkte' || fb === 'gruppenbesuche' || fb === 'zeugnis' || fb === 'grundplan') out.fsBereich = fb
   const pl = p.get('pl')
   if (pl === '0' || pl === '1') out.planner = pl === '1'
+  if (pl === '2') {
+    out.planner = false
+    out.zuteiler = true
+  }
   if (p.get('shot') === '1') out.shot = true
   // stale=<Stunden>: Offline-Stand simulieren (ohne Netzabbruch nachstellbar)
   const stale = Number(p.get('stale'))
@@ -200,6 +206,7 @@ export function entwicklerStart(hash: string = location.hash): AppState {
     theme: debug?.theme ?? basis.theme,
     fontScale: debug?.fontScale ?? basis.fontScale,
     planner: debug?.planner ?? basis.planner,
+    zuteiler: debug?.zuteiler ?? basis.zuteiler,
     personId: debug?.me ?? null,
     selectedPersonId: debug?.personId ?? null,
     staleAt: debug?.staleAt ?? null,

@@ -39,6 +39,8 @@ const U_UNQUAL = 'user-unqual' // Mitglied, aber nicht für den Dienst qualifizi
 const U_NOPERSON = 'user-noperson' // Konto ohne verknüpfte Person
 const U_ABSENT = 'user-absent' // qualifiziert, aber in dieser Woche abwesend
 const U_PLANNER = 'user-planner'
+/** Planer (4.10.2026): teilt zu, ist nicht Admin — und sucht wie der Admin den Ersatz. */
+const U_ZUTEILER = 'user-zuteiler'
 const U_FOREIGN = 'user-foreign' // Mitglied einer ANDEREN Versammlung
 const U_ORIG_ZWILL = 'user-orig-zwill' // heißt wie der Absagende und kann denselben Dienst
 
@@ -51,6 +53,7 @@ const MEMBERS = [
   { user_id: U_NOPERSON, person_id: null, planner: false, congregation_id: CONG },
   { user_id: U_ABSENT, person_id: 'p-absent', planner: false, congregation_id: CONG },
   { user_id: U_PLANNER, person_id: 'p-planner', planner: true, congregation_id: CONG },
+  { user_id: U_ZUTEILER, person_id: null, planner: false, zuteiler: true, congregation_id: CONG },
   { user_id: U_ORIG_ZWILL, person_id: 'p-orig-zwill', planner: false, congregation_id: CONG },
 ]
 
@@ -716,9 +719,10 @@ describe('substitute: Positivfall als Gegenprobe', () => {
     expect(writesTo('notifications').map((w) => w.method)).toEqual(['DELETE', 'POST'])
     expect(writesTo('notifications')[0]?.path).toContain('task_key=eq.')
     expect(writesTo('notifications')[0]?.path).toContain('Ersatz')
-    // Ursprungsperson und Planer werden informiert
+    // Ursprungsperson, Admin und Planer werden informiert — wer zuteilt, sucht
+    // auch den Ersatz (4.10.2026).
     const rows = writesTo('notifications')[1]?.body as { user_id: string }[]
-    expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ORIG, U_PLANNER]))
+    expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ORIG, U_PLANNER, U_ZUTEILER]))
   })
 })
 
@@ -739,7 +743,7 @@ describe('substitute: die Id entscheidet, wer verdrängt wurde', () => {
   it('„Ersatz gefunden" erreicht den Eingeteilten, nicht den Namensvetter', async () => {
     await call(take())
     const rows = writesTo('notifications')[1]?.body as { user_id: string }[]
-    expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ORIG, U_PLANNER]))
+    expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ORIG, U_PLANNER, U_ZUTEILER]))
   })
 })
 

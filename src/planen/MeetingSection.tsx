@@ -16,6 +16,7 @@ import {
   themaVon,
 } from '../data/meeting-edit'
 import { isSpeakerRole } from '../data/helpers'
+import { rechteVon } from '../data/rechte'
 import { nurZiffern } from '../data/ziffern'
 import { useKonflikte } from './useKonflikte'
 import { useZusage } from './useZusage'
@@ -166,6 +167,10 @@ export function MeetingSection({
   const [lacTitle, setLacTitle] = useState('')
 
   const isLac = istArt(rawSection, 'lac')
+  // Den Ablauf ändert nur der Admin — eigene Punkte, Reihenfolge, Minuten
+  // (4.10.2026). Thema, Lieder und Partner gehören zum Zuteilen: Die setzt
+  // auch der Planer (Grenzfälle des Betreibers, `zuteilen-grenze.ts`).
+  const darfUmbauen = rechteVon(state).admin
   // Wochenende: Vortragsthema als Freitext, Anfangslied als Nummernfeld
   const isTalk = state.tab === 'we' && istArt(rawSection, 'vortrag')
   const isOpening = state.tab === 'we' && istArt(rawSection, 'eroeffnung')
@@ -290,7 +295,7 @@ export function MeetingSection({
         const istCoPunkt = !isSong(rawItem) && rawItem.names.some((n) => n.rolle === ROLE_CIRCUIT)
         const coBegriff = istCoPunkt ? (rawTitle.split(' · ')[0] ?? '') : ''
         const rawMins = isSong(rawItem) ? null : itemMinutes(rawItem)
-        const editable = isLac && rawMins != null
+        const editable = darfUmbauen && isLac && rawMins != null
         const mPos = movables.indexOf(ii)
         // Schülerteil (Gesprächsführer-Slot vorhanden) → Partner an-/abschaltbar.
         // Sprachunabhängig über die Qualifikation erkannt, nicht über den Label-Text.
@@ -438,7 +443,7 @@ export function MeetingSection({
           </Fragment>
         )
       })}
-      {isLac && (
+      {isLac && darfUmbauen && (
         <div className="lac-add-row">
           <input
             type="text"

@@ -86,7 +86,7 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('Zustand 1: Person hat schon ein Konto', () => {
-  const MITGLIED: Member[] = [{ userId: 'u9', personId: 'p-a', email: 'anton@example.org', planner: false }]
+  const MITGLIED: Member[] = [{ userId: 'u9', personId: 'p-a', email: 'anton@example.org', planner: false, zuteiler: false }]
 
   it('nennt die Adresse und bietet nichts zum Einladen an', () => {
     const { container } = zeige(person(), { members: MITGLIED })
@@ -96,7 +96,7 @@ describe('Zustand 1: Person hat schon ein Konto', () => {
 
   it('ohne hinterlegte Adresse steht wenigstens, dass es verknüpft ist', () => {
     const { container } = zeige(person(), {
-      members: [{ userId: 'u9', personId: 'p-a', email: '', planner: false }],
+      members: [{ userId: 'u9', personId: 'p-a', email: '', planner: false, zuteiler: false }],
     })
     expect(container.querySelector('.konto-mail')?.textContent).toContain(t.kontoVerknuepft)
   })
@@ -112,7 +112,7 @@ describe('Zustand 1: Person hat schon ein Konto', () => {
 
   it('das eigene Konto nicht — man sperrte sich selbst aus', () => {
     const { container } = zeige(person(), {
-      members: [{ userId: 'u1', personId: 'p-a', email: 'ich@example.org', planner: true }],
+      members: [{ userId: 'u1', personId: 'p-a', email: 'ich@example.org', planner: true, zuteiler: false }],
       userId: 'u1',
     })
     expect(container.querySelector('.svc-remove')).toBeNull()
@@ -121,7 +121,7 @@ describe('Zustand 1: Person hat schon ein Konto', () => {
 })
 
 describe('Zustand 2: es liegt ein offener Code', () => {
-  const CODE: Invite[] = [{ id: 'i1', code: 'ABC12345', personId: 'p-a', planner: false }]
+  const CODE: Invite[] = [{ id: 'i1', code: 'ABC12345', personId: 'p-a', planner: false, zuteiler: false }]
 
   it('der Code steht sichtbar da, mit der Erklärung was er ist', () => {
     const { container } = zeige(person(), { invites: CODE })

@@ -241,7 +241,9 @@ export function PlanungsKarte() {
           </span>
         </button>
       )}
-      {stand.vorratKnapp && (
+      {/* Importieren ist Sache des Admins (4.10.2026): Ein neues Programm
+          ändert den Plan, es teilt nichts zu. */}
+      {stand.vorratKnapp && state.planner && (
         <div className="dash-plan-vorrat">
           <span className="dash-plan-vorrat-text">
             {geladenBis ? fill(t.geladenBis, { datum: geladenBis }) : t.geladenNichts}

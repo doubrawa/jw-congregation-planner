@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "Le adunanze per il servizio di questo gruppo verranno eliminate.",
   "ohneGruppeTitle": "SENZA GRUPPO DI SERVIZIO",
   "ohneGruppeHint": "Ogni proclamatore appartiene a un gruppo di servizio. Senza assegnazione, la persona non vede nel programma le adunanze per il servizio dei gruppi. Tocca un nome per impostare il gruppo.",
+  "rollePlaner": "Pianificatore",
+  "rechteHint": "I pianificatori assegnano gli incarichi e inviano i programmi. Gli admin possono anche modificare i programmi stessi, le persone e le impostazioni.",
+  "fsSendenOffen": "Incarichi del tuo gruppo non ancora comunicati: {n}",
+  "fsSendenAlle": "Tutti gli incaricati del tuo gruppo sono stati avvisati.",
 } satisfies Partial<Dict>

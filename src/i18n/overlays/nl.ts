@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "De velddienstbijeenkomsten van deze groep vervallen.",
   "ohneGruppeTitle": "ZONDER VELDDIENSTGROEP",
   "ohneGruppeHint": "Elke verkondiger hoort bij een velddienstgroep. Zonder groep ziet de persoon in het programma geen velddienstbijeenkomsten van groepen. Tik op een naam om de groep in te stellen.",
+  "rollePlaner": "Planner",
+  "rechteHint": "Planners wijzen toe en versturen de planningen. Admins kunnen ook de planningen zelf, de personen en de instellingen wijzigen.",
+  "fsSendenOffen": "Toewijzingen in jouw groep die nog aan niemand zijn doorgegeven: {n}",
+  "fsSendenAlle": "Iedereen met een toewijzing in jouw groep is op de hoogte.",
 } satisfies Partial<Dict>

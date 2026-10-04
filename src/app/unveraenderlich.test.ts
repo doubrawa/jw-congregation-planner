@@ -77,7 +77,7 @@ function ladung(): HydratePayload {
     congLang: 'de',
     progLangs: [],
     auxClass: true,
-    members: [{ userId: 'u1', personId: DEMO_PERSONS[0]!.id, planner: true, email: 'a@b.c' }],
+    members: [{ userId: 'u1', personId: DEMO_PERSONS[0]!.id, planner: true, zuteiler: false, email: 'a@b.c' }],
     invites: [],
   }
 }
@@ -181,7 +181,7 @@ function schreibfolge(s: AppState): AppAction[] {
     { type: 'setLang', lang: 'de' },
     // Konten
     { type: 'updateMember', userId: 'u1', patch: { planner: true } },
-    { type: 'addInvite', invite: { id: 'i-probe', code: 'ABC123', personId: null, planner: false } },
+    { type: 'addInvite', invite: { id: 'i-probe', code: 'ABC123', personId: null, planner: false, zuteiler: false } },
     { type: 'removeInvite', id: 'i-probe' },
     // Import
     { type: 'addImportedWeek', week: buildImportWeek() },

@@ -12,8 +12,8 @@ import { dienstAusWochenEntfernen, dienstBereichEntfernen, dienstZusagenKeys, oh
 import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
 import { eigenePerson } from './eigene-person'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsRegelAussetzen, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, genFsWeek, regenFsWeeks } from '../data/fs'
-import { displayName, isSong, linkFamily, mtab, aufseherGruppe, unlinkFamily } from '../data/helpers'
-import { darfPlanen, erlaubteScreens, themaVon } from '../data/rechte'
+import { displayName, isSong, linkFamily, mtab, unlinkFamily } from '../data/helpers'
+import { darfPlanen, erlaubteScreens, rechteVon, themaVon } from '../data/rechte'
 import {
   besuchAustragen,
   besuchEintragen,
@@ -564,9 +564,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // Rechteprüfung: Wer den Bildschirm nicht sehen darf, landet im Programm.
       // Dieselbe Liste bestückt die Navigation (AppShell) — eine Antwort, zwei
       // Fragesteller.
-      const fsOverseer =
-        aufseherGruppe(state.planner, state.groups, state.personId) !== null
-      const erlaubteZiele = erlaubteScreens(state.planner, fsOverseer)
+      const rechte = rechteVon(state)
+      const erlaubteZiele = erlaubteScreens(rechte)
       let screen: Screen = erlaubteZiele.includes(action.screen) ? action.screen : 'programm'
       // Ein Thema des Menüs bringt seinen Reiter mit (T120); ohne Thema bleibt
       // der bisherige. Zurück zu den Zusammenkünften geht es aus jedem Reiter
@@ -585,20 +584,21 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // zeigt ihm deshalb den Predigtdienst — so war es schon vorher, als
       // `PlanenScreen` ihm nur die Treffpunkte zeigte. Wählt er ausdrücklich die
       // Zusammenkünfte, sieht er sie an.
-      if (screen === 'planen' && !darfPlanen(state.planner, fsOverseer, themaVon(wunsch))) {
+      if (screen === 'planen' && !darfPlanen(rechte, themaVon(wunsch))) {
         if (action.thema === undefined) wunsch = 'fs'
         else screen = 'programm'
       }
       // Drei Tabs sind keine Zusammenkunft und nicht überall erlaubt:
       // „Treffpunkte" und „Weitere Pläne" (T120) gibt es in Programm und
       // Planen, „Bearbeiten" (T64) **nur** im Planen — das Programm ist für alle
-      // nur lesend. Beim Wechsel woandershin auf die Zusammenkunft unter der
+      // nur lesend — und nur für den Admin: Bearbeiten heißt den Plan ändern
+      // (4.10.2026). Beim Wechsel woandershin auf die Zusammenkunft unter der
       // Woche zurücksetzen, sonst stünde die Ansicht auf einem Reiter, den es
       // dort nicht gibt. Die beiden Zusammenkünfte stehen nicht in der Liste —
       // sie gibt es überall.
       const erlaubt: Partial<Record<MeetingTab, boolean>> = {
         fs: screen === 'programm' || screen === 'planen',
-        edit: screen === 'planen',
+        edit: screen === 'planen' && rechte.admin,
         wp: screen === 'programm' || screen === 'planen',
       }
       const tab: MeetingTab = erlaubt[wunsch] === false ? 'mid' : wunsch
@@ -614,7 +614,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         planModus:
           screen === 'planen'
             ? true
-            : screen === 'programm' && darfPlanen(state.planner, fsOverseer, themaVon(tab))
+            : screen === 'programm' && darfPlanen(rechte, themaVon(tab))
               ? false
               : state.planModus,
         notifOpen: false,
@@ -644,7 +644,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
           week: Math.min(Math.max(0, action.woche.wi), Math.max(0, state.weeks.length - 1)),
           // Auch hier nur planen, wo man planen darf — der Gruppenaufseher die Treffpunkte.
           tab:
-            screen === 'planen' && !darfPlanen(state.planner, fsOverseer, themaVon(wocheTab))
+            screen === 'planen' && !darfPlanen(rechte, themaVon(wocheTab))
               ? 'fs'
               : wocheTab,
           terminGewaehlt: true,
@@ -790,6 +790,16 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         next.invites = state.invites.map((i) =>
           i.personId === action.id ? { ...i, planner: on } : i,
         )
+      }
+      // Ebenso das Planer-Recht (4.10.2026). Vom eigenen Konto aus nimmt es
+      // sich niemand: Wer es hat, sieht die Personen gar nicht — und dem Admin
+      // nimmt es nichts.
+      if ('zuteilerVorgemerkt' in action.patch) {
+        const on = Boolean(action.patch.zuteilerVorgemerkt)
+        next.members = next.members.map((m) =>
+          m.personId === action.id && m.userId !== state.userId ? { ...m, zuteiler: on } : m,
+        )
+        next.invites = next.invites.map((i) => (i.personId === action.id ? { ...i, zuteiler: on } : i))
       }
       return next
     }
@@ -1295,9 +1305,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'ozAustragen': {
       const eintrag = state.ozEintraege.find((e) => e.id === action.id)
       if (!eintrag) return state
-      // Wer sich selbst austrägt, sagt ab — die Planer erfahren es. Ein Planer,
-      // der seinen Plan aufräumt, meldet sich nichts selbst.
-      if (!state.planner && eintrag.pid === eigenePerson(state)?.id) return ozAbsage(state, eintrag)
+      // Wer sich selbst austrägt, sagt ab — die Planer erfahren es. Wer
+      // zuteilt (Admin oder Planer) und seinen Plan aufräumt, meldet sich
+      // nichts selbst.
+      if (!rechteVon(state).zuteilen && eintrag.pid === eigenePerson(state)?.id) return ozAbsage(state, eintrag)
       return {
         ...state,
         ozEintraege: state.ozEintraege.filter((e) => e !== eintrag),
@@ -1708,6 +1719,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         userId: p.userId,
         personId: p.personId,
         planner: p.planner,
+        zuteiler: p.zuteiler ?? false,
         dataStatus: 'ready',
         dataEmpty: p.empty,
         staleAt: action.staleAt ?? null,

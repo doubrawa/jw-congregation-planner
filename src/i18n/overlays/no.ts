@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "Denne gruppens frammøter faller bort.",
   "ohneGruppeTitle": "UTEN FELTTJENESTEGRUPPE",
   "ohneGruppeHint": "Hver forkynner hører til en felttjenestegruppe. Uten tilknytning ser personen ingen gruppers frammøter i programmet. Trykk på et navn for å velge gruppen.",
+  "rollePlaner": "Planlegger",
+  "rechteHint": "Planleggere fordeler oppgavene og sender planene. En admin kan også endre selve planene, personene og innstillingene.",
+  "fsSendenOffen": "Oppgaver i gruppen din som ennå ikke er meddelt noen: {n}",
+  "fsSendenAlle": "Alle med oppgaver i gruppen din er informert.",
 } satisfies Partial<Dict>

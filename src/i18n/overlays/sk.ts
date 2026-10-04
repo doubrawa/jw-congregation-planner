@@ -500,4 +500,8 @@ export default {
   "gruppeDelTreffpunkte": "Schôdzky pred službou tejto skupiny odpadnú.",
   "ohneGruppeTitle": "BEZ SLUŽOBNEJ SKUPINY",
   "ohneGruppeHint": "Každý zvestovateľ patrí do služobnej skupiny. Bez priradenia daná osoba v programe neuvidí schôdzky pred službou jednotlivých skupín. Ťukni na meno a nastav skupinu.",
+  "rollePlaner": "Plánovač",
+  "rechteHint": "Plánovači prideľujú úlohy a odosielajú plány. Admin môže navyše meniť samotné plány, osoby a nastavenia.",
+  "fsSendenOffen": "Úlohy v tvojej skupine, ktoré zatiaľ nikomu neboli oznámené: {n}",
+  "fsSendenAlle": "Všetci pridelení v tvojej skupine už to vedia.",
 } satisfies Partial<Dict>

@@ -305,3 +305,33 @@ describe('Einen Besuch ändern', () => {
     expect(zeile(container).querySelector('.fs-remove')).toBeNull()
   })
 })
+
+/**
+ * **Der Planer wechselt den Besucher, plant aber keine Besuche** (Rechte-Stufe
+ * „Planer", 4.10.2026 — einer der vier Grenzfälle des Betreibers). Anlegen,
+ * Verteilen, Verlegen und Streichen ist der Plan; die Datenbank lässt den
+ * Planer nur den Besucher ändern (`gruppenbesuche_pruefen`).
+ */
+describe('Der Planer bei den Gruppenbesuchen (4.10.2026)', () => {
+  const alsPlaner = (over: Partial<AppState> = {}) => zeige({ planner: false, zuteiler: true, ...over })
+
+  it('sieht die Besuche und wechselt den Besucher', () => {
+    const { container, dispatch } = alsPlaner({ gruppenbesuche: [besuch(W1)] })
+    const feld = zeile(container).querySelector<HTMLSelectElement>('.gb-besucher-zeile select')!
+    expect(feld.value).toBe(MANFRED.id)
+    fireEvent.change(feld, { target: { value: THOMAS.id } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'besuchBesucher', id: `b-${W1}`, pid: THOMAS.id })
+  })
+
+  it('kein Verteilen, kein Hinzufügen, kein Verlegen oder Streichen', () => {
+    const { container } = alsPlaner({ gruppenbesuche: [besuch(W1)] })
+    expect(container.querySelector('.gb-besucher')).toBeNull() // Besucher für neue Besuche
+    expect(container.querySelector('.gb-monate')).toBeNull()
+    expect(container.querySelector('.plan-auto-btn--primary')).toBeNull()
+    expect(knopf(container, t.hinzufuegen)).toBeUndefined()
+    expect(zeile(container).querySelector('.gb-wahl')).toBeNull()
+    expect(zeile(container).querySelector('.fs-remove')).toBeNull()
+    // Woche und Gruppe stehen als Text da.
+    expect(zeile(container).querySelector('.gb-woche')?.textContent).toBeTruthy()
+  })
+})

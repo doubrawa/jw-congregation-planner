@@ -428,6 +428,11 @@ export interface Person {
    * Bildschirm zeigte dem Betreiber „Admin: aus", während er Admin war.
    */
   plannerVorgemerkt?: boolean
+  /**
+   * Vormerkung des **Planer**-Rechts (4.10.2026) — derselbe Weg wie beim
+   * Admin: Code (`Invite.zuteiler`), dann Konto (`Member.zuteiler`).
+   */
+  zuteilerVorgemerkt?: boolean
 }
 
 /**
@@ -898,19 +903,30 @@ export interface Absence {
 /* ---- Mitglieder & Einladungen (Produktionsmodus) ---- */
 
 /** Mitglied der Versammlung (Konto ↔ Person); Planer sehen alle. */
+/**
+ * Ein Konto der Versammlung.
+ *
+ * **Drei Rechte-Stufen** (4.10.2026): `planner` heißt in der App „Admin" und
+ * darf alles; `zuteiler` heißt „Planer" — er teilt zu und sendet, ändert aber
+ * die Pläne nicht. Der Admin hat das Planer-Recht ohnehin (`darfZuteilen`).
+ * Die Spalte heißt aus der Zeit vor den Stufen `planner`; umbenannt hätte sie
+ * Datenbank, Edge Functions und Skripte auf einmal getroffen.
+ */
 export interface Member {
   userId: string
   email: string
   personId: string | null
   planner: boolean
+  zuteiler: boolean
 }
 
-/** Offener Einladungscode (nur Planer sichtbar). */
+/** Offener Einladungscode (nur Admins sichtbar). */
 export interface Invite {
   id: string
   code: string
   personId: string | null
   planner: boolean
+  zuteiler: boolean
 }
 
 /* ---- Persönliche Aufgaben & Bestätigungs-Flow ---- */
