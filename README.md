@@ -119,8 +119,10 @@ Entwicklerseite (siehe [docs/user-guide/README.md](docs/user-guide/README.md)).
 
 ## Logo & App-Icons
 
-Einzige Quelle ist **[`public/logo.svg`](public/logo.svg)** (Vektor, `viewBox` eng um
-das Motiv). Alles andere wird daraus erzeugt — die PNGs nie von Hand bearbeiten:
+Quelle der App-Icons ist **[`public/logo.svg`](public/logo.svg)** (Vektor, `viewBox`
+eng um das Motiv). Daneben steht **[`public/logo-klein.svg`](public/logo-klein.svg)**
+für kleine Größen. Die PNGs werden aus `logo.svg` erzeugt — nie von Hand
+bearbeiten:
 
 ```bash
 npm run icons    # scripts/make-icons.mjs, rendert mit Chrome (headless)
@@ -128,15 +130,18 @@ npm run icons    # scripts/make-icons.mjs, rendert mit Chrome (headless)
 
 | Datei | Größe | Zweck |
 | --- | --- | --- |
-| `logo.svg` | Vektor | Sidebar, mobiler Header, Login, SVG-Favicon |
+| `logo.svg` | Vektor | Login, Quelle der PNGs |
+| `logo-klein.svg` | Vektor | Sidebar (40 px), mobiler Header (22 px), SVG-Favicon |
 | `icon-192.png` | 192² | Manifest `any`, PNG-Favicon-Fallback, Push-Notification |
 | `icon-512.png` | 512² | Manifest `any` |
 | `icon-512-maskable.png` | 512² | Manifest `maskable` (Motiv in der Safe-Zone) |
 | `apple-touch-icon.png` | 180² | iOS-Home-Bildschirm (kein SVG, keine Transparenz) |
 
 Das Zeichen (seit dem 4.10.2026): drei Sitzreihen mit 4, 6 und 8 Plätzen um ein
-goldenes Rednerpult, von oben gesehen, auf einer dunklen Petrol-Kachel — flach,
-damit es auch als 16-px-Favicon trägt. Die Polsterung je Ziel steht als `share`
+goldenes Rednerpult, von oben gesehen, auf einer dunklen Petrol-Kachel — flach.
+Klein verschwammen die 18 Plätze zu Streifen; dort steht deshalb die kleine
+Fassung mit 3, 5 und 7 Plätzen und kräftigeren Punkten auf denselben Bögen
+(Radien 112/176/240 um das Pult, 64 Einheiten Bogenabstand). Die Polsterung je Ziel steht als `share`
 in `scripts/make-icons.mjs`. Das maskable-Icon liegt auf Weiß wie der
 Startbildschirm der installierten App (`background_color`), denn Android zeigt
 es dort groß — vollflächig hätte es spitze Ecken; das iOS-Icon bekommt die

@@ -9,7 +9,7 @@ import { vorzulegen } from './reducer'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import { redeemInvite } from '../lib/data'
-import { LOGO } from '../lib/logo'
+import { LOGO_KLEIN } from '../lib/logo'
 import type { Screen, Thema } from '../data/types'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
 import { AbmeldenKnopf } from '../components/AbmeldenKnopf'
@@ -284,7 +284,7 @@ export function AppShell() {
                   <span className="menu-btn-bar" />
                 </button>
                 <div className="mobile-header-brand">
-                  <img className="mobile-header-logo" src={LOGO} alt="" width={22} height={22} />
+                  <img className="mobile-header-logo" src={LOGO_KLEIN} alt="" width={22} height={22} />
                   {/* Der Name der Versammlung, nicht die Wortmarke (T107): Die
                       Kurzform „VERSAMMLUNG" sah auf dem Handy aus wie eine
                       Überschrift und sagte nichts, weil „Versammlung" in dieser

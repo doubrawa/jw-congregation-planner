@@ -26,7 +26,8 @@ const DEV = new URL(self.location.href).searchParams.has('dev')
 
 // Relative URLs lösen gegen den SW-Pfad auf, also den App-Basispfad
 // (unter versammlung.app und im Dev gleichermaßen /).
-const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'logo.svg', 'icon-192.png']
+// `logo-klein.svg` trägt Kopfzeile und Seitenleiste, `logo.svg` die Anmeldung.
+const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'logo.svg', 'logo-klein.svg', 'icon-192.png']
 
 /**
  * Die gehashten Bündel, auf die `index.html` verweist — Skript, vorab geladene

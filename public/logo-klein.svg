@@ -1,0 +1,32 @@
+<!-- Das Logo für kleine Größen (seit dem 4.10.2026): Favicon, Kopfzeile am Handy
+     (22 px), Seitenleiste (40 px). Dieselben drei Bögen um das Pult wie
+     logo.svg (Radien 112, 176, 240; 64 Einheiten Bogenabstand zwischen zwei
+     Plätzen), aber nur 3, 5 und 7 Plätze und kräftigere Punkte — klein
+     verschwammen die 18 Plätze von 4-6-8 zu Streifen. Bei ungerader Zahl
+     steht ein Platz genau unter dem Pult. Groß (Anmeldung, App-Icons) bleibt
+     logo.svg. Entworfen auf der Design-Fläche, Board „Klein · weniger Plätze". -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Sitzreihen um ein Rednerpult">
+  <rect width="512" height="512" rx="116" fill="#17302D"></rect>
+  <g fill="#FBF6EA">
+    <circle cx="195.43" cy="234.21" r="21"></circle>
+    <circle cx="256.00" cy="252.00" r="21"></circle>
+    <circle cx="316.57" cy="234.21" r="21"></circle>
+    <g fill-opacity="0.76">
+      <circle cx="138.99" cy="271.47" r="21"></circle>
+      <circle cx="193.40" cy="304.49" r="21"></circle>
+      <circle cx="256.00" cy="316.00" r="21"></circle>
+      <circle cx="318.60" cy="304.49" r="21"></circle>
+      <circle cx="373.01" cy="271.47" r="21"></circle>
+    </g>
+    <g fill-opacity="0.52">
+      <circle cx="83.83" cy="307.21" r="21"></circle>
+      <circle cx="133.98" cy="346.67" r="21"></circle>
+      <circle cx="192.76" cy="371.52" r="21"></circle>
+      <circle cx="256.00" cy="380.00" r="21"></circle>
+      <circle cx="319.24" cy="371.52" r="21"></circle>
+      <circle cx="378.02" cy="346.67" r="21"></circle>
+      <circle cx="428.17" cy="307.21" r="21"></circle>
+    </g>
+  </g>
+  <circle cx="256" cy="140" r="34" fill="#E7B04B"></circle>
+</svg>

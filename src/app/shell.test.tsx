@@ -275,6 +275,19 @@ describe('Der Mitteilungs-Chip zählt nur das Ungelesene', () => {
   })
 })
 
+describe('Klein steht die kleine Fassung des Logos (4.10.2026)', () => {
+  it('Seitenleiste und Kopfzeile am Handy zeigen 3-5-7 statt 4-6-8', () => {
+    // Klein verschwammen die 18 Plätze von 4-6-8 zu Streifen; die Anmeldung
+    // (72 px) und die App-Icons behalten das große Zeichen.
+    const { container } = zeige()
+    const quellen = [...container.querySelectorAll<HTMLImageElement>('.sidebar-logo, .mobile-header-logo')].map((img) =>
+      img.getAttribute('src'),
+    )
+    expect(quellen.length, 'kein Logo gefunden').toBeGreaterThanOrEqual(2)
+    expect(quellen.every((src) => src?.endsWith('logo-klein.svg')), quellen.join(', ')).toBe(true)
+  })
+})
+
 describe('Das Offline-Banner nennt den Stand', () => {
   it('ohne Offline-Stand steht es nicht da', () => {
     const { container } = zeige({ staleAt: null })

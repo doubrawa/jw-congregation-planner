@@ -6194,6 +6194,14 @@ samt Konten wieder entfernt; für den nächsten Lauf legt
   in allen 34 Sprachen, gegen die Überschrift des Arbeitshefts (FRAG)
   gehalten — deckungsgleich bis auf Russisch, wo die S-38 «» setzt und das
   Heft nicht (das Heft gewinnt).
+- **Logo klein mit weniger Plätzen** — „Wenn das Logo klein dargestellt wird,
+  kannst du dann auf noch weniger Punkte gehen? Also 3 Punkte am engsten Kreis
+  und dann mehr in den Reihen danach." Auf der Design-Fläche verglichen
+  (3-5-7, 3-4-5, 3-5 in 16–40 px), gewählt **3-5-7** mit kräftigeren Punkten
+  (r 21 statt 15, Pult 34 statt 30) auf denselben Bögen wie 4-6-8:
+  `public/logo-klein.svg` für Favicon, Kopfzeile am Handy (22 px) und
+  Seitenleiste (40 px), im Offline-Cache der Hülle (`sw.js`). Anmeldung und
+  App-Icons bleiben 4-6-8. Handbuch-Bilder neu aufgenommen.
 
 **Mitteilungen ausrollen:** erst `schema.sql` (oder nur den Block
 `notify_planners`), dann pushen. Das neue Frontend schickt bei einer Absage den

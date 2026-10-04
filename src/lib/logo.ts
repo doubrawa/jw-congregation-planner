@@ -7,3 +7,10 @@
  * „JW"-Zeile ohne Gestaltung stehen — übrig aus dem Prototyp.
  */
 export const LOGO = `${import.meta.env.BASE_URL}logo.svg`
+
+/**
+ * Das Logo für kleine Größen — Kopfzeile am Handy und Seitenleiste (dazu das
+ * Favicon in `index.html`). Weniger, kräftigere Plätze (3-5-7 statt 4-6-8),
+ * die klein nicht zu Streifen verschwimmen (Betreiber, 4.10.2026).
+ */
+export const LOGO_KLEIN = `${import.meta.env.BASE_URL}logo-klein.svg`

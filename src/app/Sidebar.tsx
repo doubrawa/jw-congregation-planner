@@ -6,7 +6,7 @@
 
 import { displayName, initials } from '../data/helpers'
 import { useT } from '../i18n/useT'
-import { LOGO } from '../lib/logo'
+import { LOGO_KLEIN } from '../lib/logo'
 import type { Person } from '../data/types'
 
 /** Ein Eintrag des Menüs: ein Bildschirm oder ein Thema (T120). */
@@ -32,7 +32,7 @@ export interface NavAbschnitt {
 export function SidebarBrand({ congSub }: { congSub: string }) {
   return (
     <div className="sidebar-brand">
-      <img className="sidebar-logo" src={LOGO} alt="" width={40} height={40} />
+      <img className="sidebar-logo" src={LOGO_KLEIN} alt="" width={40} height={40} />
       {/* Ein Wort, das nur bei großer Schrift umbrechen muss: `wbr` gibt die
           Stelle vor der Endung vor — sonst risse der Browser mitten im Wort. */}
       <div className="sidebar-wordmark">
