@@ -814,6 +814,38 @@ create trigger oz_termine_ausfall
   when (new.aus is distinct from old.aus)
   execute function public.oz_ausfall_raeumen();
 
+-- Ein anderer Wochentag nimmt die kommenden Einträge mit (4.10.2026) — wie beim
+-- Streichen auch die, die die App des Planers nicht kannte. Sie löscht nur, was
+-- sie kennt (`ozWegBeiTagwechsel`); ein Eintrag, den jemand nach ihrem letzten
+-- Laden angelegt hat, bliebe am alten Tag stehen — im Plan unsichtbar, beim
+-- Verkündiger als Aufgabe, und `send-reminders` erinnerte ihn.
+--
+-- **Erst ab übermorgen (UTC).** Die App lässt den Eintrag von heute stehen —
+-- heute nach ihrer Uhr. Die Datenbank kennt nur UTC, und „heute" liegt dort je
+-- nach Zeitzone einen Tag früher oder später; ab übermorgen ist ein Tag überall
+-- schon kommend. Für den einen Tag dazwischen blenden ihn die App
+-- (`deriveMyOzTasks`) und die Functions (`offeneZeugnisEintraege`) aus.
+create or replace function public.oz_tagwechsel_raeumen()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  delete from public.oz_eintraege
+   where termin_id = new.id
+     and datum > current_date + 1
+     and extract(dow from datum)::int <> new.wd;
+  return null;
+end
+$$;
+
+drop trigger if exists oz_termine_tagwechsel on public.oz_termine;
+create trigger oz_termine_tagwechsel
+  after update of wd on public.oz_termine
+  for each row
+  when (new.wd is distinct from old.wd)
+  execute function public.oz_tagwechsel_raeumen();
+
 -- Name der eigenen Person — wie `displayName()` in der App: Vor- und Nachname.
 -- Gebraucht für Plätze, die nur einen Namen tragen und keine Person-Id: Ein
 -- Import ordnet einen mehrdeutigen Namen bewusst keiner Person zu, und von

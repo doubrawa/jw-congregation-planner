@@ -6119,6 +6119,15 @@ samt Konten wieder entfernt; für den nächsten Lauf legt
   angelegten), Monate zum Auslassen vor dem Verteilen (die Reihe rückt nach),
   und an jedem kommenden Besuch Woche und Gruppe als Auswahl
   (`besuchAendern`).
+- **Wochentagwechsel im Zeugnisgeben** (Nebenbefund des Streichens): Ein
+  Eintrag, den jemand nach dem letzten Laden des Planers angelegt hatte,
+  blieb nach einem Wechsel des Wochentags am alten Tag stehen — im Plan
+  unsichtbar, beim Verkündiger als Aufgabe, von `send-reminders` erinnert.
+  Jetzt räumt ihn die Datenbank ab (Trigger `oz_tagwechsel_raeumen`), und
+  zwar erst ab übermorgen (UTC): Den Eintrag von heute lässt die App stehen,
+  und „heute" weicht je nach Zeitzone um einen Tag von UTC ab. Für den Tag
+  dazwischen blenden ihn „Meine Aufgaben" (`deriveMyOzTasks`) und
+  Ankündigen/Erinnern (`offeneZeugnisEintraege`) aus.
 
 **Ausrollen in dieser Reihenfolge:** Functions `send-plan`, `send-reminders`,
 `substitute` deployen → `schema.sql` einspielen → Push. Das neue Frontend

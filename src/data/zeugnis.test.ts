@@ -212,6 +212,22 @@ describe('Die eigenen Einträge als Aufgaben', () => {
     expect(ozZusage(zugeteilt, { [ozTaskKey(zugeteilt)]: 'bestätigt' })).toBe('bestätigt')
   })
 
+  it('ein kommender Eintrag am alten Wochentag ist keine Aufgabe mehr — heute und Vergangenes bleiben (4.10.2026)', () => {
+    const donnerstag: OzTermin = { ...MITTWOCH, wd: 4 }
+    const gestern = eintrag('t1', '2026-09-02', 'p-a')
+    const heute = eintrag('t1', '2026-09-09', 'p-a')
+    const naechsteWoche = eintrag('t1', '2026-09-16', 'p-a')
+    const amNeuenTag = eintrag('t1', '2026-09-17', 'p-a')
+    const tasks = deriveMyOzTasks(
+      [donnerstag],
+      [gestern, heute, naechsteWoche, amNeuenTag],
+      'p-a',
+      {},
+      new Date(2026, 8, 9, 9, 0), // Mittwoch, 9. September
+    )
+    expect(tasks.map((t) => t.id)).toEqual([ozTaskKey(gestern), ozTaskKey(heute), ozTaskKey(amNeuenTag)])
+  })
+
   it('ohne eigene Person oder ohne Termin keine Aufgabe', () => {
     const e = eintrag('t1', '2026-09-09', 'p-a')
     expect(deriveMyOzTasks([MITTWOCH], [e], undefined, {})).toEqual([])
@@ -235,6 +251,24 @@ describe('„Plan senden": was noch hinausmuss', () => {
       HEUTE,
     )
     expect(liste).toEqual([{ key: ozTaskKey(offen), name: 'Anna Test' }])
+  })
+
+  it('ein kommender Eintrag am alten Wochentag geht nicht hinaus — der von heute schon (4.10.2026)', () => {
+    // Der Termin liegt inzwischen auf Donnerstag; Anna und Bert stehen noch am
+    // Mittwoch — Überbleibsel eines Wechsels, den die App nicht ganz abräumte.
+    const donnerstag: OzTermin = { ...MITTWOCH, wd: 4 }
+    const heute = eintrag('t1', '2026-09-09', 'p-a')
+    const naechsteWoche = eintrag('t1', '2026-09-16', 'p-b')
+    const amNeuenTag = eintrag('t1', '2026-09-17', 'p-c')
+    const liste = ozOffeneMeldungen(
+      [donnerstag],
+      [heute, naechsteWoche, amNeuenTag],
+      [ANNA, BERT, CARL],
+      {},
+      {},
+      new Date(2026, 8, 9, 9, 0), // Mittwoch, 9. September
+    )
+    expect(liste.map((m) => m.name)).toEqual(['Anna Test', 'Carl Test'])
   })
 
   it('wann zuletzt etwas hinausging — nur aus dem eigenen Schlüsselraum', () => {

@@ -2579,6 +2579,43 @@ export const KATALOG = [
     suchen: '              auslassen: ausgelassen.filter((m) => monate.includes(m)),',
     ersetzen: '              auslassen: [],',
   },
+  /* ---- Wochentagwechsel im Zeugnisgeben (4.10.2026) ---- */
+  {
+    id: 'oz-tagwechsel-raeumt',
+    datei: 'supabase/schema.sql',
+    regel: 'Ein anderer Wochentag räumt in der Datenbank auch Einträge ab, die die App des Planers nicht kannte.',
+    suchen: '     and extract(dow from datum)::int <> new.wd;',
+    ersetzen: '     and false;',
+  },
+  {
+    id: 'oz-tagwechsel-erst-uebermorgen',
+    datei: 'supabase/schema.sql',
+    regel: 'Die Datenbank räumt erst ab übermorgen (UTC) — den Eintrag von heute lässt die App stehen, in jeder Zeitzone.',
+    suchen: '     and datum > current_date + 1',
+    ersetzen: '     and datum > current_date - 1',
+  },
+  {
+    id: 'oz-tagwechsel-keine-aufgabe',
+    datei: 'src/data/zeugnis.ts',
+    regel: 'Ein kommender Eintrag am alten Wochentag ist keine Aufgabe mehr.',
+    suchen: '    if (fromIso(eintrag.datum).getDay() !== termin.wd && eintrag.datum > isoDay(heute)) continue',
+    ersetzen: '',
+  },
+  {
+    id: 'oz-tagwechsel-heute-bleibt-aufgabe',
+    datei: 'src/data/zeugnis.ts',
+    regel: 'Der Eintrag von heute und Vergangenes bleiben Aufgaben, auch am alten Wochentag — wie beim Wechsel selbst.',
+    suchen: '    if (fromIso(eintrag.datum).getDay() !== termin.wd && eintrag.datum > isoDay(heute)) continue',
+    ersetzen: '    if (fromIso(eintrag.datum).getDay() !== termin.wd) continue',
+  },
+  {
+    id: 'oz-tagwechsel-nicht-erinnern',
+    datei: 'supabase/functions/_shared/zuteilungen.ts',
+    regel: 'Ein kommender Eintrag am alten Wochentag wird weder angekündigt noch erinnert.',
+    suchen:
+      '    if ((tag.offset + 1) % 7 !== termin.wd && (tageBisTermin(tag.montag, tag.offset, heuteUTC) ?? 0) > 0) continue',
+    ersetzen: '',
+  },
   {
     id: 'oz-schema-ausfall-raeumt',
     datei: 'supabase/schema.sql',

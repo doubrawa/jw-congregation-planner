@@ -17,6 +17,7 @@ import {
   type MeetingTimes,
   rolleMitHerkunft,
   SKIP_ROLE,
+  tageBisTermin,
   terminText,
   terminVorbei,
   versatzMitAbweichung,
@@ -564,6 +565,11 @@ export function offeneZeugnisEintraege(
     const key = ozKey(tag.montag, e.id)
     if (conf.has(key)) continue
     if (terminVorbei(tag.montag, tag.offset, heuteUTC)) continue
+    // Ein kommender Eintrag an einem anderen Wochentag als dem seines Termins
+    // stammt aus der Zeit vor einem Wechsel des Wochentags (4.10.2026): Die
+    // Schicht steht so nicht mehr im Plan — nicht ankündigen, nicht erinnern.
+    // Heute bleibt, wie beim Wechsel selbst (`ozWegBeiTagwechsel`).
+    if ((tag.offset + 1) % 7 !== termin.wd && (tageBisTermin(tag.montag, tag.offset, heuteUTC) ?? 0) > 0) continue
     const datum = ozTerminText(tag.montag, tag.offset, termin.von, termin.bis, termin.ort)
     out.push({
       name: namen.get(e.person_id) ?? '',

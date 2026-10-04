@@ -205,6 +205,18 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     )
   })
 
+  it('ein anderer Wochentag: die Datenbank räumt kommende Einträge am alten Tag ab — erst ab übermorgen (4.10.2026)', () => {
+    const raeumen = funktionsRuempfe(schema).get('oz_tagwechsel_raeumen') ?? ''
+    expect(raeumen).toContain(
+      'delete from public.oz_eintraege where termin_id = new.id and datum > current_date + 1 and extract(dow from datum)::int <> new.wd;',
+    )
+    // Ohne `security definer`: Den Termin ändert ohnehin nur ein Planer.
+    expect(raeumen).not.toContain('security definer')
+    expect(normiert(schema)).toContain(
+      'create trigger oz_termine_tagwechsel after update of wd on public.oz_termine for each row when (new.wd is distinct from old.wd) execute function public.oz_tagwechsel_raeumen();',
+    )
+  })
+
   it('eine Verhinderungs-Meldung geht nur an Planer (T89)', () => {
     // Seit dem 24.9.2026 legt `notify_planners` die Zeilen an: Ein Verkündiger
     // sieht in `members` nur sich selbst und kann die Planer nicht adressieren.
@@ -328,10 +340,17 @@ describe('kein Altbestand mehr im Schema', () => {
       expect(angelegt, m[1]).toBeLessThan(m.index)
     }
     // Gegenprobe: Es gibt solche Zeilen überhaupt — die drei der Redner, die der
-    // Familienpläne und der Trigger, der die Einträge einer gestrichenen
-    // Schicht räumt (`oz_ausfall_raeumen`). Der läuft zwar erst beim Ändern
-    // eines Termins, steht aber ebenso hinter seiner Tabelle.
-    expect(loeschen.map((m) => m[1]).sort()).toEqual(['assignment_log', 'confirmations', 'notifications', 'oz_eintraege', 'plaene'])
+    // Familienpläne und die zwei Trigger, die Einträge eines Termins räumen
+    // (`oz_ausfall_raeumen`, `oz_tagwechsel_raeumen`). Die laufen zwar erst
+    // beim Ändern eines Termins, stehen aber ebenso hinter ihrer Tabelle.
+    expect(loeschen.map((m) => m[1]).sort()).toEqual([
+      'assignment_log',
+      'confirmations',
+      'notifications',
+      'oz_eintraege',
+      'oz_eintraege',
+      'plaene',
+    ])
   })
 })
 

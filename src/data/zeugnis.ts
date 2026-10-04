@@ -398,6 +398,7 @@ export function deriveMyOzTasks(
   eintraege: readonly OzEintrag[],
   personId: string | undefined,
   confirmations: ConfirmationMap,
+  heute = new Date(),
 ): MyTask[] {
   if (!personId) return []
   const tasks: MyTask[] = []
@@ -408,6 +409,11 @@ export function deriveMyOzTasks(
     // Datenbank ab (`oz_ausfall_raeumen`); bis zum nächsten Laden steht hier
     // womöglich noch einer, den der Planer nicht kannte.
     if (!termin || termin.aus?.includes(eintrag.datum)) continue
+    // Ebenso ein kommender Eintrag an einem anderen Wochentag als dem seines
+    // Termins: Er stammt aus der Zeit vor einem Wechsel des Wochentags, den die
+    // App des Planers nicht ganz abräumen konnte (`oz_tagwechsel_raeumen`).
+    // Heute bleibt, wie beim Wechsel selbst (`ozWegBeiTagwechsel`).
+    if (fromIso(eintrag.datum).getDay() !== termin.wd && eintrag.datum > isoDay(heute)) continue
     tasks.push({
       id: ozTaskKey(eintrag),
       title: '',
