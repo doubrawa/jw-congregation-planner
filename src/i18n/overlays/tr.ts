@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Yedek (Gözcü Kulesi İncelemesi)",
   "wtRollenLabel": "SABİT ROLLER",
   "wtRollenHint": "Sabit Gözcü Kulesi İncelemesi idarecisi; yedek, yokluğunda devreye girer.",
+  "wtRollenDoppeltHint": "İdareci ve yedek, her biri yalnızca bir kişidir. Bir rol birden fazla kişiye verilmişse otomatik atama bunlardan herhangi birini seçer. Rolü orada kapatmak için bir ada dokun.",
   "s89Title": "Hayatımız ve Hizmetimiz İbadeti Görevi",
   "s89Name": "Ad",
   "s89Partner": "Yardımcı",

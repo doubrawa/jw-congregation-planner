@@ -3265,6 +3265,57 @@ export const KATALOG = [
     suchen: "  if (key === 'vortrag') return `${t.privSchaetze} · ${t.privVortrag}`\n",
     ersetzen: '',
   },
+
+  // ── Feste Rollen mehrfach vergeben: die Namen im Banner (F7, 4.10.2026) ───
+  {
+    id: 'feste-rollen-warnung',
+    datei: 'src/personen/PersonenScreen.tsx',
+    regel: 'Die Personenliste warnt, wenn eine feste Rolle (Wachtturm-Studium-Leiter, Vertreter) mehrfach vergeben ist (F7).',
+    suchen: '        mehrfachRollen: doppelteFesteRollen(sortiert),',
+    ersetzen: '        mehrfachRollen: [],',
+  },
+  {
+    id: 'feste-rollen-erst-ab-zwei',
+    datei: 'src/data/helpers.ts',
+    regel: 'Eine feste Rolle, die genau eine Person trägt, ist kein Befund.',
+    suchen: '  })).filter(({ personen }) => personen.length >= 2)',
+    ersetzen: '  })).filter(({ personen }) => personen.length >= 1)',
+  },
+  {
+    id: 'feste-rollen-namen',
+    datei: 'src/personen/PersonenScreen.tsx',
+    regel:
+      'Die Warnung nennt je Rolle, wer sie trägt — mit der Zahl allein suchte der Planer die Betroffenen Detail für Detail.',
+    suchen: '              <NamenKnoepfe personen={r.personen} />\n',
+    ersetzen: '',
+  },
+  {
+    id: 'feste-rollen-namen-sortiert',
+    datei: 'src/personen/PersonenScreen.tsx',
+    regel: 'Die Namen in der Warnung stehen in der Folge der Liste — alphabetisch in der Sprache des Lesers.',
+    suchen: '        mehrfachRollen: doppelteFesteRollen(sortiert),',
+    ersetzen: '        mehrfachRollen: doppelteFesteRollen(state.persons),',
+  },
+  {
+    id: 'warnung-name-oeffnet-sein-detail',
+    datei: 'src/personen/PersonenScreen.tsx',
+    regel: 'Ein Tipp auf einen Namen in einer Warnung öffnet das Detail genau dieser Person, nicht das der ersten.',
+    suchen:
+      '          className="pers-dupes-chip"\n' +
+      '          dir="auto"\n' +
+      "          onClick={() => dispatch({ type: 'selectPerson', id: person.id })}\n",
+    ersetzen:
+      '          className="pers-dupes-chip"\n' +
+      '          dir="auto"\n' +
+      "          onClick={() => dispatch({ type: 'selectPerson', id: personen[0]!.id })}\n",
+  },
+  {
+    id: 'feste-rollen-im-filter',
+    datei: 'src/personen/PersonenScreen.tsx',
+    regel: 'Der Filter „Aufgabenbereiche" führt auch die festen Rollen — so findet man den festen Leiter.',
+    suchen: '            ...[...QUALIFICATION_ORDER, ...WT_ROLE_ORDER].map(',
+    ersetzen: '            ...[...QUALIFICATION_ORDER].map(',
+  },
 ]
 
 /**

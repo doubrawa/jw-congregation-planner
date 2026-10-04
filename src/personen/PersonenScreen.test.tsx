@@ -268,6 +268,20 @@ describe('Die Filterfelder', () => {
     expect(werte).toContain('schulung')
   })
 
+  it('die Bereichs-Auswahl führt auch die festen Rollen — so findet man den festen Leiter', () => {
+    // Als Bereich zählen sie nicht (eigene Karte im Detail), gesucht wird nach
+    // ihnen aber genauso. Bis zum 4.10.2026 fehlten sie hier: Wer den festen
+    // Leiter suchte, öffnete ein Detail nach dem anderen.
+    const leiter = person('p-l', 'Lars', 'Leiter', { priv: priv('wtLeiter') })
+    const { container } = zeige({ persons: [...PERSONEN, leiter] })
+    const auswahl = feld(container, t.aufgabenbereiche)
+    const optionen = [...auswahl.querySelectorAll('option')]
+    expect(optionen.find((o) => o.value === 'wtLeiter')?.textContent).toBe(t.privWtLeiter)
+    expect(optionen.find((o) => o.value === 'wtVertreter')?.textContent).toBe(t.privWtVertreter)
+    fireEvent.change(auswahl, { target: { value: 'wtLeiter' } })
+    expect(namen(container)).toEqual(['Leiter, Lars'])
+  })
+
   it('die Gruppen-Rotation hat keinen Bereich und steht deshalb nicht dabei', () => {
     const { container } = zeige()
     const werte = [...feld(container, t.aufgabenbereiche).querySelectorAll('option')].map(
@@ -294,24 +308,84 @@ describe('Die Filterfelder', () => {
  * `persons_name_eindeutig` (`schema.test.ts`).
  */
 
+/**
+ * **Feste Rollen sind je eine Person** (F7).
+ *
+ * Trägt eine Rolle mehr als einer, greift sich die Auto-Zuteilung irgendeinen.
+ * Seit dem 4.10.2026 nennt die Warnung die Betroffenen mit Namen, als Knöpfe
+ * wie bei „Ohne Predigtdienstgruppe". Davor stand dort nur die Zahl, und weil
+ * auch der Filter die festen Rollen nicht kannte, suchte der Planer sie Detail
+ * für Detail.
+ */
 describe('Warnung vor doppelt vergebenen festen Rollen (F7)', () => {
+  const NORD = person('p-1', 'Otto', 'Nord', { priv: priv('wtLeiter') })
+  const MEIER = person('p-2', 'Hans', 'Meier', { priv: priv('wtLeiter') })
+  const ALT = person('p-3', 'Anton', 'Alt', { priv: priv('wtVertreter') })
+  const BRAND = person('p-4', 'Bernd', 'Brand', { priv: priv('wtVertreter') })
+  // Über die Kennung statt über den Titel: Ein Fall unten läuft schwedisch.
+  const rollen = (c: HTMLElement) => c.querySelector('[data-warnung="feste-rollen"]')
+  /** Die Namen unter einer Rolle, in ihrer Folge. */
+  const chips = (c: HTMLElement, rolle: string) => [
+    ...(rollen(c)?.querySelectorAll<HTMLButtonElement>(`[data-rolle="${rolle}"] .pers-dupes-chip`) ?? []),
+  ]
+  const texte = (knoepfe: HTMLButtonElement[]) => knoepfe.map((b) => b.textContent)
+
   it('zwei Wachtturm-Leiter werden gemeldet — die Auto-Zuteilung nähme sonst irgendeinen', () => {
-    const { container } = zeige({
-      persons: [
-        person('p-1', 'Hans', 'Meier', { priv: priv('wtLeiter') }),
-        person('p-2', 'Otto', 'Nord', { priv: priv('wtLeiter') }),
-      ],
-    })
-    const rollen = warnung(container, t.wtRollenLabel)
-    expect(rollen).toBeTruthy()
-    expect(rollen?.querySelector('.pers-dupes-hint')?.textContent).toBe(t.wtRollenHint)
+    const { container } = zeige({ persons: [NORD, MEIER] })
+    expect(warnung(container, t.wtRollenLabel)).toBe(rollen(container))
+    expect(rollen(container)?.querySelector('.pers-dupes-hint')?.textContent).toBe(t.wtRollenDoppeltHint)
+    expect(rollen(container)?.querySelector('.pers-dupes-row')?.textContent).toBe(
+      '„Wachtturm-Studium-Leiter“ · 2 Personen',
+    )
+  })
+
+  it('nennt unter der Rolle, wer sie trägt — in der Folge der Liste', () => {
+    // Absichtlich unsortiert übergeben: Nord vor Meier.
+    const { container } = zeige({ persons: [NORD, MEIER] })
+    expect(texte(chips(container, 'wtLeiter'))).toEqual(['Meier, Hans', 'Nord, Otto'])
+  })
+
+  it('ein Tipp auf den Namen öffnet das Detail, in dem der Schalter steht', () => {
+    const { container, dispatch } = zeige({ persons: [NORD, MEIER] })
+    fireEvent.click(chips(container, 'wtLeiter')[1]!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'selectPerson', id: 'p-1' })
+  })
+
+  it('Leiter und Vertreter stehen getrennt, jede Rolle mit ihren Personen', () => {
+    const { container } = zeige({ persons: [NORD, BRAND, MEIER, ALT] })
+    expect(rollen(container)?.querySelector('.pers-dupes-count')?.textContent).toBe('2')
+    expect(texte(chips(container, 'wtLeiter'))).toEqual(['Meier, Hans', 'Nord, Otto'])
+    expect(texte(chips(container, 'wtVertreter'))).toEqual(['Alt, Anton', 'Brand, Bernd'])
+  })
+
+  it('ein einzelner Vertreter steht nicht darin — nur die doppelt vergebene Rolle', () => {
+    const { container } = zeige({ persons: [NORD, MEIER, ALT] })
+    expect(rollen(container)?.querySelector('.pers-dupes-count')?.textContent).toBe('1')
+    expect(chips(container, 'wtVertreter')).toEqual([])
+  })
+
+  it('sortiert in der Sprache des Lesers — schwedisch steht Å hinter Z', () => {
+    // Deutsch stünde „Åberg" bei A, also vorn: Die Gegenprobe zeigt, dass die
+    // Folge wirklich an der Sprache hängt und nicht zufällig stimmt.
+    const aberg = person('p-5', 'Per', 'Åberg', { priv: priv('wtLeiter') })
+    const zander = person('p-6', 'Ola', 'Zander', { priv: priv('wtLeiter') })
+    const schwedisch = zeige({ persons: [aberg, zander], lang: 'sv' }).container
+    expect(texte(chips(schwedisch, 'wtLeiter'))).toEqual(['Zander, Ola', 'Åberg, Per'])
+    cleanup()
+    const deutsch = zeige({ persons: [aberg, zander] }).container
+    expect(texte(chips(deutsch, 'wtLeiter'))).toEqual(['Åberg, Per', 'Zander, Ola'])
+  })
+
+  it('die Suche engt die Liste ein, die Warnung nicht — sie gilt der ganzen Versammlung', () => {
+    const { container } = zeige({ persons: [NORD, MEIER] })
+    fireEvent.change(container.querySelector('.pers-search')!, { target: { value: 'nord' } })
+    expect(namen(container)).toEqual(['Nord, Otto'])
+    expect(texte(chips(container, 'wtLeiter'))).toEqual(['Meier, Hans', 'Nord, Otto'])
   })
 
   it('einer ist kein Problem', () => {
-    const { container } = zeige({
-      persons: [person('p-1', 'Hans', 'Meier', { priv: priv('wtLeiter') })],
-    })
-    expect(warnung(container, t.wtRollenLabel)).toBeUndefined()
+    const { container } = zeige({ persons: [NORD] })
+    expect(rollen(container)).toBeNull()
   })
 })
 
@@ -329,7 +403,7 @@ describe('Warnung vor doppelt vergebenen festen Rollen (F7)', () => {
 describe('Warnung: ohne Predigtdienstgruppe', () => {
   const ohne = (c: HTMLElement) => warnung(c, t.ohneGruppeTitle)
   const chips = (c: HTMLElement) =>
-    [...(ohne(c)?.querySelectorAll<HTMLButtonElement>('.pers-ohne-chip') ?? [])]
+    [...(ohne(c)?.querySelectorAll<HTMLButtonElement>('.pers-dupes-chip') ?? [])]
 
   it('nennt jeden ohne Gruppe mit Namen — in der Reihenfolge der Liste, mit Zahl und Grund', () => {
     const { container } = zeige()

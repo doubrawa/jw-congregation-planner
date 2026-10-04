@@ -255,19 +255,30 @@ export function personCompare(a: Person, b: Person, lang: string): number {
  */
 
 /**
- * Feste Rollen, die mehr als eine Person trägt.
+ * Feste Rollen, die mehr als eine Person trägt — samt diesen Personen.
  *
  * „Fester Wachtturm-Studium-Leiter; der Vertreter springt bei Abwesenheit ein"
  * — beides ist der Sache nach **eine** Person. Zwei gesetzte Schalter blieben
  * bisher folgenlos und unbemerkt (F7): die Auto-Zuteilung greift sich dann
  * irgendeinen, und der Planer sieht nirgends, dass die Rolle doppelt vergeben
- * ist. Liefert je betroffener Rolle die Personenzahl.
+ * ist.
+ *
+ * **Die Personen, nicht bloß ihre Zahl** (4.10.2026). Bis dahin nannte die
+ * Warnung über der Personenliste nur „· 2 Personen", und der Filter kannte die
+ * festen Rollen nicht: Der Planer musste jedes infrage kommende Detail öffnen,
+ * um die beiden zu finden. Jetzt stehen sie mit Namen da, ein Tipp öffnet ihr
+ * Detail.
+ *
+ * Die Reihenfolge der Eingabe bleibt erhalten — sortiert übergibt der Aufrufer
+ * (wie bei `ohneGruppe`).
  */
-export function doppelteFesteRollen(persons: Person[]): Array<{ key: QualificationKey; count: number }> {
+export function doppelteFesteRollen(
+  persons: readonly Person[],
+): Array<{ key: QualificationKey; personen: Person[] }> {
   return WT_ROLE_ORDER.map((key) => ({
     key,
-    count: persons.filter((p) => p.priv[key]).length,
-  })).filter(({ count }) => count >= 2)
+    personen: persons.filter((p) => p.priv[key]),
+  })).filter(({ personen }) => personen.length >= 2)
 }
 
 /**

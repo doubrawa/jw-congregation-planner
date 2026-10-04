@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Vervanger (Wachttoren-studie)",
   "wtRollenLabel": "VASTE ROLLEN",
   "wtRollenHint": "Vaste Wachttoren-studieleider; de vervanger valt in bij afwezigheid.",
+  "wtRollenDoppeltHint": "De studieleider en de vervanger zijn elk één persoon. Is een rol aan meerdere personen gegeven, dan kiest de automatische toewijzing er willekeurig een. Tik op een naam om de rol daar uit te zetten.",
   "s89Title": "Toewijzing voor de leven-en-dienenvergadering",
   "s89Name": "Naam",
   "s89Partner": "Assistent",

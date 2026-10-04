@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Mbadala (Funzo la Mnara wa Mlinzi)",
   "wtRollenLabel": "MAJUKUMU YA KUDUMU",
   "wtRollenHint": "Kiongozi wa kudumu wa Funzo la Mnara wa Mlinzi; mbadala huchukua nafasi wakati hayupo.",
+  "wtRollenDoppeltHint": "Kiongozi na mbadala kila mmoja ni mtu mmoja tu. Jukumu likipewa watu kadhaa, ugawaji wa kiotomatiki huchagua yeyote kati yao. Gusa jina ili kuzima jukumu hilo hapo.",
   "s89Title": "Mgawo kwa Mkutano wa Huduma na Maisha Yetu ya Kikristo",
   "s89Name": "Jina",
   "s89Partner": "Msaidizi",

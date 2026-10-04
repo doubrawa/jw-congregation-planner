@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Helyettes (Őrtorony-tanulmányozás)",
   "wtRollenLabel": "ÁLLANDÓ SZEREPEK",
   "wtRollenHint": "Állandó Őrtorony-tanulmányozás-vezető; a helyettes beugrik távollét esetén.",
+  "wtRollenDoppeltHint": "A vezető és a helyettes egy-egy személy. Ha egy szerepet többen kaptak meg, az automatikus kiosztás bármelyiküket választhatja. Érints meg egy nevet, és ott kapcsold ki a szerepet.",
   "s89Title": "Feladat a keresztényi életünk és szolgálatunk összejövetelen",
   "s89Name": "Név",
   "s89Partner": "Segítő",

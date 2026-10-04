@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Ersättare (Vakttornsstudiet)",
   "wtRollenLabel": "FASTA ROLLER",
   "wtRollenHint": "Fast vakttornsstudieledare; ersättaren hoppar in vid frånvaro.",
+  "wtRollenDoppeltHint": "Ledaren och ersättaren är var för sig bara en person. Har flera personer samma roll väljer den automatiska tilldelningen vem som helst av dem. Tryck på ett namn för att stänga av rollen där.",
   "s89Title": "Uppgift vid veckomötet",
   "s89Name": "Namn",
   "s89Partner": "Medhjälpare",

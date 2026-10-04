@@ -342,6 +342,8 @@ export const DE = {
     geschlecht: 'Geschlecht', bruder: 'Bruder', schwester: 'Schwester',
     privWtLeiter: 'Wachtturm-Studium-Leiter', privWtVertreter: 'Vertreter (Wachtturm-Studium)',
     wtRollenLabel: 'FESTE ROLLEN', wtRollenHint: 'Fester Wachtturm-Studium-Leiter; der Vertreter springt bei Abwesenheit ein.',
+    // Die Warnung über der Personenliste, wenn eine feste Rolle mehrfach vergeben ist.
+    wtRollenDoppeltHint: 'Leiter und Vertreter sind je eine Person. Ist eine Rolle mehrfach vergeben, nimmt die automatische Zuteilung irgendeinen davon. Tippe auf einen Namen, um die Rolle dort abzuschalten.',
     // `s89Partner` beschriftet drei Flächen: den Druckbogen, den einzelnen
     // Zettel und — über `privLabel` — den Aufgabenbereich „nur Partner". Seit
     // die Rolle im Programm „Partner" heißt, hieß das Feld daneben noch

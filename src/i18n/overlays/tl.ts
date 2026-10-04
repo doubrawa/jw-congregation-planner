@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Kapalit (Pag-aaral sa Bantayan)",
   "wtRollenLabel": "MGA NAKATAKDANG PAPEL",
   "wtRollenHint": "Nakatakdang konduktor sa Pag-aaral sa Bantayan; papalit ang kapalit kapag wala.",
+  "wtRollenDoppeltHint": "Iisang tao lang ang bawat isa sa konduktor at kapalit. Kung ang isang papel ay naibigay sa ilang tao, pipili ang awtomatikong pagtatalaga ng sinuman sa kanila. I-tap ang isang pangalan para i-off doon ang papel.",
   "s89Title": "Atas sa Pulong na Ating Buhay at Ministeryong Kristiyano",
   "s89Name": "Pangalan",
   "s89Partner": "Assistant",

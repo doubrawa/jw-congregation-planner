@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Sijainen (Vartiotornin tutkistelu)",
   "wtRollenLabel": "KIINTEÄT ROOLIT",
   "wtRollenHint": "Vakituinen Vartiotornin tutkistelun johtaja; sijainen tuuraa poissaollessa.",
+  "wtRollenDoppeltHint": "Johtaja ja sijainen ovat kumpikin yksi henkilö. Jos rooli on annettu useammalle, automaattinen jako valitsee heistä kenet tahansa. Napauta nimeä ja kytke rooli siellä pois.",
   "s89Title": "Tehtävä kokouksessa Kristityn elämä ja palvelus",
   "s89Name": "Nimi",
   "s89Partner": "Avustaja",

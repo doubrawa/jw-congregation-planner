@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Sostituto (studio Torre di Guardia)",
   "wtRollenLabel": "RUOLI FISSI",
   "wtRollenHint": "Conduttore fisso dello studio Torre di Guardia; il sostituto interviene in caso di assenza.",
+  "wtRollenDoppeltHint": "Il conduttore e il sostituto sono una sola persona ciascuno. Se un ruolo è assegnato a più persone, l’assegnazione automatica ne sceglie una qualsiasi. Tocca un nome per disattivare lì il ruolo.",
   "s89Title": "Incarico per l’adunanza Vita cristiana e ministero",
   "s89Name": "Nome",
   "s89Partner": "Assistente",

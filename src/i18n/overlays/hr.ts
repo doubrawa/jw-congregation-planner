@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Zamjenik (Razmatranje Stražarske kule)",
   "wtRollenLabel": "STALNE ULOGE",
   "wtRollenHint": "Stalni voditelj Razmatranja Stražarske kule; zamjenik uskače u slučaju odsutnosti.",
+  "wtRollenDoppeltHint": "Voditelj i zamjenik uvijek su po jedna osoba. Ako ulogu ima više osoba, automatsko dodjeljivanje uzima bilo koju od njih. Dodirni ime da tamo isključiš ulogu.",
   "s89Title": "Zadatak na sastanku Naš kršćanski život i služba",
   "s89Name": "Ime",
   "s89Partner": "Sugovornik",

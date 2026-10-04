@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Înlocuitor (Studiul Turnul de veghe)",
   "wtRollenLabel": "ROLURI FIXE",
   "wtRollenHint": "Conducător fix al Studiului Turnul de veghe; înlocuitorul intervine în caz de absență.",
+  "wtRollenDoppeltHint": "Conducătorul și înlocuitorul sunt fiecare o singură persoană. Dacă un rol este atribuit mai multor persoane, atribuirea automată o alege pe oricare dintre ele. Atinge un nume pentru a dezactiva rolul acolo.",
   "s89Title": "Însărcinare la întrunirea „Viața creștină și predicarea”",
   "s89Name": "Nume",
   "s89Partner": "Partener",

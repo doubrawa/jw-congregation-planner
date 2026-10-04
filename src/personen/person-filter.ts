@@ -10,7 +10,7 @@ export interface PersonFilter {
   sex: '' | 'm' | 'w'
   role: '' | Role
   grp: string // Group.id
-  priv: string // Aufgabenbereich-Key (fest oder `svc:<dienst>`)
+  priv: string // Aufgabenbereich-Key (fest, feste Rolle wie `wtLeiter` oder `svc:<dienst>`)
 }
 
 export const KEIN_FILTER: PersonFilter = { q: '', sex: '', role: '', grp: '', priv: '' }

@@ -87,13 +87,15 @@ describe('F4 — Brüder-Bereiche bei einer Schwester', () => {
 /* ---- F7 ------------------------------------------------------------------ */
 
 describe('F7 — feste Rollen doppelt vergeben', () => {
-  it('meldet zwei Wachtturm-Studium-Leiter', () => {
+  it('meldet zwei Wachtturm-Studium-Leiter — mit den beiden, nicht nur ihrer Zahl', () => {
+    // Die Personen selbst, damit die Warnung sie nennen kann (4.10.2026). Mit
+    // der Zahl allein suchte der Planer sie Detail für Detail.
     const p = [
       person('a', { priv: { ...KEINE, wtLeiter: true } }),
       person('b', { priv: { ...KEINE, wtLeiter: true } }),
       person('c'),
     ]
-    expect(doppelteFesteRollen(p)).toEqual([{ key: 'wtLeiter', count: 2 }])
+    expect(doppelteFesteRollen(p)).toEqual([{ key: 'wtLeiter', personen: [p[0], p[1]] }])
   })
 
   it('einer ist kein Problem, keiner auch nicht', () => {
@@ -101,15 +103,27 @@ describe('F7 — feste Rollen doppelt vergeben', () => {
     expect(doppelteFesteRollen([person('a'), person('b')])).toEqual([])
   })
 
-  it('meldet Leiter und Vertreter getrennt', () => {
+  it('meldet Leiter und Vertreter getrennt, jede Rolle mit ihren Personen', () => {
     const p = [
       person('a', { priv: { ...KEINE, wtLeiter: true, wtVertreter: true } }),
-      person('b', { priv: { ...KEINE, wtLeiter: true, wtVertreter: true } }),
+      person('b', { priv: { ...KEINE, wtLeiter: true } }),
+      person('c', { priv: { ...KEINE, wtVertreter: true } }),
     ]
     expect(doppelteFesteRollen(p)).toEqual([
-      { key: 'wtLeiter', count: 2 },
-      { key: 'wtVertreter', count: 2 },
+      { key: 'wtLeiter', personen: [p[0], p[1]] },
+      { key: 'wtVertreter', personen: [p[0], p[2]] },
     ])
+  })
+
+  it('lässt die Reihenfolge der Eingabe stehen — sortiert übergibt der Aufrufer', () => {
+    // Wie `ohneGruppe`: Die Personenliste übergibt ihre sortierte Fassung,
+    // damit die Namen in der Warnung in derselben Folge stehen wie darunter.
+    // Sortierte die Funktion selbst, bräuchte sie die Sprache des Lesers.
+    const p = [
+      person('z', { priv: { ...KEINE, wtVertreter: true } }),
+      person('a', { priv: { ...KEINE, wtVertreter: true } }),
+    ]
+    expect(doppelteFesteRollen(p)[0]!.personen.map((x) => x.id)).toEqual(['z', 'a'])
   })
 })
 

@@ -244,6 +244,7 @@ export default {
   "privWtVertreter": "Substitute (Watchtower Study)",
   "wtRollenLabel": "FIXED ROLES",
   "wtRollenHint": "Fixed Watchtower Study conductor; the substitute fills in when absent.",
+  "wtRollenDoppeltHint": "The conductor and the substitute are one person each. If a role is given to more than one person, automatic assignment picks any one of them. Tap a name to turn the role off there.",
   "s89Title": "Our Christian Life and Ministry Meeting Assignment",
   "s89Name": "Name",
   "s89Partner": "Assistant",

@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Người thay thế (Phần học Tháp Canh)",
   "wtRollenLabel": "VAI TRÒ CỐ ĐỊNH",
   "wtRollenHint": "Người điều khiển Phần học Tháp Canh cố định; người thay thế đảm nhận khi vắng.",
+  "wtRollenDoppeltHint": "Mỗi vai trò này chỉ do một người đảm nhận. Nếu một vai trò được giao cho nhiều người, việc phân công tự động sẽ chọn bất kỳ ai trong số họ. Chạm vào một tên để tắt vai trò ở đó.",
   "s89Title": "Nhiệm vụ cho Buổi họp Lối sống và thánh chức",
   "s89Name": "Tên",
   "s89Partner": "Người phụ giúp",

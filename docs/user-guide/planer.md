@@ -668,6 +668,9 @@ Unter **Personen** pflegst du alle Mitglieder der Versammlung.
   alphabetisch sortiert). Die Felder wirken zusammen (z. B. alle Brüder aus
   Gruppe 2 mit dem Bereich Mikrofone); „—" bedeutet „nicht eingeschränkt". Die
   Zahl neben der Überschrift zeigt, wie viele Personen gerade übrig bleiben.
+  Unter **Aufgabenbereich** stehen auch die beiden festen Rollen
+  **Wachtturm-Studium-Leiter** und **Vertreter (Wachtturm-Studium)** – so
+  findest du schnell, wer sie trägt.
 - Ein Tippen auf eine Person öffnet ihr Detail:
 
 ![Person bearbeiten](screenshots/planer-person-detail.png)
@@ -748,7 +751,8 @@ Im Detail legst du fest:
   abwesend oder schon eingeteilt, sein Vertreter. Fehlen beide, verteilt die
   Automatik den Platz wie jeden anderen unter allen mit dem Bereich **Studium
   leiten**. Jede der beiden Rollen gehört genau einer Person; ist eine
-  mehrfach vergeben, warnt die Personenliste.
+  mehrfach vergeben, warnt die Personenliste (siehe
+  [Warnung: feste Rolle mehrfach vergeben](#warnung-feste-rolle-mehrfach-vergeben)).
 - **Konto & Einladung** – hier lädst du eine Person zur App‑Nutzung ein (Code bzw.
   Einladungs‑E‑Mail).
 
@@ -780,14 +784,15 @@ Gleichnamige wären dort nicht auseinanderzuhalten.
 Leiter und Vertreter des Wachtturm-Studiums sind je **eine** Person. Ist einer
 der beiden Schalter bei mehreren eingeschaltet, erscheint über der Liste das
 Warnbanner **FESTE ROLLEN** mit einer Zeile je Rolle, etwa
-„Wachtturm-Studium-Leiter" · 2 Personen. Beim automatischen Zuteilen nimmt die
-App dann irgendeinen von ihnen – nicht unbedingt den, den du meinst.
+„Wachtturm-Studium-Leiter" · 2 Personen, und darunter den Namen aller, die sie
+tragen. Beim automatischen Zuteilen nimmt die App dann irgendeinen von ihnen –
+nicht unbedingt den, den du meinst.
 
-Abhilfe: Lass den Schalter nur bei einer Person an. Das Banner nennt keine
-Namen, und der Filter **Aufgabenbereiche** kennt die festen Rollen nicht. Öffne
-deshalb das Detail der Brüder, die als Leiter oder Vertreter in Frage kommen,
-und sieh dort in der Karte **Feste Rollen** nach. Das Banner verschwindet,
-sobald jede Rolle höchstens einmal vergeben ist.
+Abhilfe: Tippe im Banner auf einen Namen. Es öffnet sich das Detail der Person,
+dort schaltest du in der Karte **Feste Rollen** die Rolle ab, wenn sie nicht zu
+ihr gehört – an bleibt sie nur bei einer Person. Das Banner gilt für die ganze
+Versammlung, Suche und Filter blenden es nicht aus. Es verschwindet, sobald
+jede Rolle höchstens einmal vergeben ist.
 
 ### Warnung: ohne Predigtdienstgruppe
 

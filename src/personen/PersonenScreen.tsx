@@ -71,8 +71,9 @@ function PersonList() {
       return {
         sorted: sortiert,
         mitKonto: new Set(state.members.map((m) => m.personId)),
-        mehrfachRollen: doppelteFesteRollen(state.persons),
-        // Aus der sortierten Liste — die Namen stehen dann in derselben Folge wie unten.
+        // Beide aus der sortierten Liste — die Namen in den Warnungen stehen
+        // dann in derselben Folge wie unten.
+        mehrfachRollen: doppelteFesteRollen(sortiert),
         ohne: ohneGruppe(sortiert, state.groups),
       }
     },
@@ -161,20 +162,26 @@ function PersonList() {
 
       {/* Feste Rollen sind der Sache nach je EINE Person. Sind zwei Schalter
           gesetzt, greift sich die Auto-Zuteilung irgendeinen — bisher ohne
-          jeden Hinweis (F7). Gleiche Optik wie die frühere Dubletten-Warnung;
-          alle Texte sind vorhandene Bausteine, damit sie in jeder Sprache
-          stimmen. */}
+          jeden Hinweis (F7). Je Rolle eine Zeile, darunter wer sie trägt: Bis
+          zum 4.10.2026 stand hier nur die Zahl, und der Planer suchte die
+          Betroffenen Detail für Detail. Ein Tipp auf den Namen öffnet das
+          Detail, in dem der Schalter steht. */}
       {mehrfachRollen.length > 0 && (
-        <div className="pers-dupes">
+        <div className="pers-dupes" data-warnung="feste-rollen">
           <div className="pers-dupes-head">
             <span className="pers-dupes-badge">!</span>
             <span className="pers-dupes-title">{t.wtRollenLabel}</span>
             <span className="pers-dupes-count">{mehrfachRollen.length}</span>
           </div>
-          <div className="pers-dupes-hint">{t.wtRollenHint}</div>
+          <div className="pers-dupes-hint">{t.wtRollenDoppeltHint}</div>
           {mehrfachRollen.map((r) => (
-            <div key={r.key} className="pers-dupes-row">
-              <span dir="auto">{fill(t.dublettenRow, { name: privLabel(t, r.key), n: r.count })}</span>
+            <div key={r.key} data-rolle={r.key}>
+              <div className="pers-dupes-row">
+                <span dir="auto">
+                  {fill(t.dublettenRow, { name: privLabel(t, r.key), n: r.personen.length })}
+                </span>
+              </div>
+              <NamenKnoepfe personen={r.personen} />
             </div>
           ))}
         </div>
@@ -182,10 +189,8 @@ function PersonList() {
 
       {/* Wer keiner Predigtdienstgruppe zugeordnet ist, sieht im Programm keine
           Gruppentreffpunkte — und bisher stand das nirgends, auch nicht nach
-          dem Löschen einer Gruppe, das alle ihre Mitglieder so zurückließ. Die
-          Namen sind Knöpfe: Ein Tipp öffnet das Detail, in dem die Gruppe
-          gesetzt wird. Als Chips statt Zeilen, damit auch eine lange Liste die
-          Personenliste darunter nicht unter sich begräbt. */}
+          dem Löschen einer Gruppe, das alle ihre Mitglieder so zurückließ. Ein
+          Tipp auf den Namen öffnet das Detail, in dem die Gruppe gesetzt wird. */}
       {ohne.length > 0 && (
         <div className="pers-dupes" data-warnung="ohne-gruppe">
           <div className="pers-dupes-head">
@@ -194,19 +199,7 @@ function PersonList() {
             <span className="pers-dupes-count">{ohne.length}</span>
           </div>
           <div className="pers-dupes-hint">{t.ohneGruppeHint}</div>
-          <div className="pers-ohne-list">
-            {ohne.map((person) => (
-              <button
-                key={person.id}
-                type="button"
-                className="pers-ohne-chip"
-                dir="auto"
-                onClick={() => dispatch({ type: 'selectPerson', id: person.id })}
-              >
-                {listName(person)}
-              </button>
-            ))}
-          </div>
+          <NamenKnoepfe personen={ohne} />
         </div>
       )}
 
@@ -267,7 +260,12 @@ function PersonList() {
           value={filter.priv}
           onChange={(v) => setz({ priv: v })}
           options={[
-            ...QUALIFICATION_ORDER.map((key) => [key, privLabel(t, key)] as [string, string]),
+            // Mit den festen Rollen (4.10.2026): Als Bereich zählen sie nicht
+            // (`bereicheCount`, eigene Karte im Detail), gesucht wird nach
+            // ihnen aber genauso — wer ist der feste Leiter?
+            ...[...QUALIFICATION_ORDER, ...WT_ROLE_ORDER].map(
+              (key) => [key, privLabel(t, key)] as [string, string],
+            ),
             // Wie im Detail: Gruppen-Dienste (Reinigung) rotieren Gruppen
             // statt Personen und haben deshalb keinen Bereich.
             ...state.services
@@ -314,6 +312,30 @@ function PersonList() {
         ))}
       </div>
     </section>
+  )
+}
+
+/**
+ * Die Namen in einer Warnung über der Liste, als Knöpfe: Ein Tipp öffnet das
+ * Detail, in dem sich die Ursache beheben lässt. Chips statt Zeilen, damit auch
+ * eine lange Liste die Personenliste darunter nicht unter sich begräbt.
+ */
+function NamenKnoepfe({ personen }: { personen: readonly Person[] }) {
+  const { dispatch } = useApp()
+  return (
+    <div className="pers-dupes-chips">
+      {personen.map((person) => (
+        <button
+          key={person.id}
+          type="button"
+          className="pers-dupes-chip"
+          dir="auto"
+          onClick={() => dispatch({ type: 'selectPerson', id: person.id })}
+        >
+          {listName(person)}
+        </button>
+      ))}
+    </div>
   )
 }
 

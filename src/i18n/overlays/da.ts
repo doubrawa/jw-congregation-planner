@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Stedfortræder (Vagttårnsstudiet)",
   "wtRollenLabel": "FASTE ROLLER",
   "wtRollenHint": "Fast vagttårnsstudieleder; stedfortræderen træder til ved fravær.",
+  "wtRollenDoppeltHint": "Lederen og stedfortræderen er hver især én person. Er en rolle givet til flere, vælger den automatiske tildeling en vilkårlig af dem. Tryk på et navn for at slå rollen fra der.",
   "s89Title": "Opgave til mødet “Livet og tjenesten som kristne”",
   "s89Name": "Navn",
   "s89Partner": "Medvirkende",

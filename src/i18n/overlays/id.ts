@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Pengganti (Pelajaran Menara Pengawal)",
   "wtRollenLabel": "PERAN TETAP",
   "wtRollenHint": "Pemandu tetap Pelajaran Menara Pengawal; pengganti menggantikan saat absen.",
+  "wtRollenDoppeltHint": "Pemandu dan pengganti masing-masing hanya satu orang. Jika suatu peran diberikan kepada beberapa orang, penetapan otomatis memilih siapa saja di antara mereka. Ketuk nama untuk menonaktifkan peran itu di sana.",
   "s89Title": "Tugas untuk Perhimpunan Pelayanan dan Kehidupan Kristen",
   "s89Name": "Nama",
   "s89Partner": "Asisten",

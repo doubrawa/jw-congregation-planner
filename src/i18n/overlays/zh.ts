@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "代理（《守望台》研究班）",
   "wtRollenLabel": "固定角色",
   "wtRollenHint": "固定的《守望台》研究班主持人；主持人缺席时由代理担任。",
+  "wtRollenDoppeltHint": "主持人和代理各只有一人。如果某个角色被分配给多人，自动分配会从中任选一人。点按姓名即可在那里关闭该角色。",
   "s89Title": "传道与生活聚会任务",
   "s89Name": "姓名",
   "s89Partner": "助手",

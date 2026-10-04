@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Remplaçant (Étude de La Tour de Garde)",
   "wtRollenLabel": "RÔLES FIXES",
   "wtRollenHint": "Conducteur fixe de l’Étude de La Tour de Garde\u00a0; le remplaçant intervient en cas d’absence.",
+  "wtRollenDoppeltHint": "Le conducteur et le remplaçant sont chacun une seule personne. Si un rôle est attribué à plusieurs personnes, l’attribution automatique choisit n’importe laquelle. Touche un nom pour y désactiver le rôle.",
   "s89Title": "Devoir d’élève à la réunion Vie chrétienne et ministère",
   "s89Name": "Nom",
   "s89Partner": "Interlocuteur",

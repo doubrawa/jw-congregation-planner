@@ -445,18 +445,26 @@
   background: var(--wein);
 }
 
-/* ---- Warnung: ohne Predigtdienstgruppe -----------------------------------
- * Gleiche Banner-Optik wie oben; die Namen sind hier aber Knöpfe (ein Tipp
- * öffnet das Detail) und stehen als Chips nebeneinander — nach dem Löschen
- * einer großen Gruppe wären Zeilen eine Wand über der eigentlichen Liste. */
-.pers-ohne-list {
+/* ---- Namen in den Warnungen ----------------------------------------------
+ * Die Namen sind Knöpfe (ein Tipp öffnet das Detail) und stehen als Chips
+ * nebeneinander — nach dem Löschen einer großen Gruppe wären Zeilen eine Wand
+ * über der eigentlichen Liste. „Ohne Predigtdienstgruppe" zeigt sie unter dem
+ * Hinweis, „Feste Rollen" je Rolle unter deren Zeile — dort eingerückt auf
+ * den Anfang ihres Textes (Punkt 8 px + Abstand 9 px), damit man sieht, zu
+ * welcher Rolle sie gehören. */
+.pers-dupes-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 10px;
 }
 
-.pers-ohne-chip {
+.pers-dupes-row + .pers-dupes-chips {
+  margin-top: 6px;
+  padding-inline-start: 17px;
+}
+
+.pers-dupes-chip {
   padding-block: 5px;
   padding-inline: 12px;
   border-radius: var(--r-pill);
@@ -468,7 +476,7 @@
   overflow-wrap: anywhere;
 }
 
-.pers-ohne-chip:hover {
+.pers-dupes-chip:hover {
   border-color: var(--wein);
   color: var(--wein);
 }

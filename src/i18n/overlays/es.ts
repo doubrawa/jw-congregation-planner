@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Suplente (Estudio de La Atalaya)",
   "wtRollenLabel": "FUNCIONES FIJAS",
   "wtRollenHint": "Conductor fijo del Estudio de La Atalaya; el suplente sustituye si está ausente.",
+  "wtRollenDoppeltHint": "El conductor y el suplente son una sola persona cada uno. Si una función está asignada a varias personas, la asignación automática elige a cualquiera de ellas. Toca un nombre para desactivar allí la función.",
   "s89Title": "Asignación para la reunión Vida y Ministerio Cristianos",
   "s89Name": "Nombre",
   "s89Partner": "Ayudante",

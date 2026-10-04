@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Substituto (Estudo de A Sentinela)",
   "wtRollenLabel": "FUNÇÕES FIXAS",
   "wtRollenHint": "Dirigente fixo do Estudo de A Sentinela; o substituto entra em caso de ausência.",
+  "wtRollenDoppeltHint": "O dirigente e o substituto são, cada um, uma única pessoa. Se uma função estiver atribuída a várias pessoas, a atribuição automática escolhe qualquer uma delas. Toque em um nome para desativar a função ali.",
   "s89Title": "Designação da reunião Nossa Vida e Ministério Cristão",
   "s89Name": "Nome",
   "s89Partner": "Ajudante",

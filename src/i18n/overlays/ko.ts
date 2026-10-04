@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "대리 (「파수대」 연구)",
   "wtRollenLabel": "고정 역할",
   "wtRollenHint": "고정 「파수대」 연구 사회자. 사회자가 결석하면 대리가 맡습니다.",
+  "wtRollenDoppeltHint": "사회자와 대리는 각각 한 사람입니다. 한 역할이 여러 사람에게 지정되어 있으면 자동 배정은 그중 아무나 선택합니다. 이름을 눌러 그곳에서 역할을 끄십시오.",
   "s89Title": "그리스도인 생활과 봉사 집회 임명",
   "s89Name": "이름",
   "s89Partner": "보조자",

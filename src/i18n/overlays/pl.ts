@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Zastępca (studium Strażnicy)",
   "wtRollenLabel": "STAŁE ROLE",
   "wtRollenHint": "Stały prowadzący studium Strażnicy; zastępca wchodzi w razie nieobecności.",
+  "wtRollenDoppeltHint": "Każdą z tych ról pełni tylko jedna osoba. Jeśli rola jest przypisana kilku osobom, automatyczne przydzielanie wybiera dowolną z nich. Dotknij imienia, aby wyłączyć tam tę rolę.",
   "s89Title": "Zadanie na zebraniu chrześcijańskiego życia i służby",
   "s89Name": "Imię i nazwisko",
   "s89Partner": "Pomocnik",

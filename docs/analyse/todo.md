@@ -724,6 +724,8 @@ Eröffnung.
 - **F7:** ✅ erledigt (8.8.2026) — die Personen-Übersicht zeigt jetzt dieselbe
   Warnkachel wie bei doppelten Anzeigenamen, sobald eine feste Rolle mehrfach
   vergeben ist (`doppelteFesteRollen`). Leiter und Vertreter getrennt gezählt.
+  Seit dem 4.10.2026 nennt die Kachel die Personen mit Namen (siehe T120,
+  Nachtrag vom 4. Oktober).
 - **F4:** ✅ erledigt (8.8.2026) — `BRUDER_BEREICHE` benennt die Bereiche, die
   fachlich Brüdern vorbehalten sind; ist einer bei einer Schwester gesetzt,
   steht ein ⚠ neben der Beschriftung. **Keine Sperre** — die Schalter bleiben
@@ -6237,6 +6239,15 @@ samt Konten wieder entfernt; für den nächsten Lauf legt
   Treffpunkte prüft der Trigger `fs_weeks_pruefen`, Gruppenbesuche
   `gruppenbesuche_pruefen`, der Rest `darf_zuteilen()` in den Richtlinien.
   `send-plan`, `substitute` und `send-reminders` kennen die Stufe.
+- **Feste Rollen: die Namen im Banner** — Das Banner „FESTE ROLLEN" über der
+  Personenliste nannte nur „· 2 Personen", und der Filter „Aufgabenbereiche"
+  kannte die festen Rollen nicht: Wer die Doppelvergabe auflösen wollte, öffnete
+  ein Detail nach dem anderen. Zuschnitt des Betreibers: je Rolle die Zeile wie
+  bisher, darunter die Namen als Knöpfe wie bei „Ohne Predigtdienstgruppe"
+  (Folge der Liste, ein Tipp öffnet das Detail), ein Hinweis, der sagt, was zu
+  tun ist (`wtRollenDoppeltHint`, alle Sprachen), und beide Rollen im Filter.
+  `doppelteFesteRollen` liefert dafür die Personen statt ihrer Zahl. Kein
+  Schema, keine Function — geht mit dem Push live.
 
 **Rechte-Stufe ausrollen:** `schema.sql` einspielen → Functions `zuteilen`
 (neu), `send-plan`, `substitute`, `send-reminders` deployen → Push. Das neue

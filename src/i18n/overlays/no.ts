@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Stedfortreder (Vakttårn-studiet)",
   "wtRollenLabel": "FASTE ROLLER",
   "wtRollenHint": "Fast vakttårnstudieleder; stedfortrederen trer inn ved fravær.",
+  "wtRollenDoppeltHint": "Lederen og stedfortrederen er hver bare én person. Har flere samme rolle, velger den automatiske tildelingen hvem som helst av dem. Trykk på et navn for å slå av rollen der.",
   "s89Title": "Oppgave på møtet «Livet og tjenesten som kristne»",
   "s89Name": "Navn",
   "s89Partner": "Medhjelper",

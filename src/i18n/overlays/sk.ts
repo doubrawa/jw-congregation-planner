@@ -145,6 +145,7 @@ export default {
   "privWtVertreter": "Zástupca (štúdium Strážnej veže)",
   "wtRollenLabel": "STÁLE ROLY",
   "wtRollenHint": "Stály vedúci štúdia Strážnej veže; zástupca zaskočí pri neprítomnosti.",
+  "wtRollenDoppeltHint": "Každú z týchto rolí má len jedna osoba. Ak je rola pridelená viacerým, automatické prideľovanie vyberie hocikoho z nich. Ťukni na meno a rolu tam vypni.",
   "s89Title": "Úloha na zhromaždení Náš kresťanský život a služba",
   "s89Name": "Meno",
   "s89Partner": "Partner",
