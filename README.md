@@ -134,8 +134,12 @@ npm run icons    # scripts/make-icons.mjs, rendert mit Chrome (headless)
 | `icon-512-maskable.png` | 512² | Manifest `maskable` (Motiv in der Safe-Zone) |
 | `apple-touch-icon.png` | 180² | iOS-Home-Bildschirm (kein SVG, keine Transparenz) |
 
-Die Polsterung je Ziel steht als `share` in `scripts/make-icons.mjs`. Gerendert
-wird mit Chrome, weil das Logo Gradienten und einen `feDropShadow` nutzt.
+Das Zeichen (seit dem 4.10.2026): drei Sitzreihen mit 4, 6 und 8 Plätzen um ein
+goldenes Rednerpult, von oben gesehen, auf einer dunklen Petrol-Kachel — flach,
+damit es auch als 16-px-Favicon trägt. Die Polsterung je Ziel steht als `share`
+in `scripts/make-icons.mjs`; die deckenden Icons (maskable, iOS) bekommen die
+Kachelfarbe als Hintergrund, die das Skript aus `logo.svg` liest. Gerendert wird
+mit Chrome, demselben Renderer wie in der App.
 
 ## Projektstruktur
 

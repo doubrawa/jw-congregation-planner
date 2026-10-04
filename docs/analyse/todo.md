@@ -6157,6 +6157,15 @@ samt Konten wieder entfernt; für den nächsten Lauf legt
   dass eine Gruppe dazuerfunden wird. Die erste Fassung rechnete Eintrag für
   Eintrag um (ein Monat bekam die Gruppe seiner ersten Woche) — im Browser
   wurde aus einer wöchentlichen Reihe g3, g4, g1, g2 … „Gruppe 3, 4, 4, 4".
+- **Neues Logo** — „Vielleicht finden wir noch ein schöneres Logo." Aus fünf
+  Entwürfen (Design-Fläche „Versammlung.app Logo") gewählt: „Versammelt",
+  drei Sitzreihen mit 4, 6 und 8 Plätzen um ein goldenes Rednerpult, von oben,
+  auf dunkler Petrol-Kachel (`#17302D`) — mit Mittelgang, weil jede Reihe eine
+  gerade Zahl hat. Flach statt Verläufe und Schatten, trägt als 16-px-Favicon.
+  `public/logo.svg` neu, die PNGs per `npm run icons`; die deckenden Icons
+  (maskable, iOS) haben jetzt die Kachelfarbe als Hintergrund statt Weiß, das
+  maskable-Motiv füllt 80 % (vorher 64 %, damals musste die helle Kachel in
+  die Safe-Zone). Handbuch-Bilder neu aufgenommen.
 
 **Ausrollen in dieser Reihenfolge:** Functions `send-plan`, `send-reminders`,
 `substitute` deployen → `schema.sql` einspielen → Push. Das neue Frontend
