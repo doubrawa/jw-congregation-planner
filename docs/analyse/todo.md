@@ -5431,6 +5431,26 @@ wenn es mehrere versammlungen gibt."*
   betrifft das jeden Neuzugang, also gehört die Antwort ins README, wo die
   übrigen Auth-Einstellungen stehen.
 
+> **Nachgesehen am 4. Oktober 2026 — die Bestätigung ist an.** Die öffentlichen
+> Auth-Einstellungen des Projekts (`GET /auth/v1/settings` mit dem anon-Key)
+> melden `mailer_autoconfirm: false` und `disable_signup: false`: Wer sich
+> registriert, muss erst den Link aus der Mail öffnen, und registrieren kann
+> sich jeder, auch ohne Code.
+>
+> **Daran hängt mehr als der Beitritt.** Ohne eigenen SMTP-Server stellt
+> Supabase Auth nur an Adressen aus dem Team des Projekts zu; alle anderen
+> scheitern mit „Email address not authorized", und für das ganze Projekt gelten
+> 2 Mails pro Stunde (Supabase-Doku „Custom SMTP", nachgelesen am 4.10.2026; mit
+> eigenem SMTP zunächst 30, einstellbar). Ist keiner eingetragen, bekäme ein
+> Verkündiger weder die Bestätigung noch die Mail für „Passwort vergessen" —
+> beide nehmen denselben Weg. `authFehler` in `src/lib/supabase.ts` kennt diese
+> Meldung nicht und zeigt sie roh und englisch. Aufgefallen ist das bisher
+> nicht, weil Testkonten per Skript schon bestätigt angelegt werden. Ob ein
+> eigener SMTP-Server eingetragen ist, zeigt die öffentliche Abfrage nicht, nur
+> das Dashboard (Authentication → Emails). Für den Passwort-Reset braucht es
+> ihn in jedem Fall, also vor der Inbetriebnahme (T106) — gleich, wie diese
+> Frage ausgeht. Ins README gehört die Antwort, sobald der SMTP-Stand feststeht.
+
 **Prüfen, sobald entschieden:** den Ablauf mit zwei Versammlungen einmal ganz
 durchspielen — am Testbestand „Probeversammlung Talheim" aus T78 neben der
 echten Versammlung: Konto anlegen, Code aus der einen einlösen, Code aus der
@@ -6107,7 +6127,7 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt |
-| **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf |
+| **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf; die Mail-Bestätigung ist an, ankommen kann sie nur mit eigenem SMTP-Server (4.10.2026) |
 
 **Beim Betreiber steht nichts aus (Stand 26. September, spätabends):**
 ✅ `import-week` ist erneut deployt (21:21 Uhr, Version 35), Datei für Datei
