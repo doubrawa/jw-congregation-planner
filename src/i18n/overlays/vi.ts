@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Không có",
   "privVorsitz": "Chủ tọa",
   "privVortrag": "Bài giảng",
+  "privSchaetze": "Kho báu từ Kinh Thánh",
   "privBesprechung": "Điều khiển thảo luận",
   "privGebet": "Cầu nguyện",
   "privSchulung": "Nhiệm vụ học viên",

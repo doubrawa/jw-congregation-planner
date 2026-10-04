@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Yok",
   "privVorsitz": "Başkanlık",
   "privVortrag": "Konuşmalar",
+  "privSchaetze": "Tanrı’nın Sözündeki Hazineler",
   "privBesprechung": "Müzakere idare etme",
   "privGebet": "Dualar",
   "privSchulung": "Öğrenci görevleri",

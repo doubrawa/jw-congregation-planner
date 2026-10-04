@@ -323,6 +323,12 @@ export const DE = {
     auxDesc: 'Je nach Anzahl der Teilnehmer kann für die Schulungsaufgaben eine zusätzliche Klasse eingerichtet werden.',
     auxRatgeberHint: 'Für jede zusätzliche Klasse soll ein befähigter Ratgeber zur Verfügung stehen, vorzugsweise ein Ältester.',
     privVorsitz: 'Vorsitz', privVortrag: 'Vorträge', privGebet: 'Gebete',
+    // Der Programmteil vor dem Vortrag (4.10.2026): „Schätze aus Gottes Wort ·
+    // Vorträge“ (`privLabel`), gebaut wie „Schulungsaufgaben · Vorträge“ — vorher
+    // hieß der Bereich nur „Vorträge“ und las sich als jeder Vortrag. Gemessen am
+    // Inhaltsverzeichnis der S-38 (WOL 1201038, p4) in allen 34 Sprachen und
+    // gegen die Überschrift des Arbeitshefts gehalten (FRAG); ru ohne die «» der S-38.
+    privSchaetze: 'Schätze aus Gottes Wort',
     // Besprechungen leiten (4.10.2026) — das Wort ist das des Arbeitshefts
     // („Besprechung." vor der Zeit), je Sprache gemessen (FRAG in translate-data.ts),
     // die Form folgt „Studium leiten“.

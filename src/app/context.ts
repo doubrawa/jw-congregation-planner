@@ -393,6 +393,8 @@ export type AppAction =
    */
   | { type: 'setNotifs'; notifs: Notification[] }
   | { type: 'markAllRead' }
+  // Eine Mitteilung ist gelesen, weil sie angetippt wurde (Glocke).
+  | { type: 'mitteilungGelesen'; id: string }
   | { type: 'clearNotifs' } // löscht die eigenen Mitteilungen (Feed ist personalisiert)
   | { type: 'openSlot'; sel: SlotSelection }
   | { type: 'closeSlot' }

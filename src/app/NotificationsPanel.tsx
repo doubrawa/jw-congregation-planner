@@ -8,7 +8,7 @@ import { useT } from '../i18n/useT'
 import { useApp } from './context'
 import { loadNotifications } from '../lib/data'
 import { loadAndHydrate } from './hydrate'
-import { sichtbareMitteilungen } from './mitteilungen'
+import { mitteilungsZiel, sichtbareMitteilungen } from './mitteilungen'
 import { relativeZeit } from '../i18n/zeit'
 
 /** Mitteilungen-Overlay (Kopf-Chip öffnet); Backdrop-Klick oder Escape schließt. */
@@ -112,16 +112,37 @@ export function NotificationsPanel() {
         {sichtbar.length === 0 && <p className="notif-empty">{t.keineMitteilungen}</p>}
         {sichtbar.map((notif) => {
           const canConfirm =
+            // Eine Absage trägt seit dem 4.10.2026 den Schlüssel der Aufgabe —
+            // den eines anderen. Hat der Planer den Platz inzwischen selbst
+            // übernommen, stünde an der Absage sonst „Bestätigen".
+            notif.type !== 'verhindert' &&
             !!notif.taskId &&
             state.myTasks.some((task) => task.id === notif.taskId && task.status === 'offen')
           const titleKey = NOTIF_TITLE_KEY[notif.title]
+          const text = tu(notif.text)
+          /*
+           * **Ein Tipp führt dorthin, wo die Mitteilung herkommt** (4.10.2026,
+           * `mitteilungsZiel`) — und sie gilt damit als gelesen. Offline nicht:
+           * Gespeichert werden kann dann nichts, und die Sperre (store.tsx)
+           * meldete statt des Sprungs bloß „nur lesen". Das Ziel selbst ist
+           * Ansehen und geht auch offline.
+           */
+          const oeffnen = () => {
+            if (!notif.read && !state.staleAt) dispatch({ type: 'mitteilungGelesen', id: notif.id })
+            for (const aktion of mitteilungsZiel(notif, state)) dispatch(aktion)
+          }
           return (
             <div key={notif.id} className={notif.read ? 'notif-row' : 'notif-row is-unread'}>
               <span className="notif-dot" />
               <div>
-                <div className="notif-row-title">{titleKey ? t[titleKey] : notif.title}</div>
-                <div className="notif-row-text">{tu(notif.text)}</div>
-                <div className="notif-row-time">{relativeZeit(notif.at, state.lang)}</div>
+                <button type="button" className="notif-row-link" onClick={oeffnen}>
+                  <span className="notif-row-title">{titleKey ? t[titleKey] : notif.title}</span>
+                  {/* Höchstens zwei Zeilen (shell.css); der ganze Text steht im Tooltip. */}
+                  <span className="notif-row-text" title={text}>
+                    {text}
+                  </span>
+                  <span className="notif-row-time">{relativeZeit(notif.at, state.lang)}</span>
+                </button>
                 {canConfirm && (
                   <button
                     type="button"

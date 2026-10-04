@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "无",
   "privVorsitz": "主持",
   "privVortrag": "演讲",
+  "privSchaetze": "上帝话语的宝藏",
   "privBesprechung": "主持讨论",
   "privGebet": "祷告",
   "privSchulung": "学生任务",

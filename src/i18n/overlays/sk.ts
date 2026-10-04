@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Žiadna",
   "privVorsitz": "Predsedníctvo",
   "privVortrag": "Prejavy",
+  "privSchaetze": "Poklady z Božieho Slova",
   "privBesprechung": "Viesť rozhovory",
   "privGebet": "Modlitby",
   "privSchulung": "Študentské úlohy",

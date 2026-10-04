@@ -227,6 +227,19 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     expect(fn).toContain("kind <> 'verhindert' and not public.is_planner()")
   })
 
+  it('die Verhinderung trägt ihren Aufgaben-Schlüssel — gekürzt, mit Vorgabe, ohne alte Fassung daneben (4.10.2026)', () => {
+    const fn = funktionsRuempfe(schema).get('notify_planners') ?? ''
+    // Ein Wegweiser für den Tipp in der Glocke, kein Recht: gekürzt genügt.
+    expect(fn).toContain("nullif(left(task, 300), '')")
+    const text = normiert(schema)
+    // Ohne Vorgabe brächen Aufrufe ohne Schlüssel (Import, ältere App-Stände);
+    // stünde die Fassung mit drei Parametern daneben, wären sie mehrdeutig.
+    expect(text).toContain('function public.notify_planners(kind text, subject text, message text, task text default null)')
+    expect(text).toContain('drop function if exists public.notify_planners(text, text, text);')
+    expect(text).toContain('grant execute on function public.notify_planners(text, text, text, text) to authenticated;')
+    expect(text).not.toContain('grant execute on function public.notify_planners(text, text, text) to')
+  })
+
   it('unmittelbar in notifications schreiben nur Planer — der Verkündiger-Zweig ist weg', () => {
     // Er war nie erreichbar (die App fand keinen Empfänger) und hielte eine
     // zweite Lesart derselben Regel offen.

@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Nenhum",
   "privVorsitz": "Presidência",
   "privVortrag": "Discursos",
+  "privSchaetze": "Tesouros da Palavra de Deus",
   "privBesprechung": "Dirigir considerações",
   "privGebet": "Orações",
   "privSchulung": "Partes de estudante",

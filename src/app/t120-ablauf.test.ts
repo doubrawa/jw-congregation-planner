@@ -145,6 +145,9 @@ describe('Öffentliches Zeugnisgeben als Ablauf', () => {
       'verhindert',
       'Verhinderung gemeldet',
       expect.stringContaining(`${OZ_DIENST} · Mittwoch, 9. September · 10:00–12:00 · Marktplatz`),
+      // Der Schlüssel des Eintrags: Ein Tipp in der Glocke des Planers führt
+      // zum Zeugnisgeben (4.10.2026).
+      key,
     )
     // Die eigene Absage ist keine Wegnahme, und eine Verhinderung bleibt nicht stehen.
     expect(data.sendPlanEntzug).not.toHaveBeenCalled()

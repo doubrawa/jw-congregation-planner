@@ -471,7 +471,13 @@ function neueEintragId(): string {
 function ozAbsage(state: AppState, eintrag: OzEintrag): AppState {
   const termin = state.ozTermine.find((t) => t.id === eintrag.terminId)
   const was = termin ? `${OZ_DIENST} · ${ozTerminText(eintrag.datum, termin)}` : OZ_DIENST
-  const notif = makeNotif('verhindert', 'Verhinderung gemeldet', `${was} — ${alsFreitext(currentUserName(state))}`)
+  const notif = makeNotif(
+    'verhindert',
+    'Verhinderung gemeldet',
+    `${was} — ${alsFreitext(currentUserName(state))}`,
+    // Wohin ein Tipp in der Glocke des Planers führt (`mitteilungsZiel`).
+    ozTaskKey(eintrag),
+  )
   return {
     ...state,
     ozEintraege: state.ozEintraege.filter((e) => e !== eintrag),
@@ -658,6 +664,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, notifs: action.notifs }
     case 'markAllRead':
       return { ...state, notifs: state.notifs.map((n) => ({ ...n, read: true })) }
+    case 'mitteilungGelesen':
+      return state.notifs.some((n) => n.id === action.id && !n.read)
+        ? { ...state, notifs: state.notifs.map((n) => (n.id === action.id ? { ...n, read: true } : n)) }
+        : state
     case 'clearNotifs':
       return { ...state, notifs: [] }
     case 'openSlot':
@@ -1396,6 +1406,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         // Schreibweise für Namensgleiche) stand dort sonst als „Mark 2".
         // Siehe `i18n/freitext.ts`.
         `${bezeichnung} — ${alsFreitext(currentUserName(state))}`,
+        // Der Schlüssel der Aufgabe: Ein Tipp in der Glocke des Planers führt
+        // in ihre Woche (`mitteilungsZiel`). Bis zum 4.10.2026 ohne — dann
+        // landete er nirgends.
+        action.id,
       )
       // Bei Hilfsdiensten wird automatisch ein Ersatz gesucht (Ersatzgesuch) →
       // eigener Toast; sonst nur die Verhinderungs-Meldung an den Planer.

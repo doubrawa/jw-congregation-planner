@@ -438,9 +438,14 @@ describe('Jeder REST-Aufruf der Wartungsskripte passt zu schema.sql', () => {
   it('ein Funktionsaufruf passt nur mit der Funktion und genau ihren Parametern', () => {
     // Sonst gälte ein vertippter Parameter — bei PostgREST ein 404 — wie bei
     // den Spalten als Abweisung.
-    expect(schemaFunktion('notify_planners')).toEqual(new Map([['kind', 'text'], ['subject', 'text'], ['message', 'text']]))
+    const pflicht = { typ: 'text', pflicht: true }
+    expect(schemaFunktion('notify_planners')).toEqual(
+      new Map([['kind', pflicht], ['subject', pflicht], ['message', pflicht], ['task', { typ: 'text', pflicht: false }]]),
+    )
     const aufruf = (body: unknown, pfad = 'rpc/notify_planners'): Aufruf => ({ pfad, method: 'POST', body })
     expect(schemaFehler(aufruf({ kind: 'verhindert', subject: 'x', message: '' }))).toEqual([])
+    // Der Aufgaben-Schlüssel (4.10.2026) hat eine Vorgabe: mit und ohne passt.
+    expect(schemaFehler(aufruf({ kind: 'verhindert', subject: 'x', message: '', task: '2026-09-07|mid|ratgeber' }))).toEqual([])
     expect(schemaFehler(aufruf({ kind: 'verhindert', subject: 'x' }))).toEqual(['POST rpc/notify_planners.message: Parameter fehlt'])
     expect(schemaFehler(aufruf({ kind: 'verhindert', subject: 'x', message: '', title: 'y' }))).toEqual([
       'POST rpc/notify_planners.title: keinen solchen Parameter',

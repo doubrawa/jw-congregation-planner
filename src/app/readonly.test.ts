@@ -45,6 +45,9 @@ describe('isViewAction', () => {
     'addAbsence',
     'removeAbsence',
     'markAllRead',
+    // Eine einzelne Zeile gelesen (Tipp in der Glocke) — schreibt in die
+    // Datenbank. Offline schickt die Glocke sie gar nicht erst (4.10.2026).
+    'mitteilungGelesen',
     'clearNotifs',
     'updateCongregation',
     'fsInstUpdate',

@@ -35,6 +35,7 @@ vi.mock('../lib/data', async (importActual) => ({
   deleteMemberRow: vi.fn(),
   deleteNotifications: vi.fn(),
   deleteServiceRow: vi.fn(),
+  markNotificationRead: vi.fn(),
   markNotificationsRead: vi.fn(),
   notifyPlanners: vi.fn(),
   saveAbsence: vi.fn(),
@@ -509,7 +510,7 @@ describe('Öffentliches Zeugnisgeben (T120)', () => {
 
   it('Absagen aus „Meine Aufgaben": der Eintrag geht, keine Verhinderung, die Planer erfahren es', () => {
     const e = eintrag('e1', 'p9')
-    const notif = { id: 'n', type: 'verhindert', title: 'Verhinderung gemeldet', text: 'x', at: '', read: false, local: true }
+    const notif = { id: 'n', type: 'verhindert', title: 'Verhinderung gemeldet', text: 'x', at: '', read: false, local: true, taskId: KEY('e1') }
     persist(
       st({ ozTermine: [T1], ozEintraege: [e], confirmations: { [KEY('e1')]: 'bestätigt' } }),
       st({ ozTermine: [T1], ozEintraege: [], confirmations: {}, notifs: [notif] as AppState['notifs'] }),
@@ -518,7 +519,7 @@ describe('Öffentliches Zeugnisgeben (T120)', () => {
     expect(data.saveOzEintraege).toHaveBeenCalledWith('c1', [], ['e1'])
     expect(data.saveConfirmation).not.toHaveBeenCalled()
     expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [KEY('e1')])
-    expect(data.notifyPlanners).toHaveBeenCalledWith('verhindert', 'Verhinderung gemeldet', 'x')
+    expect(data.notifyPlanners).toHaveBeenCalledWith('verhindert', 'Verhinderung gemeldet', 'x', KEY('e1'))
     // Die eigene Absage ist keine Wegnahme.
     expect(data.sendPlanEntzug).not.toHaveBeenCalled()
   })
@@ -1302,6 +1303,37 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     expect(data.deleteNotifications).toHaveBeenCalledWith('c1', 'u1')
   })
 
+  describe('mitteilungGelesen — die angetippte Zeile (4.10.2026)', () => {
+    const zeile = (over: Partial<AppState['notifs'][number]> = {}) => ({
+      id: 'n1', type: 'zuteilung' as const, title: 'Neue Zuteilung', text: 'x', at: '', read: false, ...over,
+    })
+
+    it('schreibt genau diese eine Zeile als gelesen', () => {
+      persist(st({ notifs: [zeile()] }), st({ notifs: [zeile({ read: true })] }), { type: 'mitteilungGelesen', id: 'n1' })
+      expect(data.markNotificationRead).toHaveBeenCalledWith('c1', 'u1', 'n1')
+      expect(data.markNotificationsRead).not.toHaveBeenCalled()
+    })
+
+    it('eine schon gelesene nicht noch einmal', () => {
+      persist(st({ notifs: [zeile({ read: true })] }), st({ notifs: [zeile({ read: true })] }), { type: 'mitteilungGelesen', id: 'n1' })
+      expect(data.markNotificationRead).not.toHaveBeenCalled()
+    })
+
+    it('eine hier entstandene nicht — unter ihrer Kennung steht nichts in der Datenbank', () => {
+      // Die Planer haben je eine eigene Abschrift (`notify_planners`) mit eigener Kennung.
+      persist(st({ notifs: [zeile({ local: true })] }), st({ notifs: [zeile({ local: true, read: true })] }), {
+        type: 'mitteilungGelesen',
+        id: 'n1',
+      })
+      expect(data.markNotificationRead).not.toHaveBeenCalled()
+    })
+
+    it('eine unbekannte nicht', () => {
+      persist(st({ notifs: [] }), st({ notifs: [] }), { type: 'mitteilungGelesen', id: 'weg' })
+      expect(data.markNotificationRead).not.toHaveBeenCalled()
+    })
+  })
+
   it('confirmTask / declineTask schreiben den Status', () => {
     persist(st(), st(), { type: 'confirmTask', id: 'k1' })
     expect(data.saveConfirmation).toHaveBeenCalledWith('c1', 'u1', 'k1', 'bestätigt')
@@ -1459,8 +1491,11 @@ describe('T118: „Doch bestätigen" und die Abwesenheiten einer gelöschten Per
 })
 
 describe('Mitteilungs-Fanout', () => {
-  /** Wie der Reducer sie erzeugt: mit `local`-Kennzeichen. */
-  const hier = { id: 'n1', type: 'verhindert' as const, title: 'Verhinderung gemeldet', text: 'B', at: '2026-09-14T10:00:00Z', read: false, local: true as const }
+  /** Wie der Reducer sie erzeugt: mit `local`-Kennzeichen und dem Schlüssel der Aufgabe. */
+  const hier = {
+    id: 'n1', type: 'verhindert' as const, title: 'Verhinderung gemeldet', text: 'B', at: '2026-09-14T10:00:00Z', read: false,
+    local: true as const, taskId: '2026-09-14|mid|ratgeber',
+  }
   /** Wie sie aus der Datenbank kommt: ohne Kennzeichen. */
   const geladen = { id: 'n2', type: 'verhindert' as const, title: 'Verhinderung gemeldet', text: 'B', at: '2026-09-14T10:00:00Z', read: false }
 
@@ -1473,7 +1508,14 @@ describe('Mitteilungs-Fanout', () => {
       genau der Stand, den ein Verkündiger hat.
     */
     persist(st({ notifs: [] }), st({ notifs: [hier], members: [] }), { type: 'declineTask', id: 'x' })
-    expect(data.notifyPlanners).toHaveBeenCalledWith('verhindert', 'Verhinderung gemeldet', 'B')
+    // Mit dem Schlüssel: Ein Tipp in der Glocke des Planers führt in die Woche (4.10.2026).
+    expect(data.notifyPlanners).toHaveBeenCalledWith('verhindert', 'Verhinderung gemeldet', 'B', '2026-09-14|mid|ratgeber')
+  })
+
+  it('eine Mitteilung ohne Aufgabe geht ohne Schlüssel', () => {
+    const importiert = { ...hier, type: 'import' as const, title: 'Programm importiert', taskId: undefined }
+    persist(st({ notifs: [] }), st({ notifs: [importiert] }), { type: 'autoAssign' })
+    expect(data.notifyPlanners).toHaveBeenCalledWith('import', 'Programm importiert', 'B', undefined)
   })
 
   it('Laden aus der Datenbank verteilt NICHTS', () => {

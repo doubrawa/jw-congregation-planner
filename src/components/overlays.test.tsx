@@ -213,6 +213,67 @@ describe('Aus der Mitteilung heraus bestätigen', () => {
     const { container } = zeige('notif', { notifs: [notif({ taskId: 'T-weg' })], myTasks: [task()] })
     expect(knopf(container, '.notif-confirm')).toBeNull()
   })
+
+  it('eine Absage nie — auch wenn ihr Schlüssel inzwischen die eigene offene Aufgabe ist', () => {
+    // Seit dem 4.10.2026 trägt die Absage den Schlüssel der abgesagten
+    // Aufgabe. Übernimmt der Planer den Platz selbst, ist es seine — an der
+    // Meldung über die Absage stünde sonst „Bestätigen".
+    const absage = notif({ type: 'verhindert', title: 'Verhinderung gemeldet', taskId: 'T1' })
+    const { container } = zeige('notif', { notifs: [absage], myTasks: [task({ id: 'T1' })], planner: true })
+    expect(knopf(container, '.notif-confirm')).toBeNull()
+  })
+})
+
+describe('Ein Tipp auf die Mitteilung führt dorthin, wo sie herkommt (4.10.2026)', () => {
+  const typen = (dispatch: ReturnType<typeof vi.fn>) => dispatch.mock.calls.map((c) => c[0].type as string)
+
+  it('die Zeile ist ein Knopf; „Bestätigen" steht daneben, nicht darin', () => {
+    const { container } = zeige('notif', { notifs: [notif({ taskId: 'T1' })], myTasks: [task({ id: 'T1' })] })
+    const link = knopf(container, '.notif-row-link')!
+    expect(link.tagName).toBe('BUTTON')
+    expect(link.querySelector('.notif-row-title')?.textContent).toBe(t.notifZuteilung)
+    // Geschachtelte Knöpfe gibt es nicht — der Browser risse sie auseinander.
+    expect(link.querySelector('.notif-confirm')).toBeNull()
+    expect(knopf(container, '.notif-confirm')).not.toBeNull()
+  })
+
+  it('eine ungelesene gilt danach als gelesen, dann geht es zum Ziel', () => {
+    const { container, dispatch } = zeige('notif', {
+      notifs: [notif({ id: 'n7', taskId: 'T1' })], myTasks: [task({ id: 'T1' })],
+    })
+    fireEvent.click(knopf(container, '.notif-row-link')!)
+    expect(dispatch.mock.calls.map((c) => c[0])).toEqual([
+      { type: 'mitteilungGelesen', id: 'n7' },
+      { type: 'navigate', screen: 'aufgaben' },
+      { type: 'openMyTask', id: 'T1' },
+    ])
+  })
+
+  it('eine gelesene wird nicht noch einmal gemeldet', () => {
+    const { container, dispatch } = zeige('notif', { notifs: [notif({ read: true })] })
+    fireEvent.click(knopf(container, '.notif-row-link')!)
+    expect(typen(dispatch)).toEqual(['navigate'])
+  })
+
+  it('offline springt sie trotzdem — ohne „gelesen", das dort nur „nur lesen" hervorriefe', () => {
+    const { container, dispatch } = zeige('notif', { notifs: [notif()], staleAt: Date.now() - 3600_000 })
+    fireEvent.click(knopf(container, '.notif-row-link')!)
+    expect(typen(dispatch)).toEqual(['navigate'])
+  })
+
+  it('„Bestätigen" bestätigt nur — es springt nicht zusätzlich weg', () => {
+    const { container, dispatch } = zeige('notif', { notifs: [notif({ taskId: 'T1' })], myTasks: [task({ id: 'T1' })] })
+    fireEvent.click(knopf(container, '.notif-confirm')!)
+    expect(typen(dispatch)).toEqual(['confirmTask'])
+  })
+
+  it('der Text steht in der Liste gekürzt (CSS), im Tooltip ganz', () => {
+    const lang = 'Mikrofone · Sonntag, 20. September · Gebet · Dienstag, 22. September · Ordner · Sonntag, 27. September'
+    const { container } = zeige('notif', { notifs: [notif({ text: lang })] })
+    const text = container.querySelector('.notif-row-text')!
+    expect(text.textContent).toBe(lang)
+    expect(text.getAttribute('title')).toBe(lang)
+  })
 })
 
 describe('Das Blatt zur eigenen Aufgabe — drei Zustände, drei Angebote', () => {

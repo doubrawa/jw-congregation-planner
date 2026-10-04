@@ -353,7 +353,11 @@ Durchgehen der Zusammenkunft fällt er von selbst auf.
 
 Verkündiger können eine Zuteilung in ihren Aufgaben absagen. Du bekommst dann
 eine Mitteilung („Verhinderung gemeldet"), und der Punkt an der Zuteilung wird
-**rot**.
+**rot**. Ein Tipp auf die Mitteilung öffnet **Planen in der Woche der
+abgesagten Aufgabe** – bei einem Treffpunkt im Predigtdienst, beim öffentlichen
+Zeugnisgeben dessen Reiter. Auch die übrigen Mitteilungen an dich als Planer
+(„Programm importiert", „Unbestätigte Zuteilungen", „Ersatz gefunden") führen
+ins Planen; in der Glocke steht jede höchstens zwei Zeilen lang.
 
 Bei **Hilfsdiensten** übernimmt die App den ersten Schritt selbst: Sie
 benachrichtigt alle, die für diesen Dienst eingetragen und an dem Tag nicht
@@ -672,7 +676,8 @@ Im Detail legst du fest:
   Vorträge, Besprechungen leiten, Gebet, Bibellesung, Schulung …). Diese
   Bereiche steuern, wen die Automatik und die Kandidatenlisten vorschlagen.
   Drei davon klingen ähnlich und sind doch getrennt:
-  - **Vorträge** – der Vortrag zu Beginn von „Schätze aus Gottes Wort".
+  - **Schätze aus Gottes Wort · Vorträge** – der Vortrag zu Beginn von „Schätze
+    aus Gottes Wort".
   - **Besprechungen leiten** – „Nach geistigen Schätzen graben", die
     Besprechungen unter „Uns im Dienst verbessern" (z. B. „Was würdest du
     sagen?") und alle Punkte unter „Unser Leben als Christ" außer dem

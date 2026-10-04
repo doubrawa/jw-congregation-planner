@@ -1478,10 +1478,22 @@ export function deleteAbsenceRow(id: string): void {
  * sieht in `members` nur die eigene Zeile (`members_select`) — wer die Planer
  * aus `state.members` herausfilterte, bekam für jede Verhinderung eine leere
  * Liste und schrieb still nichts (so bis zum 24.9.2026).
+ *
+ * `taskKey`: die Aufgabe, um die es geht (die Absage, seit dem 4.10.2026) —
+ * daran findet ein Tipp in der Glocke ihre Woche. Ohne ihn bleibt der Aufruf
+ * genau der alte; so verträgt er auch eine Datenbank, die den vierten
+ * Parameter noch nicht kennt.
  */
-export function notifyPlanners(type: NotificationType, title: string, body: string): void {
+export function notifyPlanners(type: NotificationType, title: string, body: string, taskKey?: string): void {
   if (!supabase) return
-  void run(supabase.rpc('notify_planners', { kind: type, subject: title, message: body }))
+  void run(
+    supabase.rpc('notify_planners', {
+      kind: type,
+      subject: title,
+      message: body,
+      ...(taskKey ? { task: taskKey } : {}),
+    }),
+  )
 }
 
 /**
@@ -1622,6 +1634,19 @@ export function sendPlanEntzug(entzuege: EntzogeneZusage[]): void {
     .then(({ error }) => {
       if (error) console.error('[send-plan/entzug]', error.message)
     })
+}
+
+/** Eine Glocken-Zeile gelesen — die angetippte (`mitteilungGelesen`). */
+export function markNotificationRead(congregationId: string, userId: string, id: string): void {
+  if (!supabase) return
+  void run(
+    supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('congregation_id', congregationId)
+      .eq('user_id', userId)
+      .eq('id', id),
+  )
 }
 
 export function markNotificationsRead(congregationId: string, userId: string): void {

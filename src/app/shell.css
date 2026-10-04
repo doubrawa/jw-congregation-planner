@@ -585,18 +585,43 @@
   border-bottom-color: transparent;
 }
 
+/* Die ganze Zeile ist ein Knopf: Ein Tipp führt dorthin, wo die Mitteilung
+   herkommt (`mitteilungsZiel`). Der Bestätigen-Knopf steht daneben, nicht
+   darin — Knöpfe lassen sich nicht schachteln. */
+.notif-row-link {
+  display: block;
+  width: 100%;
+  text-align: start;
+  border-radius: 6px;
+}
+
+.notif-row-link:hover .notif-row-title {
+  color: var(--acc);
+}
+
 .notif-row-title {
+  display: block;
   font-size: calc(13px * var(--fs));
   font-weight: 600;
 }
 
+/* Höchstens zwei Zeilen — eine Sammelmeldung über ein Dutzend Personen
+   streckte die Liste sonst über den ganzen Bildschirm. Den ganzen Text zeigt
+   der Tooltip; das Ziel des Tipps zeigt, worum es geht. */
 .notif-row-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
   font-size: calc(12px * var(--fs));
   color: var(--mut);
   margin-top: 2px;
 }
 
 .notif-row-time {
+  display: block;
   font-size: calc(10.5px * var(--fs));
   color: var(--mut2);
   margin-top: 3px;

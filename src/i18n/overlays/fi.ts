@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Ei mitään",
   "privVorsitz": "Puheenjohtajuus",
   "privVortrag": "Puheet",
+  "privSchaetze": "Jumalan sanan aarteita",
   "privBesprechung": "Keskustelujen johtaminen",
   "privGebet": "Rukoukset",
   "privSchulung": "Oppilastehtävät",

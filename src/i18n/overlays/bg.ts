@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Няма",
   "privVorsitz": "Председателство",
   "privVortrag": "Речи",
+  "privSchaetze": "Съкровища от Божието Слово",
   "privBesprechung": "Водене на обсъждания",
   "privGebet": "Молитви",
   "privSchulung": "Ученически задачи",

@@ -91,20 +91,27 @@ export function schemaSpalten(tabelle: string, schema = SCHEMA_SQL): Map<string,
   return spalten
 }
 
+/** Ein Parameter einer Funktion: sein Typ, und ob ihn jeder Aufruf mitbringen muss. */
+export interface SchemaParameter {
+  typ: string
+  /** Ohne `default` — fehlt er, findet PostgREST die Funktion nicht. */
+  pflicht: boolean
+}
+
 /**
  * Die Parameter einer Funktion aus `schema.sql`, wie PostgREST sie unter
- * `rpc/<name>` annimmt: Name → Typ — oder `null`, wenn es die Funktion nicht
- * gibt. Seit dem 3.10.2026 ruft ein Skript eine auf (`notify_planners` in der
+ * `rpc/<name>` annimmt — oder `null`, wenn es die Funktion nicht gibt. Seit dem
+ * 3.10.2026 ruft ein Skript eine auf (`notify_planners` in der
  * Mitgliedsrechte-Probe); ein vertippter Parameter wäre dort ein 404 und hieße
  * ohne diese Prüfung bloß „abgewiesen".
  */
-export function schemaFunktion(name: string, schema = SCHEMA_SQL): Map<string, string> | null {
+export function schemaFunktion(name: string, schema = SCHEMA_SQL): Map<string, SchemaParameter> | null {
   const kopf = new RegExp(`create or replace function public\\.${name}\\(([^)]*)\\)`, 'i').exec(schema)
   if (!kopf) return null
-  const parameter = new Map<string, string>()
+  const parameter = new Map<string, SchemaParameter>()
   for (const teil of kopf[1]!.split(',').map((s) => s.trim()).filter(Boolean)) {
     const [pname = '', typ = ''] = teil.split(/\s+/)
-    parameter.set(pname, typ.toLowerCase())
+    parameter.set(pname, { typ: typ.toLowerCase(), pflicht: !/\bdefault\b/i.test(teil) })
   }
   return parameter
 }
@@ -193,8 +200,9 @@ export function schemaFehler({ pfad, method, body }: Aufruf, schema = SCHEMA_SQL
 
 /**
  * Ein Funktionsaufruf (`rpc/<name>`): Gibt es die Funktion, und bringt der
- * Rumpf genau ihre Parameter mit, im passenden Typ? Vorgaben (`default`) hat
- * keine der Funktionen in `schema.sql` — fehlt einer, fände PostgREST sie nicht.
+ * Rumpf ihre Parameter mit, im passenden Typ? Fehlen darf nur einer mit
+ * Vorgabe (`default`, seit dem 4.10.2026 `task` von `notify_planners`) —
+ * fehlt ein anderer, fände PostgREST sie nicht.
  */
 function funktionsFehler(tabelle: string, method: string, body: unknown, schema: string): string[] {
   const parameter = schemaFunktion(tabelle.slice('rpc/'.length), schema)
@@ -202,11 +210,11 @@ function funktionsFehler(tabelle: string, method: string, body: unknown, schema:
   const rumpf = (body ?? {}) as Record<string, unknown>
   const fehler: string[] = []
   for (const [k, wert] of Object.entries(rumpf)) {
-    const typ = parameter.get(k)
-    const falsch = typ ? typFehler(typ, wert) : 'keinen solchen Parameter'
+    const p = parameter.get(k)
+    const falsch = p ? typFehler(p.typ, wert) : 'keinen solchen Parameter'
     if (falsch) fehler.push(`${method} ${tabelle}.${k}: ${falsch}`)
   }
-  for (const k of parameter.keys()) if (!(k in rumpf)) fehler.push(`${method} ${tabelle}.${k}: Parameter fehlt`)
+  for (const [k, p] of parameter) if (p.pflicht && !(k in rumpf)) fehler.push(`${method} ${tabelle}.${k}: Parameter fehlt`)
   return fehler
 }
 
@@ -309,11 +317,14 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
       // die Probe ihr Ergebnis sieht: je Planer der Versammlung eine Mitteilung.
       // Ihre Prüfung (nur Verhinderungen) bleibt außen vor — wie alle Richtlinien.
       if (tabelle === 'rpc/notify_planners' && wer) {
-        const { kind, subject, message } = rumpf as { kind: string; subject: string; message: string }
+        const { kind, subject, message, task } = rumpf as { kind: string; subject: string; message: string; task?: string }
         const mitglieder = tabellen.members ?? []
         const cong = mitglieder.find((m) => m.user_id === wer.id)?.congregation_id
         for (const m of mitglieder.filter((x) => x.planner && x.congregation_id === cong)) {
-          ;(tabellen.notifications ??= []).push({ id: randomUUID(), congregation_id: cong, user_id: m.user_id, type: kind, title: subject, body: message })
+          ;(tabellen.notifications ??= []).push({
+            id: randomUUID(), congregation_id: cong, user_id: m.user_id, type: kind, title: subject, body: message,
+            task_key: task || null,
+          })
         }
       }
       return antwort(204)

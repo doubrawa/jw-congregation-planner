@@ -2733,6 +2733,93 @@ export const KATALOG = [
     suchen: '     and datum = any (new.aus);',
     ersetzen: '     and false;',
   },
+
+  // ── Mitteilungen: ein Tipp führt dorthin, wo sie herkommen (4.10.2026) ────
+  {
+    id: 'mitteilung-ersatz-einspringen',
+    datei: 'src/app/mitteilungen.ts',
+    regel: '„Ersatz gesucht" führt zum Einspringen auf „Meine Aufgaben" — wie der Push.',
+    suchen: "  if (n.title === ERSATZ_GESUCHT) return [{ type: 'navigate', screen: 'aufgaben', abschnitt: 'einspringen' }]\n",
+    ersetzen: '',
+  },
+  {
+    id: 'mitteilung-planer-vor-eigener-aufgabe',
+    datei: 'src/app/mitteilungen.ts',
+    regel: 'Eine Absage führt den Planer ins Planen, auch wenn es seine eigene Aufgabe war — als Planer sucht er Ersatz.',
+    suchen: "  if (lage.planner && AN_DIE_PLANER.has(n.title)) return wocheZeigen('planen', teile, lage.weeks)",
+    ersetzen:
+      "  if (lage.planner && AN_DIE_PLANER.has(n.title) && !lage.myTasks.some((t) => t.id === n.taskId)) return wocheZeigen('planen', teile, lage.weeks)",
+  },
+  {
+    id: 'mitteilung-woche-der-aufgabe',
+    datei: 'src/app/mitteilungen.ts',
+    regel: 'Ein Schlüssel einer geladenen Woche führt in genau diese Woche, nicht bloß zum Thema.',
+    suchen: "    wi < 0 ? { type: 'navigate', screen, thema: themaVon(tab) }",
+    ersetzen: "    wi < 999 ? { type: 'navigate', screen, thema: themaVon(tab) }",
+  },
+  {
+    id: 'mitteilung-treffpunkt-reiter',
+    datei: 'src/app/mitteilungen.ts',
+    regel: 'Ein Treffpunkt öffnet im Predigtdienst den Reiter Treffpunkte, nicht den zuletzt gewählten.',
+    suchen: "  return teile.art === 'fs' ? [hin, { type: 'setFsBereich', bereich: 'treffpunkte' }] : [hin]",
+    ersetzen: '  return [hin]',
+  },
+  {
+    id: 'mitteilung-absage-ohne-bestaetigen',
+    datei: 'src/app/NotificationsPanel.tsx',
+    regel: 'An einer Absage steht nie „Bestätigen" — auch wenn ihr Schlüssel inzwischen die eigene offene Aufgabe ist.',
+    suchen: "            notif.type !== 'verhindert' &&\n",
+    ersetzen: '',
+  },
+  {
+    id: 'mitteilung-offline-nicht-gelesen',
+    datei: 'src/app/NotificationsPanel.tsx',
+    regel: 'Offline springt der Tipp, ohne „gelesen" zu schicken — die Sperre meldete sonst nur „nur lesen".',
+    suchen: 'if (!notif.read && !state.staleAt) dispatch(',
+    ersetzen: 'if (!notif.read) dispatch(',
+  },
+  {
+    id: 'mitteilung-gelesen-nicht-lokal',
+    datei: 'src/app/persist.ts',
+    regel: 'Eine hier entstandene Zeile wird nicht als gelesen geschrieben — unter ihrer Kennung steht nichts in der Datenbank.',
+    suchen: 'if (vorher && !vorher.read && !vorher.local) markNotificationRead(',
+    ersetzen: 'if (vorher && !vorher.read) markNotificationRead(',
+  },
+  {
+    id: 'absage-schluessel-an-die-planer',
+    datei: 'src/app/persist.ts',
+    regel: 'Die Absage geht mit dem Schlüssel ihrer Aufgabe an die Planer — daran findet ihr Tipp die Woche.',
+    suchen: 'notifyPlanners(neu.type, neu.title, neu.text, neu.taskId)',
+    ersetzen: 'notifyPlanners(neu.type, neu.title, neu.text)',
+  },
+  {
+    id: 'absage-schluessel-im-reducer',
+    datei: 'src/app/reducer.ts',
+    regel: 'Die Meldung „Verhinderung gemeldet" trägt den Schlüssel der abgesagten Aufgabe.',
+    suchen: '        // landete er nirgends.\n        action.id,\n',
+    ersetzen: '        // landete er nirgends.\n',
+  },
+  {
+    id: 'notify-planners-schluessel-gekuerzt',
+    datei: 'supabase/schema.sql',
+    regel: 'Der Schlüssel, den ein Mitglied über notify_planners mitschickt, wird gekürzt — er ist nur ein Wegweiser.',
+    suchen: "nullif(left(task, 300), '')",
+    ersetzen: 'task',
+  },
+  {
+    id: 'mitteilung-text-zwei-zeilen',
+    datei: 'src/app/shell.css',
+    regel: 'Der Text einer Mitteilung steht in der Glocke höchstens zwei Zeilen hoch.',
+    suchen: '  -webkit-line-clamp: 2;\n',
+    ersetzen: '  -webkit-line-clamp: 3;\n',
+  },
+  {
+    id: 'vortrag-schaetze-beschriftung',
+    datei: 'src/personen/priv-label.ts',
+    regel: 'Der Vortrag aus „Schätze aus Gottes Wort" trägt seinen Programmteil im Namen — „Vorträge" allein hieß jeder Vortrag.',
+    suchen: "  if (key === 'vortrag') return `${t.privSchaetze} · ${t.privVortrag}`\n",
+    ersetzen: '',
+  },
 ]
 
 /**

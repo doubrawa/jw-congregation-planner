@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Ingen",
   "privVorsitz": "Ordstyrer",
   "privVortrag": "Taler",
+  "privSchaetze": "Perler fra Guds ord",
   "privBesprechung": "Lede drøftelser",
   "privGebet": "Bønner",
   "privSchulung": "Elevopgaver",

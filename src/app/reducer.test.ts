@@ -413,6 +413,21 @@ describe('einfache UI-Setter', () => {
     expect(reducer(makeState(), { type: 'clearNotifs' }).notifs).toEqual([])
   })
 
+  it('mitteilungGelesen: nur die angetippte Zeile; eine gelesene oder unbekannte ändert nichts', () => {
+    const notifs = [
+      { id: 'a', type: 'zuteilung' as const, title: 'Neue Zuteilung', text: '', at: '', read: false },
+      { id: 'b', type: 'zuteilung' as const, title: 'Neue Zuteilung', text: '', at: '', read: false },
+    ]
+    const s = makeState({ notifs })
+    const nach = reducer(s, { type: 'mitteilungGelesen', id: 'b' })
+    expect(nach.notifs.map((n) => n.read)).toEqual([false, true])
+    // Die andere Zeile bleibt dasselbe Objekt.
+    expect(nach.notifs[0]).toBe(notifs[0])
+    // Leerlauf: derselbe Zustand, damit niemand etwas zu schreiben meint.
+    expect(reducer(nach, { type: 'mitteilungGelesen', id: 'b' })).toBe(nach)
+    expect(reducer(nach, { type: 'mitteilungGelesen', id: 'weg' })).toBe(nach)
+  })
+
   it('showToast / hideToast (id steigt monoton)', () => {
     const t1 = reducer(makeState(), { type: 'showToast', text: 'Hallo' })
     expect(t1.toast).toMatchObject({ text: 'Hallo', id: 1 })
@@ -1039,6 +1054,9 @@ describe('Bestätigungs-Flow', () => {
     const dec = reducer(s, { type: 'declineTask', id: 'slot|key|2' })
     expect(dec.confirmations['slot|key|2']).toBe('verhindert')
     expect(dec.notifs[0].type).toBe('verhindert')
+    // Die Meldung an die Planer trägt den Schlüssel der Aufgabe — daran
+    // findet ihr Tipp in der Glocke die Woche (4.10.2026).
+    expect(dec.notifs[0]!.taskId).toBe('slot|key|2')
   })
 
   it('der Name in der Meldung geht als Freitext hinaus', () => {

@@ -20,6 +20,7 @@ import {
   deleteMemberRow,
   deleteNotifications,
   deleteServiceRow,
+  markNotificationRead,
   markNotificationsRead,
   notifyPlanners,
   saveAbsence,
@@ -821,6 +822,14 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'markAllRead':
       markNotificationsRead(congId, userId)
       break
+    case 'mitteilungGelesen': {
+      // Nur, was der Reducer wirklich umgestellt hat. Eine hier entstandene
+      // Zeile (`local`) steht unter ihrer Kennung gar nicht in der Datenbank —
+      // die Planer haben dort je eine eigene Abschrift (`notify_planners`).
+      const vorher = prev.notifs.find((n) => n.id === action.id)
+      if (vorher && !vorher.read && !vorher.local) markNotificationRead(congId, userId, action.id)
+      break
+    }
     case 'clearNotifs':
       deleteNotifications(congId, userId)
       break
@@ -912,9 +921,12 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
    * leere Empfängerliste, und der Schreiber brach über ihr still ab. Kein
    * Planer hat je eine Verhinderung erhalten; dem Test-Fixture lag ein Planer
    * bei, deshalb blieb es grün.
+   *
+   * Der Aufgaben-Schlüssel geht seit dem 4.10.2026 mit: Ein Tipp auf die
+   * Absage führt den Planer in ihre Woche (`mitteilungsZiel`).
    */
   const neu = next.notifs[0]
-  if (neu?.local && neu !== prev.notifs[0]) notifyPlanners(neu.type, neu.title, neu.text)
+  if (neu?.local && neu !== prev.notifs[0]) notifyPlanners(neu.type, neu.title, neu.text, neu.taskId)
 
   /*
    * **Wem eine bestätigte Zusage genommen wurde, erfährt es sofort** (T99).

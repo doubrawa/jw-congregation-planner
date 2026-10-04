@@ -33,6 +33,7 @@ import {
   deletePushSubscription,
   deleteServiceRow,
   generateInviteCode,
+  markNotificationRead,
   markNotificationsRead,
   notifyPlanners,
   redeemInvite,
@@ -241,6 +242,12 @@ describe('Insert-Schreiber', () => {
     // Verkündiger kennt die Planer nicht (RLS zeigt ihm nur die eigene Zeile).
     expect(chain.from).not.toHaveBeenCalled()
   })
+  it('notifyPlanners mit Aufgabe → der Schlüssel geht als `task` mit (4.10.2026)', () => {
+    notifyPlanners('verhindert', 'Verhinderung gemeldet', 'B', '2026-09-14|mid|ratgeber')
+    expect(chain.rpc).toHaveBeenCalledWith('notify_planners', {
+      kind: 'verhindert', subject: 'Verhinderung gemeldet', message: 'B', task: '2026-09-14|mid|ratgeber',
+    })
+  })
 })
 
 describe('Update-Schreiber', () => {
@@ -255,6 +262,14 @@ describe('Update-Schreiber', () => {
     expect(chain.update).toHaveBeenCalledWith({ read: true })
     expect(chain.eq).toHaveBeenCalledWith('congregation_id', 'c1')
     expect(chain.eq).toHaveBeenCalledWith('user_id', 'u1')
+  })
+  it('markNotificationRead → nur die eine Zeile, und nur die eigene', () => {
+    markNotificationRead('c1', 'u1', 'n7')
+    expect(chain.from).toHaveBeenCalledWith('notifications')
+    expect(chain.update).toHaveBeenCalledWith({ read: true })
+    expect(chain.eq).toHaveBeenCalledWith('congregation_id', 'c1')
+    expect(chain.eq).toHaveBeenCalledWith('user_id', 'u1')
+    expect(chain.eq).toHaveBeenCalledWith('id', 'n7')
   })
   it('saveCongregationInfo / saveSettings → congregations update', () => {
     saveCongregationInfo('c1', { name: 'N', hall: 'H', times: STANDARD_ZEITEN })

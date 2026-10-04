@@ -1393,9 +1393,18 @@ grant execute on function public.redeem_invite(text) to authenticated;
 -- Melden darf jedes Mitglied nur eine Verhinderung; Import und „Plan gesendet"
 -- bleiben Planern vorbehalten (S3/T89). Die Art prüft zusätzlich die
 -- check-Bedingung der Tabelle.
+--
+-- `task` (seit 4.10.2026): der Schlüssel der abgesagten Aufgabe. Ein Tipp auf
+-- die Zeile führt den Planer in ihre Woche. Er ist nur ein Wegweiser — er
+-- gibt kein Recht, und eine Bestätigung bietet die Glocke an einer Absage
+-- nicht an —, darum genügt es, ihn zu kürzen. Mit Vorgabe, damit Aufrufe ohne
+-- ihn (Import, ältere App-Stände) weiter passen; die alte Fassung mit drei
+-- Parametern muss dafür weg, sonst wäre ein solcher Aufruf mehrdeutig.
 -- ---------------------------------------------------------------------------
 
-create or replace function public.notify_planners(kind text, subject text, message text)
+drop function if exists public.notify_planners(text, text, text);
+
+create or replace function public.notify_planners(kind text, subject text, message text, task text default null)
 returns void
 language plpgsql security definer
 set search_path = public
@@ -1404,17 +1413,17 @@ begin
   if kind <> 'verhindert' and not public.is_planner() then
     raise exception 'nur eine Verhinderung darf jedes Mitglied melden';
   end if;
-  insert into public.notifications (congregation_id, user_id, type, title, body)
-  select m.congregation_id, m.user_id, kind, subject, message
+  insert into public.notifications (congregation_id, user_id, type, title, body, task_key)
+  select m.congregation_id, m.user_id, kind, subject, message, nullif(left(task, 300), '')
     from public.members m
    where m.congregation_id = public.my_congregation_id()
      and m.planner;
 end;
 $$;
 
-revoke all on function public.notify_planners(text, text, text) from public;
-revoke all on function public.notify_planners(text, text, text) from anon;
-grant execute on function public.notify_planners(text, text, text) to authenticated;
+revoke all on function public.notify_planners(text, text, text, text) from public;
+revoke all on function public.notify_planners(text, text, text, text) from anon;
+grant execute on function public.notify_planners(text, text, text, text) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Erste Einrichtung (Beispiel — Werte anpassen und einmalig ausführen)

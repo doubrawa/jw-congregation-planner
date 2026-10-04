@@ -108,7 +108,8 @@ describe('Absagen gibt den Platz frei', () => {
     expect(s.ozEintraege).toEqual([])
     expect(s.confirmations).toEqual({}) // kein „verhindert" für einen Platz, den es nicht mehr gibt
     expect(ozAufgabe(s)).toBeUndefined()
-    expect(s.notifs[0]).toMatchObject({ type: 'verhindert', title: 'Verhinderung gemeldet', local: true })
+    // Mit dem Schlüssel des Eintrags: Der Tipp des Planers führt zum Zeugnisgeben (4.10.2026).
+    expect(s.notifs[0]).toMatchObject({ type: 'verhindert', title: 'Verhinderung gemeldet', local: true, taskId: key })
     expect(s.notifs[0]!.text).toContain(`${OZ_DIENST} · Mittwoch, 9. September · 10:00–12:00 · Marktplatz — `)
   })
 
@@ -121,6 +122,7 @@ describe('Absagen gibt den Platz frei', () => {
     expect(s.ozEintraege).toEqual([])
     expect(s.confirmations).toEqual({})
     expect(s.notifs[0]?.type).toBe('verhindert')
+    expect(s.notifs[0]?.taskId).toBe(ozKey('2026-09-07', e.id))
   })
 
   it('der Planer, der seinen Plan aufräumt, meldet sich nichts selbst', () => {

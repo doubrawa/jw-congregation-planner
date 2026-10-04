@@ -181,6 +181,12 @@ Zwei weitere Nachrichten können dich erreichen:
   genommen, die du **schon bestätigt** hattest. Dann brauchst du dich nicht
   weiter vorzubereiten.
 
+In der **Glocke** steht jede Mitteilung höchstens zwei Zeilen lang (am
+Computer zeigt der Mauszeiger den ganzen Text). **Ein Tipp darauf führt
+dorthin, wo sie herkommt:** zu deiner Aufgabe, gleich mit Bestätigen und
+Absagen; bei „Ersatz gesucht" zum Einspringen; ohne bestimmte Aufgabe zu
+**Meine Aufgaben**. Was du angetippt hast, gilt als gelesen.
+
 > Solange der Koordinator noch plant, erfährst du nichts – auch wenn dein Name
 > im Programm schon steht. Das ist Absicht: Bis die Woche steht, wird oft noch
 > umsortiert.
@@ -224,9 +230,9 @@ passt.
 
 Du bekommst es auf drei Wegen zu sehen, und dafür musst du nichts suchen:
 
-- **Über die Push-Nachricht** – ein Tipp darauf öffnet **Meine Aufgaben** und
-  springt direkt zum Bereich **EINSPRINGEN**, statt oben auf der Seite zu
-  landen.
+- **Über die Push-Nachricht oder die Glocke** – ein Tipp darauf öffnet
+  **Meine Aufgaben** und springt direkt zum Bereich **EINSPRINGEN**, statt oben
+  auf der Seite zu landen.
 - **Beim Öffnen der App** – dasselbe Blatt, das dich an unbestätigte
   Zuteilungen erinnert, zeigt darunter den Bereich **EINSPRINGEN**. Hast du
   nichts zu bestätigen, steht dort nur die Anfrage, und du kannst das Blatt mit

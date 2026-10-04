@@ -88,6 +88,7 @@ export const PRIV_KEY: Record<QualificationKey, keyof Dict> = {
   // „unter der Woche"/„Wochenende" hängt PersonDetail aus tabMid/tabWe an.
   vorsitzMid: 'privVorsitz',
   vorsitzWe: 'privVorsitz',
+  // in `privLabel` mit dem Programmteil davor („Schätze aus Gottes Wort · Vorträge“), 4.10.2026
   vortrag: 'privVortrag',
   besprechung: 'privBesprechung',
   gebet: 'privGebet',
@@ -129,6 +130,11 @@ export const NOTIF_TITLE_KEY: Record<string, keyof Dict> = {
   // sind. Ging bis T99 nur als Push hinaus — ein Planer ohne Abo bekam sie also
   // nie, obwohl gerade er sie braucht (er muss persönlich erinnern).
   'Unbestätigte Zuteilungen (nicht erreichbar)': 'notifUnerreichbar',
+  // Aus der App selbst an die Planer (Reducer → `notify_planners`): der Import
+  // einer Woche und die Absage einer Aufgabe. Bis zum 4.10.2026 standen beide
+  // unter den abgelegten Titeln — erzeugt werden sie aber nach wie vor.
+  'Programm importiert': 'notifProgImportiert',
+  'Verhinderung gemeldet': 'notifVerhindert',
   // **Abgelegte Titel.** Diese Mitteilungen entstehen seit T99 nicht mehr —
   // aber die Glocke hält Zeilen 30 Tage lang, und wer die App vorher benutzt
   // hat, hat sie noch vor sich. Ohne die Einträge stünde dort deutscher
@@ -138,8 +144,6 @@ export const NOTIF_TITLE_KEY: Record<string, keyof Dict> = {
   'Plan veröffentlicht': 'notifPlan',
   'Zuteilung gesendet': 'notifZutGesendet',
   'Zuteilungen gesendet': 'notifZutsGesendet',
-  'Programm importiert': 'notifProgImportiert',
-  'Verhinderung gemeldet': 'notifVerhindert',
   // Ersatzsuche (Edge Function `substitute`) — die Titel sind fest, alles
   // Veränderliche (Dienst, Termin, Name) steht als ` · `-Atome im Rumpf und
   // wird dort vom Fragment-Übersetzer erledigt.

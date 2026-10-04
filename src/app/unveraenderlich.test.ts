@@ -169,6 +169,7 @@ function schreibfolge(s: AppState): AppAction[] {
     // Abwesenheiten, Mitteilungen, Erinnerungen
     { type: 'addAbsence', absence: { id: 'a-probe', personId: person.id, userId: 'u1', from: '2026-10-01', to: '2026-10-05', reason: '' } },
     { type: 'removeAbsence', id: 'a-probe' },
+    { type: 'mitteilungGelesen', id: DEMO_NOTIFICATIONS[0]!.id },
     { type: 'markAllRead' },
     { type: 'changeReminder', key: 'first', delta: 1 },
     { type: 'toggleReminderRepeat' },

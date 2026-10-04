@@ -9,11 +9,12 @@ import type { QualificationKey } from '../data/types'
 /**
  * **Die Beschriftung eines Aufgabenbereichs — zusammengesetzt statt übersetzt.**
  *
- * Fünf der sechzehn Bereiche haben keinen eigenen Wörterbuch-Schlüssel, sondern
- * werden aus zwei vorhandenen gebaut: „Vorsitz · unter der Woche",
+ * Sechs Bereiche haben keinen eigenen Wörterbuch-Schlüssel, sondern werden aus
+ * zwei Bausteinen gebaut: „Vorsitz · unter der Woche",
  * „Ratgeber · Zusätzliche Klasse", „Schulungsaufgaben · Gesprächspartner",
- * „Schulungsaufgaben · Vorträge" (seit dem 4.10.2026). Das ist Absicht — fünf
- * zusätzliche Schlüssel hießen 170 Übersetzungen für etwas, das schon dasteht.
+ * „Schulungsaufgaben · Vorträge" und „Schätze aus Gottes Wort · Vorträge"
+ * (beide seit dem 4.10.2026). Das ist Absicht — jeder zusätzliche Schlüssel
+ * hieße 34 Übersetzungen für etwas, das schon dasteht.
  *
  * Der Preis ist eine Annahme, die niemand geprüft hat: dass die Bausteine in
  * **jeder** Sprache zusammenpassen. Fehlt einer, steht dort „· " mit einer
@@ -70,18 +71,26 @@ describe('privLabel in jeder App-Sprache', () => {
 })
 
 describe('Die Zusammensetzung selbst', () => {
-  it('setzt die fünf Sonderfälle aus vorhandenen Bausteinen zusammen', () => {
+  it('setzt die sechs Sonderfälle aus vorhandenen Bausteinen zusammen', () => {
     const t = dict('de')
     expect(privLabel(t, 'vorsitzMid')).toBe(`${t.privVorsitz} · ${t.tabMid}`)
     expect(privLabel(t, 'vorsitzWe')).toBe(`${t.privVorsitz} · ${t.tabWe}`)
     expect(privLabel(t, 'ratgeber')).toBe(`${t.auxRatgeber} · ${t.auxKlasse}`)
     expect(privLabel(t, 'schulungPartner')).toBe(`${t.privSchulung} · ${t.s89Partner}`)
     expect(privLabel(t, 'schulungVortrag')).toBe(`${t.privSchulung} · ${t.privVortrag}`)
+    expect(privLabel(t, 'vortrag')).toBe(`${t.privSchaetze} · ${t.privVortrag}`)
+  })
+
+  it('die beiden Vorträge unterscheidet ihr Programmteil — „Vorträge" allein hieß jeder Vortrag (4.10.2026)', () => {
+    expect(privLabel(dict('de'), 'vortrag')).toBe('Schätze aus Gottes Wort · Vorträge')
+    expect(privLabel(dict('de'), 'schulungVortrag')).toBe('Schulungsaufgaben · Vorträge')
+    // Der Baustein ist die Überschrift des Arbeitshefts — gemessen, nicht gebildet.
+    expect(privLabel(dict('en'), 'vortrag')).toBe('Treasures From God’s Word · Talks')
   })
 
   it('alle übrigen kommen unverändert aus dem Wörterbuch', () => {
     const t = dict('en')
-    const zusammengesetzt = new Set(['vorsitzMid', 'vorsitzWe', 'ratgeber', 'schulungPartner', 'schulungVortrag'])
+    const zusammengesetzt = new Set(['vorsitzMid', 'vorsitzWe', 'ratgeber', 'schulungPartner', 'schulungVortrag', 'vortrag'])
     for (const key of ALLE) {
       if (zusammengesetzt.has(key)) continue
       expect(privLabel(t, key), key).toBe(t[PRIV_KEY[key]])

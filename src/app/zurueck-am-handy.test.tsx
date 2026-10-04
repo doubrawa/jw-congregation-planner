@@ -227,6 +227,52 @@ describe('Zurück am Handy', () => {
     expect(amGrund()).toBe(true)
   })
 
+  /*
+   * **Ein Tipp in der Glocke** (4.10.2026): Im selben Augenblick schließt die
+   * Glocke (ihr Eintrag geht), der Bildschirm wechselt und — bei der eigenen
+   * Aufgabe — öffnet ihr Blatt (zwei Einträge kommen).
+   */
+  const zeile = (over: Partial<AppState['notifs'][number]>) => ({
+    id: 'n1', type: 'zuteilung' as const, title: 'Neue Zuteilung', text: 'x',
+    at: new Date().toISOString(), read: false, ...over,
+  })
+
+  async function tippeInDerGlocke(c: HTMLElement): Promise<void> {
+    fireEvent.click(c.querySelector('.notif-chip')!)
+    await ausklingen()
+    fireEvent.click(c.querySelector('.notif-row-link')!)
+    await ausklingen()
+    expect(c.querySelector('.notif-panel'), 'die Glocke blieb offen').toBeNull()
+  }
+
+  it('Tipp auf die eigene Aufgabe: ihr Blatt auf „Meine Aufgaben" — Zurück schließt es, dann geht es zu Start', async () => {
+    // `a1` ist eine offene Aufgabe des Demo-Bestands (DEMO_MY_TASKS).
+    const { container } = zeige({ planner: false, personId: 'p9', notifs: [zeile({ taskId: 'a1' })] })
+    await tippeInDerGlocke(container)
+    expect(aktiv(container)).toBe(t.navAufgabenLong)
+    expect(container.querySelector('.confirm-modal'), 'das Blatt ist nicht offen').not.toBeNull()
+
+    await zurueck()
+    expect(container.querySelector('.confirm-modal'), 'das Blatt blieb offen').toBeNull()
+    expect(aktiv(container)).toBe(t.navAufgabenLong)
+
+    await zurueck()
+    expect(aktiv(container)).toBe(t.navStart)
+    expect(amGrund(), 'ein Eintrag zu viel oder zu wenig').toBe(true)
+  })
+
+  it('der Planer tippt auf eine Absage: die Woche im Planen — ein Druck führt zu Start', async () => {
+    const woche = demoZustand().weeks[1]!.start
+    const absage = zeile({ type: 'verhindert', title: 'Verhinderung gemeldet', taskId: `${woche}|mid|ratgeber` })
+    const { container } = zeige({ notifs: [absage] })
+    await tippeInDerGlocke(container)
+    expect(aktiv(container)).toBe(t.navZusammenkuenfte)
+
+    await zurueck()
+    expect(aktiv(container)).toBe(t.navStart)
+    expect(amGrund(), 'ein Eintrag zu viel oder zu wenig').toBe(true)
+  })
+
   it('über das Menü zu Start: kein Eintrag bleibt liegen', async () => {
     const { container } = zeige()
     klickMenue(container, t.navPersonen)

@@ -6170,6 +6170,36 @@ samt Konten wieder entfernt; für den nächsten Lauf legt
   spitzen Ecken („die Ecken sollten dort auch abgerundet sein"). Jetzt wieder
   die runde Kachel auf Weiß (= `background_color`), ganz in der Safe-Zone
   (64 %).
+- **Mitteilungen: kürzer in der Liste, ein Tipp führt zur Quelle** —
+  „Mitteilungen sollen eine maximale Länge haben, wenn sie in der Liste
+  angezeigt werden. Und wenn man drauf klickt soll man da landen, wo die
+  Meldung herkommt." Der Text steht höchstens zwei Zeilen hoch (CSS, ganzer
+  Text im Tooltip), die Zeile ist ein Knopf (`mitteilungsZiel`): die eigene
+  Aufgabe → „Meine Aufgaben" mit ihrem Blatt; „Ersatz gesucht" → Einspringen;
+  Meldungen an die Planer (Absage, Import, Sammelmeldung, Ersatz gefunden) →
+  Planen, bei einer Absage in die Woche ihrer Aufgabe (Treffpunkt: Reiter
+  Treffpunkte; Zeugnisgeben: dessen Reiter); eine Aufgabe, die nicht mehr die
+  eigene ist → ihre Woche im Programm; sonst „Meine Aufgaben" wie der Push.
+  Die angetippte Zeile gilt als gelesen (`mitteilungGelesen`, offline nicht).
+  Dafür trägt die Absage jetzt den Schlüssel ihrer Aufgabe: `notify_planners`
+  hat einen vierten Parameter `task` (Vorgabe null, gekürzt auf 300 Zeichen,
+  die Fassung mit drei Parametern gelöscht). An einer Absage steht nie
+  „Bestätigen" — ihr Schlüssel ist der einer fremden Aufgabe. Nebenbei: Der
+  Kommentar in `NOTIF_TITLE_KEY` führte „Programm importiert" und
+  „Verhinderung gemeldet" als abgelegt, beide entstehen weiter.
+- **„Vorträge" heißt jetzt „Schätze aus Gottes Wort · Vorträge"** — „Der
+  Aufgabenbereich Vorträge muss besser benannt werden." Gebaut wie
+  „Schulungsaufgaben · Vorträge" (`privLabel`), der neue Baustein
+  `privSchaetze` ist gemessen: Inhaltsverzeichnis der S-38 (WOL 1201038, p4)
+  in allen 34 Sprachen, gegen die Überschrift des Arbeitshefts (FRAG)
+  gehalten — deckungsgleich bis auf Russisch, wo die S-38 «» setzt und das
+  Heft nicht (das Heft gewinnt).
+
+**Mitteilungen ausrollen:** erst `schema.sql` (oder nur den Block
+`notify_planners`), dann pushen. Das neue Frontend schickt bei einer Absage den
+vierten Parameter; an der alten Fassung schlüge genau dieser Aufruf fehl, und
+die Absage erreichte die Planer nicht. Aufrufe ohne Schlüssel (Import, ältere
+App-Stände) passen an beide Fassungen. Keine Function betroffen.
 
 **Ausrollen in dieser Reihenfolge:** Functions `send-plan`, `send-reminders`,
 `substitute` deployen → `schema.sql` einspielen → Push. Das neue Frontend

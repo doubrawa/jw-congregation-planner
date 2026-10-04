@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Hakuna",
   "privVorsitz": "Uenyekiti",
   "privVortrag": "Hotuba",
+  "privSchaetze": "Hazina za Neno la Mungu",
   "privBesprechung": "Kuongoza mazungumzo",
   "privGebet": "Sala",
   "privSchulung": "Migawo ya wanafunzi",

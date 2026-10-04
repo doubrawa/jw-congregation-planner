@@ -62,6 +62,7 @@ vi.mock('../lib/data', async (importActual) => ({
   deleteMemberRow: vi.fn(),
   deleteNotifications: vi.fn(),
   deleteServiceRow: vi.fn(),
+  markNotificationRead: vi.fn(),
   markNotificationsRead: vi.fn(),
   notifyPlanners: vi.fn(),
   saveAbsence: vi.fn(),
@@ -192,6 +193,7 @@ function folge(s: AppState): AppAction[] {
     { type: 'toggleReminderRepeat' },
     { type: 'setAuxClass', on: true }, // ist schon an
     { type: 'markAllRead' },
+    { type: 'mitteilungGelesen', id: DEMO_NOTIFICATIONS[0]!.id },
   ]
 }
 

@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Geen",
   "privVorsitz": "Voorzitterschap",
   "privVortrag": "Lezingen",
+  "privSchaetze": "Schatten uit Gods Woord",
   "privBesprechung": "Besprekingen leiden",
   "privGebet": "Gebeden",
   "privSchulung": "Studenttoewijzingen",

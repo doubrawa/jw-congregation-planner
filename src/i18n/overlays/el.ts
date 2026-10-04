@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Καμία",
   "privVorsitz": "Εισηγητής",
   "privVortrag": "Ομιλίες",
+  "privSchaetze": "Θησαυροί από τον Λόγο του Θεού",
   "privBesprechung": "Διεξαγωγή συζητήσεων",
   "privGebet": "Προσευχές",
   "privSchulung": "Μαθητικές αναθέσεις",
