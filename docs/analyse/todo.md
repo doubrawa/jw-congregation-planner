@@ -6128,6 +6128,22 @@ samt Konten wieder entfernt; für den nächsten Lauf legt
   und „heute" weicht je nach Zeitzone um einen Tag von UTC ab. Für den Tag
   dazwischen blenden ihn „Meine Aufgaben" (`deriveMyOzTasks`) und
   Ankündigen/Erinnern (`offeneZeugnisEintraege`) aus.
+- **„Vorträge" aufgeteilt** — „Es soll einen Bereich geben
+  Schulungsaufgaben-Vorträge. Dann den Bereich Besprechungen leiten." Drei
+  Bereiche statt eines: `vortrag` nur noch für den Vortrag unter „Schätze aus
+  Gottes Wort"; `besprechung` („Besprechungen leiten") für Graben, die
+  Besprechungen unter „Uns im Dienst verbessern" und jeden Punkt unter „Unser
+  Leben als Christ" außer dem Versammlungsbibelstudium (Betreiber: „Unser Leben
+  als Christ gilt alles als Besprechungen leiten") — auch für eigene Punkte
+  dort (`lacAdd`, bisher `studium`); `schulungVortrag` („Schulungsaufgaben ·
+  Vorträge") für den Vortrag eines Schülers, weiter mit `male`. Der Import
+  entscheidet an der Stellung (`vortragsPlatz`/`besprechungsPlatz`), S-89 und
+  Zusätzliche Klasse fragen eine Menge (`istSchuelerBereich`). **Der
+  öffentliche Vortrag am Sonntag** hängt an keinem Bereich mehr: Zur Wahl
+  stehen alle Ältesten und Dienstamtgehilfen (`kandidaten.ts`, an jedem
+  Redner-Platz, auch dem des Kreisaufsehers), und als Engpass zählt auch der
+  eigene Redner nicht mehr (`bedarf.ts`). Leser bleibt ein Bereich. Der
+  Generator in `nws-export` liest die getrennten NWS-Felder (bo, bp|bw, bv).
 
 **Ausrollen in dieser Reihenfolge:** Functions `send-plan`, `send-reminders`,
 `substitute` deployen → `schema.sql` einspielen → Push. Das neue Frontend
@@ -6135,6 +6151,13 @@ fragt `oz_termine.aus` ab; vor dem Schema fände es die Spalte nicht und zeigte
 keine Termine. Ein altes Frontend am neuen Schema verliert nur Anzeigen
 (Redner auswärts, die Pläne bis zum Neuladen) — das tut es in jeder
 Reihenfolge.
+
+**„Vorträge" ausrollen, eigene Reihenfolge:** (1) Personen vorbelegen — im
+SQL-Editor `besprechung` := `vortrag` und `schulungVortrag` := `schulung` bei
+Brüdern, nur wo der Schlüssel fehlt; sonst stünden die neuen Plätze ohne
+Kandidaten da. (2) `import-week` deployen und pushen. (3) Den Bestand
+nachziehen: `node scripts/bereiche-trennen.mjs --trocken`, dann ohne. Eilig ist
+(3) nicht — alte Wochen tragen die alten Bereiche und verhalten sich wie bisher.
 
 ---
 

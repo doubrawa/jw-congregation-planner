@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Aucun",
   "privVorsitz": "Présidence",
   "privVortrag": "Discours",
+  "privBesprechung": "Conduire des discussions",
   "privGebet": "Prières",
   "privSchulung": "Devoirs d’élèves",
   "privStudium": "Conduire des études",

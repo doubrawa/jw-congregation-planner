@@ -19,14 +19,20 @@ import { hatAuxKlasse, isSong, programmPlaetze, raeume, slotsOf } from './helper
 /**
  * Bereiche, die einen Programmpunkt zum Schülerteil machen. Bewusst über die
  * Slot-Bereiche und nicht über den Titel: Titel kommen in der Sprache der
- * Versammlung aus dem Arbeitsheft, die Bereiche sind kanonisch.
+ * Versammlung aus dem Arbeitsheft, die Bereiche sind kanonisch. Der Vortrag
+ * eines Schülers (`schulungVortrag`) hat seit dem 4.10.2026 einen eigenen.
  */
-const SCHUELER_BEREICHE = new Set(['bibellesung', 'schulung', 'schulungPartner'])
+const SCHUELER_BEREICHE = new Set(['bibellesung', 'schulung', 'schulungPartner', 'schulungVortrag'])
+
+/** Ist das der Bereich eines Schülerteils (S-89-Zettel, Zusätzliche Klasse)? */
+export function istSchuelerBereich(bereichsKey: string | null | undefined): boolean {
+  return bereichsKey != null && SCHUELER_BEREICHE.has(bereichsKey)
+}
 
 /** Wird dieser Punkt in der Zusätzlichen Klasse wiederholt? */
 export function istSchuelerteil(item: ProgramItem): boolean {
   if (isSong(item)) return false
-  return item.names.some((s) => s.bereichsKey != null && SCHUELER_BEREICHE.has(s.bereichsKey))
+  return item.names.some((s) => istSchuelerBereich(s.bereichsKey))
 }
 
 // Diese vier stehen in helpers.ts — `partWorkload` braucht sie dort, und

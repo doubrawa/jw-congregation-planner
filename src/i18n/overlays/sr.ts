@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Nijedna",
   "privVorsitz": "Predsedavanje",
   "privVortrag": "Govori",
+  "privBesprechung": "Vođenje razmatranja s prisutnima",
   "privGebet": "Molitve",
   "privSchulung": "Učenička zaduženja",
   "privStudium": "Vođenje razmatranja",

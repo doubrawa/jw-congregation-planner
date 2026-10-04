@@ -190,6 +190,7 @@ export default {
   "rolleKeine": "ללא",
   "privVorsitz": "יושב־ראש",
   "privVortrag": "הרצאות",
+  "privBesprechung": "הנחיית דיונים",
   "privGebet": "תפילות",
   "privSchulung": "מטלות תלמיד",
   "privStudium": "הדרכת שיעורים",

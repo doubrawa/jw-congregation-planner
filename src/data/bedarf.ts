@@ -1,5 +1,5 @@
 import { allePlaetze } from './plaetze'
-import { isGuestRole, isQualified, serviceQualKey } from './helpers'
+import { isQualified, isSpeakerRole, serviceQualKey } from './helpers'
 import { istAbwesend, type AbsenceSet } from './absence'
 import type { MeetingKey, Meeting, Person, Service } from './types'
 
@@ -58,9 +58,13 @@ export interface Engpass {
  * dieser Hinweis gebaut ist: eine, die immer dasteht und deshalb weggesehen
  * wird.
  *
- * Der **eigene** Redner (T29, `rolle: 'Redner'`) zählt weiter mit — er ist ein
- * Bruder dieser Versammlung und braucht den Bereich. Der Unterschied steht in
- * `isGuestRole` und nirgends sonst.
+ * **Der eigene Redner** (T29, `rolle: 'Redner'`) **seit dem 4.10.2026 auch**
+ * (`isSpeakerRole`). Bis dahin zählte er mit, weil er den Bereich `vortrag`
+ * brauchte. Den öffentlichen Vortrag kann aber jetzt jeder Älteste und
+ * Dienstamtgehilfe halten (`kandidaten.ts`), und `vortrag` meint nur noch den
+ * Vortrag unter „Schätze aus Gottes Wort". Gezählt hätte er gegen die Falschen:
+ * „0 von 1 verfügbar", obwohl ein Dutzend Brüder ihn halten dürfen. Den Redner
+ * vereinbart man ohnehin, man verlost ihn nicht — ein Engpass ist er nie.
  *
  * Nicht zu verwechseln mit `countOpenSlots`: Ein unbesetzter Gastredner-Platz
  * ist sehr wohl eine **offene Zuteilung** — der Planer muss den Namen
@@ -82,7 +86,7 @@ export function bedarfJeBereich(meeting: Meeting, services: readonly Service[]):
       zaehl(serviceQualKey(platz.svc.key))
       continue
     }
-    if (isGuestRole(platz.slot.rolle)) continue
+    if (isSpeakerRole(platz.slot.rolle)) continue
     zaehl(platz.slot.bereichsKey)
   }
   return out

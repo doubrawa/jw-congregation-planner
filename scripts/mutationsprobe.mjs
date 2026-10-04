@@ -612,13 +612,21 @@ export const KATALOG = [
   },
   {
     id: 's89-bibellesung-am-bereich',
-    datei: 'src/data/planning.ts',
+    datei: 'src/data/aux-class.ts',
     regel: 'Die Bibellesung wird am Bereich erkannt, nicht am deutschen Titel — sonst fehlt der S-89-Zettel in jeder anderen Sprache.',
     // Der Titel-Rückfall (`item.title.startsWith('Bibellesung')`) ist am
     // 25.9.2026 entfallen — er stand nur für Bestandswochen ohne Bereich, die
-    // es seit dem Neuaufbau (T105) nicht mehr gibt.
-    suchen: "const isStudent = sel.priv === 'schulung' || sel.priv === 'schulungPartner' || sel.priv === 'bibellesung'",
-    ersetzen: "const isStudent = sel.priv === 'schulung' || sel.priv === 'schulungPartner'",
+    // es seit dem Neuaufbau (T105) nicht mehr gibt. Seit dem 4.10.2026 fragen
+    // S-89 und Zusätzliche Klasse dieselbe Menge (`istSchuelerBereich`).
+    suchen: "const SCHUELER_BEREICHE = new Set(['bibellesung', 'schulung', 'schulungPartner', 'schulungVortrag'])",
+    ersetzen: "const SCHUELER_BEREICHE = new Set(['schulung', 'schulungPartner', 'schulungVortrag'])",
+  },
+  {
+    id: 's89-schuelervortrag',
+    datei: 'src/data/aux-class.ts',
+    regel: 'Der Vortrag eines Schülers bleibt Schülerteil, obwohl er einen eigenen Bereich hat — Zusätzliche Klasse und S-89-Zettel.',
+    suchen: "const SCHUELER_BEREICHE = new Set(['bibellesung', 'schulung', 'schulungPartner', 'schulungVortrag'])",
+    ersetzen: "const SCHUELER_BEREICHE = new Set(['bibellesung', 'schulung', 'schulungPartner'])",
   },
   {
     id: 's89-rahmen-an-der-form',
@@ -818,7 +826,7 @@ export const KATALOG = [
     id: 'import-besprechung-kein-schuelerteil',
     datei: 'supabase/functions/import-week/parse.ts',
     regel: 'Eine Besprechung unter „Uns im Dienst verbessern" ist keine Schulungsaufgabe — sie bekommt den Platz eines Bruders.',
-    suchen: '  if (BESPRECHUNG_RE.test(form)) return bruderPlatz()\n',
+    suchen: '  if (BESPRECHUNG_RE.test(form)) return besprechungsPlatz()\n',
     ersetzen: '',
   },
   {
@@ -834,6 +842,51 @@ export const KATALOG = [
     regel: 'Einen Vortrag hält ein Bruder — die Form gilt vor dem Titel.',
     suchen: '  if (VORTRAG_RE.test(form)) return [talk]\n',
     ersetzen: '',
+  },
+  // Die Trennung vom 4.10.2026: Vortrag, Besprechung und Vortrag eines Schülers
+  // sind drei Bereiche. Fiele einer zurück, stünde wieder jeder, der einen davon
+  // kann, für alle drei zur Wahl.
+  {
+    id: 'import-schaetze-erster-ist-vortrag',
+    datei: 'supabase/functions/import-week/parse.ts',
+    regel: 'Der erste Schätze-Punkt ist der Vortrag, die übrigen sind Besprechungen — über die Position, nicht den Text.',
+    suchen: "else if (color === 'teal' && rec === firstOf.teal) part.names = vortragsPlatz()",
+    ersetzen: "else if (color === 'teal' && rec === lastOf.teal) part.names = vortragsPlatz()",
+  },
+  {
+    id: 'import-besprechung-eigener-bereich',
+    datei: 'supabase/functions/import-week/parse.ts',
+    regel: 'Graben, Besprechungen und „Unser Leben als Christ" tragen „Besprechungen leiten", nicht den Bereich des Vortrags.',
+    suchen: "  return [{ name: '', bereichsKey: 'besprechung' }]\n",
+    ersetzen: "  return [{ name: '', bereichsKey: 'vortrag' }]\n",
+  },
+  {
+    id: 'import-schuelervortrag-eigener-bereich',
+    datei: 'supabase/functions/import-week/parse.ts',
+    regel: 'Der Vortrag eines Schülers hat seinen eigenen Bereich — wer Gespräche führt, hält nicht zwingend Vorträge.',
+    suchen: "const talk = { name: '', bereichsKey: 'schulungVortrag', male: true }",
+    ersetzen: "const talk = { name: '', bereichsKey: 'schulung', male: true }",
+  },
+  {
+    id: 'lac-eigener-punkt-besprechung',
+    datei: 'src/data/meeting-edit.ts',
+    regel: 'Ein eigener Punkt unter „Unser Leben als Christ" bekommt denselben Bereich wie die importierten dort.',
+    suchen: "names: [{ name: '', bereichsKey: 'besprechung' }] }",
+    ersetzen: "names: [{ name: '', bereichsKey: 'studium' }] }",
+  },
+  {
+    id: 'redner-nach-stellung',
+    datei: 'src/planen/kandidaten.ts',
+    regel: 'Am Redner-Platz stehen alle Ältesten und Dienstamtgehilfen zur Wahl — nach Stellung, nicht nach Bereich.',
+    suchen: "    sel.kind === 'part' && sel.guest\n",
+    ersetzen: '    false\n',
+  },
+  {
+    id: 'engpass-ohne-eigenen-redner',
+    datei: 'src/data/bedarf.ts',
+    regel: 'Auch der eigene Redner ist kein Engpass — er braucht keinen Bereich mehr.',
+    suchen: '    if (isSpeakerRole(platz.slot.rolle)) continue\n',
+    ersetzen: "    if (isSpeakerRole(platz.slot.rolle) && platz.slot.rolle !== 'Redner') continue\n",
   },
 
   // ── Rechte und Bedienung ──────────────────────────────────────────────────

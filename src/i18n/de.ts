@@ -317,6 +317,10 @@ export const DE = {
     auxDesc: 'Je nach Anzahl der Teilnehmer kann für die Schulungsaufgaben eine zusätzliche Klasse eingerichtet werden.',
     auxRatgeberHint: 'Für jede zusätzliche Klasse soll ein befähigter Ratgeber zur Verfügung stehen, vorzugsweise ein Ältester.',
     privVorsitz: 'Vorsitz', privVortrag: 'Vorträge', privGebet: 'Gebete',
+    // Besprechungen leiten (4.10.2026) — das Wort ist das des Arbeitshefts
+    // („Besprechung." vor der Zeit), je Sprache gemessen (FRAG in translate-data.ts),
+    // die Form folgt „Studium leiten“.
+    privBesprechung: 'Besprechungen leiten',
     privSchulung: 'Schulungsaufgaben', privStudium: 'Studium leiten',
     privBibellesung: 'Bibellesung', privLeser: 'Leser',
     geschlecht: 'Geschlecht', bruder: 'Bruder', schwester: 'Schwester',

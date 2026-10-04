@@ -230,6 +230,7 @@ export default {
   "rolleKeine": "None",
   "privVorsitz": "Chairman",
   "privVortrag": "Talks",
+  "privBesprechung": "Conducting discussions",
   "privGebet": "Prayers",
   "privSchulung": "Student assignments",
   "privStudium": "Conducting studies",

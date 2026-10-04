@@ -26,11 +26,13 @@ export const QUALIFICATION_ORDER: readonly QualificationKey[] = [
   'vorsitzMid',
   'vorsitzWe',
   'vortrag',
+  'besprechung',
   'gebet',
   'bibellesung',
   'leser',
   'schulung',
   'schulungPartner',
+  'schulungVortrag',
   'studium',
   'treffpunkt',
   'zeugnis',
@@ -51,12 +53,14 @@ export const WT_ROLE_ORDER: readonly QualificationKey[] = ['wtLeiter', 'wtVertre
  * Nicht enthalten sind `schulung` und `schulungPartner` — Schülerteile
  * übernehmen auch Schwestern. `ratgeber` steht hier der Vollständigkeit halber
  * mit; am Slot trägt er ohnehin schon `male: true`, ebenso der
- * Schülerteil-Vortrag.
+ * Schülerteil-Vortrag (`schulungVortrag`).
  */
 export const BRUDER_BEREICHE: ReadonlySet<QualificationKey> = new Set<QualificationKey>([
   'vorsitzMid',
   'vorsitzWe',
   'vortrag',
+  'besprechung',
+  'schulungVortrag',
   'gebet',
   'bibellesung',
   'leser',

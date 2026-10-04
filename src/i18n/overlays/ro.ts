@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Niciunul",
   "privVorsitz": "Președinție",
   "privVortrag": "Cuvântări",
+  "privBesprechung": "Conducerea discuțiilor",
   "privGebet": "Rugăciuni",
   "privSchulung": "Însărcinări de elev",
   "privStudium": "Conducerea studiilor",

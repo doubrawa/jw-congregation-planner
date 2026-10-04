@@ -32,7 +32,7 @@ describe('applyGoldSlots – Schülerteil-Art aus der deutschen Fassung übertra
     applyGoldSlots(localized, german)
     const gold = localized.mid.sections[0].items as ImportedPart[]
     expect(gold[0].names.map((n) => n.bereichsKey)).toEqual(['schulung', 'schulungPartner'])
-    expect(gold[1].names[0]).toMatchObject({ bereichsKey: 'schulung', male: true })
+    expect(gold[1].names[0]).toMatchObject({ bereichsKey: 'schulungVortrag', male: true })
   })
 })
 
@@ -45,10 +45,12 @@ describe('ministryNames – Slots je Schülerteil-Typ (deutscher Titel)', () => 
     }
   })
 
-  it('Vortrag/Ansprache → genau ein männlicher Slot', () => {
+  it('Vortrag/Ansprache → genau ein männlicher Slot, mit eigenem Bereich', () => {
+    // `schulungVortrag` seit dem 4.10.2026: Wer ein Gespräch führt, hält nicht
+    // zwingend auch einen Vortrag — der Betreiber erlaubt es je Person.
     const n = ministryNames('Vortrag', '5 Min.')
     expect(n).toHaveLength(1)
-    expect(n[0]).toMatchObject({ bereichsKey: 'schulung', male: true })
+    expect(n[0]).toMatchObject({ bereichsKey: 'schulungVortrag', male: true })
   })
 
   it('Unsere Glaubensansichten: mit Predigtdienst-Rahmen → 2 (Szene), sonst 1 (Ansprache, männlich)', () => {
@@ -70,7 +72,7 @@ describe('ministryNames – Slots je Schülerteil-Typ (deutscher Titel)', () => 
 
   it('… als Vortrag → ein männlicher Teilnehmer', () => {
     expect(ministryNames('Unsere Glaubensansichten erklären', 'Vortrag · 4 Min. · th Lektion 7')).toEqual([
-      { name: '', bereichsKey: 'schulung', male: true },
+      { name: '', bereichsKey: 'schulungVortrag', male: true },
     ])
   })
 
@@ -93,7 +95,7 @@ describe('ministryNames – Slots je Schülerteil-Typ (deutscher Titel)', () => 
     // anderer Ältester oder ein geeigneter Dienstamtgehilfe. Derselbe Platz wie
     // die Punkte unter „Unser Leben als Christ" — ohne Rolle, ohne `male`.
     expect(ministryNames('Was würdest du sagen?', 'Besprechung · 6 Min.')).toEqual([
-      { name: '', bereichsKey: 'vortrag' },
+      { name: '', bereichsKey: 'besprechung' },
     ])
   })
 
@@ -101,7 +103,7 @@ describe('ministryNames – Slots je Schülerteil-Typ (deutscher Titel)', () => 
     // Abs. 6 gilt für jede Besprechung des Programmteils. Trüge eine einmal den
     // Titel eines Schülerteils, bliebe sie trotzdem keine gespielte Szene.
     expect(ministryNames('Gespräche beginnen', 'Besprechung · 5 Min.')).toEqual([
-      { name: '', bereichsKey: 'vortrag' },
+      { name: '', bereichsKey: 'besprechung' },
     ])
     // Gegenprobe: Der Rahmen an derselben Stelle macht es nicht dazu.
     expect(ministryNames('Gespräche beginnen', 'VON HAUS ZU HAUS · 5 Min.')).toHaveLength(2)
@@ -109,7 +111,7 @@ describe('ministryNames – Slots je Schülerteil-Typ (deutscher Titel)', () => 
     // Titel eines Gesprächsteils. Bei „Unsere Glaubensansichten erklären" fiele
     // das nicht auf — dort käme über den Titel dasselbe heraus.
     expect(ministryNames('Menschen zu Jüngern machen', 'Vortrag · 5 Min.')).toEqual([
-      { name: '', bereichsKey: 'schulung', male: true },
+      { name: '', bereichsKey: 'schulungVortrag', male: true },
     ])
   })
 })
@@ -168,6 +170,8 @@ describe('parseWorkbookWeek (Struktur, deutsche Seite)', () => {
     expect(byLabel('UNSER LEBEN ALS CHRIST').farbe).toBe('wein')
     expect(parts('SCHÄTZE AUS GOTTES WORT')[0].names[0].bereichsKey).toBe('vortrag')
     expect(parts('UNS IM DIENST VERBESSERN')[0].names[0].bereichsKey).toBe('schulung')
+    // „Unser Leben als Christ" bis auf das Versammlungsbibelstudium: Besprechung.
+    expect(parts('UNSER LEBEN ALS CHRIST')[0].names).toEqual([{ name: '', bereichsKey: 'besprechung' }])
   })
 
   it('Bibellesung (= letzter Schätze-Punkt): Schriftstelle im Titel, Quelle in Meta', () => {
@@ -281,6 +285,13 @@ describe('parseWorkbookWeek (sprachunabhängig, erfundene Sprache)', () => {
   it('Rahmen + Minuten wörtlich (verbatim), Quelle über MEPS-Kürzel', () => {
     expect(parts('SERVO XI')[0].meta).toBe('DOMO XI DOMO · 3 vim · lmd plek 1 puno 5')
     expect(parts('SERVO XI')[0].names[0].bereichsKey).toBe('schulung')
+  })
+
+  it('Vortrag und Besprechung über die Position, nicht über den Text', () => {
+    // Erster Schätze-Punkt = Vortrag, ein Unser-Leben-Punkt vor dem Studium =
+    // Besprechung — in einer Sprache, deren Wörter der Import nicht kennt.
+    expect(parts('XORBI SATO')[0].names).toEqual([{ name: '', bereichsKey: 'vortrag' }])
+    expect(parts('VIVO KRISTO')[0].names).toEqual([{ name: '', bereichsKey: 'besprechung' }])
   })
 
   it('Zwischenlied lokalisiert übernommen', () => {
@@ -410,7 +421,7 @@ ${besprechung(
   })
 
   it('bekommt den Platz eines Bruders, keinen Schüler-Platz', () => {
-    expect(punkt.names).toEqual([{ name: '', bereichsKey: 'vortrag' }])
+    expect(punkt.names).toEqual([{ name: '', bereichsKey: 'besprechung' }])
   })
 
   it('… denselben wie die Besprechung unter „Unser Leben als Christ"', () => {
@@ -435,7 +446,7 @@ ${besprechung(
     // die Heuristik liest nur Deutsch.
     expect(fremderPunkt().names).toEqual([{ name: '', bereichsKey: 'schulung' }])
     applyGoldSlots(fremd, de)
-    expect(fremderPunkt().names).toEqual([{ name: '', bereichsKey: 'vortrag' }])
+    expect(fremderPunkt().names).toEqual([{ name: '', bereichsKey: 'besprechung' }])
     // Der Text bleibt der der Zielsprache; übertragen wird nur der Platz.
     expect(fremderPunkt()).toMatchObject({ title: 'Kion vi dirus?', meta: 'Diskuto · 6 vim' })
   })
@@ -481,7 +492,7 @@ ${schuelerteil(26, '7. Unsere Glaubens­ansichten erklären', zeit)}`)
   })
 
   it('der Vortrag bleibt ein Platz für einen Bruder', () => {
-    expect(punkt(VORTRAG).names).toEqual([{ name: '', bereichsKey: 'schulung', male: true }])
+    expect(punkt(VORTRAG).names).toEqual([{ name: '', bereichsKey: 'schulungVortrag', male: true }])
   })
 
   it('eine fremdsprachige Woche bekommt die Plätze aus der deutschen Fassung', () => {
@@ -493,6 +504,59 @@ ${schuelerteil(26, '7. Klarigi niajn kredojn', `(3 vim) Ludita sceno. ${pub('ijw
     expect(punkt(fremd).names).toEqual([{ name: '', bereichsKey: 'schulung' }])
     applyGoldSlots(fremd, SZENE)
     expect(punkt(fremd).names.map((n) => n.bereichsKey)).toEqual(['schulung', 'schulungPartner'])
+  })
+})
+
+/**
+ * **Vortrag oder Besprechung — die Bereiche der Punkte eines Bruders.**
+ *
+ * Bis zum 4.10.2026 trugen sie alle `vortrag`. Seither unterscheidet der Import
+ * nach der Stellung im Programm, wie es der Betreiber festgelegt hat: Der erste
+ * Punkt unter „Schätze aus Gottes Wort" ist der Vortrag, „Nach geistigen
+ * Schätzen graben" und jeder Punkt unter „Unser Leben als Christ" außer dem
+ * Versammlungsbibelstudium sind Besprechungen.
+ *
+ * Gefragt wird an einer Woche mit **drei** Schätze-Punkten, wie sie jw.org
+ * bringt: Mit zweien (Vortrag und Bibellesung) fiele nicht auf, wenn der
+ * mittlere wie der erste behandelt würde.
+ */
+describe('Vortrag oder Besprechung: die Stellung entscheidet', () => {
+  const woche = parseWorkbookWeek(`
+<article>
+  <h1 data-pid="1" class="du-color--textSubdued">1.-7. Juli</h1>
+  <h2 data-pid="2" class="du-fontSize--base">MUSTERBUCH 1-3</h2>
+  <h3 data-pid="3" class="x"><span class="dc-icon--music"></span> Lied 1 und Gebet | Einleitende Worte (1 Min.)</h3>
+  <h2 data-pid="4" class="du-color--teal-700">SCHÄTZE AUS GOTTES WORT</h2>
+  <h3 data-pid="5" class="du-color--teal-700">1. Erster Vortrag</h3>
+  <p data-pid="6">(10 Min.)</p>
+  <h3 data-pid="7" class="du-color--teal-700">2. Nach geistigen Schätzen graben</h3>
+  <p data-pid="8">(10 Min.)</p>
+  <h3 data-pid="9" class="du-color--teal-700">3. Bibellesung</h3>
+  <p data-pid="10">(4 Min.) Mus 1:1-9 ( th Lektion 2 )</p>
+  <h2 data-pid="18" class="du-color--gold-700">UNS IM DIENST VERBESSERN</h2>
+${schuelerteil(19, '4. Gespräche beginnen', '(3 Min.) VON HAUS ZU HAUS. Irgendein Satz.')}
+${schuelerteil(21, '5. Vortrag', '(5 Min.) Vortrag. Irgendein Satz.')}
+  <h2 data-pid="40" class="du-color--maroon-600">UNSER LEBEN ALS CHRIST</h2>
+  <h3 data-pid="41" class="du-color--maroon-600">6. Erster eigener Punkt</h3>
+  <p data-pid="42">(5 Min.) Vortrag.</p>
+  <h3 data-pid="43" class="du-color--maroon-600">7. Zweiter eigener Punkt</h3>
+  <p data-pid="44">(10 Min.) Besprechung.</p>
+  <h3 data-pid="45" class="du-color--maroon-600">8. Versammlungsbibelstudium</h3>
+  <p data-pid="46">(30 Min.) lfb Geschichte 1</p>
+  <h3 data-pid="47" class="x"><span class="dc-icon--music"></span> Schlussworte (3 Min.) | Lied 2 und Gebet</h3>
+</article>`)
+  const bereiche = (farbe: string) => teile(woche, farbe).map((p) => p.names.map((n) => n.bereichsKey).join('+'))
+
+  it('Schätze: Vortrag, Besprechung, Bibellesung', () => {
+    expect(bereiche('petrol')).toEqual(['vortrag', 'besprechung', 'bibellesung'])
+  })
+
+  it('Unser Leben als Christ: alles Besprechung — auch in Vortragsform —, zuletzt das Studium', () => {
+    expect(bereiche('wein')).toEqual(['besprechung', 'besprechung', 'studium+leser'])
+  })
+
+  it('der Vortrag eines Schülers hat seinen eigenen Bereich, nicht den des Schätze-Vortrags', () => {
+    expect(bereiche('gold')).toEqual(['schulung+schulungPartner', 'schulungVortrag'])
   })
 })
 

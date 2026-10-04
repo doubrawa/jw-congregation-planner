@@ -191,6 +191,7 @@ export default {
   "rolleKeine": "بدون",
   "privVorsitz": "العريف",
   "privVortrag": "الخطابات",
+  "privBesprechung": "إدارة المناقشات",
   "privGebet": "الصلوات",
   "privSchulung": "تعيينات الطلاب",
   "privStudium": "إدارة الدروس",

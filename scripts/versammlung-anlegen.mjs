@@ -107,11 +107,13 @@ export function planerBereiche() {
     vorsitzWe: true,
     gebet: true,
     vortrag: true,
+    besprechung: true,
     studium: true,
     leser: true,
     bibellesung: true,
     schulung: true,
     schulungPartner: true,
+    schulungVortrag: true,
     // Hilfsdienste: je Dienst ein eigener Bereich (`svc:<key>`).
     ...Object.fromEntries(STANDARD_DIENSTE.map((d) => [`svc:${d.key}`, true])),
   }

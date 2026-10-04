@@ -9,11 +9,11 @@ import type { QualificationKey } from '../data/types'
 /**
  * **Die Beschriftung eines Aufgabenbereichs — zusammengesetzt statt übersetzt.**
  *
- * Vier der dreizehn Bereiche haben keinen eigenen Wörterbuch-Schlüssel, sondern
+ * Fünf der sechzehn Bereiche haben keinen eigenen Wörterbuch-Schlüssel, sondern
  * werden aus zwei vorhandenen gebaut: „Vorsitz · unter der Woche",
- * „Ratgeber · Zusätzliche Klasse", „Schulungsaufgaben · Gesprächspartner". Das
- * ist Absicht — vier zusätzliche Schlüssel hießen 136 Übersetzungen für etwas,
- * das schon dasteht.
+ * „Ratgeber · Zusätzliche Klasse", „Schulungsaufgaben · Gesprächspartner",
+ * „Schulungsaufgaben · Vorträge" (seit dem 4.10.2026). Das ist Absicht — fünf
+ * zusätzliche Schlüssel hießen 170 Übersetzungen für etwas, das schon dasteht.
  *
  * Der Preis ist eine Annahme, die niemand geprüft hat: dass die Bausteine in
  * **jeder** Sprache zusammenpassen. Fehlt einer, steht dort „· " mit einer
@@ -70,17 +70,18 @@ describe('privLabel in jeder App-Sprache', () => {
 })
 
 describe('Die Zusammensetzung selbst', () => {
-  it('setzt die vier Sonderfälle aus vorhandenen Bausteinen zusammen', () => {
+  it('setzt die fünf Sonderfälle aus vorhandenen Bausteinen zusammen', () => {
     const t = dict('de')
     expect(privLabel(t, 'vorsitzMid')).toBe(`${t.privVorsitz} · ${t.tabMid}`)
     expect(privLabel(t, 'vorsitzWe')).toBe(`${t.privVorsitz} · ${t.tabWe}`)
     expect(privLabel(t, 'ratgeber')).toBe(`${t.auxRatgeber} · ${t.auxKlasse}`)
     expect(privLabel(t, 'schulungPartner')).toBe(`${t.privSchulung} · ${t.s89Partner}`)
+    expect(privLabel(t, 'schulungVortrag')).toBe(`${t.privSchulung} · ${t.privVortrag}`)
   })
 
   it('alle übrigen kommen unverändert aus dem Wörterbuch', () => {
     const t = dict('en')
-    const zusammengesetzt = new Set(['vorsitzMid', 'vorsitzWe', 'ratgeber', 'schulungPartner'])
+    const zusammengesetzt = new Set(['vorsitzMid', 'vorsitzWe', 'ratgeber', 'schulungPartner', 'schulungVortrag'])
     for (const key of ALLE) {
       if (zusammengesetzt.has(key)) continue
       expect(privLabel(t, key), key).toBe(t[PRIV_KEY[key]])

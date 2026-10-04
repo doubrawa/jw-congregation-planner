@@ -190,6 +190,7 @@ export default {
   "rolleKeine": "هیچ‌کدام",
   "privVorsitz": "مجری",
   "privVortrag": "سخنرانی‌ها",
+  "privBesprechung": "ادارهٔ گفتار با سؤال و جواب",
   "privGebet": "دعاها",
   "privSchulung": "وظایف شاگرد",
   "privStudium": "ادارهٔ مطالعه",

@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "なし",
   "privVorsitz": "司会",
   "privVortrag": "話",
+  "privBesprechung": "討議の司会",
   "privGebet": "祈り",
   "privSchulung": "生徒の割り当て",
   "privStudium": "研究の司会",

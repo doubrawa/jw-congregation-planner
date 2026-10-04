@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Ei mitään",
   "privVorsitz": "Puheenjohtajuus",
   "privVortrag": "Puheet",
+  "privBesprechung": "Keskustelujen johtaminen",
   "privGebet": "Rukoukset",
   "privSchulung": "Oppilastehtävät",
   "privStudium": "Tutkistelujen johtaminen",

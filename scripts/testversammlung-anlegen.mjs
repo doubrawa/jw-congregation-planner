@@ -81,9 +81,9 @@ export const TEST_GRUPPEN = ['Gruppe 1', 'Gruppe 2', 'Gruppe 3']
  * Aussage ist „ein Ältester darf das Feste", nicht eine Liste von 18 Zufällen.
  * Wer einen Sonderfall braucht, hängt ihn in `plus` an.
  */
-const AELTESTER = ['vorsitzMid', 'vorsitzWe', 'vortrag', 'gebet', 'studium', 'leser', 'bibellesung', 'schulung', 'schulungPartner', 'treffpunkt', 'ratgeber']
-const GEHILFE = ['gebet', 'leser', 'bibellesung', 'schulung', 'schulungPartner', 'treffpunkt', 'ratgeber']
-const BRUDER = ['bibellesung', 'schulung', 'schulungPartner']
+const AELTESTER = ['vorsitzMid', 'vorsitzWe', 'vortrag', 'besprechung', 'gebet', 'studium', 'leser', 'bibellesung', 'schulung', 'schulungPartner', 'schulungVortrag', 'treffpunkt', 'ratgeber']
+const GEHILFE = ['gebet', 'leser', 'bibellesung', 'schulung', 'schulungPartner', 'schulungVortrag', 'treffpunkt', 'ratgeber']
+const BRUDER = ['bibellesung', 'schulung', 'schulungPartner', 'schulungVortrag']
 const SCHWESTER = ['schulung', 'schulungPartner']
 
 /**
@@ -243,7 +243,7 @@ export function vielseitigkeit(p) {
  * Ausgewählt wird nach zwei Zahlen, in dieser Reihenfolge:
  *
  *  1. **Wer bisher am wenigsten hatte** (`zaehler`) — verteilt die Last.
- *  2. **Wer am wenigsten kann** — ein Ältester deckt elf Bereiche ab, eine
+ *  2. **Wer am wenigsten kann** — ein Ältester deckt dreizehn Bereiche ab, eine
  *     Schwester zwei. Verbraucht man die Vielseitigen an den Plätzen, die auch
  *     andere könnten, bleiben am Ende der Zusammenkunft Leiter, Leser und
  *     Schlussgebet leer, weil nur noch Unqualifizierte übrig sind. Genau das

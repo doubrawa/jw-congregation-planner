@@ -92,11 +92,13 @@ const q = (
     vorsitzMid: vorsitz,
     vorsitzWe: vorsitz,
     vortrag: has('vortrag'),
+    besprechung: has('besprechung'),
     gebet: has('gebet'),
     bibellesung: has('bibellesung') || has('lesen'),
     leser: has('leser') || has('lesen'),
     schulung: has('schulung'),
     schulungPartner: has('schulungPartner'),
+    schulungVortrag: has('schulungVortrag'),
     studium: has('studium'),
     treffpunkt: has('treffpunkt'),
     [serviceQualKey('ton')]: has('ton'),
@@ -139,16 +141,16 @@ const XLN = ['Müller', 'Schmidt', 'Schneider', 'Fischer', 'Weber', 'Meyer', 'Be
 function extraProfile(r: number): { role: Role; priv: Person['priv'] } {
   switch (r) {
     case 0:
-      return { role: 'aeltester', priv: q(['vorsitz', 'vortrag', 'gebet', 'studium', 'lesen', 'schulung']) }
+      return { role: 'aeltester', priv: q(['vorsitz', 'vortrag', 'besprechung', 'gebet', 'studium', 'lesen', 'schulung', 'schulungVortrag']) }
     case 1:
-      return { role: 'dienstamtgehilfe', priv: q(['vortrag', 'gebet', 'lesen', 'schulung', 'mikrofon', 'ordner', 'zoomordner']) }
+      return { role: 'dienstamtgehilfe', priv: q(['vortrag', 'besprechung', 'gebet', 'lesen', 'schulung', 'schulungVortrag', 'mikrofon', 'ordner', 'zoomordner']) }
     case 2:
-      return { role: 'dienstamtgehilfe', priv: q(['vortrag', 'gebet', 'lesen', 'mikrofon', 'ton', 'ordner', 'zoomordner']) }
+      return { role: 'dienstamtgehilfe', priv: q(['vortrag', 'besprechung', 'gebet', 'lesen', 'mikrofon', 'ton', 'ordner', 'zoomordner']) }
     case 3:
       // Nur-Verkündiger-Brüder, die (nur) als Gesprächspartner einspringen.
       return { role: 'verkuendiger', priv: q(['mikrofon', 'ton', 'ordner', 'zoomordner', 'schulungPartner']) }
     case 4:
-      return { role: 'verkuendiger', priv: q(['mikrofon', 'ordner', 'lesen', 'schulung', 'zoomordner']) }
+      return { role: 'verkuendiger', priv: q(['mikrofon', 'ordner', 'lesen', 'schulung', 'schulungVortrag', 'zoomordner']) }
     default:
       return { role: 'verkuendiger', priv: q(['schulung']) } // Schwestern (Schulungsaufgaben)
   }
@@ -189,16 +191,16 @@ const CORE_GRP: Record<string, string> = {
 }
 
 const CORE_PERSONS: Person[] = [
-  { id: 'p1', fn: 'Manfred', ln: 'Albrecht', role: 'aeltester', tel: telefon(1), mail: adresse('m.albrecht'), priv: { ...q(['treffpunkt', 'vorsitz', 'vortrag', 'gebet', 'studium']), wtLeiter: true } },
-  { id: 'p2', fn: 'Thomas', ln: 'Lindner', role: 'aeltester', tel: telefon(2), mail: adresse('t.lindner'), priv: { ...q(['treffpunkt', 'vorsitz', 'vortrag', 'gebet', 'studium']), wtVertreter: true } },
-  { id: 'p3', fn: 'Friedrich', ln: 'Neumann', role: 'aeltester', tel: telefon(3), mail: adresse('f.neumann'), priv: q(['treffpunkt', 'vorsitz', 'vortrag', 'gebet', 'studium']) },
-  { id: 'p4', fn: 'Helmut', ln: 'Vogel', role: 'aeltester', tel: telefon(4), mail: adresse('h.vogel'), priv: q(['treffpunkt', 'vortrag', 'gebet', 'studium']) },
-  { id: 'p5', fn: 'Konrad', ln: 'Sommer', role: 'aeltester', tel: telefon(5), mail: adresse('k.sommer'), priv: q(['treffpunkt', 'vortrag', 'gebet']) },
-  { id: 'p6', fn: 'Jonas', ln: 'Berger', role: 'dienstamtgehilfe', tel: telefon(6), mail: adresse('j.berger'), priv: q(['treffpunkt', 'vortrag', 'gebet', 'lesen', 'schulung', 'mikrofon']) },
-  { id: 'p7', fn: 'Paul', ln: 'Schröder', role: 'dienstamtgehilfe', tel: telefon(7), mail: adresse('p.schroeder'), priv: q(['treffpunkt', 'vortrag', 'gebet', 'lesen', 'schulung', 'mikrofon', 'ordner']) },
+  { id: 'p1', fn: 'Manfred', ln: 'Albrecht', role: 'aeltester', tel: telefon(1), mail: adresse('m.albrecht'), priv: { ...q(['treffpunkt', 'vorsitz', 'vortrag', 'besprechung', 'gebet', 'studium']), wtLeiter: true } },
+  { id: 'p2', fn: 'Thomas', ln: 'Lindner', role: 'aeltester', tel: telefon(2), mail: adresse('t.lindner'), priv: { ...q(['treffpunkt', 'vorsitz', 'vortrag', 'besprechung', 'gebet', 'studium']), wtVertreter: true } },
+  { id: 'p3', fn: 'Friedrich', ln: 'Neumann', role: 'aeltester', tel: telefon(3), mail: adresse('f.neumann'), priv: q(['treffpunkt', 'vorsitz', 'vortrag', 'besprechung', 'gebet', 'studium']) },
+  { id: 'p4', fn: 'Helmut', ln: 'Vogel', role: 'aeltester', tel: telefon(4), mail: adresse('h.vogel'), priv: q(['treffpunkt', 'vortrag', 'besprechung', 'gebet', 'studium']) },
+  { id: 'p5', fn: 'Konrad', ln: 'Sommer', role: 'aeltester', tel: telefon(5), mail: adresse('k.sommer'), priv: q(['treffpunkt', 'vortrag', 'besprechung', 'gebet']) },
+  { id: 'p6', fn: 'Jonas', ln: 'Berger', role: 'dienstamtgehilfe', tel: telefon(6), mail: adresse('j.berger'), priv: q(['treffpunkt', 'vortrag', 'besprechung', 'gebet', 'lesen', 'schulung', 'schulungVortrag', 'mikrofon']) },
+  { id: 'p7', fn: 'Paul', ln: 'Schröder', role: 'dienstamtgehilfe', tel: telefon(7), mail: adresse('p.schroeder'), priv: q(['treffpunkt', 'vortrag', 'besprechung', 'gebet', 'lesen', 'schulung', 'schulungVortrag', 'mikrofon', 'ordner']) },
   { id: 'p8', fn: 'Claus', ln: 'Maier', role: 'dienstamtgehilfe', tel: telefon(8), mail: adresse('c.maier'), priv: q(['treffpunkt', 'mikrofon', 'ton', 'ordner']) },
-  { id: 'p9', fn: 'Simon', ln: 'Krüger', role: 'verkuendiger', tel: telefon(9), mail: adresse('s.krueger'), priv: q(['treffpunkt', 'lesen', 'schulung', 'mikrofon', 'ton']) },
-  { id: 'p10', fn: 'Niklas', ln: 'Feld', role: 'verkuendiger', tel: telefon(10), mail: adresse('n.feld'), priv: q(['lesen', 'schulung', 'mikrofon']) },
+  { id: 'p9', fn: 'Simon', ln: 'Krüger', role: 'verkuendiger', tel: telefon(9), mail: adresse('s.krueger'), priv: q(['treffpunkt', 'lesen', 'schulung', 'schulungVortrag', 'mikrofon', 'ton']) },
+  { id: 'p10', fn: 'Niklas', ln: 'Feld', role: 'verkuendiger', tel: telefon(10), mail: adresse('n.feld'), priv: q(['lesen', 'schulung', 'schulungVortrag', 'mikrofon']) },
   { id: 'p11', fn: 'Jörg', ln: 'Roth', role: 'verkuendiger', tel: telefon(11), mail: adresse('j.roth'), priv: q(['lesen', 'mikrofon']) },
   { id: 'p12', fn: 'Bernd', ln: 'Klein', role: 'verkuendiger', tel: telefon(12), mail: adresse('b.klein'), priv: q(['gebet', 'mikrofon']) },
   { id: 'p13', fn: 'Georg', ln: 'Peters', role: 'verkuendiger', tel: telefon(13), mail: adresse('g.peters'), priv: q(['treffpunkt', 'gebet', 'ordner']) },
@@ -526,7 +528,7 @@ export function buildDemoWeeks(): Week[] {
           sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 1 · Gebet · Einleitende Worte', '1 Min.', [['Manfred Albrecht', 'Vorsitz', 'vorsitzMid'], ['Konrad Sommer', 'Gebet', 'gebet']])]),
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
             part(1, 'Demoaufgabe 8', '10 Min.', [['Thomas Lindner', '', 'vortrag']]),
-            part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Jonas Berger', '', 'vortrag']]),
+            part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Jonas Berger', '', 'besprechung']]),
             part(3, 'Bibellesung · Jer 32:6-18', '4 Min. · th Lektion 2', [['Niklas Feld', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
@@ -536,7 +538,7 @@ export function buildDemoWeeks(): Week[] {
           ]),
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
             song('Lied 128'),
-            part(7, 'Demoaufgabe 9', 'Besprechung · 15 Min.', [['Dieter Winkler', '', 'vortrag']]),
+            part(7, 'Demoaufgabe 9', 'Besprechung · 15 Min.', [['Dieter Winkler', '', 'besprechung']]),
             part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 7', [['Friedrich Neumann', 'Leiter', 'studium'], ['Paul Schröder', 'Leser', 'leser']]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 143 · Gebet', '3 Min.', [['Helmut Vogel', 'Gebet', 'gebet']])]),
@@ -565,17 +567,17 @@ export function buildDemoWeeks(): Week[] {
           sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 33 · Gebet · Einleitende Worte', '1 Min.', [['Friedrich Neumann', 'Vorsitz', 'vorsitzMid'], ['Thomas Lindner', 'Gebet', 'gebet']])]),
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
             part(1, 'Demoaufgabe 1', '10 Min.', [['Helmut Vogel', '', 'vortrag']]),
-            part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Manfred Albrecht', '', 'vortrag']]),
+            part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Manfred Albrecht', '', 'besprechung']]),
             part(3, 'Bibellesung · Jer 35:1-19', '4 Min. · th Lektion 5', [['Paul Schröder', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
             part(4, 'Gespräche beginnen', 'In der Öffentlichkeit · 3 Min.', [['Andrea Hoffmann', 'Schüler', 'schulung'], ['Lena Hoffmann', 'Partner', 'schulungPartner']]),
             part(5, 'Interesse fördern', 'Informell · 4 Min.', [['Rita Brandt', 'Schüler', 'schulung'], ['Elke Brandt', 'Partner', 'schulungPartner']]),
-            part(6, 'Vortrag', '5 Min. · lmd Anhang A Punkt 3', [['Niklas Feld', '', 'schulung', true]]),
+            part(6, 'Vortrag', '5 Min. · lmd Anhang A Punkt 3', [['Niklas Feld', '', 'schulungVortrag', true]]),
           ]),
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
             song('Lied 89'),
-            part(7, 'Aktuelles', '15 Min.', [['Manfred Albrecht', '', 'vortrag']]),
+            part(7, 'Aktuelles', '15 Min.', [['Manfred Albrecht', '', 'besprechung']]),
             part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 8', [['Thomas Lindner', 'Leiter', 'studium'], ['Jonas Berger', 'Leser', 'leser']]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 112 · Gebet', '3 Min.', [['Konrad Sommer', 'Gebet', 'gebet']])]),
@@ -606,17 +608,17 @@ export function buildDemoWeeks(): Week[] {
           sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 3 · Gebet · Einleitende Worte', '1 Min.', [['Manfred Albrecht', 'Vorsitz', 'vorsitzMid'], ['Friedrich Neumann', 'Gebet', 'gebet']])]),
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
             part(1, 'Demoaufgabe 2', '10 Min.', [['Friedrich Neumann', '', 'vortrag']]),
-            part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Thomas Lindner', '', 'vortrag']]),
+            part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Thomas Lindner', '', 'besprechung']]),
             part(3, 'Bibellesung · Jer 38:1-13', '4 Min. · th Lektion 10', [['Simon Krüger', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
             part(4, 'Gespräche beginnen', 'Von Haus zu Haus · 3 Min.', [['Elke Brandt', 'Schüler', 'schulung'], ['Rita Brandt', 'Partner', 'schulungPartner']]),
             part(5, 'Menschen zu Jüngern machen', '5 Min. · lmd Lektion 9', [['Lena Hoffmann', 'Schüler', 'schulung'], ['Andrea Hoffmann', 'Partner', 'schulungPartner']]),
-            part(6, 'Unsere Glaubensansichten erklären', '5 Min.', [['Jonas Berger', '', 'schulung', true]]),
+            part(6, 'Unsere Glaubensansichten erklären', '5 Min.', [['Jonas Berger', '', 'schulungVortrag', true]]),
           ]),
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
             song('Lied 44'),
-            part(7, 'Demoaufgabe 3', 'Besprechung · 15 Min.', [['Helmut Vogel', '', 'vortrag']]),
+            part(7, 'Demoaufgabe 3', 'Besprechung · 15 Min.', [['Helmut Vogel', '', 'besprechung']]),
             part(8, 'Demo-Studienartikel 2', 'Dienstvortrag · 30 Min.', [['Klaus Wagner', 'Kreisaufseher', '']]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 96 · Gebet', '3 Min.', [['Dieter Winkler', 'Gebet', 'gebet']])]),
@@ -652,17 +654,17 @@ export function buildDemoWeeks(): Week[] {
           sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 7 · Gebet · Einleitende Worte', '1 Min.', [['Thomas Lindner', 'Vorsitz', 'vorsitzMid'], ['Manfred Albrecht', 'Gebet', 'gebet']])]),
           sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
             part(1, 'Demoaufgabe 4', '10 Min.', [['Manfred Albrecht', '', 'vortrag']]),
-            part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Helmut Vogel', '', 'vortrag']]),
+            part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['Helmut Vogel', '', 'besprechung']]),
             part(3, 'Bibellesung · Jer 42:1-17', '4 Min. · th Lektion 12', [['Jörg Roth', '', 'bibellesung']]),
           ]),
           sec('UNS IM DIENST VERBESSERN', 'gold', [
             part(4, 'Gespräche beginnen', 'Informell · 3 Min.', [['Rita Brandt', 'Schüler', 'schulung'], ['Elke Brandt', 'Partner', 'schulungPartner']]),
             part(5, 'Interesse fördern', 'Von Haus zu Haus · 4 Min.', [['Konrad Sommer', 'Schüler', 'schulung'], ['Lena Hoffmann', 'Partner', 'schulungPartner']]),
-            part(6, 'Vortrag', '5 Min. · lmd Anhang A Punkt 5', [['Paul Schröder', '', 'schulung', true]]),
+            part(6, 'Vortrag', '5 Min. · lmd Anhang A Punkt 5', [['Paul Schröder', '', 'schulungVortrag', true]]),
           ]),
           sec('UNSER LEBEN ALS CHRIST', 'wein', [
             song('Lied 65'),
-            part(7, 'Demoaufgabe 5', '15 Min.', [['Friedrich Neumann', '', 'vortrag']]),
+            part(7, 'Demoaufgabe 5', '15 Min.', [['Friedrich Neumann', '', 'besprechung']]),
             part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 10', [['Helmut Vogel', 'Leiter', 'studium'], ['Paul Schröder', 'Leser', 'leser']]),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 150 · Gebet', '3 Min.', [['Claus Maier', 'Gebet', 'gebet']])]),
@@ -699,7 +701,7 @@ export function buildImportWeek(): Week {
         sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 19 · Gebet · Einleitende Worte', '1 Min.', [['', 'Vorsitz', 'vorsitzMid'], ['', 'Gebet', 'gebet']])]),
         sec('SCHÄTZE AUS GOTTES WORT', 'petrol', [
           part(1, 'Demoaufgabe 6', '10 Min.', [['', '', 'vortrag']]),
-          part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['', '', 'vortrag']]),
+          part(2, 'Nach geistigen Schätzen graben', '10 Min.', [['', '', 'besprechung']]),
           part(3, 'Bibellesung · Jer 44:24-30', '4 Min. · th Lektion 3', [['', '', 'bibellesung']]),
         ]),
         sec('UNS IM DIENST VERBESSERN', 'gold', [
@@ -709,7 +711,7 @@ export function buildImportWeek(): Week {
         ]),
         sec('UNSER LEBEN ALS CHRIST', 'wein', [
           song('Lied 76'),
-          part(7, 'Demoaufgabe 7', '15 Min.', [['', '', 'vortrag']]),
+          part(7, 'Demoaufgabe 7', '15 Min.', [['', '', 'besprechung']]),
           part(8, 'Versammlungsbibelstudium', '30 Min. · wcg Kap. 11', [['', 'Leiter', 'studium'], ['', 'Leser', 'leser']]),
         ]),
         sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 24 · Gebet', '3 Min.', [['', 'Gebet', 'gebet']])]),

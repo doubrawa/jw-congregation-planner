@@ -132,14 +132,19 @@ describe('Was gezählt wird und was nicht', () => {
     expect(keiner.map((e) => e.key)).not.toContain('vortrag')
   })
 
-  it('der EIGENE Redner zählt dagegen mit — er ist einer von uns', () => {
-    // T29: `rolle: 'Redner'` steht bewusst nicht in `SKIP_ROLE`. Wer den
-    // Vortrag selbst hält, braucht den Bereich, und wenn niemand ihn hat, ist
-    // das ein echter Engpass.
+  it('der EIGENE Redner zählt seit dem 4.10.2026 ebenso wenig', () => {
+    // Bis dahin zählte er mit: `rolle: 'Redner'` steht bewusst nicht in
+    // `SKIP_ROLE`, und er brauchte den Bereich `vortrag`. Den öffentlichen
+    // Vortrag darf jetzt jeder Älteste und Dienstamtgehilfe halten — gezählt
+    // gegen die Qualifizierten für den Schätze-Vortrag, meldete das Banner
+    // einen Engpass, wo keiner ist.
     const we = weekendTemplate('7.–13. September') as unknown as Meeting
     const slot = vortragsPlatz(we)
     slot.rolle = 'Redner'
-    expect(bedarfJeBereich(we, []).get('vortrag')).toBe(1)
+    expect(bedarfJeBereich(we, []).get('vortrag')).toBeUndefined()
+    // Gegenprobe: niemand hat den Bereich, und trotzdem kein Engpass.
+    const keiner = engpaesse(we, [], [], set([]), 0, 'we')
+    expect(keiner.map((e) => e.key)).not.toContain('vortrag')
   })
 
   it('der Kreisaufseher ebenso wenig wie der Gastredner', () => {

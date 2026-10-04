@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Yok",
   "privVorsitz": "Başkanlık",
   "privVortrag": "Konuşmalar",
+  "privBesprechung": "Müzakere idare etme",
   "privGebet": "Dualar",
   "privSchulung": "Öğrenci görevleri",
   "privStudium": "İnceleme idare etme",

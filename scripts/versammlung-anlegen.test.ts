@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { argumente } from './gemeinsam.mjs'
 import {
@@ -83,6 +84,21 @@ describe('Bereiche des ersten Planers', () => {
     for (const k of ['vorsitzMid', 'vorsitzWe', 'gebet', 'vortrag', 'studium', 'leser', 'bibellesung']) {
       expect(p[k]).toBe(true)
     }
+  })
+
+  it('und jeden Bereich, den der Import an einen Platz schreibt', () => {
+    /*
+     * Die Liste oben ist von Hand gepflegt — und eine neue Platzart vergäße
+     * sie. So geschehen am 4.10.2026: `besprechung` und `schulungVortrag` kamen
+     * in den Import, der erste Planer einer neuen Versammlung hätte beide
+     * nicht gehabt. Deshalb wird hier der Importer gefragt, wie in der
+     * Vollständigkeitsprobe der Testversammlung.
+     */
+    const quelle = fs.readFileSync(new URL('../supabase/functions/import-week/parse.ts', import.meta.url), 'utf8')
+    const keys = new Set([...quelle.matchAll(/bereichsKey: '([^']+)'/g)].map((m) => m[1]))
+    expect(keys.size).toBeGreaterThan(5)
+    const p = planerBereiche()
+    for (const key of keys) expect(`${key}: ${p[key as keyof typeof p]}`).toBe(`${key}: true`)
   })
 
   it('und jeden Hilfsdienst über seinen eigenen Schlüssel', () => {

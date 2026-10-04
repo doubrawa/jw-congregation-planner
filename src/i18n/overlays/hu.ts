@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Nincs",
   "privVorsitz": "Elnöklés",
   "privVortrag": "Előadások",
+  "privBesprechung": "Megbeszélések levezetése",
   "privGebet": "Imák",
   "privSchulung": "Tanulói feladatok",
   "privStudium": "Tanulmányozások levezetése",

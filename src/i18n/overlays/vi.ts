@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Không có",
   "privVorsitz": "Chủ tọa",
   "privVortrag": "Bài giảng",
+  "privBesprechung": "Điều khiển thảo luận",
   "privGebet": "Cầu nguyện",
   "privSchulung": "Nhiệm vụ học viên",
   "privStudium": "Điều khiển học hỏi",

@@ -11,7 +11,7 @@
 
 import { istAbwesend, KEINE_ABWESENHEIT, type AbsenceSet } from './absence'
 import { allePlaetze, gespeicherteHelfer, platzKey } from './plaetze'
-import { programmPlaetze, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
+import { istSchuelerBereich, programmPlaetze, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
 import {
   dieselbePerson,
   displayName,
@@ -897,8 +897,10 @@ export function buildS89ForSlot(
   // wörtlich aus der Zielsprache („Lectura de la Biblia"). Die Bibellesung bekam
   // dort **keinen S-89-Zettel**, ohne Fehler und ohne Hinweis; dieselbe Familie
   // wie T61 (Bibelstudium am deutschen Titel gesucht). Den Bereich vergibt der
-  // Import in jeder Sprache (`bereichsKey: 'bibellesung'`, parse.ts).
-  const isStudent = sel.priv === 'schulung' || sel.priv === 'schulungPartner' || sel.priv === 'bibellesung'
+  // Import in jeder Sprache (`bereichsKey: 'bibellesung'`, parse.ts). Dieselbe
+  // Menge wie die Zusätzliche Klasse — seit dem 4.10.2026 samt dem Vortrag
+  // eines Schülers (`schulungVortrag`).
+  const isStudent = istSchuelerBereich(sel.priv)
   if (!isStudent) return null
   // Hauptteilnehmer (schulung) und Gesprächspartner (schulungPartner) stehen als
   // getrennte Slots im selben Punkt.
@@ -914,9 +916,10 @@ export function buildS89ForSlot(
    * Der Zettel nannte dieselbe Person zweimal, als Schülerin und als
    * Gesprächspartnerin, und der Druckbogen legte ihn gleich zweimal aus.
    *
-   * Der Rückfall bleibt, wofür er gedacht ist: Die **Bibellesung** hat gar
-   * keinen `schulung`-Platz (ihr Platz trägt `bibellesung`), dort ist der
-   * aktuelle Name der des Schülers.
+   * Der Rückfall bleibt, wofür er gedacht ist: Die **Bibellesung** und der
+   * **Vortrag eines Schülers** haben gar keinen `schulung`-Platz (ihrer trägt
+   * `bibellesung` bzw. `schulungVortrag`), dort ist der aktuelle Name der des
+   * Schülers.
    */
   if (schulungsPlatz && !schulungsPlatz.name) return null
   const leadName = schulungsPlatz?.name ?? ''

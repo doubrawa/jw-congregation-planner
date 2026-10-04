@@ -27,7 +27,10 @@ const PERSONEN: Person[] = [
   person('schwester2', { female: true, priv: { ...emptyQualifications(), schulung: true } }),
   // Keine Schulungsaufgaben: Mit dem Schüler-Platz kam er für die Besprechung
   // gar nicht infrage.
-  person('aeltester', { role: 'aeltester', priv: { ...emptyQualifications(), vortrag: true } }),
+  person('aeltester', { role: 'aeltester', priv: { ...emptyQualifications(), besprechung: true } }),
+  // Hält den Vortrag unter „Schätze aus Gottes Wort", leitet aber keine
+  // Besprechung — seit dem 4.10.2026 zwei Bereiche (Betreiber).
+  person('nurVortrag', { role: 'aeltester', priv: { ...emptyQualifications(), vortrag: true } }),
 ]
 
 const punkt = (iid: string, num: number, title: string, meta: string): PartItem => ({
@@ -66,12 +69,20 @@ describe('Besprechung unter „Uns im Dienst verbessern" — kein Schülerteil',
     expect(teile(mitKlasse!)[0]!.aux).toHaveLength(2)
   })
 
-  it('die Auto-Zuteilung nimmt einen Bruder für Vorträge, keine Schwester', () => {
+  it('die Auto-Zuteilung nimmt einen Bruder, der Besprechungen leitet — keine Schwester', () => {
     const { weeks } = autoAssignMeeting([woche(GESPRAECH(), BESPRECHUNG())], 0, 'mid', PERSONEN, [])
     const [gespraech, besprechung] = teile(weeks[0]!)
     expect(besprechung!.names.map((n) => n.pid)).toEqual(['aeltester'])
     // Die Schwestern bleiben dem Schülerteil.
     expect(gespraech!.names.map((n) => n.pid).sort()).toEqual(['schwester1', 'schwester2'])
+  })
+
+  it('… und nicht den, der nur den Schätze-Vortrag hält', () => {
+    // Gegenprobe zur Trennung: Ohne den Bruder mit `besprechung` bleibt der
+    // Platz offen, statt auf `vortrag` zurückzufallen.
+    const ohne = PERSONEN.filter((p) => p.id !== 'aeltester')
+    const { weeks } = autoAssignMeeting([woche(BESPRECHUNG())], 0, 'mid', ohne, [])
+    expect(teile(weeks[0]!)[0]!.names.map((n) => n.pid)).toEqual([undefined])
   })
 
   it('bekommt keinen S-89-Zettel', () => {
@@ -87,6 +98,34 @@ describe('Besprechung unter „Uns im Dienst verbessern" — kein Schülerteil',
       'Gespräche beginnen · VON HAUS ZU HAUS',
       'Gespräche beginnen · VON HAUS ZU HAUS',
     ])
+  })
+})
+
+describe('Vortrag eines Schülers — eigener Bereich, aber Schülerteil wie jeder andere', () => {
+  const VORTRAG = () => punkt('v5', 5, 'Unsere Glaubensansichten erklären', 'Vortrag · 4 Min. · th Lektion 7')
+  const SCHUELER: Person[] = [
+    ...PERSONEN,
+    // Führt Gespräche, hält aber (noch) keine Vorträge.
+    person('nurGespraech', { priv: { ...emptyQualifications(), schulung: true } }),
+    person('redner', { priv: { ...emptyQualifications(), schulungVortrag: true } }),
+  ]
+
+  it('die Auto-Zuteilung nimmt den Bruder mit `schulungVortrag`, nicht jeden mit Schulungsaufgaben', () => {
+    const { weeks } = autoAssignMeeting([woche(VORTRAG())], 0, 'mid', SCHUELER, [])
+    expect(teile(weeks[0]!)[0]!.names.map((n) => n.pid)).toEqual(['redner'])
+  })
+
+  it('wird in der Zusätzlichen Klasse wiederholt und bekommt einen S-89-Zettel', () => {
+    // Der eigene Bereich darf ihn nicht aus dem Schülerteil holen: Daran hängen
+    // Klasse und Zettel (`istSchuelerBereich`).
+    const w = woche(VORTRAG())
+    expect(istSchuelerteil(teile(w)[0]!)).toBe(true)
+    const [mitKlasse] = syncAuxSlots([woche(VORTRAG())], true)
+    expect(teile(mitKlasse!)[0]!.aux).toEqual([{ name: '', bereichsKey: 'schulungVortrag', male: true }])
+    teile(w)[0]!.names = [{ name: 'Redner Test', pid: 'redner', bereichsKey: 'schulungVortrag', male: true }]
+    const zettel = alleS89DerWoche([w], 0, STANDARD_ZEITEN)
+    expect(zettel).toHaveLength(1)
+    expect(zettel[0]).toMatchObject({ name: 'Redner Test', partner: '' })
   })
 })
 

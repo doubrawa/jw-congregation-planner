@@ -57,8 +57,11 @@ const person = (id: string, fn: string, ln: string, ...q: string[]): Person => (
   id, fn, ln, role: 'verkuendiger', female: false, tel: '', mail: '', priv: priv(...q), grp: null,
 })
 
-const ANTON = person('p-a', 'Anton', 'Alt', 'vorsitzWe', 'schulung', 'svc:mik')
-const BERND = person('p-b', 'Bernd', 'Brand', 'vorsitzWe', 'schulung', 'svc:mik')
+// Ältester und Dienstamtgehilfe: Den öffentlichen Vortrag kann jeder von ihnen
+// halten (4.10.2026, `kandidaten.ts`). Carlo hat denselben Bereich, ist aber
+// Verkündiger — er steht deshalb nicht in der Redner-Liste.
+const ANTON: Person = { ...person('p-a', 'Anton', 'Alt', 'vorsitzWe', 'schulung', 'svc:mik'), role: 'aeltester' }
+const BERND: Person = { ...person('p-b', 'Bernd', 'Brand', 'vorsitzWe', 'schulung', 'svc:mik'), role: 'dienstamtgehilfe' }
 const CARLO = person('p-c', 'Carlo', 'Cohn', 'vorsitzWe')
 const PERSONEN = [ANTON, BERND, CARLO]
 const DIENSTE: Service[] = [
@@ -282,6 +285,15 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
     expect(container.querySelector('.sheet-guest')).toBeTruthy()
     expect(container.querySelector('.sheet-guest-hint')?.textContent).toBe(t.oderPersonWaehlen)
     expect(namen(container).length).toBeGreaterThan(0)
+  })
+
+  it('zur Wahl stehen die Ältesten und Dienstamtgehilfen — nach Stellung, nicht nach Bereich', () => {
+    // Carlo hat den Bereich des Platzes, ist aber Verkündiger; Dieter hat ihn
+    // nicht, ist aber Ältester. Entschieden wird am Redner-Platz über die
+    // Stellung (Betreiber, 4.10.2026).
+    const DIETER: Person = { ...person('p-d', 'Dieter', 'Dietz'), role: 'aeltester' }
+    const { container } = zeige(SEL_REDNER(), { persons: [...PERSONEN, DIETER] })
+    expect(namen(container)).toEqual(['Anton Alt', 'Bernd Brand', 'Dieter Dietz'])
   })
 
   it('der Freitext macht ihn auswärtig — Name und Herkunftsversammlung', () => {

@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Wala",
   "privVorsitz": "Chairman",
   "privVortrag": "Mga Pahayag",
+  "privBesprechung": "Pangangasiwa ng pagtalakay",
   "privGebet": "Mga Panalangin",
   "privSchulung": "Mga atas ng estudyante",
   "privStudium": "Pangangasiwa ng pag-aaral",

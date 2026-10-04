@@ -371,7 +371,8 @@ function swapKeepNums(items: Meeting['sections'][number]['items'], a: number, b:
  *
  * Der Leser-Slot ist die verlässliche Marke: der Import vergibt ihn genau
  * einmal je Zusammenkunft (`parse.ts` — letzter Unser-Leben-Punkt bekommt
- * Leiter + Leser), und die von `lacAdd` erzeugten Punkte tragen nur `studium`.
+ * Leiter + Leser), und die von `lacAdd` erzeugten Punkte tragen nur
+ * `besprechung`.
  * Ein zweiter eigener Punkt reiht sich damit hinter dem ersten ein, nicht
  * davor.
  */
@@ -400,12 +401,14 @@ export function lacAdd(
   const an = stelle(next, wi, tab, si)
   if (!an) return weeks
   const { week, meeting, items } = an
-  // Ein eigener Punkt unter „Unser Leben als Christ" ist kein öffentlicher
-  // Vortrag — der Bereich blieb hier fälschlich auf 'vortrag' stehen (F6).
+  // Ein eigener Punkt unter „Unser Leben als Christ" bekommt denselben Bereich
+  // wie die importierten dort: `besprechung` (parse.ts, `besprechungsPlatz`). Hier
+  // stand bis zum 4.10.2026 'studium' — der Ausweg aus F6, als es nur
+  // 'vortrag' gab, und der hieß damals noch öffentlicher Vortrag.
   // Die stabile Kennung (T37) macht die Bestätigungen unabhängig von der
   // Position: der neue Punkt schiebt die folgenden weiter, ihre Bestätigungen
   // bleiben trotzdem bei ihnen — es gibt nichts umzubenennen.
-  const newItem: PartItem = { iid: neueItemId(), title: trimmed, meta: '10 Min.', mins: 10, names: [{ name: '', bereichsKey: 'studium' }] }
+  const newItem: PartItem = { iid: neueItemId(), title: trimmed, meta: '10 Min.', mins: 10, names: [{ name: '', bereichsKey: 'besprechung' }] }
   const at = lacAddIndex(items)
   items.splice(at, 0, newItem)
   meeting.end = shiftEnd(meeting.end, 10)

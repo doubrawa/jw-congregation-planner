@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "없음",
   "privVorsitz": "사회",
   "privVortrag": "연설",
+  "privBesprechung": "토의 사회",
   "privGebet": "기도",
   "privSchulung": "학생 임명",
   "privStudium": "연구 사회",

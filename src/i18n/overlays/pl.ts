@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Brak",
   "privVorsitz": "Przewodniczenie",
   "privVortrag": "Przemówienia",
+  "privBesprechung": "Prowadzenie omówień z udziałem obecnych",
   "privGebet": "Modlitwy",
   "privSchulung": "Zadania ucznia",
   "privStudium": "Prowadzenie studiów",

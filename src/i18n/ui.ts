@@ -89,12 +89,15 @@ export const PRIV_KEY: Record<QualificationKey, keyof Dict> = {
   vorsitzMid: 'privVorsitz',
   vorsitzWe: 'privVorsitz',
   vortrag: 'privVortrag',
+  besprechung: 'privBesprechung',
   gebet: 'privGebet',
   bibellesung: 'privBibellesung',
   leser: 'privLeser',
   schulung: 'privSchulung',
   // wie beim Vorsitz aus Bausteinen gebaut („Schulungsaufgaben · Gesprächspartner“)
   schulungPartner: 'privSchulung',
+  // ebenso („Schulungsaufgaben · Vorträge“), 4.10.2026
+  schulungVortrag: 'privSchulung',
   studium: 'privStudium',
   treffpunkt: 'privTreffpunkt',
   zeugnis: 'privZeugnis',

@@ -305,12 +305,25 @@ export type Role = 'aeltester' | 'dienstamtgehilfe' | 'verkuendiger' | 'keine'
 export interface FesteBereiche {
   vorsitzMid?: boolean // Vorsitz unter der Woche
   vorsitzWe?: boolean // Vorsitz am Wochenende
+  /**
+   * Der Vortrag unter „Schätze aus Gottes Wort". Seit dem 4.10.2026 nur noch
+   * er: Besprechungen haben ihren eigenen Bereich (`besprechung`), die Vorträge
+   * der Schüler auch (`schulungVortrag`), und den öffentlichen Vortrag am
+   * Sonntag hält, wer Ältester oder Dienstamtgehilfe ist — ohne Bereich.
+   */
   vortrag?: boolean
+  /**
+   * Besprechungen leiten (4.10.2026): „Nach geistigen Schätzen graben", die
+   * Besprechungen unter „Uns im Dienst verbessern" und die Punkte unter
+   * „Unser Leben als Christ" außer dem Versammlungsbibelstudium.
+   */
+  besprechung?: boolean
   gebet?: boolean
   bibellesung?: boolean // Bibellesung (Schätze aus Gottes Wort)
   leser?: boolean // Leser (Versammlungsbibelstudium / Wachtturm-Studium)
-  schulung?: boolean // Schulungsaufgaben (Gesprächsführer/Vortrag; auch Schwestern)
+  schulung?: boolean // Schulungsaufgaben: Gesprächsführer (auch Schwestern)
   schulungPartner?: boolean // nur als Gesprächspartner im Schülerteil (nicht Führer)
+  schulungVortrag?: boolean // Schulungsaufgaben · Vortrag — Vortrag eines Schülers (Brüder), 4.10.2026
   studium?: boolean // Studium leiten
   treffpunkt?: boolean // Treffpunkte leiten (Zusammenkünfte für den Predigtdienst)
   /**

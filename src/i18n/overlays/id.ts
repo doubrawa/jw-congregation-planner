@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Tidak ada",
   "privVorsitz": "Ketua",
   "privVortrag": "Khotbah",
+  "privBesprechung": "Memandu pembahasan",
   "privGebet": "Doa",
   "privSchulung": "Tugas murid",
   "privStudium": "Memandu pelajaran",

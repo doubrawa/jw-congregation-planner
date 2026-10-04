@@ -8,7 +8,9 @@ import { PRIV_KEY } from '../i18n/ui'
  * zu verlangen:
  *  - Vorsitz ist nach Zusammenkunft getrennt („Vorsitz · unter der Woche"),
  *  - der Ratgeber gehört zur Zusätzlichen Klasse,
- *  - „nur Gesprächspartner" ist der Schülerteil-Bereich plus die Partner-Rolle.
+ *  - „nur Gesprächspartner" ist der Schülerteil-Bereich plus die Partner-Rolle,
+ *  - der Vortrag eines Schülers ebenso der Schülerteil-Bereich plus „Vorträge"
+ *    (4.10.2026).
  * Wird im Personen-Detail (Schalter) und in der Filterleiste gebraucht.
  */
 export function privLabel(t: Dict, key: QualificationKey): string {
@@ -16,5 +18,6 @@ export function privLabel(t: Dict, key: QualificationKey): string {
   if (key === 'vorsitzWe') return `${t.privVorsitz} · ${t.tabWe}`
   if (key === 'ratgeber') return `${t.auxRatgeber} · ${t.auxKlasse}`
   if (key === 'schulungPartner') return `${t.privSchulung} · ${t.s89Partner}`
+  if (key === 'schulungVortrag') return `${t.privSchulung} · ${t.privVortrag}`
   return t[PRIV_KEY[key]]
 }

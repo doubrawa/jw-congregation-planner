@@ -1076,6 +1076,18 @@ describe('LAC / Vortrag (über den Reducer)', () => {
     expect(next.toast?.text).toBeTruthy()
   })
 
+  it('der neue Punkt bekommt den Bereich der importierten dort: Besprechungen leiten', () => {
+    // Bis zum 4.10.2026 stand hier 'studium' — der Ausweg aus F6, als es nur
+    // 'vortrag' gab. Seither hat „Unser Leben als Christ" seinen Bereich.
+    const s = makeState({ week: 0, tab: 'mid' })
+    const si = lacSi(s)
+    const next = reducer(s, { type: 'lacAdd', si, title: 'Örtliche Hinweise' })
+    const neu = next.weeks[0]!.mid.sections[si]!.items.find(
+      (i) => !isSong(i) && (i as PartItem).title === 'Örtliche Hinweise',
+    ) as PartItem
+    expect(neu.names).toEqual([{ name: '', bereichsKey: 'besprechung' }])
+  })
+
   it('lacMinuten setzt die Dauer — auch auf eine ungerade Zahl', () => {
     // Bis zum 18.9.2026 sprang die Dauer in Fünferschritten, weil die Aktion
     // einen Versatz nahm und zwei Knöpfe ±5 schickten. „19" war nicht

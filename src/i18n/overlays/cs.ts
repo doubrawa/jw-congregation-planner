@@ -136,6 +136,7 @@ export default {
   "rolleKeine": "Žádná",
   "privVorsitz": "Předsednictví",
   "privVortrag": "Proslovy",
+  "privBesprechung": "Vést společné rozbory",
   "privGebet": "Modlitby",
   "privSchulung": "Studentské úkoly",
   "privStudium": "Vést studia",

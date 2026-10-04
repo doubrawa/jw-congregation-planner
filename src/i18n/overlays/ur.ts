@@ -190,6 +190,7 @@ export default {
   "rolleKeine": "کوئی نہیں",
   "privVorsitz": "چیئرمین",
   "privVortrag": "تقاریر",
+  "privBesprechung": "بات‌چیت کرانا",
   "privGebet": "دُعائیں",
   "privSchulung": "طالبِ علم کی ذمہ داریاں",
   "privStudium": "مطالعہ کرانا",

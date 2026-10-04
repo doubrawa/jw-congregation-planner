@@ -146,9 +146,11 @@ vorsieht. Die Zettel der Zusätzlichen Klasse sind dabei und tragen ihren Raum.
 ein oder zwei Personen. Gesprächsteile (Gespräche beginnen, Interesse fördern,
 Menschen zu Jüngern machen) haben einen **Hauptteilnehmer** und einen
 **Gesprächspartner** – beide werden getrennt zugeteilt. Vorträge/Ansprachen
-haben nur einen (männlichen) Teilnehmer. Die App legt die passende Zahl beim
-Import automatisch an; mit **„+ / – Gesprächspartner"** unter dem Teil kannst du
-den Partner bei Bedarf hinzufügen oder entfernen. Für den Gesprächspartner
+haben nur einen (männlichen) Teilnehmer; für sie gibt es den eigenen Bereich
+**„Schulungsaufgaben · Vorträge"** – wer Gespräche führt, hält damit nicht
+automatisch auch Vorträge. Die App legt die passende Zahl beim Import
+automatisch an; mit **„+ / – Gesprächspartner"** unter einem Gesprächsteil
+kannst du den Partner bei Bedarf hinzufügen oder entfernen. Für den Gesprächspartner
 werden nur Personen mit demselben Geschlecht vorgeschlagen – **oder
 Familienangehörige** (siehe „Familie" im Personen‑Detail), die auch
 geschlechtsübergreifend zusammen eingeteilt werden dürfen. Wer nur als Partner
@@ -661,8 +663,20 @@ Im Detail legst du fest:
   Schülerteilen auch geschlechtsübergreifend Gesprächspartner sein (z. B.
   Ehepaar, Vater/Tochter).
 - **Aufgabenbereiche** – welche Aufgaben die Person übernehmen darf (Vorsitz,
-  Vorträge, Gebet, Bibellesung, Schulung …). Diese Bereiche steuern, wen die
-  Automatik und die Kandidatenlisten vorschlagen.
+  Vorträge, Besprechungen leiten, Gebet, Bibellesung, Schulung …). Diese
+  Bereiche steuern, wen die Automatik und die Kandidatenlisten vorschlagen.
+  Drei davon klingen ähnlich und sind doch getrennt:
+  - **Vorträge** – der Vortrag zu Beginn von „Schätze aus Gottes Wort".
+  - **Besprechungen leiten** – „Nach geistigen Schätzen graben", die
+    Besprechungen unter „Uns im Dienst verbessern" (z. B. „Was würdest du
+    sagen?") und alle Punkte unter „Unser Leben als Christ" außer dem
+    Versammlungsbibelstudium.
+  - **Schulungsaufgaben · Vorträge** – der Vortrag eines Schülers unter „Uns im
+    Dienst verbessern".
+
+  Den **öffentlichen Vortrag am Sonntag** regelt kein Bereich: Zur Wahl stehen
+  dort alle Ältesten und Dienstamtgehilfen. Eingeteilt wird er ohnehin von
+  Hand – die Automatik lässt ihn aus.
 - **Hilfsdienste** – dasselbe für die Dienste (Ton, Mikrofone, Ordner …), als
   eigener Bereich darunter. Beide Listen stehen alphabetisch.
 - **Konto & Einladung** – hier lädst du eine Person zur App‑Nutzung ein (Code bzw.

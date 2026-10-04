@@ -608,17 +608,34 @@ const VORTRAG_RE = /^Vortrag$/i
 
 /**
  * Der Platz eines Programmpunkts, den ein Bruder übernimmt — ein Ältester
- * oder geeigneter Dienstamtgehilfe, kein Teilnehmer der Schulung: Vortrag und
- * „Nach geistigen Schätzen graben" (S-38-X 8/26, Abs. 3 und 4), die Punkte unter
- * „Unser Leben als Christ" (Abs. 16) und die Besprechungen unter „Uns im Dienst
- * verbessern" (Abs. 6).
+ * oder geeigneter Dienstamtgehilfe, kein Teilnehmer der Schulung. Zwei
+ * Bereiche, seit dem 4.10.2026 getrennt (Betreiber):
+ *
+ *  - `vortrag`: der Vortrag zu Beginn von „Schätze aus Gottes Wort"
+ *    (S-38-X 8/26, Abs. 3);
+ *  - `besprechung`: „Nach geistigen Schätzen graben" (Abs. 4), die
+ *    Besprechungen unter „Uns im Dienst verbessern" (Abs. 6) und **jeder**
+ *    Punkt unter „Unser Leben als Christ" außer dem Versammlungsbibelstudium
+ *    (Abs. 16) — auch einer in Vortragsform; so hat es der Betreiber
+ *    entschieden.
  *
  * Eine Stelle für alle, damit sie dieselbe Antwort geben. Am Bereich des
  * Platzes hängt alles, was einen Schülerteil ausmacht — Zusätzliche Klasse
- * (`istSchuelerteil`), S-89-Zettel, Partner-Knopf, Kandidaten und Engpass.
+ * (`istSchuelerteil`), S-89-Zettel, Partner-Knopf, Kandidaten und Engpass —,
+ * und keiner der beiden ist einer.
+ *
+ * Die Bereiche stehen **wörtlich** da, nicht als Parameter: Die
+ * Vollständigkeitsprobe der Testversammlung (`testversammlung-anlegen.test.ts`)
+ * liest jedes `bereichsKey`-Literal aus diesem Quelltext und verlangt für jeden
+ * Bereich eine qualifizierte Person. Ein `{ bereichsKey }` sähe sie nicht.
  */
-function bruderPlatz(): ImportedSlot[] {
+function vortragsPlatz(): ImportedSlot[] {
   return [{ name: '', bereichsKey: 'vortrag' }]
+}
+
+/** Siehe `vortragsPlatz`. */
+function besprechungsPlatz(): ImportedSlot[] {
+  return [{ name: '', bereichsKey: 'besprechung' }]
 }
 
 /**
@@ -635,11 +652,16 @@ function bruderPlatz(): ImportedSlot[] {
  * Glaubensansichten erklären" **ohne** Beschreiber — gemessen nie — deutet
  * weiter ein Predigtdienst-Rahmen im Meta als Szene. Unbekannt → 1 Slot
  * (Partner ggf. manuell).
+ *
+ * Der Vortrag eines Teilnehmers hat seit dem 4.10.2026 einen eigenen Bereich
+ * (`schulungVortrag`): Wer ein Gespräch führt, hält nicht zwingend auch einen
+ * Vortrag. `male` bleibt daneben stehen — es ist die harte Regel, der Bereich
+ * nur die Erlaubnis je Person.
  */
 export function ministryNames(title: string, meta: string): ImportedSlot[] {
   const form = meta.split(' · ')[0] ?? ''
-  if (BESPRECHUNG_RE.test(form)) return bruderPlatz()
-  const talk = { name: '', bereichsKey: 'schulung', male: true }
+  if (BESPRECHUNG_RE.test(form)) return besprechungsPlatz()
+  const talk = { name: '', bereichsKey: 'schulungVortrag', male: true }
   const convo: ImportedSlot[] = [
     { name: '', rolle: 'Schüler', bereichsKey: 'schulung' },
     { name: '', rolle: 'Partner', bereichsKey: 'schulungPartner' },
@@ -674,8 +696,12 @@ export function applyGoldSlots(target: ImportedWeek, source: ImportedWeek): void
 
 /** Titel/Meta/Slots je Punkt festlegen — kennt jetzt die Position in der Sektion. */
 function finalizeParts(recs: PartRec[]): void {
+  const firstOf: Partial<Record<SecColor, PartRec>> = {}
   const lastOf: Partial<Record<SecColor, PartRec>> = {}
-  for (const rec of recs) lastOf[rec.color] = rec // letzter je Farbe
+  for (const rec of recs) {
+    firstOf[rec.color] ??= rec // erster je Farbe
+    lastOf[rec.color] = rec // letzter je Farbe
+  }
 
   for (const rec of recs) {
     const { part, color, raw, time } = rec
@@ -701,7 +727,11 @@ function finalizeParts(recs: PartRec[]): void {
     } else {
       part.title = title
       part.meta = joinMeta(settingOf(time), min, sourceOf(time))
-      part.names = color === 'gold' ? ministryNames(title, part.meta) : bruderPlatz()
+      // Der erste Schätze-Punkt ist der Vortrag; alle übrigen Punkte eines
+      // Bruders sind Besprechungen (siehe `vortragsPlatz`).
+      if (color === 'gold') part.names = ministryNames(title, part.meta)
+      else if (color === 'teal' && rec === firstOf.teal) part.names = vortragsPlatz()
+      else part.names = besprechungsPlatz()
     }
   }
 }

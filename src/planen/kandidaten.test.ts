@@ -169,6 +169,45 @@ describe('Kandidatenliste allgemein', () => {
   })
 })
 
+/**
+ * **Der Redner-Platz: nach Stellung, nicht nach Bereich** (Betreiber,
+ * 4.10.2026).
+ *
+ * Den öffentlichen Vortrag am Sonntag kann jeder Älteste und Dienstamtgehilfe
+ * halten. Eingeteilt wird er ohnehin von Hand — ein eigener Bereich wäre Pflege
+ * ohne Nutzen, und `vortrag` meint seither nur noch den Vortrag unter „Schätze
+ * aus Gottes Wort". Ob ein Platz ein Redner-Platz ist, sagt `sel.guest`
+ * (`isSpeakerRole`, gesetzt in `MeetingSection`).
+ */
+describe('Redner-Platz: Älteste und Dienstamtgehilfen, ohne Bereich', () => {
+  const ALT: Person = { ...person('a1', 'Albert', 'Ahrens', false), role: 'aeltester' }
+  const DAG: Person = { ...person('d1', 'Detlef', 'Dorn', false), role: 'dienstamtgehilfe' }
+  // Hat den Bereich des Platzes, ist aber Verkündiger.
+  const VERK = person('v1', 'Viktor', 'Vogt', false, 'vortrag')
+  const ALLE = [ALT, DAG, VERK]
+
+  /** Ein Punkt mit dem Bereich `vortrag` — wie der Vortragsplatz aus dem Import. */
+  const woche: Week = {
+    range: '', book: '', start: '2026-09-07',
+    mid: { date: '', end: '', sections: [], helpers: {} },
+    we: {
+      date: '', end: '', helpers: {},
+      sections: [{ label: 'X', farbe: 'petrol', items: [{ iid: 'i80', title: 'Thema', names: [{ name: '', rolle: 'Gastredner', bereichsKey: 'vortrag' }] }] }],
+    },
+  }
+  const platz = (guest: boolean): SlotSelection => ({
+    kind: 'part', wi: 0, tab: 'we', si: 0, ii: 0, ni: 0, priv: 'vortrag', groups: false, guest, label: 'Thema',
+  })
+
+  it('am Redner-Platz stehen die Ältesten und Dienstamtgehilfen — auch ohne den Bereich', () => {
+    expect(namen(platz(true), daten([woche], ALLE))).toEqual(['Albert Ahrens', 'Detlef Dorn'])
+  })
+
+  it('Gegenprobe: derselbe Bereich an einem gewöhnlichen Platz fragt weiter den Bereich', () => {
+    expect(namen(platz(false), daten([woche], ALLE))).toEqual(['Viktor Vogt'])
+  })
+})
+
 describe('Rollen-Beschriftung der Kandidaten', () => {
   /**
    * Die Rolle kommt aus dem UI-Wörterbuch (`ROLE_KEY` → Dict), nicht mehr aus

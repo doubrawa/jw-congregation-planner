@@ -156,6 +156,31 @@ const LAEUFE: Record<string, Lauf[]> = {
     },
   ],
 
+  'bereiche-trennen.mjs': [
+    {
+      titel: 'Bereiche im Bestand trennen',
+      fahren: (m) => m.main!([]),
+      umgebung: {
+        bestand: {
+          weeks: [
+            {
+              congregation_id: C,
+              start: '2026-08-24',
+              // Ein Dienstteil mit dem Platz eines Bruders in alter Form — sonst
+              // gäbe es nichts zu schreiben.
+              data: (() => {
+                const w = probeWoche('2026-08-24', [{ name: '', bereichsKey: 'vortrag' }])
+                w.mid.sections[0]!.farbe = 'gold'
+                return w
+              })(),
+            },
+          ],
+        },
+      },
+      erwartet: ['GET weeks', 'PATCH weeks'],
+    },
+  ],
+
   'wochen-importieren.mjs': [
     {
       titel: 'zwei Wochen holen',

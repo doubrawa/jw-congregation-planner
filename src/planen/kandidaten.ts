@@ -176,11 +176,22 @@ function personenKandidaten(
   // Die Woche gibt es, sonst wäre das Sheet nicht offen; ohne sie bleibt der
   // Hinweis „heute schon zugeteilt" einfach aus.
   const meeting = state.weeks[sel.wi]?.[sel.tab]
+  // Den öffentlichen Vortrag am Sonntag (Redner-Platz, T29) kann jeder Älteste
+  // und Dienstamtgehilfe halten (Betreiber, 4.10.2026): Eingeteilt wird er
+  // ohnehin von Hand, nie automatisch — ein eigener Aufgabenbereich wäre Pflege
+  // ohne Nutzen. Am Platz steht weiter `vortrag`; entschieden wird am
+  // Redner-Platz (`sel.guest` = `isSpeakerRole`). Darunter fallen auch die
+  // Plätze des Kreisaufsehers (T62) — aus demselben Grund: Auch sie besetzt die
+  // Auto-Zuteilung nie, und `bedarf.ts` zählt sie nicht als Engpass.
+  const darf =
+    sel.kind === 'part' && sel.guest
+      ? (p: Person) => p.role === 'aeltester' || p.role === 'dienstamtgehilfe'
+      : (p: Person) => !sel.priv || isQualified(p, sel.priv)
   // Erst filtern, dann sortieren (siehe `fsKandidaten`): Sortiert werden
   // müssen nur die Qualifizierten. Alphabetisch; Abwesende wandern danach
   // stabil ans Ende.
   return state.persons
-    .filter((p) => (!sel.priv || isQualified(p, sel.priv)) && geschlechtOk(p))
+    .filter((p) => darf(p) && geschlechtOk(p))
     .sort((a, b) => personCompare(a, b, state.lang))
     .map((p) => {
       const name = displayName(p)
