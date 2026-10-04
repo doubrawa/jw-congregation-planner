@@ -672,7 +672,7 @@ zählt dabei der Wochentag des jeweiligen Treffpunkts, nicht die ganze Woche.
 
 Im Detail legst du fest:
 
-- **Stammdaten** – Name, Anzeigename, Telefon, E‑Mail, Geschlecht.
+- **Stammdaten** – Vorname, Nachname, Telefon, E‑Mail, Geschlecht.
 - **Rolle** – Ältester, Dienstamtgehilfe, Verkündiger oder **Keine** (für
   Schüler ohne Verkündiger‑Status).
 - **Predigtdienstgruppe** – Zuordnung zur Gruppe. Jeder Verkündiger braucht
@@ -704,16 +704,25 @@ Im Detail legst du fest:
 Wird eine Person umbenannt, zieht die App den neuen Namen automatisch durch alle
 bereits geplanten Wochen.
 
-### Warnung: doppelte Anzeigenamen
+### Zwei Personen mit demselben Namen
 
-Heißen zwei Personen gleich, erscheint über der Liste ein Warnbanner mit den
-betroffenen Namen. Das ist wichtiger, als es aussieht: Wo eine Zuteilung nur
-den Namen trägt und keine Person-Id (Hilfsdienste, externe Redner, Altdaten),
-ordnet die App über den Namen zu — Namensgleiche teilen sich dann Aufgaben,
-Bestätigungen und Erinnerungen.
+Vor- und Nachname zusammen gibt es in einer Versammlung nur einmal. Gibst du
+einer Person einen Namen, den schon jemand trägt, erscheint direkt unter dem
+Nachnamen ein Hinweis, der die andere Person nennt: „Diesen Namen trägt
+bereits Paul Beispiel. Ergänze den Vornamen, damit beide unterscheidbar sind."
 
-Abhilfe: Gib einer der beiden im Feld **Anzeigename** etwas Eindeutiges
-(z. B. „Paul Beispiel (1)"). Der Anzeigename ersetzt überall den vollen Namen.
+Solange der Hinweis steht, speichert die App den Namen nicht – auch nicht, wenn
+du das Detail verlässt. Ergänze deshalb gleich den Vornamen, etwa zu „Paul
+sen." oder um einen zweiten Vornamen. Sobald der Name eindeutig ist,
+verschwindet der Hinweis, und die App speichert wieder.
+
+Verglichen wird der ganze Name, wie er angezeigt wird. Groß- und
+Kleinschreibung und doppelte Leerzeichen zählen dabei nicht – „paul beispiel"
+ist derselbe Name wie „Paul Beispiel". Akzente zählen dagegen: „Müller" und
+„Muller" dürfen nebeneinanderstehen.
+
+Der Grund für die Regel: Auf den Plänen und Ausdrucken steht nur der Name. Zwei
+Gleichnamige wären dort nicht auseinanderzuhalten.
 
 ### Warnung: ohne Predigtdienstgruppe
 
