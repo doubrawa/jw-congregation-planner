@@ -2439,8 +2439,8 @@ export const KATALOG = [
     datei: 'src/components/useBackDismiss.ts',
     regel:
       'Hat ein Zurück-Druck den Eintrag einer Ebene genommen, räumt ihr Schließen nichts mehr ab — sonst nähme es den Eintrag der Ebene darunter mit.',
-    suchen: '      if (!lage.verbraucht) austragen()',
-    ersetzen: '      austragen()',
+    suchen: '      } else if (!lage.verbraucht) austragen()',
+    ersetzen: '      } else austragen()',
   },
   {
     id: 'zurueck-unterwegs-wartet',
@@ -2456,6 +2456,60 @@ export const KATALOG = [
     regel: 'Zurück trifft die Ebene mit dem höchsten Rang, nicht die zuletzt eingehängte — React hängt Kinder vor Eltern ein.',
     suchen: '    if (!beste || lage.rang > beste.rang || (lage.rang === beste.rang && lage.nr > beste.nr)) beste = lage',
     ersetzen: '    if (!beste || lage.nr > beste.nr) beste = lage',
+  },
+  /* ---- Zurück nach einem Push-Tipp: ohne Geste ein Wächter (4.10.2026) ---- */
+  {
+    id: 'zurueck-ohne-geste-waechter',
+    datei: 'src/components/useBackDismiss.ts',
+    regel:
+      'Geht eine Ebene ohne Geste auf (der Bildschirm nach einem Push-Tipp), legt sie keinen Eintrag an, sondern einen Wächter — Chromium überspränge den Eintrag, und die Zurück-Taste schlösse die App.',
+    suchen: '    if (Klasse && ohneGeste() && stapel.every((andere) => andere.waechter)) {',
+    ersetzen: '    if (false) {',
+  },
+  {
+    id: 'zurueck-waechter-schliesst',
+    datei: 'src/components/useBackDismiss.ts',
+    regel: 'Die Zurück-Taste schließt eine Ebene mit Wächter — nach einem Push-Tipp führt sie zu Start.',
+    suchen: '    lage.verbraucht = true\n    lage.schliessen()\n  }\n  lage.waechter = waechter',
+    ersetzen: '    lage.verbraucht = true\n  }\n  lage.waechter = waechter',
+  },
+  {
+    id: 'zurueck-waechter-abloesen',
+    datei: 'src/components/useBackDismiss.ts',
+    regel:
+      'Geht danach eine Ebene mit Geste auf, bekommt die Ebene mit Wächter ihren Eintrag nachgetragen, und der Wächter geht — sonst träfe die Zurück-Taste zuerst ihn, also die untere Ebene.',
+    suchen: '    } else {\n      waechterAbloesen()\n',
+    ersetzen: '    } else {\n',
+  },
+  {
+    id: 'zurueck-waechter-nur-ueber-waechtern',
+    datei: 'src/components/useBackDismiss.ts',
+    regel:
+      'Liegt schon eine Ebene mit Eintrag offen, bekommt auch eine Ebene ohne Geste einen Eintrag — ein Wächter darüber schlösse vor der höher rangierenden Ebene darunter.',
+    suchen: '    if (Klasse && ohneGeste() && stapel.every((andere) => andere.waechter)) {',
+    ersetzen: '    if (Klasse && ohneGeste()) {',
+  },
+  {
+    id: 'zurueck-waechter-abbauen',
+    datei: 'src/components/useBackDismiss.ts',
+    regel:
+      'Schließt eine Ebene mit Wächter anders als über die Taste, geht ihr Wächter mit — sonst träfe der nächste Druck eine Ebene, die es nicht mehr gibt.',
+    suchen: '        lage.waechter.destroy() // ohne Eintrag ist nichts abzuräumen\n',
+    ersetzen: '',
+  },
+  {
+    id: 'zurueck-mit-geste-eintrag',
+    datei: 'src/components/useBackDismiss.ts',
+    regel: 'Mit Geste bleibt es beim Verlaufseintrag — der Wächter springt nur ein, wo kein Eintrag zählen würde.',
+    suchen: '  return (navigator as { userActivation?: UserActivation }).userActivation?.isActive === false',
+    ersetzen: '  return true',
+  },
+  {
+    id: 'zurueck-ohne-closewatcher-eintrag',
+    datei: 'src/components/useBackDismiss.ts',
+    regel: 'Ohne CloseWatcher (Firefox, Safari) bleibt es auch ohne Geste beim Verlaufseintrag.',
+    suchen: '    if (Klasse && ohneGeste() && stapel.every((andere) => andere.waechter)) {',
+    ersetzen: '    if (ohneGeste() && stapel.every((andere) => andere.waechter)) {',
   },
   {
     id: 'abmelden-statusseite',

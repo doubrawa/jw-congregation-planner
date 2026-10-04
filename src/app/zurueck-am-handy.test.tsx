@@ -1,8 +1,15 @@
 /** @vitest-environment jsdom */
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import type { AppState } from './context'
 import type { WeitererPlan } from '../data/types'
+import {
+  WaechterAttrappe,
+  attrappenEinsetzen,
+  attrappenEntfernen,
+  mitGeste,
+  zurueckTaste,
+} from '../../tests/zurueck-attrappen'
 
 /**
  * **Zurück am Handy bleibt in der App** (4.10.2026, Variante B).
@@ -45,10 +52,13 @@ const PLAN: WeitererPlan = { id: 'pl-x', name: 'Winterdienst', von: '2026-01-05'
 
 let basis = ''
 
-/** Die ganze App mit echtem Speicher, angemeldet als Planer, auf Start. */
-function zeige(over: Partial<AppState> = {}) {
+/**
+ * Die ganze App mit echtem Speicher, angemeldet als Planer, auf Start — mit
+ * `link` (`#go=…`) so geöffnet wie von einem Push-Tipp.
+ */
+function zeige(over: Partial<AppState> = {}, link?: string) {
   basis = `basis-${Math.random()}`
-  history.pushState({ basis }, '')
+  history.pushState({ basis }, '', link)
   const anfang: AppState = {
     ...demoZustand(),
     dataStatus: 'ready',
@@ -280,5 +290,45 @@ describe('Zurück am Handy', () => {
     klickMenue(container, t.navStart)
     await ausklingen()
     expect(amGrund(), 'auf Start blieb ein Eintrag liegen').toBe(true)
+  })
+})
+
+/*
+ * **Nach einem Push-Tipp** (4.10.2026): Der Bildschirm aus `#go=…` geht auf,
+ * ohne dass jemand getippt hat. Einen so angelegten Eintrag überspränge
+ * Chromium, und auf Android schlösse der erste Zurück-Druck die App — deshalb
+ * hält dort ein Wächter die Taste fest (`useBackDismiss`, „Ohne Geste kein
+ * Eintrag"; Attrappen in `tests/zurueck-attrappen.ts`).
+ */
+describe('Zurück nach einem Push-Tipp', () => {
+  beforeEach(() => attrappenEinsetzen())
+  afterEach(() => attrappenEntfernen())
+
+  it('„Meine Aufgaben" ohne Eintrag — die Zurück-Taste führt zu Start, der nächste Druck verließe die App', async () => {
+    const { container } = zeige({}, '#go=aufgaben')
+    await ausklingen()
+    expect(aktiv(container)).toBe(t.navAufgabenLong)
+    expect(amGrund(), 'ohne Geste entstand ein Eintrag — Chromium überspränge ihn').toBe(true)
+
+    expect(await zurueckTaste()).toBe('waechter')
+    await ausklingen()
+    expect(aktiv(container)).toBe(t.navStart)
+    expect(WaechterAttrappe.aufgestellt).toHaveLength(0)
+    expect(amGrund()).toBe(true)
+  })
+
+  it('danach Menü und „Personen": Der Bildschirm bekommt seinen Eintrag mit — ein Druck führt zu Start', async () => {
+    const { container } = zeige({}, '#go=aufgaben')
+    await ausklingen()
+    await mitGeste(() => fireEvent.click(container.querySelector('.menu-btn')!))
+    await mitGeste(() => klickMenue(container, t.navPersonen, '.drawer'))
+    expect(container.querySelector('.drawer')).toBeNull()
+    expect(aktiv(container)).toBe(t.navPersonen)
+    expect(WaechterAttrappe.aufgestellt, 'der Wächter blieb — die Taste träfe ihn vor dem Verlauf').toHaveLength(0)
+
+    expect(await zurueckTaste()).toBe('verlauf')
+    await ausklingen()
+    expect(aktiv(container)).toBe(t.navStart)
+    expect(amGrund(), 'ein Eintrag zu viel oder zu wenig').toBe(true)
   })
 })
