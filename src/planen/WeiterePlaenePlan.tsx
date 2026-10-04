@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
 import { DatePicker } from '../components/DatePicker'
+import { useBackDismiss } from '../components/useBackDismiss'
 import { besuchsWocheText } from '../components/gruppenbesuch-anzeige'
 import { useZweiTipp } from '../components/useZweiTipp'
 import {
@@ -48,6 +49,17 @@ export function WeiterePlaenePlan() {
   const [offen, setOffen] = useState<string | null>(null)
   const [waehlen, setWaehlen] = useState(false)
   const plan = offen ? state.plaene.find((p) => p.id === offen) : undefined
+  // Zurück am Handy schließt zuerst die Vorlagenwahl bzw. den geöffneten Plan
+  // (4.10.2026). Eine Ebene für beide: Nach der Wahl der Vorlage steht der neue
+  // Plan offen da, und Zurück führt zur Liste, nicht zurück zur Wahl.
+  useBackDismiss(
+    waehlen || plan !== undefined,
+    () => {
+      setOffen(null)
+      setWaehlen(false)
+    },
+    'unteransicht',
+  )
 
   if (waehlen) {
     const anlegen = (vorlage: PlanVorlage): void => {

@@ -2481,6 +2481,72 @@ export const KATALOG = [
     suchen: '      {!vorbei && (\n        <button\n          type="button"\n          className="oz-raus"',
     ersetzen: '      {(\n        <button\n          type="button"\n          className="oz-raus"',
   },
+  /* ---- Zurück am Handy, Menüfuß (4.10.2026) ---- */
+  {
+    id: 'zurueck-bildschirm-zu-start',
+    datei: 'src/app/AppShell.tsx',
+    regel: 'Zurück auf einem Bildschirm außer Start führt zu Start, statt die App zu verlassen.',
+    suchen: "  useBackDismiss(\n    !isLogin && state.screen !== 'start',",
+    ersetzen: '  useBackDismiss(\n    false,',
+  },
+  {
+    id: 'zurueck-detail-zuerst',
+    datei: 'src/personen/PersonenScreen.tsx',
+    regel: 'Zurück schließt zuerst das Personen-Detail, erst dann geht es zu Start.',
+    suchen: 'useBackDismiss(selected !== undefined,',
+    ersetzen: 'useBackDismiss(false,',
+  },
+  {
+    id: 'zurueck-plan-zuerst',
+    datei: 'src/planen/WeiterePlaenePlan.tsx',
+    regel: 'Zurück schließt zuerst den geöffneten Plan, erst dann geht es zu Start.',
+    suchen: '    waehlen || plan !== undefined,',
+    ersetzen: '    waehlen,',
+  },
+  {
+    id: 'zurueck-verbraucht',
+    datei: 'src/components/useBackDismiss.ts',
+    regel:
+      'Hat ein Zurück-Druck den Eintrag einer Ebene genommen, räumt ihr Schließen nichts mehr ab — sonst nähme es den Eintrag der Ebene darunter mit.',
+    suchen: '      if (!lage.verbraucht) austragen()',
+    ersetzen: '      austragen()',
+  },
+  {
+    id: 'zurueck-unterwegs-wartet',
+    datei: 'src/components/useBackDismiss.ts',
+    regel:
+      'Geht eine Ebene auf, während ein eigener Rückschritt unterwegs ist, legt sie ihren Eintrag erst danach an — ein pushState bräche den Rückschritt ab, und der nächste Druck ginge verloren.',
+    suchen: '  if (unterwegs > 0) {\n    nachzutragen++ // erst, wenn der eigene Rückschritt angekommen ist\n    return\n  }\n',
+    ersetzen: '',
+  },
+  {
+    id: 'zurueck-rang',
+    datei: 'src/components/useBackDismiss.ts',
+    regel: 'Zurück trifft die Ebene mit dem höchsten Rang, nicht die zuletzt eingehängte — React hängt Kinder vor Eltern ein.',
+    suchen: '    if (!beste || lage.rang > beste.rang || (lage.rang === beste.rang && lage.nr > beste.nr)) beste = lage',
+    ersetzen: '    if (!beste || lage.nr > beste.nr) beste = lage',
+  },
+  {
+    id: 'abmelden-statusseite',
+    datei: 'src/app/AppShell.tsx',
+    regel: 'Wo statt des Profils eine Statusseite steht (kein Mitglied, Ladefehler, leere Versammlung), meldet sie selbst ab.',
+    suchen: "      {kind !== 'loading' && (\n        <button type=\"button\" className=\"btn-outline status-btn\"",
+    ersetzen: '      {false && (\n        <button type="button" className="btn-outline status-btn"',
+  },
+  {
+    id: 'abmelden-profil-knopf',
+    datei: 'src/profil/ProfilScreen.tsx',
+    regel: '„Abmelden" im Profil ist ein Knopf wie „App installieren", keine Textzeile.',
+    suchen: 'className="btn-outline prof-logout"',
+    ersetzen: 'className="prof-logout"',
+  },
+  {
+    id: 'profil-wort-unsichtbar',
+    datei: 'src/app/Sidebar.tsx',
+    regel: 'Neben dem Namen im Menü steht kein sichtbares „Profil ›" — nur Screenreader hören das Wort.',
+    suchen: '<span className="sr-only">{profilLabel}</span>',
+    ersetzen: '<span className="sidebar-profile-link">{profilLabel} ›</span>',
+  },
 ]
 
 /**

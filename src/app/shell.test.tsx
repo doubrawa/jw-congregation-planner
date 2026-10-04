@@ -354,7 +354,8 @@ describe('Die vier Status-Ansichten der Datenanbindung', () => {
     const { getByText, container } = zeige({ dataEmpty: true, planner: false })
     expect(getByText(t.stLeer)).toBeTruthy()
     expect(getByText(t.stLeerText)).toBeTruthy()
-    expect(container.querySelector('.status-btn')).toBeNull()
+    // Nur der Weg hinaus (seit 4.10.2026) — kein Knopf, der etwas einfüllt.
+    expect([...container.querySelectorAll('.status-view button')].map((b) => b.textContent)).toEqual([t.abmelden])
   })
 
   it('dem Planer steht die leere Versammlung offen — er ist der Admin, an den der Hinweis verwiese', () => {
@@ -572,10 +573,38 @@ describe('Abmelden und Rollenanzeige', () => {
     expect(container.querySelector('.sidebar-profile .avatar')?.textContent).toBe('–')
   })
 
-  it('„Abmelden" meldet ab', () => {
-    const { container, dispatch } = zeige()
-    fireEvent.click(container.querySelector('.sidebar-logout')!)
+  it('im Menü steht kein „Abmelden" mehr — es steht im Profil, als Knopf wie „App installieren"', () => {
+    // Seit dem 4.10.2026. Der Fuß steht zweimal da (Seitenleiste, Handy-Menü).
+    const { container, dispatch } = zeige({ screen: 'profil' })
+    const menue = [...container.querySelectorAll('.sidebar, .drawer')]
+    expect(menue.flatMap((m) => [...m.querySelectorAll('button')]).map((b) => b.textContent)).not.toContain(t.abmelden)
+    const imProfil = [...container.querySelectorAll('.app-content button')].find((b) => b.textContent === t.abmelden)
+    expect(imProfil?.classList.contains('btn-outline'), 'kein richtiger Knopf').toBe(true)
+    fireEvent.click(imProfil!)
     expect(performLogout).toHaveBeenCalledWith(dispatch)
+  })
+
+  /*
+   * Wo statt jedes Bildschirms eine Statusseite steht, ist das Profil nicht
+   * erreichbar — bis zum 4.10.2026 war „Abmelden" im Menü dort der einzige Weg
+   * hinaus. Wer mit dem falschen Konto angemeldet ist, säße sonst fest.
+   */
+  it.each([
+    ['ohne Versammlung (Code einlösen)', { dataStatus: 'no-membership' } as Partial<AppState>],
+    ['nach einem Ladefehler', { dataStatus: 'error' } as Partial<AppState>],
+    ['vor einer leeren Versammlung (Verkündiger)', { dataEmpty: true, planner: false } as Partial<AppState>],
+  ])('%s: die Statusseite meldet selbst ab', (_was, over) => {
+    const { container, dispatch } = zeige(over)
+    const knopf = [...container.querySelectorAll('.status-view button')].find((b) => b.textContent === t.abmelden)
+    expect(knopf, 'kein Weg hinaus').toBeDefined()
+    fireEvent.click(knopf!)
+    expect(performLogout).toHaveBeenCalledWith(dispatch)
+  })
+
+  it('beim Laden nicht — das dauert nur einen Augenblick', () => {
+    const { container } = zeige({ dataStatus: 'loading' })
+    expect(container.querySelector('.status-view')).not.toBeNull()
+    expect([...container.querySelectorAll('.status-view button')].map((b) => b.textContent)).not.toContain(t.abmelden)
   })
 })
 

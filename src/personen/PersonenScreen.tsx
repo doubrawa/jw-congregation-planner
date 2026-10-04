@@ -3,6 +3,7 @@ import { useApp } from '../app/context'
 import { istAngemeldet } from '../app/eigene-person'
 import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
 import { displayName, doppelteFesteRollen, emptyQualifications, initials, listName, ohneGruppe, personCompare, serviceQualKey } from '../data/helpers'
+import { useBackDismiss } from '../components/useBackDismiss'
 import { copyText } from '../lib/clipboard'
 import { sendInviteMails } from '../lib/invite'
 import { congAppCode, LOCALES } from '../i18n/langs'
@@ -22,8 +23,10 @@ import './personen.css'
  * verwaltet OrphanAccounts.
  */
 export function PersonenScreen() {
-  const { state } = useApp()
+  const { state, dispatch } = useApp()
   const selected = state.persons.find((p) => p.id === state.selectedPersonId)
+  // Zurück am Handy schließt zuerst das Detail (4.10.2026), dann erst den Bildschirm.
+  useBackDismiss(selected !== undefined, () => dispatch({ type: 'selectPerson', id: null }), 'unteransicht')
   return selected ? <PersonDetail person={selected} /> : <PersonList />
 }
 

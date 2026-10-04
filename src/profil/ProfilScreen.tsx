@@ -140,7 +140,7 @@ export function ProfilScreen() {
             ))}
           </select>
         </div>
-        <button type="button" className="prof-logout" onClick={() => performLogout(dispatch)}>
+        <button type="button" className="btn-outline prof-logout" onClick={() => performLogout(dispatch)}>
           {t.abmelden}
         </button>
         {/*

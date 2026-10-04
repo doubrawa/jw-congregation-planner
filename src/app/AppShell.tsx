@@ -72,6 +72,18 @@ export function AppShell() {
   const drawerRef = useRef<HTMLElement>(null)
   useDialogFocus(drawerRef, menuOpen)
   useBackDismiss(menuOpen, () => setMenuOpen(false))
+  /*
+   * **Zurück am Handy** (4.10.2026): Jeder Bildschirm außer Start ist eine
+   * Ebene über Start. Zurück führt von dort zu Start, von Start aus verlässt es
+   * die App — so halten es Android-Apps mit Seitenmenü. Reiter, Wochen und der
+   * Schalter Ansehen/Planen sind keine Schritte: Die Ebene hängt nur daran, ob
+   * man auf Start steht. Darüber liegen Unteransichten und Blätter.
+   */
+  useBackDismiss(
+    !isLogin && state.screen !== 'start',
+    () => dispatch({ type: 'navigate', screen: 'start' }),
+    'bildschirm',
+  )
   const navigate = (screen: Screen) => {
     setMenuOpen(false)
     dispatch({ type: 'navigate', screen })
@@ -93,7 +105,9 @@ export function AppShell() {
   // Deep-Link-Hash beim Start entfernen (nur wenn es einer ist), damit ein
   // Reload nicht erneut springt — Debug-Hashes (#s=…) bleiben unberührt.
   useEffect(() => {
-    if (parseGoTarget(location.hash)) history.replaceState(null, '', location.pathname + location.search)
+    // Den Zustand des Eintrags behalten: Er kann die Marke einer offenen Ebene
+    // tragen (`useBackDismiss`), und ohne sie räumte deren Schließen nichts ab.
+    if (parseGoTarget(location.hash)) history.replaceState(history.state, '', location.pathname + location.search)
   }, [])
 
   // Push-Klick auf ein bereits offenes Fenster → sw.js stellt das Ziel auf zwei
@@ -104,8 +118,9 @@ export function AppShell() {
       const target = sprungAus(input)
       if (target) {
         setPendingNav(target)
-        // #go= wieder aus der URL nehmen, damit ein Reload nicht erneut springt.
-        history.replaceState(null, '', location.pathname + location.search)
+        // #go= wieder aus der URL nehmen, damit ein Reload nicht erneut springt
+        // — den Zustand des Eintrags dabei behalten (siehe oben).
+        history.replaceState(history.state, '', location.pathname + location.search)
       }
     }
     const onHash = () => applyFrom(location.hash)
@@ -217,7 +232,6 @@ export function AppShell() {
   ]
   const congSub = fill(t.congLabel, { name: state.congregation.name })
   const roleLabel = state.planner ? t.rolleKoordinator : t.rolleVerkuendiger
-  const logout = () => performLogout(dispatch)
   // Der Fuß steht zweimal da — in der Seitenleiste und im Menü des Handys.
   const fuss = (
     <SidebarFooter
@@ -226,8 +240,6 @@ export function AppShell() {
       profilLabel={t.navProfil}
       aktiv={state.screen === 'profil'}
       onProfil={() => navigate('profil')}
-      logoutLabel={t.abmelden}
-      onLogout={logout}
     />
   )
   // Texte für die Error Boundaries: die Klasse kann useT() nicht aufrufen.
@@ -516,6 +528,18 @@ function StatusView({ kind }: { kind: 'loading' | 'no-membership' | 'error' | 'e
           <h1 className="status-title">{t.stLeer}</h1>
           <p className="status-text">{t.stLeerText}</p>
         </>
+      )}
+
+      {/*
+        Abmelden, wo das Profil nicht erreichbar ist: Statt jedes Bildschirms
+        steht hier diese Seite. Bis zum 4.10.2026 war „Abmelden" im Menü der
+        Weg hinaus — wer mit dem falschen Konto angemeldet war oder vor einer
+        leeren Versammlung stand, säße ohne ihn fest.
+      */}
+      {kind !== 'loading' && (
+        <button type="button" className="btn-outline status-btn" onClick={() => performLogout(dispatch)}>
+          {t.abmelden}
+        </button>
       )}
     </section>
   )

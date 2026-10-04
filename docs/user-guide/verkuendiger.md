@@ -309,9 +309,10 @@ alles geht auch weiterhin über Knöpfe und Pfeile.
 
 - **Seitwärts wischen** – blättert bei den **Zusammenkünften**, im
   **Predigtdienst** und beim **Planen** eine Woche vor oder zurück.
-- **Zurück** (Zurück‑Taste oder Zurück‑Geste) – schließt ein geöffnetes Fenster,
-  das Menü oder die Mitteilungen, statt die App zu verlassen. Ist nichts
-  geöffnet, verlässt Zurück die App wie gewohnt.
+- **Zurück** (Zurück‑Taste oder Zurück‑Geste) – bleibt in der App: Es schließt
+  zuerst ein geöffnetes Fenster, das Menü oder die Mitteilungen, dann eine
+  geöffnete Ansicht (etwa einen Plan), und führt sonst zur **Startseite**. Erst
+  auf der Startseite verlässt Zurück die App.
 - **Nach unten wischen** – schließt ein von unten eingeblendetes Fenster. Der
   kurze Strich am oberen Rand zeigt, dass es sich ziehen lässt.
 

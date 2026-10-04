@@ -80,13 +80,16 @@ export function SidebarNav({ abschnitte }: { abschnitte: readonly NavAbschnitt[]
 }
 
 /**
- * Profil-Fuß: Abstand, der Namensblock und Abmelden.
+ * Profil-Fuß: Abstand und der Namensblock.
  *
  * Der Namensblock **ist** der Weg zum Profil (T120). Bis dahin stand das Profil
  * zweimal da — als Menüpunkt und darunter als Name, den man nicht antippen
  * konnte. Seit dem 4.10.2026 auch ohne das Schild „Profil ›" daneben: Den
  * Namen anzutippen genügt. Das Wort bleibt nur für Screenreader stehen — sonst
  * läse der Knopf Name und Rolle vor und sagte nicht, wohin er führt.
+ *
+ * „Abmelden" stand bis zum 4.10.2026 ebenfalls hier. Es steht jetzt im Profil
+ * — und auf der Statusseite, wo das Profil nicht erreichbar ist (`StatusView`).
  */
 export function SidebarFooter({
   me,
@@ -94,16 +97,12 @@ export function SidebarFooter({
   profilLabel,
   aktiv,
   onProfil,
-  logoutLabel,
-  onLogout,
 }: {
   me: Person | undefined
   roleLabel: string
   profilLabel: string
   aktiv: boolean
   onProfil: () => void
-  logoutLabel: string
-  onLogout: () => void
 }) {
   return (
     <>
@@ -122,9 +121,6 @@ export function SidebarFooter({
           <span className="sidebar-profile-role">{roleLabel}</span>
         </span>
         <span className="sr-only">{profilLabel}</span>
-      </button>
-      <button type="button" className="sidebar-logout" onClick={onLogout}>
-        {logoutLabel}
       </button>
     </>
   )

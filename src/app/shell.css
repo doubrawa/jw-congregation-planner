@@ -286,14 +286,6 @@
   color: var(--accD);
 }
 
-.sidebar-logout {
-  text-align: start;
-  font-size: calc(11.5px * var(--fs));
-  font-weight: 600;
-  color: var(--wein);
-  padding: 6px 10px 0;
-}
-
 /* ---- Kopfzeile (mobil) & Mitteilungs-Chip ------------------------------- */
 
 .mobile-header {

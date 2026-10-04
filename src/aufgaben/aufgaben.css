@@ -231,15 +231,10 @@
   margin-top: 0;
 }
 
+/* Abmelden — ein Knopf wie „App installieren" (`btn-outline`), seit es im
+   Menü nicht mehr steht (4.10.2026); vorher eine rote Textzeile. */
 .prof-logout {
-  display: block;
-  width: 100%;
-  margin-top: 8px;
-  text-align: center;
-  font-size: calc(12px * var(--fs));
-  font-weight: 600;
-  color: var(--wein);
-  padding: 6px 0;
+  margin-top: 12px;
 }
 
 /* Stand der App (Zeit · Git-Kurzkennung) — beantwortet aus der Ferne, welche

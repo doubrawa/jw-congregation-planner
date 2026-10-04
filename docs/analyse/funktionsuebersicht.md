@@ -56,7 +56,7 @@ Navigation auf einen gesperrten Screen landet im Programm.
 | 4 | Neues Passwort setzen (Mail-Link) | Recovery | alle | `login/RecoveryScreen.tsx` |
 | 5 | Bestehende Sitzung überspringt Login | — | alle | `store.tsx` (Auth-Listener) |
 | 6 | Demo-Modus ohne Supabase (beliebige Zugangsdaten) | Login | alle | `lib/supabase.ts` (`isSupabaseConfigured`) |
-| 7 | Abmelden | Sidebar / Profil | alle | `performLogout` |
+| 7 | Abmelden (seit 4.10.2026 nicht mehr im Menü) | Profil / Statusseite (kein Mitglied, Ladefehler, leere Versammlung) | alle | `performLogout` |
 | 8 | Sprachauswahl bereits im Login | Login | alle | `APP_LANGS_SORTED` |
 | 9 | Einladungscode einlösen (Konto → Versammlung) | Statusansicht „keine Versammlung" | alle | `redeemInvite`, DB-Funktion `redeem_invite` |
 | 10 | Person einladen (Code erzeugen) | Personen → Konto-Karte | Planer | `personen/KontoCard.tsx`, `invite-helpers.ts` |
@@ -260,7 +260,7 @@ Navigation auf einen gesperrten Screen landet im Programm.
 | --- | --- | --- |
 | 128 | Mobil ≤430 px zentrierte Spalte, Desktop ≥920 px mit Sidebar | `app/shell.css` |
 | 129 | Mobiles Seitenmenü (Drawer) mit Fokusfalle und Escape | `AppShell.tsx`, `useDialogFocus.ts` |
-| 130 | Zurück-Taste schließt Overlays statt die App | `components/useBackDismiss.ts` |
+| 130 | Zurück-Taste bleibt in der App: Overlay → Unteransicht (Personen-Detail, geöffneter Plan) → Start; erst auf Start verlässt sie die App (4.10.2026) | `components/useBackDismiss.ts`, `AppShell.tsx` |
 | 131 | Bottom-Sheets per Wisch-nach-unten schließen | `components/useSwipeDown.ts` |
 | 132 | Toast-Meldungen mit Neustart-Timer | `AppShell.tsx`, `nextToast` |
 | 133 | Hell/Dunkel ohne Flackern (Inline-Script vor erstem Paint) | `index.html` |
