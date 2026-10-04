@@ -277,9 +277,9 @@ describe('Gruppenbesuche als Ablauf', () => {
 describe('Weitere Pläne als Ablauf', () => {
   it('Plan anlegen → Namen tippen → reihum verteilen → Zeitraum kürzen', () => {
     // Ein zweiter, veröffentlichter Plan, den hier niemand anfasst.
-    const anderer: WeitererPlan = { id: 'p-alt', vorlage: 'saal', name: 'Fenster', von: '2026-09-07', bis: '2026-11-29', entwurf: false }
+    const anderer: WeitererPlan = { id: 'p-alt', name: 'Fenster', von: '2026-09-07', bis: '2026-11-29', entwurf: false }
     const a = ablauf(start({ plaene: [anderer] }))
-    const plan = neuerPlan('p-neu', 'saal', new Date())
+    const plan = neuerPlan('p-neu', new Date())
     a.tue({ type: 'wpPlanAnlegen', plan })
     for (const name of ['W', 'Wi', 'Winter']) a.tue({ type: 'wpPlanAendern', id: 'p-neu', patch: { name } })
     expect(data.savePlaene).not.toHaveBeenCalled()
@@ -307,8 +307,8 @@ describe('Weitere Pläne als Ablauf', () => {
 
   it('erst getippt, dann gelöscht: der Plan geht nur als Löschung hinaus', () => {
     const a = ablauf(start())
-    a.tue({ type: 'wpPlanAnlegen', plan: neuerPlan('p-neu', 'familien', new Date()) })
-    a.tue({ type: 'wpPlanAendern', id: 'p-neu', patch: { name: 'Kreisaufseher' } })
+    a.tue({ type: 'wpPlanAnlegen', plan: neuerPlan('p-neu', new Date()) })
+    a.tue({ type: 'wpPlanAendern', id: 'p-neu', patch: { name: 'Grundreinigung' } })
     a.tue({ type: 'wpPlanLoeschen', id: 'p-neu' })
     a.tue({ type: 'navigate', screen: 'start' })
     // Geschrieben nach dem Löschen, stünde er wieder da.

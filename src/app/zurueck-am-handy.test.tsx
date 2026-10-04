@@ -11,8 +11,8 @@ import type { WeitererPlan } from '../data/types'
  * das Handy-Menü einen Eintrag an. Auf jedem gewöhnlichen Bildschirm verließ
  * Zurück deshalb die App. Jetzt:
  *
- * - Ist eine Unteransicht offen (Personen-Detail, geöffneter Plan,
- *   Vorlagenwahl), schließt Zurück zuerst sie.
+ * - Ist eine Unteransicht offen (Personen-Detail, geöffneter Plan), schließt
+ *   Zurück zuerst sie.
  * - Sonst führt es zu Start — ein Druck, gleich wie viele Bildschirme davor
  *   lagen: Reiter, Wochen und Bildschirmwechsel sind keine Schritte.
  * - Auf Start verlässt es die App.
@@ -41,7 +41,7 @@ const t = dict('de')
 window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
 
 /** Ein Plan, der läuft — damit die Liste der Weiteren Pläne etwas zum Öffnen hat. */
-const PLAN: WeitererPlan = { id: 'pl-x', vorlage: 'saal', name: 'Winterdienst', von: '2026-01-05', bis: '2099-12-27', entwurf: false }
+const PLAN: WeitererPlan = { id: 'pl-x', name: 'Winterdienst', von: '2026-01-05', bis: '2099-12-27', entwurf: false }
 
 let basis = ''
 
@@ -164,19 +164,16 @@ describe('Zurück am Handy', () => {
     expect(amGrund()).toBe(true)
   })
 
-  it('nach der Wahl der Vorlage führt Zurück zur Liste, nicht zurück zur Wahl', async () => {
+  it('ein neuer Plan steht gleich offen da — Zurück führt zur Liste, dann zu Start', async () => {
     const { container } = zeige({ planModus: true, plaene: [], planEintraege: [] })
     klickMenue(container, t.navWeiterePlaene)
     fireEvent.click([...container.querySelectorAll('button')].find((b) => b.textContent === t.wpNeu)!)
     await ausklingen()
-    expect(container.querySelector('.wp-vorlagen')).not.toBeNull()
-    fireEvent.click(container.querySelector('.wp-vorlage-karte[data-vorlage="familien"]')!)
-    await ausklingen()
     expect(container.querySelector('.wp-zurueck'), 'der neue Plan ist nicht offen').not.toBeNull()
 
     await zurueck()
-    expect(container.querySelector('.wp-vorlagen'), 'zurück in der Vorlagenwahl').toBeNull()
-    expect(container.querySelector('.wp-zurueck')).toBeNull()
+    expect(container.querySelector('.wp-zurueck'), 'der Plan blieb offen').toBeNull()
+    expect(container.querySelector('.wp-karte'), 'der neue Plan fehlt in der Liste').not.toBeNull()
 
     await zurueck()
     expect(aktiv(container)).toBe(t.navStart)

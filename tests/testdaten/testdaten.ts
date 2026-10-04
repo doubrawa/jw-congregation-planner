@@ -307,46 +307,23 @@ export const DEMO_OZ_PERSONEN: readonly string[] = ['p6', 'p7', 'p9', 'p10', 'p1
 
 /**
  * Weitere Pläne (T120, Phase 5) — nur für die Entwicklerseite, wie die übrigen
- * Pläne. Je eine Lage: Familien reihum in der Woche des Kreisaufsehers
- * (veröffentlicht; Simon, p9, bewirtet am Donnerstag), ein Winterdienst ab
- * Gruppe 3 (veröffentlicht; Simon ist in Gruppe 1) und ein Entwurf.
+ * Pläne. Je eine Lage: ein Winterdienst ab Gruppe 3 (veröffentlicht; Simon,
+ * p9, ist in Gruppe 1) und eine Grundreinigung als Entwurf.
  */
 export const DEMO_PLAENE: WeitererPlan[] = [
-  { id: 'pl-familien', vorlage: 'familien', name: 'Besuch des Kreisaufsehers', von: '2026-09-22', bis: '2026-09-27', entwurf: false },
-  { id: 'pl-grund', vorlage: 'saal', name: 'Grundreinigung', von: '2026-10-05', bis: '2026-10-25', entwurf: true },
-  { id: 'pl-winter', vorlage: 'saal', name: 'Winterdienst', von: '2026-11-30', bis: '2027-02-28', entwurf: false },
+  { id: 'pl-grund', name: 'Grundreinigung', von: '2026-10-05', bis: '2026-10-25', entwurf: true },
+  { id: 'pl-winter', name: 'Winterdienst', von: '2026-11-30', bis: '2027-02-28', entwurf: false },
 ]
 
-/** Die Einträge dazu: Gastgeber je Mahlzeit, die Gruppen reihum ab Gruppe 3. */
+/** Die Einträge dazu: die Gruppen reihum ab Gruppe 3. */
 export function demoPlanEintraege(): PlanEintrag[] {
-  const gast = (datum: string, mahlzeit: 'mittag' | 'abend', pid: string): PlanEintrag => ({
-    id: `pe-${datum}-${mahlzeit}`,
-    planId: 'pl-familien',
-    datum,
-    grp: null,
-    pid,
-    mahlzeit,
-  })
   const reihum = ['g3', 'g4', 'g1', 'g2']
-  const winter = Array.from({ length: 13 }, (_, i): PlanEintrag => ({
+  return Array.from({ length: 13 }, (_, i): PlanEintrag => ({
     id: `pe-winter-${i}`,
     planId: 'pl-winter',
     datum: montagNach('2026-11-30', i),
     grp: reihum[i % reihum.length]!,
-    pid: null,
-    mahlzeit: null,
   }))
-  return [
-    gast('2026-09-22', 'mittag', 'p1'),
-    gast('2026-09-22', 'abend', 'p4'),
-    gast('2026-09-23', 'mittag', 'p2'),
-    gast('2026-09-23', 'abend', 'p6'),
-    gast('2026-09-24', 'abend', 'p9'),
-    gast('2026-09-25', 'mittag', 'p3'),
-    gast('2026-09-26', 'abend', 'p7'),
-    gast('2026-09-27', 'mittag', 'p13'),
-    ...winter,
-  ]
 }
 
 /* ---- Hilfsdienste ------------------------------------------------------- */

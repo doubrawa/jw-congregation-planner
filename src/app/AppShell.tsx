@@ -195,10 +195,7 @@ export function AppShell() {
   const verwaltung = (['personen', 'einstellungen'] as const).filter((s) => navScreens.includes(s))
   const weiterePlaeneSichtbar = weiterePlaeneImMenue({
     plaene: state.plaene,
-    eintraege: state.planEintraege,
     planner: state.planner,
-    me,
-    persons: state.persons,
     heute: fromIso(tag),
   })
   const abschnitte: NavAbschnitt[] = [

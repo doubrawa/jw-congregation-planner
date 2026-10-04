@@ -54,9 +54,8 @@ const oz = (datum: string, pid: string, selbst = false): OzEintrag => ({
   pid,
   selbst,
 })
-const SAAL: WeitererPlan = { id: 'pl-s', vorlage: 'saal', name: 'Winterdienst', von: '2026-09-07', bis: '2026-10-04', entwurf: true }
-const FAMILIEN: WeitererPlan = { id: 'pl-f', vorlage: 'familien', name: '', von: '2026-09-22', bis: '2026-09-27', entwurf: false }
-const GAST: PlanEintrag = { id: 'e-gast', planId: 'pl-f', datum: '2026-09-22', grp: null, pid: 'p1', mahlzeit: 'mittag' }
+const SAAL: WeitererPlan = { id: 'pl-s', name: 'Winterdienst', von: '2026-09-07', bis: '2026-10-04', entwurf: true }
+const WOCHE: PlanEintrag = { id: 'e-woche', planId: 'pl-s', datum: '2026-09-14', grp: 'g1' }
 /** Konrad (p5) besucht Gruppe 2 in der zweiten Demo-Woche — und ist dort schon eingetragen. */
 const BESUCH: Gruppenbesuch = { id: 'b1', woche: '2026-09-14', grp: 'g2', pid: 'p5' }
 
@@ -76,8 +75,8 @@ function zustand(over: Partial<AppState> = {}): AppState {
     gruppenbesuche: [BESUCH],
     ozTermine: [MITTWOCH],
     ozEintraege: [oz(NAECHSTER_MITTWOCH, 'p1')],
-    plaene: [SAAL, FAMILIEN],
-    planEintraege: [GAST],
+    plaene: [SAAL],
+    planEintraege: [WOCHE],
     confirmations: {},
     notifs: [],
     terminGewaehlt: true,
@@ -146,10 +145,9 @@ describe('Abgelehnt: derselbe Zustand, nichts geschrieben', () => {
     ['einen Zeitraum setzen, der vor seinem Anfang endet', {}, { type: 'wpPlanAendern', id: SAAL.id, patch: { bis: '2026-09-01' } }],
     ['einen Plan löschen, den es nicht gibt', {}, { type: 'wpPlanLoeschen', id: 'pl-weg' }],
     ['Gruppen verteilen in einem Plan, den es nicht gibt', {}, { type: 'wpGruppenVerteilen', planId: 'pl-weg', abGruppe: 'g1' }],
-    ['Gruppen verteilen bei „Familien reihum"', {}, { type: 'wpGruppenVerteilen', planId: FAMILIEN.id, abGruppe: 'g1' }],
-    ['einen Platz setzen in einem Plan, den es nicht gibt', {}, { type: 'wpEintragSetzen', planId: 'pl-weg', datum: '2026-09-22', mahlzeit: 'mittag', grp: null, pid: 'p2' }],
-    ['denselben Gastgeber noch einmal setzen', {}, { type: 'wpEintragSetzen', planId: FAMILIEN.id, datum: GAST.datum, mahlzeit: 'mittag', grp: null, pid: 'p1' }],
-    ['einen leeren Platz räumen', {}, { type: 'wpEintragSetzen', planId: FAMILIEN.id, datum: '2026-09-23', mahlzeit: 'abend', grp: null, pid: null }],
+    ['eine Gruppe setzen in einem Plan, den es nicht gibt', {}, { type: 'wpEintragSetzen', planId: 'pl-weg', datum: '2026-09-21', grp: 'g2' }],
+    ['dieselbe Gruppe noch einmal setzen', {}, { type: 'wpEintragSetzen', planId: SAAL.id, datum: WOCHE.datum, grp: 'g1' }],
+    ['eine leere Woche räumen', {}, { type: 'wpEintragSetzen', planId: SAAL.id, datum: '2026-09-21', grp: null }],
     // Gruppenbesuche
     ['dieselbe Gruppe in derselben Woche ein zweites Mal besuchen', {}, { type: 'besuchHinzufuegen', woche: BESUCH.woche, grp: BESUCH.grp, pid: 'p6' }],
     ['einen Besuch entfernen, den es nicht gibt', {}, { type: 'besuchEntfernen', id: 'b-weg' }],

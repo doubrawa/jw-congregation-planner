@@ -52,8 +52,8 @@
  * Richtlinie offen, sondern die ganze Kodierung.
  *
  * **Seit dem 3. Oktober 2026 misst sie auch die Rechte aus T120** — die Pläne
- * der Versammlung. Dort geht es öfter ums **Sehen** als ums Schreiben: Wer bei
- * „Familien reihum" Gastgeber ist, geht nicht die ganze Versammlung an.
+ * der Versammlung. Dort geht es auch ums **Sehen**: Einen Entwurf sieht nur,
+ * wer planen darf.
  *
  *  11. einen Gruppenbesuch anlegen                      → abgewiesen
  *  12. einen Gruppenbesuch sehen                        → sichtbar
@@ -68,26 +68,21 @@
  *  21. den eigenen löschen (Absagen gibt den Platz frei) → durch
  *  28. einen Plan im Entwurf sehen                      → unsichtbar
  *  29. den veröffentlichten Königreichssaal sehen       → sichtbar
- *  30. „Familien reihum" ohne eigenen Haushalt          → unsichtbar
- *  31. „Familien reihum" als Gastgeber — ganzer Plan    → sichtbar
- *  32. „Familien reihum", Gastgeber aus dem Haushalt    → sichtbar
  *  33. einen Plan anlegen                               → abgewiesen
- *  34. sich als Gastgeber in einen fremden Plan setzen  → abgewiesen
+ *  34. eine Woche eines Plans selbst besetzen           → abgewiesen
  *
- * (22)–(27) maßen die Redner auswärts, die es vom 3. bis 4.10.2026 gab. Die
- * Nummern bleiben frei, damit Protokolle und Notizen von damals weiter auf
- * dieselben Fälle zeigen.
+ * (22)–(27) maßen die Redner auswärts, (30)–(32) die Vorlage „Familien
+ * reihum" — beides gab es vom 3. bis 4.10.2026. Die Nummern bleiben frei,
+ * damit Protokolle und Notizen von damals weiter auf dieselben Fälle zeigen.
  *
  * Anders als (1)–(10) findet die Probe dafür **keinen Bestand** vor: Termine
  * und Pläne gibt es in der Probeversammlung nicht von selbst. Der
  * Planer legt sie an — im Jahr 2099, jede Kennung mit dem Kennzeichen des
  * Laufs —, und am Ende räumt die Probe genau diese Zeilen wieder weg, auch
- * nach einem Fehler mittendrin. **Drei Dinge ändert sie dafür vorübergehend
+ * nach einem Fehler mittendrin. **Zwei Dinge ändert sie dafür vorübergehend
  * an der Person des Mitglieds** und stellt sie danach wieder her: den
  * Aufgabenbereich „Öffentliches Zeugnisgeben" (für 15 und 16 in beiden
- * Stellungen), die Freischaltung für den Hilfsdienst aus (9), wenn sie fehlt,
- * und — nur, wenn niemand ihren Haushalt teilt — den Haushalt (für 32 zieht
- * sie mit einer Probe-Person in einen Probe-Haushalt).
+ * Stellungen) und die Freischaltung für den Hilfsdienst aus (9), wenn sie fehlt.
  *
  * **Jede durchgekommene Zeile wird sofort wieder gelöscht.** Wer aufräumen darf,
  * hängt am Empfänger: `notifications_delete` verlangt `user_id = auth.uid()`,
@@ -349,16 +344,12 @@ export function ozSchluessel(datum, id) {
  * Person; (14) ist die eigene Person, nur ohne „selbst"; (16) beides richtig,
  * nur ohne Aufgabenbereich.
  *
- * `fremderGastgeber` lebt nicht im Haushalt des Mitglieds — gewöhnlich der
- * Planer, in der Testversammlung aber nicht: Dort sind Planer und Mitglied ein
- * Ehepaar.
- *
  * @param {{
  *   marke: string, versammlung: string, tag0: string,
- *   planerPid: string, mitgliedPid: string, gruppe?: string | null, fremderGastgeber?: string
+ *   planerPid: string, mitgliedPid: string, gruppe?: string | null
  * }} auftrag
  */
-export function t120Anlage({ marke, versammlung: c, tag0, planerPid, mitgliedPid, gruppe = null, fremderGastgeber = planerPid }) {
+export function t120Anlage({ marke, versammlung: c, tag0, planerPid, mitgliedPid, gruppe = null }) {
   const id = (name) => `${marke}-${name}`
   const montag = (wochen) => tagPlus(tag0, 7 * wochen)
   const sonntag = (wochen) => tagPlus(tag0, 7 * wochen + 6)
@@ -366,21 +357,20 @@ export function t120Anlage({ marke, versammlung: c, tag0, planerPid, mitgliedPid
   const oz = (name, wochen, person, selbst) => ({
     id: id(name), congregation_id: c, termin_id: termin.id, datum: montag(wochen), person_id: person, selbst,
   })
-  const plan =(name, vorlage, entwurf) => ({
-    id: id(name), congregation_id: c, vorlage, name: marke, von: tag0, bis: sonntag(0), entwurf,
+  // Zwei Wochen: Der Versuch des Mitglieds (34) liegt in der zweiten, sonst
+  // träfe er den Platz der ersten — und scheiterte an `plan_eintraege_woche`.
+  const plan = (name, entwurf) => ({
+    id: id(name), congregation_id: c, name: marke, von: tag0, bis: sonntag(1), entwurf,
   })
-  const eintrag = (name, planId, { grp = null, person = null, mahlzeit = null } = {}) => ({
-    id: id(name), congregation_id: c, plan_id: planId, datum: tag0, grp, person_id: person, mahlzeit,
+  const eintrag = (name, planId, datum = montag(0)) => ({
+    id: id(name), congregation_id: c, plan_id: planId, datum, grp: gruppe,
   })
 
   const ozZugeteilt = oz('oz-zugeteilt', 2, mitgliedPid, false)
   const plaene = {
-    entwurf: plan('plan-entwurf', 'saal', true),
-    saal: plan('plan-saal', 'saal', false),
-    fremd: plan('plan-fremd', 'familien', false),
-    eigen: plan('plan-eigen', 'familien', false),
+    entwurf: plan('plan-entwurf', true),
+    saal: plan('plan-saal', false),
   }
-  const haushalt = plan('plan-haushalt', 'familien', false)
   return {
     besuch: gruppe ? { id: id('besuch'), congregation_id: c, woche: montag(1), grp: gruppe, person_id: planerPid } : null,
     besuchVersuch: gruppe ? { id: id('besuch-mitglied'), congregation_id: c, woche: montag(0), grp: gruppe, person_id: mitgliedPid } : null,
@@ -396,22 +386,13 @@ export function t120Anlage({ marke, versammlung: c, tag0, planerPid, mitgliedPid
     ozFalscherMontag: ozSchluessel(montag(0), ozZugeteilt.id),
     plaene,
     eintraege: {
-      entwurf: [eintrag('e-entwurf', plaene.entwurf.id, { grp: gruppe })],
-      saal: [eintrag('e-saal', plaene.saal.id, { grp: gruppe })],
-      fremd: [eintrag('e-fremd', plaene.fremd.id, { person: fremderGastgeber, mahlzeit: 'mittag' })],
-      eigen: [
-        eintrag('e-eigen', plaene.eigen.id, { person: mitgliedPid, mahlzeit: 'abend' }),
-        // Ein fremder Gastgeber im selben Plan: Wer darin steht, sieht den
-        // ganzen Plan — sonst wüsste er nicht, wer an den anderen Tagen dran ist.
-        eintrag('e-eigen-andere', plaene.eigen.id, { person: planerPid, mahlzeit: 'mittag' }),
-      ],
+      entwurf: [eintrag('e-entwurf', plaene.entwurf.id)],
+      saal: [eintrag('e-saal', plaene.saal.id)],
     },
-    haushalt,
-    haushaltEintrag: (mitbewohner) => eintrag('e-haushalt', haushalt.id, { person: mitbewohner, mahlzeit: 'abend' }),
-    planVersuch: plan('plan-versuch', 'saal', false),
-    // Sich selbst zum Gastgeber machen — der Weg, einen fremden Familienplan
-    // sichtbar zu machen, wenn das Schreiben offen stünde.
-    eintragVersuch: eintrag('e-versuch', plaene.fremd.id, { person: mitgliedPid, mahlzeit: 'abend' }),
+    planVersuch: plan('plan-versuch', false),
+    // Eine Woche des veröffentlichten Plans selbst besetzen — schreiben darf
+    // dort nur ein Planer.
+    eintragVersuch: eintrag('e-versuch', plaene.saal.id, montag(1)),
   }
 }
 
@@ -576,8 +557,8 @@ async function leseVersuch(k, nr, was, anlage, lesen, erwartet, folge) {
 
 /**
  * Was das Mitglied von einem Plan sieht: den Plan und seine Einträge. Verboten
- * ist schon ein Teil davon; erlaubt heißt: alles — wer in „Familien reihum"
- * steht, soll auch sehen, wer an den anderen Tagen dran ist.
+ * ist schon ein Teil davon; erlaubt heißt: alles — wer den Plan sieht, soll
+ * auch sehen, welche Gruppe wann dran ist.
  */
 async function planSicht(mitglied, plan, eintraege, ganz) {
   const [p, e] = await Promise.all([
@@ -676,58 +657,13 @@ async function zeugnisProben(k, a, ich, spaeter) {
 }
 
 /**
- * Jemand aus dem Haushalt des Mitglieds — für (32). Teilt niemand ihn, zieht
- * das Mitglied für die Dauer der Probe mit einer Probe-Person in einen
- * Probe-Haushalt; `spaeter` stellt den Haushalt wieder her und räumt beide weg.
+ * (28), (29), (33), (34) Weitere Pläne (Phase 5): sehen über `plan_sichtbar` —
+ * einen Entwurf nie, Veröffentlichtes alle; schreiben nur Planer.
  */
-async function mitbewohnerFinden(k, ich, spaeter) {
-  const { planer, mitglied, versammlung, marke } = k
-  if (ich.fam) {
-    const r = await planer.rest(`persons?select=id&fam=eq.${ich.fam}&id=neq.${mitglied.pid}&limit=1`)
-    const da = zeilenVon(r)[0]?.id
-    if (da) return { pid: da, wie: 'vorhandener Haushalt' }
-  }
-  const haushalt = crypto.randomUUID()
-  const person = crypto.randomUUID()
-  const h = await planer.rest('households', 'POST', { id: haushalt, congregation_id: versammlung }, 'return=minimal')
-  if (h.status >= 400) return { pid: null, grund: `Probe-Haushalt nicht angelegt (HTTP ${h.status})` }
-  spaeter.push(['der Probe-Haushalt', () => planer.rest(`households?id=eq.${haushalt}`, 'DELETE', undefined, 'return=minimal')])
-  const p = await planer.rest('persons', 'POST', { id: person, congregation_id: versammlung, fn: 'PROBE', ln: marke, fam: haushalt }, 'return=minimal')
-  if (p.status >= 400) return { pid: null, grund: `Probe-Person nicht angelegt (HTTP ${p.status})` }
-  spaeter.push(['die Probe-Person', () => planer.rest(`persons?id=eq.${person}`, 'DELETE', undefined, 'return=minimal')])
-  // Vor dem Umzug vorgemerkt: Scheitert er halb, stellt das Zurücksetzen trotzdem den alten Stand her.
-  spaeter.push(['der Haushalt des Mitglieds', () => planer.rest(`persons?id=eq.${mitglied.pid}`, 'PATCH', { fam: ich.fam ?? null }, 'return=minimal')])
-  const u = await planer.rest(`persons?id=eq.${mitglied.pid}`, 'PATCH', { fam: haushalt }, 'return=minimal')
-  if (u.status >= 400) return { pid: null, grund: `Mitglied nicht in den Probe-Haushalt gezogen (HTTP ${u.status})` }
-  return { pid: person, wie: 'Probe-Haushalt' }
-}
-
-/**
- * Ein Gastgeber, der **nicht** im Haushalt des Mitglieds lebt — für (30).
- * Zuerst der Planer; in der Testversammlung sind Planer und Mitglied aber ein
- * Ehepaar (so gemessen am 3.10.2026, (30) blieb ungemessen), dann jemand
- * anderes aus der Versammlung. `wie` sagt, welcher Fall gemessen wird: Haben
- * beide keinen Haushalt, ist es genau der, an dem `null = null` scheitern muss.
- */
-async function gastgeberAusserHaus(k, ich, planerPerson) {
-  const ausserHaus = (p) => p.id !== k.mitglied.pid && !(ich.fam && p.fam === ich.fam)
-  const wie = (p) => (!ich.fam && !p.fam ? 'beide ohne Haushalt' : 'anderer Haushalt')
-  if (ausserHaus(planerPerson)) return { pid: planerPerson.id, wie: wie(planerPerson) }
-  const r = await k.planer.rest(`persons?select=id,fam&id=neq.${k.mitglied.pid}&order=id&limit=100`)
-  const p = zeilenVon(r).find(ausserHaus)
-  if (p) return { pid: p.id, wie: wie(p) }
-  return { pid: null, grund: r.status >= 400 ? `Personen nicht lesbar (HTTP ${r.status})` : 'alle teilen den Haushalt des Mitglieds' }
-}
-
-/**
- * (28)–(34) Weitere Pläne (Phase 5): sehen über `plan_sichtbar` — einen
- * Entwurf nie, den Königreichssaal alle, „Familien reihum" nur die Gastgeber
- * und ihr Haushalt; schreiben nur Planer.
- */
-async function plaeneProben(k, a, ich, gast, spaeter) {
+async function plaeneProben(k, a) {
   const { planer, mitglied } = k
   const p = a.plaene
-  const plaene = await anlegen(planer, 'plaene', [p.entwurf, p.saal, p.fremd, p.eigen])
+  const plaene = await anlegen(planer, 'plaene', [p.entwurf, p.saal])
   const anlage = plaene.ok ? await anlegen(planer, 'plan_eintraege', Object.values(a.eintraege).flat()) : plaene
 
   await leseVersuch(k, 28, 'einen Plan im Entwurf sehen', anlage, () => planSicht(mitglied, p.entwurf, a.eintraege.entwurf, false), false, [
@@ -738,34 +674,9 @@ async function plaeneProben(k, a, ich, gast, spaeter) {
     'die ganze Versammlung sieht ihn',
     'ZU STRENG — die Versammlung sieht den Saalplan nicht',
   ])
-  if (!gast.pid) {
-    k.ungemessen(30, '„Familien reihum" ohne eigenen Haushalt', gast.grund)
-  } else {
-    await leseVersuch(k, 30, `„Familien reihum" ohne eigenen Haushalt (${gast.wie})`, anlage, () => planSicht(mitglied, p.fremd, a.eintraege.fremd, false), false, [
-      'AUCH DAS!',
-      'unsichtbar — nur Gastgeber und ihr Haushalt',
-    ])
-  }
-  await leseVersuch(k, 31, '„Familien reihum" als Gastgeber — der ganze Plan', anlage, () => planSicht(mitglied, p.eigen, a.eintraege.eigen, true), true, [
-    'der Gastgeber sieht, wer an den anderen Tagen dran ist',
-    'ZU STRENG — der Gastgeber sieht seinen Plan nicht ganz',
-  ])
-
-  const mitbewohner = await mitbewohnerFinden(k, ich, spaeter)
-  if (!mitbewohner.pid) {
-    k.ungemessen(32, '„Familien reihum", Gastgeber aus dem eigenen Haushalt', mitbewohner.grund)
-  } else {
-    const eintrag = a.haushaltEintrag(mitbewohner.pid)
-    const plan = await anlegen(planer, 'plaene', [a.haushalt])
-    const anlage32 = plan.ok ? await anlegen(planer, 'plan_eintraege', [eintrag]) : plan
-    await leseVersuch(k, 32, `„Familien reihum", Gastgeber aus dem eigenen Haushalt (${mitbewohner.wie})`, anlage32, () => planSicht(mitglied, a.haushalt, [eintrag], true), true, [
-      'der Haushalt sieht mit',
-      'ZU STRENG — der Haushalt des Gastgebers sieht den Plan nicht',
-    ])
-  }
 
   await schreibVersuch(k, 33, 'einen Plan anlegen', 'plaene', a.planVersuch, false, ['AUCH DAS!', 'abgewiesen — nur Planer'])
-  const was34 = 'sich als Gastgeber in einen fremden Plan setzen'
+  const was34 = 'eine Woche eines Plans selbst besetzen'
   if (anlage.ok) await schreibVersuch(k, 34, was34, 'plan_eintraege', a.eintragVersuch, false, ['AUCH DAS!', 'abgewiesen — nur Planer'])
   else k.kaputt(34, was34, anlage.grund, false)
 }
@@ -776,8 +687,7 @@ async function plaeneProben(k, a, ich, gast, spaeter) {
  * sollen. Die Einträge gehen ausdrücklich vor ihrem Termin bzw. Plan, statt
  * sich auf `on delete cascade` zu verlassen: So prüft die Attrappe, die keine
  * Kaskade kennt, das Aufräumen mit. Danach, was `spaeter` gesammelt hat,
- * rückwärts: erst den Haushalt des Mitglieds zurück, dann Probe-Person und
- * -Haushalt, zuletzt der Aufgabenbereich.
+ * rückwärts — den Aufgabenbereich des Mitglieds.
  */
 async function t120Aufraeumen(k, spaeter) {
   const { planer, mitglied, marke } = k
@@ -816,7 +726,7 @@ async function t120Proben(k) {
     return
   }
   const [personen, gruppen] = await Promise.all([
-    planer.rest(`persons?select=id,priv,fam&id=in.(${mitglied.pid},${planer.pid})`),
+    planer.rest(`persons?select=id,priv&id=in.(${mitglied.pid},${planer.pid})`),
     planer.rest('groups?select=id&limit=1'),
   ])
   const ich = zeilenVon(personen).find((p) => p.id === mitglied.pid)
@@ -826,7 +736,6 @@ async function t120Proben(k) {
     return
   }
   const gruppe = zeilenVon(gruppen)[0]?.id ?? null
-  const gast = await gastgeberAusserHaus(k, ich, planerPerson)
   const a = t120Anlage({
     marke,
     versammlung,
@@ -834,14 +743,12 @@ async function t120Proben(k) {
     planerPid: planer.pid,
     mitgliedPid: mitglied.pid,
     gruppe,
-    // Ohne passenden Gastgeber bleibt (30) ungemessen; der Plan entsteht trotzdem.
-    fremderGastgeber: gast.pid ?? planer.pid,
   })
   const spaeter = []
   try {
     await gruppenbesucheProben(k, a)
     await zeugnisProben(k, a, ich, spaeter)
-    await plaeneProben(k, a, ich, gast, spaeter)
+    await plaeneProben(k, a)
   } finally {
     await t120Aufraeumen(k, spaeter)
   }

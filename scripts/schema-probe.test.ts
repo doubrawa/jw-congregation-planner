@@ -387,7 +387,6 @@ const LAEUFE: Record<string, Lauf[]> = {
         'POST gruppenbesuche', 'GET gruppenbesuche', 'DELETE gruppenbesuche',
         'POST oz_termine', 'POST oz_eintraege', 'DELETE oz_eintraege', 'DELETE oz_termine', 'PATCH persons',
         'POST plaene', 'GET plaene', 'DELETE plaene', 'POST plan_eintraege', 'GET plan_eintraege', 'DELETE plan_eintraege',
-        'POST households', 'DELETE households', 'POST persons', 'DELETE persons',
         // (6) und (6b): der Meldeweg eines Mitglieds seit dem 24.9.2026.
         'POST rpc/notify_planners',
       ],
@@ -570,28 +569,24 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
 
   /*
     T120 (seit 3.10.2026): Die Probe legt als Planer an, was sie misst, und
-    ändert für (15)/(16) und (32) vorübergehend die Person des Mitglieds. Die
+    ändert für (15)/(16) vorübergehend die Person des Mitglieds. Die
     Attrappe kennt keine Richtlinien — jeder Versuch kommt dort durch. Gerade
     deshalb läuft hier jeder Aufräum-Zweig, und am Ende muss alles weg sein.
   */
   const istProbe = (z: Record<string, unknown>) => String(z.id ?? '').startsWith('PROBE-')
 
   it('mitgliedsrechte-probe (T120): räumt alles weg, was es angelegt hat — die Person des Mitglieds ist wie vorher', async () => {
-    const { tabellen, ausgabe, aufrufe } = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
+    const { tabellen, ausgabe } = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
     for (const t of ['gruppenbesuche', 'oz_termine', 'oz_eintraege', 'plaene', 'plan_eintraege']) {
       expect((tabellen[t] ?? []).filter(istProbe), t).toEqual([])
     }
     expect((tabellen.confirmations ?? []).filter((z) => String(z.task_key).includes('PROBE-'))).toEqual([])
-    expect(tabellen.persons!.filter((p) => p.fn === 'PROBE'), 'Probe-Person blieb liegen').toEqual([])
-    expect(tabellen.households ?? [], 'Probe-Haushalt blieb liegen').toEqual([])
     const mitglied = tabellen.persons!.find((p) => p.id === P2)!
     expect(mitglied.priv).toEqual({ 'svc:mik': true })
-    expect(mitglied.fam ?? null).toBeNull()
-    // Bezogen war der Probe-Haushalt aber — sonst hätte (32) nichts gemessen.
-    expect(aufrufe.some((a) => a.method === 'PATCH' && tabelleVon(a) === 'persons' && typeof (a.body as { fam?: unknown }).fam === 'string')).toBe(true)
     const text = ausgabe.join('\n')
     expect(text).toMatch(/\(15\) sich selbst eintragen, mit Aufgabenbereich\n.*ANGEKOMMEN \(HTTP 201\) — der Weg steht offen/)
-    expect(text).toMatch(/\(32\) „Familien reihum", Gastgeber aus dem eigenen Haushalt \(Probe-Haushalt\)\n.*SICHTBAR \(HTTP 200; Plan 1\/1, Einträge 1\/1\)/)
+    // Gesehen wird der ganze Plan: der Plan und seine Woche.
+    expect(text).toMatch(/\(29\) den veröffentlichten Königreichssaal sehen\n.*SICHTBAR \(HTTP 200; Plan 1\/1, Einträge 1\/1\)/)
     expect(text).toMatch(/alles mit Kennzeichen PROBE-\d+ wieder entfernt/)
   })
 
@@ -641,28 +636,6 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     expect(tabellen.persons!.find((p) => p.id === P2)!.priv).toEqual({})
   })
 
-  it('mitgliedsrechte-probe (T120): sind Planer und Mitglied ein Ehepaar, nimmt (30) jemand anderen als Gastgeber', async () => {
-    // So ist die Testversammlung angelegt (gemessen am 3.10.2026): Der Planer
-    // als „fremder" Gastgeber stünde im Haushalt des Mitglieds, und (30) blieb
-    // ungemessen.
-    const P3 = k(34)
-    const { ausgabe, aufrufe } = await mitBestand({
-      households: [{ id: H1, congregation_id: C }],
-      persons: [
-        { id: P1, congregation_id: C, fn: 'Probe', ln: 'Planer', priv: {}, fam: H1 },
-        { id: P2, congregation_id: C, fn: 'Probe', ln: 'Mitglied', priv: { 'svc:mik': true }, fam: H1 },
-        { id: P3, congregation_id: C, fn: 'Probe', ln: 'Dritte', priv: {} },
-      ],
-    })
-    const text = ausgabe.join('\n')
-    expect(text).toMatch(/\(30\) „Familien reihum" ohne eigenen Haushalt \(anderer Haushalt\)\n/)
-    // (32) findet den Planer als Mitbewohner — kein Probe-Haushalt nötig.
-    expect(text).toMatch(/\(32\) „Familien reihum", Gastgeber aus dem eigenen Haushalt \(vorhandener Haushalt\)/)
-    expect(aufrufe.filter((a) => a.method === 'POST' && tabelleVon(a) === 'households')).toEqual([])
-    const eintraege = aufrufe.filter((a) => a.method === 'POST' && tabelleVon(a) === 'plan_eintraege').flatMap((a) => a.body as Record<string, unknown>[])
-    expect(eintraege.find((e) => String(e.id).endsWith('-e-fremd'))?.person_id).toBe(P3)
-  })
-
   it('mitgliedsrechte-probe (T120): scheitert die Anlage, heißt das „PROBE KAPUTT", nicht „unsichtbar"', async () => {
     // Ohne Plan gibt es nichts zu sehen — eine leere Antwort wäre sonst die
     // Grenze, die greift.
@@ -672,7 +645,7 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     const text = ausgabe.join('\n')
     expect(text).toMatch(/\(28\) einen Plan im Entwurf sehen\n.*PROBE KAPUTT — Anlage als Planer scheiterte \(plaene, HTTP 400\)/)
     expect(text).not.toMatch(/unsichtbar — einen Entwurf sehen nur Planer/)
-    expect(text).toMatch(/Nicht gemessen — die Probe selbst scheiterte: .*\(28\), \(29\), \(30\), \(31\)/)
+    expect(text).toMatch(/Nicht gemessen — die Probe selbst scheiterte: .*\(28\), \(29\), \(33\), \(34\)/)
     // Aufgeräumt wird trotzdem — der Termin des Zeugnisgebens stand ja schon.
     expect((tabellen.oz_termine ?? []).filter(istProbe)).toEqual([])
   })

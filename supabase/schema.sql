@@ -515,22 +515,16 @@ create index if not exists oz_eintraege_congregation_idx
   on public.oz_eintraege (congregation_id, datum);
 
 -- Weitere Pläne (T120, Phase 5): Ankündigungen ohne Zuteilung — niemand
--- bestätigt etwas, niemand wird erinnert. Zwei feste Vorlagen:
---   saal      Königreichssaal, je Woche eine Predigtdienstgruppe. Gemessen am
---             Buch „Organisiert, Jehovas Willen zu tun", Kap. 11 Abs. 10: „Im
---             Allgemeinen wechseln sich die Predigtdienstgruppen mit der
---             Saalreinigung ab"; ein Ältester oder Dienstamtgehilfe stellt
---             dafür einen Plan auf.
---   familien  Familien reihum, je Tag und Mahlzeit ein Gastgeber — etwa beim
---             Besuch des Kreisaufsehers (Kap. 5 Abs. 55, 58, 63: Unterkunft,
---             Mahlzeiten, Gastfreundschaft). Sehen darf ihn nur, wer darin
---             steht (`plan_sichtbar`).
+-- bestätigt etwas, niemand wird erinnert. Ein Plan ist ein Königreichssaal-
+-- Plan: je Woche eine Predigtdienstgruppe. Gemessen am Buch „Organisiert,
+-- Jehovas Willen zu tun", Kap. 11 Abs. 10: „Im Allgemeinen wechseln sich die
+-- Predigtdienstgruppen mit der Saalreinigung ab"; ein Ältester oder
+-- Dienstamtgehilfe stellt dafür einen Plan auf.
 -- Ein Plan beginnt als Entwurf; erst veröffentlicht sieht ihn die Versammlung.
 create table if not exists public.plaene (
   -- `text` wie bei `fs_rules`: Die Kennung vergibt der Client (`p<uuid>`).
   id              text primary key check (id <> ''),
   congregation_id uuid not null references public.congregations (id) on delete cascade,
-  vorlage         text not null check (vorlage in ('saal', 'familien')),
   name            text not null default '',        -- die Worte des Planers, unübersetzt
   von             date not null,
   bis             date not null,
@@ -544,30 +538,44 @@ create table if not exists public.plaene (
 create index if not exists plaene_congregation_idx
   on public.plaene (congregation_id, bis);
 
--- Ein Eintrag je Woche (saal: die Gruppe, `datum` ist der Montag) bzw. je Tag
--- und Mahlzeit (familien: der Gastgeber).
+-- Ein Eintrag je Woche: die Gruppe, `datum` ist der Montag.
 create table if not exists public.plan_eintraege (
   id              text primary key check (id <> ''),
   congregation_id uuid not null references public.congregations (id) on delete cascade,
   plan_id         text not null,
   datum           date not null,
   grp             uuid,
-  -- Der Gastgeber; sein Haushalt (`persons.fam`) sieht den Plan mit.
-  person_id       uuid,
-  mahlzeit        text check (mahlzeit is null or mahlzeit in ('fruehstueck', 'mittag', 'abend')),
   created_at      timestamptz not null default now(),
 
   constraint plan_eintraege_plan_fk foreign key (plan_id, congregation_id)
     references public.plaene (id, congregation_id) on delete cascade,
   constraint plan_eintraege_grp_fk foreign key (grp, congregation_id)
-    references public.groups (id, congregation_id) on delete set null (grp),
-  constraint plan_eintraege_person_fk foreign key (person_id, congregation_id)
-    references public.persons (id, congregation_id) on delete set null (person_id)
+    references public.groups (id, congregation_id) on delete set null (grp)
 );
 
--- Ein Platz je Woche bzw. je Tag und Mahlzeit — zugleich der Index fürs Laden.
-create unique index if not exists plan_eintraege_platz
-  on public.plan_eintraege (plan_id, datum, coalesce(mahlzeit, ''));
+-- Entfernt: die Vorlage „Familien reihum" (vom 3. bis 4.10.2026; je Tag und
+-- Mahlzeit ein Gastgeber). Ihre Pläne gehen samt Einträgen (Kaskade); danach
+-- braucht niemand mehr `plaene.vorlage` und die Gastgeber-Spalten. **Vor** dem
+-- Index darunter: Mit Mittag und Abend am selben Tag gäbe es je Plan und Tag
+-- zwei Einträge, und der eindeutige Index ließe sich nicht anlegen. Ein
+-- zweiter Lauf findet nichts mehr; der Block kann fort, sobald er überall
+-- eingespielt ist.
+do $$
+begin
+  if exists (select 1 from information_schema.columns
+              where table_schema = 'public' and table_name = 'plaene' and column_name = 'vorlage') then
+    delete from public.plaene where vorlage = 'familien';
+  end if;
+end
+$$;
+alter table public.plaene drop column if exists vorlage;
+drop index if exists public.plan_eintraege_platz;
+alter table public.plan_eintraege drop column if exists person_id;   -- nimmt plan_eintraege_person_fk mit
+alter table public.plan_eintraege drop column if exists mahlzeit;
+
+-- Ein Platz je Woche — zugleich der Index fürs Laden.
+create unique index if not exists plan_eintraege_woche
+  on public.plan_eintraege (plan_id, datum);
 
 -- Versand-Tagebuch der Erinnerungen: send-reminders trägt ein, wem es an
 -- welchem Tag welche Art geschickt hat, und überspringt beim zweiten Lauf am
@@ -712,14 +720,13 @@ as $$
 $$;
 
 -- Sieht die eigene Person diesen Plan (Weitere Pläne, T120 Phase 5)? Planer
--- alles. Sonst nur Veröffentlichtes: den Königreichssaal die ganze
--- Versammlung, „Familien reihum" nur, wer selbst oder mit seinem Haushalt als
--- Gastgeber darin steht — dann aber den ganzen Plan, damit man weiß, wer an den
--- anderen Tagen dran ist.
+-- alles, sonst die ganze Versammlung, was veröffentlicht ist. Bis zum
+-- 4.10.2026 stand hier dazu „Familien reihum": nur, wer selbst oder mit seinem
+-- Haushalt als Gastgeber darin stand.
 --
--- `security definer`, weil die Prüfung `plan_eintraege` liest — dieselbe
--- Tabelle, deren Richtlinie sie ist. Eine Richtlinie, die ihre eigene Tabelle
--- abfragt, liefe in die Rekursion.
+-- `security definer`, weil die Prüfung `plaene` liest — dieselbe Tabelle,
+-- deren Richtlinie sie ist (`plaene_select`). Eine Richtlinie, die ihre eigene
+-- Tabelle abfragt, liefe in die Rekursion.
 create or replace function public.plan_sichtbar(plan text)
 returns boolean
 language sql stable security definer
@@ -731,21 +738,6 @@ as $$
      where p.id = plan
        and p.congregation_id = public.my_congregation_id()
        and not p.entwurf
-       and (
-         p.vorlage = 'saal'
-         or exists (
-           select 1
-             from public.plan_eintraege e
-             join public.persons gast
-               on gast.id = e.person_id and gast.congregation_id = e.congregation_id
-            where e.plan_id = p.id
-              and (
-                gast.id = public.my_person_id()
-                or (gast.fam is not null
-                    and gast.fam = (select ich.fam from public.persons ich where ich.id = public.my_person_id()))
-              )
-         )
-       )
   )
 $$;
 

@@ -162,19 +162,14 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     expect(rumpf).toContain('e.congregation_id = cong')
   })
 
-  it('Weitere Pläne: Entwürfe sieht nur ein Planer, Familien reihum nur, wer darin steht (T120, Phase 5)', () => {
+  it('Weitere Pläne: Entwürfe sieht nur ein Planer, Veröffentlichtes die eigene Versammlung (T120, Phase 5)', () => {
     const fn = funktionsRuempfe(schema).get('plan_sichtbar') ?? ''
     // Die Funktion liest dieselbe Tabelle, deren Richtlinie sie ist — ohne
     // `security definer` liefe sie in die Rekursion.
     expect(fn).toContain('security definer')
     expect(fn).toContain('public.is_planner()')
     expect(fn).toContain('not p.entwurf')
-    expect(fn).toContain("p.vorlage = 'saal'")
-    expect(fn).toContain('gast.id = public.my_person_id()')
-    // Der Haushalt des Gastgebers muss der eigene sein — `gast.fam is not null`
-    // allein ließe jeden mit irgendeinem Haushalt jeden Familienplan sehen.
-    expect(fn).toContain('gast.fam is not null')
-    expect(fn).toContain('gast.fam = (select ich.fam from public.persons ich where ich.id = public.my_person_id())')
+    expect(fn).toContain('p.congregation_id = public.my_congregation_id()')
     const r = richtlinien(schema)
     expect(r.get('plaene_select') ?? '').toContain('public.plan_sichtbar(id)')
     expect(r.get('plan_eintraege_select') ?? '').toContain('public.plan_sichtbar(plan_id)')
@@ -283,16 +278,39 @@ describe('kein Altbestand mehr im Schema', () => {
     expect(normiert(schema)).toContain('drop table if exists public.vortraege_auswaerts cascade;')
   })
 
+  it('„Familien reihum" ist weg — Vorlage, Gastgeber und Mahlzeit (4.10.2026)', () => {
+    expect(tabelle('plaene')).not.toMatch(/^\s*vorlage\s/m)
+    expect(tabelle('plan_eintraege')).not.toMatch(/^\s*(person_id|mahlzeit)\s/m)
+    // Eine bestehende Datenbank verliert die Spalten beim nächsten Einspielen.
+    const sql = normiert(schema)
+    expect(sql).toContain('alter table public.plaene drop column if exists vorlage;')
+    expect(sql).toContain('alter table public.plan_eintraege drop column if exists person_id;')
+    expect(sql).toContain('alter table public.plan_eintraege drop column if exists mahlzeit;')
+    expect(funktionsRuempfe(schema).get('plan_sichtbar') ?? '').not.toMatch(/vorlage|person_id|fam/)
+  })
+
+  it('je Plan und Woche ein Eintrag — der Index entsteht erst, wenn die Familienpläne weg sind', () => {
+    // Mittag und Abend am selben Tag waren zwei Einträge je Plan und Tag; davor
+    // angelegt, bräche der eindeutige Index das Einspielen ab.
+    const index = schema.indexOf('create unique index if not exists plan_eintraege_woche')
+    const aufraeumen = schema.indexOf("delete from public.plaene where vorlage = 'familien'")
+    expect(index).toBeGreaterThan(-1)
+    expect(aufraeumen).toBeGreaterThan(-1)
+    expect(index).toBeGreaterThan(aufraeumen)
+    expect(normiert(schema)).toContain('on public.plan_eintraege (plan_id, datum);')
+  })
+
   it('das Aufräumen steht hinter den Tabellen, aus denen es löscht', () => {
     // Auf einer frischen Datenbank liefe ein `delete from` vor seinem
     // `create table` ins Leere — und das Einspielen bräche dort ab.
-    for (const m of schema.matchAll(/^delete from public\.(\w+)/gm)) {
+    const loeschen = [...schema.matchAll(/^\s*delete from public\.(\w+)/gm)]
+    for (const m of loeschen) {
       const angelegt = schema.indexOf(`create table if not exists public.${m[1]} (`)
       expect(angelegt, m[1]).toBeGreaterThan(-1)
       expect(angelegt, m[1]).toBeLessThan(m.index)
     }
-    // Gegenprobe: Es gibt solche Zeilen überhaupt.
-    expect([...schema.matchAll(/^delete from public\.(\w+)/gm)].length).toBeGreaterThan(0)
+    // Gegenprobe: Es gibt solche Zeilen überhaupt — die drei der Redner und die der Familienpläne.
+    expect(loeschen.map((m) => m[1]).sort()).toEqual(['assignment_log', 'confirmations', 'notifications', 'plaene'])
   })
 })
 

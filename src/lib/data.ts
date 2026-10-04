@@ -149,11 +149,9 @@ function ozEintragToRow(e: OzEintrag, congregationId: string) {
   }
 }
 
-
 /** Weitere Pläne (T120, Phase 5): ein Plan, eine Zeile. */
 interface PlanRow {
   id: string
-  vorlage: WeitererPlan['vorlage']
   name: string
   von: string
   bis: string
@@ -161,14 +159,13 @@ interface PlanRow {
 }
 
 function planFromRow(r: PlanRow): WeitererPlan {
-  return { id: r.id, vorlage: r.vorlage, name: r.name, von: r.von, bis: r.bis, entwurf: r.entwurf }
+  return { id: r.id, name: r.name, von: r.von, bis: r.bis, entwurf: r.entwurf }
 }
 
 function planToRow(p: WeitererPlan, congregationId: string) {
   return {
     id: p.id,
     congregation_id: congregationId,
-    vorlage: p.vorlage,
     name: p.name,
     von: p.von,
     bis: p.bis,
@@ -176,18 +173,16 @@ function planToRow(p: WeitererPlan, congregationId: string) {
   }
 }
 
-/** Ein Eintrag eines weiteren Plans: Woche und Gruppe bzw. Tag, Mahlzeit und Gastgeber. */
+/** Ein Eintrag eines weiteren Plans: die Woche und ihre Gruppe. */
 interface PlanEintragRow {
   id: string
   plan_id: string
   datum: string
   grp: string | null
-  person_id: string | null
-  mahlzeit: PlanEintrag['mahlzeit']
 }
 
 function planEintragFromRow(r: PlanEintragRow): PlanEintrag {
-  return { id: r.id, planId: r.plan_id, datum: r.datum, grp: r.grp, pid: r.person_id, mahlzeit: r.mahlzeit }
+  return { id: r.id, planId: r.plan_id, datum: r.datum, grp: r.grp }
 }
 
 function planEintragToRow(e: PlanEintrag, congregationId: string) {
@@ -197,8 +192,6 @@ function planEintragToRow(e: PlanEintrag, congregationId: string) {
     plan_id: e.planId,
     datum: e.datum,
     grp: e.grp,
-    person_id: e.pid,
-    mahlzeit: e.mahlzeit,
   }
 }
 
@@ -711,7 +704,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     // Rückblick da. Ein Mitglied bekommt nur, was es sehen darf (RLS).
     supabase
       .from('plaene')
-      .select('id, vorlage, name, von, bis, entwurf')
+      .select('id, name, von, bis, entwurf')
       .eq('congregation_id', congregationId)
       .gte('bis', ozLadeAb())
       .order('von'),
@@ -721,7 +714,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     // keinem geladenen Plan gehört, fällt unten heraus.
     supabase
       .from('plan_eintraege')
-      .select('id, plan_id, datum, grp, person_id, mahlzeit')
+      .select('id, plan_id, datum, grp')
       .eq('congregation_id', congregationId)
       .order('datum'),
   ])
@@ -1267,10 +1260,9 @@ export function savePlaene(congregationId: string, plaene: WeitererPlan[], entfe
 }
 
 /**
- * Einträge: erst löschen, dann schreiben. Ein Platz (Woche bzw. Tag und
- * Mahlzeit) ist eindeutig (`plan_eintraege_platz`); der Reducer behält deshalb
- * die Kennung eines Platzes, wenn er nur eine andere Gruppe oder einen anderen
- * Gastgeber bekommt.
+ * Einträge: erst löschen, dann schreiben. Je Plan und Woche gibt es einen Platz
+ * (`plan_eintraege_woche`); der Reducer behält deshalb die Kennung eines
+ * Platzes, wenn er nur eine andere Gruppe bekommt.
  */
 export function savePlanEintraege(congregationId: string, eintraege: PlanEintrag[], entfernt: string[] = []): void {
   if (!supabase) return

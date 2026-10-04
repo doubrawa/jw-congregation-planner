@@ -94,8 +94,8 @@ SHOTS=(
   # abwesend), freie Plätze und die ersten Wochen. Hoch genug für alles bis zu
   # den Schichten der zweiten Woche.
   "planer-zeugnis|s=planen&tab=fs&fb=zeugnis&me=p6|${W}x2100"
-  # Weitere Pläne (T120, Phase 5): die Liste — Familien reihum und Winterdienst
-  # aktuell, die Grundreinigung als Entwurf. Einen Plan öffnet kein Hash.
+  # Weitere Pläne (T120, Phase 5): die Liste — der Winterdienst aktuell, die
+  # Grundreinigung als Entwurf. Einen Plan öffnet kein Hash.
   "planer-weitere-plaene|s=planen&tab=wp&me=p6"
   "planer-personen|s=personen"
   # höher als der Rest: unter den Stammdaten folgen die Zeitleiste der
@@ -115,9 +115,8 @@ SHOTS=(
   # Simon hat den Aufgabenbereich: freie Plätze mit „+ Eintragen", und am
   # 19. September ist er zugeteilt — Bestätigen oder Absagen.
   "verkuendiger-zeugnis|s=programm&tab=fs&fb=zeugnis&pl=0&me=p9|${W}x1500"
-  # Simon (p9) ist am 24. September Gastgeber (DU) und in Gruppe 1: Er sieht
-  # Familien reihum und den Winterdienst mit „Deine Gruppe ist dran", den
-  # Entwurf nicht. Hoch genug für beide Pläne.
+  # Simon (p9) ist in Gruppe 1: Er sieht den Winterdienst mit „Deine Gruppe ist
+  # dran", den Entwurf nicht. Hoch genug für alle Wochen.
   "verkuendiger-weitere-plaene|s=programm&tab=wp&pl=0&me=p9|${W}x1400"
   "offline-stand|s=programm&tab=mid&stale=5"
 )

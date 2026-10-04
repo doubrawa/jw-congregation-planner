@@ -48,8 +48,8 @@ vi.mock('./supabase', () => ({ supabase: db.client }))
 import { savePlaene, savePlanEintraege, setSchreibfehlerMelder } from './data'
 import type { PlanEintrag, WeitererPlan } from '../data/types'
 
-const plan: WeitererPlan = { id: 'p1', vorlage: 'familien', name: 'Besuch', von: '2026-09-22', bis: '2026-09-27', entwurf: true }
-const eintrag: PlanEintrag = { id: 'e1', planId: 'p1', datum: '2026-09-22', grp: null, pid: 'x1', mahlzeit: 'abend' }
+const plan: WeitererPlan = { id: 'p1', name: 'Grundreinigung', von: '2026-09-21', bis: '2026-10-04', entwurf: true }
+const eintrag: PlanEintrag = { id: 'e1', planId: 'p1', datum: '2026-09-21', grp: 'x1' }
 
 /** Bis alles Wartende durch die Schlange ist (sie hängt Versprechen aneinander). */
 const ruhe = () => new Promise((r) => setTimeout(r, 0))

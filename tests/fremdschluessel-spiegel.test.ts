@@ -105,8 +105,8 @@ const SPIEGEL: Record<string, Spiegel> = {
   },
   plan_eintraege: {
     feld: 'planEintraege',
-    spalten: { grp: 'grp', person_id: 'pid' },
-    basis: { id: 'zz', planId: 'p1', datum: '2026-09-07', grp: null, pid: null, mahlzeit: null },
+    spalten: { grp: 'grp' },
+    basis: { id: 'zz', planId: 'p1', datum: '2026-09-07', grp: null },
   },
 }
 
@@ -119,7 +119,7 @@ const FK = fremdschluessel()
 
 describe('Fremdschlüssel auf Personen und Gruppen — jeder hat eine Entscheidung', () => {
   it('die Probe findet die Fremdschlüssel überhaupt (sonst prüfte sie nichts)', () => {
-    expect(FK.length).toBeGreaterThanOrEqual(13)
+    expect(FK.length).toBeGreaterThanOrEqual(12)
     expect(FK).toContainEqual({ tabelle: 'oz_eintraege', spalte: 'person_id', ziel: 'persons', aktion: 'cascade' })
     expect(FK).toContainEqual({ tabelle: 'persons', spalte: 'grp', ziel: 'groups', aktion: 'set null' })
   })

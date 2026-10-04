@@ -713,11 +713,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ozEintraege: state.ozEintraege.some((e) => e.pid === action.id)
           ? state.ozEintraege.filter((e) => e.pid !== action.id)
           : state.ozEintraege,
-        // Ein Platz in einem weiteren Plan (T120, Phase 5) bleibt wie ein
-        // Gruppenbesuch, nur ohne Gastgeber.
-        planEintraege: state.planEintraege.some((e) => e.pid === action.id)
-          ? state.planEintraege.map((e) => (e.pid === action.id ? { ...e, pid: null } : e))
-          : state.planEintraege,
         members: state.members.map((m) =>
           m.personId === action.id ? { ...m, personId: null } : m,
         ),
@@ -1297,7 +1292,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
     case 'wpGruppenVerteilen': {
       const plan = state.plaene.find((p) => p.id === action.planId)
-      if (!plan || plan.vorlage !== 'saal') return state
+      if (!plan) return state
       const { eintraege, verteilt } = gruppenVerteilen({
         plan,
         eintraege: state.planEintraege,

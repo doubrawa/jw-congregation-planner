@@ -109,29 +109,24 @@ export const DE = {
     toastOzEingetragen: 'Eingetragen · damit hast du zugesagt',
     toastOzAusgetragen: 'Ausgetragen',
     toastOzAbgesagt: 'Abgesagt · der Platz ist wieder frei, die Admins sind informiert',
-    // Weitere Pläne (T120, Phase 5): Ankündigungen ohne Zuteilung. Die Vorlage
-    // „Königreichssaal" heißt wie `saal`; gemessen am od Kap. 11 Abs. 10 („Im
+    // Weitere Pläne (T120, Phase 5): Ankündigungen ohne Zuteilung. Ein Plan
+    // heißt „Königreichssaal" wie `saal`; gemessen am od Kap. 11 Abs. 10 („Im
     // Allgemeinen wechseln sich die Predigtdienstgruppen mit der Saalreinigung
-    // ab"). „Familien reihum" ist keine Wendung der Schriften, sondern sagt, was
-    // der Plan tut; das Beispiel stammt aus od Kap. 5 Abs. 55–63.
+    // ab").
     navWeiterePlaene: 'Weitere Pläne',
     wpHinweis: 'Ankündigungen ohne Zuteilung: Niemand muss etwas bestätigen, und es gibt keine Erinnerung. Gruppenbesuche und öffentliches Zeugnisgeben stehen unter Predigtdienst.',
-    wpNeu: '+ NEUER PLAN', wpNeuTitel: 'Neuer Plan',
+    wpNeu: '+ NEUER PLAN',
     wpAktuell: 'AKTUELL', wpEntwuerfe: 'ENTWÜRFE', wpAbgeschlossen: 'ABGESCHLOSSEN',
     wpKeine: 'Zurzeit gibt es keine weiteren Pläne.',
     wpOhneName: 'Ohne Namen',
     wpSaalText: 'Reinigung und Instandhaltung – die Predigtdienstgruppen wechseln sich ab, je Woche eine.',
-    wpFamilien: 'Familien reihum',
-    wpFamilienText: 'Je Tag und Mahlzeit eine Familie als Gastgeber – etwa beim Besuch des Kreisaufsehers.',
-    wpNamePhSaal: 'z. B. Winterdienst', wpNamePhFamilien: 'z. B. Besuch des Kreisaufsehers',
+    wpNamePhSaal: 'z. B. Winterdienst',
     wpEntwurf: 'Entwurf', wpEntwurfHint: 'Einen Entwurf sehen nur Admins.',
     wpVeroeffentlichen: 'VERÖFFENTLICHEN', wpZurueckziehen: 'Zurück zum Entwurf',
     wpSichtSaal: 'Veröffentlicht sieht ihn die ganze Versammlung.',
-    wpSichtFamilien: 'Veröffentlicht sehen ihn nur die Gastgeber und ihre Familien.',
     wpAbGruppe: 'Beginnen mit',
     wpVerteilenHint: 'Die Wochen ab dieser bis zum Ende, die Gruppen der Reihe nach. Vergangene Wochen bleiben, wie sie sind.',
     wpLoeschen: 'Plan löschen',
-    wpFruehstueck: 'Frühstück', wpMittag: 'Mittagessen', wpAbend: 'Abendessen',
     wpDeineGruppe: 'Deine Gruppe ist dran:',
     wpNurInfo: 'Nur zur Info – nichts zu bestätigen.',
     toastWpVeroeffentlicht: 'Plan veröffentlicht', toastWpEntwurf: 'Plan zurück im Entwurf',

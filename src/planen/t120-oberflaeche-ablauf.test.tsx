@@ -74,34 +74,35 @@ afterEach(() => {
 })
 
 describe('Weitere Pläne', () => {
-  it('neuer Plan: Vorlage wählen → gleich offen, Namen tippen, veröffentlichen → unter „Aktuell"', () => {
+  it('neuer Plan: ohne Wahl gleich offen, Namen tippen, veröffentlichen → unter „Aktuell"', () => {
     const { container } = zeige(PlanenScreen, { screen: 'planen', tab: 'wp', planner: true, plaene: [], planEintraege: [] })
     klick(container, t.wpNeu)
-    fireEvent.click(container.querySelector('.wp-vorlage-karte[data-vorlage="familien"]')!)
 
-    // Gleich offen — der Plan selbst, nicht die Liste.
+    // Gleich offen — der Plan selbst, nicht die Liste und keine Wahl dazwischen.
     expect(container.querySelector('.wp-zurueck')).not.toBeNull()
     expect(container.querySelector('.wp-karte')).toBeNull()
     expect(container.textContent).toContain(t.wpEntwurf)
-    // Eine Woche ab heute, je Tag drei Mahlzeiten.
-    expect(container.querySelectorAll('.panel[data-farbe="gold"] select')).toHaveLength(21)
+    expect(container.querySelector('.panel-label')?.textContent).toBe(t.saal)
+    // Ein Vierteljahr ab dieser Woche: dreizehn Wochen, noch ohne Gruppe.
+    const wochen = [...container.querySelectorAll(`.wp-zeile select[aria-label="${t.gbGruppe}"]`)] as HTMLSelectElement[]
+    expect(wochen).toHaveLength(13)
+    expect(wochen.every((w) => w.value === '')).toBe(true)
 
     const name = container.querySelector('input[type="text"]') as HTMLInputElement
-    fireEvent.change(name, { target: { value: 'Besuch des Kreisaufsehers' } })
-    expect(name.value).toBe('Besuch des Kreisaufsehers')
+    fireEvent.change(name, { target: { value: 'Grundreinigung' } })
+    expect(name.value).toBe('Grundreinigung')
     klick(container, t.wpVeroeffentlichen)
     expect(knopf(container, t.wpZurueckziehen)).toBeDefined()
 
     fireEvent.click(container.querySelector('.wp-zurueck')!)
     const karte = container.querySelector('.wp-karte[data-stand="aktuell"]')
-    expect(karte?.textContent).toContain('Besuch des Kreisaufsehers')
+    expect(karte?.textContent).toContain('Grundreinigung')
     expect(container.querySelector('.wp-karte[data-stand="entwurf"]')).toBeNull()
   })
 
-  it('Königreichssaal: anlegen und reihum verteilen → jede der dreizehn Wochen hat ihre Gruppe', () => {
+  it('anlegen und reihum verteilen → jede der dreizehn Wochen hat ihre Gruppe', () => {
     const { container } = zeige(PlanenScreen, { screen: 'planen', tab: 'wp', planner: true, plaene: [], planEintraege: [] })
     klick(container, t.wpNeu)
-    fireEvent.click(container.querySelector('.wp-vorlage-karte[data-vorlage="saal"]')!)
     klick(container, t.gbVerteilen)
     const wochen = () => [...container.querySelectorAll(`.wp-zeile select[aria-label="${t.gbGruppe}"]`)] as HTMLSelectElement[]
     expect(wochen()).toHaveLength(13)

@@ -11,9 +11,9 @@ import type { PlanEintrag, WeitererPlan } from '../data/types'
  * benutzt — und um das dritte Thema in der Navigation.
  */
 
-const SAAL: WeitererPlan = { id: 'pl-s', vorlage: 'saal', name: 'Winterdienst', von: '2026-09-07', bis: '2026-10-04', entwurf: true }
-const FAMILIEN: WeitererPlan = { id: 'pl-f', vorlage: 'familien', name: '', von: '2026-09-22', bis: '2026-09-27', entwurf: false }
-const gast = (datum: string, pid: string): PlanEintrag => ({ id: `e-${datum}`, planId: 'pl-f', datum, grp: null, pid, mahlzeit: 'mittag' })
+const SAAL: WeitererPlan = { id: 'pl-s', name: 'Winterdienst', von: '2026-09-07', bis: '2026-10-04', entwurf: true }
+const SPAETER: WeitererPlan = { id: 'pl-w', name: '', von: '2026-11-30', bis: '2027-02-28', entwurf: false }
+const woche = (datum: string, grp: string): PlanEintrag => ({ id: `e-${datum}`, planId: 'pl-s', datum, grp })
 
 function zustand(over: Partial<AppState> = {}): AppState {
   return { ...demoZustand(), planner: true, personId: 'p6', plaene: [], planEintraege: [], terminGewaehlt: true, ...over }
@@ -27,8 +27,8 @@ afterEach(() => vi.useRealTimers())
 
 describe('Pläne anlegen, ändern, löschen', () => {
   it('ein neuer Plan wird nach Beginn eingereiht — dieselbe Kennung nicht zweimal', () => {
-    let s = reducer(zustand({ plaene: [FAMILIEN] }), { type: 'wpPlanAnlegen', plan: SAAL })
-    expect(s.plaene.map((p) => p.id)).toEqual(['pl-s', 'pl-f'])
+    let s = reducer(zustand({ plaene: [SPAETER] }), { type: 'wpPlanAnlegen', plan: SAAL })
+    expect(s.plaene.map((p) => p.id)).toEqual(['pl-s', 'pl-w'])
     const nochmal = reducer(s, { type: 'wpPlanAnlegen', plan: SAAL })
     expect(nochmal).toBe(s)
     s = reducer(s, { type: 'wpPlanAendern', id: 'pl-s', patch: { name: 'Grundreinigung' } })
@@ -43,16 +43,16 @@ describe('Pläne anlegen, ändern, löschen', () => {
   })
 
   it('ein kürzerer Zeitraum nimmt die Einträge außerhalb mit — einer, der vor dem Anfang endet, ist keiner', () => {
-    const s0 = zustand({ plaene: [FAMILIEN], planEintraege: [gast('2026-09-22', 'p1'), gast('2026-09-27', 'p2')] })
-    const s = reducer(s0, { type: 'wpPlanAendern', id: 'pl-f', patch: { bis: '2026-09-25' } })
-    expect(s.planEintraege.map((e) => e.datum)).toEqual(['2026-09-22'])
-    expect(reducer(s0, { type: 'wpPlanAendern', id: 'pl-f', patch: { bis: '2026-09-01' } })).toBe(s0)
+    const s0 = zustand({ plaene: [SAAL], planEintraege: [woche('2026-09-14', 'g1'), woche('2026-09-28', 'g2')] })
+    const s = reducer(s0, { type: 'wpPlanAendern', id: 'pl-s', patch: { bis: '2026-09-20' } })
+    expect(s.planEintraege.map((e) => e.datum)).toEqual(['2026-09-14'])
+    expect(reducer(s0, { type: 'wpPlanAendern', id: 'pl-s', patch: { bis: '2026-09-01' } })).toBe(s0)
   })
 
   it('ein gelöschter Plan nimmt seine Einträge mit', () => {
-    const s = reducer(zustand({ plaene: [FAMILIEN], planEintraege: [gast('2026-09-22', 'p1')] }), {
+    const s = reducer(zustand({ plaene: [SAAL], planEintraege: [woche('2026-09-14', 'g1')] }), {
       type: 'wpPlanLoeschen',
-      id: 'pl-f',
+      id: 'pl-s',
     })
     expect(s.plaene).toEqual([])
     expect(s.planEintraege).toEqual([])
@@ -61,34 +61,28 @@ describe('Pläne anlegen, ändern, löschen', () => {
 })
 
 describe('Plätze', () => {
-  it('reihum verteilen: die Wochen an die Gruppen, mit Ansage — nur beim Königreichssaal', () => {
-    const s = reducer(zustand({ plaene: [SAAL, FAMILIEN] }), { type: 'wpGruppenVerteilen', planId: 'pl-s', abGruppe: 'g2' })
+  it('reihum verteilen: die Wochen an die Gruppen, mit Ansage — ein Plan, den es nicht gibt, ändert nichts', () => {
+    const s = reducer(zustand({ plaene: [SAAL] }), { type: 'wpGruppenVerteilen', planId: 'pl-s', abGruppe: 'g2' })
     expect(s.planEintraege.map((e) => e.grp)).toEqual(['g2', 'g3', 'g4', 'g1'])
     expect(s.toast?.text).toBe('Verteilte Wochen: 4')
-    const f = zustand({ plaene: [FAMILIEN] })
-    expect(reducer(f, { type: 'wpGruppenVerteilen', planId: 'pl-f', abGruppe: 'g2' })).toBe(f)
+    const ohne = zustand({ plaene: [SAAL] })
+    expect(reducer(ohne, { type: 'wpGruppenVerteilen', planId: 'pl-weg', abGruppe: 'g2' })).toBe(ohne)
   })
 
-  it('einen Gastgeber setzen, ändern, räumen', () => {
-    const setzen = (pid: string | null) =>
-      ({ type: 'wpEintragSetzen', planId: 'pl-f', datum: '2026-09-23', mahlzeit: 'abend', grp: null, pid }) as const
-    let s = reducer(zustand({ plaene: [FAMILIEN] }), setzen('p1'))
+  it('die Gruppe einer Woche setzen, ändern, räumen', () => {
+    const setzen = (grp: string | null) => ({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-09-14', grp }) as const
+    let s = reducer(zustand({ plaene: [SAAL] }), setzen('g1'))
     const id = s.planEintraege[0]!.id
-    s = reducer(s, setzen('p2'))
-    expect(s.planEintraege).toEqual([expect.objectContaining({ id, pid: 'p2' })])
+    s = reducer(s, setzen('g2'))
+    expect(s.planEintraege).toEqual([expect.objectContaining({ id, grp: 'g2' })])
     s = reducer(s, setzen(null))
     expect(s.planEintraege).toEqual([])
   })
 
-  it('wer gelöscht wird, verlässt den Platz — der Platz bleibt (wie `on delete set null`)', () => {
-    const s = reducer(zustand({ plaene: [FAMILIEN], planEintraege: [gast('2026-09-22', 'p7')] }), { type: 'removePerson', id: 'p7' })
-    expect(s.planEintraege).toEqual([{ ...gast('2026-09-22', 'p7'), pid: null }])
-  })
-
-  it('ebenso eine gelöschte Gruppe', () => {
-    const woche: PlanEintrag = { id: 'w', planId: 'pl-s', datum: '2026-09-14', grp: 'g4', pid: null, mahlzeit: null }
-    const s = reducer(zustand({ plaene: [SAAL], planEintraege: [woche] }), { type: 'removeGroup', id: 'g4' })
-    expect(s.planEintraege).toEqual([{ ...woche, grp: null }])
+  it('eine gelöschte Gruppe verlässt ihre Woche — die Woche bleibt (wie `on delete set null`)', () => {
+    const w = woche('2026-09-14', 'g4')
+    const s = reducer(zustand({ plaene: [SAAL], planEintraege: [w] }), { type: 'removeGroup', id: 'g4' })
+    expect(s.planEintraege).toEqual([{ ...w, grp: null }])
   })
 })
 

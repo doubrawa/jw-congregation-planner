@@ -123,18 +123,14 @@ Uhrzeit und wer dabei ist.
 
 ### Weitere Pläne
 
-Gibt es einen Plan, der dich betrifft, steht im Menü **Weitere Pläne**. Dort
-stehen Ankündigungen – du musst nichts bestätigen und wirst nicht erinnert.
+Gibt es einen Plan, steht im Menü **Weitere Pläne**. Dort stehen
+Ankündigungen – du musst nichts bestätigen und wirst nicht erinnert.
 
 ![Weitere Pläne](screenshots/verkuendiger-weitere-plaene.png)
 
-- **Königreichssaal**: welche Predigtdienstgruppe in welcher Woche mit der
-  Reinigung oder Instandhaltung dran ist. Oben unter „Deine Gruppe ist dran"
-  stehen die Wochen deiner Gruppe.
-- **Familien reihum**: wer an welchem Tag zu welcher Mahlzeit Gastgeber ist,
-  etwa beim Besuch des Kreisaufsehers. Diesen Plan siehst du nur, wenn du oder
-  jemand aus deiner Familie darin eingetragen ist; eure Plätze tragen ein
-  **DU**.
+Ein Plan zeigt beim **Königreichssaal**, welche Predigtdienstgruppe in welcher
+Woche mit der Reinigung oder Instandhaltung dran ist. Oben unter „Deine Gruppe
+ist dran" stehen die Wochen deiner Gruppe.
 
 ### Zusätzliche Klasse
 

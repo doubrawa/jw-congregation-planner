@@ -23,7 +23,7 @@ import { PlanenScreen } from './PlanenScreen'
 
 const t = dict('de')
 
-const person = (id: string, fn: string, grp: string | null, fam: string | null = null): Person => ({
+const person = (id: string, fn: string, grp: string | null): Person => ({
   id,
   fn,
   ln: 'Test',
@@ -33,24 +33,21 @@ const person = (id: string, fn: string, grp: string | null, fam: string | null =
   mail: '',
   priv: emptyQualifications(),
   grp,
-  fam,
+  fam: null,
 })
-const ANNA = person('p-a', 'Anna', 'g1', 'h1')
-const BERT = person('p-b', 'Bert', 'g2', 'h1') // derselbe Haushalt wie Anna
+const ANNA = person('p-a', 'Anna', 'g1')
 const CARL = person('p-c', 'Carl', 'g2')
 const GRUPPEN: Group[] = [
   { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null },
   { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
 ]
 
-const SAAL: WeitererPlan = { id: 'pl-s', vorlage: 'saal', name: 'Winterdienst', von: '2026-09-07', bis: '2026-09-27', entwurf: false }
-const FAMILIEN: WeitererPlan = { id: 'pl-f', vorlage: 'familien', name: 'Besuch', von: '2026-09-22', bis: '2026-09-23', entwurf: false }
+const SAAL: WeitererPlan = { id: 'pl-s', name: 'Winterdienst', von: '2026-09-07', bis: '2026-09-27', entwurf: false }
 const ENTWURF: WeitererPlan = { ...SAAL, id: 'pl-e', name: 'Grundreinigung', entwurf: true }
 const EINTRAEGE: PlanEintrag[] = [
-  { id: 'w1', planId: 'pl-s', datum: '2026-09-07', grp: 'g2', pid: null, mahlzeit: null },
-  { id: 'w2', planId: 'pl-s', datum: '2026-09-14', grp: 'g1', pid: null, mahlzeit: null },
-  { id: 'w3', planId: 'pl-s', datum: '2026-09-21', grp: 'g2', pid: null, mahlzeit: null },
-  { id: 'f1', planId: 'pl-f', datum: '2026-09-22', grp: null, pid: 'p-b', mahlzeit: 'abend' },
+  { id: 'w1', planId: 'pl-s', datum: '2026-09-07', grp: 'g2' },
+  { id: 'w2', planId: 'pl-s', datum: '2026-09-14', grp: 'g1' },
+  { id: 'w3', planId: 'pl-s', datum: '2026-09-21', grp: 'g2' },
 ]
 
 function zeige(Screen: () => React.JSX.Element, over: Partial<AppState> = {}) {
@@ -63,9 +60,9 @@ function zeige(Screen: () => React.JSX.Element, over: Partial<AppState> = {}) {
     userId: 'u1',
     personId: ANNA.id,
     planner: false,
-    persons: [ANNA, BERT, CARL],
+    persons: [ANNA, CARL],
     groups: GRUPPEN,
-    plaene: [SAAL, FAMILIEN, ENTWURF],
+    plaene: [SAAL, ENTWURF],
     planEintraege: EINTRAEGE,
     ...over,
   }
@@ -96,10 +93,9 @@ afterEach(() => {
 })
 
 describe('Ansehen', () => {
-  it('Königreichssaal für alle, Familien reihum für Gastgeber und ihren Haushalt — Entwürfe nie', () => {
+  it('Veröffentlichtes sieht jeder, gleich welcher Gruppe — Entwürfe nie', () => {
     const anna = zeige(ProgrammScreen, { screen: 'programm' }).container
-    const namen = [...anna.querySelectorAll('.wp-name')].map((n) => n.textContent)
-    expect(namen).toEqual(['Winterdienst', 'Besuch'])
+    expect([...anna.querySelectorAll('.wp-name')].map((n) => n.textContent)).toEqual(['Winterdienst'])
     cleanup()
     const carl = zeige(ProgrammScreen, { screen: 'programm', personId: CARL.id }).container
     expect([...carl.querySelectorAll('.wp-name')].map((n) => n.textContent)).toEqual(['Winterdienst'])
@@ -111,9 +107,11 @@ describe('Ansehen', () => {
     expect([...container.querySelectorAll('.wp-chip')].map((c) => c.textContent)).toEqual(['14.–20. September'])
   })
 
-  it('der Gastgeber aus dem eigenen Haushalt trägt das DU — und nichts ist zu bestätigen', () => {
+  it('die Woche der eigenen Gruppe ist hervorgehoben — und nichts ist zu bestätigen', () => {
     const { container } = zeige(ProgrammScreen, { screen: 'programm' })
-    expect(container.querySelector('.wp-liste-zeile.is-eigen .chip-du')).not.toBeNull()
+    expect([...container.querySelectorAll('.wp-liste-zeile.is-eigen')].map((z) => z.textContent)).toEqual([
+      '14.–20. SeptemberGruppe 1',
+    ])
     expect(container.textContent).toContain(t.wpNurInfo)
     expect(knopf(container, t.bestaetigen)).toBeUndefined()
   })
@@ -133,13 +131,15 @@ describe('Planen', () => {
     expect(container.querySelector('.wp-karte[data-stand="entwurf"]')?.textContent).toContain('Grundreinigung')
   })
 
-  it('ein neuer Plan: Vorlage wählen, als Entwurf anlegen — und gleich offen', () => {
+  it('ein neuer Plan: ohne Wahl als Entwurf angelegt, ab dieser Woche ein Vierteljahr', () => {
+    // Dass er danach gleich offen dasteht, prüft `zurueck-am-handy.test.tsx`
+    // mit dem echten Speicher; hier nimmt die Attrappe die Aktion nur entgegen.
     const { container, dispatch } = planen()
     fireEvent.click(knopf(container, t.wpNeu)!)
-    fireEvent.click(container.querySelector('.wp-vorlage-karte[data-vorlage="familien"]')!)
+    expect(dispatch).toHaveBeenCalledTimes(1)
     expect(dispatch).toHaveBeenCalledWith({
       type: 'wpPlanAnlegen',
-      plan: expect.objectContaining({ vorlage: 'familien', von: '2026-09-07', bis: '2026-09-13', entwurf: true }),
+      plan: { id: expect.stringMatching(/^p.{8,}/), name: '', von: '2026-09-07', bis: '2026-12-06', entwurf: true },
     })
   })
 
@@ -153,33 +153,9 @@ describe('Planen', () => {
     const wochen = [...container.querySelectorAll(`.wp-zeile select[aria-label="${t.gbGruppe}"]`)] as HTMLSelectElement[]
     expect(wochen.map((w) => w.value)).toEqual(['g2', 'g1', 'g2'])
     fireEvent.change(wochen[1]!, { target: { value: '' } })
-    expect(dispatch).toHaveBeenCalledWith({
-      type: 'wpEintragSetzen',
-      planId: 'pl-s',
-      datum: '2026-09-14',
-      mahlzeit: null,
-      grp: null,
-      pid: null,
-    })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-09-14', grp: null })
     fireEvent.click(knopf(container, t.wpZurueckziehen)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpPlanAendern', id: 'pl-s', patch: { entwurf: true } })
-  })
-
-  it('Familien reihum: je Tag drei Mahlzeiten, je Mahlzeit ein Gastgeber', () => {
-    const { container, dispatch } = planen()
-    fireEvent.click([...container.querySelectorAll('.wp-karte')].find((k) => k.textContent?.includes('Besuch'))!)
-    const plaetze = [...container.querySelectorAll('.panel[data-farbe="gold"] select')] as HTMLSelectElement[]
-    expect(plaetze).toHaveLength(6)
-    expect(plaetze[2]!.value).toBe('p-b') // Dienstag, Abendessen
-    fireEvent.change(plaetze[0]!, { target: { value: 'p-c' } })
-    expect(dispatch).toHaveBeenCalledWith({
-      type: 'wpEintragSetzen',
-      planId: 'pl-f',
-      datum: '2026-09-22',
-      mahlzeit: 'fruehstueck',
-      grp: null,
-      pid: 'p-c',
-    })
   })
 
   it('löschen braucht zwei Tipps', () => {

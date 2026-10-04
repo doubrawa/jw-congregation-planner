@@ -2,50 +2,31 @@
  * Weitere Pläne (T120, Phase 5) — reine Logik.
  *
  * Ankündigungen ohne Zuteilung: Niemand bestätigt etwas, niemand wird erinnert,
- * kein Schlüssel in `confirmations`. Zwei feste Vorlagen (Entscheidung des
- * Betreibers, 2.10.2026 — kein Baukasten):
+ * kein Schlüssel in `confirmations`. Es gibt eine Art, den **Königreichssaal**:
+ * je Woche eine Predigtdienstgruppe. Gemessen am Buch „Organisiert, Jehovas
+ * Willen zu tun", Kap. 11 Abs. 10: „In der Regel wird ein Ältester oder ein
+ * Dienstamtgehilfe für diese Arbeiten einen Plan aufstellen. Im Allgemeinen
+ * wechseln sich die Predigtdienstgruppen mit der Saalreinigung ab". Die Canvas
+ * nannte die Vorlage „Saal & Außenanlage" — das Wort kommt dort nicht vor; der
+ * Saal soll „sowohl von innen als auch von außen" würdig aussehen, und was zu
+ * tun ist (Winterdienst, Grundreinigung), sagt der Name des Plans.
  *
- * - **Königreichssaal** (`saal`): je Woche eine Predigtdienstgruppe. Gemessen
- *   am Buch „Organisiert, Jehovas Willen zu tun", Kap. 11 Abs. 10: „In der
- *   Regel wird ein Ältester oder ein Dienstamtgehilfe für diese Arbeiten einen
- *   Plan aufstellen. Im Allgemeinen wechseln sich die Predigtdienstgruppen mit
- *   der Saalreinigung ab". Die Canvas nannte die Vorlage „Saal & Außenanlage" —
- *   das Wort kommt dort nicht vor; der Saal soll „sowohl von innen als auch von
- *   außen" würdig aussehen, und was zu tun ist (Winterdienst, Grundreinigung),
- *   sagt der Name des Plans.
- * - **Familien reihum** (`familien`): je Tag und Mahlzeit ein Gastgeber — etwa
- *   beim Besuch des Kreisaufsehers (Kap. 5 Abs. 55: Unterkunft und andere
- *   notwendige Dinge; Abs. 58: Mahlzeiten; Abs. 63: Gastfreundschaft).
+ * Eine zweite Vorlage, „Familien reihum" (je Tag und Mahlzeit ein Gastgeber),
+ * gab es vom 3. bis 4.10.2026; der Betreiber fand keine sinnvolle Planung dazu.
  *
  * Alle Funktionen sind pur.
  */
 
 import { isoDay, montagNach, montagVon, tagNach, tagVorbei } from './meeting-dates'
-import type { Group, Mahlzeit, Person, PlanEintrag, PlanVorlage, WeitererPlan } from './types'
+import type { Group, PlanEintrag, WeitererPlan } from './types'
 
-/** Die Vorlagen in der Reihenfolge, in der sie zur Wahl stehen. */
-export const PLAN_VORLAGEN: readonly PlanVorlage[] = ['saal', 'familien']
-
-/** Die Mahlzeiten eines Tages, in ihrer Reihenfolge. */
-export const MAHLZEITEN: readonly Mahlzeit[] = ['fruehstueck', 'mittag', 'abend']
-
-/** Ein neuer Königreichssaal-Plan läuft zunächst ein Vierteljahr (13 Wochen). */
+/** Ein neuer Plan läuft zunächst ein Vierteljahr (13 Wochen). */
 export const SAAL_WOCHEN = 13
-/** Familien reihum zunächst eine Woche — so lange dauert ein Besuch des Kreisaufsehers. */
-export const FAMILIEN_TAGE = 7
 
-/**
- * Ein neuer Plan, als Entwurf: Der Königreichssaal ab dem Montag dieser Woche
- * für ein Vierteljahr, Familien reihum ab heute für eine Woche. Den Namen gibt
- * der Planer.
- */
-export function neuerPlan(id: string, vorlage: PlanVorlage, heute: Date): WeitererPlan {
-  const tag = isoDay(heute)
-  if (vorlage === 'saal') {
-    const von = montagVon(tag)
-    return { id, vorlage, name: '', von, bis: tagNach(von, SAAL_WOCHEN * 7 - 1), entwurf: true }
-  }
-  return { id, vorlage, name: '', von: tag, bis: tagNach(tag, FAMILIEN_TAGE - 1), entwurf: true }
+/** Ein neuer Plan, als Entwurf: ab dem Montag dieser Woche für ein Vierteljahr. Den Namen gibt der Planer. */
+export function neuerPlan(id: string, heute: Date): WeitererPlan {
+  const von = montagVon(isoDay(heute))
+  return { id, name: '', von, bis: tagNach(von, SAAL_WOCHEN * 7 - 1), entwurf: true }
 }
 
 /** Ist der Plan vorbei (sein letzter Tag ist um)? */
@@ -73,25 +54,14 @@ export function planWochen(plan: Pick<WeitererPlan, 'von' | 'bis'>): string[] {
   return out
 }
 
-/** Die Tage eines Plans, vom ersten bis zum letzten. */
-export function planTage(plan: Pick<WeitererPlan, 'von' | 'bis'>): string[] {
-  const out: string[] = []
-  for (let tag = plan.von; tag <= plan.bis; tag = tagNach(tag, 1)) out.push(tag)
-  return out
-}
-
-/** Die Einträge eines Plans, nach Tag und Mahlzeit. */
+/** Die Einträge eines Plans, nach Woche. */
 export function eintraegeVon(eintraege: readonly PlanEintrag[], planId: string): PlanEintrag[] {
-  const rang = (m: Mahlzeit | null) => (m === null ? -1 : MAHLZEITEN.indexOf(m))
-  return eintraege
-    .filter((e) => e.planId === planId)
-    .sort((a, b) => a.datum.localeCompare(b.datum) || rang(a.mahlzeit) - rang(b.mahlzeit))
+  return eintraege.filter((e) => e.planId === planId).sort((a, b) => a.datum.localeCompare(b.datum))
 }
 
-/** Liegt ein Eintrag im Zeitraum seines Plans? Beim Königreichssaal zählt die Woche, die im Zeitraum beginnt oder in ihn hineinreicht. */
+/** Liegt ein Eintrag im Zeitraum seines Plans? Es zählt die Woche, die im Zeitraum beginnt oder in ihn hineinreicht. */
 function imZeitraum(plan: WeitererPlan, e: PlanEintrag): boolean {
-  const ab = plan.vorlage === 'saal' ? montagVon(plan.von) : plan.von
-  return e.datum >= ab && e.datum <= plan.bis
+  return e.datum >= montagVon(plan.von) && e.datum <= plan.bis
 }
 
 /**
@@ -104,15 +74,15 @@ export function eintraegeImZeitraum(eintraege: PlanEintrag[], plan: WeitererPlan
 }
 
 /**
- * **Reihum verteilen** (Königreichssaal): die Wochen ab dieser bis zum Ende
- * des Zeitraums, die Gruppen in ihrer Reihenfolge, beginnend bei `abGruppe`.
- * Vergangene Wochen bleiben, wie sie sind — sie sind gewesen.
+ * **Reihum verteilen**: die Wochen ab dieser bis zum Ende des Zeitraums, die
+ * Gruppen in ihrer Reihenfolge, beginnend bei `abGruppe`. Vergangene Wochen
+ * bleiben, wie sie sind — sie sind gewesen.
  *
  * Ein Platz behält seine Kennung, wenn er nur eine andere Gruppe bekommt: Die
  * Datenbank kennt je Plan und Woche genau einen Eintrag
- * (`plan_eintraege_platz`), und ein zweiter mit neuer Kennung würde abgewiesen.
- * Was gleich bleibt, behält auch seine Referenz (der Speicherweg vergleicht
- * danach).
+ * (`plan_eintraege_woche`), und ein zweiter mit neuer Kennung würde
+ * abgewiesen. Was gleich bleibt, behält auch seine Referenz (der Speicherweg
+ * vergleicht danach).
  */
 export function gruppenVerteilen(args: {
   plan: WeitererPlan
@@ -133,89 +103,48 @@ export function gruppenVerteilen(args: {
     .filter((w) => w >= dieseWoche)
     .map((woche, i): PlanEintrag => {
       const grp = groups[(start + i) % groups.length]!.id
-      const da = eigene.find((e) => e.datum === woche && e.mahlzeit === null)
-      if (da) return da.grp === grp && da.pid === null ? da : { ...da, grp, pid: null }
-      return { id: neueId(), planId: plan.id, datum: woche, grp, pid: null, mahlzeit: null }
+      const da = eigene.find((e) => e.datum === woche)
+      if (da) return da.grp === grp ? da : { ...da, grp }
+      return { id: neueId(), planId: plan.id, datum: woche, grp }
     })
   return { eintraege: [...andere, ...bleiben, ...neu], verteilt: neu.length }
 }
 
 /**
- * Einen Platz setzen oder räumen: je Woche (Gruppe) bzw. je Tag und Mahlzeit
- * (Gastgeber) einer. Sind Gruppe und Gastgeber leer, geht der Eintrag; bleibt
- * alles, wie es war, kommt dieselbe Liste zurück.
+ * Die Gruppe einer Woche setzen oder räumen. Ohne Gruppe geht der Eintrag;
+ * bleibt alles, wie es war, kommt dieselbe Liste zurück.
  */
 export function eintragSetzen(args: {
   eintraege: PlanEintrag[]
   planId: string
   datum: string
-  mahlzeit: Mahlzeit | null
   grp: string | null
-  pid: string | null
   neueId: () => string
 }): PlanEintrag[] {
-  const { eintraege, planId, datum, mahlzeit, grp, pid, neueId } = args
-  const da = eintraege.find((e) => e.planId === planId && e.datum === datum && e.mahlzeit === mahlzeit)
-  if (grp === null && pid === null) return da ? eintraege.filter((e) => e !== da) : eintraege
-  if (da) return da.grp === grp && da.pid === pid ? eintraege : eintraege.map((e) => (e === da ? { ...da, grp, pid } : e))
-  return [...eintraege, { id: neueId(), planId, datum, grp, pid, mahlzeit }]
-}
-
-/** Ist dieser Gastgeber man selbst oder jemand aus dem eigenen Haushalt (`persons.fam`)? */
-export function eigenerHaushalt(
-  pid: string | null,
-  me: Pick<Person, 'id' | 'fam'> | undefined,
-  persons: readonly Pick<Person, 'id' | 'fam'>[],
-): boolean {
-  if (!pid || !me) return false
-  if (pid === me.id) return true
-  return Boolean(me.fam && persons.find((p) => p.id === pid)?.fam === me.fam)
+  const { eintraege, planId, datum, grp, neueId } = args
+  const da = eintraege.find((e) => e.planId === planId && e.datum === datum)
+  if (grp === null) return da ? eintraege.filter((e) => e !== da) : eintraege
+  if (da) return da.grp === grp ? eintraege : eintraege.map((e) => (e === da ? { ...da, grp } : e))
+  return [...eintraege, { id: neueId(), planId, datum, grp }]
 }
 
 /**
- * Darf die eigene Person diesen Plan sehen? Dieselbe Regel wie
- * `plan_sichtbar` in schema.sql — dort entscheidet sie, hier hält sie die
- * Entwicklerseite (ohne Datenbank) und den Menüpunkt ehrlich: Planer alles;
- * sonst nur Veröffentlichtes — den Königreichssaal alle, Familien reihum nur
- * die Gastgeber und ihre Haushalte.
+ * Was das Ansehen zeigt: veröffentlichte Pläne, die laufen oder kommen. Planer
+ * sehen beim Ansehen dasselbe wie die Versammlung, Entwürfe nur beim Planen.
+ *
+ * Dieselbe Regel wie `plan_sichtbar` in schema.sql — dort entscheidet sie, hier
+ * hält sie die Entwicklerseite (ohne Datenbank) und den Menüpunkt ehrlich.
  */
-export function planFuerMich(args: {
-  plan: WeitererPlan
-  eintraege: readonly PlanEintrag[]
-  planner: boolean
-  me: Pick<Person, 'id' | 'fam'> | undefined
-  persons: readonly Pick<Person, 'id' | 'fam'>[]
-}): boolean {
-  const { plan, eintraege, planner, me, persons } = args
-  if (planner) return true
-  if (plan.entwurf) return false
-  if (plan.vorlage === 'saal') return true
-  return eintraege.some((e) => e.planId === plan.id && eigenerHaushalt(e.pid, me, persons))
-}
-
-/**
- * Was das Ansehen zeigt: veröffentlichte Pläne, die laufen oder kommen — und
- * davon, was die eigene Person sehen darf. Planer sehen beim Ansehen dasselbe
- * wie die Versammlung, Entwürfe nur beim Planen.
- */
-export function plaeneZumAnsehen(args: {
-  plaene: readonly WeitererPlan[]
-  eintraege: readonly PlanEintrag[]
-  planner: boolean
-  me: Pick<Person, 'id' | 'fam'> | undefined
-  persons: readonly Pick<Person, 'id' | 'fam'>[]
-  heute?: Date
-}): WeitererPlan[] {
-  const { plaene, heute = new Date(), ...rest } = args
-  return plaene.filter((plan) => !plan.entwurf && !planVorbei(plan, heute) && planFuerMich({ plan, ...rest }))
+export function plaeneZumAnsehen(plaene: readonly WeitererPlan[], heute = new Date()): WeitererPlan[] {
+  return plaene.filter((plan) => !plan.entwurf && !planVorbei(plan, heute))
 }
 
 /** Steht „Weitere Pläne" im Menü? Für Planer immer — dort legen sie den ersten an. Sonst, sobald es etwas anzusehen gibt. */
-export function weiterePlaeneImMenue(args: Parameters<typeof plaeneZumAnsehen>[0]): boolean {
-  return args.planner || plaeneZumAnsehen(args).length > 0
+export function weiterePlaeneImMenue(args: { plaene: readonly WeitererPlan[]; planner: boolean; heute?: Date }): boolean {
+  return args.planner || plaeneZumAnsehen(args.plaene, args.heute).length > 0
 }
 
-/** Die Wochen, in denen eine Gruppe dran ist (Königreichssaal) — für „Deine Gruppe ist dran". */
+/** Die Wochen, in denen eine Gruppe dran ist — für „Deine Gruppe ist dran". */
 export function wochenDerGruppe(eintraege: readonly PlanEintrag[], planId: string, grp: string): string[] {
   return eintraegeVon(eintraege, planId)
     .filter((e) => e.grp === grp)

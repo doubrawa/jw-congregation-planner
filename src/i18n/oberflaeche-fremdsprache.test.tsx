@@ -802,19 +802,15 @@ describe('Die Pläne (T120) in einer fremden Sprache', () => {
     { id: 'e2', terminId: 't1', datum: '2026-09-16', pid: ANDER.id, selbst: true },
   ]
   const BESUCH: Gruppenbesuch = { id: 'b1', woche: '2026-09-07', grp: 'g1', pid: ICH.id }
-  const SAAL: WeitererPlan = { id: 'pl-s', vorlage: 'saal', name: 'Vexo', von: '2026-09-07', bis: '2026-10-04', entwurf: false }
-  const FAMILIEN: WeitererPlan = { id: 'pl-f', vorlage: 'familien', name: 'Quabo', von: '2026-09-07', bis: '2026-09-13', entwurf: false }
-  const PLAN_EINTRAEGE: PlanEintrag[] = [
-    { id: 'pe1', planId: SAAL.id, datum: '2026-09-07', grp: 'g1', pid: null, mahlzeit: null },
-    { id: 'pe2', planId: FAMILIEN.id, datum: '2026-09-08', grp: null, pid: ICH.id, mahlzeit: 'mittag' },
-  ]
+  const SAAL: WeitererPlan = { id: 'pl-s', name: 'Vexo', von: '2026-09-07', bis: '2026-10-04', entwurf: false }
+  const PLAN_EINTRAEGE: PlanEintrag[] = [{ id: 'pe1', planId: SAAL.id, datum: '2026-09-07', grp: 'g1' }]
 
   /** Alle drei Pläne — die eigenen Aufgaben daraus so abgeleitet wie in der App. */
   const PLAENE: Partial<AppState> = {
     ozTermine: [OZ_TERMIN],
     ozEintraege: OZ_EINTRAEGE,
     gruppenbesuche: [BESUCH],
-    plaene: [SAAL, FAMILIEN],
+    plaene: [SAAL],
     planEintraege: PLAN_EINTRAEGE,
     myTasks: [AUFGABE, ...deriveMyOzTasks([OZ_TERMIN], OZ_EINTRAEGE, ICH.id, {})],
   }
@@ -835,7 +831,6 @@ describe('Die Pläne (T120) in einer fremden Sprache', () => {
     ['Weitere Pläne ansehen', { screen: 'programm', tab: 'wp' }, '.wp-liste'],
     ['Weitere Pläne planen', { screen: 'planen', tab: 'wp' }, '.wp-karte'],
     ['Königreichssaal geöffnet', { screen: 'planen', tab: 'wp' }, '.wp-zeile', oeffne('Vexo')],
-    ['Familien reihum geöffnet', { screen: 'planen', tab: 'wp' }, '.wp-zeile', oeffne('Quabo')],
     ['Meine Aufgaben mit Zeugnis', { screen: 'aufgaben' }, '.auf-title'],
     // Mit etwas zu tun ist die Karte ein Block (`.dash-planung`), sonst ein Knopf.
     ['Start mit der Planungs-Karte', { screen: 'start' }, '.dash-planung'],

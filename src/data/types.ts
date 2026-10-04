@@ -86,30 +86,19 @@ export type MeetingTab = MeetingKey | 'fs' | 'edit' | 'wp'
 export type Thema = 'zusammenkuenfte' | 'predigtdienst' | 'weitere'
 
 /**
- * Vorlage eines **weiteren Plans** (T120, Phase 5) — feste Vorlagen, kein
- * Baukasten (Entscheidung des Betreibers, 2.10.2026):
- * - `saal`: Königreichssaal, je Woche eine Predigtdienstgruppe (od Kap. 11
- *   Abs. 10: „Im Allgemeinen wechseln sich die Predigtdienstgruppen mit der
- *   Saalreinigung ab").
- * - `familien`: Familien reihum, je Tag und Mahlzeit ein Gastgeber — etwa beim
- *   Besuch des Kreisaufsehers (od Kap. 5 Abs. 55, 58, 63).
- */
-export type PlanVorlage = 'saal' | 'familien'
-
-/** Mahlzeiten eines Plans „Familien reihum". */
-export type Mahlzeit = 'fruehstueck' | 'mittag' | 'abend'
-
-/**
  * Ein **weiterer Plan** (T120, Phase 5): eine Ankündigung ohne Zuteilung —
- * niemand bestätigt, niemand wird erinnert. Er beginnt als Entwurf; erst
- * veröffentlicht sieht ihn die Versammlung (beim Königreichssaal alle, bei
- * „Familien reihum" nur die Gastgeber und ihre Haushalte, siehe
- * `plan_sichtbar` in schema.sql).
+ * niemand bestätigt, niemand wird erinnert. Es gibt eine Art: den
+ * **Königreichssaal**, je Woche eine Predigtdienstgruppe (od Kap. 11 Abs. 10:
+ * „Im Allgemeinen wechseln sich die Predigtdienstgruppen mit der
+ * Saalreinigung ab"). Die zweite Vorlage, „Familien reihum", gab es vom 3. bis
+ * 4.10.2026.
+ *
+ * Er beginnt als Entwurf; erst veröffentlicht sieht ihn die Versammlung
+ * (`plan_sichtbar` in schema.sql).
  */
 export interface WeitererPlan {
   /** Vom Client vergeben (`p<uuid>`). */
   id: string
-  vorlage: PlanVorlage
   /** Die Worte des Planers — unübersetzt, wie der Grund einer Verlegung. */
   name: string
   /** Erster und letzter Tag (ISO). */
@@ -118,17 +107,12 @@ export interface WeitererPlan {
   entwurf: boolean
 }
 
-/**
- * Ein Eintrag eines weiteren Plans: je Woche eine Gruppe (`saal`, `datum` ist
- * der Montag) bzw. je Tag und Mahlzeit ein Gastgeber (`familien`).
- */
+/** Ein Eintrag eines weiteren Plans: die Gruppe einer Woche (`datum` ist der Montag). */
 export interface PlanEintrag {
   id: string
   planId: string
   datum: string
   grp: string | null
-  pid: string | null
-  mahlzeit: Mahlzeit | null
 }
 
 /**

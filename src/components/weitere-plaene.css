@@ -103,49 +103,6 @@
   cursor: pointer;
 }
 
-.wp-titel {
-  margin-top: 12px;
-  font-family: var(--font-serif);
-  font-size: calc(22px * var(--fs));
-  font-weight: 500;
-}
-
-.wp-vorlagen {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr));
-  gap: 12px;
-  margin-top: 14px;
-}
-
-.wp-vorlage-karte {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 14px 16px 16px;
-  border: 0;
-  border-radius: var(--r-panel);
-  background: var(--tNeu2);
-  color: var(--ink);
-  text-align: start;
-  cursor: pointer;
-}
-
-.wp-vorlage-karte[data-vorlage='familien'] {
-  background: var(--tGld);
-}
-
-.wp-vorlage-name {
-  font-family: var(--font-serif);
-  font-size: calc(18px * var(--fs));
-  font-weight: 500;
-}
-
-.wp-vorlage-text {
-  font-size: calc(12px * var(--fs));
-  line-height: 1.45;
-  color: var(--mut);
-}
-
 .wp-feld {
   display: flex;
   flex-direction: column;
@@ -187,7 +144,7 @@
   color: var(--wein);
 }
 
-/* Eine Woche bzw. eine Mahlzeit: links wann, rechts die Gruppe oder der Gastgeber. */
+/* Eine Woche: links wann, rechts die Gruppe. */
 .wp-zeile {
   display: flex;
   flex-wrap: wrap;
@@ -202,8 +159,7 @@
   border-bottom: 0;
 }
 
-.wp-zeile.is-vorbei,
-.panel.is-vorbei {
+.wp-zeile.is-vorbei {
   opacity: 0.6;
 }
 
@@ -265,10 +221,6 @@
   align-items: center;
   gap: 6px;
   text-align: end;
-}
-
-.wp-liste-mahlzeit {
-  color: var(--mut);
 }
 
 .wp-info {

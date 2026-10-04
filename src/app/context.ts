@@ -196,8 +196,7 @@ export interface AppState {
   ozEintraege: OzEintrag[]
   /**
    * Weitere Pläne (T120, Phase 5): Ankündigungen ohne Zuteilung. Ein Mitglied
-   * bekommt nur, was es sehen darf (RLS: veröffentlicht, und bei „Familien
-   * reihum" nur als Gastgeber oder dessen Haushalt); Planer alles.
+   * bekommt nur Veröffentlichtes (RLS); Planer alles.
    */
   plaene: WeitererPlan[]
   planEintraege: PlanEintrag[]
@@ -366,17 +365,10 @@ export type AppAction =
   // Name, Zeitraum, Entwurf/veröffentlicht. Einträge außerhalb des Zeitraums gehen mit.
   | { type: 'wpPlanAendern'; id: string; patch: Partial<Pick<WeitererPlan, 'name' | 'von' | 'bis' | 'entwurf'>> }
   | { type: 'wpPlanLoeschen'; id: string }
-  // Königreichssaal: die Wochen des Zeitraums reihum an die Gruppen, ab dieser.
+  // Die Wochen des Zeitraums reihum an die Gruppen, ab dieser.
   | { type: 'wpGruppenVerteilen'; planId: string; abGruppe: string }
-  // Einen Platz setzen (Gruppe bzw. Gastgeber) — beides null räumt ihn.
-  | {
-      type: 'wpEintragSetzen'
-      planId: string
-      datum: string
-      mahlzeit: PlanEintrag['mahlzeit']
-      grp: string | null
-      pid: string | null
-    }
+  // Die Gruppe einer Woche setzen — null räumt den Platz.
+  | { type: 'wpEintragSetzen'; planId: string; datum: string; grp: string | null }
   // Der Screen ist beim vorgemerkten Bereich angekommen (siehe `sprungZiel`).
   | { type: 'sprungZielErreicht' }
   | { type: 'prevWeek' }

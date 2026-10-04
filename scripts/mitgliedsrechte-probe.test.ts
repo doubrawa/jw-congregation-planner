@@ -336,7 +336,7 @@ describe('T120: die Anlage erfüllt die Regeln der Datenbank, die mit den Rechte
   const marke = 'PROBE-1'
   const a = t120Anlage({ marke, versammlung: 'c', tag0: ersterMontagAb('2099-01-01'), planerPid: 'p-planer', mitgliedPid: 'p-mitglied', gruppe: 'g1' })
   const oz = [a.ozFremd, a.ozZugeteilt, a.ozFuerAndere, a.ozAlsZugeteilt, a.ozSelbst, a.ozOhneBereich]
-  const eintraege = [...Object.values(a.eintraege).flat(), a.haushaltEintrag('p-mitbewohner'), a.eintragVersuch]
+  const eintraege = [...Object.values(a.eintraege).flat(), a.eintragVersuch]
 
   it('jeder Zeugnis-Eintrag liegt am Wochentag seines Termins (sonst: oz_falscher_tag)', () => {
     for (const e of oz) expect(wochentag(e.datum), e.id).toBe(a.termin.wd)
@@ -354,13 +354,19 @@ describe('T120: die Anlage erfüllt die Regeln der Datenbank, die mit den Rechte
     expect(a.besuch!.woche).not.toBe(a.besuchVersuch!.woche)
   })
 
-  it('ein Platz je Plan, Tag und Mahlzeit (plan_eintraege_platz), und kein Plan endet vor seinem Anfang', () => {
-    expect(new Set(eintraege.map((e) => `${e.plan_id}|${e.datum}|${e.mahlzeit ?? ''}`)).size).toBe(eintraege.length)
-    for (const p of [...Object.values(a.plaene), a.haushalt, a.planVersuch]) expect(p.bis >= p.von, p.id).toBe(true)
+  it('ein Platz je Plan und Woche (plan_eintraege_woche), jeder an einem Montag im Zeitraum seines Plans', () => {
+    expect(new Set(eintraege.map((e) => `${e.plan_id}|${e.datum}`)).size).toBe(eintraege.length)
+    const plaene = [...Object.values(a.plaene), a.planVersuch]
+    for (const p of plaene) expect(p.bis >= p.von, p.id).toBe(true)
+    for (const e of eintraege) {
+      const plan = plaene.find((p) => p.id === e.plan_id)!
+      expect(wochentag(e.datum), e.id).toBe(1)
+      expect(e.datum >= plan.von && e.datum <= plan.bis, e.id).toBe(true)
+    }
   })
 
   it('jede Kennung trägt das Kennzeichen — daran findet das Aufräumen genau diese Zeilen', () => {
-    const ids = [a.termin, ...oz, ...Object.values(a.plaene), a.haushalt, a.planVersuch, ...eintraege, a.besuch!, a.besuchVersuch!].map((z) => z.id)
+    const ids = [a.termin, ...oz, ...Object.values(a.plaene), a.planVersuch, ...eintraege, a.besuch!, a.besuchVersuch!].map((z) => z.id)
     expect(ids.every((id) => id.startsWith(`${marke}-`))).toBe(true)
     expect(new Set(ids).size).toBe(ids.length)
   })
@@ -372,9 +378,11 @@ describe('T120: die Anlage erfüllt die Regeln der Datenbank, die mit den Rechte
     expect(a.ozAlsZugeteilt).toMatchObject({ person_id: 'p-mitglied', selbst: false })
     // (16) beides richtig — es fehlt allein der Aufgabenbereich.
     expect(a.ozOhneBereich).toMatchObject({ person_id: 'p-mitglied', selbst: true })
-    // (34) sich selbst zum Gastgeber im fremden Familienplan machen.
-    expect(a.eintragVersuch).toMatchObject({ plan_id: a.plaene.fremd.id, person_id: 'p-mitglied' })
-    expect(a.plaene.fremd.vorlage).toBe('familien')
+    // (34) eine freie Woche des veröffentlichten Plans — abweisen kann nur
+    // noch die Schreib-Richtlinie.
+    expect(a.eintragVersuch).toMatchObject({ plan_id: a.plaene.saal.id })
+    expect(a.plaene.saal.entwurf).toBe(false)
+    expect(a.eintraege.saal.map((e) => e.datum)).not.toContain(a.eintragVersuch.datum)
   })
 
   it('(19) ist der eigene Eintrag unter einem anderen Montag — nicht irgendein Schlüssel', () => {
@@ -383,14 +391,6 @@ describe('T120: die Anlage erfüllt die Regeln der Datenbank, die mit den Rechte
     expect(a.ozFalscherMontag.split('|')[0]).toBe('oz')
     expect(a.ozFalscherMontag.split('|')[2]).toBe(a.ozZugeteilt.id)
     expect(wochentag(a.ozFalscherMontag.split('|')[1]!)).toBe(1)
-  })
-
-  it('der fremde Gastgeber in (30) ist, wen die Probe gefunden hat — ohne Angabe der Planer', () => {
-    // In der Testversammlung sind Planer und Mitglied ein Ehepaar: Mit dem
-    // Planer als „fremdem" Gastgeber sähe das Mitglied den Plan zu Recht.
-    expect(a.eintraege.fremd[0]!.person_id).toBe('p-planer')
-    const anders = t120Anlage({ marke, versammlung: 'c', tag0: '2099-01-05', planerPid: 'p-planer', mitgliedPid: 'p-mitglied', fremderGastgeber: 'p-dritte' })
-    expect(anders.eintraege.fremd[0]!.person_id).toBe('p-dritte')
   })
 
   it('ohne Gruppe gibt es keinen Gruppenbesuch — (11) und (12) bleiben dann ungemessen', () => {

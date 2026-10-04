@@ -597,8 +597,8 @@ describe('Öffentliches Zeugnisgeben (T120)', () => {
 })
 
 describe('Weitere Pläne (T120, Phase 5)', () => {
-  const PLAN = { id: 'pl', vorlage: 'saal' as const, name: '', von: '2026-09-07', bis: '2026-10-04', entwurf: true }
-  const woche = (datum: string, grp: string) => ({ id: `e-${datum}`, planId: 'pl', datum, grp, pid: null, mahlzeit: null })
+  const PLAN = { id: 'pl', name: '', von: '2026-09-07', bis: '2026-10-04', entwurf: true }
+  const woche = (datum: string, grp: string) => ({ id: `e-${datum}`, planId: 'pl', datum, grp })
 
   it('der Name wird getippt — der Plan geht gebündelt hinaus, nicht je Taste', () => {
     const a = st({ plaene: [PLAN] })
@@ -633,9 +633,7 @@ describe('Weitere Pläne (T120, Phase 5)', () => {
       type: 'wpEintragSetzen',
       planId: 'pl',
       datum: '2026-09-14',
-      mahlzeit: null,
       grp: 'g3',
-      pid: null,
     })
     expect(data.savePlanEintraege).toHaveBeenCalledWith('c1', [neu], ['e-2026-09-21'])
   })
