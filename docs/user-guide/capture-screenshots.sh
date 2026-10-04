@@ -91,8 +91,8 @@ SHOTS=(
   # Monate ins Bild passen; angemeldet, damit die Sidebar einen Namen trägt.
   "planer-gruppenbesuche|s=planen&tab=fs&fb=gruppenbesuche&me=p6|${W}x1500"
   # Öffentliches Zeugnisgeben (T120, Phase 3): Termine, Konflikt (Niklas ist
-  # abwesend), freie Plätze und die ersten Wochen. Hoch genug für alles bis zu
-  # den Schichten der zweiten Woche.
+  # abwesend), freie Plätze und die ersten Wochen — in der dritten fällt die
+  # Schicht am 23. September aus („Wiederherstellen"). Hoch genug bis dorthin.
   "planer-zeugnis|s=planen&tab=fs&fb=zeugnis&me=p6|${W}x2100"
   # Weitere Pläne (T120, Phase 5): die Liste — der Winterdienst aktuell, die
   # Grundreinigung als Entwurf. Einen Plan öffnet kein Hash.
@@ -112,8 +112,9 @@ SHOTS=(
   "verkuendiger-gruppenaufseher|s=planen&tab=fs&pl=0&me=p1"
   # Simon (p9) ist in Gruppe 1: oben der Besuch bei seiner Gruppe, darunter alle.
   "verkuendiger-gruppenbesuche|s=programm&tab=fs&fb=gruppenbesuche&pl=0&me=p9"
-  # Simon hat den Aufgabenbereich: freie Plätze mit „+ Eintragen", und am
-  # 19. September ist er zugeteilt — Bestätigen oder Absagen.
+  # Simon hat den Aufgabenbereich: freie Plätze mit „+ Eintragen", am
+  # 19. September ist er zugeteilt — Bestätigen oder Absagen —, und am
+  # 23. September fällt die Schicht aus.
   "verkuendiger-zeugnis|s=programm&tab=fs&fb=zeugnis&pl=0&me=p9|${W}x1500"
   # Simon (p9) ist in Gruppe 1: Er sieht den Winterdienst mit „Deine Gruppe ist
   # dran", den Entwurf nicht. Hoch genug für alle Wochen.

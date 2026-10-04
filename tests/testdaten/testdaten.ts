@@ -279,10 +279,11 @@ export const DEMO_GRUPPENBESUCHE: Gruppenbesuch[] = [
  * Uhr. Zwei Termine; in den ersten Wochen je eine Lage zum Ansehen:
  * selbst eingetragen (grün), zugeteilt und bestätigt, zugeteilt und offen
  * (Simon, p9 — mit `me=p9` bestätigt oder sagt er ab), Niklas (p10) an einem
- * Tag, an dem er abwesend ist (Konflikt), und freie Plätze.
+ * Tag, an dem er abwesend ist (Konflikt), freie Plätze — und am 23. September
+ * fällt die Schicht am Marktplatz aus (gestrichen, 4.10.2026).
  */
 export const DEMO_OZ_TERMINE: OzTermin[] = [
-  { id: 'oz-mi', wd: 3, von: '10:00', bis: '12:00', ort: 'Marktplatz', plaetze: 2 },
+  { id: 'oz-mi', wd: 3, von: '10:00', bis: '12:00', ort: 'Marktplatz', plaetze: 2, aus: ['2026-09-23'] },
   { id: 'oz-sa', wd: 6, von: '09:00', bis: '11:00', ort: 'Bahnhofsvorplatz', plaetze: 2 },
 ]
 
