@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "集まり",
   "fsGrundplan": "基本の予定",
   "abmelden": "ログアウト",
+  "abmeldenSicher": "本当にログアウト？",
   "rolleKoordinator": "管理者",
   "rolleVerkuendiger": "伝道者",
   "email": "メール",

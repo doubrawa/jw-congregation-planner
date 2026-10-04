@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useApp } from '../app/context'
+import { AbwesenheitEntfernen } from '../components/AbwesenheitEntfernen'
 import { Zeitleiste, type ZeitZeile } from '../components/Zeitleiste'
 import { abwesenheitsArt, zeitleisteDatum } from '../components/zeitleiste-gemeinsam'
 import type { Person } from '../data/types'
@@ -24,7 +25,7 @@ import { personTimeline, type TimelineEntry } from './person-timeline'
  * Ohne jeden Eintrag bleibt die Karte ganz weg.
  */
 export function PersonTimeline({ person }: { person: Person }) {
-  const { state, dispatch } = useApp()
+  const { state } = useApp()
   const i18n = useT()
   const { t, tu } = i18n
   /*
@@ -60,16 +61,7 @@ export function PersonTimeline({ person }: { person: Person }) {
     // kein zweiter.
     ...(e.kind === 'abw' && e.rand !== 'ende' && darfBearbeiten
       ? {
-          ende: (
-            <button
-              type="button"
-              className="zeit-remove"
-              aria-label={t.a11yRemove}
-              onClick={() => dispatch({ type: 'removeAbsence', id: e.abwId })}
-            >
-              ✕
-            </button>
-          ),
+          ende: <AbwesenheitEntfernen id={e.abwId} className="zeit-remove" />,
         }
       : {}),
   }))

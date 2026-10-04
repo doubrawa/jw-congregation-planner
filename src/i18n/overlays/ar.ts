@@ -19,6 +19,7 @@ export default {
   "navProfil": "الملف الشخصي",
   "menueLbl": "القائمة",
   "abmelden": "تسجيل الخروج",
+  "abmeldenSicher": "تسجيل الخروج فعلاً؟",
   "rolleKoordinator": "المسؤول",
   "rolleVerkuendiger": "ناشر",
   "email": "البريد الإلكتروني",

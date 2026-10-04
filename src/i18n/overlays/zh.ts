@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "传道前聚会",
   "fsGrundplan": "基本时间表",
   "abmelden": "退出",
+  "abmeldenSicher": "确定退出？",
   "rolleKoordinator": "管理员",
   "rolleVerkuendiger": "传道员",
   "email": "电子邮箱",

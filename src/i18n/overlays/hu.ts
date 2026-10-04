@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Összejövetelek",
   "fsGrundplan": "Alapterv",
   "abmelden": "Kijelentkezés",
+  "abmeldenSicher": "Biztosan kijelentkezel?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Hírnök",
   "email": "E-MAIL",

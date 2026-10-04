@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Bijeenkomsten",
   "fsGrundplan": "Basisschema",
   "abmelden": "Afmelden",
+  "abmeldenSicher": "Echt afmelden?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Verkondiger",
   "email": "E-MAIL",

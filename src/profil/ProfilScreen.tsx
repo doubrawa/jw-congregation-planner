@@ -8,7 +8,7 @@ import type { Lang, Theme } from '../data/types'
 import { APP_LANGS_SORTED } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import { promptInstall } from '../lib/install'
-import { performLogout } from '../lib/supabase'
+import { AbmeldenKnopf } from '../components/AbmeldenKnopf'
 import { Diagnose } from './Diagnose'
 import '../aufgaben/aufgaben.css'
 import { Switch } from '../components/Switch'
@@ -140,9 +140,7 @@ export function ProfilScreen() {
             ))}
           </select>
         </div>
-        <button type="button" className="btn-outline prof-logout" onClick={() => performLogout(dispatch)}>
-          {t.abmelden}
-        </button>
+        <AbmeldenKnopf className="prof-logout" />
         {/*
           Stand der App: beantwortet die eine Frage, die sich aus der Ferne
           sonst nicht klären lässt — läuft auf diesem Gerät wirklich die

@@ -19,6 +19,7 @@ export default {
   "navProfil": "پروفائل",
   "menueLbl": "مینو",
   "abmelden": "لاگ آؤٹ",
+  "abmeldenSicher": "واقعی لاگ آؤٹ کریں؟",
   "rolleKoordinator": "ایڈمن",
   "rolleVerkuendiger": "مبشر",
   "email": "ای میل",

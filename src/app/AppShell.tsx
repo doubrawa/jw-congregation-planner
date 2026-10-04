@@ -10,9 +10,9 @@ import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import { redeemInvite } from '../lib/data'
 import { LOGO } from '../lib/logo'
-import { performLogout } from '../lib/supabase'
 import type { Screen, Thema } from '../data/types'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
+import { AbmeldenKnopf } from '../components/AbmeldenKnopf'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { MyTaskSheet } from '../components/MyTaskSheet'
@@ -536,11 +536,7 @@ function StatusView({ kind }: { kind: 'loading' | 'no-membership' | 'error' | 'e
         Weg hinaus — wer mit dem falschen Konto angemeldet war oder vor einer
         leeren Versammlung stand, säße ohne ihn fest.
       */}
-      {kind !== 'loading' && (
-        <button type="button" className="btn-outline status-btn" onClick={() => performLogout(dispatch)}>
-          {t.abmelden}
-        </button>
-      )}
+      {kind !== 'loading' && <AbmeldenKnopf className="status-btn" />}
     </section>
   )
 }

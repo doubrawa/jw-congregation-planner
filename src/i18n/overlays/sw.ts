@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Mikutano",
   "fsGrundplan": "Ratiba ya msingi",
   "abmelden": "Toka",
+  "abmeldenSicher": "Toka kweli?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Mhubiri",
   "email": "BARUA PEPE",

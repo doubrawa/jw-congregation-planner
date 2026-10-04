@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Zbiórki",
   "fsGrundplan": "Plan stały",
   "abmelden": "Wyloguj",
+  "abmeldenSicher": "Na pewno wylogować?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Głosiciel",
   "email": "E-MAIL",

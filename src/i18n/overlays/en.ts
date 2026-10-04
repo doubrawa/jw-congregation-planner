@@ -20,6 +20,7 @@ export default {
   "navProfil": "Profile",
   "menueLbl": "Menu",
   "abmelden": "Log out",
+  "abmeldenSicher": "Really log out?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Publisher",
   "offlineBanner": "Offline · as of {m}",

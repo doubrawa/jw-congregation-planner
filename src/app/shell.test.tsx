@@ -580,8 +580,22 @@ describe('Abmelden und Rollenanzeige', () => {
     expect(menue.flatMap((m) => [...m.querySelectorAll('button')]).map((b) => b.textContent)).not.toContain(t.abmelden)
     const imProfil = [...container.querySelectorAll('.app-content button')].find((b) => b.textContent === t.abmelden)
     expect(imProfil?.classList.contains('btn-outline'), 'kein richtiger Knopf').toBe(true)
+    // Mit Rückfrage (4.10.2026): Der erste Tipp fragt nur, erst der zweite meldet ab.
+    fireEvent.click(imProfil!)
+    expect(performLogout).not.toHaveBeenCalled()
+    expect(imProfil!.textContent).toBe(t.abmeldenSicher)
     fireEvent.click(imProfil!)
     expect(performLogout).toHaveBeenCalledWith(dispatch)
+  })
+
+  it('ein Tipp daneben bricht die Rückfrage beim Abmelden ab', () => {
+    const { container } = zeige({ screen: 'profil' })
+    const knopf = [...container.querySelectorAll('.app-content button')].find((b) => b.textContent === t.abmelden)!
+    fireEvent.click(knopf)
+    fireEvent.blur(knopf)
+    expect(knopf.textContent).toBe(t.abmelden)
+    fireEvent.click(knopf)
+    expect(performLogout).not.toHaveBeenCalled()
   })
 
   /*
@@ -597,7 +611,9 @@ describe('Abmelden und Rollenanzeige', () => {
     const { container, dispatch } = zeige(over)
     const knopf = [...container.querySelectorAll('.status-view button')].find((b) => b.textContent === t.abmelden)
     expect(knopf, 'kein Weg hinaus').toBeDefined()
-    fireEvent.click(knopf!)
+    fireEvent.click(knopf!) // fragt nach …
+    expect(performLogout).not.toHaveBeenCalled()
+    fireEvent.click(knopf!) // … und meldet ab
     expect(performLogout).toHaveBeenCalledWith(dispatch)
   })
 

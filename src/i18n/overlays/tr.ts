@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Buluşmalar",
   "fsGrundplan": "Temel program",
   "abmelden": "Çıkış",
+  "abmeldenSicher": "Gerçekten çıkış yapılsın mı?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Müjdeci",
   "email": "E-POSTA",

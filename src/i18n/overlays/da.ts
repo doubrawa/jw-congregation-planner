@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Samlinger",
   "fsGrundplan": "Fast skema",
   "abmelden": "Log ud",
+  "abmeldenSicher": "Vil du logge ud?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Forkynder",
   "email": "E-MAIL",

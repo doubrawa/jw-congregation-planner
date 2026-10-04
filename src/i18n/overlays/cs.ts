@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Schůzky",
   "fsGrundplan": "Základní plán",
   "abmelden": "Odhlásit se",
+  "abmeldenSicher": "Opravdu se odhlásit?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Zvěstovatel",
   "email": "E-MAIL",

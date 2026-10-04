@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Întruniri",
   "fsGrundplan": "Program de bază",
   "abmelden": "Deconectare",
+  "abmeldenSicher": "Chiar te deconectezi?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Vestitor",
   "email": "E-MAIL",

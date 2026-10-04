@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Συναθροίσεις",
   "fsGrundplan": "Βασικό πρόγραμμα",
   "abmelden": "Αποσύνδεση",
+  "abmeldenSicher": "Σίγουρα αποσύνδεση;",
   "rolleKoordinator": "Διαχειριστής",
   "rolleVerkuendiger": "Ευαγγελιζόμενος",
   "email": "EMAIL",

@@ -113,7 +113,10 @@ describe('Personen-Detail — die Abwesenheiten dieser Person', () => {
     const { container } = zeigen({ absences: [abw('a1', 'p-andere', null, '2026-09-01')] }, dispatch)
     const knopf = container.querySelector('.zeit-remove')
     if (!knopf) throw new Error('kein Entfernen-Knopf in der Zeitleiste')
+    // Mit Rückfrage (4.10.2026): Der erste Tipp fragt nur.
     fireEvent.click(knopf)
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'removeAbsence', id: 'a1' })
+    fireEvent.click(container.querySelector('.zeit-remove')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'removeAbsence', id: 'a1' })
   })
 

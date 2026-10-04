@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Reuniones",
   "fsGrundplan": "Horario base",
   "abmelden": "Cerrar sesión",
+  "abmeldenSicher": "¿Cerrar sesión de verdad?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Publicador",
   "email": "CORREO",

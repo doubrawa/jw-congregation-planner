@@ -19,6 +19,7 @@ export default {
   "navProfil": "פרופיל",
   "menueLbl": "תפריט",
   "abmelden": "התנתקות",
+  "abmeldenSicher": "להתנתק באמת?",
   "rolleKoordinator": "מנהל",
   "rolleVerkuendiger": "מבשר",
   "email": "אימייל",

@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Réunions",
   "fsGrundplan": "Programme de base",
   "abmelden": "Se déconnecter",
+  "abmeldenSicher": "Vraiment se déconnecter\u00a0?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Proclamateur",
   "email": "E-MAIL",

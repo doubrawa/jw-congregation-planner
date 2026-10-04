@@ -286,7 +286,8 @@ nicht eingeteilt.
 3. Auf **Abwesenheit eintragen** tippen.
 
 Deine eingetragenen Zeiträume erscheinen darunter unter „Deine Einträge" und
-lassen sich mit dem ✕ wieder entfernen.
+lassen sich mit dem ✕ wieder entfernen. Der erste Tipp fragt „Wirklich
+löschen?", erst der zweite entfernt den Eintrag; ein Tipp daneben bricht ab.
 
 Dort stehen auch Zeiträume, die **nicht du** eingetragen hast: Der Planer kann
 sie für dich erfassen (etwa wenn du angerufen hast), und beim Umstieg von einem
@@ -370,7 +371,8 @@ Unter **Profil** stellst du persönliche Vorlieben ein.
     eingestellte Sprache.
 - **Push‑Mitteilungen** – Erinnerungen an anstehende Aufgaben ein‑ oder
   ausschalten (siehe [Abschnitt 7](#7-app-installieren--erinnerungen)).
-- **Abmelden** – meldet dich auf diesem Gerät ab.
+- **Abmelden** – meldet dich auf diesem Gerät ab. Der erste Tipp fragt
+  „Wirklich abmelden?", erst der zweite meldet ab.
 
 ---
 

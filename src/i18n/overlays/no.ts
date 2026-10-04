@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Frammøter",
   "fsGrundplan": "Fast plan",
   "abmelden": "Logg ut",
+  "abmeldenSicher": "Vil du virkelig logge ut?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Forkynner",
   "email": "E-POST",

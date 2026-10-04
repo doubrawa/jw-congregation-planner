@@ -127,9 +127,14 @@ describe('Wer bin ich, wo bin ich', () => {
     expect(zeile.querySelector('.kv-val')?.getAttribute('dir')).toBe('ltr')
   })
 
-  it('„Abmelden" meldet ab', () => {
+  it('„Abmelden" fragt erst nach, dann meldet es ab', () => {
+    // Seit dem 4.10.2026 mit Rückfrage („Wirklich abmelden?").
     const { container, dispatch } = zeige()
-    fireEvent.click([...container.querySelectorAll('button')].find((b) => b.textContent === t.abmelden)!)
+    const knopf = [...container.querySelectorAll('button')].find((b) => b.textContent === t.abmelden)!
+    fireEvent.click(knopf)
+    expect(performLogout).not.toHaveBeenCalled()
+    expect(knopf.textContent).toBe(t.abmeldenSicher)
+    fireEvent.click(knopf)
     expect(performLogout).toHaveBeenCalledWith(dispatch)
   })
 })

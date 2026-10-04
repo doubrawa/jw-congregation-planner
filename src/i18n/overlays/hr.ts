@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Sastanci",
   "fsGrundplan": "Osnovni raspored",
   "abmelden": "Odjava",
+  "abmeldenSicher": "Zaista se odjaviti?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Objavitelj",
   "email": "E-MAIL",

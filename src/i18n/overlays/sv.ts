@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Möten",
   "fsGrundplan": "Grundschema",
   "abmelden": "Logga ut",
+  "abmeldenSicher": "Vill du verkligen logga ut?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Förkunnare",
   "email": "E-POST",

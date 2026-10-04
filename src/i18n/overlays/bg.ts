@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Сбирки",
   "fsGrundplan": "Основен график",
   "abmelden": "Изход",
+  "abmeldenSicher": "Наистина ли да излезете?",
   "rolleKoordinator": "Админ",
   "rolleVerkuendiger": "Вестител",
   "email": "ИМЕЙЛ",

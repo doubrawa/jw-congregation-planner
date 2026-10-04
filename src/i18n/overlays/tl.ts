@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Mga Pagtitipon",
   "fsGrundplan": "Pangunahing iskedyul",
   "abmelden": "Mag-log out",
+  "abmeldenSicher": "Sigurado bang mag-log out?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Mamamahayag",
   "email": "EMAIL",

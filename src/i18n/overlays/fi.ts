@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Kenttäkokoukset",
   "fsGrundplan": "Perusaikataulu",
   "abmelden": "Kirjaudu ulos",
+  "abmeldenSicher": "Kirjaudutaanko ulos?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Julistaja",
   "email": "SÄHKÖPOSTI",

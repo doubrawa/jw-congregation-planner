@@ -13,6 +13,8 @@ export const DE = {
     // des Admin-Abschnitts und die erste Stellung des Schalters Ansehen/Planen.
     navZusammenkuenfte: 'Zusammenkünfte', navVerwaltung: 'Verwaltung', ansehen: 'Ansehen',
     abmelden: 'Abmelden', rolleKoordinator: 'Admin', rolleVerkuendiger: 'Verkündiger',
+    // Zwei-Tipp-Bestätigung beim Abmelden (AbmeldenKnopf), wie `loeschenSicher`.
+    abmeldenSicher: 'Wirklich abmelden?',
     // Offline-Stand (lib/snapshot.ts): {m} = Zeitpunkt der Momentaufnahme
     offlineBanner: 'Offline · Stand von {m}', offlineBannerHint: 'Nur lesen — keine Änderungen möglich',
     offlineReadOnly: 'Offline — Änderungen sind erst wieder online möglich',

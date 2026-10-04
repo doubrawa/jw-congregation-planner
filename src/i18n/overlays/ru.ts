@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Встречи",
   "fsGrundplan": "Основное расписание",
   "abmelden": "Выйти",
+  "abmeldenSicher": "Точно выйти?",
   "rolleKoordinator": "Админ",
   "rolleVerkuendiger": "Возвещатель",
   "email": "ЭЛ. ПОЧТА",

@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Pertemuan",
   "fsGrundplan": "Jadwal dasar",
   "abmelden": "Keluar",
+  "abmeldenSicher": "Yakin keluar?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Penyiar",
   "email": "EMAIL",

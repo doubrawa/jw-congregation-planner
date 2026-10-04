@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useApp } from '../app/context'
 import { fromIso } from '../data/meeting-dates'
+import { AbwesenheitEntfernen } from './AbwesenheitEntfernen'
 import { DatePicker } from './DatePicker'
 import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
@@ -161,16 +162,7 @@ export function AbsencePanel({
             <div className="abs-range">{zeitraum(absence)}</div>
             <div className="abs-reason-text" dir="auto">{absence.reason || t.ohneAngabe}</div>
           </div>
-          {darfBearbeiten && (
-            <button
-              type="button"
-              className="abs-remove"
-              aria-label={t.a11yRemove}
-              onClick={() => dispatch({ type: 'removeAbsence', id: absence.id })}
-            >
-              ✕
-            </button>
-          )}
+          {darfBearbeiten && <AbwesenheitEntfernen id={absence.id} className="abs-remove" />}
         </div>
       ))}
       {showList && entries.length === 0 && <p className="abs-empty">{t.keineAbw}</p>}

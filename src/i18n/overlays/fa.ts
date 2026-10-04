@@ -19,6 +19,7 @@ export default {
   "navProfil": "پروفایل",
   "menueLbl": "منو",
   "abmelden": "خروج",
+  "abmeldenSicher": "واقعاً خارج شوید؟",
   "rolleKoordinator": "مدیر",
   "rolleVerkuendiger": "مبشّر",
   "email": "ایمیل",

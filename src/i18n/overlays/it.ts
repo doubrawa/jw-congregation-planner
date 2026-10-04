@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Adunanze",
   "fsGrundplan": "Programma di base",
   "abmelden": "Esci",
+  "abmeldenSicher": "Uscire davvero?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Proclamatore",
   "email": "EMAIL",

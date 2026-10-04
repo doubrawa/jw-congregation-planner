@@ -190,3 +190,17 @@
   background: var(--hov);
   color: var(--ink);
 }
+
+/* Nach dem ersten Tipp („Wirklich löschen?", 4.10.2026): aus dem runden ✕
+   wird eine Pille mit Text, in der Farbe der übrigen Zwei-Tipp-Knöpfe. */
+.zeit-remove.is-armed {
+  width: auto;
+  height: auto;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--wein);
+  background: var(--tWein);
+  color: var(--wein);
+  font-weight: 600;
+  padding: 4px 10px;
+  white-space: nowrap;
+}

@@ -376,10 +376,25 @@ describe('Die Liste darunter', () => {
     expect(container.querySelector('.abs-empty')?.textContent).toBe(t.keineAbw)
   })
 
-  it('Entfernen entfernt genau diesen Eintrag', () => {
+  it('Entfernen fragt erst nach, dann entfernt es genau diesen Eintrag', () => {
+    // Seit dem 4.10.2026 mit Rückfrage: Der erste Tipp fragt, erst der zweite löscht.
     const { container, dispatch } = zeigePanel({ entries: [abw({ id: 'a1' }), abw({ id: 'a2' })] })
-    fireEvent.click([...container.querySelectorAll('.abs-remove')][1]!)
+    const knopf = () => [...container.querySelectorAll('.abs-remove')][1]!
+    fireEvent.click(knopf())
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'removeAbsence' }))
+    expect(knopf().textContent).toBe(t.loeschenSicher)
+    fireEvent.click(knopf())
     expect(dispatch).toHaveBeenCalledWith({ type: 'removeAbsence', id: 'a2' })
+  })
+
+  it('ein Tipp daneben bricht die Rückfrage ab', () => {
+    const { container, dispatch } = zeigePanel({ entries: [abw({ id: 'a1' })] })
+    const knopf = () => container.querySelector('.abs-remove')!
+    fireEvent.click(knopf())
+    fireEvent.blur(knopf())
+    expect(knopf().textContent).toBe('✕')
+    fireEvent.click(knopf())
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'removeAbsence' }))
   })
 
   it('im Personen-Detail bleibt die Liste weg — dort steht sie in der Zeitleiste', () => {

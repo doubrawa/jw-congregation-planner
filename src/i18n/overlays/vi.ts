@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "Buổi nhóm",
   "fsGrundplan": "Lịch cố định",
   "abmelden": "Đăng xuất",
+  "abmeldenSicher": "Thực sự đăng xuất?",
   "rolleKoordinator": "Admin",
   "rolleVerkuendiger": "Người công bố",
   "email": "EMAIL",

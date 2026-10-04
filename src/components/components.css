@@ -120,6 +120,14 @@
   background: var(--tAcc);
 }
 
+/* Abmelden nach dem ersten Tipp („Wirklich abmelden?") — in der Farbe der
+   übrigen Zwei-Tipp-Knöpfe (Leeren, Person löschen). */
+.abmelden.is-armed {
+  background: var(--tWein);
+  border-color: var(--wein);
+  color: var(--wein);
+}
+
 /* Chevron-Icon der runden Blätter-Buttons (siehe Chevron.tsx). `display:block`
    ist wichtig: als Inline-Element säße das SVG auf der Grundlinie und bekäme
    Unterlängen-Platz — genau die Schieflage, die es vermeiden soll. */

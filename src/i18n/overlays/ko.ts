@@ -18,6 +18,7 @@ export default {
   "fsTreffpunkteTab": "모임",
   "fsGrundplan": "기본 일정",
   "abmelden": "로그아웃",
+  "abmeldenSicher": "정말 로그아웃할까요?",
   "rolleKoordinator": "관리자",
   "rolleVerkuendiger": "전도인",
   "email": "이메일",
