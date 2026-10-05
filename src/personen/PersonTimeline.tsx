@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useApp } from '../app/context'
 import { AbwesenheitEntfernen } from '../components/AbwesenheitEntfernen'
+import { besuchsGruppe } from '../components/gruppenbesuch-anzeige'
 import { Zeitleiste, type ZeitZeile } from '../components/Zeitleiste'
 import { abwesenheitsArt, zeitleisteDatum } from '../components/zeitleiste-gemeinsam'
 import type { Person } from '../data/types'
@@ -12,7 +13,8 @@ import { personTimeline, type TimelineEntry } from './person-timeline'
  * Aufgabenbereichen): je Eintrag Datum und Art, vergangene blasser.
  *
  * Sie führt **beide Richtungen** zusammen — wann jemand dran ist (Zuteilungen,
- * geleitete Treffpunkte) und wann er nicht kann (Abwesenheiten). Die
+ * geleitete Treffpunkte, Zeugnis-Schichten, vorgemerkte Gruppenbesuche) und
+ * wann er nicht kann (Abwesenheiten). Die
  * Abwesenheiten standen zuerst als eigene Liste unter dem Eingabeformular; dort
  * war nicht zu sehen, dass eine Zuteilung mitten in einen Zeitraum fällt. Jetzt
  * markieren zwei Punkte Beginn und Ende, und die Strecke dazwischen ist
@@ -46,6 +48,9 @@ export function PersonTimeline({ person }: { person: Person }) {
   const beschriftung = (e: TimelineEntry): string => {
     if (e.kind === 'meeting') return aufgabenLabel({ title: e.titel, rolle: e.rolle }, i18n)
     if (e.kind === 'fs') return `${t.privTreffpunkt} · ${tu(e.ort)}`
+    // Ohne Ort stünde ein Trenner ohne etwas dahinter — der Ort ist beim Termin freiwillig.
+    if (e.kind === 'oz') return [t.privZeugnis, tu(e.ort)].filter(Boolean).join(' · ')
+    if (e.kind === 'besuch') return `${t.gbMarker} · ${besuchsGruppe(e, state.groups, tu)}`
     return abwesenheitsArt(e.grund, t.abwesendChip)
   }
 

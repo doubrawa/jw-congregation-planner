@@ -15,7 +15,7 @@ import { DruckWahl } from './DruckWahl'
  */
 function FsDruck() {
   return (
-    <div className="prog-meta-row fs-druck-row">
+    <div className="prog-meta-row druck-zeile">
       <DruckWahl />
     </div>
   )

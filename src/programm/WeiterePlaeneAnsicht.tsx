@@ -6,6 +6,7 @@ import { fromIso } from '../data/meeting-dates'
 import { eintraegeVon, plaeneZumAnsehen, spanneVon, spannenDerGruppe, taktVon } from '../data/weitere-plaene'
 import { useT } from '../i18n/useT'
 import type { Person, WeitererPlan } from '../data/types'
+import { AnsichtDrucken } from './AnsichtDrucken'
 import '../components/weitere-plaene.css'
 
 /**
@@ -31,6 +32,7 @@ export function WeiterePlaeneAnsicht() {
   }
   return (
     <>
+      <AnsichtDrucken titel={t.navWeiterePlaene} />
       {plaene.map((plan) => (
         <PlanAnsicht key={plan.id} plan={plan} me={me} tag={tag} />
       ))}

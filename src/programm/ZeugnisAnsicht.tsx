@@ -21,6 +21,7 @@ import {
 import { fill, useT } from '../i18n/useT'
 import { ZUSAGE_LABEL } from '../planen/useZusage'
 import { ZusagePunkt } from '../planen/ZusageStatus'
+import { AnsichtDrucken } from './AnsichtDrucken'
 import '../components/zeugnis.css'
 
 /**
@@ -49,7 +50,9 @@ export function ZeugnisAnsicht() {
 
   return (
     <>
-      <div className="panel panel--pb16" data-farbe="neutral">
+      {/* Gedruckt wird der ganze Plan, nicht nur die ersten Wochen. */}
+      <AnsichtDrucken titel={t.privZeugnis} vorbereiten={() => setAlle(true)} />
+      <div className="panel panel--pb16 oz-kopf" data-farbe="neutral">
         <h2 className="panel-label">{t.privZeugnis}</h2>
         <p className="panel-hint">{darf ? t.ozAnsichtHint : t.ozNichtFreigegeben}</p>
       </div>

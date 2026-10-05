@@ -13,6 +13,7 @@ import { useBesuchsLage } from '../components/useBesuchsLage'
 import { overseerGroup } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import { fill, useT } from '../i18n/useT'
+import { AnsichtDrucken } from './AnsichtDrucken'
 import '../components/gruppenbesuche.css'
 
 /**
@@ -47,6 +48,7 @@ export function GruppenbesucheAnsicht() {
 
   return (
     <>
+      <AnsichtDrucken titel={t.gbTitel} />
       {gruppe && (
         <div className="panel" data-farbe="gold">
           <h2 className="panel-label">{`${t.gbDeineGruppe} · ${tu(gruppe.name)}`}</h2>

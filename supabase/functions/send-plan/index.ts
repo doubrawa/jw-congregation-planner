@@ -1,7 +1,7 @@
 // =============================================================================
 // Supabase Edge Function: send-plan — „Plan senden"
 // =============================================================================
-// Drei Aktionen (Aufruf mit Nutzer-JWT, supabase.functions.invoke):
+// Vier Aktionen (Aufruf mit Nutzer-JWT, supabase.functions.invoke):
 //
 //   { action: 'plan', weekStart, heute? }
 //     Der Planer hat eine Woche fertig und gibt sie frei. Jede eingeteilte
@@ -20,10 +20,18 @@
 //     weiß Bescheid und hat damit zugesagt. Versand, Tagebuch und „je Person
 //     eine Nachricht" wie bei der Woche (`versenden`).
 //
-//   { action: 'entzug', entzuege: [{ taskKey, name, pid?, label?, datum? }, …] }
+//   { action: 'entzug', entzuege: [{ taskKey, name, pid?, label?, datum?, grund? }, …] }
 //     Eine oder mehrere bereits **bestätigte** Zuteilungen wurden zurückgezogen
 //     oder verlegt. Die Betroffenen erfahren es sofort. Ohne diesen Weg
 //     bereitete jemand weiter etwas vor, das ihm längst genommen war.
+//     `grund: 'ausfall'` (5.10.2026): Eine Schicht im Zeugnisgeben fällt aus —
+//     die Nachricht heißt dann „Schicht fällt aus".
+//
+//   { action: 'zeugnis-geaendert', aenderungen: [{ taskKey, name, pid?, label?, datum? }, …] }
+//     Uhrzeit oder Ort einer Schicht im Zeugnisgeben haben sich geändert
+//     (5.10.2026); `datum` ist der neue Termin. Wer dort eingetragen ist und
+//     davon weiß, bekommt „Schicht geändert". Das Tagebuch bleibt unberührt —
+//     der Platz gehört ihm weiter.
 //
 //     **Eine Liste, kein Einzelfall.** Der Client schickte je Entzug einen
 //     eigenen Aufruf, und jeder wiederholte davor dieselben fünf REST-Runden
@@ -130,6 +138,17 @@ interface EntzugRumpf {
   pid?: string
   label?: string
   datum?: string
+  /**
+   * `'ausfall'`: Die Schicht im Zeugnisgeben fällt aus (5.10.2026) — die
+   * Nachricht heißt dann „Schicht fällt aus". Gilt nur für Schlüssel des
+   * Zeugnisgebens (`oz|…`); sonst bleibt es der Entzug.
+   */
+  grund?: string
+}
+
+/** Die Art der Nachricht zu einem Entzug: „Schicht fällt aus" nur, wo es eine Schicht ist. */
+function entzugsArt(e: EntzugRumpf & { taskKey: string }): 'entzug' | 'ausfall' {
+  return e.grund === 'ausfall' && schluesselTeile(e.taskKey)?.art === 'oz' ? 'ausfall' : 'entzug'
 }
 
 /* ---- Versand ------------------------------------------------------------- */
@@ -291,6 +310,46 @@ async function versenden(
   })
 }
 
+/**
+ * **Je Person und Art eine Nachricht** — für den Entzug, den Ausfall einer
+ * Schicht und eine geänderte Schicht (5.10.2026). Bezeichnung und Termin kommen
+ * vom Client, kanonisch deutsch, wie beim Entzug seit T99: Er hat den Platz
+ * gerade in der Hand, die Function könnte ihn nach dem Überschreiben nicht mehr
+ * nachschlagen.
+ *
+ * Getrennt nach Art, weil jede Art ihren Titel trägt: Wer an einem Tag einen
+ * Platz verliert und dessen Schicht am anderen ausfällt, bekommt zwei
+ * Nachrichten — aber nie zwei derselben Art.
+ */
+async function jePersonMelden(
+  cong: string,
+  meldungen: ReadonlyArray<EntzugRumpf & { name: string; art: keyof PlanTexte }>,
+  kontoFuer: (pid: string | undefined, name: string) => string | undefined,
+  empfaengerFuer: (uid: string) => Empfaenger,
+): Promise<Response> {
+  const jePerson = new Map<string, Nachricht>()
+  const ohneKonto = new Set<string>()
+  for (const m of meldungen) {
+    const uid = kontoFuer(m.pid, m.name)
+    // Kein Konto → nichts zuzustellen. Kein Fehler: der Planer sagt es
+    // persönlich, und die Antwort nennt ihm den Namen.
+    if (!uid) {
+      ohneKonto.add(m.name)
+      continue
+    }
+    const eintrag: Eintrag = { datum: m.datum ?? '', label: m.label ?? '' }
+    const schluessel = `${uid}|${m.art}`
+    const da = jePerson.get(schluessel)
+    if (da) da.eintraege.push(eintrag)
+    else jePerson.set(schluessel, { empfaenger: empfaengerFuer(uid), art: m.art, eintraege: [eintrag] })
+  }
+  if (jePerson.size === 0) return json({ ok: true, personen: 0, push: 0, ohneKonto: [...ohneKonto] })
+
+  await bibelbuecherLaden()
+  const { personen, push } = await verschicken(cong, [...jePerson.values()])
+  return json({ ok: true, personen, push, ohneKonto: [...ohneKonto] })
+}
+
 /* ---- Wer einen Entzug melden darf --------------------------------------- */
 
 /**
@@ -403,9 +462,15 @@ Deno.serve(async (req: Request) => {
     if (!userId) return json({ error: 'unauthorized' }, 401)
 
     const payload = (await req.json().catch(() => null)) as
-      | ({ action?: string; weekStart?: string; heute?: string; entzuege?: EntzugRumpf[] } & EntzugRumpf)
+      | ({
+          action?: string
+          weekStart?: string
+          heute?: string
+          entzuege?: EntzugRumpf[]
+          aenderungen?: EntzugRumpf[]
+        } & EntzugRumpf)
       | null
-    const aktionen = ['plan', 'entzug', 'zeugnis']
+    const aktionen = ['plan', 'entzug', 'zeugnis', 'zeugnis-geaendert']
     if (!payload?.action || !aktionen.includes(payload.action)) {
       return json({ error: 'bad-request' }, 400)
     }
@@ -415,7 +480,8 @@ Deno.serve(async (req: Request) => {
     // Versammlungen. Senden darf, wer zuteilt: Admin und Planer (4.10.2026).
     // Der Gruppenaufseher sendet die Treffpunkte **seiner** Gruppe — den Plan
     // der Woche nur für sie und den Entzug einer Leitung dort
-    // (`nurEigeneTreffpunkte`); das Zeugnisgeben gar nicht.
+    // (`nurEigeneTreffpunkte`); das Zeugnisgeben gar nicht — weder den Plan
+    // noch eine geänderte Schicht.
     const eigene = await rest.get<(MemberRow & { zuteiler?: boolean })[]>(
       `members?select=user_id,person_id,planner,zuteiler,congregation_id&user_id=eq.${wert(userId)}`,
     )
@@ -424,7 +490,8 @@ Deno.serve(async (req: Request) => {
     if (!cong) return json({ error: 'no-congregation' }, 403)
     const darfZuteilen = Boolean(mich?.planner || mich?.zuteiler)
     const aufseherVon = darfZuteilen ? null : await geleiteteGruppen(cong, mich?.person_id ?? null)
-    if (aufseherVon && (payload.action === 'zeugnis' || aufseherVon.size === 0)) {
+    const zeugnisAktion = payload.action === 'zeugnis' || payload.action === 'zeugnis-geaendert'
+    if (aufseherVon && (zeugnisAktion || aufseherVon.size === 0)) {
       return json({ error: 'forbidden' }, 403)
     }
 
@@ -479,36 +546,35 @@ Deno.serve(async (req: Request) => {
         ),
       )
 
-      // Je Person **eine** Nachricht, wie beim „Plan senden": Wer beim
+      // Je Person und Art **eine** Nachricht, wie beim „Plan senden": Wer beim
       // Umbesetzen einer Zusammenkunft zwei Plätze verliert, soll einmal
-      // hinsehen müssen und nicht zweimal erschrecken.
-      const jeEntzug = new Map<string, Eintrag[]>()
-      const ohneKonto = new Set<string>()
-      for (const e of entzuege) {
-        const uid = kontoFuer(e.pid, e.name)
-        // Kein Konto → nichts zuzustellen. Kein Fehler: der Planer sagt es
-        // persönlich, und die Antwort nennt ihm den Namen.
-        if (!uid) {
-          ohneKonto.add(e.name)
-          continue
-        }
-        const eintrag: Eintrag = { datum: e.datum ?? '', label: e.label ?? '' }
-        jeEntzug.set(uid, [...(jeEntzug.get(uid) ?? []), eintrag])
-      }
-      if (jeEntzug.size === 0) {
-        return json({ ok: true, personen: 0, push: 0, ohneKonto: [...ohneKonto] })
-      }
-
-      await bibelbuecherLaden()
-      const { personen, push } = await verschicken(
+      // hinsehen müssen und nicht zweimal erschrecken. Fällt zugleich eine
+      // Schicht aus, ist das eine eigene Nachricht mit eigenem Titel.
+      return await jePersonMelden(
         cong,
-        [...jeEntzug].map(([uid, eintraege]) => ({
-          empfaenger: empfaengerFuer(uid),
-          art: 'entzug' as const,
-          eintraege,
-        })),
+        entzuege.map((e) => ({ ...e, art: entzugsArt(e) })),
+        kontoFuer,
+        empfaengerFuer,
       )
-      return json({ ok: true, personen, push, ohneKonto: [...ohneKonto] })
+    }
+
+    /* ---- Aktion: Uhrzeit oder Ort einer Zeugnis-Schicht geändert (5.10.2026) ---- */
+    if (payload.action === 'zeugnis-geaendert') {
+      // Nur Schlüssel des Zeugnisgebens, nur mit Namen. Der Gruppenaufseher ist
+      // oben schon abgewiesen — Termine ändert, wer zuteilt.
+      const roh = Array.isArray(payload.aenderungen) ? payload.aenderungen : []
+      const gueltig = roh.filter(
+        (e): e is EntzugRumpf & { taskKey: string; name: string } =>
+          Boolean(e?.taskKey && e?.name) && schluesselTeile(String(e.taskKey))?.art === 'oz',
+      )
+      if (gueltig.length === 0) return json({ error: 'bad-request' }, 400)
+      // Das Tagebuch bleibt: Der Platz gehört der Person weiter, nur der Termin ist neu.
+      return await jePersonMelden(
+        cong,
+        gueltig.map((e) => ({ ...e, art: 'geaendert' as const })),
+        kontoFuer,
+        empfaengerFuer,
+      )
     }
 
     /* ---- Aktion: Plan des öffentlichen Zeugnisgebens senden (T120) ---- */

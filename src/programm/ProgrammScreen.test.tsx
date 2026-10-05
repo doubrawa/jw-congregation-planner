@@ -721,3 +721,69 @@ describe('Was die Gruppe über ihren Besuch liest, stimmt (T120)', () => {
     expect(container.textContent).not.toContain('Konrad Sommer')
   })
 })
+
+/**
+ * **Drucken für die Pläne ohne Woche** (5.10.2026): Gruppenbesuche,
+ * Zeugnisgeben und Weitere Pläne hatten keinen Druckknopf — dabei gehören der
+ * Reinigungsplan und die Zeugnis-Schichten genauso an den Aushang wie das
+ * Programm. Gedruckt wird die Ansicht samt einer Kopfzeile, die das Blatt
+ * zuordnet; das Zeugnisgeben klappt vorher alle Wochen auf.
+ */
+describe('Drucken: Pläne ohne Woche', () => {
+  let print = vi.fn()
+  beforeEach(() => {
+    print = vi.fn()
+    window.print = print
+  })
+  afterEach(() => {
+    delete document.documentElement.dataset.print
+  })
+
+  const GRUPPE = { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null }
+  /** Fern genug, dass die Uhr den Test nie überholt. */
+  const BESUCH = { id: 'b1', woche: '2099-01-05', grp: 'g1', pid: null }
+  const TERMIN = { id: 't1', wd: 6, von: '10:00', bis: '12:00', ort: 'Testplatz', plaetze: 2 }
+  const PLAN = { id: 'pl1', name: 'Saalreinigung', von: '2099-01-05', bis: '2099-03-29', entwurf: false }
+
+  const kopf = (c: HTMLElement) => [...c.querySelectorAll('.prog-print-head span')].map((s) => s.textContent)
+  const knopf = (c: HTMLElement) => c.querySelector<HTMLButtonElement>('.druck-zeile .prog-print-btn')!
+
+  it('Gruppenbesuche: Knopf druckt, die Kopfzeile nennt Versammlung und Plan', () => {
+    const { container } = zeige({ tab: 'fs', fsBereich: 'gruppenbesuche', groups: [GRUPPE], gruppenbesuche: [BESUCH] })
+    expect(kopf(container)).toEqual(['Nordheim', t.gbTitel])
+    fireEvent.click(knopf(container))
+    expect(print).toHaveBeenCalledTimes(1)
+  })
+
+  it('Weitere Pläne: Knopf druckt, die Kopfzeile nennt Versammlung und Plan', () => {
+    const { container } = zeige({ tab: 'wp', plaene: [PLAN], planEintraege: [] })
+    expect(kopf(container)).toEqual(['Nordheim', t.navWeiterePlaene])
+    fireEvent.click(knopf(container))
+    expect(print).toHaveBeenCalledTimes(1)
+  })
+
+  it('Zeugnisgeben: gedruckt wird der ganze Plan, nicht nur die ersten vier Wochen', () => {
+    const { container } = zeige({ tab: 'fs', fsBereich: 'zeugnis', ozTermine: [TERMIN], ozEintraege: [] })
+    const wochen = () => container.querySelectorAll('.panel[data-farbe="gold"]').length
+    expect(wochen()).toBe(4)
+    let imDruck = 0
+    print.mockImplementation(() => {
+      imDruck = wochen()
+    })
+    expect(kopf(container)).toEqual(['Nordheim', t.privZeugnis])
+    fireEvent.click(knopf(container))
+    expect(print).toHaveBeenCalledTimes(1)
+    expect(imDruck).toBeGreaterThan(4)
+  })
+
+  it('räumt ein stehengebliebenes Kennzeichen ab — sonst käme das Blatt als Monat heraus', () => {
+    document.documentElement.dataset.print = 'monat'
+    let kennzeichen: string | undefined = 'nicht gedruckt'
+    print.mockImplementation(() => {
+      kennzeichen = document.documentElement.dataset.print
+    })
+    const { container } = zeige({ tab: 'wp', plaene: [PLAN], planEintraege: [] })
+    fireEvent.click(knopf(container))
+    expect(kennzeichen).toBeUndefined()
+  })
+})

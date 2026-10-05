@@ -8,6 +8,7 @@
  * i18n.js. Offizielle S-38-Begriffe (siehe i18n.js-Kopf).
  */
 
+import type { RechteStufe } from '../data/rechte'
 import type { Lang, QualificationKey, Role } from '../data/types'
 import EN_OVERLAY from './overlays/en'
 import { DE } from './de'
@@ -116,6 +117,15 @@ export const ROLE_KEY: Record<Role, keyof Dict> = {
   keine: 'rolleKeine',
 }
 
+/** Rechte-Stufe → Wörterbuch-Schlüssel (die Zeile unter dem Namen in der Seitenleiste). */
+export const RECHTE_STUFE_KEY: Record<RechteStufe, keyof Dict> = {
+  admin: 'rolleKoordinator',
+  planer: 'rollePlaner',
+  gruppenaufseher: 'rolleGruppenaufseher',
+  gehilfe: 'rolleGehilfe',
+  verkuendiger: 'rolleVerkuendiger',
+}
+
 /** Deutscher Mitteilungs-Titel → Wörterbuch-Schlüssel (Übersetzung bei Anzeige). */
 export const NOTIF_TITLE_KEY: Record<string, keyof Dict> = {
   // „Plan senden" (Edge Function `send-plan`) — an die eingeteilte Person.
@@ -123,6 +133,10 @@ export const NOTIF_TITLE_KEY: Record<string, keyof Dict> = {
   // und dass eine bestätigte Zusage zurückgezogen wurde, erfuhr niemand (T99).
   'Neue Zuteilung': 'notifZuteilung',
   'Zuteilung zurückgezogen': 'notifEntzug',
+  // Ebenfalls aus `send-plan`, an die Eingetragenen einer Zeugnis-Schicht
+  // (5.10.2026): Sie fällt aus, oder Uhrzeit bzw. Ort haben sich geändert.
+  'Schicht fällt aus': 'notifOzAusfall',
+  'Schicht geändert': 'notifOzGeaendert',
   // Titel der Erinnerungen aus send-reminders — steht kanonisch deutsch in der
   // Datenbank und wird hier in die Sprache des Lesers gebracht.
   'Erinnerung: Zuteilung bestätigen': 'notifErinnerungBest',

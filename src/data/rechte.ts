@@ -60,6 +60,26 @@ export function rechteVon(s: {
 }
 
 /**
+ * **Wie sich jemand in der App nennt** — die Zeile unter dem Namen in der
+ * Seitenleiste und im Menü des Handys. Die höchste Stufe gewinnt: Admin, dann
+ * Planer; wer sonst eine Gruppe betreut, ist ihr Gruppenaufseher oder ihr
+ * Gehilfe (5.10.2026 — bis dahin stand dort „Verkündiger", obwohl er ihre
+ * Treffpunkte ändern und senden darf), alle übrigen Verkündiger.
+ */
+export type RechteStufe = 'admin' | 'planer' | 'gruppenaufseher' | 'gehilfe' | 'verkuendiger'
+
+export function rechteStufe(
+  r: Rechte,
+  s: { groups: readonly Group[]; personId: string | null },
+): RechteStufe {
+  if (r.admin) return 'admin'
+  if (r.zuteilen) return 'planer'
+  if (r.gruppe === null) return 'verkuendiger'
+  const gruppe = s.groups.find((g) => g.id === r.gruppe)
+  return gruppe?.overseerId === s.personId ? 'gruppenaufseher' : 'gehilfe'
+}
+
+/**
  * **Planer, aber nicht Admin** — wer zuteilen, den Plan aber nicht ändern
  * darf. Daran blenden die Planen-Ansichten aus, was den Plan selbst ändert, und
  * daran schreibt `persist.ts` die Wochen über die Edge Function `zuteilen`.

@@ -327,6 +327,13 @@ und **`ohne Zuteilungen`** (nach jedem Import); dazu das Gedächtnismahl-Vokabul
 > (`translate-data.test.ts`) — wer sie nachträgt, streicht sie dort und misst
 > sie an jw.org. Neue Lücken kann die Liste nicht verstecken, sie ist
 > namentlich.
+>
+> **Nachtrag (13. August 2026, hier vermerkt am 5. Oktober):** Die Titel
+> waren keine veröffentlichten, sondern erfundene Demo-Titel im Stil einer
+> Veröffentlichung — nachgemessen an der echten Wochenseite. Sie heißen seither
+> „Demoaufgabe 1" usw. In der Liste stehen nur noch die zwei
+> Gedächtnismahl-Fachbegriffe, und die erzeugt die App nicht (T64/T65 setzen
+> Anlass und Ausfall, nicht den Ablauf). Offen ist damit nichts.
 
 ### T26 · Vollständigkeitstest für `FRAG`/`EXTRA`/`REF` 🔧 ✅ erledigt
 `ui.test.ts` sichert das UI-Wörterbuch vorbildlich ab (inkl. „kein stiller
@@ -5825,7 +5832,8 @@ Predigtdienst, dort auch der Grundplan seiner Gruppe; keine Einstellungen.
 
 Bewusst offen: Die Rollenzeile des Gruppenaufsehers sagt weiter „Verkündiger";
 `ohneGruppeHint` spricht von „im Programm" (verständlich, eine Änderung hieße 34
-Übersetzungen ohne Gewinn).
+Übersetzungen ohne Gewinn). — ✅ Beides am 5.10.2026 nachgezogen (siehe unten,
+„Die bewusst offenen Punkte, einzeln entschieden").
 
 **Stand Phase 2 (3. Oktober 2026) — Gruppenbesuche, umgesetzt:**
 
@@ -5864,7 +5872,8 @@ Bewusst offen: Die Rollenzeile des Gruppenaufsehers sagt weiter „Verkündiger"
   6/6 bewacht; Handbücher und zwei neue Handbuchbilder.
 
 Bewusst offen (Phase 2): kein wählbarer Rhythmus („jede Gruppe zweimal im
-Jahr" geht über Entfernen einzelner Besuche); kein Ausdruck des Besuchsplans;
+Jahr" geht über Entfernen einzelner Besuche); kein Ausdruck des Besuchsplans
+(✅ seit 5.10.2026 abends);
 „Woche ändern" heißt entfernen und neu anlegen.
 
 **Stand Phase 3 (3. Oktober 2026) — Öffentliches Zeugnisgeben, umgesetzt
@@ -5920,7 +5929,8 @@ Jahr" geht über Entfernen einzelner Besuche); kein Ausdruck des Besuchsplans;
 
 Bewusst offen (Phase 3): Die Zeitleiste im Personen-Detail nennt die Einträge
 nicht; kein Ausdruck des Schichtplans; eine Änderung von Uhrzeit oder Ort eines
-Termins benachrichtigt die Eingetragenen nicht. Die Mitgliedsrechte-Probe
+Termins benachrichtigt die Eingetragenen nicht. (✅ Alle drei am 5.10.2026
+abends gebaut.) Die Mitgliedsrechte-Probe
 (`scripts/mitgliedsrechte-probe.mjs`) misst die neuen Richtlinien seit dem
 3.10.2026 (Fälle 13–21, siehe Nachtrag nach Phase 5) — gelaufen am selben
 Tag, alle wie erwartet.
@@ -6025,7 +6035,8 @@ Verkündiger alle Vorträge (sie hat keine Zeilenrechte).
   behoben (`c700dd7`: Schlüssel `chipDu` in 34 Sprachen, beide Prüfungen ab
   zwei Buchstaben).
 
-Bewusst offen (Phase 5): kein Ausdruck der Pläne; keine Benachrichtigung beim
+Bewusst offen (Phase 5): kein Ausdruck der Pläne (✅ seit 5.10.2026 abends);
+keine Benachrichtigung beim
 Veröffentlichen (Ankündigungen, keine Zuteilungen); Familien reihum bietet alle
 Personen als Gastgeber an.
 
@@ -6300,6 +6311,11 @@ Brüdern, nur wo der Schlüssel fehlt; sonst stünden die neuen Plätze ohne
 Kandidaten da. (2) `import-week` deployen und pushen. (3) Den Bestand
 nachziehen: `node scripts/bereiche-trennen.mjs --trocken`, dann ohne. Eilig ist
 (3) nicht — alte Wochen tragen die alten Bereiche und verhalten sich wie bisher.
+✅ (1) und (2) am 4.10. erledigt, (3) am 5.10.2026 um 19:20: vorher geprüft,
+dass jeder Bruder mit `vortrag` auch `besprechung` hat und jeder mit
+`schulung` auch `schulungVortrag`; dann 10 Wochen umgestellt (24 Plätze, 17
+besetzt). Kontrolle: `--trocken` meldet „Nichts zu tun",
+`wochen-angleichen.mjs --trocken` „Nichts abweichend".
 
 **Takt der weiteren Pläne:** erst `schema.sql` (Spalte `plaene.takt`), dann
 pushen. Das neue Frontend fragt die Spalte ab; ohne sie käme beim Laden kein
@@ -6355,7 +6371,41 @@ Fall entsteht nach Weg B nur noch durch Daten, die außerhalb der App
 geschrieben wurden, und `wochen-angleichen.mjs --trocken` findet ihn. Bis
 dahin lautet die Meldung „Änderung konnte nicht gespeichert werden — bitte neu
 laden" — stimmt, hilft aber nicht weiter. Kommt der Fall doch vor: eigener
-Schlüssel in allen Sprachen, `konfliktMelder` mit Grund.
+Schlüssel in allen Sprachen, `konfliktMelder` mit Grund. *Am Abend vom
+Betreiber bestätigt: Es bleibt dabei.*
+
+**Die bewusst offenen Punkte, einzeln entschieden (5.10.2026 abends):**
+- **Drucken für die Pläne ohne Woche** — Gruppenbesuche, öffentliches
+  Zeugnisgeben und Weitere Pläne haben beim Ansehen einen Knopf „Drucken"
+  (`AnsichtDrucken`): Kopfzeile Versammlung · Plan, ohne Bedienelemente
+  (`print.css`); das Zeugnisgeben klappt vorher alle Wochen auf.
+- **Zeugnis-Schichten melden sich, mit Push.** Fällt eine Schicht weg —
+  gestrichen, anderer Wochentag, Termin gelöscht —, heißt die Nachricht
+  „Schicht fällt aus" statt „Zuteilung zurückgezogen" und geht an jeden, der
+  von seinem Eintrag weiß: selbst eingetragen, bestätigt oder über „Plan
+  senden" benachrichtigt. Ändern sich Uhrzeit oder Ort, bekommt derselbe Kreis
+  „Schicht geändert" mit dem neuen Termin — gesammelt, bis die Eingabe fünf
+  Sekunden ruht, sofort beim Verlassen der Ansicht und vor einem Neuladen
+  (`ozAenderungen` in `persist.ts`). `send-plan`: `entzug` mit `grund`, neue
+  Aktion `zeugnis-geaendert`; Titel für Glocke und Push in 34 Sprachen. Kein
+  Schema. Weitere Pläne melden sich beim Veröffentlichen weiter nicht — sie
+  kündigen an, sie teilen nicht zu.
+- **Zeitleiste im Personen-Detail** mit den Schichten im Zeugnisgeben und den
+  vorgemerkten Gruppenbesuchen (Woche noch nicht geladen; in einer geladenen
+  steht der Besucher schon als Treffpunkt-Leiter darin). „Meine Aufgaben" und
+  die Zeitleiste fragen dieselbe Regel (`ozEintragGilt`).
+- **Rechte-Zeile unter dem Namen:** Gruppenaufseher bzw. Gehilfe statt
+  „Verkündiger" (`rechteStufe`; die Wörter wie `aufseherLbl`/`gehilfeLbl`,
+  gemessen am Wachtturm Juni 2026). Der Hinweis über „Ohne Predigtdienstgruppe"
+  nennt den Predigtdienst statt des Programms, in allen Sprachen.
+- **Personenliste:** Suche und Filter überstehen das Detail (offener
+  Aufgaben-Chip aus der Sitzung „Feste-Rollen-Warnung", 4.10.).
+- **Gestrichen:** die Rollen-Union `RolleKey` — sie prüfte nur Schreibwege,
+  gespeichert bliebe Text.
+
+**Ausrollen:** erst `send-plan` deployen, dann pushen. Ein älterer Client am
+neuen `send-plan` arbeitet unverändert; ein neuer an einem alten bekäme für
+„Schicht geändert" 400 (nur ins Protokoll) und für den Ausfall den alten Titel.
 
 ---
 
@@ -6849,5 +6899,5 @@ zurückgenommen und der Testlauf wiederholt wurde.
 | **T50** (`--primary`/`--clear`) | ⛔ die Tokens gibt es nicht — es sind benutzte Klassennamen |
 | **T51** (vier z-index-Ebenen) | umgesetzt mit **sieben**; vier hätten die Reihenfolge geändert |
 | **T15** (Endzeit) | umgesetzt als feste 105 min statt Summe der Programmminuten — das Arbeitsheft führt Lieder und Gebete nicht auf |
-| **T25** (Fragmente) | teilweise; 22 veröffentlichte Titel bleiben unübersetzt, als geschlossene Liste im Test festgehalten |
+| **T25** (Fragmente) | teilweise; zwei Gedächtnismahl-Fachbegriffe bleiben unübersetzt, als geschlossene Liste im Test festgehalten — die App erzeugt sie nicht. Die früher hier genannten 22 Titel waren erfundene Demo-Titel (13.8.2026) |
 | **T33** (Beschriftung „Schlusslied") | ⛔ gemessen, kein Wort: das Kongressprogramm nennt Lied und Gebet zusammen — in 8 Sprachen ergäbe ein Schnitt bloß „Lied", auf Französisch steht gar kein Schlusswort. `SONG_WORD` unter der gemessenen Überschrift `ABSCHLUSS` bleibt |

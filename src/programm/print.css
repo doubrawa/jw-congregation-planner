@@ -73,7 +73,7 @@
   .prog-helpers,
   .prog-print-btn,
   .druck-menue,
-  .fs-druck-row {
+  .druck-zeile {
     display: none !important;
   }
 
@@ -245,5 +245,46 @@
     padding-top: 2mm;
     border-top: 1px solid #999;
     font-size: 8.5pt;
+  }
+
+  /* Pläne ohne Woche (5.10.2026): Gruppenbesuche, Zeugnisgeben, Weitere
+     Pläne. Wie die Treffpunkte in festen Größen — und ohne das, was nur den
+     Leser angeht oder etwas bedient: Eintragen, die eigene Zusage, „Weitere
+     Wochen" (der Druck hat sie schon aufgeklappt), „Deine Gruppe ist dran".
+     Der Kopf des Zeugnisgebens erklärt das Eintragen; den Plan nennt die
+     Kopfzeile des Ausdrucks. */
+  .oz-kopf,
+  .oz-eintragen,
+  .oz-eigen,
+  .oz-mehr,
+  .wp-dran,
+  .wp-chips,
+  .wp-info {
+    display: none !important;
+  }
+
+  .oz-person,
+  .oz-faellt-aus,
+  .gb-woche,
+  .gb-gruppe,
+  .wp-liste-zeile {
+    font-size: 9.5pt;
+  }
+
+  .oz-frei,
+  .gb-treffpunkt,
+  .gb-hinweis,
+  .wp-zeitraum {
+    font-size: 8.5pt;
+  }
+
+  .wp-name {
+    font-size: 14pt;
+  }
+
+  /* Am Bildschirm hebt sich die Zeile der eigenen Gruppe ab — der Aushang
+     gilt allen. */
+  .wp-liste-zeile.is-eigen {
+    font-weight: inherit;
   }
 }

@@ -59,6 +59,8 @@ import {
   substituteTake,
   substituteWithdraw,
   platzFuellen,
+  sendPlanEntzug,
+  sendPlanZeugnisAenderung,
 } from './data'
 import type { Group, Person, Service, Week } from '../data/types'
 import { isoDay } from '../data/meeting-dates'
@@ -449,5 +451,48 @@ describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
     // Der freie Platz nennt dazu den Kalendertag des Geräts (5.10.2026).
     const tag = action === 'fill' ? { heute: isoDay(new Date()) } : {}
     expect(optionen.body).toEqual({ action, taskKey: 'k1', ...tag })
+  })
+})
+
+/**
+ * **Was an `send-plan` geht, wenn eine Zeugnis-Schicht ausfällt oder sich
+ * ändert** (5.10.2026). Feldnamen und Aktion müssen genau die sein, die die
+ * Function liest (`entzuege[].grund`, `zeugnis-geaendert` mit `aenderungen`) —
+ * ein Tippfehler auf einer Seite ginge still unter: Die Function antwortete
+ * 400, der Client protokollierte es nur.
+ */
+describe('send-plan: Ausfall und Änderung einer Zeugnis-Schicht', () => {
+  const abwarten = () => new Promise((r) => setTimeout(r, 0))
+  const SCHICHT = { key: 'oz|2026-09-07|e1', name: 'A B', pid: 'p1', label: 'Öffentliches Zeugnisgeben', datum: 'Mi' }
+
+  it('der Entzug trägt den Grund, wo es einer ist — und nur dort', async () => {
+    chain.functions.invoke.mockClear()
+    sendPlanEntzug([{ ...SCHICHT, grund: 'ausfall' }, { ...SCHICHT, key: 'oz|2026-09-07|e2' }])
+    await abwarten()
+    const [name, optionen] = chain.functions.invoke.mock.calls[0] as [string, { body: { action: string; entzuege: unknown[] } }]
+    expect(name).toBe('send-plan')
+    expect(optionen.body.action).toBe('entzug')
+    expect(optionen.body.entzuege).toEqual([
+      { taskKey: 'oz|2026-09-07|e1', name: 'A B', pid: 'p1', label: 'Öffentliches Zeugnisgeben', datum: 'Mi', grund: 'ausfall' },
+      { taskKey: 'oz|2026-09-07|e2', name: 'A B', pid: 'p1', label: 'Öffentliches Zeugnisgeben', datum: 'Mi' },
+    ])
+  })
+
+  it('eine geänderte Schicht geht als `zeugnis-geaendert` mit `aenderungen`', async () => {
+    chain.functions.invoke.mockClear()
+    sendPlanZeugnisAenderung([SCHICHT])
+    await abwarten()
+    const [name, optionen] = chain.functions.invoke.mock.calls[0] as [string, { body: unknown }]
+    expect(name).toBe('send-plan')
+    expect(optionen.body).toEqual({
+      action: 'zeugnis-geaendert',
+      aenderungen: [{ taskKey: 'oz|2026-09-07|e1', name: 'A B', pid: 'p1', label: 'Öffentliches Zeugnisgeben', datum: 'Mi' }],
+    })
+  })
+
+  it('eine leere Liste ruft gar nicht erst', () => {
+    chain.functions.invoke.mockClear()
+    sendPlanZeugnisAenderung([])
+    expect(chain.functions.invoke).not.toHaveBeenCalled()
   })
 })

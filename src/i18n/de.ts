@@ -13,6 +13,10 @@ export const DE = {
     // des Admin-Abschnitts und die erste Stellung des Schalters Ansehen/Planen.
     navZusammenkuenfte: 'Zusammenkünfte', navVerwaltung: 'Verwaltung', ansehen: 'Ansehen',
     abmelden: 'Abmelden', rolleKoordinator: 'Admin', rolleVerkuendiger: 'Verkündiger',
+    // Unter dem Namen in der Seitenleiste (5.10.2026): Wer eine Gruppe leitet, darf
+    // ihre Treffpunkte ändern und senden — „Verkündiger" sagte das nicht. Die
+    // Wörter wie `aufseherLbl`/`gehilfeLbl`, gemessen am Wachtturm Juni 2026.
+    rolleGruppenaufseher: 'Gruppenaufseher', rolleGehilfe: 'Gehilfe',
     // Die Rechte-Stufe zwischen Verkündiger und Admin (4.10.2026): teilt zu und
     // sendet, ändert die Pläne aber nicht. Steht im Kopf und als Schalter unter
     // „Feste Rollen".
@@ -306,6 +310,8 @@ export const DE = {
     importFehler: 'Import fehlgeschlagen',
     notifZuteilung: 'Neue Zuteilung', notifErinnerung: 'Erinnerung', notifPlan: 'Plan veröffentlicht',
     notifEntzug: 'Zuteilung zurückgezogen',
+    // Zeugnisgeben (5.10.2026): eine Schicht fällt aus oder hat eine neue Zeit oder einen neuen Ort.
+    notifOzAusfall: 'Schicht fällt aus', notifOzGeaendert: 'Schicht geändert',
     notifUnerreichbar: 'Unbestätigte Zuteilungen (nicht erreichbar)',
     notifErinnerungBest: 'Erinnerung: Zuteilung bestätigen',
     notifErsatzGesucht: 'Ersatz gesucht', notifErsatzGefunden: 'Ersatz gefunden',
@@ -466,5 +472,5 @@ export const DE = {
     gruppeDelMitglieder: 'Die Mitglieder dieser Gruppe sind danach keiner Gruppe mehr zugeordnet.',
     gruppeDelTreffpunkte: 'Die Treffpunkte dieser Gruppe entfallen.',
     ohneGruppeTitle: 'OHNE PREDIGTDIENSTGRUPPE',
-    ohneGruppeHint: 'Jeder Verkündiger gehört zu einer Predigtdienstgruppe. Ohne Zuordnung sieht die Person im Programm keine Gruppentreffpunkte. Tippe auf einen Namen, um die Gruppe festzulegen.'
+    ohneGruppeHint: 'Jeder Verkündiger gehört zu einer Predigtdienstgruppe. Ohne Zuordnung sieht die Person unter „Predigtdienst“ keine Gruppentreffpunkte. Tippe auf einen Namen, um die Gruppe festzulegen.'
 }

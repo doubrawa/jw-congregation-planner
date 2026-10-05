@@ -672,7 +672,11 @@ Und drei Takte:
    abgesagt und ein Ersatz gesucht, jemand springt ein — oder der Absagende
    kann doch, dann verschwindet das Gesuch wieder aus allen Glocken
    ([`substitute`](supabase/functions/substitute/)), eine Verhinderung wird an
-   die Planer gemeldet.
+   die Planer gemeldet. Im **Zeugnisgeben** (5.10.2026) heißt ein Entzug
+   „Schicht fällt aus", wenn die Schicht wegfällt (`entzug` mit `grund`), und
+   eine neue Uhrzeit oder ein neuer Ort geht als „Schicht geändert" hinaus
+   (Aktion `zeugnis-geaendert`) — beides an jeden, der von seinem Eintrag weiß,
+   die Änderung erst, wenn die Eingabe ruht (`ozAenderungen` in `persist.ts`).
 
    Der Entzug wird an **einer** Stelle erkannt ([`persist.ts`](src/app/persist.ts),
    Vorher/Nachher-Vergleich der Woche) statt an jeder auslösenden Aktion — sonst

@@ -88,6 +88,7 @@ vi.mock('../lib/data', async (importActual) => ({
   substituteTake: vi.fn(),
   substituteWithdraw: vi.fn(),
   sendPlanEntzug: vi.fn(),
+  sendPlanZeugnisAenderung: vi.fn(),
   platzFuellen: vi.fn(),
 }))
 

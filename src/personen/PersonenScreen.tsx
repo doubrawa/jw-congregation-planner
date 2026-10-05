@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from 'react'
+import { type Dispatch, type SetStateAction, useId, useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { istAngemeldet } from '../app/eigene-person'
 import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
@@ -27,7 +27,15 @@ export function PersonenScreen() {
   const selected = state.persons.find((p) => p.id === state.selectedPersonId)
   // Zurück am Handy schließt zuerst das Detail (4.10.2026), dann erst den Bildschirm.
   useBackDismiss(selected !== undefined, () => dispatch({ type: 'selectPerson', id: null }), 'unteransicht')
-  return selected ? <PersonDetail person={selected} /> : <PersonList />
+  /*
+   * **Suche und Filter leben hier, eine Ebene über der Liste** (5.10.2026).
+   * Das Detail ersetzt die Liste, und bis dahin ging ihr Zustand mit ihr: Wer
+   * die Personen einer Gruppe oder die Namen eines Warnbanners nacheinander
+   * bearbeitete, setzte den Filter nach jeder Person neu. Ein anderer
+   * Bildschirm setzt ihn weiter zurück — dann baut sich auch dieser ab.
+   */
+  const [filter, setFilter] = useState<PersonFilter>(KEIN_FILTER)
+  return selected ? <PersonDetail person={selected} /> : <PersonList filter={filter} setFilter={setFilter} />
 }
 
 /**
@@ -44,18 +52,23 @@ function bereicheCount(person: Person): number {
   return Object.entries(person.priv).filter(([key, an]) => an && !feste.has(key)).length
 }
 
-function PersonList() {
+function PersonList({
+  filter,
+  setFilter,
+}: {
+  filter: PersonFilter
+  setFilter: Dispatch<SetStateAction<PersonFilter>>
+}) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
-  const [filter, setFilter] = useState<PersonFilter>(KEIN_FILTER)
   const setz = (patch: Partial<PersonFilter>) => setFilter((f) => ({ ...f, ...patch }))
   const locale = LOCALES[state.lang]
 
   /*
    * **Einmal je Bestand, nicht einmal je Tastendruck.**
    *
-   * Das Filterfeld ist örtlicher Zustand: Jeder Buchstabe rendert die Liste
-   * neu. Von allem hier hängt aber nur `filtered` am Filter — sortiert,
+   * Das Filterfeld ist Zustand des Bildschirms: Jeder Buchstabe rendert die
+   * Liste neu. Von allem hier hängt aber nur `filtered` am Filter — sortiert,
    * gezählt und verglichen wird immer derselbe Bestand. Bei 300 Personen
    * kostete ein Buchstabe rund 2 500 Namensvergleiche (`personCompare` ruft
    * `localeCompare`) und dreimal einen Durchlauf über alle Personen.
@@ -187,8 +200,8 @@ function PersonList() {
         </div>
       )}
 
-      {/* Wer keiner Predigtdienstgruppe zugeordnet ist, sieht im Programm keine
-          Gruppentreffpunkte — und bisher stand das nirgends, auch nicht nach
+      {/* Wer keiner Predigtdienstgruppe zugeordnet ist, sieht beim Predigtdienst
+          keine Gruppentreffpunkte — und bisher stand das nirgends, auch nicht nach
           dem Löschen einer Gruppe, das alle ihre Mitglieder so zurückließ. Ein
           Tipp auf den Namen öffnet das Detail, in dem die Gruppe gesetzt wird. */}
       {ohne.length > 0 && (

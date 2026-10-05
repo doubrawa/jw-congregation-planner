@@ -573,6 +573,23 @@ describe('Abmelden und Rollenanzeige', () => {
     expect(container.querySelector('.sidebar-profile-role')?.textContent).toBe(t.rolleKoordinator)
   })
 
+  /*
+   * **Wer eine Gruppe betreut, nennt sich so** (5.10.2026). Bis dahin stand dort
+   * „Verkündiger" — dabei ändert und sendet er die Treffpunkte seiner Gruppe.
+   */
+  it('der Aufseher einer Gruppe steht als Gruppenaufseher da, sein Gehilfe als Gehilfe', () => {
+    const rolle = (c: HTMLElement) => c.querySelector('.sidebar-profile-role')?.textContent
+    const aufseher = zeige({ planner: false, personId: AUFSEHER.id })
+    expect(rolle(aufseher.container)).toBe(t.rolleGruppenaufseher)
+    cleanup()
+    const mitGehilfe = [{ ...GRUPPEN[0]!, overseerId: 'p-anders', assistantId: AUFSEHER.id }]
+    const gehilfe = zeige({ planner: false, personId: AUFSEHER.id, groups: mitGehilfe })
+    expect(rolle(gehilfe.container)).toBe(t.rolleGehilfe)
+    cleanup()
+    const verk = zeige({ planner: false, personId: VERKUENDIGER.id })
+    expect(rolle(verk.container)).toBe(t.rolleVerkuendiger)
+  })
+
   it('auch ohne Konto (Entwicklerseite) steht die Rolle ohne Zusatz da', () => {
     // Bis zum 2.10.2026 hing im Demo-Modus „ (Demo)" daran — und stand damit
     // auf jedem Handbuchbild. Die Entwicklerseite zeigt die App wie im Betrieb.

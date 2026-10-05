@@ -1,10 +1,12 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
+import type { Dispatch } from 'react'
 import {
   AppDispatchContext,
   AppStateContext,
   AppStoreContext,
+  type AppAction,
   type AppState,
   useStaticStore,
 } from '../app/context'
@@ -69,9 +71,8 @@ const DIENSTE: Service[] = [
   { key: 'rein', name: 'Reinigung', count: 1, groups: true },
 ]
 
-function zeige(over: Partial<AppState> = {}) {
-  const dispatch = vi.fn()
-  const state: AppState = {
+function zustand(over: Partial<AppState> = {}): AppState {
+  return {
     ...demoZustand(),
     screen: 'personen',
     dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
@@ -80,19 +81,25 @@ function zeige(over: Partial<AppState> = {}) {
     selectedPersonId: null,
     ...over,
   }
-  function Buehne() {
-    const store = useStaticStore(state)
-    return (
-      <AppDispatchContext.Provider value={dispatch}>
-        <AppStoreContext.Provider value={store}>
-          <AppStateContext.Provider value={state}>
-            <PersonenScreen />
-          </AppStateContext.Provider>
-        </AppStoreContext.Provider>
-      </AppDispatchContext.Provider>
-    )
-  }
-  return { dispatch, ...render(<Buehne />) }
+}
+
+/** Der Bildschirm mit einem Zustand von außen — `rerender` behält dabei seinen eigenen. */
+function Buehne({ state, dispatch }: { state: AppState; dispatch: Dispatch<AppAction> }) {
+  const store = useStaticStore(state)
+  return (
+    <AppDispatchContext.Provider value={dispatch}>
+      <AppStoreContext.Provider value={store}>
+        <AppStateContext.Provider value={state}>
+          <PersonenScreen />
+        </AppStateContext.Provider>
+      </AppStoreContext.Provider>
+    </AppDispatchContext.Provider>
+  )
+}
+
+function zeige(over: Partial<AppState> = {}) {
+  const dispatch = vi.fn()
+  return { dispatch, ...render(<Buehne state={zustand(over)} dispatch={dispatch} />) }
 }
 
 const zeilen = (c: HTMLElement) => [...c.querySelectorAll('.pers-row')]
@@ -296,6 +303,53 @@ describe('Die Filterfelder', () => {
       .slice(1) // der Platzhalter „—" bleibt vorn
       .map((o) => o.textContent ?? '')
     expect(texte).toEqual([...texte].sort((a, b) => a.localeCompare(b, 'de', { numeric: true })))
+  })
+})
+
+/**
+ * **Suche und Filter überstehen das Detail** (5.10.2026).
+ *
+ * Das Detail ersetzt die Liste. Bis dahin hielt die Liste ihren Filter selbst
+ * und verlor ihn dabei: Wer die Personen einer Gruppe nacheinander bearbeitete,
+ * stellte nach jeder Person den Filter neu ein. Gezeigt wird mit `rerender`,
+ * damit der Bildschirm derselbe bleibt — so wie in der App, wo nur
+ * `selectedPersonId` wechselt.
+ */
+describe('Suche und Filter überstehen das Detail', () => {
+  const suche = (c: HTMLElement) => c.querySelector<HTMLInputElement>('.pers-search')!
+
+  it('Filter setzen → Person öffnen → zurück: Suche, Filter und Treffer stehen noch', () => {
+    const dispatch = vi.fn()
+    const liste = zustand()
+    const { container, rerender } = render(<Buehne state={liste} dispatch={dispatch} />)
+    fireEvent.change(suche(container), { target: { value: 'cohn' } })
+    fireEvent.change(feld(container, t.geschlecht), { target: { value: 'w' } })
+    expect(namen(container)).toEqual(['Cohn, Clara'])
+
+    // Ein Tipp öffnet das Detail — in der App setzt der Reducer die Kennung.
+    fireEvent.click(zeilen(container)[0]!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'selectPerson', id: 'p-c' })
+    rerender(<Buehne state={{ ...liste, selectedPersonId: 'p-c' }} dispatch={dispatch} />)
+    expect(container.querySelector('.pers-list'), 'jetzt steht das Detail da').toBeNull()
+
+    // „‹ Alle Personen" bzw. Zurück am Handy: `selectPerson` mit null.
+    rerender(<Buehne state={liste} dispatch={dispatch} />)
+    expect(suche(container).value).toBe('cohn')
+    expect(feld(container, t.geschlecht).value).toBe('w')
+    expect(feld(container, t.geschlecht).className).toContain('is-active')
+    expect(namen(container)).toEqual(['Cohn, Clara'])
+    expect(container.querySelector('.screen-head-note')?.textContent).toBe('Personen: 1')
+  })
+
+  it('ein anderer Bildschirm setzt sie zurück — der Bildschirm baut sich dann ab', () => {
+    const dispatch = vi.fn()
+    const liste = zustand()
+    const { container, rerender } = render(<Buehne state={liste} dispatch={dispatch} />)
+    fireEvent.change(suche(container), { target: { value: 'cohn' } })
+    rerender(<></>)
+    rerender(<Buehne state={liste} dispatch={dispatch} />)
+    expect(suche(container).value).toBe('')
+    expect(namen(container)).toHaveLength(3)
   })
 })
 

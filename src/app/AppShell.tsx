@@ -3,11 +3,12 @@ import { useBackDismiss } from '../components/useBackDismiss'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { initials } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
-import { darfPlanen, erlaubteScreens, rechteVon, themaVon } from '../data/rechte'
+import { darfPlanen, erlaubteScreens, rechteStufe, rechteVon, themaVon } from '../data/rechte'
 import { weiterePlaeneImMenue } from '../data/weitere-plaene'
 import { vorzulegen } from './reducer'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
+import { RECHTE_STUFE_KEY } from '../i18n/ui'
 import { redeemInvite } from '../lib/data'
 import { LOGO_KLEIN } from '../lib/logo'
 import type { Screen, Thema } from '../data/types'
@@ -228,7 +229,9 @@ export function AppShell() {
       : []),
   ]
   const congSub = fill(t.congLabel, { name: state.congregation.name })
-  const roleLabel = rechte.admin ? t.rolleKoordinator : rechte.zuteilen ? t.rollePlaner : t.rolleVerkuendiger
+  // Gruppenaufseher und Gehilfe nennen sich so (5.10.2026) — „Verkündiger"
+  // verschwieg, dass sie die Treffpunkte ihrer Gruppe ändern und senden.
+  const roleLabel = t[RECHTE_STUFE_KEY[rechteStufe(rechte, state)]]
   // Der Fuß steht zweimal da — in der Seitenleiste und im Menü des Handys.
   const fuss = (
     <SidebarFooter

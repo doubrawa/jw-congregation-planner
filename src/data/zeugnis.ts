@@ -19,8 +19,14 @@ import { istAbwesendAm } from './absence'
 import { displayName, isQualified } from './helpers'
 import { tieHash } from './auslastung'
 import { fromIso, isoDay, kalendertagMs, montagNach, montagVon, tagVorbei, versatzAbMontag } from './meeting-dates'
-import { zusageStatus } from './planning'
-import { neuesterVersand, nochNichtGemeldet, type EntzogeneZusage, type OffeneMeldung } from './plan-versand'
+import { sentKey, zusageStatus } from './planning'
+import {
+  neuesterVersand,
+  nochNichtGemeldet,
+  type EntzogeneZusage,
+  type GeaenderteSchicht,
+  type OffeneMeldung,
+} from './plan-versand'
 import { ozKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import {
   OZ_DIENST,
@@ -353,38 +359,138 @@ export function ozZuletztGesendet(sentLog: SentLog): string | null {
 }
 
 /**
- * **Bestätigte** Einträge, die ein Planer entfernt hat — wer sie hatte, erfährt
- * es sofort (`send-plan`, Aktion „entzug"), wie bei jedem anderen Platz.
+ * Zwei Stände des Zeugnisgebens — vor und nach einer Aktion — und was es
+ * braucht, um daraus Nachrichten zu machen. Ein Objekt statt einer langen
+ * Reihe gleichartiger Listen: Vertauscht hätte niemand es bemerkt.
+ */
+export interface OzVergleich {
+  vorher: { termine: readonly OzTermin[]; eintraege: readonly OzEintrag[] }
+  nachher: { termine: readonly OzTermin[]; eintraege: readonly OzEintrag[] }
+  persons: readonly Person[]
+  confirmations: ConfirmationMap
+  /** Das Versand-Tagebuch — wer zugeteilt wurde und davon schon weiß. */
+  sentLog: SentLog
+  /** Die eigene Person: Was sie selbst tut, meldet ihr niemand. */
+  ausser: string | undefined
+}
+
+/**
+ * **Weiß die Person von diesem Eintrag?** Selbst eingetragen oder bestätigt —
+ * oder zugeteilt, und „Plan senden" hat es ihr gesagt (`sentLog`). Wer
+ * zugeteilt, aber noch nicht benachrichtigt ist, weiß nichts; ihm sagt erst
+ * „Plan senden" den Stand von dann.
+ */
+function ozWeissDavon(e: OzEintrag, name: string, confirmations: ConfirmationMap, sentLog: SentLog): boolean {
+  const zusage = ozZusage(e, confirmations)
+  if (zusage === 'bestätigt') return true
+  return zusage === 'offen' && Boolean(sentLog[sentKey(ozTaskKey(e), name)])
+}
+
+/**
+ * Fällt die Schicht dieses Eintrags weg — gestrichen, auf einen anderen
+ * Wochentag gelegt oder ihr Termin gelöscht? Dann geht der Eintrag nicht der
+ * Person verloren, sondern der Termin.
+ */
+function ozSchichtWeg(e: OzEintrag, termine: readonly OzTermin[]): boolean {
+  const termin = termine.find((t) => t.id === e.terminId)
+  return !termin || Boolean(termin.aus?.includes(e.datum)) || fromIso(e.datum).getDay() !== termin.wd
+}
+
+/**
+ * Einträge, die weggefallen sind — wer sie hatte, erfährt es sofort
+ * (`send-plan`, Aktion „entzug"), wie bei jedem anderen Platz.
  *
- * Bestätigt heißt hier auch: **selbst eingetragen**. Wer sich eingetragen hat,
- * plant mit der Schicht wie jemand, der eine Zuteilung bestätigt hat.
+ * - **Ein Planer hat ihn entfernt:** gemeldet wird eine **Zusage** — bestätigt
+ *   oder selbst eingetragen; wer sich eingetragen hat, plant mit der Schicht
+ *   wie jemand, der eine Zuteilung bestätigt hat. Die Nachricht heißt
+ *   „Zuteilung zurückgezogen", wie bei den Zusammenkünften.
+ * - **Die Schicht fällt aus** (5.10.2026): gestrichen, anderer Wochentag oder
+ *   Termin gelöscht. Dann erfährt es jeder, der von seinem Eintrag weiß —
+ *   auch wer zugeteilt und benachrichtigt ist, aber noch nicht bestätigt hat:
+ *   Er stünde sonst an einem Tag dort, an dem niemand kommt. Die Nachricht
+ *   heißt „Schicht fällt aus" (`grund`), mit dem Termin, den er kannte.
  *
  * Nicht gemeldet wird, wer sich selbst austrägt (`ausser`, die eigene Person) —
  * das ist seine Absage, keine Wegnahme —, was vorbei ist, und wer nicht mehr in
  * der Personenliste steht: Eine gelöschte Person hat niemanden mehr, dem man
  * etwas sagen könnte.
  */
-export function ozEntzogeneZusagen(
-  termine: readonly OzTermin[],
-  vorher: readonly OzEintrag[],
-  nachher: readonly OzEintrag[],
-  persons: readonly Person[],
-  confirmations: ConfirmationMap,
-  ausser: string | undefined,
-  heute = new Date(),
-): EntzogeneZusage[] {
-  if (vorher === nachher) return []
-  const bleibt = new Set(nachher.map((e) => e.id))
+export function ozEntzogeneZusagen(v: OzVergleich, heute = new Date()): EntzogeneZusage[] {
+  if (v.vorher.eintraege === v.nachher.eintraege) return []
+  const confirmations = v.confirmations ?? {}
+  const bleibt = new Set(v.nachher.eintraege.map((e) => e.id))
   const out: EntzogeneZusage[] = []
-  for (const e of vorher) {
-    if (bleibt.has(e.id) || e.pid === ausser) continue
-    if (ozZusage(e, confirmations ?? {}) !== 'bestätigt' || ozVorbei(e, heute)) continue
-    const termin = termine.find((t) => t.id === e.terminId)
-    const person = persons.find((p) => p.id === e.pid)
+  for (const e of v.vorher.eintraege) {
+    if (bleibt.has(e.id) || e.pid === v.ausser || ozVorbei(e, heute)) continue
+    const termin = v.vorher.termine.find((t) => t.id === e.terminId)
+    const person = v.persons.find((p) => p.id === e.pid)
     if (!termin || !person) continue
-    out.push({ key: ozTaskKey(e), name: displayName(person), pid: e.pid, label: OZ_DIENST, datum: ozTerminText(e.datum, termin) })
+    const name = displayName(person)
+    const ausfall = ozSchichtWeg(e, v.nachher.termine)
+    const melden = ausfall ? ozWeissDavon(e, name, confirmations, v.sentLog ?? {}) : ozZusage(e, confirmations) === 'bestätigt'
+    if (!melden) continue
+    out.push({
+      key: ozTaskKey(e),
+      name,
+      pid: e.pid,
+      label: OZ_DIENST,
+      datum: ozTerminText(e.datum, termin),
+      ...(ausfall ? { grund: 'ausfall' as const } : {}),
+    })
   }
   return out
+}
+
+/**
+ * **Schichten, deren Uhrzeit oder Ort sich geändert hat** (5.10.2026) — wer
+ * dort eingetragen ist und davon weiß, erfährt den neuen Termin
+ * (`send-plan`, Aktion „zeugnis-geaendert").
+ *
+ * Gefragt wird je Termin, der in beiden Ständen steht und denselben Wochentag
+ * hat: Ein anderer Wochentag nimmt die kommenden Einträge mit, und die meldet
+ * `ozEntzogeneZusagen` als Ausfall. Gemeldet werden die kommenden Einträge,
+ * die nach der Änderung noch gelten — der heutige auch: Wer heute Nachmittag
+ * dort steht, braucht die neue Uhrzeit am dringendsten.
+ */
+export function ozGeaenderteSchichten(v: OzVergleich, heute = new Date()): GeaenderteSchicht[] {
+  if (v.vorher.termine === v.nachher.termine) return []
+  const confirmations = v.confirmations ?? {}
+  const out: GeaenderteSchicht[] = []
+  for (const neu of v.nachher.termine) {
+    const alt = v.vorher.termine.find((t) => t.id === neu.id)
+    if (!alt || alt.wd !== neu.wd) continue
+    if (alt.von === neu.von && alt.bis === neu.bis && alt.ort === neu.ort) continue
+    for (const e of v.nachher.eintraege) {
+      if (e.terminId !== neu.id || e.pid === v.ausser || ozVorbei(e, heute) || !ozEintragGilt(e, neu, heute)) continue
+      const person = v.persons.find((p) => p.id === e.pid)
+      if (!person) continue
+      const name = displayName(person)
+      if (!ozWeissDavon(e, name, confirmations, v.sentLog ?? {})) continue
+      out.push({ key: ozTaskKey(e), name, pid: e.pid, label: OZ_DIENST, datum: ozTerminText(e.datum, neu) })
+    }
+  }
+  return out
+}
+
+/**
+ * **Steht ein Eintrag noch im Plan?** Gefragt von „Meine Aufgaben" und von der
+ * Zeitleiste im Personen-Detail — beide zeigen dieselben Einträge.
+ *
+ * Nicht mehr, wenn sein Termin fehlt oder die Schicht gestrichen ist: Ihre
+ * Einträge räumt die Datenbank ab (`oz_ausfall_raeumen`); bis zum nächsten
+ * Laden steht hier womöglich noch einer, den der Planer nicht kannte. Ebenso
+ * ein kommender Eintrag an einem anderen Wochentag als dem seines Termins: Er
+ * stammt aus der Zeit vor einem Wechsel des Wochentags, den die App des Planers
+ * nicht ganz abräumen konnte (`oz_tagwechsel_raeumen`). Heute bleibt, wie beim
+ * Wechsel selbst (`ozWegBeiTagwechsel`).
+ */
+export function ozEintragGilt(
+  eintrag: OzEintrag,
+  termin: OzTermin | undefined,
+  heute = new Date(),
+): termin is OzTermin {
+  if (!termin || termin.aus?.includes(eintrag.datum)) return false
+  return fromIso(eintrag.datum).getDay() === termin.wd || eintrag.datum <= isoDay(heute)
 }
 
 /**
@@ -405,15 +511,7 @@ export function deriveMyOzTasks(
   for (const eintrag of eintraege) {
     if (eintrag.pid !== personId) continue
     const termin = termine.find((t) => t.id === eintrag.terminId)
-    // Eine gestrichene Schicht ist keine Aufgabe mehr. Ihre Einträge räumt die
-    // Datenbank ab (`oz_ausfall_raeumen`); bis zum nächsten Laden steht hier
-    // womöglich noch einer, den der Planer nicht kannte.
-    if (!termin || termin.aus?.includes(eintrag.datum)) continue
-    // Ebenso ein kommender Eintrag an einem anderen Wochentag als dem seines
-    // Termins: Er stammt aus der Zeit vor einem Wechsel des Wochentags, den die
-    // App des Planers nicht ganz abräumen konnte (`oz_tagwechsel_raeumen`).
-    // Heute bleibt, wie beim Wechsel selbst (`ozWegBeiTagwechsel`).
-    if (fromIso(eintrag.datum).getDay() !== termin.wd && eintrag.datum > isoDay(heute)) continue
+    if (!ozEintragGilt(eintrag, termin, heute)) continue
     tasks.push({
       id: ozTaskKey(eintrag),
       title: '',

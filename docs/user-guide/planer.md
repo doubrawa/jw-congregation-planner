@@ -117,6 +117,10 @@ Die Meldungen an die Planer – eine **Verhinderung**, **Ersatz gefunden**,
 auch den Ersatz. Was einem Planer nicht zusteht, zeigt die App ihm gar nicht
 erst an; die Datenbank weist es zusätzlich ab.
 
+Unter dem eigenen Namen unten in der Seitenleiste (am Handy im Menü) steht,
+was jemand darf: **Admin**, **Planer**, **Gruppenaufseher** bzw. **Gehilfe**
+einer Gruppe – sonst **Verkündiger**.
+
 ---
 
 ## 2. Planen: Zuteilungen vornehmen
@@ -592,13 +596,20 @@ Treffpunkte aus dem Grundplan. Gezeigt werden die nächsten vier Wochen,
 - **✕** an einem Namen trägt ihn aus. Hatte er zugesagt (oder sich selbst
   eingetragen), bekommt er sofort die Nachricht, dass die Zuteilung
   zurückgezogen ist. Ändert sich der **Wochentag** eines Termins, gehen seine
-  kommenden Einträge mit.
+  kommenden Einträge mit — wer davon wusste, bekommt **„Schicht fällt aus"**.
+- **Uhrzeit oder Ort ändern**: Wer in einer kommenden Schicht dieses Termins
+  steht und davon weiß — selbst eingetragen, bestätigt oder über **Plan
+  senden** benachrichtigt —, bekommt **„Schicht geändert"** mit dem neuen
+  Termin. Die App wartet damit, bis du ein paar Sekunden nichts mehr änderst
+  oder die Ansicht verlässt; stellst du den alten Wert wieder ein, geht nichts
+  hinaus.
 - **Eine Schicht fällt aus**: Findet in einer Woche nichts statt, tippe auf das
   **✕** rechts neben der Schicht und dann auf **Wirklich löschen?**. Die Schicht
   bleibt mit **Fällt aus** stehen — so sehen alle, dass in dieser Woche nichts
   stattfindet, statt eine fehlende Woche für ein Versehen zu halten. Ihre
-  Einträge gehen; wer zugesagt hatte, bekommt die Nachricht, dass die Zuteilung
-  zurückgezogen ist. **Wiederherstellen** holt die Schicht zurück — leer.
+  Einträge gehen; wer davon wusste — selbst eingetragen, bestätigt oder schon
+  benachrichtigt —, bekommt **„Schicht fällt aus"**. **Wiederherstellen** holt
+  die Schicht zurück — leer.
 - **Mögliche Konflikte** nennen, wer an seinem Tag abwesend ist; **Freie
   Plätze** zählt, was in den gezeigten Wochen noch offen ist. Beides und „Plan
   senden" stehen auch auf der **Planungs‑Karte der Startseite**.
@@ -670,15 +681,21 @@ Unter **Personen** pflegst du alle Mitglieder der Versammlung.
   Zahl neben der Überschrift zeigt, wie viele Personen gerade übrig bleiben.
   Unter **Aufgabenbereich** stehen auch die beiden festen Rollen
   **Wachtturm-Studium-Leiter** und **Vertreter (Wachtturm-Studium)** – so
-  findest du schnell, wer sie trägt.
+  findest du schnell, wer sie trägt. Suche und Filter bleiben stehen, wenn du
+  eine Person öffnest und über **‹ Alle Personen** zurückkommst – so lassen
+  sich die Gefundenen nacheinander bearbeiten. Erst ein anderer Bildschirm
+  setzt sie zurück.
 - Ein Tippen auf eine Person öffnet ihr Detail:
 
 ![Person bearbeiten](screenshots/planer-person-detail.png)
 
 Unter den Stammdaten steht die **Zeitleiste**: alle Aufgaben dieser Person aus
 den geladenen Wochen, chronologisch, jeweils mit Wochentag, Datum und Uhrzeit –
-Programmpunkte, Hilfsdienste und geleitete Treffpunkte. Vergangenes wird blasser
-dargestellt. Hat jemand weder Zuteilung noch Abwesenheit, entfällt der Abschnitt.
+Programmpunkte, Hilfsdienste, geleitete Treffpunkte und Schichten im
+öffentlichen Zeugnisgeben. Beim Dienstaufseher stehen auch seine **vorgemerkten
+Gruppenbesuche** darin – Besuche in Wochen, die noch nicht importiert sind, an
+den Tagen laut Grundplan. Vergangenes wird blasser dargestellt. Hat jemand
+weder Zuteilung noch Abwesenheit, entfällt der Abschnitt.
 
 Den genauen Tag rechnet die App aus: Das Arbeitsheft kennt nur die Woche, der
 Wochentag und die Uhrzeit stehen in den [Einstellungen](#7-einstellungen)
@@ -960,6 +977,12 @@ Tipp darauf klappt die Wahl auf:
 
 Gedruckt wird immer nur, was du gerade siehst. Für alle drei – unter der Woche,
 Wochenende, Treffpunkte – druckst du dreimal.
+
+Auch die Pläne ohne Woche haben beim **Ansehen** einen **Drucken**‑Knopf: die
+**Gruppenbesuche**, das **öffentliche Zeugnisgeben** und die **Weiteren
+Pläne**. Gedruckt wird ohne Auswahl, mit Versammlung und Plan im Kopf; beim
+Zeugnisgeben kommen alle Wochen des Vierteljahrs aufs Blatt, nicht nur die
+ersten vier – für den Aushang.
 
 ### Was auf dem Blatt steht
 

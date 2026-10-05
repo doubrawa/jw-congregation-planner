@@ -19,8 +19,9 @@ import { DEMO_NOTIFICATIONS } from '../../tests/testdaten/testdaten'
  *  - `supabase/functions/send-reminders/texte.ts` — die Erinnerung und die
  *    Sammelmeldung an die Planer,
  *  - `supabase/functions/substitute/texte.ts` — Ersatz gesucht/gefunden,
- *  - `supabase/functions/send-plan/texte.ts` — „Plan senden" und der Entzug
- *    einer bestätigten Zuteilung (T99),
+ *  - `supabase/functions/send-plan/texte.ts` — „Plan senden", der Entzug
+ *    einer bestätigten Zuteilung (T99) und die Zeugnis-Schicht, die ausfällt
+ *    oder sich ändert (5.10.2026),
  *  - `tests/testdaten/testdaten.ts` — der Bestand der Entwicklerseite (er
  *    sieht aus wie echte Daten und wird auch so angezeigt).
  *
@@ -131,7 +132,8 @@ describe('Jeder erzeugte Mitteilungs-Titel steht in der Zuordnung', () => {
     expect(titelAusReducer().length, 'reducer.ts').toBeGreaterThan(1)
     expect(titelAusErinnerung().length, 'send-reminders/texte.ts').toBe(2)
     expect(titelAusErsatz().length, 'substitute/texte.ts').toBe(2)
-    expect(titelAusPlan().length, 'send-plan/texte.ts').toBe(2)
+    // Zuteilung, Entzug — und seit dem 5.10.2026 Ausfall und Änderung einer Zeugnis-Schicht.
+    expect(titelAusPlan().length, 'send-plan/texte.ts').toBe(4)
     expect(DEMO_NOTIFICATIONS.length, 'Demo-Bestand').toBeGreaterThan(0)
   })
 

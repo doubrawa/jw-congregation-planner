@@ -1,10 +1,12 @@
 import type { AppState } from '../app/context'
 import { abwesenheitsRaender, abwRang, markiereAbwesenheiten, type AbwRand } from '../components/zeitleiste-gemeinsam'
 import { fsLeiterZuteilung, fsTag } from '../data/fs'
+import { besuchsLage, besuchStand } from '../data/gruppenbesuche'
 import { displayName, gehoertZu } from '../data/helpers'
 import { fromIso, kalendertagMs, meetingDate, meetingTime } from '../data/meeting-dates'
 import { deriveMyTasks, taskKeyWeek, wochenIndex } from '../data/planning'
 import type { Person } from '../data/types'
+import { ozEintragGilt } from '../data/zeugnis'
 
 /**
  * Ein Eintrag der Zeitleiste im Personen-Detail — für beide Arten gleich
@@ -36,6 +38,10 @@ export type TimelineEntry = {
       rolle?: string
     }
   | { kind: 'fs'; ort: string }
+  /** Eine Schicht im öffentlichen Zeugnisgeben (T120) — eingetragen oder zugeteilt. */
+  | { kind: 'oz'; ort: string }
+  /** Ein vorgemerkter Gruppenbesuch: Die Woche ist noch nicht geladen (T120). */
+  | { kind: 'besuch'; grp: string }
   | {
       kind: 'abw'
       /** Id der Abwesenheit — zum Entfernen aus der Zeitleiste heraus. */
@@ -52,13 +58,23 @@ export type TimelineEntry = {
 /** Was die Zeitleiste aus dem Zustand braucht (erleichtert das Testen). */
 export type TimelineDaten = Pick<
   AppState,
-  'weeks' | 'services' | 'confirmations' | 'congregation' | 'fsWeeks' | 'absences'
+  | 'weeks'
+  | 'services'
+  | 'confirmations'
+  | 'congregation'
+  | 'fsWeeks'
+  | 'absences'
+  | 'fsRules'
+  | 'ozTermine'
+  | 'ozEintraege'
+  | 'gruppenbesuche'
 >
 
 /**
  * Alle Zuteilungen einer Person in zeitlicher Reihenfolge: Programmpunkte,
  * Ratgeber und Hilfsdienste der Zusammenkünfte (deriveMyTasks — dieselbe
- * Quelle wie „Meine Aufgaben") plus die geleiteten Treffpunkte.
+ * Quelle wie „Meine Aufgaben") plus die geleiteten Treffpunkte, die Schichten
+ * im öffentlichen Zeugnisgeben und vorgemerkte Gruppenbesuche.
  *
  * Datum und Uhrzeit werden gerechnet: importierte Wochen tragen im `date`-Feld
  * nur die Wochenspanne („7.–13. September"). Der Tag ergibt sich aus dem Montag
@@ -132,6 +148,55 @@ export function personTimeline(
       })
     }
   })
+
+  /*
+   * **Öffentliches Zeugnisgeben** (T120): die Schichten, in denen die Person
+   * steht — eingetragen oder zugeteilt. Bis zum 5.10.2026 fehlten sie hier,
+   * während „Meine Aufgaben" sie längst zeigte; wer zuteilte, sah die Last
+   * einer Person ohne sie. Was nicht mehr gilt (gestrichen, alter Wochentag),
+   * fällt heraus wie dort (`ozEintragGilt`).
+   */
+  for (const eintrag of state.ozEintraege) {
+    if (eintrag.pid !== person.id) continue
+    const termin = state.ozTermine.find((t) => t.id === eintrag.terminId)
+    if (!ozEintragGilt(eintrag, termin, heute)) continue
+    const datum = fromIso(eintrag.datum)
+    entries.push({
+      kind: 'oz',
+      key: `oz|${eintrag.id}`,
+      datum,
+      zeit: termin.von,
+      vergangen: datum < grenze,
+      ort: termin.ort,
+    })
+  }
+
+  /*
+   * **Vorgemerkte Gruppenbesuche** (T120). Ein Besuch in einer geladenen Woche
+   * steht schon oben: Der Besucher leitet dort die Treffpunkte der Gruppe. Liegt
+   * die Woche noch nicht im Bestand, gibt es diese Treffpunkte noch nicht — der
+   * Besuch des Dienstaufsehers stand dann nirgends in seiner Leiste, obwohl
+   * „Reihum verteilen" ein halbes Jahr vorausplant. Genannt werden die Tage laut
+   * Grundplan, wie in der Liste der Besuche (`besuchStand`).
+   */
+  const lage = besuchsLage(state)
+  for (const besuch of state.gruppenbesuche) {
+    if (besuch.pid !== person.id) continue
+    const stand = besuchStand(besuch, lage, heute)
+    if (stand.art !== 'vorgemerkt') continue
+    for (const inst of stand.treffpunkte) {
+      const datum = fsTag(besuch.woche, inst.wd)
+      if (!datum) continue
+      entries.push({
+        kind: 'besuch',
+        key: `gb|${besuch.id}|${inst.id}`,
+        datum,
+        zeit: inst.time,
+        vergangen: datum < grenze,
+        grp: besuch.grp,
+      })
+    }
+  }
 
   /*
    * Abwesenheiten — die Gegenrichtung zu den Zuteilungen: wann jemand NICHT da

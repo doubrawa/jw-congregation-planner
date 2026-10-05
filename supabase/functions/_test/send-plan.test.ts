@@ -22,7 +22,7 @@
  */
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reset as resetPush, sent as sentPush } from './web-push.stub'
-import { TITEL_ENTZUG, TITEL_ZUTEILUNG } from '../send-plan/texte.ts'
+import { TITEL_AUSFALL, TITEL_ENTZUG, TITEL_GEAENDERT, TITEL_ZUTEILUNG } from '../send-plan/texte.ts'
 import {
   filterWert,
   jsonRes,
@@ -876,6 +876,88 @@ describe('Entzug als Liste: ein Aufruf für alle', () => {
       entzuege: [{ taskKey: KEY_ANNA, name: 'Anna Berg', label: 'x', datum: 'Di' }],
     })
     expect(res.status).toBe(403)
+    expect(writes).toEqual([])
+  })
+})
+
+/*
+ * **Eine Zeugnis-Schicht fällt aus oder ändert sich** (5.10.2026).
+ *
+ * Fällt sie aus — gestrichen, anderer Wochentag, Termin gelöscht —, heißt die
+ * Nachricht „Schicht fällt aus" statt „Zuteilung zurückgezogen": Der Termin ist
+ * weg, nicht die Person. Ändern sich Uhrzeit oder Ort, bekommt sie „Schicht
+ * geändert" mit dem neuen Termin, und ihr Platz bleibt ihr — im Tagebuch wie
+ * in der Schicht.
+ */
+describe('Zeugnis-Schicht: Ausfall und Änderung', () => {
+  const KEY_OZ = 'oz|2026-09-07|e1'
+  const OZ = { taskKey: KEY_OZ, name: 'Anna Berg', pid: 'p-anna', label: 'Öffentliches Zeugnisgeben' }
+  const pushTitel = () => sentPush.map((p) => (JSON.parse(p.payload) as { title: string }).title)
+
+  it('„Schicht fällt aus" mit dem alten Termin — und der Platz verschwindet aus dem Tagebuch', async () => {
+    const res = await ruf({
+      action: 'entzug',
+      entzuege: [{ ...OZ, datum: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz', grund: 'ausfall' }],
+    })
+    expect(res.status).toBe(200)
+    const zeilen = zeilenIn('notifications')
+    expect(zeilen).toEqual([expect.objectContaining({ user_id: U_ANNA, title: TITEL_AUSFALL })])
+    expect(String(zeilen[0]!.body)).toContain('Marktplatz')
+    expect(pushTitel()).toEqual([TITEL_AUSFALL])
+    expect(writes.some((w) => w.method === 'DELETE' && w.path.includes(encodeURIComponent(KEY_OZ)))).toBe(true)
+  })
+
+  it('der Grund zählt nur bei einer Schicht — sonst bleibt es der Entzug', async () => {
+    await ruf({
+      action: 'entzug',
+      entzuege: [{ taskKey: KEY_ANNA, name: 'Anna Berg', pid: 'p-anna', label: 'Bibellesung', datum: 'Di', grund: 'ausfall' }],
+    })
+    expect(zeilenIn('notifications')).toEqual([expect.objectContaining({ title: TITEL_ENTZUG })])
+  })
+
+  it('Entzug und Ausfall derselben Person: zwei Nachrichten, je mit ihrem Titel', async () => {
+    await ruf({
+      action: 'entzug',
+      entzuege: [
+        { taskKey: KEY_ANNA, name: 'Anna Berg', pid: 'p-anna', label: 'Bibellesung', datum: 'Di' },
+        { ...OZ, datum: 'Mi', grund: 'ausfall' },
+      ],
+    })
+    expect(zeilenIn('notifications').map((z) => z.title).sort()).toEqual([TITEL_AUSFALL, TITEL_ENTZUG].sort())
+  })
+
+  it('„Schicht geändert" mit dem neuen Termin — das Tagebuch bleibt', async () => {
+    const res = await ruf({
+      action: 'zeugnis-geaendert',
+      aenderungen: [{ ...OZ, datum: 'Mittwoch, 9. September · 09:00–11:00 · Rathausplatz' }],
+    })
+    expect(res.status).toBe(200)
+    const zeilen = zeilenIn('notifications')
+    expect(zeilen).toEqual([expect.objectContaining({ user_id: U_ANNA, title: TITEL_GEAENDERT })])
+    expect(String(zeilen[0]!.body)).toContain('Rathausplatz')
+    expect(pushTitel()).toEqual([TITEL_GEAENDERT])
+    expect(writes.filter((w) => w.method === 'DELETE')).toEqual([])
+  })
+
+  it('der Planer meldet es wie der Admin', async () => {
+    authUser = U_ZUTEILER
+    expect((await ruf({ action: 'zeugnis-geaendert', aenderungen: [{ ...OZ, datum: 'Mi' }] })).status).toBe(200)
+  })
+
+  it('kein Mitglied, kein Gruppenaufseher', async () => {
+    for (const wer of [U_MITGLIED, U_AUFSEHER]) {
+      authUser = wer
+      expect((await ruf({ action: 'zeugnis-geaendert', aenderungen: [{ ...OZ, datum: 'Mi' }] })).status, wer).toBe(403)
+    }
+    expect(writes).toEqual([])
+  })
+
+  it('nur Schlüssel des Zeugnisgebens — eine Liste ohne brauchbaren Eintrag ist ein Fehler', async () => {
+    expect((await ruf({ action: 'zeugnis-geaendert', aenderungen: [] })).status).toBe(400)
+    expect(
+      (await ruf({ action: 'zeugnis-geaendert', aenderungen: [{ taskKey: KEY_ANNA, name: 'Anna Berg', datum: 'Di' }] }))
+        .status,
+    ).toBe(400)
     expect(writes).toEqual([])
   })
 })

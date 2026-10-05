@@ -121,8 +121,11 @@ Uhrzeit und wer dabei ist.
 - **Absagen** gibt deinen Platz wieder frei, damit ihn jemand anders übernehmen
   kann; die Admins erfahren es.
 - **Fällt aus**: Steht das an einer Schicht, findet in dieser Woche nichts
-  statt. Hattest du zugesagt (oder dich selbst eingetragen), bekommst du eine
-  Nachricht.
+  statt. Hattest du dich eingetragen, zugesagt oder schon die Nachricht über
+  deine Zuteilung bekommen, erreicht dich **„Schicht fällt aus"** — auch, wenn
+  der Termin auf einen anderen Wochentag wandert oder ganz entfällt.
+- **Neue Uhrzeit oder neuer Ort**: Ändern die Admins eine Schicht, in der du
+  stehst, bekommst du **„Schicht geändert"** mit dem neuen Termin.
 
 ### Weitere Pläne
 
@@ -153,8 +156,11 @@ Bist **du** eingeteilt, siehst du am Block, in welchem Raum – und auf deinem
 Über jeder Zusammenkunft und über den Treffpunkten steht ein
 **Drucken**‑Knopf. Er fragt, ob du **diese Woche** oder den **ganzen Monat**
 willst – gedruckt wird jeweils, was du gerade siehst, ohne die
-Bedienelemente der App. Nötig ist das nicht: Deine eigenen Aufgaben stehen
-unter **Meine Aufgaben**, und das Programm ist hier immer aktuell.
+Bedienelemente der App. Auch die **Gruppenbesuche**, das **öffentliche
+Zeugnisgeben** und die **Weiteren Pläne** haben einen **Drucken**‑Knopf; beim
+Zeugnisgeben kommen dabei alle Wochen aufs Blatt, nicht nur die ersten vier.
+Nötig ist das nicht: Deine eigenen Aufgaben stehen unter **Meine Aufgaben**,
+und das Programm ist hier immer aktuell.
 
 ---
 
@@ -180,6 +186,9 @@ Zwei weitere Nachrichten können dich erreichen:
 - **„Zuteilung zurückgezogen"** – der Koordinator hat dir eine Aufgabe wieder
   genommen, die du **schon bestätigt** hattest. Dann brauchst du dich nicht
   weiter vorzubereiten.
+- **„Schicht fällt aus"** und **„Schicht geändert"** – im öffentlichen
+  Zeugnisgeben findet deine Schicht nicht statt, oder sie hat eine neue
+  Uhrzeit oder einen neuen Ort (siehe oben).
 
 In der **Glocke** steht jede Mitteilung höchstens zwei Zeilen lang (am
 Computer zeigt der Mauszeiger den ganzen Text). **Ein Tipp darauf führt

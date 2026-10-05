@@ -144,7 +144,21 @@ export interface EntzogeneZusage {
   label: string
   /** Termin, kanonisch deutsch („Dienstag, 8. September · 19:00"). */
   datum: string
+  /**
+   * Warum der Platz weg ist, wo es nicht um die Person ging: Die Schicht im
+   * Zeugnisgeben **fällt aus** — gestrichen, auf einen anderen Wochentag gelegt
+   * oder ihr Termin gelöscht (5.10.2026). Die Nachricht heißt dann „Schicht
+   * fällt aus" statt „Zuteilung zurückgezogen".
+   */
+  grund?: 'ausfall'
 }
+
+/**
+ * Eine Zeugnis-Schicht mit neuer Uhrzeit oder neuem Ort (5.10.2026) — für die
+ * Person, die dort eingetragen ist. Dieselben Felder wie ein Entzug; `datum`
+ * ist der **neue** Termin.
+ */
+export type GeaenderteSchicht = Omit<EntzogeneZusage, 'grund'>
 
 /**
  * **Bestätigte** Zuteilungen, die zwischen zwei Ständen einer Woche

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { darfPlanen, erlaubteScreens, nurZuteilen, rechteVon, themaVon, type Rechte } from './rechte'
+import { darfPlanen, erlaubteScreens, nurZuteilen, rechteStufe, rechteVon, themaVon, type Rechte } from './rechte'
 import type { Group, Screen } from './types'
 
 /**
@@ -175,4 +175,35 @@ describe('Die Liste dahinter bleibt vollständig', () => {
   // es dem Compiler überträgt. Eine Zusicherung, die beim Übersetzen greift,
   // ist die bessere: Sie kann nicht übersehen werden, weil ohne sie gar nichts
   // mehr läuft.
+})
+
+/**
+ * **Wie sich jemand nennt** (5.10.2026): die Zeile unter dem Namen in der
+ * Seitenleiste. Die höchste Stufe gewinnt; wer eine Gruppe betreut, ist ihr
+ * Gruppenaufseher oder Gehilfe — bis dahin hieß er „Verkündiger".
+ */
+describe('rechteStufe', () => {
+  const GRUPPE: Group = { id: 'g1', name: 'G1', overseerId: 'p-ov', assistantId: 'p-geh' }
+  const stufe = (s: { planner?: boolean; zuteiler?: boolean; personId: string | null }) => {
+    const zustand = { planner: false, zuteiler: false, groups: [GRUPPE], ...s }
+    return rechteStufe(rechteVon(zustand), zustand)
+  }
+
+  it('Admin vor allem — auch wenn er eine Gruppe leitet', () => {
+    expect(stufe({ planner: true, personId: 'p-ov' })).toBe('admin')
+  })
+
+  it('Planer vor der Gruppe', () => {
+    expect(stufe({ zuteiler: true, personId: 'p-ov' })).toBe('planer')
+  })
+
+  it('Aufseher und Gehilfe ihrer Gruppe', () => {
+    expect(stufe({ personId: 'p-ov' })).toBe('gruppenaufseher')
+    expect(stufe({ personId: 'p-geh' })).toBe('gehilfe')
+  })
+
+  it('alle übrigen Verkündiger — auch ohne eigene Person', () => {
+    expect(stufe({ personId: 'p-x' })).toBe('verkuendiger')
+    expect(stufe({ personId: null })).toBe('verkuendiger')
+  })
 })

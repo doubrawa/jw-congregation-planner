@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyQualifications } from './helpers'
 import { montagVon } from './meeting-dates'
+import { sentKey } from './planning'
 import {
   deriveMyOzTasks,
   ozAb,
@@ -8,6 +9,7 @@ import {
   ozDatum,
   ozEntzogeneZusagen,
   ozFreieSchichten,
+  ozGeaenderteSchichten,
   ozKannEintragen,
   ozKonflikte,
   ozNachDatum,
@@ -20,6 +22,7 @@ import {
   ozWegBeiTagwechsel,
   ozZuletztGesendet,
   ozZusage,
+  type OzVergleich,
 } from './zeugnis'
 import type { Absence, OzEintrag, OzTermin, Person } from './types'
 import { OZ_DIENST } from '../../supabase/functions/_shared/zuteilungen.ts'
@@ -313,6 +316,28 @@ describe('Der Stand für die Planungs-Karte', () => {
   })
 })
 
+/** Ein Vergleich zweier Stände — ohne Angabe bleiben die Termine, wie sie sind. */
+function vergleich(over: {
+  termine?: OzTermin[]
+  nachTermine?: OzTermin[]
+  vorher: OzEintrag[]
+  nachher: OzEintrag[]
+  persons?: Person[]
+  confirmations?: Record<string, 'bestätigt' | 'offen' | 'verhindert'>
+  sentLog?: Record<string, string>
+  ausser?: string
+}): OzVergleich {
+  const termine = over.termine ?? [MITTWOCH, SAMSTAG]
+  return {
+    vorher: { termine, eintraege: over.vorher },
+    nachher: { termine: over.nachTermine ?? termine, eintraege: over.nachher },
+    persons: over.persons ?? [ANNA, BERT, CARL],
+    confirmations: over.confirmations ?? {},
+    sentLog: over.sentLog ?? {},
+    ausser: over.ausser,
+  }
+}
+
 describe('Entzug: wer einen zugesagten Eintrag verliert', () => {
   const zugesagt = eintrag('t1', '2026-09-09', 'p-a')
   const selbst = eintrag('t1', '2026-09-09', 'p-b', true)
@@ -320,7 +345,10 @@ describe('Entzug: wer einen zugesagten Eintrag verliert', () => {
   const conf = { [ozTaskKey(zugesagt)]: 'bestätigt' as const }
 
   it('bestätigt oder selbst eingetragen — beides ist eine Zusage', () => {
-    const weg = ozEntzogeneZusagen([MITTWOCH, SAMSTAG], [zugesagt, selbst, unbestaetigt], [], [ANNA, BERT, CARL], conf, undefined, HEUTE)
+    const weg = ozEntzogeneZusagen(
+      vergleich({ vorher: [zugesagt, selbst, unbestaetigt], nachher: [], confirmations: conf }),
+      HEUTE,
+    )
     expect(weg.map((z) => z.name)).toEqual(['Anna Test', 'Bert Test'])
     expect(weg[0]).toEqual({
       key: ozTaskKey(zugesagt),
@@ -331,15 +359,155 @@ describe('Entzug: wer einen zugesagten Eintrag verliert', () => {
     })
   })
 
+  it('ein Planer nimmt einen zugeteilten, aber unbestätigten Eintrag — auch benachrichtigt: kein Entzug', () => {
+    // Wie bei den Zusammenkünften (T99): Gemeldet wird eine Zusage.
+    const gemeldet = { [sentKey(ozTaskKey(unbestaetigt), 'Carl Test')]: '2026-09-01T10:00:00Z' }
+    expect(ozEntzogeneZusagen(vergleich({ vorher: [unbestaetigt], nachher: [], sentLog: gemeldet }), HEUTE)).toEqual([])
+  })
+
   it('die eigene Absage ist keine Wegnahme', () => {
-    expect(ozEntzogeneZusagen([MITTWOCH], [selbst], [], [BERT], conf, 'p-b', HEUTE)).toEqual([])
+    expect(
+      ozEntzogeneZusagen(vergleich({ vorher: [selbst], nachher: [], confirmations: conf, ausser: 'p-b' }), HEUTE),
+    ).toEqual([])
   })
 
   it('Vergangenes nicht, Unverändertes nicht, und keine gelöschte Person', () => {
     const vorbei = eintrag('t1', '2026-09-02', 'p-b', true)
-    expect(ozEntzogeneZusagen([MITTWOCH], [vorbei], [], [BERT], conf, undefined, HEUTE)).toEqual([])
-    expect(ozEntzogeneZusagen([MITTWOCH], [selbst], [selbst], [BERT], conf, undefined, HEUTE)).toEqual([])
-    expect(ozEntzogeneZusagen([MITTWOCH], [selbst], [], [], conf, undefined, HEUTE)).toEqual([])
+    expect(ozEntzogeneZusagen(vergleich({ vorher: [vorbei], nachher: [] }), HEUTE)).toEqual([])
+    expect(ozEntzogeneZusagen(vergleich({ vorher: [selbst], nachher: [selbst] }), HEUTE)).toEqual([])
+    expect(ozEntzogeneZusagen(vergleich({ vorher: [selbst], nachher: [], persons: [] }), HEUTE)).toEqual([])
+  })
+})
+
+/**
+ * **Die Schicht fällt aus** (5.10.2026): gestrichen, auf einen anderen
+ * Wochentag gelegt oder ihr Termin gelöscht. Dann ging der Eintrag nicht der
+ * Person verloren, sondern der Termin — die Nachricht heißt „Schicht fällt
+ * aus", und sie geht an jeden, der von seinem Eintrag weiß: auch an wen „Plan
+ * senden" schon benachrichtigt hat, ohne dass er bestätigt hätte. Er stünde
+ * sonst an einem Tag dort, an dem niemand kommt.
+ */
+describe('Ausfall: die Schicht fällt weg', () => {
+  const selbst = eintrag('t1', '2026-09-09', 'p-b', true)
+  const unbestaetigt = eintrag('t1', '2026-09-09', 'p-c')
+  const gemeldet = { [sentKey(ozTaskKey(unbestaetigt), 'Carl Test')]: '2026-09-01T10:00:00Z' }
+
+  it('gestrichen: „Schicht fällt aus" mit dem Termin, den die Person kannte', () => {
+    const gestrichen = [{ ...MITTWOCH, aus: ['2026-09-09'] }, SAMSTAG]
+    const weg = ozEntzogeneZusagen(
+      vergleich({ nachTermine: gestrichen, vorher: [selbst, unbestaetigt], nachher: [], sentLog: gemeldet }),
+      HEUTE,
+    )
+    expect(weg.map((z) => [z.name, z.grund])).toEqual([
+      ['Bert Test', 'ausfall'],
+      ['Carl Test', 'ausfall'],
+    ])
+    expect(weg[0]?.datum).toBe('Mittwoch, 9. September · 10:00–12:00 · Marktplatz')
+  })
+
+  it('wer zugeteilt ist, aber noch nichts davon weiß, bekommt nichts', () => {
+    const gestrichen = [{ ...MITTWOCH, aus: ['2026-09-09'] }]
+    expect(ozEntzogeneZusagen(vergleich({ nachTermine: gestrichen, vorher: [unbestaetigt], nachher: [] }), HEUTE)).toEqual([])
+  })
+
+  it('wer abgesagt hat, auch nicht', () => {
+    const gestrichen = [{ ...MITTWOCH, aus: ['2026-09-09'] }]
+    const abgesagt = { [ozTaskKey(unbestaetigt)]: 'verhindert' as const }
+    expect(
+      ozEntzogeneZusagen(
+        vergleich({ nachTermine: gestrichen, vorher: [unbestaetigt], nachher: [], sentLog: gemeldet, confirmations: abgesagt }),
+        HEUTE,
+      ),
+    ).toEqual([])
+  })
+
+  it('ein anderer Wochentag und ein gelöschter Termin sind ebenso ein Ausfall', () => {
+    const donnerstag = [{ ...MITTWOCH, wd: 4 }]
+    expect(ozEntzogeneZusagen(vergleich({ nachTermine: donnerstag, vorher: [selbst], nachher: [] }), HEUTE)[0]?.grund).toBe(
+      'ausfall',
+    )
+    expect(ozEntzogeneZusagen(vergleich({ nachTermine: [], vorher: [selbst], nachher: [] }), HEUTE)[0]?.grund).toBe('ausfall')
+  })
+
+  it('austragen ohne Ausfall bleibt ein Entzug — ohne Grund', () => {
+    expect(ozEntzogeneZusagen(vergleich({ vorher: [selbst], nachher: [] }), HEUTE)[0]?.grund).toBeUndefined()
+  })
+})
+
+/**
+ * **Uhrzeit oder Ort einer Schicht geändert** (5.10.2026): Wer dort steht und
+ * davon weiß, bekommt den neuen Termin. Gefragt wird nur, was sich an Zeit und
+ * Ort wirklich unterscheidet.
+ */
+describe('Geänderte Schicht: neue Uhrzeit oder neuer Ort', () => {
+  const selbst = eintrag('t1', '2026-09-09', 'p-b', true)
+  const spaeter = eintrag('t1', '2026-09-16', 'p-a', true)
+  const unbestaetigt = eintrag('t1', '2026-09-09', 'p-c')
+  const alle = [selbst, spaeter, unbestaetigt]
+  const neueZeit = [{ ...MITTWOCH, von: '09:00', bis: '11:00' }, SAMSTAG]
+
+  it('meldet den neuen Termin an jede eingetragene Person, die davon weiß', () => {
+    const geaendert = ozGeaenderteSchichten(vergleich({ nachTermine: neueZeit, vorher: alle, nachher: alle }), HEUTE)
+    expect(geaendert.map((z) => [z.name, z.datum])).toEqual([
+      ['Bert Test', 'Mittwoch, 9. September · 09:00–11:00 · Marktplatz'],
+      ['Anna Test', 'Mittwoch, 16. September · 09:00–11:00 · Marktplatz'],
+    ])
+    expect(geaendert[0]).toMatchObject({ key: ozTaskKey(selbst), pid: 'p-b', label: OZ_DIENST })
+  })
+
+  it('der Ort zählt wie die Zeit', () => {
+    const neuerOrt = [{ ...MITTWOCH, ort: 'Rathausplatz' }]
+    const geaendert = ozGeaenderteSchichten(vergleich({ nachTermine: neuerOrt, vorher: [selbst], nachher: [selbst] }), HEUTE)
+    expect(geaendert[0]?.datum).toBe('Mittwoch, 9. September · 10:00–12:00 · Rathausplatz')
+  })
+
+  it('benachrichtigt, aber unbestätigt: ja — zugeteilt, aber noch nichts gewusst: nein', () => {
+    const gemeldet = { [sentKey(ozTaskKey(unbestaetigt), 'Carl Test')]: '2026-09-01T10:00:00Z' }
+    const mit = ozGeaenderteSchichten(vergleich({ nachTermine: neueZeit, vorher: [unbestaetigt], nachher: [unbestaetigt], sentLog: gemeldet }), HEUTE)
+    const ohne = ozGeaenderteSchichten(vergleich({ nachTermine: neueZeit, vorher: [unbestaetigt], nachher: [unbestaetigt] }), HEUTE)
+    expect(mit.map((z) => z.name)).toEqual(['Carl Test'])
+    expect(ohne).toEqual([])
+  })
+
+  it('nichts, wenn Zeit und Ort gleich sind — auch wenn sich Plätze oder Ausfälle ändern', () => {
+    const mehrPlaetze = [{ ...MITTWOCH, plaetze: 3, aus: ['2026-09-30'] }, SAMSTAG]
+    expect(ozGeaenderteSchichten(vergleich({ nachTermine: mehrPlaetze, vorher: alle, nachher: alle }), HEUTE)).toEqual([])
+  })
+
+  it('ein anderer Wochentag ist ein Ausfall, keine Änderung', () => {
+    const donnerstag = [{ ...MITTWOCH, wd: 4, von: '09:00' }]
+    expect(ozGeaenderteSchichten(vergleich({ nachTermine: donnerstag, vorher: alle, nachher: alle }), HEUTE)).toEqual([])
+  })
+
+  it('auch nicht für den heutigen Eintrag am alten Tag, der beim Wechsel stehen bleibt', () => {
+    // Die kommenden Einträge nimmt der Wechsel mit, den heutigen nicht
+    // (`ozWegBeiTagwechsel`) — er gilt weiter (`ozEintragGilt`). Ob die
+    // Schicht heute noch zur alten Zeit stattfindet, weiß aber niemand; eine
+    // „Änderung" mit der Uhrzeit des neuen Tages wäre falsch.
+    const heute = eintrag('t1', '2026-09-09', 'p-b', true)
+    const mittwochMorgen = new Date(2026, 8, 9, 7, 0)
+    const donnerstag = [{ ...MITTWOCH, wd: 4, von: '09:00' }]
+    expect(
+      ozGeaenderteSchichten(vergleich({ nachTermine: donnerstag, vorher: [heute], nachher: [heute] }), mittwochMorgen),
+    ).toEqual([])
+  })
+
+  it('nicht an die eigene Person, nicht an Vergangenes, nicht an gestrichene Tage', () => {
+    const vorbei = eintrag('t1', '2026-09-02', 'p-a', true)
+    const gestrichenUndNeu = [{ ...MITTWOCH, von: '09:00', aus: ['2026-09-16'] }]
+    const geaendert = ozGeaenderteSchichten(
+      vergleich({ nachTermine: gestrichenUndNeu, vorher: [vorbei, selbst, spaeter], nachher: [vorbei, selbst, spaeter], ausser: 'p-b' }),
+      HEUTE,
+    )
+    expect(geaendert).toEqual([])
+  })
+
+  it('auch die Schicht von heute — wer nachmittags dort steht, braucht die neue Uhrzeit am dringendsten', () => {
+    const heute = eintrag('t1', '2026-09-09', 'p-b', true)
+    const mittwochMorgen = new Date(2026, 8, 9, 7, 0)
+    expect(
+      ozGeaenderteSchichten(vergleich({ nachTermine: neueZeit, vorher: [heute], nachher: [heute] }), mittwochMorgen).map((z) => z.name),
+    ).toEqual(['Bert Test'])
   })
 })
 

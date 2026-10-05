@@ -62,6 +62,7 @@ vi.mock('../lib/data', async (importActual) => ({
   substituteTake: vi.fn(),
   substituteWithdraw: vi.fn(),
   sendPlanEntzug: vi.fn(),
+  sendPlanZeugnisAenderung: vi.fn(),
   platzFuellen: vi.fn(),
 }))
 
@@ -575,13 +576,18 @@ describe('Öffentliches Zeugnisgeben (T120)', () => {
     expect(data.sendPlanEntzug).not.toHaveBeenCalled()
   })
 
-  it('ein gestrichener Termin: wer sich eingetragen hatte, erfährt es', () => {
+  it('ein gestrichener Termin: wer sich eingetragen hatte, erfährt es — „Schicht fällt aus"', () => {
     persist(st({ ozTermine: [T1], ozEintraege: [eintrag('e1', 'p1', true)] }), st({ ozTermine: [], ozEintraege: [] }), {
       type: 'ozTerminRemove',
       id: 't1',
     })
     expect(data.sendPlanEntzug).toHaveBeenCalledWith([
-      expect.objectContaining({ key: KEY('e1'), pid: 'p1', datum: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz' }),
+      expect.objectContaining({
+        key: KEY('e1'),
+        pid: 'p1',
+        datum: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz',
+        grund: 'ausfall',
+      }),
     ])
   })
 
@@ -593,8 +599,77 @@ describe('Öffentliches Zeugnisgeben (T120)', () => {
     )
     expect(data.saveOzEintraege).toHaveBeenCalledWith('c1', [], ['e1'])
     expect(data.sendPlanEntzug).toHaveBeenCalledWith([
-      expect.objectContaining({ key: KEY('e1'), datum: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz' }),
+      expect.objectContaining({ key: KEY('e1'), datum: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz', grund: 'ausfall' }),
     ])
+    // Ein anderer Wochentag ist ein Ausfall, keine Änderung.
+    vi.runOnlyPendingTimers()
+    expect(data.sendPlanZeugnisAenderung).not.toHaveBeenCalled()
+  })
+
+  /**
+   * **Uhrzeit oder Ort geändert** (5.10.2026): Wer dort eingetragen ist und
+   * davon weiß, bekommt den neuen Termin — aber erst, wenn die Eingabe ruht.
+   * Der Ort ändert sich je Tastendruck; je Anschlag eine Nachricht hieße
+   * „R", „Ra", „Rathausplatz" auf jedem Handy.
+   */
+  describe('Uhrzeit oder Ort geändert', () => {
+    const selbst = eintrag('e1', 'p1', true)
+    const tippen = (...orte: string[]) => {
+      let vorher = st({ ozTermine: [T1], ozEintraege: [selbst] })
+      for (const ort of orte) {
+        const nachher = st({ ozTermine: [{ ...T1, ort }], ozEintraege: [selbst] })
+        persist(vorher, nachher, { type: 'ozTerminUpdate', id: 't1', patch: { ort } })
+        vorher = nachher
+      }
+      return vorher
+    }
+    const NEU = [
+      {
+        key: KEY('e1'),
+        name: 'Manfred Albrecht',
+        pid: 'p1',
+        label: 'Öffentliches Zeugnisgeben',
+        datum: 'Mittwoch, 9. September · 10:00–12:00 · Rathausplatz',
+      },
+    ]
+
+    it('erst nach der Ruhe, einmal, mit dem letzten Stand', () => {
+      tippen('R', 'Ra', 'Rathausplatz')
+      vi.advanceTimersByTime(4999)
+      expect(data.sendPlanZeugnisAenderung).not.toHaveBeenCalled()
+      vi.advanceTimersByTime(1)
+      expect(data.sendPlanZeugnisAenderung).toHaveBeenCalledTimes(1)
+      expect(data.sendPlanZeugnisAenderung).toHaveBeenCalledWith(NEU)
+      // Gespeichert wird weiter nach der kurzen Ruhe der Termine.
+      expect(data.saveOzTermine).toHaveBeenCalledTimes(1)
+    })
+
+    it('zurück auf den alten Ort: nichts', () => {
+      tippen('R', 'Marktplatz')
+      vi.runOnlyPendingTimers()
+      expect(data.sendPlanZeugnisAenderung).not.toHaveBeenCalled()
+    })
+
+    it('wer die Ansicht verlässt, schickt sofort', () => {
+      const zuletzt = tippen('Rathausplatz')
+      persist(zuletzt, zuletzt, { type: 'navigate', screen: 'start' } as AppAction)
+      expect(data.sendPlanZeugnisAenderung).toHaveBeenCalledWith(NEU)
+    })
+
+    it('vor dem Neuladen geht hinaus, was dieser Planer geändert hat', () => {
+      const zuletzt = tippen('Rathausplatz')
+      persist(zuletzt, st({ ozTermine: [{ ...T1, ort: 'Fremd' }], ozEintraege: [] }), { type: 'hydrate' } as AppAction)
+      expect(data.sendPlanZeugnisAenderung).toHaveBeenCalledWith(NEU)
+    })
+
+    it('wer inzwischen ausgetragen wurde, bekommt keine Änderung mehr — nur den Entzug', () => {
+      const zuletzt = tippen('Rathausplatz')
+      const ohne = st({ ozTermine: zuletzt.ozTermine, ozEintraege: [] })
+      persist(zuletzt, ohne, { type: 'ozAustragen', id: 'e1' })
+      expect(data.sendPlanEntzug).toHaveBeenCalledTimes(1)
+      vi.runOnlyPendingTimers()
+      expect(data.sendPlanZeugnisAenderung).not.toHaveBeenCalled()
+    })
   })
 
   /*
@@ -643,7 +718,12 @@ describe('Öffentliches Zeugnisgeben (T120)', () => {
     expect(termin).toBeDefined()
     expect(vi.mocked(data.saveOzEintraege).mock.invocationCallOrder[0]).toBeGreaterThan(termin!)
     expect(data.sendPlanEntzug).toHaveBeenCalledWith([
-      expect.objectContaining({ key: KEY('e1'), pid: 'p1', datum: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz' }),
+      expect.objectContaining({
+        key: KEY('e1'),
+        pid: 'p1',
+        datum: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz',
+        grund: 'ausfall',
+      }),
     ])
   })
 
@@ -1228,7 +1308,11 @@ describe('Die Mock-Liste deckt jeden Schreibweg ab', () => {
 
   it('jeder Import aus lib/data ist eine Attrappe', () => {
     const quelle = Object.values(QUELLE)[0] ?? ''
-    const block = /import \{([\s\S]*?)\} from '\.\.\/lib\/data'/.exec(quelle)?.[1]
+    // `[^}]*`, nicht `[\s\S]*?`: Das faule Muster begann beim ersten
+    // `import {` der Datei und schluckte alle Importe bis zu diesem — ein
+    // einzelner Name aus einem anderen Modul galt dann als Import aus lib/data
+    // (5.10.2026, `ozGeaenderteSchichten` aus `data/zeugnis`).
+    const block = /import \{([^}]*)\} from '\.\.\/lib\/data'/.exec(quelle)?.[1]
     expect(block, 'Import-Block aus lib/data nicht gefunden — Muster nachziehen').toBeDefined()
     const namen = (block ?? '')
       .split(',')

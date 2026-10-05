@@ -14,7 +14,7 @@ import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
 import { kurzeZeit, zeitenAus } from '../../supabase/functions/_shared/planung.ts'
 import { fsLeiterBinden, regenFsWeeks } from '../data/fs'
 import { sentKey, taskKeyVorbei } from '../data/planning'
-import type { EntzogeneZusage } from '../data/plan-versand'
+import type { EntzogeneZusage, GeaenderteSchicht } from '../data/plan-versand'
 import { pidsNachtragen } from '../data/namensbindung'
 import { normalizeChairKeys } from '../data/helpers'
 import { isoDay, tagNach } from '../data/meeting-dates'
@@ -1583,11 +1583,40 @@ export function sendPlanEntzug(entzuege: EntzogeneZusage[]): void {
           pid: z.pid,
           label: z.label,
           datum: z.datum,
+          // „Schicht fällt aus" statt „Zuteilung zurückgezogen" (5.10.2026).
+          // Eine ältere Function übergeht das Feld und meldet den Entzug.
+          ...(z.grund ? { grund: z.grund } : {}),
         })),
       },
     })
     .then(({ error }) => {
       if (error) console.error('[send-plan/entzug]', error.message)
+    })
+}
+
+/**
+ * **Uhrzeit oder Ort einer Zeugnis-Schicht hat sich geändert** (5.10.2026):
+ * Wer dort eingetragen ist und davon weiß, bekommt den neuen Termin — Glocke
+ * und Push über `send-plan` (Aktion `zeugnis-geaendert`). Wann das geschieht
+ * und wer es erfährt, entscheidet `persist.ts` (`ozGeaenderteSchichten`).
+ *
+ * Fehler nur ins Protokoll, wie beim Entzug: Gespeichert ist die Änderung
+ * längst, und eine Warnung „nicht gespeichert" wäre falsch.
+ *
+ * **Reihenfolge beim Ausrollen:** erst die Function deployen — eine ältere
+ * kennt die Aktion nicht und antwortet mit 400.
+ */
+export function sendPlanZeugnisAenderung(aenderungen: GeaenderteSchicht[]): void {
+  if (!supabase || aenderungen.length === 0) return
+  void supabase.functions
+    .invoke('send-plan', {
+      body: {
+        action: 'zeugnis-geaendert',
+        aenderungen: aenderungen.map((z) => ({ taskKey: z.key, name: z.name, pid: z.pid, label: z.label, datum: z.datum })),
+      },
+    })
+    .then(({ error }) => {
+      if (error) console.error('[send-plan/zeugnis-geaendert]', error.message)
     })
 }
 

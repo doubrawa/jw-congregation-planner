@@ -18,6 +18,7 @@ vi.mock('../lib/data', async (importActual) => ({
   saveConfirmation: vi.fn(),
   deleteConfirmationRows: vi.fn(),
   sendPlanEntzug: vi.fn(),
+  sendPlanZeugnisAenderung: vi.fn(),
   notifyPlanners: vi.fn(),
 }))
 

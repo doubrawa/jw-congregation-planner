@@ -89,8 +89,9 @@
   background: var(--hov);
 }
 
-/* Über den Treffpunkten steht nur der Knopf — ans Ende der Zeile. */
-.fs-druck-row {
+/* Über den Treffpunkten und den Plänen ohne Woche (Gruppenbesuche,
+   Zeugnisgeben, Weitere Pläne) steht nur der Knopf — ans Ende der Zeile. */
+.druck-zeile {
   justify-content: flex-end;
 }
 
