@@ -6416,8 +6416,9 @@ S3. Alle drei zielen ins Leere (`schichtInsLeere`): gültiger Schlüssel im Jahr
 ungemessen, wenn der Gruppenaufseher keine Gruppe leitet — vorher maß (37) dann
 still die Tür für Mitglieder. Die Attrappe der Schema-Probe bildet die Tür von
 `send-plan` nach wie die von `zuteilen`. Mutationsprobe 4/4 bewacht.
-**Offen:** der Lauf an der echten Datenbank — der Betreiber legt dafür wieder
-eine Testversammlung an (`testversammlung-anlegen.mjs`).
+**Gemessen am 5. Oktober 2026, 23:00**, gegen `send-plan` v23 mit einer neu
+angelegten Testversammlung: 0 von 37 verbotenen Versuchen kamen durch, alle 19
+Gegenproben gingen durch, nichts ungemessen, alles wieder aufgeräumt.
 
 ---
 
