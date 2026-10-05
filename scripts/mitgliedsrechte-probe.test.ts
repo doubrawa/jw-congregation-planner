@@ -1,4 +1,7 @@
+import { spawnSync } from 'node:child_process'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { PROBE_DATEI, probeDateiText, wertAusEnvText } from './gemeinsam.mjs'
 import {
   bewerteSicht,
   bewerteVersuch,
@@ -240,6 +243,7 @@ describe('Woher die Probe ihren Zugang nimmt', () => {
     expect(zugangAus({}, ausDatei)).toEqual({
       url: 'https://datei.invalid',
       anon: 'sb_publishable_aus_der_datei',
+      versammlung: '',
       planerMail: PROBE_KONTEN.planer,
       mitgliedMail: PROBE_KONTEN.mitglied,
       zuteilerMail: PROBE_KONTEN.zuteiler,
@@ -264,6 +268,40 @@ describe('Woher die Probe ihren Zugang nimmt', () => {
       url: 'https://env.invalid', anon: 'sb_publishable_env', planerMail: 'a@x.invalid', mitgliedPass: 'geheim',
       zuteilerMail: 'z@x.invalid', aufseherPass: 'auch-geheim',
     })
+  })
+
+  /*
+    Seit dem 5.10.2026 schreibt das Anlege-Skript Versammlung und Kennwörter in
+    eine Kontendatei (`.env.probe`), und die Probe liest sie von dort. Am 4.10.
+    nahm die verdeckte Abfrage im Terminal der Desktop-App keine Eingabe an,
+    und am nächsten Tag waren die Kennwörter aus dem Rückblick verschwunden.
+  */
+  it('die Kontendatei liefert Versammlung, Adressen und Kennwörter — die Umgebung geht vor', () => {
+    const datei: Record<string, string> = { PROBE_VERSAMMLUNG: 'v-datei', PROBE_PLANER_PASS: 'aus-der-datei', PROBE_ZUTEILER_MAIL: 'z@datei.invalid' }
+    const z = zugangAus({ PROBE_PLANER_PASS: 'aus-der-umgebung' }, ausDatei, (name) => datei[name] ?? '')
+    expect(z).toMatchObject({
+      versammlung: 'v-datei', planerPass: 'aus-der-umgebung', zuteilerMail: 'z@datei.invalid', mitgliedPass: '', planerMail: PROBE_KONTEN.planer,
+    })
+  })
+
+  it('was das Anlege-Skript schreibt, liest die Probe — unter denselben Namen', () => {
+    // Zwei Skripte, ein Format: Hieße ein Name hier anders als dort, fände die
+    // Probe die Kennwörter nicht und fragte wieder — genau das, was die Datei
+    // abschaffen soll.
+    const text = probeDateiText('v1', TEST_KONTEN.map((k) => ({ env: k.env, mail: k.mail, pass: `kennwort-${k.env}`, stufe: k.stufe })))
+    const z = zugangAus({}, ausDatei, (name) => wertAusEnvText(text, name))
+    expect(z).toMatchObject({
+      versammlung: 'v1',
+      planerMail: 'planer@probe.invalid', planerPass: 'kennwort-PLANER',
+      mitgliedMail: 'mitglied@probe.invalid', mitgliedPass: 'kennwort-MITGLIED',
+      zuteilerMail: 'zuteiler@probe.invalid', zuteilerPass: 'kennwort-ZUTEILER',
+      aufseherMail: 'aufseher@probe.invalid', aufseherPass: 'kennwort-AUFSEHER',
+    })
+  })
+
+  it('die Kontendatei kommt nie ins Repository — Git ignoriert sie', () => {
+    const git = spawnSync('git', ['check-ignore', '-q', PROBE_DATEI], { cwd: path.join(import.meta.dirname, '..') })
+    expect(git.status, 'git check-ignore: 0 heißt ignoriert').toBe(0)
   })
 
   it('die Konten heißen wie in testversammlung-anlegen.mjs — dort entstehen sie', () => {

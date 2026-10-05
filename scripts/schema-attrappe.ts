@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import { vi } from 'vitest'
 
 /**
@@ -461,6 +463,13 @@ export async function fahre(lauf: () => Promise<unknown>, umgebung: Umgebung = {
   vi.stubGlobal('fetch', a.holen)
   vi.stubEnv('SUPABASE_URL', ATTRAPPE_URL)
   vi.stubEnv('SUPABASE_SECRET_KEY', ATTRAPPE_SCHLUESSEL)
+  // Die Kontendatei der Testversammlung (`PROBE_DATEI` in gemeinsam.mjs) liegt
+  // im Projekt — mit echten Kennwörtern, wenn gerade eine Testversammlung
+  // steht. Kein Lauf soll sie lesen oder überschreiben: Jeder bekommt eine
+  // eigene, die es noch nicht gibt. Ein Lauf, der sie braucht, nennt sie in
+  // `env` selbst.
+  const kontendatei = path.join(os.tmpdir(), `probe-konten-${randomUUID()}.env`)
+  vi.stubEnv('PROBE_KONTEN_DATEI', kontendatei)
   for (const [k, v] of Object.entries(umgebung.env ?? {})) vi.stubEnv(k, v)
   const still = vi.spyOn(console, 'log').mockImplementation((...teile: unknown[]) => {
     ausgabe.push(teile.map(String).join(' '))
@@ -481,6 +490,7 @@ export async function fahre(lauf: () => Promise<unknown>, umgebung: Umgebung = {
     still.mockRestore()
     vi.unstubAllEnvs()
     vi.unstubAllGlobals()
+    fs.rmSync(kontendatei, { force: true })
   }
   return { aufrufe: a.aufrufe, tabellen: a.tabellen, ausgabe, meldungen }
 }

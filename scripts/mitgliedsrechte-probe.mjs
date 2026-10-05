@@ -142,23 +142,27 @@
  * umgeht RLS, ein Nachweis damit wäre wertlos.
  *
  *   node scripts/testversammlung-anlegen.mjs --wochen 2      (zuerst --trocken)
- *   node scripts/mitgliedsrechte-probe.mjs --versammlung <congregation-id>
+ *   node scripts/mitgliedsrechte-probe.mjs
  *
- * **Nichts vorher setzen.** URL und anon-Schlüssel stehen in `.env.local`
- * (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`), die Konten heißen wie in
- * `testversammlung-anlegen.mjs` (`planer@probe.invalid` als Admin,
- * `mitglied@`, `zuteiler@` als Planer, `aufseher@` als Gruppenaufseher), und
- * nach den vier Kennwörtern fragt die Probe — verdeckt. Umgebungsvariablen
- * gehen vor (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `PROBE_PLANER_MAIL`/`_PASS`,
+ * **Nichts vorher setzen, nichts abtippen.** URL und anon-Schlüssel stehen in
+ * `.env.local` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`); Versammlung,
+ * Adressen und Kennwörter der vier Konten in der Kontendatei, die
+ * `testversammlung-anlegen.mjs` schreibt (`.env.probe`, seit 5.10.2026 —
+ * siehe `PROBE_DATEI` in `gemeinsam.mjs`). Die Konten heißen dort
+ * `planer@probe.invalid` (Admin), `mitglied@`, `zuteiler@` (Planer) und
+ * `aufseher@` (Gruppenaufseher). Umgebungsvariablen gehen vor (`SUPABASE_URL`,
+ * `SUPABASE_ANON_KEY`, `PROBE_VERSAMMLUNG`, `PROBE_PLANER_MAIL`/`_PASS`,
  * `PROBE_MITGLIED_MAIL`/`_PASS`, `PROBE_ZUTEILER_MAIL`/`_PASS`,
- * `PROBE_AUFSEHER_MAIL`/`_PASS`), etwa für andere Konten oder ohne Terminal.
+ * `PROBE_AUFSEHER_MAIL`/`_PASS`), etwa für andere Konten. Fehlt ein Kennwort
+ * überall, fragt die Probe verdeckt danach.
  *
- * `--versammlung` ist Pflicht und wird gegen alle Konten geprüft. Die Probe
+ * `--versammlung <id>` nennt die Versammlung ausdrücklich, sonst gilt die der
+ * Kontendatei; geprüft wird sie so oder so gegen alle Konten. Die Probe
  * **schreibt**, wenn auch nur kurz — sie soll das nicht in der echten
  * Versammlung tun, weil jemand versehentlich sein eigenes Konto einträgt.
  */
 
-import { alsSkript, anfrageKaputt, pruefKlient, verdecktLesen, wertAusEnvDatei } from './gemeinsam.mjs'
+import { alsSkript, anfrageKaputt, probeDatei, pruefKlient, verdecktLesen, wertAusEnvDatei } from './gemeinsam.mjs'
 
 /* ===================== Schlüssel (Spiegel von planning.ts) ================ */
 
@@ -459,41 +463,55 @@ export const PROBE_KONTEN = {
 
 /**
  * **Woher die Probe ihren Zugang nimmt** — rein, damit der Test es ohne Datei
- * und Terminal prüfen kann. Die Umgebung schlägt die Datei, wie in
+ * und Terminal prüfen kann. Die Umgebung schlägt die Dateien, wie in
  * `gemeinsam.mjs`: URL und anon-Schlüssel stehen im Projekt (`.env.local`,
- * die Namen der App), die Konten heißen wie in `testversammlung-anlegen.mjs`.
- * Kennwörter stehen nirgends — die fragt `zugang()` verdeckt ab.
+ * die Namen der App, `ausDatei`); Versammlung, Adressen und Kennwörter in der
+ * Kontendatei, die `testversammlung-anlegen.mjs` schreibt (`.env.probe`,
+ * `ausKonten`). Fehlt ein Kennwort überall, fragt `zugang()` danach.
  *
  * Bis zum 3.10.2026 verlangte die Probe sechs Umgebungsvariablen im selben
  * Fenster: das Muster, an dem am 17.9. fünf Läufe starben und das
  * `zugangsdaten()` seither für alle anderen Skripte abgelöst hat. Am 3.10.
  * scheiterte so auch ihr eigener erster Lauf — an einem Platzhalter im Aufruf.
+ * Die Kontendatei kam am 5.10.2026 dazu (siehe `PROBE_DATEI`): Die verdeckte
+ * Abfrage nahm im Terminal der Desktop-App keine Eingabe an, und die
+ * Kennwörter aus dem Rückblick waren am nächsten Tag weg.
  *
  * `dienstSchluessel`: Ein Schlüssel, der RLS umgeht, machte jede Messung
  * wertlos — der alte Service-Role-Schlüssel wie der neue `sb_secret_…`.
+ *
+ * @param {Record<string, string | undefined>} env
+ * @param {(name: string) => string} ausDatei
+ * @param {(name: string) => string} [ausKonten]
  */
-export function zugangAus(env, ausDatei) {
+export function zugangAus(env, ausDatei, ausKonten = () => '') {
   const anon = env.SUPABASE_ANON_KEY || ausDatei('VITE_SUPABASE_ANON_KEY')
+  const wert = (name) => env[name] || ausKonten(name)
   return {
     url: env.SUPABASE_URL || ausDatei('VITE_SUPABASE_URL'),
     anon,
-    planerMail: env.PROBE_PLANER_MAIL || PROBE_KONTEN.planer,
-    mitgliedMail: env.PROBE_MITGLIED_MAIL || PROBE_KONTEN.mitglied,
-    zuteilerMail: env.PROBE_ZUTEILER_MAIL || PROBE_KONTEN.zuteiler,
-    aufseherMail: env.PROBE_AUFSEHER_MAIL || PROBE_KONTEN.aufseher,
-    planerPass: env.PROBE_PLANER_PASS || '',
-    mitgliedPass: env.PROBE_MITGLIED_PASS || '',
-    zuteilerPass: env.PROBE_ZUTEILER_PASS || '',
-    aufseherPass: env.PROBE_AUFSEHER_PASS || '',
+    versammlung: wert('PROBE_VERSAMMLUNG'),
+    planerMail: wert('PROBE_PLANER_MAIL') || PROBE_KONTEN.planer,
+    mitgliedMail: wert('PROBE_MITGLIED_MAIL') || PROBE_KONTEN.mitglied,
+    zuteilerMail: wert('PROBE_ZUTEILER_MAIL') || PROBE_KONTEN.zuteiler,
+    aufseherMail: wert('PROBE_AUFSEHER_MAIL') || PROBE_KONTEN.aufseher,
+    planerPass: wert('PROBE_PLANER_PASS'),
+    mitgliedPass: wert('PROBE_MITGLIED_PASS'),
+    zuteilerPass: wert('PROBE_ZUTEILER_PASS'),
+    aufseherPass: wert('PROBE_AUFSEHER_PASS'),
     dienstSchluessel:
       Boolean(anon) &&
       (anon.startsWith('sb_secret_') || anon === env.SUPABASE_SERVICE_ROLE_KEY || anon === env.SUPABASE_SECRET_KEY),
   }
 }
 
-/** Den Zugang vervollständigen: abbrechen, wo etwas fehlt; Kennwörter verdeckt erfragen. */
-async function zugang() {
-  const z = zugangAus(process.env, (name) => wertAusEnvDatei(name))
+/** Der Zugang aus Umgebung, `.env.local` und Kontendatei — noch ohne zu fragen. */
+function zugangOhneFragen() {
+  return zugangAus(process.env, (name) => wertAusEnvDatei(name), (name) => wertAusEnvDatei(name, [probeDatei()]))
+}
+
+/** Den Zugang vervollständigen: abbrechen, wo etwas fehlt; fehlende Kennwörter verdeckt erfragen. */
+async function zugang(z) {
   if (!z.url || !z.anon) {
     console.error('Keine Projekt-URL oder kein anon-Schlüssel — weder SUPABASE_URL/SUPABASE_ANON_KEY gesetzt noch VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY in .env.local.')
     process.exit(2)
@@ -1397,12 +1415,20 @@ async function stufenProben(k, woche) {
 
 /** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
 export async function main(arg = process.argv.slice(2)) {
-  const versammlung = arg[arg.indexOf('--versammlung') + 1]
-  if (!arg.includes('--versammlung') || !versammlung || versammlung.startsWith('--')) {
-    console.error('--versammlung <congregation-id> ist Pflicht. Aufruf siehe Kopf dieser Datei.')
+  // Die Versammlung aus der Aufrufzeile, sonst aus der Kontendatei, die das
+  // Anlege-Skript mit ihren Konten geschrieben hat. Geprüft wird sie so oder so
+  // gegen alle vier Anmeldungen (unten), bevor etwas geschrieben wird.
+  const ohneFragen = zugangOhneFragen()
+  // `--versammlung` ohne Wert ist ein vergessener Wert, kein Wunsch nach der Datei.
+  const stelle = arg.indexOf('--versammlung')
+  const genannt = stelle >= 0 ? (arg[stelle + 1] ?? '') : undefined
+  const versammlung = genannt ?? ohneFragen.versammlung
+  if (!versammlung || versammlung.startsWith('--')) {
+    console.error(`Welche Versammlung? Weder --versammlung <congregation-id> noch eine Kontendatei (${probeDatei()}) — zuerst die Testversammlung anlegen, siehe Kopf dieser Datei.`)
     process.exit(2)
   }
-  const z = await zugang()
+  if (!genannt) console.log(`Versammlung und Konten aus ${probeDatei()}.`)
+  const z = await zugang(ohneFragen)
 
   // `planer` ist das Admin-Konto (der Name stammt aus der Zeit vor den
   // Rechte-Stufen), `zuteiler` das der Stufe „Planer" — siehe Kopf.

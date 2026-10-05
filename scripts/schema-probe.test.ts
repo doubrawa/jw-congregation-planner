@@ -15,6 +15,7 @@ import {
   tabelleVon,
   type Umgebung,
 } from './schema-attrappe'
+import { probeDateiText, wertAusEnvText } from './gemeinsam.mjs'
 import { eigeneSlots, ersterMontagAb, fremdeSlots, stufenAnlage } from './mitgliedsrechte-probe.mjs'
 import { uuid5 } from './wochenplanung-importieren.mjs'
 
@@ -730,6 +731,28 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     expect(ausgabe.join('\n')).toMatch(/Admin: +planer@probe\.invalid/)
   })
 
+  it('mitgliedsrechte-probe: ohne Aufrufzeile und Umgebung kommen Versammlung und Konten aus der Kontendatei', async () => {
+    // So, wie das Anlege-Skript sie schreibt — kein Kennwort in der Umgebung,
+    // keine `--versammlung`: Die Probe fragt nicht und misst trotzdem.
+    const datei = path.join(os.tmpdir(), `probe-konten-test-${process.pid}-${Math.random().toString(36).slice(2)}.env`)
+    try {
+      const konten = [
+        ['PLANER', 'planer@probe.invalid', 'Admin'], ['MITGLIED', 'mitglied@probe.invalid', 'Mitglied'],
+        ['ZUTEILER', 'zuteiler@probe.invalid', 'Planer'], ['AUFSEHER', 'aufseher@probe.invalid', 'Gruppenaufseher'],
+      ].map(([env, mail, stufe]) => ({ env: env!, mail: mail!, pass: 'probe', stufe: stufe! }))
+      fs.writeFileSync(datei, probeDateiText(C, konten))
+      const l = lauf('mitgliedsrechte-probe.mjs')
+      const modul = (await MODULE['./mitgliedsrechte-probe.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+      const { ausgabe } = await fahre(() => modul.main!([]), { ...l.umgebung, env: { ...ANON, PROBE_KONTEN_DATEI: datei } })
+      const text = ausgabe.join('\n')
+      expect(text).toMatch(/^Versammlung und Konten aus .+\.$/m)
+      expect(text).toMatch(/Admin: +planer@probe\.invalid/)
+      expect(text).toMatch(/\(61\) Planer: die Absage eines Mitglieds bekommen/)
+    } finally {
+      fs.rmSync(datei, { force: true })
+    }
+  })
+
   it('mitgliedsrechte-probe (Rechte-Stufen): stellt jede geänderte Zeile zurück und räumt alles weg', async () => {
     const vorher = lauf('mitgliedsrechte-probe.mjs').umgebung!.bestand!
     const { tabellen, ausgabe } = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
@@ -859,5 +882,51 @@ describe('testversammlung-anlegen: jedes Konto bekommt seine Rechte-Stufe', () =
     // Und der Gruppenaufseher leitet in der Datenbank wirklich eine Gruppe.
     const aufseher = tabellen.members!.find((m) => m.email === 'aufseher@probe.invalid')!
     expect(tabellen.groups!.some((g) => g.overseer_id === aufseher.person_id || g.assistant_id === aufseher.person_id)).toBe(true)
+  })
+
+  /*
+    Die Kennwörter gehen seit dem 5.10.2026 in die Kontendatei, nicht auf den
+    Bildschirm: Am 4.10. stand der Probelauf, weil die verdeckte Abfrage im
+    Terminal der Desktop-App nichts annahm — und am nächsten Morgen war der
+    Rückblick mit den Kennwörtern leer.
+  */
+  const kontendatei = () => path.join(os.tmpdir(), `probe-konten-test-${process.pid}-${Math.random().toString(36).slice(2)}.env`)
+  const anlegeModul = async () => (await MODULE['./testversammlung-anlegen.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+
+  it('die Kennwörter landen in der Kontendatei, samt Versammlung — und nicht auf dem Bildschirm', async () => {
+    const datei = kontendatei()
+    try {
+      const l = LAEUFE['testversammlung-anlegen.mjs']![0]!
+      const modul = await anlegeModul()
+      const { tabellen, ausgabe } = await fahre(() => l.fahren(modul, ''), { ...l.umgebung, env: { PROBE_KONTEN_DATEI: datei } })
+      const text = fs.readFileSync(datei, 'utf8')
+      expect(wertAusEnvText(text, 'PROBE_VERSAMMLUNG')).toBe(tabellen.congregations![0]!.id)
+      const kennwoerter = ['PLANER', 'MITGLIED', 'ZUTEILER', 'AUFSEHER'].map((k) => wertAusEnvText(text, `PROBE_${k}_PASS`))
+      expect(kennwoerter.every((pw) => pw.length >= 20), 'vier Kennwörter, jedes lang').toBe(true)
+      expect(new Set(kennwoerter).size).toBe(4)
+      const bildschirm = ausgabe.join('\n')
+      for (const pw of kennwoerter) expect(bildschirm).not.toContain(pw)
+      // Die Probe braucht dann keine Angaben mehr.
+      expect(bildschirm).toMatch(/^ {2}node scripts\/mitgliedsrechte-probe\.mjs$/m)
+    } finally {
+      fs.rmSync(datei, { force: true })
+    }
+  })
+
+  it('--entfernen löscht die Kontendatei mit ihrer Versammlung — die einer anderen bleibt', async () => {
+    const datei = kontendatei()
+    try {
+      const l = LAEUFE['testversammlung-anlegen.mjs']![1]!
+      const modul = await anlegeModul()
+      const entfernen = () => fahre(() => l.fahren(modul, ''), { ...l.umgebung, env: { PROBE_KONTEN_DATEI: datei } })
+      fs.writeFileSync(datei, `PROBE_VERSAMMLUNG=${CB}\n`)
+      await entfernen()
+      expect(fs.existsSync(datei), 'gehört zu einer anderen Versammlung').toBe(true)
+      fs.writeFileSync(datei, `PROBE_VERSAMMLUNG=${C}\n`)
+      await entfernen()
+      expect(fs.existsSync(datei), 'gehört zur entfernten').toBe(false)
+    } finally {
+      fs.rmSync(datei, { force: true })
+    }
   })
 })

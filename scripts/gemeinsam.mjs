@@ -220,6 +220,56 @@ export function zeileGesetzt(inhalt, name, wert, kommentar = '') {
 }
 
 /**
+ * **Die Konten der Testversammlung — von Skript zu Skript, nicht über den
+ * Bildschirm** (5.10.2026).
+ *
+ * `testversammlung-anlegen.mjs` legt vier Konten mit Zufalls-Kennwörtern an;
+ * `mitgliedsrechte-probe.mjs` meldet sich mit allen vieren an. Bis zum
+ * 5.10.2026 ging das über den Bildschirm: Das Anlege-Skript druckte die
+ * Kennwörter, und wer messen wollte, kopierte sie aus dem Rückblick des
+ * Terminals in die Abfrage der Probe. Am 4.10. scheiterte das zweimal — die
+ * verdeckte Abfrage nahm im eingebetteten Terminal der Desktop-App keine
+ * Eingabe an, und am nächsten Morgen war der Rückblick leer, die Kennwörter
+ * mit ihm.
+ *
+ * Jetzt schreibt das Anlege-Skript sie in diese Datei, die Probe liest sie von
+ * dort, `--entfernen` löscht sie mit ihrer Versammlung. Sie heißt `.env.…`,
+ * damit sie unter die Regel fällt, die schon `.env.local` aus dem Repository
+ * hält (`.gitignore`: `.env.*`), und sie hat dasselbe Format — gelesen wird
+ * sie mit `wertAusEnvDatei`. Es stehen nur Probekonten darin, die nichts
+ * sehen außer der Testversammlung.
+ *
+ * `PROBE_KONTEN_DATEI` legt sie woandershin — die Tests tun das immer
+ * (`fahre` in `schema-attrappe.ts`), damit kein Lauf die echte Datei trifft.
+ */
+export const PROBE_DATEI = '.env.probe'
+
+/** Wo die Konten der Testversammlung liegen — siehe `PROBE_DATEI`. */
+export function probeDatei() {
+  return process.env.PROBE_KONTEN_DATEI || PROBE_DATEI
+}
+
+/**
+ * Der Inhalt der Datei: Versammlung und je Konto Adresse und Kennwort, unter
+ * den Namen, unter denen die Probe sie auch aus der Umgebung nimmt
+ * (`PROBE_PLANER_MAIL`, `PROBE_PLANER_PASS`, …).
+ *
+ * @param {string} versammlung
+ * @param {Array<{ env: string, mail: string, pass: string, stufe: string }>} konten
+ * @param {Date} [jetzt]
+ */
+export function probeDateiText(versammlung, konten, jetzt = new Date()) {
+  return [
+    `# Testversammlung, angelegt am ${jetzt.toISOString().slice(0, 16).replace('T', ' ')} UTC`,
+    '# von scripts/testversammlung-anlegen.mjs. Gelesen von scripts/mitgliedsrechte-probe.mjs,',
+    '# gelöscht von --entfernen. Nie einchecken (.gitignore: .env.*).',
+    `PROBE_VERSAMMLUNG=${versammlung}`,
+    ...konten.flatMap((k) => [`# ${k.stufe}`, `PROBE_${k.env}_MAIL=${k.mail}`, `PROBE_${k.env}_PASS=${k.pass}`]),
+    '',
+  ].join('\n')
+}
+
+/**
  * Steht dort ein unersetzter Platzhalter statt eines Schlüssels?
  *
  * Ohne diese Prüfung läuft ein Skript los und stirbt an einem nackten

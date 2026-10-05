@@ -23,7 +23,9 @@
  *   * die Standard-Hilfsdienste (aus `versammlung-anlegen.mjs`, eine Quelle),
  *   * vier Konten über die Auth-Admin-API — je Rechte-Stufe eines: Admin,
  *     Planer, Gruppenaufseher und einfaches Mitglied (`TEST_KONTEN`) —, jedes
- *     mit `members`-Zeile und Person verknüpft,
+ *     mit `members`-Zeile und Person verknüpft; ihre Kennwörter stehen danach
+ *     in `.env.probe` (`PROBE_DATEI` in `gemeinsam.mjs`), dort liest die
+ *     Mitgliedsrechte-Probe sie, und `--entfernen` löscht die Datei wieder,
  *   * ein Treffpunkt-Grundplan (zwei Regeln); die Wochen materialisiert die
  *     App daraus selbst,
  *   * `--wochen N` **echte** Wochen von jw.org über die Edge Function
@@ -71,8 +73,20 @@
  */
 
 import { randomBytes, randomUUID } from 'node:crypto'
+import fs from 'node:fs'
 import { STANDARD_DIENSTE } from './versammlung-anlegen.mjs'
-import { alsSkript, argumente, authKopf, funktionsKopf, personDisplayName, restKlient, zugangsdaten } from './gemeinsam.mjs'
+import {
+  alsSkript,
+  argumente,
+  authKopf,
+  funktionsKopf,
+  personDisplayName,
+  probeDatei,
+  probeDateiText,
+  restKlient,
+  wertAusEnvDatei,
+  zugangsdaten,
+} from './gemeinsam.mjs'
 
 /* ===================== Der erfundene Bestand ============================== */
 
@@ -217,13 +231,21 @@ export const TEST_GASTREDNER = [
  * Die Personen sind mit Absicht gewählt: Der Gruppenaufseher leitet eine
  * Gruppe (`av`), Planer und Mitglied leiten keine — sonst mäße die Probe bei
  * ihnen die Rechte eines Gruppenaufsehers mit.
+ *
+ * `env` ist der Name, unter dem die Probe das Konto liest — aus der Umgebung
+ * oder aus der Datei, die dieses Skript schreibt (`PROBE_PLANER_PASS`, …).
  */
 export const TEST_KONTEN = [
-  { schalter: 'mail-planer', mail: 'planer@probe.invalid', stufe: 'Admin', planner: true, zuteiler: false, person: ['Martin', 'Aichinger'] },
-  { schalter: 'mail-mitglied', mail: 'mitglied@probe.invalid', stufe: 'Mitglied', planner: false, zuteiler: false, person: ['Elena', 'Aichinger'] },
-  { schalter: 'mail-zuteiler', mail: 'zuteiler@probe.invalid', stufe: 'Planer', planner: false, zuteiler: true, person: ['Andreas', 'Rothacker'] },
-  { schalter: 'mail-aufseher', mail: 'aufseher@probe.invalid', stufe: 'Gruppenaufseher', planner: false, zuteiler: false, person: ['Thomas', 'Ebersbach'] },
+  { schalter: 'mail-planer', env: 'PLANER', mail: 'planer@probe.invalid', stufe: 'Admin', planner: true, zuteiler: false, person: ['Martin', 'Aichinger'] },
+  { schalter: 'mail-mitglied', env: 'MITGLIED', mail: 'mitglied@probe.invalid', stufe: 'Mitglied', planner: false, zuteiler: false, person: ['Elena', 'Aichinger'] },
+  { schalter: 'mail-zuteiler', env: 'ZUTEILER', mail: 'zuteiler@probe.invalid', stufe: 'Planer', planner: false, zuteiler: true, person: ['Andreas', 'Rothacker'] },
+  { schalter: 'mail-aufseher', env: 'AUFSEHER', mail: 'aufseher@probe.invalid', stufe: 'Gruppenaufseher', planner: false, zuteiler: false, person: ['Thomas', 'Ebersbach'] },
 ]
+
+/** Zu welcher Versammlung die Kontendatei gehört — leer, wenn es keine gibt. */
+function versammlungDerKontendatei() {
+  return wertAusEnvDatei('PROBE_VERSAMMLUNG', [probeDatei()])
+}
 
 /**
  * Die Konten mit den Adressen aus der Aufrufzeile (`--mail-planer …`), sonst
@@ -542,6 +564,12 @@ async function entfernen(arg) {
   for (const u of verwaist) await auth(`users/${u.id}`, 'DELETE')
   await rest(`congregations?id=eq.${id}`, 'DELETE', undefined, 'return=minimal')
   console.log('\nEntfernt.')
+  // Die Kennwörter gehen mit — aber nur die dieser Versammlung: Gehört die
+  // Datei zu einer anderen, misst die vielleicht gerade jemand.
+  if (versammlungDerKontendatei() === id) {
+    fs.rmSync(probeDatei(), { force: true })
+    console.log(`Die Kontendatei ${probeDatei()} ist gelöscht.`)
+  }
 }
 
 /**
@@ -566,6 +594,12 @@ export async function main(argv = process.argv.slice(2)) {
   console.log(`Treffpunkte:  ${TEST_FS_REGELN.length} Regeln (Wochen baut die App daraus)`)
   console.log(`Wochen:       ${wochenAnzahl} — echt von jw.org über import-week`)
   console.log(`Konten:       ${kontenPlan.map((k) => `${k.mail} (${k.stufe})`).join(', ')}`)
+  console.log(`Kennwörter:   in ${probeDatei()} (von Git ignoriert) — die Probe liest sie von dort`)
+  const vorige = versammlungDerKontendatei()
+  if (vorige) {
+    console.log(`              Achtung: Die Datei gehört noch zur Versammlung ${vorige} und wird überschrieben —`)
+    console.log(`              deren Kennwörter sind dann weg. Vorher entfernen: --entfernen ${vorige} --wirklich`)
+  }
 
   if (arg.trocken) {
     console.log('\n--trocken: nichts geschrieben.')
@@ -715,15 +749,25 @@ export async function main(argv = process.argv.slice(2)) {
     if (Object.keys(vormerkung).length) {
       await rest(`persons?id=eq.${person.id}`, 'PATCH', vormerkung, 'return=minimal')
     }
-    konten.push({ mail: k.mail, pw, person: personDisplayName(person.fn, person.ln), stufe: k.stufe })
+    konten.push({ env: k.env, mail: k.mail, pass: pw, person: personDisplayName(person.fn, person.ln), stufe: k.stufe })
     console.log(`  Konto ${k.mail}${user.uebernommen ? ' (vorhandenes übernommen, Kennwort neu gesetzt)' : ''}`)
   }
 
   console.log(`\nAngelegt. Versammlung ${cong.id}`)
   for (const w of wochen) console.log(`  Woche ${w.start} (${w.range}) — ${w.gesetzt} Plätze besetzt`)
-  console.log('\nKonten — die Kennwörter stehen nur hier, sie sind nirgends abrufbar:')
-  for (const k of konten) console.log(`  ${k.mail}  ${k.pw}   ${k.stufe} · ${k.person}`)
-  console.log(`\nMessen mit:\n  node scripts/mitgliedsrechte-probe.mjs --versammlung ${cong.id}`)
+  // Die Kennwörter gehen in die Kontendatei, nicht auf den Bildschirm (siehe
+  // `PROBE_DATEI`). Nur wenn das Schreiben scheitert, stehen sie hier — sonst
+  // wären sie verloren, und die Konten müssten neu angelegt werden.
+  try {
+    fs.writeFileSync(probeDatei(), probeDateiText(cong.id, konten), { mode: 0o600 })
+    console.log(`\nKonten — die Kennwörter stehen in ${probeDatei()}:`)
+    for (const k of konten) console.log(`  ${k.mail}   ${k.stufe} · ${k.person}`)
+  } catch (err) {
+    console.log(`\n!! ${probeDatei()} ließ sich nicht schreiben (${err instanceof Error ? err.message : err}).`)
+    console.log('Konten — die Kennwörter stehen nur hier, sie sind nirgends abrufbar:')
+    for (const k of konten) console.log(`  ${k.mail}  ${k.pass}   ${k.stufe} · ${k.person}`)
+  }
+  console.log('\nMessen mit:\n  node scripts/mitgliedsrechte-probe.mjs')
   console.log(`\nWieder weg mit:\n  node scripts/testversammlung-anlegen.mjs --entfernen ${cong.id} --wirklich`)
 }
 

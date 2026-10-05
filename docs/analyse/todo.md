@@ -6248,8 +6248,10 @@ samt Konten wieder entfernt; für den nächsten Lauf legt
   tun ist (`wtRollenDoppeltHint`, alle Sprachen), und beide Rollen im Filter.
   `doppelteFesteRollen` liefert dafür die Personen statt ihrer Zahl. Kein
   Schema, keine Function — geht mit dem Push live.
-- **Die Rechte-Stufen an der echten Datenbank messen** — offen bis zum
-  nächsten Lauf. `scripts/mitgliedsrechte-probe.mjs` kennt die Stufen
+- ~~**Die Rechte-Stufen an der echten Datenbank messen**~~ — ✅ **gemessen am
+  5. Oktober 2026**: 0 von 35 verbotenen Versuchen kamen durch, alle 18
+  Gegenproben gingen durch, nichts ungemessen, alles wieder aufgeräumt.
+  `scripts/mitgliedsrechte-probe.mjs` kennt die Stufen
   (4.10.2026): Fälle 35–61, je Grenze ein verbotener Versuch und eine
   Gegenprobe — Türen von `zuteilen` und `send-plan`, die Programmwoche am
   Server vorbei und über `zuteilen`, das eigene Konto, Treffpunkte (fremde,
@@ -6261,7 +6263,13 @@ samt Konten wieder entfernt; für den nächsten Lauf legt
   ungefiltert, und einem Admin liefert `members_select` jede Zeile der
   Versammlung — dass er sich selbst fand, hing an der Speicherreihenfolge.
   Fahren: Testversammlung anlegen (Betreiber), dann die Probe, danach
-  `--entfernen`.
+  `--entfernen`. **Kennwörter von Skript zu Skript (5.10.2026):** Das
+  Anlege-Skript schreibt sie in `.env.probe` (gitignored wie `.env.local`),
+  die Probe liest dort auch die Versammlung — ohne Angaben aufrufbar —, und
+  `--entfernen` löscht die Datei mit ihrer Versammlung. Anlass: Am 4.10. nahm
+  die verdeckte Kennwort-Abfrage im Terminal der Desktop-App keine Eingabe an,
+  und am nächsten Morgen waren die gedruckten Kennwörter aus dem Rückblick
+  verschwunden. Warum die Abfrage hängt, ist nicht untersucht.
 
 **Rechte-Stufe ausrollen:** `schema.sql` einspielen → Functions `zuteilen`
 (neu), `send-plan`, `substitute`, `send-reminders` deployen → Push. Das neue

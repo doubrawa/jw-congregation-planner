@@ -1143,6 +1143,35 @@ export const KATALOG = [
     suchen: "person: ['Thomas', 'Ebersbach'] }",
     ersetzen: "person: ['Peter', 'Ostermann'] }",
   },
+  // Die Kontendatei (5.10.2026): Kennwörter von Skript zu Skript, nicht über den Bildschirm.
+  {
+    id: 'testversammlung-schreibt-kontendatei',
+    datei: 'scripts/testversammlung-anlegen.mjs',
+    regel: 'Das Anlege-Skript schreibt Versammlung und Kennwörter in die Kontendatei.',
+    suchen: '    fs.writeFileSync(probeDatei(), probeDateiText(cong.id, konten), { mode: 0o600 })\n',
+    ersetzen: '    void probeDateiText\n',
+  },
+  {
+    id: 'testversammlung-kennwoerter-nicht-auf-bildschirm',
+    datei: 'scripts/testversammlung-anlegen.mjs',
+    regel: 'Steht die Kontendatei, stehen die Kennwörter nicht auf dem Bildschirm.',
+    suchen: '    for (const k of konten) console.log(`  ${k.mail}   ${k.stufe} · ${k.person}`)\n',
+    ersetzen: '    for (const k of konten) console.log(`  ${k.mail}  ${k.pass}   ${k.stufe} · ${k.person}`)\n',
+  },
+  {
+    id: 'testversammlung-kontendatei-nur-eigene',
+    datei: 'scripts/testversammlung-anlegen.mjs',
+    regel: '--entfernen löscht die Kontendatei nur mit ihrer eigenen Versammlung.',
+    suchen: '  if (versammlungDerKontendatei() === id) {\n',
+    ersetzen: '  if (true) {\n',
+  },
+  {
+    id: 'probe-liest-kontendatei',
+    datei: 'scripts/mitgliedsrechte-probe.mjs',
+    regel: 'Die Probe nimmt Versammlung und Konten aus der Kontendatei des Anlege-Skripts.',
+    suchen: '  return zugangAus(process.env, (name) => wertAusEnvDatei(name), (name) => wertAusEnvDatei(name, [probeDatei()]))\n',
+    ersetzen: '  return zugangAus(process.env, (name) => wertAusEnvDatei(name))\n',
+  },
   {
     id: 'nachladen-laesst-predigtdienst-stehen',
     datei: 'src/app/reducer.ts',
