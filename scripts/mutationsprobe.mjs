@@ -1108,6 +1108,35 @@ export const KATALOG = [
     suchen: '  const durch = a.status < 400 || nachDerTuer.includes(fehler)\n',
     ersetzen: '  const durch = a.status < 400\n',
   },
+  // „Schicht geändert" an der Tür von send-plan (5.10.2026): (62)–(64).
+  {
+    id: 'probe-tuer-gegenprobe',
+    datei: 'scripts/mitgliedsrechte-probe.mjs',
+    regel: 'Eine Gegenprobe an der Tür erwartet „durch" — sonst fiele ein zu streng abgewiesener Planer nicht auf.',
+    suchen: "  const e = bewerteVersuch(a.status, durch, erwartet, { urteil: durch || fehler === 'forbidden', woerter: ['DURCHGELASSEN', 'abgewiesen'] })\n",
+    ersetzen: "  const e = bewerteVersuch(a.status, durch, false, { urteil: durch || fehler === 'forbidden', woerter: ['DURCHGELASSEN', 'abgewiesen'] })\n",
+  },
+  {
+    id: 'probe-schicht-ohne-gruppe-ungemessen',
+    datei: 'scripts/mitgliedsrechte-probe.mjs',
+    regel: 'Leitet der Gruppenaufseher keine Gruppe, bleiben (37) und (62) ungemessen — die Tür wiese ihn schon wie ein Mitglied ab.',
+    suchen: '      if (ohneGruppe) k.ungemessen(nr, was, ohneGruppe)\n',
+    ersetzen: '      if (false) k.ungemessen(nr, was, ohneGruppe)\n',
+  },
+  {
+    id: 'probe-schicht-gueltiger-schluessel',
+    datei: 'scripts/mitgliedsrechte-probe.mjs',
+    regel: '„Schicht geändert" ins Leere trägt einen gültigen Zeugnis-Schlüssel — sonst mäße die Gegenprobe (64) nur ein 400.',
+    suchen: '    aenderungen: [{ taskKey: ozSchluessel(montag, `${marke}-oz-leer`), name: `${marke} Niemand`, label: marke, datum: montag }],\n',
+    ersetzen: '    aenderungen: [{ taskKey: `oz|${marke}-oz-leer`, name: `${marke} Niemand`, label: marke, datum: montag }],\n',
+  },
+  {
+    id: 'probe-schicht-name-ins-leere',
+    datei: 'scripts/mitgliedsrechte-probe.mjs',
+    regel: '„Schicht geändert" ins Leere nennt einen Namen mit dem Kennzeichen des Laufs — den trägt keine Person.',
+    suchen: '    aenderungen: [{ taskKey: ozSchluessel(montag, `${marke}-oz-leer`), name: `${marke} Niemand`, label: marke, datum: montag }],\n',
+    ersetzen: "    aenderungen: [{ taskKey: ozSchluessel(montag, `${marke}-oz-leer`), name: 'Probe Niemand', label: marke, datum: montag }],\n",
+  },
   {
     id: 'probe-stellt-zurueck',
     datei: 'scripts/mitgliedsrechte-probe.mjs',

@@ -126,10 +126,22 @@
  *  59. Planer: eine Woche eines Plans besetzen                  → durch
  *  60. Planer: einen Plan anlegen                               → abgewiesen
  *  61. Planer: die Absage eines Mitglieds bekommen              → angekommen
+ *  62. Gruppenaufseher: „Schicht geändert" melden               → abgewiesen
+ *  63. Mitglied: „Schicht geändert" melden                      → abgewiesen
+ *  64. Planer: „Schicht geändert" melden                        → durch
  *
  * (35)–(37) zielen ins Leere — eine Woche im Jahr 2100, die es nicht gibt —,
  * damit eine offene Tür nichts verschickt und nichts schreibt; dass die
- * Function dann „keine Woche" meldet, heißt bereits: durchgelassen. Wo ein
+ * Function dann „keine Woche" meldet, heißt bereits: durchgelassen.
+ *
+ * (62)–(64) kamen am 5.10.2026 mit der Aktion `zeugnis-geaendert` von
+ * `send-plan` dazu. Sie übernimmt Bezeichnung und Termin vom Aufrufer und
+ * stellt sie jedem zu, den sie über den Namen findet. Wer durch die Tür kommt,
+ * verschickt also Nachrichten mit freiem Text — wie bei S3. Auch sie zielen
+ * ins Leere (`schichtInsLeere`): ein gültiger Schlüssel im Jahr 2100 und ein
+ * Name, den keine Person trägt. (37) und (62) messen nur, wenn der
+ * Gruppenaufseher eine Gruppe leitet; sonst wiese ihn die Tür schon wie ein
+ * Mitglied ab, und das Urteil gälte einer anderen Regel. Wo ein
  * Versuch an einer **bestehenden** Zeile durchkommt (die Programmwoche, ein
  * Treffpunkt, das eigene Konto des Planers, ein Gruppenbesuch), stellt der
  * Admin sofort den vorigen Stand her. Alles Übrige legt der Admin wieder im
@@ -378,6 +390,19 @@ export function ersterMontagAb(iso) {
 /** Aufgaben-Schlüssel eines Eintrags im Zeugnisgeben — Spiegel von `ozTaskKey`. */
 export function ozSchluessel(datum, id) {
   return `oz|${montagDerWoche(datum)}|${id}`
+}
+
+/**
+ * **„Schicht geändert" ins Leere** — der Rumpf für (62)–(64). Der Schlüssel
+ * muss gültig sein, sonst wiese `send-plan` ihn erst hinter der Tür mit 400 ab,
+ * und die Gegenprobe (64) mäße nichts. Der Name dagegen darf niemanden treffen:
+ * Er trägt das Kennzeichen des Laufs, und eine offene Tür fände kein Konto dazu.
+ */
+export function schichtInsLeere(marke, montag) {
+  return {
+    action: 'zeugnis-geaendert',
+    aenderungen: [{ taskKey: ozSchluessel(montag, `${marke}-oz-leer`), name: `${marke} Niemand`, label: marke, datum: montag }],
+  }
 }
 
 /**
@@ -867,7 +892,7 @@ async function t120Proben(k) {
   }
 }
 
-/* ===================== Rechte-Stufen: die Fälle 35–61 ===================== */
+/* ===================== Rechte-Stufen: die Fälle 35–64 ===================== */
 
 /**
  * Rollen am Vortragsplatz — Spiegel von `REDNER_ROLLEN` samt `rolleBasis` in
@@ -1084,19 +1109,22 @@ async function aenderVersuch(k, { nr, was, schreiben, nachsehen, zurueck, erwart
 }
 
 /**
- * Ein Versuch an der Tür einer Edge Function — (35)–(37). Gezielt wird ins
- * Leere, damit eine offene Tür nichts verschickt und nichts schreibt. Deshalb
- * heißt nicht nur ein 2xx „durchgelassen", sondern auch eine Antwort, die erst
- * **hinter** der Rechteprüfung kommt (`nachDerTuer`, etwa „keine Woche"). Ein
- * Urteil über die Tür ist sonst allein `forbidden`.
+ * Ein Versuch an der Tür einer Edge Function — (35)–(37), (62)–(64). Gezielt
+ * wird ins Leere, damit eine offene Tür nichts verschickt und nichts schreibt.
+ * Deshalb heißt nicht nur ein 2xx „durchgelassen", sondern auch eine Antwort,
+ * die erst **hinter** der Rechteprüfung kommt (`nachDerTuer`, etwa „keine
+ * Woche"). Ein Urteil über die Tür ist sonst allein `forbidden`. Mit
+ * `erwartet` ist es eine Gegenprobe: Dann ist `folge` der Satz für die Tür,
+ * die zu ist.
  */
-async function tuerVersuch(k, nr, was, wer, name, rumpf, nachDerTuer, folge) {
+async function tuerVersuch(k, nr, was, wer, name, rumpf, nachDerTuer, folge, erwartet = false) {
   const a = await wer.funktion(name, rumpf)
   const fehler = a.daten?.error
   const durch = a.status < 400 || nachDerTuer.includes(fehler)
-  const e = bewerteVersuch(a.status, durch, false, { urteil: durch || fehler === 'forbidden', woerter: ['DURCHGELASSEN', 'abgewiesen'] })
-  k.ergebnis(nr, was, e, e.durch ? 'AUCH DAS!' : `${folge} (${fehler ?? '—'})`)
-  if (e.durch || e.kaputt) console.log(`      Die Function antwortete: ${JSON.stringify(a.daten)}`)
+  const e = bewerteVersuch(a.status, durch, erwartet, { urteil: durch || fehler === 'forbidden', woerter: ['DURCHGELASSEN', 'abgewiesen'] })
+  const offen = erwartet ? 'der Weg steht offen' : 'AUCH DAS!'
+  k.ergebnis(nr, was, e, e.durch ? offen : `${folge} (${fehler ?? '—'})`)
+  if (e.kaputt || e.durch !== erwartet) console.log(`      Die Function antwortete: ${JSON.stringify(a.daten)}`)
 }
 
 /**
@@ -1357,7 +1385,7 @@ async function stufenAufraeumen(k, fsStart, merker) {
 }
 
 /**
- * Die Fälle (35)–(61) — siehe Kopf. Aufgeräumt wird in jedem Fall, auch wenn
+ * Die Fälle (35)–(64) — siehe Kopf. Aufgeräumt wird in jedem Fall, auch wenn
  * ein Fall mittendrin wirft.
  */
 async function stufenProben(k, woche) {
@@ -1366,26 +1394,40 @@ async function stufenProben(k, woche) {
   const merker = { treffpunktWoche: false }
   let fsStart = null
   try {
+    // Die Gruppen zuerst: Ob der Gruppenaufseher eine leitet, entscheidet
+    // schon über (37) und (62), nicht erst über die Treffpunkte.
+    const g = await planer.rest('groups?select=id,overseer_id,assistant_id&order=position')
+    const wahl = gruppenWahl(zeilenVon(g), { aufseherPid: aufseher.pid, zuteilerPid: zuteiler.pid, mitgliedPid: mitglied.pid })
+    const ohneGruppe = g.status >= 400
+      ? `die Gruppen sind nicht lesbar (HTTP ${g.status})`
+      : !wahl.eigene
+        ? 'der Gruppenaufseher leitet keine Gruppe'
+        : null
+
     // Ins Leere: Eine Woche im Jahr 2100 gibt es nicht — eine offene Tür
     // antwortete mit „keine Woche", statt etwas zu schreiben oder zu senden.
     const leer = ersterMontagAb('2100-01-01')
     await tuerVersuch(k, 35, 'Mitglied: eine Woche über „zuteilen" schreiben', mitglied, 'zuteilen', { action: 'woche', woche: leer, stand: marke, data: {} }, ['week-not-found'], 'nur Admin und Planer')
     await tuerVersuch(k, 36, 'Mitglied: „Plan senden"', mitglied, 'send-plan', { action: 'plan', weekStart: leer }, ['no-week'], 'senden nur Admin, Planer und Gruppenaufseher')
-    await tuerVersuch(k, 37, 'Gruppenaufseher: „Plan senden" fürs Zeugnisgeben', aufseher, 'send-plan', { action: 'zeugnis' }, [], 'das Zeugnisgeben senden nur Admin und Planer')
+    // Der Gruppenaufseher sendet die Treffpunkte seiner Gruppe, aus dem
+    // Zeugnisgeben aber nichts. Ohne eigene Gruppe wiese ihn die Tür schon wie
+    // ein Mitglied ab — gemessen wäre dann eine andere Regel.
+    const schicht = schichtInsLeere(marke, leer)
+    for (const [nr, was, rumpf, folge] of [
+      [37, 'Gruppenaufseher: „Plan senden" fürs Zeugnisgeben', { action: 'zeugnis' }, 'das Zeugnisgeben senden nur Admin und Planer'],
+      [62, 'Gruppenaufseher: „Schicht geändert" melden', schicht, 'geänderte Schichten melden nur Admin und Planer'],
+    ]) {
+      if (ohneGruppe) k.ungemessen(nr, was, ohneGruppe)
+      else await tuerVersuch(k, nr, was, aufseher, 'send-plan', rumpf, [], folge)
+    }
+    await tuerVersuch(k, 63, 'Mitglied: „Schicht geändert" melden', mitglied, 'send-plan', schicht, [], 'geänderte Schichten melden nur Admin und Planer')
+    await tuerVersuch(k, 64, 'Planer: „Schicht geändert" melden', zuteiler, 'send-plan', schicht, [], 'ZU STRENG — ändert der Planer eine Schicht, erfährt es niemand', true)
 
     await wochenProben(k, woche)
 
-    const g = await planer.rest('groups?select=id,overseer_id,assistant_id&order=position')
-    const wahl = gruppenWahl(zeilenVon(g), { aufseherPid: aufseher.pid, zuteilerPid: zuteiler.pid, mitgliedPid: mitglied.pid })
     const fehlt = !planer.pid || !zuteiler.pid || !mitglied.pid
       ? 'Admin, Planer und Mitglied brauchen je eine Person'
-      : g.status >= 400
-        ? `die Gruppen sind nicht lesbar (HTTP ${g.status})`
-        : !wahl.eigene
-          ? 'der Gruppenaufseher leitet keine Gruppe'
-          : !wahl.fremde
-            ? 'keine Gruppe, die keines der Probekonten leitet'
-            : null
+      : (ohneGruppe ?? (!wahl.fremde ? 'keine Gruppe, die keines der Probekonten leitet' : null))
     if (fehlt) {
       k.ungemessen('42–61', 'Treffpunkte, Grundplan, Gruppenbesuche, Zeugnisgeben und Pläne der Stufen', fehlt)
       return
@@ -1821,7 +1863,7 @@ export async function main(arg = process.argv.slice(2)) {
   const k = { planer, mitglied, zuteiler, aufseher, versammlung, marke, ergebnis, aufraeumen, ungemessen, kaputt }
   await t120Proben(k)
 
-  // ---- 35) bis 61) Die Rechte-Stufen (4.10.2026) --------------------------
+  // ---- 35) bis 64) Die Rechte-Stufen (4.10.2026) --------------------------
   await stufenProben(k, wochen[0].start)
 
   // Verboten ist, was nicht durchkommen soll; die übrigen sind die Gegenproben.

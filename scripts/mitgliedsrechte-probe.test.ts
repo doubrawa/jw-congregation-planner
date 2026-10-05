@@ -16,6 +16,7 @@ import {
   planAenderung,
   PROBE_KONTEN,
   qualifiziertFuer,
+  schichtInsLeere,
   slotSchluessel,
   stufenAnlage,
   t120Anlage,
@@ -32,6 +33,9 @@ import { ozTaskKey } from '../src/data/zeugnis'
 import type { PartItem, Person } from '../src/data/types'
 import { pidsNachtragen } from '../src/data/namensbindung'
 import { nurZuteilungen } from '../supabase/functions/_shared/zuteilen-grenze.ts'
+import { schluesselTeile } from '../supabase/functions/_shared/aufgaben-schluessel.ts'
+import { kontoAufloeser } from '../supabase/functions/_shared/konten.ts'
+import { personDisplayName } from '../supabase/functions/_shared/planung.ts'
 import { buildDemoWeeks, DEMO_PERSONS } from '../tests/testdaten/testdaten'
 
 /**
@@ -650,5 +654,27 @@ describe('Rechte-Stufen: die Anlage — jeder Versuch trifft genau eine Regel', 
     expect(ids.every((id) => id.startsWith('PROBE-1-'))).toBe(true)
     expect(new Set(ids).size).toBe(ids.length)
     expect(a.absage.startsWith('PROBE-1 ')).toBe(true)
+  })
+})
+
+describe('„Schicht geändert" ins Leere — (62) bis (64)', () => {
+  const montag = ersterMontagAb('2100-01-01')
+  const rumpf = schichtInsLeere('PROBE-1', montag)
+  const aenderung = rumpf.aenderungen[0]!
+
+  it('der Schlüssel besteht die Prüfung von `send-plan` — sonst mäße die Gegenprobe (64) nur ein 400', () => {
+    expect(rumpf.action).toBe('zeugnis-geaendert')
+    expect(rumpf.aenderungen).toHaveLength(1)
+    expect(schluesselTeile(aenderung.taskKey)).toEqual({ art: 'oz', woche: montag, eintragId: 'PROBE-1-oz-leer' })
+  })
+
+  it('der Name findet kein Konto, auch wenn jede Person eines hat — eine offene Tür stellte nichts zu', () => {
+    const persons = DEMO_PERSONS.map((p) => ({ id: p.id, fn: p.fn, ln: p.ln }))
+    const konto = kontoAufloeser(persons.map((p, i) => ({ user_id: `u${i}`, person_id: p.id })), persons)
+    expect(konto(undefined, aenderung.name)).toBeUndefined()
+    // Gegenprobe am selben Auflöser: Ein echter Name findet sein Konto.
+    expect(konto(undefined, personDisplayName(persons[0]!.fn, persons[0]!.ln))).toBe('u0')
+    expect(aenderung.name).toContain('PROBE-1')
+    expect('pid' in aenderung).toBe(false)
   })
 })

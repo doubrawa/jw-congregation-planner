@@ -463,7 +463,16 @@ const LAEUFE: Record<string, Lauf[]> = {
             woche.data = rumpf.data
             return { json: { ok: true, stand: '2026-08-21T10:00:00+00:00' } }
           },
-          'send-plan': () => ({ status: 403, json: { error: 'forbidden' } }),
+          // Die Tür wie in `send-plan/index.ts`: Senden und Melden darf, wer
+          // zuteilt. Den Zweig des Gruppenaufsehers für die Treffpunkte seiner
+          // Gruppe kennt die Attrappe nicht — die Probe misst ihn nicht. Dahinter
+          // ins Leere: keine Woche im Jahr 2100, kein Konto zum Namen.
+          'send-plan': (rumpf, { tabellen, wer }) => {
+            const ich = (tabellen.members ?? []).find((m) => m.user_id === wer?.id)
+            if (!ich?.planner && !ich?.zuteiler) return { status: 403, json: { error: 'forbidden' } }
+            if (rumpf.action === 'plan') return { status: 404, json: { error: 'no-week' } }
+            return { json: { ok: true, personen: 0, push: 0, ohneKonto: [] } }
+          },
         },
       },
       erwartet: [
@@ -800,8 +809,40 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     expect(text).toMatch(/\(40\) Planer: über „zuteilen" einen Platz freigeben\n.*GEÄNDERT \(HTTP 200\) — der Weg steht offen\n.*\(wieder zurückgestellt\)/)
     expect(text).toMatch(/\(47\) Gruppenaufseher: den Ort eines Treffpunkts der eigenen Gruppe ändern\n.*GEÄNDERT \(HTTP 201\) — der Weg steht offen/)
     expect(text).toMatch(/\(61\) Planer: die Absage eines Mitglieds bekommen \(notify_planners\)\n.*ANGEKOMMEN \(HTTP 204\) — kommt an/)
-    // Jeder Fall von 35 bis 61 kam zu einem Ergebnis — keiner blieb ungemessen.
-    for (let nr = 35; nr <= 61; nr++) expect(text, `(${nr})`).toMatch(new RegExp(`[·!] \\(${nr}\\) `))
+    expect(text).toMatch(/· \(62\) Gruppenaufseher: „Schicht geändert" melden\n.*abgewiesen \(HTTP 403\) — geänderte Schichten melden nur Admin und Planer \(forbidden\)/)
+    expect(text).toMatch(/· \(63\) Mitglied: „Schicht geändert" melden\n.*abgewiesen \(HTTP 403\)/)
+    expect(text).toMatch(/· \(64\) Planer: „Schicht geändert" melden\n.*DURCHGELASSEN \(HTTP 200\) — der Weg steht offen/)
+    // Jeder Fall von 35 bis 64 kam zu einem Ergebnis — keiner blieb ungemessen.
+    for (let nr = 35; nr <= 64; nr++) expect(text, `(${nr})`).toMatch(new RegExp(`[·!] \\(${nr}\\) `))
+  })
+
+  it('mitgliedsrechte-probe (Rechte-Stufen): ist der Planer zu streng abgewiesen, fällt (64) auf', async () => {
+    const l = lauf('mitgliedsrechte-probe.mjs')
+    const modul = (await MODULE['./mitgliedsrechte-probe.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const zu = await fahre(() => l.fahren(modul, ''), {
+      ...l.umgebung,
+      funktionen: { ...l.umgebung!.funktionen, 'send-plan': () => ({ status: 403, json: { error: 'forbidden' } }) },
+    })
+    const text = zu.ausgabe.join('\n')
+    expect(text).toMatch(/! \(64\) Planer: „Schicht geändert" melden\n.*abgewiesen \(HTTP 403\) — ZU STRENG — ändert der Planer eine Schicht, erfährt es niemand \(forbidden\)/)
+    expect(text).toMatch(/Abweichend von der Erwartung: .*\(64\)/)
+  })
+
+  it('mitgliedsrechte-probe (Rechte-Stufen): leitet der Gruppenaufseher keine Gruppe, bleiben (37) und (62) ungemessen', async () => {
+    // Die Tür wiese ihn dann schon wie ein Mitglied ab; ein „abgewiesen" gälte
+    // nicht der Regel fürs Zeugnisgeben.
+    const ohneAufseher = [
+      { id: G1, congregation_id: C, name: 'Probe', position: 0 },
+      { id: G2, congregation_id: C, name: 'Probe Zwei', position: 1 },
+    ]
+    const text = (await mitBestand({ groups: ohneAufseher })).ausgabe.join('\n')
+    for (const nr of [37, 62]) {
+      expect(text, `(${nr})`).toMatch(new RegExp(`\\? \\(${nr}\\) Gruppenaufseher: .* — der Gruppenaufseher leitet keine Gruppe, nicht gemessen`))
+      expect(text, `(${nr})`).not.toMatch(new RegExp(`[·!] \\(${nr}\\) `))
+    }
+    // Das Mitglied und der Planer brauchen keine Gruppe.
+    expect(text).toMatch(/· \(63\) /)
+    expect(text).toMatch(/· \(64\) /)
   })
 
   it('mitgliedsrechte-probe (Rechte-Stufen): sagt die Function erst hinter der Tür „keine Woche", hat sie durchgelassen', async () => {

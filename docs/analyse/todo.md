@@ -6407,6 +6407,18 @@ Betreiber bestätigt: Es bleibt dabei.*
 neuen `send-plan` arbeitet unverändert; ein neuer an einem alten bekäme für
 „Schicht geändert" 400 (nur ins Protokoll) und für den Ausfall den alten Titel.
 
+**Mitgliedsrechte-Probe nachgezogen (Nachtrag 5.10.2026):** Die Fälle (62)–(64)
+messen die Tür von `zeugnis-geaendert`. Gruppenaufseher und Mitglied werden
+abgewiesen, der Planer kommt durch. Die Aktion übernimmt Bezeichnung und Termin
+vom Aufrufer; wer durchkommt, verschickt Nachrichten mit freiem Text, wie bei
+S3. Alle drei zielen ins Leere (`schichtInsLeere`): gültiger Schlüssel im Jahr
+2100, Name mit dem Kennzeichen des Laufs. (37) und (62) bleiben jetzt
+ungemessen, wenn der Gruppenaufseher keine Gruppe leitet — vorher maß (37) dann
+still die Tür für Mitglieder. Die Attrappe der Schema-Probe bildet die Tür von
+`send-plan` nach wie die von `zuteilen`. Mutationsprobe 4/4 bewacht.
+**Offen:** der Lauf an der echten Datenbank — der Betreiber legt dafür wieder
+eine Testversammlung an (`testversammlung-anlegen.mjs`).
+
 ---
 
 ## Was bewusst offen bleibt
