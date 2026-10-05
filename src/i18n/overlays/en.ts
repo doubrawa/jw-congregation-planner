@@ -474,7 +474,7 @@ export default {
   "wpSaalText": "Cleaning and maintenance — the field service groups take turns, one each week.",
   "wpNamePhSaal": "e.g. Snow clearing",
   "wpEntwurf": "Draft",
-  "wpEntwurfHint": "Only admins see a draft.",
+  "wpEntwurfHint": "Only admins and planners see a draft.",
   "wpVeroeffentlichen": "PUBLISH",
   "wpZurueckziehen": "Back to draft",
   "wpSichtSaal": "Once published, the whole congregation sees it.",

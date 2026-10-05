@@ -150,17 +150,17 @@ describe('Eine Predigtdienstgruppe löschen', () => {
   it('nach dem nächsten Laden kommen sie nicht wieder', () => {
     /*
       Beim Laden richtet `loadCongregationData` die gespeicherten Wochen am
-      Grundplan neu aus (`regenFsWeeks(…, true)`). Blieben die Regeln der
+      Grundplan neu aus (`regenFsWeeks`). Blieben die Regeln der
       Gruppe liegen, stünden ihre Treffpunkte danach wieder in jeder Woche.
     */
     const nachher = loeschen(stand(), 'g1')
     const kennungen = nachher.weeks.map((w) => w.start)
 
-    const neuGeladen = regenFsWeeks(kennungen, nachher.fsWeeks, nachher.fsRules, true)
+    const neuGeladen = regenFsWeeks(kennungen, nachher.fsWeeks, nachher.fsRules)
 
     expect(treffpunkteVon(neuGeladen, 'g1')).toEqual([])
     // Gegenprobe: Mit dem alten Grundplan wären sie wieder da.
-    expect(treffpunkteVon(regenFsWeeks(kennungen, nachher.fsWeeks, DEMO_FS_RULES, true), 'g1').length)
+    expect(treffpunkteVon(regenFsWeeks(kennungen, nachher.fsWeeks, DEMO_FS_RULES), 'g1').length)
       .toBeGreaterThan(0)
   })
 

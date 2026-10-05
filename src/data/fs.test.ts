@@ -137,29 +137,36 @@ describe('regenFsWeeks (Neu-Ausrichtung)', () => {
   const RULE: FsRule[] = [
     { id: 'r1', grp: null, wd: 1, time: '14:00', place: 'Königreichssaal', monthly: 0, skipCong: false },
   ]
-  it('preserveEdits behält wochenspezifische Zeit/Ort + Leiter', () => {
+  it('ohne Angabe behält jeder Treffpunkt wochenspezifische Zeit/Ort + Leiter (Laden)', () => {
     const built = buildFsWeeks(KENN.slice(0, 1), RULE, { '0|r1': 'A. Leiter' })
     const edited = built.map((wk) => wk.map((i) => ({ ...i, place: 'Anderswo', time: '15:30' })))
-    const keep = regenFsWeeks(KENN, edited, RULE, true)
+    const keep = regenFsWeeks(KENN, edited, RULE)
     expect(keep[0][0].place).toBe('Anderswo')
     expect(keep[0][0].time).toBe('15:30')
     expect(keep[0][0].leader).toBe('A. Leiter')
   })
-  it('ohne preserveEdits: Zeit/Ort auf Regelwerte zurück, Leiter bleibt', () => {
+  it('zurückgesetzt: Zeit/Ort auf Regelwerte zurück, Leiter bleibt', () => {
     const built = buildFsWeeks(KENN.slice(0, 1), RULE, { '0|r1': 'A. Leiter' })
     const edited = built.map((wk) => wk.map((i) => ({ ...i, place: 'Anderswo' })))
-    const reset = regenFsWeeks(KENN, edited, RULE, false)
+    const reset = regenFsWeeks(KENN, edited, RULE, () => true)
     expect(reset[0][0].place).toBe('Königreichssaal')
     expect(reset[0][0].leader).toBe('A. Leiter')
+  })
+  it('zurückgesetzt wird nur, wen die Frage meint — die übrigen behalten ihre Woche (5.10.2026)', () => {
+    const regeln: FsRule[] = [...RULE, { id: 'r2', grp: 'g2', wd: 6, time: '09:15', place: 'Saal', monthly: 0, skipCong: false }]
+    const edited = buildFsWeeks(KENN.slice(0, 1), regeln).map((wk) => wk.map((i) => ({ ...i, place: 'Anderswo' })))
+    const [woche] = regenFsWeeks(KENN, edited, regeln, (inst) => inst.ruleId === 'r1')
+    expect(woche?.find((i) => i.ruleId === 'r1')?.place).toBe('Königreichssaal')
+    expect(woche?.find((i) => i.ruleId === 'r2')?.place).toBe('Anderswo')
   })
 
   it('der Leiter bleibt mit seiner Person-Id — nicht nur mit dem Namen', () => {
     // Ohne Id fiele jede spätere Zuordnung auf den Namen zurück: Umbenennen
     // kostete die Zusage, und ein Namensvetter erbte sie (`dieselbePerson`).
     const mitId = [[{ ...buildFsWeeks(KENN.slice(0, 1), RULE)[0]![0]!, leader: 'Anton Muster', lpid: 'p1' }]]
-    for (const erhalten of [true, false]) {
-      const [woche] = regenFsWeeks(KENN, mitId, [{ ...RULE[0]!, place: 'Markt' }], erhalten)
-      expect(woche?.[0], `preserveEdits=${erhalten}`).toMatchObject({ leader: 'Anton Muster', lpid: 'p1' })
+    for (const zuruecksetzen of [true, false]) {
+      const [woche] = regenFsWeeks(KENN, mitId, [{ ...RULE[0]!, place: 'Markt' }], () => zuruecksetzen)
+      expect(woche?.[0], `zuruecksetzen=${zuruecksetzen}`).toMatchObject({ leader: 'Anton Muster', lpid: 'p1' })
     }
   })
 

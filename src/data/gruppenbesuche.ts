@@ -20,7 +20,7 @@
 import { istAbwesendAm } from './absence'
 import { fsSetLeader, fsTag, fsTagVorbei, genFsWeek } from './fs'
 import { displayName } from './helpers'
-import { fromIso, isoDay, montagNach } from './meeting-dates'
+import { fromIso, isoDay, monatNach, montagNach, tagNach } from './meeting-dates'
 import type { Absence, FsInstance, FsRule, Group, Gruppenbesuch, Person, Week } from './types'
 
 /** Die Treffpunkte der besuchten Gruppe in einer Woche. */
@@ -220,14 +220,7 @@ export const VERTEILEN_MONATE = 6
  * vom 28. September bis 4. Oktober gehört damit zum Oktober.
  */
 export function besuchsMonat(woche: string): string {
-  const samstag = fromIso(woche)
-  samstag.setDate(samstag.getDate() + 5)
-  return isoDay(samstag).slice(0, 7)
-}
-
-function naechsterMonat(monat: string): string {
-  const [y = 0, m = 1] = monat.split('-').map(Number)
-  return isoDay(new Date(y, m, 1, 12)).slice(0, 7)
+  return tagNach(woche, 5).slice(0, 7)
 }
 
 /**
@@ -242,8 +235,10 @@ export const WOCHENENDEN: readonly Wochenende[] = [1, 2, 3, 4, 'letztes']
 
 /** Das wievielte Wochenende seines Monats eine Besuchswoche hat; das fünfte heißt „letztes". */
 export function besuchsWochenende(woche: string): Wochenende {
-  const i = montageImMonat(besuchsMonat(woche)).indexOf(woche)
-  return i === 0 ? 1 : i === 1 ? 2 : i === 2 ? 3 : i === 3 ? 4 : 'letztes'
+  // Die Wahl steht in Monatsfolge: Index 0–3 sind das erste bis vierte
+  // Wochenende; das fünfte (4) und eine Woche, die kein Montag ist (-1),
+  // heißen „letztes".
+  return WOCHENENDEN[montageImMonat(besuchsMonat(woche)).indexOf(woche)] ?? 'letztes'
 }
 
 /**
@@ -279,11 +274,9 @@ function wochenNachWahl(montage: readonly string[], wahl: Wochenende): string[] 
 export function verteilenMonate(besuche: readonly Gruppenbesuch[], heute = new Date()): string[] {
   const juengster = nachWoche(besuche).at(-1)
   const diesenMonat = isoDay(heute).slice(0, 7)
-  const ab = juengster ? naechsterMonat(besuchsMonat(juengster.woche)) : diesenMonat
-  let monat = ab > diesenMonat ? ab : diesenMonat
-  const out: string[] = []
-  for (let i = 0; i < VERTEILEN_MONATE; i++, monat = naechsterMonat(monat)) out.push(monat)
-  return out
+  const ab = juengster ? monatNach(besuchsMonat(juengster.woche)) : diesenMonat
+  const erster = ab > diesenMonat ? ab : diesenMonat
+  return Array.from({ length: VERTEILEN_MONATE }, (_unused, i) => monatNach(erster, i))
 }
 
 /**
@@ -303,15 +296,11 @@ export function besuchsWochenAuswahl(dieseWoche: string, woche = dieseWoche): st
 
 /** Die Montage der Wochen, deren Samstag im Monat liegt — aufsteigend. */
 function montageImMonat(monat: string): string[] {
-  const [y = 0, m = 1] = monat.split('-').map(Number)
-  const tag = new Date(y, m - 1, 1, 12)
-  tag.setDate(tag.getDate() + ((6 - tag.getDay() + 7) % 7)) // erster Samstag
+  const erster = `${monat}-01`
   const montage: string[] = []
-  while (tag.getMonth() === m - 1) {
-    const montag = new Date(tag)
-    montag.setDate(tag.getDate() - 5)
-    montage.push(isoDay(montag))
-    tag.setDate(tag.getDate() + 7)
+  const ersterSamstag = tagNach(erster, (6 - fromIso(erster).getDay() + 7) % 7)
+  for (let samstag = ersterSamstag; samstag.startsWith(monat); samstag = tagNach(samstag, 7)) {
+    montage.push(tagNach(samstag, -5))
   }
   return montage
 }

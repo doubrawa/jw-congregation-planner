@@ -407,7 +407,7 @@ export default {
   "wpSaalText": "Städning och underhåll – tjänstegrupperna turas om, en varje vecka.",
   "wpNamePhSaal": "t.ex. Snöröjning",
   "wpEntwurf": "Utkast",
-  "wpEntwurfHint": "Bara administratörer ser ett utkast.",
+  "wpEntwurfHint": "Bara administratörer och planerare ser ett utkast.",
   "wpVeroeffentlichen": "PUBLICERA",
   "wpZurueckziehen": "Tillbaka till utkast",
   "wpSichtSaal": "När den är publicerad ser hela församlingen den.",

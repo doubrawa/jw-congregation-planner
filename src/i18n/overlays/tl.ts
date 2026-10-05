@@ -407,7 +407,7 @@ export default {
   "wpSaalText": "Paglilinis at pagmamantini – nagsasalitan ang mga grupo sa paglilingkod sa larangan, isa bawat linggo.",
   "wpNamePhSaal": "hal. Paglilinis ng niyebe",
   "wpEntwurf": "Draft",
-  "wpEntwurfHint": "Mga admin lang ang nakakakita ng draft.",
+  "wpEntwurfHint": "Mga admin at tagaplano lang ang nakakakita ng draft.",
   "wpVeroeffentlichen": "I-PUBLISH",
   "wpZurueckziehen": "Ibalik sa draft",
   "wpSichtSaal": "Kapag na-publish, makikita ito ng buong kongregasyon.",

@@ -139,7 +139,9 @@ export const DE = {
     wpSaalTextMonat: 'Reinigung und Instandhaltung – die Predigtdienstgruppen wechseln sich ab, je Monat eine.',
     wpTakt: 'Die Gruppen wechseln', wpJedenMonat: 'Jeden Monat',
     wpNamePhSaal: 'z. B. Winterdienst',
-    wpEntwurf: 'Entwurf', wpEntwurfHint: 'Einen Entwurf sehen nur Admins.',
+    // Seit dem 4.10.2026 auch der Planer: Er verteilt die Gruppen, bevor der
+    // Admin veröffentlicht (`plan_sichtbar` in schema.sql).
+    wpEntwurf: 'Entwurf', wpEntwurfHint: 'Einen Entwurf sehen nur Admins und Planer.',
     wpVeroeffentlichen: 'VERÖFFENTLICHEN', wpZurueckziehen: 'Zurück zum Entwurf',
     wpSichtSaal: 'Veröffentlicht sieht ihn die ganze Versammlung.',
     wpAbGruppe: 'Beginnen mit',

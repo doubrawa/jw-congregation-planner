@@ -22,7 +22,7 @@
  * Alle Funktionen sind pur.
  */
 
-import { isoDay, montagNach, montagVon, tagNach, tagVorbei } from './meeting-dates'
+import { isoDay, monatNach, montagNach, montagVon, tagNach, tagVorbei } from './meeting-dates'
 import type { Group, PlanEintrag, PlanTakt, WeitererPlan } from './types'
 
 /** Ein neuer Plan läuft zunächst ein Vierteljahr (13 Wochen). */
@@ -62,11 +62,9 @@ export function monatsErster(datum: string): string {
   return `${datum.slice(0, 7)}-01`
 }
 
-/** Der Erste des Folgemonats (ISO) — über die Ziffern, ohne Zeitzone. */
+/** Der Erste des Folgemonats (ISO). */
 function naechsterMonatsErster(erster: string): string {
-  const jahr = Number(erster.slice(0, 4))
-  const monat = Number(erster.slice(5, 7)) // 1–12; der nächste ist dieser + 1
-  return monat === 12 ? `${jahr + 1}-01-01` : `${jahr}-${String(monat + 1).padStart(2, '0')}-01`
+  return `${monatNach(erster.slice(0, 7))}-01`
 }
 
 /** Der Anfang der Spanne, in der `datum` liegt: der Montag seiner Woche oder der Erste seines Monats. */
@@ -237,9 +235,13 @@ export function plaeneZumAnsehen(plaene: readonly WeitererPlan[], heute = new Da
   return plaene.filter((plan) => !plan.entwurf && !planVorbei(plan, heute))
 }
 
-/** Steht „Weitere Pläne" im Menü? Für Planer immer — dort legen sie den ersten an. Sonst, sobald es etwas anzusehen gibt. */
-export function weiterePlaeneImMenue(args: { plaene: readonly WeitererPlan[]; planner: boolean; heute?: Date }): boolean {
-  return args.planner || plaeneZumAnsehen(args.plaene, args.heute).length > 0
+/**
+ * Steht „Weitere Pläne" im Menü? Für Admin und Planer (`zuteilen`) immer — dort
+ * legt der Admin den ersten an, und der Planer verteilt die Gruppen. Sonst,
+ * sobald es etwas anzusehen gibt.
+ */
+export function weiterePlaeneImMenue(args: { plaene: readonly WeitererPlan[]; zuteilen: boolean; heute?: Date }): boolean {
+  return args.zuteilen || plaeneZumAnsehen(args.plaene, args.heute).length > 0
 }
 
 /** Die Spannen (Wochen oder Monate), in denen eine Gruppe dran ist — für „Deine Gruppe ist dran". */

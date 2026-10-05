@@ -100,37 +100,14 @@ function PlanKarte({ plan, stand, onOeffnen }: { plan: WeitererPlan; stand: Plan
 function PlanBearbeiten({ plan, onZurueck }: { plan: WeitererPlan; onZurueck: () => void }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
-  const aendern = (patch: Partial<Pick<WeitererPlan, 'name' | 'von' | 'bis' | 'entwurf' | 'takt'>>): void =>
-    dispatch({ type: 'wpPlanAendern', id: plan.id, patch })
-  const monatlich = taktVon(plan) === 'monat'
   const loeschen = useZweiTipp(() => {
     dispatch({ type: 'wpPlanLoeschen', id: plan.id })
     onZurueck()
   })
-  const locale = LOCALES[state.lang]
 
   // Name, Zeitraum, Takt, Veröffentlichen und Löschen sind der Plan selbst —
   // die ändert der Admin. Der Planer sieht sie und verteilt die Gruppen.
-  if (!state.planner) {
-    return (
-      <>
-        <button type="button" className="wp-zurueck" onClick={onZurueck}>
-          {`‹ ${t.navWeiterePlaene}`}
-        </button>
-        <div className="panel panel--pb16" data-farbe="neutral">
-          <div className="wp-karte-kopf">
-            <h2 className="panel-label">{t.saal}</h2>
-            {plan.entwurf && <span className="wp-marke">{t.wpEntwurf}</span>}
-          </div>
-          <p className="wp-karte-name" dir="auto">
-            {plan.name || t.wpOhneName}
-          </p>
-          <p className="wp-karte-zeitraum">{zeitraumText(plan, state.lang)}</p>
-        </div>
-        <SaalSpannen plan={plan} />
-      </>
-    )
-  }
+  const admin = state.planner
 
   return (
     <>
@@ -142,74 +119,101 @@ function PlanBearbeiten({ plan, onZurueck }: { plan: WeitererPlan; onZurueck: ()
           <h2 className="panel-label">{t.saal}</h2>
           {plan.entwurf && <span className="wp-marke">{t.wpEntwurf}</span>}
         </div>
-        <p className="panel-hint">{monatlich ? t.wpSaalTextMonat : t.wpSaalText}</p>
-        <label className="wp-feld">
-          <span className="field-label">{t.nameLbl}</span>
-          <input
-            className="field-input"
-            type="text"
-            dir="auto"
-            value={plan.name}
-            placeholder={t.wpNamePhSaal}
-            onChange={(e) => aendern({ name: e.target.value })}
-          />
-        </label>
-        <div className="wp-zeitraum-felder">
-          <div className="wp-feld">
-            <span className="field-label">{t.von}</span>
-            <DatePicker
-              value={plan.von}
-              onChange={(von) => von && aendern({ von, ...(von > plan.bis ? { bis: von } : {}) })}
-              locale={locale}
-              placeholder={t.datumPh}
-              ariaLabel={t.von}
-              prevLabel={t.a11yPrevMonth}
-              nextLabel={t.a11yNextMonth}
-            />
-          </div>
-          <div className="wp-feld">
-            <span className="field-label">{t.bis}</span>
-            <DatePicker
-              value={plan.bis}
-              onChange={(bis) => bis && aendern({ bis })}
-              locale={locale}
-              min={plan.von}
-              placeholder={t.datumPh}
-              ariaLabel={t.bis}
-              prevLabel={t.a11yPrevMonth}
-              nextLabel={t.a11yNextMonth}
-            />
-          </div>
-        </div>
-        {/*
-          Der Takt (4.10.2026): je Woche oder je Monat eine Gruppe. Ein Wechsel
-          nimmt die Einteilung ins neue Raster mit (`taktWechseln`).
-        */}
-        <label className="wp-feld">
-          <span className="field-label">{t.wpTakt}</span>
-          <select
-            className="fs-select"
-            value={taktVon(plan)}
-            onChange={(e) => aendern({ takt: e.target.value as PlanTakt })}
-          >
-            <option value="woche">{t.fsFreqW}</option>
-            <option value="monat">{t.wpJedenMonat}</option>
-          </select>
-        </label>
-        <p className="panel-hint">{plan.entwurf ? `${t.wpEntwurfHint} ${t.wpSichtSaal}` : t.wpSichtSaal}</p>
-        <button
-          type="button"
-          className={`${plan.entwurf ? 'plan-auto-btn plan-auto-btn--primary' : 'btn-outline'} wp-veroeffentlichen`}
-          onClick={() => aendern({ entwurf: !plan.entwurf })}
-        >
-          {plan.entwurf ? t.wpVeroeffentlichen : t.wpZurueckziehen}
-        </button>
+        {admin ? (
+          <PlanFelder plan={plan} />
+        ) : (
+          <>
+            <p className="wp-karte-name" dir="auto">
+              {plan.name || t.wpOhneName}
+            </p>
+            <p className="wp-karte-zeitraum">{zeitraumText(plan, state.lang)}</p>
+          </>
+        )}
       </div>
 
       <SaalSpannen plan={plan} />
 
-      <button type="button" className="btn-outline wp-loeschen" onClick={loeschen.onClick} onBlur={loeschen.onBlur}>
-        {loeschen.armed ? t.loeschenSicher : t.wpLoeschen}
+      {admin && (
+        <button type="button" className="btn-outline wp-loeschen" onClick={loeschen.onClick} onBlur={loeschen.onBlur}>
+          {loeschen.armed ? t.loeschenSicher : t.wpLoeschen}
+        </button>
+      )}
+    </>
+  )
+}
+
+/** Was der Admin am Plan selbst ändert: Name, Zeitraum, Takt und ob er veröffentlicht ist. */
+function PlanFelder({ plan }: { plan: WeitererPlan }) {
+  const { state, dispatch } = useApp()
+  const { t } = useT()
+  const aendern = (patch: Partial<Pick<WeitererPlan, 'name' | 'von' | 'bis' | 'entwurf' | 'takt'>>): void =>
+    dispatch({ type: 'wpPlanAendern', id: plan.id, patch })
+  const monatlich = taktVon(plan) === 'monat'
+  const locale = LOCALES[state.lang]
+
+  return (
+    <>
+      <p className="panel-hint">{monatlich ? t.wpSaalTextMonat : t.wpSaalText}</p>
+      <label className="wp-feld">
+        <span className="field-label">{t.nameLbl}</span>
+        <input
+          className="field-input"
+          type="text"
+          dir="auto"
+          value={plan.name}
+          placeholder={t.wpNamePhSaal}
+          onChange={(e) => aendern({ name: e.target.value })}
+        />
+      </label>
+      <div className="wp-zeitraum-felder">
+        <div className="wp-feld">
+          <span className="field-label">{t.von}</span>
+          <DatePicker
+            value={plan.von}
+            onChange={(von) => von && aendern({ von, ...(von > plan.bis ? { bis: von } : {}) })}
+            locale={locale}
+            placeholder={t.datumPh}
+            ariaLabel={t.von}
+            prevLabel={t.a11yPrevMonth}
+            nextLabel={t.a11yNextMonth}
+          />
+        </div>
+        <div className="wp-feld">
+          <span className="field-label">{t.bis}</span>
+          <DatePicker
+            value={plan.bis}
+            onChange={(bis) => bis && aendern({ bis })}
+            locale={locale}
+            min={plan.von}
+            placeholder={t.datumPh}
+            ariaLabel={t.bis}
+            prevLabel={t.a11yPrevMonth}
+            nextLabel={t.a11yNextMonth}
+          />
+        </div>
+      </div>
+      {/*
+        Der Takt (4.10.2026): je Woche oder je Monat eine Gruppe. Ein Wechsel
+        nimmt die Einteilung ins neue Raster mit (`taktWechseln`).
+      */}
+      <label className="wp-feld">
+        <span className="field-label">{t.wpTakt}</span>
+        <select
+          className="fs-select"
+          value={taktVon(plan)}
+          onChange={(e) => aendern({ takt: e.target.value as PlanTakt })}
+        >
+          <option value="woche">{t.fsFreqW}</option>
+          <option value="monat">{t.wpJedenMonat}</option>
+        </select>
+      </label>
+      <p className="panel-hint">{plan.entwurf ? `${t.wpEntwurfHint} ${t.wpSichtSaal}` : t.wpSichtSaal}</p>
+      <button
+        type="button"
+        className={`${plan.entwurf ? 'plan-auto-btn plan-auto-btn--primary' : 'btn-outline'} wp-veroeffentlichen`}
+        onClick={() => aendern({ entwurf: !plan.entwurf })}
+      >
+        {plan.entwurf ? t.wpVeroeffentlichen : t.wpZurueckziehen}
       </button>
     </>
   )

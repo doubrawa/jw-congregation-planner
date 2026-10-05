@@ -76,6 +76,7 @@ import { fill } from '../i18n/useT'
 import { APP_TO_JW, congAppCode } from '../i18n/langs'
 import type {
   ConfirmationMap,
+  FsInstance,
   FsRule,
   MeetingKey,
   MeetingTab,
@@ -376,15 +377,11 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
         .sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity))
         .map((task) => markieren(task, task.id))
     : []
+  // Einmal für Gesuche und freie Plätze: Die Abwesenheiten über alle Wochen zu
+  // legen ist das Teuerste hier, und die Ableitung läuft bei jeder Änderung.
+  const abwesend = me ? buildAbsences(state.absences, weeks, state.congregation.times) : undefined
   const substituteReqs = me
-    ? deriveSubstituteReqs(
-        weeks,
-        state.services,
-        state.confirmations,
-        me,
-        state.congregation.times,
-        buildAbsences(state.absences, weeks, state.congregation.times),
-      )
+    ? deriveSubstituteReqs(weeks, state.services, state.confirmations, me, state.congregation.times, abwesend)
         .filter((req) => !istVorbei(req.at)) // niemand springt für gestern ein
         .map((req) => markieren(req, req.key))
     : []
@@ -392,14 +389,9 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   // Nicht im Blatt beim Öffnen: Ein Angebot ist keine Pflicht wie eine
   // Zuteilung, und ein Gesuch drängt mehr als ein leerer Platz.
   const offen = me
-    ? offenePlaetze(
-        weeks,
-        state.services,
-        state.sentLog,
-        me,
-        state.congregation.times,
-        buildAbsences(state.absences, weeks, state.congregation.times),
-      ).map((platz) => markieren(platz, platz.key))
+    ? offenePlaetze(weeks, state.services, state.sentLog, me, state.congregation.times, abwesend).map((platz) =>
+        markieren(platz, platz.key),
+      )
     : []
   return {
     ...state,
@@ -1191,7 +1183,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     }
     case 'fsRuleUpdate': {
       const fsRules = state.fsRules.map((r) => (r.id === action.id ? { ...r, ...action.patch } : r))
-      return { ...state, fsRules, fsWeeks: regenFsWeeks(wochenKennungen(state), state.fsWeeks, fsRules) }
+      // Zeit und Ort gehen nur bei den Treffpunkten dieser Regel auf die Regel
+      // zurück; die übrigen behalten, was ihre Woche hat (`regenFsWeeks`).
+      const dieseRegel = (inst: FsInstance) => inst.ruleId === action.id
+      return { ...state, fsRules, fsWeeks: regenFsWeeks(wochenKennungen(state), state.fsWeeks, fsRules, dieseRegel) }
     }
     case 'fsRuleRemove': {
       const fsRules = state.fsRules.filter((r) => r.id !== action.id)

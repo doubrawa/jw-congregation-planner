@@ -1,7 +1,6 @@
 import { Fragment, useRef, useState } from 'react'
 import { useApp, useAppDispatch } from '../app/context'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
-import { useZweiTipp } from '../components/useZweiTipp'
 import { movableIndices } from '../data/meeting-edit'
 import { istSchuelerteil } from '../data/aux-class'
 import { rolleMitHerkunft, istArt, isGuestRole, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
@@ -36,7 +35,6 @@ function PartnerKnopf({ si, ii, hasPartner }: { si: number; ii: number; hasPartn
   const dispatch = useAppDispatch()
   const { t } = useT()
   const umschalten = () => dispatch({ type: 'togglePartner', si, ii })
-  const entfernen = useZweiTipp(umschalten)
   if (!hasPartner) {
     return (
       <button type="button" className="partner-toggle" onClick={umschalten}>
@@ -44,16 +42,7 @@ function PartnerKnopf({ si, ii, hasPartner }: { si: number; ii: number; hasPartn
       </button>
     )
   }
-  return (
-    <button
-      type="button"
-      className={entfernen.armed ? 'partner-toggle entfernen is-armed' : 'partner-toggle'}
-      onClick={entfernen.onClick}
-      onBlur={entfernen.onBlur}
-    >
-      {entfernen.armed ? t.entfernenSicher : t.partnerEntfernen}
-    </button>
-  )
+  return <EntfernenKnopf className="partner-toggle" text={t.partnerEntfernen} frage={t.entfernenSicher} onEntfernen={umschalten} />
 }
 
 /**

@@ -290,11 +290,11 @@ describe('Wer was sieht — wie `plan_sichtbar` in schema.sql', () => {
     expect(plaeneZumAnsehen(plaene, HEUTE).map((p) => p.id)).toEqual(['pl-s'])
   })
 
-  it('der Menüpunkt: für Planer immer, sonst nur mit etwas zum Ansehen', () => {
-    expect(weiterePlaeneImMenue({ plaene: [], planner: true, heute: HEUTE })).toBe(true)
-    expect(weiterePlaeneImMenue({ plaene: [saal()], planner: false, heute: HEUTE })).toBe(true)
-    // Ein Entwurf allein bringt den Menüpunkt nicht — ihn sieht nur ein Planer.
-    expect(weiterePlaeneImMenue({ plaene: [saal({ entwurf: true })], planner: false, heute: HEUTE })).toBe(false)
+  it('der Menüpunkt: für Admin und Planer immer, sonst nur mit etwas zum Ansehen', () => {
+    expect(weiterePlaeneImMenue({ plaene: [], zuteilen: true, heute: HEUTE })).toBe(true)
+    expect(weiterePlaeneImMenue({ plaene: [saal()], zuteilen: false, heute: HEUTE })).toBe(true)
+    // Ein Entwurf allein bringt den Menüpunkt nicht — ihn sehen nur Admin und Planer.
+    expect(weiterePlaeneImMenue({ plaene: [saal({ entwurf: true })], zuteilen: false, heute: HEUTE })).toBe(false)
   })
 })
 

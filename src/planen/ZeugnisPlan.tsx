@@ -6,7 +6,6 @@ import { besuchsWocheText } from '../components/gruppenbesuch-anzeige'
 import { SchichtKopf } from '../components/SchichtKopf'
 import { ozKurzTag, ozNachWoche } from '../components/zeugnis-anzeige'
 import { istAbwesendAm } from '../data/absence'
-import { FS_TIME_OPTIONS } from '../data/fs'
 import { displayName, isQualified, personCompare } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import {
@@ -29,7 +28,8 @@ import { BannerKopf } from './PlanBanners'
 import { ZeugnisSendenPanel } from './PlanSendenPanel'
 import { ZUSAGE_LABEL } from './useZusage'
 import { ZusageLegende, ZusagePunkt } from './ZusageStatus'
-import { WOCHENTAGE_AB_MONTAG, wochentagNameAusWd } from './wochentage'
+import { wochentagNameAusWd } from './wochentage'
+import { WochentagWahl, ZeitWahl } from './ZeitWahl'
 import '../components/zeugnis.css'
 
 /** Plätze je Termin zur Wahl — so weit lässt sie auch die Datenbank zu (`oz_termine.plaetze`). */
@@ -196,18 +196,7 @@ function TerminZeile({ termin }: { termin: OzTermin }) {
     <div className="fsr-row">
       <div className="fsr-line">
         <div className="fsr-wahl">
-          <select
-            className="fs-select"
-            value={wechsel?.wd ?? termin.wd}
-            aria-label={t.a11yWeekday}
-            onChange={(e) => tagWaehlen(Number(e.target.value))}
-          >
-            {WOCHENTAGE_AB_MONTAG.map((d) => (
-              <option key={d} value={d}>
-                {wochentagNameAusWd(d, state.lang)}
-              </option>
-            ))}
-          </select>
+          <WochentagWahl value={wechsel?.wd ?? termin.wd} label={t.a11yWeekday} onChange={tagWaehlen} />
           <select
             className="fs-select"
             value={termin.plaetze}
@@ -246,30 +235,8 @@ function TerminZeile({ termin }: { termin: OzTermin }) {
         </div>
       )}
       <div className="fsr-line">
-        <select
-          className="fs-select fs-select--time"
-          value={termin.von}
-          aria-label={t.von}
-          onChange={(e) => upd({ von: e.target.value })}
-        >
-          {FS_TIME_OPTIONS.map((tm) => (
-            <option key={tm} value={tm}>
-              {tm}
-            </option>
-          ))}
-        </select>
-        <select
-          className="fs-select fs-select--time"
-          value={termin.bis}
-          aria-label={t.bis}
-          onChange={(e) => upd({ bis: e.target.value })}
-        >
-          {FS_TIME_OPTIONS.map((tm) => (
-            <option key={tm} value={tm}>
-              {tm}
-            </option>
-          ))}
-        </select>
+        <ZeitWahl value={termin.von} label={t.von} onChange={(von) => upd({ von })} />
+        <ZeitWahl value={termin.bis} label={t.bis} onChange={(bis) => upd({ bis })} />
       </div>
       <div className="fsr-line">
         <input

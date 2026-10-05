@@ -6306,6 +6306,42 @@ pushen. Das neue Frontend fragt die Spalte ab; ohne sie käme beim Laden kein
 Plan an (die App bliebe benutzbar, nur ohne weitere Pläne). Keine Function
 betroffen.
 
+**Review 5.10.2026 (alles seit 3.10. vormittags, `/simplify` + `/code-review` +
+Übersetzungen vollständig):** Behoben, alles im Client — geht mit dem Push live,
+kein Schema (in `schema.sql` nur ein Kommentar), keine Function:
+- **Grundplan des Gruppenaufsehers:** Jede Grundplan-Änderung setzte Zeit und
+  Ort **aller** Treffpunkte zurück (`regenFsWeeks`), schon beim Anlegen einer
+  Regel. Was andere Gruppen für eine Woche angepasst hatten, ging verloren, und
+  seit `fs_weeks_pruefen` wies die Datenbank die Wochen des Gruppenaufsehers
+  ab — die App lud nach, seine Regel kam dort nie an. Jetzt setzt eine Regel
+  nur ihre eigenen Treffpunkte neu auf (`grundplan-andere-gruppen.test.ts`).
+- **Übersetzungen**, 103 Werte in 33 Sprachen: „Einen Entwurf sehen nur Admins"
+  war seit der Planer-Stufe falsch (alle Sprachen); Anrede gemischt (el, id, ru,
+  uk, bg); männliche Formen, wo Schwestern gemeint sind (fr, es, it, pt, ro, ru,
+  pl, cs, sk, hr, sr, bg); „Übernehmen" beim Gruppenbesuch hieß in fi/he/ru
+  „nimm du es"; tr `tabFs` hieß noch „Zusammenkünfte für den Predigtdienst";
+  wpHinweis mit anderem Wort fürs Zeugnisgeben (ar, he, hu, id, ja, sw, zh).
+  Werkzeug dafür: `node scripts/uebersetzungs-matrix.mjs <basis>`.
+- Testlücke: der Schreibweg des Planers über `zuteilen` im Client
+  (`zuteilen-schreiben.test.ts`).
+
+**Offen aus demselben Review** (bewusst nicht angefasst):
+- **Was der Client beim Laden angleicht, schreibt nur der Admin zurück**
+  (`syncAuxSlots`, `regenFsWeeks` erzeugt oder entfernt Treffpunkte nach dem
+  Grundplan). Weicht der Bestand davon ab, weist die Datenbank Planer und
+  Gruppenaufseher für diese Woche ab (`nurZuteilungen` bzw. `fs_weeks_pruefen`),
+  und jeder Versuch lädt nur nach. Auslöser: eine Woche, die nach einer
+  Grundplan- oder Klassenänderung nicht mehr geschrieben wurde. Abhilfe wäre,
+  dass der Admin beim Laden Angeglichenes zurückschreibt — eine Designfrage
+  (bisher schreibt das Laden nie).
+- **Bei der nächsten Function-Runde mitnehmen:** `zuteilen/woche.ts` und
+  `substitute/fuellen.ts` schreiben im Rückfall (Vergleich verfehlt, Stand
+  gleich) ohne Bedingung — ein Schreiben dazwischen ginge ungeprüft verloren;
+  beide Abschriften derselben Vergleiche-und-Tausche-Logik gehören nach
+  `_shared`. `fuellen.ts` nimmt „heute" in UTC und lässt zwischen Mitternacht
+  Ortszeit und UTC eine Zusammenkunft vom Vorabend noch füllen. In `send-plan`
+  wiederholt `jePraefix` (Zeugnisgeben) das `jeWoche` der Woche.
+
 ---
 
 ## Was bewusst offen bleibt

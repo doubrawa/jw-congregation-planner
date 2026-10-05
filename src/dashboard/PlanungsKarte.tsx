@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { useKalendertag } from '../app/useKalendertag'
@@ -6,6 +6,7 @@ import { besuchHatKonflikt, besuchStand } from '../data/gruppenbesuche'
 import { useBesuchsLage } from '../components/useBesuchsLage'
 import { fromIso } from '../data/meeting-dates'
 import { planungsstand, type Wochenstand } from '../data/planungsstand'
+import type { FsBereich } from '../data/types'
 import { ozStand } from '../data/zeugnis'
 import { useWochenImport } from '../einstellungen/useWochenImport'
 import { LOCALES } from '../i18n/langs'
@@ -128,8 +129,9 @@ export function PlanungsKarte() {
     [lage, state.gruppenbesuche, tag],
   )
 
-  const zuDenBesuchen = (): void => {
-    dispatch({ type: 'setFsBereich', bereich: 'gruppenbesuche' })
+  /** In den Predigtdienst beim Planen, gleich in diesen Bereich. */
+  const zumBereich = (bereich: FsBereich): void => {
+    dispatch({ type: 'setFsBereich', bereich })
     dispatch({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
   }
 
@@ -155,11 +157,6 @@ export function PlanungsKarte() {
     [tag, sendenMoeglich, state.ozTermine, state.ozEintraege, state.persons, state.absences, state.confirmations, state.sentLog],
   )
   const zeugnisZuTun = zeugnis.konflikte + zeugnis.frei + zeugnis.nichtGesendet > 0
-
-  const zumZeugnis = (): void => {
-    dispatch({ type: 'setFsBereich', bereich: 'zeugnis' })
-    dispatch({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
-  }
 
   if (stand.wochen.length === 0 && !stand.vorratKnapp && besuchsKonflikte === 0 && !zeugnisZuTun) {
     return (
@@ -211,35 +208,17 @@ export function PlanungsKarte() {
         </button>
       ))}
       {besuchsKonflikte > 0 && (
-        <button type="button" className="dash-plan-woche" onClick={zuDenBesuchen}>
-          <span className="dash-plan-kopf">
-            <span className="dash-plan-range">{t.gbTitel}</span>
-            <span className="dash-plan-arrow" aria-hidden="true">
-              ›
-            </span>
-          </span>
-          <span className="dash-plan-chips">
-            <Chip art="konflikte" titel={t.konflikteTitle} n={besuchsKonflikte} />
-          </span>
-        </button>
+        <BereichZeile titel={t.gbTitel} onClick={() => zumBereich('gruppenbesuche')}>
+          <Chip art="konflikte" titel={t.konflikteTitle} n={besuchsKonflikte} />
+        </BereichZeile>
       )}
       {zeugnisZuTun && (
-        <button type="button" className="dash-plan-woche" onClick={zumZeugnis}>
-          <span className="dash-plan-kopf">
-            <span className="dash-plan-range">{t.privZeugnis}</span>
-            <span className="dash-plan-arrow" aria-hidden="true">
-              ›
-            </span>
-          </span>
+        <BereichZeile titel={t.privZeugnis} onClick={() => zumBereich('zeugnis')}>
           {/* In der Reihenfolge der Banner dort: Konflikte, freie Plätze, Versand. */}
-          <span className="dash-plan-chips">
-            {zeugnis.konflikte > 0 && <Chip art="konflikte" titel={t.konflikteTitle} n={zeugnis.konflikte} />}
-            {zeugnis.frei > 0 && <Chip art="offen" titel={t.ozFreiePlaetze} n={zeugnis.frei} />}
-            {zeugnis.nichtGesendet > 0 && (
-              <Chip art="senden" titel={t.planSendenTitle} n={zeugnis.nichtGesendet} />
-            )}
-          </span>
-        </button>
+          {zeugnis.konflikte > 0 && <Chip art="konflikte" titel={t.konflikteTitle} n={zeugnis.konflikte} />}
+          {zeugnis.frei > 0 && <Chip art="offen" titel={t.ozFreiePlaetze} n={zeugnis.frei} />}
+          {zeugnis.nichtGesendet > 0 && <Chip art="senden" titel={t.planSendenTitle} n={zeugnis.nichtGesendet} />}
+        </BereichZeile>
       )}
       {/* Importieren ist Sache des Admins (4.10.2026): Ein neues Programm
           ändert den Plan, es teilt nichts zu. */}
@@ -258,6 +237,25 @@ export function PlanungsKarte() {
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * Eine Zeile für einen Plan ohne Woche (Gruppenbesuche, Zeugnisgeben): sein
+ * Titel und darunter seine Banner im Kleinen (`Chip`). Gebaut wie die Zeile
+ * einer Woche darüber; ein Tipp führt in den Plan.
+ */
+function BereichZeile({ titel, onClick, children }: { titel: string; onClick: () => void; children: ReactNode }) {
+  return (
+    <button type="button" className="dash-plan-woche" onClick={onClick}>
+      <span className="dash-plan-kopf">
+        <span className="dash-plan-range">{titel}</span>
+        <span className="dash-plan-arrow" aria-hidden="true">
+          ›
+        </span>
+      </span>
+      <span className="dash-plan-chips">{children}</span>
+    </button>
   )
 }
 

@@ -93,7 +93,7 @@ describe('T63 · der Freitext wird nicht zur gleichnamigen Person', () => {
      */
     const regel = [{ id: 'r1', grp: null, wd: 1, time: '09:30', place: 'KH', monthly: 0, skipCong: false }]
     const gespeichert = [[inst({ id: 'r1', ruleId: 'r1', leader: KS, lext: true })]]
-    const ausgerichtet = regenFsWeeks(KENN.slice(0, 1), gespeichert, regel, true)
+    const ausgerichtet = regenFsWeeks(KENN.slice(0, 1), gespeichert, regel)
     const geladen = fsLeiterBinden(ausgerichtet, [person()])
     expect(geladen[0]?.[0]).toMatchObject({ leader: KS, lext: true })
     expect(geladen[0]?.[0]?.lpid).toBeUndefined()
@@ -101,11 +101,12 @@ describe('T63 · der Freitext wird nicht zur gleichnamigen Person', () => {
   })
 
   it('… und jede Änderung am Grundplan', () => {
-    // Derselbe Weg ohne `preserveEdits`: Der Ort der Regel wird geändert, die
-    // Woche neu erzeugt — der Freitext-Leiter bleibt Freitext.
+    // Derselbe Weg wie bei einer geänderten Regel (`fsRuleUpdate`): Der Ort der
+    // Regel wird geändert, ihr Treffpunkt neu erzeugt — der Freitext-Leiter
+    // bleibt Freitext.
     const regel = [{ id: 'r1', grp: null, wd: 1, time: '09:30', place: 'KH', monthly: 0, skipCong: false }]
     const gespeichert = [[inst({ id: 'r1', ruleId: 'r1', leader: KS, lext: true })]]
-    const [woche] = regenFsWeeks(KENN.slice(0, 1), gespeichert, [{ ...regel[0]!, place: 'Markt' }])
+    const [woche] = regenFsWeeks(KENN.slice(0, 1), gespeichert, [{ ...regel[0]!, place: 'Markt' }], (i) => i.ruleId === 'r1')
     expect(woche?.[0]).toMatchObject({ leader: KS, lext: true, place: 'Markt' })
   })
 

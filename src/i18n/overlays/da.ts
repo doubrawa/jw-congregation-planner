@@ -407,7 +407,7 @@ export default {
   "wpSaalText": "Rengøring og vedligeholdelse – tjenestegrupperne skiftes, én om ugen.",
   "wpNamePhSaal": "fx Snerydning",
   "wpEntwurf": "Kladde",
-  "wpEntwurfHint": "Kun administratorer ser en kladde.",
+  "wpEntwurfHint": "Kun administratorer og planlæggere ser en kladde.",
   "wpVeroeffentlichen": "OFFENTLIGGØR",
   "wpZurueckziehen": "Tilbage til kladde",
   "wpSichtSaal": "Når den er offentliggjort, ser hele menigheden den.",

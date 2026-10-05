@@ -52,7 +52,7 @@ describe('Die Kennung eines Treffpunkts hängt nicht an der Wochennummer', () =>
     const vorher = buildFsWeeks(kennAb(0, 6), RULES)
     vorher[3]![0]!.leader = 'Emil Ernst'
     const gespeichert = vorher.slice(1) // Woche 0 fällt aus dem Fenster
-    const nachher = regenFsWeeks(kennAb(1), gespeichert, RULES, true)
+    const nachher = regenFsWeeks(kennAb(1), gespeichert, RULES)
     expect(nachher[2]![0]!.leader).toBe('Emil Ernst')
   })
 

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { Sheet } from '../components/Sheet'
-import { useZweiTipp } from '../components/useZweiTipp'
+import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { herkunftVon, isSong, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER, rolleBasis, slotsOf } from '../data/helpers'
 import { LOAD_RADIUS, type WeekLoad } from '../data/auslastung'
 import { fsLeaderValue } from '../data/fs'
@@ -140,9 +140,8 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
    * **Mit Rückfrage** (4.10.2026): Wer zugesagt hatte, bekommt sofort
    * „Zuteilung zurückgezogen" — ein Fehltipp ließe sich nicht zurückholen.
    */
-  const entfernen = useZweiTipp(() =>
-    dispatch(guest ? { type: 'assign', name: '', rolle: guestBase } : { type: 'assign', name: '' }),
-  )
+  const freimachen = () =>
+    dispatch(guest ? { type: 'assign', name: '', rolle: guestBase } : { type: 'assign', name: '' })
 
   const pick = (cand: Candidate) => {
     if (cand.absent) {
@@ -180,14 +179,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
                 {t.s89Open}
               </button>
             )}
-            <button
-              type="button"
-              className={entfernen.armed ? 'sheet-remove entfernen is-armed' : 'sheet-remove'}
-              onClick={entfernen.onClick}
-              onBlur={entfernen.onBlur}
-            >
-              {entfernen.armed ? t.entfernenSicher : t.entfernen}
-            </button>
+            <EntfernenKnopf className="sheet-remove" text={t.entfernen} frage={t.entfernenSicher} onEntfernen={freimachen} />
           </div>
         </div>
       )}

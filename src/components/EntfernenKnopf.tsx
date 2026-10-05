@@ -16,16 +16,23 @@ import './components.css'
  * Person aus einer Schicht, eine Sprache aus dem Programm: „Wirklich
  * entfernen?" (`entfernenSicher`).
  *
+ * `text` steht statt des ✕ da, wo der Knopf ein Wort trägt („Entfernen" im
+ * Zuteilungsblatt, „Partner entfernen"); er braucht dann keinen eigenen Namen
+ * für Screenreader. Bis zum 5.10.2026 baute jede dieser Stellen ihre
+ * Rückfrage selbst.
+ *
  * Ein eigener Baustein, weil jede Zeile ihren eigenen Zustand braucht.
  */
 export function EntfernenKnopf({
   className,
   onEntfernen,
   frage,
+  text,
 }: {
   className: string
   onEntfernen: () => void
   frage?: string
+  text?: string
 }) {
   const { t } = useT()
   const entfernen = useZweiTipp(onEntfernen)
@@ -34,11 +41,11 @@ export function EntfernenKnopf({
       type="button"
       className={entfernen.armed ? `${className} entfernen is-armed` : `${className} entfernen`}
       // Geschärft sagt der Text selbst, was geschieht; das ✕ davor braucht den Namen.
-      aria-label={entfernen.armed ? undefined : t.a11yRemove}
+      aria-label={entfernen.armed || text ? undefined : t.a11yRemove}
       onClick={entfernen.onClick}
       onBlur={entfernen.onBlur}
     >
-      {entfernen.armed ? (frage ?? t.loeschenSicher) : '✕'}
+      {entfernen.armed ? (frage ?? t.loeschenSicher) : (text ?? '✕')}
     </button>
   )
 }

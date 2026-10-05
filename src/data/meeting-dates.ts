@@ -122,6 +122,16 @@ export function tagNach(datum: string, tage: number): string {
 }
 
 /**
+ * Der Monat `monate` Monate nach `monat` („2026-10") — über die Ziffern, ohne
+ * Zeitzone. Stand bis zum 5.10.2026 zweimal da: als `Date`-Rechnung in den
+ * Gruppenbesuchen und über die Ziffern in den Weiteren Plänen.
+ */
+export function monatNach(monat: string, monate = 1): string {
+  const zaehler = Number(monat.slice(0, 4)) * 12 + Number(monat.slice(5, 7)) - 1 + monate
+  return `${Math.floor(zaehler / 12)}-${String((zaehler % 12) + 1).padStart(2, '0')}`
+}
+
+/**
  * Ist dieser Tag (ISO) um? Für Termine ohne Woche — Schichten, Vorträge,
  * Pläne; das Gegenstück zu `fsTagVorbei`. Stand bis zum 3.10.2026 dreimal
  * gleich da (`ozVorbei`, `vaVorbei`, `planVorbei`).

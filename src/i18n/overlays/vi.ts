@@ -407,7 +407,7 @@ export default {
   "wpSaalText": "Dọn dẹp và bảo trì – các nhóm rao giảng thay phiên nhau, mỗi tuần một nhóm.",
   "wpNamePhSaal": "vd. Dọn tuyết",
   "wpEntwurf": "Bản nháp",
-  "wpEntwurfHint": "Chỉ quản trị viên thấy bản nháp.",
+  "wpEntwurfHint": "Chỉ quản trị viên và người lập kế hoạch thấy bản nháp.",
   "wpVeroeffentlichen": "CÔNG BỐ",
   "wpZurueckziehen": "Trở lại bản nháp",
   "wpSichtSaal": "Khi công bố, cả hội thánh đều thấy.",

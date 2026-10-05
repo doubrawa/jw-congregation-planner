@@ -407,7 +407,7 @@ export default {
   "wpSaalText": "Schoonmaak en onderhoud – de velddienstgroepen wisselen elkaar af, één per week.",
   "wpNamePhSaal": "bijv. Sneeuwruimen",
   "wpEntwurf": "Concept",
-  "wpEntwurfHint": "Een concept zien alleen admins.",
+  "wpEntwurfHint": "Een concept zien alleen admins en planners.",
   "wpVeroeffentlichen": "PUBLICEREN",
   "wpZurueckziehen": "Terug naar concept",
   "wpSichtSaal": "Gepubliceerd ziet de hele gemeente het.",

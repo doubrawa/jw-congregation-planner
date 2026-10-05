@@ -1038,8 +1038,8 @@ export const KATALOG = [
     id: 'wp-plan-aendern-nur-admin',
     datei: 'src/planen/WeiterePlaenePlan.tsx',
     regel: 'Name, Zeitraum, Takt, Veröffentlichen und Löschen eines Plans nur beim Admin — der Planer verteilt die Gruppen.',
-    suchen: '  if (!state.planner) {\n',
-    ersetzen: '  if (false) {\n',
+    suchen: '  const admin = state.planner\n',
+    ersetzen: '  const admin = true\n',
   },
   {
     id: 'wp-anlegen-nur-admin',
@@ -1949,8 +1949,8 @@ export const KATALOG = [
     id: 'plan-knopf-schickt-seinen-tag',
     datei: 'src/planen/PlanSendenPanel.tsx',
     regel: 'Der Knopf schickt den Tag mit, mit dem er gezählt hat.',
-    suchen: '    const res = await sendPlan(week.start, tag)',
-    ersetzen: "    const res = await sendPlan(week.start, '')",
+    suchen: '  return useSenden(week?.start ?? null, (start) => sendPlan(start, tag))',
+    ersetzen: "  return useSenden(week?.start ?? null, (start) => sendPlan(start, ''))",
   },
   {
     id: 'entzug-vorbei-schweigt',
@@ -2524,7 +2524,7 @@ export const KATALOG = [
     id: 'wp-menue-nur-mit-plan',
     datei: 'src/data/weitere-plaene.ts',
     regel: 'Ohne etwas zum Ansehen steht „Weitere Pläne" für Mitglieder nicht im Menü.',
-    suchen: '  return args.planner || plaeneZumAnsehen(args.plaene, args.heute).length > 0',
+    suchen: '  return args.zuteilen || plaeneZumAnsehen(args.plaene, args.heute).length > 0',
     ersetzen: '  return true',
   },
   {
@@ -3034,8 +3034,8 @@ export const KATALOG = [
     id: 'entfernen-frage-je-art',
     datei: 'src/components/EntfernenKnopf.tsx',
     regel: 'Was nur herausgenommen wird (Person, Sprache, Konto), fragt „Wirklich entfernen?" — nicht „Wirklich löschen?".',
-    suchen: '      {entfernen.armed ? (frage ?? t.loeschenSicher) : \'✕\'}',
-    ersetzen: "      {entfernen.armed ? t.loeschenSicher : '✕'}",
+    suchen: "      {entfernen.armed ? (frage ?? t.loeschenSicher) : (text ?? '✕')}",
+    ersetzen: "      {entfernen.armed ? t.loeschenSicher : (text ?? '✕')}",
   },
   {
     id: 'gruppenbesuch-fragt-nach',
@@ -3059,15 +3059,18 @@ export const KATALOG = [
     id: 'zuteilung-entfernen-fragt-nach',
     datei: 'src/planen/AssignSheet.tsx',
     regel: '„Entfernen" im Zuteilungsblatt fragt erst nach — wer zugesagt hatte, bekäme sofort eine Nachricht.',
-    suchen: '              onClick={entfernen.onClick}',
-    ersetzen: "              onClick={() => dispatch({ type: 'assign', name: '' })}",
+    suchen:
+      '            <EntfernenKnopf className="sheet-remove" text={t.entfernen} frage={t.entfernenSicher} onEntfernen={freimachen} />',
+    ersetzen: '            <button type="button" className="sheet-remove" onClick={freimachen}>{t.entfernen}</button>',
   },
   {
     id: 'partner-entfernen-fragt-nach',
     datei: 'src/planen/MeetingSection.tsx',
     regel: 'Den Partner eines Schülerteils abzuschalten fragt erst nach — mit dem Platz geht, wer dort steht.',
-    suchen: '      onClick={entfernen.onClick}',
-    ersetzen: '      onClick={umschalten}',
+    suchen:
+      '  return <EntfernenKnopf className="partner-toggle" text={t.partnerEntfernen} frage={t.entfernenSicher} onEntfernen={umschalten} />',
+    ersetzen:
+      '  return <button type="button" className="partner-toggle" onClick={umschalten}>{t.partnerEntfernen}</button>',
   },
   {
     id: 'oz-faellt-aus-sichtbar',
@@ -3526,6 +3529,31 @@ export const KATALOG = [
     regel: 'Der Filter „Aufgabenbereiche" führt auch die festen Rollen — so findet man den festen Leiter.',
     suchen: '            ...[...QUALIFICATION_ORDER, ...WT_ROLE_ORDER].map(',
     ersetzen: '            ...[...QUALIFICATION_ORDER].map(',
+  },
+
+  /* ---- Code-Review 5.10.2026 ---- */
+  {
+    id: 'grundplan-nur-eigene-regel',
+    datei: 'src/app/reducer.ts',
+    regel:
+      'Eine geänderte Regel setzt Zeit und Ort nur ihrer eigenen Treffpunkte zurück — die der übrigen Gruppen bleiben, wie ihre Woche sie hat (sonst wiese die Datenbank die Wochen des Gruppenaufsehers ab).',
+    suchen: '      const dieseRegel = (inst: FsInstance) => inst.ruleId === action.id\n',
+    ersetzen: '      const dieseRegel = (_inst: FsInstance) => true\n',
+  },
+  {
+    id: 'grundplan-anlegen-behaelt-wochen',
+    datei: 'src/data/fs.ts',
+    regel: 'Ohne Angabe behält die Neu-Ausrichtung Zeit und Ort jeder Woche — beim Laden, beim Anlegen und Entfernen einer Regel.',
+    suchen: '  zuruecksetzen: (inst: FsInstance) => boolean = () => false,\n',
+    ersetzen: '  zuruecksetzen: (inst: FsInstance) => boolean = () => true,\n',
+  },
+  {
+    id: 'planer-lernt-neuen-stand',
+    datei: 'src/lib/data.ts',
+    regel:
+      'Der Planer schreibt mit dem Stand aus der Antwort der Function weiter — sonst meldete schon die zweite Zuteilung derselben Woche einen Konflikt.',
+    suchen: "  if (typeof neu === 'string') wochenStand.set(woche, neu)",
+    ersetzen: "  if (typeof neu === 'string') void neu",
   },
 ]
 

@@ -9,7 +9,7 @@ import { rechteVon } from '../data/rechte'
 import { ozOffeneMeldungen, ozZuletztGesendet } from '../data/zeugnis'
 import { relativeZeit } from '../i18n/zeit'
 import { fill, useT } from '../i18n/useT'
-import { sendPlan, sendZeugnisPlan } from '../lib/data'
+import { type PlanVersand, sendPlan, sendZeugnisPlan } from '../lib/data'
 import type { Week } from '../data/types'
 
 /**
@@ -20,6 +20,60 @@ import type { Week } from '../data/types'
  * Liste erst zum Schluss, wenn nur noch ein paar fehlen.
  */
 const NAMEN_GRENZE = 8
+
+/**
+ * Der Aufruf, der sendet — mit der Kennung, zu der er gehört. Als Aufruf-
+ * Signatur statt als Pfeiltyp: Der Pfeil vor dem Rückgabetyp sähe für
+ * `beschriftungen-quelle.test.ts` aus wie ein Textknoten im JSX.
+ */
+interface Versand {
+  (kennung: string): Promise<PlanVersand | null>
+}
+
+/**
+ * Senden — für die Woche, die Gruppe und das öffentliche Zeugnisgeben derselbe
+ * Weg: senden, das Ergebnis melden, die Namen ohne Konto festhalten.
+ *
+ * Namen ohne App-Konto aus dem letzten Versand bleiben stehen — **mit der
+ * Kennung, zu der sie gehören** (der Woche; das Zeugnisgeben hat eine feste).
+ * Sie stehen im Tagebuch wie alle anderen — sonst zeigte der Knopf für sie auf
+ * ewig „noch nicht gesendet", obwohl niemand sie erreichen kann. Damit
+ * verschwinden sie aber aus der Liste oben, und genau sie sind die, die der
+ * Planer jetzt persönlich ansprechen muss. Also bleiben sie stehen, bis er die
+ * Woche wechselt.
+ *
+ * Die Kennung gehört dazu, weil der Baustein beim Blättern **nicht** neu
+ * aufgesetzt wird: Ohne sie standen die Namen aus Woche 37 unter Woche 38, wo
+ * die Genannten gar nichts haben. Verglichen statt zurückgesetzt, weil ein
+ * Effekt hier nur eine zweite Buchführung über dasselbe wäre. Ohne Kennung
+ * (keine Woche geladen) gibt es nichts zu senden.
+ *
+ * Bis zum 5.10.2026 stand der Weg für die Woche und für das Zeugnisgeben je
+ * einmal da.
+ */
+function useSenden(kennung: string | null, versand: Versand) {
+  const [laeuft, setLaeuft] = useState(false)
+  const [ohneKontoStand, setOhneKonto] = useState<{ kennung: string; namen: string[] } | null>(null)
+  const versandGemeldet = useVersandGemeldet()
+  const senden = async (): Promise<void> => {
+    if (kennung === null) return
+    setLaeuft(true)
+    const res = await versand(kennung)
+    setLaeuft(false)
+    if (res) setOhneKonto({ kennung, namen: res.ohneKonto })
+    versandGemeldet(res)
+  }
+  const ohneKonto = kennung !== null && ohneKontoStand?.kennung === kennung ? ohneKontoStand.namen : []
+  return { laeuft, ohneKonto, senden }
+}
+
+/**
+ * Eine Woche senden — der Wochen-Knopf wie der der Gruppe. Der Kalendertag
+ * geht mit: Die Function soll denselben Tag meinen wie die Zahl am Knopf.
+ */
+function useWocheSenden(week: Week | undefined, tag: string) {
+  return useSenden(week?.start ?? null, (start) => sendPlan(start, tag))
+}
 
 /**
  * „Plan senden" — der Knopf, mit dem der Planer eine fertige Woche freigibt.
@@ -40,40 +94,6 @@ const NAMEN_GRENZE = 8
  * so auf ihm; sonst hielte man ihn für eine Aktion des Reiters, unter dem er
  * gerade steht.
  */
-/**
- * Eine Woche senden — für den Wochen-Knopf wie für den der Gruppe derselbe
- * Weg: senden, das Ergebnis melden, die Namen ohne Konto festhalten.
- *
- * Namen ohne App-Konto aus dem letzten Versand bleiben stehen — **mit der
- * Woche, zu der sie gehören**. Sie stehen im Tagebuch wie alle anderen —
- * sonst zeigte der Knopf für sie auf ewig „noch nicht gesendet", obwohl
- * niemand sie erreichen kann. Damit verschwinden sie aber aus der Liste oben,
- * und genau sie sind die, die der Planer jetzt persönlich ansprechen muss.
- * Also bleiben sie stehen, bis er die Woche wechselt.
- *
- * Die Kennung gehört dazu, weil der Baustein beim Blättern **nicht** neu
- * aufgesetzt wird: Ohne sie standen die Namen aus Woche 37 unter Woche 38, wo
- * die Genannten gar nichts haben. Verglichen statt zurückgesetzt, weil ein
- * Effekt hier nur eine zweite Buchführung über dasselbe wäre.
- */
-function useWocheSenden(week: Week | undefined, tag: string) {
-  const [laeuft, setLaeuft] = useState(false)
-  const [ohneKontoStand, setOhneKonto] = useState<{ woche: string; namen: string[] } | null>(null)
-  const versandGemeldet = useVersandGemeldet()
-  const senden = async (): Promise<void> => {
-    if (!week) return
-    setLaeuft(true)
-    const res = await sendPlan(week.start, tag)
-    setLaeuft(false)
-    if (res) setOhneKonto({ woche: week.start, namen: res.ohneKonto })
-    versandGemeldet(res)
-  }
-  // Nur die Namen dieser Woche: Beim Blättern bleibt der Baustein stehen, und
-  // ohne den Vergleich stünden die Nachzügler von Woche 37 unter Woche 38.
-  const ohneKonto = week && ohneKontoStand?.woche === week.start ? ohneKontoStand.namen : []
-  return { laeuft, ohneKonto, senden }
-}
-
 export function PlanSendenPanel() {
   const { state } = useApp()
   const { t } = useT()
@@ -225,12 +245,10 @@ function useVersandGemeldet(): (res: { personen: number } | null) => void {
 export function ZeugnisSendenPanel() {
   const { state } = useApp()
   const { t } = useT()
-  const [laeuft, setLaeuft] = useState(false)
-  // Namen ohne Konto aus dem letzten Versand — bis zum nächsten bleiben sie stehen.
-  const [ohneKonto, setOhneKonto] = useState<string[]>([])
-  const versandGemeldet = useVersandGemeldet()
   // Ein Kalendertag für beides: die Vorschau hier und den Versand.
   const tag = useKalendertag()
+  // Namen ohne Konto aus dem letzten Versand — bis zum nächsten bleiben sie stehen.
+  const { laeuft, ohneKonto, senden } = useSenden('oz', () => sendZeugnisPlan(tag))
 
   const offen = useMemo(
     () =>
@@ -248,14 +266,6 @@ export function ZeugnisSendenPanel() {
 
   // Wie bei der Woche: nur, wer zuteilt, nur auf frischem Stand.
   if (!rechteVon(state).zuteilen || state.staleAt) return null
-
-  const senden = async (): Promise<void> => {
-    setLaeuft(true)
-    const res = await sendZeugnisPlan(tag)
-    setLaeuft(false)
-    if (res) setOhneKonto(res.ohneKonto)
-    versandGemeldet(res)
-  }
 
   return (
     <PlanSendenAnzeige

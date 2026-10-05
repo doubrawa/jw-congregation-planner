@@ -205,23 +205,31 @@ function besetzungVon(inst: FsInstance): Pick<FsInstance, 'leader' | 'lpid' | 'l
  * (per Instanz-Id, samt Person und Freitext-Kennzeichen) und für die jeweilige
  * Woche manuell hinzugefügte Treffpunkte.
  *
- * `preserveEdits`: false (Grundplan-Änderung) übernimmt nur die Besetzung und
- * setzt Zeit/Ort auf die Regelwerte zurück; true (Neu-Ausrichtung beim Laden)
- * behält auch Zeit/Ort, damit wochenspezifische Anpassungen nicht verloren gehen.
+ * `zuruecksetzen` sagt, welche Treffpunkte Zeit und Ort wieder von ihrer Regel
+ * bekommen; alle übrigen behalten die ihrer Woche. Beim Laden keiner — die
+ * Neu-Ausrichtung behält wochenspezifische Anpassungen —, bei einer geänderten
+ * Regel nur deren eigene (`fsRuleUpdate`). Die Besetzung bleibt immer.
+ *
+ * **Nur die eigenen** (5.10.2026). Bis dahin setzte jede Grundplan-Änderung
+ * Zeit und Ort **aller** Treffpunkte zurück, schon beim Anlegen einer neuen
+ * Regel: Was für eine einzelne Woche angepasst war, ging bei allen Gruppen
+ * verloren. Und seit die Datenbank den Gruppenaufseher auf seine Gruppe
+ * beschränkt (`fs_weeks_pruefen`), wies sie die Wochen ab, die er dabei
+ * schrieb — seine Regel kam dort nie an (`grundplan-andere-gruppen.test.ts`).
  */
 export function regenFsWeeks(
   kennungen: readonly string[],
   fsWeeks: FsInstance[][],
   rules: FsRule[],
-  preserveEdits = false,
+  zuruecksetzen: (inst: FsInstance) => boolean = () => false,
 ): FsInstance[][] {
   return fsWeeks.map((week, wi) => {
     const gen = genFsWeek(kennungen[wi] ?? '', rules).map((inst) => {
       const old = week.find((o) => o.id === inst.id)
       if (!old) return inst
-      return preserveEdits
-        ? { ...inst, time: old.time, place: old.place, ...besetzungVon(old) }
-        : { ...inst, ...besetzungVon(old) }
+      return zuruecksetzen(inst)
+        ? { ...inst, ...besetzungVon(old) }
+        : { ...inst, time: old.time, place: old.place, ...besetzungVon(old) }
     })
     const all = gen.concat(week.filter((o) => o.manual))
     all.sort(fsSort)

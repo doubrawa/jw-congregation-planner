@@ -3,7 +3,7 @@ import { useApp } from '../app/context'
 import { BesuchsMarke } from '../components/BesuchsMarke'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { treffpunktTagLabel, treffpunktTitel } from '../components/treffpunkt-beschriftung'
-import { FS_TIME_OPTIONS, fsLeiterZuteilung, fsWeekConflicts, nachWochentag } from '../data/fs'
+import { fsLeiterZuteilung, fsWeekConflicts, nachWochentag } from '../data/fs'
 import { rechteVon } from '../data/rechte'
 import { useT } from '../i18n/useT'
 import type { FsInstance } from '../data/types'
@@ -11,8 +11,8 @@ import { AutoAssignRow } from './AutoAssignPanel'
 import { BannerKopf } from './PlanBanners'
 import { SlotChip } from './SlotChip'
 import { machBetrifft } from './useKonflikte'
-import { WOCHENTAGE_AB_MONTAG, wochentagNameAusWd } from './wochentage'
 import { useZusage } from './useZusage'
+import { WochentagWahl, ZeitWahl } from './ZeitWahl'
 import { ZusageLegende } from './ZusageStatus'
 
 /**
@@ -91,8 +91,6 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
     setPlace('')
   }
 
-  const wdName = (d: number): string => wochentagNameAusWd(d, state.lang)
-
   // Treffpunkte dieser Woche ohne zugeteilten Leiter → Warn-Banner (analog zu
   // den offenen Zuteilungen der Zusammenkünfte). Konflikte gibt es hier nicht.
   const openLeaders = insts.filter((inst) => !inst.leader)
@@ -134,18 +132,11 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
               {aendernDarf(inst) ? (
                 <>
                   <div className="fs-edit-head">
-                    <select
-                      className="fs-select fs-select--time"
+                    <ZeitWahl
                       value={inst.time}
-                      aria-label={title(inst)}
-                      onChange={(e) => dispatch({ type: 'fsInstUpdate', wi, id: inst.id, patch: { time: e.target.value } })}
-                    >
-                      {FS_TIME_OPTIONS.map((tm) => (
-                        <option key={tm} value={tm}>
-                          {tm}
-                        </option>
-                      ))}
-                    </select>
+                      label={title(inst)}
+                      onChange={(time) => dispatch({ type: 'fsInstUpdate', wi, id: inst.id, patch: { time } })}
+                    />
                     <div className="fs-edit-title">{title(inst)}</div>
                     <EntfernenKnopf className="fs-remove" onEntfernen={() => dispatch({ type: 'fsInstRemove', wi, id: inst.id })} />
                   </div>
@@ -208,20 +199,8 @@ export function FsPlan({ onlyGroup = null }: { onlyGroup?: string | null }) {
                 ))}
               </select>
             )}
-            <select className="fs-select" value={wd} aria-label={t.a11yWeekday} onChange={(e) => setWd(Number(e.target.value))}>
-              {WOCHENTAGE_AB_MONTAG.map((d) => (
-                <option key={d} value={d}>
-                  {wdName(d)}
-                </option>
-              ))}
-            </select>
-            <select className="fs-select" value={time} aria-label={t.a11yTime} onChange={(e) => setTime(e.target.value)}>
-              {FS_TIME_OPTIONS.map((tm) => (
-                <option key={tm} value={tm}>
-                  {tm}
-                </option>
-              ))}
-            </select>
+            <WochentagWahl value={wd} label={t.a11yWeekday} onChange={setWd} />
+            <ZeitWahl className="fs-select" value={time} label={t.a11yTime} onChange={setTime} />
             <input
               className="fs-input"
               type="text"

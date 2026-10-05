@@ -514,7 +514,7 @@ create index if not exists oz_termine_congregation_idx
   on public.oz_termine (congregation_id);
 
 create table if not exists public.oz_eintraege (
-  -- Die Kennung vergibt der Client (`z<uuid>`); sie steckt im Aufgaben-Schlüssel
+  -- Die Kennung vergibt der Client (`e<uuid>`); sie steckt im Aufgaben-Schlüssel
   -- (`oz|<montag>|<id>`), an dem Zusage und Erinnerung hängen.
   id              text primary key check (id <> ''),
   congregation_id uuid not null references public.congregations (id) on delete cascade,

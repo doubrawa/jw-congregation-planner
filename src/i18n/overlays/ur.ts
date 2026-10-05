@@ -406,7 +406,7 @@ export default {
   "wpSaalText": "صفائی اور دیکھ بھال – میدانی خدمت کے گروپ باری باری، ہر ہفتے ایک۔",
   "wpNamePhSaal": "مثلاً: برف ہٹانا",
   "wpEntwurf": "مسودہ",
-  "wpEntwurfHint": "مسودہ صرف ایڈمن دیکھ سکتے ہیں۔",
+  "wpEntwurfHint": "مسودہ صرف ایڈمن اور منصوبہ ساز دیکھ سکتے ہیں۔",
   "wpVeroeffentlichen": "شائع کریں",
   "wpZurueckziehen": "واپس مسودے میں",
   "wpSichtSaal": "شائع ہونے کے بعد پوری کلیسیا اِسے دیکھتی ہے۔",

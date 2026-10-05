@@ -197,7 +197,7 @@ export interface OzTermin {
  * Aufgabenbereich), ohne die Zeilen der anderen anzufassen.
  */
 export interface OzEintrag {
-  /** Vom Client vergeben (`z<uuid>`) — steckt im Aufgaben-Schlüssel. */
+  /** Vom Client vergeben (`e<uuid>`, `neueEintragId` im Reducer) — steckt im Aufgaben-Schlüssel. */
   id: string
   terminId: string
   /** Der Tag der Schicht (ISO), ein Wochentag des Termins. */
@@ -902,9 +902,9 @@ export interface Absence {
 
 /* ---- Mitglieder & Einladungen (Produktionsmodus) ---- */
 
-/** Mitglied der Versammlung (Konto ↔ Person); Planer sehen alle. */
 /**
- * Ein Konto der Versammlung.
+ * Ein Konto der Versammlung (Konto ↔ Person); die Liste aller sieht nur der
+ * Admin (`members_select`).
  *
  * **Drei Rechte-Stufen** (4.10.2026): `planner` heißt in der App „Admin" und
  * darf alles; `zuteiler` heißt „Planer" — er teilt zu und sendet, ändert aber

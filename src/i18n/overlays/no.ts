@@ -407,7 +407,7 @@ export default {
   "wpSaalText": "Rengjøring og vedlikehold – tjenestegruppene bytter på, én hver uke.",
   "wpNamePhSaal": "f.eks. Snømåking",
   "wpEntwurf": "Utkast",
-  "wpEntwurfHint": "Bare administratorer ser et utkast.",
+  "wpEntwurfHint": "Bare administratorer og planleggere ser et utkast.",
   "wpVeroeffentlichen": "PUBLISER",
   "wpZurueckziehen": "Tilbake til utkast",
   "wpSichtSaal": "Når den er publisert, ser hele menigheten den.",

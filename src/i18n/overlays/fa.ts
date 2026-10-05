@@ -406,7 +406,7 @@ export default {
   "wpSaalText": "نظافت و نگهداری – گروه‌های خدمت موعظه به نوبت، هر هفته یک گروه.",
   "wpNamePhSaal": "مثلاً: برف‌روبی",
   "wpEntwurf": "پیش‌نویس",
-  "wpEntwurfHint": "پیش‌نویس را فقط مدیران می‌بینند.",
+  "wpEntwurfHint": "پیش‌نویس را فقط مدیران و برنامه‌ریزان می‌بینند.",
   "wpVeroeffentlichen": "انتشار",
   "wpZurueckziehen": "بازگشت به پیش‌نویس",
   "wpSichtSaal": "پس از انتشار، کل جماعت آن را می‌بیند.",

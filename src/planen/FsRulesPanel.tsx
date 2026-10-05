@@ -1,8 +1,7 @@
 import { useApp } from '../app/context'
-import { FS_TIME_OPTIONS } from '../data/fs'
 import { useT } from '../i18n/useT'
 import type { FsRule } from '../data/types'
-import { WOCHENTAGE_AB_MONTAG, wochentagNameAusWd } from './wochentage'
+import { WochentagWahl, ZeitWahl } from './ZeitWahl'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { Switch } from '../components/Switch'
 import './planen.css'
@@ -29,7 +28,6 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
 
-  const wdName = (d: number): string => wochentagNameAusWd(d, state.lang)
   const freqOptions: ReadonlyArray<[number, string]> = [
     [0, t.fsFreqW],
     [1, t.fsFreqM1],
@@ -65,18 +63,7 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
                       lesbar sind — sonst bricht die Häufigkeit in eine zweite
                       Reihe um, und das ✕ bleibt rechts daneben (planen.css). */}
                   <div className="fsr-wahl">
-                    <select
-                      className="fs-select"
-                      value={rule.wd}
-                      aria-label={t.a11yWeekday}
-                      onChange={(e) => upd(rule.id, { wd: Number(e.target.value) })}
-                    >
-                      {WOCHENTAGE_AB_MONTAG.map((d) => (
-                        <option key={d} value={d}>
-                          {wdName(d)}
-                        </option>
-                      ))}
-                    </select>
+                    <WochentagWahl value={rule.wd} label={t.a11yWeekday} onChange={(wd) => upd(rule.id, { wd })} />
                     <select
                       className="fs-select"
                       value={rule.monthly}
@@ -94,18 +81,7 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
                 </div>
 
                 <div className="fsr-line">
-                  <select
-                    className="fs-select fs-select--time"
-                    value={rule.time}
-                    aria-label={t.a11yTime}
-                    onChange={(e) => upd(rule.id, { time: e.target.value })}
-                  >
-                    {FS_TIME_OPTIONS.map((tm) => (
-                      <option key={tm} value={tm}>
-                        {tm}
-                      </option>
-                    ))}
-                  </select>
+                  <ZeitWahl value={rule.time} label={t.a11yTime} onChange={(time) => upd(rule.id, { time })} />
                   <input
                     className="fsr-input"
                     type="text"

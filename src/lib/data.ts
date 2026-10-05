@@ -18,6 +18,7 @@ import { sentKey, taskKeyVorbei } from '../data/planning'
 import type { EntzogeneZusage } from '../data/plan-versand'
 import { normalizePriv, pidsNachtragen } from '../data/namensbindung'
 import { normalizeChairKeys } from '../data/helpers'
+import { isoDay, tagNach } from '../data/meeting-dates'
 import { taktVon } from '../data/weitere-plaene'
 import type {
   Absence,
@@ -228,11 +229,13 @@ function planEintragToRow(e: PlanEintrag, congregationId: string) {
  */
 export const OZ_RUECKBLICK_TAGE = 91
 
-/** Der erste Tag, ab dem Einträge geladen werden (ISO). */
-function ozLadeAb(): string {
-  const d = new Date()
-  d.setDate(d.getDate() - OZ_RUECKBLICK_TAGE)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+/**
+ * Der erste Tag des Rückblicks (ISO): Ab ihm werden die Einträge des
+ * Zeugnisgebens geladen und die Weiteren Pläne, die noch nicht länger vorbei
+ * sind.
+ */
+function rueckblickAb(): string {
+  return tagNach(isoDay(new Date()), -OZ_RUECKBLICK_TAGE)
 }
 
 /**
@@ -727,7 +730,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       .from('oz_eintraege')
       .select('id, termin_id, datum, person_id, selbst')
       .eq('congregation_id', congregationId)
-      .gte('datum', ozLadeAb())
+      .gte('datum', rueckblickAb())
       .order('datum'),
     // Weitere Pläne (T120, Phase 5): was frühestens ein Vierteljahr zurück
     // endet — die abgeschlossenen stehen beim Planen noch eine Weile als
@@ -736,7 +739,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       .from('plaene')
       .select('id, name, von, bis, entwurf, takt')
       .eq('congregation_id', congregationId)
-      .gte('bis', ozLadeAb())
+      .gte('bis', rueckblickAb())
       .order('von'),
     // Die Einträge **ohne** Datumsgrenze: Ein laufender Plan kann vor mehr als
     // einem Vierteljahr begonnen haben, und ein fehlender alter Eintrag sähe
@@ -845,7 +848,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   }
   const storedFsWeeks: FsInstance[][] = weekList.map((w) => fsNachWoche.get(w.start) ?? [])
   const ausgerichtet = fsRules.length
-    ? regenFsWeeks(weekList.map((w) => w.start), storedFsWeeks, fsRules, true)
+    ? regenFsWeeks(weekList.map((w) => w.start), storedFsWeeks, fsRules)
     : storedFsWeeks
   // Leiter ohne `lpid` an ihre Person binden — dasselbe, was `pidsNachtragen`
   // eine Bildschirmhöhe weiter oben für die Zusammenkünfte tut. Ohne das bliebe
