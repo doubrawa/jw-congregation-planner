@@ -6325,22 +6325,37 @@ kein Schema (in `schema.sql` nur ein Kommentar), keine Function:
 - Testlücke: der Schreibweg des Planers über `zuteilen` im Client
   (`zuteilen-schreiben.test.ts`).
 
-**Offen aus demselben Review** (bewusst nicht angefasst):
-- **Was der Client beim Laden angleicht, schreibt nur der Admin zurück**
-  (`syncAuxSlots`, `regenFsWeeks` erzeugt oder entfernt Treffpunkte nach dem
-  Grundplan). Weicht der Bestand davon ab, weist die Datenbank Planer und
-  Gruppenaufseher für diese Woche ab (`nurZuteilungen` bzw. `fs_weeks_pruefen`),
-  und jeder Versuch lädt nur nach. Auslöser: eine Woche, die nach einer
-  Grundplan- oder Klassenänderung nicht mehr geschrieben wurde. Abhilfe wäre,
-  dass der Admin beim Laden Angeglichenes zurückschreibt — eine Designfrage
-  (bisher schreibt das Laden nie).
-- **Bei der nächsten Function-Runde mitnehmen:** `zuteilen/woche.ts` und
-  `substitute/fuellen.ts` schreiben im Rückfall (Vergleich verfehlt, Stand
-  gleich) ohne Bedingung — ein Schreiben dazwischen ginge ungeprüft verloren;
-  beide Abschriften derselben Vergleiche-und-Tausche-Logik gehören nach
-  `_shared`. `fuellen.ts` nimmt „heute" in UTC und lässt zwischen Mitternacht
-  Ortszeit und UTC eine Zusammenkunft vom Vorabend noch füllen. In `send-plan`
-  wiederholt `jePraefix` (Zeugnisgeben) das `jeWoche` der Woche.
+**Nachgezogen am selben Tag** (Betreiber: „setze alle 4 edge cases um", für
+Befund 9 „mach wie du denkst"):
+- **Wochen nur auf ihren Stand schreiben** — ein Weg für `zuteilen` und
+  `substitute` (`_shared/woche-schreiben.ts`). Der zweite Versuch trägt
+  dieselbe Bedingung; bis dahin ging er ohne hinaus, sobald beim Nachsehen noch
+  der alte Stand dastand, und schrieb über eine Änderung, die in genau diesem
+  Augenblick gespeichert wurde. Im Client ist ein Fehltreffer seitdem ein
+  Konflikt, ohne ungeschützten zweiten Anlauf (README, T39).
+- **Freier Platz: „heute" vom Gerät** — die App schickt ihren Kalendertag,
+  `substitute` nimmt ihn über `heuteUtc` wie „Plan senden".
+- **`send-plan`**: ein Präfix-Helfer (`jePraefix`) statt zweier.
+- **Befund 9, Weg B.** Was die App beim Laden angleicht, schreibt sie bewusst
+  weiterhin nicht zurück (eine veraltete App-Version schriebe sonst ihren
+  älteren Stand, und Treffpunkt-Wochen haben keine Stand-Prüfung). Stattdessen
+  an der Quelle: Der bekannte Auslöser war `wochen-importieren.mjs` (Schritt 3
+  des Neuaufbaus) — es schrieb die Woche, wie `import-week` sie liefert, ohne
+  Klasse, Endzeiten, Gedächtnismahl und Treffpunkte. Jetzt ordnen Knopf und
+  Skript mit derselben Funktion ein (`src/data/neue-woche.ts`; Skripte laden
+  App-Code über `appCodeBereit`), und `scripts/wochen-angleichen.mjs` rechnet
+  die Ladekette nach und gleicht an, was abweicht. Krumbach am 5.10. 16:45:
+  nichts abweichend.
+- Deployt: `zuteilen`, `substitute`, `send-plan`, `send-reminders` (dort nur
+  ein Kommentar).
+
+**Bewusst nicht gebaut:** eine eigene Meldung, wenn `zuteilen` mit
+`nur-zuteilen` abweist („Diese Woche muss zuerst ein Admin speichern"). Der
+Fall entsteht nach Weg B nur noch durch Daten, die außerhalb der App
+geschrieben wurden, und `wochen-angleichen.mjs --trocken` findet ihn. Bis
+dahin lautet die Meldung „Änderung konnte nicht gespeichert werden — bitte neu
+laden" — stimmt, hilft aber nicht weiter. Kommt der Fall doch vor: eigener
+Schlüssel in allen Sprachen, `konfliktMelder` mit Grund.
 
 ---
 

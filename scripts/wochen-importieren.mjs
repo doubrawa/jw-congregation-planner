@@ -9,8 +9,22 @@
  * Gearbeitet wird mit derselben Edge Function wie in der App
  * (`import-week`): Sie holt die Seite von jw.org und gibt eine fertige Woche
  * zurück — das Zerlegen des HTML steht damit an genau einer Stelle, und dieses
- * Skript kann es nicht anders machen als die App. Geschrieben wird wie dort:
- * eine Zeile je Woche in `weeks` (`congregation_id`, `start`, `data`).
+ * Skript kann es nicht anders machen als die App.
+ *
+ * **Eingeordnet wird mit derselben Funktion wie beim Knopf in der App**
+ * (`neueWocheEinordnen`, `src/data/neue-woche.ts`): Endzeiten aus den eigenen
+ * Zusammenkunftszeiten, die Zusätzliche Klasse, der Ausfall in der Woche des
+ * Gedächtnismahls und die Treffpunkte aus dem Grundplan samt vorgemerkter
+ * Gruppenbesuche. Geschrieben wird eine Zeile je Woche in `weeks` und eine in
+ * `fs_weeks`. Bis zum 5.10.2026 stand hier „Geschrieben wird wie dort", und
+ * geschrieben wurde die Woche, wie `import-week` sie liefert — ohne Klasse, mit
+ * den festen Endzeiten des Imports, ohne Treffpunkte. Mit eingeschalteter
+ * Klasse wies `zuteilen` danach jede Zuteilung eines Planers in diesen Wochen
+ * als Umbau ab. Wer nachsehen will, ob der Bestand so dasteht, wie die App ihn
+ * lädt: `scripts/wochen-angleichen.mjs`.
+ *
+ * Hat eine Woche schon Treffpunkte (`fs_weeks`), bleiben sie stehen — anders
+ * als in der App, die eine neue Woche nie mit vorhandenen Treffpunkten sieht.
  *
  * **Die Function nimmt den Secret-Schlüssel als Anmeldung an** (gemessen am
  * 18.9.2026: Status 200). Sie verlangt laut `config.toml` ein JWT, und der
@@ -40,7 +54,10 @@
  * dem, was da war — das ist kein Fehler, sondern der Kalender.
  */
 
-import { alsSkript, argumente, funktionsKopf, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
+import { alsSkript, appCodeBereit, argumente, funktionsKopf, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
+
+/** Was die Einordnung von der Versammlung braucht — Zeiten und Klasse kommen aus dieser Zeile. */
+const VERSAMMLUNG_SPALTEN = 'id,name,cong_lang,prog_langs,aux_class,mid_wd,mid_time,we_wd,we_time'
 
 /**
  * Wochen der Reihe nach holen. Jede Antwort nennt ihren Montag, und der ist
@@ -90,6 +107,34 @@ export function nurNeue(vorhandeneStarts, wochen) {
   return wochen.filter((w) => w.start && !da.has(w.start))
 }
 
+/**
+ * Die Einordnung der App, bestückt mit dieser Versammlung: Grundplan,
+ * Gruppenbesuche und Personen gelesen und umgesetzt wie beim Laden der App
+ * (`src/lib/zeilen.ts`), dieselbe Reihenfolge wie dort.
+ */
+async function einordnungFuer(rest, cong) {
+  appCodeBereit()
+  const [{ neueWocheEinordnen }, zeilen, { zeitenAus }] = await Promise.all([
+    import('../src/data/neue-woche.ts'),
+    import('../src/lib/zeilen.ts'),
+    import('../supabase/functions/_shared/planung.ts'),
+  ])
+  const meine = `congregation_id=eq.${cong.id}`
+  const [regeln, besuche, personen] = await Promise.all([
+    rest(`fs_rules?select=*&${meine}&order=created_at`),
+    rest(`gruppenbesuche?select=id,woche,grp,person_id&${meine}&order=woche`),
+    rest(`persons?select=*&${meine}&order=created_at`),
+  ])
+  const kontext = {
+    zeiten: zeitenAus(cong),
+    auxClass: Boolean(cong.aux_class),
+    fsRules: regeln.map(zeilen.fsRuleFromRow),
+    gruppenbesuche: besuche.map(zeilen.gruppenbesuchFromRow),
+    persons: personen.map(zeilen.personFromRow),
+  }
+  return (roh) => neueWocheEinordnen(roh, kontext)
+}
+
 /** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
 export async function main(argv = process.argv.slice(2)) {
   const arg = argumente(argv)
@@ -101,7 +146,7 @@ export async function main(argv = process.argv.slice(2)) {
   const { url, key } = await zugangsdaten()
   const rest = restKlient(url, key)
 
-  const cong = await versammlungHolen(rest, arg, 'id,name,cong_lang,prog_langs')
+  const cong = await versammlungHolen(rest, arg, VERSAMMLUNG_SPALTEN)
 
   const vorhandene = (await rest(`weeks?select=start&congregation_id=eq.${cong.id}&order=start`)).map((w) => w.start)
   const ab = arg.ab || vorhandene[vorhandene.length - 1]
@@ -126,14 +171,29 @@ export async function main(argv = process.argv.slice(2)) {
     console.log(`\n--trocken: ${neue.length} Woche(n) blieben ungeschrieben.`)
     return
   }
-  for (const w of neue) {
+
+  const einordnen = await einordnungFuer(rest, cong)
+  const mitTreffpunkten = new Set(
+    (await rest(`fs_weeks?select=start&congregation_id=eq.${cong.id}`)).map((r) => r.start),
+  )
+  for (const roh of neue) {
+    const { week, fsWeek } = einordnen(roh)
     await rest('weeks', {
       method: 'POST',
       headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ congregation_id: cong.id, start: w.start, data: w }),
+      body: JSON.stringify({ congregation_id: cong.id, start: week.start, data: week }),
+    })
+    if (mitTreffpunkten.has(week.start)) {
+      console.log(`  ${week.start}: Treffpunkte schon da — bleiben, wie sie sind.`)
+      continue
+    }
+    await rest('fs_weeks', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ congregation_id: cong.id, start: week.start, data: fsWeek }),
     })
   }
-  console.log(`\nGeschrieben: ${neue.length} Woche(n).`)
+  console.log(`\nGeschrieben: ${neue.length} Woche(n) samt Treffpunkten.`)
 }
 
 alsSkript(import.meta.url, main)

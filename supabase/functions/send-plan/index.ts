@@ -349,32 +349,44 @@ async function nurEigeneTreffpunkte<T extends { taskKey: string }>(
 }
 
 /**
- * Zusagen und Versand-Tagebuch des öffentlichen Zeugnisgebens
- * (`oz|<Montag>|…`), eines Plans ohne Woche.
+ * Zeilen einer `task_key`-Tabelle (`confirmations`, `assignment_log`), deren
+ * Schlüssel mit einem der Präfixe beginnt — **nur, was gebraucht wird**.
  *
- * **Nur für die Wochen dieser Einträge** — dieselbe Sparsamkeit wie bei der
- * Woche (`jeWoche`): Beide Tabellen wachsen, gebraucht werden ein paar Wochen.
- * Je Woche eine `like`-Abfrage, parallel. Der Montag kommt aus dem Datum der
- * Datenbank (`YYYY-MM-DD`), enthält also weder `%` noch `_`.
+ * Beide Tabellen wurden hier je Knopfdruck ganz gelesen. Sie wachsen mit der
+ * Zeit (gut 35 Plätze je Woche, und das Tagebuch wird nie aufgeräumt),
+ * gebraucht werden aber immer nur ein paar Wochen. Nach ein paar Jahren holte
+ * ein Druck Zehntausende Zeilen, um in dreißig davon nachzusehen.
+ *
+ * Je Präfix eine einfache `like`-Abfrage, parallel, statt eines `or=`: Ihre
+ * Bedeutung ist ohne Nachschlagen in der PostgREST-Grammatik zu erkennen. Die
+ * Präfixe tragen nur geprüfte Montage (`YYYY-MM-DD`), also weder `%` noch `_`,
+ * die als Muster wirkten. Bis zum 5.10.2026 stand dieser Helfer zweimal da —
+ * für die Woche und für das Zeugnisgeben.
+ */
+async function jePraefix<T>(cong: string, tabelle: string, spalten: string, praefixe: readonly string[]): Promise<T[]> {
+  const teile = await Promise.all(
+    praefixe.map((praefix) =>
+      rest.get<T[]>(
+        `${tabelle}?select=${spalten}&congregation_id=eq.${wert(cong)}` + `&task_key=like.${wert(`${praefix}*`)}`,
+      ),
+    ),
+  )
+  return teile.flat()
+}
+
+/**
+ * Zusagen und Versand-Tagebuch des öffentlichen Zeugnisgebens
+ * (`oz|<Montag>|…`), eines Plans ohne Woche — für die Wochen dieser Einträge.
+ * Der Montag kommt aus dem Datum der Datenbank.
  */
 async function zusagenUndTagebuch(
   cong: string,
   daten: readonly string[],
 ): Promise<{ conf: Map<string, string>; schonGemeldet: Set<string> }> {
-  const wochen = [...new Set(daten.map(ozWoche).filter(Boolean))]
-  const jePraefix = async <T>(tabelle: string, spalten: string): Promise<T[]> => {
-    const teile = await Promise.all(
-      wochen.map((w) =>
-        rest.get<T[]>(
-          `${tabelle}?select=${spalten}&congregation_id=eq.${wert(cong)}` + `&task_key=like.${wert(`oz|${w}|*`)}`,
-        ),
-      ),
-    )
-    return teile.flat()
-  }
+  const praefixe = [...new Set(daten.map(ozWoche).filter(Boolean))].map((w) => `oz|${w}|`)
   const [confs, log] = await Promise.all([
-    jePraefix<{ task_key: string; status: string }>('confirmations', 'task_key,status'),
-    jePraefix<{ task_key: string; name: string }>('assignment_log', 'task_key,name'),
+    jePraefix<{ task_key: string; status: string }>(cong, 'confirmations', 'task_key,status', praefixe),
+    jePraefix<{ task_key: string; name: string }>(cong, 'assignment_log', 'task_key,name', praefixe),
   ])
   return {
     conf: new Map(confs.map((c) => [c.task_key, c.status])),
@@ -527,36 +539,14 @@ Deno.serve(async (req: Request) => {
     const weekStart = payload.weekStart ?? ''
     if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) return json({ error: 'bad-request' }, 400)
 
-    /**
-     * Zeilen einer `task_key`-Tabelle, **nur für diese Woche**.
-     *
-     * `confirmations` und `assignment_log` wurden hier je Knopfdruck ganz
-     * gelesen — beide wachsen mit der Zeit (gut 35 Plätze je Woche, und das
-     * Tagebuch wird nie aufgeräumt), gebraucht wird davon aber immer nur eine
-     * Woche. Nach ein paar Jahren holte ein Druck Zehntausende Zeilen, um in
-     * dreißig davon nachzusehen.
-     *
+    /*
      * Die Woche steht im Schlüssel selbst, in genau zwei Formen: `<Montag>|…`
      * für die Zusammenkünfte und `fs|<Montag>|…` für die Treffpunkte (T66).
      * Fehlt die zweite, gilt jede Treffpunkt-Leitung als noch nicht gemeldet
      * und der Leiter bekommt bei jedem Druck dieselbe Nachricht erneut.
-     *
-     * Zwei einfache `like`-Abfragen statt eines `or=`: Sie laufen parallel, und
-     * ihre Bedeutung ist ohne Nachschlagen in der PostgREST-Grammatik zu
-     * erkennen. `weekStart` ist oben auf `YYYY-MM-DD` geprüft, enthält also
-     * weder `%` noch `_`, die als Muster wirkten.
+     * `weekStart` ist oben auf `YYYY-MM-DD` geprüft.
      */
-    const jeWoche = async <T>(tabelle: string, spalten: string): Promise<T[]> => {
-      const teile = await Promise.all(
-        wochenPraefixe(weekStart).map((praefix) =>
-          rest.get<T[]>(
-            `${tabelle}?select=${spalten}&congregation_id=eq.${wert(cong)}` +
-              `&task_key=like.${wert(`${praefix}*`)}`,
-          ),
-        ),
-      )
-      return teile.flat()
-    }
+    const praefixe = wochenPraefixe(weekStart)
 
     const [congRows, weekRows, fsRows, confs, services, log] = await Promise.all([
       rest.get<ZeitenRow[]>(`congregations?select=mid_wd,mid_time,we_wd,we_time&id=eq.${wert(cong)}`),
@@ -570,11 +560,11 @@ Deno.serve(async (req: Request) => {
         console.error(`fs_weeks nicht lesbar: ${(err as Error).message}`)
         return [] as { start: string; data: FsInstance[] }[]
       }),
-      jeWoche<{ task_key: string; status: string }>('confirmations', 'task_key,status'),
+      jePraefix<{ task_key: string; status: string }>(cong, 'confirmations', 'task_key,status', praefixe),
       rest.get<ServiceRow[]>(
         `services?select=key,name,count,groups&congregation_id=eq.${wert(cong)}&order=position.asc`,
       ),
-      jeWoche<{ task_key: string; name: string }>('assignment_log', 'task_key,name').catch((err) => {
+      jePraefix<{ task_key: string; name: string }>(cong, 'assignment_log', 'task_key,name', praefixe).catch((err) => {
         // Fehlt das Tagebuch (Migration nicht eingespielt), würde ohne diesen
         // Fang gar nichts hinausgehen. Lieber senden — schlimmstenfalls eine
         // Wiederholung, nie ein Ausfall.

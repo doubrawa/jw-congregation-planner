@@ -192,12 +192,40 @@ const LAEUFE: Record<string, Lauf[]> = {
       titel: 'zwei Wochen holen',
       fahren: (m) => m.main!(['--anzahl', '2']),
       umgebung: {
-        bestand: { congregations: [{ id: C, name: 'Probe', cong_lang: 'de', prog_langs: [] }] },
+        bestand: {
+          congregations: [
+            { id: C, name: 'Probe', cong_lang: 'de', prog_langs: [], aux_class: true, mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00' },
+          ],
+        },
         funktionen: {
           'import-week': ({ after }) => ({ json: { week: probeWoche(after ? plusTage(String(after), 7) : '2026-08-24') } }),
         },
       },
-      erwartet: ['GET congregations', 'GET weeks', 'POST weeks'],
+      // Eingeordnet wie in der App (5.10.2026): Grundplan, Gruppenbesuche und
+      // Personen gelesen, die Treffpunkte der neuen Wochen mitgeschrieben.
+      erwartet: [
+        'GET congregations', 'GET weeks', 'GET fs_rules', 'GET gruppenbesuche', 'GET persons', 'GET fs_weeks',
+        'POST weeks', 'POST fs_weeks',
+      ],
+    },
+  ],
+
+  'wochen-angleichen.mjs': [
+    {
+      titel: 'den Bestand angleichen',
+      fahren: (m) => m.main!([]),
+      umgebung: {
+        bestand: {
+          congregations: [{ id: C, name: 'Probe', aux_class: true }],
+          // Eine Woche ohne die Zusätzliche Klasse und ohne Treffpunkt-Zeile,
+          // dazu eine Regel — sonst gäbe es nichts anzugleichen.
+          weeks: [{ congregation_id: C, start: '2026-08-24', data: probeWoche('2026-08-24'), updated_at: '2026-08-20T10:00:00.000000+00:00' }],
+          fs_rules: [
+            { id: k(61), congregation_id: C, grp: G1, wd: 6, time: '09:30:00', place: 'Probe-Ort', monthly: 0, skip_cong: false, aus: null, created_at: '2026-01-01T00:00:00Z' },
+          ],
+        },
+      },
+      erwartet: ['GET congregations', 'GET weeks', 'GET fs_weeks', 'GET fs_rules', 'GET persons', 'PATCH weeks', 'POST fs_weeks'],
     },
   ],
 

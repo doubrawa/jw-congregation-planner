@@ -11,13 +11,13 @@ import { offenePlaetze, platzAuswahl } from '../data/offene-plaetze'
 import { dienstAusWochenEntfernen, dienstBereichEntfernen, dienstZusagenKeys, ohneDienstZusagen } from '../data/dienste'
 import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
 import { eigenePerson } from './eigene-person'
-import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsRegelAussetzen, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, genFsWeek, regenFsWeeks } from '../data/fs'
+import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsRegelAussetzen, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, regenFsWeeks } from '../data/fs'
+import { neueWocheEinordnen } from '../data/neue-woche'
 import { displayName, isSong, linkFamily, mtab, namensDublette, unlinkFamily } from '../data/helpers'
 import { darfPlanen, erlaubteScreens, rechteVon, themaVon } from '../data/rechte'
 import {
   besuchAustragen,
   besuchEintragen,
-  besucheInNeueWoche,
   besucheVerteilen,
   besuchsLage,
   besuchStand,
@@ -59,7 +59,6 @@ import {
   lacMinuten,
   lacMove,
   lacRemove,
-  endeAusStartzeit,
   endenNachziehen,
   togglePartner,
   setAbweichung,
@@ -984,37 +983,22 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       if (state.weeks.some((w) => w.start === action.week.start)) {
         return { ...state, importing: false, toast: toastKey(state, 'toastAlleWochen') }
       }
-      // Endzeiten aus den Zusammenkunftszeiten rechnen. Der Import kennt sie
-      // nicht und trug feste Werte ein (20:45 / 11:45) — bei einem Beginn um
-      // 18:30 stand damit auf jedem Programmblatt eine falsche Endzeit.
-      const zeiten = state.congregation.times
-      const week: Week = {
-        ...action.week,
-        mid: { ...action.week.mid, end: endeAusStartzeit(zeiten.mid.time, action.week.mid.end) },
-        we: { ...action.week.we, end: endeAusStartzeit(zeiten.we.time, action.week.we.end) },
-      }
-      // Eine frisch importierte Woche kennt die Zusätzliche Klasse noch
-      // nicht: ohne dieses Angleichen bliebe sie ohne zweite Platzreihe und
-      // ohne Ratgeber — die Klasse würde ab dem nächsten Import verschwinden.
-      let weeks = syncAuxSlots([...state.weeks, week], state.auxClass)
-      // Bringt die Woche einen Gedächtnismahl-Termin mit (T65), wird der
-      // Ausfall **hier** abgeleitet und nicht im Import. Die Regel — Werktag
-      // trifft die Zusammenkunft unter der Woche, Wochenende die andere —
-      // steht damit an einer Stelle; ein zweites Mal in eine Edge Function
-      // geschrieben war sie schon einmal die Ursache eines Fehlers (B8/T40).
-      const mem = week.anlass?.art === 'mem' ? week.anlass.von : undefined
-      if (mem) weeks = setAnlassTermin(weeks, weeks.length - 1, { von: mem })
+      // Endzeiten, Zusätzliche Klasse, Gedächtnismahl, Treffpunkte: dieselbe
+      // Einordnung wie im Skript `wochen-importieren.mjs` (`neue-woche.ts`).
+      const { week, fsWeek } = neueWocheEinordnen(action.week, {
+        zeiten: state.congregation.times,
+        auxClass: state.auxClass,
+        fsRules: state.fsRules,
+        gruppenbesuche: state.gruppenbesuche,
+        persons: state.persons,
+      })
       return {
         ...state,
-        weeks,
+        weeks: [...state.weeks, week],
         // Die Treffpunkte laufen parallel (`fsWeeks[wi]` gehört zu `weeks[wi]`).
         // Ohne diese Zeile hatte die neue Woche bis zum Neuladen keine, und was
         // man dort hinzufügte, fand seine Woche nicht und ging verloren.
-        // Ein vorgemerkter Gruppenbesuch (T120) wird dabei eingetragen.
-        fsWeeks: [
-          ...state.fsWeeks,
-          besucheInNeueWoche(genFsWeek(week.start, state.fsRules), week.start, state.gruppenbesuche, state.persons),
-        ],
+        fsWeeks: [...state.fsWeeks, fsWeek],
         importing: false,
         notifs: pushNotif(
           state.notifs,

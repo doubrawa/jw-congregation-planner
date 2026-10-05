@@ -178,8 +178,8 @@ function dueKind(rem: Reminders, days: number): 'main' | 'repeat' | null {
  * trotzdem **jede Woche der Versammlung** — `order=start.asc`, ohne Grenze,
  * täglich, für jede Versammlung, mitsamt dem vollen JSONB-Blob. Nach ein paar
  * Jahren sind das Hunderte Zeilen, um in dreien nachzusehen. Genau diese
- * Rechnung steht schon bei `jeWoche` in `send-plan` — dort wurde sie gezogen,
- * hier nicht.
+ * Rechnung steht schon bei `jePraefix` in `send-plan` — dort wurde sie
+ * gezogen, hier nicht.
  *
  * **Und es ist nicht nur Verschwendung.** Greift je eine Zeilengrenze
  * (PostgREST kennt `max-rows`), schneidet `asc` die **jüngsten** Zeilen ab —

@@ -109,10 +109,15 @@ Trigger — nicht vom Client, sonst schriebe man sich daran vorbei):
 3. Trifft er nicht mehr zu, wurde **nichts** überschrieben. Der Client lädt
    still neu und sagt es dem Nutzer.
 
-Vor Schritt 3 wird nachgesehen, ob dort wirklich ein fremder Stand steht: ein
-falscher Konfliktalarm würde die Arbeit des Nutzers verwerfen, und dieser eine
-zusätzliche Umlauf kostet nur in genau dem Fall etwas. Schreibvorgänge derselben
-Woche laufen hintereinander, sonst kämpfte man gegen sich selbst.
+Schreibvorgänge derselben Woche laufen hintereinander, sonst kämpfte man gegen
+sich selbst. Die Edge Functions, die Wochen schreiben (`zuteilen`,
+`substitute`), folgen derselben Regel
+(`supabase/functions/_shared/woche-schreiben.ts`).
+
+Bis zum 5.10.2026 wurde vor Schritt 3 nachgesehen und, stand dort noch der
+eigene Stand, **ohne** Bedingung geschrieben — gegen einen falschen
+Konfliktalarm, für den es keinen bekannten Auslöser gab. Genau dieser Schritt
+öffnete das Fenster, in dem eine fremde Änderung lautlos verloren ging.
 
 Zum Nachstellen ohne Netzabbruch: `/demo.html#stale=<Stunden>` auf der
 Entwicklerseite (siehe [docs/user-guide/README.md](docs/user-guide/README.md)).
@@ -394,6 +399,19 @@ bleiben stehen. Ohne das stünde jeder importierte Treffpunkt danach doppelt da 
 `regenFsWeeks` erzeugt die Regel-Treffpunkte und behält daneben jeden manuellen
 Eintrag. Dass beide Rechnungen dasselbe ergeben, hält
 `treffpunkt-regeln-setzen.test.ts` gegen `genFsWeek` aus der App fest.
+
+**Zum Schluss nachsehen, ob der Bestand so dasteht, wie die App ihn lädt:**
+
+```powershell
+node scripts/wochen-angleichen.mjs --trocken
+```
+
+Die App gleicht beim Laden an (Zusätzliche Klasse, Treffpunkte nach dem
+Grundplan), schreibt das aber nicht zurück. Weicht eine Woche davon ab, weisen
+`zuteilen` und der Trigger `fs_weeks_pruefen` Planer und Gruppenaufseher dort
+ab — die App lädt nur nach, bis ein Admin die Woche einmal speichert. Meldet
+das Skript abweichende Wochen, gleicht es sie ohne `--trocken` an (auf ihren
+Stand, wie ein Admin). Ein zweiter Lauf muss „Nichts abweichend" melden.
 
 **Vorher ist nichts zu setzen.** Die Projekt-URL holen sich die Skripte aus
 `.env.local` (`VITE_SUPABASE_URL`), und nach dem Secret-Schlüssel fragen sie,

@@ -62,8 +62,10 @@ let stand: string
 let aufrufe: Aufruf[]
 /** Ändert die Woche zwischen Lesen und Schreiben. */
 let konkurrent: (() => void) | null
-/** Der Vergleich trifft nicht, obwohl sich nichts geändert hat. */
-let vergleichHakt: boolean
+/** So oft scheitert ein Schreibversuch, ohne dass jemand geschrieben hat — ein Aussetzer (Netz, Zeitüberschreitung). */
+let aussetzer: number
+/** Läuft einmal nach einem Aussetzer — ein anderer schreibt genau zwischen erstem und zweitem Versuch. */
+let zwischendurch: (() => void) | null
 
 const kopie = <T>(x: T): T => JSON.parse(JSON.stringify(x)) as T
 
@@ -93,9 +95,15 @@ const rest: Rest = {
   },
   async patchZeilen<T>(path: string, body: unknown): Promise<T[] | null> {
     aufrufe.push({ method: 'PATCH', path, body })
+    if (aussetzer > 0) {
+      aussetzer--
+      zwischendurch?.()
+      zwischendurch = null
+      return null
+    }
     if (!path.startsWith('weeks') || filterWert(path, 'congregation_id') !== CONG) return []
     const bedingung = filterWert(path, 'updated_at')
-    if (bedingung !== null && (bedingung !== stand || vergleichHakt)) return []
+    if (bedingung !== null && bedingung !== stand) return []
     woche = (body as { data: typeof woche }).data
     stand = `${stand}+1`
     return [{ updated_at: stand }] as T[]
@@ -110,7 +118,8 @@ beforeEach(() => {
   stand = '2026-09-01T10:00:00.000000+00:00'
   aufrufe = []
   konkurrent = null
-  vergleichHakt = false
+  aussetzer = 0
+  zwischendurch = null
 })
 
 /** Die Woche, wie der Planer sie schickt: Gebet zugeteilt. */
@@ -199,24 +208,42 @@ describe('zuteilen: der Stand', () => {
     expect(geschrieben()).toEqual([])
   })
 
-  it('schreibt ein anderer zwischen Lesen und Schreiben, gewinnt er — 409, kein zweiter Versuch ohne Bedingung', async () => {
+  it('schreibt ein anderer zwischen Lesen und Schreiben, gewinnt er — 409, kein Versuch ohne Bedingung', async () => {
     konkurrent = () => {
       stand = `${stand}+fremd`
     }
     const res = await aufruf(U_PLANER, { woche: MONTAG, stand, data: zugeteilt() })
     expect(await antwort(res)).toEqual({ status: 409, body: { error: 'conflict' } })
     const patches = geschrieben().filter((a) => a.method === 'PATCH')
-    expect(patches).toHaveLength(1)
-    expect(filterWert(patches[0]!.path, 'updated_at')).not.toBeNull()
+    expect(patches.length).toBeGreaterThan(0)
+    expect(patches.every((p) => filterWert(p.path, 'updated_at') !== null)).toBe(true)
+    expect(woche).toEqual(frischeWoche())
   })
 
-  it('verfehlt der Vergleich ohne Änderung, wird ohne Bedingung geschrieben (kein falscher Alarm)', async () => {
-    vergleichHakt = true
+  it('ein Aussetzer beim ersten Versuch verwirft die Zuteilung nicht — der zweite trägt dieselbe Bedingung (5.10.2026)', async () => {
+    aussetzer = 1
+    const vorher = stand
     const res = await aufruf(U_PLANER, { woche: MONTAG, stand, data: zugeteilt() })
     expect(res.status).toBe(200)
     const patches = geschrieben().filter((a) => a.method === 'PATCH')
     expect(patches).toHaveLength(2)
-    expect(filterWert(patches[1]!.path, 'updated_at')).toBeNull()
+    expect(patches.map((p) => filterWert(p.path, 'updated_at'))).toEqual([vorher, vorher])
     expect(woche.mid.sections[0]!.items[0]!.names[0]).toMatchObject({ name: 'Paul Beispiel' })
+  })
+
+  it('schreibt ein anderer genau zwischen den beiden Versuchen, gewinnt er — 409, nichts überschrieben (5.10.2026)', async () => {
+    // Bis zum 5.10.2026 ging der zweite Versuch ohne Bedingung hinaus, sobald
+    // beim Nachsehen noch der alte Stand dastand — und schrieb über das, was
+    // ein anderer in genau diesem Augenblick gespeichert hatte.
+    const fremd = frischeWoche()
+    fremd.mid.sections[0]!.items[0]!.names[0] = { name: 'Andere Fassung', rolle: 'Gebet', bereichsKey: 'gebet' } as never
+    aussetzer = 1
+    zwischendurch = () => {
+      woche = fremd
+      stand = `${stand}+fremd`
+    }
+    const res = await aufruf(U_PLANER, { woche: MONTAG, stand, data: zugeteilt() })
+    expect(await antwort(res)).toEqual({ status: 409, body: { error: 'conflict' } })
+    expect(woche.mid.sections[0]!.items[0]!.names[0]).toMatchObject({ name: 'Andere Fassung' })
   })
 })

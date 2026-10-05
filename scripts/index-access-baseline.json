@@ -28,7 +28,7 @@
   "src/lib/data-save.test.ts": 2,
   "src/lib/data.test.ts": 11,
   "src/lib/gesture-log.test.ts": 2,
-  "src/lib/week-konflikt.test.ts": 11,
+  "src/lib/week-konflikt.test.ts": 8,
   "src/personen/person-timeline.test.ts": 4,
   "src/planen/kandidaten.test.ts": 6
 }

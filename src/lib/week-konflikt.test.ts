@@ -145,7 +145,6 @@ describe('Ein anderer Planer war schneller', () => {
     stub.antworten = [
       ok('S1'), // anlegen
       leer, // geschütztes Update trifft keine Zeile
-      ok('FREMD'), // nachgesehen: dort steht ein anderer Stand
     ]
     saveWeek('c1', woche('erste', '2026-01-26'))
     await abgearbeitet()
@@ -154,8 +153,26 @@ describe('Ein anderer Planer war schneller', () => {
 
     expect(konflikte).toBe(1)
     expect(schreibfehler).toBe(0)
-    // Entscheidend: NACH dem Nachsehen wird nicht doch noch geschrieben.
+    // Entscheidend: Danach wird nicht doch noch geschrieben.
     expect(stub.aufrufe.filter((a) => a.op === 'update')).toHaveLength(1)
+  })
+
+  it('kein zweiter Anlauf ohne Bedingung — auch nicht, wenn der Stand unverändert wäre (5.10.2026)', async () => {
+    // Bis zum 5.10.2026 wurde nach einem Fehltreffer nachgesehen und, stand
+    // dort noch der eigene Stand, ungeschützt geschrieben. Was ein anderer
+    // zwischen Nachsehen und Schreiben speicherte, ging dabei verloren. Jetzt
+    // ist ein Fehltreffer ein Konflikt — ohne Nachsehen, ohne zweites Update.
+    stub.antworten = [ok('S1'), leer, ok('S1'), ok('S2')]
+    saveWeek('c1', woche('erste', '2026-02-09'))
+    await abgearbeitet()
+    saveWeek('c1', woche('meine Fassung', '2026-02-09'))
+    await abgearbeitet()
+
+    expect(konflikte).toBe(1)
+    const updates = stub.aufrufe.filter((a) => a.op === 'update')
+    expect(updates).toHaveLength(1)
+    expect(updates.every((u) => u.filter.updated_at === 'S1')).toBe(true)
+    expect(stub.aufrufe.filter((a) => a.op === 'select')).toEqual([])
   })
 
   it('deutet einen Unique-Verstoß beim Anlegen als Konflikt', async () => {
@@ -171,35 +188,6 @@ describe('Ein anderer Planer war schneller', () => {
 })
 
 describe('Kein falscher Alarm', () => {
-  it('schreibt doch, wenn der Stand unverändert dasteht', async () => {
-    // Ein FALSCHER Konfliktalarm verwirft die Arbeit des Nutzers — deshalb wird
-    // nachgesehen, bevor gemeldet wird. Steht dort noch unser eigener Stand,
-    // war niemand schneller; der Filter hat die Zeile aus einem anderen Grund
-    // nicht getroffen.
-    stub.antworten = [
-      ok('S1'), // anlegen
-      leer, // geschütztes Update trifft nichts
-      ok('S1'), // nachgesehen: unverändert
-      ok('S2'), // zweiter Anlauf, ungeschützt
-    ]
-    saveWeek('c1', woche('erste', '2026-02-09'))
-    await abgearbeitet()
-    saveWeek('c1', woche('meine Fassung', '2026-02-09'))
-    await abgearbeitet()
-
-    expect(konflikte).toBe(0)
-    const updates = stub.aufrufe.filter((a) => a.op === 'update')
-    expect(updates).toHaveLength(2)
-    expect(updates[1].filter.updated_at).toBeUndefined() // ungeschützt
-    expect(updates[1].filter.start).toBe('2026-02-09')
-
-    // Und der neue Stand ist gelernt: der nächste Schreibvorgang nennt S2.
-    stub.antworten = [ok('S3')]
-    saveWeek('c1', woche('dritte', '2026-02-09'))
-    await abgearbeitet()
-    expect(stub.aufrufe[stub.aufrufe.length - 1].filter.updated_at).toBe('S2')
-  })
-
   it('zwei rasche Änderungen derselben Woche kämpfen nicht gegeneinander', async () => {
     // Ohne die Serialisierung gingen beide mit demselben Stand los und die
     // zweite meldete einen Konflikt, den es nicht gab — gegen sich selbst.

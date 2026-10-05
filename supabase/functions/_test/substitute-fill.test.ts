@@ -86,8 +86,10 @@ let abwesend: { person_id: string; from_date: string; to_date: string }[]
 let aufrufe: Aufruf[]
 /** Ändert die Woche zwischen Lesen und Schreiben — der Wettlauf, den der Vergleich abfangen muss. */
 let konkurrent: (() => void) | null
-/** Der Vergleich auf `updated_at` trifft nicht, obwohl sich nichts geändert hat (eine Eigenheit des Vergleichs). */
-let vergleichHakt: boolean
+/** So oft scheitert ein Schreibversuch, ohne dass jemand geschrieben hat — ein Aussetzer (Netz, Zeitüberschreitung). */
+let aussetzer: number
+/** Läuft einmal nach einem Aussetzer — ein anderer schreibt genau zwischen erstem und zweitem Versuch. */
+let zwischendurch: (() => void) | null
 
 const kopie = <T>(x: T): T => JSON.parse(JSON.stringify(x)) as T
 
@@ -131,9 +133,15 @@ const rest: Rest = {
   },
   async patchIf(path, body): Promise<boolean> {
     aufrufe.push({ method: 'PATCH', path, body })
+    if (aussetzer > 0) {
+      aussetzer--
+      zwischendurch?.()
+      zwischendurch = null
+      return false
+    }
     if (!path.startsWith('weeks') || filterWert(path, 'congregation_id') !== CONG) return false
     const bedingung = filterWert(path, 'updated_at')
-    if (bedingung !== null && (bedingung !== stand || vergleichHakt)) return false
+    if (bedingung !== null && bedingung !== stand) return false
     woche = (body as { data: Week }).data
     stand = `${stand}+1`
     return true
@@ -154,7 +162,8 @@ beforeEach(() => {
   abwesend = []
   aufrufe = []
   konkurrent = null
-  vergleichHakt = false
+  aussetzer = 0
+  zwischendurch = null
 })
 
 const fuellen = (taskKey: string, wer = U_ICH, heute = HEUTE) => platzFuellen(rest, wer, taskKey, heute)
@@ -202,10 +211,13 @@ describe('fill: der Weg, der gehen soll', () => {
     expect(aufrufe.some((a) => a.path.startsWith('notifications'))).toBe(false)
   })
 
-  it('ein Vergleich, der ohne Änderung nicht trifft, verwirft den Tipp nicht', async () => {
-    vergleichHakt = true
+  it('ein Aussetzer beim ersten Schreiben verwirft den Tipp nicht — der zweite Versuch trägt dieselbe Bedingung', async () => {
+    aussetzer = 1
     expect((await fuellen(K_GEBET)).status).toBe(200)
     expect(gespeichert().names[0]?.name).toBe('Ich Selbst')
+    const patches = aufrufe.filter((a) => a.method === 'PATCH')
+    expect(patches).toHaveLength(2)
+    expect(patches.every((p) => filterWert(p.path, 'updated_at') === '2026-09-01T10:00:00.000000+00:00')).toBe(true)
   })
 })
 
@@ -272,6 +284,22 @@ describe('fill: was abgewiesen wird — und dann nichts schreibt', () => {
       stand = '2026-09-07T08:00:00.000000+00:00' // ein Planer hat gespeichert
     }
     expect(await antwort(await fuellen(K_GEBET))).toEqual({ status: 409, body: { error: 'slot-taken' } })
+    expect(aufrufe.some((a) => a.path.startsWith('confirmations'))).toBe(false)
+  })
+
+  it('schreibt genau zwischen den beiden Versuchen ein anderer, bleibt dessen Woche — 409, keine Zusage (5.10.2026)', async () => {
+    // Bis zum 5.10.2026 ging der zweite Versuch ohne Bedingung hinaus, sobald
+    // beim Nachsehen noch der alte Stand dastand — und schrieb über das, was
+    // ein Planer in genau diesem Augenblick gespeichert hatte.
+    aussetzer = 1
+    zwischendurch = () => {
+      const fremd = frischeWoche()
+      ;(fremd.mid!.sections![0]!.items![0] as { names: { name: string }[] }).names[0] = { name: 'Andere Person' }
+      woche = fremd
+      stand = '2026-09-07T08:00:00.000000+00:00'
+    }
+    expect(await antwort(await fuellen(K_GEBET))).toEqual({ status: 409, body: { error: 'slot-taken' } })
+    expect(gespeichert().names[0]?.name).toBe('Andere Person')
     expect(aufrufe.some((a) => a.path.startsWith('confirmations'))).toBe(false)
   })
 

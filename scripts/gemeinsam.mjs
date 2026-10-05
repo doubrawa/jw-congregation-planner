@@ -16,7 +16,7 @@
  */
 
 import fs from 'node:fs'
-import { createRequire } from 'node:module'
+import { createRequire, registerHooks } from 'node:module'
 import path from 'node:path'
 import readline from 'node:readline'
 import { fileURLToPath } from 'node:url'
@@ -688,4 +688,44 @@ export function auszug(ausgabe) {
   const zeilen = ausgabe.split(/\r?\n/).filter((z) => z.trim() !== '')
   if (zeilen.length === 0) return '  (keine Ausgabe)'
   return zeilen.slice(0, 10).map((z) => `  ${z}`).join('\n')
+}
+
+let appCodeHaken = false
+
+/**
+ * **Den Code der App in einem Skript benutzen** — dieselben Funktionen statt
+ * einer Abschrift (5.10.2026).
+ *
+ * Node 24 streift TypeScript-Typen selbst ab und lädt `src/data/*.ts` direkt.
+ * Es findet aber Importe ohne Endung nicht (`./helpers` statt `./helpers.ts`),
+ * und so schreibt sie die App, weil Vite sie auflöst. Dieser Haken hängt `.ts`
+ * an, wenn ein relativer Import ohne Endung nicht gefunden wird — nur dann;
+ * alles andere löst Node wie immer.
+ *
+ * Tragfähig, weil `tsconfig.app.json` `verbatimModuleSyntax` und
+ * `erasableSyntaxOnly` verlangt: keine `enum`, keine Parameter-Eigenschaften,
+ * Typ-Importe stehen als solche da — genau das, was Node abstreifen kann. Was
+ * am Supabase-Client hängt (`src/lib/data.ts`, `import.meta.env`), lädt hier
+ * nicht; die Zeilen-Umsetzer stehen deshalb in `src/lib/zeilen.ts`.
+ *
+ * Danach mit `await import('../src/…')` laden — ein statischer Import würde
+ * aufgelöst, bevor der Haken steht. Unter vitest bleibt er aus: Dort löst Vite.
+ *
+ * Der Anlass: `wochen-importieren.mjs` schrieb Wochen anders als der Knopf in
+ * der App, obwohl sein Kopf das Gegenteil sagte (`src/data/neue-woche.ts`).
+ */
+export function appCodeBereit() {
+  if (appCodeHaken || process.env.VITEST) return
+  appCodeHaken = true
+  registerHooks({
+    resolve(specifier, context, nextResolve) {
+      try {
+        return nextResolve(specifier, context)
+      } catch (err) {
+        const relativOhneEndung = /^\.\.?\//.test(specifier) && !/\.[cm]?[jt]sx?$/.test(specifier)
+        if (err?.code !== 'ERR_MODULE_NOT_FOUND' || !relativOhneEndung) throw err
+        return nextResolve(`${specifier}.ts`, context)
+      }
+    },
+  })
 }

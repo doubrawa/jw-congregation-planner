@@ -10,13 +10,12 @@
  * geräteweise in localStorage): App-Sprache und Darstellung.
  */
 
-import { ROLE_ORDER } from '../data/constants'
 import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
 import { kurzeZeit, zeitenAus } from '../../supabase/functions/_shared/planung.ts'
 import { fsLeiterBinden, regenFsWeeks } from '../data/fs'
 import { sentKey, taskKeyVorbei } from '../data/planning'
 import type { EntzogeneZusage } from '../data/plan-versand'
-import { normalizePriv, pidsNachtragen } from '../data/namensbindung'
+import { pidsNachtragen } from '../data/namensbindung'
 import { normalizeChairKeys } from '../data/helpers'
 import { isoDay, tagNach } from '../data/meeting-dates'
 import { taktVon } from '../data/weitere-plaene'
@@ -39,33 +38,28 @@ import type {
   Notification,
   NotificationType,
   Person,
-  Qualifications,
   Reminders,
-  Role,
   SentLog,
   Service,
   TaskStatus,
   Week,
 } from '../data/types'
 import { supabase } from './supabase'
+import {
+  type FsRuleRow,
+  fsRuleFromRow,
+  fsRuleToRow,
+  type GruppenbesuchRow,
+  gruppenbesuchFromRow,
+  gruppenbesuchToRow,
+  type PersonRow,
+  personFromRow,
+  personToRow,
+} from './zeilen'
 
 /* ---- Row-Typen (Spalten aus supabase/schema.sql) ------------------------ */
-
-interface PersonRow {
-  id: string
-  fn: string
-  ln: string
-  planner_vorgemerkt: boolean
-  /** Fehlt, solange `schema.sql` vom 4.10.2026 nicht eingespielt ist. */
-  zuteiler_vorgemerkt?: boolean
-  role: string
-  female: boolean
-  tel: string
-  mail: string
-  priv: Qualifications
-  grp: string | null
-  fam: string | null
-}
+// Personen, Grundplan-Regeln und Gruppenbesuche stehen in `zeilen.ts` — die
+// lesen auch die Wartungsskripte, und dort hängt nichts am Client.
 
 interface ServiceRow {
   key: string
@@ -81,34 +75,6 @@ interface GroupRow {
   overseer_id: string | null
   assistant_id: string | null
   position: number
-}
-
-/** Eine Grundplan-Regel der Treffpunkte — seit T105 eine Zeile statt JSONB. */
-interface FsRuleRow {
-  id: string
-  grp: string | null
-  wd: number
-  time: string
-  place: string
-  monthly: number
-  skip_cong: boolean
-  aus: string[] | null
-}
-
-/** Ein Gruppenbesuch des Dienstaufsehers (T120) — eine Zeile je Besuch. */
-interface GruppenbesuchRow {
-  id: string
-  woche: string
-  grp: string
-  person_id: string | null
-}
-
-function gruppenbesuchFromRow(r: GruppenbesuchRow): Gruppenbesuch {
-  return { id: r.id, woche: r.woche, grp: r.grp, pid: r.person_id }
-}
-
-function gruppenbesuchToRow(b: Gruppenbesuch, congregationId: string) {
-  return { id: b.id, congregation_id: congregationId, woche: b.woche, grp: b.grp, person_id: b.pid }
 }
 
 /** Öffentliches Zeugnisgeben (T120): ein Termin, eine Zeile. */
@@ -350,48 +316,11 @@ interface InviteRow {
   zuteiler: boolean
 }
 
-const asRole = (r: string): Role => (ROLE_ORDER.includes(r as Role) ? (r as Role) : 'verkuendiger')
-
 const NOTIF_TYPES: NotificationType[] = ['zuteilung', 'erinnerung', 'gesendet', 'import', 'verhindert']
 const asNotifType = (t: string): NotificationType =>
   NOTIF_TYPES.includes(t as NotificationType) ? (t as NotificationType) : 'gesendet'
 
 /* ---- Mapper Row ↔ App ---------------------------------------------------- */
-
-function personFromRow(r: PersonRow): Person {
-  return {
-    id: r.id,
-    fn: r.fn,
-    ln: r.ln,
-    plannerVorgemerkt: r.planner_vorgemerkt || undefined,
-    zuteilerVorgemerkt: r.zuteiler_vorgemerkt || undefined,
-    role: asRole(r.role),
-    female: r.female || undefined,
-    tel: r.tel,
-    mail: r.mail,
-    priv: normalizePriv(r.priv),
-    grp: r.grp ?? null,
-    fam: r.fam ?? null,
-  }
-}
-
-function personToRow(p: Person, congregationId: string) {
-  return {
-    id: p.id,
-    congregation_id: congregationId,
-    fn: p.fn,
-    ln: p.ln,
-    planner_vorgemerkt: Boolean(p.plannerVorgemerkt),
-    zuteiler_vorgemerkt: Boolean(p.zuteilerVorgemerkt),
-    role: p.role,
-    female: Boolean(p.female),
-    tel: p.tel,
-    mail: p.mail,
-    priv: p.priv,
-    grp: p.grp ?? null,
-    fam: p.fam ?? null,
-  }
-}
 
 function groupFromRow(r: GroupRow): Group {
   return { id: r.id, name: r.name, overseerId: r.overseer_id, assistantId: r.assistant_id }
@@ -405,38 +334,6 @@ function groupToRow(g: Group, congregationId: string, position: number) {
     overseer_id: g.overseerId,
     assistant_id: g.assistantId,
     position,
-  }
-}
-
-/**
- * Eine Grundplan-Regel: `grp` ist in der Datenbank `null` für den
- * Versammlungstreffpunkt, und dieselbe Bedeutung trägt sie in der App — dort
- * stand dafür lange der leere String.
- */
-function fsRuleFromRow(r: FsRuleRow): FsRule {
-  return {
-    id: r.id,
-    grp: r.grp,
-    wd: r.wd,
-    time: kurzeZeit(r.time, '00:00'),
-    place: r.place,
-    monthly: r.monthly,
-    skipCong: r.skip_cong,
-    ...(r.aus?.length ? { aus: r.aus } : {}),
-  }
-}
-
-function fsRuleToRow(r: FsRule, congregationId: string) {
-  return {
-    id: r.id,
-    congregation_id: congregationId,
-    grp: r.grp,
-    wd: r.wd,
-    time: r.time,
-    place: r.place,
-    monthly: r.monthly,
-    skip_cong: r.skipCong,
-    aus: r.aus ?? [],
   }
 }
 
@@ -1070,14 +967,18 @@ export function setKonfliktMelder(fn: Konfliktmelder | null): void {
  *  1. Kein Stand bekannt → die Zeile gibt es hier noch nicht: einfügen.
  *  2. Stand bekannt → Update **mit** Bedingung `updated_at = <Stand>`.
  *     Eine getroffene Zeile bringt den neuen Stand zurück; fertig.
- *  3. Keine Zeile getroffen → nachsehen, warum. Steht dort noch immer unser
- *     Stand, war es kein Konflikt, sondern eine Eigenheit des Vergleichs —
- *     dann ungeschützt schreiben. Steht ein anderer da, war jemand schneller.
+ *  3. Keine Zeile getroffen → ein anderer war schneller (oder das Recht ist
+ *     weg): melden, die App lädt nach. Überschrieben wurde nichts.
  *
- * Schritt 3 ist der Grund, warum hier überhaupt nachgefragt wird: ein
- * **falscher** Konfliktalarm würde die Arbeit des Nutzers verwerfen. Der
- * zusätzliche Umlauf kostet nur in dem Fall etwas, in dem sonst etwas
- * verlorenginge.
+ * Bis zum 5.10.2026 stand zwischen 2 und 3 ein Schritt: nachsehen und, wenn
+ * dort noch der eigene Stand stand, **ohne** Bedingung schreiben — gegen einen
+ * falschen Konfliktalarm, für den es keinen bekannten Auslöser gibt (der Stand
+ * ist die Zeichenkette, die PostgREST geliefert hat). Er öffnete genau das
+ * Fenster, das die Bedingung schließen soll: Was ein anderer zwischen Nachsehen
+ * und Schreiben speicherte, ging lautlos verloren. Ein zweiter Anlauf mit
+ * derselben Bedingung hätte hier nichts geändert — einen Aussetzer meldet
+ * supabase-js als Fehler, nicht als leeres Ergebnis. Die Edge Functions
+ * schreiben nach derselben Regel (`_shared/woche-schreiben.ts`).
  */
 async function schreibeWoche(congregationId: string, woche: string, week: Week, nurZuteilen: boolean): Promise<void> {
   if (!supabase) return
@@ -1118,35 +1019,6 @@ async function schreibeWoche(congregationId: string, woche: string, week: Week, 
   }
   if (data) {
     wochenStand.set(woche, data.updated_at as string)
-    return
-  }
-
-  const { data: jetzt, error: leseFehler } = await supabase
-    .from('weeks')
-    .select('updated_at')
-    .eq('congregation_id', congregationId)
-    .eq('start', woche)
-    .maybeSingle()
-  if (leseFehler) {
-    schreibfehler(leseFehler)
-    return
-  }
-  if (jetzt && jetzt.updated_at === stand) {
-    // Der Stand ist unverändert — niemand war schneller. Der Filter hat die
-    // Zeile aus einem anderen Grund nicht getroffen; ohne diesen zweiten Anlauf
-    // ginge die Änderung verloren, obwohl nichts kollidiert ist.
-    const { data: erneut, error: schreibFehler } = await supabase
-      .from('weeks')
-      .update({ data: week })
-      .eq('congregation_id', congregationId)
-      .eq('start', woche)
-      .select('updated_at')
-      .maybeSingle()
-    if (schreibFehler) {
-      schreibfehler(schreibFehler)
-      return
-    }
-    if (erneut) wochenStand.set(woche, erneut.updated_at as string)
     return
   }
   konfliktMelder?.()
@@ -1594,10 +1466,15 @@ export function substituteTake(taskKey: string): void {
  * Schlägt es fehl — jemand war schneller, der Platz wird nicht mehr angeboten
  * —, wird **nachgeladen** statt nur gemeldet (`konfliktMelder`). Mit `run()`
  * stünde man hier weiter eingetragen, wo längst ein anderer steht.
+ *
+ * Der Kalendertag des Geräts geht mit (5.10.2026): Der Server kennt nur UTC,
+ * und zwischen Mitternacht und 02:00 ließe sich dort noch ein Platz vom Vorabend
+ * übernehmen — dieselbe Lage wie bei „Plan senden".
  */
 export function platzFuellen(taskKey: string): void {
   if (!supabase) return
-  void supabase.functions.invoke('substitute', { body: { action: 'fill', taskKey } }).then(({ error }) => {
+  const heute = isoDay(new Date())
+  void supabase.functions.invoke('substitute', { body: { action: 'fill', taskKey, heute } }).then(({ error }) => {
     if (!error) return
     console.error('[substitute/fill]', error.message)
     konfliktMelder?.()

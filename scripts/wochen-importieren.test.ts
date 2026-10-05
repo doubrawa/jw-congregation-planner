@@ -1,5 +1,12 @@
-import { describe, expect, it } from 'vitest'
-import { nurNeue, wochenHolen } from './wochen-importieren.mjs'
+import { describe, expect, it, vi } from 'vitest'
+import { main, nurNeue, wochenHolen } from './wochen-importieren.mjs'
+import { fahre, type Zeile } from './schema-attrappe'
+import type { AppState } from '../src/app/context'
+import { initialState } from '../src/app/init'
+import { reducer } from '../src/app/reducer'
+import type { Week } from '../src/data/types'
+import { fsRuleFromRow, gruppenbesuchFromRow, personFromRow, type FsRuleRow, type GruppenbesuchRow, type PersonRow } from '../src/lib/zeilen'
+import { zeitenAus } from '../supabase/functions/_shared/planung.ts'
 
 /**
  * **Acht Wochen statt acht Klicks.**
@@ -98,5 +105,100 @@ describe('nurNeue', () => {
     // `weeks.start` ist `not null` mit Montags-Bedingung — eine Woche ohne
     // Startdatum brächte den ganzen Lauf zum Abbruch.
     expect(nurNeue([], [{ range: 'kaputt' }, { start: '2026-09-14' }]).map((w: { start?: string }) => w.start)).toEqual(['2026-09-14'])
+  })
+})
+
+/**
+ * **Geschrieben wie der Knopf in der App** (5.10.2026).
+ *
+ * Bis dahin schrieb das Skript die Woche, wie `import-week` sie liefert. Mit
+ * eingeschalteter Zusätzlicher Klasse fehlten ihr zweite Platzreihe und
+ * Ratgeber — und `zuteilen` wies jede Zuteilung eines Planers dort als Umbau
+ * ab. Gemessen wird deshalb nicht eine Liste von Feldern, sondern der
+ * Gleichstand: Dieselbe Woche geht durch das Skript und durch den Reducer
+ * (`addImportedWeek`), und heraus muss dasselbe kommen — Woche und Treffpunkte.
+ *
+ * Der Bestand ist so gewählt, dass jeder Schritt der Einordnung etwas zu tun
+ * hat: eigene Zeiten (18:30 statt der Endzeit des Imports), die Klasse an,
+ * eine Grundplan-Regel, ein vorgemerkter Gruppenbesuch, eine Woche mit dem
+ * Gedächtnismahl am Donnerstag. Alles Platzhalter.
+ */
+describe('main: eingeordnet wie beim Import in der App', () => {
+  const C = '00000000-0000-4000-8000-000000000001'
+  const G1 = '00000000-0000-4000-8000-000000000011'
+  const P1 = '00000000-0000-4000-8000-000000000031'
+  const VERSAMMLUNG = { id: C, name: 'Probe', cong_lang: 'de', prog_langs: [], aux_class: true, mid_wd: 2, mid_time: '18:30:00', we_wd: 0, we_time: '10:00:00' }
+  const REGEL: FsRuleRow & Zeile = {
+    id: '00000000-0000-4000-8000-000000000061', congregation_id: C, grp: G1, wd: 6, time: '09:30:00',
+    place: 'Probe-Ort', monthly: 0, skip_cong: false, aus: null, created_at: '2026-01-01T00:00:00Z',
+  }
+  const BESUCH: GruppenbesuchRow & Zeile = { id: '00000000-0000-4000-8000-000000000071', congregation_id: C, woche: '2026-08-24', grp: G1, person_id: P1 }
+  const PERSON: PersonRow & Zeile = {
+    id: P1, congregation_id: C, fn: 'Probe', ln: 'Besuch', planner_vorgemerkt: false, role: 'aeltester', female: false,
+    tel: '', mail: '', priv: {}, grp: null, fam: null, created_at: '2026-01-01T00:00:00Z',
+  }
+
+  /** Eine Woche, wie `import-week` sie liefert — ein Schülerteil, feste Endzeiten. */
+  const roh = (start: string, extra: Partial<Week> = {}): Week =>
+    ({
+      start,
+      range: 'Probewoche',
+      book: '',
+      mid: {
+        date: '', end: 'Ende ca. 20:45',
+        sections: [{ label: 'PROBE', farbe: 'gold', items: [{ iid: `s-${start}`, title: 'Probe-Schülerteil', meta: '', names: [{ name: '', bereichsKey: 'schulung' }] }] }],
+        helpers: {},
+      },
+      we: { date: '', end: 'Ende ca. 11:45', sections: [], helpers: {} },
+      ...extra,
+    }) as Week
+  const LIEFERUNG = [roh('2026-08-24'), roh('2026-08-31', { anlass: { art: 'mem', von: '2026-09-03' } })]
+
+  it('Woche und Treffpunkte gleichen dem, was `addImportedWeek` daraus macht', async () => {
+    let n = 0
+    const { tabellen } = await fahre(() => main(['--anzahl', '2']), {
+      bestand: { congregations: [VERSAMMLUNG], fs_rules: [REGEL], gruppenbesuche: [BESUCH], persons: [PERSON] },
+      funktionen: { 'import-week': () => ({ json: { week: LIEFERUNG[n++] } }) },
+    })
+
+    // `initialState` liest die Geräte-Einstellungen — hier gibt es keine.
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {}, removeItem: () => {} })
+    const leer = initialState()
+    vi.unstubAllGlobals()
+    let s: AppState = {
+      ...leer,
+      congregation: { ...leer.congregation, times: zeitenAus(VERSAMMLUNG) },
+      auxClass: true,
+      fsRules: [fsRuleFromRow(REGEL)],
+      gruppenbesuche: [gruppenbesuchFromRow(BESUCH)],
+      persons: [personFromRow(PERSON)],
+      weeks: [],
+      fsWeeks: [],
+    }
+    for (const week of LIEFERUNG) s = reducer(s, { type: 'addImportedWeek', week })
+    const json = <T>(x: T): T => JSON.parse(JSON.stringify(x)) as T
+
+    expect((tabellen.weeks ?? []).map((z) => z.data)).toEqual(json(s.weeks))
+    expect((tabellen.fs_weeks ?? []).map((z) => z.data)).toEqual(json(s.fsWeeks))
+
+    // Und es war nicht der Leerlauf beider Seiten: Jeder Schritt hat gewirkt.
+    const [erste, zweite] = s.weeks
+    expect(erste?.mid.end).toBe('Ende ca. 20:15')
+    expect(erste?.mid.auxRatgeber).toBeDefined()
+    expect(zweite?.dev?.mid?.cancelled).toBe(true)
+    expect(s.fsWeeks[0]?.[0]).toMatchObject({ grp: G1, leader: 'Probe Besuch', lpid: P1 })
+  })
+
+  it('lässt Treffpunkte stehen, die eine Woche schon hat', async () => {
+    const vorhanden = [{ id: 'probe-treffpunkt', grp: null, time: '08:00', place: 'Schon da' }]
+    const { tabellen, ausgabe } = await fahre(() => main(['--anzahl', '1']), {
+      bestand: {
+        congregations: [VERSAMMLUNG], fs_rules: [REGEL],
+        fs_weeks: [{ congregation_id: C, start: '2026-08-24', data: vorhanden }],
+      },
+      funktionen: { 'import-week': () => ({ json: { week: roh('2026-08-24') } }) },
+    })
+    expect(tabellen.fs_weeks).toEqual([{ congregation_id: C, start: '2026-08-24', data: vorhanden }])
+    expect(ausgabe.join('\n')).toContain('Treffpunkte schon da')
   })
 })

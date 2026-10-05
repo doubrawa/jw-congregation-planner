@@ -14,15 +14,16 @@
 //  - geändert ist **nur, was ein Planer setzen darf** (`nurZuteilungen` in
 //    `_shared/zuteilen-grenze.ts`), sonst 403.
 //
-// Geschrieben wird wie im Client mit Vergleiche-und-Tausche auf `updated_at`,
-// und zurück geht der neue Stand: Mit ihm schreibt der Client die nächste
-// Änderung derselben Woche.
+// Geschrieben wird wie im Client mit Vergleiche-und-Tausche auf `updated_at`
+// (`_shared/woche-schreiben.ts`), und zurück geht der neue Stand: Mit ihm
+// schreibt der Client die nächste Änderung derselben Woche.
 //
 // Anlegen kann ein Planer keine Woche — das tut der Import, und der ist Sache
 // des Admins.
 // =============================================================================
 
 import { json, type Rest, wert } from '../_shared/rest.ts'
+import { wocheSchreiben } from '../_shared/woche-schreiben.ts'
 import { nurZuteilungen } from '../_shared/zuteilen-grenze.ts'
 
 const MONTAG = /^\d{4}-\d{2}-\d{2}$/
@@ -31,29 +32,6 @@ interface Mitglied {
   congregation_id: string
   planner: boolean
   zuteiler: boolean
-}
-
-/**
- * Schreiben mit Vergleiche-und-Tausche; der neue Stand oder `null`, wenn
- * inzwischen ein anderer geschrieben hat.
- *
- * Trifft der Vergleich nicht, wird nachgesehen, ob sich der Stand wirklich
- * geändert hat — dieselbe Abwägung wie `schreibeWoche` im Client und
- * `wocheSchreiben` beim Füllen eines freien Platzes: Ein falscher Konfliktalarm
- * verwürfe die Arbeit des Planers.
- */
-async function schreiben(rest: Rest, cong: string, woche: string, stand: string, data: unknown): Promise<string | null> {
-  const zeile = `congregation_id=eq.${wert(cong)}&start=eq.${wert(woche)}`
-  const getroffen = await rest.patchZeilen<{ updated_at: string }>(
-    `weeks?${zeile}&updated_at=eq.${wert(stand)}&select=updated_at`,
-    { data },
-  )
-  if (getroffen?.[0]) return getroffen[0].updated_at
-  if (getroffen === null) return null
-  const jetzt = await rest.get<{ updated_at: string }[]>(`weeks?select=updated_at&${zeile}`)
-  if (jetzt[0]?.updated_at !== stand) return null
-  const erneut = await rest.patchZeilen<{ updated_at: string }>(`weeks?${zeile}&select=updated_at`, { data })
-  return erneut?.[0]?.updated_at ?? null
 }
 
 /** Eine Woche des Aufrufers schreiben, wenn er nur zugeteilt hat. */
@@ -83,7 +61,7 @@ export async function wocheZuteilen(rest: Rest, userId: string, payload: unknown
   // der Sitzung dazukam.
   if (!ich.planner && !nurZuteilungen(jetzt.data, data)) return json({ error: 'nur-zuteilen' }, 403)
 
-  const neu = await schreiben(rest, cong, woche, stand, data)
+  const neu = await wocheSchreiben(rest, cong, woche, stand, data)
   if (!neu) return json({ error: 'conflict' }, 409)
   return json({ ok: true, stand: neu })
 }

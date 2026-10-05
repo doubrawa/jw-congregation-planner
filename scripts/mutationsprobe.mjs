@@ -1200,11 +1200,11 @@ export const KATALOG = [
   },
   {
     id: 'import-traegt-besuch-ein',
-    datei: 'src/app/reducer.ts',
+    // Seit dem 5.10.2026 in der Einordnung, die App und Import-Skript teilen.
+    datei: 'src/data/neue-woche.ts',
     regel: 'Ein vorgemerkter Besuch wird mit dem Import seiner Woche eingetragen.',
-    suchen:
-      '          besucheInNeueWoche(genFsWeek(week.start, state.fsRules), week.start, state.gruppenbesuche, state.persons),',
-    ersetzen: '          genFsWeek(week.start, state.fsRules),',
+    suchen: '  const fsWeek = besucheInNeueWoche(genFsWeek(roh.start, k.fsRules), roh.start, k.gruppenbesuche, k.persons)\n',
+    ersetzen: '  const fsWeek = genFsWeek(roh.start, k.fsRules)\n',
   },
   {
     id: 'verteilen-reihum',
@@ -3385,8 +3385,8 @@ export const KATALOG = [
     id: 'fill-weiche',
     datei: 'supabase/functions/substitute/index.ts',
     regel: 'Der Aufruf „fill" geht seinen eigenen Weg — Programmpunkte laufen nicht über die Hilfsdienst-Prüfung.',
-    suchen: "    if (payload?.action === 'fill') return await platzFuellen(rest, userId, String(payload.taskKey ?? ''))\n",
-    ersetzen: '',
+    suchen: "    if (payload?.action === 'fill') {\n",
+    ersetzen: '    if (false) {\n',
   },
   {
     id: 'fill-nach-plan-senden',
@@ -3446,10 +3446,11 @@ export const KATALOG = [
   },
   {
     id: 'fill-vergleiche-und-tausche',
-    datei: 'supabase/functions/substitute/fuellen.ts',
+    // Seit dem 5.10.2026 im gemeinsamen Schreibweg von `zuteilen` und `substitute`.
+    datei: 'supabase/functions/_shared/woche-schreiben.ts',
     regel: 'Hat jemand die Woche zwischen Lesen und Schreiben geändert, schreibt der Server nicht darüber.',
-    suchen: '  if (jetzt[0]?.updated_at !== stand) return false\n',
-    ersetzen: '',
+    suchen: '    `&updated_at=eq.${wert(stand)}&select=updated_at`\n',
+    ersetzen: "    '&select=updated_at'\n",
   },
   {
     id: 'fill-klasse-nur-wenn-besteht',
@@ -3554,6 +3555,107 @@ export const KATALOG = [
       'Der Planer schreibt mit dem Stand aus der Antwort der Function weiter — sonst meldete schon die zweite Zuteilung derselben Woche einen Konflikt.',
     suchen: "  if (typeof neu === 'string') wochenStand.set(woche, neu)",
     ersetzen: "  if (typeof neu === 'string') void neu",
+  },
+
+  /* ---- Edge-Runde 5.10.2026: Schreiben auf Stand, „heute" vom Gerät ---- */
+  {
+    id: 'woche-schreiben-aussetzer',
+    datei: 'supabase/functions/_shared/woche-schreiben.ts',
+    regel: 'Ein Aussetzer beim ersten Schreibversuch verwirft weder die Zuteilung des Planers noch den Tipp auf einen freien Platz.',
+    suchen: '  return (await versuchen()) ?? versuchen()\n',
+    ersetzen: '  return versuchen()\n',
+  },
+  {
+    id: 'woche-schreiben-zweiter-versuch-bedingt',
+    datei: 'supabase/functions/_shared/woche-schreiben.ts',
+    /*
+      Der Fehler bis zum 5.10.2026: Der zweite Versuch ging ohne Bedingung
+      hinaus. Die Mutation stellt genau das wieder her.
+    */
+    regel: 'Auch der zweite Schreibversuch trägt die Bedingung — schreibt dazwischen ein anderer, gewinnt er.',
+    suchen: '  return (await versuchen()) ?? versuchen()\n',
+    ersetzen:
+      "  return (await versuchen()) ?? ((await rest.patchZeilen<{ updated_at: string }>(pfad.replace(/&updated_at=[^&]*/, ''), { data }))?.[0]?.updated_at ?? null)\n",
+  },
+  {
+    id: 'woche-konflikt-ohne-ungeschuetzten-anlauf',
+    datei: 'src/lib/data.ts',
+    regel: 'Trifft das Update auf den Stand nichts, ist es ein Konflikt — kein zweiter Anlauf ohne Bedingung (5.10.2026).',
+    suchen: '  if (data) {\n    wochenStand.set(woche, data.updated_at as string)\n    return\n  }\n  konfliktMelder?.()\n}\n',
+    ersetzen:
+      "  if (data) {\n    wochenStand.set(woche, data.updated_at as string)\n    return\n  }\n  const { data: erneut } = await supabase.from('weeks').update({ data: week }).eq('congregation_id', congregationId).eq('start', woche).select('updated_at').maybeSingle()\n  if (erneut) return\n  konfliktMelder?.()\n}\n",
+  },
+  {
+    id: 'fill-heute-vom-geraet',
+    datei: 'supabase/functions/substitute/index.ts',
+    regel: 'Ob eine Zusammenkunft vorbei ist, entscheidet beim Übernehmen eines freien Platzes der Kalendertag des Geräts, nicht der UTC-Tag.',
+    suchen: '      const heute = new Date(heuteUtc(payload.heute)).toISOString().slice(0, 10)\n',
+    ersetzen: '      const heute = new Date(heuteUtc(undefined)).toISOString().slice(0, 10)\n',
+  },
+  {
+    id: 'fill-heute-geht-mit',
+    datei: 'src/lib/data.ts',
+    regel: 'Die App schickt beim Übernehmen eines freien Platzes ihren Kalendertag mit.',
+    suchen: "{ body: { action: 'fill', taskKey, heute } }",
+    ersetzen: "{ body: { action: 'fill', taskKey } }",
+  },
+
+  /* ---- Befund 9, 5.10.2026: Bestand, wie die App ihn lädt ---- */
+  {
+    id: 'neue-woche-klasse',
+    datei: 'src/data/neue-woche.ts',
+    regel: 'Eine importierte Woche bekommt die Zusätzliche Klasse, wenn sie eingerichtet ist.',
+    suchen: '  let wochen = syncAuxSlots([mitEnden], k.auxClass)\n',
+    ersetzen: '  let wochen = [mitEnden]\n',
+  },
+  {
+    id: 'neue-woche-endzeit',
+    datei: 'src/data/neue-woche.ts',
+    regel: 'Eine importierte Woche bekommt die Endzeit aus den eigenen Zusammenkunftszeiten, nicht die des Imports.',
+    suchen: '    mid: { ...roh.mid, end: endeAusStartzeit(k.zeiten.mid.time, roh.mid.end) },\n',
+    ersetzen: '    mid: { ...roh.mid },\n',
+  },
+  {
+    id: 'neue-woche-gedaechtnismahl',
+    datei: 'src/data/neue-woche.ts',
+    regel: 'Bringt eine importierte Woche das Gedächtnismahl mit, entfällt die Zusammenkunft, die es trifft.',
+    suchen: '  if (mem) wochen = setAnlassTermin(wochen, 0, { von: mem })\n',
+    ersetzen: '',
+  },
+  {
+    id: 'import-skript-ordnet-ein',
+    datei: 'scripts/wochen-importieren.mjs',
+    regel: 'Das Import-Skript schreibt die Woche, wie der Knopf in der App sie einordnet — samt Treffpunkten.',
+    suchen: '    const { week, fsWeek } = einordnen(roh)\n',
+    ersetzen: '    const [week, fsWeek] = [roh, []]\n',
+  },
+  {
+    id: 'import-skript-treffpunkte-bleiben',
+    datei: 'scripts/wochen-importieren.mjs',
+    regel: 'Hat eine Woche schon Treffpunkte, lässt das Import-Skript sie stehen.',
+    suchen: '    if (mitTreffpunkten.has(week.start)) {\n',
+    ersetzen: '    if (false) {\n',
+  },
+  {
+    id: 'angleichen-klasse',
+    datei: 'scripts/wochen-angleichen.mjs',
+    regel: 'Das Prüfskript findet Wochen ohne die eingeschaltete Zusätzliche Klasse — an denen `zuteilen` den Planer abweist.',
+    suchen: '  const angeglichen = app.syncAuxSlots(geladen, auxClass)\n',
+    ersetzen: '  const angeglichen = geladen\n',
+  },
+  {
+    id: 'angleichen-grundplan',
+    datei: 'scripts/wochen-angleichen.mjs',
+    regel: 'Das Prüfskript richtet die Treffpunkte nach dem Grundplan aus, wie das Laden — sonst weist der Trigger den Gruppenaufseher ab.',
+    suchen: '  const ausgerichtet = fsRules.length ? app.regenFsWeeks(zeilen.map((r) => r.start), fsRoh, fsRules) : fsRoh\n',
+    ersetzen: '  const ausgerichtet = fsRoh\n',
+  },
+  {
+    id: 'angleichen-auf-stand',
+    datei: 'scripts/wochen-angleichen.mjs',
+    regel: 'Das Prüfskript schreibt eine Woche nur auf ihren gelesenen Stand — was inzwischen jemand gespeichert hat, bleibt.',
+    suchen: '        `weeks?${meine}&start=eq.${e.start}&updated_at=eq.${encodeURIComponent(e.stand)}&select=start`,\n',
+    ersetzen: '        `weeks?${meine}&start=eq.${e.start}&select=start`,\n',
   },
 ]
 

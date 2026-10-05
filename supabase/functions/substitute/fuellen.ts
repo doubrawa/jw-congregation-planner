@@ -1,7 +1,7 @@
 // =============================================================================
 // substitute, Aufruf 'fill': einen freien Platz selbst übernehmen (4.10.2026)
 // =============================================================================
-//   { action: 'fill', taskKey }
+//   { action: 'fill', taskKey, heute? }
 //
 // Unter „Meine Aufgaben" bietet die App unbesetzte Plätze an, für die der
 // Leser den Aufgabenbereich hat (`src/data/offene-plaetze.ts`). Ein Tipp trägt
@@ -21,12 +21,13 @@
 //    nicht zurück, und die Person ist an dem Tag nicht abwesend.
 //
 // Geschrieben wird die ganze Woche mit Vergleiche-und-Tausche auf ihren Stand
-// (`updated_at`), wie der Client speichert (T39): Hat zwischen Lesen und
-// Schreiben jemand die Woche geändert, geht nichts verloren — der Aufruf endet
-// mit 409, und die App lädt nach.
+// (`updated_at`, `_shared/woche-schreiben.ts`), wie der Client speichert (T39):
+// Hat zwischen Lesen und Schreiben jemand die Woche geändert, geht nichts
+// verloren — der Aufruf endet mit 409, und die App lädt nach.
 // =============================================================================
 
 import { json, type Rest, wert } from '../_shared/rest.ts'
+import { wocheSchreiben } from '../_shared/woche-schreiben.ts'
 import { schluesselTeile, type SchluesselTeile } from '../_shared/aufgaben-schluessel.ts'
 import { programmAngebot } from '../_shared/freie-plaetze.ts'
 import { istAusgefallenFuer, personDisplayName, versatzMitAbweichung, zeitenAus, type ZeitenRow } from '../_shared/planung.ts'
@@ -120,32 +121,13 @@ function tagDerZusammenkunft(start: string, offset: number): string | null {
 }
 
 /**
- * Die Woche schreiben — nur, wenn sie noch auf dem gelesenen Stand ist.
- *
- * Trifft der Vergleich nicht, wird nachgesehen, ob sich der Stand wirklich
- * geändert hat: Steht derselbe da, lag es am Vergleich, nicht an einem anderen
- * Schreiber, und es wird ohne Bedingung geschrieben. Dieselbe Abwägung wie
- * `schreibeWoche` im Client — ein falscher Konfliktalarm verwürfe den Tipp.
- */
-async function wocheSchreiben(rest: Rest, cong: string, woche: string, stand: string, week: Week): Promise<boolean> {
-  const zeile = `congregation_id=eq.${wert(cong)}&start=eq.${wert(woche)}`
-  if (await rest.patchIf(`weeks?${zeile}&updated_at=eq.${wert(stand)}`, { data: week })) return true
-  const jetzt = await rest.get<{ updated_at: string }[]>(`weeks?select=updated_at&${zeile}`)
-  if (jetzt[0]?.updated_at !== stand) return false
-  return rest.patchIf(`weeks?${zeile}`, { data: week })
-}
-
-/**
  * Den Aufrufer in den freien Platz `taskKey` eintragen.
  *
- * `heute` (ISO-Tag, UTC) als Parameter für die Tests; im Betrieb ist es jetzt.
+ * `heute` ist der Kalendertag, an dem gefragt wird („YYYY-MM-DD"): der des
+ * Geräts, soweit glaubhaft (`heuteUtc` in `index.ts`). Bis zum 5.10.2026 galt
+ * hier der UTC-Tag — zwischen Mitternacht und 02:00 noch der gestrige.
  */
-export async function platzFuellen(
-  rest: Rest,
-  userId: string,
-  taskKey: string,
-  heute: string = new Date().toISOString().slice(0, 10),
-): Promise<Response> {
+export async function platzFuellen(rest: Rest, userId: string, taskKey: string, heute: string): Promise<Response> {
   const teile = schluesselTeile(taskKey)
   if (!teile || !('tab' in teile)) return json({ error: 'bad-request' }, 400)
 

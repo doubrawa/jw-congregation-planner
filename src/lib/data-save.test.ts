@@ -61,6 +61,7 @@ import {
   platzFuellen,
 } from './data'
 import type { Group, Person, Service, Week } from '../data/types'
+import { isoDay } from '../data/meeting-dates'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
 
 const person = { id: 'p1', fn: 'A', ln: 'B', role: 'verkuendiger', tel: '', mail: '', priv: {} as Person['priv'], grp: null } as Person
@@ -445,6 +446,8 @@ describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
     await abwarten()
     const [name, optionen] = chain.functions.invoke.mock.calls[0] as [string, { body: unknown }]
     expect(name).toBe('substitute')
-    expect(optionen.body).toEqual({ action, taskKey: 'k1' })
+    // Der freie Platz nennt dazu den Kalendertag des Geräts (5.10.2026).
+    const tag = action === 'fill' ? { heute: isoDay(new Date()) } : {}
+    expect(optionen.body).toEqual({ action, taskKey: 'k1', ...tag })
   })
 })

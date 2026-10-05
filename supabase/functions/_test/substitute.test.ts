@@ -13,7 +13,7 @@
  * zusätzlich schreibfrei bleiben — ein 403 nützt nichts, wenn vorher schon
  * gespeichert wurde.
  */
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { alsFreitext } from '../_shared/i18n/freitext.ts'
 import { reset as resetPush, sent as sentPush } from './web-push.stub'
 import { APP_LANGS } from '../../../src/i18n/langs'
@@ -135,6 +135,8 @@ let writes: Write[]
 let absagen: { user_id: string; task_key: string }[]
 /** Wird einmal ausgeführt, nachdem die Woche gelesen wurde (Wettlauf). */
 let konkurrent: (() => void) | null
+/** Versand-Tagebuch (`assignment_log`): ohne Eintrag ist der Plan nicht gesendet. */
+let versandLog: string[]
 
 /** Alle schreibenden REST-Aufrufe (PATCH/POST/DELETE) dieses Testlaufs. */
 const { writesTo } = schreibZugriff(() => writes)
@@ -189,6 +191,7 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   if (path.startsWith('push_subscriptions')) return jsonRes(fremd ? [] : SUBS)
   if (path.startsWith('congregations')) return jsonRes(CONGREGATIONS)
   if (path.startsWith('absences')) return jsonRes(fremd ? [] : ABSENCES)
+  if (path.startsWith('assignment_log')) return jsonRes(fremd ? [] : versandLog.map((task_key) => ({ task_key })))
   if (path.startsWith('confirmations')) {
     const wer = filterWert(path, 'user_id')
     const aufgabe = filterWert(path, 'task_key')
@@ -249,6 +252,7 @@ beforeEach(() => {
   // jetzt (siehe „Einspringen setzt ein Gesuch voraus").
   absagen = [{ user_id: U_ORIG, task_key: KEY }]
   konkurrent = null
+  versandLog = []
   resetPush()
 })
 
@@ -317,6 +321,32 @@ describe('substitute: der Aufruf „fill" hat seinen eigenen Weg (4.10.2026)', (
     const res = await call({ action: 'fill', taskKey: `${WI}|mid|part|k1|0` }, { auth: null })
     expect(res.status).toBe(401)
     expect(writes).toEqual([])
+  })
+
+  describe('„heute" ist der Tag des Geräts (5.10.2026)', () => {
+    // Die Zusammenkunft der Woche ist Dienstag, 8.9., 19:00. Um 00:30 Uhr
+    // Ortszeit am Mittwoch ist es in UTC noch Dienstag, 22:30 — dort gälte sie
+    // als heute, und ihr freier Platz ließe sich noch übernehmen.
+    const PLATZ = `${WI}|mid|helper|${SVC}|1`
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-09-08T22:30:00Z') })
+      versandLog = [`${WI}|mid|part|kx|0`] // der Plan ist gesendet
+    })
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('nennt das Gerät schon Mittwoch, ist die Zusammenkunft vorbei — 409, nichts geschrieben', async () => {
+      const res = await call({ action: 'fill', taskKey: PLATZ, heute: '2026-09-09' })
+      expect(await res.json()).toEqual({ error: 'past' })
+      expect(res.status).toBe(409)
+      expect(writes).toEqual([])
+    })
+
+    it('Gegenprobe: ohne Angabe gilt der UTC-Tag, und sie ist es noch nicht', async () => {
+      const res = await call({ action: 'fill', taskKey: PLATZ })
+      expect((await res.json()).error).not.toBe('past')
+    })
   })
 })
 
