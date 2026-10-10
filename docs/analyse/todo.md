@@ -6420,6 +6420,78 @@ still die Tür für Mitglieder. Die Attrappe der Schema-Probe bildet die Tür vo
 angelegten Testversammlung: 0 von 37 verbotenen Versuchen kamen durch, alle 19
 Gegenproben gingen durch, nichts ungemessen, alles wieder aufgeräumt.
 
+## Aufgenommen am 10. Oktober 2026 — Neues Design (T121)
+
+### T121 · Neues Design: B · Saal in Graphit · Minze 🏗 ☐ offen
+
+**Wortlaut:** *„überleg dir ein ganz neues design für die app. es soll noch
+schöner und aufgeräumter aussehen. mach ein paar vorschläge und lass dich nicht
+durch den aufwand einschränken"*, dann *„designe die app mal so durch ohne
+loszuprogrammieren"* und *„du musst dich beim designen nicht genau an die
+bestehende app halten. vielleicht findest du auch möglichkeiten abläufe besser
+darzustellen"*.
+
+Entworfen auf einer Design-Leinwand
+(https://claude.ai/artifact/5wEDfbTFg8BVoxWsPGVLrn, Version 41). Die Übergabe
+mit Schritten, Regeln der Tafeln und dem Szenario steht in der Leinwand selbst
+(`project/werkzeug/LIESMICH.md`), kürzer im Memory des Projekts. **Es ist ein
+Entwurf:** Am Code der App ist für das Design nichts geändert.
+
+**Weitermachen, auch aus einem anderen Profil:** Die Leinwand gehört dem
+privaten claude.ai-Konto. Veröffentlichen kann nur eine Sitzung im Profil
+`privat`; aus `arbeit` geht Lesen und Holen (gemessen am 10. Oktober 2026).
+Die Arbeitskopie für beide Profile liegt neben dem Repo unter
+`C:\DATA\Claude\jw-congregation-planner-design`: alle Tafeln, das Werkzeug
+startbereit, `LIESMICH.md` und der gemerkte Stand mit der Versionskennung der
+Leinwand. Wer ohne Schreibrecht ändert, arbeitet dort und veröffentlicht nicht;
+`node leinwand.mjs` nennt dann, was auf das Veröffentlichen wartet. Das wird
+hier eingetragen und von der nächsten Sitzung im Profil `privat` erledigt.
+
+**Wartet auf Veröffentlichung:** nichts (Stand 10. Oktober 2026, Arbeitskopie
+gleich Version 41, Kennung `1791649561-f152`).
+
+**Entschieden am 10. Oktober 2026:**
+
+- Richtung **B · Saal** (zur Wahl standen A · Stille, B · Saal, C · Aushang,
+  D · Zettel): Karten auf Grund, die Sitzreihen 4-6-8 des Logos zeigen die
+  Besetzung, unten vier Reiter statt Seitenmenü, „Planen" als eigener Modus.
+- Statt elf Farbschemata nur noch **Dunkel, Hell und Hoher Kontrast**. Das Logo
+  folgt dem Farbschema; Petrol, Creme und Gold sind keine Vorgabe mehr.
+- Farbe **Graphit · Minze**, hell und dunkel. Schrift **Manrope**: Sie deckt
+  Latein, Kyrillisch, Griechisch und Vietnamesisch wie heute IBM Plex Sans.
+
+**Gezeichnet:** die ganze App dunkel und hell (je 46 Tafeln als Wege: Einstieg,
+Für mich, Versammlung ansehen, Planen, Predigtdienst und weitere Pläne planen,
+Verwaltung), Desktop für Start, Planen und Personen, dazu die Grundlagen mit
+drei Tafeln in Hohem Kontrast.
+
+**Offen:**
+
+1. **Vorgeschlagen, nicht entschieden:** die neuen Funktionen in den Abläufen —
+   Wochenübersicht mit Spur, ein Bildschirm „Zusagen" mit „Jetzt erinnern" und
+   Abhaken für Personen ohne Konto, Vorschau beim Programm-Holen, Nachricht und
+   „Tag als abwesend eintragen" beim Absagen, Einladung vor dem Konto und ein
+   Schritt „Willkommen", „Rückgängig" in der Meldung, „Alle bestätigen",
+   Auslastung als fünf Punkte und „Vorschlag" beim Zuteilen, Aufgabenbereiche
+   als Chips. Ob es einzelne davon schon gibt, ist am Code nicht nachgesehen.
+2. **Nicht gezeichnet:** Rechts-nach-links, Schriftgröße bis 1,45, Tablet,
+   Desktop für die übrigen Bildschirme, kleine Dialoge (Programmpunkt
+   bearbeiten, Sprache wählen, Passwort vergessen, Gruppen und Standorte),
+   Druckbögen.
+3. **Die Rückmeldung des Betreibers:** Bis zum 10. Oktober war die fertige
+   Leinwand geöffnet, aber nicht kommentiert.
+
+**Danach, als eigener Auftrag: der Umbau der App.** Vorher jeden Vorschlag aus
+Punkt 1 einzeln bestätigen lassen. Mitzunehmen sind die Regeln der App:
+Schriftgrößen nur über `--fs`, Löschen fragt nach, die Zusage-Ampel, alle 33
+Sprachen im selben Zug, neue Handbuch-Bilder, Logo-Dateien und Icons
+(`npm run icons`) erst mit dem neuen Logo. Beim Kürzen der Farbschemata:
+`asTheme` verwirft unbekannte Schlüssel und fällt auf `weiss` zurück. Wer heute
+ein dunkles Schema gespeichert hat, landete ohne Abbildung im hellen. Und der
+Schlüssel `graphit` ist schon vergeben, er zeigt heute „Matcha"
+(`THEME_LIST` in `src/data/constants.ts`). Das neue Graphit ist ein anderes
+Schema.
+
 ---
 
 ## Was bewusst offen bleibt
@@ -6447,7 +6519,7 @@ Gegenproben gingen durch, nichts ungemessen, alles wieder aufgeräumt.
 
 ## Fortschritt
 
-Stand 5. Oktober 2026 (nachgezählt am 10. Oktober) · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 10. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -6455,15 +6527,17 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
 22./23. August ☑☑☑☑☑☑☑☑☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑⏸☑☑☑ ·
-21. September ☑☑☑☑☐☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑
+21. September ☑☑☑☑☐☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
+10. Oktober ☐
 
-**118 der 120 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind zwei, eine davon zurückgestellt:**
+**118 der 121 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind drei, eine davon zurückgestellt:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt (so auch am 10. Oktober) |
 | **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf; die Mail-Bestätigung ist an, ankommen kann sie nur mit eigenem SMTP-Server (4.10.2026) |
+| **T121** | Neues Design | ☐ Entwurf auf der Design-Leinwand; wartet auf Rückmeldung und Entscheidung des Betreibers zu den vorgeschlagenen neuen Funktionen, der Umbau der App folgt erst danach |
 
 > **Nachgezählt am 10. Oktober 2026.** Die Zeile oben führte seit dem
 > 23. August zwei Zeichen zu wenig: „22./23. August" stand von Anfang an mit
@@ -6838,6 +6912,7 @@ offen; was aussteht, braucht eine Entscheidung, den Betreiber oder ein Gerät.
 | --- | --- | --- |
 | **T114** | Registrieren bei mehreren Versammlungen | wartet auf Entscheidungen des Betreibers: Konto ohne Code, wer eine Versammlung anlegt, ein Konto in zwei Versammlungen, die Meldung bei `already-member` |
 | **T106** | Alle auf einmal benachrichtigen | zurückgestellt am 21. September; im Bestand steht keine Telefonnummer |
+| **T121** | Neues Design | Entwurf auf der Design-Leinwand, am Code nichts geändert; wartet auf Rückmeldung und Entscheidung des Betreibers zu den vorgeschlagenen neuen Funktionen und auf die fehlenden Teile (Rechts-nach-links, große Schrift, kleine Dialoge). Der Umbau ist ein eigener Auftrag |
 | **Vor dem Ausrollen** | SMTP-Server, `INVITE_FROM` | nur der Betreiber, außerhalb des Repos (siehe oben) |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht |
