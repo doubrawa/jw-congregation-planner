@@ -6447,25 +6447,64 @@ Gegenproben gingen durch, nichts ungemessen, alles wieder aufgeräumt.
 
 ## Fortschritt
 
-Stand 26. September 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 5. Oktober 2026 (nachgezählt am 10. Oktober) · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
-22./23. August ☑☑☑☑☑☑ ☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
+22./23. August ☑☑☑☑☑☑☑☑☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑⏸☑☑☑ ·
-21. September ☑☑☑☑☐☑☑ · 25. September ☑☑ · 26. September ☑
+21. September ☑☑☑☑☐☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑
 
-**118 der 119 Punkte sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind zwei, einer davon zurückgestellt:**
+**118 der 120 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind zwei, eine davon zurückgestellt:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
-| **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt |
+| **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt (so auch am 10. Oktober) |
 | **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf; die Mail-Bestätigung ist an, ankommen kann sie nur mit eigenem SMTP-Server (4.10.2026) |
 
-**Beim Betreiber steht nichts aus (Stand 26. September, spätabends):**
+> **Nachgezählt am 10. Oktober 2026.** Die Zeile oben führte seit dem
+> 23. August zwei Zeichen zu wenig: „22./23. August" stand von Anfang an mit
+> fünf Zeichen für sechs Aufgaben da (T89–T94), und T97 bekam nie eines. Die
+> Zahl der abgearbeiteten Punkte stand seit dem 25. September um eins zu hoch,
+> zuletzt „118 der 119" bei zwei offenen. Jetzt steht je Aufgabenkopf ein
+> Zeichen, dazu eines für die Vorfrage zu T28 unter „Nachgetragen": 121 Zeichen
+> für 120 Aufgaben. Nachzählen lässt es sich an den Köpfen:
+> `grep -cE '^### T[0-9]+ ' docs/analyse/todo.md` zählt die Aufgaben,
+> `grep -E '^### T[0-9]+ ' docs/analyse/todo.md | grep -vE '✅|⛔'` lässt die
+> offenen übrig.
+
+**Der Betrieb steht auf dem Stand von `main` (5. Oktober, nachgesehen am
+10. Oktober):** Das Frontend geht mit jedem Push hinaus; vor diesem Eintrag
+lief `02094be` (`sw.js` nannte `shell-02094be`), der Kopf von `main`. Die
+sechs Edge Functions tragen die Versionen ihrer letzten Deploys: `send-plan`
+23 (5. Oktober, 22:16 Uhr), `zuteilen` 2, `substitute` 35 und `send-reminders`
+48 (5. Oktober, 16:53 Uhr), `import-week` 38 (4. Oktober, 15:00 Uhr),
+`send-invite` 13 (2. Oktober, 11:08 Uhr). Seit `9fb67ca` hat kein Commit
+`supabase/` berührt. `import-week` und `send-invite` weichen in
+`_shared/rest.ts` und `_shared/zuteilungen.ts` von `main` ab, nutzen das
+Geänderte aber nicht (nachgesehen am 5. Oktober, 17:20 Uhr) — ein Deploy ist
+dafür nicht nötig. Auf GitHub steht nur `main`, ohne offene PRs. Die Deploys
+und Schema-Schritte vom 3. bis 5. Oktober stehen bei T120 unter „ausrollen".
+Davor liegt einer vom 2. Oktober, der in dieser Liste sonst nirgends steht:
+`import-week` und `send-invite` prüfen seither selbst, wer fragt (`2368189`),
+weil `verify_jwt` den öffentlichen Schlüssel durchlässt.
+
+**Vor dem Ausrollen liegt beim Betreiber, außerhalb des Repos:** ein eigener
+SMTP-Server für die Anmelde-Mails (T114; ob einer eingetragen ist, zeigt nur
+das Dashboard) und das Secret `INVITE_FROM` (T106; am 10. Oktober nachgesehen:
+`RESEND_API_KEY` ist gesetzt, `INVITE_FROM` nicht).
+
+Seit dem 26. September kam eine Aufgabe dazu: **T120**, die Pläne der
+Versammlung (3. Oktober, fünf Phasen). Was danach folgte, steht dort als
+Nachtrag: am 4. Oktober das Durchsehen durch den Betreiber (Redner auswärts
+und „Familien reihum" wieder heraus, Löschen fragt nach, freie Plätze, die
+Rechte-Stufe „Planer"), am 5. Oktober das Review über alles seit dem 3. und
+die einzeln entschiedenen offenen Punkte.
+
+**Am späten Abend des 26. September stand beim Betreiber nichts aus:**
 ✅ `import-week` ist erneut deployt (21:21 Uhr, Version 35), Datei für Datei
 gleich dem Stand von `main` bis `a8ea233` — also mit `8b13548`, dem
 Schlusspunkt hinter einer Ziffer. Nachgesehen mit `functions list`,
@@ -6792,6 +6831,24 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 ### Was offen ist und warum
 
+**Stand 10. Oktober 2026, alles Offene an einer Stelle.** Im Code ist nichts
+offen; was aussteht, braucht eine Entscheidung, den Betreiber oder ein Gerät.
+
+| | Punkt | Warum offen |
+| --- | --- | --- |
+| **T114** | Registrieren bei mehreren Versammlungen | wartet auf Entscheidungen des Betreibers: Konto ohne Code, wer eine Versammlung anlegt, ein Konto in zwei Versammlungen, die Meldung bei `already-member` |
+| **T106** | Alle auf einmal benachrichtigen | zurückgestellt am 21. September; im Bestand steht keine Telefonnummer |
+| **Vor dem Ausrollen** | SMTP-Server, `INVITE_FROM` | nur der Betreiber, außerhalb des Repos (siehe oben) |
+| **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
+| **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht |
+| **Vertagt** | Zusagen an die Person binden statt an den Platz | vom Betreiber am 15. September vertagt; `confirmations` trägt Konto und Platz, die App räumt eine Zusage ab, sobald die Person am Platz wechselt (`changedSlotKeys`) |
+| **Phase 7** | T42 (Testdateien) | die Sperrklinke steht bei 636 Meldungen in 32 Dateien |
+| **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
+
+D7 (zwei Planer gleichzeitig), D4 (echte Geräte) und D5 (fachliche Abnahme)
+stehen unter „Was bewusst offen bleibt". Darunter folgen die älteren Stände,
+wie sie damals notiert wurden.
+
 > ✅ **Beim Betreiber erledigt (29. August 2026)** — T99 ist damit vollständig
 > in Betrieb:
 >
@@ -6819,9 +6876,9 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 | | Aufgabe | Warum offen |
 | --- | --- | --- |
-| **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber. Die restlichen Meldungen stehen in Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand und lässt ihn nur fallen: 727 in 34 Dateien am 27.8., 661 in 32 nach T104. |
+| **Phase 7** | T42 (Testdateien) | Der Produktionscode ist vollständig sauber. Die restlichen Meldungen stehen in Testdateien — dort ist ein `undefined` ein roter Test, kein Absturz beim Planer. Die Sperrklinke hält den Stand und lässt ihn nur fallen: 727 in 34 Dateien am 27.8., 661 in 32 nach T104, 636 in 32 am 10.10. |
 | **Phase 6** | — | **T63** ist am 17. August geklärt und gebaut: eine allgemeine Terminart für die Woche, dazu der Treffpunkt-Leiter als Freitext. Die abweichenden Treffpunkt-Zeiten der Dienstwoche konnte die App schon. |
-| **15. August** | T72 | Nur noch das Vorhaben „Abwesenheiten" — es ist ausdrücklich erst zu überlegen. T67–T71 und T73–T81 sind erledigt. |
+| **15. August** | ~~T72~~ | ✅ **erledigt am 23. August** — die Verwaltungs-Hälfte steht in der Zeitleiste des Personen-Details, die Planungs-Hälfte ist bewusst nicht gebaut (siehe T72). T67–T71 und T73–T81 sind erledigt. |
 | **19. August** | — | **T78** ist gemessen und bestanden: zweite Versammlung als Testbestand angelegt, Trennung in beide Richtungen und über alle 14 Tabellen mit RLS geprüft — mit dem anon-Key, nicht mit der Service-Role. Darauf **T89**: S2 und S3 gemessen, beide bestätigt. Nebenbei entstand der Wächter `no-undef` im Lint. |
 | **16. August** | — | T67, T68, T70, T71 und T82–T87 sind am selben Tag erledigt; migration-020 ist eingespielt, `substitute` und `send-reminders` sind deployt. **T88** kam beim Push desselben Tages dazu und ist am 17. August gehoben und belegt. |
 | **17. August** | — | **T79** ist mit der Entscheidung des Betreibers geschlossen: Ein neu angelegter Hilfsdienst startet weiter mit „niemand freigegeben". Zu ändern war daran nichts. Ebenso der **Rest von T33**: die Wortlaute für „Schlusslied" sind an einer echten Parallelquelle gemessen — 26 Sprachen geben ihn her, 8 nicht, Französisch gar nicht. `SONG_WORD` bleibt. |
