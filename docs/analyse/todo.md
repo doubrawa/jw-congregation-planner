@@ -6497,8 +6497,9 @@ jeweiligen Weg unter „Entschieden am 11. Oktober". Die folgenreichsten:
   man sich verabreden kann - alle, die das trolley recht haben."* Die
   Versammlung legt ihre Trolleys mit Abholort an. Wer das Recht hat, trägt sich
   frei von 6 bis 22 Uhr in halben Stunden ein: einer für beide, oder allein mit
-  „Begleitung gesucht", und jemand anders kommt dazu. Kein Planer, keine Zusage;
-  die andere Person erfährt es beim Eintragen, am Vortag werden beide erinnert.
+  „Partner gesucht", und jemand anders kommt dazu. Kein Planer, keine Zusage;
+  der Partner erfährt es beim Eintragen, am Vortag werden beide erinnert.
+  Infostände gibt es nicht: *„nein, nur trolleys"*.
 - **Hoher Kontrast gestrichen**; kein „Rückgängig" in Meldungen (die Rückfrage
   beim Löschen reicht); „den Tag als abwesend eintragen" beim Absagen ist aus,
   zum Einschalten.
@@ -6537,12 +6538,10 @@ Konto, Passwort, Standort, Zeugnisgeben planen und Hohem Kontrast.
 2. **Veröffentlichen** (siehe oben), dann kann der Betreiber die Leinwand im
    neuen Stand ansehen und kommentieren. Bis zum 11. Oktober kam seine
    Rückmeldung über die Durchsicht, nicht über Kommentare auf der Leinwand.
-3. **Wortwahl beim Trolley:** gezeichnet ist „Begleitung gesucht" statt
-   „Partner gesucht", damit es für Brüder und Schwestern gleich passt — vom
-   Betreiber noch nicht bestätigt.
 
-Erledigt: die Schrift für Rechts-nach-links und die gemeinsame Durchsicht aller
-Abläufe (beides 11. Oktober).
+Erledigt: die Schrift für Rechts-nach-links, die gemeinsame Durchsicht aller
+Abläufe und die beiden Nachfragen dazu — „Partner gesucht" statt „Begleitung
+gesucht", nur Trolleys ohne Infostände (alles 11. Oktober).
 
 **Danach, als eigener Auftrag: der Umbau der App.** Was es davon heute schon
 gibt, steht je Weg auf der Seite der Durchsicht unter „Heute in der App"
@@ -6554,8 +6553,9 @@ der länger gilt als die Anmelde-Links von Supabase (über eine Edge Function),
 eine interne Anmeldeadresse für Personen ohne oder mit geteilter Adresse; der
 Versand braucht `INVITE_FROM`. Die Trolleys ersetzen das heutige Modell
 (`OzTermin`: fester Ort, Tag und Zeit nach dem Königreichsdienst vom November
-2013, Stand oder Trolley, daraus wöchentliche Schichten); das Recht bleibt der
-Aufgabenbereich `zeugnis`. Mitzunehmen sind die Regeln der App:
+2013, Stand oder Trolley, daraus wöchentliche Schichten); der Stand fällt weg,
+das Recht bleibt der Aufgabenbereich `zeugnis`. Mitzunehmen sind die Regeln der
+App:
 Schriftgrößen nur über `--fs`, Löschen fragt nach, die Zusage-Ampel, alle 33
 Sprachen im selben Zug, neue Handbuch-Bilder, Logo-Dateien und Icons
 (`npm run icons`) erst mit dem neuen Logo. Beim Kürzen der Farbschemata (die
