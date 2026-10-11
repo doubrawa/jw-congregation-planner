@@ -6447,45 +6447,119 @@ Leinwand. Wer ohne Schreibrecht ändert, arbeitet dort und veröffentlicht nicht
 `node leinwand.mjs` nennt dann, was auf das Veröffentlichen wartet. Das wird
 hier eingetragen und von der nächsten Sitzung im Profil `privat` erledigt.
 
-**Wartet auf Veröffentlichung:** nichts (Stand 10. Oktober 2026, Arbeitskopie
-gleich Version 41, Kennung `1791649561-f152`).
+**Wartet auf Veröffentlichung** (gezeichnet am 10. und 11. Oktober 2026 im Profil
+`arbeit`, Arbeitskopie auf Version 41, Kennung `1791649561-f152`):
+`node leinwand.mjs` in der Arbeitskopie nennt **79 Dateien zum Veröffentlichen**
+(Tafeln, ihre hellen Hüllen, `canvas.json`) und **7 zum Entfernen**: `GKonto`,
+`GZeugnisPlanen` (je mit `-Hell`) und die drei Tafeln `…-Kontrast`. Beides in
+einem Aufruf; `files` dann als Zuordnung, die zu entfernenden auf `null`
+(Schritt 7 der Übergabe). Von Hand dazu, weil `leinwand.mjs` Werkzeug nicht
+zählt: ganz `project/werkzeug/`, 19 Dateien (alle `.mjs`, neu darunter
+`bauen-trolley.mjs` und die drei `durchgang*.mjs`, dazu `LIESMICH.md`). Danach
+`node leinwand.mjs --gemerkt <neue Kennung>` und diesen Vermerk austragen.
 
 **Entschieden am 10. Oktober 2026:**
 
 - Richtung **B · Saal** (zur Wahl standen A · Stille, B · Saal, C · Aushang,
   D · Zettel): Karten auf Grund, die Sitzreihen 4-6-8 des Logos zeigen die
-  Besetzung, unten vier Reiter statt Seitenmenü, „Planen" als eigener Modus.
+  Besetzung, „Planen" als eigener Modus. Die Reiterleiste unten, die zu B
+  gehörte, ist am 11. Oktober gestrichen: **Das Menü bleibt wie heute an der
+  Seite und klappt aus.**
 - Statt elf Farbschemata nur noch **Dunkel, Hell und Hoher Kontrast**. Das Logo
-  folgt dem Farbschema; Petrol, Creme und Gold sind keine Vorgabe mehr.
+  folgt dem Farbschema; Petrol, Creme und Gold sind keine Vorgabe mehr. Am
+  11. Oktober geändert: **Hell, Dunkel und Automatisch**, Hoher Kontrast ist
+  gestrichen.
 - Farbe **Graphit · Minze**, hell und dunkel. Schrift **Manrope**: Sie deckt
   Latein, Kyrillisch, Griechisch und Vietnamesisch wie heute IBM Plex Sans.
+- Abends: **Die neuen Funktionen in den Abläufen bleiben** („ja") —
+  Wochenübersicht mit Spur, ein Bildschirm „Zusagen" mit „Jetzt erinnern" und
+  Abhaken für Personen ohne Konto, Vorschau beim Programm-Holen, Nachricht und
+  „Tag als abwesend eintragen" beim Absagen, Einladung vor dem Konto und ein
+  Schritt „Willkommen", „Rückgängig" in der Meldung, „Alle bestätigen",
+  Auslastung als fünf Punkte und „Vorschlag" beim Zuteilen, Aufgabenbereiche
+  als Chips. Und: **erst die fehlenden Teile zeichnen**, dann seine Anmerkungen.
+  Am 11. Oktober geändert: „Einladung vor dem Konto" ist dem Anmelden mit Link
+  gewichen, „Rückgängig" in der Meldung kommt nicht.
+
+**Entschieden am 11. Oktober 2026** — alle Abläufe mit dem Betreiber
+durchgegangen, Frage für Frage. Jede Antwort steht auf der Seite „Abläufe der
+Versammlung.app" (https://claude.ai/artifact/QZY5VbKHRESb9sReyV7FbB) beim
+jeweiligen Weg unter „Entschieden am 11. Oktober". Die folgenreichsten:
+
+- **Kein Registrieren, kein Passwort, für alle Versammlungen.** Konten legt der
+  Admin an oder die Übernahme aus New World Scheduler; angemeldet wird nur mit
+  einem Link, per E-Mail oder auf einem Zettel mit QR-Code und Code zum
+  Eintippen. Übernommene Zuteilungen bestätigt jeder selbst, Links und erster
+  Plan gehen in einem Schritt hinaus. Wer noch nicht angemeldet ist, bekommt
+  persönlich Bescheid. Das beantwortet T114 zum großen Teil (siehe dort).
+- **Trolleys statt Standorte und Schichten:** *„man steht mit dem trolley ja nur
+  15 minuten an einem platz … was man eigentlich braucht ist ein terminplan, wo
+  man sich verabreden kann - alle, die das trolley recht haben."* Die
+  Versammlung legt ihre Trolleys mit Abholort an. Wer das Recht hat, trägt sich
+  frei von 6 bis 22 Uhr in halben Stunden ein: einer für beide, oder allein mit
+  „Begleitung gesucht", und jemand anders kommt dazu. Kein Planer, keine Zusage;
+  die andere Person erfährt es beim Eintragen, am Vortag werden beide erinnert.
+- **Hoher Kontrast gestrichen**; kein „Rückgängig" in Meldungen (die Rückfrage
+  beim Löschen reicht); „den Tag als abwesend eintragen" beim Absagen ist aus,
+  zum Einschalten.
+- Bestätigt wie gezeichnet: Planen als eigener Modus, die Übersicht aller Wochen
+  (auf Start bleibt eine kurze Planungs-Karte), Programm holen für Planer und
+  Admin mit Vorschau, „Vorschlag" beim Zuteilen, „Plan senden" mit Namen, der
+  Bildschirm „Zusagen", das Blatt beim Öffnen mit „Später" und „Alle
+  bestätigen", der Saal auf Start, das Blatt vor dem Absagen mit freiwilliger
+  Nachricht, freie Gruppennamen, Erinnerungen als Zeitleiste, Aufgabenbereiche
+  als Chips, Rechte bei der Person, der Menü-Abschnitt „Planen und verwalten",
+  große Schrift untereinander.
+- Schriften für Rechts-nach-links: **Vazirmatn** (Arabisch, Persisch), **Noto
+  Nastaliq Urdu**, **Heebo** (Hebräisch).
 
 **Gezeichnet:** die ganze App dunkel und hell (je 46 Tafeln als Wege: Einstieg,
 Für mich, Versammlung ansehen, Planen, Predigtdienst und weitere Pläne planen,
 Verwaltung), Desktop für Start, Planen und Personen, dazu die Grundlagen mit
-drei Tafeln in Hohem Kontrast.
+drei Tafeln in Hohem Kontrast. Am Abend dazu (wartet auf Veröffentlichung, siehe
+oben): die kleinen Dialoge in ihren Wegen — Passwort vergessen in drei
+Schritten, Sprache der App, Programm und Programmpunkt bearbeiten, Gruppen und
+Standorte —, große Schrift (Stufe 1,45) und Rechts-nach-links (Arabisch, dazu
+eine Schriftprobe für Arabisch, Persisch, Urdu und Hebräisch) auf den Grundlagen.
+Am 11. Oktober nach der Durchsicht (wartet ebenfalls): das Menü an der Seite,
+Anmelden nur mit Link im Einstieg, in der Übernahme aus New World Scheduler und
+bei der Person („Link senden", „Zettel drucken", angemeldet · Link gesendet ·
+ohne Link), die Trolleys (Ansicht mit Tagesplan je Trolley, Eintragen,
+Trolleys in der Verwaltung), „Noch nicht angemeldet" statt „Ohne App-Konto",
+Profil ohne Hohen Kontrast, die gewählten RTL-Schriften markiert, die Wege der
+App um „Aus NWS übernehmen" und „Trolley" ergänzt. Entfallen sind die Tafeln zu
+Konto, Passwort, Standort, Zeugnisgeben planen und Hohem Kontrast.
 
 **Offen:**
 
-1. **Vorgeschlagen, nicht entschieden:** die neuen Funktionen in den Abläufen —
-   Wochenübersicht mit Spur, ein Bildschirm „Zusagen" mit „Jetzt erinnern" und
-   Abhaken für Personen ohne Konto, Vorschau beim Programm-Holen, Nachricht und
-   „Tag als abwesend eintragen" beim Absagen, Einladung vor dem Konto und ein
-   Schritt „Willkommen", „Rückgängig" in der Meldung, „Alle bestätigen",
-   Auslastung als fünf Punkte und „Vorschlag" beim Zuteilen, Aufgabenbereiche
-   als Chips. Ob es einzelne davon schon gibt, ist am Code nicht nachgesehen.
-2. **Nicht gezeichnet:** Rechts-nach-links, Schriftgröße bis 1,45, Tablet,
-   Desktop für die übrigen Bildschirme, kleine Dialoge (Programmpunkt
-   bearbeiten, Sprache wählen, Passwort vergessen, Gruppen und Standorte),
+1. **Noch nicht gezeichnet:** Tablet, Desktop für die übrigen Bildschirme,
    Druckbögen.
-3. **Die Rückmeldung des Betreibers:** Bis zum 10. Oktober war die fertige
-   Leinwand geöffnet, aber nicht kommentiert.
+2. **Veröffentlichen** (siehe oben), dann kann der Betreiber die Leinwand im
+   neuen Stand ansehen und kommentieren. Bis zum 11. Oktober kam seine
+   Rückmeldung über die Durchsicht, nicht über Kommentare auf der Leinwand.
+3. **Wortwahl beim Trolley:** gezeichnet ist „Begleitung gesucht" statt
+   „Partner gesucht", damit es für Brüder und Schwestern gleich passt — vom
+   Betreiber noch nicht bestätigt.
 
-**Danach, als eigener Auftrag: der Umbau der App.** Vorher jeden Vorschlag aus
-Punkt 1 einzeln bestätigen lassen. Mitzunehmen sind die Regeln der App:
+Erledigt: die Schrift für Rechts-nach-links und die gemeinsame Durchsicht aller
+Abläufe (beides 11. Oktober).
+
+**Danach, als eigener Auftrag: der Umbau der App.** Was es davon heute schon
+gibt, steht je Weg auf der Seite der Durchsicht unter „Heute in der App"
+(gemessen am Code). Neu gegenüber der App sind auch Teile der Dialoge: der
+Titel eines Programmpunkts nachträglich (heute nur beim Anlegen), Gruppennamen
+(heute fest „Gruppe N") und die Gruppenbesuche in der Rückfrage beim Löschen
+einer Gruppe. Die Konten: über die Admin-Schnittstelle von Supabase, ein Link,
+der länger gilt als die Anmelde-Links von Supabase (über eine Edge Function),
+eine interne Anmeldeadresse für Personen ohne oder mit geteilter Adresse; der
+Versand braucht `INVITE_FROM`. Die Trolleys ersetzen das heutige Modell
+(`OzTermin`: fester Ort, Tag und Zeit nach dem Königreichsdienst vom November
+2013, Stand oder Trolley, daraus wöchentliche Schichten); das Recht bleibt der
+Aufgabenbereich `zeugnis`. Mitzunehmen sind die Regeln der App:
 Schriftgrößen nur über `--fs`, Löschen fragt nach, die Zusage-Ampel, alle 33
 Sprachen im selben Zug, neue Handbuch-Bilder, Logo-Dateien und Icons
-(`npm run icons`) erst mit dem neuen Logo. Beim Kürzen der Farbschemata:
+(`npm run icons`) erst mit dem neuen Logo. Beim Kürzen der Farbschemata (die
+Farbtabelle der Leinwand führt noch `kontrast` — nicht übernehmen):
 `asTheme` verwirft unbekannte Schlüssel und fällt auf `weiss` zurück. Wer heute
 ein dunkles Schema gespeichert hat, landete ohne Abbildung im hellen. Und der
 Schlüssel `graphit` ist schon vergeben, er zeigt heute „Matcha"
@@ -6519,7 +6593,7 @@ Schema.
 
 ## Fortschritt
 
-Stand 10. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 11. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -6536,8 +6610,8 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt (so auch am 10. Oktober) |
-| **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf; die Mail-Bestätigung ist an, ankommen kann sie nur mit eigenem SMTP-Server (4.10.2026) |
-| **T121** | Neues Design | ☐ Entwurf auf der Design-Leinwand; wartet auf Rückmeldung und Entscheidung des Betreibers zu den vorgeschlagenen neuen Funktionen, der Umbau der App folgt erst danach |
+| **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf; die Mail-Bestätigung ist an, ankommen kann sie nur mit eigenem SMTP-Server (4.10.2026). Mit T121 am 11. Oktober zum großen Teil entschieden: kein Registrieren, Konten legt der Admin oder der Betreiber an (kommt mit dem Umbau); offen bleibt ein Konto in zwei Versammlungen |
+| **T121** | Neues Design | ☐ Entwurf auf der Design-Leinwand; am 11. Oktober alle Abläufe mit dem Betreiber durchgegangen und entschieden. Die Änderungen vom 10. und 11. Oktober warten auf Veröffentlichung (Profil privat); der Umbau der App ist ein eigener Auftrag |
 
 > **Nachgezählt am 10. Oktober 2026.** Die Zeile oben führte seit dem
 > 23. August zwei Zeichen zu wenig: „22./23. August" stand von Anfang an mit
@@ -6905,14 +6979,14 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 ### Was offen ist und warum
 
-**Stand 10. Oktober 2026, alles Offene an einer Stelle.** Im Code ist nichts
+**Stand 11. Oktober 2026, alles Offene an einer Stelle.** Im Code ist nichts
 offen; was aussteht, braucht eine Entscheidung, den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **T114** | Registrieren bei mehreren Versammlungen | wartet auf Entscheidungen des Betreibers: Konto ohne Code, wer eine Versammlung anlegt, ein Konto in zwei Versammlungen, die Meldung bei `already-member` |
+| **T114** | Registrieren bei mehreren Versammlungen | wartet auf Entscheidungen des Betreibers: Konto ohne Code, wer eine Versammlung anlegt, ein Konto in zwei Versammlungen, die Meldung bei `already-member`. Am 11. Oktober mit T121 entschieden: kein Registrieren, Konten legt der Admin oder der Betreiber an; offen bleiben ein Konto in zwei Versammlungen und wer eine Versammlung anlegt |
 | **T106** | Alle auf einmal benachrichtigen | zurückgestellt am 21. September; im Bestand steht keine Telefonnummer |
-| **T121** | Neues Design | Entwurf auf der Design-Leinwand, am Code nichts geändert; wartet auf Rückmeldung und Entscheidung des Betreibers zu den vorgeschlagenen neuen Funktionen und auf die fehlenden Teile (Rechts-nach-links, große Schrift, kleine Dialoge). Der Umbau ist ein eigener Auftrag |
+| **T121** | Neues Design | Entwurf auf der Design-Leinwand, am Code nichts geändert. Am 11. Oktober alle Abläufe mit dem Betreiber durchgegangen und entschieden (Anmelden nur mit Link, Trolleys statt Standorte, ohne Hohen Kontrast); die Änderungen warten auf Veröffentlichung aus dem Profil privat. Offen sind Tablet, Desktop der übrigen Bildschirme und Druckbögen. Der Umbau ist ein eigener Auftrag |
 | **Vor dem Ausrollen** | SMTP-Server, `INVITE_FROM` | nur der Betreiber, außerhalb des Repos (siehe oben) |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht |
