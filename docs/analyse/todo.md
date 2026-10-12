@@ -6456,9 +6456,10 @@ Leinwand stand am 12. Oktober unverändert auf dieser Version):
 `-Hell`) und die drei Tafeln `…-Kontrast`. Beides in einem Aufruf; `files` dann
 als Zuordnung, die zu entfernenden auf `null` (Schritt 7 der Übergabe), höchstens
 255 Dateien je Aufruf. Von Hand dazu, weil `leinwand.mjs` Werkzeug nicht zählt:
-ganz `project/werkzeug/`, 23 Dateien (alle `.mjs`, neu am 12. Oktober
-`desktop-teile.mjs`, `bauen-desktop-mehr.mjs`, `bauen-tablet.mjs`,
-`bauen-druck.mjs`, dazu `LIESMICH.md`). Danach
+ganz `project/werkzeug/`, 26 Dateien (alle `.mjs` und `LIESMICH.md`; neu am
+12. Oktober `desktop-teile.mjs`, `bauen-desktop-mehr.mjs`, `bauen-tablet.mjs`,
+`bauen-druck.mjs`, nach dem Code-Review `szenario.mjs`, `trolley-teile.mjs` und
+`messen.mjs`). Danach
 `node leinwand.mjs --gemerkt <neue Kennung>` und diesen Vermerk austragen.
 
 **Entschieden am 10. Oktober 2026:**
@@ -6549,8 +6550,21 @@ abgefragt, **alles wie gezeichnet**: die schmale Leiste am Tablet hochkant (stat
 fest ausgeklappt wie heute oder versteckt wie am Handy), „Mitteilungen" als
 Eintrag in der Leiste am Desktop, beide Zusammenkünfte einer Woche mit den
 Hilfsdiensten auf einem Blatt, freie Plätze gepunktet zum Eintragen von Hand, der
-Trolley-Bogen für den Aushang bleibt. Auf der Seite der Durchsicht (Version 8) je
-Abschnitt unter „Entschieden am 12. Oktober".
+Trolley-Bogen für den Aushang bleibt. Auf der Seite der Durchsicht (seit
+Version 8) je Abschnitt unter „Entschieden am 12. Oktober".
+
+**Code-Review am 12. Oktober 2026** über die Entwürfe (*„mach aber noch ein
+code-review über die entwürfe"*): 15 Befunde, auf *„ja, alle beheben"* alle
+behoben (wartet mit dem Übrigen auf Veröffentlichung). Am Bild: Die Spur in
+„Plan senden" und „Zusagen" zeigte am Desktop „Zuteilen" als erledigt, hinter dem
+Dialog „Plan senden" und dem Tablet-Menü blieb die Leiste bedienbar, „S-89
+drucken" führte auf die Zettel anderer, zwei Verweise am Desktop gingen auf
+Handy-Blätter, einer auf die falsche Seite, die Monatsbögen trugen die
+Seitenzahl doppelt, `GZustaende` war 10 px zu kurz. Im Werkzeug: Das Szenario
+steht in `szenario.mjs` statt abgeschrieben in den Stapeln, die Zeitleiste der
+Trolleys in `trolley-teile.mjs`, und `messen.mjs` misst alle Tafeln gerendert.
+Danach `pruefen.mjs` 152 Dateien und `messen.mjs` 96 Tafeln ohne Befund, alle
+Stapel bytegleich wiederholbar; die Seite der Durchsicht steht auf Version 9.
 
 **Offen:** **Veröffentlichen** (siehe oben), dann kann der Betreiber die
 Leinwand im neuen Stand ansehen und kommentieren. Bis zum 12. Oktober kam seine
@@ -6559,7 +6573,8 @@ Rückmeldung über die Durchsicht, nicht über Kommentare auf der Leinwand.
 Erledigt: die Schrift für Rechts-nach-links, die gemeinsame Durchsicht aller
 Abläufe und die beiden Nachfragen dazu — „Partner gesucht" statt „Begleitung
 gesucht", nur Trolleys ohne Infostände (alles 11. Oktober); Tablet, Desktop für
-alle Bereiche und die Druckbögen gezeichnet (12. Oktober).
+alle Bereiche und die Druckbögen gezeichnet, das Code-Review darüber mit allen
+Befunden behoben (12. Oktober).
 
 **Danach, als eigener Auftrag: der Umbau der App.** Was es davon heute schon
 gibt, steht je Weg auf der Seite der Durchsicht unter „Heute in der App"
@@ -6629,7 +6644,7 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 | --- | --- | --- |
 | **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt (so auch am 10. Oktober) |
 | **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf; die Mail-Bestätigung ist an, ankommen kann sie nur mit eigenem SMTP-Server (4.10.2026). Mit T121 am 11. Oktober zum großen Teil entschieden: kein Registrieren, Konten legt der Admin oder der Betreiber an (kommt mit dem Umbau); offen bleibt ein Konto in zwei Versammlungen |
-| **T121** | Neues Design | ☐ Entwurf auf der Design-Leinwand; am 11. Oktober alle Abläufe mit dem Betreiber durchgegangen und entschieden, am 12. Oktober Tablet, Desktop und Druckbögen gezeichnet und die Fragen dazu entschieden (alles wie gezeichnet). Die Änderungen vom 10. bis 12. Oktober warten auf Veröffentlichung (Profil privat); der Umbau der App ist ein eigener Auftrag |
+| **T121** | Neues Design | ☐ Entwurf auf der Design-Leinwand; am 11. Oktober alle Abläufe mit dem Betreiber durchgegangen und entschieden, am 12. Oktober Tablet, Desktop und Druckbögen gezeichnet, die Fragen dazu entschieden (alles wie gezeichnet) und ein Code-Review über die Entwürfe behoben (15 Befunde). Die Änderungen vom 10. bis 12. Oktober warten auf Veröffentlichung (Profil privat); der Umbau der App ist ein eigener Auftrag |
 
 > **Nachgezählt am 10. Oktober 2026.** Die Zeile oben führte seit dem
 > 23. August zwei Zeichen zu wenig: „22./23. August" stand von Anfang an mit
@@ -7004,7 +7019,7 @@ offen; was aussteht, braucht eine Entscheidung, den Betreiber oder ein Gerät.
 | --- | --- | --- |
 | **T114** | Registrieren bei mehreren Versammlungen | wartet auf Entscheidungen des Betreibers: Konto ohne Code, wer eine Versammlung anlegt, ein Konto in zwei Versammlungen, die Meldung bei `already-member`. Am 11. Oktober mit T121 entschieden: kein Registrieren, Konten legt der Admin oder der Betreiber an; offen bleiben ein Konto in zwei Versammlungen und wer eine Versammlung anlegt |
 | **T106** | Alle auf einmal benachrichtigen | zurückgestellt am 21. September; im Bestand steht keine Telefonnummer |
-| **T121** | Neues Design | Entwurf auf der Design-Leinwand, am Code nichts geändert. Am 11. Oktober alle Abläufe mit dem Betreiber durchgegangen und entschieden (Anmelden nur mit Link, Trolleys statt Standorte, ohne Hohen Kontrast); am 12. Oktober Tablet, Desktop für alle Bereiche und sieben Druckbögen gezeichnet, die fünf Fragen dazu am selben Tag entschieden (alles wie gezeichnet). Die Änderungen warten auf Veröffentlichung aus dem Profil privat. Der Umbau ist ein eigener Auftrag |
+| **T121** | Neues Design | Entwurf auf der Design-Leinwand, am Code nichts geändert. Am 11. Oktober alle Abläufe mit dem Betreiber durchgegangen und entschieden (Anmelden nur mit Link, Trolleys statt Standorte, ohne Hohen Kontrast); am 12. Oktober Tablet, Desktop für alle Bereiche und sieben Druckbögen gezeichnet, die fünf Fragen dazu am selben Tag entschieden (alles wie gezeichnet), danach ein Code-Review über die Entwürfe mit 15 Befunden, alle behoben. Die Änderungen warten auf Veröffentlichung aus dem Profil privat. Der Umbau ist ein eigener Auftrag |
 | **Vor dem Ausrollen** | SMTP-Server, `INVITE_FROM` | nur der Betreiber, außerhalb des Repos (siehe oben) |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht |
