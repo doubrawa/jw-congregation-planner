@@ -5,6 +5,7 @@ const VALID: readonly Screen[] = [
   'start',
   'programm',
   'aufgaben',
+  'mitteilungen',
   'planen',
   'personen',
   'einstellungen',

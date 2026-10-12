@@ -32,8 +32,6 @@ const VIEW_ACTIONS: ReadonlySet<AppAction['type']> = new Set([
   // erst das eigentliche `assign` ist ein Schreibzugriff)
   'openSlot',
   'closeSlot',
-  'openNotifs',
-  'closeNotifs',
   'selectPerson',
   'openS89',
   'closeS89',
@@ -60,11 +58,11 @@ const VIEW_ACTIONS: ReadonlySet<AppAction['type']> = new Set([
    */
   'closeConfirm',
   /*
-   * Frisch geholte Glocken-Zeilen anzeigen (`NotificationsPanel`). Das ist
+   * Frisch geholte Mitteilungen anzeigen (`useMitteilungenNachladen`). Das ist
    * gelesen, nicht geschrieben — `persist` kennt die Aktion gar nicht. Gesperrt
    * wurden dadurch genau die Zeilen verworfen, die gerade eingetroffen waren,
-   * und statt ihrer erschien ein „nur lesen"-Hinweis auf das bloße Aufklappen
-   * der Glocke.
+   * und statt ihrer erschien ein „nur lesen"-Hinweis auf das bloße Öffnen der
+   * Mitteilungen.
    */
   'setNotifs',
   // Die eigene Aufgabe ansehen. Erst Bestätigen/Absagen darin schreibt —

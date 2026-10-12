@@ -7,13 +7,13 @@ import {
   AppStoreContext,
   type AppState,
   useStaticStore,
-} from './context'
+} from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
-import { NotificationsPanel } from './NotificationsPanel'
 import type { Notification } from '../data/types'
+import { MitteilungenScreen } from './MitteilungenScreen'
 
 /**
- * **Was das Öffnen der Glocke kostet — und was es liefern muss.**
+ * **Was das Öffnen der Mitteilungen kostet — und was es liefern muss.**
  *
  * Beim Öffnen lief der **volle** Ladevorgang: dreizehn Abfragen, darunter 52
  * Wochen als JSONB, alle Bestätigungen und das Versand-Tagebuch — um fünfzig
@@ -21,12 +21,12 @@ import type { Notification } from '../data/types'
  * gelegentlich nachsieht, lud damit jedes Mal die ganze Versammlung neu.
  *
  * Das Nachladen selbst ist aber richtig und darf nicht verschwinden: Es gibt
- * kein Realtime-Abo. Ohne es sähe man in der Glocke den Stand vom letzten
+ * kein Realtime-Abo. Ohne es sähe man auf der Seite den Stand vom letzten
  * echten Start — ein zweiter Planer teilt zu, jemand sagt ab, ein Ersatz wird
  * gesucht, und nichts davon käme an.
  *
  * Und es reicht **nicht**, nur die Zeilen zu holen: Eine frische Zuteilung
- * bringt einen Aufgaben-Schlüssel mit, aus dem die Glocke einen
+ * bringt einen Aufgaben-Schlüssel mit, aus dem die Seite einen
  * Bestätigen-Knopf macht — ob sie das darf, entscheidet `state.myTasks`, und
  * das hängt an Wochen und Bestätigungen. Deshalb die zweite Stufe.
  *
@@ -40,7 +40,7 @@ const ladeAlles = vi.fn()
 vi.mock('../lib/data', () => ({
   loadNotifications: (...args: unknown[]) => ladeMitteilungen(...args) as unknown,
 }))
-vi.mock('./hydrate', () => ({
+vi.mock('../app/hydrate', () => ({
   loadAndHydrate: (...args: unknown[]) => ladeAlles(...args) as unknown,
 }))
 
@@ -54,7 +54,7 @@ const notif = (id: string, over: Partial<Notification> = {}): Notification => ({
   ...over,
 })
 
-function oeffneGlocke(over: Partial<AppState> = {}) {
+function oeffneMitteilungen(over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
     ...demoZustand(),
@@ -75,7 +75,7 @@ function oeffneGlocke(over: Partial<AppState> = {}) {
       <AppDispatchContext.Provider value={dispatch}>
         <AppStoreContext.Provider value={store}>
           <AppStateContext.Provider value={state}>
-            <NotificationsPanel />
+            <MitteilungenScreen />
           </AppStateContext.Provider>
         </AppStoreContext.Provider>
       </AppDispatchContext.Provider>
@@ -92,11 +92,11 @@ beforeEach(() => {
 })
 afterEach(cleanup)
 
-describe('Die Glocke lädt beim Öffnen nach — so wenig wie möglich', () => {
+describe('Die Mitteilungen laden beim Öffnen nach — so wenig wie möglich', () => {
   it('ist nichts Neues da, bleibt es bei der einen Abfrage', async () => {
     const bekannt = notif('n1')
     ladeMitteilungen.mockResolvedValue([bekannt])
-    const { dispatch } = oeffneGlocke({ notifs: [bekannt] })
+    const { dispatch } = oeffneMitteilungen({ notifs: [bekannt] })
 
     await waitFor(() => expect(dispatch).toHaveBeenCalled())
     expect(ladeMitteilungen).toHaveBeenCalledTimes(1)
@@ -107,9 +107,9 @@ describe('Die Glocke lädt beim Öffnen nach — so wenig wie möglich', () => {
 
   it('der frische Stand kommt an — auch wenn nur der Gelesen-Haken sich geändert hat', async () => {
     // Ein anderes Gerät hat die Zeile gelesen. Kein neuer Eintrag, aber die
-    // Glocke soll den Punkt nicht weiter als ungelesen zeigen.
+    // Seite soll sie nicht weiter als neu zeigen.
     ladeMitteilungen.mockResolvedValue([notif('n1', { read: true })])
-    const { dispatch } = oeffneGlocke({ notifs: [notif('n1', { read: false })] })
+    const { dispatch } = oeffneMitteilungen({ notifs: [notif('n1', { read: false })] })
 
     await waitFor(() => expect(dispatch).toHaveBeenCalled())
     expect(dispatch).toHaveBeenCalledWith({
@@ -123,11 +123,11 @@ describe('Die Glocke lädt beim Öffnen nach — so wenig wie möglich', () => {
     /*
      * Die Zeile bringt einen Aufgaben-Schlüssel mit; ob daraus ein
      * Bestätigen-Knopf wird, entscheidet `state.myTasks`. Ohne den Nachlauf
-     * zeigte die Glocke die frische Zuteilung an und verschwiege genau den
+     * zeigte die Seite die frische Zuteilung an und verschwiege genau den
      * Knopf, für den sie den Schlüssel mitbringt.
      */
     ladeMitteilungen.mockResolvedValue([notif('n2', { taskId: 'k' }), notif('n1')])
-    const { dispatch } = oeffneGlocke({ notifs: [notif('n1')] })
+    const { dispatch } = oeffneMitteilungen({ notifs: [notif('n1')] })
 
     await waitFor(() => expect(ladeAlles).toHaveBeenCalledTimes(1))
     // Und dann NICHT zusätzlich die halbe Liste setzen — der volle Lauf bringt
@@ -136,10 +136,11 @@ describe('Die Glocke lädt beim Öffnen nach — so wenig wie möglich', () => {
   })
 
   it('eine gelöschte Zeile verschwindet, ohne alles neu zu laden', async () => {
-    // „Alle löschen" auf einem anderen Gerät. Nichts Neues, also keine zweite
-    // Stufe — aber die Liste muss leer werden.
+    // Ein Ersatzgesuch ist vergeben — der Server räumt „Ersatz gesucht" aus
+    // allen Glocken. Nichts Neues, also keine zweite Stufe — aber die Liste
+    // muss leer werden.
     ladeMitteilungen.mockResolvedValue([])
-    const { dispatch } = oeffneGlocke({ notifs: [notif('n1')] })
+    const { dispatch } = oeffneMitteilungen({ notifs: [notif('n1')] })
 
     await waitFor(() => expect(dispatch).toHaveBeenCalled())
     expect(dispatch).toHaveBeenCalledWith({ type: 'setNotifs', notifs: [] })
@@ -150,7 +151,7 @@ describe('Die Glocke lädt beim Öffnen nach — so wenig wie möglich', () => {
     // `null` heißt „nicht gelesen". Die Liste hier zu leeren hieße, dem
     // Betrachter seine Mitteilungen wegen eines Funklochs zu nehmen.
     ladeMitteilungen.mockResolvedValue(null)
-    const { dispatch } = oeffneGlocke({ notifs: [notif('n1')] })
+    const { dispatch } = oeffneMitteilungen({ notifs: [notif('n1')] })
 
     await waitFor(() => expect(ladeMitteilungen).toHaveBeenCalled())
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'setNotifs' }))
@@ -158,7 +159,7 @@ describe('Die Glocke lädt beim Öffnen nach — so wenig wie möglich', () => {
   })
 
   it('im Demo-Modus wird gar nichts geladen', async () => {
-    oeffneGlocke({ congregationId: null, userId: null, notifs: [notif('n1')] })
+    oeffneMitteilungen({ congregationId: null, userId: null, notifs: [notif('n1')] })
     await Promise.resolve()
     expect(ladeMitteilungen).not.toHaveBeenCalled()
     expect(ladeAlles).not.toHaveBeenCalled()

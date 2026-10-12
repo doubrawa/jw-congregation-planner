@@ -8,6 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from './context'
+import { BILDSCHIRME } from '../../tests/testdaten/bildschirme'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import {
   buildDemoFsWeeks,
@@ -21,7 +22,7 @@ import {
   DEMO_PERSONS,
   DEMO_SERVICES,
 } from '../../tests/testdaten/testdaten'
-import type { S89Payload, Screen } from '../data/types'
+import type { S89Payload } from '../data/types'
 
 /**
  * **Jeder Knopf muss einen Namen haben.**
@@ -97,15 +98,10 @@ function zeige(over: Partial<AppState> = {}) {
   return render(<Buehne />)
 }
 
-const SCREENS: Screen[] = [
-  'start', 'programm', 'aufgaben', 'planen', 'personen', 'einstellungen', 'profil',
-]
-
 const LAGEN: Array<[string, Partial<AppState>]> = [
-  ...SCREENS.map((screen) => [`Bildschirm ${screen}`, { screen }] as [string, Partial<AppState>]),
+  ...BILDSCHIRME.map((screen) => [`Bildschirm ${screen}`, { screen }] as [string, Partial<AppState>]),
   ['Planen · Wochenende', { screen: 'planen', tab: 'we' }],
   ['Planen · Predigtdienst', { screen: 'planen', tab: 'fs' }],
-  ['Mitteilungen', { screen: 'start', notifOpen: true }],
   ['Aufgaben-Blatt', { screen: 'aufgaben', myTaskId: DEMO_MY_TASKS[0]?.id ?? '' }],
   ['Sprachauswahl', { screen: 'einstellungen', langSheetOpen: true }],
   ['S-89-Formular', { screen: 'aufgaben', s89: S89 }],

@@ -37,6 +37,7 @@ export type Screen =
   | 'start'
   | 'programm'
   | 'aufgaben'
+  | 'mitteilungen'
   | 'planen'
   | 'personen'
   | 'einstellungen'

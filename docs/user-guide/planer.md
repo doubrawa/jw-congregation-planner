@@ -422,7 +422,8 @@ eine Mitteilung („Verhinderung gemeldet"), und der Punkt an der Zuteilung wird
 abgesagten Aufgabe** – bei einem Treffpunkt im Predigtdienst, beim öffentlichen
 Zeugnisgeben dessen Reiter. Auch die übrigen Mitteilungen an dich als Planer
 („Programm importiert", „Unbestätigte Zuteilungen", „Ersatz gefunden") führen
-ins Planen; in der Glocke steht jede höchstens zwei Zeilen lang.
+ins Planen; in den Mitteilungen (Glocke oben rechts, am Computer im Menü) steht
+jede höchstens zwei Zeilen lang.
 
 Bei **Hilfsdiensten** übernimmt die App den ersten Schritt selbst: Sie
 benachrichtigt alle, die für diesen Dienst eingetragen und an dem Tag nicht
@@ -932,7 +933,7 @@ Die Seite enthält mehrere Abschnitte (nach unten scrollen):
 
   Die Sprache **jeder anderen** Nachricht ist dagegen die des Empfängers:
   Push-Erinnerungen entstehen beim Verschicken in der Sprache, die auf seinem
-  Gerät eingestellt ist, die Glocken-Zeilen in der App in seiner App-Sprache.
+  Gerät eingestellt ist, die Mitteilungen in der App in seiner App-Sprache.
   Wer Englisch eingestellt hat, liest „Reminder: confirm assignment", auch wenn
   eure Versammlung deutsch ist.
 - **Programm‑Import** – neue Wochen von jw.org laden (siehe unten).

@@ -44,8 +44,10 @@ describe('Overlays lassen sich mit Escape schließen', () => {
 
   it('jeder Baustein mit role="dialog" nimmt Escape entgegen', () => {
     // Gegenprobe: Ohne Treffer prüfte der Test nichts. Seit alle Blätter die
-    // Hülle `Sheet` teilen (T121), sind es nur noch wenige Dateien.
-    expect(dialoge.length, 'keine Dialoge gefunden').toBeGreaterThanOrEqual(4)
+    // Hülle `Sheet` teilen (T121) und die Mitteilungen eine Seite sind, sind es
+    // nur noch wenige Dateien: die Hülle, das Gerüst (Schublade) und das Popup
+    // des Datumswählers.
+    expect(dialoge.length, 'keine Dialoge gefunden').toBeGreaterThanOrEqual(3)
 
     const ohne = dialoge
       .filter(([pfad, q]) => !q.includes('useEscape') && !(name(pfad) in AUSNAHMEN))

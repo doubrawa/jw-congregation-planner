@@ -22,7 +22,8 @@
 /* ---- Kopfzeile ------------------------------------------------------------ */
 
 .kopfzeile,
-.planenkopf {
+.planenkopf,
+.unterseitenkopf {
   position: sticky;
   top: 0;
   z-index: var(--z-nav);
@@ -77,6 +78,20 @@
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Zurück links, das Angebot der Seite rechts (Mitteilungen: „Alle gelesen"). */
+.unterseitenkopf {
+  justify-content: space-between;
+}
+
+.unterseitenkopf-aktion {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 8px;
+  color: var(--akzent-text);
+  font-weight: 600;
 }
 
 /* ---- Das volle Menü ------------------------------------------------------- */
@@ -286,6 +301,7 @@
 .schmale-leiste-abschnitt {
   display: flex;
   flex-direction: column;
+  align-self: stretch;
   align-items: center;
   gap: 4px;
 }
@@ -296,13 +312,15 @@
   border-block-start: 1px solid var(--linie);
 }
 
+/* Volle Breite statt fester 76 px: 88 px Leiste minus Rand und Innenabstand
+   lassen 75 px — der eine Pixel zu viel zeigte einen waagerechten Rollbalken. */
 .leisten-eintrag {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  width: 76px;
+  width: 100%;
   min-height: 58px;
   padding: 4px 0 6px;
   color: var(--text2);
@@ -390,18 +408,20 @@
 
 /* ---- Breiten ---------------------------------------------------------------- */
 
-/* Beim Planen trägt am Handy der Kopf des Planens Titel und „Fertig". */
-.kopfzeile--beim-planen {
+/* Am Handy trägt beim Planen der Kopf des Planens Titel und „Fertig", auf
+   einer Unterseite der Kopf mit Zurück. */
+.kopfzeile--ersetzt {
   display: none;
 }
 
 @media (min-width: 768px) {
-  .planenkopf {
+  .planenkopf,
+  .unterseitenkopf {
     display: none;
   }
 
   .kopfzeile,
-  .kopfzeile--beim-planen {
+  .kopfzeile--ersetzt {
     display: flex;
     min-height: 68px;
     padding-inline: 32px;
@@ -424,7 +444,7 @@
 @media (min-width: 1180px) {
   .schmale-leiste,
   .kopfzeile,
-  .kopfzeile--beim-planen {
+  .kopfzeile--ersetzt {
     display: none;
   }
 

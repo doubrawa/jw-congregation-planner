@@ -7,6 +7,7 @@ import {
   currentSubscription,
   pushNeedsInstall,
   pushSupported,
+  pushVerweigert,
   subscribePush,
   subscriptionFields,
 } from '../lib/push'
@@ -16,13 +17,15 @@ interface PushState {
   angemeldet: boolean // angemeldetes Konto — ohne gibt es kein Abo, an das Push gehen könnte
   supported: boolean // Push direkt möglich (Schalter/„Aktivieren")
   needsInstall: boolean // erst als Home-Bildschirm-App möglich (iOS)
+  verweigert: boolean // der Browser hat die Berechtigung schon abgelehnt
   subscribed: boolean // dieses Gerät hat ein Abo
   enable: () => Promise<boolean>
   disable: () => Promise<void>
 }
 
 /**
- * Push-Zustand + An-/Abmelden, gebündelt für Profil-Schalter und Opt-in-Banner.
+ * Push-Zustand + An-/Abmelden, gebündelt für Profil-Schalter und die Karte auf
+ * den Mitteilungen.
  * `enable` fragt die Berechtigung an, speichert das Abo und toastet; `disable`
  * meldet das Gerät ab. Berechtigung wird nur ausgelöst, wenn der Nutzer selbst
  * eine Aktion anstößt (nie automatisch — ein abgelehnter Dialog blockiert dauerhaft).
@@ -73,7 +76,7 @@ export function usePush(): PushState {
     dispatch({ type: 'showToast', text: t.toastPushAus })
   }
 
-  return { angemeldet, supported, needsInstall, subscribed, enable, disable }
+  return { angemeldet, supported, needsInstall, verweigert: pushVerweigert(), subscribed, enable, disable }
 }
 
 /**

@@ -61,7 +61,8 @@ Wichtigste zusammen.
 - **Diese Woche in der Versammlung** – die Zusammenkünfte und die Treffpunkte
   deiner Gruppe, die in dieser Woche noch kommen.
 
-Neue **Mitteilungen** zeigt die **Glocke** oben rechts mit einem Punkt.
+Neue **Mitteilungen** zeigt die **Glocke** oben rechts mit einem Punkt; ein
+Tipp darauf öffnet sie (siehe Abschnitt 4).
 
 Über das Menü an der Seite (auf dem Handy hinter dem Menüknopf oben links)
 erreichst du **Start** und **Meine Aufgaben**, darunter unter **Versammlung** die
@@ -193,11 +194,25 @@ Zwei weitere Nachrichten können dich erreichen:
   Zeugnisgeben findet deine Schicht nicht statt, oder sie hat eine neue
   Uhrzeit oder einen neuen Ort (siehe oben).
 
-In der **Glocke** steht jede Mitteilung höchstens zwei Zeilen lang (am
-Computer zeigt der Mauszeiger den ganzen Text). **Ein Tipp darauf führt
-dorthin, wo sie herkommt:** zu deiner Aufgabe, gleich mit Bestätigen und
-Absagen; bei „Ersatz gesucht" zum Einspringen; ohne bestimmte Aufgabe zu
-**Meine Aufgaben**. Was du angetippt hast, gilt als gelesen.
+### Die Mitteilungen
+
+Die **Glocke** oben rechts öffnet die **Mitteilungen**; am Computer stehen sie
+im Menü. Oben steht **Neu**, darunter **Früher** – was du schon gelesen hast.
+Jede Mitteilung steht höchstens zwei Zeilen lang (am Computer zeigt der
+Mauszeiger den ganzen Text).
+
+- **Gleich hier erledigen:** Wartet eine neue Zuteilung noch auf deine Zusage,
+  stehen **Bestätigen** und **Ich kann nicht** direkt darunter; bei „Ersatz
+  gesucht" steht **Übernehmen**, solange noch niemand eingesprungen ist.
+- **Ein Tipp auf die Mitteilung führt dorthin, wo sie herkommt:** zu deiner
+  Aufgabe, gleich mit Bestätigen und Absagen; bei „Ersatz gesucht" zum
+  Einspringen; ohne bestimmte Aufgabe zu **Meine Aufgaben**.
+- Was du angetippt, bestätigt oder übernommen hast, gilt als gelesen und steht
+  danach unter **Früher**. **Alle gelesen** (am Handy oben rechts) räumt „Neu"
+  auf einmal ab.
+- Solange Benachrichtigungen auf diesem Gerät aus sind, steht ganz oben die
+  Karte **Keine Zuteilung verpassen** mit **Aktivieren** (siehe
+  [Abschnitt 8](#8-app-installieren--erinnerungen)).
 
 > Solange der Koordinator noch plant, erfährst du nichts – auch wenn dein Name
 > im Programm schon steht. Das ist Absicht: Bis die Woche steht, wird oft noch
@@ -251,9 +266,10 @@ passt.
 
 Du bekommst es auf drei Wegen zu sehen, und dafür musst du nichts suchen:
 
-- **Über die Push-Nachricht oder die Glocke** – ein Tipp darauf öffnet
-  **Meine Aufgaben** und springt direkt zum Bereich **Einspringen**, statt oben
-  auf der Seite zu landen.
+- **Über die Push-Nachricht oder die Mitteilungen** – dort übernimmst du
+  gleich mit **Übernehmen**; ein Tipp auf die Mitteilung selbst öffnet **Meine
+  Aufgaben** und springt direkt zum Bereich **Einspringen**, statt oben auf der
+  Seite zu landen.
 - **Beim Öffnen der App** – dasselbe Blatt, das dich an unbestätigte
   Zuteilungen erinnert, zeigt darunter den Bereich **Einspringen**. Mit
   **Später** legst du das Blatt weg: Einspringen kannst du, müssen tust du es
@@ -349,9 +365,10 @@ alles geht auch weiterhin über Knöpfe und Pfeile.
 - **Seitwärts wischen** – blättert bei den **Zusammenkünften**, im
   **Predigtdienst** und beim **Planen** eine Woche vor oder zurück.
 - **Zurück** (Zurück‑Taste oder Zurück‑Geste) – bleibt in der App: Es schließt
-  zuerst ein geöffnetes Fenster, das Menü oder die Mitteilungen, dann eine
-  geöffnete Ansicht (etwa einen Plan), und führt sonst zur **Startseite**. Erst
-  auf der Startseite verlässt Zurück die App.
+  zuerst ein geöffnetes Fenster oder das Menü, dann eine geöffnete Ansicht
+  (etwa einen Plan), und führt sonst zur **Startseite**. Erst auf der
+  Startseite verlässt Zurück die App. Auf den Mitteilungen führt auch der Pfeil
+  oben links zur Startseite.
 - **Nach unten wischen** – schließt ein von unten eingeblendetes Fenster. Der
   kurze Strich am oberen Rand zeigt, dass es sich ziehen lässt.
 
@@ -363,7 +380,8 @@ und am Computer steht das Menü ausgeklappt links, dort auch die
 Auf dem Handy und am Tablet steht oben in der Kopfzeile der **heutige Tag** und
 deine **Versammlung**, rechts die **Glocke** für die Mitteilungen – ein Punkt
 daran heißt: Es gibt Neues. Ein sehr langer Versammlungsname wird dort mit „…“
-gekürzt; ganz steht er im Menü.
+gekürzt; ganz steht er im Menü. Auf den Mitteilungen selbst steht am Handy
+statt der Kopfzeile der Pfeil zurück und **Alle gelesen**.
 
 ## 7. Profil: Darstellung, Schriftgröße & Sprache
 
@@ -391,7 +409,7 @@ dich ab. Admins finden am Handy hier auch **Personen** und **Einstellungen**.
   - **Auch die Nachrichten.** Eine Push-Erinnerung entsteht in dem Moment, in
     dem sie verschickt wird – in der Sprache, die auf **diesem Gerät**
     eingestellt war. Hast du die App auf zwei Geräten mit verschiedenen
-    Sprachen, bekommt jedes seine eigene. Die Zeilen unter der Glocke folgen
+    Sprachen, bekommt jedes seine eigene. Die Mitteilungen in der App folgen
     dagegen immer der Sprache, die du gerade eingestellt hast.
   - **Rechts nach links.** Bei Arabisch, Hebräisch, Persisch und Urdu läuft die
     ganze Oberfläche von rechts nach links – auch das Blättern zwischen den
@@ -400,7 +418,7 @@ dich ab. Admins finden am Handy hier auch **Personen** und **Einstellungen**.
     Versammlung. Wer sie bekommt, hat noch kein Konto – und damit noch keine
     eingestellte Sprache.
 - **Push‑Mitteilungen** – Erinnerungen an anstehende Aufgaben ein‑ oder
-  ausschalten (siehe [Abschnitt 7](#7-app-installieren--erinnerungen)).
+  ausschalten (siehe [Abschnitt 8](#8-app-installieren--erinnerungen)).
 - **Abmelden** – meldet dich auf diesem Gerät ab. Der erste Tipp fragt
   „Wirklich abmelden?", erst der zweite meldet ab.
 
@@ -444,22 +462,24 @@ Store zu laden. Du öffnest die Adresse im Browser und legst sie dir als App ab.
 
 Melde dich nach dem Installieren einmal **mit Internetverbindung** an und sieh dir
 Programm und Aufgaben an. Erst dadurch legt die App den Stand ab, den sie dir
-später [ohne Internet](#8-ohne-internet-offline) zeigen kann. Direkt nach dem
+später [ohne Internet](#9-ohne-internet-offline) zeigen kann. Direkt nach dem
 Installieren ist offline noch nichts vorhanden.
 
 ### Erinnerungen (Push‑Benachrichtigungen)
 
 Wo dein Gerät es unterstützt, kannst du Erinnerungen an anstehende Aufgaben als
-Push‑Nachricht erhalten – über den Schalter **Push‑Mitteilungen** unter
-**Profil**. Er erscheint nur, wenn dein Browser Push unterstützt. Auf dem iPhone
+Push‑Nachricht erhalten – über **Aktivieren** auf der Karte oben in den
+**Mitteilungen** oder den Schalter **Push‑Mitteilungen** unter **Profil**.
+Beides erscheint nur, wenn dein Browser Push unterstützt; hat er die Erlaubnis
+schon einmal verweigert, gibst du sie in seinen Einstellungen wieder frei. Auf dem iPhone
 funktioniert das
 **nur aus der installierten App** – im normalen Safari‑Tab kommen keine
 Benachrichtigungen an. **Erinnerungen kommen ausschließlich als Push‑Nachricht –
 nie per E‑Mail.**
 
-Ohne Push verpasst du nichts: Jede Nachricht steht auch in der App unter der
-**Glocke** oben rechts, und offene Zuteilungen legt dir die App beim Öffnen
-ohnehin vor. Push spart dir nur das Nachsehen.
+Ohne Push verpasst du nichts: Jede Nachricht steht auch in der App unter den
+**Mitteilungen** (Glocke oben rechts), und offene Zuteilungen legt dir die App
+beim Öffnen ohnehin vor. Push spart dir nur das Nachsehen.
 
 ---
 

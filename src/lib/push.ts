@@ -14,6 +14,15 @@ export function pushSupported(): boolean {
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
 }
 
+/**
+ * Hat der Browser die Berechtigung schon verweigert? Dann fragt er nicht noch
+ * einmal: „Aktivieren" richtete nichts mehr aus, freigeben lässt sie sich nur
+ * in den Einstellungen des Browsers.
+ */
+export function pushVerweigert(): boolean {
+  return pushSupported() && Notification.permission === 'denied'
+}
+
 /** iOS/iPadOS-Gerät (iPadOS meldet sich als „Macintosh" mit Touch). */
 function isIOS(): boolean {
   const ua = navigator.userAgent

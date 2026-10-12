@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react'
 import { useApp } from '../app/context'
 import { Punkt, type PunktArt } from '../bausteine/Punkt'
 import { Zeichen } from '../bausteine/Zeichen'
-import { PushPrompt } from '../components/PushPrompt'
 import type { TaskStatus } from '../data/types'
 import { aufgabenLabel, aufgabenTp, useT } from '../i18n/useT'
 import { aufgabeWann } from './aufgabe-anzeige'
@@ -22,7 +21,8 @@ const PUNKT_DER_ZUSAGE: Record<TaskStatus, PunktArt> = {
  * die übrigen je eine Zeile mit einem Haken zum Bestätigen, „Alle bestätigen"
  * für alles auf einmal. Darunter, was man übernehmen kann: Ersatzgesuche
  * (Einspringen) und freie Plätze gesendeter Wochen. Die eigenen Abwesenheiten
- * stehen seit dem Umbau im Profil.
+ * stehen seit dem Umbau im Profil, der Hinweis auf Benachrichtigungen auf den
+ * Mitteilungen.
  */
 export function AufgabenScreen() {
   const { state, dispatch } = useApp()
@@ -69,9 +69,7 @@ export function AufgabenScreen() {
         )}
       </div>
 
-      <PushPrompt />
-
-      {naechste ? <AufgabeKarte task={naechste} /> : <p className="karte karte--held aufgaben-leer">{t.dashKeineAufgabe}</p>}
+      {naechste ?<AufgabeKarte task={naechste} /> : <p className="karte karte--held aufgaben-leer">{t.dashKeineAufgabe}</p>}
 
       {weitere.length > 0 && (
         <div className="karte aufgaben-liste">

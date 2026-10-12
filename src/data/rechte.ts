@@ -92,6 +92,7 @@ const ALLE: readonly Screen[] = [
   'start',
   'programm',
   'aufgaben',
+  'mitteilungen',
   'planen',
   'personen',
   'einstellungen',

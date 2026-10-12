@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { BILDSCHIRME } from '../../tests/testdaten/bildschirme'
 import { parseGoAbschnitt, parseGoTarget } from './deeplink'
 
 describe('parseGoTarget (Push-Deep-Link)', () => {
@@ -20,6 +21,13 @@ describe('parseGoTarget (Push-Deep-Link)', () => {
 
   it('ein Bereich im Link ändert den Screen nicht', () => {
     expect(parseGoTarget('#go=aufgaben&abschnitt=einspringen')).toBe('aufgaben')
+  })
+
+  it('jeder Bildschirm außer der Anmeldung ist ein Ziel — auch ein neuer', () => {
+    // Die Liste in deeplink.ts ist von Hand gepflegt; `BILDSCHIRME` hält
+    // TypeScript vollständig. Ein neuer Bildschirm ohne Eintrag dort wäre aus
+    // keinem Push erreichbar, und nichts meldete es.
+    for (const screen of BILDSCHIRME) expect(parseGoTarget(`#go=${screen}`), screen).toBe(screen)
   })
 })
 

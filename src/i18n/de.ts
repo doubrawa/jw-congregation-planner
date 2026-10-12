@@ -34,8 +34,10 @@ export const DE = {
     // eine neue Versammlung. Die Adresse selbst steht in login/kontakt.ts.
     appZweck: 'Zusammenkünfte planen, Aufgaben verteilen, die Versammlung verwalten.',
     versammlungAnfragen: 'Neue Versammlung anfragen:', anfrageBetreff: 'Neue Versammlung: Versammlung.app',
-    mitteilungen: 'Mitteilungen', neuN: 'Neu: {n}', alleGelesen: 'Alle gelesen', alleLoeschen: 'Alle löschen',
+    mitteilungen: 'Mitteilungen', neuN: 'Neu: {n}', alleGelesen: 'Alle gelesen',
     keineMitteilungen: 'Keine Mitteilungen',
+    // Die beiden Abschnitte der Mitteilungen (T121): ungelesen, schon gelesen.
+    mitteilungenNeu: 'Neu', mitteilungenFrueher: 'Früher',
     aktuelleWoche: 'AKTUELLE WOCHE', tabMid: 'Zusammenkunft unter der Woche', tabWe: 'Zusammenkunft am Wochenende',
     // Kurzlabel der Programm-/Planen-Reiter: „Versammlung <Wochentag>"
     versammlungTag: 'Versammlung {tag}',
@@ -261,7 +263,7 @@ export const DE = {
     kontenOhnePersonHint: 'Diese Konten sind noch keiner Person zugeordnet.',
     pushLbl: 'Push-Mitteilungen',
     pushPromptTitle: 'Keine Zuteilung verpassen',
-    pushPromptText: 'Aktiviere Benachrichtigungen und werde rechtzeitig an deine Zuteilungen erinnert.',
+    pushPromptText: 'Benachrichtigungen auf diesem Gerät einschalten.',
     pushPromptIos: 'Auf dem iPhone zuerst installieren: Teilen-Symbol → „Zum Home-Bildschirm“. Danach kannst du im Profil Benachrichtigungen aktivieren.',
     pushAktivieren: 'Aktivieren',
     appInstallieren: 'App installieren',
@@ -277,6 +279,7 @@ export const DE = {
     schriftgroesse: 'Schriftgröße',
     // Vorlesbare Beschriftungen für Icon-Schaltflächen (Screenreader)
     a11yClose: 'Schließen',
+    a11yZurueck: 'Zurück',
     a11yRemove: 'Entfernen',
     a11yDecrease: 'Verringern',
     a11yIncrease: 'Erhöhen',

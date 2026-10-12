@@ -1,0 +1,198 @@
+/*
+ * Mitteilungen (T121, Entwürfe `GMitteilungen` und `GDesktopMitteilungen`):
+ * Titel mit „Alle gelesen", die Karte für Benachrichtigungen, „Neu" und
+ * „Früher". Am Handy stehen die Knöpfe einer Mitteilung unter ihrem Text, ab
+ * dem Tablet daneben.
+ */
+
+.screen.mitteilungen {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mitteilungen-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+/* Am Handy steht „Alle gelesen" im Kopf der Seite (`UnterseiteKopf`). */
+.mitteilungen-alle {
+  display: none;
+}
+
+.mitteilungen-leer {
+  padding-block: 16px;
+  color: var(--text2);
+}
+
+.mitteilungen-abschnitt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-block-start: 6px;
+}
+
+/* ---- Die Karte für Benachrichtigungen ----------------------------------------- */
+
+.push-karte {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding-block: 12px;
+  border-radius: 20px;
+}
+
+.push-karte-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.push-karte-titel {
+  font-weight: 600;
+}
+
+/* ---- Eine Mitteilung ------------------------------------------------------------- */
+
+.mitteilung {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  column-gap: 14px;
+  padding-block: 14px;
+}
+
+.mitteilung + .mitteilung {
+  border-block-start: 1px solid var(--linie);
+}
+
+/* Der Punkt: neu in Minze. Gelesene tragen am Handy keinen (Entwurf). */
+.mitteilung-punkt {
+  width: 10px;
+  height: 10px;
+  margin-block-start: 7px;
+  border-radius: 50%;
+}
+
+.mitteilung.is-neu .mitteilung-punkt {
+  background: var(--akzent);
+}
+
+.mitteilung:not(.is-neu) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.mitteilung:not(.is-neu) .mitteilung-punkt {
+  display: none;
+}
+
+/* Die ganze Zeile ist ein Knopf: Ein Tipp führt dorthin, wo die Mitteilung
+   herkommt (`mitteilungsZiel`). Die Handlungen stehen daneben, nicht darin —
+   Knöpfe lassen sich nicht schachteln. */
+.mitteilung-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  text-align: start;
+}
+
+.mitteilung-kopf {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mitteilung-titel {
+  min-width: 0;
+  font-size: calc(16px * var(--fs));
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.mitteilung-zeit {
+  flex: none;
+  color: var(--text3);
+  font-size: calc(13px * var(--fs));
+}
+
+/* Höchstens zwei Zeilen (Betreiber, 4.10.2026) — eine Sammelmeldung über ein
+   Dutzend Personen streckte die Liste sonst über den ganzen Bildschirm. Den
+   ganzen Text zeigt der Tooltip; das Ziel des Tipps zeigt, worum es geht. */
+.mitteilung-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--text2);
+}
+
+.mitteilung:not(.is-neu) .mitteilung-text {
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
+}
+
+.mitteilung-handlungen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  grid-column: 2;
+  padding-block-start: 10px;
+}
+
+/* ---- Ab dem Tablet ----------------------------------------------------------------- */
+
+@media (min-width: 768px) {
+  .mitteilungen-alle {
+    display: inline-flex;
+  }
+
+  .mitteilung,
+  .mitteilung:not(.is-neu) {
+    grid-template-columns: 12px minmax(0, 1fr) auto;
+    align-items: center;
+    min-height: 64px;
+  }
+
+  .mitteilung-punkt,
+  .mitteilung:not(.is-neu) .mitteilung-punkt {
+    display: block;
+    margin-block-start: 0;
+  }
+
+  .mitteilung:not(.is-neu) .mitteilung-punkt {
+    background: var(--text);
+  }
+
+  .mitteilung-handlungen {
+    flex-wrap: nowrap;
+    grid-column: 3;
+    padding-block-start: 0;
+  }
+}
+
+/* Am Desktop hebt sich die Karte ab, und „Aktivieren" ist der Hauptknopf. */
+@media (min-width: 1180px) {
+  .screen.mitteilungen {
+    max-width: 920px;
+  }
+
+  .push-karte {
+    padding: 16px 16px 16px 22px;
+    border: 1.5px solid var(--akzent-text);
+  }
+
+  .push-karte-knopf {
+    border-color: var(--akzent);
+    background: var(--akzent);
+    color: var(--auf-akzent);
+    font-weight: 700;
+  }
+}

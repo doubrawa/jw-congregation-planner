@@ -1,13 +1,13 @@
 import { schluesselTeile, type SchluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { wochenIndex } from '../data/planning'
 import { themaVon } from '../data/rechte'
-import type { MyTask, Notification, Week } from '../data/types'
+import type { MyTask, Notification, SubstituteReq, Week } from '../data/types'
 import type { AppAction } from './context'
 
 /**
- * **Welche Glocken-Zeilen dieser Nutzer sieht** — eine Stelle für Kopf-Chip,
- * Start-Kachel und Glocke, damit die Zahl „Neu" und die Liste nie
- * auseinanderlaufen.
+ * **Welche Mitteilungen dieser Nutzer sieht** — eine Stelle für den Punkt an
+ * der Glocke, die Zahl im Menü und die Seite, damit die Zahl „Neu" und die
+ * Liste nie auseinanderlaufen.
  *
  * Eine Absage legt die Meldung „Verhinderung gemeldet" in den Zustand, als
  * `local`: Daran erkennt `persist`, dass sie über `notify_planners` an die
@@ -42,6 +42,35 @@ export const AN_DIE_PLANER: ReadonlySet<string> = new Set([
 /** Das Ersatzgesuch (substitute): Sein Ziel ist das Einspringen. */
 export const ERSATZ_GESUCHT = 'Ersatz gesucht'
 
+/**
+ * Was man mit einer neuen Mitteilung gleich an Ort und Stelle tun kann — und
+ * mit welcher Aufgabe (ihr Schlüssel).
+ */
+export type MitteilungsHandlung = { art: 'bestaetigen' | 'uebernehmen'; id: string } | null
+
+/**
+ * **Was eine Mitteilung gleich anbietet** (T121), ohne erst dorthin zu gehen,
+ * wo sie herkommt: Eine Zuteilung, die noch auf Zusage wartet, lässt sich
+ * bestätigen oder absagen; ein Ersatzgesuch, das noch offen ist, übernehmen.
+ * Was inzwischen erledigt ist, bietet nichts mehr an.
+ *
+ * Eine Absage trägt seit dem 4.10.2026 den Schlüssel der Aufgabe — den eines
+ * anderen. Hat der Planer den Platz inzwischen selbst übernommen, ist es
+ * seine; an der Meldung über die Absage stünde sonst „Bestätigen".
+ */
+export function handlungZu(
+  n: Notification,
+  lage: { myTasks: readonly MyTask[]; substituteReqs: readonly SubstituteReq[] },
+): MitteilungsHandlung {
+  const id = n.taskId
+  if (!id) return null
+  if (n.title === ERSATZ_GESUCHT) return lage.substituteReqs.some((r) => r.key === id) ? { art: 'uebernehmen', id } : null
+  const offen =
+    n.type !== 'verhindert' &&
+    lage.myTasks.some((t) => t.id === id && t.status === 'offen')
+  return offen ? { art: 'bestaetigen', id } : null
+}
+
 /** Was `mitteilungsZiel` vom Zustand braucht. */
 export interface ZielLage {
   /** Darf zuteilen — Admin oder Planer (4.10.2026): Beide bekommen die Meldungen an die Planer. */
@@ -53,8 +82,8 @@ export interface ZielLage {
 /**
  * **Wohin ein Tipp auf eine Mitteilung führt: dorthin, wo sie herkommt.**
  *
- * Die Aktionen gehen der Reihe nach hinaus; `navigate` schließt dabei die
- * Glocke. Gefragt wird in dieser Reihenfolge:
+ * Die Aktionen gehen der Reihe nach hinaus; `navigate` verlässt dabei die
+ * Mitteilungen. Gefragt wird in dieser Reihenfolge:
  *
  * 1. „Ersatz gesucht" → zum Einspringen auf „Meine Aufgaben", wie der Push.
  * 2. Eine Meldung an die Planer → ins Planen, in die Woche ihrer Aufgabe,

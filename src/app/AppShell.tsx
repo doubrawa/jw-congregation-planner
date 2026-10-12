@@ -25,6 +25,8 @@ import { EinstellungenScreen } from '../einstellungen/EinstellungenScreen'
 import { LoginScreen } from '../login/LoginScreen'
 import { RecoveryScreen } from '../login/RecoveryScreen'
 import { DashboardScreen } from '../dashboard/DashboardScreen'
+import { AlleGelesen } from '../mitteilungen/AlleGelesen'
+import { MitteilungenScreen } from '../mitteilungen/MitteilungenScreen'
 import { PersonenScreen } from '../personen/PersonenScreen'
 import { AssignSheet } from '../planen/AssignSheet'
 import { PlanenScreen } from '../planen/PlanenScreen'
@@ -36,9 +38,8 @@ import { parseGoAbschnitt, parseGoTarget, type Abschnitt } from './deeplink'
 import { loadAndHydrate } from './hydrate'
 import { sichtbareMitteilungen } from './mitteilungen'
 import { useKalendertag } from './useKalendertag'
-import { NotificationsPanel } from './NotificationsPanel'
 import { bereichsTitel, zumAnsehen, zumPlanen } from './bereich'
-import { Kopfzeile, PlanenKopf } from './Kopfzeile'
+import { Kopfzeile, PlanenKopf, UnterseiteKopf } from './Kopfzeile'
 import { SchmaleLeiste, Seitenmenue, type MenueAbschnitt, type MenueEintrag, type ProfilFuss } from './Menue'
 import { welcomeDecision } from './welcome'
 import '../components/components.css'
@@ -48,8 +49,9 @@ import './rtl.css'
 /**
  * App-Gerüst im neuen Design (T121): das Menü an der Seite — am Handy als
  * Schublade, am Tablet hochkant als schmale Leiste, ab 1180 px fest links —,
- * die Kopfzeile (beim Planen am Handy der Kopf des Planens), der Inhalt,
- * Mitteilungen und Toast. Login rendert ohne App-Chrome.
+ * die Kopfzeile (am Handy beim Planen der Kopf des Planens, auf den
+ * Mitteilungen der Kopf mit Zurück), der Inhalt, die Blätter und der Toast.
+ * Login rendert ohne App-Chrome.
  */
 
 /** Ziel eines Push-Klicks: der Screen und, wenn der Link einen nennt, ein Bereich darin. */
@@ -247,16 +249,9 @@ export function AppShell() {
       : []),
   ]
   // Am Desktop gibt es keine Kopfzeile mit Glocke: Die Mitteilungen stehen in
-  // der Leiste (entschieden am 12.10.2026). Sie öffnen sich über der Seite und
-  // sind keine eigene — deshalb nie „aktuelle Seite".
-  const glockeEintrag: MenueEintrag = {
-    key: 'mitteilungen',
-    label: t.mitteilungen,
-    zeichen: 'glocke',
-    aktiv: false,
-    zahl: ungelesen,
-    onClick: () => dispatch({ type: 'openNotifs' }),
-  }
+  // der Leiste (entschieden am 12.10.2026). Am Handy und am Tablet führt die
+  // Glocke dorthin.
+  const glockeEintrag: MenueEintrag = { ...eintrag('mitteilungen', t.mitteilungen, 'glocke'), zahl: ungelesen }
   const versammlung = state.congregation.name.trim()
   const profil: ProfilFuss = {
     kuerzel: me ? initials(me) : '–',
@@ -266,6 +261,7 @@ export function AppShell() {
     onClick: () => navigate('profil'),
   }
   const planen = state.screen === 'planen'
+  const unterseite = state.screen === 'mitteilungen'
   const geplant = geplantesThema(rechte, state.tab)
   const menue = abschnitte([])
   // Texte für die Error Boundaries: die Klasse kann useT() nicht aufrufen.
@@ -303,6 +299,11 @@ export function AppShell() {
             {planen && (
               <PlanenKopf titel={bereichsTitel(t, geplant)} onBeenden={() => dispatch(zumAnsehen(geplant))} />
             )}
+            {unterseite && (
+              <UnterseiteKopf onZurueck={() => navigate('start')}>
+                {ungelesen > 0 && <AlleGelesen className="unterseitenkopf-aktion" />}
+              </UnterseiteKopf>
+            )}
             {/* Die Versammlung im Kopf, nicht die Wortmarke (T107); solange
                 keine geladen ist (Laden, Konto ohne Versammlung), steht der
                 Produktname da, damit der Kopf nicht leer bleibt. */}
@@ -311,9 +312,9 @@ export function AppShell() {
               versammlung={versammlung ? fill(t.congLabel, { name: versammlung }) : 'Versammlung.app'}
               ungelesen={ungelesen}
               menueOffen={menuOpen}
-              beimPlanen={planen}
+              amHandyErsetzt={planen || unterseite}
               onMenue={() => setMenuOpen(true)}
-              onGlocke={() => dispatch({ type: 'openNotifs' })}
+              onGlocke={() => navigate('mitteilungen')}
             />
 
             <OfflineBanner />
@@ -356,7 +357,6 @@ export function AppShell() {
           mitten in derselben Taste einen frischen `CloseWatcher` — der die
           Taste ein zweites Mal verarbeitete und es gleich mit schloss.
         */}
-        {state.notifOpen && blatt(<NotificationsPanel />)}
         {state.slotSel && blatt(<AssignSheet sel={state.slotSel} />)}
         {state.langSheetOpen && blatt(<LanguageSheet />)}
         {state.svcSheet && blatt(<ServicePersonsSheet svcKey={state.svcSheet} />)}
@@ -535,6 +535,8 @@ function ActiveScreen({ screen }: { screen: Screen }) {
       return <ProgrammScreen />
     case 'aufgaben':
       return <AufgabenScreen />
+    case 'mitteilungen':
+      return <MitteilungenScreen />
     case 'planen':
       return <PlanenScreen />
     case 'personen':

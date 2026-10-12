@@ -60,7 +60,6 @@ vi.mock('../lib/data', async (importActual) => ({
   deletePersonRow: vi.fn(),
   deleteInviteRow: vi.fn(),
   deleteMemberRow: vi.fn(),
-  deleteNotifications: vi.fn(),
   deleteServiceRow: vi.fn(),
   markNotificationRead: vi.fn(),
   markNotificationsRead: vi.fn(),

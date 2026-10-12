@@ -1364,8 +1364,8 @@ export const KATALOG = [
   },
   {
     id: 'push-nie-von-allein',
-    datei: 'src/components/PushPrompt.tsx',
-    regel: 'Der Push-Hinweis bleibt weg, wenn Push auf diesem Gerät gar nicht erreichbar ist.',
+    datei: 'src/mitteilungen/PushKarte.tsx',
+    regel: 'Die Karte für Benachrichtigungen bleibt weg, wenn Push auf diesem Gerät gar nicht erreichbar ist.',
     suchen: 'if (!supported && !needsInstall && !installAvail) return null',
     ersetzen: '',
   },
@@ -1846,7 +1846,7 @@ export const KATALOG = [
   },
   {
     id: 'glocke-laedt-nach-wenn-neu',
-    datei: 'src/app/NotificationsPanel.tsx',
+    datei: 'src/mitteilungen/useMitteilungenNachladen.ts',
     /*
       Zwei Fehler sind hier möglich, und die Probe misst beide Richtungen über
       denselben Ausdruck: Wer nie voll nachlädt, zeigt die frische Zuteilung
@@ -1854,8 +1854,8 @@ export const KATALOG = [
       voll nachlädt, holt für fünfzig Zeilen Text die ganze Versammlung.
     */
     regel:
-      'Die Glocke lädt den ganzen Bestand nur nach, wenn wirklich eine neue Zeile dabei ist.',
-    suchen: 'if (frisch.some((n) => !bekannt.current.has(n.id))) {',
+      'Die Mitteilungen laden den ganzen Bestand nur nach, wenn wirklich eine neue Zeile dabei ist.',
+    suchen: 'if (frisch.some((n) => !bekannt.has(n.id))) {',
     ersetzen: 'if (false) {',
   },
 
@@ -3394,17 +3394,67 @@ export const KATALOG = [
   },
   {
     id: 'mitteilung-absage-ohne-bestaetigen',
-    datei: 'src/app/NotificationsPanel.tsx',
+    datei: 'src/app/mitteilungen.ts',
     regel: 'An einer Absage steht nie „Bestätigen" — auch wenn ihr Schlüssel inzwischen die eigene offene Aufgabe ist.',
-    suchen: "            notif.type !== 'verhindert' &&\n",
+    suchen: "    n.type !== 'verhindert' &&\n",
     ersetzen: '',
   },
   {
     id: 'mitteilung-offline-nicht-gelesen',
-    datei: 'src/app/NotificationsPanel.tsx',
+    datei: 'src/mitteilungen/Mitteilung.tsx',
     regel: 'Offline springt der Tipp, ohne „gelesen" zu schicken — die Sperre meldete sonst nur „nur lesen".',
     suchen: 'if (!notif.read && !state.staleAt) dispatch(',
     ersetzen: 'if (!notif.read) dispatch(',
+  },
+  /* ---- Die Mitteilungen als Seite (T121, Phase 3c) ---- */
+  {
+    id: 'mitteilung-bestaetigen-nur-offen',
+    datei: 'src/app/mitteilungen.ts',
+    regel: '„Bestätigen" steht an einer Mitteilung nur, solange die eigene Aufgabe auf Zusage wartet.',
+    suchen: "    lage.myTasks.some((t) => t.id === id && t.status === 'offen')",
+    ersetzen: '    lage.myTasks.some((t) => t.id === id)',
+  },
+  {
+    id: 'mitteilung-uebernehmen-nur-offenes-gesuch',
+    datei: 'src/app/mitteilungen.ts',
+    regel: '„Übernehmen" steht an „Ersatz gesucht" nur, solange das Gesuch offen ist.',
+    suchen: "  if (n.title === ERSATZ_GESUCHT) return lage.substituteReqs.some((r) => r.key === id) ? { art: 'uebernehmen', id } : null",
+    ersetzen: "  if (n.title === ERSATZ_GESUCHT) return { art: 'uebernehmen', id }",
+  },
+  {
+    id: 'mitteilung-kann-nicht-noch-ungelesen',
+    datei: 'src/mitteilungen/Mitteilung.tsx',
+    regel: '„Ich kann nicht" öffnet nur das Blatt — wer es abbricht, hat nichts beantwortet, die Mitteilung bleibt neu.',
+    suchen: "onClick={() => dispatch({ type: 'openAbsage', id: handlung.id })}",
+    ersetzen: "onClick={() => { gelesen(); dispatch({ type: 'openAbsage', id: handlung.id }) }}",
+  },
+  {
+    id: 'mitteilungen-alle-gelesen-nur-bei-neuem',
+    datei: 'src/mitteilungen/MitteilungenScreen.tsx',
+    regel: '„Alle gelesen" steht nur da, solange es Neues gibt.',
+    suchen: '{neu.length > 0 && <AlleGelesen className="knopf-umriss mitteilungen-alle" />}',
+    ersetzen: '<AlleGelesen className="knopf-umriss mitteilungen-alle" />',
+  },
+  {
+    id: 'push-karte-nicht-bei-verweigert',
+    datei: 'src/mitteilungen/PushKarte.tsx',
+    regel: 'Hat der Browser die Berechtigung verweigert, steht keine Karte da, deren Knopf nichts mehr ausrichtet.',
+    suchen: '  if (!angemeldet || subscribed || verweigert) return null',
+    ersetzen: '  if (!angemeldet || subscribed) return null',
+  },
+  {
+    id: 'glocke-fuehrt-zur-seite',
+    datei: 'src/app/AppShell.tsx',
+    regel: 'Die Glocke führt auf die Seite der Mitteilungen.',
+    suchen: "              onGlocke={() => navigate('mitteilungen')}",
+    ersetzen: '              onGlocke={() => undefined}',
+  },
+  {
+    id: 'unterseite-zurueck-zu-start',
+    datei: 'src/app/AppShell.tsx',
+    regel: 'Zurück im Kopf der Mitteilungen führt zu Start — wie die Zurück-Taste.',
+    suchen: "              <UnterseiteKopf onZurueck={() => navigate('start')}>",
+    ersetzen: "              <UnterseiteKopf onZurueck={() => navigate('aufgaben')}>",
   },
   {
     id: 'mitteilung-gelesen-nicht-lokal',
@@ -3436,8 +3486,8 @@ export const KATALOG = [
   },
   {
     id: 'mitteilung-text-zwei-zeilen',
-    datei: 'src/app/shell.css',
-    regel: 'Der Text einer Mitteilung steht in der Glocke höchstens zwei Zeilen hoch.',
+    datei: 'src/mitteilungen/mitteilungen.css',
+    regel: 'Der Text einer Mitteilung steht höchstens zwei Zeilen hoch.',
     suchen: '  -webkit-line-clamp: 2;\n',
     ersetzen: '  -webkit-line-clamp: 3;\n',
   },

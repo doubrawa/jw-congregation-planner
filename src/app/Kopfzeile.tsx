@@ -4,10 +4,12 @@
  * gibt es keine — dort stehen Menü und Mitteilungen in der Leiste. Am Tablet
  * steht der Menüknopf in der schmalen Leiste, hier fällt er weg (CSS).
  *
- * Beim Planen steht am Handy statt ihrer der Kopf des Planens: Kreuz, Titel,
- * „Fertig" (`PlanenKopf`).
+ * Am Handy weicht sie zwei anderen Köpfen: beim Planen dem Kopf des Planens
+ * (Kreuz, Titel, „Fertig", `PlanenKopf`), auf einer Unterseite wie den
+ * Mitteilungen dem Kopf mit Zurück (`UnterseiteKopf`).
  */
 
+import type { ReactNode } from 'react'
 import { Zeichen } from '../bausteine/Zeichen'
 import { fill, useT } from '../i18n/useT'
 import '../bausteine/bausteine.css'
@@ -18,7 +20,7 @@ export function Kopfzeile({
   versammlung,
   ungelesen,
   menueOffen,
-  beimPlanen,
+  amHandyErsetzt,
   onMenue,
   onGlocke,
 }: {
@@ -27,15 +29,15 @@ export function Kopfzeile({
   versammlung: string
   ungelesen: number
   menueOffen: boolean
-  /** Beim Planen weicht die Kopfzeile am Handy dem Kopf des Planens. */
-  beimPlanen: boolean
+  /** Am Handy steht ein anderer Kopf da (Planen, Unterseite). */
+  amHandyErsetzt: boolean
   onMenue: () => void
   onGlocke: () => void
 }) {
   const { t } = useT()
   const glocke = ungelesen > 0 ? `${t.mitteilungen}, ${fill(t.neuN, { n: ungelesen })}` : t.mitteilungen
   return (
-    <header className={beimPlanen ? 'kopfzeile kopfzeile--beim-planen' : 'kopfzeile'}>
+    <header className={amHandyErsetzt ? 'kopfzeile kopfzeile--ersetzt' : 'kopfzeile'}>
       <button
         type="button"
         className="rund-knopf kopfzeile-menue"
@@ -74,6 +76,24 @@ export function PlanenKopf({ titel, onBeenden }: { titel: string; onBeenden: () 
       <button type="button" className="planen-knopf" onClick={onBeenden}>
         {t.fertig}
       </button>
+    </header>
+  )
+}
+
+/**
+ * Der Kopf einer Unterseite am Handy (Entwurf `GMitteilungen`): Zurück führt
+ * zu Start — wie die Zurück-Taste, die von jedem Bildschirm dorthin führt —,
+ * rechts steht, was die Seite anbietet. Ab dem Tablet steht wieder die
+ * Kopfzeile da.
+ */
+export function UnterseiteKopf({ onZurueck, children }: { onZurueck: () => void; children?: ReactNode }) {
+  const { t } = useT()
+  return (
+    <header className="unterseitenkopf">
+      <button type="button" className="rund-knopf" aria-label={t.a11yZurueck} onClick={onZurueck}>
+        <Zeichen name="zurueck" />
+      </button>
+      {children}
     </header>
   )
 }

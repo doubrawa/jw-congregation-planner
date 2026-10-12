@@ -16,7 +16,6 @@ describe('isViewAction', () => {
     'openSlot',
     'closeSlot',
     'selectPerson',
-    'openNotifs',
     'setTheme',
     'setFontScale',
     'setLang',
@@ -47,10 +46,9 @@ describe('isViewAction', () => {
     'addAbsence',
     'removeAbsence',
     'markAllRead',
-    // Eine einzelne Zeile gelesen (Tipp in der Glocke) — schreibt in die
-    // Datenbank. Offline schickt die Glocke sie gar nicht erst (4.10.2026).
+    // Eine einzelne Zeile gelesen (Tipp auf die Mitteilung) — schreibt in die
+    // Datenbank. Offline schickt die Seite sie gar nicht erst (4.10.2026).
     'mitteilungGelesen',
-    'clearNotifs',
     'updateCongregation',
     'fsInstUpdate',
     'fsRuleAdd',
@@ -73,7 +71,7 @@ describe('isViewAction', () => {
     // Steht allein ein Ersatzgesuch da, ist der Hintergrund-Klick der einzige
     // Weg heraus — kein ✕, kein Escape.
     'closeConfirm',
-    // Frisch geholte Glocken-Zeilen anzeigen (NotificationsPanel).
+    // Frisch geholte Mitteilungen anzeigen (useMitteilungenNachladen).
     'setNotifs',
   ]
   it.each(ansichten)('erlaubt %s (schreibt nichts)', (type) => {

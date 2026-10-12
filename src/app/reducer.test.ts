@@ -68,7 +68,6 @@ function makeState(over: Partial<AppState> = {}): AppState {
     planEintraege: [],
     absences: [...DEMO_ABSENCES],
     notifs: [...DEMO_NOTIFICATIONS],
-    notifOpen: false,
     slotSel: null,
     selectedPersonId: null,
     nameBeimOeffnen: null,
@@ -409,21 +408,18 @@ describe('Wochennavigation', () => {
 })
 
 describe('einfache UI-Setter', () => {
-  it('setTab / setTheme / Slot / Notif-Panel', () => {
+  it('setTab / setTheme / Slot', () => {
     expect(reducer(makeState(), { type: 'setTab', tab: 'we' }).tab).toBe('we')
     expect(reducer(makeState(), { type: 'setTheme', theme: 'dunkel' }).theme).toBe('dunkel')
     expect(reducer(makeState(), { type: 'setFontScale', scale: 1.3 }).fontScale).toBe(1.3)
-    expect(reducer(makeState(), { type: 'openNotifs' }).notifOpen).toBe(true)
-    expect(reducer(makeState({ notifOpen: true }), { type: 'closeNotifs' }).notifOpen).toBe(false)
     const sel = { kind: 'part', wi: 0, tab: 'mid', si: 1, ii: 1, ni: 0, priv: null, groups: false, label: 'X' } as const
     expect(reducer(makeState(), { type: 'openSlot', sel }).slotSel).toEqual(sel)
     expect(reducer(makeState({ slotSel: sel }), { type: 'closeSlot' }).slotSel).toBeNull()
   })
 
-  it('markAllRead / clearNotifs', () => {
+  it('markAllRead', () => {
     const read = reducer(makeState(), { type: 'markAllRead' })
     expect(read.notifs.every((n) => n.read)).toBe(true)
-    expect(reducer(makeState(), { type: 'clearNotifs' }).notifs).toEqual([])
   })
 
   it('mitteilungGelesen: nur die angetippte Zeile; eine gelesene oder unbekannte ändert nichts', () => {
@@ -1581,9 +1577,9 @@ describe('login / logout / setRecovery', () => {
     expect(reducer(makeState({ welcomePending: true }), { type: 'logout' }).welcomePending).toBe(false)
   })
   it('logout schließt alle Overlays', () => {
-    const s = makeState({ notifOpen: true, langSheetOpen: true, selectedPersonId: 'p1', confirmOpen: true })
+    const s = makeState({ langSheetOpen: true, selectedPersonId: 'p1', confirmOpen: true })
     const next = reducer(s, { type: 'logout' })
-    expect(next).toMatchObject({ screen: 'login', notifOpen: false, langSheetOpen: false, selectedPersonId: null, confirmOpen: false, recovery: false })
+    expect(next).toMatchObject({ screen: 'login', langSheetOpen: false, selectedPersonId: null, confirmOpen: false, recovery: false })
   })
   it('logout verwirft den Offline-Stand', () => {
     expect(reducer(makeState({ staleAt: 123 }), { type: 'logout' }).staleAt).toBeNull()

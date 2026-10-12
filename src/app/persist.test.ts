@@ -33,7 +33,6 @@ vi.mock('../lib/data', async (importActual) => ({
   deletePersonRow: vi.fn(),
   deleteInviteRow: vi.fn(),
   deleteMemberRow: vi.fn(),
-  deleteNotifications: vi.fn(),
   deleteServiceRow: vi.fn(),
   markNotificationRead: vi.fn(),
   markNotificationsRead: vi.fn(),
@@ -1614,11 +1613,9 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
 })
 
 describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
-  it('markAllRead / clearNotifs', () => {
+  it('markAllRead', () => {
     persist(st(), st(), { type: 'markAllRead' })
     expect(data.markNotificationsRead).toHaveBeenCalledWith('c1', 'u1')
-    persist(st(), st(), { type: 'clearNotifs' })
-    expect(data.deleteNotifications).toHaveBeenCalledWith('c1', 'u1')
   })
 
   describe('mitteilungGelesen — die angetippte Zeile (4.10.2026)', () => {

@@ -35,6 +35,7 @@ const ALLE_SCREENS = Object.keys({
   start: true,
   programm: true,
   aufgaben: true,
+  mitteilungen: true,
   planen: true,
   personen: true,
   einstellungen: true,
@@ -93,7 +94,7 @@ describe('Wer welchen Bildschirm sehen darf', () => {
     expect(erlaubt).not.toContain('personen')
     expect(erlaubt).not.toContain('einstellungen')
     // Und das Übrige sehr wohl — sonst prüfte der Test bloß eine leere Menge.
-    expect([...erlaubt]).toEqual(['start', 'programm', 'aufgaben', 'profil'])
+    expect([...erlaubt]).toEqual(['start', 'programm', 'aufgaben', 'mitteilungen', 'profil'])
   })
 
   it('Planer und Gruppenaufseher bekommen Planen dazu — Personen und Einstellungen nicht', () => {
@@ -103,7 +104,7 @@ describe('Wer welchen Bildschirm sehen darf', () => {
     // Versammlung — die Datenbank hielte sie zwar noch auf, aber die
     // Oberfläche böte es an.
     for (const r of [PLANER, AUFSEHER, PLANER_UND_AUFSEHER]) {
-      expect([...erlaubteScreens(r)]).toEqual(['start', 'programm', 'aufgaben', 'planen', 'profil'])
+      expect([...erlaubteScreens(r)]).toEqual(['start', 'programm', 'aufgaben', 'mitteilungen', 'planen', 'profil'])
     }
   })
 

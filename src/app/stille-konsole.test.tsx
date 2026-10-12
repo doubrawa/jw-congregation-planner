@@ -8,6 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from './context'
+import { BILDSCHIRME } from '../../tests/testdaten/bildschirme'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import {
   buildDemoFsWeeks,
@@ -110,24 +111,19 @@ function zeige(over: Partial<AppState> = {}) {
   return render(<Buehne />)
 }
 
-const SCREENS: Screen[] = [
-  'start', 'programm', 'aufgaben', 'planen', 'personen', 'einstellungen', 'profil',
-]
-
 /** Wochen, die von der Regel abweichen — dort entstehen die Sonderzweige. */
 const mitAnlass = (art: 'co' | 'mem' | 'kongress'): Week[] =>
   setAnlass(buildDemoWeeks(), 0, art)
 
 /** Jede Lage einmal: Bildschirm, Reiter, Überlagerung, Sonderwoche. */
 const LAGEN: Array<[string, Partial<AppState>]> = [
-  ...SCREENS.map((screen) => [`Bildschirm ${screen}`, { screen }] as [string, Partial<AppState>]),
+  ...BILDSCHIRME.map((screen) => [`Bildschirm ${screen}`, { screen }] as [string, Partial<AppState>]),
   ...(['we', 'fs'] as const).map(
     (tab) => [`Programm · Reiter ${tab}`, { screen: 'programm' as Screen, tab }] as [string, Partial<AppState>],
   ),
   ['Planen · Wochenende', { screen: 'planen', tab: 'we' }],
   ['Planen · Predigtdienst', { screen: 'planen', tab: 'fs' }],
   // Überlagerungen — nur sichtbar, wenn man sie öffnet.
-  ['Mitteilungen', { screen: 'start', notifOpen: true }],
   ['Aufgaben-Blatt', { screen: 'aufgaben', myTaskId: DEMO_MY_TASKS[0]?.id ?? '' }],
   ['Sprachauswahl', { screen: 'einstellungen', langSheetOpen: true }],
   ['Bestätigungs-Dialog', { screen: 'start', confirmOpen: true }],

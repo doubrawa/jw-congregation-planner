@@ -260,7 +260,6 @@ export interface AppState {
   offenePlaetze: OffenerPlatz[] // unbesetzte Plätze, die ich übernehmen kann (4.10.2026)
 
   /* ---- Ansichtszustand: was gerade offen ist ---------------------------- */
-  notifOpen: boolean
   slotSel: SlotSelection | null // offenes Zuteilungs-Sheet (Planen)
   selectedPersonId: string | null // offenes Personen-Detail
   /**
@@ -414,18 +413,15 @@ export type AppAction =
   | { type: 'setFontScale'; scale: FontScale }
   | { type: 'togglePartner'; si: number; ii: number } // Gesprächspartner-Slot an/aus
   | { type: 'setFamily'; id: string; memberId: string; add: boolean } // Familienangehörige
-  | { type: 'openNotifs' }
-  | { type: 'closeNotifs' }
   /**
-   * Nur die Glocken-Liste ersetzen — das leichte Nachladen beim Öffnen der
-   * Glocke (`loadNotifications`). Ein voller `hydrate` wirft den ganzen
-   * Bestand um; hier ändert sich nichts als die Liste selbst.
+   * Nur die Liste der Mitteilungen ersetzen — das leichte Nachladen beim
+   * Öffnen ihrer Seite (`loadNotifications`). Ein voller `hydrate` wirft den
+   * ganzen Bestand um; hier ändert sich nichts als die Liste selbst.
    */
   | { type: 'setNotifs'; notifs: Notification[] }
   | { type: 'markAllRead' }
-  // Eine Mitteilung ist gelesen, weil sie angetippt wurde (Glocke).
+  // Eine Mitteilung ist gelesen, weil sie angetippt oder beantwortet wurde.
   | { type: 'mitteilungGelesen'; id: string }
-  | { type: 'clearNotifs' } // löscht die eigenen Mitteilungen (Feed ist personalisiert)
   | { type: 'openSlot'; sel: SlotSelection }
   | { type: 'closeSlot' }
   | { type: 'addAbsence'; absence: Absence }

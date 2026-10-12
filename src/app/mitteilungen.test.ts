@@ -2,11 +2,18 @@
 import { describe, expect, it } from 'vitest'
 import { fsKey, helferKey, ozKey, punktKey, ratgeberKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { rechteVon } from '../data/rechte'
-import type { MyTask, Notification, Week } from '../data/types'
+import type { MyTask, Notification, SubstituteReq, Week } from '../data/types'
 import { NOTIF_TITLE_KEY } from '../i18n/ui'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import type { AppState } from './context'
-import { AN_DIE_PLANER, ERSATZ_GESUCHT, mitteilungsZiel, sichtbareMitteilungen, type ZielLage } from './mitteilungen'
+import {
+  AN_DIE_PLANER,
+  ERSATZ_GESUCHT,
+  handlungZu,
+  mitteilungsZiel,
+  sichtbareMitteilungen,
+  type ZielLage,
+} from './mitteilungen'
 import { reducer } from './reducer'
 
 const zeile = (over: Partial<Notification> = {}): Notification => ({
@@ -111,7 +118,7 @@ describe('mitteilungsZiel — ein Tipp führt dorthin, wo die Mitteilung herkomm
   })
 
   it('eine Aufgabe, die nicht mehr die eigene ist: ihre Woche — beim Verkündiger im Programm', () => {
-    // Umgeteilt: Die Zuteilung steht noch in der Glocke, die Aufgabe hat
+    // Umgeteilt: Die Zuteilung steht noch in den Mitteilungen, die Aufgabe hat
     // inzwischen ein anderer. Die Woche zeigt, wer.
     const n = zeile({ type: 'zuteilung', title: 'Neue Zuteilung', taskId: PUNKT })
     expect(mitteilungsZiel(n, lage())).toEqual([{ type: 'navigate', screen: 'programm', woche: { wi: 1, tab: 'mid' } }])
@@ -146,15 +153,62 @@ describe('mitteilungsZiel — ein Tipp führt dorthin, wo die Mitteilung herkomm
 })
 
 /**
+ * **Was eine neue Mitteilung gleich anbietet** (T121): Bestätigen und Absagen
+ * nur, solange die eigene Aufgabe auf Zusage wartet; Übernehmen nur, solange
+ * das Gesuch offen ist. Was erledigt ist, bietet nichts mehr an — ein Knopf,
+ * der nichts mehr bewirkt, wäre schlimmer als keiner.
+ */
+describe('handlungZu', () => {
+  const gesuch = (key: string): SubstituteReq => ({
+    key, svc: 'mik', title: 'Mikrofone', date: '', declinedBy: 'X', schonHeute: [],
+  })
+  const lage = (over: { myTasks?: MyTask[]; substituteReqs?: SubstituteReq[] } = {}) => ({
+    myTasks: [],
+    substituteReqs: [],
+    ...over,
+  })
+  const zuteilung = zeile({ type: 'zuteilung', title: 'Neue Zuteilung', taskId: PUNKT })
+
+  it('eine eigene offene Zuteilung: bestätigen', () => {
+    expect(handlungZu(zuteilung, lage({ myTasks: [aufgabe(PUNKT)] }))).toEqual({ art: 'bestaetigen', id: PUNKT })
+  })
+
+  it('schon bestätigt oder abgesagt: nichts mehr', () => {
+    for (const status of ['bestätigt', 'verhindert'] as const) {
+      expect(handlungZu(zuteilung, lage({ myTasks: [{ ...aufgabe(PUNKT), status }] })), status).toBeNull()
+    }
+  })
+
+  it('umgeteilt — die Aufgabe ist nicht mehr die eigene: nichts', () => {
+    expect(handlungZu(zuteilung, lage({ myTasks: [aufgabe('anderes')] }))).toBeNull()
+  })
+
+  it('ohne Schlüssel: nichts', () => {
+    expect(handlungZu(zeile({ type: 'zuteilung', title: 'Neue Zuteilung' }), lage({ myTasks: [aufgabe(PUNKT)] }))).toBeNull()
+  })
+
+  it('eine Absage nie — auch wenn ihr Schlüssel inzwischen die eigene offene Aufgabe ist', () => {
+    // Übernimmt der Planer den abgesagten Platz selbst, ist es seine Aufgabe.
+    const absage = zeile({ taskId: PUNKT })
+    expect(handlungZu(absage, lage({ myTasks: [aufgabe(PUNKT)] }))).toBeNull()
+  })
+
+  it('ein offenes Ersatzgesuch: übernehmen — ist es vergeben, nichts', () => {
+    const n = zeile({ type: 'zuteilung', title: ERSATZ_GESUCHT, taskId: HILFSDIENST })
+    expect(handlungZu(n, lage({ substituteReqs: [gesuch(HILFSDIENST)] }))).toEqual({ art: 'uebernehmen', id: HILFSDIENST })
+    expect(handlungZu(n, lage({ substituteReqs: [gesuch('anderes')] }))).toBeNull()
+  })
+})
+
+/**
  * **Und der Reducer kommt dort auch an.** Die Regeln oben liefern Aktionen;
- * ob die Glocke danach zu ist und die richtige Ansicht offen, entscheidet
+ * ob danach die richtige Ansicht offen ist, entscheidet
  * `navigate` mit seiner Rechteprüfung. Deshalb der ganze Weg einmal durch.
  */
-describe('Ablauf: Glocke offen → Tipp → angekommen', () => {
+describe('Ablauf: Mitteilungen offen → Tipp → angekommen', () => {
   const offen = (over: Partial<AppState> = {}): AppState => ({
     ...demoZustand(),
-    screen: 'start',
-    notifOpen: true,
+    screen: 'mitteilungen',
     ...over,
   })
   const tippen = (s: AppState, n: Notification): AppState =>
@@ -167,35 +221,35 @@ describe('Ablauf: Glocke offen → Tipp → angekommen', () => {
     const s = offen({ planner: true })
     const woche = s.weeks[1]!
     const nach = tippen(s, zeile({ taskId: punktKey(woche.start, 'we', 'x', 0) }))
-    expect(nach).toMatchObject({ screen: 'planen', week: 1, tab: 'we', notifOpen: false, terminGewaehlt: true })
+    expect(nach).toMatchObject({ screen: 'planen', week: 1, tab: 'we', terminGewaehlt: true })
   })
 
   it('… bei einem Treffpunkt im Predigtdienst, Reiter Treffpunkte', () => {
     const s = offen({ planner: true, fsBereich: 'grundplan' })
     const nach = tippen(s, zeile({ taskId: fsKey(s.weeks[0]!.start, 'i1') }))
-    expect(nach).toMatchObject({ screen: 'planen', week: 0, tab: 'fs', fsBereich: 'treffpunkte', notifOpen: false })
+    expect(nach).toMatchObject({ screen: 'planen', week: 0, tab: 'fs', fsBereich: 'treffpunkte' })
   })
 
   it('… beim Zeugnisgeben in dessen Reiter', () => {
     const s = offen({ planner: true })
     const nach = tippen(s, zeile({ taskId: ozKey(s.weeks[0]!.start, 'e1') }))
-    expect(nach).toMatchObject({ screen: 'planen', tab: 'fs', fsBereich: 'zeugnis', notifOpen: false })
+    expect(nach).toMatchObject({ screen: 'planen', tab: 'fs', fsBereich: 'zeugnis' })
   })
 
-  it('der Verkündiger landet bei seiner Aufgabe — das Blatt ist offen, die Glocke zu', () => {
+  it('der Verkündiger landet bei seiner Aufgabe — das Blatt ist offen', () => {
     const s = offen({ planner: false, myTasks: [aufgabe('a1')] })
     const nach = tippen(s, zeile({ type: 'zuteilung', title: 'Neue Zuteilung', taskId: 'a1' }))
-    expect(nach).toMatchObject({ screen: 'aufgaben', myTaskId: 'a1', notifOpen: false })
+    expect(nach).toMatchObject({ screen: 'aufgaben', myTaskId: 'a1' })
   })
 
   it('… beim Ersatzgesuch am Einspringen', () => {
     const nach = tippen(offen({ planner: false }), zeile({ type: 'zuteilung', title: ERSATZ_GESUCHT }))
-    expect(nach).toMatchObject({ screen: 'aufgaben', sprungZiel: 'einspringen', notifOpen: false })
+    expect(nach).toMatchObject({ screen: 'aufgaben', sprungZiel: 'einspringen' })
   })
 
   it('… und eine Woche, die er nur ansehen darf, im Programm — nie im Planen', () => {
     const s = offen({ planner: false })
     const nach = tippen(s, zeile({ type: 'zuteilung', title: 'Neue Zuteilung', taskId: punktKey(s.weeks[1]!.start, 'mid', 'x', 0) }))
-    expect(nach).toMatchObject({ screen: 'programm', week: 1, tab: 'mid', notifOpen: false })
+    expect(nach).toMatchObject({ screen: 'programm', week: 1, tab: 'mid' })
   })
 })

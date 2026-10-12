@@ -216,7 +216,7 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
     // Gegenprobe zur Rechteprüfung im Reducer: Was hier steht, muss dort
     // durchgehen. Sonst zeigt die App einen Punkt, der ins Programm zurückwirft.
     // Geprüft wird die Aktion, die der Punkt wirklich auslöst — bei den
-    // Bereichen samt ihrem Reiter. Die Mitteilungen öffnen sich über der Seite.
+    // Bereichen samt ihrem Reiter.
     const { reducer } = await import('./reducer')
     for (const [rolle, over] of [
       ['Planer', { planner: true, personId: PLANER.id }],
@@ -228,7 +228,6 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
         dispatch.mockClear()
         tippe(container, label)
         const aktion = dispatch.mock.calls[0]?.[0]
-        if (aktion.type === 'openNotifs') continue
         const next = reducer(zustand(over), aktion)
         expect(next.screen, `${rolle} · ${label}`).toBe(aktion.screen)
       }
@@ -258,6 +257,7 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
       [{ screen: 'planen', tab: 'edit' }, t.dashPlanung],
       [{ screen: 'planen', tab: 'fs' }, t.dashPlanung],
       [{ screen: 'aufgaben' }, t.navAufgabenLong],
+      [{ screen: 'mitteilungen' }, t.mitteilungen],
     ] as const) {
       const { container } = zeige(over)
       const aktiv = container.querySelectorAll(`${LEISTE} .menue-eintrag[aria-current="page"]`)
@@ -295,10 +295,10 @@ describe('Die Glocke zählt nur das Ungelesene', () => {
     expect(glocke(container).querySelector('.kopfzeile-neu')).not.toBeNull()
   })
 
-  it('ein Tipp öffnet die Mitteilungen', () => {
+  it('ein Tipp führt zu den Mitteilungen — einer eigenen Seite (T121)', () => {
     const { container, dispatch } = zeige()
     fireEvent.click(glocke(container))
-    expect(dispatch).toHaveBeenCalledWith({ type: 'openNotifs' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'mitteilungen' })
   })
 
   it('am Desktop stehen die Mitteilungen in der Leiste — mit derselben Zahl', () => {
@@ -308,7 +308,7 @@ describe('Die Glocke zählt nur das Ungelesene', () => {
     )!
     expect(eintrag.querySelector('.menue-zahl')?.textContent).toBe('2')
     fireEvent.click(eintrag)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'openNotifs' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'mitteilungen' })
   })
 })
 
@@ -641,7 +641,36 @@ describe('Beim Planen trägt am Handy der Kopf des Planens Titel und „Fertig"'
   it('beim Ansehen gibt es ihn nicht', () => {
     const { container } = zeige({ screen: 'programm', tab: 'mid' })
     expect(container.querySelector('.planenkopf')).toBeNull()
-    expect(container.querySelector('.kopfzeile')?.classList.contains('kopfzeile--beim-planen')).toBe(false)
+    expect(container.querySelector('.kopfzeile')?.classList.contains('kopfzeile--ersetzt')).toBe(false)
+  })
+})
+
+describe('Auf den Mitteilungen steht am Handy der Kopf mit Zurück (T121)', () => {
+  const ungelesen: Notification = {
+    id: 'n1', type: 'zuteilung', title: 'Neue Zuteilung', text: 'x', at: new Date().toISOString(), read: false,
+  }
+  const kopf = (c: HTMLElement) => c.querySelector('.unterseitenkopf')
+
+  it('statt der Kopfzeile — Zurück führt zu Start, wie die Zurück-Taste', () => {
+    const { container, dispatch } = zeige({ screen: 'mitteilungen' })
+    expect(container.querySelector('.kopfzeile')?.classList.contains('kopfzeile--ersetzt')).toBe(true)
+    fireEvent.click(kopf(container)!.querySelector(`[aria-label="${t.a11yZurueck}"]`)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'start' })
+  })
+
+  it('daneben „Alle gelesen" — nur, solange es Neues gibt', () => {
+    const leer = zeige({ screen: 'mitteilungen' })
+    expect(kopf(leer.container)?.textContent).not.toContain(t.alleGelesen)
+    cleanup()
+    const { container, dispatch } = zeige({ screen: 'mitteilungen', notifs: [ungelesen] })
+    const knopf = [...kopf(container)!.querySelectorAll('button')].find((b) => b.textContent === t.alleGelesen)!
+    fireEvent.click(knopf)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'markAllRead' })
+  })
+
+  it('auf anderen Bildschirmen nicht', () => {
+    const { container } = zeige({ screen: 'aufgaben' })
+    expect(kopf(container)).toBeNull()
   })
 })
 

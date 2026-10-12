@@ -656,7 +656,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         screen: 'login',
-        notifOpen: false,
         slotSel: null,
         selectedPersonId: null,
         langSheetOpen: false,
@@ -721,7 +720,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ...detailVerlassen(state),
         screen,
         tab,
-        notifOpen: false,
         slotSel: null,
         selectedPersonId: null,
         langSheetOpen: false,
@@ -779,10 +777,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, theme: action.theme }
     case 'setFontScale':
       return { ...state, fontScale: action.scale }
-    case 'openNotifs':
-      return { ...state, notifOpen: true }
-    case 'closeNotifs':
-      return { ...state, notifOpen: false }
     case 'setNotifs':
       return { ...state, notifs: action.notifs }
     case 'markAllRead':
@@ -791,8 +785,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return state.notifs.some((n) => n.id === action.id && !n.read)
         ? { ...state, notifs: state.notifs.map((n) => (n.id === action.id ? { ...n, read: true } : n)) }
         : state
-    case 'clearNotifs':
-      return { ...state, notifs: [] }
     case 'openSlot':
       return { ...state, slotSel: action.sel }
     case 'closeSlot':

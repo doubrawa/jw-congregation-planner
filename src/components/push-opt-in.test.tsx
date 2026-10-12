@@ -13,7 +13,6 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { dict } from '../i18n/ui'
 import type { Dispatch } from 'react'
-import type { MyTask } from '../data/types'
 
 /**
  * **Der Weg zu Push-Mitteilungen — der einzige Kanal, über den die App von
@@ -24,16 +23,17 @@ import type { MyTask } from '../data/types'
  *
  * - Die **Berechtigung wird nie von allein angefragt.** Ein abgelehnter Dialog
  *   sperrt den Browser dauerhaft — er darf erst auf einen echten Tipp kommen.
- * - Der **Hinweis erscheint im richtigen Moment**: auf „Meine Aufgaben", sobald
- *   jemand Zuteilungen hat, und nicht, wenn Push ohnehin unerreichbar ist.
- * - **Einmal weggeklickt bleibt weggeklickt** (localStorage) — sonst ist er
- *   Werbung. Über das Profil geht es weiterhin jederzeit.
+ * - Die **Karte steht, wo man nach Mitteilungen sieht** (T121: oben auf ihrer
+ *   Seite, bis dahin ein Hinweis unter „Meine Aufgaben", der sich wegklicken
+ *   ließ) — und nicht, wenn Push ohnehin unerreichbar ist.
+ * - Sie **geht von selbst**: mit dem Abo, und wenn der Browser die Berechtigung
+ *   schon verweigert hat — dann richtete „Aktivieren" nichts mehr aus.
  * - Auf **iOS im Browser** steht die Anleitung statt eines Knopfes: dort führt
  *   nur „Teilen → Zum Home-Bildschirm" zum Ziel.
  */
 
 const push = {
-  supported: true, needsInstall: false,
+  supported: true, needsInstall: false, verweigert: false,
   subscribePush: vi.fn(() => Promise.resolve<unknown>({ endpoint: 'https://push.test/abo' })),
   subscriptionFields: vi.fn(() => ({ endpoint: 'https://push.test/abo', p256dh: 'k', auth: 'a' })),
   currentSubscription: vi.fn(() => Promise.resolve<unknown>(null)),
@@ -48,6 +48,7 @@ const appInstalledWert = { wert: false }
 vi.mock('../lib/push', () => ({
   pushSupported: () => push.supported,
   pushNeedsInstall: () => push.needsInstall,
+  pushVerweigert: () => push.verweigert,
   subscribePush: () => push.subscribePush(),
   subscriptionFields: (s: unknown) => (s ? push.subscriptionFields() : null),
   currentSubscription: () => push.currentSubscription(),
@@ -68,13 +69,9 @@ vi.mock('../lib/install', () => ({
 }))
 
 const { usePush, useInstallAvailable } = await import('./usePush')
-const { PushPrompt } = await import('./PushPrompt')
+const { PushKarte } = await import('../mitteilungen/PushKarte')
 
 const t = dict('de')
-
-const task = (id: string): MyTask => ({
-  id, title: 'Bibellesung', rolle: '', date: '', at: null, status: 'offen', s89: null,
-})
 
 function huelle(state: AppState, dispatch: Dispatch<AppAction>) {
   return function Huelle({ children }: { children: ReactNode }) {
@@ -104,18 +101,20 @@ function hook(over: Partial<AppState> = {}) {
   return { dispatch, ...r }
 }
 
-function zeigePrompt(over: Partial<AppState> = {}) {
+function zeigeKarte(over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const Huelle = huelle(baseState(over), dispatch)
-  return { dispatch, ...render(<Huelle><PushPrompt /></Huelle>) }
+  return { dispatch, ...render(<Huelle><PushKarte /></Huelle>) }
 }
+
+const karte = (c: HTMLElement) => c.querySelector('.push-karte')
+const kartenText = (c: HTMLElement) => c.querySelector('.push-karte .klein-text')?.textContent
 
 const knopf = (c: HTMLElement, text: string) =>
   [...c.querySelectorAll('button')].find((b) => b.textContent?.trim() === text)
 
 beforeEach(() => {
-  localStorage.clear()
-  Object.assign(push, { supported: true, needsInstall: false })
+  Object.assign(push, { supported: true, needsInstall: false, verweigert: false })
   push.subscribePush.mockClear().mockResolvedValue({ endpoint: 'https://push.test/abo' })
   push.subscriptionFields.mockClear().mockReturnValue({
     endpoint: 'https://push.test/abo', p256dh: 'k', auth: 'a',
@@ -244,50 +243,50 @@ describe('„App installieren" wird nur angeboten, wo es Sinn hat', () => {
   })
 })
 
-describe('Der Opt-in-Hinweis erscheint im richtigen Moment', () => {
-  it('ohne anstehende Aufgabe nicht — dann gäbe es nichts zu verpassen', () => {
-    const { container } = zeigePrompt({ myTasks: [] })
-    expect(container.querySelector('.push-prompt')).toBeNull()
-  })
-
-  it('mit Aufgabe steht er da, mit Titel und Begründung', () => {
-    const { container } = zeigePrompt({ myTasks: [task('T1')] })
-    expect(container.querySelector('.push-prompt-title')?.textContent).toBe(t.pushPromptTitle)
-    expect(container.querySelector('.push-prompt-text')?.textContent).toBe(t.pushPromptText)
+describe('Die Karte auf den Mitteilungen', () => {
+  it('steht da, mit Titel und Text — auch ohne anstehende Aufgabe, denn es kommen welche', () => {
+    const { container } = zeigeKarte({ myTasks: [] })
+    expect(container.querySelector('.push-karte-titel')?.textContent).toBe(t.pushPromptTitle)
+    expect(kartenText(container)).toBe(t.pushPromptText)
   })
 
   it('ohne angemeldetes Konto nicht — ein Abo gehört einem Nutzer (Entwicklerseite)', () => {
-    const { container } = zeigePrompt({ myTasks: [task('T1')], userId: null, congregationId: null })
-    expect(container.querySelector('.push-prompt')).toBeNull()
+    const { container } = zeigeKarte({ userId: null, congregationId: null })
+    expect(karte(container)).toBeNull()
   })
 
-  it('kann der Browser gar kein Push und ist auch nichts zu installieren, bleibt er weg', () => {
+  it('kann der Browser gar kein Push und ist auch nichts zu installieren, bleibt sie weg', () => {
     Object.assign(push, { supported: false, needsInstall: false })
     installAvailable.wert = false
-    const { container } = zeigePrompt({ myTasks: [task('T1')] })
-    expect(container.querySelector('.push-prompt')).toBeNull()
+    const { container } = zeigeKarte()
+    expect(karte(container)).toBeNull()
   })
 
   it('„Aktivieren" fragt die Berechtigung — erst jetzt, nie vorher', async () => {
-    const { container } = zeigePrompt({ myTasks: [task('T1')] })
+    const { container } = zeigeKarte()
     expect(push.subscribePush).not.toHaveBeenCalled()
     fireEvent.click(knopf(container, t.pushAktivieren)!)
     await waitFor(() => expect(push.subscribePush).toHaveBeenCalled())
   })
 
-  it('nach dem Aktivieren verschwindet er', async () => {
-    const { container } = zeigePrompt({ myTasks: [task('T1')] })
+  it('nach dem Aktivieren verschwindet sie', async () => {
+    const { container } = zeigeKarte()
     fireEvent.click(knopf(container, t.pushAktivieren)!)
-    await waitFor(() => expect(container.querySelector('.push-prompt')).toBeNull())
+    await waitFor(() => expect(karte(container)).toBeNull())
   })
 
-  it('einmal weggeklickt kehrt er nicht wieder — auch nach einem Neustart nicht', () => {
-    const erste = zeigePrompt({ myTasks: [task('T1')] })
-    fireEvent.click(erste.container.querySelector('.push-prompt-x')!)
-    expect(erste.container.querySelector('.push-prompt')).toBeNull()
-    cleanup()
-    const zweite = zeigePrompt({ myTasks: [task('T1')] })
-    expect(zweite.container.querySelector('.push-prompt')).toBeNull()
+  it('hat das Gerät schon ein Abo, steht sie nicht da', async () => {
+    push.currentSubscription.mockResolvedValue({ endpoint: 'https://push.test/abo' })
+    const { container } = zeigeKarte()
+    await waitFor(() => expect(karte(container)).toBeNull())
+  })
+
+  it('hat der Browser die Berechtigung schon verweigert, auch nicht — „Aktivieren" richtete nichts mehr aus', () => {
+    // Ohne ✕ (T121) stünde sie sonst für immer da, mit einem Knopf, der nur
+    // noch „verweigert" meldet. Freigeben lässt es sich nur im Browser.
+    push.verweigert = true
+    const { container } = zeigeKarte()
+    expect(karte(container)).toBeNull()
   })
 })
 
@@ -297,18 +296,19 @@ describe('Auf iOS im Browser steht die Anleitung statt eines Knopfes', () => {
   })
 
   it('der Text nennt den Weg über „Zum Home-Bildschirm"', () => {
-    const { container } = zeigePrompt({ myTasks: [task('T1')] })
-    expect(container.querySelector('.push-prompt-text')?.textContent).toBe(t.pushPromptIos)
+    const { container } = zeigeKarte()
+    expect(kartenText(container)).toBe(t.pushPromptIos)
   })
 
   it('und es gibt keinen Knopf, der dort nichts bewirken könnte', () => {
-    const { container } = zeigePrompt({ myTasks: [task('T1')] })
-    expect(container.querySelector('.push-prompt-actions')).toBeNull()
+    const { container } = zeigeKarte()
+    expect(karte(container)).not.toBeNull()
+    expect(container.querySelector('.push-karte button')).toBeNull()
   })
 
   it('bietet der Browser dagegen die Installation an, führt der Knopf dorthin', () => {
     installAvailable.wert = true
-    const { container } = zeigePrompt({ myTasks: [task('T1')] })
+    const { container } = zeigeKarte()
     const b = knopf(container, t.appInstallieren)!
     expect(b).toBeTruthy()
     fireEvent.click(b)

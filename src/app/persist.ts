@@ -18,7 +18,6 @@ import {
   deletePersonRow,
   deleteInviteRow,
   deleteMemberRow,
-  deleteNotifications,
   deleteServiceRow,
   markNotificationRead,
   markNotificationsRead,
@@ -969,9 +968,6 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       if (vorher && !vorher.read && !vorher.local) markNotificationRead(congId, userId, action.id)
       break
     }
-    case 'clearNotifs':
-      deleteNotifications(congId, userId)
-      break
     case 'confirmTask':
       saveConfirmation(congId, userId, action.id, 'bestätigt')
       // „Doch bestätigen" nach der Absage eines Hilfsdienstes: Das Gesuch ist

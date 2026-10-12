@@ -1676,17 +1676,6 @@ export function markNotificationsRead(congregationId: string, userId: string): v
   )
 }
 
-export function deleteNotifications(congregationId: string, userId: string): void {
-  if (!supabase) return
-  void run(
-    supabase
-      .from('notifications')
-      .delete()
-      .eq('congregation_id', congregationId)
-      .eq('user_id', userId),
-  )
-}
-
 export function saveCongregationInfo(congregationId: string, info: Congregation): void {
   if (!supabase) return
   void run(

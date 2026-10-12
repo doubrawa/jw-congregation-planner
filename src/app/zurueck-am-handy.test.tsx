@@ -227,43 +227,67 @@ describe('Zurück am Handy', () => {
   })
 
   it('ein Blatt über einem Bildschirm schließt zuerst', async () => {
-    const { container } = zeige()
-    klickMenue(container, t.navPersonen)
-    fireEvent.click(container.querySelector('.kopfzeile-glocke')!)
+    // `a1` ist eine offene Aufgabe des Demo-Bestands (DEMO_MY_TASKS); „Ich kann
+    // nicht" an ihrer Karte legt das Blatt zum Absagen darüber.
+    const { container } = zeige({ planner: false, personId: 'p9' })
+    klickMenue(container, t.navAufgabenLong)
+    fireEvent.click([...container.querySelectorAll('.aufgabe-karte button')].find((b) => b.textContent === t.kannNicht)!)
     await ausklingen()
-    expect(container.querySelector('.notif-panel')).not.toBeNull()
+    expect(container.querySelector('.sheet')).not.toBeNull()
 
     await zurueck()
-    expect(container.querySelector('.notif-panel'), 'die Glocke blieb offen').toBeNull()
-    expect(aktiv(container)).toBe(t.navPersonen)
+    expect(container.querySelector('.sheet'), 'das Blatt blieb offen').toBeNull()
+    expect(aktiv(container)).toBe(t.navAufgabenLong)
 
     await zurueck()
     expect(aktiv(container)).toBe(t.navStart)
     expect(amGrund()).toBe(true)
   })
 
+  it('die Glocke führt auf die Seite der Mitteilungen — Zurück von dort zu Start (T121)', async () => {
+    const { container } = zeige()
+    klickMenue(container, t.navPersonen)
+    fireEvent.click(container.querySelector('.kopfzeile-glocke')!)
+    await ausklingen()
+    expect(aktiv(container)).toBe(t.mitteilungen)
+
+    await zurueck()
+    expect(aktiv(container)).toBe(t.navStart)
+    expect(amGrund()).toBe(true)
+  })
+
+  it('der Knopf Zurück im Kopf der Mitteilungen führt ebenso zu Start — ohne einen Eintrag liegen zu lassen', async () => {
+    const { container } = zeige()
+    fireEvent.click(container.querySelector('.kopfzeile-glocke')!)
+    await ausklingen()
+    fireEvent.click(container.querySelector(`.unterseitenkopf [aria-label="${t.a11yZurueck}"]`)!)
+    await ausklingen()
+    expect(aktiv(container)).toBe(t.navStart)
+    expect(amGrund(), 'auf Start blieb ein Eintrag liegen').toBe(true)
+  })
+
   /*
-   * **Ein Tipp in der Glocke** (4.10.2026): Im selben Augenblick schließt die
-   * Glocke (ihr Eintrag geht), der Bildschirm wechselt und — bei der eigenen
-   * Aufgabe — öffnet ihr Blatt (zwei Einträge kommen).
+   * **Ein Tipp auf eine Mitteilung** (4.10.2026): Der Bildschirm wechselt und —
+   * bei der eigenen Aufgabe — öffnet ihr Blatt. Bis T121 schloss im selben
+   * Augenblick noch die Glocke, die sich über die Seite gelegt hatte.
    */
   const zeile = (over: Partial<AppState['notifs'][number]>) => ({
     id: 'n1', type: 'zuteilung' as const, title: 'Neue Zuteilung', text: 'x',
     at: new Date().toISOString(), read: false, ...over,
   })
 
-  async function tippeInDerGlocke(c: HTMLElement): Promise<void> {
+  async function tippeAufDieMitteilung(c: HTMLElement): Promise<void> {
     fireEvent.click(c.querySelector('.kopfzeile-glocke')!)
     await ausklingen()
-    fireEvent.click(c.querySelector('.notif-row-link')!)
+    fireEvent.click(c.querySelector('.mitteilung-link')!)
     await ausklingen()
-    expect(c.querySelector('.notif-panel'), 'die Glocke blieb offen').toBeNull()
+    expect(c.querySelector('.screen.mitteilungen'), 'die Mitteilungen blieben stehen').toBeNull()
   }
 
   it('Tipp auf die eigene Aufgabe: ihr Blatt auf „Meine Aufgaben" — Zurück schließt es, dann geht es zu Start', async () => {
     // `a1` ist eine offene Aufgabe des Demo-Bestands (DEMO_MY_TASKS).
     const { container } = zeige({ planner: false, personId: 'p9', notifs: [zeile({ taskId: 'a1' })] })
-    await tippeInDerGlocke(container)
+    await tippeAufDieMitteilung(container)
     expect(aktiv(container)).toBe(t.navAufgabenLong)
     expect(container.querySelector('.sheet'), 'das Blatt ist nicht offen').not.toBeNull()
 
@@ -280,7 +304,7 @@ describe('Zurück am Handy', () => {
     const woche = demoZustand().weeks[1]!.start
     const absage = zeile({ type: 'verhindert', title: 'Verhinderung gemeldet', taskId: `${woche}|mid|ratgeber` })
     const { container } = zeige({ notifs: [absage] })
-    await tippeInDerGlocke(container)
+    await tippeAufDieMitteilung(container)
     // Im Planen steht im Menü „Planung" als aktuelle Seite (T121).
     expect(aktiv(container)).toBe(t.dashPlanung)
 

@@ -28,7 +28,6 @@ import {
   deleteGroupRow,
   deleteInviteRow,
   deleteMemberRow,
-  deleteNotifications,
   deletePersonRow,
   deletePushSubscription,
   deleteServiceRow,
@@ -331,9 +330,7 @@ describe('Delete-Schreiber', () => {
     deletePushSubscription('e1')
     expect(chain.eq).toHaveBeenCalledWith('endpoint', 'e1')
   })
-  it('deleteNotifications (.eq.eq); deleteConfirmationRows leert per .in, leer = No-op', () => {
-    deleteNotifications('c1', 'u1')
-    expect(chain.from).toHaveBeenCalledWith('notifications')
+  it('deleteConfirmationRows leert per .in, leer = No-op', () => {
     deleteConfirmationRows('c1', ['k1', 'k2'])
     expect(chain.in).toHaveBeenCalledWith('task_key', ['k1', 'k2'])
     vi.clearAllMocks()

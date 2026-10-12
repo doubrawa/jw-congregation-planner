@@ -64,7 +64,6 @@ export function initialState(): AppState {
     planEintraege: [],
     absences: [],
     notifs: [],
-    notifOpen: false,
     slotSel: null,
     selectedPersonId: null,
     nameBeimOeffnen: null,

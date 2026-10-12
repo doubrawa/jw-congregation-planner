@@ -8,6 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
+import { BILDSCHIRME } from '../../tests/testdaten/bildschirme'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import { deriveMyOzTasks } from '../data/zeugnis'
@@ -231,9 +232,7 @@ function zeige(over: Partial<AppState> = {}) {
   return render(<Buehne />)
 }
 
-const SCREENS: Screen[] = [
-  'start', 'programm', 'aufgaben', 'planen', 'personen', 'einstellungen', 'profil',
-]
+const SCREENS = BILDSCHIRME
 
 /**
  * Zusätzlich zu den Bildschirmen: die Überlagerungen, die eigene Texte tragen.
@@ -244,7 +243,6 @@ const SCREENS: Screen[] = [
  * die Dubletten monatelang englisch da.
  */
 const OVERLAYS: Array<[string, Partial<AppState>]> = [
-  ['Mitteilungen', { screen: 'start', notifOpen: true }],
   ['Aufgaben-Blatt', { screen: 'aufgaben', myTaskId: AUFGABE.id }],
   ['Sprachauswahl', { screen: 'einstellungen', langSheetOpen: true }],
   ['Bestätigungs-Dialog', { screen: 'start', confirmOpen: true }],
@@ -406,7 +404,7 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
       Genau so prüfen sich Oberflächen-Tests gern selbst ins Nichts.
     */
     const { container } = zeige({ ...over, lang: 'en', congLang: 'en' })
-    const dialoge = container.querySelectorAll('[role="dialog"], .sheet, .notif-panel')
+    const dialoge = container.querySelectorAll('[role="dialog"], .sheet')
     expect(dialoge.length, `${name}: nichts aufgegangen`).toBeGreaterThan(0)
     expect(sichtbarerText(container).length, name).toBeGreaterThan(40)
   })
