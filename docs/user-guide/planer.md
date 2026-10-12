@@ -676,7 +676,7 @@ Treffpunkte aus dem Grundplan. Gezeigt werden die nächsten vier Wochen,
   Zeugnisgeben** fest (Personen › Aufgabenbereiche). Nur diese Personen schlägt
   die App vor, und nur sie können sich selbst eintragen.
 - **Selbst eintragen ist eine Zusage.** Wer sich in einen freien Platz
-  einträgt, steht sofort grün da — er muss nichts mehr bestätigen und bekommt
+  einträgt, steht sofort als bestätigt da (voller Punkt) — er muss nichts mehr bestätigen und bekommt
   keine Erinnerung.
 - **Zuteilen** kannst du in jeden freien Platz („— zuteilen"). Eine Zuteilung
   wartet auf Bestätigung wie jeder andere Platz; **Plan senden** unten teilt sie

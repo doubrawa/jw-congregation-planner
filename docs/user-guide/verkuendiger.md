@@ -553,10 +553,10 @@ Leiter, und du musst ihn nicht selbst eintragen.
 
 ![Planen als Gruppenaufseher](screenshots/verkuendiger-gruppenaufseher.png)
 
-Der **Punkt hinter dem Namen** sagt dir, woran du bist: grün heißt **bestätigt**,
-gelb **wartet noch auf Bestätigung**, rot **abgesagt**. Teilst du einen
-Treffpunkt neu zu, steht er wieder auf Gelb — die Zusage gehört dem, der sie
-gegeben hat.
+Der **Punkt hinter dem Namen** sagt dir, woran du bist: voll heißt
+**bestätigt**, blass **wartet noch auf Bestätigung**, rot **abgesagt**. Teilst
+du einen Treffpunkt neu zu, steht er wieder blass da — die Zusage gehört dem,
+der sie gegeben hat.
 
 Die **Personen** bleiben dem Koordinator vorbehalten, und die Zuteilungen der
 Zusammenkünfte ebenso — daran änderst du nichts. Alles Übrige siehst du wie jeder
