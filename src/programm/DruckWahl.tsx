@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { createPortal, flushSync } from 'react-dom'
 import { useApp } from '../app/context'
-import { Zeichen } from '../bausteine/Zeichen'
 import { Sheet } from '../components/Sheet'
 import { fill, useT } from '../i18n/useT'
 import { druckKennzeichen, monatDerWoche, monatsName } from './druck'
+import { DruckKnopf } from './DruckKnopf'
 import { useMonatDrucken } from './MonatsDruck'
 
 /**
@@ -45,23 +45,12 @@ export function DruckWahl({
     druckKennzeichen(null) // die Woche ist der Normalfall — kein Kennzeichen
     window.print()
   }
-  const knopf = (onClick: () => void) =>
-    mitText ? (
-      <button type="button" className="knopf-umriss druck-knopf druck-knopf--text" onClick={onClick}>
-        <Zeichen name="drucken" />
-        {t.drucken}
-      </button>
-    ) : (
-      <button type="button" className="rund-knopf druck-knopf" aria-label={t.drucken} onClick={onClick}>
-        <Zeichen name="drucken" />
-      </button>
-    )
 
-  if (!monat || !monatDrucken) return knopf(woche)
+  if (!monat || !monatDrucken) return <DruckKnopf mitText={mitText} onClick={woche} />
 
   return (
     <>
-      {knopf(() => setOffen(true))}
+      <DruckKnopf mitText={mitText} onClick={() => setOffen(true)} />
       {offen && (
         <DruckBlatt
           zeitraum={zeitraum}

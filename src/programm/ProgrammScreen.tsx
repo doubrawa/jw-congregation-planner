@@ -65,7 +65,7 @@ export function ProgrammScreen() {
   // Die Weiteren Pläne (T120, Phase 5): ein eigenes Thema ohne Woche.
   if (state.tab === 'wp') {
     return (
-      <section className="screen">
+      <section className="screen prog">
         <Bereichstitel />
         <WeiterePlaeneAnsicht />
       </section>
@@ -77,7 +77,7 @@ export function ProgrammScreen() {
   const bereich = state.tab === 'fs' ? aktiverFsBereich(state) : null
   if (bereich === 'gruppenbesuche' || bereich === 'zeugnis') {
     return (
-      <section className="screen">
+      <section className="screen prog">
         <Bereichstitel />
         <FsBereichTabs />
         {bereich === 'zeugnis' ? <ZeugnisAnsicht /> : <GruppenbesucheAnsicht />}

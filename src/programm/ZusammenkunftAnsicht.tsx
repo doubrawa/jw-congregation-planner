@@ -7,6 +7,7 @@ import type { HelperSlot, Meeting, MeetingKey, MeetingTab, PartItem, Person, Sec
 import { fill, useT } from '../i18n/useT'
 import { datumsFormat } from '../components/datum-anzeige'
 import { AusfallBanner, MemorialBanner } from '../components/WeekBadges'
+import { PersonZeile } from './PersonZeile'
 
 type Uebersetzer = (s: string) => string
 
@@ -277,7 +278,7 @@ function ProgramRow({
   me: Person | undefined
   tpw: Uebersetzer
 }) {
-  const { t } = useT()
+  const { t, tu } = useT()
   const zweiRaeume = mitAux && item.aux != null
   // Getrennt vor dem Übersetzen: Der Übersetzer zerlegt die Zeile an
   // denselben Stellen, jeder Teil kommt also übersetzt heraus wie vorher.
@@ -299,32 +300,16 @@ function ProgramRow({
           <Fragment key={aux ? 'aux' : 'haupt'}>
             {zweiRaeume && <div className="prog-raum">{aux ? t.auxKlasse : t.auxHauptsaal}</div>}
             {(aux ? (item.aux ?? []) : item.names).map((slot, index) => (
-              <ProgramPerson key={index} slot={slot} me={me} />
+              <PersonZeile
+                key={index}
+                name={slot.name}
+                rolle={slot.rolle && tu(slot.rolle)}
+                du={me != null && gehoertZu(slot, me)}
+              />
             ))}
           </Fragment>
         ))}
       </div>
-    </div>
-  )
-}
-
-/**
- * Eine Person an einem Punkt: Punkt, Name, Rolle. Die eigene steht als „Du"
- * da, mit dem Punkt in Minze — „Id vor Name", wie überall: `gehoertZu` ist die
- * eine Stelle, an der entschieden wird, wem eine Zuteilung gehört.
- *
- * Gedruckt wird der Name, nicht „Du": Der Aushang gilt allen (`nur-druck`).
- */
-function ProgramPerson({ slot, me }: { slot: PartItem['names'][number]; me: Person | undefined }) {
-  const { t, tu } = useT()
-  const du = me != null && gehoertZu(slot, me)
-  const klasse = du ? 'prog-person is-du' : slot.name ? 'prog-person' : 'prog-person is-offen'
-  return (
-    <div className={klasse}>
-      <span className="prog-person-punkt" aria-hidden="true" />
-      {du && <span className="prog-du">{t.chipDu}</span>}
-      <span className={du ? 'prog-name nur-druck' : 'prog-name'}>{slot.name || t.offenDash}</span>
-      {slot.rolle && <span className="prog-role">{tu(slot.rolle)}</span>}
     </div>
   )
 }

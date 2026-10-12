@@ -159,18 +159,19 @@ describe('Programm-Zeilen: der lange Titel darf schrumpfen und umbrechen', () =>
   }
 
   it.each([
-    ['fs-row', 'Treffpunkte'],
-    // Seit T121 am Handy eine Spalte, ab dem Tablet zwei — die Titelspalte
-    // ist in beiden schrumpffähig.
+    // Seit T121 die Uhrzeit fest vorn, daneben die Titelspalte.
+    ['treff-punkt', 'Treffpunkte'],
+    // Seit T121 am Handy Titel und Dauer, ab dem Tablet drei Spalten — die
+    // Titelspalte ist in beiden schrumpffähig.
     ['prog-row', 'Programmpunkte'],
   ])('%s gibt dem Titel eine schrumpffähige Spalte (%s)', (name) => {
     // `1fr` allein genügt nicht: eine Gitterspalte hat sonst min-width:auto und
     // bleibt so breit wie ihr längstes Wort. Genau das drückte den Namen weg.
-    expect(regel(name)).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)/)
+    expect(regel(name)).toMatch(/grid-template-columns:[^;]*minmax\(0,\s*1fr\)/)
   })
 
   it.each([
-    ['fs-row-text', 'fs-title'],
+    ['treff-text', 'treff-titel'],
     ['prog-row-text', 'prog-title'],
   ])('%s darf unter seine Inhaltsbreite, %s darf umbrechen', (spalte, titel) => {
     expect(regel(spalte)).toMatch(/min-width:\s*0/)
@@ -182,7 +183,7 @@ describe('Programm-Zeilen: der lange Titel darf schrumpfen und umbrechen', () =>
   })
 
   it('auch die Namensspalte gibt nach, statt die Karte zu sprengen', () => {
-    for (const name of ['fs-leader', 'prog-names']) {
+    for (const name of ['treff-leiter', 'prog-names']) {
       expect(regel(name), name).toMatch(/min-width:\s*0/)
       expect(regel(name), name).toMatch(/overflow-wrap:\s*break-word/)
     }
@@ -191,8 +192,8 @@ describe('Programm-Zeilen: der lange Titel darf schrumpfen und umbrechen', () =>
   it('die Treffpunkt-Zeile vergibt die beiden Klassen, an denen das hängt', () => {
     // Die Regeln greifen nur, wenn die Komponente die Klassen auch setzt —
     // vor der Behebung war die Titelspalte ein <div> ganz ohne Klasse.
-    expect(tsx).toContain('className="fs-row-text"')
-    expect(tsx).toContain('fs-leader-person')
+    expect(tsx).toContain('className="treff-text"')
+    expect(tsx).toContain('className="treff-leiter"')
   })
 })
 

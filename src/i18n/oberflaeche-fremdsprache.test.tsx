@@ -826,7 +826,7 @@ describe('Die Pläne (T120) in einer fremden Sprache', () => {
   const ANSICHTEN: Array<[string, Partial<AppState>, string, ((c: HTMLElement) => void)?]> = [
     ['Zeugnisgeben ansehen', { screen: 'programm', tab: 'fs', fsBereich: 'zeugnis' }, '.oz-schicht'],
     ['Zeugnisgeben planen', { screen: 'planen', tab: 'fs', fsBereich: 'zeugnis' }, '.oz-person'],
-    ['Gruppenbesuche ansehen', { screen: 'programm', tab: 'fs', fsBereich: 'gruppenbesuche' }, '.gb-zeile'],
+    ['Gruppenbesuche ansehen', { screen: 'programm', tab: 'fs', fsBereich: 'gruppenbesuche' }, '.gb-besuch'],
     ['Gruppenbesuche planen', { screen: 'planen', tab: 'fs', fsBereich: 'gruppenbesuche' }, '.gb-besucher'],
     ['Weitere Pläne ansehen', { screen: 'programm', tab: 'wp' }, '.wp-liste'],
     ['Weitere Pläne planen', { screen: 'planen', tab: 'wp' }, '.wp-karte'],

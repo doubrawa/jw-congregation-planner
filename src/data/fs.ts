@@ -270,12 +270,27 @@ export function fsVisible(
   planner: boolean,
 ): FsInstance[] {
   if (planner) return [...insts]
+  const meine = eigeneGruppen(persons, groups, personId)
+  return insts.filter((inst) => inst.grp == null || meine.has(inst.grp))
+}
+
+/**
+ * **Die Gruppen, die jemanden angehen**: die, in der er geführt ist
+ * (`Person.grp`), und die, die er leitet (Aufseher oder Gehilfe — er muss
+ * nicht in ihr geführt sein). Nach derselben Menge zeigt `fsVisible` die
+ * Treffpunkte, und die Ansicht markiert „Deine Gruppe".
+ */
+export function eigeneGruppen(
+  persons: readonly Person[],
+  groups: readonly Group[],
+  personId: string | null,
+): Set<string> {
   const meine = new Set<string>()
   const eigene = personId ? persons.find((p) => p.id === personId)?.grp : null
   if (eigene) meine.add(eigene)
   const geleitet = overseerGroup(groups, personId)
   if (geleitet) meine.add(geleitet)
-  return insts.filter((inst) => inst.grp == null || meine.has(inst.grp))
+  return meine
 }
 
 /* ---- Wochen-Bearbeitung (Planen) ---- */

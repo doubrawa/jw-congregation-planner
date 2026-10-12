@@ -101,10 +101,12 @@ stehen im Menü unter **Predigtdienst**:
 ![Zusammenkünfte für den Predigtdienst (Treffpunkte)](screenshots/verkuendiger-treffpunkte.png)
 
 Bei den Treffpunkten siehst du **Versammlungstreffpunkte** (für alle) und die
-**Gruppentreffpunkte** deiner Predigtdienstgruppe – jeweils mit Uhrzeit, Ort und
-Leiter. Die Treffpunkte **anderer** Gruppen stehen nicht dabei; sie gehen dich
-nicht an, und die Liste bliebe sonst voller Termine, zu denen niemand geht.
-Bist du keiner Gruppe zugeordnet, siehst du die Versammlungstreffpunkte.
+**Gruppentreffpunkte** deiner Predigtdienstgruppe – je Tag eine Karte, darin die
+Uhrzeit, der Ort und darunter der Leiter; leitest du selbst, steht dort
+**„Du"**. Trifft sich deine Gruppe an einem Tag, steht an ihm **Deine Gruppe**.
+Die Treffpunkte **anderer** Gruppen stehen nicht dabei; sie gehen dich nicht
+an, und die Liste bliebe sonst voller Termine, zu denen niemand geht. Bist du
+keiner Gruppe zugeordnet, siehst du die Versammlungstreffpunkte.
 
 ### Besuche des Dienstaufsehers
 
@@ -112,8 +114,8 @@ Der Dienstaufseher besucht reihum die Predigtdienstgruppen, an einem Wochenende
 im Monat, und leitet dann ihre Treffpunkte. Sind Besuche geplant, hat der
 Predigtdienst den Reiter **Gruppenbesuche**: oben die Besuche bei **deiner**
 Gruppe mit Treffpunkt und Besucher, darunter alle kommenden Besuche in
-Kurzform. In der Woche des Besuchs steht am Treffpunkt deiner Gruppe
-**„Besuch des Dienstaufsehers"**.
+Kurzform – die deiner Gruppe hervorgehoben. In der Woche des Besuchs steht am
+Treffpunkt deiner Gruppe **„Besuch des Dienstaufsehers"**.
 
 ![Besuche des Dienstaufsehers](screenshots/verkuendiger-gruppenbesuche.png)
 

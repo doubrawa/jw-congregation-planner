@@ -3,15 +3,18 @@ import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
 import { BesuchsMarke } from '../components/BesuchsMarke'
 import { treffpunktTagLabel, treffpunktTitel } from '../components/treffpunkt-beschriftung'
-import { fsLeiterZuteilung, fsVisible, nachWochentag } from '../data/fs'
+import { eigeneGruppen, fsLeiterZuteilung, fsVisible, nachWochentag } from '../data/fs'
 import { gehoertZu } from '../data/helpers'
 import { rechteVon } from '../data/rechte'
+import type { FsInstance, Person } from '../data/types'
 import { useT } from '../i18n/useT'
+import { PersonZeile } from './PersonZeile'
 
 /**
- * Treffpunkte-Anzeige (Programm-Tab „Zusammenkünfte für den Predigtdienst"):
- * pro Tag eine gold getönte Karte mit Zeit · Versammlungs-/Gruppentreffpunkt ·
- * Ort und dem zugeteilten Leiter (DU-Chip beim angemeldeten Nutzer).
+ * **Die Treffpunkte der Woche** (Thema Predigtdienst; T121, Entwurf
+ * `GTreffpunkte`): je Tag eine Karte — oben der Tag und, wenn sich die eigene
+ * Gruppe an ihm trifft, „Deine Gruppe" —, darin je Treffpunkt die Uhrzeit
+ * groß, Versammlungs- oder Gruppentreffpunkt, der Ort und der Leiter.
  *
  * Gezeigt wird nur, was den Leser angeht: die Versammlungstreffpunkte und die
  * seiner eigenen Gruppe (`fsVisible`). Fremde Gruppentreffpunkte stünden hier
@@ -23,9 +26,7 @@ import { useT } from '../i18n/useT'
  */
 export function FsProgram({ druck }: { druck?: ReactNode }) {
   const { state } = useApp()
-  const i18n = useT()
-  const { t, tu } = i18n
-  const me = eigenePerson(state)
+  const { t } = useT()
   const insts = fsVisible(
     state.fsWeeks[state.week] ?? [],
     state.persons,
@@ -34,16 +35,15 @@ export function FsProgram({ druck }: { druck?: ReactNode }) {
     // Wer zuteilt, sieht die Treffpunkte aller Gruppen — er besetzt sie.
     rechteVon(state).zuteilen,
   )
-
   const druckZeile = druck && <div className="prog-meta-row druck-zeile">{druck}</div>
 
   if (insts.length === 0) {
     return (
       <>
         {druckZeile}
-        <div className="panel panel--lead panel--pb16" data-farbe="gold">
+        <section className="karte treff-leer">
           <p className="prog-meta">{t.fsKeine}</p>
-        </div>
+        </section>
       </>
     )
   }
@@ -51,50 +51,74 @@ export function FsProgram({ druck }: { druck?: ReactNode }) {
   // Der Montag der Woche selbst (T66) — eine Rechnung aus der Ordnungszahl
   // nannte bei einer Lücke im Bestand ab dort den falschen Tag.
   const kennung = state.weeks[state.week]?.start ?? ''
-  const days = nachWochentag(insts)
+  const meine = eigeneGruppen(state.persons, state.groups, state.personId)
+  const me = eigenePerson(state)
+
+  const eigene = (inst: FsInstance) => inst.grp != null && meine.has(inst.grp)
 
   return (
     <>
       {druckZeile}
-      {days.map((day) => (
-        <div key={day.wd} className="panel" data-farbe="gold">
-          <h2 className="panel-label">{treffpunktTagLabel(kennung, day.wd, state.lang)}</h2>
-          {day.items.map((inst) => (
-            <div key={inst.id} className="fs-row">
-              <div className="fs-row-main">
-                <span className="fs-time">{inst.time}</span>
-                <div className="fs-row-text">
-                  <div className="fs-title">{treffpunktTitel(inst, state.groups, i18n)}</div>
-                  <BesuchsMarke woche={kennung} grp={inst.grp} />
-                  {/* Der Ort ist Freitext, aber der Vorgabewert („Königreichssaal")
-                      steht im Wörterbuch — ohne tu bliebe er als einziges Feld
-                      dieser Karte deutsch. */}
-                  {/* Freitext der Versammlung — eigene Schreibrichtung. */}
-                  <div className="fs-place" dir="auto">{tu(inst.place)}</div>
-                </div>
-              </div>
-              <div className="fs-leader">
-                <div className="fs-leader-name">
-                  {/* Über `gehoertZu`, nicht über den Namen — „Id vor Name",
-                      wie es `deriveMyFsTasks` für dieselben Treffpunkte tut.
-                      Namensgleiche sahen den Chip sonst beide. `gehoertZu`
-                      fällt ohne pid auf den Namen zurück (außer bei
-                      Gast-Rollen, die ein Treffpunkt nicht hat) — deshalb
-                      kommt die Zuteilung aus `fsLeiterZuteilung`, das den
-                      Freitext-Leiter gar nicht erst als Person ausgibt. */}
-                  {me && gehoertZu(fsLeiterZuteilung(inst), me) && (
-                    <span className="chip-du">{t.chipDu}</span>
-                  )}
-                  <span className={inst.leader ? 'fs-leader-person' : 'fs-leader-person fs-leader-open'}>
-                    {inst.leader || t.offenDash}
-                  </span>
-                </div>
-                <div className="fs-leader-role">{tu('Leiter')}</div>
-              </div>
+      {nachWochentag(insts).map((tag) => {
+        // Wer nur die eigene Gruppe sieht, liest „Deine Gruppe" am Tag, wie im
+        // Entwurf. Wer alle sieht (wer zuteilt), am Treffpunkt selbst — am Tag
+        // stünde es über vier Gruppen und meinte eine.
+        const amTreffpunkt = tag.items.some((inst) => inst.grp != null && !eigene(inst))
+        return (
+          <section key={tag.wd} className="prog-abschnitt treff-tag">
+            <div className="prog-abschnitt-kopf">
+              <h2 className="treff-tag-name">{treffpunktTagLabel(kennung, tag.wd, state.lang)}</h2>
+              {!amTreffpunkt && tag.items.some(eigene) && <span className="treff-deine">{t.gbDeineGruppe}</span>}
             </div>
-          ))}
-        </div>
-      ))}
+            {tag.items.map((inst) => (
+              <Treffpunkt key={inst.id} inst={inst} kennung={kennung} me={me} deine={amTreffpunkt && eigene(inst)} />
+            ))}
+          </section>
+        )
+      })}
     </>
+  )
+}
+
+/** Ein Treffpunkt: Uhrzeit, wer sich trifft, wo — und wer leitet. */
+function Treffpunkt({
+  inst,
+  kennung,
+  me,
+  deine,
+}: {
+  inst: FsInstance
+  kennung: string
+  me: Person | undefined
+  /** „Deine Gruppe" an diesem Treffpunkt statt am Tag. */
+  deine: boolean
+}) {
+  const { state } = useApp()
+  const i18n = useT()
+  return (
+    <div className="treff-punkt">
+      <span className="treff-zeit">{inst.time}</span>
+      <div className="treff-text">
+        <div className="treff-titel">{treffpunktTitel(inst, state.groups, i18n)}</div>
+        {/* Der Ort ist Freitext, aber der Vorgabewert („Königreichssaal")
+            steht im Wörterbuch — ohne tu bliebe er als einziges Feld deutsch.
+            Freitext der Versammlung: eigene Schreibrichtung. */}
+        <div className="treff-ort" dir="auto">
+          {i18n.tu(inst.place)}
+        </div>
+        {deine && <span className="treff-deine">{i18n.t.gbDeineGruppe}</span>}
+        <BesuchsMarke woche={kennung} grp={inst.grp} />
+      </div>
+      <div className="treff-leiter">
+        {/* „Du" über `fsLeiterZuteilung`, nicht über den Namen — „Id vor
+            Name", wie `deriveMyFsTasks` für dieselben Treffpunkte. Ein Leiter
+            als Freitext gehört niemandem hier, auch keinem Namensgleichen. */}
+        <PersonZeile
+          name={inst.leader}
+          rolle={i18n.tu('Leiter')}
+          du={me != null && gehoertZu(fsLeiterZuteilung(inst), me)}
+        />
+      </div>
+    </div>
   )
 }

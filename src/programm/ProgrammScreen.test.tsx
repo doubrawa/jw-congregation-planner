@@ -715,7 +715,7 @@ describe('Drucken im Reiter Predigtdienst', () => {
   it('„Ganzer Monat" druckt die Treffpunkte aller Wochen des Monats — und nur die', () => {
     let orte: string[] = []
     print.mockImplementation(() => {
-      orte = [...document.querySelectorAll('.monat-woche .fs-place')].map((e) => e.textContent ?? '')
+      orte = [...document.querySelectorAll('.monat-woche .treff-ort')].map((e) => e.textContent ?? '')
     })
     const { container } = zeige({
       tab: 'fs', week: 0,
@@ -725,6 +725,78 @@ describe('Drucken im Reiter Predigtdienst', () => {
     drucke(container, 1)
     expect(print).toHaveBeenCalledTimes(1)
     expect(orte).toEqual(['Saal', 'Marktplatz'])
+  })
+})
+
+/**
+ * **Die Treffpunkte der Woche** (T121, `GTreffpunkte`): je Tag eine Karte, die
+ * Uhrzeit groß, wer sich trifft und wo, darunter der Leiter. Wo sich die
+ * eigene Gruppe trifft, steht „Deine Gruppe".
+ */
+describe('Die Treffpunkte der Woche (T121)', () => {
+  const GRUPPEN = [{ id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null }]
+  const treffpunkt = (over: Partial<FsInstance>): FsInstance => ({
+    id: 'x', ruleId: null, grp: null, wd: 3, time: '09:30', place: 'Königreichssaal', leader: '', ...over,
+  })
+  const WOCHE = [
+    treffpunkt({ id: 'a', leader: 'Wer Anders', lpid: 'p-x' }),
+    treffpunkt({ id: 'b', wd: 6, time: '10:00', place: 'Bei Familie A', grp: 'g1' }),
+  ]
+  const tage = (c: HTMLElement) => [...seite(c).querySelectorAll('.treff-tag')]
+
+  it('je Tag eine Karte: Uhrzeit, wer sich trifft, wo — und der Leiter', () => {
+    const { container } = zeige({ tab: 'fs', fsWeeks: [WOCHE], groups: GRUPPEN, persons: [{ ...ICH, grp: 'g1' }] })
+    expect(tage(container).map((tag) => tag.querySelector('.treff-tag-name')?.textContent)).toEqual([
+      'Mittwoch, 9. September',
+      'Samstag, 12. September',
+    ])
+    expect(texte(container, '.treff-zeit')).toEqual(['09:30', '10:00'])
+    expect(texte(container, '.treff-titel')).toEqual([t.fsVers, 'Gruppe 1'])
+    expect(texte(container, '.treff-ort')).toEqual(['Königreichssaal', 'Bei Familie A'])
+    // Ohne Leiter steht der Platz offen da — er fehlt nicht einfach.
+    expect(texte(container, '.treff-leiter .prog-name')).toEqual(['Wer Anders', t.offenDash])
+  })
+
+  it('„Deine Gruppe" steht an dem Tag, an dem sich die eigene Gruppe trifft', () => {
+    const { container } = zeige({ tab: 'fs', fsWeeks: [WOCHE], groups: GRUPPEN, persons: [{ ...ICH, grp: 'g1' }] })
+    expect(tage(container).map((tag) => tag.querySelector('.treff-deine')?.textContent ?? null)).toEqual([
+      null,
+      t.gbDeineGruppe,
+    ])
+  })
+
+  it('wer alle Gruppen sieht, liest „Deine Gruppe" am Treffpunkt — am Tag meinte es eine von vielen', () => {
+    const zwei = [...GRUPPEN, { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null }]
+    const { container } = zeige({
+      tab: 'fs',
+      planner: true,
+      groups: zwei,
+      persons: [{ ...ICH, grp: 'g1' }],
+      fsWeeks: [[treffpunkt({ id: 'a', wd: 6, grp: 'g2' }), treffpunkt({ id: 'b', wd: 6, grp: 'g1' })]],
+    })
+    const [samstag] = tage(container)
+    expect(samstag!.querySelector('.prog-abschnitt-kopf .treff-deine')).toBeNull()
+    expect([...samstag!.querySelectorAll('.treff-punkt')].map((p) => p.querySelector('.treff-deine') !== null)).toEqual([
+      false,
+      true,
+    ])
+  })
+
+  it('auch für den, der die Gruppe leitet, ohne in ihr geführt zu sein', () => {
+    const geleitet = [{ ...GRUPPEN[0]!, overseerId: 'p-a' }]
+    const { container } = zeige({ tab: 'fs', fsWeeks: [WOCHE], groups: geleitet })
+    expect(tage(container).map((tag) => tag.querySelector('.treff-deine') !== null)).toEqual([false, true])
+  })
+
+  it('der eigene Leiterplatz heißt „Du" — über die Id; ein Leiter als Freitext gehört niemandem', () => {
+    const { container } = zeige({
+      tab: 'fs',
+      fsWeeks: [[
+        treffpunkt({ id: 'a', leader: 'Anton Alt', lpid: 'p-a' }),
+        treffpunkt({ id: 'b', wd: 4, leader: 'Anton Alt', lext: true }),
+      ]],
+    })
+    expect(tage(container).map((tag) => tag.querySelector('.prog-du') !== null)).toEqual([true, false])
   })
 })
 
@@ -779,14 +851,23 @@ describe('Gruppenbesuche beim Ansehen (T120, Phase 2)', () => {
   it('oben die eigene Gruppe mit Treffpunkt und Besucher, darunter alle Besuche', () => {
     const { container } = mitBesuchen({ fsBereich: 'gruppenbesuche' })
     expect(container.querySelector('.week-strip')).toBeNull()
-    const karten = [...container.querySelectorAll('.panel-label')].map((x) => x.textContent)
+    const karten = [...container.querySelectorAll('.gb-karte-titel')].map((x) => x.textContent)
     expect(karten).toEqual([`${t.gbDeineGruppe} · Gruppe 1`, t.gbAlle])
-    const eigene = container.querySelector('.panel')!
+    const eigene = container.querySelector('.gb-karte')!
     expect(eigene.textContent).toContain('Bei Familie A')
     expect(eigene.textContent).toContain(t.gbLeitetDann.replace('{name}', 'Konrad Sommer'))
     // Den Treffpunkt einer fremden Gruppe nennt die Ansicht nicht — nur Woche und Gruppe.
     expect(container.textContent).not.toContain('Saal')
     expect(container.querySelectorAll('.gb-liste-zeile')).toHaveLength(2)
+  })
+
+  it('unter allen Besuchen ist der der eigenen Gruppe hervorgehoben (T121)', () => {
+    const { container } = mitBesuchen({ fsBereich: 'gruppenbesuche' })
+    const zeilen = [...container.querySelectorAll('.gb-liste-zeile')]
+    expect(zeilen.map((z) => [z.querySelector('.gb-liste-gruppe')?.textContent, z.classList.contains('is-eigen')])).toEqual([
+      ['Gruppe 1', true],
+      ['Gruppe 2', false],
+    ])
   })
 
   it('der Treffpunkt der besuchten Gruppe trägt in der Besuchswoche die Marke', () => {
@@ -849,7 +930,7 @@ describe('Drucken: Pläne ohne Woche', () => {
   const PLAN = { id: 'pl1', name: 'Saalreinigung', von: '2099-01-05', bis: '2099-03-29', entwurf: false }
 
   const kopf = (c: HTMLElement) => [...c.querySelectorAll('.prog-print-head span')].map((s) => s.textContent)
-  const knopf = (c: HTMLElement) => c.querySelector<HTMLButtonElement>('.druck-zeile .prog-print-btn')!
+  const knopf = (c: HTMLElement) => c.querySelector<HTMLButtonElement>('.druck-zeile .druck-knopf')!
 
   it('Gruppenbesuche: Knopf druckt, die Kopfzeile nennt Versammlung und Plan', () => {
     const { container } = zeige({ tab: 'fs', fsBereich: 'gruppenbesuche', groups: [GRUPPE], gruppenbesuche: [BESUCH] })
@@ -929,6 +1010,16 @@ describe('Ab dem Tablet', () => {
   it('in der Kongresswoche gibt es nichts zu drucken', () => {
     const { container } = zeige({ weeks: [woche({ anlass: { art: 'kongress' } })] })
     expect(seite(container).querySelector('.druck-knopf')).toBeNull()
+  })
+
+  it('auch der Druckknopf der Pläne ohne Woche trägt sein Wort', () => {
+    const { container } = zeige({
+      tab: 'fs',
+      fsBereich: 'gruppenbesuche',
+      groups: [{ id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null }],
+      gruppenbesuche: [{ id: 'b1', woche: '2099-01-05', grp: 'g1', pid: null }],
+    })
+    expect(container.querySelector('.druck-zeile .druck-knopf--text')?.textContent).toBe(t.drucken)
   })
 })
 

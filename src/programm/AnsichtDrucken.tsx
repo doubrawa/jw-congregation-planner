@@ -1,7 +1,8 @@
 import { flushSync } from 'react-dom'
 import { useApp } from '../app/context'
-import { useT } from '../i18n/useT'
+import { TABLET_BREITE, useMedia } from '../components/useMedia'
 import { druckKennzeichen } from './druck'
+import { DruckKnopf } from './DruckKnopf'
 
 /**
  * **Drucken für die Pläne ohne Woche** (5.10.2026): Gruppenbesuche,
@@ -17,10 +18,13 @@ import { druckKennzeichen } from './druck'
  * `vorbereiten` läuft vor dem Druck und landet sofort im DOM (`flushSync`) —
  * so klappt das Zeugnisgeben alle Wochen auf, bevor der Druckdialog das Blatt
  * aufnimmt, wie beim Monat des Programms.
+ *
+ * Der Knopf sieht aus wie der der Woche (T121): am Handy das Zeichen, ab dem
+ * Tablet mit Wort.
  */
 export function AnsichtDrucken({ titel, vorbereiten }: { titel: string; vorbereiten?: () => void }) {
   const { state } = useApp()
-  const { t } = useT()
+  const breit = useMedia(TABLET_BREITE)
 
   const drucken = () => {
     if (vorbereiten) flushSync(vorbereiten)
@@ -36,9 +40,7 @@ export function AnsichtDrucken({ titel, vorbereiten }: { titel: string; vorberei
         <span>{titel}</span>
       </div>
       <div className="prog-meta-row druck-zeile">
-        <button type="button" className="prog-print-btn" onClick={drucken}>
-          {t.drucken}
-        </button>
+        <DruckKnopf mitText={breit} onClick={drucken} />
       </div>
     </>
   )

@@ -3479,10 +3479,10 @@ export const KATALOG = [
   },
   {
     id: 'du-gedruckt-mit-namen',
-    datei: 'src/programm/ZusammenkunftAnsicht.tsx',
+    datei: 'src/programm/PersonZeile.tsx',
     regel: 'Am eigenen Platz steht „Du" — gedruckt wird der Name, der Aushang gilt allen.',
-    suchen: "      <span className={du ? 'prog-name nur-druck' : 'prog-name'}>{slot.name || t.offenDash}</span>",
-    ersetzen: '      {!du && <span className="prog-name">{slot.name || t.offenDash}</span>}',
+    suchen: "      <span className={du ? 'prog-name nur-druck' : 'prog-name'}>{name || t.offenDash}</span>",
+    ersetzen: '      {!du && <span className="prog-name">{name || t.offenDash}</span>}',
   },
   {
     id: 'lied-im-abschnittskopf',
@@ -3610,6 +3610,49 @@ export const KATALOG = [
     regel: 'Die Fußzeile („Stand") ist am Bildschirm aus — im Druck blendet print.css sie wieder ein.',
     suchen: '    display: flex;\n    justify-content: space-between;\n    gap: 6mm;\n',
     ersetzen: '',
+  },
+  /* ---- Predigtdienst ansehen (T121, Phase 4b) ---- */
+  {
+    id: 'treffpunkt-deine-gruppe-am-tag',
+    datei: 'src/programm/FsProgram.tsx',
+    regel: 'Wer alle Gruppen sieht, liest „Deine Gruppe" nicht am Tag — dort meinte es eine von vielen.',
+    suchen: '{!amTreffpunkt && tag.items.some(eigene) && ',
+    ersetzen: '{tag.items.some(eigene) && ',
+  },
+  {
+    id: 'treffpunkt-deine-gruppe-am-punkt',
+    datei: 'src/programm/FsProgram.tsx',
+    regel: 'Wer alle Gruppen sieht, liest „Deine Gruppe" am Treffpunkt der eigenen Gruppe.',
+    suchen: 'deine={amTreffpunkt && eigene(inst)}',
+    ersetzen: 'deine={false}',
+  },
+  {
+    id: 'treffpunkt-leiter-du-ueber-id',
+    datei: 'src/programm/FsProgram.tsx',
+    regel: 'Am Treffpunkt heißt der eigene Leiterplatz „Du" über die Id — ein Leiter als Freitext gehört niemandem.',
+    suchen: 'du={me != null && gehoertZu(fsLeiterZuteilung(inst), me)}',
+    ersetzen: 'du={me != null && gehoertZu({ name: inst.leader }, me)}',
+  },
+  {
+    id: 'eigene-gruppe-auch-geleitet',
+    datei: 'src/data/fs.ts',
+    regel: 'Die eigene Gruppe ist auch die, die man leitet, ohne in ihr geführt zu sein.',
+    suchen: '  if (geleitet) meine.add(geleitet)\n',
+    ersetzen: '',
+  },
+  {
+    id: 'besuch-eigene-gruppe-hervorgehoben',
+    datei: 'src/programm/GruppenbesucheAnsicht.tsx',
+    regel: 'Unter allen Besuchen ist der der eigenen Gruppe hervorgehoben.',
+    suchen: "className={besuch.grp === meineGruppe ? 'gb-liste-zeile is-eigen' : 'gb-liste-zeile'}",
+    ersetzen: 'className="gb-liste-zeile"',
+  },
+  {
+    id: 'ansicht-drucken-wort-ab-tablet',
+    datei: 'src/programm/AnsichtDrucken.tsx',
+    regel: 'Ab dem Tablet trägt auch der Druckknopf der Pläne ohne Woche sein Wort.',
+    suchen: '        <DruckKnopf mitText={breit} onClick={drucken} />',
+    ersetzen: '        <DruckKnopf mitText={false} onClick={drucken} />',
   },
   {
     id: 'mitteilung-gelesen-nicht-lokal',

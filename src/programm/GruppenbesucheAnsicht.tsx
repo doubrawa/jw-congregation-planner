@@ -14,17 +14,16 @@ import { overseerGroup } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import { fill, useT } from '../i18n/useT'
 import { AnsichtDrucken } from './AnsichtDrucken'
-import '../components/gruppenbesuche.css'
 
 /**
- * **Gruppenbesuche des Dienstaufsehers** beim Ansehen (T120, Phase 2) — für
- * alle.
+ * **Gruppenbesuche des Dienstaufsehers** beim Ansehen (T120, Phase 2; T121,
+ * Entwurf `GGruppenbesuche`) — für alle.
  *
  * Oben die Besuche bei der **eigenen** Gruppe mit Treffpunkt und Besucher: Die
  * Gruppe soll sich darauf einstellen können (od Kap. 5 Abs. 41 — der
  * Gruppenaufseher kündigt den Besuch an). Darunter alle kommenden Besuche, nur
- * Woche und Gruppe: Wo und wann sich eine fremde Gruppe trifft, zeigt die App
- * auch sonst nicht (`fsVisible`).
+ * Woche und Gruppe, die eigene hervorgehoben: Wo und wann sich eine fremde
+ * Gruppe trifft, zeigt die App auch sonst nicht (`fsVisible`).
  */
 export function GruppenbesucheAnsicht() {
   const { state } = useApp()
@@ -50,9 +49,9 @@ export function GruppenbesucheAnsicht() {
     <>
       <AnsichtDrucken titel={t.gbTitel} />
       {gruppe && (
-        <div className="panel" data-farbe="gold">
-          <h2 className="panel-label">{`${t.gbDeineGruppe} · ${tu(gruppe.name)}`}</h2>
-          {beiMir.length === 0 && <p className="prog-meta">{t.gbLeer}</p>}
+        <section className="karte gb-karte">
+          <h2 className="gb-karte-titel is-eigen">{`${t.gbDeineGruppe} · ${tu(gruppe.name)}`}</h2>
+          {beiMir.length === 0 && <p className="gb-leer">{t.gbLeer}</p>}
           {beiMir.map(({ besuch, stand }) => {
             // Wer leitet, sagt der Satz nur, wenn es stimmt: eingetragen oder
             // vorgemerkt. Steht dort noch ein anderer Leiter, hat der Planer
@@ -60,32 +59,31 @@ export function GruppenbesucheAnsicht() {
             const zugesagt = stand.art === 'eingetragen' || stand.art === 'vorgemerkt'
             const name = zugesagt ? besucherName(besuch, state.persons) : ''
             return (
-              <div key={besuch.id} className="gb-zeile">
-                <div className="gb-kopf">
-                  <span className="gb-woche">{besuchsWocheText(besuch.woche, state.lang)}</span>
-                </div>
+              <div key={besuch.id} className="gb-besuch">
+                <span className="gb-besuch-woche">{besuchsWocheText(besuch.woche, state.lang)}</span>
                 {stand.treffpunkte.map((inst) => (
-                  <div key={inst.id} className="gb-treffpunkt" dir="auto">
+                  <span key={inst.id} className="gb-besuch-treffpunkt" dir="auto">
                     {besuchsTreffpunktText(besuch.woche, inst, state.lang, tu)}
-                  </div>
+                  </span>
                 ))}
-                {name && <p className="gb-hinweis">{fill(t.gbLeitetDann, { name })}</p>}
+                {name && <span className="gb-besuch-leiter">{fill(t.gbLeitetDann, { name })}</span>}
               </div>
             )
           })}
-        </div>
+        </section>
       )}
 
-      <div className="panel panel--pb16" data-farbe="neutral">
-        <h2 className="panel-label">{t.gbAlle}</h2>
-        {kommend.length === 0 && <p className="prog-meta">{t.gbLeer}</p>}
+      <section className="karte gb-karte">
+        <h2 className="gb-karte-titel">{t.gbAlle}</h2>
+        {kommend.length === 0 && <p className="gb-leer">{t.gbLeer}</p>}
         {kommend.map(({ besuch }) => (
-          <div key={besuch.id} className="gb-liste-zeile">
-            <span className="gb-woche">{besuchsWocheText(besuch.woche, state.lang)}</span>
-            <span className="gb-gruppe">{besuchsGruppe(besuch, state.groups, tu)}</span>
+          <div key={besuch.id} className={besuch.grp === meineGruppe ? 'gb-liste-zeile is-eigen' : 'gb-liste-zeile'}>
+            <span className="gb-liste-punkt" aria-hidden="true" />
+            <span>{besuchsWocheText(besuch.woche, state.lang)}</span>
+            <span className="gb-liste-gruppe">{besuchsGruppe(besuch, state.groups, tu)}</span>
           </div>
         ))}
-      </div>
+      </section>
     </>
   )
 }

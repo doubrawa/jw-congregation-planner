@@ -12,6 +12,12 @@
   gap: 12px;
 }
 
+/* Den Abstand regelt hier die Spalte; die Karten der alten Oberfläche brächten
+   ihren eigenen Rand obendrauf mit (Zeugnisgeben bis zu den Trolleys). */
+.screen.prog > .panel {
+  margin-top: 0;
+}
+
 /* Datum links, Drucken rechts auf einer Linie. */
 .prog-meta-row {
   display: flex;
@@ -41,19 +47,6 @@
 /* Ab dem Tablet mit Wort, rechts neben der Wochenwahl (`GTabletWoche`). */
 .druck-knopf--text {
   flex: none;
-}
-
-/* Drucken für die Pläne ohne Woche (Gruppenbesuche, Zeugnisgeben, Weitere
-   Pläne) — bis sie ihr Kleid bekommen (Phase 4b/4c). */
-.prog-print-btn {
-  flex: none;
-  min-height: 44px;
-  padding: 4px 16px;
-  border: 1.5px solid var(--umriss);
-  border-radius: 22px;
-  color: var(--text);
-  font-size: calc(14.5px * var(--fs));
-  font-weight: 600;
 }
 
 /* ---- Das Blatt „Drucken" ------------------------------------------------------ */
@@ -516,29 +509,189 @@
   width: calc(132px * var(--fs));
 }
 
-/* ---- Treffpunkte (Zusammenkünfte für den Predigtdienst) ------------------ */
+/* ---- Predigtdienst ansehen (`GTreffpunkte`, `GGruppenbesuche`) --------------------- */
 
-/*
- * Gleiche Aufteilung wie `.prog-row` — und aus demselben Grund: Eine
- * Flex-Zeile mit `justify-content: space-between` ließ den Titel über den
- * Namen laufen, sobald „Versammlungstreffpunkt" breiter war als sein Platz.
- * `minmax(0, 1fr)` erlaubt der Titelspalte, unter die Breite ihres längsten
- * Wortes zu schrumpfen; die Namensspalte bleibt `auto` und nimmt sich, was sie
- * braucht (bis sie selbst über `min-width: 0` nachgibt, siehe `.fs-leader`).
- */
-.fs-row {
+/* Ein Tag mit seinen Treffpunkten: die Karte eines Abschnitts, ohne Farbbalken. */
+.treff-tag-name {
+  color: var(--text2);
+  font-size: calc(14px * var(--fs));
+  font-weight: 600;
+}
+
+/* „Deine Gruppe" — am Tag, an dem sie sich trifft. */
+.treff-deine {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--akzent-text);
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 600;
+}
+
+/* Der Punkt der eigenen Gruppe, an den Treffpunkten wie bei den Besuchen. */
+.treff-deine::before,
+.gb-karte-titel.is-eigen::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--akzent);
+}
+
+/* Ein Treffpunkt: die Uhrzeit groß vorn, daneben wer und wo, darunter der
+   Leiter — ab dem Tablet daneben. */
+.treff-punkt {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--lineGld);
+  grid-template-columns: calc(58px * var(--fs)) minmax(0, 1fr);
+  grid-template-areas:
+    'zeit text'
+    '. leiter';
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0 14px;
+  border-block-start: 1px solid var(--linie);
 }
 
-.panel .fs-row:last-child {
-  border-bottom-color: transparent;
+.treff-zeit {
+  grid-area: zeit;
+  font-size: calc(20px * var(--fs));
+  font-weight: 300;
 }
 
+.treff-text {
+  grid-area: text;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Silbentrennung für „Versammlungstreffpunkt", `break-word` als Notbremse. */
+.treff-titel {
+  font-size: calc(16px * var(--fs));
+  font-weight: 600;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+.treff-ort {
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
+  overflow-wrap: break-word;
+}
+
+/* Letzte Sicherung wie bei `.prog-names`: Ein sehr langer Name bricht um,
+   statt die Spalte über die Karte hinaus aufzublähen. */
+.treff-leiter {
+  grid-area: leiter;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.treff-tag {
+  padding-block-end: 4px;
+}
+
+.treff-leer {
+  padding-block: 14px;
+}
+
+@media (min-width: 768px) {
+  .treff-punkt {
+    grid-template-columns: calc(58px * var(--fs)) minmax(0, 1fr) minmax(0, 0.8fr);
+    grid-template-areas: 'zeit text leiter';
+  }
+}
+
+/* Gruppenbesuche: oben die eigene Gruppe, darunter alle. */
+.gb-karte {
+  padding-block: 6px 4px;
+}
+
+.gb-karte-titel {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  color: var(--text2);
+  font-size: calc(14px * var(--fs));
+  font-weight: 600;
+}
+
+.gb-karte-titel.is-eigen {
+  color: var(--akzent-text);
+}
+
+.gb-leer,
+.gb-besuch {
+  padding: 12px 0 14px;
+  border-block-start: 1px solid var(--linie);
+}
+
+.gb-leer {
+  color: var(--text3);
+}
+
+.gb-besuch {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gb-besuch-woche {
+  font-size: calc(16px * var(--fs));
+  font-weight: 600;
+}
+
+.gb-besuch-treffpunkt {
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
+}
+
+.gb-besuch-leiter {
+  color: var(--text2);
+  font-size: calc(14px * var(--fs));
+}
+
+/* „Alle Besuche": Punkt, Woche, Gruppe — die eigene hervorgehoben. */
+.gb-liste-zeile {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  min-height: 50px;
+  border-block-start: 1px solid var(--linie);
+  font-weight: 500;
+}
+
+.gb-liste-zeile.is-eigen {
+  font-weight: 700;
+}
+
+.gb-liste-punkt {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.gb-liste-zeile.is-eigen .gb-liste-punkt {
+  background: var(--akzent);
+}
+
+.gb-liste-gruppe {
+  color: var(--text2);
+  text-align: end;
+}
+
+.gb-liste-zeile.is-eigen .gb-liste-gruppe {
+  color: var(--text);
+}
+
+/* ---- Kopf einer Zeugnis-Schicht -------------------------------------------- */
+
+/* Früher die Kopfzeile der Treffpunkte; die Schichten des Zeugnisgebens
+   (`SchichtKopf`) leihen sie sich, bis die Trolleys sie ablösen (T121). */
 .fs-row-main {
   display: flex;
   align-items: baseline;
@@ -581,41 +734,4 @@
   margin-top: 2px;
   /* Freitext der Versammlung — ein langer Ortsname bricht um. */
   overflow-wrap: break-word;
-}
-
-.fs-leader {
-  text-align: end;
-  /* Letzte Sicherung wie bei `.prog-names`: ein sehr langer Name bricht um,
-     statt die Spalte über die Karte hinaus aufzublähen. */
-  min-width: 0;
-  overflow-wrap: break-word;
-}
-
-.fs-leader-name {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 5px;
-  font-size: calc(12.5px * var(--fs));
-  font-weight: 600;
-}
-
-/* Der Name darf schrumpfen und umbrechen; der DU-Chip bleibt, wie er ist. */
-.fs-leader-person {
-  min-width: 0;
-}
-
-.fs-leader-name .chip-du {
-  flex: none;
-}
-
-.fs-leader-open {
-  color: var(--mut2);
-}
-
-.fs-leader-role {
-  font-size: calc(11px * var(--fs));
-  color: var(--mut);
-  margin-top: 1px;
 }

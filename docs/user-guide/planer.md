@@ -524,6 +524,10 @@ Gruppe, und mit **Plan senden** benachrichtigen sie die Leiter ihrer Gruppe.
 Ein **Planer** besetzt die Leiter aller Gruppen; Uhrzeit und Ort stehen bei ihm
 als Text da, und den Grundplan sieht er nicht.
 
+Beim **Ansehen** sieht, wer zuteilt, die Treffpunkte **aller** Gruppen — je Tag
+eine Karte. **Deine Gruppe** steht dann am Treffpunkt der eigenen Gruppe, nicht
+am Tag (dort meinte es eine von mehreren).
+
 > **Wer sieht was.** Einen Gruppentreffpunkt zeigt das Programm nur den
 > Verkündigern **dieser** Gruppe (und ihrem Aufseher). Versammlungstreffpunkte
 > sehen alle. Du als Planer siehst weiterhin alles — du planst ja für jede

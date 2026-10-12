@@ -73,7 +73,6 @@
   .week-chips,
   .woche-hinweis.is-aktuell,
   .prog-helpers,
-  .prog-print-btn,
   .druck-knopf,
   .druck-zeile,
   .prog-du,
@@ -268,12 +267,29 @@
   /* Treffpunkte (Reiter Predigtdienst, T105) — wie die Programmzeilen in
      festen Größen: Auf dem Papier gilt nicht die Schriftstufe des Geräts, von
      dem aus gedruckt wird. Vorher wuchsen sie mit (`--fs`), und derselbe Plan
-     kam von zwei Handys verschieden groß heraus. */
-  .fs-row {
-    gap: 5mm;
+     kam von zwei Handys verschieden groß heraus. Der Leiter steht daneben,
+     wie ab dem Tablet; „Deine Gruppe" geht nur den Leser an. */
+  .treff-punkt {
+    grid-template-columns: 14mm minmax(0, 1fr) minmax(0, 0.9fr);
+    grid-template-areas: 'zeit text leiter';
+    gap: 4mm;
     padding: 1.6mm 0;
   }
 
+  .treff-zeit,
+  .treff-titel {
+    font-size: 10pt;
+  }
+
+  .treff-ort {
+    font-size: 8.5pt;
+  }
+
+  .treff-deine {
+    display: none;
+  }
+
+  /* Die Schichten des Zeugnisgebens leihen sich den alten Kopf des Treffpunkts. */
   .fs-time {
     font-size: 9.5pt;
   }
@@ -285,14 +301,6 @@
 
   .fs-place {
     margin-top: 0.3mm;
-    font-size: 8.5pt;
-  }
-
-  .fs-leader-name {
-    font-size: 9.5pt;
-  }
-
-  .fs-leader-role {
     font-size: 8.5pt;
   }
 
@@ -330,17 +338,22 @@
 
   .oz-person,
   .oz-faellt-aus,
-  .gb-woche,
-  .gb-gruppe,
+  .gb-besuch-woche,
+  .gb-liste-zeile,
   .wp-liste-zeile {
     font-size: 9.5pt;
   }
 
   .oz-frei,
-  .gb-treffpunkt,
-  .gb-hinweis,
+  .gb-besuch-treffpunkt,
+  .gb-besuch-leiter,
   .wp-zeitraum {
     font-size: 8.5pt;
+  }
+
+  .gb-liste-zeile {
+    min-height: 0;
+    padding: 1.2mm 0;
   }
 
   .wp-name {
@@ -349,7 +362,12 @@
 
   /* Am Bildschirm hebt sich die Zeile der eigenen Gruppe ab — der Aushang
      gilt allen. */
-  .wp-liste-zeile.is-eigen {
+  .wp-liste-zeile.is-eigen,
+  .gb-liste-zeile.is-eigen {
     font-weight: inherit;
+  }
+
+  .gb-liste-zeile.is-eigen .gb-liste-punkt {
+    background: none;
   }
 }
