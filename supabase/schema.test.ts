@@ -336,6 +336,17 @@ describe('die Rechteprüfungen stehen im Schema', () => {
       expect(r().get('oz_termine_write') ?? '').not.toContain('darf_zuteilen')
     })
 
+    it('vorgemerkte Vorträge (T122): lesen und schreiben nur Admin und Planer — sonst niemand', () => {
+      const alle = r()
+      // Eine Regel und nur eine: Eine zweite (etwa ein Lesen für alle) legte die
+      // Namen auswärtiger Redner jedem Mitglied offen.
+      expect([...alle.keys()].filter((name) => name.startsWith('vortraege_'))).toEqual(['vortraege_zuteilen'])
+      const regel = alle.get('vortraege_zuteilen') ?? ''
+      expect(regel).toContain('for all')
+      expect(regel).toContain('using (congregation_id = public.my_congregation_id() and public.darf_zuteilen())')
+      expect(regel).toContain('with check (congregation_id = public.my_congregation_id() and public.darf_zuteilen())')
+    })
+
     it('Zusagen eines neu besetzten Platzes räumen Admin und Planer überall, der Gruppenaufseher bei den Treffpunkten', () => {
       expect(r().get('confirmations_delete_planner') ?? '').toContain(
         "public.darf_zuteilen() or (public.is_group_overseer() and task_key like 'fs|%')",

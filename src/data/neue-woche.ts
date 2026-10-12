@@ -18,6 +18,9 @@
  *    schon einmal die Ursache eines Fehlers (B8/T40).
  *  - **Treffpunkte** aus dem Grundplan, samt der vorgemerkten Gruppenbesuche
  *    (T120).
+ *  - **Öffentlicher Vortrag**, wenn er aus dem Vortragsplan vorgemerkt ist
+ *    (T122): Das Planungsprogramm plant Monate voraus, die Woche kommt erst
+ *    mit ihrem Programm.
  *
  * Eine Funktion für den Knopf in der App (`addImportedWeek`) und das Skript
  * `scripts/wochen-importieren.mjs` — Gleichstand durch Bauart, nicht durch
@@ -34,6 +37,7 @@ import { genFsWeek } from './fs'
 import { besucheInNeueWoche } from './gruppenbesuche'
 import { endeAusStartzeit } from './meeting-edit'
 import type { FsInstance, FsRule, Gruppenbesuch, MeetingTimes, Person, Week } from './types'
+import { vortragInNeueWoche, type VorgemerkterVortrag } from './vortragsplan'
 
 export interface NeueWocheKontext {
   zeiten: MeetingTimes
@@ -41,6 +45,8 @@ export interface NeueWocheKontext {
   auxClass: boolean
   fsRules: FsRule[]
   gruppenbesuche: readonly Gruppenbesuch[]
+  /** Vorgemerkte öffentliche Vorträge (T122). */
+  vortraege: readonly VorgemerkterVortrag[]
   persons: readonly Person[]
 }
 
@@ -55,5 +61,7 @@ export function neueWocheEinordnen(roh: Week, k: NeueWocheKontext): { week: Week
   const mem = mitEnden.anlass?.art === 'mem' ? mitEnden.anlass.von : undefined
   if (mem) wochen = setAnlassTermin(wochen, 0, { von: mem })
   const fsWeek = besucheInNeueWoche(genFsWeek(roh.start, k.fsRules), roh.start, k.gruppenbesuche, k.persons)
-  return { week: wochen[0] ?? mitEnden, fsWeek }
+  // Nach dem Gedächtnismahl: Fällt es aufs Wochenende, bleibt der Vortrag weg.
+  const week = vortragInNeueWoche(wochen[0] ?? mitEnden, k.vortraege, k.persons)
+  return { week, fsWeek }
 }

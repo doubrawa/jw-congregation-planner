@@ -72,6 +72,9 @@ export const RLS_TABELLEN = [
   { name: 'fs_rules', spalte: 'congregation_id' },
   { name: 'fs_weeks', spalte: 'congregation_id' },
   { name: 'gruppenbesuche', spalte: 'congregation_id' },
+  // Vorgemerkte Vorträge (T122): nur Admin und Planer lesen — ein Mitglied
+  // ohne Zuteilungsrecht sieht auch in der eigenen Versammlung keine Zeile.
+  { name: 'vortraege', spalte: 'congregation_id' },
   { name: 'oz_termine', spalte: 'congregation_id' },
   { name: 'oz_eintraege', spalte: 'congregation_id' },
   { name: 'plaene', spalte: 'congregation_id' },

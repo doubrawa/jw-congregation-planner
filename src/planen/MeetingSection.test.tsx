@@ -656,6 +656,47 @@ describe('Die Kreisaufseher-Woche: fester Begriff, freies Thema (T62)', () => {
   })
 })
 
+describe('Ändert sich ein Titel von außen, zeigt das Feld den neuen', () => {
+  /*
+    Thema- und Liedfelder sind ungesteuert (`defaultValue`). Steht der
+    gespeicherte Wert nicht im Schlüssel, bleibt nach einer Änderung von außen —
+    Vortragsplan (T122), Nachladen — der alte Text stehen, und das Verlassen des
+    Felds schriebe ihn zurück. Dasselbe Bauteil, nur neu gezeichnet.
+  */
+  function Buehne({ section, tab }: { section: Section; tab: 'mid' | 'we' }) {
+    const state: AppState = {
+      ...demoZustand(),
+      dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
+      persons: PERSONEN, services: [], groups: [], absences: [], confirmations: {},
+      weeks: [tab === 'we' ? woche([], [section]) : woche([section])], fsWeeks: [[]], tab,
+    }
+    const store = useStaticStore(state)
+    return (
+      <AppDispatchContext.Provider value={vi.fn()}>
+        <AppStoreContext.Provider value={store}>
+          <AppStateContext.Provider value={state}>
+            <MeetingSection si={0} section={section} rawSection={section} mitAux={false} tpw={(s) => s} />
+          </AppStateContext.Provider>
+        </AppStoreContext.Provider>
+      </AppDispatchContext.Provider>
+    )
+  }
+
+  const punkt = (label: string, title: string, rolle: string): Section => ({
+    label, farbe: 'neutral', items: [{ iid: 'i70', title, meta: '', names: [{ name: '', rolle }] }],
+  })
+
+  it.each([
+    ['Vortragsthema', 'we', LABEL_VORTRAG, ROLE_GUEST_SPEAKER, 'Altes Thema', 'Neues Thema', '.talk-title-input', 'Neues Thema'],
+    ['Anfangslied', 'we', LABEL_EROEFFNUNG, 'Gebet', 'Lied 44 · Gebet', 'Lied 12 · Gebet', '.talk-song-input', '12'],
+    ['Thema der Kreisaufseher-Woche', 'mid', LABEL_LAC, ROLE_CIRCUIT, 'Dienstvortrag · Alt', 'Dienstvortrag · Neu', '.talk-title-input', 'Neu'],
+  ] as const)('%s', (_name, tab, label, rolle, vorher, nachher, feld, erwartet) => {
+    const { container, rerender } = render(<Buehne section={punkt(label, vorher, rolle)} tab={tab} />)
+    rerender(<Buehne section={punkt(label, nachher, rolle)} tab={tab} />)
+    expect(container.querySelector<HTMLInputElement>(feld)?.value).toBe(erwartet)
+  })
+})
+
 describe('Konflikte heben sich im Plan ab', () => {
   it('wer abwesend und trotzdem eingeteilt ist, bekommt den Punkt am Chip', () => {
     const s: Section = {

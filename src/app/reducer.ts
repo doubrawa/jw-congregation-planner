@@ -23,6 +23,7 @@ import {
   besuchStand,
   nachWoche,
 } from '../data/gruppenbesuche'
+import { vortragsplanAnwenden, vortragsplanVorschau } from '../data/vortragsplan'
 import {
   deriveMyOzTasks,
   ozAb,
@@ -214,6 +215,11 @@ function ohnePerson(state: AppState, id: string): AppState {
     gruppenbesuche: state.gruppenbesuche.some((b) => b.pid === id)
       ? state.gruppenbesuche.map((b) => (b.pid === id ? { ...b, pid: null } : b))
       : state.gruppenbesuche,
+    // Ebenso ein vorgemerkter Vortrag (T122): Es bleibt der Name, den die
+    // Woche beim Anlegen erneut einer Person zuzuordnen versucht.
+    vortraege: state.vortraege.some((v) => v.pid === id)
+      ? state.vortraege.map((v) => (v.pid === id ? { ...v, pid: null } : v))
+      : state.vortraege,
     // Ihre Einträge im öffentlichen Zeugnisgeben gehen mit — wie in der
     // Datenbank (`on delete cascade`): Ein Platz ohne Person ist frei.
     ozEintraege: state.ozEintraege.some((e) => e.pid === id)
@@ -990,6 +996,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         auxClass: state.auxClass,
         fsRules: state.fsRules,
         gruppenbesuche: state.gruppenbesuche,
+        vortraege: state.vortraege,
         persons: state.persons,
       })
       return {
@@ -1275,6 +1282,37 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         fsWeeks,
         // Nicht „Geleerte Zuteilungen": gezählt sind Besuche, keine Plätze.
         toast: toastKey(state, 'toastBesucheGeleert', { n: weg.size }),
+      }
+    }
+    case 'vortragsplanUebernehmen': {
+      // Neu gerechnet mit dem Stand von jetzt — die Vorschau kann ein anderer
+      // Planer inzwischen überholt haben (`data/vortragsplan.ts`).
+      const heute = new Date()
+      const vorschau = vortragsplanVorschau(action.plan, {
+        weeks: state.weeks,
+        vormerkungen: state.vortraege,
+        persons: state.persons,
+        zeiten: state.congregation.times,
+        heute,
+      })
+      const { weeks, vormerkungen, geaendert } = vortragsplanAnwenden({
+        vorschau,
+        weeks: state.weeks,
+        vormerkungen: state.vortraege,
+        neueId: () => `v${crypto.randomUUID()}`,
+        heute,
+      })
+      return {
+        ...state,
+        weeks,
+        vortraege: vormerkungen,
+        // Wie beim Zuteilen von Hand: Wer seinen Vortrag verliert, verliert die
+        // Zusage — und erfährt es (`persist.ts`, Entzug).
+        confirmations: dropConfirmations(
+          state.confirmations,
+          geaendert.flatMap((wi) => geaenderteSlots(state.weeks, weeks, wi, 'we', state.services)),
+        ),
+        toast: toastKey(state, 'toastVortraegeUebernommen'),
       }
     }
     /*
@@ -1783,6 +1821,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         // Aus einer Momentaufnahme von vor T120 fehlt das Feld — wie beim
         // Versand-Tagebuch darunter.
         gruppenbesuche: p.gruppenbesuche ?? [],
+        // Momentaufnahmen von vor T122 kennen die Vormerkungen nicht.
+        vortraege: p.vortraege ?? [],
         ozTermine: p.ozTermine ?? [],
         ozEintraege: p.ozEintraege ?? [],
         plaene: p.plaene ?? [],

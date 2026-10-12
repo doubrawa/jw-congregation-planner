@@ -58,6 +58,7 @@ export function initialState(): AppState {
     fsRules: [],
     fsWeeks: [],
     gruppenbesuche: [],
+    vortraege: [],
     ozTermine: [],
     ozEintraege: [],
     plaene: [],

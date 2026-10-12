@@ -23,6 +23,7 @@ Versammlungseinstellungen pflegen.
 1. [Dashboard für Planer](#1-dashboard-für-planer)
 2. [Planen: Zuteilungen vornehmen](#2-planen-zuteilungen-vornehmen)
 3. [Automatisch zuteilen & leeren](#3-automatisch-zuteilen--leeren)
+   – [Vortragsplan übernehmen](#vortragsplan-übernehmen)
 4. [Konflikte und offene Zuteilungen](#4-konflikte-und-offene-zuteilungen)
 5. [Treffpunkte planen](#5-treffpunkte-planen)
    – [Weitere Pläne](#5a-weitere-pläne)
@@ -102,6 +103,7 @@ nicht umlegen.
 | --- | --- | --- | --- | --- |
 | Programmpunkte, Hilfsdienste, Ratgeber zuteilen | – | – | ✓ | ✓ |
 | Vortragsthema, Lieder, Partner am Schülerteil | – | – | ✓ | ✓ |
+| Vortragsplan aus dem Planungsprogramm übernehmen | – | – | ✓ | ✓ |
 | Treffpunkt-Leiter zuteilen | – | seine Gruppe | alle | alle |
 | Treffpunkte ändern: Zeit, Ort, hinzufügen, entfernen, Grundplan | – | seine Gruppe | – | alle |
 | Schichten im öffentlichen Zeugnisgeben besetzen | sich selbst | – | ✓ | ✓ |
@@ -346,6 +348,36 @@ der zuletzt Gesprächspartner war. Sonst kann es passieren, dass eine Schwester
 zwar gleich viele Aufgaben hat wie alle anderen, davon aber fast immer die
 Partnerrolle. Dasselbe gilt für Brüder, die sowohl die Bibellesung als auch den
 Leser übernehmen können.
+
+### Vortragsplan übernehmen
+
+Plant ihr die öffentlichen Vorträge in einem eigenen Programm, übernimmst du
+dessen Plan als XML-Datei: **Planen › Zusammenkünfte › Wochenende**, ganz unten
+**Vortragsplan › XML-DATEI WÄHLEN**. Wie die Datei aufgebaut sein muss, steht in
+[vortragsplan-import.md](../vortragsplan-import.md) — danach richtet sich die
+Ausgabe des Programms.
+
+- **Gelesen wird die Datei auf deinem Gerät.** In die App kommen je Woche nur
+  Redner, Versammlung, Thema und Lied. Alles andere — eine Telefonnummer, eine
+  E-Mail-Adresse — bleibt auf dem Gerät; die Vorschau nennt es unter „Bleibt
+  auf diesem Gerät".
+- **Erst die Vorschau, dann übernehmen.** Je Woche steht da, was geschieht:
+  neu, geändert (mit dem bisherigen Redner), entfällt, nicht übernommen.
+  Unveränderte und vergangene Wochen stehen nur gezählt da. Geschrieben wird
+  erst mit **Übernehmen**.
+- **Wochen, deren Programm noch nicht geholt ist,** werden vorgemerkt: Der
+  Vortrag steht in der Woche, sobald ihr Programm importiert ist.
+- **Ein eigener Redner** wird über seinen Namen mit seiner Person verbunden und
+  bekommt Aufgabe, Bestätigung und Erinnerung wie bei jeder Zuteilung. Gibt es
+  niemanden mit genau diesem Namen, sagt es die Vorschau.
+- **Das Planungsprogramm gilt.** Ein erneuter Import überschreibt, was du in der
+  App am Vortrag geändert hast, und ein Vortrag, der im Zeitraum der Datei nicht
+  mehr vorkommt, entfällt — gemessen am Tag der Zusammenkunft. Hatte ein eigener
+  Redner schon zugesagt, erfährt er es wie bei jeder Umteilung.
+- **Nicht angefasst** werden Vorträge, deren Tag vorbei ist, Wochen mit einem
+  fehlerhaften Eintrag in der Datei und Sonderwochen: Besuch des
+  Kreisaufsehers, Kongress, Gedächtnismahl am Wochenende, eine ausgefallene
+  Zusammenkunft.
 
 ---
 

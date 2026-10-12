@@ -3864,6 +3864,92 @@ export const KATALOG = [
     suchen: "  return gruppe?.overseerId === s.personId ? 'gruppenaufseher' : 'gehilfe'\n",
     ersetzen: "  return 'gruppenaufseher'\n",
   },
+  // Vortragsplan aus dem Planungsprogramm (T122).
+  {
+    id: 'vp-unbekannte-felder-nennen',
+    datei: 'src/lib/vortragsplan-xml.ts',
+    regel: 'Was die Datei sonst noch enthält, nennt die Vorschau — der Planer sieht, dass es das Gerät nicht verlässt.',
+    suchen: '      if (!BEKANNT.kinder.has(kind.localName)) ignoriert.add(kind.localName)\n',
+    ersetzen: '      if (!BEKANNT.kinder.has(kind.localName)) continue\n',
+  },
+  {
+    id: 'vp-vergangene-wochen',
+    datei: 'src/data/vortragsplan.ts',
+    regel: 'Einen Vortrag, dessen Tag vorbei ist, fasst der Import nicht an.',
+    suchen: '    if (tag < heute) {\n',
+    ersetzen: "    if (tag < '0000') {\n",
+  },
+  {
+    id: 'vp-zeitraum-am-tag',
+    datei: 'src/data/vortragsplan.ts',
+    regel: 'Ob ein Vortrag im Zeitraum der Datei liegt, entscheidet der Tag der Zusammenkunft, nicht der Montag seiner Woche.',
+    suchen: '      if (tag >= plan.von && tag <= plan.bis && !fehlerhaft.has(woche)) wochen.add(woche)\n',
+    ersetzen: '      if (woche >= montagVon(plan.von) && woche <= montagVon(plan.bis) && !fehlerhaft.has(woche)) wochen.add(woche)\n',
+  },
+  {
+    id: 'vp-fehlerwoche-bleibt',
+    datei: 'src/data/vortragsplan.ts',
+    regel: 'Ein fehlerhafter Eintrag ist keine Absage: Seine Woche bleibt, wie sie ist.',
+    suchen: '  const fehlerhaft = new Set(plan.fehlerWochen ?? [])\n',
+    ersetzen: '  const fehlerhaft = new Set<string>()\n',
+  },
+  {
+    id: 'vp-kreisaufseher-woche',
+    datei: 'src/data/vortragsplan.ts',
+    regel: 'In der Woche des Kreisaufsehers hält er den Vortrag — der Import lässt sie stehen.',
+    suchen: "  if (week.anlass?.art === 'co') return 'kreisaufseher'\n",
+    ersetzen: "  if (week.anlass?.art === 'nie') return 'kreisaufseher'\n",
+  },
+  {
+    id: 'vp-vormerkung-in-neue-woche',
+    datei: 'src/data/neue-woche.ts',
+    regel: 'Eine später geholte Woche bekommt ihren vorgemerkten Vortrag.',
+    suchen: '  const week = vortragInNeueWoche(wochen[0] ?? mitEnden, k.vortraege, k.persons)\n',
+    ersetzen: '  const week = wochen[0] ?? mitEnden\n',
+  },
+  {
+    id: 'vp-zusage-verfaellt',
+    datei: 'src/app/reducer.ts',
+    regel: 'Wer durch den Vortragsplan seinen Vortrag verliert, verliert die Zusage — wie beim Zuteilen von Hand.',
+    suchen: "          geaendert.flatMap((wi) => geaenderteSlots(state.weeks, weeks, wi, 'we', state.services)),\n",
+    ersetzen: '          [],\n',
+  },
+  {
+    id: 'vp-vormerkungen-speichern',
+    datei: 'src/app/persist.ts',
+    regel: 'Die Vormerkungen des Vortragsplans gehen hinaus.',
+    suchen: "    case 'vortragsplanUebernehmen':\n      vortraegeSpeichern(congId, prev, next)\n",
+    ersetzen: "    case 'vortragsplanUebernehmen':\n",
+  },
+  {
+    id: 'vp-thema-feld-schluessel',
+    datei: 'src/planen/MeetingSection.tsx',
+    regel: 'Setzt jemand das Vortragsthema von außen, zeigt das Feld den neuen Titel — und schreibt den alten nicht zurück.',
+    suchen: '                  key={`talk-${state.week}-${ii}-${rawTitle}`}\n',
+    ersetzen: '                  key={`talk-${state.week}-${ii}`}\n',
+  },
+  {
+    id: 'co-thema-feld-schluessel',
+    datei: 'src/planen/MeetingSection.tsx',
+    regel: 'Ändert sich das Thema der Kreisaufseher-Woche von außen, zeigt das Feld den neuen Text.',
+    suchen: '                    key={`thema-${state.week}-${si}-${ii}-${rawTitle}`}\n',
+    ersetzen: '                    key={`thema-${state.week}-${si}-${ii}`}\n',
+  },
+  {
+    id: 'vp-lied-feld-schluessel',
+    datei: 'src/planen/MeetingSection.tsx',
+    regel: 'Setzt jemand das Anfangslied von außen, zeigt das Feld die neue Nummer.',
+    suchen: "            key={`song-${isOpening ? 'open' : 'close'}-${state.week}-${liedNr}`}\n",
+    ersetzen: "            key={`song-${isOpening ? 'open' : 'close'}-${state.week}`}\n",
+  },
+  {
+    id: 'vp-rls-nur-zuteiler',
+    datei: 'supabase/schema.sql',
+    regel: 'Vorgemerkte Vorträge — Namen auswärtiger Redner — lesen nur Admin und Planer.',
+    suchen:
+      'create policy vortraege_zuteilen on public.vortraege\n  for all\n  using (congregation_id = public.my_congregation_id() and public.darf_zuteilen())\n',
+    ersetzen: 'create policy vortraege_zuteilen on public.vortraege\n  for all\n  using (congregation_id = public.my_congregation_id())\n',
+  },
 ]
 
 /**

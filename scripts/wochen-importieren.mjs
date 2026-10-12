@@ -14,8 +14,9 @@
  * **Eingeordnet wird mit derselben Funktion wie beim Knopf in der App**
  * (`neueWocheEinordnen`, `src/data/neue-woche.ts`): Endzeiten aus den eigenen
  * Zusammenkunftszeiten, die Zusätzliche Klasse, der Ausfall in der Woche des
- * Gedächtnismahls und die Treffpunkte aus dem Grundplan samt vorgemerkter
- * Gruppenbesuche. Geschrieben wird eine Zeile je Woche in `weeks` und eine in
+ * Gedächtnismahls, die Treffpunkte aus dem Grundplan samt vorgemerkter
+ * Gruppenbesuche und der vorgemerkte öffentliche Vortrag aus dem Vortragsplan
+ * (T122). Geschrieben wird eine Zeile je Woche in `weeks` und eine in
  * `fs_weeks`. Bis zum 5.10.2026 stand hier „Geschrieben wird wie dort", und
  * geschrieben wurde die Woche, wie `import-week` sie liefert — ohne Klasse, mit
  * den festen Endzeiten des Imports, ohne Treffpunkte. Mit eingeschalteter
@@ -109,8 +110,8 @@ export function nurNeue(vorhandeneStarts, wochen) {
 
 /**
  * Die Einordnung der App, bestückt mit dieser Versammlung: Grundplan,
- * Gruppenbesuche und Personen gelesen und umgesetzt wie beim Laden der App
- * (`src/lib/zeilen.ts`), dieselbe Reihenfolge wie dort.
+ * Gruppenbesuche, vorgemerkte Vorträge und Personen gelesen und umgesetzt wie
+ * beim Laden der App (`src/lib/zeilen.ts`), dieselbe Reihenfolge wie dort.
  */
 async function einordnungFuer(rest, cong) {
   appCodeBereit()
@@ -120,9 +121,10 @@ async function einordnungFuer(rest, cong) {
     import('../supabase/functions/_shared/planung.ts'),
   ])
   const meine = `congregation_id=eq.${cong.id}`
-  const [regeln, besuche, personen] = await Promise.all([
+  const [regeln, besuche, vortraege, personen] = await Promise.all([
     rest(`fs_rules?select=*&${meine}&order=created_at`),
     rest(`gruppenbesuche?select=id,woche,grp,person_id&${meine}&order=woche`),
+    rest(`vortraege?select=id,woche,redner,versammlung,eigener,person_id,thema,lied&${meine}&order=woche`),
     rest(`persons?select=*&${meine}&order=created_at`),
   ])
   const kontext = {
@@ -130,6 +132,7 @@ async function einordnungFuer(rest, cong) {
     auxClass: Boolean(cong.aux_class),
     fsRules: regeln.map(zeilen.fsRuleFromRow),
     gruppenbesuche: besuche.map(zeilen.gruppenbesuchFromRow),
+    vortraege: vortraege.map(zeilen.vortragFromRow),
     persons: personen.map(zeilen.personFromRow),
   }
   return (roh) => neueWocheEinordnen(roh, kontext)

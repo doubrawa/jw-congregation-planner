@@ -184,6 +184,10 @@ export function MeetingSection({
   const liedPlatzDa =
     (isOpening || isClosing) &&
     hatLiedPlatz(state.weeks[state.week]?.we, isOpening ? 'eroeffnung' : 'abschluss')
+  // Die gespeicherte Liednummer des Felds. Ohne Woche gäbe es diesen Abschnitt
+  // nicht; der Index-Zugriff sieht das nicht.
+  const liedWe = state.weeks[state.week]?.we
+  const liedNr = !liedWe ? '' : isOpening ? openingSongNr(liedWe) : isClosing ? closingSongNr(liedWe) : ''
 
   // Ampel-Punkt je Platz — dieselben Schlüssel, unter denen bestätigt wird.
   const zusage = useZusage()
@@ -310,7 +314,10 @@ export function MeetingSection({
                 <div className="plan-item-title">
                   <span className="co-begriff">{tpw(coBegriff)}</span>
                   <input
-                    key={`thema-${state.week}-${si}-${ii}`}
+                    // Mit dem gespeicherten Titel im Schlüssel, wie beim
+                    // Vortragsthema darunter: Ein ungesteuertes Feld zeigte
+                    // nach einer Änderung von außen sonst den alten Text.
+                    key={`thema-${state.week}-${si}-${ii}-${rawTitle}`}
                     type="text"
                     dir="auto"
                     className="talk-title-input"
@@ -334,7 +341,11 @@ export function MeetingSection({
                 </div>
               ) : isTalk ? (
                 <input
-                  key={`talk-${state.week}-${ii}`}
+                  // Der gespeicherte Titel gehört in den Schlüssel: Das Feld ist
+                  // ungesteuert, und setzt ihn jemand von außen (Vortragsplan,
+                  // T122), zeigte es sonst den alten — und schriebe ihn beim
+                  // Verlassen zurück.
+                  key={`talk-${state.week}-${ii}-${rawTitle}`}
                   type="text"
                   dir="auto"
                   className="talk-title-input"
@@ -459,20 +470,17 @@ export function MeetingSection({
             {isOpening ? t.anfangsliedLbl : schlussliedLbl}
           </span>
           <input
-            key={`song-${isOpening ? 'open' : 'close'}-${state.week}`}
+            // Die gespeicherte Nummer im Schlüssel — aus demselben Grund wie
+            // beim Vortragsthema: Der Vortragsplan setzt das Anfangslied von
+            // außen.
+            key={`song-${isOpening ? 'open' : 'close'}-${state.week}-${liedNr}`}
             type="text"
             inputMode="numeric"
             maxLength={4}
             className="lac-add-input talk-song-input"
             placeholder={t.liedNrPh}
             aria-label={isOpening ? t.anfangsliedLbl : schlussliedLbl}
-            defaultValue={(() => {
-              // Ohne Woche gäbe es diesen Abschnitt nicht; der Index-Zugriff
-              // sieht das nicht.
-              const we = state.weeks[state.week]?.we
-              if (!we) return ''
-              return isOpening ? openingSongNr(we) : closingSongNr(we)
-            })()}
+            defaultValue={liedNr}
             onInput={(e) => {
               // Nur Ziffern zulassen (Liederbuch-Nummer) — jeder Schrift.
               const el = e.currentTarget

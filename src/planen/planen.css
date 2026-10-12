@@ -1322,3 +1322,119 @@
 .fsr-add {
   margin-top: 10px;
 }
+
+/* ---- Vortragsplan aus dem Planungsprogramm (T122) ------------------------- */
+
+.vp-panel {
+  margin-top: 12px;
+}
+
+/* Die Dateiauswahl selbst bleibt unsichtbar — der Knopf darunter öffnet sie. */
+.vp-eingabe {
+  display: none;
+}
+
+.vp-knopf {
+  margin-top: 10px;
+}
+
+.vp-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0 12px;
+  /* Der einzige Scrollbereich des Blatts, wie die Kandidatenliste
+     (`.sheet-list`): Das Blatt selbst schneidet ab, Kopf und Knöpfe bleiben
+     stehen. Ohne das lagen „Übernehmen" und „Abbrechen" bei langem Plan
+     unter dem Bildrand. */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.vp-zeile {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.vp-zeile--blass {
+  color: var(--mut);
+}
+
+.vp-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.vp-tag {
+  font-size: calc(12px * var(--fs));
+  font-weight: 600;
+}
+
+.vp-art {
+  flex: none;
+  border-radius: var(--r-pill);
+  padding: 2px 9px;
+  font-size: calc(10.5px * var(--fs));
+  font-weight: 600;
+}
+
+.vp-art--neu {
+  background: var(--tPet);
+  color: var(--pet);
+}
+
+.vp-art--geaendert {
+  background: var(--tGld);
+  color: var(--gld);
+}
+
+.vp-art--entfaellt,
+.vp-art--fehler {
+  background: var(--tWein);
+  color: var(--wein);
+}
+
+.vp-art--uebersprungen {
+  background: var(--tNeu);
+  color: var(--mut);
+}
+
+.vp-vortrag {
+  margin-top: 4px;
+}
+
+.vp-redner {
+  font-size: calc(12.5px * var(--fs));
+}
+
+.vp-thema,
+.vp-lied,
+.vp-hinweis,
+.vp-notiz {
+  font-size: calc(11.5px * var(--fs));
+  color: var(--mut);
+  margin-top: 2px;
+}
+
+.vp-hinweis--warnung {
+  color: var(--wein);
+}
+
+.vp-fehler {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vp-aktionen {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+}

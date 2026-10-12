@@ -155,6 +155,7 @@ describe('Das dritte Thema', () => {
         fsRules: basis.fsRules,
         fsWeeks: basis.fsWeeks,
         gruppenbesuche: [],
+        vortraege: [],
         ozTermine: [],
         ozEintraege: [],
         plaene: [],

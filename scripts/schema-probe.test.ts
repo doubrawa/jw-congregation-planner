@@ -201,10 +201,11 @@ const LAEUFE: Record<string, Lauf[]> = {
           'import-week': ({ after }) => ({ json: { week: probeWoche(after ? plusTage(String(after), 7) : '2026-08-24') } }),
         },
       },
-      // Eingeordnet wie in der App (5.10.2026): Grundplan, Gruppenbesuche und
-      // Personen gelesen, die Treffpunkte der neuen Wochen mitgeschrieben.
+      // Eingeordnet wie in der App (5.10.2026): Grundplan, Gruppenbesuche,
+      // vorgemerkte Vorträge (T122) und Personen gelesen, die Treffpunkte der
+      // neuen Wochen mitgeschrieben.
       erwartet: [
-        'GET congregations', 'GET weeks', 'GET fs_rules', 'GET gruppenbesuche', 'GET persons', 'GET fs_weeks',
+        'GET congregations', 'GET weeks', 'GET fs_rules', 'GET gruppenbesuche', 'GET vortraege', 'GET persons', 'GET fs_weeks',
         'POST weeks', 'POST fs_weeks',
       ],
     },

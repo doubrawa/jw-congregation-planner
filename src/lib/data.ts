@@ -55,11 +55,16 @@ import {
   type PersonRow,
   personFromRow,
   personToRow,
+  type VortragRow,
+  vortragFromRow,
+  vortragToRow,
 } from './zeilen'
+import type { VorgemerkterVortrag } from '../data/vortragsplan'
 
 /* ---- Row-Typen (Spalten aus supabase/schema.sql) ------------------------ */
-// Personen, Grundplan-Regeln und Gruppenbesuche stehen in `zeilen.ts` — die
-// lesen auch die Wartungsskripte, und dort hängt nichts am Client.
+// Personen, Grundplan-Regeln, Gruppenbesuche und vorgemerkte Vorträge stehen
+// in `zeilen.ts` — die lesen auch die Wartungsskripte, und dort hängt nichts
+// am Client.
 
 interface ServiceRow {
   key: string
@@ -509,6 +514,11 @@ export interface CongregationData {
   fsWeeks: FsInstance[][]
   /** Besuche des Dienstaufsehers (T120), aufsteigend nach Woche — nicht an das Ladefenster gebunden. */
   gruppenbesuche: Gruppenbesuch[]
+  /**
+   * Vorgemerkte öffentliche Vorträge (T122), aufsteigend nach Woche. Nur für
+   * Admin und Planer (RLS) — die Versammlung sieht einen Vortrag in seiner Woche.
+   */
+  vortraege: VorgemerkterVortrag[]
   /** Öffentliches Zeugnisgeben (T120): Termine und die Einträge ab `OZ_RUECKBLICK_TAGE` zurück. */
   ozTermine: OzTermin[]
   ozEintraege: OzEintrag[]
@@ -573,7 +583,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .order('start', { ascending: false })
     .limit(WEEK_LIMIT)
 
-  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, ozTerminRows, ozEintragRows, planRows, planEintragRows] = await Promise.all([
+  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, vortragRows, ozTerminRows, ozEintragRows, planRows, planEintragRows] = await Promise.all([
     supabase.from('congregations').select(CONG_SPALTEN.join(', ')).eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
@@ -614,6 +624,14 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     supabase
       .from('gruppenbesuche')
       .select('id, woche, grp, person_id')
+      .eq('congregation_id', congregationId)
+      .order('woche'),
+    // Vorgemerkte Vorträge (T122) — aus demselben Grund alle: Sie stehen für
+    // Wochen, die noch nicht importiert sind. Ein Mitglied ohne Zuteilungsrecht
+    // bekommt keine Zeile (RLS).
+    supabase
+      .from('vortraege')
+      .select('id, woche, redner, versammlung, eigener, person_id, thema, lied')
       .eq('congregation_id', congregationId)
       .order('woche'),
     // Öffentliches Zeugnisgeben (T120): alle Termine, die Einträge ab einem
@@ -667,6 +685,8 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   if (firstErr) return { ok: false, reason: 'error', message: firstErr.message }
   if (sentLogRows.error) console.error('[assignment_log]', sentLogRows.error.message)
   if (besuchRows.error) console.error('[gruppenbesuche]', besuchRows.error.message)
+  // Ebenso die vorgemerkten Vorträge (T122).
+  if (vortragRows.error) console.error('[vortraege]', vortragRows.error.message)
   // Ebenso das öffentliche Zeugnisgeben (T120, Phase 3).
   if (ozTerminRows.error) console.error('[oz_termine]', ozTerminRows.error.message)
   if (ozEintragRows.error) console.error('[oz_eintraege]', ozEintragRows.error.message)
@@ -767,6 +787,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     fsRules,
     fsWeeks,
     gruppenbesuche: ((besuchRows.data ?? []) as GruppenbesuchRow[]).map(gruppenbesuchFromRow),
+    vortraege: ((vortragRows.data ?? []) as VortragRow[]).map(vortragFromRow),
     ozTermine: ((ozTerminRows.data ?? []) as OzTerminRow[]).map(ozTerminFromRow),
     ozEintraege: ((ozEintragRows.data ?? []) as OzEintragRow[]).map(ozEintragFromRow),
     plaene: planListe,
@@ -1128,6 +1149,17 @@ export function saveFsRules(congregationId: string, rules: FsRule[], entfernt: s
 export function saveGruppenbesuche(congregationId: string, besuche: Gruppenbesuch[], entfernt: string[] = []): void {
   if (!supabase) return
   void zeilenRun(loeschenDannSchreiben(supabase, 'gruppenbesuche', congregationId, besuche, entfernt, gruppenbesuchToRow))
+}
+
+/**
+ * Vorgemerkte Vorträge (T122) — eine Zeile je Woche, derselbe Weg wie bei den
+ * Gruppenbesuchen. Übernehmen zwei Planer zugleich einen Vortragsplan, weist
+ * die Datenbank die zweite Vormerkung derselben Woche ab
+ * (`unique (congregation_id, woche)`), und der zweite lädt nach.
+ */
+export function saveVortraege(congregationId: string, vortraege: VorgemerkterVortrag[], entfernt: string[] = []): void {
+  if (!supabase) return
+  void zeilenRun(loeschenDannSchreiben(supabase, 'vortraege', congregationId, vortraege, entfernt, vortragToRow))
 }
 
 /**

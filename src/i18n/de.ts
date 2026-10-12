@@ -95,6 +95,32 @@ export const DE = {
     toastBesucheN: 'Besuche geplant: {n}', toastKeineBesuche: 'Keine passende Woche gefunden',
     toastBesuchAdd: 'Besuch eingetragen', toastBesuchDel: 'Besuch entfernt',
     toastBesucheGeleert: 'Entfernte Besuche: {n}',
+    // Vortragsplan aus dem Planungsprogramm (T122). Die Datei liest das Gerät;
+    // nur Redner, Versammlung, Thema und Lied gehen weiter. Zahlen stehen
+    // hinter einer Bezeichnung („Unverändert: 3"), damit keine Sprache zählen
+    // muss. Abbrechen und die Anlässe der Woche sagen schon `abbrechen`,
+    // `coWoche`, `kongress` und `memWoche`. „Übernehmen" und „vorgemerkt" nicht
+    // von den Gruppenbesuchen leihen: Dort heißen sie „Take over" und reden in
+    // den Übersetzungen vom Besuch.
+    vpTitel: 'Vortragsplan',
+    vpHinweis: 'XML-Datei aus dem Programm, in dem die öffentlichen Vorträge geplant werden. Redner, Versammlung, Thema und Lied kommen in die Wochen; spätere Wochen werden vorgemerkt. Alles andere in der Datei bleibt auf diesem Gerät.',
+    vpDateiWaehlen: 'XML-DATEI WÄHLEN',
+    vpVorschau: 'Vortragsplan übernehmen', vpUebernehmen: 'Übernehmen',
+    vpNeu: 'Neu', vpGeaendert: 'Geändert', vpEntfaellt: 'Entfällt', vpNichtUebernommen: 'Nicht übernommen',
+    vpUnveraendert: 'Unverändert: {n}',
+    vpVergangen: 'Vergangene Wochen, nicht angefasst: {n}',
+    vpBisher: 'Bisher: {name}',
+    vpVorgemerkt: 'Die Woche ist noch nicht angelegt. Der Vortrag wird eingetragen, sobald ihr Programm geholt ist.',
+    vpOhnePerson: 'Keine Person mit diesem Namen – ohne Aufgabe und Erinnerung.',
+    vpIgnoriert: 'Bleibt auf diesem Gerät: {felder}',
+    vpNichtsZuTun: 'Die Datei bringt nichts Neues.',
+    vpFehlerDatum: 'Datum ungültig', vpFehlerRedner: 'Redner fehlt',
+    vpFehlerVersammlung: 'Versammlung fehlt', vpFehlerLied: 'Lied ist keine Nummer',
+    vpFehlerDoppelt: 'Zwei Vorträge in einer Woche',
+    vpKeinXml: 'Die Datei ist kein lesbares XML.',
+    vpFormat: 'Die Datei ist kein Vortragsplan in Version 1.',
+    vpZeitraum: 'Der Zeitraum in der Datei (von/bis) ist ungültig.',
+    toastVortraegeUebernommen: 'Vortragsplan übernommen',
     // Öffentliches Zeugnisgeben (T120, Phase 3). Termine sind die Regel, aus
     // der jede Woche ihre Schichten bekommt; Zahlen stehen hinter einer
     // Bezeichnung („Frei: 1"), damit keine Sprache eine Mehrzahl braucht.

@@ -1,10 +1,12 @@
 /** @vitest-environment jsdom */
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { gleich, nurZuteilungen } from '../../supabase/functions/_shared/zuteilen-grenze.ts'
 import { isSong, istArt } from '../data/helpers'
+import { tagNach } from '../data/meeting-dates'
 import type { SectionKind } from '../data/constants'
 import type { MeetingKey, PartItem, SlotAssignment, Week } from '../data/types'
+import type { PlanVortrag, Vortragsplan } from '../data/vortragsplan'
 import type { AppAction, AppState } from './context'
 import { reducer } from './reducer'
 
@@ -355,5 +357,54 @@ describe('Planer-Grenze: von Hand verändert', () => {
         }
       }),
     ).toBe(true)
+  })
+})
+
+/**
+ * **Der Vortragsplan (T122) übernimmt der Planer** — also muss alles, was er an
+ * einer Woche ändert, durch `zuteilen`: Redner samt Rolle und Heimatversammlung,
+ * das Thema, das Anfangslied, und beim entfallenen Vortrag das Zurücksetzen.
+ *
+ * Mit gestellter Uhr: Die Testwochen liegen im September 2026, und vergangene
+ * Wochen fasst der Import nicht an — mit der echten Uhr änderte er nichts, und
+ * der Fall prüfte nichts.
+ */
+describe('Planer-Grenze: der Vortragsplan geht durch', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 10))
+  })
+  afterEach(() => vi.useRealTimers())
+
+  /** Der Plan für die Woche, die gerade gewählt ist — der Vortrag am Sonntag. */
+  const plan = (s: AppState, vortraege: Array<Omit<PlanVortrag, 'datum'>>): Vortragsplan => {
+    const woche = s.weeks[s.week]!.start
+    const sonntag = tagNach(woche, 6)
+    return { von: woche, bis: sonntag, vortraege: vortraege.map((v) => ({ ...v, datum: sonntag })) }
+  }
+  const gast = { redner: 'Gast Redner', versammlung: 'Beispieldorf', eigener: false, thema: 'Demo-Thema 1', lied: '151' }
+
+  it.each([
+    ['Gastredner mit Thema und Lied', (s: AppState): AppAction[] => [{ type: 'vortragsplanUebernehmen', plan: plan(s, [gast]) }]],
+    [
+      'eigener Redner (Rolle wechselt auf „Redner")',
+      (s: AppState): AppAction[] => [
+        { type: 'vortragsplanUebernehmen', plan: plan(s, [{ ...gast, redner: `${PERSON(s).fn} ${PERSON(s).ln}`, versammlung: '', eigener: true }]) },
+      ],
+    ],
+  ])('%s', (_name, aktionen) => {
+    const vorher = basis()
+    const nachher = ablauf(vorher, aktionen(vorher))
+    const paare = geaendert(vorher, nachher)
+    expect(paare.length).toBeGreaterThan(0)
+    for (const [alt, neu] of paare) expect(nurZuteilungen(alt, neu)).toBe(true)
+  })
+
+  it('ein entfallener Vortrag setzt den Platz zurück — auch das ist nur Zuteilen', () => {
+    const mitVortrag = ablauf(basis(), [{ type: 'vortragsplanUebernehmen', plan: plan(basis(), [gast]) }])
+    const ohne = ablauf(mitVortrag, [{ type: 'vortragsplanUebernehmen', plan: plan(mitVortrag, []) }])
+    const paare = geaendert(mitVortrag, ohne)
+    expect(paare.length).toBeGreaterThan(0)
+    for (const [alt, neu] of paare) expect(nurZuteilungen(alt, neu)).toBe(true)
   })
 })

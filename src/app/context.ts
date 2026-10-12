@@ -16,6 +16,7 @@ import {
 import type { FontScale } from '../data/constants'
 import type { Wochenende } from '../data/gruppenbesuche'
 import type { OffenerPlatz } from '../data/offene-plaetze'
+import type { VorgemerkterVortrag, Vortragsplan } from '../data/vortragsplan'
 import type { Abschnitt } from './deeplink'
 import type {
   Anlass,
@@ -96,6 +97,7 @@ export interface HydratePayload {
   fsRules: FsRule[]
   fsWeeks: FsInstance[][]
   gruppenbesuche: Gruppenbesuch[]
+  vortraege: VorgemerkterVortrag[]
   ozTermine: OzTermin[]
   ozEintraege: OzEintrag[]
   plaene: WeitererPlan[]
@@ -198,6 +200,13 @@ export interface AppState {
    * dann vorgemerkt und wird mit dem Import eingetragen.
    */
   gruppenbesuche: Gruppenbesuch[]
+  /**
+   * Vorgemerkte öffentliche Vorträge aus dem Vortragsplan (T122), aufsteigend
+   * nach Woche: für Wochen, die noch nicht importiert sind. Beim Anlegen der
+   * Woche wird der Vortrag eingetragen (`neueWocheEinordnen`). Nur Admin und
+   * Planer bekommen Zeilen (RLS), sonst bleibt die Liste leer.
+   */
+  vortraege: VorgemerkterVortrag[]
   /**
    * Öffentliches Zeugnisgeben (T120, Phase 3): die wöchentlichen Termine und
    * die Einträge der Personen in ihren Schichten (`data/zeugnis.ts`). Wie die
@@ -365,6 +374,10 @@ export type AppAction =
   | { type: 'besuchUebernehmen'; id: string }
   // Alle künftigen Besuche entfernen; Vergangenes bleibt als Rückblick.
   | { type: 'besucheLeeren' }
+  // Den Vortragsplan aus dem Planungsprogramm übernehmen (T122): in die
+  // angelegten Wochen, für die übrigen als Vormerkung. Der Reducer rechnet die
+  // Vorschau mit dem dann gültigen Stand neu (`data/vortragsplan.ts`).
+  | { type: 'vortragsplanUebernehmen'; plan: Vortragsplan }
   /*
    * Öffentliches Zeugnisgeben (T120, Phase 3). Termine pflegt der Planer; in
    * die Schichten trägt er Personen ein — oder sie sich selbst

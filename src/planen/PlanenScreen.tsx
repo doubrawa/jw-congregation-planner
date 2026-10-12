@@ -23,6 +23,7 @@ import { FsRulesPanel } from './FsRulesPanel'
 import { AuxCounselorPanel } from './AuxCounselorPanel'
 import { WochePanel } from './WochePanel'
 import { HelpersPanel } from './HelpersPanel'
+import { VortragsplanPanel } from './VortragsplanPanel'
 import { MeetingSection } from './MeetingSection'
 import { ZusageLegende } from './ZusageStatus'
 import './planen.css'
@@ -218,6 +219,11 @@ function PlanenBody() {
           <AuxCounselorPanel meeting={rawMeeting} />
 
           <HelpersPanel meeting={meeting} />
+
+          {/* Der Vortragsplan aus dem Planungsprogramm (T122) gilt für viele
+              Wochen auf einmal und kommt selten — deshalb unten, nur am
+              Wochenende, wo der Vortrag steht. */}
+          {tab === 'we' && <VortragsplanPanel />}
 
           {/* Ganz unten, weil es der letzte Schritt ist: erst steht der Plan,
               dann geht er hinaus. Er gilt für die ganze Woche, nicht für den

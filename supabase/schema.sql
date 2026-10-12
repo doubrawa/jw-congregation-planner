@@ -478,6 +478,38 @@ create table if not exists public.gruppenbesuche (
     references public.persons (id, congregation_id) on delete set null (person_id)
 );
 
+-- Vorgemerkte öffentliche Vorträge aus dem Vortragsplan (T122). Der
+-- Vortragskoordinator plant in einem eigenen Programm Monate voraus; die Woche
+-- gibt es in der App erst mit ihrem Programm von jw.org. Bis dahin steht der
+-- Vortrag hier und wird beim Anlegen der Woche eingetragen
+-- (`neueWocheEinordnen`) — danach gehört er der Woche, und der nächste Import
+-- räumt die Zeile ab.
+--
+-- **Von auswärtigen Rednern nur Name und Versammlung** (Vorgabe des
+-- Betreibers, 12.10.2026): keine Telefonnummer, keine E-Mail. Die bleiben im
+-- Planungsprogramm; die App liest dessen Datei auf dem Gerät und schickt nur
+-- diese Spalten.
+create table if not exists public.vortraege (
+  -- `text` wie bei `gruppenbesuche`: Die Kennung vergibt der Client (`v<uuid>`).
+  id              text primary key check (id <> ''),
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  woche           date not null check (extract(isodow from woche) = 1),
+  redner          text not null check (redner <> ''),
+  -- Heimatversammlung des Gastredners; leer beim eigenen Redner.
+  versammlung     text not null default '',
+  eigener         boolean not null default false,
+  -- Der eigene Redner, wenn er über den Namen eindeutig zu finden war; null,
+  -- wenn nicht oder wenn seine Person gelöscht wurde — dann zählt der Name.
+  person_id       uuid,
+  thema           text not null default '',
+  lied            text not null default '' check (lied ~ '^[0-9]{0,3}$'),
+
+  -- Ein Vortrag je Woche — zugleich der Index fürs Laden.
+  unique (congregation_id, woche),
+  constraint vortraege_person_fk foreign key (person_id, congregation_id)
+    references public.persons (id, congregation_id) on delete set null (person_id)
+);
+
 -- Öffentliches Zeugnisgeben mit Stand oder Trolley (T120, Phase 3). Gemessen am
 -- Königreichsdienst: Die Ältestenschaft organisiert es, am besten immer am
 -- selben Ort, am selben Wochentag und zur selben Uhrzeit (Nov. 2013); ein
@@ -1448,6 +1480,19 @@ create policy gruppenbesuche_besucher on public.gruppenbesuche
 drop policy if exists gruppenbesuche_besucher_upsert on public.gruppenbesuche;
 create policy gruppenbesuche_besucher_upsert on public.gruppenbesuche
   for insert
+  with check (congregation_id = public.my_congregation_id() and public.darf_zuteilen());
+
+-- Vorgemerkte Vorträge (T122): Lesen und schreiben darf, wer zuteilt — Admin
+-- und Planer; den Vortragsplan übernimmt der Planer (Entscheidung des
+-- Betreibers, 12.10.2026). Die Versammlung sieht einen Vortrag, sobald er in
+-- seiner Woche steht; vorher braucht ihn niemand, und von auswärtigen Rednern
+-- liegt so wenig wie möglich offen.
+alter table public.vortraege enable row level security;
+
+drop policy if exists vortraege_zuteilen on public.vortraege;
+create policy vortraege_zuteilen on public.vortraege
+  for all
+  using (congregation_id = public.my_congregation_id() and public.darf_zuteilen())
   with check (congregation_id = public.my_congregation_id() and public.darf_zuteilen());
 
 -- Öffentliches Zeugnisgeben: Termine pflegen nur Planer; die Einträge sieht die

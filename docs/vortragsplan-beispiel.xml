@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Beispiel für den Import des Vortragsplans (Format Version 1), beschrieben in
+     docs/vortragsplan-import.md. Alle Namen und Themen sind Platzhalter. -->
+<vortragsplan version="1" von="2026-11-01" bis="2026-11-30">
+  <vortrag datum="2026-11-08">
+    <redner>Max Mustermann</redner>
+    <versammlung>Musterstadt</versammlung>
+    <thema>Demo-Thema 1</thema>
+    <lied>151</lied>
+  </vortrag>
+  <vortrag datum="2026-11-15">
+    <redner eigener="true">Peter Beispiel</redner>
+    <thema>Demo-Thema 2</thema>
+    <lied>27</lied>
+  </vortrag>
+  <vortrag datum="2026-11-22">
+    <redner>Klaus Platzhalter</redner>
+    <versammlung>Beispielhausen</versammlung>
+    <!-- Felder, die die App nicht kennt, bleiben auf dem Gerät: -->
+    <telefon>0000 000000</telefon>
+  </vortrag>
+</vortragsplan>

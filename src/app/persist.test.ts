@@ -44,6 +44,7 @@ vi.mock('../lib/data', async (importActual) => ({
   saveFamily: vi.fn(),
   saveFsRules: vi.fn(),
   saveGruppenbesuche: vi.fn(),
+  saveVortraege: vi.fn(),
   saveFsWeek: vi.fn(),
   saveGroupRow: vi.fn(),
   saveInvite: vi.fn(),
@@ -73,6 +74,7 @@ import { STANDARD_ZEITEN } from '../data/vorgaben'
 import { reducer } from './reducer'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { displayName, emptyQualifications } from '../data/helpers'
+import { vortragSetzen } from '../data/vortragsplan'
 import { DE } from '../i18n/de'
 import { fill } from '../i18n/useT'
 
@@ -483,6 +485,38 @@ describe('Gruppenbesuche (T120)', () => {
     })
     expect(data.saveGruppenbesuche).not.toHaveBeenCalled()
     expect(data.saveFsWeek).not.toHaveBeenCalled()
+  })
+})
+
+describe('Vortragsplan (T122)', () => {
+  /*
+   * Die Vormerkungen je Zeile wie die Gruppenbesuche; die Wochen, in die der
+   * Plan schrieb, über den allgemeinen Weg — beim Planer also über `zuteilen`.
+   */
+  const V5 = { id: 'v5', woche: '2026-10-12', redner: 'Max Mustermann', versammlung: 'Musterstadt', eigener: false, pid: null, thema: '', lied: '' }
+  const V6 = { id: 'v6', woche: '2026-10-19', redner: 'Klaus Platzhalter', versammlung: 'Nord', eigener: false, pid: null, thema: '', lied: '' }
+  const UEBERNEHMEN: AppAction = { type: 'vortragsplanUebernehmen', plan: { von: '', bis: '', vortraege: [] } }
+
+  it('geänderte Vormerkungen gehen hinaus, entfallene werden gelöscht — keine Woche', () => {
+    const weeks = buildDemoWeeks()
+    const geaendert = { ...V5, redner: 'Neu Redner' }
+    persist(st({ weeks, vortraege: [V5, V6] }), st({ weeks, vortraege: [geaendert] }), UEBERNEHMEN)
+    expect(data.saveVortraege).toHaveBeenCalledWith('c1', [geaendert], ['v6'])
+    expect(data.saveWeek).not.toHaveBeenCalled()
+  })
+
+  it('die Woche, in die der Plan schrieb, geht beim Planer über die Function', () => {
+    const vortraege = [V5]
+    const prev = st({ planner: false, zuteiler: true, vortraege })
+    const weeks = vortragSetzen(prev.weeks, 0, {
+      redner: 'Max Mustermann', versammlung: 'Musterstadt', eigener: false, thema: 'Demo-Thema 1', lied: '151',
+    })
+    expect(weeks).not.toBe(prev.weeks)
+    const next = st({ planner: false, zuteiler: true, weeks, vortraege })
+    persist(prev, next, UEBERNEHMEN)
+    expect(data.saveWeek).toHaveBeenCalledTimes(1)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0], true)
+    expect(data.saveVortraege).not.toHaveBeenCalled()
   })
 })
 

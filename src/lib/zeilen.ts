@@ -1,6 +1,7 @@
 /**
  * **Zeilen der Datenbank ↔ App-Objekte** — für die Tabellen, die auch die
- * Wartungsskripte lesen: Personen, Grundplan-Regeln, Gruppenbesuche.
+ * Wartungsskripte lesen: Personen, Grundplan-Regeln, Gruppenbesuche,
+ * vorgemerkte Vorträge.
  *
  * Eine eigene Datei ohne Supabase-Client (5.10.2026): `data.ts` hängt an
  * `supabase.ts` und damit an `import.meta.env` — außerhalb von Vite lädt es
@@ -13,6 +14,7 @@ import { ROLE_ORDER } from '../data/constants'
 import { normalizePriv } from '../data/namensbindung'
 import { kurzeZeit } from '../../supabase/functions/_shared/planung.ts'
 import type { FsRule, Gruppenbesuch, Person, Qualifications, Role } from '../data/types'
+import type { VorgemerkterVortrag } from '../data/vortragsplan'
 
 /* ---- Row-Typen (Spalten aus supabase/schema.sql) ------------------------ */
 
@@ -50,6 +52,18 @@ export interface GruppenbesuchRow {
   woche: string
   grp: string
   person_id: string | null
+}
+
+/** Ein vorgemerkter öffentlicher Vortrag (T122) — eine Zeile je Woche. */
+export interface VortragRow {
+  id: string
+  woche: string
+  redner: string
+  versammlung: string
+  eigener: boolean
+  person_id: string | null
+  thema: string
+  lied: string
 }
 
 export const asRole = (r: string): Role => (ROLE_ORDER.includes(r as Role) ? (r as Role) : 'verkuendiger')
@@ -129,4 +143,31 @@ export function gruppenbesuchFromRow(r: GruppenbesuchRow): Gruppenbesuch {
 
 export function gruppenbesuchToRow(b: Gruppenbesuch, congregationId: string) {
   return { id: b.id, congregation_id: congregationId, woche: b.woche, grp: b.grp, person_id: b.pid }
+}
+
+export function vortragFromRow(r: VortragRow): VorgemerkterVortrag {
+  return {
+    id: r.id,
+    woche: r.woche,
+    redner: r.redner,
+    versammlung: r.versammlung,
+    eigener: r.eigener,
+    pid: r.person_id,
+    thema: r.thema,
+    lied: r.lied,
+  }
+}
+
+export function vortragToRow(v: VorgemerkterVortrag, congregationId: string) {
+  return {
+    id: v.id,
+    congregation_id: congregationId,
+    woche: v.woche,
+    redner: v.redner,
+    versammlung: v.versammlung,
+    eigener: v.eigener,
+    person_id: v.pid,
+    thema: v.thema,
+    lied: v.lied,
+  }
 }

@@ -6601,6 +6601,86 @@ Schema.
 
 ---
 
+## Aufgenommen am 12. Oktober 2026 — Vortragsplan (T122)
+
+### T122 · Vortragsplan aus dem Planungsprogramm übernehmen 🏗 ☐ gebaut, nicht ausgerollt
+
+**Wortlaut:** *„es wäre nicht schlecht die vortragsplanung zu integrieren in die
+app. allerdings darf ich nur die namen und versammlung der externen
+vortragsredner in der cloud speichern. keine email oder telefonnummer."* Dann:
+*„wir machen erst mal einen import der daten aus dem externen tool. das tool ist
+sehr gut und darauf ausgelegt das planen einfach zu machen. diesen comfort können
+wir nur mit viel aufwand nachbilden. … das importformat können wir selber
+festlegen. das einzige problem, das ich sehe ist, dass die planung oft schon
+monate im vorraus gemacht wird."* Und: *„das import format soll nicht csv sein,
+sondern xml"*.
+
+**Entschieden am 12. Oktober 2026:** Das Planungsprogramm (nicht New World
+Scheduler) bleibt, die App übernimmt dessen Plan. **Der Planer** übernimmt ihn in
+der App. **Das Programm ist führend**: Ein erneuter Import überschreibt, was in
+der App am Vortrag geändert wurde, und was im Zeitraum der Datei nicht mehr
+steht, entfällt. Vorträge zeigt die App **nur in ihrer Woche**, keine eigene
+Liste. Format **XML**. In die Cloud gehen von auswärtigen Rednern nur Name und
+Versammlung (dazu Thema und Lied je Termin), nie Telefon oder E-Mail.
+
+**Gebaut am 12. Oktober 2026:**
+
+- **Format** `docs/vortragsplan-import.md` mit Beispiel
+  `docs/vortragsplan-beispiel.xml` (ein Test liest das Beispiel):
+  `<vortragsplan version="1" von bis>`, je `<vortrag datum>` die Elemente
+  `redner` (mit `eigener="true"`), `versammlung`, `thema`, `lied`.
+- **Gelesen auf dem Gerät** (`src/lib/vortragsplan-xml.ts`): Kodierung aus BOM
+  oder Deklaration, unbekannte Felder werden übergangen und in der Vorschau
+  genannt („Bleibt auf diesem Gerät"), fehlerhafte Vorträge mit Datum gemeldet,
+  zwei Vorträge in einer Woche abgewiesen.
+- **Wochen, die es noch nicht gibt,** werden vorgemerkt: Tabelle `vortraege`
+  (RLS `vortraege_zuteilen`: nur Admin und Planer), eingetragen beim Anlegen der
+  Woche in `neueWocheEinordnen` — für den Knopf und `wochen-importieren.mjs`,
+  wie die Gruppenbesuche. Der nächste Import räumt überholte Vormerkungen ab.
+- **In angelegte Wochen** schreibt der Import über `assignSlot`,
+  `editTalkTheme` und `setOpeningSong` — die Grenze des Planers
+  (`zuteilen-grenze.ts`) lässt das ohne Änderung durch. Ein eigener Redner wird
+  über den Namen seiner Person zugeordnet und bekommt Aufgabe, Zusage und
+  Erinnerung; wer seinen Vortrag verliert, verliert die Zusage und erfährt es.
+  Übersprungen: Vorträge, deren Tag vorbei ist, Wochen mit fehlerhaftem Eintrag
+  in der Datei, Kreisaufseher, Kongress, Gedächtnismahl am Wochenende,
+  ausgefallene Zusammenkunft. Ob ein Vortrag im Zeitraum der Datei liegt,
+  entscheidet der Tag der Zusammenkunft, nicht seine Woche.
+- **Oberfläche:** Planen › Zusammenkünfte › Wochenende, ganz unten „Vortragsplan"
+  (`VortragsplanPanel.tsx`), Vorschau als Blatt, erst „Übernehmen" schreibt. Das
+  Blatt hängt per Portal am Dokument: Im Wochen-Streifen (`transform`) lag es
+  im Browser gemessen unter dem Bildrand, samt Knöpfen. 25
+  neue Texte in allen 33 Sprachen; Fachwörter wie in `translate-data.ts`
+  gemessen. Handbuch `planer.md`, Abschnitt „Vortragsplan übernehmen".
+- **Nebenbei behoben:** Das Feld für das Vortragsthema und das für das
+  Anfangslied zeigten nach einer Änderung von außen den alten Wert — und
+  schrieben ihn beim Verlassen des Felds zurück. Der Schlüssel der ungesteuerten
+  Felder trägt jetzt den gespeicherten Wert.
+- **Tests:** Logik, Leser, Reducer, Speichern, Planer-Grenze, Oberfläche,
+  Schema-Recht; zwölf Sabotage-Proben (`vp-*`, `co-thema-feld-schluessel`), alle
+  bewacht.
+- **`/simplify` und `/code-review max` am selben Tag:** vereinfacht (Namensabgleich
+  über `eindeutigeNamen`, Nachschlagen per `Map`, eine Tabelle statt zwei im
+  Blatt); das Themenfeld der Kreisaufseher-Woche hatte dieselbe Schwäche wie
+  Thema und Lied und ist mit behoben. Das Review fand zwei echte Fehler: Der
+  Zeitraum der Datei wurde auf Montage gerundet — eine Datei bis Montag, 30.11.,
+  hätte den Vortrag vom 6.12. gestrichen —, und ein fehlerhafter Eintrag ließ
+  den Vortrag seiner Woche entfallen. Beides behoben, dazu „vorbei" am Tag statt
+  an der Woche, Lesefehler der Datei mit Meldung, eindeutige Schlüssel in der
+  Fehlerliste.
+
+**Ausrollen (wartet):** zuerst `supabase/schema.sql` im SQL-Editor einspielen
+(Tabelle `vortraege` und ihre Regel), dann pushen — keine Edge Function. Ohne das
+Schema lädt die App weiter, nur gespeichert werden Vormerkungen erst danach.
+
+**Danach offen:** die Live-Probe der Mitgliedsrechte
+(`mitgliedsrechte-probe.mjs`) um `vortraege` erweitern (ein Verkündiger liest
+keine Zeile); ein Handbuch-Bild. Der NWS-Import der Wochenplanung schreibt
+weiterhin Redner, Thema und Lied aus NWS — nach einem Neuaufbau den Vortragsplan
+neu übernehmen (das Zurücksetzen leert `vortraege`).
+
+---
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -6635,16 +6715,17 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 22./23. August ☑☑☑☑☑☑☑☑☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑⏸☑☑☑ ·
 21. September ☑☑☑☑☐☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
-10. Oktober ☐
+10. Oktober ☐ · 12. Oktober ☐
 
-**118 der 121 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind drei, eine davon zurückgestellt:**
+**118 der 122 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind vier, eine davon zurückgestellt:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt (so auch am 10. Oktober) |
 | **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf; die Mail-Bestätigung ist an, ankommen kann sie nur mit eigenem SMTP-Server (4.10.2026). Mit T121 am 11. Oktober zum großen Teil entschieden: kein Registrieren, Konten legt der Admin oder der Betreiber an (kommt mit dem Umbau); offen bleibt ein Konto in zwei Versammlungen |
 | **T121** | Neues Design | ☐ Entwurf auf der Design-Leinwand; am 11. Oktober alle Abläufe mit dem Betreiber durchgegangen und entschieden, am 12. Oktober Tablet, Desktop und Druckbögen gezeichnet, die Fragen dazu entschieden (alles wie gezeichnet) und ein Code-Review über die Entwürfe behoben (15 Befunde). Die Änderungen vom 10. bis 12. Oktober warten auf Veröffentlichung (Profil privat); der Umbau der App ist ein eigener Auftrag |
+| **T122** | Vortragsplan übernehmen | ☐ gebaut am 12. Oktober: XML aus dem Planungsprogramm, gelesen auf dem Gerät, Vormerkungen für Wochen, die es noch nicht gibt. Wartet aufs Ausrollen: erst `schema.sql` (Tabelle `vortraege`), dann pushen |
 
 > **Nachgezählt am 10. Oktober 2026.** Die Zeile oben führte seit dem
 > 23. August zwei Zeichen zu wenig: „22./23. August" stand von Anfang an mit
@@ -7020,6 +7101,7 @@ offen; was aussteht, braucht eine Entscheidung, den Betreiber oder ein Gerät.
 | **T114** | Registrieren bei mehreren Versammlungen | wartet auf Entscheidungen des Betreibers: Konto ohne Code, wer eine Versammlung anlegt, ein Konto in zwei Versammlungen, die Meldung bei `already-member`. Am 11. Oktober mit T121 entschieden: kein Registrieren, Konten legt der Admin oder der Betreiber an; offen bleiben ein Konto in zwei Versammlungen und wer eine Versammlung anlegt |
 | **T106** | Alle auf einmal benachrichtigen | zurückgestellt am 21. September; im Bestand steht keine Telefonnummer |
 | **T121** | Neues Design | Entwurf auf der Design-Leinwand, am Code nichts geändert. Am 11. Oktober alle Abläufe mit dem Betreiber durchgegangen und entschieden (Anmelden nur mit Link, Trolleys statt Standorte, ohne Hohen Kontrast); am 12. Oktober Tablet, Desktop für alle Bereiche und sieben Druckbögen gezeichnet, die fünf Fragen dazu am selben Tag entschieden (alles wie gezeichnet), danach ein Code-Review über die Entwürfe mit 15 Befunden, alle behoben. Die Änderungen warten auf Veröffentlichung aus dem Profil privat. Der Umbau ist ein eigener Auftrag |
+| **T122** | Vortragsplan übernehmen | gebaut und getestet am 12. Oktober; wartet aufs Ausrollen (erst `schema.sql` mit der Tabelle `vortraege`, dann pushen). Danach: die Live-Probe der Mitgliedsrechte um `vortraege` erweitern |
 | **Vor dem Ausrollen** | SMTP-Server, `INVITE_FROM` | nur der Betreiber, außerhalb des Repos (siehe oben) |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht |

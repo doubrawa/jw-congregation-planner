@@ -42,6 +42,7 @@ import {
   savePlaene,
   savePlanEintraege,
   saveSettings,
+  saveVortraege,
   saveWeek,
   substituteSeek,
   substituteTake,
@@ -633,6 +634,18 @@ function besucheSpeichern(
 }
 
 /**
+ * Vorgemerkte Vorträge (T122) — wie die Gruppenbesuche: je Zeile nur, was sich
+ * geändert hat, gelöscht nur, was hier entfiel. Die Wochen, in die der
+ * Vortragsplan schrieb, gehen über den allgemeinen Block unter dem Switch
+ * hinaus, mit dem Entzug für einen eigenen Redner, der seinen Vortrag verliert.
+ */
+function vortraegeSpeichern(congId: string, prev: AppState, next: AppState): void {
+  if (next.vortraege === prev.vortraege) return
+  const { geaendert, entfernt } = zeilenAenderung(prev.vortraege, next.vortraege)
+  if (geaendert.length || entfernt.length) saveVortraege(congId, geaendert, entfernt)
+}
+
+/**
  * Öffentliches Zeugnisgeben (T120): Termine gebündelt, Einträge sofort.
  *
  * Geschrieben wird je Zeile nur, was sich geändert hat, und gelöscht nur, was
@@ -742,6 +755,9 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'besucheLeeren':
       // Die Besuche und die Treffpunkte, in die sie eingetragen wurden.
       besucheSpeichern(congId, prev, next, fsVerwaist)
+      break
+    case 'vortragsplanUebernehmen':
+      vortraegeSpeichern(congId, prev, next)
       break
     case 'ozTerminAdd':
     case 'ozTerminUpdate':

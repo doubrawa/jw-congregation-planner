@@ -161,6 +161,9 @@ export const LEEREN = [
   // Die Gruppenbesuche (T120) gingen mit den Gruppen ohnehin per Kaskade —
   // ausdrücklich hier, weil sie Planung sind wie die Wochen, nicht Stammdaten.
   'gruppenbesuche',
+  // Die vorgemerkten Vorträge (T122) ebenso: Planung aus dem Vortragsplan —
+  // nach dem Zurücksetzen übernimmt ihn der Planer neu.
+  'vortraege',
   // Die Einträge des öffentlichen Zeugnisgebens (T120) ebenso: Planung.
   'oz_eintraege',
   // Und die Weiteren Pläne (Phase 5) — die Einträge zuerst, sie zeigen auf die Pläne.
@@ -489,12 +492,15 @@ export async function main(argv = process.argv.slice(2)) {
    * hat es niemand: Die App plant dann gegen einen leeren Kalender und teilt
    * Verreiste ein.
    */
-  console.log('\nNächste Schritte — alle vier, sonst fehlt etwas:')
+  console.log('\nNächste Schritte — alle fünf, sonst fehlt etwas:')
   console.log('  1. jw.org-Wochen in der App importieren („Nächste Woche importieren")')
   console.log('  2. node scripts/wochenplanung-importieren.mjs   (Zuteilungen, Hilfsdienste, Reinigung)')
   console.log('  3. node scripts/abwesenheiten-importieren.mjs   (gelöscht, kommt aus denselben NWS-Daten)')
   console.log('  4. node scripts/treffpunkte-importieren.mjs     (die Leiter der Treffpunkte, ebenso)')
-  console.log('Jeder zuerst mit --trocken.')
+  // Zuletzt: Der Vortragsplan ist führend und überschreibt, was Schritt 2 aus
+  // NWS an Rednern, Themen und Liedern eingetragen hat (T122).
+  console.log('  5. Vortragsplan in der App übernehmen          (Planen › Zusammenkünfte › Wochenende; die Vormerkungen sind gelöscht)')
+  console.log('Die Skripte zuerst mit --trocken.')
 }
 
 alsSkript(import.meta.url, main)

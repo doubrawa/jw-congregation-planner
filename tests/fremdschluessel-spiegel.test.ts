@@ -98,6 +98,11 @@ const SPIEGEL: Record<string, Spiegel> = {
     spalten: { grp: 'grp', person_id: 'pid' },
     basis: { id: 'zz', woche: '2026-10-05', grp: 'g-andere', pid: null },
   },
+  vortraege: {
+    feld: 'vortraege',
+    spalten: { person_id: 'pid' },
+    basis: { id: 'zz', woche: '2026-11-09', redner: 'Z', versammlung: '', eigener: true, pid: null, thema: '', lied: '' },
+  },
   oz_eintraege: {
     feld: 'ozEintraege',
     spalten: { person_id: 'pid' },
