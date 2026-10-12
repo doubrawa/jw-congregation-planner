@@ -9,24 +9,13 @@ import { wochentagName } from '../planen/wochentage'
 import './components.css'
 
 /**
- * Chips unter der Wochen-Navigation: aktuelle Woche, Besuch des
- * Kreisaufsehers, Gedächtnismahl. Im Programm wird auch „AKTUELLE WOCHE“
- * gezeigt, im Planen nur die Sonderwochen-Chips.
+ * Chips unter der Wochen-Navigation beim Planen: Besuch des Kreisaufsehers,
+ * Gedächtnismahl, Kongress, abweichende Zusammenkünfte. Beim Ansehen steht der
+ * Anlass seit T121 unter der Woche selbst (`WochenZeile`).
  */
-export function WeekChips({
-  week,
-  showCurrent,
-  istAktuell = false,
-}: {
-  week: Week
-  showCurrent: boolean
-  /** Ob dies die laufende Woche ist — kommt von außen (`currentWeekIndex`). */
-  istAktuell?: boolean
-}) {
+export function WeekChips({ week }: { week: Week }) {
   const { t } = useT()
   const chips: Array<{ key: string; label: string; cls: string }> = []
-  if (showCurrent && istAktuell)
-    chips.push({ key: 'cur', label: t.aktuelleWoche, cls: 'week-chip--current' })
   // Gefragt wird über `anlassArt`, nicht über die Wirkungen (`co`/`mem`): der
   // Kongress hat keine — er wirkt als Ausfall beider Zusammenkünfte (T64).
   const art = anlassArt(week)

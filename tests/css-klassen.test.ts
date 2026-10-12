@@ -160,8 +160,10 @@ describe('Programm-Zeilen: der lange Titel darf schrumpfen und umbrechen', () =>
 
   it.each([
     ['fs-row', 'Treffpunkte'],
+    // Seit T121 am Handy eine Spalte, ab dem Tablet zwei — die Titelspalte
+    // ist in beiden schrumpffähig.
     ['prog-row', 'Programmpunkte'],
-  ])('%s teilt die Karte in eine schrumpffähige und eine feste Spalte (%s)', (name) => {
+  ])('%s gibt dem Titel eine schrumpffähige Spalte (%s)', (name) => {
     // `1fr` allein genügt nicht: eine Gitterspalte hat sonst min-width:auto und
     // bleibt so breit wie ihr längstes Wort. Genau das drückte den Namen weg.
     expect(regel(name)).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)/)

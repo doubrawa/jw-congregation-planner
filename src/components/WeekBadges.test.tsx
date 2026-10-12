@@ -67,25 +67,15 @@ afterEach(cleanup)
 
 describe('Die Wochen-Chips', () => {
   it('ohne Besonderheit steht gar nichts da — keine leere Leiste', () => {
-    const { container } = buehne('chips', <WeekChips week={woche()} showCurrent />)
-    expect(container.querySelector('.week-chips')).toBeNull()
-  })
-
-  it('die laufende Woche wird als solche gekennzeichnet', () => {
-    const { container } = buehne('chips', <WeekChips week={woche()} showCurrent istAktuell />)
-    expect(chips(container)).toEqual([t.aktuelleWoche])
-  })
-
-  it('im Planen wird die laufende Woche nicht gekennzeichnet — dort plant man voraus', () => {
-    const { container } = buehne('chips', <WeekChips week={woche()} showCurrent={false} istAktuell />)
+    const { container } = buehne('chips', <WeekChips week={woche()} />)
     expect(container.querySelector('.week-chips')).toBeNull()
   })
 
   it('Kreisaufseher-Woche und Gedächtnismahl bekommen ihren Chip', () => {
-    const co = buehne('chips', <WeekChips week={woche({ anlass: { art: 'co' }, co: true })} showCurrent />)
+    const co = buehne('chips', <WeekChips week={woche({ anlass: { art: 'co' }, co: true })} />)
     expect(chips(co.container)).toEqual([t.coWoche])
     cleanup()
-    const mem = buehne('chips', <WeekChips week={woche({ anlass: { art: 'mem' }, mem: true })} showCurrent />)
+    const mem = buehne('chips', <WeekChips week={woche({ anlass: { art: 'mem' }, mem: true })} />)
     expect(chips(mem.container)).toEqual([t.memWoche])
   })
 
@@ -94,26 +84,26 @@ describe('Die Wochen-Chips', () => {
       anlass: { art: 'kongress' },
       dev: { mid: { cancelled: true }, we: { cancelled: true } },
     } as Partial<Week>)
-    const { container } = buehne('chips', <WeekChips week={kongress} showCurrent />)
+    const { container } = buehne('chips', <WeekChips week={kongress} />)
     expect(chips(container)[0]).toBe(t.kongress)
   })
 
   it('eine Verlegung sieht man schon in der Navigation — ohne den Tab zu wechseln', () => {
     const verlegt = woche({ dev: { mid: { wd: 4 } } })
-    const { container } = buehne('chips', <WeekChips week={verlegt} showCurrent />)
+    const { container } = buehne('chips', <WeekChips week={verlegt} />)
     expect(chips(container)).toEqual([t.tabMid])
     expect(container.querySelector('.week-chip--dev s')).toBeNull() // verlegt, nicht gestrichen
   })
 
   it('eine ausgefallene Zusammenkunft steht durchgestrichen da', () => {
     const aus = woche({ dev: { we: { cancelled: true, reason: 'Kongress' } } })
-    const { container } = buehne('chips', <WeekChips week={aus} showCurrent />)
+    const { container } = buehne('chips', <WeekChips week={aus} />)
     expect(container.querySelector('.week-chip--dev s')?.textContent).toBe(t.tabWe)
   })
 
   it('fallen beide aus, stehen beide da', () => {
     const aus = woche({ dev: { mid: { cancelled: true }, we: { cancelled: true } } })
-    const { container } = buehne('chips', <WeekChips week={aus} showCurrent />)
+    const { container } = buehne('chips', <WeekChips week={aus} />)
     expect(chips(container)).toEqual([t.tabMid, t.tabWe])
   })
 })

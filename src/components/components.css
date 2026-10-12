@@ -125,33 +125,14 @@
  * Vergleich zweier Aufnahmen mit und ohne die Regel.
  */
 
-/* ---- Wochen-Navigation (Programm + Planen) ------------------------------ */
+/* ---- Wochen-Navigation (Programm + Planen, T121: `GWoche`) ---------------- */
 
 .week-nav {
-  display: flex;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   align-items: center;
-  justify-content: space-between;
-}
-
-.week-arrow {
-  width: 36px;
-  height: 36px;
-  flex: none;
-  border-radius: 50%;
-  background: var(--tAcc);
-  border: 1px solid var(--acc);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--acc);
-  font-size: calc(19px * var(--fs));
-  font-weight: 600;
-  box-shadow: var(--sh-btn);
-}
-
-.week-arrow:hover:enabled {
-  background: var(--acc);
-  color: var(--onAcc);
+  gap: 8px;
+  min-height: 60px;
 }
 
 .week-arrow:disabled {
@@ -160,7 +141,33 @@
 }
 
 .week-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
   text-align: center;
+  line-height: 1.3;
+}
+
+/* Die Woche groß, darunter ein Hinweis: aktuelle Woche oder ihr Anlass. */
+.woche-zeitraum {
+  font-size: calc(19px * var(--fs));
+  font-weight: 600;
+}
+
+.woche-unterzeile {
+  font-size: calc(13px * var(--fs));
+  color: var(--text3);
+}
+
+.woche-hinweis {
+  color: var(--akzent-text);
+  font-weight: 500;
+}
+
+/* „Aktuelle Woche · Jeremia 32–33": der Punkt nur, wenn beides dasteht. */
+.woche-hinweis + .woche-buch::before {
+  content: ' · ';
 }
 
 /* ---- Wochen-Chips (aktuelle Woche / Kreisaufseher / Gedächtnismahl) ------ */
@@ -181,11 +188,6 @@
   letter-spacing: 0.1em;
 }
 
-.week-chip--current {
-  background: var(--tAcc);
-  color: var(--acc);
-}
-
 .week-chip--co {
   background: var(--tPet);
   color: var(--pet);
@@ -203,55 +205,76 @@
   color: var(--gld);
 }
 
-/* Hinweis-Banner Gedächtnismahl (ausfallende Zusammenkunft) */
-.mem-banner {
-  margin-top: 12px;
-  background: var(--tWein);
-  border-radius: 10px;
-  padding: 9px 12px;
-  font-size: calc(11.5px * var(--fs));
-  color: var(--wein);
-  line-height: 1.45;
-}
-
-.mem-banner-date {
+/* Hinweise zu einer Zusammenkunft (T121, Entwurf „Besuch des Kreisaufsehers"):
+   eine Karte mit Rand. Das Gedächtnismahl ersetzt sie — Minze; sie fällt aus
+   (T30) — Rot. */
+.mem-banner,
+.ausfall-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--akzent-text);
+  border-radius: 20px;
+  background: var(--karte);
   font-weight: 600;
-  margin-top: 2px;
 }
 
-/* ---- Meeting-Tabs -------------------------------------------------------- */
+.ausfall-banner {
+  border-color: var(--problem);
+}
+
+.mem-banner-date,
+.ausfall-grund {
+  color: var(--text2);
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 400;
+}
+
+/* ---- Die Zusammenkünfte der Woche als Karten (T121) ---------------------- */
 
 .meeting-tabs {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
-  /* Passt nicht alles in eine Zeile (lange Wochentage, großer Schriftgrad):
-     umbrechen statt waagerecht scrollen. Ein weggescrollter Reiter ist faktisch
-     unsichtbar — man findet ihn nur, wenn man ahnt, dass es ihn gibt. */
-  flex-wrap: wrap;
+}
+
+/* Beim Planen kommt die Bearbeiten-Karte dazu — schmal, mit Zeichen. */
+.meeting-tabs.mit-bearbeiten {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
 }
 
 .meeting-tab {
-  flex: 0 0 auto;
-  padding: 8px 15px;
-  border-radius: var(--r-pill);
-  border: 1px solid var(--bord2);
-  font-size: calc(12px * var(--fs));
-  font-weight: 600;
-  color: var(--mut);
-  white-space: nowrap;
-}
-
-.meeting-tab:hover:not(.is-active) {
-  background: var(--hov);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  min-height: 56px;
+  padding: 6px 14px;
+  border: 1.5px solid transparent;
+  border-radius: 20px;
+  background: var(--karte);
+  color: var(--text2);
+  text-align: start;
 }
 
 .meeting-tab.is-active {
-  background: var(--tAcc);
-  border-color: transparent;
-  /* --ink (nicht --acc): sicherer Kontrast auf --tAcc in ALLEN Themes
-     (--acc auf --tAcc scheitert z. B. in Papaya). Der gefüllte Pill hebt den
-     aktiven Reiter deutlich hervor. */
-  color: var(--ink);
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.meeting-tab-name {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.meeting-tab.is-active .meeting-tab-name {
+  font-weight: 700;
+}
+
+.meeting-tab-wann {
+  color: var(--text3);
+  font-size: calc(13px * var(--fs));
 }
 
 /* ---- Bereichs-Panels ------------------------------------------------------
@@ -465,55 +488,94 @@ select {
   color: var(--mut);
 }
 
-/* Der Bearbeiten-Reiter (T64) trägt ein Symbol statt eines Wortes. Er bekommt
-   deshalb feste Maße statt Textbreite — und mindestens 24 px in beide
-   Richtungen, wie jedes Trefferziel (T43). Bei großem Schriftgrad wächst er
-   mit, damit er in der umbrechenden Leiste nicht als Rest erscheint. */
+/* Die Bearbeiten-Karte (T64) trägt ein Zeichen statt eines Wortes — so breit
+   wie hoch. */
 .meeting-tab--icon {
-  min-width: calc(34px * var(--fs));
-  padding-inline: calc(8px * var(--fs));
-  font-size: calc(15px * var(--fs));
-  line-height: 1;
+  align-items: center;
+  min-width: 56px;
+  padding-inline: 14px;
+}
+
+/* Durchgestrichen: Diese Zusammenkunft fällt aus (T30). */
+.ausfall-name {
+  text-decoration-thickness: 2px;
+}
+
+/* ---- Reiter eines Bereichs (T121, `GDienstTabs`): Predigtdienst ------------ */
+
+.bereich-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+  min-height: 48px;
+}
+
+.bereich-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 48px;
+  color: var(--text3);
+  font-size: calc(14px * var(--fs));
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Der Punkt darunter: nur am gewählten Reiter sichtbar. */
+.bereich-tab::after {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.bereich-tab.is-active {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.bereich-tab.is-active::after {
+  background: var(--akzent);
 }
 
 /* ---- Weitere Termine der Woche (T63) --------------------------------------
-   Ankündigungen, keine Zuteilungen: kein Chip, kein Status, kein Antippen.
-   Bezeichnung und Ort sind die Worte des Planers und stehen unübersetzt da —
-   nur der Wochentag kommt aus `Intl`. */
+   Ankündigungen, keine Zuteilungen: kein Status, kein Antippen. Bezeichnung
+   und Ort sind die Worte des Planers und stehen unübersetzt da — nur der
+   Wochentag kommt aus `Intl`. */
 .termin-liste {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: 10px;
+  padding: 4px 18px;
+  border-radius: 20px;
+  background: var(--karte);
 }
 
 .termin-zeile {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  justify-content: center;
-  gap: 3px 8px;
-  background: var(--card);
-  border-radius: 10px;
-  padding: 7px 12px;
-  line-height: 1.45;
+  gap: 2px 10px;
+  padding: 10px 0;
+}
+
+.termin-zeile + .termin-zeile {
+  border-block-start: 1px solid var(--linie);
 }
 
 .termin-wann {
-  font-size: calc(10px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--mut);
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
 }
 
 .termin-was {
-  font-size: calc(12.5px * var(--fs));
   font-weight: 600;
 }
 
 .termin-ort {
-  font-size: calc(11.5px * var(--fs));
-  color: var(--mut);
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
 }
 
 /* „+ Abwesenheit eintragen" (`AbwesenheitEintragen`, T121) — im Profil und im Personen-Detail. */

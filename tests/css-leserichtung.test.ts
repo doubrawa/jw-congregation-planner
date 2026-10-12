@@ -132,7 +132,12 @@ describe('Richtungsabhängige Pfeile werden gespiegelt', () => {
 
   it('die Wochen-Pfeile und der Zurück-Chevron kippen in RTL', () => {
     const rtl = inhalt('app/rtl.css')
-    expect(rtl).toMatch(/\[dir=['"]rtl['"]\]\s*\.week-arrow\s*\{[^}]*transform:\s*scaleX\(-1\)/)
+    // Die Wochen-Pfeile sind seit T121 `Zeichen` mit Richtung: Sie kippen in
+    // bausteine.css — und nicht noch einmal am Knopf (`.week-arrow`).
+    expect(inhalt('bausteine/bausteine.css')).toMatch(
+      /\[dir=['"]rtl['"]\]\s*\.zeichen\.is-richtung\s*\{[^}]*transform:\s*scaleX\(-1\)/,
+    )
+    expect(rtl, 'die Wochen-Pfeile kippten ein zweites Mal').not.toMatch(/\.week-arrow\s*\{[^}]*transform/)
     expect(rtl).toMatch(/\[dir=['"]rtl['"]\]\s*\.pers-back-chev\s*\{[^}]*transform:\s*scaleX\(-1\)/)
   })
 
@@ -156,7 +161,8 @@ describe('Richtungsabhängige Pfeile werden gespiegelt', () => {
     // Wochen-Nachbarn, deren Klassen einmal als „tot" entfernt wurden.
     const quelle = (rel: string) =>
       readFileSync(fileURLToPath(new URL(`../src/${rel}`, import.meta.url)), 'utf8')
-    expect(quelle('components/WeekNav.tsx')).toContain('week-arrow')
+    expect(quelle('components/WeekNav.tsx')).toMatch(/<Zeichen name="zurueck"/)
+    expect(quelle('bausteine/Zeichen.tsx')).toMatch(/RICHTUNG[^\n]*'weiter'[^\n]*'zurueck'/)
     expect(quelle('personen/PersonDetail.tsx')).toContain('pers-back-chev')
     expect(quelle('components/DatePicker.tsx')).toContain('dp-nav')
     // Und der Pfeil ist wirklich seitenabhängig — sonst gäbe es nichts zu drehen.

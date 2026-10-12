@@ -38,7 +38,7 @@ export const DE = {
     keineMitteilungen: 'Keine Mitteilungen',
     // Die beiden Abschnitte der Mitteilungen (T121): ungelesen, schon gelesen.
     mitteilungenNeu: 'Neu', mitteilungenFrueher: 'Früher',
-    aktuelleWoche: 'AKTUELLE WOCHE', tabMid: 'Zusammenkunft unter der Woche', tabWe: 'Zusammenkunft am Wochenende',
+    aktuelleWoche: 'Aktuelle Woche', tabMid: 'Zusammenkunft unter der Woche', tabWe: 'Zusammenkunft am Wochenende',
     // Kurzlabel der Programm-/Planen-Reiter: „Versammlung <Wochentag>"
     versammlungTag: 'Versammlung {tag}',
     // Treffpunkte (Zusammenkünfte für den Predigtdienst)
@@ -185,9 +185,15 @@ export const DE = {
     toastWpVeroeffentlicht: 'Plan veröffentlicht', toastWpEntwurf: 'Plan zurück im Entwurf',
     toastWpGeloescht: 'Plan gelöscht', toastWpVerteilt: 'Verteilte Wochen: {n}',
     toastWpVerteiltMonate: 'Verteilte Monate: {n}',
-    hilfsdienste: 'HILFSDIENSTE', stand: 'Stand: {datum}', drucken: 'Drucken',
+    hilfsdienste: 'Hilfsdienste', stand: 'Stand: {datum}', drucken: 'Drucken',
     // Druck-Auswahl (T105): die angezeigte Woche oder alle Wochen des Monats.
     druckWoche: 'Diese Woche', druckMonat: 'Ganzer Monat · {monat}',
+    // Unter dem Titel des Druck-Blatts der Zusammenkünfte (T121).
+    druckZusammenkuenfte: 'Zusammenkünfte mit allen Zuteilungen.',
+    // Kongresswoche (T121): statt des Programms der leere Saal und zwei Wege.
+    kongressAusfall: 'In dieser Woche fallen alle Zusammenkünfte aus.',
+    treffpunkteDieserWoche: 'Treffpunkte dieser Woche',
+    naechsteZusammenkunft: 'Nächste Zusammenkunft · {wann}',
     planen: 'Planen', offeneZut: 'Offene Zuteilungen: {n}',
     planHint: 'Auf eine Zuteilung tippen, um sie zu ändern. Abwesenheiten und Aufgabenbereiche werden geprüft.',
     autoZuteilen: 'AUTOMATISCH ZUTEILEN', leeren: 'Leeren', leerenSicher: 'Wirklich leeren?',
@@ -437,9 +443,9 @@ export const DE = {
     remErste: 'Erste Erinnerung', remLetzte: 'Letzte Erinnerung',
     remTageVorher: 'Tage vorher: {n}', remAmTag: 'Am Tag der Aufgabe',
     remRepeat: 'Täglich wiederholen, bis bestätigt',
-    coWoche: 'BESUCH DES KREISAUFSEHERS',
-    memWoche: 'GEDÄCHTNISMAHL',
-    kongress: 'KONGRESS',
+    coWoche: 'Besuch des Kreisaufsehers',
+    memWoche: 'Gedächtnismahl',
+    kongress: 'Kongress',
     memAusfall: '„{m}“ entfällt in dieser Woche — stattdessen findet das Gedächtnismahl statt:',
     lacPh: 'Neuer Programmpunkt, z. B. Örtliche Hinweise', lacAdd: '+ EINFÜGEN',
     vortragThemaPh: 'Vortragsthema eintragen', anfangsliedLbl: 'ANFANGSLIED', liedNrPh: 'Nr.',
@@ -481,9 +487,9 @@ export const DE = {
     stLeerText: 'Es sind noch keine Daten hinterlegt. Bitte wende dich an einen Admin.',
     keinePersonOpt: '— keine Person —', planerLbl: 'Admin', duMarker: ' (du)',
     rechteHint: 'Planer teilen zu und senden die Pläne. Admins ändern auch die Pläne selbst, die Personen und die Einstellungen.',
-    // Kennzeichen am eigenen Platz in den Programm-Ansichten: dasselbe Wort wie
-    // `duMarker`, als Chip — in Großbuchstaben, wo die Schrift welche kennt.
-    chipDu: 'DU',
+    // Der eigene Platz in den Programm-Ansichten: dasselbe Wort wie `duMarker`,
+    // seit T121 in Satzschreibung — es steht dort statt des eigenen Namens.
+    chipDu: 'Du',
     toastMitgliedEntfernt: 'Mitglied entfernt', toastEinladungErstellt: 'Einladungscode erstellt',
     toastEinladungGeloescht: 'Einladung gelöscht',
     // Konfliktprüfungen (Planen)

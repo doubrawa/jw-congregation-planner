@@ -67,13 +67,22 @@
   .toast,
   .week-arrow,
   .bereichstitel,
+  .bereich-tabs,
   .meeting-tabs,
   .week-chips,
+  .woche-hinweis.is-aktuell,
   .prog-helpers,
   .prog-print-btn,
-  .druck-menue,
-  .druck-zeile {
+  .druck-knopf,
+  .druck-zeile,
+  .prog-du,
+  .kongress-weg {
     display: none !important;
+  }
+
+  /* Gedruckt wird der eigene Name statt „Du" — der Aushang gilt allen. */
+  .nur-druck {
+    display: inline !important;
   }
 
   /* Spalten-Layout auflösen — der Inhalt bekommt die volle Blattbreite.
@@ -118,12 +127,16 @@
     text-align: start;
   }
 
-  .prog-week-range {
+  .week-center {
+    align-items: flex-start;
+  }
+
+  .woche-zeitraum {
     font-size: 18pt;
     line-height: 1.15;
   }
 
-  .prog-week-book {
+  .woche-unterzeile {
     margin-top: 0.5mm;
     font-size: 11pt;
   }
@@ -145,15 +158,35 @@
     font-size: 8.5pt;
   }
 
-  /* Bereichs-Panels flach: Überschrift + Linie statt Tonfläche.
+  /* Bereichs-Karten flach: Überschrift + Linie statt Tonfläche.
      Ein Bereich soll nie über den Seitenumbruch zerrissen werden. */
-  .panel {
+  .panel,
+  .prog-abschnitt {
     background: none !important;
     border-radius: 0;
     padding: 0;
     margin: 0 0 3mm;
     break-inside: avoid;
     page-break-inside: avoid;
+  }
+
+  .prog-abschnitt-kopf {
+    min-height: 0;
+    padding: 0 0 1mm;
+    margin-bottom: 0.5mm;
+    border-bottom: 1px solid #999;
+    font-size: 8.5pt;
+  }
+
+  .prog-abschnitt-name,
+  .prog-lied {
+    font-size: 8.5pt;
+  }
+
+  /* Die Punkte vor den Namen sind Bildschirm-Zeichen — auf Papier reicht die
+     Spalte. */
+  .prog-person-punkt {
+    display: none;
   }
 
   .panel-label {
@@ -168,8 +201,11 @@
     font-size: 9.5pt;
   }
 
-  /* Programmzeilen kompakt, Namen bleiben rechtsbündig. */
+  /* Programmzeilen kompakt, die Namen in einer Spalte daneben — das Blatt ist
+     schmaler als ein Tablet, am Bildschirm stünden sie darunter. */
   .prog-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
     gap: 5mm;
     padding: 1.6mm 0;
   }

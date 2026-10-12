@@ -21,12 +21,13 @@
 
 .panel-label,
 .panel-song,
-.prog-week-range,
-.prog-week-book,
+.woche-zeitraum,
+.woche-buch,
 .prog-meta,
+.prog-lied,
 .prog-title,
 .prog-item-meta,
-.prog-helper-names,
+.prog-dienst-wer,
 .prog-name,
 .prog-role,
 .prog-footer > span,
@@ -52,15 +53,9 @@
   transform: scaleX(-1);
 }
 
-/* Wochen-Blätter-Pfeile in RTL: NUR die Glyphen kippen, damit beide nach außen
-   zeigen. Die Buttons tauschen ihre Seiten schon von selbst — ein Flex-Container
-   in `dir="rtl"` ordnet seine Kinder bereits von rechts nach links an. Das
-   zusätzliche `flex-direction: row-reverse` kehrte ein zweites Mal um und stellte
-   damit die LTR-Anordnung wieder her (gemessen: „vorherige" links bei x=20),
-   während die gekippten Glyphen beide nach innen zeigten. */
-[dir='rtl'] .week-arrow {
-  transform: scaleX(-1);
-}
+/* Die Wochen-Blätter-Pfeile spiegeln sich seit T121 selbst: Sie sind `Zeichen`
+   mit Richtung (`is-richtung`, bausteine.css). Eine Regel hier auf
+   `.week-arrow` kippte sie ein zweites Mal — beide zeigten dann nach innen. */
 
 /* „Zurück"-Chevron (‹ Alle Personen) in RTL nach rechts zeigen lassen. */
 [dir='rtl'] .pers-back-chev {

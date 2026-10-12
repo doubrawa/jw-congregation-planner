@@ -24,8 +24,8 @@ import { ProgrammScreen } from './ProgrammScreen'
  *
  * - Der **Termin** wird gerechnet, nicht aus `meeting.date` gelesen:
  *   importierte Wochen tragen dort nur die Wochenspanne („7.–13. September").
- * - Der **DU-Chip** entscheidet über `gehoertZu` — erst die Person-Id, dann der
- *   Name. Der bloße Namensvergleich gab ihn an beide Namensgleichen und an
+ * - **„Du"** statt des eigenen Namens entscheidet `gehoertZu` — erst die
+ *   Person-Id, dann der Name. Der bloße Namensvergleich gab ihn an beide Namensgleichen und an
  *   einen Verkündiger, der zufällig hieß wie der Gastredner.
  * - Ob es eine **Zusätzliche Klasse** gibt, steht in den Wochendaten, nicht am
  *   Schalter: Beim Ausschalten bleiben die Namen in `item.aux` stehen, und das
@@ -105,16 +105,30 @@ function zeige(over: Partial<AppState> = {}) {
  */
 const seite = (c: HTMLElement): HTMLElement => (c.querySelector('.week-strip > .screen') as HTMLElement) ?? c
 const texte = (c: HTMLElement, sel: string) => [...seite(c).querySelectorAll(sel)].map((x) => x.textContent ?? '')
-/** Die Einträge der aufgeklappten Druck-Auswahl (T105). */
-const optionen = (c: HTMLElement) => [...seite(c).querySelectorAll<HTMLButtonElement>('.druck-menue .druck-option')]
+/**
+ * Die Wahl im Blatt „Drucken" (T105; T121 ein Blatt statt einer Liste am
+ * Knopf). Das Blatt hängt per Portal am Dokument, nicht im Bildschirm.
+ */
+const optionen = () => [...document.querySelectorAll<HTMLButtonElement>('.druck-optionen .druck-option')]
+const druckKnopf = (c: HTMLElement) => seite(c).querySelector<HTMLButtonElement>('.druck-knopf')!
+/** Öffnet das Blatt, wählt die Woche (0) oder den Monat (1) und druckt. */
+function drucke(c: HTMLElement, wahl: 0 | 1): void {
+  fireEvent.click(druckKnopf(c))
+  fireEvent.click(optionen()[wahl]!)
+  fireEvent.click(document.querySelector('.druck-fuss .knopf-haupt')!)
+}
 
+// jsdom kennt `matchMedia` nicht; das Blatt „Drucken" fragt danach (Herunterwischen).
+beforeEach(() => {
+  window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
+})
 afterEach(cleanup)
 
 describe('Kopf und Navigation', () => {
   it('nennt Wochenbereich und Bibelbuch', () => {
     const { container } = zeige()
-    expect(seite(container).querySelector('.prog-week-range')?.textContent).toBe('7.–13. September')
-    expect(seite(container).querySelector('.prog-week-book')?.textContent).toBe('JEREMIA 32')
+    expect(seite(container).querySelector('.woche-zeitraum')?.textContent).toBe('7.–13. September')
+    expect(seite(container).querySelector('.woche-buch')?.textContent).toBe('JEREMIA 32')
   })
 
   it('blättert vor und zurück', () => {
@@ -130,17 +144,17 @@ describe('Kopf und Navigation', () => {
     expect(pfeile.every((b) => b.disabled)).toBe(true)
   })
 
-  it('zwei Reiter: unter der Woche und Wochenende', () => {
+  it('zwei Karten: unter der Woche und Wochenende — mit Tag und Uhrzeit (T121)', () => {
     // Die Treffpunkte waren bis T120 ein dritter Reiter; sie sind jetzt das
     // Thema Predigtdienst und stehen im Menü.
     const { container } = zeige()
-    const reiter = [...seite(container).querySelectorAll('.prog-tabs button')].map((b) => b.textContent)
-    expect(reiter).toEqual(['Dienstag', 'Sonntag'])
+    expect(texte(container, '.meeting-tab-name')).toEqual(['Dienstag', 'Sonntag'])
+    expect(texte(container, '.meeting-tab-wann')).toEqual(['8.9. · 19:00', '13.9. · 10:00'])
   })
 
   it('der Predigtdienst hat keine Reiter der Zusammenkünfte', () => {
     const { container } = zeige({ tab: 'fs' })
-    expect(seite(container).querySelector('.prog-tabs')).toBeNull()
+    expect(seite(container).querySelector('.meeting-tabs')).toBeNull()
   })
 
   it('der Titel nennt den Bereich — „Planen" daneben sieht nur, wer ihn planen darf (T121)', () => {
@@ -168,7 +182,7 @@ describe('Kopf und Navigation', () => {
 
   it('der Reiter-Wechsel schlägt durch', () => {
     const { container, dispatch } = zeige()
-    const reiter = [...seite(container).querySelectorAll('.prog-tabs button')]
+    const reiter = [...seite(container).querySelectorAll('.meeting-tab')]
     fireEvent.click(reiter[1]!)
     expect(dispatch.mock.calls.some((c) => c[0].type === 'setTab')).toBe(true)
   })
@@ -222,9 +236,9 @@ describe('Der Termin wird gerechnet, nicht abgelesen', () => {
 })
 
 describe('Das Programm selbst', () => {
-  it('jeder Bereich wird zu einem Panel in seiner Farbe', () => {
+  it('jeder Bereich wird zu einer Karte in seiner Farbe', () => {
     const { container } = zeige()
-    const panels = [...seite(container).querySelectorAll('.panel[data-farbe]')]
+    const panels = [...seite(container).querySelectorAll('.prog-abschnitt[data-farbe]')]
     const farben = panels.map((p) => p.getAttribute('data-farbe'))
     expect(farben).toContain('petrol')
     expect(farben).toContain('neutral')
@@ -232,7 +246,7 @@ describe('Das Programm selbst', () => {
 
   it('nummerierte Punkte tragen ihre Nummer, unnummerierte nicht', () => {
     const { container } = zeige()
-    expect(texte(container, '.prog-num')).toEqual(['1.', '3.'])
+    expect(texte(container, '.prog-num').map((n) => n.trim())).toEqual(['1', '3'])
   })
 
   it('ein offener Platz steht als solcher da — er fehlt nicht einfach', () => {
@@ -240,9 +254,9 @@ describe('Das Programm selbst', () => {
     expect(texte(container, '.prog-name')).toContain(t.offenDash)
   })
 
-  it('das Lied wird aus dem Eröffnungs-Sammeltitel herausgezogen', () => {
+  it('das Lied wird aus dem Eröffnungs-Sammeltitel herausgezogen — es steht rechts im Kopf', () => {
     const { container } = zeige()
-    const lieder = texte(container, '.panel-song')
+    const lieder = texte(container, '.prog-abschnitt-kopf .prog-lied')
     expect(lieder).toContain('Lied 12')
     // Der Rest des Titels bleibt als Punkt stehen.
     expect(texte(container, '.prog-title').join(' | ')).toContain('Gebet · Einleitende Worte')
@@ -250,7 +264,7 @@ describe('Das Programm selbst', () => {
 
   it('im Abschluss ebenso — dort steht das Lied vorn im Sammeltitel', () => {
     const { container } = zeige()
-    expect(texte(container, '.panel-song')).toContain('Lied 99')
+    expect(texte(container, '.prog-abschnitt-kopf .prog-lied')).toContain('Lied 99')
   })
 
   it('die Fußzeile nennt das Ende und den Stand von heute', () => {
@@ -264,8 +278,7 @@ describe('Das Programm selbst', () => {
     const print = vi.fn()
     window.print = print
     const { container } = zeige()
-    fireEvent.click(seite(container).querySelector('.prog-print-btn')!)
-    fireEvent.click(optionen(container)[0]!)
+    drucke(container, 0)
     expect(print).toHaveBeenCalled()
   })
 
@@ -277,31 +290,33 @@ describe('Das Programm selbst', () => {
   })
 })
 
-describe('Der DU-Chip: Id vor Name', () => {
+describe('„Du" statt des eigenen Namens: Id vor Name', () => {
   const mitMir = (pid: string | undefined, name = 'Anton Alt') => {
     const w = woche()
     ;(w.mid.sections[1]!.items[0] as PartItem).names[0] = { name, pid }
     return w
   }
 
-  it('steht an der eigenen Zuteilung', () => {
+  it('steht an der eigenen Zuteilung — gedruckt wird der Name', () => {
     const { container } = zeige({ weeks: [mitMir('p-a')] })
-    expect(seite(container).querySelectorAll('.chip-du')).toHaveLength(1)
+    expect(seite(container).querySelectorAll('.prog-du')).toHaveLength(1)
+    // Der Aushang gilt allen: Der Name steht im DOM, nur der Bildschirm zeigt „Du".
+    expect(seite(container).querySelector('.prog-person.is-du .prog-name.nur-druck')?.textContent).toBe('Anton Alt')
   })
 
   it('nicht an der des Namensvetters — die Id entscheidet', () => {
     const { container } = zeige({ weeks: [mitMir('p-z')] })
-    expect(seite(container).querySelector('.chip-du')).toBeNull()
+    expect(seite(container).querySelector('.prog-du')).toBeNull()
   })
 
   it('ohne Id (Altdaten) zählt weiter der Name', () => {
     const { container } = zeige({ weeks: [mitMir(undefined)] })
-    expect(seite(container).querySelectorAll('.chip-du')).toHaveLength(1)
+    expect(seite(container).querySelectorAll('.prog-du')).toHaveLength(1)
   })
 
   it('ohne eigene Person steht er nirgends', () => {
     const { container } = zeige({ weeks: [mitMir('p-a')], personId: null })
-    expect(seite(container).querySelector('.chip-du')).toBeNull()
+    expect(seite(container).querySelector('.prog-du')).toBeNull()
   })
 })
 
@@ -321,8 +336,8 @@ describe('Die Zusätzliche Klasse steht als zweiter Raum darunter', () => {
     const weeks = mitKlasse()
     weeks[0]!.mid.auxRatgeber = { name: 'Anton Alt', pid: 'p-a' }
     const { container } = zeige({ weeks, auxClass: true })
-    const panels = [...seite(container).querySelectorAll('.panel-label')].map((x) => x.textContent)
-    expect(panels).toContain(t.auxKlassen)
+    const karten = [...seite(container).querySelectorAll('.prog-abschnitt-name')].map((x) => x.textContent)
+    expect(karten).toContain(t.auxKlassen)
   })
 
   it('der Ratgeber-Titel steht in der Sprache des Lesers, nicht der Versammlung', () => {
@@ -331,8 +346,8 @@ describe('Die Zusätzliche Klasse steht als zweiter Raum darunter', () => {
     const weeks = mitKlasse()
     weeks[0]!.mid.auxRatgeber = { name: 'Anton Alt', pid: 'p-a' }
     const { container } = zeige({ weeks, auxClass: true })
-    const klasse = [...seite(container).querySelectorAll('.panel')].find(
-      (p) => p.querySelector('.panel-label')?.textContent === t.auxKlassen,
+    const klasse = [...seite(container).querySelectorAll('.prog-abschnitt')].find(
+      (p) => p.querySelector('.prog-abschnitt-name')?.textContent === t.auxKlassen,
     )!
     expect(klasse.querySelector('.prog-title')?.textContent).toBe(t.auxRatgeber)
   })
@@ -346,32 +361,45 @@ describe('Die Zusätzliche Klasse steht als zweiter Raum darunter', () => {
 })
 
 describe('Die Hilfsdienst-Übersicht', () => {
-  it('füllt bis zur eingestellten Platzzahl auf — der Rest steht als „offen"', () => {
+  /** Was in der Zeile des Dienstes steht: „Du", die übrigen Namen, „offen". */
+  const dienst = (c: HTMLElement) => {
+    const wer = seite(c).querySelector('.prog-dienst-wer')!
+    return {
+      du: wer.querySelector('.prog-du-pille') !== null,
+      namen: wer.querySelector('.prog-dienst-namen')?.textContent ?? '',
+      offen: wer.querySelector('.prog-dienst-offen')?.textContent ?? '',
+    }
+  }
+
+  it('füllt bis zur eingestellten Platzzahl auf — ein freier Platz steht als „offen"', () => {
     const w = woche()
-    w.mid.helpers.mik = [{ name: 'Anton Alt' }]
+    w.mid.helpers.mik = [{ name: 'Wer Anders' }]
     const { container } = zeige({ weeks: [w] })
-    expect(seite(container).querySelector('.prog-helper-names')?.textContent).toBe(
-      `Anton Alt · ${t.offenWort}`,
-    )
+    expect(dienst(container)).toEqual({ du: false, namen: 'Wer Anders', offen: t.offenWort })
   })
 
   it('mehr Einträge als Plätze werden abgeschnitten — die Einstellung gilt', () => {
     const w = woche()
     w.mid.helpers.mik = [{ name: 'A' }, { name: 'B' }, { name: 'C' }]
     const { container } = zeige({ weeks: [w] })
-    expect(seite(container).querySelector('.prog-helper-names')?.textContent).toBe('A · B')
+    expect(dienst(container)).toEqual({ du: false, namen: 'A, B', offen: '' })
   })
 
-  it('der Dienstname steht in Großbuchstaben — wie im Arbeitsheft', () => {
-    const { container } = zeige()
-    expect(seite(container).querySelector('.prog-helper-label')?.textContent).toBe('MIKROFONE')
+  it('der eigene Platz steht als „Du" vorn, nicht als Name (T121)', () => {
+    const w = woche()
+    w.mid.helpers.mik = [{ name: 'Wer Anders' }, { name: 'Anton Alt', pid: 'p-a' }]
+    const { container } = zeige({ weeks: [w] })
+    expect(dienst(container)).toEqual({ du: true, namen: 'Wer Anders', offen: '' })
   })
 
-  it('ganz ohne Zuteilung stehen alle Plätze offen', () => {
+  it('der Dienstname steht da, wie er heißt', () => {
     const { container } = zeige()
-    expect(seite(container).querySelector('.prog-helper-names')?.textContent).toBe(
-      `${t.offenWort} · ${t.offenWort}`,
-    )
+    expect(seite(container).querySelector('.prog-dienst-name')?.textContent).toBe('Mikrofone')
+  })
+
+  it('ganz ohne Zuteilung steht der Dienst offen', () => {
+    const { container } = zeige()
+    expect(dienst(container)).toEqual({ du: false, namen: '', offen: t.offenWort })
   })
 
   /*
@@ -385,13 +413,11 @@ describe('Die Hilfsdienst-Übersicht', () => {
    * Aufgabenliste, die Auslastung und der Planen-Screen längst nicht mehr
    * kennen — eine Zuteilung, von der nur dieses eine Blatt weiß.
    */
-  it('ein offener erster Platz bleibt an seiner Stelle', () => {
+  it('ein offener erster Platz bleibt offen — der Name dahinter steht trotzdem da', () => {
     const w = woche()
-    w.mid.helpers.mik = [{ name: '' }, { name: 'Anton Alt' }]
+    w.mid.helpers.mik = [{ name: '' }, { name: 'Wer Anders' }]
     const { container } = zeige({ weeks: [w] })
-    expect(seite(container).querySelector('.prog-helper-names')?.textContent).toBe(
-      `${t.offenWort} · Anton Alt`,
-    )
+    expect(dienst(container)).toEqual({ du: false, namen: 'Wer Anders', offen: t.offenWort })
   })
 
   it('ein Name hinter der Platzzahl wird nicht nach vorn gezogen', () => {
@@ -403,7 +429,71 @@ describe('Die Hilfsdienst-Übersicht', () => {
       weeks: [w],
       services: [{ key: 'mik', name: 'Mikrofone', count: 1, groups: false }],
     })
-    expect(seite(container).querySelector('.prog-helper-names')?.textContent).toBe(t.offenWort)
+    expect(dienst(container)).toEqual({ du: false, namen: '', offen: t.offenWort })
+  })
+})
+
+/**
+ * **Was die Woche besonders macht, steht unter ihr** (T121, `GWoche`): ihr
+ * Anlass — und nur ohne Anlass „Aktuelle Woche". Der Kongress ersetzt das
+ * Programm ganz (`GSonderwoche`).
+ */
+describe('Anlass und Kongress', () => {
+  const zweiWochen = (erste: Partial<Week>, zweite: Partial<Week> = {}) => [
+    woche(erste),
+    woche({ start: '2026-09-14', range: '14.–20. September', ...zweite }),
+  ]
+
+  it('ohne Anlass steht in der laufenden Woche „Aktuelle Woche"', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 8, 9, 0))
+    try {
+      const { container } = zeige()
+      expect(seite(container).querySelector('.woche-hinweis')?.textContent).toBe(t.aktuelleWoche)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('der Anlass geht vor: Besuch des Kreisaufsehers statt „Aktuelle Woche"', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 8, 9, 0))
+    try {
+      const { container } = zeige({ weeks: [woche({ anlass: { art: 'co' }, co: true })] })
+      expect(texte(container, '.woche-hinweis')).toEqual([t.coWoche])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('im Kongress statt der Tage und des Programms die Karte mit den zwei Wegen', () => {
+    const { container, dispatch } = zeige({ weeks: zweiWochen({ anlass: { art: 'kongress' } }) })
+    const s = seite(container)
+    expect(s.querySelector('.kongress-karte')?.textContent).toContain(t.kongressAusfall)
+    expect(s.querySelector('.meeting-tabs')).toBeNull()
+    expect(s.querySelector('.prog-abschnitt')).toBeNull()
+    const [treffpunkte, naechste] = [...s.querySelectorAll<HTMLButtonElement>('.kongress-weg')]
+    fireEvent.click(treffpunkte!)
+    expect(dispatch).toHaveBeenLastCalledWith({ type: 'navigate', screen: 'programm', woche: { wi: 0, tab: 'fs' } })
+    fireEvent.click(naechste!)
+    expect(dispatch).toHaveBeenLastCalledWith({ type: 'navigate', screen: 'programm', woche: { wi: 1, tab: 'mid' } })
+  })
+
+  it('„Nächste Zusammenkunft" überspringt, was ausfällt', () => {
+    // In der Woche danach fällt die Zusammenkunft unter der Woche aus — die
+    // nächste ist dann die am Sonntag, dem 20. September.
+    const { container, dispatch } = zeige({
+      weeks: zweiWochen({ anlass: { art: 'kongress' } }, { dev: { mid: { cancelled: true } } }),
+    })
+    const naechste = [...seite(container).querySelectorAll<HTMLButtonElement>('.kongress-weg')][1]!
+    expect(naechste.textContent).toContain('20. September')
+    fireEvent.click(naechste)
+    expect(dispatch).toHaveBeenLastCalledWith({ type: 'navigate', screen: 'programm', woche: { wi: 1, tab: 'we' } })
+  })
+
+  it('ist keine Woche danach geladen, fehlt der Weg zur nächsten — statt ins Leere zu führen', () => {
+    const { container } = zeige({ weeks: [woche({ anlass: { art: 'kongress' } })] })
+    expect(seite(container).querySelectorAll('.kongress-weg')).toHaveLength(1)
   })
 })
 
@@ -446,25 +536,24 @@ describe('Drucken: diese Woche oder der ganze Monat', () => {
     const imDruck: ImDruck = { wochen: [], kopf: '', seitenweise: false }
     print.mockImplementation(() => {
       imDruck.kennzeichen = document.documentElement.dataset.print
-      imDruck.wochen = [...container.querySelectorAll('.monat-woche .prog-week-range')].map((e) => e.textContent ?? '')
+      imDruck.wochen = [...container.querySelectorAll('.monat-woche .woche-zeitraum')].map((e) => e.textContent ?? '')
       imDruck.kopf = container.querySelector('.monat-kopf')?.textContent ?? ''
       imDruck.seitenweise = container.querySelector('.monat-druck')?.classList.contains('monat-druck--seitenweise') ?? false
     })
-    fireEvent.click(seite(container).querySelector('.prog-print-btn')!)
-    fireEvent.click(optionen(container)[1]!)
+    drucke(container, 1)
     return imDruck
   }
 
-  it('der Knopf klappt die Wahl auf, statt gleich zu drucken', () => {
+  it('der Knopf öffnet die Wahl, statt gleich zu drucken — die Woche ist vorgewählt', () => {
     const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2 })
-    const knopf = seite(container).querySelector<HTMLButtonElement>('.prog-print-btn')!
-    fireEvent.click(knopf)
+    fireEvent.click(druckKnopf(container))
     expect(print).not.toHaveBeenCalled()
-    expect(knopf.getAttribute('aria-expanded')).toBe('true')
-    expect(optionen(container).map((o) => o.textContent)).toEqual([
+    expect(document.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe(t.drucken)
+    expect(optionen().map((o) => o.querySelector('.druck-option-titel')?.textContent)).toEqual([
       t.druckWoche,
       t.druckMonat.replace('{monat}', 'September 2026'),
     ])
+    expect(optionen().map((o) => o.getAttribute('aria-checked'))).toEqual(['true', 'false'])
   })
 
   it('„Diese Woche" druckt ohne Kennzeichen — auch wenn eins stehen geblieben ist', () => {
@@ -475,11 +564,17 @@ describe('Drucken: diese Woche oder der ganze Monat', () => {
     print.mockImplementation(() => {
       kennzeichen = document.documentElement.dataset.print
     })
+    let blattImDruck: boolean | undefined
+    print.mockImplementation(() => {
+      kennzeichen = document.documentElement.dataset.print
+      // Der Druckdialog nimmt auf, was in diesem Moment im DOM steht.
+      blattImDruck = document.querySelector('.druck-optionen') !== null
+    })
     const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2 })
-    fireEvent.click(seite(container).querySelector('.prog-print-btn')!)
-    fireEvent.click(optionen(container)[0]!)
+    drucke(container, 0)
     expect(print).toHaveBeenCalledTimes(1)
     expect(kennzeichen).toBeUndefined()
+    expect(blattImDruck, 'das Blatt „Drucken" stand noch im Ausdruck').toBe(false)
     expect(container.querySelector('.monat-druck')).toBeNull()
   })
 
@@ -541,34 +636,38 @@ describe('Drucken: diese Woche oder der ganze Monat', () => {
 
   it('Escape schließt die Wahl, der Fokus geht zurück auf den Knopf', () => {
     const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2 })
-    const knopf = seite(container).querySelector<HTMLButtonElement>('.prog-print-btn')!
+    const knopf = druckKnopf(container)
+    knopf.focus()
     fireEvent.click(knopf)
-    fireEvent.keyDown(document, { key: 'Escape' })
-    expect(optionen(container)).toHaveLength(0)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(optionen()).toHaveLength(0)
     expect(document.activeElement).toBe(knopf)
     expect(print).not.toHaveBeenCalled()
   })
 
-  it('ein Tipp daneben schließt die Wahl, ohne zu drucken', () => {
+  it('ein Tipp daneben oder „Abbrechen" schließt die Wahl, ohne zu drucken', () => {
     const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2 })
-    fireEvent.click(seite(container).querySelector('.prog-print-btn')!)
-    fireEvent.pointerDown(document.body)
-    expect(optionen(container)).toHaveLength(0)
+    fireEvent.click(druckKnopf(container))
+    fireEvent.click(document.querySelector('.sheet-backdrop')!)
+    expect(optionen()).toHaveLength(0)
+    fireEvent.click(druckKnopf(container))
+    fireEvent.click([...document.querySelectorAll('.druck-fuss button')].find((b) => b.textContent === t.abbrechen)!)
+    expect(optionen()).toHaveLength(0)
     expect(print).not.toHaveBeenCalled()
   })
 
-  it('eine Woche ohne gültiges Datum druckt gleich — eine Wahl mit einem Eintrag wäre ein Klick zu viel', () => {
+  it('eine Woche ohne gültiges Datum druckt gleich — eine Wahl mit einem Eintrag wäre ein Tipp zu viel', () => {
     const { container } = zeige({ weeks: [woche({ start: '' })], week: 0 })
-    fireEvent.click(seite(container).querySelector('.prog-print-btn')!)
+    fireEvent.click(druckKnopf(container))
     expect(print).toHaveBeenCalledTimes(1)
-    expect(optionen(container)).toHaveLength(0)
+    expect(optionen()).toHaveLength(0)
   })
 
   it('der Monat steht in der Sprache des Lesers', () => {
     const en = dict('en')
     const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2, lang: 'en' })
-    fireEvent.click(seite(container).querySelector('.prog-print-btn')!)
-    expect(optionen(container).map((o) => o.textContent)).toEqual([
+    fireEvent.click(druckKnopf(container))
+    expect(optionen().map((o) => o.querySelector('.druck-option-titel')?.textContent)).toEqual([
       en.druckWoche,
       en.druckMonat.replace('{monat}', 'September 2026'),
     ])
@@ -601,7 +700,7 @@ describe('Drucken im Reiter Predigtdienst', () => {
       fsWeeks: [[], [treff('a', 'Marktplatz')], []],
     })
     expect(seite(container).textContent).toContain(t.fsKeine)
-    expect(seite(container).querySelector('.prog-print-btn')).not.toBeNull()
+    expect(seite(container).querySelector('.druck-knopf')).not.toBeNull()
   })
 
   it('„Ganzer Monat" druckt die Treffpunkte aller Wochen des Monats — und nur die', () => {
@@ -614,8 +713,7 @@ describe('Drucken im Reiter Predigtdienst', () => {
       weeks: MONTAGE.map((start) => woche({ start })),
       fsWeeks: [[treff('a', 'Saal')], [treff('b', 'Marktplatz')], [treff('c', 'Oktoberort')]],
     })
-    fireEvent.click(seite(container).querySelector('.prog-print-btn')!)
-    fireEvent.click(optionen(container)[1]!)
+    drucke(container, 1)
     expect(print).toHaveBeenCalledTimes(1)
     expect(orte).toEqual(['Saal', 'Marktplatz'])
   })
@@ -655,17 +753,17 @@ describe('Gruppenbesuche beim Ansehen (T120, Phase 2)', () => {
       gruppenbesuche: BESUCHE,
       ...over,
     })
-  const reiter = (c: HTMLElement) => [...c.querySelectorAll('.plan-tabs .meeting-tab')].map((b) => b.textContent)
+  const reiter = (c: HTMLElement) => [...c.querySelectorAll('.bereich-tab')].map((b) => b.textContent)
 
   it('ohne kommenden Besuch keine Reiter — der Predigtdienst sieht aus wie vorher', () => {
     const { container } = mitBesuchen({ gruppenbesuche: [] })
-    expect(container.querySelector('.plan-tabs')).toBeNull()
+    expect(container.querySelector('.bereich-tabs')).toBeNull()
   })
 
   it('mit Besuchen: Treffpunkte und Gruppenbesuche — den Grundplan gibt es nur beim Planen', () => {
     const { container, dispatch } = mitBesuchen()
     expect(reiter(seite(container))).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab])
-    fireEvent.click([...seite(container).querySelectorAll('.plan-tabs .meeting-tab')][1]!)
+    fireEvent.click([...seite(container).querySelectorAll('.bereich-tab')][1]!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'setFsBereich', bereich: 'gruppenbesuche' })
   })
 

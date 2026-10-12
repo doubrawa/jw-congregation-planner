@@ -151,7 +151,7 @@ function PlanenBody() {
         <div className="plan-week-range">{tpw(week.range)}</div>
       </WeekNav>
 
-      <WeekChips week={week} showCurrent={false} />
+      <WeekChips week={week} />
 
       {!isFs && (
         <MeetingTabs

@@ -11,7 +11,10 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import type { Person, Service } from '../data/types'
+import { dict } from '../i18n/ui'
 import { PersonDetail } from './PersonDetail'
+
+const t = dict('de')
 
 /**
  * T73. Aufgaben und Hilfsdienste standen in **einem** Bereich, in der
@@ -72,7 +75,7 @@ describe('PersonDetail — Aufgaben und Hilfsdienste sind zwei Bereiche (T73)', 
   it('die Hilfsdienste stehen in einem eigenen Bereich, nicht bei den Aufgaben', () => {
     const { container } = zeige(dienste)
     const aufgaben = bereich(container, 'AUFGABENBEREICHE')
-    const hilfsdienste = bereich(container, 'HILFSDIENSTE')
+    const hilfsdienste = bereich(container, t.hilfsdienste)
 
     expect(hilfsdienste).toContain('Tonanlage')
     expect(aufgaben).not.toContain('Tonanlage')
@@ -83,18 +86,18 @@ describe('PersonDetail — Aufgaben und Hilfsdienste sind zwei Bereiche (T73)', 
     const { container } = zeige(dienste)
     const sortiert = (liste: string[]) => [...liste].sort((a, b) => a.localeCompare(b, 'de'))
 
-    expect(bereich(container, 'HILFSDIENSTE')).toEqual(['Mikrofone', 'Ordner', 'Tonanlage'])
+    expect(bereich(container, t.hilfsdienste)).toEqual(['Mikrofone', 'Ordner', 'Tonanlage'])
     const aufgaben = bereich(container, 'AUFGABENBEREICHE')
     expect(aufgaben).toEqual(sortiert(aufgaben))
   })
 
   it('Gruppen-Dienste bleiben draußen — sie rotieren Gruppen statt Personen', () => {
     const { container } = zeige(dienste)
-    expect(bereich(container, 'HILFSDIENSTE')).not.toContain('Reinigung')
+    expect(bereich(container, t.hilfsdienste)).not.toContain('Reinigung')
   })
 
   it('ohne konfigurierte Dienste bleibt der Bereich leer, aber vorhanden', () => {
     const { container } = zeige([])
-    expect(bereich(container, 'HILFSDIENSTE')).toEqual([])
+    expect(bereich(container, t.hilfsdienste)).toEqual([])
   })
 })

@@ -74,18 +74,25 @@ einem Tipp auf deinen Namen ganz unten.
 ## 3. Das Programm ansehen
 
 Unter **Zusammenkünfte** siehst du das vollständige Programm der Woche.
-Mit den Pfeilen ‹ › blätterst du zwischen den Wochen; die aktuelle Woche ist mit
-einem Chip markiert. Auf dem Handy oder Tablet kannst du stattdessen auch
+Mit den Pfeilen ‹ › blätterst du zwischen den Wochen. Unter der Woche steht,
+was sie besonders macht – **Besuch des Kreisaufsehers**, **Gedächtnismahl**,
+**Kongress** –, sonst in der laufenden Woche **Aktuelle Woche**, daneben das
+Bibellesen der Woche. Auf dem Handy oder Tablet kannst du stattdessen auch
 **seitwärts wischen** – nach links zur nächsten, nach rechts zur vorigen Woche.
 Federt die Ansicht zurück, gibt es in der Richtung keine Woche mehr.
 
-Oben wählst du zwischen den beiden Zusammenkünften; die Treffpunkte für den
-Predigtdienst stehen im Menü unter **Predigtdienst**:
+Darunter stehen die beiden Zusammenkünfte als Karten, je mit Tag, Datum und
+Uhrzeit; die gewählte hat einen Rand. Fällt eine aus, ist ihr Tag
+durchgestrichen, und im Programm steht der Grund. Im Programm hat jeder
+Abschnitt seine Karte mit der Farbe des Arbeitshefts, das Lied steht rechts im
+Kopf. Unter jedem Punkt stehen die Eingeteilten – **dein eigener Platz** heißt
+dort **„Du"**. Ab dem Tablet stehen die Namen neben dem Punkt. Die
+Treffpunkte für den Predigtdienst stehen im Menü unter **Predigtdienst**:
 
 | Wo | Inhalt |
 | --- | --- |
-| **Zusammenkünfte** › Reiter unter der Woche | Das Programm der Wochenmitte (Schätze aus Gottes Wort, Dienst, Unser Leben als Christ) mit allen Zuteilungen. |
-| **Zusammenkünfte** › Reiter Wochenende | Öffentlicher Vortrag und Wachtturm‑Studium. |
+| **Zusammenkünfte** › Karte unter der Woche | Das Programm der Wochenmitte (Schätze aus Gottes Wort, Dienst, Unser Leben als Christ) mit allen Zuteilungen, darunter die Hilfsdienste. |
+| **Zusammenkünfte** › Karte Wochenende | Öffentlicher Vortrag und Wachtturm‑Studium, darunter die Hilfsdienste. |
 | **Predigtdienst** | Die „Treffpunkte" – wann und wo sich die Versammlung bzw. deine Gruppe zum Predigtdienst trifft, mit dem jeweiligen Leiter. |
 
 ![Zusammenkünfte für den Predigtdienst (Treffpunkte)](screenshots/verkuendiger-treffpunkte.png)
@@ -153,12 +160,19 @@ Schulungsaufgabe zurück.
 Bist **du** eingeteilt, siehst du am Block, in welchem Raum – und auf deinem
 **S‑89‑Zettel** steht es ebenfalls.
 
+### Kongress
+
+In einer Woche mit **Kongress** fallen alle Zusammenkünfte aus. Statt des
+Programms steht das dort, und zwei Wege führen weiter: zu den **Treffpunkten
+dieser Woche** und zur **nächsten Zusammenkunft**, die stattfindet.
+
 ### Ausdrucken
 
-Über jeder Zusammenkunft und über den Treffpunkten steht ein
-**Drucken**‑Knopf. Er fragt, ob du **diese Woche** oder den **ganzen Monat**
-willst – gedruckt wird jeweils, was du gerade siehst, ohne die
-Bedienelemente der App. Auch die **Gruppenbesuche**, das **öffentliche
+Neben dem Termin jeder Zusammenkunft und über den Treffpunkten steht das
+**Drucker**‑Zeichen. Es öffnet ein Blatt: **Diese Woche** ist vorgewählt, oder
+du wählst den **ganzen Monat** – erst **Drucken** druckt, gedruckt wird jeweils,
+was du gerade siehst, ohne die Bedienelemente der App. Wo bei dir **„Du"**
+steht, druckt das Blatt deinen Namen; der Aushang gilt allen. Auch die **Gruppenbesuche**, das **öffentliche
 Zeugnisgeben** und die **Weiteren Pläne** haben einen **Drucken**‑Knopf; beim
 Zeugnisgeben kommen dabei alle Wochen aufs Blatt, nicht nur die ersten vier.
 Nötig ist das nicht: Deine eigenen Aufgaben stehen unter **Meine Aufgaben**,

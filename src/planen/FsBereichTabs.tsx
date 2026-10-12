@@ -13,12 +13,12 @@ const BESCHRIFTUNG: Record<FsBereich, keyof Dict> = {
 }
 
 /**
- * Reiter des Predigtdienstes (T120): die Treffpunkte der Woche, die
- * Gruppenbesuche des Dienstaufsehers, das öffentliche Zeugnisgeben und — beim
- * Planen — der Grundplan der Treffpunkte. Welche
- * es hier gibt, sagt `fsBereiche`. Gestaltet wie die Reiter der
- * Zusammenkünfte, damit beide Themen dieselbe Bedienung haben. Gibt es nur
- * einen Bereich, steht gar keine Leiste da.
+ * Reiter des Predigtdienstes (T120; T121, Baustein `GDienstTabs`): die
+ * Treffpunkte der Woche, die Gruppenbesuche des Dienstaufsehers, das
+ * öffentliche Zeugnisgeben und — beim Planen — der Grundplan der Treffpunkte.
+ * Welche es hier gibt, sagt `fsBereiche`. Der gewählte steht kräftig mit
+ * einem Punkt in Minze darunter. Gibt es nur einen Bereich, steht gar keine
+ * Leiste da.
  */
 export function FsBereichTabs() {
   const { state, dispatch } = useApp()
@@ -27,18 +27,18 @@ export function FsBereichTabs() {
   if (bereiche.length < 2) return null
   const aktiv = aktiverFsBereich(state)
   return (
-    <div className="meeting-tabs plan-tabs fs-bereich-tabs">
+    <nav className="bereich-tabs" aria-label={t.tabFs}>
       {bereiche.map((bereich) => (
         <button
           key={bereich}
           type="button"
-          className={aktiv === bereich ? 'meeting-tab is-active' : 'meeting-tab'}
+          className={aktiv === bereich ? 'bereich-tab is-active' : 'bereich-tab'}
           aria-pressed={aktiv === bereich}
           onClick={() => dispatch({ type: 'setFsBereich', bereich })}
         >
           {t[BESCHRIFTUNG[bereich]]}
         </button>
       ))}
-    </div>
+    </nav>
   )
 }

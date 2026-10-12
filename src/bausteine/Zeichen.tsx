@@ -18,6 +18,13 @@ const PFADE = {
   /** Ohne Verbindung. */
   wolke: <path d="M7.2 18.6h9.8a4 4 0 0 0 .6-7.9 5.5 5.5 0 0 0-10.7 1.2 3.5 3.5 0 0 0 .3 6.7z" />,
   haken: <path d="m6.5 12.5 3.7 3.7L17.5 8.5" />,
+  drucken: (
+    <>
+      <path d="M7.5 9V4.5h9V9" />
+      <rect x="4" y="9" width="16" height="8" rx="1.5" />
+      <path d="M7.5 14.5h9V20h-9z" />
+    </>
+  ),
   glocke: (
     <>
       <path d="M6.5 16.5v-5.2a5.5 5.5 0 0 1 11 0v5.2l1.5 2H5z" />

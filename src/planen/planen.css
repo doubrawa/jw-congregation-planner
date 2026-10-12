@@ -14,14 +14,6 @@
   margin-top: 8px;
 }
 
-/* Die Reiter des Predigtdienstes stehen über der Woche — beim Ansehen klebte
-   das Wochendatum ohne jeden Abstand darunter (4.10.2026). Dieselben 14 px
-   wie zwischen Kopf und Reitern; beim Planen fällt der Rand mit dem der
-   Wochen-Navigation zusammen. */
-.fs-bereich-tabs {
-  margin-bottom: 14px;
-}
-
 .plan-hint {
   margin-top: 12px;
   font-size: calc(11.5px * var(--fs));
@@ -1045,26 +1037,9 @@
   width: 100%;
 }
 
-/* ---- Banner: diese Zusammenkunft findet nicht statt ----------------------- */
-
-.ausfall-banner {
-  margin-top: 12px;
-  background: var(--tWein);
-  border-radius: 10px;
-  padding: 9px 12px;
-  color: var(--wein);
-  line-height: 1.45;
-}
-
-.ausfall-name {
-  font-size: calc(12.5px * var(--fs));
-  font-weight: 600;
-}
-
-.ausfall-grund {
-  font-size: calc(11.5px * var(--fs));
-  margin-top: 2px;
-}
+/* Das Banner „diese Zusammenkunft findet nicht statt" steht seit T121 bei
+   seinem Baustein (components.css, `AusfallBanner`) — es zeigt sich auch beim
+   Ansehen. */
 
 /* Anlass der Woche (T64) — das Auswahlfeld über den beiden Zusammenkünften. */
 .woche-anlass {

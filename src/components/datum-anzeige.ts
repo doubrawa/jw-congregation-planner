@@ -20,6 +20,10 @@ const FORMATE = {
   kurzerWochentag: { weekday: 'short', day: 'numeric', month: 'long' },
   /** „Di., 8.9." — die Spalte vor einer Zeile auf dem Start */
   wochentagZahl: { weekday: 'short', day: 'numeric', month: 'numeric' },
+  /** „8.9." — unter dem Wochentag auf der Karte einer Zusammenkunft */
+  tagZahl: { day: 'numeric', month: 'numeric' },
+  /** „Dienstag" — der Name der Karte einer Zusammenkunft */
+  wochentag: { weekday: 'long' },
   /** „12. Oktober" — als Spanne „12.–18. Oktober" */
   tagMonat: { day: 'numeric', month: 'long' },
   /** „1. Dezember 2026" — als Zeitraum „1. Dezember 2026 – 28. Februar 2027" */

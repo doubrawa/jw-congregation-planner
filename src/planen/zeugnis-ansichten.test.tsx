@@ -98,7 +98,7 @@ afterEach(() => {
 })
 
 describe('Wer den Reiter sieht', () => {
-  const reiter = (c: HTMLElement) => [...c.querySelectorAll('.plan-tabs .meeting-tab')].map((b) => b.textContent)
+  const reiter = (c: HTMLElement) => [...c.querySelectorAll('.bereich-tab')].map((b) => b.textContent)
 
   it('beim Ansehen jeder, sobald es Termine gibt — ohne Termine fehlt er', () => {
     expect(reiter(zeige(ProgrammScreen, { screen: 'programm' }).container)).toContain(t.privZeugnis)

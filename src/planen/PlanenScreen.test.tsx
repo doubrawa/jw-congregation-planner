@@ -102,8 +102,15 @@ function zeige(over: Partial<AppState> = {}) {
  * zurück — derselbe Fehler, den `ProgrammScreen.test.tsx` am 21.9.2026 behob.
  */
 const seite = (c: HTMLElement): HTMLElement => (c.querySelector('.week-strip > .screen') as HTMLElement) ?? c
+/**
+ * Die Beschriftung eines Reiters: auf der Karte eines Tages ihr Name (T121:
+ * darunter stehen Datum und Uhrzeit), sonst der Text — beim Zeichen das
+ * Vorgelesene.
+ */
+const beschriftung = (b: Element): string =>
+  (b.querySelector('.meeting-tab-name') ?? b).textContent || (b.getAttribute('aria-label') ?? '')
 const reiter = (c: HTMLElement) =>
-  [...seite(c).querySelectorAll('.plan-tabs .meeting-tab')].map((b) => b.textContent ?? '')
+  [...seite(c).querySelectorAll('.plan-tabs .meeting-tab, .bereich-tab')].map(beschriftung)
 
 afterEach(cleanup)
 
@@ -141,7 +148,7 @@ describe('Die Reiter', () => {
     // Die Treffpunkte waren bis T120 ein vierter Reiter; sie sind jetzt das
     // Thema Predigtdienst und stehen im Menü.
     const { container } = zeige()
-    expect(reiter(container)).toEqual(['Dienstag', 'Sonntag', '✎'])
+    expect(reiter(container)).toEqual(['Dienstag', 'Sonntag', t.einstellungen])
   })
 
   it('der Predigtdienst hat vier: Treffpunkte der Woche, Gruppenbesuche, öffentliches Zeugnisgeben und Grundplan', () => {
@@ -191,7 +198,7 @@ describe('Der Kopf nennt das Thema (T120)', () => {
 describe('Der Grundplan im Predigtdienst (T120)', () => {
   it('ein Tipp auf den Reiter wechselt den Bereich', () => {
     const { container, dispatch } = zeige({ tab: 'fs' })
-    const grundplan = [...seite(container).querySelectorAll('.plan-tabs .meeting-tab')].find(
+    const grundplan = [...seite(container).querySelectorAll('.bereich-tab')].find(
       (b) => b.textContent === t.fsGrundplan,
     )!
     fireEvent.click(grundplan)
@@ -304,7 +311,7 @@ describe('Die Bearbeiten-Ansicht (T64)', () => {
   it('der Planer kommt über den Reiter hin', () => {
     const { container, dispatch } = zeige()
     const stift = [...seite(container).querySelectorAll('.plan-tabs .meeting-tab')].find(
-      (b) => b.textContent === '✎',
+      (b) => b.getAttribute('aria-label') === t.einstellungen,
     )!
     fireEvent.click(stift)
     expect(dispatch).toHaveBeenCalledWith({ type: 'setTab', tab: 'edit' })

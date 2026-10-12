@@ -1,41 +1,39 @@
-import { Fragment, useCallback, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
-import { istBlockSektion, mtab } from '../data/helpers'
-import { MeetingTabs } from '../components/MeetingTabs'
+import { Saal } from '../bausteine/Saal'
+import { Zeichen } from '../bausteine/Zeichen'
+import { anlassArt } from '../data/anlass'
+import { istAusgefallen, MEETING_TABS } from '../data/helpers'
+import { currentWeekIndex, meetingDate } from '../data/meeting-dates'
+import type { SaalLage } from '../data/saal'
+import type { MeetingKey, Week } from '../data/types'
 import { Bereichstitel } from '../components/Bereichstitel'
-import { WeekStrip } from '../components/WeekStrip'
+import { datumsFormat } from '../components/datum-anzeige'
+import { MeetingTabs } from '../components/MeetingTabs'
+import { TerminListe } from '../components/WeekBadges'
 import { WeekNav } from '../components/WeekNav'
-import { MemorialBanner, TerminListe, WeekChips } from '../components/WeekBadges'
-import { currentWeekIndex, meetingDateText } from '../data/meeting-dates'
-import { hatAuxKlasse } from '../data/aux-class'
-import { gehoertZu, isSong, splitOpeningSong } from '../data/helpers'
-import { LOCALES } from '../i18n/langs'
+import { WeekStrip } from '../components/WeekStrip'
 import { fill, useProgWeek, useT } from '../i18n/useT'
-import type { Lang, Meeting, MeetingTab, PartItem, Person, Week } from '../data/types'
-import { druckKennzeichen } from './druck'
-import { DruckWahl } from './DruckWahl'
-import { FsProgram } from './FsProgram'
-import { WeiterePlaeneAnsicht } from './WeiterePlaeneAnsicht'
-import { GruppenbesucheAnsicht } from './GruppenbesucheAnsicht'
-import { ZeugnisAnsicht } from './ZeugnisAnsicht'
 import { FsBereichTabs } from '../planen/FsBereichTabs'
 import { aktiverFsBereich } from '../planen/fs-bereiche'
+import { druckKennzeichen } from './druck'
+import { FsProgram } from './FsProgram'
+import { GruppenbesucheAnsicht } from './GruppenbesucheAnsicht'
 import { MonatDruckenContext, MonatsDruck } from './MonatsDruck'
+import { WeiterePlaeneAnsicht } from './WeiterePlaeneAnsicht'
+import { ZeugnisAnsicht } from './ZeugnisAnsicht'
+import { ZusammenkunftAnsicht } from './ZusammenkunftAnsicht'
 import './programm.css'
 import './print.css'
 
-/** Heutiges Datum (Tag + Monat) in der Sprache des Nutzers. */
-function heute(lang: Lang): string {
-  return new Intl.DateTimeFormat(LOCALES[lang], { day: 'numeric', month: 'long' }).format(new Date())
-}
-
 /**
- * Programm (Screen 2, Startscreen): Wochenprogramm beider Zusammenkünfte
- * mit Bereichs-Panels in Arbeitsheft-Farblogik und Hilfsdienste-Übersicht.
- * Angezeigt wird die Sprachvariante der App-Sprache, falls beim Import
- * mitgeholt (useProgWeek) — sonst die Versammlungssprache.
+ * **Die Versammlung ansehen** (T121): Zusammenkünfte, Predigtdienst und
+ * Weitere Pläne. Bei den Zusammenkünften die Woche, die Karten der beiden
+ * Tage und das Programm des gewählten (`ZusammenkunftAnsicht`). Angezeigt
+ * wird die Sprachvariante der App-Sprache, falls beim Import mitgeholt
+ * (useProgWeek) — sonst die Versammlungssprache.
  */
 export function ProgrammScreen() {
   const { state } = useApp()
@@ -99,7 +97,7 @@ export function ProgrammScreen() {
   )
 }
 
-/** Programm EINER Woche; welche, sagt der Zustand (im Streifen ueberschrieben). */
+/** Programm EINER Woche; welche, sagt der Zustand (im Streifen überschrieben). */
 function ProgrammBody() {
   const { state, dispatch } = useApp()
   const { t } = useT()
@@ -122,17 +120,18 @@ function ProgrammBody() {
 
   const isFs = state.tab === 'fs'
   const meeting = state.tab === 'we' ? week.we : week.mid // fs nutzt Meeting-Inhalt nicht
-  // Kanonische Fassung (deutsche Sektions-Labels) zum Erkennen von ERÖFFNUNG/
-  // ABSCHLUSS — dort wird das Lied aus dem Sammeltitel mittig+kursiv gezogen.
+  // Kanonische Fassung (deutsche Sektions-Labels) zum Erkennen von Eröffnung
+  // und Abschluss — dort steht das Lied im Sammeltitel.
   const rawMeeting = state.tab === 'we' ? rawWeek.we : rawWeek.mid
-  const me = eigenePerson(state)
   const tabName = state.tab === 'we' ? t.tabWe : isFs ? t.fsShort : t.tabMid
+  // Kongress (T64): Beide Zusammenkünfte fallen aus — statt der Karten der
+  // Tage steht das, und der Weg zu den Treffpunkten und zur nächsten.
+  const kongress = !isFs && anlassArt(rawWeek) === 'kongress'
 
   return (
-    <section className="screen">
-      {/* Titel des Themas (T120) und, für wen es zu planen ist, der Schalter
-          Ansehen/Planen. Im Ausdruck fehlt beides; dort ordnet die Zeile
-          darunter das Blatt zu. */}
+    <section className="screen prog">
+      {/* Titel des Themas (T120) und, für wen es zu planen ist, „Planen". Im
+          Ausdruck fehlt beides; dort ordnet die Zeile darunter das Blatt zu. */}
       <Bereichstitel />
       {/* Die Reiter des Predigtdienstes (Treffpunkte · Gruppenbesuche) stehen
           über der Woche, wie beim Planen. Ohne Besuche gibt es keine Leiste. */}
@@ -149,251 +148,138 @@ function ProgrammBody() {
         onPrev={() => dispatch({ type: 'prevWeek' })}
         onNext={() => dispatch({ type: 'nextWeek' })}
       >
-        <div className="prog-week-range">{tpw(week.range)}</div>
-        <div className="prog-week-book">{tpw(week.book)}</div>
+        <WochenZeile week={week} rawWeek={rawWeek} istAktuell={currentWeekIndex(state.weeks) === state.week} tpw={tpw} />
       </WeekNav>
 
-      <WeekChips week={week} showCurrent istAktuell={currentWeekIndex(state.weeks) === state.week} />
-
-      {/* Weitere Termine der Woche (T63): über den Reitern, weil sie zu keiner
-          Zusammenkunft gehören, sondern zur Woche — und damit auf jedem Reiter
-          und bei beiden Themen sichtbar bleiben. */}
+      {/* Weitere Termine der Woche (T63): über den Karten der Tage, weil sie zu
+          keiner Zusammenkunft gehören, sondern zur Woche — und damit bei beiden
+          Tagen und beiden Themen sichtbar bleiben. */}
       <TerminListe week={rawWeek} />
 
-      {/* Die Reiter gehören den Zusammenkünften; der Predigtdienst ist seit
-          T120 ein eigenes Thema im Menü. */}
-      {!isFs && (
-        <MeetingTabs
-          className="prog-tabs"
-          tab={state.tab}
-          week={rawWeek}
-          onChange={(tab) => dispatch({ type: 'setTab', tab })}
-        />
-      )}
-
-      {isFs ? (
+      {kongress ? (
+        <KongressKarte wi={state.week} />
+      ) : isFs ? (
         <FsProgram />
       ) : (
-        <ProgramMeeting
-          meeting={meeting}
-          rawMeeting={rawMeeting}
-          week={week}
-          rawWeek={rawWeek}
-          tab={state.tab}
-          me={me}
-          tpw={tpw}
-        />
+        <>
+          {/* Die Karten gehören den Zusammenkünften; der Predigtdienst ist seit
+              T120 ein eigenes Thema im Menü. */}
+          <MeetingTabs
+            tab={state.tab}
+            week={rawWeek}
+            onChange={(tab) => dispatch({ type: 'setTab', tab })}
+          />
+          <ZusammenkunftAnsicht
+            meeting={meeting}
+            rawMeeting={rawMeeting}
+            week={week}
+            rawWeek={rawWeek}
+            tab={state.tab}
+            me={eigenePerson(state)}
+            tpw={tpw}
+          />
+        </>
       )}
     </section>
   )
 }
 
-/** Programm einer Zusammenkunft (Datum, Bereichs-Panels, Hilfsdienste, Fußzeile). */
-function ProgramMeeting({
-  meeting,
-  rawMeeting,
+/**
+ * Die Mitte der Wochenwahl (T121, `GWoche`): die Woche groß, darunter ihr
+ * Anlass — Besuch des Kreisaufsehers, Gedächtnismahl, Kongress — oder, ohne
+ * Anlass, „Aktuelle Woche". Daneben das Bibellesen der Woche.
+ *
+ * Gefragt wird über `anlassArt`, nicht über die Wirkungen (`co`/`mem`): Der
+ * Kongress hat keine — er wirkt als Ausfall beider Zusammenkünfte (T64).
+ */
+function WochenZeile({
   week,
   rawWeek,
-  tab,
-  me,
+  istAktuell,
   tpw,
 }: {
-  meeting: Meeting
-  rawMeeting: Meeting
   week: Week
-  /** Unübersetzte Woche — der Termin wird aus den kanonischen Daten gerechnet. */
   rawWeek: Week
-  tab: MeetingTab
-  /** Die eigene Person — für den DU-Chip. Entschieden wird über `gehoertZu`. */
-  me: Person | undefined
+  istAktuell: boolean
   tpw: (s: string) => string
 }) {
-  const { state } = useApp()
-  const { t, tu } = useT()
-  // Ob es eine Zusätzliche Klasse gibt, steht in den Wochendaten — nicht am
-  // Schalter und erst recht nicht am bloßen Vorhandensein von `item.aux`:
-  // dessen Namen bleiben beim Ausschalten stehen, und das Programm zeigte
-  // danach weiter beide Räume.
-  const mitAux = hatAuxKlasse(rawMeeting)
+  const { t } = useT()
+  const art = anlassArt(rawWeek)
+  const anlass = art === 'co' ? t.coWoche : art === 'mem' ? t.memWoche : art === 'kongress' ? t.kongress : null
   return (
     <>
-      <MemorialBanner week={week} tab={tab} />
-
-      <div className="prog-meta-row">
-        {/* Gerechneter Termin statt des rohen date-Felds: importierte Wochen
-            tragen dort nur die Wochenspanne („7.–13. September"). */}
-        <p className="prog-meta">
-          {tpw(meetingDateText(rawWeek, mtab(tab), state.congregation.times))}
-        </p>
-        <DruckWahl />
-      </div>
-
-      {meeting.sections.map((section, si) => {
-        // ERÖFFNUNG/ABSCHLUSS tragen das Lied im Sammeltitel — herausgezogen
-        // als eigene mittig+kursive Zeile (einheitlich mit den übrigen Liedern).
-        //
-        // Gefragt wird die **Art** des Abschnitts, nicht sein Name: `section`
-        // ist hier die angezeigte (womöglich übersetzte) Fassung, `rawSection`
-        // die kanonische. Der Name griff bisher nur, weil ERÖFFNUNG und
-        // ABSCHLUSS die einzigen Überschriften sind, die der Import **nicht**
-        // aus der Zielsprache übernimmt — eine stille Verabredung mit
-        // `parse.ts`, an deren Gegenstück (`LABEL_LAC`) genau dieser Weg schon
-        // einmal gescheitert ist.
-        const rawSection = rawMeeting.sections[si]
-        const splitHere = rawSection ? istBlockSektion(rawSection) : false
-        return (
-          <div key={section.label} className="panel" data-farbe={section.farbe}>
-            <h2 className="panel-label">{tpw(section.label)}</h2>
-            {section.items.map((item, index) => {
-              if (isSong(item)) {
-                return (
-                  <div key={index} className="panel-song">
-                    {tpw(item.song)}
-                  </div>
-                )
-              }
-              const { song, rest } = splitHere
-                ? splitOpeningSong(tpw(item.title))
-                : { song: null, rest: '' }
-              return (
-                <Fragment key={index}>
-                  {song && <div className="panel-song">{song}</div>}
-                  <ProgramRow
-                    item={item}
-                    title={song ? rest : undefined}
-                    mitAux={mitAux}
-                    me={me}
-                    tpw={tpw}
-                  />
-                </Fragment>
-              )
-            })}
-          </div>
-        )
-      })}
-
-      {/* Ratgeber der Zusätzlichen Klasse — gehört zur ganzen Klasse, nicht
-          zu einem Punkt, deshalb eine eigene Zeile hinter dem Programm. */}
-      {mitAux && rawMeeting.auxRatgeber && (
-        <div className="panel panel--pb16" data-farbe="neutral2">
-          <h2 className="panel-label">{t.auxKlassen}</h2>
-          {/* Der Titel steht hier schon in der Sprache des Lesers (`t.…`) und
-              geht deshalb als fertiger Text hinein, nicht durch `tpw`: „Ratgeber"
-              ist ein Programm-Fragment, das der Übersetzer sonst ein zweites Mal
-              anfasst — bei deutscher App und englischer Versammlungssprache stand
-              „Counselor" unter der deutschen Überschrift. */}
-          {/* Kein echter Programmpunkt, sondern eine Zeile für den Ratgeber.
-              Deshalb ohne Kennung: `ProgramRow` verlangt keine (siehe dort). */}
-          <ProgramRow
-            item={{ title: t.auxRatgeber, names: [rawMeeting.auxRatgeber] }}
-            title={t.auxRatgeber}
-            mitAux={false}
-            me={me}
-            tpw={tpw}
-          />
-        </div>
-      )}
-
-      <div className="panel panel--pb16 prog-helpers" data-farbe="neutral2">
-        <h2 className="panel-label">{t.hilfsdienste}</h2>
-        <div className="prog-helpers-grid">
-          {state.services.map((service) => {
-            const arr = meeting.helpers[service.key] ?? []
-            /*
-             * Platz für Platz, genau so weit wie `service.count` reicht — die
-             * gleiche Grenze, nach der `countOpenSlots`, `deriveMyTasks` und
-             * `helperWorkload` rechnen.
-             *
-             * Vorher wurden erst die leeren Namen weggeworfen und dann
-             * abgeschnitten. Das verschob die Besetzung nach vorn (Platz 2
-             * besetzt, Platz 1 offen → „Anna · offen") und, schlimmer, zeigte
-             * einen Namen, den es gar nicht mehr gibt: Reduziert der Planer die
-             * Platzzahl, bleiben die Namen dahinter in den Wochendaten stehen —
-             * das Programmblatt nannte dann jemanden, den die Aufgabenliste,
-             * die Auslastung und der Planen-Screen längst nicht mehr kennen.
-             */
-            const cells = Array.from({ length: service.count }, (_unused, pos) => {
-              const name = arr[pos]?.name
-              return name ? tu(name) : t.offenWort
-            })
-            return (
-              <div key={service.key}>
-                <div className="prog-helper-label">{tu(service.name).toUpperCase()}</div>
-                <div className="prog-helper-names">{cells.join(' · ')}</div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      <div className="prog-footer">
-        <span>{tpw(meeting.end)}</span>
-        {/* „Stand" stand als festes Datum aus dem Prototyp hier (4. September)
-            und war damit auf jedem Ausdruck falsch. Gemeint ist der Tag, an
-            dem das Blatt entsteht — also heute, in der Sprache des Nutzers. */}
-        <span>{fill(t.stand, { datum: heute(state.lang) })}</span>
-      </div>
+      <span className="woche-zeitraum">{tpw(week.range)}</span>
+      <span className="woche-unterzeile">
+        {anlass ? (
+          <span className="woche-hinweis">{anlass}</span>
+        ) : (
+          istAktuell && <span className="woche-hinweis is-aktuell">{t.aktuelleWoche}</span>
+        )}
+        {week.book && <span className="woche-buch">{tpw(week.book)}</span>}
+      </span>
     </>
   )
 }
 
-function ProgramRow({
-  item,
-  title,
-  mitAux,
-  me,
-  tpw,
-}: {
-  /**
-   * Der Programmpunkt — **ohne seine Kennung**, denn diese Zeile liest sie
-   * nicht. Ein echter `PartItem` passt unverändert hinein; zusätzlich kann so
-   * die Ratgeber-Zeile hier durch, die gar kein Programmpunkt ist. Sie mit
-   * einer erfundenen Kennung auszustatten hieße, die Zusicherung „jede `iid`
-   * ist die echte Kennung eines Punkts" an einer Stelle zu brechen, an der es
-   * niemandem auffällt.
-   */
-  item: Omit<PartItem, 'iid'>
-  title?: string // überschriebener Titel (Lied bereits herausgezogen)
-  mitAux: boolean // Zusammenkunft mit Zusätzlicher Klasse
-  /** Die eigene Person — für den DU-Chip. Entschieden wird über `gehoertZu`. */
-  me: Person | undefined
-  tpw: (s: string) => string
-}) {
-  const { t, tu } = useT()
-  const zweiRaeume = mitAux && item.aux != null
+/** Alle 18 Plätze leer — der Saal einer Woche, in der nichts stattfindet. */
+const LEERER_SAAL: readonly SaalLage[] = Array.from({ length: 18 }, () => 'offen')
+
+/**
+ * **Kongress** (T121, Entwurf `GSonderwoche`): In dieser Woche fallen alle
+ * Zusammenkünfte aus. Statt eines leeren Programms der leere Saal, und zwei
+ * Wege weiter: zu den Treffpunkten dieser Woche und zur nächsten
+ * Zusammenkunft, die stattfindet.
+ */
+function KongressKarte({ wi }: { wi: number }) {
+  const { state, dispatch } = useApp()
+  const { t } = useT()
+  const naechste = naechsteNach(state.weeks, wi)
   return (
-    <div className={item.num != null ? 'prog-row prog-row--num' : 'prog-row'}>
-      {item.num != null && <div className="prog-num">{item.num}.</div>}
-      <div className="prog-row-text">
-        <div className="prog-title">{title ?? tpw(item.title)}</div>
-        {item.meta && <div className="prog-item-meta">{tpw(item.meta)}</div>}
-      </div>
-      <div className="prog-names">
-        {/*
-          Bei einer Zusätzlichen Klasse stehen beide Räume untereinander, jeder
-          mit seiner Überschrift. Ohne Klasse bleibt es die schlichte
-          Namensliste von vorher.
-        */}
-        {(zweiRaeume ? [false, true] : [false]).map((aux) => (
-          <Fragment key={aux ? 'aux' : 'haupt'}>
-            {zweiRaeume && <div className="prog-raum">{aux ? t.auxKlasse : t.auxHauptsaal}</div>}
-            {(aux ? item.aux ?? [] : item.names).map((slot, index) => (
-              <div key={index} className="prog-name-block">
-                <div className="prog-name">
-                  {/* „Id vor Name", wie überall: `gehoertZu` ist die eine
-                      Stelle, an der entschieden wird, wem eine Zuteilung
-                      gehört. Der bloße Namensvergleich gab den DU-Chip an
-                      beide Namensgleichen — und an einen Verkündiger, der
-                      zufällig heißt wie der Gastredner. */}
-                  {me && gehoertZu(slot, me) && <span className="chip-du">{t.chipDu}</span>}
-                  <span>{slot.name || t.offenDash}</span>
-                </div>
-                {slot.rolle && <div className="prog-role">{tu(slot.rolle)}</div>}
-              </div>
-            ))}
-          </Fragment>
-        ))}
-      </div>
-    </div>
+    <>
+      <section className="karte karte--held kongress-karte">
+        <Saal lagen={LEERER_SAAL} label={t.kongress} />
+        <h2 className="kongress-titel">{t.kongress}</h2>
+        <p className="kongress-text">{t.kongressAusfall}</p>
+      </section>
+      <nav className="karte" aria-label={t.kongress}>
+        <button
+          type="button"
+          className="kongress-weg"
+          onClick={() => dispatch({ type: 'navigate', screen: 'programm', woche: { wi, tab: 'fs' } })}
+        >
+          <span>{t.treffpunkteDieserWoche}</span>
+          <Zeichen name="weiter" />
+        </button>
+        {naechste && (
+          <button
+            type="button"
+            className="kongress-weg"
+            onClick={() => dispatch({ type: 'navigate', screen: 'programm', woche: { wi: naechste.wi, tab: naechste.tab } })}
+          >
+            <span>
+              {fill(t.naechsteZusammenkunft, {
+                wann: datumsFormat(state.lang, 'kurzerWochentag').format(
+                  meetingDate(naechste.week, naechste.tab, state.congregation.times),
+                ),
+              })}
+            </span>
+            <Zeichen name="weiter" />
+          </button>
+        )}
+      </nav>
+    </>
   )
+}
+
+/**
+ * Die erste Zusammenkunft nach der Woche `wi`, die stattfindet — in der
+ * Reihenfolge der Wochen, je Woche unter der Woche vor dem Wochenende.
+ */
+function naechsteNach(weeks: readonly Week[], wi: number): { wi: number; tab: MeetingKey; week: Week } | null {
+  for (let i = wi + 1; i < weeks.length; i++) {
+    const week = weeks[i]
+    const tab = MEETING_TABS.find((key) => !istAusgefallen(week, key))
+    if (week && tab) return { wi: i, tab, week }
+  }
+  return null
 }

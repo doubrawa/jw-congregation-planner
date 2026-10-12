@@ -129,9 +129,10 @@ einer Gruppe – sonst **Verkündiger**.
 ## 2. Planen: Zuteilungen vornehmen
 
 Unter **Zusammenkünfte** schaltest du oben rechts auf **Planen** und teilst die
-Aufgaben und Hilfsdienste einer Woche zu. Die Reiter wechseln zwischen der
-**Zusammenkunft unter der Woche** und **am Wochenende**; daneben steht der
-Stift für die Woche. Die Zusammenkünfte für den Predigtdienst sind ein eigenes
+Aufgaben und Hilfsdienste einer Woche zu. Die Karten der beiden Tage (mit
+Datum und Uhrzeit) wechseln zwischen der **Zusammenkunft unter der Woche** und
+**am Wochenende**; daneben steht die Karte mit dem **Einstellungen**-Zeichen
+für die Woche. Die Zusammenkünfte für den Predigtdienst sind ein eigenes
 Thema im Menü (Abschnitt 5). Mit ‹ › wählst du die Woche – auf Handy und
 Tablet geht auch seitwärts wischen.
 
@@ -228,11 +229,11 @@ Manchmal weicht eine Woche ab — mehrere Versammlungen teilen sich einen Saal,
 eine hat Dienstwoche, und ihr müsst euren Tag verschieben. Oder es ist
 Kongress und die Zusammenkunft entfällt ganz.
 
-Dafür gibt es beim Planen der Zusammenkünfte einen eigenen Reiter neben
-„Dienstag" und „Sonntag": den **Stift** (✎). Er gehört der ganzen Woche,
-nicht einer einzelnen Zusammenkunft — deshalb stellst du dort **beide**
-Zusammenkünfte ein, ohne den Reiter zu wechseln. Je Zusammenkunft steht ein
-Feld:
+Dafür gibt es beim Planen der Zusammenkünfte eine eigene Karte neben
+„Dienstag" und „Sonntag": die mit dem **Einstellungen**-Zeichen (drei Regler).
+Sie gehört der ganzen Woche, nicht einer einzelnen Zusammenkunft — deshalb
+stellst du dort **beide** Zusammenkünfte ein, ohne die Karte zu wechseln. Je
+Zusammenkunft steht ein Feld:
 
 | Bedienelement | Wirkung |
 | --- | --- |
@@ -245,7 +246,7 @@ Wählst du wieder den regulären Tag bzw. die reguläre Uhrzeit, ist die Verlegu
 damit aufgehoben; das Feld verliert seine Hervorhebung.
 
 **Was daran hängt.** Eine Verlegung zieht alles mit: den Termin in „Meine
-Aufgaben", das S-89-Formular, die Erinnerungen und die Beschriftung der Reiter.
+Aufgaben", das S-89-Formular, die Erinnerungen und die Karten der Tage.
 Fällt eine Zusammenkunft aus, hat sie keine offenen Plätze mehr, taucht in
 keiner Konfliktprüfung auf, wird nicht automatisch zugeteilt, verschickt keine
 Erinnerungen und zählt bei niemandem auf die Auslastung.
@@ -263,8 +264,8 @@ Zu einer Woche gehört manchmal mehr als die beiden Zusammenkünfte und die
 Treffpunkte — eine **Pionierbesprechung**, eine **Besprechung mit
 Dienstamtgehilfen und Ältesten**, was sonst ansteht.
 
-Im **Stift**-Reiter (✎) legst du mit **+ HINZUFÜGEN** so viele Termine an, wie
-du brauchst. Jeder hat vier Felder, alle bis auf den Namen freiwillig:
+Auf der Karte mit dem **Einstellungen**-Zeichen legst du mit **+ HINZUFÜGEN**
+so viele Termine an, wie du brauchst. Jeder hat vier Felder, alle bis auf den Namen freiwillig:
 
 | Feld | Wofür |
 | --- | --- |
@@ -273,9 +274,9 @@ du brauchst. Jeder hat vier Felder, alle bis auf den Namen freiwillig:
 | **Uhrzeit** | |
 | **Ort** | Freitext, z. B. „Königreichssaal" |
 
-Die Termine erscheinen beim **Ansehen** über den Reitern — also auf jedem
-Reiter und auch im Predigtdienst, denn sie gehören zu keiner einzelnen
-Zusammenkunft. **Alle sehen sie**,
+Die Termine erscheinen beim **Ansehen** über den Karten der Tage — also bei
+beiden Zusammenkünften und auch im Predigtdienst, denn sie gehören zu keiner
+einzelnen Zusammenkunft. **Alle sehen sie**,
 und zwar nach Wochentag und Uhrzeit geordnet; Termine ohne Tag stehen hinten.
 
 > **Ein Termin ist eine Ankündigung, keine Zuteilung.** Es gibt dazu keinen
@@ -1000,13 +1001,17 @@ Blättern kommst du deshalb nur bis zur ältesten geladenen Woche zurück.
 
 ## 9. Pläne drucken
 
-Beim **Ansehen** der Zusammenkünfte steht über jeder Zusammenkunft ein
-**Drucken**‑Knopf – und im **Predigtdienst** über den Treffpunkten genauso. Ein
-Tipp darauf klappt die Wahl auf:
+Beim **Ansehen** der Zusammenkünfte steht neben dem Termin jeder Zusammenkunft
+das **Drucker**‑Zeichen – und im **Predigtdienst** über den Treffpunkten
+genauso. Ein Tipp darauf öffnet das Blatt **Drucken** mit der Wahl; erst
+**Drucken** darin druckt:
 
-- **Diese Woche** – die Woche und der Reiter, die gerade zu sehen sind.
+- **Diese Woche** (vorgewählt) – die Woche und die Zusammenkunft, die gerade zu
+  sehen sind.
 - **Ganzer Monat · September 2026** – alle Wochen dieses Monats hintereinander,
   für den Aushang am schwarzen Brett.
+
+Wo am Bildschirm **„Du"** steht, druckt das Blatt den Namen.
 
 Gedruckt wird immer nur, was du gerade siehst. Für alle drei – unter der Woche,
 Wochenende, Treffpunkte – druckst du dreimal.

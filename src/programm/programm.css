@@ -1,203 +1,391 @@
-/* Programm (Startscreen) — Wochen-Navigation, Bereichs-Panels, Hilfsdienste. */
+/*
+ * Die Versammlung ansehen (T121, Entwürfe `GAnsehenWoche`, `GTabletWoche`,
+ * `GSonderwoche`, `GDrucken`): Termin und Drucken, je Abschnitt eine Karte
+ * mit Farbbalken und Lied, die Punkte mit ihren Personen, die Hilfsdienste.
+ * Am Handy stehen die Personen unter dem Punkt, ab dem Tablet daneben.
+ */
 
-.prog-week-range {
-  font-family: var(--font-serif);
-  font-size: calc(24px * var(--fs));
-  font-weight: 500;
-  line-height: 1.1;
+.screen.prog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.prog-week-book {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: calc(14px * var(--fs));
-  color: var(--mut);
-  margin-top: 3px;
-}
-
-.prog-tabs {
-  margin-top: 14px;
-}
-
-.prog-meta {
-  margin-top: 14px;
-  font-size: calc(12px * var(--fs));
-  color: var(--mut);
-}
-
-/* Datum links, Drucken-Button rechts auf einer Linie. */
+/* Datum links, Drucken rechts auf einer Linie. */
 .prog-meta-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-height: 44px;
 }
 
-.prog-print-btn {
-  flex: none;
-  margin-top: 14px;
-  border: 1px solid var(--bord);
-  border-radius: var(--r-pill);
-  padding: 6px 14px;
-  font-size: calc(11px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--mut);
+.prog-meta {
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
 }
 
-.prog-print-btn:hover {
-  border-color: var(--acc);
-  color: var(--acc);
-}
-
-/* Druck-Auswahl (T105): diese Woche oder der ganze Monat. Klappt unter dem
-   Knopf auf, bündig mit seinem Ende — liegt über dem Programm darunter, aber
-   unter der klebenden Kopfzeile. */
-.druck-wahl {
-  position: relative;
-  flex: none;
-}
-
-.druck-menue {
-  position: absolute;
-  top: calc(100% + 6px);
-  inset-inline-end: 0;
-  z-index: var(--z-menue);
-  display: flex;
-  flex-direction: column;
-  min-width: 200px;
-  padding: 6px;
-  border: 1px solid var(--bord);
-  border-radius: 12px;
-  background: var(--card);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-}
-
-.druck-option {
-  padding: 10px 12px;
-  border-radius: 8px;
-  text-align: start;
-  font-size: calc(13px * var(--fs));
-  font-weight: 500;
-  color: var(--ink);
-  white-space: nowrap;
-}
-
-.druck-option:hover,
-.druck-option:focus-visible {
-  background: var(--hov);
-}
-
-/* Über den Treffpunkten und den Plänen ohne Woche (Gruppenbesuche,
-   Zeugnisgeben, Weitere Pläne) steht nur der Knopf — ans Ende der Zeile. */
+/* Über den Treffpunkten und den Plänen ohne Woche steht nur der Knopf — ans
+   Ende der Zeile. */
 .druck-zeile {
   justify-content: flex-end;
 }
 
-/* ---- Programmpunkt-Zeilen ------------------------------------------------ */
+.druck-knopf {
+  background: transparent;
+  color: var(--text2);
+}
 
-/*
- * minmax(0, 1fr) statt 1fr: eine Grid-Spalte hat sonst min-width:auto und kann
- * nicht unter die Breite ihres längsten Wortes schrumpfen — die Namensspalte
- * würde aus der Karte gedrückt (sichtbar bei grosser Schrift oder langen
- * Namen auf schmalen Geräten). Die Nummernspalte darf über 20px hinauswachsen,
- * damit auch „10.“ bei grosser Schrift noch hineinpasst.
- */
-.prog-row {
+/* Drucken für die Pläne ohne Woche (Gruppenbesuche, Zeugnisgeben, Weitere
+   Pläne) — bis sie ihr Kleid bekommen (Phase 4b/4c). */
+.prog-print-btn {
+  flex: none;
+  min-height: 44px;
+  padding: 4px 16px;
+  border: 1.5px solid var(--umriss);
+  border-radius: 22px;
+  color: var(--text);
+  font-size: calc(14.5px * var(--fs));
+  font-weight: 600;
+}
+
+/* ---- Das Blatt „Drucken" ------------------------------------------------------ */
+
+.druck-optionen {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.druck-option {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 12px;
+  min-height: 64px;
+  padding: 8px 16px;
+  border: 1.5px solid transparent;
+  border-radius: 20px;
+  background: var(--feld);
+  text-align: start;
+}
+
+.druck-option[aria-checked='true'] {
+  border-color: var(--akzent-text);
+}
+
+.druck-option-kreis {
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--umriss);
+  border-radius: 50%;
+}
+
+.druck-option[aria-checked='true'] .druck-option-kreis {
+  border-color: var(--akzent-text);
+  background: radial-gradient(circle, var(--akzent-text) 0 5px, transparent 6px);
+}
+
+.druck-option-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.druck-option-titel {
+  font-weight: 600;
+}
+
+.druck-fuss {
+  flex: none;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--panel-hair);
-  align-items: baseline;
+  gap: 8px;
+  padding-block-start: 16px;
 }
 
-.prog-row--num {
-  grid-template-columns: minmax(20px, auto) minmax(0, 1fr) auto;
+/* ---- Ein Abschnitt als Karte --------------------------------------------------- */
+
+.prog-abschnitt {
+  --abschnitt-farbe: var(--text2);
+
+  display: flex;
+  flex-direction: column;
+  padding: 6px 18px 8px;
+  border-radius: 24px;
+  background: var(--karte);
 }
 
-.panel .prog-row:last-child {
-  border-bottom-color: transparent;
+.prog-abschnitt[data-farbe='petrol'] {
+  --abschnitt-farbe: var(--sek1);
 }
 
-.prog-num {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-weight: 500;
+.prog-abschnitt[data-farbe='gold'] {
+  --abschnitt-farbe: var(--sek2);
+}
+
+.prog-abschnitt[data-farbe='wein'] {
+  --abschnitt-farbe: var(--sek3);
+}
+
+.prog-abschnitt-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+}
+
+/* Der Farbbalken vor dem Namen: die Farbe des Arbeitshefts. */
+.prog-abschnitt-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--abschnitt-farbe);
   font-size: calc(14px * var(--fs));
-  color: var(--panel-accent);
+  font-weight: 600;
 }
 
-/*
- * Titel und Zusatz als eigene Spalte. `min-width: 0` ist der entscheidende
- * Teil: ohne das darf ein Gitter-Element nicht unter seine kleinste
- * Inhaltsbreite schrumpfen — und die ist bei einem langen deutschen Wort wie
- * „Versammlungsbibelstudium" das ganze Wort. Der Titel lief dann in die
- * Namensspalte und legte sich über die Namen.
- */
+.prog-abschnitt-name::before {
+  content: '';
+  flex: none;
+  width: 4px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--abschnitt-farbe);
+}
+
+.prog-lied {
+  flex: none;
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
+}
+
+/* ---- Ein Punkt --------------------------------------------------------------------- */
+
+/* Am Handy eine Spalte — Titel, Zusatz, darunter die Personen. `minmax(0, 1fr)`
+   statt `1fr`: Eine Gitterspalte hat sonst min-width:auto und bleibt so breit
+   wie ihr längstes Wort. */
+.prog-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 3px;
+  padding: 10px 0 12px;
+  border-block-start: 1px solid var(--linie);
+}
+
+/* Titel und Zusatz als eigene Spalte. `min-width: 0`: Ohne das darf ein
+   Gitter-Element nicht unter seine kleinste Inhaltsbreite schrumpfen — und die
+   ist bei einem langen deutschen Wort wie „Versammlungsbibelstudium" das ganze
+   Wort. */
 .prog-row-text {
   min-width: 0;
 }
 
 .prog-title {
-  font-family: var(--font-serif);
-  font-size: calc(15px * var(--fs));
-  font-weight: 500;
-  line-height: 1.35;
-  /*
-   * Echte Silbentrennung statt hartem Abschneiden: Die Sprache steht am
-   * <html>-Element und wird bei jedem Sprachwechsel mitgeführt (store.tsx),
-   * der Browser trennt also nach den Regeln der jeweiligen Sprache.
-   * `break-word` bleibt als Notbremse für Wörter, die er nicht trennen kann
-   * (fremde Sprache, Eigennamen) — lieber ein unschöner Umbruch als
-   * übereinanderliegender Text.
-   */
+  font-size: calc(16px * var(--fs));
+  font-weight: 600;
+  line-height: 1.3;
+  /* Echte Silbentrennung nach der Sprache am <html>-Element; `break-word`
+     als Notbremse für Wörter, die der Browser nicht trennen kann. */
   -webkit-hyphens: auto;
   hyphens: auto;
   overflow-wrap: break-word;
 }
 
-.prog-item-meta {
-  font-size: calc(11.5px * var(--fs));
-  color: var(--mut);
-  margin-top: 3px;
+.prog-num {
+  color: var(--text3);
+  font-weight: 500;
 }
 
+.prog-item-meta {
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
+}
+
+/* Letzte Sicherung: Ein einzelner sehr langer Name bricht um, statt die Spalte
+   über die Karte hinaus aufzublähen. */
 .prog-names {
-  text-align: end;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   min-width: 0;
-  /* Letzte Sicherung: ein einzelner sehr langer Name bricht um, statt die
-     Spalte aufzublähen. */
   overflow-wrap: break-word;
 }
 
-.prog-name-block + .prog-name-block {
-  margin-top: 5px;
+/* Eine Person: Punkt, Name, Rolle — die eigene als „Du" in Minze. */
+.prog-person {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 9px;
+  min-width: 0;
+}
+
+.prog-person-punkt {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--text);
+}
+
+.prog-person.is-du .prog-person-punkt {
+  background: var(--akzent);
+}
+
+.prog-person.is-offen .prog-person-punkt {
+  border: 1.5px dashed var(--text3);
+  background: transparent;
 }
 
 .prog-name {
-  font-size: calc(12.5px * var(--fs));
-  font-weight: 600;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 5px;
+  min-width: 0;
+  font-weight: 500;
+  overflow-wrap: break-word;
 }
 
-.chip-du {
-  background: var(--acc);
-  color: var(--onAcc);
-  border-radius: var(--r-pill);
-  padding: 1px 7px;
-  font-size: calc(9px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.08em;
+.prog-person.is-offen .prog-name {
+  color: var(--text3);
+}
+
+.prog-du {
+  color: var(--akzent-text);
+  font-weight: 700;
 }
 
 .prog-role {
-  font-size: calc(11px * var(--fs));
-  color: var(--mut);
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
+}
+
+/* Gedruckt wird der eigene Name statt „Du" — der Aushang gilt allen. */
+.nur-druck {
+  display: none;
+}
+
+/* Raum-Überschrift (Hauptsaal / Zusätzliche Klasse) — nur, wenn der Punkt
+   tatsächlich in beiden Räumen läuft. */
+.prog-raum {
+  padding-block-start: 4px;
+  color: var(--text3);
+  font-size: calc(12.5px * var(--fs));
+  font-weight: 600;
+}
+
+.prog-names > .prog-raum:first-child {
+  padding-block-start: 0;
+}
+
+/* ---- Hilfsdienste -------------------------------------------------------------- */
+
+.prog-dienst {
+  display: grid;
+  grid-template-columns: minmax(0, 132px) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 8px;
+  min-height: 46px;
+  padding-block: 6px;
+  border-block-start: 1px solid var(--linie);
+}
+
+.prog-dienst-name {
+  color: var(--text3);
+  font-size: calc(14.5px * var(--fs));
+  overflow-wrap: break-word;
+}
+
+.prog-dienst-wer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+}
+
+.prog-du-pille {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: var(--akzent);
+  color: var(--auf-akzent);
+  font-weight: 700;
+}
+
+.prog-dienst-namen {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.prog-dienst-offen {
+  color: var(--text3);
+}
+
+/* Die Fußzeile („Stand") gehört dem Ausdruck. */
+.prog-footer {
+  display: none;
+}
+
+/* ---- Kongress: alle Zusammenkünfte fallen aus -------------------------------------- */
+
+.kongress-karte {
+  align-items: center;
+  gap: 6px;
+  padding: 28px 22px 26px;
+  text-align: center;
+}
+
+.kongress-karte .saal {
+  width: 150px;
+}
+
+.kongress-titel {
+  padding-block-start: 10px;
+  font-size: calc(24px * var(--fs));
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.kongress-text {
+  max-width: 270px;
+  color: var(--text2);
+}
+
+.kongress-weg {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 54px;
+  font-weight: 600;
+  text-align: start;
+}
+
+.kongress-weg + .kongress-weg {
+  border-block-start: 1px solid var(--linie);
+}
+
+.kongress-weg .zeichen {
+  width: 20px;
+  height: 20px;
+  color: var(--text3);
+}
+
+/* ---- Ab dem Tablet: die Personen neben dem Punkt (`GTabletWoche`) ---------------- */
+
+@media (min-width: 768px) {
+  .prog-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+    align-items: start;
+    column-gap: 16px;
+  }
+
+  .prog-names {
+    padding-block-start: 2px;
+  }
 }
 
 /* ---- Treffpunkte (Zusammenkünfte für den Predigtdienst) ------------------ */
@@ -302,53 +490,4 @@
   font-size: calc(11px * var(--fs));
   color: var(--mut);
   margin-top: 1px;
-}
-
-/* ---- Hilfsdienste ---------------------------------------------------------- */
-
-.prog-helpers-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px 18px;
-  margin-top: 8px;
-}
-
-.prog-helper-label {
-  font-size: calc(9.5px * var(--fs));
-  letter-spacing: 0.14em;
-  color: var(--mut);
-}
-
-.prog-helper-names {
-  font-size: calc(12.5px * var(--fs));
-  font-weight: 600;
-  margin-top: 3px;
-}
-
-/* ---- Fußzeile ---------------------------------------------------------------- */
-
-.prog-footer {
-  margin-top: 16px;
-  display: flex;
-  justify-content: space-between;
-  font-size: calc(11px * var(--fs));
-  color: var(--mut);
-}
-
-/*
- * Raum-Überschrift über einer Namensspalte (Hauptsaal / Zusätzliche Klasse).
- * Nur vorhanden, wenn der Punkt tatsächlich in beiden Räumen läuft.
- */
-.prog-raum {
-  margin-top: 6px;
-  font-size: calc(10.5px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--mut);
-}
-
-/* Die erste Überschrift sitzt schon am oberen Rand der Spalte. */
-.prog-names > .prog-raum:first-child {
-  margin-top: 0;
 }

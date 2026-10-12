@@ -1,9 +1,10 @@
 import { useApp } from '../app/context'
-import { MEETING_TABS } from '../data/helpers'
-import { meetingOffset, versatzAbMontag } from '../data/meeting-dates'
-import { LOCALES } from '../i18n/langs'
+import { Zeichen } from '../bausteine/Zeichen'
+import { istAusgefallen, MEETING_TABS } from '../data/helpers'
+import { meetingDate, meetingTime, versatzAbMontag } from '../data/meeting-dates'
 import { fill, useT } from '../i18n/useT'
 import type { MeetingTab, Week } from '../data/types'
+import { datumsFormat } from './datum-anzeige'
 import './components.css'
 
 interface MeetingTabsProps {
@@ -20,7 +21,7 @@ interface MeetingTabsProps {
    * Abweichungen. Nur im Planen und nur für Planer; das Ansehen ist für alle
    * nur lesend, und der Gruppenaufseher plant ohnehin nur den Predigtdienst.
    *
-   * Er trägt ein Symbol statt eines Wortes. Das ist keine Sparsamkeit an der
+   * Er trägt ein Zeichen statt eines Wortes. Das ist keine Sparsamkeit an der
    * falschen Stelle, sondern die Konsequenz aus `ui.test.ts`: Jeder neue
    * Schlüssel verlangt 33 Übersetzungen, und erfunden wird hier keine. Der
    * vorgelesene Name kommt deshalb aus `einstellungen` — die Ansicht *sind* die
@@ -28,67 +29,67 @@ interface MeetingTabsProps {
    */
   showEdit?: boolean
   /**
-   * Die gezeigte Woche. Weicht sie ab (T30), steht auf dem Reiter ihr
+   * Die gezeigte Woche. Weicht sie ab (T30), steht auf der Karte ihr
    * **tatsächlicher** Tag — nicht der Rhythmus aus den Einstellungen. Sonst
    * stünde „Sonntag" über einer Zusammenkunft, die auf Samstag verlegt wurde.
-   * Ohne Woche gilt weiterhin der Rhythmus.
+   * Ohne Woche gilt weiterhin der Rhythmus, und das Datum fehlt.
    */
   week?: Week
 }
 
-/** Wochentagsname (App-Sprache) für einen Versatz 0..6 (Montag..Sonntag). */
-function weekdayName(offset: number, locale: string): string {
-  const monday = Date.UTC(2024, 0, 1) // 1. Jan 2024 = Montag
-  return new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone: 'UTC' }).format(
-    new Date(monday + offset * 864e5),
-  )
-}
-
 /**
- * Reiter für die beiden Zusammenkünfte (Wochentag aus den Zusammenkunftszeiten
- * der Versammlung) und optional die Bearbeiten-Ansicht. Als gefüllte Pillen
- * gestaltet.
+ * **Die beiden Zusammenkünfte der Woche als Karten** (T121, `GAnsehenWoche`):
+ * je Karte der Wochentag, darunter Datum und Uhrzeit — „Dienstag · 8.9. ·
+ * 19:00". Die gewählte trägt einen Rand. Eine ausgefallene steht
+ * durchgestrichen da (T30).
  *
- * Sichtbar steht nur der Wochentag: „Versammlung“ stünde auf beiden Reitern und
- * unterscheidet sie nicht, macht die Zeile aber so breit, dass auf dem Handy der
- * dritte Reiter aus dem Bild rutscht. Der volle Text bleibt als aria-label für
- * Screenreader erhalten. Reicht die Breite trotzdem nicht (lange Wochentage in
- * anderen Sprachen, großer Schriftgrad), bricht die Leiste um — alle Reiter
- * müssen sichtbar sein, seitliches Scrollen findet man nicht.
+ * Vorgelesen wird „Versammlung Dienstag, 8.9. · 19:00" (`versammlungTag`): Der
+ * Wochentag allein unterschiede die Karten, sagte aber nicht, wofür sie stehen.
  */
 export function MeetingTabs({ tab, onChange, className, showEdit = false, week }: MeetingTabsProps) {
   const { state } = useApp()
   const { t } = useT()
   const zeiten = state.congregation.times
-  const locale = LOCALES[state.lang]
-  // [Schlüssel, sichtbare Beschriftung, vorgelesene Beschriftung]
-  const tabs: ReadonlyArray<[MeetingTab, string, string]> = [
-    ...MEETING_TABS.map((key): [MeetingTab, string, string] => {
-      // Verlegte Woche → ihr echter Tag (T30); sonst der Rhythmus.
-      const versatz = week
-        ? meetingOffset(week, key, zeiten)
-        : versatzAbMontag(zeiten[key].wd)
-      const day = weekdayName(versatz, locale)
-      return [key, day, fill(t.versammlungTag, { tag: day })]
-    }),
-    ...(showEdit
-      ? ([['edit', '✎', t.einstellungen]] as ReadonlyArray<[MeetingTab, string, string]>)
-      : []),
-  ]
+  const tagName = datumsFormat(state.lang, 'wochentag')
+  const tagZahl = datumsFormat(state.lang, 'tagZahl')
+
   return (
-    <div className={className ? `meeting-tabs ${className}` : 'meeting-tabs'}>
-      {tabs.map(([key, label, full]) => (
+    <div className={['meeting-tabs', showEdit ? 'mit-bearbeiten' : '', className ?? ''].filter(Boolean).join(' ')}>
+      {MEETING_TABS.map((key) => {
+        // Verlegte Woche → ihr echter Tag (T30); sonst der Rhythmus, gezählt
+        // vom Montag, 1. Januar 2024 — örtlich zur Mittagszeit, damit keine
+        // Zeitzone den Wochentag verschiebt.
+        const datum = week
+          ? meetingDate(week, key, zeiten)
+          : new Date(2024, 0, 1 + versatzAbMontag(zeiten[key].wd), 12)
+        const name = tagName.format(datum)
+        const wann = week ? `${tagZahl.format(datum)} · ${meetingTime(week, key, zeiten)}` : zeiten[key].time
+        const aus = istAusgefallen(week, key)
+        return (
+          <button
+            key={key}
+            type="button"
+            className={tab === key ? 'meeting-tab is-active' : 'meeting-tab'}
+            aria-pressed={tab === key}
+            aria-label={`${fill(t.versammlungTag, { tag: name })}, ${wann}`}
+            onClick={() => onChange(key)}
+          >
+            <span className="meeting-tab-name">{aus ? <s>{name}</s> : name}</span>
+            <span className="meeting-tab-wann">{wann}</span>
+          </button>
+        )
+      })}
+      {showEdit && (
         <button
-          key={key}
           type="button"
-          className={[ 'meeting-tab', tab === key ? 'is-active' : '', key === 'edit' ? 'meeting-tab--icon' : '' ].filter(Boolean).join(' ')}
-          aria-pressed={tab === key}
-          aria-label={label === full ? undefined : full}
-          onClick={() => onChange(key)}
+          className={tab === 'edit' ? 'meeting-tab meeting-tab--icon is-active' : 'meeting-tab meeting-tab--icon'}
+          aria-pressed={tab === 'edit'}
+          aria-label={t.einstellungen}
+          onClick={() => onChange('edit')}
         >
-          {label}
+          <Zeichen name="einstellungen" />
         </button>
-      ))}
+      )}
     </div>
   )
 }
