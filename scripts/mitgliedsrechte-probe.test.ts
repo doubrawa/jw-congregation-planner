@@ -21,6 +21,7 @@ import {
   stufenAnlage,
   t120Anlage,
   tagPlus,
+  vortragAnlage,
   wochentag,
   zugangAus,
   zuteilungAenderung,
@@ -468,6 +469,37 @@ describe('T120: die Anlage erfüllt die Regeln der Datenbank, die mit den Rechte
     const ohne = t120Anlage({ marke, versammlung: 'c', tag0: '2099-01-05', planerPid: 'p1', mitgliedPid: 'p2' })
     expect(ohne.besuch).toBeNull()
     expect(ohne.besuchVersuch).toBeNull()
+  })
+})
+
+describe('T122: die Vormerkungen erfüllen die Regeln der Datenbank, die mit den Rechten nichts zu tun haben', () => {
+  /*
+    `vortraege` verlangt einen Montag, einen Redner und als Lied höchstens drei
+    Ziffern, und je Woche gibt es eine Vormerkung. Scheiterte ein Versuch
+    daran, sähe das aus wie eine Abweisung über die Rechte — (67) und (68)
+    meldeten „greift", ohne dort gewesen zu sein.
+  */
+  const marke = 'PROBE-1'
+  const a = vortragAnlage({ marke, versammlung: 'c', tag0: ersterMontagAb('2099-01-01') })
+  const alle = [a.vortrag, ...Object.values(a.versuche)]
+
+  it('jede an einem Montag, jede in einer eigenen Woche (unique congregation_id, woche)', () => {
+    for (const v of alle) expect(wochentag(v.woche), v.id).toBe(1)
+    expect(new Set(alle.map((v) => v.woche)).size).toBe(alle.length)
+  })
+
+  it('ein auswärtiger Redner, wie der Import ihn vormerkt: Name und Versammlung, keine Person', () => {
+    for (const v of alle) {
+      expect(v.redner, v.id).not.toBe('')
+      expect(v, v.id).toMatchObject({ eigener: false, person_id: null, versammlung: marke })
+      expect(v.lied, v.id).toMatch(/^[0-9]{0,3}$/)
+    }
+  })
+
+  it('jede Kennung trägt das Kennzeichen — daran findet das Aufräumen genau diese Zeilen', () => {
+    const ids = alle.map((v) => v.id)
+    expect(ids.every((id) => id.startsWith(`${marke}-`))).toBe(true)
+    expect(new Set(ids).size).toBe(ids.length)
   })
 })
 

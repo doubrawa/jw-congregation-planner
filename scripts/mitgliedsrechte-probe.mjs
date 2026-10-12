@@ -129,6 +129,12 @@
  *  62. Gruppenaufseher: „Schicht geändert" melden               → abgewiesen
  *  63. Mitglied: „Schicht geändert" melden                      → abgewiesen
  *  64. Planer: „Schicht geändert" melden                        → durch
+ *  65. Mitglied: einen vorgemerkten Vortrag sehen               → unsichtbar
+ *  66. Gruppenaufseher: einen vorgemerkten Vortrag sehen        → unsichtbar
+ *  67. Mitglied: einen Vortrag vormerken                        → abgewiesen
+ *  68. Gruppenaufseher: einen Vortrag vormerken                 → abgewiesen
+ *  69. Planer: einen vorgemerkten Vortrag sehen                 → sichtbar
+ *  70. Planer: einen Vortrag vormerken (Upsert wie die App)     → durch
  *
  * (35)–(37) zielen ins Leere — eine Woche im Jahr 2100, die es nicht gibt —,
  * damit eine offene Tür nichts verschickt und nichts schreibt; dass die
@@ -146,6 +152,13 @@
  * Treffpunkt, das eigene Konto des Planers, ein Gruppenbesuch), stellt der
  * Admin sofort den vorigen Stand her. Alles Übrige legt der Admin wieder im
  * Jahr 2099 an, und am Ende geht es weg.
+ *
+ * (65)–(70) kamen am 12.10.2026 mit dem Vortragsplan (T122). Vorgemerkt werden
+ * Vorträge für Wochen, die es noch nicht gibt, mit dem Namen des auswärtigen
+ * Redners und seiner Versammlung. Die sieht nur, wer zuteilt
+ * (`vortraege_zuteilen`); Mitglied und Gruppenaufseher zeigt die Tabelle
+ * nichts. Sie brauchen weder Personen noch Gruppen und messen deshalb auch
+ * dann, wenn (42)–(61) mangels Gruppe ungemessen bleiben.
  *
  * ---------------------------------------------------------------- Aufruf ----
  *
@@ -892,7 +905,7 @@ async function t120Proben(k) {
   }
 }
 
-/* ===================== Rechte-Stufen: die Fälle 35–64 ===================== */
+/* ===================== Rechte-Stufen: die Fälle 35–70 ===================== */
 
 /**
  * Rollen am Vortragsplatz — Spiegel von `REDNER_ROLLEN` samt `rolleBasis` in
@@ -1070,6 +1083,37 @@ export function stufenAnlage({ marke, versammlung: c, tag0, adminPid, zuteilerPi
     eintragVersuch: { id: id('e-planer'), congregation_id: c, plan_id: plan.id, datum: montag(7), grp: fremdeGruppe },
     planVersuch: { ...plan, id: id('plan-planer'), entwurf: false },
     absage: `${marke} — Absage auch an den Planer`,
+  }
+}
+
+/**
+ * Die Anlage für (65)–(70), die Vormerkungen des Vortragsplans (T122): ein
+ * Vortrag, den der Admin vormerkt, und je Versuch ein eigener. Jeder liegt in
+ * einer anderen Woche — `vortraege` hält eine Vormerkung je Woche
+ * (`unique (congregation_id, woche)`), und ein Versuch in einer belegten Woche
+ * scheiterte am Schlüssel. Das sähe aus wie eine Abweisung über die Rechte.
+ * Ein auswärtiger Redner, wie ihn der Import vormerkt: Name und Versammlung,
+ * keine Person.
+ */
+export function vortragAnlage({ marke, versammlung: c, tag0 }) {
+  const vortrag = (name, wochen) => ({
+    id: `${marke}-${name}`,
+    congregation_id: c,
+    woche: tagPlus(tag0, 7 * wochen),
+    redner: `${marke} Redner`,
+    versammlung: marke,
+    eigener: false,
+    person_id: null,
+    thema: '',
+    lied: '',
+  })
+  return {
+    vortrag: vortrag('vortrag', 10),
+    versuche: {
+      mitglied: vortrag('vortrag-mitglied', 11),
+      aufseher: vortrag('vortrag-aufseher', 12),
+      planer: vortrag('vortrag-planer', 13),
+    },
   }
 }
 
@@ -1353,6 +1397,36 @@ async function absageProbe(k, a) {
 }
 
 /**
+ * (65)–(70) Vorgemerkte Vorträge (T122): Die Namen auswärtiger Redner sieht und
+ * schreibt nur, wer zuteilt — Admin und Planer (`vortraege_zuteilen`). Der
+ * Planer schreibt wie die App per Upsert (`loeschenDannSchreiben` in `data.ts`).
+ */
+async function vortragProben(k, a) {
+  const { planer, mitglied, zuteiler, aufseher } = k
+  const anlage = await anlegen(planer, 'vortraege', [a.vortrag])
+  const sicht = (wer) => async () => {
+    const r = await wer.rest(`vortraege?select=id&id=eq.${a.vortrag.id}`)
+    return { status: r.status, sichtbar: zeilenVon(r).length > 0 }
+  }
+  const v = a.versuche
+  await leseVersuch(k, 65, 'Mitglied: einen vorgemerkten Vortrag sehen', anlage, sicht(mitglied), false, [
+    'AUCH DAS!',
+    'unsichtbar — Namen auswärtiger Redner sieht nur, wer zuteilt',
+  ])
+  await leseVersuch(k, 66, 'Gruppenaufseher: einen vorgemerkten Vortrag sehen', anlage, sicht(aufseher), false, [
+    'AUCH DAS!',
+    'unsichtbar — der Gruppenaufseher teilt nicht zu',
+  ])
+  await schreibVersuch(k, 67, 'Mitglied: einen Vortrag vormerken', 'vortraege', v.mitglied, false, ['AUCH DAS!', 'abgewiesen — vormerken nur Admin und Planer'], { wer: mitglied, prefer: UPSERT })
+  await schreibVersuch(k, 68, 'Gruppenaufseher: einen Vortrag vormerken', 'vortraege', v.aufseher, false, ['AUCH DAS!', 'abgewiesen — vormerken nur Admin und Planer'], { wer: aufseher, prefer: UPSERT })
+  await leseVersuch(k, 69, 'Planer: einen vorgemerkten Vortrag sehen', anlage, sicht(zuteiler), true, [
+    'er übernimmt den Vortragsplan',
+    'ZU STRENG — der Planer sieht die Vormerkungen nicht',
+  ])
+  await schreibVersuch(k, 70, 'Planer: einen Vortrag vormerken (Upsert wie die App)', 'vortraege', v.planer, true, ['der Weg steht offen', 'ZU STRENG — der Planer kann den Vortragsplan nicht übernehmen'], { wer: zuteiler, prefer: UPSERT })
+}
+
+/**
  * Alles wieder weg, was die Probe für die Rechte-Stufen angelegt hat — über das
  * Kennzeichen, wie bei T120; die Treffpunkt-Woche nur, wenn sie der Probe
  * gehört. Dazu die Mitteilungen mit dem Kennzeichen beim Planer und beim
@@ -1370,6 +1444,7 @@ async function stufenAufraeumen(k, fsStart, merker) {
     ['die Termine', weg('oz_termine')],
     ['die Gruppenbesuche', weg('gruppenbesuche')],
     ['die Regeln des Grundplans', weg('fs_rules')],
+    ['die Vormerkungen der Vorträge', weg('vortraege')],
     ...(merker.treffpunktWoche
       ? [['die Treffpunkt-Woche', () => planer.rest(`fs_weeks?congregation_id=eq.${versammlung}&start=eq.${fsStart}`, 'DELETE', undefined, 'return=minimal')]]
       : []),
@@ -1385,7 +1460,7 @@ async function stufenAufraeumen(k, fsStart, merker) {
 }
 
 /**
- * Die Fälle (35)–(64) — siehe Kopf. Aufgeräumt wird in jedem Fall, auch wenn
+ * Die Fälle (35)–(70) — siehe Kopf. Aufgeräumt wird in jedem Fall, auch wenn
  * ein Fall mittendrin wirft.
  */
 async function stufenProben(k, woche) {
@@ -1424,6 +1499,8 @@ async function stufenProben(k, woche) {
     await tuerVersuch(k, 64, 'Planer: „Schicht geändert" melden', zuteiler, 'send-plan', schicht, [], 'ZU STRENG — ändert der Planer eine Schicht, erfährt es niemand', true)
 
     await wochenProben(k, woche)
+    // Vor der Prüfung auf Personen und Gruppen: Die Vormerkungen brauchen keine.
+    await vortragProben(k, vortragAnlage({ marke, versammlung, tag0: ersterMontagAb('2099-01-01') }))
 
     const fehlt = !planer.pid || !zuteiler.pid || !mitglied.pid
       ? 'Admin, Planer und Mitglied brauchen je eine Person'
@@ -1863,7 +1940,7 @@ export async function main(arg = process.argv.slice(2)) {
   const k = { planer, mitglied, zuteiler, aufseher, versammlung, marke, ergebnis, aufraeumen, ungemessen, kaputt }
   await t120Proben(k)
 
-  // ---- 35) bis 64) Die Rechte-Stufen (4.10.2026) --------------------------
+  // ---- 35) bis 70) Die Rechte-Stufen (4.10.2026), Vormerkungen (12.10.) ---
   await stufenProben(k, wochen[0].start)
 
   // Verboten ist, was nicht durchkommen soll; die übrigen sind die Gegenproben.
@@ -1875,9 +1952,9 @@ export async function main(arg = process.argv.slice(2)) {
   const ueberraschungen = befunde.filter((b) => !b.wieErwartet && !b.kaputt)
   console.log(`\n${durch} von ${verboten.length} verbotenen Versuchen kamen durch.`)
   if (ueberraschungen.length === 0 && kaputte.length === 0) {
-    console.log('Genau die erwarteten: S2, S3, S10, S11, S13, die Rechte aus T120 und die Rechte-Stufen sind damit')
-    console.log(`nicht mehr gelesen, sondern gemessen — und die ${gegenproben.length} Gegenproben zeigen, dass die Regeln`)
-    console.log('nicht zu streng geraten sind: Bestätigen, Abmelden, Absagen, Eintragen, Zuteilen und Sehen gehen weiter.')
+    console.log('Genau die erwarteten: S2, S3, S10, S11, S13, die Rechte aus T120, die Rechte-Stufen und die Vormerkungen')
+    console.log(`der Vorträge sind damit nicht mehr gelesen, sondern gemessen — und die ${gegenproben.length} Gegenproben zeigen, dass`)
+    console.log('die Regeln nicht zu streng geraten sind: Bestätigen, Abmelden, Absagen, Eintragen, Zuteilen und Sehen gehen weiter.')
     if (nichtGemessen.length) {
       console.log(`Ohne Messung blieben ${nichtGemessen.map((n) => `(${n})`).join(', ')} — die Voraussetzung fehlte.`)
     }

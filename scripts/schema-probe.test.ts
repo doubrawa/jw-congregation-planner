@@ -489,6 +489,8 @@ const LAEUFE: Record<string, Lauf[]> = {
         // Besuche — samt Zurückstellen und Aufräumen.
         'PATCH weeks', 'PATCH members', 'GET groups', 'POST fs_weeks', 'GET fs_weeks', 'PATCH fs_weeks', 'DELETE fs_weeks',
         'POST fs_rules', 'GET fs_rules', 'DELETE fs_rules', 'PATCH gruppenbesuche',
+        // Die Vormerkungen des Vortragsplans (T122): anlegen, sehen, aufräumen.
+        'POST vortraege', 'GET vortraege', 'DELETE vortraege',
       ],
     },
   ],
@@ -800,7 +802,7 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     expect(tabellen.members!.find((m) => m.user_id === U3)!.planner).toBe(false)
     // Was die Probe anlegte, ist weg: die Treffpunkt-Woche und jede Zeile mit Kennzeichen.
     expect(tabellen.fs_weeks ?? []).toEqual([])
-    for (const t of ['fs_rules', 'gruppenbesuche', 'oz_termine', 'oz_eintraege', 'plaene', 'plan_eintraege']) {
+    for (const t of ['fs_rules', 'gruppenbesuche', 'oz_termine', 'oz_eintraege', 'plaene', 'plan_eintraege', 'vortraege']) {
       expect((tabellen[t] ?? []).filter(istProbe), t).toEqual([])
     }
     // Auch die Absage aus (6), die seit dem 4.10.2026 beim Planer ebenfalls ankommt.
@@ -813,8 +815,10 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     expect(text).toMatch(/· \(62\) Gruppenaufseher: „Schicht geändert" melden\n.*abgewiesen \(HTTP 403\) — geänderte Schichten melden nur Admin und Planer \(forbidden\)/)
     expect(text).toMatch(/· \(63\) Mitglied: „Schicht geändert" melden\n.*abgewiesen \(HTTP 403\)/)
     expect(text).toMatch(/· \(64\) Planer: „Schicht geändert" melden\n.*DURCHGELASSEN \(HTTP 200\) — der Weg steht offen/)
-    // Jeder Fall von 35 bis 64 kam zu einem Ergebnis — keiner blieb ungemessen.
-    for (let nr = 35; nr <= 64; nr++) expect(text, `(${nr})`).toMatch(new RegExp(`[·!] \\(${nr}\\) `))
+    expect(text).toMatch(/· \(69\) Planer: einen vorgemerkten Vortrag sehen\n.*SICHTBAR \(HTTP 200\) — er übernimmt den Vortragsplan/)
+    expect(text).toMatch(/· \(70\) Planer: einen Vortrag vormerken \(Upsert wie die App\)\n.*ANGEKOMMEN \(HTTP 201\) — der Weg steht offen\n.*\(Zeile wieder gelöscht\)/)
+    // Jeder Fall von 35 bis 70 kam zu einem Ergebnis — keiner blieb ungemessen.
+    for (let nr = 35; nr <= 70; nr++) expect(text, `(${nr})`).toMatch(new RegExp(`[·!] \\(${nr}\\) `))
   })
 
   it('mitgliedsrechte-probe (Rechte-Stufen): ist der Planer zu streng abgewiesen, fällt (64) auf', async () => {

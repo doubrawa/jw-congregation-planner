@@ -3950,6 +3950,20 @@ export const KATALOG = [
       'create policy vortraege_zuteilen on public.vortraege\n  for all\n  using (congregation_id = public.my_congregation_id() and public.darf_zuteilen())\n',
     ersetzen: 'create policy vortraege_zuteilen on public.vortraege\n  for all\n  using (congregation_id = public.my_congregation_id())\n',
   },
+  {
+    id: 'mrp-vormerkungen-gemessen',
+    datei: 'scripts/mitgliedsrechte-probe.mjs',
+    regel: 'Die Mitgliedsrechte-Probe misst die Vormerkungen des Vortragsplans, (65)–(70).',
+    suchen: "    await vortragProben(k, vortragAnlage({ marke, versammlung, tag0: ersterMontagAb('2099-01-01') }))\n",
+    ersetzen: '',
+  },
+  {
+    id: 'mrp-vormerkungen-aufraeumen',
+    datei: 'scripts/mitgliedsrechte-probe.mjs',
+    regel: 'Was die Probe in `vortraege` angelegt hat, räumt sie wieder weg.',
+    suchen: "    ['die Vormerkungen der Vorträge', weg('vortraege')],\n",
+    ersetzen: '',
+  },
 ]
 
 /**
