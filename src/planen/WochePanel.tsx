@@ -1,52 +1,60 @@
+import { useState } from 'react'
 import { useApp } from '../app/context'
+import { Option } from '../bausteine/Option'
+import { Zeichen } from '../bausteine/Zeichen'
 import { DatePicker } from '../components/DatePicker'
+import { datumsFormat } from '../components/datum-anzeige'
 import { anlassArt } from '../data/anlass'
-import { MEETING_TABS } from '../data/helpers'
-import type { Anlass, AnlassArt } from '../data/types'
+import { istAusgefallen, MEETING_TABS, weichtAb } from '../data/helpers'
+import { meetingDate, meetingTime } from '../data/meeting-dates'
+import type { Anlass, AnlassArt, MeetingKey } from '../data/types'
+import type { Dict } from '../i18n/ui'
 import { LOCALES } from '../i18n/langs'
-import { useT } from '../i18n/useT'
+import { useProgWeek, useT } from '../i18n/useT'
+import { ProgrammBlatt } from './ProgrammBlatt'
 import { SonderwochePanel } from './SonderwochePanel'
 import { TerminePanel } from './TerminePanel'
 
+type DictKey = keyof Dict
+
 /**
- * Die Bearbeiten-Ansicht der Woche (T64) — hinter dem Stift-Reiter.
+ * Die vier Anlässe in der Reihenfolge des Entwurfs, je mit dem, was er für die
+ * Woche bedeutet. Der Kongress nennt dieselbe Folge wie seine Karte beim
+ * Ansehen (`kongressAusfall`).
+ */
+const ANLAESSE: ReadonlyArray<readonly [AnlassArt | null, DictKey, DictKey]> = [
+  [null, 'anlassNormal', 'anlassNormalText'],
+  ['co', 'coWoche', 'anlassCoText'],
+  ['kongress', 'kongress', 'kongressAusfall'],
+  ['mem', 'memWoche', 'anlassMemText'],
+]
+
+/**
+ * **Woche einrichten** (T121, Entwurf `GWochePlanen`; die Bearbeiten-Ansicht
+ * aus T64) — hinter dem Zeichen neben den Karten der Tage, nur beim Admin.
  *
- * Sie ist entstanden, weil der Kreisaufseher-Schalter im Panel **einer**
- * Zusammenkunft stand, aber **beide** änderte. Daraus die Regel: Ein
- * Bedienelement gehört auf die Ebene, die es verändert. Hier stehen deshalb
- * beide Ebenen untereinander und in dieser Reihenfolge:
+ * Entstanden ist die Ansicht, weil der Kreisaufseher-Schalter im Panel
+ * **einer** Zusammenkunft stand, aber **beide** änderte. Daraus die Regel: Ein
+ * Bedienelement gehört auf die Ebene, die es verändert. Hier steht deshalb,
+ * was der ganzen Woche gehört, in Karten untereinander:
  *
- * | Ebene | Was hier eingestellt wird |
+ * | Karte | Was hier eingestellt wird |
  * | --- | --- |
- * | **Woche** | der Anlass samt Termin |
- * | **je Zusammenkunft** | findet statt · Wochentag · Uhrzeit · Grund |
- *
- * Beide Zusammenkünfte auf einmal — vorher ging nur die des gerade offenen
- * Reiters, „Mittwoch statt Dienstag" **und** „Wochenende entfällt" waren zwei
- * Reiterwechsel.
- *
- * **Ohne einen einzigen neuen Wörterbuch-Schlüssel gebaut**, bis auf den
- * gemessenen `kongress`. Das ist kein Selbstzweck: `ui.test.ts` verlangt, dass
- * jedes der 33 Overlays jeden Schlüssel selbst übersetzt — ein neuer Schlüssel
- * heißt 33 Übersetzungen, und eine erfundene ist schlimmer als eine
- * zusammengesetzte aus geprüften Bausteinen. Verwendet werden:
- *
- * | Element | Woher |
- * | --- | --- |
- * | Überschrift, Beschriftung des Auswahlfelds | `einstellungen` |
- * | die drei Anlässe | `coWoche` / `memWoche` / `kongress` |
- * | „kein Anlass" | ein Gedankenstrich — in jeder Schrift derselbe |
- * | Datum, Uhrzeit | `s89Datum` / `a11yTime` |
- * | Von, Bis | `von` / `bis` |
+ * | **Anlass der Woche** | normal, Kreisaufseher, Kongress, Gedächtnismahl — samt Termin |
+ * | **Zusammenkünfte dieser Woche** | je Zusammenkunft: findet statt · Wochentag · Uhrzeit · Grund („Verlegen") |
+ * | **Weitere Termine** | Pionierbesprechung und was sonst ansteht (T63) |
+ * | **Programm** | die Punkte unter „Unser Leben als Christ" (`ProgrammBlatt`) |
  */
 export function WochePanel() {
   const { state, dispatch } = useApp()
   const { t } = useT()
-  const week = state.weeks[state.week]
-  if (!week) return null
+  const rawWeek = state.weeks[state.week]
+  const { week, tpw } = useProgWeek(rawWeek)
+  const [programmOffen, setProgrammOffen] = useState(false)
+  if (!rawWeek || !week) return null
 
-  const art = anlassArt(week)
-  const termin = week.anlass
+  const art = anlassArt(rawWeek)
+  const termin = rawWeek.anlass
   const termine = (patch: Partial<Anlass>) => dispatch({ type: 'setAnlassTermin', patch })
   // Der eigene Datumswähler statt des nativen Feldes — wie bei den
   // Abwesenheiten. Die gemeinsamen Beschriftungen einmal binden.
@@ -59,25 +67,18 @@ export function WochePanel() {
 
   return (
     <>
-      <div className="panel" data-farbe="neutral">
-        <h2 className="panel-label">{t.einstellungen}</h2>
-
-        <div className="woche-anlass">
-          <select
-            className="sonder-select woche-anlass-select"
-            aria-label={t.einstellungen}
-            value={art ?? ''}
-            onChange={(e) =>
-              dispatch({ type: 'setAnlass', art: (e.target.value || null) as AnlassArt | null })
-            }
-          >
-            {/* Kein Anlass: 50 von 52 Wochen. Ein Gedankenstrich braucht keine
-                Übersetzung, und die drei anderen Einträge tragen die Bedeutung. */}
-            <option value="">—</option>
-            <option value="co">{t.coWoche}</option>
-            <option value="mem">{t.memWoche}</option>
-            <option value="kongress">{t.kongress}</option>
-          </select>
+      <section className="karte einrichten-karte">
+        <h2 className="abschnitt-titel einrichten-karte-titel">{t.anlassDerWoche}</h2>
+        <div role="radiogroup" aria-label={t.anlassDerWoche} className="anlass-liste">
+          {ANLAESSE.map(([wert, name, text]) => (
+            <Option
+              key={wert ?? 'normal'}
+              an={(art ?? null) === wert}
+              titel={t[name]}
+              unter={t[text]}
+              onWahl={() => dispatch({ type: 'setAnlass', art: wert })}
+            />
+          ))}
         </div>
 
         {/* Das Gedächtnismahl ist ein Abend nach Sonnenuntergang: ein Zeitpunkt. */}
@@ -102,9 +103,7 @@ export function WochePanel() {
         {/* Der Kongress ist ein Zeitraum: ein Kreiskongress dauert einen Tag,
             ein Regionalkongress drei. „Bis" übernimmt beim Eintragen von „Von"
             denselben Wert (siehe setAnlassTermin) — der kurze Fall braucht damit
-            keine zweite Eingabe, und beide Werte sind trotzdem immer gefüllt.
-            Dieselbe Regel gilt seit jeher bei den Abwesenheiten; die Wochen-
-            Ansicht folgt ihr, statt eine zweite zu erfinden. */}
+            keine zweite Eingabe, und beide Werte sind trotzdem immer gefüllt. */}
         {art === 'kongress' && (
           <div className="sonder-row sonder-row--termin">
             <div className="sonder-feld">
@@ -123,22 +122,70 @@ export function WochePanel() {
             </div>
           </div>
         )}
-
-        {/* Weitere Termine der Woche (T63) — Pionierbesprechung,
-            Ältestenbesprechung, was sonst ansteht. Sie stehen im selben Panel
-            wie der Anlass, weil sie derselben Ebene gehören: der Woche. Eine
-            eigene Überschrift bekämen sie nur mit einem erfundenen Wort. */}
-        <TerminePanel />
-      </div>
+      </section>
 
       {/* Beide Zusammenkünfte, in der Reihenfolge der Woche. Der Anlass oben hat
-          seine Wirkung schon gesetzt — hier kann der Planer sie übersteuern:
+          seine Wirkung schon gesetzt — hier kann der Admin sie übersteuern:
           fällt der Kongress nur aufs Wochenende, schaltet er die Zusammenkunft
           unter der Woche wieder an. */}
-      {MEETING_TABS.map((tab) => (
-        <SonderwochePanel key={tab} tab={tab} />
-      ))}
+      <section className="karte einrichten-karte">
+        <h2 className="abschnitt-titel einrichten-karte-titel">{t.zusammenkuenfteDieserWoche}</h2>
+        {MEETING_TABS.map((tab) => (
+          <ZusammenkunftZeile key={tab} tab={tab} />
+        ))}
+      </section>
+
+      {/* Weitere Termine der Woche (T63) — sie gehören der Woche, nicht einer
+          Zusammenkunft. */}
+      <section className="karte einrichten-karte">
+        <h2 className="abschnitt-titel einrichten-karte-titel">{t.weitereTermine}</h2>
+        <p className="klein-text einrichten-text">{t.weitereTermineText}</p>
+        <TerminePanel />
+      </section>
+
+      <section className="karte einrichten-karte">
+        <h2 className="abschnitt-titel einrichten-karte-titel">{t.programmTitel}</h2>
+        <button type="button" className="einrichten-verweis" onClick={() => setProgrammOffen(true)}>
+          <span className="einrichten-verweis-text">
+            <span>{t.programmpunkteBearbeiten}</span>
+            {week.book && <span className="klein-text">{tpw(week.book)}</span>}
+          </span>
+          <Zeichen name="weiter" />
+        </button>
+      </section>
+
+      {programmOffen && <ProgrammBlatt onClose={() => setProgrammOffen(false)} />}
     </>
   )
 }
 
+/**
+ * Eine Zusammenkunft der Woche: wann sie stattfindet — durchgestrichen, wenn
+ * sie ausfällt — und „Verlegen", das ihre Abweichung aufklappt (Tag, Uhrzeit,
+ * findet statt, Grund). Weicht sie schon ab, steht die Abweichung offen da.
+ */
+function ZusammenkunftZeile({ tab }: { tab: MeetingKey }) {
+  const { state } = useApp()
+  const { t } = useT()
+  const week = state.weeks[state.week]
+  const [offen, setOffen] = useState(() => weichtAb(week, tab))
+  if (!week) return null
+  const zeiten = state.congregation.times
+  const wann = `${datumsFormat(state.lang, 'tag').format(meetingDate(week, tab, zeiten))} · ${meetingTime(week, tab, zeiten)}`
+  return (
+    <div className="einrichten-zusammenkunft">
+      <div className="einrichten-zeile">
+        <span className="einrichten-zeile-text">
+          <span className="einrichten-wann">{istAusgefallen(week, tab) ? <s>{wann}</s> : wann}</span>
+          <span className="klein-text">{tab === 'we' ? t.tabWe : t.tabMid}</span>
+        </span>
+        {/* „Verlegen" — dasselbe Wort wie beim Zeugnisgeben, wo ein Termin
+            auf einen anderen Tag geht (`ozTagWechseln`). */}
+        <button type="button" className="verweis-leise" aria-expanded={offen} onClick={() => setOffen((o) => !o)}>
+          {t.ozTagWechseln}
+        </button>
+      </div>
+      {offen && <SonderwochePanel tab={tab} />}
+    </div>
+  )
+}

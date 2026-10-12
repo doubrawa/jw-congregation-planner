@@ -51,49 +51,23 @@
 
 /* ---- Das Blatt „Drucken" ------------------------------------------------------ */
 
+/* Die Möglichkeiten als Flächen (`Option`, Entwurf `GDrucken`). */
 .druck-optionen {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.druck-option {
-  display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
-  align-items: center;
-  column-gap: 12px;
+.druck-optionen > .option {
   min-height: 64px;
   padding: 8px 16px;
   border: 1.5px solid transparent;
   border-radius: 20px;
   background: var(--feld);
-  text-align: start;
 }
 
-.druck-option[aria-checked='true'] {
+.druck-optionen > .option[aria-checked='true'] {
   border-color: var(--akzent-text);
-}
-
-.druck-option-kreis {
-  width: 22px;
-  height: 22px;
-  border: 1.5px solid var(--umriss);
-  border-radius: 50%;
-}
-
-.druck-option[aria-checked='true'] .druck-option-kreis {
-  border-color: var(--akzent-text);
-  background: radial-gradient(circle, var(--akzent-text) 0 5px, transparent 6px);
-}
-
-.druck-option-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.druck-option-titel {
-  font-weight: 600;
 }
 
 .druck-fuss {

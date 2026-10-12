@@ -506,6 +506,45 @@
   border-end-end-radius: 22px;
 }
 
+/* ---- Option: eine Möglichkeit von mehreren ------------------------------------ */
+
+/* Kreis, Titel, Zeile darunter — wie die Möglichkeiten aussehen (Fläche, Zeile),
+   setzt die Gruppe darum. */
+.option {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 14px;
+  min-height: 60px;
+  text-align: start;
+}
+
+.option-kreis {
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--umriss);
+  border-radius: 50%;
+}
+
+.option[aria-checked='true'] .option-kreis {
+  border-color: var(--akzent-text);
+  background: radial-gradient(circle, var(--akzent) 0 5.5px, transparent 6.5px);
+}
+
+.option-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.option-titel {
+  font-weight: 500;
+}
+
+.option[aria-checked='true'] .option-titel {
+  font-weight: 700;
+}
+
 /* ---- Spur: die Schritte eines Ablaufs ----------------------------------------- */
 
 .spur {

@@ -466,37 +466,16 @@
   margin-inline-start: 0.15em;
 }
 
-/* ---- „Unser Leben als Christ“ bearbeiten -------------------------------- */
+/* ---- „Unser Leben als Christ“ bearbeiten (`ProgrammBlatt`) --------------- */
 
-.lac-move {
-  display: flex;
-  gap: 4px;
-  flex: none;
-}
-
+/* Nach oben, nach unten — nebeneinander, gleich breit. Am Rand gesperrt. */
 .lac-move-btn {
-  width: 24px;
-  height: 24px;
-  flex: none;
-  border-radius: 50%;
-  border: 1px solid var(--bord4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--mut);
-  font-size: calc(10px * var(--fs));
+  flex: 1;
 }
 
 .lac-move-btn:disabled {
-  color: var(--bord3);
+  opacity: 0.45;
   cursor: default;
-}
-
-.lac-edit {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 9px;
 }
 
 .lac-mins {
@@ -549,12 +528,12 @@
   white-space: nowrap;
 }
 
-.lac-spacer {
-  flex: 1;
+/* Einen Programmpunkt entfernen: ein Wort in der Farbe der Probleme. */
+.lac-remove {
+  color: var(--problem);
 }
 
-/* Der runde ✕-Knopf am Programmpunkt und am Treffpunkt — dieselbe Form. */
-.lac-remove,
+/* Der runde ✕-Knopf am Treffpunkt. */
 .fs-remove {
   width: 24px;
   height: 24px;
@@ -566,12 +545,6 @@
   justify-content: center;
   color: var(--wein);
   font-size: calc(10px * var(--fs));
-}
-
-.lac-add-row {
-  display: flex;
-  gap: 8px;
-  padding: 8px 0 12px;
 }
 
 .lac-add-input {
@@ -1072,18 +1045,181 @@
    seinem Baustein (components.css, `AusfallBanner`) — es zeigt sich auch beim
    Ansehen. */
 
-/* Anlass der Woche (T64) — das Auswahlfeld über den beiden Zusammenkünften. */
-.woche-anlass {
-  padding: 10px 0 2px;
-}
-
-.woche-anlass-select {
-  width: 100%;
-}
-
-/* Termin hinzufügen (T63) — unter den Terminen im Wochen-Reiter. */
+/* Termin hinzufügen (T63) — unter den Terminen der Woche. */
 .termin-add {
-  margin-top: 10px;
+  margin: 10px 0 8px;
+}
+
+/* ---- Woche einrichten (T121, Entwurf `GWochePlanen`) ----------------------- */
+
+/* Statt des Bereichstitels: zurück in den Plan, daneben der Titel. */
+.einrichten-kopf {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.einrichten-karte {
+  padding: 6px 14px 8px 18px;
+}
+
+.einrichten-karte-titel {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+}
+
+.einrichten-text {
+  padding-block-end: 4px;
+}
+
+/* Der Anlass: eine Möglichkeit je Zeile, durch Linien getrennt. */
+.anlass-liste {
+  display: flex;
+  flex-direction: column;
+}
+
+.anlass-liste > .option {
+  border-block-start: 1px solid var(--linie);
+}
+
+.einrichten-zusammenkunft {
+  border-block-start: 1px solid var(--linie);
+}
+
+.einrichten-zusammenkunft > .sonder {
+  margin-block: 0 12px;
+}
+
+.einrichten-zeile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  min-height: 60px;
+}
+
+.einrichten-zeile-text,
+.einrichten-verweis-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.einrichten-wann {
+  font-weight: 600;
+}
+
+/* Ein Weg weiter — Titel, darunter was dahinter liegt, rechts der Pfeil. */
+.einrichten-verweis {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20px;
+  align-items: center;
+  column-gap: 10px;
+  width: 100%;
+  min-height: 60px;
+  border-block-start: 1px solid var(--linie);
+  font-weight: 600;
+  text-align: start;
+}
+
+.einrichten-verweis-text > .klein-text {
+  font-weight: 400;
+}
+
+.einrichten-verweis > .zeichen,
+.programm-zeile > .zeichen {
+  width: 20px;
+  height: 20px;
+  color: var(--text3);
+}
+
+/* ---- Das Programm bearbeiten (T121, Entwürfe `GProgramm`, `GProgrammpunkt`) ---- */
+
+.programm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Im Blatt liegen die Abschnitte auf der Farbe der Felder — das Blatt selbst
+   trägt schon die der Karten. */
+.programm > .prog-abschnitt {
+  background: var(--feld);
+}
+
+.programm-zeile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  border-block-start: 1px solid var(--linie);
+  text-align: start;
+}
+
+.programm-zeile.is-bearbeitbar {
+  grid-template-columns: minmax(0, 1fr) auto 20px;
+}
+
+.programm-titel {
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
+.programm-einfuegen {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  border-block-start: 1px solid var(--linie);
+  color: var(--akzent-text);
+  font-weight: 600;
+  text-align: start;
+}
+
+.programmpunkt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.programmpunkt-zeile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+}
+
+.programmpunkt-reihenfolge {
+  justify-content: flex-start;
+}
+
+/* Im Blatt ist Platz: das Minutenfeld in Schriftgröße und mit voller
+   Trefferfläche (WCAG 2.5.8) — im Plan stand es klein neben dem Titel. */
+.programmpunkt .lac-mins,
+.programmpunkt .lac-mins-input {
+  font-size: calc(16px * var(--fs));
+}
+
+.programmpunkt .lac-mins-input {
+  width: 64px;
+  min-height: 44px;
+  border-radius: 12px;
+}
+
+.programmpunkt-ende {
+  margin: 0;
+}
+
+.programmpunkt-fuss {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 16px;
 }
 
 /* ---- „Plan senden" (T99) --------------------------------------------------

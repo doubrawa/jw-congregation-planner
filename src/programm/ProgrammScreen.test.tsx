@@ -109,7 +109,7 @@ const texte = (c: HTMLElement, sel: string) => [...seite(c).querySelectorAll(sel
  * Die Wahl im Blatt „Drucken" (T105; T121 ein Blatt statt einer Liste am
  * Knopf). Das Blatt hängt per Portal am Dokument, nicht im Bildschirm.
  */
-const optionen = () => [...document.querySelectorAll<HTMLButtonElement>('.druck-optionen .druck-option')]
+const optionen = () => [...document.querySelectorAll<HTMLButtonElement>('.druck-optionen .option')]
 const druckKnopf = (c: HTMLElement) => seite(c).querySelector<HTMLButtonElement>('.druck-knopf')!
 /** Öffnet das Blatt, wählt die Woche (0) oder den Monat (1) und druckt. */
 function drucke(c: HTMLElement, wahl: 0 | 1): void {
@@ -558,7 +558,7 @@ describe('Drucken: diese Woche oder der ganze Monat', () => {
     fireEvent.click(druckKnopf(container))
     expect(print).not.toHaveBeenCalled()
     expect(document.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe(t.drucken)
-    expect(optionen().map((o) => o.querySelector('.druck-option-titel')?.textContent)).toEqual([
+    expect(optionen().map((o) => o.querySelector('.option-titel')?.textContent)).toEqual([
       t.druckWoche,
       t.druckMonat.replace('{monat}', 'September 2026'),
     ])
@@ -676,7 +676,7 @@ describe('Drucken: diese Woche oder der ganze Monat', () => {
     const en = dict('en')
     const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2, lang: 'en' })
     fireEvent.click(druckKnopf(container))
-    expect(optionen().map((o) => o.querySelector('.druck-option-titel')?.textContent)).toEqual([
+    expect(optionen().map((o) => o.querySelector('.option-titel')?.textContent)).toEqual([
       en.druckWoche,
       en.druckMonat.replace('{monat}', 'September 2026'),
     ])

@@ -12,7 +12,7 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { syncAuxSlots } from '../data/aux-class'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../data/constants'
 import { emptyQualifications, ROLE_CIRCUIT } from '../data/helpers'
-import { LAC_MAX_MINUTEN, LAC_MIN_MINUTEN, TALK_PLACEHOLDER } from '../data/meeting-edit'
+import { TALK_PLACEHOLDER } from '../data/meeting-edit'
 import { ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER } from '../data/helpers'
 import { punktKey } from '../data/planning'
 import { dict } from '../i18n/ui'
@@ -397,7 +397,13 @@ describe('Die Zusätzliche Klasse als zweite Reihe', () => {
   })
 })
 
-describe('„Unser Leben als Christ" ist der einzige bearbeitbare Abschnitt', () => {
+describe('Den Ablauf ändert man nicht beim Zuteilen (T121, Phase 5b)', () => {
+  /*
+   * Minuten, Reihenfolge, Entfernen und eigene Punkte standen bis Phase 5b
+   * mitten im Plan, an jedem Punkt von „Unser Leben als Christ". Seitdem
+   * stehen sie im Blatt hinter „Woche einrichten" (`ProgrammBlatt.test.tsx`);
+   * hier wird nur noch zugeteilt — auch beim Admin.
+   */
   const lac = (): Section => ({
     label: LABEL_LAC, farbe: 'wein',
     items: [
@@ -406,121 +412,13 @@ describe('„Unser Leben als Christ" ist der einzige bearbeitbare Abschnitt', ()
     ],
   })
 
-  it('jeder Punkt trägt seine Minuten in einem Feld — samt Einheit', () => {
+  it('weder Minuten noch Verschieben, Entfernen oder Einfügen — die Plätze aber schon', () => {
     const { container } = zeige(lac())
-    const felder = [...container.querySelectorAll<HTMLInputElement>('.lac-mins-input')]
-    expect(felder.map((x) => x.value)).toEqual(['5', '30'])
-    expect([...container.querySelectorAll('.lac-mins-einheit')].map((x) => x.textContent)).toEqual([
-      ' Min.', ' Min.',
-    ])
-    // Die Schrittknöpfe sind weg — sie sprangen in Fünferschritten, und „19"
-    // war damit nicht einstellbar (18.9.2026).
-    expect(container.querySelectorAll('.lac-step-btn')).toHaveLength(0)
-  })
-
-  it('eine getippte Zahl gilt beim Verlassen des Feldes — jede Minute, nicht jede fünfte', () => {
-    const { container, dispatch } = zeige(lac())
-    const feld = container.querySelectorAll<HTMLInputElement>('.lac-mins-input')[1]!
-
-    fireEvent.focus(feld)
-    fireEvent.change(feld, { target: { value: '19' } })
-    // Während des Tippens noch nichts: Die „1" von „19" wäre sonst ein eigener
-    // Wert, würde auf 5 geklemmt und zöge die Endzeit mit.
-    expect(dispatch).not.toHaveBeenCalled()
-
-    fireEvent.blur(feld)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'lacMinuten', si: 0, ii: 1, mins: 19 })
-  })
-
-  it('ein leeres Feld ändert nichts — und Escape nimmt den alten Wert zurück', () => {
-    const { container, dispatch } = zeige(lac())
-    const feld = container.querySelectorAll<HTMLInputElement>('.lac-mins-input')[1]!
-
-    // Wer alles löscht und weiterklickt, wollte nicht die kürzestmögliche Dauer.
-    fireEvent.focus(feld)
-    fireEvent.change(feld, { target: { value: '' } })
-    fireEvent.blur(feld)
-    expect(dispatch).not.toHaveBeenCalled()
-
-    fireEvent.focus(feld)
-    fireEvent.change(feld, { target: { value: '42' } })
-    fireEvent.keyDown(feld, { key: 'Escape' })
-    fireEvent.blur(feld)
-    // Abgebrochen heißt: gar nichts geschickt — und im Feld steht wieder das,
-    // was vorher dastand, nicht die 42.
-    expect(dispatch).not.toHaveBeenCalled()
-    expect(container.querySelectorAll<HTMLInputElement>('.lac-mins-input')[1]!.value).toBe('30')
-  })
-
-  it('das Feld trägt die Grenzen 5..45 und zählt in Einerschritten', () => {
-    // Geklemmt wird in `lacMinuten`; die Grenzen stehen hier nur, damit die
-    // Tastatur des Telefons und die Pfeiltasten nicht daneben laufen. Zwei
-    // Zahlen an zwei Stellen wären eine Abschrift zu viel — sie kommen aus
-    // `meeting-edit.ts`.
-    const { container } = zeige(lac())
-    const feld = container.querySelector<HTMLInputElement>('.lac-mins-input')!
-    expect(feld.min).toBe(String(LAC_MIN_MINUTEN))
-    expect(feld.max).toBe(String(LAC_MAX_MINUTEN))
-    expect(feld.step).toBe('1')
-    expect(feld.type).toBe('number')
-  })
-
-  it('am Rand ist das Verschieben gesperrt — nach oben beim ersten, nach unten beim letzten', () => {
-    const { container } = zeige(lac())
-    const hoch = [...container.querySelectorAll<HTMLButtonElement>('.lac-move-btn')].filter(
-      (b) => b.getAttribute('aria-label') === t.a11yMoveUp,
-    )
-    const runter = [...container.querySelectorAll<HTMLButtonElement>('.lac-move-btn')].filter(
-      (b) => b.getAttribute('aria-label') === t.a11yMoveDown,
-    )
-    expect(hoch[0]!.disabled).toBe(true)
-    expect(hoch[1]!.disabled).toBe(false)
-    expect(runter[0]!.disabled).toBe(false)
-    expect(runter[1]!.disabled).toBe(true)
-  })
-
-  it('Verschieben nennt die Richtung', () => {
-    const { container, dispatch } = zeige(lac())
-    const runter = [...container.querySelectorAll('.lac-move-btn')].find(
-      (b) => b.getAttribute('aria-label') === t.a11yMoveDown,
-    )!
-    fireEvent.click(runter)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'lacMove', si: 0, ii: 0, dir: 1 })
-  })
-
-  it('Löschen entfernt den Punkt — erst nach der Rückfrage', () => {
-    const { container, dispatch } = zeige(lac())
-    fireEvent.click(container.querySelector('.lac-remove')!)
-    expect(dispatch).not.toHaveBeenCalledWith({ type: 'lacRemove', si: 0, ii: 0 })
-    expect(container.querySelector('.lac-remove')?.textContent).toBe(t.loeschenSicher)
-    fireEvent.click(container.querySelector('.lac-remove')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'lacRemove', si: 0, ii: 0 })
-  })
-
-  it('ein neuer Punkt braucht einen Titel — leer bittet darum', () => {
-    const { container, dispatch } = zeige(lac())
-    fireEvent.click(container.querySelector('.lac-add-btn')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.toastNameEingeben })
-    expect(dispatch.mock.calls.some((c) => c[0].type === 'lacAdd')).toBe(false)
-  })
-
-  it('mit Titel wird er eingefügt und das Feld geleert', () => {
-    const { container, dispatch } = zeige(lac())
-    const feld = container.querySelector<HTMLInputElement>('.lac-add-input')!
-    fireEvent.change(feld, { target: { value: 'Örtliche Hinweise' } })
-    fireEvent.click(container.querySelector('.lac-add-btn')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'lacAdd', si: 0, title: 'Örtliche Hinweise' })
-    expect(feld.value).toBe('')
-  })
-
-  it('ein anderer Abschnitt hat weder Minuten noch Einfügefeld', () => {
-    const s: Section = {
-      label: 'SCHÄTZE AUS GOTTES WORT', farbe: 'petrol',
-      items: [{ iid: 'i85', num: 1, title: 'Punkt', meta: '10 Min.', mins: 10, names: [{ name: '' }] }],
-    }
-    const { container } = zeige(s)
-    expect(container.querySelector('.lac-edit')).toBeNull()
-    expect(container.querySelector('.lac-add-row')).toBeNull()
+    expect(container.querySelector('.lac-mins-input')).toBeNull()
+    expect(container.querySelector('.lac-move-btn')).toBeNull()
+    expect(container.querySelector('.lac-remove')).toBeNull()
+    expect(container.querySelector('input:not(.talk-title-input)')).toBeNull()
+    expect(plaetze(container)).toHaveLength(3)
   })
 })
 

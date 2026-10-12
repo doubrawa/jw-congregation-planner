@@ -1,21 +1,10 @@
-import { Fragment, useRef, useState } from 'react'
+import { Fragment } from 'react'
 import { useApp, useAppDispatch } from '../app/context'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
-import { movableIndices } from '../data/meeting-edit'
 import { istSchuelerteil } from '../data/aux-class'
 import { dauerAbtrennen, rolleMitHerkunft, istArt, isGuestRole, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
-import {
-  closingSongNr,
-  hatLiedPlatz,
-  itemMinutes,
-  LAC_MAX_MINUTEN,
-  LAC_MIN_MINUTEN,
-  openingSongNr,
-  TALK_PLACEHOLDER,
-  themaVon,
-} from '../data/meeting-edit'
+import { closingSongNr, hatLiedPlatz, openingSongNr, TALK_PLACEHOLDER, themaVon } from '../data/meeting-edit'
 import { isSpeakerRole } from '../data/helpers'
-import { rechteVon } from '../data/rechte'
 import { nurZiffern } from '../data/ziffern'
 import { useKonflikte } from './useKonflikte'
 import { useZusage } from './useZusage'
@@ -47,96 +36,14 @@ function PartnerKnopf({ si, ii, hasPartner }: { si: number; ii: number; hasPartn
 }
 
 /**
- * Die Minuten eines LAC-Punkts — **direkt eingeben**.
- *
- * Hier standen bis zum 18. September 2026 zwei Knöpfe, und die sprangen in
- * Fünferschritten: „19 Minuten" war damit nicht einstellbar, „20" kostete vier
- * Tipps. Ein Feld nennt den Wert selbst.
- *
- * **Gespeichert wird beim Verlassen, nicht bei jedem Tastendruck.** Sonst wäre
- * die „1" von „19" schon ein eigener Wert — die Zahl würde auf das Minimum
- * geklemmt, das Ende der Zusammenkunft nachgezogen und der Schreibvorgang
- * angestoßen, bevor überhaupt zu Ende getippt ist. Solange das Feld den Fokus
- * hat, gilt deshalb der Entwurf; danach wieder der Wert aus den Daten — der
- * kann ein anderer sein, weil `lacMinuten` auf 5..45 klemmt.
- */
-function MinutenFeld({
-  mins,
-  einheit,
-  label,
-  onSetzen,
-}: {
-  mins: number
-  einheit: string
-  label: string
-  onSetzen: (wert: number) => void
-}) {
-  const [entwurf, setEntwurf] = useState(String(mins))
-  const [tippt, setTippt] = useState(false)
-  const abbruch = useRef(false)
-
-  /**
-   * Übernehmen — **gelesen wird aus dem Feld, nicht aus dem Entwurf.**
-   *
-   * Das Feld trägt den Wert unabhängig davon, ob React den Entwurf schon
-   * übernommen hat; der Entwurf ist nur die Anzeige während des Tippens. Wer
-   * hier den Zustand läse, machte das Übernehmen von der Reihenfolge zweier
-   * Renderläufe abhängig — eine Abhängigkeit, die kein Nutzen rechtfertigt.
-   */
-  const beenden = (feld: HTMLInputElement) => {
-    setTippt(false)
-    if (abbruch.current) {
-      abbruch.current = false
-      setEntwurf(String(mins))
-      return
-    }
-    const roh = feld.value.trim()
-    const zahl = Number(roh)
-    // Ein leeres Feld ist keine Null: Wer alles löscht und weiterklickt,
-    // wollte die Dauer nicht auf das Minimum setzen.
-    if (roh && Number.isFinite(zahl)) onSetzen(zahl)
-    else setEntwurf(String(mins))
-  }
-
-  return (
-    <span className="lac-mins">
-      <input
-        className="lac-mins-input"
-        type="number"
-        inputMode="numeric"
-        min={LAC_MIN_MINUTEN}
-        max={LAC_MAX_MINUTEN}
-        step={1}
-        aria-label={label}
-        value={tippt ? entwurf : String(mins)}
-        onFocus={(e) => {
-          setEntwurf(String(mins))
-          setTippt(true)
-          e.currentTarget.select()
-        }}
-        onChange={(e) => setEntwurf(e.target.value)}
-        onBlur={(e) => beenden(e.currentTarget)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') e.currentTarget.blur()
-          // Abbrechen über ein Merkfähnchen statt über den Entwurf: Das
-          // Verlassen liest das Feld, und dort stünde die verworfene Zahl noch.
-          if (e.key === 'Escape') {
-            abbruch.current = true
-            e.currentTarget.blur()
-          }
-        }}
-      />
-      <span className="lac-mins-einheit">{einheit}</span>
-    </span>
-  )
-}
-
-/**
  * Ein Programm-Abschnitt beim Planen (T121, Entwurf `GPlanen`): eine Karte wie
  * beim Ansehen, je Punkt Titel und Dauer und darunter — ab dem Tablet daneben —
- * seine Plätze als Zeilen (`PlatzZeile`); ein Tipp öffnet das Zuteilen. Bei
- * „Unser Leben als Christ" mit Minuten-/Verschieben-/Löschen-Steuerung und
- * Punkt-hinzufügen, am Wochenende Vortragsthema (Freitext) und Anfangslied.
+ * seine Plätze als Zeilen (`PlatzZeile`); ein Tipp öffnet das Zuteilen. Am
+ * Wochenende Vortragsthema (Freitext) und Anfangslied.
+ *
+ * Den Ablauf von „Unser Leben als Christ" — Minuten, Reihenfolge, eigene
+ * Punkte — ändert der Admin seit Phase 5b unter „Woche einrichten ›
+ * Programmpunkte bearbeiten" (`ProgrammBlatt`); hier wird zugeteilt.
  *
  * `section` ist die Anzeige-Fassung (Programmsprache), `rawSection` die
  * kanonische (deutsche Labels/Minuten) — die Logik läuft immer auf `rawSection`.
@@ -156,14 +63,10 @@ export function MeetingSection({
 }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
-  const [lacTitle, setLacTitle] = useState('')
 
-  const isLac = istArt(rawSection, 'lac')
-  // Den Ablauf ändert nur der Admin — eigene Punkte, Reihenfolge, Minuten
-  // (4.10.2026). Thema, Lieder und Partner gehören zum Zuteilen: Die setzt
-  // auch der Planer (Grenzfälle des Betreibers, `zuteilen-grenze.ts`).
-  const darfUmbauen = rechteVon(state).admin
-  // Wochenende: Vortragsthema als Freitext, Anfangslied als Nummernfeld
+  // Wochenende: Vortragsthema als Freitext, Anfangslied als Nummernfeld. Thema,
+  // Lieder und Partner gehören zum Zuteilen: Die setzt auch der Planer
+  // (Grenzfälle des Betreibers, `zuteilen-grenze.ts`).
   const isTalk = state.tab === 'we' && istArt(rawSection, 'vortrag')
   const isOpening = state.tab === 'we' && istArt(rawSection, 'eroeffnung')
   // …und am Wochenende ebenso das Schlusslied: es steht nicht im Arbeitsheft,
@@ -181,7 +84,6 @@ export function MeetingSection({
   const splitSong =
     (istArt(rawSection, 'eroeffnung') && !isOpening) ||
     (istArt(rawSection, 'abschluss') && !isClosing)
-  const movables = movableIndices(rawSection.items)
   // Gefragt wird an der **kanonischen** Woche: Das Lied-Atom heißt dort
   // „Lied", in der Anzeigesprache steht womöglich „Song" oder „سرود".
   const liedPlatzDa =
@@ -245,15 +147,6 @@ export function MeetingSection({
     })
   }
 
-  const addLac = () => {
-    if (!lacTitle.trim()) {
-      dispatch({ type: 'showToast', text: t.toastNameEingeben })
-      return
-    }
-    dispatch({ type: 'lacAdd', si, title: lacTitle })
-    setLacTitle('')
-  }
-
   // Die Lieder stehen rechts im Kopf, wie beim Ansehen: eigene Liedzeilen und
   // das Lied aus dem Sammeltitel von Eröffnung und Abschluss — außer dort, wo
   // es am Wochenende ein Nummernfeld ist (unten).
@@ -282,9 +175,6 @@ export function MeetingSection({
         // des kanonischen Titels; dahinter steht das Thema (T62).
         const istCoPunkt = !isSong(rawItem) && rawItem.names.some((n) => n.rolle === ROLE_CIRCUIT)
         const coBegriff = istCoPunkt ? (rawTitle.split(' · ')[0] ?? '') : ''
-        const rawMins = isSong(rawItem) ? null : itemMinutes(rawItem)
-        const editable = darfUmbauen && isLac && rawMins != null
-        const mPos = movables.indexOf(ii)
         // Schülerteil (Gesprächsführer-Slot vorhanden) → Partner an-/abschaltbar.
         // Sprachunabhängig über die Qualifikation erkannt, nicht über den Label-Text.
         const canPartner = !isSong(rawItem) && rawItem.names.some((n) => n.bereichsKey === 'schulung')
@@ -359,45 +249,6 @@ export function MeetingSection({
                 </div>
               )}
               {zusatz && <div className="prog-item-meta">{tpw(zusatz)}</div>}
-              {editable && (
-                <div className="lac-edit">
-                  {/*
-                    Die Einheit kommt aus dem Programm-Übersetzer, nicht aus der
-                    Oberfläche: Sie steht neben einer Zahl des Programms und folgt
-                    deshalb der Versammlungssprache („min.", „دقيقة", „分"). Geholt
-                    wird sie, indem eine Null übersetzt und wieder abgezogen wird —
-                    die Wörterbücher kennen nur die ganze Angabe „N Min.".
-                  */}
-                  <MinutenFeld
-                    mins={rawMins}
-                    einheit={tpw('0 Min.').replace(/^0/, '')}
-                    label={t.a11yMinuten}
-                    onSetzen={(wert) => dispatch({ type: 'lacMinuten', si, ii, mins: wert })}
-                  />
-                  <div className="lac-move">
-                    <button
-                      type="button"
-                      className="lac-move-btn"
-                      aria-label={t.a11yMoveUp}
-                      disabled={mPos <= 0}
-                      onClick={() => dispatch({ type: 'lacMove', si, ii, dir: -1 })}
-                    >
-                      ▲
-                    </button>
-                    <button
-                      type="button"
-                      className="lac-move-btn"
-                      aria-label={t.a11yMoveDown}
-                      disabled={mPos >= movables.length - 1}
-                      onClick={() => dispatch({ type: 'lacMove', si, ii, dir: 1 })}
-                    >
-                      ▼
-                    </button>
-                  </div>
-                  <span className="lac-spacer" />
-                  <EntfernenKnopf className="lac-remove" onEntfernen={() => dispatch({ type: 'lacRemove', si, ii })} />
-                </div>
-              )}
               {canPartner && <PartnerKnopf si={si} ii={ii} hasPartner={hasPartner} />}
             </div>
             {dauer && <span className="prog-dauer">{tpw(dauer)}</span>}
@@ -443,22 +294,6 @@ export function MeetingSection({
           </div>
         )
       })}
-      {isLac && darfUmbauen && (
-        <div className="lac-add-row">
-          <input
-            type="text"
-            dir="auto"
-            className="lac-add-input"
-            placeholder={t.lacPh}
-            aria-label={t.lacPh}
-            value={lacTitle}
-            onChange={(e) => setLacTitle(e.target.value)}
-          />
-          <button type="button" className="lac-add-btn" onClick={addLac}>
-            {t.lacAdd}
-          </button>
-        </div>
-      )}
       {/*
         Nur wo die Nummer auch landen kann (V7): Trägt der Abschnitt weder ein
         Lied-Item noch ein Lied-Atom im Titel, hätte `setSong` nichts, wohin es

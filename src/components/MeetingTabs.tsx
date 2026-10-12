@@ -16,15 +16,13 @@ interface MeetingTabsProps {
    * Zusammenkünften.
    */
   /**
-   * Weiterer Reiter: die Bearbeiten-Ansicht der Woche (T64) — Anlass und
-   * Abweichungen. Nur im Planen und nur für Planer; das Ansehen ist für alle
-   * nur lesend, und der Gruppenaufseher plant ohnehin nur den Predigtdienst.
+   * Weiterer Eintrag: „Woche einrichten" (T64, T121 `GWochePlanen`) — Anlass,
+   * Abweichungen, Termine, Programm. Nur im Planen und nur für den Admin; das
+   * Ansehen ist für alle nur lesend, und der Gruppenaufseher plant ohnehin nur
+   * den Predigtdienst.
    *
-   * Er trägt ein Zeichen statt eines Wortes. Das ist keine Sparsamkeit an der
-   * falschen Stelle, sondern die Konsequenz aus `ui.test.ts`: Jeder neue
-   * Schlüssel verlangt 33 Übersetzungen, und erfunden wird hier keine. Der
-   * vorgelesene Name kommt deshalb aus `einstellungen` — die Ansicht *sind* die
-   * Einstellungen dieser Woche.
+   * Er trägt ein Zeichen statt eines Wortes, wie im Entwurf; vorgelesen wird
+   * „Woche einrichten".
    */
   showEdit?: boolean
   /**
@@ -83,7 +81,7 @@ export function MeetingTabs({ tab, onChange, showEdit = false, week }: MeetingTa
           type="button"
           className={tab === 'edit' ? 'meeting-tab meeting-tab--icon is-active' : 'meeting-tab meeting-tab--icon'}
           aria-pressed={tab === 'edit'}
-          aria-label={t.einstellungen}
+          aria-label={t.wocheEinrichten}
           onClick={() => onChange('edit')}
         >
           <Zeichen name="einstellungen" />

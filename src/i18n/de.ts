@@ -429,6 +429,21 @@ export const DE = {
     // „Zuteilen" heißt auch der offene Platz — er sagt, was dort zu tun ist.
     spurWoche: 'Stand der Woche', spurZuteilen: 'Zuteilen', spurSenden: 'Senden', spurZusagen: 'Zusagen',
     lageProblem: 'Problem', zuKlaeren: 'Zu klären',
+    // Woche einrichten und Programm (T121, Entwurf `GWochePlanen`, `GProgramm`).
+    wocheEinrichten: 'Woche einrichten',
+    anlassDerWoche: 'Anlass der Woche',
+    anlassNormal: 'Normale Woche',
+    anlassNormalText: 'Programm wie im Arbeitsheft',
+    anlassCoText: 'Dienstvortrag statt Versammlungsbibelstudium',
+    anlassMemText: 'Die Zusammenkunft an diesem Tag entfällt',
+    zusammenkuenfteDieserWoche: 'Zusammenkünfte dieser Woche',
+    weitereTermine: 'Weitere Termine',
+    weitereTermineText: 'Für alles, was in dieser Woche zusätzlich stattfindet. Erscheint bei allen im Programm.',
+    programmTitel: 'Programm',
+    programmpunkteBearbeiten: 'Programmpunkte bearbeiten',
+    ausArbeitsheft: 'aus dem Arbeitsheft',
+    programmHinweis: 'Was aus dem Arbeitsheft kommt, bleibt, wie es ist. Unter „{abschnitt}“ ordnest du um, änderst Minuten und fügst eigene Punkte ein.',
+    programmpunktEinfuegen: 'Programmpunkt einfügen',
     // „Plan senden": der Planer gibt die fertige Woche frei, und erst dann
     // erfahren die Eingeteilten davon. Der Knopf spricht von der ganzen Woche,
     // nicht vom Reiter darüber — sonst hielte man ihn für dessen Aktion.

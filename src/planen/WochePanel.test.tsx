@@ -19,11 +19,12 @@ import { dict } from '../i18n/ui'
 import { WochePanel } from './WochePanel'
 
 /**
- * T64 — der Bearbeiten-Reiter und die Ansicht dahinter.
+ * T64 — der Bearbeiten-Reiter und die Ansicht dahinter, seit T121 „Woche
+ * einrichten" (Entwurf `GWochePlanen`).
  *
  * Der Befund war ein Bedienelement auf der falschen Ebene: Der
  * Kreisaufseher-Schalter stand im Panel **einer** Zusammenkunft, änderte aber
- * **beide**. Geprüft wird deshalb dreierlei — dass es den Reiter gibt und nur
+ * **beide**. Geprüft wird deshalb dreierlei — dass es den Eintrag gibt und nur
  * dort, wo er hingehört; dass die Ansicht **beide** Zusammenkünfte zeigt; und
  * dass der Schalter aus dem Zusammenkunfts-Panel verschwunden ist.
  */
@@ -42,6 +43,9 @@ function Buehne({ state, children }: { state: AppState; children: ReactNode }) {
 afterEach(cleanup)
 
 const t = dict('de')
+
+// jsdom kennt kein matchMedia; das Blatt des Programms fragt danach.
+window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
 const basis = (): AppState => ({ ...demoZustand(), weeks: buildDemoWeeks(), week: 0, planner: true })
 
 describe('Der Bearbeiten-Reiter', () => {
@@ -51,16 +55,15 @@ describe('Der Bearbeiten-Reiter', () => {
         <MeetingTabs tab="mid" onChange={() => {}} />
       </Buehne>,
     )
-    expect(queryByLabelText(t.einstellungen)).toBeNull()
+    expect(queryByLabelText(t.wocheEinrichten)).toBeNull()
 
     rerender(
       <Buehne state={basis()}>
         <MeetingTabs tab="mid" onChange={() => {}} showEdit />
       </Buehne>,
     )
-    // Ein Symbol braucht einen vorgelesenen Namen — er kommt aus `einstellungen`,
-    // damit kein Schlüssel erfunden werden muss (33 Overlays, ui.test.ts).
-    expect(queryByLabelText(t.einstellungen)).not.toBeNull()
+    // Ein Zeichen braucht einen vorgelesenen Namen.
+    expect(queryByLabelText(t.wocheEinrichten)).not.toBeNull()
   })
 
   it('schaltet auf „edit" um', () => {
@@ -70,39 +73,73 @@ describe('Der Bearbeiten-Reiter', () => {
         <MeetingTabs tab="mid" onChange={(tab) => (gewaehlt = tab)} showEdit />
       </Buehne>,
     )
-    fireEvent.click(getByLabelText(t.einstellungen))
+    fireEvent.click(getByLabelText(t.wocheEinrichten))
     expect(gewaehlt).toBe('edit')
   })
 })
 
 describe('Die Wochen-Ansicht', () => {
-  it('zeigt die drei Anlässe und „kein Anlass"', () => {
-    const { getByLabelText } = render(
+  it('der Anlass ist eine Auswahl aus vier — je mit dem, was er bedeutet', () => {
+    const { getByRole } = render(
       <Buehne state={basis()}>
         <WochePanel />
       </Buehne>,
     )
-    const select = getByLabelText(t.einstellungen) as HTMLSelectElement
-    expect([...select.options].map((o) => o.value)).toEqual(['', 'co', 'mem', 'kongress'])
-    // Der erste Eintrag ist ein Gedankenstrich: er braucht keine Übersetzung.
-    expect(select.options[0]?.textContent).toBe('—')
-    expect([...select.options].map((o) => o.textContent).slice(1)).toEqual([
+    const gruppe = getByRole('radiogroup', { name: t.anlassDerWoche })
+    const optionen = [...gruppe.querySelectorAll('[role="radio"]')]
+    expect(optionen.map((o) => o.querySelector('.option-titel')?.textContent)).toEqual([
+      t.anlassNormal,
       t.coWoche,
-      t.memWoche,
       t.kongress,
+      t.memWoche,
     ])
+    expect(optionen.map((o) => o.querySelector('.klein-text')?.textContent)).toEqual([
+      t.anlassNormalText,
+      t.anlassCoText,
+      t.kongressAusfall,
+      t.anlassMemText,
+    ])
+    // Ohne Anlass ist „Normale Woche" gewählt.
+    expect(optionen.map((o) => o.getAttribute('aria-checked'))).toEqual(['true', 'false', 'false', 'false'])
   })
 
-  it('zeigt **beide** Zusammenkünfte auf einmal', () => {
+  it('zeigt **beide** Zusammenkünfte auf einmal — „Verlegen" klappt ihre Abweichung auf', () => {
     // Vorher ging nur die des offenen Reiters: „Mittwoch statt Dienstag" und
     // „Wochenende entfällt" waren zwei Reiterwechsel.
-    const { getAllByRole } = render(
+    const { container, getAllByRole, queryAllByRole } = render(
       <Buehne state={basis()}>
         <WochePanel />
       </Buehne>,
     )
+    const zeilen = [...container.querySelectorAll('.einrichten-zusammenkunft')]
+    expect(zeilen.map((z) => z.querySelector('.klein-text')?.textContent)).toEqual([t.tabMid, t.tabWe])
+    // Zu, solange nichts abweicht.
+    expect(queryAllByRole('switch')).toHaveLength(0)
+    for (const knopf of getAllByRole('button', { name: t.ozTagWechseln })) fireEvent.click(knopf)
     const namen = getAllByRole('switch').map((el) => el.getAttribute('aria-label'))
     expect(namen).toEqual([t.tabMid, t.tabWe])
+  })
+
+  it('eine Zusammenkunft, die schon abweicht, steht offen da', () => {
+    const verlegt = reducer({ ...basis(), screen: 'planen', tab: 'edit' }, { type: 'setAbweichung', tab: 'we', patch: { cancelled: true } })
+    const { getAllByRole, container } = render(
+      <Buehne state={verlegt}>
+        <WochePanel />
+      </Buehne>,
+    )
+    expect(getAllByRole('switch').map((el) => el.getAttribute('aria-label'))).toEqual([t.tabWe])
+    // Ausgefallen: der Termin steht durchgestrichen da.
+    expect(container.querySelectorAll('.einrichten-wann s')).toHaveLength(1)
+  })
+
+  it('„Programmpunkte bearbeiten" öffnet das Programm der Woche', () => {
+    const { getByRole } = render(
+      <Buehne state={basis()}>
+        <WochePanel />
+      </Buehne>,
+    )
+    fireEvent.click(getByRole('button', { name: new RegExp(t.programmpunkteBearbeiten) }))
+    expect(document.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe(t.programmTitel)
   })
 
   it('der Kreisaufseher-Schalter steht **nicht** mehr bei einer Zusammenkunft', () => {
@@ -312,18 +349,22 @@ describe('Der Termin des Anlasses', () => {
   })
 
   it('der Anlass selbst wird über die Auswahl gesetzt und wieder aufgehoben', () => {
+    const option = (c: HTMLElement, titel: string) =>
+      [...c.querySelectorAll<HTMLButtonElement>('.anlass-liste [role="radio"]')].find(
+        (o) => o.querySelector('.option-titel')?.textContent === titel,
+      )!
     const { container, gesendet } = zeige(basis())
-    const wahl = container.querySelector('.woche-anlass-select')!
-    fireEvent.change(wahl, { target: { value: 'kongress' } })
+    fireEvent.click(option(container, t.kongress))
     expect(gesendet).toContainEqual({ type: 'setAnlass', art: 'kongress' })
     cleanup()
     const zweiter = zeige(mitAnlass('kongress'))
-    fireEvent.change(zweiter.container.querySelector('.woche-anlass-select')!, { target: { value: '' } })
+    expect(option(zweiter.container, t.kongress).getAttribute('aria-checked')).toBe('true')
+    fireEvent.click(option(zweiter.container, t.anlassNormal))
     expect(zweiter.gesendet).toContainEqual({ type: 'setAnlass', art: null })
   })
 
   it('ohne geladene Woche steht gar nichts da', () => {
     const { container } = zeige({ ...basis(), weeks: [] })
-    expect(container.querySelector('.woche-anlass')).toBeNull()
+    expect(container.querySelector('.anlass-liste')).toBeNull()
   })
 })

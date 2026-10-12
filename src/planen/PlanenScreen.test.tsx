@@ -157,11 +157,11 @@ describe('Der Stand der Woche (T121)', () => {
 })
 
 describe('Die Reiter', () => {
-  it('die Zusammenkünfte haben drei: beide Zusammenkünfte und Bearbeiten', () => {
+  it('die Zusammenkünfte haben drei: beide Zusammenkünfte und „Woche einrichten"', () => {
     // Die Treffpunkte waren bis T120 ein vierter Reiter; sie sind jetzt das
     // Thema Predigtdienst und stehen im Menü.
     const { container } = zeige()
-    expect(reiter(container)).toEqual(['Dienstag', 'Sonntag', t.einstellungen])
+    expect(reiter(container)).toEqual(['Dienstag', 'Sonntag', t.wocheEinrichten])
   })
 
   it('der Predigtdienst hat vier: Treffpunkte der Woche, Gruppenbesuche, öffentliches Zeugnisgeben und Grundplan', () => {
@@ -317,25 +317,34 @@ describe('Der Gruppenaufseher sieht nur seine Treffpunkte', () => {
   it('auch ein stehengebliebener „edit"-Reiter führt ihn nicht in die Bearbeitung', () => {
     // Er kann ihn nicht wählen — aber der Zustand könnte von vorher stammen.
     const { container } = alsAufseher({ tab: 'edit' })
-    expect(seite(container).querySelector('.woche-anlass')).toBeNull()
+    expect(seite(container).querySelector('.anlass-liste')).toBeNull()
   })
 })
 
-describe('Die Bearbeiten-Ansicht (T64)', () => {
-  it('zeigt Anlass und beide Zusammenkünfte statt des Programms', () => {
+describe('Woche einrichten (T64, T121 `GWochePlanen`)', () => {
+  it('zeigt Anlass, beide Zusammenkünfte, Termine und Programm statt des Plans', () => {
     const { container } = zeige({ tab: 'edit' })
-    expect(seite(container).querySelector('.woche-anlass')).toBeTruthy()
-    expect(seite(container).querySelectorAll('.sonder')).toHaveLength(2)
+    expect(seite(container).querySelector('.anlass-liste')).toBeTruthy()
+    expect(seite(container).querySelectorAll('.einrichten-zusammenkunft')).toHaveLength(2)
+    expect(seite(container).textContent).toContain(t.programmpunkteBearbeiten)
     expect(seite(container).querySelector('.prog-row')).toBeNull()
     expect(seite(container).querySelector('.besetzung')).toBeNull()
   })
 
-  it('der Planer kommt über den Reiter hin', () => {
+  it('ist eine Ebene unter dem Plan: Titel und Zurück statt der Karten der Tage', () => {
+    const { container, dispatch } = zeige({ tab: 'edit' })
+    expect(seite(container).querySelector('.einrichten-kopf .seitentitel')?.textContent).toBe(t.wocheEinrichten)
+    expect(seite(container).querySelector('.meeting-tabs')).toBeNull()
+    fireEvent.click(seite(container).querySelector<HTMLButtonElement>(`.einrichten-kopf [aria-label="${t.a11yZurueck}"]`)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'setTab', tab: 'mid' })
+  })
+
+  it('der Admin kommt über das Zeichen neben den Tagen hin', () => {
     const { container, dispatch } = zeige()
-    const stift = [...seite(container).querySelectorAll('.meeting-tabs .meeting-tab')].find(
-      (b) => b.getAttribute('aria-label') === t.einstellungen,
+    const zeichen = [...seite(container).querySelectorAll('.meeting-tabs .meeting-tab')].find(
+      (b) => b.getAttribute('aria-label') === t.wocheEinrichten,
     )!
-    fireEvent.click(stift)
+    fireEvent.click(zeichen)
     expect(dispatch).toHaveBeenCalledWith({ type: 'setTab', tab: 'edit' })
   })
 })
@@ -483,24 +492,20 @@ describe('Der Planer teilt zu, ändert den Plan aber nicht (4.10.2026)', () => {
 
   it('ein stehengebliebener „edit"-Reiter führt ihn nicht in die Bearbeitung', () => {
     // Gegenprobe: beim Admin steht dort der Anlass der Woche.
-    expect(seite(zeige({ tab: 'edit' }).container).querySelector('.woche-anlass')).not.toBeNull()
+    expect(seite(zeige({ tab: 'edit' }).container).querySelector('.anlass-liste')).not.toBeNull()
     cleanup()
     const { container } = zeige({ ...ALS_PLANER, tab: 'edit' })
-    expect(seite(container).querySelector('.woche-anlass')).toBeNull()
+    expect(seite(container).querySelector('.anlass-liste')).toBeNull()
     expect(seite(container).querySelector('.meeting-tabs')).not.toBeNull()
   })
 
-  it('keine eigenen Punkte, keine Reihenfolge, keine Minuten — der Admin sieht sie', () => {
-    const admin = zeige({ weeks: [mitLac()] })
-    expect(seite(admin.container).querySelector('.lac-move')).not.toBeNull()
-    expect(seite(admin.container).querySelector('.lac-edit')).not.toBeNull()
-    expect(seite(admin.container).querySelector('.lac-add-row')).not.toBeNull()
-    cleanup()
+  it('den Ablauf ändert er nicht — die Steuerung dafür steht nur unter „Woche einrichten" (T121)', () => {
+    // Eigene Punkte, Reihenfolge und Minuten gehören dem Admin; seit Phase 5b
+    // stehen sie in dessen „Woche einrichten", nicht mehr im Plan.
     const planer = zeige({ ...ALS_PLANER, weeks: [mitLac()] })
     const s = seite(planer.container)
-    expect(s.querySelector('.lac-move')).toBeNull()
-    expect(s.querySelector('.lac-edit')).toBeNull()
-    expect(s.querySelector('.lac-add-row')).toBeNull()
+    expect(s.querySelector('.lac-mins-input')).toBeNull()
+    expect(s.textContent).not.toContain(t.programmpunkteBearbeiten)
     // Den Platz darin teilt er aber zu.
     expect(s.textContent).toContain('Olaf Overseer')
   })

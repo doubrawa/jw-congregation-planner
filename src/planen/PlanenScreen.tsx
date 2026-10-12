@@ -1,6 +1,8 @@
-import { useApp } from '../app/context'
+import { useApp, type AppAction } from '../app/context'
+import { Zeichen } from '../bausteine/Zeichen'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { Bereichstitel } from '../components/Bereichstitel'
+import { useBackDismiss } from '../components/useBackDismiss'
 import { WeekStrip } from '../components/WeekStrip'
 import { AusfallBanner, MemorialBanner } from '../components/WeekBadges'
 import { WochenWahl } from '../components/WochenWahl'
@@ -41,11 +43,15 @@ import './planen.css'
  * Predigtdienstes. Welches gerade gezeigt wird, sagt der Reiter (`themaVon`).
  */
 export function PlanenScreen() {
-  const { state } = useApp()
+  const { state, dispatch } = useApp()
   const rechte = rechteVon(state)
   // Nur die eigene Gruppe sieht, wer Gruppenaufseher ist und nicht zuteilt:
   // Admin und Planer besetzen die Treffpunkte aller Gruppen.
   const fsOverseer = !rechte.zuteilen && rechte.gruppe !== null
+  // „Woche einrichten" ist eine Unteransicht des Plans: Die Zurück-Taste führt
+  // in den Plan zurück (`unteransicht`), nicht gleich zu Start. Hier und nicht
+  // im Rumpf, den der Wochenstreifen dreimal zeichnet.
+  useBackDismiss(state.tab === 'edit' && rechte.admin, () => dispatch(zumPlanDerWoche), 'unteransicht')
 
   // Die Weiteren Pläne (T120, Phase 5) sind ein eigenes Thema ohne Woche.
   // Planen dürfen sie Admin und Planer (der Planer verteilt die Gruppen); der
@@ -91,6 +97,9 @@ export function PlanenScreen() {
   )
 }
 
+/** Aus „Woche einrichten" zurück in den Plan — der Zusammenkunft unter der Woche. */
+const zumPlanDerWoche: AppAction = { type: 'setTab', tab: 'mid' }
+
 /** Planung EINER Woche; welche, sagt der Zustand (im Streifen überschrieben). */
 function PlanenBody() {
   const { state, dispatch } = useApp()
@@ -131,7 +140,18 @@ function PlanenBody() {
 
   return (
     <section className="screen prog">
-      <Bereichstitel thema={thema} />
+      {/* „Woche einrichten" ist eine Unteransicht des Plans (`GWochePlanen`):
+          Zurück führt in den Plan der Woche, nicht aus dem Planen hinaus. */}
+      {isEdit ? (
+        <div className="einrichten-kopf">
+          <button type="button" className="rund-knopf" aria-label={t.a11yZurueck} onClick={() => dispatch(zumPlanDerWoche)}>
+            <Zeichen name="zurueck" />
+          </button>
+          <h1 className="seitentitel">{t.wocheEinrichten}</h1>
+        </div>
+      ) : (
+        <Bereichstitel thema={thema} />
+      )}
 
       {/* Die Reiter des Predigtdienstes stehen über der Woche: Der Grundplan
           hat keine. */}
@@ -139,7 +159,7 @@ function PlanenBody() {
 
       <WochenWahl week={week} rawWeek={rawWeek} tpw={tpw} />
 
-      {!isFs && (
+      {!isFs && !isEdit && (
         <MeetingTabs
           tab={state.tab}
           week={rawWeek}

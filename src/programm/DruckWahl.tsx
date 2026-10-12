@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { createPortal, flushSync } from 'react-dom'
 import { useApp } from '../app/context'
+import { Option } from '../bausteine/Option'
 import { Sheet } from '../components/Sheet'
 import { fill, useT } from '../i18n/useT'
 import { druckKennzeichen, monatDerWoche, monatsName } from './druck'
@@ -86,28 +87,13 @@ function DruckBlatt({
 }) {
   const { t } = useT()
   const [ganzerMonat, setGanzerMonat] = useState(false)
-  const wahl = (monat: boolean, titel: string, unter?: string) => (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={ganzerMonat === monat}
-      className="druck-option"
-      onClick={() => setGanzerMonat(monat)}
-    >
-      <span className="druck-option-kreis" aria-hidden="true" />
-      <span className="druck-option-text">
-        <span className="druck-option-titel">{titel}</span>
-        {unter && <span className="klein-text">{unter}</span>}
-      </span>
-    </button>
-  )
 
   return createPortal(
     <Sheet label={t.drucken} title={t.drucken} sub={erklaerung} onClose={onClose}>
       <div className="sheet-inhalt">
         <div className="druck-optionen" role="radiogroup" aria-label={t.drucken}>
-          {wahl(false, t.druckWoche, zeitraum)}
-          {wahl(true, monatText)}
+          <Option an={!ganzerMonat} titel={t.druckWoche} unter={zeitraum} onWahl={() => setGanzerMonat(false)} />
+          <Option an={ganzerMonat} titel={monatText} onWahl={() => setGanzerMonat(true)} />
         </div>
       </div>
       <div className="druck-fuss">

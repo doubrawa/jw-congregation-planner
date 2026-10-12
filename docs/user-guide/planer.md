@@ -111,7 +111,7 @@ nicht umlegen.
 | Gruppenbesuche: Besucher wechseln | – | – | ✓ | ✓ |
 | Weitere Pläne: Gruppen verteilen | – | – | ✓ | ✓ |
 | **Plan senden** | – | Treffpunkte seiner Gruppe | ✓ | ✓ |
-| Bearbeiten‑Reiter (Anlass, Sonderwoche, Termine), Punkte unter „Unser Leben als Christ" anlegen, verschieben, Minuten | – | – | – | ✓ |
+| **Woche einrichten** (Anlass, Sonderwoche, Termine), Punkte unter „Unser Leben als Christ" anlegen, verschieben, Minuten | – | – | – | ✓ |
 | Termine des Zeugnisgebens, Gruppenbesuche planen, Weitere Pläne anlegen | – | – | – | ✓ |
 | Programm importieren, Personen, Abwesenheiten anderer, Einstellungen, Mitglieder, Einladungen | – | – | – | ✓ |
 
@@ -131,8 +131,8 @@ einer Gruppe – sonst **Verkündiger**.
 Unter **Zusammenkünfte** schaltest du oben rechts auf **Planen** und teilst die
 Aufgaben und Hilfsdienste einer Woche zu. Die Karten der beiden Tage (mit
 Datum und Uhrzeit) wechseln zwischen der **Zusammenkunft unter der Woche** und
-**am Wochenende**; daneben steht die Karte mit dem **Einstellungen**-Zeichen
-für die Woche. Die Zusammenkünfte für den Predigtdienst sind ein eigenes
+**am Wochenende**; daneben steht für Admins die Karte mit dem Zeichen (drei
+Regler): **Woche einrichten** (Abschnitt 3). Die Zusammenkünfte für den Predigtdienst sind ein eigenes
 Thema im Menü (Abschnitt 5). Mit ‹ › wählst du die Woche – auf Handy und
 Tablet geht auch seitwärts wischen.
 
@@ -211,17 +211,10 @@ den Bereich **„Schulungsaufgaben Partner"**. Die automatische Zuteilung setzt
 Gesprächsteile bevorzugt mit Verkündigern und Schwestern (nicht mit Ältesten/
 Dienstamtgehilfen) und achtet auf gleiches Geschlecht der beiden Partner.
 
-Das Programm selbst lässt sich hier ebenfalls anpassen: Im Abschnitt **Unser Leben
-als Christ** kannst du Punkte hinzufügen, in der Länge (Minuten) anpassen,
-verschieben oder entfernen; beim Wochenende trägst du das **Vortragsthema** und
-die **Anfangslied‑Nummer** ein.
-
-**Die Dauer tippst du direkt ein.** Neben jedem Punkt steht ein Feld mit der
-Minutenzahl — hineinklicken, Zahl eintragen, fertig. Übernommen wird sie, sobald
-du das Feld verlässt (oder Enter drückst); **Esc** verwirft die Eingabe, und ein
-leer gelassenes Feld ändert nichts. Erlaubt sind **5 bis 45 Minuten**; wer mehr
-einträgt, bekommt 45. Die **Endzeit der Zusammenkunft** unten wandert
-automatisch mit.
+Beim Wochenende trägst du hier das **Vortragsthema** und die
+**Anfangslied‑Nummer** ein – das gehört zum Zuteilen, das darf auch der Planer.
+Den Ablauf selbst ändert der Admin unter **Woche einrichten › Programmpunkte
+bearbeiten** (Abschnitt 3, „Das Programm bearbeiten").
 
 ---
 
@@ -241,17 +234,31 @@ sie ihn (siehe [Personen verwalten](#6-personen-verwalten)). Externe Redner
 (Gastredner, Kreisaufseher) bleiben offen und werden manuell eingetragen. Nach dem
 Zuteilen kannst du einzelne Slots wie gewohnt noch von Hand anpassen.
 
+### Woche einrichten
+
+Was der ganzen Woche gehört, stellt der Admin unter **Woche einrichten** ein:
+beim Planen der Zusammenkünfte die Karte mit dem Zeichen (drei Regler) neben
+„Dienstag" und „Sonntag". Die Seite ist eine Ebene unter dem Plan – oben führt
+der Pfeil zurück, ebenso die Zurück-Taste. Untereinander stehen vier Karten:
+
+| Karte | Was du dort einstellst |
+| --- | --- |
+| **Anlass der Woche** | Normale Woche, Besuch des Kreisaufsehers, Kongress oder Gedächtnismahl – je mit dem, was er für die Woche bedeutet; dazu Datum und Uhrzeit des Mahls bzw. die Tage des Kongresses |
+| **Zusammenkünfte dieser Woche** | Beide Zusammenkünfte mit Tag und Uhrzeit; **Verlegen** klappt die Abweichung auf (siehe unten) |
+| **Weitere Termine** | Pionierbesprechung und was sonst ansteht (siehe unten) |
+| **Programm** | **Programmpunkte bearbeiten** – „Unser Leben als Christ" (siehe unten) |
+
 ### Sonderwoche: verlegen oder absagen
 
 Manchmal weicht eine Woche ab — mehrere Versammlungen teilen sich einen Saal,
 eine hat Dienstwoche, und ihr müsst euren Tag verschieben. Oder es ist
 Kongress und die Zusammenkunft entfällt ganz.
 
-Dafür gibt es beim Planen der Zusammenkünfte eine eigene Karte neben
-„Dienstag" und „Sonntag": die mit dem **Einstellungen**-Zeichen (drei Regler).
-Sie gehört der ganzen Woche, nicht einer einzelnen Zusammenkunft — deshalb
-stellst du dort **beide** Zusammenkünfte ein, ohne die Karte zu wechseln. Je
-Zusammenkunft steht ein Feld:
+Dafür steht unter **Woche einrichten › Zusammenkünfte dieser Woche** bei jeder
+Zusammenkunft **Verlegen**. Die Karte gehört der ganzen Woche, nicht einer
+einzelnen Zusammenkunft — deshalb stellst du dort **beide** Zusammenkünfte
+ein, ohne die Karte zu wechseln. Weicht eine schon ab, steht ihr Feld offen
+da, und eine ausgefallene ist durchgestrichen. Je Zusammenkunft:
 
 | Bedienelement | Wirkung |
 | --- | --- |
@@ -282,7 +289,7 @@ Zu einer Woche gehört manchmal mehr als die beiden Zusammenkünfte und die
 Treffpunkte — eine **Pionierbesprechung**, eine **Besprechung mit
 Dienstamtgehilfen und Ältesten**, was sonst ansteht.
 
-Auf der Karte mit dem **Einstellungen**-Zeichen legst du mit **+ HINZUFÜGEN**
+Unter **Woche einrichten › Weitere Termine** legst du mit **+ HINZUFÜGEN**
 so viele Termine an, wie du brauchst. Jeder hat vier Felder, alle bis auf den Namen freiwillig:
 
 | Feld | Wofür |
@@ -305,9 +312,33 @@ Name und Ort bleiben so stehen, wie du sie schreibst; sie werden **nicht**
 übersetzt — es sind deine Worte, wie der Grund einer Verlegung. Nur der
 Wochentag erscheint bei jedem in seiner eigenen Sprache.
 
+### Das Programm bearbeiten
+
+Unter **Woche einrichten › Programmpunkte bearbeiten** steht das Programm der
+Zusammenkunft unter der Woche, Abschnitt für Abschnitt. Was aus dem Arbeitsheft
+kommt, bleibt, wie es ist. Unter **Unser Leben als Christ** öffnet ein Tipp
+auf einen Punkt sein Blatt:
+
+- **Die Dauer tippst du direkt ein** — hineinklicken, Zahl eintragen, fertig.
+  Übernommen wird sie, sobald du das Feld verlässt (oder Enter drückst);
+  **Esc** verwirft die Eingabe, und ein leer gelassenes Feld ändert nichts.
+  Erlaubt sind **5 bis 45 Minuten**; wer mehr einträgt, bekommt 45. Die
+  **Endzeit der Zusammenkunft** darunter wandert automatisch mit.
+- **Nach oben / Nach unten** verschiebt den Punkt; am Rand ist der Knopf
+  gesperrt.
+- **Entfernen** fragt noch einmal nach („Wirklich entfernen?") — mit dem Punkt
+  gehen seine Zuteilungen.
+
+Darunter fügt **Programmpunkt einfügen** einen eigenen Punkt ein: Titel
+eintragen, **Übernehmen**. Er kommt vor das Versammlungsbibelstudium und
+beginnt mit 10 Minuten.
+
+Zugeteilt wird weiter im Plan; dort stehen seit dem neuen Design keine
+Minutenfelder mehr.
+
 ### Besuch des Kreisaufsehers
 
-Im selben Feld sitzt der Schalter **Besuch des Kreisaufsehers**. Er betrifft
+Unter **Anlass der Woche** wählst du **Besuch des Kreisaufsehers**. Er betrifft
 beide Zusammenkünfte auf einmal:
 
 | | Was passiert |

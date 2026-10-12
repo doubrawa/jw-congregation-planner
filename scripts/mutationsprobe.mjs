@@ -1447,13 +1447,10 @@ export const KATALOG = [
     suchen: "        edit: screen === 'planen' && rechte.admin,",
     ersetzen: "        edit: screen === 'planen',",
   },
-  {
-    id: 'planen-planer-ohne-umbau',
-    datei: 'src/planen/MeetingSection.tsx',
-    regel: 'Eigene Punkte, Reihenfolge und Minuten stehen nur beim Admin — der Planer teilt zu.',
-    suchen: '  const darfUmbauen = rechteVon(state).admin\n',
-    ersetzen: '  const darfUmbauen = true\n',
-  },
+  // Hier stand `planen-planer-ohne-umbau` (MeetingSection, `darfUmbauen`). Seit
+  // T121 Phase 5b gibt es Minuten, Reihenfolge und eigene Punkte nur noch
+  // unter „Woche einrichten" — und die zieht dieselbe Grenze, bewacht von
+  // `planen-aufseher-ohne-bearbeiten` und `planen-planer-ohne-bearbeiten-reiter`.
   {
     id: 'fs-planer-aendert-nur-leiter',
     datei: 'src/planen/FsPlan.tsx',
@@ -3696,6 +3693,63 @@ export const KATALOG = [
     datei: 'src/app/Menue.tsx',
     regel: 'Die Zurück-Taste schließt die Schublade, statt den Bildschirm zu verlassen.',
     suchen: '  useBackDismiss(true, onSchliessen)\n',
+    ersetzen: '',
+  },
+  /* ---- Woche einrichten und Programm (T121, Phase 5b) ---- */
+  {
+    id: 'einrichten-anlass-gewaehlt',
+    datei: 'src/planen/WochePanel.tsx',
+    regel: 'Gewählt steht der Anlass, den die Woche hat — ohne Anlass „Normale Woche".',
+    suchen: 'an={(art ?? null) === wert}',
+    ersetzen: 'an={false}',
+  },
+  {
+    id: 'einrichten-abweichung-offen',
+    datei: 'src/planen/WochePanel.tsx',
+    regel: 'Weicht eine Zusammenkunft schon ab, steht ihre Abweichung offen da.',
+    suchen: 'const [offen, setOffen] = useState(() => weichtAb(week, tab))',
+    ersetzen: 'const [offen, setOffen] = useState(false)',
+  },
+  {
+    id: 'einrichten-ebene-ohne-tage',
+    datei: 'src/planen/PlanenScreen.tsx',
+    regel: '„Woche einrichten" ist eine Ebene unter dem Plan — ohne die Karten der Tage.',
+    suchen: '{!isFs && !isEdit && (',
+    ersetzen: '{!isFs && (',
+  },
+  {
+    id: 'programm-nur-mit-minuten',
+    datei: 'src/planen/ProgrammBlatt.tsx',
+    regel: 'Bearbeiten lassen sich nur Punkte von „Unser Leben als Christ", die Minuten tragen.',
+    suchen: 'return lac && itemMinutes(rawItem) != null ? (',
+    ersetzen: 'return lac ? (',
+  },
+  {
+    id: 'programmpunkt-an-kennung',
+    datei: 'src/planen/ProgrammBlatt.tsx',
+    regel: 'Das Blatt eines Punkts findet ihn an seiner Kennung — verschoben bleibt es bei ihm.',
+    suchen: 'const ii = section.items.findIndex((item) => !isSong(item) && item.iid === iid)',
+    ersetzen: 'const ii = section.items.findIndex((item) => !isSong(item))',
+  },
+  {
+    id: 'programmpunkt-entfernt-schliesst',
+    datei: 'src/planen/ProgrammBlatt.tsx',
+    regel: 'Mit dem entfernten Punkt geht sein Blatt zu.',
+    suchen: "            dispatch({ type: 'lacRemove', si, ii })\n            onClose()",
+    ersetzen: "            dispatch({ type: 'lacRemove', si, ii })",
+  },
+  {
+    id: 'programmpunkt-neu-braucht-titel',
+    datei: 'src/planen/ProgrammBlatt.tsx',
+    regel: 'Ein eigener Punkt braucht einen Titel — leer bittet die App darum.',
+    suchen: '    if (!titel.trim()) {',
+    ersetzen: '    if (false) {',
+  },
+  {
+    id: 'minuten-escape-bleibt-beim-feld',
+    datei: 'src/planen/MinutenFeld.tsx',
+    regel: 'Escape im Minutenfeld nimmt die Eingabe zurück, ohne das Blatt darum zu schließen.',
+    suchen: '            e.stopPropagation()\n',
     ersetzen: '',
   },
   /* ---- Die Woche planen (T121, Phase 5a) ---- */
