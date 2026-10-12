@@ -8,9 +8,8 @@
  */
 export const LOGO = `${import.meta.env.BASE_URL}logo.svg`
 
-/**
- * Das Logo für kleine Größen — Kopfzeile am Handy und Seitenleiste (dazu das
- * Favicon in `index.html`). Weniger, kräftigere Plätze (3-5-7 statt 4-6-8),
- * die klein nicht zu Streifen verschwimmen (Betreiber, 4.10.2026).
+/*
+ * Die kleine Fassung (3-5-7, `public/logo-klein.svg`) braucht hier keinen
+ * Pfad mehr: Das Favicon steht in `index.html`, und Menü und Leiste zeichnen
+ * sie seit T121 selbst, in den Farben der Darstellung (`bausteine/Logo.tsx`).
  */
-export const LOGO_KLEIN = `${import.meta.env.BASE_URL}logo-klein.svg`

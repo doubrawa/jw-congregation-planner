@@ -10,7 +10,6 @@ interface WeekNavProps {
   onNext: () => void
   /** Mittelteil (Wochenbereich, darunter ein Hinweis) */
   children: ReactNode
-  className?: string
 }
 
 /**
@@ -18,10 +17,10 @@ interface WeekNavProps {
  * rechts, dazwischen die Woche — im Programm und beim Planen. Die Pfeile
  * zeigen in Leserichtung (`Zeichen` spiegelt sie von rechts nach links).
  */
-export function WeekNav({ canPrev, canNext, onPrev, onNext, children, className }: WeekNavProps) {
+export function WeekNav({ canPrev, canNext, onPrev, onNext, children }: WeekNavProps) {
   const { t } = useT()
   return (
-    <div className={className ? `week-nav ${className}` : 'week-nav'}>
+    <div className="week-nav">
       <button type="button" className="rund-knopf week-arrow" onClick={onPrev} disabled={!canPrev} aria-label={t.a11yPrevWeek}>
         <Zeichen name="zurueck" />
       </button>

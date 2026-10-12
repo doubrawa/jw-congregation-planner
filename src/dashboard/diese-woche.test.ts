@@ -20,8 +20,10 @@ const treffpunkt = (id: string, grp: string | null, wd: number): FsInstance => (
 })
 
 /** Was der Leser sieht: der Tag im Monat und welcher Termin. */
-const folge = (heute: Date, fs: FsInstance[] = [], gruppe: string | null = 'g1', weeks = [woche()]) =>
-  termineDieserWoche(weeks, [fs], ZEITEN, gruppe, heute).map((t) => `${t.tag.getDate()} ${t.art === 'zusammenkunft' ? t.tab : t.inst.id}`)
+const folge = (heute: Date, fs: FsInstance[] = [], gruppen: string[] = ['g1'], weeks = [woche()]) =>
+  termineDieserWoche(weeks, [fs], ZEITEN, new Set(gruppen), heute).map(
+    (t) => `${t.tag.getDate()} ${t.art === 'zusammenkunft' ? t.tab : t.inst.id}`,
+  )
 
 const MONTAG = new Date(2026, 8, 7, 9, 0)
 
@@ -47,12 +49,20 @@ describe('Diese Woche in der Versammlung', () => {
 
   it('ohne Gruppe nur die der ganzen Versammlung', () => {
     const fs = [treffpunkt('eigen', 'g1', 3), treffpunkt('alle', null, 5)]
-    expect(folge(MONTAG, fs, null)).toEqual(['8 mid', '11 alle', '13 we'])
+    expect(folge(MONTAG, fs, [])).toEqual(['8 mid', '11 alle', '13 we'])
+  })
+
+  it('auch die der Gruppe, die man leitet, ohne in ihr geführt zu sein', () => {
+    // Dieselbe Menge wie im Predigtdienst (`eigeneGruppen`): Bis zum
+    // 13.10.2026 fragte der Start nur die eigene Gruppe und ließ die
+    // geleitete weg.
+    const fs = [treffpunkt('eigen', 'g1', 3), treffpunkt('geleitet', 'g2', 4), treffpunkt('fremd', 'g3', 5)]
+    expect(folge(MONTAG, fs, ['g1', 'g2'])).toEqual(['8 mid', '9 eigen', '10 geleitet', '13 we'])
   })
 
   it('was entfällt, steht nicht da — in der Kongresswoche nur die Treffpunkte', () => {
     const kongress = woche({ dev: { mid: { cancelled: true }, we: { cancelled: true } } })
-    expect(folge(MONTAG, [treffpunkt('sa', 'g1', 6)], 'g1', [kongress])).toEqual(['12 sa'])
+    expect(folge(MONTAG, [treffpunkt('sa', 'g1', 6)], ['g1'], [kongress])).toEqual(['12 sa'])
   })
 
   it('ohne geladene laufende Woche: nichts', () => {

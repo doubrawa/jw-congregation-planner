@@ -7,7 +7,7 @@ import { Spur } from '../bausteine/Spur'
 import { engpaesse } from '../data/bedarf'
 import { istAusgefallen, serviceQualKey } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
-import { openSlotLabels, type Conflict } from '../data/planning'
+import { openSlotLabels, type Conflict, type ConflictKind } from '../data/planning'
 import { besetztVon, besetzung, saalLagen, type PlatzLage } from '../data/saal'
 import type { MeetingKey, QualificationKey } from '../data/types'
 import type { Dict } from '../i18n/ui'
@@ -53,7 +53,7 @@ export function PlanSpur({ tab }: { tab: MeetingKey }) {
  * gar nicht —, dann Doppelbelegung, dann Hilfsdienst und Aufgabe. Sonst wanderte
  * die schwerste Meldung je nach Datenlage an eine andere Stelle.
  */
-const KONFLIKT_RANG: Record<string, number> = { absent: 0, double: 1, helperTask: 2 }
+const KONFLIKT_RANG: Partial<Record<ConflictKind, number>> = { absent: 0, double: 1, helperTask: 2 }
 
 /** Die Legende in der Reihenfolge des Entwurfs. */
 const LEGENDE: ReadonlyArray<readonly [PlatzLage, 'zusageBestaetigt' | 'zusageWartet' | 'lageProblem' | 'offenWort']> = [

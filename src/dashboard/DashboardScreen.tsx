@@ -7,6 +7,7 @@ import { aufgabeTag } from '../aufgaben/aufgabe-anzeige'
 import { AufgabeKarte } from '../aufgaben/AufgabeKarte'
 import { datumsFormat } from '../components/datum-anzeige'
 import { treffpunktTitel } from '../components/treffpunkt-beschriftung'
+import { eigeneGruppen } from '../data/fs'
 import { fromIso } from '../data/meeting-dates'
 import { rechteVon } from '../data/rechte'
 import type { MyTask } from '../data/types'
@@ -47,10 +48,11 @@ export function DashboardScreen() {
   const { zuteilen } = rechteVon(state)
 
   const [naechste, ...danach] = state.myTasks
-  const gruppe = me?.grp ?? null
+  const { weeks, fsWeeks, persons, groups, personId } = state
   const termine = useMemo(
-    () => termineDieserWoche(state.weeks, state.fsWeeks, state.congregation.times, gruppe, fromIso(tag)),
-    [state.weeks, state.fsWeeks, state.congregation.times, gruppe, tag],
+    () =>
+      termineDieserWoche(weeks, fsWeeks, state.congregation.times, eigeneGruppen(persons, groups, personId), fromIso(tag)),
+    [weeks, fsWeeks, state.congregation.times, persons, groups, personId, tag],
   )
 
   return (

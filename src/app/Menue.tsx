@@ -9,8 +9,12 @@
  * Liste füllt alle drei Formen; sie laufen so nicht auseinander.
  */
 
+import { useRef } from 'react'
 import { Logo } from '../bausteine/Logo'
 import { Zeichen, type ZeichenName } from '../bausteine/Zeichen'
+import { useBackDismiss } from '../components/useBackDismiss'
+import { useDialogFocus } from '../components/useDialogFocus'
+import { useEscape } from '../components/useEscape'
 import { useT } from '../i18n/useT'
 import './menue.css'
 
@@ -126,6 +130,39 @@ export function Seitenmenue({
         </span>
       </button>
     </nav>
+  )
+}
+
+/**
+ * **Das Menü als Schublade** — am Handy und aus der schmalen Leiste heraus:
+ * über einem Schleier, und es geht wie ein Blatt (`Sheet`) wieder weg — mit
+ * dem Kreuz, dem Schleier, der Zurück-Taste und Escape. Gezeichnet wird sie
+ * nur, solange sie offen ist; damit gelten die Haken genau so lange.
+ *
+ * Escape über `useEscape` wie jedes Blatt: Bis zum 13.10.2026 horchte die
+ * Schublade selbst am Fenster — die Abschrift, die `useEscape` abgelöst hatte.
+ */
+export function Schublade({
+  onSchliessen,
+  ...menue
+}: {
+  abschnitte: readonly MenueAbschnitt[]
+  versammlung: string
+  profil: ProfilFuss
+  onSchliessen: () => void
+}) {
+  const { t } = useT()
+  const ref = useRef<HTMLElement>(null)
+  useDialogFocus(ref)
+  useBackDismiss(true, onSchliessen)
+  useEscape(onSchliessen)
+  return (
+    <>
+      <div className="schublade-schleier" onClick={onSchliessen} />
+      <aside className="schublade" role="dialog" aria-modal="true" aria-label={t.menueLbl} ref={ref}>
+        <Seitenmenue {...menue} onSchliessen={onSchliessen} />
+      </aside>
+    </>
   )
 }
 

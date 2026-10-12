@@ -1,4 +1,4 @@
-import type { SaalLage } from '../data/saal'
+import type { PlatzLage, SaalLage } from '../data/saal'
 import './bausteine.css'
 
 /** Die 18 Plätze des Logos 4-6-8, von vorn nach hinten — wie `werk.mjs` der Leinwand. */
@@ -9,7 +9,7 @@ const PLAETZE: ReadonlyArray<readonly [number, number]> = [
 ]
 
 /** Ganze Klassennamen, damit eine Textsuche sie findet (`tests/css-klassen.test.ts`). */
-const PLATZ_KLASSE: Record<Exclude<SaalLage, 'du'>, string> = {
+const PLATZ_KLASSE: Record<PlatzLage, string> = {
   voll: 'saal-platz is-voll',
   wartet: 'saal-platz is-wartet',
   problem: 'saal-platz is-problem',

@@ -1,20 +1,13 @@
 import { useEffect, useRef } from 'react'
 import { useApp } from '../app/context'
-import { Punkt, type PunktArt } from '../bausteine/Punkt'
+import { Punkt } from '../bausteine/Punkt'
 import { Zeichen } from '../bausteine/Zeichen'
-import type { TaskStatus } from '../data/types'
+import { LAGE_DER_ZUSAGE } from '../data/saal'
 import { aufgabenLabel, aufgabenTp, useT } from '../i18n/useT'
 import { aufgabeWann } from './aufgabe-anzeige'
 import { AngebotText, GesuchText } from './Angebot'
 import { AufgabeKarte } from './AufgabeKarte'
 import './aufgaben.css'
-
-/** Der Punkt einer Aufgabe: wartet auf Zusage, zugesagt, abgesagt. */
-const PUNKT_DER_ZUSAGE: Record<TaskStatus, PunktArt> = {
-  offen: 'wartet',
-  bestätigt: 'voll',
-  verhindert: 'problem',
-}
 
 /**
  * **Meine Aufgaben** (T121): alles, was ansteht — die nächste Aufgabe groß,
@@ -69,7 +62,7 @@ export function AufgabenScreen() {
         )}
       </div>
 
-      {naechste ?<AufgabeKarte task={naechste} /> : <p className="karte karte--held aufgaben-leer">{t.dashKeineAufgabe}</p>}
+      {naechste ? <AufgabeKarte task={naechste} /> : <p className="karte karte--held aufgaben-leer">{t.dashKeineAufgabe}</p>}
 
       {weitere.length > 0 && (
         <div className="karte aufgaben-liste">
@@ -77,7 +70,7 @@ export function AufgabenScreen() {
             const label = aufgabenLabel(task, i18n)
             return (
               <div key={task.id} className="aufgaben-zeile">
-                <Punkt art={PUNKT_DER_ZUSAGE[task.status]} />
+                <Punkt art={LAGE_DER_ZUSAGE[task.status]} />
                 <button type="button" className="aufgaben-zeile-text" onClick={() => dispatch({ type: 'openMyTask', id: task.id })}>
                   <span className="aufgaben-zeile-titel">{label}</span>
                   <span className="klein-text">{aufgabeWann(task, state.lang, i18n)}</span>
@@ -151,7 +144,6 @@ export function AufgabenScreen() {
           </div>
         </section>
       )}
-
     </section>
   )
 }

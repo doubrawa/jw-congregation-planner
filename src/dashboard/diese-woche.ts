@@ -15,7 +15,9 @@ export type Termin = {
 /**
  * **Was diese Woche in der Versammlung ansteht** (T121) — die Zeilen unter der
  * eigenen Aufgabe auf dem Start: die Zusammenkünfte und die Treffpunkte, die
- * einen angehen (der eigenen Gruppe und die der ganzen Versammlung).
+ * einen angehen — die der ganzen Versammlung und der eigenen Gruppen
+ * (`eigeneGruppen`: die, in der man geführt ist, und die, die man leitet; so
+ * zeigt sie auch der Predigtdienst).
  *
  * Nur, was noch kommt: Am Donnerstag interessiert der Dienstag nicht mehr.
  * Entfallenes (Kongress, T30) steht nicht da — es findet nicht statt.
@@ -24,7 +26,7 @@ export function termineDieserWoche(
   weeks: readonly Week[],
   fsWeeks: readonly FsInstance[][],
   zeiten: MeetingTimes,
-  gruppe: string | null,
+  gruppen: ReadonlySet<string>,
   heute = new Date(),
 ): Termin[] {
   const wi = currentWeekIndex(weeks, heute)
@@ -43,7 +45,7 @@ export function termineDieserWoche(
   }
 
   for (const inst of fsWeeks[wi] ?? []) {
-    if (inst.grp !== null && inst.grp !== gruppe) continue
+    if (inst.grp !== null && !gruppen.has(inst.grp)) continue
     const tag = fsTag(week.start, inst.wd)
     if (!tag || kalendertagMs(tag) < ab) continue
     termine.push({ key: `fs|${inst.id}`, tag, zeit: inst.time, art: 'treffpunkt', inst })

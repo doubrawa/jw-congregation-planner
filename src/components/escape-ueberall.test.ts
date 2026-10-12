@@ -26,13 +26,14 @@ describe('Overlays lassen sich mit Escape schließen', () => {
   /**
    * Wer kein `useEscape` braucht — jeder Eintrag mit seinem Grund.
    *
-   * Die beiden unteren regeln Escape **selbst**, weil sie den Effekt an einen
-   * Zustand binden müssen (`useEscape` kennt kein „nur wenn offen"). Dass sie
-   * es wirklich tun, prüft der zweite Test — sonst wäre diese Liste ein
-   * bequemer Ort, um eine echte Lücke abzulegen.
+   * Der Eintrag regelt Escape **selbst**, weil er den Effekt an einen Zustand
+   * binden muss (`useEscape` kennt kein „nur wenn offen"). Dass er es wirklich
+   * tut, prüft der zweite Test — sonst wäre diese Liste ein bequemer Ort, um
+   * eine echte Lücke abzulegen. Bis zum 13.10.2026 stand hier auch das Gerüst
+   * mit der Schublade; die ist seitdem ein eigener Baustein, der nur offen
+   * gezeichnet wird, und nimmt `useEscape` wie jedes Blatt.
    */
   const AUSNAHMEN: Record<string, string> = {
-    'AppShell.tsx': 'Regelt Escape selbst, gebunden an das geöffnete Seitenmenü.',
     'DatePicker.tsx': 'Kein modaler Dialog, sondern ein Popup — Escape hängt dort am `open`-Zustand.',
   }
 
@@ -45,8 +46,8 @@ describe('Overlays lassen sich mit Escape schließen', () => {
   it('jeder Baustein mit role="dialog" nimmt Escape entgegen', () => {
     // Gegenprobe: Ohne Treffer prüfte der Test nichts. Seit alle Blätter die
     // Hülle `Sheet` teilen (T121) und die Mitteilungen eine Seite sind, sind es
-    // nur noch wenige Dateien: die Hülle, das Gerüst (Schublade) und das Popup
-    // des Datumswählers.
+    // nur noch wenige Dateien: die Hülle, die Schublade (`Menue.tsx`) und das
+    // Popup des Datumswählers.
     expect(dialoge.length, 'keine Dialoge gefunden').toBeGreaterThanOrEqual(3)
 
     const ohne = dialoge

@@ -10,7 +10,6 @@ import './components.css'
 interface MeetingTabsProps {
   tab: MeetingTab
   onChange: (tab: MeetingTab) => void
-  className?: string
   /*
    * Einen dritten Reiter „Predigtdienst" gab es hier bis T120. Der Predigtdienst
    * ist seitdem ein eigenes Thema im Menü — die Reiter hier gehören allein den
@@ -46,7 +45,7 @@ interface MeetingTabsProps {
  * Vorgelesen wird „Versammlung Dienstag, 8.9. · 19:00" (`versammlungTag`): Der
  * Wochentag allein unterschiede die Karten, sagte aber nicht, wofür sie stehen.
  */
-export function MeetingTabs({ tab, onChange, className, showEdit = false, week }: MeetingTabsProps) {
+export function MeetingTabs({ tab, onChange, showEdit = false, week }: MeetingTabsProps) {
   const { state } = useApp()
   const { t } = useT()
   const zeiten = state.congregation.times
@@ -54,7 +53,7 @@ export function MeetingTabs({ tab, onChange, className, showEdit = false, week }
   const tagZahl = datumsFormat(state.lang, 'tagZahl')
 
   return (
-    <div className={['meeting-tabs', showEdit ? 'mit-bearbeiten' : '', className ?? ''].filter(Boolean).join(' ')}>
+    <div className={showEdit ? 'meeting-tabs mit-bearbeiten' : 'meeting-tabs'}>
       {MEETING_TABS.map((key) => {
         // Verlegte Woche → ihr echter Tag (T30); sonst der Rhythmus, gezählt
         // vom Montag, 1. Januar 2024 — örtlich zur Mittagszeit, damit keine

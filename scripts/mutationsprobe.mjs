@@ -3034,9 +3034,16 @@ export const KATALOG = [
   {
     id: 'woche-nur-eigene-gruppe',
     datei: 'src/dashboard/diese-woche.ts',
-    regel: 'Unter „Diese Woche" stehen die Treffpunkte der eigenen Gruppe und der Versammlung, nicht die fremder Gruppen.',
-    suchen: '    if (inst.grp !== null && inst.grp !== gruppe) continue',
+    regel: 'Unter „Diese Woche" stehen die Treffpunkte der eigenen Gruppen und der Versammlung, nicht die fremder Gruppen.',
+    suchen: '    if (inst.grp !== null && !gruppen.has(inst.grp)) continue',
     ersetzen: '',
+  },
+  {
+    id: 'woche-auch-geleitete-gruppe',
+    datei: 'src/dashboard/DashboardScreen.tsx',
+    regel: 'Unter „Diese Woche" stehen auch die Treffpunkte der Gruppe, die man leitet — wie im Predigtdienst.',
+    suchen: 'eigeneGruppen(persons, groups, personId)',
+    ersetzen: 'new Set(persons.find((p) => p.id === personId)?.grp ? [persons.find((p) => p.id === personId)!.grp!] : [])',
   },
   {
     id: 'alle-bestaetigen-nur-offene',
@@ -3676,6 +3683,21 @@ export const KATALOG = [
     suchen: '        <DruckKnopf mitText={breit} onClick={drucken} />',
     ersetzen: '        <DruckKnopf mitText={false} onClick={drucken} />',
   },
+  /* ---- Gesamt-Review des neuen Designs (T121, 13.10.2026) ---- */
+  {
+    id: 'schublade-escape',
+    datei: 'src/app/Menue.tsx',
+    regel: 'Escape schließt die Schublade — über `useEscape`, wie jedes Blatt.',
+    suchen: '  useEscape(onSchliessen)\n',
+    ersetzen: '',
+  },
+  {
+    id: 'schublade-zurueck',
+    datei: 'src/app/Menue.tsx',
+    regel: 'Die Zurück-Taste schließt die Schublade, statt den Bildschirm zu verlassen.',
+    suchen: '  useBackDismiss(true, onSchliessen)\n',
+    ersetzen: '',
+  },
   /* ---- Die Woche planen (T121, Phase 5a) ---- */
   {
     id: 'plan-lage-konflikt-vor-zusage',
@@ -3737,8 +3759,8 @@ export const KATALOG = [
     id: 'plan-konflikte-feste-reihenfolge',
     datei: 'src/planen/WochenStand.tsx',
     regel: '„Zu klären" nennt die Konflikte in fester Reihenfolge: abwesend, doppelt, Hilfsdienst und Aufgabe.',
-    suchen: 'const KONFLIKT_RANG: Record<string, number> = { absent: 0, double: 1, helperTask: 2 }',
-    ersetzen: 'const KONFLIKT_RANG: Record<string, number> = { absent: 2, double: 1, helperTask: 0 }',
+    suchen: 'const KONFLIKT_RANG: Partial<Record<ConflictKind, number>> = { absent: 0, double: 1, helperTask: 2 }',
+    ersetzen: 'const KONFLIKT_RANG: Partial<Record<ConflictKind, number>> = { absent: 2, double: 1, helperTask: 0 }',
   },
   {
     id: 'plan-konflikt-abwesenheit-gilt',

@@ -193,8 +193,9 @@ export function PlanungsKarte() {
           <button key={w.wi} type="button" className="dash-plan-woche" onClick={() => oeffnen(w)}>
             <span className="dash-plan-kopf">
               <span className="dash-plan-range">{w.spanne}</span>
-              {/* In der Reihenfolge der Banner in Planen: erst was nicht stimmt,
-                  dann was nicht geht, dann was fehlt, zuletzt der Versand. */}
+              {/* In der Reihenfolge von „Zu klären" beim Planen: erst was nicht
+                  stimmt, dann was nicht geht, dann was fehlt, zuletzt der
+                  Versand. */}
               <span className="dash-plan-chips">
                 {w.konflikte > 0 && <Chip art="konflikte" titel={t.konflikteTitle} n={w.konflikte} />}
                 {w.nichtBesetzbar > 0 && <Chip art="engpass" titel={t.engpassTitle} n={w.nichtBesetzbar} />}

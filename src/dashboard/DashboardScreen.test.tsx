@@ -311,6 +311,28 @@ describe('Diese Woche in der Versammlung', () => {
       vi.useRealTimers()
     }
   })
+
+  it('… und die der Gruppe, die man leitet — wie im Predigtdienst (`eigeneGruppen`)', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9, 0)) // Montag
+    try {
+      const woche = { ...laufendeWoche(), start: '2026-09-07' }
+      const geleitet: FsInstance = { id: 'g2', ruleId: 'g2', grp: 'g2', wd: 6, time: '09:30', place: 'Anderswo', leader: '' }
+      const { container } = zeige({
+        weeks: [woche],
+        fsWeeks: [[geleitet]],
+        persons: [{ ...ICH, grp: 'g1' }],
+        groups: [
+          { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null },
+          { id: 'g2', name: 'Gruppe 2', overseerId: ICH.id, assistantId: null },
+        ],
+      })
+      const was = [...container.querySelectorAll('.start-woche .start-zeile-text')].map((z) => z.textContent)
+      expect(was).toEqual([t.tabMid, 'Gruppe 2 · Anderswo', t.tabWe])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
 
 /* ---- Die Planungs-Karte (T95) ---------------------------------------------- */

@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Zeichen, type ZeichenName } from '../bausteine/Zeichen'
 import { datumsFormat } from '../components/datum-anzeige'
 import { useBackDismiss } from '../components/useBackDismiss'
-import { useDialogFocus } from '../components/useDialogFocus'
 import { displayName, initials } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import { darfPlanen, erlaubteScreens, geplantesThema, rechteVon, themaVon } from '../data/rechte'
@@ -40,7 +39,7 @@ import { sichtbareMitteilungen } from './mitteilungen'
 import { useKalendertag } from './useKalendertag'
 import { bereichsTitel, zumAnsehen, zumPlanen } from './bereich'
 import { Kopfzeile, PlanenKopf, UnterseiteKopf } from './Kopfzeile'
-import { SchmaleLeiste, Seitenmenue, type MenueAbschnitt, type MenueEintrag, type ProfilFuss } from './Menue'
+import { SchmaleLeiste, Schublade, Seitenmenue, type MenueAbschnitt, type MenueEintrag, type ProfilFuss } from './Menue'
 import { welcomeDecision } from './welcome'
 import '../components/components.css'
 import './shell.css'
@@ -72,14 +71,11 @@ export function AppShell() {
   // Der Kalendertag: Ob „Weitere Pläne" im Menü steht, hängt daran, ob ein Plan
   // noch läuft.
   const tag = useKalendertag()
-  // Mobiles Seitenmenü (Drawer) — Desktop hat die feste Sidebar
+  // Das Menü als Schublade (Handy, Tablet hochkant) — am Desktop steht es fest.
   const [menuOpen, setMenuOpen] = useState(false)
   // Deep-Link aus einem Push-Klick (#go=<screen>): beim Start aus dem Hash, bei
   // schon offenem Fenster per Service-Worker-Nachricht. Angewandt erst nach Login.
   const [pendingNav, setPendingNav] = useState<Sprung | null>(() => sprungAus(location.hash))
-  const drawerRef = useRef<HTMLElement>(null)
-  useDialogFocus(drawerRef, menuOpen)
-  useBackDismiss(menuOpen, () => setMenuOpen(false))
   /*
    * **Zurück am Handy** (4.10.2026): Jeder Bildschirm außer Start ist eine
    * Ebene über Start. Zurück führt von dort zu Start, von Start aus verlässt es
@@ -96,15 +92,6 @@ export function AppShell() {
     setMenuOpen(false)
     dispatch({ type: 'navigate', screen })
   }
-
-  useEffect(() => {
-    if (!menuOpen) return
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMenuOpen(false)
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [menuOpen])
 
   const rechte = rechteVon(state)
   const navScreens = erlaubteScreens(rechte)
@@ -329,17 +316,7 @@ export function AppShell() {
             </div>
 
             {menuOpen && (
-              <>
-                <div className="schublade-schleier" onClick={() => setMenuOpen(false)} />
-                <aside className="schublade" role="dialog" aria-modal="true" aria-label={t.menueLbl} ref={drawerRef}>
-                  <Seitenmenue
-                    abschnitte={menue}
-                    versammlung={versammlung}
-                    profil={profil}
-                    onSchliessen={() => setMenuOpen(false)}
-                  />
-                </aside>
-              </>
+              <Schublade abschnitte={menue} versammlung={versammlung} profil={profil} onSchliessen={() => setMenuOpen(false)} />
             )}
           </>
         )}

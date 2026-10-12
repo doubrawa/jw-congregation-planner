@@ -45,7 +45,8 @@ export interface Besetzung {
   du: boolean
 }
 
-const LAGE_DER_ZUSAGE: Record<TaskStatus, 'voll' | 'wartet' | 'problem'> = {
+/** Die Lage, die eine Zusage zeigt — im Saal, an der Zeile beim Planen und unter „Meine Aufgaben". */
+export const LAGE_DER_ZUSAGE: Record<TaskStatus, 'voll' | 'wartet' | 'problem'> = {
   bestätigt: 'voll',
   offen: 'wartet',
   verhindert: 'problem',

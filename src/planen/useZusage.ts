@@ -7,20 +7,22 @@ import type { Dict } from '../i18n/ui'
 import type { FsInstance, MeetingKey, PartItem, TaskStatus } from '../data/types'
 
 /*
- * Die Ampel an jedem besetzten Platz: grün bestätigt, gelb wartet, rot
- * abgesagt (14. September 2026, vorher ✓ und …). Hier stehen Stufen und
- * Nachschlagen, die Darstellung in `ZusageStatus.tsx`.
+ * Die Zusage an jedem besetzten Platz: bestätigt, wartet, abgesagt
+ * (14. September 2026, vorher ✓ und …). Hier stehen Stufen und Nachschlagen.
+ * Gezeigt wird sie seit T121 als Punkt der Lage — voll, blass, rot —, an den
+ * Plätzen der Zusammenkünfte über `PlatzZeile`, an Treffpunkten und beim
+ * Zeugnisgeben am Chip (`ZusageStatus.tsx`).
  *
- * Die Farben stehen als Tokens in `tokens.css` (`--zusage-*`), je Palette
- * abgestimmt und mit `npm run contrast` geprüft. Allein auf die Farbe verlässt
- * sich der Punkt nicht: Die Legende nennt jede Stufe beim Namen, der Chip nennt
- * sie dem Screenreader.
+ * Die Farben stehen als Tokens in `tokens.css` (`--zusage-*`, abgeleitet aus
+ * `--text`, `--wartet` und `--problem`). Allein auf die Farbe verlässt sich der
+ * Punkt nicht: Die Legende nennt jede Stufe beim Namen, der Platz nennt sie dem
+ * Screenreader.
  */
 
-/** Die drei Stufen in Ampel-Reihenfolge — so stehen sie auch in der Legende. */
+/** Die drei Stufen in dieser Reihenfolge — so stehen sie auch in der Legende. */
 export const ZUSAGE_STUFEN: readonly TaskStatus[] = ['bestätigt', 'offen', 'verhindert']
 
-/** Beschriftung je Stufe: in der Legende sichtbar, am Chip für den Screenreader. */
+/** Beschriftung je Stufe: in der Legende sichtbar, am Platz für den Screenreader. */
 export const ZUSAGE_LABEL: Record<TaskStatus, keyof Dict> = {
   bestätigt: 'zusageBestaetigt',
   offen: 'zusageWartet',

@@ -1,3 +1,4 @@
+import type { SaalLage } from '../data/saal'
 import './bausteine.css'
 
 /**
@@ -5,7 +6,7 @@ import './bausteine.css'
  * zugesagt, blass wartet, rot ist ein Problem, gestrichelt noch offen, Minze
  * bist du.
  */
-export type PunktArt = 'voll' | 'wartet' | 'problem' | 'offen' | 'du'
+export type PunktArt = SaalLage
 
 /** Ganze Klassennamen, damit eine Textsuche sie findet (`tests/css-klassen.test.ts`). */
 const PUNKT_KLASSE: Record<PunktArt, string> = {

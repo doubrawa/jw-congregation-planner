@@ -7,7 +7,7 @@ import { Zeichen } from '../bausteine/Zeichen'
 import { anlassArt } from '../data/anlass'
 import { istAusgefallen, MEETING_TABS } from '../data/helpers'
 import { meetingDate } from '../data/meeting-dates'
-import type { SaalLage } from '../data/saal'
+import { SAAL_PLAETZE, type SaalLage } from '../data/saal'
 import type { MeetingKey, Week } from '../data/types'
 import { Bereichstitel } from '../components/Bereichstitel'
 import { datumsFormat } from '../components/datum-anzeige'
@@ -194,8 +194,8 @@ function ProgrammBody() {
   )
 }
 
-/** Alle 18 Plätze leer — der Saal einer Woche, in der nichts stattfindet. */
-const LEERER_SAAL: readonly SaalLage[] = Array.from({ length: 18 }, () => 'offen')
+/** Alle Plätze leer — der Saal einer Woche, in der nichts stattfindet. */
+const LEERER_SAAL: readonly SaalLage[] = Array.from({ length: SAAL_PLAETZE }, () => 'offen')
 
 /**
  * **Kongress** (T121, Entwurf `GSonderwoche`): In dieser Woche fallen alle
