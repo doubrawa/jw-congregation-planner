@@ -32,8 +32,6 @@ describe('Overlays lassen sich mit Escape schließen', () => {
    * bequemer Ort, um eine echte Lücke abzulegen.
    */
   const AUSNAHMEN: Record<string, string> = {
-    'ConfirmDialog.tsx':
-      'Absicht: Solange eine Bestätigung aussteht, bleibt das Blatt stehen — dort gibt es weder ✕ noch Escape.',
     'AppShell.tsx': 'Regelt Escape selbst, gebunden an das geöffnete Seitenmenü.',
     'DatePicker.tsx': 'Kein modaler Dialog, sondern ein Popup — Escape hängt dort am `open`-Zustand.',
   }
@@ -45,8 +43,9 @@ describe('Overlays lassen sich mit Escape schließen', () => {
   const name = (pfad: string): string => pfad.split('/').pop() ?? pfad
 
   it('jeder Baustein mit role="dialog" nimmt Escape entgegen', () => {
-    // Gegenprobe: Ohne Treffer prüfte der Test nichts.
-    expect(dialoge.length, 'keine Dialoge gefunden').toBeGreaterThan(5)
+    // Gegenprobe: Ohne Treffer prüfte der Test nichts. Seit alle Blätter die
+    // Hülle `Sheet` teilen (T121), sind es nur noch wenige Dateien.
+    expect(dialoge.length, 'keine Dialoge gefunden').toBeGreaterThanOrEqual(4)
 
     const ohne = dialoge
       .filter(([pfad, q]) => !q.includes('useEscape') && !(name(pfad) in AUSNAHMEN))

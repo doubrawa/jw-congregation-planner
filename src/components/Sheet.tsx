@@ -1,4 +1,5 @@
 import { useRef, type ReactNode } from 'react'
+import { Zeichen } from '../bausteine/Zeichen'
 import { useBackDismiss } from './useBackDismiss'
 import { useDialogFocus } from './useDialogFocus'
 import { useEscape } from './useEscape'
@@ -8,8 +9,9 @@ import './overlays.css'
 
 /**
  * **Die Hülle eines Blatts** (mobil von unten, am Schreibtisch zentriert):
- * Hintergrund, Griff, Kopfzeile mit Überschrift und Schließen-Knopf — und die
- * vier Wege, es wieder loszuwerden: ✕, Hintergrund, Zurück-Taste, Escape.
+ * Schleier, Griff, Kopf mit Überschrift und Schließen-Knopf — und die vier
+ * Wege, es wieder loszuwerden: ✕, Schleier, Zurück-Taste, Escape (am Handy
+ * dazu das Herunterwischen).
  *
  * Sie stand viermal ausgeschrieben da (Zuteilen, Sprache, Hilfsdienst-Personen,
  * S-89), jede Abschrift mit denselben vier Hooks und denselben Zuschreibungen
@@ -20,11 +22,8 @@ import './overlays.css'
  *
  * Wer eine Regel ändert (etwa: Escape schließt nur das oberste Blatt), ändert
  * sie hier einmal statt an vier Stellen — und übersieht keine.
- *
- * **Nicht für `MyTaskSheet`**: Das Aufgaben-Blatt trägt eine eigene Hülle
- * (`confirm-modal`), weil es über dem Zuteilungs-Blatt liegt und sich nicht
- * herunterziehen lässt.
  */
+
 /**
  * Ganze Klassennamen statt `sheet--${variante}`: Ein zusammengesetzter Name
  * steht nirgends im Quelltext, eine Textsuche findet ihn nicht, und die
@@ -32,8 +31,9 @@ import './overlays.css'
  * einmal zwei Wochen übereinander). `klassennamen.test.ts` wacht darüber.
  */
 const SHEET_KLASSE = {
+  normal: 'sheet',
   lang: 'sheet sheet--lang',
-  s89: 'sheet sheet--s89',
+  oben: 'sheet sheet--oben',
 } as const
 
 export function Sheet({
@@ -41,7 +41,8 @@ export function Sheet({
   title,
   sub,
   eyebrow,
-  variante,
+  variante = 'normal',
+  schliessen = true,
   onClose,
   children,
 }: {
@@ -50,10 +51,19 @@ export function Sheet({
   title: ReactNode
   /** Zweite Zeile unter der Überschrift (Anzahl, Datum, Hinweis). */
   sub?: ReactNode
-  /** Kleine Zeile **über** der Überschrift (das Formular-Kürzel „S-89"). */
+  /** Kleine Zeile **über** der Überschrift (das Formular-Kürzel „S-89", die Aufgabe). */
   eyebrow?: ReactNode
-  /** Zusatzklasse für Breite und Höhe: `lang` (lange Liste), `s89` (Formular). */
-  variante?: 'lang' | 's89'
+  /**
+   * `lang`: eine lange Liste, das Blatt nimmt die Höhe, die es bekommt.
+   * `oben`: liegt über einem anderen Blatt (S-89 über dem Zuteilen, Absagen
+   * über dem Blatt beim Öffnen) — siehe die Ebenen in tokens.css.
+   */
+  variante?: keyof typeof SHEET_KLASSE
+  /**
+   * Ohne ✕ im Kopf — für ein Blatt, das seinen Ausgang selbst unten anbietet
+   * („Später"). Schleier, Zurück und Escape schließen es trotzdem.
+   */
+  schliessen?: boolean
   onClose: () => void
   children: ReactNode
 }) {
@@ -67,26 +77,22 @@ export function Sheet({
   return (
     <>
       <div
-        className={variante === 's89' ? 'sheet-backdrop sheet-backdrop--s89' : 'sheet-backdrop'}
+        className={variante === 'oben' ? 'sheet-backdrop sheet-backdrop--oben' : 'sheet-backdrop'}
         onClick={onClose}
       />
-      <div
-        className={variante ? SHEET_KLASSE[variante] : 'sheet'}
-        role="dialog"
-        aria-modal="true"
-        aria-label={label}
-        ref={dlg}
-      >
+      <div className={SHEET_KLASSE[variante]} role="dialog" aria-modal="true" aria-label={label} ref={dlg}>
         <span className="sheet-grip" aria-hidden="true" />
         <div className="sheet-head">
-          <div>
+          <div className="sheet-kopf">
             {eyebrow}
-            <div className="sheet-title">{title}</div>
+            <h2 className="sheet-title">{title}</h2>
             {sub !== undefined && <div className="sheet-sub">{sub}</div>}
           </div>
-          <button type="button" className="sheet-close" aria-label={t.a11yClose} onClick={onClose}>
-            ✕
-          </button>
+          {schliessen && (
+            <button type="button" className="rund-knopf rund-knopf--feld" aria-label={t.a11yClose} onClick={onClose}>
+              <Zeichen name="kreuz" />
+            </button>
+          )}
         </div>
         {children}
       </div>

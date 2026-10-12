@@ -277,6 +277,7 @@ export interface AppState {
   importing: boolean // Programm-Import läuft
   confirmOpen: boolean // Bestätigungs-Modal beim Öffnen der App
   myTaskId: string | null // eigene Aufgabe im Aktions-Sheet (bestätigen/absagen)
+  absageId: string | null // eigene Aufgabe im Absage-Blatt („Du kannst nicht?", T121)
   s89: S89Payload | null // offenes S-89-Formular
   langSheetOpen: boolean // Sprach-Sheet offen
   langSheetFor: 'cong' | 'alt' // Auswahl-Ziel: Versammlungssprache | weitere Programmsprache
@@ -467,7 +468,11 @@ export type AppAction =
   | { type: 'fsRuleRemove'; id: string }
   // Bestätigungs-Flow
   | { type: 'confirmTask'; id: string }
-  | { type: 'declineTask'; id: string }
+  | { type: 'confirmAll' } // alle offenen eigenen Zuteilungen auf einmal (T121)
+  /** `nachricht`: freiwillig, für den Planer — steht in seiner Mitteilung (T121). */
+  | { type: 'declineTask'; id: string; nachricht?: string }
+  | { type: 'openAbsage'; id: string } // Absage-Blatt öffnen
+  | { type: 'closeAbsage' }
   | { type: 'openMyTask'; id: string } // eigenes Aufgaben-Aktions-Sheet öffnen
   | { type: 'closeMyTask' }
   | { type: 'takeSubstitute'; key: string } // Hilfsdienst-Ersatz übernehmen

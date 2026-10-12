@@ -320,7 +320,7 @@ describe('Das Sprach-Sheet', () => {
 
   it('✕, Hintergrund und Escape schließen', () => {
     const { container, dispatch } = zeige('lang', { langSheetOpen: true })
-    fireEvent.click(container.querySelector('.sheet-close')!)
+    fireEvent.click(container.querySelector(`[aria-label="${t.a11yClose}"]`)!)
     fireEvent.click(container.querySelector('.sheet-backdrop')!)
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(dispatch.mock.calls.filter((c) => c[0].type === 'closeLangSheet')).toHaveLength(3)

@@ -1,68 +1,180 @@
 /*
- * Zusätzliche Overlays (v3): S-89-Formular, Bestätigungs-Dialog,
- * Sprach-Sheet. Nutzen die Sheet-Basis aus planen.css (global) und
- * ergänzen Stapel-Reihenfolge sowie eigene Inhalte.
+ * Blätter (T121): die Hülle aller Blätter (`Sheet`) und die Inhalte der
+ * eigenen — S-89, das Blatt beim Öffnen, Absagen, die eigene Aufgabe, die
+ * Sprache. Am Handy von unten, ab 920 px ein Fenster in der Mitte.
  */
 
-/* S-89 liegt über dem Zuteilungs-Sheet — siehe die Ebenen in tokens.css. */
-.sheet-backdrop--s89 {
-  z-index: var(--z-sheet-top);
-  background: rgba(var(--shade), 0.36);
+/* ---- Hülle ------------------------------------------------------------------ */
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--schleier);
+  z-index: var(--z-sheet);
 }
 
-.sheet--s89 {
+/* Ein Blatt über einem anderen (S-89 über dem Zuteilen, Absagen über dem Blatt
+   beim Öffnen) — siehe die Ebenen in tokens.css. */
+.sheet-backdrop--oben {
+  z-index: var(--z-sheet-top);
+}
+
+.sheet {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  /* --sheet-drag setzt useSwipeDown beim Ziehen; muss Teil DIESER Transformation
+     sein, sonst überschriebe sie die Zentrierung. */
+  transform: translateX(-50%) translateY(var(--sheet-drag, 0px));
+  /* Senkrecht darf gescrollt werden (lange Listen), waagerecht nicht —
+     pinch-zoom bleibt erlaubt, damit Vergrößern möglich bleibt. */
+  touch-action: pan-y pinch-zoom;
+  display: flex;
+  flex-direction: column;
+  width: min(430px, 100vw);
+  /* svh ohne die Leisten des Browsers; wer es nicht kennt, nimmt vh. */
+  max-height: 88vh;
+  max-height: 88svh;
+  overflow: hidden;
+  /* Unten der Home-Indikator: index.html nutzt viewport-fit=cover. */
+  padding: 8px 20px max(20px, env(safe-area-inset-bottom));
+  border-radius: 28px 28px 0 0;
+  background: var(--karte);
+  z-index: calc(var(--z-sheet) + 1);
+}
+
+.sheet--oben {
   z-index: calc(var(--z-sheet-top) + 1);
 }
 
-.s89-eyebrow {
-  font-size: calc(10px * var(--fs));
+@media (min-width: 920px) {
+  .sheet {
+    bottom: auto;
+    top: 50%;
+    /* Mittiges Fenster — hier ist die Wisch-Geste aus (siehe useSwipeDown). */
+    transform: translate(-50%, -50%);
+    width: min(560px, calc(100vw - 64px));
+    padding: 24px 28px 28px;
+    border-radius: 28px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  }
+}
+
+/* Griff über dem Kopf: macht sichtbar, dass sich das Blatt herunterwischen
+   lässt. Nur auf dem Handy. */
+.sheet-grip {
+  flex: none;
+  align-self: center;
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--umriss);
+}
+
+@media (min-width: 920px) {
+  .sheet-grip {
+    display: none;
+  }
+}
+
+.sheet-head {
+  flex: none; /* bleibt oben stehen, wenn darunter gescrollt wird */
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 0 14px;
+}
+
+@media (min-width: 920px) {
+  .sheet-head {
+    padding-top: 0;
+  }
+}
+
+.sheet-kopf {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sheet-title {
+  font-size: calc(21px * var(--fs));
   font-weight: 600;
-  letter-spacing: 0.18em;
-  color: var(--acc);
+  line-height: 1.2;
+}
+
+.sheet-sub {
+  color: var(--text2);
+}
+
+/* Die kleine Zeile über der Überschrift: das Formular, die Aufgabe. */
+.sheet-marke {
+  color: var(--text2);
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 600;
+}
+
+/* Was in einem Blatt scrollt, wenn es mehr ist, als hineinpasst. */
+.sheet-inhalt {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Unten im Blatt: die Knöpfe, die es abschließen. */
+.sheet-fuss {
+  flex: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  padding-top: 16px;
+}
+
+/* ---- S-89 ------------------------------------------------------------------- */
+
+.s89-eyebrow {
+  color: var(--sek2);
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 600;
 }
 
 .s89-box {
-  margin-top: 14px;
-  border: 1px solid var(--bord);
-  background: var(--bg);
-  border-radius: 12px;
-  padding: 2px 14px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 18px;
+  border-radius: 20px;
+  background: var(--feld);
 }
 
 .s89-row {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 7em) minmax(0, 1fr);
   align-items: baseline;
-  gap: 14px;
-  padding: 11px 0;
-  border-bottom: 1px solid var(--line2);
+  gap: 12px;
+  padding: 13px 0;
+  border-block-start: 1px dashed var(--umriss);
 }
 
-.s89-row:last-child {
-  border-bottom-color: transparent;
+.s89-row:first-child {
+  border-block-start-color: transparent;
 }
 
 .s89-label {
-  font-size: calc(9.5px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--mut);
-  flex: none;
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
 }
 
 .s89-value {
-  font-family: var(--font-serif);
-  font-size: calc(14.5px * var(--fs));
-  font-weight: 500;
-  text-align: end;
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .s89-note {
-  margin-top: 12px;
-  font-size: calc(11px * var(--fs));
-  line-height: 1.5;
-  color: var(--mut);
+  padding: 14px 4px 0;
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
 }
 
 /* Verweis „S-89 anzeigen“ (im Zuteilungs-Sheet neben „Entfernen“). */
@@ -78,174 +190,10 @@
   color: var(--acc);
 }
 
-/* ---- Bestätigungs-Dialog (modal beim Öffnen der App) -------------------- */
-
-.confirm-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(var(--shade), 0.45);
-  z-index: var(--z-dialog);
-}
-
-.confirm-modal {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: min(400px, calc(100vw - 36px));
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sheet);
-  box-shadow: 0 24px 64px rgba(var(--shade), 0.35);
-  z-index: calc(var(--z-dialog) + 1);
-  padding: 20px 20px 16px;
-  max-height: 82vh;
-  overflow: auto;
-}
-
-.confirm-eyebrow {
-  font-size: calc(10px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  color: var(--acc);
-}
-
-.confirm-title {
-  font-family: var(--font-serif);
-  font-size: calc(20px * var(--fs));
-  font-weight: 500;
-  line-height: 1.25;
-  margin-top: 6px;
-}
-
-.confirm-intro {
-  font-size: calc(12px * var(--fs));
-  color: var(--mut);
-  margin-top: 6px;
-  line-height: 1.5;
-}
-
-.confirm-task {
-  margin-top: 12px;
-  background: var(--tAcc);
-  border-radius: 12px;
-  padding: 12px 14px;
-}
-
-.confirm-task-title {
-  font-family: var(--font-serif);
-  font-size: calc(14.5px * var(--fs));
-  font-weight: 500;
-}
-
-/* „An diesem Tag schon: …" im Ersatzgesuch — Warnfarbe wie beim Planer. */
-.confirm-task-warn {
-  font-size: calc(11px * var(--fs));
-  font-weight: 600;
-  color: var(--wein);
-  margin-top: 2px;
-}
-
-.confirm-task-date {
-  font-size: calc(11px * var(--fs));
-  color: var(--mut);
-  margin-top: 2px;
-}
-
-.confirm-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.confirm-yes {
-  flex: 1;
-  background: var(--pet);
-  color: var(--onAcc);
-  border-radius: var(--r-pill);
-  padding: 8px 0;
-  text-align: center;
-  font-size: calc(11.5px * var(--fs));
-  font-weight: 600;
-}
-
-.confirm-no {
-  border: 1px solid var(--weinB);
-  color: var(--wein);
-  border-radius: var(--r-pill);
-  padding: 8px 12px;
-  font-size: calc(11.5px * var(--fs));
-  font-weight: 600;
-}
-
-.confirm-no:hover {
-  background: var(--tWein);
-}
-
-.confirm-foot {
-  text-align: center;
-  font-size: calc(10.5px * var(--fs));
-  color: var(--mut2);
-  margin-top: 14px;
-}
-
-/* Ersatzgesuche im selben Blatt (T69). Stehen Bestätigungen darüber, trennt
-   eine Haarlinie die Pflicht von der Bitte. */
-.confirm-subs--nach {
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-}
-
-/* Das ✕ gibt es nur, wenn nichts zu bestätigen ist; es steht dann neben der
-   Überschrift — nicht schwebend, das Blatt scrollt in sich. */
-.confirm-subs-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-/* ---- Eigenes Aufgaben-Aktions-Sheet (MyTaskSheet) ------------------------- */
-
-.mytask-close {
-  position: absolute;
-  top: 12px;
-  inset-inline-end: 12px;
-  color: var(--mut);
-  font-size: calc(15px * var(--fs));
-  line-height: 1;
-  padding: 4px;
-}
-
-.mytask-close:hover {
-  color: var(--ink);
-}
-
-.mytask-status {
-  margin-top: 8px;
-  font-size: calc(11.5px * var(--fs));
-  font-weight: 600;
-  color: var(--pet);
-}
-
-.mytask-status--verh {
-  color: var(--wein);
-}
-
-.mytask-hint {
-  margin-top: 12px;
-  font-size: calc(11px * var(--fs));
-  line-height: 1.45;
-  color: var(--mut);
-}
-
 /* ---- Sprach-Sheet (Versammlungssprache) --------------------------------- */
 
 .sheet--lang {
   height: 74vh;
-  display: flex;
-  flex-direction: column;
 }
 
 .lang-search {

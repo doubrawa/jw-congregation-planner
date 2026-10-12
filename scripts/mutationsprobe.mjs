@@ -1864,8 +1864,8 @@ export const KATALOG = [
     id: 'planung-nur-beim-planer',
     datei: 'src/dashboard/DashboardScreen.tsx',
     regel: 'Die Planungs-Karte steht nur bei Admin und Planer — sie führt in einen Screen, den sonst niemand betreten darf.',
-    suchen: '{zuteilen && <PlanungsKarte />}',
-    ersetzen: '{<PlanungsKarte />}',
+    suchen: '        {zuteilen && (\n          <div className="start-spalte">\n            <PlanungsKarte />',
+    ersetzen: '        {(\n          <div className="start-spalte">\n            <PlanungsKarte />',
   },
   {
     id: 'planung-ab-laufender-woche',
@@ -2112,12 +2112,13 @@ export const KATALOG = [
   },
   {
     id: 'start-wochenfolge',
-    // Aus der Karte ist die Zeitleiste geworden (19.9.2026); die Regel ist
-    // dieselbe geblieben, nur gilt sie jetzt für Aufgaben UND Abwesenheiten.
-    datei: 'src/dashboard/dash-timeline.ts',
-    regel: 'Die Start-Leiste steht in Terminfolge — was früher dran ist, steht oben.',
-    suchen: '    (a, b) => (a.at ?? Infinity) - (b.at ?? Infinity) || abwRang(randVon(a)) - abwRang(randVon(b)),',
-    ersetzen: '    (a, b) => abwRang(randVon(a)) - abwRang(randVon(b)),',
+    // Aus der Karte wurde die Zeitleiste (19.9.2026), aus der Zeitleiste die
+    // Termine der Woche (T121) — die Regel blieb: Zusammenkünfte und
+    // Treffpunkte stehen gemischt in der Folge ihrer Tage.
+    datei: 'src/dashboard/diese-woche.ts',
+    regel: 'Die Termine der Woche stehen in Tagesfolge — der Treffpunkt am Samstag vor der Zusammenkunft am Sonntag.',
+    suchen: '  return termine.sort((a, b) => a.tag.getTime() - b.tag.getTime() || a.zeit.localeCompare(b.zeit))',
+    ersetzen: '  return termine',
   },
   {
     id: 'treffpunkt-freitext-gehoert-niemandem',
@@ -3007,6 +3008,78 @@ export const KATALOG = [
     regel: '„Planung" führt den Gruppenaufseher zu den Treffpunkten, die er planen darf — nicht in die Zusammenkünfte.',
     suchen: "const planungsThema: Thema = darfPlanen(rechte, 'zusammenkuenfte') ? 'zusammenkuenfte' : 'predigtdienst'",
     ersetzen: "const planungsThema: Thema = 'zusammenkuenfte'",
+  },
+
+  // ── Für mich: Start, Meine Aufgaben, Absagen (T121, Phase 3) ──────────────
+  {
+    id: 'saal-verschweigt-keine-lage',
+    datei: 'src/data/saal.ts',
+    regel: 'Im Saal bekommt jede vorhandene Lage einen Platz — eine einzige Absage unter dreißig Plätzen verschwindet nicht.',
+    suchen: '    if (zahlen[lage] === 0 || out[lage] > 0) continue',
+    ersetzen: '    continue',
+  },
+  {
+    id: 'saal-offen-hinten',
+    datei: 'src/data/saal.ts',
+    regel: 'Offene Plätze sitzen hinten im Saal, die besetzten vorn.',
+    suchen: "  const reihe: SaalLage[] = [...wunsch.map((w) => w.lage), ...Array<SaalLage>(frei - vorn).fill('offen')]",
+    ersetzen: "  const reihe: SaalLage[] = [...Array<SaalLage>(frei - vorn).fill('offen'), ...wunsch.map((w) => w.lage)]",
+  },
+  {
+    id: 'woche-nur-was-noch-kommt',
+    datei: 'src/dashboard/diese-woche.ts',
+    regel: 'Unter „Diese Woche" steht nur, was noch kommt — am Donnerstag nicht mehr der Dienstag.',
+    suchen: '    if (ms === null || ms < ab) continue',
+    ersetzen: '    if (ms === null) continue',
+  },
+  {
+    id: 'woche-nur-eigene-gruppe',
+    datei: 'src/dashboard/diese-woche.ts',
+    regel: 'Unter „Diese Woche" stehen die Treffpunkte der eigenen Gruppe und der Versammlung, nicht die fremder Gruppen.',
+    suchen: '    if (inst.grp !== null && inst.grp !== gruppe) continue',
+    ersetzen: '',
+  },
+  {
+    id: 'alle-bestaetigen-nur-offene',
+    datei: 'src/app/persist.ts',
+    regel: '„Alle bestätigen" sagt nur zu, was offen war — eine Absage wird dabei nicht still zur Zusage.',
+    suchen: "        if (task.status === 'offen') saveConfirmation(congId, userId, task.id, 'bestätigt')",
+    ersetzen: "        saveConfirmation(congId, userId, task.id, 'bestätigt')",
+  },
+  {
+    id: 'absage-nachricht-als-freitext',
+    datei: 'src/app/reducer.ts',
+    regel: 'Die Nachricht beim Absagen steht als Freitext in der Mitteilung — kein Übersetzer macht aus „Markus 2" ein Bibelbuch.',
+    suchen: '  return text ? ` · ${alsFreitext(text)}` : \'\'',
+    ersetzen: '  return text ? ` · ${text}` : \'\'',
+  },
+  {
+    id: 'absage-abwesend-nur-mit-schalter',
+    datei: 'src/aufgaben/AbsageBlatt.tsx',
+    regel: 'Beim Absagen wird der Tag nur als abwesend eingetragen, wenn der Schalter an ist — er steht aus.',
+    suchen: '    if (abwesend && tag) {',
+    ersetzen: '    if (tag) {',
+  },
+  {
+    id: 'blatt-eigene-fehlergrenze',
+    datei: 'src/app/AppShell.tsx',
+    regel: 'Geht ein Blatt über einem anderen auf, bleibt das untere eingehängt — es behält seinen Verlaufseintrag.',
+    suchen: '  const blatt = (inhalt: ReactNode) => <ErrorBoundary {...fehlerTexte}>{inhalt}</ErrorBoundary>',
+    ersetzen: '  const blatt = (inhalt: ReactNode) => <ErrorBoundary key={String(state.s89 != null)} {...fehlerTexte}>{inhalt}</ErrorBoundary>',
+  },
+  {
+    id: 'escape-verbraucht',
+    datei: 'src/components/useEscape.ts',
+    regel: 'Ein Escape, das ein Blatt schließt, ist verbraucht — Chromium macht daraus keine zweite „close request".',
+    suchen: '      event.preventDefault()\n      handler.current()',
+    ersetzen: '      handler.current()',
+  },
+  {
+    id: 'spaeter-legt-weg',
+    datei: 'src/app/reducer.ts',
+    regel: '„Später" legt das Blatt beim Öffnen weg, auch wenn noch etwas zu bestätigen ist.',
+    suchen: "    case 'closeConfirm':\n      // „Später\" (T121): Das Blatt lässt sich weglegen, auch wenn noch etwas zu\n      // bestätigen ist. Beim nächsten Öffnen der App liegt es wieder da (`login`).\n      return { ...state, confirmOpen: false }",
+    ersetzen: "    case 'closeConfirm':\n      return state.myTasks.some((t) => t.status === 'offen') ? state : { ...state, confirmOpen: false }",
   },
   /* ---- Eine Zeugnis-Schicht fällt aus (4.10.2026) ---- */
   {

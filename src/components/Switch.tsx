@@ -1,3 +1,5 @@
+import '../bausteine/bausteine.css'
+
 /**
  * Der Ein/Aus-Schalter der App — ein Knopf, kein `<input type="checkbox">`.
  *

@@ -34,8 +34,6 @@
 .plan-item-title,
 .plan-item-meta,
 .plan-conflict-row,
-.auf-title,
-.auf-date,
 .abs-range,
 .cand-name,
 .cand-sub,
@@ -47,11 +45,6 @@
 .zeit-art,
 .dash-plan-range {
   unicode-bidi: plaintext;
-}
-
-/* Die Pfeile der Planungs-Karte (Start-Bildschirm) zeigen in Leserichtung. */
-[dir='rtl'] .dash-plan-arrow {
-  transform: scaleX(-1);
 }
 
 /* Ebenso der Pfeil des Hinweises „Ohne Predigtdienstgruppe" (Einstellungen) —

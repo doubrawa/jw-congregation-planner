@@ -118,7 +118,16 @@ export function montagNach(start: string, wochen: number): string {
  * Plänen und als `setDate`-Rechnung in den Gruppenbesuchen.
  */
 export function tagNach(datum: string, tage: number): string {
-  return new Date(Date.parse(datum) + tage * 864e5).toISOString().slice(0, 10)
+  return isoVonKalendertag(Date.parse(datum) + tage * 864e5)
+}
+
+/**
+ * Ein Kalendertag in der Kodierung von `kalendertagMs` (UTC-Mitternacht, so
+ * trägt ihn auch `MyTask.at`) als ISO-Datum — über UTC gelesen, damit kein
+ * Zeitzonenversatz den Tag verschiebt.
+ */
+export function isoVonKalendertag(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10)
 }
 
 /**

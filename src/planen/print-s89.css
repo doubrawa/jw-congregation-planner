@@ -76,8 +76,6 @@
   :root[data-print='s89'] .planenkopf,
   :root[data-print='s89'] .sheet,
   :root[data-print='s89'] .sheet-backdrop,
-  :root[data-print='s89'] .confirm-modal,
-  :root[data-print='s89'] .confirm-backdrop,
   :root[data-print='s89'] .toast {
     display: none !important;
   }

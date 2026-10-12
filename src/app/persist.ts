@@ -982,6 +982,12 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         substituteWithdraw(action.id)
       }
       break
+    case 'confirmAll':
+      // Dieselbe Zusage wie einzeln, für jede Aufgabe, die gerade offen stand.
+      for (const task of prev.myTasks) {
+        if (task.status === 'offen') saveConfirmation(congId, userId, task.id, 'bestätigt')
+      }
+      break
     case 'declineTask':
       // Öffentliches Zeugnisgeben: Die Absage gibt den Platz frei, statt eine
       // Verhinderung zu hinterlegen (`ozAbsage` im Reducer). Die Planer

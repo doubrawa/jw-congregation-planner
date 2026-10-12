@@ -38,10 +38,11 @@ Versammlungseinstellungen pflegen.
 
 ## 1. Dashboard für Planer
 
-Als Planer steht für dich ganz oben, direkt unter dem Gruß, die
-**Planungs‑Karte**: was in den kommenden Wochen noch zu tun ist. Darunter folgt
-deine persönliche Übersicht wie bei jedem Verkündiger – deine unbestätigten
-Aufgaben legt dir die App ohnehin beim Öffnen vor.
+Als Planer siehst du auf der Startseite neben deiner persönlichen Übersicht –
+deiner nächsten Aufgabe und den Aufgaben danach, wie bei jedem Verkündiger – die
+**Planung**: was in den kommenden Wochen noch zu tun ist. Am Tablet und am
+Computer steht sie in einer eigenen Spalte daneben, am Handy darunter, dort an
+der Stelle von „Diese Woche in der Versammlung".
 
 ![Planer‑Dashboard](screenshots/planer-start.png)
 

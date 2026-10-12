@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { DE } from '../i18n/de'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -112,7 +113,7 @@ describe('T79 — Freigabe-Liste eines Hilfsdienstes', () => {
     // S-89) sie längst hatten. Am Schreibtisch ist die Taste der gewohnte Weg
     // hinaus — hier blieb das Blatt stehen.
     const { container, dispatch } = zeige()
-    fireEvent.click(container.querySelector('.sheet-close')!)
+    fireEvent.click(container.querySelector(`[aria-label="${DE.a11yClose}"]`)!)
     fireEvent.click(container.querySelector('.sheet-backdrop')!)
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(dispatch.mock.calls.filter((c) => c[0].type === 'closeServiceSheet')).toHaveLength(3)

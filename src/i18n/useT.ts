@@ -45,6 +45,25 @@ export function aufgabenLabel(
 }
 
 /**
+ * Dieselbe Beschriftung auf **zwei Zeilen** — für die große Karte der nächsten
+ * Aufgabe (T121): oben groß der Programmpunkt, darunter die Rolle und, bei
+ * Schulungsaufgaben, der Partner. Wo die Rolle allein trägt (Vorsitz,
+ * Hilfsdienste, Treffpunkte), steht sie oben. Zusammengesetzt wird hier,
+ * neben `aufgabenLabel`, aus demselben Grund: Jede Hälfte braucht ihren
+ * eigenen Übersetzer.
+ */
+export function aufgabenZeilen(
+  task: { title: string; rolle?: string; lesersprache?: boolean; s89?: { partner: string } | null },
+  i18n: Pick<I18n, 't' | 'tp' | 'tu'>,
+): { titel: string; unter: string } {
+  const punkt = task.title ? aufgabenTp(task, i18n)(task.title) : ''
+  const rolle = task.rolle ? i18n.tu(task.rolle) : ''
+  const partner = task.s89?.partner ? `${i18n.t.s89Partner}: ${task.s89.partner}` : ''
+  if (!punkt) return { titel: rolle, unter: partner }
+  return { titel: punkt, unter: [rolle, partner].filter(Boolean).join(' · ') }
+}
+
+/**
  * Übersetzer für den Programmtext einer Aufgabe — Titel und Datum.
  *
  * Gewöhnlich `tp`, die Versammlungssprache. Liegt die Woche aber als Variante in

@@ -175,7 +175,7 @@ describe('Kopf und Schließen', () => {
 
   it('das ✕, der Hintergrund und Escape schließen alle drei', () => {
     const { container, dispatch } = zeige(SEL_SCHUELER)
-    fireEvent.click(container.querySelector('.sheet-close')!)
+    fireEvent.click(container.querySelector(`[aria-label="${t.a11yClose}"]`)!)
     fireEvent.click(container.querySelector('.sheet-backdrop')!)
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(dispatch.mock.calls.filter((c) => c[0].type === 'closeSlot')).toHaveLength(3)

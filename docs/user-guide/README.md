@@ -42,11 +42,12 @@ dadurch bleiben Bilder und App immer konsistent. Mit Namen als Argumenten
 | `pl`  | Rechte erzwingen: `0` = Verkündiger‑Ansicht, `1` = Admin, `2` = Planer (teilt zu, ändert die Pläne nicht) |
 | `p`   | **Ausgewählte** Person‑Id — auf der Personen‑Seite öffnet es deren Detail |
 | `me`  | **Angemeldete** Person‑Id: wessen App das hier ist. Davon hängt ab, was persönlich ist — „Meine Aufgaben" und Einspringen (abgeleitet wie im Betrieb), der „DU"‑Chip, „Deine Einträge", und welche **Gruppentreffpunkte** überhaupt erscheinen (nur die der eigenen Gruppe) |
-| `t`   | Theme (z. B. `weiss` für die druckfreundliche Doku) |
+| `t`   | Darstellung: `hell`, `dunkel` oder `auto` |
 | `fs`  | Schriftgröße‑Faktor (`0.9`, `1`, `1.15`, `1.3`, `1.45`) — für Layout‑Tests bei großer Schrift |
 | `l` / `c` | App‑Sprache / Versammlungssprache |
 | `shot` | `1` = Screenshot‑Modus: schaltet den Spaltenschatten ab, damit die Zentrier‑Lücke flach ist und randlos zugeschnitten werden kann |
 | `stale` | Offline‑Stand vortäuschen: Zahl = Alter in Stunden (`stale=5`). Zeigt das Offline‑Banner und schaltet auf „nur lesen" — ohne echten Netzabbruch |
+| `vorlage` | `1` = das Blatt beim Öffnen vorlegen, wie nach dem Anmelden (braucht `me=`, sonst liegt nichts vor) |
 
 Nach der Aufnahme schneidet **`trim.mjs`** (pngjs) jedes Bild seitlich auf den Inhalt
 zu – es entfernt die einfarbige Zentrier‑Lücke links/rechts. Das Skript ruft es am

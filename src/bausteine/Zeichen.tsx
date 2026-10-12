@@ -11,6 +11,9 @@ import type { ReactNode } from 'react'
 const PFADE = {
   menue: <path d="M4.5 7h15M4.5 12h15M4.5 17h15" />,
   kreuz: <path d="m6.5 6.5 11 11M17.5 6.5l-11 11" />,
+  /** Der Pfeil am Ende einer Zeile, die weiterführt. */
+  weiter: <path d="m9.6 6 6 6-6 6" />,
+  haken: <path d="m6.5 12.5 3.7 3.7L17.5 8.5" />,
   glocke: (
     <>
       <path d="M6.5 16.5v-5.2a5.5 5.5 0 0 1 11 0v5.2l1.5 2H5z" />
@@ -68,11 +71,14 @@ const PFADE = {
 
 export type ZeichenName = keyof typeof PFADE
 
+/** Was eine Richtung zeigt und deshalb von rechts nach links gespiegelt wird. */
+const RICHTUNG: ReadonlySet<ZeichenName> = new Set(['weiter'])
+
 /** Ein Zeichen, für Vorleseprogramme verborgen — die Beschriftung trägt der Knopf. */
 export function Zeichen({ name }: { name: ZeichenName }) {
   return (
     <svg
-      className="zeichen"
+      className={RICHTUNG.has(name) ? 'zeichen is-richtung' : 'zeichen'}
       width="24"
       height="24"
       viewBox="0 0 24 24"

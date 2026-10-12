@@ -265,10 +265,10 @@ describe('Zurück am Handy', () => {
     const { container } = zeige({ planner: false, personId: 'p9', notifs: [zeile({ taskId: 'a1' })] })
     await tippeInDerGlocke(container)
     expect(aktiv(container)).toBe(t.navAufgabenLong)
-    expect(container.querySelector('.confirm-modal'), 'das Blatt ist nicht offen').not.toBeNull()
+    expect(container.querySelector('.sheet'), 'das Blatt ist nicht offen').not.toBeNull()
 
     await zurueck()
-    expect(container.querySelector('.confirm-modal'), 'das Blatt blieb offen').toBeNull()
+    expect(container.querySelector('.sheet'), 'das Blatt blieb offen').toBeNull()
     expect(aktiv(container)).toBe(t.navAufgabenLong)
 
     await zurueck()

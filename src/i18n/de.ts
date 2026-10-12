@@ -193,9 +193,9 @@ export const DE = {
     // Start / Dashboard
     grussMorgen: 'Guten Morgen', grussTag: 'Guten Tag', grussAbend: 'Guten Abend',
     dashKeineAufgabe: 'Keine anstehende Aufgabe',
-    dashZuBest: 'Zu bestätigen', aufgabenN: 'Aufgaben: {n}', dashPlanung: 'Planung',
+    dashZuBest: 'Zu bestätigen', dashPlanung: 'Planung',
     dashAllesZugeteilt: 'Alles zugeteilt',
-    naechsteAufgaben: 'NÄCHSTE AUFGABEN', abwesenheiten: 'ABWESENHEITEN',
+    abwesenheiten: 'ABWESENHEITEN',
     von: 'VON', bis: 'BIS', grundOpt: 'GRUND (OPTIONAL)', grundPh: 'z. B. Urlaub',
     datumPh: 'Datum wählen',
     abwEintragen: 'ABWESENHEIT EINTRAGEN', deineEintraege: 'DEINE EINTRÄGE', ohneAngabe: 'Ohne Angabe',
@@ -217,6 +217,17 @@ export const DE = {
     themeDunkel: 'Dunkel', themeHell: 'Hell', themeAuto: 'Automatisch',
     // Menü und Planen im neuen Design (T121).
     navPlanenVerwalten: 'Planen und verwalten', fertig: 'Fertig', planenBeenden: 'Planen beenden',
+    // „Für mich" (T121, Phase 3): der Saal auf dem Start, die Woche der
+    // Versammlung, das Blatt beim Öffnen und das Absagen mit seiner Spur.
+    saalBesetzung: 'Besetzung', saalDeinPlatz: 'dein Platz ist markiert',
+    dieseWocheVersammlung: 'Diese Woche in der Versammlung',
+    alleBestaetigen: 'Alle bestätigen', spaeter: 'Später',
+    absageFrage: 'Du kannst nicht?', absageIntro: 'Kein Problem. So geht es danach weiter:',
+    spurDuSagstAb: 'Du sagst ab', spurErsatzGesucht: 'Ersatz gesucht', spurUebernommen: 'Übernommen',
+    spurPlanerErfaehrt: 'Planer erfährt es', spurNeuZugeteilt: 'Neu zugeteilt',
+    absageErklaerung: 'Der Planer erfährt es sofort und gibt die Aufgabe jemand anderem.',
+    absageNachricht: 'Nachricht an den Planer (freiwillig)', absageNachrichtBeispiel: 'z. B. bin an dem Tag verreist',
+    absageAbwesend: 'Den Tag als abwesend eintragen',
     personen: 'Personen', personenCount: 'Personen: {n}', suchen: 'Suchen …',
     neuePerson: '+ NEUE PERSON ANLEGEN', aufgabenbereicheN: 'Aufgabenbereiche: {n}',
     allePersonen: '‹ Alle Personen', stammdaten: 'STAMMDATEN',
@@ -388,18 +399,16 @@ export const DE = {
     s89Datum: 'Datum', s89Aufgabe: 'Aufgabe', s89Punkt: 'Schulungspunkt', s89Ort: 'Durchzuführen im',
     s89Open: 'S-89 anzeigen',
     s89Note: 'Hinweis: Quelle und Schulungspunkt für deine Aufgabe findest du im Arbeitsheft.',
-    erinnerungCap: 'ERINNERUNG', confirmTitle: 'Bitte bestätige deine Zuteilungen',
-    confirmIntro: 'Du hast Zuteilungen, die noch nicht bestätigt sind. Bitte bestätige sie, damit sich die Admins darauf verlassen können.',
-    confirmRequired: 'Ohne Bestätigung wirst du beim nächsten Öffnen erneut erinnert.',
+    confirmTitle: 'Bitte bestätige deine Zuteilungen',
     bestaetigen: 'Bestätigen', bestaetigt: 'Bestätigt', verhindert: 'Ich bin verhindert', verhindertChip: 'Verhindert',
-    kannNicht: 'Ich kann nicht', absagen: 'Absagen — ich kann doch nicht', dochBestaetigen: 'Doch bestätigen',
+    kannNicht: 'Ich kann nicht', absagen: 'Absagen', dochBestaetigen: 'Doch bestätigen',
     ersatzHint: 'Wenn du einen Hilfsdienst absagst, wird automatisch ein Ersatz aus dem Kreis der Qualifizierten gesucht.',
-    einspringenTitle: 'EINSPRINGEN', einspringenHint: 'Für diese Hilfsdienste wird ein Ersatz gesucht — kannst du übernehmen?',
+    einspringenTitle: 'Einspringen', einspringenHint: 'Für diese Hilfsdienste wird ein Ersatz gesucht — kannst du übernehmen?',
     uebernehmen: 'Übernehmen',
     // Freie Plätze unter „Meine Aufgaben" (4.10.2026): unbesetzte Plätze
     // gesendeter Wochen, für die man den Aufgabenbereich hat. Der Titel ist das
     // Wort des Zeugnisgebens (`ozFreiePlaetze`) — dieselbe Sache, dasselbe Wort.
-    freiePlaetzeTitle: 'FREIE PLÄTZE',
+    freiePlaetzeTitle: 'Freie Plätze',
     freiePlaetzeHint: 'Hier ist noch niemand eingeteilt, und du hast den Aufgabenbereich dafür. Wer zuerst übernimmt, ist eingetragen und hat damit zugesagt.',
     toastPlatzUebernommen: 'Danke! Du bist eingetragen',
     // Die drei Stufen des Ampel-Punkts im Planen — Legende und Screenreader

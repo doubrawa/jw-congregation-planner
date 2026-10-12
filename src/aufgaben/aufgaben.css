@@ -1,97 +1,312 @@
-/* Meine Aufgaben (Screen 4, persönlicher Bereich). */
+/*
+ * Die eigenen Aufgaben (T121): die große Karte (Start, Meine Aufgaben), die
+ * Zeilen darunter, was man übernehmen kann, und die Blätter dazu — die eigene
+ * Aufgabe, Absagen, das Blatt beim Öffnen.
+ */
 
-/* ---- Nächste Aufgaben ----------------------------------------------------- */
+/* ---- Die große Karte ------------------------------------------------------- */
 
-.auf-row {
+.aufgabe-karte.mit-saal {
+  padding-block-start: 12px;
+}
+
+.aufgabe-karte .saal,
+.sheet .saal {
+  align-self: center;
+  margin-block-end: 10px;
+}
+
+.aufgabe-wann {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  gap: 8px;
+  color: var(--akzent-text);
+  font-size: calc(14px * var(--fs));
+  font-weight: 600;
+}
+
+.aufgabe-wann .punkt {
+  width: 9px;
+  height: 9px;
+}
+
+.aufgabe-titel {
+  padding-block-start: 3px;
+  font-size: calc(25px * var(--fs));
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+[dir='rtl'] .aufgabe-titel {
+  letter-spacing: 0;
+}
+
+.aufgabe-unter {
+  padding-block-start: 3px;
+  color: var(--text2);
+}
+
+.aufgabe-handlungen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-block-start: 16px;
+}
+
+/* Der Stand, wo es nichts mehr zu bestätigen gibt. */
+.aufgabe-stand {
+  color: var(--akzent-text);
+  font-weight: 600;
+}
+
+.aufgabe-stand.is-problem {
+  color: var(--problem);
+}
+
+/* S-89 steht am Ende der Zeile, abgesetzt von den Knöpfen. */
+.aufgabe-s89 {
+  margin-inline-start: auto;
+}
+
+/* ---- Meine Aufgaben -------------------------------------------------------- */
+
+.aufgaben {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--panel-hair);
 }
 
-.panel .auf-row:last-child {
-  border-bottom-color: transparent;
+.aufgaben-kopf {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-/* Titel+Datum sind anklickbar → Aktions-Sheet (bestätigen/absagen). */
-.auf-open {
-  display: block;
-  width: 100%;
+.aufgaben-zusage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.aufgaben-leer {
+  color: var(--text2);
+}
+
+.aufgaben-liste {
+  padding-inline-end: 10px;
+}
+
+.aufgaben-zeile {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 14px;
+  min-height: 68px;
+}
+
+.aufgaben-zeile + .aufgaben-zeile {
+  border-block-start: 1px solid var(--linie);
+}
+
+/* Titel und Termin öffnen die Aufgabe; der Haken daneben bestätigt. */
+.aufgaben-zeile-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-block: 10px;
   text-align: start;
 }
 
-.auf-open:hover .auf-title {
-  text-decoration: underline;
-  text-underline-offset: 2px;
+.aufgaben-zeile-titel {
+  font-size: calc(16px * var(--fs));
+  font-weight: 600;
 }
 
-.auf-title {
-  font-family: var(--font-serif);
-  font-size: calc(15px * var(--fs));
+.aufgaben-zeile-pfeil {
+  display: flex;
+  justify-content: center;
+  width: 44px;
+  color: var(--text3);
+}
+
+.aufgaben-zeile-pfeil .zeichen {
+  width: 20px;
+  height: 20px;
+}
+
+/* Einspringen und freie Plätze: was man übernehmen kann.
+   Ziel des Sprungs aus „Ersatz gesucht" (T109): Auf dem Handy klebt die
+   Kopfzeile oben; ohne den Abstand läge die Überschrift des Bereichs nach dem
+   Hinscrollen genau darunter. */
+.aufgaben-abschnitt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-block-start: 8px;
+  scroll-margin-top: calc(72px + env(safe-area-inset-top));
+}
+
+/* Die Überschrift wird beim Sprung fokussiert, damit ein Screenreader dort
+   weiterliest. Sie ist kein Bedienelement — ein Fokusrahmen um sie sähe aus,
+   als ließe sie sich anklicken. */
+.aufgaben-abschnitt h2:focus {
+  outline: none;
+}
+
+.aufgaben-angebote {
+  gap: 12px;
+  padding: 14px 10px 14px 18px;
+}
+
+.aufgaben-angebot {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aufgaben-angebot + .aufgaben-angebot {
+  padding-block-start: 12px;
+  border-block-start: 1px solid var(--linie);
+}
+
+.aufgaben-angebot-text {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  column-gap: 14px;
+}
+
+.aufgaben-angebot-text .punkt {
+  margin-block-start: 6px;
+}
+
+/* Was man übernehmen kann (`AngebotText`): was, wann, was man schon hat. */
+.angebot-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.angebot-titel {
+  font-size: calc(16px * var(--fs));
+  font-weight: 600;
+}
+
+/* „An diesem Tag schon: …" — vor dem Zusagen. */
+.hinweis-schon {
+  color: var(--sek2);
+  font-size: calc(13.5px * var(--fs));
   font-weight: 500;
 }
 
-.auf-date {
-  font-size: calc(11.5px * var(--fs));
-  color: var(--mut);
-  margin-top: 3px;
-}
+/* ---- Absagen --------------------------------------------------------------- */
 
-.auf-chip {
-  background: var(--acc);
-  color: var(--onAcc);
-  border-radius: var(--r-pill);
-  padding: 3px 9px;
-  font-size: calc(10px * var(--fs));
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-/* Aktionszeile je Aufgabe: bestätigen / Status / S-89 */
-.auf-actions {
+.absage {
   display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-top: 8px;
+  flex-direction: column;
+}
+
+.absage-intro {
+  padding-block-end: 14px;
+  color: var(--text2);
+}
+
+.absage-erklaerung {
+  padding-block-start: 12px;
+}
+
+.absage-nachricht {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-block-start: 16px;
+}
+
+.absage-fuss {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-block-start: 16px;
+}
+
+.absage-fuss-zeile {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 6px;
+}
+
+.knopf-leise.is-akzent {
+  color: var(--akzent-text);
+}
+
+/* ---- Das Blatt beim Öffnen -------------------------------------------------- */
+
+.oeffnen-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.oeffnen-aufgabe {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: var(--feld);
+}
+
+.oeffnen-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.oeffnen-wann {
+  color: var(--text2);
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 600;
+}
+
+/* Die erste Aufgabe ist die nächste — ihr Termin in Minze. */
+.oeffnen-aufgabe:first-child .oeffnen-wann {
+  color: var(--akzent-text);
+}
+
+.oeffnen-titel {
+  font-size: calc(16.5px * var(--fs));
+  font-weight: 600;
+}
+
+.oeffnen-knoepfe {
+  display: flex;
   flex-wrap: wrap;
+  gap: 8px;
 }
 
-.auf-confirm {
-  border: 1px solid var(--pet);
-  color: var(--pet);
-  border-radius: var(--r-pill);
-  padding: 3px 11px;
-  font-size: calc(10.5px * var(--fs));
-  font-weight: 600;
+.oeffnen-knoepfe .knopf-haupt {
+  min-height: 44px;
+  padding-inline: 20px;
 }
 
-.auf-confirm:hover {
-  background: var(--tPet);
+.oeffnen-gesuche {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.auf-badge {
-  border-radius: var(--r-pill);
-  padding: 3px 11px;
-  font-size: calc(10px * var(--fs));
-  font-weight: 600;
+.oeffnen-gesuche.is-nach {
+  padding-block-start: 8px;
 }
 
-.auf-badge--best {
-  background: var(--tPet);
-  color: var(--pet);
-}
-
-.auf-badge--verh {
-  background: var(--tWein);
-  color: var(--wein);
-}
-
-.auf-s89 {
-  font-size: calc(10.5px * var(--fs));
-  font-weight: 600;
-  color: var(--acc);
+.oeffnen-fuss {
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 /* ---- Abwesenheiten --------------------------------------------------------- */
@@ -117,68 +332,6 @@
 /* "DEINE EINTRÄGE" — wie panel-label, aber mit Abstand zum Formular */
 .auf-entries-label {
   padding-top: 18px;
-}
-
-/* Einspringen: offene Ersatzgesuche (Hilfsdienste) zum Übernehmen. */
-/* Ziel des Sprungs aus „Ersatz gesucht" (T109). Auf dem Handy klebt die
-   Kopfzeile oben; ohne den Abstand läge die Überschrift des Bereichs nach dem
-   Hinscrollen genau darunter. */
-.auf-sub {
-  scroll-margin-top: calc(72px + env(safe-area-inset-top));
-}
-
-/* Die Überschrift wird beim Sprung fokussiert, damit ein Screenreader dort
-   weiterliest. Sie ist kein Bedienelement — ein Fokusrahmen um sie sähe aus,
-   als ließe sie sich anklicken. */
-.auf-sub .panel-label:focus {
-  outline: none;
-}
-
-.auf-sub-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--panel-hair);
-}
-
-.auf-sub-row:last-child {
-  border-bottom: 0;
-}
-
-.auf-sub-title {
-  font-size: calc(13px * var(--fs));
-  font-weight: 600;
-}
-
-.auf-sub-meta {
-  font-size: calc(11px * var(--fs));
-  color: var(--mut);
-  margin-top: 1px;
-}
-
-/* „An diesem Tag schon: …" — dieselbe Warnfarbe wie beim Planer im
-   Zuteilungs-Sheet (`.cand-today`), damit es dasselbe bedeutet. */
-.auf-sub-warn {
-  font-size: calc(11px * var(--fs));
-  font-weight: 600;
-  color: var(--wein);
-  margin-top: 2px;
-}
-
-.auf-sub-btn {
-  flex: none;
-  background: var(--acc);
-  color: var(--onAcc);
-  border-radius: var(--r-pill);
-  padding: 8px 14px;
-  font-size: calc(11.5px * var(--fs));
-  font-weight: 600;
-}
-
-.auf-sub-btn:hover {
-  background: var(--accD);
 }
 
 .abs-row {

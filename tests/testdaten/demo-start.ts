@@ -115,6 +115,8 @@ export interface DebugHash {
   zuteiler?: boolean
   shot?: boolean // Screenshot-Modus: Spaltenschatten aus (randloses Zuschneiden)
   staleAt?: number // Offline-Stand vortäuschen (stale=<Stunden alt>) — Banner + nur lesen
+  /** `vorlage=1`: das Blatt beim Öffnen vorlegen, wie nach dem Anmelden (T121). */
+  vorlage?: boolean
 }
 
 export function parseDebugHash(hash: string, jetzt = Date.now()): DebugHash | null {
@@ -149,6 +151,7 @@ export function parseDebugHash(hash: string, jetzt = Date.now()): DebugHash | nu
     out.zuteiler = true
   }
   if (p.get('shot') === '1') out.shot = true
+  if (p.get('vorlage') === '1') out.vorlage = true
   // stale=<Stunden>: Offline-Stand simulieren (ohne Netzabbruch nachstellbar)
   const stale = Number(p.get('stale'))
   if (Number.isFinite(stale) && stale > 0) out.staleAt = jetzt - stale * 3600_000
@@ -213,6 +216,9 @@ export function entwicklerStart(hash: string = location.hash): AppState {
     // doppelter Name beim Verlassen nicht zurück (T110).
     nameBeimOeffnen: namensStand(basis.persons.find((p) => p.id === debug?.personId)),
     staleAt: debug?.staleAt ?? null,
+    // Liegt nichts vor (ohne `me=` keine eigenen Aufgaben), bleibt es zu —
+    // die Ableitung prüft das (`vorzulegen`).
+    confirmOpen: debug?.vorlage === true,
     lang: debug?.lang ?? basis.lang,
     congLang: debug?.congLang ?? basis.congLang,
     // Ein Hash mit `tab=` ist eine Wahl — sonst spränge der Reiter beim

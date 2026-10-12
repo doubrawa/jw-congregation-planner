@@ -74,6 +74,7 @@ export function initialState(): AppState {
     sentLog: {},
     confirmOpen: false,
     myTaskId: null,
+    absageId: null,
     substituteReqs: [],
     offenePlaetze: [],
     s89: null,

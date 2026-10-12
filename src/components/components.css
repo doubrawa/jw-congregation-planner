@@ -474,15 +474,12 @@ select {
    Gemessen waren fünf Bedienelemente kleiner als die geforderten 24 px:
    der Schalter (40×22), „✓ Bestätigen" (86×23), die beiden S-89-Verweise
    (82×17 und 75×15) und „+ Gesprächspartner" (101×16). Die S-89-Zeilen waren
-   sogar reine Textzeilen ohne eigene Fläche.
+   sogar reine Textzeilen ohne eigene Fläche. Die Knöpfe der eigenen Aufgaben
+   haben seit dem neuen Design (T121) ohnehin 44 px und mehr.
 
    Bei den Textknöpfen wächst die Fläche über die Mindesthöhe — das Schriftbild
-   bleibt, nur der Knopf wird höher. Der Schalter behält seine 22 px Optik und
-   bekommt die Fläche über ein unsichtbares Pseudo-Element: seine Höhe ist Teil
-   des Designs, die Trefferfläche muss es nicht sein. */
-.auf-confirm,
-.auf-s89,
-.dash-s89,
+   bleibt, nur der Knopf wird höher. Der Schalter bekommt die Fläche über ein
+   unsichtbares Pseudo-Element. */
 .partner-toggle {
   min-height: 24px;
   display: inline-flex;

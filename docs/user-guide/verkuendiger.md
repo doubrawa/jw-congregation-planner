@@ -50,17 +50,18 @@ Wichtigste zusammen.
 
 ![Startseite eines Verkündigers](screenshots/verkuendiger-start.png)
 
-- **Nächste Aufgaben** – deine Zeitleiste der kommenden **zwei Wochen**: jede
-  Zuteilung mit Datum, Uhrzeit und einem Countdown‑Chip („in 4 Tagen"), dazu
-  die **Treffpunkte**, die du leitest, mit Tag, Uhrzeit und Ort. Bei jeder Zeile
-  kannst du gleich **Bestätigen** oder das **S‑89**‑Formular ansehen; ein Tipp
-  auf die Zeile öffnet das Aufgaben‑Blatt. Liegt in den zwei Wochen nichts,
-  steht die nächste Aufgabe dahinter da.
-- Deine eigenen **Abwesenheiten** stehen in derselben Leiste – Beginn und Ende
-  als zwei Punkte, die Strecke dazwischen eingefärbt. So siehst du sofort, ob
-  eine Zuteilung mitten in einen Zeitraum fällt.
-- **Mitteilungen** und **Zu bestätigen** zeigen dir auf einen Blick, ob etwas
-  Neues für dich da ist.
+- **Deine nächste Aufgabe, groß** – wann („Morgen · Dienstag, 8. September ·
+  19:00"), was, deine Rolle und bei Schulungsaufgaben dein Partner. Gleich
+  darunter **Bestätigen** und **Ich kann nicht**, daneben das **S‑89**.
+- **Der Saal** darüber zeigt, wie weit die Zusammenkunft besetzt ist: ein Punkt
+  je Platz, **voll** heißt zugesagt, **blass** wartet noch auf Zusage, **rot**
+  ist abgesagt, **gestrichelt** noch offen. Dein eigener Platz trägt einen Ring.
+- Darunter **deine nächsten Aufgaben** danach, je eine Zeile; ein Tipp öffnet
+  die Aufgabe. Alle zusammen stehen unter **Meine Aufgaben**.
+- **Diese Woche in der Versammlung** – die Zusammenkünfte und die Treffpunkte
+  deiner Gruppe, die in dieser Woche noch kommen.
+
+Neue **Mitteilungen** zeigt die **Glocke** oben rechts mit einem Punkt.
 
 Über das Menü an der Seite (auf dem Handy hinter dem Menüknopf oben links)
 erreichst du **Start** und **Meine Aufgaben**, darunter unter **Versammlung** die
@@ -176,7 +177,9 @@ auf der Startseite nicht mehr mit.
 **Wenn der Koordinator die Woche freigibt**, bekommst du eine Mitteilung
 „Neue Zuteilung" mit allen deinen Aufgaben dieser Woche auf einmal – in der App
 und, wenn du Push aktiviert hast, auch als Benachrichtigung auf dem Gerät. Beim
-nächsten Öffnen der App legt sie dir die offenen Zuteilungen zum Bestätigen vor.
+nächsten Öffnen der App legt sie dir die offenen Zuteilungen zum Bestätigen vor:
+je Aufgabe **Bestätigen** oder **Ich kann nicht**, unten **Alle bestätigen**.
+Mit **Später** legst du das Blatt weg; beim nächsten Öffnen liegt es wieder da.
 
 Zwei weitere Nachrichten können dich erreichen:
 
@@ -202,32 +205,41 @@ Absagen; bei „Ersatz gesucht" zum Einspringen; ohne bestimmte Aufgabe zu
 
 ![Meine Aufgaben mit Bestätigung](screenshots/verkuendiger-aufgaben.png)
 
-Für jede Aufgabe gilt:
+Oben steht, wie viele Aufgaben noch auf deine Zusage warten. Die nächste steht
+groß da, wie auf der Startseite; die übrigen je eine Zeile mit einem Punkt für
+ihren Stand (blass: wartet, voll: zugesagt, rot: abgesagt):
 
-- **✓ Bestätigen** – teile deinem Koordinator mit, dass du die Aufgabe
-  übernimmst. Danach steht bei der Aufgabe „Bestätigt".
-- **S‑89 anzeigen** – siehe unten.
+- **Der Haken** rechts bestätigt die Aufgabe – dein Koordinator sieht, dass du
+  sie übernimmst.
+- **Alle bestätigen** sagt alles Offene auf einmal zu.
 - **Antippen** öffnet die Aufgabe. Dort kannst du sie auch **absagen** – und
   eine Absage später wieder zurücknehmen.
+- **S‑89** – siehe unten.
 
 > **Tipp:** Bestätige zeitnah. Dein Koordinator sieht offene Bestätigungen und
 > weiß dann, dass alles steht.
 
 ### Wenn du nicht kannst
 
-Tippe die Aufgabe an und wähle **„Ich kann nicht"**. Dein Koordinator bekommt
-eine Mitteilung und kann rechtzeitig neu einteilen. Hast du dich vertan, öffne
-die Aufgabe erneut und wähle **„Doch bestätigen"**. Bei einem Hilfsdienst endet
-damit auch die Ersatzsuche: Die Mitteilung „Ersatz gesucht" verschwindet bei
-den anderen wieder.
+Wähle **„Ich kann nicht"**. Es öffnet sich ein Blatt „Du kannst nicht?", das
+zeigt, wie es danach weitergeht:
 
-Bei einem **Hilfsdienst** (Mikrofone, Ton, Ordner …) passiert zusätzlich etwas:
-Die App sucht sofort selbst einen Ersatz und benachrichtigt alle, die für
-diesen Dienst eingetragen und an dem Tag nicht abwesend sind. Du musst also
-niemanden persönlich anrufen.
+- Bei einem **Hilfsdienst** (Mikrofone, Ton, Ordner …) sucht die App sofort
+  selbst einen Ersatz und benachrichtigt alle, die für diesen Dienst
+  eingetragen und an dem Tag nicht abwesend sind. Du musst niemanden
+  persönlich anrufen.
+- Bei **Programmpunkten** und Treffpunkten erfährt es dein Koordinator sofort
+  und teilt neu zu.
 
-Bei **Programmpunkten** gibt es keine automatische Suche – dort teilt der
-Koordinator neu zu.
+Freiwillig kannst du zwei Dinge mitgeben: eine **Nachricht an den Planer** (sie
+steht in seiner Mitteilung, etwa „bin an dem Tag verreist") und **den Tag als
+abwesend** – dann wirst du an diesem Tag gar nicht erst wieder eingeteilt. Der
+Schalter dafür steht aus; ist der Tag schon eingetragen, fehlt er. Erst
+**Absagen** sendet ab; **Abbrechen** legt das Blatt weg, ohne etwas zu ändern.
+
+Hast du dich vertan, öffne die Aufgabe erneut und wähle **„Doch bestätigen"**.
+Bei einem Hilfsdienst endet damit auch die Ersatzsuche: Die Mitteilung
+„Ersatz gesucht" verschwindet bei den anderen wieder.
 
 ### Einspringen für jemand anderen
 
@@ -240,13 +252,13 @@ passt.
 Du bekommst es auf drei Wegen zu sehen, und dafür musst du nichts suchen:
 
 - **Über die Push-Nachricht oder die Glocke** – ein Tipp darauf öffnet
-  **Meine Aufgaben** und springt direkt zum Bereich **EINSPRINGEN**, statt oben
+  **Meine Aufgaben** und springt direkt zum Bereich **Einspringen**, statt oben
   auf der Seite zu landen.
 - **Beim Öffnen der App** – dasselbe Blatt, das dich an unbestätigte
-  Zuteilungen erinnert, zeigt darunter den Bereich **EINSPRINGEN**. Hast du
-  nichts zu bestätigen, steht dort nur die Anfrage, und du kannst das Blatt mit
-  **✕** weglegen: Einspringen kannst du, müssen tust du es nicht.
-- Unter **Meine Aufgaben** – dort steht der Bereich **EINSPRINGEN** dauerhaft,
+  Zuteilungen erinnert, zeigt darunter den Bereich **Einspringen**. Mit
+  **Später** legst du das Blatt weg: Einspringen kannst du, müssen tust du es
+  nicht.
+- Unter **Meine Aufgaben** – dort steht der Bereich **Einspringen** dauerhaft,
   solange die Anfrage offen ist. Eine eigene Seite dafür gibt es bewusst nicht:
   Sie wäre fast immer leer.
 
@@ -261,7 +273,7 @@ dann ist der Dienst schon besetzt.
 ### Freie Plätze übernehmen
 
 Ist im Programm ein Platz **noch gar nicht besetzt**, den du übernehmen
-könntest, steht er unter **Meine Aufgaben** im Bereich **FREIE PLÄTZE** – aber
+könntest, steht er unter **Meine Aufgaben** im Bereich **Freie Plätze** – aber
 erst, wenn der Koordinator den Plan der Woche gesendet hat. Vorher plant er
 noch, und ein leerer Platz hieße nichts.
 

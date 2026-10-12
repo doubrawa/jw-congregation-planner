@@ -4,7 +4,7 @@ import type { AppAction, AppState } from './context'
 import { buildDemoFsWeeks, buildDemoWeeks, DEMO_FS_RULES, DEMO_PERSONS, DEMO_SERVICES } from '../../tests/testdaten/testdaten'
 import { syncAuxSlots } from '../data/aux-class'
 import { fsGruppeEntfernen, fsTaskKey } from '../data/fs'
-import type { Person, Week } from '../data/types'
+import type { MyTask, Person, Week } from '../data/types'
 
 // Supabase truthy (Guard soll durchlassen) — kein echter Client/Netz.
 vi.mock('../lib/supabase', () => ({ supabase: {} }))
@@ -1657,6 +1657,17 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     expect(data.saveConfirmation).toHaveBeenCalledWith('c1', 'u1', 'k1', 'bestätigt')
     persist(st(), st(), { type: 'declineTask', id: 'k2' })
     expect(data.saveConfirmation).toHaveBeenCalledWith('c1', 'u1', 'k2', 'verhindert')
+  })
+
+  it('„Alle bestätigen" schreibt die Zusage jeder Aufgabe, die offen stand — eine Absage bleibt eine (T121)', () => {
+    const aufgabe = (id: string, status: MyTask['status']): MyTask => ({ id, title: 'X', date: 'Di', status, s89: null })
+    persist(st({ myTasks: [aufgabe('a', 'offen'), aufgabe('b', 'verhindert'), aufgabe('c', 'offen')] }), st(), {
+      type: 'confirmAll',
+    })
+    expect(vi.mocked(data.saveConfirmation).mock.calls).toEqual([
+      ['c1', 'u1', 'a', 'bestätigt'],
+      ['c1', 'u1', 'c', 'bestätigt'],
+    ])
   })
 
   it('Erinnerungen/Sprache → saveSettings', () => {

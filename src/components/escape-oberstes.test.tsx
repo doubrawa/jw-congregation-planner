@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { DE } from '../i18n/de'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -52,12 +53,9 @@ const S89: S89Payload = {
   aux: false,
 }
 
-function zeige(over: Partial<AppState>) {
-  const gerufen: AppAction[] = []
-  const dispatch = (a: AppAction) => {
-    gerufen.push(a)
-  }
-  const state: AppState = {
+/** Der Planer im Planen, mit dem Demo-Bestand. */
+function zustand(): AppState {
+  return {
     ...demoZustand(),
     dataStatus: 'ready',
     congregationId: 'c1',
@@ -73,8 +71,15 @@ function zeige(over: Partial<AppState>) {
     services: [...DEMO_SERVICES],
     weeks: buildDemoWeeks(),
     week: 0,
-    ...over,
   }
+}
+
+function zeige(over: Partial<AppState>) {
+  const gerufen: AppAction[] = []
+  const dispatch = (a: AppAction) => {
+    gerufen.push(a)
+  }
+  const state: AppState = { ...zustand(), ...over }
   function Buehne() {
     const store = useStaticStore(state)
     return (
@@ -118,7 +123,7 @@ describe('Zwei Blätter übereinander', () => {
   it('… und das ✕ des Formulars ebenso — beide Wege führen zurück zur Zuteilung', () => {
     // Gegenprobe zur Zeile darüber: Über den Knopf war es schon immer richtig.
     const { container, gerufen } = zeige({ ...ZUTEILUNG, s89: S89 })
-    const zu = container.querySelector<HTMLButtonElement>('.sheet--s89 .sheet-close')
+    const zu = container.querySelector<HTMLButtonElement>(`.sheet--oben [aria-label="${DE.a11yClose}"]`)
     expect(zu, 'kein ✕ am S-89-Formular gefunden').not.toBeNull()
     fireEvent.click(zu!)
     const arten = gerufen.map((a) => a.type)
@@ -131,5 +136,51 @@ describe('Zwei Blätter übereinander', () => {
     const { gerufen } = zeige(ZUTEILUNG)
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(gerufen.map((a) => a.type)).toContain('closeSlot')
+  })
+
+  /*
+   * Gemessen am 12.10.2026 in Chromium: Das Blatt beim Öffnen geht ohne Geste
+   * auf und bekommt einen `CloseWatcher` (`useBackDismiss`). Schloss Escape das
+   * Absage-Blatt darüber, verarbeitete Chromium die Taste danach noch als
+   * „close request" — und schloss das untere gleich mit. Ein Escape, das ein
+   * Blatt schließt, ist deshalb verbraucht.
+   */
+  it('ein Escape, das ein Blatt schließt, ist verbraucht — der Browser macht nichts mehr daraus', () => {
+    zeige({ ...ZUTEILUNG, s89: S89 })
+    const taste = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    window.dispatchEvent(taste)
+    expect(taste.defaultPrevented).toBe(true)
+  })
+
+  it('ohne offenes Blatt bleibt Escape, was es ist', () => {
+    zeige({})
+    const taste = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    window.dispatchEvent(taste)
+    expect(taste.defaultPrevented).toBe(false)
+  })
+
+  it('geht ein Blatt über einem anderen auf, bleibt das untere eingehängt', () => {
+    // Bis zum 12.10.2026 hängte jeder Wechsel des obersten Blatts alle neu ein
+    // (eine gemeinsame Fehlergrenze mit dem obersten als `key`): Das untere
+    // verlor seinen Verlaufseintrag und bekam einen neuen `CloseWatcher`.
+    const basis = { ...zustand(), ...ZUTEILUNG }
+    function Buehne({ s }: { s: AppState }) {
+      const store = useStaticStore(s)
+      return (
+        <AppDispatchContext.Provider value={() => {}}>
+          <AppStoreContext.Provider value={store}>
+            <AppStateContext.Provider value={s}>
+              <AppShell />
+            </AppStateContext.Provider>
+          </AppStoreContext.Provider>
+        </AppDispatchContext.Provider>
+      )
+    }
+    const { container, rerender } = render(<Buehne s={basis} />)
+    const zuteilen = container.querySelector('.sheet')
+    expect(zuteilen).not.toBeNull()
+    rerender(<Buehne s={{ ...basis, s89: S89 }} />)
+    expect(container.querySelectorAll('.sheet')).toHaveLength(2)
+    expect(container.querySelector('.sheet:not(.sheet--oben)')).toBe(zuteilen)
   })
 })

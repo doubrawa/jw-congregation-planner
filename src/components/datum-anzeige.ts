@@ -18,6 +18,8 @@ const FORMATE = {
   kurzerTag: { weekday: 'short', day: 'numeric', month: 'short' },
   /** „So., 8. November" */
   kurzerWochentag: { weekday: 'short', day: 'numeric', month: 'long' },
+  /** „Di., 8.9." — die Spalte vor einer Zeile auf dem Start */
+  wochentagZahl: { weekday: 'short', day: 'numeric', month: 'numeric' },
   /** „12. Oktober" — als Spanne „12.–18. Oktober" */
   tagMonat: { day: 'numeric', month: 'long' },
   /** „1. Dezember 2026" — als Zeitraum „1. Dezember 2026 – 28. Februar 2027" */

@@ -44,6 +44,10 @@ export function useEscape(onEscape: () => void): void {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       if (stapel[stapel.length - 1] !== marke) return // darunter — nicht gemeint
+      // Verbraucht: Chromium machte aus einem nicht abgewiesenen Escape danach
+      // noch eine „close request" für den obersten `CloseWatcher`
+      // (`useBackDismiss`) — und der gehört womöglich einem anderen Blatt.
+      event.preventDefault()
       handler.current()
     }
     window.addEventListener('keydown', onKeyDown)

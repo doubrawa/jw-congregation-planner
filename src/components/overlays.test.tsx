@@ -12,14 +12,16 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { dict } from '../i18n/ui'
 import type { MyTask, Notification, S89Payload } from '../data/types'
 import { NotificationsPanel } from '../app/NotificationsPanel'
-import { MyTaskSheet } from './MyTaskSheet'
+import { AbsageBlatt } from '../aufgaben/AbsageBlatt'
+import { AufgabeBlatt } from '../aufgaben/AufgabeBlatt'
 import { S89Sheet } from './S89Sheet'
 
 /**
  * **Die drei Overlays, die dem Verkündiger gehören.**
  *
  * Ein Verkündiger sieht von der App im Wesentlichen dreierlei: die Glocke, das
- * Blatt zu seiner Aufgabe und das S-89-Formular. Alle drei waren ungeprüft.
+ * Blatt zu seiner Aufgabe (seit T121 mit dem Absage-Blatt dahinter) und das
+ * S-89-Formular. Alle drei waren ungeprüft.
  *
  * Fachlich hängt daran der ganze **Bestätigungs-Flow**: bestätigen, absagen,
  * eine Absage zurücknehmen. Er hat drei Zustände und für jeden andere
@@ -42,7 +44,7 @@ const task = (over: Partial<MyTask> = {}): MyTask => ({
 })
 
 function zeige(
-  was: 'notif' | 'myTask' | 's89',
+  was: 'notif' | 'myTask' | 'absage' | 's89',
   over: Partial<AppState> = {},
   payload?: S89Payload,
 ) {
@@ -53,6 +55,9 @@ function zeige(
     notifs: [], myTasks: [], persons: [], weeks: [], fsWeeks: [],
     ...over,
   }
+  // Wie die Hülle (AppShell): ein Blatt nur, solange es seine Aufgabe gibt.
+  const meine = state.myTasks.find((x) => x.id === state.myTaskId)
+  const abzusagen = state.myTasks.find((x) => x.id === state.absageId)
   function Buehne() {
     const store = useStaticStore(state)
     return (
@@ -60,7 +65,8 @@ function zeige(
         <AppStoreContext.Provider value={store}>
           <AppStateContext.Provider value={state}>
             {was === 'notif' && <NotificationsPanel />}
-            {was === 'myTask' && <MyTaskSheet />}
+            {was === 'myTask' && meine && <AufgabeBlatt task={meine} />}
+            {was === 'absage' && abzusagen && <AbsageBlatt task={abzusagen} />}
             {was === 's89' && <S89Sheet payload={payload!} />}
           </AppStateContext.Provider>
         </AppStoreContext.Provider>
@@ -71,6 +77,9 @@ function zeige(
 }
 
 const knopf = (c: HTMLElement, sel: string) => c.querySelector<HTMLButtonElement>(sel)
+/** Ein Knopf an seiner Beschriftung. */
+const text = (c: HTMLElement, beschriftung: string) =>
+  [...c.querySelectorAll('button')].find((b) => b.textContent === beschriftung)
 
 beforeEach(() => {
   window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
@@ -282,72 +291,146 @@ describe('Das Blatt zur eigenen Aufgabe — drei Zustände, drei Angebote', () =
     return zeige('myTask', { myTasks: [eigene], myTaskId: eigene.id })
   }
 
-  it('nennt Aufgabe und Termin', () => {
+  it('nennt Aufgabe, Rolle und Termin', () => {
     const { container } = mitAufgabe()
-    expect(container.querySelector('.confirm-task-title')?.textContent).toContain('Bibellesung')
-    expect(container.querySelector('.confirm-task-date')?.textContent).toContain('8. September')
+    expect(container.querySelector('.sheet-title')?.textContent).toBe('Bibellesung')
+    expect(container.querySelector('.sheet-sub')?.textContent).toBe('Leser')
+    expect(container.querySelector('.aufgabe-wann')?.textContent).toContain('8. September')
   })
 
-  it('offen: bestätigen oder absagen', () => {
+  it('offen: bestätigen — oder „Ich kann nicht", das ins Absage-Blatt führt', () => {
     const { container, dispatch } = mitAufgabe({ status: 'offen' })
-    expect(knopf(container, '.confirm-yes')?.textContent).toContain(t.bestaetigen)
-    expect(knopf(container, '.confirm-no')?.textContent).toBe(t.kannNicht)
-    fireEvent.click(knopf(container, '.confirm-yes')!)
+    fireEvent.click(text(container, t.bestaetigen)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'confirmTask', id: task().id })
+    fireEvent.click(text(container, t.kannNicht)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'openAbsage', id: task().id })
   })
 
   it('bestätigt: der Zustand steht da, und man kann noch absagen', () => {
     const { container, dispatch } = mitAufgabe({ status: 'bestätigt' })
-    expect(container.querySelector('.mytask-status')?.textContent).toContain(t.bestaetigt)
-    expect(knopf(container, '.confirm-yes')).toBeNull()
-    expect(knopf(container, '.confirm-no')?.textContent).toBe(t.absagen)
-    fireEvent.click(knopf(container, '.confirm-no')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'declineTask', id: task().id })
+    expect(container.querySelector('.aufgabe-stand')?.textContent).toBe(t.bestaetigt)
+    expect(text(container, t.bestaetigen)).toBeUndefined()
+    fireEvent.click(text(container, t.kannNicht)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'openAbsage', id: task().id })
   })
 
   it('verhindert: die Absage lässt sich zurücknehmen — es ist keine Einbahnstraße', () => {
     const { container, dispatch } = mitAufgabe({ status: 'verhindert' })
-    expect(container.querySelector('.mytask-status--verh')?.textContent).toBe(t.verhindertChip)
-    expect(knopf(container, '.confirm-no')).toBeNull()
-    expect(knopf(container, '.confirm-yes')?.textContent).toContain(t.dochBestaetigen)
-    fireEvent.click(knopf(container, '.confirm-yes')!)
+    expect(container.querySelector('.aufgabe-stand.is-problem')?.textContent).toBe(t.verhindertChip)
+    expect(text(container, t.kannNicht)).toBeUndefined()
+    fireEvent.click(text(container, t.dochBestaetigen)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'confirmTask', id: task().id })
   })
 
-  it('beim Hilfsdienst steht der Hinweis auf die Ersatzsuche — VOR dem Absagen', () => {
-    const { container } = zeige('myTask', {
-      myTasks: [task({ id: '2026-09-07|mid|helper|mik|0', status: 'offen' })],
-      myTaskId: '2026-09-07|mid|helper|mik|0',
-    })
-    expect(container.querySelector('.mytask-hint')?.textContent).toBe(t.ersatzHint)
-  })
-
-  it('bei einem Programmpunkt nicht — dort sucht niemand Ersatz', () => {
-    expect(mitAufgabe().container.querySelector('.mytask-hint')).toBeNull()
-  })
-
-  it('nach dem Absagen steht der Hinweis nicht mehr — die Suche läuft schon', () => {
-    const { container } = zeige('myTask', {
-      myTasks: [task({ id: '2026-09-07|mid|helper|mik|0', status: 'verhindert' })],
-      myTaskId: '2026-09-07|mid|helper|mik|0',
-    })
-    expect(container.querySelector('.mytask-hint')).toBeNull()
-  })
-
   it('das ✕, der Hintergrund und Escape schließen alle drei', () => {
-    // Escape fehlte hier — ausgerechnet in einer der beiden Dateien, wegen
-    // derer `useEscape` überhaupt herausgelöst wurde. Am Schreibtisch ist die
-    // Taste der gewohnte Weg hinaus; das Blatt blieb stehen.
+    // Escape fehlte hier einmal — ausgerechnet in einer der beiden Dateien,
+    // wegen derer `useEscape` überhaupt herausgelöst wurde.
     const { container, dispatch } = mitAufgabe()
-    fireEvent.click(knopf(container, '.mytask-close')!)
-    fireEvent.click(container.querySelector('.confirm-backdrop')!)
+    fireEvent.click(container.querySelector(`[aria-label="${t.a11yClose}"]`)!)
+    fireEvent.click(container.querySelector('.sheet-backdrop')!)
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(dispatch.mock.calls.filter((c) => c[0].type === 'closeMyTask')).toHaveLength(3)
   })
 
   it('zeigt gar nichts, wenn die Aufgabe inzwischen weg ist — statt abzustürzen', () => {
     const { container } = zeige('myTask', { myTasks: [], myTaskId: 'gibt-es-nicht' })
-    expect(container.querySelector('.confirm-modal')).toBeNull()
+    expect(container.querySelector('.sheet')).toBeNull()
+  })
+})
+
+/**
+ * **Absagen** (T121): „Du kannst nicht?" — mit dem Weg, der danach kommt, einer
+ * Nachricht an den Planer und dem Tag als abwesend (freiwillig, aus).
+ */
+describe('Das Absage-Blatt', () => {
+  const HILFSDIENST = '2026-09-07|mid|helper|mik|0'
+  /** Dienstag, 8. September — der Tag der Testaufgabe als UTC-Mitternacht. */
+  const DIENSTAG = Date.UTC(2026, 8, 8)
+  const absagen = (over: Partial<MyTask> = {}, zustand: Partial<AppState> = {}) => {
+    const eigene = task({ at: DIENSTAG, ...over })
+    return zeige('absage', { myTasks: [eigene], absageId: eigene.id, personId: 'p-a', ...zustand })
+  }
+  const schritte = (c: HTMLElement) => [...c.querySelectorAll('.spur-name')].map((s) => s.textContent)
+  const schalter = (c: HTMLElement) => c.querySelector<HTMLButtonElement>('[role="switch"]')
+
+  it('fragt und nennt die Aufgabe, um die es geht', () => {
+    const { container } = absagen()
+    expect(container.querySelector('.sheet-title')?.textContent).toBe(t.absageFrage)
+    expect(container.querySelector('.sheet-marke')?.textContent).toContain('Bibellesung · Leser')
+  })
+
+  it('beim Programmpunkt: Der Planer erfährt es und teilt neu zu', () => {
+    const { container } = absagen()
+    expect(schritte(container)).toEqual([t.spurDuSagstAb, t.spurPlanerErfaehrt, t.spurNeuZugeteilt])
+    expect(container.querySelector('[aria-current="step"]')?.textContent).toContain(t.spurDuSagstAb)
+    expect(container.querySelector('.absage-erklaerung')?.textContent).toBe(t.absageErklaerung)
+  })
+
+  it('beim Hilfsdienst: Es wird von selbst ein Ersatz gesucht — gesagt VOR dem Absagen', () => {
+    const { container } = absagen({ id: HILFSDIENST })
+    expect(schritte(container)).toEqual([t.spurDuSagstAb, t.spurErsatzGesucht, t.spurUebernommen])
+    expect(container.querySelector('.absage-erklaerung')?.textContent).toBe(t.ersatzHint)
+  })
+
+  it('beim Zeugnisgeben keine Spur — der Platz wird einfach frei', () => {
+    const { container } = absagen({ id: 'oz|2026-09-07|e1' })
+    expect(container.querySelector('.spur')).toBeNull()
+  })
+
+  it('„Absagen" sagt ab und gibt die Nachricht mit', () => {
+    const { container, dispatch } = absagen()
+    fireEvent.change(container.querySelector('input.feld')!, { target: { value: 'bin verreist' } })
+    fireEvent.click(text(container, t.absagen)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'declineTask', id: task().id, nachricht: 'bin verreist' })
+  })
+
+  it('der Tag als abwesend: der Schalter steht aus, und ohne ihn wird nichts eingetragen', () => {
+    const { container, dispatch } = absagen()
+    expect(schalter(container)?.getAttribute('aria-checked')).toBe('false')
+    fireEvent.click(text(container, t.absagen)!)
+    expect(dispatch.mock.calls.some((c) => c[0].type === 'addAbsence')).toBe(false)
+  })
+
+  it('mit Schalter: genau dieser Tag, für die eigene Person — die Nachricht nicht als Grund', () => {
+    // Eine Abwesenheit kann jedes Mitglied lesen, die Nachricht gilt dem Planer.
+    const { container, dispatch } = absagen()
+    fireEvent.change(container.querySelector('input.feld')!, { target: { value: 'krank' } })
+    fireEvent.click(schalter(container)!)
+    fireEvent.click(text(container, t.absagen)!)
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'addAbsence',
+      absence: expect.objectContaining({ personId: 'p-a', from: '2026-09-08', to: '2026-09-08', reason: '' }),
+    })
+    // Erst die Abwesenheit, dann die Absage — beides geht hinaus.
+    const typen = dispatch.mock.calls.map((c) => c[0].type)
+    expect(typen.indexOf('addAbsence')).toBeLessThan(typen.indexOf('declineTask'))
+  })
+
+  it('kein Schalter, wo es nichts einzutragen gibt: Tag schon abwesend, keine eigene Person, kein Termin', () => {
+    const abwesend = { id: 'a', personId: 'p-a', userId: null, from: '2026-09-07', to: '2026-09-09', reason: '' }
+    expect(schalter(absagen({}, { absences: [abwesend] }).container)).toBeNull()
+    cleanup()
+    expect(schalter(absagen({}, { personId: null }).container)).toBeNull()
+    cleanup()
+    expect(schalter(absagen({ at: null }).container)).toBeNull()
+  })
+
+  it('„Doch bestätigen" sagt stattdessen zu — nur, solange die Aufgabe offen ist', () => {
+    const { container, dispatch } = absagen()
+    fireEvent.click(text(container, t.dochBestaetigen)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'confirmTask', id: task().id })
+    cleanup()
+    expect(text(absagen({ status: 'bestätigt' }).container, t.dochBestaetigen)).toBeUndefined()
+  })
+
+  it('„Abbrechen", ✕, Hintergrund und Escape legen das Blatt weg, ohne abzusagen', () => {
+    const { container, dispatch } = absagen()
+    fireEvent.click(text(container, t.abbrechen)!)
+    fireEvent.click(container.querySelector(`[aria-label="${t.a11yClose}"]`)!)
+    fireEvent.click(container.querySelector('.sheet-backdrop')!)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(dispatch.mock.calls.filter((c) => c[0].type === 'closeAbsage')).toHaveLength(4)
+    expect(dispatch.mock.calls.some((c) => c[0].type === 'declineTask')).toBe(false)
   })
 })
 
@@ -366,17 +449,17 @@ describe('Das S-89-Formular', () => {
     expect(container.querySelector('.sheet-title')?.textContent).toBe(t.s89Title)
   })
 
-  it('ist ein modaler Dialog und trägt die Karte mit den Daten', () => {
+  it('ist ein modaler Dialog über dem Blatt darunter und trägt die Karte mit den Daten', () => {
     const { container } = zeige('s89', {}, PAYLOAD)
-    const dlg = container.querySelector('.sheet--s89')!
+    const dlg = container.querySelector('.sheet--oben')!
     expect(dlg.getAttribute('role')).toBe('dialog')
     expect(dlg.textContent).toContain('Anton Alt')
   })
 
   it('✕, Hintergrund und Escape schließen alle drei', () => {
     const { container, dispatch } = zeige('s89', {}, PAYLOAD)
-    fireEvent.click(container.querySelector('.sheet-close')!)
-    fireEvent.click(container.querySelector('.sheet-backdrop--s89')!)
+    fireEvent.click(container.querySelector(`[aria-label="${t.a11yClose}"]`)!)
+    fireEvent.click(container.querySelector('.sheet-backdrop--oben')!)
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(dispatch.mock.calls.filter((c) => c[0].type === 'closeS89')).toHaveLength(3)
   })

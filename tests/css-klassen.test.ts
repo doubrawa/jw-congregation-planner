@@ -240,7 +240,7 @@ function dateien(ordner: string, endungen: string[]): Array<[string, string]> {
  * (letzter Fall unten): Ein Eintrag, der aus dem Code verschwindet oder eine
  * Regel bekommt, fällt auf und ist hier zu streichen.
  */
-const MARKEN = ['co-begriff', 'confirm-subs', 'dash', 'fs-add', 'kopfzeile-glocke', 'plan-conflict-text']
+const MARKEN = ['co-begriff', 'fs-add', 'kopfzeile-glocke', 'plan-conflict-text']
 
 const WORT = /[A-Za-z][\w-]*/g
 

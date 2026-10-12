@@ -587,13 +587,13 @@ function neueEintragId(): string {
  * deutsch und **mit dem Termin**: Bei einem Dutzend Schichten im Monat
  * wüssten sie mit „Öffentliches Zeugnisgeben — Name" allein nicht, welche.
  */
-function ozAbsage(state: AppState, eintrag: OzEintrag): AppState {
+function ozAbsage(state: AppState, eintrag: OzEintrag, nachricht?: string): AppState {
   const termin = state.ozTermine.find((t) => t.id === eintrag.terminId)
   const was = termin ? `${OZ_DIENST} · ${ozTerminText(eintrag.datum, termin)}` : OZ_DIENST
   const notif = makeNotif(
     'verhindert',
     'Verhinderung gemeldet',
-    `${was} — ${alsFreitext(currentUserName(state))}`,
+    `${was} — ${alsFreitext(currentUserName(state))}${nachrichtAtom(nachricht)}`,
     // Wohin ein Tipp in der Glocke des Planers führt (`mitteilungsZiel`).
     ozTaskKey(eintrag),
   )
@@ -602,8 +602,24 @@ function ozAbsage(state: AppState, eintrag: OzEintrag): AppState {
     ozEintraege: state.ozEintraege.filter((e) => e !== eintrag),
     notifs: [notif, ...state.notifs],
     myTaskId: null,
+    absageId: null,
     toast: toastKey(state, 'toastOzAbgesagt'),
   }
+}
+
+/**
+ * Die Nachricht beim Absagen (T121) als letztes Atom der Mitteilung — oder
+ * nichts, wenn keine geschrieben wurde.
+ *
+ * **Ein eigenes Atom, als Freitext gekennzeichnet**: Der Planer liest sie so,
+ * wie sie geschrieben wurde, in jeder Sprache — der Übersetzer der Glocke
+ * reicht ein gekennzeichnetes Atom unverändert weiter. Ein „ · " darin würde
+ * sie an der Atomgrenze zerteilen und die Kennzeichnung brechen; es wird zum
+ * Komma.
+ */
+function nachrichtAtom(nachricht: string | undefined): string {
+  const text = nachricht?.trim().split(' · ').join(', ')
+  return text ? ` · ${alsFreitext(text)}` : ''
 }
 
 /**
@@ -1484,6 +1500,20 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, myTaskId: action.id }
     case 'closeMyTask':
       return { ...state, myTaskId: null }
+    // Das Absage-Blatt ersetzt das Aufgaben-Blatt, statt darüber zu liegen:
+    // Zurück führt dann nicht durch zwei Blätter derselben Aufgabe.
+    case 'openAbsage':
+      return { ...state, absageId: action.id, myTaskId: null }
+    case 'closeAbsage':
+      return { ...state, absageId: null }
+    case 'confirmAll': {
+      // Alle offenen auf einmal (T121) — dieselbe Zusage wie einzeln, je Aufgabe.
+      const offen = state.myTasks.filter((t) => t.status === 'offen')
+      if (offen.length === 0) return state
+      const confirmations = { ...state.confirmations }
+      for (const t of offen) confirmations[t.id] = 'bestätigt'
+      return { ...state, confirmations, toast: toastKey(state, 'toastBestaetigt') }
+    }
     case 'confirmTask':
       // Status in die ConfirmationMap — myTasks und confirmOpen folgen aus der
       // Ableitung (withDerivedTasks). Ein offenes Ersatzgesuch hält das Blatt
@@ -1492,6 +1522,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ...state,
         confirmations: { ...state.confirmations, [action.id]: 'bestätigt' },
         myTaskId: null,
+        absageId: null,
         toast: toastKey(state, 'toastBestaetigt'),
       }
     case 'declineTask': {
@@ -1499,7 +1530,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const teile = schluesselTeile(action.id)
       if (teile?.art === 'oz') {
         const eintrag = state.ozEintraege.find((e) => e.id === teile.eintragId)
-        return eintrag ? ozAbsage(state, eintrag) : state
+        return eintrag ? ozAbsage(state, eintrag, action.nachricht) : state
       }
       const task = state.myTasks.find((t) => t.id === action.id)
       // Kanonisch deutsch in die Mitteilung — beide Hälften, denn dort steht
@@ -1512,7 +1543,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         // Anzeigen Atom für Atom, und ein Bruder namens „Markus 2" (die
         // Schreibweise für Namensgleiche) stand dort sonst als „Mark 2".
         // Siehe `i18n/freitext.ts`.
-        `${bezeichnung} — ${alsFreitext(currentUserName(state))}`,
+        `${bezeichnung} — ${alsFreitext(currentUserName(state))}${nachrichtAtom(action.nachricht)}`,
         // Der Schlüssel der Aufgabe: Ein Tipp in der Glocke des Planers führt
         // in ihre Woche (`mitteilungsZiel`). Bis zum 4.10.2026 ohne — dann
         // landete er nirgends.
@@ -1526,6 +1557,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         confirmations: { ...state.confirmations, [action.id]: 'verhindert' },
         notifs: [notif, ...state.notifs],
         myTaskId: null,
+        absageId: null,
         toast: toastKey(state, declineToast),
       }
     }
@@ -1714,8 +1746,9 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'closeServiceSheet':
       return { ...state, svcSheet: null }
     case 'closeConfirm':
-      // Nur wegzulegen, solange nichts zu bestätigen ist — die Pflicht bleibt.
-      return state.myTasks.some((t) => t.status === 'offen') ? state : { ...state, confirmOpen: false }
+      // „Später" (T121): Das Blatt lässt sich weglegen, auch wenn noch etwas zu
+      // bestätigen ist. Beim nächsten Öffnen der App liegt es wieder da (`login`).
+      return { ...state, confirmOpen: false }
     case 'setAuxClass':
       // Beim Einschalten bekommen alle Schuelerteile ihre zweite Platzreihe.
       // Beim Ausschalten bleibt sie stehen (nur unsichtbar) — sonst waere die

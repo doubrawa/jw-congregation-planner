@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from 'react'
 import { useApp } from '../app/context'
+import { Zeichen } from '../bausteine/Zeichen'
 import { useAbwesend } from '../app/useAbwesend'
 import { useKalendertag } from '../app/useKalendertag'
 import { besuchHatKonflikt, besuchStand } from '../data/gruppenbesuche'
@@ -160,22 +161,24 @@ export function PlanungsKarte() {
 
   if (stand.wochen.length === 0 && !stand.vorratKnapp && besuchsKonflikte === 0 && !zeugnisZuTun) {
     return (
-      <button
-        type="button"
-        className="dash-plan"
-        // Die Karte zählt die Zusammenkünfte — sie öffnet auch dort, nicht im
-        // Predigtdienst, falls man zuletzt den angesehen hat (T120).
-        onClick={() => dispatch({ type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte' })}
-      >
-        <span className="dash-plan-body">
-          <span className="dash-plan-label">{t.dashPlanung}</span>
-          <span className="dash-plan-text">{t.dashAllesZugeteilt}</span>
-          {zeitraum && <span className="dash-plan-zeitraum">{zeitraum}</span>}
-        </span>
-        <span className="dash-plan-arrow" aria-hidden="true">
-          ›
-        </span>
-      </button>
+      <section className="dash-plan">
+        <h2 className="abschnitt-titel">{t.dashPlanung}</h2>
+        <div className="karte">
+          <button
+            type="button"
+            className="dash-plan-woche"
+            // Die Karte zählt die Zusammenkünfte — sie öffnet auch dort, nicht im
+            // Predigtdienst, falls man zuletzt den angesehen hat (T120).
+            onClick={() => dispatch({ type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte' })}
+          >
+            <span className="dash-plan-kopf">
+              <span className="dash-plan-text">{t.dashAllesZugeteilt}</span>
+              {zeitraum && <span className="dash-plan-zeitraum">{zeitraum}</span>}
+            </span>
+            <Zeichen name="weiter" />
+          </button>
+        </div>
+      </section>
     )
   }
 
@@ -183,60 +186,52 @@ export function PlanungsKarte() {
     dispatch({ type: 'navigate', screen: 'planen', woche: { wi: w.wi, tab: w.tab } })
 
   return (
-    <div className="dash-planung">
-      <div className="dash-plan-label">{t.dashPlanung}</div>
-      {zeilen.map((w) => (
-        <button key={w.wi} type="button" className="dash-plan-woche" onClick={() => oeffnen(w)}>
-          <span className="dash-plan-kopf">
-            <span className="dash-plan-range">{w.spanne}</span>
-            <span className="dash-plan-arrow" aria-hidden="true">
-              ›
+    <section className="dash-planung">
+      <h2 className="abschnitt-titel">{t.dashPlanung}</h2>
+      <div className="karte">
+        {zeilen.map((w) => (
+          <button key={w.wi} type="button" className="dash-plan-woche" onClick={() => oeffnen(w)}>
+            <span className="dash-plan-kopf">
+              <span className="dash-plan-range">{w.spanne}</span>
+              {/* In der Reihenfolge der Banner in Planen: erst was nicht stimmt,
+                  dann was nicht geht, dann was fehlt, zuletzt der Versand. */}
+              <span className="dash-plan-chips">
+                {w.konflikte > 0 && <Chip art="konflikte" titel={t.konflikteTitle} n={w.konflikte} />}
+                {w.nichtBesetzbar > 0 && <Chip art="engpass" titel={t.engpassTitle} n={w.nichtBesetzbar} />}
+                {w.offen > 0 && <Chip art="offen" titel={t.offeneTitle} n={w.offen} />}
+                {w.nichtGesendet > 0 && <Chip art="senden" titel={t.planSendenTitle} n={w.nichtGesendet} />}
+              </span>
             </span>
-          </span>
-          {/* In der Reihenfolge der Banner in Planen: erst was nicht stimmt,
-              dann was nicht geht, dann was fehlt, zuletzt der Versand. */}
-          <span className="dash-plan-chips">
-            {w.konflikte > 0 && <Chip art="konflikte" titel={t.konflikteTitle} n={w.konflikte} />}
-            {w.nichtBesetzbar > 0 && (
-              <Chip art="engpass" titel={t.engpassTitle} n={w.nichtBesetzbar} />
-            )}
-            {w.offen > 0 && <Chip art="offen" titel={t.offeneTitle} n={w.offen} />}
-            {w.nichtGesendet > 0 && (
-              <Chip art="senden" titel={t.planSendenTitle} n={w.nichtGesendet} />
-            )}
-          </span>
-        </button>
-      ))}
-      {besuchsKonflikte > 0 && (
-        <BereichZeile titel={t.gbTitel} onClick={() => zumBereich('gruppenbesuche')}>
-          <Chip art="konflikte" titel={t.konflikteTitle} n={besuchsKonflikte} />
-        </BereichZeile>
-      )}
-      {zeugnisZuTun && (
-        <BereichZeile titel={t.privZeugnis} onClick={() => zumBereich('zeugnis')}>
-          {/* In der Reihenfolge der Banner dort: Konflikte, freie Plätze, Versand. */}
-          {zeugnis.konflikte > 0 && <Chip art="konflikte" titel={t.konflikteTitle} n={zeugnis.konflikte} />}
-          {zeugnis.frei > 0 && <Chip art="offen" titel={t.ozFreiePlaetze} n={zeugnis.frei} />}
-          {zeugnis.nichtGesendet > 0 && <Chip art="senden" titel={t.planSendenTitle} n={zeugnis.nichtGesendet} />}
-        </BereichZeile>
-      )}
-      {/* Importieren ist Sache des Admins (4.10.2026): Ein neues Programm
-          ändert den Plan, es teilt nichts zu. */}
-      {stand.vorratKnapp && state.planner && (
-        <div className="dash-plan-vorrat">
-          <span className="dash-plan-vorrat-text">
-            {geladenBis ? fill(t.geladenBis, { datum: geladenBis }) : t.geladenNichts}
-          </span>
-          <button
-            type="button"
-            className="btn-outline dash-plan-import"
-            onClick={() => void importieren()}
-          >
-            {knopf}
+            <Zeichen name="weiter" />
           </button>
-        </div>
-      )}
-    </div>
+        ))}
+        {besuchsKonflikte > 0 && (
+          <BereichZeile titel={t.gbTitel} onClick={() => zumBereich('gruppenbesuche')}>
+            <Chip art="konflikte" titel={t.konflikteTitle} n={besuchsKonflikte} />
+          </BereichZeile>
+        )}
+        {zeugnisZuTun && (
+          <BereichZeile titel={t.privZeugnis} onClick={() => zumBereich('zeugnis')}>
+            {/* In der Reihenfolge der Banner dort: Konflikte, freie Plätze, Versand. */}
+            {zeugnis.konflikte > 0 && <Chip art="konflikte" titel={t.konflikteTitle} n={zeugnis.konflikte} />}
+            {zeugnis.frei > 0 && <Chip art="offen" titel={t.ozFreiePlaetze} n={zeugnis.frei} />}
+            {zeugnis.nichtGesendet > 0 && <Chip art="senden" titel={t.planSendenTitle} n={zeugnis.nichtGesendet} />}
+          </BereichZeile>
+        )}
+        {/* Importieren ist Sache des Admins (4.10.2026): Ein neues Programm
+            ändert den Plan, es teilt nichts zu. */}
+        {stand.vorratKnapp && state.planner && (
+          <div className="dash-plan-vorrat">
+            <span className="dash-plan-vorrat-text">
+              {geladenBis ? fill(t.geladenBis, { datum: geladenBis }) : t.geladenNichts}
+            </span>
+            <button type="button" className="knopf-pille" onClick={() => void importieren()}>
+              {knopf}
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
   )
 }
 
@@ -250,11 +245,9 @@ function BereichZeile({ titel, onClick, children }: { titel: string; onClick: ()
     <button type="button" className="dash-plan-woche" onClick={onClick}>
       <span className="dash-plan-kopf">
         <span className="dash-plan-range">{titel}</span>
-        <span className="dash-plan-arrow" aria-hidden="true">
-          ›
-        </span>
+        <span className="dash-plan-chips">{children}</span>
       </span>
-      <span className="dash-plan-chips">{children}</span>
+      <Zeichen name="weiter" />
     </button>
   )
 }
@@ -271,7 +264,7 @@ function Chip({
 }) {
   return (
     <span className="dash-chip" data-art={art}>
-      <span className="dash-chip-titel">{titel}</span>
+      <span>{titel}</span>
       <span className="dash-chip-n">{n}</span>
     </span>
   )

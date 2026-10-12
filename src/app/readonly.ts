@@ -72,6 +72,9 @@ const VIEW_ACTIONS: ReadonlySet<AppAction['type']> = new Set([
   // ansteht, also genau das, wofür der Offline-Stand da ist.
   'openMyTask',
   'closeMyTask',
+  // Ebenso das Absage-Blatt (T121): Erst „Absagen" darin schreibt.
+  'openAbsage',
+  'closeAbsage',
   // Vermerk, dass die Begrüßung gezeigt wurde. Rein lokal; fehlte sie hier,
   // begrüßte der Offline-Start mit einem „nur lesend"-Hinweis.
   'welcomeShown',

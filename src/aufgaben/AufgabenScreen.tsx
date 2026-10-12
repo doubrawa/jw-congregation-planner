@@ -1,37 +1,38 @@
 import { useEffect, useRef } from 'react'
 import { useApp } from '../app/context'
-import { eigenePerson } from '../app/eigene-person'
+import { Punkt, type PunktArt } from '../bausteine/Punkt'
+import { Zeichen } from '../bausteine/Zeichen'
 import { AbsencePanel } from '../components/AbsencePanel'
-import { AufgabenAktionen } from '../components/AufgabenAktionen'
 import { PushPrompt } from '../components/PushPrompt'
-import { displayName } from '../data/helpers'
-import { relativeDayLabel } from '../i18n/relative-time'
-import { aufgabenLabel, aufgabenTp, fill, useT, zuteilungenText } from '../i18n/useT'
+import type { TaskStatus } from '../data/types'
+import { aufgabenLabel, aufgabenTp, useT } from '../i18n/useT'
+import { aufgabeWann } from './aufgabe-anzeige'
+import { AngebotText, GesuchText } from './Angebot'
+import { AufgabeKarte } from './AufgabeKarte'
 import './aufgaben.css'
 
-/** Die Aktionen einer Aufgabe als Pillen — der Start zeigt sie kompakter. */
-const AUF_KLASSEN = {
-  bestaetigen: 'auf-confirm',
-  bestaetigt: 'auf-badge auf-badge--best',
-  verhindert: 'auf-badge auf-badge--verh',
-  s89: 'auf-s89',
+/** Der Punkt einer Aufgabe: wartet auf Zusage, zugesagt, abgesagt. */
+const PUNKT_DER_ZUSAGE: Record<TaskStatus, PunktArt> = {
+  offen: 'wartet',
+  bestätigt: 'voll',
+  verhindert: 'problem',
 }
 
 /**
- * Meine Aufgaben (Screen 4): nächste Aufgaben mit Bestätigungs-Status
- * (bestätigen / verhindert, S-89 anzeigen) und eigene Abwesenheiten. Das
- * Profil (Darstellung/Sprache/Abmelden) ist ein eigener Navigationspunkt.
+ * **Meine Aufgaben** (T121): alles, was ansteht — die nächste Aufgabe groß,
+ * die übrigen je eine Zeile mit einem Haken zum Bestätigen, „Alle bestätigen"
+ * für alles auf einmal. Darunter, was man übernehmen kann: Ersatzgesuche
+ * (Einspringen) und freie Plätze gesendeter Wochen.
  */
 export function AufgabenScreen() {
   const { state, dispatch } = useApp()
   const i18n = useT()
-  const { t, tu } = i18n
-  const me = eigenePerson(state)
+  const { t } = i18n
 
-  /**
+  /*
    * „Deine Einträge": seit die Abwesenheiten versammlungsweit geladen werden
    * (die Planung braucht sie), muss hier wieder auf die eigenen eingegrenzt
-   * werden. Ohne Konto (Demo) gibt es nichts einzugrenzen.
+   * werden. Ohne Konto (Entwicklerseite) gibt es nichts einzugrenzen.
    *
    * **Die Person entscheidet, nicht der Ersteller.** Wer eingetragen hat, ist
    * eine andere Frage als wen es betrifft — und seit es beides getrennt gibt
@@ -57,115 +58,119 @@ export function AufgabenScreen() {
    * und das Ziel ist erledigt. Kommt er nicht — das Gesuch war schon vergeben —,
    * bleibt die Seite oben; die nächste Navigation räumt das Ziel ab.
    */
-  const einspringenRef = useRef<HTMLDivElement>(null)
+  const einspringenRef = useRef<HTMLElement>(null)
   const gesucheOffen = state.substituteReqs.length > 0
   useEffect(() => {
     if (state.sprungZiel !== 'einspringen' || !gesucheOffen) return
     const bereich = einspringenRef.current
     if (!bereich) return
     bereich.scrollIntoView({ block: 'start' })
-    bereich.querySelector<HTMLElement>('.panel-label')?.focus({ preventScroll: true })
+    bereich.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true })
     dispatch({ type: 'sprungZielErreicht' })
   }, [state.sprungZiel, gesucheOffen, dispatch])
 
+  const [naechste, ...weitere] = state.myTasks
+  const zuBestaetigen = state.myTasks.filter((task) => task.status === 'offen').length
+
   return (
-    <section className="screen">
-      <h1 className="screen-title">{t.navAufgabenLong}</h1>
-      <p className="screen-subtitle">
-        {me ? displayName(me) : ''} · {fill(t.congLabel, { name: state.congregation.name })}
-      </p>
+    <section className="screen aufgaben">
+      <div className="aufgaben-kopf">
+        <h1 className="seitentitel seitentitel--gross">{t.navAufgabenLong}</h1>
+        {zuBestaetigen > 0 && (
+          <div className="aufgaben-zusage">
+            <span className="klein-text">{`${t.dashZuBest}: ${zuBestaetigen}`}</span>
+            {zuBestaetigen > 1 && (
+              <button type="button" className="knopf-pille" onClick={() => dispatch({ type: 'confirmAll' })}>
+                {t.alleBestaetigen}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       <PushPrompt />
 
-      <div className="panel panel--lead" data-farbe="acc">
-        <h2 className="panel-label">{t.naechsteAufgaben}</h2>
-        {state.myTasks.map((task) => (
-          <div key={task.id} className="auf-row">
-            <div>
-              <button
-                type="button"
-                className="auf-open"
-                onClick={() => dispatch({ type: 'openMyTask', id: task.id })}
-              >
-                <div className="auf-title">{aufgabenLabel(task, i18n)}</div>
-                <div className="auf-date">{aufgabenTp(task, i18n)(task.date)}</div>
-              </button>
-              <div className="auf-actions">
-                <AufgabenAktionen task={task} klassen={AUF_KLASSEN} />
-              </div>
-            </div>
-            {(() => {
-              // Live-Countdown aus dem Datum (Intl); ohne Datum kein Chip.
-              const label = relativeDayLabel(task.at, state.lang)
-              return label && <span className="auf-chip">{label}</span>
-            })()}
-          </div>
-        ))}
-      </div>
+      {naechste ? <AufgabeKarte task={naechste} /> : <p className="karte karte--held aufgaben-leer">{t.dashKeineAufgabe}</p>}
 
-      {gesucheOffen && (
-        <div ref={einspringenRef} className="panel panel--pb14 auf-sub" data-farbe="gold">
-          {/* tabIndex -1: fokussierbar für den Sprung aus dem Push, ohne in die Tab-Reihenfolge zu geraten. */}
-          <h2 className="panel-label" tabIndex={-1}>
-            {t.einspringenTitle}
-          </h2>
-          <p className="panel-hint">{t.einspringenHint}</p>
-          {state.substituteReqs.map((req) => (
-            <div key={req.key} className="auf-sub-row">
-              <div>
-                <div className="auf-sub-title">{tu(req.title)}</div>
-                <div className="auf-sub-meta">
-                  {aufgabenTp(req, i18n)(req.date)} · {tu(req.declinedBy)}
-                </div>
-                {/* Was ich an dem Tag schon habe — vor dem Zusagen. */}
-                {req.schonHeute.length > 0 && (
-                  <div className="auf-sub-warn">
-                    {t.sheetSchonHeute}: {zuteilungenText(req.schonHeute, i18n)}
-                  </div>
+      {weitere.length > 0 && (
+        <div className="karte aufgaben-liste">
+          {weitere.map((task) => {
+            const label = aufgabenLabel(task, i18n)
+            return (
+              <div key={task.id} className="aufgaben-zeile">
+                <Punkt art={PUNKT_DER_ZUSAGE[task.status]} />
+                <button type="button" className="aufgaben-zeile-text" onClick={() => dispatch({ type: 'openMyTask', id: task.id })}>
+                  <span className="aufgaben-zeile-titel">{label}</span>
+                  <span className="klein-text">{aufgabeWann(task, state.lang, i18n)}</span>
+                </button>
+                {task.status === 'offen' ? (
+                  <button
+                    type="button"
+                    className="knopf-haken"
+                    aria-label={`${label}: ${t.bestaetigen}`}
+                    onClick={() => dispatch({ type: 'confirmTask', id: task.id })}
+                  >
+                    <Zeichen name="haken" />
+                  </button>
+                ) : (
+                  <span className="aufgaben-zeile-pfeil">
+                    <Zeichen name="weiter" />
+                  </span>
                 )}
               </div>
-              <button
-                type="button"
-                className="auf-sub-btn"
-                onClick={() => dispatch({ type: 'takeSubstitute', key: req.key })}
-              >
-                {t.uebernehmen}
-              </button>
-            </div>
-          ))}
+            )
+          })}
         </div>
+      )}
+
+      {gesucheOffen && (
+        <section ref={einspringenRef} className="aufgaben-abschnitt" data-bereich="einspringen">
+          {/* tabIndex -1: fokussierbar für den Sprung aus dem Push, ohne in die Tab-Reihenfolge zu geraten. */}
+          <h2 className="abschnitt-titel" tabIndex={-1}>
+            {t.einspringenTitle}
+          </h2>
+          <div className="karte aufgaben-angebote">
+            <p className="klein-text">{t.einspringenHint}</p>
+            {state.substituteReqs.map((req) => (
+              <div key={req.key} className="aufgaben-angebot">
+                <div className="aufgaben-angebot-text">
+                  <Punkt art="problem" />
+                  <GesuchText req={req} />
+                </div>
+                <button type="button" className="knopf-dunkel" onClick={() => dispatch({ type: 'takeSubstitute', key: req.key })}>
+                  {t.uebernehmen}
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {/*
         Freie Plätze (4.10.2026): unbesetzte Plätze gesendeter Wochen, für die
-        ich den Aufgabenbereich habe. Gebaut wie das Einspringen darüber; der
-        Tipp trägt direkt ein (`platzUebernehmen` → Edge Function).
+        ich den Aufgabenbereich habe. Der Tipp trägt direkt ein
+        (`platzUebernehmen` → Edge Function).
       */}
       {state.offenePlaetze.length > 0 && (
-        <div className="panel panel--pb14 auf-sub" data-farbe="petrol" data-bereich="freie-plaetze">
-          <h2 className="panel-label">{t.freiePlaetzeTitle}</h2>
-          <p className="panel-hint">{t.freiePlaetzeHint}</p>
-          {state.offenePlaetze.map((platz) => (
-            <div key={platz.key} className="auf-sub-row">
-              <div>
-                <div className="auf-sub-title">{aufgabenLabel(platz, i18n)}</div>
-                <div className="auf-sub-meta">{aufgabenTp(platz, i18n)(platz.date)}</div>
-                {platz.schonHeute.length > 0 && (
-                  <div className="auf-sub-warn">
-                    {t.sheetSchonHeute}: {zuteilungenText(platz.schonHeute, i18n)}
-                  </div>
-                )}
+        <section className="aufgaben-abschnitt" data-bereich="freie-plaetze">
+          <h2 className="abschnitt-titel">{t.freiePlaetzeTitle}</h2>
+          <div className="karte aufgaben-angebote">
+            <p className="klein-text">{t.freiePlaetzeHint}</p>
+            {state.offenePlaetze.map((platz) => (
+              <div key={platz.key} className="aufgaben-zeile">
+                <Punkt art="offen" />
+                <AngebotText
+                  titel={aufgabenLabel(platz, i18n)}
+                  wann={aufgabenTp(platz, i18n)(platz.date)}
+                  schonHeute={platz.schonHeute}
+                />
+                <button type="button" className="knopf-pille" onClick={() => dispatch({ type: 'platzUebernehmen', key: platz.key })}>
+                  {t.uebernehmen}
+                </button>
               </div>
-              <button
-                type="button"
-                className="auf-sub-btn"
-                onClick={() => dispatch({ type: 'platzUebernehmen', key: platz.key })}
-              >
-                {t.uebernehmen}
-              </button>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </section>
       )}
 
       <AbsencePanel personId={state.personId} entries={eigeneAbwesenheiten} listLabel={t.deineEintraege} />

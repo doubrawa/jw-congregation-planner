@@ -26,27 +26,25 @@ import type {
 } from '../data/types'
 import { DashboardScreen } from './DashboardScreen'
 import { privSetzen } from '../data/helpers'
-import { isoDay } from '../data/meeting-dates'
 
 /**
  * **Der Start-Bildschirm — die Landeseite nach dem Anmelden.**
  *
- * Er ist für die meisten Nutzer die ganze App: Gruß, die eigene Zeitleiste der
- * nächsten zwei Wochen, zwei Kacheln. Vier Zusicherungen tragen dabei Fachlogik:
+ * Er ist für die meisten Nutzer die ganze App (T121): Gruß, die nächste
+ * eigene Aufgabe groß mit dem Saal darüber, die nächsten danach, die Woche der
+ * Versammlung. Zusicherungen mit Fachlogik:
  *
- * - Die **Leiste zeigt ein Fenster**, nicht alles Geplante — und wenn darin
- *   nichts liegt, die nächste Aufgabe dahinter, statt „keine anstehende
- *   Aufgabe" zu behaupten (das Fenster selbst prüft `dash-timeline.test.ts`;
- *   hier geht es darum, dass der Bildschirm es mit dem heutigen Tag aufruft).
- * - **Nach Rolle sortiert** (T95): Der Planer sieht seine Arbeit zuerst, direkt
- *   unter dem Gruß. Ein Verkündiger sieht die Karte gar nicht — er käme über
- *   sie auf einen Screen, den er nicht betreten darf.
+ * - Die **große Karte** bietet an, was zum Stand der Aufgabe passt: bestätigen
+ *   oder absagen, nach der Zusage doch absagen, nach der Absage doch bestätigen.
+ * - Der **Saal** zählt die Plätze ihrer Zusammenkunft (die Verteilung selbst
+ *   prüft `saal.test.ts`) und nennt die Zahlen in Worten.
+ * - **Nach Rolle sortiert** (T95): Der Planer sieht seine Arbeit gleich neben
+ *   der eigenen. Ein Verkündiger sieht die Karte gar nicht — er käme über sie
+ *   auf einen Screen, den er nicht betreten darf.
  * - Die **Planungs-Karte** nennt die kommenden Wochen, in denen etwas zu tun
  *   ist, mit den Zahlen der Banner in Planen — und was vorbei ist, zählt nicht
  *   (die Regeln selbst prüft `planungsstand.test.ts`; hier geht es darum, dass
  *   der Bildschirm sie mit dem heutigen Tag und dem echten Zustand aufruft).
- * - **Treffpunkt-Leitungen und Abwesenheiten stehen mit darin** — die Leiste
- *   liest `state.myTasks`, wo beide Quellen längst zusammenkommen.
  */
 
 /*
@@ -138,39 +136,36 @@ function zeige(over: Partial<AppState> = {}) {
 
 afterEach(cleanup)
 
-describe('Gruß und Datum', () => {
+describe('Der Gruß', () => {
+  const gruss = (container: HTMLElement) => container.querySelector('h1')?.textContent ?? ''
+
   it('begrüßt mit dem Vornamen', () => {
     const { container } = zeige()
-    expect(container.querySelector('.dash-greeting')?.textContent).toContain('Anton')
+    expect(gruss(container)).toContain('Anton')
   })
 
-  it('ohne verknüpfte Person bleibt der Name leer statt „undefined"', () => {
+  it('ohne verknüpfte Person bleibt es beim Gruß — ohne „undefined" und ohne Komma', () => {
     const { container } = zeige({ personId: null })
-    expect(container.querySelector('.dash-greeting')?.textContent).not.toContain('undefined')
+    expect(gruss(container)).not.toContain('undefined')
+    expect(gruss(container)).not.toContain(',')
   })
 
   it('der Gruß richtet sich nach der Tageszeit', () => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ toFake: ['Date'] })
     try {
-      for (const [stunde, erwartet] of [[8, t.grussMorgen], [13, t.grussTag], [20, t.grussAbend]] as const) {
-        vi.setSystemTime(new Date(2026, 8, 8, stunde, 0))
+      for (const [stunde, erwartet] of [[8, t.grussMorgen], [14, t.grussTag], [20, t.grussAbend]] as const) {
+        vi.setSystemTime(new Date(2026, 8, 7, stunde, 0))
         const { container } = zeige()
-        expect(container.querySelector('.dash-greeting')?.textContent).toContain(erwartet)
+        expect(gruss(container)).toContain(erwartet)
         cleanup()
       }
     } finally {
       vi.useRealTimers()
     }
   })
-
-  it('das Datum steht in der Sprache des Lesers', () => {
-    const { container } = zeige({ lang: 'de' })
-    const eyebrow = container.querySelector('.dash-eyebrow')?.textContent ?? ''
-    expect(eyebrow).toMatch(/MONTAG|DIENSTAG|MITTWOCH|DONNERSTAG|FREITAG|SAMSTAG|SONNTAG/)
-  })
 })
 
-/* ---- Die Zeitleiste: die eigenen Aufgaben der nächsten zwei Wochen -------- */
+/* ---- Die nächste eigene Aufgabe, groß (T121) -------------------------------- */
 
 /** Der Kalendertag in `n` Tagen als UTC-Mitternacht — die Form von `MyTask.at`. */
 const inTagen = (n: number): number => {
@@ -178,218 +173,143 @@ const inTagen = (n: number): number => {
   return Date.UTC(h.getFullYear(), h.getMonth(), h.getDate() + n)
 }
 
-/** Derselbe Tag als ISO-Datum — die Form, in der eine Abwesenheit steht. */
-const isoIn = (n: number): string => {
-  const d = new Date()
-  d.setDate(d.getDate() + n)
-  return isoDay(d)
-}
+const karte = (container: HTMLElement) => container.querySelector('.aufgabe-karte')
+const knopf = (root: Element | null, text: string) =>
+  [...(root?.querySelectorAll('button') ?? [])].find((b) => b.textContent === text)
 
-const zeilen = (container: HTMLElement) => [...container.querySelectorAll('.zeit-row')]
-const titel = (container: HTMLElement) =>
-  [...container.querySelectorAll('.dash-zeit-titel')].map((x) => x.textContent)
-
-describe('Die Zeitleiste der nächsten zwei Wochen', () => {
-  it('ohne jede Aufgabe steht der ruhige Satz statt einer leeren Leiste', () => {
+describe('Die nächste Aufgabe steht groß oben', () => {
+  it('ohne jede Aufgabe steht der ruhige Satz statt einer leeren Karte', () => {
     const { container } = zeige({ myTasks: [] })
-    expect(container.querySelector('.zeit')).toBeNull()
-    expect(container.querySelector('.dash-leer-text')?.textContent).toBe(t.dashKeineAufgabe)
+    expect(karte(container)).toBeNull()
+    expect(container.querySelector('.start-leer')?.textContent).toBe(t.dashKeineAufgabe)
   })
 
-  it('mit Bezeichnung und Termin', () => {
-    const { container } = zeige({ myTasks: [task({ at: inTagen(1) })] })
-    expect(container.querySelector('.dash-zeit-titel')?.textContent).toContain('Bibellesung')
-    expect(container.querySelector('.zeit-datum')?.textContent).toContain('8. September')
+  it('mit Programmpunkt, Rolle und Termin — der Abstand in Worten vorn', () => {
+    const { container } = zeige({ myTasks: [task({ rolle: 'Schüler', at: inTagen(1) })] })
+    expect(container.querySelector('.aufgabe-titel')?.textContent).toBe('Bibellesung')
+    expect(container.querySelector('.aufgabe-unter')?.textContent).toBe('Schüler')
+    const wann = container.querySelector('.aufgabe-wann')?.textContent ?? ''
+    expect(wann).toMatch(/^Morgen · /)
+    expect(wann).toContain('8. September')
   })
 
-  /*
-   * Der Grund für den Umbau: Vorher stand hier **eine** Aufgabe groß, und
-   * darunter die laufende Woche mit „frei". Die zweite Aufgabe stand nirgends,
-   * und was nach Sonntag kam, erst recht nicht.
-   */
-  it('jede Aufgabe des Fensters steht da — nicht nur die nächste', () => {
-    const { container } = zeige({
-      myTasks: [
-        task({ id: 'T1', title: 'Erste', at: inTagen(1) }),
-        task({ id: 'T2', title: 'Zweite', at: inTagen(8) }),
-      ],
-    })
-    expect(titel(container)).toEqual(['Erste', 'Zweite'])
+  it('bei einer Schulungsaufgabe steht der Partner dabei', () => {
+    const { container } = zeige({ myTasks: [task({ rolle: 'Schüler', s89: { ...S89, partner: 'Bruno Bauer' } })] })
+    expect(container.querySelector('.aufgabe-unter')?.textContent).toBe(`Schüler · ${t.s89Partner}: Bruno Bauer`)
   })
 
-  it('was weiter weg liegt als zwei Wochen, bleibt weg', () => {
-    const { container } = zeige({
-      myTasks: [
-        task({ id: 'T1', title: 'Bald', at: inTagen(3) }),
-        task({ id: 'T2', title: 'Später', at: inTagen(20) }),
-      ],
-    })
-    expect(titel(container)).toEqual(['Bald'])
+  it('wo die Rolle allein trägt, steht sie oben', () => {
+    const { container } = zeige({ myTasks: [task({ title: '', rolle: 'Mikrofone' })] })
+    expect(container.querySelector('.aufgabe-titel')?.textContent).toBe('Mikrofone')
+    expect(container.querySelector('.aufgabe-unter')).toBeNull()
   })
 
-  it('… es sei denn, im Fenster liegt nichts — dann steht die nächste dahinter da', () => {
-    // „Keine anstehende Aufgabe" wäre schlicht falsch: Es steht eine an, nur
-    // später. In einer gut geplanten Versammlung ist das der Normalfall.
-    const { container } = zeige({ myTasks: [task({ id: 'T2', title: 'Später', at: inTagen(20) })] })
-    expect(titel(container)).toEqual(['Später'])
-  })
-
-  it('ein Tipp auf die Zeile öffnet das Aufgaben-Blatt', () => {
+  it('offen: Bestätigen und „Ich kann nicht" — das öffnet das Absage-Blatt', () => {
     const { container, dispatch } = zeige({ myTasks: [task()] })
-    fireEvent.click(container.querySelector('.zeit-open')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'openMyTask', id: 'T1' })
-  })
-
-  it('offen: sie lässt sich gleich hier bestätigen', () => {
-    const { container, dispatch } = zeige({ myTasks: [task({ status: 'offen' })] })
-    fireEvent.click(container.querySelector('.dash-confirm')!)
+    fireEvent.click(knopf(karte(container), t.bestaetigen)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'confirmTask', id: 'T1' })
+    fireEvent.click(knopf(karte(container), t.kannNicht)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'openAbsage', id: 'T1' })
   })
 
-  it('bestätigt: statt des Knopfs steht der Zustand', () => {
+  it('bestätigt: statt des Knopfs steht der Stand — absagen geht weiter', () => {
     const { container } = zeige({ myTasks: [task({ status: 'bestätigt' })] })
-    expect(container.querySelector('.dash-confirm')).toBeNull()
-    expect(container.querySelector('.dash-badge--best')?.textContent).toContain(t.bestaetigt)
+    expect(knopf(karte(container), t.bestaetigen)).toBeUndefined()
+    expect(container.querySelector('.aufgabe-stand')?.textContent).toBe(t.bestaetigt)
+    expect(knopf(karte(container), t.kannNicht)).toBeDefined()
   })
 
-  it('verhindert: ebenso', () => {
-    const { container } = zeige({ myTasks: [task({ status: 'verhindert' })] })
-    expect(container.querySelector('.dash-confirm')).toBeNull()
-    expect(container.querySelector('.dash-badge--verh')?.textContent).toBe(t.verhindertChip)
+  it('verhindert: der Stand, und „Doch bestätigen"', () => {
+    const { container, dispatch } = zeige({ myTasks: [task({ status: 'verhindert' })] })
+    expect(container.querySelector('.aufgabe-stand.is-problem')?.textContent).toBe(t.verhindertChip)
+    expect(knopf(karte(container), t.kannNicht)).toBeUndefined()
+    fireEvent.click(knopf(karte(container), t.dochBestaetigen)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'confirmTask', id: 'T1' })
   })
 
   it('bei einer Schulungsaufgabe führt der Weg zum S-89-Formular', () => {
     const { container, dispatch } = zeige({ myTasks: [task({ s89: S89 })] })
-    fireEvent.click(container.querySelector('.dash-s89')!)
+    fireEvent.click(knopf(karte(container), 'S-89')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'openS89', payload: S89 })
   })
 
   it('sonst nicht — für einen Hilfsdienst gibt es kein Formular', () => {
     const { container } = zeige({ myTasks: [task({ s89: null })] })
-    expect(container.querySelector('.dash-s89')).toBeNull()
-  })
-
-  it('jede Zeile trägt ihre eigenen Knöpfe, nicht nur die erste', () => {
-    // Die alte Karte konnte nur die nächste Aufgabe bestätigen; für die zweite
-    // musste man auf „Meine Aufgaben".
-    const { container } = zeige({
-      myTasks: [
-        task({ id: 'T1', at: inTagen(1), status: 'offen' }),
-        task({ id: 'T2', at: inTagen(8), status: 'offen' }),
-      ],
-    })
-    expect(container.querySelectorAll('.dash-confirm')).toHaveLength(2)
-  })
-
-  it('der Countdown rechnet aus dem echten Termin — nicht aus einem gespeicherten Satz', () => {
-    /*
-      `MyTask.at` ist ein **Kalendertag** als UTC-Mitternacht, kein Zeitpunkt
-      (siehe dort). Hier stand `Date.now() + 24h` — eine Uhrzeit von jetzt aus,
-      eine Form, die keine der beiden Quellen erzeugt. In den Stunden nach
-      Mitternacht liegt ihr UTC-Tag noch auf heute, und der Test hing damit an
-      der Uhrzeit des Testlaufs.
-    */
-    const { container } = zeige({ myTasks: [task({ at: inTagen(1) })] })
-    expect(container.querySelector('.dash-zeit-chip')?.textContent).toBe('morgen')
-  })
-
-  it('ohne Termin steht kein Chip da', () => {
-    // Bis zum 25.9.2026 trug eine Aufgabe ohne Termin einen festen Chip-Text
-    // (nur in der Demo, „in 4 Tagen") — neben einem festen Datum, zu dem er
-    // nie passte. Jetzt gibt es den Countdown nur aus dem Datum.
-    const { container } = zeige({ myTasks: [task({ at: null })] })
-    expect(container.querySelector('.dash-zeit-chip')).toBeNull()
+    expect(knopf(karte(container), 'S-89')).toBeUndefined()
   })
 })
 
-/**
- * **Die Gegenrichtung gehört dazu** — wie im Personen-Detail.
- *
- * Eine Abwesenheit ist keine Aufgabe, erklärt aber eine leere Strecke: Ohne sie
- * stünde da nur „keine Aufgabe" und nicht, warum. Beginn und Ende sind zwei
- * Punkte, die Strecke dazwischen ist eingefärbt.
- */
-describe('Die eigenen Abwesenheiten stehen in derselben Leiste', () => {
-  const abw = (over: Partial<Absence> = {}): Absence => ({
-    id: 'a1', personId: 'p-a', userId: null, from: isoIn(2), to: isoIn(2), reason: 'Urlaub', ...over,
+describe('Über einer Aufgabe in einer Zusammenkunft steht der Saal', () => {
+  /** Die laufende Woche mit dem eigenen Platz besetzt — die Aufgabe dazu trägt seinen Schlüssel. */
+  function meinAbend(): { woche: Week; meine: MyTask } {
+    const woche = laufendeWoche()
+    platz(woche).name = 'Anton Alt'
+    platz(woche).pid = 'p-a'
+    woche.mid.helpers.mik = [{ name: 'Bruno Test', pid: 'p-b' }]
+    return { woche, meine: task({ id: platzKey(woche), at: inTagen(1) }) }
+  }
+
+  it('mit Worten für Vorleseprogramme: wie viele Plätze besetzt sind, und dass der eigene markiert ist', () => {
+    const { woche, meine } = meinAbend()
+    const { container } = zeige({ weeks: [woche], myTasks: [meine] })
+    const saal = container.querySelector('svg.saal')
+    expect(saal?.getAttribute('role')).toBe('img')
+    // Bibellesung (ich) + Mikrofon 1 besetzt, Mikrofon 2 offen.
+    expect(saal?.getAttribute('aria-label')).toBe(`${t.saalBesetzung}: 2/3 · ${t.saalDeinPlatz}`)
+    expect(container.querySelectorAll('.saal-du')).toHaveLength(1)
   })
 
-  it('ein einzelner Tag mit Grund, am Punkt in der Warnfarbe', () => {
-    const { container } = zeige({ absences: [abw()] })
-    const [zeile] = zeilen(container)
-    expect(zeile?.querySelector('.zeit-dot--abw')).not.toBeNull()
-    expect(zeile?.querySelector('.zeit-art')?.textContent).toBe(`${t.abwesendChip} · Urlaub`)
+  it('eine Absage im Abend steht rot im Saal', () => {
+    const { woche, meine } = meinAbend()
+    const confirmations: ConfirmationMap = { [helferKey(woche.start, 'mid', 'mik', 0)]: 'verhindert' }
+    const { container } = zeige({ weeks: [woche], myTasks: [meine], confirmations })
+    expect(container.querySelectorAll('.saal-platz.is-problem').length).toBeGreaterThan(0)
   })
 
-  it('ohne Grund bleibt es beim Wort', () => {
-    const { container } = zeige({ absences: [abw({ reason: '' })] })
-    expect(container.querySelector('.zeit-art')?.textContent).toBe(t.abwesendChip)
-  })
-
-  it('fremde stehen nicht da — es ist die eigene Leiste', () => {
-    const { container } = zeige({ absences: [abw({ personId: 'p-x' })] })
-    expect(zeilen(container)).toHaveLength(0)
-  })
-
-  it('ein Zeitraum gibt zwei Punkte, und was dazwischen liegt, liegt sichtbar darin', () => {
-    const { container } = zeige({
-      absences: [abw({ from: isoIn(1), to: isoIn(5) })],
-      myTasks: [task({ at: inTagen(3) })],
-    })
-    const klassen = zeilen(container).map((z) => z.className)
-    expect(klassen).toHaveLength(3)
-    // Der Beginn steht vor der Aufgabe dieses Zeitraums, das Ende dahinter …
-    expect(klassen[0]).toContain('zeit-row--abw-unten')
-    expect(klassen[2]).toContain('zeit-row--abw-oben')
-    // … und die Aufgabe in der Mitte trägt die Strecke auf beiden Seiten.
-    expect(klassen[1]).toContain('zeit-row--abw-oben')
-    expect(klassen[1]).toContain('zeit-row--abw-unten')
-  })
-
-  it('ein Zeitraum, der vor heute beginnt, steht mit seinem echten Beginn da', () => {
-    // Das Fenster gilt den Aufgaben, nicht den Abwesenheiten: Der Beginn liegt
-    // zurück und steht blasser da, statt abgeschnitten zu werden.
-    const { container } = zeige({
-      absences: [abw({ from: isoIn(-3), to: isoIn(4) })],
-      myTasks: [task({ at: inTagen(2) })],
-    })
-    const klassen = zeilen(container).map((z) => z.className)
-    expect(klassen).toHaveLength(3)
-    expect(klassen[0]).toContain('is-past')
-    expect(klassen[0]).toContain('zeit-row--abw-unten')
-    expect(klassen[1]).toContain('zeit-row--abw-oben')
-    expect(klassen[1]).toContain('zeit-row--abw-unten')
-    expect(klassen[2]).toContain('zeit-row--abw-oben')
-  })
-
-  it('eine Abwesenheit über die ganzen zwei Wochen lässt den Start nicht leer aussehen', () => {
-    const { container } = zeige({ absences: [abw({ from: isoIn(-2), to: isoIn(20) })] })
-    expect(zeilen(container)).toHaveLength(2)
-    expect(container.querySelector('.dash-leer-text')).toBeNull()
+  it('ein Treffpunkt hat keinen Saal', () => {
+    const { container } = zeige({ myTasks: [task({ id: `fs|${laufendeWoche().start}|r1`, title: '', rolle: t.fsLeiterLbl })] })
+    expect(container.querySelector('svg.saal')).toBeNull()
   })
 })
 
-describe('Die beiden Kacheln', () => {
-  it('zählen ungelesene Mitteilungen und offene Bestätigungen', () => {
-    const { container } = zeige({
-      notifs: [
-        { id: 'n1', type: 'zuteilung', title: 'x', text: 'y', at: new Date().toISOString(), read: false },
-        { id: 'n2', type: 'zuteilung', title: 'x', text: 'y', at: new Date().toISOString(), read: true },
-      ],
-      myTasks: [task({ id: 'T1', status: 'offen' }), task({ id: 'T2', status: 'bestätigt' })],
-    })
-    const werte = [...container.querySelectorAll('.dash-tile-value')].map((x) => x.textContent)
-    // Genau der Fall, an dem `{n} {t.navAufgaben}` scheiterte: „1 Aufgaben".
-    expect(werte).toEqual(['Neu: 1', 'Aufgaben: 1'])
+describe('Die nächsten Aufgaben danach, je eine Zeile', () => {
+  const vier = (): MyTask[] => [1, 2, 3, 4, 5].map((n) => task({ id: `T${n}`, title: `Aufgabe ${n}`, at: inTagen(n) }))
+
+  it('höchstens drei unter der großen Karte — die ganze Liste hat „Meine Aufgaben"', () => {
+    const { container } = zeige({ myTasks: vier() })
+    const zeilen = [...container.querySelectorAll('.start-spalte > .start-liste .start-zeile-text')].map((z) => z.textContent)
+    expect(zeilen).toEqual(['Aufgabe 2', 'Aufgabe 3', 'Aufgabe 4'])
   })
 
-  it('führen dorthin, wo man sie abarbeitet', () => {
-    const { container, dispatch } = zeige()
-    const kacheln = [...container.querySelectorAll('.dash-tile')]
-    fireEvent.click(kacheln[0]!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'openNotifs' })
-    fireEvent.click(kacheln[1]!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'aufgaben' })
+  it('ein Tipp öffnet das Blatt genau dieser Aufgabe', () => {
+    const { container, dispatch } = zeige({ myTasks: vier() })
+    fireEvent.click(container.querySelector('.start-spalte > .start-liste .start-zeile')!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'openMyTask', id: 'T2' })
+  })
+})
+
+describe('Diese Woche in der Versammlung', () => {
+  it('nennt die Zusammenkünfte und die Treffpunkte der eigenen Gruppe, nicht die fremder', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9, 0)) // Montag
+    try {
+      const woche = { ...laufendeWoche(), start: '2026-09-07' }
+      const eigene: FsInstance = { id: 'g1', ruleId: 'g1', grp: 'g1', wd: 6, time: '09:30', place: 'Bei Albrechts', leader: '' }
+      const fremde: FsInstance = { ...eigene, id: 'g2', ruleId: 'g2', grp: 'g2', place: 'Anderswo' }
+      const { container } = zeige({
+        weeks: [woche],
+        fsWeeks: [[fremde, eigene]],
+        persons: [{ ...ICH, grp: 'g1' }],
+        groups: [
+          { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null },
+          { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
+        ],
+      })
+      const was = [...container.querySelectorAll('.start-woche .start-zeile-text')].map((z) => z.textContent)
+      expect(was).toEqual([t.tabMid, 'Gruppe 1 · Bei Albrechts', t.tabWe])
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 
@@ -487,11 +407,14 @@ function planer(over: Partial<AppState> = {}) {
 const chip = (root: Element, art: string) => {
   const el = root.querySelector(`.dash-chip[data-art="${art}"]`)
   return el
-    ? { titel: el.querySelector('.dash-chip-titel')?.textContent, n: el.querySelector('.dash-chip-n')?.textContent }
+    ? { titel: el.firstElementChild?.textContent, n: el.querySelector('.dash-chip-n')?.textContent }
     : null
 }
 
-describe('Die Planungs-Karte gehört dem Planer — und steht bei ihm zuerst (T95)', () => {
+/** Der Import-Knopf auf der Karte — er heißt wie der in den Einstellungen. */
+const importKnopf = (root: Element) => root.querySelector<HTMLButtonElement>('.dash-plan-vorrat button')
+
+describe('Die Planungs-Karte gehört dem Planer — und steht bei ihm gleich daneben (T95)', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(MONTAG)
@@ -513,14 +436,14 @@ describe('Die Planungs-Karte gehört dem Planer — und steht bei ihm zuerst (T9
     expect(container.querySelector('.dash-planung')).toBeNull()
   })
 
-  it('beim Planer steht sie direkt unter dem Gruß, vor der eigenen Leiste', () => {
+  it('beim Planer steht sie in einer eigenen Spalte neben den eigenen Aufgaben', () => {
     // Bis T95 stand die Arbeit des Planers als letzte Zeile unter seinem
-    // eigenen Verkündiger-Teil.
+    // eigenen Verkündiger-Teil. Seit T121 steht sie daneben — am Handy darunter.
     const { container } = planer({ weeks: [importiert(W1)], myTasks: [task()] })
-    const reihenfolge = [...container.querySelector('.dash')!.children].map((el) => el.className)
-    const karte = reihenfolge.findIndex((c) => c.includes('dash-planung'))
-    expect(karte, reihenfolge.join(' | ')).toBe(2) // nach Datum und Gruß
-    expect(karte).toBeLessThan(reihenfolge.findIndex((c) => c.includes('panel')))
+    const spalten = [...container.querySelectorAll('.start-spalten.is-planer > .start-spalte')]
+    expect(spalten).toHaveLength(2)
+    expect(spalten[0]!.querySelector('.aufgabe-karte')).not.toBeNull()
+    expect(spalten[1]!.querySelector('.dash-planung')).not.toBeNull()
   })
 })
 
@@ -673,7 +596,7 @@ describe('Eine Zeile je Woche, in der etwas zu tun ist', () => {
     const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks) })
     expect(container.querySelector('.dash-planung')).toBeNull()
     expect(container.querySelector('.dash-plan-text')?.textContent).toBe(t.dashAllesZugeteilt)
-    fireEvent.click(container.querySelector('.dash-plan')!)
+    fireEvent.click(container.querySelector('.dash-plan .dash-plan-woche')!)
     // Mit Thema: Wer zuletzt im Predigtdienst war, käme sonst dort heraus.
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte' })
   })
@@ -691,7 +614,7 @@ describe('Reichen die Programme nicht mehr, steht der Import gleich auf der Kart
     const weeks = [besetzt(W1)]
     const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks) })
     expect(container.querySelector('.dash-plan-vorrat-text')?.textContent).toMatch(/^Geladen bis 13\. Sept\. 2026$/)
-    expect(container.querySelector('.dash-plan-import')?.textContent).toBe(t.importBtn)
+    expect(importKnopf(container)?.textContent).toBe(t.importBtn)
   })
 
   it('der Knopf holt die nächste Woche — derselbe Ablauf wie in den Einstellungen', async () => {
@@ -699,7 +622,7 @@ describe('Reichen die Programme nicht mehr, steht der Import gleich auf der Kart
     importNextWeek.mockResolvedValue({ ok: true, week: neu })
     const weeks = [besetzt(W1)]
     const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks), dataStatus: 'ready' })
-    fireEvent.click(container.querySelector('.dash-plan-import')!)
+    fireEvent.click(importKnopf(container)!)
     // Ab der zuletzt geladenen Woche, in der Versammlungssprache.
     await waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'addImportedWeek', week: neu }))
     expect(importNextWeek).toHaveBeenCalledWith(W1, 'de', [])
@@ -709,7 +632,7 @@ describe('Reichen die Programme nicht mehr, steht der Import gleich auf der Kart
   it('offline fängt er gar nicht erst an', () => {
     const weeks = [besetzt(W1)]
     const { container, dispatch } = planer({ weeks, staleAt: Date.now() })
-    fireEvent.click(container.querySelector('.dash-plan-import')!)
+    fireEvent.click(importKnopf(container)!)
     expect(importNextWeek).not.toHaveBeenCalled()
     expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.offlineReadOnly })
   })
@@ -717,63 +640,13 @@ describe('Reichen die Programme nicht mehr, steht der Import gleich auf der Kart
   it('ohne jede Woche: „Noch keine Woche geladen" — der erste Import steht aus', () => {
     const { container } = planer({ weeks: [] })
     expect(container.querySelector('.dash-plan-vorrat-text')?.textContent).toBe(t.geladenNichts)
-    expect(container.querySelector('.dash-plan-import')).not.toBeNull()
+    expect(importKnopf(container)).not.toBeNull()
   })
 
   it('reicht der Vorrat, steht nichts davon da', () => {
     const weeks = WOCHEN.map(besetzt)
     const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks) })
     expect(container.querySelector('.dash-plan-vorrat')).toBeNull()
-  })
-})
-
-/* ---- Treffpunkt-Leitungen (T95) -------------------------------------------- */
-
-/**
- * **Eine Treffpunkt-Leitung ist eine Aufgabe wie jede andere.**
- *
- * Bis T95 stand sie nur in der Karte „Deine nächste Aufgabe", sobald sie die
- * nächste war — im Wochenüberblick darunter nie: zwei Stellen auf einem
- * Bildschirm, die verschieden viel von derselben Woche wussten. Beide sind der
- * Leiste gewichen, und die liest `state.myTasks`, wo der Reducer
- * Zusammenkünfte und Treffpunkte längst zusammenführt (`reducer.test.ts`:
- * „Treffpunkt fehlt in myTasks"). Hier geht es darum, dass der Start sie nicht
- * anders behandelt als eine Zuteilung.
- */
-describe('Eine Treffpunkt-Leitung steht mit in der Leiste', () => {
-  const leitung = (over: Partial<MyTask> = {}): MyTask =>
-    task({
-      id: `fs|${W1}|r1`,
-      title: '',
-      rolle: t.fsLeiterLbl,
-      date: 'Mittwoch, 9. September · 09:30 · Bahnhof',
-      at: inTagen(2),
-      ...over,
-    })
-
-  it('mit Rolle, Tag, Uhrzeit und Ort — der Ort sagt erst, wohin man kommt', () => {
-    const { container } = zeige({ myTasks: [leitung()] })
-    expect(container.querySelector('.dash-zeit-titel')?.textContent).toBe(t.fsLeiterLbl)
-    expect(container.querySelector('.zeit-datum')?.textContent).toBe(
-      'Mittwoch, 9. September · 09:30 · Bahnhof',
-    )
-  })
-
-  it('und lässt sich von hier aus bestätigen', () => {
-    const { container, dispatch } = zeige({ myTasks: [leitung({ status: 'offen' })] })
-    fireEvent.click(container.querySelector('.dash-confirm')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'confirmTask', id: `fs|${W1}|r1` })
-  })
-
-  it('in der Folge der Termine, zwischen den Zusammenkünften', () => {
-    const { container } = zeige({
-      myTasks: [
-        task({ id: 'T1', title: 'Dienstag', at: inTagen(1) }),
-        leitung({ at: inTagen(2) }),
-        task({ id: 'T2', title: 'Sonntag', at: inTagen(6) }),
-      ],
-    })
-    expect(titel(container)).toEqual(['Dienstag', t.fsLeiterLbl, 'Sonntag'])
   })
 })
 

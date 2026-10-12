@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { ZeichenName } from '../bausteine/Zeichen'
 import { datumsFormat } from '../components/datum-anzeige'
 import { useBackDismiss } from '../components/useBackDismiss'
@@ -13,11 +13,12 @@ import { fill, useT } from '../i18n/useT'
 import { RECHTE_STUFE_KEY } from '../i18n/ui'
 import { redeemInvite } from '../lib/data'
 import type { Screen, Thema } from '../data/types'
+import { AbsageBlatt } from '../aufgaben/AbsageBlatt'
+import { AufgabeBlatt } from '../aufgaben/AufgabeBlatt'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
+import { OeffnenBlatt } from '../aufgaben/OeffnenBlatt'
 import { AbmeldenKnopf } from '../components/AbmeldenKnopf'
-import { ConfirmDialog } from '../components/ConfirmDialog'
 import { ErrorBoundary } from '../components/ErrorBoundary'
-import { MyTaskSheet } from '../components/MyTaskSheet'
 import { LanguageSheet } from '../components/LanguageSheet'
 import { ServicePersonsSheet } from '../einstellungen/ServicePersonsSheet'
 import { S89Sheet } from '../components/S89Sheet'
@@ -273,15 +274,10 @@ export function AppShell() {
   const menue = abschnitte([])
   // Texte für die Error Boundaries: die Klasse kann useT() nicht aufrufen.
   const fehlerTexte = { titel: t.errTitel, text: t.errText, aktion: t.offlineRetry }
-  const offenesOverlay =
-    (state.notifOpen && 'notif') ||
-    (state.slotSel && 'slot') ||
-    (state.langSheetOpen && 'lang') ||
-    (state.svcSheet && 'svc') ||
-    (state.s89 && 's89') ||
-    (state.myTaskId && 'myTask') ||
-    (state.confirmOpen && 'confirm') ||
-    'keins'
+  const meineAufgabe = state.myTasks.find((task) => task.id === state.myTaskId)
+  const abzusagen = state.myTasks.find((task) => task.id === state.absageId)
+  /** Ein Blatt in seiner eigenen Fehlergrenze (siehe unten). */
+  const blatt = (inhalt: ReactNode) => <ErrorBoundary {...fehlerTexte}>{inhalt}</ErrorBoundary>
 
   return (
     <div className="rahmen">
@@ -351,18 +347,28 @@ export function AppShell() {
           </>
         )}
 
-        {/* Zweite Boundary um die Overlays: ein Fehler im Sheet darf die App
-            darunter stehen lassen. `key` = das gerade offene Overlay, damit
-            das nächste wieder frisch startet. */}
-        <ErrorBoundary key={offenesOverlay} {...fehlerTexte}>
-          {state.notifOpen && <NotificationsPanel />}
-          {state.slotSel && <AssignSheet sel={state.slotSel} />}
-          {state.langSheetOpen && <LanguageSheet />}
-          {state.svcSheet && <ServicePersonsSheet svcKey={state.svcSheet} />}
-          {state.s89 && <S89Sheet payload={state.s89} />}
-          {state.myTaskId && <MyTaskSheet />}
-          {state.confirmOpen && vorzulegen(state.myTasks, state.substituteReqs) && <ConfirmDialog />}
-        </ErrorBoundary>
+        {/*
+          Jedes Blatt in seiner **eigenen** Fehlergrenze: Ein Fehler darin lässt
+          die App darunter stehen, und das nächste Öffnen beginnt frisch — die
+          Grenze geht mit dem Blatt.
+
+          Bis zum 12.10.2026 stand eine gemeinsame Grenze um alle Blätter, mit
+          dem obersten als `key`. Lagen zwei übereinander (S-89 über dem
+          Zuteilen, Absagen über dem Blatt beim Öffnen), hängte jeder Wechsel
+          des obersten auch das untere neu ein: Es verlor seinen
+          Verlaufseintrag, und schloss das obere per Escape, bekam das untere
+          mitten in derselben Taste einen frischen `CloseWatcher` — der die
+          Taste ein zweites Mal verarbeitete und es gleich mit schloss.
+        */}
+        {state.notifOpen && blatt(<NotificationsPanel />)}
+        {state.slotSel && blatt(<AssignSheet sel={state.slotSel} />)}
+        {state.langSheetOpen && blatt(<LanguageSheet />)}
+        {state.svcSheet && blatt(<ServicePersonsSheet svcKey={state.svcSheet} />)}
+        {state.s89 && blatt(<S89Sheet payload={state.s89} />)}
+        {meineAufgabe && blatt(<AufgabeBlatt task={meineAufgabe} />)}
+        {state.confirmOpen && vorzulegen(state.myTasks, state.substituteReqs) && blatt(<OeffnenBlatt />)}
+        {/* Nach dem Blatt beim Öffnen: „Ich kann nicht" darin legt sich darüber. */}
+        {abzusagen && blatt(<AbsageBlatt key={abzusagen.id} task={abzusagen} />)}
         {state.toast && (
           <div key={state.toast.id} className="toast" role="status">
             {state.toast.text}

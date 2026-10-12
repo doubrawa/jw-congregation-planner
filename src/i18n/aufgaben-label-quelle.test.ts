@@ -81,30 +81,30 @@ describe('Aufgaben-Beschriftung entsteht an einer Stelle', () => {
 
   it('und beide setzen sie auch wirklich zusammen', () => {
     expect(QUELLEN.get('i18n/useT.ts')).toContain('export function aufgabenLabel')
+    expect(QUELLEN.get('i18n/useT.ts')).toContain('export function aufgabenZeilen')
     expect(QUELLEN.get('data/planning.ts')).toContain('export function aufgabenBezeichnung')
   })
 
-  it('jede Anzeige einer Aufgabe nimmt eine der beiden Formen', () => {
-    // Wer `myTasks` liest und dabei etwas beschriftet, muss über die Helfer
-    // gehen. Dateien, die die Liste nur zählen oder filtern, sind nicht
-    // gemeint — sie fassen keine Bezeichnung an.
+  it('jede Anzeige einer Aufgabe nimmt eine der Formen', () => {
+    // Wer eine Aufgabe beschriftet — an den Klassen ihrer Titelzeilen zu
+    // erkennen —, muss über die Helfer gehen: `aufgabenLabel` für eine Zeile,
+    // `aufgabenZeilen` für die große Karte mit Titel und Unterzeile.
     const beschriftet = [...QUELLEN]
       .filter(([pfad]) => pfad.endsWith('.tsx') && !/\.test\.tsx$/.test(pfad))
-      .filter(([, text]) => /\bmyTasks\b/.test(text))
-      .filter(([, text]) => /confirm-task-title|auf-title|dash-zeit-titel/.test(text))
+      .filter(([, text]) => /aufgabe-titel|aufgaben-zeile-titel|oeffnen-titel|start-zeile-text/.test(text))
       .map(([pfad]) => pfad)
       .sort()
 
-    // Vier Anzeigestellen — genau die, die beim Umbau einzeln umgestellt
-    // wurden. Kommt eine fünfte hinzu, fällt sie hier auf.
+    // Die Anzeigestellen des neuen Designs (T121). Kommt eine weitere hinzu,
+    // fällt sie hier auf.
     expect(beschriftet).toEqual([
+      'aufgaben/AufgabeKarte.tsx',
       'aufgaben/AufgabenScreen.tsx',
-      'components/ConfirmDialog.tsx',
-      'components/MyTaskSheet.tsx',
+      'aufgaben/OeffnenBlatt.tsx',
       'dashboard/DashboardScreen.tsx',
     ])
     for (const datei of beschriftet) {
-      expect(QUELLEN.get(datei), datei).toContain('aufgabenLabel')
+      expect(QUELLEN.get(datei), datei).toMatch(/aufgabenLabel|aufgabenZeilen/)
     }
   })
 })

@@ -78,6 +78,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     sentLog: {},
     confirmOpen: false,
     myTaskId: null,
+    absageId: null,
     substituteReqs: [],
     offenePlaetze: [],
     s89: null,
@@ -1491,15 +1492,46 @@ describe('Sprache', () => {
     expect(reducer(s, { type: 'login' }).confirmOpen).toBe(true)
     // Weglegen darf man es — einspringen ist freiwillig.
     expect(reducer({ ...s, confirmOpen: true }, { type: 'closeConfirm' }).confirmOpen).toBe(false)
-    // Solange etwas zu bestätigen ist, hält es.
-    const mitAufgabe = makeState({
-      confirmOpen: true,
-      substituteReqs: [gesuch],
-      myTasks: [{ id: 't1', title: 'X', date: 'Di', status: 'offen', s89: null }],
-    })
-    expect(reducer(mitAufgabe, { type: 'closeConfirm' }).confirmOpen).toBe(true)
     // Und ohne beides gibt es nichts vorzulegen.
     expect(reducer(makeState({ myTasks: [], substituteReqs: [] }), { type: 'login' }).confirmOpen).toBe(false)
+  })
+
+  it('„Später" legt das Blatt weg, auch mit offener Zuteilung — beim nächsten Öffnen liegt es wieder da (T121)', () => {
+    // Bis zum 12.10.2026 hielt das Blatt, bis alles bestätigt war.
+    const offen = { id: 't1', title: 'X', date: 'Di', status: 'offen' as const, s89: null }
+    const s = makeState({ confirmOpen: true, myTasks: [offen] })
+    const spaeter = reducer(s, { type: 'closeConfirm' })
+    expect(spaeter.confirmOpen).toBe(false)
+    // Eine Änderung danach holt es nicht von selbst zurück …
+    expect(reducer(spaeter, { type: 'navigate', screen: 'programm' }).confirmOpen).toBe(false)
+    // … erst das nächste Öffnen der App.
+    expect(reducer(spaeter, { type: 'login' }).confirmOpen).toBe(true)
+  })
+
+  it('„Alle bestätigen" sagt jede offene Aufgabe zu — und nur die offenen (T121)', () => {
+    const s = makeState({
+      myTasks: [
+        { id: 'a', title: 'A', date: 'Di', status: 'offen', s89: null },
+        { id: 'b', title: 'B', date: 'Di', status: 'verhindert', s89: null },
+        { id: 'c', title: 'C', date: 'So', status: 'offen', s89: null },
+      ],
+      confirmations: { b: 'verhindert' },
+    })
+    const nach = reducer(s, { type: 'confirmAll' })
+    expect(nach.confirmations).toEqual({ a: 'bestätigt', b: 'verhindert', c: 'bestätigt' })
+    expect(nach.toast?.text).toBe(t.toastBestaetigt)
+    // Nichts offen: nichts geändert, auch kein Toast.
+    const ohne = makeState({ myTasks: [{ id: 'b', title: 'B', date: 'Di', status: 'verhindert', s89: null }] })
+    expect(reducer(ohne, { type: 'confirmAll' })).toBe(ohne)
+  })
+
+  it('das Absage-Blatt ersetzt das Aufgaben-Blatt — Absagen und Bestätigen schließen es (T121)', () => {
+    const offen = makeState({ myTaskId: 'x' })
+    const auf = reducer(offen, { type: 'openAbsage', id: 'x' })
+    expect(auf).toMatchObject({ absageId: 'x', myTaskId: null })
+    expect(reducer(auf, { type: 'closeAbsage' }).absageId).toBeNull()
+    expect(reducer(auf, { type: 'confirmTask', id: 'x' }).absageId).toBeNull()
+    expect(reducer(auf, { type: 'declineTask', id: 'x' }).absageId).toBeNull()
   })
 
   it('Freigabe-Liste eines Hilfsdienstes: öffnen, schließen — und beim Löschen mit weg (T79)', () => {

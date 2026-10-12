@@ -1,153 +1,128 @@
 import { useMemo } from 'react'
 import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
-import { sichtbareMitteilungen } from '../app/mitteilungen'
-import { AufgabenAktionen } from '../components/AufgabenAktionen'
 import { useKalendertag } from '../app/useKalendertag'
-import { Zeitleiste, type ZeitZeile } from '../components/Zeitleiste'
-import { abwesenheitsArt, zeitleisteDatum } from '../components/zeitleiste-gemeinsam'
+import { Zeichen } from '../bausteine/Zeichen'
+import { aufgabeTag } from '../aufgaben/aufgabe-anzeige'
+import { AufgabeKarte } from '../aufgaben/AufgabeKarte'
+import { datumsFormat } from '../components/datum-anzeige'
+import { treffpunktTitel } from '../components/treffpunkt-beschriftung'
 import { fromIso } from '../data/meeting-dates'
 import { rechteVon } from '../data/rechte'
-import { LOCALES } from '../i18n/langs'
-import { relativeDayLabel } from '../i18n/relative-time'
-import { aufgabenLabel, aufgabenTp, fill, useT } from '../i18n/useT'
-import { dashTimeline } from './dash-timeline'
+import type { MyTask } from '../data/types'
+import { aufgabenLabel, useT } from '../i18n/useT'
+import { termineDieserWoche, type Termin } from './diese-woche'
 import { PlanungsKarte } from './PlanungsKarte'
 import './dashboard.css'
 
-/**
- * Start (Screen 1, Landeseite nach dem Login): bündelt das Wichtigste — Gruß,
- * die eigene Zeitleiste der nächsten zwei Wochen, Mitteilungen und offene
- * Bestätigungen. Ruhiger „Programmheft-Deckblatt"-Stil (Vorschlag 1a).
- *
- * **Nach Rolle sortiert, nicht nach Person** (T95). Bis dahin stand für alle
- * dasselbe in derselben Reihenfolge, und die Arbeit des Planers kam als letzte
- * Zeile — unter seinem eigenen Verkündiger-Teil. Jetzt steht für ihn die
- * Planungs-Karte direkt unter dem Gruß. Seine eigenen unbestätigten Aufgaben
- * verliert er dabei nicht aus dem Blick: Die legt ihm ohnehin das Blatt beim
- * Öffnen vor (T69), und die Karte schrumpft auf eine Zeile, wenn nichts zu tun
- * ist. Verkündiger und Gruppenaufseher sehen den Bildschirm wie bisher.
- *
- * **Eine Leiste statt zweier Karten.** Hier standen „Deine nächste Aufgabe" und
- * „Aktuelle Woche": die erste Aufgabe groß, darunter die beiden Zusammenkünfte
- * der laufenden Woche mit „Deine Aufgabe" oder „frei". Das beantwortete die
- * Frage, mit der man den Start öffnet, nur halb — die zweite Aufgabe stand
- * nirgends, und was nach Sonntag kommt, erst recht nicht. Jetzt steht dort die
- * Zeitleiste aus dem Personen-Detail, dieselbe Form, mit den eigenen Aufgaben
- * und Abwesenheiten der **nächsten zwei Wochen** (`dash-timeline.ts` sagt,
- * welche). Was der Woche fehlte — der eigene Treffpunkt am Mittwoch, die
- * Zuteilung in der Folgewoche — steht damit von selbst da. Die Zusammenkünfte,
- * in denen man frei ist, stehen nicht mehr auf dem Start: Wann sie sind, sagt
- * das Programm; hier geht es um das, was einen selbst angeht.
- */
-/** Die Aktionen einer Aufgabe in der Zeitleiste — kompakter als in „Meine Aufgaben". */
-const DASH_KLASSEN = {
-  bestaetigen: 'dash-confirm',
-  bestaetigt: 'dash-badge dash-badge--best',
-  verhindert: 'dash-badge dash-badge--verh',
-  s89: 'dash-s89',
-}
+/** So viele Aufgaben stehen unter der großen Karte — die ganze Liste hat „Meine Aufgaben". */
+const WEITERE_AUFGABEN = 3
 
+/**
+ * **Start** (T121): was einen selbst angeht, in der Reihenfolge, in der man
+ * fragt.
+ *
+ *  1. **Der Gruß** — mit Vornamen.
+ *  2. **Die nächste eigene Aufgabe, groß**, mit Bestätigen und Absagen gleich
+ *     darunter. Liegt sie in einer Zusammenkunft, steht der Saal darüber: wie
+ *     weit der Abend besetzt ist, und wo man selbst sitzt.
+ *  3. **Die nächsten danach**, je eine Zeile; ein Tipp öffnet die Aufgabe.
+ *  4. **Diese Woche in der Versammlung** — die Zusammenkünfte und Treffpunkte,
+ *     die noch kommen.
+ *  5. Für Planer: **die Planung** der kommenden Wochen (T95), ab dem Tablet
+ *     in einer zweiten Spalte daneben.
+ *
+ * Die Abwesenheiten standen hier bis zum Umbau in einer Zeitleiste mit den
+ * Aufgaben; sie gehören jetzt ins Profil, wo man sie auch einträgt.
+ */
 export function DashboardScreen() {
-  const { state, dispatch } = useApp()
-  const i18n = useT()
-  const { t } = i18n
+  const { state } = useApp()
+  const { t } = useT()
   const me = eigenePerson(state)
   // Ein neuer Render, sobald der Tag wechselt — sonst stünde nach einer Nacht im
-  // Hintergrund noch der gestrige Gruß über dem gestrigen Zeitfenster.
+  // Hintergrund noch der gestrige Gruß über den gestrigen Terminen.
   const tag = useKalendertag()
-
-  // Tageszeit-Gruß + lokalisiertes Datum (Wochentag · Tag · Monat, Großbuchstaben).
   const hour = new Date().getHours()
   const gruss = hour < 11 ? t.grussMorgen : hour < 18 ? t.grussTag : t.grussAbend
-  const heute = new Date()
-    .toLocaleDateString(LOCALES[state.lang], { weekday: 'long', day: 'numeric', month: 'long' })
-    .toUpperCase()
-
   const { zuteilen } = rechteVon(state)
-  const unread = sichtbareMitteilungen(state.notifs, zuteilen).filter((n) => !n.read).length
-  const toConfirm = state.myTasks.filter((task) => task.status === 'offen').length
 
-  /*
-   * Fenster **und** Zeilen in einem Zug gemerkt: Die Leiste baut je Aufgabe
-   * Knöpfe, und die entstünden sonst bei jedem Render neu — gerechnet war dann
-   * nur die Auswahl, nicht das, was daraus wird.
-   *
-   * Gemerkt am Tag, nicht an der Uhrzeit: Das Fenster verschiebt sich um
-   * Mitternacht, und `useKalendertag` stößt dann den Render an.
-   */
-  const zeilen: ZeitZeile[] = useMemo(() => {
-    const eintraege = dashTimeline(state.myTasks, state.absences, state.personId, fromIso(tag))
-    return eintraege.map((e) => {
-      const band = {
-        ...(e.abwOben ? { abwOben: true } : {}),
-        ...(e.abwUnten ? { abwUnten: true } : {}),
-        ...(e.vergangen ? { vergangen: true } : {}),
-      }
-      if (e.kind === 'abw') {
-        return {
-          key: e.key,
-          wann: zeitleisteDatum(e.datum, state.lang),
-          art: abwesenheitsArt(e.grund, t.abwesendChip),
-          abw: true,
-          ...band,
-        }
-      }
-      const { task } = e
-      // Live-Countdown aus dem Datum (Intl); ohne Datum kein Chip.
-      const countdown = relativeDayLabel(task.at, state.lang)
-      return {
-        key: e.key,
-        wann: aufgabenTp(task, i18n)(task.date),
-        art: <span className="dash-zeit-titel">{aufgabenLabel(task, i18n)}</span>,
-        ...band,
-        oeffnen: () => dispatch({ type: 'openMyTask', id: task.id }),
-        aktionen: <AufgabenAktionen task={task} klassen={DASH_KLASSEN} />,
-        ...(countdown ? { ende: <span className="dash-zeit-chip">{countdown}</span> } : {}),
-      }
-    })
-  }, [state.myTasks, state.absences, state.personId, state.lang, tag, dispatch, i18n, t])
+  const [naechste, ...danach] = state.myTasks
+  const gruppe = me?.grp ?? null
+  const termine = useMemo(
+    () => termineDieserWoche(state.weeks, state.fsWeeks, state.congregation.times, gruppe, fromIso(tag)),
+    [state.weeks, state.fsWeeks, state.congregation.times, gruppe, tag],
+  )
 
   return (
-    <section className="screen dash">
-      <div className="dash-eyebrow">{heute}</div>
-      <h1 className="dash-greeting">
-        {gruss},<br />
-        {me?.fn ?? ''}
-      </h1>
+    <section className="screen start">
+      <h1 className="seitentitel seitentitel--gross">{me?.fn ? `${gruss}, ${me.fn}` : gruss}</h1>
 
-      {/* Wer zuteilt — Admin oder Planer —, sieht seine Arbeit zuerst (T95).
-          Wer nicht plant, dürfte den Screen dahinter gar nicht betreten. */}
-      {zuteilen && <PlanungsKarte />}
+      <div className={zuteilen ? 'start-spalten is-planer' : 'start-spalten'}>
+        <div className="start-spalte">
+          {naechste ? (
+            <AufgabeKarte task={naechste} saal />
+          ) : (
+            <p className="karte karte--held start-leer">{t.dashKeineAufgabe}</p>
+          )}
+          {danach.length > 0 && <WeitereAufgaben aufgaben={danach.slice(0, WEITERE_AUFGABEN)} />}
+          {termine.length > 0 && <DieseWoche termine={termine} />}
+        </div>
+        {/* Wer zuteilt — Admin oder Planer —, sieht seine Arbeit gleich daneben
+            (T95). Wer nicht plant, dürfte den Bildschirm dahinter gar nicht
+            betreten. */}
+        {zuteilen && (
+          <div className="start-spalte">
+            <PlanungsKarte />
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
 
-      {/* Der Leerzustand heißt: wirklich nichts geplant — nicht „nichts in den
-          nächsten zwei Wochen". Steht etwas dahinter, nennt die Leiste es
-          (siehe `dashTimeline`). */}
-      <Zeitleiste
-        label={t.naechsteAufgaben}
-        farbe="acc"
-        lead
-        zeilen={zeilen}
-        leer={<div className="dash-leer-text">{t.dashKeineAufgabe}</div>}
-      />
+/** Die Aufgaben nach der nächsten: Tag und was, ein Tipp öffnet sie. */
+function WeitereAufgaben({ aufgaben }: { aufgaben: readonly MyTask[] }) {
+  const { state, dispatch } = useApp()
+  const i18n = useT()
+  const kurz = datumsFormat(state.lang, 'wochentagZahl')
+  return (
+    <div className="karte start-liste">
+      {aufgaben.map((task) => {
+        const tag = aufgabeTag(task)
+        return (
+          <button key={task.id} type="button" className="start-zeile" onClick={() => dispatch({ type: 'openMyTask', id: task.id })}>
+            <span className="start-zeile-tag">{tag ? kurz.format(fromIso(tag)) : ''}</span>
+            <span className="start-zeile-text">{aufgabenLabel(task, i18n)}</span>
+            <Zeichen name="weiter" />
+          </button>
+        )
+      })}
+    </div>
+  )
+}
 
-      <div className="dash-tiles">
-        <button
-          type="button"
-          className="dash-tile dash-tile--acc"
-          onClick={() => dispatch({ type: 'openNotifs' })}
-        >
-          <div className="dash-tile-label">{t.mitteilungen}</div>
-          <div className="dash-tile-value">{fill(t.neuN, { n: unread })}</div>
-        </button>
-        <button
-          type="button"
-          className="dash-tile dash-tile--wein"
-          onClick={() => dispatch({ type: 'navigate', screen: 'aufgaben' })}
-        >
-          <div className="dash-tile-label">{t.dashZuBest}</div>
-          <div className="dash-tile-value">{fill(t.aufgabenN, { n: toConfirm })}</div>
-        </button>
+/** Was diese Woche in der Versammlung noch ansteht. */
+function DieseWoche({ termine }: { termine: readonly Termin[] }) {
+  const { state } = useApp()
+  const i18n = useT()
+  const { t } = i18n
+  const kurz = datumsFormat(state.lang, 'wochentagZahl')
+  const was = (termin: Termin): string => {
+    if (termin.art === 'zusammenkunft') return termin.tab === 'mid' ? t.tabMid : t.tabWe
+    const titel = treffpunktTitel(termin.inst, state.groups, i18n)
+    return termin.inst.place ? `${titel} · ${termin.inst.place}` : titel
+  }
+  return (
+    <section className="start-woche">
+      <h2 className="abschnitt-titel">{t.dieseWocheVersammlung}</h2>
+      <div className="karte start-liste">
+        {termine.map((termin) => (
+          <div key={termin.key} className="start-zeile start-termin">
+            <span className="start-zeile-tag">{kurz.format(termin.tag)}</span>
+            <span className="start-zeile-tag">{termin.zeit}</span>
+            <span className="start-zeile-text">{was(termin)}</span>
+          </div>
+        ))}
       </div>
     </section>
   )

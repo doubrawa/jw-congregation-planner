@@ -15,6 +15,11 @@
   flex: none;
 }
 
+/* Pfeile zeigen in Leserichtung. */
+[dir='rtl'] .zeichen.is-richtung {
+  transform: scaleX(-1);
+}
+
 .logo {
   display: block;
   flex: none;
@@ -98,9 +103,19 @@
   }
 }
 
+/* Der Titel einer Seite, die man aus dem Menü öffnet und die kein Bereich ist
+   (Start, Meine Aufgaben, Profil). */
+.seitentitel--gross {
+  font-size: calc(29px * var(--fs));
+}
+
 @media (min-width: 768px) {
   .seitentitel {
     font-size: calc(29px * var(--fs));
+  }
+
+  .seitentitel--gross {
+    font-size: calc(34px * var(--fs));
   }
 }
 
@@ -133,4 +148,356 @@
   background: var(--text);
   color: var(--grund);
   font-weight: 700;
+}
+
+/* ---- Schalter (`Switch`) ------------------------------------------------------ */
+
+.switch {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  width: 54px;
+  height: 32px;
+  padding: 0 4px;
+  border: 1.5px solid var(--umriss);
+  border-radius: 16px;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+/* `flex-end` ist logisch: Von rechts nach links steht der Knauf links. */
+.switch.is-on {
+  justify-content: flex-end;
+  border-color: var(--akzent);
+  background: var(--akzent);
+}
+
+.switch-knob {
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: var(--umriss);
+}
+
+.switch.is-on .switch-knob {
+  background: var(--auf-akzent);
+}
+
+/* Eine Zeile mit Beschriftung und Schalter — in Blättern und Einstellungen. */
+.schalter-zeile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 64px;
+}
+
+.schalter-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.klein-text {
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
+}
+
+/* ---- Eingabefeld ------------------------------------------------------------- */
+
+.feld-marke {
+  color: var(--text2);
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 600;
+}
+
+.feld {
+  width: 100%;
+  min-height: 50px;
+  padding: 0 18px;
+  border: 1px solid var(--umriss);
+  border-radius: 25px;
+  background: var(--feld);
+  color: var(--text);
+}
+
+.feld::placeholder {
+  color: var(--text3);
+}
+
+/* ---- Karten ---------------------------------------------------------------- */
+
+.karte {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 14px 4px 18px;
+  border-radius: 24px;
+  background: var(--karte);
+}
+
+/* Die große Karte oben auf einer Seite: die nächste Aufgabe, das Nächste beim Planen. */
+.karte--held {
+  padding: 18px 20px 20px;
+  border-radius: 28px;
+}
+
+/* Überschrift über einer Karte oder einem Abschnitt. */
+.abschnitt-titel {
+  font-size: calc(14px * var(--fs));
+  font-weight: 600;
+  color: var(--text2);
+}
+
+/* ---- Knöpfe --------------------------------------------------------------- */
+
+.knopf-haupt,
+.knopf-umriss,
+.knopf-dunkel,
+.knopf-leise {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 6px 24px;
+  border-radius: 24px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.knopf-haupt {
+  background: var(--akzent);
+  color: var(--auf-akzent);
+  font-weight: 700;
+}
+
+.knopf-umriss {
+  padding-inline: 16px;
+  border: 1.5px solid var(--umriss);
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Die eine Handlung, die hier entscheidet und kein Bestätigen ist (Absagen, Übernehmen). */
+.knopf-dunkel {
+  background: var(--text);
+  color: var(--grund);
+  font-weight: 700;
+}
+
+.knopf-leise {
+  padding-inline: 12px;
+  color: var(--text2);
+  font-weight: 600;
+}
+
+/* Kleiner als die Hauptknöpfe: in Zeilen und neben Überschriften. */
+.knopf-pille {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 4px 16px;
+  border: 1.5px solid var(--umriss);
+  border-radius: 22px;
+  color: var(--text);
+  font-size: calc(14.5px * var(--fs));
+  font-weight: 600;
+}
+
+/* Ein Verweis, der leiser ist als jeder Knopf (S-89 neben Bestätigen). */
+.verweis-leise {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--text2);
+  font-size: calc(14px * var(--fs));
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Runder Haken in einer Zeile: bestätigt mit einem Tipp. */
+.knopf-haken {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1.5px solid var(--akzent-text);
+  border-radius: 50%;
+  color: var(--akzent-text);
+}
+
+/* ---- Punkt: die Lagen der Sitzreihen im Kleinen ------------------------------ */
+
+.punkt {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.punkt.is-voll {
+  background: var(--text);
+}
+
+.punkt.is-wartet {
+  background: var(--wartet);
+}
+
+.punkt.is-problem {
+  background: var(--problem);
+}
+
+.punkt.is-offen {
+  border: 1.5px dashed var(--ring);
+}
+
+.punkt.is-du {
+  background: var(--akzent);
+}
+
+/* ---- Saal: die Besetzung einer Zusammenkunft ------------------------------------ */
+
+.saal {
+  display: block;
+  flex: none;
+  width: 186px;
+  height: auto;
+}
+
+.saal-platz.is-voll {
+  fill: var(--text);
+}
+
+.saal-platz.is-wartet {
+  fill: var(--wartet);
+}
+
+.saal-platz.is-problem {
+  fill: var(--problem);
+}
+
+.saal-platz.is-offen {
+  fill: none;
+  stroke: var(--ring);
+  stroke-width: 3.5;
+  stroke-dasharray: 7 6;
+}
+
+.saal-du {
+  fill: var(--akzent);
+}
+
+.saal-ring {
+  fill: none;
+  stroke: var(--akzent);
+  stroke-width: 3.5;
+}
+
+/* ---- Spur: die Schritte eines Ablaufs ----------------------------------------- */
+
+.spur {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  line-height: 1.3;
+}
+
+.spur-schritt {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  text-align: center;
+}
+
+.spur-bahn {
+  display: flex;
+  align-self: stretch;
+  align-items: center;
+  gap: 6px;
+  height: 20px;
+}
+
+.spur-linie {
+  flex: 1;
+  border-block-start: 2px dashed var(--umriss);
+}
+
+.spur-linie.is-voll {
+  border-block-start-style: solid;
+  border-color: var(--text);
+}
+
+.spur-linie.is-weg {
+  border-color: transparent;
+}
+
+.spur-punkt {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.is-voll > .spur-bahn > .spur-punkt {
+  background: var(--text);
+}
+
+.is-jetzt > .spur-bahn > .spur-punkt {
+  background: var(--akzent);
+  outline: 1.5px solid var(--akzent);
+  outline-offset: 2.5px;
+}
+
+.is-teil > .spur-bahn > .spur-punkt {
+  background: var(--wartet);
+}
+
+.is-problem > .spur-bahn > .spur-punkt {
+  background: var(--problem);
+}
+
+.is-leer > .spur-bahn > .spur-punkt {
+  border: 1.5px dashed var(--ring);
+}
+
+.spur-name {
+  max-width: 100%;
+  color: var(--text2);
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.spur-schritt.is-jetzt .spur-name {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.spur-schritt.is-leer .spur-name {
+  color: var(--text3);
+}
+
+.spur-wert {
+  color: var(--text3);
+  font-size: calc(12.5px * var(--fs));
+}
+
+.spur-schritt.is-jetzt .spur-wert {
+  color: var(--akzent-text);
+  font-weight: 600;
+}
+
+.spur-schritt.is-problem .spur-wert {
+  color: var(--problem);
 }

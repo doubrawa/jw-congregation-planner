@@ -634,7 +634,8 @@ describe('Jeder Bildschirm rendert in jeder Sprache', () => {
    */
   const INTL_STELLEN: Array<[string, Partial<AppState>, string]> = [
     ['Reiter der Zusammenkünfte', { screen: 'programm' }, '.meeting-tab'],
-    ['Datumszeile auf dem Start', { screen: 'start' }, '.dash-eyebrow'],
+    // Seit T121 steht der Tag in der Kopfzeile, nicht mehr über dem Gruß.
+    ['Datum in der Kopfzeile', { screen: 'start' }, '.kopfzeile-datum'],
     ['Zeitleiste im Personen-Detail', { screen: 'personen', selectedPersonId: ICH.id }, '.zeit-datum'],
   ]
 
@@ -831,7 +832,7 @@ describe('Die Pläne (T120) in einer fremden Sprache', () => {
     ['Weitere Pläne ansehen', { screen: 'programm', tab: 'wp' }, '.wp-liste'],
     ['Weitere Pläne planen', { screen: 'planen', tab: 'wp' }, '.wp-karte'],
     ['Königreichssaal geöffnet', { screen: 'planen', tab: 'wp' }, '.wp-zeile', oeffne('Vexo')],
-    ['Meine Aufgaben mit Zeugnis', { screen: 'aufgaben' }, '.auf-title'],
+    ['Meine Aufgaben mit Zeugnis', { screen: 'aufgaben' }, '.aufgabe-titel'],
     // Mit etwas zu tun ist die Karte ein Block (`.dash-planung`), sonst ein Knopf.
     ['Start mit der Planungs-Karte', { screen: 'start' }, '.dash-planung'],
   ]
