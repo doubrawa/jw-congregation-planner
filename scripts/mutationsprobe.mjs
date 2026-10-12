@@ -3647,6 +3647,28 @@ export const KATALOG = [
     suchen: "className={besuch.grp === meineGruppe ? 'gb-liste-zeile is-eigen' : 'gb-liste-zeile'}",
     ersetzen: 'className="gb-liste-zeile"',
   },
+  /* ---- Weitere Pläne ansehen (T121, Phase 4c) ---- */
+  {
+    id: 'plaene-wahl-zeigt-gewaehlten',
+    datei: 'src/programm/WeiterePlaeneAnsicht.tsx',
+    regel: 'Gibt es mehrere Pläne, zeigt die Ansicht den gewählten — nicht immer den ersten.',
+    suchen: '  const plan = plaene.find((p) => p.id === gewaehlt) ?? plaene[0]',
+    ersetzen: '  const plan = plaene[0]',
+  },
+  {
+    id: 'plaene-eigene-zeile-hervorgehoben',
+    datei: 'src/programm/WeiterePlaeneAnsicht.tsx',
+    regel: 'Im Plan ist die Zeile der eigenen Gruppe hervorgehoben.',
+    suchen: "className={meineGruppe && e.grp === meineGruppe ? 'wp-liste-zeile is-eigen' : 'wp-liste-zeile'}",
+    ersetzen: 'className="wp-liste-zeile"',
+  },
+  {
+    id: 'plaene-ohne-gruppe-nichts-hervorgehoben',
+    datei: 'src/programm/WeiterePlaeneAnsicht.tsx',
+    regel: 'Wer keine Gruppe hat, sieht keine Zeile als die eigene — auch die noch offene nicht (beide `null`).',
+    suchen: '{meineGruppe && e.grp === meineGruppe ?',
+    ersetzen: '{e.grp === meineGruppe ?',
+  },
   {
     id: 'ansicht-drucken-wort-ab-tablet',
     datei: 'src/programm/AnsichtDrucken.tsx',

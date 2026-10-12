@@ -1028,7 +1028,8 @@ Auch die Pläne ohne Woche haben beim **Ansehen** einen **Drucken**‑Knopf: die
 **Gruppenbesuche**, das **öffentliche Zeugnisgeben** und die **Weiteren
 Pläne**. Gedruckt wird ohne Auswahl, mit Versammlung und Plan im Kopf; beim
 Zeugnisgeben kommen alle Wochen des Vierteljahrs aufs Blatt, nicht nur die
-ersten vier – für den Aushang.
+ersten vier – für den Aushang. Bei mehreren Weiteren Plänen kommt der aufs
+Blatt, den du oben gewählt hast.
 
 ### Was auf dem Blatt steht
 

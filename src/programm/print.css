@@ -323,15 +323,15 @@
   /* Pläne ohne Woche (5.10.2026): Gruppenbesuche, Zeugnisgeben, Weitere
      Pläne. Wie die Treffpunkte in festen Größen — und ohne das, was nur den
      Leser angeht oder etwas bedient: Eintragen, die eigene Zusage, „Weitere
-     Wochen" (der Druck hat sie schon aufgeklappt), „Deine Gruppe ist dran".
-     Der Kopf des Zeugnisgebens erklärt das Eintragen; den Plan nennt die
-     Kopfzeile des Ausdrucks. */
+     Wochen" (der Druck hat sie schon aufgeklappt), „Deine Gruppe ist dran",
+     die Wahl des Plans. Der Kopf des Zeugnisgebens erklärt das Eintragen; den
+     Plan nennt die Kopfzeile des Ausdrucks. */
   .oz-kopf,
   .oz-eintragen,
   .oz-eigen,
   .oz-mehr,
+  .wp-wahl,
   .wp-dran,
-  .wp-chips,
   .wp-info {
     display: none !important;
   }
@@ -347,11 +347,13 @@
   .oz-frei,
   .gb-besuch-treffpunkt,
   .gb-besuch-leiter,
-  .wp-zeitraum {
+  .wp-ort,
+  .wp-plan-zeitraum {
     font-size: 8.5pt;
   }
 
-  .gb-liste-zeile {
+  .gb-liste-zeile,
+  .wp-liste-zeile {
     min-height: 0;
     padding: 1.2mm 0;
   }
@@ -367,7 +369,8 @@
     font-weight: inherit;
   }
 
-  .gb-liste-zeile.is-eigen .gb-liste-punkt {
+  .gb-liste-zeile.is-eigen .gb-liste-punkt,
+  .wp-liste-zeile.is-eigen .wp-liste-punkt {
     background: none;
   }
 }

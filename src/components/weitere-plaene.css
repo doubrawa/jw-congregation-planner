@@ -75,20 +75,14 @@
   text-transform: uppercase;
 }
 
-.wp-karte-name,
-.wp-name {
+.wp-karte-name {
   font-family: var(--font-serif);
   font-size: calc(18px * var(--fs));
   font-weight: 500;
   line-height: 1.25;
 }
 
-.wp-name {
-  margin-top: 2px;
-}
-
-.wp-karte-zeitraum,
-.wp-zeitraum {
+.wp-karte-zeitraum {
   font-size: calc(11.5px * var(--fs));
   color: var(--mut);
 }
@@ -173,58 +167,145 @@
   color: var(--mut);
 }
 
-/* Beim Ansehen: „Deine Gruppe ist dran" und die Liste. */
+/* ---- Ansehen (T121, Entwurf `GPlaene`) -------------------------------------
+   Oben die Wahl des Plans, darunter der gewählte als Karte: Ort, Name,
+   Zeitraum, wann die eigene Gruppe dran ist, die Wochen oder Monate. */
+
+.wp-leer-karte {
+  padding-block: 14px;
+}
+
+.wp-wahl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.wp-wahl-knopf {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1.5px solid var(--umriss);
+  border-radius: 22px;
+  color: var(--text2);
+  font-size: calc(14px * var(--fs));
+  font-weight: 600;
+}
+
+.wp-wahl-knopf[aria-pressed='true'] {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--grund);
+  font-weight: 700;
+}
+
+.wp-plan {
+  padding-block: 16px 4px;
+}
+
+.wp-ort {
+  color: var(--text2);
+  font-size: calc(14px * var(--fs));
+  font-weight: 600;
+}
+
+.wp-name {
+  font-size: calc(24px * var(--fs));
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  overflow-wrap: break-word;
+}
+
+.wp-plan-zeitraum {
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
+}
+
 .wp-dran {
-  margin-top: 10px;
-  font-size: calc(11.5px * var(--fs));
-  color: var(--mut);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 0 14px;
+}
+
+/* Der Punkt der eigenen Gruppe — wie an den Treffpunkten und bei den Besuchen. */
+.wp-dran-titel {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--akzent-text);
+  font-size: calc(14px * var(--fs));
+  font-weight: 600;
+}
+
+.wp-dran-titel::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--akzent);
 }
 
 .wp-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 8px;
 }
 
 .wp-chip {
-  padding: 4px 10px;
-  border-radius: var(--r-pill);
-  background: var(--card);
-  font-size: calc(11.5px * var(--fs));
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 17px;
+  background: var(--akzent);
+  color: var(--auf-akzent);
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 700;
 }
 
 .wp-liste {
-  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
 }
 
 .wp-liste-zeile {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 7px 0;
-  border-bottom: 1px solid var(--panel-hair);
-  font-size: calc(12.5px * var(--fs));
-}
-
-.wp-liste-zeile:last-child {
-  border-bottom: 0;
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  min-height: 44px;
+  border-block-start: 1px solid var(--linie);
+  font-weight: 500;
 }
 
 .wp-liste-zeile.is-eigen {
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.wp-liste-punkt {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.wp-liste-zeile.is-eigen .wp-liste-punkt {
+  background: var(--akzent);
 }
 
 .wp-liste-wer {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  color: var(--text2);
   text-align: end;
 }
 
+.wp-liste-zeile.is-eigen .wp-liste-wer {
+  color: var(--text);
+}
+
 .wp-info {
-  margin-top: 10px;
-  font-size: calc(11.5px * var(--fs));
-  color: var(--mut);
+  padding: 12px 0 14px;
+  border-block-start: 1px solid var(--linie);
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
 }

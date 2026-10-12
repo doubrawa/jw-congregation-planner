@@ -1119,3 +1119,78 @@ describe('Am Desktop', () => {
     expect(seite(container).querySelector('.prog-print-head')?.textContent).toContain(t.fsShort)
   })
 })
+
+/**
+ * **Weitere Pläne ansehen** (T121, `GPlaene`): Gibt es mehrere, wählt man oben
+ * einen; gezeigt — und gedruckt — wird der gewählte. Die Zeile der eigenen
+ * Gruppe ist hervorgehoben, „Deine Gruppe ist dran" nennt ihre Wochen.
+ */
+describe('Weitere Pläne ansehen (T121)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9, 0))
+  })
+  afterEach(() => vi.useRealTimers())
+
+  const GRUPPEN = [
+    { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null },
+    { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
+  ]
+  const REINIGUNG = { id: 'pl1', name: 'Reinigung', von: '2026-09-07', bis: '2026-10-04', entwurf: false }
+  const WINTER = { id: 'pl2', name: 'Winterdienst', von: '2026-11-30', bis: '2027-02-28', entwurf: false }
+  const EINTRAEGE = [
+    { id: 'e1', planId: 'pl1', datum: '2026-09-07', grp: 'g2' },
+    { id: 'e2', planId: 'pl1', datum: '2026-09-14', grp: 'g1' },
+    { id: 'e3', planId: 'pl2', datum: '2026-11-30', grp: 'g1' },
+  ]
+  const plaene = (over: Partial<AppState> = {}) =>
+    zeige({
+      tab: 'wp',
+      plaene: [REINIGUNG, WINTER],
+      planEintraege: EINTRAEGE,
+      groups: GRUPPEN,
+      persons: [{ ...ICH, grp: 'g1' }],
+      ...over,
+    })
+
+  it('mehrere Pläne: oben die Wahl, gezeigt wird einer — der erste, bis man einen anderen wählt', () => {
+    const { container } = plaene()
+    const knoepfe = [...container.querySelectorAll('.wp-wahl-knopf')]
+    expect(knoepfe.map((k) => [k.textContent, k.getAttribute('aria-pressed')])).toEqual([
+      ['Reinigung', 'true'],
+      ['Winterdienst', 'false'],
+    ])
+    expect(container.querySelector('.wp-name')?.textContent).toBe('Reinigung')
+    fireEvent.click(knoepfe[1]!)
+    expect(container.querySelector('.wp-name')?.textContent).toBe('Winterdienst')
+    expect(container.querySelectorAll('.wp-plan')).toHaveLength(1)
+  })
+
+  it('die Zeile der eigenen Gruppe ist hervorgehoben, „Deine Gruppe ist dran" nennt ihre Wochen', () => {
+    const { container } = plaene()
+    const zeilen = [...container.querySelectorAll('.wp-liste-zeile')]
+    expect(zeilen.map((z) => [z.querySelector('.wp-liste-wer')?.textContent, z.classList.contains('is-eigen')])).toEqual([
+      ['Gruppe 2', false],
+      ['Gruppe 1', true],
+    ])
+    expect(container.querySelectorAll('.wp-dran .wp-chip')).toHaveLength(1)
+  })
+
+  it('ohne eigene Gruppe ist keine Zeile hervorgehoben — auch die noch offene nicht', () => {
+    // Keine Gruppe heißt `null`, ein offener Eintrag ebenso: Gleich sind die
+    // beiden trotzdem nicht.
+    const { container } = plaene({
+      persons: [{ ...ICH, grp: null }],
+      planEintraege: [...EINTRAEGE, { id: 'e4', planId: 'pl1', datum: '2026-09-21', grp: null }],
+    })
+    expect(container.querySelectorAll('.wp-liste-zeile')).toHaveLength(3)
+    expect(container.querySelector('.wp-liste-zeile.is-eigen')).toBeNull()
+    expect(container.querySelector('.wp-dran')).toBeNull()
+  })
+
+  it('ein einziger Plan braucht keine Wahl', () => {
+    const { container } = plaene({ plaene: [REINIGUNG] })
+    expect(container.querySelector('.wp-wahl')).toBeNull()
+    expect(container.querySelector('.wp-name')?.textContent).toBe('Reinigung')
+  })
+})

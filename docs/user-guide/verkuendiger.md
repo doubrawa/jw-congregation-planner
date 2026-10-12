@@ -151,7 +151,9 @@ Ankündigungen – du musst nichts bestätigen und wirst nicht erinnert.
 Ein Plan zeigt beim **Königreichssaal**, welche Predigtdienstgruppe in welcher
 Woche – oder, wenn der Plan monatlich wechselt, in welchem Monat – mit der
 Reinigung oder Instandhaltung dran ist. Oben unter „Deine Gruppe ist dran"
-stehen die Wochen bzw. Monate deiner Gruppe.
+stehen die Wochen bzw. Monate deiner Gruppe, in der Liste darunter sind sie
+hervorgehoben. Gibt es mehrere Pläne, wählst du oben einen aus; gedruckt wird
+der, den du gerade siehst.
 
 ### Zusätzliche Klasse
 
