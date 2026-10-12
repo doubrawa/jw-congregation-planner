@@ -1,0 +1,39 @@
+/*
+ * Bausteine des neuen Designs (T121) — die Muster der Design-Leinwand
+ * (`werk.mjs` der Arbeitskopie: Karte, Knöpfe, Wahl, Chip, Schalter …) als
+ * Klassen für die React-Bausteine in diesem Ordner.
+ *
+ * Regeln wie überall in der App: Farben nur aus tokens.css, Schriftgrößen nur
+ * als calc(<px> * var(--fs)), Richtungen nur logisch. Flächen zum Tippen haben
+ * eine Mindesthöhe statt einer festen, damit sie mit großer Schrift mitwachsen.
+ */
+
+/* ---- Wahl: wenige Möglichkeiten, eine gedrückt ---------------------------- */
+
+.wahl {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  min-height: 52px;
+  padding: 4px;
+  border-radius: 26px;
+  background: var(--feld);
+}
+
+.wahl-knopf {
+  min-height: 44px;
+  padding: 4px 8px;
+  border-radius: 22px;
+  color: var(--text2);
+  font-size: calc(14.5px * var(--fs));
+  font-weight: 500;
+  /* Bei großer Schrift trennt ein langes Wort lieber, als hinauszuragen. */
+  hyphens: auto;
+  overflow-wrap: anywhere;
+}
+
+.wahl-knopf[aria-pressed='true'] {
+  background: var(--text);
+  color: var(--grund);
+  font-weight: 700;
+}

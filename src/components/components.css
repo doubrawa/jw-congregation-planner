@@ -299,57 +299,36 @@
 }
 
 /* ---- Bereichs-Panels ------------------------------------------------------
- * Farbe über data-farbe; --panel-accent (Label/Nummern) und --panel-hair
- * (Trennlinien) stehen den Panel-Inhalten zur Verfügung.
+ * Seit dem neuen Design (T121) Karten auf Grund: jede Fläche ist eine Karte,
+ * die Abschnittsfarbe trägt nur noch die Beschriftung (--panel-accent).
+ * --panel-hair (Trennlinien) steht den Panel-Inhalten zur Verfügung.
  */
 
 .panel {
-  --panel-accent: var(--mut);
-  --panel-hair: var(--lineNeu);
+  --panel-accent: var(--text2);
+  --panel-hair: var(--linie);
 
   border-radius: var(--r-panel);
-  padding: 6px 14px;
+  padding: 6px 18px;
   margin-top: 12px;
-}
-
-.panel[data-farbe='neutral'] {
-  background: var(--tNeu);
-}
-
-/* Zweite neutrale Tonfläche — bewusst klar von tNeu abgesetzt, damit direkt
-   aufeinanderfolgende neutrale Panels (z. B. Abschluss ↔ Hilfsdienste) sich
-   im Hintergrund unterscheiden. */
-.panel[data-farbe='neutral2'] {
-  background: var(--tNeu2);
+  background: var(--karte);
 }
 
 .panel[data-farbe='petrol'] {
-  --panel-accent: var(--pet);
-  --panel-hair: var(--linePet);
-
-  background: var(--tPet);
+  --panel-accent: var(--sek1);
 }
 
 .panel[data-farbe='gold'] {
-  --panel-accent: var(--gld);
-  --panel-hair: var(--lineGld);
-
-  background: var(--tGld);
+  --panel-accent: var(--sek2);
 }
 
-/* Akzent-Tonfläche (Karten wie NÄCHSTE AUFGABEN, SPRACHE, FESTE ROLLEN) */
+/* Karten wie NÄCHSTE AUFGABEN, SPRACHE, FESTE ROLLEN */
 .panel[data-farbe='acc'] {
-  --panel-accent: var(--acc);
-  --panel-hair: var(--lineNeu);
-
-  background: var(--tAcc);
+  --panel-accent: var(--akzent-text);
 }
 
 .panel[data-farbe='wein'] {
-  --panel-accent: var(--wein);
-  --panel-hair: var(--lineWein);
-
-  background: var(--tWein);
+  --panel-accent: var(--sek3);
 }
 
 .panel-label {
@@ -475,19 +454,20 @@
 }
 
 /* ---- Selects app-weit: eigener Chevron mit Innenabstand (Korrektur-Brief) ---
-   appearance:none + dezentes SVG-Chevron in Muted-Farbe, 14px vom Rand; der
-   Text bekommt padding-inline-end, damit er nie unter den Pfeil läuft. Farbe je
-   Theme; Position spiegelt in RTL. */
+   appearance:none + dezentes SVG-Chevron in der Farbe --text3 der Palette,
+   14px vom Rand; der Text bekommt padding-inline-end, damit er nie unter den
+   Pfeil läuft. Ein Bild kennt keine Variablen — deshalb je Palette eins.
+   Position spiegelt in RTL. */
 select {
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23756d5c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%2363676a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   background-repeat: no-repeat;
   background-position: right 14px center;
   padding-inline-end: 40px;
 }
-:root[data-dark] select {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23a79e8c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+:root[data-theme='dunkel'] select {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%239b9e9b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
 }
 [dir='rtl'] select {
   background-position: left 14px center;

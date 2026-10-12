@@ -94,11 +94,11 @@ describe('entwicklerStart – was der Hash der Entwicklerseite verlangt', () => 
 
   it('liest s/l/c/t/p aus dem Hash', () => {
     // `c=` darf den deutschen Namen tragen — geführt wird der jw.org-Code.
-    const s = entwicklerStart('#s=programm&l=en&c=Englisch&t=graphit&p=p9')
+    const s = entwicklerStart('#s=programm&l=en&c=Englisch&t=dunkel&p=p9')
     expect(s.screen).toBe('programm')
     expect(s.lang).toBe('en')
     expect(s.congLang).toBe('en')
-    expect(s.theme).toBe('graphit')
+    expect(s.theme).toBe('dunkel')
     expect(s.selectedPersonId).toBe('p9')
   })
 

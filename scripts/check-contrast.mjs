@@ -1,18 +1,16 @@
 /**
- * Prüft die Paletten in src/styles/tokens.css: Farbabstände gegen WCAG 2.1,
- * dazu zwei Zusagen, die sich sonst still brechen lassen (siehe unten).
+ * Prüft die beiden Paletten in src/styles/tokens.css (T121, Graphit · Minze)
+ * gegen WCAG 2.1, dazu, dass beide vollständig und richtig gekennzeichnet sind.
  *
- *   npm run contrast            alle Paletten, Übersicht
- *   npm run contrast -- kontrast   nur eine Palette
+ *   npm run contrast            beide Paletten
+ *   npm run contrast -- dunkel  nur eine
  *
- * Geprüft wird, was in der Oberfläche tatsächlich übereinander liegt (Texte auf
- * Flächen, Rahmen gegen ihren Untergrund). Verbindlich ist die Palette „Hoher
- * Kontrast": schlägt dort etwas fehl, endet das Skript mit Fehlercode. Die
- * gestalterischen Paletten werden nur berichtet — sie folgen dem Design-Export
- * und sollen hier nicht stillschweigend umgefärbt werden.
- *
- * Halbtransparente Tokens (rgba) werden über --bg gerechnet, weil sie in der
- * Oberfläche immer auf dem Seitenhintergrund liegen.
+ * Geprüft wird, was in der Oberfläche übereinander liegt. **Text** muss
+ * bestehen (sonst Fehlercode): Fließtext 7:1, alles andere 4.5:1. **Grafik**
+ * (Umrisse, Punkte, Ring) wird nur berichtet: Der blasse Punkt „wartet" und die
+ * Minze als Fläche sind im Entwurf bewusst zart und tragen ihre Aussage nie
+ * allein — daneben steht immer Text oder eine Spur. Halbtransparente Werte
+ * (rgba) werden über die Fläche gerechnet, auf der sie liegen.
  */
 import { readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
@@ -20,13 +18,6 @@ import { fileURLToPath } from 'node:url'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const CSS = readFileSync(join(ROOT, 'src/styles/tokens.css'), 'utf8')
-const CONSTANTS = readFileSync(join(ROOT, 'src/data/constants.ts'), 'utf8')
-
-/** Palette, die strikt bestehen muss. */
-const STRICT = 'kontrast'
-
-/** Palette ganz ohne Farbton — jeder Wert muss R = G = B sein. */
-const GREYSCALE = 'grau'
 
 /* ---- Farbwerte ----------------------------------------------------------- */
 
@@ -36,11 +27,6 @@ function parseColor(v) {
   if (m) {
     const n = parseInt(m[1], 16)
     return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255, a: 1 }
-  }
-  m = /^#([0-9a-f]{3})$/i.exec(s)
-  if (m) {
-    const [r, g, b] = [...m[1]].map((c) => parseInt(c + c, 16))
-    return { r, g, b, a: 1 }
   }
   m = /^rgba?\(([^)]+)\)$/i.exec(s)
   if (m) {
@@ -77,228 +63,113 @@ function contrast(fg, bg) {
 
 /* ---- Paletten einlesen --------------------------------------------------- */
 
-/** Rumpf einer Regel als Text (ohne die Klammern), `null` wenn es sie nicht gibt. */
+/** Rumpf der Regel mit genau diesem Selektor-Anfang, `null` ohne sie. */
 function rumpf(selector) {
   const i = CSS.indexOf(selector)
   if (i < 0) return null
   const start = CSS.indexOf('{', i)
-  const end = CSS.indexOf('\n}', start)
-  return CSS.slice(start, end)
+  return CSS.slice(start, CSS.indexOf('\n}', start))
 }
 
-function block(selector) {
-  const text = rumpf(selector)
-  if (text === null) return null
-  const out = {}
-  for (const m of text.matchAll(/--([\w-]+)\s*:\s*([^;]+);/g)) {
-    out[m[1]] = m[2].trim()
-  }
-  return out
+function werte(text) {
+  return Object.fromEntries([...(text ?? '').matchAll(/--([\w-]+)\s*:\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]))
 }
 
-const base = block(':root {')
-/*
- * Der Nachtrag für die dunklen Paletten (`:root[data-dark]`, am Dateiende)
- * gehört zu ihrer Palette dazu. Ohne ihn rechnete das Skript die dunklen
- * Schemata mit den HELLEN Auslastungs- und Ampelfarben — und meldete Fehler,
- * die es in der Oberfläche nicht gibt, oder übersah die, die es gibt.
- *
- * **Dunkel ist, was `THEME_LIST` so führt** (`dark: true` in constants.ts):
- * Dasselbe Kennzeichen setzt zur Laufzeit `data-dark` (`isDarkTheme`). Am
- * `color-scheme` im CSS abgelesen, rechnete ein Schema ohne diese Zeile mit
- * Farben, die die App gar nicht zeigt. Ob beides zusammenpasst, prüft (3) unten.
- */
-const DUNKEL = new Set(
-  [...CONSTANTS.matchAll(/\{\s*key:\s*'([\w-]+)',[^}]*?\bdark:\s*true\b/g)].map((m) => m[1]),
-)
-const dunkel = block(':root[data-dark] {') ?? {}
-const themes = { weiss: base }
-for (const m of CSS.matchAll(/:root\[data-theme='([\w-]+)'\]/g)) {
-  const selector = `:root[data-theme='${m[1]}']`
-  themes[m[1]] = { ...base, ...block(selector), ...(DUNKEL.has(m[1]) ? dunkel : {}) }
+const PALETTEN = {
+  hell: rumpf(":root[data-theme='hell'] {"),
+  dunkel: rumpf(":root[data-theme='dunkel'] {"),
 }
 
 /* ---- Zu prüfende Paarungen ---------------------------------------------- */
 
 // [Vordergrund, Hintergrund, Mindestwert, Beschreibung]
-const PAIRS = [
-  ['ink', 'bg', 7, 'Fließtext auf Seite'],
-  ['ink', 'card', 7, 'Fließtext auf Karte'],
-  ['ink', 'tNeu', 7, 'Text auf Sektion neutral'],
-  ['ink', 'tNeu2', 7, 'Text auf Sektion neutral 2'],
-  ['ink', 'tPet', 7, 'Text auf Sektion Petrol'],
-  ['ink', 'tGld', 7, 'Text auf Sektion Gold'],
-  ['ink', 'tWein', 7, 'Text auf Sektion Wein'],
-  ['ink', 'tAcc', 7, 'Text auf Akzentfläche (aktiver Reiter)'],
-  ['mut', 'bg', 4.5, 'Sekundärtext auf Seite'],
-  ['mut', 'card', 4.5, 'Sekundärtext auf Karte'],
-  ['mut', 'tNeu', 4.5, 'Sektionslabel neutral'],
-  ['mut', 'tNeu2', 4.5, 'Sektionslabel neutral 2'],
-  // „Plan senden" (T99) trägt seine Nebenangaben — die Namen derer, die noch
-  // nichts wissen, und der Zeitpunkt des letzten Versands — gedämpft auf der
-  // goldenen Fläche. Bisher stand `mut` nur auf Seite, Karte und den beiden
-  // neutralen Sektionen; auf einer getönten Fläche ist es eine eigene Paarung.
-  ['mut', 'tGld', 4.5, 'Nebenangaben auf Sektion Gold'],
-  // Der Zeitraum unter „Alles zugeteilt" auf der Planungs-Karte (T95).
-  ['mut', 'tPet', 4.5, 'Nebenangaben auf Sektion Petrol'],
-  ['wein', 'tGld', 4.5, 'Warnung „ohne Konto" auf Sektion Gold'],
-  ['mut2', 'bg', 4.5, 'Sekundärtext 2 auf Seite'],
-  ['acc', 'bg', 4.5, 'Akzenttext auf Seite'],
-  ['acc', 'card', 4.5, 'Akzenttext auf Karte'],
-  ['acc', 'tAcc', 4.5, 'Blätter-Pfeil auf Akzentfläche'],
-  ['onAcc', 'acc', 4.5, 'Text auf gefülltem Button'],
-  // Die Zähler der Banner in Planen — und dieselben Zahlen auf der
-  // Planungs-Karte des Start-Bildschirms (T95). Sie standen seit T96/T99 auf
-  // Wein und Gold, ohne dass eine Paarung sie erfasste.
-  ['onAcc', 'wein', 4.5, 'Zähler auf Wein (Konflikte, nicht besetzbar)'],
-  ['onAcc', 'gld', 4.5, 'Zähler auf Gold (Plan senden)'],
-  ['onAcc', 'accD', 4.5, 'Text auf Button (gedrückt)'],
-  ['pet', 'tPet', 4.5, 'Sektionslabel Petrol'],
-  ['gld', 'tGld', 4.5, 'Sektionslabel Gold'],
-  ['wein', 'tWein', 4.5, 'Sektionslabel Wein'],
-  ['pet', 'bg', 4.5, 'Petrol-Text auf Seite'],
-  ['gld', 'bg', 4.5, 'Gold-Text auf Seite'],
-  ['wein', 'bg', 4.5, 'Wein-Text auf Seite'],
-  ['bord', 'bg', 3, 'Rahmen auf Seite'],
-  ['bord2', 'card', 3, 'Rahmen auf Karte'],
-  ['bord3', 'bg', 3, 'Rahmen kräftig'],
-  ['bord4', 'bg', 3, 'Rahmen sehr kräftig'],
-  ['dash', 'bg', 3, 'gestrichelter Rahmen'],
-  ['acc', 'bg', 3, 'Bedienelement-Umriss'],
-  // Die Ampel-Punkte im Planen tragen eine Aussage, sie sind kein Schmuck —
-  // also gilt WCAG 1.4.11 für grafische Objekte: 3:1 gegen den Chip, auf dem
-  // sie sitzen, und gegen die Seite, auf der die Legende steht.
-  ['zusage-bestaetigt', 'card', 3, 'Ampel „bestätigt" am Chip'],
-  ['zusage-offen', 'card', 3, 'Ampel „wartet" am Chip'],
-  ['zusage-verhindert', 'card', 3, 'Ampel „abgesagt" am Chip'],
-  ['zusage-bestaetigt', 'bg', 3, 'Ampel „bestätigt" in der Legende'],
-  ['zusage-offen', 'bg', 3, 'Ampel „wartet" in der Legende'],
-  ['zusage-verhindert', 'bg', 3, 'Ampel „abgesagt" in der Legende'],
+const TEXT = [
+  ['text', 'grund', 7, 'Fließtext auf Grund'],
+  ['text', 'karte', 7, 'Fließtext auf Karte'],
+  ['text', 'feld', 7, 'Text im Feld'],
+  ['text', 'hoch', 7, 'Text auf erhabener Fläche'],
+  ['text2', 'grund', 4.5, 'Sekundärtext auf Grund'],
+  ['text2', 'karte', 4.5, 'Sekundärtext auf Karte'],
+  ['text2', 'feld', 4.5, 'Sekundärtext im Feld (Wahl, nicht gedrückt)'],
+  ['text3', 'grund', 4.5, 'Nebenangaben auf Grund'],
+  ['text3', 'karte', 4.5, 'Nebenangaben auf Karte'],
+  ['text3', 'feld', 4.5, 'Nebenangaben im Feld'],
+  ['akzent-text', 'grund', 4.5, 'Akzenttext auf Grund'],
+  ['akzent-text', 'karte', 4.5, 'Akzenttext auf Karte („Fertig")'],
+  ['auf-akzent', 'akzent', 4.5, 'Text auf der Hauptaktion'],
+  ['grund', 'text', 4.5, 'gedrückter Knopf der Wahl'],
+  ['problem', 'grund', 4.5, 'Problem als Text auf Grund'],
+  ['problem', 'karte', 4.5, 'Problem als Text auf Karte'],
+  ['sek1', 'karte', 4.5, 'Abschnitt 1 auf Karte'],
+  ['sek2', 'karte', 4.5, 'Abschnitt 2 auf Karte'],
+  ['sek3', 'karte', 4.5, 'Abschnitt 3 auf Karte'],
+  ['leiste-text', 'leiste', 4.5, 'Text in der Aktionsleiste'],
 ]
 
-/*
- * Die Ampel steht in drei Helligkeitsstufen: gelb über grün über rot.
- *
- * Rot-Grün-Schwäche nimmt den Farbton, nicht die Helligkeit. Liegen grün und
- * rot gleich hell, sieht ein Betroffener zwei gleiche Punkte — unter den
- * Planern, fast alles Brüder, ist das jeder zwölfte. Gemessen wird wie ein
- * Kontrast, aber mit Richtung: die erste Farbe muss die hellere sein.
- *
- * Die Schwelle 1,25 ist an Simulationen (Machado 2009) abgelesen: Darunter
- * rückten grün und rot bei Deuteranopie auf einen Farbabstand (ΔE2000) unter 9.
- */
-// [heller, dunkler, Mindestabstand, Beschreibung]
-const STUFEN = [
-  ['zusage-offen', 'zusage-bestaetigt', 1.25, 'Ampel: gelb heller als grün'],
-  ['zusage-bestaetigt', 'zusage-verhindert', 1.25, 'Ampel: grün heller als rot'],
-]
-
-// Nur für „Hoher Kontrast": die Auslastungs-Quadrate sollen sich auch vom
-// Untergrund abheben. Die gestalterischen Paletten nutzen bewusst zarte Töne.
-const STRICT_ONLY = [
-  ['load-free', 'card', 3, 'Quadrat „frei“'],
-  ['load-task', 'card', 3, 'Quadrat „Aufgabe“'],
-  ['load-helper', 'card', 3, 'Quadrat „Hilfsdienst“'],
+const GRAFIK = [
+  ['umriss', 'karte', 3, 'Umriss auf Karte'],
+  ['umriss', 'grund', 3, 'Umriss auf Grund'],
+  ['ring', 'karte', 3, 'gestrichelter Punkt (offen) auf Karte'],
+  ['problem', 'karte', 3, 'roter Punkt auf Karte'],
+  ['text', 'karte', 3, 'voller Punkt auf Karte'],
+  ['wartet', 'karte', 3, 'blasser Punkt (wartet) auf Karte'],
+  ['akzent', 'karte', 3, 'Minze als Fläche auf Karte'],
 ]
 
 /* ---- Prüfen -------------------------------------------------------------- */
 
 const only = process.argv[2]
-let strictFailed = 0
-
-for (const [name, vars] of Object.entries(themes)) {
-  if (only && name !== only) continue
-  const strict = name === STRICT
-  const pairs = strict ? [...PAIRS, ...STRICT_ONLY] : PAIRS
-  const rows = []
-  let worst = Infinity
-
-  for (const [fgKey, bgKey, min, label] of pairs) {
-    const fgRaw = parseColor(vars[fgKey] ?? '')
-    const bgRaw = parseColor(vars[bgKey] ?? '')
-    if (!fgRaw || !bgRaw) continue
-    const page = parseColor(vars.bg) ?? { r: 255, g: 255, b: 255, a: 1 }
-    const bg = over(bgRaw, page)
-    const ratio = contrast(over(fgRaw, bg), bg)
-    const ok = ratio >= min
-    if (!ok) worst = Math.min(worst, ratio)
-    if (!ok && strict) strictFailed++
-    rows.push({ ok, ratio, min, label, fgKey, bgKey })
-  }
-
-  for (const [hellKey, dunkelKey, min, label] of STUFEN) {
-    const hell = parseColor(vars[hellKey] ?? '')
-    const dunk = parseColor(vars[dunkelKey] ?? '')
-    if (!hell || !dunk) continue
-    const ratio = (luminance(hell) + 0.05) / (luminance(dunk) + 0.05)
-    const ok = ratio >= min
-    if (!ok) worst = Math.min(worst, ratio)
-    if (!ok && strict) strictFailed++
-    rows.push({ ok, ratio, min, label, fgKey: hellKey, bgKey: dunkelKey })
-  }
-
-  const bad = rows.filter((r) => !r.ok)
-  const tag = strict ? ' (verbindlich)' : ''
-  console.log(`\n${name}${tag}: ${rows.length - bad.length}/${rows.length} bestanden`)
-  for (const r of bad) {
-    console.log(
-      `  ✗ ${r.ratio.toFixed(2)}:1 (nötig ${r.min}) — ${r.label}  [--${r.fgKey} auf --${r.bgKey}]`,
-    )
-  }
-  if (bad.length === 0) console.log('  alle Paarungen erfüllt')
-  else if (worst < Infinity && !strict) console.log(`  (nur berichtet, keine Vorgabe)`)
-}
-
-/* ---- Vollständigkeit und Farblosigkeit ----------------------------------- */
-
 const fehler = []
 
-// (1) Jedes im Profil angebotene Schema braucht auch eine Palette. Fehlt sie,
-// steht der Eintrag zur Wahl und ändert nichts — im Betrieb schwer zu deuten.
-for (const m of CONSTANTS.matchAll(/\{\s*key:\s*'([\w-]+)',\s*label:/g)) {
-  if (!(m[1] in themes)) fehler.push(`Farbschema „${m[1]}" hat keine Palette in tokens.css.`)
-}
-
-// (2) „Grau" verspricht ausschließlich Grautöne. Ein einzelner farbiger Wert
-// (etwa aus einer anderen Palette übernommen) fällt kaum auf, hebt die Zusage
-// aber auf — und nur hier gibt es keinen Farbton, der ihn überdecken würde.
-//
-// Eine Ausnahme, benannt statt geduldet: die Ampel-Punkte. Der Betreiber hat am
-// 14. September 2026 entschieden, dass sie auch hier Farbe tragen — sehr
-// gedämpft. Jeder weitere farbige Wert schlägt weiterhin an.
-const FARBIG_IN_GRAU = new Set(['zusage-bestaetigt', 'zusage-offen', 'zusage-verhindert'])
-for (const [key, value] of Object.entries(block(`:root[data-theme='${GREYSCALE}']`) ?? {})) {
-  if (FARBIG_IN_GRAU.has(key)) continue
-  const c = parseColor(value)
-  if (c && !(c.r === c.g && c.g === c.b)) {
-    fehler.push(`„${GREYSCALE}" ist nicht farblos: --${key}: ${value}`)
+for (const [name, text] of Object.entries(PALETTEN)) {
+  if (only && name !== only) continue
+  if (text === null) {
+    fehler.push(`Palette „${name}" fehlt in tokens.css.`)
+    continue
+  }
+  const vars = werte(text)
+  const zeilen = []
+  for (const [art, paare] of [['Text', TEXT], ['Grafik', GRAFIK]]) {
+    for (const [fgKey, bgKey, min, label] of paare) {
+      const fgRaw = parseColor(vars[fgKey] ?? '')
+      const bgRaw = parseColor(vars[bgKey] ?? '')
+      if (!fgRaw || !bgRaw) {
+        fehler.push(`${name}: --${fgKey} oder --${bgKey} ist keine lesbare Farbe.`)
+        continue
+      }
+      const bg = over(bgRaw, parseColor(vars.grund))
+      const ratio = contrast(over(fgRaw, bg), bg)
+      zeilen.push({ art, ok: ratio >= min, ratio, min, label, fgKey, bgKey })
+    }
+  }
+  const schlecht = zeilen.filter((z) => !z.ok)
+  console.log(`\n${name}: ${zeilen.length - schlecht.length}/${zeilen.length} bestanden`)
+  for (const z of schlecht) {
+    const marke = z.art === 'Text' ? '✗' : '·'
+    console.log(`  ${marke} ${z.ratio.toFixed(2)}:1 (nötig ${z.min}) — ${z.label}  [--${z.fgKey} auf --${z.bgKey}]${z.art === 'Grafik' ? ' (Grafik, nur berichtet)' : ''}`)
+    if (z.art === 'Text') fehler.push(`${name}: ${z.label} nur ${z.ratio.toFixed(2)}:1`)
   }
 }
 
-// (3) Dunkel heißt an zwei Stellen dasselbe. `THEME_LIST` setzt `data-dark` und
-// damit die dunklen Ampel- und Auslastungsfarben; `color-scheme: dark` in der
-// Palette lässt Eingabefelder und Bildlaufleisten dunkel zeichnen. Widerspricht
-// sich beides, sieht das Schema halb hell, halb dunkel aus — und dieses Skript
-// rechnete mit der Hälfte, die es nicht gibt.
-for (const name of Object.keys(themes)) {
-  if (name === 'weiss') continue
-  const imCss = /color-scheme:\s*dark/.test(rumpf(`:root[data-theme='${name}']`) ?? '')
-  if (imCss !== DUNKEL.has(name)) {
-    fehler.push(
-      `Farbschema „${name}": THEME_LIST sagt ${DUNKEL.has(name) ? 'dunkel' : 'hell'}, tokens.css ${imCss ? 'color-scheme: dark' : 'kein color-scheme: dark'}.`,
-    )
+/* ---- Vollständigkeit ----------------------------------------------------- */
+
+// Beide Paletten setzen dieselben Namen. Fehlt einer in „dunkel", gälte dort
+// still der helle Wert aus `:root` — heller Text auf hellem Grund.
+const hell = Object.keys(werte(PALETTEN.hell))
+const dunkel = Object.keys(werte(PALETTEN.dunkel))
+for (const k of hell) if (!dunkel.includes(k)) fehler.push(`--${k} fehlt in der dunklen Palette.`)
+for (const k of dunkel) if (!hell.includes(k)) fehler.push(`--${k} fehlt in der hellen Palette.`)
+
+// `color-scheme` lässt Eingabefelder und Bildlaufleisten passend zeichnen.
+for (const [name, schema] of [['hell', 'light'], ['dunkel', 'dark']]) {
+  if (!new RegExp(`color-scheme:\\s*${schema}`).test(PALETTEN[name] ?? '')) {
+    fehler.push(`Palette „${name}" ohne color-scheme: ${schema}.`)
   }
 }
 
 if (fehler.length > 0) {
   console.error('')
   for (const f of fehler) console.error(`  ✗ ${f}`)
-}
-
-if (strictFailed > 0 || fehler.length > 0) {
-  if (strictFailed > 0) {
-    console.error(`\nFEHLGESCHLAGEN: ${strictFailed} Paarung(en) in „${STRICT}" unter der Vorgabe.`)
-  }
   process.exit(1)
 }
-console.log(`\nPalette „${STRICT}" erfüllt alle Vorgaben, „${GREYSCALE}" ist farblos (bis auf die Ampel).`)
+console.log('\nBeide Paletten vollständig, aller Text lesbar.')

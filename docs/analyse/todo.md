@@ -6599,6 +6599,16 @@ Schlüssel `graphit` ist schon vergeben, er zeigt heute „Matcha"
 (`THEME_LIST` in `src/data/constants.ts`). Das neue Graphit ist ein anderes
 Schema.
 
+**Umbau, beauftragt am 12. Oktober 2026** (*„danach mach bitte die
+implementierung des redesigns"*). Direkt auf main, Phase für Phase mit Commit
+und Push: *„es darf direkt auf main. wir sind noch im testbetrieb. es ist egal
+wenn es zwischenzeitlich nicht geht. auch die daten können einfach gelöscht
+werden und wieder importiert."* Nach jeder Phase ohne Nachfrage `/simplify` und
+ein Code-Review, die Befunde behoben, dann der Commit: *„mach zwischendurch auch
+mal selbstständig ein simplify und code-review, damit wir am ende das nicht
+machen müssen … clean code programmierung ist wichtig"*. Tablet- und
+Desktop-Fassung entstehen je Bildschirm in seiner Phase, nicht am Schluss.
+
 ---
 
 ## Aufgenommen am 12. Oktober 2026 — Vortragsplan (T122)

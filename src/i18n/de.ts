@@ -213,9 +213,8 @@ export const DE = {
     keineAbw: 'Keine Abwesenheiten eingetragen.', profil: 'PROFIL',
     nameLbl: 'Name', versammlungLbl: 'Versammlung', emailKv: 'E-Mail',
     darstellung: 'Darstellung', spracheLbl: 'Sprache',
-    // Farbschemata heißen überall gleich (Eigennamen) — außer diesem einen:
-    // „Hoher Kontrast" beschreibt eine Funktion und muss verständlich sein.
-    themeKontrast: 'Hoher Kontrast',
+    // Darstellung (T121): Dunkel, Hell, Automatisch.
+    themeDunkel: 'Dunkel', themeHell: 'Hell', themeAuto: 'Automatisch',
     personen: 'Personen', personenCount: 'Personen: {n}', suchen: 'Suchen …',
     neuePerson: '+ NEUE PERSON ANLEGEN', aufgabenbereicheN: 'Aufgabenbereiche: {n}',
     allePersonen: '‹ Alle Personen', stammdaten: 'STAMMDATEN',

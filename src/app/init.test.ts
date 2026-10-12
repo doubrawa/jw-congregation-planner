@@ -41,29 +41,32 @@ describe('initialState – leer bis zur Hydration', () => {
   })
 })
 
-describe('Theme / Sprache aus localStorage', () => {
-  it('übernimmt ein gültiges Theme', () => {
-    localStorage.setItem('theme', 'graphit')
-    expect(initialState().theme).toBe('graphit')
-  })
-
-  it('ein unbekannter Name gilt nicht — auch nicht „dark"/„light"', () => {
-    // Die beiden waren die gespeicherten Werte, bevor es die acht Farbschemata
-    // gab. Sie wurden beim Laden umgesetzt; der Griff ist mit den Altlasten
-    // weggefallen. Was jetzt in `localStorage` steht, muss ein Schema sein.
-    for (const alt of ['dark', 'light']) {
-      localStorage.setItem('theme', alt)
-      expect(initialState().theme).toBe('weiss') // Standard
+describe('Darstellung / Sprache aus localStorage', () => {
+  it('übernimmt eine gespeicherte Darstellung', () => {
+    for (const theme of ['dunkel', 'hell', 'auto'] as const) {
+      localStorage.setItem('theme', theme)
+      expect(initialState().theme).toBe(theme)
     }
   })
 
-  it('ungültiges/fehlendes Theme → Reinweiß (Standard, unabhängig vom System)', () => {
+  it('ohne oder mit unbekanntem Wert: Automatisch — wie das Gerät', () => {
     localStorage.setItem('theme', 'quatsch')
-    // Selbst wenn das System dunkel ist (data-theme=graphit vorbelegt): Standard weiss.
-    document.documentElement.dataset.theme = 'graphit'
-    expect(initialState().theme).toBe('weiss')
+    expect(initialState().theme).toBe('auto')
     localStorage.removeItem('theme')
-    expect(initialState().theme).toBe('weiss')
+    expect(initialState().theme).toBe('auto')
+  })
+
+  it('die Farbschemata von vor dem 12.10.2026: die dunklen werden „dunkel", die hellen „auto"', () => {
+    // Eines davon stand in jedem Gerät — das helle Standardschema auch dann,
+    // wenn es niemand gewählt hatte. Gewählt war nur ein dunkles wirklich.
+    for (const alt of ['graphit', 'bernstein', 'aubergine', 'koralle', 'dark']) {
+      localStorage.setItem('theme', alt)
+      expect(initialState().theme, alt).toBe('dunkel')
+    }
+    for (const alt of ['weiss', 'indigo', 'blatt', 'papaya', 'pastell', 'grau', 'kontrast', 'light']) {
+      localStorage.setItem('theme', alt)
+      expect(initialState().theme, alt).toBe('auto')
+    }
   })
 
   it('übernimmt eine gültige App-Sprache, sonst de', () => {

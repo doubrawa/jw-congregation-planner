@@ -231,6 +231,14 @@
   margin-top: 0;
 }
 
+/* Darstellung: die Bezeichnung über der Wahl (Dunkel, Hell, Automatisch). */
+.prof-darstellung {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 0;
+}
+
 /* Abmelden — ein Knopf wie „App installieren" (`btn-outline`), seit es im
    Menü nicht mehr steht (4.10.2026); vorher eine rote Textzeile. */
 .prof-logout {

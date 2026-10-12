@@ -9,25 +9,15 @@ import type { SectionKind } from './constants'
  * beim Portieren der Demo-Daten entsprechend umformen.
  */
 
+/** Eine der beiden Paletten in styles/tokens.css — so steht sie in `data-theme`. */
+export type FarbModus = 'hell' | 'dunkel'
+
 /**
- * Farbschema (Einstellungen → Profil → Darstellung). 4 helle + 4 dunkle
- * Paletten aus dem Design-Export „Farboptionen Programm" (inzwischen kräftiger
- * abgestimmt), dazu „pastell" (die ursprünglichen, weichen Töne), „grau"
- * (ganz ohne Farbton) und „kontrast" (Barrierefreiheit). Labels/Reihenfolge
- * in THEME_LIST (constants.ts), Paletten in styles/tokens.css.
+ * Darstellung (Profil → Darstellung), seit dem neuen Design (T121): hell,
+ * dunkel oder wie das Gerät (`auto`). Reihenfolge der Auswahl in THEME_LIST
+ * (constants.ts). Bis zum 12.10.2026 waren es elf Farbschemata.
  */
-export type Theme =
-  | 'weiss'
-  | 'indigo'
-  | 'blatt'
-  | 'papaya'
-  | 'pastell'
-  | 'grau'
-  | 'kontrast'
-  | 'graphit'
-  | 'bernstein'
-  | 'aubergine'
-  | 'koralle'
+export type Theme = FarbModus | 'auto'
 
 /**
  * App-Sprache (UI). Programm-Inhalte nutzen separat die Versammlungssprache.

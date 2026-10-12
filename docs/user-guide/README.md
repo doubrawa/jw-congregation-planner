@@ -81,7 +81,7 @@ Ende automatisch auf; du musst nichts extra tun.
 | `planer-einstellungen.png` | `s=einstellungen` | planer |
 | `offline-stand.png` | `s=programm&tab=mid&stale=5` | beide |
 
-Alle Screenshots entstehen im hellen Theme (`t=weiss`) und im Screenshot‑Modus
+Alle Screenshots entstehen in der hellen Darstellung (`t=hell`) und im Screenshot‑Modus
 (`shot=1`) und werden anschließend seitlich auf den Inhalt zugeschnitten:
 App‑Screens → **662px** (Sidebar 232 + App‑Spalte 430), der Login → **430px**
 (nur die App‑Spalte). Das Fenster ist 920px breit, der Sichtbereich unter

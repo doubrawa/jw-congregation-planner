@@ -57,8 +57,8 @@ const QUELLEN = new Map(
 type Grund =
   /**
    * **Eigenname des Programms.** „Versammlung.app" steht in jeder Sprache
-   * gleich da — wie „Jasmin" oder „Matcha" bei den Farbschemata. Ihn zu
-   * übersetzen hieße, in 34 Sprachen einen zweiten Produktnamen zu erfinden.
+   * gleich da. Ihn zu übersetzen hieße, in 34 Sprachen einen zweiten
+   * Produktnamen zu erfinden.
    */
   | 'produktname'
   /**

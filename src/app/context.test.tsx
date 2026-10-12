@@ -161,7 +161,7 @@ function SpeicherBuehne({ children }: { children: ReactNode }) {
       <button type="button" onClick={() => aendern({ week: (zustand.current as AppState).week + 1 })}>
         woche
       </button>
-      <button type="button" onClick={() => aendern({ theme: 'indigo' })}>
+      <button type="button" onClick={() => aendern({ theme: 'hell' })}>
         thema
       </button>
       {children}
@@ -252,7 +252,7 @@ describe('useAppSelector — nur der eigene Ausschnitt weckt', () => {
     )
     fireEvent.click(getByText('thema'))
     expect(renders).toBe(2)
-    expect(getByText(`${demoZustand().week}|indigo`)).toBeTruthy()
+    expect(getByText(`${demoZustand().week}|hell`)).toBeTruthy()
   })
 
   it('beim Abbauen wird abgemeldet — kein Aufruf ins Leere', () => {

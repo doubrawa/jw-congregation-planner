@@ -160,20 +160,19 @@ vorsieht. Die Zettel der Zusätzlichen Klasse sind dabei und tragen ihren Raum.
   zählt der Wochentag des jeweiligen Treffpunkts.
 - Programmpunkte (Vorsitz, Gebet, Bibellesung, Schulungsaufgaben …) und
   **Hilfsdienste** (Mikrofone, Ton, Ordner, Reinigung …) werden getrennt geführt.
-- **Der farbige Punkt hinter jedem Namen** zeigt, ob die Person diese Zuteilung
+- **Der Punkt hinter jedem Namen** zeigt, ob die Person diese Zuteilung
   zugesagt hat. Die Legende über dem Plan nennt die drei Stufen:
-  - **grün** – bestätigt
-  - **gelb** – wartet auf Bestätigung
+  - **voll** – bestätigt
+  - **blass** – wartet auf Bestätigung
   - **rot** – abgesagt; hier musst du handeln (siehe „Wenn jemand absagt")
 
   Der Punkt gilt dem **einzelnen Platz**, nicht der Person: Hat jemand den
-  Vorsitz bestätigt, das Gebet aber noch nicht, steht Grün neben Gelb. Teilst du
-  einen Platz um, steht er wieder auf Gelb – die Zusage gehört dem, der sie
-  gegeben hat. Wo niemand bestätigen kann (offener Platz, Gastredner,
-  Kreisaufseher, Reinigungsgruppe, Treffpunkt-Leiter von außerhalb, eine
-  ausgefallene Zusammenkunft), steht kein Punkt. Die Farben passen zu jedem Farbschema; die drei Stufen unterscheiden
-  sich zusätzlich in der Helligkeit, damit sie auch bei Rot-Grün-Schwäche
-  auseinanderzuhalten sind.
+  Vorsitz bestätigt, das Gebet aber noch nicht, steht ein voller neben einem
+  blassen Punkt. Teilst du einen Platz um, wird sein Punkt wieder blass – die
+  Zusage gehört dem, der sie gegeben hat. Wo niemand bestätigen kann (offener
+  Platz, Gastredner, Kreisaufseher, Reinigungsgruppe, Treffpunkt-Leiter von
+  außerhalb, eine ausgefallene Zusammenkunft), steht kein Punkt. Voll, blass
+  und rot unterscheiden sich auch in der Helligkeit, nicht nur im Farbton.
 
 **Schülerteile im Abschnitt „Uns im Dienst verbessern"** brauchen je nach Art
 ein oder zwei Personen. Gesprächsteile (Gespräche beginnen, Interesse fördern,

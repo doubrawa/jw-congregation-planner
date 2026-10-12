@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { asFontScale, DEFAULT_FONT_SCALE, FONT_SCALES, isDarkTheme } from './constants'
+import {
+  ALTE_DUNKLE_SCHEMATA,
+  asFontScale,
+  asTheme,
+  DEFAULT_FONT_SCALE,
+  DEFAULT_THEME,
+  farbModus,
+  FONT_SCALES,
+  THEME_LIST,
+} from './constants'
 
 describe('asFontScale', () => {
   it('akzeptiert jede bekannte Stufe (als Zahl und als String)', () => {
@@ -30,9 +39,21 @@ describe('asFontScale', () => {
   })
 })
 
-describe('isDarkTheme', () => {
-  it('erkennt dunkle Paletten', () => {
-    expect(isDarkTheme('graphit')).toBe(true)
-    expect(isDarkTheme('weiss')).toBe(false)
+describe('Darstellung (T121)', () => {
+  it('Hell und Dunkel gelten fest, „Automatisch" folgt dem Gerät', () => {
+    expect(farbModus('hell', true)).toBe('hell')
+    expect(farbModus('dunkel', false)).toBe('dunkel')
+    expect(farbModus('auto', true)).toBe('dunkel')
+    expect(farbModus('auto', false)).toBe('hell')
+  })
+
+  it('asTheme kennt die drei — und von den alten Schemata nur, ob sie dunkel waren', () => {
+    for (const { key } of THEME_LIST) expect(asTheme(key)).toBe(key)
+    for (const alt of ALTE_DUNKLE_SCHEMATA) expect(asTheme(alt), alt).toBe('dunkel')
+    // Die hellen fallen auf den Standard des Aufrufers.
+    expect(asTheme('weiss')).toBeNull()
+    expect(asTheme('kontrast')).toBeNull()
+    expect(asTheme(null)).toBeNull()
+    expect(DEFAULT_THEME).toBe('auto')
   })
 })

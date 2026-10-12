@@ -5,7 +5,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react'
-import { isDarkTheme } from '../data/constants'
+import { darstellungSpiegeln } from './darstellung'
 import { isRTL } from '../i18n/langs'
 import { bibelbuecherLaden } from '../i18n/translate'
 import { dict, loadOverlay } from '../i18n/ui'
@@ -197,21 +197,11 @@ export function AppProvider({
     return () => data.subscription.unsubscribe()
   }, [dispatch])
 
-  // Theme auf <html> spiegeln + Wahl merken (Muster aus index.html);
-  // data-dark markiert die dunklen Paletten für dark-spezifische CSS-Regeln.
+  // Darstellung auf <html> spiegeln und merken (Muster aus index.html);
+  // „Automatisch" folgt dem Gerät, solange die App offen ist.
   useEffect(() => {
-    document.documentElement.dataset.theme = state.theme
-    if (isDarkTheme(state.theme)) {
-      document.documentElement.dataset.dark = '1'
-    } else {
-      delete document.documentElement.dataset.dark
-    }
     localStorage.setItem('theme', state.theme)
-    // Statusleiste der installierten App an das Theme anpassen. --bg wird aus
-    // dem CSS gelesen, damit es keine zweite Farbliste zu pflegen gibt.
-    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
-    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()
-    if (meta && bg) meta.content = bg
+    return darstellungSpiegeln(state.theme)
   }, [state.theme])
 
   // Schriftgröße auf <html> spiegeln + Wahl merken. Rein gerätebezogen (wie

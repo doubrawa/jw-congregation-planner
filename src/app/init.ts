@@ -12,15 +12,15 @@
  * aufruft (`<App start={…} />`).
  */
 import { STANDARD_ERINNERUNGEN, STANDARD_ZEITEN } from '../data/vorgaben'
-import { asFontScale, asTheme, DEFAULT_FONT_SCALE, type FontScale } from '../data/constants'
+import { asFontScale, asTheme, DEFAULT_FONT_SCALE, DEFAULT_THEME, type FontScale } from '../data/constants'
 import { APP_LANGS } from '../i18n/langs'
 import type { Lang, Theme } from '../data/types'
 import type { AppState } from './context'
 
 function getInitialTheme(): Theme {
-  // Standard ist Reinweiß, unabhängig von der System-Einstellung (dunkler
-  // Modus). Ein anderes Design wählt man im Profil; die Wahl wird gespeichert.
-  return asTheme(localStorage.getItem('theme')) ?? 'weiss'
+  // Standard ist „Automatisch" (folgt dem Gerät, T121). Hell oder Dunkel wählt
+  // man im Profil; die Wahl wird auf dem Gerät gespeichert.
+  return asTheme(localStorage.getItem('theme')) ?? DEFAULT_THEME
 }
 function getInitialFontScale(): FontScale {
   return asFontScale(localStorage.getItem('fontScale')) ?? DEFAULT_FONT_SCALE

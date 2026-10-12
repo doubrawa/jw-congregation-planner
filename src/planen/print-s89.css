@@ -136,15 +136,16 @@
     vertical-align: top;
   }
 
-  /* Helle Palette erzwingen — wie beim Programm-Ausdruck. */
+  /* Tinte auf Papier erzwingen — wie beim Programm-Ausdruck. */
   :root[data-print='s89'] {
-    --card: #fff;
-    --bg: #fff;
-    --ink: #000;
-    --mut: #444;
-    --acc: #5c4517;
-    --bord: #999;
-    --line2: #d5d5d5;
+    color-scheme: light;
+    --karte: #fff;
+    --grund: #fff;
+    --text: #000;
+    --text2: #444;
+    --akzent-text: #17694a;
+    --umriss: #999;
+    --linie: #d5d5d5;
   }
 
   :root[data-print='s89'] .s89-zettel {

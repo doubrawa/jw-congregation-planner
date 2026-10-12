@@ -5,8 +5,8 @@ import { DE, dict, loadOverlay } from './ui'
 /**
  * **Die App heißt in jeder Sprache gleich** (T115).
  *
- * „Versammlung.app" ist ein Eigenname — wie „Jasmin" und „Matcha" bei den
- * Farbschemata steht er in allen 34 Sprachen lateinisch da. Übersetzt würde er
+ * „Versammlung.app" ist ein Eigenname und steht in allen 34 Sprachen
+ * lateinisch da. Übersetzt würde er
  * zu 34 zweiten Produktnamen, und der Empfänger einer Einladung erkennt nicht
  * wieder, wovon die Rede ist. Als erlaubter fester JSX-Text steht das schon in
  * `beschriftungen-quelle.test.ts` („produktname"); hier geht es um die

@@ -40,7 +40,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     tab: 'mid',
     planModus: false,
     fsBereich: 'treffpunkte',
-    theme: 'weiss',
+    theme: 'auto',
     fontScale: 1,
     planner: DEMO_PLANNER,
     zuteiler: false,
@@ -434,7 +434,7 @@ describe('Wochennavigation', () => {
 describe('einfache UI-Setter', () => {
   it('setTab / setTheme / Slot / Notif-Panel', () => {
     expect(reducer(makeState(), { type: 'setTab', tab: 'we' }).tab).toBe('we')
-    expect(reducer(makeState(), { type: 'setTheme', theme: 'graphit' }).theme).toBe('graphit')
+    expect(reducer(makeState(), { type: 'setTheme', theme: 'dunkel' }).theme).toBe('dunkel')
     expect(reducer(makeState(), { type: 'setFontScale', scale: 1.3 }).fontScale).toBe(1.3)
     expect(reducer(makeState(), { type: 'openNotifs' }).notifOpen).toBe(true)
     expect(reducer(makeState({ notifOpen: true }), { type: 'closeNotifs' }).notifOpen).toBe(false)
@@ -1972,7 +1972,7 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
     const s = neuAbgeleitet(
       makeState({ dataStatus: 'ready', personId: person('Simon Krüger').id, myTasks: [] }),
     )
-    const nachher = reducer(s, { type: 'setTheme', theme: 'indigo' })
+    const nachher = reducer(s, { type: 'setTheme', theme: 'hell' })
     expect(nachher.myTasks).toBe(s.myTasks)
     expect(nachher.confirmations).toBe(s.confirmations)
   })

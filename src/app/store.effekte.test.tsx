@@ -105,7 +105,6 @@ beforeEach(() => {
   getSession.mockClear().mockResolvedValue({ data: { session: null } })
   localStorage.clear()
   document.documentElement.removeAttribute('data-theme')
-  document.documentElement.removeAttribute('data-dark')
   document.documentElement.removeAttribute('dir')
 })
 afterEach(() => {
@@ -321,46 +320,42 @@ describe('Die Supabase-Sitzung wird gespiegelt', () => {
 })
 
 describe('Gerätevorlieben stehen auf <html> — dort liest das CSS sie', () => {
-  it('das Farbschema landet als Attribut und im Speicher', async () => {
+  it('die Darstellung landet als Palette auf <html> und als Wahl im Speicher', async () => {
     const { result } = starte()
     await act(async () => {
-      result.current.dispatch({ type: 'setTheme', theme: 'blatt' })
+      result.current.dispatch({ type: 'setTheme', theme: 'dunkel' })
     })
-    expect(document.documentElement.dataset.theme).toBe('blatt')
-    expect(localStorage.getItem('theme')).toBe('blatt')
+    expect(document.documentElement.dataset.theme).toBe('dunkel')
+    expect(localStorage.getItem('theme')).toBe('dunkel')
+    await act(async () => {
+      result.current.dispatch({ type: 'setTheme', theme: 'hell' })
+    })
+    expect(document.documentElement.dataset.theme).toBe('hell')
   })
 
-  it('eine dunkle Palette bekommt zusätzlich die Dunkel-Marke', async () => {
+  it('„Automatisch" bleibt als Wahl gespeichert — auf <html> steht die Palette', async () => {
+    // Wie das Gerät gerade steht und umschaltet, prüft darstellung.test.ts;
+    // jsdom kennt kein matchMedia, ohne Gerät gilt Hell.
     const { result } = starte()
     await act(async () => {
-      result.current.dispatch({ type: 'setTheme', theme: 'graphit' })
+      result.current.dispatch({ type: 'setTheme', theme: 'auto' })
     })
-    expect(document.documentElement.dataset.dark).toBe('1')
+    expect(localStorage.getItem('theme')).toBe('auto')
+    expect(document.documentElement.dataset.theme).toBe('hell')
   })
 
-  it('und beim Wechsel zurück verschwindet sie wieder', async () => {
-    const { result } = starte()
-    await act(async () => {
-      result.current.dispatch({ type: 'setTheme', theme: 'graphit' })
-    })
-    await act(async () => {
-      result.current.dispatch({ type: 'setTheme', theme: 'weiss' })
-    })
-    expect(document.documentElement.dataset.dark).toBeUndefined()
-  })
-
-  it('die Statusleiste der installierten App folgt dem Theme', async () => {
+  it('die Statusleiste der installierten App folgt der Palette', async () => {
     const meta = document.createElement('meta')
     meta.name = 'theme-color'
     document.head.append(meta)
-    document.documentElement.style.setProperty('--bg', '#123456')
+    document.documentElement.style.setProperty('--grund', '#123456')
     const { result } = starte()
     await act(async () => {
-      result.current.dispatch({ type: 'setTheme', theme: 'graphit' })
+      result.current.dispatch({ type: 'setTheme', theme: 'dunkel' })
     })
     expect(meta.content).toBe('#123456')
     meta.remove()
-    document.documentElement.style.removeProperty('--bg')
+    document.documentElement.style.removeProperty('--grund')
   })
 
   it('die Schriftgröße wird als CSS-Variable gesetzt und gemerkt', async () => {

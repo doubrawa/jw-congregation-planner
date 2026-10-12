@@ -350,16 +350,9 @@ Unter **Profil** stellst du persönliche Vorlieben ein.
 
 ![Profil](screenshots/verkuendiger-profil.png)
 
-- **Darstellung** – das Farbschema der App (z. B. **Jasmin** oder ein dunkles
-  Design). Die Einstellung gilt nur für dein Gerät. Die Namen sind
-  Eigennamen aus Pflanzen und Gewürzen und stehen in jeder Sprache gleich da:
-  hell **Jasmin**, **Indigo**, **Olive**, **Papaya**, **Vanille**, **Sesam**;
-  dunkel **Matcha**, **Safran**, **Aubergine**, **Mango**.
-  - **Hoher Kontrast** – schwarze Schrift auf Weiß, deutlich abgesetzte
-    Farbflächen und gut sichtbare Rahmen. Zusammen mit einer größeren
-    Schriftgröße ist die App damit auch bei eingeschränktem Sehvermögen gut
-    lesbar. Als einziges Schema trägt es einen übersetzten Namen – es
-    beschreibt eine Funktion, keine Farbe.
+- **Darstellung** – **Dunkel**, **Hell** oder **Automatisch**. „Automatisch"
+  ist voreingestellt und folgt deinem Gerät: Schaltet das Handy abends auf
+  dunkel, schaltet die App mit. Die Einstellung gilt nur für dein Gerät.
   - **Vanille** – die besonders zurückhaltende Variante mit sehr weichen
     Farben. Die übrigen Schemata sind bewusst etwas kräftiger, damit sich die
     Programmabschnitte klarer voneinander abheben.

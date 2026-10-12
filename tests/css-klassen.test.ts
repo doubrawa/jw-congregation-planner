@@ -115,10 +115,16 @@ describe('Ampel-Punkt: jede Stufe hat ihre Farbe', () => {
     }
   })
 
-  it('jedes Token ist in der hellen Grundpalette definiert', () => {
-    const basis = tokens.slice(tokens.indexOf(':root {'), tokens.indexOf('\n}', tokens.indexOf(':root {')))
-    for (const token of ['--zusage-bestaetigt', '--zusage-offen', '--zusage-verhindert']) {
-      expect(basis, token).toMatch(new RegExp(String.raw`${token}:\s*#[0-9a-f]{6};`))
+  it('jede Stufe spricht die Sprache der Punkte (T121): voll, blass, rot', () => {
+    // Seit dem neuen Design keine Ampel mehr: zugesagt ist ein voller Punkt in
+    // der Textfarbe, „wartet" der blasse, abgesagt der rote — in beiden Paletten,
+    // denn die Stufen zeigen auf deren Namen.
+    for (const [token, ziel] of [
+      ['--zusage-bestaetigt', '--text'],
+      ['--zusage-offen', '--wartet'],
+      ['--zusage-verhindert', '--problem'],
+    ] as const) {
+      expect(tokens, token).toMatch(new RegExp(String.raw`${token}:\s*var\(${ziel}\);`))
     }
   })
 })

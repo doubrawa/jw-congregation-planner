@@ -1,105 +1,93 @@
 /*
- * Design-Tokens — Versammlung.app
- * Quelle: Design-Export "Farboptionen Programm" (8 Farbschemata, Jul 2026),
- * seither kräftiger abgestimmt (siehe unten).
+ * Design-Tokens — Versammlung.app im Entwurf „B · Saal", Graphit · Minze (T121).
  *
- * Theming über [data-theme] auf <html>: weiss (Standard) | indigo | blatt |
- * papaya | pastell | grau | kontrast (hell) und graphit | bernstein | aubergine |
- * koralle (dunkel). Dunkle Schemata setzen zusätzlich [data-dark] (für
- * dark-spezifische Regeln wie das Select-Chevron). Beides wird vor dem ersten
- * Paint per Inline-Script in index.html gesetzt (gespeicherte Wahl).
+ * Quelle ist die Farbtabelle der Design-Leinwand (`P` in jeder G-Tafel, Stand
+ * 12. Oktober 2026). Zwei Paletten, Hell und Dunkel; „Automatisch" ist keine
+ * dritte, sondern wählt eine der beiden nach dem Gerät (`farbModus` in
+ * data/constants.ts, vor dem ersten Paint schon in index.html). Gesetzt wird
+ * die Palette als `data-theme` auf <html>. Bis zum 12.10.2026 waren es elf
+ * Farbschemata mit Eigennamen; „Hoher Kontrast" ist mit ihnen entfallen.
  *
- * Die acht Design-Paletten sind gegenüber dem Export kräftiger: gesättigtere
- * Sektionsflächen, satterer Text und Rahmen, die 3:1 gegen ihren Untergrund
- * erreichen (WCAG 1.4.11) — vorher lagen sie bei 1,2–2,5:1. Die NEUTRALEN
- * Flächen (--tNeu/--tNeu2) blieben bewusst ungesättigt, sonst sähe die
- * neutrale Sektion z. B. bei Indigo aus wie die Petrol-Sektion.
- * "pastell" bewahrt die ursprünglichen, weichen Töne; "grau" kommt ganz ohne
- * Farbton aus (R = G = B in jedem Wert); "kontrast" ist die Fassung für
- * Barrierefreiheit. Geprüft mit `npm run contrast`.
+ * Die Namen folgen der Leinwand, damit Entwurf und Code dieselbe Sprache
+ * sprechen: Grund, Karte, Feld, Linie, Umriss, Text in drei Stufen, Akzent
+ * (Minze) als Fläche und als Text, Problem, „wartet" (der blasse Punkt), Ring
+ * (der gestrichelte), die drei Abschnitte des Programms, die Aktionsleiste des
+ * Planens und der Schleier hinter Blättern und Dialogen.
  *
- * Regel aus dem Handoff: Flächen/Farben referenzieren AUSSCHLIESSLICH Tokens.
- * --tAcc ist die Akzent-Tonfläche (Wochen-Pfeile, "Aktuelle Woche"-Chip,
- * Nächste-Aufgaben-/Sprache-Karte, Bestätigungs-Karten, Sidebar-aktiv,
- * Mitteilungs-Chip) — getrennt von --tGld (nur noch Sektionsfarbe Dienst).
+ * Farben stehen ausschließlich hier. Geprüft mit `npm run contrast`.
  */
 
-:root {
-  /* ---- Reinweiß · Tinte (hell, Standard) -------------------------------- */
+:root,
+:root[data-theme='hell'] {
   color-scheme: light;
 
-  --desk: #e9e8e3;
-  --bg: #ffffff;
-  --bgT: rgba(255, 255, 255, 0.96);
-  --card: #fdfdfb;
+  --grund: #f1f1ef;
+  --karte: #ffffff;
+  /* Erhabene Fläche (Dialog, gewählte Zeile am Desktop); hell gleich der Karte. */
+  --hoch: #ffffff;
+  --feld: #f1f1ef;
+  --linie: #e1e1de;
+  --umriss: #8a8e91;
 
-  --tNeu: #e6e5dc;
-  --tNeu2: #d4d9df;
-  --tPet: #d2ede6;
-  --tGld: #ffeab6;
-  --tWein: #ffcec2;
-  --tAcc: #ffeab6;
+  --text: #141516;
+  --text2: #45484b;
+  --text3: #63676a;
 
-  --ink: #0e0c08;
-  --mut: #5b574c;
-  --mut2: #5a574d;
+  /* Minze als Fläche (Hauptaktion, „du") — als Text in Hell zu schwach, dafür
+     `--akzent-text`. */
+  --akzent: #86e0b8;
+  --auf-akzent: #141516;
+  --akzent-text: #17694a;
+  --problem: #be3b2b;
+  --wartet: rgba(20, 21, 22, 0.3);
+  --ring: #63676a;
 
-  --acc: #755616;
-  --accD: #5a3f10;
-  --onAcc: #ffffff;
+  /* Die drei Abschnitte der Zusammenkunft unter der Woche. */
+  --sek1: #1b6c78;
+  --sek2: #7d5700;
+  --sek3: #a03a34;
 
-  --pet: #235753;
-  --gld: #775912;
-  --wein: #772e27;
+  --leiste: #141516;
+  --leiste-text: #f4f4f1;
+  --schleier: rgba(20, 21, 22, 0.45);
+  /* Grundton der Schatten als RGB-Tripel: rgba(var(--shade), 0.3). */
+  --shade: 20, 21, 22;
+}
 
-  --line: #d4cfc0;
-  --line2: #d7cfbd;
-  --bord: #9c8f71;
-  --bord2: #9b9072;
-  --bord3: #9b9275;
-  --bord4: #98917a;
-  --dash: #9a9277;
-  --weinB: #eac2b9;
+:root[data-theme='dunkel'] {
+  color-scheme: dark;
 
-  --lineNeu: rgba(109, 103, 89, 0.29);
-  --linePet: rgba(38, 104, 98, 0.25);
-  --lineGld: rgba(140, 104, 17, 0.29);
-  --lineWein: rgba(137, 50, 41, 0.25);
+  --grund: #121314;
+  --karte: #1c1e20;
+  --hoch: #282b2e;
+  --feld: #282b2e;
+  --linie: #303336;
+  --umriss: #6a6f73;
 
-  --knob: #ffffff;
-  --hov: rgba(241, 240, 235, 0.6);
-  --focus: rgba(124, 95, 35, 0.52);
+  --text: #f4f4f1;
+  --text2: #c5c7c4;
+  --text3: #9b9e9b;
 
-  /*
-   * Auslastungs-Quadrate im Zuteilungs-Sheet (frei / Aufgabe / Hilfsdienst).
-   * Bewusst in allen Paletten gleich, damit die drei Zustände überall gleich
-   * aussehen; nur „Hoher Kontrast" überschreibt sie kräftiger.
-   */
-  --load-free: #5fd07a;
-  --load-task: #f47160;
-  --load-helper: #a99cf7;
+  --akzent: #86e0b8;
+  --auf-akzent: #121314;
+  --akzent-text: #86e0b8;
+  --problem: #ff9282;
+  --wartet: rgba(244, 244, 241, 0.38);
+  --ring: #c5c7c4;
 
-  /*
-   * Ampel-Punkt an jedem besetzten Platz im Planen: bestätigt / wartet /
-   * abgesagt. Eigene Tokens statt der Sektionsfarben — `--pet` ist in Papaya
-   * ein Beerenton, `--gld` in Indigo ein Orange; die Ampel muss überall Ampel
-   * bleiben.
-   *
-   * Gerechnet, nicht geschätzt (`npm run contrast`), und zwar zweierlei:
-   *  - Jeder Punkt hebt sich mit mindestens 3:1 von Chip und Seite ab
-   *    (WCAG 1.4.11). Deshalb ist das Gelb hier ein dunkles Bernstein — ein
-   *    leuchtendes Ampelgelb verschwände auf Weiß (1,5:1).
-   *  - Die drei stehen in drei Helligkeitsstufen: gelb am hellsten, rot am
-   *    dunkelsten. Rot-Grün-Schwäche nimmt den Farbton, nicht die Helligkeit —
-   *    so bleiben die Stufen auch dann unterscheidbar. Unter den Planern, fast
-   *    alles Brüder, ist das jeder zwölfte.
-   * Eigene Fassungen haben die dunklen Paletten (Nachtrag am Dateiende),
-   * „Grau" (sehr gedämpft) und „Hoher Kontrast".
-   */
-  --zusage-bestaetigt: #1f8a4b;
-  --zusage-offen: #b98500;
-  --zusage-verhindert: #a8241c;
+  --sek1: #8ccbda;
+  --sek2: #e6ca82;
+  --sek3: #efa9a2;
 
+  --leiste: #282b2e;
+  --leiste-text: #f4f4f1;
+  --schleier: rgba(0, 0, 0, 0.6);
+  --shade: 0, 0, 0;
+}
+
+/* ---- In beiden Darstellungen gleich -------------------------------------- */
+
+:root {
   /*
    * Schriftgrößen-Faktor (Profil → Schriftgröße). Jede font-size im Projekt
    * steht als calc(<px> * var(--fs)) — siehe scripts/scale-font-sizes.mjs.
@@ -109,33 +97,21 @@
    */
   --fs: 1;
 
-  /* Schriften (siehe index.html: Google Fonts) */
-  --font-serif: 'Newsreader Variable', 'Newsreader', Georgia, 'Times New Roman', serif;
-  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto,
-    sans-serif;
+  /*
+   * Manrope für alles (Latein, Kyrillisch, Griechisch, Vietnamesisch). Für
+   * Rechts-nach-links steht die Schrift der Sprache dahinter: Manrope trägt
+   * Ziffern und lateinische Namen, der Rest fällt auf sie (siehe unten).
+   */
+  --font-sans: 'Manrope Variable', 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Fokusring für Eingabefelder — weicher als der der Knöpfe. */
+  --fokus: color-mix(in srgb, var(--akzent-text) 55%, transparent);
 
   /* Radien */
-  --r-panel: 16px;
-  --r-input: 10px;
-  --r-sheet: 18px;
+  --r-panel: 24px;
+  --r-input: 12px;
+  --r-sheet: 28px;
   --r-pill: 999px;
-
-  /*
-   * Grundton alles Abdunkelnden (Schatten und die Schleier hinter Sheets,
-   * Dialogen und Schubladen) — als RGB-Tripel, weil jede Stelle ihre eigene
-   * Deckkraft braucht: rgba(var(--shade), 0.3).
-   *
-   * Ein warmes Schwarz, kein reines: es passt zu den Papiertönen der Paletten.
-   * Genau deshalb muss „Grau" es überschreiben — dort wäre es ein Farbstich.
-   */
-  --shade: 30, 25, 15;
-
-  /*
-   * Das Logo ist eine Bilddatei und folgt den Tokens nicht — in „Grau" bliebe
-   * es sonst der einzige Farbfleck. Deshalb hier ein Filter statt einer
-   * zweiten Logodatei: der Ton bleibt eine Sache der Palette.
-   */
-  --logo-filter: none;
 
   /* Schatten */
   --sh-col: 0 0 60px rgba(var(--shade), 0.18);
@@ -143,570 +119,85 @@
   --sh-btn: 0 1px 3px rgba(var(--shade), 0.12);
 }
 
-:root[data-theme='indigo'] {
-  /* ---- Indigo · Himmel (hell) ------------------------------------------- */
-  --desk: #dce2f0;
-  --bg: #f7f9fd;
-  --bgT: rgba(247, 249, 253, 0.96);
-  --card: #ffffff;
+/*
+ * Schriften für Rechts-nach-links, gewählt am 11.10.2026: Vazirmatn für
+ * Arabisch und Persisch, Noto Nastaliq Urdu, Heebo für Hebräisch. Manrope bleibt
+ * vorn — sie deckt die arabische und hebräische Schrift nicht ab, die Zeichen
+ * fallen also auf die zweite Familie, Ziffern und lateinische Namen nicht.
+ */
+:root:lang(ar),
+:root:lang(fa) {
+  --font-sans: 'Manrope Variable', 'Vazirmatn Variable', system-ui, sans-serif;
+}
 
-  --tNeu: #dbe1ec;
-  --tNeu2: #e2dcd0;
-  --tPet: #c2d8ff;
-  --tGld: #ffe2b8;
-  --tWein: #e8c3ff;
-  --tAcc: #c5d3ff;
+:root:lang(ur) {
+  --font-sans: 'Manrope Variable', 'Noto Nastaliq Urdu Variable', system-ui, sans-serif;
+}
 
-  --ink: #101423;
-  --mut: #505971;
-  --mut2: #535868;
+:root:lang(he) {
+  --font-sans: 'Manrope Variable', 'Heebo Variable', system-ui, sans-serif;
+}
 
-  --acc: #263dc9;
-  --accD: #1f30a2;
-  --onAcc: #ffffff;
+/* ---- Übergang (T121): die Namen der alten Oberfläche ----------------------
+   Die Bildschirme werden Phase für Phase auf die neuen Bausteine umgebaut.
+   Bis dahin lesen sie ihre alten Namen; hier zeigen diese auf die neuen
+   Werte, damit die ganze App schon jetzt in Graphit · Minze erscheint. Jede
+   Zeile fällt, sobald niemand mehr sie liest — am Ende des Umbaus ist der
+   Block leer. Neue Regeln lesen nie aus diesem Block. */
+:root {
+  --bg: var(--grund);
+  --bgT: color-mix(in srgb, var(--grund) 96%, transparent);
+  --card: var(--karte);
 
-  --pet: #1b52bd;
-  --gld: #a64501;
-  --wein: #742aa2;
+  --tNeu: var(--feld);
+  --tNeu2: var(--feld);
+  --tPet: var(--feld);
+  --tGld: var(--feld);
+  --tWein: color-mix(in srgb, var(--problem) 14%, var(--karte));
+  --tAcc: color-mix(in srgb, var(--akzent) 24%, var(--karte));
 
-  --line: #c3cde4;
-  --line2: #bfcbe8;
-  --bord: #768dbe;
-  --bord2: #7a8ebd;
-  --bord3: #7d8eb9;
-  --bord4: #7f8eb5;
-  --dash: #808db3;
-  --weinB: #ddbeef;
+  --ink: var(--text);
+  --mut: var(--text2);
+  --mut2: var(--text3);
 
-  --lineNeu: rgba(90, 102, 133, 0.29);
-  --linePet: rgba(24, 88, 213, 0.25);
-  --lineGld: rgba(211, 86, 0, 0.27);
-  --lineWein: rgba(129, 42, 182, 0.25);
+  --acc: var(--akzent-text);
+  --accD: var(--akzent-text);
+  --onAcc: var(--karte);
+
+  --pet: var(--sek1);
+  --gld: var(--sek2);
+  --wein: var(--problem);
+
+  --line: var(--linie);
+  --line2: var(--linie);
+  --bord: var(--umriss);
+  --bord2: var(--umriss);
+  --bord3: var(--umriss);
+  --bord4: var(--umriss);
+  --dash: var(--umriss);
+  --weinB: color-mix(in srgb, var(--problem) 45%, var(--karte));
+
+  --lineNeu: var(--linie);
+  --linePet: var(--linie);
+  --lineGld: var(--linie);
+  --lineWein: var(--linie);
 
   --knob: #ffffff;
-  --hov: rgba(236, 239, 245, 0.6);
-  --focus: rgba(59, 79, 200, 0.52);
-}
-
-:root[data-theme='blatt'] {
-  /* ---- Botanik · Blattgrün (hell) --------------------------------------- */
-  --desk: #d8e3cf;
-  --bg: #f5f8f0;
-  --bgT: rgba(245, 248, 240, 0.96);
-  --card: #fdfefa;
-
-  --tNeu: #dee5d2;
-  --tNeu2: #d3dbdf;
-  --tPet: #c3f1d2;
-  --tGld: #ffefac;
-  --tWein: #ffd4b6;
-  --tAcc: #ddf9b0;
-
-  --ink: #0f1709;
-  --mut: #4f5a3c;
-  --mut2: #535946;
-
-  --acc: #3d690e;
-  --accD: #325909;
-  --onAcc: #ffffff;
-
-  --pet: #116243;
-  --gld: #845400;
-  --wein: #a93c14;
-
-  --line: #c3d0a9;
-  --line2: #c1d19c;
-  --bord: #7e9354;
-  --bord2: #829558;
-  --bord3: #809358;
-  --bord4: #829460;
-  --dash: #849463;
-  --weinB: #efc6b3;
-
-  --lineNeu: rgba(100, 117, 74, 0.29);
-  --linePet: rgba(17, 119, 80, 0.25);
-  --lineGld: rgba(169, 108, 0, 0.29);
-  --lineWein: rgba(197, 64, 17, 0.25);
-
-  --knob: #ffffff;
-  --hov: rgba(234, 238, 226, 0.6);
-  --focus: rgba(76, 122, 28, 0.52);
-}
-
-:root[data-theme='papaya'] {
-  /* ---- Papaya · Beere (hell) -------------------------------------------- */
-  --desk: #f2dcce;
-  --bg: #fff7f0;
-  --bgT: rgba(255, 247, 240, 0.96);
-  --card: #fffcf8;
-
-  --tNeu: #edddcd;
-  --tNeu2: #d7d8da;
-  --tPet: #ffc0e5;
-  --tGld: #ffe0b0;
-  --tWein: #e4c0fe;
-  --tAcc: #ffd8b2;
-
-  --ink: #230f06;
-  --mut: #6b5144;
-  --mut2: #65534b;
-
-  --acc: #ab3708;
-  --accD: #ad3505;
-  --onAcc: #ffffff;
-
-  --pet: #a42473;
-  --gld: #994c00;
-  --wein: #703b99;
-
-  --line: #e5c6ab;
-  --line2: #e9c4a3;
-  --bord: #bd824f;
-  --bord2: #ba8252;
-  --bord3: #b68457;
-  --bord4: #b08560;
-  --dash: #ad8767;
-  --weinB: #dabded;
-
-  --lineNeu: rgba(141, 102, 83, 0.29);
-  --linePet: rgba(185, 35, 128, 0.25);
-  --lineGld: rgba(213, 106, 0, 0.29);
-  --lineWein: rgba(124, 61, 171, 0.25);
-
-  --knob: #ffffff;
-  --hov: rgba(244, 234, 224, 0.6);
-  --focus: rgba(210, 82, 30, 0.52);
-}
-
-:root[data-theme='pastell'] {
-  /*
-   * ---- Pastell (hell) ---------------------------------------------------
-   * Die zurückhaltende Fassung: exakt die Farben, die „Reinweiß" vor der
-   * Kräftigung hatte — damit der weiche Look erhalten bleibt. Wer es ruhiger
-   * mag, wählt diese Palette; „Reinweiß" ist jetzt die klarere Variante
-   * desselben Grundtons. Die zarten Rahmen verfehlen hier bewusst die 3:1 aus
-   * WCAG 1.4.11 (`npm run contrast` meldet das) — genau das macht den Stil
-   * aus; für gute Lesbarkeit gibt es „Reinweiß" und „Hoher Kontrast".
-   */
-  --desk: #e9e8e3;
-  --bg: #ffffff;
-  --bgT: rgba(255, 255, 255, 0.96);
-  --card: #fdfdfb;
-  --tNeu: #f1f0eb;
-  --tNeu2: #e3e6ea;
-  --tPet: #e8f0ee;
-  --tGld: #f5edda;
-  --tWein: #f7e7e3;
-  --tAcc: #f5edda;
-  --ink: #17140e;
-  --mut: #6b665b;
-  --mut2: #69665c;
-  --acc: #7c5f23;
-  --accD: #63491b;
-  --onAcc: #ffffff;
-  --pet: #2e605c;
-  --gld: #7e621f;
-  --wein: #7e3b34;
-  --line: #eae8e2;
-  --line2: #f1efea;
-  --bord: #e2dfd8;
-  --bord2: #dedbd3;
-  --bord3: #d8d5cc;
-  --bord4: #c8c5bb;
-  --dash: #b4af9f;
-  --weinB: #ebd2cc;
-  --lineNeu: rgba(107, 102, 91, 0.16);
-  --linePet: rgba(46, 96, 92, 0.14);
-  --lineGld: rgba(126, 98, 31, 0.16);
-  --lineWein: rgba(126, 59, 52, 0.14);
-  --knob: #ffffff;
-  --hov: rgba(241, 240, 235, 0.6);
-  --focus: rgba(124, 95, 35, 0.35);
-}
-
-:root[data-theme='grau'] {
-  /*
-   * ---- Grau (hell) --------------------------------------------------------
-   * Ohne jeden Farbton: JEDER Wert hier ist ein echtes Grau (R = G = B) — bis
-   * auf die drei gedämpften Ampel-Punkte am Ende des Blocks.
-   * Damit fällt die Unterscheidung der vier Programm-Sektionen allein auf die
-   * Helligkeit — die Tonflächen sind deshalb in klaren Stufen gesetzt
-   * (neutral → Petrol → Gold → Wein wird Schritt für Schritt dunkler) und die
-   * Trennlinien werden in derselben Reihenfolge kräftiger. Ohne diese zweite
-   * Staffelung sähen benachbarte Sektionen fast gleich aus.
-   *
-   * Die dunkelste Tonfläche ist nicht frei gewählt: Schwarz erreicht 7:1 (AAA)
-   * nur auf Flächen mit Luminanz ≥ 0,30 — das entspricht etwa #a3a3a3. Bis
-   * dorthin ist die Wein-Fläche ausgereizt, tiefer geht die Staffelung nicht,
-   * ohne die Lesbarkeit aufzugeben. Geprüft mit `npm run contrast -- grau`.
-   *
-   * Auch Schatten und Abdunkelung sind hier neutral (--shade): die übrigen
-   * Paletten nutzen ein warmes Schwarz, das im Grau als Farbstich auffiele.
-   */
-  --shade: 0, 0, 0;
-  --logo-filter: grayscale(1);
-
-  --desk: #d5d5d5;
-  --bg: #fbfbfb;
-  --bgT: rgba(251, 251, 251, 0.96);
-  --card: #ffffff;
-
-  /* Tonflächen: gleichmäßige Helligkeitsstufen, das einzige Unterscheidungs-
-     merkmal der Sektionen. */
-  --tNeu: #ececec;
-  --tNeu2: #dedede;
-  --tPet: #cdcdcd;
-  --tGld: #bcbcbc;
-  --tWein: #ababab;
-  --tAcc: #d4d4d4;
-
-  --ink: #101010;
-  /*
-   * Dunkler als die anderen Paletten es bräuchten (#565656 → #4a4a4a), weil
-   * hier die getönten Sektionsflächen selbst grau sind: `--tGld` ist #bcbcbc,
-   * und darauf kam der gedämpfte Text nur auf 3.86:1. Das betrifft nicht erst
-   * „Plan senden" — jedes goldene Panel trägt seinen Hinweistext in `--mut`
-   * (`.panel-hint`), also auch Treffpunkte, Aufgaben und die Zeitleiste.
-   * Gefunden hat es die Paarung `mut/tGld`, die `check-contrast.mjs` mit T99
-   * dazubekommen hat.
-   */
-  --mut: #4a4a4a;
-  --mut2: #5b5b5b;
-
-  --acc: #3f3f3f;
-  --accD: #2b2b2b;
-  --onAcc: #ffffff;
-
-  /* Sektionslabels: dunkler, je dunkler ihre Fläche — sonst bliebe der
-     Abstand zum Untergrund nicht gleich. */
-  --pet: #4e4e4e;
-  --gld: #444444;
-  --wein: #3a3a3a;
-
-  --line: #dcdcdc;
-  --line2: #e2e2e2;
-  --bord: #8a8a8a;
-  --bord2: #8a8a8a;
-  --bord3: #808080;
-  --bord4: #757575;
-  --dash: #858585;
-  --weinB: #7a7a7a;
-
-  /* Zweite Staffelung: dieselbe Reihenfolge wie die Tonflächen. */
-  --lineNeu: rgba(0, 0, 0, 0.22);
-  --linePet: rgba(0, 0, 0, 0.26);
-  --lineGld: rgba(0, 0, 0, 0.3);
-  --lineWein: rgba(0, 0, 0, 0.34);
-
-  --knob: #ffffff;
-  --hov: rgba(0, 0, 0, 0.05);
-  --focus: rgba(0, 0, 0, 0.55);
-
-  /*
-   * Auslastungs-Quadrate: hier zwangsläufig grau statt grün/rot/violett. Die
-   * Helligkeit trägt die Bedeutung — je dunkler, desto belegter: frei hell,
-   * Hilfsdienst mittel, Aufgabe dunkel. Alle drei erreichen 3:1 gegen die
-   * Karte, sonst verschwänden die hellen im Weiß.
-   */
-  --load-free: #949494;
-  --load-helper: #5e5e5e;
-  --load-task: #2b2b2b;
-
-  /*
-   * Die einzige Farbe in „Grau" — mit Absicht (Entscheidung des Betreibers,
-   * 14. September 2026): Die Ampel-Punkte behalten ihren Farbton, stark
-   * entsättigt, damit sie im farblosen Bild nicht leuchten. Die Bedeutung
-   * tragen sie trotzdem nicht allein über die Farbe: Die drei Helligkeitsstufen
-   * der übrigen Paletten gelten auch hier. `check-contrast.mjs` nimmt genau
-   * diese drei Werte von der Farblos-Prüfung aus.
-   */
-  --zusage-bestaetigt: #64856e;
-  --zusage-offen: #a38f59;
-  --zusage-verhindert: #89534e;
-}
-
-:root[data-theme='kontrast'] {
-  /*
-   * ---- Hoher Kontrast (hell) --------------------------------------------
-   * Reines Schwarz auf Weiß, satte Volltöne statt Tonflächen, harte Rahmen.
-   * Bewusst deutlich lauter als die gestalterischen Paletten — der Name soll
-   * halten, was er verspricht.
-   *
-   * Der Spielraum ist gerechnet: Schwarz erreicht auf einer Fläche 7:1 (AAA),
-   * solange deren Luminanz ≥ 0,30 bleibt. Genau bis dorthin sind die
-   * Sektionsflächen ausgereizt — kräftige Mitteltöne, keine hellen Pastelle.
-   * Die Beschriftungen darauf sind entsprechend tief gewählt.
-   *
-   * Alle Paarungen sind gegen WCAG 2.1 geprüft (`npm run contrast`): Text
-   * ≥ 7:1 (AAA), Sekundärtext und farbige Beschriftungen ≥ 4.5:1 (AA),
-   * Rahmen/Bedienelemente ≥ 3:1. Die vier Sektionsfarben unterscheiden sich
-   * zusätzlich in der Helligkeit, damit sie auch bei Farbfehlsichtigkeit
-   * auseinanderzuhalten sind.
-   */
-  --desk: #1a1a1a;
-  --bg: #ffffff;
-  --bgT: rgba(255, 255, 255, 0.98);
-  --card: #ffffff;
-
-  --tNeu: #c2c2c2;
-  --tNeu2: #9dbae8;
-  --tPet: #2ecfae;
-  --tGld: #ffbe00;
-  --tWein: #ff8072;
-  --tAcc: #86aaff;
-
-  --ink: #000000;
-  --mut: #2e2e2e;
-  --mut2: #2e2e2e;
-
-  --acc: #002a8f;
-  --accD: #001c66;
-  --onAcc: #ffffff;
-
-  --pet: #00382f;
-  --gld: #4a2f00;
-  --wein: #6e000d;
-
-  --line: #666666;
-  --line2: #8a8a8a;
-  --bord: #3d3d3d;
-  --bord2: #3d3d3d;
-  --bord3: #2b2b2b;
-  --bord4: #141414;
-  --dash: #3d3d3d;
-  --weinB: #8a0011;
-
-  --lineNeu: rgba(0, 0, 0, 0.55);
-  --linePet: rgba(0, 68, 60, 0.6);
-  --lineGld: rgba(90, 58, 0, 0.6);
-  --lineWein: rgba(138, 0, 17, 0.6);
-
-  --knob: #ffffff;
-  --hov: rgba(0, 0, 0, 0.14);
-  --focus: rgba(0, 0, 0, 0.85);
-
-  /* Auslastungs-Quadrate: Volltöne, zusätzlich per Helligkeit getrennt. */
-  --load-free: #00661b;
-  --load-task: #cc0000;
-  --load-helper: #3d00b8;
-
-  /* Ampel-Punkte: Volltöne, die Helligkeitsstufen weiter auseinander als in
-     den gestalterischen Paletten. */
-  --zusage-bestaetigt: #007a29;
-  --zusage-offen: #c28a00;
-  --zusage-verhindert: #8f0000;
-}
-
-:root[data-theme='graphit'] {
-  /* ---- Graphit · Salbei (dunkel) ---------------------------------------- */
-  color-scheme: dark;
-
-  --desk: #0d0e0c;
-  --bg: #191a17;
-  --bgT: rgba(25, 26, 23, 0.96);
-  --card: #21221e;
-
-  --tNeu: #282a26;
-  --tNeu2: #32373f;
-  --tPet: #1c3028;
-  --tGld: #332d15;
-  --tWein: #331f1b;
-  --tAcc: #332d15;
-
-  --ink: #edede7;
-  --mut: #aaada3;
-  --mut2: #a4a79c;
-
-  --acc: #a4bb92;
-  --accD: #91aa7d;
-  --onAcc: #191a17;
-
-  --pet: #88b3a4;
-  --gld: #c7ac65;
-  --wein: #c7897b;
-
-  --line: #3f413a;
-  --line2: #3d3f36;
-  --bord: #6a6f5f;
-  --bord2: #6a6f5f;
-  --bord3: #6c7062;
-  --bord4: #6d7062;
-  --dash: #6a6e5e;
-  --weinB: #563833;
-
-  --lineNeu: rgba(191, 195, 180, 0.22);
-  --linePet: rgba(125, 175, 158, 0.29);
-  --lineGld: rgba(198, 168, 86, 0.29);
-  --lineWein: rgba(197, 126, 110, 0.29);
-
-  --knob: #fffdf6;
-  --hov: rgba(40, 41, 37, 0.5);
-  --focus: rgba(157, 177, 141, 0.6);
-}
-
-:root[data-theme='bernstein'] {
-  /* ---- Königsblau · Bernstein (dunkel) ---------------------------------- */
-  color-scheme: dark;
-
-  --desk: #070c1a;
-  --bg: #101830;
-  --bgT: rgba(16, 24, 48, 0.96);
-  --card: #16203c;
-
-  --tNeu: #1b2541;
-  --tNeu2: #313238;
-  --tPet: #05215a;
-  --tGld: #342c16;
-  --tWein: #371935;
-  --tAcc: #0f225e;
-
-  --ink: #eef1fa;
-  --mut: #9aa4c5;
-  --mut2: #9aa1b8;
-
-  --acc: #fbb438;
-  --accD: #e3a02b;
-  --onAcc: #101830;
-
-  --pet: #70aff6;
-  --gld: #efba54;
-  --wein: #ed83a6;
-
-  --line: #2a3c76;
-  --line2: #283b7a;
-  --bord: #5269b7;
-  --bord2: #5269b7;
-  --bord3: #5469b4;
-  --bord4: #576bac;
-  --dash: #596aa1;
-  --weinB: #5c2b49;
-
-  --lineNeu: rgba(174, 187, 226, 0.22);
-  --linePet: rgba(93, 167, 250, 0.29);
-  --lineGld: rgba(244, 183, 64, 0.29);
-  --lineWein: rgba(238, 114, 155, 0.29);
-
-  --knob: #fffdf6;
-  --hov: rgba(23, 32, 56, 0.5);
-  --focus: rgba(232, 169, 60, 0.6);
-}
-
-:root[data-theme='aubergine'] {
-  /* ---- Aubergine · Rosé (dunkel) ---------------------------------------- */
-  color-scheme: dark;
-
-  --desk: #100813;
-  --bg: #201427;
-  --bgT: rgba(32, 20, 39, 0.96);
-  --card: #281b30;
-
-  --tNeu: #302238;
-  --tNeu2: #3e3641;
-  --tPet: #211557;
-  --tGld: #422d10;
-  --tWein: #421d15;
-  --tAcc: #3f1a43;
-
-  --ink: #f4eef6;
-  --mut: #b5a1bd;
-  --mut2: #b1a5b6;
-
-  --acc: #ed94bb;
-  --accD: #d87ea6;
-  --onAcc: #201427;
-
-  --pet: #a592f3;
-  --gld: #ecb15c;
-  --wein: #f77d64;
-
-  --line: #4e3462;
-  --line2: #4f3363;
-  --bord: #835da1;
-  --bord2: #835da1;
-  --bord3: #7f5e9f;
-  --bord4: #7f6099;
-  --dash: #7a628f;
-  --weinB: #5d2e26;
-
-  --lineNeu: rgba(202, 176, 214, 0.22);
-  --linePet: rgba(152, 129, 245, 0.29);
-  --lineGld: rgba(239, 172, 73, 0.29);
-  --lineWein: rgba(252, 109, 80, 0.29);
-
-  --knob: #fffdf6;
-  --hov: rgba(41, 29, 48, 0.5);
-  --focus: rgba(226, 144, 180, 0.6);
-}
-
-:root[data-theme='koralle'] {
-  /* ---- Schiefer · Koralle (dunkel) -------------------------------------- */
-  color-scheme: dark;
-
-  --desk: #0c0e13;
-  --bg: #1a1d25;
-  --bgT: rgba(26, 29, 37, 0.96);
-  --card: #21242e;
-
-  --tNeu: #272b35;
-  --tNeu2: #393132;
-  --tPet: #152a42;
-  --tGld: #362e14;
-  --tWein: #391b2d;
-  --tAcc: #3f241a;
-
-  --ink: #f0f2f6;
-  --mut: #9ea6b6;
-  --mut2: #9ba2ae;
-
-  --acc: #ff7c56;
-  --accD: #ed724d;
-  --onAcc: #1a1d25;
-
-  --pet: #64b1eb;
-  --gld: #e1b34d;
-  --wein: #e486af;
-
-  --line: #3a4255;
-  --line2: #384153;
-  --bord: #64708c;
-  --bord2: #64708c;
-  --bord3: #646f8a;
-  --bord4: #656f88;
-  --dash: #657085;
-  --weinB: #593041;
-
-  --lineNeu: rgba(187, 195, 213, 0.22);
-  --linePet: rgba(82, 170, 238, 0.29);
-  --lineGld: rgba(228, 176, 58, 0.29);
-  --lineWein: rgba(229, 118, 166, 0.29);
-
-  --knob: #fffdf6;
-  --hov: rgba(34, 37, 46, 0.5);
-  --focus: rgba(240, 120, 86, 0.6);
-}
-
-/* ---- Nachtrag für alle dunklen Paletten ------------------------------------
-   graphit, bernstein, aubergine und koralle erbten die Auslastungsfarben und
-   die Schatten-Grundfarbe von der HELLEN Basis: die Mini-Quadrate leuchteten
-   auf dunklem Grund, und jeder Schatten trug deren warmen Braunton statt
-   Schwarz. „grau" und „kontrast" setzen beides ausdrücklich selbst — sie sind
-   hell und tragen kein `data-dark`, bleiben hier also unberührt.
-
-   Steht am Dateiende, weil `:root[data-dark]` und `:root[data-theme='…']`
-   dieselbe Spezifität haben: es gewinnt die spätere Regel. Die dunklen
-   Paletten setzen keinen dieser Werte selbst, es geht also nichts verloren. */
-:root[data-dark] {
-  /* Gedämpfte Fassung der Ampel: dieselbe Bedeutung, ohne zu leuchten. */
-  --load-free: #4e8f61;
-  --load-task: #b8574b;
-  --load-helper: #7a6fc4;
-  /* Ampel-Punkte auf dunklem Chip: hier darf das Gelb wieder gelb sein, es hat
-     Kontrast genug. Die Helligkeitsstufen bleiben: gelb, grün, rot. */
-  --zusage-bestaetigt: #5cb87a;
-  --zusage-offen: #e8bf48;
-  --zusage-verhindert: #c24f45;
-  /* Schatten auf dunklem Grund sind schwarz, nicht warm. */
-  --shade: 0, 0, 0;
+  --hov: color-mix(in srgb, var(--text) 6%, transparent);
+
+  /* Auslastung beim Zuteilen: frei, Aufgabe, Hilfsdienst. */
+  --load-free: var(--akzent);
+  --load-task: var(--problem);
+  --load-helper: var(--sek1);
+
+  /* Die Ampel am Platz spricht jetzt die Sprache der Punkte: voll = zugesagt,
+     blass = wartet, rot = Problem. */
+  --zusage-bestaetigt: var(--text);
+  --zusage-offen: var(--wartet);
+  --zusage-verhindert: var(--problem);
+
+  --font-serif: var(--font-sans);
+  --logo-filter: none;
 }
 
 /* ---- Ebenen (z-index) ------------------------------------------------------

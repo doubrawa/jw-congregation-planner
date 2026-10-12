@@ -3,7 +3,7 @@
  * Reine Referenzwerte — keine Demo-Daten (die kommen aus dem Prototyp).
  */
 
-import type { QualificationKey, Role, Theme } from './types'
+import type { FarbModus, QualificationKey, Role, Theme } from './types'
 
 /*
  * Hier stand `PLANNER_ROLES = ['aeltester', 'dienstamtgehilfe']` mit dem Satz
@@ -81,48 +81,41 @@ export const BRUDER_BEREICHE: ReadonlySet<QualificationKey> = new Set<Qualificat
  */
 
 /**
- * Farbschemata (Profil → Darstellung), Reihenfolge = Combobox.
- *
- * Die Namen sind Eigennamen und stehen in jeder App-Sprache gleich da —
- * deshalb eine Familie aus Pflanzen und Lebensmitteln, deren Wörter in nahezu
- * allen 34 Sprachen als Lehnwort existieren (Indigo, Olive, Papaya, Matcha,
- * Mango …). Vorher waren es deutsche Wörter („Reinweiß", „Blattgrün"), die
- * außerhalb des deutschen Sprachraums niemand einordnen konnte.
- *
- * Die technischen Schlüssel bleiben unverändert: sie stehen so im Profil jedes
- * Nutzers und in `data-theme` — ein Umbenennen würde jede gespeicherte Wahl
- * ungültig machen. `labelKey` gibt es nur für „Hoher Kontrast": das ist kein
- * Name, sondern eine Funktionsbeschreibung, und ausgerechnet die
- * Barrierefreiheits-Option muss man verstehen können.
+ * Darstellungen (Profil → Darstellung) in der Reihenfolge des Entwurfs (T121):
+ * Dunkel, Hell, Automatisch. Bis zum 12.10.2026 waren es elf Farbschemata
+ * mit Eigennamen; „Automatisch" folgt dem Gerät und ist der Standard.
  */
 export const THEME_LIST: ReadonlyArray<{
   key: Theme
-  label: string
-  labelKey?: 'themeKontrast'
-  dark: boolean
+  labelKey: 'themeDunkel' | 'themeHell' | 'themeAuto'
 }> = [
-  { key: 'weiss', label: 'Jasmin', dark: false },
-  { key: 'indigo', label: 'Indigo', dark: false },
-  { key: 'blatt', label: 'Olive', dark: false },
-  { key: 'papaya', label: 'Papaya', dark: false },
-  { key: 'pastell', label: 'Vanille', dark: false },
-  { key: 'grau', label: 'Sesam', dark: false },
-  { key: 'kontrast', label: 'Hoher Kontrast', labelKey: 'themeKontrast', dark: false },
-  { key: 'graphit', label: 'Matcha', dark: true },
-  { key: 'bernstein', label: 'Safran', dark: true },
-  { key: 'aubergine', label: 'Aubergine', dark: true },
-  { key: 'koralle', label: 'Mango', dark: true },
+  { key: 'dunkel', labelKey: 'themeDunkel' },
+  { key: 'hell', labelKey: 'themeHell' },
+  { key: 'auto', labelKey: 'themeAuto' },
 ]
 
-/** true für die dunklen Paletten (steuert data-dark / color-scheme). */
-export function isDarkTheme(theme: Theme): boolean {
-  return THEME_LIST.some((t) => t.key === theme && t.dark)
-}
+export const DEFAULT_THEME: Theme = 'auto'
 
-/** Gespeicherten/übergebenen Namen auf ein bekanntes Farbschema eingrenzen. */
+/**
+ * Die dunklen der elf Farbschemata, die bis zum 12.10.2026 im Gerät
+ * gespeichert wurden (dazu `dark` aus der Zeit davor). Wer eines gewählt hatte,
+ * wollte es dunkel und bekommt „dunkel"; die hellen fallen auf den Standard —
+ * fast jeder hatte das helle Standardschema nie selbst gewählt, es stand nur
+ * gespeichert da. index.html führt dieselbe Liste (tests/vorab-paint.test.ts).
+ */
+export const ALTE_DUNKLE_SCHEMATA: readonly string[] = ['graphit', 'bernstein', 'aubergine', 'koralle', 'dark']
+
+/** Gespeicherten/übergebenen Wert auf eine Darstellung eingrenzen. */
 export function asTheme(value: string | null): Theme | null {
   if (!value) return null
+  if (ALTE_DUNKLE_SCHEMATA.includes(value)) return 'dunkel'
   return THEME_LIST.some((t) => t.key === value) ? (value as Theme) : null
+}
+
+/** Welche Palette gerade gilt: „auto" folgt dem Gerät. */
+export function farbModus(theme: Theme, geraetDunkel: boolean): FarbModus {
+  if (theme !== 'auto') return theme
+  return geraetDunkel ? 'dunkel' : 'hell'
 }
 
 /**

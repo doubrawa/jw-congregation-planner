@@ -1,14 +1,15 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { FONT_SCALES, THEME_LIST } from '../src/data/constants'
+import { ALTE_DUNKLE_SCHEMATA, FONT_SCALES, THEME_LIST } from '../src/data/constants'
 import { APP_LANGS, isRTL } from '../src/i18n/langs'
+import { palette } from './paletten'
 
 /**
  * **Was `index.html` schon weiß, bevor die App startet — und woher es das weiß.**
  *
  * Vier Dinge stehen am `<html>`-Element, noch bevor React geladen ist:
- * Farbschema, Schriftgröße, Sprache und Schreibrichtung. Das ist kein Luxus,
+ * Darstellung, Schriftgröße, Sprache und Schreibrichtung. Das ist kein Luxus,
  * sondern der Unterschied zwischen einer Seite, die richtig erscheint, und
  * einer, die sichtbar umklappt: Arabisch, Hebräisch, Persisch und Urdu würden
  * sonst erst von links nach rechts rendern und danach spiegeln.
@@ -76,23 +77,26 @@ describe('Das Vorab-Skript kennt dieselben Sprachen wie die App', () => {
   })
 })
 
-describe('Und dieselben Farbschemata und Schriftgrößen', () => {
-  it('jedes Farbschema aus THEME_LIST steht auch im Vorab-Skript', () => {
-    const imHtml = INDEX.slice(INDEX.indexOf('var THEMES'), INDEX.indexOf('var stored'))
-    for (const { key } of THEME_LIST) {
-      expect(imHtml, `${key} fehlt im Vorab-Skript`).toContain(`${key}:`)
-    }
+describe('Und dieselbe Darstellung und dieselben Schriftgrößen', () => {
+  it('die alten dunklen Farbschemata werden dort „dunkel" wie in asTheme', () => {
+    const imHtml = listeNach("localStorage.getItem('theme')")
+    expect(imHtml).toEqual([...ALTE_DUNKLE_SCHEMATA])
   })
 
-  it('und die dunklen sind dort auch als dunkel markiert', () => {
-    // Steht ein dunkles Schema mit `0` da, blitzt beim Laden die helle
-    // Statusleiste auf, bevor React sie richtigstellt.
-    const abschnitt = INDEX.slice(INDEX.indexOf('var THEMES'), INDEX.indexOf('var stored'))
-    for (const { key, dark } of THEME_LIST) {
-      expect(abschnitt, `${key} steht im HTML als ${dark ? 'hell' : 'dunkel'}`).toContain(
-        `${key}: ${dark ? 1 : 0}`,
-      )
-    }
+  it('das Skript kennt die drei Darstellungen — Hell und Dunkel fest, sonst das Gerät', () => {
+    const skript = INDEX.slice(INDEX.indexOf("localStorage.getItem('theme')"), INDEX.indexOf("localStorage.getItem('fontScale')"))
+    expect(skript).toContain("stored === 'dunkel'")
+    expect(skript).toContain("stored !== 'hell'")
+    expect(skript).toContain("matchMedia('(prefers-color-scheme: dark)')")
+    expect(THEME_LIST.map((t) => t.key).sort()).toEqual(['auto', 'dunkel', 'hell'])
+  })
+
+  it('die Statusleiste vor dem Laden hat den Grund der Palette (tokens.css)', () => {
+    // Weicht er ab, blitzt beim Start eine andere Farbe auf, bis die App die
+    // Statusleiste aus dem CSS richtigstellt (darstellung.ts).
+    const grund = (modus: 'hell' | 'dunkel') => palette(modus).grund
+    expect(INDEX).toContain(`dunkel ? '${grund('dunkel')}' : '${grund('hell')}'`)
+    expect(INDEX).toContain(`<meta name="theme-color" content="${grund('hell')}" />`)
   })
 
   it('die Schriftgrößen-Stufen stimmen überein', () => {

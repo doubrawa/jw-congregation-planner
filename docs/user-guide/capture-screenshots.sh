@@ -152,7 +152,7 @@ for entry in "${SHOTS[@]}"; do
   if [ $# -gt 0 ] && [[ "$NUR" != *" $name "* ]]; then continue; fi
   w="$W"; h="$H"
   if [ -n "${size:-}" ]; then w="${size%x*}"; h="${size#*x}"; fi
-  hash="$hash&t=weiss&shot=1" # helles Theme + Screenshot-Modus (Spaltenschatten aus)
+  hash="$hash&t=hell&shot=1" # helle Darstellung + Screenshot-Modus (Spaltenschatten aus)
   roh="$ROH/$name.png"
   # Windows-Pfad für Chrome (Vorwärts-Slashes funktionieren)
   "$CHROME" --headless=new --disable-gpu --no-first-run --no-default-browser-check \

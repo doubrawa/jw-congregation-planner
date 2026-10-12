@@ -657,7 +657,7 @@
   /* background-color, nicht die Kurzschreibweise: `background:` setzt auch Bild,
      Wiederholung und Lage zurück und hebelt das app-weite Chevron aus
      (components.css). Hell verschwand es, dunkel kachelte es als Zickzack über
-     das ganze Feld — `:root[data-dark] select` setzt das Bild mit höherer
+     das ganze Feld — `:root[data-theme='dunkel'] select` setzt das Bild mit höherer
      Spezifität wieder ein, die Wiederholung aber blieb zurückgesetzt. Wache:
      tests/auswahlfeld-chevron.test.ts. */
   background-color: var(--card);

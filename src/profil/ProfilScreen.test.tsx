@@ -201,38 +201,24 @@ describe('App installieren', () => {
   })
 })
 
-describe('Farbschema', () => {
-  it('jede Palette steht zur Wahl und ist benannt', () => {
+describe('Darstellung (T121): Dunkel, Hell, Automatisch', () => {
+  /** Die Knöpfe der Wahl „Darstellung", in ihrer Reihenfolge. */
+  const knoepfe = (container: HTMLElement) =>
+    [...container.querySelectorAll<HTMLButtonElement>(`[role="group"][aria-label="${t.darstellung}"] button`)]
+
+  it('alle drei stehen zur Wahl, in der Reihenfolge des Entwurfs und mit Namen aus dem Wörterbuch', () => {
     const { container } = zeige()
-    const optionen = [...auswahl(container, t.darstellung).querySelectorAll('option')]
-    expect(optionen).toHaveLength(THEME_LIST.length)
-    expect(optionen.every((o) => (o.textContent ?? '').trim().length > 0)).toBe(true)
+    expect(knoepfe(container).map((k) => k.textContent)).toEqual([t.themeDunkel, t.themeHell, t.themeAuto])
+    expect(THEME_LIST.map((o) => o.key)).toEqual(['dunkel', 'hell', 'auto'])
   })
 
-  it('die eingestellte ist ausgewählt, ein Wechsel schlägt durch', () => {
-    const { container, dispatch } = zeige({ theme: 'blatt' })
-    const wahl = auswahl(container, t.darstellung)
-    expect(wahl.value).toBe('blatt')
-    fireEvent.change(wahl, { target: { value: 'graphit' } })
-    expect(dispatch).toHaveBeenCalledWith({ type: 'setTheme', theme: 'graphit' })
-  })
-
-  it('angezeigt wird der Name, gespeichert der Schlüssel — der bleibt stabil', () => {
-    // Die Paletten wurden umbenannt (Jasmin, Olive, Matcha …); die Schlüssel
-    // blieben, damit gespeicherte Einstellungen weiter gelten.
-    const { container } = zeige({ theme: 'blatt' })
-    const gewaehlt = [...auswahl(container, t.darstellung).querySelectorAll('option')].find(
-      (o) => o.value === 'blatt',
-    )!
-    expect(gewaehlt.textContent).toBe('Olive')
-  })
-
-  it('„Hoher Kontrast" heißt in jeder Sprache anders — er kommt aus dem Wörterbuch', () => {
-    const { container } = zeige()
-    const kontrast = [...auswahl(container, t.darstellung).querySelectorAll('option')].find(
-      (o) => o.value === 'kontrast',
-    )!
-    expect(kontrast.textContent).toBe(t.themeKontrast)
+  it('die eingestellte ist gedrückt, ein Tipp auf eine andere schlägt durch', () => {
+    const { container, dispatch } = zeige({ theme: 'hell' })
+    const [dunkel, hell, auto] = knoepfe(container)
+    expect(hell!.getAttribute('aria-pressed')).toBe('true')
+    expect([dunkel, auto].map((k) => k!.getAttribute('aria-pressed'))).toEqual(['false', 'false'])
+    fireEvent.click(auto!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'setTheme', theme: 'auto' })
   })
 })
 

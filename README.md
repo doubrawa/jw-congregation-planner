@@ -34,7 +34,8 @@ Mitteilungen und Einstellungen.
 - **[Vite](https://vite.dev/)** (Build/Dev-Server) + **React 19** + **TypeScript**
 - Styling mit **reinem CSS + CSS-Variablen** (Design-Tokens) — keine UI-Bibliothek,
   da das Design bespoke ist (siehe `src/styles/tokens.css`)
-- Schriften: **Newsreader** (Serif) + **IBM Plex Sans** (UI), via Google Fonts (OFL)
+- Schriften: **Manrope**, für Rechts-nach-links **Vazirmatn**, **Noto Nastaliq Urdu**
+  und **Heebo** — im Bündel über `@fontsource` (OFL), siehe `src/styles/fonts.css`
 - Linting: **oxlint** (`npm run lint`)
 
 ## Loslegen

@@ -15,31 +15,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="Zusammenkünfte planen, Aufgaben verteilen, die Versammlung verwalten." />
     <meta name="color-scheme" content="light dark" />
-    <!-- Wird unten grob und in src/app/store.tsx exakt auf --bg des aktiven
-         Themes gesetzt (nicht per media: der Nutzer kann ein helles Theme bei
-         dunklem System wählen). -->
-    <meta name="theme-color" content="#ffffff" />
+    <!-- Wird unten und in src/app/darstellung.ts auf --grund der geltenden
+         Palette gesetzt (nicht per media: man kann Hell bei dunklem Gerät
+         wählen). -->
+    <meta name="theme-color" content="#f1f1ef" />
 
-    <!-- Farbschema vor dem ersten Paint setzen (kein Flackern). Schemata wie
-         THEME_LIST in src/data/constants.ts; alte Werte light/dark gemappt. -->
+    <!-- Darstellung vor dem ersten Paint setzen (kein Flackern): hell, dunkel
+         oder wie das Gerät, wie THEME_LIST und asTheme in
+         src/data/constants.ts. Die dunklen der elf alten Farbschemata werden
+         „dunkel", alles andere „auto". -->
     <script>
       (function () {
         try {
-          var THEMES = {
-            weiss: 0, indigo: 0, blatt: 0, papaya: 0, pastell: 0, grau: 0, kontrast: 0,
-            graphit: 1, bernstein: 1, aubergine: 1, koralle: 1,
-          }
           var stored = localStorage.getItem('theme')
-          if (stored === 'light') stored = 'weiss'
-          if (stored === 'dark') stored = 'graphit'
-          // Standard ist Reinweiß, unabhängig von der System-Einstellung. Ein
-          // dunkles Design wählt man bewusst im Profil (bleibt dann gespeichert).
-          if (!(stored in THEMES)) stored = 'weiss'
-          document.documentElement.dataset.theme = stored
-          if (THEMES[stored]) document.documentElement.dataset.dark = '1'
-          // Statusleiste sofort passend; store.tsx verfeinert auf --bg.
+          if (['graphit', 'bernstein', 'aubergine', 'koralle', 'dark'].indexOf(stored) >= 0) stored = 'dunkel'
+          // Ohne matchMedia würfe die Abfrage, und Schriftgröße und Leserichtung
+          // unten blieben ungesetzt — dann eben Hell.
+          var dunkel =
+            stored === 'dunkel' ||
+            (stored !== 'hell' && !!window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.dataset.theme = dunkel ? 'dunkel' : 'hell'
+          // Statusleiste sofort passend: --grund der beiden Paletten (tokens.css).
           var meta = document.querySelector('meta[name="theme-color"]')
-          if (meta) meta.content = THEMES[stored] ? '#191a17' : '#ffffff'
+          if (meta) meta.content = dunkel ? '#121314' : '#f1f1ef'
           // Schriftgröße ebenfalls vor dem Paint (sonst springt die ganze
           // Seite). Stufen wie FONT_SCALES in src/data/constants.ts.
           var fs = localStorage.getItem('fontScale')
@@ -57,15 +55,15 @@
               ['ar', 'he', 'fa', 'ur'].indexOf(lang) >= 0 ? 'rtl' : 'ltr'
           }
         } catch (e) {
-          /* localStorage nicht verfügbar — Standard bleibt Reinweiß */
+          /* localStorage nicht verfügbar — es bleibt die helle Palette aus :root */
         }
       })()
     </script>
 
-    <!-- Schriften (Newsreader + IBM Plex Sans, OFL) liegen im Bündel:
-         src/styles/fonts.css. Bis August 2026 kamen sie von fonts.googleapis.com
-         — das meldete jede Nutzer-IP an einen Dritten und fiel ohne Netz zu
-         diesem Host ganz aus. -->
+    <!-- Schriften (Manrope und die drei für Rechts-nach-links, OFL) liegen im
+         Bündel: src/styles/fonts.css. Bis August 2026 kamen die damaligen von
+         fonts.googleapis.com — das meldete jede Nutzer-IP an einen Dritten und
+         fiel ohne Netz zu diesem Host ganz aus. -->
     <title>Versammlung.app</title>
   </head>
   <body>

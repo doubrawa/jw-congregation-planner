@@ -4,8 +4,9 @@ import { useInstallAvailable, usePush } from '../components/usePush'
 import { FONT_SCALES, THEME_LIST } from '../data/constants'
 import { displayName } from '../data/helpers'
 
-import type { Lang, Theme } from '../data/types'
+import type { Lang } from '../data/types'
 import { APP_LANGS_SORTED } from '../i18n/langs'
+import { Wahl } from '../bausteine/Wahl'
 import { useT } from '../i18n/useT'
 import { promptInstall } from '../lib/install'
 import { AbmeldenKnopf } from '../components/AbmeldenKnopf'
@@ -24,7 +25,7 @@ const FS_LABELS = [
 
 /**
  * Profil (eigener Navigationspunkt): Name/Versammlung, Push-Mitteilungen,
- * Darstellung (Farbschemata, siehe THEME_LIST), Schriftgröße, App-Sprache und Abmelden. Rolle
+ * Darstellung (Hell, Dunkel, Automatisch — THEME_LIST), Schriftgröße, App-Sprache und Abmelden. Rolle
  * und Predigtdienstgruppe werden im Personen-Screen gepflegt.
  */
 export function ProfilScreen() {
@@ -85,20 +86,14 @@ export function ProfilScreen() {
             {t.appInstallieren}
           </button>
         )}
-        <div className="kv-row kv-row--plain">
+        <div className="prof-darstellung">
           <span className="kv-key">{t.darstellung}</span>
-          <select
-            className="mem-select lang-select"
-            aria-label={t.darstellung}
-            value={state.theme}
-            onChange={(e) => dispatch({ type: 'setTheme', theme: e.target.value as Theme })}
-          >
-            {THEME_LIST.map(({ key, label, labelKey }) => (
-              <option key={key} value={key}>
-                {labelKey ? t[labelKey] : label}
-              </option>
-            ))}
-          </select>
+          <Wahl
+            label={t.darstellung}
+            optionen={THEME_LIST.map(({ key, labelKey }) => ({ wert: key, text: t[labelKey] }))}
+            wert={state.theme}
+            onWahl={(theme) => dispatch({ type: 'setTheme', theme })}
+          />
         </div>
         <div className="kv-row kv-row--plain">
           <span className="kv-key">{t.schriftgroesse}</span>

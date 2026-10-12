@@ -2,14 +2,15 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { palette } from './paletten'
 
 /**
- * **Jedes Auswahlfeld behält sein Chevron — in hellen wie in dunklen Schemata.**
+ * **Jedes Auswahlfeld behält sein Chevron — in der hellen wie in der dunklen Palette.**
  *
  * Das Chevron kommt app-weit aus einer Regel in `components/components.css`:
  * `select` bekommt ein Hintergrundbild, `no-repeat`, rechts mittig, dazu
- * `padding-inline-end: 40px` als Platz dafür; `:root[data-dark] select`
- * tauscht im dunklen Schema nur das Bild gegen ein helleres.
+ * `padding-inline-end: 40px` als Platz dafür; `:root[data-theme='dunkel'] select`
+ * tauscht in der dunklen Palette nur das Bild gegen ein helleres.
  *
  * Gefunden am 21.9.2026, im Dunkeln: Die Auswahlfelder der Treffpunkte
  * (`.fs-select`) und des Wochen-Reiters im Planen (`.sonder-select`) waren von
@@ -107,7 +108,15 @@ describe('Auswahlfelder behalten ihr Chevron', () => {
     const basis = css.find((r) => r.selektor === 'select' && /background-image/.test(r.rumpf))
     expect(basis?.rumpf).toMatch(/background-repeat:\s*no-repeat/)
     expect(basis?.rumpf).toMatch(/padding-inline-end:\s*40px/)
-    expect(css.some((r) => r.selektor === ':root[data-dark] select' && /background-image/.test(r.rumpf))).toBe(true)
+    expect(css.some((r) => r.selektor === ":root[data-theme='dunkel'] select" && /background-image/.test(r.rumpf))).toBe(true)
+  })
+
+  it('das Chevron trägt die Farbe --text3 seiner Palette', () => {
+    // Ein Bild kennt keine CSS-Variablen; die Farbe steht als Abschrift darin.
+    const farbe = (selektor: string) =>
+      /stroke='%23([0-9a-f]{6})'/i.exec(css.find((r) => r.selektor === selektor)?.rumpf ?? '')?.[1]?.toLowerCase()
+    expect(`#${farbe('select')}`).toBe(palette('hell').text3)
+    expect(`#${farbe(":root[data-theme='dunkel'] select")}`).toBe(palette('dunkel').text3)
   })
 
   it('die Prüfung sieht die Auswahlfelder, an denen sie entstanden ist', () => {
