@@ -1,40 +1,25 @@
 /*
- * App-Shell: Schreibtisch, App-Spalte, Sidebar (Desktop), Kopf/Bottom-Nav
- * (mobil), Mitteilungen-Overlay, Toast. Alle Werte aus dem Prototyp
- * (docs/design-handoff/design/Prototyp 2a v2.dc.html). Breakpoint 920 px.
+ * App-Shell: Inhalt neben dem Menü, Mitteilungen-Overlay, Toast, Lade- und
+ * Sonderzustände. Menü und Kopfzeile stehen seit dem neuen Design (T121) in
+ * menue.css.
  */
 
-/* ---- Schreibtisch & App-Spalte ---------------------------------------- */
-
-.desk {
-  display: flex;
-  justify-content: center;
-  align-items: stretch;
-  min-height: 100svh;
-}
+/* ---- Inhalt neben dem Menü ------------------------------------------------ */
 
 .app-main {
-  width: 100%;
-  max-width: 430px;
-  background: var(--bg);
-  box-shadow: var(--sh-col);
-  display: flex;
-  flex-direction: column;
   position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
   min-height: 100svh;
-  color: var(--ink);
+  color: var(--text);
 }
 
-@media (min-width: 920px) {
-  .app-main:not(.is-login) {
-    max-width: 660px;
-  }
-}
-
-/* Nur für Doku-Screenshots (DEV, #…&shot=1): Spaltenschatten aus, damit die
-   Zentrier-Lücke flach ist und randlos zugeschnitten werden kann. */
-:root[data-shot] .app-main {
-  box-shadow: none;
+/* Die Anmeldung steht als schmale Spalte in der Mitte. */
+.app-main.is-login {
+  max-width: 430px;
+  margin-inline: auto;
 }
 
 .app-content {
@@ -82,14 +67,17 @@
   }
 }
 
-/* Screen-Grundfläche (je Bereich ein <section class="screen">) */
+/* Screen-Grundfläche (je Bereich ein <section class="screen">). Die Bildschirme
+   der alten Oberfläche sind für eine Spalte gebaut; bis zu ihrem Umbau (T121)
+   bleibt sie auch am Desktop so breit. */
 .screen {
   padding: 22px 20px;
 }
 
-@media (min-width: 920px) {
+@media (min-width: 768px) {
   .screen {
-    padding: 26px 36px;
+    max-width: 760px;
+    padding: 24px 32px;
   }
 }
 
@@ -104,26 +92,9 @@
   flex: none;
 }
 
-.avatar--ink {
-  background: var(--ink);
-  color: var(--onAcc);
-}
-
 .avatar--tint {
   background: var(--tNeu);
   color: var(--acc);
-}
-
-.avatar--28 {
-  width: 28px;
-  height: 28px;
-  font-size: calc(10px * var(--fs));
-}
-
-.avatar--32 {
-  width: 32px;
-  height: 32px;
-  font-size: calc(11px * var(--fs));
 }
 
 .avatar--36 {
@@ -142,345 +113,6 @@
   width: 54px;
   height: 54px;
   font-size: calc(16px * var(--fs));
-}
-
-/* ---- Sidebar (nur Desktop) --------------------------------------------- */
-
-.sidebar {
-  display: none;
-}
-
-/*
- * Ab Tablet-Breite steht das Menü fest an der Seite: der Platz ist da, und
- * ein Menü, das man erst aufklappen muss, verschenkt ihn. Die App-Spalte
- * bleibt hier noch schmal (430 px) — 232 px Menü + 660 px Spalte passen erst
- * ab 920 px nebeneinander, deshalb bleibt jener Umbruch bestehen.
- */
-@media (min-width: 768px) {
-  .sidebar {
-    display: flex;
-    flex-direction: column;
-    width: 232px;
-    flex: none;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    background: var(--bg);
-    border-inline-end: 1px solid var(--line);
-    padding: 26px 16px 22px;
-  }
-}
-
-.sidebar-brand {
-  padding: 0 10px;
-}
-
-.sidebar-logo {
-  display: block;
-  width: 40px;
-  height: 40px;
-  filter: var(--logo-filter);
-}
-
-.sidebar-wordmark {
-  /* Notbremse: bricht erst, wenn schon das Stück vor der `wbr`-Stelle
-     überliefe (320 px auf der größten Schriftstufe). */
-  overflow-wrap: anywhere;
-  font-family: var(--font-serif);
-  font-size: calc(21px * var(--fs));
-  font-weight: 500;
-  line-height: 1.15;
-  margin-top: 6px;
-}
-
-.sidebar-sub {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: calc(13px * var(--fs));
-  color: var(--mut);
-  margin-top: 5px;
-}
-
-.sidebar-nav {
-  margin-top: 26px;
-}
-
-.sidebar-nav-item {
-  display: block;
-  width: 100%;
-  text-align: start;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--mut);
-  font-size: calc(13px * var(--fs));
-  font-weight: 600;
-  margin-top: 4px;
-}
-
-.sidebar-nav-item:hover:not(.is-active) {
-  background: var(--tNeu);
-}
-
-.sidebar-nav-item.is-active {
-  background: var(--tAcc);
-  color: var(--accD);
-}
-
-/* Überschrift eines Menü-Abschnitts (T120): „Versammlung", „Verwaltung".
-   Großbuchstaben per CSS — Schriften ohne sie bleiben unberührt. */
-.sidebar-nav-titel {
-  margin: 12px 12px 2px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-  font-size: calc(9.5px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--mut);
-}
-
-.sidebar-spacer {
-  flex: 1;
-}
-
-/* Der Namensblock ist der Weg zum Profil (T120) — ein Knopf, kein Schild. */
-.sidebar-profile {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  text-align: start;
-  color: var(--ink);
-  border-top: 1px solid var(--line);
-  margin-top: 12px;
-  padding: 14px 10px 8px;
-}
-
-.sidebar-profile-text {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-}
-
-.sidebar-profile-name {
-  font-size: calc(12.5px * var(--fs));
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-.sidebar-profile:hover .sidebar-profile-name {
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.sidebar-profile-role {
-  font-size: calc(10.5px * var(--fs));
-  color: var(--mut);
-}
-
-/* Steht man auf dem Profil, trägt der Name die Farbe des aktiven Menüpunkts —
-   bis zum 4.10.2026 tat das das Schild „Profil ›" daneben. */
-.sidebar-profile.is-active .sidebar-profile-name {
-  color: var(--accD);
-}
-
-/* ---- Kopfzeile (mobil) & Mitteilungs-Chip ------------------------------- */
-
-.mobile-header {
-  position: sticky;
-  top: 0;
-  z-index: var(--z-nav);
-  background: var(--bgT);
-  border-bottom: 1px solid var(--line);
-  padding: 13px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.mobile-header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-/* Hamburger-Button — öffnet das seitliche Menü (nur mobil sichtbar). */
-.menu-btn {
-  display: inline-flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  width: 30px;
-  height: 30px;
-  padding: 6px;
-  border-radius: 8px;
-  flex: none;
-}
-
-.menu-btn:hover {
-  background: var(--hov);
-}
-
-.menu-btn-bar {
-  display: block;
-  width: 100%;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--acc);
-}
-
-.mobile-header-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: calc(10px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  color: var(--acc);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Eigenes Element für den Namen: „…“ greift nur in einem Textcontainer — direkt
-   in .mobile-header-brand (Flexbox) bliebe der Name ohne Auslassungspunkte
-   mitten im Wort stehen. So kürzt ein langer Versammlungsname sauber ab, statt
-   Mitteilungen und Avatar aus dem Kopf zu schieben.
-
-   Großbuchstaben per CSS, nicht im Text: Der Name steht in der Datenbank so,
-   wie ihn der Planer eingibt, und der Kopf behält die Gestalt der Wortmarke,
-   die vorher hier stand. Schriften ohne Großbuchstaben bleiben unberührt. */
-.mobile-header-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-transform: uppercase;
-}
-
-.mobile-header-logo {
-  width: 22px;
-  height: 22px;
-  filter: var(--logo-filter);
-}
-
-.mobile-header-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: none; /* darf nie schrumpfen — sonst rutscht der Name darunter */
-}
-
-.notif-chip {
-  border: 1px solid var(--bord);
-  background: transparent;
-  color: var(--mut);
-  border-radius: var(--r-pill);
-  padding: 5px 12px;
-  font-size: calc(11.5px * var(--fs));
-  font-weight: 600;
-  /* Eine Pille bleibt einzeilig: bei grosser Schrift (--fs) bräche „2 neu“
-     sonst um, der Chip würde doppelt hoch und schöbe sich über den Inhalt. */
-  white-space: nowrap;
-}
-
-.notif-chip.has-unread {
-  background: var(--tAcc);
-  color: var(--acc);
-  border-color: transparent;
-}
-
-/* Chip-Zeile oben rechts (nur Desktop) */
-.desktop-topbar {
-  display: none;
-}
-
-@media (min-width: 768px) {
-  .mobile-header {
-    display: none;
-  }
-
-  .desktop-topbar {
-    display: flex;
-    justify-content: flex-end;
-    padding: 16px 36px 0;
-  }
-}
-
-/* ---- Seitliches Menü / Drawer (nur mobil) --------------------------------
-   Öffnet über den Hamburger im Kopf; nutzt die sidebar-*-Bausteine der
-   Desktop-Sidebar (Marke, Nav-Items, Profil, Abmelden). */
-
-.drawer-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(var(--shade), 0.28);
-  z-index: var(--z-sheet);
-}
-
-@keyframes drawer-in {
-  from {
-    transform: translateX(-100%);
-  }
-
-  to {
-    transform: none;
-  }
-}
-
-@keyframes drawer-in-rtl {
-  from {
-    transform: translateX(100%);
-  }
-
-  to {
-    transform: none;
-  }
-}
-
-.drawer {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  inset-inline-start: 0;
-  width: min(280px, 82vw);
-  z-index: calc(var(--z-sheet) + 1);
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
-  border-inline-end: 1px solid var(--line);
-  box-shadow: var(--sh-overlay);
-  padding: 26px 16px 22px;
-  overflow-y: auto;
-  animation: drawer-in 0.22s ease;
-}
-
-[dir='rtl'] .drawer {
-  animation-name: drawer-in-rtl;
-}
-
-.drawer-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-
-.drawer-close {
-  color: var(--mut2);
-  font-size: calc(15px * var(--fs));
-  padding: 4px 8px;
-  flex: none;
-}
-
-/* Mit fest stehendem Menü gibt es nichts mehr aufzuklappen. */
-@media (min-width: 768px) {
-  .drawer-backdrop,
-  .drawer {
-    display: none;
-  }
 }
 
 /* ---- Mitteilungen-Overlay ------------------------------------------------ */
@@ -729,21 +361,10 @@
    sind: die Kopfzeile klebt oben, der Inhalt endet unten.
 
    `max()` statt reiner Addition: auf Geräten ohne Aussparung ist der Wert 0,
-   der bisherige Abstand bleibt also unverändert. */
-.mobile-header {
-  padding-top: max(13px, env(safe-area-inset-top));
-  padding-inline: max(20px, env(safe-area-inset-left)) max(20px, env(safe-area-inset-right));
-}
-
+   der bisherige Abstand bleibt also unverändert. Kopfzeile und Schublade
+   tragen ihre Abstände selbst (menue.css). */
 .app-content {
   padding-bottom: max(40px, env(safe-area-inset-bottom));
-}
-
-/* Über die volle Höhe stehende Flächen: Schublade und Sheets enden sonst
-   unter dem Home-Indikator. */
-.drawer {
-  padding-top: max(26px, env(safe-area-inset-top));
-  padding-bottom: max(22px, env(safe-area-inset-bottom));
 }
 
 /* ---- Bewegung sparsam ------------------------------------------------------

@@ -1,0 +1,79 @@
+/**
+ * **Die Kopfzeile** (T121, Baustein `GKopf`) am Handy und am Tablet: links
+ * der Menüknopf, dann Datum und Versammlung, rechts die Glocke. Am Desktop
+ * gibt es keine — dort stehen Menü und Mitteilungen in der Leiste. Am Tablet
+ * steht der Menüknopf in der schmalen Leiste, hier fällt er weg (CSS).
+ *
+ * Beim Planen steht am Handy statt ihrer der Kopf des Planens: Kreuz, Titel,
+ * „Fertig" (`PlanenKopf`).
+ */
+
+import { Zeichen } from '../bausteine/Zeichen'
+import { fill, useT } from '../i18n/useT'
+import '../bausteine/bausteine.css'
+import './menue.css'
+
+export function Kopfzeile({
+  datum,
+  versammlung,
+  ungelesen,
+  menueOffen,
+  beimPlanen,
+  onMenue,
+  onGlocke,
+}: {
+  /** „Montag, 7. September" */
+  datum: string
+  versammlung: string
+  ungelesen: number
+  menueOffen: boolean
+  /** Beim Planen weicht die Kopfzeile am Handy dem Kopf des Planens. */
+  beimPlanen: boolean
+  onMenue: () => void
+  onGlocke: () => void
+}) {
+  const { t } = useT()
+  const glocke = ungelesen > 0 ? `${t.mitteilungen}, ${fill(t.neuN, { n: ungelesen })}` : t.mitteilungen
+  return (
+    <header className={beimPlanen ? 'kopfzeile kopfzeile--beim-planen' : 'kopfzeile'}>
+      <button
+        type="button"
+        className="rund-knopf kopfzeile-menue"
+        aria-label={t.menueLbl}
+        aria-expanded={menueOffen}
+        onClick={onMenue}
+      >
+        <Zeichen name="menue" />
+      </button>
+      <div className="kopfzeile-mitte">
+        <span className="kopfzeile-datum">{datum}</span>
+        <span className="kopfzeile-versammlung" dir="auto">
+          {versammlung}
+        </span>
+      </div>
+      <button type="button" className="rund-knopf kopfzeile-glocke" aria-label={glocke} onClick={onGlocke}>
+        <Zeichen name="glocke" />
+        {ungelesen > 0 && <span className="kopfzeile-neu" aria-hidden="true" />}
+      </button>
+    </header>
+  )
+}
+
+/**
+ * Der Kopf des Planens am Handy (Baustein `kopfPlanen`): Kreuz und „Fertig"
+ * beenden beide das Planen — das Kreuz für die Gewohnheit, „Fertig" als Wort.
+ */
+export function PlanenKopf({ titel, onBeenden }: { titel: string; onBeenden: () => void }) {
+  const { t } = useT()
+  return (
+    <header className="planenkopf">
+      <button type="button" className="rund-knopf" aria-label={t.planenBeenden} onClick={onBeenden}>
+        <Zeichen name="kreuz" />
+      </button>
+      <h1 className="planenkopf-titel">{titel}</h1>
+      <button type="button" className="planen-knopf" onClick={onBeenden}>
+        {t.fertig}
+      </button>
+    </header>
+  )
+}

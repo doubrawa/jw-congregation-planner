@@ -55,11 +55,12 @@
   }
 
   /* App-Chrome, Overlays und Bedienelemente */
-  .sidebar,
-  .mobile-header,
-  .desktop-topbar,
-  .drawer,
-  .drawer-backdrop,
+  .leiste,
+  .schmale-leiste,
+  .kopfzeile,
+  .planenkopf,
+  .schublade,
+  .schublade-schleier,
   .notif-panel,
   .notif-backdrop,
   .sheet,
@@ -68,7 +69,7 @@
   .confirm-backdrop,
   .toast,
   .week-arrow,
-  .thema-kopf,
+  .bereichstitel,
   .meeting-tabs,
   .week-chips,
   .prog-helpers,
@@ -79,10 +80,10 @@
   }
 
   /* Spalten-Layout auflösen — der Inhalt bekommt die volle Blattbreite.
-     !important, weil die App-Spalte (.app-main max-width:430px, von .desk
-     zentriert) sonst als schmale Bildschirm-Spalte mit Rand ausgedruckt würde;
-     print.css wird zudem vor shell.css gebündelt und verlöre sonst im Rang. */
-  .desk,
+     !important, weil der Rahmen (.rahmen mit Menü, .app-main daneben) sonst
+     als Bildschirm-Spalte mit Rand ausgedruckt würde; print.css wird zudem vor
+     shell.css gebündelt und verlöre sonst im Rang. */
+  .rahmen,
   .app-main,
   .app-content,
   .screen {

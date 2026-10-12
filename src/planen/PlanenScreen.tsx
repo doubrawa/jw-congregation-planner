@@ -1,13 +1,13 @@
 import { useApp } from '../app/context'
 import { MeetingTabs } from '../components/MeetingTabs'
-import { ThemaKopf } from '../components/ThemaKopf'
+import { Bereichstitel } from '../components/Bereichstitel'
 import { WeekStrip } from '../components/WeekStrip'
 import { WeekNav } from '../components/WeekNav'
 import { AusfallBanner, MemorialBanner, WeekChips } from '../components/WeekBadges'
 import { hatAuxKlasse } from '../data/aux-class'
 import { istAusgefallen, mtab } from '../data/helpers'
 import { countOpenSlots } from '../data/planning'
-import { rechteVon } from '../data/rechte'
+import { geplantesThema, rechteVon } from '../data/rechte'
 import { fill, useProgWeek, useT } from '../i18n/useT'
 import { ConflictsBanner, EngpassBanner, FsConflictsBanner, OpenSlotsBanner } from './PlanBanners'
 import { GruppeSendenPanel, PlanSendenPanel } from './PlanSendenPanel'
@@ -51,7 +51,7 @@ export function PlanenScreen() {
   if (state.tab === 'wp' && rechte.zuteilen) {
     return (
       <section className="screen">
-        <ThemaKopf thema="weitere" />
+        <Bereichstitel thema="weitere" />
         <WeiterePlaenePlan />
       </section>
     )
@@ -65,7 +65,7 @@ export function PlanenScreen() {
   if ((state.tab === 'fs' || fsOverseer) && bereich !== 'treffpunkte') {
     return (
       <section className="screen">
-        <ThemaKopf thema="predigtdienst" />
+        <Bereichstitel thema="predigtdienst" />
         <FsBereichTabs />
         {bereich === 'grundplan' ? (
           // Den Grundplan ändert der Admin ganz, der Gruppenaufseher seine
@@ -102,15 +102,15 @@ function PlanenBody() {
   const rechte = rechteVon(state)
   const myFsGroup = rechte.gruppe
   const fsOverseer = !rechte.zuteilen && myFsGroup !== null
-  const isFs = state.tab === 'fs' || fsOverseer
-  const thema = isFs ? 'predigtdienst' : 'zusammenkuenfte'
+  const thema = geplantesThema(rechte, state.tab)
+  const isFs = thema === 'predigtdienst'
 
   // Noch keine Wochen (z. B. frisch eingerichtete Versammlung) → Hinweis. Im
   // Predigtdienst bleibt der Grundplan erreichbar.
   if (!rawWeek || !week) {
     return (
       <section className="screen">
-        <ThemaKopf thema={thema} />
+        <Bereichstitel thema={thema} />
         {isFs && <FsBereichTabs />}
         <div className="panel panel--lead" data-farbe="neutral">
           <h2 className="panel-label">{t.keineWochenTitel}</h2>
@@ -132,7 +132,7 @@ function PlanenBody() {
 
   return (
     <section className="screen">
-      <ThemaKopf
+      <Bereichstitel
         thema={thema}
         zusatz={!isFs && <span className="screen-head-note">{fill(t.offeneZut, { n: openCount })}</span>}
       />

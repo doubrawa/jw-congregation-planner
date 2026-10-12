@@ -324,14 +324,14 @@ function deutscheWerte(ziel: Lang): Array<[string, string]> {
  * `produktname` wie in `beschriftungen-quelle.test.ts`). Sie enthält aber das
  * deutsche Wort „Versammlung" und träfe damit `versammlungLbl` — auf jedem
  * Bildschirm, in jeder Sprache. Ausgenommen ist nur der Name selbst, nicht der
- * Versammlungsname darunter (`.sidebar-sub`).
+ * Versammlungsname darunter (`.seitenmenue-versammlung`).
  *
- * Der Kopf auf dem Handy (`.mobile-header-name`) war bis zum 21.9.2026 hier
- * ebenfalls ausgenommen — dort stand die Kurzform der Wortmarke. Seit T107
- * steht darin der Name der Versammlung, und der wird mitgeprüft wie jeder
- * andere Text: Sonst könnte dort unbemerkt wieder ein deutsches Wort landen.
+ * Der Kopf auf dem Handy war bis zum 21.9.2026 hier ebenfalls ausgenommen —
+ * dort stand die Kurzform der Wortmarke. Seit T107 steht darin die Versammlung
+ * (seit T121 mit dem Tag darüber), und die wird mitgeprüft wie jeder andere
+ * Text: Sonst könnte dort unbemerkt wieder ein deutsches Wort landen.
  */
-const WORTMARKE = '.sidebar-wordmark, .login-wordmark'
+const WORTMARKE = '.seitenmenue-app, .login-wordmark'
 
 function sichtbarerText(container: HTMLElement): string {
   const stuecke: string[] = []
@@ -758,7 +758,7 @@ describe('Rechts-nach-links', () => {
    * den Elementen unten und nicht an ihren Eltern.
    */
   const EIGENER_TEXT: Array<[string, Partial<AppState>, string]> = [
-    ['Name in der Seitenleiste', { screen: 'start' }, '.sidebar-profile-name'],
+    ['Name im Menü', { screen: 'start' }, '.menue-profil-name'],
     ['Name in der Personenliste', { screen: 'personen' }, '.pers-name'],
     ['Name über dem Detail', { screen: 'personen', selectedPersonId: ICH.id }, '.pers-detail-name'],
     ['Name im Profil', { screen: 'profil' }, '.kv-val'],

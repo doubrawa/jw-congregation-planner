@@ -38,7 +38,6 @@ function makeState(over: Partial<AppState> = {}): AppState {
     screen: 'start',
     week: 0,
     tab: 'mid',
-    planModus: false,
     fsBereich: 'treffpunkte',
     theme: 'auto',
     fontScale: 1,
@@ -330,29 +329,6 @@ describe('navigate nach Thema (T120)', () => {
     ).toMatchObject({ screen: 'planen', tab: 'fs', week: 1 })
   })
 
-  it('merkt sich, ob zuletzt geplant wurde — andere Bildschirme ändern daran nichts', () => {
-    let s = makeState({ planner: true })
-    s = reducer(s, { type: 'navigate', screen: 'planen' })
-    expect(s.planModus).toBe(true)
-    s = reducer(s, { type: 'navigate', screen: 'personen' })
-    expect(s.planModus).toBe(true)
-    s = reducer(s, { type: 'navigate', screen: 'programm' })
-    expect(s.planModus).toBe(false)
-  })
-
-  it('der Gruppenaufseher verlässt das Planen nicht, wenn er die Zusammenkünfte ansieht', () => {
-    // Sie anzusehen ist für ihn keine Wahl — planen kann er sie nicht. Zurück im
-    // Predigtdienst soll er dort weiterplanen, wo er war.
-    let s = makeState({ planner: false, personId: 'p1', tab: 'fs' })
-    s = reducer(s, { type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
-    expect(s.planModus).toBe(true)
-    s = reducer(s, { type: 'navigate', screen: 'programm', thema: 'zusammenkuenfte' })
-    expect(s).toMatchObject({ screen: 'programm', planModus: true })
-    // Den Predigtdienst ansehen ist dagegen eine Wahl.
-    s = reducer(s, { type: 'navigate', screen: 'programm', thema: 'predigtdienst' })
-    expect(s.planModus).toBe(false)
-  })
-
   it('setFsBereich wechselt den Bereich und ist ohne Änderung wirkungslos', () => {
     const s = makeState()
     const grund = reducer(s, { type: 'setFsBereich', bereich: 'grundplan' })
@@ -360,9 +336,9 @@ describe('navigate nach Thema (T120)', () => {
     expect(reducer(grund, { type: 'setFsBereich', bereich: 'grundplan' })).toBe(grund)
   })
 
-  it('eine neue Sitzung beginnt beim Ansehen und bei den Treffpunkten', () => {
-    const s = makeState({ planModus: true, fsBereich: 'grundplan', screen: 'planen' })
-    expect(reducer(s, { type: 'logout' })).toMatchObject({ planModus: false, fsBereich: 'treffpunkte' })
+  it('eine neue Sitzung beginnt bei den Treffpunkten', () => {
+    const s = makeState({ fsBereich: 'grundplan', screen: 'planen' })
+    expect(reducer(s, { type: 'logout' })).toMatchObject({ screen: 'login', fsBereich: 'treffpunkte' })
   })
 })
 

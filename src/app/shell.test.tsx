@@ -18,10 +18,10 @@ import type { Group, Notification, Person } from '../data/types'
  * Verkündiger den Punkt „Personen" und liefe beim Antippen ins Programm
  * zurück — der Fehler wäre sichtbar, aber kein Test würde rot.
  *
- * Dazu das übrige Gerüst, das sonst nirgends geprüft war: Mitteilungs-Chip,
+ * Dazu das übrige Gerüst, das sonst nirgends geprüft war: Glocke,
  * Offline-Banner, die vier Status-Ansichten (Laden / keine Versammlung /
- * Fehler / leer), das Einlösen eines Einladungscodes, der Drawer und der
- * Push-Deep-Link.
+ * Fehler / leer), das Einlösen eines Einladungscodes, die Schublade, der Kopf
+ * des Planens und der Push-Deep-Link.
  */
 
 const loadAndHydrate = vi.fn(() => Promise.resolve())
@@ -92,11 +92,17 @@ function zeige(over: Partial<AppState> = {}) {
   return { dispatch, state, ...render(<Buehne />) }
 }
 
-/** Beschriftungen der Hauptnavigation (Desktop-Sidebar, die immer gerendert wird). */
-const navPunkte = (c: HTMLElement) =>
-  [...(c.querySelector('.sidebar .sidebar-nav')?.querySelectorAll('button') ?? [])].map(
-    (b) => b.textContent ?? '',
-  )
+/**
+ * Das Menü am Desktop (`.leiste`) — es wird immer gerendert; welche Form man
+ * sieht, entscheidet allein das CSS nach der Breite. Es trägt als einziges
+ * auch „Mitteilungen".
+ */
+const LEISTE = '.leiste .seitenmenue'
+
+/** Beschriftungen der Hauptnavigation, in ihrer Reihenfolge. */
+const beschriftungen = (wurzel: Element | null) =>
+  [...(wurzel?.querySelectorAll('.menue-eintrag') ?? [])].map((b) => b.querySelector('.menue-eintrag-text')?.textContent ?? '')
+const navPunkte = (c: HTMLElement) => beschriftungen(c.querySelector(LEISTE))
 
 beforeEach(() => {
   loadAndHydrate.mockClear()
@@ -106,36 +112,40 @@ beforeEach(() => {
 })
 afterEach(cleanup)
 
-/** Überschriften der Menü-Abschnitte (T120). */
+/** Überschriften der Menü-Abschnitte. */
 const abschnittTitel = (c: HTMLElement) =>
-  [...c.querySelectorAll('.sidebar .sidebar-nav-titel')].map((e) => e.textContent ?? '')
+  [...c.querySelectorAll(`${LEISTE} .seitenmenue-titel`)].map((e) => e.textContent ?? '')
 
-/** Den Menüpunkt mit dieser Beschriftung antippen (Desktop-Sidebar). */
+/** Den Menüpunkt mit dieser Beschriftung antippen (Menü am Desktop). */
 function tippe(c: HTMLElement, label: string) {
-  const punkt = [...c.querySelectorAll('.sidebar .sidebar-nav button')].find((b) => b.textContent === label)
+  const punkt = [...c.querySelectorAll(`${LEISTE} .menue-eintrag`)].find(
+    (b) => b.querySelector('.menue-eintrag-text')?.textContent === label,
+  )
   if (!punkt) throw new Error(`kein Menüpunkt „${label}"`)
   fireEvent.click(punkt)
 }
 
 describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () => {
   /*
-   * **Das Menü nach Themen** (T120): Eigenes oben, dann die Versammlung mit
-   * ihren Themen, zuletzt die Verwaltung. „Programm" und „Planen" sind keine
-   * Menüpunkte mehr, sondern die beiden Seiten eines Themas; das Profil
-   * erreicht man über den Namensblock.
+   * **Das Menü im neuen Design** (T121, entschieden am 11.10.2026): Eigenes
+   * oben, dann die Versammlung mit ihren Bereichen, zuletzt „Planen und
+   * verwalten" — die Planung für alle, die planen dürfen, Personen und
+   * Einstellungen nur für den Admin. Das Profil erreicht man über den Namen.
    */
-  it('der Admin sieht Eigenes, die Themen der Versammlung und die Verwaltung', () => {
+  it('der Admin sieht Eigenes, die Bereiche der Versammlung, die Planung und die Verwaltung', () => {
     // „Weitere Pläne" (T120, Phase 5) immer — dort legt er den ersten an.
     const { container } = zeige({ planner: true })
     expect(navPunkte(container)).toEqual([
-      t.navStart, t.navAufgabenLong, t.navZusammenkuenfte, t.tabFs, t.navWeiterePlaene, t.navPersonen, t.navEinstellungen,
+      t.navStart, t.navAufgabenLong, t.mitteilungen,
+      t.navZusammenkuenfte, t.tabFs, t.navWeiterePlaene,
+      t.dashPlanung, t.navPersonen, t.navEinstellungen,
     ])
-    expect(abschnittTitel(container)).toEqual([t.versammlungLbl, t.navVerwaltung])
+    expect(abschnittTitel(container)).toEqual([t.versammlungLbl, t.navPlanenVerwalten])
   })
 
-  it('der Verkündiger sieht dieselben Themen — ohne Verwaltung, ohne leere Weitere Pläne', () => {
+  it('der Verkündiger sieht dieselben Bereiche — ohne Planen und Verwalten, ohne leere Weitere Pläne', () => {
     const { container } = zeige({ planner: false, personId: VERKUENDIGER.id })
-    expect(navPunkte(container)).toEqual([t.navStart, t.navAufgabenLong, t.navZusammenkuenfte, t.tabFs])
+    expect(navPunkte(container)).toEqual([t.navStart, t.navAufgabenLong, t.mitteilungen, t.navZusammenkuenfte, t.tabFs])
     expect(abschnittTitel(container)).toEqual([t.versammlungLbl])
   })
 
@@ -149,82 +159,78 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
     expect(navPunkte(entwurf.container)).not.toContain(t.navWeiterePlaene)
   })
 
-  it('der Gruppenaufseher ebenso — er plant über den Schalter im Predigtdienst', () => {
+  it('der Gruppenaufseher plant über „Planung" — die Treffpunkte seiner Gruppe', () => {
     // Die Einstellungen brauchte er nur für den Grundplan seiner Gruppe; der
     // steht seit T120 im Predigtdienst. Personen bleiben ohnehin zu.
-    const { container } = zeige({ planner: false, personId: AUFSEHER.id })
-    expect(navPunkte(container)).toEqual([t.navStart, t.navAufgabenLong, t.navZusammenkuenfte, t.tabFs])
+    const { container, dispatch } = zeige({ planner: false, personId: AUFSEHER.id })
+    expect(navPunkte(container)).toEqual([
+      t.navStart, t.navAufgabenLong, t.mitteilungen, t.navZusammenkuenfte, t.tabFs, t.dashPlanung,
+    ])
+    tippe(container, t.dashPlanung)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
   })
 
-  it('das Profil ist kein Menüpunkt mehr — der Namensblock führt hin', () => {
+  it('„Planung" führt den Planer ins Planen der Zusammenkünfte', () => {
+    const { container, dispatch } = zeige({ planner: true })
+    tippe(container, t.dashPlanung)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte' })
+  })
+
+  it('das Profil ist kein Menüpunkt — der Name im Fuß führt hin und nennt es', () => {
     const { container, dispatch } = zeige({ planner: true })
     expect(navPunkte(container)).not.toContain(t.navProfil)
-    fireEvent.click(container.querySelector('.sidebar .sidebar-profile')!)
+    const fuss = container.querySelector(`${LEISTE} .menue-profil`)!
+    expect(fuss.querySelector('.menue-profil-unterzeile')?.textContent).toBe(`${t.navProfil} · ${t.rolleKoordinator}`)
+    fireEvent.click(fuss)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'profil' })
   })
 
-  it('neben dem Namen steht kein „Profil" — nur für Screenreader nennt der Knopf sein Ziel', () => {
-    // Seit dem 4.10.2026: Den Namen anzutippen genügt. Ohne das unsichtbare Wort
-    // läse der Knopf nur Name und Rolle vor.
-    const { container } = zeige({ planner: true })
-    for (const block of container.querySelectorAll('.sidebar-profile')) {
-      const sichtbar = [...block.querySelectorAll('span')]
-        .filter((s) => !s.classList.contains('sr-only') && !s.closest('.sr-only'))
-        .map((s) => s.textContent)
-        .join(' ')
-      expect(sichtbar).not.toContain(t.navProfil)
-      expect(block.querySelector('.sr-only')?.textContent).toBe(t.navProfil)
-    }
+  it('wer in einer Gruppe ist, hat sie im Fuß stehen', () => {
+    const mitGruppe = { ...PLANER, grp: 'g1' }
+    const { container } = zeige({ persons: [mitGruppe, AUFSEHER, VERKUENDIGER] })
+    expect(container.querySelector(`${LEISTE} .menue-profil-unterzeile`)?.textContent).toBe(
+      `${t.navProfil} · ${t.rolleKoordinator} · Gruppe 1`,
+    )
   })
 
-  it('auf dem Profil ist der Namensblock als aktuelle Seite markiert', () => {
+  it('auf dem Profil ist der Name als aktuelle Seite markiert', () => {
     const { container } = zeige({ planner: true, screen: 'profil' })
-    const block = container.querySelector('.sidebar .sidebar-profile')!
-    expect(block.classList.contains('is-active')).toBe(true)
-    expect(block.getAttribute('aria-current')).toBe('page')
+    const fuss = container.querySelector(`${LEISTE} .menue-profil`)!
+    expect(fuss.classList.contains('is-active')).toBe(true)
+    expect(fuss.getAttribute('aria-current')).toBe('page')
   })
 
   it('Vollständigkeitsprobe: kein Eintrag ohne Recht — die Liste deckt sich mit dem Wächter', async () => {
     // Gegenprobe zur Rechteprüfung im Reducer: Was hier steht, muss dort
     // durchgehen. Sonst zeigt die App einen Punkt, der ins Programm zurückwirft.
-    // Geprüft wird die Aktion, die der Punkt wirklich auslöst — bei den Themen
-    // samt ihrem Reiter.
+    // Geprüft wird die Aktion, die der Punkt wirklich auslöst — bei den
+    // Bereichen samt ihrem Reiter. Die Mitteilungen öffnen sich über der Seite.
     const { reducer } = await import('./reducer')
     for (const [rolle, over] of [
       ['Planer', { planner: true, personId: PLANER.id }],
       ['Gruppenaufseher', { planner: false, personId: AUFSEHER.id }],
       ['Verkündiger', { planner: false, personId: VERKUENDIGER.id }],
     ] as const) {
-      for (const planModus of [false, true]) {
-        const { container, dispatch } = zeige({ ...over, planModus })
-        for (const label of navPunkte(container)) {
-          dispatch.mockClear()
-          tippe(container, label)
-          const aktion = dispatch.mock.calls[0]?.[0]
-          const next = reducer(zustand({ ...over, planModus }), aktion)
-          expect(next.screen, `${rolle} · ${label} · planModus ${planModus}`).toBe(aktion.screen)
-        }
-        cleanup()
+      const { container, dispatch } = zeige(over)
+      for (const label of navPunkte(container)) {
+        dispatch.mockClear()
+        tippe(container, label)
+        const aktion = dispatch.mock.calls[0]?.[0]
+        if (aktion.type === 'openNotifs') continue
+        const next = reducer(zustand(over), aktion)
+        expect(next.screen, `${rolle} · ${label}`).toBe(aktion.screen)
       }
+      cleanup()
     }
   })
 
-  it('ein Thema öffnet beim Ansehen — oder beim Planen, wer zuletzt geplant hat', () => {
-    const { container, dispatch } = zeige({ planner: true, planModus: false })
-    tippe(container, t.navZusammenkuenfte)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'programm', thema: 'zusammenkuenfte' })
-    cleanup()
-    const zuletztGeplant = zeige({ planner: true, planModus: true })
-    tippe(zuletztGeplant.container, t.tabFs)
-    expect(zuletztGeplant.dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
-  })
-
-  it('der Gruppenaufseher kommt so nur in den Predigtdienst planend hinein', () => {
-    const { container, dispatch } = zeige({ planner: false, personId: AUFSEHER.id, planModus: true })
-    tippe(container, t.navZusammenkuenfte)
-    expect(dispatch).toHaveBeenLastCalledWith({ type: 'navigate', screen: 'programm', thema: 'zusammenkuenfte' })
+  it('ein Bereich öffnet immer zum Ansehen — auch wer gerade plant', () => {
+    // Planen ist ein eigener Modus (11.10.2026): über „Planen" am Titel oder
+    // über „Planung" im Menü. Bis dahin öffnete ein Thema beim Planen, wer
+    // zuletzt geplant hatte.
+    const { container, dispatch } = zeige({ planner: true, screen: 'planen', tab: 'mid' })
     tippe(container, t.tabFs)
-    expect(dispatch).toHaveBeenLastCalledWith({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'programm', thema: 'predigtdienst' })
   })
 
   it('ein Klick auf einen Bildschirm-Punkt navigiert dorthin', () => {
@@ -233,58 +239,75 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'personen' })
   })
 
-  it('der aktive Punkt ist als solcher ausgezeichnet — beim Thema entscheidet der Reiter', () => {
+  it('der aktive Punkt ist als solcher ausgezeichnet — beim Ansehen entscheidet der Reiter', () => {
     for (const [over, erwartet] of [
       [{ screen: 'programm', tab: 'mid' }, t.navZusammenkuenfte],
-      [{ screen: 'planen', tab: 'edit' }, t.navZusammenkuenfte],
-      [{ screen: 'planen', tab: 'fs' }, t.tabFs],
+      [{ screen: 'programm', tab: 'fs' }, t.tabFs],
+      [{ screen: 'planen', tab: 'edit' }, t.dashPlanung],
+      [{ screen: 'planen', tab: 'fs' }, t.dashPlanung],
       [{ screen: 'aufgaben' }, t.navAufgabenLong],
     ] as const) {
       const { container } = zeige(over)
-      const aktiv = container.querySelectorAll('.sidebar .sidebar-nav [aria-current="page"]')
+      const aktiv = container.querySelectorAll(`${LEISTE} .menue-eintrag[aria-current="page"]`)
       expect(aktiv).toHaveLength(1)
-      expect(aktiv[0]?.textContent).toBe(erwartet)
+      expect(aktiv[0]?.querySelector('.menue-eintrag-text')?.textContent).toBe(erwartet)
       cleanup()
     }
   })
+
+  it('an „Meine Aufgaben" steht, wie viele auf Zusage warten', () => {
+    const offen = (id: string) => ({ ...demoZustand().myTasks[0]!, id, status: 'offen' as const })
+    const { container } = zeige({ myTasks: [offen('a1'), offen('a2'), { ...offen('a3'), status: 'bestätigt' as const }] })
+    const aufgaben = [...container.querySelectorAll(`${LEISTE} .menue-eintrag`)].find(
+      (b) => b.querySelector('.menue-eintrag-text')?.textContent === t.navAufgabenLong,
+    )!
+    expect(aufgaben.querySelector('.menue-zahl')?.textContent).toBe('2')
+  })
 })
 
-describe('Der Mitteilungs-Chip zählt nur das Ungelesene', () => {
+describe('Die Glocke zählt nur das Ungelesene', () => {
   const notif = (id: string, read: boolean): Notification => ({
     id, type: 'zuteilung', title: 'Neue Zuteilung', text: 'x', at: new Date().toISOString(), read,
   })
+  const glocke = (c: HTMLElement) => c.querySelector<HTMLButtonElement>('.kopfzeile .kopfzeile-glocke')!
 
-  it('ohne Ungelesenes trägt er nur das Wort', () => {
+  it('ohne Ungelesenes heißt sie nur „Mitteilungen" und trägt keinen Punkt', () => {
     const { container } = zeige({ notifs: [notif('n1', true)] })
-    const chip = container.querySelector('.notif-chip')!
-    expect(chip.textContent).toBe(t.mitteilungen)
-    expect(chip.className).not.toContain('has-unread')
+    expect(glocke(container).getAttribute('aria-label')).toBe(t.mitteilungen)
+    expect(glocke(container).querySelector('.kopfzeile-neu')).toBeNull()
   })
 
-  it('mit Ungelesenem nennt er die Zahl — und hebt sich ab', () => {
+  it('mit Ungelesenem nennt sie die Zahl — und trägt den Punkt', () => {
     const { container } = zeige({ notifs: [notif('n1', false), notif('n2', false), notif('n3', true)] })
-    const chip = container.querySelector('.notif-chip')!
-    expect(chip.textContent).toBe('Neu: 2')
-    expect(chip.className).toContain('has-unread')
+    expect(glocke(container).getAttribute('aria-label')).toBe(`${t.mitteilungen}, Neu: 2`)
+    expect(glocke(container).querySelector('.kopfzeile-neu')).not.toBeNull()
   })
 
   it('ein Tipp öffnet die Mitteilungen', () => {
     const { container, dispatch } = zeige()
-    fireEvent.click(container.querySelector('.notif-chip')!)
+    fireEvent.click(glocke(container))
+    expect(dispatch).toHaveBeenCalledWith({ type: 'openNotifs' })
+  })
+
+  it('am Desktop stehen die Mitteilungen in der Leiste — mit derselben Zahl', () => {
+    const { container, dispatch } = zeige({ notifs: [notif('n1', false), notif('n2', false)] })
+    const eintrag = [...container.querySelectorAll(`${LEISTE} .menue-eintrag`)].find(
+      (b) => b.querySelector('.menue-eintrag-text')?.textContent === t.mitteilungen,
+    )!
+    expect(eintrag.querySelector('.menue-zahl')?.textContent).toBe('2')
+    fireEvent.click(eintrag)
     expect(dispatch).toHaveBeenCalledWith({ type: 'openNotifs' })
   })
 })
 
 describe('Klein steht die kleine Fassung des Logos (4.10.2026)', () => {
-  it('Seitenleiste und Kopfzeile am Handy zeigen 3-5-7 statt 4-6-8', () => {
+  it('im Menü 3-5-7 statt 4-6-8 — in den Farben der Darstellung', () => {
     // Klein verschwammen die 18 Plätze von 4-6-8 zu Streifen; die Anmeldung
     // (72 px) und die App-Icons behalten das große Zeichen.
     const { container } = zeige()
-    const quellen = [...container.querySelectorAll<HTMLImageElement>('.sidebar-logo, .mobile-header-logo')].map((img) =>
-      img.getAttribute('src'),
-    )
-    expect(quellen.length, 'kein Logo gefunden').toBeGreaterThanOrEqual(2)
-    expect(quellen.every((src) => src?.endsWith('logo-klein.svg')), quellen.join(', ')).toBe(true)
+    const logo = container.querySelector(`${LEISTE} .logo`)!
+    expect(logo.querySelectorAll('.logo-platz circle')).toHaveLength(3 + 5 + 7)
+    expect(logo.querySelectorAll('.logo-pult')).toHaveLength(1)
   })
 })
 
@@ -456,51 +479,72 @@ describe('Ein Konto ohne Versammlung löst seinen Einladungscode ein', () => {
   })
 })
 
-describe('Das mobile Seitenmenü', () => {
-  it('ist zu, bis man es öffnet', () => {
+describe('Die Schublade am Handy (und am Tablet hochkant)', () => {
+  const menueKnopf = (c: HTMLElement) => c.querySelector<HTMLButtonElement>('.kopfzeile .kopfzeile-menue')!
+
+  it('ist zu, bis man sie öffnet', () => {
     const { container } = zeige()
-    expect(container.querySelector('.drawer')).toBeNull()
-    expect(container.querySelector('.menu-btn')?.getAttribute('aria-expanded')).toBe('false')
+    expect(container.querySelector('.schublade')).toBeNull()
+    expect(menueKnopf(container).getAttribute('aria-expanded')).toBe('false')
   })
 
-  it('der Menü-Knopf öffnet es als Dialog', () => {
+  it('der Menü-Knopf öffnet sie als Dialog', () => {
     const { container } = zeige()
-    fireEvent.click(container.querySelector('.menu-btn')!)
-    const drawer = container.querySelector('.drawer')!
-    expect(drawer.getAttribute('role')).toBe('dialog')
-    expect(drawer.getAttribute('aria-modal')).toBe('true')
+    fireEvent.click(menueKnopf(container))
+    const schublade = container.querySelector('.schublade')!
+    expect(schublade.getAttribute('role')).toBe('dialog')
+    expect(schublade.getAttribute('aria-modal')).toBe('true')
   })
 
-  it('Escape schließt es wieder', () => {
+  it('der Knopf der schmalen Leiste öffnet dieselbe', () => {
     const { container } = zeige()
-    fireEvent.click(container.querySelector('.menu-btn')!)
+    fireEvent.click(container.querySelector('.schmale-leiste .schmale-leiste-menue')!)
+    expect(container.querySelector('.schublade')).not.toBeNull()
+  })
+
+  it('Escape schließt sie wieder', () => {
+    const { container } = zeige()
+    fireEvent.click(menueKnopf(container))
     fireEvent.keyDown(window, { key: 'Escape' })
-    expect(container.querySelector('.drawer')).toBeNull()
+    expect(container.querySelector('.schublade')).toBeNull()
   })
 
-  it('ein Klick auf den Hintergrund ebenfalls', () => {
+  it('ein Klick auf den Schleier ebenfalls — und das Kreuz', () => {
     const { container } = zeige()
-    fireEvent.click(container.querySelector('.menu-btn')!)
-    fireEvent.click(container.querySelector('.drawer-backdrop')!)
-    expect(container.querySelector('.drawer')).toBeNull()
+    fireEvent.click(menueKnopf(container))
+    fireEvent.click(container.querySelector('.schublade-schleier')!)
+    expect(container.querySelector('.schublade')).toBeNull()
+    fireEvent.click(menueKnopf(container))
+    fireEvent.click(container.querySelector(`.schublade [aria-label="${t.a11yClose}"]`)!)
+    expect(container.querySelector('.schublade')).toBeNull()
   })
 
-  it('eine Navigation schließt es mit — sonst stünde es über dem neuen Screen', () => {
+  it('eine Navigation schließt sie mit — sonst stünde sie über dem neuen Screen', () => {
     const { container, dispatch } = zeige()
-    fireEvent.click(container.querySelector('.menu-btn')!)
-    const punkt = [...container.querySelectorAll('.drawer .sidebar-nav button')].find(
-      (b) => b.textContent === t.navZusammenkuenfte,
+    fireEvent.click(menueKnopf(container))
+    const punkt = [...container.querySelectorAll('.schublade .menue-eintrag')].find(
+      (b) => b.querySelector('.menue-eintrag-text')?.textContent === t.navZusammenkuenfte,
     )!
     fireEvent.click(punkt)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'programm', thema: 'zusammenkuenfte' })
-    expect(container.querySelector('.drawer')).toBeNull()
+    expect(container.querySelector('.schublade')).toBeNull()
   })
 
-  it('das Menü führt dieselben Punkte wie die Sidebar — eine Rechteliste, zwei Orte', () => {
+  it('sie führt dieselben Punkte wie die Leiste — ohne Mitteilungen, die hat die Glocke', () => {
     const { container } = zeige({ planner: false, personId: VERKUENDIGER.id })
-    fireEvent.click(container.querySelector('.menu-btn')!)
-    const imMenue = [...container.querySelectorAll('.drawer .sidebar-nav button')].map((b) => b.textContent)
-    expect(imMenue).toEqual(navPunkte(container))
+    fireEvent.click(menueKnopf(container))
+    const inDerSchublade = beschriftungen(container.querySelector('.schublade'))
+    expect(inDerSchublade).toEqual(navPunkte(container).filter((p) => p !== t.mitteilungen))
+  })
+
+  it('die schmale Leiste ebenso — mit dem kurzen Namen für Meine Aufgaben', () => {
+    const { container } = zeige({ planner: true })
+    const kurz = [...container.querySelectorAll('.schmale-leiste .leisten-text')].map((e) => e.textContent)
+    expect(kurz).toEqual(
+      navPunkte(container)
+        .filter((p) => p !== t.mitteilungen)
+        .map((p) => (p === t.navAufgabenLong ? t.navAufgaben : p)),
+    )
   })
 })
 
@@ -509,39 +553,35 @@ describe('Das mobile Seitenmenü', () => {
  * die Kurzform der Wortmarke, „VERSAMMLUNG" — sie sah aus wie eine Überschrift
  * und sagte nichts, weil das Wort in dieser App ohnehin überall steht.
  */
-describe('Die Kopfzeile auf dem Handy nennt die Versammlung', () => {
-  const kopfName = (c: HTMLElement) => c.querySelector('.mobile-header .mobile-header-name')
+describe('Die Kopfzeile auf dem Handy nennt Tag und Versammlung', () => {
+  const kopfName = (c: HTMLElement) => c.querySelector('.kopfzeile .kopfzeile-versammlung')
   const krumbach = { name: 'Krumbach', hall: '', times: demoZustand().congregation.times }
 
-  it('steht der Name der Versammlung — nicht die Wortmarke', () => {
+  it('steht die Versammlung — so, wie das Wörterbuch sie nennt', () => {
     const { container } = zeige({ congregation: krumbach })
-    expect(kopfName(container)?.textContent).toBe('Krumbach')
-    expect(container.querySelector('.mobile-header')?.textContent).not.toMatch(/versammlung/i)
+    expect(kopfName(container)?.textContent).toBe('Versammlung Krumbach')
   })
 
-  it('der Name steht so da, wie ihn der Planer eingegeben hat — die Großschreibung macht das CSS', () => {
-    // Stünde „KRUMBACH" im Text, läse ein Screenreader den Namen als Abkürzung
-    // Buchstabe für Buchstabe vor.
-    const { container } = zeige({ congregation: { ...krumbach, name: 'Ichenhausen-Nord' } })
-    expect(kopfName(container)?.textContent).toBe('Ichenhausen-Nord')
+  it('und darüber der heutige Tag in der Sprache der App', () => {
+    const { container } = zeige({ congregation: krumbach })
+    const tag = container.querySelector('.kopfzeile .kopfzeile-datum')?.textContent ?? ''
+    expect(tag).toBe(new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date()))
   })
 
   it('ein langer Name wird nicht abgeschnitten, bevor er ankommt — kürzen darf nur die Anzeige', () => {
     const lang = 'Neu-Ulm Ludwigsfeld Spanischsprachige Versammlung'
     const { container } = zeige({ congregation: { ...krumbach, name: lang } })
-    expect(kopfName(container)?.textContent).toBe(lang)
+    expect(kopfName(container)?.textContent).toBe(`Versammlung ${lang}`)
   })
 
   it('der Name in anderer Schrift bestimmt seine Leserichtung selbst', () => {
     const { container } = zeige({ congregation: { ...krumbach, name: 'جماعة الرياض' } })
     expect(kopfName(container)?.getAttribute('dir')).toBe('auto')
-    expect(kopfName(container)?.textContent).toBe('جماعة الرياض')
   })
 
   it('solange keine Versammlung geladen ist, steht der Produktname da — kein leerer Kopf', () => {
     // Beim Laden und für ein Konto, das noch keinen Code eingelöst hat, gibt es
-    // keinen Versammlungsnamen. Ein Kopf mit Logo und nichts daneben sähe aus
-    // wie ein Ladefehler.
+    // keinen Versammlungsnamen. Ein leerer Kopf sähe aus wie ein Ladefehler.
     for (const over of [
       { dataStatus: 'loading' as const },
       { dataStatus: 'no-membership' as const },
@@ -557,20 +597,47 @@ describe('Die Kopfzeile auf dem Handy nennt die Versammlung', () => {
     expect(kopfName(container)?.textContent).toBe('Versammlung.app')
   })
 
-  it('das Menü führt den Produktnamen weiter — dort bleibt er, wenn er den Kopf räumt', () => {
+  it('das Menü führt Produktnamen und Versammlung', () => {
     const { container } = zeige({ congregation: krumbach })
-    fireEvent.click(container.querySelector('.menu-btn')!)
-    const drawer = container.querySelector('.drawer')!
-    expect(drawer.querySelector('.sidebar-wordmark')?.textContent).toBe('Versammlung.app')
-    expect(drawer.querySelector('.sidebar-sub')?.textContent).toBe('Versammlung Krumbach')
+    const marke = container.querySelector(`${LEISTE} .seitenmenue-marke`)!
+    expect(marke.querySelector('.seitenmenue-app')?.textContent).toBe('Versammlung.app')
+    expect(marke.querySelector('.seitenmenue-versammlung')?.textContent).toBe('Krumbach')
+  })
+})
+
+describe('Beim Planen trägt am Handy der Kopf des Planens Titel und „Fertig"', () => {
+  it('Kreuz und „Fertig" führen zurück zum Ansehen desselben Bereichs', () => {
+    const { container, dispatch } = zeige({ screen: 'planen', tab: 'fs' })
+    const kopf = container.querySelector('.planenkopf')!
+    expect(kopf.querySelector('.planenkopf-titel')?.textContent).toBe(t.tabFs)
+    fireEvent.click(kopf.querySelector(`[aria-label="${t.planenBeenden}"]`)!)
+    expect(dispatch).toHaveBeenLastCalledWith({ type: 'navigate', screen: 'programm', thema: 'predigtdienst' })
+    fireEvent.click([...kopf.querySelectorAll('button')].find((b) => b.textContent === t.fertig)!)
+    expect(dispatch).toHaveBeenCalledTimes(2)
+  })
+
+  it('beim Gruppenaufseher nennt er den Predigtdienst — auch mit einem Reiter von früher', () => {
+    // Darunter stehen seine Treffpunkte (`geplantesThema`); „Fertig" führt
+    // dorthin zurück, nicht in die Zusammenkünfte.
+    const { container, dispatch } = zeige({ planner: false, personId: AUFSEHER.id, screen: 'planen', tab: 'mid' })
+    const kopf = container.querySelector('.planenkopf')!
+    expect(kopf.querySelector('.planenkopf-titel')?.textContent).toBe(t.tabFs)
+    fireEvent.click([...kopf.querySelectorAll('button')].find((b) => b.textContent === t.fertig)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'programm', thema: 'predigtdienst' })
+  })
+
+  it('beim Ansehen gibt es ihn nicht', () => {
+    const { container } = zeige({ screen: 'programm', tab: 'mid' })
+    expect(container.querySelector('.planenkopf')).toBeNull()
+    expect(container.querySelector('.kopfzeile')?.classList.contains('kopfzeile--beim-planen')).toBe(false)
   })
 })
 
 describe('Abmelden und Rollenanzeige', () => {
   it('der Fuß nennt Namen und Rolle', () => {
     const { container } = zeige()
-    expect(container.querySelector('.sidebar-profile-name')?.textContent).toBe('Paula Planer')
-    expect(container.querySelector('.sidebar-profile-role')?.textContent).toBe(t.rolleKoordinator)
+    expect(container.querySelector('.menue-profil-name')?.textContent).toBe('Paula Planer')
+    expect(container.querySelector('.menue-profil-unterzeile')?.textContent).toBe(`${t.navProfil} · ${t.rolleKoordinator}`)
   })
 
   /*
@@ -578,7 +645,7 @@ describe('Abmelden und Rollenanzeige', () => {
    * „Verkündiger" — dabei ändert und sendet er die Treffpunkte seiner Gruppe.
    */
   it('der Aufseher einer Gruppe steht als Gruppenaufseher da, sein Gehilfe als Gehilfe', () => {
-    const rolle = (c: HTMLElement) => c.querySelector('.sidebar-profile-role')?.textContent
+    const rolle = (c: HTMLElement) => c.querySelector('.menue-profil-unterzeile')?.textContent?.split(' · ')[1]
     const aufseher = zeige({ planner: false, personId: AUFSEHER.id })
     expect(rolle(aufseher.container)).toBe(t.rolleGruppenaufseher)
     cleanup()
@@ -594,19 +661,19 @@ describe('Abmelden und Rollenanzeige', () => {
     // Bis zum 2.10.2026 hing im Demo-Modus „ (Demo)" daran — und stand damit
     // auf jedem Handbuchbild. Die Entwicklerseite zeigt die App wie im Betrieb.
     const { container } = zeige({ userId: null, congregationId: null })
-    expect(container.querySelector('.sidebar-profile-role')?.textContent).toBe(t.rolleKoordinator)
+    expect(container.querySelector('.menue-profil-unterzeile')?.textContent).toBe(`${t.navProfil} · ${t.rolleKoordinator}`)
   })
 
   it('ohne eigene Person bleibt der Name leer, statt „undefined" zu zeigen', () => {
     const { container } = zeige({ personId: null })
-    expect(container.querySelector('.sidebar-profile-name')?.textContent).toBe('')
-    expect(container.querySelector('.sidebar-profile .avatar')?.textContent).toBe('–')
+    expect(container.querySelector('.menue-profil-name')?.textContent).toBe('')
+    expect(container.querySelector('.menue-profil .menue-kuerzel')?.textContent).toBe('–')
   })
 
   it('im Menü steht kein „Abmelden" mehr — es steht im Profil, als Knopf wie „App installieren"', () => {
-    // Seit dem 4.10.2026. Der Fuß steht zweimal da (Seitenleiste, Handy-Menü).
+    // Seit dem 4.10.2026. Das Menü steht in drei Formen da (Leiste, schmale Leiste, Schublade).
     const { container, dispatch } = zeige({ screen: 'profil' })
-    const menue = [...container.querySelectorAll('.sidebar, .drawer')]
+    const menue = [...container.querySelectorAll('.leiste, .schmale-leiste, .schublade')]
     expect(menue.flatMap((m) => [...m.querySelectorAll('button')]).map((b) => b.textContent)).not.toContain(t.abmelden)
     const imProfil = [...container.querySelectorAll('.app-content button')].find((b) => b.textContent === t.abmelden)
     expect(imProfil?.classList.contains('btn-outline'), 'kein richtiger Knopf').toBe(true)
@@ -655,17 +722,17 @@ describe('Abmelden und Rollenanzeige', () => {
 })
 
 describe('Der Login rendert ohne App-Gerüst', () => {
-  it('kein Sidebar, kein Kopf, kein Mitteilungs-Chip', () => {
+  it('kein Menü, keine Kopfzeile, keine Glocke', () => {
     const { container } = zeige({ screen: 'login' })
-    expect(container.querySelector('.sidebar')).toBeNull()
-    expect(container.querySelector('.mobile-header')).toBeNull()
-    expect(container.querySelector('.notif-chip')).toBeNull()
+    expect(container.querySelector('.leiste')).toBeNull()
+    expect(container.querySelector('.schmale-leiste')).toBeNull()
+    expect(container.querySelector('.kopfzeile')).toBeNull()
     expect(container.querySelector('.app-main.is-login')).toBeTruthy()
   })
 
   it('die Passwort-Rücksetz-Ansicht ebenso — sie kommt aus einem Mail-Link', () => {
     const { container } = zeige({ screen: 'start', recovery: true })
-    expect(container.querySelector('.sidebar')).toBeNull()
+    expect(container.querySelector('.leiste')).toBeNull()
     expect(container.querySelector('.app-main.is-login')).toBeTruthy()
   })
 })

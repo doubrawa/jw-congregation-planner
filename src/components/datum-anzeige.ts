@@ -32,12 +32,21 @@ export type DatumsFormat = keyof typeof FORMATE
 
 const gemerkt = new Map<string, Intl.DateTimeFormat>()
 
-/** Der Formatierer für Sprache und Format — beim ersten Mal gebaut, danach gemerkt. */
+/**
+ * Der Formatierer für Sprache und Format — beim ersten Mal gebaut, danach
+ * gemerkt. Ein Sprach-Tag, das Intl nicht kennt, fällt auf die Sprache des
+ * Geräts zurück, statt zu werfen: Seit dem neuen Design (T121) steht das Datum
+ * in der Kopfzeile jedes Bildschirms, ein Wurf dort risse die ganze App mit.
+ */
 export function datumsFormat(lang: string, format: DatumsFormat): Intl.DateTimeFormat {
   const schluessel = `${lang}|${format}`
   let formatierer = gemerkt.get(schluessel)
   if (!formatierer) {
-    formatierer = new Intl.DateTimeFormat(LOCALES[lang as Lang] ?? lang, FORMATE[format])
+    try {
+      formatierer = new Intl.DateTimeFormat(LOCALES[lang as Lang] ?? lang, FORMATE[format])
+    } catch {
+      formatierer = new Intl.DateTimeFormat(undefined, FORMATE[format])
+    }
     gemerkt.set(schluessel, formatierer)
   }
   return formatierer

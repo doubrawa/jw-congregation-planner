@@ -651,7 +651,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         // (`zurNaechstenZusammenkunft`), der Nächste erbte ihn sonst.
         tab: 'mid',
         terminGewaehlt: false,
-        planModus: false,
         fsBereich: 'treffpunkte',
         sprungZiel: null, // ein Sprung aus einem Push gehört zur Sitzung, die ihn bekam
         s89: null,
@@ -706,17 +705,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ...detailVerlassen(state),
         screen,
         tab,
-        // Merkt sich, ob zuletzt geplant wurde — die Themen im Menü öffnen
-        // dann wieder dort (T120). Andere Bildschirme ändern daran nichts, und
-        // ebenso wenig das Ansehen eines Themas, das man gar nicht planen darf:
-        // Der Gruppenaufseher, der zwischendurch die Zusammenkünfte ansieht,
-        // hat das Planen damit nicht verlassen.
-        planModus:
-          screen === 'planen'
-            ? true
-            : screen === 'programm' && darfPlanen(rechte, themaVon(tab))
-              ? false
-              : state.planModus,
         notifOpen: false,
         slotSel: null,
         selectedPersonId: null,

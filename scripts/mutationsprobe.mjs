@@ -2986,12 +2986,27 @@ export const KATALOG = [
     ersetzen:
       "  return <button type=\"button\" className={className} onClick={() => dispatch({ type: 'removeAbsence', id })}>✕</button>",
   },
+  /* ---- Das Menü im neuen Design (T121, 12.10.2026) ---- */
   {
-    id: 'profil-wort-unsichtbar',
-    datei: 'src/app/Sidebar.tsx',
-    regel: 'Neben dem Namen im Menü steht kein sichtbares „Profil ›" — nur Screenreader hören das Wort.',
-    suchen: '<span className="sr-only">{profilLabel}</span>',
-    ersetzen: '<span className="sidebar-profile-link">{profilLabel} ›</span>',
+    id: 'menue-bereich-zum-ansehen',
+    datei: 'src/app/AppShell.tsx',
+    regel: 'Ein Bereich im Menü öffnet zum Ansehen — auch wer gerade plant; geplant wird über „Planen" oder „Planung".',
+    suchen: '    dispatch(zumAnsehen(thema))\n  }',
+    ersetzen: "    dispatch(state.screen === 'planen' ? zumPlanen(thema) : zumAnsehen(thema))\n  }",
+  },
+  {
+    id: 'menue-planenkopf-bereich',
+    datei: 'src/app/AppShell.tsx',
+    regel: 'Der Kopf des Planens nennt den Bereich, der darunter geplant wird — beim Gruppenaufseher den Predigtdienst.',
+    suchen: '  const geplant = geplantesThema(rechte, state.tab)',
+    ersetzen: '  const geplant = themaVon(state.tab)',
+  },
+  {
+    id: 'menue-planung-gruppenaufseher',
+    datei: 'src/app/AppShell.tsx',
+    regel: '„Planung" führt den Gruppenaufseher zu den Treffpunkten, die er planen darf — nicht in die Zusammenkünfte.',
+    suchen: "const planungsThema: Thema = darfPlanen(rechte, 'zusammenkuenfte') ? 'zusammenkuenfte' : 'predigtdienst'",
+    ersetzen: "const planungsThema: Thema = 'zusammenkuenfte'",
   },
   /* ---- Eine Zeugnis-Schicht fällt aus (4.10.2026) ---- */
   {

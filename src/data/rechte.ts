@@ -137,3 +137,14 @@ export function themaVon(tab: MeetingTab): Thema {
 export function darfPlanen(r: Rechte, thema: Thema): boolean {
   return r.zuteilen || (r.gruppe !== null && thema === 'predigtdienst')
 }
+
+/**
+ * Welchen Bereich das Planen zeigt. Der Gruppenaufseher, der nicht zuteilt,
+ * plant allein die Treffpunkte seiner Gruppe — auch mit einem Reiter von
+ * früher; alle anderen planen, was der Reiter sagt. Eine Antwort für den
+ * Bildschirm (`PlanenScreen`) und für den Kopf des Planens darüber.
+ */
+export function geplantesThema(r: Rechte, tab: MeetingTab): Thema {
+  if (!r.zuteilen && r.gruppe !== null) return 'predigtdienst'
+  return themaVon(tab)
+}

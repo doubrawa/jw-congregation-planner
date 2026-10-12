@@ -8,6 +8,102 @@
  * eine Mindesthöhe statt einer festen, damit sie mit großer Schrift mitwachsen.
  */
 
+/* ---- Zeichen und Logo --------------------------------------------------- */
+
+.zeichen {
+  display: block;
+  flex: none;
+}
+
+.logo {
+  display: block;
+  flex: none;
+}
+
+.logo-pult {
+  fill: var(--akzent);
+}
+
+.logo-platz {
+  fill: var(--text);
+}
+
+/* ---- Runde Knöpfe (Menü, Glocke, Kreuz, Wochen) -------------------------------- */
+
+.rund-knopf {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--karte);
+  color: var(--text);
+}
+
+.rund-knopf--feld {
+  background: var(--feld);
+}
+
+/* ---- Titel einer Seite und eines Bereichs ------------------------------- */
+
+.seitentitel {
+  font-size: calc(25px * var(--fs));
+  font-weight: 300;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+/* Arabische Schrift verbindet ihre Buchstaben; Sperren reißt sie auseinander. */
+[dir='rtl'] .seitentitel {
+  letter-spacing: 0;
+}
+
+.bereichstitel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-block-end: 14px;
+}
+
+.bereichstitel-zeile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  min-height: 52px;
+}
+
+/* „Planen" neben dem Titel — und „Fertig", solange geplant wird. */
+.planen-knopf {
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 6px 16px;
+  border: 1.5px solid var(--akzent-text);
+  border-radius: 22px;
+  color: var(--akzent-text);
+  font-size: calc(14.5px * var(--fs));
+  font-weight: 700;
+}
+
+/* Am Handy trägt beim Planen der Kopf des Planens Titel und „Fertig". */
+@media (max-width: 767.98px) {
+  .bereichstitel--planen .bereichstitel-zeile {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .seitentitel {
+    font-size: calc(29px * var(--fs));
+  }
+}
+
 /* ---- Wahl: wenige Möglichkeiten, eine gedrückt ---------------------------- */
 
 .wahl {
@@ -28,6 +124,7 @@
   font-size: calc(14.5px * var(--fs));
   font-weight: 500;
   /* Bei großer Schrift trennt ein langes Wort lieber, als hinauszuragen. */
+  -webkit-hyphens: auto;
   hyphens: auto;
   overflow-wrap: anywhere;
 }

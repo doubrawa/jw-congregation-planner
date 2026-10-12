@@ -162,7 +162,7 @@ describe('Die Reiter', () => {
 })
 
 describe('Der Kopf nennt das Thema (T120)', () => {
-  const titel = (c: HTMLElement) => seite(c).querySelector('.thema-kopf .screen-title')?.textContent
+  const titel = (c: HTMLElement) => seite(c).querySelector('.bereichstitel .seitentitel')?.textContent
 
   it('Zusammenkünfte oder Predigtdienst — je nach Reiter', () => {
     expect(titel(zeige().container)).toBe(t.navZusammenkuenfte)
@@ -179,10 +179,11 @@ describe('Der Kopf nennt das Thema (T120)', () => {
     }
   })
 
-  it('der Schalter führt zum Ansehen desselben Themas', () => {
+  it('„Fertig" führt zum Ansehen desselben Bereichs', () => {
     const { container, dispatch } = zeige({ tab: 'fs' })
-    const ansehen = [...seite(container).querySelectorAll('.modus-knopf')].find((b) => b.textContent === t.ansehen)!
-    fireEvent.click(ansehen)
+    const fertig = seite(container).querySelector<HTMLButtonElement>('.bereichstitel .planen-knopf')!
+    expect(fertig.textContent).toBe(t.fertig)
+    fireEvent.click(fertig)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'programm', thema: 'predigtdienst' })
   })
 })

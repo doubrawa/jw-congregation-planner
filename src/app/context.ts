@@ -138,12 +138,6 @@ export interface AppState {
   screen: Screen
   week: number // Index in weeks
   tab: MeetingTab
-  /**
-   * Zuletzt wurde geplant, nicht angesehen (T120). Die Themen im Menü öffnen
-   * dort, wo man zuletzt war: Wer plant, kurz in die Personen geht und über
-   * „Zusammenkünfte" zurückkommt, landet wieder beim Planen.
-   */
-  planModus: boolean
   /** Im Predigtdienst: Treffpunkte der Woche, Gruppenbesuche oder (beim Planen) Grundplan (T120). */
   fsBereich: FsBereich
 

@@ -78,18 +78,18 @@ Aufgaben legt dir die App ohnehin beim Öffnen vor.
 - Ist nichts zu tun, schrumpft die Karte auf eine Zeile **„Alles zugeteilt"** –
   darunter der Zeitraum, für den das gilt. Wochen dahinter hat sie nicht
   angesehen.
-- Das Menü links ist nach Themen geordnet: oben **Start** und **Meine
-  Aufgaben**, darunter unter **Versammlung** die **Zusammenkünfte** und der
-  **Predigtdienst**, zuletzt unter **Verwaltung** die **Personen** und
-  **Einstellungen** – die Verwaltung sehen nur Planer. Dein **Profil** erreichst
-  du über deinen Namen ganz unten.
-- **Ansehen oder Planen.** Jedes Thema hat oben rechts einen Schalter: **Ansehen**
-  zeigt das Programm so, wie es alle sehen, **Planen** die Zuteilungen. Ein
-  Thema öffnet sich dort, wo du zuletzt warst – wer gerade plant, kommt beim
-  Wechsel von den Zusammenkünften zum Predigtdienst gleich in dessen Planung.
-- **Gruppenaufseher** planen nur den Predigtdienst ihrer Gruppe: Sie sehen den
-  Schalter nur dort, die Verwaltung gar nicht, und die Startseite wie
-  Verkündiger, ohne Planungs‑Karte.
+- Das Menü an der Seite: oben **Start** und **Meine Aufgaben**, darunter unter
+  **Versammlung** die **Zusammenkünfte**, der **Predigtdienst** und die
+  **Weiteren Pläne**, zuletzt unter **Planen und verwalten** die **Planung** und
+  – nur für Admins – **Personen** und **Einstellungen**. Dein **Profil**
+  erreichst du über deinen Namen ganz unten.
+- **Ansehen oder Planen.** Die Bereiche im Menü öffnen immer zum Ansehen: so,
+  wie es alle sehen. Neben dem Titel steht **Planen** – damit kommst du zu den
+  Zuteilungen, ebenso über **Planung** im Menü. Beim Planen steht am Handy oben
+  ein Kreuz und **Fertig**; beides führt zurück zum Ansehen.
+- **Gruppenaufseher** planen nur den Predigtdienst ihrer Gruppe: Sie sehen
+  **Planen** nur dort, unter **Planen und verwalten** nur die **Planung**, und
+  die Startseite wie Verkündiger, ohne Planungs‑Karte.
 
 ### Wer darf was: Planer und Admin
 

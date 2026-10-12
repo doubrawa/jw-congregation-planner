@@ -35,7 +35,6 @@ export function initialState(): AppState {
     screen: 'login',
     week: 0,
     tab: 'mid',
-    planModus: false,
     fsBereich: 'treffpunkte',
     theme: getInitialTheme(),
     fontScale: getInitialFontScale(),

@@ -62,10 +62,10 @@ Wichtigste zusammen.
 - **Mitteilungen** und **Zu bestätigen** zeigen dir auf einen Blick, ob etwas
   Neues für dich da ist.
 
-Über das Menü links (bzw. den Menüknopf auf dem Handy) erreichst du **Start**
-und **Meine Aufgaben**, darunter unter **Versammlung** die **Zusammenkünfte**
-und den **Predigtdienst**. Dein **Profil** öffnest du mit einem Tipp auf deinen
-Namen ganz unten.
+Über das Menü an der Seite (auf dem Handy hinter dem Menüknopf oben links)
+erreichst du **Start** und **Meine Aufgaben**, darunter unter **Versammlung** die
+**Zusammenkünfte** und den **Predigtdienst**. Dein **Profil** öffnest du mit
+einem Tipp auf deinen Namen ganz unten.
 
 ---
 
@@ -336,13 +336,15 @@ alles geht auch weiterhin über Knöpfe und Pfeile.
 - **Nach unten wischen** – schließt ein von unten eingeblendetes Fenster. Der
   kurze Strich am oberen Rand zeigt, dass es sich ziehen lässt.
 
-Auf einem Tablet im Querformat – und auf allen Bildschirmen ab etwa Tablet‑Breite –
-steht das Menü dauerhaft links, statt sich hinter dem Menüknopf zu verbergen.
+Auf einem Tablet im Hochformat steht links eine **schmale Leiste** mit Zeichen
+und kurzen Namen; der Menüknopf darin klappt das ganze Menü aus. Im Querformat
+und am Computer steht das Menü ausgeklappt links, dort auch die
+**Mitteilungen**.
 
-Auf dem Handy steht oben in der Kopfzeile der **Name deiner Versammlung**,
-rechts daneben die **Mitteilungen** und deine Initialen, die ins **Profil**
-führen. Ein sehr langer Versammlungsname wird dort mit „…“ gekürzt; ganz steht
-er im Menü.
+Auf dem Handy und am Tablet steht oben in der Kopfzeile der **heutige Tag** und
+deine **Versammlung**, rechts die **Glocke** für die Mitteilungen – ein Punkt
+daran heißt: Es gibt Neues. Ein sehr langer Versammlungsname wird dort mit „…“
+gekürzt; ganz steht er im Menü.
 
 ## 7. Profil: Darstellung, Schriftgröße & Sprache
 
@@ -473,16 +475,17 @@ Zwei Dinge, die du wissen solltest:
 
 Bist du **Aufseher oder Gehilfe** einer Predigtdienstgruppe, kannst du die
 **Treffpunkte deiner Gruppe** selbst planen und senden — ohne Admin zu sein. Der
-Admin trägt das bei der Gruppe ein; danach steht im **Predigtdienst** oben
-rechts der Schalter **Ansehen / Planen**. Beim Planen gibt es zwei Reiter:
+Admin trägt das bei der Gruppe ein; danach steht im **Predigtdienst** neben dem
+Titel **Planen**, und im Menü unter **Planen und verwalten** die **Planung**.
+Beim Planen gibt es zwei Reiter:
 
 | Reiter | Was du dort siehst |
 | --- | --- |
 | **Treffpunkte** | Ausschließlich die Treffpunkte **deiner** Gruppe, Woche für Woche: **Uhrzeit** und **Ort** ändern, einen Treffpunkt für diese Woche **entfernen** oder einen zusätzlichen **ergänzen**, Leiter eintragen, **Automatisch zuteilen** und **Leeren** (beides wirkt nur auf deine Gruppe). Darunter **Plan senden**: Es benachrichtigt die Leiter deiner Gruppe, die davon noch nichts wissen. |
 | **Grundplan** | Nur den **Grundplan deiner Gruppe** — die Regel, nach der ihr euch regelmäßig trefft: Wochentag, Uhrzeit, Ort und ob sie jede Woche gilt oder z. B. jeden ersten im Monat. |
 
-Wechselst du zwischendurch zu den Zusammenkünften, siehst du sie nur an; zurück
-im Predigtdienst bist du wieder beim Planen.
+Die Zusammenkünfte siehst du nur an. **Fertig** (am Handy auch das Kreuz oben)
+führt vom Planen zurück zum Ansehen.
 
 Die **Besuche des Dienstaufsehers** planen die Admins; du siehst sie beim
 Ansehen unter **Gruppenbesuche** und kannst deine Gruppe darauf einstellen. In

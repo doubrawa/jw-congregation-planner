@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
+import type { ZeichenName } from '../bausteine/Zeichen'
+import { datumsFormat } from '../components/datum-anzeige'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { useDialogFocus } from '../components/useDialogFocus'
-import { initials } from '../data/helpers'
+import { displayName, initials } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
-import { darfPlanen, erlaubteScreens, rechteStufe, rechteVon, themaVon } from '../data/rechte'
+import { darfPlanen, erlaubteScreens, geplantesThema, rechteStufe, rechteVon, themaVon } from '../data/rechte'
 import { weiterePlaeneImMenue } from '../data/weitere-plaene'
 import { vorzulegen } from './reducer'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import { RECHTE_STUFE_KEY } from '../i18n/ui'
 import { redeemInvite } from '../lib/data'
-import { LOGO_KLEIN } from '../lib/logo'
 import type { Screen, Thema } from '../data/types'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
 import { AbmeldenKnopf } from '../components/AbmeldenKnopf'
@@ -36,16 +37,19 @@ import { loadAndHydrate } from './hydrate'
 import { sichtbareMitteilungen } from './mitteilungen'
 import { useKalendertag } from './useKalendertag'
 import { NotificationsPanel } from './NotificationsPanel'
-import { SidebarBrand, SidebarFooter, SidebarNav, type NavAbschnitt, type NavEintrag } from './Sidebar'
+import { bereichsTitel, zumAnsehen, zumPlanen } from './bereich'
+import { Kopfzeile, PlanenKopf } from './Kopfzeile'
+import { SchmaleLeiste, Seitenmenue, type MenueAbschnitt, type MenueEintrag, type ProfilFuss } from './Menue'
 import { welcomeDecision } from './welcome'
 import '../components/components.css'
 import './shell.css'
 import './rtl.css'
 
 /**
- * App-Gerüst: Schreibtisch-Hintergrund, App-Spalte (mobil ≤ 430 px zentriert,
- * Desktop ≥ 920 px mit Sidebar 232 px + Inhalt ≤ 660 px), Navigation,
- * Mitteilungen-Overlay und Toast. Login rendert ohne App-Chrome.
+ * App-Gerüst im neuen Design (T121): das Menü an der Seite — am Handy als
+ * Schublade, am Tablet hochkant als schmale Leiste, ab 1180 px fest links —,
+ * die Kopfzeile (beim Planen am Handy der Kopf des Planens), der Inhalt,
+ * Mitteilungen und Toast. Login rendert ohne App-Chrome.
  */
 
 /** Ziel eines Push-Klicks: der Screen und, wenn der Link einen nennt, ein Bereich darin. */
@@ -167,81 +171,106 @@ export function AppShell() {
     if (d !== 'verwerfen') dispatch({ type: 'showToast', text: fill(t.toastWillkommen, d) })
   }, [state.welcomePending, state.dataStatus, me, t, dispatch])
   /*
-   * **Das Menü nach Themen** (T120): Eigenes oben, dann die Versammlung mit
-   * ihren Themen, zuletzt die Verwaltung — nur, wer sie sehen darf. „Programm"
-   * und „Planen" sind keine Menüpunkte mehr, sondern die beiden Seiten eines
-   * Themas (der Schalter im Kopf, `ThemaKopf`). Ein Thema öffnet dort, wo man
-   * zuletzt war: beim Planen, wer zuletzt geplant hat und es darf.
+   * **Das Menü** (T121, entschieden am 11.10.2026): Eigenes oben, dann die
+   * Versammlung mit ihren Bereichen — die öffnen immer zum Ansehen —, zuletzt
+   * „Planen und verwalten" mit der Planung und, nur für Admins, Personen und
+   * Einstellungen. Planen ist ein eigener Modus: über „Planen" am Titel eines
+   * Bereichs oder über „Planung" hier.
    */
-  const aktuellesThema =
-    state.screen === 'programm' || state.screen === 'planen' ? themaVon(state.tab) : null
+  const ansehenThema = state.screen === 'programm' ? themaVon(state.tab) : null
   const zuThema = (thema: Thema) => {
     setMenuOpen(false)
-    const planen = state.planModus && darfPlanen(rechte, thema)
-    dispatch({ type: 'navigate', screen: planen ? 'planen' : 'programm', thema })
+    dispatch(zumAnsehen(thema))
   }
-  const eintrag = (screen: Screen, label: string): NavEintrag => ({
+  const eintrag = (screen: Screen, label: string, zeichen: ZeichenName): MenueEintrag => ({
     key: screen,
     label,
+    zeichen,
     aktiv: state.screen === screen,
     onClick: () => navigate(screen),
   })
-  const themaEintrag = (thema: Thema, label: string): NavEintrag => ({
+  const themaEintrag = (thema: Thema, zeichen: ZeichenName): MenueEintrag => ({
     key: thema,
-    label,
-    aktiv: aktuellesThema === thema,
+    label: bereichsTitel(t, thema),
+    zeichen,
+    aktiv: ansehenThema === thema,
     onClick: () => zuThema(thema),
   })
-  const verwaltung = (['personen', 'einstellungen'] as const).filter((s) => navScreens.includes(s))
+  // Geplant wird zuerst, was man planen darf: der Gruppenaufseher allein die
+  // Treffpunkte seiner Gruppe.
+  const planungsThema: Thema = darfPlanen(rechte, 'zusammenkuenfte') ? 'zusammenkuenfte' : 'predigtdienst'
+  const planung: MenueEintrag[] = darfPlanen(rechte, planungsThema)
+    ? [
+        {
+          key: 'planung',
+          label: t.dashPlanung,
+          zeichen: 'planung',
+          aktiv: state.screen === 'planen',
+          onClick: () => {
+            setMenuOpen(false)
+            dispatch(zumPlanen(planungsThema))
+          },
+        },
+      ]
+    : []
+  const verwaltung = (['personen', 'einstellungen'] as const)
+    .filter((s) => navScreens.includes(s))
+    .map((s) => (s === 'personen' ? eintrag(s, t.navPersonen, 'personen') : eintrag(s, t.navEinstellungen, 'einstellungen')))
   const weiterePlaeneSichtbar = weiterePlaeneImMenue({
     plaene: state.plaene,
     zuteilen: rechte.zuteilen,
     heute: fromIso(tag),
   })
-  const abschnitte: NavAbschnitt[] = [
-    {
-      key: 'eigenes',
-      titel: null,
-      eintraege: [eintrag('start', t.navStart), eintrag('aufgaben', t.navAufgabenLong)],
-    },
+  const aufgaben: MenueEintrag = {
+    ...eintrag('aufgaben', t.navAufgabenLong, 'aufgaben'),
+    kurz: t.navAufgaben,
+    zahl: state.myTasks.filter((a) => a.status === 'offen').length,
+  }
+  const ungelesen = sichtbareMitteilungen(state.notifs, rechte.zuteilen).filter((n) => !n.read).length
+  const abschnitte = (mitteilungen: MenueEintrag[]): MenueAbschnitt[] => [
+    { key: 'eigenes', titel: null, eintraege: [eintrag('start', t.navStart, 'start'), aufgaben, ...mitteilungen] },
     {
       key: 'versammlung',
       titel: t.versammlungLbl,
       eintraege: [
-        themaEintrag('zusammenkuenfte', t.navZusammenkuenfte),
-        themaEintrag('predigtdienst', t.tabFs),
+        themaEintrag('zusammenkuenfte', 'zusammenkuenfte'),
+        themaEintrag('predigtdienst', 'predigtdienst'),
         // Weitere Pläne (T120, Phase 5): für Admin und Planer immer, sonst
-        // erst, wenn es etwas anzusehen gibt — ein leeres Thema wäre nur eine
+        // erst, wenn es etwas anzusehen gibt — ein leerer Bereich wäre nur eine
         // Sackgasse.
-        ...(weiterePlaeneSichtbar ? [themaEintrag('weitere', t.navWeiterePlaene)] : []),
+        ...(weiterePlaeneSichtbar ? [themaEintrag('weitere', 'plaene')] : []),
       ],
     },
-    ...(verwaltung.length > 0
-      ? [
-          {
-            key: 'verwaltung',
-            titel: t.navVerwaltung,
-            eintraege: verwaltung.map((s) =>
-              eintrag(s, s === 'personen' ? t.navPersonen : t.navEinstellungen),
-            ),
-          },
-        ]
+    ...(planung.length + verwaltung.length > 0
+      ? [{ key: 'planen-verwalten', titel: t.navPlanenVerwalten, eintraege: [...planung, ...verwaltung] }]
       : []),
   ]
-  const congSub = fill(t.congLabel, { name: state.congregation.name })
+  // Am Desktop gibt es keine Kopfzeile mit Glocke: Die Mitteilungen stehen in
+  // der Leiste (entschieden am 12.10.2026). Sie öffnen sich über der Seite und
+  // sind keine eigene — deshalb nie „aktuelle Seite".
+  const glockeEintrag: MenueEintrag = {
+    key: 'mitteilungen',
+    label: t.mitteilungen,
+    zeichen: 'glocke',
+    aktiv: false,
+    zahl: ungelesen,
+    onClick: () => dispatch({ type: 'openNotifs' }),
+  }
+  const versammlung = state.congregation.name.trim()
   // Gruppenaufseher und Gehilfe nennen sich so (5.10.2026) — „Verkündiger"
   // verschwieg, dass sie die Treffpunkte ihrer Gruppe ändern und senden.
   const roleLabel = t[RECHTE_STUFE_KEY[rechteStufe(rechte, state)]]
-  // Der Fuß steht zweimal da — in der Seitenleiste und im Menü des Handys.
-  const fuss = (
-    <SidebarFooter
-      me={me}
-      roleLabel={roleLabel}
-      profilLabel={t.navProfil}
-      aktiv={state.screen === 'profil'}
-      onProfil={() => navigate('profil')}
-    />
-  )
+  const gruppe = state.groups.find((g) => g.id === me?.grp)?.name
+  const profil: ProfilFuss = {
+    kuerzel: me ? initials(me) : '–',
+    name: me ? displayName(me) : '',
+    unterzeile: [t.navProfil, roleLabel, gruppe].filter(Boolean).join(' · '),
+    aktiv: state.screen === 'profil',
+    onClick: () => navigate('profil'),
+  }
+  const planen = state.screen === 'planen'
+  const geplant = geplantesThema(rechte, state.tab)
+  const menue = abschnitte([])
   // Texte für die Error Boundaries: die Klasse kann useT() nicht aufrufen.
   const fehlerTexte = { titel: t.errTitel, text: t.errText, aktion: t.offlineRetry }
   const offenesOverlay =
@@ -255,13 +284,19 @@ export function AppShell() {
     'keins'
 
   return (
-    <div className="desk">
+    <div className="rahmen">
       {!isLogin && (
-        <aside className="sidebar">
-          <SidebarBrand congSub={congSub} />
-          <SidebarNav abschnitte={abschnitte} />
-          {fuss}
-        </aside>
+        <>
+          <aside className="leiste">
+            <Seitenmenue abschnitte={abschnitte([glockeEintrag])} versammlung={versammlung} profil={profil} />
+          </aside>
+          <SchmaleLeiste
+            abschnitte={menue}
+            profil={profil}
+            menueOffen={menuOpen}
+            onMenue={() => setMenuOpen(true)}
+          />
+        </>
       )}
 
       <main className={isLogin ? 'app-main is-login' : 'app-main'}>
@@ -273,50 +308,21 @@ export function AppShell() {
           )
         ) : (
           <>
-            <header className="mobile-header">
-              <div className="mobile-header-left">
-                <button
-                  type="button"
-                  className="menu-btn"
-                  aria-label={t.menueLbl}
-                  aria-expanded={menuOpen}
-                  onClick={() => setMenuOpen(true)}
-                >
-                  <span className="menu-btn-bar" />
-                  <span className="menu-btn-bar" />
-                  <span className="menu-btn-bar" />
-                </button>
-                <div className="mobile-header-brand">
-                  <img className="mobile-header-logo" src={LOGO_KLEIN} alt="" width={22} height={22} />
-                  {/* Der Name der Versammlung, nicht die Wortmarke (T107): Die
-                      Kurzform „VERSAMMLUNG" sah auf dem Handy aus wie eine
-                      Überschrift und sagte nichts, weil „Versammlung" in dieser
-                      App ohnehin überall steht. Der Produktname bleibt im Menü
-                      und auf der Anmeldung — und hier, solange noch keine
-                      Versammlung geladen ist (Laden, Konto ohne Versammlung),
-                      damit der Kopf nicht leer dasteht. `dir="auto"`: Der Name
-                      kann in einer anderen Schrift stehen als die Oberfläche. */}
-                  <span className="mobile-header-name" dir="auto">
-                    {state.congregation.name.trim() || 'Versammlung.app'}
-                  </span>
-                </div>
-              </div>
-              <div className="mobile-header-right">
-                <NotifChip />
-                <button
-                  type="button"
-                  className="avatar avatar--ink avatar--28"
-                  aria-label={t.navProfil}
-                  onClick={() => navigate('profil')}
-                >
-                  {me ? initials(me) : '–'}
-                </button>
-              </div>
-            </header>
-
-            <div className="desktop-topbar">
-              <NotifChip />
-            </div>
+            {planen && (
+              <PlanenKopf titel={bereichsTitel(t, geplant)} onBeenden={() => dispatch(zumAnsehen(geplant))} />
+            )}
+            {/* Die Versammlung im Kopf, nicht die Wortmarke (T107); solange
+                keine geladen ist (Laden, Konto ohne Versammlung), steht der
+                Produktname da, damit der Kopf nicht leer bleibt. */}
+            <Kopfzeile
+              datum={datumsFormat(state.lang, 'tag').format(fromIso(tag))}
+              versammlung={versammlung ? fill(t.congLabel, { name: versammlung }) : 'Versammlung.app'}
+              ungelesen={ungelesen}
+              menueOffen={menuOpen}
+              beimPlanen={planen}
+              onMenue={() => setMenuOpen(true)}
+              onGlocke={() => dispatch({ type: 'openNotifs' })}
+            />
 
             <OfflineBanner />
 
@@ -331,21 +337,14 @@ export function AppShell() {
 
             {menuOpen && (
               <>
-                <div className="drawer-backdrop" onClick={() => setMenuOpen(false)} />
-                <aside className="drawer" role="dialog" aria-modal="true" aria-label={t.menueLbl} ref={drawerRef}>
-                  <div className="drawer-head">
-                    <SidebarBrand congSub={congSub} />
-                    <button
-                      type="button"
-                      className="drawer-close"
-                      aria-label={t.a11yClose}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <SidebarNav abschnitte={abschnitte} />
-                  {fuss}
+                <div className="schublade-schleier" onClick={() => setMenuOpen(false)} />
+                <aside className="schublade" role="dialog" aria-modal="true" aria-label={t.menueLbl} ref={drawerRef}>
+                  <Seitenmenue
+                    abschnitte={menue}
+                    versammlung={versammlung}
+                    profil={profil}
+                    onSchliessen={() => setMenuOpen(false)}
+                  />
                 </aside>
               </>
             )}
@@ -371,22 +370,6 @@ export function AppShell() {
         )}
       </main>
     </div>
-  )
-}
-
-/** Kopf-Chip Mitteilungen: „Neu: N“ (getönt) bzw. „Mitteilungen“ (Outline). */
-function NotifChip() {
-  const { state, dispatch } = useApp()
-  const { t } = useT()
-  const unread = sichtbareMitteilungen(state.notifs, rechteVon(state).zuteilen).filter((n) => !n.read).length
-  return (
-    <button
-      type="button"
-      className={unread > 0 ? 'notif-chip has-unread' : 'notif-chip'}
-      onClick={() => dispatch({ type: 'openNotifs' })}
-    >
-      {unread > 0 ? fill(t.neuN, { n: unread }) : t.mitteilungen}
-    </button>
   )
 }
 

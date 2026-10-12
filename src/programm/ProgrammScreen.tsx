@@ -4,7 +4,7 @@ import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
 import { istBlockSektion, mtab } from '../data/helpers'
 import { MeetingTabs } from '../components/MeetingTabs'
-import { ThemaKopf } from '../components/ThemaKopf'
+import { Bereichstitel } from '../components/Bereichstitel'
 import { WeekStrip } from '../components/WeekStrip'
 import { WeekNav } from '../components/WeekNav'
 import { MemorialBanner, TerminListe, WeekChips } from '../components/WeekBadges'
@@ -64,7 +64,7 @@ export function ProgrammScreen() {
   if (state.tab === 'wp') {
     return (
       <section className="screen">
-        <ThemaKopf />
+        <Bereichstitel />
         <WeiterePlaeneAnsicht />
       </section>
     )
@@ -76,7 +76,7 @@ export function ProgrammScreen() {
   if (bereich === 'gruppenbesuche' || bereich === 'zeugnis') {
     return (
       <section className="screen">
-        <ThemaKopf />
+        <Bereichstitel />
         <FsBereichTabs />
         {bereich === 'zeugnis' ? <ZeugnisAnsicht /> : <GruppenbesucheAnsicht />}
       </section>
@@ -110,7 +110,7 @@ function ProgrammBody() {
   if (!week || !rawWeek) {
     return (
       <section className="screen">
-        <ThemaKopf />
+        <Bereichstitel />
         {state.tab === 'fs' && <FsBereichTabs />}
         <div className="panel panel--lead" data-farbe="neutral">
           <h2 className="panel-label">{t.keineWochenTitel}</h2>
@@ -133,7 +133,7 @@ function ProgrammBody() {
       {/* Titel des Themas (T120) und, für wen es zu planen ist, der Schalter
           Ansehen/Planen. Im Ausdruck fehlt beides; dort ordnet die Zeile
           darunter das Blatt zu. */}
-      <ThemaKopf />
+      <Bereichstitel />
       {/* Die Reiter des Predigtdienstes (Treffpunkte · Gruppenbesuche) stehen
           über der Woche, wie beim Planen. Ohne Besuche gibt es keine Leiste. */}
       {isFs && <FsBereichTabs />}

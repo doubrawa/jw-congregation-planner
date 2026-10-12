@@ -1,0 +1,441 @@
+/*
+ * Der Rahmen der App im neuen Design (T121): Menü an der Seite, Kopfzeile,
+ * Kopf des Planens. Maße aus der Leinwand (`bauen-menue.mjs`,
+ * `bauen-tablet.mjs`, `desktop-teile.mjs` der Arbeitskopie).
+ *
+ * Drei Breiten:
+ *  - Handy (bis 767 px): Kopfzeile mit Menüknopf, das Menü als Schublade.
+ *  - Tablet hochkant (768–1179 px): links die schmale Leiste (88 px), die das
+ *    volle Menü ausklappt; die Kopfzeile ohne Menüknopf.
+ *  - Desktop und Tablet quer (ab 1180 px): das Menü fest links (248 px) samt
+ *    „Mitteilungen"; keine Kopfzeile.
+ */
+
+/* ---- Gerüst ------------------------------------------------------------- */
+
+.rahmen {
+  display: flex;
+  min-height: 100svh;
+  background: var(--grund);
+}
+
+/* ---- Kopfzeile ------------------------------------------------------------ */
+
+.kopfzeile,
+.planenkopf {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-nav);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding-block: max(8px, env(safe-area-inset-top)) 8px;
+  padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right));
+  background: var(--grund);
+}
+
+.kopfzeile-mitte {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.kopfzeile-datum {
+  font-size: calc(13px * var(--fs));
+  color: var(--text3);
+}
+
+.kopfzeile-versammlung {
+  overflow: hidden;
+  font-size: calc(14.5px * var(--fs));
+  font-weight: 600;
+  color: var(--text2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Der Punkt an der Glocke: es gibt Ungelesenes. */
+.kopfzeile-neu {
+  position: absolute;
+  top: 7px;
+  inset-inline-end: 7px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--karte);
+  border-radius: 50%;
+  background: var(--akzent);
+}
+
+.planenkopf-titel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: calc(20px * var(--fs));
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Das volle Menü ------------------------------------------------------- */
+
+.seitenmenue {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 100%;
+  padding: 18px 14px;
+  font-size: calc(15.5px * var(--fs));
+  line-height: 1.3;
+}
+
+.seitenmenue-marke {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-block-end: 18px;
+  padding-inline-start: 8px;
+}
+
+.seitenmenue-name {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.seitenmenue-app {
+  font-weight: 600;
+}
+
+.seitenmenue-versammlung {
+  font-size: calc(13px * var(--fs));
+  color: var(--text3);
+}
+
+.seitenmenue-abschnitt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.seitenmenue-titel {
+  padding: 16px 14px 6px;
+  font-size: calc(12.5px * var(--fs));
+  font-weight: 600;
+  color: var(--text3);
+}
+
+.menue-eintrag {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 48px;
+  padding: 6px 14px;
+  border-radius: 24px;
+  color: var(--text2);
+  font-weight: 500;
+  text-align: start;
+}
+
+.menue-eintrag:hover:not(.is-active) {
+  background: var(--feld);
+}
+
+.menue-eintrag.is-active {
+  background: var(--akzent);
+  color: var(--auf-akzent);
+  font-weight: 700;
+}
+
+.menue-eintrag-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.menue-zahl {
+  flex: none;
+  min-width: 24px;
+  padding: 2px 7px;
+  border-radius: 12px;
+  background: var(--hoch);
+  color: var(--text);
+  font-size: calc(13px * var(--fs));
+  font-weight: 700;
+  text-align: center;
+}
+
+.menue-eintrag.is-active .menue-zahl {
+  background: var(--auf-akzent);
+  color: var(--akzent);
+}
+
+.menue-profil {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-block-start: auto;
+  padding: 14px 8px 0;
+  border-block-start: 1px solid var(--linie);
+  text-align: start;
+}
+
+.menue-kuerzel {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--feld);
+  font-size: calc(14px * var(--fs));
+  font-weight: 600;
+}
+
+.menue-profil.is-active .menue-kuerzel {
+  outline: 2px solid var(--akzent);
+}
+
+.menue-profil-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.menue-profil-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.menue-profil-unterzeile {
+  font-size: calc(13px * var(--fs));
+  color: var(--text3);
+}
+
+/* ---- Schublade (Handy, Tablet hochkant) ----------------------------------- */
+
+.schublade-schleier {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-sheet);
+  background: var(--schleier);
+}
+
+@keyframes schublade-ein {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: none;
+  }
+}
+
+@keyframes schublade-ein-rtl {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: none;
+  }
+}
+
+.schublade {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-start: 0;
+  z-index: calc(var(--z-sheet) + 1);
+  width: min(304px, 86vw);
+  overflow-y: auto;
+  padding-block: env(safe-area-inset-top) env(safe-area-inset-bottom);
+  background: var(--karte);
+  animation: schublade-ein 0.22s ease;
+}
+
+[dir='rtl'] .schublade {
+  animation-name: schublade-ein-rtl;
+}
+
+/* ---- Die schmale Leiste (Tablet hochkant) -------------------------------- */
+
+.schmale-leiste {
+  position: sticky;
+  top: 0;
+  display: none;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 88px;
+  height: 100svh;
+  overflow-y: auto;
+  padding: 12px 6px 20px;
+  border-inline-end: 1px solid var(--linie);
+}
+
+.schmale-leiste-menue {
+  margin-block-end: 16px;
+}
+
+.schmale-leiste-abschnitt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.schmale-leiste-trenner {
+  width: 44px;
+  margin: 8px 0;
+  border-block-start: 1px solid var(--linie);
+}
+
+.leisten-eintrag {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 76px;
+  min-height: 58px;
+  padding: 4px 0 6px;
+  color: var(--text2);
+}
+
+.leisten-zeichen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 32px;
+  border-radius: 16px;
+}
+
+.leisten-eintrag.is-active {
+  color: var(--text);
+}
+
+.leisten-eintrag.is-active .leisten-zeichen {
+  background: var(--akzent);
+  color: var(--auf-akzent);
+}
+
+/* Lange Namen („Zusammenkünfte") trennen; die Sprache steht auf <html>.
+   Safari trennt nur mit Präfix. Ohne Trennregeln für die Sprache (Chrome am
+   Windows-Desktop) bricht `overflow-wrap` notfalls mitten im Wort — die Leiste
+   erscheint aber vor allem an Tablets, und die trennen. */
+.leisten-text {
+  max-width: 100%;
+  font-size: calc(12px * var(--fs));
+  font-weight: 500;
+  line-height: 1.25;
+  text-align: center;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: anywhere;
+}
+
+.leisten-eintrag.is-active .leisten-text {
+  font-weight: 700;
+}
+
+.leisten-zahl {
+  position: absolute;
+  top: 0;
+  inset-inline-end: 4px;
+  min-width: 20px;
+  padding: 1px 5px;
+  border-radius: 10px;
+  background: var(--text);
+  color: var(--grund);
+  font-size: calc(12px * var(--fs));
+  font-weight: 700;
+  text-align: center;
+}
+
+.schmale-leiste-profil {
+  margin-block-start: auto;
+  font-size: calc(14px * var(--fs));
+  font-weight: 600;
+}
+
+/* ---- Die Leiste am Desktop ------------------------------------------------- */
+
+.leiste {
+  position: sticky;
+  top: 0;
+  display: none;
+  flex: none;
+  width: 248px;
+  height: 100svh;
+  overflow-y: auto;
+  border-inline-end: 1px solid var(--linie);
+}
+
+.leiste .seitenmenue {
+  padding: 24px 14px;
+}
+
+/* Etwas enger als in der Schublade: Bei 14 px Abstand brach „Meine Aufgaben"
+   neben der Zahl in der 248 px breiten Leiste um. */
+.leiste .menue-eintrag {
+  gap: 12px;
+}
+
+/* ---- Breiten ---------------------------------------------------------------- */
+
+/* Beim Planen trägt am Handy der Kopf des Planens Titel und „Fertig". */
+.kopfzeile--beim-planen {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .planenkopf {
+    display: none;
+  }
+
+  .kopfzeile,
+  .kopfzeile--beim-planen {
+    display: flex;
+    min-height: 68px;
+    padding-inline: 32px;
+  }
+
+  /* Der Menüknopf steht in der schmalen Leiste. */
+  .kopfzeile-menue {
+    display: none;
+  }
+
+  .schmale-leiste {
+    display: flex;
+  }
+
+  .schublade {
+    width: 328px;
+  }
+}
+
+@media (min-width: 1180px) {
+  .schmale-leiste,
+  .kopfzeile,
+  .kopfzeile--beim-planen {
+    display: none;
+  }
+
+  .leiste {
+    display: block;
+  }
+
+  /* Am Desktop gibt es nichts aufzuklappen — eine offene Schublade (Fenster
+     verbreitert) verschwindet mit. */
+  .schublade,
+  .schublade-schleier {
+    display: none;
+  }
+}

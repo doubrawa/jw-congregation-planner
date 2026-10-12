@@ -70,9 +70,10 @@
    */
   :root[data-print='s89'] .week-page,
   :root[data-print='s89'] .screen > *:not(.s89-bogen),
-  :root[data-print='s89'] .sidebar,
-  :root[data-print='s89'] .mobile-header,
-  :root[data-print='s89'] .desktop-topbar,
+  :root[data-print='s89'] .leiste,
+  :root[data-print='s89'] .schmale-leiste,
+  :root[data-print='s89'] .kopfzeile,
+  :root[data-print='s89'] .planenkopf,
   :root[data-print='s89'] .sheet,
   :root[data-print='s89'] .sheet-backdrop,
   :root[data-print='s89'] .confirm-modal,
@@ -81,7 +82,7 @@
     display: none !important;
   }
 
-  :root[data-print='s89'] .desk,
+  :root[data-print='s89'] .rahmen,
   :root[data-print='s89'] .app-main,
   :root[data-print='s89'] .app-content,
   :root[data-print='s89'] .screen {

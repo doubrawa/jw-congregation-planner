@@ -215,6 +215,8 @@ export const DE = {
     darstellung: 'Darstellung', spracheLbl: 'Sprache',
     // Darstellung (T121): Dunkel, Hell, Automatisch.
     themeDunkel: 'Dunkel', themeHell: 'Hell', themeAuto: 'Automatisch',
+    // Menü und Planen im neuen Design (T121).
+    navPlanenVerwalten: 'Planen und verwalten', fertig: 'Fertig', planenBeenden: 'Planen beenden',
     personen: 'Personen', personenCount: 'Personen: {n}', suchen: 'Suchen …',
     neuePerson: '+ NEUE PERSON ANLEGEN', aufgabenbereicheN: 'Aufgabenbereiche: {n}',
     allePersonen: '‹ Alle Personen', stammdaten: 'STAMMDATEN',

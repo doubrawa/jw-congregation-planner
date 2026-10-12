@@ -96,11 +96,14 @@ const zustand = () => (history.state ?? {}) as Record<string, unknown>
 /** Steht der Verlauf wieder auf dem Grundeintrag — der nächste Druck verließe die App? */
 const amGrund = () => zustand().basis === basis && zustand().cpOverlay === undefined
 
-/** Der aktive Punkt im Menü der Seitenleiste. */
-const aktiv = (c: HTMLElement) => c.querySelector('.sidebar .sidebar-nav-item.is-active')?.textContent ?? null
+/** Der aktive Punkt im Menü der Leiste (am Desktop). */
+const aktiv = (c: HTMLElement) =>
+  c.querySelector('.leiste .menue-eintrag.is-active .menue-eintrag-text')?.textContent ?? null
 
-function klickMenue(c: HTMLElement, text: string, wo = '.sidebar'): void {
-  const knopf = [...c.querySelectorAll<HTMLElement>(`${wo} .sidebar-nav-item`)].find((b) => b.textContent === text)
+function klickMenue(c: HTMLElement, text: string, wo = '.leiste'): void {
+  const knopf = [...c.querySelectorAll<HTMLElement>(`${wo} .menue-eintrag`)].find(
+    (b) => b.querySelector('.menue-eintrag-text')?.textContent === text,
+  )
   if (!knopf) throw new Error(`Kein Menüpunkt „${text}" in ${wo}`)
   fireEvent.click(knopf)
 }
@@ -159,8 +162,9 @@ describe('Zurück am Handy', () => {
   })
 
   it('ein geöffneter Plan schließt zuerst, dann die Liste', async () => {
-    const { container } = zeige({ planModus: true, plaene: [PLAN], planEintraege: [] })
+    const { container } = zeige({ plaene: [PLAN], planEintraege: [] })
     klickMenue(container, t.navWeiterePlaene)
+    fireEvent.click(container.querySelector('.bereichstitel .planen-knopf')!)
     fireEvent.click(container.querySelector('.wp-karte')!)
     await ausklingen()
     expect(container.querySelector('.wp-zurueck')).not.toBeNull()
@@ -175,8 +179,9 @@ describe('Zurück am Handy', () => {
   })
 
   it('ein neuer Plan steht gleich offen da — Zurück führt zur Liste, dann zu Start', async () => {
-    const { container } = zeige({ planModus: true, plaene: [], planEintraege: [] })
+    const { container } = zeige({ plaene: [], planEintraege: [] })
     klickMenue(container, t.navWeiterePlaene)
+    fireEvent.click(container.querySelector('.bereichstitel .planen-knopf')!)
     fireEvent.click([...container.querySelectorAll('button')].find((b) => b.textContent === t.wpNeu)!)
     await ausklingen()
     expect(container.querySelector('.wp-zurueck'), 'der neue Plan ist nicht offen').not.toBeNull()
@@ -194,11 +199,11 @@ describe('Zurück am Handy', () => {
     // Das Menü schließt (sein Eintrag geht) und der Bildschirm wechselt (sein
     // Eintrag kommt) im selben Augenblick.
     const { container } = zeige()
-    fireEvent.click(container.querySelector('.menu-btn')!)
+    fireEvent.click(container.querySelector('.kopfzeile-menue')!)
     await ausklingen()
-    klickMenue(container, t.navPersonen, '.drawer')
+    klickMenue(container, t.navPersonen, '.schublade')
     await ausklingen()
-    expect(container.querySelector('.drawer')).toBeNull()
+    expect(container.querySelector('.schublade')).toBeNull()
     expect(aktiv(container)).toBe(t.navPersonen)
 
     await zurueck()
@@ -209,11 +214,11 @@ describe('Zurück am Handy', () => {
   it('erst schließt das Handy-Menü, dann geht es zu Start', async () => {
     const { container } = zeige()
     klickMenue(container, t.navPersonen)
-    fireEvent.click(container.querySelector('.menu-btn')!)
+    fireEvent.click(container.querySelector('.kopfzeile-menue')!)
     await ausklingen()
 
     await zurueck()
-    expect(container.querySelector('.drawer'), 'das Menü blieb offen').toBeNull()
+    expect(container.querySelector('.schublade'), 'das Menü blieb offen').toBeNull()
     expect(aktiv(container)).toBe(t.navPersonen)
 
     await zurueck()
@@ -224,7 +229,7 @@ describe('Zurück am Handy', () => {
   it('ein Blatt über einem Bildschirm schließt zuerst', async () => {
     const { container } = zeige()
     klickMenue(container, t.navPersonen)
-    fireEvent.click(container.querySelector('.notif-chip')!)
+    fireEvent.click(container.querySelector('.kopfzeile-glocke')!)
     await ausklingen()
     expect(container.querySelector('.notif-panel')).not.toBeNull()
 
@@ -248,7 +253,7 @@ describe('Zurück am Handy', () => {
   })
 
   async function tippeInDerGlocke(c: HTMLElement): Promise<void> {
-    fireEvent.click(c.querySelector('.notif-chip')!)
+    fireEvent.click(c.querySelector('.kopfzeile-glocke')!)
     await ausklingen()
     fireEvent.click(c.querySelector('.notif-row-link')!)
     await ausklingen()
@@ -276,7 +281,8 @@ describe('Zurück am Handy', () => {
     const absage = zeile({ type: 'verhindert', title: 'Verhinderung gemeldet', taskId: `${woche}|mid|ratgeber` })
     const { container } = zeige({ notifs: [absage] })
     await tippeInDerGlocke(container)
-    expect(aktiv(container)).toBe(t.navZusammenkuenfte)
+    // Im Planen steht im Menü „Planung" als aktuelle Seite (T121).
+    expect(aktiv(container)).toBe(t.dashPlanung)
 
     await zurueck()
     expect(aktiv(container)).toBe(t.navStart)
@@ -320,9 +326,9 @@ describe('Zurück nach einem Push-Tipp', () => {
   it('danach Menü und „Personen": Der Bildschirm bekommt seinen Eintrag mit — ein Druck führt zu Start', async () => {
     const { container } = zeige({}, '#go=aufgaben')
     await ausklingen()
-    await mitGeste(() => fireEvent.click(container.querySelector('.menu-btn')!))
-    await mitGeste(() => klickMenue(container, t.navPersonen, '.drawer'))
-    expect(container.querySelector('.drawer')).toBeNull()
+    await mitGeste(() => fireEvent.click(container.querySelector('.kopfzeile-menue')!))
+    await mitGeste(() => klickMenue(container, t.navPersonen, '.schublade'))
+    expect(container.querySelector('.schublade')).toBeNull()
     expect(aktiv(container)).toBe(t.navPersonen)
     expect(WaechterAttrappe.aufgestellt, 'der Wächter blieb — die Taste träfe ihn vor dem Verlauf').toHaveLength(0)
 
