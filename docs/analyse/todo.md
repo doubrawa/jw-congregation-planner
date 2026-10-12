@@ -6447,15 +6447,18 @@ Leinwand. Wer ohne Schreibrecht ändert, arbeitet dort und veröffentlicht nicht
 `node leinwand.mjs` nennt dann, was auf das Veröffentlichen wartet. Das wird
 hier eingetragen und von der nächsten Sitzung im Profil `privat` erledigt.
 
-**Wartet auf Veröffentlichung** (gezeichnet am 10. und 11. Oktober 2026 im Profil
-`arbeit`, Arbeitskopie auf Version 41, Kennung `1791649561-f152`):
-`node leinwand.mjs` in der Arbeitskopie nennt **79 Dateien zum Veröffentlichen**
-(Tafeln, ihre hellen Hüllen, `canvas.json`) und **7 zum Entfernen**: `GKonto`,
-`GZeugnisPlanen` (je mit `-Hell`) und die drei Tafeln `…-Kontrast`. Beides in
-einem Aufruf; `files` dann als Zuordnung, die zu entfernenden auf `null`
-(Schritt 7 der Übergabe). Von Hand dazu, weil `leinwand.mjs` Werkzeug nicht
-zählt: ganz `project/werkzeug/`, 19 Dateien (alle `.mjs`, neu darunter
-`bauen-trolley.mjs` und die drei `durchgang*.mjs`, dazu `LIESMICH.md`). Danach
+**Wartet auf Veröffentlichung** (gezeichnet am 10., 11. und 12. Oktober 2026 im
+Profil `arbeit`, Arbeitskopie auf Version 41, Kennung `1791649561-f152`; die
+Leinwand stand am 12. Oktober unverändert auf dieser Version):
+`node leinwand.mjs` in der Arbeitskopie nennt **104 Dateien zum Veröffentlichen**
+(Tafeln, ihre hellen Hüllen, `canvas.json` mit den neuen Seiten „App – Tablet" und
+„Druckbögen") und **7 zum Entfernen**: `GKonto`, `GZeugnisPlanen` (je mit
+`-Hell`) und die drei Tafeln `…-Kontrast`. Beides in einem Aufruf; `files` dann
+als Zuordnung, die zu entfernenden auf `null` (Schritt 7 der Übergabe), höchstens
+255 Dateien je Aufruf. Von Hand dazu, weil `leinwand.mjs` Werkzeug nicht zählt:
+ganz `project/werkzeug/`, 23 Dateien (alle `.mjs`, neu am 12. Oktober
+`desktop-teile.mjs`, `bauen-desktop-mehr.mjs`, `bauen-tablet.mjs`,
+`bauen-druck.mjs`, dazu `LIESMICH.md`). Danach
 `node leinwand.mjs --gemerkt <neue Kennung>` und diesen Vermerk austragen.
 
 **Entschieden am 10. Oktober 2026:**
@@ -6530,18 +6533,33 @@ Trolleys in der Verwaltung), „Noch nicht angemeldet" statt „Ohne App-Konto",
 Profil ohne Hohen Kontrast, die gewählten RTL-Schriften markiert, die Wege der
 App um „Aus NWS übernehmen" und „Trolley" ergänzt. Entfallen sind die Tafeln zu
 Konto, Passwort, Standort, Zeugnisgeben planen und Hohem Kontrast.
+Am 12. Oktober auf *„zeichne jetzt tablet, desktop und die druckbögen"* (wartet
+ebenfalls): **Tablet** (hochkant mit schmaler Leiste zum Ausklappen, quer wie am
+Desktop; fünf Tafeln), **Desktop für alle Bereiche** (elf neue Tafeln, die Leiste
+mit „Mitteilungen", Dialoge in der Mitte) und **sieben Druckbögen** in A4 (Woche,
+Monat auf zwei Seiten, S-89, Treffpunkte, Trolleys, Winterdienst; freie Plätze
+gepunktet). Beim Rendern über die Seite der Durchsicht gemessen und behoben: vier
+zu kurze Tafeln (darunter die alte `GDesktopPlanen`, deren Ende die Leinwand
+abschnitt), zwei überlaufende lange Wörter; dazu drei Stellen, die dem Szenario
+widersprachen (Kongresswoche in `GSonderwoche`, zwei Aufgaben am Kongress-Samstag
+in `GAufgaben`, alte Zahlen in der Planungs-Karte von `GStartPlaner`).
 
-**Offen:**
+**Entschieden am 12. Oktober 2026** — die fünf Fragen dazu nacheinander
+abgefragt, **alles wie gezeichnet**: die schmale Leiste am Tablet hochkant (statt
+fest ausgeklappt wie heute oder versteckt wie am Handy), „Mitteilungen" als
+Eintrag in der Leiste am Desktop, beide Zusammenkünfte einer Woche mit den
+Hilfsdiensten auf einem Blatt, freie Plätze gepunktet zum Eintragen von Hand, der
+Trolley-Bogen für den Aushang bleibt. Auf der Seite der Durchsicht (Version 8) je
+Abschnitt unter „Entschieden am 12. Oktober".
 
-1. **Noch nicht gezeichnet:** Tablet, Desktop für die übrigen Bildschirme,
-   Druckbögen.
-2. **Veröffentlichen** (siehe oben), dann kann der Betreiber die Leinwand im
-   neuen Stand ansehen und kommentieren. Bis zum 11. Oktober kam seine
-   Rückmeldung über die Durchsicht, nicht über Kommentare auf der Leinwand.
+**Offen:** **Veröffentlichen** (siehe oben), dann kann der Betreiber die
+Leinwand im neuen Stand ansehen und kommentieren. Bis zum 12. Oktober kam seine
+Rückmeldung über die Durchsicht, nicht über Kommentare auf der Leinwand.
 
 Erledigt: die Schrift für Rechts-nach-links, die gemeinsame Durchsicht aller
 Abläufe und die beiden Nachfragen dazu — „Partner gesucht" statt „Begleitung
-gesucht", nur Trolleys ohne Infostände (alles 11. Oktober).
+gesucht", nur Trolleys ohne Infostände (alles 11. Oktober); Tablet, Desktop für
+alle Bereiche und die Druckbögen gezeichnet (12. Oktober).
 
 **Danach, als eigener Auftrag: der Umbau der App.** Was es davon heute schon
 gibt, steht je Weg auf der Seite der Durchsicht unter „Heute in der App"
@@ -6593,7 +6611,7 @@ Schema.
 
 ## Fortschritt
 
-Stand 11. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 12. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -6611,7 +6629,7 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 | --- | --- | --- |
 | **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt (so auch am 10. Oktober) |
 | **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf; die Mail-Bestätigung ist an, ankommen kann sie nur mit eigenem SMTP-Server (4.10.2026). Mit T121 am 11. Oktober zum großen Teil entschieden: kein Registrieren, Konten legt der Admin oder der Betreiber an (kommt mit dem Umbau); offen bleibt ein Konto in zwei Versammlungen |
-| **T121** | Neues Design | ☐ Entwurf auf der Design-Leinwand; am 11. Oktober alle Abläufe mit dem Betreiber durchgegangen und entschieden. Die Änderungen vom 10. und 11. Oktober warten auf Veröffentlichung (Profil privat); der Umbau der App ist ein eigener Auftrag |
+| **T121** | Neues Design | ☐ Entwurf auf der Design-Leinwand; am 11. Oktober alle Abläufe mit dem Betreiber durchgegangen und entschieden, am 12. Oktober Tablet, Desktop und Druckbögen gezeichnet und die Fragen dazu entschieden (alles wie gezeichnet). Die Änderungen vom 10. bis 12. Oktober warten auf Veröffentlichung (Profil privat); der Umbau der App ist ein eigener Auftrag |
 
 > **Nachgezählt am 10. Oktober 2026.** Die Zeile oben führte seit dem
 > 23. August zwei Zeichen zu wenig: „22./23. August" stand von Anfang an mit
@@ -6979,14 +6997,14 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 ### Was offen ist und warum
 
-**Stand 11. Oktober 2026, alles Offene an einer Stelle.** Im Code ist nichts
+**Stand 12. Oktober 2026, alles Offene an einer Stelle.** Im Code ist nichts
 offen; was aussteht, braucht eine Entscheidung, den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **T114** | Registrieren bei mehreren Versammlungen | wartet auf Entscheidungen des Betreibers: Konto ohne Code, wer eine Versammlung anlegt, ein Konto in zwei Versammlungen, die Meldung bei `already-member`. Am 11. Oktober mit T121 entschieden: kein Registrieren, Konten legt der Admin oder der Betreiber an; offen bleiben ein Konto in zwei Versammlungen und wer eine Versammlung anlegt |
 | **T106** | Alle auf einmal benachrichtigen | zurückgestellt am 21. September; im Bestand steht keine Telefonnummer |
-| **T121** | Neues Design | Entwurf auf der Design-Leinwand, am Code nichts geändert. Am 11. Oktober alle Abläufe mit dem Betreiber durchgegangen und entschieden (Anmelden nur mit Link, Trolleys statt Standorte, ohne Hohen Kontrast); die Änderungen warten auf Veröffentlichung aus dem Profil privat. Offen sind Tablet, Desktop der übrigen Bildschirme und Druckbögen. Der Umbau ist ein eigener Auftrag |
+| **T121** | Neues Design | Entwurf auf der Design-Leinwand, am Code nichts geändert. Am 11. Oktober alle Abläufe mit dem Betreiber durchgegangen und entschieden (Anmelden nur mit Link, Trolleys statt Standorte, ohne Hohen Kontrast); am 12. Oktober Tablet, Desktop für alle Bereiche und sieben Druckbögen gezeichnet, die fünf Fragen dazu am selben Tag entschieden (alles wie gezeichnet). Die Änderungen warten auf Veröffentlichung aus dem Profil privat. Der Umbau ist ein eigener Auftrag |
 | **Vor dem Ausrollen** | SMTP-Server, `INVITE_FROM` | nur der Betreiber, außerhalb des Repos (siehe oben) |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht |
