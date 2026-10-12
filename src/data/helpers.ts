@@ -42,6 +42,35 @@ export function splitOpeningSong(title: string): { song: string | null; rest: st
 }
 
 /**
+ * Zerlegt die Meta-Zeile eines Punkts in die **Dauer** und den Rest:
+ * („Von Haus zu Haus · 3 Min.", 3) → „3 Min." und „Von Haus zu Haus". Die
+ * Ansicht stellt die Dauer neben den Titel (T121).
+ *
+ * Erkannt wird sie an der **Zahl aus den Daten** (`mins`), nicht an ihrer
+ * Schreibweise: „3 Min.", „3 分" und „٣ دق" sind dieselbe Dauer, und die Zahl
+ * aus dem Anzeigetext zurückzulesen war schon einmal der Fehler (T32). Geteilt
+ * wird an ` · ` — so setzt der Import die Zeile zusammen, und so zerlegt sie
+ * der Übersetzer wieder.
+ *
+ * Tragen zwei Teile dieselbe Zahl („3 Min. · lmd Lektion 3", „Studienartikel
+ * 30 · 30 Min."), gewinnt der kürzere: Die Dauer ist Zahl und Einheit, eine
+ * Quelle nennt dazu ihr Werk.
+ *
+ * Passt kein Teil, bleibt die Zeile ganz — die Dauer steht dann im Rest, wie
+ * bisher, statt verloren zu gehen.
+ */
+export function dauerAbtrennen(meta: string, mins: number | undefined): { dauer: string | null; rest: string } {
+  const teile = meta.split(' · ')
+  let beste: { index: number; teil: string } | undefined
+  for (const [index, teil] of teile.entries()) {
+    if (ersteZahl(teil) === mins && (!beste || teil.length < beste.teil.length)) beste = { index, teil }
+  }
+  if (!beste) return { dauer: null, rest: meta }
+  const { index: weg, teil: dauer } = beste
+  return { dauer, rest: teile.filter((_, index) => index !== weg).join(' · ') }
+}
+
+/**
  * Gruppen-Id, deren Aufseher (ov) oder Gehilfe (as) die Person ist — sonst null.
  * Grundlage der Treffpunkt-Planungsrechte für Gruppenaufseher.
  */

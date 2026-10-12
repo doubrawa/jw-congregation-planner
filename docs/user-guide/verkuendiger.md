@@ -85,9 +85,12 @@ Darunter stehen die beiden Zusammenkünfte als Karten, je mit Tag, Datum und
 Uhrzeit; die gewählte hat einen Rand. Fällt eine aus, ist ihr Tag
 durchgestrichen, und im Programm steht der Grund. Im Programm hat jeder
 Abschnitt seine Karte mit der Farbe des Arbeitshefts, das Lied steht rechts im
-Kopf. Unter jedem Punkt stehen die Eingeteilten – **dein eigener Platz** heißt
-dort **„Du"**. Ab dem Tablet stehen die Namen neben dem Punkt. Die
-Treffpunkte für den Predigtdienst stehen im Menü unter **Predigtdienst**:
+Kopf. Neben jedem Punkt steht seine Dauer, darunter die Eingeteilten – **dein
+eigener Platz** heißt dort **„Du"**. Ab dem Tablet stehen die Namen neben dem
+Punkt. **Am Computer** stehen beide Zusammenkünfte nebeneinander, jede mit
+Datum und Uhrzeit, die Hilfsdienste beider Tage in einer gemeinsamen Tabelle;
+die Karten zum Wählen fallen dort weg. Die Treffpunkte für den Predigtdienst
+stehen im Menü unter **Predigtdienst**:
 
 | Wo | Inhalt |
 | --- | --- |
@@ -169,9 +172,11 @@ dieser Woche** und zur **nächsten Zusammenkunft**, die stattfindet.
 ### Ausdrucken
 
 Neben dem Termin jeder Zusammenkunft und über den Treffpunkten steht das
-**Drucker**‑Zeichen. Es öffnet ein Blatt: **Diese Woche** ist vorgewählt, oder
-du wählst den **ganzen Monat** – erst **Drucken** druckt, gedruckt wird jeweils,
-was du gerade siehst, ohne die Bedienelemente der App. Wo bei dir **„Du"**
+**Drucker**‑Zeichen, ab dem Tablet der Knopf **Drucken** rechts neben der Woche.
+Er öffnet ein Blatt: **Diese Woche** ist vorgewählt, oder du wählst den
+**ganzen Monat** – erst **Drucken** druckt, gedruckt wird jeweils, was du
+gerade siehst, ohne die Bedienelemente der App. Am Computer sind das beide
+Zusammenkünfte, jede auf einer eigenen Seite. Wo bei dir **„Du"**
 steht, druckt das Blatt deinen Namen; der Aushang gilt allen. Auch die **Gruppenbesuche**, das **öffentliche
 Zeugnisgeben** und die **Weiteren Pläne** haben einen **Drucken**‑Knopf; beim
 Zeugnisgeben kommen dabei alle Wochen aufs Blatt, nicht nur die ersten vier.

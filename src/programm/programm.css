@@ -1,8 +1,9 @@
 /*
  * Die Versammlung ansehen (T121, Entwürfe `GAnsehenWoche`, `GTabletWoche`,
- * `GSonderwoche`, `GDrucken`): Termin und Drucken, je Abschnitt eine Karte
- * mit Farbbalken und Lied, die Punkte mit ihren Personen, die Hilfsdienste.
- * Am Handy stehen die Personen unter dem Punkt, ab dem Tablet daneben.
+ * `GDesktopWoche`, `GSonderwoche`, `GDrucken`): Termin und Drucken, je
+ * Abschnitt eine Karte mit Farbbalken und Lied, die Punkte mit Dauer und
+ * Personen, die Hilfsdienste. Am Handy stehen die Personen unter dem Punkt,
+ * ab dem Tablet daneben; am Desktop stehen beide Tage nebeneinander.
  */
 
 .screen.prog {
@@ -31,9 +32,15 @@
   justify-content: flex-end;
 }
 
-.druck-knopf {
+/* Am Handy das Drucker-Zeichen allein: ohne Fläche, leiser als der Termin. */
+.rund-knopf.druck-knopf {
   background: transparent;
   color: var(--text2);
+}
+
+/* Ab dem Tablet mit Wort, rechts neben der Wochenwahl (`GTabletWoche`). */
+.druck-knopf--text {
+  flex: none;
 }
 
 /* Drucken für die Pläne ohne Woche (Gruppenbesuche, Zeugnisgeben, Weitere
@@ -163,12 +170,16 @@
 
 /* ---- Ein Punkt --------------------------------------------------------------------- */
 
-/* Am Handy eine Spalte — Titel, Zusatz, darunter die Personen. `minmax(0, 1fr)`
-   statt `1fr`: Eine Gitterspalte hat sonst min-width:auto und bleibt so breit
-   wie ihr längstes Wort. */
+/* Am Handy Titel und Zusatz, die Dauer rechts daneben, darunter die Personen.
+   `minmax(0, 1fr)` statt `1fr`: Eine Gitterspalte hat sonst min-width:auto und
+   bleibt so breit wie ihr längstes Wort. */
 .prog-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'text dauer'
+    'namen namen';
+  column-gap: 12px;
   row-gap: 3px;
   padding: 10px 0 12px;
   border-block-start: 1px solid var(--linie);
@@ -177,9 +188,19 @@
 /* Titel und Zusatz als eigene Spalte. `min-width: 0`: Ohne das darf ein
    Gitter-Element nicht unter seine kleinste Inhaltsbreite schrumpfen — und die
    ist bei einem langen deutschen Wort wie „Versammlungsbibelstudium" das ganze
-   Wort. */
+   Wort. Titel und Dauer stehen auf einer Grundlinie, obwohl ihre Schrift
+   verschieden groß ist. */
 .prog-row-text {
+  grid-area: text;
+  align-self: baseline;
   min-width: 0;
+}
+
+.prog-dauer {
+  grid-area: dauer;
+  align-self: baseline;
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
 }
 
 .prog-title {
@@ -206,6 +227,7 @@
 /* Letzte Sicherung: Ein einzelner sehr langer Name bricht um, statt die Spalte
    über die Karte hinaus aufzublähen. */
 .prog-names {
+  grid-area: namen;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -373,19 +395,125 @@
   color: var(--text3);
 }
 
-/* ---- Ab dem Tablet: die Personen neben dem Punkt (`GTabletWoche`) ---------------- */
+/* ---- Ab dem Tablet (`GTabletWoche`) ----------------------------------------------- */
 
 @media (min-width: 768px) {
+  /* Die Woche links gebündelt, „Drucken" rechts daneben. */
+  .prog-wochenwahl {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .prog-wochenwahl .week-nav {
+    grid-template-columns: 44px minmax(190px, auto) 44px;
+  }
+
+  .prog-wochenwahl .week-center {
+    align-items: flex-start;
+    text-align: start;
+  }
+
+  /* Drei Spalten — Punkt, Dauer, Personen —, in jeder Zeile gleich breit,
+     damit die Dauern untereinander stehen. */
   .prog-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+    grid-template-columns: minmax(0, 1fr) calc(60px * var(--fs)) minmax(0, 0.8fr);
+    grid-template-areas: 'text dauer namen';
     align-items: start;
-    column-gap: 16px;
   }
 
   .prog-names {
     padding-block-start: 2px;
   }
+
+  /* In der eigenen Spalte brauchen die Personen keinen Punkt davor; der
+     eigene Platz trägt „Du" als Pille, wie bei den Hilfsdiensten. */
+  .prog-person-punkt {
+    display: none;
+  }
+
+  .prog-du {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 0 10px;
+    border-radius: 13px;
+    background: var(--akzent);
+    color: var(--auf-akzent);
+    font-size: calc(13.5px * var(--fs));
+  }
+}
+
+/* ---- Am Desktop: beide Tage nebeneinander (`GDesktopWoche`) ------------------------ */
+
+/* Zwei Programme mit Dauer und Namen brauchen die Breite neben dem Menü —
+   die Spalte der übrigen Bildschirme (shell.css) ließe den Namen 100 px. */
+.screen.prog--beide-tage {
+  max-width: 1200px;
+}
+
+/* Zwei Spalten, die Hilfsdienste beider Tage unter der zweiten. Die erste
+   Spalte reicht über beide Zeilen; was sie mehr Platz braucht, geht an die
+   zweite Zeile (`1fr`) — so rückt die Tabelle nicht vom Sonntag ab. */
+.prog-tage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  gap: 12px 20px;
+  align-items: start;
+}
+
+.prog-tag {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.prog-tag:first-child {
+  grid-row: span 2;
+}
+
+.prog-tag-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+  min-height: 32px;
+}
+
+.prog-tag-datum {
+  font-size: calc(18px * var(--fs));
+  font-weight: 700;
+}
+
+/* Die Hilfsdienste beider Tage: eine Zeile je Dienst, eine Spalte je Tag. */
+.prog-dienste {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.prog-dienste th,
+.prog-dienste td {
+  padding-block: 8px;
+  padding-inline: 0 12px;
+  border-block-start: 1px solid var(--linie);
+  font-weight: 400;
+  text-align: start;
+  vertical-align: middle;
+}
+
+.prog-dienste thead th {
+  color: var(--text3);
+  font-size: calc(13px * var(--fs));
+  font-weight: 600;
+}
+
+/* Die Spalte der Dienste so breit wie am Handy die Zeile davor. */
+.prog-dienste tbody th {
+  width: calc(132px * var(--fs));
 }
 
 /* ---- Treffpunkte (Zusammenkünfte für den Predigtdienst) ------------------ */

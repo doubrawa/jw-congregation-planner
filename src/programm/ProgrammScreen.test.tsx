@@ -267,6 +267,15 @@ describe('Das Programm selbst', () => {
     expect(texte(container, '.prog-abschnitt-kopf .prog-lied')).toContain('Lied 99')
   })
 
+  it('die Dauer steht neben dem Titel, der Rahmen darunter (T121)', () => {
+    const w = woche()
+    Object.assign(w.mid.sections[1]!.items[0]!, { meta: 'Von Haus zu Haus · 3 Min.', mins: 3 })
+    const { container } = zeige({ weeks: [w] })
+    const zeile = seite(container).querySelector('.prog-abschnitt[data-farbe="petrol"] .prog-row')!
+    expect(zeile.querySelector('.prog-dauer')?.textContent).toBe('3 Min.')
+    expect(zeile.querySelector('.prog-item-meta')?.textContent).toBe('Von Haus zu Haus')
+  })
+
   it('die Fußzeile nennt das Ende und den Stand von heute', () => {
     const { container } = zeige()
     const fuss = texte(container, '.prog-footer span')
@@ -879,5 +888,143 @@ describe('Drucken: Pläne ohne Woche', () => {
     const { container } = zeige({ tab: 'wp', plaene: [PLAN], planEintraege: [] })
     fireEvent.click(knopf(container))
     expect(kennzeichen).toBeUndefined()
+  })
+})
+
+/** Ein Fenster dieser Breite: Jede Abfrage `(min-width: …px)` gilt, wenn das Fenster so breit ist. */
+function fensterBreite(px: number): void {
+  window.matchMedia = vi.fn((abfrage: string) => ({
+    matches: px >= Number(/min-width:\s*(\d+)px/.exec(abfrage)?.[1] ?? Infinity),
+  })) as unknown as typeof window.matchMedia
+}
+
+/**
+ * **Ab dem Tablet trägt „Drucken" sein Wort** (T121, `GTabletWoche`) und steht
+ * rechts neben der Wochenwahl — über beiden Themen mit Woche. Neben dem
+ * Termin bleibt dann nur der Termin.
+ */
+describe('Ab dem Tablet', () => {
+  beforeEach(() => fensterBreite(900))
+
+  it('„Drucken" steht mit Wort neben der Wochenwahl, nicht neben dem Termin', () => {
+    const { container } = zeige()
+    const s = seite(container)
+    expect(s.querySelector('.prog-wochenwahl .druck-knopf--text')?.textContent).toBe(t.drucken)
+    expect(s.querySelector('.prog-meta-row .druck-knopf')).toBeNull()
+    expect(s.querySelector('.prog-meta')?.textContent).toContain('8. September')
+  })
+
+  it('ebenso über den Treffpunkten', () => {
+    const { container } = zeige({ tab: 'fs' })
+    expect(seite(container).querySelector('.prog-wochenwahl .druck-knopf--text')).not.toBeNull()
+    expect(seite(container).querySelector('.druck-zeile')).toBeNull()
+  })
+
+  it('die Tage bleiben Karten — nebeneinander stehen sie erst am Desktop', () => {
+    const { container } = zeige()
+    expect(seite(container).querySelector('.meeting-tabs')).not.toBeNull()
+    expect(seite(container).querySelector('.prog-tage')).toBeNull()
+  })
+
+  it('in der Kongresswoche gibt es nichts zu drucken', () => {
+    const { container } = zeige({ weeks: [woche({ anlass: { art: 'kongress' } })] })
+    expect(seite(container).querySelector('.druck-knopf')).toBeNull()
+  })
+})
+
+/**
+ * **Am Desktop beide Tage nebeneinander** (T121, `GDesktopWoche`): je Tag
+ * eine Spalte mit Datum und Uhrzeit, die Hilfsdienste beider Tage als eine
+ * Tabelle. Eine Wahl des Tages gibt es nicht mehr — gedruckt werden beide.
+ */
+describe('Am Desktop', () => {
+  beforeEach(() => fensterBreite(1440))
+  afterEach(() => {
+    delete document.documentElement.dataset.print
+  })
+
+  it('beide Tage mit Datum und Uhrzeit — statt der Karten, zwischen denen man wählt', () => {
+    const { container } = zeige()
+    const s = seite(container)
+    expect(texte(container, '.prog-tag-datum')).toEqual(['Dienstag, 8. September', 'Sonntag, 13. September'])
+    expect(texte(container, '.prog-tag-kopf .prog-meta')).toEqual(['19:00 · 20:45', '10:00 · 11:45'])
+    expect(s.querySelector('.meeting-tabs')).toBeNull()
+    // Zwei Programme brauchen die Breite neben dem Menü.
+    expect(s.classList.contains('prog--beide-tage')).toBe(true)
+  })
+
+  it('in der Kongresswoche bleibt die Karte in der gewohnten Spalte', () => {
+    const { container } = zeige({ weeks: [woche({ anlass: { art: 'kongress' } })] })
+    expect(seite(container).querySelector('.kongress-karte')).not.toBeNull()
+    expect(seite(container).classList.contains('prog--beide-tage')).toBe(false)
+  })
+
+  it('jeder Tag mit seinem Programm — die Abschnitte unter der Überschrift des Tages', () => {
+    const w = woche()
+    w.we.sections = [{ label: 'ÖFFENTLICHER VORTRAG', farbe: 'petrol', items: [{ iid: 'v1', title: 'Thema', meta: '30 Min.', mins: 30, names: [{ name: 'Gast Redner' }] }] }]
+    const { container } = zeige({ weeks: [w] })
+    const [dienstag, sonntag] = [...seite(container).querySelectorAll('.prog-tag')]
+    expect(dienstag!.querySelectorAll('h3.prog-abschnitt-name')).toHaveLength(3)
+    expect(sonntag!.querySelector('h3.prog-abschnitt-name')?.textContent).toBe('ÖFFENTLICHER VORTRAG')
+    expect(sonntag!.querySelector('.prog-name')?.textContent).toBe('Gast Redner')
+    expect(sonntag!.querySelector('.prog-dauer')?.textContent).toBe('30 Min.')
+  })
+
+  it('die Hilfsdienste beider Tage als eine Tabelle — „Du" in der Spalte des eigenen Tages', () => {
+    const w = woche()
+    w.mid.helpers.mik = [{ name: 'Wer Anders' }]
+    w.we.helpers.mik = [{ name: 'Anton Alt', pid: 'p-a' }, { name: 'Noch Einer' }]
+    const { container } = zeige({ weeks: [w] })
+    const tabelle = seite(container).querySelector('table.prog-dienste')!
+    expect([...tabelle.querySelectorAll('thead th')].map((th) => th.textContent)).toEqual(['Dienstag 8.9.', 'Sonntag 13.9.'])
+    const zeile = tabelle.querySelector('tbody tr')!
+    expect(zeile.querySelector('th')?.textContent).toBe('Mikrofone')
+    const [dienstag, sonntag] = [...zeile.querySelectorAll('td')]
+    expect(dienstag!.querySelector('.prog-du-pille')).toBeNull()
+    expect(dienstag!.querySelector('.prog-dienst-namen')?.textContent).toBe('Wer Anders')
+    expect(dienstag!.querySelector('.prog-dienst-offen')?.textContent).toBe(t.offenWort)
+    expect(sonntag!.querySelector('.prog-du-pille')?.textContent).toBe(t.chipDu)
+    expect(sonntag!.querySelector('.prog-dienst-namen')?.textContent).toBe('Noch Einer')
+    expect(sonntag!.querySelector('.prog-dienst-offen')).toBeNull()
+    // Eine Tabelle für beide Tage, nicht je Tag eine Liste.
+    expect(seite(container).querySelectorAll('.prog-helpers')).toHaveLength(1)
+  })
+
+  it('fällt ein Tag aus, steht er im Kopf der Tabelle durchgestrichen', () => {
+    const { container } = zeige({ weeks: [woche({ dev: { we: { cancelled: true } } })] })
+    const kopf = [...seite(container).querySelectorAll('table.prog-dienste thead th')]
+    expect(kopf.map((th) => th.querySelector('s') !== null)).toEqual([false, true])
+    const tage = [...seite(container).querySelectorAll('.prog-tag')]
+    expect(tage.map((tag) => tag.querySelector('.ausfall-banner') !== null)).toEqual([false, true])
+  })
+
+  it('„Drucken" steht mit Wort neben der Wochenwahl, und das Blatt nennt die Zusammenkünfte', () => {
+    const { container } = zeige()
+    expect(seite(container).querySelector('.prog-wochenwahl .druck-knopf--text')).not.toBeNull()
+    expect(seite(container).querySelector('.prog-print-head')?.textContent).toContain(t.navZusammenkuenfte)
+  })
+
+  it('der Monat nimmt beide Tage mit — Kopf „Zusammenkünfte", jede Woche ein eigenes Blatt', () => {
+    let imDruck = { kopf: '', seitenweise: false, tage: 0 }
+    window.print = vi.fn(() => {
+      imDruck = {
+        kopf: container.querySelector('.monat-kopf')?.textContent ?? '',
+        seitenweise: container.querySelector('.monat-druck')?.classList.contains('monat-druck--seitenweise') ?? false,
+        tage: container.querySelectorAll('.monat-woche .prog-tag').length,
+      }
+    })
+    // Gewählt war zuletzt das Wochenende — am Desktop zählt das nicht mehr.
+    const { container } = zeige({ tab: 'we', weeks: [woche(), woche({ start: '2026-09-14' })], week: 0 })
+    drucke(container, 1)
+    expect(imDruck.kopf).toContain(t.navZusammenkuenfte)
+    expect(imDruck.kopf).not.toContain(t.tabWe)
+    expect(imDruck.seitenweise).toBe(true)
+    expect(imDruck.tage).toBe(4)
+  })
+
+  it('im Predigtdienst bleibt es beim Plan der Treffpunkte', () => {
+    const { container } = zeige({ tab: 'fs' })
+    expect(seite(container).querySelector('.prog-tage')).toBeNull()
+    expect(seite(container).querySelector('.prog-print-head')?.textContent).toContain(t.fsShort)
   })
 })

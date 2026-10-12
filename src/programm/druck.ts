@@ -1,6 +1,7 @@
 import { datumsFormat } from '../components/datum-anzeige'
 import { fromIso } from '../data/meeting-dates'
-import type { Lang, Week } from '../data/types'
+import type { Lang, MeetingTab, Week } from '../data/types'
+import type { Dict } from '../i18n/ui'
 
 /**
  * **Was „den ganzen Monat drucken" heißt** (T105).
@@ -37,6 +38,21 @@ export function wochenDesMonats(weeks: readonly Pick<Week, 'start'>[], monat: st
     if (monatDerWoche(w) === monat) out.push(wi)
   })
   return out
+}
+
+/**
+ * **Was der Kopf eines Ausdrucks als Thema nennt** — die Zusammenkunft oder
+ * die Treffpunkte; stehen am Desktop beide Tage im Blatt (`useBeideTage`),
+ * „Zusammenkünfte". Eine Stelle für die Woche und den Monat: Bis hierher
+ * stand die Auswahl in beiden, und jede Erweiterung musste sie zweimal finden.
+ */
+export function druckThema(
+  t: Pick<Dict, 'navZusammenkuenfte' | 'tabWe' | 'tabMid' | 'fsShort'>,
+  tab: MeetingTab,
+  beideTage: boolean,
+): string {
+  if (beideTage) return t.navZusammenkuenfte
+  return tab === 'we' ? t.tabWe : tab === 'fs' ? t.fsShort : t.tabMid
 }
 
 /**

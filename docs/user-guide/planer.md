@@ -1003,7 +1003,8 @@ Blättern kommst du deshalb nur bis zur ältesten geladenen Woche zurück.
 
 Beim **Ansehen** der Zusammenkünfte steht neben dem Termin jeder Zusammenkunft
 das **Drucker**‑Zeichen – und im **Predigtdienst** über den Treffpunkten
-genauso. Ein Tipp darauf öffnet das Blatt **Drucken** mit der Wahl; erst
+genauso. Ab dem Tablet steht stattdessen der Knopf **Drucken** rechts neben
+der Woche. Ein Tipp darauf öffnet das Blatt **Drucken** mit der Wahl; erst
 **Drucken** darin druckt:
 
 - **Diese Woche** (vorgewählt) – die Woche und die Zusammenkunft, die gerade zu
@@ -1013,8 +1014,11 @@ genauso. Ein Tipp darauf öffnet das Blatt **Drucken** mit der Wahl; erst
 
 Wo am Bildschirm **„Du"** steht, druckt das Blatt den Namen.
 
-Gedruckt wird immer nur, was du gerade siehst. Für alle drei – unter der Woche,
-Wochenende, Treffpunkte – druckst du dreimal.
+Gedruckt wird immer nur, was du gerade siehst. Am Handy und am Tablet druckst
+du für alle drei – unter der Woche, Wochenende, Treffpunkte – dreimal. **Am
+Computer** stehen beide Zusammenkünfte nebeneinander, und das Blatt nimmt
+beide mit: jede auf einer eigenen Seite, beim Monat Woche für Woche. Im Kopf
+steht dann **Zusammenkünfte**.
 
 Auch die Pläne ohne Woche haben beim **Ansehen** einen **Drucken**‑Knopf: die
 **Gruppenbesuche**, das **öffentliche Zeugnisgeben** und die **Weiteren
@@ -1033,9 +1037,12 @@ Ausdruck über Überschriften und feine Linien.
 Beim Monat steht der Kopf **einmal** über dem ganzen Blatt – Versammlung,
 Reiter und Monat – statt über jeder Woche. Die Zusammenkunft **unter der
 Woche** füllt allein etwa eine Seite, deshalb bekommt dort jede Woche ihre
-eigene; beim **Wochenende** und bei den **Treffpunkten** passen mehrere
-untereinander, getrennt durch eine Linie. Eine Woche wird nie mitten auf der
-Seite zerteilt.
+eigene – am Computer, mit beiden Zusammenkünften, ebenso; beim **Wochenende**
+und bei den **Treffpunkten** passen mehrere untereinander, getrennt durch eine
+Linie. Eine Woche wird nie mitten auf der Seite zerteilt.
+
+Unten steht der **Stand** – der Tag, an dem du gedruckt hast; bei einer
+einzelnen Zusammenkunft auch, wann sie endet.
 
 ### Welche Wochen zum Monat gehören
 

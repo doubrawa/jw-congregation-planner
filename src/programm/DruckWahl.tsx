@@ -22,8 +22,19 @@ import { useMonatDrucken } from './MonatsDruck'
  * Ohne Monat (die Woche trägt kein gültiges Datum) oder ohne Bildschirm, der
  * ihn drucken kann, druckt der Knopf wie früher gleich die Woche — eine Wahl
  * mit einem einzigen Eintrag wäre ein Tipp zu viel.
+ *
+ * Am Handy ein rundes Zeichen neben dem Termin; ab dem Tablet steht das Wort
+ * dabei (`mitText`), rechts neben der Wochenwahl (`GTabletWoche`).
  */
-export function DruckWahl({ zeitraum, erklaerung }: { zeitraum?: string; erklaerung?: string }) {
+export function DruckWahl({
+  zeitraum,
+  erklaerung,
+  mitText = false,
+}: {
+  zeitraum?: string
+  erklaerung?: string
+  mitText?: boolean
+}) {
   const { state } = useApp()
   const { t } = useT()
   const monatDrucken = useMonatDrucken()
@@ -34,11 +45,17 @@ export function DruckWahl({ zeitraum, erklaerung }: { zeitraum?: string; erklaer
     druckKennzeichen(null) // die Woche ist der Normalfall — kein Kennzeichen
     window.print()
   }
-  const knopf = (onClick: () => void) => (
-    <button type="button" className="rund-knopf druck-knopf" aria-label={t.drucken} onClick={onClick}>
-      <Zeichen name="drucken" />
-    </button>
-  )
+  const knopf = (onClick: () => void) =>
+    mitText ? (
+      <button type="button" className="knopf-umriss druck-knopf druck-knopf--text" onClick={onClick}>
+        <Zeichen name="drucken" />
+        {t.drucken}
+      </button>
+    ) : (
+      <button type="button" className="rund-knopf druck-knopf" aria-label={t.drucken} onClick={onClick}>
+        <Zeichen name="drucken" />
+      </button>
+    )
 
   if (!monat || !monatDrucken) return knopf(woche)
 

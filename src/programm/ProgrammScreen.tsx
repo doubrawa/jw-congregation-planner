@@ -12,28 +12,32 @@ import type { MeetingKey, Week } from '../data/types'
 import { Bereichstitel } from '../components/Bereichstitel'
 import { datumsFormat } from '../components/datum-anzeige'
 import { MeetingTabs } from '../components/MeetingTabs'
+import { TABLET_BREITE, useMedia } from '../components/useMedia'
 import { TerminListe } from '../components/WeekBadges'
 import { WeekNav } from '../components/WeekNav'
 import { WeekStrip } from '../components/WeekStrip'
 import { fill, useProgWeek, useT } from '../i18n/useT'
 import { FsBereichTabs } from '../planen/FsBereichTabs'
 import { aktiverFsBereich } from '../planen/fs-bereiche'
-import { druckKennzeichen } from './druck'
+import { druckKennzeichen, druckThema } from './druck'
+import { DruckWahl } from './DruckWahl'
 import { FsProgram } from './FsProgram'
 import { GruppenbesucheAnsicht } from './GruppenbesucheAnsicht'
 import { MonatDruckenContext, MonatsDruck } from './MonatsDruck'
+import { useBeideTage } from './useBeideTage'
 import { WeiterePlaeneAnsicht } from './WeiterePlaeneAnsicht'
 import { ZeugnisAnsicht } from './ZeugnisAnsicht'
-import { ZusammenkunftAnsicht } from './ZusammenkunftAnsicht'
+import { BeideTage, ZusammenkunftAnsicht } from './ZusammenkunftAnsicht'
 import './programm.css'
 import './print.css'
 
 /**
  * **Die Versammlung ansehen** (T121): Zusammenkünfte, Predigtdienst und
  * Weitere Pläne. Bei den Zusammenkünften die Woche, die Karten der beiden
- * Tage und das Programm des gewählten (`ZusammenkunftAnsicht`). Angezeigt
- * wird die Sprachvariante der App-Sprache, falls beim Import mitgeholt
- * (useProgWeek) — sonst die Versammlungssprache.
+ * Tage und das Programm des gewählten (`ZusammenkunftAnsicht`) — am Desktop
+ * beide Tage nebeneinander (`BeideTage`). Angezeigt wird die
+ * Sprachvariante der App-Sprache, falls beim Import mitgeholt (useProgWeek) —
+ * sonst die Versammlungssprache.
  */
 export function ProgrammScreen() {
   const { state } = useApp()
@@ -103,6 +107,8 @@ function ProgrammBody() {
   const { t } = useT()
   const rawWeek = state.weeks[state.week]
   const { week, tpw } = useProgWeek(rawWeek)
+  const breit = useMedia(TABLET_BREITE)
+  const beideTage = useBeideTage()
 
   // Noch keine Wochen (z. B. frisch eingerichtete Versammlung) → Hinweis
   if (!week || !rawWeek) {
@@ -123,13 +129,21 @@ function ProgrammBody() {
   // Kanonische Fassung (deutsche Sektions-Labels) zum Erkennen von Eröffnung
   // und Abschluss — dort steht das Lied im Sammeltitel.
   const rawMeeting = state.tab === 'we' ? rawWeek.we : rawWeek.mid
-  const tabName = state.tab === 'we' ? t.tabWe : isFs ? t.fsShort : t.tabMid
   // Kongress (T64): Beide Zusammenkünfte fallen aus — statt der Karten der
   // Tage steht das, und der Weg zu den Treffpunkten und zur nächsten.
   const kongress = !isFs && anlassArt(rawWeek) === 'kongress'
+  // Der Druckknopf: ab dem Tablet mit Wort neben der Wochenwahl, am Handy als
+  // Zeichen neben dem Termin. In der Kongresswoche gibt es nichts zu drucken.
+  const druck = kongress ? null : (
+    <DruckWahl zeitraum={tpw(week.range)} erklaerung={isFs ? undefined : t.druckZusammenkuenfte} mitText={breit} />
+  )
+  const druckNebenTermin = breit ? null : druck
+  // Die volle Breite neben dem Menü nur für die zwei Spalten — die Karte des
+  // Kongresses bleibt in der gewohnten.
+  const zweiSpalten = beideTage && !kongress
 
   return (
-    <section className="screen prog">
+    <section className={zweiSpalten ? 'screen prog prog--beide-tage' : 'screen prog'}>
       {/* Titel des Themas (T120) und, für wen es zu planen ist, „Planen". Im
           Ausdruck fehlt beides; dort ordnet die Zeile darunter das Blatt zu. */}
       <Bereichstitel />
@@ -139,17 +153,20 @@ function ProgrammBody() {
       {/* Nur im Ausdruck: ordnet das Blatt zu (Tabs/Navigation fehlen dort). */}
       <div className="prog-print-head">
         <span>{state.congregation.name}</span>
-        <span>{tabName}</span>
+        <span>{druckThema(t, state.tab, beideTage)}</span>
       </div>
 
-      <WeekNav
-        canPrev={state.week > 0}
-        canNext={state.week < state.weeks.length - 1}
-        onPrev={() => dispatch({ type: 'prevWeek' })}
-        onNext={() => dispatch({ type: 'nextWeek' })}
-      >
-        <WochenZeile week={week} rawWeek={rawWeek} istAktuell={currentWeekIndex(state.weeks) === state.week} tpw={tpw} />
-      </WeekNav>
+      <div className="prog-wochenwahl">
+        <WeekNav
+          canPrev={state.week > 0}
+          canNext={state.week < state.weeks.length - 1}
+          onPrev={() => dispatch({ type: 'prevWeek' })}
+          onNext={() => dispatch({ type: 'nextWeek' })}
+        >
+          <WochenZeile week={week} rawWeek={rawWeek} istAktuell={currentWeekIndex(state.weeks) === state.week} tpw={tpw} />
+        </WeekNav>
+        {breit && druck}
+      </div>
 
       {/* Weitere Termine der Woche (T63): über den Karten der Tage, weil sie zu
           keiner Zusammenkunft gehören, sondern zur Woche — und damit bei beiden
@@ -159,7 +176,9 @@ function ProgrammBody() {
       {kongress ? (
         <KongressKarte wi={state.week} />
       ) : isFs ? (
-        <FsProgram />
+        <FsProgram druck={druckNebenTermin} />
+      ) : zweiSpalten ? (
+        <BeideTage week={week} rawWeek={rawWeek} me={eigenePerson(state)} tpw={tpw} />
       ) : (
         <>
           {/* Die Karten gehören den Zusammenkünften; der Predigtdienst ist seit
@@ -177,6 +196,7 @@ function ProgrammBody() {
             tab={state.tab}
             me={eigenePerson(state)}
             tpw={tpw}
+            druck={druckNebenTermin}
           />
         </>
       )}

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
 import { BesuchsMarke } from '../components/BesuchsMarke'
@@ -6,20 +7,6 @@ import { fsLeiterZuteilung, fsVisible, nachWochentag } from '../data/fs'
 import { gehoertZu } from '../data/helpers'
 import { rechteVon } from '../data/rechte'
 import { useT } from '../i18n/useT'
-import { DruckWahl } from './DruckWahl'
-
-/**
- * Der Druckknopf über den Treffpunkten (T105) — dieselbe Auswahl wie bei den
- * Zusammenkünften: diese Woche oder der ganze Monat. Er steht auch über einer
- * Woche ohne Treffpunkte: Der Monat hat vielleicht welche.
- */
-function FsDruck() {
-  return (
-    <div className="prog-meta-row druck-zeile">
-      <DruckWahl />
-    </div>
-  )
-}
 
 /**
  * Treffpunkte-Anzeige (Programm-Tab „Zusammenkünfte für den Predigtdienst"):
@@ -29,8 +16,12 @@ function FsDruck() {
  * Gezeigt wird nur, was den Leser angeht: die Versammlungstreffpunkte und die
  * seiner eigenen Gruppe (`fsVisible`). Fremde Gruppentreffpunkte stünden hier
  * sonst als Termine, zu denen niemand kommt.
+ *
+ * `druck` ist der Druckknopf (T105), falls er über den Treffpunkten stehen
+ * soll — am Handy; ab dem Tablet steht er neben der Wochenwahl. Er steht auch
+ * über einer Woche ohne Treffpunkte: Der Monat hat vielleicht welche.
  */
-export function FsProgram() {
+export function FsProgram({ druck }: { druck?: ReactNode }) {
   const { state } = useApp()
   const i18n = useT()
   const { t, tu } = i18n
@@ -44,10 +35,12 @@ export function FsProgram() {
     rechteVon(state).zuteilen,
   )
 
+  const druckZeile = druck && <div className="prog-meta-row druck-zeile">{druck}</div>
+
   if (insts.length === 0) {
     return (
       <>
-        <FsDruck />
+        {druckZeile}
         <div className="panel panel--lead panel--pb16" data-farbe="gold">
           <p className="prog-meta">{t.fsKeine}</p>
         </div>
@@ -62,7 +55,7 @@ export function FsProgram() {
 
   return (
     <>
-      <FsDruck />
+      {druckZeile}
       {days.map((day) => (
         <div key={day.wd} className="panel" data-farbe="gold">
           <h2 className="panel-label">{treffpunktTagLabel(kennung, day.wd, state.lang)}</h2>

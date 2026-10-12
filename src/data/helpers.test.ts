@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  dauerAbtrennen,
   displayName,
   namensDublette,
   namensSchluessel,
@@ -183,6 +184,49 @@ describe('splitOpeningSong', () => {
       song: null,
       rest: 'Schlussworte · Gebet',
     })
+  })
+})
+
+/**
+ * **Die Dauer neben dem Titel** (T121): Die Ansicht stellt sie in eine eigene
+ * Spalte. Welcher Teil der Meta-Zeile sie ist, sagt die Zahl aus den Daten
+ * (`mins`) — nicht ihre Schreibweise, die in jeder Sprache anders aussieht.
+ */
+describe('dauerAbtrennen', () => {
+  it('trennt die Dauer vom Rahmen', () => {
+    expect(dauerAbtrennen('Von Haus zu Haus · 3 Min.', 3)).toEqual({ dauer: '3 Min.', rest: 'Von Haus zu Haus' })
+  })
+
+  it('und von der Quelle dahinter', () => {
+    expect(dauerAbtrennen('4 Min. · th Lektion 2', 4)).toEqual({ dauer: '4 Min.', rest: 'th Lektion 2' })
+  })
+
+  it('steht nur die Dauer da, bleibt kein Rest', () => {
+    expect(dauerAbtrennen('10 Min.', 10)).toEqual({ dauer: '10 Min.', rest: '' })
+  })
+
+  it('erkennt sie an der Zahl, nicht an der Stellung — die Quelle darf vorn stehen', () => {
+    expect(dauerAbtrennen('Studienartikel 28 · 60 Min.', 60)).toEqual({ dauer: '60 Min.', rest: 'Studienartikel 28' })
+  })
+
+  it('tragen zwei Teile dieselbe Zahl, ist der kürzere die Dauer', () => {
+    // Die Woche des Kreisaufsehers kürzt das Studium auf 30 Minuten — beim
+    // 30. Studienartikel stehen zwei Dreißiger in der Zeile.
+    expect(dauerAbtrennen('Studienartikel 30 · 30 Min.', 30)).toEqual({ dauer: '30 Min.', rest: 'Studienartikel 30' })
+    expect(dauerAbtrennen('3 Min. · lmd Lektion 3', 3)).toEqual({ dauer: '3 Min.', rest: 'lmd Lektion 3' })
+  })
+
+  it('in jeder Schrift', () => {
+    expect(dauerAbtrennen('من بيت إلى بيت · ٣ دق', 3)).toEqual({ dauer: '٣ دق', rest: 'من بيت إلى بيت' })
+  })
+
+  it('ohne Zahl in den Daten bleibt die Zeile ganz', () => {
+    expect(dauerAbtrennen('Von Haus zu Haus · 3 Min.', undefined)).toEqual({ dauer: null, rest: 'Von Haus zu Haus · 3 Min.' })
+  })
+
+  it('passt die Zahl zu keinem Teil, geht nichts verloren', () => {
+    expect(dauerAbtrennen('Von Haus zu Haus · 3 Min.', 5)).toEqual({ dauer: null, rest: 'Von Haus zu Haus · 3 Min.' })
+    expect(dauerAbtrennen('', 5)).toEqual({ dauer: null, rest: '' })
   })
 })
 

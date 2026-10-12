@@ -1,7 +1,8 @@
 /* Druckansicht des Programms (füllt das gewählte Papier, i. d. R. eine Seite).
  *
- * Gedruckt wird die gerade sichtbare Woche und Zusammenkunft — ohne App-Chrome
- * (Navigation, Kopfzeilen, Overlays), ohne Hilfsdienste und ohne Bedienelemente.
+ * Gedruckt wird die gerade sichtbare Woche und Zusammenkunft (am Desktop beide
+ * Zusammenkünfte) — ohne App-Chrome (Navigation, Kopfzeilen, Overlays), ohne
+ * Hilfsdienste und ohne Bedienelemente.
  *
  * Bewusst ohne Tonflächen: Browser drucken Hintergründe standardmäßig nicht.
  * Die Struktur trägt deshalb über Bereichsüberschriften und Haarlinien und
@@ -201,13 +202,38 @@
     font-size: 9.5pt;
   }
 
-  /* Programmzeilen kompakt, die Namen in einer Spalte daneben — das Blatt ist
-     schmaler als ein Tablet, am Bildschirm stünden sie darunter. */
+  /* Programmzeilen kompakt, Dauer und Namen in Spalten daneben — das Blatt ist
+     schmaler als ein Tablet, am Bildschirm stünden die Namen darunter. */
   .prog-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
-    gap: 5mm;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 0.9fr);
+    grid-template-areas: 'text dauer namen';
+    gap: 4mm;
     padding: 1.6mm 0;
+  }
+
+  .prog-dauer {
+    font-size: 8.5pt;
+  }
+
+  /* Vom Desktop gedruckt stehen beide Tage im Blatt — untereinander, jeder
+     auf einer eigenen Seite, wie zwei einzeln gedruckte Wochen. Ein Bogen mit
+     beiden Tagen auf einer Seite kommt mit den Druckbögen (T121). */
+  .prog-tage {
+    display: block;
+  }
+
+  .prog-tag + .prog-tag {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .prog-tag-kopf {
+    margin-bottom: 3mm;
+  }
+
+  .prog-tag-datum {
+    font-size: 12pt;
   }
 
   .prog-num {
@@ -275,7 +301,11 @@
     display: none;
   }
 
+  /* Am Bildschirm ausgeblendet (programm.css) — hier erscheint sie. */
   .prog-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 6mm;
     margin-top: 3mm;
     padding-top: 2mm;
     border-top: 1px solid #999;
