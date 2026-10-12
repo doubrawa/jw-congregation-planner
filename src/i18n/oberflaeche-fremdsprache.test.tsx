@@ -762,14 +762,15 @@ describe('Rechts-nach-links', () => {
     ['Name im Menü', { screen: 'start' }, '.menue-profil-name'],
     ['Name in der Personenliste', { screen: 'personen' }, '.pers-name'],
     ['Name über dem Detail', { screen: 'personen', selectedPersonId: ICH.id }, '.pers-detail-name'],
-    ['Name im Profil', { screen: 'profil' }, '.kv-val'],
+    ['Name im Profil', { screen: 'profil' }, '.profil-name'],
     [
       'Grund einer Abwesenheit',
       {
-        screen: 'aufgaben',
-        absences: [{ id: 'a1', personId: ICH.id, userId: 'u1', from: '2026-09-07', to: '2026-09-13', reason: 'Kalvo' }],
+        screen: 'profil',
+        // Seit T121 im Profil, und dort nur, was noch ansteht.
+        absences: [{ id: 'a1', personId: ICH.id, userId: 'u1', from: '2099-09-07', to: '2099-09-13', reason: 'Kalvo' }],
       },
-      '.abs-reason-text',
+      '.profil-abw .klein-text',
     ],
   ]
 

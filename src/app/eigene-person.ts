@@ -1,4 +1,7 @@
-import type { Person } from '../data/types'
+import { rechteStufe, rechteVon } from '../data/rechte'
+import type { Group, Person } from '../data/types'
+import { RECHTE_STUFE_KEY } from '../i18n/ui'
+import type { I18n } from '../i18n/useT'
 
 /**
  * Die Person hinter dem angemeldeten Konto — `undefined`, wenn keine verknüpft
@@ -14,6 +17,29 @@ export function eigenePerson(state: {
   personId: string | null
 }): Person | undefined {
   return state.personId ? state.persons.find((p) => p.id === state.personId) : undefined
+}
+
+/**
+ * **Wie sich das Konto nennt**: Rechte-Stufe und, wenn es eine hat, die Gruppe
+ * der eigenen Person — „Admin", „Gruppe 1". Im Fuß des Menüs steht davor
+ * „Profil", im Profil stehen sie unter dem Namen.
+ *
+ * Eine Stelle für beide: Der Fuß des Menüs nannte die Gruppe bis zum
+ * 12.10.2026 unübersetzt („Gruppe 1" auch auf Englisch), das Profil nicht.
+ */
+export function rolleUndGruppe(
+  state: {
+    planner: boolean
+    zuteiler: boolean
+    groups: readonly Group[]
+    persons: readonly Person[]
+    personId: string | null
+  },
+  { t, tu }: Pick<I18n, 't' | 'tu'>,
+): string[] {
+  const rolle = t[RECHTE_STUFE_KEY[rechteStufe(rechteVon(state), state)]]
+  const gruppe = state.groups.find((g) => g.id === eigenePerson(state)?.grp)
+  return gruppe ? [rolle, tu(gruppe.name)] : [rolle]
 }
 
 /**

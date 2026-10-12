@@ -132,6 +132,22 @@
   padding-top: 16px;
 }
 
+/* Das Blatt „Abwesenheit eintragen". */
+.abw-grund {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-block-start: 14px;
+}
+
+.abw-fuss {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-block-start: 14px;
+}
+
 /* ---- S-89 ------------------------------------------------------------------- */
 
 .s89-eyebrow {

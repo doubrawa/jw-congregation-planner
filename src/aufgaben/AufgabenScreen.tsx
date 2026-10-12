@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react'
 import { useApp } from '../app/context'
 import { Punkt, type PunktArt } from '../bausteine/Punkt'
 import { Zeichen } from '../bausteine/Zeichen'
-import { AbsencePanel } from '../components/AbsencePanel'
 import { PushPrompt } from '../components/PushPrompt'
 import type { TaskStatus } from '../data/types'
 import { aufgabenLabel, aufgabenTp, useT } from '../i18n/useT'
@@ -22,31 +21,13 @@ const PUNKT_DER_ZUSAGE: Record<TaskStatus, PunktArt> = {
  * **Meine Aufgaben** (T121): alles, was ansteht — die nächste Aufgabe groß,
  * die übrigen je eine Zeile mit einem Haken zum Bestätigen, „Alle bestätigen"
  * für alles auf einmal. Darunter, was man übernehmen kann: Ersatzgesuche
- * (Einspringen) und freie Plätze gesendeter Wochen.
+ * (Einspringen) und freie Plätze gesendeter Wochen. Die eigenen Abwesenheiten
+ * stehen seit dem Umbau im Profil.
  */
 export function AufgabenScreen() {
   const { state, dispatch } = useApp()
   const i18n = useT()
   const { t } = i18n
-
-  /*
-   * „Deine Einträge": seit die Abwesenheiten versammlungsweit geladen werden
-   * (die Planung braucht sie), muss hier wieder auf die eigenen eingegrenzt
-   * werden. Ohne Konto (Entwicklerseite) gibt es nichts einzugrenzen.
-   *
-   * **Die Person entscheidet, nicht der Ersteller.** Wer eingetragen hat, ist
-   * eine andere Frage als wen es betrifft — und seit es beides getrennt gibt
-   * (Import ohne Konto, Planer trägt für andere ein), führt der Ersteller in die
-   * Irre: Nach `userId === meiner` stünden dem Planer alle Abwesenheiten der
-   * Versammlung unter „Deine Einträge". Der Ersteller trägt nur noch den Fall,
-   * für den er gedacht war: ein Konto **ohne** eigene Person (`personId` null),
-   * das seine Einträge sonst nicht wiederfände.
-   */
-  const eigeneAbwesenheiten = state.userId
-    ? state.absences.filter((a) =>
-        a.personId != null ? a.personId === state.personId : a.userId === state.userId,
-      )
-    : state.absences
 
   /*
    * **Ein Klick auf „Ersatz gesucht" landet hier beim Einspringen** (T109).
@@ -173,7 +154,6 @@ export function AufgabenScreen() {
         </section>
       )}
 
-      <AbsencePanel personId={state.personId} entries={eigeneAbwesenheiten} listLabel={t.deineEintraege} />
     </section>
   )
 }

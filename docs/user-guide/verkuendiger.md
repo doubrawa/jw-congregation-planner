@@ -308,23 +308,30 @@ zeigen – ausdrucken musst du es nicht.
 
 ## 5. Abwesenheiten eintragen
 
-Direkt unter deinen Aufgaben findest du den Bereich **Abwesenheiten**. Trage hier
-ein, wann du z. B. im Urlaub oder verhindert bist – dann wirst du in dieser Zeit
-nicht eingeteilt.
+Im **Profil** findest du die Karte **Abwesenheiten**. Trage dort ein, wann du
+z. B. im Urlaub oder verhindert bist – dann wirst du in dieser Zeit nicht
+eingeteilt.
 
-1. **Von** und **Bis** wählen (Datumsauswahl).
-2. Optional einen **Grund** angeben (z. B. „Urlaub").
-3. Auf **Abwesenheit eintragen** tippen.
+1. Auf **Abwesenheit eintragen** tippen. Es öffnet sich ein Kalender.
+2. Den ersten Tag antippen, dann den letzten. Ein einzelner Tag ist ein Tipp.
+   Oben stehen **Von** und **Bis**; das hervorgehobene Ende setzt der nächste
+   Tipp. Ein Tipp vor „Von" beginnt den Zeitraum neu.
+3. Optional einen **Grund** angeben (z. B. „Urlaub").
+4. Auf **Abwesenheit eintragen** tippen.
 
-Deine eingetragenen Zeiträume erscheinen darunter unter „Deine Einträge" und
+Deine Zeiträume, die anstehen oder gerade laufen, stehen in der Karte und
 lassen sich mit dem ✕ wieder entfernen. Der erste Tipp fragt „Wirklich
 löschen?", erst der zweite entfernt den Eintrag; ein Tipp daneben bricht ab.
+Was vorbei ist, steht nicht mehr da.
 
 Dort stehen auch Zeiträume, die **nicht du** eingetragen hast: Der Planer kann
 sie für dich erfassen (etwa wenn du angerufen hast), und beim Umstieg von einem
 anderen Programm sind sie mit übernommen worden. Es ist dieselbe Liste – du
-kannst sie genauso ändern oder entfernen. Umgekehrt siehst du hier **nur deine
-eigenen**; die Abwesenheiten anderer gehen dich nichts an.
+kannst sie genauso entfernen. Umgekehrt siehst du hier **nur deine eigenen**;
+die Abwesenheiten anderer gehen dich nichts an.
+
+Sagst du eine Aufgabe ab, kannst du den Tag dabei gleich als abwesend eintragen
+(siehe [Wenn du nicht kannst](#wenn-du-nicht-kannst)).
 
 **Es zählt der Tag, nicht die Woche.** Bist du nur übers Wochenende weg, bleibst
 du für die Zusammenkunft unter der Woche eingeplant – und umgekehrt. Auch bei den
@@ -360,19 +367,16 @@ gekürzt; ganz steht er im Menü.
 
 ## 7. Profil: Darstellung, Schriftgröße & Sprache
 
-Unter **Profil** stellst du persönliche Vorlieben ein.
+Das **Profil** öffnest du über deinen Namen unten im Menü. Oben stehen deine
+Initialen, dein Name, deine Rolle und deine Gruppe; darunter stellst du
+persönliche Vorlieben ein, trägst Abwesenheiten ein (Abschnitt 5) und meldest
+dich ab. Admins finden am Handy hier auch **Personen** und **Einstellungen**.
 
 ![Profil](screenshots/verkuendiger-profil.png)
 
 - **Darstellung** – **Dunkel**, **Hell** oder **Automatisch**. „Automatisch"
   ist voreingestellt und folgt deinem Gerät: Schaltet das Handy abends auf
   dunkel, schaltet die App mit. Die Einstellung gilt nur für dein Gerät.
-  - **Vanille** – die besonders zurückhaltende Variante mit sehr weichen
-    Farben. Die übrigen Schemata sind bewusst etwas kräftiger, damit sich die
-    Programmabschnitte klarer voneinander abheben.
-  - **Sesam** – ganz ohne Farbe, nur Grautöne. Die Programmabschnitte
-    unterscheiden sich hier allein durch ihre Helligkeit: von oben nach unten
-    wird jeder Abschnitt eine Stufe dunkler.
 - **Schriftgröße** – ein Regler von **Klein** bis **Sehr groß**. Standard ist die
   bisherige Größe; wenn dir der Text zu klein ist, schiebe ihn nach rechts. Die
   Änderung wirkt sofort in der ganzen App und gilt nur für dein Gerät.

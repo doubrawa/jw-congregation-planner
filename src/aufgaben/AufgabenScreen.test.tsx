@@ -18,16 +18,16 @@ import { AufgabenScreen } from './AufgabenScreen'
 /**
  * **„Meine Aufgaben" — der Bildschirm, den ein Verkündiger benutzt.**
  *
- * Er trägt drei Dinge, und alle drei haben eine Regel, die man nicht sieht:
+ * Er trägt zwei Dinge, und beide haben eine Regel, die man nicht sieht:
  *
  * - Die **Aufgaben** (T121): die nächste groß, die übrigen je eine Zeile mit
  *   einem Haken zum Bestätigen — und „Alle bestätigen" für alles Offene.
  * - **Einspringen**: offene Ersatzgesuche. Entscheidend ist, dass „was ich an
  *   dem Tag schon habe" **vor** dem Zusagen dasteht — es stand früher hinterher
  *   im Toast, und das ist die falsche Reihenfolge.
- * - **„Deine Einträge"**: seit die Abwesenheiten versammlungsweit geladen
- *   werden, entscheidet die **betroffene Person**, nicht der Ersteller. Sonst
- *   stünden dem Planer alle Abwesenheiten der Versammlung als seine eigenen da.
+ *
+ * Die eigenen Abwesenheiten stehen seit T121 im Profil
+ * (`profil/abwesenheiten.test.ts`).
  */
 
 const t = dict('de')
@@ -343,44 +343,5 @@ describe('Der Sprung aus „Ersatz gesucht"', () => {
     // Der Reducer hat das Ziel abgeräumt; ein zweites Gesuch kommt hinzu.
     neu(basis({ sprungZiel: null, substituteReqs: [gesuch(), gesuch({ key: '2026-09-07|we|helper|mik|0' })] }))
     expect(gescrollt).toHaveLength(1)
-  })
-})
-
-describe('„Deine Einträge": die betroffene Person entscheidet, nicht der Ersteller', () => {
-  const abw = (id: string, personId: string | null, userId: string | null) => ({
-    id, personId, userId, from: '2026-10-01', to: '2026-10-14', reason: '',
-  })
-
-  it('zeigt die eigenen — auch die, die der Planer für mich eingetragen hat', () => {
-    const { container } = zeige({
-      absences: [abw('a1', 'p-a', 'u-planer')],
-    })
-    expect(container.querySelectorAll('.abs-row').length).toBe(1)
-  })
-
-  it('zeigt NICHT, was der Planer für andere eingetragen hat', () => {
-    // Nach dem Ersteller gefragt, stünden ihm hier alle Abwesenheiten der
-    // Versammlung als seine eigenen.
-    const { container } = zeige({
-      userId: 'u-planer', personId: 'p-a',
-      absences: [abw('a1', 'p-b', 'u-planer'), abw('a2', 'p-c', 'u-planer')],
-    })
-    expect(container.querySelectorAll('.abs-row')).toHaveLength(0)
-  })
-
-  it('ein Konto ohne eigene Person findet seine Einträge über den Ersteller wieder', () => {
-    const { container } = zeige({
-      personId: null, userId: 'u1',
-      absences: [abw('a1', null, 'u1'), abw('a2', null, 'u9')],
-    })
-    expect(container.querySelectorAll('.abs-row')).toHaveLength(1)
-  })
-
-  it('ohne Konto (Entwicklerseite) bleibt alles stehen — es gibt nichts einzugrenzen', () => {
-    const { container } = zeige({
-      userId: null,
-      absences: [abw('a1', 'p-b', null), abw('a2', 'p-c', null)],
-    })
-    expect(container.querySelectorAll('.abs-row')).toHaveLength(2)
   })
 })

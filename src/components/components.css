@@ -77,27 +77,29 @@
 /* Abmelden nach dem ersten Tipp („Wirklich abmelden?") — in der Farbe der
    übrigen Zwei-Tipp-Knöpfe (Leeren, Person löschen). */
 .abmelden.is-armed {
-  background: var(--tWein);
-  border-color: var(--wein);
-  color: var(--wein);
+  border-color: var(--problem);
+  background: var(--problem);
+  color: var(--karte);
+  font-weight: 700;
 }
 
 /* Ein ✕ nach dem ersten Tipp (`EntfernenKnopf`, 4.10.2026): Aus dem runden
-   Knopf wird eine Pille mit „Wirklich löschen?", in der Farbe der übrigen
-   Zwei-Tipp-Knöpfe. Gilt für jede Form davor — und auch unter dem Zeiger,
-   wo manche Liste ihrem ✕ eine eigene Fläche gibt. */
+   Knopf wird eine Pille mit „Wirklich löschen?" in der Farbe für Probleme
+   (T121, Entwurf „Zustände"). Gilt für jede Form davor — und auch unter dem
+   Zeiger, wo manche Liste ihrem ✕ eine eigene Fläche gibt. */
 .entfernen.is-armed,
 .entfernen.is-armed:hover {
   width: auto;
   height: auto;
-  border: 1px solid var(--wein);
-  border-radius: var(--r-pill);
-  background: var(--tWein);
-  color: var(--wein);
-  font-size: calc(12px * var(--fs));
-  font-weight: 600;
+  min-height: 44px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--problem);
+  color: var(--karte);
+  font-size: calc(14.5px * var(--fs));
+  font-weight: 700;
   line-height: 1.25;
-  padding: 4px 10px;
+  padding: 4px 16px;
   white-space: nowrap;
 }
 
@@ -318,61 +320,10 @@
   margin-top: 4px;
 }
 
-/* ---- Schlüssel/Wert-Zeilen (Profil, Versammlung) -------------------------- */
-
-.kv-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--panel-hair);
-  font-size: calc(12.5px * var(--fs));
-}
-
-.kv-row--plain {
-  border-bottom: 0;
-}
+/* ---- Schlüssel (Einstellungen: Import) ------------------------------------ */
 
 .kv-key {
   color: var(--mut);
-}
-
-.kv-val {
-  font-weight: 600;
-}
-
-/* ---- Schriftgrößen-Regler (Profil) --------------------------------------- */
-
-.fs-slider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 2px 0 12px;
-}
-
-/* Die beiden „A“ zeigen die Richtung an. Sie skalieren bewusst mit (--fs),
-   damit die Wirkung der Einstellung unmittelbar am Regler sichtbar ist. */
-.fs-slider-a {
-  color: var(--mut);
-  font-weight: 600;
-  line-height: 1;
-}
-
-.fs-slider-a--min {
-  font-size: calc(11px * var(--fs));
-}
-
-.fs-slider-a--max {
-  font-size: calc(21px * var(--fs));
-}
-
-/* accent-color färbt Schiene und Griff nativ — kein Nachbau je Browser nötig. */
-.fs-slider-input {
-  flex: 1;
-  min-width: 0;
-  height: 24px;
-  accent-color: var(--acc);
-  cursor: pointer;
 }
 
 /* ---- Formularfeld (Label in Caps + Input) ---------------------------------- */
@@ -563,4 +514,21 @@ select {
 .termin-ort {
   font-size: calc(11.5px * var(--fs));
   color: var(--mut);
+}
+
+/* „+ Abwesenheit eintragen" (`AbwesenheitEintragen`, T121) — im Profil und im Personen-Detail. */
+.abw-neu {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  border-block-start: 1px solid var(--linie);
+  color: var(--akzent-text);
+  font-weight: 600;
+  text-align: start;
+}
+
+.abw-neu .zeichen {
+  width: 20px;
+  height: 20px;
 }

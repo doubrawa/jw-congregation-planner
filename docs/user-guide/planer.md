@@ -155,7 +155,7 @@ vorsieht. Die Zettel der Zusätzlichen Klasse sind dabei und tragen ihren Raum.
   (Qualifikationen) berücksichtigt, und Doppelbelegungen am selben Tag werden
   angezeigt.
 - Die Abwesenheiten kommen aus den Einträgen, die die Verkündiger selbst in
-  ihrem persönlichen Bereich erfassen (**Von–Bis** als Datum). Geprüft wird der
+  ihrem **Profil** erfassen (**Von–Bis** als Datum). Geprüft wird der
   **Tag der jeweiligen Zusammenkunft**, nicht die Woche: wer nur übers Wochenende
   weg ist, steht unter der Woche weiterhin zur Verfügung. Bei den Treffpunkten
   zählt der Wochentag des jeweiligen Treffpunkts.
@@ -741,13 +741,13 @@ auf einen Blick zu sehen, was in einen Zeitraum hineinfällt – eine Zuteilung
 mitten in einer Abwesenheit sitzt sichtbar in der farbigen Strecke. Ein
 einzelner Tag ergibt einen Punkt.
 
-Eingetragen wird darunter in der Karte **Abwesenheiten** (Von, Bis, optional ein
-Grund); entfernt wird mit dem ✕ am Beginn des Zeitraums in der Leiste. Als
-Planer trägst du hier für andere ein (nach einem Anruf „wir sind im Oktober
-weg"); die meisten Verkündiger haben kein Konto und können es nicht selbst. Wer
-eines hat, sieht dieselben Einträge in seinem eigenen Bereich unter **Meine
-Aufgaben** und kann sie dort ebenfalls pflegen – es ist dieselbe Angabe, nicht
-zwei.
+Eingetragen wird darunter mit **Abwesenheit eintragen**: ein Kalender, in dem
+du den ersten und den letzten Tag antippst, optional ein Grund. Entfernt wird mit
+dem ✕ am Beginn des Zeitraums in der Leiste. Als Admin trägst du hier für andere
+ein (nach einem Anruf „wir sind im Oktober weg"); die meisten Verkündiger haben
+kein Konto und können es nicht selbst. Wer eines hat, sieht dieselben Einträge
+in seinem **Profil** und kann sie dort ebenfalls pflegen – es ist dieselbe
+Angabe, nicht zwei.
 
 Abwesenheiten wirken sofort auf die Planung: Wer weg ist, lässt sich für diese
 Woche gar nicht erst zuteilen, die automatische Zuteilung übergeht ihn, und eine

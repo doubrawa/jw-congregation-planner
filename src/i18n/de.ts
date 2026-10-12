@@ -195,23 +195,21 @@ export const DE = {
     dashKeineAufgabe: 'Keine anstehende Aufgabe',
     dashZuBest: 'Zu bestätigen', dashPlanung: 'Planung',
     dashAllesZugeteilt: 'Alles zugeteilt',
-    abwesenheiten: 'ABWESENHEITEN',
-    von: 'VON', bis: 'BIS', grundOpt: 'GRUND (OPTIONAL)', grundPh: 'z. B. Urlaub',
+    abwesenheiten: 'Abwesenheiten',
+    von: 'Von', bis: 'Bis', grundOpt: 'Grund (optional)', grundPh: 'z. B. Urlaub',
     datumPh: 'Datum wählen',
-    abwEintragen: 'ABWESENHEIT EINTRAGEN', deineEintraege: 'DEINE EINTRÄGE', ohneAngabe: 'Ohne Angabe',
+    abwEintragen: 'Abwesenheit eintragen',
+    abwHinweis: 'In dieser Zeit wirst du nicht eingeteilt. Bestehende Zuteilungen sehen die Planer als Konflikt.',
     // Warnung im Planen: Für diesen Bereich sind an dem Tag weniger Leute da
     // als Plätze. Der Zähler im Kopf nennt die Plätze, die offen bleiben
     // MÜSSEN — anders als „offene Zuteilungen", die nur noch nicht getan sind.
     engpassTitle: 'NICHT BESETZBAR',
     engpassZeile: '{bereich} · nötig {b} · verfügbar {v} · abwesend {a} von {q}',
-    // „EINTRÄGE" ohne „Deine": im Personen-Detail geht es um jemand anderen.
-    eintraege: 'EINTRÄGE',
     // Überschrift der Leiste im Personen-Detail. Sie hieß „AUFGABEN", zeigt
     // aber seit den Abwesenheiten beide Richtungen — wann jemand dran ist und
     // wann er nicht kann.
     zeitleiste: 'ZEITLEISTE',
-    keineAbw: 'Keine Abwesenheiten eingetragen.', profil: 'PROFIL',
-    nameLbl: 'Name', versammlungLbl: 'Versammlung', emailKv: 'E-Mail',
+    nameLbl: 'Name', versammlungLbl: 'Versammlung',
     darstellung: 'Darstellung', spracheLbl: 'Sprache',
     // Darstellung (T121): Dunkel, Hell, Automatisch.
     themeDunkel: 'Dunkel', themeHell: 'Hell', themeAuto: 'Automatisch',
@@ -335,7 +333,7 @@ export const DE = {
     toastKeinePassende: 'Keine passende Person für die offenen Slots frei',
     toastAutoN: 'Automatisch vergebene Zuteilungen: {n}', toastGeleertN: 'Geleerte Zuteilungen: {n}',
     toastAbsentP: '{name} ist in dieser Woche abwesend',
-    toastVonBis: 'Bitte Von und Bis angeben', toastVonNachBis: '„Von“ darf nicht nach „Bis“ liegen',
+    toastVonBis: 'Bitte Von und Bis angeben',
     toastAbwAdd: 'Abwesenheit eingetragen', toastAbwDel: 'Abwesenheit entfernt',
     toastPersonNeu: 'Neue Person angelegt',
     toastDienstDel: 'Dienst entfernt', toastDienstAdd: 'Dienst hinzugefügt', toastNameEingeben: 'Bitte einen Namen eingeben',

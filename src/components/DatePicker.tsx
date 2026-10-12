@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { kalendertagMs } from '../data/meeting-dates'
+import { isoDay } from '../data/meeting-dates'
 import { Chevron } from './Chevron'
+import { imMonat, monatPlus, monatsRaster, monatVon, wochentagKuerzel } from './kalender'
 import './datepicker.css'
-import { versatzAbMontag } from '../data/meeting-dates'
 
 /**
  * Eigener Datums-Popup-Kalender (statt des nicht stylebaren nativen
@@ -22,53 +22,14 @@ interface DatePickerProps {
   nextLabel: string // Vorlesbare Beschriftung „›"
 }
 
-const DAY = 864e5
-const iso = (d: Date): string => d.toISOString().slice(0, 10)
-/**
- * Der Monat, mit dem das Popup aufgeht.
- *
- * **Mit Wert** kommt er aus dem ISO-Datum, über UTC-Mittag gelesen — dieselbe
- * Rechnung wie das Raster darunter, und damit zeitzonenfrei.
- *
- * **Ohne Wert** ist „dieser Monat" gemeint, und das ist ein **örtlicher**
- * Begriff. Hier stand `new Date()` mit `getUTC…` daneben: Zwischen Mitternacht
- * und 01:00 bzw. 02:00 ist der UTC-Tag in Mitteleuropa noch der gestrige, am
- * Monatsersten also der Vormonat. Der Kalender ging dann im **Februar** auf,
- * während die Heute-Marke auf dem 1. März in der ausgegrauten Nachzeile saß.
- * Genau dieselbe Verwechslung, die `todayIso` weiter unten schon benennt — nur
- * die halbe Stelle war behoben.
- */
-const monthStart = (v: string): { y: number; m: number } => {
-  if (!v) {
-    const jetzt = new Date()
-    return { y: jetzt.getFullYear(), m: jetzt.getMonth() }
-  }
-  const d = new Date(`${v}T12:00:00Z`)
-  return { y: d.getUTCFullYear(), m: d.getUTCMonth() }
-}
-
-/** 6×7-Raster ab Montag für den angezeigten Monat (UTC, zeitzonenneutral). */
-function grid(y: number, m: number): Date[] {
-  const first = new Date(Date.UTC(y, m, 1))
-  const lead = versatzAbMontag(first.getUTCDay()) // Montag = 0
-  const start = Date.UTC(y, m, 1 - lead)
-  return Array.from({ length: 42 }, (_, i) => new Date(start + i * DAY))
-}
-
-function weekdayLabels(locale: string): string[] {
-  const fmt = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' })
-  const monday = Date.UTC(2024, 0, 1) // 1. Jan 2024 = Montag
-  return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(monday + i * DAY)))
-}
-
 export function DatePicker({ value, onChange, locale, min, max, placeholder, ariaLabel, prevLabel, nextLabel }: DatePickerProps) {
   const [open, setOpen] = useState(false)
-  const [view, setView] = useState(() => monthStart(value))
+  const [view, setView] = useState(() => monatVon(value))
   const ref = useRef<HTMLDivElement>(null)
 
   // Beim Öffnen auf den gewählten (bzw. aktuellen) Monat springen.
   useEffect(() => {
-    if (open) setView(monthStart(value))
+    if (open) setView(monatVon(value))
   }, [open, value])
 
   // Klick außerhalb / Escape schließt das Popup.
@@ -96,16 +57,10 @@ export function DatePicker({ value, onChange, locale, min, max, placeholder, ari
   const title = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
     new Date(Date.UTC(view.y, view.m, 1)),
   )
-  // „Heute" ist ein **örtlicher** Begriff, anders als die Rasterrechnung
-  // darüber: `iso(new Date())` nimmt den UTC-Tag, und der ist in Mitteleuropa
-  // zwischen Mitternacht und 01:00 bzw. 02:00 noch der gestrige — die
-  // Markierung saß dann einen Tag daneben. Aus den örtlichen Bestandteilen
-  // gebaut (`kalendertagMs`).
-  const todayIso = iso(new Date(kalendertagMs(new Date())))
-  const shift = (delta: number) => {
-    const d = new Date(Date.UTC(view.y, view.m + delta, 1))
-    setView({ y: d.getUTCFullYear(), m: d.getUTCMonth() })
-  }
+  // „Heute" ist ein örtlicher Begriff: `isoDay` liest die örtlichen Bestandteile
+  // — der UTC-Tag wäre in Mitteleuropa nach Mitternacht noch der gestrige.
+  const todayIso = isoDay(new Date())
+  const shift = (delta: number) => setView(monatPlus(view, delta))
 
   return (
     <div className="dp" ref={ref}>
@@ -136,16 +91,15 @@ export function DatePicker({ value, onChange, locale, min, max, placeholder, ari
             </button>
           </div>
           <div className="dp-weekdays">
-            {weekdayLabels(locale).map((w, i) => (
+            {wochentagKuerzel(locale).map((w, i) => (
               <span key={i}>{w}</span>
             ))}
           </div>
           <div className="dp-grid">
-            {grid(view.y, view.m).map((d) => {
-              const di = iso(d)
+            {monatsRaster(view).map((di) => {
               const disabled = (min != null && di < min) || (max != null && di > max)
               const cls = ['dp-day']
-              if (d.getUTCMonth() !== view.m) cls.push('dp-day--muted')
+              if (!imMonat(di, view)) cls.push('dp-day--muted')
               if (di === value) cls.push('dp-day--sel')
               else if (di === todayIso) cls.push('dp-day--today')
               return (
@@ -159,7 +113,7 @@ export function DatePicker({ value, onChange, locale, min, max, placeholder, ari
                     setOpen(false)
                   }}
                 >
-                  {d.getUTCDate()}
+                  {Number(di.slice(8))}
                 </button>
               )
             })}

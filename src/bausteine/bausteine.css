@@ -400,6 +400,112 @@
   stroke-width: 3.5;
 }
 
+/* ---- Zeitraum-Kalender (`ZeitraumKalender`) ----------------------------------- */
+
+.kal {
+  display: flex;
+  flex-direction: column;
+}
+
+.kal-enden {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+/* „Von" und „Bis": das Ende, das der nächste Tipp setzt, ist umrandet. */
+.kal-ende {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 60px;
+  padding: 6px 16px;
+  border: 1.5px solid transparent;
+  border-radius: 20px;
+  background: var(--feld);
+  text-align: start;
+}
+
+.kal-ende[aria-pressed='true'] {
+  border-color: var(--akzent-text);
+}
+
+.kal-ende-wert {
+  font-weight: 600;
+}
+
+.kal-kopf {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  padding-block-start: 12px;
+}
+
+.kal-blaettern {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: var(--text2);
+}
+
+.kal-monat {
+  text-align: center;
+  font-size: calc(16.5px * var(--fs));
+  font-weight: 600;
+}
+
+.kal-wochentage,
+.kal-raster {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.kal-wochentage {
+  align-items: center;
+  min-height: 28px;
+  color: var(--text3);
+  font-size: calc(13px * var(--fs));
+  text-align: center;
+}
+
+.kal-raster {
+  row-gap: 2px;
+}
+
+.kal-tag {
+  min-height: 44px;
+  font-weight: 500;
+}
+
+/* Tage aus dem Monat davor und danach treten zurück. */
+.kal-tag.is-fremd {
+  color: var(--text3);
+}
+
+.kal-tag.is-heute {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Der gewählte Zeitraum als Band; Anfang und Ende gerundet. */
+.kal-tag.is-drin {
+  background: var(--akzent);
+  color: var(--auf-akzent);
+  font-weight: 700;
+}
+
+.kal-tag.is-anfang {
+  border-start-start-radius: 22px;
+  border-end-start-radius: 22px;
+}
+
+.kal-tag.is-ende {
+  border-start-end-radius: 22px;
+  border-end-end-radius: 22px;
+}
+
 /* ---- Spur: die Schritte eines Ablaufs ----------------------------------------- */
 
 .spur {

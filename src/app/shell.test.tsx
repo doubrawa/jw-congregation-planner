@@ -4,6 +4,7 @@ import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react
 import { AppDispatchContext, AppStateContext, AppStoreContext, type AppState, useStaticStore } from './context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { APP_LANGS, LOCALES } from '../i18n/langs'
+import { makeTr } from '../i18n/translate'
 import { dict } from '../i18n/ui'
 import { emptyQualifications } from '../data/helpers'
 import type { Group, Notification, Person } from '../data/types'
@@ -193,6 +194,17 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
     )
   })
 
+  it('die Gruppe im Fuß steht in der Sprache der App — wie im Profil', () => {
+    // Bis zum 12.10.2026 stand sie hier unübersetzt („Gruppe 1" auch auf Englisch).
+    const en = dict('en')
+    const mitGruppe = { ...PLANER, grp: 'g1' }
+    const { container } = zeige({ lang: 'en', persons: [mitGruppe, AUFSEHER, VERKUENDIGER] })
+    expect(container.querySelector(`${LEISTE} .menue-profil-unterzeile`)?.textContent).toBe(
+      `${en.navProfil} · ${en.rolleKoordinator} · ${makeTr('en')('Gruppe 1')}`,
+    )
+    expect(makeTr('en')('Gruppe 1')).not.toBe('Gruppe 1')
+  })
+
   it('auf dem Profil ist der Name als aktuelle Seite markiert', () => {
     const { container } = zeige({ planner: true, screen: 'profil' })
     const fuss = container.querySelector(`${LEISTE} .menue-profil`)!
@@ -366,7 +378,7 @@ describe('Das Offline-Banner nennt den Stand', () => {
       value: { ...echt, reload, pathname: '/', search: '', hash: '' },
     })
     const { container } = zeige({ staleAt: Date.now() })
-    fireEvent.click(container.querySelector('.offline-banner-btn')!)
+    fireEvent.click(container.querySelector('.offline-banner button')!)
     expect(reload).toHaveBeenCalled()
     Object.defineProperty(window, 'location', { configurable: true, value: echt })
   })
@@ -676,7 +688,7 @@ describe('Abmelden und Rollenanzeige', () => {
     const menue = [...container.querySelectorAll('.leiste, .schmale-leiste, .schublade')]
     expect(menue.flatMap((m) => [...m.querySelectorAll('button')]).map((b) => b.textContent)).not.toContain(t.abmelden)
     const imProfil = [...container.querySelectorAll('.app-content button')].find((b) => b.textContent === t.abmelden)
-    expect(imProfil?.classList.contains('btn-outline'), 'kein richtiger Knopf').toBe(true)
+    expect(imProfil?.classList.contains('knopf-umriss'), 'kein richtiger Knopf').toBe(true)
     // Mit Rückfrage (4.10.2026): Der erste Tipp fragt nur, erst der zweite meldet ab.
     fireEvent.click(imProfil!)
     expect(performLogout).not.toHaveBeenCalled()

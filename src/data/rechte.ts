@@ -148,3 +148,17 @@ export function geplantesThema(r: Rechte, tab: MeetingTab): Thema {
   if (!r.zuteilen && r.gruppe !== null) return 'predigtdienst'
   return themaVon(tab)
 }
+
+/**
+ * Darf das angemeldete Konto für diese Person Abwesenheiten eintragen und
+ * entfernen? Für die eigene Person jeder, für alle anderen der Admin —
+ * dieselbe Grenze zieht die Datenbank (`absences_write`). Stünde der Knopf auch
+ * anderen offen, schriebe er ins Leere, und die Zeile verschwände beim
+ * nächsten Laden wieder. `personId` ist die **betroffene** Person.
+ */
+export function darfAbwesenheitBearbeiten(
+  s: { planner: boolean; personId: string | null },
+  personId: string | null,
+): boolean {
+  return s.planner || personId === s.personId
+}

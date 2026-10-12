@@ -4,6 +4,7 @@ import { AbwesenheitEntfernen } from '../components/AbwesenheitEntfernen'
 import { besuchsGruppe } from '../components/gruppenbesuch-anzeige'
 import { Zeitleiste, type ZeitZeile } from '../components/Zeitleiste'
 import { abwesenheitsArt, zeitleisteDatum } from '../components/zeitleiste-gemeinsam'
+import { darfAbwesenheitBearbeiten } from '../data/rechte'
 import type { Person } from '../data/types'
 import { aufgabenLabel, useT } from '../i18n/useT'
 import { personTimeline, type TimelineEntry } from './person-timeline'
@@ -41,9 +42,9 @@ export function PersonTimeline({ person }: { person: Person }) {
     [person, state],
   )
 
-  // Entfernen darf, wen es betrifft, oder ein Planer — dieselbe Grenze wie im
-  // Eingabe-Formular (`AbsencePanel`) und in der Datenbank (`absences_write`).
-  const darfBearbeiten = state.planner || person.id === state.personId
+  // Entfernen darf, wen es betrifft, oder ein Admin — dieselbe Grenze wie beim
+  // Eintragen und in der Datenbank (`absences_write`).
+  const darfBearbeiten = darfAbwesenheitBearbeiten(state, person.id)
 
   const beschriftung = (e: TimelineEntry): string => {
     if (e.kind === 'meeting') return aufgabenLabel({ title: e.titel, rolle: e.rolle }, i18n)

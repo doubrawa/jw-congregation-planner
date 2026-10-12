@@ -25,6 +25,13 @@
   }
 }
 
+/* Am Desktop mehr Breite für die zwei Spalten (Entwurf: Start am Desktop). */
+@media (min-width: 1180px) {
+  .screen.start {
+    max-width: 1080px;
+  }
+}
+
 @media (min-width: 768px) {
   .start-spalten.is-planer {
     display: grid;

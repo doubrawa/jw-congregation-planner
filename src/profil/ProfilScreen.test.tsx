@@ -84,11 +84,10 @@ function zeige(over: Partial<AppState> = {}) {
   return { dispatch, ...render(<Buehne />) }
 }
 
-const wert = (c: HTMLElement, key: string) =>
-  [...c.querySelectorAll('.kv-row')].find((r) => r.querySelector('.kv-key')?.textContent === key)
-    ?.querySelector('.kv-val')?.textContent
-const auswahl = (c: HTMLElement, label: string) =>
-  c.querySelector<HTMLSelectElement>(`select[aria-label="${label}"]`)!
+const knopf = (c: HTMLElement, text: string) => [...c.querySelectorAll('button')].find((b) => b.textContent === text)
+const sprachwahl = (c: HTMLElement) => c.querySelector<HTMLSelectElement>('.profil-sprache select')!
+const regler = (c: HTMLElement) => c.querySelector<HTMLInputElement>('.profil-regler-feld')!
+const stufe = (c: HTMLElement) => c.querySelector('.profil-schrift-kopf .klein-text')?.textContent
 
 beforeEach(() => {
   Object.assign(push, { angemeldet: true, supported: true, needsInstall: false, subscribed: false })
@@ -101,30 +100,27 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('Wer bin ich, wo bin ich', () => {
-  it('nennt Name, Konto-Adresse und Versammlung', () => {
+  it('nennt Initialen, Name und Konto-Adresse', () => {
     const { container } = zeige()
-    expect(wert(container, t.nameLbl)).toBe('Anton Alt')
-    expect(wert(container, t.emailKv)).toBe('anton@example.org')
-    expect(wert(container, t.versammlungLbl)).toBe('Nordheim')
+    expect(container.querySelector('.profil-bild')?.textContent).toBe('AA')
+    expect(container.querySelector('h1')?.textContent).toBe('Anton Alt')
+    expect(container.querySelector('.profil-wer')?.textContent).toContain('anton@example.org')
   })
 
-  it('ohne verknüpfte Person bleibt der Name leer statt „undefined"', () => {
+  it('ohne verknüpfte Person steht „Profil" statt „undefined"', () => {
     const { container } = zeige({ personId: null })
-    expect(wert(container, t.nameLbl)).toBe('')
+    expect(container.querySelector('h1')?.textContent).toBe(t.navProfil)
   })
 
   it('ohne Konto-Adresse (Demo) entfällt die Zeile ganz', () => {
     const { container } = zeige({ members: [] })
-    expect(wert(container, t.emailKv)).toBeUndefined()
+    expect(container.querySelector('.profil-wer [dir="ltr"]')).toBeNull()
   })
 
   it('die Adresse steht von links nach rechts — auch in einer RTL-Oberfläche', () => {
     // Eine E-Mail-Adresse ist keine Sprache; auf Arabisch stünde sie sonst verdreht.
     const { container } = zeige()
-    const zeile = [...container.querySelectorAll('.kv-row')].find(
-      (r) => r.querySelector('.kv-key')?.textContent === t.emailKv,
-    )!
-    expect(zeile.querySelector('.kv-val')?.getAttribute('dir')).toBe('ltr')
+    expect(container.querySelector('.profil-wer [dir="ltr"]')?.textContent).toBe('anton@example.org')
   })
 
   it('„Abmelden" fragt erst nach, dann meldet es ab', () => {
@@ -166,37 +162,36 @@ describe('Push-Mitteilungen', () => {
     Object.assign(push, { supported: false, needsInstall: true })
     const { container } = zeige()
     expect(container.querySelector('[role="switch"]')).toBeNull()
-    expect(container.querySelector('.prof-push-hint')?.textContent).toBe(t.pushIosHint)
+    expect(container.textContent).toContain(t.pushIosHint)
   })
 
   it('ohne angemeldetes Konto gibt es weder Schalter noch Hinweis — es gibt kein Abo dafür', () => {
     Object.assign(push, { angemeldet: false, needsInstall: true })
     const { container } = zeige({ userId: null })
     expect(container.querySelector('[role="switch"]')).toBeNull()
-    expect(container.querySelector('.prof-push-hint')).toBeNull()
+    expect(container.textContent).not.toContain(t.pushIosHint)
   })
 
   it('kann der Browser gar nichts davon, steht nichts da', () => {
     Object.assign(push, { supported: false, needsInstall: false })
     const { container } = zeige()
     expect(container.querySelector('[role="switch"]')).toBeNull()
-    expect(container.querySelector('.prof-push-hint')).toBeNull()
+    expect(container.textContent).not.toContain(t.pushIosHint)
   })
 })
 
 describe('App installieren', () => {
   it('wird nur angeboten, wenn der Browser es kann', () => {
-    expect(zeige().container.querySelector('.prof-install')).toBeNull()
+    expect(knopf(zeige().container, t.appInstallieren)).toBeUndefined()
     cleanup()
     installAvail.wert = true
-    const { container } = zeige()
-    expect(container.querySelector('.prof-install')?.textContent).toBe(t.appInstallieren)
+    expect(knopf(zeige().container, t.appInstallieren)).toBeDefined()
   })
 
   it('ein Tipp startet die Installation', () => {
     installAvail.wert = true
     const { container } = zeige()
-    fireEvent.click(container.querySelector('.prof-install')!)
+    fireEvent.click(knopf(container, t.appInstallieren)!)
     expect(promptInstall).toHaveBeenCalled()
   })
 })
@@ -225,45 +220,75 @@ describe('Darstellung (T121): Dunkel, Hell, Automatisch', () => {
 describe('Schriftgröße', () => {
   it('der Regler deckt genau die vorgesehenen Stufen ab', () => {
     const { container } = zeige()
-    const regler = container.querySelector<HTMLInputElement>('.fs-slider-input')!
-    expect(regler.min).toBe('0')
-    expect(regler.max).toBe(String(FONT_SCALES.length - 1))
-    expect(regler.step).toBe('1')
+    expect(regler(container).min).toBe('0')
+    expect(regler(container).max).toBe(String(FONT_SCALES.length - 1))
+    expect(regler(container).step).toBe('1')
   })
 
   it('die Stufe steht auch als Wort da — und im Regler für Screenreader', () => {
     const { container } = zeige({ fontScale: FONT_SCALES[0]! })
-    expect(wert(container, t.schriftgroesse)).toBe(t.schriftKlein)
-    expect(container.querySelector('.fs-slider-input')?.getAttribute('aria-valuetext')).toBe(
-      t.schriftKlein,
-    )
+    expect(stufe(container)).toBe(t.schriftKlein)
+    expect(regler(container).getAttribute('aria-valuetext')).toBe(t.schriftKlein)
   })
 
   it('ein Zug am Regler setzt die zugehörige Stufe', () => {
     const { container, dispatch } = zeige()
-    fireEvent.change(container.querySelector('.fs-slider-input')!, { target: { value: '3' } })
+    fireEvent.change(regler(container), { target: { value: '3' } })
     expect(dispatch).toHaveBeenCalledWith({ type: 'setFontScale', scale: FONT_SCALES[3] })
   })
 
   it('ein unbekannter gespeicherter Wert landet auf der ersten Stufe, nicht auf −1', () => {
     const { container } = zeige({ fontScale: 99 as AppState['fontScale'] })
-    expect(container.querySelector<HTMLInputElement>('.fs-slider-input')?.value).toBe('0')
-    expect(wert(container, t.schriftgroesse)).toBe(t.schriftKlein)
+    expect(regler(container).value).toBe('0')
+    expect(stufe(container)).toBe(t.schriftKlein)
   })
 })
 
 describe('App-Sprache', () => {
   it('führt alle Oberflächensprachen und steht auf der eingestellten', () => {
     const { container } = zeige({ lang: 'de' })
-    const wahl = auswahl(container, t.spracheLbl)
+    const wahl = sprachwahl(container)
     expect(wahl.value).toBe('de')
     expect(wahl.querySelectorAll('option').length).toBeGreaterThan(30)
   })
 
   it('ein Wechsel schlägt durch', () => {
     const { container, dispatch } = zeige()
-    fireEvent.change(auswahl(container, t.spracheLbl), { target: { value: 'fr' } })
+    fireEvent.change(sprachwahl(container), { target: { value: 'fr' } })
     expect(dispatch).toHaveBeenCalledWith({ type: 'setLang', lang: 'fr' })
+  })
+})
+
+describe('Abwesenheiten (T121: im Profil statt unter „Meine Aufgaben")', () => {
+  it('die eigenen, die anstehen — mit Zeitraum, Grund und ✕', () => {
+    const { container } = zeige({
+      absences: [
+        { id: 'a1', personId: 'p-a', userId: 'u1', from: '2099-11-02', to: '2099-11-06', reason: 'Besuch' },
+        { id: 'a2', personId: 'p-b', userId: 'u1', from: '2099-11-02', to: '2099-11-06', reason: 'Fremd' },
+      ],
+    })
+    const zeilen = [...container.querySelectorAll('.profil-abw')]
+    expect(zeilen).toHaveLength(1)
+    expect(zeilen[0]!.textContent).toContain('Besuch')
+    expect(zeilen[0]!.querySelector('.entfernen')).not.toBeNull()
+  })
+
+  it('„Abwesenheit eintragen" steht darunter', () => {
+    expect(knopf(zeige().container, t.abwEintragen)).toBeDefined()
+  })
+})
+
+describe('Verwaltung (Admins, am Handy)', () => {
+  it('Personen mit ihrer Zahl und die Einstellungen — ein Tipp führt hin', () => {
+    const { container, dispatch } = zeige({ planner: true })
+    const karte = container.querySelector('.profil-verwaltung')!
+    expect(karte.textContent).toContain(t.navPersonen)
+    fireEvent.click(knopf(container, t.navEinstellungen)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'einstellungen' })
+  })
+
+  it('ein Verkündiger sieht sie nicht', () => {
+    expect(zeige({ planner: false }).container.querySelector('.profil-verwaltung')).toBeNull()
   })
 })
 

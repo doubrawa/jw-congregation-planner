@@ -338,10 +338,10 @@ export const KATALOG = [
   // ── Abwesenheiten ─────────────────────────────────────────────────────────
   {
     id: 'abwesenheit-gehoert-der-person',
-    datei: 'src/aufgaben/AufgabenScreen.tsx',
-    regel: '„Deine Einträge" hängen an der Person, nicht am Ersteller.',
-    suchen: 'a.personId != null ? a.personId === state.personId : a.userId === state.userId,',
-    ersetzen: 'a.userId === state.userId || a.personId === state.personId,',
+    datei: 'src/profil/abwesenheiten.ts',
+    regel: 'Die eigenen Abwesenheiten (Profil) hängen an der Person, nicht am Ersteller.',
+    suchen: '    ? absences.filter((a) => (a.personId != null ? a.personId === wer.personId : a.userId === wer.userId))',
+    ersetzen: '    ? absences.filter((a) => a.userId === wer.userId || a.personId === wer.personId)',
   },
   {
     id: 'admin-schalter-zeigt-wirksames-recht',
@@ -681,10 +681,10 @@ export const KATALOG = [
   },
   {
     id: 'datumswaehler-montag',
-    datei: 'src/components/DatePicker.tsx',
+    datei: 'src/components/kalender.ts',
     regel: 'Der Kalender beginnt in jeder Sprache am Montag — wie die Programmwoche selbst.',
-    suchen: 'const lead = versatzAbMontag(first.getUTCDay()) // Montag = 0',
-    ersetzen: 'const lead = first.getUTCDay()',
+    suchen: '  const start = Date.UTC(y, m, 1 - versatzAbMontag(erster.getUTCDay()))',
+    ersetzen: '  const start = Date.UTC(y, m, 1 - erster.getUTCDay())',
   },
 
   // ── Edge Functions ────────────────────────────────────────────────────────
@@ -2962,15 +2962,15 @@ export const KATALOG = [
     id: 'abmelden-statusseite',
     datei: 'src/app/AppShell.tsx',
     regel: 'Wo statt des Profils eine Statusseite steht (kein Mitglied, Ladefehler, leere Versammlung), meldet sie selbst ab.',
-    suchen: "      {kind !== 'loading' && <AbmeldenKnopf className=\"status-btn\" />}",
-    ersetzen: '      {false && <AbmeldenKnopf className="status-btn" />}',
+    suchen: "      {kind !== 'loading' && <AbmeldenKnopf className=\"btn-outline status-btn\" />}",
+    ersetzen: '      {false && <AbmeldenKnopf className="btn-outline status-btn" />}',
   },
   {
     id: 'abmelden-profil-knopf',
-    datei: 'src/components/AbmeldenKnopf.tsx',
+    datei: 'src/profil/ProfilScreen.tsx',
     regel: '„Abmelden" ist ein Knopf wie „App installieren", keine Textzeile.',
-    suchen: '      className={`btn-outline abmelden ${className}',
-    ersetzen: '      className={`abmelden ${className}',
+    suchen: '            <AbmeldenKnopf className="knopf-umriss" />',
+    ersetzen: '            <AbmeldenKnopf className="" />',
   },
   {
     id: 'abmelden-fragt-nach',
@@ -3073,6 +3073,34 @@ export const KATALOG = [
     regel: 'Ein Escape, das ein Blatt schließt, ist verbraucht — Chromium macht daraus keine zweite „close request".',
     suchen: '      event.preventDefault()\n      handler.current()',
     ersetzen: '      handler.current()',
+  },
+  {
+    id: 'zeitraum-von-nie-nach-bis',
+    datei: 'src/components/kalender.ts',
+    regel: 'Ein Tipp vor „Von" beginnt den Zeitraum neu — Von liegt nie nach Bis, sonst träfe ihn keine Prüfung.',
+    suchen: "  if (stand.ende === 'von' || !stand.von || tag < stand.von) {",
+    ersetzen: "  if (stand.ende === 'von' || !stand.von) {",
+  },
+  {
+    id: 'abwesenheiten-nur-was-ansteht',
+    datei: 'src/profil/abwesenheiten.ts',
+    regel: 'Im Profil stehen nur Abwesenheiten, die anstehen oder laufen — was vorbei ist, fällt heraus.',
+    suchen: '    .filter((a) => a.to >= heute)',
+    ersetzen: '    .filter(() => true)',
+  },
+  {
+    id: 'abwesenheit-nur-mit-recht',
+    datei: 'src/data/rechte.ts',
+    regel: 'Eintragen darf, wen es betrifft, oder ein Admin — wie absences_write; sonst schriebe der Knopf ins Leere.',
+    suchen: '  return s.planner || personId === s.personId',
+    ersetzen: '  return true',
+  },
+  {
+    id: 'menue-fuss-gruppe-uebersetzt',
+    datei: 'src/app/eigene-person.ts',
+    regel: 'Die Gruppe unter dem Namen steht in der Sprache der App — im Fuß des Menüs wie im Profil.',
+    suchen: '  return gruppe ? [rolle, tu(gruppe.name)] : [rolle]',
+    ersetzen: '  return gruppe ? [rolle, gruppe.name] : [rolle]',
   },
   {
     id: 'spaeter-legt-weg',

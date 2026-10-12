@@ -1,6 +1,6 @@
 import { useApp } from '../app/context'
 import { istAngemeldet } from '../app/eigene-person'
-import { AbsencePanel } from '../components/AbsencePanel'
+import { AbwesenheitEintragen } from '../components/AbwesenheitEintragen'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { useZweiTipp } from '../components/useZweiTipp'
 import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
@@ -242,13 +242,16 @@ export function PersonDetail({ person }: { person: Person }) {
       <PersonTimeline person={person} />
 
       {/*
-       * Nur das Eingabe-Formular: Die eingetragenen Zeiträume stehen oben in
+       * Nur das Eintragen (T121: ein Blatt mit Kalender): Die Zeiträume stehen oben in
        * der Zeitleiste, mit Beginn und Ende als eigene Punkte und der Strecke
        * dazwischen eingefärbt. Eine zweite Liste darunter wiederholte sie nur —
        * und zeigte gerade das nicht, worauf es ankommt: welche Zuteilung in
        * einen Zeitraum fällt.
        */}
-      <AbsencePanel personId={person.id} entries={[]} listLabel={t.eintraege} showList={false} />
+      <div className="panel panel--pb10" data-farbe="neutral">
+        <h2 className="panel-label">{t.abwesenheiten}</h2>
+        <AbwesenheitEintragen personId={person.id} />
+      </div>
 
       <div className="panel panel--pb10" data-farbe="petrol">
         <h2 className="panel-label">{t.aufgabenbereiche}</h2>

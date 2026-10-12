@@ -11,8 +11,12 @@ import type { ReactNode } from 'react'
 const PFADE = {
   menue: <path d="M4.5 7h15M4.5 12h15M4.5 17h15" />,
   kreuz: <path d="m6.5 6.5 11 11M17.5 6.5l-11 11" />,
-  /** Der Pfeil am Ende einer Zeile, die weiterführt. */
+  /** Der Pfeil am Ende einer Zeile, die weiterführt — und „nächster Monat". */
   weiter: <path d="m9.6 6 6 6-6 6" />,
+  zurueck: <path d="m14.5 6-6 6 6 6" />,
+  plus: <path d="M12 5.4v13.2M5.4 12h13.2" />,
+  /** Ohne Verbindung. */
+  wolke: <path d="M7.2 18.6h9.8a4 4 0 0 0 .6-7.9 5.5 5.5 0 0 0-10.7 1.2 3.5 3.5 0 0 0 .3 6.7z" />,
   haken: <path d="m6.5 12.5 3.7 3.7L17.5 8.5" />,
   glocke: (
     <>
@@ -72,7 +76,7 @@ const PFADE = {
 export type ZeichenName = keyof typeof PFADE
 
 /** Was eine Richtung zeigt und deshalb von rechts nach links gespiegelt wird. */
-const RICHTUNG: ReadonlySet<ZeichenName> = new Set(['weiter'])
+const RICHTUNG: ReadonlySet<ZeichenName> = new Set(['weiter', 'zurueck'])
 
 /** Ein Zeichen, für Vorleseprogramme verborgen — die Beschriftung trägt der Knopf. */
 export function Zeichen({ name }: { name: ZeichenName }) {

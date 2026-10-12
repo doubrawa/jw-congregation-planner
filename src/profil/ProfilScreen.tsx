@@ -1,18 +1,20 @@
 import { useApp } from '../app/context'
-import { eigenePerson } from '../app/eigene-person'
+import { eigenePerson, rolleUndGruppe } from '../app/eigene-person'
+import { Wahl } from '../bausteine/Wahl'
+import { Zeichen } from '../bausteine/Zeichen'
+import { AbmeldenKnopf } from '../components/AbmeldenKnopf'
+import { Switch } from '../components/Switch'
 import { useInstallAvailable, usePush } from '../components/usePush'
 import { FONT_SCALES, THEME_LIST } from '../data/constants'
-import { displayName } from '../data/helpers'
-
+import { displayName, initials } from '../data/helpers'
+import { erlaubteScreens, rechteVon } from '../data/rechte'
 import type { Lang } from '../data/types'
 import { APP_LANGS_SORTED } from '../i18n/langs'
-import { Wahl } from '../bausteine/Wahl'
 import { useT } from '../i18n/useT'
 import { promptInstall } from '../lib/install'
-import { AbmeldenKnopf } from '../components/AbmeldenKnopf'
+import { AbwesenheitenKarte } from './AbwesenheitenKarte'
 import { Diagnose } from './Diagnose'
-import '../aufgaben/aufgaben.css'
-import { Switch } from '../components/Switch'
+import './profil.css'
 
 /** Stufenname je FONT_SCALES-Position (gleiche Reihenfolge). */
 const FS_LABELS = [
@@ -24,126 +26,159 @@ const FS_LABELS = [
 ] as const
 
 /**
- * Profil (eigener Navigationspunkt): Name/Versammlung, Push-Mitteilungen,
- * Darstellung (Hell, Dunkel, Automatisch — THEME_LIST), Schriftgröße, App-Sprache und Abmelden. Rolle
- * und Predigtdienstgruppe werden im Personen-Screen gepflegt.
+ * **Profil** (T121): wer man ist, wie die App aussieht, wann man fehlt.
+ *
+ *  - Oben Initialen, Name, Rechte-Stufe und Gruppe — und das Konto (E-Mail):
+ *    man sieht, als wer man angemeldet ist.
+ *  - **Darstellung**: Hell, Dunkel, Automatisch; Schriftgröße; Sprache;
+ *    Push-Mitteilungen (auf dem iPhone erst als App, dann steht dort der Hinweis).
+ *  - **Abwesenheiten**: die eigenen, die anstehen — und „Abwesenheit eintragen".
+ *  - **Verwaltung** (Admins, nur am Handy — ab dem Tablet steht sie im Menü).
+ *  - App installieren, Abmelden und der Stand der App.
  */
 export function ProfilScreen() {
   const { state, dispatch } = useApp()
-  const { t } = useT()
+  const i18n = useT()
+  const { t } = i18n
+  const me = eigenePerson(state)
   // Position im Regler; unbekannter Wert (z. B. alter localStorage) → Standard.
   const scaleIndex = Math.max(0, FONT_SCALES.indexOf(state.fontScale))
   // Beide Listen sind gleich lang und der Index ist geklemmt; der
   // Index-Zugriff sieht das nicht (noUncheckedIndexedAccess).
   const scaleLabel = FS_LABELS[scaleIndex] ?? FS_LABELS[0]!
-  const me = eigenePerson(state)
-  // Konto-E-Mail des eingeloggten Nutzers (nur Produktion; die eigene
-  // Mitglieder-Zeile ist auch für Nicht-Planer sichtbar).
+  // Konto-E-Mail (nur Produktion; die eigene Mitglieder-Zeile sieht jeder).
   const myEmail = state.members.find((m) => m.userId === state.userId)?.email ?? ''
+  const verwalten = erlaubteScreens(rechteVon(state)).includes('personen')
 
   // Web-Push (nur angemeldet): Schalter, wenn der Browser es kann; auf iOS im
   // Browser stattdessen Installations-Hinweis (dort erst als App möglich).
   const { angemeldet, supported, needsInstall, subscribed, enable, disable } = usePush()
   const installAvail = useInstallAvailable()
-  const togglePush = () => void (subscribed ? disable() : enable())
 
   return (
-    <section className="screen">
-      <h1 className="screen-title">{t.navProfil}</h1>
-
-      <div className="panel panel--pb14" data-farbe="neutral">
-        <h2 className="panel-label">{t.profil}</h2>
-        <div className="kv-row">
-          <span className="kv-key">{t.nameLbl}</span>
-          <span className="kv-val" dir="auto">{me ? displayName(me) : ''}</span>
-        </div>
-        {myEmail && (
-          <div className="kv-row">
-            <span className="kv-key">{t.emailKv}</span>
-            <span className="kv-val" dir="ltr">
+    <section className="screen profil">
+      <div className="profil-kopf">
+        <span className="profil-bild" aria-hidden="true">
+          <span>{me ? initials(me) : '–'}</span>
+        </span>
+        <div className="profil-wer">
+          <h1 className="profil-name" dir="auto">
+            {me ? displayName(me) : t.navProfil}
+          </h1>
+          <span className="profil-rolle">{rolleUndGruppe(state, i18n).join(' · ')}</span>
+          {myEmail && (
+            <span className="klein-text" dir="ltr">
               {myEmail}
             </span>
-          </div>
-        )}
-        <div className="kv-row">
-          <span className="kv-key">{t.versammlungLbl}</span>
-          <span className="kv-val">{state.congregation.name}</span>
+          )}
         </div>
-        {angemeldet && supported && (
-          <div className="kv-row">
-            <span className="kv-key">{t.pushLbl}</span>
-            <Switch on={subscribed} label={t.pushLbl} onToggle={togglePush} />
-          </div>
-        )}
-        {angemeldet && needsInstall && (
-          <div className="kv-row kv-row--plain prof-push-ios">
-            <span className="kv-key">{t.pushLbl}</span>
-            <span className="prof-push-hint">{t.pushIosHint}</span>
-          </div>
-        )}
-        {angemeldet && installAvail && (
-          <button type="button" className="btn-outline prof-install" onClick={() => void promptInstall()}>
-            {t.appInstallieren}
-          </button>
-        )}
-        <div className="prof-darstellung">
-          <span className="kv-key">{t.darstellung}</span>
+      </div>
+
+      <div className="profil-spalten">
+        <section className="karte profil-karte">
+          <h2 className="abschnitt-titel profil-karte-titel">{t.darstellung}</h2>
           <Wahl
             label={t.darstellung}
             optionen={THEME_LIST.map(({ key, labelKey }) => ({ wert: key, text: t[labelKey] }))}
             wert={state.theme}
             onWahl={(theme) => dispatch({ type: 'setTheme', theme })}
           />
+          <div className="profil-zeile profil-schrift">
+            <div className="profil-schrift-kopf">
+              <span>{t.schriftgroesse}</span>
+              <span className="klein-text">{t[scaleLabel]}</span>
+            </div>
+            <div className="profil-regler">
+              <span className="profil-regler-a" aria-hidden="true">
+                A
+              </span>
+              <input
+                type="range"
+                className="profil-regler-feld"
+                min={0}
+                max={FONT_SCALES.length - 1}
+                step={1}
+                value={scaleIndex}
+                aria-label={t.schriftgroesse}
+                aria-valuetext={t[scaleLabel]}
+                onChange={(e) =>
+                  dispatch({ type: 'setFontScale', scale: FONT_SCALES[Number(e.target.value)] ?? FONT_SCALES[0]! })
+                }
+              />
+              <span className="profil-regler-a is-gross" aria-hidden="true">
+                A
+              </span>
+            </div>
+          </div>
+          <label className="profil-zeile profil-sprache">
+            <span>{t.spracheLbl}</span>
+            <select
+              className="profil-auswahl"
+              value={state.lang}
+              onChange={(e) => dispatch({ type: 'setLang', lang: e.target.value as Lang })}
+            >
+              {APP_LANGS_SORTED.map(({ code, label }) => (
+                <option key={code} value={code}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {angemeldet && supported && (
+            <div className="profil-zeile schalter-zeile">
+              <span>{t.pushLbl}</span>
+              <Switch on={subscribed} label={t.pushLbl} onToggle={() => void (subscribed ? disable() : enable())} />
+            </div>
+          )}
+          {angemeldet && needsInstall && (
+            <div className="profil-zeile schalter-zeile">
+              <span className="schalter-text">
+                <span>{t.pushLbl}</span>
+                <span className="klein-text">{t.pushIosHint}</span>
+              </span>
+            </div>
+          )}
+        </section>
+
+        <div className="profil-spalte">
+          <AbwesenheitenKarte />
+
+          {verwalten && (
+            <section className="karte profil-karte profil-verwaltung">
+              <h2 className="abschnitt-titel profil-karte-titel">{t.navVerwaltung}</h2>
+              <button type="button" className="profil-zeile profil-verweis" onClick={() => dispatch({ type: 'navigate', screen: 'personen' })}>
+                <span>{t.navPersonen}</span>
+                <span className="profil-verweis-wert">
+                  {state.persons.length}
+                  <Zeichen name="weiter" />
+                </span>
+              </button>
+              <button
+                type="button"
+                className="profil-zeile profil-verweis"
+                onClick={() => dispatch({ type: 'navigate', screen: 'einstellungen' })}
+              >
+                <span>{t.navEinstellungen}</span>
+                <Zeichen name="weiter" />
+              </button>
+            </section>
+          )}
+
+          <div className="profil-knoepfe">
+            {angemeldet && installAvail && (
+              <button type="button" className="knopf-umriss" onClick={() => void promptInstall()}>
+                {t.appInstallieren}
+              </button>
+            )}
+            <AbmeldenKnopf className="knopf-umriss" />
+          </div>
+          {/*
+            Stand der App: beantwortet die eine Frage, die sich aus der Ferne
+            sonst nicht klären lässt — läuft auf diesem Gerät wirklich die
+            neueste Fassung? Dahinter versteckt sich die Gesten-Diagnose.
+          */}
+          <Diagnose />
         </div>
-        <div className="kv-row kv-row--plain">
-          <span className="kv-key">{t.schriftgroesse}</span>
-          <span className="kv-val">{t[scaleLabel]}</span>
-        </div>
-        <div className="fs-slider">
-          <span className="fs-slider-a fs-slider-a--min" aria-hidden="true">
-            A
-          </span>
-          <input
-            type="range"
-            className="fs-slider-input"
-            min={0}
-            max={FONT_SCALES.length - 1}
-            step={1}
-            value={scaleIndex}
-            aria-label={t.schriftgroesse}
-            aria-valuetext={t[scaleLabel]}
-            onChange={(e) =>
-              dispatch({ type: 'setFontScale', scale: FONT_SCALES[Number(e.target.value)] ?? FONT_SCALES[0]! })
-            }
-          />
-          <span className="fs-slider-a fs-slider-a--max" aria-hidden="true">
-            A
-          </span>
-        </div>
-        <div className="kv-row kv-row--plain">
-          <span className="kv-key">{t.spracheLbl}</span>
-          <select
-            className="mem-select lang-select"
-            aria-label={t.spracheLbl}
-            value={state.lang}
-            onChange={(e) => dispatch({ type: 'setLang', lang: e.target.value as Lang })}
-          >
-            {APP_LANGS_SORTED.map(({ code, label }) => (
-              <option key={code} value={code}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <AbmeldenKnopf className="prof-logout" />
-        {/*
-          Stand der App: beantwortet die eine Frage, die sich aus der Ferne
-          sonst nicht klären lässt — läuft auf diesem Gerät wirklich die
-          neueste Fassung? Unübersetzt, weil „Build" international geläufig
-          und die Zeile ohnehin technische Kennung ist. Dahinter versteckt
-          sich die Gesten-Diagnose (siehe Diagnose.tsx).
-        */}
-        <Diagnose />
       </div>
     </section>
   )

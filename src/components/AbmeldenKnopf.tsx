@@ -21,7 +21,7 @@ export function AbmeldenKnopf({ className }: { className: string }) {
   return (
     <button
       type="button"
-      className={`btn-outline abmelden ${className}${abmelden.armed ? ' is-armed' : ''}`}
+      className={`abmelden ${className}${abmelden.armed ? ' is-armed' : ''}`}
       onClick={abmelden.onClick}
       onBlur={abmelden.onBlur}
     >

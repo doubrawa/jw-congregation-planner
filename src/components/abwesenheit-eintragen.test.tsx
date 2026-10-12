@@ -11,27 +11,23 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import { dict } from '../i18n/ui'
-import type { Absence, Person } from '../data/types'
-import { AbsencePanel } from './AbsencePanel'
-import { DatePicker } from './DatePicker'
+import type { Person } from '../data/types'
+import { AbwesenheitEintragen } from './AbwesenheitEintragen'
+import { zeitraumTippen } from './kalender'
 
 /**
- * **Eine Abwesenheit eintragen — der eine Vorgang, den jeder Verkündiger
- * selbst ausführt.**
+ * **Eine Abwesenheit eintragen** (T121) — der eine Vorgang, den jeder
+ * Verkündiger selbst ausführt, im Profil für sich und im Personen-Detail der
+ * Planer für andere. Ein Blatt mit einem Zeitraum-Kalender.
  *
- * `abwesenheiten.test.tsx` prüft, wessen Einträge wo erscheinen; hier steht das
- * Eintragen selbst. Drei Regeln hängen daran:
- *
- * - **„Bis" wird vorbelegt.** Eine Ein-Tages-Abwesenheit ist damit ein einziger
- *   Klick, und ein „Bis" vor dem „Von" korrigiert sich von selbst.
- * - **Von darf nicht nach Bis liegen.** Sonst entsteht ein Zeitraum, den keine
- *   Prüfung je trifft — die Person gälte nirgends als abwesend.
- * - **Eintragen darf, wen es betrifft, oder ein Planer.** Dieselbe Grenze zieht
- *   die Datenbank (`absences_write`); stünde das Formular anderen offen,
- *   schriebe es ins Leere und die Zeile verschwände beim nächsten Laden.
- *
- * Der eigene Datumswähler ist Teil davon: das native Feld sieht auf jedem
- * Gerät anders aus und lässt sich nicht in 34 Sprachen führen.
+ * - **Ein Tag ist ein Tipp.** Der erste Tipp setzt Von und Bis auf denselben
+ *   Tag; ein zweiter danach verlängert bis dorthin.
+ * - **Von liegt nie nach Bis.** Ein Tipp vor „Von" beginnt den Zeitraum neu,
+ *   statt ihn rückwärts aufzuspannen — sonst entstünde ein Zeitraum, den keine
+ *   Prüfung je trifft.
+ * - **Eintragen darf, wen es betrifft, oder ein Admin.** Dieselbe Grenze zieht
+ *   die Datenbank (`absences_write`); stünde der Knopf anderen offen, schriebe
+ *   er ins Leere und die Zeile verschwände beim nächsten Laden.
  */
 
 const t = dict('de')
@@ -41,12 +37,7 @@ const ICH: Person = {
   tel: '', mail: '', priv: emptyQualifications(),
 }
 
-const abw = (over: Partial<Absence> = {}): Absence => ({
-  id: 'a1', personId: 'p-a', userId: 'u1', from: '2026-10-01', to: '2026-10-14', reason: 'Urlaub',
-  ...over,
-})
-
-function zeigePanel(props: Partial<Parameters<typeof AbsencePanel>[0]> = {}, over: Partial<AppState> = {}) {
+function zeige(personId: string | null, over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
     ...demoZustand(),
@@ -60,12 +51,7 @@ function zeigePanel(props: Partial<Parameters<typeof AbsencePanel>[0]> = {}, ove
       <AppDispatchContext.Provider value={dispatch}>
         <AppStoreContext.Provider value={store}>
           <AppStateContext.Provider value={state}>
-            <AbsencePanel
-              personId={props.personId !== undefined ? props.personId : 'p-a'}
-              entries={props.entries ?? []}
-              listLabel={props.listLabel ?? t.deineEintraege}
-              showList={props.showList ?? true}
-            />
+            <AbwesenheitEintragen personId={personId} />
           </AppStateContext.Provider>
         </AppStoreContext.Provider>
       </AppDispatchContext.Provider>
@@ -74,420 +60,123 @@ function zeigePanel(props: Partial<Parameters<typeof AbsencePanel>[0]> = {}, ove
   return { dispatch, ...render(<Buehne />) }
 }
 
-/** Den Datumswähler mit dem Namen `label` öffnen und einen Tag wählen. */
-const waehle = (c: HTMLElement, label: string, tag: string) => {
-  const feld = [...c.querySelectorAll<HTMLButtonElement>('.dp-field')].find(
-    (b) => b.getAttribute('aria-label') === label,
-  )!
-  fireEvent.click(feld)
-  const pop = feld.closest('.dp')!.querySelector('.dp-pop')!
-  const knopf = [...pop.querySelectorAll<HTMLButtonElement>('.dp-day:not(.dp-day--muted)')].find(
-    (b) => b.textContent === tag,
-  )!
-  fireEvent.click(knopf)
+/** Das Blatt liegt per Portal am Ende des Dokuments, nicht im Container. */
+const blatt = () => document.body.querySelector<HTMLElement>('.sheet')
+const knopf = (root: ParentNode | null, text: string) =>
+  [...(root?.querySelectorAll<HTMLButtonElement>('button') ?? [])].find((b) => b.textContent === text)
+/** Einen Tag des angezeigten Monats antippen (nach seinem Namen für Vorleseprogramme). */
+const tippe = (name: string) => {
+  const tag = [...document.body.querySelectorAll<HTMLButtonElement>('.kal-tag')].find((b) => b.getAttribute('aria-label') === name)
+  if (!tag) throw new Error(`Tag „${name}" nicht im Kalender`)
+  fireEvent.click(tag)
 }
 
 beforeEach(() => {
-  vi.useFakeTimers()
-  vi.setSystemTime(new Date(2026, 9, 15, 12, 0)) // 15. Oktober 2026
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(2026, 9, 15, 12, 0)) // Donnerstag, 15. Oktober 2026
+  window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
 })
 afterEach(() => {
   vi.useRealTimers()
   cleanup()
 })
 
-describe('Der Datumswähler', () => {
-  const zeigeDP = (value = '', over: Partial<Parameters<typeof DatePicker>[0]> = {}) => {
-    const onChange = vi.fn()
-    const r = render(
-      <DatePicker
-        value={value}
-        onChange={onChange}
-        locale="de-DE"
-        placeholder={t.datumPh}
-        ariaLabel={t.von}
-        prevLabel={t.a11yPrevMonth}
-        nextLabel={t.a11yNextMonth}
-        {...over}
-      />,
-    )
-    return { onChange, ...r }
-  }
+describe('Den Zeitraum wählen', () => {
+  const leer = { von: '', bis: '', ende: 'von' as const }
 
-  it('zeigt den Platzhalter, solange nichts gewählt ist', () => {
-    const { container } = zeigeDP('')
-    const feld = container.querySelector('.dp-field')!
-    expect(feld.textContent).toContain(t.datumPh)
-    expect(feld.className).toContain('dp-field--empty')
+  it('ein Tag ist ein Tipp: Von und Bis stehen auf demselben Tag', () => {
+    expect(zeitraumTippen(leer, '2026-11-02')).toEqual({ von: '2026-11-02', bis: '2026-11-02', ende: 'bis' })
   })
 
-  it('ein gewähltes Datum steht lesbar da — nicht als ISO', () => {
-    const { container } = zeigeDP('2026-10-01')
-    expect(container.querySelector('.dp-field')?.textContent).toContain('1. Okt. 2026')
+  it('der zweite Tipp danach verlängert bis dorthin', () => {
+    const erster = zeitraumTippen(leer, '2026-11-02')
+    expect(zeitraumTippen(erster, '2026-11-06')).toEqual({ von: '2026-11-02', bis: '2026-11-06', ende: 'bis' })
   })
 
-  it('das Popup ist zu, bis man es öffnet', () => {
-    const { container } = zeigeDP()
-    expect(container.querySelector('.dp-pop')).toBeNull()
-    expect(container.querySelector('.dp-field')?.getAttribute('aria-expanded')).toBe('false')
-    fireEvent.click(container.querySelector('.dp-field')!)
-    expect(container.querySelector('.dp-pop')?.getAttribute('role')).toBe('dialog')
+  it('ein Tipp vor „Von" beginnt neu — Von liegt nie nach Bis', () => {
+    const stand = { von: '2026-11-02', bis: '2026-11-06', ende: 'bis' as const }
+    expect(zeitraumTippen(stand, '2026-10-30')).toEqual({ von: '2026-10-30', bis: '2026-11-06', ende: 'bis' })
   })
 
-  it('es öffnet auf dem Monat des gewählten Datums', () => {
-    const { container } = zeigeDP('2026-03-05')
-    fireEvent.click(container.querySelector('.dp-field')!)
-    expect(container.querySelector('.dp-title')?.textContent).toBe('März 2026')
-  })
-
-  it('ohne Auswahl auf dem laufenden Monat', () => {
-    const { container } = zeigeDP('')
-    fireEvent.click(container.querySelector('.dp-field')!)
-    expect(container.querySelector('.dp-title')?.textContent).toBe('Oktober 2026')
-  })
-
-  it('die Pfeile blättern Monat für Monat — über den Jahreswechsel hinweg', () => {
-    const { container } = zeigeDP('2026-12-01')
-    fireEvent.click(container.querySelector('.dp-field')!)
-    expect(container.querySelector('.dp-title')?.textContent).toBe('Dezember 2026')
-    fireEvent.click(container.querySelector(`[aria-label="${t.a11yNextMonth}"]`)!)
-    expect(container.querySelector('.dp-title')?.textContent).toBe('Januar 2027')
-    fireEvent.click(container.querySelector(`[aria-label="${t.a11yPrevMonth}"]`)!)
-    fireEvent.click(container.querySelector(`[aria-label="${t.a11yPrevMonth}"]`)!)
-    expect(container.querySelector('.dp-title')?.textContent).toBe('November 2026')
-  })
-
-  it('ein Tag meldet sich als ISO-Datum und schließt das Popup', () => {
-    const { container, onChange } = zeigeDP('2026-10-01')
-    fireEvent.click(container.querySelector('.dp-field')!)
-    const zwoelf = [...container.querySelectorAll<HTMLButtonElement>('.dp-day:not(.dp-day--muted)')]
-      .find((b) => b.textContent === '12')!
-    fireEvent.click(zwoelf)
-    expect(onChange).toHaveBeenCalledWith('2026-10-12')
-    expect(container.querySelector('.dp-pop')).toBeNull()
-  })
-
-  it('der gewählte Tag und heute sind markiert — und nie beide derselbe', () => {
-    const { container } = zeigeDP('2026-10-01')
-    fireEvent.click(container.querySelector('.dp-field')!)
-    expect(container.querySelectorAll('.dp-day--sel')).toHaveLength(1)
-    const heute = container.querySelectorAll('.dp-day--today')
-    expect(heute).toHaveLength(1)
-    expect(heute[0]!.textContent).toBe('15')
-    expect(heute[0]!.className).not.toContain('dp-day--sel')
-  })
-
-  it('geht ohne Wert im ÖRTLICHEN Monat auf, nicht im UTC-Monat', () => {
-    /*
-      „Dieser Monat" ist ein örtlicher Begriff. Der Kalender las ihn über
-      `getUTCMonth()`, und in Mitteleuropa ist der UTC-Tag zwischen Mitternacht
-      und 01:00 bzw. 02:00 noch der gestrige — am Monatsersten also der
-      Vormonat. Wer nach Mitternacht eine Abwesenheit eintrug, bekam den
-      **Februar** vorgelegt, während die Heute-Marke auf dem 1. März in der
-      ausgegrauten Nachzeile saß.
-
-      Für die Heute-Marke selbst steht dieselbe Begründung längst im
-      Quelltext (`todayIso`) — nur die Monatswahl daneben war noch die alte.
-      Die Tests der Suite laufen sonst auf 12:00 mittags und können den
-      Unterschied gar nicht sehen; deshalb stellt dieser die Uhr selbst.
-    */
-    vi.setSystemTime(new Date(2026, 2, 1, 0, 30)) // 1. März 2026, 00:30 Ortszeit
-    const { container } = zeigeDP('')
-    fireEvent.click(container.querySelector('.dp-field')!)
-    expect(container.querySelector('.dp-title')?.textContent).toContain('März')
-  })
-
-  it('mit Wert entscheidet der Wert, nicht die Uhr', () => {
-    // Die Gegenprobe: Das ISO-Datum wird über UTC-Mittag gelesen und ist
-    // damit zeitzonenfrei — daran ändert die Uhrzeit nichts.
-    vi.setSystemTime(new Date(2026, 2, 1, 0, 30))
-    const { container } = zeigeDP('2026-08-01')
-    fireEvent.click(container.querySelector('.dp-field')!)
-    expect(container.querySelector('.dp-title')?.textContent).toContain('August')
-  })
-
-  it('Tage vor `min` sind gesperrt — „Bis" kann nicht vor „Von" liegen', () => {
-    const { container } = zeigeDP('', { value: '', min: '2026-10-10' })
-    fireEvent.click(container.querySelector('.dp-field')!)
-    const tage = [...container.querySelectorAll<HTMLButtonElement>('.dp-day:not(.dp-day--muted)')]
-    expect(tage.find((b) => b.textContent === '9')?.disabled).toBe(true)
-    expect(tage.find((b) => b.textContent === '10')?.disabled).toBe(false)
-  })
-
-  it('Escape und ein Klick daneben schließen', () => {
-    const { container } = zeigeDP()
-    fireEvent.click(container.querySelector('.dp-field')!)
-    fireEvent.keyDown(document, { key: 'Escape' })
-    expect(container.querySelector('.dp-pop')).toBeNull()
-    fireEvent.click(container.querySelector('.dp-field')!)
-    fireEvent.mouseDown(document.body)
-    expect(container.querySelector('.dp-pop')).toBeNull()
-  })
-
-  it('ein Klick INS Popup schließt nicht — sonst käme man nie zum Tag', () => {
-    const { container } = zeigeDP()
-    fireEvent.click(container.querySelector('.dp-field')!)
-    fireEvent.mouseDown(container.querySelector('.dp-title')!)
-    expect(container.querySelector('.dp-pop')).toBeTruthy()
-  })
-
-  it('die Wochentagsköpfe stehen in der Sprache des Lesers, Montag zuerst', () => {
-    const { container } = zeigeDP()
-    fireEvent.click(container.querySelector('.dp-field')!)
-    const koepfe = [...container.querySelectorAll('.dp-weekdays span')].map((s) => s.textContent)
-    expect(koepfe).toHaveLength(7)
-    expect(koepfe[0]).toMatch(/^Mo/)
+  it('ist „Von" gewählt, verschiebt ein Tipp nach „Bis" beide Enden', () => {
+    const stand = { von: '2026-11-02', bis: '2026-11-06', ende: 'von' as const }
+    expect(zeitraumTippen(stand, '2026-11-09')).toEqual({ von: '2026-11-09', bis: '2026-11-09', ende: 'bis' })
   })
 })
 
 describe('Abwesenheit eintragen', () => {
-  it('ohne Von und Bis wird nichts eingetragen, sondern nachgefragt', () => {
-    const { container, dispatch } = zeigePanel()
-    fireEvent.submit(container.querySelector('form')!)
+  const oeffne = () => fireEvent.click(knopf(document.body, t.abwEintragen)!)
+
+  it('der Knopf öffnet das Blatt mit dem Kalender', () => {
+    zeige('p-a')
+    expect(blatt()).toBeNull()
+    oeffne()
+    expect(blatt()?.querySelector('.kal')).not.toBeNull()
+    expect(blatt()?.querySelector('.sheet-title')?.textContent).toBe(t.abwEintragen)
+  })
+
+  it('ohne Zeitraum wird nichts eingetragen, sondern nachgefragt', () => {
+    const { dispatch } = zeige('p-a')
+    oeffne()
+    fireEvent.click(knopf(blatt(), t.abwEintragen)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.toastVonBis })
     expect(dispatch.mock.calls.some((c) => c[0].type === 'addAbsence')).toBe(false)
+    expect(blatt()).not.toBeNull()
   })
 
-  it('„Bis" wird beim Wählen von „Von" mit vorbelegt — ein Tag, ein Klick', () => {
-    const { container } = zeigePanel()
-    waehle(container, t.von, '20')
-    const bis = [...container.querySelectorAll('.dp-field')].find(
-      (b) => b.getAttribute('aria-label') === t.bis,
-    )!
-    expect(bis.textContent).toContain('20. Okt. 2026')
-  })
-
-  it('ein späteres „Bis" bleibt stehen — der Zeitraum gehört dem Nutzer', () => {
-    const { container } = zeigePanel()
-    waehle(container, t.von, '10')
-    waehle(container, t.bis, '25')
-    waehle(container, t.von, '12')
-    const bis = [...container.querySelectorAll('.dp-field')].find(
-      (b) => b.getAttribute('aria-label') === t.bis,
-    )!
-    expect(bis.textContent).toContain('25. Okt. 2026')
-  })
-
-  it('ein vollständiger Zeitraum wird eingetragen — auf DIESE Person, mit Ersteller', () => {
-    const { container, dispatch } = zeigePanel()
-    waehle(container, t.von, '10')
-    waehle(container, t.bis, '20')
-    fireEvent.change(container.querySelector('.abs-reason input')!, { target: { value: 'Urlaub' } })
-    fireEvent.submit(container.querySelector('form')!)
-    const aktion = dispatch.mock.calls.find((c) => c[0].type === 'addAbsence')![0]
-    expect(aktion.absence).toMatchObject({
-      personId: 'p-a', userId: 'u1', from: '2026-10-10', to: '2026-10-20', reason: 'Urlaub',
+  it('ein vollständiger Zeitraum wird eingetragen — auf DIESE Person, mit Ersteller und Grund', () => {
+    const { dispatch } = zeige('p-a')
+    oeffne()
+    tippe('Dienstag, 20. Oktober')
+    tippe('Freitag, 23. Oktober')
+    fireEvent.change(blatt()!.querySelector('input.feld')!, { target: { value: '  Urlaub ' } })
+    fireEvent.click(knopf(blatt(), t.abwEintragen)!)
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'addAbsence',
+      absence: expect.objectContaining({ personId: 'p-a', userId: 'u1', from: '2026-10-20', to: '2026-10-23', reason: 'Urlaub' }),
     })
-    expect(aktion.absence.id).toBeTruthy()
-  })
-
-  it('nach dem Eintragen ist das Formular wieder leer', () => {
-    const { container } = zeigePanel()
-    waehle(container, t.von, '10')
-    waehle(container, t.bis, '20')
-    const grund = container.querySelector<HTMLInputElement>('.abs-reason input')!
-    fireEvent.change(grund, { target: { value: 'Urlaub' } })
-    fireEvent.submit(container.querySelector('form')!)
-    expect(grund.value).toBe('')
-    const felder = [...container.querySelectorAll('.dp-field')]
-    expect(felder.every((f) => f.className.includes('dp-field--empty'))).toBe(true)
+    // Danach geht das Blatt zu.
+    expect(blatt()).toBeNull()
   })
 
   it('der Planer trägt für eine ANDERE Person ein — sie ist die Betroffene, er der Ersteller', () => {
-    const { container, dispatch } = zeigePanel(
-      { personId: 'p-b' },
-      { planner: true, personId: 'p-a', userId: 'u1' },
-    )
-    waehle(container, t.von, '10')
-    fireEvent.submit(container.querySelector('form')!)
-    const aktion = dispatch.mock.calls.find((c) => c[0].type === 'addAbsence')![0]
-    expect(aktion.absence.personId).toBe('p-b')
-    expect(aktion.absence.userId).toBe('u1')
+    const { dispatch } = zeige('p-b', { planner: true })
+    oeffne()
+    tippe('Montag, 19. Oktober')
+    fireEvent.click(knopf(blatt(), t.abwEintragen)!)
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'addAbsence',
+      absence: expect.objectContaining({ personId: 'p-b', userId: 'u1', from: '2026-10-19', to: '2026-10-19' }),
+    })
   })
 
   it('ein Konto ohne eigene Person trägt ohne Person-Bezug ein', () => {
-    const { container, dispatch } = zeigePanel({ personId: null }, { personId: null })
-    waehle(container, t.von, '10')
-    fireEvent.submit(container.querySelector('form')!)
-    expect(dispatch.mock.calls.find((c) => c[0].type === 'addAbsence')![0].absence.personId).toBeNull()
+    const { dispatch } = zeige(null, { personId: null })
+    oeffne()
+    tippe('Dienstag, 20. Oktober')
+    fireEvent.click(knopf(blatt(), t.abwEintragen)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'addAbsence', absence: expect.objectContaining({ personId: null }) })
+  })
+
+  it('das Blatt blättert die Monate', () => {
+    zeige('p-a')
+    oeffne()
+    expect(blatt()?.querySelector('.kal-monat')?.textContent).toBe('Oktober 2026')
+    fireEvent.click(blatt()!.querySelector(`[aria-label="${t.a11yNextMonth}"]`)!)
+    expect(blatt()?.querySelector('.kal-monat')?.textContent).toBe('November 2026')
   })
 })
 
 describe('Wer eintragen darf', () => {
-  it('die eigene Person: Formular und Entfernen', () => {
-    const { container } = zeigePanel({ entries: [abw()] }, { planner: false, personId: 'p-a' })
-    expect(container.querySelector('.abs-form-row')).toBeTruthy()
-    expect(container.querySelector('.abs-remove')).toBeTruthy()
+  it('die eigene Person', () => {
+    expect(knopf(zeige('p-a').container, t.abwEintragen)).toBeDefined()
   })
 
-  it('ein Planer bei jeder Person ebenso', () => {
-    const { container } = zeigePanel({ personId: 'p-b', entries: [abw({ personId: 'p-b' })] }, { planner: true })
-    expect(container.querySelector('.abs-form-row')).toBeTruthy()
-    expect(container.querySelector('.abs-remove')).toBeTruthy()
+  it('ein Admin bei jeder Person', () => {
+    expect(knopf(zeige('p-b', { planner: true }).container, t.abwEintragen)).toBeDefined()
   })
 
-  it('sonst niemand — sehen schon, ändern nicht', () => {
-    const { container } = zeigePanel(
-      { personId: 'p-b', entries: [abw({ personId: 'p-b' })] },
-      { planner: false, personId: 'p-a' },
-    )
-    expect(container.querySelector('.abs-form-row')).toBeNull()
-    expect(container.querySelector('.abs-remove')).toBeNull()
-    expect(container.querySelector('.abs-range')).toBeTruthy()
-  })
-})
-
-describe('Die Liste darunter', () => {
-  it('nennt Zeitraum und Grund', () => {
-    const { container } = zeigePanel({ entries: [abw()] })
-    expect(container.querySelector('.abs-range')?.textContent).toBe('1. Oktober – 14. Oktober')
-    expect(container.querySelector('.abs-reason-text')?.textContent).toBe('Urlaub')
-  })
-
-  it('ein einzelner Tag steht einmal da — nicht „1. November – 1. November"', () => {
-    const { container } = zeigePanel({ entries: [abw({ from: '2026-11-01', to: '2026-11-01' })] })
-    expect(container.querySelector('.abs-range')?.textContent).toBe('1. November')
-  })
-
-  it('geordnet nach Beginn — auch ein eben eingetragener Eintrag steht an seinem Datum', () => {
-    // Der Zustand hängt Neues hinten an; geladen wird nach Datum. Ohne Ordnung
-    // stand ein frischer Eintrag bis zum nächsten Laden am Ende.
-    const { container } = zeigePanel({
-      entries: [
-        abw({ id: 'nov', from: '2026-11-02', to: '2026-11-06' }),
-        abw({ id: 'sep', from: '2026-09-07', to: '2026-09-13' }),
-        abw({ id: 'okt', from: '2026-10-19', to: '2026-10-25' }),
-      ],
-    })
-    expect([...container.querySelectorAll('.abs-range')].map((e) => e.textContent)).toEqual([
-      '7. September – 13. September',
-      '19. Oktober – 25. Oktober',
-      '2. November – 6. November',
-    ])
-  })
-
-  it('ohne Grund steht der Ersatztext — nicht eine leere Zeile', () => {
-    const { container } = zeigePanel({ entries: [abw({ reason: '' })] })
-    expect(container.querySelector('.abs-reason-text')?.textContent).toBe(t.ohneAngabe)
-  })
-
-  it('ohne Einträge sagt es das', () => {
-    const { container } = zeigePanel({ entries: [] })
-    expect(container.querySelector('.abs-empty')?.textContent).toBe(t.keineAbw)
-  })
-
-  it('Entfernen fragt erst nach, dann entfernt es genau diesen Eintrag', () => {
-    // Seit dem 4.10.2026 mit Rückfrage: Der erste Tipp fragt, erst der zweite löscht.
-    const { container, dispatch } = zeigePanel({ entries: [abw({ id: 'a1' }), abw({ id: 'a2' })] })
-    const knopf = () => [...container.querySelectorAll('.abs-remove')][1]!
-    fireEvent.click(knopf())
-    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'removeAbsence' }))
-    expect(knopf().textContent).toBe(t.loeschenSicher)
-    fireEvent.click(knopf())
-    expect(dispatch).toHaveBeenCalledWith({ type: 'removeAbsence', id: 'a2' })
-  })
-
-  it('ein Tipp daneben bricht die Rückfrage ab', () => {
-    const { container, dispatch } = zeigePanel({ entries: [abw({ id: 'a1' })] })
-    const knopf = () => container.querySelector('.abs-remove')!
-    fireEvent.click(knopf())
-    fireEvent.blur(knopf())
-    expect(knopf().textContent).toBe('✕')
-    fireEvent.click(knopf())
-    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'removeAbsence' }))
-  })
-
-  it('im Personen-Detail bleibt die Liste weg — dort steht sie in der Zeitleiste', () => {
-    const { container } = zeigePanel({ entries: [abw()], showList: false })
-    expect(container.querySelector('.abs-row')).toBeNull()
-    expect(container.querySelector('.abs-empty')).toBeNull()
-    expect(container.querySelector('.abs-form-row')).toBeTruthy()
-  })
-})
-
-/**
- * **Der Datumswähler in fremden Sprachen.**
- *
- * Alles darüber misst ihn auf `de-DE`. Er ist aber der einzige Baustein der
- * App, der einen ganzen **Kalender** zeichnet — und Kalender sind das Gebiet,
- * auf dem Sprachen am weitesten auseinandergehen: andere Wochentagskürzel,
- * andere Monatsnamen, andere Ziffern, andere Leserichtung. Und in `en-US`
- * beginnt die Woche am **Sonntag**.
- *
- * Genau darauf verzichtet dieser Kalender bewusst: Das Raster startet immer am
- * Montag (`grid`), weil die Programmwoche dieser App per Definition am Montag
- * beginnt (`Week.start`, T66) — ein locale-abhängiger Wochenanfang würde die
- * Spalten gegen die Wochen des Programms verschieben. Diese Entscheidung stand
- * nur im Quelltext; hier wird sie gemessen.
- */
-describe('Der Datumswähler in anderen Sprachen', () => {
-  const oeffne = (locale: string, value = '2026-03-15') => {
-    const r = render(
-      <DatePicker
-        value={value}
-        onChange={vi.fn()}
-        locale={locale}
-        placeholder={t.datumPh}
-        ariaLabel={t.von}
-        prevLabel={t.a11yPrevMonth}
-        nextLabel={t.a11yNextMonth}
-      />,
-    )
-    fireEvent.click(r.container.querySelector('.dp-field')!)
-    return r
-  }
-
-  const LOCALES_PROBE: Array<[string, string, RegExp]> = [
-    ['englisch', 'en-US', /March/],
-    ['spanisch', 'es-ES', /marzo/],
-    ['griechisch', 'el-GR', /\p{Script=Greek}/u],
-    ['japanisch', 'ja-JP', /3月/],
-    ['koreanisch', 'ko-KR', /3월/],
-    ['arabisch', 'ar', /\p{Script=Arabic}/u],
-    ['hebräisch', 'he-IL', /\p{Script=Hebrew}/u],
-    // Persisch ist der Grund für `-u-ca-gregory` in LOCALES: ohne die
-    // Erweiterung stünde hier ein Dschalali-Monat statt März.
-    ['persisch', 'fa-IR-u-ca-gregory', /مارس/],
-  ]
-
-  it.each(LOCALES_PROBE)('%s: Monatstitel in der eigenen Sprache', (_name, locale, muster) => {
-    const { container } = oeffne(locale)
-    expect(container.querySelector('.dp-title')?.textContent, locale).toMatch(muster)
-  })
-
-  it.each(LOCALES_PROBE)('%s: die Wochentagsköpfe kommen aus der Locale', (_name, locale) => {
-    const { container } = oeffne(locale)
-    const koepfe = [...container.querySelectorAll('.dp-weekdays span')].map((e) => e.textContent ?? '')
-    expect(koepfe, locale).toHaveLength(7)
-    expect(koepfe.every(Boolean), locale).toBe(true)
-    // Nicht die deutschen — sonst wäre die Locale nicht angekommen.
-    const deutsch = [...oeffne('de-DE').container.querySelectorAll('.dp-weekdays span')].map((e) => e.textContent)
-    expect(koepfe.join('|'), locale).not.toBe(deutsch.join('|'))
-  })
-
-  it.each(LOCALES_PROBE)('%s: das Raster beginnt trotzdem am Montag', (_name, locale) => {
-    /*
-      Die eigentliche Zusicherung. `en-US` und `ar` beginnen die Woche sonst am
-      Sonntag, `fa` am Samstag. Bliebe das Raster locale-abhängig, stünde der
-      1. März 2026 (ein Sonntag) in einer anderen Spalte als die Woche des
-      Programms — und der Planer klickte auf den falschen Tag.
-    */
-    const { container } = oeffne(locale, '2026-03-15')
-    const tage = [...container.querySelectorAll('.dp-day')]
-    expect(tage.length, locale).toBe(42)
-    // Der erste Tag des Rasters für März 2026 ist Montag, der 23. Februar.
-    const ersterTitel = tage[0]?.textContent ?? ''
-    expect(ersterTitel, `${locale}: ${ersterTitel}`).toMatch(/23/)
-  })
-
-  it('auf Deutsch ist der erste Rasterplatz derselbe — die Sprache verschiebt nichts', () => {
-    // Gegenprobe: Fände die Prüfung oben „23" auch bei einem sonntagsbasierten
-    // Raster, prüfte sie nichts. Deutsch beginnt ohnehin am Montag; entscheidend
-    // ist, dass **alle** dasselbe zeigen.
-    const de = [...oeffne('de-DE').container.querySelectorAll('.dp-day')]
-    const en = [...oeffne('en-US').container.querySelectorAll('.dp-day')]
-    expect(en.length).toBe(de.length)
-    expect(en[0]?.textContent).toBe(de[0]?.textContent)
-    expect(en[41]?.textContent).toBe(de[41]?.textContent)
+  it('sonst niemand — kein Knopf, der ins Leere schriebe', () => {
+    expect(knopf(zeige('p-b').container, t.abwEintragen)).toBeUndefined()
   })
 })

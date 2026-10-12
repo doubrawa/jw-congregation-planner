@@ -6,7 +6,7 @@ import { EntfernenKnopf } from './EntfernenKnopf'
  *
  * Der erste Tipp auf „✕" fragt („Wirklich löschen?"), erst der zweite löscht;
  * ein Tipp daneben bricht ab (`EntfernenKnopf`). Ein eigener Baustein, weil er
- * an zwei Stellen steht — in der Abwesenheiten-Karte (`AbsencePanel`) und in
+ * an zwei Stellen steht — in der Abwesenheiten-Karte im Profil und in
  * der Zeitleiste des Personen-Details (`PersonTimeline`).
  */
 export function AbwesenheitEntfernen({ id, className }: { id: string; className: string }) {

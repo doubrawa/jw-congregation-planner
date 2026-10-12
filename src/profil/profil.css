@@ -1,0 +1,285 @@
+/*
+ * Profil (T121): Kopf mit Initialen, die Karten Darstellung, Abwesenheiten und
+ * Verwaltung, darunter Installieren und Abmelden. Ab dem Tablet zwei Spalten.
+ */
+
+.profil {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profil-kopf {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 16px;
+  padding-block-end: 6px;
+}
+
+/* Die Initialen im Ring in Minze. */
+.profil-bild {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border: 2px solid var(--akzent);
+  border-radius: 50%;
+}
+
+.profil-bild > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--karte);
+  font-size: calc(18px * var(--fs));
+  font-weight: 600;
+}
+
+.profil-wer {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.profil-name {
+  font-size: calc(25px * var(--fs));
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+[dir='rtl'] .profil-name {
+  letter-spacing: 0;
+}
+
+.profil-rolle {
+  color: var(--text2);
+}
+
+.profil-spalten,
+.profil-spalte {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Zwei Spalten erst am Desktop: Am Tablet würde die Wahl der Darstellung so
+   schmal, dass „Automatisch" mitten im Wort bricht. */
+@media (min-width: 1180px) {
+  .screen.profil {
+    max-width: 1080px;
+  }
+
+  .profil-spalten {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 16px;
+  }
+}
+
+.profil-karte {
+  padding: 6px 18px 4px;
+}
+
+.profil-karte-titel {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+}
+
+/* Eine Zeile in einer Karte, durch eine Linie von der davor getrennt. */
+.profil-zeile {
+  border-block-start: 1px solid var(--linie);
+}
+
+.profil-karte .wahl {
+  margin-block-end: 8px;
+}
+
+.profil-schrift {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-block: 12px 8px;
+}
+
+.profil-schrift-kopf {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profil-regler {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  min-height: 44px;
+}
+
+/* Die beiden „A" zeigen die Richtung — und wachsen mit, damit die Wirkung
+   gleich am Regler zu sehen ist. */
+.profil-regler-a {
+  color: var(--text2);
+  font-size: calc(14px * var(--fs));
+  line-height: 1;
+}
+
+.profil-regler-a.is-gross {
+  font-size: calc(24px * var(--fs));
+}
+
+/* accent-color färbt Schiene und Griff nativ. */
+.profil-regler-feld {
+  width: 100%;
+  min-width: 0;
+  accent-color: var(--akzent-text);
+  cursor: pointer;
+}
+
+.profil-sprache {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+}
+
+/* Das Chevron bringt das app-weite Auswahlfeld mit (Hintergrundbild) — hier
+   nur Form und Farbe, deshalb `background-color` statt der Kurzschreibweise. */
+.profil-auswahl {
+  width: auto;
+  max-width: 60%;
+  min-height: 44px;
+  margin: 0;
+  padding-inline-start: 16px;
+  border: 1px solid var(--umriss);
+  border-radius: 22px;
+  background-color: var(--feld);
+  color: var(--text);
+}
+
+/* ---- Abwesenheiten ---------------------------------------------------------- */
+
+.profil-abw {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 14px;
+  min-height: 60px;
+  border-block-start: 1px solid var(--linie);
+}
+
+.profil-abw-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.profil-abw-zeit {
+  font-weight: 600;
+}
+
+.profil-abw-entfernen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: var(--text2);
+}
+
+/* ---- Verwaltung (am Handy; ab dem Tablet steht sie im Menü) -------------------- */
+
+.profil-verweis {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 54px;
+  font-weight: 600;
+  text-align: start;
+}
+
+.profil-verweis .zeichen {
+  width: 20px;
+  height: 20px;
+  color: var(--text3);
+}
+
+.profil-verweis-wert {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text3);
+  font-weight: 400;
+}
+
+@media (min-width: 768px) {
+  .profil-verwaltung {
+    display: none;
+  }
+}
+
+/* ---- Installieren, Abmelden, Stand der App ----------------------------------- */
+
+.profil-knoepfe {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 8px;
+  padding-block-start: 6px;
+}
+
+/* Stand der App (Zeit · Git-Kurzkennung) — beantwortet aus der Ferne, welche
+   Fassung auf einem Gerät wirklich läuft. Bewusst zurückhaltend. */
+.prof-build {
+  color: var(--text3);
+  font-size: calc(13px * var(--fs));
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* Versteckte Gesten-Diagnose (Build-Zeile 5× antippen). Rein technisch —
+   Aussehen darf schlicht sein, nur lesbar und kopierbar muss es sein. */
+.prof-diag {
+  padding-block-start: 10px;
+  border-block-start: 1px solid var(--linie);
+}
+
+.prof-diag-text {
+  max-height: 260px;
+  margin: 0;
+  padding: 8px 10px;
+  overflow: auto;
+  border-radius: 12px;
+  background: var(--feld);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: calc(10px * var(--fs));
+  line-height: 1.4;
+  white-space: pre;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.prof-diag-btns {
+  display: flex;
+  gap: 8px;
+  margin-block-start: 8px;
+}
+
+.prof-diag-btns .btn-outline {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: calc(11px * var(--fs));
+}

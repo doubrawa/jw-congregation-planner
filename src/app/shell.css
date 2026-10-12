@@ -28,42 +28,36 @@
 }
 
 /* Offline-Stand (staleAt): getönter Hinweisstreifen über dem Inhalt. */
+/* Ohne Verbindung (T121, Entwurf „Zustände"): eine ruhige Zeile mit Wolke,
+   kein Alarm — lesen geht ja. */
 .offline-banner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 0 20px 4px;
-  padding: 10px 14px;
-  border: 1px solid var(--lineGld);
-  border-radius: var(--r-input);
-  background: var(--tGld);
-  color: var(--gld);
-  font-size: calc(12.5px * var(--fs));
-  line-height: 1.35;
+  gap: 10px;
+  margin: 0 16px 4px;
+  padding: 8px 8px 8px 16px;
+  border-radius: 24px;
+  background: var(--hoch);
+  font-size: calc(14.5px * var(--fs));
+}
+
+.offline-banner .zeichen {
+  color: var(--text2);
+}
+
+.offline-banner-text {
+  flex: 1;
+  min-width: 0;
 }
 
 .offline-banner-hint {
-  color: var(--mut);
-  font-size: calc(11.5px * var(--fs));
+  color: var(--text2);
+  font-size: calc(13.5px * var(--fs));
 }
 
-.offline-banner-btn {
-  flex: none;
-  padding: 6px 12px;
-  border: 1px solid var(--lineGld);
-  border-radius: var(--r-pill);
-  background: var(--bg);
-  color: var(--gld);
-  font-family: inherit;
-  font-size: calc(11.5px * var(--fs));
-  font-weight: 600;
-  cursor: pointer;
-}
-
-@media (min-width: 920px) {
+@media (min-width: 768px) {
   .offline-banner {
-    margin: 12px 36px 0;
+    margin: 12px 32px 0;
   }
 }
 
@@ -338,20 +332,26 @@
   }
 }
 
+/* Meldung (T121, Entwurf „Zustände"): eine dunkle Pille unten — umbrechen
+   statt hinausragen, wenn der Text länger ist als das Handy breit. */
 .toast {
   position: fixed;
-  bottom: 28px; /* ohne Bottom-Nav reicht ein kleiner Abstand */
+  bottom: max(28px, env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
-  background: var(--ink);
-  color: var(--onAcc);
-  border-radius: var(--r-pill);
-  padding: 10px 18px;
-  font-size: calc(12.5px * var(--fs));
+  display: flex;
+  align-items: center;
+  width: max-content;
+  max-width: min(560px, calc(100vw - 32px));
+  min-height: 52px;
+  padding: 8px 20px;
+  border-radius: 26px;
+  background: var(--text);
+  color: var(--grund);
+  font-size: calc(14.5px * var(--fs));
   font-weight: 600;
   z-index: var(--z-toast);
   animation: toast-in 0.2s;
-  white-space: nowrap;
 }
 
 /* ---- Sichere Bereiche (Notch, Home-Indikator) ------------------------------

@@ -1,16 +1,15 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { ZeichenName } from '../bausteine/Zeichen'
+import { Zeichen, type ZeichenName } from '../bausteine/Zeichen'
 import { datumsFormat } from '../components/datum-anzeige'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { displayName, initials } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
-import { darfPlanen, erlaubteScreens, geplantesThema, rechteStufe, rechteVon, themaVon } from '../data/rechte'
+import { darfPlanen, erlaubteScreens, geplantesThema, rechteVon, themaVon } from '../data/rechte'
 import { weiterePlaeneImMenue } from '../data/weitere-plaene'
 import { vorzulegen } from './reducer'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
-import { RECHTE_STUFE_KEY } from '../i18n/ui'
 import { redeemInvite } from '../lib/data'
 import type { Screen, Thema } from '../data/types'
 import { AbsageBlatt } from '../aufgaben/AbsageBlatt'
@@ -32,7 +31,7 @@ import { PlanenScreen } from '../planen/PlanenScreen'
 import { ProfilScreen } from '../profil/ProfilScreen'
 import { ProgrammScreen } from '../programm/ProgrammScreen'
 import { useApp } from './context'
-import { eigenePerson } from './eigene-person'
+import { eigenePerson, rolleUndGruppe } from './eigene-person'
 import { parseGoAbschnitt, parseGoTarget, type Abschnitt } from './deeplink'
 import { loadAndHydrate } from './hydrate'
 import { sichtbareMitteilungen } from './mitteilungen'
@@ -63,7 +62,8 @@ function sprungAus(input: string): Sprung | null {
 
 export function AppShell() {
   const { state, dispatch } = useApp()
-  const { t } = useT()
+  const i18n = useT()
+  const { t } = i18n
   // Recovery (Passwort-Reset-Link) nutzt das Login-Layout ohne App-Chrome
   const isLogin = state.screen === 'login' || state.recovery
   const me = eigenePerson(state)
@@ -258,14 +258,10 @@ export function AppShell() {
     onClick: () => dispatch({ type: 'openNotifs' }),
   }
   const versammlung = state.congregation.name.trim()
-  // Gruppenaufseher und Gehilfe nennen sich so (5.10.2026) — „Verkündiger"
-  // verschwieg, dass sie die Treffpunkte ihrer Gruppe ändern und senden.
-  const roleLabel = t[RECHTE_STUFE_KEY[rechteStufe(rechte, state)]]
-  const gruppe = state.groups.find((g) => g.id === me?.grp)?.name
   const profil: ProfilFuss = {
     kuerzel: me ? initials(me) : '–',
     name: me ? displayName(me) : '',
-    unterzeile: [t.navProfil, roleLabel, gruppe].filter(Boolean).join(' · '),
+    unterzeile: [t.navProfil, ...rolleUndGruppe(state, i18n)].join(' · '),
     aktiv: state.screen === 'profil',
     onClick: () => navigate('profil'),
   }
@@ -417,11 +413,12 @@ function OfflineBanner() {
 
   return (
     <div className="offline-banner" role="status">
-      <div>
+      <Zeichen name="wolke" />
+      <div className="offline-banner-text">
         <strong>{fill(t.offlineBanner, { m: stamp })}</strong>
         <div className="offline-banner-hint">{t.offlineBannerHint}</div>
       </div>
-      <button type="button" className="offline-banner-btn" onClick={() => location.reload()}>
+      <button type="button" className="knopf-pille" onClick={() => location.reload()}>
         {t.offlineRetry}
       </button>
     </div>
@@ -525,7 +522,7 @@ function StatusView({ kind }: { kind: 'loading' | 'no-membership' | 'error' | 'e
         Weg hinaus — wer mit dem falschen Konto angemeldet war oder vor einer
         leeren Versammlung stand, säße ohne ihn fest.
       */}
-      {kind !== 'loading' && <AbmeldenKnopf className="status-btn" />}
+      {kind !== 'loading' && <AbmeldenKnopf className="btn-outline status-btn" />}
     </section>
   )
 }
