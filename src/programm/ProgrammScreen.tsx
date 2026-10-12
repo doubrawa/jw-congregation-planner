@@ -6,7 +6,7 @@ import { Saal } from '../bausteine/Saal'
 import { Zeichen } from '../bausteine/Zeichen'
 import { anlassArt } from '../data/anlass'
 import { istAusgefallen, MEETING_TABS } from '../data/helpers'
-import { currentWeekIndex, meetingDate } from '../data/meeting-dates'
+import { meetingDate } from '../data/meeting-dates'
 import type { SaalLage } from '../data/saal'
 import type { MeetingKey, Week } from '../data/types'
 import { Bereichstitel } from '../components/Bereichstitel'
@@ -14,8 +14,8 @@ import { datumsFormat } from '../components/datum-anzeige'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { TABLET_BREITE, useMedia } from '../components/useMedia'
 import { TerminListe } from '../components/WeekBadges'
-import { WeekNav } from '../components/WeekNav'
 import { WeekStrip } from '../components/WeekStrip'
+import { WochenWahl } from '../components/WochenWahl'
 import { fill, useProgWeek, useT } from '../i18n/useT'
 import { FsBereichTabs } from '../planen/FsBereichTabs'
 import { aktiverFsBereich } from '../planen/fs-bereiche'
@@ -156,17 +156,7 @@ function ProgrammBody() {
         <span>{druckThema(t, state.tab, beideTage)}</span>
       </div>
 
-      <div className="prog-wochenwahl">
-        <WeekNav
-          canPrev={state.week > 0}
-          canNext={state.week < state.weeks.length - 1}
-          onPrev={() => dispatch({ type: 'prevWeek' })}
-          onNext={() => dispatch({ type: 'nextWeek' })}
-        >
-          <WochenZeile week={week} rawWeek={rawWeek} istAktuell={currentWeekIndex(state.weeks) === state.week} tpw={tpw} />
-        </WeekNav>
-        {breit && druck}
-      </div>
+      <WochenWahl week={week} rawWeek={rawWeek} tpw={tpw} rechts={breit && druck} />
 
       {/* Weitere Termine der Woche (T63): über den Karten der Tage, weil sie zu
           keiner Zusammenkunft gehören, sondern zur Woche — und damit bei beiden
@@ -201,43 +191,6 @@ function ProgrammBody() {
         </>
       )}
     </section>
-  )
-}
-
-/**
- * Die Mitte der Wochenwahl (T121, `GWoche`): die Woche groß, darunter ihr
- * Anlass — Besuch des Kreisaufsehers, Gedächtnismahl, Kongress — oder, ohne
- * Anlass, „Aktuelle Woche". Daneben das Bibellesen der Woche.
- *
- * Gefragt wird über `anlassArt`, nicht über die Wirkungen (`co`/`mem`): Der
- * Kongress hat keine — er wirkt als Ausfall beider Zusammenkünfte (T64).
- */
-function WochenZeile({
-  week,
-  rawWeek,
-  istAktuell,
-  tpw,
-}: {
-  week: Week
-  rawWeek: Week
-  istAktuell: boolean
-  tpw: (s: string) => string
-}) {
-  const { t } = useT()
-  const art = anlassArt(rawWeek)
-  const anlass = art === 'co' ? t.coWoche : art === 'mem' ? t.memWoche : art === 'kongress' ? t.kongress : null
-  return (
-    <>
-      <span className="woche-zeitraum">{tpw(week.range)}</span>
-      <span className="woche-unterzeile">
-        {anlass ? (
-          <span className="woche-hinweis">{anlass}</span>
-        ) : (
-          istAktuell && <span className="woche-hinweis is-aktuell">{t.aktuelleWoche}</span>
-        )}
-        {week.book && <span className="woche-buch">{tpw(week.book)}</span>}
-      </span>
-    </>
   )
 }
 

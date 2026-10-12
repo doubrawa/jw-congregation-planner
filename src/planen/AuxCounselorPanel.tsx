@@ -2,7 +2,8 @@ import { useApp } from '../app/context'
 import { hatAuxKlasse, ratgeberSlot } from '../data/aux-class'
 import { useT } from '../i18n/useT'
 import type { Meeting } from '../data/types'
-import { SlotChip } from './SlotChip'
+import { platzAnzeige } from './platz-anzeige'
+import { PlatzZeile } from './PlatzZeile'
 import { useKonflikte } from './useKonflikte'
 import { useZusage } from './useZusage'
 
@@ -20,11 +21,12 @@ export function AuxCounselorPanel({ meeting }: { meeting: Meeting }) {
   const { t, tu } = useT()
   // Vor dem frühen Ausstieg: Haken laufen in jedem Durchgang, oder gar nicht.
   // Die Klasse gibt es nur unter der Woche — deshalb fest 'mid'.
-  const { betrifft } = useKonflikte('mid')
+  const konflikte = useKonflikte('mid')
   const zusage = useZusage()
   if (!hatAuxKlasse(meeting)) return null
 
   const slot = ratgeberSlot(meeting)
+  const stand = slot.name && zusage.moeglich('mid') ? zusage.ratgeber('mid') : null
   const open = () =>
     dispatch({
       type: 'openSlot',
@@ -39,22 +41,19 @@ export function AuxCounselorPanel({ meeting }: { meeting: Meeting }) {
     })
 
   return (
-    <div className="panel panel--pb16" data-farbe="neutral2">
-      <h2 className="panel-label">{t.auxKlassen}</h2>
-      <div className="plan-item">
-        <div className="plan-item-title">{t.auxRatgeber}</div>
-        <div className="plan-slots">
-          <SlotChip
-            text={slot.name || t.zuteilenChip}
-            open={!slot.name}
-            showStatus={Boolean(slot.name) && zusage.moeglich('mid')}
-            status={zusage.ratgeber('mid')}
-            konflikt={betrifft(slot)}
-            onClick={open}
-          />
-        </div>
+    <section className="prog-abschnitt" data-farbe="neutral2">
+      <div className="prog-abschnitt-kopf">
+        <h2 className="prog-abschnitt-name">{t.auxKlassen}</h2>
+      </div>
+      <div className="plan-plaetze">
+        <PlatzZeile
+          name={slot.name}
+          rolle={t.auxRatgeber}
+          {...platzAnzeige(slot, stand, konflikte.von(slot), t)}
+          onClick={open}
+        />
       </div>
       <p className="panel-hint">{tu(t.auxRatgeberHint)}</p>
-    </div>
+    </section>
   )
 }

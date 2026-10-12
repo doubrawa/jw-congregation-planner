@@ -93,16 +93,32 @@ function zeige(
   return { dispatch, ...render(<Buehne />) }
 }
 
-const chips = (c: HTMLElement) => [...c.querySelectorAll('.slot-chip')]
-const chipTexte = (c: HTMLElement) => chips(c).map((x) => x.textContent ?? '')
+const plaetze = (c: HTMLElement) => [...c.querySelectorAll('.platz')]
+const namen = (c: HTMLElement) => plaetze(c).map((x) => x.querySelector('.platz-name')?.textContent ?? '')
+const rollen = (c: HTMLElement) => plaetze(c).map((x) => x.querySelector('.platz-rolle')?.textContent ?? '')
 const knopf = (c: HTMLElement, label: string) =>
   [...c.querySelectorAll('button')].find(
     (b) => b.getAttribute('aria-label') === label || b.textContent?.trim() === label,
   )!
 
+/** Die Lage eines Platzes: voll, wartet, Problem oder offen (T121, `GPlanen`). */
+function lage(platz: Element | undefined): string | null {
+  return ['is-voll', 'is-wartet', 'is-problem', 'is-offen'].find((k) => platz?.classList.contains(k)) ?? null
+}
+
+/**
+ * Was ein Vorleseprogramm über die Zusage hört — „wartet" steht sichtbar bei
+ * der Rolle, die übrigen Stufen verborgen. Ohne Zusage `null`.
+ */
+function zusageWort(platz: Element | undefined): string | null {
+  const verborgen = platz?.querySelector('.sr-only')?.textContent
+  if (verborgen) return verborgen
+  return lage(platz) === 'is-wartet' ? t.zusageWartet : null
+}
+
 afterEach(cleanup)
 
-describe('Plätze als Chips', () => {
+describe('Plätze als Zeilen (T121)', () => {
   const mitPlaetzen = (): Section => ({
     label: 'SCHÄTZE AUS GOTTES WORT', farbe: 'petrol',
     items: [{ iid: 'i99',
@@ -113,14 +129,12 @@ describe('Plätze als Chips', () => {
 
   it('ein besetzter Platz trägt den Namen, ein offener die Aufforderung', () => {
     const { container } = zeige(mitPlaetzen())
-    expect(chipTexte(container)[0]).toContain('Anton Alt')
-    expect(chipTexte(container)[1]).toBe(t.zuteilenChip)
+    expect(namen(container)).toEqual(['Anton Alt', t.spurZuteilen])
   })
 
   it('der offene Platz ist als solcher gekennzeichnet, der besetzte nicht', () => {
     const { container } = zeige(mitPlaetzen())
-    expect(chips(container)[0]!.className).not.toContain('is-open')
-    expect(chips(container)[1]!.className).toContain('is-open')
+    expect(plaetze(container).map(lage)).toEqual(['is-wartet', 'is-offen'])
   })
 
   it('auch der offene Platz nennt seine Rolle', () => {
@@ -134,28 +148,28 @@ describe('Plätze als Chips', () => {
     const s = mitPlaetzen()
     ;(s.items[0] as PartItem).names[1]!.rolle = 'Leser'
     const { container } = zeige(s)
-    expect(chipTexte(container)[1]).toBe(`Leser: ${t.zuteilenChip}`)
+    expect(namen(container)[1]).toBe(t.spurZuteilen)
+    expect(rollen(container)[1]).toBe('Leser')
     // Offen bleibt er trotzdem — die Beschriftung ist kein Name.
-    expect(chips(container)[1]!.className).toContain('is-open')
+    expect(lage(plaetze(container)[1])).toBe('is-offen')
   })
 
   it('ohne Rolle bleibt der offene Platz bei der blanken Aufforderung', () => {
-    // Die Hilfsdienste tragen keine Rolle — ihr Dienstname steht in der
-    // Überschrift. Dort wäre ein Präfix ein leerer Doppelpunkt.
     const { container } = zeige(mitPlaetzen())
-    expect(chipTexte(container)[1]).toBe(t.zuteilenChip)
+    expect(plaetze(container)[1]?.querySelector('.platz-rolle')).toBeNull()
   })
 
-  it('die Rolle steht vor dem Namen — in der Sprache des Lesers', () => {
+  it('die Rolle steht beim Namen, nicht davor', () => {
     const s = mitPlaetzen()
     ;(s.items[0] as PartItem).names[0]!.rolle = 'Leser'
     const { container } = zeige(s)
-    expect(chipTexte(container)[0]).toContain('Leser: Anton Alt')
+    expect(namen(container)[0]).toBe('Anton Alt')
+    expect(rollen(container)[0]).toContain('Leser')
   })
 
   it('ein Tipp öffnet das Zuteilungs-Sheet mit Woche, Zusammenkunft, Position und Bereich', () => {
     const { container, dispatch } = zeige(mitPlaetzen(), { week: 0 }, { si: 2 })
-    fireEvent.click(chips(container)[1]!)
+    fireEvent.click(plaetze(container)[1]!)
     expect(dispatch).toHaveBeenCalledWith({
       type: 'openSlot',
       sel: expect.objectContaining({
@@ -165,26 +179,27 @@ describe('Plätze als Chips', () => {
     })
   })
 
-  it('ein Lied ist kein Platz — es steht nur da', () => {
+  it('die Dauer steht neben dem Titel — erkannt an der Zahl aus den Daten', () => {
+    const s = mitPlaetzen()
+    ;(s.items[0] as PartItem).mins = 4
+    const { container } = zeige(s)
+    expect(container.querySelector('.prog-dauer')?.textContent).toBe('4 Min.')
+    expect(container.querySelector('.prog-item-meta')).toBeNull()
+  })
+
+  it('ein Lied ist kein Platz — es steht rechts im Kopf des Abschnitts', () => {
     const s: Section = { label: 'ERÖFFNUNG', farbe: 'neutral', items: [{ song: 'Lied 12' }] }
     const { container } = zeige(s)
-    expect(chips(container)).toHaveLength(0)
-    expect(container.querySelector('.panel-song')?.textContent).toBe('Lied 12')
+    expect(plaetze(container)).toHaveLength(0)
+    expect(container.querySelector('.prog-abschnitt-kopf .prog-lied')?.textContent).toBe('Lied 12')
   })
 })
 
-/** Die Stufe des Ampel-Punkts an einem Chip — `null`, wenn er keinen trägt. */
-function stufe(chip: Element | undefined): string | null {
-  const punkt = chip?.querySelector('.zusage-punkt')
-  if (!punkt) return null
-  return ['is-bestaetigt', 'is-offen', 'is-verhindert'].find((k) => punkt.classList.contains(k)) ?? '?'
-}
-
-describe('Der Ampel-Punkt gehört dem Platz, nicht der Person', () => {
+describe('Die Zusage gehört dem Platz, nicht der Person', () => {
   /*
    * Bis zum 14. September 2026 stand hier eine Personen-Markierung: „…" an
    * jedem Platz einer Person, solange sie irgendwo etwas offen hatte. Robert
-   * sagt den Vorsitz zu, das Gebet noch nicht — und beide Chips standen auf
+   * sagt den Vorsitz zu, das Gebet noch nicht — und beide Plätze standen auf
    * „…". Der Planer las daraus, der Vorsitz sei unbestätigt.
    */
   const eroeffnung = (): Section => ({
@@ -200,29 +215,29 @@ describe('Der Ampel-Punkt gehört dem Platz, nicht der Person', () => {
   const schluessel = (s: Section, ni: number) =>
     punktKey('2026-09-07', 'mid', (s.items[0] as PartItem).iid, ni)
 
-  it('Vorsitz bestätigt, Gebet noch offen: grün und gelb nebeneinander', () => {
+  it('Vorsitz bestätigt, Gebet noch offen: voll und blass nebeneinander', () => {
     const s = eroeffnung()
     const { container } = zeige(s, { confirmations: { [schluessel(s, 0)]: 'bestätigt' } })
-    expect(chips(container).map(stufe)).toEqual(['is-bestaetigt', 'is-offen'])
+    expect(plaetze(container).map(lage)).toEqual(['is-voll', 'is-wartet'])
   })
 
-  it('eine Absage ist rot — nicht gelb wie eine ausstehende Antwort', () => {
+  it('eine Absage ist ein Problem — nicht blass wie eine ausstehende Antwort', () => {
     const s = eroeffnung()
     const { container } = zeige(s, { confirmations: { [schluessel(s, 1)]: 'verhindert' } })
-    expect(chips(container).map(stufe)).toEqual(['is-offen', 'is-verhindert'])
+    expect(plaetze(container).map(lage)).toEqual(['is-wartet', 'is-problem'])
+    expect(plaetze(container)[1]?.querySelector('.platz-hinweis')?.textContent).toBe(t.zusageAbgesagt)
+    // Einmal gesagt genügt: Steht die Absage sichtbar da, hört der
+    // Screenreader sie nicht ein zweites Mal („abgesagt abgesagt").
+    expect(plaetze(container)[1]?.querySelector('.sr-only')).toBeNull()
   })
 
-  it('der Screenreader hört die Stufe als Wort, hinter einem geschützten Leerzeichen', () => {
-    // Die Farbe allein sagt einem blinden Planer nichts. Ohne Leerzeichen läse
-    // er „Anton Altbestätigt"; mit einem gewöhnlichen dürfte der Punkt in einem
-    // umbrechenden Chip allein in die nächste Zeile rutschen.
+  it('der Screenreader hört die Stufe als Wort — „wartet" steht sichtbar bei der Rolle', () => {
+    // Die Farbe allein sagt einem blinden Planer nichts.
     const s = eroeffnung()
     const { container } = zeige(s, { confirmations: { [schluessel(s, 0)]: 'bestätigt' } })
-    expect(chipTexte(container)).toEqual([
-      `Vorsitz: Anton Alt\u00A0${t.zusageBestaetigt}`,
-      `Gebet: Anton Alt\u00A0${t.zusageWartet}`,
-    ])
-    expect(chips(container)[0]!.querySelector('.zusage-punkt')!.getAttribute('aria-hidden')).toBe('true')
+    expect(plaetze(container).map(zusageWort)).toEqual([t.zusageBestaetigt, t.zusageWartet])
+    expect(rollen(container)[1]).toBe(`Gebet · ${t.zusageWartet}`)
+    expect(plaetze(container)[0]!.querySelector('.platz-punkt')!.getAttribute('aria-hidden')).toBe('true')
   })
 
   it('die Zusage einer anderen Woche färbt diesen Platz nicht', () => {
@@ -231,43 +246,47 @@ describe('Der Ampel-Punkt gehört dem Platz, nicht der Person', () => {
     const s = eroeffnung()
     const andereWoche = punktKey('2026-09-14', 'mid', (s.items[0] as PartItem).iid, 0)
     const { container } = zeige(s, { confirmations: { [andereWoche]: 'bestätigt' } })
-    expect(chips(container).map(stufe)).toEqual(['is-offen', 'is-offen'])
+    expect(plaetze(container).map(lage)).toEqual(['is-wartet', 'is-wartet'])
   })
 })
 
-describe('Der Ampel-Punkt steht nur, wo jemand bestätigen kann', () => {
+describe('Eine Zusage gibt es nur, wo jemand bestätigen kann', () => {
   const rednerAbschnitt = (rolle: string): Section => ({
     label: LABEL_VORTRAG, farbe: 'petrol',
     items: [{ iid: 'i97', num: 1, title: 'Öffentlicher Vortrag', meta: '', names: [{ name: 'Gustav Gast', rolle }] }],
   })
 
-  it('ein offener Platz trägt keinen — es gibt noch nichts zu bestätigen', () => {
+  it('ein offener Platz trägt keine — es gibt noch nichts zu bestätigen', () => {
     const s: Section = {
       label: 'X', farbe: 'petrol',
       items: [{ iid: 'i96', num: 1, title: 'Punkt', meta: '', names: [{ name: '' }] }],
     }
-    expect(zeige(s).container.querySelector('.zusage-punkt')).toBeNull()
+    const platz = plaetze(zeige(s).container)[0]
+    expect(lage(platz)).toBe('is-offen')
+    expect(zusageWort(platz)).toBeNull()
   })
 
-  it('ein Gastredner bekommt keinen — er hat weder Aufgabe noch App', () => {
+  it('ein Gastredner bekommt keine — er hat weder Aufgabe noch App; er steht besetzt da', () => {
     const { container } = zeige(rednerAbschnitt(`${ROLE_GUEST_SPEAKER} · Nordheim`), { tab: 'we' })
-    expect(container.querySelector('.zusage-punkt')).toBeNull()
+    expect(lage(plaetze(container)[0])).toBe('is-voll')
+    expect(zusageWort(plaetze(container)[0])).toBeNull()
   })
 
   it('der Kreisaufseher ebenso wenig', () => {
     const { container } = zeige(rednerAbschnitt(ROLE_CIRCUIT), { tab: 'we' })
-    expect(container.querySelector('.zusage-punkt')).toBeNull()
+    expect(zusageWort(plaetze(container)[0])).toBeNull()
   })
 
   it('ein eigener Redner dagegen schon — für ihn gibt es den Flow', () => {
     const { container } = zeige(rednerAbschnitt(ROLE_OWN_SPEAKER), { tab: 'we' })
-    expect(stufe(chips(container)[0])).toBe('is-offen')
+    expect(lage(plaetze(container)[0])).toBe('is-wartet')
   })
 
-  it('eine ausgefallene Zusammenkunft trägt keinen — auch nicht mit einer Zusage von vorher (T30)', () => {
+  it('eine ausgefallene Zusammenkunft trägt keine — auch nicht mit einer Zusage von vorher (T30)', () => {
     // Die Namen bleiben stehen, die Zusammenkunft findet nicht statt: keine
-    // Aufgabe, keine Erinnerung, nichts zu bestätigen. Ein gelber Punkt wartete
-    // dort für immer, ein grüner meldete eine Zusage für einen leeren Abend.
+    // Aufgabe, keine Erinnerung, nichts zu bestätigen. Ein blasser Platz
+    // wartete dort für immer, ein voller meldete eine Zusage für einen leeren
+    // Abend.
     const s: Section = {
       label: 'X', farbe: 'petrol',
       items: [{ iid: 'i95', num: 1, title: 'Punkt', meta: '', names: [{ name: 'Anton Alt', pid: 'p-a' }] }],
@@ -276,11 +295,11 @@ describe('Der Ampel-Punkt steht nur, wo jemand bestätigen kann', () => {
     ausgefallen.dev = { mid: { cancelled: true } }
     const key = punktKey('2026-09-07', 'mid', (s.items[0] as PartItem).iid, 0)
     const { container } = zeige(s, { weeks: [ausgefallen], confirmations: { [key]: 'bestätigt' } })
-    expect(chipTexte(container)[0]).toContain('Anton Alt')
-    expect(container.querySelector('.zusage-punkt')).toBeNull()
+    expect(namen(container)[0]).toBe('Anton Alt')
+    expect(zusageWort(plaetze(container)[0])).toBeNull()
   })
 
-  it('… die andere Zusammenkunft derselben Woche zeigt ihn weiter', () => {
+  it('… die andere Zusammenkunft derselben Woche zeigt sie weiter', () => {
     // Gegenprobe: Der Ausfall gilt der einen Zusammenkunft, nicht der Woche.
     const s: Section = {
       label: 'X', farbe: 'petrol',
@@ -289,7 +308,7 @@ describe('Der Ampel-Punkt steht nur, wo jemand bestätigen kann', () => {
     const nurMitteAus = woche([], [s])
     nurMitteAus.dev = { mid: { cancelled: true } }
     const { container } = zeige(s, { tab: 'we', weeks: [nurMitteAus] })
-    expect(stufe(chips(container)[0])).toBe('is-offen')
+    expect(lage(plaetze(container)[0])).toBe('is-wartet')
   })
 })
 
@@ -301,13 +320,13 @@ describe('Der Redner-Platz öffnet immer den Freitext-Weg (T29)', () => {
 
   it('beim Gastredner', () => {
     const { container, dispatch } = zeige(abschnitt(ROLE_GUEST_SPEAKER), { tab: 'we' })
-    fireEvent.click(chips(container)[0]!)
+    fireEvent.click(plaetze(container)[0]!)
     expect(dispatch.mock.calls[0]![0].sel.guest).toBe(true)
   })
 
   it('und auch beim eigenen Redner — sonst gäbe es keinen Weg zurück', () => {
     const { container, dispatch } = zeige(abschnitt(ROLE_OWN_SPEAKER), { tab: 'we' })
-    fireEvent.click(chips(container)[0]!)
+    fireEvent.click(plaetze(container)[0]!)
     expect(dispatch.mock.calls[0]![0].sel.guest).toBe(true)
   })
 
@@ -317,7 +336,7 @@ describe('Der Redner-Platz öffnet immer den Freitext-Weg (T29)', () => {
       items: [{ iid: 'i92', num: 1, title: 'Punkt', meta: '', names: [{ name: '', rolle: 'Leser' }] }],
     }
     const { container, dispatch } = zeige(s)
-    fireEvent.click(chips(container)[0]!)
+    fireEvent.click(plaetze(container)[0]!)
     expect(dispatch.mock.calls[0]![0].sel.guest).toBeFalsy()
   })
 })
@@ -334,15 +353,15 @@ describe('Die Zusätzliche Klasse als zweite Reihe', () => {
   it('ohne eingerichtete Klasse bleibt es bei einer Reihe — ohne Raumnamen', () => {
     const weeks = schuelerWoche()
     const { container } = zeige(weeks[0]!.mid.sections[0]!, { weeks }, { mitAux: false })
-    expect(container.querySelectorAll('.plan-slots')).toHaveLength(1)
-    expect(container.querySelector('.plan-raum')).toBeNull()
+    expect(plaetze(container)).toHaveLength(1)
+    expect(container.querySelector('.prog-raum')).toBeNull()
   })
 
   it('mit Klasse stehen zwei Reihen da, jede mit ihrem Raumnamen', () => {
     const weeks = schuelerWoche()
     const { container } = zeige(weeks[0]!.mid.sections[0]!, { weeks, auxClass: true }, { mitAux: true })
-    expect(container.querySelectorAll('.plan-slots')).toHaveLength(2)
-    expect([...container.querySelectorAll('.plan-raum')].map((x) => x.textContent)).toEqual([
+    expect(plaetze(container)).toHaveLength(2)
+    expect([...container.querySelectorAll('.prog-raum')].map((x) => x.textContent)).toEqual([
       t.auxHauptsaal, t.auxKlasse,
     ])
   })
@@ -353,8 +372,8 @@ describe('Die Zusätzliche Klasse als zweite Reihe', () => {
       items: [{ iid: 'i90', title: 'Lied 12 · Gebet', meta: '', names: [{ name: '', rolle: 'Gebet' }] }],
     }
     const { container } = zeige(s, { auxClass: true }, { mitAux: true })
-    expect(container.querySelectorAll('.plan-slots')).toHaveLength(1)
-    expect(container.querySelector('.plan-raum')).toBeNull()
+    expect(plaetze(container)).toHaveLength(1)
+    expect(container.querySelector('.prog-raum')).toBeNull()
   })
 
   it('der Platz der Klasse öffnet das Sheet mit dem Raum im Titel', () => {
@@ -362,7 +381,7 @@ describe('Die Zusätzliche Klasse als zweite Reihe', () => {
     const { container, dispatch } = zeige(
       weeks[0]!.mid.sections[0]!, { weeks, auxClass: true }, { mitAux: true },
     )
-    fireEvent.click(chips(container).at(-1)!)
+    fireEvent.click(plaetze(container).at(-1)!)
     const sel = dispatch.mock.calls[0]![0].sel
     expect(sel.aux).toBe(true)
     expect(sel.labelRolle).toContain(t.auxKlasse)
@@ -373,7 +392,7 @@ describe('Die Zusätzliche Klasse als zweite Reihe', () => {
     const { container, dispatch } = zeige(
       weeks[0]!.mid.sections[0]!, { weeks, auxClass: true }, { mitAux: true },
     )
-    fireEvent.click(chips(container)[0]!)
+    fireEvent.click(plaetze(container)[0]!)
     expect(dispatch.mock.calls[0]![0].sel.aux).toBeUndefined()
   })
 })
@@ -698,7 +717,7 @@ describe('Ändert sich ein Titel von außen, zeigt das Feld den neuen', () => {
 })
 
 describe('Konflikte heben sich im Plan ab', () => {
-  it('wer abwesend und trotzdem eingeteilt ist, bekommt den Punkt am Chip', () => {
+  it('wer abwesend und trotzdem eingeteilt ist, steht rot da — mit dem Grund', () => {
     const s: Section = {
       label: 'X', farbe: 'petrol',
       items: [{ iid: 'i78', num: 1, title: 'Punkt', meta: '', names: [{ name: 'Anton Alt', pid: 'p-a' }] }],
@@ -708,16 +727,17 @@ describe('Konflikte heben sich im Plan ab', () => {
       absences: [{ id: 'a1', personId: 'p-a', userId: null, from: '2026-09-01', to: '2026-09-30', reason: '' }],
       congregation: { name: '', hall: '', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     })
-    expect(chips(container)[0]!.className).toContain('is-konflikt')
-    expect(chips(container)[0]!.querySelector('.slot-konflikt-dot')).toBeTruthy()
+    expect(lage(plaetze(container)[0])).toBe('is-problem')
+    expect(plaetze(container)[0]!.querySelector('.platz-hinweis')?.textContent).toBe(t.abwesendChip)
   })
 
-  it('ohne Konflikt bleibt der Chip schlicht', () => {
+  it('ohne Konflikt bleibt der Platz, wie seine Zusage steht', () => {
     const s: Section = {
       label: 'X', farbe: 'petrol',
       items: [{ iid: 'i77', num: 1, title: 'Punkt', meta: '', names: [{ name: 'Anton Alt', pid: 'p-a' }] }],
     }
     const { container } = zeige(s, { weeks: [woche([s])] })
-    expect(chips(container)[0]!.className).not.toContain('is-konflikt')
+    expect(lage(plaetze(container)[0])).toBe('is-wartet')
+    expect(plaetze(container)[0]!.querySelector('.platz-hinweis')).toBeNull()
   })
 })

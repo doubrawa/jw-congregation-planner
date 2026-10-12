@@ -170,39 +170,24 @@
   content: ' · ';
 }
 
-/* ---- Wochen-Chips (aktuelle Woche / Kreisaufseher / Gedächtnismahl) ------ */
+/* Ab dem Tablet die Woche links gebündelt, rechts daneben, was die Seite zur
+   Woche anbietet (`WochenWahl`, Entwurf `GTabletWoche`). */
+@media (min-width: 768px) {
+  .wochenwahl {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
 
-.week-chips {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  margin-top: 10px;
-}
+  .wochenwahl .week-nav {
+    grid-template-columns: 44px minmax(190px, auto) 44px;
+  }
 
-.week-chip {
-  border-radius: var(--r-pill);
-  padding: 3px 10px;
-  font-size: calc(10px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.1em;
-}
-
-.week-chip--co {
-  background: var(--tPet);
-  color: var(--pet);
-}
-
-.week-chip--mem {
-  background: var(--tWein);
-  color: var(--wein);
-}
-
-/* Abweichende Zusammenkunft (T30): verlegt oder ausgefallen. Beschriftet mit
-   dem Namen der betroffenen Zusammenkunft — ausgefallene durchgestrichen. */
-.week-chip--dev {
-  background: var(--tGld);
-  color: var(--gld);
+  .wochenwahl .week-center {
+    align-items: flex-start;
+    text-align: start;
+  }
 }
 
 /* Hinweise zu einer Zusammenkunft (T121, Entwurf „Besuch des Kreisaufsehers"):
@@ -371,16 +356,6 @@
   color: var(--ink);
 }
 
-/* Lied zwischen Programmpunkten (Programm + Planen) */
-.panel-song {
-  text-align: center;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: calc(13px * var(--fs));
-  color: var(--mut);
-  padding: 8px 0 2px;
-}
-
 /* ---- Selects app-weit: eigener Chevron mit Innenabstand (Korrektur-Brief) ---
    appearance:none + dezentes SVG-Chevron in der Farbe --text3 der Palette,
    14px vom Rand; der Text bekommt padding-inline-end, damit er nie unter den
@@ -478,14 +453,6 @@ select {
 select {
   min-width: 0;
   text-overflow: ellipsis;
-}
-
-/* Kongress-Woche (T64). Neutral getönt: Petrol und Weinrot tragen bereits den
-   Kreisaufseher und das Gedächtnismahl, Gold die abweichende Zusammenkunft —
-   die vierte Bereichsfarbe ist die einzige, die noch frei ist. */
-.week-chip--kongress {
-  background: var(--tNeu2);
-  color: var(--mut);
 }
 
 /* Die Bearbeiten-Karte (T64) trägt ein Zeichen statt eines Wortes — so breit

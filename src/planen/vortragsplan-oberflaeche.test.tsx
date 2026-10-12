@@ -109,7 +109,12 @@ describe('Vortragsplan übernehmen', () => {
     fireEvent.click(knopf(blatt, t.vpUebernehmen)!)
     expect(document.querySelector('[role="dialog"]')).toBeNull()
     expect(toast(container)).toBe(t.toastVortraegeUebernommen)
-    expect(container.textContent).toContain('Gastredner · Musterstadt: Max Mustermann')
+    // Im Programm steht der Redner an seinem Platz: der Name, darunter Rolle
+    // und Herkunft (T121, `PlatzZeile`).
+    const redner = [...container.querySelectorAll('.platz')].find(
+      (p) => p.querySelector('.platz-name')?.textContent === 'Max Mustermann',
+    )
+    expect(redner?.querySelector('.platz-rolle')?.textContent).toBe('Gastredner · Musterstadt')
     // Thema und Anfangslied stehen in Feldern — und die zeigen den neuen Wert,
     // nicht den von vor dem Import (ungesteuerte Felder, Schlüssel mit Wert).
     expect(container.querySelector<HTMLInputElement>('.talk-title-input')?.value).toBe('Demo-Thema 1')

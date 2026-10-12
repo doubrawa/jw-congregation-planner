@@ -1,0 +1,75 @@
+import type { SpurLage, SpurSchritt } from '../bausteine/Spur'
+import { offeneMeldungen } from '../data/plan-versand'
+import { besetztVon, besetzung, zusagenStand } from '../data/saal'
+import type { ConfirmationMap, FsInstance, MeetingKey, MeetingTimes, SentLog, Service, Week } from '../data/types'
+import type { Dict } from '../i18n/ui'
+import { fill } from '../i18n/useT'
+
+/** Die Zahlen hinter der Spur einer Woche beim Planen. */
+export interface WochenZahlen {
+  /** Besetzte und alle Plätze der gezeigten Zusammenkunft. */
+  besetzt: number
+  gesamt: number
+  /** Zuteilungen der ganzen Woche, von denen noch niemand weiß — die Zahl am „Plan senden". */
+  neu: number
+  /** Bestätigt von allen Plätzen der Zusammenkunft, die etwas zu bestätigen haben. */
+  bestaetigt: number
+  zuBestaetigen: number
+}
+
+/**
+ * Die Zahlen aus den Funktionen, die sie auch sonst liefern: die Besetzung
+ * (`besetzung`, wie der Saal), die Zusagen (`zusagenStand`) und, was noch
+ * hinaus muss (`offeneMeldungen`, wie der Knopf „Plan senden"). Gesendet wird
+ * die ganze Woche, deshalb zählt „neu" beide Zusammenkünfte und die
+ * Treffpunkte.
+ */
+export function wochenZahlen(
+  week: Week,
+  fsWeek: FsInstance[] | undefined,
+  tab: MeetingKey,
+  q: { services: Service[]; confirmations: ConfirmationMap; sentLog: SentLog; zeiten: MeetingTimes },
+  heute: Date,
+): WochenZahlen {
+  const meeting = week[tab]
+  const { besetzt, gesamt } = besetztVon(besetzung(meeting, q.services, q.confirmations, week.start, tab, null))
+  const zusagen = zusagenStand(meeting, q.services, q.confirmations, week.start, tab)
+  const neu = offeneMeldungen(week, fsWeek, q.services, q.confirmations, q.sentLog, q.zeiten, heute).length
+  return { besetzt, gesamt, neu, bestaetigt: zusagen.bestaetigt, zuBestaetigen: zusagen.gesamt }
+}
+
+/**
+ * **Wie weit die Woche ist** (T121, Baustein `GSpur`): Zuteilen, Senden,
+ * Zusagen. Der laufende Schritt ist der erste, der nicht fertig ist — erst
+ * werden die Plätze besetzt, dann geht der Plan hinaus, dann kommen die
+ * Zusagen. Zahlen stehen als „a/b" oder „Neu: n": So stimmt die Form in jeder
+ * Sprache.
+ */
+export function spurDerWoche(
+  z: WochenZahlen,
+  t: Pick<Dict, 'spurZuteilen' | 'spurSenden' | 'spurZusagen' | 'neuN'>,
+): SpurSchritt[] {
+  const alleBesetzt = z.besetzt >= z.gesamt
+  const zuteilen: SpurLage = alleBesetzt ? 'voll' : 'jetzt'
+  // Gesendet wird die ganze Woche: Was noch hinaus muss, zählt auch dann, wenn
+  // die gezeigte Zusammenkunft leer ist — sonst stünde „Neu: 3" an einem
+  // Schritt, der nach „nichts zu tun" aussieht.
+  const senden: SpurLage = z.neu > 0 ? (alleBesetzt ? 'jetzt' : 'teil') : z.besetzt > 0 ? 'voll' : 'leer'
+  const zusagenFertig = z.zuBestaetigen > 0 && z.bestaetigt >= z.zuBestaetigen
+  const zusagen: SpurLage = zusagenFertig
+    ? 'voll'
+    : zuteilen === 'voll' && senden === 'voll'
+      ? 'jetzt'
+      : z.bestaetigt > 0
+        ? 'teil'
+        : 'leer'
+  return [
+    { name: t.spurZuteilen, wert: `${z.besetzt}/${z.gesamt}`, lage: zuteilen },
+    { name: t.spurSenden, wert: z.neu > 0 ? fill(t.neuN, { n: z.neu }) : undefined, lage: senden },
+    {
+      name: t.spurZusagen,
+      wert: z.zuBestaetigen > 0 ? `${z.bestaetigt}/${z.zuBestaetigen}` : undefined,
+      lage: zusagen,
+    },
+  ]
+}

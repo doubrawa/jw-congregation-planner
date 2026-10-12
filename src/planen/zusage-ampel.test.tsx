@@ -131,8 +131,30 @@ function zeige(state: AppState) {
  */
 const seite = (c: HTMLElement): HTMLElement => (c.querySelector('.week-strip > .screen') as HTMLElement) ?? c
 
-/** Stufe je Chip einer Person: `is-bestaetigt` / `is-offen` / `is-verhindert`. */
+/** Die Stufe hinter dem Wort, das ein Vorleseprogramm an einem Platz hört. */
+const STUFE_DES_WORTS: Record<string, string> = {
+  [t.zusageBestaetigt]: 'is-bestaetigt',
+  [t.zusageWartet]: 'is-offen',
+  [t.zusageAbgesagt]: 'is-verhindert',
+}
+
+/**
+ * Stufe je Platz einer Person: `is-bestaetigt` / `is-offen` / `is-verhindert`,
+ * ohne Zusage `kein Punkt`. Die Zusammenkünfte zeigen ihre Plätze seit T121 als
+ * Zeilen — „wartet" steht dort sichtbar bei der Rolle, die übrigen Stufen
+ * verborgen für Vorleseprogramme. Die Treffpunkte tragen weiter den Chip mit
+ * dem Ampel-Punkt.
+ */
 function stufenVon(c: HTMLElement, name: string): string[] {
+  const zeilen = [...seite(c).querySelectorAll('.platz')].filter(
+    (p) => p.querySelector('.platz-name')?.textContent === name,
+  )
+  if (zeilen.length > 0) {
+    return zeilen.map((p) => {
+      const wort = p.querySelector('.sr-only')?.textContent ?? (p.classList.contains('is-wartet') ? t.zusageWartet : '')
+      return STUFE_DES_WORTS[wort] ?? 'kein Punkt'
+    })
+  }
   return [...seite(c).querySelectorAll('.slot-chip')]
     .filter((chip) => chip.textContent?.includes(name))
     .map((chip) => {
@@ -190,10 +212,10 @@ describe('Eine ausgefallene Zusammenkunft trägt keine Punkte (T30)', () => {
     // Aufgabe mehr, und ein grüner Punkt meldete eine Zusage für einen Abend,
     // der nicht stattfindet.
     const c = zeige(danachAusgefallen())
-    const annasChips = stufenVon(c, 'Anna Beispiel')
-    expect(annasChips).toHaveLength(4)
-    expect(annasChips.every((s) => s === 'kein Punkt')).toBe(true)
-    expect(seite(c).querySelectorAll('.slot-chip .zusage-punkt')).toHaveLength(0)
+    const annasPlaetze = stufenVon(c, 'Anna Beispiel')
+    expect(annasPlaetze).toHaveLength(4)
+    expect(annasPlaetze.every((s) => s === 'kein Punkt')).toBe(true)
+    expect(seite(c).querySelectorAll('.platz .sr-only, .platz.is-wartet')).toHaveLength(0)
   })
 
   it('… die Treffpunkte derselben Woche schon — sie hängen an keiner Zusammenkunft', () => {
@@ -202,22 +224,23 @@ describe('Eine ausgefallene Zusammenkunft trägt keine Punkte (T30)', () => {
   })
 })
 
-describe('Die Legende', () => {
-  it('nennt die drei Stufen beim Namen — mit denselben Punkten wie die Chips', () => {
-    const legende = seite(zeige(stand())).querySelector('.plan-legend')!
-    const eintraege = [...legende.querySelectorAll('.plan-legend-item')]
-    expect(eintraege.map((e) => e.textContent)).toEqual([t.zusageBestaetigt, t.zusageWartet, t.zusageAbgesagt])
-    expect(eintraege.map((e) => e.querySelector('.zusage-punkt')?.className)).toEqual([
-      'zusage-punkt is-bestaetigt', 'zusage-punkt is-offen', 'zusage-punkt is-verhindert',
-    ])
+describe('Die Legende (T121, `GPlanen`)', () => {
+  it('nennt die vier Lagen beim Namen — mit denselben Punkten wie die Plätze', () => {
+    const legende = seite(zeige(stand())).querySelector('.besetzung-legende')!
+    const eintraege = [...legende.querySelectorAll('li')]
+    expect(eintraege.map((e) => e.textContent)).toEqual([t.zusageBestaetigt, t.zusageWartet, t.lageProblem, t.offenWort])
+    expect(eintraege.map((e) => e.className)).toEqual(['is-voll', 'is-wartet', 'is-problem', 'is-offen'])
+    expect(eintraege.every((e) => e.querySelector('.platz-punkt'))).toBe(true)
   })
 
   it('spricht die Sprache des Planers', () => {
     const en = dict('en')
-    const legende = seite(zeige(stand({ lang: 'en' }))).querySelector('.plan-legend')!
-    expect([...legende.querySelectorAll('.plan-legend-item')].map((e) => e.textContent)).toEqual([
-      en.zusageBestaetigt, en.zusageWartet, en.zusageAbgesagt,
+    const legende = seite(zeige(stand({ lang: 'en' }))).querySelector('.besetzung-legende')!
+    expect([...legende.querySelectorAll('li')].map((e) => e.textContent)).toEqual([
+      en.zusageBestaetigt, en.zusageWartet, en.lageProblem, en.offenWort,
     ])
-    expect(en.zusageAbgesagt).not.toBe(t.zusageAbgesagt)
+    // „Problem" heißt in beiden Sprachen gleich — die Probe muss an einem Wort
+    // hängen, das sich unterscheidet.
+    expect(en.zusageWartet).not.toBe(t.zusageWartet)
   })
 })

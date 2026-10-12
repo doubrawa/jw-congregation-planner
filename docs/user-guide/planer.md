@@ -50,8 +50,8 @@ der Stelle von „Diese Woche in der Versammlung".
   höchstens vier Wochen voraus. Fertig geplante und gesendete Wochen erscheinen
   nicht. Auch eine Kongresswoche erscheint, wenn dort ein Treffpunkt noch einen
   Leiter braucht.
-- Die Zeile nennt, was ansteht, mit denselben Begriffen und Farben wie die
-  Hinweise in **Planen** (Abschnitt 4):
+- Die Zeile nennt, was ansteht – dieselben Hinweise, die beim **Planen** unter
+  **Zu klären** stehen (Abschnitt 4):
   - **Mögliche Konflikte** – z. B. jemand ist eingeteilt, aber abwesend,
   - **Nicht besetzbar** – an dem Tag sind für einen Bereich zu wenige Leute da,
   - **Offene Zuteilungen** – noch unbesetzte Plätze, auch Treffpunkte ohne Leiter,
@@ -144,6 +144,16 @@ dabei – du wirst beim Hin- und Herwechseln nicht wieder umgesetzt.
 
 ![Planen‑Ansicht](screenshots/planer-planen-woche.png)
 
+Oben steht der **Stand der Woche**: drei Schritte auf einer Linie –
+**Zuteilen** (besetzte von allen Plätzen der Zusammenkunft, etwa „11/14"),
+**Senden** (wie viele Zuteilungen der ganzen Woche noch niemand kennt,
+„Neu: 5") und **Zusagen** (bestätigt von allen, die etwas zu bestätigen haben).
+Hervorgehoben ist der Schritt, der gerade dran ist: erst wird besetzt, dann
+gesendet, dann kommen die Zusagen. Darunter die Karte **Besetzung**: der Saal,
+dessen Plätze die Lage der Zuteilungen zeigen, die Zahl „Besetzung: 11/14", die
+Legende und darunter, was **zu klären** ist (Abschnitt 4). Fällt die
+Zusammenkunft aus, stehen beide nicht da – es gibt nichts zu besetzen.
+
 Unter den Zuteilungs‑Knöpfen steht **S‑89 DRUCKEN**: ein Tipp auf **Drucken**
 legt alle Schülerzettel der offenen Woche als DIN‑A4‑Bogen an, **sechs je
 Blatt**. Der Schalter **Gesprächspartner/in** bestimmt, ob der Zettel eines
@@ -162,19 +172,27 @@ vorsieht. Die Zettel der Zusätzlichen Klasse sind dabei und tragen ihren Raum.
   zählt der Wochentag des jeweiligen Treffpunkts.
 - Programmpunkte (Vorsitz, Gebet, Bibellesung, Schulungsaufgaben …) und
   **Hilfsdienste** (Mikrofone, Ton, Ordner, Reinigung …) werden getrennt geführt.
-- **Der Punkt hinter jedem Namen** zeigt, ob die Person diese Zuteilung
-  zugesagt hat. Die Legende über dem Plan nennt die drei Stufen:
-  - **voll** – bestätigt
-  - **blass** – wartet auf Bestätigung
-  - **rot** – abgesagt; hier musst du handeln (siehe „Wenn jemand absagt")
+- **Jeder Platz ist eine Zeile**: vorn ein Punkt, dann der Name und die Rolle
+  (Leiter, Leser, Mikrofone …). Ein offener Platz heißt **Zuteilen** – er sagt,
+  was dort zu tun ist. Ab dem Tablet stehen die Plätze rechts neben ihrem
+  Programmpunkt. Der Punkt zeigt, wie der Platz steht; die Legende in der Karte
+  **Besetzung** nennt die vier Lagen:
+  - **voll** – bestätigt, oder es gibt nichts zu bestätigen
+  - **blass** – wartet auf Bestätigung; das steht auch hinter der Rolle
+  - **rot** – ein Problem: abgesagt, abwesend oder an dem Tag schon
+    eingeteilt. Den Grund nennt die Zeile rechts – bei einem Hilfsdienst nach
+    einer Absage „Ersatz gesucht", denn dort sucht die App selbst. Hier musst
+    du handeln (siehe „Wenn jemand absagt" und Abschnitt 4)
+  - **gestrichelt** – offen
 
-  Der Punkt gilt dem **einzelnen Platz**, nicht der Person: Hat jemand den
+  Die Lage gilt dem **einzelnen Platz**, nicht der Person: Hat jemand den
   Vorsitz bestätigt, das Gebet aber noch nicht, steht ein voller neben einem
   blassen Punkt. Teilst du einen Platz um, wird sein Punkt wieder blass – die
-  Zusage gehört dem, der sie gegeben hat. Wo niemand bestätigen kann (offener
-  Platz, Gastredner, Kreisaufseher, Reinigungsgruppe, Treffpunkt-Leiter von
-  außerhalb, eine ausgefallene Zusammenkunft), steht kein Punkt. Voll, blass
-  und rot unterscheiden sich auch in der Helligkeit, nicht nur im Farbton.
+  Zusage gehört dem, der sie gegeben hat. Wo niemand bestätigen kann
+  (Gastredner, Kreisaufseher, Reinigungsgruppe, eine ausgefallene
+  Zusammenkunft), ist der Platz mit dem Namen besetzt und steht voll da. Die
+  vier Lagen unterscheiden sich auch in Helligkeit und Form, nicht nur im
+  Farbton.
 
 **Schülerteile im Abschnitt „Uns im Dienst verbessern"** brauchen je nach Art
 ein oder zwei Personen. Gesprächsteile (Gespräche beginnen, Interesse fördern,
@@ -384,23 +402,27 @@ Ausgabe des Programms.
 
 ## 4. Konflikte und offene Zuteilungen
 
-Die Planen‑Seite weist dich aktiv auf Handlungsbedarf hin:
+Die Planen‑Seite weist dich aktiv auf Handlungsbedarf hin: In der Karte
+**Besetzung** steht unter **Zu klären**, was vor der Zusammenkunft noch zu
+erledigen ist – eine Zeile je Punkt, in dieser Reihenfolge:
 
-- **Mögliche Konflikte** – „Person ist abwesend, aber eingeteilt",
-  Doppelbelegungen und „Hilfsdienst und Aufgabe am selben Tag". Es steht nur
-  da, was so nicht bleiben kann; dass jemand mehrere Wochen hintereinander
-  drankommt, meldet die App nicht mehr – in einer kleinen Versammlung ist das
-  der Normalfall, und die Meldung verdeckte die wichtigen daneben.
-- **Nicht besetzbar** – Bereiche, in denen an diesem Tag **weniger Leute
-  verfügbar sind als Plätze zu besetzen**: „Mikrofone · nötig 3 · verfügbar 2 ·
-  abwesend 8 von 10". Die Zahl oben rechts sagt, wie viele Plätze deshalb offen
-  bleiben *müssen*. Das ist kein Rückstand, sondern eine Grenze — die
-  automatische Zuteilung lässt diese Plätze kommentarlos leer, und ohne den
-  Hinweis suchst du den Fehler bei dir.
-- **Offene Zuteilungen** – noch unbesetzte Programmpunkte und Hilfsdienste,
-  gebündelt aufgelistet.
+- **Konflikte** (roter Punkt) – „Person ist abwesend, aber eingeteilt",
+  Doppelbelegungen und „Hilfsdienst und Aufgabe am selben Tag", die
+  Abwesenheiten zuerst. Es steht nur da, was so nicht bleiben kann; dass jemand
+  mehrere Wochen hintereinander drankommt, meldet die App nicht mehr – in einer
+  kleinen Versammlung ist das der Normalfall, und die Meldung verdeckte die
+  wichtigen daneben.
+- **Nicht besetzbar** (roter Punkt) – Bereiche, in denen an diesem Tag
+  **weniger Leute verfügbar sind als Plätze zu besetzen**: „Mikrofone · nötig 3
+  · verfügbar 2 · abwesend 8 von 10". So viele Plätze bleiben offen, wie Leute
+  fehlen. Das ist kein Rückstand, sondern eine Grenze — die automatische
+  Zuteilung lässt diese Plätze kommentarlos leer, und ohne den Hinweis suchst
+  du den Fehler bei dir.
+- **Offene Zuteilungen** (gestrichelter Punkt) – wie viele Plätze noch
+  unbesetzt sind, darunter welche: Programmpunkte und Hilfsdienste, gebündelt.
 
 So siehst du auf einen Blick, was vor der Zusammenkunft noch zu erledigen ist.
+Ist nichts zu klären, steht nur die Besetzung da.
 
 > Die Rechnung ist **vorsichtig**: Gezählt wird je Bereich einzeln, und wer für
 > zwei Bereiche taugt, zählt in beiden mit — obwohl er an dem Tag nur eine
@@ -409,11 +431,12 @@ So siehst du auf einen Blick, was vor der Zusammenkunft noch zu erledigen ist.
 > manchmal ohne Anlass erscheint, klickt man weg — und übersieht sie dann auch,
 > wenn sie stimmt.
 
-Die genannten Zuteilungen **heben sich im Programm darunter ab** – kräftiger
-Rand und ein Punkt davor, wie ihn auch jede Zeile im Banner trägt; in beiden
-Zusammenkünften, in der Zusätzlichen Klasse, bei den Hilfsdiensten und bei den
-Treffpunkten. Du musst den Namen aus dem Banner also nicht suchen: Beim
-Durchgehen der Zusammenkunft fällt er von selbst auf.
+Die genannten Zuteilungen **stehen im Programm darunter rot da**, rechts der
+Grund („Abwesend", „An diesem Tag schon") – in beiden Zusammenkünften, in der
+Zusätzlichen Klasse und bei den Hilfsdiensten. Die Treffpunkte haben ihre
+eigene Liste der Konflikte über dem Plan; dort heben sich die Genannten mit
+kräftigem Rand und einem Punkt davor ab. Du musst den Namen also nicht suchen:
+Beim Durchgehen der Zusammenkunft fällt er von selbst auf.
 
 ### Wenn jemand absagt
 
@@ -428,15 +451,16 @@ jede höchstens zwei Zeilen lang.
 
 Bei **Hilfsdiensten** übernimmt die App den ersten Schritt selbst: Sie
 benachrichtigt alle, die für diesen Dienst eingetragen und an dem Tag nicht
-abwesend sind, dass ein Ersatz gesucht wird. Springt jemand ein, trägt sich die
-Person selbst ein, die Bestätigung ist gleich gesetzt (der Punkt wird grün), und
+abwesend sind, dass ein Ersatz gesucht wird; am Platz steht so lange
+„Ersatz gesucht". Springt jemand ein, trägt sich die
+Person selbst ein, die Bestätigung ist gleich gesetzt (der Punkt wird voll), und
 du bekommst die Mitteilung „Ersatz gefunden". Du musst dich nur kümmern, wenn
 sich niemand meldet. Nimmt der Absagende die Absage zurück („Doch
 bestätigen"), verschwindet das Gesuch bei allen wieder.
 
 Bei **Programmpunkten** gibt es keine automatische Suche — dort teilst du neu
-zu. Der Name des Absagenden bleibt mit rotem Punkt im Slot stehen, damit du
-siehst, worum es geht.
+zu. Der Name des Absagenden bleibt rot an seinem Platz stehen, rechts
+„abgesagt", damit du siehst, worum es geht.
 
 ### Den Plan senden
 
@@ -475,7 +499,7 @@ PLÄTZE** – jeder nur, wofür er einen Aufgabenbereich hat und an dem Tag nich
 abwesend ist. Schulungsaufgaben, den öffentlichen Vortrag und die Reinigung
 bietet die App nicht an. Wer zuerst tippt, ist eingetragen und hat damit
 zugesagt; eine Mitteilung bekommst du dafür nicht, im Plan steht sein Name mit
-grünem Punkt. Willst du einen Platz selbst besetzen, tu es vor dem Senden.
+vollem Punkt. Willst du einen Platz selbst besetzen, tu es vor dem Senden.
 
 > **Eine Ausnahme wartet nicht auf den Knopf.** Nimmst du jemandem eine Aufgabe
 > weg, die er **schon bestätigt** hatte, erfährt er das sofort („Zuteilung
@@ -757,7 +781,7 @@ Angabe, nicht zwei.
 
 Abwesenheiten wirken sofort auf die Planung: Wer weg ist, lässt sich für diese
 Woche gar nicht erst zuteilen, die automatische Zuteilung übergeht ihn, und eine
-bereits bestehende Zuteilung erscheint im Konflikt‑Banner. Bei den Treffpunkten
+bereits bestehende Zuteilung erscheint unter **Zu klären**. Bei den Treffpunkten
 zählt dabei der Wochentag des jeweiligen Treffpunkts, nicht die ganze Woche.
 
 Im Detail legst du fest:

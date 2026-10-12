@@ -175,39 +175,40 @@ describe('Der Ratgeber der Zusätzlichen Klasse (S-38 Abs. 27)', () => {
 
   it('ohne eingerichtete Klasse steht die Karte gar nicht da', () => {
     const { container } = buehne('aux', { weeks: [woche()] })
-    expect(container.querySelector('.panel')).toBeNull()
+    expect(container.querySelector('.prog-abschnitt')).toBeNull()
   })
 
   it('mit Klasse steht sie da — mit dem Hinweis aus S-38', () => {
     const { container } = buehne('aux', { weeks: mitKlasse(), auxClass: true })
-    expect(container.querySelector('.panel-label')?.textContent).toBe(t.auxKlassen)
-    expect(container.querySelector('.plan-item-title')?.textContent).toBe(t.auxRatgeber)
+    expect(container.querySelector('.prog-abschnitt-name')?.textContent).toBe(t.auxKlassen)
+    expect(container.querySelector('.platz-rolle')?.textContent).toBe(t.auxRatgeber)
     expect(container.querySelector('.panel-hint')?.textContent).toBe(t.auxRatgeberHint)
   })
 
   it('offen zeigt sie die Aufforderung, ein Tipp öffnet den eigenen Slot-Typ', () => {
     const { container, dispatch } = buehne('aux', { weeks: mitKlasse(), auxClass: true })
-    const chip = container.querySelector('.slot-chip')!
-    expect(chip.textContent).toBe(t.zuteilenChip)
-    fireEvent.click(chip)
+    const platz = container.querySelector('.platz')!
+    expect(platz.className).toContain('is-offen')
+    expect(platz.querySelector('.platz-name')?.textContent).toBe(t.spurZuteilen)
+    fireEvent.click(platz)
     expect(dispatch).toHaveBeenCalledWith({
       type: 'openSlot',
       sel: expect.objectContaining({ kind: 'ratgeber', wi: 0, tab: 'mid', priv: 'ratgeber' }),
     })
   })
 
-  it('besetzt trägt sie den Namen und den Ampel-Punkt seiner Zusage', () => {
+  it('besetzt trägt sie den Namen und die Lage seiner Zusage', () => {
     const weeks = mitKlasse()
     weeks[0]!.mid.auxRatgeber = { name: 'Anton Alt', pid: 'p-a' }
-    const offen = buehne('aux', { weeks, auxClass: true }).container.querySelector('.slot-chip')!
-    expect(offen.textContent).toContain('Anton Alt')
-    expect(offen.querySelector('.zusage-punkt')?.className).toContain('is-offen')
+    const wartet = buehne('aux', { weeks, auxClass: true }).container.querySelector('.platz')!
+    expect(wartet.querySelector('.platz-name')?.textContent).toBe('Anton Alt')
+    expect(wartet.className).toContain('is-wartet')
     cleanup()
 
     const zugesagt = buehne('aux', {
       weeks, auxClass: true, confirmations: { [ratgeberKey('2026-09-07', 'mid')]: 'bestätigt' },
-    }).container.querySelector('.slot-chip')!
-    expect(zugesagt.querySelector('.zusage-punkt')?.className).toContain('is-bestaetigt')
+    }).container.querySelector('.platz')!
+    expect(zugesagt.className).toContain('is-voll')
   })
 })
 

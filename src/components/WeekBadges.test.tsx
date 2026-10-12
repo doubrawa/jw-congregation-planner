@@ -12,25 +12,25 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { dict } from '../i18n/ui'
 import type { Week } from '../data/types'
-import { AusfallBanner, MemorialBanner, TerminListe, WeekChips } from './WeekBadges'
+import { AusfallBanner, MemorialBanner, TerminListe } from './WeekBadges'
 import { WeekNav } from './WeekNav'
 
 /**
- * **Die Chips und Banner über dem Wochenprogramm.**
+ * **Die Banner über dem Wochenprogramm.**
  *
  * Sie beantworten in einem Blick die Frage, die im Saal am häufigsten gestellt
  * wird: *Findet diese Woche überhaupt etwas statt — und wann?* Genau deshalb
  * sind hier mehrere Regeln zusammengekommen, die nichts miteinander zu tun
  * haben und trotzdem dieselbe Fläche teilen:
  *
- * - Der **Kongress** hat kein eigenes Flag: er wirkt als Ausfall *beider*
- *   Zusammenkünfte und wird über `anlassArt` erkannt (T64).
- * - Der Chip **AKTUELLE WOCHE** hängt an der gerechneten laufenden Woche
- *   (`currentWeekIndex`), die der Aufrufer hereinreicht — nicht an einem
- *   gespeicherten Kennzeichen, das nie nachgeführt würde.
+ * - Das **Gedächtnismahl** nennt die Zusammenkunft, die es ersetzt.
  * - Der **Grund eines Ausfalls** sind die Worte des Planers und bleiben
  *   unübersetzt. Für „entfällt" gibt es kein gemessenes Wort in 33 Sprachen;
  *   der durchgestrichene Name der Zusammenkunft trägt die Aussage allein.
+ *
+ * Die Chips unter der Wochen-Navigation gibt es seit T121 nicht mehr: Den
+ * Anlass nennt die Wochenwahl (`WochenWahl`), eine verlegte oder ausgefallene
+ * Zusammenkunft ihre Karte (`MeetingTabs`).
  */
 
 const t = dict('de')
@@ -61,52 +61,7 @@ function buehne(kind: string, inhalt: ReactNode, over: Partial<AppState> = {}) {
   return { dispatch, ...render(<Buehne />) }
 }
 
-const chips = (c: HTMLElement) => [...c.querySelectorAll('.week-chip')].map((x) => x.textContent ?? '')
-
 afterEach(cleanup)
-
-describe('Die Wochen-Chips', () => {
-  it('ohne Besonderheit steht gar nichts da — keine leere Leiste', () => {
-    const { container } = buehne('chips', <WeekChips week={woche()} />)
-    expect(container.querySelector('.week-chips')).toBeNull()
-  })
-
-  it('Kreisaufseher-Woche und Gedächtnismahl bekommen ihren Chip', () => {
-    const co = buehne('chips', <WeekChips week={woche({ anlass: { art: 'co' }, co: true })} />)
-    expect(chips(co.container)).toEqual([t.coWoche])
-    cleanup()
-    const mem = buehne('chips', <WeekChips week={woche({ anlass: { art: 'mem' }, mem: true })} />)
-    expect(chips(mem.container)).toEqual([t.memWoche])
-  })
-
-  it('der Kongress ebenso — obwohl er gar kein eigenes Flag hat (T64)', () => {
-    const kongress = woche({
-      anlass: { art: 'kongress' },
-      dev: { mid: { cancelled: true }, we: { cancelled: true } },
-    } as Partial<Week>)
-    const { container } = buehne('chips', <WeekChips week={kongress} />)
-    expect(chips(container)[0]).toBe(t.kongress)
-  })
-
-  it('eine Verlegung sieht man schon in der Navigation — ohne den Tab zu wechseln', () => {
-    const verlegt = woche({ dev: { mid: { wd: 4 } } })
-    const { container } = buehne('chips', <WeekChips week={verlegt} />)
-    expect(chips(container)).toEqual([t.tabMid])
-    expect(container.querySelector('.week-chip--dev s')).toBeNull() // verlegt, nicht gestrichen
-  })
-
-  it('eine ausgefallene Zusammenkunft steht durchgestrichen da', () => {
-    const aus = woche({ dev: { we: { cancelled: true, reason: 'Kongress' } } })
-    const { container } = buehne('chips', <WeekChips week={aus} />)
-    expect(container.querySelector('.week-chip--dev s')?.textContent).toBe(t.tabWe)
-  })
-
-  it('fallen beide aus, stehen beide da', () => {
-    const aus = woche({ dev: { mid: { cancelled: true }, we: { cancelled: true } } })
-    const { container } = buehne('chips', <WeekChips week={aus} />)
-    expect(chips(container)).toEqual([t.tabMid, t.tabWe])
-  })
-})
 
 describe('Das Gedächtnismahl-Banner', () => {
   it('steht auf dem Tab der ausfallenden Zusammenkunft — und nennt ihr Datum', () => {

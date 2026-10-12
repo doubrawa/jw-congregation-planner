@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { platzKey, allePlaetze } from './plaetze'
-import { besetztVon, besetzung, saalLagen, SAAL_PLAETZE, type Besetzung, type SaalLage } from './saal'
+import { besetztVon, besetzung, lageVon, saalLagen, SAAL_PLAETZE, zusagenStand, type Besetzung, type SaalLage } from './saal'
 import type { ConfirmationMap, Meeting, Service } from './types'
 
 const WOCHE = '2026-09-07'
@@ -60,6 +60,49 @@ describe('besetzung: jeder Platz einmal, nach seiner Zusage', () => {
     expect(b.du).toBe(true)
     expect(b.problem).toBe(0)
     expect(besetztVon(b)).toEqual({ besetzt: 3, gesamt: 5 })
+  })
+
+  it('wer nichts zu bestätigen hat, ist besetzt — er wartet nicht ewig (Gastredner, Gruppe)', () => {
+    // Ein Gastredner bekommt keine Aufgabe und sagt nie zu; die Reinigung
+    // macht eine Gruppe. Gezählt als „wartet", stünden beide für immer blass.
+    const m = zusammenkunft(1, 0)
+    ;(m.sections[0]!.items[0] as { names: unknown[] }).names = [{ name: 'Gast Redner', rolle: 'Gastredner' }]
+    const gruppe: Service[] = [{ key: 'rein', name: 'Reinigung', count: 1, groups: true }]
+    m.helpers = { rein: [{ name: 'Gruppe 1' }] }
+    expect(besetzung(m, gruppe, {}, WOCHE, 'mid', null)).toEqual({ voll: 2, wartet: 0, problem: 0, offen: 0, du: false })
+  })
+
+  it('ein Konflikt macht den Platz zum Problem — auch wenn die Person zugesagt hat', () => {
+    const m = zusammenkunft(2, 2)
+    const [a] = schluessel(m)
+    const b = besetzung(m, SERVICES, { [a!]: 'bestätigt' }, WOCHE, 'mid', null, (slot) => slot.name === 'Person 0')
+    expect(b).toEqual({ voll: 0, wartet: 1, problem: 1, offen: 2, du: false })
+  })
+})
+
+describe('lageVon: die Lage eines Platzes', () => {
+  const besetzt = { name: 'Anton Alt' }
+  it.each([
+    ['unbesetzt ist offen — gleich, was sonst gilt', undefined, 'bestätigt', true, 'offen'],
+    ['ein Konflikt geht der Zusage vor', besetzt, 'bestätigt', true, 'problem'],
+    ['nichts zu bestätigen heißt besetzt', besetzt, null, false, 'voll'],
+    ['zugesagt', besetzt, 'bestätigt', false, 'voll'],
+    ['wartet auf die Zusage', besetzt, 'offen', false, 'wartet'],
+    ['abgesagt', besetzt, 'verhindert', false, 'problem'],
+  ] as const)('%s', (_fall, slot, zusage, konflikt, lage) => {
+    expect(lageVon(slot, zusage, konflikt)).toBe(lage)
+  })
+})
+
+describe('zusagenStand: bestätigt von allen, die etwas zu bestätigen haben', () => {
+  it('zählt Programm und Hilfsdienste, offene und Gastredner nicht', () => {
+    const m = zusammenkunft(4, 3, ['Mik 1'])
+    ;(m.sections[0]!.items[2] as { names: unknown[] }).names = [{ name: 'Gast Redner', rolle: 'Gastredner' }]
+    const [a, b] = schluessel(m)
+    expect(zusagenStand(m, SERVICES, { [a!]: 'bestätigt', [b!]: 'verhindert' }, WOCHE, 'mid')).toEqual({
+      bestaetigt: 1,
+      gesamt: 3,
+    })
   })
 })
 

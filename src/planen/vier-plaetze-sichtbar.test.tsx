@@ -140,13 +140,14 @@ describe('Der Planen-Bildschirm zeigt jeden besetzten Platz', () => {
       auf — über `eachAssignedSlot`, also über alle vier Sorten. Gegen den
       vollen Text geprüft wäre der Test grün geblieben, auch wenn das Programm
       die zweite Reihe gar nicht mehr zeichnete; genau das hat die Gegenprobe
-      gezeigt. Ein `.slot-chip` ist dagegen der Knopf, über den der Planer den
-      Platz öffnet — steht ein Name in keinem, kommt er nicht an ihn heran.
+      gezeigt. Ein `.platz` ist dagegen der Knopf, über den der Planer den
+      Platz öffnet (T121, `PlatzZeile`) — steht ein Name in keinem, kommt er
+      nicht an ihn heran.
     */
-    const chips = [...zeige(weeks).container.querySelectorAll('.slot-chip')]
+    const plaetze = [...zeige(weeks).container.querySelectorAll('.platz')]
       .map((el) => el.textContent ?? '')
       .join(' | ')
-    const fehlend = namen.filter((name) => !chips.includes(name))
+    const fehlend = namen.filter((name) => !plaetze.includes(name))
     expect(fehlend, `nicht anklickbar im Plan: ${fehlend.join(', ')}`).toEqual([])
   })
 

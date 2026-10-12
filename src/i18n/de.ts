@@ -195,7 +195,6 @@ export const DE = {
     treffpunkteDieserWoche: 'Treffpunkte dieser Woche',
     naechsteZusammenkunft: 'Nächste Zusammenkunft · {wann}',
     planen: 'Planen', offeneZut: 'Offene Zuteilungen: {n}',
-    planHint: 'Auf eine Zuteilung tippen, um sie zu ändern. Abwesenheiten und Aufgabenbereiche werden geprüft.',
     autoZuteilen: 'AUTOMATISCH ZUTEILEN', leeren: 'Leeren', leerenSicher: 'Wirklich leeren?',
     zuteilenChip: '— zuteilen', offenWort: 'offen', offenDash: '— offen —',
     // Start / Dashboard
@@ -425,6 +424,11 @@ export const DE = {
     zusageBestaetigt: 'bestätigt',
     zusageWartet: 'wartet auf Bestätigung',
     zusageAbgesagt: 'abgesagt',
+    // Planen (T121, Entwurf `GPlanen`): die Spur der Woche und die Lage der
+    // Plätze. „Problem" steht in der Legende für abgesagt oder im Konflikt;
+    // „Zuteilen" heißt auch der offene Platz — er sagt, was dort zu tun ist.
+    spurWoche: 'Stand der Woche', spurZuteilen: 'Zuteilen', spurSenden: 'Senden', spurZusagen: 'Zusagen',
+    lageProblem: 'Problem', zuKlaeren: 'Zu klären',
     // „Plan senden": der Planer gibt die fertige Woche frei, und erst dann
     // erfahren die Eingeteilten davon. Der Knopf spricht von der ganzen Woche,
     // nicht vom Reiter darüber — sonst hielte man ihn für dessen Aktion.

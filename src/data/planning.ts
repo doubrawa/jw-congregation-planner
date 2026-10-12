@@ -10,7 +10,7 @@
  */
 
 import { istAbwesend, KEINE_ABWESENHEIT, type AbsenceSet } from './absence'
-import { allePlaetze, gespeicherteHelfer, platzKey } from './plaetze'
+import { allePlaetze, gespeicherteHelfer, platzKey, platzMitZusage } from './plaetze'
 import { istSchuelerBereich, programmPlaetze, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
 import {
   dieselbePerson,
@@ -1218,13 +1218,10 @@ export function eachAssignedSlot(
       // eigenem Schlüssel und eigenem Ort; der Ratgeber und die Hilfsdienste
       // ebenso. Hier standen dafür drei Schleifen untereinander.
       for (const platz of allePlaetze(meeting, services)) {
+        // Nur, wer etwas zu bestätigen hat: Gastredner und Kreisaufseher kommen
+        // von außen, die Reinigungs-Rotation ist eine Gruppe.
         const slot = platz.slot
-        if (!slot?.name) continue
-        // Gastredner/Kreisaufseher kommen von außen — kein Bestätigungs-Flow.
-        if (isGuestRole(slot.rolle)) continue
-        // Die Reinigungs-Rotation ist keine persönliche Aufgabe, sondern eine
-        // Gruppe.
-        if (platz.art === 'helper' && platz.svc.groups) continue
+        if (!slot || !platzMitZusage(platz)) continue
         const key = platzKey(platz, week.start, tab)
         visit(slot, key, () => {
           const gemeinsam = { id: key, date: meetingDateText(week, tab, zeiten), at, status: 'offen' as const }

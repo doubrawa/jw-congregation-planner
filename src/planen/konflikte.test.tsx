@@ -11,16 +11,19 @@ import {
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
+import { dict } from '../i18n/ui'
+import type { Conflict } from '../data/planning'
 import type { Meeting, Person, Service, Week } from '../data/types'
-import { ConflictsBanner } from './PlanBanners'
+import { BesetzungKarte } from './WochenStand'
 import { HelpersPanel } from './HelpersPanel'
+import { machKonfliktVon } from './useKonflikte'
 
 /**
- * Das Konflikt-Banner und der Plan darunter.
+ * Die Konflikte unter „Zu klären" und der Plan darunter.
  *
  * **T76:** Die betroffenen Zuteilungen sahen im Programm aus wie alle anderen —
- * den im Banner genannten Namen musste man darunter erst suchen. Jetzt hebt
- * sich der Chip ab.
+ * den genannten Namen musste man darunter erst suchen. Seit T121 steht der
+ * Platz rot da, mit dem Grund am Ende der Zeile.
  *
  * **T81:** Die Serie („3 Wochen in Folge") ist ganz weggefallen, und mit ihr
  * der Aufklapper, der einzig sie kürzte.
@@ -29,6 +32,8 @@ import { HelpersPanel } from './HelpersPanel'
  * bringen eigene Konflikte mit, und dann prüfte der Test die Demo statt die
  * Regel.
  */
+
+const t = dict('de')
 
 function Buehne({ state, children }: { state: AppState; children: ReactNode }) {
   const store = useStaticStore(state)
@@ -68,7 +73,7 @@ const MONTAGE = ['2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28']
 
 function woche(i: number, mid: Meeting): Week {
   return {
-    range: '', book: '', start: MONTAGE[i]!, 
+    range: '', book: '', start: MONTAGE[i]!,
     mid,
     we: { date: '', end: '', sections: [], helpers: {} },
   }
@@ -77,7 +82,6 @@ function woche(i: number, mid: Meeting): Week {
 /**
  * `anzahl` Personen, jede in den Wochen 0–2 auf demselben Programmpunkt (Woche
  * 3 bleibt frei, sonst ist es keine auffällige Serie, sondern Dauerbetrieb).
- * Serien sind die einzige Konfliktart, die gekürzt wird.
  */
 function mitSerien(anzahl: number): { weeks: Week[]; persons: Person[] } {
   const persons = Array.from({ length: anzahl }, (_, n) => person(`p${n}`, `Serie ${n}`))
@@ -100,39 +104,30 @@ const basis = (over: Partial<AppState>): AppState => ({
   ...over,
 })
 
-describe('T81 — Serien stehen nicht mehr im Banner', () => {
-  const zeige = (anzahl: number) => {
-    const { weeks, persons } = mitSerien(anzahl)
-    return render(
-      <Buehne state={basis({ weeks, persons })}>
-        <ConflictsBanner tab="mid" />
-      </Buehne>,
-    )
-  }
+/** Die Konflikte unter „Zu klären" (ohne die Engpässe daneben). */
+const probleme = (c: HTMLElement) =>
+  [...c.querySelectorAll('.klaeren-zeile[data-art="konflikt"]')].map((x) => x.textContent ?? '')
 
-  it('drei Wochen in Folge ergeben kein Banner mehr', () => {
+describe('T81 — Serien sind kein Konflikt mehr', () => {
+  it('drei Wochen in Folge ergeben keine Zeile unter „Zu klären"', () => {
     /*
      * Der Fall, der das Banner früher füllte: drei Personen, jede drei Wochen
      * am Stück auf demselben Programmpunkt. Das war der Normalfall einer
-     * kleinen Versammlung — und stand deshalb fast immer da. Jetzt bleibt das
-     * Banner ganz weg, wenn es nichts Echtes zu melden gibt.
+     * kleinen Versammlung — und stand deshalb fast immer da.
      */
-    const { container } = zeige(3)
-    expect(container.querySelector('.plan-conflicts')).toBeNull()
-  })
-
-  it('auch der Aufklapper ist mit den Serien weggefallen', () => {
-    // „+{n} weitere mögliche Konflikte" kürzte einzig die Serien; ohne sie
-    // hätte der Schalter nichts mehr zu zeigen.
-    const { container } = zeige(6)
-    expect(container.querySelector('.plan-conflict-more')).toBeNull()
-    expect(container.querySelectorAll('.plan-conflict-row')).toHaveLength(0)
+    const { weeks, persons } = mitSerien(6)
+    const { container } = render(
+      <Buehne state={basis({ weeks, persons })}>
+        <BesetzungKarte tab="mid" tpw={(s) => s} />
+      </Buehne>,
+    )
+    expect(probleme(container)).toEqual([])
   })
 })
 
 describe('T76 — die betroffene Zuteilung hebt sich im Plan ab', () => {
-  const chips = (c: HTMLElement) => [...c.querySelectorAll('.slot-chip')]
-  const markiert = (c: HTMLElement) => chips(c).filter((el) => el.className.includes('is-konflikt'))
+  const plaetze = (c: HTMLElement) => [...c.querySelectorAll('.platz')]
+  const markiert = (c: HTMLElement) => plaetze(c).filter((el) => el.classList.contains('is-problem'))
 
   /** Eine Woche, in der Anna Programmpunkt UND Hilfsdienst hat (helperTask). */
   const mitHelferKonflikt = (): { state: AppState; meeting: Meeting } => {
@@ -148,7 +143,7 @@ describe('T76 — die betroffene Zuteilung hebt sich im Plan ab', () => {
     }
   }
 
-  it('markiert den Chip der betroffenen Person — und nur ihn', () => {
+  it('markiert den Platz der betroffenen Person — und nur ihn', () => {
     const { state, meeting } = mitHelferKonflikt()
     const { container } = render(
       <Buehne state={state}>
@@ -156,33 +151,24 @@ describe('T76 — die betroffene Zuteilung hebt sich im Plan ab', () => {
       </Buehne>,
     )
     expect(markiert(container)).toHaveLength(1)
-    expect(markiert(container)[0]?.textContent).toContain('Anna')
+    expect(markiert(container)[0]?.querySelector('.platz-name')?.textContent).toBe('Anna')
     // Bernd steht nur einmal da und bleibt unberührt.
-    const bernd = chips(container).find((el) => el.textContent?.includes('Bernd'))
-    expect(bernd?.className).not.toContain('is-konflikt')
+    const bernd = plaetze(container).find((el) => el.textContent?.includes('Bernd'))
+    expect(bernd?.classList.contains('is-problem')).toBe(false)
   })
 
-  it('markiert mit einem Punkt — der Chip behält seine Fläche (T80)', () => {
-    /*
-     * Die Markierung war anfangs eine Farbfläche in `--tWein`. Das ist der Ton
-     * des Bereichs „Unser Leben als Christ": dort ging die Hervorhebung im
-     * Panel unter. Jetzt trägt sie der Punkt, den das Banner ebenfalls führt.
-     */
+  it('der rote Platz nennt den Grund am Ende der Zeile', () => {
+    // Hilfsdienst und Aufgabe am selben Tag: Die Person ist schon eingeteilt.
     const { state, meeting } = mitHelferKonflikt()
     const { container } = render(
       <Buehne state={state}>
         <HelpersPanel meeting={meeting} />
       </Buehne>,
     )
-    const punkte = container.querySelectorAll('.slot-konflikt-dot')
-    expect(punkte).toHaveLength(1)
-    expect(punkte[0]?.closest('.slot-chip')?.className).toContain('is-konflikt')
-    // Und nur der markierte Chip trägt ihn.
-    const bernd = chips(container).find((el) => el.textContent?.includes('Bernd'))
-    expect(bernd?.querySelector('.slot-konflikt-dot')).toBeNull()
+    expect(markiert(container)[0]?.querySelector('.platz-hinweis')?.textContent).toBe(t.sheetSchonHeute)
   })
 
-  it('ohne Konflikt bleibt kein Chip markiert', () => {
+  it('ohne Konflikt bleibt kein Platz markiert', () => {
     const anna = person('p-anna', 'Anna')
     const meeting = zusammenkunft([{ name: 'Anna', pid: anna.id }], { ton: [{ name: '' }], mik: [] })
     const { container } = render(
@@ -198,7 +184,7 @@ describe('T76 — die betroffene Zuteilung hebt sich im Plan ab', () => {
      * Am laufenden Demo-Stand aufgefallen, nicht am Reißbrett: dort tragen die
      * Hilfsdienst-Plätze **keine** `pid`. Die Konfliktprüfung löst den Namen
      * über die Personenliste zu einer Id auf, die Markierung verglich aber
-     * `pid`/Name direkt — der abwesende Ordner stand im Banner, sein Chip blieb
+     * `pid`/Name direkt — der abwesende Ordner stand im Banner, sein Platz blieb
      * unmarkiert. Beide Seiten müssen dieselbe Auflösung benutzen.
      */
     const anna = person('p-anna', 'Anna')
@@ -242,38 +228,31 @@ describe('T76 — die betroffene Zuteilung hebt sich im Plan ab', () => {
         <HelpersPanel meeting={meeting} />
       </Buehne>,
     )
-    const gruppe = chips(container).find((el) => el.textContent?.includes('Gruppe 1'))
-    expect(gruppe?.className).not.toContain('is-konflikt')
+    const gruppe = plaetze(container).find((el) => el.textContent?.includes('Gruppe 1'))
+    expect(gruppe?.classList.contains('is-problem')).toBe(false)
   })
 })
 
 /**
- * **Was das Banner sagt, wenn es etwas zu sagen hat.**
+ * **Was unter „Zu klären" steht, wenn es etwas zu sagen gibt.**
  *
- * Die Prüfungen oben halten fest, wann es **weg**bleibt (T81). Was es
- * schreibt, wenn ein echter Konflikt vorliegt, stand bislang nirgends — und
- * genau darauf handelt der Planer: Er liest einen Namen und eine Aussage und
- * geht dann in den Plan. Steht dort die falsche Aussage, sucht er den falschen
+ * Darauf handelt der Planer: Er liest einen Namen und eine Aussage und geht
+ * dann in den Plan. Steht dort die falsche Aussage, sucht er den falschen
  * Fehler.
  *
  * Drei Arten, drei Sätze, feste Reihenfolge: Abwesenheit zuerst (sie ist die
  * schwerste, denn die Person kommt gar nicht), dann Doppelbelegung, dann
- * Hilfsdienst-und-Aufgabe. Die Zahl im Kopf zählt **alle**.
+ * Hilfsdienst-und-Aufgabe.
  */
 describe('Die drei Konflikt-Sätze', () => {
   const KAI = person('p-k', 'Kai')
 
-  const zeigeKonflikt = (over: Partial<AppState>) =>
+  const zeigeKonflikt = (over: Partial<AppState>, tab: 'mid' | 'we' = 'mid') =>
     render(
       <Buehne state={basis({ persons: [KAI], week: 0, ...over })}>
-        <ConflictsBanner tab="mid" />
+        <BesetzungKarte tab={tab} tpw={(s) => s} />
       </Buehne>,
     )
-
-  const zeilen = (c: HTMLElement) =>
-    [...c.querySelectorAll('.plan-conflict-text')].map((x) => x.textContent ?? '')
-  const arten = (c: HTMLElement) =>
-    [...c.querySelectorAll('.plan-conflict-dot')].map((x) => x.getAttribute('data-kind'))
 
   it('abwesend und trotzdem eingeteilt — mit Namen und Zusammenkunft', () => {
     const { container } = zeigeKonflikt({
@@ -281,8 +260,7 @@ describe('Die drei Konflikt-Sätze', () => {
       absences: [{ id: 'a1', personId: 'p-k', userId: null, from: '2026-09-01', to: '2026-09-30', reason: '' }],
       congregation: { name: '', hall: '', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     })
-    expect(zeilen(container)).toEqual(['Kai ist abwesend, aber eingeteilt · Zusammenkunft unter der Woche'])
-    expect(arten(container)).toEqual(['absent'])
+    expect(probleme(container)).toEqual(['Kai ist abwesend, aber eingeteilt · Zusammenkunft unter der Woche'])
   })
 
   it('zweimal Hilfsdienst am selben Tag — mit der Anzahl', () => {
@@ -292,8 +270,7 @@ describe('Die drei Konflikt-Sätze', () => {
         ton: [{ name: 'Kai', pid: 'p-k' }],
       }))],
     })
-    expect(zeilen(container)).toEqual(['Kai ist 2× in einer Zusammenkunft · Zusammenkunft unter der Woche'])
-    expect(arten(container)).toEqual(['double'])
+    expect(probleme(container)).toEqual(['Kai ist 2× in einer Zusammenkunft · Zusammenkunft unter der Woche'])
   })
 
   it('Hilfsdienst und Programmpunkt am selben Tag — der eigene Satz', () => {
@@ -302,20 +279,9 @@ describe('Die drei Konflikt-Sätze', () => {
         mik: [{ name: 'Kai', pid: 'p-k' }],
       }))],
     })
-    expect(zeilen(container)).toEqual([
+    expect(probleme(container)).toEqual([
       'Kai hat Hilfsdienst und Aufgabe am selben Tag · Zusammenkunft unter der Woche',
     ])
-    expect(arten(container)).toEqual(['helperTask'])
-  })
-
-  it('der Kopf nennt Titel und Anzahl', () => {
-    const { container } = zeigeKonflikt({
-      weeks: [woche(0, zusammenkunft([{ name: 'Kai', pid: 'p-k' }], {
-        mik: [{ name: 'Kai', pid: 'p-k' }],
-      }))],
-    })
-    expect(container.querySelector('.plan-banner-title')?.textContent).toBe('MÖGLICHE KONFLIKTE')
-    expect(container.querySelector('.plan-banner-count')?.textContent).toBe('1')
   })
 
   it('mehrere Arten stehen in fester Reihenfolge: abwesend, doppelt, Hilfsdienst+Aufgabe', () => {
@@ -332,18 +298,28 @@ describe('Die drei Konflikt-Sätze', () => {
       absences: [{ id: 'a1', personId: 'p-k', userId: null, from: '2026-09-01', to: '2026-09-30', reason: '' }],
       congregation: { name: '', hall: '', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     })
-    expect(arten(container)).toEqual(['absent', 'double', 'helperTask'])
-    expect(container.querySelector('.plan-banner-count')?.textContent).toBe('3')
+    expect(probleme(container).map((z) => z.split(' ')[0])).toEqual(['Kai', 'Lea', 'Mia'])
+    expect(probleme(container)[0]).toContain('abwesend')
   })
 
   it('am Wochenende nennt derselbe Satz die andere Zusammenkunft', () => {
     const w = woche(0, zusammenkunft([{ name: '' }]))
     w.we = zusammenkunft([{ name: 'Kai', pid: 'p-k' }], { mik: [{ name: 'Kai', pid: 'p-k' }] })
-    const { container } = render(
-      <Buehne state={basis({ persons: [KAI], week: 0, weeks: [w] })}>
-        <ConflictsBanner tab="we" />
-      </Buehne>,
-    )
-    expect(zeilen(container)[0]).toContain('Zusammenkunft am Wochenende')
+    const { container } = zeigeKonflikt({ weeks: [w] }, 'we')
+    expect(probleme(container)[0]).toContain('Zusammenkunft am Wochenende')
+  })
+})
+
+describe('Der Grund am Platz: die Abwesenheit vor der Doppelbelegung', () => {
+  it('steht eine Person in mehreren Konflikten, gilt die Abwesenheit — gleich, in welcher Reihenfolge', () => {
+    // Sie sagt, warum der Platz so nicht bleiben kann: Die Person kommt gar
+    // nicht. `weekConflicts` liefert sie heute zuerst; darauf verlässt sich die
+    // Zuordnung nicht.
+    const anna = person('p-anna', 'Anna')
+    const doppelt: Conflict = { kind: 'double', name: 'Anna', kennung: anna.id, tab: 'mid', count: 2 }
+    const weg: Conflict = { kind: 'absent', name: 'Anna', kennung: anna.id, tab: 'mid' }
+    const platz = { name: 'Anna', pid: anna.id }
+    expect(machKonfliktVon([anna], [doppelt, weg])(platz)?.kind).toBe('absent')
+    expect(machKonfliktVon([anna], [weg, doppelt])(platz)?.kind).toBe('absent')
   })
 })

@@ -34,7 +34,7 @@
  * Namen hinter der Grenze bleiben absichtlich stehen.
  */
 
-import { isSong, programmPlaetze, raeume, slotsOf, type ProgrammPlatz } from './helpers'
+import { isGuestRole, isSong, programmPlaetze, raeume, slotsOf, type ProgrammPlatz } from './helpers'
 import {
   helferKey,
   punktKey,
@@ -99,6 +99,21 @@ export function* allePlaetze(
       yield { art: 'helper', slot: arr[pos], svc, pos }
     }
   }
+}
+
+/**
+ * **Hat dieser Platz etwas zu bestätigen?** — besetzt, und mit einer Person
+ * der Versammlung: Gastredner und Kreisaufseher kommen von außen, die
+ * Reinigungs-Rotation ist eine Gruppe. Nach dieser Regel entstehen die
+ * Aufgaben (`eachAssignedSlot`), und nach ihr zählen Besetzung und Zusagen.
+ *
+ * Ob die Zusammenkunft überhaupt stattfindet (T30), fragt der Aufrufer — der
+ * Platz weiß es nicht.
+ */
+export function platzMitZusage(platz: Platz): boolean {
+  const slot = platz.slot
+  if (!slot?.name || isGuestRole(slot.rolle)) return false
+  return !(platz.art === 'helper' && platz.svc.groups)
 }
 
 /**

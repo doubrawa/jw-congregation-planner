@@ -3,7 +3,7 @@ import { useApp, useAppDispatch } from '../app/context'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { movableIndices } from '../data/meeting-edit'
 import { istSchuelerteil } from '../data/aux-class'
-import { rolleMitHerkunft, istArt, isGuestRole, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
+import { dauerAbtrennen, rolleMitHerkunft, istArt, isGuestRole, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
 import {
   closingSongNr,
   hatLiedPlatz,
@@ -22,7 +22,8 @@ import { useZusage } from './useZusage'
 import { SONG_WORD } from '../../supabase/functions/_shared/i18n/translate-data.ts'
 import { useT } from '../i18n/useT'
 import type { PartItem, Section, SlotAssignment } from '../data/types'
-import { SlotChip } from './SlotChip'
+import { platzAnzeige } from './platz-anzeige'
+import { PlatzZeile } from './PlatzZeile'
 
 /**
  * Den Partner eines Schülerteils an- oder abschalten.
@@ -131,8 +132,10 @@ function MinutenFeld({
 }
 
 /**
- * Ein Programm-Abschnitt (Panel) beim Planen: Programmpunkte als Slot-Chips,
- * bei „Unser Leben als Christ" mit Minuten-/Verschieben-/Löschen-Steuerung und
+ * Ein Programm-Abschnitt beim Planen (T121, Entwurf `GPlanen`): eine Karte wie
+ * beim Ansehen, je Punkt Titel und Dauer und darunter — ab dem Tablet daneben —
+ * seine Plätze als Zeilen (`PlatzZeile`); ein Tipp öffnet das Zuteilen. Bei
+ * „Unser Leben als Christ" mit Minuten-/Verschieben-/Löschen-Steuerung und
  * Punkt-hinzufügen, am Wochenende Vortragsthema (Freitext) und Anfangslied.
  *
  * `section` ist die Anzeige-Fassung (Programmsprache), `rawSection` die
@@ -189,11 +192,12 @@ export function MeetingSection({
   const liedWe = state.weeks[state.week]?.we
   const liedNr = !liedWe ? '' : isOpening ? openingSongNr(liedWe) : isClosing ? closingSongNr(liedWe) : ''
 
-  // Ampel-Punkt je Platz — dieselben Schlüssel, unter denen bestätigt wird.
+  // Die Zusage je Platz — dieselben Schlüssel, unter denen bestätigt wird.
   const zusage = useZusage()
+  const tab = mtab(state.tab)
 
-  // Wer im Konflikt-Banner über dem Programm steht, wird hier hervorgehoben.
-  const { betrifft } = useKonflikte(mtab(state.tab))
+  // Wer oben unter „Zu klären" steht, wird hier an seinem Platz rot.
+  const konflikte = useKonflikte(tab)
 
   /**
    * Die Platzreihen eines Programmpunkts: nur Hauptsaal — oder Hauptsaal und
@@ -204,21 +208,6 @@ export function MeetingSection({
     const rows = [{ aux: false, slots: item.names }]
     if (mitAux && istSchuelerteil(item)) rows.push({ aux: true, slots: item.aux ?? [] })
     return rows
-  }
-
-  const partChipText = (slot: SlotAssignment): string => {
-    // Die Rolle in der Sprache des Lesers (`tu`), nicht der Versammlung: sie
-    // gehört zur Bedienung, nicht zum Programmtext. Über `tpw` stand sie in
-    // einer anderen Sprache als dieselbe Rolle im Banner darüber.
-    const rolle = rolleMitHerkunft(slot) ?? ''
-    // **Auch der leere Platz nennt seine Rolle.** Vorher stand hier nur
-    // „— zuteilen": Beim Versammlungsbibelstudium bekam der Planer zwei
-    // gleich aussehende Knöpfe zu sehen und musste antippen, um zu erfahren,
-    // welcher der Leiter und welcher der Leser ist. Beim Schülerteil hängt
-    // daran mehr als Bequemlichkeit: Die Geschlechterregel gilt für den
-    // Partner-Platz, und welcher das ist, stand nirgends.
-    const text = slot.name || t.zuteilenChip
-    return rolle ? `${tu(rolle)}: ${text}` : text
   }
 
   const openPartSlot = (
@@ -239,7 +228,7 @@ export function MeetingSection({
       sel: {
         kind: 'part',
         wi: state.week,
-        tab: mtab(state.tab),
+        tab,
         si,
         ii,
         ni,
@@ -265,17 +254,23 @@ export function MeetingSection({
     setLacTitle('')
   }
 
+  // Die Lieder stehen rechts im Kopf, wie beim Ansehen: eigene Liedzeilen und
+  // das Lied aus dem Sammeltitel von Eröffnung und Abschluss — außer dort, wo
+  // es am Wochenende ein Nummernfeld ist (unten).
+  const lieder: string[] = []
+  for (const item of section.items) {
+    const lied = isSong(item) ? tpw(item.song) : splitSong ? splitOpeningSong(tpw(item.title)).song : null
+    if (lied) lieder.push(lied)
+  }
+
   return (
-    <div className="panel" data-farbe={section.farbe}>
-      <h2 className="panel-label">{tpw(section.label)}</h2>
+    <section className="prog-abschnitt" data-farbe={section.farbe}>
+      <div className="prog-abschnitt-kopf">
+        <h2 className="prog-abschnitt-name">{tpw(section.label)}</h2>
+        {lieder.length > 0 && <span className="prog-lied">{lieder.join(' · ')}</span>}
+      </div>
       {section.items.map((item, ii) => {
-        if (isSong(item)) {
-          return (
-            <div key={ii} className="panel-song">
-              {tpw(item.song)}
-            </div>
-          )
-        }
+        if (isSong(item)) return null
         // Die Sprachvariante ist strukturgleich zur kanonischen Woche
         // (`localizedWeek` prüft das); ohne kanonisches Gegenstück bleibt der
         // Punkt lesbar, aber nicht bearbeitbar.
@@ -298,11 +293,11 @@ export function MeetingSection({
         const { song, rest } = splitSong
           ? splitOpeningSong(tpw(item.title))
           : { song: null, rest: '' }
+        // Die Dauer neben dem Titel, wie beim Ansehen (`dauerAbtrennen`).
+        const { dauer, rest: zusatz } = dauerAbtrennen(item.meta ?? '', item.mins)
         return (
-          <Fragment key={ii}>
-            {song && <div className="panel-song">{song}</div>}
-            <div className="plan-item">
-            <div className="plan-item-head">
+          <div key={ii} className="prog-row">
+            <div className="prog-row-text">
               {coBegriff && !isTalk ? (
                 /*
                   Dienstvortrag und Schlussvortrag der Kreisaufseher-Woche
@@ -327,7 +322,7 @@ export function MeetingSection({
                     onBlur={(e) =>
                       dispatch({
                         type: 'setPartThema',
-                        tab: mtab(state.tab),
+                        tab,
                         si,
                         ii,
                         begriff: coBegriff,
@@ -358,89 +353,94 @@ export function MeetingSection({
                   }}
                 />
               ) : (
-                <div className="plan-item-title">{song ? rest : tpw(item.title)}</div>
+                <div className="prog-title">
+                  {item.num != null && <span className="prog-num">{item.num} </span>}
+                  {song ? rest : tpw(item.title)}
+                </div>
               )}
+              {zusatz && <div className="prog-item-meta">{tpw(zusatz)}</div>}
               {editable && (
-                <div className="lac-move">
-                  <button
-                    type="button"
-                    className="lac-move-btn"
-                    aria-label={t.a11yMoveUp}
-                    disabled={mPos <= 0}
-                    onClick={() => dispatch({ type: 'lacMove', si, ii, dir: -1 })}
-                  >
-                    ▲
-                  </button>
-                  <button
-                    type="button"
-                    className="lac-move-btn"
-                    aria-label={t.a11yMoveDown}
-                    disabled={mPos >= movables.length - 1}
-                    onClick={() => dispatch({ type: 'lacMove', si, ii, dir: 1 })}
-                  >
-                    ▼
-                  </button>
+                <div className="lac-edit">
+                  {/*
+                    Die Einheit kommt aus dem Programm-Übersetzer, nicht aus der
+                    Oberfläche: Sie steht neben einer Zahl des Programms und folgt
+                    deshalb der Versammlungssprache („min.", „دقيقة", „分"). Geholt
+                    wird sie, indem eine Null übersetzt und wieder abgezogen wird —
+                    die Wörterbücher kennen nur die ganze Angabe „N Min.".
+                  */}
+                  <MinutenFeld
+                    mins={rawMins}
+                    einheit={tpw('0 Min.').replace(/^0/, '')}
+                    label={t.a11yMinuten}
+                    onSetzen={(wert) => dispatch({ type: 'lacMinuten', si, ii, mins: wert })}
+                  />
+                  <div className="lac-move">
+                    <button
+                      type="button"
+                      className="lac-move-btn"
+                      aria-label={t.a11yMoveUp}
+                      disabled={mPos <= 0}
+                      onClick={() => dispatch({ type: 'lacMove', si, ii, dir: -1 })}
+                    >
+                      ▲
+                    </button>
+                    <button
+                      type="button"
+                      className="lac-move-btn"
+                      aria-label={t.a11yMoveDown}
+                      disabled={mPos >= movables.length - 1}
+                      onClick={() => dispatch({ type: 'lacMove', si, ii, dir: 1 })}
+                    >
+                      ▼
+                    </button>
+                  </div>
+                  <span className="lac-spacer" />
+                  <EntfernenKnopf className="lac-remove" onEntfernen={() => dispatch({ type: 'lacRemove', si, ii })} />
                 </div>
               )}
+              {canPartner && <PartnerKnopf si={si} ii={ii} hasPartner={hasPartner} />}
             </div>
-            {item.meta && <div className="plan-item-meta">{tpw(item.meta)}</div>}
-            {/*
-              Zwei Reihen, sobald eine Zusätzliche Klasse eingerichtet ist:
-              derselbe Programmpunkt wird dort parallel durchgeführt. Ohne
-              Klasse bleibt es die schlichte, unbeschriftete Reihe von vorher.
-            */}
-            {auxRows(item).map(({ aux, slots }, _, reihen) => (
-              <Fragment key={aux ? 'aux' : 'haupt'}>
-                {/* Raum nur benennen, wo es tatsächlich zwei Reihen gibt —
-                    sonst stünde „Hauptsaal" auch über Gebet und Vorsitz. */}
-                {reihen.length > 1 && (
-                  <div className="plan-raum">{aux ? t.auxKlasse : t.auxHauptsaal}</div>
-                )}
-                <div className="plan-slots">
-                  {/* Kein Ampel-Punkt, wo es nichts zu bestätigen gibt: Wer in
-                      `SKIP_ROLE` steht (Gastredner, Kreisaufseher), hat weder
-                      Aufgabe noch Erinnerung noch die App, und eine
-                      ausgefallene Zusammenkunft hat gar keine Aufgaben (T30).
-                      Ein Punkt behauptete dort eine Zusage oder ein Warten,
-                      das es nie gibt. Dieselbe Regel führt `HelpersPanel` seit
-                      jeher für die Gruppen-Rotation („keine Person") und
-                      `FsPlan` seit T63 für den Freitext-Leiter. */}
-                  {slots.map((slot, ni) => (
-                    <SlotChip
-                      key={ni}
-                      text={partChipText(slot)}
-                      open={!slot.name}
-                      showStatus={Boolean(slot.name) && !isGuestRole(slot.rolle) && zusage.moeglich(mtab(state.tab))}
-                      status={zusage.teil(mtab(state.tab), keyItem, ni, aux)}
-                      konflikt={betrifft(slot)}
-                      onClick={() => openPartSlot(ii, ni, item, slot, aux)}
-                    />
-                  ))}
-                </div>
-              </Fragment>
-            ))}
-            {canPartner && <PartnerKnopf si={si} ii={ii} hasPartner={hasPartner} />}
-            {editable && (
-              <div className="lac-edit">
-                {/*
-                  Die Einheit kommt aus dem Programm-Übersetzer, nicht aus der
-                  Oberfläche: Sie steht neben einer Zahl des Programms und folgt
-                  deshalb der Versammlungssprache („min.", „دقيقة", „分"). Geholt
-                  wird sie, indem eine Null übersetzt und wieder abgezogen wird —
-                  die Wörterbücher kennen nur die ganze Angabe „N Min.".
-                */}
-                <MinutenFeld
-                  mins={rawMins}
-                  einheit={tpw('0 Min.').replace(/^0/, '')}
-                  label={t.a11yMinuten}
-                  onSetzen={(wert) => dispatch({ type: 'lacMinuten', si, ii, mins: wert })}
-                />
-                <span className="lac-spacer" />
-                <EntfernenKnopf className="lac-remove" onEntfernen={() => dispatch({ type: 'lacRemove', si, ii })} />
-              </div>
-            )}
+            {dauer && <span className="prog-dauer">{tpw(dauer)}</span>}
+            <div className="prog-names">
+              {/*
+                Zwei Reihen, sobald eine Zusätzliche Klasse eingerichtet ist:
+                derselbe Programmpunkt wird dort parallel durchgeführt. Ohne
+                Klasse bleibt es die schlichte, unbeschriftete Reihe von vorher.
+              */}
+              {auxRows(item).map(({ aux, slots }, _, reihen) => (
+                <Fragment key={aux ? 'aux' : 'haupt'}>
+                  {/* Raum nur benennen, wo es tatsächlich zwei Reihen gibt —
+                      sonst stünde „Hauptsaal" auch über Gebet und Vorsitz. */}
+                  {reihen.length > 1 && <div className="prog-raum">{aux ? t.auxKlasse : t.auxHauptsaal}</div>}
+                  {slots.map((slot, ni) => {
+                    // Keine Zusage, wo es nichts zu bestätigen gibt: Wer in
+                    // `SKIP_ROLE` steht (Gastredner, Kreisaufseher), hat weder
+                    // Aufgabe noch Erinnerung noch die App, und eine
+                    // ausgefallene Zusammenkunft hat gar keine Aufgaben (T30).
+                    const stand =
+                      slot.name && !isGuestRole(slot.rolle) && zusage.moeglich(tab)
+                        ? zusage.teil(tab, keyItem, ni, aux)
+                        : null
+                    // **Auch der leere Platz nennt seine Rolle**: Beim
+                    // Versammlungsbibelstudium sind Leiter und Leser sonst zwei
+                    // gleiche Zeilen, und beim Schülerteil gilt die
+                    // Geschlechterregel für den Partner-Platz. Die Rolle in der
+                    // Sprache des Lesers — sie gehört zur Bedienung.
+                    const rolle = rolleMitHerkunft(slot)
+                    return (
+                      <PlatzZeile
+                        key={ni}
+                        name={slot.name}
+                        rolle={rolle ? tu(rolle) : undefined}
+                        {...platzAnzeige(slot, stand, konflikte.von(slot), t)}
+                        onClick={() => openPartSlot(ii, ni, item, slot, aux)}
+                      />
+                    )
+                  })}
+                </Fragment>
+              ))}
             </div>
-          </Fragment>
+          </div>
         )
       })}
       {isLac && darfUmbauen && (
@@ -496,6 +496,6 @@ export function MeetingSection({
           />
         </div>
       )}
-    </div>
+    </section>
   )
 }

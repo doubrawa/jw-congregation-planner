@@ -16,12 +16,15 @@
  * (`zusageStatus`), die Plätze aus demselben Durchlauf (`allePlaetze`).
  */
 
-import { platzKey, allePlaetze } from './plaetze'
+import { platzKey, allePlaetze, platzMitZusage } from './plaetze'
 import { zusageStatus } from './planning'
-import type { ConfirmationMap, Meeting, MeetingKey, Service, TaskStatus } from './types'
+import type { ConfirmationMap, Meeting, MeetingKey, Service, SlotAssignment, TaskStatus } from './types'
 
 /** Lage eines Platzes im Bild. */
 export type SaalLage = 'voll' | 'wartet' | 'problem' | 'offen' | 'du'
+
+/** Lage eines einzelnen Platzes — im Saal wie beim Planen an der Zeile (`GPlanen`). */
+export type PlatzLage = Exclude<SaalLage, 'du'>
 
 /** Wie viele Plätze der Saal zeigt — die Plätze des Logos 4-6-8. */
 export const SAAL_PLAETZE = 18
@@ -49,8 +52,22 @@ const LAGE_DER_ZUSAGE: Record<TaskStatus, 'voll' | 'wartet' | 'problem'> = {
 }
 
 /**
+ * **Die Lage eines Platzes** — die eine Regel für den Saal und die Zeilen
+ * beim Planen: Unbesetzt ist er offen; steht die Person in einem Konflikt
+ * (abwesend, doppelt eingeteilt), ist er ein Problem; hat er nichts zu
+ * bestätigen (`zusage` ist `null` — Gastredner, Gruppe, ausgefallene
+ * Zusammenkunft), ist er besetzt und damit voll; sonst sagt es die Zusage.
+ */
+export function lageVon(slot: SlotAssignment | undefined, zusage: TaskStatus | null, imKonflikt: boolean): PlatzLage {
+  if (!slot?.name) return 'offen'
+  if (imKonflikt) return 'problem'
+  return zusage === null ? 'voll' : LAGE_DER_ZUSAGE[zusage]
+}
+
+/**
  * Die Besetzung einer Zusammenkunft: jeder Platz einmal, der des Lesers
- * (`meinKey`) gesondert.
+ * (`meinKey`) gesondert. Beim Planen fragt sie dazu, wer in einem Konflikt
+ * steht (`imKonflikt`) — sein Platz ist ein Problem.
  */
 export function besetzung(
   meeting: Meeting,
@@ -59,21 +76,41 @@ export function besetzung(
   woche: string,
   tab: MeetingKey,
   meinKey: string | null,
+  imKonflikt: (slot: SlotAssignment) => boolean = () => false,
 ): Besetzung {
   const b: Besetzung = { voll: 0, wartet: 0, problem: 0, offen: 0, du: false }
   for (const platz of allePlaetze(meeting, services)) {
-    if (!platz.slot?.name) {
-      b.offen++
-      continue
-    }
-    const key = platzKey(platz, woche, tab)
-    if (key === meinKey) {
+    const slot = platz.slot
+    const key = slot?.name ? platzKey(platz, woche, tab) : null
+    if (key !== null && key === meinKey) {
       b.du = true
       continue
     }
-    b[LAGE_DER_ZUSAGE[zusageStatus(confirmations, key)]]++
+    const zusage = key !== null && platzMitZusage(platz) ? zusageStatus(confirmations, key) : null
+    b[lageVon(slot, zusage, Boolean(slot && imKonflikt(slot)))]++
   }
   return b
+}
+
+/**
+ * **Wie weit die Zusagen sind**: bestätigt von allen Plätzen, die etwas zu
+ * bestätigen haben (`platzMitZusage`) — die Spur beim Planen.
+ */
+export function zusagenStand(
+  meeting: Meeting,
+  services: readonly Service[],
+  confirmations: ConfirmationMap,
+  woche: string,
+  tab: MeetingKey,
+): { bestaetigt: number; gesamt: number } {
+  let bestaetigt = 0
+  let gesamt = 0
+  for (const platz of allePlaetze(meeting, services)) {
+    if (!platzMitZusage(platz)) continue
+    gesamt++
+    if (zusageStatus(confirmations, platzKey(platz, woche, tab)) === 'bestätigt') bestaetigt++
+  }
+  return { bestaetigt, gesamt }
 }
 
 /** Besetzte Plätze (mit dem eigenen) und alle Plätze — für die Beschriftung. */

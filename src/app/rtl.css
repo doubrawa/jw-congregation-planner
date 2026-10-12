@@ -20,7 +20,6 @@
 }
 
 .panel-label,
-.panel-song,
 .woche-zeitraum,
 .woche-buch,
 .prog-meta,
@@ -33,9 +32,10 @@
 .prog-name,
 .prog-role,
 .prog-footer > span,
-.plan-week-range,
 .plan-item-title,
-.plan-item-meta,
+.platz-name,
+.platz-rolle,
+.klaeren-zeile,
 .plan-conflict-row,
 .cand-name,
 .cand-sub,

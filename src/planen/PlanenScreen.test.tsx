@@ -11,6 +11,7 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { syncAuxSlots } from '../data/aux-class'
 import { emptyQualifications } from '../data/helpers'
+import { helferKey } from '../data/planning'
 import { dict } from '../i18n/ui'
 import type { Group, PartItem, Person, Section, Service, Week } from '../data/types'
 import { PlanenScreen } from './PlanenScreen'
@@ -110,34 +111,46 @@ const seite = (c: HTMLElement): HTMLElement => (c.querySelector('.week-strip > .
 const beschriftung = (b: Element): string =>
   (b.querySelector('.meeting-tab-name') ?? b).textContent || (b.getAttribute('aria-label') ?? '')
 const reiter = (c: HTMLElement) =>
-  [...seite(c).querySelectorAll('.plan-tabs .meeting-tab, .bereich-tab')].map(beschriftung)
+  [...seite(c).querySelectorAll('.meeting-tabs .meeting-tab, .bereich-tab')].map(beschriftung)
+/** Die Karte eines Abschnitts, an ihrem Namen gefunden. */
+const abschnitt = (c: HTMLElement, name: string): HTMLElement | undefined =>
+  [...seite(c).querySelectorAll<HTMLElement>('.prog-abschnitt')].find(
+    (a) => a.querySelector('.prog-abschnitt-name')?.textContent === name,
+  )
 
 afterEach(cleanup)
 
-describe('Der Kopf', () => {
+describe('Der Stand der Woche (T121)', () => {
+  /** Der Wert unter einem Schritt der Spur, am Namen des Schritts gefunden. */
+  const spurWert = (c: HTMLElement, name: string) =>
+    [...seite(c).querySelectorAll('.spur-schritt')]
+      .find((s) => s.querySelector('.spur-name')?.textContent === name)
+      ?.querySelector('.spur-wert')?.textContent
+
   it('zählt die offenen Zuteilungen der gewählten Zusammenkunft', () => {
     // 2 Programmplätze + 2 Mikrofone
     const { container } = zeige()
-    expect(seite(container).querySelector('.screen-head-note')?.textContent).toBe(
-      'Offene Zuteilungen: 4',
-    )
+    expect(spurWert(container, t.spurZuteilen)).toBe('0/4')
+    const offen = seite(container).querySelector('.klaeren-zeile[data-art="offen"]')!
+    expect(offen.textContent).toContain('Offene Zuteilungen: 4')
   })
 
-  it('eine ausgefallene Zusammenkunft hat nichts offen (T30)', () => {
+  it('eine ausgefallene Zusammenkunft hat nichts zu besetzen (T30)', () => {
+    // Eine Zahl führte den Planer an einen Plan, den es nicht gibt.
     const { container } = zeige({ weeks: [woche({ dev: { mid: { cancelled: true } } })] })
-    expect(seite(container).querySelector('.screen-head-note')?.textContent).toBe(
-      'Offene Zuteilungen: 0',
-    )
+    expect(seite(container).querySelector('.spur')).toBeNull()
+    expect(seite(container).querySelector('.besetzung')).toBeNull()
   })
 
-  it('auf dem Treffpunkt-Reiter steht die Zahl nicht — sie meint die Zusammenkunft', () => {
+  it('auf dem Treffpunkt-Reiter steht er nicht — er meint die Zusammenkunft', () => {
     const { container } = zeige({ tab: 'fs' })
-    expect(seite(container).querySelector('.screen-head-note')).toBeNull()
+    expect(seite(container).querySelector('.spur')).toBeNull()
+    expect(seite(container).querySelector('.besetzung')).toBeNull()
   })
 
   it('die Wochennavigation blättert', () => {
     const { container, dispatch } = zeige({ weeks: [woche(), woche()], week: 0 })
-    const pfeile = [...seite(container).querySelectorAll('.plan-week-nav .week-arrow')]
+    const pfeile = [...seite(container).querySelectorAll('.wochenwahl .week-arrow')]
     fireEvent.click(pfeile[1]!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'nextWeek' })
   })
@@ -158,13 +171,20 @@ describe('Die Reiter', () => {
 
   it('ein Reiterwechsel schlägt durch', () => {
     const { container, dispatch } = zeige()
-    fireEvent.click([...seite(container).querySelectorAll('.plan-tabs .meeting-tab')][2]!)
+    fireEvent.click([...seite(container).querySelectorAll('.meeting-tabs .meeting-tab')][2]!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'setTab', tab: 'edit' })
   })
 
   it('eine verlegte Zusammenkunft trägt ihren echten Tag im Reiter (T30)', () => {
     const { container } = zeige({ weeks: [woche({ dev: { mid: { wd: 4 } } })] })
     expect(reiter(container)[0]).toBe('Donnerstag')
+  })
+
+  it('eine ausgefallene steht im Reiter durchgestrichen da — schon bevor man ihn wählt (T30)', () => {
+    // Bis T121 sagte das ein Chip unter der Wochen-Navigation.
+    const { container } = zeige({ weeks: [woche({ dev: { we: { cancelled: true } } })] })
+    const tage = [...seite(container).querySelectorAll('.meeting-tabs .meeting-tab-name')]
+    expect(tage.map((n) => n.querySelector('s') !== null)).toEqual([false, true])
   })
 })
 
@@ -208,7 +228,7 @@ describe('Der Grundplan im Predigtdienst (T120)', () => {
   it('steht ohne Woche da — er gilt für alle Wochen', () => {
     const { container } = zeige({ tab: 'fs', fsBereich: 'grundplan' })
     expect(container.querySelector('.week-strip')).toBeNull()
-    expect(container.querySelector('.plan-week-nav')).toBeNull()
+    expect(container.querySelector('.wochenwahl')).toBeNull()
     const karten = [...container.querySelectorAll('.panel-label')].map((x) => x.textContent)
     expect(karten).toEqual([`${t.fsShort} · ${t.versammlungCard}`, `${t.fsShort} · Gruppe 1`])
   })
@@ -233,7 +253,7 @@ describe('Der Grundplan im Predigtdienst (T120)', () => {
 
   it('bei den Zusammenkünften gilt der Bereich nicht — ihr Reiter zeigt die Woche', () => {
     const { container } = zeige({ tab: 'mid', fsBereich: 'grundplan' })
-    expect(seite(container).querySelector('.plan-item')).toBeTruthy()
+    expect(seite(container).querySelector('.prog-row')).toBeTruthy()
   })
 })
 
@@ -284,7 +304,8 @@ describe('Der Gruppenaufseher sieht nur seine Treffpunkte', () => {
   it('und ohne die Zusammenkunft selbst', () => {
     const { container } = alsAufseher()
     expect(seite(container).querySelector('.plan-auto')).toBeTruthy() // die der Treffpunkte
-    expect(seite(container).querySelector('.plan-item')).toBeNull() // keine Programmplätze
+    expect(seite(container).querySelector('.prog-row')).toBeNull() // keine Programmpunkte
+    expect(seite(container).querySelector('.besetzung')).toBeNull()
   })
 
   it('der Treffpunkt-Plan bekommt seine Gruppe mit', () => {
@@ -305,12 +326,13 @@ describe('Die Bearbeiten-Ansicht (T64)', () => {
     const { container } = zeige({ tab: 'edit' })
     expect(seite(container).querySelector('.woche-anlass')).toBeTruthy()
     expect(seite(container).querySelectorAll('.sonder')).toHaveLength(2)
-    expect(seite(container).querySelector('.plan-item')).toBeNull()
+    expect(seite(container).querySelector('.prog-row')).toBeNull()
+    expect(seite(container).querySelector('.besetzung')).toBeNull()
   })
 
   it('der Planer kommt über den Reiter hin', () => {
     const { container, dispatch } = zeige()
-    const stift = [...seite(container).querySelectorAll('.plan-tabs .meeting-tab')].find(
+    const stift = [...seite(container).querySelectorAll('.meeting-tabs .meeting-tab')].find(
       (b) => b.getAttribute('aria-label') === t.einstellungen,
     )!
     fireEvent.click(stift)
@@ -328,16 +350,16 @@ describe('Der Treffpunkt-Reiter', () => {
 
   it('und keine Programmabschnitte', () => {
     const { container } = zeige({ tab: 'fs' })
-    expect(seite(container).querySelector('.plan-slots')).toBeNull()
+    expect(seite(container).querySelector('.prog-abschnitt')).toBeNull()
+    expect(seite(container).querySelector('.platz')).toBeNull()
   })
 })
 
 describe('Das Programm der Zusammenkunft', () => {
-  it('jeder Abschnitt wird zu einem Panel', () => {
+  it('jeder Abschnitt wird zu einer Karte — wie beim Ansehen', () => {
     const { container } = zeige()
-    const labels = [...seite(container).querySelectorAll('.panel-label')].map((x) => x.textContent)
-    expect(labels).toContain('SCHÄTZE AUS GOTTES WORT')
-    expect(labels).toContain('UNS IM DIENST VERBESSERN')
+    const namen = [...seite(container).querySelectorAll('.prog-abschnitt-name')].map((x) => x.textContent)
+    expect(namen).toEqual(['SCHÄTZE AUS GOTTES WORT', 'UNS IM DIENST VERBESSERN', t.hilfsdienste])
   })
 
   it('eine Sprachvariante mit weniger Abschnitten reißt die Ansicht nicht mit', () => {
@@ -352,11 +374,22 @@ describe('Das Programm der Zusammenkunft', () => {
       .not.toThrow()
   })
 
+  it('sagt jemand einen Hilfsdienst ab, steht dort „Ersatz gesucht" — die App sucht selbst', () => {
+    // Beim Programmpunkt steht die Absage (MeetingSection.test.tsx); beim
+    // Hilfsdienst, was nach ihr geschieht (`declineTask`).
+    const w = woche()
+    w.mid.helpers = { mik: [{ name: 'Olaf Overseer', pid: AUFSEHER.id }] }
+    const { container } = zeige({ weeks: [w], confirmations: { [helferKey(w.start, 'mid', 'mik', 0)]: 'verhindert' } })
+    const platz = abschnitt(container, t.hilfsdienste)!.querySelector('.platz')!
+    expect(platz.className).toContain('is-problem')
+    expect(platz.querySelector('.platz-hinweis')?.textContent).toBe(t.spurErsatzGesucht)
+  })
+
   it('der Hilfsdienst-Block steht darunter und öffnet seinen Platz', () => {
     const { container, dispatch } = zeige()
-    const chips = [...seite(container).querySelectorAll('.plan-helper-row .slot-chip')]
-    expect(chips).toHaveLength(2) // zwei Mikrofon-Plätze
-    fireEvent.click(chips[1]!)
+    const plaetze = [...abschnitt(container, t.hilfsdienste)!.querySelectorAll('.platz')]
+    expect(plaetze).toHaveLength(2) // zwei Mikrofon-Plätze
+    fireEvent.click(plaetze[1]!)
     expect(dispatch).toHaveBeenCalledWith({
       type: 'openSlot',
       sel: expect.objectContaining({ kind: 'helper', svc: 'mik', pos: 1, wi: 0, tab: 'mid' }),
@@ -389,12 +422,17 @@ describe('Ohne geladene Woche', () => {
 })
 
 describe('Der Besucher bleibt sichtbar (T120)', () => {
+  // Mit fester Uhr und einem Besuch einen Monat voraus: Hier stand das Jahr
+  // 2099, und die Wochenwahl des Besuchs zählte jede Woche bis dorthin auf —
+  // gut 3800 Einträge, eine Sekunde je Lauf und unter Last über der Frist.
+  amMontagDerTestwoche()
+
   it('auch wenn er inzwischen keine Treffpunkte mehr leiten darf', () => {
     // Ohne ihn in der Auswahl zeigte das Feld „Besucher wählen" — als gäbe es keinen.
     const { container } = zeige({
       tab: 'fs',
       fsBereich: 'gruppenbesuche',
-      gruppenbesuche: [{ id: 'b1', woche: '2099-01-05', grp: 'g1', pid: AUFSEHER.id }],
+      gruppenbesuche: [{ id: 'b1', woche: '2026-10-05', grp: 'g1', pid: AUFSEHER.id }],
     })
     const feld = container.querySelector<HTMLSelectElement>('.gb-besucher-zeile select')!
     expect(feld.value).toBe(AUFSEHER.id)
@@ -449,7 +487,7 @@ describe('Der Planer teilt zu, ändert den Plan aber nicht (4.10.2026)', () => {
     cleanup()
     const { container } = zeige({ ...ALS_PLANER, tab: 'edit' })
     expect(seite(container).querySelector('.woche-anlass')).toBeNull()
-    expect(seite(container).querySelector('.plan-tabs')).not.toBeNull()
+    expect(seite(container).querySelector('.meeting-tabs')).not.toBeNull()
   })
 
   it('keine eigenen Punkte, keine Reihenfolge, keine Minuten — der Admin sieht sie', () => {

@@ -391,23 +391,6 @@
 /* ---- Ab dem Tablet (`GTabletWoche`) ----------------------------------------------- */
 
 @media (min-width: 768px) {
-  /* Die Woche links gebündelt, „Drucken" rechts daneben. */
-  .prog-wochenwahl {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .prog-wochenwahl .week-nav {
-    grid-template-columns: 44px minmax(190px, auto) 44px;
-  }
-
-  .prog-wochenwahl .week-center {
-    align-items: flex-start;
-    text-align: start;
-  }
-
   /* Drei Spalten — Punkt, Dauer, Personen —, in jeder Zeile gleich breit,
      damit die Dauern untereinander stehen. */
   .prog-row {

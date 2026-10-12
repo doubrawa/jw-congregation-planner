@@ -990,14 +990,14 @@ describe('Ab dem Tablet', () => {
   it('„Drucken" steht mit Wort neben der Wochenwahl, nicht neben dem Termin', () => {
     const { container } = zeige()
     const s = seite(container)
-    expect(s.querySelector('.prog-wochenwahl .druck-knopf--text')?.textContent).toBe(t.drucken)
+    expect(s.querySelector('.wochenwahl .druck-knopf--text')?.textContent).toBe(t.drucken)
     expect(s.querySelector('.prog-meta-row .druck-knopf')).toBeNull()
     expect(s.querySelector('.prog-meta')?.textContent).toContain('8. September')
   })
 
   it('ebenso über den Treffpunkten', () => {
     const { container } = zeige({ tab: 'fs' })
-    expect(seite(container).querySelector('.prog-wochenwahl .druck-knopf--text')).not.toBeNull()
+    expect(seite(container).querySelector('.wochenwahl .druck-knopf--text')).not.toBeNull()
     expect(seite(container).querySelector('.druck-zeile')).toBeNull()
   })
 
@@ -1091,7 +1091,7 @@ describe('Am Desktop', () => {
 
   it('„Drucken" steht mit Wort neben der Wochenwahl, und das Blatt nennt die Zusammenkünfte', () => {
     const { container } = zeige()
-    expect(seite(container).querySelector('.prog-wochenwahl .druck-knopf--text')).not.toBeNull()
+    expect(seite(container).querySelector('.wochenwahl .druck-knopf--text')).not.toBeNull()
     expect(seite(container).querySelector('.prog-print-head')?.textContent).toContain(t.navZusammenkuenfte)
   })
 

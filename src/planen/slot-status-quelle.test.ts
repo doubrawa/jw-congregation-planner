@@ -4,9 +4,10 @@ import { describe, expect, it } from 'vitest'
  * Kein Ampel-Punkt, wo es nichts zu bestätigen gibt.
  *
  * `SlotChip` hängt an einen belegten Platz den Ampel-Punkt seiner Zusage
- * (grün bestätigt, gelb wartet, rot abgesagt). Das setzt voraus, dass überhaupt
- * jemand bestätigen **kann** — eine Person der Versammlung mit Konto, für einen
- * Termin, der stattfindet. Genau das trifft auf vier Fälle nicht zu:
+ * (grün bestätigt, gelb wartet, rot abgesagt); `PlatzZeile` (T121) zeigt die
+ * Lage des Platzes — blass „wartet", rot abgesagt. Das setzt voraus, dass
+ * überhaupt jemand bestätigen **kann** — eine Person der Versammlung mit Konto,
+ * für einen Termin, der stattfindet. Genau das trifft auf vier Fälle nicht zu:
  *
  * | Fall | Warum kein Flow |
  * | --- | --- |
@@ -29,10 +30,15 @@ import { describe, expect, it } from 'vitest'
  * Ein Verhaltenstest hilft hier wenig: Die Bedienoberflächen sind kaum
  * abgedeckt (MeetingSection 0 %, FsPlan 1,5 %), und ein neuer Aufrufer wäre
  * genau der, an den niemand denkt. Deshalb eine Probe am **Quelltext**, nach
- * dem Vorbild von `aufgaben-label-quelle.test.ts`: Jede `showStatus`-Angabe
- * steht hier namentlich, mitsamt Begründung. Wer eine ändert oder einen
- * `SlotChip` hinzufügt, wird rot und muss sich entscheiden — das ist der
- * ganze Zweck.
+ * dem Vorbild von `aufgaben-label-quelle.test.ts`: Jede Angabe steht hier
+ * namentlich, mitsamt Begründung. Wer eine ändert oder einen `SlotChip` oder
+ * eine `PlatzZeile` hinzufügt, wird rot und muss sich entscheiden — das ist
+ * der ganze Zweck.
+ *
+ * Die Angabe hat zwei Formen: am `SlotChip` das `showStatus={…}`, an der
+ * `PlatzZeile` die Bedingung, unter der es einen Stand der Zusage gibt
+ * (`const stand = … ? … : null`). Ohne Stand ist ein besetzter Platz voll —
+ * mit einem stünde der Gastredner für immer auf „wartet".
  */
 
 /** Quelltext aller Dateien unter `src/` — über Vite, ohne Node-Abhängigkeit. */
@@ -52,7 +58,7 @@ const QUELLEN = new Map(
 )
 
 /**
- * Erwartete `showStatus`-Angabe je Aufrufer — Leerraum normiert.
+ * Erwartete Angabe je Aufrufer — Leerraum normiert.
  *
  * Der Ratgeber der Zusätzlichen Klasse ist immer ein Bruder der eigenen
  * Versammlung: Freitext und Gruppe gibt es dort nicht, nur den Ausfall.
@@ -61,11 +67,10 @@ const QUELLEN = new Map(
  * fragt ihn ebenso wenig.
  */
 const ERWARTET: Record<string, string> = {
-  'planen/AuxCounselorPanel.tsx': "Boolean(slot.name) && zusage.moeglich('mid')",
+  'planen/AuxCounselorPanel.tsx': "slot.name && zusage.moeglich('mid')",
   'planen/FsPlan.tsx': 'Boolean(inst.leader) && !inst.lext',
-  'planen/HelpersPanel.tsx': 'Boolean(name) && !isGroup && zusage.moeglich(mtab(state.tab))',
-  'planen/MeetingSection.tsx':
-    'Boolean(slot.name) && !isGuestRole(slot.rolle) && zusage.moeglich(mtab(state.tab))',
+  'planen/HelpersPanel.tsx': 'name && !gruppe && zusage.moeglich(tab)',
+  'planen/MeetingSection.tsx': 'slot.name && !isGuestRole(slot.rolle) && zusage.moeglich(tab)',
 }
 
 /**
@@ -95,14 +100,29 @@ function showStatusVon(text: string): string[] {
   return out
 }
 
+/**
+ * Die Bedingung jedes `const stand = … ? … : null` — bis zum ersten
+ * freistehenden `?`. Ein `?.` gehört nicht dazu: Es steht ohne Leerraum davor.
+ */
+function standVon(text: string): string[] {
+  const out: string[] = []
+  const marke = 'const stand ='
+  for (let i = text.indexOf(marke); i >= 0; i = text.indexOf(marke, i + 1)) {
+    const rest = text.slice(i + marke.length).replace(/\s+/g, ' ')
+    const ende = rest.indexOf(' ? ')
+    out.push(ende < 0 ? rest.trim() : rest.slice(0, ende).trim())
+  }
+  return out
+}
+
 describe('Bestätigungs-Zeichen nur, wo jemand bestätigen kann', () => {
   const aufrufer = [...QUELLEN]
     .filter(([pfad]) => !/\.test\.tsx$/.test(pfad))
-    .filter(([, text]) => /<SlotChip\b/.test(text))
+    .filter(([, text]) => /<(SlotChip|PlatzZeile)\b/.test(text))
     .map(([pfad]) => pfad)
     .sort()
 
-  it('die Aufrufer von SlotChip sind genau die bekannten vier', () => {
+  it('die Aufrufer von SlotChip und PlatzZeile sind genau die bekannten vier', () => {
     // Kommt ein fünfter hinzu, fällt er hier auf — und muss unten begründet
     // werden, statt die Marke stillschweigend mitzunehmen.
     expect(aufrufer).toEqual(Object.keys(ERWARTET).sort())
@@ -110,8 +130,9 @@ describe('Bestätigungs-Zeichen nur, wo jemand bestätigen kann', () => {
 
   it('jeder nimmt aus, was keinen Flow hat', () => {
     for (const pfad of aufrufer) {
-      const angaben = showStatusVon(QUELLEN.get(pfad) ?? '')
-      expect(angaben, `${pfad}: genau eine showStatus-Angabe erwartet`).toHaveLength(1)
+      const text = QUELLEN.get(pfad) ?? ''
+      const angaben = [...showStatusVon(text), ...standVon(text)]
+      expect(angaben, `${pfad}: genau eine Angabe erwartet`).toHaveLength(1)
       expect(angaben[0], pfad).toBe(ERWARTET[pfad])
     }
   })

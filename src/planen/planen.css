@@ -1,23 +1,146 @@
-/* Planen (Screen 3, nur Planer) — Slot-Chips + Zuteilungs-Sheet. */
+/* Planen (Screen 3, nur Planer) — die Woche, ihre Plätze, das Zuteilungs-Sheet. */
 
-.plan-week-nav {
-  margin-top: 14px;
-}
-
-.plan-week-range {
-  font-family: var(--font-serif);
-  font-size: calc(19px * var(--fs));
-  font-weight: 500;
-}
-
-.plan-tabs {
-  margin-top: 8px;
-}
-
+/* Hinweis über einem Plan (Treffpunkte, Besuche, Zeugnisgeben). */
 .plan-hint {
   margin-top: 12px;
   font-size: calc(11.5px * var(--fs));
   color: var(--mut);
+}
+
+/* ---- Die Woche planen (T121, Entwurf `GPlanen`) ---------------------------- */
+
+/* Ein Platz: Punkt nach seiner Lage, Name, Rolle, rechts was nicht stimmt.
+   Die ganze Zeile ist der Knopf zum Zuteilen. */
+.platz {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  text-align: start;
+}
+
+/* Der Punkt — an der Zeile, in der Legende und in „Zu klären" derselbe. */
+.platz-punkt {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--text);
+  border-radius: 50%;
+  background: var(--text);
+}
+
+.is-wartet > .platz-punkt {
+  border-color: transparent;
+  background: var(--wartet);
+}
+
+.is-problem > .platz-punkt {
+  border-color: var(--problem);
+  background: var(--problem);
+}
+
+.is-offen > .platz-punkt {
+  border: 1.5px dashed var(--ring);
+  background: transparent;
+}
+
+.platz-name {
+  min-width: 0;
+  font-weight: 500;
+  overflow-wrap: break-word;
+}
+
+/* Offen heißt „Zuteilen" — der Platz sagt, was zu tun ist. */
+.platz.is-offen .platz-name {
+  color: var(--akzent-text);
+  font-weight: 700;
+}
+
+.platz-rolle {
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
+}
+
+.platz-hinweis {
+  margin-inline-start: auto;
+  color: var(--problem);
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 600;
+}
+
+/* Hilfsdienste und Ratgeber: die Plätze untereinander, ohne Programmpunkt. */
+.plan-plaetze {
+  display: flex;
+  flex-direction: column;
+  padding-block-end: 4px;
+}
+
+/* Die Besetzung: der Saal, die Zahl, die Legende, darunter „Zu klären". */
+.besetzung {
+  padding: 12px 18px 6px;
+}
+
+.besetzung .saal {
+  align-self: center;
+  width: min(280px, 100%);
+}
+
+.besetzung-zahl {
+  padding-block-start: 6px;
+  font-size: calc(16.5px * var(--fs));
+  font-weight: 600;
+  text-align: center;
+}
+
+.besetzung-legende {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 10px;
+  margin: 0;
+  padding: 4px 0 10px;
+  list-style: none;
+  color: var(--text2);
+  font-size: calc(12.5px * var(--fs));
+}
+
+.besetzung-legende > li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.besetzung-legende .platz-punkt {
+  width: 10px;
+  height: 10px;
+}
+
+.klaeren {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.klaeren-zeile {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 12px;
+  min-height: 58px;
+  padding-block: 8px;
+  border-block-start: 1px solid var(--linie);
+  font-weight: 600;
+}
+
+/* Wo die offenen Plätze sind — unter der Zahl. */
+.klaeren-wo {
+  display: block;
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 400;
 }
 
 /* Auto-Zuteilen / Leeren — je eine Zeile für Aufgaben und Hilfsdienste:
@@ -217,37 +340,6 @@
   background: var(--wein);
 }
 
-/* „Nicht besetzbar": Rahmen wie das Offene-Zuteilungen-Banner darunter — es
-   erklärt einen Teil von dessen Zahl —, aber in der Warnfarbe der Konflikte,
-   denn hier ist nichts mehr zu tun. Es ist kein Rückstand, sondern eine
-   Grenze. */
-.plan-engpass {
-  background: var(--tAcc);
-  border-color: var(--wein);
-  box-shadow: 0 3px 12px -6px var(--wein);
-}
-
-.plan-engpass .plan-banner-badge,
-.plan-engpass .plan-banner-count {
-  background: var(--wein);
-}
-
-.plan-engpass .plan-banner-title {
-  color: var(--wein);
-}
-
-.plan-conflict-dot[data-kind='engpass'] {
-  background: var(--wein);
-}
-
-.plan-conflict-dot[data-kind='double'] {
-  background: var(--gld);
-}
-
-.plan-conflict-dot[data-kind='helperTask'] {
-  background: var(--acc);
-}
-
 /* Offene Zuteilung: Präfix (Zusammenkunft) in Akzentfarbe, Aufgabe dunkel. */
 .plan-open-row {
   display: flex;
@@ -262,23 +354,7 @@
   overflow-wrap: anywhere;
 }
 
-/* ---- Programmpunkte mit Slot-Chips -------------------------------------- */
-
-.plan-item {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--panel-hair);
-}
-
-.panel .plan-item:last-child {
-  border-bottom-color: transparent;
-}
-
-.plan-item-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 10px;
-}
+/* ---- Slot-Chips (Treffpunkte) und der Titel des Kreisaufseher-Punkts ------- */
 
 .plan-item-title {
   font-family: var(--font-serif);
@@ -291,38 +367,6 @@
      Schrumpfen, overflow-wrap den Umbruch im Wort, wo es nicht anders geht. */
   min-width: 0;
   overflow-wrap: anywhere;
-}
-
-.plan-item-meta {
-  font-size: calc(11px * var(--fs));
-  color: var(--mut);
-  margin-top: 2px;
-}
-
-.plan-slots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 9px;
-}
-
-/*
- * Raum-Beschriftung über einer Platzreihe (Hauptsaal / Zusätzliche Klasse).
- * Erscheint nur, wenn es wirklich zwei Reihen gibt — ohne Zusätzliche Klasse
- * bleibt der Programmpunkt so schlicht wie vorher.
- */
-.plan-raum {
-  margin-top: 9px;
-  font-size: calc(11px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--mut);
-}
-
-/* Direkt darunter folgt die Reihe — der eigene Abstand wäre doppelt. */
-.plan-raum + .plan-slots {
-  margin-top: 4px;
 }
 
 .slot-chip {
@@ -743,25 +787,11 @@
   background: var(--tAcc);
 }
 
-/* ---- Hilfsdienste ---------------------------------------------------------- */
-
-.plan-helper-row {
-  padding: 10px 0;
-  border-bottom: 1px solid var(--lineNeu);
-}
-
-.panel .plan-helper-row:last-child {
-  border-bottom-color: transparent;
-}
-
+/* Beschriftung einer Eingabezeile (Anfangs- und Schlusslied, Grundplan). */
 .plan-helper-label {
   font-size: calc(9.5px * var(--fs));
   letter-spacing: 0.14em;
   color: var(--mut);
-}
-
-.plan-helper-row .plan-slots {
-  margin-top: 7px;
 }
 
 .sheet-current {

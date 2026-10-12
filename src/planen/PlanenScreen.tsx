@@ -2,14 +2,13 @@ import { useApp } from '../app/context'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { Bereichstitel } from '../components/Bereichstitel'
 import { WeekStrip } from '../components/WeekStrip'
-import { WeekNav } from '../components/WeekNav'
-import { AusfallBanner, MemorialBanner, WeekChips } from '../components/WeekBadges'
+import { AusfallBanner, MemorialBanner } from '../components/WeekBadges'
+import { WochenWahl } from '../components/WochenWahl'
 import { hatAuxKlasse } from '../data/aux-class'
-import { istAusgefallen, mtab } from '../data/helpers'
-import { countOpenSlots } from '../data/planning'
+import { mtab } from '../data/helpers'
 import { geplantesThema, rechteVon } from '../data/rechte'
-import { fill, useProgWeek, useT } from '../i18n/useT'
-import { ConflictsBanner, EngpassBanner, FsConflictsBanner, OpenSlotsBanner } from './PlanBanners'
+import { useProgWeek, useT } from '../i18n/useT'
+import { FsConflictsBanner } from './PlanBanners'
 import { GruppeSendenPanel, PlanSendenPanel } from './PlanSendenPanel'
 import { AutoAssignPanel } from './AutoAssignPanel'
 import { S89Bogen } from './S89Bogen'
@@ -25,15 +24,18 @@ import { WochePanel } from './WochePanel'
 import { HelpersPanel } from './HelpersPanel'
 import { VortragsplanPanel } from './VortragsplanPanel'
 import { MeetingSection } from './MeetingSection'
-import { ZusageLegende } from './ZusageStatus'
+import { BesetzungKarte, PlanSpur } from './WochenStand'
+// Die Karten der Abschnitte und die Zeilen der Punkte teilt das Planen mit dem
+// Ansehen (T121).
+import '../programm/programm.css'
 import './planen.css'
 
 /**
- * Planen (Screen 3, nur Planer): alle Slots einer Woche als Chips —
- * Tippen öffnet das Zuteilungs-Sheet. Belegte Slots tragen den Ampel-Punkt
- * ihrer Zusage (grün bestätigt, gelb wartet, rot abgesagt). „Unser Leben als
- * Christ" ist editierbar. Der Screen orchestriert nur; Banner, Abschnitte und
- * Hilfsdienste sind eigene Bausteine.
+ * Planen (Screen 3, nur Planer): die Woche mit ihrem Stand, darunter jeder
+ * Platz als Zeile (T121, Entwurf `GPlanen`) — ein Tipp öffnet das Zuteilen.
+ * Jede Zeile zeigt die Lage ihres Platzes: zugesagt, wartet, ein Problem,
+ * offen. „Unser Leben als Christ" ist editierbar. Der Screen orchestriert nur;
+ * Stand, Abschnitte und Hilfsdienste sind eigene Bausteine.
  *
  * Seit T120 die Planen-Seite **beider Themen**: der Zusammenkünfte und des
  * Predigtdienstes. Welches gerade gezeigt wird, sagt der Reiter (`themaVon`).
@@ -126,36 +128,19 @@ function PlanenBody() {
   const tab = mtab(state.tab)
   const meeting = week[tab]
   const rawMeeting = rawWeek[tab]
-  // Entfällt die Zusammenkunft, sind ihre Plätze nicht offen — sie werden nicht
-  // gebraucht (T30).
-  const openCount = istAusgefallen(rawWeek, tab) ? 0 : countOpenSlots(rawMeeting, state.services)
 
   return (
-    <section className="screen">
-      <Bereichstitel
-        thema={thema}
-        zusatz={!isFs && <span className="screen-head-note">{fill(t.offeneZut, { n: openCount })}</span>}
-      />
+    <section className="screen prog">
+      <Bereichstitel thema={thema} />
 
       {/* Die Reiter des Predigtdienstes stehen über der Woche: Der Grundplan
           hat keine. */}
       {isFs && <FsBereichTabs />}
 
-      <WeekNav
-        className="plan-week-nav"
-        canPrev={state.week > 0}
-        canNext={state.week < state.weeks.length - 1}
-        onPrev={() => dispatch({ type: 'prevWeek' })}
-        onNext={() => dispatch({ type: 'nextWeek' })}
-      >
-        <div className="plan-week-range">{tpw(week.range)}</div>
-      </WeekNav>
-
-      <WeekChips week={week} />
+      <WochenWahl week={week} rawWeek={rawWeek} tpw={tpw} />
 
       {!isFs && (
         <MeetingTabs
-          className="plan-tabs"
           tab={state.tab}
           week={rawWeek}
           showEdit={rechte.admin}
@@ -181,22 +166,16 @@ function PlanenBody() {
           <MemorialBanner week={week} tab={state.tab} />
           <AusfallBanner week={rawWeek} tab={tab} />
 
-          <p className="plan-hint">{t.planHint}</p>
-
+          {/* Wie weit die Woche ist und was zu klären ist (T121, `GPlanen`) —
+              an der Stelle der früheren Banner und ihrer Legende. */}
+          <PlanSpur tab={tab} />
+          <BesetzungKarte tab={tab} tpw={tpw} />
 
           <AutoAssignPanel />
-          <ZusageLegende />
 
           {/* Schulungsaufgaben gibt es nur unter der Woche — der Bogen steht
               deshalb nur dort und zeigt sich gar nicht, wenn keine da sind. */}
           {tab === 'mid' && <S89Bogen />}
-
-          <ConflictsBanner tab={tab} />
-          {/* Über den offenen Zuteilungen: Das Banner erklärt einen Teil ihrer
-              Zahl — die Plätze, die offen bleiben MÜSSEN, weil zu wenige da
-              sind. Die Erklärung gehört vor die Aufzählung. */}
-          <EngpassBanner tab={tab} />
-          <OpenSlotsBanner tab={tab} tpw={tpw} />
 
           {/* Die Sprachvariante ist strukturgleich zur kanonischen Woche
               (`localizedWeek` prüft das) — fehlt der Abschnitt dort trotzdem,

@@ -1,45 +1,11 @@
 import { fill, useT } from '../i18n/useT'
 import { useApp } from '../app/context'
-import { abweichungsGrund, istAusgefallen, MEETING_TABS, weichtAb } from '../data/helpers'
-import { anlassArt } from '../data/anlass'
+import { abweichungsGrund, istAusgefallen } from '../data/helpers'
 import { versatzAbMontag } from '../data/meeting-dates'
 import { termineVon } from '../data/termine'
 import type { MeetingKey, MeetingTab, Week } from '../data/types'
 import { wochentagName } from '../planen/wochentage'
 import './components.css'
-
-/**
- * Chips unter der Wochen-Navigation beim Planen: Besuch des Kreisaufsehers,
- * Gedächtnismahl, Kongress, abweichende Zusammenkünfte. Beim Ansehen steht der
- * Anlass seit T121 unter der Woche selbst (`WochenZeile`).
- */
-export function WeekChips({ week }: { week: Week }) {
-  const { t } = useT()
-  const chips: Array<{ key: string; label: string; cls: string }> = []
-  // Gefragt wird über `anlassArt`, nicht über die Wirkungen (`co`/`mem`): der
-  // Kongress hat keine — er wirkt als Ausfall beider Zusammenkünfte (T64).
-  const art = anlassArt(week)
-  if (art === 'co') chips.push({ key: 'co', label: t.coWoche, cls: 'week-chip--co' })
-  if (art === 'mem') chips.push({ key: 'mem', label: t.memWoche, cls: 'week-chip--mem' })
-  if (art === 'kongress')
-    chips.push({ key: 'kongress', label: t.kongress, cls: 'week-chip--kongress' })
-  const abweichungen = abweichungsChips(week, t)
-  if (chips.length === 0 && abweichungen.length === 0) return null
-  return (
-    <div className="week-chips">
-      {chips.map((c) => (
-        <span key={c.key} className={`week-chip ${c.cls}`}>
-          {c.label}
-        </span>
-      ))}
-      {abweichungen.map((c) => (
-        <span key={`dev-${c.key}`} className="week-chip week-chip--dev">
-          {c.aus ? <s>{c.label}</s> : c.label}
-        </span>
-      ))}
-    </div>
-  )
-}
 
 /**
  * Hinweis-Banner auf dem Tab der ausfallenden Zusammenkunft einer
@@ -127,20 +93,4 @@ export function TerminListe({ week }: { week: Week | undefined }) {
       })}
     </div>
   )
-}
-
-/**
- * Chip für eine Woche, in der eine Zusammenkunft von der Regel abweicht.
- *
- * Beschriftet mit dem Namen der betroffenen Zusammenkunft — ausgefallene
- * durchgestrichen. Damit sieht der Planer schon in der Wochen-Navigation, dass
- * hier etwas anders ist, ohne den Tab zu wechseln.
- */
-function abweichungsChips(week: Week, t: ReturnType<typeof useT>['t']): Array<{ key: string; label: string; aus: boolean }> {
-  const out: Array<{ key: string; label: string; aus: boolean }> = []
-  for (const tab of MEETING_TABS) {
-    if (!weichtAb(week, tab)) continue
-    out.push({ key: tab, label: tab === 'we' ? t.tabWe : t.tabMid, aus: istAusgefallen(week, tab) })
-  }
-  return out
 }

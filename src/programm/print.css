@@ -70,7 +70,6 @@
   .bereichstitel,
   .bereich-tabs,
   .meeting-tabs,
-  .week-chips,
   .woche-hinweis.is-aktuell,
   .prog-helpers,
   .druck-knopf,
@@ -194,11 +193,6 @@
     margin-bottom: 0.5mm;
     border-bottom: 1px solid #999;
     font-size: 8.5pt;
-  }
-
-  .panel-song {
-    padding: 1.2mm 0;
-    font-size: 9.5pt;
   }
 
   /* Programmzeilen kompakt, Dauer und Namen in Spalten daneben — das Blatt ist
