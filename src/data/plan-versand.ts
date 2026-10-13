@@ -136,9 +136,10 @@ export function offeneMeldungen(
  * Die Zusammenkünfte dieser Woche, deren Tag vorbei ist (T77).
  *
  * Ohne Startdatum (Demo, Vorlagen) liegt die Woche nirgends im Kalender — dann
- * ist nichts vorbei, wie bei `istVorbei` selbst.
+ * ist nichts vorbei, wie bei `istVorbei` selbst. Auch die Zusagen der Woche
+ * lassen sie weg (`zusagenDerWoche`).
  */
-function vergangeneZusammenkuenfte(week: Week, zeiten: MeetingTimes, heute: Date): Set<string> {
+export function vergangeneZusammenkuenfte(week: Week, zeiten: MeetingTimes, heute: Date): Set<string> {
   return new Set(MEETING_TABS.filter((tab) => istVorbei(meetingDateMs(week, tab, zeiten), heute)))
 }
 

@@ -1250,6 +1250,71 @@ body:has(.planen-leiste) .toast {
   text-align: center;
 }
 
+/* ---- Zusagen der Woche (T121, Phase 5g) --------------------------------------
+   Entwürfe `GRueckmeldungen` und `GDesktopZusagen`: je Lage eine Karte — zu
+   klären, warten, zugesagt —, am Desktop als Spalten nebeneinander. */
+
+.zusagen-raster {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.zusagen-karte {
+  padding: 6px 10px 4px 18px;
+}
+
+/* Wer, welche Aufgabe — und bei einem Problem rechts „Zuteilen". */
+.zusage-zeile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  min-height: 60px;
+  padding-block: 8px;
+  border-block-start: 1px solid var(--linie);
+}
+
+.zusage-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.zusage-name {
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
+/* Der Grund eines Problems — in der Farbe der Probleme, wie am Platz. */
+.zusage-grund {
+  color: var(--problem);
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 500;
+}
+
+.zusagen-namen {
+  padding-block-end: 14px;
+  color: var(--text2);
+}
+
+.zusagen-leer {
+  padding-block: 14px;
+}
+
+@media (min-width: 1180px) {
+  .screen.zusagen {
+    max-width: 1240px;
+  }
+
+  .zusagen-raster {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    align-items: start;
+    gap: 16px;
+  }
+}
+
 /* Blatt „Automatisch zuteilen" (`GAutomatisch`). */
 .automatisch {
   display: flex;

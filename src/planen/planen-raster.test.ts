@@ -62,10 +62,12 @@ const gruppenaufseher = (over: Partial<AppState> = {}): AppState => {
 }
 
 describe('planArt — welche Leiste der Plan trägt (T121, Phase 5e)', () => {
-  it('die Zusammenkünfte für den, der zuteilt — nicht „Woche einrichten"', () => {
+  it('die Zusammenkünfte für den, der zuteilt — nicht „Woche einrichten", nicht die Zusagen', () => {
     expect(planArt(zustand())).toBe('zusammenkuenfte')
+    expect(planArt(zustand({ tab: 'we' }))).toBe('zusammenkuenfte')
     expect(planArt(zustand({ planner: false, zuteiler: true }))).toBe('zusammenkuenfte')
     expect(planArt(zustand({ tab: 'edit' }))).toBeNull()
+    expect(planArt(zustand({ tab: 'zusagen' }))).toBeNull()
   })
 
   it('die Treffpunkte der Woche — auch für den Gruppenaufseher, gleich welcher Reiter stehen blieb', () => {
@@ -98,9 +100,11 @@ describe('zuteilenInSpalte', () => {
     expect(zuteilenInSpalte(zustand(), false)).toBe(false)
   })
 
-  it('nicht außerhalb des Planens, nicht in „Woche einrichten", nicht ohne Woche', () => {
+  it('nicht außerhalb des Planens, nicht in „Woche einrichten" oder den Zusagen, nicht ohne Woche', () => {
     expect(zuteilenInSpalte(zustand({ screen: 'start' }), true)).toBe(false)
     expect(zuteilenInSpalte(zustand({ tab: 'edit' }), true)).toBe(false)
+    // Von den Zusagen aus teilt das Blatt zu — als Fenster in der Mitte.
+    expect(zuteilenInSpalte(zustand({ tab: 'zusagen' }), true)).toBe(false)
     expect(zuteilenInSpalte(zustand({ weeks: [] }), true)).toBe(false)
   })
 

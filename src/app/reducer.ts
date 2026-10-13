@@ -708,11 +708,11 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         if (action.thema === undefined) wunsch = 'fs'
         else screen = 'programm'
       }
-      // Drei Tabs sind keine Zusammenkunft und nicht überall erlaubt:
+      // Vier Tabs sind keine Zusammenkunft und nicht überall erlaubt:
       // „Treffpunkte" und „Weitere Pläne" (T120) gibt es in Programm und
       // Planen, „Bearbeiten" (T64) **nur** im Planen — das Programm ist für alle
       // nur lesend — und nur für den Admin: Bearbeiten heißt den Plan ändern
-      // (4.10.2026). Beim Wechsel woandershin auf die Zusammenkunft unter der
+      // (4.10.2026). Die Zusagen (T121) ebenfalls nur im Planen. Beim Wechsel woandershin auf die Zusammenkunft unter der
       // Woche zurücksetzen, sonst stünde die Ansicht auf einem Reiter, den es
       // dort nicht gibt. Die beiden Zusammenkünfte stehen nicht in der Liste —
       // sie gibt es überall.
@@ -720,6 +720,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         fs: screen === 'programm' || screen === 'planen',
         edit: screen === 'planen' && rechte.admin,
         wp: screen === 'programm' || screen === 'planen',
+        // Die Zusagen der Woche (T121, Phase 5g) sieht, wer zuteilt — beim Planen.
+        zusagen: screen === 'planen' && rechte.zuteilen,
       }
       const tab: MeetingTab = erlaubt[wunsch] === false ? 'mid' : wunsch
       const nachher = {

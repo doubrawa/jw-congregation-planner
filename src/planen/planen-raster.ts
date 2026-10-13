@@ -1,4 +1,4 @@
-import type { AppState } from '../app/context'
+import type { AppAction, AppState } from '../app/context'
 import { darfPlanen, geplantesThema, rechteVon } from '../data/rechte'
 import type { MeetingKey, SlotSelection } from '../data/types'
 import { aktiverFsBereich } from './fs-bereiche'
@@ -10,11 +10,18 @@ import { aktiverFsBereich } from './fs-bereiche'
 export type PlanArt = 'zusammenkuenfte' | 'treffpunkte'
 
 /**
+ * Aus einer Unteransicht des Plans — „Woche einrichten", die Zusagen der Woche
+ * — zurück in den Plan, zur Zusammenkunft unter der Woche.
+ */
+export const zumPlanDerWoche: AppAction = { type: 'setTab', tab: 'mid' }
+
+/**
  * **Gehört zum Plan die Aktionsleiste — und welche?** Sobald es eine Woche
  * gibt:
  *
  * - zum Plan der **Zusammenkünfte** für den, der zuteilt — nicht zu „Woche
- *   einrichten";
+ *   einrichten" und nicht zu den Zusagen der Woche: Beide sind Unteransichten
+ *   des Plans, kein Plan einer Zusammenkunft;
  * - zu den **Treffpunkten der Woche** für den, der zuteilt, und für den
  *   Gruppenaufseher, der die Treffpunkte seiner Gruppe besetzt. Die übrigen
  *   Reiter des Predigtdienstes (Besuche, Zeugnisgeben, Grundplan) haben keine
@@ -25,7 +32,7 @@ export function planArt(state: AppState): PlanArt | null {
   const rechte = rechteVon(state)
   const thema = geplantesThema(rechte, state.tab)
   if (!darfPlanen(rechte, thema)) return null
-  if (thema === 'zusammenkuenfte') return state.tab !== 'edit' ? 'zusammenkuenfte' : null
+  if (thema === 'zusammenkuenfte') return state.tab === 'mid' || state.tab === 'we' ? 'zusammenkuenfte' : null
   return thema === 'predigtdienst' && aktiverFsBereich(state) === 'treffpunkte' ? 'treffpunkte' : null
 }
 

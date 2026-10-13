@@ -3851,8 +3851,8 @@ export const KATALOG = [
   {
     id: 'leiste-nicht-beim-einrichten',
     datei: 'src/planen/planen-raster.ts',
-    regel: 'Die Aktionsleiste gehört zum Plan, nicht zu „Woche einrichten".',
-    suchen: "  if (thema === 'zusammenkuenfte') return state.tab !== 'edit' ? 'zusammenkuenfte' : null\n",
+    regel: 'Die Aktionsleiste gehört zum Plan, nicht zu „Woche einrichten" und nicht zu den Zusagen.',
+    suchen: "  if (thema === 'zusammenkuenfte') return state.tab === 'mid' || state.tab === 'we' ? 'zusammenkuenfte' : null\n",
     ersetzen: "  if (thema === 'zusammenkuenfte') return 'zusammenkuenfte'\n",
   },
   {
@@ -4029,8 +4029,8 @@ export const KATALOG = [
     id: 'plan-hinweis-abwesend',
     datei: 'src/planen/platz-anzeige.ts',
     regel: 'Wer abwesend ist und eingeteilt, trägt am Platz „Abwesend" — nicht den Satz der Doppelbelegung.',
-    suchen: '        ? t.abwesendChip',
-    ersetzen: '        ? t.sheetSchonHeute',
+    suchen: "  if (konflikt?.kind === 'absent' || konflikt?.kind === 'fsAbsent') return t.abwesendChip\n",
+    ersetzen: "  if (konflikt?.kind === 'absent' || konflikt?.kind === 'fsAbsent') return t.sheetSchonHeute\n",
   },
   {
     id: 'plan-hinweis-abgesagt',
@@ -5170,6 +5170,70 @@ export const KATALOG = [
     regel: 'Ein Plan, der als Entwurf ablief, war nie veröffentlicht — der mittlere Schritt seiner Spur bleibt leer.',
     suchen: "        : ['voll', plan.entwurf ? 'leer' : 'voll', 'voll']\n",
     ersetzen: "        : ['voll', 'voll', 'voll']\n",
+  },
+  /* ---- Zusagen der Woche (T121, Phase 5g, 13.10.2026) ---- */
+  {
+    id: 'zusagen-lage-wie-im-plan',
+    datei: 'src/data/zusagen.ts',
+    regel: 'Ein Platz steht in den Zusagen in derselben Lage wie im Plan — wer abwesend ist, ist ein Problem, auch mit Zusage.',
+    suchen: '    const lage = lageVon(slot, zusageStatus(confirmations, key), konflikt !== undefined)\n',
+    ersetzen: '    const lage = lageVon(slot, zusageStatus(confirmations, key), false)\n',
+  },
+  {
+    id: 'zusagen-ohne-vergangenes',
+    datei: 'src/data/zusagen.ts',
+    regel: 'Was vorbei ist, fehlt in den Zusagen — danach zählt keine Zusage mehr.',
+    suchen: '    if (vorbei.has(tab)) return\n',
+    ersetzen: '',
+  },
+  {
+    id: 'zusagen-gesendet-aus-tagebuch',
+    datei: 'src/data/zusagen.ts',
+    regel: 'Wann die Nachricht hinausging, kommt aus dem Versand-Tagebuch.',
+    suchen: '      gesendet: sentLog[sentKey(key, slot.name)] ?? null,\n',
+    ersetzen: '      gesendet: null,\n',
+  },
+  {
+    id: 'zusagen-hilfsdienst-ersatz',
+    datei: 'src/data/zusagen.ts',
+    regel: 'Ein abgesagter Hilfsdienst heißt in den Zusagen „Ersatz gesucht" — dort sucht die App selbst.',
+    suchen: "      hilfsdienst: platz.art === 'helper',\n",
+    ersetzen: '      hilfsdienst: false,\n',
+  },
+  {
+    id: 'zusagen-zahlen-ohne-vergangenes',
+    datei: 'src/planen/plan-spur.ts',
+    regel: 'Die Spur der Zusagen zählt, was die Liste zeigt: ohne die Zusammenkunft, die vorbei ist.',
+    suchen: '    if (istAusgefallen(week, tab) || vorbei.has(tab)) continue\n',
+    ersetzen: '    if (istAusgefallen(week, tab)) continue\n',
+  },
+  {
+    id: 'zusagen-nur-wer-zuteilt',
+    datei: 'src/planen/PlanenScreen.tsx',
+    regel: 'Die Zusagen der Woche sieht nur, wer zuteilt — der Gruppenaufseher plant die Treffpunkte.',
+    suchen: "  if (state.tab === 'zusagen' && rechte.zuteilen) return <ZusagenAnsicht",
+    ersetzen: "  if (state.tab === 'zusagen') return <ZusagenAnsicht",
+  },
+  {
+    id: 'zusagen-zurueck-in-den-plan',
+    datei: 'src/planen/PlanenScreen.tsx',
+    regel: 'Zurück schließt zuerst die Zusagen der Woche — in den Plan, nicht gleich zu Start.',
+    suchen: "  return (tab === 'edit' && rechte.admin) || (tab === 'zusagen' && rechte.zuteilen)\n",
+    ersetzen: "  return tab === 'edit' && rechte.admin\n",
+  },
+  {
+    id: 'spur-zusagen-weg',
+    datei: 'src/planen/WochenStand.tsx',
+    regel: 'Der Schritt „Zusagen" der Spur führt zu den Zusagen der Woche.',
+    suchen: 'spurDerWoche(zahlen, t, { zusagen: zuDenZusagen })',
+    ersetzen: 'spurDerWoche(zahlen, t)',
+  },
+  {
+    id: 'zusagen-namen-einmal',
+    datei: 'src/planen/ZusagenAnsicht.tsx',
+    regel: 'Wer zwei Aufgaben zugesagt hat, steht unter „Zugesagt" einmal.',
+    suchen: '  const namen = [...new Set(plaetze.map((p) => p.slot.name))]\n',
+    ersetzen: '  const namen = plaetze.map((p) => p.slot.name)\n',
   },
 ]
 

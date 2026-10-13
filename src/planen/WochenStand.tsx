@@ -23,7 +23,7 @@ import { useKonflikte } from './useKonflikte'
  * (`wochenZahlen`).
  */
 export function PlanSpur({ tab }: { tab: MeetingKey }) {
-  const { state } = useApp()
+  const { state, dispatch } = useApp()
   const { t } = useT()
   const tag = useKalendertag()
   const week = state.weeks[state.week]
@@ -45,7 +45,9 @@ export function PlanSpur({ tab }: { tab: MeetingKey }) {
     [week, fsWeek, tab, services, confirmations, sentLog, zeiten, tag],
   )
   if (!zahlen) return null
-  return <Spur schritte={spurDerWoche(zahlen, t)} label={t.spurWoche} />
+  // „Zusagen" führt zu den Zusagen der Woche (Entwurf `GPlanen`: `ziele`).
+  const zuDenZusagen = (): void => dispatch({ type: 'setTab', tab: 'zusagen' })
+  return <Spur schritte={spurDerWoche(zahlen, t, { zusagen: zuDenZusagen })} label={t.spurWoche} />
 }
 
 /**

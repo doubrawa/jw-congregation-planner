@@ -25,6 +25,7 @@ Versammlungseinstellungen pflegen.
 3. [Automatisch zuteilen & leeren](#3-automatisch-zuteilen--leeren)
    – [Vortragsplan übernehmen](#vortragsplan-übernehmen)
 4. [Konflikte und offene Zuteilungen](#4-konflikte-und-offene-zuteilungen)
+   – [Die Zusagen der Woche](#die-zusagen-der-woche)
 5. [Treffpunkte planen](#5-treffpunkte-planen)
    – [Weitere Pläne](#5a-weitere-pläne)
 6. [Personen verwalten](#6-personen-verwalten)
@@ -149,7 +150,8 @@ Oben steht der **Stand der Woche**: drei Schritte auf einer Linie –
 **Senden** (wie viele Zuteilungen der ganzen Woche noch niemand kennt,
 „Neu: 5") und **Zusagen** (bestätigt von allen, die etwas zu bestätigen haben).
 Hervorgehoben ist der Schritt, der gerade dran ist: erst wird besetzt, dann
-gesendet, dann kommen die Zusagen. Darunter die Karte **Besetzung**: der Saal,
+gesendet, dann kommen die Zusagen. Ein Tipp auf **Zusagen** öffnet die
+[Zusagen der Woche](#die-zusagen-der-woche). Darunter die Karte **Besetzung**: der Saal,
 dessen Plätze die Lage der Zuteilungen zeigen, die Zahl „Besetzung: 11/14", die
 Legende und darunter, was **zu klären** ist (Abschnitt 4). Fällt die
 Zusammenkunft aus, stehen beide nicht da – es gibt nichts zu besetzen.
@@ -581,6 +583,23 @@ vollem Punkt. Willst du einen Platz selbst besetzen, tu es vor dem Senden.
 > Platz, dessen Termin schon **vorbei** ist: Trägst du am Donnerstag nach, wer
 > am Dienstag wirklich gelesen hat, nimmst du niemandem etwas, das er noch
 > vorbereiten müsste. In all diesen Fällen geht keine Nachricht hinaus.
+
+### Die Zusagen der Woche
+
+Nach dem Senden willst du wissen, wo die Woche steht. Ein Tipp auf den Schritt
+**Zusagen** der Spur öffnet die **Zusagen** der Woche — beide Zusammenkünfte
+zusammen, ohne was schon vorbei ist:
+
+- **Zu klären**: wer abgesagt hat, abwesend ist oder an dem Tag schon etwas
+  anderes hat — mit dem Grund. **Zuteilen** daneben öffnet den Platz gleich zum
+  Neubesetzen. Bei einem Hilfsdienst steht nach einer Absage „Ersatz gesucht":
+  Dort fragt die App selbst nach einem Ersatz.
+- **Warten auf Zusage**: wer noch nicht zugesagt hat, mit Tag und Aufgabe und
+  seit wann die Nachricht draußen ist — oder „noch nicht gesendet".
+- **Zugesagt**: die Namen derer, die schon zugesagt haben.
+
+Am Desktop stehen die Karten als Spalten nebeneinander. Zurück — oder der
+Schritt **Zuteilen** der Spur — führt wieder in den Plan.
 
 ---
 

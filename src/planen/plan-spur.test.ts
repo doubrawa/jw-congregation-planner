@@ -3,7 +3,7 @@ import { allePlaetze, platzKey } from '../data/plaetze'
 import type { FsInstance, MeetingTimes, Service, Week } from '../data/types'
 import type { PlanStand } from '../data/weitere-plaene'
 import { dict } from '../i18n/ui'
-import { spurDerWoche, spurDesPlans, wochenZahlen, type WochenZahlen } from './plan-spur'
+import { spurDerWoche, spurDesPlans, wochenZahlen, zahlenDerWoche, type WochenZahlen } from './plan-spur'
 
 /**
  * **Die Spur beim Planen** (T121, `GPlanen`): Zuteilen, Senden, Zusagen —
@@ -79,6 +79,39 @@ describe('wochenZahlen: die Zusammenkunft für Besetzung und Zusagen, die Woche 
     // Besetzt ist nur der Vortrag; dazu zwei leere Mikrofone. Neu sind Anna,
     // Bert und der Treffpunkt — gesendet wird die ganze Woche.
     expect(zahlen).toEqual({ besetzt: 1, gesamt: 3, neu: 3, bestaetigt: 0, zuBestaetigen: 0 })
+  })
+})
+
+/** **Die Zusagen der Woche** (Phase 5g) zählen beide Zusammenkünfte zusammen — wie ihre Liste. */
+describe('zahlenDerWoche: beide Zusammenkünfte, ohne was vorbei ist', () => {
+  const q = (w: Week) => ({ services: SERVICES, confirmations: { [keyVon(w, 'Anna Alt')]: 'bestätigt' as const }, sentLog: {}, zeiten: ZEITEN })
+
+  it('Dienstag und Sonntag zusammen; „neu" ist dieselbe Zahl wie am Knopf', () => {
+    const w = woche()
+    expect(zahlenDerWoche(w, [TREFFPUNKT], q(w), HEUTE)).toEqual({ besetzt: 3, gesamt: 7, neu: 2, bestaetigt: 1, zuBestaetigen: 2 })
+  })
+
+  it('am Mittwoch ist der Dienstag vorbei — es bleibt der Sonntag', () => {
+    const w = woche()
+    const mittwoch = new Date(2026, 8, 9, 12, 0)
+    expect(zahlenDerWoche(w, [TREFFPUNKT], q(w), mittwoch)).toMatchObject({ besetzt: 1, gesamt: 3, bestaetigt: 0, zuBestaetigen: 0 })
+  })
+})
+
+describe('Wege in der Spur (Entwurf: `ziele`)', () => {
+  const zahlen: WochenZahlen = { besetzt: 4, gesamt: 4, neu: 0, bestaetigt: 1, zuBestaetigen: 4 }
+
+  it('ohne Ziele ist kein Schritt ein Weg', () => {
+    expect(spurDerWoche(zahlen, t).some((s) => s.ziel)).toBe(false)
+  })
+
+  it('„Zusagen" und „Zuteilen" werden Wege, „Senden" nicht', () => {
+    const zuDenZusagen = (): void => {}
+    const zumPlan = (): void => {}
+    const [zuteilen, senden, zusagen] = spurDerWoche(zahlen, t, { zuteilen: zumPlan, zusagen: zuDenZusagen })
+    expect(zuteilen!.ziel).toBe(zumPlan)
+    expect(senden!.ziel).toBeUndefined()
+    expect(zusagen!.ziel).toBe(zuDenZusagen)
   })
 })
 

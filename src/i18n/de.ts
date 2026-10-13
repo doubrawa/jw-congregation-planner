@@ -436,6 +436,11 @@ export const DE = {
     // Die Spur eines Weiteren Plans (Phase 5f): Einzahl, wo der Abschnittstitel
     // `wpAbgeschlossen` in vielen Sprachen Mehrzahl ist; „Entwurf" ist `wpEntwurf`.
     spurPlan: 'Stand des Plans', spurVeroeffentlicht: 'Veröffentlicht', spurAbgeschlossen: 'Abgeschlossen',
+    // Die Zusagen der Woche (Phase 5g, Entwurf `GRueckmeldungen`); der Titel ist
+    // `spurZusagen`, „Zu klären" `zuKlaeren`. `{zeit}` ist „vor 13 Stunden" (Intl).
+    zusagenWarten: 'Warten auf Zusage', zusagenZugesagt: 'Zugesagt',
+    zusagenGesendet: 'gesendet {zeit}', zusagenNichtGesendet: 'noch nicht gesendet',
+    zusagenLeer: 'In dieser Woche gibt es nichts zu bestätigen.',
     lageProblem: 'Problem', zuKlaeren: 'Zu klären',
     // Woche einrichten und Programm (T121, Entwurf `GWochePlanen`, `GProgramm`).
     wocheEinrichten: 'Woche einrichten',

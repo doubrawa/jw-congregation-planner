@@ -141,7 +141,7 @@ export function parseDebugHash(hash: string, jetzt = Date.now()): DebugHash | nu
   const me = p.get('me')
   if (me) out.me = me
   const tab = p.get('tab')
-  if (tab === 'mid' || tab === 'we' || tab === 'fs' || tab === 'wp') out.tab = tab
+  if (tab === 'mid' || tab === 'we' || tab === 'fs' || tab === 'wp' || tab === 'zusagen') out.tab = tab
   const fb = p.get('fb')
   if (fb === 'treffpunkte' || fb === 'gruppenbesuche' || fb === 'zeugnis' || fb === 'grundplan') out.fsBereich = fb
   const pl = p.get('pl')

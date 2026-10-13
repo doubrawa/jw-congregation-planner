@@ -178,6 +178,23 @@ describe('Zurück am Handy', () => {
     expect(amGrund()).toBe(true)
   })
 
+  it('die Zusagen der Woche schließen zuerst — Zurück führt in den Plan, dann zu Start (Phase 5g)', async () => {
+    const { container } = zeige()
+    klickMenue(container, t.dashPlanung)
+    await ausklingen()
+    fireEvent.click([...container.querySelectorAll('.spur-ziel')].find((b) => b.textContent?.startsWith(t.spurZusagen))!)
+    await ausklingen()
+    expect(container.querySelector('.screen.zusagen')).not.toBeNull()
+
+    await zurueck()
+    expect(container.querySelector('.screen.zusagen'), 'die Zusagen blieben offen').toBeNull()
+    expect(container.querySelector('.spur-ziel'), 'nicht zurück im Plan').not.toBeNull()
+
+    await zurueck()
+    expect(aktiv(container)).toBe(t.navStart)
+    expect(amGrund()).toBe(true)
+  })
+
   it('ein neuer Plan steht gleich offen da — Zurück führt zur Liste, dann zu Start', async () => {
     const { container } = zeige({ plaene: [], planEintraege: [] })
     klickMenue(container, t.navWeiterePlaene)

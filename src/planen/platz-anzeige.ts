@@ -39,18 +39,25 @@ export function platzAnzeige(
   stand: ZusageStand | null,
   konflikt: Conflict | undefined,
   t: Pick<Dict, 'abwesendChip' | 'sheetSchonHeute' | 'zusageAbgesagt'>,
-  absage: string = t.zusageAbgesagt,
+  absage?: string,
 ): PlatzAnzeige {
   const lage = lageVon(slot, stand?.stufe ?? null, konflikt !== undefined)
-  const hinweis =
-    lage !== 'problem'
-      ? undefined
-      : konflikt?.kind === 'absent' || konflikt?.kind === 'fsAbsent'
-        ? t.abwesendChip
-        : konflikt
-          ? t.sheetSchonHeute
-          : absage
+  const hinweis = lage === 'problem' ? problemGrund(konflikt, t, absage) : undefined
   return { lage, hinweis, status: stand?.label }
+}
+
+/**
+ * **Warum ein Platz ein Problem ist**: abwesend (am Treffpunkt: an seinem Tag),
+ * sonst eine Doppelbelegung, sonst die Absage — beim Planen am Platz wie in
+ * den Zusagen der Woche.
+ */
+export function problemGrund(
+  konflikt: Conflict | undefined,
+  t: Pick<Dict, 'abwesendChip' | 'sheetSchonHeute' | 'zusageAbgesagt'>,
+  absage: string = t.zusageAbgesagt,
+): string {
+  if (konflikt?.kind === 'absent' || konflikt?.kind === 'fsAbsent') return t.abwesendChip
+  return konflikt ? t.sheetSchonHeute : absage
 }
 
 /**

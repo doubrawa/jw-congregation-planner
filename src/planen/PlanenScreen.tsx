@@ -1,4 +1,4 @@
-import { useApp, type AppAction } from '../app/context'
+import { useApp } from '../app/context'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { Bereichstitel } from '../components/Bereichstitel'
 import { UnteransichtKopf } from '../components/UnteransichtKopf'
@@ -9,10 +9,11 @@ import { AusfallBanner, MemorialBanner } from '../components/WeekBadges'
 import { WochenWahl } from '../components/WochenWahl'
 import { hatAuxKlasse } from '../data/aux-class'
 import { mtab } from '../data/helpers'
-import { geplantesThema, rechteVon } from '../data/rechte'
+import { geplantesThema, rechteVon, type Rechte } from '../data/rechte'
+import type { MeetingTab } from '../data/types'
 import { useProgWeek, useT } from '../i18n/useT'
 import { PlanenAktionen } from './PlanenAktionen'
-import { planArt } from './planen-raster'
+import { planArt, zumPlanDerWoche } from './planen-raster'
 import { ZuteilenSpalte } from './AssignSheet'
 import { S89Bogen } from './S89Bogen'
 import { FsBereichTabs } from './FsBereichTabs'
@@ -28,6 +29,7 @@ import { HelpersPanel } from './HelpersPanel'
 import { VortragsplanPanel } from './VortragsplanPanel'
 import { MeetingSection } from './MeetingSection'
 import { BesetzungKarte, PlanSpur } from './WochenStand'
+import { ZusagenAnsicht } from './ZusagenAnsicht'
 // Die Karten der Abschnitte und die Zeilen der Punkte teilt das Planen mit dem
 // Ansehen (T121).
 import '../programm/programm.css'
@@ -48,10 +50,10 @@ export function PlanenScreen() {
   const rechte = rechteVon(state)
   const breit = useMedia(TABLET_BREITE)
   const desktop = useMedia(DESKTOP_BREITE)
-  // „Woche einrichten" ist eine Unteransicht des Plans: Die Zurück-Taste führt
-  // in den Plan zurück (`unteransicht`), nicht gleich zu Start. Hier und nicht
-  // im Rumpf, den der Wochenstreifen dreimal zeichnet.
-  useBackDismiss(state.tab === 'edit' && rechte.admin, () => dispatch(zumPlanDerWoche), 'unteransicht')
+  // „Woche einrichten" und die Zusagen der Woche sind Unteransichten des Plans:
+  // Die Zurück-Taste führt in den Plan zurück (`unteransicht`), nicht gleich zu
+  // Start. Hier und nicht im Rumpf, den der Wochenstreifen dreimal zeichnet.
+  useBackDismiss(unteransichtDesPlans(state.tab, rechte), () => dispatch(zumPlanDerWoche), 'unteransicht')
 
   // Die Weiteren Pläne (T120, Phase 5) sind ein eigenes Thema ohne Woche.
   // Planen dürfen sie Admin und Planer (der Planer verteilt die Gruppen); der
@@ -114,8 +116,10 @@ export function PlanenScreen() {
   )
 }
 
-/** Aus „Woche einrichten" zurück in den Plan — der Zusammenkunft unter der Woche. */
-const zumPlanDerWoche: AppAction = { type: 'setTab', tab: 'mid' }
+/** Steht eine Unteransicht des Plans offen — „Woche einrichten" beim Admin, die Zusagen bei dem, der zuteilt? */
+function unteransichtDesPlans(tab: MeetingTab, rechte: Rechte): boolean {
+  return (tab === 'edit' && rechte.admin) || (tab === 'zusagen' && rechte.zuteilen)
+}
 
 /** Planung EINER Woche; welche, sagt der Zustand (im Streifen überschrieben). */
 function PlanenBody() {
@@ -146,6 +150,10 @@ function PlanenBody() {
       </section>
     )
   }
+
+  // Die Zusagen der Woche (T121, Phase 5g) stehen über beiden Zusammenkünften —
+  // eine eigene Ansicht, im Streifen, damit sich die Woche wechseln lässt.
+  if (state.tab === 'zusagen' && rechte.zuteilen) return <ZusagenAnsicht week={week} rawWeek={rawWeek} tpw={tpw} />
 
   // Die Bearbeiten-Ansicht (T64) gibt es nur für den Admin: Anlass,
   // Sonderwoche und Termine ändern den Plan, sie teilen nichts zu (4.10.2026).

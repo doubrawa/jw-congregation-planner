@@ -32,12 +32,12 @@ dadurch bleiben Bilder und App immer konsistent. Mit Namen als Argumenten
 
 ### Hash der Entwicklerseite (siehe `tests/testdaten/demo-start.ts` → `parseDebugHash`)
 
-`#s=<screen>&tab=<mid|we|fs|wp>&fb=<treffpunkte|gruppenbesuche|zeugnis|grundplan>&pl=<0|1|2>&p=<personId>&me=<personId>&t=<theme>&l=<lang>&c=<congLang>`
+`#s=<screen>&tab=<mid|we|fs|wp|zusagen>&fb=<treffpunkte|gruppenbesuche|zeugnis|grundplan>&pl=<0|1|2>&p=<personId>&me=<personId>&t=<theme>&l=<lang>&c=<congLang>`
 
 | Parameter | Bedeutung |
 | --- | --- |
 | `s`   | Bildschirm: `login`, `start`, `programm`, `aufgaben`, `planen`, `personen`, `einstellungen`, `profil` |
-| `tab` | Reiter in Programm/Planen: `mid` (unter der Woche), `we` (Wochenende), `fs` (Predigtdienst), `wp` (Weitere Pläne; Pläne bringt nur die Entwicklerseite mit) |
+| `tab` | Reiter in Programm/Planen: `mid` (unter der Woche), `we` (Wochenende), `fs` (Predigtdienst), `wp` (Weitere Pläne; Pläne bringt nur die Entwicklerseite mit), `zusagen` (die Zusagen der Woche; nur beim Planen) |
 | `fb`  | Reiter im Predigtdienst: `treffpunkte`, `gruppenbesuche` (Besuche des Dienstaufsehers; nur die Entwicklerseite bringt welche mit), `zeugnis` (öffentliches Zeugnisgeben; ebenso nur die Entwicklerseite), `grundplan` (nur beim Planen) |
 | `pl`  | Rechte erzwingen: `0` = Verkündiger‑Ansicht, `1` = Admin, `2` = Planer (teilt zu, ändert die Pläne nicht) |
 | `p`   | **Ausgewählte** Person‑Id — auf der Personen‑Seite öffnet es deren Detail |

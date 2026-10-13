@@ -57,12 +57,16 @@ export type MeetingKey = 'mid' | 'we'
  * 3. bis 4.10.2026 als Reiter neben Dienstag und Sonntag; sie sind wieder
  * entfernt.
  *
- * Drei der fünf Werte sind also **keine** Zusammenkunft. Wer aus einem Tab eine
+ * Seit T121 (Phase 5g) die **Zusagen** der Woche ('zusagen', Entwurf
+ * `GRueckmeldungen`): wie „Woche einrichten" eine Unteransicht des Plans, nur
+ * im Planen und nur für den, der zuteilt.
+ *
+ * Vier der sechs Werte sind also **keine** Zusammenkunft. Wer aus einem Tab eine
  * Zusammenkunft braucht, geht durch `mtab()` (app/persist.ts) bzw. verengt
  * selbst — der Compiler erzwingt das, weil `MeetingTab` nicht auf `MeetingKey`
  * zuweisbar ist.
  */
-export type MeetingTab = MeetingKey | 'fs' | 'edit' | 'wp'
+export type MeetingTab = MeetingKey | 'fs' | 'edit' | 'wp' | 'zusagen'
 
 /**
  * Ein **Thema** des Hauptmenüs (T120): Zusammenkünfte, Predigtdienst oder —
