@@ -414,7 +414,7 @@ describe('Den Ablauf ändert man nicht beim Zuteilen (T121, Phase 5b)', () => {
 
   it('weder Minuten noch Verschieben, Entfernen oder Einfügen — die Plätze aber schon', () => {
     const { container } = zeige(lac())
-    expect(container.querySelector('.lac-mins-input')).toBeNull()
+    expect(container.querySelector('.plus-minus')).toBeNull()
     expect(container.querySelector('.lac-move-btn')).toBeNull()
     expect(container.querySelector('.lac-remove')).toBeNull()
     expect(container.querySelector('input:not(.talk-title-input)')).toBeNull()

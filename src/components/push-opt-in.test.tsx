@@ -27,7 +27,8 @@ import type { Dispatch } from 'react'
  *   Seite, bis dahin ein Hinweis unter „Meine Aufgaben", der sich wegklicken
  *   ließ) — und nicht, wenn Push ohnehin unerreichbar ist.
  * - Sie **geht von selbst**: mit dem Abo, und wenn der Browser die Berechtigung
- *   schon verweigert hat — dann richtete „Aktivieren" nichts mehr aus.
+ *   schon verweigert hat — dann richtete „Aktivieren" nichts mehr aus. Und sie
+ *   **lässt sich wegklicken**, für immer auf diesem Gerät (13.10.2026).
  * - Auf **iOS im Browser** steht die Anleitung statt eines Knopfes: dort führt
  *   nur „Teilen → Zum Home-Bildschirm" zum Ziel.
  */
@@ -126,6 +127,8 @@ beforeEach(() => {
   promptInstall.mockClear()
   installAvailable.wert = false
   appInstalledWert.wert = false
+  // Jeder Fall beginnt auf einem Gerät, auf dem die Karte nie weggeklickt wurde.
+  localStorage.clear()
 })
 afterEach(cleanup)
 
@@ -282,11 +285,28 @@ describe('Die Karte auf den Mitteilungen', () => {
   })
 
   it('hat der Browser die Berechtigung schon verweigert, auch nicht — „Aktivieren" richtete nichts mehr aus', () => {
-    // Ohne ✕ (T121) stünde sie sonst für immer da, mit einem Knopf, der nur
-    // noch „verweigert" meldet. Freigeben lässt es sich nur im Browser.
+    // Wegklicken müsste man sie sonst von Hand, und ihr Knopf meldete nur noch
+    // „verweigert". Freigeben lässt es sich nur im Browser.
     push.verweigert = true
     const { container } = zeigeKarte()
     expect(karte(container)).toBeNull()
+  })
+
+  it('das ✕ blendet sie auf diesem Gerät aus — auch nach dem Neuladen', () => {
+    // Entscheid vom 13.10.2026: wie der Hinweis unter „Meine Aufgaben" bis zum
+    // Umbau. Einschalten geht weiter im Profil.
+    const { container } = zeigeKarte()
+    const weg = container.querySelector<HTMLButtonElement>('.push-karte-weg')!
+    expect(weg.getAttribute('aria-label')).toBe(t.pushKarteWeg)
+    fireEvent.click(weg)
+    expect(karte(container)).toBeNull()
+    cleanup()
+    expect(karte(zeigeKarte().container)).toBeNull()
+  })
+
+  it('weggeklickt fragt sie auch nichts an', () => {
+    fireEvent.click(zeigeKarte().container.querySelector('.push-karte-weg')!)
+    expect(push.subscribePush).not.toHaveBeenCalled()
   })
 })
 
@@ -300,10 +320,11 @@ describe('Auf iOS im Browser steht die Anleitung statt eines Knopfes', () => {
     expect(kartenText(container)).toBe(t.pushPromptIos)
   })
 
-  it('und es gibt keinen Knopf, der dort nichts bewirken könnte', () => {
+  it('und es gibt keinen Knopf, der dort nichts bewirken könnte — nur das ✕', () => {
     const { container } = zeigeKarte()
     expect(karte(container)).not.toBeNull()
-    expect(container.querySelector('.push-karte button')).toBeNull()
+    expect(container.querySelector('.push-karte-knopf')).toBeNull()
+    expect(container.querySelector('.push-karte-weg')).not.toBeNull()
   })
 
   it('bietet der Browser dagegen die Installation an, führt der Knopf dorthin', () => {

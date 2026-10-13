@@ -8,6 +8,7 @@ import {
   lacMinuten,
   lacMove,
   lacRemove,
+  lacTitel,
   MEETING_MINUTES,
   setClosingSong,
   setOpeningSong,
@@ -166,6 +167,13 @@ describe('Bearbeitung mit einem Index, den es nicht gibt', () => {
     expect(lacMove(weeks, 0, 'mid', WEIT_DRAUSSEN, 0, 1)).toBe(weeks)
     expect(lacAdd(weeks, WEIT_DRAUSSEN, 'mid', 0, 'Neu')).toBe(weeks)
     expect(lacAdd(weeks, 0, 'mid', WEIT_DRAUSSEN, 'Neu')).toBe(weeks)
+  })
+
+  it('lacTitel: fehlende Woche, fehlender Abschnitt, fehlender Punkt', () => {
+    const weeks = w()
+    expect(lacTitel(weeks, WEIT_DRAUSSEN, 'mid', 0, 0, 'Neu')).toBe(weeks)
+    expect(lacTitel(weeks, 0, 'mid', WEIT_DRAUSSEN, 0, 'Neu')).toBe(weeks)
+    expect(lacTitel(weeks, 0, 'mid', 0, WEIT_DRAUSSEN, 'Neu')).toBe(weeks)
   })
 
   it('togglePartner auf eine Woche, die es nicht gibt', () => {

@@ -479,6 +479,7 @@ export type AppAction =
   | { type: 'lacMinuten'; si: number; ii: number; mins: number }
   | { type: 'lacRemove'; si: number; ii: number }
   | { type: 'lacMove'; si: number; ii: number; dir: LacDir }
+  | { type: 'lacTitel'; si: number; ii: number; title: string }
   | { type: 'lacAdd'; si: number; title: string }
   // Sonderwoche (T30): Verlegung, Ausfall, Grund — je Zusammenkunft der
   // aktuellen Woche. `patch` überschreibt nur die genannten Felder; ein Feld

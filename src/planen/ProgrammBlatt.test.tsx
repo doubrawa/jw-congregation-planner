@@ -10,20 +10,22 @@ import {
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { LABEL_LAC } from '../data/constants'
+import { ROLE_CIRCUIT } from '../data/helpers'
 import { LAC_MAX_MINUTEN, LAC_MIN_MINUTEN } from '../data/meeting-edit'
 import type { PartItem, Section, Week } from '../data/types'
 import { dict } from '../i18n/ui'
 import { ProgrammBlatt } from './ProgrammBlatt'
 
 /**
- * **Das Programm bearbeiten** (T121, Phase 5b) — Minuten, Reihenfolge,
+ * **Das Programm bearbeiten** (T121, Phase 5b) — Titel, Minuten, Reihenfolge,
  * Entfernen und eigene Punkte unter „Unser Leben als Christ".
  *
  * Bis Phase 5b standen diese Regeln an der Steuerung mitten im Plan
  * (`MeetingSection.test.tsx`); seitdem gelten sie im Blatt hinter „Woche
- * einrichten". Sie sind dieselben geblieben: Die Minuten werden getippt, nicht
- * erklickt, und gelten beim Verlassen; am Rand ist das Verschieben gesperrt;
- * Löschen fragt nach; ein neuer Punkt braucht einen Titel.
+ * einrichten". Am Rand ist das Verschieben gesperrt, Löschen fragt nach, ein
+ * neuer Punkt braucht einen Titel. Seit dem 13.10.2026 (Entscheid des
+ * Betreibers) stellen − und + die Minuten in Einerschritten, und jeder Punkt
+ * außer denen des Kreisaufsehers lässt sich umbenennen.
  */
 
 const t = dict('de')
@@ -97,6 +99,9 @@ const oeffne = (titel: string) => {
 const knopf = (c: ParentNode, text: string) =>
   [...c.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === text)!
 
+/** Gesperrt per `aria-disabled` — der Knopf behält so den Fokus (`GesperrterKnopf`). */
+const gesperrt = (b: HTMLButtonElement) => b.getAttribute('aria-disabled') === 'true'
+
 afterEach(cleanup)
 
 describe('Das Programm der Woche', () => {
@@ -123,68 +128,136 @@ describe('Das Programm der Woche', () => {
   })
 })
 
-describe('Ein Programmpunkt', () => {
-  it('trägt seine Minuten in einem Feld — samt Einheit', () => {
+describe('Die Dauer eines Programmpunkts', () => {
+  it('steht zwischen − und + — samt Einheit', () => {
     zeige()
     oeffne('Versammlungsbibelstudium')
     expect(blaetter()).toHaveLength(2)
-    expect(oben().querySelector<HTMLInputElement>('.lac-mins-input')?.value).toBe('30')
-    expect(oben().querySelector('.lac-mins-einheit')?.textContent).toBe(' Min.')
+    const gruppe = oben().querySelector<HTMLElement>('.plus-minus')!
+    expect(gruppe.getAttribute('aria-label')).toBe(t.a11yMinuten)
+    expect(gruppe.querySelector('.plus-minus-wert')?.textContent).toBe('30 Min.')
   })
 
-  it('eine getippte Zahl gilt beim Verlassen des Feldes — jede Minute, nicht jede fünfte', () => {
+  it('− und + zählen in Einerschritten — jede Minute ist erreichbar, nicht nur jede fünfte', () => {
     const { dispatch } = zeige()
     oeffne('Versammlungsbibelstudium')
-    const feld = oben().querySelector<HTMLInputElement>('.lac-mins-input')!
-    fireEvent.focus(feld)
-    fireEvent.change(feld, { target: { value: '19' } })
-    // Während des Tippens noch nichts: Die „1" von „19" wäre sonst ein eigener
-    // Wert, würde auf 5 geklemmt und zöge die Endzeit mit.
-    expect(dispatch).not.toHaveBeenCalled()
-    fireEvent.blur(feld)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'lacMinuten', si: LAC, ii: 1, mins: 19 })
+    fireEvent.click(oben().querySelector<HTMLButtonElement>(`.plus-minus [aria-label="${t.a11yIncrease}"]`)!)
+    expect(dispatch).toHaveBeenLastCalledWith({ type: 'lacMinuten', si: LAC, ii: 1, mins: 31 })
+    fireEvent.click(oben().querySelector<HTMLButtonElement>(`.plus-minus [aria-label="${t.a11yDecrease}"]`)!)
+    expect(dispatch).toHaveBeenLastCalledWith({ type: 'lacMinuten', si: LAC, ii: 1, mins: 29 })
   })
 
-  it('ein leeres Feld ändert nichts — und Escape nimmt den alten Wert zurück, ohne das Blatt zu schließen', () => {
-    const { dispatch } = zeige()
+  it('an den Grenzen 5 und 45 ist der Knopf in diese Richtung gesperrt — und tut nichts', () => {
+    const lang = lac()
+    ;(lang.items[1] as PartItem).mins = LAC_MAX_MINUTEN
+    const { dispatch } = zeige([woche([schaetze(), lang])])
+    oeffne('Örtliche Hinweise')
+    const knoepfe = () => [...oben().querySelectorAll<HTMLButtonElement>('.plus-minus button')]
+    // Örtliche Hinweise: 5 Minuten — weniger geht nicht.
+    expect(LAC_MIN_MINUTEN).toBe(5)
+    expect(knoepfe().map(gesperrt)).toEqual([true, false])
+    fireEvent.click(knoepfe()[0]!)
+    expect(dispatch).not.toHaveBeenCalled()
+    cleanup()
+    zeige([woche([schaetze(), lang])])
     oeffne('Versammlungsbibelstudium')
-    const feld = oben().querySelector<HTMLInputElement>('.lac-mins-input')!
-    // Wer alles löscht und weiterklickt, wollte nicht die kürzestmögliche Dauer.
-    fireEvent.focus(feld)
-    fireEvent.change(feld, { target: { value: '' } })
-    fireEvent.blur(feld)
-    expect(dispatch).not.toHaveBeenCalled()
-
-    fireEvent.focus(feld)
-    fireEvent.change(feld, { target: { value: '42' } })
-    fireEvent.keyDown(feld, { key: 'Escape' })
-    fireEvent.blur(feld)
-    expect(dispatch).not.toHaveBeenCalled()
-    expect(oben().querySelector<HTMLInputElement>('.lac-mins-input')!.value).toBe('30')
-    // Die Taste gehört dem Feld — das Blatt bleibt offen.
-    expect(blaetter()).toHaveLength(2)
+    expect(knoepfe().map(gesperrt)).toEqual([false, true])
   })
 
-  it('das Feld trägt die Grenzen 5..45 und zählt in Einerschritten', () => {
+  it('gesperrt behält der Knopf den Fokus — sonst stünde, wer per Tastatur zählt, hinter dem Blatt', () => {
     zeige()
     oeffne('Örtliche Hinweise')
-    const feld = oben().querySelector<HTMLInputElement>('.lac-mins-input')!
-    expect(feld.min).toBe(String(LAC_MIN_MINUTEN))
-    expect(feld.max).toBe(String(LAC_MAX_MINUTEN))
-    expect(feld.step).toBe('1')
-    expect(feld.type).toBe('number')
+    const weniger = oben().querySelector<HTMLButtonElement>(`.plus-minus [aria-label="${t.a11yDecrease}"]`)!
+    weniger.focus()
+    expect(weniger.disabled).toBe(false)
+    expect(document.activeElement).toBe(weniger)
   })
+})
+
+describe('Der Titel eines Programmpunkts', () => {
+  const titelFeld = () => oben().querySelector<HTMLInputElement>('.programmpunkt-feld input')!
+
+  it('steht im Feld und gilt beim Verlassen — nicht bei jedem Tastendruck', () => {
+    const { dispatch } = zeige()
+    oeffne('Örtliche Hinweise')
+    expect(oben().querySelector('.programmpunkt-feld label')?.textContent).toBe(t.programmpunktTitel)
+    expect(titelFeld().value).toBe('Örtliche Hinweise')
+    fireEvent.change(titelFeld(), { target: { value: 'Spendenbericht ' } })
+    expect(dispatch).not.toHaveBeenCalled()
+    fireEvent.blur(titelFeld())
+    expect(dispatch).toHaveBeenCalledWith({ type: 'lacTitel', si: LAC, ii: 0, title: 'Spendenbericht' })
+  })
+
+  it('wer das Feld nur betritt und verlässt, ändert nichts — und leer bleibt der alte Titel', () => {
+    const { dispatch } = zeige()
+    oeffne('Örtliche Hinweise')
+    fireEvent.focus(titelFeld())
+    fireEvent.blur(titelFeld())
+    // Zurückgetippt auf den Titel, der dasteht: In einer fremdsprachigen
+    // Versammlung schriebe das die Anzeige über alle Sprachen. Erst weg und
+    // dann zurück — denselben Wert noch einmal meldet React gar nicht als
+    // Änderung.
+    fireEvent.change(titelFeld(), { target: { value: 'Örtliche Hinweis' } })
+    fireEvent.change(titelFeld(), { target: { value: 'Örtliche Hinweise' } })
+    fireEvent.blur(titelFeld())
+    fireEvent.change(titelFeld(), { target: { value: '   ' } })
+    fireEvent.blur(titelFeld())
+    expect(dispatch).not.toHaveBeenCalled()
+    expect(titelFeld().value).toBe('Örtliche Hinweise')
+  })
+
+  it('Escape nimmt die Eingabe zurück und lässt das Blatt offen; erst ein zweites schließt es', () => {
+    const { dispatch } = zeige()
+    oeffne('Örtliche Hinweise')
+    fireEvent.change(titelFeld(), { target: { value: 'Etwas anderes' } })
+    fireEvent.keyDown(titelFeld(), { key: 'Escape' })
+    expect(titelFeld().value).toBe('Örtliche Hinweise')
+    expect(blaetter()).toHaveLength(2)
+    fireEvent.keyDown(titelFeld(), { key: 'Escape' })
+    expect(blaetter()).toHaveLength(1)
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('wer das Blatt schließt, während er tippt, verliert den Titel nicht', () => {
+    // Die Zurück-Taste am Handy schließt das Blatt, während der Fokus noch im
+    // Feld steht — hier das Kreuz, das in jsdom den Fokus ebenso stehen lässt.
+    // Das Feld verlässt dann `Sheet`, bevor es schließt.
+    const { dispatch } = zeige()
+    oeffne('Örtliche Hinweise')
+    titelFeld().focus()
+    fireEvent.change(titelFeld(), { target: { value: 'Spendenbericht' } })
+    fireEvent.click(oben().querySelector<HTMLButtonElement>(`.sheet-head [aria-label="${t.a11yClose}"]`)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'lacTitel', si: LAC, ii: 0, title: 'Spendenbericht' })
+    expect(blaetter()).toHaveLength(1)
+  })
+
+  it('ein Punkt des Kreisaufsehers hat kein Titelfeld — sein Thema steht im Plan', () => {
+    const coWoche = lac()
+    coWoche.items[1] = {
+      iid: 'i88', num: 9, title: 'Dienstvortrag', meta: '30 Min.', mins: 30,
+      names: [{ name: '', rolle: ROLE_CIRCUIT, bereichsKey: 'vortrag' }],
+    }
+    zeige([woche([schaetze(), coWoche])])
+    oeffne('Dienstvortrag')
+    expect(oben().querySelector('.programmpunkt-feld')).toBeNull()
+    expect(oben().querySelector('.plus-minus')).not.toBeNull()
+  })
+})
+
+describe('Ein Programmpunkt', () => {
 
   it('am Rand ist das Verschieben gesperrt — nach oben beim ersten, nach unten beim letzten', () => {
-    zeige()
+    const { dispatch } = zeige()
     oeffne('Örtliche Hinweise')
-    expect(knopf(oben(), t.a11yMoveUp).disabled).toBe(true)
-    expect(knopf(oben(), t.a11yMoveDown).disabled).toBe(false)
+    expect(gesperrt(knopf(oben(), t.a11yMoveUp))).toBe(true)
+    expect(gesperrt(knopf(oben(), t.a11yMoveDown))).toBe(false)
+    fireEvent.click(knopf(oben(), t.a11yMoveUp))
+    expect(dispatch).not.toHaveBeenCalled()
     cleanup()
     zeige()
     oeffne('Versammlungsbibelstudium')
-    expect(knopf(oben(), t.a11yMoveUp).disabled).toBe(false)
-    expect(knopf(oben(), t.a11yMoveDown).disabled).toBe(true)
+    expect(gesperrt(knopf(oben(), t.a11yMoveUp))).toBe(false)
+    expect(gesperrt(knopf(oben(), t.a11yMoveDown))).toBe(true)
   })
 
   it('Verschieben nennt die Richtung', () => {

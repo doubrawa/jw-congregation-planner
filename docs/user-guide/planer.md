@@ -111,7 +111,7 @@ nicht umlegen.
 | Gruppenbesuche: Besucher wechseln | – | – | ✓ | ✓ |
 | Weitere Pläne: Gruppen verteilen | – | – | ✓ | ✓ |
 | **Plan senden** | – | Treffpunkte seiner Gruppe | ✓ | ✓ |
-| **Woche einrichten** (Anlass, Sonderwoche, Termine), Punkte unter „Unser Leben als Christ" anlegen, verschieben, Minuten | – | – | – | ✓ |
+| **Woche einrichten** (Anlass, Sonderwoche, Termine), Punkte unter „Unser Leben als Christ" anlegen, umbenennen, verschieben, Minuten | – | – | – | ✓ |
 | Termine des Zeugnisgebens, Gruppenbesuche planen, Weitere Pläne anlegen | – | – | – | ✓ |
 | Programm importieren, Personen, Abwesenheiten anderer, Einstellungen, Mitglieder, Einladungen | – | – | – | ✓ |
 
@@ -315,15 +315,20 @@ Wochentag erscheint bei jedem in seiner eigenen Sprache.
 ### Das Programm bearbeiten
 
 Unter **Woche einrichten › Programmpunkte bearbeiten** steht das Programm der
-Zusammenkunft unter der Woche, Abschnitt für Abschnitt. Was aus dem Arbeitsheft
-kommt, bleibt, wie es ist. Unter **Unser Leben als Christ** öffnet ein Tipp
-auf einen Punkt sein Blatt:
+Zusammenkunft unter der Woche, Abschnitt für Abschnitt. Unter **Unser Leben als
+Christ** öffnet ein Tipp auf einen Punkt sein Blatt; alles andere kommt aus dem
+Arbeitsheft und bleibt, wie es ist.
 
-- **Die Dauer tippst du direkt ein** — hineinklicken, Zahl eintragen, fertig.
-  Übernommen wird sie, sobald du das Feld verlässt (oder Enter drückst);
-  **Esc** verwirft die Eingabe, und ein leer gelassenes Feld ändert nichts.
-  Erlaubt sind **5 bis 45 Minuten**; wer mehr einträgt, bekommt 45. Die
-  **Endzeit der Zusammenkunft** darunter wandert automatisch mit.
+- **Titel:** Jeder Punkt lässt sich umbenennen, auch einer aus dem Arbeitsheft —
+  etwa „Örtliche Bedürfnisse" in das eigentliche Thema. Übernommen wird der
+  Titel, sobald du das Feld verlässt, Enter drückst oder das Blatt schließt;
+  **Esc** verwirft die Eingabe, und ein leeres Feld ändert nichts. Der neue
+  Titel steht in allen Sprachen des Programms gleich. Die Punkte des
+  Kreisaufsehers haben kein Titelfeld: Ihr Thema trägst du im Plan ein (siehe
+  „Besuch des Kreisaufsehers").
+- **Dauer:** **−** und **+** ändern sie um je eine Minute, zwischen **5 und 45
+  Minuten**; an der Grenze ist der Knopf gesperrt. Die **Endzeit der
+  Zusammenkunft** darunter wandert automatisch mit.
 - **Nach oben / Nach unten** verschiebt den Punkt; am Rand ist der Knopf
   gesperrt.
 - **Entfernen** fragt noch einmal nach („Wirklich entfernen?") — mit dem Punkt
@@ -333,8 +338,8 @@ Darunter fügt **Programmpunkt einfügen** einen eigenen Punkt ein: Titel
 eintragen, **Übernehmen**. Er kommt vor das Versammlungsbibelstudium und
 beginnt mit 10 Minuten.
 
-Zugeteilt wird weiter im Plan; dort stehen seit dem neuen Design keine
-Minutenfelder mehr.
+Zugeteilt wird im Plan, nicht im Blatt eines Punkts — und den Ablauf ändert man
+umgekehrt nur hier, nicht im Plan.
 
 ### Besuch des Kreisaufsehers
 

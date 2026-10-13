@@ -1,15 +1,16 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../app/context'
+import { GesperrterKnopf } from '../bausteine/GesperrterKnopf'
+import { PlusMinus } from '../bausteine/PlusMinus'
 import { Zeichen } from '../bausteine/Zeichen'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { Sheet } from '../components/Sheet'
-import { dauerAbtrennen, istArt, isSong } from '../data/helpers'
+import { dauerAbtrennen, istArt, istCoPunkt, isSong } from '../data/helpers'
 import { meetingDateText } from '../data/meeting-dates'
-import { itemMinutes, movableIndices } from '../data/meeting-edit'
+import { itemMinutes, LAC_MAX_MINUTEN, LAC_MIN_MINUTEN, movableIndices } from '../data/meeting-edit'
 import type { Meeting, PartItem, Section } from '../data/types'
 import { fill, useProgWeek, useT } from '../i18n/useT'
-import { MinutenFeld } from './MinutenFeld'
 
 /** Welcher Punkt im Blatt darüber offen ist: ein bestehender (seine Kennung) oder ein neuer. */
 type Offen = { iid: string } | 'neu' | null
@@ -155,9 +156,14 @@ function stelleVon(meeting: Meeting, iid: string): { si: number; ii: number; sec
 }
 
 /**
- * **Ein Programmpunkt** (T121, Entwurf `GProgrammpunkt`): die Dauer, wo er in
- * der Reihenfolge steht, und Entfernen. Jede Änderung gilt sofort, wie vorher
- * im Plan — das Ende der Zusammenkunft darunter zieht mit.
+ * **Ein Programmpunkt** (T121, Entwurf `GProgrammpunkt`): Titel, Dauer, wo er
+ * in der Reihenfolge steht, und Entfernen. Dauer und Reihenfolge gelten mit
+ * jedem Tipp, wie vorher im Plan — das Ende der Zusammenkunft darunter zieht
+ * mit. Der Titel gilt beim Verlassen des Felds — auch wenn das Blatt
+ * geschlossen wird, während getippt wird: Dann verlässt `Sheet` das Feld
+ * vorher.
+ *
+ * Zugeteilt wird hier nicht, nur im Plan (Entscheid vom 13.10.2026).
  */
 function ProgrammpunktBlatt({
   iid,
@@ -176,6 +182,9 @@ function ProgrammpunktBlatt({
 }) {
   const { dispatch } = useApp()
   const { t } = useT()
+  const titelId = useId()
+  /** Der getippte Titel — `null`, solange niemand tippt; dann steht der gespeicherte da. */
+  const [entwurf, setEntwurf] = useState<string | null>(null)
   const stelle = stelleVon(meeting, iid)
   const mins = stelle ? itemMinutes(stelle.item) : null
   if (!stelle || mins === null) return null
@@ -184,6 +193,18 @@ function ProgrammpunktBlatt({
   const position = movables.indexOf(ii)
   const titel = anzeige.sections[si]?.items[ii]
   const titelText = titel && !isSong(titel) ? tpw(titel.title) : stelle.item.title
+
+  /**
+   * Übernommen wird nur, was sich gegenüber der Anzeige geändert hat: Wer das
+   * Feld einer englischen Versammlung nur betritt und verlässt, schriebe sonst
+   * „Local Needs" über alle Sprachen.
+   */
+  const titelUebernehmen = () => {
+    if (entwurf === null) return
+    setEntwurf(null)
+    const neu = entwurf.trim()
+    if (neu && neu !== titelText) dispatch({ type: 'lacTitel', si, ii, title: neu })
+  }
 
   return (
     <Sheet
@@ -194,40 +215,65 @@ function ProgrammpunktBlatt({
       onClose={onClose}
     >
       <div className="sheet-inhalt programmpunkt">
+        {/* Die Punkte des Kreisaufsehers tragen ihr Thema im Plan (`setPartThema`). */}
+        {!istCoPunkt(stelle.item) && (
+          <div className="programmpunkt-feld">
+            <label className="feld-marke" htmlFor={titelId}>
+              {t.programmpunktTitel}
+            </label>
+            <input
+              id={titelId}
+              className="feld"
+              type="text"
+              dir="auto"
+              value={entwurf ?? titelText}
+              onChange={(e) => setEntwurf(e.target.value)}
+              onBlur={titelUebernehmen}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') e.currentTarget.blur()
+                // Escape nimmt die Eingabe zurück und bleibt beim Feld; erst
+                // ein zweites schließt das Blatt.
+                if (e.key === 'Escape' && entwurf !== null) {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setEntwurf(null)
+                }
+              }}
+            />
+          </div>
+        )}
         <div className="programmpunkt-zeile">
           <span>{t.a11yMinuten}</span>
           {/*
-            Die Einheit kommt aus dem Programm-Übersetzer, nicht aus der
-            Oberfläche: Sie steht neben einer Zahl des Programms und folgt
-            deshalb der Versammlungssprache („min.", „دقيقة", „分"). Geholt
-            wird sie, indem eine Null übersetzt und wieder abgezogen wird — die
-            Wörterbücher kennen nur die ganze Angabe „N Min.".
+            „N Min." kommt aus dem Programm-Übersetzer, nicht aus der
+            Oberfläche: Die Angabe steht im Programm und folgt deshalb der
+            Versammlungssprache („10 min.", „١٠ دقيقة", „10分").
           */}
-          <MinutenFeld
-            mins={mins}
-            einheit={tpw('0 Min.').replace(/^0/, '')}
+          <PlusMinus
+            wert={mins}
+            min={LAC_MIN_MINUTEN}
+            max={LAC_MAX_MINUTEN}
             label={t.a11yMinuten}
-            onSetzen={(wert) => dispatch({ type: 'lacMinuten', si, ii, mins: wert })}
+            anzeige={tpw(`${mins} Min.`)}
+            onWert={(wert) => dispatch({ type: 'lacMinuten', si, ii, mins: wert })}
           />
         </div>
         <p className="klein-text programmpunkt-ende">{tpw(anzeige.end)}</p>
         <div className="programmpunkt-zeile programmpunkt-reihenfolge">
-          <button
-            type="button"
+          <GesperrterKnopf
             className="knopf-umriss lac-move-btn"
-            disabled={position <= 0}
-            onClick={() => dispatch({ type: 'lacMove', si, ii, dir: -1 })}
+            gesperrt={position <= 0}
+            onTipp={() => dispatch({ type: 'lacMove', si, ii, dir: -1 })}
           >
             {t.a11yMoveUp}
-          </button>
-          <button
-            type="button"
+          </GesperrterKnopf>
+          <GesperrterKnopf
             className="knopf-umriss lac-move-btn"
-            disabled={position < 0 || position >= movables.length - 1}
-            onClick={() => dispatch({ type: 'lacMove', si, ii, dir: 1 })}
+            gesperrt={position < 0 || position >= movables.length - 1}
+            onTipp={() => dispatch({ type: 'lacMove', si, ii, dir: 1 })}
           >
             {t.a11yMoveDown}
-          </button>
+          </GesperrterKnopf>
         </div>
       </div>
       <div className="programmpunkt-fuss">

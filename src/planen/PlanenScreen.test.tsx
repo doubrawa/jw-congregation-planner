@@ -504,7 +504,7 @@ describe('Der Planer teilt zu, ändert den Plan aber nicht (4.10.2026)', () => {
     // stehen sie in dessen „Woche einrichten", nicht mehr im Plan.
     const planer = zeige({ ...ALS_PLANER, weeks: [mitLac()] })
     const s = seite(planer.container)
-    expect(s.querySelector('.lac-mins-input')).toBeNull()
+    expect(s.querySelector('.plus-minus')).toBeNull()
     expect(s.textContent).not.toContain(t.programmpunkteBearbeiten)
     // Den Platz darin teilt er aber zu.
     expect(s.textContent).toContain('Olaf Overseer')

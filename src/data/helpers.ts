@@ -706,6 +706,16 @@ export const ROLE_GUEST_SPEAKER = 'Gastredner'
 export const ROLE_CIRCUIT = 'Kreisaufseher'
 
 /**
+ * **Ein Punkt des Kreisaufsehers** (Dienst- oder Schlussvortrag, T62)? Erkannt
+ * am Rollen-Platz, nicht am Titel: Der Titel ist Anzeigetext, die Rolle
+ * kanonisch. Sein Titel ist ein fester Begriff mit dem Thema dahinter — gesetzt
+ * wird nur das Thema (`setPartThema`), umbenannt wird er nicht.
+ */
+export function istCoPunkt(item: PartItem): boolean {
+  return item.names.some((n) => n.rolle === ROLE_CIRCUIT)
+}
+
+/**
  * Titel des Dienstvortrags in der Kreisaufseher-Woche. Fester Begriff, in
  * `translate-data.ts` in allen 34 Sprachen gemessen; das Thema kommt als
  * zweites Atom dahinter („Dienstvortrag · <Thema>"), wie bei

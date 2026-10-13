@@ -244,6 +244,13 @@ const ADMIN_SCHRITTE: Schritt[] = [
       return [{ type: 'lacMinuten', si: stelle.si, ii: stelle.ii, mins: (stelle.item.mins ?? 10) + 5 }]
     },
   },
+  {
+    name: 'Punkt umbenennen',
+    aktionen: (s) => {
+      const stelle = punkt(s.weeks[0]!, 'mid', (_it, art) => art === 'lac')
+      return [{ type: 'lacTitel', si: stelle.si, ii: stelle.ii, title: 'Spendenbericht' }]
+    },
+  },
   { name: 'Zusammenkunft verlegen', aktionen: () => [{ type: 'setAbweichung', tab: 'mid', patch: { wd: 3 } }] },
   { name: 'Zusammenkunft absagen', aktionen: () => [{ type: 'setAbweichung', tab: 'we', patch: { cancelled: true, reason: 'Kongress' } }] },
   { name: 'Kreisaufseher-Woche einrichten', aktionen: () => [{ type: 'setAnlass', art: 'co' }] },

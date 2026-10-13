@@ -138,6 +138,7 @@ function schreibfolge(s: AppState): AppAction[] {
     { type: 'lacAdd', si: p.si, title: 'Neuer Punkt' },
     { type: 'lacMinuten', si: p.si, ii: p.ii, mins: 19 },
     { type: 'lacMove', si: p.si, ii: p.ii, dir: 1 },
+    { type: 'lacTitel', si: p.si, ii: p.ii, title: 'Neuer Titel' },
     { type: 'lacRemove', si: p.si, ii: p.ii },
     // Wochen-Sonderfälle
     { type: 'setAbweichung', tab: 'mid', patch: { wd: 3, time: '19:30' } },

@@ -271,6 +271,8 @@ export const DE = {
     pushPromptText: 'Benachrichtigungen auf diesem Gerät einschalten.',
     pushPromptIos: 'Auf dem iPhone zuerst installieren: Teilen-Symbol → „Zum Home-Bildschirm“. Danach kannst du im Profil Benachrichtigungen aktivieren.',
     pushAktivieren: 'Aktivieren',
+    // Das ✕ der Push-Karte: Sie kommt auf diesem Gerät nicht wieder.
+    pushKarteWeg: 'Nicht mehr anzeigen',
     appInstallieren: 'App installieren',
     pushIosHint: 'Für Benachrichtigungen die App installieren: Teilen → „Zum Home-Bildschirm“.',
     familieLabel: 'Familie',
@@ -442,8 +444,9 @@ export const DE = {
     programmTitel: 'Programm',
     programmpunkteBearbeiten: 'Programmpunkte bearbeiten',
     ausArbeitsheft: 'aus dem Arbeitsheft',
-    programmHinweis: 'Was aus dem Arbeitsheft kommt, bleibt, wie es ist. Unter „{abschnitt}“ ordnest du um, änderst Minuten und fügst eigene Punkte ein.',
+    programmHinweis: 'Unter „{abschnitt}“ änderst du Titel und Minuten, ordnest um und fügst eigene Punkte ein. Alles andere kommt aus dem Arbeitsheft und bleibt, wie es ist.',
     programmpunktEinfuegen: 'Programmpunkt einfügen',
+    programmpunktTitel: 'Titel',
     // „Plan senden": der Planer gibt die fertige Woche frei, und erst dann
     // erfahren die Eingeteilten davon. Der Knopf spricht von der ganzen Woche,
     // nicht vom Reiter darüber — sonst hielte man ihn für dessen Aktion.

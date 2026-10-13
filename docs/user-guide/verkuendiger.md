@@ -235,7 +235,9 @@ Mauszeiger den ganzen Text).
   auf einmal ab.
 - Solange Benachrichtigungen auf diesem Gerät aus sind, steht ganz oben die
   Karte **Keine Zuteilung verpassen** mit **Aktivieren** (siehe
-  [Abschnitt 8](#8-app-installieren--erinnerungen)).
+  [Abschnitt 8](#8-app-installieren--erinnerungen)). Brauchst du sie nicht,
+  blendet das **✕** sie auf diesem Gerät für immer aus; einschalten kannst du
+  Benachrichtigungen weiterhin im **Profil**.
 
 > Solange der Koordinator noch plant, erfährst du nichts – auch wenn dein Name
 > im Programm schon steht. Das ist Absicht: Bis die Woche steht, wird oft noch

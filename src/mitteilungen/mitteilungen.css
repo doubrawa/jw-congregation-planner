@@ -57,6 +57,15 @@
   font-weight: 600;
 }
 
+/* Das ✕ oben in der Ecke: volle Trefferfläche, aber bis an den Rand der Karte
+   gerückt, damit dem Text kein Platz verloren geht. */
+.push-karte > .push-karte-weg {
+  align-self: flex-start;
+  margin-block: -8px;
+  margin-inline: -6px -10px;
+  color: var(--text3);
+}
+
 /* ---- Eine Mitteilung ------------------------------------------------------------- */
 
 .mitteilung {

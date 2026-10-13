@@ -473,59 +473,9 @@
   flex: 1;
 }
 
-.lac-move-btn:disabled {
+.lac-move-btn[aria-disabled='true'] {
   opacity: 0.45;
   cursor: default;
-}
-
-.lac-mins {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: calc(11px * var(--fs));
-  font-weight: 600;
-  color: var(--mut);
-}
-
-/*
-  Eingabefeld statt Schrittknöpfen: Die Dauer wird getippt, nicht erklickt.
-  Zwei Ziffern plus Rand — breiter braucht es nicht, die Grenze liegt bei 45.
-*/
-.lac-mins-input {
-  width: 38px;
-  padding: 2px 4px;
-  border: 1px solid var(--bord4);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--txt);
-  text-align: center;
-  font: inherit;
-  font-size: calc(11px * var(--fs));
-  font-weight: 600;
-}
-
-.lac-mins-input:focus-visible {
-  outline: 2px solid var(--acc);
-  outline-offset: 1px;
-}
-
-/*
-  **Ohne die kleinen Pfeile.** Ein `type="number"` blendet in Chrome und Safari
-  eigene Schrittknöpfe ein — genau das, was hier wegsollte. `type="text"` wäre
-  der falsche Weg zurück: Auf dem Telefon erschiene dann die Buchstaben-Tastatur.
-*/
-.lac-mins-input::-webkit-outer-spin-button,
-.lac-mins-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.lac-mins-input {
-  appearance: textfield;
-}
-
-.lac-mins-einheit {
-  white-space: nowrap;
 }
 
 /* Einen Programmpunkt entfernen: ein Wort in der Farbe der Probleme. */
@@ -1198,17 +1148,12 @@
   justify-content: flex-start;
 }
 
-/* Im Blatt ist Platz: das Minutenfeld in Schriftgröße und mit voller
-   Trefferfläche (WCAG 2.5.8) — im Plan stand es klein neben dem Titel. */
-.programmpunkt .lac-mins,
-.programmpunkt .lac-mins-input {
-  font-size: calc(16px * var(--fs));
-}
-
-.programmpunkt .lac-mins-input {
-  width: 64px;
-  min-height: 44px;
-  border-radius: 12px;
+/* Der Titel: Marke über dem Feld, wie beim Absagen. */
+.programmpunkt-feld {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-block-end: 4px;
 }
 
 .programmpunkt-ende {

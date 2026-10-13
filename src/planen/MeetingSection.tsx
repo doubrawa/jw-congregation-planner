@@ -2,7 +2,7 @@ import { Fragment } from 'react'
 import { useApp, useAppDispatch } from '../app/context'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { istSchuelerteil } from '../data/aux-class'
-import { dauerAbtrennen, rolleMitHerkunft, istArt, isGuestRole, isSong, mtab, ROLE_CIRCUIT, splitOpeningSong } from '../data/helpers'
+import { dauerAbtrennen, rolleMitHerkunft, istArt, istCoPunkt, isGuestRole, isSong, mtab, splitOpeningSong } from '../data/helpers'
 import { closingSongNr, hatLiedPlatz, openingSongNr, TALK_PLACEHOLDER, themaVon } from '../data/meeting-edit'
 import { isSpeakerRole } from '../data/helpers'
 import { nurZiffern } from '../data/ziffern'
@@ -173,8 +173,7 @@ export function MeetingSection({
         const rawTitle = isSong(rawItem) ? '' : rawItem.title
         // Punkt der Kreisaufseher-Woche? Sein fester Begriff ist das erste Atom
         // des kanonischen Titels; dahinter steht das Thema (T62).
-        const istCoPunkt = !isSong(rawItem) && rawItem.names.some((n) => n.rolle === ROLE_CIRCUIT)
-        const coBegriff = istCoPunkt ? (rawTitle.split(' · ')[0] ?? '') : ''
+        const coBegriff = !isSong(rawItem) && istCoPunkt(rawItem) ? (rawTitle.split(' · ')[0] ?? '') : ''
         // Schülerteil (Gesprächsführer-Slot vorhanden) → Partner an-/abschaltbar.
         // Sprachunabhängig über die Qualifikation erkannt, nicht über den Label-Text.
         const canPartner = !isSong(rawItem) && rawItem.names.some((n) => n.bereichsKey === 'schulung')

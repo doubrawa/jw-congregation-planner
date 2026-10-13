@@ -15,6 +15,7 @@ const PFADE = {
   weiter: <path d="m9.6 6 6 6-6 6" />,
   zurueck: <path d="m14.5 6-6 6 6 6" />,
   plus: <path d="M12 5.4v13.2M5.4 12h13.2" />,
+  minus: <path d="M5.4 12h13.2" />,
   /** Ohne Verbindung. */
   wolke: <path d="M7.2 18.6h9.8a4 4 0 0 0 .6-7.9 5.5 5.5 0 0 0-10.7 1.2 3.5 3.5 0 0 0 .3 6.7z" />,
   haken: <path d="m6.5 12.5 3.7 3.7L17.5 8.5" />,

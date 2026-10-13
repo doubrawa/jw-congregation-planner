@@ -60,6 +60,7 @@ import {
   lacMinuten,
   lacMove,
   lacRemove,
+  lacTitel,
   endenNachziehen,
   togglePartner,
   setAbweichung,
@@ -1644,6 +1645,12 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const weeks = lacMove(state.weeks, state.week, mtab(state.tab), action.si, action.ii, action.dir)
       if (weeks === state.weeks) return state // Rand: kein Tausch
       return { ...state, weeks }
+    }
+    case 'lacTitel': {
+      // Der Titel wechselt, die Kennung bleibt — Zuteilungen und Zusagen hängen
+      // an ihr und gehen mit.
+      const weeks = lacTitel(state.weeks, state.week, mtab(state.tab), action.si, action.ii, action.title)
+      return weeks === state.weeks ? state : { ...state, weeks }
     }
     case 'lacAdd': {
       const weeks = lacAdd(state.weeks, state.week, mtab(state.tab), action.si, action.title)

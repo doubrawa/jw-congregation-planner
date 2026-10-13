@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { isSong, ROLE_CIRCUIT } from './helpers'
 import { localizedWeek, localizedWeeks, missingVariants } from './localize'
-import { itemMinutes, lacAdd, lacMinuten, lacMove, lacRemove } from './meeting-edit'
+import { itemMinutes, lacAdd, lacMinuten, lacMove, lacRemove, lacTitel } from './meeting-edit'
 import type { Meeting, PartItem, Week, WeekVariant } from './types'
 
 /** Kanonische (deutsche) Beispielwoche mit englischer Sprachvariante. */
@@ -179,6 +180,47 @@ describe('LAC-Edits halten Sprachvarianten aligned', () => {
     expect((next[0].alt!.en.mid.sections[LAC].items[0] as PartItem).title).toBe('Congregation Bible Study')
     // Nummern bleiben positionsfest — auch in der Variante
     expect((next[0].alt!.en.mid.sections[LAC].items[0] as PartItem).num).toBe(6)
+  })
+
+  /** Ein Punkt unter „Unser Leben als Christ" — mit Wächter statt `!` (T42). */
+  const lacPunkt = (meeting: Meeting | undefined, ii: number): PartItem => {
+    const item = meeting?.sections[LAC]?.items[ii]
+    if (!item || isSong(item)) throw new Error(`Testaufbau: Punkt ${ii} fehlt`)
+    return item
+  }
+
+  it('lacTitel schreibt den neuen Titel in jede Variante und merkt den Umbau (T121)', () => {
+    // Der Titel ist Text des Planers: In der englischen Anzeige stünde sonst
+    // weiter der Titel aus dem Arbeitsheft, und eine später nachgeholte
+    // Sprache legte ihren darüber.
+    const weeks = [makeWeek()]
+    const [neu] = lacTitel(weeks, 0, 'mid', LAC, 0, '  Spendenbericht ')
+    if (!neu) throw new Error('Testaufbau: Woche fehlt')
+    const englisch = neu.alt?.en?.mid
+    const punkt = lacPunkt(neu.mid, 0)
+    expect(punkt.title).toBe('Spendenbericht')
+    expect(lacPunkt(englisch, 0).title).toBe('Spendenbericht')
+    expect(lacPunkt(localizedWeek(neu, 'en').mid, 0).title).toBe('Spendenbericht')
+    expect(neu.mid.umgebaut).toBe(true)
+    expect(englisch?.umgebaut).toBe(true)
+    // Nur der Titel wechselt: Kennung, Dauer und Plätze bleiben — und die
+    // Eingabe ist unberührt.
+    expect(punkt.iid).toBe('i33')
+    expect(itemMinutes(punkt)).toBe(15)
+    expect(punkt.names).toEqual([{ name: '', bereichsKey: 'vortrag' }])
+    expect(lacPunkt(weeks.at(0)?.mid, 0).title).toBe('Punkt A')
+  })
+
+  it('lacTitel lässt stehen, was kein neuer Titel ist — und die Punkte des Kreisaufsehers', () => {
+    const weeks = [makeWeek()]
+    expect(lacTitel(weeks, 0, 'mid', LAC, 0, '   ')).toBe(weeks)
+    expect(lacTitel(weeks, 0, 'mid', LAC, 0, 'Punkt A')).toBe(weeks)
+    expect(lacTitel(weeks, 0, 'mid', 0, 1, 'Lied')).toBe(weeks)
+    // Der Dienstvortrag trägt sein Thema über `setPartThema`, nicht hierüber.
+    const co = makeWeek()
+    lacPunkt(co.mid, 1).names = [{ name: '', rolle: ROLE_CIRCUIT, bereichsKey: 'vortrag' }]
+    const coWochen = [co]
+    expect(lacTitel(coWochen, 0, 'mid', LAC, 1, 'Ein anderes Thema')).toBe(coWochen)
   })
 })
 

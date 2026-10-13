@@ -69,16 +69,28 @@ export function Sheet({
 }) {
   const { t } = useT()
   const dlg = useRef<HTMLDivElement>(null)
+  /**
+   * Erst das Feld verlassen, in dem getippt wird, dann schließen. Ein Feld,
+   * das beim Verlassen übernimmt (der Titel eines Programmpunkts), bekäme
+   * sonst nichts mit: Escape, die Zurück-Taste und das Herunterwischen
+   * schließen das Blatt, während der Fokus noch im Feld steht — und das Feld
+   * verschwände samt Eingabe.
+   */
+  const beenden = () => {
+    const aktiv = document.activeElement
+    if (aktiv instanceof HTMLElement && dlg.current?.contains(aktiv)) aktiv.blur()
+    onClose()
+  }
   useDialogFocus(dlg)
-  useBackDismiss(true, onClose)
-  useEscape(onClose)
-  useSwipeDown(dlg, onClose)
+  useBackDismiss(true, beenden)
+  useEscape(beenden)
+  useSwipeDown(dlg, beenden)
 
   return (
     <>
       <div
         className={variante === 'oben' ? 'sheet-backdrop sheet-backdrop--oben' : 'sheet-backdrop'}
-        onClick={onClose}
+        onClick={beenden}
       />
       <div className={SHEET_KLASSE[variante]} role="dialog" aria-modal="true" aria-label={label} ref={dlg}>
         <span className="sheet-grip" aria-hidden="true" />
@@ -89,7 +101,7 @@ export function Sheet({
             {sub !== undefined && <div className="sheet-sub">{sub}</div>}
           </div>
           {schliessen && (
-            <button type="button" className="rund-knopf rund-knopf--feld" aria-label={t.a11yClose} onClick={onClose}>
+            <button type="button" className="rund-knopf rund-knopf--feld" aria-label={t.a11yClose} onClick={beenden}>
               <Zeichen name="kreuz" />
             </button>
           )}

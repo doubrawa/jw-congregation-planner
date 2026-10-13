@@ -177,6 +177,7 @@ function folge(s: AppState): AppAction[] {
     // Dieselbe Dauer noch einmal gesetzt — das Feld gibt beim Verlassen auch
     // dann einen Wert ab, wenn niemand etwas geändert hat.
     { type: 'lacMinuten', si: p.si, ii: p.ii, mins: p.mins },
+    { type: 'lacTitel', si: p.si, ii: p.ii, title: 'Probetitel' },
     { type: 'setAbweichung', tab: 'mid', patch: { wd: 3 } },
     { type: 'setAnlass', art: null }, // ist ohnehin keiner gesetzt
     { type: 'updatePerson', id: person.id, patch: { tel: person.tel } },

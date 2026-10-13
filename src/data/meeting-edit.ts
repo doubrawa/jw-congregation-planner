@@ -1,6 +1,6 @@
 /**
  * Bearbeitung der Programme im Planen-Screen: „Unser Leben als Christ"
- * (Minuten, Reihenfolge, eigene Punkte) und die Wochenend-Zusammenkunft
+ * (Titel, Minuten, Reihenfolge, eigene Punkte) und die Wochenend-Zusammenkunft
  * (Vortragsthema, Anfangslied).
  *
  * Alle Funktionen sind pur (Eingaben bleiben unverändert). Jede Änderung wird
@@ -14,6 +14,7 @@ import type { SectionKind } from './constants'
 import {
   isSong,
   istArt,
+  istCoPunkt,
   klonWoche,
   MEETING_TABS,
   neueItemId,
@@ -209,11 +210,11 @@ function stelle(
 /**
  * Grenzen der Punkt-Dauer.
  *
- * **Exportiert, weil das Eingabefeld sie braucht**: Es trägt sie als `min`/`max`
- * und klemmt beim Übernehmen darauf — hier wird ohnehin geklemmt, aber ein Feld,
- * das eine Zahl annimmt und stumm eine andere speichert, sieht aus wie ein
- * Fehler. Zwei Zahlen an zwei Stellen wären genau die Sorte Abschrift, die hier
- * schon mehrfach auseinandergelaufen ist.
+ * **Exportiert, weil die Knöpfe sie brauchen**: − und + sperren an den Grenzen
+ * (`PlusMinus`) — hier wird ohnehin geklemmt, aber ein Knopf, der sich drücken
+ * lässt und nichts bewirkt, sieht aus wie ein Fehler. Zwei Zahlen an zwei
+ * Stellen wären genau die Sorte Abschrift, die hier schon mehrfach
+ * auseinandergelaufen ist.
  */
 export const LAC_MIN_MINUTEN = 5
 export const LAC_MAX_MINUTEN = 45
@@ -224,8 +225,9 @@ export const LAC_MAX_MINUTEN = 45
  *
  * Bis zum 18. September 2026 nahm diese Funktion einen **Versatz** (`delta`),
  * weil daneben zwei Knöpfe standen — und die sprangen in Fünferschritten. Für
- * „19 Minuten" gab es damit keinen Weg. Die Zahl steht jetzt in einem Feld, und
- * ein Feld nennt den Wert, nicht seine Änderung.
+ * „19 Minuten" gab es damit keinen Weg. Danach stand die Zahl in einem Feld;
+ * seit dem 13. Oktober 2026 sind es wieder − und +, in Einerschritten
+ * (Entscheid des Betreibers). Sie nennen den neuen Wert, nicht die Änderung.
  */
 export function lacMinuten(
   weeks: Week[],
@@ -421,6 +423,42 @@ export function lacAdd(
     m.end = shiftEnd(m.end, 10)
   })
   umbauMerken(week, tab)
+  return next
+}
+
+/**
+ * **Einen LAC-Punkt umbenennen** (T121) — auch einen aus dem Arbeitsheft, etwa
+ * „Örtliche Bedürfnisse" in das eigentliche Thema.
+ *
+ * Der neue Titel ist Text des Planers und gilt in allen Sprachvarianten
+ * gleich, wie bei `lacAdd`; ein ausgetauschter Titel ist ein Umbau
+ * (`umbauMerken`). Leerer Titel → keine Änderung. Die Punkte des
+ * Kreisaufsehers haben ihr eigenes Themenfeld (`setPartThema`) und bleiben
+ * unberührt (Entscheid vom 13.10.2026).
+ */
+export function lacTitel(
+  weeks: Week[],
+  wi: number,
+  tab: MeetingKey,
+  si: number,
+  ii: number,
+  title: string,
+): Week[] {
+  const trimmed = title.trim()
+  if (!trimmed) return weeks
+  const item = weeks[wi]?.[tab].sections[si]?.items[ii]
+  if (!item || isSong(item) || istCoPunkt(item) || item.title === trimmed) return weeks
+  const next = klonWoche(weeks, wi)
+  if (!next) return weeks
+  const an = stelle(next, wi, tab, si)
+  const ziel = an?.items[ii]
+  if (!an || !ziel || isSong(ziel)) return weeks
+  ziel.title = trimmed
+  forEachAltMeeting(an.week, tab, (m) => {
+    const vi = m.sections[si]?.items[ii]
+    if (vi && !isSong(vi)) vi.title = trimmed
+  })
+  umbauMerken(an.week, tab)
   return next
 }
 

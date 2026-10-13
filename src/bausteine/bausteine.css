@@ -545,6 +545,28 @@
   font-weight: 700;
 }
 
+/* ---- Eine Zahl mit − und + ---------------------------------------------------- */
+
+.plus-minus {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+
+.plus-minus-wert {
+  min-width: 4.5em;
+  font-size: calc(16px * var(--fs));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.plus-minus .rund-knopf[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+}
+
 /* ---- Spur: die Schritte eines Ablaufs ----------------------------------------- */
 
 .spur {

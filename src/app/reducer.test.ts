@@ -1282,6 +1282,23 @@ describe('LAC / Vortrag (über den Reducer)', () => {
     expect(next.confirmations).toBe(andere) // gleiche Referenz → kein Schreibvorgang
   })
 
+  it('lacTitel benennt den Punkt um — seine Zusage bleibt, sie hängt an der Kennung', () => {
+    const s0 = makeState({ week: 0, tab: 'mid' })
+    const si = lacSi(s0)
+    const ii = gehIdx(s0)
+    const punkt = nimm(
+      lacPunkte(s0).find((p) => p === s0.weeks[0]?.mid.sections[si]?.items[ii]),
+      'umzubenennender Punkt',
+    )
+    const map = { [punktKey(wocheVon(s0), 'mid', punkt.iid, 0)]: 'bestätigt' as const }
+
+    const next = reducer({ ...s0, confirmations: map }, { type: 'lacTitel', si, ii, title: 'Spendenbericht' })
+    expect(mitKennung(next, punkt.iid)?.title).toBe('Spendenbericht')
+    expect(next.confirmations).toBe(map)
+    // Derselbe Titel noch einmal ist kein Schreibvorgang.
+    expect(reducer(next, { type: 'lacTitel', si, ii, title: 'Spendenbericht' })).toBe(next)
+  })
+
   it('lacMove am Rand lässt den State unverändert', () => {
     const s = makeState({ week: 0, tab: 'mid' })
     const si = lacSi(s)
