@@ -19,7 +19,7 @@ import {
   serviceQualKey,
   unlinkFamily,
 } from './helpers'
-import { loadWindow, partWorkload, tieHash, workloadOf } from './auslastung'
+import { partWorkload, tieHash, workloadOf } from './auslastung'
 import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 import type { PartItem, Person, Qualifications } from './types'
 
@@ -350,9 +350,11 @@ describe('Rollen & Qualifikation', () => {
 })
 
 
-describe('loadWindow hält sich an dieselbe Platzgrenze wie workloadOf', () => {
-  // Der Fix an `helperWorkload` erreichte die Mini-Quadrate nicht: dieselbe
-  // Zeile im Zuteilungs-Sheet zeigte „frei" und daneben ein belegtes Quadrat.
+describe('workloadOf hält sich an die Platzgrenze der Dienste', () => {
+  // Verkleinert der Planer einen Dienst, bleiben die Namen dahinter stehen
+  // (`gespeicherteHelfer`) — als Last zählen sie nicht mehr. Bis T121 stand
+  // daneben eine zweite Rechnung für die Quadrate im Zuteilungs-Blatt, und
+  // dieselbe Zeile zeigte „frei" und ein belegtes Quadrat.
   const dienste = [{ key: 'ton', name: 'Ton', count: 1, qual: false }]
 
   function wochenMitZweitemTon(): ReturnType<typeof buildDemoWeeks> {
@@ -363,21 +365,15 @@ describe('loadWindow hält sich an dieselbe Platzgrenze wie workloadOf', () => {
   }
 
   it('zählt einen Platz hinter svc.count nicht als Belegung', () => {
-    const weeks = wochenMitZweitemTon()
-    expect(workloadOf(weeks, alsPerson('Zweite Person'), dienste)).toBe(0)
-    expect(loadWindow(weeks, alsPerson('Zweite Person'), 1, dienste)).not.toContain('helper')
+    expect(workloadOf(wochenMitZweitemTon(), alsPerson('Zweite Person'), dienste)).toBe(0)
   })
 
-  it('ohne services zählt weiter alles — beide Seiten gleich', () => {
-    const weeks = wochenMitZweitemTon()
-    expect(workloadOf(weeks, alsPerson('Zweite Person'))).toBe(1)
-    expect(loadWindow(weeks, alsPerson('Zweite Person'), 1)).toContain('helper')
+  it('ohne services zählt weiter alles', () => {
+    expect(workloadOf(wochenMitZweitemTon(), alsPerson('Zweite Person'))).toBe(1)
   })
 
   it('der belegte Platz innerhalb der Grenze zählt weiterhin', () => {
-    const weeks = wochenMitZweitemTon()
-    expect(workloadOf(weeks, alsPerson('Erste Person'), dienste)).toBe(1)
-    expect(loadWindow(weeks, alsPerson('Erste Person'), 1, dienste)).toContain('helper')
+    expect(workloadOf(wochenMitZweitemTon(), alsPerson('Erste Person'), dienste)).toBe(1)
   })
 })
 

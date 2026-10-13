@@ -54,6 +54,9 @@ function wocheMitKlasse(fuehrerHaupt: string, fuehrerKlasse: string): Week {
   return an
 }
 
+/** Dienstag 19 Uhr, Sonntag 10 Uhr — daran misst die Abwesenheit. */
+const ZEITEN = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
+
 function daten(weeks: Week[], persons = PERSONEN, absences: Absence[] = []): KandidatenDaten {
   return {
     weeks,
@@ -63,6 +66,7 @@ function daten(weeks: Week[], persons = PERSONEN, absences: Absence[] = []): Kan
     services: DIENSTE,
     fsWeeks: [],
     absences,
+    congregation: { name: 'Test', hall: 'Saal', times: ZEITEN },
   }
 }
 
@@ -82,25 +86,28 @@ const partnerSlot = (aux: boolean): SlotSelection => ({
 const namen = (sel: SlotSelection, state: KandidatenDaten) =>
   kandidaten(state, sel, KEINE_ABWESENHEIT, DE, (s) => s).map((c) => c.name)
 
+/** Wer zur Wahl steht, ohne die Reihenfolge — für die Fragen des Filters. */
+const wer = (sel: SlotSelection, state: KandidatenDaten) => namen(sel, state).sort()
+
 describe('Gesprächspartner richtet sich nach dem Führer DESSELBEN Raums', () => {
   // Hauptsaal: Bruder führt → nur Brüder als Partner.
   // Zusätzliche Klasse: Schwester führt → nur Schwestern.
   const state = daten([wocheMitKlasse('Anton Alt', 'Clara Cohn')])
 
   it('Hauptsaal folgt dem Hauptsaal-Führer', () => {
-    expect(namen(partnerSlot(false), state)).toEqual(['Anton Alt', 'Bernd Brand'])
+    expect(wer(partnerSlot(false), state)).toEqual(['Anton Alt', 'Bernd Brand'])
   })
 
   it('Zusätzliche Klasse folgt IHREM Führer, nicht dem des Hauptsaals', () => {
     // Vorher stand hier dieselbe Liste wie oben — die Klasse richtete sich
     // nach dem falschen Raum.
-    expect(namen(partnerSlot(true), state)).toEqual(['Clara Cohn', 'Dora Dietz'])
+    expect(wer(partnerSlot(true), state)).toEqual(['Clara Cohn', 'Dora Dietz'])
   })
 
   it('und andersherum genauso', () => {
     const gedreht = daten([wocheMitKlasse('Clara Cohn', 'Anton Alt')])
-    expect(namen(partnerSlot(false), gedreht)).toEqual(['Clara Cohn', 'Dora Dietz'])
-    expect(namen(partnerSlot(true), gedreht)).toEqual(['Anton Alt', 'Bernd Brand'])
+    expect(wer(partnerSlot(false), gedreht)).toEqual(['Clara Cohn', 'Dora Dietz'])
+    expect(wer(partnerSlot(true), gedreht)).toEqual(['Anton Alt', 'Bernd Brand'])
   })
 })
 
@@ -123,7 +130,7 @@ describe('Gesprächspartner richtet sich nach dem Führer DESSELBEN Raums', () =
     const schwesterAlt = person('s9', 'Anton', 'Alt', true, 'schulung', 'schulungPartner')
     const s = daten([w], [schwesterAlt, ...PERSONEN])
 
-    expect(namen(partnerSlot(false), s)).toEqual(['Anton Alt', 'Bernd Brand'])
+    expect(wer(partnerSlot(false), s)).toEqual(['Anton Alt', 'Bernd Brand'])
   })
 
 describe('Kandidatenliste allgemein', () => {
@@ -135,13 +142,25 @@ describe('Kandidatenliste allgemein', () => {
     expect(namen(partnerSlot(false), s)).not.toContain('Egon Ernst')
   })
 
-  it('sortiert alphabetisch nach Nachname', () => {
-    expect(namen({ ...partnerSlot(false), priv: null } as SlotSelection, state)).toEqual([
-      'Anton Alt',
-      'Bernd Brand',
-      'Clara Cohn',
-      'Dora Dietz',
-    ])
+  it('ohne Rangfolge der Automatik alphabetisch nach Nachname', () => {
+    // Am Redner-Platz wählt die Automatik nie (`rangfolgeFuer` ist leer) —
+    // dort bleibt es bei der Ordnung des Alphabets.
+    const ALLE = [
+      person('x4', 'Dieter', 'Dietz', false),
+      person('x2', 'Bernd', 'Brand', false),
+      person('x3', 'Carl', 'Cohn', false),
+      person('x1', 'Anton', 'Alt', false),
+    ].map((p): Person => ({ ...p, role: 'aeltester' }))
+    const woche: Week = {
+      range: '', book: '', start: '2026-09-07',
+      mid: { date: '', end: '', sections: [], helpers: {} },
+      we: {
+        date: '', end: '', helpers: {},
+        sections: [{ label: 'X', farbe: 'petrol', items: [{ iid: 'i81', title: 'Thema', names: [{ name: '', rolle: 'Gastredner', bereichsKey: 'vortrag' }] }] }],
+      },
+    }
+    const redner: SlotSelection = { kind: 'part', wi: 0, tab: 'we', si: 0, ii: 0, ni: 0, priv: 'vortrag', groups: false, guest: true, label: 'Thema' }
+    expect(namen(redner, daten([woche], ALLE))).toEqual(['Anton Alt', 'Bernd Brand', 'Carl Cohn', 'Dieter Dietz'])
   })
 
   it('schiebt Abwesende stabil ans Ende, ohne sie zu entfernen', () => {
@@ -151,10 +170,13 @@ describe('Kandidatenliste allgemein', () => {
       { id: 'a1', personId: BRUDER_A.id, userId: 'u', from: '2026-09-07', to: '2026-09-09', reason: '' },
     ]
     const s = daten(weeks, PERSONEN, abw)
-    const set = buildAbsences(abw, weeks, { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } })
+    const set = buildAbsences(abw, weeks, ZEITEN)
     const liste = kandidaten(s, { ...partnerSlot(false), priv: null } as SlotSelection, set, DE, (x) => x)
     expect(liste.map((c) => c.name).at(-1)).toBe('Anton Alt')
-    expect(liste.find((c) => c.name === 'Anton Alt')?.absent).toBe(true)
+    const anton = liste.find((c) => c.name === 'Anton Alt')
+    expect(anton?.absent).toBe(true)
+    // Mit ihrem Zeitraum — das Blatt nennt ihn („abwesend 7.–9. September").
+    expect(anton?.abwesenheit?.id).toBe('a1')
   })
 
   it('meldet den Führer als „schon heute zugeteilt"', () => {
@@ -311,7 +333,9 @@ describe('Treffpunkt-Leiter: eigene Liste, eigene Regeln', () => {
     ]
     const state = fsDaten(TREFFPUNKTE, nurMittwoch)
     expect(liste('a', state).find((c) => c.key === 'l1')?.absent, 'Montag').toBe(false)
-    expect(liste('c', state).find((c) => c.key === 'l1')?.absent, 'Mittwoch').toBe(true)
+    const mittwoch = liste('c', state).find((c) => c.key === 'l1')
+    expect(mittwoch?.absent, 'Mittwoch').toBe(true)
+    expect(mittwoch?.abwesenheit?.id).toBe('u')
   })
 
   it('bei einer Lücke im Bestand zählt der Tag DIESER Woche, nicht der aus der Position', () => {
@@ -341,57 +365,21 @@ describe('Treffpunkt-Leiter: eigene Liste, eigene Regeln', () => {
     expect(emil?.absent, 'Montag der Woche 1 ist der 21.9.').toBe(true)
   })
 
-  /*
-    **„frei" muss von Treffpunkten reden.**
-
-    Hier stand `workloadOf(state.weeks, …)` — die **Zusammenkunfts**-Last, und
-    zwar über *alle* geladenen Wochen. Zwei Fehler in einer Zeile: Treffpunkte
-    zählen ausdrücklich nicht in `workloadOf` (sie sind eine getrennte Größe),
-    und über ein ganzes Jahr trägt fast jeder irgendetwas. Der Chip war deshalb
-    im Regelfall stumm — und in dem einen Fall, in dem er ansprang, log er:
-    Wer keine Zusammenkunfts-Aufgabe hat, bekam „frei", auch wenn er in
-    derselben Woche schon Treffpunkte leitet.
-  */
-  it('„frei" heißt: leitet im Lastfenster keinen Treffpunkt', () => {
-    const belegt = TREFFPUNKTE.map((i) =>
-      i.id === 'c' ? { ...i, leader: 'Emil Ernst', lpid: 'l1' } : i,
-    )
-    const liste_ = liste('a', fsDaten(belegt))
-    expect(liste_.find((c) => c.key === 'l1')?.free, 'Emil leitet am Mittwoch').toBe(false)
-    expect(liste_.find((c) => c.key === 'l2')?.free, 'Frida leitet nichts').toBe(true)
-  })
-
-  it('eine Zusammenkunfts-Aufgabe macht niemanden unfrei', () => {
-    // Die Gegenprobe: Emil hat keine Treffpunkt-Leitung, aber eine Aufgabe in
-    // der Zusammenkunft. Für dieses Blatt ist er frei.
-    const mitAufgabe: Week = {
-      range: '', book: '', start: '2026-09-07', 
-      mid: {
-        date: '', end: '',
-        sections: [
-          {
-            label: 'X', farbe: 'gold',
-            items: [{ iid: 'i74', title: 'Irgendetwas', names: [{ name: 'Emil Ernst', pid: 'l1' }] }],
-          },
-        ],
-        helpers: {},
-      },
-      we: { date: '', end: '', sections: [], helpers: {} },
-    }
-    const state: KandidatenDaten = {
-      ...daten([mitAufgabe], [LEITER_E, LEITER_F, OHNE]),
-      fsWeeks: [TREFFPUNKTE],
-    }
-    expect(liste('a', state).find((c) => c.key === 'l1')?.free).toBe(true)
-  })
-
-  it('ein Freitext-Leiter macht seinen Namensvetter nicht unfrei', () => {
+  it('ein Freitext-Leiter macht seinen Namensvetter nicht „schon heute" dran', () => {
     // Wer als Freitext dasteht, ist nicht diese Person — er heißt nur so
     // (`fsLeiterZuteilung`).
-    const gast = TREFFPUNKTE.map((i) =>
-      i.id === 'c' ? { ...i, leader: 'Emil Ernst', lext: true } : i,
-    )
-    expect(liste('a', fsDaten(gast)).find((c) => c.key === 'l1')?.free).toBe(true)
+    const gast = TREFFPUNKTE.map((i) => (i.id === 'b' ? { ...i, leader: 'Emil Ernst', lext: true } : i))
+    expect(liste('a', fsDaten(gast)).find((c) => c.key === 'l1')?.today).toEqual([])
+  })
+
+  it('ohne „zuletzt" und ohne Punkte — Treffpunkte zählt die Automatik anders', () => {
+    // Die Zahl der Punkte ist die Zusammenkunfts-Last (`workloadOf`);
+    // Treffpunkte zählen ausdrücklich nicht hinein (`fsLast`). Eine Zahl
+    // daneben behauptete hier etwas, das die Wahl nicht trägt.
+    const emil = liste('a', fsDaten()).find((c) => c.key === 'l1')
+    expect(emil?.last).toBeUndefined()
+    expect(emil?.zuletzt).toBeUndefined()
+    expect(emil?.sub).toBe(DE.rolleVerk)
   })
 
   it('Abwesende bleiben in der Liste, rutschen aber ans Ende', () => {
@@ -423,7 +411,10 @@ describe('Gruppen-Slots liefern Gruppen statt Personen', () => {
     }
     const liste = kandidaten(state, sel, KEINE_ABWESENHEIT, DE, (x) => x)
     expect(liste.map((c) => c.assignName)).toEqual(['Gruppe 1'])
-    expect(liste[0].initials).toBe('G1')
+    // Die Zeile nennt den Aufseher und die Größe der Gruppe; Punkte gibt es
+    // nicht — die Reinigung rotiert.
+    expect(liste[0]!.sub).toBe(`Anton Alt · ${DE.mitgliederN.replace('{n}', '0')}`)
+    expect(liste[0]!.last).toBeUndefined()
   })
 
   it('ohne angelegte Gruppen bleibt die Liste leer — das Sheet zeigt dafür einen Hinweis', () => {

@@ -75,7 +75,21 @@ export function istAbwesendAm(
   personId: string | undefined,
   tag: Date,
 ): boolean {
-  if (!personId) return false
+  return abwesenheitAm(absences, personId, tag) !== undefined
+}
+
+/**
+ * **Welche Abwesenheit trifft diesen Tag?** — die erste eingetragene, oder
+ * keine. Das Zuteilen-Blatt nennt ihren Zeitraum („abwesend 7.–11. September"),
+ * statt nur „abwesend" zu sagen: Wer nur noch zwei Tage weg ist, wird anders
+ * gefragt als jemand, der den ganzen Monat fehlt.
+ */
+export function abwesenheitAm(
+  absences: readonly Absence[],
+  personId: string | undefined,
+  tag: Date,
+): Absence | undefined {
+  if (!personId) return undefined
   const iso = isoDay(tag)
-  return absences.some((a) => a.personId === personId && a.from <= iso && iso <= a.to)
+  return absences.find((a) => a.personId === personId && a.from <= iso && iso <= a.to)
 }

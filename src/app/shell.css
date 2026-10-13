@@ -91,12 +91,6 @@
   color: var(--acc);
 }
 
-.avatar--36 {
-  width: 36px;
-  height: 36px;
-  font-size: calc(11px * var(--fs));
-}
-
 .avatar--40 {
   width: 40px;
   height: 40px;

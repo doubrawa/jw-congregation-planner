@@ -113,6 +113,7 @@ const GRAFIK = [
   ['problem', 'karte', 3, 'roter Punkt auf Karte'],
   ['text', 'karte', 3, 'voller Punkt auf Karte'],
   ['wartet', 'karte', 3, 'blasser Punkt (wartet) auf Karte'],
+  ['punkt-leer', 'karte', 3, 'leerer Punkt der Auslastung auf Karte'],
   ['akzent', 'karte', 3, 'Minze als Fläche auf Karte'],
 ]
 

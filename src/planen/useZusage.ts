@@ -1,6 +1,7 @@
 import { useApp } from '../app/context'
 import { fsTaskKey } from '../data/fs'
 import { istAusgefallen } from '../data/helpers'
+import { platzKey, type Platz } from '../data/plaetze'
 import { helferKey, punktKey, ratgeberKey, zusageStatus } from '../data/planning'
 import { useT } from '../i18n/useT'
 import type { Dict } from '../i18n/ui'
@@ -79,6 +80,8 @@ export function useZusage() {
     moeglich: (tab: MeetingKey): boolean => !istAusgefallen(week, tab),
     teil: (tab: MeetingKey, item: PartItem, ni: number, aux: boolean) =>
       stand(punktKey(woche, tab, item.iid, ni, aux)),
+    /** Derselbe Stand für einen Platz aus dem Durchlauf (`allePlaetze`). */
+    platz: (tab: MeetingKey, platz: Platz) => stand(platzKey(platz, woche, tab)),
     hilfsdienst: (tab: MeetingKey, svc: string, pos: number) => stand(helferKey(woche, tab, svc, pos)),
     ratgeber: (tab: MeetingKey) => stand(ratgeberKey(woche, tab)),
     treffpunkt: (inst: FsInstance) => stand(fsTaskKey(woche, inst.id)),

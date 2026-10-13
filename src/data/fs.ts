@@ -512,22 +512,17 @@ export const FS_LOAD_WEEKS = 12
  * **Die Treffpunkt-Strichliste**: Leitungen je Person im Fenster der letzten
  * `FS_LOAD_WEEKS` Wochen bis einschließlich `wi`.
  *
- * Sie steht hier und nicht in `fsAutoAssign`, weil zwei Stellen sie brauchen:
- * die Auswahl der Automatik und der „frei"-Chip im Zuteilungs-Blatt. Der las
- * bis hierher `workloadOf` — also die **Zusammenkunfts**-Last über alle
- * geladenen Wochen. Das ist die falsche Größe und der falsche Zeitraum
- * zugleich: Treffpunkte zählen ausdrücklich nicht in `workloadOf` (siehe
- * `deriveMyFsTasks`), und über ein ganzes Jahr trägt fast jeder irgendetwas.
- * Der Chip war deshalb im Regelfall stumm — und in dem einen Fall, in dem er
- * ansprang (jemand ohne Zusammenkunfts-Aufgabe), behauptete er „frei" für
+ * Eine eigene Größe neben `workloadOf`: Treffpunkte zählen ausdrücklich nicht
+ * in die Zusammenkunfts-Last (siehe `deriveMyFsTasks`). Bis zum neuen Design
+ * (T121) las auch der „frei"-Chip des Zuteilungs-Blatts diese Liste — vorher
+ * `workloadOf` über alle geladenen Wochen, und er behauptete „frei" für
  * jemanden, der in derselben Woche schon drei Treffpunkte leitet.
  *
  * Gezählt wird über die Person-Id; ein Freitext-Leiter gehört niemandem hier
  * (`fsLeiterZuteilung`) und zählt für niemanden.
  *
- * Den Auflöser bringt der Aufrufer mit, statt dass ihn jeder Aufruf neu baut:
- * `fsAutoAssign` hält ihn ohnehin schon (zwei Maps über alle Personen), und im
- * Zuteilungs-Blatt entsteht er einmal je Liste statt einmal je Kandidat.
+ * Den Auflöser bringt der Aufrufer mit: `fsAutoAssign` hält ihn ohnehin schon
+ * (zwei Maps über alle Personen).
  */
 export function fsLast(
   fsWeeks: FsInstance[][],
@@ -600,9 +595,8 @@ export function fsAutoAssign(
   // Auto-Zuteilung überginge ihn daraufhin.
   const idVon = (inst: FsInstance): string | undefined => werIst(fsLeiterZuteilung(inst))
 
-  // Grundlast: Leitungen je Person im Fenster der letzten FS_LOAD_WEEKS Wochen.
-  // Dieselbe Rechnung, die das Zuteilungs-Blatt für seinen „frei"-Chip liest
-  // (`fsLast`) — sonst zeigt es eine andere Zahl an, als die Automatik wählt.
+  // Grundlast: Leitungen je Person im Fenster der letzten FS_LOAD_WEEKS Wochen
+  // (`fsLast`).
   const load = fsLast(fsWeeks, wi, werIst)
   // Wartezeit: Abstand zur nächstgelegenen eigenen Leitung über ALLE geladenen
   // Wochen — auch außerhalb des Lastfensters, sonst wären alle dort auf null

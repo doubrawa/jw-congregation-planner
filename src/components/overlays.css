@@ -193,19 +193,6 @@
   font-size: calc(13.5px * var(--fs));
 }
 
-/* Verweis „S-89 anzeigen“ (im Zuteilungs-Sheet neben „Entfernen“). */
-.sheet-current-actions {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-}
-
-.sheet-s89-link {
-  font-size: calc(11.5px * var(--fs));
-  font-weight: 600;
-  color: var(--acc);
-}
-
 /* ---- Sprach-Sheet (Versammlungssprache) --------------------------------- */
 
 .sheet--lang {

@@ -52,16 +52,16 @@ export function relativeDayLabel(
 }
 
 /**
- * Lokalisiertes Relativ-Wochen-Label für einen ganzzahligen Wochenversatz:
- * 0 → "diese Woche", 1 → "nächste Woche", -1 → "letzte Woche",
- * 2 → "in 2 Wochen", -2 → "vor 2 Wochen". Ebenfalls über Intl, damit jede
- * App-Sprache die grammatisch korrekte Form bekommt. '' wenn Intl die Locale
- * nicht kennt (dann bleibt es beim reinen Typ-Label ohne Wochenangabe).
+ * **Wie viele Wochen her** — „vor 1 Woche", „vor 12 Wochen": das „zuletzt …"
+ * im Zuteilen-Blatt (T121). Ebenfalls über Intl, damit jede App-Sprache die
+ * grammatisch richtige Form bekommt; immer mit Zahl (`numeric: 'always'`),
+ * denn „zuletzt letzte Woche" sagt niemand. '' wenn Intl die Sprache nicht
+ * kennt — dann lässt das Blatt die Angabe weg.
  */
-export function relativeWeekLabel(offset: number, lang: Lang): string {
+export function wochenHer(wochen: number, lang: Lang): string {
   const locale = LOCALES[lang] ?? lang
   try {
-    return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(offset, 'week')
+    return new Intl.RelativeTimeFormat(locale, { numeric: 'always' }).format(-wochen, 'week')
   } catch {
     return ''
   }

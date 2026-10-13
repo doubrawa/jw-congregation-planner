@@ -568,23 +568,17 @@
   text-align: center;
 }
 
-/* Gastredner-Freitext im Zuteilungs-Sheet */
+/* Freitext im Zuteilungs-Blatt: Gastredner, Treffpunkt-Leiter von außen.
+   Bleibt oben stehen, wenn die Liste darunter scrollt. */
 .sheet-guest {
+  flex: none;
   display: grid;
   gap: 8px;
-  padding: 12px 0 4px;
-  border-bottom: 1px solid var(--line2);
-  flex: none; /* bleibt oben fixiert */
+  padding-block-start: 14px;
 }
 
-.sheet-guest .lac-add-btn {
+.sheet-guest .knopf-pille {
   justify-self: end;
-}
-
-.sheet-guest-hint {
-  font-size: calc(11px * var(--fs));
-  color: var(--mut);
-  padding-bottom: 6px;
 }
 
 /* ---- Treffpunkte planen ---------------------------------------------------- */
@@ -718,162 +712,171 @@
   color: var(--mut);
 }
 
-.sheet-current {
-  display: flex;
-  justify-content: space-between;
+/* ---- Zuteilen (T121, Entwurf `GZuteilen`) ---------------------------------- */
+
+/* Der Abschnitt über dem Titel — in der Farbe des Arbeitshefts. */
+.zuteilen-abschnitt {
+  color: var(--text2);
+}
+
+.zuteilen-abschnitt[data-farbe='petrol'] {
+  color: var(--sek1);
+}
+
+.zuteilen-abschnitt[data-farbe='gold'] {
+  color: var(--sek2);
+}
+
+.zuteilen-abschnitt[data-farbe='wein'] {
+  color: var(--sek3);
+}
+
+/* Wer den Platz gerade hat: Punkt nach der Lage, Name und wie es steht,
+   rechts „Entfernen". Bleibt oben stehen, wenn die Liste darunter scrollt. */
+.zuteilen-aktuell {
+  flex: none;
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
   align-items: center;
-  margin-top: 12px;
-  background: var(--tNeu);
-  border-radius: 12px;
-  padding: 9px 12px;
-  font-size: calc(12px * var(--fs));
-  flex: none; /* bleibt oben fixiert */
+  column-gap: 12px;
+  padding: 8px 8px 8px 16px;
+  border-radius: 20px;
+  background: var(--feld);
 }
 
-.sheet-current strong {
+.zuteilen-aktuell-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+/* Das S-89 unter der Zeile — leiser als „Entfernen", aber erreichbar. */
+.zuteilen-s89 {
+  min-height: 36px;
+}
+
+.zuteilen-entfernen {
+  border-color: var(--problem);
+  color: var(--problem);
+}
+
+.zuteilen-name {
+  font-size: calc(16px * var(--fs));
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
-.sheet-remove {
-  font-size: calc(11.5px * var(--fs));
-  font-weight: 600;
-  color: var(--wein);
+/* Was für oder gegen die Person spricht. Rot: abwesend; im Ton des zweiten
+   Abschnitts: an diesem Tag schon dran. */
+.zuteilen-info {
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
 }
 
-/* ---- Kandidatenliste ---- */
+.zuteilen-info.is-problem {
+  color: var(--problem);
+  font-weight: 500;
+}
 
-.sheet-list {
-  margin-top: 6px;
-  /* Einziger Scrollbereich des Sheets */
+.zuteilen-info.is-doppelt {
+  color: var(--sek2);
+}
+
+/* „Wer übernimmt?" und die Suche. */
+.zuteilen-suche {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-block-start: 14px;
+}
+
+/* Wie viele den Bereich haben — und wofür die Punkte rechts stehen. */
+.zuteilen-zaehler {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 12px;
+  min-height: 36px;
+  padding-block: 6px 4px;
+  color: var(--text3);
+  font-size: calc(13px * var(--fs));
+}
+
+/* Passt beides nicht in eine Zeile (schmales Handy, lange Sprache, große
+   Schrift), rutscht die Legende der Punkte als Ganzes darunter — an den
+   rechten Rand, über die Punkte. */
+.zuteilen-zaehler > :last-child {
+  margin-inline-start: auto;
+  text-align: end;
+}
+
+/* Der einzige Scrollbereich des Blatts: Karte, Suche und Zähler bleiben
+   stehen. overflow-x ausdrücklich aus — sonst stuft overflow-y die zweite
+   Achse auf auto hoch, und es erscheint ein überflüssiger Querbalken. */
+.zuteilen-liste {
   flex: 1 1 auto;
   min-height: 0;
-  /* 8px Luft links/rechts: nimmt den Blutrand der belegten Zeilen auf, damit
-     er nicht überläuft. overflow-x explizit aus, sonst stuft es die zweite
-     Achse wegen overflow-y auf auto hoch → überflüssige Querscrollbar. */
-  margin-inline: -8px;
-  padding-inline: 8px;
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
 }
 
-/* Avatar · Name+Auslastung · Meta (Chip + 5-Wochen-Quadrate). Die Meta-Spalte
-   sitzt am rechten Zeilenrand, die Quadrate stehen darin ganz rechts — ihre
-   rechte Kante ist damit in jeder Zeile dieselbe, unabhängig davon, ob ein
-   Chip davor steht und wie breit er ist. */
-.cand-row {
+/* Eine Person: Name (mit „· Vorschlag"), darunter die Zeile; rechts die Punkte. */
+.zuteilen-zeile {
   display: grid;
-  grid-template-columns: 36px 1fr auto;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
+  column-gap: 12px;
   width: 100%;
+  min-height: 60px;
+  padding-block: 8px;
+  border-top: 1px solid var(--linie);
   text-align: start;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--line2);
 }
 
-.cand-row:hover {
+.zuteilen-zeile:hover {
   background: var(--hov);
 }
 
-.cand-row.is-absent {
-  opacity: 0.45;
-}
-
-/* Schon an diesem Tag zugeteilt → weinrot getönte Zeile (Doppelbelegung).
-   Negative Außenabstände halten den Text mit den übrigen Zeilen fluchtend. */
-.cand-row.is-busy,
-.cand-row.is-busy:hover {
-  background: var(--tWein);
-  border-radius: 10px;
-  padding-inline: 8px;
-  margin-inline: -8px;
-  width: calc(100% + 16px);
-  border-bottom-color: transparent;
-}
-
-.cand-name {
-  display: block;
-  font-size: calc(13px * var(--fs));
-  font-weight: 600;
-}
-
-.cand-sub {
-  display: block;
-  font-size: calc(11px * var(--fs));
-  color: var(--mut);
-  margin-top: 1px;
-}
-
-/* 5 Mini-Quadrate neben der Auslastung (aktuelle Woche ±2): zeigen je Woche die
-   Belegung — grün = frei, sonst nach Art (Aufgabe/Hilfsdienst) eingefärbt. Feste
-   Farben (nicht themenabhängig), damit die drei Zustände immer unterscheidbar
-   bleiben; das mittlere Quadrat (aktuelle Woche) ist dezent hervorgehoben. */
-.cand-meta {
+.zuteilen-zeile-text {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  min-width: 0;
 }
 
-.cand-load {
+.zuteilen-vorschlag {
+  color: var(--akzent-text);
+  font-size: calc(13.5px * var(--fs));
+}
+
+/* Abwesend: der Name tritt zurück, der Grund steht rot darunter. */
+.zuteilen-zeile.is-abwesend .zuteilen-name {
+  color: var(--text3);
+}
+
+/* Die Auslastung: so viele Punkte voll, wie Aufgaben im Fenster liegen. */
+.zuteilen-last {
   display: flex;
-  gap: 2px;
+  gap: 4px;
 }
 
-.cand-load-cell {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  background: var(--load-free); /* none/frei */
+.zuteilen-last-punkt {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--punkt-leer);
 }
 
-/* Die geplante Woche — markiert per Attribut, damit die Umrandung nicht an
-   einer festen Position klebt (siehe LOAD_RADIUS). */
-.cand-load-cell[data-jetzt] {
-  outline: 1px solid var(--mut);
-  outline-offset: 1px;
+.zuteilen-last-punkt.is-voll {
+  background: var(--text);
 }
 
-/* Drei weit auseinanderliegende Töne (grün/rot/violett), damit die winzigen
-   Quadrate klar unterscheidbar bleiben — welche genau, entscheidet die Palette:
-   „Grau" hat keine Farbtöne und staffelt sie stattdessen nach Helligkeit. */
-.cand-load-cell[data-load='task'] {
-  background: var(--load-task); /* Aufgabe */
-}
-
-.cand-load-cell[data-load='helper'] {
-  background: var(--load-helper); /* Hilfsdienst */
-}
-
-.cand-load-cell[data-load='void'] {
-  background: transparent;
-  box-shadow: inset 0 0 0 1px var(--bord2); /* keine solche Woche */
-}
-
-/* Bereits an diesem Tag zugeteilt — Warnhinweis gegen Doppelbelegung. */
-.cand-today {
-  display: block;
-  font-size: calc(11px * var(--fs));
-  font-weight: 600;
-  color: var(--wein);
-  margin-top: 2px;
-}
-
-.cand-chip {
-  border-radius: var(--r-pill);
-  padding: 3px 9px;
-  font-size: calc(10px * var(--fs));
-  font-weight: 600;
-}
-
-.cand-chip--frei {
-  background: var(--tPet);
-  color: var(--pet);
-}
-
-.cand-chip--absent {
-  background: var(--tWein);
-  color: var(--wein);
+.zuteilen-zeile.is-abwesend .zuteilen-last-punkt.is-voll {
+  background: var(--text3);
 }
 
 /*
@@ -1537,7 +1540,7 @@ body:has(.planen-leiste) .toast {
   gap: 10px;
   padding: 4px 0 12px;
   /* Der einzige Scrollbereich des Blatts, wie die Kandidatenliste
-     (`.sheet-list`): Das Blatt selbst schneidet ab, Kopf und Knöpfe bleiben
+     (`.zuteilen-liste`): Das Blatt selbst schneidet ab, Kopf und Knöpfe bleiben
      stehen. Ohne das lagen „Übernehmen" und „Abbrechen" bei langem Plan
      unter dem Bildrand. */
   flex: 1 1 auto;

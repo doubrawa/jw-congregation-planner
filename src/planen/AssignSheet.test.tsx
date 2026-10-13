@@ -11,9 +11,10 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { syncAuxSlots } from '../data/aux-class'
 import { emptyQualifications } from '../data/helpers'
-import { LOAD_RADIUS } from '../data/auslastung'
+import { LOAD_WEEKS } from '../data/auslastung'
 import { ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER } from '../data/helpers'
 import { dict } from '../i18n/ui'
+import { fill } from '../i18n/useT'
 import type {
   Absence,
   Group,
@@ -30,9 +31,9 @@ import { privSetzen } from '../data/helpers'
 /**
  * **Das Zuteilungs-Sheet — der Ort, an dem der Planer wirklich arbeitet.**
  *
- * Die Auswahlregeln stecken in `kandidaten.ts` und sind dort geprüft. Was hier
- * geprüft wird, ist das Verhalten des Blattes selbst, und das trägt eigene
- * fachliche Entscheidungen:
+ * Die Auswahlregeln stecken in `kandidaten.ts` und sind dort geprüft, die
+ * Rangfolge in `rangfolge.test.ts`. Was hier geprüft wird, ist das Verhalten
+ * des Blattes selbst, und das trägt eigene fachliche Entscheidungen:
  *
  * - Der **Redner-Platz** ist zweierlei zugleich (T29). Es gibt keinen
  *   Umschalter: der Freitext macht ihn auswärtig, ein Tipp auf eine Person
@@ -43,6 +44,9 @@ import { privSetzen } from '../data/helpers'
  *   lassen auch.
  * - Ein **Gruppen-Slot ohne Gruppen** blieb wortlos leer, während die
  *   Auto-Zuteilung „Gruppe 1…3" eintrug.
+ * - Jede Zeile sagt, **was für oder gegen die Person spricht** (T121,
+ *   `GZuteilen`): abwesend mit Zeitraum, an diesem Tag schon dran, sonst wann
+ *   zuletzt im Bereich und was am anderen Tag ansteht.
  */
 
 const t = dict('de')
@@ -72,11 +76,11 @@ const DIENSTE: Service[] = [
 /** Eine Woche mit Redner-Platz (Wochenende) und einem Schülerteil (Mitte). */
 function woche(start: string, rednerName = '', rednerRolle = ROLE_GUEST_SPEAKER, herkunft?: string): Week {
   const schueler: PartItem = { iid: 'i73',
-    num: 4, title: 'Gespräche beginnen', meta: '',
+    num: 4, title: 'Gespräche beginnen', meta: '3 Min.', mins: 3,
     names: [{ name: '', rolle: '', bereichsKey: 'schulung' }],
   }
   return {
-    range: '1.–7. September', book: '', start, 
+    range: '1.–7. September', book: '', start,
     mid: {
       date: '', end: '',
       sections: [{ label: 'UNS IM DIENST VERBESSERN', farbe: 'gold', items: [schueler] }],
@@ -95,6 +99,9 @@ function woche(start: string, rednerName = '', rednerRolle = ROLE_GUEST_SPEAKER,
     },
   }
 }
+
+/** Der Schülerteil der Woche (Hauptsaal, erster Platz). */
+const schuelerPlatz = (w: Week) => (w.mid.sections[0]!.items[0] as PartItem).names[0]!
 
 const SEL_REDNER = (guest = true): SlotSelection => ({
   kind: 'part', wi: 0, tab: 'we', si: 0, ii: 0, ni: 0,
@@ -126,8 +133,10 @@ function zeige(sel: SlotSelection, over: Partial<AppState> = {}) {
     services: DIENSTE,
     groups: [],
     weeks: [woche('2026-09-07')],
+    week: 0,
     fsWeeks: [[]],
     absences: [],
+    confirmations: {},
     congregation: { name: 'Test', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
   }
@@ -146,8 +155,12 @@ function zeige(sel: SlotSelection, over: Partial<AppState> = {}) {
   return { dispatch, ...render(<Buehne />) }
 }
 
-const zeilen = (c: HTMLElement) => [...c.querySelectorAll('.cand-row')]
-const namen = (c: HTMLElement) => zeilen(c).map((r) => r.querySelector('.cand-name')?.textContent ?? '')
+const zeilen = (c: HTMLElement) => [...c.querySelectorAll<HTMLElement>('.zuteilen-zeile')]
+/** Der Name einer Zeile, ohne den Zusatz „· Vorschlag". */
+const nameVon = (r: Element) => r.querySelector('.zuteilen-name')?.childNodes[0]?.textContent ?? ''
+const namen = (c: HTMLElement) => zeilen(c).map(nameVon)
+const zeile = (c: HTMLElement, name: string) => zeilen(c).find((r) => nameVon(r) === name)!
+const info = (r: Element) => r.querySelector('.zuteilen-info')!
 const knopf = (c: HTMLElement, text: string) =>
   [...c.querySelectorAll('button')].find((b) => b.textContent?.trim() === text)!
 
@@ -158,14 +171,16 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('Kopf und Schließen', () => {
-  it('nennt Punkt und Rolle, Woche und Zusammenkunft', () => {
+  it('nennt den Abschnitt, den Punkt mit Nummer, den Tag und die Dauer', () => {
     const { container } = zeige(SEL_SCHUELER)
-    expect(container.querySelector('.sheet-title')?.textContent).toBe('Gespräche beginnen')
-    expect(container.querySelector('.sheet-sub')?.textContent).toContain('1.–7. September')
-    expect(container.querySelector('.sheet-sub')?.textContent).toContain(t.tabMid)
+    expect(container.querySelector('.zuteilen-abschnitt')?.textContent).toBe('UNS IM DIENST VERBESSERN')
+    expect(container.querySelector('.zuteilen-abschnitt')?.getAttribute('data-farbe')).toBe('gold')
+    expect(container.querySelector('.sheet-title')?.textContent).toBe('4 Gespräche beginnen')
+    // Die Woche beginnt Montag, 7.9.; die Zusammenkunft ist am Dienstag.
+    expect(container.querySelector('.sheet-sub')?.textContent).toBe('Dienstag, 8. September · 3 Min.')
   })
 
-  it('ist ein modaler Dialog — mit dem Titel als Beschriftung', () => {
+  it('ist ein modaler Dialog — mit Punkt und Rolle als Beschriftung', () => {
     const { container } = zeige(SEL_REDNER())
     const dlg = container.querySelector('.sheet')!
     expect(dlg.getAttribute('role')).toBe('dialog')
@@ -183,48 +198,70 @@ describe('Kopf und Schließen', () => {
 })
 
 describe('Die Kandidatenliste', () => {
-  it('zeigt nur Qualifizierte, alphabetisch nach Nachname', () => {
+  it('zeigt nur, wer den Bereich hat — und sagt, wie viele das sind', () => {
     const { container } = zeige(SEL_SCHUELER)
-    expect(namen(container)).toEqual(['Anton Alt', 'Bernd Brand'])
+    expect(namen(container).sort()).toEqual(['Anton Alt', 'Bernd Brand'])
+    const zaehler = container.querySelector('.zuteilen-zaehler')?.textContent
+    expect(zaehler).toContain(fill(t.mitBereichN, { n: 2 }))
+    expect(zaehler).toContain(fill(t.aufgabenInWochen, { w: LOAD_WEEKS }))
+  })
+
+  it('oben steht der Vorschlag — der eine, den „Automatisch" nähme', () => {
+    const { container } = zeige(SEL_SCHUELER)
+    const markiert = zeilen(container).filter((r) => r.querySelector('.zuteilen-vorschlag'))
+    expect(markiert).toEqual([zeilen(container)[0]])
+    expect(markiert[0]!.querySelector('.zuteilen-vorschlag')?.textContent).toBe(` · ${t.vorschlag}`)
   })
 
   it('ein Tipp teilt zu — mit Person-Id, nicht nur mit dem Namen', () => {
     const { container, dispatch } = zeige(SEL_SCHUELER)
-    fireEvent.click(zeilen(container)[1]!)
+    fireEvent.click(zeile(container, 'Bernd Brand'))
     expect(dispatch).toHaveBeenCalledWith({ type: 'assign', name: 'Bernd Brand', pid: 'p-b' })
   })
 
-  it('jeder Kandidat trägt seine fünf Auslastungs-Quadrate — die geplante Woche umrandet', () => {
-    const { container } = zeige(SEL_SCHUELER)
-    const felder = zeilen(container)[0]!.querySelectorAll('.cand-load-cell')
-    expect(felder).toHaveLength(2 * LOAD_RADIUS + 1)
-    const jetzt = [...felder].filter((f) => f.hasAttribute('data-jetzt'))
-    expect(jetzt).toHaveLength(1)
-    expect([...felder].indexOf(jetzt[0]!)).toBe(LOAD_RADIUS)
+  it('die Punkte zählen die Aufgaben im Fenster — für Vorleseprogramme mit Zahl', () => {
+    // Anton hatte in der Woche davor die Mikrofone.
+    const vorher = woche('2026-08-31')
+    vorher.mid.helpers.mik = [{ name: 'Anton Alt', pid: 'p-a' }]
+    const { container } = zeige({ ...SEL_SCHUELER, wi: 1 } as SlotSelection, { weeks: [vorher, woche('2026-09-07')], week: 1 })
+    const punkte = zeile(container, 'Anton Alt').querySelector('.zuteilen-last')!
+    expect(punkte.getAttribute('role')).toBe('img')
+    expect(punkte.getAttribute('aria-label')).toBe(fill(t.aufgabenInW, { n: 1, w: LOAD_WEEKS }))
+    expect(punkte.querySelectorAll('.zuteilen-last-punkt')).toHaveLength(LOAD_WEEKS)
+    expect(punkte.querySelectorAll('.zuteilen-last-punkt.is-voll')).toHaveLength(1)
+    // Bernd hat nichts — und steht deshalb als Vorschlag vorn.
+    expect(namen(container)[0]).toBe('Bernd Brand')
   })
 
-  it('jedes Quadrat einer geladenen Woche nennt Art und Woche — auch ohne Augen', () => {
-    // Fünf geladene Wochen: dann trägt jedes der fünf Quadrate einen Text.
-    const wochen = ['2026-08-24', '2026-08-31', '2026-09-07', '2026-09-14', '2026-09-21'].map((s) =>
-      woche(s),
-    )
-    const { container } = zeige({ ...SEL_SCHUELER, wi: 2 } as SlotSelection, { weeks: wochen })
-    const titel = [...zeilen(container)[0]!.querySelectorAll('.cand-load-cell')].map((f) =>
-      f.getAttribute('title'),
-    )
-    expect(titel).toHaveLength(2 * LOAD_RADIUS + 1)
-    expect(titel.every((x) => Boolean(x))).toBe(true)
-    expect(titel[LOAD_RADIUS]).toContain(t.loadFrei)
+  it('jede Zeile sagt, wann die Person zuletzt in diesem Bereich dran war', () => {
+    const vorher = woche('2026-08-24')
+    schuelerPlatz(vorher).name = 'Anton Alt'
+    schuelerPlatz(vorher).pid = 'p-a'
+    const { container } = zeige({ ...SEL_SCHUELER, wi: 1 } as SlotSelection, { weeks: [vorher, woche('2026-09-07')], week: 1 })
+    expect(info(zeile(container, 'Anton Alt')).textContent).toBe(fill(t.zuletztWann, { wann: 'vor 2 Wochen' }))
+    expect(info(zeile(container, 'Bernd Brand')).textContent).toBe(t.zuletztLange)
   })
 
-  it('eine nicht geladene Woche bleibt ohne Text — über sie ist nichts bekannt', () => {
-    // Am Rand des Fensters gibt es die Nachbarwochen nicht. Ein Text wie
-    // „frei vor 2 Wochen" wäre dort eine Behauptung, keine Auskunft.
-    const { container } = zeige(SEL_SCHUELER)
-    const felder = [...zeilen(container)[0]!.querySelectorAll('.cand-load-cell')]
-    expect(felder[0]!.getAttribute('data-load')).toBe('void')
-    expect(felder[0]!.getAttribute('title')).toBe('')
-    expect(felder[LOAD_RADIUS]!.getAttribute('title')).toContain(t.loadFrei)
+  it('und was am anderen Tag der Woche schon ansteht', () => {
+    const w = woche('2026-09-07')
+    w.we.helpers.mik = [{ name: 'Bernd Brand', pid: 'p-b' }]
+    const { container } = zeige(SEL_SCHUELER, { weeks: [w] })
+    // Der Wochentag aus Intl — allein steht er im Deutschen ohne Punkt.
+    expect(info(zeile(container, 'Bernd Brand')).textContent).toBe(`${t.zuletztLange} · So Mikrofone`)
+  })
+
+  it('die Suche findet Namen auch ohne Umlaute und in beliebiger Reihenfolge', () => {
+    const JOERG = person('p-j', 'Jörg', 'Müller', 'schulung')
+    const { container } = zeige(SEL_SCHUELER, { persons: [...PERSONEN, JOERG] })
+    const suche = container.querySelector<HTMLInputElement>('.zuteilen-suche input')!
+    expect(suche.type).toBe('search')
+    expect(container.querySelector('.zuteilen-suche label')?.textContent).toBe(t.werUebernimmt)
+    fireEvent.change(suche, { target: { value: 'muller' } })
+    expect(namen(container)).toEqual(['Jörg Müller'])
+    fireEvent.change(suche, { target: { value: 'brand b' } })
+    expect(namen(container)).toEqual(['Bernd Brand'])
+    // Die Zahl darüber bleibt die des Bereichs, nicht die der Treffer.
+    expect(container.querySelector('.zuteilen-zaehler')?.textContent).toContain(fill(t.mitBereichN, { n: 3 }))
   })
 })
 
@@ -233,12 +270,13 @@ describe('Abwesende sieht man, wählen kann man sie nicht', () => {
     { id: 'a1', personId: 'p-a', userId: null, from: '2026-09-01', to: '2026-09-30', reason: '' },
   ]
 
-  it('stehen ausgegraut am Ende der Liste, statt zu verschwinden', () => {
+  it('stehen am Ende der Liste, statt zu verschwinden — mit ihrem Zeitraum', () => {
     const { container } = zeige(SEL_SCHUELER, { absences: ABWESEND })
     expect(namen(container)).toEqual(['Bernd Brand', 'Anton Alt'])
     const letzte = zeilen(container).at(-1)!
-    expect(letzte.className).toContain('is-absent')
-    expect(letzte.querySelector('.cand-chip--absent')?.textContent).toBe(t.abwesendChip)
+    expect(letzte.className).toContain('is-abwesend')
+    expect(info(letzte).className).toContain('is-problem')
+    expect(info(letzte).textContent).toBe(fill(t.abwesendZeitraum, { zeitraum: '1.–30. September' }))
   })
 
   it('ein Tipp darauf teilt NICHT zu, sondern erklärt warum', () => {
@@ -261,29 +299,26 @@ describe('Wer an diesem Tag schon dran ist, wird genannt — nicht gesperrt', ()
 
   it('nennt die andere Zuteilung desselben Tages', () => {
     const { container } = zeige(SEL_SCHUELER, { weeks: [belegt()] })
-    const anton = zeilen(container)[0]!
-    expect(anton.className).toContain('is-busy')
-    expect(anton.querySelector('.cand-today')?.textContent).toContain(t.sheetSchonHeute)
-    expect(anton.querySelector('.cand-today')?.textContent).toContain('Mikrofone')
+    const anton = info(zeile(container, 'Anton Alt'))
+    expect(anton.className).toContain('is-doppelt')
+    expect(anton.textContent).toBe(`${t.sheetSchonHeute}: Mikrofone`)
   })
 
   it('aber der Planer darf trotzdem — es ist ein Hinweis, keine Sperre', () => {
     const { container, dispatch } = zeige(SEL_SCHUELER, { weeks: [belegt()] })
-    fireEvent.click(zeilen(container)[0]!)
+    fireEvent.click(zeile(container, 'Anton Alt'))
     expect(dispatch).toHaveBeenCalledWith({ type: 'assign', name: 'Anton Alt', pid: 'p-a' })
-  })
-
-  it('wer nichts hat, trägt den „frei"-Chip', () => {
-    const { container } = zeige(SEL_SCHUELER)
-    expect(zeilen(container)[0]!.querySelector('.cand-chip--frei')?.textContent).toBe(t.freiChip)
   })
 })
 
 describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', () => {
+  const felder = (c: HTMLElement) => c.querySelectorAll<HTMLInputElement>('.sheet-guest .feld')
+
   it('am leeren Platz stehen beide Wege: Freitext und Personenliste', () => {
     const { container } = zeige(SEL_REDNER())
     expect(container.querySelector('.sheet-guest')).toBeTruthy()
-    expect(container.querySelector('.sheet-guest-hint')?.textContent).toBe(t.oderPersonWaehlen)
+    // Die Liste ist der andere Weg — und sagt das, statt zu fragen, wer übernimmt.
+    expect(container.querySelector('.zuteilen-suche label')?.textContent).toBe(t.oderPersonWaehlen)
     expect(namen(container).length).toBeGreaterThan(0)
   })
 
@@ -294,13 +329,14 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
     const DIETER: Person = { ...person('p-d', 'Dieter', 'Dietz'), role: 'aeltester' }
     const { container } = zeige(SEL_REDNER(), { persons: [...PERSONEN, DIETER] })
     expect(namen(container)).toEqual(['Anton Alt', 'Bernd Brand', 'Dieter Dietz'])
+    // „Mit diesem Aufgabenbereich" stimmte hier nicht — die Zahl fehlt.
+    expect(container.querySelector('.zuteilen-zaehler')?.textContent).not.toContain(fill(t.mitBereichN, { n: 3 }))
   })
 
   it('der Freitext macht ihn auswärtig — Name und Herkunftsversammlung', () => {
     const { container, dispatch } = zeige(SEL_REDNER())
-    const felder = container.querySelectorAll<HTMLInputElement>('.sheet-guest .lac-add-input')
-    fireEvent.change(felder[0]!, { target: { value: '  Gustav Gast  ' } })
-    fireEvent.change(felder[1]!, { target: { value: 'Nordheim' } })
+    fireEvent.change(felder(container)[0]!, { target: { value: '  Gustav Gast  ' } })
+    fireEvent.change(felder(container)[1]!, { target: { value: 'Nordheim' } })
     fireEvent.click(knopf(container, t.uebernehmenBtn))
     // Die Herkunft steht in ihrem eigenen Feld, nicht als zweites Atom in der
     // Rolle: ein Versammlungsname trägt keine Regel, er wird nur angezeigt.
@@ -311,8 +347,7 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
 
   it('ohne Herkunft bleibt es bei der bloßen Rolle — kein Trenner ins Leere', () => {
     const { container, dispatch } = zeige(SEL_REDNER())
-    const felder = container.querySelectorAll<HTMLInputElement>('.sheet-guest .lac-add-input')
-    fireEvent.change(felder[0]!, { target: { value: 'Gustav Gast' } })
+    fireEvent.change(felder(container)[0]!, { target: { value: 'Gustav Gast' } })
     fireEvent.click(knopf(container, t.uebernehmenBtn))
     expect(dispatch).toHaveBeenCalledWith({
       type: 'assign', name: 'Gustav Gast', rolle: ROLE_GUEST_SPEAKER, herkunft: '',
@@ -321,9 +356,7 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
 
   it('ein leerer Name teilt nicht zu, sondern bittet um einen', () => {
     const { container, dispatch } = zeige(SEL_REDNER())
-    fireEvent.change(container.querySelectorAll('.sheet-guest .lac-add-input')[0]!, {
-      target: { value: '   ' },
-    })
+    fireEvent.change(felder(container)[0]!, { target: { value: '   ' } })
     fireEvent.click(knopf(container, t.uebernehmenBtn))
     expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.toastNameEingeben })
     expect(dispatch.mock.calls.some((c) => c[0].type === 'assign')).toBe(false)
@@ -331,7 +364,7 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
 
   it('eine Person aus der Liste macht ihn zum EIGENEN Redner — mit Rolle und Id', () => {
     const { container, dispatch } = zeige(SEL_REDNER())
-    fireEvent.click(zeilen(container)[0]!)
+    fireEvent.click(zeile(container, 'Anton Alt'))
     expect(dispatch).toHaveBeenCalledWith({
       type: 'assign', name: 'Anton Alt', rolle: ROLE_OWN_SPEAKER, pid: 'p-a',
     })
@@ -342,27 +375,23 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
     const { container } = zeige(SEL_REDNER(), {
       weeks: [woche('2026-09-07', 'Anton Alt', ROLE_OWN_SPEAKER)],
     })
-    const felder = container.querySelectorAll<HTMLInputElement>('.sheet-guest .lac-add-input')
-    expect(felder[0]!.value).toBe('')
-    expect(felder[1]!.value).toBe('')
+    expect(felder(container)[0]!.value).toBe('')
+    expect(felder(container)[1]!.value).toBe('')
   })
 
   it('steht ein Gastredner, sind sie vorbelegt — man will ihn korrigieren, nicht neu tippen', () => {
     const { container } = zeige(SEL_REDNER(), {
       weeks: [woche('2026-09-07', 'Gustav Gast', ROLE_GUEST_SPEAKER, 'Nordheim')],
     })
-    const felder = container.querySelectorAll<HTMLInputElement>('.sheet-guest .lac-add-input')
-    expect(felder[0]!.value).toBe('Gustav Gast')
-    expect(felder[1]!.value).toBe('Nordheim')
+    expect(felder(container)[0]!.value).toBe('Gustav Gast')
+    expect(felder(container)[1]!.value).toBe('Nordheim')
   })
 
   it('der Weg zurück: Freitext über einem eigenen Redner macht ihn wieder auswärtig', () => {
     const { container, dispatch } = zeige(SEL_REDNER(), {
       weeks: [woche('2026-09-07', 'Anton Alt', ROLE_OWN_SPEAKER)],
     })
-    fireEvent.change(container.querySelectorAll('.sheet-guest .lac-add-input')[0]!, {
-      target: { value: 'Gustav Gast' },
-    })
+    fireEvent.change(felder(container)[0]!, { target: { value: 'Gustav Gast' } })
     fireEvent.click(knopf(container, t.uebernehmenBtn))
     expect(dispatch).toHaveBeenCalledWith({
       type: 'assign', name: 'Gustav Gast', rolle: ROLE_GUEST_SPEAKER, herkunft: '',
@@ -381,7 +410,7 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
 
   it('an einem gewöhnlichen Platz entfernt „Entfernen" ohne Rollenwechsel', () => {
     const w = woche('2026-09-07')
-    ;(w.mid.sections[0]!.items[0] as PartItem).names[0]!.name = 'Anton Alt'
+    schuelerPlatz(w).name = 'Anton Alt'
     const { container, dispatch } = zeige(SEL_SCHUELER, { weeks: [w] })
     fireEvent.click(knopf(container, t.entfernen))
     fireEvent.click(knopf(container, t.entfernenSicher))
@@ -390,7 +419,7 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
 
   it('„Entfernen" fragt erst nach — wer zugesagt hatte, bekäme sofort eine Nachricht', () => {
     const w = woche('2026-09-07')
-    ;(w.mid.sections[0]!.items[0] as PartItem).names[0]!.name = 'Anton Alt'
+    schuelerPlatz(w).name = 'Anton Alt'
     const { container, dispatch } = zeige(SEL_SCHUELER, { weeks: [w] })
     fireEvent.click(knopf(container, t.entfernen))
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'assign' }))
@@ -401,24 +430,38 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
   })
 })
 
-describe('Der aktuell Zugeteilte steht oben', () => {
+describe('Wer den Platz gerade hat, steht oben — mit derselben Lage wie im Plan', () => {
   const belegt = () => {
     const w = woche('2026-09-07')
-    ;(w.mid.sections[0]!.items[0] as PartItem).names[0]!.name = 'Anton Alt'
+    schuelerPlatz(w).name = 'Anton Alt'
+    schuelerPlatz(w).pid = 'p-a'
     return w
   }
+  const karte = (c: HTMLElement) => c.querySelector('.zuteilen-aktuell')!
 
-  it('mit Namen und der Möglichkeit, ihn zu entfernen', () => {
+  it('mit Namen, der Stufe der Zusage und der Möglichkeit, ihn zu entfernen', () => {
     const { container } = zeige(SEL_SCHUELER, { weeks: [belegt()] })
-    const kopf = container.querySelector('.sheet-current')!
-    expect(kopf.textContent).toContain(t.aktuellLbl)
-    expect(kopf.querySelector('strong')?.textContent).toBe('Anton Alt')
+    expect(karte(container).textContent).toContain(t.aktuellLbl)
+    expect(karte(container).querySelector('.zuteilen-name')?.textContent).toBe('Anton Alt')
+    // Noch niemand hat bestätigt: blass, „wartet auf Bestätigung".
+    expect(karte(container).querySelector('.punkt')?.className).toContain('is-wartet')
+    expect(info(karte(container)).textContent).toBe(t.zusageWartet)
     expect(knopf(container, t.entfernen)).toBeTruthy()
   })
 
-  it('an einem leeren Platz steht die Zeile gar nicht', () => {
+  it('ist die Person abwesend, steht der Platz rot da — mit dem Zeitraum', () => {
+    const { container } = zeige(SEL_SCHUELER, {
+      weeks: [belegt()],
+      absences: [{ id: 'a1', personId: 'p-a', userId: null, from: '2026-09-07', to: '2026-09-11', reason: '' }],
+    })
+    expect(karte(container).querySelector('.punkt')?.className).toContain('is-problem')
+    expect(info(karte(container)).className).toContain('is-problem')
+    expect(info(karte(container)).textContent).toBe(fill(t.abwesendZeitraum, { zeitraum: '7.–11. September' }))
+  })
+
+  it('an einem leeren Platz steht die Karte gar nicht', () => {
     const { container } = zeige(SEL_SCHUELER)
-    expect(container.querySelector('.sheet-current')).toBeNull()
+    expect(container.querySelector('.zuteilen-aktuell')).toBeNull()
   })
 
   it('bei einer Schulungsaufgabe führt von hier das S-89-Formular weg', () => {
@@ -433,8 +476,8 @@ describe('Der aktuell Zugeteilte steht oben', () => {
     const w = woche('2026-09-07')
     w.mid.helpers.mik = [{ name: 'Anton Alt', pid: 'p-a' }]
     const { container } = zeige(SEL_HELFER, { weeks: [w] })
-    expect(container.querySelector('.sheet-current')).toBeTruthy()
-    expect(container.querySelector('.sheet-s89-link')).toBeNull()
+    expect(container.querySelector('.zuteilen-aktuell')).toBeTruthy()
+    expect(container.querySelector('.zuteilen-s89')).toBeNull()
   })
 })
 
@@ -448,7 +491,7 @@ describe('Ein Gruppen-Slot ohne angelegte Gruppen bleibt nicht wortlos', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'einstellungen' })
   })
 
-  it('mit Gruppen stehen die Gruppen zur Wahl — ohne Person-Id', () => {
+  it('mit Gruppen stehen die Gruppen zur Wahl — ohne Person-Id, ohne Suche und Punkte', () => {
     const gruppen: Group[] = [
       { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null },
       { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
@@ -456,6 +499,8 @@ describe('Ein Gruppen-Slot ohne angelegte Gruppen bleibt nicht wortlos', () => {
     const { container, dispatch } = zeige(SEL_GRUPPE, { groups: gruppen })
     expect(container.querySelector('.sheet-empty')).toBeNull()
     expect(zeilen(container)).toHaveLength(2)
+    expect(container.querySelector('.zuteilen-suche')).toBeNull()
+    expect(container.querySelector('.zuteilen-last')).toBeNull()
     fireEvent.click(zeilen(container)[0]!)
     // Eine Gruppe ist keine Person — eine pid gäbe es nicht, und sie stünde falsch.
     expect(dispatch).toHaveBeenCalledWith({ type: 'assign', name: 'Gruppe 1', pid: undefined })
@@ -478,6 +523,7 @@ describe('Der Treffpunkt-Leiter kennt denselben Doppelweg', () => {
       persons: [person('p-t', 'Theo', 'Treff', 'treffpunkt')],
       ...over,
     })
+  const feld = (c: HTMLElement) => c.querySelector('.sheet-guest .feld')!
 
   it('nennt im Kopf Zeit und Ort statt der Zusammenkunft', () => {
     const { container } = mitTreffpunkt()
@@ -486,9 +532,7 @@ describe('Der Treffpunkt-Leiter kennt denselben Doppelweg', () => {
 
   it('ein Freitext-Name wird als auswärtig eingetragen', () => {
     const { container, dispatch } = mitTreffpunkt()
-    fireEvent.change(container.querySelector('.sheet-guest .lac-add-input')!, {
-      target: { value: '  Kreisaufseher  ' },
-    })
+    fireEvent.change(feld(container), { target: { value: '  Kreisaufseher  ' } })
     fireEvent.click(knopf(container, t.uebernehmenBtn))
     expect(dispatch).toHaveBeenCalledWith({ type: 'assign', name: 'Kreisaufseher', extern: true })
   })
@@ -507,7 +551,17 @@ describe('Der Treffpunkt-Leiter kennt denselben Doppelweg', () => {
 
   it('nur ein Feld — eine Herkunftsversammlung hat ein Treffpunkt-Leiter nicht', () => {
     const { container } = mitTreffpunkt()
-    expect(container.querySelectorAll('.sheet-guest .lac-add-input')).toHaveLength(1)
+    expect(container.querySelectorAll('.sheet-guest .feld')).toHaveLength(1)
+  })
+
+  it('der Leiter steht oben mit seiner Lage — ein Freitext-Leiter ohne Zusage', () => {
+    const extern = [[{ ...FS_WOCHE[0]![0]!, leader: 'Kreisaufseher', lext: true }]]
+    const { container } = mitTreffpunkt({ fsWeeks: extern as unknown as AppState['fsWeeks'] })
+    const karte = container.querySelector('.zuteilen-aktuell')!
+    expect(karte.querySelector('.zuteilen-name')?.textContent).toBe('Kreisaufseher')
+    // Er hat die App nicht — es gibt nichts zu bestätigen, der Platz ist voll.
+    expect(karte.querySelector('.punkt')?.className).toContain('is-voll')
+    expect(karte.querySelector('.zuteilen-info')).toBeNull()
   })
 })
 
@@ -522,10 +576,9 @@ describe('Die Zusätzliche Klasse ist ein eigener Platz, kein zweiter Hauptsaal'
 
   it('wer im Hauptsaal steht, gilt in der Klasse als „an diesem Tag schon"', () => {
     const weeks = mitKlasse()
-    ;(weeks[0]!.mid.sections[0]!.items[0] as PartItem).names[0]!.name = 'Anton Alt'
+    schuelerPlatz(weeks[0]!).name = 'Anton Alt'
     const sel: SlotSelection = { ...SEL_SCHUELER, aux: true } as SlotSelection
     const { container } = zeige(sel, { weeks, auxClass: true })
-    const anton = zeilen(container).find((r) => r.textContent?.includes('Anton Alt'))!
-    expect(anton.className).toContain('is-busy')
+    expect(info(zeile(container, 'Anton Alt')).className).toContain('is-doppelt')
   })
 })

@@ -41,6 +41,9 @@
   --problem: #be3b2b;
   --wartet: rgba(20, 21, 22, 0.3);
   --ring: #63676a;
+  /* Ein leerer Punkt der Auslastung beim Zuteilen — zart: Die Aussage tragen
+     die vollen Punkte (und der Satz für Vorleseprogramme). */
+  --punkt-leer: #cfcfcb;
 
   /* Die drei Abschnitte der Zusammenkunft unter der Woche. */
   --sek1: #1b6c78;
@@ -74,6 +77,7 @@
   --problem: #ff9282;
   --wartet: rgba(244, 244, 241, 0.38);
   --ring: #c5c7c4;
+  --punkt-leer: #4a4e52;
 
   --sek1: #8ccbda;
   --sek2: #e6ca82;
@@ -184,11 +188,6 @@
 
   --knob: #ffffff;
   --hov: color-mix(in srgb, var(--text) 6%, transparent);
-
-  /* Auslastung beim Zuteilen: frei, Aufgabe, Hilfsdienst. */
-  --load-free: var(--akzent);
-  --load-task: var(--problem);
-  --load-helper: var(--sek1);
 
   /* Die Ampel am Platz spricht jetzt die Sprache der Punkte: voll = zugesagt,
      blass = wartet, rot = Problem. */

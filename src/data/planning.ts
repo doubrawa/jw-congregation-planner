@@ -10,7 +10,7 @@
  */
 
 import { istAbwesend, KEINE_ABWESENHEIT, type AbsenceSet } from './absence'
-import { allePlaetze, gespeicherteHelfer, platzKey, platzMitZusage } from './plaetze'
+import { allePlaetze, gespeicherteHelfer, platzKey, platzMitZusage, type Platz } from './plaetze'
 import { istSchuelerBereich, programmPlaetze, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
 import {
   dieselbePerson,
@@ -146,6 +146,47 @@ function assignmentDistance(
     }
   }
   return { part, any, je }
+}
+
+/** Der Aufgabenbereich eines Platzes, wie ihn `assignmentDistance` je Bereich führt. */
+function bereichVon(platz: Platz): string | undefined {
+  if (platz.art === 'helper') return serviceQualKey(platz.svc.key)
+  return platz.art === 'ratgeber' ? 'ratgeber' : platz.slot.bereichsKey
+}
+
+/**
+ * **Wann war jemand zuletzt in diesem Bereich dran?** (T121, Phase 5d) — je
+ * Person die Wochen vor der geplanten, in der er zuletzt einen Platz dieses
+ * Bereichs hatte: das „zuletzt vor 12 Wochen" im Zuteilen-Blatt.
+ *
+ * Anders als `assignmentDistance` nur **davor**: Was danach schon geplant ist,
+ * ist kein „zuletzt". Und nur Zusammenkünfte, die stattfanden (T30). Wer im
+ * geladenen Bestand davor nie dran war, fehlt.
+ */
+export function zuletztImBereich(
+  weeks: readonly Week[],
+  wi: number,
+  bereich: string,
+  services: readonly Service[],
+  wer: (z: Zuteilung | undefined) => string | undefined,
+): Map<string, number> {
+  const out = new Map<string, number>()
+  const ziel = weeks[wi]
+  if (!ziel) return out
+  const zielMs = Date.parse(ziel.start)
+  for (const week of weeks) {
+    if (!(Date.parse(week.start) < zielMs)) continue
+    const d = wochenAbstand(week, ziel)
+    for (const tab of MEETING_TABS) {
+      if (istAusgefallen(week, tab)) continue
+      for (const platz of allePlaetze(week[tab], services)) {
+        if (bereichVon(platz) !== bereich) continue
+        const id = wer(platz.slot)
+        if (id && (out.get(id) ?? Infinity) > d) out.set(id, d)
+      }
+    }
+  }
+  return out
 }
 
 /** Aktueller Name auf einem Slot ("" = offen). */
@@ -429,15 +470,26 @@ export function tabsImUmfang(week: Week | undefined, gezeigt: MeetingKey, umfang
  * Rumpf nicht eingerückt war. Wer die Reinigungsrotation ändern wollte, las
  * vorher zweihundert Zeilen Strichlisten, Tie-Break und Schülerteil-Regeln.
  */
+/**
+ * Was die Wahl für einen Platz zusätzlich bestimmt: eine Bedingung (`extra`),
+ * die Gesamtlast statt der Aufgabenlast (`byTotal`), ein Kreis, der nur als
+ * letzte Wahl drankommt (`malus`).
+ */
+interface WahlOptionen {
+  extra?: (p: Person) => boolean
+  byTotal?: boolean
+  malus?: (p: Person) => boolean
+}
+
 interface Waehler {
   /** Beste noch freie Person für einen Platz — `null`, wenn niemand passt. */
-  pick(
-    kind: 'part' | 'helper',
-    priv: string | null | undefined,
-    opts?: { extra?: (p: Person) => boolean; byTotal?: boolean; malus?: (p: Person) => boolean },
-  ): Person | null
+  pick(kind: 'part' | 'helper', priv: string | null | undefined, opts?: WahlOptionen): Person | null
+  /** Alle noch freien Personen für einen Platz, die beste zuerst — `pick` ist die erste. */
+  rangfolge(kind: 'part' | 'helper', priv: string | null | undefined, opts?: WahlOptionen): Person[]
   /** Fester Wachtturm-Studium-Leiter, sonst Vertreter, sonst normale Auswahl. */
   pickConductor(): Person | null
+  /** Dieselbe Wahl als Rangfolge: der feste Leiter (oder sein Vertreter) vor allen anderen. */
+  rangfolgeLeiter(): Person[]
   /** Person auf den Platz setzen: eintragen, sperren, Strichlisten fortschreiben. */
   vergeben(kind: 'part' | 'helper', person: Person, slot: SlotAssignment): void
   /**
@@ -552,7 +604,7 @@ function waehler(
 
   const ergebnis = { count: 0, newly: [] as string[] }
 
-  const pick: Waehler['pick'] = (kind, priv, opts = {}) => {
+  const rangfolge: Waehler['rangfolge'] = (kind, priv, opts = {}) => {
     // Aufgaben nach Aufgaben-Last, Hilfsdienste nach Gesamtlast. byTotal erzwingt
     // die Gesamtlast auch für Aufgaben — für Schülerteile, damit Schwestern (die
     // sonst wenig Last tragen) automatisch häufiger drankommen, Brüder aber nicht.
@@ -576,8 +628,7 @@ function waehler(
         (!opts.extra || opts.extra(p)) &&
         !used.has(p.id),
     )
-    if (candidates.length === 0) return null
-    candidates.sort(
+    return candidates.sort(
       (a, b) =>
         eff(a) - eff(b) ||
         // Gleiche Last → wer am längsten nicht dran war, kommt zuerst.
@@ -592,7 +643,15 @@ function waehler(
         // fest, der Wert kann sich also nicht ändern.
         tie(a) - tie(b),
     )
-    return candidates[0] ?? null
+  }
+  const pick: Waehler['pick'] = (kind, priv, opts) => rangfolge(kind, priv, opts)[0] ?? null
+
+  const rangfolgeLeiter = (): Person[] => {
+    const designated = (flag: 'wtLeiter' | 'wtVertreter'): Person | undefined =>
+      persons.find((p) => p.priv[flag] && !istAbwesend(abwesend, p.id, weekIndex, tab) && !used.has(p.id))
+    const fest = designated('wtLeiter') ?? designated('wtVertreter')
+    const uebrige = rangfolge('part', 'studium')
+    return fest ? [fest, ...uebrige.filter((p) => p.id !== fest.id)] : uebrige
   }
 
   return {
@@ -600,13 +659,11 @@ function waehler(
     cleaningGroup,
     ergebnis,
     pick,
+    rangfolge,
+    rangfolgeLeiter,
 
     pickConductor() {
-      const designated = (flag: 'wtLeiter' | 'wtVertreter'): Person | undefined =>
-        persons.find(
-          (p) => p.priv[flag] && !istAbwesend(abwesend, p.id, weekIndex, tab) && !used.has(p.id),
-        )
-      return designated('wtLeiter') ?? designated('wtVertreter') ?? pick('part', 'studium')
+      return rangfolgeLeiter()[0] ?? null
     },
 
     vergeben(kind, person, slot) {
@@ -642,7 +699,7 @@ function schuelerteilOpts(
   slot: SlotAssignment,
   aux: boolean,
   persons: Person[],
-): { extra?: (p: Person) => boolean; byTotal?: boolean; malus?: (p: Person) => boolean } {
+): WahlOptionen {
   if (slot.male) return { extra: (p: Person) => !p.female }
   if (slot.bereichsKey === 'schulung') {
     return { byTotal: true, malus: (p: Person) => !isPlainPublisher(p) }
@@ -833,6 +890,47 @@ export function autoAssignMeeting(
   }
 
   return { weeks: next, count: w.ergebnis.count, newly: w.ergebnis.newly, unfilled }
+}
+
+/**
+ * **In welcher Reihenfolge „Automatisch" für diesen einen Platz wählen würde**
+ * (T121, Phase 5d) — die erste Person ist der „Vorschlag" im Zuteilen-Blatt,
+ * die übrigen stehen in derselben Ordnung darunter. Derselbe Wähler und
+ * dieselben Regeln je Platz wie in `autoAssignMeeting` (fester Studienleiter,
+ * Schülerteile, Ratgeber, Hilfsdienste nach Gesamtlast) — sonst schlüge das
+ * Blatt jemand anderen vor, als der Knopf „Automatisch" nähme.
+ *
+ * Leer, wo die Automatik nicht wählt — Gastredner und Kreisaufseher, das
+ * Gebet am Anfang (es folgt dem Vorsitz), die Reinigung (sie rotiert über die
+ * Gruppen), eine ausgefallene Zusammenkunft. Wer in dieser Zusammenkunft schon
+ * eingeteilt ist, auch auf diesem Platz, steht nicht darin: Gefragt ist, wer
+ * käme.
+ */
+export function rangfolgeFuer(
+  weeks: Week[],
+  sel: MeetingSlotSelection,
+  persons: Person[],
+  services: Service[],
+  groups: Group[],
+  abwesend: AbsenceSet,
+): Person[] {
+  const week = weeks[sel.wi]
+  const meeting = week?.[sel.tab]
+  if (!meeting || istAusgefallen(week, sel.tab)) return []
+  const w = waehler(weeks, sel.wi, sel.tab, meeting, persons, services, groups, abwesend)
+  if (sel.kind === 'ratgeber') return w.rangfolge('part', 'ratgeber')
+  if (sel.kind === 'helper') {
+    const svc = services.find((s) => s.key === sel.svc)
+    return svc && !svc.groups ? w.rangfolge('helper', serviceQualKey(svc.key)) : []
+  }
+  const section = meeting.sections[sel.si]
+  const item = section?.items[sel.ii]
+  if (!section || !item || isSong(item)) return []
+  const slot = slotsOf(item, sel.aux === true)[sel.ni]
+  if (!slot || isGuestRole(slot.rolle)) return []
+  if (istArt(section, 'eroeffnung') && slot.rolle === 'Gebet') return []
+  if (istArt(section, 'wtStudium') && slot.rolle === 'Leiter') return w.rangfolgeLeiter()
+  return w.rangfolge('part', slot.bereichsKey, schuelerteilOpts(item, slot, sel.aux === true, persons))
 }
 
 /**

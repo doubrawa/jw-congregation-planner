@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { syncAuxSlots } from './aux-class'
 import { buildImportWeek, DEMO_SERVICES } from '../../tests/testdaten/testdaten'
 import { displayName, isSong, serviceQualKey } from './helpers'
-import { LOAD_RADIUS, LOAD_WEEKS, loadWindow, partWorkload } from './auslastung'
+import { lastFenster, LOAD_RADIUS, LOAD_WEEKS, partWorkload, workloadOf } from './auslastung'
 import { autoAssignMeeting } from './planning'
 import type { Meeting, Person, Qualifications, Service, SlotAssignment, Week } from './types'
 
@@ -397,15 +397,16 @@ describe('Anzeige und Entscheidung nutzen dasselbe Fenster', () => {
     weeks[10 + LOAD_RADIUS + 1].mid = belegt(displayName(b))
     weeks[10].mid = einPlatz('vortrag')
 
-    // Das zeigen auch die Mini-Quadrate: A hat im Fenster eine Aufgabe, B nicht.
-    expect(loadWindow(weeks, a, 10)).toContain('task')
-    expect(loadWindow(weeks, b, 10)).not.toContain('task')
+    // Das zeigen auch die Punkte im Sheet: A hat im Fenster eine Aufgabe, B keine.
+    expect(workloadOf(lastFenster(weeks, 10), a)).toBe(1)
+    expect(workloadOf(lastFenster(weeks, 10), b)).toBe(0)
     expect(gewaehlt(weeks, 10, [a, b])).toBe(displayName(b))
   })
 
-  it('das Sheet zeigt so viele Wochen, wie das Fenster breit ist', () => {
+  it('das Fenster ist so breit, wie das Sheet sagt („Aufgaben in 5 Wochen")', () => {
     expect(LOAD_WEEKS).toBe(LOAD_RADIUS * 2 + 1)
-    expect(loadWindow([], alsPerson('X'), 0)).toHaveLength(LOAD_WEEKS)
+    const weeks: Week[] = Array.from({ length: 20 }, (_, i) => wk(emptyMeeting(), emptyMeeting(), i))
+    expect(lastFenster(weeks, 10)).toHaveLength(LOAD_WEEKS)
   })
 })
 

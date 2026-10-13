@@ -1,3 +1,4 @@
+import { enthaelt } from '../components/suche'
 import { displayName, privWert } from '../data/helpers'
 import type { Person, Role } from '../data/types'
 
@@ -20,13 +21,6 @@ const NUR_TELEFON = /^[\d\s+()./-]+$/
 
 const ziffern = (s: string) => s.replace(/\D+/g, '')
 
-/** Ohne Akzente und Umlautpunkte, ß als ss — so tippt, wer sie nicht zur Hand hat: „kruger". */
-const ohneZeichen = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').replace(/ß/g, 'ss')
-
-/** Deutsche Umschrift — so tippt, wer sie kennt: „krueger", „boehm". */
-const umschrift = (s: string) =>
-  ohneZeichen(s.replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue'))
-
 /**
  * Volltext über Name, Telefon und E-Mail. Sieht die Eingabe nach
  * einer Telefonnummer aus, wird zusätzlich ziffernweise verglichen — sonst
@@ -41,8 +35,7 @@ const umschrift = (s: string) =>
 function passtZuText(person: Person, q: string): boolean {
   const namen = [displayName(person), `${person.ln} ${person.fn}`, `${person.ln}, ${person.fn}`]
   const heu = [...namen, person.tel, person.mail].join('\n').toLowerCase()
-  const gesucht = ohneZeichen(q)
-  if (heu.includes(q) || ohneZeichen(heu).includes(gesucht) || umschrift(heu).includes(gesucht)) return true
+  if (enthaelt(heu, q)) return true
   if (!NUR_TELEFON.test(q)) return false
   const nur = ziffern(q)
   return nur.length > 0 && ziffern(person.tel).includes(nur)

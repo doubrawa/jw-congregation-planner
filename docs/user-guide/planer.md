@@ -161,10 +161,24 @@ Gesprächs **zweimal** kommt – einer für den Schüler, einer für die Partner
 oder den Partner. Beide tragen dieselben Angaben, so wie das Formular es
 vorsieht. Die Zettel der Zusätzlichen Klasse sind dabei und tragen ihren Raum.
 
-- **Auf eine Zuteilung tippen**, um sie zu ändern. Es öffnet sich eine Liste
-  passender Personen. Dabei werden **Abwesenheiten** und **Aufgabenbereiche**
-  (Qualifikationen) berücksichtigt, und Doppelbelegungen am selben Tag werden
-  angezeigt.
+- **Auf einen Platz tippen**, um ihn zu besetzen oder umzuteilen. Es öffnet
+  sich das Blatt **Zuteilen**: oben der Abschnitt, der Punkt mit Nummer, Tag und
+  Dauer. Ist der Platz besetzt, steht darunter, wer ihn hat und wie es steht —
+  derselbe Punkt wie im Plan, dazu „wartet auf Bestätigung", „bestätigt" oder
+  rot der Grund, etwa „abwesend 7.–11. September". Dort stehen auch
+  **Entfernen** (mit Rückfrage) und bei Schulungsaufgaben **S‑89 anzeigen**.
+- Unter **Wer übernimmt?** suchst du nach Namen — auch ohne Umlaute („kruger")
+  und in beliebiger Reihenfolge („krüger s"). Darunter stehen alle, die den
+  **Aufgabenbereich** haben („Mit diesem Aufgabenbereich: 12"). Ganz oben steht
+  der **Vorschlag**: die Person, die **Automatisch** hier nehmen würde; die
+  übrigen folgen in derselben Reihenfolge.
+- Jede Zeile sagt, was für oder gegen die Person spricht: **rot** abwesend mit
+  dem Zeitraum (antippen geht nicht, die App sagt warum), **„An diesem Tag
+  schon: Mikrofone"** bei einer Doppelbelegung (das darfst du trotzdem), sonst
+  **„zuletzt vor 6 Wochen"** in diesem Aufgabenbereich oder „länger nicht dran"
+  und, was am anderen Tag der Woche schon ansteht („So Saalordner"). Rechts
+  zeigen **fünf Punkte** die Auslastung: so viele voll, wie die Person in den
+  fünf Wochen um diese herum Aufgaben hat. Abwesende stehen am Ende.
 - Die Abwesenheiten kommen aus den Einträgen, die die Verkündiger selbst in
   ihrem **Profil** erfassen (**Von–Bis** als Datum). Geprüft wird der
   **Tag der jeweiligen Zusammenkunft**, nicht die Woche: wer nur übers Wochenende
@@ -382,24 +396,24 @@ falls der Besuch verschoben wird.
 ### Öffentlicher Vortrag: Gastredner oder eigener Redner
 
 Der Rednerplatz am Wochenende kann beides sein, und du entscheidest es Woche für
-Woche — im Zuteilungs-Fenster, ohne einen zusätzlichen Schalter:
+Woche — im Zuteilungs-Blatt, ohne einen zusätzlichen Schalter:
 
 | Was du tust | Was daraus wird |
 | --- | --- |
 | Name und Versammlung in die **Freitext-Felder** eintragen | Gastredner. Er bekommt keine Aufgabe, keine Erinnerung, keine Bestätigung und zählt nicht auf die Auslastung — er gehört ja nicht zu euch. |
 | Eine **Person aus der Liste** antippen | Ein Bruder eurer Versammlung. Er bekommt die Aufgabe wie jede andere: Bestätigung, Erinnerung, Anrechnung auf die Auslastung. |
 
-Beides steht im selben Fenster untereinander, jeder Weg führt also auch wieder
+Beides steht im selben Blatt untereinander, jeder Weg führt also auch wieder
 zurück. **Entfernen** und **Leeren** setzen den Platz auf „Gastredner" zurück —
 den Redner des öffentlichen Vortrags vereinbart man, deshalb besetzt die
 Automatik ihn nie von sich aus.
 
 Ein auswärtiger Redner muss dafür **nicht** als Person angelegt werden.
 
-Die Auslastung zählt dieselben **fünf Wochen**, die du im Zuteilungs-Fenster
-unter jedem Namen siehst („2 Aufgaben in 5 Wochen") und die die fünf kleinen
-Quadrate daneben zeigen – die Zahl erklärt also genau die Reihenfolge, in der die
-Personen dort stehen. Sind mehrere gleichauf — bei den Schulungsaufgaben der
+Die Auslastung zählt dieselben **fünf Wochen**, die im Zuteilungs-Blatt die
+Punkte neben jedem Namen zeigen („Aufgaben in 5 Wochen") – die Punkte erklären
+also die Reihenfolge, in der die Personen dort stehen, und der **Vorschlag**
+oben ist genau, wen die Automatik nähme. Sind mehrere gleichauf — bei den Schulungsaufgaben der
 Normalfall, weil es mehr Schwestern als Plätze gibt —, kommt zuerst, **wer am
 längsten nicht dran war**; dafür schaut die Automatik über alle geladenen Wochen,
 nicht nur über das Fenster. Aufgaben in der

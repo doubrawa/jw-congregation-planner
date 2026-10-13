@@ -3,17 +3,9 @@ import { useKalendertag } from '../app/useKalendertag'
 import { Punkt } from '../bausteine/Punkt'
 import { AbwesenheitEintragen } from '../components/AbwesenheitEintragen'
 import { AbwesenheitEntfernen } from '../components/AbwesenheitEntfernen'
-import { datumsFormat } from '../components/datum-anzeige'
-import { fromIso } from '../data/meeting-dates'
-import type { Absence } from '../data/types'
+import { tageSpanne } from '../components/datum-anzeige'
 import { useT } from '../i18n/useT'
 import { eigeneAbwesenheiten } from './abwesenheiten'
-
-/** Ein Zeitraum in Worten — ein einzelner Tag einmal, nicht „1. – 1. November". */
-function zeitraum(a: Absence, lang: string): string {
-  const fmt = datumsFormat(lang, 'kurzerWochentag')
-  return a.from === a.to ? fmt.format(fromIso(a.from)) : fmt.formatRange(fromIso(a.from), fromIso(a.to))
-}
 
 /**
  * **Die eigenen Abwesenheiten** im Profil (T121): was ansteht oder gerade läuft,
@@ -33,7 +25,7 @@ export function AbwesenheitenKarte() {
         <div key={a.id} className="profil-abw">
           <Punkt art="problem" />
           <span className="profil-abw-text">
-            <span className="profil-abw-zeit">{zeitraum(a, state.lang)}</span>
+            <span className="profil-abw-zeit">{tageSpanne(a.from, a.to, state.lang, 'kurzerWochentag')}</span>
             {a.reason && (
               <span className="klein-text" dir="auto">
                 {a.reason}

@@ -8,6 +8,7 @@
  * Tastenanschlag. Bis dahin baute jeder Helfer seinen Formatierer je Aufruf.
  */
 
+import { fromIso } from '../data/meeting-dates'
 import type { Lang } from '../data/types'
 import { LOCALES } from '../i18n/langs'
 
@@ -24,6 +25,8 @@ const FORMATE = {
   tagZahl: { day: 'numeric', month: 'numeric' },
   /** „Dienstag" — der Name der Karte einer Zusammenkunft */
   wochentag: { weekday: 'long' },
+  /** „So." — vor den Aufgaben am anderen Tag der Woche, im Zuteilen-Blatt */
+  wochentagKurz: { weekday: 'short' },
   /** „12. Oktober" — als Spanne „12.–18. Oktober" */
   tagMonat: { day: 'numeric', month: 'long' },
   /** „1. Dezember 2026" — als Zeitraum „1. Dezember 2026 – 28. Februar 2027" */
@@ -56,4 +59,14 @@ export function datumsFormat(lang: string, format: DatumsFormat): Intl.DateTimeF
     gemerkt.set(schluessel, formatierer)
   }
   return formatierer
+}
+
+/**
+ * Ein Zeitraum von Tag zu Tag (beide ISO) in Worten — ein einzelner Tag
+ * einmal, nicht „1.–1. November". Für Abwesenheiten im Profil und im
+ * Zuteilen-Blatt.
+ */
+export function tageSpanne(von: string, bis: string, lang: string, format: DatumsFormat): string {
+  const fmt = datumsFormat(lang, format)
+  return von === bis ? fmt.format(fromIso(von)) : fmt.formatRange(fromIso(von), fromIso(bis))
 }

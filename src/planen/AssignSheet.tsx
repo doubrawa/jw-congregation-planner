@@ -1,63 +1,130 @@
-import { useMemo, useState } from 'react'
-import { useApp } from '../app/context'
+import { useId, useMemo, useState, type ReactNode } from 'react'
+import { useApp, type AppState } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
-import { Sheet } from '../components/Sheet'
+import { Punkt } from '../bausteine/Punkt'
+import { datumsFormat, tageSpanne } from '../components/datum-anzeige'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
-import { herkunftVon, isSong, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER, rolleBasis, slotsOf } from '../data/helpers'
-import { LOAD_RADIUS, type WeekLoad } from '../data/auslastung'
-import { fsLeaderValue } from '../data/fs'
-import { buildS89ForSlot, slotValue } from '../data/planning'
+import { Sheet } from '../components/Sheet'
+import { nameTrifft } from '../components/suche'
+import { LOAD_WEEKS } from '../data/auslastung'
+import { dauerAbtrennen, herkunftVon, isSong, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER, rolleBasis, slotsOf } from '../data/helpers'
+import { meetingDate } from '../data/meeting-dates'
+import { buildS89ForSlot } from '../data/planning'
+import type { Absence, S89Payload, SlotAssignment, SlotSelection, Week } from '../data/types'
+import { wochenHer } from '../i18n/relative-time'
 import type { Dict } from '../i18n/ui'
-import { fill, useT, zuteilungenText } from '../i18n/useT'
-import { relativeWeekLabel } from '../i18n/relative-time'
-import type { Lang, SlotAssignment, SlotSelection } from '../data/types'
+import { fill, useProgWeek, useT, zuteilungenText, type I18n } from '../i18n/useT'
 import { kandidaten, type Candidate } from './kandidaten'
+import { useAktuellerPlatz, type AktuellerPlatz } from './useAktuellerPlatz'
 import '../components/overlays.css'
 import './planen.css'
 
 /**
- * Tooltip der Mini-Quadrate: Farbe (frei / Aufgabe / Hilfsdienst) plus die Woche
- * relativ zur geplanten — z. B. „Aufgabe nächste Woche", „Hilfsdienst vor 2
- * Wochen", „frei diese Woche". `offset` ist der Wochenversatz (−2 … +2).
- */
-function loadTitle(t: Dict, l: WeekLoad, offset: number, lang: Lang): string {
-  const kind = l === 'task' ? t.loadAufgabe : l === 'helper' ? t.loadHilfsdienst : l === 'none' ? t.loadFrei : ''
-  if (!kind) return ''
-  const when = relativeWeekLabel(offset, lang)
-  return when ? `${kind} ${when}` : kind
-}
-
-
-/**
- * Zuteilungs-Sheet: mobil Bottom-Sheet, Desktop zentriertes Modal.
- * Kandidaten = qualifizierte Personen (Abwesende ausgegraut ans Listenende,
- * Auswahl blockiert mit Toast); Reinigungs-Slots: Gruppe 1–3.
+ * **Zuteilen** (T121, Entwurf `GZuteilen`): wer den Platz übernimmt. Oben, wer
+ * ihn gerade hat und wie es um ihn steht — dieselbe Lage wie seine Zeile im
+ * Plan —, darunter die Suche und alle, die ihn übernehmen können.
+ *
+ * Zuerst steht der **Vorschlag**: die Person, die „Automatisch" hier nähme
+ * (`rangfolgeFuer`), die übrigen in derselben Ordnung. Jede Zeile sagt, was
+ * für oder gegen die Person spricht — abwesend, an diesem Tag schon dran,
+ * sonst wann zuletzt in diesem Bereich —, rechts die Punkte der Auslastung.
+ * Abwesende stehen am Ende und lassen sich nicht wählen.
  */
 export function AssignSheet({ sel }: { sel: SlotSelection }) {
+  const { dispatch } = useApp()
+  const kopf = useZuteilenKopf(sel)
+  const close = () => dispatch({ type: 'closeSlot' })
+  return (
+    <Sheet
+      label={kopf.label}
+      eyebrow={
+        kopf.abschnitt && (
+          <div className="sheet-marke zuteilen-abschnitt" data-farbe={kopf.abschnitt.farbe}>
+            {kopf.abschnitt.name}
+          </div>
+        )
+      }
+      title={kopf.titel}
+      sub={kopf.sub}
+      onClose={close}
+    >
+      <ZuteilenInhalt sel={sel} onClose={close} />
+    </Sheet>
+  )
+}
+
+interface Kopf {
+  /** Was ein Vorleseprogramm ansagt: Punkt und Rolle. */
+  label: string
+  titel: ReactNode
+  /** Tag und Dauer, beim Treffpunkt Zeit und Ort. */
+  sub: string
+  /** Der Abschnitt über dem Titel, in seiner Farbe — nur bei Programmpunkten. */
+  abschnitt?: { name: string; farbe?: string }
+}
+
+/**
+ * Der Kopf des Blatts: der Abschnitt, der Punkt mit seiner Nummer, der Tag und
+ * die Dauer. Titel und Abschnitt in der Sprache des Programms (`useProgWeek`,
+ * wie im Plan), Rolle und Raum in der des Lesers.
+ */
+function useZuteilenKopf(sel: SlotSelection): Kopf {
+  const { state } = useApp()
+  const { t, tp, tu } = useT()
+  const rawWeek = state.weeks[sel.wi]
+  const { week, tpw } = useProgWeek(rawWeek)
+  const rolle = sel.labelRolle ? tu(sel.labelRolle) : ''
+  const mitRolle = (titel: string) => [titel, rolle].filter(Boolean).join(' · ')
+
+  if (sel.kind === 'fs') {
+    const inst = state.fsWeeks[sel.wi]?.find((i) => i.id === sel.instId)
+    const label = mitRolle(tu(sel.label))
+    return { label, titel: label, sub: inst ? `${inst.time} · ${tu(inst.place)}` : '' }
+  }
+
+  const datum = rawWeek ? datumsFormat(state.lang, 'tag').format(meetingDate(rawWeek, sel.tab, state.congregation.times)) : ''
+  if (sel.kind !== 'part') {
+    const label = mitRolle(tu(sel.label))
+    return {
+      label,
+      titel: label,
+      sub: datum,
+      abschnitt: sel.kind === 'helper' ? { name: t.hilfsdienste } : undefined,
+    }
+  }
+
+  const section = week?.[sel.tab].sections[sel.si]
+  const roh = section?.items[sel.ii]
+  const item = roh && !isSong(roh) ? roh : undefined
+  const label = mitRolle(item ? tpw(item.title) : tp(sel.label))
+  const dauer = item ? dauerAbtrennen(item.meta ?? '', item.mins).dauer : null
+  return {
+    label,
+    titel: (
+      <>
+        {item?.num != null && <span className="prog-num">{item.num} </span>}
+        {label}
+      </>
+    ),
+    sub: [datum, dauer ? tpw(dauer) : ''].filter(Boolean).join(' · '),
+    abschnitt: section ? { name: tpw(section.label), farbe: section.farbe } : undefined,
+  }
+}
+
+/**
+ * Der Inhalt des Blatts — ohne die Hülle, damit ihn am Desktop auch die
+ * Spalte neben dem Programm zeigen kann.
+ */
+function ZuteilenInhalt({ sel, onClose }: { sel: SlotSelection; onClose: () => void }) {
   const { state, dispatch } = useApp()
   const abwesend = useAbwesend()
   const i18n = useT()
-  const { t, tu, tp } = i18n
-  const close = () => dispatch({ type: 'closeSlot' })
-
-  // Treffpunkt-Leiter (fs) hat eine eigene Datenquelle und keine Meeting-Slots.
-  const fsInst = sel.kind === 'fs' ? state.fsWeeks[sel.wi]?.find((i) => i.id === sel.instId) : undefined
-  const current = sel.kind === 'fs' ? fsLeaderValue(state.fsWeeks, sel.wi, sel.instId) : slotValue(state.weeks, sel)
+  const { t, tu } = i18n
+  const sucheId = useId()
+  const [suche, setSuche] = useState('')
+  const aktuell = useAktuellerPlatz(sel)
+  const current = aktuell?.name ?? ''
   const s89 = sel.kind === 'fs' ? null : buildS89ForSlot(state.weeks, sel, state.congregation.times)
-  // Titel in der Sprache der Versammlung, Rolle und Raum in der des Lesers.
-  // Zusammengefügt war beides ein String und lief ganz durch `tp` — „Leser"
-  // stand damit in der Versammlungssprache, „Zusätzliche Klasse" war schon
-  // übersetzt und wurde ein zweites Mal hindurchgeschickt.
-  const titelTeil = sel.kind === 'part' ? tp(sel.label) : tu(sel.label)
-  const title = [titelTeil, sel.labelRolle ? tu(sel.labelRolle) : '']
-    .filter(Boolean)
-    .join(' · ')
-  const sub =
-    sel.kind === 'fs'
-      ? fsInst
-        ? `${fsInst.time} · ${tu(fsInst.place)}`
-        : ''
-      : `${tp(state.weeks[sel.wi]?.range ?? '')} · ${sel.tab === 'mid' ? t.tabMid : t.tabWe}`
 
   // Redner-Platz des öffentlichen Vortrags. Er kann **zweierlei** sein, und der
   // Planer entscheidet es Woche für Woche (T29):
@@ -66,7 +133,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   //   Person antippen     → eigener Redner (Rolle „Redner" + pid)
   //
   // Die Wahl **ist** der Schalter — es braucht keinen zusätzlichen Umschalter.
-  // Das Sheet zeigt beides untereinander, also führt jeder Weg in den jeweils
+  // Das Blatt zeigt beides untereinander, also führt jeder Weg in den jeweils
   // anderen Zustand zurück.
   const guest = sel.kind === 'part' && Boolean(sel.guest)
   /** Der Platz, um den es hier geht — nur bei Programmpunkten. */
@@ -84,9 +151,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   // Beim eigenen Redner bleiben die Freitext-Felder leer: der Name gehört einer
   // Person, nicht einem Gast. Vorbelegt wäre er ein Angebot, ihn zu verdoppeln.
   const [guestName, setGuestName] = useState(guest && !eigenerRedner ? current : '')
-  const [guestCong, setGuestCong] = useState(
-    guest && !eigenerRedner ? herkunftVon(slotJetzt()) : '',
-  )
+  const [guestCong, setGuestCong] = useState(guest && !eigenerRedner ? herkunftVon(slotJetzt()) : '')
 
   const applyGuest = () => {
     const name = guestName.trim()
@@ -94,10 +159,9 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
       dispatch({ type: 'showToast', text: t.toastNameEingeben })
       return
     }
-    const cong = guestCong.trim()
     // Herkunft als eigenes Feld: an die Rolle gehängt stünde ein
     // Versammlungsname mitten in dem Feld, über das die Regeln entscheiden.
-    dispatch({ type: 'assign', name, rolle: guestBase, herkunft: cong })
+    dispatch({ type: 'assign', name, rolle: guestBase, herkunft: guestCong.trim() })
   }
 
   // Treffpunkt-Leiter: derselbe Doppelweg wie beim Redner, aus demselben Grund
@@ -105,6 +169,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   // der steht in keiner Personenliste. Nur ein Feld statt zweier: eine
   // Herkunftsversammlung hat er nicht, und Zeit und Ort stehen schon im Kopf.
   const fsFrei = sel.kind === 'fs'
+  const fsInst = sel.kind === 'fs' ? state.fsWeeks[sel.wi]?.find((i) => i.id === sel.instId) : undefined
   // Vorbelegt nur, wenn dort schon Freitext steht. Gehört der Name einer
   // Person, wäre er hier ein Angebot, sie zu verdoppeln (wie beim Redner).
   const [externName, setExternName] = useState(fsInst?.lext ? current : '')
@@ -118,17 +183,18 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   }
 
   /*
-   * **Gemerkt, nicht bei jedem Render neu.** Die Liste sortiert erst alle
-   * Personen und rechnet dann je Kandidat Auslastung und Ladefenster über fünf
-   * Wochen — bei 300 Personen weit über hunderttausend Schritte. Gelaufen ist
-   * das bisher bei **jedem** Render des offenen Blatts: bei jedem Buchstaben in
-   * den Gastredner-Feldern und auch dann, wenn nur ein Hinweis-Streifen
-   * ausblendete.
+   * **Gemerkt, nicht bei jedem Render neu.** Die Liste rechnet je Kandidat
+   * Auslastung, Rangfolge und „zuletzt" über die geladenen Wochen — bei 300
+   * Personen weit über hunderttausend Schritte. Ohne `useMemo` liefe das bei
+   * jedem Buchstaben in der Suche und in den Freitext-Feldern.
    */
-  const candidates = useMemo(
-    () => kandidaten(state, sel, abwesend, t, tu),
-    [state, sel, abwesend, t, tu],
-  )
+  const candidates = useMemo(() => kandidaten(state, sel, abwesend, t, tu), [state, sel, abwesend, t, tu])
+  const gefiltert = suche.trim() ? candidates.filter((c) => nameTrifft(c.name, suche.trim())) : candidates
+  const personen = !sel.groups && candidates.length > 0
+  // Gezählt wird, wer den Bereich hat — am Redner-Platz stehen statt dessen
+  // die Ältesten und Dienstamtgehilfen (`kandidaten`), dort fehlt die Zahl.
+  const mitBereich = personen && !guest
+  const mitLast = candidates.some((c) => c.last !== undefined)
 
   /*
    * Entfernen setzt den Redner-Platz auf seinen Ausgangszustand zurück
@@ -163,25 +229,14 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   }
 
   return (
-    <Sheet label={title} title={title} sub={sub} onClose={close}>
-      {current && (
-        <div className="sheet-current">
-          <span>
-            {t.aktuellLbl} <strong>{tu(current)}</strong>
-          </span>
-          <div className="sheet-current-actions">
-            {s89 && (
-              <button
-                type="button"
-                className="sheet-s89-link"
-                onClick={() => dispatch({ type: 'openS89', payload: s89 })}
-              >
-                {t.s89Open}
-              </button>
-            )}
-            <EntfernenKnopf className="sheet-remove" text={t.entfernen} frage={t.entfernenSicher} onEntfernen={freimachen} />
-          </div>
-        </div>
+    <>
+      {aktuell && (
+        <AktuellKarte
+          aktuell={aktuell}
+          s89={s89}
+          onS89={(payload) => dispatch({ type: 'openS89', payload })}
+          onEntfernen={freimachen}
+        />
       )}
 
       {guest && (
@@ -189,7 +244,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
           <input
             type="text"
             dir="auto"
-            className="lac-add-input"
+            className="feld"
             placeholder={t.rednerNamePh}
             aria-label={t.rednerNamePh}
             value={guestName}
@@ -198,16 +253,15 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
           <input
             type="text"
             dir="auto"
-            className="lac-add-input"
+            className="feld"
             placeholder={t.rednerVersPh}
             aria-label={t.rednerVersPh}
             value={guestCong}
             onChange={(e) => setGuestCong(e.target.value)}
           />
-          <button type="button" className="lac-add-btn" onClick={applyGuest}>
+          <button type="button" className="knopf-pille" onClick={applyGuest}>
             {t.uebernehmenBtn}
           </button>
-          <div className="sheet-guest-hint">{t.oderPersonWaehlen}</div>
         </div>
       )}
 
@@ -216,20 +270,45 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
           <input
             type="text"
             dir="auto"
-            className="lac-add-input"
+            className="feld"
             placeholder={t.nameLbl}
             aria-label={t.nameLbl}
             value={externName}
             onChange={(e) => setExternName(e.target.value)}
           />
-          <button type="button" className="lac-add-btn" onClick={applyExtern}>
+          <button type="button" className="knopf-pille" onClick={applyExtern}>
             {t.uebernehmenBtn}
           </button>
-          <div className="sheet-guest-hint">{t.oderPersonWaehlen}</div>
         </div>
       )}
 
-      <div className="sheet-list">
+      {/* Wo es auch einen Freitext gibt, ist die Liste der andere Weg — und
+          sagt das, statt noch einmal zu fragen, wer übernimmt. */}
+      {personen && (
+        <div className="zuteilen-suche">
+          <label className="feld-marke" htmlFor={sucheId}>
+            {guest || fsFrei ? t.oderPersonWaehlen : t.werUebernimmt}
+          </label>
+          <input
+            id={sucheId}
+            type="search"
+            dir="auto"
+            className="feld"
+            placeholder={t.nameSuchen}
+            value={suche}
+            onChange={(e) => setSuche(e.target.value)}
+          />
+        </div>
+      )}
+
+      {(mitBereich || mitLast) && (
+        <div className="zuteilen-zaehler">
+          <span>{mitBereich ? fill(t.mitBereichN, { n: candidates.length }) : ''}</span>
+          {mitLast && <span>{fill(t.aufgabenInWochen, { w: LOAD_WEEKS })}</span>}
+        </div>
+      )}
+
+      <div className="zuteilen-liste">
         {/*
           Gruppen-Slot ohne angelegte Gruppen: die Liste blieb wortlos leer,
           während die Auto-Zuteilung trotzdem „Gruppe 1…3" einträgt (feste
@@ -239,9 +318,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
           Der Hinweis kommt ohne neuen Wörterbuch-Schlüssel aus: er benennt
           mit `gruppenCard`, was fehlt, und führt mit `navEinstellungen`
           dorthin, wo es angelegt wird — beide Texte gibt es in allen 34
-          Sprachen. Ein eigener Satz hieße 34 Übersetzungen, und eine
-          erfundene ist schlimmer als eine zusammengesetzte aus geprüften
-          Bausteinen.
+          Sprachen.
         */}
         {sel.groups && candidates.length === 0 && (
           <div className="sheet-empty">
@@ -250,7 +327,7 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
               type="button"
               className="sheet-empty-action"
               onClick={() => {
-                close()
+                onClose()
                 dispatch({ type: 'navigate', screen: 'einstellungen' })
               }}
             >
@@ -258,56 +335,140 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
             </button>
           </div>
         )}
-        {candidates.map((cand) => (
-          <button
-            key={cand.key}
-            type="button"
-            className={[
-              'cand-row',
-              cand.absent ? 'is-absent' : '',
-              cand.today.length > 0 ? 'is-busy' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            onClick={() => pick(cand)}
-          >
-            <span className="avatar avatar--tint avatar--36">{cand.initials}</span>
-            <span>
-              <span className="cand-name">{cand.name}</span>
-              <span className="cand-sub">{cand.sub}</span>
-              {cand.today.length > 0 && (
-                <span className="cand-today">
-                  {t.sheetSchonHeute}: {zuteilungenText(cand.today, i18n)}
-                </span>
-              )}
-            </span>
-            {/* Status-Chip und Quadrate in einer Zelle: die Quadrate stehen
-                darin ganz rechts und fluchten so über alle Zeilen — egal ob
-                ein Chip davor steht und wie breit er ist. */}
-            <span className="cand-meta">
-              {cand.absent ? (
-                <span className="cand-chip cand-chip--absent">{t.abwesendChip}</span>
-              ) : cand.free ? (
-                <span className="cand-chip cand-chip--frei">{t.freiChip}</span>
-              ) : null}
-              <span className="cand-load">
-                {(cand.load ?? []).map((l, i) => (
-                  <span
-                    key={i}
-                    className="cand-load-cell"
-                    data-load={l}
-                    // Die geplante Woche selbst wird umrandet. Als Attribut,
-                    // nicht per :nth-child — sonst zeigt die Umrandung auf das
-                    // falsche Quadrat, sobald sich LOAD_RADIUS ändert.
-                    data-jetzt={i === LOAD_RADIUS ? '' : undefined}
-                    title={loadTitle(t, l, i - LOAD_RADIUS, state.lang)}
-                  />
-                ))}
-              </span>
-            </span>
-          </button>
+        {gefiltert.map((cand) => (
+          <KandidatZeile key={cand.key} cand={cand} week={state.weeks[sel.wi]} i18n={i18n} onClick={() => pick(cand)} />
         ))}
       </div>
-    </Sheet>
+    </>
+  )
+}
+
+/**
+ * Wer den Platz gerade hat: Punkt nach seiner Lage, der Name, darunter wie es
+ * steht — bei einer Abwesenheit ihr Zeitraum. Daneben „Entfernen" (mit
+ * Rückfrage) und bei einer Schulungsaufgabe der Weg zum S-89.
+ */
+function AktuellKarte({
+  aktuell,
+  s89,
+  onS89,
+  onEntfernen,
+}: {
+  aktuell: AktuellerPlatz
+  s89: S89Payload | null
+  onS89: (payload: S89Payload) => void
+  onEntfernen: () => void
+}) {
+  const { state } = useApp()
+  const { t, tu } = useT()
+  const { anzeige, abwesenheit } = aktuell
+  const zeile = abwesenheit ? abwesendText(abwesenheit, t, state.lang) : (anzeige.hinweis ?? anzeige.status)
+  const problem = anzeige.lage === 'problem'
+  return (
+    <div className="zuteilen-aktuell">
+      <Punkt art={anzeige.lage} />
+      <span className="zuteilen-aktuell-text">
+        <span className="sr-only">{t.aktuellLbl} </span>
+        <span className="zuteilen-name">{tu(aktuell.name)}</span>
+        {zeile && <span className={problem ? 'zuteilen-info is-problem' : 'zuteilen-info'}>{zeile}</span>}
+        {s89 && (
+          <button type="button" className="verweis-leise zuteilen-s89" onClick={() => onS89(s89)}>
+            {t.s89Open}
+          </button>
+        )}
+      </span>
+      <EntfernenKnopf
+        className="knopf-pille zuteilen-entfernen"
+        text={t.entfernen}
+        frage={t.entfernenSicher}
+        onEntfernen={onEntfernen}
+      />
+    </div>
+  )
+}
+
+/** „abwesend 7.–11. September" — in der Karte oben und in der Zeile darunter derselbe Satz. */
+function abwesendText(a: Pick<Absence, 'from' | 'to'>, t: Dict, lang: string): string {
+  return fill(t.abwesendZeitraum, { zeitraum: tageSpanne(a.from, a.to, lang, 'tagMonat') })
+}
+
+/** Ganze Klassennamen, damit eine Textsuche sie findet (`tests/css-klassen.test.ts`). */
+const INFO_KLASSE = {
+  problem: 'zuteilen-info is-problem',
+  doppelt: 'zuteilen-info is-doppelt',
+  leise: 'zuteilen-info',
+} as const
+
+/**
+ * Was eine Zeile über die Person sagt — das Dringendste zuerst: abwesend
+ * (mit Zeitraum), an diesem Tag schon dran, sonst wann zuletzt in diesem
+ * Bereich und was am anderen Tag der Woche schon ansteht („So. Saalordner").
+ * Wo es davon nichts gibt (Gruppen, Treffpunkte), die Stellung.
+ */
+function kandidatInfo(
+  cand: Candidate,
+  week: Week | undefined,
+  i18n: I18n,
+  { lang, congregation }: Pick<AppState, 'lang' | 'congregation'>,
+): { text: string; ton: keyof typeof INFO_KLASSE } {
+  const { t } = i18n
+  if (cand.absent) {
+    return { text: cand.abwesenheit ? abwesendText(cand.abwesenheit, t, lang) : t.abwesendChip, ton: 'problem' }
+  }
+  if (cand.today.length > 0) return { text: `${t.sheetSchonHeute}: ${zuteilungenText(cand.today, i18n)}`, ton: 'doppelt' }
+  const teile: string[] = []
+  if (cand.zuletzt === null) teile.push(t.zuletztLange)
+  else if (cand.zuletzt !== undefined) {
+    const her = wochenHer(cand.zuletzt, lang)
+    if (her) teile.push(fill(t.zuletztWann, { wann: her }))
+  }
+  if (cand.andererTag && week) {
+    const tag = datumsFormat(lang, 'wochentagKurz').format(meetingDate(week, cand.andererTag.tab, congregation.times))
+    teile.push(`${tag} ${zuteilungenText(cand.andererTag.aufgaben, i18n)}`)
+  }
+  return { text: teile.join(' · ') || cand.sub, ton: 'leise' }
+}
+
+function KandidatZeile({
+  cand,
+  week,
+  i18n,
+  onClick,
+}: {
+  cand: Candidate
+  week: Week | undefined
+  i18n: I18n
+  onClick: () => void
+}) {
+  const { state } = useApp()
+  const { t } = i18n
+  const info = kandidatInfo(cand, week, i18n, state)
+  return (
+    <button type="button" className={cand.absent ? 'zuteilen-zeile is-abwesend' : 'zuteilen-zeile'} onClick={onClick}>
+      <span className="zuteilen-zeile-text">
+        <span className="zuteilen-name">
+          {cand.name}
+          {cand.vorschlag && <span className="zuteilen-vorschlag"> · {t.vorschlag}</span>}
+        </span>
+        <span className={INFO_KLASSE[info.ton]}>{info.text}</span>
+      </span>
+      {cand.last !== undefined && <LastPunkte n={cand.last} />}
+    </button>
+  )
+}
+
+/**
+ * Die Auslastung als Punkte: so viele voll, wie die Person im Fenster
+ * Aufgaben hat (`LOAD_WEEKS` Wochen um die geplante) — dieselbe Zahl, nach der
+ * „Automatisch" sortiert. Für Vorleseprogramme als Satz mit der Zahl.
+ */
+function LastPunkte({ n }: { n: number }) {
+  const { t } = useT()
+  return (
+    <span className="zuteilen-last" role="img" aria-label={fill(t.aufgabenInW, { n, w: LOAD_WEEKS })}>
+      {Array.from({ length: LOAD_WEEKS }, (_, i) => (
+        <span key={i} className={i < n ? 'zuteilen-last-punkt is-voll' : 'zuteilen-last-punkt'} />
+      ))}
+    </span>
   )
 }

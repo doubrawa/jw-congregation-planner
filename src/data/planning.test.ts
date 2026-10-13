@@ -10,7 +10,7 @@ import {
   DEMO_SERVICES,
 } from '../../tests/testdaten/testdaten'
 import { displayName, isGuestRole, isSong, rolleMitHerkunft } from './helpers'
-import { helperWorkload, loadWindow, partWorkload, workloadOf } from './auslastung'
+import { helperWorkload, partWorkload, workloadOf } from './auslastung'
 import { itemMinutes, lacAdd, lacMinuten, lacMove, lacRemove, shiftEnd } from './meeting-edit'
 import {
   alleS89DerWoche,
@@ -561,31 +561,6 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     weeks[0].mid.helpers.ton = [{ name: 'Ersatz Person' }] // = displayName(me)
     const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
     expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN)).toHaveLength(0)
-  })
-})
-
-describe('loadWindow (5-Wochen-Belegung für die Mini-Quadrate)', () => {
-  it('liefert je Woche none/task/helper; Aufgabe hat Vorrang', () => {
-    const weeks = buildDemoWeeks()
-    ;(weeks[1].mid.sections[0].items[0] as PartItem).names[0].name = 'Quadrat Test' // Aufgabe in Woche 1
-    weeks[3].mid.helpers.ton = [{ name: 'Quadrat Test' }] // Hilfsdienst in Woche 3
-    // Demo hat 4 Wochen (0–3); Fenster um Woche 2 (±2) → 0,1,2,3,4 → Index 4 = void
-    expect(loadWindow(weeks, alsPerson('Quadrat Test'), 2, undefined, 2)).toEqual([
-      'none',
-      'task',
-      'none',
-      'helper',
-      'void',
-    ])
-  })
-
-  it('markiert nicht geladene Wochen als void', () => {
-    const weeks = buildDemoWeeks()
-    // Fenster um Woche 0 (±2) → Indizes -2,-1,0,1,2 → erste zwei existieren nicht
-    const w = loadWindow(weeks, alsPerson('Niemand'), 0, undefined, 2)
-    expect(w[0]).toBe('void')
-    expect(w[1]).toBe('void')
-    expect(w.slice(2)).toEqual(['none', 'none', 'none'])
   })
 })
 

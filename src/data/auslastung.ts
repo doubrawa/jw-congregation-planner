@@ -94,16 +94,13 @@ export function workloadOf(weeks: Week[], person: Person, services?: Service[]):
   return partWorkload(weeks, person) + helperWorkload(weeks, person, services)
 }
 
-/** Belegungsart einer Person in EINER Woche (für die Mini-Quadrate). */
-export type WeekLoad = 'void' | 'none' | 'task' | 'helper'
-
 /**
  * Radius des Auslastungs-Fensters: so viele Wochen vor und nach der geplanten
  * zählen mit.
  *
- * Einzige Quelle dieser Zahl — für die **Anzeige** (Mini-Quadrate und „… in 5
- * Wochen" im Zuteilungs-Sheet) und für die **Entscheidung** der automatischen
- * Zuteilung. Das waren lange zwei verschiedene Zahlen: gezeigt wurden 5 Wochen,
+ * Einzige Quelle dieser Zahl — für die **Anzeige** (die Punkte und „Aufgaben
+ * in 5 Wochen" im Zuteilungs-Sheet) und für die **Entscheidung** der
+ * automatischen Zuteilung. Das waren lange zwei verschiedene Zahlen: gezeigt wurden 5 Wochen,
  * sortiert wurde nach 7. Der Planer las also unter dem Namen eine Zahl, nach der
  * gar nicht sortiert worden war. Gemessen macht die Weite keinen Unterschied
  * mehr (30 Schwestern über ein Jahr: 10–11 Aufgaben bei ±2 wie bei ±3, ein
@@ -164,11 +161,11 @@ function wocheBeiVersatz(weeks: Week[], wi: number, versatz: number): Week | und
 
 /**
  * Die Wochen des Auslastungs-Fensters um `wi` — **nach Datum**, nicht nach
- * Position (T36), und damit genau die, die `loadWindow` als Quadrate zeigt.
+ * Position (T36).
  *
- * Es gab die Rechnung zweimal: die Quadrate liefen über `wocheBeiVersatz`, die
- * Zahl daneben („Aufgaben in 5 Wochen: 2") und die Auto-Zuteilung schnitten mit
- * `slice` nach Position. Solange die Wochen lückenlos folgen, ist das
+ * Es gab die Rechnung zweimal: die Quadrate des Zuteilungs-Blatts (bis T121)
+ * liefen über `wocheBeiVersatz`, die Zahl daneben („Aufgaben in 5 Wochen: 2")
+ * und die Auto-Zuteilung schnitten mit `slice` nach Position. Solange die Wochen lückenlos folgen, ist das
  * dasselbe; fehlt eine — eine nie importierte Woche —, beschreiben Quadrat und
  * Zahl verschiedene Zeiträume, und sortiert wird nach einem dritten. Genau
  * diese Verwechslung hat T36 an anderer Stelle schon einmal behoben.
@@ -182,38 +179,6 @@ export function lastFenster(weeks: Week[], wi: number, radius = LOAD_RADIUS): We
   for (let versatz = -radius; versatz <= radius; versatz++) {
     const week = wocheBeiVersatz(weeks, wi, versatz)
     if (week) out.push(week)
-  }
-  return out
-}
-
-/**
- * Belegung je Woche im ±`radius`-Fenster um `wi` (Standard LOAD_RADIUS).
- * `void` = keine solche Woche geladen, `none` = frei, `task` = Programmpunkt
- * (Aufgabe), `helper` = nur Hilfsdienst (Aufgabe hat Vorrang, falls beides in
- * derselben Woche).
- *
- * `services` gehört hierher, obwohl die Quadrate nur eine Farbe zeigen: die
- * Zahl daneben („Aufgaben in 5 Wochen: 2") kommt aus `workloadOf` und zählt
- * Hilfsdienste nur bis `svc.count`. Ohne dieselbe Grenze zeigte dieselbe Zeile
- * „frei" und daneben ein belegtes Quadrat — die Platzzahl war reduziert, der
- * Name stand aber noch dahinter in den Wochendaten.
- */
-export function loadWindow(
-  weeks: Week[],
-  person: Person,
-  wi: number,
-  services?: Service[],
-  radius = LOAD_RADIUS,
-): WeekLoad[] {
-  const out: WeekLoad[] = []
-  // Nach Datum, nicht nach Index (T36): fehlt eine Woche, zeigen die Quadrate
-  // sonst eine, die drei Wochen zurückliegt, als „vor zwei Wochen".
-  for (let versatz = -radius; versatz <= radius; versatz++) {
-    const week = wocheBeiVersatz(weeks, wi, versatz)
-    if (!week) out.push('void')
-    else if (partWorkload([week], person) > 0) out.push('task')
-    else if (helperWorkload([week], person, services) > 0) out.push('helper')
-    else out.push('none')
   }
   return out
 }

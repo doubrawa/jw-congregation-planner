@@ -28,8 +28,8 @@ export interface PlatzAnzeige {
  * Zusage als Wort.
  *
  * `stand` ist `null`, wo es nichts zu bestätigen gibt (Gastredner, Gruppe,
- * ausgefallene Zusammenkunft). Der Grund: abwesend, sonst eine
- * Doppelbelegung („An diesem Tag schon"), sonst die Absage — oder, was nach
+ * ausgefallene Zusammenkunft). Der Grund: abwesend (am Treffpunkt: an seinem
+ * Tag), sonst eine Doppelbelegung („An diesem Tag schon"), sonst die Absage — oder, was nach
  * ihr geschieht: Für einen Hilfsdienst sucht die App selbst einen Ersatz
  * (`declineTask`), dort steht deshalb `absage` = „Ersatz gesucht".
  */
@@ -44,7 +44,7 @@ export function platzAnzeige(
   const hinweis =
     lage !== 'problem'
       ? undefined
-      : konflikt?.kind === 'absent'
+      : konflikt?.kind === 'absent' || konflikt?.kind === 'fsAbsent'
         ? t.abwesendChip
         : konflikt
           ? t.sheetSchonHeute

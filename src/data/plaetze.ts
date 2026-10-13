@@ -40,7 +40,7 @@ import {
   punktKey,
   ratgeberKey,
 } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
-import type { Meeting, MeetingKey, Service, SlotAssignment } from './types'
+import type { Meeting, MeetingKey, MeetingSlotSelection, Service, SlotAssignment } from './types'
 
 export { isSong, programmPlaetze, raeume, slotsOf }
 export type { ProgrammPlatz }
@@ -150,5 +150,38 @@ export function platzKey(platz: Platz, woche: string, tab: MeetingKey): string {
       return ratgeberKey(woche, tab)
     case 'helper':
       return helferKey(woche, tab, platz.svc.key, platz.pos)
+  }
+}
+
+/**
+ * **Der Platz, den eine Auswahl meint** — oder keiner, wenn es ihn in dieser
+ * Zusammenkunft nicht (mehr) gibt. Über den Durchlauf, damit die Auswahl jede
+ * der drei Bauformen so trifft wie alle anderen Stellen auch.
+ */
+export function platzDerAuswahl(
+  meeting: Meeting,
+  services: readonly Service[],
+  sel: MeetingSlotSelection,
+): Platz | undefined {
+  for (const platz of allePlaetze(meeting, services)) {
+    if (trifft(platz, sel)) return platz
+  }
+  return undefined
+}
+
+function trifft(platz: Platz, sel: MeetingSlotSelection): boolean {
+  switch (sel.kind) {
+    case 'ratgeber':
+      return platz.art === 'ratgeber'
+    case 'helper':
+      return platz.art === 'helper' && platz.svc.key === sel.svc && platz.pos === sel.pos
+    case 'part':
+      return (
+        platz.art === 'programm' &&
+        platz.si === sel.si &&
+        platz.ii === sel.ii &&
+        platz.ni === sel.ni &&
+        platz.aux === (sel.aux === true)
+      )
   }
 }

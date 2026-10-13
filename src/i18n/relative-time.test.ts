@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { APP_LANGS, LOCALES } from './langs'
 import { istVorbei } from '../data/meeting-dates'
-import { relativeDayLabel, relativeWeekLabel } from './relative-time'
+import { relativeDayLabel, wochenHer } from './relative-time'
 
 // Fester „Jetzt"-Zeitpunkt, damit die Tage-Differenz deterministisch ist.
 const NOW = Date.parse('2026-09-07') // Montag, 00:00 UTC
@@ -76,18 +76,15 @@ describe('relativeDayLabel', () => {
   })
 })
 
-describe('relativeWeekLabel', () => {
-  it('formatiert den Wochenversatz in der App-Sprache', () => {
-    expect(relativeWeekLabel(0, 'de')).toBe('diese Woche')
-    expect(relativeWeekLabel(1, 'de')).toBe('nächste Woche')
-    expect(relativeWeekLabel(-1, 'de')).toBe('letzte Woche')
-    expect(relativeWeekLabel(2, 'de')).toBe('in 2 Wochen')
-    expect(relativeWeekLabel(-2, 'de')).toBe('vor 2 Wochen')
+describe('wochenHer', () => {
+  it('nennt die Wochen in der App-Sprache — immer mit Zahl, auch bei einer', () => {
+    // „zuletzt letzte Woche" sagt niemand; `numeric: 'auto'` schriebe es.
+    expect(wochenHer(1, 'de')).toBe('vor 1 Woche')
+    expect(wochenHer(12, 'de')).toBe('vor 12 Wochen')
   })
 
   it('nutzt die jeweilige Locale', () => {
-    expect(relativeWeekLabel(1, 'en')).toBe('next week')
-    expect(relativeWeekLabel(-2, 'en')).toBe('2 weeks ago')
+    expect(wochenHer(2, 'en')).toBe('2 weeks ago')
   })
 })
 
@@ -108,14 +105,14 @@ describe('Unbekannte Sprache: lieber kein Chip als ein Absturz', () => {
     expect(relativeDayLabel(NOW + day, kaputt, NOW)).toBe('')
   })
 
-  it('relativeWeekLabel ebenso', () => {
-    expect(() => relativeWeekLabel(1, kaputt)).not.toThrow()
-    expect(relativeWeekLabel(1, kaputt)).toBe('')
+  it('wochenHer ebenso', () => {
+    expect(() => wochenHer(1, kaputt)).not.toThrow()
+    expect(wochenHer(1, kaputt)).toBe('')
   })
 
   it('die echten App-Sprachen liefern sehr wohl etwas — sonst prüfte das hier nichts', () => {
     expect(relativeDayLabel(NOW + day, 'de', NOW)).not.toBe('')
-    expect(relativeWeekLabel(1, 'de')).not.toBe('')
+    expect(wochenHer(1, 'de')).not.toBe('')
   })
 })
 
@@ -157,10 +154,10 @@ describe('Jede App-Sprache bekommt ihren eigenen Chip', () => {
     expect(gleich(eigen, deutsch), `${code}: ${eigen.join(' / ')}`).toBe(false)
   })
 
-  it.each(FREMD)('%s: das Wochen-Label ebenso', (code) => {
-    const STUFEN = [0, 1, -1, 2, -2]
-    const eigen = STUFEN.map((v) => relativeWeekLabel(v, code))
-    const deutsch = STUFEN.map((v) => relativeWeekLabel(v, 'de'))
+  it.each(FREMD)('%s: „vor … Wochen" ebenso', (code) => {
+    const STUFEN = [1, 2, 5, 12, 52]
+    const eigen = STUFEN.map((v) => wochenHer(v, code))
+    const deutsch = STUFEN.map((v) => wochenHer(v, 'de'))
     expect(eigen.filter(Boolean), `${code}: leere Labels`).toHaveLength(STUFEN.length)
     expect(gleich(eigen, deutsch), `${code}: ${eigen.join(' / ')}`).toBe(false)
   })
@@ -172,8 +169,8 @@ describe('Jede App-Sprache bekommt ihren eigenen Chip', () => {
       const text = relativeDayLabel(NOW + tage * day, code, NOW)
       expect(text, `${code}/${tage}`).not.toMatch(/undefined|NaN|Invalid/)
     }
-    for (const versatz of [0, 1, -1, 52, -52]) {
-      expect(relativeWeekLabel(versatz, code), `${code}/${versatz}`).not.toMatch(
+    for (const wochen of [1, 2, 52]) {
+      expect(wochenHer(wochen, code), `${code}/${wochen}`).not.toMatch(
         /undefined|NaN|Invalid/,
       )
     }

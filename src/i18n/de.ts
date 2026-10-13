@@ -331,13 +331,18 @@ export const DE = {
     geladenBis: 'Geladen bis {datum}', geladenNichts: 'Noch keine Woche geladen',
     wochenGeladen: 'Geladene Wochen: {n}',
     importBtn: 'NÄCHSTE WOCHE IMPORTIEREN', importiere: 'IMPORTIERE …',
-    aktuellLbl: 'Aktuell:', entfernen: 'Entfernen', abwesendChip: 'Abwesend', freiChip: 'frei',
+    aktuellLbl: 'Aktuell:', entfernen: 'Entfernen', abwesendChip: 'Abwesend',
     sheetSchonHeute: 'An diesem Tag schon',
-    // {w} = Breite des Auslastungs-Fensters (LOAD_WEEKS in data/helpers.ts).
+    // {w} = Breite des Auslastungs-Fensters (LOAD_WEEKS in data/auslastung.ts).
     // Nicht ausschreiben: beim letzten Wechsel von 4 auf 5 blieben ar/fa/ur
     // bei der alten Zahl stehen, ohne dass es jemandem auffiel.
     aufgabenInW: 'Aufgaben in {w} Wochen: {n}',
-    loadFrei: 'frei', loadAufgabe: 'Aufgabe', loadHilfsdienst: 'Hilfsdienst',
+    // Zuteilen (T121, Entwurf `GZuteilen`). Die Zeile unter einem Namen beginnt
+    // klein: {wann} ist „vor 12 Wochen" aus Intl, {zeitraum} „7.–11. September".
+    werUebernimmt: 'Wer übernimmt?', nameSuchen: 'Name suchen',
+    mitBereichN: 'Mit diesem Aufgabenbereich: {n}', aufgabenInWochen: 'Aufgaben in {w} Wochen',
+    vorschlag: 'Vorschlag', zuletztWann: 'zuletzt {wann}', zuletztLange: 'länger nicht dran',
+    abwesendZeitraum: 'abwesend {zeitraum}',
     toastWillkommen: 'Willkommen, {name}!', toastZugeteilt: 'Zugeteilt · noch nicht gesendet',
     toastEntfernt: 'Zuteilung entfernt', toastKeineOffen: 'Keine offenen Zuteilungen in dieser Ansicht',
     toastKeinePassende: 'Keine passende Person für die offenen Slots frei',

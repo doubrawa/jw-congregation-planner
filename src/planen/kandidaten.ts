@@ -13,22 +13,23 @@
  */
 
 import type { AppState } from '../app/context'
-import { istAbwesend, istAbwesendAm, type AbsenceSet } from '../data/absence'
+import { abwesenheitAm, istAbwesend, type AbsenceSet } from '../data/absence'
 import { slotsOf } from '../data/aux-class'
-import { fsLast, fsTag } from '../data/fs'
+import { fsTag } from '../data/fs'
 import {
   displayName,
   gehoertZu,
   idAufloeser,
-  initials,
   isQualified,
   isSong,
+  istAusgefallen,
   partnerGenderOk,
   personCompare,
 } from '../data/helpers'
-import { lastFenster, LOAD_WEEKS, loadWindow, workloadOf, type WeekLoad } from '../data/auslastung'
-import { assignmentsInMeeting } from '../data/planning'
-import type { MeetingAssignment, Person, SlotSelection } from '../data/types'
+import { lastFenster, workloadOf } from '../data/auslastung'
+import { meetingDate } from '../data/meeting-dates'
+import { assignmentsInMeeting, rangfolgeFuer, zuletztImBereich } from '../data/planning'
+import type { Absence, MeetingAssignment, MeetingKey, Person, SlotSelection } from '../data/types'
 import { ROLE_KEY, type Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 
@@ -38,24 +39,33 @@ export interface Candidate {
   name: string
   /** In die Woche geschriebener kanonischer Name (Gruppen: „Gruppe N"). */
   assignName: string
-  initials: string
+  /**
+   * Was die Zeile über die Person sagt, wenn nichts Dringenderes ansteht: die
+   * Stellung, bei Gruppen Aufseher und Mitglieder.
+   */
   sub: string
   /** Schon an diesem Tag zugeteilt — Hinweis auf Doppelbelegung. */
   today: MeetingAssignment[]
   absent: boolean
+  /** Die Abwesenheit, die den Termin trifft — für „abwesend 7.–11. September". */
+  abwesenheit?: Absence
   /**
-   * Der „frei"-Chip: **im Lastfenster dieser Liste nichts zu tun.**
-   *
-   * Welches Fenster das ist, hängt an der Liste, und das ist kein Versehen:
-   * Zusammenkünfte und Treffpunkte sind zwei getrennte Größen mit zwei
-   * Strichlisten (`workloadOf` bzw. `fsLast`) und zwei verschieden breiten
-   * Fenstern (`LOAD_WEEKS` bzw. `FS_LOAD_WEEKS`). Der Chip meint jeweils die,
-   * nach der auch die Automatik dieses Platzes wählt — sonst behauptet er
-   * etwas, das die Entscheidung daneben nicht trägt.
+   * Aufgaben im Lastfenster (`workloadOf` über `LOAD_WEEKS` Wochen) — die
+   * Punkte rechts in der Zeile. Dieselbe Zahl, nach der „Automatisch"
+   * sortiert. Fehlt bei Gruppen und Treffpunkten: Dort zählt die Automatik
+   * anders (die Reinigung rotiert, Treffpunkte haben `fsLast`).
    */
-  free: boolean
-  /** Belegung der 5 Wochen (aktuelle ±2) für die Mini-Quadrate. */
-  load?: WeekLoad[]
+  last?: number
+  /** Der „Vorschlag": die Person, die „Automatisch" hier wählen würde (`rangfolgeFuer`). */
+  vorschlag: boolean
+  /**
+   * Wochen, seit die Person zuletzt in diesem Bereich dran war
+   * (`zuletztImBereich`) — `null`, wenn im geladenen Bestand davor nie; fehlt,
+   * wo es nichts zu zählen gibt (Treffpunkte, Gruppen, Platz ohne Bereich).
+   */
+  zuletzt?: number | null
+  /** Was die Person am anderen Tag dieser Woche schon hat („So Saalordner") — fehlt, wenn nichts. */
+  andererTag?: { tab: MeetingKey; aufgaben: MeetingAssignment[] }
 }
 
 /** Was die Kandidatenliste aus dem Zustand braucht (erleichtert das Testen). */
@@ -63,7 +73,9 @@ export type KandidatenDaten = Pick<
   AppState,
   // `lang` gehört dazu, seit die Liste in der Sprache des Lesers sortiert
   // (`personCompare`) — sie steht im Zuteilungs-Sheet und wird dort gesucht.
-  'weeks' | 'persons' | 'groups' | 'services' | 'fsWeeks' | 'absences' | 'lang'
+  // `congregation` für den Tag der Zusammenkunft, an dem eine Abwesenheit
+  // gemessen wird.
+  'weeks' | 'persons' | 'groups' | 'services' | 'fsWeeks' | 'absences' | 'lang' | 'congregation'
 >
 
 export function kandidaten(
@@ -89,11 +101,6 @@ function fsKandidaten(
   tu: (s: string) => string,
 ): Candidate[] {
   const inst = state.fsWeeks[sel.wi]?.find((i) => i.id === sel.instId)
-  // „frei" heißt hier: leitet im Treffpunkt-Lastfenster keinen Treffpunkt —
-  // dieselbe Strichliste, nach der auch die Automatik wählt. Vorher stand hier
-  // `workloadOf` über alle geladenen Wochen, also die Zusammenkunfts-Last: die
-  // falsche Größe und der falsche Zeitraum (siehe `fsLast`).
-  const fsLastFenster = fsLast(state.fsWeeks, sel.wi, idAufloeser(state.persons))
   // Derselbe Montag, mit dem `fsWeekConflicts` rechnet: der der Woche selbst.
   // Über eine Rechnung aus der Ordnungszahl widersprachen sich Konfliktbanner
   // und Kandidatenblatt bei einer Lücke im Bestand um sieben Tage.
@@ -118,18 +125,19 @@ function fsKandidaten(
   return state.persons
     .filter((p) => isQualified(p, 'treffpunkt'))
     .sort((a, b) => personCompare(a, b, state.lang))
-    .map((p) => {
+    .map((p): Candidate => {
       const name = displayName(p)
+      // Am Tag DIESES Treffpunkts, nicht in der ganzen Woche.
+      const abwesenheit = tag ? abwesenheitAm(state.absences, p.id, tag) : undefined
       return {
         key: p.id,
-        initials: initials(p),
         name,
         assignName: name,
         sub: t[ROLE_KEY[p.role]],
         today: schonHeute(name),
-        // Am Tag DIESES Treffpunkts, nicht in der ganzen Woche.
-        absent: tag ? istAbwesendAm(state.absences, p.id, tag) : false,
-        free: (fsLastFenster.get(p.id) ?? 0) === 0,
+        absent: abwesenheit !== undefined,
+        abwesenheit,
+        vorschlag: false,
       }
     })
     .sort((a, b) => Number(a.absent) - Number(b.absent))
@@ -147,19 +155,15 @@ function gruppenKandidaten(
     const label = fill(t.mitgliederN, { n })
     return aufseher ? `${displayName(aufseher)} · ${label}` : label
   }
-  return state.groups.map((group) => {
-    const num = group.name.replace(/\D/g, '')
-    return {
-      key: group.id,
-      initials: num ? `G${num}` : 'G',
-      name: tu(group.name),
-      assignName: group.name,
-      sub: sub(group.id, group.overseerId),
-      today: [],
-      absent: false,
-      free: false,
-    }
-  })
+  return state.groups.map((group) => ({
+    key: group.id,
+    name: tu(group.name),
+    assignName: group.name,
+    sub: sub(group.id, group.overseerId),
+    today: [],
+    absent: false,
+    vorschlag: false,
+  }))
 }
 
 function personenKandidaten(
@@ -169,13 +173,13 @@ function personenKandidaten(
   t: Dict,
 ): Candidate[] {
   const geschlechtOk = geschlechtsPruefung(state, sel)
-  // Auslastung über dasselbe Fenster wie die Mini-Quadrate daneben — dieselbe
-  // Funktion, nicht dieselbe Absicht: `slice` schnitt nach Position, die
-  // Quadrate rechnen nach Datum (siehe `lastFenster`).
+  // Die Punkte zählen über dasselbe Fenster, nach dem „Automatisch" sortiert
+  // (`lastFenster`: nach Datum, nicht nach Position).
   const fenster = lastFenster(state.weeks, sel.wi)
-  // Die Woche gibt es, sonst wäre das Sheet nicht offen; ohne sie bleibt der
-  // Hinweis „heute schon zugeteilt" einfach aus.
-  const meeting = state.weeks[sel.wi]?.[sel.tab]
+  // Die Woche gibt es, sonst wäre das Sheet nicht offen; ohne sie bleiben die
+  // Hinweise zum Tag einfach aus.
+  const week = state.weeks[sel.wi]
+  const meeting = week?.[sel.tab]
   // Den öffentlichen Vortrag am Sonntag (Redner-Platz, T29) kann jeder Älteste
   // und Dienstamtgehilfe halten (Betreiber, 4.10.2026): Eingeteilt wird er
   // ohnehin von Hand, nie automatisch — ein eigener Aufgabenbereich wäre Pflege
@@ -187,31 +191,48 @@ function personenKandidaten(
     sel.kind === 'part' && sel.guest
       ? (p: Person) => p.role === 'aeltester' || p.role === 'dienstamtgehilfe'
       : (p: Person) => !sel.priv || isQualified(p, sel.priv)
+  // Wen „Automatisch" hier nähme, in seiner Reihenfolge (T121, Phase 5d): Die
+  // erste ist der Vorschlag, die übrigen stehen in derselben Ordnung darunter.
+  const rang = new Map(
+    rangfolgeFuer(state.weeks, sel, state.persons, state.services, state.groups, abwesend).map((p, i) => [p.id, i]),
+  )
+  const zuletzt = sel.priv ? zuletztImBereich(state.weeks, sel.wi, sel.priv, state.services, idAufloeser(state.persons)) : null
+  // Was jemand am anderen Tag dieser Woche schon hat — sofern er stattfindet.
+  const andererTab: MeetingKey = sel.tab === 'mid' ? 'we' : 'mid'
+  const anderes = week && !istAusgefallen(week, andererTab) ? week[andererTab] : undefined
+  // Der Tag, an dem `abwesend` misst (`buildAbsences`) — für den Zeitraum dazu.
+  const termin = week ? meetingDate(week, sel.tab, state.congregation.times) : undefined
+  /**
+   * Die Stufen der Liste: erst, wen die Automatik nähme, dann wer sonst frei
+   * ist, dann wer an diesem Tag schon dran ist, zuletzt die Abwesenden —
+   * innerhalb einer Stufe in der Rangfolge der Automatik, sonst alphabetisch.
+   */
+  const stufe = (c: Candidate): number => (c.absent ? 3 : c.today.length > 0 ? 2 : rang.has(c.key) ? 0 : 1)
   // Erst filtern, dann sortieren (siehe `fsKandidaten`): Sortiert werden
-  // müssen nur die Qualifizierten. Alphabetisch; Abwesende wandern danach
-  // stabil ans Ende.
+  // müssen nur die Qualifizierten. Alphabetisch, danach stabil nach Stufe und
+  // Rang.
   return state.persons
     .filter((p) => darf(p) && geschlechtOk(p))
     .sort((a, b) => personCompare(a, b, state.lang))
-    .map((p) => {
+    .map((p): Candidate => {
       const name = displayName(p)
-      const last = workloadOf(fenster, p, state.services)
-      const lastLabel = fill(t.aufgabenInW, { n: last, w: LOAD_WEEKS })
+      const absent = istAbwesend(abwesend, p.id, sel.wi, sel.tab)
+      const dort = anderes ? assignmentsInMeeting(anderes, p, state.services) : []
       return {
         key: p.id,
-        initials: initials(p),
         name,
         assignName: name,
-        sub: `${t[ROLE_KEY[p.role]]} · ${lastLabel}`,
+        sub: t[ROLE_KEY[p.role]],
         today: meeting ? assignmentsInMeeting(meeting, p, state.services, sel) : [],
-        absent: istAbwesend(abwesend, p.id, sel.wi, sel.tab),
-        free: last === 0,
-        // Dieselbe Platzgrenze wie `last` eine Zeile darüber — sonst zeigt
-        // dieselbe Zeile „frei" und daneben ein belegtes Quadrat.
-        load: loadWindow(state.weeks, p, sel.wi, state.services),
+        absent,
+        abwesenheit: absent && termin ? abwesenheitAm(state.absences, p.id, termin) : undefined,
+        last: workloadOf(fenster, p, state.services),
+        vorschlag: rang.get(p.id) === 0,
+        zuletzt: zuletzt ? (zuletzt.get(p.id) ?? null) : undefined,
+        andererTag: dort.length > 0 ? { tab: andererTab, aufgaben: dort } : undefined,
       }
     })
-    .sort((a, b) => Number(a.absent) - Number(b.absent))
+    .sort((a, b) => stufe(a) - stufe(b) || (rang.get(a.key) ?? 0) - (rang.get(b.key) ?? 0))
 }
 
 /**
