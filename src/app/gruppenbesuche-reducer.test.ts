@@ -48,34 +48,23 @@ beforeEach(() => {
 })
 afterEach(() => vi.useRealTimers())
 
-describe('Reihum verteilen', () => {
-  it('trägt in geladene Wochen ein und merkt den Rest vor', () => {
-    const next = reducer(zustand(), { type: 'besucheVerteilen', pid: 'p5' })
-    expect(next.gruppenbesuche).toHaveLength(6)
-    expect(next.gruppenbesuche[0]).toMatchObject({ woche: '2026-09-07', grp: 'g1', pid: 'p5' })
-    expect(next.gruppenbesuche.every((b) => /^b.{8,}/.test(b.id))).toBe(true)
-    // Die erste Woche ist geladen: Konrad leitet dort den Treffpunkt der Gruppe 1.
-    expect(leiter(next, '2026-09-07', 'g1')).toBe('Konrad Sommer')
-    // Die anderen Gruppen derselben Woche bleiben frei.
-    expect(leiter(next, '2026-09-07', 'g2')).toBe('')
-    expect(next.toast?.text).toBe('Besuche geplant: 6')
-  })
-
-  it('ohne Gruppen gibt es nur einen Hinweis', () => {
-    const s = zustand({ groups: [] })
-    const next = reducer(s, { type: 'besucheVerteilen', pid: 'p5' })
-    expect(next.gruppenbesuche).toBe(s.gruppenbesuche)
-    expect(next.fsWeeks).toBe(s.fsWeeks)
-    expect(next.toast?.text).toBe('Keine passende Woche gefunden')
-  })
-})
-
 describe('Einzelne Besuche', () => {
   it('hinzufügen trägt ein — dieselbe Gruppe in derselben Woche nur einmal', () => {
     const s = reducer(zustand(), { type: 'besuchHinzufuegen', woche: '2026-09-14', grp: 'g2', pid: 'p5' })
     expect(s.gruppenbesuche).toHaveLength(1)
+    // Eindeutig statt zeitgestempelt, lesbar am Präfix.
+    expect(s.gruppenbesuche[0]!.id).toMatch(/^b.{8,}/)
     expect(leiter(s, '2026-09-14', 'g2')).toBe('Konrad Sommer')
+    // Die anderen Gruppen derselben Woche bleiben frei.
+    expect(leiter(s, '2026-09-14', 'g1')).toBe('')
     expect(reducer(s, { type: 'besuchHinzufuegen', woche: '2026-09-14', grp: 'g2', pid: 'p6' })).toBe(s)
+  })
+
+  it('in einer Woche hinter den geladenen wird er vorgemerkt — eingetragen ist noch nichts', () => {
+    const s = zustand()
+    const next = reducer(s, { type: 'besuchHinzufuegen', woche: '2026-11-09', grp: 'g1', pid: 'p5' })
+    expect(next.gruppenbesuche).toHaveLength(1)
+    expect(next.fsWeeks).toBe(s.fsWeeks)
   })
 
   it('entfernen gibt den Treffpunkt wieder frei', () => {
@@ -112,36 +101,11 @@ describe('Einzelne Besuche', () => {
     expect(next.confirmations[schluessel]).toBeUndefined()
   })
 
-  it('„Leeren" nimmt nur, was noch kommt — Vergangenes bleibt als Rückblick', () => {
-    vi.setSystemTime(new Date(2026, 8, 20, 9, 0))
-    let s = zustand({ gruppenbesuche: [besuch('2026-09-07', 'g1'), besuch('2026-09-21', 'g2')] })
-    s = reducer(s, { type: 'besuchUebernehmen', id: 'b-2026-09-21-g2' })
-    expect(leiter(s, '2026-09-21', 'g2')).toBe('Konrad Sommer')
-    const next = reducer(s, { type: 'besucheLeeren' })
-    expect(next.gruppenbesuche.map((b) => b.id)).toEqual(['b-2026-09-07-g1'])
-    expect(leiter(next, '2026-09-21', 'g2')).toBe('')
-    // Gezählt sind Besuche, nicht Zuteilungen.
-    expect(next.toast?.text).toBe('Entfernte Besuche: 1')
-  })
 })
 
-/**
- * **Weniger starr** (4.10.2026): verteilen am gewählten Wochenende, Monate
- * auslassen, und an jedem kommenden Besuch Woche und Gruppe ändern.
- */
-describe('Wochenende, Monate auslassen, Besuch verlegen', () => {
+/** An jedem kommenden Besuch lassen sich Woche und Gruppe ändern (4.10.2026). */
+describe('Einen Besuch verlegen', () => {
   const mit = () => reducer(zustand(), { type: 'besuchHinzufuegen', woche: '2026-09-14', grp: 'g2', pid: 'p5' })
-
-  it('„Reihum verteilen" am gewählten Wochenende, ohne die ausgelassenen Monate', () => {
-    const next = reducer(zustand(), { type: 'besucheVerteilen', pid: 'p5', wochenende: 3, auslassen: ['2026-10'] })
-    expect(next.gruppenbesuche.map((b) => `${b.woche} ${b.grp}`).slice(0, 3)).toEqual([
-      '2026-09-14 g1', // Sa 19.9. — das dritte Wochenende
-      '2026-11-16 g2', // Oktober ausgelassen; Sa 21.11.
-      '2026-12-14 g3',
-    ])
-    expect(next.gruppenbesuche).toHaveLength(5)
-    expect(leiter(next, '2026-09-14', 'g1')).toBe('Konrad Sommer')
-  })
 
   it('in eine andere Woche: dort tritt der Besucher an, die alte wird frei', () => {
     const s = mit()

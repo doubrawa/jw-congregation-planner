@@ -73,10 +73,10 @@ export function PlanenScreen() {
   const bereich = aktiverFsBereich(state)
   if (geplantesThema(rechte, state.tab) === 'predigtdienst' && bereich !== 'treffpunkte') {
     return (
-      // Der Grundplan steht in derselben Spalte wie die Woche (`.screen.prog`):
-      // Karten mit Abstand. Besuche und Zeugnisgeben bringen als alte Bausteine
-      // ihre eigenen Ränder mit — bis zu ihrem Umbau (5e-3, Phase 7) ohne sie.
-      <section className={bereich === 'grundplan' ? 'screen prog' : 'screen'}>
+      // Grundplan und Besuche stehen in derselben Spalte wie die Woche
+      // (`.screen.prog`): Karten mit Abstand. Das Zeugnisgeben bringt als alter
+      // Baustein seine eigenen Ränder mit — bis zu seinem Umbau (Phase 7) ohne sie.
+      <section className={bereich === 'zeugnis' ? 'screen' : 'screen prog'}>
         <Bereichstitel thema="predigtdienst" />
         <FsBereichTabs />
         {bereich === 'grundplan' ? (

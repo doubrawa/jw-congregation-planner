@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
 import { useApp } from '../app/context'
+import { BlattFeld } from '../bausteine/BlattFeld'
 import { Switch } from '../components/Switch'
 import { HAEUFIGKEITEN, treffpunktHaeufigkeit } from '../components/treffpunkt-beschriftung'
 import { useT } from '../i18n/useT'
@@ -11,16 +11,6 @@ import { WochentagWahl, ZeitWahl } from './ZeitWahl'
  * mit seiner Marke darüber. Die Blätter setzen sie zusammen; ob eine Änderung
  * gleich gilt oder erst mit „Hinzufügen", entscheiden sie selbst.
  */
-
-/** Ein Feld mit seiner Marke darüber. */
-function BlattFeld({ marke, children }: { marke: string; children: ReactNode }) {
-  return (
-    <label className="blatt-feld">
-      <span className="feld-marke">{marke}</span>
-      {children}
-    </label>
-  )
-}
 
 /** Für wen der Treffpunkt gilt: die Versammlung oder eine ihrer Gruppen. */
 export function GruppeFeld({ value, onChange }: { value: string | null; onChange: (grp: string | null) => void }) {

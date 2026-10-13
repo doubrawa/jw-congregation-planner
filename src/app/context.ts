@@ -14,7 +14,6 @@ import {
   type Dispatch,
 } from 'react'
 import type { FontScale } from '../data/constants'
-import type { Wochenende } from '../data/gruppenbesuche'
 import type { OffenerPlatz } from '../data/offene-plaetze'
 import type { AssignScope, Umfang } from '../data/planning'
 import type { VorgemerkterVortrag, Vortragsplan } from '../data/vortragsplan'
@@ -353,11 +352,10 @@ export type AppAction =
    * Gruppenbesuche des Dienstaufsehers (T120, Phase 2). Jede dieser Aktionen
    * trägt den Besucher in die Treffpunkte der Gruppe ein oder aus, soweit die
    * Woche geladen ist (`data/gruppenbesuche.ts`) — Zusage, Erinnerung und
-   * Entzug laufen dann über den Treffpunkt.
+   * Entzug laufen dann über den Treffpunkt. Angelegt wird jeder Besuch von
+   * Hand (13.10.2026: „es soll keinen automatismus geben"); vorgeschlagen wird
+   * nur (`besuchVorschlag`).
    */
-  // Ein Besuch je Monat, die Gruppen der Reihe nach (`besucheVerteilen`) — am
-  // gewählten Wochenende, ohne die ausgelassenen Monate („2026-12").
-  | { type: 'besucheVerteilen'; pid: string; wochenende?: Wochenende; auslassen?: string[] }
   | { type: 'besuchHinzufuegen'; woche: string; grp: string; pid: string }
   | { type: 'besuchEntfernen'; id: string }
   // Einen Besuch in eine andere Woche oder zu einer anderen Gruppe verlegen.
@@ -367,8 +365,6 @@ export type AppAction =
   // Der Besucher übernimmt die Treffpunkte der Gruppe, auch wenn dort schon
   // jemand eingeteilt ist — der erfährt es dann wie bei jeder Umteilung.
   | { type: 'besuchUebernehmen'; id: string }
-  // Alle künftigen Besuche entfernen; Vergangenes bleibt als Rückblick.
-  | { type: 'besucheLeeren' }
   // Den Vortragsplan aus dem Planungsprogramm übernehmen (T122): in die
   // angelegten Wochen, für die übrigen als Vormerkung. Der Reducer rechnet die
   // Vorschau mit dem dann gültigen Stand neu (`data/vortragsplan.ts`).

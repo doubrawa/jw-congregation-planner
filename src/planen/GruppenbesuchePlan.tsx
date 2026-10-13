@@ -1,81 +1,66 @@
 import { useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
+import { BlattFeld } from '../bausteine/BlattFeld'
+import { Zeichen } from '../bausteine/Zeichen'
+import { datumsFormat } from '../components/datum-anzeige'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import {
   besuchsGruppe,
-  besuchsMonatKurz,
   besuchsTreffpunktText,
   besuchsWocheText,
   besucherName,
-  nachMonat,
 } from '../components/gruppenbesuch-anzeige'
-import { fsTaskKey } from '../data/fs'
+import { Sheet } from '../components/Sheet'
+import { useBesuchsLage } from '../components/useBesuchsLage'
+import { fsTag, fsTaskKey } from '../data/fs'
 import {
-  besuchHatKonflikt,
   besuchStand,
   besuchsWochenAuswahl,
-  verteilenMonate,
-  vorgabeWochenende,
-  WOCHENENDEN,
+  besuchVorschlag,
   type BesuchsStand,
-  type Wochenende,
 } from '../data/gruppenbesuche'
-import { useBesuchsLage } from '../components/useBesuchsLage'
 import { displayName, isQualified, personCompare } from '../data/helpers'
 import { fromIso, montagNach, montagVon } from '../data/meeting-dates'
-import { monatsName } from '../programm/druck'
 import { zusageStatus } from '../data/planning'
-import { fill, useT } from '../i18n/useT'
 import type { Gruppenbesuch, Person } from '../data/types'
-import { AutoAssignRow } from './AutoAssignRow'
-import { BannerKopf } from './PlanBanners'
+import type { Dict } from '../i18n/ui'
+import { fill, useT } from '../i18n/useT'
 import { ZUSAGE_LABEL } from './useZusage'
-import { ZusageLegende, ZusagePunkt } from './ZusageStatus'
 import '../components/gruppenbesuche.css'
 
 /** Wie weit zurück vergangene Besuche noch dastehen: zwei Monate, als Rückblick. */
 const RUECKBLICK_WOCHEN = 8
 
+/** Welches Blatt offen ist: ein neuer Besuch oder der mit dieser Id. */
+type Offen = 'neu' | { id: string } | null
+
 /**
- * **Gruppenbesuche des Dienstaufsehers** beim Planen (T120, Phase 2) — für
- * Admin und Planer; der Planer wechselt nur den Besucher (4.10.2026).
+ * **Gruppenbesuche des Dienstaufsehers** beim Planen (T120, Phase 2; T121,
+ * Entwurf `GGruppenbesuchePlanen`) — für Admin und Planer; der Planer wechselt
+ * nur den Besucher (4.10.2026).
  *
- * Oben der Besucher für neue Besuche und „Reihum verteilen", darunter die
- * Konflikte und die Besuche Monat für Monat. Jeder Besuch nennt seine
- * Treffpunkte (geladen oder laut Grundplan), seinen Besucher und dessen
- * Zusage — die Zusage gehört dem Treffpunkt, der Besuch zeigt sie nur.
+ * Eine Karte mit den Besuchen, jeder eine Zeile: Woche, Tag und Zeit seines
+ * Treffpunkts, was nicht aufgeht, rechts die Gruppe. Ein Tipp öffnet ihn;
+ * darunter „Besuch hinzufügen". **Ohne Automatik** (13.10.2026: „der
+ * dienstaufseher legt die besuche einfach selber manuell an … maximal 12
+ * termine im jahr") — das Blatt schlägt nur vor (`besuchVorschlag`). „Takt",
+ * „Reihenfolge" und „Reihum füllen" aus dem Entwurf entfallen damit, ebenso das
+ * frühere „Reihum verteilen".
  */
 export function GruppenbesuchePlan() {
-  const { state, dispatch } = useApp()
-  const { t, tu } = useT()
+  const { state } = useApp()
+  const { t } = useT()
   const tag = useKalendertag()
-
-  // Wer einen Treffpunkt leiten darf, darf auch besuchen — ein eigener
-  // Aufgabenbereich „Dienstaufseher" wäre eine zweite Pflege derselben Frage.
-  const kandidaten = useMemo(
-    () =>
-      state.persons.filter((p) => isQualified(p, 'treffpunkt')).sort((a, b) => personCompare(a, b, state.lang)),
-    [state.persons, state.lang],
-  )
-
-  // Vorgabe: der Besucher des jüngsten Besuchs — gespeichert wird sie nicht,
-  // der Plan selbst trägt sie. Nur, wenn er noch Treffpunkte leiten darf.
-  const juengster = [...state.gruppenbesuche].reverse().find((b) => b.pid !== null)
-  const vorgabe = kandidaten.some((p) => p.id === juengster?.pid) ? (juengster?.pid ?? '') : ''
-  const [besucher, setBesucher] = useState(vorgabe)
-
-  // Das Wochenende folgt dem jüngsten Besuch, bis der Planer selbst wählt —
-  // ein unten angelegter Besuch am dritten Wochenende setzt so die Vorgabe.
-  const [wahlWochenende, setWahlWochenende] = useState<Wochenende | null>(null)
-  const wochenende = wahlWochenende ?? vorgabeWochenende(state.gruppenbesuche)
-  // Die Monate, die „Reihum verteilen" füllt — und welche davon es auslässt.
-  const monate = verteilenMonate(state.gruppenbesuche, fromIso(tag))
-  const [ausgelassen, setAusgelassen] = useState<readonly string[]>([])
-  const umschalten = (monat: string): void =>
-    setAusgelassen((liste) => (liste.includes(monat) ? liste.filter((m) => m !== monat) : [...liste, monat]))
-
   const lage = useBesuchsLage()
+  const [offen, setOffen] = useState<Offen>(null)
+  const schliessen = (): void => setOffen(null)
+  // Besuche anlegen, verlegen und streichen ist der Plan — das tut der Admin.
+  // Der Planer wechselt den Besucher und trägt ihn in die Treffpunkte ein
+  // (Grenzfall des Betreibers, 4.10.2026).
+  const admin = state.planner
+
   const eintraege = useMemo(() => {
     const heute = fromIso(tag)
     const ab = montagNach(montagVon(tag), -RUECKBLICK_WOCHEN)
@@ -84,201 +69,222 @@ export function GruppenbesuchePlan() {
       .filter(({ besuch, stand }) => stand.art !== 'vorbei' || besuch.woche >= ab)
   }, [lage, state.gruppenbesuche, tag])
 
-  const konflikte = eintraege.filter(({ besuch, stand }) => besuchHatKonflikt(besuch, stand))
-
-  /** Was an einem Besuch nicht aufgeht — dieselben Sätze im Banner und an der Zeile. */
-  const probleme = (besuch: Gruppenbesuch, stand: BesuchsStand): string[] => {
-    if (stand.art === 'vorbei') return []
-    const out: string[] = []
-    if (besuch.pid === null) out.push(t.gbBesucherWaehlen)
-    if (stand.abwesend) out.push(fill(t.toastAbsentP, { name: besucherName(besuch, state.persons) }))
-    if (stand.art === 'keinTreffpunkt') out.push(t.gbKeinTreffpunkt)
-    if (stand.art === 'andererLeiter') out.push(fill(t.gbAndererLeiter, { name: stand.andererLeiter ?? '' }))
-    if (stand.art === 'offen') out.push(t.gbOffen)
-    return out
-  }
-
-  // „Besuch hinzufügen": die Wochen des nächsten halben Jahres, ab dieser.
-  const dieseWoche = montagVon(tag)
-  const wochen = besuchsWochenAuswahl(dieseWoche)
-  const [neueWoche, setNeueWoche] = useState(dieseWoche)
-  const [neueGruppe, setNeueGruppe] = useState(state.groups[0]?.id ?? '')
-
-  // Besuche anlegen, verteilen, verlegen und streichen ist der Plan — das tut
-  // der Admin. Der Planer wechselt den Besucher eines geplanten Besuchs und
-  // trägt ihn in die Treffpunkte ein (Grenzfall des Betreibers, 4.10.2026).
-  const admin = state.planner
-
   return (
     <>
-      {admin && (
-        <>
-          <div className="panel panel--pb16" data-farbe="neutral">
-            <h2 className="panel-label">{t.gbTitel}</h2>
-            <p className="panel-hint">{t.gbWirkung}</p>
-            <label className="gb-besucher">
-              <span className="gb-feld">{t.gbBesucher}</span>
-              <select className="fs-select" value={besucher} onChange={(e) => setBesucher(e.target.value)}>
-                <option value="">{t.gbBesucherWaehlen}</option>
-                {kandidaten.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {displayName(p)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <p className="panel-hint">{t.gbBesucherHint}</p>
-            <select
-              className="fs-select gb-wochenende"
-              value={String(wochenende)}
-              aria-label={t.gbWochenende}
-              onChange={(e) => setWahlWochenende(e.target.value === 'letztes' ? 'letztes' : (Number(e.target.value) as Wochenende))}
-            >
-              {WOCHENENDEN.map((w) => (
-                <option key={w} value={String(w)}>
-                  {w === 'letztes' ? t.gbWochenendeLetztes : fill(t.gbWochenendeNr, { n: w })}
-                </option>
-              ))}
-            </select>
-            <div className="gb-monate" role="group" aria-label={t.gbMonate}>
-              {monate.map((monat) => {
-                const an = !ausgelassen.includes(monat)
-                return (
-                  <button
-                    key={monat}
-                    type="button"
-                    className={an ? 'gb-monat is-an' : 'gb-monat'}
-                    aria-pressed={an}
-                    aria-label={monatsName(monat, state.lang)}
-                    onClick={() => umschalten(monat)}
-                  >
-                    {besuchsMonatKurz(monat, state.lang)}
-                  </button>
-                )
-              })}
-            </div>
-            <p className="panel-hint">{t.gbMonateHint}</p>
-          </div>
-
-          <div className="plan-auto">
-            <AutoAssignRow
-              label={t.fsGruppenbesucheTab}
-              aktion={t.gbVerteilen}
-              bereit={besucher !== ''}
-              automatisch={() =>
-                besucher &&
-                dispatch({
-                  type: 'besucheVerteilen',
-                  pid: besucher,
-                  wochenende,
-                  auslassen: ausgelassen.filter((m) => monate.includes(m)),
-                })
-              }
-              leeren={() => dispatch({ type: 'besucheLeeren' })}
-            />
-          </div>
-          <p className="plan-hint">{t.gbVerteilenHint}</p>
-        </>
-      )}
-      {/* Die Punkte an den Besuchern sind die Zusagen ihrer Treffpunkte. */}
-      <ZusageLegende />
-
-      {konflikte.length > 0 && (
-        <div className="plan-banner-box plan-conflicts">
-          <BannerKopf zeichen="!" titel={t.konflikteTitle} anzahl={konflikte.length} />
-          {konflikte.map(({ besuch, stand }) => (
-            <div key={besuch.id} className="plan-conflict-row">
-              <span className="plan-conflict-dot" data-kind="absent" />
-              <span className="plan-conflict-text">
-                {[besuchsWocheText(besuch.woche, state.lang), besuchsGruppe(besuch, state.groups, tu), ...probleme(besuch, stand)].join(' · ')}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {eintraege.length === 0 && (
-        <div className="panel panel--lead panel--pb16" data-farbe="gold">
-          <p className="prog-meta">{t.gbLeer}</p>
-        </div>
-      )}
-
-      {nachMonat(eintraege).map(({ monat, eintraege: imMonat }) => (
-        <div key={monat} className="panel" data-farbe="gold">
-          <h2 className="panel-label">{monatsName(monat, state.lang)}</h2>
-          {imMonat.map(({ besuch, stand }) => (
-            <BesuchZeile
-              key={besuch.id}
-              besuch={besuch}
-              stand={stand}
-              probleme={probleme(besuch, stand)}
-              kandidaten={kandidaten}
-              dieseWoche={dieseWoche}
-            />
-          ))}
-        </div>
-      ))}
-
-      {admin && (
-        <div className="panel panel--pb16 fs-add" data-farbe="neutral2">
-          <h2 className="panel-label">{t.gbHinzufuegen}</h2>
-          <div className="fs-add-grid">
-            <select className="fs-select" value={neueWoche} aria-label={t.gbWoche} onChange={(e) => setNeueWoche(e.target.value)}>
-              {wochen.map((w) => (
-                <option key={w} value={w}>
-                  {besuchsWocheText(w, state.lang)}
-                </option>
-              ))}
-            </select>
-            <select className="fs-select" value={neueGruppe} aria-label={t.gbGruppe} onChange={(e) => setNeueGruppe(e.target.value)}>
-              {state.groups.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {tu(g.name)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <button
-            type="button"
-            className="fs-add-btn"
-            disabled={!besucher || !neueGruppe}
-            onClick={() => dispatch({ type: 'besuchHinzufuegen', woche: neueWoche, grp: neueGruppe, pid: besucher })}
-          >
-            {t.hinzufuegen}
+      <p className="klein-text">{t.gbWirkung}</p>
+      <section className="karte gb-karte">
+        <h2 className="gb-karte-titel">{t.gbAlle}</h2>
+        {eintraege.length === 0 && <p className="gb-leer">{t.gbLeer}</p>}
+        {eintraege.map(({ besuch, stand }) => (
+          <BesuchZeile key={besuch.id} besuch={besuch} stand={stand} onOeffnen={() => setOffen({ id: besuch.id })} />
+        ))}
+        {admin && (
+          <button type="button" className="gb-neu" onClick={() => setOffen('neu')}>
+            <Zeichen name="plus" />
+            {t.gbHinzufuegen}
           </button>
-        </div>
-      )}
+        )}
+      </section>
+
+      {/* Wie jedes Blatt beim Planen am Dokument, nicht im Fluss der Seite. */}
+      {offen !== null &&
+        createPortal(
+          offen === 'neu' ? <NeuerBesuchBlatt onClose={schliessen} /> : <BesuchBlatt id={offen.id} onClose={schliessen} />,
+          document.body,
+        )}
     </>
   )
 }
 
+/** Was an einem Besuch nicht aufgeht — die Art und der Satz dazu. */
+interface Problem {
+  art: 'besucher' | 'abwesend' | 'keinTreffpunkt' | 'andererLeiter' | 'offen'
+  text: string
+}
+
 /**
- * Ein Besuch: Woche und Gruppe, seine Treffpunkte, der Besucher und was zu tun ist.
- *
- * **Woche und Gruppe lassen sich ändern** (4.10.2026), solange der Besuch
- * kommt: Der Besucher geht dann aus den bisherigen Treffpunkten und tritt in
- * die neuen (`besuchAendern`). Was es für diese Gruppe schon gibt — dieselbe
- * Gruppe in einer anderen Woche desselben Besuchs —, steht gesperrt in der
- * Liste, wie es auch die Datenbank abweist.
+ * Was an einem Besuch nicht aufgeht — dieselben Sätze an der Zeile, im Blatt
+ * und beim Anlegen. Vergangenes meldet nichts mehr.
+ */
+function probleme(
+  besuch: Gruppenbesuch,
+  stand: BesuchsStand,
+  t: Pick<Dict, 'gbBesucherWaehlen' | 'toastAbsentP' | 'gbKeinTreffpunkt' | 'gbAndererLeiter' | 'gbOffen'>,
+  persons: readonly Person[],
+): Problem[] {
+  if (stand.art === 'vorbei') return []
+  const out: Problem[] = []
+  if (besuch.pid === null) out.push({ art: 'besucher', text: t.gbBesucherWaehlen })
+  if (stand.abwesend) out.push({ art: 'abwesend', text: fill(t.toastAbsentP, { name: besucherName(besuch, persons) }) })
+  if (stand.art === 'keinTreffpunkt') out.push({ art: 'keinTreffpunkt', text: t.gbKeinTreffpunkt })
+  if (stand.art === 'andererLeiter') {
+    out.push({ art: 'andererLeiter', text: fill(t.gbAndererLeiter, { name: stand.andererLeiter ?? '' }) })
+  }
+  if (stand.art === 'offen') out.push({ art: 'offen', text: t.gbOffen })
+  return out
+}
+
+/** Die Sätze untereinander, in der Farbe der Probleme. */
+function ProblemListe({ liste }: { liste: readonly Problem[] }) {
+  return liste.map((p) => (
+    <p key={p.art} className="gb-problem">
+      {p.text}
+    </p>
+  ))
+}
+
+/** Wer besuchen darf: wer Treffpunkte leiten darf — ein eigener Aufgabenbereich wäre eine zweite Pflege derselben Frage. */
+function useBesucher(): Person[] {
+  const { state } = useApp()
+  return useMemo(
+    () => state.persons.filter((p) => isQualified(p, 'treffpunkt')).sort((a, b) => personCompare(a, b, state.lang)),
+    [state.persons, state.lang],
+  )
+}
+
+/**
+ * Ein Besuch als Zeile: Woche, Tag und Uhrzeit seines (ersten) Treffpunkts —
+ * vorgemerkt, wenn die Woche noch nicht geladen ist —, darunter der erste
+ * Satz dessen, was nicht aufgeht; rechts die Gruppe. Ein vergangener steht nur
+ * noch da, zum Ändern gibt es nichts mehr.
  */
 function BesuchZeile({
   besuch,
   stand,
-  probleme,
-  kandidaten,
-  dieseWoche,
+  onOeffnen,
 }: {
   besuch: Gruppenbesuch
   stand: BesuchsStand
-  probleme: string[]
-  kandidaten: readonly Person[]
-  dieseWoche: string
+  onOeffnen: () => void
 }) {
-  const { state, dispatch } = useApp()
+  const { state } = useApp()
   const { t, tu } = useT()
   const vorbei = stand.art === 'vorbei'
-  const aendern = (patch: { woche?: string; grp?: string }) => dispatch({ type: 'besuchAendern', id: besuch.id, patch })
-  const andere = state.gruppenbesuche.filter((b) => b.id !== besuch.id)
+  const erster = stand.treffpunkte[0]
+  const datum = erster ? fsTag(besuch.woche, erster.wd) : null
+  const termin = [datum ? datumsFormat(state.lang, 'kurzerTag').format(datum) : '', erster?.time ?? '']
+  const marke = vorbei ? t.gbVorbei : stand.art === 'vorgemerkt' ? t.gbVorgemerkt : ''
+  const unterzeile = [...termin, marke].filter(Boolean).join(' · ')
+  const problem = probleme(besuch, stand, t, state.persons)[0]
+
+  const inhalt = (
+    <>
+      <span className="gb-zeile-text">
+        <span className="gb-zeile-woche">{besuchsWocheText(besuch.woche, state.lang)}</span>
+        {unterzeile && <span className="klein-text">{unterzeile}</span>}
+        {problem && <span className="gb-problem">{problem.text}</span>}
+      </span>
+      <span className="gb-gruppe-pille">{besuchsGruppe(besuch, state.groups, tu)}</span>
+    </>
+  )
+  if (vorbei) return <div className="gb-zeile is-vorbei">{inhalt}</div>
+  return (
+    <button type="button" className="gb-zeile" onClick={onOeffnen}>
+      {inhalt}
+      <Zeichen name="weiter" />
+    </button>
+  )
+}
+
+/** Die Woche eines Besuchs — gesperrt, was es für die Gruppe schon gibt. */
+function WocheFeld({
+  wochen,
+  value,
+  gesperrt,
+  onChange,
+}: {
+  wochen: readonly string[]
+  value: string
+  gesperrt: (woche: string) => boolean
+  onChange: (woche: string) => void
+}) {
+  const { state } = useApp()
+  const { t } = useT()
+  return (
+    <BlattFeld marke={t.gbWoche}>
+      <select className="feld-wahl" value={value} onChange={(e) => onChange(e.target.value)}>
+        {wochen.map((w) => (
+          <option key={w} value={w} disabled={gesperrt(w)}>
+            {besuchsWocheText(w, state.lang)}
+          </option>
+        ))}
+      </select>
+    </BlattFeld>
+  )
+}
+
+/** Die besuchte Gruppe — gesperrt, was in dieser Woche schon besucht wird. */
+function BesuchsGruppeFeld({
+  value,
+  gesperrt,
+  onChange,
+}: {
+  value: string
+  gesperrt: (grp: string) => boolean
+  onChange: (grp: string) => void
+}) {
+  const { state } = useApp()
+  const { t, tu } = useT()
+  return (
+    <BlattFeld marke={t.gbGruppe}>
+      <select className="feld-wahl" value={value} onChange={(e) => onChange(e.target.value)}>
+        {state.groups.map((g) => (
+          <option key={g.id} value={g.id} disabled={gesperrt(g.id)}>
+            {tu(g.name)}
+          </option>
+        ))}
+      </select>
+    </BlattFeld>
+  )
+}
+
+/** Der Besucher — „Besucher wählen" steht vorn, solange keiner gewählt ist. */
+function BesucherFeld({
+  value,
+  wahl,
+  onChange,
+}: {
+  value: string
+  wahl: readonly Person[]
+  onChange: (pid: string) => void
+}) {
+  const { t } = useT()
+  return (
+    <BlattFeld marke={t.gbBesucher}>
+      <select className="feld-wahl" value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="">{t.gbBesucherWaehlen}</option>
+        {wahl.map((p) => (
+          <option key={p.id} value={p.id}>
+            {displayName(p)}
+          </option>
+        ))}
+      </select>
+    </BlattFeld>
+  )
+}
+
+/**
+ * **Ein Besuch** — jede Änderung gilt gleich. Woche und Gruppe verlegt der
+ * Admin (4.10.2026): Der Besucher geht dann aus den bisherigen Treffpunkten und
+ * tritt in die neuen (`besuchAendern`); gesperrt ist, was es schon gibt, wie
+ * es auch die Datenbank abweist. Den Besucher wechselt auch der Planer.
+ * Darunter die Treffpunkte, die Zusage des Besuchers und was nicht aufgeht —
+ * mit „Übernehmen" oder „Eintragen", wo der Besucher dort noch nicht leitet.
+ */
+function BesuchBlatt({ id, onClose }: { id: string; onClose: () => void }) {
+  const { state, dispatch } = useApp()
+  const { t, tu } = useT()
+  const tag = useKalendertag()
+  const lage = useBesuchsLage()
+  const kandidaten = useBesucher()
+  const besuch = state.gruppenbesuche.find((b) => b.id === id)
+  // Anderswo entfernt: Das Blatt geht mit.
+  if (!besuch) return null
+
+  const stand = besuchStand(besuch, lage, fromIso(tag))
+  // Woche und Gruppe verlegt und den Besuch streicht nur der Admin.
+  const verlegen = state.planner
+  const andere = state.gruppenbesuche.filter((b) => b.id !== id)
   // Darf der eingesetzte Besucher inzwischen keine Treffpunkte mehr leiten,
   // steht er trotzdem zur Wahl — sonst zeigte das Feld „Besucher wählen", als
   // gäbe es keinen.
@@ -286,98 +292,127 @@ function BesuchZeile({
   const wahl = eingesetzt && !kandidaten.includes(eingesetzt) ? [...kandidaten, eingesetzt] : kandidaten
   // Die Zusage des Besuchers: die seines (ersten) Treffpunkts — sie steht dort.
   const eigener = stand.treffpunkte.find((inst) => inst.lpid && inst.lpid === besuch.pid)
-  const zusage = eigener && !vorbei ? zusageStatus(state.confirmations, fsTaskKey(besuch.woche, eigener.id)) : null
+  const zusage = eigener ? zusageStatus(state.confirmations, fsTaskKey(besuch.woche, eigener.id)) : null
+  const aendern = (patch: { woche?: string; grp?: string }) => dispatch({ type: 'besuchAendern', id, patch })
+  const titel = besuchsWocheText(besuch.woche, state.lang)
 
   return (
-    <div className={vorbei ? 'gb-zeile is-vorbei' : 'gb-zeile'}>
-      {/* Woche und Gruppe verlegt oder streicht nur der Admin; der Planer
-          sieht sie, wie sie geplant sind. */}
-      {vorbei || !state.planner ? (
-        <div className="gb-kopf">
-          <span className="gb-woche">{besuchsWocheText(besuch.woche, state.lang)}</span>
-          <span className="gb-gruppe">{besuchsGruppe(besuch, state.groups, tu)}</span>
-        </div>
-      ) : (
-        <div className="gb-kopf gb-kopf--wahl">
-          <div className="gb-wahl">
-            <select
-              className="fs-select"
+    <Sheet label={titel} title={titel} sub={besuchsGruppe(besuch, state.groups, tu)} onClose={onClose}>
+      <div className="sheet-inhalt blatt-felder">
+        {verlegen && (
+          <>
+            <WocheFeld
+              wochen={besuchsWochenAuswahl(montagVon(tag), besuch.woche)}
               value={besuch.woche}
-              aria-label={t.gbWoche}
-              onChange={(e) => aendern({ woche: e.target.value })}
-            >
-              {besuchsWochenAuswahl(dieseWoche, besuch.woche).map((w) => (
-                <option key={w} value={w} disabled={andere.some((b) => b.woche === w && b.grp === besuch.grp)}>
-                  {besuchsWocheText(w, state.lang)}
-                </option>
-              ))}
-            </select>
-            <select
-              className="fs-select"
+              gesperrt={(w) => andere.some((b) => b.woche === w && b.grp === besuch.grp)}
+              onChange={(woche) => aendern({ woche })}
+            />
+            <BesuchsGruppeFeld
               value={besuch.grp}
-              aria-label={t.gbGruppe}
-              onChange={(e) => aendern({ grp: e.target.value })}
-            >
-              {state.groups.map((g) => (
-                <option key={g.id} value={g.id} disabled={andere.some((b) => b.woche === besuch.woche && b.grp === g.id)}>
-                  {tu(g.name)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <EntfernenKnopf className="fs-remove" onEntfernen={() => dispatch({ type: 'besuchEntfernen', id: besuch.id })} />
+              gesperrt={(grp) => andere.some((b) => b.woche === besuch.woche && b.grp === grp)}
+              onChange={(grp) => aendern({ grp })}
+            />
+          </>
+        )}
+        {/* „Besucher wählen" allein ändert nichts — ein Besuch ohne Besucher
+            entsteht nur, wenn die Person gelöscht wird. */}
+        <BesucherFeld
+          value={besuch.pid ?? ''}
+          wahl={wahl}
+          onChange={(pid) => pid && dispatch({ type: 'besuchBesucher', id, pid })}
+        />
+        <div className="gb-stand">
+          {stand.treffpunkte.map((inst) => (
+            <p key={inst.id} className="klein-text" dir="auto">
+              {besuchsTreffpunktText(besuch.woche, inst, state.lang, tu)}
+            </p>
+          ))}
+          {zusage && <p className="klein-text">{t[ZUSAGE_LABEL[zusage]]}</p>}
+          {stand.art === 'vorgemerkt' && <p className="klein-text">{t.gbVorgemerktHint}</p>}
+          <ProblemListe liste={probleme(besuch, stand, t, state.persons)} />
         </div>
-      )}
-      {stand.treffpunkte.map((inst) => (
-        <div key={inst.id} className="gb-treffpunkt" dir="auto">
-          {besuchsTreffpunktText(besuch.woche, inst, state.lang, tu)}
-        </div>
-      ))}
-      <div className="gb-besucher-zeile">
-        {vorbei ? (
-          <span className="gb-name">{besucherName(besuch, state.persons)}</span>
-        ) : (
-          <select
-            className="fs-select"
-            value={besuch.pid ?? ''}
-            aria-label={t.gbBesucher}
-            onChange={(e) => e.target.value && dispatch({ type: 'besuchBesucher', id: besuch.id, pid: e.target.value })}
+        {(stand.art === 'andererLeiter' || stand.art === 'offen') && besuch.pid && (
+          <button
+            type="button"
+            className="knopf-umriss gb-aktion"
+            onClick={() => dispatch({ type: 'besuchUebernehmen', id })}
           >
-            <option value="">{t.gbBesucherWaehlen}</option>
-            {wahl.map((p) => (
-              <option key={p.id} value={p.id}>
-                {displayName(p)}
-              </option>
-            ))}
-          </select>
-        )}
-        {zusage && (
-          <span className="gb-zusage">
-            <ZusagePunkt stufe={zusage} />
-            {t[ZUSAGE_LABEL[zusage]]}
-          </span>
-        )}
-        {(stand.art === 'vorgemerkt' || vorbei) && (
-          <span className="gb-marke" data-art={stand.art}>
-            {vorbei ? t.gbVorbei : t.gbVorgemerkt}
-          </span>
+            {stand.art === 'andererLeiter' ? t.gbUebernehmen : t.gbEintragen}
+          </button>
         )}
       </div>
-      {stand.art === 'vorgemerkt' && <p className="gb-hinweis">{t.gbVorgemerktHint}</p>}
-      {probleme.map((text) => (
-        <p key={text} className="gb-problem">
-          {text}
-        </p>
-      ))}
-      {(stand.art === 'andererLeiter' || stand.art === 'offen') && besuch.pid && (
-        <button
-          type="button"
-          className="btn-outline gb-aktion"
-          onClick={() => dispatch({ type: 'besuchUebernehmen', id: besuch.id })}
-        >
-          {stand.art === 'andererLeiter' ? t.gbUebernehmen : t.gbEintragen}
-        </button>
+      {verlegen && (
+        <div className="sheet-fuss-ende">
+          <EntfernenKnopf
+            className="knopf-umriss knopf-entfernen"
+            text={t.a11yRemove}
+            onEntfernen={() => {
+              dispatch({ type: 'besuchEntfernen', id })
+              onClose()
+            }}
+          />
+        </div>
       )}
-    </div>
+    </Sheet>
+  )
+}
+
+/**
+ * **Besuch hinzufügen** — vorbelegt mit dem, was der Planer vermutlich eingibt
+ * (`besuchVorschlag`): die Gruppe, die am längsten nicht dran war, die Woche
+ * einen Monat nach dem letzten Besuch, dessen Besucher. Erst „Hinzufügen" legt
+ * an; ohne Besucher und für eine Gruppe, die in der Woche schon besucht wird,
+ * geht es nicht.
+ */
+function NeuerBesuchBlatt({ onClose }: { onClose: () => void }) {
+  const { state, dispatch } = useApp()
+  const { t } = useT()
+  const tag = useKalendertag()
+  const lage = useBesuchsLage()
+  const kandidaten = useBesucher()
+  const dieseWoche = montagVon(tag)
+  const [vorschlag] = useState(() => besuchVorschlag(state.gruppenbesuche, state.groups, dieseWoche))
+  const [woche, setWoche] = useState(vorschlag.woche)
+  const [grp, setGrp] = useState(vorschlag.grp ?? '')
+  // Der Besucher des letzten Besuchs — nur, wenn er noch Treffpunkte leiten darf.
+  const [pid, setPid] = useState(kandidaten.some((p) => p.id === vorschlag.pid) ? (vorschlag.pid ?? '') : '')
+  const besucht = (w: string, g: string): boolean => state.gruppenbesuche.some((b) => b.woche === w && b.grp === g)
+  // Was auch nach dem Anlegen nicht aufginge — vorher gesagt statt danach
+  // gefunden. Ein freier Treffpunkt füllt sich beim Anlegen, und ohne Besucher
+  // ist der Knopf ohnehin gesperrt.
+  const entwurf: Gruppenbesuch = { id: '', woche, grp, pid: pid || null }
+  const hinweise = grp
+    ? probleme(entwurf, besuchStand(entwurf, lage, fromIso(tag)), t, state.persons).filter(
+        (p) => p.art !== 'offen' && p.art !== 'besucher',
+      )
+    : []
+
+  const anlegen = () => {
+    dispatch({ type: 'besuchHinzufuegen', woche, grp, pid })
+    onClose()
+  }
+
+  return (
+    <Sheet label={t.gbHinzufuegen} title={t.gbHinzufuegen} onClose={onClose}>
+      <div className="sheet-inhalt blatt-felder">
+        <WocheFeld
+          wochen={besuchsWochenAuswahl(dieseWoche, vorschlag.woche)}
+          value={woche}
+          gesperrt={(w) => besucht(w, grp)}
+          onChange={setWoche}
+        />
+        <BesuchsGruppeFeld value={grp} gesperrt={(g) => besucht(woche, g)} onChange={setGrp} />
+        <BesucherFeld value={pid} wahl={kandidaten} onChange={setPid} />
+        <ProblemListe liste={hinweise} />
+      </div>
+      <div className="sheet-fuss">
+        <button type="button" className="knopf-haupt" disabled={!pid || !grp || besucht(woche, grp)} onClick={anlegen}>
+          {t.hinzufuegenKnopf}
+        </button>
+        <button type="button" className="knopf-leise" onClick={onClose}>
+          {t.abbrechen}
+        </button>
+      </div>
+    </Sheet>
   )
 }

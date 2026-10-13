@@ -189,13 +189,6 @@ describe('Nichts zu tun: nur eine Meldung, nichts geschrieben', () => {
       { type: 'ozLeeren' },
       fill(t.toastGeleertN, { n: 0 }),
     ],
-    ['Besuche verteilen ohne Gruppen', { groups: [] }, { type: 'besucheVerteilen', pid: 'p5' }, t.toastKeineBesuche],
-    [
-      'Besuche leeren, wenn nur Vergangene da sind',
-      { gruppenbesuche: [{ id: 'b-alt', woche: '2026-08-31', grp: 'g1', pid: 'p5' }] },
-      { type: 'besucheLeeren' },
-      fill(t.toastBesucheGeleert, { n: 0 }),
-    ],
     ['Gruppen verteilen ohne Gruppen', { groups: [] }, { type: 'wpGruppenVerteilen', planId: SAAL.id, abGruppe: 'g1' }, fill(t.toastWpVerteilt, { n: 0 })],
   ]
 

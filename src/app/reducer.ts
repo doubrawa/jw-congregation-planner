@@ -15,14 +15,7 @@ import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsG
 import { neueWocheEinordnen } from '../data/neue-woche'
 import { displayName, isSong, linkFamily, mtab, namensDublette, unlinkFamily } from '../data/helpers'
 import { darfPlanen, erlaubteScreens, rechteVon, themaVon } from '../data/rechte'
-import {
-  besuchAustragen,
-  besuchEintragen,
-  besucheVerteilen,
-  besuchsLage,
-  besuchStand,
-  nachWoche,
-} from '../data/gruppenbesuche'
+import { besuchAustragen, besuchEintragen, besuchsLage, besuchStand, nachWoche } from '../data/gruppenbesuche'
 import { vortragsplanAnwenden, vortragsplanVorschau } from '../data/vortragsplan'
 import {
   deriveMyOzTasks,
@@ -1201,31 +1194,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
      * bestätigte verliert, erfährt es über `persist.ts` — wie bei jedem
      * anderen Leiterwechsel.
      */
-    case 'besucheVerteilen': {
-      const lage = besuchsLage(state)
-      const neu = besucheVerteilen({
-        besuche: state.gruppenbesuche,
-        groups: state.groups,
-        lage,
-        pid: action.pid,
-        wochenende: action.wochenende,
-        auslassen: action.auslassen,
-        // Wie die Regeln des Grundplans: eindeutig und lesbar (`fsRuleAdd`).
-        neueId: () => `b${crypto.randomUUID()}`,
-      })
-      if (!neu.length) return { ...state, toast: toastKey(state, 'toastKeineBesuche') }
-      let fsWeeks = state.fsWeeks
-      for (const besuch of neu) fsWeeks = besuchEintragen(fsWeeks, lage.kennungen, besuch, state.persons)
-      return {
-        ...state,
-        gruppenbesuche: nachWoche([...state.gruppenbesuche, ...neu]),
-        fsWeeks,
-        toast: toastKey(state, 'toastBesucheN', { n: neu.length }),
-      }
-    }
     case 'besuchHinzufuegen': {
       // Dieselbe Gruppe in derselben Woche gibt es nur einmal (so auch die Datenbank).
       if (state.gruppenbesuche.some((b) => b.woche === action.woche && b.grp === action.grp)) return state
+      // Wie die Regeln des Grundplans: eindeutig und lesbar (`fsRuleAdd`).
       const besuch = { id: `b${crypto.randomUUID()}`, woche: action.woche, grp: action.grp, pid: action.pid }
       return {
         ...state,
@@ -1275,20 +1247,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       if (!besuch) return state
       const fsWeeks = besuchEintragen(state.fsWeeks, wochenKennungen(state), besuch, state.persons, true)
       return fsWeeks === state.fsWeeks ? state : { ...state, fsWeeks, toast: toastKey(state, 'toastZugeteilt') }
-    }
-    case 'besucheLeeren': {
-      const lage = besuchsLage(state)
-      const weg = new Set(state.gruppenbesuche.filter((b) => besuchStand(b, lage).art !== 'vorbei'))
-      if (!weg.size) return { ...state, toast: toastKey(state, 'toastBesucheGeleert', { n: 0 }) }
-      let fsWeeks = state.fsWeeks
-      for (const besuch of weg) fsWeeks = besuchAustragen(fsWeeks, lage.kennungen, besuch)
-      return {
-        ...state,
-        gruppenbesuche: state.gruppenbesuche.filter((b) => !weg.has(b)),
-        fsWeeks,
-        // Nicht „Geleerte Zuteilungen": gezählt sind Besuche, keine Plätze.
-        toast: toastKey(state, 'toastBesucheGeleert', { n: weg.size }),
-      }
     }
     case 'vortragsplanUebernehmen': {
       // Neu gerechnet mit dem Stand von jetzt — die Vorschau kann ein anderer

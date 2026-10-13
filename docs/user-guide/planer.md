@@ -671,35 +671,27 @@ im Buch *Organisiert, Jehovas Willen zu tun*, Kapitel 5). Unter
   Treffpunkt wie bei jedem anderen Leiter: Er bestätigt die Aufgabe, bekommt
   Erinnerungen, und „Plan senden" teilt sie ihm mit. Am Treffpunkt steht in
   dieser Woche **„Besuch des Dienstaufsehers"**.
-- **Besucher** oben gilt für neue Besuche; in jeder Zeile lässt er sich für
-  diesen einen Besuch ändern. Zur Wahl steht, wer Treffpunkte leiten darf.
-- **Reihum verteilen** plant die nächsten sechs Monate, je Monat einen Besuch.
-  Die Gruppe, deren letzter Besuch am längsten her ist, kommt zuerst. Wochen,
-  in denen sich die Gruppe nicht trifft (etwa am ersten Samstag, wenn dort ein
-  Versammlungstreffpunkt ist) oder der Besucher abwesend ist, lässt die
-  Verteilung aus. Monate, die schon einen Besuch haben, bleiben, wie sie sind.
-- **Wochenende im Monat** legt fest, welches Wochenende die Verteilung nimmt:
-  das erste bis vierte oder das letzte. Geht es dort nicht, nimmt sie das
-  nächstgelegene, eher ein späteres als ein früheres. Vorgegeben ist das
-  Wochenende des jüngsten Besuchs: Legst du unten einen Besuch am dritten
-  Wochenende an, verteilt „Reihum verteilen" danach ebenfalls am dritten.
-- **Monate auslassen**: Darunter stehen die sechs Monate, die verteilt werden.
-  Tippe einen an, und er bleibt ohne Besuch – etwa, wenn der Besucher in dem
-  Monat verhindert ist. Die Gruppen rücken nach: Wer in dem ausgelassenen
-  Monat dran gewesen wäre, kommt im nächsten.
-- **Woche und Gruppe ändern**: An jedem kommenden Besuch stehen Woche und
-  Gruppe zur Auswahl. Der Besucher geht dann aus den bisherigen Treffpunkten
-  und leitet die neuen. Hatte er dort schon zugesagt, verfällt diese Zusage.
-  Gesperrt ist, was es schon gibt: eine Woche, in der die Gruppe bereits
-  besucht wird.
-- **Besuch hinzufügen** unten legt einen einzelnen Besuch an, **✕** entfernt
-  ihn — der Treffpunkt ist dann wieder frei. **Leeren** entfernt alle
-  kommenden Besuche (zwei Tipps).
+- **Die Besuche stehen in einer Karte**, jeder als Zeile: die Woche, darunter
+  Tag und Uhrzeit des Treffpunkts, rechts die Gruppe. Vergangene stehen noch
+  zwei Monate blass als Rückblick da.
+- **Besuch hinzufügen** unten in der Karte legst du jeden Besuch selbst an —
+  es sind ja höchstens zwölf im Jahr. Das Blatt schlägt vor, was du
+  vermutlich eingibst: die **Gruppe, die am längsten nicht dran war**, die
+  **Woche einen Monat nach dem letzten Besuch** (dasselbe Wochenende im
+  nächsten Monat) und den **Besucher des letzten Besuchs**. Passt etwas
+  nicht, änderst du es; erst **Hinzufügen** legt an. Zur Wahl als Besucher
+  steht, wer Treffpunkte leiten darf.
+- **Ein Tipp auf einen Besuch** öffnet ihn: **Woche und Gruppe** verlegen ihn
+  — der Besucher geht dann aus den bisherigen Treffpunkten und leitet die
+  neuen; hatte er dort schon zugesagt, verfällt diese Zusage. Gesperrt ist,
+  was es schon gibt: eine Woche, in der die Gruppe bereits besucht wird. Der
+  **Besucher** lässt sich für diesen einen Besuch ändern. **Entfernen** fragt
+  vorher nach; der Treffpunkt ist danach wieder frei.
 - **Vorgemerkt** heißt: Die Woche ist noch nicht importiert. Der Besuch nennt
   vorab den Treffpunkt laut Grundplan und wird eingetragen, sobald die Woche
   importiert ist.
 
-**Mögliche Konflikte** stehen oben und an der Zeile:
+**Mögliche Konflikte** stehen an der Zeile und im Blatt des Besuchs:
 
 | Konflikt | Was du tun kannst |
 | --- | --- |

@@ -663,17 +663,7 @@
   width: auto;
 }
 
-/* Karte „Treffpunkt für diese Woche hinzufügen" */
-.fs-add-grid {
-  display: grid;
-  /* minmax(0, 1fr): sonst kann die Spalte nicht unter ihren Inhalt schrumpfen
-     und die volle-Breite-Eingabe (grid-column: 1 / -1) drückt das Raster bei
-     grosser Schrift über die Karte hinaus. */
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 8px;
-  margin-top: 8px;
-}
-
+/* „Neuer Plan" bei den Weiteren Plänen. */
 .fs-add-btn {
   display: block;
   width: 100%;

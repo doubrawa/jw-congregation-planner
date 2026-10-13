@@ -242,17 +242,6 @@ describe('Gruppenbesuche als Ablauf', () => {
     )
   })
 
-  it('alle Besuche geleert: dasselbe für jeden kommenden', () => {
-    const a = ablauf(start())
-    const { woche, grp, besuch, keys } = zugesagterBesuch(a)
-    a.tue({ type: 'besucheLeeren' })
-    expect(a.state.gruppenbesuche).toEqual([])
-    expect(seineSchluessel(a, woche, grp, BESUCHER)).toEqual([])
-    expect(data.saveGruppenbesuche).toHaveBeenCalledWith('c1', [], [besuch.id])
-    expect(data.sendPlanEntzug).toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({ key: keys[0], pid: BESUCHER })]),
-    )
-  })
 
   it('leitete der Besucher den Treffpunkt schon vor dem Besuch, geht er mit dem Besuch trotzdem (entschieden am 3.10.2026)', () => {
     const a = ablauf(start())

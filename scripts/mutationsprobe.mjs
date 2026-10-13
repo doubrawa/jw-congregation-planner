@@ -1082,7 +1082,7 @@ export const KATALOG = [
   {
     id: 'gb-planen-nur-admin',
     datei: 'src/planen/GruppenbesuchePlan.tsx',
-    regel: 'Besuche anlegen und verteilen nur der Admin — der Planer wechselt den Besucher.',
+    regel: 'Besuche anlegt nur der Admin — der Planer wechselt den Besucher.',
     suchen: '  const admin = state.planner\n',
     ersetzen: '  const admin = true\n',
   },
@@ -1090,8 +1090,8 @@ export const KATALOG = [
     id: 'gb-verlegen-nur-admin',
     datei: 'src/planen/GruppenbesuchePlan.tsx',
     regel: 'Woche und Gruppe eines Besuchs verlegt oder streicht nur der Admin.',
-    suchen: '      {vorbei || !state.planner ? (',
-    ersetzen: '      {vorbei ? (',
+    suchen: '  const verlegen = state.planner\n',
+    ersetzen: '  const verlegen = true\n',
   },
   {
     id: 'wp-plan-aendern-nur-admin',
@@ -1293,27 +1293,6 @@ export const KATALOG = [
     regel: 'Ein vorgemerkter Besuch wird mit dem Import seiner Woche eingetragen.',
     suchen: '  const fsWeek = besucheInNeueWoche(genFsWeek(roh.start, k.fsRules), roh.start, k.gruppenbesuche, k.persons)\n',
     ersetzen: '  const fsWeek = genFsWeek(roh.start, k.fsRules)\n',
-  },
-  {
-    id: 'verteilen-reihum',
-    datei: 'src/data/gruppenbesuche.ts',
-    regel: 'Reihum verteilen besucht je Monat eine andere Gruppe — die besuchte geht ans Ende der Reihe.',
-    suchen: '      reihe.splice(reihe.indexOf(grp), 1)\n      reihe.push(grp)\n',
-    ersetzen: '',
-  },
-  {
-    id: 'verteilen-ohne-erste-samstage',
-    datei: 'src/data/gruppenbesuche.ts',
-    regel: 'Reihum verteilen legt keinen Besuch in eine Woche, in der sich die Gruppe nicht trifft.',
-    suchen: "      if (stand.art === 'vorbei' || stand.art === 'keinTreffpunkt' || stand.abwesend) continue",
-    ersetzen: "      if (stand.art === 'vorbei' || stand.abwesend) continue",
-  },
-  {
-    id: 'verteilen-abwesenheit',
-    datei: 'src/data/gruppenbesuche.ts',
-    regel: 'Reihum verteilen lässt Wochen aus, in denen der Besucher abwesend ist.',
-    suchen: "      if (stand.art === 'vorbei' || stand.art === 'keinTreffpunkt' || stand.abwesend) continue",
-    ersetzen: "      if (stand.art === 'vorbei' || stand.art === 'keinTreffpunkt') continue",
   },
   {
     id: 'ansicht-verspricht-nur-feststehendes',
@@ -3249,9 +3228,9 @@ export const KATALOG = [
     datei: 'src/planen/GruppenbesuchePlan.tsx',
     regel: 'Einen Gruppenbesuch zu löschen fragt erst nach — ein einzelner Tipp löscht nicht.',
     suchen:
-      "          <EntfernenKnopf className=\"fs-remove\" onEntfernen={() => dispatch({ type: 'besuchEntfernen', id: besuch.id })} />",
+      "          <EntfernenKnopf\n            className=\"knopf-umriss knopf-entfernen\"\n            text={t.a11yRemove}\n            onEntfernen={() => {\n              dispatch({ type: 'besuchEntfernen', id })",
     ersetzen:
-      "          <button type=\"button\" className=\"fs-remove\" aria-label={t.a11yRemove} onClick={() => dispatch({ type: 'besuchEntfernen', id: besuch.id })}>✕</button>",
+      "          <button\n            type=\"button\"\n            className=\"knopf-umriss knopf-entfernen\"\n            onClick={() => {\n              dispatch({ type: 'besuchEntfernen', id })",
   },
   {
     id: 'dienst-loeschen-fragt-nach',
@@ -3310,34 +3289,6 @@ export const KATALOG = [
   },
   /* ---- Gruppenbesuche weniger starr (4.10.2026) ---- */
   {
-    id: 'gb-wochenende-gewaehlt',
-    datei: 'src/data/gruppenbesuche.ts',
-    regel: '„Reihum verteilen" nimmt das gewählte Wochenende im Monat — nicht immer das erste.',
-    suchen: '    for (const woche of wochenNachWahl(montageImMonat(monat), wochenende)) {',
-    ersetzen: '    for (const woche of montageImMonat(monat)) {',
-  },
-  {
-    id: 'gb-wochenende-naechstgelegen',
-    datei: 'src/data/gruppenbesuche.ts',
-    regel: 'Geht es am gewählten Wochenende nicht, nimmt die Verteilung das nächstgelegene — bei gleichem Abstand das spätere.',
-    suchen: '    .sort((a, b) => a.abstand - b.abstand || b.i - a.i)',
-    ersetzen: '    .sort((a, b) => a.abstand - b.abstand || a.i - b.i)',
-  },
-  {
-    id: 'gb-monat-auslassen',
-    datei: 'src/data/gruppenbesuche.ts',
-    regel: 'Ein ausgelassener Monat bleibt ohne Besuch, und die Reihe der Gruppen rückt nach.',
-    suchen: '    if (belegteMonate.has(monat) || auslassen.includes(monat)) continue',
-    ersetzen: '    if (belegteMonate.has(monat)) continue',
-  },
-  {
-    id: 'gb-vorgabe-juengster',
-    datei: 'src/data/gruppenbesuche.ts',
-    regel: 'Das Wochenende beim Verteilen folgt dem jüngsten Besuch — ein unten angelegter setzt die Vorgabe.',
-    suchen: '  return juengster ? besuchsWochenende(juengster.woche) : 1',
-    ersetzen: '  return 1',
-  },
-  {
     id: 'gb-aendern-austragen',
     datei: 'src/app/reducer.ts',
     regel: 'Wird ein Besuch verlegt, geht der Besucher aus den bisherigen Treffpunkten — dort leitet er nicht mehr.',
@@ -3370,15 +3321,8 @@ export const KATALOG = [
     id: 'gb-woche-gesperrt',
     datei: 'src/planen/GruppenbesuchePlan.tsx',
     regel: 'Beim Verlegen steht gesperrt, wo die Gruppe schon besucht wird.',
-    suchen: '                <option key={w} value={w} disabled={andere.some((b) => b.woche === w && b.grp === besuch.grp)}>',
-    ersetzen: '                <option key={w} value={w}>',
-  },
-  {
-    id: 'gb-verteilen-ohne-ausgelassene',
-    datei: 'src/planen/GruppenbesuchePlan.tsx',
-    regel: '„Reihum verteilen" bekommt die abgewählten Monate mit — sonst wären sie nur angezeigt.',
-    suchen: '              auslassen: ausgelassen.filter((m) => monate.includes(m)),',
-    ersetzen: '              auslassen: [],',
+    suchen: 'gesperrt={(w) => andere.some((b) => b.woche === w && b.grp === besuch.grp)}',
+    ersetzen: 'gesperrt={() => false}',
   },
   /* ---- Wochentagwechsel im Zeugnisgeben (4.10.2026) ---- */
   {
@@ -5066,6 +5010,74 @@ export const KATALOG = [
     regel: 'Ein eigener Programmpunkt wird hinzugefügt, nicht „übernommen" (englisch hieße es „Take over").',
     suchen: '          {t.hinzufuegenKnopf}\n',
     ersetzen: '          {t.uebernehmen}\n',
+  },
+  // ── Gruppenbesuche von Hand (T121, Phase 5e-3) ────────────────────────────
+  // Hier standen acht Einträge zu „Reihum verteilen" (Reihe, erster Samstag,
+  // Abwesenheit, Wochenende, nächstgelegenes, Monate auslassen, Vorgabe des
+  // Wochenendes, abgewählte Monate). Seit dem 13.10.2026 gibt es keine
+  // Automatik mehr — nur den Vorschlag beim Anlegen.
+  {
+    id: 'gb-vorschlag-laengste-gruppe',
+    datei: 'src/data/gruppenbesuche.ts',
+    regel: 'Vorgeschlagen wird die Gruppe, die am längsten nicht dran war — noch nie besuchte zuerst.',
+    suchen: "  const grp = groups.map((g) => g.id).sort((a, b) => (zuletzt.get(a) ?? '').localeCompare(zuletzt.get(b) ?? ''))[0]\n",
+    ersetzen: '  const grp = groups.map((g) => g.id)[0]\n',
+  },
+  {
+    id: 'gb-vorschlag-monat-danach',
+    datei: 'src/data/gruppenbesuche.ts',
+    regel: 'Vorgeschlagen wird die Woche einen Monat nach dem letzten Besuch.',
+    suchen: '  const naechste = letzter ? gleichesWochenendeImNaechstenMonat(letzter.woche) : undefined\n',
+    ersetzen: '  const naechste = letzter?.woche\n',
+  },
+  {
+    id: 'gb-vorschlag-gleiches-wochenende',
+    datei: 'src/data/gruppenbesuche.ts',
+    regel: 'Einen Monat später heißt: dasselbe Wochenende im nächsten Monat, vom fünften das letzte.',
+    suchen: '  return nr >= 0 && nr < 4 ? naechste[nr] : naechste.at(-1)\n',
+    ersetzen: '  return naechste[0]\n',
+  },
+  {
+    id: 'gb-vorschlag-nicht-vor-dieser-woche',
+    datei: 'src/data/gruppenbesuche.ts',
+    regel: 'Vorgeschlagen wird nie eine Woche vor dieser.',
+    suchen: '    woche: naechste && naechste >= dieseWoche ? naechste : dieseWoche,\n',
+    ersetzen: '    woche: naechste ?? dieseWoche,\n',
+  },
+  {
+    id: 'gb-vorschlag-letzter-besucher',
+    datei: 'src/data/gruppenbesuche.ts',
+    regel: 'Vorgeschlagen wird der Besucher des letzten Besuchs, der einen hat.',
+    suchen: '    pid: reihe.findLast((b) => b.pid !== null)?.pid ?? null,\n',
+    ersetzen: '    pid: reihe.at(-1)?.pid ?? null,\n',
+  },
+  {
+    id: 'gb-neu-besucher-nur-mit-recht',
+    datei: 'src/planen/GruppenbesuchePlan.tsx',
+    regel: 'Wer keine Treffpunkte mehr leiten darf, steht beim Anlegen nicht als Besucher da.',
+    suchen: "  const [pid, setPid] = useState(kandidaten.some((p) => p.id === vorschlag.pid) ? (vorschlag.pid ?? '') : '')\n",
+    ersetzen: "  const [pid, setPid] = useState(vorschlag.pid ?? '')\n",
+  },
+  {
+    id: 'gb-neu-vorschau-ohne-offen',
+    datei: 'src/planen/GruppenbesuchePlan.tsx',
+    regel: 'Beim Anlegen steht nur, was auch danach nicht aufginge — ein freier Treffpunkt füllt sich, ein fehlender Besucher sperrt nur den Knopf.',
+    suchen: "        (p) => p.art !== 'offen' && p.art !== 'besucher',\n",
+    ersetzen: '        () => true,\n',
+  },
+  {
+    id: 'gb-neu-vorschau',
+    datei: 'src/planen/GruppenbesuchePlan.tsx',
+    regel: 'Was auch nach dem Anlegen nicht aufginge, steht schon im Blatt — nicht erst an der Zeile.',
+    suchen: '        <ProblemListe liste={hinweise} />\n',
+    ersetzen: '',
+  },
+  {
+    id: 'gb-neu-erst-mit-besucher',
+    datei: 'src/planen/GruppenbesuchePlan.tsx',
+    regel: 'Ohne Besucher und für eine Gruppe, die in der Woche schon besucht wird, legt „Hinzufügen" nichts an.',
+    suchen: 'disabled={!pid || !grp || besucht(woche, grp)}',
+    ersetzen: 'disabled={false}',
   },
 ]
 

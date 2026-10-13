@@ -201,61 +201,60 @@ describe('Öffentliches Zeugnisgeben', () => {
 })
 
 describe('Gruppenbesuche', () => {
-  it('Besucher wählen → „Reihum verteilen" → Besuche stehen da; „Leeren" (zweimal getippt) räumt sie ab', () => {
-    const { container } = zeige(PlanenScreen, {
-      screen: 'planen',
-      tab: 'fs',
-      fsBereich: 'gruppenbesuche',
-      planner: true,
-      gruppenbesuche: [],
-    })
-    // Ohne Besucher ist „Reihum verteilen" gesperrt.
-    expect(knopf(container, t.gbVerteilen)?.disabled).toBe(true)
-    fireEvent.change(container.querySelector('.gb-besucher select')!, { target: { value: 'p1' } })
-    klick(container, t.gbVerteilen)
-    const besuche = container.querySelectorAll('.gb-zeile')
-    expect(besuche.length).toBeGreaterThan(0)
-    // Jeder Besuch nennt den gewählten Besucher.
-    for (const b of besuche) expect((b.querySelector('.gb-besucher-zeile select') as HTMLSelectElement).value).toBe('p1')
-
-    klick(container, t.leeren)
-    klick(container, t.leerenSicher)
-    expect(container.querySelectorAll('.gb-zeile')).toHaveLength(0)
-    expect(container.textContent).toContain(t.gbLeer)
+  // Die Blätter fragen beim Wischen, ob wir am Schreibtisch sitzen — jsdom kennt matchMedia nicht.
+  beforeEach(() => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
+  })
+  afterEach(() => {
+    delete (window as { matchMedia?: unknown }).matchMedia
   })
 
-  it('drittes Wochenende, Oktober ausgelassen → verteilt; dann einen Besuch verlegen und zu einer anderen Gruppe geben', () => {
+  const blatt = () => document.querySelector<HTMLElement>('[role="dialog"]')!
+  const feld = (marke: string) =>
+    [...blatt().querySelectorAll('.blatt-feld')]
+      .find((f) => f.querySelector('.feld-marke')?.textContent === marke)!
+      .querySelector('select')!
+  const zeilen = (c: Element) => [...c.querySelectorAll<HTMLElement>('.gb-zeile')]
+  const gruppen = (c: Element) => zeilen(c).map((z) => z.querySelector('.gb-gruppe-pille')?.textContent)
+
+  it('Besuch hinzufügen → er steht da; der nächste ist vorbelegt; Entfernen (zweimal getippt) räumt ihn ab', () => {
+    const { container } = zeige(PlanenScreen, { screen: 'planen', tab: 'fs', fsBereich: 'gruppenbesuche', planner: true, gruppenbesuche: [] })
+    fireEvent.click(container.querySelector('.gb-neu')!)
+    // Ohne Besuch noch kein Besucher — ohne ihn ist „Hinzufügen" gesperrt.
+    expect(knopf(blatt(), t.hinzufuegenKnopf)?.disabled).toBe(true)
+    fireEvent.change(feld(t.gbBesucher), { target: { value: 'p1' } })
+    klick(blatt(), t.hinzufuegenKnopf)
+    expect(zeilen(container)).toHaveLength(1)
+
+    // Der zweite: eine andere Gruppe, einen Monat später, derselbe Besucher.
+    fireEvent.click(container.querySelector('.gb-neu')!)
+    expect(feld(t.gbBesucher).value).toBe('p1')
+    klick(blatt(), t.hinzufuegenKnopf)
+    expect(zeilen(container)).toHaveLength(2)
+    const [erste, zweite] = gruppen(container)
+    expect(zweite).not.toBe(erste)
+
+    fireEvent.click(zeilen(container)[0]!)
+    klick(blatt(), t.a11yRemove)
+    klick(blatt(), t.loeschenSicher)
+    expect(zeilen(container)).toHaveLength(1)
+  })
+
+  it('einen Besuch verlegen und zu einer anderen Gruppe geben — gleich im Blatt', () => {
+    const demo = demoZustand()
+    const [g1, g2] = demo.groups
     const { container } = zeige(PlanenScreen, {
       screen: 'planen',
       tab: 'fs',
       fsBereich: 'gruppenbesuche',
       planner: true,
-      gruppenbesuche: [],
+      gruppenbesuche: [{ id: 'b1', woche: '2026-09-14', grp: g1!.id, pid: 'p1' }],
     })
-    fireEvent.change(container.querySelector('.gb-besucher select')!, { target: { value: 'p1' } })
-    fireEvent.change(container.querySelector(`select[aria-label="${t.gbWochenende}"]`)!, { target: { value: '3' } })
-    const oktober = [...container.querySelectorAll('.gb-monat')].find((m) => m.getAttribute('aria-label') === 'Oktober 2026')!
-    fireEvent.click(oktober)
-    klick(container, t.gbVerteilen)
-
-    const wochen = () =>
-      [...container.querySelectorAll<HTMLSelectElement>(`.gb-zeile select[aria-label="${t.gbWoche}"]`)].map((s) => s.value)
-    // Je Monat das dritte Wochenende; der Oktober bleibt leer.
-    expect(wochen()).toEqual(['2026-09-14', '2026-11-16', '2026-12-14', '2027-01-11', '2027-02-15'])
-    const monatskarten = [...container.querySelectorAll('.panel-label')].map((l) => l.textContent)
-    expect(monatskarten).toContain('November 2026')
-    expect(monatskarten).not.toContain('Oktober 2026')
-
-    // Den Septemberbesuch eine Woche später …
-    const ersteWoche = container.querySelector<HTMLSelectElement>(`.gb-zeile select[aria-label="${t.gbWoche}"]`)!
-    fireEvent.change(ersteWoche, { target: { value: '2026-09-21' } })
-    expect(wochen()[0]).toBe('2026-09-21')
-    // … und zu einer anderen Gruppe.
-    const ersteGruppe = container.querySelector<HTMLSelectElement>(`.gb-zeile select[aria-label="${t.gbGruppe}"]`)!
-    const vorher = ersteGruppe.value
-    const andere = [...ersteGruppe.options].find((o) => o.value !== vorher && !o.disabled)!.value
-    fireEvent.change(ersteGruppe, { target: { value: andere } })
-    expect(container.querySelector<HTMLSelectElement>(`.gb-zeile select[aria-label="${t.gbGruppe}"]`)!.value).toBe(andere)
-    expect(wochen()).toHaveLength(5)
+    fireEvent.click(zeilen(container)[0]!)
+    fireEvent.change(feld(t.gbWoche), { target: { value: '2026-09-21' } })
+    expect(feld(t.gbWoche).value).toBe('2026-09-21')
+    fireEvent.change(feld(t.gbGruppe), { target: { value: g2!.id } })
+    expect(feld(t.gbGruppe).value).toBe(g2!.id)
+    expect(gruppen(container)).toEqual([g2!.name])
   })
 })

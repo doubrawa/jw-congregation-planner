@@ -409,34 +409,25 @@ describe('Die Gruppenbesuche im Predigtdienst (T120, Phase 2)', () => {
   it('stehen ohne Woche da und zeigen ihren Plan', () => {
     const { container } = zeige({ tab: 'fs', fsBereich: 'gruppenbesuche' })
     expect(container.querySelector('.week-strip')).toBeNull()
-    expect(container.textContent).toContain(t.gbTitel)
+    expect(container.querySelector('.gb-karte-titel')?.textContent).toBe(t.gbAlle)
     expect(container.textContent).toContain(t.gbLeer)
   })
 
   it('auch ohne geladene Woche — Besuche dürfen weiter voraus liegen als jedes Programm', () => {
     const { container } = zeige({ tab: 'fs', fsBereich: 'gruppenbesuche', weeks: [], fsWeeks: [] })
-    expect(container.textContent).toContain(t.gbTitel)
+    expect(container.querySelector('.gb-karte-titel')?.textContent).toBe(t.gbAlle)
   })
 
   it('der Gruppenaufseher plant sie nicht — bei ihm gilt der Bereich als „Treffpunkte"', () => {
     const { container } = zeige({ planner: false, personId: AUFSEHER.id, tab: 'fs', fsBereich: 'gruppenbesuche' })
-    expect(container.textContent).not.toContain(t.gbTitel)
+    expect(container.querySelector('.gb-karte')).toBeNull()
     expect(seite(container).querySelector('.treff-leer')).toBeTruthy() // der Plan der Treffpunkte
   })
 
-  it('„Reihum verteilen" braucht erst einen Besucher', () => {
-    // Besuchen darf, wer Treffpunkte leiten darf.
-    const besucher = { ...AUFSEHER, priv: { ...emptyQualifications(), treffpunkt: true } }
-    const { container, dispatch } = zeige({ tab: 'fs', fsBereich: 'gruppenbesuche', persons: [PLANER, besucher] })
-    const knopf = [...container.querySelectorAll<HTMLButtonElement>('.plan-auto-btn--primary')].find(
-      (b) => b.textContent === t.gbVerteilen,
-    )!
-    expect(knopf.disabled).toBe(true)
-    fireEvent.change(container.querySelector('.gb-besucher select')!, { target: { value: AUFSEHER.id } })
-    expect(knopf.disabled).toBe(false)
-    fireEvent.click(knopf)
-    // Ohne Besuche das erste Wochenende, und kein Monat ausgelassen.
-    expect(dispatch).toHaveBeenCalledWith({ type: 'besucheVerteilen', pid: AUFSEHER.id, wochenende: 1, auslassen: [] })
+  it('angelegt wird von Hand — „Besuch hinzufügen", kein „Reihum verteilen" (13.10.2026)', () => {
+    const { container } = zeige({ tab: 'fs', fsBereich: 'gruppenbesuche' })
+    expect(container.querySelector('.gb-neu')?.textContent).toBe(t.gbHinzufuegen)
+    expect(container.textContent).not.toContain(t.gbVerteilen)
   })
 })
 
@@ -587,6 +578,12 @@ describe('Der Besucher bleibt sichtbar (T120)', () => {
   // 2099, und die Wochenwahl des Besuchs zählte jede Woche bis dorthin auf —
   // gut 3800 Einträge, eine Sekunde je Lauf und unter Last über der Frist.
   amMontagDerTestwoche()
+  amHandy()
+  /** Das Besucher-Feld im offenen Blatt. */
+  const besucherFeld = () =>
+    [...document.querySelectorAll('[role="dialog"] .blatt-feld')]
+      .find((f) => f.querySelector('.feld-marke')?.textContent === t.gbBesucher)!
+      .querySelector('select')!
 
   it('auch wenn er inzwischen keine Treffpunkte mehr leiten darf', () => {
     // Ohne ihn in der Auswahl zeigte das Feld „Besucher wählen" — als gäbe es keinen.
@@ -595,10 +592,18 @@ describe('Der Besucher bleibt sichtbar (T120)', () => {
       fsBereich: 'gruppenbesuche',
       gruppenbesuche: [{ id: 'b1', woche: '2026-10-05', grp: 'g1', pid: AUFSEHER.id }],
     })
-    const feld = container.querySelector<HTMLSelectElement>('.gb-besucher-zeile select')!
-    expect(feld.value).toBe(AUFSEHER.id)
-    // Als Vorgabe für neue Besuche gilt er dagegen nicht.
-    expect(container.querySelector<HTMLSelectElement>('.gb-besucher select')!.value).toBe('')
+    fireEvent.click(container.querySelector('.gb-zeile')!)
+    expect(besucherFeld().value).toBe(AUFSEHER.id)
+  })
+
+  it('als Vorschlag für einen neuen Besuch gilt er dagegen nicht', () => {
+    const { container } = zeige({
+      tab: 'fs',
+      fsBereich: 'gruppenbesuche',
+      gruppenbesuche: [{ id: 'b1', woche: '2026-10-05', grp: 'g1', pid: AUFSEHER.id }],
+    })
+    fireEvent.click(container.querySelector('.gb-neu')!)
+    expect(besucherFeld().value).toBe('')
   })
 })
 

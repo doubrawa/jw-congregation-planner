@@ -745,13 +745,11 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // Grundplan-Blob + die neu materialisierten Wochen (gebündelt).
       treffpunkteSpeichern(congId, prev, next, fsVerwaist)
       break
-    case 'besucheVerteilen':
     case 'besuchHinzufuegen':
     case 'besuchEntfernen':
     case 'besuchAendern':
     case 'besuchBesucher':
     case 'besuchUebernehmen':
-    case 'besucheLeeren':
       // Die Besuche und die Treffpunkte, in die sie eingetragen wurden.
       besucheSpeichern(congId, prev, next, fsVerwaist)
       break

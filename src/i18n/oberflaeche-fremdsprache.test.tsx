@@ -827,7 +827,7 @@ describe('Die Pläne (T120) in einer fremden Sprache', () => {
     ['Zeugnisgeben ansehen', { screen: 'programm', tab: 'fs', fsBereich: 'zeugnis' }, '.oz-schicht'],
     ['Zeugnisgeben planen', { screen: 'planen', tab: 'fs', fsBereich: 'zeugnis' }, '.oz-person'],
     ['Gruppenbesuche ansehen', { screen: 'programm', tab: 'fs', fsBereich: 'gruppenbesuche' }, '.gb-besuch'],
-    ['Gruppenbesuche planen', { screen: 'planen', tab: 'fs', fsBereich: 'gruppenbesuche' }, '.gb-besucher'],
+    ['Gruppenbesuche planen', { screen: 'planen', tab: 'fs', fsBereich: 'gruppenbesuche' }, '.gb-zeile'],
     ['Weitere Pläne ansehen', { screen: 'programm', tab: 'wp' }, '.wp-liste'],
     ['Weitere Pläne planen', { screen: 'planen', tab: 'wp' }, '.wp-karte'],
     ['Königreichssaal geöffnet', { screen: 'planen', tab: 'wp' }, '.wp-zeile', oeffne('Vexo')],

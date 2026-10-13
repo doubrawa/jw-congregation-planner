@@ -6,7 +6,8 @@
  * dieser Woche, und alles Weitere — Zusage, Erinnerung, „Plan senden", die
  * Nachricht „Zuteilung zurückgezogen" — läuft über den Treffpunkt wie bei jedem
  * anderen Leiter. Diese Datei sagt nur, **wo** er einzutragen ist, wie es um
- * einen Besuch steht und wie man reihum verteilt.
+ * einen Besuch steht und was beim Anlegen eines neuen vorgeschlagen wird —
+ * angelegt wird jeder von Hand.
  *
  * Treffpunkte gibt es nur für geladene Wochen (`fsWeeks[wi]` gehört zu
  * `weeks[wi]`). Ein Besuch in einer späteren Woche ist **vorgemerkt**: Er nennt
@@ -20,7 +21,7 @@
 import { istAbwesendAm } from './absence'
 import { fsSetLeader, fsTag, fsTagVorbei, genFsWeek } from './fs'
 import { displayName } from './helpers'
-import { fromIso, isoDay, monatNach, montagNach, tagNach } from './meeting-dates'
+import { fromIso, monatNach, montagNach, tagNach } from './meeting-dates'
 import type { Absence, FsInstance, FsRule, Group, Gruppenbesuch, Person, Week } from './types'
 
 /** Die Treffpunkte der besuchten Gruppe in einer Woche. */
@@ -204,15 +205,7 @@ export function besuchHatKonflikt(besuch: Gruppenbesuch, stand: BesuchsStand): b
   )
 }
 
-/* ---- Reihum verteilen ---- */
-
-/**
- * Wie viele Monate „Reihum verteilen" auf einmal plant. Ein halbes Jahr: weit
- * genug, dass die Gruppen ihre Besuche früh kennen (der Gruppenaufseher kündigt
- * sie an, od Kap. 5 Abs. 41), kurz genug, dass Abwesenheiten schon eingetragen
- * sein können.
- */
-export const VERTEILEN_MONATE = 6
+/* ---- Ein neuer Besuch ---- */
 
 /**
  * Der Monat eines Besuchs („2026-10"): der seines **Wochenendes**. Der
@@ -221,77 +214,6 @@ export const VERTEILEN_MONATE = 6
  */
 export function besuchsMonat(woche: string): string {
   return tagNach(woche, 5).slice(0, 7)
-}
-
-/**
- * Welches Wochenende im Monat „Reihum verteilen" nimmt (4.10.2026): das erste
- * bis vierte oder das letzte. Bis dahin war es immer das erste, an dem es ging
- * — „das ist auch nicht gut".
- */
-export type Wochenende = 1 | 2 | 3 | 4 | 'letztes'
-
-/** Die Wahl, in der Reihenfolge der Auswahl. */
-export const WOCHENENDEN: readonly Wochenende[] = [1, 2, 3, 4, 'letztes']
-
-/** Das wievielte Wochenende seines Monats eine Besuchswoche hat; das fünfte heißt „letztes". */
-export function besuchsWochenende(woche: string): Wochenende {
-  // Die Wahl steht in Monatsfolge: Index 0–3 sind das erste bis vierte
-  // Wochenende; das fünfte (4) und eine Woche, die kein Montag ist (-1),
-  // heißen „letztes".
-  return WOCHENENDEN[montageImMonat(besuchsMonat(woche)).indexOf(woche)] ?? 'letztes'
-}
-
-/**
- * Die Vorgabe beim Verteilen: das Wochenende des **jüngsten** Besuchs — wer
- * unten einen Besuch am dritten Wochenende anlegt, verteilt danach am dritten
- * weiter. Gespeichert wird sie nicht, der Plan selbst trägt sie (wie den
- * Besucher). Ohne Besuch das erste.
- */
-export function vorgabeWochenende(besuche: readonly Gruppenbesuch[]): Wochenende {
-  const juengster = nachWoche(besuche).at(-1)
-  return juengster ? besuchsWochenende(juengster.woche) : 1
-}
-
-/**
- * Die Wochen eines Monats in der Reihenfolge, in der „Reihum verteilen" sie
- * versucht: das gewählte Wochenende zuerst, dann die übrigen nach Abstand —
- * bei gleichem Abstand das spätere. Ein Besuch rückt eher nach hinten als nach
- * vorn; am ersten Samstag liegt oft der Versammlungstreffpunkt.
- */
-function wochenNachWahl(montage: readonly string[], wahl: Wochenende): string[] {
-  const ziel = wahl === 'letztes' ? montage.length - 1 : Math.min(wahl, montage.length) - 1
-  return montage
-    .map((woche, i) => ({ woche, i, abstand: Math.abs(i - ziel) }))
-    .sort((a, b) => a.abstand - b.abstand || b.i - a.i)
-    .map((x) => x.woche)
-}
-
-/**
- * Die Monate, die „Reihum verteilen" füllt: sechs ab dem Monat nach dem
- * jüngsten Besuch, frühestens ab dem laufenden. Planen zeigt genau diese zum
- * Auslassen an — dieselbe Rechnung, damit dort steht, was dann geschieht.
- */
-export function verteilenMonate(besuche: readonly Gruppenbesuch[], heute = new Date()): string[] {
-  const juengster = nachWoche(besuche).at(-1)
-  const diesenMonat = isoDay(heute).slice(0, 7)
-  const ab = juengster ? monatNach(besuchsMonat(juengster.woche)) : diesenMonat
-  const erster = ab > diesenMonat ? ab : diesenMonat
-  return Array.from({ length: VERTEILEN_MONATE }, (_unused, i) => monatNach(erster, i))
-}
-
-/**
- * Die Wochen zur Wahl — beim Hinzufügen und beim Verlegen eines Besuchs: ab
- * dieser Woche ein halbes Jahr und mindestens bis einen Monat hinter die
- * Woche des Besuchs. Einen Besuch, den „Reihum verteilen" weiter hinten
- * angelegt hat, gibt es so samt seinen Nachbarwochen zur Wahl.
- */
-export function besuchsWochenAuswahl(dieseWoche: string, woche = dieseWoche): string[] {
-  const halbesJahr = montagNach(dieseWoche, VERTEILEN_MONATE * 5 - 1)
-  const nachBesuch = montagNach(woche, 4)
-  const bis = halbesJahr > nachBesuch ? halbesJahr : nachBesuch
-  const out: string[] = []
-  for (let w = dieseWoche; w <= bis; w = montagNach(w, 1)) out.push(w)
-  return out
 }
 
 /** Die Montage der Wochen, deren Samstag im Monat liegt — aufsteigend. */
@@ -306,75 +228,63 @@ function montageImMonat(monat: string): string[] {
 }
 
 /**
- * **Reihum verteilen**: je Monat ein Besuch, die Gruppen der Reihe nach —
- * gemessen am od (Kap. 5 Abs. 36: „jeden Monat an einem Wochenende eine andere
- * Gruppe").
- *
- * - **Die Reihe ist eine Warteschlange**: Vorn steht die Gruppe, deren letzter
- *   Besuch am längsten her ist (noch nie besuchte zuerst, in ihrer
- *   Reihenfolge). Wer besucht wird, geht ans Ende. Ein Zeiger „nach der Gruppe
- *   des jüngsten Besuchs" ginge nur, solange nie eine Gruppe übersprungen
- *   wird — kommt eine spätere dran, weil die vordere im Monat keine Woche
- *   findet, besuchte er die spätere sonst gleich danach noch einmal.
- * - Begonnen wird im Monat nach dem jüngsten Besuch, frühestens im laufenden
- *   (`verteilenMonate`). Monate, die schon einen Besuch haben, bleiben, wie
- *   sie sind; **ausgelassene** (`auslassen`, 4.10.2026) bleiben leer, und die
- *   Reihe rückt nach — die Gruppe des ausgelassenen Monats kommt im nächsten.
- * - Je Monat das **gewählte Wochenende** (`wochenende`, sonst das erste), in
- *   dem sich die Gruppe trifft (geladen, sonst laut Grundplan) und der
- *   Besucher nicht abwesend ist; geht es dort nicht, das nächstgelegene
- *   (`wochenNachWahl`). Am ersten Samstag liegt oft ein
- *   Versammlungstreffpunkt, dann trifft es den zweiten.
- * - Nie zwei Gruppen in derselben Woche — der Besucher ist einer.
- * - Ein anderer Leiter in einer geladenen Woche hält die Verteilung **nicht**
- *   auf: Das ist ein Konflikt, den der Planer mit „Übernehmen" löst — so sieht
- *   er ihn, statt dass der Monat still leer bliebe.
- *
- * Gibt nur die **neuen** Besuche zurück.
+ * Dasselbe Wochenende im nächsten Monat: das wievielte es im Monat des Besuchs
+ * war, so im nächsten — das fünfte heißt „letztes" und bleibt das letzte.
  */
-export function besucheVerteilen(args: {
-  besuche: readonly Gruppenbesuch[]
-  groups: readonly Group[]
-  lage: BesuchsLage
-  pid: string
-  neueId: () => string
-  wochenende?: Wochenende
-  /** Monate („2026-12"), in denen kein Besuch stattfindet. */
-  auslassen?: readonly string[]
-  heute?: Date
-}): Gruppenbesuch[] {
-  const { besuche, groups, lage, pid, neueId, wochenende = 1, auslassen = [], heute = new Date() } = args
+function gleichesWochenendeImNaechstenMonat(woche: string): string | undefined {
+  const monat = besuchsMonat(woche)
+  const nr = montageImMonat(monat).indexOf(woche)
+  const naechste = montageImMonat(monatNach(monat))
+  // Jeder Monat hat mindestens vier Samstage — das erste bis vierte gibt es immer.
+  return nr >= 0 && nr < 4 ? naechste[nr] : naechste.at(-1)
+}
+
+/**
+ * **Was beim Anlegen eines Besuchs schon dasteht** (13.10.2026). Angelegt wird
+ * von Hand — „es soll keinen automatismus geben … maximal 12 termine im jahr"
+ * —, vorbelegt mit dem, was der Planer vermutlich eingibt:
+ *
+ * - die Gruppe, die **am längsten nicht dran** war (noch nie besuchte zuerst,
+ *   in ihrer Reihenfolge) — ein schon geplanter Besuch zählt mit,
+ * - die Woche **einen Monat nach dem letzten Besuch** (dasselbe Wochenende im
+ *   nächsten Monat), frühestens diese,
+ * - der Besucher des letzten Besuchs, der einen hat.
+ *
+ * Ob der Besucher noch Treffpunkte leiten darf, prüft das Blatt — es kennt die
+ * Auswahl.
+ */
+export function besuchVorschlag(
+  besuche: readonly Gruppenbesuch[],
+  groups: readonly Group[],
+  dieseWoche: string,
+): { woche: string; grp: string | null; pid: string | null } {
+  const reihe = nachWoche(besuche)
   const zuletzt = new Map<string, string>()
-  for (const b of nachWoche(besuche)) zuletzt.set(b.grp, b.woche)
+  for (const b of reihe) zuletzt.set(b.grp, b.woche)
   // Stabil sortiert: Bei gleichem „zuletzt" (noch nie) bleibt die Reihenfolge der Gruppen.
-  const reihe = groups.map((g) => g.id).sort((a, b) => (zuletzt.get(a) ?? '').localeCompare(zuletzt.get(b) ?? ''))
-  const belegteWochen = new Set(besuche.map((b) => b.woche))
-  const belegteMonate = new Set(besuche.map((b) => besuchsMonat(b.woche)))
-
-  /** Die Woche im Monat, in der diese Gruppe besucht werden kann — sonst null. */
-  const wocheFuer = (monat: string, grp: string): string | null => {
-    for (const woche of wochenNachWahl(montageImMonat(monat), wochenende)) {
-      if (belegteWochen.has(woche)) continue
-      const stand = besuchStand({ id: '', woche, grp, pid }, lage, heute)
-      if (stand.art === 'vorbei' || stand.art === 'keinTreffpunkt' || stand.abwesend) continue
-      return woche
-    }
-    return null
+  const grp = groups.map((g) => g.id).sort((a, b) => (zuletzt.get(a) ?? '').localeCompare(zuletzt.get(b) ?? ''))[0]
+  const letzter = reihe.at(-1)
+  const naechste = letzter ? gleichesWochenendeImNaechstenMonat(letzter.woche) : undefined
+  return {
+    woche: naechste && naechste >= dieseWoche ? naechste : dieseWoche,
+    grp: grp ?? null,
+    pid: reihe.findLast((b) => b.pid !== null)?.pid ?? null,
   }
+}
 
-  const neu: Gruppenbesuch[] = []
-  for (const monat of verteilenMonate(besuche, heute)) {
-    if (belegteMonate.has(monat) || auslassen.includes(monat)) continue
-    for (const grp of reihe) {
-      const woche = wocheFuer(monat, grp)
-      if (!woche) continue
-      neu.push({ id: neueId(), woche, grp, pid })
-      belegteWochen.add(woche)
-      belegteMonate.add(monat)
-      reihe.splice(reihe.indexOf(grp), 1)
-      reihe.push(grp)
-      break
-    }
-  }
-  return neu
+/** Wie weit die Wochen zur Wahl reichen: ein halbes Jahr. */
+const AUSWAHL_WOCHEN = 30
+
+/**
+ * Die Wochen zur Wahl — beim Anlegen und beim Verlegen eines Besuchs: ab
+ * dieser Woche ein halbes Jahr und mindestens bis einen Monat hinter die
+ * Woche des Besuchs (oder des Vorschlags), damit sie samt Nachbarwochen dasteht.
+ */
+export function besuchsWochenAuswahl(dieseWoche: string, woche = dieseWoche): string[] {
+  const halbesJahr = montagNach(dieseWoche, AUSWAHL_WOCHEN - 1)
+  const nachBesuch = montagNach(woche, 4)
+  const bis = halbesJahr > nachBesuch ? halbesJahr : nachBesuch
+  const out: string[] = []
+  for (let w = dieseWoche; w <= bis; w = montagNach(w, 1)) out.push(w)
+  return out
 }
