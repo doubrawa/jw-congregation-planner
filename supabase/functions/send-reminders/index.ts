@@ -56,6 +56,7 @@ import {
   zeitMitAbweichung,
 } from '../_shared/planung.ts'
 import { abosJeKonto, kontoAufloeser } from '../_shared/konten.ts'
+import { dueKind, type Rhythmus } from '../_shared/erinnerung.ts'
 import {
   type Eintrag,
   type FsInstance,
@@ -122,14 +123,10 @@ async function pruneNotifications(): Promise<void> {
 /*
  * Das Datenmodell der Woche, die Ermittlung der offenen Plätze und die
  * Textbausteine stehen in `_shared/zuteilungen.ts` — dieselbe Datei, aus der
- * `send-plan` liest. Hier bleibt nur, was allein den Erinnerungs-Rhythmus
- * betrifft.
+ * `send-plan` liest. Der Rhythmus selbst (`dueKind`) steht in
+ * `_shared/erinnerung.ts`: Die App fragt ihn auch, für „Die nächste Erinnerung
+ * geht … von selbst raus" in den Zusagen der Woche.
  */
-interface Reminders {
-  first: number
-  last: number
-  repeat: boolean
-}
 
 /* ---- Terminberechnung ---------------------------------------------------- */
 
@@ -143,32 +140,6 @@ interface Reminders {
  * senden" Vergangenes überspringt, fragt es dasselbe — die Rechnung heißt jetzt
  * `tageBisTermin` und steht neben dem Versatz.
  */
-
-/**
- * Fälligkeit laut Einstellungen: Haupttermin (first/last) oder Wiederholung.
- *
- * **„Letzte Erinnerung" heißt letzte.** Die Wiederholung deckt die Tage
- * *dazwischen* ab — nicht die danach. Geprüft wurde hier nur `days < first`,
- * und damit ging bei `first 7 · last 1 · wiederholen` auch **am Tag der
- * Zusammenkunft selbst** noch eine Erinnerung hinaus (Tag 0 < 7). Wer „letzte
- * Erinnerung: 1 Tag vorher" einstellt, hat ausdrücklich entschieden, am Tag
- * selbst nicht mehr erinnert zu werden; für „am Tag" gibt es den eigenen Wert
- * `last = 0`. Die Einstellung blieb also folgenlos, und niemand sah es — die
- * Erinnerung kam ja an.
- *
- * Die Grenzen werden sortiert genommen, nicht als „first oben, last unten":
- * die Oberfläche lässt `first` 1–21 und `last` 0–7 zu, ein `last > first` ist
- * also einstellbar. Ohne das Sortieren wäre das Fenster dann leer statt
- * umgekehrt.
- */
-function dueKind(rem: Reminders, days: number): 'main' | 'repeat' | null {
-  if (days < 0) return null
-  if (days === rem.first || days === rem.last) return 'main'
-  if (!rem.repeat) return null
-  const frueh = Math.min(rem.first, rem.last)
-  const spaet = Math.max(rem.first, rem.last)
-  return days > frueh && days < spaet ? 'repeat' : null
-}
 
 /**
  * **Welche Wochen dieser Lauf überhaupt ansehen muss.**
@@ -191,7 +162,7 @@ function dueKind(rem: Reminders, days: number): 'main' | 'repeat' | null {
  * liegt bei `start + offset` mit `offset` zwischen 0 und 6. Nach unten deshalb
  * eine Woche Luft, nach oben die spätere der beiden Erinnerungsgrenzen.
  */
-function wochenFenster(todayUTC: number, rem: Reminders): [string, string] {
+function wochenFenster(todayUTC: number, rem: Rhythmus): [string, string] {
   const tag = (versatz: number): string =>
     new Date(todayUTC + versatz * 864e5).toISOString().slice(0, 10)
   return [tag(-7), tag(Math.max(rem.first, rem.last))]
@@ -272,7 +243,7 @@ Deno.serve(async (req: Request) => {
     await bibelbuecherLaden()
 
     for (const cong of congs) {
-      const rem: Reminders = {
+      const rem: Rhythmus = {
         first: cong.reminder_first,
         last: cong.reminder_last,
         // Ohne eigene Einstellung: **keine** Wiederholung (T99). Der Rückfall

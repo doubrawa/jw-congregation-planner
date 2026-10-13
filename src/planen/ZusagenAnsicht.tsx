@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { useKalendertag } from '../app/useKalendertag'
+import { GesperrterKnopf } from '../bausteine/GesperrterKnopf'
 import { Punkt, type PunktArt } from '../bausteine/Punkt'
 import { Spur } from '../bausteine/Spur'
 import { datumsFormat } from '../components/datum-anzeige'
@@ -10,15 +11,18 @@ import { WochenWahl } from '../components/WochenWahl'
 import { fromIso, meetingDate, meetingDateMs } from '../data/meeting-dates'
 import { platzAuswahl } from '../data/offene-plaetze'
 import { weekConflicts } from '../data/planning'
-import { zusagenDerWoche, type ZusagePlatz } from '../data/zusagen'
+import { naechsteErinnerung, zusagenDerWoche, type ZusagePlatz } from '../data/zusagen'
 import type { Lang, MeetingKey, Week } from '../data/types'
 import { LOCALES } from '../i18n/langs'
+import { relativeDayLabel } from '../i18n/relative-time'
+import type { Dict } from '../i18n/ui'
 import { aufgabenLabel, fill, useT } from '../i18n/useT'
 import { relativeZeit } from '../i18n/zeit'
 import { spurDerWoche, zahlenDerWoche } from './plan-spur'
 import { zumPlanDerWoche } from './planen-raster'
 import { problemGrund } from './platz-anzeige'
 import { machKonfliktVon } from './useKonflikte'
+import { useErinnern } from './wochen-versand'
 
 /**
  * **Die Zusagen der Woche** (T121, Phase 5g, Entwürfe `GRueckmeldungen` und
@@ -102,6 +106,7 @@ export function ZusagenAnsicht({ week, rawWeek, tpw }: { week: Week; rawWeek: We
               {warten.map((p) => (
                 <WartenZeile key={p.key} platz={p} aufgabe={aufgabeAmTag(p)} />
               ))}
+              <ErinnernZeile warten={warten} rawWeek={rawWeek} />
             </ZusagenKarte>
           )}
           {ohneKonto.length > 0 && (
@@ -195,6 +200,43 @@ function WartenZeile({ platz, aufgabe }: { platz: ZusagePlatz; aufgabe: string }
       </ZusageText>
     </div>
   )
+}
+
+/**
+ * Unter den Wartenden (Phase 5g-3): wann die nächste Erinnerung von selbst
+ * hinausgeht — und „Jetzt erinnern", sobald einer von ihnen die Nachricht
+ * schon hat. Wer sie noch nicht hat, bekommt zuerst „Plan senden", keine
+ * Erinnerung; so sieht es auch die Function.
+ */
+function ErinnernZeile({ warten, rawWeek }: { warten: readonly ZusagePlatz[]; rawWeek: Week }) {
+  const { state } = useApp()
+  const { t } = useT()
+  const tag = useKalendertag()
+  const { laeuft, erinnern } = useErinnern(rawWeek, tag)
+  const zeiten = state.congregation.times
+  const termine = [...new Set(warten.map((p) => meetingDateMs(rawWeek, p.tab, zeiten)))].filter(
+    (ms): ms is number => ms !== null,
+  )
+  const satz = erinnerungsSatz(naechsteErinnerung(termine, state.reminders, new Date()), state.lang, t)
+  const kannErinnern = warten.some((p) => p.gesendet !== null)
+  if (!satz && !kannErinnern) return null
+  return (
+    <div className="zusagen-erinnern">
+      <span className="klein-text">{satz}</span>
+      {kannErinnern && (
+        <GesperrterKnopf className="knopf-pille" gesperrt={laeuft} onTipp={() => void erinnern()}>
+          {t.zusagenErinnern}
+        </GesperrterKnopf>
+      )}
+    </div>
+  )
+}
+
+/** Der Satz über die nächste Erinnerung — leer, wenn `Intl` die Sprache nicht kennt. */
+function erinnerungsSatz(naechste: number | null, lang: Lang, t: Dict): string {
+  if (naechste === null) return t.zusagenKeineErinnerung
+  const wann = relativeDayLabel(naechste, lang)
+  return wann ? fill(t.zusagenNaechsteErinnerung, { wann }) : ''
 }
 
 /**

@@ -6,13 +6,15 @@ import { fromIso } from '../data/meeting-dates'
 import { type OffeneWochenMeldung, offeneMeldungen, zuletztGesendet, zuletztGesendetFuer } from '../data/plan-versand'
 import { rechteVon, treffpunktGruppe } from '../data/rechte'
 import type { Week } from '../data/types'
+import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
-import { type PlanVersand, sendPlan } from '../lib/data'
+import { type Erinnert, erinnerungSenden, type PlanVersand, sendPlan } from '../lib/data'
 
 /**
  * **Der Versand eines Plans** — was die Sendeknöpfe teilen: der Aktionsleiste
  * und des Blatts „Plan senden" (T121) und des öffentlichen Zeugnisgebens
- * (`PlanSendenPanel.tsx`). Eigene Datei, weil es Hooks sind und
+ * (`PlanSendenPanel.tsx`); dazu „Jetzt erinnern" in den Zusagen der Woche.
+ * Eigene Datei, weil es Hooks sind und
  * keine Bausteine: Neben Komponenten exportiert, hielten sie das schnelle
  * Neuladen beim Entwickeln an.
  */
@@ -95,6 +97,32 @@ function useVersandGemeldet(): (res: { personen: number } | null) => void {
  */
 export function useWocheSenden(week: Week | undefined, tag: string): VersandStand {
   return useSenden(week?.start ?? null, (start) => sendPlan(start, tag))
+}
+
+/**
+ * **Jetzt erinnern** (Zusagen der Woche, T121, Phase 5g): Wer von seinem Platz
+ * der Woche schon weiß und noch nicht zugesagt hat, bekommt die Erinnerung
+ * sofort. Was daraus wurde, sagt ein Hinweis — auch, dass heute schon erinnert
+ * war. Nachzuladen gibt es nichts: Die Zusagen ändern sich davon nicht.
+ */
+export function useErinnern(week: Week, tag: string): { laeuft: boolean; erinnern(): Promise<void> } {
+  const { dispatch } = useApp()
+  const { t } = useT()
+  const [laeuft, setLaeuft] = useState(false)
+  const erinnern = async (): Promise<void> => {
+    setLaeuft(true)
+    const res = await erinnerungSenden(week.start, tag)
+    setLaeuft(false)
+    dispatch({ type: 'showToast', text: erinnertMeldung(res, t) })
+  }
+  return { laeuft, erinnern }
+}
+
+/** Was „Jetzt erinnern" erreicht hat, als Hinweis. */
+function erinnertMeldung(res: Erinnert | null, t: Dict): string {
+  if (!res) return t.toastSpeicherFehler
+  if (res.personen > 0) return fill(t.toastErinnert, { n: res.personen })
+  return res.schonHeute > 0 ? t.toastSchonErinnert : t.toastNiemandZuErinnern
 }
 
 /**

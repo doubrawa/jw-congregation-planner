@@ -595,7 +595,13 @@ zusammen, ohne was schon vorbei ist:
   Neubesetzen. Bei einem Hilfsdienst steht nach einer Absage „Ersatz gesucht":
   Dort fragt die App selbst nach einem Ersatz.
 - **Warten auf Zusage**: wer noch nicht zugesagt hat, mit Tag und Aufgabe und
-  seit wann die Nachricht draußen ist — oder „noch nicht gesendet".
+  seit wann die Nachricht draußen ist — oder „noch nicht gesendet". Darunter
+  steht, wann die nächste Erinnerung von selbst hinausgeht (so, wie die
+  [Erinnerungen](#7-einstellungen) eingestellt sind). **Jetzt erinnern**
+  schickt sie sofort — an alle, die die Nachricht schon haben. Wer von seinem
+  Platz noch nichts weiß, bekommt zuerst den Plan (siehe
+  [Den Plan senden](#den-plan-senden)). Mehr als eine Erinnerung am Tag bekommt
+  niemand, ob sie von selbst kommt oder von Hand.
 - **Noch nicht angemeldet**: wer beim Senden kein Konto hatte. Ihn hat keine
   Nachricht erreicht — sag es ihm persönlich und setz dann den Haken neben
   seiner Aufgabe. Der Haken bleibt gespeichert, auch für die anderen Planer;

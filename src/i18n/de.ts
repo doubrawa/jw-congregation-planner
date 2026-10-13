@@ -446,6 +446,11 @@ export const DE = {
     zusagenOhneKonto: 'Noch nicht angemeldet',
     zusagenOhneKontoHinweis: 'Bitte persönlich Bescheid geben und hier abhaken.',
     zusagenWeissBescheid: '{name} weiß Bescheid',
+    // Unter „Warten auf Zusage" (Phase 5g-3). `{wann}` kommt aus Intl: „heute",
+    // „morgen", „in 5 Tagen" — ein Zeitadverb mitten im Satz.
+    zusagenNaechsteErinnerung: 'Die nächste Erinnerung geht {wann} von selbst raus.',
+    zusagenKeineErinnerung: 'Von selbst geht keine Erinnerung mehr raus.',
+    zusagenErinnern: 'Jetzt erinnern',
     lageProblem: 'Problem', zuKlaeren: 'Zu klären',
     // Woche einrichten und Programm (T121, Entwurf `GWochePlanen`, `GProgramm`).
     wocheEinrichten: 'Woche einrichten',
@@ -487,6 +492,10 @@ export const DE = {
     planSendenOhneKonto: 'Ohne App-Konto — bitte persönlich Bescheid geben: {namen}',
     toastPlanGesendet: 'Benachrichtigte Personen: {n}',
     toastPlanNichts: 'Es war nichts zu senden',
+    // Nach „Jetzt erinnern" (Phase 5g-3): je Person und Tag höchstens eine Erinnerung.
+    toastErinnert: 'Erinnerte Personen: {n}',
+    toastSchonErinnert: 'Heute wurde schon erinnert',
+    toastNiemandZuErinnern: 'Es war niemand zu erinnern',
     erinnerungenCard: 'ERINNERUNGEN', remDesc: 'Automatische Mitteilungen zu Zuteilungen, bis sie bestätigt sind.',
     remErste: 'Erste Erinnerung', remLetzte: 'Letzte Erinnerung',
     remTageVorher: 'Tage vorher: {n}', remAmTag: 'Am Tag der Aufgabe',

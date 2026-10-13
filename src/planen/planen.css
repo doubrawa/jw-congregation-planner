@@ -1264,8 +1264,10 @@ body:has(.planen-leiste) .toast {
   padding: 6px 10px 4px 18px;
 }
 
-/* Wer, welche Aufgabe — und bei einem Problem rechts „Zuteilen". */
-.zusage-zeile {
+/* Wer, welche Aufgabe — und bei einem Problem rechts „Zuteilen". Ebenso gebaut:
+   die Zeile „Jetzt erinnern" unter den Wartenden. */
+.zusage-zeile,
+.zusagen-erinnern {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -1312,6 +1314,11 @@ body:has(.planen-leiste) .toast {
   height: 22px;
   margin-inline-end: 4px;
   accent-color: var(--akzent-text);
+}
+
+/* Unter den Wartenden: wann die nächste Erinnerung von selbst hinausgeht, rechts „Jetzt erinnern". */
+.zusagen-erinnern {
+  min-height: 68px;
 }
 
 .zusagen-leer {

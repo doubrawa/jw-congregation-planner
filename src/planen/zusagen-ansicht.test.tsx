@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render } from '@testing-library/react'
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -24,6 +24,13 @@ import { PlanenScreen } from './PlanenScreen'
  */
 
 const t = dict('de')
+
+// „Jetzt erinnern" geht an die Function — hier abgefangen.
+const erinnerungSenden = vi.fn()
+vi.mock('../lib/data', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../lib/data')>()),
+  erinnerungSenden: (weekStart: string, heute: string) => erinnerungSenden(weekStart, heute),
+}))
 
 function zeige(over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
@@ -182,6 +189,55 @@ describe('Noch nicht angemeldet', () => {
     expect(haken(container).checked).toBe(true)
     fireEvent.click(haken(container))
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'persoenlichBescheid', name: 'Elke Brandt', ja: false }))
+  })
+})
+
+/**
+ * **Jetzt erinnern** (Phase 5g-3): Unter den Wartenden steht, wann die nächste
+ * Erinnerung von selbst hinausgeht — und, sobald einer von ihnen die Nachricht
+ * hat, „Jetzt erinnern". Die Uhr steht in UTC vor dem täglichen Lauf (08:00
+ * UTC), damit „heute" in jeder Zeitzone dasselbe meint: Am Dienstag ist
+ * Zusammenkunft, der Vortag ist der Tag der letzten Erinnerung.
+ */
+describe('Jetzt erinnern', () => {
+  beforeEach(() => {
+    vi.setSystemTime(new Date(Date.UTC(2026, 8, 7, 7, 0)))
+    erinnerungSenden.mockReset()
+  })
+  const warten = (c: HTMLElement) => karte(c, t.zusagenWarten)!
+  const knopf = (c: HTMLElement) =>
+    [...warten(c).querySelectorAll('button')].find((b) => b.textContent === t.zusagenErinnern)
+  /** Gesendet ist die ganze Woche — wer wartet, hat die Nachricht. */
+  function gesendet(): Partial<AppState> {
+    const s = demoZustand()
+    const woche = s.weeks.find((w) => w.start === '2026-09-07')!
+    const meldungen = offeneMeldungen(woche, undefined, s.services, s.confirmations, {}, s.congregation.times, new Date(2026, 8, 7, 9))
+    return { sentLog: Object.fromEntries(meldungen.map((m) => [sentKey(m.key, m.name), '2026-09-06T18:00:00.000Z'])) }
+  }
+
+  it('unter den Wartenden steht, wann die nächste Erinnerung von selbst hinausgeht', () => {
+    const { container } = zeige()
+    expect(warten(container).textContent).toContain(fill(t.zusagenNaechsteErinnerung, { wann: 'heute' }))
+  })
+
+  it('ohne gesendete Nachricht gibt es nichts zu erinnern — zuerst kommt „Plan senden"', () => {
+    const { container } = zeige()
+    expect(knopf(container)).toBeUndefined()
+  })
+
+  it('„Jetzt erinnern" geht an die Woche, mit dem Kalendertag — und sagt, wie viele es waren', async () => {
+    erinnerungSenden.mockResolvedValue({ personen: 2, schonHeute: 0 })
+    const { container, dispatch } = zeige(gesendet())
+    fireEvent.click(knopf(container)!)
+    await waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: fill(t.toastErinnert, { n: 2 }) }))
+    expect(erinnerungSenden).toHaveBeenCalledWith('2026-09-07', '2026-09-07')
+  })
+
+  it('wer heute schon eine Erinnerung hatte, bekommt keine zweite — das sagt der Hinweis', async () => {
+    erinnerungSenden.mockResolvedValue({ personen: 0, schonHeute: 3 })
+    const { container, dispatch } = zeige(gesendet())
+    fireEvent.click(knopf(container)!)
+    await waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.toastSchonErinnert }))
   })
 })
 

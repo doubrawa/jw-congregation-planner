@@ -773,7 +773,7 @@ export const KATALOG = [
   },
   {
     id: 'erinnerung-letzte-ist-letzte',
-    datei: 'supabase/functions/send-reminders/index.ts',
+    datei: 'supabase/functions/_shared/erinnerung.ts',
     regel: 'Die Wiederholung deckt die Tage zwischen erster und letzter Erinnerung ab — nicht die danach.',
     suchen: '  return days > frueh && days < spaet ? \'repeat\' : null',
     ersetzen: '  return days < spaet ? \'repeat\' : null',
@@ -1721,7 +1721,7 @@ export const KATALOG = [
     id: 'plan-nur-planer',
     datei: 'supabase/functions/send-plan/index.ts',
     regel: 'Nachrichten an die ganze Versammlung darf nur auslösen, wer zuteilt — Admin oder Planer.',
-    suchen: '    if (aufseherVon && (zeugnisAktion || aufseherVon.size === 0)) {',
+    suchen: '    if (aufseherVon && (nurWerZuteilt || aufseherVon.size === 0)) {',
     ersetzen: '    if (false) {',
   },
   {
@@ -5277,6 +5277,78 @@ export const KATALOG = [
     regel: 'Wem es schon jemand gesagt hat, der steht unter „Noch nicht angemeldet" abgehakt da.',
     suchen: '        checked={platz.ohneKonto?.bescheid != null}\n',
     ersetzen: '        checked={false}\n',
+  },
+  /* ---- Jetzt erinnern (T121, Phase 5g-3, 13.10.2026) ---- */
+  {
+    id: 'erinnern-nur-gemeldet',
+    datei: 'supabase/functions/send-plan/index.ts',
+    regel: 'Erinnert wird nur, wer von seinem Platz schon weiß — zuerst kommt „Plan senden".',
+    suchen: '    if (!woche.schonGemeldet.has(tagebuchSchluessel(p.key, p.name))) return false\n',
+    ersetzen: '',
+  },
+  {
+    id: 'erinnern-einmal-am-tag',
+    datei: 'supabase/functions/send-plan/index.ts',
+    regel: 'Je Person und Tag höchstens eine Erinnerung — wer heute schon eine hatte, bleibt aus.',
+    suchen: '    if (uid && schonErinnert.has(uid)) {\n',
+    ersetzen: '    if (false) {\n',
+  },
+  {
+    id: 'erinnern-sperre-schreiben',
+    datei: 'supabase/functions/send-plan/index.ts',
+    regel: 'Wer von Hand erinnert wurde, steht in der Sperre — der tägliche Lauf schickt heute keine zweite.',
+    suchen:
+      "    nachrichten.map((n) => ({ congregation_id: cong, user_id: n.empfaenger.userId, kind: 'self', sent_on: heute })),\n",
+    ersetzen: '    [],\n',
+  },
+  {
+    id: 'erinnern-kein-aufseher',
+    datei: 'supabase/functions/send-plan/index.ts',
+    regel: 'Aus den Zusagen der Woche erinnert, wer zuteilt — kein Gruppenaufseher.',
+    suchen: "    const nurWerZuteilt = zeugnisAktion || payload.action === 'erinnern'\n",
+    ersetzen: '    const nurWerZuteilt = zeugnisAktion\n',
+  },
+  {
+    id: 'erinnern-ohne-treffpunkte',
+    datei: 'supabase/functions/send-plan/index.ts',
+    regel: 'Jetzt erinnern meint die Zusammenkünfte, die die Zusagen der Woche zeigen — keine Treffpunkte.',
+    suchen: '  const offen = offeneDerWoche(weekStart, woche.week, [], woche.services',
+    ersetzen: '  const offen = offeneDerWoche(weekStart, woche.week, woche.fsInsts, woche.services',
+  },
+  {
+    id: 'erinnern-als-erinnerung',
+    datei: 'supabase/functions/send-plan/index.ts',
+    regel: 'Eine Erinnerung von Hand steht in der Glocke wie die des täglichen Laufs.',
+    suchen: "    type: n.art === 'erinnerung' ? 'erinnerung' : 'zuteilung',\n",
+    ersetzen: "    type: 'zuteilung',\n",
+  },
+  {
+    id: 'naechste-erinnerung-nach-dem-lauf',
+    datei: 'src/data/zusagen.ts',
+    regel: 'Ist der tägliche Lauf heute schon vorbei, kommt die nächste Erinnerung frühestens morgen.',
+    suchen: '  const ab = jetzt.getTime() < heute + ERINNERUNG_STUNDE_UTC * 36e5 ? heute : heute + 864e5\n',
+    ersetzen: '  const ab = heute\n',
+  },
+  {
+    id: 'erinnerung-stunde-wie-cron',
+    datei: 'supabase/functions/_shared/erinnerung.ts',
+    regel: 'Die App rechnet mit der Stunde, zu der der tägliche Lauf startet (`cron-reminders.sql`).',
+    suchen: 'export const ERINNERUNG_STUNDE_UTC = 8\n',
+    ersetzen: 'export const ERINNERUNG_STUNDE_UTC = 9\n',
+  },
+  {
+    id: 'erinnern-knopf-nur-gesendet',
+    datei: 'src/planen/ZusagenAnsicht.tsx',
+    regel: '„Jetzt erinnern" steht erst da, wenn einer der Wartenden die Nachricht schon hat.',
+    suchen: '  const kannErinnern = warten.some((p) => p.gesendet !== null)\n',
+    ersetzen: '  const kannErinnern = true\n',
+  },
+  {
+    id: 'erinnern-schon-heute-hinweis',
+    datei: 'src/planen/wochen-versand.ts',
+    regel: 'Hatten alle heute schon eine Erinnerung, sagt der Hinweis genau das.',
+    suchen: '  return res.schonHeute > 0 ? t.toastSchonErinnert : t.toastNiemandZuErinnern\n',
+    ersetzen: '  return t.toastNiemandZuErinnern\n',
   },
 ]
 

@@ -205,11 +205,12 @@ nächsten Öffnen der App legt sie dir die offenen Zuteilungen zum Bestätigen v
 je Aufgabe **Bestätigen** oder **Ich kann nicht**, unten **Alle bestätigen**.
 Mit **Später** legst du das Blatt weg; beim nächsten Öffnen liegt es wieder da.
 
-Zwei weitere Nachrichten können dich erreichen:
+Weitere Nachrichten können dich erreichen:
 
 - **„Erinnerung: Zuteilung bestätigen"** – solange du nicht bestätigt hast,
-  einige Tage vor der Zusammenkunft und noch einmal kurz davor. Betrifft sie
-  nur eine Aufgabe, kannst du direkt in der Mitteilung bestätigen.
+  einige Tage vor der Zusammenkunft und noch einmal kurz davor; der Planer kann
+  dich auch selbst erinnern. Mehr als eine Erinnerung am Tag bekommst du nicht.
+  Betrifft sie nur eine Aufgabe, kannst du direkt in der Mitteilung bestätigen.
 - **„Zuteilung zurückgezogen"** – der Koordinator hat dir eine Aufgabe wieder
   genommen, die du **schon bestätigt** hattest. Dann brauchst du dich nicht
   weiter vorzubereiten.

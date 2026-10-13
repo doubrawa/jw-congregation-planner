@@ -23,6 +23,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reset as resetPush, sent as sentPush } from './web-push.stub'
 import { TITEL_AUSFALL, TITEL_ENTZUG, TITEL_GEAENDERT, TITEL_ZUTEILUNG } from '../send-plan/texte.ts'
+import { pushTexte, TITEL_ERINNERUNG } from '../send-reminders/texte.ts'
 import {
   filterWert,
   jsonRes,
@@ -159,6 +160,8 @@ let gelesen: string[]
 /** Öffentliches Zeugnisgeben (T120): Termine und Einträge, wie sie in der Datenbank stehen. */
 let ozTermine: unknown[]
 let ozEintraege: { id: string; termin_id: string; datum: string; person_id: string; selbst: boolean }[]
+/** Die Sperre der Erinnerungen (`reminder_log`): wer an welchem Tag schon erinnert wurde. */
+let erinnert: { user_id: string; kind: string; sent_on: string }[]
 
 const { writesTo, zeilenIn } = schreibZugriff(() => writes)
 
@@ -238,6 +241,14 @@ const fakeFetch = async (
     const start = filterWert(path, 'start')
     return jsonRes(start === WOCHE && !fremd ? [{ start: WOCHE, data: woche }] : [])
   }
+  if (path.startsWith('reminder_log')) {
+    // Art und Tag werden ausgewertet: Die Sperre gilt je Tag, nicht für immer.
+    const art = filterWert(path, 'kind')
+    const tag = filterWert(path, 'sent_on')
+    return jsonRes(
+      fremd ? [] : erinnert.filter((r) => (art === null || r.kind === art) && (tag === null || r.sent_on === tag)),
+    )
+  }
   return jsonRes([])
 }
 
@@ -280,6 +291,7 @@ beforeEach(() => {
   gelesen = []
   ozTermine = []
   ozEintraege = []
+  erinnert = []
   resetPush()
 })
 
@@ -1065,5 +1077,90 @@ describe('Vergangenes wird nicht mehr gemeldet', () => {
       aufgaben: number
     }
     expect(res.aufgaben).toBe(4)
+  })
+})
+
+/* ---- Jetzt erinnern (T121, Phase 5g) -------------------------------------- */
+
+/**
+ * **Jetzt erinnern** — aus den Zusagen der Woche: Wer von seinem Platz weiß und
+ * noch nicht zugesagt hat, bekommt die Erinnerung sofort, nicht erst mit dem
+ * nächsten Lauf von `send-reminders`. Teuer sind hier zwei Fehler: eine
+ * Erinnerung an etwas, das ihm niemand gesagt hat, und zwei an einem Tag.
+ */
+describe('Jetzt erinnern', () => {
+  const HEUTE = '2026-09-07' // der UTC-Tag von MONTAG_FRUEH
+  const erinnern = () => ruf({ action: 'erinnern', weekStart: WOCHE })
+  const antwort = async () => (await (await erinnern()).json()) as { personen: number; schonHeute: number }
+  const pushTitel = () => sentPush.map((p) => (JSON.parse(p.payload) as { title: string }).title)
+  const NAMEN: Record<string, string> = { [KEY_ANNA]: 'Anna Berg', [KEY_BERND]: 'Bernd Cohn', [KEY_OHNE]: 'Karl Onto' }
+  /** Was „Plan senden" schon gemeldet hat — diese Personen wissen von ihren Plätzen. */
+  const gemeldet = (...keys: string[]) => {
+    log = keys.map((k) => ({ task_key: k, name: NAMEN[k] ?? '' }))
+  }
+
+  it('wer schon weiß und noch nicht zugesagt hat, wird erinnert — als Erinnerung, in Glocke und Push', async () => {
+    gemeldet(KEY_ANNA, KEY_BERND, KEY_OHNE)
+    confirmations = [{ task_key: KEY_BERND, status: 'bestätigt' }]
+    expect(await antwort()).toMatchObject({ personen: 1, schonHeute: 0 })
+    const zeilen = zeilenIn('notifications')
+    expect(zeilen).toHaveLength(1)
+    expect(zeilen[0]).toMatchObject({ user_id: U_ANNA, type: 'erinnerung', title: TITEL_ERINNERUNG, task_key: KEY_ANNA })
+    expect(String(zeilen[0]?.body)).toContain('Bibellesung')
+    expect(pushTitel()).toEqual([pushTexte('de').erinnerung])
+  })
+
+  it('wer von seinem Platz noch nichts weiß, bekommt keine Erinnerung — zuerst kommt „Plan senden"', async () => {
+    gemeldet(KEY_BERND)
+    expect(await antwort()).toMatchObject({ personen: 1 })
+    expect(zeilenIn('notifications').map((z) => z.user_id)).toEqual([U_BERND])
+  })
+
+  it('wer heute schon erinnert wurde — von selbst oder von Hand —, bleibt aus und wird gezählt', async () => {
+    gemeldet(KEY_ANNA, KEY_BERND)
+    erinnert = [
+      { user_id: U_ANNA, kind: 'self', sent_on: HEUTE },
+      // Gestern zählt nicht, und die Meldung an die Planer ist keine Erinnerung an Bernd.
+      { user_id: U_BERND, kind: 'self', sent_on: '2026-09-06' },
+      { user_id: U_BERND, kind: 'planner', sent_on: HEUTE },
+    ]
+    expect(await antwort()).toMatchObject({ personen: 1, schonHeute: 1 })
+    expect(zeilenIn('notifications').map((z) => z.user_id)).toEqual([U_BERND])
+  })
+
+  it('danach steht die Sperre für heute — der tägliche Lauf schickt keine zweite', async () => {
+    gemeldet(KEY_ANNA, KEY_BERND)
+    await erinnern()
+    expect(zeilenIn('reminder_log')).toEqual([
+      { congregation_id: CONG, user_id: U_ANNA, kind: 'self', sent_on: HEUTE },
+      { congregation_id: CONG, user_id: U_BERND, kind: 'self', sent_on: HEUTE },
+    ])
+    // Kam der tägliche Lauf zuvor, steht die Zeile schon da — sie bleibt, der Rest kommt hinzu.
+    const sperre = writes.find((w) => w.method === 'POST' && w.path.startsWith('reminder_log'))
+    expect(String(sperre?.headers['Prefer'] ?? '')).toContain('resolution=ignore-duplicates')
+  })
+
+  it('ist niemand zu erinnern, geht nichts hinaus und nichts wird gesperrt', async () => {
+    gemeldet(KEY_OHNE)
+    expect(await antwort()).toMatchObject({ personen: 0, schonHeute: 0 })
+    expect(writes).toEqual([])
+  })
+
+  it('die Treffpunkte bleiben draußen — die Zusagen der Woche zeigen nur die Zusammenkünfte', async () => {
+    fsWoche = [{ id: 'sa', grp: '', wd: 6, time: '09:30', place: 'Saal', leader: 'Anna Berg', lpid: 'p-anna' }]
+    log = [{ task_key: `fs|${WOCHE}|sa`, name: 'Anna Berg' }]
+    expect(await antwort()).toMatchObject({ personen: 0 })
+  })
+
+  it('erinnern darf, wer zuteilt — der Planer ohne Admin ja, Gruppenaufseher und Mitglied nicht', async () => {
+    gemeldet(KEY_ANNA)
+    authUser = U_ZUTEILER
+    expect((await erinnern()).status).toBe(200)
+    for (const wer of [U_AUFSEHER, U_MITGLIED]) {
+      authUser = wer
+      writes = []
+      expect((await erinnern()).status).toBe(403)
+      expect(writes).toEqual([])
+    }
   })
 })

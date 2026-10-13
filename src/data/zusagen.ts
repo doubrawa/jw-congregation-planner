@@ -15,6 +15,8 @@
  * Zusage mehr, und niemand wird mehr erinnert.
  */
 
+import { dueKind, ERINNERUNG_STUNDE_UTC, type Rhythmus } from '../../supabase/functions/_shared/erinnerung.ts'
+import { kalendertagMs } from './meeting-dates'
 import { vergangeneZusammenkuenfte } from './plan-versand'
 import { eachAssignedSlot, sentKey, zusageStatus, type Conflict } from './planning'
 import { lageVon, type PlatzLage } from './saal'
@@ -90,4 +92,24 @@ export function zusagenDerWoche(args: {
     })
   })
   return out
+}
+
+/**
+ * **Wann die nächste Erinnerung von selbst hinausgeht** — für die Plätze, die
+ * auf eine Zusage warten: der erste Lauf von `send-reminders` (täglich um
+ * `ERINNERUNG_STUNDE_UTC`), an dem einer ihrer Termine fällig ist. Fällig
+ * heißt dasselbe wie dort (`dueKind`, beide aus `_shared/erinnerung.ts`).
+ *
+ * `termine` sind die Tage der Zusammenkünfte (`meetingDateMs`); zurück kommt
+ * der Tag des Laufs in derselben Kodierung — `null`, wenn keiner mehr kommt.
+ * Ist der Lauf heute schon vorbei, kommt der nächste frühestens morgen.
+ */
+export function naechsteErinnerung(termine: readonly number[], rhythmus: Rhythmus, jetzt: Date): number | null {
+  const heute = kalendertagMs(jetzt)
+  const ab = jetzt.getTime() < heute + ERINNERUNG_STUNDE_UTC * 36e5 ? heute : heute + 864e5
+  const letzter = Math.max(...termine)
+  for (let lauf = ab; lauf <= letzter; lauf += 864e5) {
+    if (termine.some((termin) => dueKind(rhythmus, Math.round((termin - lauf) / 864e5)) !== null)) return lauf
+  }
+  return null
 }

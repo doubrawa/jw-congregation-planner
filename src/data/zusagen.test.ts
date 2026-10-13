@@ -11,7 +11,7 @@ import type {
   SlotAssignment,
   Week,
 } from './types'
-import { zusagenDerWoche } from './zusagen'
+import { naechsteErinnerung, zusagenDerWoche } from './zusagen'
 
 /**
  * **Die Zusagen der Woche** (T121, Phase 5g, `GRueckmeldungen`): Nach „Plan
@@ -129,5 +129,41 @@ describe('Die Zusagen der Woche', () => {
   it('eine ausgefallene Zusammenkunft fehlt', () => {
     const aus = { ...WOCHE, dev: { we: { cancelled: true } } } as unknown as Week
     expect(zusagen({ week: aus }).map((p) => p.slot.name)).not.toContain('Gustav Test')
+  })
+})
+
+/**
+ * **Wann die nächste Erinnerung von selbst hinausgeht** — der tägliche Lauf
+ * startet um 08:00 UTC (`ERINNERUNG_STUNDE_UTC`) und erinnert nach dem
+ * Rhythmus der Versammlung. Gerechnet wird mit der Woche vom 7. September:
+ * Dienstag, 8., und Sonntag, 13. Die Uhrzeiten stehen in UTC, damit der Test in
+ * jeder Zeitzone dieselben Tage meint.
+ */
+describe('Die nächste Erinnerung', () => {
+  const tag = (d: number) => Date.UTC(2026, 8, d)
+  const TERMINE = [tag(8), tag(13)]
+  /** Die Voreinstellung: eine Woche vorher und am Vortag (`STANDARD_ERINNERUNGEN`). */
+  const RHYTHMUS = { first: 7, last: 1, repeat: false }
+  const um = (d: number, stundeUtc: number) => new Date(Date.UTC(2026, 8, d, stundeUtc))
+
+  it('vor dem Lauf von heute ist es heute — der Dienstag ist morgen, der Vortag also heute', () => {
+    expect(naechsteErinnerung(TERMINE, RHYTHMUS, um(7, 7))).toBe(tag(7))
+  })
+
+  it('nach dem Lauf von heute ist es der nächste fällige Tag — der Vortag des Sonntags', () => {
+    expect(naechsteErinnerung(TERMINE, RHYTHMUS, um(7, 9))).toBe(tag(12))
+  })
+
+  it('mit Wiederholung schon morgen: Die Tage zwischen erster und letzter Erinnerung zählen mit', () => {
+    expect(naechsteErinnerung(TERMINE, { ...RHYTHMUS, repeat: true }, um(7, 9))).toBe(tag(8))
+  })
+
+  it('ist auch der Vortag vorbei, kommt keine mehr — außer die Versammlung erinnert am Tag selbst', () => {
+    expect(naechsteErinnerung(TERMINE, RHYTHMUS, um(12, 9))).toBeNull()
+    expect(naechsteErinnerung(TERMINE, { ...RHYTHMUS, last: 0 }, um(12, 9))).toBe(tag(13))
+  })
+
+  it('ohne wartende Plätze gibt es keine', () => {
+    expect(naechsteErinnerung([], RHYTHMUS, um(7, 7))).toBeNull()
   })
 })

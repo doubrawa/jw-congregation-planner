@@ -1584,19 +1584,51 @@ export function sendZeugnisPlan(heute: string): Promise<PlanVersand | null> {
   return planSenden({ action: 'zeugnis', heute })
 }
 
-/** Der eine Aufruf hinter den „Plan senden" — bis zum 3.10.2026 dreimal abgeschrieben. */
-async function planSenden(body: { action: 'plan' | 'zeugnis'; heute: string; weekStart?: string }): Promise<PlanVersand | null> {
+/**
+ * Der eine Aufruf hinter den Knöpfen, die auf die Antwort von `send-plan`
+ * warten — „Plan senden" (bis zum 3.10.2026 dreimal abgeschrieben) und „Jetzt
+ * erinnern". `null`: Er ist gescheitert.
+ */
+async function sendPlanAntwort<T>(body: {
+  action: 'plan' | 'zeugnis' | 'erinnern'
+  heute: string
+  weekStart?: string
+}): Promise<Partial<T> | null> {
   if (!supabase) return null
   const { data, error } = await supabase.functions.invoke('send-plan', { body })
   if (error) {
     console.error(`[send-plan/${body.action}]`, error.message)
     return null
   }
-  const res = data as Partial<PlanVersand> | null
-  return {
-    personen: res?.personen ?? 0,
-    ohneKonto: res?.ohneKonto ?? [],
-  }
+  return (data ?? {}) as Partial<T>
+}
+
+async function planSenden(body: { action: 'plan' | 'zeugnis'; heute: string; weekStart?: string }): Promise<PlanVersand | null> {
+  const res = await sendPlanAntwort<PlanVersand>(body)
+  return res && { personen: res.personen ?? 0, ohneKonto: res.ohneKonto ?? [] }
+}
+
+/** Ergebnis von „Jetzt erinnern" (`send-plan`, Aktion `erinnern`). */
+export interface Erinnert {
+  /** Wie viele Personen jetzt erinnert wurden. */
+  personen: number
+  /** Wie viele heute schon eine Erinnerung hatten und deshalb ausblieben. */
+  schonHeute: number
+}
+
+/**
+ * **Jetzt erinnern** (Zusagen der Woche, T121, Phase 5g): Wer von seinem
+ * Platz der Woche schon weiß und noch nicht zugesagt hat, bekommt die
+ * Erinnerung sofort — je Person und Tag höchstens eine, von selbst oder von
+ * Hand. Nicht fire-and-forget: Der Planer hat gedrückt und soll erfahren, was
+ * daraus wurde. `heute` wie bei `sendPlan`: Vergangenes bleibt draußen.
+ *
+ * **Reihenfolge beim Ausrollen:** erst die Function — eine ältere kennt die
+ * Aktion nicht und antwortet mit 400.
+ */
+export async function erinnerungSenden(weekStart: string, heute: string): Promise<Erinnert | null> {
+  const res = await sendPlanAntwort<Erinnert>({ action: 'erinnern', weekStart, heute })
+  return res && { personen: res.personen ?? 0, schonHeute: res.schonHeute ?? 0 }
 }
 
 /**

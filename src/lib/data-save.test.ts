@@ -31,6 +31,7 @@ import {
   deletePersonRow,
   deletePushSubscription,
   deleteServiceRow,
+  erinnerungSenden,
   generateInviteCode,
   markNotificationRead,
   markNotificationsRead,
@@ -501,5 +502,27 @@ describe('send-plan: Ausfall und Änderung einer Zeugnis-Schicht', () => {
     chain.functions.invoke.mockClear()
     sendPlanZeugnisAenderung([])
     expect(chain.functions.invoke).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * **Jetzt erinnern** (T121, Phase 5g-3): Aktion und Feldnamen, wie die Function
+ * sie liest — und ihre Antwort, wie der Hinweis sie braucht. Ein Fehler kommt
+ * als `null` zurück: Der Planer hat gedrückt und muss es erfahren.
+ */
+describe('send-plan: Jetzt erinnern', () => {
+  it('geht als `erinnern` mit Woche und Kalendertag — und bringt zurück, wie viele erinnert wurden', async () => {
+    chain.functions.invoke.mockClear()
+    chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: { ok: true, personen: 2, push: 3, schonHeute: 1 }, error: null }))
+    const res = await erinnerungSenden('2026-09-07', '2026-09-08')
+    expect(chain.functions.invoke).toHaveBeenCalledWith('send-plan', {
+      body: { action: 'erinnern', weekStart: '2026-09-07', heute: '2026-09-08' },
+    })
+    expect(res).toEqual({ personen: 2, schonHeute: 1 })
+  })
+
+  it('scheitert der Aufruf, kommt `null` zurück', async () => {
+    chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: null, error: { message: 'boom' } }))
+    expect(await erinnerungSenden('2026-09-07', '2026-09-08')).toBeNull()
   })
 })

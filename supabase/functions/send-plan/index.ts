@@ -33,6 +33,13 @@
 //     davon weiß, bekommt „Schicht geändert". Das Tagebuch bleibt unberührt —
 //     der Platz gehört ihm weiter.
 //
+//   { action: 'erinnern', weekStart, heute? }
+//     „Jetzt erinnern" in den Zusagen der Woche (T121, Phase 5g): Wer von
+//     einem Platz der Zusammenkünfte schon weiß (Tagebuch) und noch nicht
+//     zugesagt hat, bekommt die Erinnerung sofort — dieselbe Nachricht wie vom
+//     täglichen Lauf (`send-reminders`), und dieselbe Sperre: je Person und
+//     Tag höchstens eine (`reminder_log`).
+//
 //     **Eine Liste, kein Einzelfall.** Der Client schickte je Entzug einen
 //     eigenen Aufruf, und jeder wiederholte davor dieselben fünf REST-Runden
 //     über alle Mitglieder, Personen und Push-Abos. Wer eine ganze
@@ -75,7 +82,7 @@
 import { CORS, json, restKlient, wert } from '../_shared/rest.ts'
 import { schluesselTeile, wochenPraefixe } from '../_shared/aufgaben-schluessel.ts'
 import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
-import { heuteUtc, personDisplayName, zeitenAus, type ZeitenRow } from '../_shared/planung.ts'
+import { heuteUtc, type MeetingTimes, personDisplayName, zeitenAus, type ZeitenRow } from '../_shared/planung.ts'
 import { abosJeKonto, kontoAufloeser } from '../_shared/konten.ts'
 import {
   type Eintrag,
@@ -96,6 +103,7 @@ import {
   type Week,
 } from '../_shared/zuteilungen.ts'
 import { bibelbuecherLaden } from '../_shared/i18n/translate.ts'
+import { pushTexte } from '../send-reminders/texte.ts'
 import { type PlanTexte, planTexte } from './texte.ts'
 
 declare const Deno: {
@@ -158,8 +166,29 @@ interface Empfaenger {
   subs: SubscriptionRow[]
 }
 
-/** Wohin ein Tipp auf die Nachricht führt — beide Arten meinen dieselbe Liste. */
+/** Wohin ein Tipp auf die Nachricht führt — jede Art meint dieselbe Liste. */
 const ZIEL = `${APP_URL}#go=aufgaben`
+
+/** Konto einer eingeteilten Person — Id zuerst, Name nur ohne Id (`_shared/konten.ts`). */
+type KontoFuer = (pid: string | undefined, name: string) => string | undefined
+
+/** Ein offener Platz mit seiner fertigen Zeile (`offeneDerWoche`). */
+type OffenerPlatz = Pending & { eintrag: Eintrag }
+
+/**
+ * Die Arten einer Nachricht: die des Plans und die Erinnerung, die sonst der
+ * tägliche Lauf schickt (`send-reminders`).
+ */
+type Art = keyof PlanTexte | 'erinnerung'
+
+/**
+ * Der Titel einer Art in einer Sprache. Die Erinnerung trägt **denselben** wie
+ * die von `send-reminders` — es ist dieselbe Nachricht, nur früher; ihre Texte
+ * stehen dort und nicht ein zweites Mal hier.
+ */
+function titelVon(art: Art, lang: string): string {
+  return art === 'erinnerung' ? pushTexte(lang).erinnerung : planTexte(lang)[art]
+}
 
 /**
  * Eine Nachricht an einen Empfänger: Glocke (kanonisch deutsch) und Push (je
@@ -179,7 +208,7 @@ const ZIEL = `${APP_URL}#go=aufgaben`
  */
 interface Nachricht {
   empfaenger: Empfaenger
-  art: keyof PlanTexte
+  art: Art
   eintraege: Eintrag[]
   taskKey?: string
 }
@@ -199,8 +228,9 @@ async function verschicken(
   const notifRows = nachrichten.map((n) => ({
     congregation_id: cong,
     user_id: n.empfaenger.userId,
-    type: 'zuteilung',
-    title: planTexte('de')[n.art],
+    // Eine Erinnerung steht in der Glocke wie die des täglichen Laufs.
+    type: n.art === 'erinnerung' ? 'erinnerung' : 'zuteilung',
+    title: titelVon(n.art, 'de'),
     body: n.eintraege.map(kanonisch).join(' · '),
     ...(n.taskKey ? { task_key: n.taskKey } : {}),
   }))
@@ -216,7 +246,7 @@ async function verschicken(
     for (const [lang, subs] of nachSprache(n.empfaenger.subs)) {
       if (subs.length === 0) continue
       const tr = uebersetzer(lang)
-      const titel = planTexte(lang)[n.art]
+      const titel = titelVon(n.art, lang)
       const body = n.eintraege.map((e) => uebersetzt(e, tr)).join(' · ')
       for (const abo of subs) zustellungen.push({ abo, titel, body, url: ZIEL })
     }
@@ -239,48 +269,15 @@ async function verschicken(
  */
 async function versenden(
   cong: string,
-  neu: Array<Pending & { eintrag: Eintrag }>,
-  kontoFuer: (pid: string | undefined, name: string) => string | undefined,
+  neu: OffenerPlatz[],
+  kontoFuer: KontoFuer,
   empfaengerFuer: (uid: string) => Empfaenger,
   personByName: ReadonlyMap<string, string>,
 ): Promise<Response> {
   if (neu.length === 0) return json({ ok: true, personen: 0, aufgaben: 0, ohneKonto: [] })
 
   await bibelbuecherLaden()
-
-  // Je Person **eine** Nachricht mit allen ihren Aufgaben — nicht je Aufgabe
-  // eine. Wer an einem Wochenende drei Plätze hat, soll einmal hinsehen.
-  //
-  // Zwei getrennte Behälter statt eines mit Kennzeichen: Wer kein Konto hat,
-  // gehört gar nicht in die Zustell-Liste. Hier stand einmal ein Schlüssel
-  // der Form „ ohne:<Name>", der unten wieder zerlegt wurde — und ein Name,
-  // der zufällig so begann, wäre still aus dem Versand gefallen, während das
-  // Tagebuch ihn als gemeldet führte.
-  const jePerson = new Map<string, Array<Pending & { eintrag: Eintrag }>>()
-  const ohneKonto = new Set<string>()
-  for (const p of neu) {
-    const uid = kontoFuer(p.pid, p.name)
-    // Ohne Konto ist niemand zu erreichen — gemerkt wird der Name, damit der
-    // Planer unten erfährt, wen er persönlich ansprechen muss.
-    if (!uid) {
-      ohneKonto.add(p.name)
-      continue
-    }
-    jePerson.set(uid, [...(jePerson.get(uid) ?? []), p])
-  }
-
-  const nachrichten: Nachricht[] = []
-  for (const [uid, eintraege] of jePerson) {
-    nachrichten.push({
-      empfaenger: empfaengerFuer(uid),
-      art: 'zuteilung',
-      eintraege: eintraege.map((e) => e.eintrag),
-      // Nur bei genau einer Aufgabe: dann trägt die Glocke den
-      // Bestätigen-Knopf. Bei mehreren zeigte er auf eine willkürliche davon.
-      ...(eintraege.length === 1 ? { taskKey: eintraege[0].key } : {}),
-    })
-  }
-
+  const { nachrichten, ohneKonto } = nachrichtenJePerson(neu, 'zuteilung', kontoFuer, empfaengerFuer)
   const { push } = await verschicken(cong, nachrichten)
 
   // Tagebuch **nach** dem Versand — scheitert das Schreiben, wurde immerhin
@@ -306,8 +303,108 @@ async function versenden(
     personen: nachrichten.length,
     aufgaben: neu.length,
     push,
-    ohneKonto: [...ohneKonto],
+    ohneKonto,
   })
+}
+
+/**
+ * **Je Person eine Nachricht** mit allen ihren Aufgaben — nicht je Aufgabe
+ * eine. Wer an einem Wochenende drei Plätze hat, soll einmal hinsehen. Für
+ * „Plan senden" und „Jetzt erinnern" dieselbe Bündelung.
+ *
+ * Zwei getrennte Behälter statt eines mit Kennzeichen: Wer kein Konto hat,
+ * gehört gar nicht in die Zustell-Liste. Hier stand einmal ein Schlüssel der
+ * Form „ ohne:<Name>", der unten wieder zerlegt wurde — und ein Name, der
+ * zufällig so begann, wäre still aus dem Versand gefallen, während das
+ * Tagebuch ihn als gemeldet führte.
+ */
+function nachrichtenJePerson(
+  plaetze: readonly OffenerPlatz[],
+  art: Art,
+  kontoFuer: KontoFuer,
+  empfaengerFuer: (uid: string) => Empfaenger,
+): { nachrichten: Nachricht[]; ohneKonto: string[] } {
+  const jePerson = new Map<string, OffenerPlatz[]>()
+  const ohneKonto = new Set<string>()
+  for (const p of plaetze) {
+    const uid = kontoFuer(p.pid, p.name)
+    // Ohne Konto ist niemand zu erreichen — gemerkt wird der Name, damit der
+    // Planer erfährt, wen er persönlich ansprechen muss.
+    if (!uid) {
+      ohneKonto.add(p.name)
+      continue
+    }
+    jePerson.set(uid, [...(jePerson.get(uid) ?? []), p])
+  }
+  const nachrichten = [...jePerson].map(
+    ([uid, eintraege]): Nachricht => ({
+      empfaenger: empfaengerFuer(uid),
+      art,
+      eintraege: eintraege.map((e) => e.eintrag),
+      // Nur bei genau einer Aufgabe: dann trägt die Glocke den
+      // Bestätigen-Knopf. Bei mehreren zeigte er auf eine willkürliche davon.
+      ...(eintraege.length === 1 ? { taskKey: eintraege[0].key } : {}),
+    }),
+  )
+  return { nachrichten, ohneKonto: [...ohneKonto] }
+}
+
+/**
+ * **Jetzt erinnern** (T121, Phase 5g): Wer von einem Platz der Zusammenkünfte
+ * schon weiß und noch nicht zugesagt hat, bekommt die Erinnerung sofort — nicht
+ * erst mit dem nächsten Lauf von `send-reminders`.
+ *
+ * - Nur, was das Tagebuch führt: Wer von seinem Platz noch nichts weiß, bekommt
+ *   zuerst die Nachricht von „Plan senden" und keine Erinnerung an etwas, das
+ *   ihm nie gesagt wurde.
+ * - Nur die Zusammenkünfte, keine Treffpunkte — die Zusagen der Woche, in denen
+ *   der Knopf steht, zeigen nur sie.
+ * - Je Person und Tag höchstens eine Erinnerung, von selbst oder von Hand:
+ *   dieselbe Sperre wie im täglichen Lauf (`reminder_log`, Art `self`). Wer
+ *   heute schon eine hatte, bleibt aus, und die Antwort zählt ihn unter
+ *   `schonHeute`; wer hier eine bekommt, dem schickt der Lauf heute keine
+ *   zweite — auch keine für einen Platz einer anderen Woche, der heute fällig
+ *   wäre. Zwei Nachrichten an einem Morgen wiegen schwerer als eine
+ *   ausgelassene, nach der die nächste fällige ohnehin kommt. Der Tag ist der
+ *   UTC-Tag des Servers wie im Lauf — `sent_on`.
+ */
+async function erinnern(
+  cong: string,
+  weekStart: string,
+  woche: GeleseneWoche,
+  clientTag: string | undefined,
+  kontoFuer: KontoFuer,
+  empfaengerFuer: (uid: string) => Empfaenger,
+): Promise<Response> {
+  const heute = new Date().toISOString().slice(0, 10)
+  const heuteErinnert = await rest.get<{ user_id: string }[]>(
+    `reminder_log?select=user_id&congregation_id=eq.${wert(cong)}&kind=eq.self&sent_on=eq.${wert(heute)}`,
+  )
+  const schonErinnert = new Set(heuteErinnert.map((r) => r.user_id))
+  const ausgelassen = new Set<string>()
+  const offen = offeneDerWoche(weekStart, woche.week, [], woche.services, woche.conf, woche.zeiten, heuteUtc(clientTag))
+  const zuErinnern = offen.filter((p) => {
+    if (!woche.schonGemeldet.has(tagebuchSchluessel(p.key, p.name))) return false
+    const uid = kontoFuer(p.pid, p.name)
+    if (uid && schonErinnert.has(uid)) {
+      ausgelassen.add(uid)
+      return false
+    }
+    return true
+  })
+  const { nachrichten } = nachrichtenJePerson(zuErinnern, 'erinnerung', kontoFuer, empfaengerFuer)
+  if (nachrichten.length === 0) return json({ ok: true, personen: 0, push: 0, schonHeute: ausgelassen.size })
+
+  await bibelbuecherLaden()
+  const { push } = await verschicken(cong, nachrichten)
+  // Die Sperre **nach** dem Versand, wie beim Tagebuch: Scheitert das
+  // Schreiben, wurde immerhin erinnert — schlimmstenfalls heute ein zweites Mal.
+  await rest.insert(
+    'reminder_log',
+    nachrichten.map((n) => ({ congregation_id: cong, user_id: n.empfaenger.userId, kind: 'self', sent_on: heute })),
+    { ignoreDuplicates: true },
+  )
+  return json({ ok: true, personen: nachrichten.length, push, schonHeute: ausgelassen.size })
 }
 
 /**
@@ -324,7 +421,7 @@ async function versenden(
 async function jePersonMelden(
   cong: string,
   meldungen: ReadonlyArray<EntzugRumpf & { name: string; art: keyof PlanTexte }>,
-  kontoFuer: (pid: string | undefined, name: string) => string | undefined,
+  kontoFuer: KontoFuer,
   empfaengerFuer: (uid: string) => Empfaenger,
 ): Promise<Response> {
   const jePerson = new Map<string, Nachricht>()
@@ -433,6 +530,68 @@ async function jePraefix<T>(cong: string, tabelle: string, spalten: string, prae
   return teile.flat()
 }
 
+/** Eine Woche, wie „Plan senden" und „Jetzt erinnern" sie lesen (`wocheLesen`). */
+interface GeleseneWoche {
+  week: Week
+  /** Die Treffpunkte der Woche (`fs_weeks`). */
+  fsInsts: FsInstance[]
+  services: ServiceRow[]
+  /** Zusagen der Woche: Aufgaben-Schlüssel → Status. */
+  conf: Map<string, string>
+  zeiten: MeetingTimes
+  /** Was das Tagebuch schon als gemeldet führt (`tagebuchSchluessel`). */
+  schonGemeldet: Set<string>
+}
+
+/**
+ * **Eine Woche lesen** — Programm, Treffpunkte, Zusagen und Tagebuch; für
+ * „Plan senden" und „Jetzt erinnern" dieselben Abfragen. `null`: Die Woche
+ * gibt es nicht.
+ *
+ * Die Woche steht im Schlüssel selbst, in genau zwei Formen: `<Montag>|…`
+ * für die Zusammenkünfte und `fs|<Montag>|…` für die Treffpunkte (T66).
+ * Fehlt die zweite, gilt jede Treffpunkt-Leitung als noch nicht gemeldet
+ * und der Leiter bekommt bei jedem Druck dieselbe Nachricht erneut.
+ * `weekStart` ist vorher auf `YYYY-MM-DD` geprüft.
+ */
+async function wocheLesen(cong: string, weekStart: string): Promise<GeleseneWoche | null> {
+  const praefixe = wochenPraefixe(weekStart)
+  const [congRows, weekRows, fsRows, confs, services, log] = await Promise.all([
+    rest.get<ZeitenRow[]>(`congregations?select=mid_wd,mid_time,we_wd,we_time&id=eq.${wert(cong)}`),
+    rest.get<{ start: string; data: Week }[]>(
+      `weeks?select=start,data&congregation_id=eq.${wert(cong)}&start=eq.${wert(weekStart)}`,
+    ),
+    rest.get<{ start: string; data: FsInstance[] }[]>(
+      `fs_weeks?select=start,data&congregation_id=eq.${wert(cong)}&start=eq.${wert(weekStart)}`,
+    ).catch((err) => {
+      // Fehlt die Tabelle, lieber die Zusammenkünfte melden als gar nichts.
+      console.error(`fs_weeks nicht lesbar: ${(err as Error).message}`)
+      return [] as { start: string; data: FsInstance[] }[]
+    }),
+    jePraefix<{ task_key: string; status: string }>(cong, 'confirmations', 'task_key,status', praefixe),
+    rest.get<ServiceRow[]>(
+      `services?select=key,name,count,groups&congregation_id=eq.${wert(cong)}&order=position.asc`,
+    ),
+    jePraefix<{ task_key: string; name: string }>(cong, 'assignment_log', 'task_key,name', praefixe).catch((err) => {
+      // Fehlt das Tagebuch (Migration nicht eingespielt), würde ohne diesen
+      // Fang gar nichts hinausgehen. Lieber senden — schlimmstenfalls eine
+      // Wiederholung, nie ein Ausfall.
+      console.error(`assignment_log nicht lesbar: ${(err as Error).message}`)
+      return [] as { task_key: string; name: string }[]
+    }),
+  ])
+  const week = weekRows[0]?.data
+  if (!week) return null
+  return {
+    week,
+    fsInsts: fsRows[0]?.data ?? [],
+    services,
+    conf: new Map(confs.map((c) => [c.task_key, c.status])),
+    zeiten: zeitenAus(congRows[0]),
+    schonGemeldet: new Set(log.map((r) => tagebuchSchluessel(r.task_key, r.name))),
+  }
+}
+
 /**
  * Zusagen und Versand-Tagebuch des öffentlichen Zeugnisgebens
  * (`oz|<Montag>|…`), eines Plans ohne Woche — für die Wochen dieser Einträge.
@@ -470,7 +629,7 @@ Deno.serve(async (req: Request) => {
           aenderungen?: EntzugRumpf[]
         } & EntzugRumpf)
       | null
-    const aktionen = ['plan', 'entzug', 'zeugnis', 'zeugnis-geaendert']
+    const aktionen = ['plan', 'entzug', 'zeugnis', 'zeugnis-geaendert', 'erinnern']
     if (!payload?.action || !aktionen.includes(payload.action)) {
       return json({ error: 'bad-request' }, 400)
     }
@@ -481,7 +640,8 @@ Deno.serve(async (req: Request) => {
     // Der Gruppenaufseher sendet die Treffpunkte **seiner** Gruppe — den Plan
     // der Woche nur für sie und den Entzug einer Leitung dort
     // (`nurEigeneTreffpunkte`); das Zeugnisgeben gar nicht — weder den Plan
-    // noch eine geänderte Schicht.
+    // noch eine geänderte Schicht — und auch keine Erinnerung aus den Zusagen
+    // der Woche, die nur sieht, wer zuteilt.
     const eigene = await rest.get<(MemberRow & { zuteiler?: boolean })[]>(
       `members?select=user_id,person_id,planner,zuteiler,congregation_id&user_id=eq.${wert(userId)}`,
     )
@@ -491,7 +651,8 @@ Deno.serve(async (req: Request) => {
     const darfZuteilen = Boolean(mich?.planner || mich?.zuteiler)
     const aufseherVon = darfZuteilen ? null : await geleiteteGruppen(cong, mich?.person_id ?? null)
     const zeugnisAktion = payload.action === 'zeugnis' || payload.action === 'zeugnis-geaendert'
-    if (aufseherVon && (zeugnisAktion || aufseherVon.size === 0)) {
+    const nurWerZuteilt = zeugnisAktion || payload.action === 'erinnern'
+    if (aufseherVon && (nurWerZuteilt || aufseherVon.size === 0)) {
       return json({ error: 'forbidden' }, 403)
     }
 
@@ -601,65 +762,36 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    /* ---- Aktion: Plan einer Woche senden ---- */
+    /* ---- Die Aktionen einer Woche: Plan senden und Jetzt erinnern ---- */
     const weekStart = payload.weekStart ?? ''
     if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) return json({ error: 'bad-request' }, 400)
+    const woche = await wocheLesen(cong, weekStart)
+    if (!woche) return json({ error: 'no-week' }, 404)
 
-    /*
-     * Die Woche steht im Schlüssel selbst, in genau zwei Formen: `<Montag>|…`
-     * für die Zusammenkünfte und `fs|<Montag>|…` für die Treffpunkte (T66).
-     * Fehlt die zweite, gilt jede Treffpunkt-Leitung als noch nicht gemeldet
-     * und der Leiter bekommt bei jedem Druck dieselbe Nachricht erneut.
-     * `weekStart` ist oben auf `YYYY-MM-DD` geprüft.
-     */
-    const praefixe = wochenPraefixe(weekStart)
+    /* ---- Aktion: an die offenen Plätze der Woche erinnern (T121, Phase 5g) ---- */
+    if (payload.action === 'erinnern') {
+      return await erinnern(cong, weekStart, woche, payload.heute, kontoFuer, empfaengerFuer)
+    }
 
-    const [congRows, weekRows, fsRows, confs, services, log] = await Promise.all([
-      rest.get<ZeitenRow[]>(`congregations?select=mid_wd,mid_time,we_wd,we_time&id=eq.${wert(cong)}`),
-      rest.get<{ start: string; data: Week }[]>(
-        `weeks?select=start,data&congregation_id=eq.${wert(cong)}&start=eq.${wert(weekStart)}`,
-      ),
-      rest.get<{ start: string; data: FsInstance[] }[]>(
-        `fs_weeks?select=start,data&congregation_id=eq.${wert(cong)}&start=eq.${wert(weekStart)}`,
-      ).catch((err) => {
-        // Fehlt die Tabelle, lieber die Zusammenkünfte melden als gar nichts.
-        console.error(`fs_weeks nicht lesbar: ${(err as Error).message}`)
-        return [] as { start: string; data: FsInstance[] }[]
-      }),
-      jePraefix<{ task_key: string; status: string }>(cong, 'confirmations', 'task_key,status', praefixe),
-      rest.get<ServiceRow[]>(
-        `services?select=key,name,count,groups&congregation_id=eq.${wert(cong)}&order=position.asc`,
-      ),
-      jePraefix<{ task_key: string; name: string }>(cong, 'assignment_log', 'task_key,name', praefixe).catch((err) => {
-        // Fehlt das Tagebuch (Migration nicht eingespielt), würde ohne diesen
-        // Fang gar nichts hinausgehen. Lieber senden — schlimmstenfalls eine
-        // Wiederholung, nie ein Ausfall.
-        console.error(`assignment_log nicht lesbar: ${(err as Error).message}`)
-        return [] as { task_key: string; name: string }[]
-      }),
-    ])
-
-    const week = weekRows[0]?.data
-    if (!week) return json({ error: 'no-week' }, 404)
-    const conf = new Map(confs.map((c) => [c.task_key, c.status]))
-    const schonGemeldet = new Set(log.map((r) => tagebuchSchluessel(r.task_key, r.name)))
+    /* ---- Aktion: Plan einer Woche senden ---- */
+    const { week, fsInsts, services, conf, zeiten, schonGemeldet } = woche
 
     // Alle offenen, noch anstehenden Plätze der Woche — dieselbe Aufzählung, die
     // auch die Erinnerungen benutzt, samt der Ausschlüsse (`offeneDerWoche`).
-    const offen: Array<Pending & { eintrag: Eintrag }> = offeneDerWoche(
+    const offen: OffenerPlatz[] = offeneDerWoche(
       weekStart,
       week,
-      fsRows[0]?.data ?? [],
+      fsInsts,
       services,
       conf,
-      zeitenAus(congRows[0]),
+      zeiten,
       heuteUtc(payload.heute),
     )
 
     // Der Gruppenaufseher sendet nur die Treffpunkte seiner Gruppe — erkannt
     // an der Gruppe des Treffpunkts in dieser Woche.
     const eigeneTreffpunkte = aufseherVon
-      ? new Set((fsRows[0]?.data ?? []).filter((i) => i.grp != null && aufseherVon.has(i.grp)).map((i) => i.id))
+      ? new Set(fsInsts.filter((i) => i.grp != null && aufseherVon.has(i.grp)).map((i) => i.id))
       : null
     const zuSenden = eigeneTreffpunkte
       ? offen.filter((p) => {
