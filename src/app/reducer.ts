@@ -1168,12 +1168,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         // Bestätigung. `crypto.randomUUID` nutzt der Reducer für Mitteilungen
         // ohnehin; das Präfix hält die Kennung lesbar.
         id: `r${crypto.randomUUID()}`,
-        grp: action.grp,
-        wd: 6,
-        time: '09:30',
-        place: '',
-        monthly: 0,
-        skipCong: action.grp != null,
+        ...action.rule,
       }
       const fsRules = [...state.fsRules, rule]
       return {

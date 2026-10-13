@@ -461,8 +461,9 @@ export type AppAction =
   | { type: 'fsInstUpdate'; wi: number; id: string; patch: Partial<Pick<FsInstance, 'time' | 'place'>> }
   | { type: 'fsInstRemove'; wi: number; id: string }
   | { type: 'fsInstAdd'; inst: FsInstance }
-  // Treffpunkte-Grundplan (Einstellungen)
-  | { type: 'fsRuleAdd'; grp: string | null }
+  // Treffpunkte-Grundplan (Predigtdienst › Planen › Grundplan). Eine neue Regel
+  // bringt alles mit, was ihr Blatt gefragt hat (`neueRegel`).
+  | { type: 'fsRuleAdd'; rule: Omit<FsRule, 'id'> }
   | { type: 'fsRuleUpdate'; id: string; patch: Partial<Pick<FsRule, 'wd' | 'monthly' | 'time' | 'place' | 'skipCong'>> }
   | { type: 'fsRuleRemove'; id: string }
   // Bestätigungs-Flow

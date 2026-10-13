@@ -3,7 +3,7 @@ import { persist } from './persist'
 import type { AppAction, AppState } from './context'
 import { buildDemoFsWeeks, buildDemoWeeks, DEMO_FS_RULES, DEMO_PERSONS, DEMO_SERVICES } from '../../tests/testdaten/testdaten'
 import { syncAuxSlots } from '../data/aux-class'
-import { fsGruppeEntfernen, fsTaskKey } from '../data/fs'
+import { fsGruppeEntfernen, fsTaskKey, neueRegel } from '../data/fs'
 import type { MyTask, Person, Week } from '../data/types'
 
 // Supabase truthy (Guard soll durchlassen) — kein echter Client/Netz.
@@ -314,7 +314,7 @@ describe('Treffpunkte', () => {
   it('fsRuleAdd speichert die neue Regel + alle Wochen (gebündelt)', () => {
     const neu = { ...DEMO_FS_RULES[0]!, id: 'r-neu' }
     const next = st({ fsRules: [...DEMO_FS_RULES, neu] })
-    persist(st(), next, { type: 'fsRuleAdd', grp: null })
+    persist(st(), next, { type: 'fsRuleAdd', rule: neueRegel(null) })
     expect(data.saveFsRules).not.toHaveBeenCalled() // erst nach der Bündelung
     vi.advanceTimersByTime(600)
     // Nur die neue Regel, nichts zu streichen beim Anlegen.
@@ -375,7 +375,7 @@ describe('Treffpunkte', () => {
   */
   it('fsRuleAdd schreibt jede Woche unter ihre Kennung', () => {
     const next = st()
-    persist(st(), next, { type: 'fsRuleAdd', grp: null })
+    persist(st(), next, { type: 'fsRuleAdd', rule: neueRegel(null) })
     vi.advanceTimersByTime(600)
     const kennungen = (data.saveFsWeek as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[1])
     expect(kennungen).toEqual(next.weeks.map((w) => w.start))
@@ -416,7 +416,7 @@ describe('Treffpunkte', () => {
     // Die Kennung steht bei der Woche. Fehlt sie, gäbe es nichts zu bezeichnen
     // — und ein Schreibversuch träfe entweder nichts oder das Falsche.
     const next = st({ weeks: [] })
-    persist(st({ weeks: [] }), next, { type: 'fsRuleAdd', grp: null })
+    persist(st({ weeks: [] }), next, { type: 'fsRuleAdd', rule: neueRegel(null) })
     vi.advanceTimersByTime(600)
     expect(data.saveFsWeek).not.toHaveBeenCalled()
   })

@@ -54,12 +54,12 @@ export const DE = {
     // Im Deutschen gleich lautend, in den anderen Sprachen nicht: `fsLeiterLbl`
     // beschriftet die Zeile „Automatisch zuteilen" und steht dort im Plural.
     fsLeiterRolle: 'Treffpunkt-Leiter',
-    fsAdd: '+ TREFFPUNKT HINZUFÜGEN',
     fsOrtPh: 'Ort (z. B. Königreichssaal)',
     // Treffpunkte planen (T121, Entwurf `GTreffpunktePlanen`): der Knopf unter
     // den Tagen und der Titel seines Blatts. `ortLbl` und `hinzufuegenKnopf`
     // sind allgemein, für jedes Blatt mit Ort bzw. Anlegen.
     fsFuerDieseWoche: 'Treffpunkt für diese Woche', ortLbl: 'Ort', hinzufuegenKnopf: 'Hinzufügen',
+    fsFuerJedeWoche: 'Treffpunkt für jede Woche', haeufigkeitLbl: 'Häufigkeit',
     toastFsAdd: 'Treffpunkt hinzugefügt', toastFsDel: 'Treffpunkt entfernt',
     // Die Reiter des Predigtdienstes beim Planen (T120). Nicht `fsShort`: Das
     // steht in vielen Sprachen gleich wie `tabFs` („Field Service") und hieße

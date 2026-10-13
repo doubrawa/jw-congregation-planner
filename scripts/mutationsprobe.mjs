@@ -5002,6 +5002,71 @@ export const KATALOG = [
     suchen: 'week.start, treffpunktGruppe(rechteVon(state)))',
     ersetzen: 'week.start)',
   },
+
+  // ── Grundplan (T121, Phase 5e-2) ──────────────────────────────────────────
+  {
+    id: 'grundplan-nur-eigene-gruppe',
+    datei: 'src/planen/FsRulesPanel.tsx',
+    regel: 'Der Gruppenaufseher sieht im Grundplan nur die Regeln seiner Gruppe.',
+    suchen: 'state.fsRules.filter((r) => onlyGroup === null || r.grp === onlyGroup)',
+    ersetzen: 'state.fsRules.filter(() => true)',
+  },
+  {
+    id: 'grundplan-geloeschte-gruppe-leer',
+    datei: 'src/planen/FsRulesPanel.tsx',
+    regel: 'Der Aufseher einer gelöschten Gruppe bekommt keinen Grundplan, in dem er für sie anlegen könnte.',
+    suchen: '  if (onlyGroup !== null && !state.groups.some((g) => g.id === onlyGroup)) return null\n',
+    ersetzen: '',
+  },
+  {
+    id: 'grundplan-haeufigkeit-nur-wenn-selten',
+    datei: 'src/planen/FsRulesPanel.tsx',
+    regel: 'Wie oft eine Regel gilt, steht nur da, wo es nicht jede Woche ist.',
+    suchen: '{regel.monthly > 0 && <span',
+    ersetzen: '{<span',
+  },
+  {
+    id: 'grundplan-ausser-nur-bei-gruppen',
+    datei: 'src/planen/FsRulesPanel.tsx',
+    regel: '„Außer bei Versammlungstreffpunkt" gibt es nur an einer Gruppenregel.',
+    suchen: '      {regel.grp !== null && (\n        <AusserVersammlungFeld',
+    ersetzen: '      {(\n        <AusserVersammlungFeld',
+  },
+  {
+    id: 'grundplan-neu-ohne-ort-saal',
+    datei: 'src/planen/FsRulesPanel.tsx',
+    regel: 'Eine neue Regel ohne Ort nimmt den Saal dieser Versammlung.',
+    suchen: "place: regel.place.trim() || state.congregation.hall",
+    ersetzen: 'place: regel.place',
+  },
+  {
+    id: 'grundplan-gruppe-wechselt-vorgabe',
+    datei: 'src/planen/FsRulesPanel.tsx',
+    regel: 'Mit der Gruppe einer neuen Regel wechselt die Vorgabe für „Außer bei Versammlungstreffpunkt".',
+    suchen: 'setRegel((r) => ({ ...r, grp, skipCong: neueRegel(grp).skipCong }))',
+    ersetzen: 'setRegel((r) => ({ ...r, grp }))',
+  },
+  {
+    id: 'grundplan-aufseher-ohne-gruppenwahl',
+    datei: 'src/planen/FsRulesPanel.tsx',
+    regel: 'Der Gruppenaufseher legt im Grundplan in seiner Gruppe an — ohne Wahl.',
+    suchen: '{anlegenIn === null && <GruppeFeld',
+    ersetzen: '{<GruppeFeld',
+  },
+  {
+    id: 'neue-regel-gruppe-ohne-versammlungstag',
+    datei: 'src/data/fs.ts',
+    regel: 'Eine neue Gruppenregel entfällt zunächst, wenn sich am selben Tag die Versammlung trifft.',
+    suchen: "  return { grp, ...NEUER_TREFFPUNKT, place: '', monthly: 0, skipCong: grp !== null }\n",
+    ersetzen: "  return { grp, ...NEUER_TREFFPUNKT, place: '', monthly: 0, skipCong: false }\n",
+  },
+  {
+    id: 'programmpunkt-einfuegen-heisst-hinzufuegen',
+    datei: 'src/planen/ProgrammBlatt.tsx',
+    regel: 'Ein eigener Programmpunkt wird hinzugefügt, nicht „übernommen" (englisch hieße es „Take over").',
+    suchen: '          {t.hinzufuegenKnopf}\n',
+    ersetzen: '          {t.uebernehmen}\n',
+  },
 ]
 
 /**

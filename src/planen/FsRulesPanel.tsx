@@ -1,120 +1,196 @@
-import { useApp } from '../app/context'
-import { useT } from '../i18n/useT'
-import type { FsRule } from '../data/types'
-import { WochentagWahl, ZeitWahl } from './ZeitWahl'
+import { useState } from 'react'
+import { createPortal } from 'react-dom'
+import { useApp, type AppAction } from '../app/context'
+import { Zeichen } from '../bausteine/Zeichen'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
-import { Switch } from '../components/Switch'
+import { Sheet } from '../components/Sheet'
+import { treffpunktHaeufigkeit, treffpunktTitel } from '../components/treffpunkt-beschriftung'
+import { fsSort, nachWochentag, neueRegel } from '../data/fs'
+import type { FsRule } from '../data/types'
+import { useT } from '../i18n/useT'
+import {
+  AusserVersammlungFeld,
+  GruppeFeld,
+  HaeufigkeitFeld,
+  OrtFeld,
+  UhrzeitFeld,
+  WochentagFeld,
+} from './TreffpunktFelder'
+import { wochentagNameAusWd } from './wochentage'
 import './planen.css'
 
+/** Welches Blatt offen ist: eine neue Regel oder die mit dieser Id. */
+type Offen = 'neu' | { id: string } | null
+
+/** Was an einer Regel geändert werden kann — die Gruppe nur, solange sie neu ist. */
+type RegelAenderung = Extract<AppAction, { type: 'fsRuleUpdate' }>['patch']
+
 /**
- * Grundplan der Treffpunkte (Predigtdienst › Planen › Grundplan): regelmäßige
- * Zeiten/Orte je Versammlung und Gruppe. Regeln anlegen/ändern/löschen; jede
- * Änderung setzt die Wochenpläne neu auf (einzelne Wochen bleiben unter
- * „Treffpunkte" anpassbar).
+ * **Der Grundplan der Treffpunkte** (T121, Entwurf `GGrundplan`): was jede
+ * Woche gilt — je Wochentag eine Karte, darin jeder Treffpunkt mit Zeit, Titel
+ * und Ort; ein Tipp öffnet ihn zum Ändern. Darunter „Treffpunkt für jede
+ * Woche". Jede Änderung setzt die Wochenpläne neu auf; was in einer Woche
+ * anders ist, gehört unter „Treffpunkte".
  *
- * Stand bis T120 in den Einstellungen. Er gehört aber zum Predigtdienst — und
- * der Gruppenaufseher brauchte die Einstellungen nur seinetwegen.
+ * Ohne festen Leiter (13.10.2026: „Nein, wie heute") — den teilt die Woche
+ * zu. Der Gruppenaufseher sieht und ändert nur die Regeln seiner Gruppe
+ * (`onlyGroup`) und legt in ihr an, ohne Wahl.
  *
- * **Eine Karte je Abschnitt, alle in derselben Farbe** (T108, Vorschlag des
- * Betreibers). Bis zum 21.9.2026 stand alles in einer Karte, getrennt nur von
- * einer kleinen grauen Zeile: Beim Scrollen war die Überschrift schnell aus dem
- * Bild, die Zeilen sahen überall gleich aus, und der „+"-Knopf eines Abschnitts
- * stand unmittelbar über der Überschrift des nächsten — man tippte leicht in
- * die falsche Gruppe. Jetzt trägt jede Karte ihren Abschnitt in der Überschrift,
- * und der Knopf steht sichtbar in seiner Karte. Die gemeinsame Farbe hält die
- * Karten als eine Sache zusammen; der Erklärtext steht einmal, in der ersten.
+ * Bis T121 stand je Gruppe eine Karte mit eigenem „+"-Knopf (T108: man tippte
+ * leicht in die falsche Gruppe). Jetzt fragt das Blatt die Gruppe
+ * ausdrücklich, und jede Zeile trägt sie im Titel.
  */
 export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }) {
-  const { state, dispatch } = useApp()
-  const { t, tu } = useT()
+  const { state } = useApp()
+  const i18n = useT()
+  const { t, tu } = i18n
+  const [offen, setOffen] = useState<Offen>(null)
+  const schliessen = (): void => setOffen(null)
 
-  const freqOptions: ReadonlyArray<[number, string]> = [
-    [0, t.fsFreqW],
-    [1, t.fsFreqM1],
-    [2, t.fsFreqM2],
-    [3, t.fsFreqM3],
-    [4, t.fsFreqM4],
-  ]
-
-  // Gruppenaufseher: nur der Abschnitt der eigenen Gruppe — eine Karte, kein
-  // leerer Rahmen um sie herum.
-  const sections: ReadonlyArray<{ grp: string | null; title: string }> = onlyGroup
-    ? state.groups.filter((g) => g.id === onlyGroup).map((g) => ({ grp: g.id, title: tu(g.name) }))
-    : [{ grp: null, title: t.versammlungCard }, ...state.groups.map((g) => ({ grp: g.id, title: tu(g.name) }))]
-
-  const upd = (id: string, patch: Partial<Pick<FsRule, 'wd' | 'monthly' | 'time' | 'place' | 'skipCong'>>) =>
-    dispatch({ type: 'fsRuleUpdate', id, patch })
+  // Der Aufseher einer gerade gelöschten Gruppe: lieber nichts als ein Plan,
+  // in dem er für eine Gruppe anlegt, die es nicht mehr gibt.
+  if (onlyGroup !== null && !state.groups.some((g) => g.id === onlyGroup)) return null
+  const regeln = state.fsRules.filter((r) => onlyGroup === null || r.grp === onlyGroup).sort(fsSort)
 
   return (
     <>
-      {sections.map((sec, i) => (
-        <div key={sec.grp || 'vers'} className="panel panel--pb16" data-farbe="neutral">
-          {/* Zwei übersetzte Bausteine statt eines neuen Satzes je Sprache —
-              wie „Vorsitz · Unter der Woche" im Personen-Detail. */}
-          <h2 className="panel-label fsr-label">{`${t.fsShort} · ${sec.title}`}</h2>
-          {i === 0 && <p className="panel-hint">{t.fsGrundDesc}</p>}
+      <p className="klein-text">{t.fsGrundDesc}</p>
 
-          {state.fsRules
-            .filter((r) => r.grp === sec.grp)
-            .map((rule) => (
-              <div key={rule.id} className="fsr-row">
-                <div className="fsr-line">
-                  {/* Wochentag und Häufigkeit nebeneinander, solange beide ganz
-                      lesbar sind — sonst bricht die Häufigkeit in eine zweite
-                      Reihe um, und das ✕ bleibt rechts daneben (planen.css). */}
-                  <div className="fsr-wahl">
-                    <WochentagWahl value={rule.wd} label={t.a11yWeekday} onChange={(wd) => upd(rule.id, { wd })} />
-                    <select
-                      className="fs-select"
-                      value={rule.monthly}
-                      aria-label={t.fsFreqW}
-                      onChange={(e) => upd(rule.id, { monthly: Number(e.target.value) })}
-                    >
-                      {freqOptions.map(([v, l]) => (
-                        <option key={v} value={v}>
-                          {l}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <EntfernenKnopf className="fs-remove" onEntfernen={() => dispatch({ type: 'fsRuleRemove', id: rule.id })} />
-                </div>
-
-                <div className="fsr-line">
-                  <ZeitWahl value={rule.time} label={t.a11yTime} onChange={(time) => upd(rule.id, { time })} />
-                  <input
-                    className="fsr-input"
-                    type="text"
-                    dir="auto"
-                    value={rule.place}
-                    placeholder={t.fsOrtPh}
-                    aria-label={t.fsOrtPh}
-                    onChange={(e) => upd(rule.id, { place: e.target.value })}
-                  />
-                </div>
-
-                {sec.grp != null && (
-                  <div className="fsr-skip">
-                    <Switch
-                      on={rule.skipCong}
-                      label={t.fsSkipCong}
-                      onToggle={() => upd(rule.id, { skipCong: !rule.skipCong })}
-                    />
-                    <span className="fsr-skip-label">{t.fsSkipCong}</span>
-                  </div>
+      {nachWochentag(regeln).map((tag) => (
+        <section key={tag.wd} className="prog-abschnitt treff-tag">
+          <div className="prog-abschnitt-kopf">
+            <h2 className="treff-tag-name">{wochentagNameAusWd(tag.wd, state.lang)}</h2>
+          </div>
+          {tag.items.map((regel) => (
+            <button key={regel.id} type="button" className="regel-zeile" onClick={() => setOffen({ id: regel.id })}>
+              <span className="treff-zeit-pille">{regel.time}</span>
+              <span className="treff-text">
+                <span className="treff-titel">{treffpunktTitel(regel, state.groups, i18n)}</span>
+                {regel.place && (
+                  <span className="treff-ort" dir="auto">
+                    {tu(regel.place)}
+                  </span>
                 )}
-              </div>
-            ))}
-
-          <button
-            type="button"
-            className="btn-outline fsr-add"
-            onClick={() => dispatch({ type: 'fsRuleAdd', grp: sec.grp })}
-          >
-            {t.fsAdd}
-          </button>
-        </div>
+                {/* Die Karte nennt den Wochentag; wie oft, steht nur da, wo es
+                    nicht jede Woche ist. */}
+                {regel.monthly > 0 && <span className="treff-ort">{treffpunktHaeufigkeit(regel.monthly, t)}</span>}
+              </span>
+              <Zeichen name="weiter" />
+            </button>
+          ))}
+        </section>
       ))}
+
+      <button type="button" className="knopf-neu" onClick={() => setOffen('neu')}>
+        <Zeichen name="plus" />
+        {t.fsFuerJedeWoche}
+      </button>
+
+      {/* Wie jedes Blatt beim Planen am Dokument, nicht im Fluss der Seite. */}
+      {offen !== null &&
+        createPortal(
+          offen === 'neu' ? (
+            <NeueRegelBlatt anlegenIn={onlyGroup} onClose={schliessen} />
+          ) : (
+            <RegelBlatt id={offen.id} onClose={schliessen} />
+          ),
+          document.body,
+        )}
     </>
+  )
+}
+
+/**
+ * Die Felder einer Regel — beim Ändern und beim Anlegen dieselben. „Außer bei
+ * Versammlungstreffpunkt" gibt es nur bei einer Gruppe.
+ */
+function RegelFelder({
+  regel,
+  aendere,
+}: {
+  regel: Omit<FsRule, 'id'>
+  aendere: (patch: RegelAenderung) => void
+}) {
+  const { state } = useApp()
+  return (
+    <>
+      <WochentagFeld value={regel.wd} onChange={(wd) => aendere({ wd })} />
+      <HaeufigkeitFeld value={regel.monthly} onChange={(monthly) => aendere({ monthly })} />
+      <UhrzeitFeld value={regel.time} onChange={(time) => aendere({ time })} />
+      <OrtFeld value={regel.place} placeholder={state.congregation.hall} onChange={(place) => aendere({ place })} />
+      {regel.grp !== null && (
+        <AusserVersammlungFeld value={regel.skipCong} onChange={(skipCong) => aendere({ skipCong })} />
+      )}
+    </>
+  )
+}
+
+/**
+ * Eine Regel ändern — jede Änderung gilt gleich, wie bisher im Grundplan:
+ * Er setzt die Wochenpläne neu auf (`fsRuleUpdate`). Die Gruppe bleibt; wer
+ * eine andere will, legt eine neue Regel an. Unten „Entfernen", mit Rückfrage.
+ */
+function RegelBlatt({ id, onClose }: { id: string; onClose: () => void }) {
+  const { state, dispatch } = useApp()
+  const i18n = useT()
+  const { t } = i18n
+  const regel = state.fsRules.find((r) => r.id === id)
+  // Anderswo entfernt: Das Blatt geht mit.
+  if (!regel) return null
+  const aendere = (patch: RegelAenderung) => dispatch({ type: 'fsRuleUpdate', id, patch })
+  const titel = treffpunktTitel(regel, state.groups, i18n)
+
+  return (
+    <Sheet label={titel} title={titel} onClose={onClose}>
+      <div className="sheet-inhalt blatt-felder">
+        <RegelFelder regel={regel} aendere={aendere} />
+      </div>
+      <div className="sheet-fuss-ende">
+        <EntfernenKnopf
+          className="knopf-umriss knopf-entfernen"
+          text={t.a11yRemove}
+          onEntfernen={() => {
+            dispatch({ type: 'fsRuleRemove', id })
+            onClose()
+          }}
+        />
+      </div>
+    </Sheet>
+  )
+}
+
+/**
+ * **Treffpunkt für jede Woche** — erst „Hinzufügen" legt die Regel an. Ohne Ort
+ * nimmt sie den Saal dieser Versammlung, wie ein Treffpunkt der Woche. Der
+ * Admin wählt die Gruppe; `anlegenIn` ist die des Gruppenaufsehers.
+ */
+function NeueRegelBlatt({ anlegenIn, onClose }: { anlegenIn: string | null; onClose: () => void }) {
+  const { state, dispatch } = useApp()
+  const { t } = useT()
+  const [regel, setRegel] = useState(() => neueRegel(anlegenIn))
+  const aendere = (patch: RegelAenderung) => setRegel((r) => ({ ...r, ...patch }))
+  // Mit der Gruppe wechselt die Vorgabe für „Außer bei Versammlungstreffpunkt".
+  const gruppeWaehlen = (grp: string | null) => setRegel((r) => ({ ...r, grp, skipCong: neueRegel(grp).skipCong }))
+
+  const anlegen = () => {
+    dispatch({ type: 'fsRuleAdd', rule: { ...regel, place: regel.place.trim() || state.congregation.hall } })
+    onClose()
+  }
+
+  return (
+    <Sheet label={t.fsFuerJedeWoche} title={t.fsFuerJedeWoche} onClose={onClose}>
+      <div className="sheet-inhalt blatt-felder">
+        {anlegenIn === null && <GruppeFeld value={regel.grp} onChange={gruppeWaehlen} />}
+        <RegelFelder regel={regel} aendere={aendere} />
+      </div>
+      <div className="sheet-fuss">
+        <button type="button" className="knopf-haupt" onClick={anlegen}>
+          {t.hinzufuegenKnopf}
+        </button>
+        <button type="button" className="knopf-leise" onClick={onClose}>
+          {t.abbrechen}
+        </button>
+      </div>
+    </Sheet>
   )
 }

@@ -132,6 +132,16 @@
   padding-top: 16px;
 }
 
+/* Unten in einem Blatt, das gleich beim Tippen ändert: nur ein Knopf, am Ende
+   der Zeile — etwa „Entfernen" (Programmpunkt, Regel des Grundplans). */
+.sheet-fuss-ende {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 16px;
+}
+
 /* Das Blatt „Abwesenheit eintragen". */
 .abw-grund {
   display: flex;

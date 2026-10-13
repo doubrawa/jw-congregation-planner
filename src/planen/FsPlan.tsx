@@ -6,15 +6,16 @@ import { BesuchsMarke } from '../components/BesuchsMarke'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { Sheet } from '../components/Sheet'
 import { treffpunktTagLabel, treffpunktTitel } from '../components/treffpunkt-beschriftung'
-import { fsInGruppe, fsKonfliktVon, fsWeekConflicts, nachWochentag } from '../data/fs'
+import { fsInGruppe, fsKonfliktVon, fsWeekConflicts, nachWochentag, NEUER_TREFFPUNKT } from '../data/fs'
 import { rechteVon, treffpunktGruppe } from '../data/rechte'
 import type { FsInstance } from '../data/types'
 import { useT } from '../i18n/useT'
 import { istGewaehlt } from './planen-raster'
 import { leiterAnzeige } from './platz-anzeige'
 import { PlatzZeile } from './PlatzZeile'
+import { GruppeFeld, OrtFeld, UhrzeitFeld, WochentagFeld } from './TreffpunktFelder'
 import { useZusage } from './useZusage'
-import { WochentagWahl, ZeitWahl } from './ZeitWahl'
+import { ZeitWahl } from './ZeitWahl'
 
 /**
  * **Die Treffpunkte der Woche planen** (T121, Entwurf `GTreffpunktePlanen`):
@@ -175,13 +176,13 @@ function TreffpunktKopf({
  */
 function NeuerTreffpunktBlatt({ onClose }: { onClose: () => void }) {
   const { state, dispatch } = useApp()
-  const { t, tu } = useT()
+  const { t } = useT()
   const rechte = rechteVon(state)
   // Wer nicht Admin ist, legt in seiner Gruppe an — ohne Wahl.
   const anlegenIn = rechte.admin ? null : rechte.gruppe
-  const [grp, setGrp] = useState(anlegenIn ?? '')
-  const [wd, setWd] = useState(6)
-  const [time, setTime] = useState('09:30')
+  const [grp, setGrp] = useState(anlegenIn)
+  const [wd, setWd] = useState<number>(NEUER_TREFFPUNKT.wd)
+  const [time, setTime] = useState<string>(NEUER_TREFFPUNKT.time)
   const [place, setPlace] = useState('')
 
   const anlegen = () => {
@@ -194,10 +195,7 @@ function NeuerTreffpunktBlatt({ onClose }: { onClose: () => void }) {
         id: `x${crypto.randomUUID()}`,
         ruleId: null,
         manual: true,
-        // Das Auswahlfeld kennt nur Zeichenketten; „keine Gruppe" ist dort der
-        // leere Wert und in den Daten `null` (wie `Person.grp`). Ohne Feld
-        // bleibt es bei der eigenen Gruppe.
-        grp: grp || null,
+        grp,
         wd,
         time,
         // Vorgabe ist der Saal **dieser** Versammlung, nicht das deutsche Wort.
@@ -211,38 +209,10 @@ function NeuerTreffpunktBlatt({ onClose }: { onClose: () => void }) {
   return (
     <Sheet label={t.fsFuerDieseWoche} title={t.fsFuerDieseWoche} onClose={onClose}>
       <div className="sheet-inhalt blatt-felder">
-        {anlegenIn === null && (
-          <label className="blatt-feld">
-            <span className="feld-marke">{t.gbGruppe}</span>
-            <select className="feld-wahl" value={grp} onChange={(e) => setGrp(e.target.value)}>
-              <option value="">{t.fsVers}</option>
-              {state.groups.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {tu(g.name)}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        <label className="blatt-feld">
-          <span className="feld-marke">{t.a11yWeekday}</span>
-          <WochentagWahl className="feld-wahl" value={wd} label={t.a11yWeekday} onChange={setWd} />
-        </label>
-        <label className="blatt-feld">
-          <span className="feld-marke">{t.a11yTime}</span>
-          <ZeitWahl className="feld-wahl" value={time} label={t.a11yTime} onChange={setTime} />
-        </label>
-        <label className="blatt-feld">
-          <span className="feld-marke">{t.ortLbl}</span>
-          <input
-            className="feld"
-            type="text"
-            dir="auto"
-            value={place}
-            placeholder={state.congregation.hall}
-            onChange={(e) => setPlace(e.target.value)}
-          />
-        </label>
+        {anlegenIn === null && <GruppeFeld value={grp} onChange={setGrp} />}
+        <WochentagFeld value={wd} onChange={setWd} />
+        <UhrzeitFeld value={time} onChange={setTime} />
+        <OrtFeld value={place} placeholder={state.congregation.hall} onChange={setPlace} />
       </div>
       <div className="sheet-fuss">
         <button type="button" className="knopf-haupt" onClick={anlegen}>

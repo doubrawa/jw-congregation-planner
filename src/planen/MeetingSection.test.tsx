@@ -416,7 +416,7 @@ describe('Den Ablauf ändert man nicht beim Zuteilen (T121, Phase 5b)', () => {
     const { container } = zeige(lac())
     expect(container.querySelector('.plus-minus')).toBeNull()
     expect(container.querySelector('.lac-move-btn')).toBeNull()
-    expect(container.querySelector('.lac-remove')).toBeNull()
+    expect(container.querySelector('.knopf-entfernen')).toBeNull()
     expect(container.querySelector('input:not(.talk-title-input)')).toBeNull()
     expect(plaetze(container)).toHaveLength(3)
   })

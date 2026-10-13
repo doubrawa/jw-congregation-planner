@@ -282,7 +282,7 @@ describe('Ein Programmpunkt', () => {
   it('Entfernen fragt erst nach — danach geht der Punkt und mit ihm sein Blatt', () => {
     const { dispatch } = zeige()
     oeffne('Örtliche Hinweise')
-    const entfernen = oben().querySelector<HTMLButtonElement>('.lac-remove')!
+    const entfernen = oben().querySelector<HTMLButtonElement>('.knopf-entfernen')!
     fireEvent.click(entfernen)
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'lacRemove', si: LAC, ii: 0 })
     expect(entfernen.textContent).toBe(t.entfernenSicher)
@@ -296,7 +296,7 @@ describe('Ein eigener Punkt', () => {
   it('braucht einen Titel — leer bittet darum', () => {
     const { dispatch } = zeige()
     fireEvent.click(document.querySelector('.programm-einfuegen')!)
-    fireEvent.click(knopf(oben(), t.uebernehmen))
+    fireEvent.click(knopf(oben(), t.hinzufuegenKnopf))
     expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.toastNameEingeben })
     expect(dispatch.mock.calls.some((c) => (c[0] as { type: string }).type === 'lacAdd')).toBe(false)
   })
@@ -305,7 +305,7 @@ describe('Ein eigener Punkt', () => {
     const { dispatch } = zeige()
     fireEvent.click(document.querySelector('.programm-einfuegen')!)
     fireEvent.change(oben().querySelector<HTMLInputElement>('input')!, { target: { value: 'Örtliche Bedürfnisse' } })
-    fireEvent.click(knopf(oben(), t.uebernehmen))
+    fireEvent.click(knopf(oben(), t.hinzufuegenKnopf))
     expect(dispatch).toHaveBeenCalledWith({ type: 'lacAdd', si: LAC, title: 'Örtliche Bedürfnisse' })
     expect(blaetter()).toHaveLength(1)
   })

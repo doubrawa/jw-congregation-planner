@@ -20,11 +20,11 @@ import { LanguageSheet } from '../components/LanguageSheet'
  * Beide sind Auswahllisten — und bei beiden liegt der Fehler nicht im Auswählen,
  * sondern in dem, was zur Auswahl steht:
  *
- * - Der **Grundplan** ist nach Versammlung und Gruppen gegliedert. Ein
- *   Gruppenaufseher darf nur seinen eigenen Abschnitt sehen; sähe er mehr,
- *   änderte er den Plan einer fremden Gruppe. Der Schalter „außer bei
- *   Versammlungstreffpunkt" gibt es an einer Versammlungsregel nicht — sie
- *   wäre die Ausnahme von sich selbst.
+ * - Der **Grundplan** (T121, Entwurf `GGrundplan`) steht je Wochentag, jede
+ *   Regel mit ihrem Titel. Ein Gruppenaufseher sieht nur die Regeln seiner
+ *   Gruppe und legt in ihr an; sähe er mehr, änderte er den Plan einer fremden
+ *   Gruppe. „Außer bei Versammlungstreffpunkt" gibt es an einer
+ *   Versammlungsregel nicht — sie wäre die Ausnahme von sich selbst.
  * - Das **Sprach-Sheet** sucht über **beide** Namen: wer „Hebräisch" tippt,
  *   findet עברית, und umgekehrt. Nach einem Sprachwechsel kennt man oft nur
  *   noch einen der beiden. Gespeichert wird immer der deutsche Name — er ist
@@ -37,9 +37,10 @@ const GRUPPEN: Group[] = [
   { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null },
   { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
 ]
+const SAAL = 'Saal Nord'
 
 const regel = (over: Partial<FsRule> = {}): FsRule =>
-  ({ id: 'r1', grp: null, wd: 6, monthly: 0, time: '09:30', place: 'Saal', skipCong: false, ...over }) as FsRule
+  ({ id: 'r1', grp: null, wd: 6, monthly: 0, time: '09:30', place: 'Am Markt', skipCong: false, ...over }) as FsRule
 
 function zeige(
   was: 'rules' | 'lang',
@@ -54,6 +55,7 @@ function zeige(
     groups: GRUPPEN, persons: [], services: [], weeks: [], fsWeeks: [],
     fsRules: [regel()],
     congLang: 'de', progLangs: [], langSearch: '',
+    congregation: { name: 'Test', hall: SAAL, times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
   }
   function Buehne() {
@@ -71,141 +73,105 @@ function zeige(
   return { dispatch, ...render(<Buehne />) }
 }
 
-/** Die Karten des Grundplans — das Panel rendert nichts anderes. */
-const karten = (c: HTMLElement) => [...c.querySelectorAll<HTMLElement>('.panel')]
-const ueberschriften = (c: HTMLElement) => karten(c).map((k) => k.querySelector('.panel-label')?.textContent ?? '')
+const tage = (c: HTMLElement) => [...c.querySelectorAll('.treff-tag-name')].map((h) => h.textContent)
+const zeilen = (c: HTMLElement) => [...c.querySelectorAll<HTMLButtonElement>('.regel-zeile')]
+const titel = (c: HTMLElement) => zeilen(c).map((z) => z.querySelector('.treff-titel')?.textContent)
+const blatt = () => document.querySelector<HTMLElement>('[role="dialog"]')
+/** Das Feld eines Blatts, an seiner Marke gefunden. */
+const feld = <T extends Element = HTMLSelectElement>(marke: string): T | null =>
+  ([...(blatt()?.querySelectorAll('.blatt-feld') ?? [])]
+    .find((f) => f.querySelector('.feld-marke')?.textContent === marke)
+    ?.querySelector('select, input') as T | null | undefined) ?? null
+const schalter = () => blatt()?.querySelector<HTMLButtonElement>('[role="switch"]') ?? null
+const neu = (c: HTMLElement) => fireEvent.click(c.querySelector('.knopf-neu')!)
+const hinzufuegen = () => fireEvent.click(blatt()!.querySelector('.sheet-fuss .knopf-haupt')!)
+const angelegt = (dispatch: ReturnType<typeof vi.fn>) =>
+  dispatch.mock.calls.filter((c) => c[0].type === 'fsRuleAdd').map((c) => c[0].rule as Omit<FsRule, 'id'>)
 
 beforeEach(() => {
   window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
 })
 afterEach(cleanup)
 
-describe('Der Grundplan gliedert nach Versammlung und Gruppen', () => {
-  it('der Planer sieht alle Abschnitte — die Versammlung zuerst', () => {
+describe('Der Grundplan: je Wochentag eine Karte (T121, `GGrundplan`)', () => {
+  it('sagt vorweg, was er ist', () => {
     const { container } = zeige('rules')
-    expect(ueberschriften(container)).toEqual([
-      `${t.fsShort} · ${t.versammlungCard}`,
-      `${t.fsShort} · Gruppe 1`,
-      `${t.fsShort} · Gruppe 2`,
-    ])
+    expect(container.querySelector('.klein-text')?.textContent).toBe(t.fsGrundDesc)
   })
 
-  it('der Gruppenaufseher nur seinen eigenen', () => {
-    const { container } = zeige('rules', {}, 'g1')
-    expect(ueberschriften(container)).toEqual([`${t.fsShort} · Gruppe 1`])
-  })
-
-  it('jeder Abschnitt bietet an, eine Regel für sich anzulegen', () => {
-    const { container, dispatch } = zeige('rules')
-    const knoepfe = [...container.querySelectorAll('.fsr-add')]
-    expect(knoepfe).toHaveLength(3)
-    fireEvent.click(knoepfe[1]!) // Gruppe 1
-    expect(dispatch).toHaveBeenCalledWith({ type: 'fsRuleAdd', grp: 'g1' })
-  })
-
-  it('die Versammlungsregel wird mit leerem Gruppen-Schlüssel angelegt', () => {
-    const { container, dispatch } = zeige('rules')
-    fireEvent.click(container.querySelector('.fsr-add')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'fsRuleAdd', grp: null })
-  })
-
-  it('eine Regel steht nur in ihrem eigenen Abschnitt', () => {
+  it('je Wochentag eine Karte, ab Montag', () => {
     const { container } = zeige('rules', {
-      fsRules: [regel({ id: 'r1', grp: null }), regel({ id: 'r2', grp: 'g2' })],
+      fsRules: [regel({ id: 'r1', wd: 6 }), regel({ id: 'r2', wd: 1 }), regel({ id: 'r3', wd: 3 })],
     })
-    const [versammlung, gruppe1, gruppe2] = karten(container)
-    expect(versammlung!.querySelectorAll('.fsr-row')).toHaveLength(1)
-    expect(gruppe1!.querySelectorAll('.fsr-row')).toHaveLength(0)
-    expect(gruppe2!.querySelectorAll('.fsr-row')).toHaveLength(1)
+    expect(tage(container)).toEqual(['Montag', 'Mittwoch', 'Samstag'])
   })
 
-  it('ohne Predigtdienstgruppen bleibt die Karte der Versammlung allein', () => {
-    const { container } = zeige('rules', { groups: [] })
-    expect(ueberschriften(container)).toEqual([`${t.fsShort} · ${t.versammlungCard}`])
-  })
-})
-
-/**
- * **Man sieht, für welche Gruppe man gerade einstellt** (T108). Bis zum
- * 21.9.2026 stand alles in einer Karte, getrennt nur von einer kleinen grauen
- * Zeile; der „+"-Knopf eines Abschnitts stand direkt über der Überschrift des
- * nächsten, und man tippte leicht in die falsche Gruppe. Vorschlag des
- * Betreibers: eigene Bereiche, alle mit derselben Hintergrundfarbe.
- */
-describe('Jeder Abschnitt ist eine eigene Karte', () => {
-  it('eine Karte je Abschnitt, jede mit eigener Überschrift', () => {
-    const { container } = zeige('rules')
-    expect(karten(container)).toHaveLength(3)
-    for (const karte of karten(container)) {
-      expect(karte.querySelectorAll('h2.panel-label')).toHaveLength(1)
-    }
-  })
-
-  it('alle Karten tragen dieselbe Farbe — sie gehören zusammen', () => {
-    const { container } = zeige('rules')
-    expect(karten(container).map((k) => k.dataset.farbe)).toEqual(['neutral', 'neutral', 'neutral'])
-  })
-
-  it('der Knopf einer Karte legt die Regel für genau diese Karte an', () => {
-    // Die alte Falle: Der Knopf stand am Ende eines Abschnitts und damit direkt
-    // über dem nächsten. Jetzt gehört er in seine Karte — und legt für sie an.
-    const { container, dispatch } = zeige('rules')
-    const erwartet = [null, 'g1', 'g2']
-    karten(container).forEach((karte, i) => {
-      const knoepfe = karte.querySelectorAll('.fsr-add')
-      expect(knoepfe).toHaveLength(1)
-      fireEvent.click(knoepfe[0]!)
-      expect(dispatch).toHaveBeenLastCalledWith({ type: 'fsRuleAdd', grp: erwartet[i] })
+  it('je Regel eine Zeile mit Zeit, Titel und Ort — nach Uhrzeit, die Versammlung vor der Gruppe', () => {
+    const { container } = zeige('rules', {
+      fsRules: [
+        regel({ id: 'r1', grp: 'g1' }),
+        regel({ id: 'r2', grp: null }),
+        regel({ id: 'r3', grp: 'g2', time: '09:15', place: 'Nebenraum' }),
+      ],
     })
+    expect(titel(container)).toEqual(['Gruppe 2', t.fsVers, 'Gruppe 1'])
+    const erste = zeilen(container)[0]!
+    expect(erste.querySelector('.treff-zeit-pille')?.textContent).toBe('09:15')
+    expect(erste.querySelector('.treff-ort')?.textContent).toBe('Nebenraum')
   })
 
-  it('der Erklärtext steht einmal, in der ersten Karte', () => {
-    const { container } = zeige('rules')
-    const hinweise = [...container.querySelectorAll('.panel-hint')]
-    expect(hinweise).toHaveLength(1)
-    expect(hinweise[0]!.textContent).toBe(t.fsGrundDesc)
-    expect(karten(container)[0]!.contains(hinweise[0]!)).toBe(true)
+  it('wie oft, steht nur da, wo es nicht jede Woche ist', () => {
+    const { container } = zeige('rules', {
+      fsRules: [regel({ id: 'r1', monthly: 1 }), regel({ id: 'r2', wd: 1 })],
+    })
+    const [montag, samstag] = zeilen(container)
+    expect(samstag!.textContent).toContain(t.fsFreqM1)
+    expect(montag!.textContent).not.toContain(t.fsFreqW)
   })
 
-  it('der Gruppenaufseher bekommt genau eine Karte — samt Erklärtext, ohne leeren Rahmen', () => {
-    const { container } = zeige('rules', {}, 'g2')
-    expect(karten(container)).toHaveLength(1)
-    expect(container.querySelectorAll('h2')).toHaveLength(1)
-    expect(karten(container)[0]!.querySelector('.panel-hint')?.textContent).toBe(t.fsGrundDesc)
+  it('der Gruppenaufseher sieht nur die Regeln seiner Gruppe', () => {
+    const { container } = zeige(
+      'rules',
+      { fsRules: [regel({ id: 'r1', grp: null }), regel({ id: 'r2', grp: 'g1' }), regel({ id: 'r3', grp: 'g2' })] },
+      'g1',
+    )
+    expect(titel(container)).toEqual(['Gruppe 1'])
   })
 
-  it('eine Gruppe, die es nicht mehr gibt, ergibt keine leere Karte', () => {
+  it('eine Gruppe, die es nicht mehr gibt, ergibt nichts — auch kein Anlegen', () => {
     // Der Aufseher einer gerade gelöschten Gruppe — bis der Zustand nachzieht,
-    // steht hier lieber nichts als ein Rahmen ohne Inhalt.
+    // steht hier lieber nichts als ein Plan für eine Gruppe ohne Gruppe.
     const { container } = zeige('rules', {}, 'g-weg')
-    expect(karten(container)).toHaveLength(0)
     expect(container.textContent).toBe('')
   })
-
-  it('die Überschrift folgt der Sprache des Lesers', () => {
-    const en = dict('en')
-    const { container } = zeige('rules', { lang: 'en' })
-    expect(ueberschriften(container)[0]).toBe(`${en.fsShort} · ${en.versammlungCard}`)
-    expect(ueberschriften(container)[0]).not.toContain(t.fsShort)
-  })
 })
 
-describe('Eine Regel bearbeiten', () => {
-  it('Wochentag, Häufigkeit, Uhrzeit und Ort lassen sich ändern', () => {
+describe('Eine Regel ändern — es gilt gleich', () => {
+  const oeffne = (c: HTMLElement) => fireEvent.click(zeilen(c)[0]!)
+
+  it('ein Tipp öffnet sie in einem Blatt, überschrieben mit ihrem Titel', () => {
+    const { container } = zeige('rules', { fsRules: [regel({ grp: 'g2' })] })
+    oeffne(container)
+    expect(blatt()?.getAttribute('aria-label')).toBe('Gruppe 2')
+  })
+
+  it('Wochentag, Häufigkeit, Uhrzeit und Ort gelten sofort', () => {
     const { container, dispatch } = zeige('rules')
-    fireEvent.change(container.querySelector(`[aria-label="${t.a11yWeekday}"]`)!, { target: { value: '1' } })
+    oeffne(container)
+    fireEvent.change(feld(t.a11yWeekday)!, { target: { value: '1' } })
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsRuleUpdate', id: 'r1', patch: { wd: 1 } })
-    fireEvent.change(container.querySelector(`[aria-label="${t.fsFreqW}"]`)!, { target: { value: '2' } })
+    fireEvent.change(feld(t.haeufigkeitLbl)!, { target: { value: '2' } })
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsRuleUpdate', id: 'r1', patch: { monthly: 2 } })
-    fireEvent.change(container.querySelector(`[aria-label="${t.a11yTime}"]`)!, { target: { value: '10:00' } })
+    fireEvent.change(feld(t.a11yTime)!, { target: { value: '10:00' } })
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsRuleUpdate', id: 'r1', patch: { time: '10:00' } })
-    fireEvent.change(container.querySelector('.fsr-input')!, { target: { value: 'Marktplatz' } })
+    fireEvent.change(feld<HTMLInputElement>(t.ortLbl)!, { target: { value: 'Marktplatz' } })
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsRuleUpdate', id: 'r1', patch: { place: 'Marktplatz' } })
   })
 
   it('die Wochentage stehen in der Sprache des Lesers, beginnend am Montag', () => {
     const { container } = zeige('rules')
-    const optionen = [...container.querySelector(`[aria-label="${t.a11yWeekday}"]`)!.querySelectorAll('option')]
+    oeffne(container)
+    const optionen = [...feld(t.a11yWeekday)!.querySelectorAll('option')]
     expect(optionen).toHaveLength(7)
     expect(optionen[0]?.textContent).toBe('Montag')
     expect(optionen.at(-1)?.textContent).toBe('Sonntag')
@@ -213,40 +179,92 @@ describe('Eine Regel bearbeiten', () => {
 
   it('die Häufigkeit reicht von „jede Woche" bis zum vierten im Monat', () => {
     const { container } = zeige('rules')
-    const optionen = [...container.querySelector(`[aria-label="${t.fsFreqW}"]`)!.querySelectorAll('option')]
-    expect(optionen.map((o) => o.textContent)).toEqual([
+    oeffne(container)
+    expect([...feld(t.haeufigkeitLbl)!.querySelectorAll('option')].map((o) => o.textContent)).toEqual([
       t.fsFreqW, t.fsFreqM1, t.fsFreqM2, t.fsFreqM3, t.fsFreqM4,
     ])
   })
 
-  it('eine Regel lässt sich löschen — erst nach der Rückfrage', () => {
-    const { container, dispatch } = zeige('rules')
-    fireEvent.click(container.querySelector('.fs-remove')!)
-    expect(dispatch).not.toHaveBeenCalledWith({ type: 'fsRuleRemove', id: 'r1' })
-    fireEvent.click(container.querySelector('.fs-remove')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'fsRuleRemove', id: 'r1' })
-  })
-})
-
-describe('„Außer bei Versammlungstreffpunkt" gibt es nur bei Gruppen', () => {
-  it('an einer Gruppenregel steht der Schalter', () => {
-    const { container } = zeige('rules', { fsRules: [regel({ grp: 'g1' })] })
-    const schalter = container.querySelector('.fsr-skip [role="switch"]')!
-    expect(schalter.getAttribute('aria-label')).toBe(t.fsSkipCong)
-    fireEvent.click(schalter)
+  it('die Gruppe ändert man nicht — wer eine andere will, legt neu an', () => {
+    const { container } = zeige('rules')
+    oeffne(container)
+    expect(feld(t.gbGruppe)).toBeNull()
   })
 
-  it('und schaltet um', () => {
+  it('„Außer bei Versammlungstreffpunkt" steht an einer Gruppenregel — und schaltet um', () => {
     const { container, dispatch } = zeige('rules', { fsRules: [regel({ grp: 'g1', skipCong: false })] })
-    fireEvent.click(container.querySelector('.fsr-skip [role="switch"]')!)
-    expect(dispatch).toHaveBeenCalledWith({
-      type: 'fsRuleUpdate', id: 'r1', patch: { skipCong: true },
-    })
+    oeffne(container)
+    expect(schalter()?.getAttribute('aria-label')).toBe(t.fsSkipCong)
+    fireEvent.click(schalter()!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'fsRuleUpdate', id: 'r1', patch: { skipCong: true } })
   })
 
   it('an der Versammlungsregel nicht — sie wäre die Ausnahme von sich selbst', () => {
     const { container } = zeige('rules', { fsRules: [regel({ grp: null })] })
-    expect(container.querySelector('.fsr-skip')).toBeNull()
+    oeffne(container)
+    expect(schalter()).toBeNull()
+  })
+
+  it('Entfernen fragt erst nach — dann geht die Regel und mit ihr das Blatt', () => {
+    const { container, dispatch } = zeige('rules')
+    oeffne(container)
+    const knopf = blatt()!.querySelector<HTMLButtonElement>('.knopf-entfernen')!
+    fireEvent.click(knopf)
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'fsRuleRemove', id: 'r1' })
+    expect(knopf.textContent).toBe(t.loeschenSicher)
+    fireEvent.click(knopf)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'fsRuleRemove', id: 'r1' })
+    expect(blatt()).toBeNull()
+  })
+})
+
+describe('„Treffpunkt für jede Woche" — erst „Hinzufügen" legt an', () => {
+  it('mit den Vorgaben: samstags, halb zehn, jede Woche, für die Versammlung, im Saal', () => {
+    const { container, dispatch } = zeige('rules', { fsRules: [] })
+    neu(container)
+    expect(blatt()?.getAttribute('aria-label')).toBe(t.fsFuerJedeWoche)
+    expect(angelegt(dispatch)).toEqual([])
+    hinzufuegen()
+    expect(angelegt(dispatch)).toEqual([{ grp: null, wd: 6, time: '09:30', monthly: 0, place: SAAL, skipCong: false }])
+    expect(blatt()).toBeNull()
+  })
+
+  it('was man einstellt, kommt an', () => {
+    const { container, dispatch } = zeige('rules', { fsRules: [] })
+    neu(container)
+    fireEvent.change(feld(t.gbGruppe)!, { target: { value: 'g2' } })
+    fireEvent.change(feld(t.a11yWeekday)!, { target: { value: '3' } })
+    fireEvent.change(feld(t.haeufigkeitLbl)!, { target: { value: '2' } })
+    fireEvent.change(feld(t.a11yTime)!, { target: { value: '10:00' } })
+    fireEvent.change(feld<HTMLInputElement>(t.ortLbl)!, { target: { value: '  Park  ' } })
+    hinzufuegen()
+    expect(angelegt(dispatch)).toEqual([{ grp: 'g2', wd: 3, time: '10:00', monthly: 2, place: 'Park', skipCong: true }])
+  })
+
+  it('mit einer Gruppe erscheint „Außer bei Versammlungstreffpunkt" — an, wie bei jeder Gruppenregel', () => {
+    const { container } = zeige('rules', { fsRules: [] })
+    neu(container)
+    expect(schalter()).toBeNull()
+    fireEvent.change(feld(t.gbGruppe)!, { target: { value: 'g1' } })
+    expect(schalter()?.getAttribute('aria-checked')).toBe('true')
+    fireEvent.change(feld(t.gbGruppe)!, { target: { value: '' } })
+    expect(schalter()).toBeNull()
+  })
+
+  it('der Gruppenaufseher legt in seiner Gruppe an — ohne Wahl', () => {
+    const { container, dispatch } = zeige('rules', { fsRules: [] }, 'g1')
+    neu(container)
+    expect(feld(t.gbGruppe)).toBeNull()
+    hinzufuegen()
+    expect(angelegt(dispatch)[0]).toMatchObject({ grp: 'g1', skipCong: true })
+  })
+
+  it('„Abbrechen" legt nichts an', () => {
+    const { container, dispatch } = zeige('rules')
+    neu(container)
+    fireEvent.click(blatt()!.querySelector('.sheet-fuss .knopf-leise')!)
+    expect(angelegt(dispatch)).toEqual([])
+    expect(blatt()).toBeNull()
   })
 })
 

@@ -599,11 +599,15 @@ Es gibt zwei Arten:
 - **Gruppentreffpunkte** – je Predigtdienstgruppe, mit eigenem Ort und Leiter.
 
 Der regelmäßige Rhythmus kommt aus dem **Grundplan**: die regelmäßigen
-Versammlungs‑ und Gruppentreffpunkte mit Wochentag, Uhrzeit, Ort und „N‑ter im
-Monat". Jede Gruppe hat dafür eine **eigene Karte** („Treffpunkte · Gruppe 1"),
-die Versammlung ebenso („Treffpunkte · Versammlung"); alle Karten tragen
-dieselbe Farbe. „+ Treffpunkt hinzufügen" legt den Treffpunkt für die Karte an,
-in der der Knopf steht. Jede Änderung setzt die Wochenpläne neu auf.
+Versammlungs‑ und Gruppentreffpunkte mit Wochentag, Uhrzeit, Ort und
+Häufigkeit (jede Woche oder etwa „Jeden 1. im Monat"). Er steht wie die Woche
+je Wochentag in einer Karte, jeder Treffpunkt mit Uhrzeit, Titel
+(Versammlungstreffpunkt oder der Name der Gruppe) und Ort; was nicht jede Woche
+gilt, nennt seine Häufigkeit. Ein Tipp öffnet den Treffpunkt: Wochentag,
+Häufigkeit, Uhrzeit und Ort gelten sofort, bei einer Gruppe auch **Außer bei
+Versammlungstreffpunkt**; **Entfernen** fragt vorher nach. **+ Treffpunkt für
+jede Woche** legt einen neuen an — erst mit **Hinzufügen**, ohne Ort im Saal
+eurer Versammlung. Jede Änderung setzt die Wochenpläne neu auf.
 
 Unter **Treffpunkte** steht die gewählte Woche: je Tag eine Karte, darin jeder
 Treffpunkt mit Uhrzeit, Titel und Ort und darunter sein **Leiter**. Der Leiter
@@ -626,7 +630,8 @@ daneben.
 **Gruppenaufseher** können die Treffpunkte **ihrer** Gruppe selbst planen, ohne
 Admin zu sein – Uhrzeit, Ort, Leiter, zusätzliche Treffpunkte und den Grundplan
 ihrer Gruppe. Den Schalter **Planen** sehen sie nur im Predigtdienst, im
-Grundplan nur die Karte ihrer Gruppe; **Automatisch** wirkt nur auf ihre Gruppe,
+Grundplan nur die Treffpunkte ihrer Gruppe (neue legen sie dort ohne Wahl der
+Gruppe an); **Automatisch** wirkt nur auf ihre Gruppe,
 und mit **Plan senden** benachrichtigen sie die Leiter ihrer Gruppe. Ein
 **Planer** besetzt die Leiter aller Gruppen; Uhrzeit und Ort stehen bei ihm als
 Text da, und den Grundplan sieht er nicht.

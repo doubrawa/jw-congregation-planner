@@ -422,11 +422,6 @@
   cursor: default;
 }
 
-/* Einen Programmpunkt entfernen: ein Wort in der Farbe der Probleme. */
-.lac-remove {
-  color: var(--problem);
-}
-
 /* Der runde ✕-Knopf am Treffpunkt. */
 .fs-remove {
   width: 24px;
@@ -611,6 +606,28 @@
 /* Der Leiter steht unter dem Titel, nicht unter der Zeit. */
 .treff-leiter-zeile {
   padding-inline-start: calc(66px * var(--fs) + 10px);
+}
+
+/* Eine Regel des Grundplans (`GGrundplan`): Zeit, Titel und Ort, rechts der
+   Pfeil — ein Tipp öffnet sie zum Ändern. Dieselben Bereiche wie im Kopf eines
+   Treffpunkts (`.treff-planen-kopf`). */
+.regel-zeile {
+  display: grid;
+  grid-template-columns: calc(66px * var(--fs)) minmax(0, 1fr) auto;
+  grid-template-areas: 'zeit text pfeil';
+  align-items: center;
+  column-gap: 10px;
+  width: 100%;
+  min-height: 76px;
+  padding-block: 8px;
+  border-block-start: 1px solid var(--linie);
+  color: inherit;
+  text-align: start;
+}
+
+.regel-zeile .zeichen {
+  grid-area: pfeil;
+  color: var(--text3);
 }
 
 .fs-select {
@@ -1186,13 +1203,6 @@
   margin: 0;
 }
 
-.programmpunkt-fuss {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding-top: 16px;
-}
-
 /* ---- Automatisch und Plan senden (T121, Phase 5c) ------------------------------
    Ab dem Tablet zwei Knöpfe rechts neben der Woche (`GDesktopPlanen`), am Handy
    eine dunkle Leiste am unteren Rand (`GPlanen`). */
@@ -1466,18 +1476,10 @@ body:has(.planen-leiste) .toast {
   cursor: default;
 }
 
-/* ---- Grundplan Treffpunkte ------------------------------------------------
-   Seit T120 im Predigtdienst (vorher in den Einstellungen). Eine Karte je
-   Abschnitt (Versammlung, jede Gruppe), alle in derselben Farbe (T108). Die
-   Überschrift setzt sich aus zwei übersetzten Bausteinen zusammen
-   („Treffpunkte" · Gruppenname) — beide stehen im Wörterbuch bzw. in den Daten
-   nicht großgeschrieben; die Großschreibung der übrigen Kartenüberschriften
-   holt hier das CSS nach, nach den Regeln der Seitensprache (`lang` am
-   `<html>`, z. B. das türkische İ). */
-
-.fsr-label {
-  text-transform: uppercase;
-}
+/* ---- Termine des Zeugnisgebens --------------------------------------------
+   Zeilen mit Auswahl und Eingabe (`ZeugnisPlan`). Sie stammen aus dem alten
+   Grundplan der Treffpunkte; der steht seit T121 (Phase 5e) in Tageskarten
+   (`.regel-zeile`). */
 
 .fsr-row {
   padding: 10px 0;
@@ -1524,18 +1526,6 @@ body:has(.planen-leiste) .toast {
   background: var(--card);
   font-size: calc(12.5px * var(--fs));
   color: var(--ink);
-}
-
-.fsr-skip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 9px;
-}
-
-.fsr-skip-label {
-  font-size: calc(11.5px * var(--fs));
-  color: var(--mut);
 }
 
 .fsr-add {

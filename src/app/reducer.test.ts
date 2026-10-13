@@ -20,7 +20,7 @@ import {
 import { LABEL_VORTRAG } from '../data/constants'
 import { displayName, isGuestRole, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
 import { allePlaetze, platzKey } from '../data/plaetze'
-import { fsLeiterBinden, fsTaskKey, genFsWeek } from '../data/fs'
+import { fsLeiterBinden, fsTaskKey, genFsWeek, neueRegel } from '../data/fs'
 import { pidsNachtragen } from '../data/namensbindung'
 import { fill } from '../i18n/useT'
 import { deriveMyTasks, punktKey } from '../data/planning'
@@ -1155,10 +1155,10 @@ describe('Treffpunkte-Instanzen', () => {
 })
 
 describe('Treffpunkte-Grundplan (Regeln)', () => {
-  it('fsRuleAdd: Versammlungsregel ohne skipCong, Gruppenregel mit skipCong', () => {
-    const cong = reducer(makeState(), { type: 'fsRuleAdd', grp: null })
+  it('fsRuleAdd legt die Vorgabe an: Versammlungsregel ohne skipCong, Gruppenregel mit (`neueRegel`)', () => {
+    const cong = reducer(makeState(), { type: 'fsRuleAdd', rule: neueRegel(null) })
     expect(cong.fsRules.at(-1)).toMatchObject({ grp: null, wd: 6, skipCong: false })
-    const grp = reducer(makeState(), { type: 'fsRuleAdd', grp: 'g1' })
+    const grp = reducer(makeState(), { type: 'fsRuleAdd', rule: neueRegel('g1') })
     expect(grp.fsRules.at(-1)).toMatchObject({ grp: 'g1', skipCong: true })
     expect(cong.fsWeeks.length).toBe(cong.weeks.length === 0 ? 0 : cong.fsWeeks.length) // regeneriert
   })
@@ -1167,8 +1167,8 @@ describe('Treffpunkte-Grundplan (Regeln)', () => {
     // im Aufgaben-Schlüssel. `r${Date.now()}` gab zwei Regeln derselben
     // Millisekunde dieselbe — zwei Treffpunkte teilten sich dann eine
     // Bestätigung.
-    const eins = reducer(makeState(), { type: 'fsRuleAdd', grp: null })
-    const zwei = reducer(eins, { type: 'fsRuleAdd', grp: null })
+    const eins = reducer(makeState(), { type: 'fsRuleAdd', rule: neueRegel(null) })
+    const zwei = reducer(eins, { type: 'fsRuleAdd', rule: neueRegel(null) })
     const ids = zwei.fsRules.map((r) => r.id)
     expect(new Set(ids).size).toBe(ids.length)
     expect(ids.some((id) => id.includes('|'))).toBe(false) // sonst bräche der Schlüssel

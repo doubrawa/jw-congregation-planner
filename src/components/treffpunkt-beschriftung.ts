@@ -1,5 +1,6 @@
 import { fsTag } from '../data/fs'
 import type { FsInstance, Group } from '../data/types'
+import type { Dict } from '../i18n/ui'
 import type { I18n } from '../i18n/useT'
 import { datumsFormat } from './datum-anzeige'
 import { wochentagNameAusWd } from '../planen/wochentage'
@@ -32,4 +33,15 @@ export function treffpunktTitel(
   if (inst.grp == null) return i18n.t.fsVers
   const gruppe = groups.find((g) => g.id === inst.grp)
   return gruppe ? i18n.tu(gruppe.name) : inst.grp
+}
+
+/** Die Worte der Häufigkeiten einer Regel (`FsRule.monthly`): jede Woche, der n-te Wochentag im Monat. */
+const HAEUFIGKEIT_WORT = ['fsFreqW', 'fsFreqM1', 'fsFreqM2', 'fsFreqM3', 'fsFreqM4'] as const
+
+/** Die wählbaren Häufigkeiten, in dieser Reihenfolge. */
+export const HAEUFIGKEITEN: readonly number[] = HAEUFIGKEIT_WORT.map((_wort, monthly) => monthly)
+
+/** Wie oft eine Regel des Grundplans gilt, in Worten („Jede Woche", „Jeden 2. im Monat"). */
+export function treffpunktHaeufigkeit(monthly: number, t: Pick<Dict, (typeof HAEUFIGKEIT_WORT)[number]>): string {
+  return t[HAEUFIGKEIT_WORT[monthly] ?? 'fsFreqW']
 }

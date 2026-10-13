@@ -4,7 +4,7 @@ import { reducer } from './reducer'
 import type { AppState } from './context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { DEMO_FS_RULES } from '../../tests/testdaten/testdaten'
-import { buildFsWeeks } from '../data/fs'
+import { buildFsWeeks, neueRegel } from '../data/fs'
 import type { FsInstance } from '../data/types'
 
 /**
@@ -70,7 +70,7 @@ describe('Eine Grundplan-Änderung lässt die Anpassungen der übrigen Treffpunk
 
   it('auch eine neue Regel und eine entfernte lassen die Anpassung stehen', () => {
     const vorher = mitAnpassung()
-    const mitNeuer = reducer(vorher, { type: 'fsRuleAdd', grp: 'g1' })
+    const mitNeuer = reducer(vorher, { type: 'fsRuleAdd', rule: neueRegel('g1') })
     expect(treffpunkt(mitNeuer, 1, 'r5')).toMatchObject({ place: 'Bei Familie Sommer', time: '10:30' })
 
     const ohne = reducer(vorher, { type: 'fsRuleRemove', id: 'r4' })

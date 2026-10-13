@@ -77,8 +77,11 @@ export function fsTerminText(tag: Date | null, inst: { time: string; place: stri
   return [tag ? deutschesDatum(tag) : '', inst.time, inst.place].filter(Boolean).join(' · ')
 }
 
+/** Was `fsSort` vergleicht — ein Treffpunkt oder eine Regel des Grundplans. */
+type FsReihung = Pick<FsInstance, 'wd' | 'time' | 'grp'>
+
 /** Sortierung: Wochentag (Mo→So), dann Uhrzeit, dann Gruppe. */
-export function fsSort(a: FsInstance, b: FsInstance): number {
+export function fsSort(a: FsReihung, b: FsReihung): number {
   // Ohne Gruppe (Versammlungstreffpunkt) zuerst — `null` sortiert vor jedem Namen.
   return (
     versatzAbMontag(a.wd) - versatzAbMontag(b.wd) ||
@@ -326,19 +329,33 @@ export function fsInGruppe(inst: FsInstance, onlyGroup: string | null): boolean 
 /**
  * Die Treffpunkte einer Woche nach Wochentag gruppiert — in der Reihenfolge,
  * in der sie kommen (`fsSort` hat sie schon Mo→So, Zeit, Gruppe sortiert).
- * Programm und Planen bauen daraus je Tag eine Karte.
+ * Programm und Planen bauen daraus je Tag eine Karte, der Grundplan ebenso aus
+ * seinen Regeln.
  */
-export function nachWochentag(insts: readonly FsInstance[]): { wd: number; items: FsInstance[] }[] {
-  const tage: { wd: number; items: FsInstance[] }[] = []
-  for (const inst of insts) {
-    let tag = tage.find((d) => d.wd === inst.wd)
+export function nachWochentag<T extends Pick<FsInstance, 'wd'>>(items: readonly T[]): { wd: number; items: T[] }[] {
+  const tage: { wd: number; items: T[] }[] = []
+  for (const item of items) {
+    let tag = tage.find((d) => d.wd === item.wd)
     if (!tag) {
-      tag = { wd: inst.wd, items: [] }
+      tag = { wd: item.wd, items: [] }
       tage.push(tag)
     }
-    tag.items.push(inst)
+    tag.items.push(item)
   }
   return tage
+}
+
+/** Wann ein neuer Treffpunkt vorgeschlagen wird: samstags um halb zehn — für die Woche wie für den Grundplan. */
+export const NEUER_TREFFPUNKT = { wd: 6, time: '09:30' } as const
+
+/**
+ * **Eine neue Regel des Grundplans**, wie das Blatt „Treffpunkt für jede
+ * Woche" sie vorschlägt: jede Woche, zur Zeit von `NEUER_TREFFPUNKT`. Eine
+ * Gruppenregel entfällt zunächst, wenn sich am selben Tag die Versammlung
+ * trifft (`skipCong`) — das ist der Normalfall.
+ */
+export function neueRegel(grp: string | null): Omit<FsRule, 'id'> {
+  return { grp, ...NEUER_TREFFPUNKT, place: '', monthly: 0, skipCong: grp !== null }
 }
 
 /** Aktueller Leiter eines Treffpunkts ("" = offen / nicht gefunden). */

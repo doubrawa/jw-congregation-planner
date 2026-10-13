@@ -13,7 +13,7 @@ import { syncAuxSlots } from '../data/aux-class'
 import { emptyQualifications, privSetzen } from '../data/helpers'
 import { helferKey } from '../data/planning'
 import { dict } from '../i18n/ui'
-import type { FsInstance, Group, PartItem, Person, Section, Service, SlotSelection, Week } from '../data/types'
+import type { FsInstance, FsRule, Group, PartItem, Person, Section, Service, SlotSelection, Week } from '../data/types'
 import { PlanenScreen } from './PlanenScreen'
 
 /**
@@ -366,12 +366,18 @@ describe('Der Grundplan im Predigtdienst (T120)', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'setFsBereich', bereich: 'grundplan' })
   })
 
+  /** Eine Regel je Abschnitt: die Versammlung montags, Gruppe 1 samstags. */
+  const REGELN: FsRule[] = [
+    { id: 'r-v', grp: null, wd: 1, time: '14:00', place: 'Saal', monthly: 0, skipCong: false },
+    { id: 'r-g1', grp: 'g1', wd: 6, time: '09:30', place: 'Park', monthly: 0, skipCong: true },
+  ]
+  const titelDerRegeln = (c: HTMLElement) => [...c.querySelectorAll('.regel-zeile .treff-titel')].map((x) => x.textContent)
+
   it('steht ohne Woche da — er gilt für alle Wochen', () => {
-    const { container } = zeige({ tab: 'fs', fsBereich: 'grundplan' })
+    const { container } = zeige({ tab: 'fs', fsBereich: 'grundplan', fsRules: REGELN })
     expect(container.querySelector('.week-strip')).toBeNull()
     expect(container.querySelector('.wochenwahl')).toBeNull()
-    const karten = [...container.querySelectorAll('.panel-label')].map((x) => x.textContent)
-    expect(karten).toEqual([`${t.fsShort} · ${t.versammlungCard}`, `${t.fsShort} · Gruppe 1`])
+    expect(titelDerRegeln(container)).toEqual([t.fsVers, 'Gruppe 1'])
   })
 
   it('auch, solange noch keine Woche geladen ist — eine neue Versammlung richtet ihn vorher ein', () => {
@@ -381,15 +387,16 @@ describe('Der Grundplan im Predigtdienst (T120)', () => {
     cleanup()
     const { container } = zeige({ tab: 'fs', weeks: [], fsWeeks: [], fsBereich: 'grundplan' })
     expect(container.textContent).not.toContain(t.keineWochenTitel)
-    expect(container.querySelectorAll('.panel-label').length).toBeGreaterThan(0)
+    expect(container.querySelector('.knopf-neu')?.textContent).toBe(t.fsFuerJedeWoche)
   })
 
   it('der Gruppenaufseher sieht nur den seiner Gruppe', () => {
     // Bis T120 stand das unter Einstellungen; die Versammlungstreffpunkte
     // gehören nicht zu ihm.
-    const { container } = zeige({ planner: false, personId: AUFSEHER.id, tab: 'fs', fsBereich: 'grundplan' })
-    const karten = [...container.querySelectorAll('.panel-label')].map((x) => x.textContent)
-    expect(karten).toEqual([`${t.fsShort} · Gruppe 1`])
+    const { container } = zeige({
+      planner: false, personId: AUFSEHER.id, tab: 'fs', fsBereich: 'grundplan', fsRules: REGELN,
+    })
+    expect(titelDerRegeln(container)).toEqual(['Gruppe 1'])
   })
 
   it('bei den Zusammenkünften gilt der Bereich nicht — ihr Reiter zeigt die Woche', () => {

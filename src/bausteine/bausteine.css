@@ -342,6 +342,12 @@
   font-weight: 600;
 }
 
+/* Etwas entfernen (Programmpunkt, Regel des Grundplans): das Wort in der Farbe
+   der Probleme. Geschärft wird daraus die rote Pille (`.entfernen.is-armed`). */
+.knopf-entfernen {
+  color: var(--problem);
+}
+
 /* Kleiner als die Hauptknöpfe: in Zeilen und neben Überschriften. */
 .knopf-pille {
   display: inline-flex;

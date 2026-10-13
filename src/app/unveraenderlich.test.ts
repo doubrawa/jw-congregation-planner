@@ -16,6 +16,7 @@ import {
   DEMO_REMINDERS,
   DEMO_SERVICES,
 } from '../../tests/testdaten/testdaten'
+import { neueRegel } from '../data/fs'
 import { isSong } from '../data/helpers'
 import type { PartItem, Week } from '../data/types'
 
@@ -165,7 +166,7 @@ function schreibfolge(s: AppState): AppAction[] {
     // Treffpunkte
     { type: 'fsAutoAssign', onlyGroup: null },
     { type: 'fsClear', onlyGroup: null },
-    { type: 'fsRuleAdd', grp: grp.name },
+    { type: 'fsRuleAdd', rule: neueRegel(grp.name) },
     { type: 'fsRuleUpdate', id: regel.id, patch: { time: '09:15' } },
     { type: 'fsRuleRemove', id: regel.id },
     // Abwesenheiten, Mitteilungen, Erinnerungen

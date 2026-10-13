@@ -276,11 +276,11 @@ function ProgrammpunktBlatt({
           </GesperrterKnopf>
         </div>
       </div>
-      <div className="programmpunkt-fuss">
+      <div className="sheet-fuss-ende">
         {/* Zwei Tipps, wie jedes Löschen (4.10.2026): Mit dem Punkt gehen seine
             Zuteilungen und deren Zusagen. */}
         <EntfernenKnopf
-          className="knopf-umriss lac-remove"
+          className="knopf-umriss knopf-entfernen"
           text={t.a11yRemove}
           frage={t.entfernenSicher}
           onEntfernen={() => {
@@ -326,9 +326,11 @@ function NeuerPunktBlatt({ si, onClose }: { si: number; onClose: () => void }) {
           }}
         />
       </div>
-      <div className="programmpunkt-fuss">
+      <div className="sheet-fuss-ende">
+        {/* Nicht `uebernehmen`: Das heißt „eine Aufgabe übernehmen" — englisch
+            „Take over", französisch „Je m’en charge". */}
         <button type="button" className="knopf-haupt" onClick={einfuegen}>
-          {t.uebernehmen}
+          {t.hinzufuegenKnopf}
         </button>
       </div>
     </Sheet>
