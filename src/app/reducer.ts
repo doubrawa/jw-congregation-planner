@@ -52,7 +52,9 @@ import {
   deriveSubstituteReqs,
   helperKeyParts,
   itemZusagenKeys,
+  tabsImUmfang,
   wochenIndex,
+  type Umfang,
 } from '../data/planning'
 import {
   editTalkTheme,
@@ -115,6 +117,16 @@ function geaenderteSlots(
   // Die Kennung kommt aus der Woche selbst (T66) — der Index taugt dafuer nicht.
   const woche = nachher[wi]?.start ?? ''
   return a && b ? changedSlotKeys(a, b, services, woche, tab) : []
+}
+
+/** Die Zusammenkünfte, auf die „Automatisch" und „Leeren" wirken (`tabsImUmfang`). */
+function umfangTabs(state: AppState, umfang: Umfang = 'tag'): MeetingKey[] {
+  return tabsImUmfang(state.weeks[state.week], mtab(state.tab), umfang)
+}
+
+/** Die geänderten Plätze aller Zusammenkünfte des Umfangs — deren Zusagen verfallen. */
+function geaenderteSlotsIm(state: AppState, nachher: Week[], umfang: Umfang | undefined): string[] {
+  return umfangTabs(state, umfang).flatMap((tab) => geaenderteSlots(state.weeks, nachher, state.week, tab, state.services))
 }
 
 /** Toast aus einem übersetzten UI-Schlüssel (Reducer kennt state.lang). */
@@ -1068,16 +1080,18 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     }
     case 'autoAssign': {
       if (!state.weeks[state.week]) return state // keine Wochen geladen
-      const { weeks, count, unfilled } = autoAssignMeeting(
-        state.weeks,
-        state.week,
-        mtab(state.tab),
-        state.persons,
-        state.services,
-        state.groups,
-        action.scope,
-        buildAbsences(state.absences, state.weeks, state.congregation.times),
-      )
+      const abwesend = buildAbsences(state.absences, state.weeks, state.congregation.times)
+      // Nacheinander, nicht nebeneinander: Die zweite Zusammenkunft sieht, wen
+      // die erste schon eingeteilt hat — die Auslastung zählt sie mit.
+      let weeks = state.weeks
+      let count = 0
+      let unfilled = 0
+      for (const tab of umfangTabs(state, action.umfang)) {
+        const r = autoAssignMeeting(weeks, state.week, tab, state.persons, state.services, state.groups, action.scope, abwesend)
+        weeks = r.weeks
+        count += r.count
+        unfilled += r.unfilled
+      }
       if (count === 0) {
         // Offen gebliebene, aber nicht besetzbare Slots (keine passende/freie
         // Person) klar von „nichts offen“ unterscheiden.
@@ -1087,24 +1101,24 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         weeks,
-        confirmations: dropConfirmations(
-          state.confirmations,
-          geaenderteSlots(state.weeks, weeks, state.week, mtab(state.tab), state.services),
-        ),
+        confirmations: dropConfirmations(state.confirmations, geaenderteSlotsIm(state, weeks, action.umfang)),
         toast: toastKey(state, 'toastAutoN', { n: count }),
       }
     }
     case 'clearAssignments': {
       if (!state.weeks[state.week]) return state // keine Wochen geladen
-      const { weeks, count } = clearAssignments(state.weeks, state.week, mtab(state.tab), action.scope)
+      let weeks = state.weeks
+      let count = 0
+      for (const tab of umfangTabs(state, action.umfang)) {
+        const r = clearAssignments(weeks, state.week, tab, action.scope)
+        weeks = r.weeks
+        count += r.count
+      }
       if (count === 0) return { ...state, toast: toastKey(state, 'toastGeleertN', { n: 0 }) }
       return {
         ...state,
         weeks,
-        confirmations: dropConfirmations(
-          state.confirmations,
-          geaenderteSlots(state.weeks, weeks, state.week, mtab(state.tab), state.services),
-        ),
+        confirmations: dropConfirmations(state.confirmations, geaenderteSlotsIm(state, weeks, action.umfang)),
         toast: toastKey(state, 'toastGeleertN', { n: count }),
       }
     }

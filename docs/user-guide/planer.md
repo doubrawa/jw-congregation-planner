@@ -154,7 +154,7 @@ dessen Plätze die Lage der Zuteilungen zeigen, die Zahl „Besetzung: 11/14", d
 Legende und darunter, was **zu klären** ist (Abschnitt 4). Fällt die
 Zusammenkunft aus, stehen beide nicht da – es gibt nichts zu besetzen.
 
-Unter den Zuteilungs‑Knöpfen steht **S‑89 DRUCKEN**: ein Tipp auf **Drucken**
+Unter der Karte **Besetzung** steht **S‑89 DRUCKEN**: ein Tipp auf **Drucken**
 legt alle Schülerzettel der offenen Woche als DIN‑A4‑Bogen an, **sechs je
 Blatt**. Der Schalter **Gesprächspartner/in** bestimmt, ob der Zettel eines
 Gesprächs **zweimal** kommt – einer für den Schüler, einer für die Partnerin
@@ -220,12 +220,22 @@ bearbeiten** (Abschnitt 3, „Das Programm bearbeiten").
 
 ## 3. Automatisch zuteilen & leeren
 
-Oben auf der Planen‑Seite findest du je Bereich zwei Schaltflächen:
+Beim Planen der Zusammenkünfte steht am Handy unten eine Leiste mit
+**Automatisch** und **Plan senden**; am Tablet und am Computer stehen die beiden
+Knöpfe rechts neben der Woche. **Automatisch** öffnet ein Blatt:
 
-| Bereich | Aktion |
-| --- | --- |
-| **Aufgaben** | **Automatisch zuteilen** besetzt offene Programmpunkte anhand von Qualifikation, Auslastung und Abwesenheiten. **Leeren** entfernt die Zuteilungen des Bereichs. |
-| **Hilfsdienste** | Dasselbe für die Hilfsdienste (die Reinigung rotiert dabei über die Predigtdienstgruppen). |
+- **Die Bereiche:** **Aufgaben im Programm** und **Hilfsdienste**, je mit ihrer
+  Besetzung („Besetzung: 5/8"). Vorgewählt ist, wo am gezeigten Tag etwas offen
+  ist; mit den Kästchen wählst du um.
+- **Der Umfang:** **Nur Dienstag** (der Tag, den du gerade planst — bei euch
+  vielleicht ein anderer) oder **Ganze Woche**, dann beide Zusammenkünfte. Eine
+  ausgefallene Zusammenkunft zählt nicht mit.
+- **Zuteilen** besetzt die offenen Plätze der gewählten Bereiche; die Meldung
+  danach nennt, wie viele es waren.
+- **Leeren** entfernt die Zuteilungen der gewählten Bereiche im gewählten
+  Umfang. Es fragt erst nach („Wirklich leeren?"); wählst du danach etwas
+  anderes, gilt die Frage nicht mehr. Die Reinigung rotiert über die
+  Predigtdienstgruppen.
 
 Die Automatik wählt bevorzugt Personen mit der **geringsten Auslastung**, lässt
 Abwesende aus und vergibt niemanden doppelt am selben Tag. Eine Ausnahme ist der
@@ -506,11 +516,13 @@ Zumutung. Wann die Woche steht, entscheidest du.
 
 ![Plan senden](screenshots/planer-plan-senden.png)
 
-Ganz unten im Planen-Screen steht dafür **PLAN SENDEN**. Die Karte sagt dir,
-wie viele Zuteilungen dieser Woche noch niemandem mitgeteilt sind; sind es nur
-noch wenige, nennt sie auch die Namen. Ein Tipp auf **Plan senden**, und jede
-eingeteilte Person bekommt **eine** Nachricht mit allen ihren Aufgaben dieser
-Woche — in der App und, wo aktiviert, als Push.
+Dafür steht **Plan senden** in der Leiste (am Handy unten, sonst neben der
+Woche); die Zahl daran nennt, wie viele Zuteilungen dieser Woche noch niemandem
+mitgeteilt sind. Ein Tipp öffnet das Blatt: oben der Stand der Woche, darunter —
+sind es nur noch wenige — wer was noch nicht weiß, mit Tag und Aufgabe. Ein
+Tipp auf **Plan senden** im Blatt, und jede eingeteilte Person bekommt **eine**
+Nachricht mit allen ihren Aufgaben dieser Woche — in der App und, wo aktiviert,
+als Push. **Später** schließt das Blatt, ohne zu senden.
 
 Drei Dinge, auf die du dich verlassen kannst:
 
@@ -518,8 +530,8 @@ Drei Dinge, auf die du dich verlassen kannst:
   welchem Namen schon gemeldet wurde. Besserst du danach einen Platz nach und
   drückst noch einmal, bekommt nur die neue Person eine Nachricht.
 - **Wer kein App-Konto hat, bleibt danach sichtbar stehen.** Diese Namen musst
-  du persönlich ansprechen — die Karte nennt sie dir, bis du die Woche
-  wechselst.
+  du persönlich ansprechen — das Blatt nennt sie dir, auch wenn du es
+  zwischendurch schließt, bis du die Woche wechselst.
 - **Der Knopf gilt für die ganze Woche**, beide Zusammenkünfte und die
   Treffpunkte. Du musst ihn nicht in jedem Reiter drücken.
 - **Was vorbei ist, geht nicht mehr hinaus.** Am Donnerstag zählt der Knopf die

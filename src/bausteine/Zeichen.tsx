@@ -16,6 +16,8 @@ const PFADE = {
   zurueck: <path d="m14.5 6-6 6 6 6" />,
   plus: <path d="M12 5.4v13.2M5.4 12h13.2" />,
   minus: <path d="M5.4 12h13.2" />,
+  /** „Automatisch": der Zauberstab mit Funken (`werk.mjs`, dort 20 × 20). */
+  stab: <path d="M4.8 19.2 15 9M16.8 3.6v3.6M15 5.4h3.6M19.8 10.8v2.4M18.6 12h2.4M10.2 3.6v2.4M9 4.8h2.4" />,
   /** Ohne Verbindung. */
   wolke: <path d="M7.2 18.6h9.8a4 4 0 0 0 .6-7.9 5.5 5.5 0 0 0-10.7 1.2 3.5 3.5 0 0 0 .3 6.7z" />,
   haken: <path d="m6.5 12.5 3.7 3.7L17.5 8.5" />,

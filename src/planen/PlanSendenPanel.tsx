@@ -1,16 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useApp } from '../app/context'
-import { loadAndHydrate } from '../app/hydrate'
 import { useKalendertag } from '../app/useKalendertag'
 import { fsTaskKey } from '../data/fs'
 import { fromIso } from '../data/meeting-dates'
-import { type OffeneMeldung, offeneMeldungen, zuletztGesendet } from '../data/plan-versand'
+import { type OffeneMeldung, offeneMeldungen } from '../data/plan-versand'
 import { rechteVon } from '../data/rechte'
 import { ozOffeneMeldungen, ozZuletztGesendet } from '../data/zeugnis'
 import { relativeZeit } from '../i18n/zeit'
 import { fill, useT } from '../i18n/useT'
-import { type PlanVersand, sendPlan, sendZeugnisPlan } from '../lib/data'
-import type { Week } from '../data/types'
+import { sendZeugnisPlan } from '../lib/data'
+import { darfWocheSenden, useOffeneMeldungen, useSenden, useWocheSenden } from './wochen-versand'
 
 /**
  * Bis zu so vielen Namen lohnt die Aufzählung; darüber steht nur die Zahl.
@@ -20,60 +19,6 @@ import type { Week } from '../data/types'
  * Liste erst zum Schluss, wenn nur noch ein paar fehlen.
  */
 const NAMEN_GRENZE = 8
-
-/**
- * Der Aufruf, der sendet — mit der Kennung, zu der er gehört. Als Aufruf-
- * Signatur statt als Pfeiltyp: Der Pfeil vor dem Rückgabetyp sähe für
- * `beschriftungen-quelle.test.ts` aus wie ein Textknoten im JSX.
- */
-interface Versand {
-  (kennung: string): Promise<PlanVersand | null>
-}
-
-/**
- * Senden — für die Woche, die Gruppe und das öffentliche Zeugnisgeben derselbe
- * Weg: senden, das Ergebnis melden, die Namen ohne Konto festhalten.
- *
- * Namen ohne App-Konto aus dem letzten Versand bleiben stehen — **mit der
- * Kennung, zu der sie gehören** (der Woche; das Zeugnisgeben hat eine feste).
- * Sie stehen im Tagebuch wie alle anderen — sonst zeigte der Knopf für sie auf
- * ewig „noch nicht gesendet", obwohl niemand sie erreichen kann. Damit
- * verschwinden sie aber aus der Liste oben, und genau sie sind die, die der
- * Planer jetzt persönlich ansprechen muss. Also bleiben sie stehen, bis er die
- * Woche wechselt.
- *
- * Die Kennung gehört dazu, weil der Baustein beim Blättern **nicht** neu
- * aufgesetzt wird: Ohne sie standen die Namen aus Woche 37 unter Woche 38, wo
- * die Genannten gar nichts haben. Verglichen statt zurückgesetzt, weil ein
- * Effekt hier nur eine zweite Buchführung über dasselbe wäre. Ohne Kennung
- * (keine Woche geladen) gibt es nichts zu senden.
- *
- * Bis zum 5.10.2026 stand der Weg für die Woche und für das Zeugnisgeben je
- * einmal da.
- */
-function useSenden(kennung: string | null, versand: Versand) {
-  const [laeuft, setLaeuft] = useState(false)
-  const [ohneKontoStand, setOhneKonto] = useState<{ kennung: string; namen: string[] } | null>(null)
-  const versandGemeldet = useVersandGemeldet()
-  const senden = async (): Promise<void> => {
-    if (kennung === null) return
-    setLaeuft(true)
-    const res = await versand(kennung)
-    setLaeuft(false)
-    if (res) setOhneKonto({ kennung, namen: res.ohneKonto })
-    versandGemeldet(res)
-  }
-  const ohneKonto = kennung !== null && ohneKontoStand?.kennung === kennung ? ohneKontoStand.namen : []
-  return { laeuft, ohneKonto, senden }
-}
-
-/**
- * Eine Woche senden — der Wochen-Knopf wie der der Gruppe. Der Kalendertag
- * geht mit: Die Function soll denselben Tag meinen wie die Zahl am Knopf.
- */
-function useWocheSenden(week: Week | undefined, tag: string) {
-  return useSenden(week?.start ?? null, (start) => sendPlan(start, tag))
-}
 
 /**
  * „Plan senden" — der Knopf, mit dem der Planer eine fertige Woche freigibt.
@@ -97,65 +42,12 @@ function useWocheSenden(week: Week | undefined, tag: string) {
 export function PlanSendenPanel() {
   const { state } = useApp()
   const { t } = useT()
-  const week = state.weeks[state.week]
-  /*
-   * Der Kalendertag, mit dem gezählt **und** gesendet wird: Vergangenes geht
-   * nicht mehr hinaus, und die Function soll denselben Tag meinen wie die Zahl
-   * am Knopf — sonst ginge sie nach dem Drücken nicht auf null.
-   */
   const tag = useKalendertag()
+  // **Vor** den Abbrüchen unten, weil Hooks nicht bedingt laufen dürfen.
+  const { week, offen, zuletzt } = useOffeneMeldungen(tag)
   const { laeuft, ohneKonto, senden } = useWocheSenden(week, tag)
 
-  /*
-   * **Vor** den Abbrüchen unten, weil Hooks nicht bedingt laufen dürfen —
-   * daher auch der Umweg über `week ? … : …` statt eines frühen `return`.
-   *
-   * Gemerkt, weil beides teuer und der Anlass häufig ist: Der Baustein hängt am
-   * ganzen Zustand und rechnet damit bei **jedem** Dispatch neu — auch bei jedem
-   * Tastenanschlag in einem Freitextfeld nebenan. `offeneMeldungen` läuft dabei
-   * über alle gut 35 Plätze der Woche, `zuletztGesendet` über das gesamte
-   * Tagebuch, das mit jedem Versand wächst.
-   */
-  const offen = useMemo(
-    () =>
-      week
-        ? offeneMeldungen(
-            week,
-            state.fsWeeks[state.week],
-            state.services,
-            state.confirmations,
-            state.sentLog,
-            state.congregation.times,
-            fromIso(tag),
-          )
-        : [],
-    [
-      week,
-      state.fsWeeks,
-      state.week,
-      state.services,
-      state.confirmations,
-      state.sentLog,
-      state.congregation.times,
-      tag,
-    ],
-  )
-  const zuletzt = useMemo(
-    () => (week ? zuletztGesendet(state.sentLog, week.start) : null),
-    [state.sentLog, week],
-  )
-
-  // Nur, wer zuteilt — Admin oder Planer (4.10.2026): `send-plan` sendet für
-  // jeden anderen höchstens die Treffpunkte seiner Gruppe (`GruppeSendenPanel`).
-  // Ein Knopf, der die ganze Woche verspricht, wäre dort falsch.
-  //
-  // Und nur auf frischem Stand: Nach einem gescheiterten Laden zeigt die App
-  // die Momentaufnahme und lässt keine Änderungen zu (`staleAt`). Der Knopf
-  // liefe daran vorbei — er ruft die Function unmittelbar auf, nicht über den
-  // Reducer — und gäbe eine Woche frei, die der Planer so gar nicht vor sich
-  // hat.
-  if (!rechteVon(state).zuteilen || state.staleAt) return null
-  if (!week) return null
+  if (!darfWocheSenden(state) || !week) return null
 
   return (
     <PlanSendenAnzeige
@@ -212,28 +104,6 @@ export function GruppeSendenPanel({ gruppe }: { gruppe: string }) {
       onSenden={() => void senden()}
     />
   )
-}
-
-/**
- * Nach dem Druck: das Ergebnis melden und nachladen.
- *
- * Das Tagebuch steht jetzt anders da als vor dem Druck — ohne Nachladen zeigte
- * der Knopf weiter „12 noch nicht gesendet", obwohl sie draußen sind.
- */
-function useVersandGemeldet(): (res: { personen: number } | null) => void {
-  const { state, dispatch } = useApp()
-  const { t } = useT()
-  return (res) => {
-    if (!res) {
-      dispatch({ type: 'showToast', text: t.toastSpeicherFehler })
-      return
-    }
-    dispatch({
-      type: 'showToast',
-      text: res.personen === 0 ? t.toastPlanNichts : fill(t.toastPlanGesendet, { n: res.personen }),
-    })
-    if (state.userId) void loadAndHydrate(dispatch, state.userId, { silent: true })
-  }
 }
 
 /**

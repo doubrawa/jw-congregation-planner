@@ -49,6 +49,7 @@ import type {
   ConfirmationMap,
   FsInstance,
   MeetingTimes,
+  MyTask,
   SentLog,
   Service,
   Week,
@@ -60,6 +61,15 @@ export interface OffeneMeldung {
   key: string
   /** Anzeigename der eingeteilten Person. */
   name: string
+}
+
+/** Was in der Liste von „Plan senden" zu einem Platz steht — dieselben Felder wie unter „Meine Aufgaben". */
+export type MeldungsAufgabe = Pick<MyTask, 'title' | 'rolle' | 'date' | 'lesersprache'>
+
+/** Eine offene Meldung der Woche — samt Aufgabe für die Liste im Blatt „Plan senden" (T121). */
+export interface OffeneWochenMeldung extends OffeneMeldung {
+  /** Erst auf Abruf: Die Zahl am Knopf braucht sie nicht, nur die Liste. */
+  aufgabe: () => MeldungsAufgabe
 }
 
 /**
@@ -83,36 +93,41 @@ export function offeneMeldungen(
   sentLog: SentLog,
   zeiten: MeetingTimes,
   heute = new Date(),
-): OffeneMeldung[] {
-  const out: OffeneMeldung[] = []
-  const nimm = (key: string, name: string): void => {
+): OffeneWochenMeldung[] {
+  const out: OffeneWochenMeldung[] = []
+  const nimm = (key: string, name: string, aufgabe: () => MeldungsAufgabe): void => {
     // Wer bestätigt oder abgesagt hat, weiß Bescheid. Und was im Tagebuch
     // steht, ist hinaus.
     if (confirmations[key]) return
     if (sentLog[sentKey(key, name)]) return
-    out.push({ key, name })
+    out.push({ key, name, aufgabe })
   }
 
   if (week) {
     // Vorbei ist eine Zusammenkunft als Ganzes — der Schlüssel jedes Platzes
     // trägt sie an zweiter Stelle (`<Montag>|<tab>|…`).
     const vorbei = vergangeneZusammenkuenfte(week, zeiten, heute)
-    eachAssignedSlot([week], services, zeiten, (slot, key) => {
+    eachAssignedSlot([week], services, zeiten, (slot, key, task) => {
       const wo = taskKeyWeek(key)
       if (wo && vorbei.has(wo.tab)) return
-      nimm(key, slot.name)
+      nimm(key, slot.name, task)
     })
   }
 
   // Treffpunkte: zweite Datenquelle, eigener Schlüsselraum (`fs|…`), die
   // Kennung ist der Montag der Programmwoche daneben. Ein Freitext-Leiter
   // (auswärtig) gehört niemandem und bekommt nichts. Vorbei ist jeder
-  // Treffpunkt an seinem eigenen Tag.
+  // Treffpunkt an seinem eigenen Tag. Die Aufgabe steht wie unter „Meine
+  // Aufgaben" (`deriveMyFsTasks`): die Rolle, im Termin der Ort.
   const kennung = week?.start ?? ''
   for (const inst of fsWeek ?? []) {
     if (!inst.leader || inst.lext) continue
     if (fsTagVorbei(kennung, inst.wd, heute)) continue
-    nimm(fsTaskKey(kennung, inst.id), inst.leader)
+    nimm(fsTaskKey(kennung, inst.id), inst.leader, () => ({
+      title: '',
+      rolle: FS_LEITER,
+      date: fsTerminText(fsTag(kennung, inst.wd), inst),
+    }))
   }
   return out
 }

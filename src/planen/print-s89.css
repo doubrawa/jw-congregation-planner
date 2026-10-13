@@ -72,6 +72,7 @@
   :root[data-print='s89'] .screen > *:not(.s89-bogen),
   :root[data-print='s89'] .leiste,
   :root[data-print='s89'] .schmale-leiste,
+  :root[data-print='s89'] .planen-leiste,
   :root[data-print='s89'] .kopfzeile,
   :root[data-print='s89'] .planenkopf,
   :root[data-print='s89'] .sheet,

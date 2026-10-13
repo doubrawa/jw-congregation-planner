@@ -161,6 +161,29 @@ describe('Wer von seiner Zuteilung noch nichts weiß', () => {
 })
 
 /**
+ * **Die Liste im Blatt „Plan senden"** (T121, Phase 5c) nennt zu jedem Namen
+ * die Aufgabe — so, wie sie unter „Meine Aufgaben" dasteht: Titel und Rolle,
+ * dazu der Termin; beim Treffpunkt die Rolle und der Ort im Termin
+ * (`deriveMyFsTasks`).
+ */
+describe('Was die Liste zu einer offenen Meldung zeigt', () => {
+  it('ein Programmpunkt: sein Titel und der Termin der Zusammenkunft', () => {
+    const [meldung] = offeneVon(woche(zusammenkunft([punkt('Bibellesung', 'A. Berg')])))
+    const aufgabe = meldung?.aufgabe()
+    expect(aufgabe?.title).toBe('Bibellesung')
+    expect(aufgabe?.date).toContain('8. September')
+  })
+
+  it('ein Treffpunkt: die Rolle, und der Ort steht im Termin', () => {
+    const [meldung] = offeneVon(woche(zusammenkunft([])), { fs: [treffpunkt()] })
+    const aufgabe = meldung?.aufgabe()
+    expect(aufgabe?.title).toBe('')
+    expect(aufgabe?.rolle).toBe('Treffpunkt-Leiter')
+    expect(aufgabe?.date).toContain('Königreichssaal')
+  })
+})
+
+/**
  * **Was vorbei ist, geht nicht mehr hinaus** (T95).
  *
  * Am Donnerstag zählte der Knopf noch die Plätze vom Dienstag, und die Function

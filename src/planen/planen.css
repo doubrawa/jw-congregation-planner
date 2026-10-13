@@ -1167,6 +1167,216 @@
   padding-top: 16px;
 }
 
+/* ---- Automatisch und Plan senden (T121, Phase 5c) ------------------------------
+   Ab dem Tablet zwei Knöpfe rechts neben der Woche (`GDesktopPlanen`), am Handy
+   eine dunkle Leiste am unteren Rand (`GPlanen`). */
+
+.planen-aktionen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.planen-automatisch,
+.planen-senden {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: 24px;
+  font-weight: 600;
+}
+
+.planen-automatisch {
+  border: 1.5px solid var(--umriss);
+  color: var(--text);
+}
+
+.planen-senden {
+  background: var(--akzent);
+  color: var(--auf-akzent);
+  font-weight: 700;
+}
+
+/* Klebt am unteren Rand, solange der Plan darüber läuft; steht er kürzer da,
+   endet die Leiste mit ihm. */
+.planen-leiste {
+  position: sticky;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: var(--z-leiste);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 6px;
+  margin: 10px 16px 14px;
+  padding: 6px;
+  border-radius: 33px;
+  background: var(--leiste);
+}
+
+.planen-leiste > .planen-automatisch,
+.planen-leiste > .planen-senden {
+  min-height: 54px;
+  padding: 0 12px;
+  border-radius: 27px;
+}
+
+.planen-leiste > .planen-automatisch {
+  border: 0;
+  color: var(--leiste-text);
+}
+
+/* Über der Leiste, nicht auf ihr: Eine Meldung nach „Automatisch" verdeckte
+   sonst „Plan senden" für die Zeit, in der man ihn drücken will. */
+body:has(.planen-leiste) .toast {
+  bottom: calc(max(14px, env(safe-area-inset-bottom)) + 86px);
+}
+
+/* Die Zahl dessen, was noch hinaus muss — auf dem Akzent in vertauschten Farben. */
+.zahl-marke {
+  box-sizing: border-box;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: var(--auf-akzent);
+  color: var(--akzent);
+  font-size: calc(13px * var(--fs));
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+}
+
+/* Blatt „Automatisch zuteilen" (`GAutomatisch`). */
+.automatisch {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auto-bereiche {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Ein Bereich mit Kästchen; die ganze Zeile nimmt den Tipp. Gewählt mit Rand. */
+.auto-bereich {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  min-height: 64px;
+  padding: 8px 16px;
+  border: 1.5px solid transparent;
+  border-radius: 20px;
+  background: var(--feld);
+  cursor: pointer;
+}
+
+.auto-bereich:has(input:checked) {
+  border-color: var(--akzent-text);
+}
+
+.auto-bereich-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.auto-bereich-name {
+  font-weight: 600;
+}
+
+.auto-bereich > input {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--akzent-text);
+}
+
+.auto-fuss {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 16px;
+}
+
+.auto-fuss-zeile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 6px;
+}
+
+.auto-leeren {
+  min-height: 46px;
+  color: var(--problem);
+  font-weight: 600;
+}
+
+.auto-leeren:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Blatt „Plan senden" (`GSenden`). */
+.senden {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.senden-satz {
+  margin: 0;
+  color: var(--text2);
+}
+
+.senden-liste {
+  margin: 0;
+  padding: 4px 16px;
+  list-style: none;
+  border-radius: 20px;
+  background: var(--feld);
+}
+
+.senden-zeile {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 12px;
+  min-height: 60px;
+}
+
+.senden-zeile + .senden-zeile {
+  border-block-start: 1px solid var(--linie);
+}
+
+.senden-zeile-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.senden-name {
+  font-weight: 600;
+}
+
+/* Wen die App nicht erreicht — mit Rand, damit es nicht in der Liste untergeht. */
+.senden-ohne {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1.5px solid var(--sek2);
+  border-radius: 20px;
+}
+
+.senden-fuss {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding-top: 16px;
+}
+
 /* ---- „Plan senden" (T99) --------------------------------------------------
    Der letzte Schritt einer Woche: Der Planer gibt sie frei, und erst dann
    erfahren die Eingeteilten davon. Optisch ein Banner wie die darüber — es

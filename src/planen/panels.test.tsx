@@ -15,7 +15,7 @@ import { emptyQualifications } from '../data/helpers'
 import { ratgeberKey } from '../data/planning'
 import { dict } from '../i18n/ui'
 import type { FsInstance, Group, Person, Week } from '../data/types'
-import { AutoAssignPanel } from './AutoAssignPanel'
+import { AutoAssignRow } from './AutoAssignRow'
 import { AuxCounselorPanel } from './AuxCounselorPanel'
 import { FsPlan } from './FsPlan'
 
@@ -68,7 +68,21 @@ function buehne(kind: 'auto' | 'aux' | 'fs', over: Partial<AppState> = {}, onlyG
       <AppDispatchContext.Provider value={dispatch}>
         <AppStoreContext.Provider value={store}>
           <AppStateContext.Provider value={state}>
-            {kind === 'auto' && <AutoAssignPanel />}
+            {kind === 'auto' && (
+              // Zwei Zeilen, wie im Predigtdienst Treffpunkte und Schichten.
+              <div className="plan-auto">
+                <AutoAssignRow
+                  label={t.navAufgaben}
+                  automatisch={() => dispatch({ type: 'autoAssign', scope: 'parts' })}
+                  leeren={() => dispatch({ type: 'clearAssignments', scope: 'parts' })}
+                />
+                <AutoAssignRow
+                  label={t.hilfsdienste}
+                  automatisch={() => dispatch({ type: 'autoAssign', scope: 'helpers' })}
+                  leeren={() => dispatch({ type: 'clearAssignments', scope: 'helpers' })}
+                />
+              </div>
+            )}
             {kind === 'aux' && <AuxCounselorPanel meeting={state.weeks[state.week]!.mid} />}
             {kind === 'fs' && <FsPlan onlyGroup={onlyGroup} />}
           </AppStateContext.Provider>
@@ -84,27 +98,11 @@ const leerenKnoepfe = (c: HTMLElement) =>
 
 afterEach(cleanup)
 
-describe('Auto-Zuteilen: Aufgaben und Hilfsdienste sind getrennt', () => {
-  it('zwei Zeilen, jede mit ihrer Beschriftung', () => {
-    const { container } = buehne('auto')
-    expect([...container.querySelectorAll('.plan-auto-label')].map((x) => x.textContent)).toEqual([
-      t.navAufgaben, t.hilfsdienste,
-    ])
-  })
-
-  it('„Automatisch" der ersten Zeile besetzt nur die Programmpunkte', () => {
-    const { container, dispatch } = buehne('auto')
-    fireEvent.click(container.querySelectorAll('.plan-auto-btn--primary')[0]!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'autoAssign', scope: 'parts' })
-  })
-
-  it('und die der zweiten nur die Hilfsdienste', () => {
-    const { container, dispatch } = buehne('auto')
-    fireEvent.click(container.querySelectorAll('.plan-auto-btn--primary')[1]!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'autoAssign', scope: 'helpers' })
-  })
-})
-
+/*
+ * Welche Bereiche „Automatisch" bei den Zusammenkünften füllt, entscheiden seit
+ * T121 (Phase 5c) die Kästchen im Blatt — `AutomatischBlatt.test.tsx`. Hier
+ * bleibt die Zeile, die der Predigtdienst weiter nutzt.
+ */
 describe('„Leeren" braucht zwei Tipps — es macht eine Woche Arbeit zunichte', () => {
   it('der erste Tipp leert noch nichts, sondern fragt nach', () => {
     const { container, dispatch } = buehne('auto')

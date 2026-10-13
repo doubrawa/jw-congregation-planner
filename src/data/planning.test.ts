@@ -27,7 +27,9 @@ import {
   clearAssignments,
   helferKey,
   slotValue,
+  tabsImUmfang,
   weekConflicts,
+  zuteilbarePlaetze,
 } from './planning'
 import { emptyQualifications } from './helpers'
 import type { Meeting, PartItem, Person, Section, Service, Week } from './types'
@@ -1497,5 +1499,45 @@ describe('Herkunft eines auswaertigen Redners', () => {
     expect(slot?.herkunft).toBeUndefined()
     expect(rolleMitHerkunft(slot)).toBe('Gastredner')
     expect(isGuestRole(slot?.rolle)).toBe(true) // die Regel haengt an der Rolle
+  })
+})
+
+/**
+ * **Was „Automatisch" vorfindet** (T121, Phase 5c): die Plätze, die es füllt
+ * und leert, und die Zusammenkünfte, auf die es wirkt. Das Blatt zählt damit,
+ * der Reducer wirkt damit — beide müssen dieselbe Menge meinen.
+ */
+describe('zuteilbarePlaetze und tabsImUmfang', () => {
+  const DIENST: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 2, groups: false }]
+  const zusammenkunft = (): Meeting => ({
+    date: '', end: '', helpers: { mik: [{ name: 'Bruno Berg' }] },
+    sections: [{
+      label: 'SCHÄTZE AUS GOTTES WORT', farbe: 'petrol',
+      items: [
+        { iid: 'z1', title: 'Schätze', meta: '', names: [{ name: 'Anton Abel' }] },
+        { iid: 'z2', title: 'Perlen', meta: '', names: [{ name: '' }] },
+        { iid: 'z3', title: 'Vortrag', meta: '', names: [{ name: 'Gerd Gast', rolle: 'Gastredner' }] },
+      ],
+    }],
+  })
+
+  it('zählt die Programmplätze ohne Gastredner — den füllt und leert „Automatisch" nie', () => {
+    expect(zuteilbarePlaetze(zusammenkunft(), DIENST, 'parts')).toEqual({ besetzt: 1, gesamt: 2 })
+  })
+
+  it('zählt die Hilfsdienste nach der verlangten Zahl, auch die Lücken', () => {
+    expect(zuteilbarePlaetze(zusammenkunft(), DIENST, 'helpers')).toEqual({ besetzt: 1, gesamt: 2 })
+  })
+
+  it('der Tag ist die gezeigte Zusammenkunft, die Woche sind beide', () => {
+    const w = buildDemoWeeks()[0]!
+    expect(tabsImUmfang(w, 'we', 'tag')).toEqual(['we'])
+    expect(tabsImUmfang(w, 'we', 'woche')).toEqual(['mid', 'we'])
+  })
+
+  it('eine ausgefallene Zusammenkunft gehört nie dazu — auch nicht als gezeigte (T30)', () => {
+    const w: Week = { ...buildDemoWeeks()[0]!, dev: { we: { cancelled: true } } }
+    expect(tabsImUmfang(w, 'mid', 'woche')).toEqual(['mid'])
+    expect(tabsImUmfang(w, 'we', 'tag')).toEqual([])
   })
 })

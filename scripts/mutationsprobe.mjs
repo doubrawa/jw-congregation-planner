@@ -1050,10 +1050,10 @@ export const KATALOG = [
   },
   {
     id: 'plan-senden-auch-beim-planer',
-    datei: 'src/planen/PlanSendenPanel.tsx',
+    datei: 'src/planen/wochen-versand.ts',
     regel: '„Plan senden" steht bei jedem, der zuteilt — auch beim Planer.',
-    suchen: '  if (!rechteVon(state).zuteilen || state.staleAt) return null\n  if (!week) return null',
-    ersetzen: '  if (!state.planner || state.staleAt) return null\n  if (!week) return null',
+    suchen: '  return rechteVon(state).zuteilen && !state.staleAt',
+    ersetzen: '  return state.planner && !state.staleAt',
   },
   {
     id: 'rechte-planer-ist-kein-admin',
@@ -1305,7 +1305,7 @@ export const KATALOG = [
   },
   {
     id: 'leeren-zwei-tipp',
-    datei: 'src/planen/AutoAssignPanel.tsx',
+    datei: 'src/planen/AutoAssignRow.tsx',
     regel: '„Leeren" verlangt zwei Tipps — es macht eine Woche Arbeit zunichte.',
     suchen: '          onClick={bestaetigung.onClick}\n          onBlur={bestaetigung.onBlur}\n',
     ersetzen: '          onClick={leeren}\n',
@@ -1770,8 +1770,8 @@ export const KATALOG = [
     */
     regel:
       'Auch „Plan senden" nimmt den Montag aus der Woche — die Edge Function nimmt ihn aus der Datenbankzeile, und beide müssen dieselbe Woche meinen.',
-    suchen: '    nimm(fsTaskKey(kennung, inst.id), inst.leader)',
-    ersetzen: "    nimm(fsTaskKey('', inst.id), inst.leader)",
+    suchen: '    nimm(fsTaskKey(kennung, inst.id), inst.leader, () => ({',
+    ersetzen: "    nimm(fsTaskKey('', inst.id), inst.leader, () => ({",
   },
   /*
    * Hier stand `fs-kennung-migration-kette`: „Beim Umschreiben der
@@ -1927,15 +1927,15 @@ export const KATALOG = [
       mehr nur auf der Karte: Knopf, Karte und Function zählen dieselbe Menge.
     */
     regel: '„Plan senden" zählt keine Zuteilung, deren Zusammenkunft vorbei ist — am Knopf und auf der Karte.',
-    suchen: '      if (wo && vorbei.has(wo.tab)) return\n      nimm(key, slot.name)',
-    ersetzen: '      nimm(key, slot.name)',
+    suchen: '      if (wo && vorbei.has(wo.tab)) return\n      nimm(key, slot.name, task)',
+    ersetzen: '      nimm(key, slot.name, task)',
   },
   {
     id: 'plan-vorbei-treffpunkt-nicht-mehr-zaehlen',
     datei: 'src/data/plan-versand.ts',
     regel: 'Ebenso ein Treffpunkt, dessen eigener Tag vorbei ist.',
-    suchen: '    if (fsTagVorbei(kennung, inst.wd, heute)) continue\n    nimm(fsTaskKey(kennung, inst.id), inst.leader)',
-    ersetzen: '    nimm(fsTaskKey(kennung, inst.id), inst.leader)',
+    suchen: '    if (fsTagVorbei(kennung, inst.wd, heute)) continue\n    nimm(fsTaskKey(kennung, inst.id), inst.leader, () => ({',
+    ersetzen: '    nimm(fsTaskKey(kennung, inst.id), inst.leader, () => ({',
   },
   {
     id: 'plan-vorbei-function-zusammenkunft',
@@ -1972,7 +1972,7 @@ export const KATALOG = [
   },
   {
     id: 'plan-knopf-schickt-seinen-tag',
-    datei: 'src/planen/PlanSendenPanel.tsx',
+    datei: 'src/planen/wochen-versand.ts',
     regel: 'Der Knopf schickt den Tag mit, mit dem er gezählt hat.',
     suchen: '  return useSenden(week?.start ?? null, (start) => sendPlan(start, tag))',
     ersetzen: "  return useSenden(week?.start ?? null, (start) => sendPlan(start, ''))",
@@ -3744,6 +3744,119 @@ export const KATALOG = [
     regel: 'Ein eigener Punkt braucht einen Titel — leer bittet die App darum.',
     suchen: '    if (!titel.trim()) {',
     ersetzen: '    if (false) {',
+  },
+  /* ---- Automatisch und Plan senden (T121, Phase 5c) ---- */
+  {
+    id: 'auto-umfang-woche',
+    datei: 'src/data/planning.ts',
+    regel: '„Ganze Woche" wirkt auf beide Zusammenkünfte, der Tag auf die gezeigte.',
+    suchen: "  const tabs = umfang === 'tag' ? [gezeigt] : MEETING_TABS\n",
+    ersetzen: '  const tabs = [gezeigt]\n',
+  },
+  {
+    id: 'auto-umfang-ohne-ausfall',
+    datei: 'src/data/planning.ts',
+    regel: 'Eine ausgefallene Zusammenkunft gehört nie zum Umfang von „Automatisch" — ihre Zuteilungen ruhen nur.',
+    suchen: '  return tabs.filter((tab) => !istAusgefallen(week, tab))\n',
+    ersetzen: '  return tabs\n',
+  },
+  {
+    id: 'auto-zaehlt-ohne-gastredner',
+    datei: 'src/data/planning.ts',
+    regel: 'Das Blatt zählt den Gastredner nicht mit — „Automatisch" füllt und leert ihn nie.',
+    suchen: "    if (platz.art !== 'helper' && isGuestRole(platz.slot.rolle)) continue\n",
+    ersetzen: '',
+  },
+  {
+    id: 'leeren-alles-beide-bereiche',
+    datei: 'src/data/planning.ts',
+    regel: '„Leeren" mit beiden Bereichen leert auch die Hilfsdienste.',
+    suchen: "  if (scope !== 'parts') {\n    // Über alles Gespeicherte",
+    ersetzen: "  if (scope === 'helpers') {\n    // Über alles Gespeicherte",
+  },
+  {
+    id: 'auto-woche-zusagen-beider',
+    datei: 'src/app/reducer.ts',
+    regel: 'Wer beim Leeren der ganzen Woche seinen Platz verliert, verliert seine Zusage — auch am Wochenende.',
+    suchen: '  return umfangTabs(state, umfang).flatMap(',
+    ersetzen: '  return [mtab(state.tab)].flatMap(',
+  },
+  {
+    id: 'blatt-auto-vorwahl',
+    datei: 'src/planen/AutomatischBlatt.tsx',
+    regel: 'Vorgewählt sind nur die Bereiche, in denen am Tag etwas offen ist.',
+    suchen: '    return new Set(BEREICHE.filter((b) => amTag[b].besetzt < amTag[b].gesamt))',
+    ersetzen: '    return new Set(BEREICHE)',
+  },
+  {
+    id: 'blatt-auto-beide-heisst-alles',
+    datei: 'src/planen/AutomatischBlatt.tsx',
+    regel: 'Beide Bereiche gewählt heißt „alles" für Auto-Zuteilung und Leeren.',
+    suchen: "  if (gewaehlt.size === BEREICHE.length) return 'all'\n",
+    ersetzen: '',
+  },
+  {
+    id: 'blatt-auto-schickt-umfang',
+    datei: 'src/planen/AutomatischBlatt.tsx',
+    regel: '„Zuteilen" schickt den gewählten Umfang mit.',
+    suchen: "            dispatch({ type: 'autoAssign', scope, umfang })",
+    ersetzen: "            dispatch({ type: 'autoAssign', scope, umfang: 'tag' })",
+  },
+  {
+    id: 'blatt-auto-wahl-entschaerft',
+    datei: 'src/planen/AutomatischBlatt.tsx',
+    regel: 'Jede andere Wahl nimmt ein „Wirklich leeren?" zurück — es galt der alten.',
+    suchen: '  const umschalten = (b: Bereich): void => {\n    leeren.entschaerfen()\n',
+    ersetzen: '  const umschalten = (b: Bereich): void => {\n',
+  },
+  {
+    id: 'blatt-senden-liste-grenze',
+    datei: 'src/planen/PlanSendenBlatt.tsx',
+    regel: 'Bei vielen offenen Zuteilungen steht keine Namensliste, nur der Satz.',
+    suchen: '  const liste = n !== 0 && n <= LISTEN_GRENZE\n',
+    ersetzen: '  const liste = n !== 0\n',
+  },
+  {
+    id: 'blatt-senden-gesperrt-ohne-offene',
+    datei: 'src/planen/PlanSendenBlatt.tsx',
+    regel: 'Ist nichts mehr offen, lässt sich „Plan senden" nicht drücken.',
+    suchen: '        <GesperrterKnopf className="knopf-haupt" gesperrt={laeuft || n === 0}',
+    ersetzen: '        <GesperrterKnopf className="knopf-haupt" gesperrt={laeuft}',
+  },
+  {
+    id: 's89-druck-ohne-aktionsleiste',
+    datei: 'src/planen/print-s89.css',
+    regel: 'Im S-89-Druck steht die Aktionsleiste des Planens nicht unter den Zetteln.',
+    suchen: "  :root[data-print='s89'] .planen-leiste,\n",
+    ersetzen: '',
+  },
+  {
+    id: 'blatt-senden-ohne-konto',
+    datei: 'src/planen/PlanSendenBlatt.tsx',
+    regel: 'Wen „Plan senden" nicht erreicht hat (kein Konto), steht im Blatt — den spricht der Planer selbst an.',
+    suchen: '        {ohneKonto.length > 0 && (',
+    ersetzen: '        {false && (',
+  },
+  {
+    id: 'plan-senden-nicht-auf-altem-stand',
+    datei: 'src/planen/wochen-versand.ts',
+    regel: 'Auf der Momentaufnahme gibt es kein „Plan senden" — es ginge an ihr vorbei hinaus.',
+    suchen: '  return rechteVon(state).zuteilen && !state.staleAt',
+    ersetzen: '  return rechteVon(state).zuteilen',
+  },
+  {
+    id: 'leiste-nicht-beim-einrichten',
+    datei: 'src/planen/PlanenScreen.tsx',
+    regel: 'Die Aktionsleiste gehört zum Plan, nicht zu „Woche einrichten".',
+    suchen: "    state.tab !== 'edit' &&\n",
+    ersetzen: '',
+  },
+  {
+    id: 'senden-liste-treffpunkt-rolle',
+    datei: 'src/data/plan-versand.ts',
+    regel: 'In der Liste von „Plan senden" steht ein Treffpunkt als Treffpunkt-Leiter.',
+    suchen: '      rolle: FS_LEITER,\n',
+    ersetzen: "      rolle: '',\n",
   },
   /* ---- Nachentschieden am 13.10.2026 (T121) ---- */
   {

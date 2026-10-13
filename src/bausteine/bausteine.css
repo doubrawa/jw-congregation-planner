@@ -273,6 +273,14 @@
   font-weight: 700;
 }
 
+/* Gesperrt, per `disabled` oder — wo er den Fokus behalten muss — per
+   `aria-disabled` (`GesperrterKnopf`). */
+.knopf-haupt:disabled,
+.knopf-haupt[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .knopf-umriss {
   padding-inline: 16px;
   border: 1.5px solid var(--umriss);

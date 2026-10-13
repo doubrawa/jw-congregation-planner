@@ -211,6 +211,7 @@
 :root {
   --z-menue: 10; /* Auswahl am Druckknopf — unter der klebenden Kopfzeile */
   --z-nav: 20; /* Kopfzeile mobil */
+  --z-leiste: 20; /* Aktionsleiste beim Planen, mobil — unten, wie die Kopfzeile oben */
   --z-panel: 30; /* Mitteilungen */
   --z-sheet: 34; /* Zuteilungs-Sheet, Seitenmenü */
   --z-sheet-top: 38; /* S-89 — öffnet aus dem Sheet heraus */

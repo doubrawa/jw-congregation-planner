@@ -399,6 +399,24 @@ export interface AutoAssignResult {
 export type AssignScope = 'all' | 'parts' | 'helpers'
 
 /**
+ * Worauf „Automatisch" und „Leeren" wirken (T121, Entwurf `GAutomatisch`):
+ * auf die gezeigte Zusammenkunft (`tag`) oder auf beide der Woche (`woche`).
+ */
+export type Umfang = 'tag' | 'woche'
+
+/**
+ * **Die Zusammenkünfte eines Umfangs** — die gezeigte oder beide der Woche,
+ * ausgefallene nie: Ihre Zuteilungen ruhen nur (`eachAssignedSlot`), zu
+ * besetzen gibt es dort nichts (`autoAssignMeeting`), und wer leert, meint die
+ * Abende, die stattfinden. Das Blatt zählt und der Reducer wirkt über dieselbe
+ * Liste — sonst versprächen die Zahlen etwas, das der Knopf nicht tut.
+ */
+export function tabsImUmfang(week: Week | undefined, gezeigt: MeetingKey, umfang: Umfang): MeetingKey[] {
+  const tabs = umfang === 'tag' ? [gezeigt] : MEETING_TABS
+  return tabs.filter((tab) => !istAusgefallen(week, tab))
+}
+
+/**
  * **Wer kommt in Frage, und wie ausgelastet ist er?**
  *
  * Die eine Hälfte der Auto-Zuteilung. Sie kennt die Kandidaten, führt die
@@ -818,12 +836,35 @@ export function autoAssignMeeting(
 }
 
 /**
+ * **Was „Automatisch" vorfindet** (T121, Entwurf `GAutomatisch`): die besetzten
+ * und alle Plätze eines Bereichs, gezählt, wie die Auto-Zuteilung sie sieht —
+ * ohne die Plätze externer Redner (Gastredner, Kreisaufseher), die sie nicht
+ * besetzt und das Leeren stehen lässt.
+ */
+export function zuteilbarePlaetze(
+  meeting: Meeting,
+  services: readonly Service[],
+  bereich: Exclude<AssignScope, 'all'>,
+): { besetzt: number; gesamt: number } {
+  let besetzt = 0
+  let gesamt = 0
+  for (const platz of allePlaetze(meeting, services)) {
+    if ((platz.art === 'helper') !== (bereich === 'helpers')) continue
+    if (platz.art !== 'helper' && isGuestRole(platz.slot.rolle)) continue
+    gesamt++
+    if (platz.slot?.name) besetzt++
+  }
+  return { besetzt, gesamt }
+}
+
+/**
  * Leert die Zuteilungen einer Woche+Meeting — das Gegenstück zur Auto-Zuteilung.
  * `scope`:
  *  - 'parts'   entfernt die Namen der Programmpunkte. Externe Redner
  *    (Gastredner/Kreisaufseher) bleiben stehen, genau wie die Auto-Zuteilung sie
  *    nicht besetzt — sie kommen von außen und werden manuell eingetragen.
  *  - 'helpers' entfernt die Namen aller Hilfsdienste (inkl. Reinigungsgruppe).
+ *  - 'all'     beides (T121: im Blatt „Automatisch" sind beide Bereiche wählbar).
  * Programmstruktur, Rollen, Vortragsthemen und Lieder bleiben unverändert.
  * Pur — die Eingabe bleibt unangetastet. `count` = Anzahl geleerter Slots.
  */
@@ -831,14 +872,14 @@ export function clearAssignments(
   weeks: Week[],
   weekIndex: number,
   tab: MeetingKey,
-  scope: Exclude<AssignScope, 'all'>,
+  scope: AssignScope,
 ): { weeks: Week[]; count: number } {
   const next = klonWoche(weeks, weekIndex)
   if (!next) return { weeks, count: 0 }
   const meeting = next[weekIndex]?.[tab]
   if (!meeting) return { weeks, count: 0 }
   let count = 0
-  if (scope === 'parts') {
+  if (scope !== 'helpers') {
     // Programm (beide Räume) und Ratgeber: „Leeren" meint die Aufgaben dieser
     // Ansicht, und die Zusätzliche Klasse gehört dazu. Ohne `services`, denn
     // die Hilfsdienste sind der andere Umfang.
@@ -859,7 +900,8 @@ export function clearAssignments(
       if (rolleBasis(slot.rolle) === ROLE_OWN_SPEAKER) slot.rolle = ROLE_GUEST_SPEAKER
       count++
     }
-  } else {
+  }
+  if (scope !== 'parts') {
     // Über alles Gespeicherte — auch hinter einer verkleinerten Platzzahl und
     // zu Diensten, die es nicht mehr gibt: „leeren" heißt leeren.
     for (const { slot } of gespeicherteHelfer(meeting)) {

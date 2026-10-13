@@ -447,6 +447,16 @@ export const DE = {
     programmHinweis: 'Unter „{abschnitt}“ änderst du Titel und Minuten, ordnest um und fügst eigene Punkte ein. Alles andere kommt aus dem Arbeitsheft und bleibt, wie es ist.',
     programmpunktEinfuegen: 'Programmpunkt einfügen',
     programmpunktTitel: 'Titel',
+    // Automatisch und Plan senden (T121, Entwürfe `GAutomatisch`, `GSenden`).
+    // „Nur {tag}": der Wochentag der gezeigten Zusammenkunft, aus `Intl`.
+    autoKnopf: 'Automatisch',
+    autoTitel: 'Automatisch zuteilen',
+    autoHinweis: 'Füllt nur offene Plätze. Abwesenheiten, Aufgabenbereiche und Auslastung werden beachtet.',
+    autoAufgaben: 'Aufgaben im Programm',
+    autoUmfang: 'Umfang',
+    autoNurTag: 'Nur {tag}',
+    ganzeWoche: 'Ganze Woche',
+    planSendenAndere: 'Alle anderen wissen schon Bescheid.',
     // „Plan senden": der Planer gibt die fertige Woche frei, und erst dann
     // erfahren die Eingeteilten davon. Der Knopf spricht von der ganzen Woche,
     // nicht vom Reiter darüber — sonst hielte man ihn für dessen Aktion.

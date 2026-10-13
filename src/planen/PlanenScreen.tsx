@@ -1,8 +1,9 @@
-import { useApp, type AppAction } from '../app/context'
+import { useApp, type AppAction, type AppState } from '../app/context'
 import { Zeichen } from '../bausteine/Zeichen'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { Bereichstitel } from '../components/Bereichstitel'
 import { useBackDismiss } from '../components/useBackDismiss'
+import { TABLET_BREITE, useMedia } from '../components/useMedia'
 import { WeekStrip } from '../components/WeekStrip'
 import { AusfallBanner, MemorialBanner } from '../components/WeekBadges'
 import { WochenWahl } from '../components/WochenWahl'
@@ -12,7 +13,7 @@ import { geplantesThema, rechteVon } from '../data/rechte'
 import { useProgWeek, useT } from '../i18n/useT'
 import { FsConflictsBanner } from './PlanBanners'
 import { GruppeSendenPanel, PlanSendenPanel } from './PlanSendenPanel'
-import { AutoAssignPanel } from './AutoAssignPanel'
+import { PlanenAktionen } from './PlanenAktionen'
 import { S89Bogen } from './S89Bogen'
 import { FsBereichTabs } from './FsBereichTabs'
 import { aktiverFsBereich } from './fs-bereiche'
@@ -45,6 +46,7 @@ import './planen.css'
 export function PlanenScreen() {
   const { state, dispatch } = useApp()
   const rechte = rechteVon(state)
+  const breit = useMedia(TABLET_BREITE)
   // Nur die eigene Gruppe sieht, wer Gruppenaufseher ist und nicht zuteilt:
   // Admin und Planer besetzen die Treffpunkte aller Gruppen.
   const fsOverseer = !rechte.zuteilen && rechte.gruppe !== null
@@ -89,11 +91,31 @@ export function PlanenScreen() {
   }
 
   // Der Streifen zeichnet dieselben Inhalte dreimal — vorige, aktuelle und
-  // nächste Woche — und übernimmt das Wischen.
+  // nächste Woche — und übernimmt das Wischen. Die Aktionsleiste des Handys
+  // steht außerhalb: Er verschiebt seinen Inhalt per `transform`, und eine
+  // Leiste darin klebte nicht am Rand, sondern an der Woche.
   return (
-    <WeekStrip>
-      <PlanenBody />
-    </WeekStrip>
+    <>
+      <WeekStrip>
+        <PlanenBody />
+      </WeekStrip>
+      {!breit && mitAktionen(state) && <PlanenAktionen leiste />}
+    </>
+  )
+}
+
+/**
+ * **Gehört zum Plan die Aktionsleiste?** Zum Plan der Zusammenkünfte, wer
+ * zuteilt, sobald es eine Woche gibt — nicht zu „Woche einrichten" und nicht
+ * zum Predigtdienst, der seine eigenen Knöpfe hat.
+ */
+function mitAktionen(state: AppState): boolean {
+  const rechte = rechteVon(state)
+  return (
+    rechte.zuteilen &&
+    state.tab !== 'edit' &&
+    geplantesThema(rechte, state.tab) === 'zusammenkuenfte' &&
+    state.weeks[state.week] !== undefined
   )
 }
 
@@ -104,6 +126,7 @@ const zumPlanDerWoche: AppAction = { type: 'setTab', tab: 'mid' }
 function PlanenBody() {
   const { state, dispatch } = useApp()
   const { t } = useT()
+  const breit = useMedia(TABLET_BREITE)
   // Anzeige in der Programmsprache des Nutzers (Sprachvariante, falls geholt);
   // die Logik (LAC-Erkennung, Minuten, Slots) läuft auf der kanonischen Woche.
   const rawWeek = state.weeks[state.week]
@@ -157,7 +180,14 @@ function PlanenBody() {
           hat keine. */}
       {isFs && <FsBereichTabs />}
 
-      <WochenWahl week={week} rawWeek={rawWeek} tpw={tpw} />
+      {/* Ab dem Tablet stehen „Automatisch" und „Plan senden" rechts neben der
+          Woche (`GDesktopPlanen`); am Handy unten in der Leiste. */}
+      <WochenWahl
+        week={week}
+        rawWeek={rawWeek}
+        tpw={tpw}
+        rechts={breit && mitAktionen(state) ? <PlanenAktionen /> : undefined}
+      />
 
       {!isFs && !isEdit && (
         <MeetingTabs
@@ -191,8 +221,6 @@ function PlanenBody() {
           <PlanSpur tab={tab} />
           <BesetzungKarte tab={tab} tpw={tpw} />
 
-          <AutoAssignPanel />
-
           {/* Schulungsaufgaben gibt es nur unter der Woche — der Bogen steht
               deshalb nur dort und zeigt sich gar nicht, wenn keine da sind. */}
           {tab === 'mid' && <S89Bogen />}
@@ -223,11 +251,6 @@ function PlanenBody() {
               Wochen auf einmal und kommt selten — deshalb unten, nur am
               Wochenende, wo der Vortrag steht. */}
           {tab === 'we' && <VortragsplanPanel />}
-
-          {/* Ganz unten, weil es der letzte Schritt ist: erst steht der Plan,
-              dann geht er hinaus. Er gilt für die ganze Woche, nicht für den
-              Reiter darüber. */}
-          <PlanSendenPanel />
         </>
       )}
     </section>

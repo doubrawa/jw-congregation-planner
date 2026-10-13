@@ -177,10 +177,16 @@ describe('Was nichts schreibt, darf offline laufen', () => {
  *
  * Die Regel ist einfach und daher messbar: Wer einen dieser Aufrufe im
  * Quelltext trägt, muss `staleAt` lesen. `persist.ts` ist nicht darunter —
- * dort steht die Prüfung am Anfang der Datei und gilt für alles.
+ * dort steht die Prüfung am Anfang der Datei und gilt für alles —, ebenso
+ * wenig `lib/`, wo die Aufrufe definiert sind.
+ *
+ * **Auch Hooks** (`.ts`), nicht nur Bausteine: Seit T121 (Phase 5c) ruft
+ * `wochen-versand.ts` „Plan senden", und `useWochenImport.ts` holte schon
+ * vorher die nächste Woche — beide lagen außerhalb, solange hier nur `.tsx`
+ * gelesen wurde.
  */
 describe('Direkte Function-Aufrufe prüfen den Offline-Stand', () => {
-  const BAUSTEINE = import.meta.glob('../**/*.tsx', {
+  const QUELLEN = import.meta.glob('../**/*.{ts,tsx}', {
     query: '?raw',
     import: 'default',
     eager: true,
@@ -198,7 +204,9 @@ describe('Direkte Function-Aufrufe prüfen den Offline-Stand', () => {
   ]
 
   const bausteine = (): Array<[string, string]> =>
-    Object.entries(BAUSTEINE).filter(([pfad]) => !pfad.includes('.test.'))
+    Object.entries(QUELLEN).filter(
+      ([pfad]) => !pfad.includes('.test.') && !pfad.startsWith('../lib/') && pfad !== '../app/persist.ts',
+    )
 
   const ruftDirekt = (text: string): boolean => DIREKT.some((name) => text.includes(name))
 

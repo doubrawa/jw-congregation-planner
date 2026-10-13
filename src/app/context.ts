@@ -16,6 +16,7 @@ import {
 import type { FontScale } from '../data/constants'
 import type { Wochenende } from '../data/gruppenbesuche'
 import type { OffenerPlatz } from '../data/offene-plaetze'
+import type { AssignScope, Umfang } from '../data/planning'
 import type { VorgemerkterVortrag, Vortragsplan } from '../data/vortragsplan'
 import type { Abschnitt } from './deeplink'
 import type {
@@ -450,8 +451,10 @@ export type AppAction =
   | { type: 'mergeWeekAlt'; wi: number; alt: Record<string, WeekVariant> } // nachgeladene Sprachvarianten
   | { type: 'stopImport' } // Import abgebrochen/fehlgeschlagen
   | { type: 'assign'; name: string; pid?: string; rolle?: string; herkunft?: string; extern?: boolean } // auf state.slotSel; "" = entfernen; pid = Person-Id (fehlt bei Gastredner); rolle nur Gastredner-Slots; extern = Freitext-Leiter eines Treffpunkts (Kreisaufseher)
-  | { type: 'autoAssign'; scope?: 'parts' | 'helpers' | 'all' } // aktuelle Woche + Tab; Bereich (Default: alles)
-  | { type: 'clearAssignments'; scope: 'parts' | 'helpers' } // aktuelle Woche + Tab: Zuteilungen des Bereichs leeren
+  // Aktuelle Woche; Bereich (Default: alles) und Umfang: die gezeigte
+  // Zusammenkunft oder beide (T121, „Ganze Woche").
+  | { type: 'autoAssign'; scope?: AssignScope; umfang?: Umfang }
+  | { type: 'clearAssignments'; scope: AssignScope; umfang?: Umfang }
   // Treffpunkte (Wochen-Bearbeitung im Planen-Tab)
   | { type: 'fsAutoAssign'; onlyGroup: string | null } // Treffpunkt-Leiter der aktuellen Woche automatisch besetzen
   | { type: 'fsClear'; onlyGroup: string | null } // Treffpunkt-Leiter der aktuellen Woche leeren

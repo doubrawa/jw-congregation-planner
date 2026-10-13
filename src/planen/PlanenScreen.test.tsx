@@ -156,6 +156,68 @@ describe('Der Stand der Woche (T121)', () => {
   })
 })
 
+describe('Die Aktionsleiste (T121, Phase 5c)', () => {
+  /** Paula steht am ersten Punkt — gesendet ist noch nichts. */
+  const mitZuteilung = (): Week => {
+    const w = woche()
+    const punkt = w.mid.sections[0]?.items[0]
+    if (!punkt || 'song' in punkt) throw new Error('Testaufbau: Punkt fehlt')
+    punkt.names = [{ name: 'Paula Planer', pid: PLANER.id }]
+    return w
+  }
+  const breit = (an: boolean) => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: an }) as unknown as typeof window.matchMedia
+  }
+
+  beforeEach(() => {
+    // Die Uhr vor der Woche: Was vorbei ist, geht nicht mehr hinaus (T77).
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9))
+    breit(false)
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    delete (window as { matchMedia?: unknown }).matchMedia
+  })
+
+  it('am Handy unten, außerhalb des Wochenstreifens — mit der Zahl dessen, was noch hinaus muss', () => {
+    const { container } = zeige({ weeks: [mitZuteilung()] })
+    const leiste = container.querySelector('.planen-leiste')!
+    // Im Streifen klebte sie an der Woche, die beim Wischen wandert.
+    expect(leiste.closest('.week-strip')).toBeNull()
+    expect(leiste.querySelector('.planen-automatisch')?.textContent).toBe(t.autoKnopf)
+    expect(leiste.querySelector('.planen-senden .zahl-marke')?.textContent).toBe('1')
+  })
+
+  it('ab dem Tablet rechts neben der Woche, und unten keine Leiste', () => {
+    breit(true)
+    const { container } = zeige({ weeks: [mitZuteilung()] })
+    expect(seite(container).querySelector('.wochenwahl .planen-aktionen .planen-senden')).not.toBeNull()
+    expect(container.querySelector('.planen-leiste')).toBeNull()
+  })
+
+  it('nicht in „Woche einrichten" und nicht im Predigtdienst — die haben ihre eigenen Knöpfe', () => {
+    expect(zeige({ tab: 'edit' }).container.querySelector('.planen-aktionen')).toBeNull()
+    cleanup()
+    expect(zeige({ tab: 'fs' }).container.querySelector('.planen-aktionen')).toBeNull()
+  })
+
+  it('auf altem Stand kein „Plan senden" — er ginge an der Momentaufnahme vorbei hinaus', () => {
+    const { container } = zeige({ weeks: [mitZuteilung()], staleAt: 1 })
+    expect(container.querySelector('.planen-automatisch')).not.toBeNull()
+    expect(container.querySelector('.planen-senden')).toBeNull()
+  })
+
+  it('„Automatisch" und „Plan senden" öffnen ihr Blatt', () => {
+    const { container } = zeige({ weeks: [mitZuteilung()] })
+    fireEvent.click(container.querySelector('.planen-automatisch')!)
+    expect(document.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe(t.autoTitel)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    fireEvent.click(container.querySelector('.planen-senden')!)
+    expect(document.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe(t.planSenden)
+  })
+})
+
 describe('Die Reiter', () => {
   it('die Zusammenkünfte haben drei: beide Zusammenkünfte und „Woche einrichten"', () => {
     // Die Treffpunkte waren bis T120 ein vierter Reiter; sie sind jetzt das
@@ -518,10 +580,9 @@ describe('Der Planer teilt zu, ändert den Plan aber nicht (4.10.2026)', () => {
     expect(seite(am.container).querySelector('.talk-title-input')).not.toBeNull()
   })
 
-  it('„Plan senden" steht auch bei ihm', () => {
+  it('„Plan senden" steht auch bei ihm — in der Aktionsleiste (T121)', () => {
     const { container } = zeige({ ...ALS_PLANER, weeks: [mitLac()] })
-    expect(seite(container).querySelector('.plan-senden')).not.toBeNull()
-    expect(seite(container).textContent).toContain(t.planSenden)
+    expect(container.querySelector('.planen-leiste .planen-senden')?.textContent).toContain(t.planSenden)
   })
 
   it('im Predigtdienst kein Grundplan — es gibt dort nichts zuzuteilen', () => {

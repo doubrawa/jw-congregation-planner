@@ -23,7 +23,7 @@ import {
 } from '../data/zeugnis'
 import { fill, useT } from '../i18n/useT'
 import type { OzEintrag, OzTermin, Person } from '../data/types'
-import { AutoAssignRow } from './AutoAssignPanel'
+import { AutoAssignRow } from './AutoAssignRow'
 import { BannerKopf } from './PlanBanners'
 import { ZeugnisSendenPanel } from './PlanSendenPanel'
 import { ZUSAGE_LABEL } from './useZusage'

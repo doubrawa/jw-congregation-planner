@@ -18,7 +18,8 @@ import {
   DEMO_SERVICES,
 } from '../../tests/testdaten/testdaten'
 import { LABEL_VORTRAG } from '../data/constants'
-import { displayName, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
+import { displayName, isGuestRole, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
+import { allePlaetze, platzKey } from '../data/plaetze'
 import { fsLeiterBinden, fsTaskKey, genFsWeek } from '../data/fs'
 import { pidsNachtragen } from '../data/namensbindung'
 import { fill } from '../i18n/useT'
@@ -1061,6 +1062,56 @@ describe('autoAssign / clearAssignments', () => {
   it('clearAssignments ohne geladene Woche ist ein No-op', () => {
     const s = makeState({ week: 99 })
     expect(reducer(s, { type: 'clearAssignments', scope: 'parts' })).toBe(s)
+  })
+
+  /*
+   * „Ganze Woche" (T121, Phase 5c, Entscheid vom 13.10.2026): beide
+   * Zusammenkünfte auf einmal — ausgefallene ausgenommen.
+   */
+  /** Wie viele Plätze einer Zusammenkunft jemand trägt. */
+  const besetzteIn = (s: AppState, tab: 'mid' | 'we'): number =>
+    [...allePlaetze(s.weeks[0]![tab], s.services)].filter((p) => p.slot?.name).length
+
+  it('„Ganze Woche" leert beide Zusammenkünfte, der Tag nur den gezeigten', () => {
+    const s = makeState({ week: 0, tab: 'mid' })
+    expect(besetzteIn(s, 'we')).toBeGreaterThan(0)
+    const tag = reducer(s, { type: 'clearAssignments', scope: 'all', umfang: 'tag' })
+    expect(besetzteIn(tag, 'mid')).toBeLessThan(besetzteIn(s, 'mid'))
+    // „Alles" heißt beide Bereiche: Auch kein Hilfsdienst ist mehr besetzt.
+    const helfer = (z: AppState) => [...allePlaetze(z.weeks[0]!.mid, z.services)].filter((p) => p.art === 'helper' && p.slot?.name)
+    expect(helfer(s).length).toBeGreaterThan(0)
+    expect(helfer(tag)).toEqual([])
+    expect(besetzteIn(tag, 'we')).toBe(besetzteIn(s, 'we'))
+    const woche = reducer(s, { type: 'clearAssignments', scope: 'all', umfang: 'woche' })
+    expect(besetzteIn(woche, 'we')).toBeLessThan(besetzteIn(s, 'we'))
+  })
+
+  it('eine ausgefallene Zusammenkunft bleibt, wie sie ist — ihre Zuteilungen ruhen nur (T30)', () => {
+    const weeks = buildDemoWeeks()
+    weeks[0]!.dev = { we: { cancelled: true } }
+    const s = makeState({ weeks, week: 0, tab: 'mid' })
+    const woche = reducer(s, { type: 'clearAssignments', scope: 'all', umfang: 'woche' })
+    expect(besetzteIn(woche, 'we')).toBe(besetzteIn(s, 'we'))
+  })
+
+  it('„Ganze Woche" teilt beide Zusammenkünfte zu — mit einer Meldung über alle', () => {
+    const geleert = reducer(makeState({ week: 0, tab: 'mid' }), { type: 'clearAssignments', scope: 'all', umfang: 'woche' })
+    const voll = reducer({ ...geleert, toast: null }, { type: 'autoAssign', scope: 'all', umfang: 'woche' })
+    expect(besetzteIn(voll, 'mid')).toBeGreaterThan(0)
+    expect(besetzteIn(voll, 'we')).toBeGreaterThan(0)
+    const n = besetzteIn(voll, 'mid') + besetzteIn(voll, 'we') - besetzteIn(geleert, 'mid') - besetzteIn(geleert, 'we')
+    expect(voll.toast?.text).toContain(String(n))
+  })
+
+  it('wer beim Leeren seinen Platz verliert, verliert seine Zusage — in beiden Zusammenkünften', () => {
+    const s0 = makeState({ week: 0, tab: 'mid' })
+    const woche0 = s0.weeks[0]!
+    const weStelle = [...allePlaetze(woche0.we, s0.services)].find((p) => p.slot?.name && !isGuestRole(p.slot.rolle))
+    if (!weStelle) throw new Error('Testaufbau: am Wochenende ist niemand eingeteilt')
+    const weKey = platzKey(weStelle, woche0.start, 'we')
+    const s = { ...s0, confirmations: { [weKey]: 'bestätigt' as const } }
+    const woche = reducer(s, { type: 'clearAssignments', scope: 'all', umfang: 'woche' })
+    expect(woche.confirmations[weKey]).toBeUndefined()
   })
 })
 
