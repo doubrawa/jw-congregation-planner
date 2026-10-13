@@ -38,6 +38,7 @@ import type {
   Notification,
   NotificationType,
   Person,
+  PersoenlichLog,
   Reminders,
   SentLog,
   Service,
@@ -536,6 +537,8 @@ export interface CongregationData {
   invites: Invite[]
   /** Wer wurde wann über welchen Platz benachrichtigt (`assignment_log`). */
   sentLog: SentLog
+  /** Wer davon kein Konto hat — und ob der Planer es ihm selbst gesagt hat. */
+  persoenlich: PersoenlichLog
 }
 
 export type LoadResult =
@@ -612,9 +615,11 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     // Momentaufnahme im Browser-Speicher, und deren Platz ist knapp. Absteigend
     // sortiert kann die Grenze nichts Gebrauchtes abschneiden: Was für die
     // geladenen Wochen zählt, wurde zuletzt gemeldet und steht damit vorn.
+    // Ohne `user_id` hat die Nachricht niemanden erreicht — die Zusagen der
+    // Woche nennen diese Personen, und der Planer hakt ab (`persoenlich_at`).
     supabase
       .from('assignment_log')
-      .select('task_key, name, sent_at')
+      .select('task_key, name, sent_at, user_id, persoenlich_at')
       .eq('congregation_id', congregationId)
       .order('sent_at', { ascending: false })
       .limit(SENT_LOG_LIMIT),
@@ -684,6 +689,13 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .find((r) => r.error)?.error
   if (firstErr) return { ok: false, reason: 'error', message: firstErr.message }
   if (sentLogRows.error) console.error('[assignment_log]', sentLogRows.error.message)
+  const tagebuch = (sentLogRows.data ?? []) as {
+    task_key: string
+    name: string
+    sent_at: string
+    user_id: string | null
+    persoenlich_at: string | null
+  }[]
   if (besuchRows.error) console.error('[gruppenbesuche]', besuchRows.error.message)
   // Ebenso die vorgemerkten Vorträge (T122).
   if (vortragRows.error) console.error('[vortraege]', vortragRows.error.message)
@@ -817,10 +829,9 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       planner: r.planner,
       zuteiler: r.zuteiler,
     })),
-    sentLog: Object.fromEntries(
-      ((sentLogRows.data ?? []) as { task_key: string; name: string; sent_at: string }[]).map(
-        (r) => [sentKey(r.task_key, r.name), r.sent_at],
-      ),
+    sentLog: Object.fromEntries(tagebuch.map((r) => [sentKey(r.task_key, r.name), r.sent_at])),
+    persoenlich: Object.fromEntries(
+      tagebuch.filter((r) => r.user_id === null).map((r) => [sentKey(r.task_key, r.name), r.persoenlich_at]),
     ),
   }
 
@@ -1458,6 +1469,18 @@ export function notifyPlanners(type: NotificationType, title: string, body: stri
       ...(taskKey ? { task: taskKey } : {}),
     }),
   )
+}
+
+/**
+ * **Persönlich Bescheid gegeben** (T121, Phase 5g) — oder den Haken wieder
+ * weg. Wer kein Konto hat, ist auf keinem Weg zu erreichen; der Planer sagt es
+ * ihm selbst und hakt es in den Zusagen der Woche ab. Über
+ * `persoenlich_bescheid` (security definer): Das Versand-Tagebuch schreibt
+ * sonst nur `send-plan`.
+ */
+export function persoenlichBescheid(taskKey: string, name: string, ja: boolean): void {
+  if (!supabase) return
+  void run(supabase.rpc('persoenlich_bescheid', { p_task_key: taskKey, p_name: name, p_ja: ja }))
 }
 
 /**

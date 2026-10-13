@@ -1298,6 +1298,22 @@ body:has(.planen-leiste) .toast {
   color: var(--text2);
 }
 
+/* „Noch nicht angemeldet": der Hinweis über den Zeilen, rechts der Haken. */
+.zusagen-hinweis {
+  padding-block-end: 10px;
+}
+
+.zusage-haken {
+  cursor: pointer;
+}
+
+.zusage-haken input[type='checkbox'] {
+  width: 22px;
+  height: 22px;
+  margin-inline-end: 4px;
+  accent-color: var(--akzent-text);
+}
+
 .zusagen-leer {
   padding-block: 14px;
 }

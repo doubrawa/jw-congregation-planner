@@ -683,6 +683,12 @@ create table if not exists public.assignment_log (
     references public.persons (id, congregation_id) on delete set null (person_id)
 );
 
+-- Wer kein Konto hat, steht ohne `user_id` im Tagebuch: Erreicht hat ihn keine
+-- Nachricht. Der Planer sagt es ihm selbst und hakt es in den Zusagen der
+-- Woche ab (T121, Phase 5g) — wann, steht hier (`persoenlich_bescheid` unten).
+alter table public.assignment_log
+  add column if not exists persoenlich_at timestamptz;
+
 -- Einladungscodes: Planer erstellen sie, registrierte Nutzer treten damit der
 -- Versammlung bei (redeem_invite unten) — kein SQL für neue Mitglieder nötig.
 create table if not exists public.invites (
@@ -1672,6 +1678,37 @@ $$;
 revoke all on function public.notify_planners(text, text, text, text) from public;
 revoke all on function public.notify_planners(text, text, text, text) from anon;
 grant execute on function public.notify_planners(text, text, text, text) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Persönlich Bescheid gegeben (T121, Phase 5g): In den Zusagen der Woche hakt
+-- ab, wer zuteilt, dass er jemandem ohne Konto selbst Bescheid gesagt hat — und
+-- nimmt den Haken auch wieder weg. Nur an Zeilen ohne Konto und nur in der
+-- eigenen Versammlung. Eine Zeile entsteht hier nicht: Das Tagebuch schreibt
+-- weiter nur `send-plan` (siehe `assignment_log_select`), sonst könnte sich ein
+-- Client selbst als „informiert" eintragen und Nachrichten unterdrücken.
+-- ---------------------------------------------------------------------------
+
+create or replace function public.persoenlich_bescheid(p_task_key text, p_name text, p_ja boolean)
+returns void
+language plpgsql security definer
+set search_path = public
+as $$
+begin
+  if not public.darf_zuteilen() then
+    raise exception 'nur-wer-zuteilt' using errcode = '42501';
+  end if;
+  update public.assignment_log
+     set persoenlich_at = case when p_ja then now() else null end
+   where congregation_id = public.my_congregation_id()
+     and task_key = p_task_key
+     and name = p_name
+     and user_id is null;
+end;
+$$;
+
+revoke all on function public.persoenlich_bescheid(text, text, boolean) from public;
+revoke all on function public.persoenlich_bescheid(text, text, boolean) from anon;
+grant execute on function public.persoenlich_bescheid(text, text, boolean) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Erste Einrichtung (Beispiel — Werte anpassen und einmalig ausführen)

@@ -22,6 +22,7 @@ import {
   markNotificationRead,
   markNotificationsRead,
   notifyPlanners,
+  persoenlichBescheid,
   saveAbsence,
   saveConfirmation,
   saveCongregationInfo,
@@ -773,6 +774,10 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'wpGruppenVerteilen':
     case 'wpEintragSetzen':
       plaeneSpeichern(congId, prev, next)
+      break
+    case 'persoenlichBescheid':
+      // Nur, wenn der Reducer die Zeile kannte — sonst gäbe es nichts abzuhaken.
+      if (next.persoenlich !== prev.persoenlich) persoenlichBescheid(action.key, action.name, action.ja)
       break
     case 'addPerson':
       savePerson(congId, action.person)

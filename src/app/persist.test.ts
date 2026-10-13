@@ -4,6 +4,7 @@ import type { AppAction, AppState } from './context'
 import { buildDemoFsWeeks, buildDemoWeeks, DEMO_FS_RULES, DEMO_PERSONS, DEMO_SERVICES } from '../../tests/testdaten/testdaten'
 import { syncAuxSlots } from '../data/aux-class'
 import { fsGruppeEntfernen, fsTaskKey, neueRegel } from '../data/fs'
+import { sentKey } from '../data/planning'
 import type { MyTask, Person, Week } from '../data/types'
 
 // Supabase truthy (Guard soll durchlassen) — kein echter Client/Netz.
@@ -37,6 +38,7 @@ vi.mock('../lib/data', async (importActual) => ({
   markNotificationRead: vi.fn(),
   markNotificationsRead: vi.fn(),
   notifyPlanners: vi.fn(),
+  persoenlichBescheid: vi.fn(),
   saveAbsence: vi.fn(),
   saveConfirmation: vi.fn(),
   saveCongregationInfo: vi.fn(),
@@ -205,6 +207,42 @@ describe('Zuteilen', () => {
     expect(data.saveWeek).not.toHaveBeenCalled() // gleiche Referenz → nichts
     persist(st({ weeks: shared }), st({ weeks: buildDemoWeeks() }), { type: 'clearAssignments', scope: 'parts' })
     expect(data.saveWeek).toHaveBeenCalled()
+  })
+})
+
+/**
+ * **Persönlich Bescheid gegeben** (T121, Phase 5g-2): Wer kein Konto hat,
+ * steht ohne `user_id` im Versand-Tagebuch; der Planer hakt ab, dass er es ihm
+ * selbst gesagt hat — und nimmt den Haken auch wieder weg.
+ */
+describe('Persönlich Bescheid gegeben', () => {
+  const KEY = '2026-09-07|we|part|i-gebet|0'
+  const ZEILE = sentKey(KEY, 'Gustav Test')
+  const bescheid = (ja: boolean) => ({ type: 'persoenlichBescheid', key: KEY, name: 'Gustav Test', ja }) as const
+
+  it('der Haken steht im Zustand mit seiner Zeit — und geht an die Datenbank', () => {
+    vi.setSystemTime(new Date('2026-09-07T08:00:00Z'))
+    const prev = st({ persoenlich: { [ZEILE]: null } })
+    const next = reducer(prev, bescheid(true))
+    expect(next.persoenlich[ZEILE]).toBe('2026-09-07T08:00:00.000Z')
+    persist(prev, next, bescheid(true))
+    expect(data.persoenlichBescheid).toHaveBeenCalledWith(KEY, 'Gustav Test', true)
+  })
+
+  it('weggenommen steht er wieder offen da', () => {
+    const prev = st({ persoenlich: { [ZEILE]: '2026-09-07T08:00:00.000Z' } })
+    const next = reducer(prev, bescheid(false))
+    expect(next.persoenlich[ZEILE]).toBeNull()
+    persist(prev, next, bescheid(false))
+    expect(data.persoenlichBescheid).toHaveBeenCalledWith(KEY, 'Gustav Test', false)
+  })
+
+  it('an einer Zeile mit Konto — oder einer, die es nicht gibt — ändert sich nichts, und nichts geht hinaus', () => {
+    const prev = st({ persoenlich: {} })
+    const next = reducer(prev, bescheid(true))
+    expect(next).toBe(prev)
+    persist(prev, next, bescheid(true))
+    expect(data.persoenlichBescheid).not.toHaveBeenCalled()
   })
 })
 

@@ -25,7 +25,7 @@ import { fsLeiterBinden } from '../../src/data/fs'
 import { pidsNachtragen } from '../../src/data/namensbindung'
 import { offeneMeldungen } from '../../src/data/plan-versand'
 import { sentKey } from '../../src/data/planning'
-import type { FsBereich, Lang, MeetingTab, Screen, SentLog, Theme } from '../../src/data/types'
+import type { FsBereich, Lang, MeetingTab, PersoenlichLog, Screen, SentLog, Theme } from '../../src/data/types'
 import { CONG_TO_JW } from '../../src/i18n/langs'
 import { buildDemoConfirmations } from './demo-zusagen'
 import {
@@ -170,6 +170,22 @@ function demoVersand(s: AppState): SentLog {
   return Object.fromEntries(meldungen.map((m) => [sentKey(m.key, m.name), '2026-09-06T18:00:00.000Z']))
 }
 
+/** Auf der Entwicklerseite ohne Konto (Phase 5g-2): Ihre Zeilen im Tagebuch erreichten niemanden. */
+const DEMO_OHNE_KONTO = ['Elke Brandt', 'Jörg Roth']
+
+/**
+ * **Wer davon persönlich zu sagen ist** — die Zeilen der Personen ohne Konto.
+ * Für den Sonntag hat der Planer es schon gesagt und abgehakt; so zeigt die
+ * Seite beide Lagen des Hakens.
+ */
+function demoPersoenlich(versand: SentLog): PersoenlichLog {
+  return Object.fromEntries(
+    Object.keys(versand)
+      .filter((schluessel) => DEMO_OHNE_KONTO.some((name) => schluessel.endsWith(` ${name}`)))
+      .map((schluessel) => [schluessel, schluessel.includes('|we|') ? '2026-09-06T19:30:00.000Z' : null]),
+  )
+}
+
 /**
  * Startzustand der Entwicklerseite: der Demo-Bestand, dazu was der Hash
  * verlangt. Ohne `s=` beginnt sie auf dem Start-Bildschirm, angemeldet ist
@@ -185,6 +201,7 @@ export function entwicklerStart(hash: string = location.hash): AppState {
   // Doku-Screenshots randlos zugeschnitten werden können (siehe shell.css).
   if (debug?.shot) document.documentElement.dataset.shot = '1'
   const basis = demoZustand()
+  const versand = demoVersand(basis)
   return aufgabenAbgeleitet({
     ...basis,
     // Gruppenbesuche (T120) nur hier, nicht in `demoZustand`: Die Tests laufen
@@ -202,7 +219,8 @@ export function entwicklerStart(hash: string = location.hash): AppState {
     plaene: DEMO_PLAENE,
     planEintraege: demoPlanEintraege(),
     confirmations: { ...basis.confirmations, ...DEMO_OZ_ZUSAGEN },
-    sentLog: demoVersand(basis),
+    sentLog: versand,
+    persoenlich: demoPersoenlich(versand),
     screen: debug?.screen ?? 'start',
     tab: debug?.tab ?? basis.tab,
     fsBereich: debug?.fsBereich ?? basis.fsBereich,

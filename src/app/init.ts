@@ -71,6 +71,7 @@ export function initialState(): AppState {
     myTasks: [],
     confirmations: {},
     sentLog: {},
+    persoenlich: {},
     confirmOpen: false,
     myTaskId: null,
     absageId: null,

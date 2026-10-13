@@ -1040,6 +1040,15 @@ export type ConfirmationMap = Record<string, TaskStatus>
  */
 export type SentLog = Record<string, string>
 
+/**
+ * **Persönlich zu sagen** (T121, Phase 5g): die Zeilen des Versand-Tagebuchs
+ * ohne Konto — `sentKey(task_key, name)` → wann der Planer abgehakt hat, dass
+ * er selbst Bescheid gesagt hat (ISO), oder `null`, solange nicht. Erreicht hat
+ * diese Personen keine Nachricht; „gemeldet" sind sie nur, damit „Plan senden"
+ * nicht ewig auf sie zeigt.
+ */
+export type PersoenlichLog = Record<string, string | null>
+
 /** Erinnerungs-Einstellungen (Einstellungen → ERINNERUNGEN). */
 export interface Reminders {
   first: number // erste Erinnerung: N Tage vorher (1..21)

@@ -45,6 +45,7 @@ import {
   deriveSubstituteReqs,
   helperKeyParts,
   itemZusagenKeys,
+  sentKey,
   tabsImUmfang,
   wochenIndex,
   type Umfang,
@@ -1458,6 +1459,14 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const eintraege = eintragSetzen({ ...action, eintraege: state.planEintraege, neueId: neueEintragId })
       return eintraege === state.planEintraege ? state : { ...state, planEintraege: eintraege }
     }
+    case 'persoenlichBescheid': {
+      // Nur an einer Zeile ohne Konto — dieselbe Grenze zieht die Datenbank
+      // (`persoenlich_bescheid`). Was dort nicht steht, ist niemandem zu sagen.
+      const schluessel = sentKey(action.key, action.name)
+      if (!(schluessel in state.persoenlich)) return state
+      const wann = action.ja ? new Date().toISOString() : null
+      return { ...state, persoenlich: { ...state.persoenlich, [schluessel]: wann } }
+    }
     case 'openMyTask':
       return { ...state, myTaskId: action.id }
     case 'closeMyTask':
@@ -1822,6 +1831,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         // Aus einer alten Momentaufnahme (lib/snapshot.ts) fehlt das Feld — sie
         // wurde geschrieben, bevor es das Tagebuch gab.
         sentLog: p.sentLog ?? {},
+        // Ebenso aus einer Momentaufnahme vor Phase 5g.
+        persoenlich: p.persoenlich ?? {},
         reminders: p.reminders,
         auxClass: p.auxClass,
         congLang: p.congLang,

@@ -9,7 +9,10 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
+import { offeneMeldungen } from '../data/plan-versand'
+import { sentKey } from '../data/planning'
 import { dict } from '../i18n/ui'
+import { fill } from '../i18n/useT'
 import { PlanenScreen } from './PlanenScreen'
 
 /**
@@ -132,6 +135,53 @@ describe('Die Zusagen der Woche', () => {
   it('wer nicht zuteilt, bekommt sie nicht — der Gruppenaufseher plant die Treffpunkte', () => {
     const { container } = zeige({ planner: false, zuteiler: false, personId: 'p1' })
     expect(container.querySelector('.screen.zusagen')).toBeNull()
+  })
+})
+
+/**
+ * **Noch nicht angemeldet** (Phase 5g-2): Wer kein Konto hat, steht ohne
+ * `user_id` im Versand-Tagebuch — erreicht hat ihn nichts. Gesendet ist hier die
+ * ganze Woche; Elke Brandt hat kein Konto.
+ */
+describe('Noch nicht angemeldet', () => {
+  /** `bescheid`: wann der Planer abgehakt hat, dass er es Elke gesagt hat — `null`: noch nicht. */
+  function gesendet(bescheid: string | null = null): Partial<AppState> {
+    const s = demoZustand()
+    const woche = s.weeks.find((w) => w.start === '2026-09-07')!
+    const meldungen = offeneMeldungen(woche, undefined, s.services, s.confirmations, {}, s.congregation.times, new Date(2026, 8, 7, 9))
+    const sentLog = Object.fromEntries(meldungen.map((m) => [sentKey(m.key, m.name), '2026-09-06T18:00:00.000Z']))
+    const persoenlich = Object.fromEntries(
+      Object.keys(sentLog)
+        .filter((k) => k.endsWith(' Elke Brandt'))
+        .map((k) => [k, bescheid]),
+    )
+    return { sentLog, persoenlich }
+  }
+  const haken = (c: HTMLElement) =>
+    karte(c, t.zusagenOhneKonto)!.querySelector<HTMLInputElement>(
+      `input[aria-label="${fill(t.zusagenWeissBescheid, { name: 'Elke Brandt' })}"]`,
+    )!
+
+  it('wer kein Konto hat, steht dort mit dem Hinweis — und nicht unter „Warten auf Zusage"', () => {
+    const { container } = zeige(gesendet())
+    const ohne = karte(container, t.zusagenOhneKonto)!
+    expect(ohne.textContent).toContain(t.zusagenOhneKontoHinweis)
+    expect(ohne.textContent).toContain('Elke Brandt')
+    expect(karte(container, t.zusagenWarten)?.textContent ?? '').not.toContain('Elke Brandt')
+  })
+
+  it('der Haken sagt der App, dass es ihm jemand gesagt hat', () => {
+    const { container, dispatch } = zeige(gesendet())
+    expect(haken(container).checked).toBe(false)
+    fireEvent.click(haken(container))
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'persoenlichBescheid', name: 'Elke Brandt', ja: true }))
+  })
+
+  it('wem es schon jemand gesagt hat, der steht abgehakt da — ein Tipp nimmt den Haken weg', () => {
+    const { container, dispatch } = zeige(gesendet('2026-09-06T19:30:00.000Z'))
+    expect(haken(container).checked).toBe(true)
+    fireEvent.click(haken(container))
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'persoenlichBescheid', name: 'Elke Brandt', ja: false }))
   })
 })
 

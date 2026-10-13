@@ -35,6 +35,7 @@ import {
   markNotificationRead,
   markNotificationsRead,
   notifyPlanners,
+  persoenlichBescheid,
   redeemInvite,
   saveAbsence,
   saveConfirmation,
@@ -244,6 +245,15 @@ describe('Insert-Schreiber', () => {
     })
     // Keine Empfängerliste und kein eigener Insert aus dem Client: Ein
     // Verkündiger kennt die Planer nicht (RLS zeigt ihm nur die eigene Zeile).
+    expect(chain.from).not.toHaveBeenCalled()
+  })
+  it('persoenlichBescheid → rpc persoenlich_bescheid; das Tagebuch schreibt der Client nicht selbst (Phase 5g)', () => {
+    persoenlichBescheid('2026-09-07|we|part|i-gebet|0', 'Gustav Test', true)
+    expect(chain.rpc).toHaveBeenCalledWith('persoenlich_bescheid', {
+      p_task_key: '2026-09-07|we|part|i-gebet|0',
+      p_name: 'Gustav Test',
+      p_ja: true,
+    })
     expect(chain.from).not.toHaveBeenCalled()
   })
   it('notifyPlanners mit Aufgabe → der Schlüssel geht als `task` mit (4.10.2026)', () => {

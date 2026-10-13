@@ -441,6 +441,11 @@ export const DE = {
     zusagenWarten: 'Warten auf Zusage', zusagenZugesagt: 'Zugesagt',
     zusagenGesendet: 'gesendet {zeit}', zusagenNichtGesendet: 'noch nicht gesendet',
     zusagenLeer: 'In dieser Woche gibt es nichts zu bestätigen.',
+    // Wer kein Konto hat, erreicht keine Nachricht (Phase 5g-2): Der Planer sagt
+    // es selbst und hakt ab. `{name}` beschriftet den Haken für Vorleseprogramme.
+    zusagenOhneKonto: 'Noch nicht angemeldet',
+    zusagenOhneKontoHinweis: 'Bitte persönlich Bescheid geben und hier abhaken.',
+    zusagenWeissBescheid: '{name} weiß Bescheid',
     lageProblem: 'Problem', zuKlaeren: 'Zu klären',
     // Woche einrichten und Programm (T121, Entwurf `GWochePlanen`, `GProgramm`).
     wocheEinrichten: 'Woche einrichten',

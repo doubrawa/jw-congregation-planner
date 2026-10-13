@@ -36,7 +36,7 @@ export function ZusagenAnsicht({ week, rawWeek, tpw }: { week: Week; rawWeek: We
   const { t } = i18n
   const tag = useKalendertag()
   const abwesend = useAbwesend()
-  const { weeks, persons, services, confirmations, sentLog } = state
+  const { weeks, persons, services, confirmations, sentLog, persoenlich } = state
   const zeiten = state.congregation.times
   const fsWeek = state.fsWeeks[state.week]
 
@@ -52,11 +52,12 @@ export function ZusagenAnsicht({ week, rawWeek, tpw }: { week: Week; rawWeek: We
       services,
       confirmations,
       sentLog,
+      persoenlich,
       zeiten,
       konfliktVon: (tab, slot) => konfliktVon[tab](slot),
       heute: fromIso(tag),
     })
-  }, [rawWeek, weeks, state.week, persons, services, confirmations, sentLog, zeiten, abwesend, tag])
+  }, [rawWeek, weeks, state.week, persons, services, confirmations, sentLog, persoenlich, zeiten, abwesend, tag])
   const zahlen = useMemo(
     () => zahlenDerWoche(rawWeek, fsWeek, { services, confirmations, sentLog, zeiten }, fromIso(tag)),
     [rawWeek, fsWeek, services, confirmations, sentLog, zeiten, tag],
@@ -73,7 +74,9 @@ export function ZusagenAnsicht({ week, rawWeek, tpw }: { week: Week; rawWeek: We
     [tage[p.tab], aufgabenLabel(p.aufgabe(), i18n)].filter(Boolean).join(' · ')
 
   const klaeren = plaetze.filter((p) => p.lage === 'problem')
-  const warten = plaetze.filter((p) => p.lage === 'wartet')
+  // Wer kein Konto hat, wartet nicht auf eine Nachricht: Ihn erreicht keine.
+  const warten = plaetze.filter((p) => p.lage === 'wartet' && !p.ohneKonto)
+  const ohneKonto = plaetze.filter((p) => p.lage === 'wartet' && p.ohneKonto)
   const zugesagt = plaetze.filter((p) => p.lage === 'voll')
 
   return (
@@ -98,6 +101,14 @@ export function ZusagenAnsicht({ week, rawWeek, tpw }: { week: Week; rawWeek: We
             <ZusagenKarte punkt="wartet" titel={t.zusagenWarten} anzahl={warten.length}>
               {warten.map((p) => (
                 <WartenZeile key={p.key} platz={p} aufgabe={aufgabeAmTag(p)} />
+              ))}
+            </ZusagenKarte>
+          )}
+          {ohneKonto.length > 0 && (
+            <ZusagenKarte punkt="offen" titel={t.zusagenOhneKonto} anzahl={ohneKonto.length}>
+              <p className="klein-text zusagen-hinweis">{t.zusagenOhneKontoHinweis}</p>
+              {ohneKonto.map((p) => (
+                <PersoenlichZeile key={p.key} platz={p} aufgabe={aufgabeAmTag(p)} />
               ))}
             </ZusagenKarte>
           )}
@@ -135,6 +146,18 @@ function ZusagenKarte({
   )
 }
 
+/** Der Text einer Zeile: oben der Name, darunter, was die Karte über ihn sagt. */
+function ZusageText({ name, children }: { name: string; children: ReactNode }) {
+  return (
+    <span className="zusage-text">
+      <span className="zusage-name" dir="auto">
+        {name}
+      </span>
+      {children}
+    </span>
+  )
+}
+
 /**
  * Ein Problem: wer, welche Aufgabe, warum — und „Zuteilen", das den Platz
  * gleich im Zuteilen-Blatt öffnet.
@@ -146,12 +169,9 @@ function KlaerenZeile({ platz, aufgabe }: { platz: ZusagePlatz; aufgabe: string 
   const sel = platzAuswahl(state.weeks, state.services, platz.key)
   return (
     <div className="zusage-zeile">
-      <span className="zusage-text">
-        <span className="zusage-name" dir="auto">
-          {platz.slot.name}
-        </span>
+      <ZusageText name={platz.slot.name}>
         <span className="zusage-grund">{`${aufgabe} · ${grund}`}</span>
-      </span>
+      </ZusageText>
       {sel && (
         <button type="button" className="knopf-pille" onClick={() => dispatch({ type: 'openSlot', sel })}>
           {t.spurZuteilen}
@@ -167,16 +187,36 @@ function WartenZeile({ platz, aufgabe }: { platz: ZusagePlatz; aufgabe: string }
   const { t } = useT()
   return (
     <div className="zusage-zeile">
-      <span className="zusage-text">
-        <span className="zusage-name" dir="auto">
-          {platz.slot.name}
-        </span>
+      <ZusageText name={platz.slot.name}>
         <span className="klein-text">{aufgabe}</span>
         <span className="klein-text">
           {platz.gesendet ? fill(t.zusagenGesendet, { zeit: relativeZeit(platz.gesendet, state.lang) }) : t.zusagenNichtGesendet}
         </span>
-      </span>
+      </ZusageText>
     </div>
+  )
+}
+
+/**
+ * Wer kein Konto hat: wer, welche Aufgabe — und der Haken, sobald der Planer es
+ * ihm selbst gesagt hat. Die ganze Zeile schaltet ihn.
+ */
+function PersoenlichZeile({ platz, aufgabe }: { platz: ZusagePlatz; aufgabe: string }) {
+  const { dispatch } = useApp()
+  const { t } = useT()
+  const name = platz.slot.name
+  return (
+    <label className="zusage-zeile zusage-haken">
+      <ZusageText name={name}>
+        <span className="klein-text">{aufgabe}</span>
+      </ZusageText>
+      <input
+        type="checkbox"
+        aria-label={fill(t.zusagenWeissBescheid, { name })}
+        checked={platz.ohneKonto?.bescheid != null}
+        onChange={(e) => dispatch({ type: 'persoenlichBescheid', key: platz.key, name, ja: e.target.checked })}
+      />
+    </label>
   )
 }
 

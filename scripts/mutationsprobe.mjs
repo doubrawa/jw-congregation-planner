@@ -5190,7 +5190,7 @@ export const KATALOG = [
     id: 'zusagen-gesendet-aus-tagebuch',
     datei: 'src/data/zusagen.ts',
     regel: 'Wann die Nachricht hinausging, kommt aus dem Versand-Tagebuch.',
-    suchen: '      gesendet: sentLog[sentKey(key, slot.name)] ?? null,\n',
+    suchen: '      gesendet: sentLog[tagebuch] ?? null,\n',
     ersetzen: '      gesendet: null,\n',
   },
   {
@@ -5234,6 +5234,49 @@ export const KATALOG = [
     regel: 'Wer zwei Aufgaben zugesagt hat, steht unter „Zugesagt" einmal.',
     suchen: '  const namen = [...new Set(plaetze.map((p) => p.slot.name))]\n',
     ersetzen: '  const namen = plaetze.map((p) => p.slot.name)\n',
+  },
+  /* ---- Noch nicht angemeldet (T121, Phase 5g-2, 13.10.2026) ---- */
+  {
+    id: 'zusagen-ohne-konto-aus-tagebuch',
+    datei: 'src/data/zusagen.ts',
+    regel: 'Wer ohne Konto im Versand-Tagebuch steht, ist in den Zusagen als solcher erkannt — samt Haken.',
+    suchen: '      ...(tagebuch in persoenlich ? { ohneKonto: { bescheid: persoenlich[tagebuch] ?? null } } : {}),\n',
+    ersetzen: '',
+  },
+  {
+    id: 'zusagen-ohne-konto-wartet-nicht',
+    datei: 'src/planen/ZusagenAnsicht.tsx',
+    regel: 'Wer kein Konto hat, steht nicht unter „Warten auf Zusage" — ihn erreicht keine Nachricht.',
+    suchen: "  const warten = plaetze.filter((p) => p.lage === 'wartet' && !p.ohneKonto)\n",
+    ersetzen: "  const warten = plaetze.filter((p) => p.lage === 'wartet')\n",
+  },
+  {
+    id: 'persoenlich-nur-ohne-konto',
+    datei: 'src/app/reducer.ts',
+    regel: 'Abhaken geht nur an einer Zeile ohne Konto — wie in der Datenbank.',
+    suchen: '      if (!(schluessel in state.persoenlich)) return state\n',
+    ersetzen: '',
+  },
+  {
+    id: 'persoenlich-wird-gespeichert',
+    datei: 'src/app/persist.ts',
+    regel: 'Ein Haken an „Noch nicht angemeldet" geht an die Datenbank (`persoenlich_bescheid`).',
+    suchen: '      if (next.persoenlich !== prev.persoenlich) persoenlichBescheid(action.key, action.name, action.ja)\n',
+    ersetzen: '',
+  },
+  {
+    id: 'persoenlich-haken-geht-weg',
+    datei: 'src/app/reducer.ts',
+    regel: 'Einen Haken nimmt man auch wieder weg — dann steht die Zeile wieder offen.',
+    suchen: '      const wann = action.ja ? new Date().toISOString() : null\n',
+    ersetzen: '      const wann = new Date().toISOString()\n',
+  },
+  {
+    id: 'zusagen-haken-zeigt-bescheid',
+    datei: 'src/planen/ZusagenAnsicht.tsx',
+    regel: 'Wem es schon jemand gesagt hat, der steht unter „Noch nicht angemeldet" abgehakt da.',
+    suchen: '        checked={platz.ohneKonto?.bescheid != null}\n',
+    ersetzen: '        checked={false}\n',
   },
 ]
 

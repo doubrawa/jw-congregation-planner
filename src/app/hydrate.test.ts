@@ -37,6 +37,7 @@ const emptyData: CongregationData = {
   notifications: [],
   confirmations: {},
   sentLog: {},
+  persoenlich: {},
   reminders: { first: 7, last: 1, repeat: false },
   congLang: 'de',
   progLangs: [],

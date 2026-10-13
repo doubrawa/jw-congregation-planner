@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { sentKey, type Conflict } from './planning'
-import type { ConfirmationMap, Meeting, MeetingKey, PartItem, SentLog, Service, SlotAssignment, Week } from './types'
+import type {
+  ConfirmationMap,
+  Meeting,
+  MeetingKey,
+  PartItem,
+  PersoenlichLog,
+  SentLog,
+  Service,
+  SlotAssignment,
+  Week,
+} from './types'
 import { zusagenDerWoche } from './zusagen'
 
 /**
@@ -47,16 +57,23 @@ const WOCHE = {
 
 const key = (tab: MeetingKey, titel: string) => `${MONTAG}|${tab}|part|i-${titel}|0`
 const CONFIRMATIONS: ConfirmationMap = { [key('mid', 'Bibellesung')]: 'bestätigt', [key('mid', 'Gespräche beginnen')]: 'verhindert' }
-const SENT: SentLog = { [sentKey(key('mid', 'Interesse fördern'), 'Dora Test')]: '2026-09-06T20:00:00Z' }
+const GUSTAV = sentKey(key('we', 'Gebet'), 'Gustav Test')
+const SENT: SentLog = {
+  [sentKey(key('mid', 'Interesse fördern'), 'Dora Test')]: '2026-09-06T20:00:00Z',
+  [GUSTAV]: '2026-09-06T20:00:00Z',
+}
+/** Gustav hat kein Konto: Die Nachricht hat ihn nicht erreicht, gesagt hat es ihm noch niemand. */
+const PERSOENLICH: PersoenlichLog = { [GUSTAV]: null }
 const FRITZ_ABWESEND: Conflict = { kind: 'absent', name: 'Fritz Test', kennung: 'Fritz Test', tab: 'mid' } as Conflict
 const konfliktVon = (_tab: MeetingKey, slot: SlotAssignment) => (slot.name === 'Fritz Test' ? FRITZ_ABWESEND : undefined)
 
-const zusagen = (over: { week?: Week; heute?: Date } = {}) =>
+const zusagen = (over: { week?: Week; heute?: Date; persoenlich?: PersoenlichLog } = {}) =>
   zusagenDerWoche({
     week: over.week ?? WOCHE,
     services: DIENSTE,
     confirmations: CONFIRMATIONS,
     sentLog: SENT,
+    persoenlich: over.persoenlich ?? PERSOENLICH,
     zeiten: ZEITEN,
     konfliktVon,
     heute: over.heute ?? MONTAG_FRUEH,
@@ -85,6 +102,14 @@ describe('Die Zusagen der Woche', () => {
     const liste = zusagen()
     expect(liste.find((p) => p.slot.name === 'Dora Test')?.gesendet).toBe('2026-09-06T20:00:00Z')
     expect(liste.find((p) => p.slot.name === 'Emil Test')?.gesendet).toBeNull()
+  })
+
+  it('wer kein Konto hat, ist erkannt — mit dem Haken des Planers, sobald er es ihm gesagt hat', () => {
+    const gustav = (persoenlich?: PersoenlichLog) => zusagen({ persoenlich }).find((p) => p.slot.name === 'Gustav Test')
+    expect(gustav()?.ohneKonto).toEqual({ bescheid: null })
+    expect(gustav({ [GUSTAV]: '2026-09-07T08:00:00Z' })?.ohneKonto).toEqual({ bescheid: '2026-09-07T08:00:00Z' })
+    // Wer ein Konto hat, steht nicht im Verzeichnis — er wartet auf die Nachricht.
+    expect(zusagen().find((p) => p.slot.name === 'Dora Test')?.ohneKonto).toBeUndefined()
   })
 
   it('Hilfsdienste sind als solche erkannt — dort sucht die App nach einer Absage selbst Ersatz', () => {

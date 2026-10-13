@@ -76,6 +76,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     myTasks: [...DEMO_MY_TASKS],
     confirmations: {},
     sentLog: {},
+    persoenlich: {},
     confirmOpen: false,
     myTaskId: null,
     absageId: null,

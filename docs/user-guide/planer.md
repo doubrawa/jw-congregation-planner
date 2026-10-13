@@ -596,6 +596,10 @@ zusammen, ohne was schon vorbei ist:
   Dort fragt die App selbst nach einem Ersatz.
 - **Warten auf Zusage**: wer noch nicht zugesagt hat, mit Tag und Aufgabe und
   seit wann die Nachricht draußen ist — oder „noch nicht gesendet".
+- **Noch nicht angemeldet**: wer beim Senden kein Konto hatte. Ihn hat keine
+  Nachricht erreicht — sag es ihm persönlich und setz dann den Haken neben
+  seiner Aufgabe. Der Haken bleibt gespeichert, auch für die anderen Planer;
+  ein zweiter Tipp nimmt ihn wieder weg.
 - **Zugesagt**: die Namen derer, die schon zugesagt haben.
 
 Am Desktop stehen die Karten als Spalten nebeneinander. Zurück — oder der

@@ -243,6 +243,19 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     expect(text).not.toContain('grant execute on function public.notify_planners(text, text, text) to')
   })
 
+  it('persönlich Bescheid: nur wer zuteilt, nur an Zeilen ohne Konto der eigenen Versammlung — eine Zeile entsteht nicht (Phase 5g)', () => {
+    const fn = funktionsRuempfe(schema).get('persoenlich_bescheid') ?? ''
+    expect(fn).toContain('security definer')
+    expect(fn).toContain('if not public.darf_zuteilen() then')
+    expect(fn).toContain('where congregation_id = public.my_congregation_id()')
+    expect(fn).toContain('and user_id is null')
+    // Das Tagebuch schreibt weiter nur `send-plan`: Hier wird nur ein Haken gesetzt.
+    expect(fn).not.toMatch(/insert into/i)
+    const text = normiert(schema)
+    expect(text).toContain('alter table public.assignment_log add column if not exists persoenlich_at timestamptz;')
+    expect(text).toContain('revoke all on function public.persoenlich_bescheid(text, text, boolean) from anon;')
+  })
+
   it('unmittelbar in notifications schreiben nur Planer — der Verkündiger-Zweig ist weg', () => {
     // Er war nie erreichbar (die App fand keinen Empfänger) und hielte eine
     // zweite Lesart derselben Regel offen.

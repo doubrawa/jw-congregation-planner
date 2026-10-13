@@ -18,7 +18,17 @@
 import { vergangeneZusammenkuenfte } from './plan-versand'
 import { eachAssignedSlot, sentKey, zusageStatus, type Conflict } from './planning'
 import { lageVon, type PlatzLage } from './saal'
-import type { ConfirmationMap, MeetingKey, MeetingTimes, MyTask, SentLog, Service, SlotAssignment, Week } from './types'
+import type {
+  ConfirmationMap,
+  MeetingKey,
+  MeetingTimes,
+  MyTask,
+  PersoenlichLog,
+  SentLog,
+  Service,
+  SlotAssignment,
+  Week,
+} from './types'
 
 /** Ein besetzter Platz der Woche, so wie die Zusagen ihn zeigen. */
 export interface ZusagePlatz {
@@ -34,6 +44,11 @@ export interface ZusagePlatz {
   hilfsdienst: boolean
   /** Wann die Nachricht hinausging (Versand-Tagebuch) — `null`: noch nicht gesendet. */
   gesendet: string | null
+  /**
+   * Gesendet, aber ohne Konto: Erreicht hat die Nachricht niemanden, der Planer
+   * sagt es selbst — `bescheid` ist, wann er es abgehakt hat (`PersoenlichLog`).
+   */
+  ohneKonto?: { bescheid: string | null }
   /** Die Aufgabe, wie „Meine Aufgaben" sie zeigt — erst auf Abruf. */
   aufgabe: () => MyTask
 }
@@ -48,11 +63,12 @@ export function zusagenDerWoche(args: {
   services: Service[]
   confirmations: ConfirmationMap
   sentLog: SentLog
+  persoenlich: PersoenlichLog
   zeiten: MeetingTimes
   konfliktVon: (tab: MeetingKey, slot: SlotAssignment) => Conflict | undefined
   heute: Date
 }): ZusagePlatz[] {
-  const { week, services, confirmations, sentLog, zeiten, konfliktVon, heute } = args
+  const { week, services, confirmations, sentLog, persoenlich, zeiten, konfliktVon, heute } = args
   const vorbei = vergangeneZusammenkuenfte(week, zeiten, heute)
   const out: ZusagePlatz[] = []
   eachAssignedSlot([week], services, zeiten, (slot, key, aufgabe, { tab, platz }) => {
@@ -60,6 +76,7 @@ export function zusagenDerWoche(args: {
     const konflikt = konfliktVon(tab, slot)
     const lage = lageVon(slot, zusageStatus(confirmations, key), konflikt !== undefined)
     if (lage === 'offen') return
+    const tagebuch = sentKey(key, slot.name)
     out.push({
       key,
       tab,
@@ -67,7 +84,8 @@ export function zusagenDerWoche(args: {
       lage,
       ...(konflikt ? { konflikt } : {}),
       hilfsdienst: platz.art === 'helper',
-      gesendet: sentLog[sentKey(key, slot.name)] ?? null,
+      gesendet: sentLog[tagebuch] ?? null,
+      ...(tagebuch in persoenlich ? { ohneKonto: { bescheid: persoenlich[tagebuch] ?? null } } : {}),
       aufgabe,
     })
   })

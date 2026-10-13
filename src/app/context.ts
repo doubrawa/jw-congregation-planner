@@ -45,6 +45,7 @@ import type {
   Reminders,
   S89Payload,
   Screen,
+  PersoenlichLog,
   SentLog,
   Service,
   SlotSelection,
@@ -106,6 +107,8 @@ export interface HydratePayload {
   notifications: Notification[]
   confirmations: ConfirmationMap
   sentLog: SentLog
+  /** Fehlt in einer Momentaufnahme von vor Phase 5g (`lib/snapshot.ts`). */
+  persoenlich?: PersoenlichLog
   reminders: Reminders
   congLang: string
   progLangs: string[]
@@ -223,6 +226,11 @@ export interface AppState {
    * ausschließlich von der Edge Function `send-plan` mit der Service-Role.
    */
   sentLog: SentLog
+  /**
+   * Wer davon kein Konto hat — und ob der Planer es ihm selbst gesagt hat
+   * (T121, Phase 5g). Geschrieben nur über `persoenlich_bescheid`.
+   */
+  persoenlich: PersoenlichLog
   reminders: Reminders
   /**
    * Versammlung hat eine Zusätzliche Klasse eingerichtet (jw.org S-38,
@@ -401,6 +409,8 @@ export type AppAction =
   | { type: 'wpGruppenVerteilen'; planId: string; abGruppe: string }
   // Die Gruppe einer Woche setzen — null räumt den Platz.
   | { type: 'wpEintragSetzen'; planId: string; datum: string; grp: string | null }
+  /** Jemandem ohne Konto selbst Bescheid gesagt — oder doch nicht (Zusagen der Woche, Phase 5g). */
+  | { type: 'persoenlichBescheid'; key: string; name: string; ja: boolean }
   // Der Screen ist beim vorgemerkten Bereich angekommen (siehe `sprungZiel`).
   | { type: 'sprungZielErreicht' }
   | { type: 'prevWeek' }
