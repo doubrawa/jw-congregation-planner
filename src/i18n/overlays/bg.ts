@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "последно {wann}",
   "zuletztLange": "отдавна не",
   "abwesendZeitraum": "отсъствие: {zeitraum}",
+  "zuteilenLeer": "Избери място в програмата, за да назначиш някого.",
   "toastWillkommen": "Добре дошли, {name}!",
   "toastZugeteilt": "Назначено · още не е изпратено",
   "toastEntfernt": "Назначението е премахнато",

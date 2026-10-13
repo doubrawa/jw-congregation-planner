@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "senast {wann}",
   "zuletztLange": "inte på länge",
   "abwesendZeitraum": "frånvarande {zeitraum}",
+  "zuteilenLeer": "Välj en plats i programmet för att fylla den.",
   "toastWillkommen": "Välkommen, {name}!",
   "toastZugeteilt": "Tilldelad · inte skickat ännu",
   "toastEntfernt": "Tilldelning borttagen",

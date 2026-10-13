@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "마지막 배정 {wann}",
   "zuletztLange": "한동안 없음",
   "abwesendZeitraum": "{zeitraum} 결석",
+  "zuteilenLeer": "배정할 자리를 프로그램에서 선택하세요.",
   "toastWillkommen": "환영합니다, {name} 님!",
   "toastZugeteilt": "배정됨 · 아직 발송되지 않음",
   "toastEntfernt": "임명 제거됨",

@@ -879,6 +879,59 @@
   background: var(--text3);
 }
 
+/* ---- Zuteilen am Desktop: die Spalte neben dem Plan (`GDesktopPlanen`) ---- */
+
+.planen-raster {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+}
+
+.planen-raster-plan {
+  min-width: 0;
+}
+
+/* Bleibt stehen, während der Plan daneben scrollt; scrollen darf darin nur
+   die Liste (`.zuteilen-liste`). */
+.zuteilen-spalte {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100svh;
+  padding: 24px 20px;
+  border-inline-start: 1px solid var(--linie);
+}
+
+.zuteilen-spalte-kopf {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-block-end: 14px;
+}
+
+/* Neben dem Plan liegt die Karte auf dem Grund, nicht im Blatt. */
+.zuteilen-spalte .zuteilen-aktuell {
+  background: var(--karte);
+}
+
+.zuteilen-leer {
+  color: var(--text3);
+  font-size: calc(14px * var(--fs));
+}
+
+/* Der Platz, den die Spalte gerade zuteilt: erhaben, mit Rand. Ohne Versatz —
+   der Rand ist ein Schatten, die Zeile behält ihr Maß. */
+.platz.is-gewaehlt {
+  margin-inline: -10px;
+  padding-inline: 10px;
+  width: calc(100% + 20px);
+  border-radius: 22px;
+  background: var(--hoch);
+  box-shadow: inset 0 0 0 1.5px var(--text);
+}
+
 /*
  * Leere Kandidatenliste im Zuteilungs-Sheet — heute nur der Fall „Gruppen-Slot,
  * aber keine Predigtdienstgruppen angelegt". Benennt, was fehlt, und führt

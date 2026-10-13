@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "前回は{wann}",
   "zuletztLange": "しばらくなし",
   "abwesendZeitraum": "{zeitraum}は欠席",
+  "zuteilenLeer": "割り当てる枠をプログラムから選んでください。",
   "toastWillkommen": "ようこそ、{name} さん！",
   "toastZugeteilt": "割り当て済み · 未送信",
   "toastEntfernt": "割り当てを削除しました",

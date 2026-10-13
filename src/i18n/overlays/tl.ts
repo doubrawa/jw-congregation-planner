@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "huling naatasan {wann}",
   "zuletztLange": "matagal nang hindi",
   "abwesendZeitraum": "wala: {zeitraum}",
+  "zuteilenLeer": "Pumili ng puwesto sa programa para punan ito.",
   "toastWillkommen": "Maligayang pagdating, {name}!",
   "toastZugeteilt": "Naitalaga · hindi pa naipapadala",
   "toastEntfernt": "Inalis ang atas",

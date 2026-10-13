@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "上次：{wann}",
   "zuletztLange": "很久没有",
   "abwesendZeitraum": "{zeitraum}缺席",
+  "zuteilenLeer": "在节目中选择一个位置进行分配。",
   "toastWillkommen": "欢迎，{name}！",
   "toastZugeteilt": "已分配 · 尚未发送",
   "toastEntfernt": "已移除分配",

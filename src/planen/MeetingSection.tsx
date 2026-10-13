@@ -12,6 +12,7 @@ import { SONG_WORD } from '../../supabase/functions/_shared/i18n/translate-data.
 import { useT } from '../i18n/useT'
 import type { PartItem, Section, SlotAssignment } from '../data/types'
 import { platzAnzeige } from './platz-anzeige'
+import { istGewaehlt } from './planen-raster'
 import { PlatzZeile } from './PlatzZeile'
 
 /**
@@ -283,6 +284,7 @@ export function MeetingSection({
                         name={slot.name}
                         rolle={rolle ? tu(rolle) : undefined}
                         {...platzAnzeige(slot, stand, konflikte.von(slot), t)}
+                        gewaehlt={istGewaehlt(state.slotSel, { kind: 'part', wi: state.week, tab, si, ii, ni, aux })}
                         onClick={() => openPartSlot(ii, ni, item, slot, aux)}
                       />
                     )

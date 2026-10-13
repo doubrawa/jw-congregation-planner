@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "legutóbb {wann}",
   "zuletztLange": "régóta nem",
   "abwesendZeitraum": "távol: {zeitraum}",
+  "zuteilenLeer": "Válassz egy helyet a programban, hogy betöltsd.",
   "toastWillkommen": "Üdv, {name}!",
   "toastZugeteilt": "Kiosztva · még nincs elküldve",
   "toastEntfernt": "Kiosztás eltávolítva",

@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "sidst {wann}",
   "zuletztLange": "ikke i længere tid",
   "abwesendZeitraum": "fraværende {zeitraum}",
+  "zuteilenLeer": "Vælg en plads i programmet for at besætte den.",
   "toastWillkommen": "Velkommen, {name}!",
   "toastZugeteilt": "Tildelt · ikke sendt endnu",
   "toastEntfernt": "Tildeling fjernet",

@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "viimeksi {wann}",
   "zuletztLange": "ei aikoihin",
   "abwesendZeitraum": "poissa {zeitraum}",
+  "zuteilenLeer": "Valitse ohjelmasta paikka, jonka haluat täyttää.",
   "toastWillkommen": "Tervetuloa, {name}!",
   "toastZugeteilt": "Jaettu · ei vielä lähetetty",
   "toastEntfernt": "Tehtäväjako poistettu",

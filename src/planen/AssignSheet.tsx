@@ -7,7 +7,7 @@ import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { Sheet } from '../components/Sheet'
 import { nameTrifft } from '../components/suche'
 import { LOAD_WEEKS } from '../data/auslastung'
-import { dauerAbtrennen, herkunftVon, isSong, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER, rolleBasis, slotsOf } from '../data/helpers'
+import { dauerAbtrennen, herkunftVon, isSong, mtab, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER, rolleBasis, slotsOf } from '../data/helpers'
 import { meetingDate } from '../data/meeting-dates'
 import { buildS89ForSlot } from '../data/planning'
 import type { Absence, S89Payload, SlotAssignment, SlotSelection, Week } from '../data/types'
@@ -37,19 +37,62 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
   return (
     <Sheet
       label={kopf.label}
-      eyebrow={
-        kopf.abschnitt && (
-          <div className="sheet-marke zuteilen-abschnitt" data-farbe={kopf.abschnitt.farbe}>
-            {kopf.abschnitt.name}
-          </div>
-        )
-      }
+      eyebrow={kopf.abschnitt && <AbschnittMarke {...kopf.abschnitt} />}
       title={kopf.titel}
       sub={kopf.sub}
       onClose={close}
     >
       <ZuteilenInhalt sel={sel} onClose={close} />
     </Sheet>
+  )
+}
+
+/**
+ * **Zuteilen am Desktop** (T121, Entwurf `GDesktopPlanen`): kein Blatt über
+ * dem Plan, sondern eine Spalte daneben — der Plan bleibt sichtbar, und ein
+ * Klick auf den nächsten Platz wechselt nur, was hier steht. Derselbe Kopf und
+ * derselbe Inhalt wie im Blatt.
+ *
+ * Gezeigt wird nur ein Platz der Woche und Zusammenkunft, die der Plan gerade
+ * zeigt: Nach einem Wechsel stünde sonst ein Platz da, den man nirgends sieht.
+ */
+export function ZuteilenSpalte() {
+  const { state, dispatch } = useApp()
+  const { t } = useT()
+  const sel = state.slotSel
+  const sichtbar = sel && sel.kind !== 'fs' && sel.wi === state.week && sel.tab === mtab(state.tab) ? sel : null
+  return (
+    <aside className="zuteilen-spalte" aria-label={t.spurZuteilen}>
+      {sichtbar ? (
+        // Je Platz frisch: Suche und Freitext gehören dem Platz, nicht der Spalte.
+        <SpaltenInhalt key={JSON.stringify(sichtbar)} sel={sichtbar} onClose={() => dispatch({ type: 'closeSlot' })} />
+      ) : (
+        <p className="zuteilen-leer">{t.zuteilenLeer}</p>
+      )}
+    </aside>
+  )
+}
+
+function SpaltenInhalt({ sel, onClose }: { sel: SlotSelection; onClose: () => void }) {
+  const kopf = useZuteilenKopf(sel)
+  return (
+    <>
+      <div className="zuteilen-spalte-kopf">
+        {kopf.abschnitt && <AbschnittMarke {...kopf.abschnitt} />}
+        <h2 className="sheet-title">{kopf.titel}</h2>
+        {kopf.sub && <div className="sheet-sub">{kopf.sub}</div>}
+      </div>
+      <ZuteilenInhalt sel={sel} onClose={onClose} fokusAufSuche />
+    </>
+  )
+}
+
+/** Der Abschnitt über dem Titel, in der Farbe des Arbeitshefts. */
+function AbschnittMarke({ name, farbe }: { name: string; farbe?: string }) {
+  return (
+    <div className="sheet-marke zuteilen-abschnitt" data-farbe={farbe}>
+      {name}
+    </div>
   )
 }
 
@@ -114,8 +157,21 @@ function useZuteilenKopf(sel: SlotSelection): Kopf {
 /**
  * Der Inhalt des Blatts — ohne die Hülle, damit ihn am Desktop auch die
  * Spalte neben dem Programm zeigen kann.
+ *
+ * `fokusAufSuche`: In der Spalte geht der Fokus nach dem Klick auf einen Platz
+ * gleich in die Suche — man tippt den Namen, statt sich mit der Tabulatortaste
+ * durch das ganze Programm bis hierher zu arbeiten. Im Blatt nicht: Am Handy
+ * schöbe das Feld die Tastatur vor die Liste.
  */
-function ZuteilenInhalt({ sel, onClose }: { sel: SlotSelection; onClose: () => void }) {
+function ZuteilenInhalt({
+  sel,
+  onClose,
+  fokusAufSuche = false,
+}: {
+  sel: SlotSelection
+  onClose: () => void
+  fokusAufSuche?: boolean
+}) {
   const { state, dispatch } = useApp()
   const abwesend = useAbwesend()
   const i18n = useT()
@@ -296,6 +352,7 @@ function ZuteilenInhalt({ sel, onClose }: { sel: SlotSelection; onClose: () => v
             className="feld"
             placeholder={t.nameSuchen}
             value={suche}
+            autoFocus={fokusAufSuche}
             onChange={(e) => setSuche(e.target.value)}
           />
         </div>

@@ -179,6 +179,7 @@ export default {
   "zuletztWann": "לאחרונה {wann}",
   "zuletztLange": "לא לאחרונה",
   "abwesendZeitraum": "היעדרות: {zeitraum}",
+  "zuteilenLeer": "בחר מקום בתוכנית כדי לשבץ אותו.",
   "toastWillkommen": "ברוכים הבאים, {name}!",
   "toastZugeteilt": "שובץ · טרם נשלח",
   "toastEntfernt": "השיבוץ הוסר",

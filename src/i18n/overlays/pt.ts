@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "última vez {wann}",
   "zuletztLange": "faz tempo que não",
   "abwesendZeitraum": "ausente {zeitraum}",
+  "zuteilenLeer": "Escolha um lugar no programa para preenchê-lo.",
   "toastWillkommen": "Boas-vindas, {name}!",
   "toastZugeteilt": "Atribuído · ainda não enviado",
   "toastEntfernt": "Designação removida",

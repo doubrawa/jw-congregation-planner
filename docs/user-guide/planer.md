@@ -179,6 +179,10 @@ vorsieht. Die Zettel der Zusätzlichen Klasse sind dabei und tragen ihren Raum.
   und, was am anderen Tag der Woche schon ansteht („So Saalordner"). Rechts
   zeigen **fünf Punkte** die Auslastung: so viele voll, wie die Person in den
   fünf Wochen um diese herum Aufgaben hat. Abwesende stehen am Ende.
+- **Am Computer** (breites Fenster) öffnet sich kein Blatt: Das Zuteilen steht
+  als **Spalte rechts neben dem Programm**, das sichtbar bleibt. Ein Klick auf
+  einen Platz zeigt ihn dort und hebt ihn im Plan hervor; der Cursor steht
+  gleich in der Suche — Namen tippen, Person anklicken, nächster Platz.
 - Die Abwesenheiten kommen aus den Einträgen, die die Verkündiger selbst in
   ihrem **Profil** erfassen (**Von–Bis** als Datum). Geprüft wird der
   **Tag der jeweiligen Zusammenkunft**, nicht die Woche: wer nur übers Wochenende

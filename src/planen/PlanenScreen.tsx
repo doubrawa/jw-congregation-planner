@@ -1,9 +1,9 @@
-import { useApp, type AppAction, type AppState } from '../app/context'
+import { useApp, type AppAction } from '../app/context'
 import { Zeichen } from '../bausteine/Zeichen'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { Bereichstitel } from '../components/Bereichstitel'
 import { useBackDismiss } from '../components/useBackDismiss'
-import { TABLET_BREITE, useMedia } from '../components/useMedia'
+import { DESKTOP_BREITE, TABLET_BREITE, useMedia } from '../components/useMedia'
 import { WeekStrip } from '../components/WeekStrip'
 import { AusfallBanner, MemorialBanner } from '../components/WeekBadges'
 import { WochenWahl } from '../components/WochenWahl'
@@ -14,6 +14,8 @@ import { useProgWeek, useT } from '../i18n/useT'
 import { FsConflictsBanner } from './PlanBanners'
 import { GruppeSendenPanel, PlanSendenPanel } from './PlanSendenPanel'
 import { PlanenAktionen } from './PlanenAktionen'
+import { mitAktionen } from './planen-raster'
+import { ZuteilenSpalte } from './AssignSheet'
 import { S89Bogen } from './S89Bogen'
 import { FsBereichTabs } from './FsBereichTabs'
 import { aktiverFsBereich } from './fs-bereiche'
@@ -47,6 +49,7 @@ export function PlanenScreen() {
   const { state, dispatch } = useApp()
   const rechte = rechteVon(state)
   const breit = useMedia(TABLET_BREITE)
+  const desktop = useMedia(DESKTOP_BREITE)
   // Nur die eigene Gruppe sieht, wer Gruppenaufseher ist und nicht zuteilt:
   // Admin und Planer besetzen die Treffpunkte aller Gruppen.
   const fsOverseer = !rechte.zuteilen && rechte.gruppe !== null
@@ -93,29 +96,26 @@ export function PlanenScreen() {
   // Der Streifen zeichnet dieselben Inhalte dreimal — vorige, aktuelle und
   // nächste Woche — und übernimmt das Wischen. Die Aktionsleiste des Handys
   // steht außerhalb: Er verschiebt seinen Inhalt per `transform`, und eine
-  // Leiste darin klebte nicht am Rand, sondern an der Woche.
+  // Leiste darin klebte nicht am Rand, sondern an der Woche. Aus demselben
+  // Grund steht die Spalte zum Zuteilen am Desktop daneben, nicht darin.
+  const plan = (
+    <WeekStrip>
+      <PlanenBody />
+    </WeekStrip>
+  )
+  if (desktop && mitAktionen(state)) {
+    return (
+      <div className="planen-raster">
+        <div className="planen-raster-plan">{plan}</div>
+        <ZuteilenSpalte />
+      </div>
+    )
+  }
   return (
     <>
-      <WeekStrip>
-        <PlanenBody />
-      </WeekStrip>
+      {plan}
       {!breit && mitAktionen(state) && <PlanenAktionen leiste />}
     </>
-  )
-}
-
-/**
- * **Gehört zum Plan die Aktionsleiste?** Zum Plan der Zusammenkünfte, wer
- * zuteilt, sobald es eine Woche gibt — nicht zu „Woche einrichten" und nicht
- * zum Predigtdienst, der seine eigenen Knöpfe hat.
- */
-function mitAktionen(state: AppState): boolean {
-  const rechte = rechteVon(state)
-  return (
-    rechte.zuteilen &&
-    state.tab !== 'edit' &&
-    geplantesThema(rechte, state.tab) === 'zusammenkuenfte' &&
-    state.weeks[state.week] !== undefined
   )
 }
 

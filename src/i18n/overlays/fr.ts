@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "dernière fois {wann}",
   "zuletztLange": "pas récemment",
   "abwesendZeitraum": "absence\u00a0: {zeitraum}",
+  "zuteilenLeer": "Choisis une place dans le programme pour l’attribuer.",
   "toastWillkommen": "Bienvenue, {name}\u00a0!",
   "toastZugeteilt": "Attribué · pas encore envoyé",
   "toastEntfernt": "Attribution retirée",

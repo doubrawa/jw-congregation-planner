@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "востаннє {wann}",
   "zuletztLange": "давно не",
   "abwesendZeitraum": "відсутність: {zeitraum}",
+  "zuteilenLeer": "Виберіть місце в програмі, щоб призначити на нього.",
   "toastWillkommen": "Ласкаво просимо, {name}!",
   "toastZugeteilt": "Призначено · ще не надіслано",
   "toastEntfernt": "Призначення видалено",

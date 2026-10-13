@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "poslednji put {wann}",
   "zuletztLange": "već dugo ne",
   "abwesendZeitraum": "odsustvo: {zeitraum}",
+  "zuteilenLeer": "Izaberi mesto u programu da ga popuniš.",
   "toastWillkommen": "Dobro došli, {name}!",
   "toastZugeteilt": "Dodeljeno · još nije poslato",
   "toastEntfernt": "Zaduženje uklonjeno",

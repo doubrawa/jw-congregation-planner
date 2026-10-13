@@ -19,6 +19,7 @@ export function PlatzZeile({
   lage,
   hinweis,
   status,
+  gewaehlt = false,
   onClick,
 }: {
   name: string
@@ -28,13 +29,20 @@ export function PlatzZeile({
   hinweis?: string
   /** Die Stufe der Zusage als Wort — wo es eine gibt. */
   status?: string
+  /** Am Desktop: Die Spalte daneben teilt gerade diesen Platz zu (`istGewaehlt`). */
+  gewaehlt?: boolean
   onClick: () => void
 }) {
   const { t } = useT()
   const rolleText = [rolle, lage === 'wartet' ? status : undefined].filter(Boolean).join(' · ')
   const stufeSichtbar = lage === 'wartet' || status === hinweis
   return (
-    <button type="button" className={`platz ${LAGE_KLASSE[lage]}`} onClick={onClick}>
+    <button
+      type="button"
+      className={gewaehlt ? `platz ${LAGE_KLASSE[lage]} is-gewaehlt` : `platz ${LAGE_KLASSE[lage]}`}
+      aria-current={gewaehlt || undefined}
+      onClick={onClick}
+    >
       <span className="platz-punkt" aria-hidden="true" />
       <span className="platz-name">{lage === 'offen' ? t.spurZuteilen : name}</span>
       {rolleText && <span className="platz-rolle">{rolleText}</span>}

@@ -7,7 +7,7 @@ import { APP_LANGS, LOCALES } from '../i18n/langs'
 import { makeTr } from '../i18n/translate'
 import { dict } from '../i18n/ui'
 import { emptyQualifications } from '../data/helpers'
-import type { Group, Notification, Person } from '../data/types'
+import type { Group, Notification, Person, SlotSelection } from '../data/types'
 
 /**
  * **Das App-Gerüst — die Hälfte der Rechteprüfung, die niemand gesehen hat.**
@@ -877,5 +877,31 @@ describe('Die Begrüßung nach dem Anmelden', () => {
   it('ohne Vormerkung wird nicht gegrüßt', () => {
     const { dispatch } = zeige({ welcomePending: false })
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'welcomeShown' })
+  })
+})
+
+describe('Am Desktop teilt die Spalte neben dem Plan zu — ohne Blatt darüber (T121, Phase 5d-2)', () => {
+  /** Der erste Platz der Woche — welcher, ist gleich: Gefragt ist, wo er zugeteilt wird. */
+  const SEL: SlotSelection = { kind: 'part', wi: 0, tab: 'mid', si: 0, ii: 0, ni: 0, label: 'Punkt', priv: null, groups: false }
+  const breite = (desktop: boolean) => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: desktop }) as unknown as typeof window.matchMedia
+  }
+  const planen = () => zeige({ screen: 'planen', tab: 'mid', week: 0, weeks: demoZustand().weeks, slotSel: SEL })
+  afterEach(() => {
+    delete (window as { matchMedia?: unknown }).matchMedia
+  })
+
+  it('am Desktop steht der Platz in der Spalte, und kein Blatt legt sich darüber', () => {
+    breite(true)
+    const { container } = planen()
+    expect(container.querySelector('.zuteilen-spalte .zuteilen-liste')).not.toBeNull()
+    expect(document.querySelector('.sheet')).toBeNull()
+  })
+
+  it('am Handy derselbe Platz im Blatt', () => {
+    breite(false)
+    const { container } = planen()
+    expect(container.querySelector('.zuteilen-spalte')).toBeNull()
+    expect(document.querySelector('.sheet .zuteilen-liste')).not.toBeNull()
   })
 })

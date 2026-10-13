@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "naposledy {wann}",
   "zuletztLange": "už dlho nie",
   "abwesendZeitraum": "neprítomnosť: {zeitraum}",
+  "zuteilenLeer": "Vyber v programe miesto, ktoré chceš obsadiť.",
   "toastWillkommen": "Vitaj, {name}!",
   "toastZugeteilt": "Pridelené · zatiaľ neodoslané",
   "toastEntfernt": "Pridelenie odstránené",

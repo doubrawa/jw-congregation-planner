@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "mara ya mwisho {wann}",
   "zuletztLange": "si hivi karibuni",
   "abwesendZeitraum": "hayupo {zeitraum}",
+  "zuteilenLeer": "Chagua nafasi katika programu ili uijaze.",
   "toastWillkommen": "Karibu, {name}!",
   "toastZugeteilt": "Imegawiwa · bado haijatumwa",
   "toastEntfernt": "Mgawo umeondolewa",

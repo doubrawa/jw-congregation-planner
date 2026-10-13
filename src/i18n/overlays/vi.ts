@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "lần cuối {wann}",
   "zuletztLange": "lâu rồi chưa",
   "abwesendZeitraum": "vắng {zeitraum}",
+  "zuteilenLeer": "Chọn một chỗ trong chương trình để phân công.",
   "toastWillkommen": "Chào mừng, {name}!",
   "toastZugeteilt": "Đã phân công · chưa gửi",
   "toastEntfernt": "Đã xóa phân công",

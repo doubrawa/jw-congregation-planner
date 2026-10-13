@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "en son {wann}",
   "zuletztLange": "uzun süredir yok",
   "abwesendZeitraum": "yok: {zeitraum}",
+  "zuteilenLeer": "Doldurmak için programdan bir yer seç.",
   "toastWillkommen": "Hoş geldin, {name}!",
   "toastZugeteilt": "Atandı · henüz gönderilmedi",
   "toastEntfernt": "Görev kaldırıldı",

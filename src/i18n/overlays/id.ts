@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "terakhir {wann}",
   "zuletztLange": "sudah lama tidak",
   "abwesendZeitraum": "absen {zeitraum}",
+  "zuteilenLeer": "Pilih tempat dalam program untuk mengisinya.",
   "toastWillkommen": "Selamat datang, {name}!",
   "toastZugeteilt": "Ditetapkan · belum dikirim",
   "toastEntfernt": "Penetapan dihapus",

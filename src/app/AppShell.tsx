@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Zeichen, type ZeichenName } from '../bausteine/Zeichen'
 import { datumsFormat } from '../components/datum-anzeige'
 import { useBackDismiss } from '../components/useBackDismiss'
+import { DESKTOP_BREITE, useMedia } from '../components/useMedia'
 import { displayName, initials } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import { darfPlanen, erlaubteScreens, geplantesThema, rechteVon, themaVon } from '../data/rechte'
@@ -29,6 +30,7 @@ import { MitteilungenScreen } from '../mitteilungen/MitteilungenScreen'
 import { PersonenScreen } from '../personen/PersonenScreen'
 import { AssignSheet } from '../planen/AssignSheet'
 import { PlanenScreen } from '../planen/PlanenScreen'
+import { zuteilenInSpalte } from '../planen/planen-raster'
 import { ProfilScreen } from '../profil/ProfilScreen'
 import { ProgrammScreen } from '../programm/ProgrammScreen'
 import { useApp } from './context'
@@ -65,6 +67,7 @@ export function AppShell() {
   const { state, dispatch } = useApp()
   const i18n = useT()
   const { t } = i18n
+  const desktop = useMedia(DESKTOP_BREITE)
   // Recovery (Passwort-Reset-Link) nutzt das Login-Layout ohne App-Chrome
   const isLogin = state.screen === 'login' || state.recovery
   const me = eigenePerson(state)
@@ -255,6 +258,8 @@ export function AppShell() {
   const fehlerTexte = { titel: t.errTitel, text: t.errText, aktion: t.offlineRetry }
   const meineAufgabe = state.myTasks.find((task) => task.id === state.myTaskId)
   const abzusagen = state.myTasks.find((task) => task.id === state.absageId)
+  // Am Desktop teilt die Spalte neben dem Plan zu — dafür kein Blatt darüber.
+  const zuteilenBlatt = state.slotSel && !zuteilenInSpalte(state, desktop) ? state.slotSel : null
   /** Ein Blatt in seiner eigenen Fehlergrenze (siehe unten). */
   const blatt = (inhalt: ReactNode) => <ErrorBoundary {...fehlerTexte}>{inhalt}</ErrorBoundary>
 
@@ -334,7 +339,7 @@ export function AppShell() {
           mitten in derselben Taste einen frischen `CloseWatcher` — der die
           Taste ein zweites Mal verarbeitete und es gleich mit schloss.
         */}
-        {state.slotSel && blatt(<AssignSheet sel={state.slotSel} />)}
+        {zuteilenBlatt && blatt(<AssignSheet sel={zuteilenBlatt} />)}
         {state.langSheetOpen && blatt(<LanguageSheet />)}
         {state.svcSheet && blatt(<ServicePersonsSheet svcKey={state.svcSheet} />)}
         {state.s89 && blatt(<S89Sheet payload={state.s89} />)}

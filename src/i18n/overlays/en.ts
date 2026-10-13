@@ -215,6 +215,7 @@ export default {
   "zuletztWann": "last assigned {wann}",
   "zuletztLange": "not recently",
   "abwesendZeitraum": "absent {zeitraum}",
+  "zuteilenLeer": "Choose a place in the program to fill it.",
   "toastWillkommen": "Welcome, {name}!",
   "toastZugeteilt": "Assigned · not sent yet",
   "toastEntfernt": "Assignment removed",

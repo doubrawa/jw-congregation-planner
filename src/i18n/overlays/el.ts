@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "τελευταία φορά {wann}",
   "zuletztLange": "όχι πρόσφατα",
   "abwesendZeitraum": "απουσία: {zeitraum}",
+  "zuteilenLeer": "Επιλέξτε μια θέση στο πρόγραμμα για να την καλύψετε.",
   "toastWillkommen": "Καλώς ήρθατε, {name}!",
   "toastZugeteilt": "Ανατέθηκε · δεν έχει σταλεί ακόμη",
   "toastEntfernt": "Η ανάθεση αφαιρέθηκε",

@@ -343,6 +343,8 @@ export const DE = {
     mitBereichN: 'Mit diesem Aufgabenbereich: {n}', aufgabenInWochen: 'Aufgaben in {w} Wochen',
     vorschlag: 'Vorschlag', zuletztWann: 'zuletzt {wann}', zuletztLange: 'länger nicht dran',
     abwesendZeitraum: 'abwesend {zeitraum}',
+    // Die Spalte zum Zuteilen am Desktop, solange kein Platz gewählt ist.
+    zuteilenLeer: 'Wähle im Programm einen Platz, um ihn zu besetzen.',
     toastWillkommen: 'Willkommen, {name}!', toastZugeteilt: 'Zugeteilt · noch nicht gesendet',
     toastEntfernt: 'Zuteilung entfernt', toastKeineOffen: 'Keine offenen Zuteilungen in dieser Ansicht',
     toastKeinePassende: 'Keine passende Person für die offenen Slots frei',

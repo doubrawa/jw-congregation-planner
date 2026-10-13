@@ -252,8 +252,15 @@ describe('Die Kandidatenliste', () => {
 
   it('die Suche findet Namen auch ohne Umlaute und in beliebiger Reihenfolge', () => {
     const JOERG = person('p-j', 'Jörg', 'Müller', 'schulung')
+    // Im Blatt bekommt die Suche den Fokus nie, auch nicht für einen Augenblick:
+    // Am Handy klappte schon der die Tastatur über die Liste. Danach setzt
+    // `useDialogFocus` ihn ohnehin auf das erste Bedienelement — am Ende sähe
+    // man den Unterschied nicht, deshalb wird jeder Aufruf mitgeschrieben.
+    const fokus = vi.spyOn(HTMLElement.prototype, 'focus')
     const { container } = zeige(SEL_SCHUELER, { persons: [...PERSONEN, JOERG] })
     const suche = container.querySelector<HTMLInputElement>('.zuteilen-suche input')!
+    expect(fokus.mock.contexts).not.toContain(suche)
+    fokus.mockRestore()
     expect(suche.type).toBe('search')
     expect(container.querySelector('.zuteilen-suche label')?.textContent).toBe(t.werUebernimmt)
     fireEvent.change(suche, { target: { value: 'muller' } })

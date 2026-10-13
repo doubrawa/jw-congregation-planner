@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "ultima dată {wann}",
   "zuletztLange": "nu de curând",
   "abwesendZeitraum": "absență: {zeitraum}",
+  "zuteilenLeer": "Alege un loc în program pentru a-l ocupa.",
   "toastWillkommen": "Bun venit, {name}!",
   "toastZugeteilt": "Atribuit · încă netrimis",
   "toastEntfernt": "Însărcinare eliminată",

@@ -179,6 +179,7 @@ export default {
   "zuletztWann": "آخرین بار {wann}",
   "zuletztLange": "اخیراً نه",
   "abwesendZeitraum": "غایب: {zeitraum}",
+  "zuteilenLeer": "یک جا را در برنامه انتخاب کنید تا آن را پر کنید.",
   "toastWillkommen": "خوش آمدید، {name}!",
   "toastZugeteilt": "تعیین شد · هنوز ارسال نشده",
   "toastEntfernt": "وظیفه حذف شد",

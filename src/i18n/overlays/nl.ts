@@ -131,6 +131,7 @@ export default {
   "zuletztWann": "laatst {wann}",
   "zuletztLange": "al lang niet",
   "abwesendZeitraum": "afwezig {zeitraum}",
+  "zuteilenLeer": "Kies een plaats in het programma om die te vullen.",
   "toastWillkommen": "Welkom, {name}!",
   "toastZugeteilt": "Toegewezen · nog niet verstuurd",
   "toastEntfernt": "Toewijzing verwijderd",

@@ -180,6 +180,7 @@ export default {
   "zuletztWann": "آخر مرة {wann}",
   "zuletztLange": "ليس مؤخرًا",
   "abwesendZeitraum": "غياب: {zeitraum}",
+  "zuteilenLeer": "اختر مكانًا في البرنامج لتعيين شخص له.",
   "toastWillkommen": "أهلاً، {name}!",
   "toastZugeteilt": "تم التعيين · لم يُرسَل بعد",
   "toastEntfernt": "أُزيل التعيين",

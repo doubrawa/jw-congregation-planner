@@ -10,10 +10,10 @@ import {
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { syncAuxSlots } from '../data/aux-class'
-import { emptyQualifications } from '../data/helpers'
+import { emptyQualifications, privSetzen } from '../data/helpers'
 import { helferKey } from '../data/planning'
 import { dict } from '../i18n/ui'
-import type { Group, PartItem, Person, Section, Service, Week } from '../data/types'
+import type { Group, PartItem, Person, Section, Service, SlotSelection, Week } from '../data/types'
 import { PlanenScreen } from './PlanenScreen'
 
 /**
@@ -215,6 +215,66 @@ describe('Die Aktionsleiste (T121, Phase 5c)', () => {
     fireEvent.keyDown(window, { key: 'Escape' })
     fireEvent.click(container.querySelector('.planen-senden')!)
     expect(document.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe(t.planSenden)
+  })
+})
+
+describe('Zuteilen am Desktop: die Spalte neben dem Plan (T121, Phase 5d-2)', () => {
+  /** Der Schülerteil der Woche — der zweite Abschnitt, sein erster Platz. */
+  const schueler = (wi = 0): SlotSelection => ({
+    kind: 'part', wi, tab: 'mid', si: 1, ii: 0, ni: 0, label: 'Gespräche beginnen', priv: 'schulung', groups: false,
+  })
+  const spalte = (c: HTMLElement) => c.querySelector('.zuteilen-spalte')
+
+  beforeEach(() => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as unknown as typeof window.matchMedia
+  })
+  afterEach(() => {
+    delete (window as { matchMedia?: unknown }).matchMedia
+  })
+
+  it('ohne gewählten Platz sagt sie, was zu tun ist — außerhalb des Wochenstreifens', () => {
+    const { container } = zeige()
+    expect(spalte(container)?.closest('.week-strip')).toBeNull()
+    expect(spalte(container)?.getAttribute('aria-label')).toBe(t.spurZuteilen)
+    expect(spalte(container)?.textContent).toBe(t.zuteilenLeer)
+  })
+
+  it('der gewählte Platz steht darin — und ist im Plan hervorgehoben', () => {
+    const { container } = zeige({ slotSel: schueler() })
+    expect(spalte(container)?.querySelector('.sheet-title')?.textContent).toBe('4 Gespräche beginnen')
+    expect(spalte(container)?.querySelector('.zuteilen-liste')).not.toBeNull()
+    const gewaehlt = [...seite(container).querySelectorAll('.platz.is-gewaehlt')]
+    expect(gewaehlt).toHaveLength(1)
+    expect(gewaehlt[0]?.getAttribute('aria-current')).toBe('true')
+    // Der Schülerteil, nicht der Punkt darüber.
+    expect(gewaehlt[0]?.closest('.prog-abschnitt')?.textContent).toContain('UNS IM DIENST VERBESSERN')
+  })
+
+  it('der Fokus geht gleich in die Suche — tippen statt durch das Programm tabben', () => {
+    const priv = emptyQualifications()
+    privSetzen(priv, 'schulung', true)
+    const SCHUELERIN: Person = { ...person('p-s', 'Sina', 'Schulz'), role: 'verkuendiger', female: true, priv }
+    const { container } = zeige({ slotSel: schueler(), persons: [PLANER, AUFSEHER, SCHUELERIN] })
+    const suche = spalte(container)?.querySelector('.zuteilen-suche input')
+    expect(suche).not.toBeNull()
+    expect(document.activeElement).toBe(suche)
+  })
+
+  it('ein Platz einer anderen Woche bleibt draußen — die Spalte zeigt nur, was der Plan zeigt', () => {
+    const { container } = zeige({ slotSel: schueler(1), weeks: [woche(), woche({ start: '2026-09-14' })] })
+    expect(spalte(container)?.textContent).toBe(t.zuteilenLeer)
+    expect(seite(container).querySelector('.platz.is-gewaehlt')).toBeNull()
+  })
+
+  it('unter 1180 px keine Spalte — dort teilt das Blatt zu', () => {
+    window.matchMedia = vi.fn((q: string) => ({ matches: !q.includes('1180') })) as unknown as typeof window.matchMedia
+    expect(spalte(zeige().container)).toBeNull()
+  })
+
+  it('nicht in „Woche einrichten" und nicht im Predigtdienst', () => {
+    expect(spalte(zeige({ tab: 'edit' }).container)).toBeNull()
+    cleanup()
+    expect(spalte(zeige({ tab: 'fs' }).container)).toBeNull()
   })
 })
 

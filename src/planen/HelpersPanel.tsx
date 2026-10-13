@@ -3,6 +3,7 @@ import { mtab, serviceQualKey } from '../data/helpers'
 import { useT } from '../i18n/useT'
 import type { Meeting, Service } from '../data/types'
 import { platzAnzeige } from './platz-anzeige'
+import { istGewaehlt } from './planen-raster'
 import { PlatzZeile } from './PlatzZeile'
 import { useKonflikte } from './useKonflikte'
 import { useZusage } from './useZusage'
@@ -62,6 +63,7 @@ export function HelpersPanel({ meeting }: { meeting: Meeting }) {
                 name={name ? tu(name) : ''}
                 rolle={tu(service.name)}
                 {...platzAnzeige(slot, stand, gruppe ? undefined : konflikte.von(slot), t, t.spurErsatzGesucht)}
+                gewaehlt={istGewaehlt(state.slotSel, { kind: 'helper', wi: state.week, tab, svc: service.key, pos })}
                 onClick={() => openHelperSlot(service, pos)}
               />
             )
