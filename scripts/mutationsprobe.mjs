@@ -171,10 +171,10 @@ export const KATALOG = [
   },
   {
     id: 'zuteilen-spalte-nur-sichtbare-woche',
-    datei: 'src/planen/AssignSheet.tsx',
+    datei: 'src/planen/planen-raster.ts',
     regel: 'Die Spalte zeigt nur einen Platz der Woche, die der Plan gerade zeigt.',
-    suchen: 'sel.wi === state.week && sel.tab === mtab(state.tab)',
-    ersetzen: 'sel.tab === mtab(state.tab)',
+    suchen: '  if (!sel || sel.wi !== state.week) return false\n',
+    ersetzen: '  if (!sel) return false\n',
   },
   {
     id: 'zuteilen-spalte-fokus-suche',
@@ -601,27 +601,9 @@ export const KATALOG = [
     suchen: "return confirmations[key] ?? 'offen'",
     ersetzen: "return confirmations[key] === 'bestätigt' ? 'bestätigt' : 'offen'",
   },
-  {
-    id: 'ampel-chip-zeigt-stufe',
-    datei: 'src/planen/SlotChip.tsx',
-    regel: 'Der Chip zeigt die Stufe seines Platzes.',
-    suchen: '<ZusagePunkt stufe={status.stufe} />',
-    ersetzen: '<ZusagePunkt stufe="offen" />',
-  },
-  {
-    id: 'ampel-screenreader',
-    datei: 'src/planen/SlotChip.tsx',
-    regel: 'Der Screenreader hört die Stufe als Wort — die Farbe allein sagt ihm nichts.',
-    suchen: '<span className="sr-only">{status.label}</span>',
-    ersetzen: '<span className="sr-only" />',
-  },
-  {
-    id: 'ampel-geschuetztes-leerzeichen',
-    datei: 'src/planen/SlotChip.tsx',
-    regel: 'Zwischen Name und Punkt steht ein geschütztes Leerzeichen — der Punkt rutscht nicht allein in die nächste Zeile.',
-    suchen: "{'\\u00A0'}",
-    ersetzen: "{' '}",
-  },
+  // Hier standen drei Einträge zu `SlotChip` (Stufe, Vorlesen, geschütztes
+  // Leerzeichen). Seit T121 Phase 5e ist jeder Platz eine `PlatzZeile` — die
+  // Stufe bewachen dort `plan-platz-*`.
 
   // ── Zwischenablage ────────────────────────────────────────────────────────
   {
@@ -3926,8 +3908,8 @@ export const KATALOG = [
     id: 'leiste-nicht-beim-einrichten',
     datei: 'src/planen/planen-raster.ts',
     regel: 'Die Aktionsleiste gehört zum Plan, nicht zu „Woche einrichten".',
-    suchen: "    state.tab !== 'edit' &&\n",
-    ersetzen: '',
+    suchen: "  if (thema === 'zusammenkuenfte') return state.tab !== 'edit' ? 'zusammenkuenfte' : null\n",
+    ersetzen: "  if (thema === 'zusammenkuenfte') return 'zusammenkuenfte'\n",
   },
   {
     id: 'senden-liste-treffpunkt-rolle',
@@ -4884,6 +4866,141 @@ export const KATALOG = [
     regel: 'Was die Probe in `vortraege` angelegt hat, räumt sie wieder weg.',
     suchen: "    ['die Vormerkungen der Vorträge', weg('vortraege')],\n",
     ersetzen: '',
+  },
+
+  // ── Treffpunkte planen (T121, Phase 5e) ───────────────────────────────────
+  {
+    id: 'fs-konflikt-je-tag',
+    datei: 'src/data/fs.ts',
+    regel: 'Ein Konflikt am Treffpunkt gilt an seinem Wochentag — wer am Samstag fehlt, leitet am Mittwoch trotzdem.',
+    suchen: '    const eigene = conflicts.filter((c) => c.wd === inst.wd && c.kennung === kennung)\n',
+    ersetzen: '    const eigene = conflicts.filter((c) => c.kennung === kennung)\n',
+  },
+  {
+    id: 'fs-konflikt-abwesenheit-zuerst',
+    datei: 'src/data/fs.ts',
+    regel: 'Steht ein Leiter abwesend und doppelt da, nennt sein Platz die Abwesenheit.',
+    suchen: "    return eigene.find((c) => c.kind === 'fsAbsent') ?? eigene[0]\n",
+    ersetzen: '    return eigene[0]\n',
+  },
+  {
+    id: 'fs-in-gruppe',
+    datei: 'src/data/fs.ts',
+    regel: 'Der Gruppenaufseher plant, leert und besetzt nur die Treffpunkte seiner Gruppe.',
+    suchen: '  return onlyGroup === null || inst.grp === onlyGroup\n',
+    ersetzen: '  return true\n',
+  },
+  {
+    id: 'treffpunkt-gruppe-nur-ohne-zuteilen',
+    datei: 'src/data/rechte.ts',
+    regel: 'Wer zuteilt, plant die Treffpunkte aller Gruppen — auch wenn er zugleich eine Gruppe betreut.',
+    suchen: '  return r.zuteilen ? null : r.gruppe\n',
+    ersetzen: '  return r.gruppe\n',
+  },
+  {
+    id: 'treffpunkt-freitext-ohne-stand',
+    datei: 'src/planen/platz-anzeige.ts',
+    regel: 'Ein Freitext-Leiter hat nichts zu bestätigen — sein Platz wartet nicht.',
+    suchen: '    fsLeiterZuteilung(inst) ? stand(inst) : null,\n',
+    ersetzen: '    stand(inst),\n',
+  },
+  {
+    id: 'treffpunkt-konflikt-am-platz',
+    datei: 'src/planen/FsPlan.tsx',
+    regel: 'Wer abwesend oder doppelt eingeteilt ist, steht am Platz seines Treffpunkts rot da.',
+    suchen: '{...leiterAnzeige(inst, zusage.treffpunkt, konfliktVon(inst), t)}',
+    ersetzen: '{...leiterAnzeige(inst, zusage.treffpunkt, undefined, t)}',
+  },
+  {
+    id: 'treffpunkt-anlegen-nicht-beim-planer',
+    datei: 'src/planen/FsPlan.tsx',
+    regel: 'Einen Treffpunkt für diese Woche legt nur an, wer Treffpunkte ändern darf — der Planer teilt zu.',
+    suchen: '      {(rechte.admin || rechte.gruppe !== null) && (\n',
+    ersetzen: '      {(\n',
+  },
+  {
+    id: 'treffpunkt-gewaehlt-nach-kennung',
+    datei: 'src/planen/planen-raster.ts',
+    regel: 'Am Desktop ist genau der Treffpunkt hervorgehoben, der in der Spalte zugeteilt wird.',
+    suchen: "sel.kind === 'fs' && ort.kind === 'fs' && sel.instId === ort.instId",
+    ersetzen: "sel.kind === 'fs' && ort.kind === 'fs'",
+  },
+  {
+    id: 'leiste-nur-bei-treffpunkten-der-woche',
+    datei: 'src/planen/planen-raster.ts',
+    regel: 'Besuche, Zeugnisgeben und Grundplan haben keine Woche — und keine Aktionsleiste.',
+    suchen: "thema === 'predigtdienst' && aktiverFsBereich(state) === 'treffpunkte' ? 'treffpunkte' : null",
+    ersetzen: "thema === 'predigtdienst' ? 'treffpunkte' : null",
+  },
+  {
+    id: 'leiste-nur-mit-recht',
+    datei: 'src/planen/planen-raster.ts',
+    regel: 'Die Aktionsleiste hat nur, wer den Plan planen darf.',
+    suchen: '  if (!darfPlanen(rechte, thema)) return null\n',
+    ersetzen: '',
+  },
+  {
+    id: 'spalte-treffpunkt-nur-beim-plan',
+    datei: 'src/planen/planen-raster.ts',
+    regel: 'Die Spalte zeigt einen Treffpunkt nur beim Plan der Treffpunkte.',
+    suchen: "  return sel.kind === 'fs' ? art === 'treffpunkte' : art === 'zusammenkuenfte' && sel.tab === state.tab\n",
+    ersetzen: "  return sel.kind === 'fs' ? true : art === 'zusammenkuenfte' && sel.tab === state.tab\n",
+  },
+  {
+    id: 'treffpunkt-automatik-nur-eigene-gruppe',
+    datei: 'src/planen/TreffpunkteAutomatikBlatt.tsx',
+    regel: '„Automatisch" und „Leeren" wirken beim Gruppenaufseher nur auf seine Gruppe.',
+    suchen: '  const onlyGroup = treffpunktGruppe(rechteVon(state))\n',
+    ersetzen: '  const onlyGroup = null\n',
+  },
+  {
+    id: 'senden-gruppe-zaehlt-nur-ihre',
+    datei: 'src/planen/wochen-versand.ts',
+    regel: 'Der Gruppenaufseher sieht beim Senden nur, was seine Gruppe betrifft — dieselbe Auswahl wie der Server.',
+    suchen: '    return eigene ? alle.filter((o) => eigene.has(o.key)) : alle\n',
+    ersetzen: '    return alle\n',
+  },
+  {
+    id: 'senden-gruppe-zuletzt-eigene',
+    datei: 'src/planen/wochen-versand.ts',
+    regel: '„Zuletzt gesendet" meint beim Gruppenaufseher den Versand an seine Gruppe, nicht an die Woche.',
+    suchen: '    return eigene ? zuletztGesendetFuer(state.sentLog, eigene) : zuletztGesendet(state.sentLog, week.start)\n',
+    ersetzen: '    return zuletztGesendet(state.sentLog, week.start)\n',
+  },
+  {
+    id: 'senden-zuletzt-genauer-schluessel',
+    datei: 'src/data/plan-versand.ts',
+    regel: 'Ein Aufgaben-Schlüssel ist kein Anfang eines anderen — der Versand an …|r10 ist keiner an …|r1.',
+    suchen: "  const praefixe = [...taskKeys].map((k) => sentKey(k, ''))\n",
+    ersetzen: '  const praefixe = [...taskKeys]\n',
+  },
+  {
+    id: 'senden-gruppe-alle-satz',
+    datei: 'src/planen/PlanSendenBlatt.tsx',
+    regel: 'Hat der Gruppenaufseher alles gesendet, sagt der Satz es für seine Gruppe.',
+    suchen: 'gruppe ? [t.fsSendenOffen, t.fsSendenAlle]',
+    ersetzen: 'gruppe ? [t.fsSendenOffen, t.planSendenAlle]',
+  },
+  {
+    id: 'senden-gruppe-nicht-auf-altem-stand',
+    datei: 'src/planen/wochen-versand.ts',
+    regel: 'Auch der Gruppenaufseher sendet nicht von der Momentaufnahme aus.',
+    suchen: '  return gruppe !== null && !state.staleAt ? { gruppe } : null\n',
+    ersetzen: '  return gruppe !== null ? { gruppe } : null\n',
+  },
+  {
+    id: 'senden-gruppe-ohne-spur',
+    datei: 'src/planen/PlanSendenBlatt.tsx',
+    regel: 'Beim Gruppenaufseher steht im Blatt keine Spur der Zusammenkunft — sie betrifft ihn nicht.',
+    suchen: '{!gruppe && <PlanSpur tab={mtab(state.tab)} />}',
+    ersetzen: '{<PlanSpur tab={mtab(state.tab)} />}',
+  },
+  {
+    id: 'aktueller-treffpunkt-gruppe',
+    datei: 'src/planen/useAktuellerPlatz.ts',
+    regel: 'Das Zuteilen zeigt beim Gruppenaufseher dieselbe Lage wie sein Plan — mit den Konflikten seiner Gruppe.',
+    suchen: 'week.start, treffpunktGruppe(rechteVon(state)))',
+    ersetzen: 'week.start)',
   },
 ]
 

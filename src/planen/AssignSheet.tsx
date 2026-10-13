@@ -7,7 +7,7 @@ import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { Sheet } from '../components/Sheet'
 import { nameTrifft } from '../components/suche'
 import { LOAD_WEEKS } from '../data/auslastung'
-import { dauerAbtrennen, herkunftVon, isSong, mtab, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER, rolleBasis, slotsOf } from '../data/helpers'
+import { dauerAbtrennen, herkunftVon, isSong, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER, rolleBasis, slotsOf } from '../data/helpers'
 import { meetingDate } from '../data/meeting-dates'
 import { buildS89ForSlot } from '../data/planning'
 import type { Absence, S89Payload, SlotAssignment, SlotSelection, Week } from '../data/types'
@@ -15,6 +15,7 @@ import { wochenHer } from '../i18n/relative-time'
 import type { Dict } from '../i18n/ui'
 import { fill, useProgWeek, useT, zuteilungenText, type I18n } from '../i18n/useT'
 import { kandidaten, type Candidate } from './kandidaten'
+import { auswahlImPlan } from './planen-raster'
 import { useAktuellerPlatz, type AktuellerPlatz } from './useAktuellerPlatz'
 import '../components/overlays.css'
 import './planen.css'
@@ -53,14 +54,16 @@ export function AssignSheet({ sel }: { sel: SlotSelection }) {
  * Klick auf den nächsten Platz wechselt nur, was hier steht. Derselbe Kopf und
  * derselbe Inhalt wie im Blatt.
  *
- * Gezeigt wird nur ein Platz der Woche und Zusammenkunft, die der Plan gerade
- * zeigt: Nach einem Wechsel stünde sonst ein Platz da, den man nirgends sieht.
+ * Gezeigt wird nur ein Platz des Plans, der gerade zu sehen ist — derselben
+ * Woche und Zusammenkunft, beim Predigtdienst ein Treffpunkt der Woche
+ * (`auswahlImPlan`). Nach einem Wechsel stünde sonst ein Platz da, den man
+ * nirgends sieht.
  */
 export function ZuteilenSpalte() {
   const { state, dispatch } = useApp()
   const { t } = useT()
   const sel = state.slotSel
-  const sichtbar = sel && sel.kind !== 'fs' && sel.wi === state.week && sel.tab === mtab(state.tab) ? sel : null
+  const sichtbar = auswahlImPlan(state, sel) ? sel : null
   return (
     <aside className="zuteilen-spalte" aria-label={t.spurZuteilen}>
       {sichtbar ? (

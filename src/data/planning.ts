@@ -1486,11 +1486,9 @@ export interface Conflict {
   kennung: string
   tab?: MeetingKey // betroffene Zusammenkunft (absent/double/helperTask)
   count?: number // double: Hilfsdienste in der Zusammenkunft
-  // Treffpunkte haben keine Zusammenkunft, sondern einen eigenen Wochentag und
-  // Ort — beides gehört in den Hinweis, sonst weiß der Planer nicht, welchen
-  // der Treffpunkte dieser Woche er ansehen soll.
+  // Treffpunkte haben keine Zusammenkunft, sondern einen eigenen Wochentag —
+  // an ihm hängt, welche Treffpunkte der Konflikt trifft (`fsKonfliktVon`).
   wd?: number // fsAbsent/fsDouble: Wochentag (0=So … 6=Sa)
-  ort?: string // fsAbsent: Ort des Treffpunkts
 }
 
 /**

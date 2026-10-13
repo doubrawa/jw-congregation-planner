@@ -36,14 +36,16 @@ export function WochentagWahl({
   value,
   label,
   onChange,
+  className = 'fs-select',
 }: {
   value: number
   label: string
   onChange: (wd: number) => void
+  className?: string
 }) {
   const { state } = useApp()
   return (
-    <select className="fs-select" value={value} aria-label={label} onChange={(e) => onChange(Number(e.target.value))}>
+    <select className={className} value={value} aria-label={label} onChange={(e) => onChange(Number(e.target.value))}>
       {WOCHENTAGE_AB_MONTAG.map((d) => (
         <option key={d} value={d}>
           {wochentagNameAusWd(d, state.lang)}

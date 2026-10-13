@@ -123,34 +123,61 @@ export function AutomatischBlatt({ onClose }: { onClose: () => void }) {
           }}
         />
       </div>
-      <div className="auto-fuss">
+      <AutomatikFuss
+        zuteilen={
+          scope && offen
+            ? () => {
+                dispatch({ type: 'autoAssign', scope, umfang })
+                onClose()
+              }
+            : null
+        }
+        leeren={leeren}
+        leerenMoeglich={scope !== null && besetzt}
+        onClose={onClose}
+      />
+    </Sheet>
+  )
+}
+
+/**
+ * **Der Fuß beider Automatik-Blätter** (Zusammenkünfte, Treffpunkte):
+ * „Zuteilen", darunter „Leeren" mit Rückfrage und „Abbrechen". Die Rückfrage
+ * führt das Blatt selbst (`useZweiTipp`): Jede andere Wahl darin nimmt ein
+ * „Wirklich leeren?" zurück.
+ */
+export function AutomatikFuss({
+  zuteilen,
+  leeren,
+  leerenMoeglich,
+  onClose,
+}: {
+  /** `null`: Es gibt nichts zuzuteilen — der Knopf ist gesperrt. */
+  zuteilen: (() => void) | null
+  leeren: ReturnType<typeof useZweiTipp>
+  leerenMoeglich: boolean
+  onClose: () => void
+}) {
+  const { t } = useT()
+  return (
+    <div className="auto-fuss">
+      <button type="button" className="knopf-haupt" disabled={!zuteilen} onClick={() => zuteilen?.()}>
+        {t.spurZuteilen}
+      </button>
+      <div className="auto-fuss-zeile">
         <button
           type="button"
-          className="knopf-haupt"
-          disabled={!scope || !offen}
-          onClick={() => {
-            if (!scope) return
-            dispatch({ type: 'autoAssign', scope, umfang })
-            onClose()
-          }}
+          className="auto-leeren"
+          disabled={!leerenMoeglich}
+          onClick={leeren.onClick}
+          onBlur={leeren.onBlur}
         >
-          {t.spurZuteilen}
+          {leeren.armed ? t.leerenSicher : t.leeren}
         </button>
-        <div className="auto-fuss-zeile">
-          <button
-            type="button"
-            className="auto-leeren"
-            disabled={!scope || !besetzt}
-            onClick={leeren.onClick}
-            onBlur={leeren.onBlur}
-          >
-            {leeren.armed ? t.leerenSicher : t.leeren}
-          </button>
-          <button type="button" className="knopf-leise" onClick={onClose}>
-            {t.abbrechen}
-          </button>
-        </div>
+        <button type="button" className="knopf-leise" onClick={onClose}>
+          {t.abbrechen}
+        </button>
       </div>
-    </Sheet>
+    </div>
   )
 }

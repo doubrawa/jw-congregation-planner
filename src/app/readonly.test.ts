@@ -173,7 +173,8 @@ describe('Was nichts schreibt, darf offline laufen', () => {
  * und „Alle einladen" schickten im Offline-Stand Mails mit Codes, die nie
  * gespeichert wurden, und legten sie in die Zwischenablage; der Import holte
  * eine Woche von jw.org, die der abgewiesene `addImportedWeek` wieder wegwarf.
- * `PlanSendenPanel` zog die Grenze seit je („Der Knopf liefe daran vorbei").
+ * „Plan senden" zog die Grenze seit je (`darfWocheSenden`: „Der Knopf liefe
+ * daran vorbei").
  *
  * Die Regel ist einfach und daher messbar: Wer einen dieser Aufrufe im
  * Quelltext trägt, muss `staleAt` lesen. `persist.ts` ist nicht darunter —

@@ -1,17 +1,18 @@
 import { useMemo, useState } from 'react'
 import { useApp, type AppState } from '../app/context'
 import { loadAndHydrate } from '../app/hydrate'
+import { fsInGruppe, fsTaskKey } from '../data/fs'
 import { fromIso } from '../data/meeting-dates'
-import { type OffeneWochenMeldung, offeneMeldungen, zuletztGesendet } from '../data/plan-versand'
-import { rechteVon } from '../data/rechte'
+import { type OffeneWochenMeldung, offeneMeldungen, zuletztGesendet, zuletztGesendetFuer } from '../data/plan-versand'
+import { rechteVon, treffpunktGruppe } from '../data/rechte'
 import type { Week } from '../data/types'
 import { fill, useT } from '../i18n/useT'
 import { type PlanVersand, sendPlan } from '../lib/data'
 
 /**
  * **Der Versand eines Plans** — was die Sendeknöpfe teilen: der Aktionsleiste
- * und des Blatts „Plan senden" (T121), der Gruppe und des öffentlichen
- * Zeugnisgebens (`PlanSendenPanel.tsx`). Eigene Datei, weil es Hooks sind und
+ * und des Blatts „Plan senden" (T121) und des öffentlichen Zeugnisgebens
+ * (`PlanSendenPanel.tsx`). Eigene Datei, weil es Hooks sind und
  * keine Bausteine: Neben Komponenten exportiert, hielten sie das schnelle
  * Neuladen beim Entwickeln an.
  */
@@ -99,8 +100,12 @@ export function useWocheSenden(week: Week | undefined, tag: string): VersandStan
 /**
  * **Was „Plan senden" für die gezeigte Woche noch zu tun hat**: die offenen
  * Meldungen und wann zuletzt gesendet wurde — für die Zahl an der
- * Aktionsleiste, das Blatt „Plan senden" und den Kasten im Predigtdienst
- * derselbe Stand.
+ * Aktionsleiste und das Blatt „Plan senden" derselbe Stand.
+ *
+ * `gruppe`: Der Gruppenaufseher, der nicht zuteilt, sendet nur die Treffpunkte
+ * seiner Gruppe — gezählt wird dieselbe Auswahl, die der Server trifft, und
+ * „zuletzt gesendet" meint den jüngsten Versand an sie: Das Tagebuch führt
+ * jeden Platz einzeln (`zuletztGesendetFuer`).
  *
  * `tag` ist der Kalendertag, mit dem gezählt **und** gesendet wird
  * (`useKalendertag`): Vergangenes geht nicht mehr hinaus, und die Function
@@ -113,49 +118,50 @@ export function useWocheSenden(week: Week | undefined, tag: string): VersandStan
  * über alle gut 35 Plätze der Woche, `zuletztGesendet` über das gesamte
  * Tagebuch, das mit jedem Versand wächst.
  */
-export function useOffeneMeldungen(tag: string): {
+export function useOffeneMeldungen(
+  tag: string,
+  gruppe: string | null = null,
+): {
   week: Week | undefined
   offen: OffeneWochenMeldung[]
   zuletzt: string | null
 } {
   const { state } = useApp()
   const week = state.weeks[state.week]
-  const offen = useMemo(
+  const fsWeek = state.fsWeeks[state.week]
+  // Beim Gruppenaufseher die Aufgaben seiner Treffpunkte, sonst die ganze Woche.
+  const eigene = useMemo(
     () =>
-      week
-        ? offeneMeldungen(
-            week,
-            state.fsWeeks[state.week],
-            state.services,
-            state.confirmations,
-            state.sentLog,
-            state.congregation.times,
-            fromIso(tag),
-          )
-        : [],
-    [
+      week && gruppe !== null
+        ? new Set((fsWeek ?? []).filter((i) => fsInGruppe(i, gruppe)).map((i) => fsTaskKey(week.start, i.id)))
+        : null,
+    [week, fsWeek, gruppe],
+  )
+  const offen = useMemo(() => {
+    if (!week) return []
+    const alle = offeneMeldungen(
       week,
-      state.fsWeeks,
-      state.week,
+      fsWeek,
       state.services,
       state.confirmations,
       state.sentLog,
       state.congregation.times,
-      tag,
-    ],
-  )
-  const zuletzt = useMemo(
-    () => (week ? zuletztGesendet(state.sentLog, week.start) : null),
-    [state.sentLog, week],
-  )
+      fromIso(tag),
+    )
+    return eigene ? alle.filter((o) => eigene.has(o.key)) : alle
+  }, [week, fsWeek, eigene, state.services, state.confirmations, state.sentLog, state.congregation.times, tag])
+  const zuletzt = useMemo(() => {
+    if (!week) return null
+    return eigene ? zuletztGesendetFuer(state.sentLog, eigene) : zuletztGesendet(state.sentLog, week.start)
+  }, [state.sentLog, week, eigene])
   return { week, offen, zuletzt }
 }
 
 /**
  * **Darf hier die Woche gesendet werden?** Nur, wer zuteilt — Admin oder
  * Planer (4.10.2026): `send-plan` sendet für jeden anderen höchstens die
- * Treffpunkte seiner Gruppe (`GruppeSendenPanel`). Ein Knopf, der die ganze
- * Woche verspricht, wäre dort falsch.
+ * Treffpunkte seiner Gruppe (`sendeUmfang`). Ein Knopf, der die ganze Woche
+ * verspricht, wäre dort falsch.
  *
  * Und nur auf frischem Stand: Nach einem gescheiterten Laden zeigt die App die
  * Momentaufnahme und lässt keine Änderungen zu (`staleAt`). Der Knopf liefe
@@ -164,4 +170,17 @@ export function useOffeneMeldungen(tag: string): {
  */
 export function darfWocheSenden(state: AppState): boolean {
   return rechteVon(state).zuteilen && !state.staleAt
+}
+
+/**
+ * **Was hier gesendet werden darf** (T121, Phase 5e): die ganze Woche
+ * (`gruppe: null`) für den, der zuteilt (`darfWocheSenden`); die Treffpunkte
+ * der eigenen Gruppe für den Gruppenaufseher, der nicht zuteilt (4.10.2026) —
+ * mehr sendet `send-plan` für ihn ohnehin nicht. Sonst nichts: kein Recht oder
+ * nur die Momentaufnahme (`staleAt`).
+ */
+export function sendeUmfang(state: AppState): { gruppe: string | null } | null {
+  if (darfWocheSenden(state)) return { gruppe: null }
+  const gruppe = treffpunktGruppe(rechteVon(state))
+  return gruppe !== null && !state.staleAt ? { gruppe } : null
 }

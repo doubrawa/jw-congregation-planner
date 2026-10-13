@@ -16,10 +16,12 @@ import {
   deriveMyFsTasks,
   fsVerwaisteZusagen,
   fsVerwaisteZusagenAller,
+  fsKonfliktVon,
   fsWeekConflicts,
 } from './fs'
 import { emptyQualifications } from './helpers'
 import { montagNach } from './meeting-dates'
+import type { Conflict } from './planning'
 import type { Absence, FsInstance, FsRule, Person } from './types'
 
 /** Treffpunkt-qualifizierte Person (priv.treffpunkt gesetzt). */
@@ -593,7 +595,7 @@ describe('fsWeekConflicts — Konflikte der Treffpunkte', () => {
   it('meldet, wer am Tag seines Treffpunkts abwesend ist', () => {
     const weeks = [[inst({ id: 'a', wd: 1, place: 'Saal', leader: 'Anton Muster', lpid: 'p1' })]]
     const c = fsWeekConflicts(weeks, 0, [anton], abw('2026-09-05', '2026-09-09'), KENN[0]!)
-    expect(c).toEqual([{ kind: 'fsAbsent', name: 'Anton Muster', kennung: 'p1', wd: 1, ort: 'Saal' }])
+    expect(c).toEqual([{ kind: 'fsAbsent', name: 'Anton Muster', kennung: 'p1', wd: 1 }])
   })
 
   it('sperrt nur den Tag, nicht die ganze Woche', () => {
@@ -654,5 +656,66 @@ describe('fsWeekConflicts — Konflikte der Treffpunkte', () => {
 
   it('nicht geladene Woche → keine Konflikte', () => {
     expect(fsWeekConflicts([], 5, [anton])).toEqual([])
+  })
+})
+
+/*
+ * Der Konflikt steht am Platz des Leiters (T121) — also muss er den richtigen
+ * Treffpunkt treffen. Je Person zugeordnet stand, wer nur am Montag fehlt, auch
+ * am Mittwoch als „abwesend" da.
+ */
+describe('fsKonfliktVon — ein Konflikt trifft die Treffpunkte seines Tages', () => {
+  const anton = tpLeader({ id: 'p1', fn: 'Anton' })
+  // Basis-Montag 7.9.2026 → wd 1 = Mo 7.9., wd 3 = Mi 9.9., wd 6 = Sa 12.9.
+  const abwesend = (from: string, to: string): Absence[] => [
+    { id: 'a', personId: 'p1', userId: '', from, to, reason: '' },
+  ]
+  const antons = (over: Partial<FsInstance>): FsInstance => inst({ leader: 'Anton Muster', lpid: 'p1', ...over })
+
+  it('wer am Montag fehlt, leitet am Mittwoch trotzdem', () => {
+    const montag = antons({ id: 'a', wd: 1 })
+    const mittwoch = antons({ id: 'b', wd: 3 })
+    const von = fsKonfliktVon(fsWeekConflicts([[montag, mittwoch]], 0, [anton], abwesend('2026-09-07', '2026-09-07'), KENN[0]!))
+    expect(von(montag)?.kind).toBe('fsAbsent')
+    expect(von(mittwoch)).toBeUndefined()
+  })
+
+  it('zweimal am Samstag trifft beide Samstage, nicht den Mittwoch', () => {
+    const sa1 = antons({ id: 'a', wd: 6 })
+    const sa2 = antons({ id: 'b', wd: 6, grp: 'g1' })
+    const mi = antons({ id: 'c', wd: 3 })
+    const von = fsKonfliktVon(fsWeekConflicts([[sa1, sa2, mi]], 0, [anton]))
+    expect([von(sa1)?.kind, von(sa2)?.kind, von(mi)]).toEqual(['fsDouble', 'fsDouble', undefined])
+  })
+
+  it('fehlt er an dem Tag und steht doppelt, gilt die Abwesenheit — sie ist der Grund', () => {
+    const sa = antons({ id: 'a', wd: 6 })
+    expect(fsKonfliktVon(fsWeekConflicts([[sa, antons({ id: 'b', wd: 6, grp: 'g1' })]], 0, [anton], abwesend('2026-09-12', '2026-09-12'), KENN[0]!))(sa)?.kind).toBe('fsAbsent')
+    // Auch, wenn die Doppelbelegung vorn steht — es kommt nicht auf die Reihenfolge an.
+    const doppelt: Conflict = { kind: 'fsDouble', name: 'Anton Muster', kennung: 'p1', wd: 6, count: 2 }
+    const fehlt: Conflict = { kind: 'fsAbsent', name: 'Anton Muster', kennung: 'p1', wd: 6 }
+    expect(fsKonfliktVon([doppelt, fehlt])(sa)).toBe(fehlt)
+  })
+
+  it('der Freitext-Leiter zweimal am selben Tag steht ebenfalls falsch', () => {
+    const ks = (id: string, grp: string | null): FsInstance =>
+      inst({ id, wd: 6, grp, leader: 'Kreisaufseher', lext: true })
+    const von = fsKonfliktVon(fsWeekConflicts([[ks('a', null), ks('b', 'g1')]], 0, [anton]))
+    expect(von(ks('a', null))?.kind).toBe('fsDouble')
+  })
+
+  it('ein Namensvetter mit eigener Id ist nicht gemeint', () => {
+    const eigener = antons({ id: 'a', wd: 1 })
+    const zwilling = antons({ id: 'b', wd: 1, lpid: 'p2' })
+    const von = fsKonfliktVon(
+      fsWeekConflicts([[eigener, zwilling]], 0, [anton], abwesend('2026-09-07', '2026-09-07'), KENN[0]!),
+    )
+    expect(von(eigener)?.kind).toBe('fsAbsent')
+    expect(von(zwilling)).toBeUndefined()
+  })
+
+  it('ein offener Treffpunkt steht in keinem Konflikt', () => {
+    const offen = inst({ wd: 6, leader: '' })
+    expect(fsKonfliktVon([{ kind: 'fsDouble', name: '', kennung: 'name:', wd: 6, count: 2 }])(offen)).toBeUndefined()
   })
 })

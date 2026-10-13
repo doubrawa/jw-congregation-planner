@@ -13,7 +13,7 @@ import { syncAuxSlots } from '../data/aux-class'
 import { emptyQualifications, privSetzen } from '../data/helpers'
 import { helferKey } from '../data/planning'
 import { dict } from '../i18n/ui'
-import type { Group, PartItem, Person, Section, Service, SlotSelection, Week } from '../data/types'
+import type { FsInstance, Group, PartItem, Person, Section, Service, SlotSelection, Week } from '../data/types'
 import { PlanenScreen } from './PlanenScreen'
 
 /**
@@ -112,6 +112,9 @@ const beschriftung = (b: Element): string =>
   (b.querySelector('.meeting-tab-name') ?? b).textContent || (b.getAttribute('aria-label') ?? '')
 const reiter = (c: HTMLElement) =>
   [...seite(c).querySelectorAll('.meeting-tabs .meeting-tab, .bereich-tab')].map(beschriftung)
+/** Ein Treffpunkt am Samstag, dessen Leiter noch fehlt. */
+const offenerTreffpunkt = (grp: string | null): FsInstance =>
+  ({ id: `f-${grp ?? 'v'}`, ruleId: null, grp, wd: 6, time: '09:30', place: 'Saal', leader: '' })
 /** Die Karte eines Abschnitts, an ihrem Namen gefunden. */
 const abschnitt = (c: HTMLElement, name: string): HTMLElement | undefined =>
   [...seite(c).querySelectorAll<HTMLElement>('.prog-abschnitt')].find(
@@ -196,10 +199,16 @@ describe('Die Aktionsleiste (T121, Phase 5c)', () => {
     expect(container.querySelector('.planen-leiste')).toBeNull()
   })
 
-  it('nicht in „Woche einrichten" und nicht im Predigtdienst — die haben ihre eigenen Knöpfe', () => {
+  it('nicht in „Woche einrichten" und nicht bei den Bereichen ohne Woche', () => {
     expect(zeige({ tab: 'edit' }).container.querySelector('.planen-aktionen')).toBeNull()
     cleanup()
-    expect(zeige({ tab: 'fs' }).container.querySelector('.planen-aktionen')).toBeNull()
+    expect(zeige({ tab: 'fs', fsBereich: 'grundplan' }).container.querySelector('.planen-aktionen')).toBeNull()
+  })
+
+  it('bei den Treffpunkten der Woche öffnet „Automatisch" ihr eigenes Blatt (Phase 5e)', () => {
+    const { container } = zeige({ tab: 'fs' })
+    fireEvent.click(container.querySelector('.planen-leiste .planen-automatisch')!)
+    expect(document.querySelector('[role="dialog"] .auto-bereich-name')?.textContent).toBe(t.fsLeiterLbl)
   })
 
   it('auf altem Stand kein „Plan senden" — er ginge an der Momentaufnahme vorbei hinaus', () => {
@@ -271,10 +280,20 @@ describe('Zuteilen am Desktop: die Spalte neben dem Plan (T121, Phase 5d-2)', ()
     expect(spalte(zeige().container)).toBeNull()
   })
 
-  it('nicht in „Woche einrichten" und nicht im Predigtdienst', () => {
+  it('nicht in „Woche einrichten" und nicht bei den Gruppenbesuchen', () => {
     expect(spalte(zeige({ tab: 'edit' }).container)).toBeNull()
     cleanup()
-    expect(spalte(zeige({ tab: 'fs' }).container)).toBeNull()
+    expect(spalte(zeige({ tab: 'fs', fsBereich: 'gruppenbesuche' }).container)).toBeNull()
+  })
+
+  it('bei den Treffpunkten der Woche steht sie — ihr Leiter wird darin zugeteilt (Phase 5e)', () => {
+    const { container } = zeige({
+      tab: 'fs',
+      fsWeeks: [[{ id: 'f1', ruleId: null, grp: null, wd: 6, time: '09:30', place: 'Saal', leader: '' }]],
+      slotSel: { kind: 'fs', wi: 0, instId: 'f1', label: t.fsVers, priv: 'treffpunkt', groups: false },
+    })
+    expect(spalte(container)?.querySelector('.sheet-title')?.textContent).toContain(t.fsVers)
+    expect(seite(container).querySelector('.treff-leiter-zeile .platz.is-gewaehlt')).not.toBeNull()
   })
 })
 
@@ -395,7 +414,7 @@ describe('Die Gruppenbesuche im Predigtdienst (T120, Phase 2)', () => {
   it('der Gruppenaufseher plant sie nicht — bei ihm gilt der Bereich als „Treffpunkte"', () => {
     const { container } = zeige({ planner: false, personId: AUFSEHER.id, tab: 'fs', fsBereich: 'gruppenbesuche' })
     expect(container.textContent).not.toContain(t.gbTitel)
-    expect(seite(container).querySelector('.plan-auto')).toBeTruthy() // die der Treffpunkte
+    expect(seite(container).querySelector('.treff-leer')).toBeTruthy() // der Plan der Treffpunkte
   })
 
   it('„Reihum verteilen" braucht erst einen Besucher', () => {
@@ -415,6 +434,7 @@ describe('Die Gruppenbesuche im Predigtdienst (T120, Phase 2)', () => {
 })
 
 describe('Der Gruppenaufseher sieht nur seine Treffpunkte', () => {
+  amHandy()
   const alsAufseher = (over: Partial<AppState> = {}) =>
     zeige({ planner: false, personId: AUFSEHER.id, ...over })
 
@@ -425,14 +445,15 @@ describe('Der Gruppenaufseher sieht nur seine Treffpunkte', () => {
 
   it('und ohne die Zusammenkunft selbst', () => {
     const { container } = alsAufseher()
-    expect(seite(container).querySelector('.plan-auto')).toBeTruthy() // die der Treffpunkte
+    expect(seite(container).querySelector('.treff-leer')).toBeTruthy() // der Plan der Treffpunkte
     expect(seite(container).querySelector('.prog-row')).toBeNull() // keine Programmpunkte
     expect(seite(container).querySelector('.besetzung')).toBeNull()
   })
 
-  it('der Treffpunkt-Plan bekommt seine Gruppe mit', () => {
-    const { container, dispatch } = alsAufseher()
-    fireEvent.click(seite(container).querySelector('.plan-auto-btn--primary')!)
+  it('„Automatisch" bekommt seine Gruppe mit', () => {
+    const { container, dispatch } = alsAufseher({ fsWeeks: [[offenerTreffpunkt('g1')]] })
+    fireEvent.click(container.querySelector('.planen-leiste .planen-automatisch')!)
+    fireEvent.click(document.querySelector('[role="dialog"] .auto-fuss .knopf-haupt')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsAutoAssign', onlyGroup: 'g1' })
   })
 
@@ -472,10 +493,12 @@ describe('Woche einrichten (T64, T121 `GWochePlanen`)', () => {
 })
 
 describe('Der Treffpunkt-Reiter', () => {
+  amHandy()
   it('zeigt den Treffpunkt-Plan ohne Gruppen-Einschränkung', () => {
-    const { container, dispatch } = zeige({ tab: 'fs' })
-    expect(seite(container).querySelector('.fs-add')).toBeTruthy()
-    fireEvent.click(seite(container).querySelector('.plan-auto-btn--primary')!)
+    const { container, dispatch } = zeige({ tab: 'fs', fsWeeks: [[offenerTreffpunkt('g1')]] })
+    expect(seite(container).querySelector('.knopf-neu')).toBeTruthy()
+    fireEvent.click(container.querySelector('.planen-leiste .planen-automatisch')!)
+    fireEvent.click(document.querySelector('[role="dialog"] .auto-fuss .knopf-haupt')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsAutoAssign', onlyGroup: null })
   })
 
@@ -589,6 +612,19 @@ function amMontagDerTestwoche() {
   afterEach(() => vi.useRealTimers())
 }
 
+/**
+ * Am Handy, für Tests, die ein Blatt öffnen: Es fragt beim Wischen, ob wir am
+ * Schreibtisch sitzen — und jsdom kennt matchMedia nicht.
+ */
+function amHandy() {
+  beforeEach(() => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
+  })
+  afterEach(() => {
+    delete (window as { matchMedia?: unknown }).matchMedia
+  })
+}
+
 describe('Der Planer teilt zu, ändert den Plan aber nicht (4.10.2026)', () => {
   amMontagDerTestwoche()
   const ALS_PLANER: Partial<AppState> = { planner: false, zuteiler: true }
@@ -658,7 +694,8 @@ describe('Der Planer teilt zu, ändert den Plan aber nicht (4.10.2026)', () => {
 
 describe('Der Gruppenaufseher sendet die Treffpunkte seiner Gruppe (4.10.2026)', () => {
   amMontagDerTestwoche()
-  it('mit eigenem Knopf — nur was seine Gruppe betrifft', () => {
+  amHandy()
+  it('über die Leiste wie der Planer — aber nur, was seine Gruppe betrifft (T121, Phase 5e)', () => {
     const { container } = zeige({
       planner: false,
       personId: AUFSEHER.id,
@@ -669,9 +706,12 @@ describe('Der Gruppenaufseher sendet die Treffpunkte seiner Gruppe (4.10.2026)',
         { id: 'f2', ruleId: 'r2', grp: 'g2', wd: 6, time: '10:00', place: 'Park', leader: 'Olaf Overseer', lpid: AUFSEHER.id },
       ]],
     })
-    const box = seite(container).querySelector('.plan-senden')!
-    expect(box.textContent).toContain(t.fsSendenOffen.replace('{n}', '1'))
-    expect(box.textContent).toContain('Paula Planer')
-    expect(box.textContent).not.toContain('Olaf Overseer')
+    const knopf = container.querySelector('.planen-leiste .planen-senden')!
+    expect(knopf.querySelector('.zahl-marke')?.textContent).toBe('1')
+    fireEvent.click(knopf)
+    const blatt = document.querySelector('[role="dialog"]')!
+    expect(blatt.textContent).toContain(t.fsSendenOffen.replace('{n}', '1'))
+    expect(blatt.textContent).toContain('Paula Planer')
+    expect(blatt.textContent).not.toContain('Olaf Overseer')
   })
 })

@@ -542,7 +542,7 @@ Beim Planen gibt es zwei Reiter:
 
 | Reiter | Was du dort siehst |
 | --- | --- |
-| **Treffpunkte** | Ausschließlich die Treffpunkte **deiner** Gruppe, Woche für Woche: **Uhrzeit** und **Ort** ändern, einen Treffpunkt für diese Woche **entfernen** oder einen zusätzlichen **ergänzen**, Leiter eintragen, **Automatisch zuteilen** und **Leeren** (beides wirkt nur auf deine Gruppe). Darunter **Plan senden**: Es benachrichtigt die Leiter deiner Gruppe, die davon noch nichts wissen. |
+| **Treffpunkte** | Ausschließlich die Treffpunkte **deiner** Gruppe, Woche für Woche: **Uhrzeit** und **Ort** ändern, einen Treffpunkt für diese Woche **entfernen** oder einen zusätzlichen **ergänzen**, Leiter eintragen. Am Handy unten in der Leiste: **Automatisch** (zuteilen oder leeren, beides wirkt nur auf deine Gruppe) und **Plan senden** — es benachrichtigt die Leiter deiner Gruppe, die davon noch nichts wissen. |
 | **Grundplan** | Nur den **Grundplan deiner Gruppe** — die Regel, nach der ihr euch regelmäßig trefft: Wochentag, Uhrzeit, Ort und ob sie jede Woche gilt oder z. B. jeden ersten im Monat. |
 
 Die Zusammenkünfte siehst du nur an. **Fertig** (am Handy auch das Kreuz oben)
@@ -555,10 +555,11 @@ Leiter, und du musst ihn nicht selbst eintragen.
 
 ![Planen als Gruppenaufseher](screenshots/verkuendiger-gruppenaufseher.png)
 
-Der **Punkt hinter dem Namen** sagt dir, woran du bist: voll heißt
-**bestätigt**, blass **wartet noch auf Bestätigung**, rot **abgesagt**. Teilst
-du einen Treffpunkt neu zu, steht er wieder blass da — die Zusage gehört dem,
-der sie gegeben hat.
+Der **Punkt vor dem Namen** sagt dir, woran du bist: voll heißt
+**bestätigt**, blass **wartet noch auf Bestätigung**, rot **stimmt etwas
+nicht** — rechts daneben steht, was: abgesagt, abwesend oder an diesem Tag
+schon eingeteilt. Teilst du einen Treffpunkt neu zu, steht er wieder blass da —
+die Zusage gehört dem, der sie gegeben hat.
 
 Die **Personen** bleiben dem Koordinator vorbehalten, und die Zuteilungen der
 Zusammenkünfte ebenso — daran änderst du nichts. Alles Übrige siehst du wie jeder

@@ -3,10 +3,9 @@ import { describe, expect, it } from 'vitest'
 /**
  * Kein Ampel-Punkt, wo es nichts zu bestätigen gibt.
  *
- * `SlotChip` hängt an einen belegten Platz den Ampel-Punkt seiner Zusage
- * (grün bestätigt, gelb wartet, rot abgesagt); `PlatzZeile` (T121) zeigt die
- * Lage des Platzes — blass „wartet", rot abgesagt. Das setzt voraus, dass
- * überhaupt jemand bestätigen **kann** — eine Person der Versammlung mit Konto,
+ * `PlatzZeile` (T121) zeigt die Lage eines Platzes — blass „wartet", rot
+ * abgesagt; bis T121 hing `SlotChip` dafür einen Ampel-Punkt an. Das setzt
+ * voraus, dass überhaupt jemand bestätigen **kann** — eine Person der Versammlung mit Konto,
  * für einen Termin, der stattfindet. Genau das trifft auf vier Fälle nicht zu:
  *
  * | Fall | Warum kein Flow |
@@ -31,14 +30,16 @@ import { describe, expect, it } from 'vitest'
  * abgedeckt (MeetingSection 0 %, FsPlan 1,5 %), und ein neuer Aufrufer wäre
  * genau der, an den niemand denkt. Deshalb eine Probe am **Quelltext**, nach
  * dem Vorbild von `aufgaben-label-quelle.test.ts`: Jede Angabe steht hier
- * namentlich, mitsamt Begründung. Wer eine ändert oder einen `SlotChip` oder
- * eine `PlatzZeile` hinzufügt, wird rot und muss sich entscheiden — das ist
+ * namentlich, mitsamt Begründung. Wer eine ändert oder eine `PlatzZeile`
+ * hinzufügt, wird rot und muss sich entscheiden — das ist
  * der ganze Zweck.
  *
- * Die Angabe hat zwei Formen: am `SlotChip` das `showStatus={…}`, an der
- * `PlatzZeile` die Bedingung, unter der es einen Stand der Zusage gibt
+ * Die Angabe ist die Bedingung, unter der es einen Stand der Zusage gibt
  * (`const stand = … ? … : null`). Ohne Stand ist ein besetzter Platz voll —
- * mit einem stünde der Gastredner für immer auf „wartet".
+ * mit einem stünde der Gastredner für immer auf „wartet". Bei den Treffpunkten
+ * steht sie in `leiterAnzeige` (`platz-anzeige.ts`, geprüft in
+ * `platz-anzeige.test.ts`): Einen Stand hat nur ein Leiter, der eine Person
+ * ist — kein Freitext (`fsLeiterZuteilung`). Der Plan muss sie nur aufrufen.
  */
 
 /** Quelltext aller Dateien unter `src/` — über Vite, ohne Node-Abhängigkeit. */
@@ -68,36 +69,14 @@ const QUELLEN = new Map(
  */
 const ERWARTET: Record<string, string> = {
   'planen/AuxCounselorPanel.tsx': "slot.name && zusage.moeglich('mid')",
-  'planen/FsPlan.tsx': 'Boolean(inst.leader) && !inst.lext',
+  'planen/FsPlan.tsx': 'leiterAnzeige',
   'planen/HelpersPanel.tsx': 'name && !gruppe && zusage.moeglich(tab)',
   'planen/MeetingSection.tsx': 'slot.name && !isGuestRole(slot.rolle) && zusage.moeglich(tab)',
 }
 
-/**
- * `showStatus={…}` aus einer Datei ziehen (eine Angabe je Aufrufer).
- *
- * Klammern werden **gezählt**, nicht per Ausdruck gesucht: Ein `[^}]*` hört
- * beim ersten `}` auf und verschluckt bei geschachtelten Klammern den halben
- * Rest der Datei — genau das tat die erste Fassung hier.
- */
-function showStatusVon(text: string): string[] {
-  const out: string[] = []
-  const marke = 'showStatus={'
-  for (let i = text.indexOf(marke); i >= 0; i = text.indexOf(marke, i + 1)) {
-    let tiefe = 1
-    let j = i + marke.length
-    for (; j < text.length && tiefe > 0; j++) {
-      if (text[j] === '{') tiefe++
-      else if (text[j] === '}') tiefe--
-    }
-    out.push(
-      text
-        .slice(i + marke.length, j - 1)
-        .replace(/\s+/g, ' ')
-        .trim(),
-    )
-  }
-  return out
+/** Der Plan der Treffpunkte überlässt die Bedingung `leiterAnzeige` — hier nur, ob er sie ruft. */
+function leiterVon(text: string): string[] {
+  return text.includes('{...leiterAnzeige(') ? ['leiterAnzeige'] : []
 }
 
 /**
@@ -118,11 +97,11 @@ function standVon(text: string): string[] {
 describe('Bestätigungs-Zeichen nur, wo jemand bestätigen kann', () => {
   const aufrufer = [...QUELLEN]
     .filter(([pfad]) => !/\.test\.tsx$/.test(pfad))
-    .filter(([, text]) => /<(SlotChip|PlatzZeile)\b/.test(text))
+    .filter(([, text]) => /<PlatzZeile\b/.test(text))
     .map(([pfad]) => pfad)
     .sort()
 
-  it('die Aufrufer von SlotChip und PlatzZeile sind genau die bekannten vier', () => {
+  it('die Aufrufer von PlatzZeile sind genau die bekannten vier', () => {
     // Kommt ein fünfter hinzu, fällt er hier auf — und muss unten begründet
     // werden, statt die Marke stillschweigend mitzunehmen.
     expect(aufrufer).toEqual(Object.keys(ERWARTET).sort())
@@ -131,7 +110,7 @@ describe('Bestätigungs-Zeichen nur, wo jemand bestätigen kann', () => {
   it('jeder nimmt aus, was keinen Flow hat', () => {
     for (const pfad of aufrufer) {
       const text = QUELLEN.get(pfad) ?? ''
-      const angaben = [...showStatusVon(text), ...standVon(text)]
+      const angaben = [...standVon(text), ...leiterVon(text)]
       expect(angaben, `${pfad}: genau eine Angabe erwartet`).toHaveLength(1)
       expect(angaben[0], pfad).toBe(ERWARTET[pfad])
     }

@@ -605,14 +605,31 @@ die Versammlung ebenso („Treffpunkte · Versammlung"); alle Karten tragen
 dieselbe Farbe. „+ Treffpunkt hinzufügen" legt den Treffpunkt für die Karte an,
 in der der Knopf steht. Jede Änderung setzt die Wochenpläne neu auf.
 
-Unter **Treffpunkte** kannst du dann pro Woche Uhrzeit, Ort und **Leiter**
-anpassen oder einen einmaligen Treffpunkt ergänzen. **Gruppenaufseher** können die
-Treffpunkte **ihrer** Gruppe selbst planen, ohne Admin zu sein – Uhrzeit, Ort,
-Leiter, zusätzliche Treffpunkte und den Grundplan ihrer Gruppe. Den Schalter
-**Planen** sehen sie nur im Predigtdienst, im Grundplan nur die Karte ihrer
-Gruppe, und mit **Plan senden** benachrichtigen sie die Leiter ihrer Gruppe.
-Ein **Planer** besetzt die Leiter aller Gruppen; Uhrzeit und Ort stehen bei ihm
-als Text da, und den Grundplan sieht er nicht.
+Unter **Treffpunkte** steht die gewählte Woche: je Tag eine Karte, darin jeder
+Treffpunkt mit Uhrzeit, Titel und Ort und darunter sein **Leiter**. Der Leiter
+steht da wie ein Platz bei den Zusammenkünften – voller Punkt: zugesagt, blass:
+wartet, rot: etwas stimmt nicht, und rechts steht, was (abwesend an diesem Tag,
+an diesem Tag schon an einem anderen Treffpunkt, abgesagt). Ein Tipp auf den
+Leiter öffnet das Zuteilen; am großen Bildschirm steht es in der Spalte rechts
+daneben.
+
+- **Uhrzeit und Ort** änderst du direkt am Treffpunkt – nur für diese Woche;
+  was jede Woche gilt, gehört in den Grundplan. **✕** nimmt den Treffpunkt aus
+  der Woche (zwei Tipps).
+- **+ Treffpunkt für diese Woche** legt einen einmaligen an, etwa einen
+  Pioniertag: Gruppe (oder Versammlung), Wochentag, Uhrzeit und Ort. Ohne Ort
+  nimmt er euren Saal.
+- **Automatisch** besetzt die offenen Leiter, **Leeren** nimmt alle wieder heraus
+  (zwei Tipps); **Plan senden** teilt die Woche mit. Beide Knöpfe stehen am
+  Handy unten in der Leiste, ab dem Tablet rechts neben der Woche.
+
+**Gruppenaufseher** können die Treffpunkte **ihrer** Gruppe selbst planen, ohne
+Admin zu sein – Uhrzeit, Ort, Leiter, zusätzliche Treffpunkte und den Grundplan
+ihrer Gruppe. Den Schalter **Planen** sehen sie nur im Predigtdienst, im
+Grundplan nur die Karte ihrer Gruppe; **Automatisch** wirkt nur auf ihre Gruppe,
+und mit **Plan senden** benachrichtigen sie die Leiter ihrer Gruppe. Ein
+**Planer** besetzt die Leiter aller Gruppen; Uhrzeit und Ort stehen bei ihm als
+Text da, und den Grundplan sieht er nicht.
 
 Beim **Ansehen** sieht, wer zuteilt, die Treffpunkte **aller** Gruppen — je Tag
 eine Karte. **Deine Gruppe** steht dann am Treffpunkt der eigenen Gruppe, nicht
@@ -630,9 +647,10 @@ Personenliste. Tippe den Treffpunkt-Leiter an: Oben im Blatt gibst du einen
 weiterhin die Liste der eigenen Verkündiger, falls es doch jemand von euch
 sein soll. Beide Wege führen zurück, du kannst also jederzeit wechseln.
 
-> Ein Freitext-Leiter hat die App nicht: Er bekommt keine Aufgabe, keine
-> Erinnerung und keinen farbigen Punkt, und er zählt bei niemandem auf die
-> Auslastung. Auch dann nicht, wenn er zufällig so heißt wie jemand bei euch.
+> Ein Freitext-Leiter hat die App nicht: Er bekommt keine Aufgabe und keine
+> Erinnerung, sein Platz steht gleich voll da (es gibt nichts zu bestätigen),
+> und er zählt bei niemandem auf die Auslastung. Auch dann nicht, wenn er
+> zufällig so heißt wie jemand bei euch.
 
 ### Gruppenbesuche des Dienstaufsehers
 

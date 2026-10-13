@@ -1,15 +1,14 @@
 import { useMemo } from 'react'
 import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
-import { fsTaskKey } from '../data/fs'
 import { fromIso } from '../data/meeting-dates'
-import { type OffeneMeldung, offeneMeldungen } from '../data/plan-versand'
+import type { OffeneMeldung } from '../data/plan-versand'
 import { rechteVon } from '../data/rechte'
 import { ozOffeneMeldungen, ozZuletztGesendet } from '../data/zeugnis'
 import { relativeZeit } from '../i18n/zeit'
 import { fill, useT } from '../i18n/useT'
 import { sendZeugnisPlan } from '../lib/data'
-import { darfWocheSenden, useOffeneMeldungen, useSenden, useWocheSenden } from './wochen-versand'
+import { useSenden } from './wochen-versand'
 
 /**
  * Bis zu so vielen Namen lohnt die Aufzählung; darüber steht nur die Zahl.
@@ -19,92 +18,6 @@ import { darfWocheSenden, useOffeneMeldungen, useSenden, useWocheSenden } from '
  * Liste erst zum Schluss, wenn nur noch ein paar fehlen.
  */
 const NAMEN_GRENZE = 8
-
-/**
- * „Plan senden" — der Knopf, mit dem der Planer eine fertige Woche freigibt.
- *
- * **Warum es diesen Knopf gibt.** Bis hierher erfuhr die eingeteilte Person von
- * ihrer Zuteilung gar nichts: Die Mitteilung „Zuteilung gesendet" ging an die
- * *Planer*, nicht an sie (in T74 gemessen und vertagt). Sie erfuhr es
- * frühestens über die zeitliche Erinnerung, also `first` Tage vor der
- * Zusammenkunft.
- *
- * **Warum auf Knopfdruck und nicht bei jedem Klick.** Planen ist eine Sitzung,
- * kein Einzelakt: Eine Woche hat gut 35 Plätze, und bis der Plan steht, wird
- * umsortiert. Bei sofortigem Versand ginge für jeden Zwischenstand eine
- * Nachricht hinaus. Der Planer entscheidet, wann er fertig ist.
- *
- * Der Knopf gilt für die **ganze Woche** — beide Zusammenkünfte und die
- * Treffpunkte —, nicht für den gerade gewählten Reiter. Deshalb steht es auch
- * so auf ihm; sonst hielte man ihn für eine Aktion des Reiters, unter dem er
- * gerade steht.
- */
-export function PlanSendenPanel() {
-  const { state } = useApp()
-  const { t } = useT()
-  const tag = useKalendertag()
-  // **Vor** den Abbrüchen unten, weil Hooks nicht bedingt laufen dürfen.
-  const { week, offen, zuletzt } = useOffeneMeldungen(tag)
-  const { laeuft, ohneKonto, senden } = useWocheSenden(week, tag)
-
-  if (!darfWocheSenden(state) || !week) return null
-
-  return (
-    <PlanSendenAnzeige
-      offen={offen}
-      zuletzt={zuletzt}
-      ohneKonto={ohneKonto}
-      laeuft={laeuft}
-      offenText={t.planSendenOffen}
-      alleText={t.planSendenAlle}
-      onSenden={() => void senden()}
-    />
-  )
-}
-
-/**
- * **„Plan senden" für den Gruppenaufseher** (4.10.2026): die Treffpunkte
- * seiner Gruppe in dieser Woche, nicht die ganze Woche.
- *
- * Er ändert Zeit, Ort und Leiter seiner Treffpunkte selbst. Ohne eigenen Knopf
- * erfuhr ein neuer Leiter davon erst durch die Erinnerung kurz vorher — oder
- * wenn ein Admin die ganze Woche noch einmal sendete. Derselbe Aufruf wie für
- * die Woche (`sendPlan`): Welche Plätze dazugehören, entscheidet `send-plan`
- * am Recht des Aufrufers, nicht der Knopf.
- */
-export function GruppeSendenPanel({ gruppe }: { gruppe: string }) {
-  const { state } = useApp()
-  const { t } = useT()
-  const tag = useKalendertag()
-  const week = state.weeks[state.week]
-  const fsWeek = state.fsWeeks[state.week]
-  const { laeuft, ohneKonto, senden } = useWocheSenden(week, tag)
-
-  const offen = useMemo(() => {
-    if (!week || !fsWeek) return []
-    // Nur die Treffpunkte der eigenen Gruppe: dieselbe Auswahl wie der Server.
-    const eigene = new Set(fsWeek.filter((i) => i.grp === gruppe).map((i) => fsTaskKey(week.start, i.id)))
-    return offeneMeldungen(week, fsWeek, state.services, state.confirmations, state.sentLog, state.congregation.times, fromIso(tag)).filter(
-      (o) => eigene.has(o.key),
-    )
-  }, [week, fsWeek, gruppe, state.services, state.confirmations, state.sentLog, state.congregation.times, tag])
-
-  if (state.staleAt || !week) return null
-
-  return (
-    <PlanSendenAnzeige
-      offen={offen}
-      // „Zuletzt gesendet" nennt das Tagebuch für die ganze Woche — für die
-      // eigene Gruppe gibt es keine eigene Zeit. Weggelassen statt falsch.
-      zuletzt={null}
-      ohneKonto={ohneKonto}
-      laeuft={laeuft}
-      offenText={t.fsSendenOffen}
-      alleText={t.fsSendenAlle}
-      onSenden={() => void senden()}
-    />
-  )
-}
 
 /**
  * „Plan senden" im öffentlichen Zeugnisgeben (T120) — über **alle** kommenden

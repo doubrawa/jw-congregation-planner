@@ -88,6 +88,16 @@ export function nurZuteilen(r: Rechte): boolean {
   return r.zuteilen && !r.admin
 }
 
+/**
+ * **Wessen Treffpunkte jemand plant** — `null` heißt die aller Gruppen. So
+ * plant, wer zuteilt; der Gruppenaufseher, der nicht zuteilt, plant nur die
+ * seiner Gruppe. Plan, Automatik, Zuteilen und Senden fragen hier, damit sie
+ * dieselben Treffpunkte meinen.
+ */
+export function treffpunktGruppe(r: Rechte): string | null {
+  return r.zuteilen ? null : r.gruppe
+}
+
 const ALLE: readonly Screen[] = [
   'start',
   'programm',
@@ -146,7 +156,7 @@ export function darfPlanen(r: Rechte, thema: Thema): boolean {
  * Bildschirm (`PlanenScreen`) und für den Kopf des Planens darüber.
  */
 export function geplantesThema(r: Rechte, tab: MeetingTab): Thema {
-  if (!r.zuteilen && r.gruppe !== null) return 'predigtdienst'
+  if (treffpunktGruppe(r) !== null) return 'predigtdienst'
   return themaVon(tab)
 }
 

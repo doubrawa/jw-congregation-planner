@@ -83,8 +83,8 @@ export function useWochenImport(): {
      * wieder weg. `startImport` steht mit Absicht nicht in der Positivliste;
      * die Antwort darauf ist der Hinweis, nicht ein Ladebalken ins Leere.
      *
-     * `PlanSendenPanel` zieht dieselbe Grenze und aus demselben Grund: Wer eine
-     * Edge Function unmittelbar ruft, kommt am Reducer vorbei.
+     * „Plan senden" (`sendeUmfang`) zieht dieselbe Grenze und aus demselben
+     * Grund: Wer eine Edge Function unmittelbar ruft, kommt am Reducer vorbei.
      */
     if (state.staleAt) {
       dispatch({ type: 'showToast', text: t.offlineReadOnly })

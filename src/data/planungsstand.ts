@@ -128,8 +128,8 @@ export interface PlanungsQuellen {
   geladenBisMs: number | null
   /**
    * Kann gerade gesendet werden? Offline nicht — dann blendet Planen den Knopf
-   * aus (`PlanSendenPanel`), und die Karte verweist nicht auf einen Knopf, den
-   * es dort nicht gibt.
+   * aus (`sendeUmfang`), und die Karte verweist nicht auf einen Knopf, den es
+   * dort nicht gibt.
    */
   sendenMoeglich: boolean
 }

@@ -366,6 +366,17 @@ export function neuesterVersand(sentLog: SentLog, gehoert: (schluessel: string) 
 }
 
 /**
+ * Wann ging für **diese** Plätze zuletzt etwas hinaus? — eine Auswahl statt der
+ * ganzen Woche, etwa die Treffpunkte einer Gruppe. Das Tagebuch führt jeden
+ * Platz einzeln (`sentKey`), die Zeit ist also so genau wie die der Woche.
+ * Verglichen wird mit dem Leerzeichen dahinter: `…|f1` ist nicht `…|f10`.
+ */
+export function zuletztGesendetFuer(sentLog: SentLog, taskKeys: Iterable<string>): string | null {
+  const praefixe = [...taskKeys].map((k) => sentKey(k, ''))
+  return neuesterVersand(sentLog, (schluessel) => praefixe.some((p) => schluessel.startsWith(p)))
+}
+
+/**
  * Was von den offenen Aufgaben noch nicht im Versand-Tagebuch steht — die
  * Meldungen für „Plan senden" ohne Woche. Gerechnet werden die offenen mit
  * derselben Funktion wie in `send-plan`; hier fällt nur weg, was schon hinaus ist.

@@ -227,6 +227,47 @@
   color: var(--text3);
 }
 
+/* Ein Auswahlfeld in der Form von `.feld`. Eigene Klasse, weil `.feld` die
+   Kurzschreibweise `background:` trägt — sie löschte das Chevron
+   (`tests/auswahlfeld-chevron.test.ts`). */
+.feld-wahl {
+  width: 100%;
+  min-height: 50px;
+  padding-inline-start: 18px;
+  border: 1px solid var(--umriss);
+  border-radius: 25px;
+  background-color: var(--feld);
+  color: var(--text);
+}
+
+/* Die Felder eines Blatts untereinander, je mit ihrer Marke darüber. */
+.blatt-felder {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.blatt-feld {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* „Treffpunkt für diese Woche" — etwas Neues anlegen, gestrichelt unter einer Liste. */
+.knopf-neu {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 6px 20px;
+  border: 1.5px dashed var(--umriss);
+  border-radius: 26px;
+  color: var(--akzent-text);
+  font-weight: 700;
+}
+
 /* ---- Karten ---------------------------------------------------------------- */
 
 .karte {

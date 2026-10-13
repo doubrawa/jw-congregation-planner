@@ -24,12 +24,12 @@ import { STANDARD_ZEITEN } from '../data/vorgaben'
  * Anna ist in einer Woche fünfmal eingeteilt: im Hauptsaal, in der Zusätzlichen
  * Klasse, als Ratgeberin der Klasse, am Mikrofon und als Leiterin eines
  * Treffpunkts. Sie bestätigt in ihrer App alles, was ihr vorgelegt wird. Danach
- * muss der Planer an genau diesen fünf Chips Grün sehen — und an Bernds Platz
+ * muss der Planer an genau diesen fünf Plätzen Grün sehen — und an Bernds Platz
  * daneben weiter Gelb.
  *
  * **Warum die Probe von den Aufgaben ausgeht und nicht von Schlüsseln:** Die
  * Zusage entsteht unter der Aufgaben-Id, die `deriveMyTasks` und
- * `deriveMyFsTasks` liefern. Der Chip sucht sie unter einem Schlüssel, den die
+ * `deriveMyFsTasks` liefern. Der Platz sucht sie unter einem Schlüssel, den die
  * Planen-Ansicht selbst bildet (`useZusage`). Beide Rechnungen müssen
  * übereinstimmen, sonst bleibt der Punkt still gelb, obwohl längst zugesagt ist
  * — niemand sähe einen Fehler, nur eine Ampel, die nie umspringt.
@@ -140,26 +140,16 @@ const STUFE_DES_WORTS: Record<string, string> = {
 
 /**
  * Stufe je Platz einer Person: `is-bestaetigt` / `is-offen` / `is-verhindert`,
- * ohne Zusage `kein Punkt`. Die Zusammenkünfte zeigen ihre Plätze seit T121 als
- * Zeilen — „wartet" steht dort sichtbar bei der Rolle, die übrigen Stufen
- * verborgen für Vorleseprogramme. Die Treffpunkte tragen weiter den Chip mit
- * dem Ampel-Punkt.
+ * ohne Zusage `kein Punkt`. Jeder Platz ist seit T121 eine Zeile — der Leiter
+ * eines Treffpunkts seit Phase 5e auch: „wartet" steht sichtbar bei der Rolle,
+ * die übrigen Stufen verborgen für Vorleseprogramme.
  */
 function stufenVon(c: HTMLElement, name: string): string[] {
-  const zeilen = [...seite(c).querySelectorAll('.platz')].filter(
-    (p) => p.querySelector('.platz-name')?.textContent === name,
-  )
-  if (zeilen.length > 0) {
-    return zeilen.map((p) => {
+  return [...seite(c).querySelectorAll('.platz')]
+    .filter((p) => p.querySelector('.platz-name')?.textContent === name)
+    .map((p) => {
       const wort = p.querySelector('.sr-only')?.textContent ?? (p.classList.contains('is-wartet') ? t.zusageWartet : '')
       return STUFE_DES_WORTS[wort] ?? 'kein Punkt'
-    })
-  }
-  return [...seite(c).querySelectorAll('.slot-chip')]
-    .filter((chip) => chip.textContent?.includes(name))
-    .map((chip) => {
-      const punkt = chip.querySelector('.zusage-punkt')
-      return ['is-bestaetigt', 'is-offen', 'is-verhindert'].find((k) => punkt?.classList.contains(k)) ?? 'kein Punkt'
     })
 }
 

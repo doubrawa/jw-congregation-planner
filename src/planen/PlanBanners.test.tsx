@@ -12,8 +12,7 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications, serviceQualKey } from '../data/helpers'
 import { dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
-import type { Absence, FsInstance, Person, Qualifications, Section, Service, Week } from '../data/types'
-import { FsConflictsBanner } from './PlanBanners'
+import type { Absence, Person, Qualifications, Section, Service, Week } from '../data/types'
 import { BesetzungKarte } from './WochenStand'
 import { privSetzen } from '../data/helpers'
 
@@ -26,10 +25,10 @@ import { privSetzen } from '../data/helpers'
  *   auseinanderzuhalten ist der ganze Zweck: Ohne die zweite Angabe sucht der
  *   Planer den Fehler bei sich oder bei der Auto-Zuteilung, die die Plätze
  *   kommentarlos offen lässt.
- * - **Treffpunkt-Konflikte** sind ein eigenes Banner mit eigener Datenquelle.
  *
- * Beide Angaben der Zusammenkunft stehen seit T121 in der Besetzung unter
- * „Zu klären" (`BesetzungKarte`). Der wichtigste Fall: eine **ausgefallene**
+ * Beide Angaben stehen seit T121 in der Besetzung unter „Zu klären"
+ * (`BesetzungKarte`). Die Konflikte der Treffpunkte stehen am Platz ihres
+ * Leiters (`panels.test.tsx`). Der wichtigste Fall hier: eine **ausgefallene**
  * Zusammenkunft (T30). Dort ist nichts offen und nichts zu besetzen — stünde
  * dort eine Zahl, führte sie den Planer an einen Plan, den es nicht gibt.
  */
@@ -77,7 +76,7 @@ function woche(over: Partial<Week> = {}): Week {
   }
 }
 
-function zeige(kind: 'karte' | 'fs', over: Partial<AppState> = {}, onlyGroup: string | null = null) {
+function zeige(over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
     ...demoZustand(),
@@ -94,8 +93,7 @@ function zeige(kind: 'karte' | 'fs', over: Partial<AppState> = {}, onlyGroup: st
       <AppDispatchContext.Provider value={dispatch}>
         <AppStoreContext.Provider value={store}>
           <AppStateContext.Provider value={state}>
-            {kind === 'karte' && <BesetzungKarte tab="mid" tpw={(s) => s} />}
-            {kind === 'fs' && <FsConflictsBanner onlyGroup={onlyGroup} />}
+            <BesetzungKarte tab="mid" tpw={(s) => s} />
           </AppStateContext.Provider>
         </AppStoreContext.Provider>
       </AppDispatchContext.Provider>
@@ -105,7 +103,6 @@ function zeige(kind: 'karte' | 'fs', over: Partial<AppState> = {}, onlyGroup: st
 }
 
 const zeilen = (c: HTMLElement, sel: string) => [...c.querySelectorAll(sel)].map((x) => x.textContent ?? '')
-const zahl = (c: HTMLElement) => c.querySelector('.plan-banner-count')?.textContent
 /** Die Zeile „Offene Zuteilungen" unter „Zu klären" — ohne sie `null`. */
 const offenZeile = (c: HTMLElement) => c.querySelector('.klaeren-zeile[data-art="offen"]')
 /** Was unter „Zu klären" nicht besetzbar ist. */
@@ -115,7 +112,7 @@ afterEach(cleanup)
 
 describe('Offene Zuteilungen', () => {
   it('nennen die Gesamtzahl und jede offene Stelle', () => {
-    const { container } = zeige('karte')
+    const { container } = zeige()
     // 1 Leser + 2 Mikrofone + 1 Reinigung — die Zahl zählt Plätze, nicht Zeilen
     expect(offenZeile(container)?.textContent).toContain(fill(t.offeneZut, { n: 4 }))
     expect(offenZeile(container)?.querySelector('.klaeren-wo')?.textContent).toBe(
@@ -124,7 +121,7 @@ describe('Offene Zuteilungen', () => {
   })
 
   it('ein Lied ist kein offener Platz', () => {
-    const { container } = zeige('karte')
+    const { container } = zeige()
     expect(offenZeile(container)?.textContent).not.toContain('Lied')
   })
 
@@ -134,19 +131,19 @@ describe('Offene Zuteilungen', () => {
     item.names[1]!.name = 'Max Brand'
     w.mid.helpers.mik = [{ name: 'Max Brand' }, { name: 'Max Alt' }]
     w.mid.helpers.rein = [{ name: 'Gruppe 1' }]
-    const { container } = zeige('karte', { weeks: [w] })
+    const { container } = zeige({ weeks: [w] })
     expect(offenZeile(container)).toBeNull()
   })
 
   it('eine ausgefallene Zusammenkunft hat nichts offen und nichts zu besetzen (T30)', () => {
     // Sonst führte die Zahl den Planer an einen Plan, den es nicht gibt.
     const w = woche({ dev: { mid: { cancelled: true, reason: 'Kongress' } } })
-    const { container } = zeige('karte', { weeks: [w] })
+    const { container } = zeige({ weeks: [w] })
     expect(container.querySelector('.besetzung')).toBeNull()
   })
 
   it('ohne geladene Woche bleibt es still, statt abzustürzen', () => {
-    const { container } = zeige('karte', { weeks: [], week: 0 })
+    const { container } = zeige({ weeks: [], week: 0 })
     expect(container.querySelector('.besetzung')).toBeNull()
   })
 })
@@ -164,19 +161,19 @@ describe('Nicht besetzbar (T96) — was auch mit Mühe nicht geht', () => {
 
   it('meldet den Bereich, in dem an diesem Tag zu wenige da sind — mit dem Grund', () => {
     // Zwei Mikrofon-Plätze, ein einziger Qualifizierter — und der ist abwesend.
-    const { container } = zeige('karte', NUR_MIKROFONE)
+    const { container } = zeige(NUR_MIKROFONE)
     expect(engpass(container)).toEqual(['Mikrofone · nötig 2 · verfügbar 0 · abwesend 1 von 1'])
   })
 
   it('der Hilfsdienst trägt den Namen, den die Versammlung ihm gegeben hat', () => {
     const dienste: Service[] = [{ key: 'mik', name: 'Tonanlage', count: 2, groups: false }]
-    const { container } = zeige('karte', { ...NUR_MIKROFONE, services: dienste })
+    const { container } = zeige({ ...NUR_MIKROFONE, services: dienste })
     expect(engpass(container).join(' | ')).toContain('Tonanlage')
   })
 
   it('ein fester Bereich trägt seine Beschriftung aus dem Wörterbuch', () => {
     // Niemand ist für „Leser" qualifiziert → der Platz ist nicht besetzbar.
-    const { container } = zeige('karte', {
+    const { container } = zeige({
       persons: [person('p-a', 'Alt', 'vbsLeiter'), person('p-b', 'Brand', 'svc:mik')],
     })
     const texte = engpass(container).join(' | ')
@@ -185,7 +182,7 @@ describe('Nicht besetzbar (T96) — was auch mit Mühe nicht geht', () => {
   })
 
   it('solange es gerade reicht, schweigt es', () => {
-    const { container } = zeige('karte', {
+    const { container } = zeige({
       persons: [
         person('p-a', 'Alt', 'vbsLeiter'),
         person('p-b', 'Brand', 'leser', 'svc:mik'),
@@ -196,7 +193,7 @@ describe('Nicht besetzbar (T96) — was auch mit Mühe nicht geht', () => {
   })
 
   it('die Gruppen-Rotation braucht niemanden und wird nie gemeldet', () => {
-    const { container } = zeige('karte', { absences: ABWESEND })
+    const { container } = zeige({ absences: ABWESEND })
     expect(engpass(container).some((x) => x.includes('Reinigung'))).toBe(false)
   })
 
@@ -204,7 +201,7 @@ describe('Nicht besetzbar (T96) — was auch mit Mühe nicht geht', () => {
     const schwester: Person = {
       ...person('p-s', 'Sommer', 'svc:mik'), female: true,
     }
-    const { container } = zeige('karte', {
+    const { container } = zeige({
       persons: [person('p-a', 'Alt', 'vbsLeiter'), person('p-b', 'Brand', 'leser'), schwester],
       absences: [],
     })
@@ -214,62 +211,11 @@ describe('Nicht besetzbar (T96) — was auch mit Mühe nicht geht', () => {
   })
 })
 
-describe('Treffpunkt-Konflikte sind ein eigenes Banner', () => {
-  const inst = (over: Partial<FsInstance> = {}): FsInstance =>
-    ({ id: 'f1', ruleId: 'r1', wd: 6, time: '09:30', place: 'Saal', leader: '', grp: null, ...over }) as FsInstance
-
-  it('meldet, wer am Tag seines Treffpunkts abwesend ist — mit Tag und Ort', () => {
-    const { container } = zeige('fs', {
-      fsWeeks: [[inst({ leader: 'Max Brand', lpid: 'p-b' })]],
-      absences: [{ id: 'a1', personId: 'p-b', userId: null, from: '2026-09-12', to: '2026-09-13', reason: '' }],
-    })
-    const zeile = container.querySelector('.plan-conflict-text')?.textContent ?? ''
-    expect(zeile).toContain('Max Brand')
-    expect(zeile).toContain('Samstag')
-    expect(zeile).toContain('Saal')
-  })
-
-  it('zweimal am selben Tag ist ebenfalls ein Konflikt', () => {
-    const { container } = zeige('fs', {
-      fsWeeks: [[
-        inst({ id: 'f1', leader: 'Max Brand', lpid: 'p-b' }),
-        inst({ id: 'f2', leader: 'Max Brand', lpid: 'p-b', place: 'Park' }),
-      ]],
-    })
-    expect(zahl(container)).toBe('1')
-    expect(container.querySelector('.plan-conflict-text')?.textContent).toContain(t.sheetSchonHeute)
-  })
-
-  it('ohne Konflikt steht das Banner nicht da', () => {
-    const { container } = zeige('fs', {
-      fsWeeks: [[inst({ leader: 'Max Brand', lpid: 'p-b' })]],
-    })
-    expect(container.querySelector('.plan-conflicts')).toBeNull()
-  })
-
-  it('ein Gruppenaufseher sieht nur die Konflikte seiner Gruppe', () => {
-    const { container } = zeige(
-      'fs',
-      {
-        fsWeeks: [[
-          inst({ id: 'f1', leader: 'Max Brand', lpid: 'p-b', grp: 'g1' }),
-          inst({ id: 'f2', leader: 'Max Brand', lpid: 'p-b', grp: 'g2', place: 'Park' }),
-        ]],
-        absences: [{ id: 'a1', personId: 'p-b', userId: null, from: '2026-09-12', to: '2026-09-13', reason: '' }],
-      },
-      'g1',
-    )
-    const texte = zeilen(container, '.plan-conflict-text').join(' | ')
-    expect(texte).toContain('Saal')
-    expect(texte).not.toContain('Park')
-  })
-})
-
 describe('Vollständigkeitsprobe: die beiden Angaben meinen Verschiedenes', () => {
   it('„offen" zählt unbesetzte Plätze, „nicht besetzbar" fehlende Personen', () => {
     // Derselbe Zustand: zwei Mikrofon-Plätze sind offen (weil niemand
     // eingeteilt ist) UND nicht besetzbar (weil niemand da ist).
-    const { container } = zeige('karte', {
+    const { container } = zeige({
       // p-a deckt den Leser-Platz und ist da; p-b kann nur Mikrofone und fehlt.
       persons: [person('p-a', 'Alt', 'vbsLeiter', 'leser'), person('p-b', 'Brand', 'svc:mik')],
       absences: [
@@ -287,7 +233,7 @@ describe('Vollständigkeitsprobe: die beiden Angaben meinen Verschiedenes', () =
     const abwesend: Absence[] = [
       { id: 'a1', personId: 'p-b', userId: null, from: '2026-09-01', to: '2026-09-30', reason: '' },
     ]
-    const { container } = zeige('karte', { weeks: [w], absences: abwesend })
+    const { container } = zeige({ weeks: [w], absences: abwesend })
     expect(offenZeile(container)?.querySelector('.klaeren-wo')?.textContent).not.toContain('Mikrofone')
     expect(engpass(container).some((x) => x.includes('Mikrofone') && x.includes('nötig'))).toBe(true)
   })

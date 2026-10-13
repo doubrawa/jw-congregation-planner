@@ -14,10 +14,11 @@ import { fsTaskKey } from '../data/fs'
 import { emptyQualifications } from '../data/helpers'
 import { ratgeberKey } from '../data/planning'
 import { dict } from '../i18n/ui'
-import type { FsInstance, Group, Person, Week } from '../data/types'
+import type { Absence, FsInstance, Group, Person, Week } from '../data/types'
 import { AutoAssignRow } from './AutoAssignRow'
 import { AuxCounselorPanel } from './AuxCounselorPanel'
 import { FsPlan } from './FsPlan'
+import { TreffpunkteAutomatikBlatt } from './TreffpunkteAutomatikBlatt'
 
 /**
  * **Die drei Panels des Planen-Screens, die noch keiner angefasst hatte.**
@@ -33,6 +34,10 @@ import { FsPlan } from './FsPlan'
  */
 
 const t = dict('de')
+
+// Die Blätter lassen sich nach unten wegwischen; die Geste fragt zuerst, ob wir
+// am Schreibtisch sitzen. jsdom kennt matchMedia nicht — hier: kein Schreibtisch.
+window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
 
 const person = (id: string, fn: string, ln: string): Person => ({
   id, fn, ln, role: 'aeltester', female: false, tel: '', mail: '', priv: emptyQualifications(),
@@ -52,7 +57,7 @@ function woche(): Week {
   }
 }
 
-function buehne(kind: 'auto' | 'aux' | 'fs', over: Partial<AppState> = {}, onlyGroup: string | null = null) {
+function buehne(kind: 'auto' | 'aux' | 'fs' | 'fsAuto', over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
     ...demoZustand(),
@@ -84,7 +89,8 @@ function buehne(kind: 'auto' | 'aux' | 'fs', over: Partial<AppState> = {}, onlyG
               </div>
             )}
             {kind === 'aux' && <AuxCounselorPanel meeting={state.weeks[state.week]!.mid} />}
-            {kind === 'fs' && <FsPlan onlyGroup={onlyGroup} />}
+            {kind === 'fs' && <FsPlan />}
+            {kind === 'fsAuto' && <TreffpunkteAutomatikBlatt onClose={vi.fn()} />}
           </AppStateContext.Provider>
         </AppStoreContext.Provider>
       </AppDispatchContext.Provider>
@@ -210,145 +216,188 @@ describe('Der Ratgeber der Zusätzlichen Klasse (S-38 Abs. 27)', () => {
   })
 })
 
-describe('Treffpunkte planen', () => {
-  const inst = (over: Partial<FsInstance> = {}): FsInstance =>
-    ({ id: 'f1', ruleId: 'r1', wd: 6, time: '09:30', place: 'Saal', leader: '', grp: null, ...over }) as FsInstance
+const inst = (over: Partial<FsInstance> = {}): FsInstance =>
+  ({ id: 'f1', ruleId: 'r1', wd: 6, time: '09:30', place: 'Saal', leader: '', grp: null, ...over }) as FsInstance
+/** Anton leitet — als Person der Versammlung, nicht als Freitext. */
+const antons = (over: Partial<FsInstance> = {}): FsInstance => inst({ leader: 'Anton Alt', lpid: 'p-a', ...over })
+const titel = (c: HTMLElement) => [...c.querySelectorAll('.treff-titel')].map((x) => x.textContent)
+const plaetze = (c: HTMLElement) => [...c.querySelectorAll<HTMLElement>('.treff-leiter-zeile .platz')]
+const blatt = () => document.querySelector<HTMLElement>('[role="dialog"]')
+/** Öffnet „Treffpunkt für diese Woche". */
+const neu = (c: HTMLElement) => fireEvent.click(c.querySelector('.knopf-neu')!)
+const hinzufuegen = () => fireEvent.click(blatt()!.querySelector('.sheet-fuss .knopf-haupt')!)
+const angelegt = (dispatch: ReturnType<typeof vi.fn>) =>
+  dispatch.mock.calls.filter((c) => c[0].type === 'fsInstAdd').map((c) => c[0].inst as FsInstance)
 
+describe('Treffpunkte planen (T121, Entwurf `GTreffpunktePlanen`)', () => {
   it('nennt vorweg, dass Änderungen nur für diese Woche gelten', () => {
     const { container } = buehne('fs')
-    expect(container.querySelector('.plan-hint')?.textContent).toBe(t.fsNurWoche)
+    expect(container.querySelector('.klein-text')?.textContent).toBe(t.fsNurWoche)
+  })
+
+  it('ohne Treffpunkte sagt eine Karte, dass es keine gibt', () => {
+    const { container } = buehne('fs')
+    expect(container.querySelector('.treff-leer')?.textContent).toBe(t.fsKeine)
   })
 
   it('jeder Tag bekommt eine Karte, überschrieben mit dem echten Datum', () => {
     const { container } = buehne('fs', { fsWeeks: [[inst({ wd: 1 }), inst({ id: 'f2', wd: 6 })]] })
-    const labels = [...container.querySelectorAll('.panel-label')].map((x) => x.textContent)
-    expect(labels[0]).toContain('Montag')
-    expect(labels[0]).toContain('7. September')
-    expect(labels[1]).toContain('Samstag')
+    const tage = [...container.querySelectorAll('.treff-tag-name')].map((x) => x.textContent)
+    expect(tage[0]).toContain('Montag')
+    expect(tage[0]).toContain('7. September')
+    expect(tage[1]).toContain('Samstag')
+    expect(container.querySelector('.treff-leer')).toBeNull()
   })
 
   it('ein Versammlungstreffpunkt heißt so, ein Gruppentreffpunkt nach seiner Gruppe', () => {
     const { container } = buehne('fs', {
       fsWeeks: [[inst({ grp: null }), inst({ id: 'f2', grp: 'g1', time: '10:00' })]],
     })
-    expect([...container.querySelectorAll('.fs-edit-title')].map((x) => x.textContent)).toEqual([
-      t.fsVers, 'Gruppe 1',
-    ])
+    expect(titel(container)).toEqual([t.fsVers, 'Gruppe 1'])
   })
 
   it('Zeit und Ort lassen sich für diese Woche ändern', () => {
     const { container, dispatch } = buehne('fs', { fsWeeks: [[inst()]] })
-    fireEvent.change(container.querySelector('.fs-select--time')!, { target: { value: '10:00' } })
-    expect(dispatch).toHaveBeenCalledWith({
-      type: 'fsInstUpdate', wi: 0, id: 'f1', patch: { time: '10:00' },
-    })
-    fireEvent.change(container.querySelector('.fs-input')!, { target: { value: 'Marktplatz' } })
-    expect(dispatch).toHaveBeenCalledWith({
-      type: 'fsInstUpdate', wi: 0, id: 'f1', patch: { place: 'Marktplatz' },
-    })
+    fireEvent.change(container.querySelector('.treff-zeit-wahl')!, { target: { value: '10:00' } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'fsInstUpdate', wi: 0, id: 'f1', patch: { time: '10:00' } })
+    fireEvent.change(container.querySelector('.treff-ort-feld')!, { target: { value: 'Marktplatz' } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'fsInstUpdate', wi: 0, id: 'f1', patch: { place: 'Marktplatz' } })
   })
 
   it('ein Treffpunkt lässt sich aus der Woche entfernen — erst nach der Rückfrage', () => {
     const { container, dispatch } = buehne('fs', { fsWeeks: [[inst()]] })
-    fireEvent.click(container.querySelector('.fs-remove')!)
+    fireEvent.click(container.querySelector('.treff-entfernen')!)
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'fsInstRemove', wi: 0, id: 'f1' })
-    fireEvent.click(container.querySelector('.fs-remove')!)
+    fireEvent.click(container.querySelector('.treff-entfernen')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsInstRemove', wi: 0, id: 'f1' })
   })
+})
 
-  it('offene Leitungen stehen als Banner darüber — mit Tag und Treffpunkt', () => {
-    const { container } = buehne('fs', { fsWeeks: [[inst(), inst({ id: 'f2', leader: 'Anton Alt' })]] })
-    expect(container.querySelector('.plan-banner-count')?.textContent).toBe('1')
-    expect(container.querySelector('.plan-open-label')?.textContent).toContain(t.fsVers)
-  })
-
-  it('ist jede Leitung vergeben, steht das Banner nicht da', () => {
-    const { container } = buehne('fs', { fsWeeks: [[inst({ leader: 'Anton Alt' })]] })
-    expect(container.querySelector('.plan-open')).toBeNull()
-  })
-
-  it('ein Freitext-Leiter bekommt keinen Ampel-Punkt — er hat die App nicht', () => {
-    const { container } = buehne('fs', {
-      fsWeeks: [[inst({ leader: 'Kreisaufseher', lext: true })]],
+describe('Der Leiter steht als Platz unter seinem Treffpunkt', () => {
+  it('offen lädt er zum Zuteilen ein — ein Tipp öffnet es für genau diesen Treffpunkt', () => {
+    const { container, dispatch } = buehne('fs', { fsWeeks: [[inst()]] })
+    const platz = plaetze(container)[0]!
+    expect(platz.className).toContain('is-offen')
+    expect(platz.querySelector('.platz-name')?.textContent).toBe(t.spurZuteilen)
+    fireEvent.click(platz)
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'openSlot',
+      sel: expect.objectContaining({ kind: 'fs', wi: 0, instId: 'f1', priv: 'treffpunkt' }),
     })
-    expect(container.querySelector('.slot-chip')?.textContent).toContain('Kreisaufseher')
-    expect(container.querySelector('.slot-chip .zusage-punkt')).toBeNull()
   })
 
-  it('eine Person schon — gelb, solange sie nicht zugesagt hat', () => {
-    const { container } = buehne('fs', {
-      fsWeeks: [[inst({ leader: 'Anton Alt', lpid: 'p-a' })]],
-    })
-    expect(container.querySelector('.slot-chip .zusage-punkt')?.className).toContain('is-offen')
+  it('ein Freitext-Leiter ist besetzt — ohne Zusage, er hat die App nicht', () => {
+    const { container } = buehne('fs', { fsWeeks: [[inst({ leader: 'Kreisaufseher', lext: true })]] })
+    const platz = plaetze(container)[0]!
+    expect(platz.className).toContain('is-voll')
+    expect(platz.querySelector('.platz-name')?.textContent).toBe('Kreisaufseher')
+    expect(platz.textContent).not.toContain(t.zusageWartet)
+  })
+
+  it('eine Person wartet, solange sie nicht zugesagt hat', () => {
+    const { container } = buehne('fs', { fsWeeks: [[antons()]] })
+    expect(plaetze(container)[0]!.className).toContain('is-wartet')
   })
 
   it('ihre Zusage steht am Treffpunkt — gesucht unter dem Montag der Woche', () => {
     const { container } = buehne('fs', {
-      fsWeeks: [[inst({ leader: 'Anton Alt', lpid: 'p-a' }), inst({ id: 'f2', leader: 'Anton Alt', lpid: 'p-a' })]],
+      fsWeeks: [[antons({ id: 'f2', wd: 3 }), antons()]],
       confirmations: { [fsTaskKey('2026-09-07', 'f1')]: 'bestätigt', [fsTaskKey('2026-09-07', 'f2')]: 'verhindert' },
     })
-    const stufen = [...container.querySelectorAll('.slot-chip .zusage-punkt')].map((p) => p.className)
-    expect(stufen[0]).toContain('is-bestaetigt')
-    expect(stufen[1]).toContain('is-verhindert')
+    // Sortiert wie aus `fsSort`: Mittwoch (f2) vor Samstag (f1).
+    const [mittwoch, samstag] = plaetze(container)
+    expect(samstag!.className).toContain('is-voll')
+    expect(mittwoch!.className).toContain('is-problem')
+    expect(mittwoch!.querySelector('.platz-hinweis')?.textContent).toBe(t.zusageAbgesagt)
   })
 
-  it('auch hier steht die Legende — die Leiter-Chips tragen dieselben Punkte', () => {
-    const { container } = buehne('fs', { fsWeeks: [[inst({ leader: 'Anton Alt', lpid: 'p-a' })]] })
-    expect([...container.querySelectorAll('.plan-legend-item')].map((x) => x.textContent)).toEqual([
-      t.zusageBestaetigt, t.zusageWartet, t.zusageAbgesagt,
-    ])
+  it('wer an diesem Tag fehlt, steht rot da — am Tag davor leitet er trotzdem', () => {
+    // Abwesend nur am Samstag, 12.9. — der Mittwoch, 9.9., bleibt seiner.
+    const absences: Absence[] = [{ id: 'a1', personId: 'p-a', userId: null, from: '2026-09-12', to: '2026-09-12', reason: '' }]
+    const { container } = buehne('fs', { fsWeeks: [[antons({ id: 'f2', wd: 3 }), antons()]], absences })
+    const [mittwoch, samstag] = plaetze(container)
+    expect(samstag!.className).toContain('is-problem')
+    expect(samstag!.querySelector('.platz-hinweis')?.textContent).toBe(t.abwesendChip)
+    expect(mittwoch!.className).toContain('is-wartet')
   })
 
-  it('„Leeren" braucht auch hier zwei Tipps', () => {
-    const { container, dispatch } = buehne('fs', { fsWeeks: [[inst({ leader: 'Anton Alt' })]] })
-    const knopf = leerenKnoepfe(container)[0]!
-    fireEvent.click(knopf)
-    expect(dispatch.mock.calls.some((c) => c[0].type === 'fsClear')).toBe(false)
-    fireEvent.click(knopf)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'fsClear', onlyGroup: null })
+  it('zweimal am selben Tag: beide rot, „An diesem Tag schon"', () => {
+    const { container } = buehne('fs', { fsWeeks: [[antons(), antons({ id: 'f2', grp: 'g1', time: '10:00' })]] })
+    for (const platz of plaetze(container)) {
+      expect(platz.className).toContain('is-problem')
+      expect(platz.querySelector('.platz-hinweis')?.textContent).toBe(t.sheetSchonHeute)
+    }
   })
 
-  it('ein neuer Treffpunkt gilt nur für diese Woche und nimmt den Saal dieser Versammlung', () => {
-    const { container, dispatch } = buehne('fs')
-    fireEvent.click(container.querySelector('.fs-add-btn')!)
-    const aktion = dispatch.mock.calls.find((c) => c[0].type === 'fsInstAdd')![0]
-    expect(aktion.inst).toMatchObject({
-      ruleId: null, manual: true, grp: null, wd: 6, time: '09:30',
-      place: 'Königreichssaal', leader: '',
+  it('der Treffpunkt, der gerade zugeteilt wird, ist hervorgehoben', () => {
+    const { container } = buehne('fs', {
+      fsWeeks: [[inst(), inst({ id: 'f2', time: '10:00' })]],
+      slotSel: { kind: 'fs', wi: 0, instId: 'f2', label: '', priv: 'treffpunkt', groups: false },
     })
+    expect(plaetze(container).map((p) => p.getAttribute('aria-current'))).toEqual([null, 'true'])
+  })
+})
+
+describe('„Treffpunkt für diese Woche"', () => {
+  it('gilt nur für diese Woche und nimmt den Saal dieser Versammlung', () => {
+    const { container, dispatch } = buehne('fs')
+    neu(container)
+    hinzufuegen()
+    expect(angelegt(dispatch)[0]).toMatchObject({
+      ruleId: null, manual: true, grp: null, wd: 6, time: '09:30', place: 'Königreichssaal', leader: '',
+    })
+    // Danach ist das Blatt zu.
+    expect(blatt()).toBeNull()
   })
 
   it('zwei nacheinander angelegte bekommen verschiedene Kennungen — daran hängt die Bestätigung', () => {
     const { container, dispatch } = buehne('fs')
-    fireEvent.click(container.querySelector('.fs-add-btn')!)
-    fireEvent.click(container.querySelector('.fs-add-btn')!)
-    const ids = dispatch.mock.calls.filter((c) => c[0].type === 'fsInstAdd').map((c) => c[0].inst.id)
+    neu(container)
+    hinzufuegen()
+    neu(container)
+    hinzufuegen()
+    const ids = angelegt(dispatch).map((i) => i.id)
     expect(ids).toHaveLength(2)
     expect(ids[0]).not.toBe(ids[1])
   })
 
-  it('ein eingegebener Ort schlägt den Saal — und das Feld wird danach frei', () => {
+  it('ein eingegebener Ort schlägt den Saal — und das nächste Blatt beginnt leer', () => {
     const { container, dispatch } = buehne('fs')
-    const feld = container.querySelectorAll<HTMLInputElement>('.fs-add .fs-input')[0]!
-    fireEvent.change(feld, { target: { value: '  Marktplatz  ' } })
-    fireEvent.click(container.querySelector('.fs-add-btn')!)
-    expect(dispatch.mock.calls.find((c) => c[0].type === 'fsInstAdd')![0].inst.place).toBe('Marktplatz')
-    expect(feld.value).toBe('')
+    neu(container)
+    fireEvent.change(blatt()!.querySelector('input.feld')!, { target: { value: '  Marktplatz  ' } })
+    hinzufuegen()
+    expect(angelegt(dispatch)[0]!.place).toBe('Marktplatz')
+    neu(container)
+    expect(blatt()!.querySelector<HTMLInputElement>('input.feld')!.value).toBe('')
+  })
+
+  it('Tag und Uhrzeit nimmt er aus dem Blatt', () => {
+    const { container, dispatch } = buehne('fs')
+    neu(container)
+    const [tag, zeit] = [...blatt()!.querySelectorAll<HTMLSelectElement>('select')].slice(-2)
+    fireEvent.change(tag!, { target: { value: '3' } })
+    fireEvent.change(zeit!, { target: { value: '10:00' } })
+    hinzufuegen()
+    expect(angelegt(dispatch)[0]).toMatchObject({ wd: 3, time: '10:00' })
+  })
+
+  it('„Abbrechen" legt nichts an', () => {
+    const { container, dispatch } = buehne('fs')
+    neu(container)
+    fireEvent.click(blatt()!.querySelector('.sheet-fuss .knopf-leise')!)
+    expect(angelegt(dispatch)).toEqual([])
+    expect(blatt()).toBeNull()
   })
 })
 
 describe('Der Gruppenaufseher plant nur seine eigene Gruppe', () => {
-  const inst = (over: Partial<FsInstance> = {}): FsInstance =>
-    ({ id: 'f1', ruleId: 'r1', wd: 6, time: '09:30', place: 'Saal', leader: '', grp: null, ...over }) as FsInstance
-
   const beide = [[
     inst({ id: 'f1', grp: 'g1' }),
     inst({ id: 'f2', grp: 'g2', time: '10:00' }),
     inst({ id: 'f3', grp: null, time: '10:30' }),
   ]]
-  // Wirklich Gruppenaufseher: kein Admin, aber Aufseher von Gruppe 1. Bis zum
-  // 4.10.2026 stand hier ein Admin mit `onlyGroup` — seit `FsPlan` die Rechte
-  // selbst liest, wäre das ein Admin, der nur eine Gruppe sieht.
+  // Wirklich Gruppenaufseher: kein Admin, aber Aufseher von Gruppe 1. Die
+  // Einschränkung liest `FsPlan` selbst aus den Rechten (`treffpunktGruppe`).
   const AUFSEHER: Partial<AppState> = {
     planner: false,
     zuteiler: false,
@@ -357,58 +406,39 @@ describe('Der Gruppenaufseher plant nur seine eigene Gruppe', () => {
   }
 
   it('sieht die fremde Gruppe und den Versammlungstreffpunkt gar nicht', () => {
-    const { container } = buehne('fs', { fsWeeks: beide, ...AUFSEHER }, 'g1')
-    expect([...container.querySelectorAll('.fs-edit-title')].map((x) => x.textContent)).toEqual([
-      'Gruppe 1',
-    ])
-  })
-
-  it('sein Banner zählt nur seine offenen Leitungen', () => {
-    const { container } = buehne('fs', { fsWeeks: beide, ...AUFSEHER }, 'g1')
-    expect(container.querySelector('.plan-banner-count')?.textContent).toBe('1')
-  })
-
-  it('„Leeren" und „Automatisch" wirken nur auf seine Gruppe', () => {
-    const { container, dispatch } = buehne('fs', { fsWeeks: beide, ...AUFSEHER }, 'g1')
-    fireEvent.click(container.querySelector('.plan-auto-btn--primary')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'fsAutoAssign', onlyGroup: 'g1' })
-    const knopf = leerenKnoepfe(container)[0]!
-    fireEvent.click(knopf)
-    fireEvent.click(knopf)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'fsClear', onlyGroup: 'g1' })
+    const { container } = buehne('fs', { fsWeeks: beide, ...AUFSEHER })
+    expect(titel(container)).toEqual(['Gruppe 1'])
   })
 
   it('Zeit, Ort und Entfernen stehen an seinem Treffpunkt — er ändert ihn, nicht nur den Leiter (4.10.2026)', () => {
-    const { container } = buehne('fs', { fsWeeks: beide, ...AUFSEHER }, 'g1')
-    const zeile = container.querySelector('.fs-edit-row')!
-    expect(zeile.querySelector('.fs-select--time')).not.toBeNull()
-    expect(zeile.querySelector('.fs-input')).not.toBeNull()
-    expect(zeile.querySelector('.fs-remove')).not.toBeNull()
+    const { container } = buehne('fs', { fsWeeks: beide, ...AUFSEHER })
+    const kopf = container.querySelector('.treff-planen-kopf')!
+    expect(kopf.querySelector('.treff-zeit-wahl')).not.toBeNull()
+    expect(kopf.querySelector('.treff-ort-feld')).not.toBeNull()
+    expect(kopf.querySelector('.treff-entfernen')).not.toBeNull()
   })
 
   it('ein neuer Treffpunkt gehört automatisch seiner Gruppe — die Wahl entfällt', () => {
-    const { container, dispatch } = buehne('fs', { fsWeeks: beide, ...AUFSEHER }, 'g1')
-    // Ohne Gruppen-Auswahl: er kann gar keine andere wählen.
-    const auswahlen = [...container.querySelectorAll('.fs-add .fs-select')]
-    expect(auswahlen.every((s) => s.getAttribute('aria-label') !== t.fsVers)).toBe(true)
-    fireEvent.click(container.querySelector('.fs-add-btn')!)
-    expect(dispatch.mock.calls.find((c) => c[0].type === 'fsInstAdd')![0].inst.grp).toBe('g1')
+    const { container, dispatch } = buehne('fs', { fsWeeks: beide, ...AUFSEHER })
+    neu(container)
+    // Nur Wochentag und Uhrzeit — keine Wahl der Gruppe.
+    expect(blatt()!.querySelectorAll('select')).toHaveLength(2)
+    hinzufuegen()
+    expect(angelegt(dispatch)[0]!.grp).toBe('g1')
   })
 
   it('der Admin dagegen wählt die Gruppe — Versammlung oder eine der angelegten', () => {
-    const { container } = buehne('fs', { fsWeeks: beide })
-    const wahl = [...container.querySelectorAll('.fs-add .fs-select')].find(
-      (s) => s.getAttribute('aria-label') === t.fsVers,
-    )!
-    expect([...wahl.querySelectorAll('option')].map((o) => o.textContent)).toEqual([
-      t.fsVers, 'Gruppe 1', 'Gruppe 2',
-    ])
+    const { container, dispatch } = buehne('fs', { fsWeeks: beide })
+    neu(container)
+    const wahl = blatt()!.querySelector('select')!
+    expect([...wahl.querySelectorAll('option')].map((o) => o.textContent)).toEqual([t.fsVers, 'Gruppe 1', 'Gruppe 2'])
+    fireEvent.change(wahl, { target: { value: 'g2' } })
+    hinzufuegen()
+    expect(angelegt(dispatch)[0]!.grp).toBe('g2')
   })
 })
 
 describe('Der Planer besetzt Treffpunkte, ändert sie aber nicht (4.10.2026)', () => {
-  const inst = (over: Partial<FsInstance> = {}): FsInstance =>
-    ({ id: 'f1', ruleId: 'r1', wd: 6, time: '09:30', place: 'Saal', leader: '', grp: null, ...over }) as FsInstance
   const woche = [[
     inst({ id: 'f1', grp: 'g1' }),
     inst({ id: 'f2', grp: 'g2', time: '10:00', place: 'Am Markt' }),
@@ -416,20 +446,17 @@ describe('Der Planer besetzt Treffpunkte, ändert sie aber nicht (4.10.2026)', (
   const PLANER: Partial<AppState> = { planner: false, zuteiler: true, personId: null }
 
   it('sieht alle Gruppen und setzt überall den Leiter — Zeit und Ort stehen als Text', () => {
-    const { container, dispatch } = buehne('fs', { fsWeeks: woche, ...PLANER })
-    expect([...container.querySelectorAll('.fs-edit-title')].map((x) => x.textContent)).toEqual(['Gruppe 1', 'Gruppe 2'])
+    const { container } = buehne('fs', { fsWeeks: woche, ...PLANER })
+    expect(titel(container)).toEqual(['Gruppe 1', 'Gruppe 2'])
     // Nichts, was den Treffpunkt ändert …
-    expect(container.querySelector('.fs-select--time')).toBeNull()
-    expect(container.querySelector('.fs-edit-row .fs-input')).toBeNull()
-    expect(container.querySelector('.fs-remove')).toBeNull()
-    expect(container.querySelector('.fs-add')).toBeNull()
+    expect(container.querySelector('.treff-planen-kopf.is-aenderbar')).toBeNull()
+    expect(container.querySelector('.treff-zeit-wahl, .treff-ort-feld, .treff-entfernen')).toBeNull()
+    expect(container.querySelector('.knopf-neu')).toBeNull()
     // … aber Zeit und Ort zum Ansehen, und der Leiter-Platz zum Zuteilen.
-    expect([...container.querySelectorAll('.fs-edit-time')].map((x) => x.textContent)).toEqual(['09:30', '10:00'])
+    expect([...container.querySelectorAll('.treff-zeit-pille')].map((x) => x.textContent)).toEqual(['09:30', '10:00'])
+    expect(container.querySelector('.treff-ort')?.textContent).toBe('Saal')
     expect(container.textContent).toContain('Am Markt')
-    expect(container.querySelectorAll('.slot-chip')).toHaveLength(2)
-    // „Automatisch" für alle Gruppen.
-    fireEvent.click(container.querySelector('.plan-auto-btn--primary')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'fsAutoAssign', onlyGroup: null })
+    expect(plaetze(container)).toHaveLength(2)
   })
 
   it('ist er zugleich Gruppenaufseher, ändert er seine Gruppe — und nur sie', () => {
@@ -439,12 +466,57 @@ describe('Der Planer besetzt Treffpunkte, ändert sie aber nicht (4.10.2026)', (
       personId: 'p-a',
       groups: [{ ...GRUPPEN[0]!, overseerId: 'p-a' }, GRUPPEN[1]!],
     })
-    const zeilen = [...container.querySelectorAll('.fs-edit-row')]
-    expect(zeilen).toHaveLength(2)
-    expect(zeilen[0]!.querySelector('.fs-select--time')).not.toBeNull()
-    expect(zeilen[1]!.querySelector('.fs-select--time')).toBeNull()
+    const koepfe = [...container.querySelectorAll('.treff-planen-kopf')]
+    expect(koepfe.map((k) => k.classList.contains('is-aenderbar'))).toEqual([true, false])
     // Anlegen in seiner Gruppe — ohne Wahl.
-    const auswahlen = [...container.querySelectorAll('.fs-add .fs-select')]
-    expect(auswahlen.every((s) => s.getAttribute('aria-label') !== t.fsVers)).toBe(true)
+    neu(container)
+    expect(blatt()!.querySelectorAll('select')).toHaveLength(2)
   })
 })
+
+describe('„Automatisch" bei den Treffpunkten (T121, Phase 5e)', () => {
+  const zwei = [[inst({ id: 'f1', grp: 'g1', leader: 'Anton Alt', lpid: 'p-a' }), inst({ id: 'f2', grp: 'g2' })]]
+  const zuteilen = () => fireEvent.click(blatt()!.querySelector('.auto-fuss .knopf-haupt')!)
+  const leeren = () => blatt()!.querySelector<HTMLButtonElement>('.auto-leeren')!
+
+  it('nennt, wie viele Leiter besetzt sind, und besetzt die offenen aller Gruppen', () => {
+    const { dispatch } = buehne('fsAuto', { fsWeeks: zwei })
+    expect(blatt()!.querySelector('.auto-bereich')?.textContent).toContain(`${t.saalBesetzung}: 1/2`)
+    zuteilen()
+    expect(dispatch).toHaveBeenCalledWith({ type: 'fsAutoAssign', onlyGroup: null })
+  })
+
+  it('„Leeren" braucht auch hier zwei Tipps', () => {
+    const { dispatch } = buehne('fsAuto', { fsWeeks: zwei })
+    fireEvent.click(leeren())
+    expect(dispatch.mock.calls.some((c) => c[0].type === 'fsClear')).toBe(false)
+    expect(leeren().textContent).toBe(t.leerenSicher)
+    fireEvent.click(leeren())
+    expect(dispatch).toHaveBeenCalledWith({ type: 'fsClear', onlyGroup: null })
+  })
+
+  it('ist alles besetzt, gibt es nichts zuzuteilen; ist nichts besetzt, nichts zu leeren', () => {
+    buehne('fsAuto', { fsWeeks: [[inst({ leader: 'Anton Alt', lpid: 'p-a' })]] })
+    expect(blatt()!.querySelector<HTMLButtonElement>('.auto-fuss .knopf-haupt')!.disabled).toBe(true)
+    cleanup()
+    buehne('fsAuto', { fsWeeks: [[inst()]] })
+    expect(leeren().disabled).toBe(true)
+  })
+
+  it('beim Gruppenaufseher wirkt beides nur auf seine Gruppe — und zählt nur sie', () => {
+    const { dispatch } = buehne('fsAuto', {
+      fsWeeks: [[inst({ id: 'f1', grp: 'g1', leader: 'Anton Alt', lpid: 'p-a' }), inst({ id: 'f2', grp: 'g1', time: '10:00' }), inst({ id: 'f3', grp: 'g2' })]],
+      planner: false,
+      zuteiler: false,
+      personId: 'p-a',
+      groups: [{ ...GRUPPEN[0]!, overseerId: 'p-a' }, GRUPPEN[1]!],
+    })
+    expect(blatt()!.querySelector('.auto-bereich')?.textContent).toContain(`${t.saalBesetzung}: 1/2`)
+    zuteilen()
+    expect(dispatch).toHaveBeenCalledWith({ type: 'fsAutoAssign', onlyGroup: 'g1' })
+    fireEvent.click(leeren())
+    fireEvent.click(leeren())
+    expect(dispatch).toHaveBeenCalledWith({ type: 'fsClear', onlyGroup: 'g1' })
+  })
+})
+

@@ -24,6 +24,14 @@ const LISTEN_GRENZE = 8
  * weiß, und der Knopf, der die ganze Woche hinausgibt (beide Zusammenkünfte
  * und die Treffpunkte, `send-plan`).
  *
+ * **Warum es diesen Knopf gibt:** Bis T99 erfuhr die eingeteilte Person von
+ * ihrer Zuteilung nichts — die Mitteilung ging an die Planer, sie selbst
+ * hörte erst über die Erinnerung davon. **Warum auf Knopfdruck:** Planen ist
+ * eine Sitzung, bis der Plan steht, wird umsortiert; bei sofortigem Versand
+ * ginge für jeden Zwischenstand eine Nachricht hinaus. Der Knopf gilt für die
+ * ganze Woche, beide Zusammenkünfte und die Treffpunkte — beim Gruppenaufseher,
+ * der nicht zuteilt, für die Treffpunkte seiner Gruppe (`gruppe`).
+ *
  * Meldungen und Versand kommen von der Aktionsleiste (`PlanenAktionen`): Sie
  * bleibt beim Planen stehen, das Blatt nicht. So steht, wen die App nicht
  * erreichen konnte (kein Konto), auch nach dem Schließen wieder da — bis die
@@ -34,12 +42,19 @@ export function PlanSendenBlatt({
   meldungen,
   zuletzt,
   versand,
+  gruppe = false,
   onClose,
 }: {
   meldungen: readonly OffeneWochenMeldung[]
   /** Wann für diese Woche zuletzt etwas hinausging — oder `null`. */
   zuletzt: string | null
   versand: VersandStand
+  /**
+   * Nur die Treffpunkte der eigenen Gruppe (der Gruppenaufseher, der nicht
+   * zuteilt, `sendeUmfang`): ohne die Spur der Zusammenkunft, die ihn nicht
+   * betrifft, und mit den Sätzen seiner Gruppe.
+   */
+  gruppe?: boolean
   onClose: () => void
 }) {
   const { state } = useApp()
@@ -49,16 +64,15 @@ export function PlanSendenBlatt({
   const n = meldungen.length
   const liste = n !== 0 && n <= LISTEN_GRENZE
   const zuletztText = zuletzt ? fill(t.planSendenZuletzt, { zeit: relativeZeit(zuletzt, state.lang) }) : null
+  const [offenSatz, alleSatz] = gruppe ? [t.fsSendenOffen, t.fsSendenAlle] : [t.planSendenOffen, t.planSendenAlle]
 
   return (
     <Sheet variante="lang" label={t.planSenden} title={t.planSenden} onClose={onClose}>
       <div className="sheet-inhalt senden">
-        <PlanSpur tab={mtab(state.tab)} />
+        {!gruppe && <PlanSpur tab={mtab(state.tab)} />}
         {/* „Alle wissen Bescheid" erst, wenn etwas hinausging — eine Woche, in
             der noch niemand eingeteilt ist, beschreibt die Spur darüber. */}
-        {(n > 0 || zuletzt) && (
-          <p className="senden-satz">{n > 0 ? fill(t.planSendenOffen, { n }) : t.planSendenAlle}</p>
-        )}
+        {(n > 0 || zuletzt) && <p className="senden-satz">{n > 0 ? fill(offenSatz, { n }) : alleSatz}</p>}
         {liste && (
           <ul className="senden-liste">
             {meldungen.map((meldung) => {

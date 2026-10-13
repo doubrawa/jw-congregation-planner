@@ -1,13 +1,14 @@
 import { useApp } from '../app/context'
 import { abwesenheitAm } from '../data/absence'
-import { fsLeiterZuteilung, fsTag, fsWeekConflicts } from '../data/fs'
+import { fsKonfliktVon, fsLeiterZuteilung, fsTag, fsWeekConflicts } from '../data/fs'
 import { idAufloeser, type Zuteilung } from '../data/helpers'
 import { meetingDate } from '../data/meeting-dates'
 import { platzDerAuswahl, platzMitZusage } from '../data/plaetze'
+import { rechteVon, treffpunktGruppe } from '../data/rechte'
 import type { Absence, SlotSelection } from '../data/types'
 import { useT } from '../i18n/useT'
-import { platzAnzeige, type PlatzAnzeige } from './platz-anzeige'
-import { machKonfliktVon, useKonflikte } from './useKonflikte'
+import { leiterAnzeige, platzAnzeige, type PlatzAnzeige } from './platz-anzeige'
+import { useKonflikte } from './useKonflikte'
 import { useZusage } from './useZusage'
 
 /** Was die Karte „aktuell besetzt" oben im Zuteilen-Blatt zeigt. */
@@ -44,14 +45,14 @@ export function useAktuellerPlatz(sel: SlotSelection): AktuellerPlatz | undefine
   if (sel.kind === 'fs') {
     const inst = fsWeeks[sel.wi]?.find((i) => i.id === sel.instId)
     if (!inst?.leader) return undefined
-    const person = fsLeiterZuteilung(inst)
-    const konflikt = person
-      ? machKonfliktVon(persons, fsWeekConflicts(fsWeeks, sel.wi, persons, absences, week.start))(person)
-      : undefined
+    // Dieselben Konflikte wie im Plan — beim Gruppenaufseher die seiner Gruppe.
+    const konflikte = fsWeekConflicts(fsWeeks, sel.wi, persons, absences, week.start, treffpunktGruppe(rechteVon(state)))
+    const konflikt = fsKonfliktVon(konflikte)(inst)
     return {
       name: inst.leader,
-      anzeige: platzAnzeige({ name: inst.leader }, person ? zusage.treffpunkt(inst) : null, konflikt, t),
-      abwesenheit: konflikt?.kind === 'fsAbsent' ? abwesenheitVon(person, fsTag(week.start, inst.wd)) : undefined,
+      anzeige: leiterAnzeige(inst, zusage.treffpunkt, konflikt, t),
+      abwesenheit:
+        konflikt?.kind === 'fsAbsent' ? abwesenheitVon(fsLeiterZuteilung(inst), fsTag(week.start, inst.wd)) : undefined,
     }
   }
 

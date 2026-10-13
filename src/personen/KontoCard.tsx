@@ -68,8 +68,8 @@ export function KontoCard({ person }: { person: Person }) {
      * hinaus. Der Eingeladene bekam einen Code, den `redeem_invite` nicht
      * kennt.
      *
-     * `PlanSendenPanel` zieht dieselbe Grenze und aus demselben Grund: Wer eine
-     * Edge Function unmittelbar ruft, kommt am Reducer vorbei.
+     * „Plan senden" (`sendeUmfang`) zieht dieselbe Grenze und aus demselben
+     * Grund: Wer eine Edge Function unmittelbar ruft, kommt am Reducer vorbei.
      */
     if (state.staleAt) {
       dispatch({ type: 'showToast', text: t.offlineReadOnly })

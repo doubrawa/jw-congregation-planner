@@ -316,6 +316,14 @@ export function fsLeiterZuteilung(inst: FsInstance): Zuteilung | undefined {
 }
 
 /**
+ * Gehört der Treffpunkt zu dem, was geplant wird? `onlyGroup` ist die Gruppe
+ * des Gruppenaufsehers, `null` heißt alle (`treffpunktGruppe`).
+ */
+export function fsInGruppe(inst: FsInstance, onlyGroup: string | null): boolean {
+  return onlyGroup === null || inst.grp === onlyGroup
+}
+
+/**
  * Die Treffpunkte einer Woche nach Wochentag gruppiert — in der Reihenfolge,
  * in der sie kommen (`fsSort` hat sie schon Mo→So, Zeit, Gruppe sortiert).
  * Programm und Planen bauen daraus je Tag eine Karte.
@@ -629,7 +637,7 @@ export function fsAutoAssign(
 
   const newly: string[] = []
   const week = (fsWeeks[wi] ?? []).map((inst) => {
-    if (inst.leader || (onlyGroup !== null && inst.grp !== onlyGroup)) return inst
+    if (inst.leader || !fsInGruppe(inst, onlyGroup)) return inst
     const used = dayUsed.get(inst.wd) ?? new Set<string>()
     // Der Hash ist derselbe gemischte wie bei der Programm-Zuteilung. Die
     // frühere eigene Fassung ohne Avalanche ergab in jeder Woche dieselbe feste
@@ -705,7 +713,7 @@ export function fsClear(
 ): { fsWeeks: FsInstance[][]; count: number } {
   let count = 0
   const week = (fsWeeks[wi] ?? []).map((inst) => {
-    if (!inst.leader || (onlyGroup !== null && inst.grp !== onlyGroup)) return inst
+    if (!inst.leader || !fsInGruppe(inst, onlyGroup)) return inst
     count++
     // Auch die Id muss weg: sonst gehörte der geleerte Platz weiter jemandem
     // und stünde bei ihm in „Meine Aufgaben". Das Freitext-Kennzeichen ebenso —
@@ -895,7 +903,7 @@ export function fsWeekConflicts(
   const namen = new Map<string, string>()
 
   for (const inst of week) {
-    if (!inst.leader || (onlyGroup !== null && inst.grp !== onlyGroup)) continue
+    if (!inst.leader || !fsInGruppe(inst, onlyGroup)) continue
     const kennung = kennungVon(inst.leader, inst.lpid)
     namen.set(kennung, inst.leader)
     // Zählung je Wochentag für `fsDouble` — auch ohne Kennung prüfbar.
@@ -914,7 +922,7 @@ export function fsWeekConflicts(
     // Wochentag vergeben.
     const datum = fsTag(wochenStart, inst.wd)
     if (personId && datum && istAbwesendAm(absences, personId, datum)) {
-      conflicts.push({ kind: 'fsAbsent', name: inst.leader, kennung, wd: inst.wd, ort: inst.place })
+      conflicts.push({ kind: 'fsAbsent', name: inst.leader, kennung, wd: inst.wd })
     }
   }
 
@@ -926,6 +934,25 @@ export function fsWeekConflicts(
     }
   }
   return conflicts
+}
+
+/**
+ * Der Konflikt, in dem der Leiter **dieses** Treffpunkts steht — die
+ * Abwesenheit vor der Doppelbelegung.
+ *
+ * Je Treffpunkt, nicht je Person: Beide Konflikte gelten an einem Wochentag.
+ * Wer am Samstag fehlt, leitet am Mittwoch trotzdem, und wer samstags zweimal
+ * eingeteilt ist, steht mittwochs richtig. Die Kennung bildet sich wie in
+ * `fsWeekConflicts` — so trifft sie auch den Freitext-Leiter, der zweimal am
+ * selben Tag steht.
+ */
+export function fsKonfliktVon(conflicts: readonly Conflict[]): (inst: FsInstance) => Conflict | undefined {
+  return (inst) => {
+    if (!inst.leader) return undefined
+    const kennung = kennungVon(inst.leader, inst.lpid)
+    const eigene = conflicts.filter((c) => c.wd === inst.wd && c.kennung === kennung)
+    return eigene.find((c) => c.kind === 'fsAbsent') ?? eigene[0]
+  }
 }
 
 /**

@@ -170,11 +170,11 @@ function pushNotif(
  * anderthalb Wochen voll und verdrängte alles andere, die eigenen Erinnerungen
  * eingeschlossen.
  *
- * An ihre Stelle tritt „Plan senden" (`PlanSendenPanel` → Edge Function
+ * An ihre Stelle tritt „Plan senden" (`PlanSendenBlatt` → Edge Function
  * `send-plan`): eine Nachricht je **eingeteilter Person**, wenn der Plan steht.
  * Was der Planer über den Stand seiner Woche wissen muss, steht ohnehin im
- * Planen-Screen — Konflikte, offene Plätze, Engpässe und der Ampel-Punkt an
- * jedem besetzten Platz. Dafür braucht es keine Nachricht.
+ * Planen-Screen — Konflikte, offene Plätze, Engpässe und die Lage jedes
+ * besetzten Platzes. Dafür braucht es keine Nachricht.
  *
  * Mit ihr entfiel der Schalter `reminders.onAssign`, der nichts anderes
  * steuerte.

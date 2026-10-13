@@ -369,59 +369,8 @@
   overflow-wrap: anywhere;
 }
 
-.slot-chip {
-  border: 1px solid var(--bord);
-  background: var(--card);
-  color: var(--ink);
-  border-radius: var(--r-pill);
-  padding: 5px 11px;
-  font-size: calc(11.5px * var(--fs));
-  font-weight: 600;
-}
-
-.slot-chip.is-open {
-  border-style: dashed;
-  border-color: var(--dash);
-  background: transparent;
-  color: var(--mut);
-}
-
-.slot-chip:hover,
-.slot-chip.is-open:hover {
-  border-color: var(--acc);
-}
-
-/*
- * Diese Person steht im Konflikt-Banner darüber.
- *
- * **Form statt Fläche** (T80): Der Chip hatte zuerst `--tWein` als Hintergrund
- * — genau den Ton, den der Bereich „Unser Leben als Christ" für sich führt
- * (`SECTION_TOKENS.wein`). Dort verschwand die Hervorhebung im Panel, statt
- * aufzufallen, und dieselbe Farbe bedeutete zweierlei. Eine andere Tönung hilft
- * nicht: **jede** Panel-Fläche der App ist die Farbe irgendeines Bereichs. Der
- * Chip behält deshalb seine eigene Fläche und markiert mit Rand und Punkt —
- * demselben Punkt, den das Banner vor jeder Zeile führt.
- */
-.slot-chip.is-konflikt {
-  border-color: var(--wein);
-  /*
-   * 2px, nicht 1,5px: Chrome rechnet Randbreiten auf **ganze Gerätepixel
-   * ab**runden. Auf einem 125-%-Bildschirm (Windows-Standard) wurden aus 1,5px
-   * 1,875 Gerätepixel → 1, also genau so viel wie beim gewöhnlichen Chip: der
-   * „kräftigere Rand" war dort nie zu sehen. Am laufenden Stand gemessen.
-   */
-  border-width: 2px;
-  padding: 4px 10px; /* gleicht den dickeren Rand aus — kein Springen */
-  color: var(--wein);
-}
-
-.slot-chip.is-konflikt:hover {
-  border-color: var(--wein);
-}
-
-/* Der Punkt trägt die Markierung dort, wo Rand und Schrift einem Farbschema zu
-   nahe kommen (im einfarbigen ist `--wein` ein Grau). Logischer Rand, damit er
-   in RTL auf der anderen Seite steht. */
+/* Ein Konflikt an einer Person der Schichten im Zeugnisgeben — ein Punkt vor
+   dem Namen. Logischer Rand, damit er in RTL auf der anderen Seite steht. */
 .slot-konflikt-dot {
   display: inline-block;
   width: 5px;
@@ -433,13 +382,13 @@
 }
 
 /*
- * Punkt der Zusage am Chip (Treffpunkte, Zeugnisgeben): voll bestätigt, blass
+ * Punkt der Zusage (Zeugnisgeben, Gruppenbesuche): voll bestätigt, blass
  * wartet, rot abgesagt (vorher „✓" und „…"). Die Farben stehen in tokens.css
  * (`--zusage-*`).
  *
- * Größe in em, damit er mit der Schrift wächst (`--fs`) — am Chip wie in der
- * Legende. Der Konflikt-Punkt vor dem Namen bleibt mit 5px deutlich kleiner
- * und steht auf der anderen Seite: zwei Punkte, zwei Bedeutungen.
+ * Größe in em, damit er mit der Schrift wächst (`--fs`) — an der Person wie in
+ * der Legende. Der Konflikt-Punkt vor dem Namen bleibt mit 5px deutlich
+ * kleiner und steht auf der anderen Seite: zwei Punkte, zwei Bedeutungen.
  */
 .zusage-punkt {
   display: inline-block;
@@ -459,11 +408,6 @@
 
 .zusage-punkt.is-verhindert {
   background: var(--zusage-verhindert);
-}
-
-/* Am Chip hinter dem Namen: das Leerzeichen davor plus ein wenig Luft. */
-.slot-chip .zusage-punkt {
-  margin-inline-start: 0.15em;
 }
 
 /* ---- „Unser Leben als Christ“ bearbeiten (`ProgrammBlatt`) --------------- */
@@ -581,29 +525,92 @@
   justify-self: end;
 }
 
-/* ---- Treffpunkte planen ---------------------------------------------------- */
+/* ---- Treffpunkte planen (T121, Entwurf `GTreffpunktePlanen`) --------------- */
 
-.fs-edit-row {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--lineGld);
+/* Ein Treffpunkt der Woche: Zeit, Titel und Ort, darunter sein Leiter als Platz. */
+.treff-planen {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-block: 10px 8px;
+  border-block-start: 1px solid var(--linie);
 }
 
-.panel .fs-edit-row:last-child {
-  border-bottom-color: transparent;
+/* Benannte Bereiche, wie beim Ansehen (`.treff`): `.treff-text` bringt von
+   dort `grid-area: text` mit. Ohne den Bereich legte das Raster dafür
+   unsichtbare Spalten an und schob Titel und Ort in eine zweite Zeile. */
+.treff-planen-kopf {
+  display: grid;
+  grid-template-columns: calc(66px * var(--fs)) minmax(0, 1fr);
+  grid-template-areas: 'zeit text';
+  align-items: center;
+  column-gap: 10px;
 }
 
-.fs-edit-head {
+/* Wer den Treffpunkt ändern darf, hat rechts das ✕ — `auto`, weil es nach
+   dem ersten Tipp zur Pille „Wirklich löschen?" wird. */
+.treff-planen-kopf.is-aenderbar {
+  grid-template-columns: calc(66px * var(--fs)) minmax(0, 1fr) auto;
+  grid-template-areas: 'zeit text x';
+}
+
+/* Die Uhrzeit als Pille. Zum Ändern ist sie ein Auswahlfeld in derselben Form
+   — ohne Chevron: In der schmalen Pille stünde es über der Zeit. */
+.treff-zeit-pille,
+.treff-zeit-wahl {
+  grid-area: zeit;
+  height: 44px;
+  border-radius: 22px;
+  background-color: var(--feld);
+  color: var(--text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.treff-zeit-pille {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
 }
 
-.fs-edit-title {
-  flex: 1;
+.treff-zeit-wahl {
+  border: 0;
+  background-image: none;
+  padding-inline: 4px;
+  text-align: center;
+  text-align-last: center;
+}
+
+/* Der Ort dieser Woche, dort, wo er sonst als Text steht — gestrichelt
+   unterstrichen, damit man sieht, dass er sich ändern lässt. */
+.treff-ort-feld {
+  width: 100%;
   min-width: 0;
-  font-family: var(--font-serif);
-  font-size: calc(14.5px * var(--fs));
-  font-weight: 500;
+  padding: 2px 0;
+  border: 0;
+  border-block-end: 1px dashed var(--umriss);
+  background: transparent;
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
+}
+
+.treff-ort-feld:focus {
+  border-block-end-style: solid;
+  color: var(--text);
+}
+
+.treff-entfernen {
+  grid-area: x;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--text2);
+  font-size: calc(17px * var(--fs));
+}
+
+/* Der Leiter steht unter dem Titel, nicht unter der Zeit. */
+.treff-leiter-zeile {
+  padding-inline-start: calc(66px * var(--fs) + 10px);
 }
 
 .fs-select {
@@ -639,38 +646,6 @@
   width: auto;
 }
 
-.fs-input {
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: 8px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--bord2);
-  background: var(--card);
-  font-size: calc(12.5px * var(--fs));
-  color: var(--ink);
-}
-
-.fs-edit-slot {
-  margin-top: 9px;
-}
-
-/* Treffpunkt, den man nur besetzt, nicht ändert (Planer, 4.10.2026): Uhrzeit
-   und Ort als Text an den Stellen, an denen sonst Auswahl und Eingabe stehen. */
-.fs-edit-time {
-  flex: none;
-  font-variant-numeric: tabular-nums;
-  font-size: calc(13px * var(--fs));
-  font-weight: 600;
-}
-
-.fs-edit-ort {
-  margin-top: 6px;
-  color: var(--mut);
-  font-size: calc(12.5px * var(--fs));
-  overflow-wrap: anywhere;
-}
-
 /* Karte „Treffpunkt für diese Woche hinzufügen" */
 .fs-add-grid {
   display: grid;
@@ -680,11 +655,6 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
   margin-top: 8px;
-}
-
-.fs-add-grid .fs-input {
-  grid-column: 1 / -1;
-  margin-top: 0;
 }
 
 .fs-add-btn {

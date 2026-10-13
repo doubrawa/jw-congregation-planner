@@ -11,10 +11,8 @@ import { hatAuxKlasse } from '../data/aux-class'
 import { mtab } from '../data/helpers'
 import { geplantesThema, rechteVon } from '../data/rechte'
 import { useProgWeek, useT } from '../i18n/useT'
-import { FsConflictsBanner } from './PlanBanners'
-import { GruppeSendenPanel, PlanSendenPanel } from './PlanSendenPanel'
 import { PlanenAktionen } from './PlanenAktionen'
-import { mitAktionen } from './planen-raster'
+import { planArt } from './planen-raster'
 import { ZuteilenSpalte } from './AssignSheet'
 import { S89Bogen } from './S89Bogen'
 import { FsBereichTabs } from './FsBereichTabs'
@@ -50,9 +48,6 @@ export function PlanenScreen() {
   const rechte = rechteVon(state)
   const breit = useMedia(TABLET_BREITE)
   const desktop = useMedia(DESKTOP_BREITE)
-  // Nur die eigene Gruppe sieht, wer Gruppenaufseher ist und nicht zuteilt:
-  // Admin und Planer besetzen die Treffpunkte aller Gruppen.
-  const fsOverseer = !rechte.zuteilen && rechte.gruppe !== null
   // „Woche einrichten" ist eine Unteransicht des Plans: Die Zurück-Taste führt
   // in den Plan zurück (`unteransicht`), nicht gleich zu Start. Hier und nicht
   // im Rumpf, den der Wochenstreifen dreimal zeichnet.
@@ -73,9 +68,10 @@ export function PlanenScreen() {
   // Grundplan, Gruppenbesuche und öffentliches Zeugnisgeben haben keine Woche:
   // Sie stehen ohne den Wochenstreifen da — und auch, solange noch gar keine
   // Woche geladen ist, denn eine neue Versammlung richtet den Grundplan ein,
-  // bevor sie importiert.
+  // bevor sie importiert. Den Predigtdienst plant hier, wer den Reiter gewählt
+  // hat — und der Gruppenaufseher, der nur ihn plant (`geplantesThema`).
   const bereich = aktiverFsBereich(state)
-  if ((state.tab === 'fs' || fsOverseer) && bereich !== 'treffpunkte') {
+  if (geplantesThema(rechte, state.tab) === 'predigtdienst' && bereich !== 'treffpunkte') {
     return (
       <section className="screen">
         <Bereichstitel thema="predigtdienst" />
@@ -103,7 +99,8 @@ export function PlanenScreen() {
       <PlanenBody />
     </WeekStrip>
   )
-  if (desktop && mitAktionen(state)) {
+  const art = planArt(state)
+  if (desktop && art) {
     return (
       <div className="planen-raster">
         <div className="planen-raster-plan">{plan}</div>
@@ -114,7 +111,7 @@ export function PlanenScreen() {
   return (
     <>
       {plan}
-      {!breit && mitAktionen(state) && <PlanenAktionen leiste />}
+      {!breit && art && <PlanenAktionen art={art} leiste />}
     </>
   )
 }
@@ -127,15 +124,13 @@ function PlanenBody() {
   const { state, dispatch } = useApp()
   const { t } = useT()
   const breit = useMedia(TABLET_BREITE)
+  const art = planArt(state)
   // Anzeige in der Programmsprache des Nutzers (Sprachvariante, falls geholt);
   // die Logik (LAC-Erkennung, Minuten, Slots) läuft auf der kanonischen Woche.
   const rawWeek = state.weeks[state.week]
   const { week, tpw } = useProgWeek(rawWeek)
 
-  // Gruppenaufseher, der nicht zuteilt: nur Treffpunkte der eigenen Gruppe.
   const rechte = rechteVon(state)
-  const myFsGroup = rechte.gruppe
-  const fsOverseer = !rechte.zuteilen && myFsGroup !== null
   const thema = geplantesThema(rechte, state.tab)
   const isFs = thema === 'predigtdienst'
 
@@ -182,12 +177,7 @@ function PlanenBody() {
 
       {/* Ab dem Tablet stehen „Automatisch" und „Plan senden" rechts neben der
           Woche (`GDesktopPlanen`); am Handy unten in der Leiste. */}
-      <WochenWahl
-        week={week}
-        rawWeek={rawWeek}
-        tpw={tpw}
-        rechts={breit && mitAktionen(state) ? <PlanenAktionen /> : undefined}
-      />
+      <WochenWahl week={week} rawWeek={rawWeek} tpw={tpw} rechts={breit && art ? <PlanenAktionen art={art} /> : undefined} />
 
       {!isFs && !isEdit && (
         <MeetingTabs
@@ -201,16 +191,9 @@ function PlanenBody() {
       {isEdit ? (
         <WochePanel />
       ) : isFs ? (
-        <>
-          <FsConflictsBanner onlyGroup={fsOverseer ? myFsGroup : null} />
-          <FsPlan onlyGroup={fsOverseer ? myFsGroup : null} />
-          {/* Derselbe Knopf wie bei den Zusammenkünften: er gibt die **ganze**
-              Woche frei, Treffpunkte eingeschlossen. Er steht in beiden
-              Ansichten, weil ein Planer die Woche in beiden fertig machen kann
-              — und nicht zweimal senden muss. Der Gruppenaufseher, der nicht
-              zuteilt, sendet nur die Treffpunkte seiner Gruppe (4.10.2026). */}
-          {fsOverseer && myFsGroup ? <GruppeSendenPanel gruppe={myFsGroup} /> : <PlanSendenPanel />}
-        </>
+        // „Automatisch" und „Plan senden" stehen in der Leiste, wie bei den
+        // Zusammenkünften (`PlanenAktionen`).
+        <FsPlan />
       ) : (
         <>
           <MemorialBanner week={week} tab={state.tab} />

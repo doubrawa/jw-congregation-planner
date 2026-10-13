@@ -17,6 +17,7 @@ import { dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import type {
   Absence,
+  FsInstance,
   Group,
   PartItem,
   Person,
@@ -569,6 +570,49 @@ describe('Der Treffpunkt-Leiter kennt denselben Doppelweg', () => {
     // Er hat die App nicht — es gibt nichts zu bestätigen, der Platz ist voll.
     expect(karte.querySelector('.punkt')?.className).toContain('is-voll')
     expect(karte.querySelector('.zuteilen-info')).toBeNull()
+  })
+
+  /** Theo leitet am Mittwoch (f1) und am Samstag (f2) — f2 in Gruppe 2. */
+  const theosWoche = (f2: Partial<FsInstance> = {}) =>
+    [[
+      { ...FS_WOCHE[0]![0]!, wd: 3, leader: 'Theo Treff', lpid: 'p-t' },
+      { ...FS_WOCHE[0]![0]!, id: 'f2', leader: 'Theo Treff', lpid: 'p-t', ...f2 },
+    ]] as unknown as AppState['fsWeeks']
+  const theoFehltSamstag: Absence[] = [{ id: 'a1', personId: 'p-t', userId: null, from: '2026-09-12', to: '2026-09-13', reason: '' }]
+  const aktuell = (c: HTMLElement) => c.querySelector('.zuteilen-aktuell')!
+
+  it('fehlt der Leiter an seinem Tag, steht er rot da — mit dem Zeitraum', () => {
+    const samstag: SlotSelection = { kind: 'fs', wi: 0, instId: 'f2', label: 'Treffpunkt', priv: 'treffpunkt', groups: false }
+    const { container } = zeige(samstag, {
+      fsWeeks: theosWoche(),
+      persons: [person('p-t', 'Theo', 'Treff', 'treffpunkt')],
+      absences: theoFehltSamstag,
+    })
+    expect(aktuell(container).querySelector('.punkt')?.className).toContain('is-problem')
+    expect(info(aktuell(container)).textContent).toBe(fill(t.abwesendZeitraum, { zeitraum: '12.–13. September' }))
+  })
+
+  it('am Mittwoch davor leitet er trotzdem — die Abwesenheit trifft nur ihren Tag', () => {
+    const { container } = mitTreffpunkt({ fsWeeks: theosWoche(), absences: theoFehltSamstag })
+    expect(aktuell(container).querySelector('.punkt')?.className).toContain('is-wartet')
+  })
+
+  it('beim Gruppenaufseher dieselbe Lage wie im Plan — gezählt wird nur seine Gruppe', () => {
+    // Zweimal am selben Tag, aber einmal in der fremden Gruppe: Sein Plan
+    // zeigt sie nicht, also steht sein Platz dort nicht rot — hier auch nicht.
+    const zweimalSamstag = theosWoche({ wd: 6, grp: 'g2' })
+    zweimalSamstag[0]![0] = { ...zweimalSamstag[0]![0]!, wd: 6, grp: 'g1' }
+    const { container } = mitTreffpunkt({
+      fsWeeks: zweimalSamstag,
+      planner: false,
+      zuteiler: false,
+      personId: 'p-ov',
+      groups: [
+        { id: 'g1', name: 'Gruppe 1', overseerId: 'p-ov', assistantId: null },
+        { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
+      ],
+    })
+    expect(aktuell(container).querySelector('.punkt')?.className).toContain('is-wartet')
   })
 })
 

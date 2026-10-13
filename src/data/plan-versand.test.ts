@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { entzogeneZusagen, offeneMeldungen, zuletztGesendet } from './plan-versand'
+import { entzogeneZusagen, offeneMeldungen, zuletztGesendet, zuletztGesendetFuer } from './plan-versand'
 import { sentKey } from './planning'
 import type { ConfirmationMap, FsInstance, Meeting, PartItem, SentLog, Service, Week } from './types'
 import { STANDARD_ZEITEN } from './vorgaben'
@@ -249,6 +249,27 @@ describe('Wann ging für diese Woche zuletzt etwas hinaus', () => {
 
   it('eine Woche ohne Eintrag hat nichts vorzuweisen', () => {
     expect(zuletztGesendet(log, '2026-09-21')).toBeNull()
+  })
+})
+
+describe('Wann ging für bestimmte Plätze zuletzt etwas hinaus — etwa die Treffpunkte einer Gruppe', () => {
+  const log = {
+    [sentKey(`fs|${MONTAG}|r1`, 'C')]: '2026-08-27T07:00:00Z',
+    [sentKey(`fs|${MONTAG}|r10`, 'E')]: '2026-08-30T07:00:00Z',
+    [sentKey(`${MONTAG}|mid|part|i-a|0`, 'A')]: '2026-08-31T08:00:00Z',
+  }
+
+  it('nur die genannten Plätze zählen, nicht der Rest der Woche', () => {
+    expect(zuletztGesendetFuer(log, [`fs|${MONTAG}|r1`])).toBe('2026-08-27T07:00:00Z')
+  })
+
+  it('ein Schlüssel ist kein Anfang eines anderen — r1 ist nicht r10', () => {
+    const nurR10 = { [sentKey(`fs|${MONTAG}|r10`, 'E')]: '2026-08-30T07:00:00Z' }
+    expect(zuletztGesendetFuer(nurR10, [`fs|${MONTAG}|r1`])).toBeNull()
+  })
+
+  it('ohne Plätze nichts', () => {
+    expect(zuletztGesendetFuer(log, [])).toBeNull()
   })
 })
 

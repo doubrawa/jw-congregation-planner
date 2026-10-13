@@ -1,6 +1,7 @@
+import { fsLeiterZuteilung } from '../data/fs'
 import type { Conflict } from '../data/planning'
 import { lageVon, type PlatzLage } from '../data/saal'
-import type { SlotAssignment } from '../data/types'
+import type { FsInstance, SlotAssignment } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import type { ZusageStand } from './useZusage'
 
@@ -50,4 +51,28 @@ export function platzAnzeige(
           ? t.sheetSchonHeute
           : absage
   return { lage, hinweis, status: stand?.label }
+}
+
+/**
+ * **Was der Leiter eines Treffpunkts beim Planen zeigt** — derselbe Weg wie ein
+ * Platz der Zusammenkunft (`platzAnzeige`), für den Plan der Treffpunkte und
+ * die Karte oben im Zuteilen-Blatt. `konflikt` ist der dieses Treffpunkts
+ * (`fsKonfliktVon`).
+ *
+ * Ein Leiter als Freitext (meist der Kreisaufseher) hat nichts zu bestätigen:
+ * Er ist nicht die Person gleichen Namens, er heißt nur so
+ * (`fsLeiterZuteilung`). Zweimal am selben Tag steht aber auch er falsch.
+ */
+export function leiterAnzeige(
+  inst: FsInstance,
+  stand: (inst: FsInstance) => ZusageStand,
+  konflikt: Conflict | undefined,
+  t: Pick<Dict, 'abwesendChip' | 'sheetSchonHeute' | 'zusageAbgesagt'>,
+): PlatzAnzeige {
+  return platzAnzeige(
+    inst.leader ? { name: inst.leader } : undefined,
+    fsLeiterZuteilung(inst) ? stand(inst) : null,
+    konflikt,
+    t,
+  )
 }
