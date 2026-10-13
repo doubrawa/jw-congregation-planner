@@ -4806,8 +4806,15 @@ bei `afterprint`), sonst drucken sie übereinander.
 „Hintergrundgrafiken drucken", auf A4 und Letter; und der jeweils andere
 Ausdruck danach noch einmal, damit die Weiche wirklich trennt.
 
-### T106 · Bei der Inbetriebnahme alle auf einmal benachrichtigen — vielleicht per WhatsApp 🔧 ⏸ zurückgestellt (21. September 2026)
+### T106 · Bei der Inbetriebnahme alle auf einmal benachrichtigen — vielleicht per WhatsApp 🔧 ✅ geschlossen, geht in T121 auf (13. Oktober 2026)
 
+> **Geschlossen am 13. Oktober 2026** auf Entscheid des Betreibers: Das leistet
+> der Umbau T121 in Phase 8 (Anmelden per Link). Konten legt der Admin an,
+> Links und erster Plan gehen in einem Schritt hinaus, per E-Mail oder als
+> Zettel mit QR-Code — der Haken unten (ein Code je Person) fällt mit dem Code
+> weg. WhatsApp wird nicht gebaut. Für die Mails richtet der Betreiber Resend
+> und `INVITE_FROM` ein.
+>
 > **Vom Betreiber am 21. September 2026 zurückgestellt** („erstmal
 > zurückstellen"). Nichts daran gebaut. Stand beim Zurückstellen, damit die
 > Suche beim Wiederaufnehmen nicht von vorn beginnt: In der Datenbank und im
@@ -5388,7 +5395,16 @@ dort links-nach-rechts stehen bleiben (`dir="ltr"` bzw. `<bdi>` am Link), sonst
 stellt der Bidi-Algorithmus `@` und Punkt um. Danach die Aufnahme der
 Anmeldeseite in `docs/user-guide/` neu erzeugen.
 
-### T114 · Registrieren, wenn es mehrere Versammlungen gibt — erst zu klären 🏗 ☐ offen
+### T114 · Registrieren, wenn es mehrere Versammlungen gibt 🏗 ✅ entschieden, umgesetzt mit T121 (13. Oktober 2026)
+
+> **Entschieden.** Am 11. Oktober mit T121: kein Registrieren und kein
+> Passwort, für alle Versammlungen — Konten legt der Admin an oder die
+> Übernahme aus New World Scheduler, angemeldet wird nur mit Link. Am
+> 13. Oktober der Rest: **Ein Konto gehört zu genau einer Versammlung** (ein
+> Konto je Versammlung, kein Umschalter), und **eine neue Versammlung legt der
+> Betreiber per Skript an** (`scripts/versammlung-anlegen.mjs`). Umgesetzt wird
+> das mit T121 in Phase 8; dort auch die Probe mit zwei Versammlungen unten.
+
 **Wortlaut:** *„es muss noch geklärt werden, wie das mit den registrieren läuft
 wenn es mehrere versammlungen gibt."*
 
@@ -6434,33 +6450,16 @@ darzustellen"*.
 Entworfen auf einer Design-Leinwand
 (https://claude.ai/artifact/5wEDfbTFg8BVoxWsPGVLrn, Version 41). Die Übergabe
 mit Schritten, Regeln der Tafeln und dem Szenario steht in der Leinwand selbst
-(`project/werkzeug/LIESMICH.md`), kürzer im Memory des Projekts. **Es ist ein
-Entwurf:** Am Code der App ist für das Design nichts geändert.
+(`project/werkzeug/LIESMICH.md`), kürzer im Memory des Projekts. Seit dem
+12. Oktober abends wird die App danach umgebaut (siehe unten).
 
-**Weitermachen, auch aus einem anderen Profil:** Die Leinwand gehört dem
-privaten claude.ai-Konto. Veröffentlichen kann nur eine Sitzung im Profil
-`privat`; aus `arbeit` geht Lesen und Holen (gemessen am 10. Oktober 2026).
-Die Arbeitskopie für beide Profile liegt neben dem Repo unter
-`C:\DATA\Claude\jw-congregation-planner-design`: alle Tafeln, das Werkzeug
-startbereit, `LIESMICH.md` und der gemerkte Stand mit der Versionskennung der
-Leinwand. Wer ohne Schreibrecht ändert, arbeitet dort und veröffentlicht nicht;
-`node leinwand.mjs` nennt dann, was auf das Veröffentlichen wartet. Das wird
-hier eingetragen und von der nächsten Sitzung im Profil `privat` erledigt.
-
-**Wartet auf Veröffentlichung** (gezeichnet am 10., 11. und 12. Oktober 2026 im
-Profil `arbeit`, Arbeitskopie auf Version 41, Kennung `1791649561-f152`; die
-Leinwand stand am 12. Oktober unverändert auf dieser Version):
-`node leinwand.mjs` in der Arbeitskopie nennt **104 Dateien zum Veröffentlichen**
-(Tafeln, ihre hellen Hüllen, `canvas.json` mit den neuen Seiten „App – Tablet" und
-„Druckbögen") und **7 zum Entfernen**: `GKonto`, `GZeugnisPlanen` (je mit
-`-Hell`) und die drei Tafeln `…-Kontrast`. Beides in einem Aufruf; `files` dann
-als Zuordnung, die zu entfernenden auf `null` (Schritt 7 der Übergabe), höchstens
-255 Dateien je Aufruf. Von Hand dazu, weil `leinwand.mjs` Werkzeug nicht zählt:
-ganz `project/werkzeug/`, 26 Dateien (alle `.mjs` und `LIESMICH.md`; neu am
-12. Oktober `desktop-teile.mjs`, `bauen-desktop-mehr.mjs`, `bauen-tablet.mjs`,
-`bauen-druck.mjs`, nach dem Code-Review `szenario.mjs`, `trolley-teile.mjs` und
-`messen.mjs`). Danach
-`node leinwand.mjs --gemerkt <neue Kennung>` und diesen Vermerk austragen.
+**Quelle ist die Arbeitskopie**, nicht die Leinwand: Sie liegt neben dem Repo
+unter `C:\DATA\Claude\jw-congregation-planner-design` (alle Tafeln, das
+Werkzeug startbereit, `LIESMICH.md`) und ist weiter als Version 41 — mit allem,
+was am 10., 11. und 12. Oktober im Profil `arbeit` gezeichnet wurde. Die
+Leinwand gehört dem privaten claude.ai-Konto; veröffentlichen könnte nur eine
+Sitzung im Profil `privat`. **Am 13. Oktober entschieden: Es wird nicht mehr
+veröffentlicht, die Arbeitskopie reicht.**
 
 **Entschieden am 10. Oktober 2026:**
 
@@ -6521,12 +6520,12 @@ jeweiligen Weg unter „Entschieden am 11. Oktober". Die folgenreichsten:
 **Gezeichnet:** die ganze App dunkel und hell (je 46 Tafeln als Wege: Einstieg,
 Für mich, Versammlung ansehen, Planen, Predigtdienst und weitere Pläne planen,
 Verwaltung), Desktop für Start, Planen und Personen, dazu die Grundlagen mit
-drei Tafeln in Hohem Kontrast. Am Abend dazu (wartet auf Veröffentlichung, siehe
+drei Tafeln in Hohem Kontrast. Am Abend dazu (nur in der Arbeitskopie, siehe
 oben): die kleinen Dialoge in ihren Wegen — Passwort vergessen in drei
 Schritten, Sprache der App, Programm und Programmpunkt bearbeiten, Gruppen und
 Standorte —, große Schrift (Stufe 1,45) und Rechts-nach-links (Arabisch, dazu
 eine Schriftprobe für Arabisch, Persisch, Urdu und Hebräisch) auf den Grundlagen.
-Am 11. Oktober nach der Durchsicht (wartet ebenfalls): das Menü an der Seite,
+Am 11. Oktober nach der Durchsicht (ebenso): das Menü an der Seite,
 Anmelden nur mit Link im Einstieg, in der Übernahme aus New World Scheduler und
 bei der Person („Link senden", „Zettel drucken", angemeldet · Link gesendet ·
 ohne Link), die Trolleys (Ansicht mit Tagesplan je Trolley, Eintragen,
@@ -6534,8 +6533,8 @@ Trolleys in der Verwaltung), „Noch nicht angemeldet" statt „Ohne App-Konto",
 Profil ohne Hohen Kontrast, die gewählten RTL-Schriften markiert, die Wege der
 App um „Aus NWS übernehmen" und „Trolley" ergänzt. Entfallen sind die Tafeln zu
 Konto, Passwort, Standort, Zeugnisgeben planen und Hohem Kontrast.
-Am 12. Oktober auf *„zeichne jetzt tablet, desktop und die druckbögen"* (wartet
-ebenfalls): **Tablet** (hochkant mit schmaler Leiste zum Ausklappen, quer wie am
+Am 12. Oktober auf *„zeichne jetzt tablet, desktop und die druckbögen"*
+(ebenso): **Tablet** (hochkant mit schmaler Leiste zum Ausklappen, quer wie am
 Desktop; fünf Tafeln), **Desktop für alle Bereiche** (elf neue Tafeln, die Leiste
 mit „Mitteilungen", Dialoge in der Mitte) und **sieben Druckbögen** in A4 (Woche,
 Monat auf zwei Seiten, S-89, Treffpunkte, Trolleys, Winterdienst; freie Plätze
@@ -6555,7 +6554,7 @@ Version 8) je Abschnitt unter „Entschieden am 12. Oktober".
 
 **Code-Review am 12. Oktober 2026** über die Entwürfe (*„mach aber noch ein
 code-review über die entwürfe"*): 15 Befunde, auf *„ja, alle beheben"* alle
-behoben (wartet mit dem Übrigen auf Veröffentlichung). Am Bild: Die Spur in
+behoben (in der Arbeitskopie). Am Bild: Die Spur in
 „Plan senden" und „Zusagen" zeigte am Desktop „Zuteilen" als erledigt, hinter dem
 Dialog „Plan senden" und dem Tablet-Menü blieb die Leiste bedienbar, „S-89
 drucken" führte auf die Zettel anderer, zwei Verweise am Desktop gingen auf
@@ -6565,10 +6564,6 @@ steht in `szenario.mjs` statt abgeschrieben in den Stapeln, die Zeitleiste der
 Trolleys in `trolley-teile.mjs`, und `messen.mjs` misst alle Tafeln gerendert.
 Danach `pruefen.mjs` 152 Dateien und `messen.mjs` 96 Tafeln ohne Befund, alle
 Stapel bytegleich wiederholbar; die Seite der Durchsicht steht auf Version 9.
-
-**Offen:** **Veröffentlichen** (siehe oben), dann kann der Betreiber die
-Leinwand im neuen Stand ansehen und kommentieren. Bis zum 12. Oktober kam seine
-Rückmeldung über die Durchsicht, nicht über Kommentare auf der Leinwand.
 
 Erledigt: die Schrift für Rechts-nach-links, die gemeinsame Durchsicht aller
 Abläufe und die beiden Nachfragen dazu — „Partner gesucht" statt „Begleitung
@@ -6609,11 +6604,37 @@ mal selbstständig ein simplify und code-review, damit wir am ende das nicht
 machen müssen … clean code programmierung ist wichtig"*. Tablet- und
 Desktop-Fassung entstehen je Bildschirm in seiner Phase, nicht am Schluss.
 
+**Stand am 13. Oktober 2026:** gepusht und live sind die Phasen 1 bis 5b — Menü
+an der Seite und Planen als Modus, Start, Meine Aufgaben, Profil, Mitteilungen,
+die Zusammenkünfte, der Predigtdienst und die weiteren Pläne zum Ansehen, „Die
+Woche planen" (`afca2da`), ein Gesamt-Review der Phasen 1 bis 5a (`1d084f1`) und
+„Woche einrichten" mit dem Programm (`1660aab`). Es folgen 5c bis 5g (der Rest
+von Planen), 6 Verwaltung, 7 Trolleys, 8 Anmelden per Link, 9 Druckbögen und
+10 Feinschliff.
+
+**Nachentschieden am 13. Oktober 2026** — was in den ersten Phasen offen
+geblieben war, auf *„kannst du mich alles abfragen, was offen ist oder wo ich
+eventuell nochmal etwas nachentscheiden sollte?"*:
+
+- Die Zusätzliche Klasse gilt weiter für alle Wochen, kein Schalter je Woche.
+- Ein Programmpunkt lässt sich **umbenennen** — alle unter „Unser Leben als
+  Christ", auch die aus dem Arbeitsheft, nicht die der Kreisaufseher-Woche. Die
+  **Minuten** stellen −/+ in Einerschritten statt eines Felds. Zugeteilt wird
+  nicht im Blatt des Punkts, nur im Plan.
+- „Automatisch" bekommt „Ganze Woche" wie gezeichnet; der S-89 bleibt im Plan.
+- Von dem, was beim Umbau wegfiel, kommt nur das ✕ an der Push-Karte zurück
+  (je Gerät, wie früher). „Alle löschen" in den Mitteilungen, die Gesamtzahl
+  „nicht besetzbar" und der Hinweis im Plan bleiben weg.
+- Functions und Schema rollt Claude aus; Resend und `INVITE_FROM` richtet der
+  Betreiber ein. Auf echten Geräten wird nach dem Umbau geprüft.
+- T114 ist entschieden (ein Konto je Versammlung, neue Versammlungen per
+  Skript), T106 geht in Phase 8 auf, und Zusagen bleiben am Platz.
+
 ---
 
 ## Aufgenommen am 12. Oktober 2026 — Vortragsplan (T122)
 
-### T122 · Vortragsplan aus dem Planungsprogramm übernehmen 🏗 ☐ gebaut, nicht ausgerollt
+### T122 · Vortragsplan aus dem Planungsprogramm übernehmen 🏗 ✅ erledigt und ausgerollt (12. Oktober 2026)
 
 **Wortlaut:** *„es wäre nicht schlecht die vortragsplanung zu integrieren in die
 app. allerdings darf ich nur die namen und versammlung der externen
@@ -6679,15 +6700,16 @@ Versammlung (dazu Thema und Lied je Termin), nie Telefon oder E-Mail.
   an der Woche, Lesefehler der Datei mit Meldung, eindeutige Schlüssel in der
   Fehlerliste.
 
-**Ausrollen (wartet):** zuerst `supabase/schema.sql` im SQL-Editor einspielen
-(Tabelle `vortraege` und ihre Regel), dann pushen — keine Edge Function. Ohne das
-Schema lädt die App weiter, nur gespeichert werden Vormerkungen erst danach.
+**Ausgerollt am 12. Oktober 2026:** Der Betreiber hat `supabase/schema.sql`
+eingespielt (Tabelle `vortraege` und ihre Regel), danach gepusht — live seit
+17:56 Uhr (`shell-0d575ae`). Die Live-Probe der Mitgliedsrechte kennt
+`vortraege` seitdem (Fälle 65–70: Mitglied und Gruppenaufseher sehen keine
+Vormerkung und legen keine an, der Planer beides); grün am selben Tag um
+18:15 Uhr. Das Handbuch-Bild kommt mit den übrigen in T121, Phase 10.
 
-**Danach offen:** die Live-Probe der Mitgliedsrechte
-(`mitgliedsrechte-probe.mjs`) um `vortraege` erweitern (ein Verkündiger liest
-keine Zeile); ein Handbuch-Bild. Der NWS-Import der Wochenplanung schreibt
-weiterhin Redner, Thema und Lied aus NWS — nach einem Neuaufbau den Vortragsplan
-neu übernehmen (das Zurücksetzen leert `vortraege`).
+Der NWS-Import der Wochenplanung schreibt weiterhin Redner, Thema und Lied aus
+NWS — nach einem Neuaufbau den Vortragsplan neu übernehmen (das Zurücksetzen
+leert `vortraege`).
 
 ---
 
@@ -6716,26 +6738,28 @@ neu übernehmen (das Zurücksetzen leert `vortraege`).
 
 ## Fortschritt
 
-Stand 12. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 13. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
 Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen ☑☑☑☑☑☑ ·
 15. August ☑☑☑☑☑☑ ☑☑☑☑☑☑☑☑☑ · 16. August ☑☑☑☑☑☑☑ ·
 22./23. August ☑☑☑☑☑☑☑☑☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
-31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑⏸☑☑☑ ·
-21. September ☑☑☑☑☐☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
-10. Oktober ☐ · 12. Oktober ☐
+31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
+21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
+10. Oktober ☐ · 12. Oktober ☑
 
-**118 der 122 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind vier, eine davon zurückgestellt:**
+**121 der 122 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
-| **T106** | Alle auf einmal benachrichtigen | ⏸ am 21. September zurückgestellt — keine Telefonnummern im Bestand, `INVITE_FROM` nicht gesetzt (so auch am 10. Oktober) |
-| **T114** | Registrieren bei mehreren Versammlungen | ☐ erst zu klären: wie ein Konto zu seiner Versammlung kommt, ob es ohne Code entstehen darf und ob es in zwei Versammlungen sein darf; die Mail-Bestätigung ist an, ankommen kann sie nur mit eigenem SMTP-Server (4.10.2026). Mit T121 am 11. Oktober zum großen Teil entschieden: kein Registrieren, Konten legt der Admin oder der Betreiber an (kommt mit dem Umbau); offen bleibt ein Konto in zwei Versammlungen |
-| **T121** | Neues Design | ☐ Entwurf auf der Design-Leinwand; am 11. Oktober alle Abläufe mit dem Betreiber durchgegangen und entschieden, am 12. Oktober Tablet, Desktop und Druckbögen gezeichnet, die Fragen dazu entschieden (alles wie gezeichnet) und ein Code-Review über die Entwürfe behoben (15 Befunde). Die Änderungen vom 10. bis 12. Oktober warten auf Veröffentlichung (Profil privat); der Umbau der App ist ein eigener Auftrag |
-| **T122** | Vortragsplan übernehmen | ☐ gebaut am 12. Oktober: XML aus dem Planungsprogramm, gelesen auf dem Gerät, Vormerkungen für Wochen, die es noch nicht gibt. Wartet aufs Ausrollen: erst `schema.sql` (Tabelle `vortraege`), dann pushen |
+| **T121** | Neues Design | ☐ Umbau läuft, Phase für Phase auf main: 1 bis 5b sind live (zuletzt `1660aab`, „Woche einrichten" und Programm), es folgen 5c bis 10. Am 13. Oktober nachentschieden, was die ersten Phasen offen ließen; die Leinwand wird nicht mehr veröffentlicht. T106 und T114 gehen hier auf (Phase 8) |
+
+Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
+T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
+Versammlungen legt der Betreiber per Skript an), **T122** (ausgerollt am
+12. Oktober, live seit `0d575ae`).
 
 > **Nachgezählt am 10. Oktober 2026.** Die Zeile oben führte seit dem
 > 23. August zwei Zeichen zu wenig: „22./23. August" stand von Anfang an mit
@@ -7103,21 +7127,23 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 ### Was offen ist und warum
 
-**Stand 12. Oktober 2026, alles Offene an einer Stelle.** Im Code ist nichts
-offen; was aussteht, braucht eine Entscheidung, den Betreiber oder ein Gerät.
+**Stand 13. Oktober 2026, alles Offene an einer Stelle.** Im Code ist der
+Umbau T121 offen; was sonst aussteht, braucht den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **T114** | Registrieren bei mehreren Versammlungen | wartet auf Entscheidungen des Betreibers: Konto ohne Code, wer eine Versammlung anlegt, ein Konto in zwei Versammlungen, die Meldung bei `already-member`. Am 11. Oktober mit T121 entschieden: kein Registrieren, Konten legt der Admin oder der Betreiber an; offen bleiben ein Konto in zwei Versammlungen und wer eine Versammlung anlegt |
-| **T106** | Alle auf einmal benachrichtigen | zurückgestellt am 21. September; im Bestand steht keine Telefonnummer |
-| **T121** | Neues Design | Entwurf auf der Design-Leinwand, am Code nichts geändert. Am 11. Oktober alle Abläufe mit dem Betreiber durchgegangen und entschieden (Anmelden nur mit Link, Trolleys statt Standorte, ohne Hohen Kontrast); am 12. Oktober Tablet, Desktop für alle Bereiche und sieben Druckbögen gezeichnet, die fünf Fragen dazu am selben Tag entschieden (alles wie gezeichnet), danach ein Code-Review über die Entwürfe mit 15 Befunden, alle behoben. Die Änderungen warten auf Veröffentlichung aus dem Profil privat. Der Umbau ist ein eigener Auftrag |
-| **T122** | Vortragsplan übernehmen | gebaut und getestet am 12. Oktober; wartet aufs Ausrollen (erst `schema.sql` mit der Tabelle `vortraege`, dann pushen). Danach: die Live-Probe der Mitgliedsrechte um `vortraege` erweitern |
-| **Vor dem Ausrollen** | SMTP-Server, `INVITE_FROM` | nur der Betreiber, außerhalb des Repos (siehe oben) |
+| **T121** | Neues Design | Umbau läuft, Phase für Phase auf main: 1 bis 5b sind live, 5c bis 10 folgen (siehe T121). Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
+| **Vor Phase 8** | Resend, `INVITE_FROM` | richtet der Betreiber ein (zugesagt am 13. Oktober). Ob danach noch ein SMTP-Server für Supabase Auth gebraucht wird, klärt Phase 8 — ohne Passwort und Registrieren fallen dessen Mails weg |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
-| **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht |
-| **Vertagt** | Zusagen an die Person binden statt an den Platz | vom Betreiber am 15. September vertagt; `confirmations` trägt Konto und Platz, die App räumt eine Zusage ab, sobald die Person am Platz wechselt (`changedSlotKeys`) |
+| **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
 | **Phase 7** | T42 (Testdateien) | die Sperrklinke steht bei 636 Meldungen in 32 Dateien |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
+
+Am 13. Oktober aus der Tabelle genommen: T106 (geht in T121 Phase 8 auf), T114
+(entschieden), T122 (ausgerollt) und **„Zusagen an die Person binden statt an
+den Platz"** — vom Betreiber am 15. September vertagt, am 13. Oktober
+gestrichen: Eine Zusage bleibt an Konto und Platz, und die App räumt sie ab,
+sobald die Person am Platz wechselt (`changedSlotKeys`).
 
 D7 (zwei Planer gleichzeitig), D4 (echte Geräte) und D5 (fachliche Abnahme)
 stehen unter „Was bewusst offen bleibt". Darunter folgen die älteren Stände,
