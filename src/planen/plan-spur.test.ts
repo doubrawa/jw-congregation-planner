@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { allePlaetze, platzKey } from '../data/plaetze'
 import type { FsInstance, MeetingTimes, Service, Week } from '../data/types'
+import type { PlanStand } from '../data/weitere-plaene'
 import { dict } from '../i18n/ui'
-import { spurDerWoche, wochenZahlen, type WochenZahlen } from './plan-spur'
+import { spurDerWoche, spurDesPlans, wochenZahlen, type WochenZahlen } from './plan-spur'
 
 /**
  * **Die Spur beim Planen** (T121, `GPlanen`): Zuteilen, Senden, Zusagen —
@@ -112,5 +113,28 @@ describe('spurDerWoche: der laufende Schritt ist der erste, der nicht fertig ist
     const [, senden, zusagen] = spurDerWoche(z({ besetzt: 4 }), t)
     expect(senden!.wert).toBeUndefined()
     expect(zusagen!.wert).toBeUndefined()
+  })
+})
+
+/** **Die Spur eines Weiteren Plans** (T121, `GPlaenePlanen`): Entwurf, veröffentlicht, abgeschlossen. */
+describe('Wo ein Weiterer Plan steht', () => {
+  const lagen = (entwurf: boolean, stand: PlanStand) => spurDesPlans({ entwurf }, stand, t).map((s) => s.lage)
+
+  it('der Entwurf steht am Anfang, ein veröffentlichter Plan in der Mitte', () => {
+    expect(lagen(true, 'entwurf')).toEqual(['jetzt', 'leer', 'leer'])
+    expect(lagen(false, 'aktuell')).toEqual(['voll', 'jetzt', 'leer'])
+  })
+
+  it('ein abgeschlossener ist durch — als Entwurf abgelaufen, war er nie veröffentlicht', () => {
+    expect(lagen(false, 'abgeschlossen')).toEqual(['voll', 'voll', 'voll'])
+    expect(lagen(true, 'abgeschlossen')).toEqual(['voll', 'leer', 'voll'])
+  })
+
+  it('die Schritte heißen wie der Stand des einen Plans', () => {
+    expect(spurDesPlans({ entwurf: true }, 'entwurf', t).map((s) => s.name)).toEqual([
+      t.wpEntwurf,
+      t.spurVeroeffentlicht,
+      t.spurAbgeschlossen,
+    ])
   })
 })

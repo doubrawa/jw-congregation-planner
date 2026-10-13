@@ -1,170 +1,130 @@
-/* ---- Weitere Pläne (T120, Phase 5) ----------------------------------------
-   Planen (`WeiterePlaenePlan`) und Ansehen (`WeiterePlaeneAnsicht`). Die Liste
-   folgt der Canvas: aktuell, Entwürfe, abgeschlossen; ein Entwurf ist
-   gestrichelt umrandet, weil ihn nur Admins sehen. */
+/* ---- Weitere Pläne (T120, Phase 5; T121) -------------------------------------
+   Planen (`WeiterePlaenePlan`, `PlanBearbeiten`) und Ansehen
+   (`WeiterePlaeneAnsicht`). */
 
-.wp-neu {
-  margin-top: 14px;
-}
-
-.wp-leer {
-  margin-top: 14px;
-  font-size: calc(12px * var(--fs));
-  color: var(--mut);
-}
+/* ---- Planen: die Liste (Entwurf `GPlaeneListe`) --------------------------------
+   Je Stand eine Karte — Entwürfe, aktuell, abgeschlossen —; der Punkt im Titel
+   sagt, welcher. */
 
 .wp-abschnitt {
-  margin-top: 22px;
+  padding-block-start: 6px;
 }
 
-.wp-abschnitt-titel {
-  font-size: calc(10px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  color: var(--mut);
-}
-
-.wp-karte {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  width: 100%;
-  margin-top: 10px;
-  padding: 12px 16px 14px;
-  border: 1.5px solid transparent;
-  border-radius: var(--r-panel);
-  background: var(--tNeu2);
-  color: var(--ink);
-  text-align: start;
-  cursor: pointer;
-}
-
-.wp-karte[data-stand='entwurf'] {
-  border: 1.5px dashed var(--bord2);
-  background: var(--card);
-}
-
-.wp-karte[data-stand='abgeschlossen'] {
-  opacity: 0.6;
-}
-
-.wp-karte-kopf {
-  display: flex;
+/* Ein Plan: sein Name, darunter Ort und wann — ein Tipp öffnet ihn. */
+.wp-plan-zeile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  column-gap: 8px;
+  width: 100%;
+  min-height: 64px;
+  padding-block: 8px;
+  border-block-start: 1px solid var(--linie);
+  color: inherit;
+  text-align: start;
 }
 
-.wp-vorlage {
-  font-size: calc(10px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--mut);
+.wp-plan-zeile .zeichen {
+  color: var(--text3);
 }
 
-.wp-marke {
-  flex: none;
-  padding: 2px 9px;
-  border-radius: var(--r-pill);
-  background: var(--line);
-  color: var(--mut);
-  font-size: calc(10px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.wp-karte-name {
-  font-family: var(--font-serif);
-  font-size: calc(18px * var(--fs));
-  font-weight: 500;
-  line-height: 1.25;
-}
-
-.wp-karte-zeitraum {
-  font-size: calc(11.5px * var(--fs));
-  color: var(--mut);
-}
-
-.wp-zurueck {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--acc);
-  font-size: calc(12px * var(--fs));
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.wp-feld {
+.wp-plan-zeile-text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-top: 10px;
   min-width: 0;
 }
 
-.wp-zeitraum-felder {
+.wp-plan-zeile-name {
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
+/* ---- Planen: ein Plan (Entwurf `GPlaenePlanen`) --------------------------------- */
+
+.wp-plan-karte {
+  gap: 14px;
+  padding: 16px 18px;
+}
+
+/* Von und Bis nebeneinander; ein Tipp öffnet den Kalender. */
+.wp-zeitraum {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+/* Etwas schmaler gepolstert als ein Feld: „25. Okt. 2026" soll in eine Zeile passen. */
+.wp-zeitraum .wp-datum {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0 10px;
-}
-
-.wp-zeitraum-felder > .wp-feld {
-  flex: 1 1 160px;
-}
-
-/* Veröffentlichen bzw. Zurückziehen — über die ganze Breite, wie „Plan senden".
-   `plan-auto-btn` hat keinen seitlichen Innenabstand: In der Automatik-Zeile
-   streckt ihn die Flex-Zeile, frei stehend schrumpfte er auf seinen Text, und
-   der klebte am Rand. Beide Zustände gleich breit, damit nichts springt. */
-.wp-veroeffentlichen {
-  display: block;
-  width: 100%;
-  margin-top: 12px;
-}
-
-.wp-verteilen {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 8px 12px;
-}
-
-.wp-loeschen {
-  display: block;
-  margin: 18px auto 0;
-  color: var(--wein);
-}
-
-/* Eine Woche: links wann, rechts die Gruppe. */
-.wp-zeile {
-  display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px 12px;
-  padding: 9px 0;
-  border-bottom: 1px solid var(--panel-hair);
+  padding-inline: 14px;
+  text-align: start;
 }
 
-.wp-zeile:last-child {
-  border-bottom: 0;
+/* Was der Planer vom Plan sieht: Ort, Name und Zeitraum wie beim Ansehen. */
+.wp-angaben {
+  display: flex;
+  flex-direction: column;
 }
 
-.wp-zeile.is-vorbei {
-  opacity: 0.6;
+.wp-angaben > .klein-text {
+  padding-block-start: 8px;
 }
 
-.wp-zeile-wann {
-  font-size: calc(12.5px * var(--fs));
+.wp-vorschau {
+  padding: 6px 10px 4px 18px;
+}
+
+/* Eine Woche oder ein Monat: wann, rechts die Gruppe. */
+.wp-vorschau-zeile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  min-height: 52px;
+  border-block-start: 1px solid var(--linie);
+}
+
+/* Was war, bleibt, wie es war — leiser. */
+.wp-vorschau-zeile.is-vorbei {
+  color: var(--text3);
+}
+
+.wp-vorschau-wer {
+  padding-inline-end: 8px;
+}
+
+/* Die Gruppe einer kommenden Woche als Pille (Baustein `pille`). Das Chevron
+   kommt app-weit aus `components.css` — deshalb `background-color` statt der
+   Kurzschreibweise und kein `padding:` (tests/auswahlfeld-chevron.test.ts). */
+.wp-gruppe-wahl {
+  min-height: 44px;
+  padding-inline-start: 16px;
+  border: 1.5px solid var(--umriss);
+  border-radius: 22px;
+  background-color: transparent;
+  color: var(--text);
+  font-size: calc(14.5px * var(--fs));
   font-weight: 600;
 }
 
-.wp-zeile-wer {
-  font-size: calc(12.5px * var(--fs));
-  color: var(--mut);
+/* „Alle anzeigen" unter den nächsten Wochen oder Monaten. */
+.wp-alle {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  border-block-start: 1px solid var(--linie);
+  color: var(--akzent-text);
+  font-weight: 600;
+  text-align: start;
+}
+
+.wp-sicht {
+  padding-inline: 4px;
+}
+
+.wp-loeschen {
+  align-self: center;
 }
 
 /* ---- Ansehen (T121, Entwurf `GPlaene`) -------------------------------------

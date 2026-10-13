@@ -165,13 +165,13 @@ describe('Zurück am Handy', () => {
     const { container } = zeige({ plaene: [PLAN], planEintraege: [] })
     klickMenue(container, t.navWeiterePlaene)
     fireEvent.click(container.querySelector('.bereichstitel .planen-knopf')!)
-    fireEvent.click(container.querySelector('.wp-karte')!)
+    fireEvent.click(container.querySelector('.wp-plan-zeile')!)
     await ausklingen()
-    expect(container.querySelector('.wp-zurueck')).not.toBeNull()
+    expect(container.querySelector('.unteransicht-kopf')).not.toBeNull()
 
     await zurueck()
-    expect(container.querySelector('.wp-zurueck'), 'der Plan blieb offen').toBeNull()
-    expect(container.querySelector('.wp-karte')).not.toBeNull()
+    expect(container.querySelector('.unteransicht-kopf'), 'der Plan blieb offen').toBeNull()
+    expect(container.querySelector('.wp-plan-zeile')).not.toBeNull()
 
     await zurueck()
     expect(aktiv(container)).toBe(t.navStart)
@@ -184,11 +184,11 @@ describe('Zurück am Handy', () => {
     fireEvent.click(container.querySelector('.bereichstitel .planen-knopf')!)
     fireEvent.click([...container.querySelectorAll('button')].find((b) => b.textContent === t.wpNeu)!)
     await ausklingen()
-    expect(container.querySelector('.wp-zurueck'), 'der neue Plan ist nicht offen').not.toBeNull()
+    expect(container.querySelector('.unteransicht-kopf'), 'der neue Plan ist nicht offen').not.toBeNull()
 
     await zurueck()
-    expect(container.querySelector('.wp-zurueck'), 'der Plan blieb offen').toBeNull()
-    expect(container.querySelector('.wp-karte'), 'der neue Plan fehlt in der Liste').not.toBeNull()
+    expect(container.querySelector('.unteransicht-kopf'), 'der Plan blieb offen').toBeNull()
+    expect(container.querySelector('.wp-plan-zeile'), 'der neue Plan fehlt in der Liste').not.toBeNull()
 
     await zurueck()
     expect(aktiv(container)).toBe(t.navStart)

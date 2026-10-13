@@ -1,7 +1,8 @@
 import type { SpurLage, SpurSchritt } from '../bausteine/Spur'
 import { offeneMeldungen } from '../data/plan-versand'
 import { besetztVon, besetzung, zusagenStand } from '../data/saal'
-import type { ConfirmationMap, FsInstance, MeetingKey, MeetingTimes, SentLog, Service, Week } from '../data/types'
+import type { ConfirmationMap, FsInstance, MeetingKey, MeetingTimes, SentLog, Service, Week, WeitererPlan } from '../data/types'
+import type { PlanStand } from '../data/weitere-plaene'
 import type { Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 
@@ -71,5 +72,28 @@ export function spurDerWoche(
       wert: z.zuBestaetigen > 0 ? `${z.bestaetigt}/${z.zuBestaetigen}` : undefined,
       lage: zusagen,
     },
+  ]
+}
+
+/**
+ * **Wo ein Weiterer Plan steht** (T121, Entwurf `GPlaenePlanen`): Entwurf,
+ * veröffentlicht, abgeschlossen. Ein Plan, der als Entwurf ablief, war nie
+ * veröffentlicht — sein mittlerer Schritt bleibt leer.
+ */
+export function spurDesPlans(
+  plan: Pick<WeitererPlan, 'entwurf'>,
+  stand: PlanStand,
+  t: Pick<Dict, 'wpEntwurf' | 'spurVeroeffentlicht' | 'spurAbgeschlossen'>,
+): SpurSchritt[] {
+  const [entwurf, veroeffentlicht, abgeschlossen]: [SpurLage, SpurLage, SpurLage] =
+    stand === 'entwurf'
+      ? ['jetzt', 'leer', 'leer']
+      : stand === 'aktuell'
+        ? ['voll', 'jetzt', 'leer']
+        : ['voll', plan.entwurf ? 'leer' : 'voll', 'voll']
+  return [
+    { name: t.wpEntwurf, lage: entwurf },
+    { name: t.spurVeroeffentlicht, lage: veroeffentlicht },
+    { name: t.spurAbgeschlossen, lage: abgeschlossen },
   ]
 }

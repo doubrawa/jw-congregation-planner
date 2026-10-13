@@ -777,24 +777,41 @@ Woche oder je Monat eine Gruppe. Was zu tun ist, sagt der Name des Plans, etwa
 
 ![Weitere Pläne planen](screenshots/planer-weitere-plaene.png)
 
-- **+ Neuer Plan** legt den Plan als **Entwurf** an – ab dieser Woche für ein
-  Vierteljahr – und öffnet ihn gleich. Name und Zeitraum änderst du dort. Wird
-  der Zeitraum kürzer, gehen die Einträge außerhalb mit.
+Die Liste zeigt je Stand eine Karte: **Entwürfe**, **Aktuell** und
+**Abgeschlossen** (der letzte Tag ist vorbei). Unter jedem Namen steht, wann
+der Plan gilt – beim laufenden „bis …", beim kommenden „ab …", beim
+abgeschlossenen „endete am …", beim Entwurf sein Zeitraum. Ein Tipp öffnet den
+Plan in **Plan bearbeiten**; oben zeigt eine Spur, wo er steht (Entwurf,
+Veröffentlicht, Abgeschlossen), und Zurück führt wieder zur Liste.
+
+- **Neuer Plan** legt den Plan als **Entwurf** an – ab dieser Woche für ein
+  Vierteljahr – und öffnet ihn gleich. Den Namen tippst du dort ein.
+- **Von** und **Bis** öffnen den Kalender auf dem Ende, auf das du tippst; der
+  neue Zeitraum gilt erst mit **Übernehmen**. Wird er kürzer, gehen die
+  Einträge außerhalb mit.
 - **Die Gruppen wechseln** stellt den Takt ein: **Jede Woche** (so ist jeder
   Plan zuerst) oder **Jeden Monat**. Im Monatstakt steht je Kalendermonat eine
   Zeile („Oktober 2026"). Stellst du um, geht es in derselben Reihenfolge
   weiter, nur im neuen Takt: Ab der laufenden Woche bzw. dem laufenden Monat
   wird neu verteilt, beginnend mit der Gruppe, die gerade dran ist. Was vorbei
   ist, bleibt erhalten.
-- **Reihum verteilen** gibt die Wochen (bzw. Monate) ab der laufenden bis zum
-  Ende den Gruppen der Reihe nach, beginnend mit der gewählten. Vergangene
-  bleiben, wie sie sind. Danach kannst du jede Zeile einzeln umstellen.
+- **Beginnen mit** verteilt mit einem Tipp: Die Wochen (bzw. Monate) ab der
+  laufenden bis zum Ende bekommen die Gruppen der Reihe nach, beginnend mit der
+  gewählten. Gedrückt steht die Gruppe, mit der die Reihe gerade beginnt; ein
+  Tipp darauf ändert nichts. Vergangene Wochen bleiben, wie sie sind.
+- Die **Vorschau** zeigt die nächsten fünf Wochen oder Monate, **Alle anzeigen**
+  auch die übrigen und die vergangenen. Jede kommende Zeile stellst du einzeln
+  um.
 - **Veröffentlichen** macht den Plan sichtbar, **Zurück zum Entwurf** nimmt
-  ihn wieder zurück. Einen Entwurf sehen nur die Admins.
+  ihn wieder zurück. Einen Entwurf sehen nur Admins und Planer. Am Handy steht
+  der Knopf unten in der Leiste, ab dem Tablet neben dem Titel.
 - **Plan löschen** fragt einmal nach.
 
-Die Liste ordnet die Pläne nach **Aktuell**, **Entwürfe** und
-**Abgeschlossen** (der letzte Tag ist vorbei).
+Ein abgeschlossener Plan bleibt in der Liste stehen, zum Nachsehen: Verteilen
+und Veröffentlichen gibt es dort nicht mehr. Der **Planer** sieht Name,
+Zeitraum und Takt, ändert sie aber nicht – er verteilt die Gruppen mit
+„Beginnen mit" und in der Vorschau. Gedruckt wird ein Plan beim Ansehen
+(siehe [Pläne drucken](#9-pläne-drucken)).
 
 **Wer was sieht**: Einen Plan sieht nach dem Veröffentlichen die ganze
 Versammlung, und jeder findet oben unter „Deine Gruppe ist dran" die Wochen

@@ -9,6 +9,7 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
+import { datumsFormat } from '../components/datum-anzeige'
 import { emptyQualifications } from '../data/helpers'
 import { dict } from '../i18n/ui'
 import { ProgrammScreen } from '../programm/ProgrammScreen'
@@ -16,8 +17,9 @@ import type { Group, Person, PlanEintrag, WeitererPlan } from '../data/types'
 import { PlanenScreen } from './PlanenScreen'
 
 /**
- * **Weitere Pläne an der Oberfläche** (T120, Phase 5): was der Planer anlegt
- * und einstellt, und was ein Mitglied davon sieht. Die Regeln dahinter prüfen
+ * **Weitere Pläne an der Oberfläche** (T120, Phase 5; T121, Entwürfe
+ * `GPlaeneListe`, `GPlaenePlanen`): was der Planer anlegt und einstellt, und
+ * was ein Mitglied davon sieht. Die Regeln dahinter prüfen
  * `data/weitere-plaene.test.ts` und `app/weitere-plaene-reducer.test.ts`.
  */
 
@@ -37,10 +39,8 @@ const person = (id: string, fn: string, grp: string | null): Person => ({
 })
 const ANNA = person('p-a', 'Anna', 'g1')
 const CARL = person('p-c', 'Carl', 'g2')
-const GRUPPEN: Group[] = [
-  { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null },
-  { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
-]
+const gruppe = (n: number): Group => ({ id: `g${n}`, name: `Gruppe ${n}`, overseerId: null, assistantId: null })
+const GRUPPEN: Group[] = [gruppe(1), gruppe(2)]
 
 const SAAL: WeitererPlan = { id: 'pl-s', name: 'Winterdienst', von: '2026-09-07', bis: '2026-09-27', entwurf: false }
 const ENTWURF: WeitererPlan = { ...SAAL, id: 'pl-e', name: 'Grundreinigung', entwurf: true }
@@ -81,7 +81,16 @@ function zeige(Screen: () => React.JSX.Element, over: Partial<AppState> = {}) {
   return { dispatch, ...render(<Buehne />) }
 }
 
-const knopf = (c: HTMLElement, text: string) => [...c.querySelectorAll('button')].find((b) => b.textContent === text)
+const knopf = (c: Element, text: string) => [...c.querySelectorAll('button')].find((b) => b.textContent === text)
+/** Ein Knopf einer `Wahl` — die Gruppe heißt wie ihre Marke. */
+const wahlKnopf = (c: Element, wahl: string, text: string) =>
+  knopf(c.querySelector(`[role="group"][aria-label="${wahl}"]`)!, text)!
+const gedrueckt = (c: Element, wahl: string) =>
+  c.querySelector(`[role="group"][aria-label="${wahl}"] [aria-pressed="true"]`)?.textContent
+const oeffnen = (c: Element, name: string) =>
+  fireEvent.click([...c.querySelectorAll('.wp-plan-zeile')].find((z) => z.textContent?.includes(name))!)
+/** Die Gruppen der kommenden Wochen oder Monate in der Vorschau. */
+const vorschau = (c: Element) => [...c.querySelectorAll<HTMLSelectElement>('.wp-gruppe-wahl')]
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
@@ -140,13 +149,44 @@ describe('Ansehen', () => {
   })
 })
 
-describe('Planen', () => {
+/**
+ * Am Handy (Blätter fragen beim Wischen nach der Breite, und jsdom kennt
+ * matchMedia nicht); ab dem Tablet stellt ein Test die Breite selbst.
+ */
+function amHandy() {
+  beforeEach(() => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
+  })
+  afterEach(() => {
+    delete (window as { matchMedia?: unknown }).matchMedia
+  })
+}
+
+describe('Planen: die Liste', () => {
+  amHandy()
   const planen = (over: Partial<AppState> = {}) => zeige(PlanenScreen, { screen: 'planen', planner: true, ...over })
 
-  it('die Liste: aktuell und Entwürfe', () => {
-    const { container } = planen()
-    expect([...container.querySelectorAll('.wp-abschnitt-titel')].map((h) => h.textContent)).toEqual([t.wpAktuell, t.wpEntwuerfe])
-    expect(container.querySelector('.wp-karte[data-stand="entwurf"]')?.textContent).toContain('Grundreinigung')
+  it('je Stand eine Karte — die Entwürfe zuerst, dann was gilt, dann was war', () => {
+    const alt: WeitererPlan = { ...SAAL, id: 'pl-a', name: 'Gartenpflege', von: '2026-03-02', bis: '2026-08-30' }
+    const { container } = planen({ plaene: [alt, SAAL, ENTWURF] })
+    expect([...container.querySelectorAll('.wp-abschnitt .karte-titel')].map((h) => h.textContent)).toEqual([
+      t.wpEntwuerfe,
+      t.wpAktuell,
+      t.wpAbgeschlossen,
+    ])
+    expect(container.querySelector('.wp-abschnitt[data-stand="entwurf"]')?.textContent).toContain('Grundreinigung')
+  })
+
+  it('unter dem Namen der Ort und, je nach Stand, wann der Plan gilt', () => {
+    const winter: WeitererPlan = { ...SAAL, id: 'pl-w', name: 'Schneeräumen', von: '2026-11-30', bis: '2027-02-28' }
+    const alt: WeitererPlan = { ...SAAL, id: 'pl-a', name: 'Gartenpflege', von: '2026-03-02', bis: '2026-08-30' }
+    const { container } = planen({ plaene: [alt, SAAL, winter] })
+    const unter = (name: string) =>
+      [...container.querySelectorAll('.wp-plan-zeile')].find((z) => z.textContent?.includes(name))?.querySelector('.klein-text')
+        ?.textContent
+    expect(unter('Winterdienst')).toBe(`${t.saal} · bis 27. September 2026`)
+    expect(unter('Schneeräumen')).toBe(`${t.saal} · ab 30. November 2026`)
+    expect(unter('Gartenpflege')).toBe(`${t.saal} · endete am 30. August 2026`)
   })
 
   it('ein neuer Plan: ohne Wahl als Entwurf angelegt, ab dieser Woche ein Vierteljahr', () => {
@@ -161,60 +201,187 @@ describe('Planen', () => {
     })
   })
 
-  it('ein offener Plan: Name, verteilen, eine Woche umsetzen, zurück zum Entwurf', () => {
+  it('ohne Pläne der Hinweis, und für den Admin „Neuer Plan"', () => {
+    const { container } = planen({ plaene: [], planEintraege: [] })
+    expect(container.textContent).toContain(t.wpKeine)
+    expect(knopf(container, t.wpNeu)).toBeDefined()
+  })
+})
+
+describe('Planen: ein Plan', () => {
+  amHandy()
+  const planen = (over: Partial<AppState> = {}) => zeige(PlanenScreen, { screen: 'planen', planner: true, ...over })
+
+  it('die Spur, der Name, eine Woche umsetzen — und am Handy unten „Zurück zum Entwurf"', () => {
     const { container, dispatch } = planen()
-    fireEvent.click([...container.querySelectorAll('.wp-karte')].find((k) => k.textContent?.includes('Winterdienst'))!)
+    oeffnen(container, 'Winterdienst')
+    expect(container.querySelector('.unteransicht-kopf .seitentitel')?.textContent).toBe(t.wpPlanBearbeiten)
+    expect(container.querySelector('.spur [aria-current="step"]')?.textContent).toBe(t.spurVeroeffentlicht)
+
     fireEvent.change(container.querySelector('input[type="text"]')!, { target: { value: 'Winterdienst 2026' } })
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpPlanAendern', id: 'pl-s', patch: { name: 'Winterdienst 2026' } })
-    fireEvent.click(knopf(container, t.gbVerteilen)!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'wpGruppenVerteilen', planId: 'pl-s', abGruppe: 'g1' })
-    const wochen = [...container.querySelectorAll(`.wp-zeile select[aria-label="${t.gbGruppe}"]`)] as HTMLSelectElement[]
-    expect(wochen.map((w) => w.value)).toEqual(['g2', 'g1', 'g2'])
-    fireEvent.change(wochen[1]!, { target: { value: '' } })
+
+    expect(vorschau(container).map((w) => w.value)).toEqual(['g2', 'g1', 'g2'])
+    fireEvent.change(vorschau(container)[1]!, { target: { value: '' } })
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-09-14', grp: null })
-    fireEvent.click(knopf(container, t.wpZurueckziehen)!)
+
+    fireEvent.click(container.querySelector('.planen-leiste .aktion-neben')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpPlanAendern', id: 'pl-s', patch: { entwurf: true } })
+  })
+
+  it('ein Entwurf: „Veröffentlichen" in der Leiste — gesehen wird er erst danach', () => {
+    const { container, dispatch } = planen()
+    oeffnen(container, 'Grundreinigung')
+    expect(container.querySelector('.spur [aria-current="step"]')?.textContent).toBe(t.wpEntwurf)
+    expect(container.textContent).toContain(`${t.wpEntwurfHint} ${t.wpSichtSaal}`)
+    expect(container.querySelector('.unteransicht-kopf .aktion-haupt'), 'am Handy nicht auch im Kopf').toBeNull()
+    fireEvent.click(container.querySelector('.planen-leiste .aktion-haupt')!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'wpPlanAendern', id: 'pl-e', patch: { entwurf: false } })
+  })
+
+  it('ab dem Tablet steht „Veröffentlichen" neben dem Titel, nicht in einer Leiste', () => {
+    window.matchMedia = vi.fn((q: string) => ({ matches: q.includes('768') })) as unknown as typeof window.matchMedia
+    const { container } = planen()
+    oeffnen(container, 'Grundreinigung')
+    expect(container.querySelector('.unteransicht-kopf .aktion-haupt')?.textContent).toBe(t.wpVeroeffentlichen)
+    expect(container.querySelector('.planen-leiste')).toBeNull()
+  })
+
+  it('„Beginnen mit" verteilt ab dieser Woche — gedrückt ist, womit die Reihe jetzt beginnt', () => {
+    const { container, dispatch } = planen()
+    oeffnen(container, 'Winterdienst')
+    expect(gedrueckt(container, t.wpAbGruppe)).toBe('Gruppe 2')
+    fireEvent.click(wahlKnopf(container, t.wpAbGruppe, 'Gruppe 1'))
+    expect(dispatch).toHaveBeenCalledWith({ type: 'wpGruppenVerteilen', planId: 'pl-s', abGruppe: 'g1' })
+  })
+
+  it('ein Tipp auf die gedrückte Gruppe lässt alles, wie es ist — auch Wochen, die von Hand gesetzt sind', () => {
+    const { container, dispatch } = planen()
+    oeffnen(container, 'Winterdienst')
+    fireEvent.click(wahlKnopf(container, t.wpAbGruppe, 'Gruppe 2'))
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'wpGruppenVerteilen' }))
+  })
+
+  it('mehr als vier Gruppen: „Beginnen mit" als Auswahlliste', () => {
+    const { container, dispatch } = planen({ groups: [1, 2, 3, 4, 5].map(gruppe) })
+    oeffnen(container, 'Winterdienst')
+    expect(container.querySelector(`[role="group"][aria-label="${t.wpAbGruppe}"]`)).toBeNull()
+    const liste = container.querySelector<HTMLSelectElement>(`select[aria-label="${t.wpAbGruppe}"]`)!
+    expect(liste.value).toBe('g2')
+    fireEvent.change(liste, { target: { value: 'g5' } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'wpGruppenVerteilen', planId: 'pl-s', abGruppe: 'g5' })
   })
 
   it('der Takt ist wählbar — wöchentlich ist vorgegeben', () => {
     const { container, dispatch } = planen()
-    fireEvent.click([...container.querySelectorAll('.wp-karte')].find((k) => k.textContent?.includes('Winterdienst'))!)
-    const takt = [...container.querySelectorAll('select')].find((s) => s.querySelector('option[value="monat"]')) as HTMLSelectElement
-    expect(takt.value).toBe('woche')
-    expect([...takt.options].map((o) => o.textContent)).toEqual([t.fsFreqW, t.wpJedenMonat])
-    fireEvent.change(takt, { target: { value: 'monat' } })
+    oeffnen(container, 'Winterdienst')
+    expect(gedrueckt(container, t.wpTakt)).toBe(t.fsFreqW)
+    fireEvent.click(wahlKnopf(container, t.wpTakt, t.fsFreqW))
+    expect(dispatch, 'der gedrückte Takt ändert nichts').not.toHaveBeenCalled()
+    fireEvent.click(wahlKnopf(container, t.wpTakt, t.wpJedenMonat))
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpPlanAendern', id: 'pl-s', patch: { takt: 'monat' } })
   })
 
-  it('im Monatstakt: Monate als Zeilen, die Hinweise sprechen von Monaten', () => {
+  it('im Monatstakt: Monate als Zeilen, Hinweis und Vorschau sprechen von Monaten', () => {
     const monate: WeitererPlan = { ...SAAL, von: '2026-09-07', bis: '2026-11-30', takt: 'monat' }
     const { container, dispatch } = planen({
       plaene: [monate],
       planEintraege: [{ id: 'm10', planId: 'pl-s', datum: '2026-10-01', grp: 'g2' }],
     })
-    fireEvent.click(container.querySelector('.wp-karte')!)
-    expect([...container.querySelectorAll('.wp-zeile-wann')].map((z) => z.textContent)).toEqual([
+    oeffnen(container, 'Winterdienst')
+    expect([...container.querySelectorAll('.wp-vorschau-zeile')].map((z) => z.firstChild?.textContent)).toEqual([
       'September 2026',
       'Oktober 2026',
       'November 2026',
     ])
-    expect(container.textContent).toContain(t.wpSaalTextMonat)
+    expect(container.querySelector('.wp-vorschau .karte-titel')?.textContent).toBe(`${t.wpVorschau} · 3 Monate`)
     expect(container.textContent).toContain(t.wpVerteilenHintMonat)
-    expect(container.textContent).not.toContain(t.wpSaalText)
-    const zeilen = [...container.querySelectorAll(`.wp-zeile select[aria-label="${t.gbGruppe}"]`)] as HTMLSelectElement[]
-    expect(zeilen.map((z) => z.value)).toEqual(['', 'g2', ''])
+    expect(vorschau(container).map((z) => z.value)).toEqual(['', 'g2', ''])
     // Eine Zeile meint ihren Monat: gesetzt wird der Monatserste.
-    fireEvent.change(zeilen[2]!, { target: { value: 'g1' } })
+    fireEvent.change(vorschau(container)[2]!, { target: { value: 'g1' } })
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-11-01', grp: 'g1' })
+  })
+
+  it('die Vorschau zeigt die nächsten fünf Wochen — „Alle anzeigen" auch die vergangenen, als Text', () => {
+    const lang: WeitererPlan = { ...SAAL, von: '2026-08-24', bis: '2026-11-22' }
+    const { container } = planen({
+      plaene: [lang],
+      planEintraege: [{ id: 'a', planId: 'pl-s', datum: '2026-08-24', grp: 'g1' }],
+    })
+    oeffnen(container, 'Winterdienst')
+    expect(container.querySelector('.wp-vorschau .karte-titel')?.textContent).toBe(`${t.wpVorschau} · 13 Wochen`)
+    expect(container.querySelectorAll('.wp-vorschau-zeile')).toHaveLength(5)
+    expect(container.querySelector('.wp-vorschau-zeile.is-vorbei')).toBeNull()
+
+    fireEvent.click(knopf(container, t.alleAnzeigen)!)
+    expect(container.querySelectorAll('.wp-vorschau-zeile')).toHaveLength(13)
+    const vorbei = [...container.querySelectorAll('.wp-vorschau-zeile.is-vorbei')]
+    expect(vorbei).toHaveLength(2)
+    expect(vorbei[0]!.textContent).toContain('Gruppe 1')
+    expect(vorbei[1]!.textContent).toContain(t.offenDash)
+    expect(vorbei.some((z) => z.querySelector('select'))).toBe(false)
+    expect(knopf(container, t.alleAnzeigen)).toBeUndefined()
+  })
+
+  it('der Zeitraum: „Bis" öffnet den Kalender auf dem Ende — erst „Übernehmen" ändert den Plan', () => {
+    const herbst: WeitererPlan = { ...SAAL, bis: '2026-10-25' }
+    const { container, dispatch } = planen({ plaene: [herbst] })
+    oeffnen(container, 'Winterdienst')
+    const [von, bis] = [...container.querySelectorAll<HTMLButtonElement>('.wp-datum')]
+    // Kurz, wie im Entwurf: Die Felder stehen nebeneinander.
+    const kurz = datumsFormat('de', 'tagKurzJahr')
+    expect([von!.textContent, bis!.textContent]).toEqual([
+      kurz.format(new Date(2026, 8, 7)),
+      kurz.format(new Date(2026, 9, 25)),
+    ])
+
+    fireEvent.click(bis!)
+    const blatt = document.body.querySelector<HTMLElement>(`[role="dialog"][aria-label="${t.zeitraumLbl}"]`)!
+    expect(blatt.querySelector('.kal-ende[aria-pressed="true"]')?.textContent).toContain(t.bis)
+    expect(blatt.querySelector('.kal-monat')?.textContent).toBe('Oktober 2026')
+    fireEvent.click(blatt.querySelector('button[aria-label="Sonntag, 1. November"]')!)
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'wpPlanAendern' }))
+
+    fireEvent.click(knopf(blatt, t.uebernehmenBtn)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'wpPlanAendern', id: 'pl-s', patch: { von: '2026-09-07', bis: '2026-11-01' } })
+    expect(document.body.querySelector(`[role="dialog"][aria-label="${t.zeitraumLbl}"]`)).toBeNull()
+  })
+
+  it('„Abbrechen" lässt den Zeitraum, wie er war — „Übernehmen" ohne Änderung schickt nichts', () => {
+    const { container, dispatch } = planen()
+    oeffnen(container, 'Winterdienst')
+    const zeitraum = () => document.body.querySelector<HTMLElement>(`[role="dialog"][aria-label="${t.zeitraumLbl}"]`)!
+
+    fireEvent.click(container.querySelector('.wp-datum')!)
+    expect(zeitraum().querySelector('.kal-ende[aria-pressed="true"]')?.textContent).toContain(t.von)
+    fireEvent.click(zeitraum().querySelector('button[aria-label="Montag, 14. September"]')!)
+    fireEvent.click(knopf(zeitraum(), t.abbrechen)!)
+    fireEvent.click(container.querySelector('.wp-datum')!)
+    fireEvent.click(knopf(zeitraum(), t.uebernehmenBtn)!)
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'wpPlanAendern' }))
   })
 
   it('löschen braucht zwei Tipps', () => {
     const { container, dispatch } = planen()
-    fireEvent.click([...container.querySelectorAll('.wp-karte')].find((k) => k.textContent?.includes('Grundreinigung'))!)
+    oeffnen(container, 'Grundreinigung')
     fireEvent.click(knopf(container, t.wpLoeschen)!)
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'wpPlanLoeschen', id: 'pl-e' })
     fireEvent.click(knopf(container, t.loeschenSicher)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpPlanLoeschen', id: 'pl-e' })
+  })
+
+  it('ein abgeschlossener Plan ist gewesen: nichts zu verteilen, zu veröffentlichen oder umzusetzen', () => {
+    const alt: WeitererPlan = { ...SAAL, von: '2026-08-03', bis: '2026-08-30' }
+    const { container } = planen({
+      plaene: [alt],
+      planEintraege: [{ id: 'x', planId: 'pl-s', datum: '2026-08-10', grp: 'g1' }],
+    })
+    oeffnen(container, 'Winterdienst')
+    expect(container.querySelector(`[aria-label="${t.wpAbGruppe}"]`)).toBeNull()
+    expect(container.querySelector('.planen-leiste')).toBeNull()
+    expect(vorschau(container)).toHaveLength(0)
+    expect(container.querySelectorAll('.wp-vorschau-zeile.is-vorbei')).toHaveLength(4)
+    expect(container.textContent).not.toContain(t.wpSichtSaal)
   })
 })
 
@@ -225,13 +392,12 @@ describe('Planen', () => {
  * darin sind die Zuteilung.
  */
 describe('Der Planer in den Weiteren Plänen (4.10.2026)', () => {
+  amHandy()
   const alsPlaner = () => zeige(PlanenScreen, { screen: 'planen', planner: false, zuteiler: true })
-  const oeffnen = (c: HTMLElement, name: string) =>
-    fireEvent.click([...c.querySelectorAll('.wp-karte')].find((k) => k.textContent?.includes(name))!)
 
   it('legt keinen Plan an — sieht aber auch die Entwürfe, um darin zu verteilen', () => {
     const { container } = alsPlaner()
-    expect(container.querySelector('.wp-neu')).toBeNull()
+    expect(knopf(container, t.wpNeu)).toBeUndefined()
     expect(container.textContent).toContain('Grundreinigung')
   })
 
@@ -239,13 +405,17 @@ describe('Der Planer in den Weiteren Plänen (4.10.2026)', () => {
     const { container, dispatch } = alsPlaner()
     oeffnen(container, 'Winterdienst')
     expect(container.querySelector('input[type="text"]')).toBeNull()
-    expect(container.querySelector('.wp-veroeffentlichen')).toBeNull()
+    expect(container.querySelector('.wp-datum')).toBeNull()
+    expect(container.querySelector(`[role="group"][aria-label="${t.wpTakt}"]`)).toBeNull()
+    expect(container.querySelector('.planen-leiste')).toBeNull()
     expect(knopf(container, t.wpLoeschen)).toBeUndefined()
-    expect(container.textContent).toContain('Winterdienst')
-    fireEvent.click(knopf(container, t.gbVerteilen)!)
+    // Was er sieht: den Plan, wie ihn alle sehen, und wie die Gruppen wechseln.
+    expect(container.querySelector('.wp-name')?.textContent).toBe('Winterdienst')
+    expect(container.textContent).toContain(t.wpSaalText)
+
+    fireEvent.click(wahlKnopf(container, t.wpAbGruppe, 'Gruppe 1'))
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpGruppenVerteilen', planId: 'pl-s', abGruppe: 'g1' })
-    const wochen = [...container.querySelectorAll(`.wp-zeile select[aria-label="${t.gbGruppe}"]`)] as HTMLSelectElement[]
-    fireEvent.change(wochen[0]!, { target: { value: 'g1' } })
+    fireEvent.change(vorschau(container)[0]!, { target: { value: 'g1' } })
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-09-07', grp: 'g1' })
   })
 })

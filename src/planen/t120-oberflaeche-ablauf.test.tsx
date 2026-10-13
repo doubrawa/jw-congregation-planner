@@ -79,12 +79,14 @@ describe('Weitere Pläne', () => {
     klick(container, t.wpNeu)
 
     // Gleich offen — der Plan selbst, nicht die Liste und keine Wahl dazwischen.
-    expect(container.querySelector('.wp-zurueck')).not.toBeNull()
-    expect(container.querySelector('.wp-karte')).toBeNull()
-    expect(container.textContent).toContain(t.wpEntwurf)
-    expect(container.querySelector('.panel-label')?.textContent).toBe(t.saal)
-    // Ein Vierteljahr ab dieser Woche: dreizehn Wochen, noch ohne Gruppe.
-    const wochen = [...container.querySelectorAll(`.wp-zeile select[aria-label="${t.gbGruppe}"]`)] as HTMLSelectElement[]
+    expect(container.querySelector('.unteransicht-kopf .seitentitel')?.textContent).toBe(t.wpPlanBearbeiten)
+    expect(container.querySelector('.wp-plan-zeile')).toBeNull()
+    expect(container.querySelector('.spur [aria-current="step"]')?.textContent).toBe(t.wpEntwurf)
+    // Ein Vierteljahr ab dieser Woche: dreizehn Wochen, noch ohne Gruppe —
+    // die Vorschau zeigt die nächsten, „Alle anzeigen" alle.
+    expect(container.querySelector('.wp-vorschau .karte-titel')?.textContent).toBe(`${t.wpVorschau} · 13 Wochen`)
+    klick(container, t.alleAnzeigen)
+    const wochen = [...container.querySelectorAll<HTMLSelectElement>('.wp-gruppe-wahl')]
     expect(wochen).toHaveLength(13)
     expect(wochen.every((w) => w.value === '')).toBe(true)
 
@@ -93,20 +95,25 @@ describe('Weitere Pläne', () => {
     expect(name.value).toBe('Grundreinigung')
     klick(container, t.wpVeroeffentlichen)
     expect(knopf(container, t.wpZurueckziehen)).toBeDefined()
+    expect(container.querySelector('.spur [aria-current="step"]')?.textContent).toBe(t.spurVeroeffentlicht)
 
-    fireEvent.click(container.querySelector('.wp-zurueck')!)
-    const karte = container.querySelector('.wp-karte[data-stand="aktuell"]')
-    expect(karte?.textContent).toContain('Grundreinigung')
-    expect(container.querySelector('.wp-karte[data-stand="entwurf"]')).toBeNull()
+    fireEvent.click(container.querySelector(`.unteransicht-kopf [aria-label="${t.a11yZurueck}"]`)!)
+    const aktuell = container.querySelector('.wp-abschnitt[data-stand="aktuell"]')
+    expect(aktuell?.textContent).toContain('Grundreinigung')
+    expect(container.querySelector('.wp-abschnitt[data-stand="entwurf"]')).toBeNull()
   })
 
-  it('anlegen und reihum verteilen → jede der dreizehn Wochen hat ihre Gruppe', () => {
+  it('anlegen und mit einer Gruppe beginnen → jede der dreizehn Wochen hat ihre Gruppe', () => {
     const { container } = zeige(PlanenScreen, { screen: 'planen', tab: 'wp', planner: true, plaene: [], planEintraege: [] })
     klick(container, t.wpNeu)
-    klick(container, t.gbVerteilen)
-    const wochen = () => [...container.querySelectorAll(`.wp-zeile select[aria-label="${t.gbGruppe}"]`)] as HTMLSelectElement[]
-    expect(wochen()).toHaveLength(13)
-    expect(wochen().every((w) => w.value !== '')).toBe(true)
+    const beginnen = container.querySelector(`[role="group"][aria-label="${t.wpAbGruppe}"]`)!
+    fireEvent.click(beginnen.querySelector('button')!)
+    klick(container, t.alleAnzeigen)
+    const wochen = [...container.querySelectorAll<HTMLSelectElement>('.wp-gruppe-wahl')]
+    expect(wochen).toHaveLength(13)
+    expect(wochen.every((w) => w.value !== '')).toBe(true)
+    // Gedrückt steht jetzt, womit die Reihe beginnt.
+    expect(beginnen.querySelector('[aria-pressed="true"]')).toBe(beginnen.querySelector('button'))
   })
 })
 

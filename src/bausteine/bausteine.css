@@ -103,6 +103,19 @@
   }
 }
 
+/* Statt des Bereichstitels in einer Unteransicht (`UnteransichtKopf`): zurück,
+   daneben der Titel; was die Ansicht anbietet, steht am Ende der Zeile. */
+.unteransicht-kopf {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.unteransicht-kopf > .seitentitel {
+  flex: 1;
+  min-width: 0;
+}
+
 /* Der Titel einer Seite, die man aus dem Menü öffnet und die kein Bereich ist
    (Start, Meine Aufgaben, Profil). */
 .seitentitel--gross {
@@ -148,6 +161,12 @@
   background: var(--text);
   color: var(--grund);
   font-weight: 700;
+}
+
+/* Vier nebeneinander („Beginnen mit"): kleiner, damit „Gruppe 1" in eine Zeile passt. */
+.wahl--klein .wahl-knopf {
+  padding-inline: 4px;
+  font-size: calc(13.5px * var(--fs));
 }
 
 /* ---- Schalter (`Switch`) ------------------------------------------------------ */
@@ -289,6 +308,15 @@
   font-size: calc(14px * var(--fs));
   font-weight: 600;
   color: var(--text2);
+}
+
+/* Die Überschrift oben in einer Karte (Baustein `h2`), auf Zeilenhöhe — wo
+   einer steht, mit dem Punkt davor. */
+.karte-titel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
 }
 
 /* ---- Knöpfe --------------------------------------------------------------- */

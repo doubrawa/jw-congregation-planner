@@ -188,14 +188,14 @@ describe('Die Aktionsleiste (T121, Phase 5c)', () => {
     const leiste = container.querySelector('.planen-leiste')!
     // Im Streifen klebte sie an der Woche, die beim Wischen wandert.
     expect(leiste.closest('.week-strip')).toBeNull()
-    expect(leiste.querySelector('.planen-automatisch')?.textContent).toBe(t.autoKnopf)
-    expect(leiste.querySelector('.planen-senden .zahl-marke')?.textContent).toBe('1')
+    expect(leiste.querySelector('.aktion-neben')?.textContent).toBe(t.autoKnopf)
+    expect(leiste.querySelector('.aktion-haupt .zahl-marke')?.textContent).toBe('1')
   })
 
   it('ab dem Tablet rechts neben der Woche, und unten keine Leiste', () => {
     breit(true)
     const { container } = zeige({ weeks: [mitZuteilung()] })
-    expect(seite(container).querySelector('.wochenwahl .planen-aktionen .planen-senden')).not.toBeNull()
+    expect(seite(container).querySelector('.wochenwahl .planen-aktionen .aktion-haupt')).not.toBeNull()
     expect(container.querySelector('.planen-leiste')).toBeNull()
   })
 
@@ -207,22 +207,22 @@ describe('Die Aktionsleiste (T121, Phase 5c)', () => {
 
   it('bei den Treffpunkten der Woche öffnet „Automatisch" ihr eigenes Blatt (Phase 5e)', () => {
     const { container } = zeige({ tab: 'fs' })
-    fireEvent.click(container.querySelector('.planen-leiste .planen-automatisch')!)
+    fireEvent.click(container.querySelector('.planen-leiste .aktion-neben')!)
     expect(document.querySelector('[role="dialog"] .auto-bereich-name')?.textContent).toBe(t.fsLeiterLbl)
   })
 
   it('auf altem Stand kein „Plan senden" — er ginge an der Momentaufnahme vorbei hinaus', () => {
     const { container } = zeige({ weeks: [mitZuteilung()], staleAt: 1 })
-    expect(container.querySelector('.planen-automatisch')).not.toBeNull()
-    expect(container.querySelector('.planen-senden')).toBeNull()
+    expect(container.querySelector('.aktion-neben')).not.toBeNull()
+    expect(container.querySelector('.aktion-haupt')).toBeNull()
   })
 
   it('„Automatisch" und „Plan senden" öffnen ihr Blatt', () => {
     const { container } = zeige({ weeks: [mitZuteilung()] })
-    fireEvent.click(container.querySelector('.planen-automatisch')!)
+    fireEvent.click(container.querySelector('.aktion-neben')!)
     expect(document.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe(t.autoTitel)
     fireEvent.keyDown(window, { key: 'Escape' })
-    fireEvent.click(container.querySelector('.planen-senden')!)
+    fireEvent.click(container.querySelector('.aktion-haupt')!)
     expect(document.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe(t.planSenden)
   })
 })
@@ -424,10 +424,11 @@ describe('Die Gruppenbesuche im Predigtdienst (T120, Phase 2)', () => {
     expect(seite(container).querySelector('.treff-leer')).toBeTruthy() // der Plan der Treffpunkte
   })
 
-  it('angelegt wird von Hand — „Besuch hinzufügen", kein „Reihum verteilen" (13.10.2026)', () => {
+  it('angelegt wird von Hand — „Besuch hinzufügen" (13.10.2026)', () => {
+    // „Reihum verteilen" gibt es nicht mehr, auch nicht als Wort (`gbVerteilen`
+    // ging mit Phase 5f): Die Weiteren Pläne verteilen mit „Beginnen mit".
     const { container } = zeige({ tab: 'fs', fsBereich: 'gruppenbesuche' })
     expect(container.querySelector('.gb-neu')?.textContent).toBe(t.gbHinzufuegen)
-    expect(container.textContent).not.toContain(t.gbVerteilen)
   })
 })
 
@@ -450,7 +451,7 @@ describe('Der Gruppenaufseher sieht nur seine Treffpunkte', () => {
 
   it('„Automatisch" bekommt seine Gruppe mit', () => {
     const { container, dispatch } = alsAufseher({ fsWeeks: [[offenerTreffpunkt('g1')]] })
-    fireEvent.click(container.querySelector('.planen-leiste .planen-automatisch')!)
+    fireEvent.click(container.querySelector('.planen-leiste .aktion-neben')!)
     fireEvent.click(document.querySelector('[role="dialog"] .auto-fuss .knopf-haupt')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsAutoAssign', onlyGroup: 'g1' })
   })
@@ -474,9 +475,9 @@ describe('Woche einrichten (T64, T121 `GWochePlanen`)', () => {
 
   it('ist eine Ebene unter dem Plan: Titel und Zurück statt der Karten der Tage', () => {
     const { container, dispatch } = zeige({ tab: 'edit' })
-    expect(seite(container).querySelector('.einrichten-kopf .seitentitel')?.textContent).toBe(t.wocheEinrichten)
+    expect(seite(container).querySelector('.unteransicht-kopf .seitentitel')?.textContent).toBe(t.wocheEinrichten)
     expect(seite(container).querySelector('.meeting-tabs')).toBeNull()
-    fireEvent.click(seite(container).querySelector<HTMLButtonElement>(`.einrichten-kopf [aria-label="${t.a11yZurueck}"]`)!)
+    fireEvent.click(seite(container).querySelector<HTMLButtonElement>(`.unteransicht-kopf [aria-label="${t.a11yZurueck}"]`)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'setTab', tab: 'mid' })
   })
 
@@ -495,7 +496,7 @@ describe('Der Treffpunkt-Reiter', () => {
   it('zeigt den Treffpunkt-Plan ohne Gruppen-Einschränkung', () => {
     const { container, dispatch } = zeige({ tab: 'fs', fsWeeks: [[offenerTreffpunkt('g1')]] })
     expect(seite(container).querySelector('.knopf-neu')).toBeTruthy()
-    fireEvent.click(container.querySelector('.planen-leiste .planen-automatisch')!)
+    fireEvent.click(container.querySelector('.planen-leiste .aktion-neben')!)
     fireEvent.click(document.querySelector('[role="dialog"] .auto-fuss .knopf-haupt')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsAutoAssign', onlyGroup: null })
   })
@@ -690,7 +691,7 @@ describe('Der Planer teilt zu, ändert den Plan aber nicht (4.10.2026)', () => {
 
   it('„Plan senden" steht auch bei ihm — in der Aktionsleiste (T121)', () => {
     const { container } = zeige({ ...ALS_PLANER, weeks: [mitLac()] })
-    expect(container.querySelector('.planen-leiste .planen-senden')?.textContent).toContain(t.planSenden)
+    expect(container.querySelector('.planen-leiste .aktion-haupt')?.textContent).toContain(t.planSenden)
   })
 
   it('im Predigtdienst kein Grundplan — es gibt dort nichts zuzuteilen', () => {
@@ -718,7 +719,7 @@ describe('Der Gruppenaufseher sendet die Treffpunkte seiner Gruppe (4.10.2026)',
         { id: 'f2', ruleId: 'r2', grp: 'g2', wd: 6, time: '10:00', place: 'Park', leader: 'Olaf Overseer', lpid: AUFSEHER.id },
       ]],
     })
-    const knopf = container.querySelector('.planen-leiste .planen-senden')!
+    const knopf = container.querySelector('.planen-leiste .aktion-haupt')!
     expect(knopf.querySelector('.zahl-marke')?.textContent).toBe('1')
     fireEvent.click(knopf)
     const blatt = document.querySelector('[role="dialog"]')!

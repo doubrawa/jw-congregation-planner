@@ -1,7 +1,7 @@
 import { useApp, type AppAction } from '../app/context'
-import { Zeichen } from '../bausteine/Zeichen'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { Bereichstitel } from '../components/Bereichstitel'
+import { UnteransichtKopf } from '../components/UnteransichtKopf'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { DESKTOP_BREITE, TABLET_BREITE, useMedia } from '../components/useMedia'
 import { WeekStrip } from '../components/WeekStrip'
@@ -56,14 +56,9 @@ export function PlanenScreen() {
   // Die Weiteren Pläne (T120, Phase 5) sind ein eigenes Thema ohne Woche.
   // Planen dürfen sie Admin und Planer (der Planer verteilt die Gruppen); der
   // Gruppenaufseher landet hier gar nicht (`navigate` schickt ihn ins Ansehen).
-  if (state.tab === 'wp' && rechte.zuteilen) {
-    return (
-      <section className="screen">
-        <Bereichstitel thema="weitere" />
-        <WeiterePlaenePlan />
-      </section>
-    )
-  }
+  // Ihren Titel trägt die Ansicht selbst: Ein geöffneter Plan steht mit Zurück
+  // an seiner Stelle.
+  if (state.tab === 'wp' && rechte.zuteilen) return <WeiterePlaenePlan />
 
   // Grundplan, Gruppenbesuche und öffentliches Zeugnisgeben haben keine Woche:
   // Sie stehen ohne den Wochenstreifen da — und auch, solange noch gar keine
@@ -164,12 +159,7 @@ function PlanenBody() {
       {/* „Woche einrichten" ist eine Unteransicht des Plans (`GWochePlanen`):
           Zurück führt in den Plan der Woche, nicht aus dem Planen hinaus. */}
       {isEdit ? (
-        <div className="einrichten-kopf">
-          <button type="button" className="rund-knopf" aria-label={t.a11yZurueck} onClick={() => dispatch(zumPlanDerWoche)}>
-            <Zeichen name="zurueck" />
-          </button>
-          <h1 className="seitentitel">{t.wocheEinrichten}</h1>
-        </div>
+        <UnteransichtKopf titel={t.wocheEinrichten} onZurueck={() => dispatch(zumPlanDerWoche)} />
       ) : (
         <Bereichstitel thema={thema} />
       )}

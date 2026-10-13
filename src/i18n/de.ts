@@ -77,9 +77,6 @@ export const DE = {
     gbTitel: 'Gruppenbesuche des Dienstaufsehers',
     gbWirkung: 'In der Besuchswoche leitet der Besucher die Treffpunkte der Gruppe. Zusage, Erinnerung und „Plan senden“ laufen über den Treffpunkt – wie bei jedem anderen Leiter.',
     gbBesucher: 'Besucher', gbBesucherWaehlen: 'Besucher wählen',
-    // Die Gruppen eines Weiteren Plans reihum verteilen (die Gruppenbesuche
-    // legt man seit T121 von Hand an). Großgeschrieben wie `autoZuteilen`.
-    gbVerteilen: 'REIHUM VERTEILEN',
     gbLeer: 'Noch keine Besuche geplant.',
     gbVorgemerkt: 'vorgemerkt', gbVorbei: 'vorbei',
     gbVorgemerktHint: 'Die Woche ist noch nicht geladen. Eingetragen wird, sobald ihr Programm importiert ist.',
@@ -154,9 +151,9 @@ export const DE = {
     // Allgemeinen wechseln sich die Predigtdienstgruppen mit der Saalreinigung
     // ab").
     navWeiterePlaene: 'Weitere Pläne',
-    wpHinweis: 'Ankündigungen ohne Zuteilung: Niemand muss etwas bestätigen, und es gibt keine Erinnerung. Gruppenbesuche und öffentliches Zeugnisgeben stehen unter Predigtdienst.',
-    wpNeu: '+ NEUER PLAN',
-    wpAktuell: 'AKTUELL', wpEntwuerfe: 'ENTWÜRFE', wpAbgeschlossen: 'ABGESCHLOSSEN',
+    wpHinweis: 'Ankündigungen ohne Zuteilung: Niemand muss etwas bestätigen, und es gibt keine Erinnerung.',
+    wpNeu: 'Neuer Plan',
+    wpAktuell: 'Aktuell', wpEntwuerfe: 'Entwürfe', wpAbgeschlossen: 'Abgeschlossen',
     wpKeine: 'Zurzeit gibt es keine weiteren Pläne.',
     wpOhneName: 'Ohne Namen',
     wpSaalText: 'Reinigung und Instandhaltung – die Predigtdienstgruppen wechseln sich ab, je Woche eine.',
@@ -168,7 +165,7 @@ export const DE = {
     // Seit dem 4.10.2026 auch der Planer: Er verteilt die Gruppen, bevor der
     // Admin veröffentlicht (`plan_sichtbar` in schema.sql).
     wpEntwurf: 'Entwurf', wpEntwurfHint: 'Einen Entwurf sehen nur Admins und Planer.',
-    wpVeroeffentlichen: 'VERÖFFENTLICHEN', wpZurueckziehen: 'Zurück zum Entwurf',
+    wpVeroeffentlichen: 'Veröffentlichen', wpZurueckziehen: 'Zurück zum Entwurf',
     wpSichtSaal: 'Veröffentlicht sieht ihn die ganze Versammlung.',
     wpAbGruppe: 'Beginnen mit',
     wpVerteilenHint: 'Die Wochen ab dieser bis zum Ende, die Gruppen der Reihe nach. Vergangene Wochen bleiben, wie sie sind.',
@@ -176,6 +173,11 @@ export const DE = {
     wpLoeschen: 'Plan löschen',
     wpDeineGruppe: 'Deine Gruppe ist dran:',
     wpNurInfo: 'Nur zur Info – nichts zu bestätigen.',
+    // Plan bearbeiten (T121, Phase 5f): die Unteransicht mit Spur, Zeitraum im
+    // Kalender und Vorschau; in der Liste je nach Stand, ab oder bis wann er gilt.
+    wpPlanBearbeiten: 'Plan bearbeiten', wpVorschau: 'Vorschau', alleAnzeigen: 'Alle anzeigen',
+    wpAbDatum: 'ab {datum}', wpBisDatum: 'bis {datum}', wpEndete: 'endete am {datum}',
+    zeitraumLbl: 'Zeitraum',
     toastWpVeroeffentlicht: 'Plan veröffentlicht', toastWpEntwurf: 'Plan zurück im Entwurf',
     toastWpGeloescht: 'Plan gelöscht', toastWpVerteilt: 'Verteilte Wochen: {n}',
     toastWpVerteiltMonate: 'Verteilte Monate: {n}',
@@ -431,6 +433,9 @@ export const DE = {
     // Plätze. „Problem" steht in der Legende für abgesagt oder im Konflikt;
     // „Zuteilen" heißt auch der offene Platz — er sagt, was dort zu tun ist.
     spurWoche: 'Stand der Woche', spurZuteilen: 'Zuteilen', spurSenden: 'Senden', spurZusagen: 'Zusagen',
+    // Die Spur eines Weiteren Plans (Phase 5f): Einzahl, wo der Abschnittstitel
+    // `wpAbgeschlossen` in vielen Sprachen Mehrzahl ist; „Entwurf" ist `wpEntwurf`.
+    spurPlan: 'Stand des Plans', spurVeroeffentlicht: 'Veröffentlicht', spurAbgeschlossen: 'Abgeschlossen',
     lageProblem: 'Problem', zuKlaeren: 'Zu klären',
     // Woche einrichten und Programm (T121, Entwurf `GWochePlanen`, `GProgramm`).
     wocheEinrichten: 'Woche einrichten',
@@ -483,7 +488,7 @@ export const DE = {
     lacPh: 'Neuer Programmpunkt, z. B. Örtliche Hinweise', lacAdd: '+ EINFÜGEN',
     vortragThemaPh: 'Vortragsthema eintragen', anfangsliedLbl: 'ANFANGSLIED', liedNrPh: 'Nr.',
     rednerNamePh: 'Name des Redners', rednerVersPh: 'Versammlung des Redners',
-    uebernehmenBtn: 'ÜBERNEHMEN', oderPersonWaehlen: 'Oder aus der eigenen Versammlung wählen:',
+    uebernehmenBtn: 'Übernehmen', oderPersonWaehlen: 'Oder aus der eigenen Versammlung wählen:',
     toastLacAdd: 'Programmpunkt eingefügt · Zeiten angepasst', toastLacDel: 'Programmpunkt entfernt · Zeiten angepasst',
     toastBestaetigt: 'Bestätigt · die Admins sehen den Status',
     toastVerhindert: 'Gemeldet · die Admins werden informiert',

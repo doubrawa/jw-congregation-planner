@@ -84,6 +84,29 @@ export function planSpannen(plan: Pick<WeitererPlan, 'von' | 'bis' | 'takt'>): s
   return out
 }
 
+/**
+ * **Womit die Reihe beginnt** („Beginnen mit", T121): die Gruppe der ersten
+ * Spanne ab der laufenden (`tag`, ISO) — ab dort verteilt `gruppenVerteilen`.
+ * Ohne Eintrag dort keine; ist der Plan vorbei, auch keine.
+ */
+export function beginntMit(plan: WeitererPlan, eintraege: readonly PlanEintrag[], tag: string): string | null {
+  const erste = planSpannen(plan).find((s) => s >= spanneVon(taktVon(plan), tag))
+  return eintraege.find((e) => e.planId === plan.id && e.datum === erste)?.grp ?? null
+}
+
+/** So viele Wochen oder Monate zeigt die Vorschau eines Plans, bis man alle aufklappt. */
+export const VORSCHAU_SPANNEN = 5
+
+/**
+ * Was die zugeklappte Vorschau zeigt (Entwurf `GPlaenePlanen`): die nächsten
+ * Spannen ab der laufenden (`jetzt`). Ist keine mehr übrig — der Plan ist
+ * vorbei —, alle: Zu verbergen gäbe es dann nur, was war.
+ */
+export function vorschauSpannen(spannen: readonly string[], jetzt: string): string[] {
+  const kommende = spannen.filter((s) => s >= jetzt)
+  return kommende.length > 0 ? kommende.slice(0, VORSCHAU_SPANNEN) : [...spannen]
+}
+
 /** Die Einträge eines Plans, nach Spanne. */
 export function eintraegeVon(eintraege: readonly PlanEintrag[], planId: string): PlanEintrag[] {
   return eintraege.filter((e) => e.planId === planId).sort((a, b) => a.datum.localeCompare(b.datum))

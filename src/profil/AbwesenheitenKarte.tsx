@@ -20,7 +20,7 @@ export function AbwesenheitenKarte() {
 
   return (
     <section className="karte profil-karte">
-      <h2 className="abschnitt-titel profil-karte-titel">{t.abwesenheiten}</h2>
+      <h2 className="abschnitt-titel karte-titel">{t.abwesenheiten}</h2>
       {liste.map((a) => (
         <div key={a.id} className="profil-abw">
           <Punkt art="problem" />

@@ -31,6 +31,8 @@ const FORMATE = {
   tagMonat: { day: 'numeric', month: 'long' },
   /** „1. Dezember 2026" — als Zeitraum „1. Dezember 2026 – 28. Februar 2027" */
   tagMonatJahr: { day: 'numeric', month: 'long', year: 'numeric' },
+  /** „28. Feb. 2027" — Von und Bis eines Weiteren Plans, zwei Felder nebeneinander */
+  tagKurzJahr: { day: 'numeric', month: 'short', year: 'numeric' },
   /** „Oktober 2026" — auch die Monate eines weiteren Plans im Monatstakt */
   monatJahr: { month: 'long', year: 'numeric' },
 } as const satisfies Record<string, Intl.DateTimeFormatOptions>

@@ -817,7 +817,7 @@ describe('Die Pläne (T120) in einer fremden Sprache', () => {
 
   /** Einen Plan auf der Planen-Seite öffnen — das merkt sich der Baustein selbst, nicht der Zustand. */
   const oeffne = (name: string) => (c: HTMLElement) => {
-    const karte = [...c.querySelectorAll<HTMLElement>('.wp-karte')].find((k) => k.textContent?.includes(name))
+    const karte = [...c.querySelectorAll<HTMLElement>('.wp-plan-zeile')].find((k) => k.textContent?.includes(name))
     expect(karte, `Karte „${name}" fehlt`).toBeDefined()
     fireEvent.click(karte!.querySelector('button') ?? karte!)
   }
@@ -829,8 +829,8 @@ describe('Die Pläne (T120) in einer fremden Sprache', () => {
     ['Gruppenbesuche ansehen', { screen: 'programm', tab: 'fs', fsBereich: 'gruppenbesuche' }, '.gb-besuch'],
     ['Gruppenbesuche planen', { screen: 'planen', tab: 'fs', fsBereich: 'gruppenbesuche' }, '.gb-zeile'],
     ['Weitere Pläne ansehen', { screen: 'programm', tab: 'wp' }, '.wp-liste'],
-    ['Weitere Pläne planen', { screen: 'planen', tab: 'wp' }, '.wp-karte'],
-    ['Königreichssaal geöffnet', { screen: 'planen', tab: 'wp' }, '.wp-zeile', oeffne('Vexo')],
+    ['Weitere Pläne planen', { screen: 'planen', tab: 'wp' }, '.wp-plan-zeile'],
+    ['Königreichssaal geöffnet', { screen: 'planen', tab: 'wp' }, '.wp-vorschau-zeile', oeffne('Vexo')],
     ['Meine Aufgaben mit Zeugnis', { screen: 'aufgaben' }, '.aufgabe-titel'],
     // Mit etwas zu tun ist die Karte ein Block (`.dash-planung`), sonst ein Knopf.
     ['Start mit der Planungs-Karte', { screen: 'start' }, '.dash-planung'],

@@ -76,7 +76,7 @@ export function ProfilScreen() {
 
       <div className="profil-spalten">
         <section className="karte profil-karte">
-          <h2 className="abschnitt-titel profil-karte-titel">{t.darstellung}</h2>
+          <h2 className="abschnitt-titel karte-titel">{t.darstellung}</h2>
           <Wahl
             label={t.darstellung}
             optionen={THEME_LIST.map(({ key, labelKey }) => ({ wert: key, text: t[labelKey] }))}
@@ -145,7 +145,7 @@ export function ProfilScreen() {
 
           {verwalten && (
             <section className="karte profil-karte profil-verwaltung">
-              <h2 className="abschnitt-titel profil-karte-titel">{t.navVerwaltung}</h2>
+              <h2 className="abschnitt-titel karte-titel">{t.navVerwaltung}</h2>
               <button type="button" className="profil-zeile profil-verweis" onClick={() => dispatch({ type: 'navigate', screen: 'personen' })}>
                 <span>{t.navPersonen}</span>
                 <span className="profil-verweis-wert">

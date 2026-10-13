@@ -663,25 +663,6 @@
   width: auto;
 }
 
-/* „Neuer Plan" bei den Weiteren Plänen. */
-.fs-add-btn {
-  display: block;
-  width: 100%;
-  margin-top: 10px;
-  border: 1px solid var(--acc);
-  color: var(--acc);
-  border-radius: var(--r-pill);
-  padding: 9px 0;
-  text-align: center;
-  font-size: calc(11px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.06em;
-}
-
-.fs-add-btn:hover {
-  background: var(--tAcc);
-}
-
 /* Beschriftung einer Eingabezeile (Anfangs- und Schlusslied, Grundplan). */
 .plan-helper-label {
   font-size: calc(9.5px * var(--fs));
@@ -1035,21 +1016,8 @@
 
 /* ---- Woche einrichten (T121, Entwurf `GWochePlanen`) ----------------------- */
 
-/* Statt des Bereichstitels: zurück in den Plan, daneben der Titel. */
-.einrichten-kopf {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .einrichten-karte {
   padding: 6px 14px 8px 18px;
-}
-
-.einrichten-karte-titel {
-  display: flex;
-  align-items: center;
-  min-height: 42px;
 }
 
 .einrichten-text {
@@ -1195,7 +1163,9 @@
 
 /* ---- Automatisch und Plan senden (T121, Phase 5c) ------------------------------
    Ab dem Tablet zwei Knöpfe rechts neben der Woche (`GDesktopPlanen`), am Handy
-   eine dunkle Leiste am unteren Rand (`GPlanen`). */
+   eine dunkle Leiste am unteren Rand (`GPlanen`). Die Knöpfe heißen nach ihrer
+   Rolle (Bausteine `leisteNeben`, `leisteHaupt`): Dieselbe Leiste trägt beim
+   Plan bearbeiten „Veröffentlichen" (Phase 5f). */
 
 .planen-aktionen {
   display: flex;
@@ -1203,8 +1173,8 @@
   gap: 8px;
 }
 
-.planen-automatisch,
-.planen-senden {
+.aktion-neben,
+.aktion-haupt {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1215,12 +1185,12 @@
   font-weight: 600;
 }
 
-.planen-automatisch {
+.aktion-neben {
   border: 1.5px solid var(--umriss);
   color: var(--text);
 }
 
-.planen-senden {
+.aktion-haupt {
   background: var(--akzent);
   color: var(--auf-akzent);
   font-weight: 700;
@@ -1241,16 +1211,22 @@
   background: var(--leiste);
 }
 
-.planen-leiste > .planen-automatisch,
-.planen-leiste > .planen-senden {
+.planen-leiste > .aktion-neben,
+.planen-leiste > .aktion-haupt {
   min-height: 54px;
   padding: 0 12px;
   border-radius: 27px;
 }
 
-.planen-leiste > .planen-automatisch {
+.planen-leiste > .aktion-neben {
   border: 0;
   color: var(--leiste-text);
+}
+
+/* Ein Knopf allein nimmt die ganze Leiste: „Veröffentlichen" eines Plans,
+   „Automatisch", solange nur die Momentaufnahme da ist (`sendeUmfang`). */
+.planen-leiste > :only-child {
+  grid-column: 1 / -1;
 }
 
 /* Über der Leiste, nicht auf ihr: Eine Meldung nach „Automatisch" verdeckte

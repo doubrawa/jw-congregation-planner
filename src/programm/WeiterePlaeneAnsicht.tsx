@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
 import { useKalendertag } from '../app/useKalendertag'
-import { gruppenName, spannenText, zeitraumText } from '../components/weitere-plaene-anzeige'
+import { PlanTitel } from '../components/PlanTitel'
+import { gruppenName, spannenText } from '../components/weitere-plaene-anzeige'
 import { fromIso } from '../data/meeting-dates'
 import { eintraegeVon, plaeneZumAnsehen, spanneVon, spannenDerGruppe, taktVon } from '../data/weitere-plaene'
 import { useT } from '../i18n/useT'
@@ -73,11 +74,7 @@ function PlanAnsicht({ plan, tag }: { plan: WeitererPlan; tag: string }) {
 
   return (
     <section className="karte wp-plan">
-      <span className="wp-ort">{t.saal}</span>
-      <h2 className="wp-name" dir="auto">
-        {plan.name || t.wpOhneName}
-      </h2>
-      <span className="wp-plan-zeitraum">{zeitraumText(plan, state.lang)}</span>
+      <PlanTitel plan={plan} />
       {meineGruppe && (
         <DeineGruppe plan={plan} spannen={spannenDerGruppe(eintraege, plan.id, meineGruppe).filter((s) => s >= jetzt)} />
       )}

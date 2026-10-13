@@ -88,12 +88,6 @@
   padding: 6px 18px 4px;
 }
 
-.profil-karte-titel {
-  display: flex;
-  align-items: center;
-  min-height: 42px;
-}
-
 /* Eine Zeile in einer Karte, durch eine Linie von der davor getrennt. */
 .profil-zeile {
   border-block-start: 1px solid var(--linie);

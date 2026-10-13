@@ -112,7 +112,7 @@ function leiste(over: Partial<AppState> = {}, art: PlanArt = 'zusammenkuenfte') 
 /** Die Leiste mit offenem Blatt. */
 function zeige(over: Partial<AppState> = {}, art: PlanArt = 'zusammenkuenfte') {
   const l = leiste(over, art)
-  const oeffnen = () => fireEvent.click(l.container.querySelector('.planen-senden')!)
+  const oeffnen = () => fireEvent.click(l.container.querySelector('.aktion-haupt')!)
   oeffnen()
   return { ...l, oeffnen }
 }
@@ -137,21 +137,21 @@ afterEach(() => {
 
 describe('Wer den Knopf bekommt', () => {
   it('der Admin und der Planer — sie senden die ganze Woche', () => {
-    expect(leiste().container.querySelector('.planen-senden')).not.toBeNull()
+    expect(leiste().container.querySelector('.aktion-haupt')).not.toBeNull()
     cleanup()
-    expect(leiste({ planner: false, zuteiler: true }).container.querySelector('.planen-senden')).not.toBeNull()
+    expect(leiste({ planner: false, zuteiler: true }).container.querySelector('.aktion-haupt')).not.toBeNull()
   })
 
   it('ein Verkündiger nicht — die Function wiese ihn ohnehin ab', () => {
     const { container } = leiste({ planner: false, zuteiler: false, personId: 'p-x' })
-    expect(container.querySelector('.planen-senden')).toBeNull()
+    expect(container.querySelector('.aktion-haupt')).toBeNull()
   })
 
   it('auf altem Stand niemand — es ginge an der Momentaufnahme vorbei hinaus', () => {
-    expect(leiste({ staleAt: 1_700_000_000_000 }).container.querySelector('.planen-senden')).toBeNull()
+    expect(leiste({ staleAt: 1_700_000_000_000 }).container.querySelector('.aktion-haupt')).toBeNull()
     cleanup()
     const aufseher: Partial<AppState> = { planner: false, zuteiler: false, personId: AUFSEHER.id, staleAt: 1_700_000_000_000 }
-    expect(leiste(aufseher, 'treffpunkte').container.querySelector('.planen-senden')).toBeNull()
+    expect(leiste(aufseher, 'treffpunkte').container.querySelector('.aktion-haupt')).toBeNull()
   })
 })
 
@@ -166,7 +166,7 @@ describe('Der Gruppenaufseher sendet die Treffpunkte seiner Gruppe (4.10.2026)',
 
   it('nur was seine Gruppe betrifft — nicht die Zusammenkunft, nicht die andere Gruppe', () => {
     const { container } = zeige(GRUPPENAUFSEHER, 'treffpunkte')
-    expect(container.querySelector('.planen-senden .zahl-marke')?.textContent).toBe('1')
+    expect(container.querySelector('.aktion-haupt .zahl-marke')?.textContent).toBe('1')
     expect(blatt().querySelector('.senden-satz')?.textContent).toBe(fill(t.fsSendenOffen, { n: 1 }))
     expect(namen()).toEqual(['C. Dorn'])
   })
@@ -244,7 +244,7 @@ describe('Was vorbei ist, zählt nicht mehr', () => {
   it('am Donnerstag nennt es nur noch das Wochenende', () => {
     donnerstag()
     const { container } = zeige({ weeks: [mitSonntag()] })
-    expect(container.querySelector('.planen-senden .zahl-marke')?.textContent).toBe('1')
+    expect(container.querySelector('.aktion-haupt .zahl-marke')?.textContent).toBe('1')
     expect(namen()).toEqual(['S. Sonntag'])
   })
 
@@ -258,7 +258,7 @@ describe('Was vorbei ist, zählt nicht mehr', () => {
   it('ist nur Vergangenes ungesendet, gibt es nichts mehr freizugeben', () => {
     donnerstag()
     const { container } = zeige({ weeks: [woche(['A. Berg'])] })
-    expect(container.querySelector('.planen-senden .zahl-marke')).toBeNull()
+    expect(container.querySelector('.aktion-haupt .zahl-marke')).toBeNull()
     expect(senden().getAttribute('aria-disabled')).toBe('true')
   })
 })

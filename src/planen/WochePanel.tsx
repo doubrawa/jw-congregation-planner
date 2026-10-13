@@ -68,7 +68,7 @@ export function WochePanel() {
   return (
     <>
       <section className="karte einrichten-karte">
-        <h2 className="abschnitt-titel einrichten-karte-titel">{t.anlassDerWoche}</h2>
+        <h2 className="abschnitt-titel karte-titel">{t.anlassDerWoche}</h2>
         <div role="radiogroup" aria-label={t.anlassDerWoche} className="anlass-liste">
           {ANLAESSE.map(([wert, name, text]) => (
             <Option
@@ -129,7 +129,7 @@ export function WochePanel() {
           fällt der Kongress nur aufs Wochenende, schaltet er die Zusammenkunft
           unter der Woche wieder an. */}
       <section className="karte einrichten-karte">
-        <h2 className="abschnitt-titel einrichten-karte-titel">{t.zusammenkuenfteDieserWoche}</h2>
+        <h2 className="abschnitt-titel karte-titel">{t.zusammenkuenfteDieserWoche}</h2>
         {MEETING_TABS.map((tab) => (
           <ZusammenkunftZeile key={tab} tab={tab} />
         ))}
@@ -138,13 +138,13 @@ export function WochePanel() {
       {/* Weitere Termine der Woche (T63) — sie gehören der Woche, nicht einer
           Zusammenkunft. */}
       <section className="karte einrichten-karte">
-        <h2 className="abschnitt-titel einrichten-karte-titel">{t.weitereTermine}</h2>
+        <h2 className="abschnitt-titel karte-titel">{t.weitereTermine}</h2>
         <p className="klein-text einrichten-text">{t.weitereTermineText}</p>
         <TerminePanel />
       </section>
 
       <section className="karte einrichten-karte">
-        <h2 className="abschnitt-titel einrichten-karte-titel">{t.programmTitel}</h2>
+        <h2 className="abschnitt-titel karte-titel">{t.programmTitel}</h2>
         <button type="button" className="einrichten-verweis" onClick={() => setProgrammOffen(true)}>
           <span className="einrichten-verweis-text">
             <span>{t.programmpunkteBearbeiten}</span>

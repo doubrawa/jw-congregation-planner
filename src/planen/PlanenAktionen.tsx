@@ -45,12 +45,12 @@ export function PlanenAktionen({ art, leiste = false }: { art: PlanArt; leiste?:
 
   return (
     <div className={leiste ? 'planen-aktionen planen-leiste' : 'planen-aktionen'}>
-      <button type="button" className="planen-automatisch" onClick={() => setOffen('automatisch')}>
+      <button type="button" className="aktion-neben" onClick={() => setOffen('automatisch')}>
         <Zeichen name="stab" />
         {t.autoKnopf}
       </button>
       {umfang && (
-        <button type="button" className="planen-senden" onClick={() => setOffen('senden')}>
+        <button type="button" className="aktion-haupt" onClick={() => setOffen('senden')}>
           {t.planSenden}
           {meldungen.length > 0 && <span className="zahl-marke">{meldungen.length}</span>}
         </button>

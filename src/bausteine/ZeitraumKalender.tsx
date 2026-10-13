@@ -34,22 +34,30 @@ function tagKlasse(tag: string, von: string, bis: string, monat: Monat, heute: s
 /**
  * **Ein Zeitraum im Kalender** (T121): oben „Von" und „Bis", darunter der
  * Monat. Ein Tipp setzt das Ende, das gerade hervorgehoben ist; der gewählte
- * Zeitraum steht als Band in Minze. Für Abwesenheiten.
+ * Zeitraum steht als Band in Minze. Für Abwesenheiten und den Zeitraum eines
+ * Weiteren Plans.
+ *
+ * `start` sagt, welches Ende zuerst hervorgehoben ist; bei „Bis" steht der
+ * Kalender auf dessen Monat — wer beim Plan auf „Bis" tippt, setzt das Ende.
+ * Ohne Angabe ist es „Bis", sobald es einen Anfang gibt, und der Monat des
+ * Anfangs.
  */
 export function ZeitraumKalender({
   von,
   bis,
   lang,
   onWahl,
+  start,
 }: {
   von: string
   bis: string
   lang: Lang
   onWahl: (von: string, bis: string) => void
+  start?: ZeitraumEnde
 }) {
   const { t } = useT()
-  const [ende, setEnde] = useState<ZeitraumEnde>(von ? 'bis' : 'von')
-  const [monat, setMonat] = useState<Monat>(() => monatVon(von))
+  const [ende, setEnde] = useState<ZeitraumEnde>(start ?? (von ? 'bis' : 'von'))
+  const [monat, setMonat] = useState<Monat>(() => monatVon(start === 'bis' && bis ? bis : von))
   const locale = LOCALES[lang] ?? lang
   const tagLang = datumsFormat(lang, 'tag')
   const tagKurz = datumsFormat(lang, 'kurzerWochentag')

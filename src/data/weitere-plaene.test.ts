@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  beginntMit,
   eintraegeImZeitraum,
   eintragSetzen,
   gruppenVerteilen,
@@ -12,6 +13,7 @@ import {
   spanneVon,
   taktVon,
   taktWechseln,
+  vorschauSpannen,
   weiterePlaeneImMenue,
 } from './weitere-plaene'
 import type { Group, PlanEintrag, WeitererPlan } from './types'
@@ -241,6 +243,59 @@ describe('Reihum verteilen', () => {
 
   it('ohne Gruppen gibt es nichts zu verteilen', () => {
     expect(gruppenVerteilen({ plan: saal(), eintraege: [], groups: [], abGruppe: 'g1', heute: HEUTE, neueId }).verteilt).toBe(0)
+  })
+})
+
+/**
+ * **„Beginnen mit"** (T121, `GPlaenePlanen`): Gedrückt steht die Gruppe, mit
+ * der die Reihe ab jetzt beginnt — dort, wo `gruppenVerteilen` anfinge.
+ */
+describe('Womit die Reihe beginnt', () => {
+  const TAG = '2026-09-09' // Mittwoch derselben Woche
+
+  it('die Gruppe der laufenden Woche — nicht die der ersten Woche des Plans', () => {
+    const plan = saal({ von: '2026-08-24' })
+    const eintraege = [woche('2026-08-24', 'g4'), woche('2026-08-31', 'g1'), woche('2026-09-07', 'g2'), woche('2026-09-14', 'g3')]
+    expect(beginntMit(plan, eintraege, TAG)).toBe('g2')
+  })
+
+  it('ein Plan, der erst kommt, beginnt mit seiner ersten Woche', () => {
+    const plan = saal({ von: '2026-10-05', bis: '2026-10-25' })
+    expect(beginntMit(plan, [woche('2026-10-05', 'g3'), woche('2026-10-12', 'g4')], TAG)).toBe('g3')
+  })
+
+  it('im Monatstakt der laufende Monat', () => {
+    const plan = saal({ von: '2026-08-01', bis: '2026-10-31', takt: 'monat' })
+    expect(beginntMit(plan, [woche('2026-08-01', 'g1'), woche('2026-09-01', 'g2')], TAG)).toBe('g2')
+  })
+
+  it('keine, wo die laufende Woche leer ist, der Plan einem anderen gehört oder vorbei ist', () => {
+    expect(beginntMit(saal(), [woche('2026-09-14', 'g1')], TAG)).toBeNull()
+    expect(beginntMit(saal(), [{ ...woche('2026-09-07', 'g1'), planId: 'anderer' }], TAG)).toBeNull()
+    const vorbei = saal({ von: '2026-08-03', bis: '2026-08-30' })
+    expect(beginntMit(vorbei, [woche('2026-08-24', 'g1')], TAG)).toBeNull()
+  })
+})
+
+describe('Die Vorschau eines Plans', () => {
+  const dreizehn = planSpannen(saal({ von: '2026-08-24', bis: '2026-11-22' }))
+
+  it('zugeklappt die nächsten fünf ab der laufenden — Vergangenes nicht', () => {
+    expect(vorschauSpannen(dreizehn, '2026-09-07')).toEqual([
+      '2026-09-07',
+      '2026-09-14',
+      '2026-09-21',
+      '2026-09-28',
+      '2026-10-05',
+    ])
+  })
+
+  it('gegen Ende, was übrig ist', () => {
+    expect(vorschauSpannen(dreizehn, '2026-11-09')).toEqual(['2026-11-09', '2026-11-16'])
+  })
+
+  it('ist der Plan vorbei, alle — sonst bliebe die Vorschau leer', () => {
+    expect(vorschauSpannen(dreizehn, '2026-12-07')).toEqual(dreizehn)
   })
 })
 
