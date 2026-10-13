@@ -6604,13 +6604,17 @@ mal selbstständig ein simplify und code-review, damit wir am ende das nicht
 machen müssen … clean code programmierung ist wichtig"*. Tablet- und
 Desktop-Fassung entstehen je Bildschirm in seiner Phase, nicht am Schluss.
 
-**Stand am 13. Oktober 2026:** gepusht und live sind die Phasen 1 bis 5b — Menü
+**Stand am 13. Oktober 2026:** gepusht und live sind die Phasen 1 bis 5d — Menü
 an der Seite und Planen als Modus, Start, Meine Aufgaben, Profil, Mitteilungen,
 die Zusammenkünfte, der Predigtdienst und die weiteren Pläne zum Ansehen, „Die
-Woche planen" (`afca2da`), ein Gesamt-Review der Phasen 1 bis 5a (`1d084f1`) und
-„Woche einrichten" mit dem Programm (`1660aab`). Es folgen 5c bis 5g (der Rest
-von Planen), 6 Verwaltung, 7 Trolleys, 8 Anmelden per Link, 9 Druckbögen und
-10 Feinschliff.
+Woche planen" (`afca2da`), ein Gesamt-Review der Phasen 1 bis 5a (`1d084f1`),
+„Woche einrichten" mit dem Programm (`1660aab`), „Automatisch" und „Plan
+senden" (`bf80ac6`) sowie das Zuteilen — als Blatt mit Vorschlag, Suche und
+„zuletzt" (`06e16aa`), am Desktop als Spalte neben dem Plan (`35293e9`). Es
+folgen 5e bis 5g (der Rest von Planen), 6 Verwaltung, 7 Trolleys, 8 Anmelden
+per Link, 9 Druckbögen und 10 Feinschliff. Nicht gebaut ist bisher die
+Wochenspalte links aus `GDesktopPlanen` („Planung" mit Wochenkarten und
+„Holen").
 
 **Nachentschieden am 13. Oktober 2026** — was in den ersten Phasen offen
 geblieben war, auf *„kannst du mich alles abfragen, was offen ist oder wo ich
