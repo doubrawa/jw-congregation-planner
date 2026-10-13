@@ -6604,17 +6604,21 @@ mal selbstständig ein simplify und code-review, damit wir am ende das nicht
 machen müssen … clean code programmierung ist wichtig"*. Tablet- und
 Desktop-Fassung entstehen je Bildschirm in seiner Phase, nicht am Schluss.
 
-**Stand am 13. Oktober 2026:** gepusht und live sind die Phasen 1 bis 5d — Menü
+**Stand am 13. Oktober 2026:** gepusht und live sind die Phasen 1 bis 5e — Menü
 an der Seite und Planen als Modus, Start, Meine Aufgaben, Profil, Mitteilungen,
 die Zusammenkünfte, der Predigtdienst und die weiteren Pläne zum Ansehen, „Die
 Woche planen" (`afca2da`), ein Gesamt-Review der Phasen 1 bis 5a (`1d084f1`),
 „Woche einrichten" mit dem Programm (`1660aab`), „Automatisch" und „Plan
-senden" (`bf80ac6`) sowie das Zuteilen — als Blatt mit Vorschlag, Suche und
-„zuletzt" (`06e16aa`), am Desktop als Spalte neben dem Plan (`35293e9`). Es
-folgen 5e bis 5g (der Rest von Planen), 6 Verwaltung, 7 Trolleys, 8 Anmelden
-per Link, 9 Druckbögen und 10 Feinschliff. Nicht gebaut ist bisher die
-Wochenspalte links aus `GDesktopPlanen` („Planung" mit Wochenkarten und
-„Holen").
+senden" (`bf80ac6`), das Zuteilen — als Blatt mit Vorschlag, Suche und
+„zuletzt" (`06e16aa`), am Desktop als Spalte neben dem Plan (`35293e9`) — und
+der Predigtdienst beim Planen: die Treffpunkte der Woche mit dem Leiter als
+Platz und Konflikten je Tag (`a5a73e8`), der Grundplan in Tageskarten
+(`315298c`) und die Gruppenbesuche von Hand mit Vorschlag statt „Reihum
+verteilen" (`13ca3d0`). Es folgen 5f und 5g (Weitere Pläne planen, Planen
+an Tablet und Desktop), 6 Verwaltung, 7 Trolleys, 8 Anmelden per Link, 9
+Druckbögen und 10 Feinschliff. Nicht gebaut ist bisher die Wochenspalte links
+aus `GDesktopPlanen` („Planung" mit Wochenkarten und „Holen") — sie kommt in
+Phase 10.
 
 **Nachentschieden am 13. Oktober 2026** — was in den ersten Phasen offen
 geblieben war, auf *„kannst du mich alles abfragen, was offen ist oder wo ich
@@ -6633,6 +6637,14 @@ eventuell nochmal etwas nachentscheiden sollte?"*:
   Betreiber ein. Auf echten Geräten wird nach dem Umbau geprüft.
 - T114 ist entschieden (ein Konto je Versammlung, neue Versammlungen per
   Skript), T106 geht in Phase 8 auf, und Zusagen bleiben am Platz.
+- Die Wochenspalte links am Desktop (`GDesktopPlanen`) kommt in Phase 10.
+- Gruppenbesuche **ohne Automatik**: *„der dienstaufseher legt die besuche
+  einfach selber manuell an … maximal 12 termine im jahr"*. Beim Anlegen
+  vorbelegt sind die Gruppe, die am längsten nicht dran war, die Woche einen
+  Monat nach dem letzten Besuch und dessen Besucher. „Takt", „Reihenfolge" und
+  „Reihum füllen" aus dem Entwurf entfallen, ebenso „Reihum verteilen".
+- Der Grundplan bekommt **keinen festen Leiter** („Nein, wie heute") — die
+  Zeile „Leiter: …" aus `GGrundplan` entfällt.
 
 ---
 
@@ -6758,7 +6770,7 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
-| **T121** | Neues Design | ☐ Umbau läuft, Phase für Phase auf main: 1 bis 5b sind live (zuletzt `1660aab`, „Woche einrichten" und Programm), es folgen 5c bis 10. Am 13. Oktober nachentschieden, was die ersten Phasen offen ließen; die Leinwand wird nicht mehr veröffentlicht. T106 und T114 gehen hier auf (Phase 8) |
+| **T121** | Neues Design | ☐ Umbau läuft, Phase für Phase auf main: 1 bis 5e sind live (zuletzt `13ca3d0`, Gruppenbesuche von Hand), es folgen 5f bis 10. Am 13. Oktober nachentschieden, was die ersten Phasen offen ließen; die Leinwand wird nicht mehr veröffentlicht. T106 und T114 gehen hier auf (Phase 8) |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
@@ -7136,7 +7148,7 @@ Umbau T121 offen; was sonst aussteht, braucht den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **T121** | Neues Design | Umbau läuft, Phase für Phase auf main: 1 bis 5b sind live, 5c bis 10 folgen (siehe T121). Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
+| **T121** | Neues Design | Umbau läuft, Phase für Phase auf main: 1 bis 5e sind live, 5f bis 10 folgen (siehe T121). Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
 | **Vor Phase 8** | Resend, `INVITE_FROM` | richtet der Betreiber ein (zugesagt am 13. Oktober). Ob danach noch ein SMTP-Server für Supabase Auth gebraucht wird, klärt Phase 8 — ohne Passwort und Registrieren fallen dessen Mails weg |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
