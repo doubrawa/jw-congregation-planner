@@ -452,7 +452,10 @@ export type AppAction =
   | { type: 'setRecovery'; on: boolean }
   | { type: 'startImport' }
   | { type: 'addImportedWeek'; week: Week } // die von jw.org geholte Woche
-  | { type: 'mergeWeekAlt'; wi: number; alt: Record<string, WeekVariant> } // nachgeladene Sprachvarianten
+  // Nachgeladene Sprachvarianten — die Woche über ihre Kennung (T66), nicht über
+  // den Index: Der Abruf dauert, und ein Nachladen dazwischen kann das
+  // Ladefenster verschieben.
+  | { type: 'mergeWeekAlt'; start: string; alt: Record<string, WeekVariant> }
   | { type: 'stopImport' } // Import abgebrochen/fehlgeschlagen
   | { type: 'assign'; name: string; pid?: string; rolle?: string; herkunft?: string; extern?: boolean } // auf state.slotSel; "" = entfernen; pid = Person-Id (fehlt bei Gastredner); rolle nur Gastredner-Slots; extern = Freitext-Leiter eines Treffpunkts (Kreisaufseher)
   // Aktuelle Woche; Bereich (Default: alles) und Umfang: die gezeigte

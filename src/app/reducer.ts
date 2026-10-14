@@ -899,14 +899,18 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         toast: toastKey(state, 'toastImportiert'),
       }
     }
-    case 'mergeWeekAlt':
-      // Nachgeladene Sprachvarianten in die bestehende Woche mischen
+    case 'mergeWeekAlt': {
+      // Nachgeladene Sprachvarianten in die bestehende Woche mischen — in die
+      // mit diesem Montag. Bis zum 15.10.2026 stand hier der Index vom Beginn
+      // des Abrufs; lud die App inzwischen neu und hatte sich das Fenster
+      // verschoben, bekam die Nachbarwoche die Texte. Gibt es die Woche nicht
+      // mehr, ändert sich nichts.
+      if (!action.start || !state.weeks.some((w) => w.start === action.start)) return state
       return {
         ...state,
-        weeks: state.weeks.map((w, i) =>
-          i === action.wi ? { ...w, alt: { ...w.alt, ...action.alt } } : w,
-        ),
+        weeks: state.weeks.map((w) => (w.start === action.start ? { ...w, alt: { ...w.alt, ...action.alt } } : w)),
       }
+    }
     case 'stopImport':
       return { ...state, importing: false }
     case 'assign': {

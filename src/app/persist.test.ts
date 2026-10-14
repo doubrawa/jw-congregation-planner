@@ -771,7 +771,7 @@ describe('LAC / Import / Vortrag', () => {
 
   it('mergeWeekAlt speichert die betroffene Woche', () => {
     const next = st()
-    persist(st(), next, { type: 'mergeWeekAlt', wi: 1, alt: {} })
+    persist(st(), next, { type: 'mergeWeekAlt', start: next.weeks[1]!.start!, alt: {} })
     expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[1], false)
   })
 })
@@ -803,7 +803,7 @@ describe('Index außerhalb des Fensters', () => {
 
   it('mergeWeekAlt auf eine Woche, die es nicht gibt, schreibt nichts', () => {
     const weeks = buildDemoWeeks() // geteilt: unberührte Wochen sind identisch
-    persist(st({ weeks }), st({ weeks }), { type: 'mergeWeekAlt', wi: WEIT_DRAUSSEN, alt: {} })
+    persist(st({ weeks }), st({ weeks }), { type: 'mergeWeekAlt', start: '2099-01-05', alt: {} })
     expect(data.saveWeek).not.toHaveBeenCalled()
   })
 

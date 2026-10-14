@@ -820,9 +820,22 @@ describe('Import', () => {
   it('mergeWeekAlt mischt Sprachvarianten; stopImport beendet', () => {
     const s = makeState()
     const alt = { en: s.weeks[0] }
-    const next = reducer(s, { type: 'mergeWeekAlt', wi: 0, alt })
+    const next = reducer(s, { type: 'mergeWeekAlt', start: s.weeks[0]!.start!, alt })
     expect(next.weeks[0].alt).toMatchObject({ en: expect.anything() })
     expect(reducer(makeState({ importing: true }), { type: 'stopImport' }).importing).toBe(false)
+  })
+
+  it('mergeWeekAlt findet die Woche über ihren Montag — auch nach einem verschobenen Fenster (15.10.2026)', () => {
+    // Der Abruf der Varianten dauert. Lud die App dazwischen neu und war eine
+    // Woche vorne herausgefallen, zeigte der alte Index auf die Nachbarwoche.
+    const s = makeState()
+    const ziel = s.weeks[1]!
+    const verschoben = { ...s, weeks: s.weeks.slice(1) }
+    const next = reducer(verschoben, { type: 'mergeWeekAlt', start: ziel.start!, alt: { en: ziel } })
+    expect(next.weeks.find((w) => w.start === ziel.start)?.alt).toMatchObject({ en: expect.anything() })
+    expect(next.weeks.filter((w) => w.alt?.en).length).toBe(1)
+    // Gibt es die Woche nicht mehr, ändert sich nichts.
+    expect(reducer(verschoben, { type: 'mergeWeekAlt', start: '2099-01-05', alt: { en: ziel } })).toBe(verschoben)
   })
 })
 

@@ -5727,6 +5727,13 @@ export const KATALOG = [
     ersetzen: "  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)",
   },
   {
+    id: "varianten-ueber-montag",
+    datei: "src/app/reducer.ts",
+    regel: "Nachgeladene Sprachvarianten finden ihre Woche über den Montag; gibt es sie nicht mehr, ändert sich nichts.",
+    suchen: "      if (!action.start || !state.weeks.some((w) => w.start === action.start)) return state\n",
+    ersetzen: "",
+  },
+  {
     id: "alle-seiten-holt-weiter",
     datei: "src/lib/data.ts",
     regel: "Wachsende Tabellen kommen über die Zeilengrenze von PostgREST hinweg vollständig an — Seite für Seite.",

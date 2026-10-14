@@ -131,7 +131,7 @@ export function useWochenImport(): {
       block.forEach((gap, j) => {
         const filled = geholt[j]
         if (filled?.ok && filled.week.alt) {
-          dispatch({ type: 'mergeWeekAlt', wi: gap.wi, alt: filled.week.alt })
+          dispatch({ type: 'mergeWeekAlt', start: gap.start, alt: filled.week.alt })
         }
       })
     }
