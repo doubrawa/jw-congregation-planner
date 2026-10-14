@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
-import { PrivToggle, RechteToggles } from './PrivToggle'
+import { PrivToggle, RechteKarte } from './PrivToggle'
+import { dict } from '../i18n/ui'
 import { emptyQualifications } from '../data/helpers'
 import type { Member, Person } from '../data/types'
  import {
@@ -141,7 +142,8 @@ describe('PrivToggle — Hinweis auf Brüder-Bereiche (F4)', () => {
  * Vormerkung anzeigt, zeigt bei jedem, dessen Person aus dem NWS-Import
  * stammt, „aus" — auch beim Betreiber selbst, der sehr wohl Admin ist.
  */
-describe('RechteToggles — welches der beiden Rechte gilt', () => {
+describe('RechteKarte — welches der beiden Rechte gilt', () => {
+  const t = dict('de')
   const konto = (userId: string, personId: string | null, rechte: { planner?: boolean; zuteiler?: boolean }): Member => ({
     userId,
     email: `${userId}@example.org`,
@@ -153,11 +155,11 @@ describe('RechteToggles — welches der beiden Rechte gilt', () => {
   const zeige = (over: Partial<AppState>, p: Person = person(), update = vi.fn()) =>
     render(
       <Buehne state={{ ...demoZustand(), userId: 'u-ich', ...over }}>
-        <RechteToggles person={p} update={update} />
+        <RechteKarte person={p} update={update} />
       </Buehne>,
     )
-  const schalter = (r: ReturnType<typeof zeige>, name: 'Admin' | 'Planer') =>
-    r.getByRole('switch', { name }) as HTMLButtonElement
+  const schalter = (r: ReturnType<typeof zeige>, recht: 'Admin' | 'Planer') =>
+    r.getByRole('switch', { name: recht === 'Admin' ? t.planerLbl : t.rechtPlanen }) as HTMLButtonElement
 
   it('nimmt das Konto, nicht die Vormerkung an der Person', () => {
     // Genau der gemeldete Fall: `persons.planner` false (der Personen-Import

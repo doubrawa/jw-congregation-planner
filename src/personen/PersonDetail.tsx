@@ -1,294 +1,148 @@
+import { useState } from 'react'
 import { useApp } from '../app/context'
 import { istAngemeldet } from '../app/eigene-person'
-import { AbwesenheitEintragen } from '../components/AbwesenheitEintragen'
+import { useKalendertag } from '../app/useKalendertag'
+import { Zeichen } from '../bausteine/Zeichen'
+import { AbwesenheitenKarte } from '../components/AbwesenheitenKarte'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
-import { useZweiTipp } from '../components/useZweiTipp'
-import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
-import { familyMembers, initials, namensDublette, personCompare, personLabel, serviceQualKey } from '../data/helpers'
-import { LOCALES } from '../i18n/langs'
-import { fill, useT } from '../i18n/useT'
-import { ROLE_KEY } from '../i18n/ui'
+import { UnteransichtKopf } from '../components/UnteransichtKopf'
+import { aufgabenJeWoche } from '../data/auslastung'
+import { initials, personLabel } from '../data/helpers'
+import { montagVon } from '../data/meeting-dates'
 import type { Person } from '../data/types'
+import { LOCALES } from '../i18n/langs'
+import { ROLE_KEY } from '../i18n/ui'
+import { fill, useT } from '../i18n/useT'
+import { BereicheBlatt } from './BereicheBlatt'
+import { bereicheDerPerson, bereichsGruppen } from './bereiche'
 import { KontoCard } from './KontoCard'
+import { PersonBearbeitenBlatt } from './PersonBearbeitenBlatt'
 import { PersonTimeline } from './PersonTimeline'
-import { privLabel } from './priv-label'
-import { PrivToggle, RechteToggles } from './PrivToggle'
+import { RechteKarte } from './PrivToggle'
+
+/** Über wie viele Wochen die Auslastung zurückblickt (Entwurf `GPerson`). */
+const AUSLASTUNG_WOCHEN = 8
 
 /**
- * Personen-Detail: Stammdaten, Geschlecht/Rolle/Gruppe, die Aufgabenbereich-
- * Toggles (feste Bereiche + je konfiguriertem Hilfsdienst einer), die festen
- * Wachtturm-Rollen samt Planer-Recht, im Produktionsmodus die Konto-Karte.
+ * **Eine Person** (T121, Entwurf `GPerson`): oben Name, Gruppe und Rolle, der
+ * Stift öffnet „Person bearbeiten". Darunter das Konto als Spur, die
+ * Aufgabenbereiche als Chips („Ändern" öffnet die Schalter), die Auslastung
+ * der letzten Wochen, die Zeitleiste, die Abwesenheiten und die Rechte — zuletzt
+ * „Person entfernen".
+ *
+ * Am Handy eine Unteransicht der Liste mit Zurück; am Desktop steht sie rechts
+ * neben der Liste (`spalte`), dann ohne Zurück.
  */
-export function PersonDetail({ person }: { person: Person }) {
+export function PersonDetail({ person, spalte = false }: { person: Person; spalte?: boolean }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
-  // Zwei-Tipp-Bestätigung des Löschens (siehe unten).
-  const loeschen = useZweiTipp(() => dispatch({ type: 'removePerson', id: person.id }))
-  const update = (patch: Partial<Person>) =>
-    dispatch({ type: 'updatePerson', id: person.id, patch })
-
-  const family = familyMembers(state.persons, person)
-  const famIds = new Set([person.id, ...family.map((m) => m.id)])
-  const addableFamily = state.persons.filter((p) => !famIds.has(p.id)).sort((a, b) => personCompare(a, b, state.lang))
-
-  /**
-   * Zwei Bereiche statt einem, jeder für sich alphabetisch: Aufgaben und
-   * Hilfsdienste sind verschiedene Dinge — die einen kommen aus dem Programm,
-   * die anderen aus den Einstellungen der Versammlung —, und in einer Liste
-   * aus einem Dutzend Schaltern sucht man nach dem Wort, nicht nach der
-   * Programmreihenfolge.
-   *
-   * Sortiert wird nach der **übersetzten** Beschriftung (wie in der
-   * Filterleiste der Liste). Nach dem Schlüssel stünde jede Sprache in
-   * deutscher Reihenfolge da. `numeric` hält „Ordner 2" vor „Ordner 10".
-   */
-  const locale = LOCALES[state.lang]
-  const nachLabel = (a: { label: string }, b: { label: string }): number =>
-    a.label.localeCompare(b.label, locale, { numeric: true })
-
-  const aufgaben = QUALIFICATION_ORDER.map((key) => ({ key, label: privLabel(t, key) })).sort(
-    nachLabel,
+  const [blatt, setBlatt] = useState<'bearbeiten' | 'bereiche' | null>(null)
+  const update = (patch: Partial<Person>) => dispatch({ type: 'updatePerson', id: person.id, patch })
+  const gruppe = state.groups.find((g) => g.id === person.grp)
+  const unter = [gruppe ? tu(gruppe.name) : '', t[ROLE_KEY[person.role]]].filter(Boolean).join(' · ')
+  // Angemeldet: der Ring voll in Minze; sonst gestrichelt — wie die Punkte der Liste.
+  const angemeldet = state.members.some((m) => m.personId === person.id)
+  const stift = (
+    <button type="button" className="rund-knopf" aria-label={t.personBearbeiten} onClick={() => setBlatt('bearbeiten')}>
+      <Zeichen name="stift" />
+    </button>
   )
-  // Je Hilfsdienst ein Bereich; Gruppen-Dienste (Reinigung) rotieren Gruppen
-  // statt Personen und haben deshalb keinen.
-  const hilfsdienste = state.services
-    .filter((service) => !service.groups)
-    .map((service) => ({ key: serviceQualKey(service.key), label: tu(service.name) }))
-    .sort(nachLabel)
-
-  const fields: Array<[keyof Person & ('fn' | 'ln' | 'tel' | 'mail'), string]> = [
-    ['fn', t.vorname],
-    ['ln', t.nachname],
-    ['tel', t.telefon],
-    ['mail', t.emailLbl],
-  ]
-
-  /*
-   * **Trägt schon jemand diesen Namen?** (T110)
-   *
-   * Die Meldung hängt an beiden Namensfeldern, denn die Regel gilt dem Paar —
-   * wer sie nur an den Nachnamen schriebe, ließe den Planer am Vornamen
-   * suchen, was falsch ist. Sie nennt die andere Person beim Namen; in einer
-   * Liste von dreihundert bringt „gibt es schon" allein niemanden weiter.
-   *
-   * Getippt werden darf trotzdem weiter: Auf dem Weg von „Paul Beisp" zu
-   * „Paul Beispiel sen." kommt man zwangsläufig durch „Paul Beispiel". Angehalten
-   * wird deshalb nicht die Eingabe, sondern das **Speichern** (`persist.ts`) —
-   * sonst ginge der Zwischenstand hinaus und käme als Schreibfehler zurück.
-   * Wer das Detail mit der Meldung verlässt, bekommt den Namen vom Öffnen
-   * zurück (`dubletteVerwerfen` im Reducer).
-   */
-  const dublette = namensDublette(state.persons, person)
 
   return (
-    <section className="screen">
-      <button
-        type="button"
-        className="pers-back"
-        onClick={() => dispatch({ type: 'selectPerson', id: null })}
-      >
-        <span className="pers-back-chev" aria-hidden="true">
-          ‹
+    <section className="screen person">
+      {!spalte && (
+        <UnteransichtKopf titel={t.person} onZurueck={() => dispatch({ type: 'selectPerson', id: null })}>
+          {stift}
+        </UnteransichtKopf>
+      )}
+
+      <div className="person-kopf">
+        <span className={angemeldet ? 'person-bild is-angemeldet' : 'person-bild'} aria-hidden="true">
+          <span>{initials(person)}</span>
         </span>
-        {t.allePersonen.replace(/^[‹›]\s*/, '')}
-      </button>
-
-      <div className="pers-detail-head">
-        <span className="avatar avatar--tint avatar--54">{initials(person)}</span>
-        <div>
-          <h1 className="pers-detail-name" dir="auto">{personLabel(person)}</h1>
-          <div className="pers-detail-sub">
-            {t[ROLE_KEY[person.role]]} · {fill(t.congLabel, { name: state.congregation.name })}
-          </div>
+        <div className="person-wer">
+          <h2 className="person-name" dir="auto">
+            {personLabel(person)}
+          </h2>
+          <span className="person-unter">{unter}</span>
         </div>
-      </div>
-
-      <div className="panel panel--lead panel--pb16" data-farbe="neutral">
-        <h2 className="panel-label">{t.stammdaten}</h2>
-        {fields.map(([key, label]) => (
-          <div key={key} className="pers-field">
-            <label className="field-label" htmlFor={`pers-${key}`}>
-              {label}
-            </label>
-            {/*
-              `dir="auto"` statt der Richtung der Oberfläche: Was hier steht,
-              gehört einer Person, nicht der App. Ein arabischer Name soll von
-              rechts nach links stehen, ein lateinischer von links nach rechts —
-              und eine **Telefonnummer** immer von links nach rechts.
-
-              Der letzte Fall ist der, der wirklich falsch aussah: In einer
-              rechts-nach-links-Oberfläche zerlegt der Bidi-Algorithmus
-              eine Nummer wie „+49 30 23125 009" an den Leerzeichen und dreht
-              die Blöcke um — angezeigt stand „009 23125 30 49+". Keine
-              falsche Zeichenkette, aber eine falsche Nummer. `auto` nimmt das
-              erste Zeichen mit starker Richtung; die Nummer hat keines und
-              läuft deshalb links nach rechts.
-            */}
-            <input
-              id={`pers-${key}`}
-              className="field-input"
-              type="text"
-              dir="auto"
-              value={person[key] ?? ''}
-              onChange={(e) => update({ [key]: e.target.value })}
-              aria-invalid={dublette && (key === 'fn' || key === 'ln') ? true : undefined}
-              aria-describedby={
-                dublette && (key === 'fn' || key === 'ln') ? 'pers-name-dublette' : undefined
-              }
-            />
-            {key === 'ln' && dublette && (
-              /* Direkt unter dem Nachnamen, auf den sie sich bezieht — nicht
-                 erst hinter Telefon und E-Mail, wo sie bis zum 24.9.2026 stand.
-                 `role="alert"` liest ein Screenreader vor, sobald die Meldung
-                 erscheint — ohne sie bliebe der Hinweis für ihn unsichtbar, und
-                 gespeichert wird ja nichts mehr. */
-              <p className="pers-field-fehler" id="pers-name-dublette" role="alert" dir="auto">
-                {fill(t.nameDoppelt, { name: personLabel(dublette) })}
-              </p>
-            )}
-          </div>
-        ))}
-        <div className="pers-role-block">
-          <div className="field-label">{t.geschlecht}</div>
-          <div className="role-chips">
-            <button
-              type="button"
-              className={!person.female ? 'role-chip is-active' : 'role-chip'}
-              aria-pressed={!person.female}
-              onClick={() => update({ female: false })}
-            >
-              {t.bruder}
-            </button>
-            <button
-              type="button"
-              className={person.female ? 'role-chip is-active' : 'role-chip'}
-              aria-pressed={Boolean(person.female)}
-              onClick={() => update({ female: true })}
-            >
-              {t.schwester}
-            </button>
-          </div>
-        </div>
-        <div className="pers-role-block">
-          <div className="field-label">{t.rolle}</div>
-          <div className="role-chips">
-            {ROLE_ORDER.map((role) => (
-              <button
-                key={role}
-                type="button"
-                className={person.role === role ? 'role-chip is-active' : 'role-chip'}
-                aria-pressed={person.role === role}
-                onClick={() => update({ role })}
-              >
-                {t[ROLE_KEY[role]]}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="pers-role-block">
-          <label className="field-label" htmlFor="pers-grp">
-            {t.gruppeLbl}
-          </label>
-          <select
-            id="pers-grp"
-            className="mem-select pers-grp-select"
-            value={person.grp ?? ''}
-            onChange={(e) => update({ grp: e.target.value || null })}
-          >
-            <option value="">—</option>
-            {state.groups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {tu(g.name)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="pers-role-block">
-          <div className="field-label">{t.familieLabel}</div>
-          {family.length > 0 && (
-            <div className="fam-list">
-              {family.map((m) => (
-                <span key={m.id} className="fam-chip">
-                  {personLabel(m)}
-                  <EntfernenKnopf
-                    className="fam-remove"
-                    frage={t.entfernenSicher}
-                    onEntfernen={() => dispatch({ type: 'setFamily', id: person.id, memberId: m.id, add: false })}
-                  />
-                </span>
-              ))}
-            </div>
-          )}
-          <select
-            className="mem-select pers-grp-select"
-            aria-label={t.familieHinzu}
-            value=""
-            onChange={(e) => {
-              if (e.target.value)
-                dispatch({ type: 'setFamily', id: person.id, memberId: e.target.value, add: true })
-            }}
-          >
-            <option value="">{t.familieHinzu}</option>
-            {addableFamily.map((p) => (
-              <option key={p.id} value={p.id}>
-                {personLabel(p)}
-              </option>
-            ))}
-          </select>
-          <p className="panel-hint">{t.familieHint}</p>
-        </div>
-      </div>
-
-      <PersonTimeline person={person} />
-
-      {/*
-       * Nur das Eintragen (T121: ein Blatt mit Kalender): Die Zeiträume stehen oben in
-       * der Zeitleiste, mit Beginn und Ende als eigene Punkte und der Strecke
-       * dazwischen eingefärbt. Eine zweite Liste darunter wiederholte sie nur —
-       * und zeigte gerade das nicht, worauf es ankommt: welche Zuteilung in
-       * einen Zeitraum fällt.
-       */}
-      <div className="panel panel--pb10" data-farbe="neutral">
-        <h2 className="panel-label">{t.abwesenheiten}</h2>
-        <AbwesenheitEintragen personId={person.id} />
-      </div>
-
-      <div className="panel panel--pb10" data-farbe="petrol">
-        <h2 className="panel-label">{t.aufgabenbereiche}</h2>
-        {aufgaben.map(({ key, label }) => (
-          <PrivToggle key={key} qkey={key} label={label} person={person} update={update} bruderLabel={t.bruder} />
-        ))}
-      </div>
-
-      <div className="panel panel--pb10" data-farbe="neutral2">
-        <h2 className="panel-label">{t.hilfsdienste}</h2>
-        {hilfsdienste.map(({ key, label }) => (
-          <PrivToggle key={key} qkey={key} label={label} person={person} update={update} />
-        ))}
-      </div>
-
-      <div className="panel panel--pb10" data-farbe="acc">
-        <h2 className="panel-label">{t.wtRollenLabel}</h2>
-        <p className="panel-hint">{t.wtRollenHint}</p>
-        {WT_ROLE_ORDER.map((key) => (
-          <PrivToggle key={key} qkey={key} label={privLabel(t, key)} person={person} update={update} bruderLabel={t.bruder} />
-        ))}
-        <RechteToggles person={person} update={update} />
+        {spalte && stift}
       </div>
 
       {istAngemeldet(state) && <KontoCard person={person} />}
+      <BereicheKarte person={person} onAendern={() => setBlatt('bereiche')} />
+      <AuslastungKarte person={person} />
+      <PersonTimeline person={person} />
+      <AbwesenheitenKarte person={person} />
+      <RechteKarte person={person} update={update} />
 
-      {/* Zwei-Tipp-Bestätigung wie beim Leeren der Zuteilungen (`useZweiTipp`):
-          der erste Tipp bewaffnet den Knopf und nennt die Folge, erst der
-          zweite löscht. */}
-      <button
-        type="button"
-        className={`pers-delete${loeschen.armed ? ' is-armed' : ''}`}
-        onClick={loeschen.onClick}
-        onBlur={loeschen.onBlur}
-      >
-        {loeschen.armed ? fill(t.confirmPersonDel, { name: personLabel(person) }) : t.persLoeschen}
-      </button>
+      {/* Zwei Tipps: Der erste nennt die Folge, erst der zweite entfernt. */}
+      <EntfernenKnopf
+        className="knopf-leise knopf-entfernen person-entfernen"
+        text={t.persLoeschen}
+        frage={fill(t.confirmPersonDel, { name: personLabel(person) })}
+        onEntfernen={() => dispatch({ type: 'removePerson', id: person.id })}
+      />
+
+      {blatt === 'bearbeiten' && <PersonBearbeitenBlatt person={person} onClose={() => setBlatt(null)} />}
+      {blatt === 'bereiche' && <BereicheBlatt person={person} onClose={() => setBlatt(null)} />}
+    </section>
+  )
+}
+
+/**
+ * Die Aufgabenbereiche als Chips, nach Gruppen — nur, was die Person hat.
+ * „Ändern" öffnet die Schalter (entschieden am 11.10.2026: „Chips.").
+ */
+function BereicheKarte({ person, onAendern }: { person: Person; onAendern: () => void }) {
+  const { state } = useApp()
+  const { t, tu } = useT()
+  const gruppen = bereicheDerPerson(bereichsGruppen(t, tu, state.services, LOCALES[state.lang]), person)
+  return (
+    <section className="karte person-karte">
+      <div className="person-karte-kopf">
+        <h2 className="abschnitt-titel karte-titel">{t.aufgabenbereiche}</h2>
+        <button type="button" className="knopf-leise person-aendern" onClick={onAendern}>
+          {t.aendern}
+        </button>
+      </div>
+      {gruppen.length === 0 && <p className="klein-text">{t.keineBereiche}</p>}
+      {gruppen.map((g) => (
+        <div key={g.art} className="person-bereiche">
+          <span className="klein-text">{g.titel}</span>
+          <ul className="person-chips">
+            {g.bereiche.map((b) => (
+              <li key={b.key} className="person-chip">
+                {b.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </section>
+  )
+}
+
+/**
+ * **Auslastung**: wie viele Aufgaben in den letzten Wochen, je Woche ein Punkt —
+ * voll, wo die Person dran war (gezählt wie beim Zuteilen). Die Punkte sind
+ * ein Bild der Zahl darüber; vorgelesen wird die Zahl.
+ */
+function AuslastungKarte({ person }: { person: Person }) {
+  const { state } = useApp()
+  const { t } = useT()
+  const heute = useKalendertag()
+  const jeWoche = aufgabenJeWoche(state.weeks, person, state.services, montagVon(heute), AUSLASTUNG_WOCHEN)
+  const summe = jeWoche.reduce((a, b) => a + b, 0)
+  return (
+    <section className="karte person-karte">
+      <h2 className="abschnitt-titel karte-titel">{t.auslastung}</h2>
+      <p>{fill(t.aufgabenLetzteW, { w: AUSLASTUNG_WOCHEN, n: summe })}</p>
+      <span className="person-wochen" aria-hidden="true">
+        {jeWoche.map((n, i) => (
+          <span key={i} className={n > 0 ? 'person-woche is-voll' : 'person-woche'} />
+        ))}
+      </span>
     </section>
   )
 }

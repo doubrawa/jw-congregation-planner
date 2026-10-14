@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { aufgabenAbgeleitet, isNameless, reducer } from './reducer'
+import { aufgabenAbgeleitet, reducer } from './reducer'
 import { hatAuxKlasse } from '../data/aux-class'
 import type { AppAction, AppState } from './context'
 import type { HydratePayload } from './context'
@@ -18,7 +18,7 @@ import {
   DEMO_SERVICES,
 } from '../../tests/testdaten/testdaten'
 import { LABEL_VORTRAG } from '../data/constants'
-import { displayName, isGuestRole, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
+import { displayName, isGuestRole, isNameless, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
 import { allePlaetze, platzKey } from '../data/plaetze'
 import { fsLeiterBinden, fsTaskKey, genFsWeek, neueRegel } from '../data/fs'
 import { pidsNachtragen } from '../data/namensbindung'

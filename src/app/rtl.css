@@ -55,9 +55,5 @@
 
 /* Die Wochen-Blätter-Pfeile spiegeln sich seit T121 selbst: Sie sind `Zeichen`
    mit Richtung (`is-richtung`, bausteine.css). Eine Regel hier auf
-   `.week-arrow` kippte sie ein zweites Mal — beide zeigten dann nach innen. */
-
-/* „Zurück"-Chevron (‹ Alle Personen) in RTL nach rechts zeigen lassen. */
-[dir='rtl'] .pers-back-chev {
-  transform: scaleX(-1);
-}
+   `.week-arrow` kippte sie ein zweites Mal — beide zeigten dann nach innen.
+   Der Zurück-Pfeil der Person ist seit T121 ebenso ein `Zeichen`. */

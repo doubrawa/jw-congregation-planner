@@ -346,7 +346,7 @@ describe('Alle Bausteine gegen alle Stylesheets', () => {
     // Fänden die Muster nichts, gingen die Fälle unten leer und grün durch.
     expect(regeln.size).toBeGreaterThan(300)
     expect(bausteine.length).toBeGreaterThan(50)
-    expect(regeln.has('pers-field-fehler')).toBe(true)
+    expect(regeln.has('feld-fehler')).toBe(true)
   })
 
   it.skipIf(imProbelauf)('jede Klasse eines Bausteins hat eine Regel — oder steht als Marke in der Liste', () => {

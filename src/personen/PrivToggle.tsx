@@ -1,14 +1,14 @@
 import { useApp } from '../app/context'
+import { Punkt } from '../bausteine/Punkt'
+import { Switch } from '../components/Switch'
 import { istBruderBereichBeiSchwester, privWert } from '../data/helpers'
 import { rechteDerPerson } from '../data/rechte'
-import { useT } from '../i18n/useT'
 import type { Member, Person } from '../data/types'
-import { Switch } from '../components/Switch'
-
+import { useT } from '../i18n/useT'
 
 type UpdatePerson = (patch: Partial<Person>) => void
 
-/** Einzelner Aufgabenbereich-/Rollen-Schalter im Personen-Detail. */
+/** Einzelner Aufgabenbereich-/Rollen-Schalter (Blatt „Aufgabenbereiche", Freigabe-Liste eines Dienstes). */
 export function PrivToggle({
   qkey,
   label,
@@ -36,12 +36,12 @@ export function PrivToggle({
   // ein eigener Text gäbe es nur auf Deutsch.
   const auffaellig = on && istBruderBereichBeiSchwester(person, qkey)
   return (
-    <div className="priv-row">
-      <span className="priv-label">
+    <div className="schalter-zeile bereich-zeile">
+      <span className="bereich-name">
         {label}
         {auffaellig && bruderLabel && (
           <span className="priv-warn" role="img" aria-label={bruderLabel} title={bruderLabel}>
-            ⚠
+            <Punkt art="problem" />
           </span>
         )}
       </span>
@@ -61,23 +61,40 @@ export function PrivToggle({
 }
 
 /**
- * Die Rechte einer Person (Feste Rollen): **Planer** und **Admin** (4.10.2026).
+ * **Die Rechte einer Person** (T121, Entwurf `GPerson`): „Darf planen" und
+ * „Admin", je mit einer Zeile, was es heißt.
  *
  * Der Planer teilt zu und sendet; der Admin darf alles — Planen, Personen,
- * Einstellungen. Beide werden in verknüpfte Konten gespiegelt; das eigene
- * Recht ist gesperrt (sonst könnte sich der letzte Admin selbst aussperren).
- * Der Planer-Schalter steht bei einem Admin an und gesperrt: Das Recht hat er
- * ohnehin, und ein Schalter, der „aus" zeigt, behauptete das Gegenteil.
+ * Einstellungen. Beide werden in verknüpfte Konten gespiegelt; welche der
+ * beiden Stellen zählt, an denen ein Recht steht, sagt `rechteDerPerson`. Das
+ * eigene Recht ist gesperrt (sonst könnte sich der letzte Admin selbst
+ * aussperren). „Darf planen" steht bei einem Admin an und gesperrt: Das Recht
+ * hat er ohnehin, und ein Schalter, der „aus" zeigt, behauptete das Gegenteil.
  */
-export function RechteToggles({ person, update }: { person: Person; update: UpdatePerson }) {
+export function RechteKarte({ person, update }: { person: Person; update: UpdatePerson }) {
+  const { state } = useApp()
   const { t } = useT()
+  const { admin, planer } = rechteDerPerson(state.members, person)
+  const eigen = eigenesKonto(state.members, state.userId, person)
   return (
-    <>
+    <section className="karte person-karte">
+      <h2 className="abschnitt-titel karte-titel">{t.rechte}</h2>
       {/* Aufsteigend: erst das kleinere Recht, dann das, das es einschließt. */}
-      <ZuteilerToggle person={person} update={update} />
-      <PlannerToggle person={person} update={update} />
-      <p className="panel-hint">{t.rechteHint}</p>
-    </>
+      <RechtZeile
+        name={t.rechtPlanen}
+        unter={t.rechtPlanenUnter}
+        an={admin || planer}
+        gesperrt={eigen || admin}
+        onToggle={() => update({ zuteilerVorgemerkt: !planer })}
+      />
+      <RechtZeile
+        name={t.planerLbl}
+        unter={t.rechtAdminUnter}
+        an={admin}
+        gesperrt={eigen}
+        onToggle={() => update({ plannerVorgemerkt: !admin })}
+      />
+    </section>
   )
 }
 
@@ -86,46 +103,26 @@ function eigenesKonto(members: readonly Member[], userId: string | null, person:
   return members.some((m) => m.personId === person.id && m.userId === userId)
 }
 
-/** Planer-Recht (zuteilen und senden) — siehe `RechteToggles`. */
-function ZuteilerToggle({ person, update }: { person: Person; update: UpdatePerson }) {
-  const { state } = useApp()
-  const { t } = useT()
-  // Wie beim Admin entscheidet das Konto, sobald es eines gibt (`rechteDerPerson`).
-  const { admin, planer } = rechteDerPerson(state.members, person)
-  const gesperrt = eigenesKonto(state.members, state.userId, person) || admin
+function RechtZeile({
+  name,
+  unter,
+  an,
+  gesperrt,
+  onToggle,
+}: {
+  name: string
+  unter: string
+  an: boolean
+  gesperrt: boolean
+  onToggle: () => void
+}) {
   return (
-    <div className={gesperrt ? 'priv-row priv-row--locked' : 'priv-row'}>
-      <span className="priv-label">{t.rollePlaner}</span>
-      <Switch
-        on={admin || planer}
-        label={t.rollePlaner}
-        disabled={gesperrt}
-        onToggle={() => update({ zuteilerVorgemerkt: !planer })}
-      />
-    </div>
-  )
-}
-
-/**
- * Admin-Recht (Feste Rollen): sieht Planen/Personen/Einstellungen. Wird in
- * verknüpfte Konten gespiegelt; das eigene Recht ist gesperrt (sonst könnte
- * sich der letzte Admin selbst aussperren). Welche der beiden Stellen zählt,
- * an denen es steht, sagt `rechteDerPerson`.
- */
-function PlannerToggle({ person, update }: { person: Person; update: UpdatePerson }) {
-  const { state } = useApp()
-  const { t } = useT()
-  const { admin } = rechteDerPerson(state.members, person)
-  const self = eigenesKonto(state.members, state.userId, person)
-  return (
-    <div className={self ? 'priv-row priv-row--locked' : 'priv-row'}>
-      <span className="priv-label">{t.planerLbl}</span>
-      <Switch
-        on={admin}
-        label={t.planerLbl}
-        disabled={self}
-        onToggle={() => update({ plannerVorgemerkt: !admin })}
-      />
+    <div className={gesperrt ? 'schalter-zeile recht-zeile is-gesperrt' : 'schalter-zeile recht-zeile'}>
+      <span className="schalter-text">
+        <span>{name}</span>
+        <span className="klein-text">{unter}</span>
+      </span>
+      <Switch on={an} label={name} disabled={gesperrt} onToggle={onToggle} />
     </div>
   )
 }

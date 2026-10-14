@@ -95,11 +95,11 @@ der Stelle von „Diese Woche in der Versammlung".
 
 ### Wer darf was: Planer und Admin
 
-Es gibt zwei Rechte, die du unter **Personen › Feste Rollen** vergibst:
-**Planer** und **Admin**. Der Planer teilt zu und sendet die Pläne; der Admin
-darf zusätzlich die Pläne selbst ändern und alles Übrige. Ein Admin hat das
-Planer-Recht ohnehin – bei ihm steht der Schalter **Planer** an und lässt sich
-nicht umlegen.
+Es gibt zwei Rechte, die du bei einer Person in der Karte **Rechte** vergibst:
+**Darf planen** (der Planer) und **Admin**. Der Planer teilt zu und sendet die
+Pläne; der Admin darf zusätzlich die Pläne selbst ändern und alles Übrige. Ein
+Admin hat das Planer-Recht ohnehin – bei ihm steht der Schalter **Darf planen**
+an und lässt sich nicht umlegen.
 
 | | Verkündiger | Gruppenaufseher und Gehilfe | Planer | Admin |
 | --- | --- | --- | --- | --- |
@@ -902,13 +902,42 @@ Unter **Personen** pflegst du alle Mitglieder der Versammlung.
 
 ![Person bearbeiten](screenshots/planer-person-detail.png)
 
-Unter den Stammdaten steht die **Zeitleiste**: alle Aufgaben dieser Person aus
-den geladenen Wochen, chronologisch, jeweils mit Wochentag, Datum und Uhrzeit –
-Programmpunkte, Hilfsdienste, geleitete Treffpunkte und Schichten im
-öffentlichen Zeugnisgeben. Beim Dienstaufseher stehen auch seine **vorgemerkten
+### Die Person
+
+Oben stehen Name, Gruppe und Rolle, daneben der **Stift** für
+[Person bearbeiten](#person-bearbeiten). Darunter folgen Karten:
+
+- **Konto** – wie weit die Person mit der App ist, als Spur mit drei
+  Schritten: **Angelegt**, **Eingeladen**, **Angemeldet**. Darunter steht, was
+  als Nächstes geht. Ohne Einladung ist das **Einladen**: Mit E‑Mail‑Adresse
+  geht die Einladung gleich hinaus, sonst entsteht nur der Code. Mit offenem
+  Code stehen der Code selbst und **E‑Mail**, **Teilen** und **Kopieren** da;
+  das ✕ zieht den Code zurück. Ist die Person angemeldet, steht die Adresse
+  ihres Kontos da, und das ✕ nimmt das Konto aus der Versammlung – beim eigenen
+  fehlt es.
+- **Aufgabenbereiche** – als Chips, was die Person übernehmen darf, nach
+  Gruppen geordnet. **Ändern** öffnet die Schalter (siehe
+  [Aufgabenbereiche](#aufgabenbereiche)).
+- **Auslastung** – wie viele Aufgaben die Person in den letzten acht Wochen
+  hatte, die laufende eingeschlossen. Darunter steht je Woche ein Punkt, voll in
+  den Wochen, in denen sie dran war. So siehst du vor dem Zuteilen, wer zuletzt
+  viel hatte.
+- **Zeitleiste** und **Abwesenheiten** – siehe unten.
+- **Rechte** – siehe [Rechte](#rechte).
+
+Ganz unten steht **Person entfernen**. Der erste Tipp nennt die Folge, erst der
+zweite entfernt. Bereits geplante Zuteilungen bleiben als Text in den Wochen
+stehen.
+
+### Zeitleiste und Abwesenheiten
+
+Die **Zeitleiste** zeigt alle Aufgaben dieser Person aus den geladenen Wochen,
+chronologisch, jeweils mit Wochentag, Datum und Uhrzeit – Programmpunkte,
+Hilfsdienste, geleitete Treffpunkte und Schichten im öffentlichen
+Zeugnisgeben. Beim Dienstaufseher stehen auch seine **vorgemerkten
 Gruppenbesuche** darin – Besuche in Wochen, die noch nicht importiert sind, an
 den Tagen laut Grundplan. Vergangenes wird blasser dargestellt. Hat jemand
-weder Zuteilung noch Abwesenheit, entfällt der Abschnitt.
+weder Zuteilung noch Abwesenheit, entfällt die Karte.
 
 Den genauen Tag rechnet die App aus: Das Arbeitsheft kennt nur die Woche, der
 Wochentag und die Uhrzeit stehen in den [Einstellungen](#7-einstellungen)
@@ -922,30 +951,46 @@ auf einen Blick zu sehen, was in einen Zeitraum hineinfällt – eine Zuteilung
 mitten in einer Abwesenheit sitzt sichtbar in der farbigen Strecke. Ein
 einzelner Tag ergibt einen Punkt.
 
-Eingetragen wird darunter mit **Abwesenheit eintragen**: ein Kalender, in dem
-du den ersten und den letzten Tag antippst, optional ein Grund. Entfernt wird mit
-dem ✕ am Beginn des Zeitraums in der Leiste. Als Admin trägst du hier für andere
-ein (nach einem Anruf „wir sind im Oktober weg"); die meisten Verkündiger haben
-kein Konto und können es nicht selbst. Wer eines hat, sieht dieselben Einträge
-in seinem **Profil** und kann sie dort ebenfalls pflegen – es ist dieselbe
-Angabe, nicht zwei.
+Die Karte **Abwesenheiten** darunter nennt, was ansteht oder gerade läuft; was
+vorbei ist, fällt heraus. Eingetragen wird dort mit **Abwesenheit eintragen**:
+ein Kalender, in dem du den ersten und den letzten Tag antippst, optional ein
+Grund. Entfernt wird mit dem ✕ an der Zeile – der erste Tipp fragt nach, erst
+der zweite entfernt. Als Admin trägst du hier für andere ein (nach einem Anruf
+„wir sind im Oktober weg"); die meisten Verkündiger haben kein Konto und können
+es nicht selbst. Wer eines hat, sieht dieselben Einträge in seinem **Profil**
+und kann sie dort ebenfalls pflegen – es ist dieselbe Angabe, nicht zwei.
 
 Abwesenheiten wirken sofort auf die Planung: Wer weg ist, lässt sich für diese
 Woche gar nicht erst zuteilen, die automatische Zuteilung übergeht ihn, und eine
 bereits bestehende Zuteilung erscheint unter **Zu klären**. Bei den Treffpunkten
 zählt dabei der Wochentag des jeweiligen Treffpunkts, nicht die ganze Woche.
 
-Im Detail legst du fest:
+### Person bearbeiten
 
-- **Stammdaten** – Vorname, Nachname, Telefon, E‑Mail, Geschlecht.
-- **Rolle** – Ältester, Dienstamtgehilfe, Verkündiger oder **Keine** (für
-  Schüler ohne Verkündiger‑Status).
+Der **Stift** öffnet das Blatt **Person bearbeiten**:
+
+- **Vorname** und **Nachname**, **Telefon**, **E‑Mail**, **Geschlecht**.
 - **Predigtdienstgruppe** – Zuordnung zur Gruppe. Jeder Verkündiger braucht
   eine; fehlt sie, warnt die Personenliste.
+- **Rolle** – Ältester, Dienstamtgehilfe, Verkündiger oder **Keine** (für
+  Schüler ohne Verkündiger‑Status).
 - **Familie** – wer zur selben Familie gehört. Familienangehörige dürfen bei
   Schülerteilen auch geschlechtsübergreifend Gesprächspartner sein (z. B.
-  Ehepaar, Vater/Tochter).
-- **Aufgabenbereiche** – welche Aufgaben die Person übernehmen darf (Vorsitz,
+  Ehepaar, Vater/Tochter). Über das Auswahlfeld kommt jemand dazu, das ✕ am
+  Namen nimmt ihn wieder heraus.
+
+Alles außer dem Namen gilt sofort. Der Name gilt erst, wenn du das Blatt
+schließt (**Fertig**) – beim Tippen entsteht so kein halber Name in den Plänen.
+Wird eine Person umbenannt, zieht die App den neuen Namen automatisch durch alle
+bereits geplanten Wochen.
+
+### Aufgabenbereiche
+
+**Ändern** in der Karte **Aufgabenbereiche** öffnet ein Blatt mit einem
+Schalter je Bereich, in vier Gruppen. Jede steht alphabetisch, nur die festen
+Rollen in ihrer Folge.
+
+- **Zusammenkünfte** – welche Aufgaben die Person übernehmen darf (Vorsitz,
   Vorträge, Besprechungen leiten, Gebet, Bibellesung, Schulung …). Diese
   Bereiche steuern, wen die Automatik und die Kandidatenlisten vorschlagen.
   Drei davon klingen ähnlich und sind doch getrennt:
@@ -961,20 +1006,12 @@ Im Detail legst du fest:
   Den **öffentlichen Vortrag am Sonntag** regelt kein Bereich: Zur Wahl stehen
   dort alle Ältesten und Dienstamtgehilfen. Eingeteilt wird er ohnehin von
   Hand – die Automatik lässt ihn aus.
-- **Hilfsdienste** – dasselbe für die Dienste (Ton, Mikrofone, Ordner …), als
-  eigener Bereich darunter. Beide Listen stehen alphabetisch.
-- **Feste Rollen** – eine eigene Karte mit vier Schaltern:
+- **Hilfsdienste** – dasselbe für die Dienste (Ton, Mikrofone, Ordner …).
+- **Predigtdienst** – **Treffpunkte leiten** und **Öffentliches
+  Zeugnisgeben**.
+- **Feste Rollen** – die beiden des Wachtturm-Studiums:
   - **Wachtturm-Studium-Leiter** – der feste Leiter des Wachtturm-Studiums.
   - **Vertreter (Wachtturm-Studium)** – sein Vertreter.
-  - **Planer** – teilt zu und sendet die Pläne, ändert sie aber nicht.
-  - **Admin** – darf alles, was dieses Handbuch beschreibt. Das Planer-Recht
-    hat er ohnehin; bei ihm steht der Schalter **Planer** an und lässt sich
-    nicht umlegen.
-
-  Was Planer und Admin im Einzelnen dürfen, steht unter „Wer darf was" in
-  Abschnitt 1. Hat die Person noch kein Konto, merkt die App die Rechte vor;
-  sie gelten, sobald sie sich mit ihrem Einladungscode anmeldet. Deine eigenen
-  Schalter kannst du nicht umlegen – so sperrt sich niemand selbst aus.
 
   Leiter und Vertreter wirken beim automatischen Zuteilen: Den Leiter-Platz des
   Wachtturm-Studiums bekommt zuerst der feste Leiter, ist er an dem Tag
@@ -983,29 +1020,39 @@ Im Detail legst du fest:
   leiten**. Jede der beiden Rollen gehört genau einer Person; ist eine
   mehrfach vergeben, warnt die Personenliste (siehe
   [Warnung: feste Rolle mehrfach vergeben](#warnung-feste-rolle-mehrfach-vergeben)).
-- **Konto & Einladung** – hier lädst du eine Person zur App‑Nutzung ein (Code bzw.
-  Einladungs‑E‑Mail).
 
-Wird eine Person umbenannt, zieht die App den neuen Namen automatisch durch alle
-bereits geplanten Wochen.
+### Rechte
+
+Die Karte **Rechte** hat zwei Schalter:
+
+- **Darf planen** – teilt zu und sendet die Pläne, ändert sie aber nicht.
+- **Admin** – ändert auch Pläne, Personen und Einstellungen: alles, was dieses
+  Handbuch beschreibt. Das Planer-Recht hat er ohnehin; bei ihm steht **Darf
+  planen** an und lässt sich nicht umlegen.
+
+Was Planer und Admin im Einzelnen dürfen, steht unter „Wer darf was" in
+Abschnitt 1. Hat die Person noch kein Konto, merkt die App die Rechte vor; sie
+gelten, sobald sie sich mit ihrem Einladungscode anmeldet. Deine eigenen
+Schalter kannst du nicht umlegen – so sperrt sich niemand selbst aus.
 
 ### Zwei Personen mit demselben Namen
 
 Vor- und Nachname zusammen gibt es in einer Versammlung nur einmal. Gibst du
-einer Person einen Namen, den schon jemand trägt, erscheint direkt unter dem
-Nachnamen ein Hinweis, der die andere Person nennt: „Diesen Namen trägt
-bereits Paul Beispiel. Ergänze den Vornamen, damit beide unterscheidbar sind."
+einer Person in **Person bearbeiten** einen Namen, den schon jemand trägt,
+erscheint direkt unter dem Nachnamen ein Hinweis, der die andere Person nennt:
+„Diesen Namen trägt bereits Paul Beispiel. Ergänze den Vornamen, damit beide
+unterscheidbar sind."
 
-Solange der Hinweis steht, speichert die App den Namen nicht. Ergänze deshalb
-gleich den Vornamen, etwa zu „Paul sen." oder um einen zweiten Vornamen. Sobald
-der Name eindeutig ist, verschwindet der Hinweis, und die App speichert wieder.
+Ergänze dann gleich den Vornamen, etwa zu „Paul sen." oder um einen zweiten
+Vornamen. Sobald der Name eindeutig ist, verschwindet der Hinweis.
 
-Verlässt du das Detail, während der Hinweis noch steht, behält die Person den
-Namen, den sie beim Öffnen hatte – in der Liste und in den bereits geplanten
-Wochen. Unten am Bildschirm erscheint dazu kurz „Name nicht geändert: Paul
-Beispiel gibt es schon". Was du sonst geändert hast, etwa Telefon oder
-Aufgabenbereiche, bleibt gespeichert. Beim **Anlegen** nimmt das Blatt einen
-solchen Namen gar nicht erst an.
+Schließt du das Blatt, während der Hinweis noch steht, behält die Person ihren
+bisherigen Namen – in der Liste und in den bereits geplanten Wochen. Unten am
+Bildschirm erscheint dazu kurz „Name nicht geändert: Paul Beispiel gibt es
+schon". Ebenso bei einem leeren Namen: „Name nicht geändert: Ohne Namen geht es
+nicht". Was du sonst im Blatt geändert hast, etwa Telefon oder Gruppe, bleibt
+gespeichert. Beim **Anlegen** nimmt das Blatt einen solchen Namen gar nicht
+erst an.
 
 Verglichen wird der ganze Name, wie er angezeigt wird. Groß- und
 Kleinschreibung und doppelte Leerzeichen zählen dabei nicht – „paul beispiel"
@@ -1025,8 +1072,8 @@ tragen. Beim automatischen Zuteilen nimmt die App dann irgendeinen von ihnen –
 nicht unbedingt den, den du meinst.
 
 Abhilfe: Tippe im Hinweis auf einen Namen. Es öffnet sich die Person, dort
-schaltest du in der Karte **Feste Rollen** die Rolle ab, wenn sie nicht zu ihr
-gehört – an bleibt sie nur bei einer Person. Der Hinweis gilt für die ganze
+schaltest du unter **Aufgabenbereiche › Ändern** bei den **Festen Rollen** die
+Rolle ab, wenn sie nicht zu ihr gehört – an bleibt sie nur bei einer Person. Der Hinweis gilt für die ganze
 Versammlung, Suche und Filter blenden ihn nicht aus. Er verschwindet, sobald
 jede Rolle höchstens einmal vergeben ist.
 
@@ -1042,7 +1089,8 @@ bei den Mitgliedern **dieser** Gruppe. Wer ohne Gruppe dasteht, sieht nur die
 Treffpunkte der Versammlung.
 
 Abhilfe: Tippe im Hinweis auf einen Namen. Es öffnet sich die Person, dort
-wählst du unter **Predigtdienstgruppe** die richtige Gruppe. Der Hinweis gilt
+wählst du über den Stift (**Person bearbeiten**) unter **Predigtdienstgruppe**
+die richtige Gruppe. Der Hinweis gilt
 für die ganze Versammlung, Suche und Filter blenden ihn nicht aus. Er
 verschwindet, sobald alle zugeordnet sind.
 

@@ -13,7 +13,7 @@ import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meet
 import { eigenePerson } from './eigene-person'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsRegelAussetzen, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, regenFsWeeks } from '../data/fs'
 import { neueWocheEinordnen } from '../data/neue-woche'
-import { displayName, isSong, linkFamily, mtab, namensDublette, unlinkFamily } from '../data/helpers'
+import { displayName, isNameless, isSong, linkFamily, mtab, namensDublette, unlinkFamily } from '../data/helpers'
 import { darfPlanen, erlaubteScreens, rechteVon, themaVon } from '../data/rechte'
 import { besuchAustragen, besuchEintragen, besuchsLage, besuchStand, nachWoche } from '../data/gruppenbesuche'
 import { vortragsplanAnwenden, vortragsplanVorschau } from '../data/vortragsplan'
@@ -173,15 +173,6 @@ function pushNotif(
  * Mit ihr entfiel der Schalter `reminders.onAssign`, der nichts anderes
  * steuerte.
  */
-
-/**
- * Beim Anlegen abgebrochene Personen (komplett ohne Namen) werden beim
- * Verlassen des Details automatisch wieder entfernt — sonst blieben durch das
- * Auto-Speichern leere Einträge in der Liste stehen.
- */
-export function isNameless(p: Person): boolean {
-  return !`${p.fn}${p.ln}`.trim()
-}
 
 /**
  * Die Person `id` aus dem Zustand nehmen — samt allem, was auf sie zeigt:

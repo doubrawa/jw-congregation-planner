@@ -21,6 +21,8 @@ const PFADE = {
   /** Ohne Verbindung. */
   wolke: <path d="M7.2 18.6h9.8a4 4 0 0 0 .6-7.9 5.5 5.5 0 0 0-10.7 1.2 3.5 3.5 0 0 0 .3 6.7z" />,
   haken: <path d="m6.5 12.5 3.7 3.7L17.5 8.5" />,
+  /** Bearbeiten: der Stift bei der Person (`werk.mjs`, dort 20 × 20). */
+  stift: <path d="M4.8 19.2l.96-4.08L16.32 4.56a1.68 1.68 0 0 1 2.4 0l.72.72a1.68 1.68 0 0 1 0 2.4L8.88 18.24z" />,
   /** Die Lupe im Suchfeld (`werk.mjs`, dort 20 × 20). */
   suche: (
     <>

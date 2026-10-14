@@ -198,12 +198,6 @@
   height: calc(14px * var(--fs));
 }
 
-.mem-code {
-  font-size: calc(13px * var(--fs));
-  font-weight: 700;
-  letter-spacing: 0.18em;
-}
-
 /* ---- Hilfsdienste ------------------------------------------------------------ */
 
 .svc-row {

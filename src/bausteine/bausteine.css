@@ -411,6 +411,13 @@
   font-weight: 600;
 }
 
+/* Die eine Handlung einer Karte, die weiterführt („Einladen"): Rand und Wort in Minze. */
+.knopf-pille--akzent {
+  border-color: var(--akzent-text);
+  color: var(--akzent-text);
+  font-weight: 700;
+}
+
 /* Ein Verweis, der leiser ist als jeder Knopf (S-89 neben Bestätigen). */
 .verweis-leise {
   display: inline-flex;

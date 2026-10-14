@@ -267,7 +267,7 @@ describe('Abwesenheiten (T121: im Profil statt unter „Meine Aufgaben")', () =>
         { id: 'a2', personId: 'p-b', userId: 'u1', from: '2099-11-02', to: '2099-11-06', reason: 'Fremd' },
       ],
     })
-    const zeilen = [...container.querySelectorAll('.profil-abw')]
+    const zeilen = [...container.querySelectorAll('.abw-zeile')]
     expect(zeilen).toHaveLength(1)
     expect(zeilen[0]!.textContent).toContain('Besuch')
     expect(zeilen[0]!.querySelector('.entfernen')).not.toBeNull()

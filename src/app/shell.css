@@ -75,28 +75,6 @@
   }
 }
 
-/* ---- Avatare (Initialen-Kreise) ---------------------------------------- */
-
-.avatar {
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  flex: none;
-}
-
-.avatar--tint {
-  background: var(--tNeu);
-  color: var(--acc);
-}
-
-.avatar--54 {
-  width: 54px;
-  height: 54px;
-  font-size: calc(16px * var(--fs));
-}
-
 /* ---- Datenanbindung: Lade-/Sonderzustände -------------------------------- */
 
 .status-view {

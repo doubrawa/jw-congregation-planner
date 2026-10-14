@@ -150,10 +150,10 @@ describe('Zurück am Handy', () => {
     klickMenue(container, t.navPersonen)
     fireEvent.click(container.querySelector('.personen-zeile')!)
     await ausklingen()
-    expect(container.querySelector('.pers-detail-head')).not.toBeNull()
+    expect(container.querySelector('.person-kopf')).not.toBeNull()
 
     await zurueck()
-    expect(container.querySelector('.pers-detail-head'), 'das Detail blieb offen').toBeNull()
+    expect(container.querySelector('.person-kopf'), 'das Detail blieb offen').toBeNull()
     expect(aktiv(container)).toBe(t.navPersonen)
 
     await zurueck()

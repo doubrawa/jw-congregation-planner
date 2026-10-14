@@ -94,7 +94,7 @@ export function PersonAnlegenBlatt({ onClose }: { onClose: () => void }) {
             <input
               className="feld"
               type="email"
-              dir="ltr"
+              dir="auto"
               autoComplete="off"
               value={mail}
               onChange={(e) => setMail(e.target.value)}

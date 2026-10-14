@@ -263,7 +263,7 @@ const OVERLAYS: Array<[string, Partial<AppState>]> = [
  * entstehen — sie ersetzen den Bildschirm, statt sich darüberzulegen.
  */
 const UNTERANSICHTEN: Array<[string, Partial<AppState>, string]> = [
-  ['Personen-Detail', { screen: 'personen', selectedPersonId: ICH.id }, '.pers-detail-head'],
+  ['Personen-Detail', { screen: 'personen', selectedPersonId: ICH.id }, '.person-kopf'],
 ]
 
 const CODES = APP_LANGS.map((l) => l.code)
@@ -727,12 +727,19 @@ describe('Rechts-nach-links', () => {
    * `dir="auto"` löst beides zugleich: ein arabischer Name läuft rechts nach
    * links, ein lateinischer und eine Nummer links nach rechts.
    */
+  /** Die Textfelder eines Bildschirms — bei der Person die im Blatt „Person bearbeiten" (T121, Phase 6b). */
+  const textfelder = (container: HTMLElement, lang: Lang): HTMLInputElement[] => {
+    const stift = container.querySelector(`[aria-label="${dict(lang).personBearbeiten}"]`)
+    if (stift) fireEvent.click(stift)
+    return [...document.body.querySelectorAll<HTMLInputElement>('input.field-input, input.feld')]
+  }
+
   it.each([
     ['Personen-Detail', { screen: 'personen', selectedPersonId: ICH.id } as Partial<AppState>],
     ['Versammlungs-Angaben', { screen: 'einstellungen' } as Partial<AppState>],
   ])('%s: jedes Textfeld trägt dir="auto"', (name, over) => {
     const { container } = zeige({ ...over, lang: 'ar', congLang: 'ar' })
-    const felder = [...container.querySelectorAll<HTMLInputElement>('input.field-input')]
+    const felder = textfelder(container, 'ar')
     expect(felder.length, `${name}: keine Felder gefunden`).toBeGreaterThan(1)
     const ohne = felder.filter((e) => e.getAttribute('dir') !== 'auto')
     expect(ohne.map((e) => e.id), name).toEqual([])
@@ -743,7 +750,7 @@ describe('Rechts-nach-links', () => {
     // eigenem Verhalten. `dir="auto"` gilt immer: Ein arabischer Name in einer
     // deutschen Oberfläche soll ebenso richtig herum stehen.
     const { container } = zeige({ screen: 'personen', selectedPersonId: ICH.id, lang: 'de' })
-    const felder = [...container.querySelectorAll<HTMLInputElement>('input.field-input')]
+    const felder = textfelder(container, 'de')
     expect(felder.every((e) => e.getAttribute('dir') === 'auto')).toBe(true)
   })
 
@@ -759,7 +766,7 @@ describe('Rechts-nach-links', () => {
   const EIGENER_TEXT: Array<[string, Partial<AppState>, string]> = [
     ['Name im Menü', { screen: 'start' }, '.menue-profil-name'],
     ['Name in der Personenliste', { screen: 'personen' }, '.personen-name'],
-    ['Name über dem Detail', { screen: 'personen', selectedPersonId: ICH.id }, '.pers-detail-name'],
+    ['Name über dem Detail', { screen: 'personen', selectedPersonId: ICH.id }, '.person-name'],
     ['Name im Profil', { screen: 'profil' }, '.profil-name'],
     [
       'Grund einer Abwesenheit',
@@ -768,7 +775,7 @@ describe('Rechts-nach-links', () => {
         // Seit T121 im Profil, und dort nur, was noch ansteht.
         absences: [{ id: 'a1', personId: ICH.id, userId: 'u1', from: '2099-09-07', to: '2099-09-13', reason: 'Kalvo' }],
       },
-      '.profil-abw .klein-text',
+      '.abw-zeile .klein-text',
     ],
   ]
 

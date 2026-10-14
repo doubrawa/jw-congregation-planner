@@ -514,7 +514,7 @@ describe('Am Desktop (`GDesktopPersonen`)', () => {
     expect(namen(container)).toHaveLength(3)
     const spalte = container.querySelector('.personen-spalte')!
     expect(spalte.getAttribute('aria-label')).toBe('Bernd Brand')
-    expect(spalte.querySelector('.pers-detail-name')?.textContent).toBe('Bernd Brand')
+    expect(spalte.querySelector('.person-name')?.textContent).toBe('Bernd Brand')
     expect(zeilen(container).map((z) => z.getAttribute('aria-current'))).toEqual([null, 'true', null])
   })
 

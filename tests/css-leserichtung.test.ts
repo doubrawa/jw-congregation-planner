@@ -116,8 +116,9 @@ describe('Kein physischer Richtungswert ohne Grund', () => {
  *
  * Die Glyphen ‹ › im Fließtext dreht der Browser in einem RTL-Absatz selbst um
  * (Unicode führt sie als spiegelbar). Ein SVG-Pfad ist dagegen Geometrie: Er
- * zeigt dorthin, wo er hinzeigt. Deshalb kippt `app/rtl.css` die Wochen-Pfeile
- * und den Zurück-Chevron, `datepicker.css` die Monatspfeile.
+ * zeigt dorthin, wo er hinzeigt. Deshalb kippt `bausteine.css` jedes `Zeichen`
+ * mit Richtung — die Wochen-Pfeile und den Zurück-Pfeil der Unteransichten, seit
+ * T121 auch den der Person —, `datepicker.css` die Monatspfeile.
  *
  * **Genau einmal.** Beim Durchsehen am 28.8.2026 kam versuchsweise eine zweite
  * Regel auf die gemeinsame Klasse `.chev` dazu — und drehte damit alles ein
@@ -138,7 +139,9 @@ describe('Richtungsabhängige Pfeile werden gespiegelt', () => {
       /\[dir=['"]rtl['"]\]\s*\.zeichen\.is-richtung\s*\{[^}]*transform:\s*scaleX\(-1\)/,
     )
     expect(rtl, 'die Wochen-Pfeile kippten ein zweites Mal').not.toMatch(/\.week-arrow\s*\{[^}]*transform/)
-    expect(rtl).toMatch(/\[dir=['"]rtl['"]\]\s*\.pers-back-chev\s*\{[^}]*transform:\s*scaleX\(-1\)/)
+    // Ebenso der Zurück-Pfeil der Unteransichten, auch der Person: kein eigenes
+    // Kippen mehr in rtl.css.
+    expect(rtl, 'der Zurück-Pfeil kippte ein zweites Mal').not.toMatch(/\.unteransicht-kopf[^{]*\{[^}]*transform/)
   })
 
   it('die Monatspfeile der Datumsauswahl ebenso', () => {
@@ -163,7 +166,8 @@ describe('Richtungsabhängige Pfeile werden gespiegelt', () => {
       readFileSync(fileURLToPath(new URL(`../src/${rel}`, import.meta.url)), 'utf8')
     expect(quelle('components/WeekNav.tsx')).toMatch(/<Zeichen name="zurueck"/)
     expect(quelle('bausteine/Zeichen.tsx')).toMatch(/RICHTUNG[^\n]*'weiter'[^\n]*'zurueck'/)
-    expect(quelle('personen/PersonDetail.tsx')).toContain('pers-back-chev')
+    expect(quelle('components/UnteransichtKopf.tsx')).toMatch(/<Zeichen name="zurueck"/)
+    expect(quelle('personen/PersonDetail.tsx')).toMatch(/<UnteransichtKopf\b/)
     expect(quelle('components/DatePicker.tsx')).toContain('dp-nav')
     // Und der Pfeil ist wirklich seitenabhängig — sonst gäbe es nichts zu drehen.
     expect(quelle('components/Chevron.tsx')).toMatch(/dir === 'prev'/)

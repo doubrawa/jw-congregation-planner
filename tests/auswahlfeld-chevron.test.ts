@@ -121,8 +121,9 @@ describe('Auswahlfelder behalten ihr Chevron', () => {
 
   it('die Prüfung sieht die Auswahlfelder, an denen sie entstanden ist', () => {
     // Ohne diese Zeile wäre ein zu enger Suchausdruck nicht von „alles sauber"
-    // zu unterscheiden.
-    for (const k of ['fs-select', 'sonder-select', 'mem-select', 'pers-grp-select']) {
+    // zu unterscheiden. `feld-wahl` ist das Auswahlfeld der Blätter seit T121 —
+    // auch das der Gruppe einer Person (vorher `pers-grp-select`).
+    for (const k of ['fs-select', 'sonder-select', 'mem-select', 'feld-wahl']) {
       expect(klassen, k).toContain(k)
     }
   })

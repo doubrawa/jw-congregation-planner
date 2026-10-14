@@ -24,7 +24,22 @@ export function eigeneAbwesenheiten(
   const eigene = wer.userId
     ? absences.filter((a) => (a.personId != null ? a.personId === wer.personId : a.userId === wer.userId))
     : absences
-  return eigene
-    .filter((a) => a.to >= heute)
-    .sort((a, b) => a.from.localeCompare(b.from) || a.to.localeCompare(b.to))
+  return anstehend(eigene, heute)
+}
+
+/**
+ * **Die Abwesenheiten einer Person, die anstehen oder gerade laufen** — bei der
+ * Person in den Personen (T121, Phase 6b), nach Beginn geordnet. Gezählt wird
+ * allein die Person, nicht wer eingetragen hat (siehe oben).
+ */
+export function abwesenheitenVon(absences: readonly Absence[], personId: string, heute: string): Absence[] {
+  return anstehend(
+    absences.filter((a) => a.personId === personId),
+    heute,
+  )
+}
+
+/** Was nicht vorbei ist, nach Beginn und Ende geordnet. */
+function anstehend(liste: readonly Absence[], heute: string): Absence[] {
+  return liste.filter((a) => a.to >= heute).sort((a, b) => a.from.localeCompare(b.from) || a.to.localeCompare(b.to))
 }

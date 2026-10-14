@@ -21,7 +21,7 @@ import { PersonDetail } from '../personen/PersonDetail'
  * Personen-Detail für die einer anderen Person. Hier geht es um den zweiten
  * Aufrufer, denn genau dort lauert die Fehlerart des Projekts: Das Blatt ist
  * richtig, und der Aufrufer reicht die falsche Person hinein. Welche im Profil
- * stehen, prüft `profil/abwesenheiten.test.ts`.
+ * stehen, prüft `components/abwesenheiten.test.ts`.
  */
 
 function Buehne({
@@ -61,12 +61,14 @@ const abw = (id: string, personId: string | null, userId: string | null, from: s
 
 /** Die Abwesenheiten-Karte im gerenderten Baum. */
 function karte(container: HTMLElement): HTMLElement {
-  const panel = [...container.querySelectorAll('.panel')].find(
-    (p) => p.querySelector('.panel-label')?.textContent === 'Abwesenheiten',
-  )
-  if (!panel) throw new Error('Abwesenheiten-Karte nicht gefunden')
-  return panel as HTMLElement
+  const k = container.querySelector<HTMLElement>('.abw-karte')
+  if (!k) throw new Error('Abwesenheiten-Karte nicht gefunden')
+  return k
 }
+
+/** Die Zeiträume in der Karte, je mit Grund. */
+const inDerKarte = (container: HTMLElement): string[] =>
+  [...karte(container).querySelectorAll('.abw-zeile .klein-text')].map((e) => e.textContent ?? '')
 
 /** Die Beschriftungen der Abwesenheits-Punkte in der Zeitleiste. */
 const zeitleiste = (container: HTMLElement): string[] =>
@@ -82,7 +84,14 @@ const basis = (over: Partial<AppState>): AppState => ({
   ...over,
 })
 
-describe('Personen-Detail — die Abwesenheiten dieser Person', () => {
+describe('Bei einer Person — ihre Abwesenheiten', () => {
+  // Die Uhr vor den Zeiträumen: Die Karte zeigt nur, was ansteht.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 7, 31, 9))
+  })
+  afterEach(() => vi.useRealTimers())
+
   const zeigen = (over: Partial<AppState> = {}, dispatch?: () => void) =>
     render(
       <Buehne state={basis({ planner: true, ...over })} dispatch={dispatch}>
@@ -90,31 +99,36 @@ describe('Personen-Detail — die Abwesenheiten dieser Person', () => {
       </Buehne>,
     )
 
-  it('zeigt ihre Abwesenheiten in der Zeitleiste — und nur ihre', () => {
+  it('stehen in ihrer Karte — und nur ihre, nicht die des Angemeldeten', () => {
     /*
-     * Nicht mehr als Liste unter dem Formular: Die Zeiträume stehen in der
-     * Zeitleiste, damit man sieht, was in sie hineinfällt. Unter dem Formular
-     * steht nichts mehr — sonst stünde dasselbe zweimal da.
+     * Wie im Entwurf `GPerson` (T121, Phase 6b): eine Karte „Abwesenheiten" mit
+     * dem, was ansteht. Bis dahin standen sie nur in der Zeitleiste.
      */
     const { container } = zeigen({
       absences: [abw('a1', 'p-andere', null, '2026-09-01'), abw('a2', 'p-ich', 'u-ich', '2026-09-02')],
     })
-    expect(zeitleiste(container)).toEqual(['Abwesend · Grund a1'])
-    // Die Karte trägt nur noch das Eintragen, keine Liste.
-    expect(karte(container).textContent).not.toContain('Grund a1')
+    expect(inDerKarte(container)).toEqual(['Grund a1'])
   })
 
-  it('entfernt eine Abwesenheit aus der Zeitleiste heraus', () => {
-    // Die Liste unter dem Formular ist weg — ohne das ✕ an der Leiste liesse
-    // sich ein Eintrag nur noch anlegen, nie wieder entfernen.
+  it('in der Zeitleiste stehen sie im Zusammenhang — dort ohne ✕', () => {
+    const { container } = zeigen({ absences: [abw('a1', 'p-andere', null, '2026-09-01')] })
+    expect(zeitleiste(container)).toEqual(['Abwesend · Grund a1'])
+    expect(container.querySelector('.zeit-karte .entfernen')).toBeNull()
+  })
+
+  it('ohne eine sagt die Karte das', () => {
+    const { container } = zeigen({ absences: [] })
+    expect(karte(container).textContent).toContain('Keine eingetragen.')
+  })
+
+  it('entfernt wird in der Karte — erst nach der Rückfrage', () => {
     const dispatch = vi.fn()
     const { container } = zeigen({ absences: [abw('a1', 'p-andere', null, '2026-09-01')] }, dispatch)
-    const knopf = container.querySelector('.zeit-remove')
-    if (!knopf) throw new Error('kein Entfernen-Knopf in der Zeitleiste')
+    const knopf = () => karte(container).querySelector('.abw-entfernen')!
     // Mit Rückfrage (4.10.2026): Der erste Tipp fragt nur.
-    fireEvent.click(knopf)
+    fireEvent.click(knopf())
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'removeAbsence', id: 'a1' })
-    fireEvent.click(container.querySelector('.zeit-remove')!)
+    fireEvent.click(knopf())
     expect(dispatch).toHaveBeenCalledWith({ type: 'removeAbsence', id: 'a1' })
   })
 
@@ -146,7 +160,8 @@ describe('Personen-Detail — die Abwesenheiten dieser Person', () => {
     // wäre beim nächsten Laden weg.
     const { container } = zeigen({ planner: false, absences: [abw('a1', 'p-andere', null, '2026-09-01')] })
     expect(within(karte(container)).queryByText('Abwesenheit eintragen')).toBeNull()
-    expect(container.querySelector('.zeit-remove')).toBeNull()
-    expect(zeitleiste(container)).toEqual(['Abwesend · Grund a1']) // lesen darf er
+    expect(container.querySelector('.abw-entfernen')).toBeNull()
+    expect(inDerKarte(container)).toEqual(['Grund a1']) // lesen darf er
+    expect(zeitleiste(container)).toEqual(['Abwesend · Grund a1'])
   })
 })

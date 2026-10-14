@@ -297,10 +297,6 @@
 }
 
 /* Panel-Padding-Varianten (unterer Abschluss je nach Inhalt) */
-.panel--pb10 {
-  padding-bottom: 10px;
-}
-
 .panel--pb14 {
   padding-bottom: 14px;
 }
@@ -533,7 +529,41 @@ select {
   font-size: calc(13.5px * var(--fs));
 }
 
-/* „+ Abwesenheit eintragen" (`AbwesenheitEintragen`, T121) — im Profil und im Personen-Detail. */
+/* ---- Abwesenheiten (`AbwesenheitenKarte`, T121) — im Profil und bei der Person ---- */
+
+.abw-karte {
+  padding: 6px 18px 4px;
+}
+
+.abw-leer {
+  padding-block-end: 12px;
+}
+
+/* Ein Zeitraum: Punkt, wann und warum, rechts das ✕. */
+.abw-zeile {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 14px;
+  min-height: 60px;
+  border-block-start: 1px solid var(--linie);
+}
+
+.abw-zeile-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.abw-zeile-zeit {
+  font-weight: 600;
+}
+
+.abw-entfernen {
+  color: var(--text2);
+}
+
+/* „+ Abwesenheit eintragen" (`AbwesenheitEintragen`, T121) — im Profil und bei der Person. */
 .abw-neu {
   display: flex;
   align-items: center;

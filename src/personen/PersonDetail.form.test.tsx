@@ -12,25 +12,27 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
 import { emptyQualifications, serviceQualKey } from '../data/helpers'
 import { dict, ROLE_KEY } from '../i18n/ui'
-import type { Group, Person, Service } from '../data/types'
+import { fill } from '../i18n/useT'
+import type { Group, Member, Person, Service } from '../data/types'
 import { PersonDetail } from './PersonDetail'
 
 /**
- * **Das Personen-Detail — das einzige Formular, das die Planung wirklich
- * steuert.**
+ * **Eine Person — das einzige Formular, das die Planung wirklich steuert**
+ * (T121, Entwurf `GPerson`).
  *
- * `PersonDetail.test.tsx` prüft die Aufteilung in Aufgaben und Hilfsdienste
- * (T73), `PrivToggle.test.tsx` die Kopplungen an den Schaltern. Hier steht,
- * was der Screen selbst zusagt:
+ * `PrivToggle.test.tsx` prüft die Kopplungen an den Schaltern und die Rechte,
+ * `bereiche.test.ts` die Gruppen der Aufgabenbereiche. Hier steht, was die
+ * Ansicht und ihre beiden Blätter selbst zusagen:
  *
- * - **Vollständigkeit**: Jeder feste Aufgabenbereich und jeder Hilfsdienst
- *   muss einen Schalter haben. Fehlt einer, lässt sich die Qualifikation
- *   nirgends setzen — und der zugehörige Platz bleibt für immer offen, ohne
- *   dass es auffiele.
- * - **Löschen mit Zwei-Tipp-Bestätigung**: Es löst Gruppen-, Konto- und
+ * - **Person bearbeiten**: Der Name gilt erst beim Schließen, und nur, wenn er
+ *   geht — doppelt oder leer bleibt der alte (T110). Alles Übrige gilt sofort.
+ * - **Aufgabenbereiche** als Chips, geändert im Blatt — dort mit einem Schalter
+ *   für jeden Bereich. Fehlt einer, lässt sich die Qualifikation nirgends
+ *   setzen, und der zugehörige Platz bleibt für immer offen.
+ * - **Entfernen mit zwei Tipps**: Es löst Gruppen-, Konto- und
  *   Code-Verknüpfungen und ist nicht rückgängig zu machen.
- * - Die **Familie** ist symmetrisch und darf niemanden doppelt anbieten —
- *   auch die Person selbst nicht.
+ * - Die **Familie** ist symmetrisch und darf niemanden doppelt anbieten — auch
+ *   die Person selbst nicht.
  */
 
 vi.mock('../lib/clipboard', () => ({ copyText: vi.fn(() => Promise.resolve(true)) }))
@@ -55,7 +57,7 @@ const DIENSTE: Service[] = [
   { key: 'rein', name: 'Reinigung', count: 1, groups: true },
 ]
 
-function zeige(p: Person, over: Partial<AppState> = {}) {
+function zeige(p: Person, over: Partial<AppState> = {}, spalte = false) {
   const dispatch = vi.fn()
   const state: AppState = {
     ...demoZustand(),
@@ -63,7 +65,6 @@ function zeige(p: Person, over: Partial<AppState> = {}) {
     congregationId: 'c1', userId: 'u1', planner: true,
     persons: [p, BRAND, COHN], groups: GRUPPEN, services: DIENSTE,
     members: [], invites: [], weeks: [], fsWeeks: [], absences: [],
-    congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
   }
   function Buehne() {
@@ -72,7 +73,7 @@ function zeige(p: Person, over: Partial<AppState> = {}) {
       <AppDispatchContext.Provider value={dispatch}>
         <AppStoreContext.Provider value={store}>
           <AppStateContext.Provider value={state}>
-            <PersonDetail person={p} />
+            <PersonDetail person={p} spalte={spalte} />
           </AppStateContext.Provider>
         </AppStoreContext.Provider>
       </AppDispatchContext.Provider>
@@ -83,16 +84,25 @@ function zeige(p: Person, over: Partial<AppState> = {}) {
 
 const patches = (dispatch: ReturnType<typeof vi.fn>) =>
   dispatch.mock.calls.filter((c) => c[0].type === 'updatePerson').map((c) => c[0].patch)
-const chip = (c: HTMLElement, text: string) =>
-  [...c.querySelectorAll<HTMLButtonElement>('.role-chip')].find((b) => b.textContent === text)!
-const schalterLabels = (c: HTMLElement, panelLabel: string) => {
-  const panel = [...c.querySelectorAll('.panel')].find(
-    (p) => p.querySelector('.panel-label')?.textContent === panelLabel,
-  )!
-  return [...panel.querySelectorAll('[role="switch"]')].map((s) => s.getAttribute('aria-label') ?? '')
+const knopf = (wo: ParentNode, text: string) =>
+  [...wo.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text)!
+/** Ein Blatt, am Dokument (Portal) — erkannt an seiner Beschriftung. */
+const blatt = (label: string) => document.querySelector<HTMLElement>(`[role="dialog"][aria-label="${label}"]`)
+const bearbeiten = (c: HTMLElement) => {
+  fireEvent.click(c.querySelector(`[aria-label="${t.personBearbeiten}"]`)!)
+  return blatt(t.personBearbeiten)!
 }
+const bereicheAendern = (c: HTMLElement) => {
+  fireEvent.click(knopf(c, t.aendern))
+  return blatt(t.aufgabenbereiche)!
+}
+const feld = (b: HTMLElement, id: string) => b.querySelector<HTMLInputElement>(`#${id}`)!
+const schalterIn = (b: HTMLElement, titel: string) =>
+  [...b.querySelectorAll(`section[aria-label="${titel}"] [role="switch"]`)].map((s) => s.getAttribute('aria-label') ?? '')
 
 beforeEach(() => {
+  // Das Herunterwischen der Blätter fragt nach der Breite; jsdom kennt keine.
+  window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
   Object.defineProperty(window, 'location', {
     configurable: true,
     value: { href: '', pathname: '/', search: '', hash: '', origin: 'https://app.test' },
@@ -100,283 +110,300 @@ beforeEach(() => {
 })
 afterEach(cleanup)
 
-describe('Stammdaten', () => {
-  it('alle vier Felder stehen da und tragen ihren Wert', () => {
-    const { container } = zeige(person())
-    expect(container.querySelector<HTMLInputElement>('#pers-fn')?.value).toBe('Anton')
-    expect(container.querySelector<HTMLInputElement>('#pers-ln')?.value).toBe('Alt')
-    expect(container.querySelector<HTMLInputElement>('#pers-tel')?.value).toBe('0123')
-    expect(container.querySelector<HTMLInputElement>('#pers-mail')?.value).toBe('anton@example.org')
+describe('Der Kopf', () => {
+  it('nennt Namen, Gruppe und Rolle', () => {
+    const { container } = zeige(person({ grp: 'g1', role: 'aeltester' }))
+    expect(container.querySelector('.person-name')?.textContent).toBe('Anton Alt')
+    expect(container.querySelector('.person-unter')?.textContent).toBe('Gruppe 1 · Ältester')
   })
 
-  it('das Feld für den Anzeigenamen gibt es nicht mehr (T110)', () => {
-    const { container } = zeige(person())
-    expect(container.querySelector('#pers-dn')).toBeNull()
+  it('der Ring ist voll, wenn die Person angemeldet ist — sonst gestrichelt', () => {
+    const konto: Member[] = [{ userId: 'u9', personId: 'p-a', email: '', planner: false, zuteiler: false }]
+    expect(zeige(person(), { members: konto }).container.querySelector('.person-bild')?.className).toContain(
+      'is-angemeldet',
+    )
+    cleanup()
+    expect(zeige(person()).container.querySelector('.person-bild')?.className).not.toContain('is-angemeldet')
   })
 
-  it('jedes Feld schreibt nur sein eigenes', () => {
+  it('am Handy führt Zurück zur Liste — am Desktop (rechts neben der Liste) gibt es kein Zurück', () => {
     const { container, dispatch } = zeige(person())
-    fireEvent.change(container.querySelector('#pers-fn')!, { target: { value: 'Andreas' } })
-    expect(patches(dispatch)).toContainEqual({ fn: 'Andreas' })
-    fireEvent.change(container.querySelector('#pers-mail')!, { target: { value: 'neu@x.de' } })
-    expect(patches(dispatch)).toContainEqual({ mail: 'neu@x.de' })
+    fireEvent.click(container.querySelector(`[aria-label="${t.a11yZurueck}"]`)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'selectPerson', id: null })
+    cleanup()
+    const desktop = zeige(person(), {}, true).container
+    expect(desktop.querySelector(`[aria-label="${t.a11yZurueck}"]`)).toBeNull()
+    expect(desktop.querySelector(`[aria-label="${t.personBearbeiten}"]`)).not.toBeNull()
+  })
+
+  it('die Konto-Karte gibt es nur angemeldet — ohne Konto (Entwicklerseite) gibt es keine Konten', () => {
+    expect(zeige(person()).container.querySelector('.konto-karte')).not.toBeNull()
+    cleanup()
+    expect(zeige(person(), { userId: null }).container.querySelector('.konto-karte')).toBeNull()
+  })
+})
+
+describe('Person bearbeiten: die Felder', () => {
+  it('alle vier Felder stehen da und tragen ihren Wert', () => {
+    const b = bearbeiten(zeige(person()).container)
+    expect(feld(b, 'pers-fn').value).toBe('Anton')
+    expect(feld(b, 'pers-ln').value).toBe('Alt')
+    expect(feld(b, 'pers-tel').value).toBe('0123')
+    expect(feld(b, 'pers-mail').value).toBe('anton@example.org')
+  })
+
+  it('Telefon und E-Mail gelten sofort, jedes nur für sich', () => {
+    const { container, dispatch } = zeige(person())
+    const b = bearbeiten(container)
+    fireEvent.change(feld(b, 'pers-tel'), { target: { value: '0456' } })
+    fireEvent.change(feld(b, 'pers-mail'), { target: { value: 'neu@x.de' } })
+    expect(patches(dispatch)).toEqual([{ tel: '0456' }, { mail: 'neu@x.de' }])
   })
 
   it('ein fehlender Wert ergibt ein leeres Feld, kein „undefined"', () => {
-    const { container } = zeige(person({ tel: '' }))
-    expect(container.querySelector<HTMLInputElement>('#pers-tel')?.value).toBe('')
+    const b = bearbeiten(zeige(person({ tel: '' })).container)
+    expect(feld(b, 'pers-tel').value).toBe('')
   })
 })
 
 /**
- * **Trägt schon jemand diesen Namen?** (T110)
+ * **Der Name gilt erst beim Schließen** (T121, Phase 6b).
  *
- * Vor- und Nachname sind je Versammlung eindeutig. Die Datenbank erzwingt das
- * (`persons_name_eindeutig`), aber eine abgewiesene Zeile ist keine Auskunft:
- * Der Planer sähe eine Schreibfehler-Meldung und wüsste nicht, wem der Name
- * schon gehört. Deshalb steht die Meldung am Feld — und sie nennt die andere
- * Person.
+ * Bis dahin schrieb jeder Tastendruck den Namen in Zustand und Wochen; auf dem
+ * Weg von „Bernd" zu „Bernd jun." stand für einen Moment die Dublette da, und
+ * wer beide Felder leerte und ging, dem verwarf die App die Person samt Zeile in
+ * der Datenbank. Jetzt bleibt der Name im Blatt, bis es zugeht.
  */
-describe('Namensgleichheit', () => {
-  const fehler = (c: HTMLElement) => c.querySelector('#pers-name-dublette')?.textContent ?? ''
+describe('Person bearbeiten: der Name', () => {
+  const tippen = (b: HTMLElement, fn: string, ln: string) => {
+    fireEvent.change(feld(b, 'pers-fn'), { target: { value: fn } })
+    fireEvent.change(feld(b, 'pers-ln'), { target: { value: ln } })
+  }
 
-  it('meldet, wer den Namen schon trägt', () => {
-    const { container } = zeige(person({ fn: 'Bernd', ln: 'Brand' }))
-    expect(fehler(container)).toContain('Bernd Brand')
+  it('Tippen schreibt nichts — „Fertig" übernimmt den Namen, ohne Leerzeichen am Rand', () => {
+    const { container, dispatch } = zeige(person())
+    const b = bearbeiten(container)
+    tippen(b, ' Andreas ', 'Alt')
+    expect(patches(dispatch)).toEqual([])
+    fireEvent.click(knopf(b, t.fertig))
+    expect(patches(dispatch)).toEqual([{ fn: 'Andreas', ln: 'Alt' }])
+    expect(blatt(t.personBearbeiten)).toBeNull()
   })
 
-  it('vergleicht ohne Rücksicht auf Schreibweise und Leerzeichen', () => {
-    const { container } = zeige(person({ fn: 'bernd  ', ln: ' BRAND' }))
-    expect(fehler(container)).toContain('Bernd Brand')
+  it('auch das ✕ übernimmt — geändert ist geändert', () => {
+    const { container, dispatch } = zeige(person())
+    const b = bearbeiten(container)
+    tippen(b, 'Andreas', 'Alt')
+    fireEvent.click(b.querySelector(`[aria-label="${t.a11yClose}"]`)!)
+    expect(patches(dispatch)).toEqual([{ fn: 'Andreas', ln: 'Alt' }])
   })
 
-  it('markiert beide Namensfelder, nicht nur eines — die Regel gilt dem Paar', () => {
-    const { container } = zeige(person({ fn: 'Bernd', ln: 'Brand' }))
-    expect(container.querySelector('#pers-fn')?.getAttribute('aria-invalid')).toBe('true')
-    expect(container.querySelector('#pers-ln')?.getAttribute('aria-invalid')).toBe('true')
-    // Telefon und E-Mail sind unbeteiligt.
-    expect(container.querySelector('#pers-tel')?.getAttribute('aria-invalid')).toBeNull()
+  it('unverändert schreibt das Schließen nichts', () => {
+    const { container, dispatch } = zeige(person())
+    fireEvent.click(knopf(bearbeiten(container), t.fertig))
+    expect(dispatch).not.toHaveBeenCalled()
   })
 
-  it('der Zusatz am Vornamen räumt die Meldung ab', () => {
-    const { container } = zeige(person({ fn: 'Bernd jun.', ln: 'Brand' }))
-    expect(container.querySelector('#pers-name-dublette')).toBeNull()
+  it('meldet am Feld, wer den Namen schon trägt — Schreibweise und Leerzeichen zählen nicht', () => {
+    const b = bearbeiten(zeige(person()).container)
+    tippen(b, 'bernd  ', ' BRAND')
+    expect(b.querySelector('[role="alert"]')?.textContent).toContain('Bernd Brand')
+    // Beide Felder, nicht nur eines — die Regel gilt dem Paar. Telefon ist unbeteiligt.
+    expect(feld(b, 'pers-fn').getAttribute('aria-invalid')).toBe('true')
+    expect(feld(b, 'pers-ln').getAttribute('aria-invalid')).toBe('true')
+    expect(feld(b, 'pers-tel').getAttribute('aria-invalid')).toBeNull()
+  })
+
+  it('ein doppelter Name bleibt beim Schließen draußen — der alte gilt, und ein Hinweis sagt warum', () => {
+    const { container, dispatch } = zeige(person())
+    const b = bearbeiten(container)
+    tippen(b, 'Bernd', 'Brand')
+    fireEvent.click(knopf(b, t.fertig))
+    expect(patches(dispatch)).toEqual([])
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'showToast', text: fill(t.toastNameNichtGeaendert, { name: 'Bernd Brand' }),
+    })
+  })
+
+  it('ein leerer Name ebenso — die Person bleibt, wie sie war', () => {
+    const { container, dispatch } = zeige(person())
+    const b = bearbeiten(container)
+    tippen(b, '  ', '')
+    expect(b.querySelector('[role="alert"]')?.textContent).toBe(t.toastNameLeer)
+    fireEvent.click(knopf(b, t.fertig))
+    expect(patches(dispatch)).toEqual([])
+    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.toastNameLeer })
+    expect(dispatch.mock.calls.some((c) => c[0].type === 'removePerson')).toBe(false)
   })
 
   it('der eigene Name ist keine Dublette — sonst ließe sich niemand bearbeiten', () => {
-    const { container } = zeige(person())
-    expect(container.querySelector('#pers-name-dublette')).toBeNull()
-  })
-
-  it('getippt werden darf weiter — angehalten wird das Speichern, nicht die Eingabe', () => {
-    // Von „Bernd" zu „Bernd jun." führt kein Weg, der nicht durch die Dublette
-    // ginge. Das Feld nimmt den Tastendruck also an.
-    const { container, dispatch } = zeige(person({ fn: 'Bernd', ln: 'Brand' }))
-    fireEvent.change(container.querySelector('#pers-fn')!, { target: { value: 'Bernd j' } })
-    expect(patches(dispatch)).toContainEqual({ fn: 'Bernd j' })
+    const b = bearbeiten(zeige(person()).container)
+    expect(b.querySelector('[role="alert"]')).toBeNull()
   })
 })
 
-describe('Geschlecht, Rolle, Gruppe', () => {
-  it('das Geschlecht steht als Auswahl mit gedrücktem Zustand', () => {
-    const { container } = zeige(person({ female: true }))
-    expect(chip(container, t.schwester).getAttribute('aria-pressed')).toBe('true')
-    expect(chip(container, t.bruder).getAttribute('aria-pressed')).toBe('false')
+describe('Person bearbeiten: Geschlecht, Rolle, Gruppe', () => {
+  it('das Geschlecht steht als Wahl mit gedrücktem Zustand — ein Tipp ändert es', () => {
+    const { container, dispatch } = zeige(person({ female: true }))
+    const b = bearbeiten(container)
+    expect(knopf(b, t.schwester).getAttribute('aria-pressed')).toBe('true')
+    expect(knopf(b, t.bruder).getAttribute('aria-pressed')).toBe('false')
+    fireEvent.click(knopf(b, t.bruder))
+    expect(patches(dispatch)).toContainEqual({ female: false })
   })
 
-  it('ein Tipp ändert es', () => {
-    const { container, dispatch } = zeige(person({ female: false }))
-    fireEvent.click(chip(container, t.schwester))
-    expect(patches(dispatch)).toContainEqual({ female: true })
-  })
-
-  it('jede Rolle steht zur Wahl — genau die vier aus der Vorgabe', () => {
-    const { container } = zeige(person({ role: 'aeltester' }))
-    const rollenBlock = [...container.querySelectorAll('.pers-role-block')].find(
-      (b) => b.querySelector('.field-label')?.textContent === t.rolle,
-    )!
-    expect([...rollenBlock.querySelectorAll('.role-chip')].map((b) => b.textContent)).toEqual(
-      ROLE_ORDER.map((r) => t[ROLE_KEY[r]]),
-    )
-    const aktiv = rollenBlock.querySelector('.role-chip[aria-pressed="true"]')
-    expect(aktiv?.textContent).toBe(t.rolleAeltester)
-  })
-
-  it('ein Tipp setzt die Rolle', () => {
-    const { container, dispatch } = zeige(person({ role: 'verkuendiger' }))
-    const rollenBlock = [...container.querySelectorAll('.pers-role-block')].find(
-      (b) => b.querySelector('.field-label')?.textContent === t.rolle,
-    )!
-    const dag = [...rollenBlock.querySelectorAll('.role-chip')].find(
-      (b) => b.textContent === t.rolleDag,
-    )!
-    fireEvent.click(dag)
+  it('jede Rolle steht zur Wahl — genau die vier aus der Vorgabe — und gilt sofort', () => {
+    const { container, dispatch } = zeige(person({ role: 'aeltester' }))
+    const wahl = feld(bearbeiten(container), 'pers-rolle') as unknown as HTMLSelectElement
+    expect([...wahl.options].map((o) => o.textContent)).toEqual(ROLE_ORDER.map((r) => t[ROLE_KEY[r]]))
+    expect(wahl.value).toBe('aeltester')
+    fireEvent.change(wahl, { target: { value: 'dienstamtgehilfe' } })
     expect(patches(dispatch)).toContainEqual({ role: 'dienstamtgehilfe' })
   })
 
   it('die Gruppe lässt sich zuweisen und wieder lösen', () => {
     const { container, dispatch } = zeige(person())
-    const wahl = container.querySelector<HTMLSelectElement>('#pers-grp')!
-    expect([...wahl.querySelectorAll('option')].map((o) => o.textContent)).toEqual(['—', 'Gruppe 1'])
+    const wahl = feld(bearbeiten(container), 'pers-grp') as unknown as HTMLSelectElement
+    expect([...wahl.options].map((o) => o.textContent)).toEqual(['—', 'Gruppe 1'])
     fireEvent.change(wahl, { target: { value: 'g1' } })
     expect(patches(dispatch)).toContainEqual({ grp: 'g1' })
     cleanup()
     const zweiter = zeige(person({ grp: 'g1' }))
-    fireEvent.change(zweiter.container.querySelector('#pers-grp')!, { target: { value: '' } })
+    fireEvent.change(feld(bearbeiten(zweiter.container), 'pers-grp'), { target: { value: '' } })
     expect(patches(zweiter.dispatch)).toContainEqual({ grp: null })
+  })
+
+  it('ohne angelegte Gruppen fragt es nach keiner', () => {
+    expect(bearbeiten(zeige(person(), { groups: [] }).container).querySelector('#pers-grp')).toBeNull()
   })
 })
 
-describe('Familie / Haushalt', () => {
+describe('Person bearbeiten: Familie', () => {
+  const auswahl = (b: HTMLElement) => b.querySelector<HTMLSelectElement>(`[aria-label="${t.familieHinzu}"]`)!
+
   it('ohne Verknüpfung stehen nur die anderen zur Auswahl — nicht man selbst', () => {
-    const { container } = zeige(person())
-    const wahl = container.querySelector<HTMLSelectElement>(`[aria-label="${t.familieHinzu}"]`)!
-    const namen = [...wahl.querySelectorAll('option')].map((o) => o.textContent)
-    expect(namen).toEqual([t.familieHinzu, 'Bernd Brand', 'Clara Cohn'])
+    const b = bearbeiten(zeige(person()).container)
+    expect([...auswahl(b).options].map((o) => o.textContent)).toEqual([t.familieHinzu, 'Bernd Brand', 'Clara Cohn'])
   })
 
-  it('eine Auswahl verknüpft', () => {
+  it('eine Auswahl verknüpft — eine leere nicht', () => {
     const { container, dispatch } = zeige(person())
-    fireEvent.change(container.querySelector(`[aria-label="${t.familieHinzu}"]`)!, {
-      target: { value: 'p-c' },
-    })
-    expect(dispatch).toHaveBeenCalledWith({
-      type: 'setFamily', id: 'p-a', memberId: 'p-c', add: true,
-    })
+    const b = bearbeiten(container)
+    fireEvent.change(auswahl(b), { target: { value: '' } })
+    expect(dispatch.mock.calls.some((c) => c[0].type === 'setFamily')).toBe(false)
+    fireEvent.change(auswahl(b), { target: { value: 'p-c' } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'setFamily', id: 'p-a', memberId: 'p-c', add: true })
   })
 
   it('bereits Verknüpfte stehen als Chips und nicht mehr in der Auswahl', () => {
-    const { container } = zeige(person({ fam: 'f1' }), {
-      persons: [person({ fam: 'f1' }), { ...COHN, fam: 'f1' }, BRAND],
-    })
-    expect([...container.querySelectorAll('.fam-chip')].map((c) => c.textContent)).toEqual([
-      'Clara Cohn✕',
-    ])
-    const wahl = container.querySelector<HTMLSelectElement>(`[aria-label="${t.familieHinzu}"]`)!
-    expect([...wahl.querySelectorAll('option')].map((o) => o.textContent)).toEqual([
-      t.familieHinzu, 'Bernd Brand',
-    ])
+    const p = person({ fam: 'f1' })
+    const b = bearbeiten(zeige(p, { persons: [p, { ...COHN, fam: 'f1' }, BRAND] }).container)
+    expect([...b.querySelectorAll('.person-familie-chip')].map((c) => c.textContent)).toEqual(['Clara Cohn✕'])
+    expect([...auswahl(b).options].map((o) => o.textContent)).toEqual([t.familieHinzu, 'Bernd Brand'])
   })
 
-  it('ein Chip lässt sich lösen', () => {
-    const { container, dispatch } = zeige(person({ fam: 'f1' }), {
-      persons: [person({ fam: 'f1' }), { ...COHN, fam: 'f1' }],
-    })
-    fireEvent.click(container.querySelector('.fam-remove')!)
+  it('ein Chip lässt sich lösen — erst nach der Rückfrage', () => {
+    const p = person({ fam: 'f1' })
+    const { container, dispatch } = zeige(p, { persons: [p, { ...COHN, fam: 'f1' }] })
+    const b = bearbeiten(container)
+    fireEvent.click(b.querySelector('.person-familie-weg')!)
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'setFamily' }))
-    expect(container.querySelector('.fam-remove')?.textContent).toBe(t.entfernenSicher)
-    fireEvent.click(container.querySelector('.fam-remove')!)
-    expect(dispatch).toHaveBeenCalledWith({
-      type: 'setFamily', id: 'p-a', memberId: 'p-c', add: false,
-    })
+    expect(b.querySelector('.person-familie-weg')?.textContent).toBe(t.entfernenSicher)
+    fireEvent.click(b.querySelector('.person-familie-weg')!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'setFamily', id: 'p-a', memberId: 'p-c', add: false })
   })
 
   it('erklärt, wozu die Verknüpfung dient — sie wirkt bei den Gesprächspartnern', () => {
-    const { container } = zeige(person())
-    expect(container.textContent).toContain(t.familieHint)
-  })
-
-  it('eine leere Auswahl verknüpft nichts', () => {
-    const { container, dispatch } = zeige(person())
-    fireEvent.change(container.querySelector(`[aria-label="${t.familieHinzu}"]`)!, {
-      target: { value: '' },
-    })
-    expect(dispatch.mock.calls.some((c) => c[0].type === 'setFamily')).toBe(false)
+    expect(bearbeiten(zeige(person()).container).textContent).toContain(t.familieHint)
   })
 })
 
-describe('Vollständigkeitsprobe: jeder Bereich hat seinen Schalter', () => {
-  it('jeder feste Aufgabenbereich steht in der Aufgaben-Karte', () => {
+describe('Aufgabenbereiche', () => {
+  it('als Chips nach Gruppen — nur, was die Person hat', () => {
+    const p = person({ priv: { ...emptyQualifications(), gebet: true, treffpunkt: true, [serviceQualKey('mik')]: true } })
+    const { container } = zeige(p)
+    const gruppen = [...container.querySelectorAll('.person-bereiche')].map((g) => [
+      g.querySelector('.klein-text')?.textContent,
+      [...g.querySelectorAll('.person-chip')].map((c) => c.textContent),
+    ])
+    expect(gruppen).toEqual([
+      [t.navZusammenkuenfte, [t.privGebet]],
+      [t.hilfsdienste, ['Mikrofone']],
+      [t.tabFs, [t.privTreffpunkt]],
+    ])
+  })
+
+  it('ohne gesetzten Bereich sagt die Karte das', () => {
+    const { container } = zeige(person())
+    expect(container.querySelector('.person-chip')).toBeNull()
+    expect(container.textContent).toContain(t.keineBereiche)
+  })
+
+  it('„Ändern" öffnet die Schalter: jeder feste Bereich, jede feste Rolle, jeder Dienst — die Gruppen-Rotation nicht', () => {
     // Fehlte einer, ließe er sich nirgends setzen — der zugehörige Platz
     // bliebe für immer offen, ohne dass es auffiele.
-    const { container } = zeige(person())
-    const gezeigt = schalterLabels(container, t.aufgabenbereiche)
-    expect(gezeigt).toHaveLength(QUALIFICATION_ORDER.length)
+    const b = bereicheAendern(zeige(person()).container)
+    const alle = [...b.querySelectorAll('[role="switch"]')]
+    expect(alle).toHaveLength(QUALIFICATION_ORDER.length + WT_ROLE_ORDER.length + 2)
+    expect(schalterIn(b, t.hilfsdienste)).toEqual(['Mikrofone', 'Ordner'])
+    expect(schalterIn(b, t.hilfsdienste)).not.toContain('Reinigung')
   })
 
-  it('jeder Hilfsdienst mit eigenem Bereich steht in der Hilfsdienst-Karte', () => {
-    const { container } = zeige(person())
-    expect(schalterLabels(container, t.hilfsdienste)).toEqual(['Mikrofone', 'Ordner'])
-  })
-
-  it('die Gruppen-Rotation nicht — sie rotiert Gruppen statt Personen', () => {
-    const { container } = zeige(person())
-    expect(schalterLabels(container, t.hilfsdienste)).not.toContain('Reinigung')
-  })
-
-  it('jede feste Wachtturm-Rolle steht in ihrer eigenen Karte — dazu die beiden Rechte', () => {
-    const { container } = zeige(person())
-    // Die Karte trägt zusätzlich die Rechte: Planer und Admin (4.10.2026).
-    const labels = schalterLabels(container, t.wtRollenLabel)
-    expect(labels).toHaveLength(WT_ROLE_ORDER.length + 2)
-    expect(labels.slice(-2)).toEqual([t.rollePlaner, t.planerLbl])
+  it('die festen Rollen tragen ihren Hinweis mit', () => {
+    const b = bereicheAendern(zeige(person()).container)
+    expect(b.querySelector(`section[aria-label="${t.wtRollenLabel}"]`)?.textContent).toContain(t.wtRollenHint)
   })
 
   it('ein Schalter schreibt genau seinen Bereich', () => {
     const { container, dispatch } = zeige(person())
-    const panel = [...container.querySelectorAll('.panel')].find(
-      (p) => p.querySelector('.panel-label')?.textContent === t.hilfsdienste,
-    )!
-    const mik = [...panel.querySelectorAll('[role="switch"]')].find(
-      (s) => s.getAttribute('aria-label') === 'Mikrofone',
-    )!
+    const b = bereicheAendern(container)
+    const mik = [...b.querySelectorAll('[role="switch"]')].find((s) => s.getAttribute('aria-label') === 'Mikrofone')!
     fireEvent.click(mik)
     const patch = patches(dispatch).at(-1)!
     expect(Object.keys(patch.priv).filter((k) => patch.priv[k])).toEqual([serviceQualKey('mik')])
   })
 
-  it('ohne konfigurierte Dienste bleibt die Karte leer, aber vorhanden', () => {
-    const { container } = zeige(person(), { services: [] })
-    expect(schalterLabels(container, t.hilfsdienste)).toEqual([])
+  it('ohne konfigurierte Dienste fehlt ihre Gruppe im Blatt', () => {
+    const b = bereicheAendern(zeige(person(), { services: [] }).container)
+    expect(b.querySelector(`section[aria-label="${t.hilfsdienste}"]`)).toBeNull()
   })
 })
 
-describe('Löschen braucht zwei Tipps', () => {
-  it('der erste löscht nicht, sondern nennt die Folge', () => {
+describe('Auslastung', () => {
+  it('nennt die Aufgaben der letzten acht Wochen und zeigt je Woche einen Punkt', () => {
+    const { container } = zeige(person())
+    expect(container.textContent).toContain(fill(t.aufgabenLetzteW, { w: 8, n: 0 }))
+    const punkte = container.querySelector('.person-wochen')!
+    expect(punkte.querySelectorAll('.person-woche')).toHaveLength(8)
+    expect(punkte.querySelectorAll('.person-woche.is-voll')).toHaveLength(0)
+  })
+})
+
+describe('Person entfernen braucht zwei Tipps', () => {
+  const entfernen = (c: HTMLElement) => c.querySelector<HTMLButtonElement>('.person-entfernen')!
+
+  it('der erste entfernt nicht, sondern nennt die Folge', () => {
     const { container, dispatch } = zeige(person())
-    const knopf = container.querySelector<HTMLButtonElement>('.pers-delete')!
-    expect(knopf.textContent).toBe(t.persLoeschen)
-    fireEvent.click(knopf)
+    expect(entfernen(container).textContent).toBe(t.persLoeschen)
+    fireEvent.click(entfernen(container))
     expect(dispatch.mock.calls.some((c) => c[0].type === 'removePerson')).toBe(false)
-    expect(knopf.textContent).toContain('Anton Alt')
-    expect(knopf.className).toContain('is-armed')
+    expect(entfernen(container).textContent).toContain('Anton Alt')
+    expect(entfernen(container).className).toContain('is-armed')
   })
 
-  it('erst der zweite löscht', () => {
+  it('erst der zweite entfernt', () => {
     const { container, dispatch } = zeige(person())
-    const knopf = container.querySelector<HTMLButtonElement>('.pers-delete')!
-    fireEvent.click(knopf)
-    fireEvent.click(knopf)
+    fireEvent.click(entfernen(container))
+    fireEvent.click(entfernen(container))
     expect(dispatch).toHaveBeenCalledWith({ type: 'removePerson', id: 'p-a' })
   })
 
   it('geht der Fokus weg, entschärft er sich wieder', () => {
     const { container, dispatch } = zeige(person())
-    const knopf = container.querySelector<HTMLButtonElement>('.pers-delete')!
-    fireEvent.click(knopf)
-    fireEvent.blur(knopf)
-    expect(knopf.textContent).toBe(t.persLoeschen)
-    fireEvent.click(knopf)
+    fireEvent.click(entfernen(container))
+    fireEvent.blur(entfernen(container))
+    expect(entfernen(container).textContent).toBe(t.persLoeschen)
+    fireEvent.click(entfernen(container))
     expect(dispatch.mock.calls.some((c) => c[0].type === 'removePerson')).toBe(false)
-  })
-})
-
-describe('Zurück und Konto-Karte', () => {
-  it('„Alle Personen" führt zur Liste zurück', () => {
-    const { container, dispatch } = zeige(person())
-    fireEvent.click(container.querySelector('.pers-back')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'selectPerson', id: null })
-  })
-
-  it('die Konto-Karte gibt es nur angemeldet — ohne Konto (Entwicklerseite) gibt es keine Konten', () => {
-    expect(zeige(person()).container.textContent).toContain(t.kontoCard)
-    cleanup()
-    expect(zeige(person(), { userId: null }).container.textContent).not.toContain(t.kontoCard)
-  })
-
-  it('der Kopf nennt Namen, Rolle und Versammlung', () => {
-    const { container } = zeige(person())
-    expect(container.querySelector('.pers-detail-name')?.textContent).toBe('Anton Alt')
-    expect(container.querySelector('.pers-detail-sub')?.textContent).toContain('Nordheim')
   })
 })

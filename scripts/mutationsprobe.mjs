@@ -415,7 +415,7 @@ export const KATALOG = [
   // ── Abwesenheiten ─────────────────────────────────────────────────────────
   {
     id: 'abwesenheit-gehoert-der-person',
-    datei: 'src/profil/abwesenheiten.ts',
+    datei: 'src/components/abwesenheiten.ts',
     regel: 'Die eigenen Abwesenheiten (Profil) hängen an der Person, nicht am Ersteller.',
     suchen: '    ? absences.filter((a) => (a.personId != null ? a.personId === wer.personId : a.userId === wer.userId))',
     ersetzen: '    ? absences.filter((a) => a.userId === wer.userId || a.personId === wer.personId)',
@@ -733,10 +733,10 @@ export const KATALOG = [
   },
   {
     id: 'bidi-eigene-texte',
-    datei: 'src/personen/PersonDetail.tsx',
+    datei: 'src/personen/PersonBearbeitenBlatt.tsx',
     regel: 'Personenfelder tragen ihre eigene Schreibrichtung — eine Telefonnummer dreht sich sonst in einer RTL-Oberfläche um.',
-    suchen: '              dir="auto"\n',
-    ersetzen: '',
+    suchen: '            type="tel"\n            dir="auto"\n',
+    ersetzen: '            type="tel"\n',
   },
   {
     id: 'datumswaehler-montag',
@@ -1024,8 +1024,8 @@ export const KATALOG = [
     id: 'rechte-admin-hat-planer-schalter-an',
     datei: 'src/personen/PrivToggle.tsx',
     regel: 'Beim Admin steht der Planer-Schalter an — er hat das Recht ohnehin.',
-    suchen: '        on={admin || planer}\n',
-    ersetzen: '        on={planer}\n',
+    suchen: '        an={admin || planer}\n',
+    ersetzen: '        an={planer}\n',
   },
   {
     id: 'ersatz-gefunden-auch-an-planer',
@@ -1352,8 +1352,11 @@ export const KATALOG = [
     id: 'person-loeschen-zwei-tipp',
     datei: 'src/personen/PersonDetail.tsx',
     regel: '„Person löschen" verlangt zwei Tipps — es löst Gruppen-, Konto- und Code-Bezüge.',
-    suchen: '        onClick={loeschen.onClick}\n        onBlur={loeschen.onBlur}\n',
-    ersetzen: "        onClick={() => dispatch({ type: 'removePerson', id: person.id })}\n",
+    suchen: '      <EntfernenKnopf\n        className="knopf-leise knopf-entfernen person-entfernen"\n',
+    ersetzen:
+      '      <button\n' +
+      "        onClick={() => dispatch({ type: 'removePerson', id: person.id })}\n" +
+      '        className="knopf-leise knopf-entfernen person-entfernen"\n',
   },
   {
     id: 'sheet-abwesende-gesperrt',
@@ -2283,9 +2286,9 @@ export const KATALOG = [
   },
   {
     id: 'name-feld-meldet-die-dublette',
-    datei: 'src/personen/PersonDetail.tsx',
-    regel: 'Das Personen-Detail nennt am Feld, wer den Namen schon trägt.',
-    suchen: '  const dublette = namensDublette(state.persons, person)',
+    datei: 'src/personen/PersonBearbeitenBlatt.tsx',
+    regel: '„Person bearbeiten" nennt am Feld, wer den Namen schon trägt.',
+    suchen: '  const dublette = namensDublette(state.persons, name)',
     ersetzen: '  const dublette = undefined',
   },
   // Doppelter Name beim Tippen und Verlassen (4.10.2026): Bis dahin ließ die
@@ -3124,10 +3127,10 @@ export const KATALOG = [
   },
   {
     id: 'abwesenheiten-nur-was-ansteht',
-    datei: 'src/profil/abwesenheiten.ts',
-    regel: 'Im Profil stehen nur Abwesenheiten, die anstehen oder laufen — was vorbei ist, fällt heraus.',
-    suchen: '    .filter((a) => a.to >= heute)',
-    ersetzen: '    .filter(() => true)',
+    datei: 'src/components/abwesenheiten.ts',
+    regel: 'Im Profil und bei der Person stehen nur Abwesenheiten, die anstehen oder laufen — was vorbei ist, fällt heraus.',
+    suchen: '  return liste.filter((a) => a.to >= heute)',
+    ersetzen: '  return liste.filter(() => true)',
   },
   {
     id: 'abwesenheit-nur-mit-recht',
@@ -5422,6 +5425,71 @@ export const KATALOG = [
     regel: 'Leerzeichen um den Namen zählen nicht — weder als Name noch beim Speichern.',
     suchen: "  const name = { id: '', fn: fn.trim(), ln: ln.trim() }",
     ersetzen: "  const name = { id: '', fn, ln }",
+  },
+
+  /* ---- T121 Phase 6b: die Person ---- */
+  {
+    id: 'person-name-erst-beim-schliessen',
+    datei: 'src/personen/PersonBearbeitenBlatt.tsx',
+    regel: 'Tippen im Namen schreibt nichts — der Name gilt erst beim Schließen des Blatts.',
+    suchen: '        onChange={(e) => setzen(e.target.value)}',
+    ersetzen: '        onChange={(e) => { setzen(e.target.value); update({ fn: e.target.value }) }}',
+  },
+  {
+    id: 'person-name-doppelt-bleibt-draussen',
+    datei: 'src/personen/PersonBearbeitenBlatt.tsx',
+    regel: 'Ein doppelter Name wird beim Schließen nicht übernommen — der alte bleibt, ein Hinweis sagt warum (T110).',
+    suchen: "      if (dublette) dispatch({ type: 'showToast', text: fill(t.toastNameNichtGeaendert, { name: personLabel(dublette) }) })",
+    ersetzen: "      if (false) dispatch({ type: 'showToast', text: fill(t.toastNameNichtGeaendert, { name: personLabel(dublette) }) })",
+  },
+  {
+    id: 'person-name-leer-bleibt-draussen',
+    datei: 'src/personen/PersonBearbeitenBlatt.tsx',
+    regel: 'Ein leerer Name wird nicht übernommen — die Person bleibt, wie sie war.',
+    suchen: "      else if (leer) dispatch({ type: 'showToast', text: t.toastNameLeer })",
+    ersetzen: "      else if (false) dispatch({ type: 'showToast', text: t.toastNameLeer })",
+  },
+  {
+    id: 'person-chips-nur-gesetzte',
+    datei: 'src/personen/bereiche.ts',
+    regel: 'Als Chips stehen nur die Bereiche, die die Person hat.',
+    suchen: '    .map((g) => ({ ...g, bereiche: g.bereiche.filter((b) => privWert(person.priv, b.key)) }))',
+    ersetzen: '    .map((g) => g)',
+  },
+  {
+    id: 'person-predigtdienst-eigene-gruppe',
+    datei: 'src/personen/bereiche.ts',
+    regel: 'Treffpunkte und Zeugnisgeben stehen beim Predigtdienst, nicht bei den Zusammenkünften — jeder Bereich genau einmal.',
+    suchen: '      bereiche: fest(QUALIFICATION_ORDER.filter((k) => !PREDIGTDIENST.has(k))).sort(nachLabel),',
+    ersetzen: '      bereiche: fest(QUALIFICATION_ORDER).sort(nachLabel),',
+  },
+  {
+    id: 'konto-spur-eingeladen',
+    datei: 'src/personen/KontoCard.tsx',
+    regel: 'Ein offener Code macht den Schritt „Eingeladen" voll — als Nächstes steht das Anmelden.',
+    suchen: "    { name: t.standEingeladen, lage: member || invite ? 'voll' : 'jetzt' },",
+    ersetzen: "    { name: t.standEingeladen, lage: member ? 'voll' : 'jetzt' },",
+  },
+  {
+    id: 'auslastung-bis-zur-laufenden-woche',
+    datei: 'src/data/auslastung.ts',
+    regel: 'Die Auslastung bei der Person blickt zurück: die Wochen bis einschließlich der laufenden.',
+    suchen: '    const woche = nachStart.get(montagNach(montag, i - anzahl + 1))',
+    ersetzen: '    const woche = nachStart.get(montagNach(montag, i))',
+  },
+  {
+    id: 'abwesenheiten-nur-der-person',
+    datei: 'src/components/abwesenheiten.ts',
+    regel: 'Bei einer Person stehen ihre Abwesenheiten — nicht die anderer.',
+    suchen: '    absences.filter((a) => a.personId === personId),',
+    ersetzen: '    absences,',
+  },
+  {
+    id: 'abwesenheit-auf-die-gezeigte-person',
+    datei: 'src/components/AbwesenheitenKarte.tsx',
+    regel: 'Bei einer Person trägt „Abwesenheit eintragen" auf sie ein, nicht auf den Angemeldeten.',
+    suchen: '  const personId = person ? person.id : state.personId',
+    ersetzen: '  const personId = state.personId',
   },
 ]
 

@@ -161,36 +161,6 @@
   color: var(--text);
 }
 
-/* ---- Abwesenheiten ---------------------------------------------------------- */
-
-.profil-abw {
-  display: grid;
-  grid-template-columns: 12px minmax(0, 1fr) auto;
-  align-items: center;
-  column-gap: 14px;
-  min-height: 60px;
-  border-block-start: 1px solid var(--linie);
-}
-
-.profil-abw-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.profil-abw-zeit {
-  font-weight: 600;
-}
-
-.profil-abw-entfernen {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  color: var(--text2);
-}
-
 /* ---- Verwaltung (am Handy; ab dem Tablet steht sie im Menü) -------------------- */
 
 .profil-verweis {

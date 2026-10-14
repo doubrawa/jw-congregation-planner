@@ -211,7 +211,7 @@ export const DE = {
     // Überschrift der Leiste im Personen-Detail. Sie hieß „AUFGABEN", zeigt
     // aber seit den Abwesenheiten beide Richtungen — wann jemand dran ist und
     // wann er nicht kann.
-    zeitleiste: 'ZEITLEISTE',
+    zeitleiste: 'Zeitleiste',
     nameLbl: 'Name', versammlungLbl: 'Versammlung',
     darstellung: 'Darstellung', spracheLbl: 'Sprache',
     // Darstellung (T121): Dunkel, Hell, Automatisch.
@@ -240,15 +240,28 @@ export const DE = {
     standAngemeldet: 'Angemeldet', standEingeladen: 'Eingeladen', standOhne: 'Nicht eingeladen',
     filterAlle: 'Alle', filterWeitere: 'Filter', filterZuruecksetzen: 'Zurücksetzen',
     personWaehlen: 'Wähle eine Person in der Liste, um sie hier zu sehen.',
-    allePersonen: '‹ Alle Personen', stammdaten: 'STAMMDATEN',
+    // Die Person (T121, Phase 6b). „Angelegt" ist der erste Schritt der Spur des
+    // Kontos, vor `standEingeladen` und `standAngemeldet` — deshalb wie diese
+    // ohne Numerus und Genus. {w} ist die feste Zahl der Wochen der Auslastung
+    // (8): Für sie stimmt die Mehrzahl in jeder Sprache.
+    person: 'Person', personBearbeiten: 'Person bearbeiten', aendern: 'Ändern',
+    spurAngelegt: 'Angelegt',
+    auslastung: 'Auslastung',
+    aufgabenLetzteW: 'Aufgaben in den letzten {w} Wochen: {n}',
+    keineAbwesenheiten: 'Keine eingetragen.',
+    keineBereiche: 'Noch keine Aufgabenbereiche.',
+    rechte: 'Rechte', rechtPlanen: 'Darf planen',
+    rechtPlanenUnter: 'Teilt zu und sendet die Pläne.',
+    rechtAdminUnter: 'Ändert auch Pläne, Personen und Einstellungen.',
+    toastNameLeer: 'Name nicht geändert: Ohne Namen geht es nicht',
     vorname: 'Vorname', nachname: 'Nachname', telefon: 'Telefon', emailLbl: 'E-Mail',
-    kontoCard: 'KONTO',
-    persLoeschen: 'PERSON LÖSCHEN',
+    kontoCard: 'Konto',
+    persLoeschen: 'Person entfernen',
     offeneTitle: 'OFFENE ZUTEILUNGEN',
-    confirmPersonDel: '„{name}“ wirklich löschen? Bereits geplante Zuteilungen bleiben als Text in den Wochen stehen.',
-    toastPersonDel: 'Person gelöscht',
+    confirmPersonDel: '„{name}“ wirklich entfernen? Bereits geplante Zuteilungen bleiben als Text in den Wochen stehen.',
+    toastPersonDel: 'Person entfernt',
     kontoVerknuepft: 'Konto verknüpft',
-    einladenBtn: '+ EINLADEN',
+    einladenBtn: 'Einladen',
     einladenHintMail: 'Erstellt einen Einladungscode und schickt die Einladung per E-Mail. Ist kein Versand eingerichtet, öffnet sich stattdessen eine fertige E-Mail in deinem Mail-Programm.',
     einladenHintOhneMail: 'Keine E-Mail-Adresse hinterlegt — Code erstellen und per Teilen oder Kopieren persönlich weitergeben.',
     codeOffenHint: 'Offener Einladungscode — wird beim Registrieren in der App eingelöst.',
@@ -281,7 +294,7 @@ export const DE = {
     // Sprache der dortige Satz, statt einer eigenen Umschreibung. Zuletzt
     // in allen 34 Sprachen gegen WOL 1201038 gehalten am 27.9.2026.
     familieHint: 'Der Gesprächspartner soll dasselbe Geschlecht haben oder ein Familienangehöriger sein.',
-    familieHinzu: '+ Familienmitglied hinzufügen',
+    familieHinzu: 'Familienmitglied hinzufügen',
     partnerHinzu: '+ Partner',
     partnerEntfernen: '– Partner',
     schriftgroesse: 'Schriftgröße',
@@ -548,7 +561,6 @@ export const DE = {
     stErneut: 'ERNEUT VERSUCHEN', stLeer: 'Versammlung ist noch leer',
     stLeerText: 'Es sind noch keine Daten hinterlegt. Bitte wende dich an einen Admin.',
     keinePersonOpt: '— keine Person —', planerLbl: 'Admin', duMarker: ' (du)',
-    rechteHint: 'Planer teilen zu und senden die Pläne. Admins ändern auch die Pläne selbst, die Personen und die Einstellungen.',
     // Der eigene Platz in den Programm-Ansichten: dasselbe Wort wie `duMarker`,
     // seit T121 in Satzschreibung — es steht dort statt des eigenen Namens.
     chipDu: 'Du',

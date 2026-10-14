@@ -27,7 +27,7 @@ import { AufgabenScreen } from './AufgabenScreen'
  *   im Toast, und das ist die falsche Reihenfolge.
  *
  * Die eigenen Abwesenheiten stehen seit T121 im Profil
- * (`profil/abwesenheiten.test.ts`).
+ * (`components/abwesenheiten.test.ts`).
  */
 
 const t = dict('de')

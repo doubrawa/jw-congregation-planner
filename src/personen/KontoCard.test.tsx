@@ -85,6 +85,37 @@ beforeEach(() => {
 })
 afterEach(cleanup)
 
+/**
+ * **Die Spur** (T121, Entwurf `GPerson`): Angelegt · Eingeladen · Angemeldet —
+ * erledigt voll, der nächste Schritt hervorgehoben, was danach kommt leer.
+ */
+describe('Die Spur des Kontos', () => {
+  const lagen = (c: HTMLElement) =>
+    [...c.querySelectorAll('.spur-schritt')].map((s) => [s.querySelector('.spur-name')?.textContent, s.className])
+
+  it('noch nichts: als Nächstes das Einladen', () => {
+    expect(lagen(zeige(person()).container)).toEqual([
+      [t.spurAngelegt, 'spur-schritt is-voll'],
+      [t.standEingeladen, 'spur-schritt is-jetzt'],
+      [t.standAngemeldet, 'spur-schritt is-leer'],
+    ])
+  })
+
+  it('ein offener Code: eingeladen, als Nächstes das Anmelden', () => {
+    const code: Invite[] = [{ id: 'i1', code: 'ABC', personId: 'p-a', planner: false, zuteiler: false }]
+    expect(lagen(zeige(person(), { invites: code }).container).map(([, k]) => k)).toEqual([
+      'spur-schritt is-voll', 'spur-schritt is-voll', 'spur-schritt is-jetzt',
+    ])
+  })
+
+  it('ein verknüpftes Konto: alles erledigt', () => {
+    const konto: Member[] = [{ userId: 'u9', personId: 'p-a', email: '', planner: false, zuteiler: false }]
+    expect(lagen(zeige(person(), { members: konto }).container).map(([, k]) => k)).toEqual([
+      'spur-schritt is-voll', 'spur-schritt is-voll', 'spur-schritt is-voll',
+    ])
+  })
+})
+
 describe('Zustand 1: Person hat schon ein Konto', () => {
   const MITGLIED: Member[] = [{ userId: 'u9', personId: 'p-a', email: 'anton@example.org', planner: false, zuteiler: false }]
 
@@ -103,10 +134,10 @@ describe('Zustand 1: Person hat schon ein Konto', () => {
 
   it('die Verknüpfung lässt sich lösen — erst nach der Rückfrage', () => {
     const { container, dispatch } = zeige(person(), { members: MITGLIED })
-    fireEvent.click(container.querySelector('.svc-remove')!)
+    fireEvent.click(container.querySelector('.konto-entfernen')!)
     expect(dispatch).not.toHaveBeenCalled()
-    expect(container.querySelector('.svc-remove')?.textContent).toBe(t.entfernenSicher)
-    fireEvent.click(container.querySelector('.svc-remove')!)
+    expect(container.querySelector('.konto-entfernen')?.textContent).toBe(t.entfernenSicher)
+    fireEvent.click(container.querySelector('.konto-entfernen')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'removeMember', userId: 'u9' })
   })
 
@@ -115,7 +146,7 @@ describe('Zustand 1: Person hat schon ein Konto', () => {
       members: [{ userId: 'u1', personId: 'p-a', email: 'ich@example.org', planner: true, zuteiler: false }],
       userId: 'u1',
     })
-    expect(container.querySelector('.svc-remove')).toBeNull()
+    expect(container.querySelector('.konto-entfernen')).toBeNull()
     expect(container.querySelector('.mem-du')?.textContent).toBe(t.duMarker)
   })
 })
@@ -125,8 +156,8 @@ describe('Zustand 2: es liegt ein offener Code', () => {
 
   it('der Code steht sichtbar da, mit der Erklärung was er ist', () => {
     const { container } = zeige(person(), { invites: CODE })
-    expect(container.querySelector('.mem-code')?.textContent).toBe('ABC12345')
-    expect(container.querySelector('.panel-hint')?.textContent).toBe(t.codeOffenHint)
+    expect(container.querySelector('.konto-code')?.textContent).toBe('ABC12345')
+    expect(container.querySelector('.konto-hinweis')?.textContent).toBe(t.codeOffenHint)
   })
 
   it('„Kopieren" legt Einladungstext samt App-Adresse in die Zwischenablage', () => {
@@ -203,10 +234,10 @@ describe('Zustand 2: es liegt ein offener Code', () => {
 
   it('der Code lässt sich zurückziehen — erst nach der Rückfrage', () => {
     const { container, dispatch } = zeige(person(), { invites: CODE })
-    fireEvent.click(container.querySelector('.svc-remove')!)
+    fireEvent.click(container.querySelector('.konto-entfernen')!)
     expect(dispatch).not.toHaveBeenCalled()
-    expect(container.querySelector('.svc-remove')?.textContent).toBe(t.loeschenSicher)
-    fireEvent.click(container.querySelector('.svc-remove')!)
+    expect(container.querySelector('.konto-entfernen')?.textContent).toBe(t.loeschenSicher)
+    fireEvent.click(container.querySelector('.konto-entfernen')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'removeInvite', id: 'i1' })
   })
 })
@@ -214,12 +245,12 @@ describe('Zustand 2: es liegt ein offener Code', () => {
 describe('Zustand 3: noch nichts — einladen', () => {
   it('mit Adresse verspricht der Hinweis eine fertige Mail', () => {
     const { container } = zeige(person({ mail: 'anton@example.org' }))
-    expect(container.querySelector('.panel-hint')?.textContent).toBe(t.einladenHintMail)
+    expect(container.querySelector('.konto-hinweis')?.textContent).toBe(t.einladenHintMail)
   })
 
   it('ohne Adresse verspricht er Teilen und Kopieren', () => {
     const { container } = zeige(person())
-    expect(container.querySelector('.panel-hint')?.textContent).toBe(t.einladenHintOhneMail)
+    expect(container.querySelector('.konto-hinweis')?.textContent).toBe(t.einladenHintOhneMail)
   })
 
   it('„Einladen" erzeugt einen Code für genau diese Person', () => {

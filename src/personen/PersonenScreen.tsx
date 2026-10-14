@@ -74,7 +74,7 @@ export function PersonenScreen() {
     <div className="personen-raster">
       {liste}
       <aside className="personen-spalte" aria-label={selected ? displayName(selected) : t.navPersonen}>
-        {selected ? <PersonDetail key={selected.id} person={selected} /> : <p className="klein-text">{t.personWaehlen}</p>}
+        {selected ? <PersonDetail key={selected.id} person={selected} spalte /> : <p className="klein-text">{t.personWaehlen}</p>}
       </aside>
     </div>
   )

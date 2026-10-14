@@ -1,20 +1,23 @@
 import { useApp } from '../app/context'
+import { Spur, type SpurSchritt } from '../bausteine/Spur'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
-import { copyText } from '../lib/clipboard'
-import { sendInviteMails } from '../lib/invite'
+import type { Person } from '../data/types'
 import { congAppCode } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
+import { copyText } from '../lib/clipboard'
+import { sendInviteMails } from '../lib/invite'
 import { appUrl, inviteMailHref, linkedMember, makeInvite, openInvite } from './invite-helpers'
-import type { Person } from '../data/types'
 
 /**
- * Konto-Karte (nur Produktionsmodus): Status des App-Zugangs der Person —
- * verknüpftes Konto, offener Einladungscode oder Einladen-Aktion. Mit
- * E-Mail-Adresse schickt Einladen die Mail über die Edge Function
+ * **Das Konto einer Person** (T121, Entwurf `GPerson`): oben die Spur
+ * Angelegt · Eingeladen · Angemeldet, darunter, was als Nächstes geht —
+ * einladen, den offenen Code weitergeben oder das verknüpfte Konto lösen.
+ *
+ * Mit E-Mail-Adresse schickt „Einladen" die Mail über die Edge Function
  * `send-invite`; antwortet die mit `not-configured` (kein `INVITE_FROM`),
  * öffnet sich stattdessen das eigene Mail-Programm (mailto:). Ohne Adresse
- * werden Code + Teilen/Kopieren angeboten. Der Hinweis über dem Knopf
- * (`einladenHintMail`) nennt beide Wege.
+ * werden Code und Teilen/Kopieren angeboten. Den Link statt des Codes bringt
+ * Phase 8 („Anmelden per Link").
  */
 export function KontoCard({ person }: { person: Person }) {
   const { state, dispatch } = useApp()
@@ -22,6 +25,12 @@ export function KontoCard({ person }: { person: Person }) {
   const member = linkedMember(state, person.id)
   const invite = openInvite(state, person.id)
   const self = member?.userId === state.userId
+
+  const schritte: SpurSchritt[] = [
+    { name: t.spurAngelegt, lage: 'voll' },
+    { name: t.standEingeladen, lage: member || invite ? 'voll' : 'jetzt' },
+    { name: t.standAngemeldet, lage: member ? 'voll' : invite ? 'jetzt' : 'leer' },
+  ]
 
   const shareText = (code: string) => fill(t.inviteShareText, { code, url: appUrl() })
 
@@ -81,17 +90,17 @@ export function KontoCard({ person }: { person: Person }) {
   }
 
   return (
-    <div className="panel panel--pb14" data-farbe="neutral2">
-      <h2 className="panel-label">{t.kontoCard}</h2>
+    <section className="karte person-karte konto-karte">
+      <Spur label={t.kontoCard} schritte={schritte} />
       {member ? (
-        <div className="konto-row">
+        <div className="konto-zeile">
           <span className="konto-mail" dir="auto">
-            ✓ {member.email || t.kontoVerknuepft}
+            {member.email || t.kontoVerknuepft}
             {self && <span className="mem-du">{t.duMarker}</span>}
           </span>
           {!self && (
             <EntfernenKnopf
-              className="svc-remove"
+              className="rund-knopf rund-knopf--feld konto-entfernen"
               frage={t.entfernenSicher}
               onEntfernen={() => dispatch({ type: 'removeMember', userId: member.userId })}
             />
@@ -99,43 +108,43 @@ export function KontoCard({ person }: { person: Person }) {
         </div>
       ) : invite ? (
         <>
-          <p className="panel-hint">{t.codeOffenHint}</p>
-          <div className="konto-row">
-            <span className="mem-code">{invite.code}</span>
-            <div className="konto-actions">
-              {/* Ohne Offline-Wache, und das mit Absicht: Der Code steht schon
-                  in der Datenbank (die Karte zeigt diesen Knopf nur bei einem
-                  offenen). Nichts wird erzeugt, nichts geht verloren — und wenn
-                  das Netz inzwischen wieder da ist, ist das Verschicken genau
-                  das Richtige. Anders als beim Einladen, wo der Code erst
-                  entsteht. */}
-              {person.mail && (
-                <button
-                  type="button"
-                  className="konto-link"
-                  onClick={() => void einladungSenden(invite.code)}
-                >
-                  {t.mailBtn}
-                </button>
-              )}
-              <button type="button" className="konto-link" onClick={() => void share(invite.code)}>
-                {t.teilenBtn}
+          <p className="klein-text konto-hinweis">{t.codeOffenHint}</p>
+          <div className="konto-zeile">
+            <span className="konto-code">{invite.code}</span>
+            <EntfernenKnopf
+              className="rund-knopf rund-knopf--feld konto-entfernen"
+              onEntfernen={() => dispatch({ type: 'removeInvite', id: invite.id })}
+            />
+          </div>
+          <div className="konto-knoepfe">
+            {/* Ohne Offline-Wache, und das mit Absicht: Der Code steht schon in
+                der Datenbank (die Karte zeigt diese Knöpfe nur bei einem
+                offenen). Nichts wird erzeugt, nichts geht verloren — und wenn
+                das Netz inzwischen wieder da ist, ist das Verschicken genau das
+                Richtige. Anders als beim Einladen, wo der Code erst entsteht. */}
+            {person.mail && (
+              <button type="button" className="knopf-pille" onClick={() => void einladungSenden(invite.code)}>
+                {t.mailBtn}
               </button>
-              <button type="button" className="konto-link" onClick={() => void copyCode(invite.code)}>
-                {t.kopierenBtn}
-              </button>
-              <EntfernenKnopf className="svc-remove" onEntfernen={() => dispatch({ type: 'removeInvite', id: invite.id })} />
-            </div>
+            )}
+            <button type="button" className="knopf-pille" onClick={() => void share(invite.code)}>
+              {t.teilenBtn}
+            </button>
+            <button type="button" className="knopf-pille" onClick={() => void copyCode(invite.code)}>
+              {t.kopierenBtn}
+            </button>
           </div>
         </>
       ) : (
         <>
-          <p className="panel-hint">{person.mail ? t.einladenHintMail : t.einladenHintOhneMail}</p>
-          <button type="button" className="btn-outline konto-invite" onClick={() => void invitePerson()}>
-            {t.einladenBtn}
-          </button>
+          <p className="klein-text konto-hinweis">{person.mail ? t.einladenHintMail : t.einladenHintOhneMail}</p>
+          <div className="konto-knoepfe">
+            <button type="button" className="knopf-pille knopf-pille--akzent" onClick={() => void invitePerson()}>
+              {t.einladenBtn}
+            </button>
+          </div>
         </>
       )}
-    </div>
+    </section>
   )
 }

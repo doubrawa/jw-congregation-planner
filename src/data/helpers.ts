@@ -242,6 +242,16 @@ export function namensDublette(
   return persons.find((p) => p.id !== person.id && namensSchluessel(p) === schluessel)
 }
 
+/**
+ * **Hat die Person gar keinen Namen?** — weder Vor- noch Nachnamen, auch nicht
+ * aus Leerzeichen. Einen solchen nehmen „Person anlegen" und „Person
+ * bearbeiten" nicht an (T121); eine namenlose Person aus älterer Zeit verwirft
+ * der Reducer beim Verlassen ihres Details (`dropNamelessSelected`).
+ */
+export function isNameless(p: Pick<Person, 'fn' | 'ln'>): boolean {
+  return !`${p.fn}${p.ln}`.trim()
+}
+
 /** Initialen für Avatare: "SK"; leerer Datensatz → "–". */
 export function initials(p: Person): string {
   return ((p.fn[0] ?? '') + (p.ln[0] ?? '')).toUpperCase() || '–'

@@ -12,7 +12,7 @@ import type { Lang } from '../data/types'
 import { APP_LANGS_SORTED } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import { promptInstall } from '../lib/install'
-import { AbwesenheitenKarte } from './AbwesenheitenKarte'
+import { AbwesenheitenKarte } from '../components/AbwesenheitenKarte'
 import { Diagnose } from './Diagnose'
 import './profil.css'
 

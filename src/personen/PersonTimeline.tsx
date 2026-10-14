@@ -1,31 +1,24 @@
 import { useMemo } from 'react'
 import { useApp } from '../app/context'
-import { AbwesenheitEntfernen } from '../components/AbwesenheitEntfernen'
 import { besuchsGruppe } from '../components/gruppenbesuch-anzeige'
 import { Zeitleiste, type ZeitZeile } from '../components/Zeitleiste'
 import { abwesenheitsArt, zeitleisteDatum } from '../components/zeitleiste-gemeinsam'
-import { darfAbwesenheitBearbeiten } from '../data/rechte'
 import type { Person } from '../data/types'
 import { aufgabenLabel, useT } from '../i18n/useT'
 import { personTimeline, type TimelineEntry } from './person-timeline'
 
 /**
- * Zeitleiste einer Person (Personen-Detail, zwischen Stammdaten und
- * Aufgabenbereichen): je Eintrag Datum und Art, vergangene blasser.
+ * Zeitleiste einer Person: je Eintrag Datum und Art, vergangene blasser.
  *
  * Sie führt **beide Richtungen** zusammen — wann jemand dran ist (Zuteilungen,
  * geleitete Treffpunkte, Zeugnis-Schichten, vorgemerkte Gruppenbesuche) und
- * wann er nicht kann (Abwesenheiten). Die
- * Abwesenheiten standen zuerst als eigene Liste unter dem Eingabeformular; dort
- * war nicht zu sehen, dass eine Zuteilung mitten in einen Zeitraum fällt. Jetzt
- * markieren zwei Punkte Beginn und Ende, und die Strecke dazwischen ist
- * eingefärbt: Was in diesen Abschnitt fällt, liegt sichtbar darin.
+ * wann er nicht kann (Abwesenheiten). Zwei Punkte markieren Beginn und Ende
+ * eines Zeitraums, und die Strecke dazwischen ist eingefärbt: Was in diesen
+ * Abschnitt fällt, liegt sichtbar darin.
  *
- * Gezeichnet wird sie von `Zeitleiste` — derselben Leiste, die auf dem Start
- * die eigenen Aufgaben der nächsten zwei Wochen zeigt. Hier steht, **was**
- * daraufsteht: alle Einträge dieser Person, ohne Zeitfenster.
- *
- * Ohne jeden Eintrag bleibt die Karte ganz weg.
+ * Entfernt wird eine Abwesenheit seit der Phase 6b in ihrer eigenen Karte
+ * (`AbwesenheitenKarte`, wie im Entwurf `GPerson`); hier steht sie nur noch im
+ * Zusammenhang. Ohne jeden Eintrag bleibt die Karte ganz weg.
  */
 export function PersonTimeline({ person }: { person: Person }) {
   const { state } = useApp()
@@ -33,18 +26,9 @@ export function PersonTimeline({ person }: { person: Person }) {
   const { t, tu } = i18n
   /*
    * Gemerkt: `personTimeline` läuft über **alle** geladenen Wochen (bis zu 52,
-   * zwei Zusammenkünfte je Woche). Die Karte steht mitten im Personen-Formular,
-   * und das löst je Tastenanschlag aus — ein zwölfbuchstabiger Nachname kostete
-   * so zwölf volle Durchläufe.
+   * zwei Zusammenkünfte je Woche).
    */
-  const entries = useMemo(
-    () => personTimeline(person, state),
-    [person, state],
-  )
-
-  // Entfernen darf, wen es betrifft, oder ein Admin — dieselbe Grenze wie beim
-  // Eintragen und in der Datenbank (`absences_write`).
-  const darfBearbeiten = darfAbwesenheitBearbeiten(state, person.id)
+  const entries = useMemo(() => personTimeline(person, state), [person, state])
 
   const beschriftung = (e: TimelineEntry): string => {
     if (e.kind === 'meeting') return aufgabenLabel({ title: e.titel, rolle: e.rolle }, i18n)
@@ -63,14 +47,7 @@ export function PersonTimeline({ person }: { person: Person }) {
     ...(e.abwOben ? { abwOben: true } : {}),
     ...(e.abwUnten ? { abwUnten: true } : {}),
     vergangen: e.vergangen,
-    // Entfernt wird am Beginn, nicht an beiden Rändern: Es ist ein Eintrag,
-    // kein zweiter.
-    ...(e.kind === 'abw' && e.rand !== 'ende' && darfBearbeiten
-      ? {
-          ende: <AbwesenheitEntfernen id={e.abwId} className="zeit-remove" />,
-        }
-      : {}),
   }))
 
-  return <Zeitleiste label={t.zeitleiste} farbe="gold" zeilen={zeilen} />
+  return <Zeitleiste label={t.zeitleiste} zeilen={zeilen} />
 }
