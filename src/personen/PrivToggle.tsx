@@ -1,5 +1,6 @@
 import { useApp } from '../app/context'
 import { istBruderBereichBeiSchwester, privWert } from '../data/helpers'
+import { rechteDerPerson } from '../data/rechte'
 import { useT } from '../i18n/useT'
 import type { Member, Person } from '../data/types'
 import { Switch } from '../components/Switch'
@@ -80,29 +81,26 @@ export function RechteToggles({ person, update }: { person: Person; update: Upda
   )
 }
 
-/** Die Konten einer Person und ob eines davon das eigene ist. */
-function kontenVon(members: readonly Member[], userId: string | null, person: Person) {
-  const konten = members.filter((m) => m.personId === person.id)
-  return { konten, self: konten.some((m) => m.userId === userId) }
+/** Ist eines der Konten dieser Person das eigene? */
+function eigenesKonto(members: readonly Member[], userId: string | null, person: Person): boolean {
+  return members.some((m) => m.personId === person.id && m.userId === userId)
 }
 
 /** Planer-Recht (zuteilen und senden) — siehe `RechteToggles`. */
 function ZuteilerToggle({ person, update }: { person: Person; update: UpdatePerson }) {
   const { state } = useApp()
   const { t } = useT()
-  const { konten, self } = kontenVon(state.members, state.userId, person)
-  // Wie beim Admin entscheidet das Konto, sobald es eines gibt.
-  const admin = konten.length > 0 ? konten.some((m) => m.planner) : Boolean(person.plannerVorgemerkt)
-  const eigen = konten.length > 0 ? konten.some((m) => m.zuteiler) : Boolean(person.zuteilerVorgemerkt)
-  const gesperrt = self || admin
+  // Wie beim Admin entscheidet das Konto, sobald es eines gibt (`rechteDerPerson`).
+  const { admin, planer } = rechteDerPerson(state.members, person)
+  const gesperrt = eigenesKonto(state.members, state.userId, person) || admin
   return (
     <div className={gesperrt ? 'priv-row priv-row--locked' : 'priv-row'}>
       <span className="priv-label">{t.rollePlaner}</span>
       <Switch
-        on={admin || eigen}
+        on={admin || planer}
         label={t.rollePlaner}
         disabled={gesperrt}
-        onToggle={() => update({ zuteilerVorgemerkt: !eigen })}
+        onToggle={() => update({ zuteilerVorgemerkt: !planer })}
       />
     </div>
   )
@@ -111,36 +109,22 @@ function ZuteilerToggle({ person, update }: { person: Person; update: UpdatePers
 /**
  * Admin-Recht (Feste Rollen): sieht Planen/Personen/Einstellungen. Wird in
  * verknüpfte Konten gespiegelt; das eigene Recht ist gesperrt (sonst könnte
- * sich der letzte Admin selbst aussperren).
+ * sich der letzte Admin selbst aussperren). Welche der beiden Stellen zählt,
+ * an denen es steht, sagt `rechteDerPerson`.
  */
 function PlannerToggle({ person, update }: { person: Person; update: UpdatePerson }) {
   const { state } = useApp()
   const { t } = useT()
-  /**
-   * Das Recht steht an **zwei** Stellen, und nur eine entscheidet.
-   *
-   * `persons.planner_vorgemerkt` ist die Vormerkung: Sie wird beim Einladen in den Code
-   * übernommen, damit jemand das Recht schon hat, wenn er sich anmeldet.
-   * Sobald ein Konto verknüpft ist, zählt aber `members.planner` — daran hängt
-   * `is_planner()` in der Datenbank und `state.planner` in der App.
-   *
-   * Angezeigt wurde bis August 2026 die Vormerkung. Das ging gut, solange beide
-   * gemeinsam entstanden; der Personen-Neuaufbau aus New World Scheduler
-   * schreibt die Spalte aber gar nicht mit. Seither stand sie bei allen auf
-   * `false`, während die Konten ihr Recht behielten: Der Betreiber sah bei sich
-   * selbst „Admin: aus" — und war Admin. Deshalb entscheidet hier jetzt das
-   * Konto, und die Vormerkung trägt nur noch, wo es keines gibt.
-   */
-  const { konten, self } = kontenVon(state.members, state.userId, person)
-  const on = konten.length > 0 ? konten.some((m) => m.planner) : Boolean(person.plannerVorgemerkt)
+  const { admin } = rechteDerPerson(state.members, person)
+  const self = eigenesKonto(state.members, state.userId, person)
   return (
     <div className={self ? 'priv-row priv-row--locked' : 'priv-row'}>
       <span className="priv-label">{t.planerLbl}</span>
       <Switch
-        on={on}
+        on={admin}
         label={t.planerLbl}
         disabled={self}
-        onToggle={() => update({ plannerVorgemerkt: !on })}
+        onToggle={() => update({ plannerVorgemerkt: !admin })}
       />
     </div>
   )

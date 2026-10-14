@@ -1,29 +1,62 @@
-import { type Dispatch, type SetStateAction, useId, useMemo, useState } from 'react'
+import { type Dispatch, type ReactNode, type SetStateAction, useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { istAngemeldet } from '../app/eigene-person'
-import { QUALIFICATION_ORDER, ROLE_ORDER, WT_ROLE_ORDER } from '../data/constants'
-import { displayName, doppelteFesteRollen, emptyQualifications, initials, listName, ohneGruppe, personCompare, serviceQualKey } from '../data/helpers'
+import { useKalendertag } from '../app/useKalendertag'
+import { Punkt, type PunktArt } from '../bausteine/Punkt'
+import { Zeichen } from '../bausteine/Zeichen'
+import { abwesendText } from '../components/abwesenheit-anzeige'
 import { useBackDismiss } from '../components/useBackDismiss'
+import { DESKTOP_BREITE, useMedia } from '../components/useMedia'
+import { displayName, doppelteFesteRollen, listName, ohneGruppe, personCompare } from '../data/helpers'
+import type { Person } from '../data/types'
+import { congAppCode } from '../i18n/langs'
+import { ROLE_KEY, type Dict } from '../i18n/ui'
+import { fill, useT } from '../i18n/useT'
 import { copyText } from '../lib/clipboard'
 import { sendInviteMails } from '../lib/invite'
-import { congAppCode, LOCALES } from '../i18n/langs'
-import { fill, useT } from '../i18n/useT'
-import { ROLE_KEY } from '../i18n/ui'
-import { appUrl, linkedMember, makeInvite, openInvite } from './invite-helpers'
+import { appUrl, makeInvite } from './invite-helpers'
 import { OrphanAccounts } from './OrphanAccounts'
+import { PersonAnlegenBlatt } from './PersonAnlegenBlatt'
 import { PersonDetail } from './PersonDetail'
-import { KEIN_FILTER, passtZumFilter, type PersonFilter } from './person-filter'
-import type { Person } from '../data/types'
+import { PersonenFilterBlatt } from './PersonenFilterBlatt'
+import {
+  type Auswahl,
+  gesetzteBlattfilter,
+  KEIN_FILTER,
+  passtOhneAuswahl,
+  passtZurAuswahl,
+  type PersonFilter,
+} from './person-filter'
+import { type AnmeldeStand, mitLage, type PersonMitLage } from './person-lage'
 import { privLabel } from './priv-label'
 import './personen.css'
 
+/** Der Punkt eines Stands — dieselbe Sprache wie überall: voll, blass, gestrichelt. */
+const PUNKT_DES_STANDS: Record<AnmeldeStand, PunktArt> = {
+  angemeldet: 'voll',
+  eingeladen: 'wartet',
+  ohne: 'offen',
+}
+
+const STAND_KEY = {
+  angemeldet: 'standAngemeldet',
+  eingeladen: 'standEingeladen',
+  ohne: 'standOhne',
+} as const satisfies Record<AnmeldeStand, keyof Dict>
+
+const STAENDE: readonly AnmeldeStand[] = ['angemeldet', 'eingeladen', 'ohne']
+
 /**
- * Personen (Screen 5, nur Planer): Liste mit Live-Suche + Sammel-Einladung
- * (PersonList) oder Detail (PersonDetail). Konten ohne verknüpfte Person
- * verwaltet OrphanAccounts.
+ * **Personen** (T121, Entwurf `GPersonen`, nur Admins): die Liste mit Suche,
+ * oben der Stand der Anmeldung zum Antippen, jede Person mit ihrem Punkt — oder
+ * eine Person. Am Desktop (`GDesktopPersonen`) steht die gewählte rechts neben
+ * der Liste, statt sie zu ersetzen. Konten ohne verknüpfte Person verwaltet
+ * `OrphanAccounts`.
  */
 export function PersonenScreen() {
   const { state, dispatch } = useApp()
+  const { t } = useT()
+  const desktop = useMedia(DESKTOP_BREITE)
   const selected = state.persons.find((p) => p.id === state.selectedPersonId)
   // Zurück am Handy schließt zuerst das Detail (4.10.2026), dann erst den Bildschirm.
   useBackDismiss(selected !== undefined, () => dispatch({ type: 'selectPerson', id: null }), 'unteransicht')
@@ -35,313 +68,321 @@ export function PersonenScreen() {
    * Bildschirm setzt ihn weiter zurück — dann baut sich auch dieser ab.
    */
   const [filter, setFilter] = useState<PersonFilter>(KEIN_FILTER)
-  return selected ? <PersonDetail person={selected} /> : <PersonList filter={filter} setFilter={setFilter} />
-}
-
-/**
- * Zahl der gesetzten **Aufgabenbereiche** einer Person.
- *
- * Ohne die festen Wachtturm-Rollen: `person.priv` trägt sie mit
- * (`wtLeiter`/`wtVertreter`), das Detail zeigt sie aber ausdrücklich in einer
- * eigenen Karte („Feste Rollen") neben den Aufgabenbereichen. Über alle Werte
- * zu zählen hieß, dass der feste Studienleiter in der Liste einen Bereich mehr
- * hatte, als sein Detail zeigt.
- */
-function bereicheCount(person: Person): number {
-  const feste = new Set<string>(WT_ROLE_ORDER)
-  return Object.entries(person.priv).filter(([key, an]) => an && !feste.has(key)).length
+  const liste = <PersonList filter={filter} setFilter={setFilter} desktop={desktop} />
+  if (!desktop) return selected ? <PersonDetail person={selected} /> : liste
+  return (
+    <div className="personen-raster">
+      {liste}
+      <aside className="personen-spalte" aria-label={selected ? displayName(selected) : t.navPersonen}>
+        {selected ? <PersonDetail key={selected.id} person={selected} /> : <p className="klein-text">{t.personWaehlen}</p>}
+      </aside>
+    </div>
+  )
 }
 
 function PersonList({
   filter,
   setFilter,
+  desktop,
 }: {
   filter: PersonFilter
   setFilter: Dispatch<SetStateAction<PersonFilter>>
+  desktop: boolean
 }) {
-  const { state, dispatch } = useApp()
-  const { t, tu } = useT()
+  const { state } = useApp()
+  const { t } = useT()
+  const heute = useKalendertag()
+  const [blatt, setBlatt] = useState<'anlegen' | 'filter' | null>(null)
   const setz = (patch: Partial<PersonFilter>) => setFilter((f) => ({ ...f, ...patch }))
-  const locale = LOCALES[state.lang]
+  // Ein Tipp auf die gewählte Auswahl hebt sie wieder auf; „Alle" bleibt dabei „Alle".
+  const waehle = (auswahl: Auswahl) => setz({ auswahl: filter.auswahl === auswahl ? '' : auswahl })
+  // Ohne Konto (Entwicklerseite) gibt es nichts anzumelden und niemanden, der einlädt.
+  const angemeldet = istAngemeldet(state)
 
   /*
    * **Einmal je Bestand, nicht einmal je Tastendruck.**
    *
    * Das Filterfeld ist Zustand des Bildschirms: Jeder Buchstabe rendert die
-   * Liste neu. Von allem hier hängt aber nur `filtered` am Filter — sortiert,
-   * gezählt und verglichen wird immer derselbe Bestand. Bei 300 Personen
-   * kostete ein Buchstabe rund 2 500 Namensvergleiche (`personCompare` ruft
-   * `localeCompare`) und dreimal einen Durchlauf über alle Personen.
-   *
-   * Die Marke „Ohne App-Konto" unten fragte einmal `linkedMember` je Person,
-   * und das sucht linear über `state.members` — bei 300 Konten 90 000
-   * Vergleiche. `OrphanAccounts` stellt für dieselbe Frage längst eine Menge
-   * auf.
+   * Liste neu. Von allem hier hängt aber nur, was danach gefiltert wird, am
+   * Filter — sortiert, eingeordnet und verglichen wird immer derselbe Bestand.
+   * Bei 300 Personen kostete ein Buchstabe sonst rund 2 500 Namensvergleiche
+   * (`personCompare` ruft `localeCompare`).
    */
-  const { sorted, mitKonto, mehrfachRollen, ohne } = useMemo(
-    () => {
-      const sortiert = [...state.persons].sort((a, b) => personCompare(a, b, state.lang))
-      return {
-        sorted: sortiert,
-        mitKonto: new Set(state.members.map((m) => m.personId)),
-        // Beide aus der sortierten Liste — die Namen in den Warnungen stehen
-        // dann in derselben Folge wie unten.
-        mehrfachRollen: doppelteFesteRollen(sortiert),
-        ohne: ohneGruppe(sortiert, state.groups),
-      }
-    },
-    [state.persons, state.lang, state.members, state.groups],
+  const { persons, lang, members, invites, absences, groups } = state
+  const { eintraege, mehrfachRollen, ohne } = useMemo(() => {
+    const sortiert = [...persons].sort((a, b) => personCompare(a, b, lang))
+    return {
+      eintraege: mitLage(sortiert, { members, invites, absences }, heute),
+      // Beide aus der sortierten Liste — die Namen in den Warnungen stehen
+      // dann in derselben Folge wie unten.
+      mehrfachRollen: doppelteFesteRollen(sortiert),
+      ohne: ohneGruppe(sortiert, groups),
+    }
+  }, [persons, lang, members, invites, absences, groups, heute])
+  // Was Suche und Blatt übrig lassen — daran zählen die Knöpfe der Auswahl.
+  const basis = eintraege.filter((e) => passtOhneAuswahl(e.person, filter))
+  const zahl = (auswahl: Auswahl) => basis.filter((e) => passtZurAuswahl(auswahl, e.lage)).length
+  const sichtbar = basis.filter((e) => passtZurAuswahl(filter.auswahl, e.lage))
+  const blattfilter = gesetzteBlattfilter(filter)
+
+  const auswahlKnopf = (auswahl: Auswahl, text: string) => (
+    <button
+      key={auswahl}
+      type="button"
+      className="personen-auswahl"
+      aria-pressed={filter.auswahl === auswahl}
+      onClick={() => waehle(auswahl)}
+    >
+      {text}
+      <span className="personen-auswahl-zahl">{zahl(auswahl)}</span>
+    </button>
   )
-  const filtered = sorted.filter((p) => passtZumFilter(p, filter))
-
-  // Sammel-Einladung: Codes für alle ohne Konto/offenen Code erzeugen. Mit
-  // konfigurierter Domain gehen die Mails direkt raus (send-invite); die
-  // Liste "Name: Code" landet zusätzlich in der Zwischenablage (für Personen
-  // ohne E-Mail bzw. als Fallback ohne Domain).
-  const inviteAll = async () => {
-    /*
-     * **Offline-Stand: gar nicht erst anfangen.**
-     *
-     * Der Reducer weist Schreib-Aktionen im Offline-Stand ab (`readonly.ts`) —
-     * aber nur den Reducer. Was danach in derselben Funktion steht, lief
-     * weiter: Die Codes entstehen hier im Baustein, keiner davon landet im Zustand
-     * oder in der Datenbank — und die Mails gingen trotzdem an **alle** ohne
-     * Konto, samt Liste in der Zwischenablage. Lauter Codes, die
-     * `redeem_invite` nicht kennt.
-     *
-     * „Plan senden" (`sendeUmfang`) zieht dieselbe Grenze und aus demselben
-     * Grund: Wer eine Edge Function unmittelbar ruft, kommt am Reducer vorbei.
-     */
-    if (state.staleAt) {
-      dispatch({ type: 'showToast', text: t.offlineReadOnly })
-      return
-    }
-    const candidates = sorted.filter((p) => !linkedMember(state, p.id) && !openInvite(state, p.id))
-    if (candidates.length === 0) {
-      dispatch({ type: 'showToast', text: t.toastAlleHabenKonto })
-      return
-    }
-    const lines: string[] = []
-    const mailable: Array<{ personId: string; code: string }> = []
-    for (const person of candidates) {
-      const invite = makeInvite(person)
-      dispatch({ type: 'addInvite', invite })
-      lines.push(`${displayName(person)}: ${invite.code}`)
-      if (person.mail) mailable.push({ personId: person.id, code: invite.code })
-    }
-    const text = `${fill(t.inviteListeTitel, { url: appUrl() })}\n\n${lines.join('\n')}`
-    // Zwischenablage best effort — misslingt sie, stehen die Codes weiterhin an
-    // den Personen (Konto-Karte).
-    await copyText(text)
-    const res = mailable.length > 0 ? await sendInviteMails(mailable, congAppCode(state.congLang)) : null
-    if (res?.ok && res.sent > 0) {
-      dispatch({
-        type: 'showToast',
-        text: fill(t.toastEinladungenMailN, { n: candidates.length, m: res.sent }),
-      })
-    } else {
-      dispatch({ type: 'showToast', text: fill(t.toastEinladungenN, { n: candidates.length }) })
-    }
-  }
-
-  const addPerson = () => {
-    dispatch({
-      type: 'addPerson',
-      person: {
-        id: crypto.randomUUID(),
-        fn: '',
-        ln: '',
-        role: 'verkuendiger',
-        tel: '',
-        mail: '',
-        priv: emptyQualifications(),
-      },
-    })
-  }
 
   return (
-    <section className="screen">
-      <div className="screen-head">
-        <h1 className="screen-title">{t.personen}</h1>
-        {/* Zählt die sichtbaren Personen — so zeigt der Kopf zugleich, wie
-            stark Suche und Filter gerade einschränken. */}
-        <span className="screen-head-note">{fill(t.personenCount, { n: filtered.length })}</span>
+    <section className="screen personen">
+      <div className="personen-kopf">
+        <h1 className="seitentitel">{t.personen}</h1>
+        {/* Am Handy der runde Knopf, am Desktop mit seinem Wort. */}
+        {desktop ? (
+          <button type="button" className="knopf-haupt" onClick={() => setBlatt('anlegen')}>
+            <Zeichen name="plus" />
+            {t.personAnlegen}
+          </button>
+        ) : (
+          <button type="button" className="rund-knopf rund-knopf--akzent" aria-label={t.personAnlegen} onClick={() => setBlatt('anlegen')}>
+            <Zeichen name="plus" />
+          </button>
+        )}
       </div>
 
-      {/* Hier stand die Warnung „DOPPELTE ANZEIGENAMEN". Sie ist mit T110
-          entfallen: Ein doppelter Name lässt sich nicht mehr speichern, also
-          gibt es nichts mehr zu melden. Die Meldung steht jetzt dort, wo der
-          Name entsteht — am Feld im Personen-Detail. */}
+      <div className="personen-suche">
+        <Zeichen name="suche" />
+        <input
+          type="search"
+          dir="auto"
+          className="feld"
+          placeholder={t.nameSuchen}
+          aria-label={t.nameSuchen}
+          value={filter.q}
+          onChange={(e) => setz({ q: e.target.value })}
+        />
+      </div>
 
       {/* Feste Rollen sind der Sache nach je EINE Person. Sind zwei Schalter
-          gesetzt, greift sich die Auto-Zuteilung irgendeinen — bisher ohne
-          jeden Hinweis (F7). Je Rolle eine Zeile, darunter wer sie trägt: Bis
-          zum 4.10.2026 stand hier nur die Zahl, und der Planer suchte die
-          Betroffenen Detail für Detail. Ein Tipp auf den Namen öffnet das
-          Detail, in dem der Schalter steht. */}
+          gesetzt, greift sich die Auto-Zuteilung irgendeinen (F7). Je Rolle
+          eine Zeile, darunter wer sie trägt; ein Tipp auf den Namen öffnet die
+          Person, bei der der Schalter steht. */}
       {mehrfachRollen.length > 0 && (
-        <div className="pers-dupes" data-warnung="feste-rollen">
-          <div className="pers-dupes-head">
-            <span className="pers-dupes-badge">!</span>
-            <span className="pers-dupes-title">{t.wtRollenLabel}</span>
-            <span className="pers-dupes-count">{mehrfachRollen.length}</span>
-          </div>
-          <div className="pers-dupes-hint">{t.wtRollenDoppeltHint}</div>
+        <Hinweis art="feste-rollen" titel={t.wtRollenLabel} zahl={mehrfachRollen.length} text={t.wtRollenDoppeltHint}>
           {mehrfachRollen.map((r) => (
             <div key={r.key} data-rolle={r.key}>
-              <div className="pers-dupes-row">
-                <span dir="auto">
-                  {fill(t.dublettenRow, { name: privLabel(t, r.key), n: r.personen.length })}
-                </span>
-              </div>
+              <p className="personen-hinweis-zeile" dir="auto">
+                {fill(t.dublettenRow, { name: privLabel(t, r.key), n: r.personen.length })}
+              </p>
               <NamenKnoepfe personen={r.personen} />
             </div>
+          ))}
+        </Hinweis>
+      )}
+
+      {/* Wer keiner Predigtdienstgruppe zugeordnet ist, sieht beim Predigtdienst
+          keine Gruppentreffpunkte — auch nach dem Löschen einer Gruppe, das alle
+          ihre Mitglieder so zurückließ. Ein Tipp auf den Namen öffnet die
+          Person, bei der die Gruppe gesetzt wird. */}
+      {ohne.length > 0 && (
+        <Hinweis art="ohne-gruppe" titel={t.ohneGruppeTitle} zahl={ohne.length} text={t.ohneGruppeHint}>
+          <NamenKnoepfe personen={ohne} />
+        </Hinweis>
+      )}
+
+      {/* Konten ohne Person — sonst leicht zu übersehen (rendert nur, wenn es welche gibt). */}
+      <OrphanAccounts />
+
+      {/* Am Handy gezählt als Spur, am Desktop als Knöpfe in der Reihe darunter. */}
+      {angemeldet && !desktop && (
+        <div className="karte personen-stand" role="group" aria-label={t.standDerAnmeldung}>
+          {STAENDE.map((stand) => (
+            <button
+              key={stand}
+              type="button"
+              className="personen-stand-knopf"
+              aria-pressed={filter.auswahl === stand}
+              onClick={() => waehle(stand)}
+            >
+              <span className="personen-stand-bahn" aria-hidden="true">
+                <Punkt art={PUNKT_DES_STANDS[stand]} />
+                <span className="personen-stand-linie" />
+              </span>
+              <span className="personen-stand-zahl">{zahl(stand)}</span>
+              <span className="klein-text">{t[STAND_KEY[stand]]}</span>
+            </button>
           ))}
         </div>
       )}
 
-      {/* Wer keiner Predigtdienstgruppe zugeordnet ist, sieht beim Predigtdienst
-          keine Gruppentreffpunkte — und bisher stand das nirgends, auch nicht nach
-          dem Löschen einer Gruppe, das alle ihre Mitglieder so zurückließ. Ein
-          Tipp auf den Namen öffnet das Detail, in dem die Gruppe gesetzt wird. */}
-      {ohne.length > 0 && (
-        <div className="pers-dupes" data-warnung="ohne-gruppe">
-          <div className="pers-dupes-head">
-            <span className="pers-dupes-badge">!</span>
-            <span className="pers-dupes-title">{t.ohneGruppeTitle}</span>
-            <span className="pers-dupes-count">{ohne.length}</span>
-          </div>
-          <div className="pers-dupes-hint">{t.ohneGruppeHint}</div>
-          <NamenKnoepfe personen={ohne} />
+      <div className="personen-auswahlen" role="group" aria-label={t.filterWeitere}>
+        {auswahlKnopf('', t.filterAlle)}
+        {angemeldet &&
+          (desktop
+            ? STAENDE.map((stand) => auswahlKnopf(stand, t[STAND_KEY[stand]]))
+            : // Dasselbe Wort wie bei den Zusagen der Woche: „Noch nicht angemeldet".
+              auswahlKnopf('nichtAngemeldet', t.zusagenOhneKonto))}
+        {auswahlKnopf('abwesend', t.abwesendChip)}
+        <button
+          type="button"
+          className="personen-auswahl"
+          aria-pressed={blattfilter > 0}
+          aria-haspopup="dialog"
+          onClick={() => setBlatt('filter')}
+        >
+          {t.filterWeitere}
+          {blattfilter > 0 && <span className="personen-auswahl-zahl">{blattfilter}</span>}
+        </button>
+      </div>
+
+      {/* Wer noch nicht eingeladen ist, bekommt hier seinen Code — alle, die die
+          Liste gerade zeigt, auf einmal. */}
+      {angemeldet && filter.auswahl === 'ohne' && sichtbar.length > 0 && (
+        <AlleEinladen personen={sichtbar.map((e) => e.person)} />
+      )}
+
+      {/* Wie viele übrig sind — nur, wenn Suche oder Auswahl einschränken; sonst
+          nennt „Alle" die Zahl schon. */}
+      {sichtbar.length !== eintraege.length && (
+        <p className="klein-text personen-zahl">{fill(t.personenCount, { n: sichtbar.length })}</p>
+      )}
+      {sichtbar.length > 0 && (
+        <div className="karte personen-liste">
+          {sichtbar.map((e) => (
+            <PersonZeile
+              key={e.person.id}
+              eintrag={e}
+              punkt={angemeldet}
+              breit={desktop}
+              gewaehlt={desktop && e.person.id === state.selectedPersonId}
+            />
+          ))}
         </div>
       )}
 
-      {/* Konten ohne Person ganz oben — sonst leicht zu übersehen (nur wenn
-          es welche gibt; rendert sonst nichts). */}
-      <OrphanAccounts />
-
-      <button type="button" className="btn-outline pers-add" onClick={addPerson}>
-        {t.neuePerson}
-      </button>
-
-      {istAngemeldet(state) && (
-        <button type="button" className="btn-outline pers-add" onClick={() => void inviteAll()}>
-          {t.alleEinladen}
-        </button>
-      )}
-
-      <input
-        type="search"
-        className="pers-search"
-        placeholder={t.suchen}
-        aria-label={t.suchen}
-        value={filter.q}
-        onChange={(e) => setz({ q: e.target.value })}
-      />
-
-      <div className="pers-filters">
-        <FilterSelect
-          locale={locale}
-          label={t.geschlecht}
-          value={filter.sex}
-          onChange={(v) => setz({ sex: v as PersonFilter['sex'] })}
-          options={[
-            ['m', t.bruder],
-            ['w', t.schwester],
-          ]}
-        />
-        <FilterSelect
-          locale={locale}
-          label={t.rolle}
-          value={filter.role}
-          onChange={(v) => setz({ role: v as PersonFilter['role'] })}
-          options={ROLE_ORDER.map((role) => [role, t[ROLE_KEY[role]]])}
-        />
-        {/* Ohne angelegte Gruppen hätte die Auswahl nur den Platzhalter. */}
-        {state.groups.length > 0 && (
-          <FilterSelect
-            locale={locale}
-            label={t.gruppeLbl}
-            value={filter.grp}
-            onChange={(v) => setz({ grp: v })}
-            options={state.groups.map((g) => [g.id, tu(g.name)])}
-          />
-        )}
-        <FilterSelect
-          locale={locale}
-          label={t.aufgabenbereiche}
-          value={filter.priv}
-          onChange={(v) => setz({ priv: v })}
-          options={[
-            // Mit den festen Rollen (4.10.2026): Als Bereich zählen sie nicht
-            // (`bereicheCount`, eigene Karte im Detail), gesucht wird nach
-            // ihnen aber genauso — wer ist der feste Leiter?
-            ...[...QUALIFICATION_ORDER, ...WT_ROLE_ORDER].map(
-              (key) => [key, privLabel(t, key)] as [string, string],
-            ),
-            // Wie im Detail: Gruppen-Dienste (Reinigung) rotieren Gruppen
-            // statt Personen und haben deshalb keinen Bereich.
-            ...state.services
-              .filter((service) => !service.groups)
-              .map((service) => [serviceQualKey(service.key), tu(service.name)] as [string, string]),
-          ]}
-        />
-      </div>
-
-      <div className="pers-list">
-        {filtered.map((person) => (
-          <button
-            key={person.id}
-            type="button"
-            className="pers-row"
-            onClick={() => dispatch({ type: 'selectPerson', id: person.id })}
-          >
-            <span className="avatar avatar--tint avatar--40">{initials(person)}</span>
-            <span>
-              <span className="pers-name" dir="auto">{listName(person)}</span>
-              <span className="pers-sub">
-                {t[ROLE_KEY[person.role]]} · {fill(t.aufgabenbereicheN, { n: bereicheCount(person) })}
-                {/*
-                  **Wer kein App-Konto hat, erfährt nichts von selbst** (V13/F10).
-                  Weder „Plan senden" noch die Erinnerung erreichen ihn — der
-                  Planer muss ihn persönlich ansprechen. Bisher erfuhr er das
-                  erst hinterher: „Plan senden" nennt die Namen in seiner
-                  Antwort, und `send-reminders` meldet sie am letzten
-                  Erinnerungstag per Sammel-Push. Beides kommt, wenn der Plan
-                  schon steht. Hier steht es, während er ihn macht.
-
-                  Gefragt wird nach dem **verknüpften Konto**, nicht nach einem
-                  offenen Einladungscode: Ein Code, den niemand einlöst, macht
-                  niemanden erreichbar. Genau diese Grenze zieht auch
-                  `send-plan` für seine `ohneKonto`-Liste.
-                */}
-                {!mitKonto.has(person.id) && (
-                  <> · <span className="pers-ohne-konto">{t.keinKonto}</span></>
-                )}
-              </span>
-            </span>
-            <span className="pers-chevron">›</span>
-          </button>
-        ))}
-      </div>
+      {blatt === 'anlegen' && <PersonAnlegenBlatt onClose={() => setBlatt(null)} />}
+      {blatt === 'filter' && <PersonenFilterBlatt filter={filter} setz={setz} onClose={() => setBlatt(null)} />}
     </section>
   )
 }
 
 /**
- * Die Namen in einer Warnung über der Liste, als Knöpfe: Ein Tipp öffnet das
- * Detail, in dem sich die Ursache beheben lässt. Chips statt Zeilen, damit auch
- * eine lange Liste die Personenliste darunter nicht unter sich begräbt.
+ * Eine Person in der Liste: ihr Punkt, der Name („Nachname, Vorname", wie
+ * sortiert), darunter Gruppe und Rolle — wer noch nicht angemeldet ist, statt
+ * der Rolle sein Stand, wer heute fehlt, bis wann. Rechts ihr Recht.
+ *
+ * Am Desktop (`breit`, Entwurf `GDesktopPersonen`) in Spalten: Name, Gruppe
+ * und Rolle, dann der Stand mit dem Recht — oder bis wann jemand fehlt.
+ */
+function PersonZeile({
+  eintrag,
+  punkt,
+  breit,
+  gewaehlt,
+}: {
+  eintrag: PersonMitLage
+  /** Mit Punkt und Stand — nur, wo es Konten gibt (nicht auf der Entwicklerseite). */
+  punkt: boolean
+  breit: boolean
+  gewaehlt: boolean
+}) {
+  const { state, dispatch } = useApp()
+  const { t, tu } = useT()
+  const { person, lage } = eintrag
+  const gruppe = state.groups.find((g) => g.id === person.grp)
+  const gruppenName = gruppe ? tu(gruppe.name) : ''
+  const standWort = punkt ? t[STAND_KEY[lage.stand]] : ''
+  const abwesend = lage.abwesenheit ? abwesendText(lage.abwesenheit, t, state.lang) : ''
+  const marke = lage.rechte.admin ? t.planerLbl : lage.rechte.planer ? t.rollePlaner : ''
+  const inhalt = breit ? (
+    <>
+      <span className="personen-name personen-zelle" dir="auto">
+        {listName(person)}
+      </span>
+      <span className="klein-text personen-zelle">{[gruppenName, t[ROLE_KEY[person.role]]].filter(Boolean).join(' · ')}</span>
+      <span className={abwesend ? 'klein-text personen-zelle is-problem' : 'klein-text personen-zelle'}>
+        {abwesend || [standWort, marke].filter(Boolean).join(' · ')}
+      </span>
+    </>
+  ) : (
+    <>
+      <span className="personen-zeile-text">
+        <span className="personen-name" dir="auto">
+          {listName(person)}
+        </span>
+        <span className={abwesend ? 'klein-text is-problem' : 'klein-text'}>
+          {abwesend ||
+            [gruppenName, standWort && lage.stand !== 'angemeldet' ? standWort : t[ROLE_KEY[person.role]]]
+              .filter(Boolean)
+              .join(' · ')}
+        </span>
+      </span>
+      {marke && <span className="personen-marke">{marke}</span>}
+    </>
+  )
+  return (
+    <button
+      type="button"
+      className="personen-zeile"
+      aria-current={gewaehlt ? 'true' : undefined}
+      onClick={() => dispatch({ type: 'selectPerson', id: person.id })}
+    >
+      {punkt && <Punkt art={PUNKT_DES_STANDS[lage.stand]} />}
+      {inhalt}
+      <Zeichen name="weiter" />
+    </button>
+  )
+}
+
+/**
+ * Ein Hinweis über der Liste (feste Rollen doppelt, ohne Gruppe): Titel mit
+ * Zahl, der Grund, darunter die Namen.
+ */
+function Hinweis({
+  art,
+  titel,
+  zahl,
+  text,
+  children,
+}: {
+  art: string
+  titel: string
+  zahl: number
+  text: string
+  children: ReactNode
+}) {
+  return (
+    <section className="karte personen-hinweis" data-warnung={art}>
+      <h2 className="abschnitt-titel karte-titel">
+        <Punkt art="problem" />
+        <span className="personen-hinweis-titel">{titel}</span>
+        <span className="personen-hinweis-zahl">{zahl}</span>
+      </h2>
+      <p className="klein-text personen-hinweis-text">{text}</p>
+      {children}
+    </section>
+  )
+}
+
+/**
+ * Die Namen in einem Hinweis, als Knöpfe: Ein Tipp öffnet die Person, bei der
+ * sich die Ursache beheben lässt. Chips statt Zeilen, damit auch eine lange
+ * Liste die Personenliste darunter nicht unter sich begräbt.
  */
 function NamenKnoepfe({ personen }: { personen: readonly Person[] }) {
   const { dispatch } = useApp()
   return (
-    <div className="pers-dupes-chips">
+    <div className="personen-namen">
       {personen.map((person) => (
         <button
           key={person.id}
           type="button"
-          className="pers-dupes-chip"
+          className="personen-name-knopf"
           dir="auto"
           onClick={() => dispatch({ type: 'selectPerson', id: person.id })}
         >
@@ -353,45 +394,60 @@ function NamenKnoepfe({ personen }: { personen: readonly Person[] }) {
 }
 
 /**
- * Ein Filterfeld der Personenliste. Der Platzhalter „—" steht wie überall im
- * Screen für „nicht eingeschränkt"; ist etwas gewählt, hebt sich das Feld ab.
+ * **Alle einladen**: ein Code für jeden, den die Liste in der Auswahl „Nicht
+ * eingeladen" gerade zeigt — also weder mit Konto noch mit offenem Code; Suche
+ * und Filter grenzen weiter ein (etwa auf eine Gruppe). Mit eingerichtetem
+ * Versand gehen die Mails direkt hinaus (`send-invite`); die Liste „Name:
+ * Code" landet zusätzlich in der Zwischenablage — für alle ohne E-Mail oder
+ * wenn kein Versand eingerichtet ist.
+ *
+ * Bis Phase 6a stand der Knopf über der ganzen Liste und lud jeden ohne Konto
+ * ein, gleich, was gesucht war.
  */
-function FilterSelect({
-  label,
-  value,
-  onChange,
-  options,
-  locale,
-}: {
-  label: string
-  value: string
-  onChange: (value: string) => void
-  options: ReadonlyArray<readonly [string, string]>
-  locale: string
-}) {
-  const id = useId()
-  // Alphabetisch nach der übersetzten Beschriftung — in einer langen Auswahl
-  // sucht man nach dem Wort, nicht nach der Programmreihenfolge. `numeric`
-  // hält „Gruppe 2" vor „Gruppe 10".
-  const sortiert = [...options].sort((a, b) => a[1].localeCompare(b[1], locale, { numeric: true }))
+function AlleEinladen({ personen }: { personen: readonly Person[] }) {
+  const { state, dispatch } = useApp()
+  const { t } = useT()
+  const einladen = async () => {
+    /*
+     * **Offline-Stand: gar nicht erst anfangen.**
+     *
+     * Der Reducer weist Schreib-Aktionen im Offline-Stand ab (`readonly.ts`) —
+     * aber nur den Reducer. Was danach in derselben Funktion steht, lief
+     * weiter: Die Codes entstehen hier im Baustein, keiner davon landet im
+     * Zustand oder in der Datenbank — und die Mails gingen trotzdem an **alle**
+     * ohne Konto, samt Liste in der Zwischenablage. Lauter Codes, die
+     * `redeem_invite` nicht kennt.
+     *
+     * „Plan senden" (`sendeUmfang`) zieht dieselbe Grenze und aus demselben
+     * Grund: Wer eine Edge Function unmittelbar ruft, kommt am Reducer vorbei.
+     */
+    if (state.staleAt) {
+      dispatch({ type: 'showToast', text: t.offlineReadOnly })
+      return
+    }
+    const zeilen: string[] = []
+    const perMail: Array<{ personId: string; code: string }> = []
+    for (const person of personen) {
+      const invite = makeInvite(person)
+      dispatch({ type: 'addInvite', invite })
+      zeilen.push(`${displayName(person)}: ${invite.code}`)
+      if (person.mail) perMail.push({ personId: person.id, code: invite.code })
+    }
+    // Zwischenablage nach Kräften — misslingt sie, stehen die Codes weiterhin
+    // an den Personen (Konto-Karte).
+    await copyText(`${fill(t.inviteListeTitel, { url: appUrl() })}\n\n${zeilen.join('\n')}`)
+    const res = perMail.length > 0 ? await sendInviteMails(perMail, congAppCode(state.congLang)) : null
+    dispatch({
+      type: 'showToast',
+      text:
+        res?.ok && res.sent > 0
+          ? fill(t.toastEinladungenMailN, { n: personen.length, m: res.sent })
+          : fill(t.toastEinladungenN, { n: personen.length }),
+    })
+  }
   return (
-    <div className="pers-filter">
-      <label className="field-label" htmlFor={id}>
-        {label}
-      </label>
-      <select
-        id={id}
-        className={value ? 'mem-select pers-grp-select is-active' : 'mem-select pers-grp-select'}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        <option value="">—</option>
-        {sortiert.map(([key, text]) => (
-          <option key={key} value={key}>
-            {text}
-          </option>
-        ))}
-      </select>
-    </div>
+    <button type="button" className="knopf-umriss personen-einladen" onClick={() => void einladen()}>
+      {t.alleEinladen}
+    </button>
   )
 }

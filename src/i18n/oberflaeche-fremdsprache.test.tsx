@@ -758,7 +758,7 @@ describe('Rechts-nach-links', () => {
    */
   const EIGENER_TEXT: Array<[string, Partial<AppState>, string]> = [
     ['Name im Menü', { screen: 'start' }, '.menue-profil-name'],
-    ['Name in der Personenliste', { screen: 'personen' }, '.pers-name'],
+    ['Name in der Personenliste', { screen: 'personen' }, '.personen-name'],
     ['Name über dem Detail', { screen: 'personen', selectedPersonId: ICH.id }, '.pers-detail-name'],
     ['Name im Profil', { screen: 'profil' }, '.profil-name'],
     [

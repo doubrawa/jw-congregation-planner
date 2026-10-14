@@ -230,19 +230,24 @@ export const DE = {
     absageNachricht: 'Nachricht an den Planer (freiwillig)', absageNachrichtBeispiel: 'z. B. bin an dem Tag verreist',
     absageAbwesend: 'Den Tag als abwesend eintragen',
     personen: 'Personen', personenCount: 'Personen: {n}', suchen: 'Suchen …',
-    neuePerson: '+ NEUE PERSON ANLEGEN', aufgabenbereicheN: 'Aufgabenbereiche: {n}',
+    // Personenliste und „Person anlegen" (T121, Phase 6a). Der Stand steht als
+    // Etikett unter einer Zahl und an einer einzelnen Person („Gruppe 3 ·
+    // Eingeladen") — übersetzt deshalb ohne Numerus und Genus.
+    personAnlegen: 'Person anlegen',
+    personAnlegenHinweis: 'Aufgabenbereiche legst du danach bei der Person fest.',
+    emailFreiwillig: 'E-Mail (freiwillig)',
+    standDerAnmeldung: 'Stand der Anmeldung',
+    standAngemeldet: 'Angemeldet', standEingeladen: 'Eingeladen', standOhne: 'Nicht eingeladen',
+    filterAlle: 'Alle', filterWeitere: 'Filter', filterZuruecksetzen: 'Zurücksetzen',
+    personWaehlen: 'Wähle eine Person in der Liste, um sie hier zu sehen.',
     allePersonen: '‹ Alle Personen', stammdaten: 'STAMMDATEN',
-    vorname: 'VORNAME', nachname: 'NACHNAME', telefon: 'TELEFON', emailLbl: 'E-MAIL',
+    vorname: 'Vorname', nachname: 'Nachname', telefon: 'Telefon', emailLbl: 'E-Mail',
     kontoCard: 'KONTO',
     persLoeschen: 'PERSON LÖSCHEN',
     offeneTitle: 'OFFENE ZUTEILUNGEN',
     confirmPersonDel: '„{name}“ wirklich löschen? Bereits geplante Zuteilungen bleiben als Text in den Wochen stehen.',
     toastPersonDel: 'Person gelöscht',
     kontoVerknuepft: 'Konto verknüpft',
-    // Kurzform von `planSendenOhneKonto` — dieselbe Aussage, nur als
-    // Marke in der Personenliste. Die Übersetzungen sind deshalb keine
-    // Erfindung, sondern die erste Hälfte des dortigen Satzes.
-    keinKonto: 'Ohne App-Konto',
     einladenBtn: '+ EINLADEN',
     einladenHintMail: 'Erstellt einen Einladungscode und schickt die Einladung per E-Mail. Ist kein Versand eingerichtet, öffnet sich stattdessen eine fertige E-Mail in deinem Mail-Programm.',
     einladenHintOhneMail: 'Keine E-Mail-Adresse hinterlegt — Code erstellen und per Teilen oder Kopieren persönlich weitergeben.',
@@ -253,14 +258,14 @@ export const DE = {
     toastCodeKopiert: 'Einladung kopiert',
     toastInviteMail: 'Einladung per E-Mail verschickt',
     toastEinladungenMailN: 'Codes erstellt: {n} · per E-Mail verschickt: {m}',
-    alleEinladen: '+ ALLE OHNE KONTO EINLADEN',
+    // Steht nur in der Auswahl „Nicht eingeladen" — „alle" sind dort genau die.
+    alleEinladen: 'Alle einladen',
     toastEinladungenN: 'Einladungscodes erstellt: {n} — als Liste kopiert',
-    toastAlleHabenKonto: 'Alle Personen haben ein Konto oder einen offenen Code',
     inviteMailSubject: 'Einladung: Versammlung.app',
     inviteMailBody: 'Hallo {name},\n\nbitte registriere dich in unserer Versammlungs-App:\n{url}\n\nLöse nach der Registrierung diesen Einladungscode ein:\n{code}',
     inviteShareText: 'Einladung zu Versammlung.app: {url} — Einladungscode: {code}',
     inviteListeTitel: 'Einladungscodes — App: {url}',
-    kontenOhnePerson: 'KONTEN OHNE PERSON',
+    kontenOhnePerson: 'Konten ohne Person',
     kontenOhnePersonHint: 'Diese Konten sind noch keiner Person zugeordnet.',
     pushLbl: 'Push-Mitteilungen',
     pushPromptTitle: 'Keine Zuteilung verpassen',
@@ -307,7 +312,7 @@ export const DE = {
     toastPushVerweigert: 'Benachrichtigungen wurden nicht erlaubt',
     keineWochenTitel: 'KEIN PROGRAMM GELADEN',
     keineWochenHinweis: 'Es sind noch keine Wochen vorhanden. Admins können das Programm in den Einstellungen über „Nächste Woche importieren“ laden.',
-    rolle: 'ROLLE', aufgabenbereiche: 'AUFGABENBEREICHE',
+    rolle: 'Rolle', aufgabenbereiche: 'Aufgabenbereiche',
     einstellungen: 'Einstellungen', versammlungCard: 'VERSAMMLUNG', saal: 'Königreichssaal',
     hdDesc: 'Anzahl benötigter Personen je Dienst — wirkt sofort auf Programm und Planung.',
     gruppenRotation: 'Gruppen-Rotation', eigenerBereich: 'Eigener Aufgabenbereich',
@@ -398,7 +403,7 @@ export const DE = {
     privBibellesung: 'Bibellesung', privLeser: 'Leser',
     geschlecht: 'Geschlecht', bruder: 'Bruder', schwester: 'Schwester',
     privWtLeiter: 'Wachtturm-Studium-Leiter', privWtVertreter: 'Vertreter (Wachtturm-Studium)',
-    wtRollenLabel: 'FESTE ROLLEN', wtRollenHint: 'Fester Wachtturm-Studium-Leiter; der Vertreter springt bei Abwesenheit ein.',
+    wtRollenLabel: 'Feste Rollen',wtRollenHint: 'Fester Wachtturm-Studium-Leiter; der Vertreter springt bei Abwesenheit ein.',
     // Die Warnung über der Personenliste, wenn eine feste Rolle mehrfach vergeben ist.
     wtRollenDoppeltHint: 'Leiter und Vertreter sind je eine Person. Ist eine Rolle mehrfach vergeben, nimmt die automatische Zuteilung irgendeinen davon. Tippe auf einen Namen, um die Rolle dort abzuschalten.',
     // `s89Partner` beschriftet drei Flächen: den Druckbogen, den einzelnen
@@ -571,6 +576,6 @@ export const DE = {
     entfernenSicher: 'Wirklich entfernen?',
     gruppeDelMitglieder: 'Die Mitglieder dieser Gruppe sind danach keiner Gruppe mehr zugeordnet.',
     gruppeDelTreffpunkte: 'Die Treffpunkte dieser Gruppe entfallen.',
-    ohneGruppeTitle: 'OHNE PREDIGTDIENSTGRUPPE',
+    ohneGruppeTitle: 'Ohne Predigtdienstgruppe',
     ohneGruppeHint: 'Jeder Verkündiger gehört zu einer Predigtdienstgruppe. Ohne Zuordnung sieht die Person unter „Predigtdienst“ keine Gruppentreffpunkte. Tippe auf einen Namen, um die Gruppe festzulegen.'
 }

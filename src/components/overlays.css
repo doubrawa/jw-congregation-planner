@@ -123,6 +123,15 @@
   overflow: auto;
 }
 
+/* Ein Blatt, das als Formular abschickt (Eingabe → „Anlegen"): reicht die
+   Spalte des Blatts an Inhalt und Fuß weiter, als stünde es nicht dazwischen. */
+.sheet-formular {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
 /* Unten im Blatt: die Knöpfe, die es abschließen. */
 .sheet-fuss {
   flex: none;

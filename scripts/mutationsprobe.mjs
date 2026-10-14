@@ -422,10 +422,10 @@ export const KATALOG = [
   },
   {
     id: 'admin-schalter-zeigt-wirksames-recht',
-    datei: 'src/personen/PrivToggle.tsx',
-    regel: 'Der Admin-Schalter zeigt das Recht des Kontos, nicht die Vormerkung an der Person.',
-    suchen: 'const on = konten.length > 0 ? konten.some((m) => m.planner) : Boolean(person.plannerVorgemerkt)',
-    ersetzen: 'const on = Boolean(person.plannerVorgemerkt)',
+    datei: 'src/data/rechte.ts',
+    regel: 'Der Admin-Schalter (und die Marke in der Liste) zeigt das Recht des Kontos, nicht die Vormerkung an der Person.',
+    suchen: '  return { admin: konten.some((m) => m.planner), planer: konten.some((m) => m.zuteiler) }',
+    ersetzen: '  return { admin: Boolean(person.plannerVorgemerkt), planer: konten.some((m) => m.zuteiler) }',
   },
   {
     id: 'abwesenheit-person-aus-datensatz',
@@ -1024,8 +1024,8 @@ export const KATALOG = [
     id: 'rechte-admin-hat-planer-schalter-an',
     datei: 'src/personen/PrivToggle.tsx',
     regel: 'Beim Admin steht der Planer-Schalter an — er hat das Recht ohnehin.',
-    suchen: '        on={admin || eigen}\n',
-    ersetzen: '        on={eigen}\n',
+    suchen: '        on={admin || planer}\n',
+    ersetzen: '        on={planer}\n',
   },
   {
     id: 'ersatz-gefunden-auch-an-planer',
@@ -2401,8 +2401,8 @@ export const KATALOG = [
     id: 'ohne-gruppe-warnung-personen',
     datei: 'src/personen/PersonenScreen.tsx',
     regel: 'Die Personenliste warnt vor Personen ohne Predigtdienstgruppe.',
-    suchen: '        ohne: ohneGruppe(sortiert, state.groups),',
-    ersetzen: '        ohne: [],',
+    suchen: '      ohne: ohneGruppe(sortiert, groups),',
+    ersetzen: '      ohne: [],',
   },
   {
     id: 'ohne-gruppe-hinweis-einstellungen',
@@ -4362,8 +4362,8 @@ export const KATALOG = [
     id: 'feste-rollen-warnung',
     datei: 'src/personen/PersonenScreen.tsx',
     regel: 'Die Personenliste warnt, wenn eine feste Rolle (Wachtturm-Studium-Leiter, Vertreter) mehrfach vergeben ist (F7).',
-    suchen: '        mehrfachRollen: doppelteFesteRollen(sortiert),',
-    ersetzen: '        mehrfachRollen: [],',
+    suchen: '      mehrfachRollen: doppelteFesteRollen(sortiert),',
+    ersetzen: '      mehrfachRollen: [],',
   },
   {
     id: 'feste-rollen-erst-ab-zwei',
@@ -4384,25 +4384,25 @@ export const KATALOG = [
     id: 'feste-rollen-namen-sortiert',
     datei: 'src/personen/PersonenScreen.tsx',
     regel: 'Die Namen in der Warnung stehen in der Folge der Liste — alphabetisch in der Sprache des Lesers.',
-    suchen: '        mehrfachRollen: doppelteFesteRollen(sortiert),',
-    ersetzen: '        mehrfachRollen: doppelteFesteRollen(state.persons),',
+    suchen: '      mehrfachRollen: doppelteFesteRollen(sortiert),',
+    ersetzen: '      mehrfachRollen: doppelteFesteRollen(persons),',
   },
   {
     id: 'warnung-name-oeffnet-sein-detail',
     datei: 'src/personen/PersonenScreen.tsx',
-    regel: 'Ein Tipp auf einen Namen in einer Warnung öffnet das Detail genau dieser Person, nicht das der ersten.',
+    regel: 'Ein Tipp auf einen Namen in einem Hinweis öffnet genau diese Person, nicht die erste.',
     suchen:
-      '          className="pers-dupes-chip"\n' +
+      '          className="personen-name-knopf"\n' +
       '          dir="auto"\n' +
       "          onClick={() => dispatch({ type: 'selectPerson', id: person.id })}\n",
     ersetzen:
-      '          className="pers-dupes-chip"\n' +
+      '          className="personen-name-knopf"\n' +
       '          dir="auto"\n' +
       "          onClick={() => dispatch({ type: 'selectPerson', id: personen[0]!.id })}\n",
   },
   {
     id: 'feste-rollen-im-filter',
-    datei: 'src/personen/PersonenScreen.tsx',
+    datei: 'src/personen/PersonenFilterBlatt.tsx',
     regel: 'Der Filter „Aufgabenbereiche" führt auch die festen Rollen — so findet man den festen Leiter.',
     suchen: '            ...[...QUALIFICATION_ORDER, ...WT_ROLE_ORDER].map(',
     ersetzen: '            ...[...QUALIFICATION_ORDER].map(',
@@ -5349,6 +5349,79 @@ export const KATALOG = [
     regel: 'Hatten alle heute schon eine Erinnerung, sagt der Hinweis genau das.',
     suchen: '  return res.schonHeute > 0 ? t.toastSchonErinnert : t.toastNiemandZuErinnern\n',
     ersetzen: '  return t.toastNiemandZuErinnern\n',
+  },
+
+  /* ---- T121 Phase 6a: Personenliste und „Person anlegen" ---- */
+  {
+    id: 'personen-konto-schlaegt-code',
+    datei: 'src/personen/person-lage.ts',
+    regel: 'Angemeldet ist, wer ein verknüpftes Konto hat — auch wenn noch ein Code offen ist.',
+    suchen: "        stand: konten.length > 0 ? 'angemeldet' : eingeladen.has(person.id) ? 'eingeladen' : 'ohne',",
+    ersetzen: "        stand: eingeladen.has(person.id) ? 'eingeladen' : konten.length > 0 ? 'angemeldet' : 'ohne',",
+  },
+  {
+    id: 'personen-heute-abwesend',
+    datei: 'src/personen/person-lage.ts',
+    regel: 'Die Liste weiß, wer heute abwesend ist — die Auswahl „Abwesend" und der Zeitraum in der Zeile hängen daran.',
+    suchen: '        abwesenheit: abwesenheitAm(quelle.absences, person.id, tag),',
+    ersetzen: '        abwesenheit: undefined,',
+  },
+  {
+    id: 'personen-nicht-angemeldet-mit-eingeladenen',
+    datei: 'src/personen/person-filter.ts',
+    regel: '„Noch nicht angemeldet" zeigt die Eingeladenen mit — nicht nur, wer noch keinen Code hat.',
+    suchen: "      return lage.stand !== 'angemeldet'",
+    ersetzen: "      return lage.stand === 'ohne'",
+  },
+  {
+    id: 'personen-auswahl-zaehlt-unter-suche',
+    datei: 'src/personen/PersonenScreen.tsx',
+    regel: 'Die Zahlen der Auswahl zählen unter Suche und Filter — was diese ausschließen, zählt nicht mit.',
+    suchen: '  const zahl = (auswahl: Auswahl) => basis.filter((e) => passtZurAuswahl(auswahl, e.lage)).length',
+    ersetzen: '  const zahl = (auswahl: Auswahl) => eintraege.filter((e) => passtZurAuswahl(auswahl, e.lage)).length',
+  },
+  {
+    id: 'personen-einladen-nur-ohne-einladung',
+    datei: 'src/personen/PersonenScreen.tsx',
+    regel: '„Alle einladen" steht nur in der Auswahl „Nicht eingeladen" — „alle" sind dort genau die.',
+    suchen: "      {angemeldet && filter.auswahl === 'ohne' && sichtbar.length > 0 && (",
+    ersetzen: '      {angemeldet && sichtbar.length > 0 && (',
+  },
+  {
+    id: 'personen-einladen-was-die-liste-zeigt',
+    datei: 'src/personen/PersonenScreen.tsx',
+    regel: '„Alle einladen" lädt genau die ein, die die Liste zeigt — die Suche grenzt mit ein.',
+    suchen: '        <AlleEinladen personen={sichtbar.map((e) => e.person)} />',
+    ersetzen:
+      "        <AlleEinladen personen={eintraege.filter((e) => e.lage.stand === 'ohne').map((e) => e.person)} />",
+  },
+  {
+    id: 'personen-angemeldet-mit-rolle',
+    datei: 'src/personen/PersonenScreen.tsx',
+    regel: 'Wer angemeldet ist, steht mit seiner Rolle da; den Stand nennt die Zeile nur bei allen anderen.',
+    suchen: "            [gruppenName, standWort && lage.stand !== 'angemeldet' ? standWort : t[ROLE_KEY[person.role]]]",
+    ersetzen: '            [gruppenName, standWort ? standWort : t[ROLE_KEY[person.role]]]',
+  },
+  {
+    id: 'personen-abwesend-als-problem',
+    datei: 'src/personen/PersonenScreen.tsx',
+    regel: 'Wer heute fehlt, steht in der Farbe der Probleme da.',
+    suchen: "        <span className={abwesend ? 'klein-text is-problem' : 'klein-text'}>",
+    ersetzen: "        <span className={'klein-text'}>",
+  },
+  {
+    id: 'person-anlegen-keine-dublette',
+    datei: 'src/personen/PersonAnlegenBlatt.tsx',
+    regel: 'Ein Name, den es schon gibt, lässt sich nicht anlegen (T110).',
+    suchen: "  const bereit = (name.fn !== '' || name.ln !== '') && dublette === undefined",
+    ersetzen: "  const bereit = name.fn !== '' || name.ln !== ''",
+  },
+  {
+    id: 'person-anlegen-namen-getrimmt',
+    datei: 'src/personen/PersonAnlegenBlatt.tsx',
+    regel: 'Leerzeichen um den Namen zählen nicht — weder als Name noch beim Speichern.',
+    suchen: "  const name = { id: '', fn: fn.trim(), ln: ln.trim() }",
+    ersetzen: "  const name = { id: '', fn, ln }",
   },
 ]
 

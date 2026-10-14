@@ -2,7 +2,8 @@ import { useId, useMemo, useState, type ReactNode } from 'react'
 import { useApp, type AppState } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { Punkt } from '../bausteine/Punkt'
-import { datumsFormat, tageSpanne } from '../components/datum-anzeige'
+import { abwesendText } from '../components/abwesenheit-anzeige'
+import { datumsFormat } from '../components/datum-anzeige'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { Sheet } from '../components/Sheet'
 import { nameTrifft } from '../components/suche'
@@ -10,9 +11,8 @@ import { LOAD_WEEKS } from '../data/auslastung'
 import { dauerAbtrennen, herkunftVon, isSong, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER, rolleBasis, slotsOf } from '../data/helpers'
 import { meetingDate } from '../data/meeting-dates'
 import { buildS89ForSlot } from '../data/planning'
-import type { Absence, S89Payload, SlotAssignment, SlotSelection, Week } from '../data/types'
+import type { S89Payload, SlotAssignment, SlotSelection, Week } from '../data/types'
 import { wochenHer } from '../i18n/relative-time'
-import type { Dict } from '../i18n/ui'
 import { fill, useProgWeek, useT, zuteilungenText, type I18n } from '../i18n/useT'
 import { kandidaten, type Candidate } from './kandidaten'
 import { auswahlImPlan } from './planen-raster'
@@ -445,11 +445,6 @@ function AktuellKarte({
       />
     </div>
   )
-}
-
-/** „abwesend 7.–11. September" — in der Karte oben und in der Zeile darunter derselbe Satz. */
-function abwesendText(a: Pick<Absence, 'from' | 'to'>, t: Dict, lang: string): string {
-  return fill(t.abwesendZeitraum, { zeitraum: tageSpanne(a.from, a.to, lang, 'tagMonat') })
 }
 
 /** Ganze Klassennamen, damit eine Textsuche sie findet (`tests/css-klassen.test.ts`). */

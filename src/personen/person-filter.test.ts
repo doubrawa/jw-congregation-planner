@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyQualifications } from '../data/helpers'
 import type { Person } from '../data/types'
-import { KEIN_FILTER, passtZumFilter, type PersonFilter } from './person-filter'
+import { gesetzteBlattfilter, KEIN_FILTER, passtOhneAuswahl, passtZurAuswahl, type PersonFilter } from './person-filter'
 
 function person(patch: Partial<Person> = {}): Person {
   return {
@@ -22,56 +22,56 @@ describe('Volltextsuche', () => {
   const p = person()
 
   it('ohne Eingabe bleibt jeder sichtbar', () => {
-    expect(passtZumFilter(p, KEIN_FILTER)).toBe(true)
+    expect(passtOhneAuswahl(p, KEIN_FILTER)).toBe(true)
   })
 
   it('findet über den Namen — Groß-/Kleinschreibung egal', () => {
-    expect(passtZumFilter(p, filter({ q: 'krüger' }))).toBe(true)
-    expect(passtZumFilter(p, filter({ q: 'Meier' }))).toBe(false)
+    expect(passtOhneAuswahl(p, filter({ q: 'krüger' }))).toBe(true)
+    expect(passtOhneAuswahl(p, filter({ q: 'Meier' }))).toBe(false)
   })
 
   it('findet über die E-Mail-Adresse', () => {
-    expect(passtZumFilter(p, filter({ q: 'example.org' }))).toBe(true)
+    expect(passtOhneAuswahl(p, filter({ q: 'example.org' }))).toBe(true)
   })
 
   it('findet über die Telefonnummer, auch mit anderer Schreibweise', () => {
-    expect(passtZumFilter(p, filter({ q: '0170 123' }))).toBe(true)
+    expect(passtOhneAuswahl(p, filter({ q: '0170 123' }))).toBe(true)
     // Ohne den Ziffernvergleich fände diese Eingabe „0170 123 4567" nicht.
-    expect(passtZumFilter(p, filter({ q: '01701234567' }))).toBe(true)
-    expect(passtZumFilter(p, filter({ q: '+49 170 1234567' }))).toBe(false)
+    expect(passtOhneAuswahl(p, filter({ q: '01701234567' }))).toBe(true)
+    expect(passtOhneAuswahl(p, filter({ q: '+49 170 1234567' }))).toBe(false)
   })
 
   it('eine reine Ziffer im Namen macht nicht jeden zum Treffer', () => {
-    expect(passtZumFilter(person({ tel: '0555 999' }), filter({ q: '7' }))).toBe(false)
+    expect(passtOhneAuswahl(person({ tel: '0555 999' }), filter({ q: '7' }))).toBe(false)
   })
 
   it('findet auch so, wie die Liste den Namen zeigt — Nachname zuerst', () => {
     // Die Liste schreibt „Krüger, Simon". Bis zum 1.10.2026 fand genau das
     // nichts, ebenso wenig „krüger s" zum Eingrenzen unter Namensvettern.
     for (const q of ['Krüger, Simon', 'krüger simon', 'krüger s', 'simon krüger']) {
-      expect(passtZumFilter(p, filter({ q })), q).toBe(true)
+      expect(passtOhneAuswahl(p, filter({ q })), q).toBe(true)
     }
-    expect(passtZumFilter(p, filter({ q: 'krüger t' }))).toBe(false)
+    expect(passtOhneAuswahl(p, filter({ q: 'krüger t' }))).toBe(false)
   })
 
   it('Umlaute und ß: mit Umlaut, ohne und in Umschrift', () => {
     // Ohne E-Mail-Adresse — sonst träfe „krueger" zufällig dort.
     const ohneMail = person({ mail: '' })
     for (const q of ['krüger', 'kruger', 'krueger', 'KRUGER']) {
-      expect(passtZumFilter(ohneMail, filter({ q })), q).toBe(true)
+      expect(passtOhneAuswahl(ohneMail, filter({ q })), q).toBe(true)
     }
     const weiss = person({ fn: 'Sven', ln: 'Weiß', mail: '' })
-    expect(passtZumFilter(weiss, filter({ q: 'weiss' }))).toBe(true)
-    expect(passtZumFilter(weiss, filter({ q: 'weiß' }))).toBe(true)
+    expect(passtOhneAuswahl(weiss, filter({ q: 'weiss' }))).toBe(true)
+    expect(passtOhneAuswahl(weiss, filter({ q: 'weiß' }))).toBe(true)
     const boehm = person({ fn: 'Frank', ln: 'Böhm', mail: '' })
     for (const q of ['böhm', 'bohm', 'boehm']) {
-      expect(passtZumFilter(boehm, filter({ q })), q).toBe(true)
+      expect(passtOhneAuswahl(boehm, filter({ q })), q).toBe(true)
     }
-    expect(passtZumFilter(boehm, filter({ q: 'bahm' }))).toBe(false)
+    expect(passtOhneAuswahl(boehm, filter({ q: 'bahm' }))).toBe(false)
   })
 
   it('auch Akzente anderer Sprachen fallen weg — „jose" findet „José"', () => {
-    expect(passtZumFilter(person({ fn: 'José', ln: 'Núñez', mail: '' }), filter({ q: 'jose nunez' }))).toBe(true)
+    expect(passtOhneAuswahl(person({ fn: 'José', ln: 'Núñez', mail: '' }), filter({ q: 'jose nunez' }))).toBe(true)
   })
 
   /*
@@ -85,34 +85,77 @@ describe('Filterfelder', () => {
   it('Geschlecht', () => {
     const bruder = person()
     const schwester = person({ female: true })
-    expect(passtZumFilter(bruder, filter({ sex: 'm' }))).toBe(true)
-    expect(passtZumFilter(bruder, filter({ sex: 'w' }))).toBe(false)
-    expect(passtZumFilter(schwester, filter({ sex: 'w' }))).toBe(true)
+    expect(passtOhneAuswahl(bruder, filter({ sex: 'm' }))).toBe(true)
+    expect(passtOhneAuswahl(bruder, filter({ sex: 'w' }))).toBe(false)
+    expect(passtOhneAuswahl(schwester, filter({ sex: 'w' }))).toBe(true)
   })
 
   it('Rolle', () => {
     const aeltester = person({ role: 'aeltester' })
-    expect(passtZumFilter(aeltester, filter({ role: 'aeltester' }))).toBe(true)
-    expect(passtZumFilter(aeltester, filter({ role: 'verkuendiger' }))).toBe(false)
+    expect(passtOhneAuswahl(aeltester, filter({ role: 'aeltester' }))).toBe(true)
+    expect(passtOhneAuswahl(aeltester, filter({ role: 'verkuendiger' }))).toBe(false)
   })
 
   it('Gruppe — Personen ohne Gruppe fallen heraus', () => {
-    expect(passtZumFilter(person({ grp: 'g2' }), filter({ grp: 'g2' }))).toBe(true)
-    expect(passtZumFilter(person({ grp: 'g1' }), filter({ grp: 'g2' }))).toBe(false)
-    expect(passtZumFilter(person({ grp: null }), filter({ grp: 'g2' }))).toBe(false)
+    expect(passtOhneAuswahl(person({ grp: 'g2' }), filter({ grp: 'g2' }))).toBe(true)
+    expect(passtOhneAuswahl(person({ grp: 'g1' }), filter({ grp: 'g2' }))).toBe(false)
+    expect(passtOhneAuswahl(person({ grp: null }), filter({ grp: 'g2' }))).toBe(false)
   })
 
   it('Aufgabenbereich — fest wie dynamisch (svc:<dienst>)', () => {
     const p = person({ priv: { ...emptyQualifications(), gebet: true, 'svc:mik': true } })
-    expect(passtZumFilter(p, filter({ priv: 'gebet' }))).toBe(true)
-    expect(passtZumFilter(p, filter({ priv: 'vortrag' }))).toBe(false)
-    expect(passtZumFilter(p, filter({ priv: 'svc:mik' }))).toBe(true)
-    expect(passtZumFilter(p, filter({ priv: 'svc:ton' }))).toBe(false)
+    expect(passtOhneAuswahl(p, filter({ priv: 'gebet' }))).toBe(true)
+    expect(passtOhneAuswahl(p, filter({ priv: 'vortrag' }))).toBe(false)
+    expect(passtOhneAuswahl(p, filter({ priv: 'svc:mik' }))).toBe(true)
+    expect(passtOhneAuswahl(p, filter({ priv: 'svc:ton' }))).toBe(false)
   })
 
   it('mehrere Felder wirken zusammen (UND)', () => {
     const p = person({ role: 'aeltester', grp: 'g1', female: false })
-    expect(passtZumFilter(p, filter({ q: 'krüger', role: 'aeltester', grp: 'g1' }))).toBe(true)
-    expect(passtZumFilter(p, filter({ q: 'krüger', role: 'aeltester', grp: 'g2' }))).toBe(false)
+    expect(passtOhneAuswahl(p, filter({ q: 'krüger', role: 'aeltester', grp: 'g1' }))).toBe(true)
+    expect(passtOhneAuswahl(p, filter({ q: 'krüger', role: 'aeltester', grp: 'g2' }))).toBe(false)
+  })
+
+  it('die Auswahl über der Liste fragt diese Funktion nicht — so zählen ihre Knöpfe unter den übrigen Filtern', () => {
+    expect(passtOhneAuswahl(person(), filter({ auswahl: 'abwesend' }))).toBe(true)
+  })
+
+  it('am Knopf „Filter" steht, wie viele Felder des Blatts gesetzt sind — Suche und Auswahl zählen nicht', () => {
+    expect(gesetzteBlattfilter(KEIN_FILTER)).toBe(0)
+    expect(gesetzteBlattfilter(filter({ q: 'x', auswahl: 'abwesend' }))).toBe(0)
+    expect(gesetzteBlattfilter(filter({ sex: 'w', grp: 'g1' }))).toBe(2)
+  })
+})
+
+/**
+ * **Die Auswahl über der Liste** (T121, Entwurf `GPersonen`): eine zur Zeit —
+ * ein Stand der Anmeldung, „Noch nicht angemeldet" oder wer heute fehlt.
+ */
+describe('Auswahl', () => {
+  const lage = (stand: 'angemeldet' | 'eingeladen' | 'ohne', abwesend = false) => ({
+    stand,
+    abwesenheit: abwesend ? { id: 'a', personId: 'x', userId: null, from: '2026-09-01', to: '2026-09-09', reason: '' } : undefined,
+    rechte: { admin: false, planer: false },
+  })
+
+  it('leer heißt alle', () => {
+    for (const s of ['angemeldet', 'eingeladen', 'ohne'] as const) expect(passtZurAuswahl('', lage(s))).toBe(true)
+  })
+
+  it('ein Stand trifft genau ihn', () => {
+    expect(passtZurAuswahl('eingeladen', lage('eingeladen'))).toBe(true)
+    expect(passtZurAuswahl('eingeladen', lage('ohne'))).toBe(false)
+    expect(passtZurAuswahl('angemeldet', lage('eingeladen'))).toBe(false)
+  })
+
+  it('„Noch nicht angemeldet" heißt eingeladen oder noch nicht — nur nicht angemeldet', () => {
+    expect(passtZurAuswahl('nichtAngemeldet', lage('eingeladen'))).toBe(true)
+    expect(passtZurAuswahl('nichtAngemeldet', lage('ohne'))).toBe(true)
+    expect(passtZurAuswahl('nichtAngemeldet', lage('angemeldet'))).toBe(false)
+  })
+
+  it('„Abwesend" fragt nur die Abwesenheit, nicht den Stand', () => {
+    expect(passtZurAuswahl('abwesend', lage('angemeldet', true))).toBe(true)
+    expect(passtZurAuswahl('abwesend', lage('angemeldet'))).toBe(false)
   })
 })

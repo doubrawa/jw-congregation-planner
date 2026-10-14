@@ -148,7 +148,7 @@ describe('Zurück am Handy', () => {
   it('das Personen-Detail schließt zuerst, dann geht es zu Start', async () => {
     const { container } = zeige()
     klickMenue(container, t.navPersonen)
-    fireEvent.click(container.querySelector('.pers-row')!)
+    fireEvent.click(container.querySelector('.personen-zeile')!)
     await ausklingen()
     expect(container.querySelector('.pers-detail-head')).not.toBeNull()
 

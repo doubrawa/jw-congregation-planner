@@ -29,7 +29,7 @@
  */
 
 import { aufseherGruppe } from './helpers'
-import type { Group, MeetingTab, Screen, Thema } from './types'
+import type { Group, MeetingTab, Member, Person, Screen, Thema } from './types'
 
 /** Die Rechte eines Kontos — woraus jede Antwort dieser Datei folgt. */
 export interface Rechte {
@@ -172,4 +172,29 @@ export function darfAbwesenheitBearbeiten(
   personId: string | null,
 ): boolean {
   return s.planner || personId === s.personId
+}
+
+/**
+ * **Die Rechte, die bei einer Person stehen** — „Admin" und das eigene
+ * Planer-Recht, ohne das, was im Admin schon steckt.
+ *
+ * Das Recht steht an **zwei** Stellen, und nur eine entscheidet: Sobald ein
+ * Konto verknüpft ist, zählt das Konto (`members.planner`, `members.zuteiler`
+ * — daran hängt `is_planner()` in der Datenbank). Die Vormerkung an der Person
+ * trägt nur, wo es keines gibt; sie geht beim Einladen in den Code über.
+ * Angezeigt wurde bis August 2026 die Vormerkung — der Personen-Neuaufbau aus
+ * New World Scheduler schreibt sie aber gar nicht mit, und der Betreiber sah
+ * bei sich selbst „Admin: aus".
+ *
+ * Eine Antwort für die Schalter im Detail und die Marke in der Liste.
+ */
+export function rechteDerPerson(
+  members: readonly Member[],
+  person: Pick<Person, 'id' | 'plannerVorgemerkt' | 'zuteilerVorgemerkt'>,
+): { admin: boolean; planer: boolean } {
+  const konten = members.filter((m) => m.personId === person.id)
+  if (konten.length === 0) {
+    return { admin: Boolean(person.plannerVorgemerkt), planer: Boolean(person.zuteilerVorgemerkt) }
+  }
+  return { admin: konten.some((m) => m.planner), planer: konten.some((m) => m.zuteiler) }
 }

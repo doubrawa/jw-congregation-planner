@@ -1,103 +1,272 @@
-/* Personen (Screen 5, nur Planer) — Liste mit Suche + Detail. */
+/* Personen (nur Admins) — die Liste (T121, Entwurf `GPersonen`) und das Detail. */
 
-/* ---- Liste ------------------------------------------------------------------ */
+/* ---- Liste -------------------------------------------------------------------- */
 
-.pers-search {
-  display: block;
-  width: 100%;
-  margin-top: 14px;
-  padding: 11px 14px;
-  border-radius: var(--r-pill);
-  border: 1px solid var(--bord);
-  background: var(--card);
-  font-size: calc(13px * var(--fs));
-  color: var(--ink);
+.personen {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.pers-add {
-  margin-top: 12px;
+.personen-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
 }
 
-/* Filterleiste unter der Suche. Zwei Spalten, sobald es der Platz zulässt —
-   vier gestapelte Felder schöben die Liste sonst weit nach unten. */
-.pers-filters {
+/* Das Suchfeld mit der Lupe vorn. */
+.personen-suche {
+  position: relative;
+}
+
+.personen-suche > .zeichen {
+  position: absolute;
+  inset-inline-start: 16px;
+  top: 50%;
+  translate: 0 -50%;
+  color: var(--text3);
+  pointer-events: none;
+}
+
+.personen-suche > .feld {
+  padding-inline-start: 48px;
+}
+
+/* Der Stand der Anmeldung als Spur: je Stand ein Knopf mit Punkt, Zahl und Wort.
+   Die Linie läuft vom Punkt bis zum nächsten; beim letzten bleibt sie weg. */
+.personen-stand {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px 12px;
-  margin-top: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 14px 18px;
 }
 
-/* Ab üblicher Telefonbreite passen zwei Felder nebeneinander. */
-@media (min-width: 380px) {
-  .pers-filters {
-    grid-template-columns: 1fr 1fr;
-  }
+.personen-stand-knopf {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 60px;
+  text-align: start;
 }
 
-/* Die Wörterbuch-Beschriftungen sind teils groß, teils gemischt geschrieben
-   („ROLLE", „Geschlecht") — nebeneinander fiele das auf, also hier einheitlich. */
-.pers-filter .field-label {
-  display: block;
-  text-transform: uppercase;
+.personen-stand-bahn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 14px;
 }
 
-/* Gesetzter Filter hebt sich vom Rest ab — sonst übersieht man leicht,
-   warum die Liste kurz ist. */
-.pers-filter .is-active {
-  border-color: var(--acc);
-  color: var(--acc);
+.personen-stand-bahn > .punkt {
+  width: 10px;
+  height: 10px;
+}
+
+.personen-stand-linie {
+  flex: 1;
+  margin-inline-end: 6px;
+  border-block-start: 1.5px dashed var(--umriss);
+}
+
+.personen-stand-knopf:last-child .personen-stand-linie {
+  visibility: hidden;
+}
+
+.personen-stand-zahl {
+  font-size: calc(19px * var(--fs));
   font-weight: 600;
 }
 
-.pers-list {
-  margin-top: 8px;
+/* Gewählt: Zahl und Wort in Minze. */
+.personen-stand-knopf[aria-pressed='true'] .personen-stand-zahl,
+.personen-stand-knopf[aria-pressed='true'] .klein-text {
+  color: var(--akzent-text);
+  font-weight: 700;
 }
 
-.pers-row {
-  display: grid;
-  grid-template-columns: 40px 1fr auto;
-  gap: 12px;
+/* Die Auswahl darunter — eine gedrückt, wie die Darstellung im Profil. */
+.personen-auswahlen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.personen-auswahl {
+  display: inline-flex;
   align-items: center;
-  width: 100%;
-  text-align: start;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--line2);
-}
-
-.pers-row:hover {
-  background: var(--hov);
-}
-
-.pers-name {
-  display: block;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 14px;
+  border: 1.5px solid var(--umriss);
+  border-radius: 22px;
+  color: var(--text2);
   font-size: calc(14px * var(--fs));
   font-weight: 600;
 }
 
-.pers-sub {
-  display: block;
-  font-size: calc(11.5px * var(--fs));
-  color: var(--mut);
-  margin-top: 2px;
+.personen-auswahl[aria-pressed='true'] {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--grund);
+  font-weight: 700;
 }
 
-/*
- * „Ohne App-Konto" in der Personenliste (V13).
- *
- * Hebt sich ab, ohne zu alarmieren: Es ist kein Missstand, sondern eine
- * Auskunft — die meisten Verkündiger haben kein Konto, und der Planer muss nur
- * wissen, wen er persönlich anspricht. Deshalb dieselbe Zeile und dieselbe
- * Größe wie der Rest der Unterzeile, nur kräftiger.
- */
-.pers-ohne-konto {
-  color: var(--txt);
+.personen-auswahl-zahl {
+  font-variant-numeric: tabular-nums;
+}
+
+.personen-einladen {
+  align-self: flex-start;
+}
+
+.personen-zahl {
+  padding-inline: 4px;
+}
+
+.personen-liste {
+  padding: 4px 10px 4px 18px;
+}
+
+/* Eine Person: Punkt, Name und Unterzeile, rechts ihr Recht und der Pfeil. */
+.personen-zeile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  padding-block: 8px;
+  border-block-start: 1px solid var(--linie);
+  color: inherit;
+  text-align: start;
+}
+
+.personen-zeile:first-child {
+  border-block-start-color: transparent;
+}
+
+.personen-zeile-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.personen-name {
+  font-size: calc(16px * var(--fs));
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.personen-zeile .is-problem {
+  color: var(--problem);
+}
+
+.personen-marke {
+  flex: none;
+  color: var(--text2);
+  font-size: calc(13px * var(--fs));
   font-weight: 600;
 }
 
-.pers-chevron {
-  color: var(--mut);
-  font-size: calc(24px * var(--fs));
-  line-height: 1;
+/* Am Desktop in Spalten: der Name etwas breiter als Gruppe und Stand. */
+.personen-zelle {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.personen-zelle.personen-name {
+  flex-grow: 1.2;
+}
+
+.personen-zeile > .zeichen {
+  width: 20px;
+  height: 20px;
+  color: var(--text3);
+}
+
+/* Am Desktop die Person, die rechts steht: erhaben, mit Rand — wie der Platz,
+   den beim Planen die Spalte zuteilt. */
+.personen-zeile[aria-current='true'] {
+  margin-inline: -8px;
+  padding-inline: 8px;
+  width: calc(100% + 16px);
+  border-radius: 16px;
+  background: var(--hoch);
+  box-shadow: inset 0 0 0 1.5px var(--text);
+}
+
+/* ---- Hinweise über der Liste ---------------------------------------------------
+ * Mehrfach vergebene feste Rollen und „Ohne Predigtdienstgruppe": der Titel mit
+ * Punkt und Zahl, der Grund, darunter die Namen als Knöpfe. Chips statt Zeilen,
+ * damit auch nach dem Löschen einer großen Gruppe die Liste darunter erreichbar
+ * bleibt. */
+
+.personen-hinweis {
+  padding: 6px 18px 16px;
+}
+
+.personen-hinweis-titel {
+  flex: 1;
+}
+
+.personen-hinweis-zahl {
+  color: var(--problem);
+  font-weight: 700;
+}
+
+.personen-hinweis-text {
+  padding-block-end: 2px;
+}
+
+.personen-hinweis-zeile {
+  padding-block-start: 10px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.personen-namen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-block-start: 8px;
+}
+
+.personen-name-knopf {
+  min-height: 36px;
+  padding: 4px 12px;
+  border: 1px solid var(--umriss);
+  border-radius: 18px;
+  background: var(--feld);
+  color: var(--text);
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* ---- Desktop (`GDesktopPersonen`): die Person rechts neben der Liste ---------- */
+
+.personen-raster {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  align-items: start;
+}
+
+.personen-raster > .screen {
+  max-width: none;
+}
+
+/* Bleibt stehen, während die Liste daneben scrollt; die Person scrollt in sich. */
+.personen-spalte {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow-y: auto;
+  border-inline-start: 1px solid var(--linie);
+}
+
+.personen-spalte > .klein-text {
+  padding: 32px 24px;
 }
 
 /* ---- Detail ------------------------------------------------------------------ */
@@ -327,126 +496,4 @@
   line-height: 1.35;
   text-align: start;
   padding: 11px 14px;
-}
-
-/* ---- Warnungen über der Personenliste ------------------------------------
- * Mehrfach vergebene feste Rollen und „Ohne Predigtdienstgruppe"
- * (`PersonenScreen.tsx`). Die Klassen heißen nach der ersten Warnung an dieser
- * Stelle, der vor doppelten Anzeigenamen; sie ist mit T110 entfallen. Wein-
- * Warnoptik wie die Konflikt-Banner im Planen (Badge/Zähler AA-geprüft). */
-.pers-dupes {
-  margin-top: 14px;
-  background: var(--tWein);
-  border: 1.5px solid var(--wein);
-  border-radius: 14px;
-  padding: 12px 14px 13px;
-  box-shadow: 0 3px 12px -6px var(--wein);
-}
-
-.pers-dupes-head {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-
-/* Badge und Zähler wachsen mit der Schriftstufe — wie im Planen-Banner. */
-.pers-dupes-badge {
-  flex: none;
-  width: calc(21px * var(--fs));
-  height: calc(21px * var(--fs));
-  border-radius: 50%;
-  background: var(--wein);
-  color: var(--onAcc);
-  font-size: calc(13px * var(--fs));
-  font-weight: 700;
-  line-height: calc(21px * var(--fs));
-  text-align: center;
-}
-
-.pers-dupes-title {
-  flex: 1;
-  font-size: calc(11.5px * var(--fs));
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--wein);
-}
-
-.pers-dupes-count {
-  flex: none;
-  min-width: calc(22px * var(--fs));
-  height: calc(22px * var(--fs));
-  padding: 0 7px;
-  box-sizing: border-box;
-  border-radius: var(--r-pill);
-  background: var(--wein);
-  color: var(--onAcc);
-  font-size: calc(12px * var(--fs));
-  font-weight: 700;
-  line-height: calc(22px * var(--fs));
-  text-align: center;
-}
-
-.pers-dupes-hint {
-  margin-top: 8px;
-  font-size: calc(11.5px * var(--fs));
-  line-height: 1.45;
-  color: var(--ink);
-}
-
-.pers-dupes-row {
-  display: flex;
-  align-items: baseline;
-  gap: 9px;
-  margin-top: 8px;
-  font-size: calc(11.5px * var(--fs));
-  line-height: 1.4;
-  color: var(--ink);
-  overflow-wrap: anywhere;
-}
-
-.pers-dupes-row::before {
-  content: '';
-  flex: none;
-  width: 8px;
-  height: 8px;
-  align-self: flex-start;
-  margin-top: 5px;
-  border-radius: 50%;
-  background: var(--wein);
-}
-
-/* ---- Namen in den Warnungen ----------------------------------------------
- * Die Namen sind Knöpfe (ein Tipp öffnet das Detail) und stehen als Chips
- * nebeneinander — nach dem Löschen einer großen Gruppe wären Zeilen eine Wand
- * über der eigentlichen Liste. „Ohne Predigtdienstgruppe" zeigt sie unter dem
- * Hinweis, „Feste Rollen" je Rolle unter deren Zeile — dort eingerückt auf
- * den Anfang ihres Textes (Punkt 8 px + Abstand 9 px), damit man sieht, zu
- * welcher Rolle sie gehören. */
-.pers-dupes-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
-}
-
-.pers-dupes-row + .pers-dupes-chips {
-  margin-top: 6px;
-  padding-inline-start: 17px;
-}
-
-.pers-dupes-chip {
-  padding-block: 5px;
-  padding-inline: 12px;
-  border-radius: var(--r-pill);
-  border: 1px solid var(--weinB);
-  background: var(--card);
-  color: var(--ink);
-  font-size: calc(12px * var(--fs));
-  line-height: 1.3;
-  overflow-wrap: anywhere;
-}
-
-.pers-dupes-chip:hover {
-  border-color: var(--wein);
-  color: var(--wein);
 }

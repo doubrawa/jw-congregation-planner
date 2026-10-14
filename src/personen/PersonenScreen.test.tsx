@@ -13,24 +13,26 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications, serviceQualKey } from '../data/helpers'
 import { dict } from '../i18n/ui'
-import type { Group, Invite, Member, Person, Qualifications, Service } from '../data/types'
+import type { Absence, Group, Invite, Member, Person, Qualifications, Service } from '../data/types'
 import { privSetzen } from '../data/helpers'
 
 /**
- * **Die Personenliste — der Arbeitsplatz des Koordinators.**
+ * **Die Personenliste — der Arbeitsplatz des Koordinators** (T121, Entwurf
+ * `GPersonen`).
  *
- * `person-filter.ts` prüft die Filterregeln für sich; hier geht es um das, was
- * der Screen selbst zusagt und was nirgends sonst geprüft ist:
+ * `person-filter.ts` und `person-lage.ts` prüfen ihre Regeln für sich; hier
+ * geht es um das, was der Bildschirm selbst zusagt:
  *
- * - Zwei **Warnungen**, die stille Fehler sichtbar machen: doppelt vergebene
+ * - Der **Stand der Anmeldung**: oben gezählt und zum Antippen, an jeder
+ *   Person als Punkt — und wer noch nicht angemeldet ist, sagt es statt der
+ *   Rolle.
+ * - **Person anlegen** als Blatt: Angelegt wird erst mit „Hinzufügen".
+ * - Zwei **Hinweise**, die stille Fehler sichtbar machen: doppelt vergebene
  *   feste Rollen (die Auto-Zuteilung greift sich irgendeine, F7) und Personen
- *   ohne Predigtdienstgruppe (sie sehen keine Gruppentreffpunkte). Die dritte,
- *   vor doppelten Anzeigenamen, ist mit T110 entfallen (siehe unten).
- * - Die **Sammel-Einladung**: sie erzeugt Codes für alle, die noch keinen
- *   haben — und zwar **nur** für die. Zweimal getippt dürfte sie nicht jedem
- *   einen zweiten Code geben.
- * - Der **Zähler** nennt die *sichtbaren* Personen, nicht alle: so sieht man,
- *   wie stark Suche und Filter gerade einschränken.
+ *   ohne Predigtdienstgruppe (sie sehen keine Gruppentreffpunkte).
+ * - Die **Sammel-Einladung** in der Auswahl „Nicht eingeladen": Codes für
+ *   alle, die noch keinen haben — und **nur** für die.
+ * - Der **Zähler** nennt die *sichtbaren* Personen, nicht alle.
  */
 
 interface MailErgebnis { ok: boolean; sent: number; skipped: number; notConfigured: boolean }
@@ -71,6 +73,13 @@ const DIENSTE: Service[] = [
   { key: 'rein', name: 'Reinigung', count: 1, groups: true },
 ]
 
+const konto = (personId: string | null, over: Partial<Member> = {}): Member => ({
+  userId: `u-${personId}`, personId, email: '', planner: false, zuteiler: false, ...over,
+})
+// Bernd hat ein Konto, Clara einen offenen Code, Anton nichts.
+const BRAND_KONTO: Member[] = [konto('p-b')]
+const COHN_CODE: Invite[] = [{ id: 'i1', code: 'ABC123', personId: 'p-c', planner: false, zuteiler: false }]
+
 function zustand(over: Partial<AppState> = {}): AppState {
   return {
     ...demoZustand(),
@@ -102,25 +111,50 @@ function zeige(over: Partial<AppState> = {}) {
   return { dispatch, ...render(<Buehne state={zustand(over)} dispatch={dispatch} />) }
 }
 
-const zeilen = (c: HTMLElement) => [...c.querySelectorAll('.pers-row')]
-const namen = (c: HTMLElement) => zeilen(c).map((r) => r.querySelector('.pers-name')?.textContent ?? '')
-const knopf = (c: HTMLElement, text: string) =>
-  [...c.querySelectorAll('button')].find((b) => b.textContent?.trim() === text)!
-const feld = (c: HTMLElement, label: string) =>
-  [...c.querySelectorAll<HTMLSelectElement>('select')].find(
-    (s) => s.previousElementSibling?.textContent === label,
+/** Am Desktop (ab 1180 px) oder am Handy — jsdom kennt `matchMedia` nicht. */
+const breite = (desktop: boolean) => {
+  window.matchMedia = vi.fn((q: string) => ({
+    matches: desktop || !q.includes('1180'),
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  })) as unknown as typeof window.matchMedia
+}
+
+const zeilen = (c: HTMLElement) => [...c.querySelectorAll('.personen-zeile')]
+const namen = (c: HTMLElement) => zeilen(c).map((r) => r.querySelector('.personen-name')?.textContent ?? '')
+const unter = (c: HTMLElement, i: number) => zeilen(c)[i]!.querySelector('.klein-text')?.textContent ?? ''
+const knopf = (wo: HTMLElement, text: string) =>
+  [...wo.querySelectorAll('button')].find((b) => b.textContent?.trim() === text)!
+const suche = (c: HTMLElement) => c.querySelector<HTMLInputElement>('.personen-suche input')!
+const zaehler = (c: HTMLElement) => c.querySelector('.personen-zahl')?.textContent
+/** Ein Knopf der Auswahl, erkannt am Wort vor seiner Zahl. */
+const auswahl = (c: HTMLElement, wort: string) =>
+  [...c.querySelectorAll<HTMLButtonElement>('.personen-auswahl')].find((b) => b.firstChild?.textContent === wort)!
+/** Ein Stand in der Karte oben, erkannt an seinem Wort. */
+const stand = (c: HTMLElement, wort: string) =>
+  [...c.querySelectorAll<HTMLButtonElement>('.personen-stand-knopf')].find(
+    (b) => b.querySelector('.klein-text')?.textContent === wort,
   )!
-/** Eine der Warnungen oben in der Liste, erkannt an ihrem Titel — es gibt mehrere. */
-const warnung = (c: HTMLElement, titel: string) =>
-  [...c.querySelectorAll('.pers-dupes')].find(
-    (x) => x.querySelector('.pers-dupes-title')?.textContent === titel,
-  )
+/** Das Blatt „Filter" öffnen — es liegt am Dokument, nicht im Bildschirm. */
+const filterBlatt = (c: HTMLElement) => {
+  fireEvent.click(auswahl(c, t.filterWeitere))
+  return document.querySelector<HTMLElement>(`[role="dialog"][aria-label="${t.filterWeitere}"]`)!
+}
+const feld = (wo: HTMLElement, marke: string) =>
+  [...wo.querySelectorAll<HTMLSelectElement>('select')].find((s) => s.previousElementSibling?.textContent === marke)!
+/** Einer der Hinweise oben in der Liste, erkannt an seinem Titel — es gibt mehrere. */
+const hinweis = (c: HTMLElement, titel: string) =>
+  [...c.querySelectorAll('.personen-hinweis')].find((x) => x.querySelector('.personen-hinweis-titel')?.textContent === titel)
 
 beforeEach(() => {
+  breite(false)
   copyText.mockClear().mockResolvedValue(true)
   sendInviteMails.mockClear().mockResolvedValue({ ok: true, sent: 0, skipped: 0, notConfigured: false })
 })
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  delete (window as { matchMedia?: unknown }).matchMedia
+})
 
 describe('Die Liste', () => {
   it('steht alphabetisch nach Nachname — und zeigt „Nachname, Vorname"', () => {
@@ -128,147 +162,268 @@ describe('Die Liste', () => {
     expect(namen(container)).toEqual(['Alt, Anton', 'Brand, Bernd', 'Cohn, Clara'])
   })
 
-  it('jede Zeile nennt Rolle und Zahl der Aufgabenbereiche', () => {
-    // Mit Konto, damit die Marke „Ohne App-Konto" hier nicht mitspricht — die
-    // hat ihre eigenen Zeilen weiter unten.
-    const alleMitKonto: Member[] = PERSONEN.map((pp, i) => ({
-      userId: `u${i}`, personId: pp.id, email: '', planner: false, zuteiler: false,
-    }))
-    const { container } = zeige({ members: alleMitKonto })
-    expect(zeilen(container)[2]!.querySelector('.pers-sub')?.textContent).toBe(
-      // Nicht „1 Aufgabenbereiche": Die Form „Bezeichnung: {n}" stimmt für jede
-      // Zahl, auch in Sprachen mit eigener Form für 2–4.
-      'Verkündiger · Aufgabenbereiche: 1',
-    )
-    expect(zeilen(container)[1]!.querySelector('.pers-sub')?.textContent).toContain('Ältester')
+  it('jede Zeile nennt Gruppe und Rolle', () => {
+    // Mit Konto, damit der Stand hier nicht mitspricht — er hat seine eigenen Fälle.
+    const { container } = zeige({ members: PERSONEN.map((p) => konto(p.id)) })
+    expect(unter(container, 1)).toBe('Gruppe 1 · Ältester')
+    expect(unter(container, 2), 'ohne Gruppe nur die Rolle').toBe('Verkündiger')
   })
 
-  /**
-   * **Wer kein App-Konto hat, erfährt nichts von selbst** (V13/F10).
-   *
-   * Weder „Plan senden" noch die Erinnerung erreichen ihn. Bisher erfuhr der
-   * Planer das erst hinterher — „Plan senden" nennt die Namen in seiner
-   * Antwort, `send-reminders` meldet sie am letzten Erinnerungstag per
-   * Sammel-Push. Beides kommt, wenn der Plan schon steht. Die Marke steht
-   * dagegen da, während er ihn macht.
-   */
-  describe('Ohne App-Konto', () => {
-    const MIT_KONTO: Member[] = [{ userId: 'u9', personId: 'p-b', email: 'b@x.de', planner: false, zuteiler: false }]
-    const sub = (c: HTMLElement, i: number) =>
-      zeilen(c)[i]!.querySelector('.pers-sub')?.textContent ?? ''
-
-    it('steht bei jedem, der keins hat — und bei den anderen nicht', () => {
-      const { container } = zeige({ members: MIT_KONTO })
-      // Reihenfolge: Alt (p-a), Brand (p-b), Cohn (p-c).
-      expect(sub(container, 0), 'Alt hat kein Konto').toContain('Ohne App-Konto')
-      expect(sub(container, 1), 'Brand hat eins').not.toContain('Ohne App-Konto')
-      expect(sub(container, 2), 'Cohn hat kein Konto').toContain('Ohne App-Konto')
+  it('rechts das Recht: „Admin" vor „Planer" — mit Konto zählt das Konto', () => {
+    const { container } = zeige({
+      members: [konto('p-a', { planner: true }), konto('p-b', { zuteiler: true }), konto('p-c')],
     })
-
-    it('ein offener Einladungscode zählt nicht als Konto', () => {
-      /*
-        Ein Code, den niemand einlöst, macht niemanden erreichbar. Genau diese
-        Grenze zieht `send-plan` für seine `ohneKonto`-Liste — die Marke muss
-        dieselbe Menge treffen, sonst nennt die Liste nach dem Senden Namen,
-        die vorher unmarkiert dastanden.
-      */
-      const code: Invite[] = [{ id: 'i1', code: 'ABC123', personId: 'p-a', planner: false, zuteiler: false }]
-      const { container } = zeige({ members: MIT_KONTO, invites: code })
-      expect(sub(container, 0)).toContain('Ohne App-Konto')
-    })
-
-    it('hat jeder ein Konto, steht die Marke nirgends', () => {
-      // Gegenprobe: Sonst wäre die Zeile oben auch dann grün, wenn sie immer
-      // dastünde.
-      const alle: Member[] = PERSONEN.map((pp, i) => ({
-        userId: `u${i}`, personId: pp.id, email: '', planner: false, zuteiler: false,
-      }))
-      const { container } = zeige({ members: alle })
-      expect(container.textContent).not.toContain('Ohne App-Konto')
-    })
+    expect(zeilen(container).map((z) => z.querySelector('.personen-marke')?.textContent ?? '')).toEqual([
+      t.planerLbl,
+      t.rollePlaner,
+      '',
+    ])
   })
 
-  it('die feste Wachtturm-Rolle zählt nicht als Aufgabenbereich — sie hat eine eigene Karte', () => {
-    const leiter = person('p-l', 'Lars', 'Leiter', { priv: priv('wtLeiter') })
-    const { container } = zeige({ persons: [leiter] })
-    expect(zeilen(container)[0]!.querySelector('.pers-sub')?.textContent).toContain('0')
-  })
-
-  it('ein Tipp öffnet das Detail dieser Person', () => {
+  it('ein Tipp öffnet diese Person', () => {
     const { container, dispatch } = zeige()
     fireEvent.click(zeilen(container)[0]!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'selectPerson', id: 'p-a' })
   })
+})
 
-  it('„Neue Person" legt eine leere an — die Kennung kommt vorne dran', () => {
+/**
+ * **Wer kein App-Konto hat, erfährt nichts von selbst** (V13/F10).
+ *
+ * Weder „Plan senden" noch die Erinnerung erreichen ihn. Deshalb steht der
+ * Stand an jeder Person, während der Planer plant — als Punkt in derselben
+ * Sprache wie überall und, bei allen ohne Konto, statt der Rolle als Wort.
+ */
+describe('Stand der Anmeldung', () => {
+  const MIT_STAENDEN: Partial<AppState> = { members: BRAND_KONTO, invites: COHN_CODE }
+
+  it('jede Person trägt ihren Punkt: voll angemeldet, blass eingeladen, gestrichelt noch nicht', () => {
+    const { container } = zeige(MIT_STAENDEN)
+    // Reihenfolge: Alt (nichts), Brand (Konto), Cohn (Code).
+    expect(zeilen(container).map((z) => z.querySelector('.punkt')?.className)).toEqual([
+      'punkt is-offen',
+      'punkt is-voll',
+      'punkt is-wartet',
+    ])
+  })
+
+  it('wer noch nicht angemeldet ist, steht statt mit der Rolle mit seinem Stand da', () => {
+    const { container } = zeige(MIT_STAENDEN)
+    expect(unter(container, 0)).toBe(t.standOhne)
+    expect(unter(container, 1)).toBe('Gruppe 1 · Ältester')
+    // Ein offener Code macht niemanden erreichbar — eingeladen ist nicht angemeldet.
+    expect(unter(container, 2)).toBe(t.standEingeladen)
+  })
+
+  it('oben gezählt — ein Tipp grenzt ein, ein zweiter hebt es wieder auf', () => {
+    const { container } = zeige(MIT_STAENDEN)
+    expect([...container.querySelectorAll('.personen-stand-zahl')].map((z) => z.textContent)).toEqual(['1', '1', '1'])
+    fireEvent.click(stand(container, t.standEingeladen))
+    expect(namen(container)).toEqual(['Cohn, Clara'])
+    expect(stand(container, t.standEingeladen).getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(stand(container, t.standEingeladen))
+    expect(namen(container)).toHaveLength(3)
+  })
+
+  it('„Noch nicht angemeldet" zeigt Eingeladene und nicht Eingeladene', () => {
+    const { container } = zeige(MIT_STAENDEN)
+    fireEvent.click(auswahl(container, t.zusagenOhneKonto))
+    expect(namen(container)).toEqual(['Alt, Anton', 'Cohn, Clara'])
+    expect(auswahl(container, t.zusagenOhneKonto).textContent).toBe(`${t.zusagenOhneKonto}2`)
+  })
+
+  it('die Zahlen zählen unter der Suche — was sie ausschließt, zählt nicht mit', () => {
+    const { container } = zeige(MIT_STAENDEN)
+    fireEvent.change(suche(container), { target: { value: 'cohn' } })
+    expect([...container.querySelectorAll('.personen-stand-zahl')].map((z) => z.textContent)).toEqual(['0', '1', '0'])
+    expect(auswahl(container, t.filterAlle).textContent).toBe(`${t.filterAlle}1`)
+  })
+
+  it('ohne angemeldetes Konto (Entwicklerseite) weder Punkte noch Stand — nur die Rolle', () => {
+    const { container } = zeige({ ...MIT_STAENDEN, userId: null, congregationId: null })
+    expect(container.querySelector('.personen-zeile .punkt')).toBeNull()
+    expect(container.querySelector('.personen-stand')).toBeNull()
+    expect(unter(container, 0)).toBe('Verkündiger')
+    expect([...container.querySelectorAll('.personen-auswahl')].map((b) => b.firstChild?.textContent)).toEqual([
+      t.filterAlle,
+      t.abwesendChip,
+      t.filterWeitere,
+    ])
+  })
+})
+
+describe('Heute abwesend', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9))
+  })
+  afterEach(() => vi.useRealTimers())
+
+  const abw = (personId: string, from: string, to: string): Absence => ({
+    id: `a-${personId}`, personId, userId: null, from, to, reason: '',
+  })
+
+  it('wer heute fehlt, sagt in seiner Zeile, wie lange — in der Farbe der Probleme', () => {
+    const { container } = zeige({ absences: [abw('p-b', '2026-09-07', '2026-09-11')] })
+    const zeile = zeilen(container)[1]!.querySelector('.klein-text')!
+    expect(zeile.textContent).toBe('abwesend 7.–11. September')
+    expect(zeile.className).toContain('is-problem')
+  })
+
+  it('„Abwesend" zeigt nur, wer heute fehlt — nicht wer bald oder schon wieder da ist', () => {
+    const { container } = zeige({
+      absences: [abw('p-b', '2026-09-07', '2026-09-11'), abw('p-c', '2026-09-08', '2026-09-20')],
+    })
+    fireEvent.click(auswahl(container, t.abwesendChip))
+    expect(namen(container)).toEqual(['Brand, Bernd'])
+  })
+})
+
+describe('Person anlegen', () => {
+  const blatt = () => document.querySelector<HTMLElement>(`[role="dialog"][aria-label="${t.personAnlegen}"]`)
+  const oeffnen = (c: HTMLElement) => {
+    fireEvent.click(c.querySelector(`[aria-label="${t.personAnlegen}"]`)!)
+    return blatt()!
+  }
+  const eingabe = (b: HTMLElement, marke: string) =>
+    [...b.querySelectorAll<HTMLInputElement>('input')].find((i) => i.previousElementSibling?.textContent === marke)!
+
+  it('der Knopf öffnet ein Blatt — angelegt wird erst mit „Hinzufügen", mit allem, was es gefragt hat', () => {
     const { container, dispatch } = zeige()
-    fireEvent.click(knopf(container, t.neuePerson))
+    const b = oeffnen(container)
+    expect(dispatch).not.toHaveBeenCalled()
+    fireEvent.change(eingabe(b, t.vorname), { target: { value: ' Dora ' } })
+    fireEvent.change(eingabe(b, t.nachname), { target: { value: 'Dahl' } })
+    fireEvent.change(eingabe(b, t.emailFreiwillig), { target: { value: 'dora@example.org' } })
+    fireEvent.click(knopf(b, t.schwester))
+    fireEvent.change(feld(b, t.gruppeLbl), { target: { value: 'g1' } })
+    fireEvent.change(feld(b, t.rolle), { target: { value: 'keine' } })
+    fireEvent.click(knopf(b, t.hinzufuegenKnopf))
     const aktion = dispatch.mock.calls.find((c) => c[0].type === 'addPerson')![0]
-    expect(aktion.person).toMatchObject({ fn: '', ln: '', role: 'verkuendiger' })
+    expect(aktion.person).toMatchObject({
+      fn: 'Dora', ln: 'Dahl', mail: 'dora@example.org', female: true, grp: 'g1', role: 'keine', tel: '',
+    })
+    expect(aktion.person.priv).toEqual(emptyQualifications())
     expect(aktion.person.id).toBeTruthy()
+    expect(blatt(), 'das Blatt geht zu — der Reducer öffnet die neue Person').toBeNull()
+  })
+
+  it('Enter im Feld legt ebenso an', () => {
+    const { container, dispatch } = zeige()
+    const b = oeffnen(container)
+    fireEvent.change(eingabe(b, t.nachname), { target: { value: 'Dahl' } })
+    fireEvent.submit(b.querySelector('form')!)
+    expect(dispatch.mock.calls.some((c) => c[0].type === 'addPerson')).toBe(true)
+  })
+
+  it('ohne Namen bleibt „Hinzufügen" gesperrt — und Enter legt nichts an', () => {
+    const { container, dispatch } = zeige()
+    const b = oeffnen(container)
+    fireEvent.change(eingabe(b, t.vorname), { target: { value: '   ' } })
+    expect(knopf(b, t.hinzufuegenKnopf).disabled).toBe(true)
+    fireEvent.submit(b.querySelector('form')!)
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('ein Name, den es schon gibt, sperrt — und sagt, wer ihn trägt', () => {
+    const { container } = zeige()
+    const b = oeffnen(container)
+    fireEvent.change(eingabe(b, t.vorname), { target: { value: 'anton' } })
+    fireEvent.change(eingabe(b, t.nachname), { target: { value: 'ALT' } })
+    expect(b.querySelector('[role="alert"]')?.textContent).toContain('Anton Alt')
+    expect(eingabe(b, t.vorname).getAttribute('aria-invalid')).toBe('true')
+    expect(knopf(b, t.hinzufuegenKnopf).disabled).toBe(true)
+  })
+
+  it('„Abbrechen" legt nichts an', () => {
+    const { container, dispatch } = zeige()
+    const b = oeffnen(container)
+    fireEvent.change(eingabe(b, t.nachname), { target: { value: 'Dahl' } })
+    fireEvent.click(knopf(b, t.abbrechen))
+    expect(blatt()).toBeNull()
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('ohne angelegte Gruppen fragt es nach keiner', () => {
+    const { container } = zeige({ groups: [] })
+    expect(feld(oeffnen(container), t.gruppeLbl)).toBeUndefined()
   })
 })
 
 describe('Der Zähler nennt die sichtbaren, nicht alle', () => {
-  it('ohne Einschränkung alle', () => {
+  it('ohne Einschränkung steht keiner da — „Alle" nennt die Zahl schon', () => {
     const { container } = zeige()
-    expect(container.querySelector('.screen-head-note')?.textContent).toBe('Personen: 3')
+    expect(zaehler(container)).toBeUndefined()
+    expect(auswahl(container, t.filterAlle).textContent).toBe(`${t.filterAlle}3`)
   })
 
   it('mit Suche nur die Treffer — so sieht man, wie stark sie einschränkt', () => {
     const { container } = zeige()
-    fireEvent.change(container.querySelector('.pers-search')!, { target: { value: 'alt' } })
+    fireEvent.change(suche(container), { target: { value: 'alt' } })
     expect(namen(container)).toEqual(['Alt, Anton'])
-    expect(container.querySelector('.screen-head-note')?.textContent).toBe('Personen: 1')
+    expect(zaehler(container)).toBe('Personen: 1')
   })
 
   it('die Suche findet auch über die E-Mail-Adresse', () => {
     const { container } = zeige()
-    fireEvent.change(container.querySelector('.pers-search')!, { target: { value: 'anton@' } })
+    fireEvent.change(suche(container), { target: { value: 'anton@' } })
     expect(namen(container)).toEqual(['Alt, Anton'])
   })
 
   it('findet nichts, sagt der Zähler 0 — die Liste ist leer, nicht kaputt', () => {
     const { container } = zeige()
-    fireEvent.change(container.querySelector('.pers-search')!, { target: { value: 'zzz' } })
+    fireEvent.change(suche(container), { target: { value: 'zzz' } })
     expect(zeilen(container)).toHaveLength(0)
-    expect(container.querySelector('.screen-head-note')?.textContent).toBe('Personen: 0')
+    expect(zaehler(container)).toBe('Personen: 0')
   })
 })
 
-describe('Die Filterfelder', () => {
+describe('Das Blatt „Filter"', () => {
   it('Geschlecht, Rolle, Gruppe und Aufgabenbereich stehen zur Wahl', () => {
-    const { container } = zeige()
-    expect([...container.querySelectorAll('.pers-filter .field-label')].map((x) => x.textContent)).toEqual([
+    const b = filterBlatt(zeige().container)
+    expect([...b.querySelectorAll('.feld-marke')].map((x) => x.textContent)).toEqual([
       t.geschlecht, t.rolle, t.gruppeLbl, t.aufgabenbereiche,
     ])
   })
 
   it('ohne angelegte Gruppen entfällt die Gruppen-Auswahl — sie hätte nur den Platzhalter', () => {
-    const { container } = zeige({ groups: [] })
-    expect([...container.querySelectorAll('.pers-filter .field-label')].map((x) => x.textContent)).toEqual([
+    const b = filterBlatt(zeige({ groups: [] }).container)
+    expect([...b.querySelectorAll('.feld-marke')].map((x) => x.textContent)).toEqual([
       t.geschlecht, t.rolle, t.aufgabenbereiche,
     ])
   })
 
-  it('ein gesetzter Filter grenzt ein und hebt sein Feld hervor', () => {
+  it('eine Wahl grenzt sofort ein, hebt ihr Feld hervor und steht als Zahl am Knopf', () => {
     const { container } = zeige()
-    const geschlecht = feld(container, t.geschlecht)
-    fireEvent.change(geschlecht, { target: { value: 'w' } })
+    const b = filterBlatt(container)
+    fireEvent.change(feld(b, t.geschlecht), { target: { value: 'w' } })
     expect(namen(container)).toEqual(['Cohn, Clara'])
-    expect(geschlecht.className).toContain('is-active')
+    expect(feld(b, t.geschlecht).className).toContain('is-gesetzt')
+    expect(auswahl(container, t.filterWeitere).textContent).toBe(`${t.filterWeitere}1`)
+    expect(auswahl(container, t.filterWeitere).getAttribute('aria-pressed')).toBe('true')
   })
 
-  it('mehrere Filter wirken zusammen — nicht nebeneinander', () => {
+  it('mehrere Felder wirken zusammen — nicht nebeneinander', () => {
     const { container } = zeige()
-    fireEvent.change(feld(container, t.rolle), { target: { value: 'aeltester' } })
-    fireEvent.change(feld(container, t.geschlecht), { target: { value: 'w' } })
+    const b = filterBlatt(container)
+    fireEvent.change(feld(b, t.rolle), { target: { value: 'aeltester' } })
+    fireEvent.change(feld(b, t.geschlecht), { target: { value: 'w' } })
     expect(zeilen(container)).toHaveLength(0) // ein weiblicher Ältester ist keiner da
   })
 
-  it('die Bereichs-Auswahl führt die festen Bereiche UND jeden Hilfsdienst', () => {
+  it('„Zurücksetzen" hebt die Felder auf — die Suche bleibt', () => {
     const { container } = zeige()
-    const werte = [...feld(container, t.aufgabenbereiche).querySelectorAll('option')].map(
+    fireEvent.change(suche(container), { target: { value: 'c' } })
+    const b = filterBlatt(container)
+    fireEvent.change(feld(b, t.geschlecht), { target: { value: 'm' } })
+    fireEvent.click(knopf(b, t.filterZuruecksetzen))
+    expect(feld(b, t.geschlecht).value).toBe('')
+    expect(suche(container).value).toBe('c')
+    expect(auswahl(container, t.filterWeitere).getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('die Bereichs-Auswahl führt die festen Bereiche UND jeden Hilfsdienst', () => {
+    const werte = [...feld(filterBlatt(zeige().container), t.aufgabenbereiche).querySelectorAll('option')].map(
       (o) => o.getAttribute('value'),
     )
     expect(werte).toContain(serviceQualKey('mik'))
@@ -281,25 +436,23 @@ describe('Die Filterfelder', () => {
     // Leiter suchte, öffnete ein Detail nach dem anderen.
     const leiter = person('p-l', 'Lars', 'Leiter', { priv: priv('wtLeiter') })
     const { container } = zeige({ persons: [...PERSONEN, leiter] })
-    const auswahl = feld(container, t.aufgabenbereiche)
-    const optionen = [...auswahl.querySelectorAll('option')]
+    const wahl = feld(filterBlatt(container), t.aufgabenbereiche)
+    const optionen = [...wahl.querySelectorAll('option')]
     expect(optionen.find((o) => o.value === 'wtLeiter')?.textContent).toBe(t.privWtLeiter)
     expect(optionen.find((o) => o.value === 'wtVertreter')?.textContent).toBe(t.privWtVertreter)
-    fireEvent.change(auswahl, { target: { value: 'wtLeiter' } })
+    fireEvent.change(wahl, { target: { value: 'wtLeiter' } })
     expect(namen(container)).toEqual(['Leiter, Lars'])
   })
 
   it('die Gruppen-Rotation hat keinen Bereich und steht deshalb nicht dabei', () => {
-    const { container } = zeige()
-    const werte = [...feld(container, t.aufgabenbereiche).querySelectorAll('option')].map(
+    const werte = [...feld(filterBlatt(zeige().container), t.aufgabenbereiche).querySelectorAll('option')].map(
       (o) => o.getAttribute('value'),
     )
     expect(werte).not.toContain(serviceQualKey('rein'))
   })
 
   it('die Auswahl steht alphabetisch — man sucht das Wort, nicht die Programmreihenfolge', () => {
-    const { container } = zeige()
-    const texte = [...feld(container, t.aufgabenbereiche).querySelectorAll('option')]
+    const texte = [...feld(filterBlatt(zeige().container), t.aufgabenbereiche).querySelectorAll('option')]
       .slice(1) // der Platzhalter „—" bleibt vorn
       .map((o) => o.textContent ?? '')
     expect(texte).toEqual([...texte].sort((a, b) => a.localeCompare(b, 'de', { numeric: true })))
@@ -309,36 +462,36 @@ describe('Die Filterfelder', () => {
 /**
  * **Suche und Filter überstehen das Detail** (5.10.2026).
  *
- * Das Detail ersetzt die Liste. Bis dahin hielt die Liste ihren Filter selbst
- * und verlor ihn dabei: Wer die Personen einer Gruppe nacheinander bearbeitete,
- * stellte nach jeder Person den Filter neu ein. Gezeigt wird mit `rerender`,
- * damit der Bildschirm derselbe bleibt — so wie in der App, wo nur
- * `selectedPersonId` wechselt.
+ * Das Detail ersetzt am Handy die Liste. Bis dahin hielt die Liste ihren
+ * Filter selbst und verlor ihn dabei: Wer die Personen einer Gruppe
+ * nacheinander bearbeitete, stellte nach jeder Person den Filter neu ein.
+ * Gezeigt wird mit `rerender`, damit der Bildschirm derselbe bleibt — so wie in
+ * der App, wo nur `selectedPersonId` wechselt.
  */
 describe('Suche und Filter überstehen das Detail', () => {
-  const suche = (c: HTMLElement) => c.querySelector<HTMLInputElement>('.pers-search')!
-
-  it('Filter setzen → Person öffnen → zurück: Suche, Filter und Treffer stehen noch', () => {
+  it('Filter setzen → Person öffnen → zurück: Suche, Auswahl, Filter und Treffer stehen noch', () => {
     const dispatch = vi.fn()
-    const liste = zustand()
+    const liste = zustand({ members: BRAND_KONTO })
     const { container, rerender } = render(<Buehne state={liste} dispatch={dispatch} />)
-    fireEvent.change(suche(container), { target: { value: 'cohn' } })
-    fireEvent.change(feld(container, t.geschlecht), { target: { value: 'w' } })
+    fireEvent.change(suche(container), { target: { value: 'c' } })
+    fireEvent.click(auswahl(container, t.zusagenOhneKonto))
+    fireEvent.change(feld(filterBlatt(container), t.geschlecht), { target: { value: 'w' } })
+    fireEvent.click(knopf(document.body, t.fertig))
     expect(namen(container)).toEqual(['Cohn, Clara'])
 
-    // Ein Tipp öffnet das Detail — in der App setzt der Reducer die Kennung.
+    // Ein Tipp öffnet die Person — in der App setzt der Reducer die Kennung.
     fireEvent.click(zeilen(container)[0]!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'selectPerson', id: 'p-c' })
     rerender(<Buehne state={{ ...liste, selectedPersonId: 'p-c' }} dispatch={dispatch} />)
-    expect(container.querySelector('.pers-list'), 'jetzt steht das Detail da').toBeNull()
+    expect(container.querySelector('.personen-liste'), 'jetzt steht die Person da').toBeNull()
 
-    // „‹ Alle Personen" bzw. Zurück am Handy: `selectPerson` mit null.
+    // Zurück: `selectPerson` mit null.
     rerender(<Buehne state={liste} dispatch={dispatch} />)
-    expect(suche(container).value).toBe('cohn')
-    expect(feld(container, t.geschlecht).value).toBe('w')
-    expect(feld(container, t.geschlecht).className).toContain('is-active')
+    expect(suche(container).value).toBe('c')
+    expect(auswahl(container, t.zusagenOhneKonto).getAttribute('aria-pressed')).toBe('true')
+    expect(auswahl(container, t.filterWeitere).textContent).toBe(`${t.filterWeitere}1`)
     expect(namen(container)).toEqual(['Cohn, Clara'])
-    expect(container.querySelector('.screen-head-note')?.textContent).toBe('Personen: 1')
+    expect(zaehler(container)).toBe('Personen: 1')
   })
 
   it('ein anderer Bildschirm setzt sie zurück — der Bildschirm baut sich dann ab', () => {
@@ -353,25 +506,56 @@ describe('Suche und Filter überstehen das Detail', () => {
   })
 })
 
+describe('Am Desktop (`GDesktopPersonen`)', () => {
+  beforeEach(() => breite(true))
+
+  it('steht die gewählte Person rechts neben der Liste, statt sie zu ersetzen — ihre Zeile hervorgehoben', () => {
+    const { container } = zeige({ selectedPersonId: 'p-b' })
+    expect(namen(container)).toHaveLength(3)
+    const spalte = container.querySelector('.personen-spalte')!
+    expect(spalte.getAttribute('aria-label')).toBe('Bernd Brand')
+    expect(spalte.querySelector('.pers-detail-name')?.textContent).toBe('Bernd Brand')
+    expect(zeilen(container).map((z) => z.getAttribute('aria-current'))).toEqual([null, 'true', null])
+  })
+
+  it('ohne gewählte Person sagt die Spalte, was zu tun ist', () => {
+    expect(zeige().container.querySelector('.personen-spalte')?.textContent).toBe(t.personWaehlen)
+  })
+
+  it('jede Zeile in Spalten: Name, Gruppe und Rolle, dann Stand und Recht', () => {
+    const { container } = zeige({ members: [konto('p-b', { planner: true })], invites: COHN_CODE })
+    const zellen = zeilen(container).map((z) => [...z.querySelectorAll('.personen-zelle')].map((s) => s.textContent))
+    expect(zellen).toEqual([
+      ['Alt, Anton', 'Verkündiger', t.standOhne],
+      ['Brand, Bernd', 'Gruppe 1 · Ältester', `${t.standAngemeldet} · ${t.planerLbl}`],
+      ['Cohn, Clara', 'Verkündiger', t.standEingeladen],
+    ])
+  })
+
+  it('die drei Stände stehen als Knöpfe in der Reihe — statt der Karte darüber', () => {
+    const { container } = zeige({ members: BRAND_KONTO, invites: COHN_CODE })
+    expect(container.querySelector('.personen-stand')).toBeNull()
+    fireEvent.click(auswahl(container, t.standOhne))
+    expect(namen(container)).toEqual(['Alt, Anton'])
+  })
+})
+
 /*
  * Hier stand „Warnung vor doppelten Anzeigenamen". Sie ist mit T110 entfallen
  * — ein doppelter Name lässt sich nicht mehr speichern, also gibt es nichts
- * mehr zu melden. Die Meldung steht jetzt am Feld im Personen-Detail
- * (`PersonDetail.form.test.tsx`), die Regel dahinter in
- * `helpers.test.ts > namensDublette`, und die Zusicherung im Index
- * `persons_name_eindeutig` (`schema.test.ts`).
+ * mehr zu melden. Die Meldung steht jetzt am Feld (Detail und „Person
+ * anlegen"), die Regel dahinter in `helpers.test.ts > namensDublette`, und die
+ * Zusicherung im Index `persons_name_eindeutig` (`schema.test.ts`).
  */
 
 /**
  * **Feste Rollen sind je eine Person** (F7).
  *
  * Trägt eine Rolle mehr als einer, greift sich die Auto-Zuteilung irgendeinen.
- * Seit dem 4.10.2026 nennt die Warnung die Betroffenen mit Namen, als Knöpfe
- * wie bei „Ohne Predigtdienstgruppe". Davor stand dort nur die Zahl, und weil
- * auch der Filter die festen Rollen nicht kannte, suchte der Planer sie Detail
- * für Detail.
+ * Seit dem 4.10.2026 nennt der Hinweis die Betroffenen mit Namen, als Knöpfe
+ * wie bei „Ohne Predigtdienstgruppe".
  */
-describe('Warnung vor doppelt vergebenen festen Rollen (F7)', () => {
+describe('Hinweis auf doppelt vergebene feste Rollen (F7)', () => {
   const NORD = person('p-1', 'Otto', 'Nord', { priv: priv('wtLeiter') })
   const MEIER = person('p-2', 'Hans', 'Meier', { priv: priv('wtLeiter') })
   const ALT = person('p-3', 'Anton', 'Alt', { priv: priv('wtVertreter') })
@@ -380,15 +564,15 @@ describe('Warnung vor doppelt vergebenen festen Rollen (F7)', () => {
   const rollen = (c: HTMLElement) => c.querySelector('[data-warnung="feste-rollen"]')
   /** Die Namen unter einer Rolle, in ihrer Folge. */
   const chips = (c: HTMLElement, rolle: string) => [
-    ...(rollen(c)?.querySelectorAll<HTMLButtonElement>(`[data-rolle="${rolle}"] .pers-dupes-chip`) ?? []),
+    ...(rollen(c)?.querySelectorAll<HTMLButtonElement>(`[data-rolle="${rolle}"] .personen-name-knopf`) ?? []),
   ]
   const texte = (knoepfe: HTMLButtonElement[]) => knoepfe.map((b) => b.textContent)
 
   it('zwei Wachtturm-Leiter werden gemeldet — die Auto-Zuteilung nähme sonst irgendeinen', () => {
     const { container } = zeige({ persons: [NORD, MEIER] })
-    expect(warnung(container, t.wtRollenLabel)).toBe(rollen(container))
-    expect(rollen(container)?.querySelector('.pers-dupes-hint')?.textContent).toBe(t.wtRollenDoppeltHint)
-    expect(rollen(container)?.querySelector('.pers-dupes-row')?.textContent).toBe(
+    expect(hinweis(container, t.wtRollenLabel)).toBe(rollen(container))
+    expect(rollen(container)?.querySelector('.personen-hinweis-text')?.textContent).toBe(t.wtRollenDoppeltHint)
+    expect(rollen(container)?.querySelector('.personen-hinweis-zeile')?.textContent).toBe(
       '„Wachtturm-Studium-Leiter“ · 2 Personen',
     )
   })
@@ -399,7 +583,7 @@ describe('Warnung vor doppelt vergebenen festen Rollen (F7)', () => {
     expect(texte(chips(container, 'wtLeiter'))).toEqual(['Meier, Hans', 'Nord, Otto'])
   })
 
-  it('ein Tipp auf den Namen öffnet das Detail, in dem der Schalter steht', () => {
+  it('ein Tipp auf den Namen öffnet die Person, bei der der Schalter steht', () => {
     const { container, dispatch } = zeige({ persons: [NORD, MEIER] })
     fireEvent.click(chips(container, 'wtLeiter')[1]!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'selectPerson', id: 'p-1' })
@@ -407,14 +591,14 @@ describe('Warnung vor doppelt vergebenen festen Rollen (F7)', () => {
 
   it('Leiter und Vertreter stehen getrennt, jede Rolle mit ihren Personen', () => {
     const { container } = zeige({ persons: [NORD, BRAND, MEIER, ALT] })
-    expect(rollen(container)?.querySelector('.pers-dupes-count')?.textContent).toBe('2')
+    expect(rollen(container)?.querySelector('.personen-hinweis-zahl')?.textContent).toBe('2')
     expect(texte(chips(container, 'wtLeiter'))).toEqual(['Meier, Hans', 'Nord, Otto'])
     expect(texte(chips(container, 'wtVertreter'))).toEqual(['Alt, Anton', 'Brand, Bernd'])
   })
 
   it('ein einzelner Vertreter steht nicht darin — nur die doppelt vergebene Rolle', () => {
     const { container } = zeige({ persons: [NORD, MEIER, ALT] })
-    expect(rollen(container)?.querySelector('.pers-dupes-count')?.textContent).toBe('1')
+    expect(rollen(container)?.querySelector('.personen-hinweis-zahl')?.textContent).toBe('1')
     expect(chips(container, 'wtVertreter')).toEqual([])
   })
 
@@ -430,16 +614,15 @@ describe('Warnung vor doppelt vergebenen festen Rollen (F7)', () => {
     expect(texte(chips(deutsch, 'wtLeiter'))).toEqual(['Åberg, Per', 'Zander, Ola'])
   })
 
-  it('die Suche engt die Liste ein, die Warnung nicht — sie gilt der ganzen Versammlung', () => {
+  it('die Suche engt die Liste ein, den Hinweis nicht — er gilt der ganzen Versammlung', () => {
     const { container } = zeige({ persons: [NORD, MEIER] })
-    fireEvent.change(container.querySelector('.pers-search')!, { target: { value: 'nord' } })
+    fireEvent.change(suche(container), { target: { value: 'nord' } })
     expect(namen(container)).toEqual(['Nord, Otto'])
     expect(texte(chips(container, 'wtLeiter'))).toEqual(['Meier, Hans', 'Nord, Otto'])
   })
 
   it('einer ist kein Problem', () => {
-    const { container } = zeige({ persons: [NORD] })
-    expect(rollen(container)).toBeNull()
+    expect(rollen(zeige({ persons: [NORD] }).container)).toBeNull()
   })
 })
 
@@ -454,19 +637,18 @@ describe('Warnung vor doppelt vergebenen festen Rollen (F7)', () => {
  *
  * Vorgabe der Liste: Brand ist in g1, Alt und Cohn sind es nicht.
  */
-describe('Warnung: ohne Predigtdienstgruppe', () => {
-  const ohne = (c: HTMLElement) => warnung(c, t.ohneGruppeTitle)
-  const chips = (c: HTMLElement) =>
-    [...(ohne(c)?.querySelectorAll<HTMLButtonElement>('.pers-dupes-chip') ?? [])]
+describe('Hinweis: ohne Predigtdienstgruppe', () => {
+  const ohne = (c: HTMLElement) => hinweis(c, t.ohneGruppeTitle)
+  const chips = (c: HTMLElement) => [...(ohne(c)?.querySelectorAll<HTMLButtonElement>('.personen-name-knopf') ?? [])]
 
   it('nennt jeden ohne Gruppe mit Namen — in der Reihenfolge der Liste, mit Zahl und Grund', () => {
     const { container } = zeige()
     expect(chips(container).map((b) => b.textContent)).toEqual(['Alt, Anton', 'Cohn, Clara'])
-    expect(ohne(container)?.querySelector('.pers-dupes-count')?.textContent).toBe('2')
-    expect(ohne(container)?.querySelector('.pers-dupes-hint')?.textContent).toBe(t.ohneGruppeHint)
+    expect(ohne(container)?.querySelector('.personen-hinweis-zahl')?.textContent).toBe('2')
+    expect(ohne(container)?.querySelector('.personen-hinweis-text')?.textContent).toBe(t.ohneGruppeHint)
   })
 
-  it('ein Tipp auf den Namen öffnet das Detail, in dem die Gruppe gesetzt wird', () => {
+  it('ein Tipp auf den Namen öffnet die Person, bei der die Gruppe gesetzt wird', () => {
     const { container, dispatch } = zeige()
     fireEvent.click(chips(container)[1]!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'selectPerson', id: 'p-c' })
@@ -485,9 +667,9 @@ describe('Warnung: ohne Predigtdienstgruppe', () => {
     expect(chips(container).map((b) => b.textContent)).toEqual(['Voss, Vera'])
   })
 
-  it('die Suche engt die Liste ein, die Warnung nicht — sie gilt der ganzen Versammlung', () => {
+  it('die Suche engt die Liste ein, den Hinweis nicht — er gilt der ganzen Versammlung', () => {
     const { container } = zeige()
-    fireEvent.change(container.querySelector('.pers-search')!, { target: { value: 'brand' } })
+    fireEvent.change(suche(container), { target: { value: 'brand' } })
     expect(namen(container)).toEqual(['Brand, Bernd'])
     expect(chips(container)).toHaveLength(2)
   })
@@ -496,28 +678,42 @@ describe('Warnung: ohne Predigtdienstgruppe', () => {
     expect(ohne(zeige({ groups: [] }).container)).toBeUndefined()
   })
 
-  it('sind alle zugeordnet, steht die Warnung nicht da', () => {
+  it('sind alle zugeordnet, steht der Hinweis nicht da', () => {
     const alle = PERSONEN.map((p) => ({ ...p, grp: 'g1' }))
     expect(ohne(zeige({ persons: alle }).container)).toBeUndefined()
   })
 })
 
-describe('Alle ohne Konto einladen', () => {
-  const MITGLIED: Member[] = [{ userId: 'u9', personId: 'p-b', email: 'b@x.de', planner: false, zuteiler: false }]
-  const OFFENER_CODE: Invite[] = [
-    { id: 'i1', code: 'ABC123', personId: 'p-c', planner: false, zuteiler: false },
-  ]
+describe('Alle einladen', () => {
+  const MIT_STAENDEN: Partial<AppState> = { members: BRAND_KONTO, invites: COHN_CODE }
+  /** Der Knopf steht in der Auswahl „Nicht eingeladen" — dorthin und ihn holen. */
+  const einladen = (c: HTMLElement) => {
+    fireEvent.click(stand(c, t.standOhne))
+    return knopf(c, t.alleEinladen)
+  }
 
-  it('ohne angemeldetes Konto gibt es den Knopf gar nicht — niemand, der einlädt (Entwicklerseite)', () => {
+  it('steht nur in der Auswahl „Nicht eingeladen" — „alle" sind dort genau die', () => {
+    const { container } = zeige(MIT_STAENDEN)
+    expect(knopf(container, t.alleEinladen)).toBeUndefined()
+    expect(einladen(container)).toBeDefined()
+  })
+
+  it('ohne angemeldetes Konto gibt es ihn gar nicht — niemand, der einlädt (Entwicklerseite)', () => {
     const { container } = zeige({ userId: null, congregationId: null })
-    expect([...container.querySelectorAll('button')].some((b) => b.textContent === t.alleEinladen)).toBe(
-      false,
-    )
+    expect(container.querySelector('.personen-stand')).toBeNull()
+    expect(knopf(container, t.alleEinladen)).toBeUndefined()
+  })
+
+  it('hat jeder ein Konto oder einen Code, steht er nicht da — die Auswahl ist leer', () => {
+    const { container } = zeige({ members: [konto('p-a'), konto('p-b')], invites: COHN_CODE })
+    fireEvent.click(stand(container, t.standOhne))
+    expect(zeilen(container)).toHaveLength(0)
+    expect(knopf(container, t.alleEinladen)).toBeUndefined()
   })
 
   it('erzeugt einen Code je Person ohne Konto und ohne offenen Code', async () => {
-    const { container, dispatch } = zeige({ members: MITGLIED, invites: OFFENER_CODE })
-    fireEvent.click(knopf(container, t.alleEinladen))
+    const { container, dispatch } = zeige(MIT_STAENDEN)
+    fireEvent.click(einladen(container))
     await waitFor(() => expect(dispatch.mock.calls.some((c) => c[0].type === 'addInvite')).toBe(true))
     const codes = dispatch.mock.calls.filter((c) => c[0].type === 'addInvite')
     // Bernd hat ein Konto, Clara einen offenen Code → nur Anton bleibt übrig.
@@ -525,24 +721,36 @@ describe('Alle ohne Konto einladen', () => {
     expect(codes[0]![0].invite.personId).toBe('p-a')
   })
 
-  it('legt die Liste zugleich in die Zwischenablage — für alle ohne E-Mail', async () => {
-    const { container } = zeige({ members: MITGLIED, invites: OFFENER_CODE })
+  it('lädt genau die ein, die die Liste zeigt — die Suche grenzt mit ein', async () => {
+    const DAHL = person('p-d', 'Dora', 'Dahl')
+    const { container, dispatch } = zeige({ ...MIT_STAENDEN, persons: [...PERSONEN, DAHL] })
+    fireEvent.click(stand(container, t.standOhne))
+    fireEvent.change(suche(container), { target: { value: 'dahl' } })
     fireEvent.click(knopf(container, t.alleEinladen))
+    await waitFor(() => expect(dispatch.mock.calls.some((c) => c[0].type === 'addInvite')).toBe(true))
+    const codes = dispatch.mock.calls.filter((c) => c[0].type === 'addInvite')
+    // Anton ist ebenso nicht eingeladen, steht aber nicht in der Liste.
+    expect(codes.map((c) => c[0].invite.personId)).toEqual(['p-d'])
+  })
+
+  it('legt die Liste zugleich in die Zwischenablage — für alle ohne E-Mail', async () => {
+    const { container } = zeige(MIT_STAENDEN)
+    fireEvent.click(einladen(container))
     await waitFor(() => expect(copyText).toHaveBeenCalled())
     expect(copyText.mock.calls[0]![0]).toContain('Anton Alt')
   })
 
   it('verschickt nur an Personen mit hinterlegter Adresse', async () => {
-    const { container } = zeige({ members: MITGLIED, invites: OFFENER_CODE })
-    fireEvent.click(knopf(container, t.alleEinladen))
+    const { container } = zeige(MIT_STAENDEN)
+    fireEvent.click(einladen(container))
     await waitFor(() => expect(sendInviteMails).toHaveBeenCalled())
     expect(sendInviteMails.mock.calls[0]![0]).toEqual([{ personId: 'p-a', code: expect.any(String) }])
   })
 
   it('meldet, wie viele Codes entstanden und wie viele Mails rausgingen', async () => {
     sendInviteMails.mockResolvedValue({ ok: true, sent: 1, skipped: 0, notConfigured: false })
-    const { container, dispatch } = zeige({ members: MITGLIED, invites: OFFENER_CODE })
-    fireEvent.click(knopf(container, t.alleEinladen))
+    const { container, dispatch } = zeige(MIT_STAENDEN)
+    fireEvent.click(einladen(container))
     await waitFor(() =>
       expect(dispatch).toHaveBeenCalledWith({
         type: 'showToast', text: 'Codes erstellt: 1 · per E-Mail verschickt: 1',
@@ -552,8 +760,8 @@ describe('Alle ohne Konto einladen', () => {
 
   it('ohne Mail-Versand nennt es nur die Codes — die Liste steht in der Zwischenablage', async () => {
     sendInviteMails.mockResolvedValue({ ok: false, sent: 0, skipped: 1, notConfigured: true })
-    const { container, dispatch } = zeige({ members: MITGLIED, invites: OFFENER_CODE })
-    fireEvent.click(knopf(container, t.alleEinladen))
+    const { container, dispatch } = zeige(MIT_STAENDEN)
+    fireEvent.click(einladen(container))
     await waitFor(() =>
       expect(dispatch).toHaveBeenCalledWith({
         type: 'showToast', text: 'Einladungscodes erstellt: 1 — als Liste kopiert',
@@ -561,25 +769,25 @@ describe('Alle ohne Konto einladen', () => {
     )
   })
 
-  it('hat schon jeder ein Konto, sagt es das — statt lautlos nichts zu tun', async () => {
-    const alleVersorgt: Member[] = PERSONEN.map((p, i) => ({
-      userId: `u${i}`, personId: p.id, email: '', planner: false, zuteiler: false,
-    }))
-    const { container, dispatch } = zeige({ members: alleVersorgt })
-    fireEvent.click(knopf(container, t.alleEinladen))
-    await waitFor(() =>
-      expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.toastAlleHabenKonto }),
-    )
-    expect(dispatch.mock.calls.some((c) => c[0].type === 'addInvite')).toBe(false)
-    expect(sendInviteMails).not.toHaveBeenCalled()
-  })
-
   it('eine misslungene Zwischenablage hält den Versand nicht auf — die Codes stehen an der Person', async () => {
     copyText.mockResolvedValue(false)
-    const { container, dispatch } = zeige({ members: MITGLIED, invites: OFFENER_CODE })
-    fireEvent.click(knopf(container, t.alleEinladen))
+    const { container, dispatch } = zeige(MIT_STAENDEN)
+    fireEvent.click(einladen(container))
     await waitFor(() => expect(sendInviteMails).toHaveBeenCalled())
     expect(dispatch.mock.calls.some((c) => c[0].type === 'addInvite')).toBe(true)
+  })
+
+  /**
+   * Im Offline-Stand entsteht keine einzige Zeile in der Datenbank: Codes,
+   * Mails und Liste wären alle wertlos gewesen.
+   */
+  it('im Offline-Stand erzeugt es nichts, verschickt nichts, kopiert nichts', async () => {
+    const { container, dispatch } = zeige({ ...MIT_STAENDEN, staleAt: Date.now() - 3600_000 })
+    fireEvent.click(einladen(container))
+    await waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.offlineReadOnly }))
+    expect(dispatch.mock.calls.some((c) => c[0].type === 'addInvite')).toBe(false)
+    expect(sendInviteMails).not.toHaveBeenCalled()
+    expect(copyText).not.toHaveBeenCalled()
   })
 })
 
@@ -595,8 +803,8 @@ describe('Konten ohne verknüpfte Person', () => {
 
   it('lassen sich einer Person zuordnen', () => {
     const { container, dispatch } = zeige({ members: WAISE })
-    const auswahl = container.querySelector<HTMLSelectElement>('.pers-orphans .mem-select')!
-    fireEvent.change(auswahl, { target: { value: 'p-a' } })
+    const wahl = container.querySelector<HTMLSelectElement>('.pers-orphans .mem-select')!
+    fireEvent.change(wahl, { target: { value: 'p-a' } })
     expect(dispatch).toHaveBeenCalledWith({
       type: 'updateMember', userId: 'u9', patch: { personId: 'p-a' },
     })
@@ -608,18 +816,12 @@ describe('Konten ohne verknüpfte Person', () => {
       unterstellt es: `linkedMember` nimmt das **erste** passende Mitglied, die
       Konto-Karte zeigt genau eines, und `send-plan` wie `send-reminders`
       führen je Person genau eine Konto-Id (`userByPerson`).
-
-      Die Liste bot trotzdem jede Person an. Wurde eine gewählt, die schon ein
-      Konto hat, hingen zwei daran: Beide sahen ihre Aufgaben und konnten
-      bestätigen, die Benachrichtigung erreichte nur eines von beiden, und die
-      Konto-Karte der Person zeigte das zweite nirgends — es ließ sich von dort
-      also auch nicht wieder lösen.
     */
     const { container } = zeige({
       members: [...WAISE, { userId: 'u8', personId: 'p-a', email: 'a@x.de', planner: false, zuteiler: false }],
     })
-    const auswahl = container.querySelector<HTMLSelectElement>('.pers-orphans .mem-select')!
-    const werte = [...auswahl.options].map((o) => o.value)
+    const wahl = container.querySelector<HTMLSelectElement>('.pers-orphans .mem-select')!
+    const werte = [...wahl.options].map((o) => o.value)
     expect(werte, 'Person mit Konto steht zur Wahl').not.toContain('p-a')
     // Gegenprobe: die übrigen stehen sehr wohl zur Wahl.
     expect(werte).toContain('p-b')
@@ -643,29 +845,6 @@ describe('Konten ohne verknüpfte Person', () => {
   })
 
   it('gibt es keine, steht die Karte nicht da — ohne Datenbank gibt es nie welche', () => {
-    // Hier stand bis zum 2.10.2026 dazu ein eigener Fall „im Demo-Modus ebenso
-    // wenig". Die Karte fragte den Modus ab, obwohl ohne Datenbank gar keine
-    // Mitglieder geladen werden — die Abfrage war doppelt.
     expect(zeige().container.querySelector('.pers-orphans')).toBeNull()
-  })
-})
-
-/**
- * Dasselbe eine Ebene höher — und dort schlimmer: „Alle einladen" erzeugt Codes
- * für **jeden** ohne Konto, schickt sie per Mail und legt die Liste in die
- * Zwischenablage. Im Offline-Stand entsteht keine einzige Zeile in der
- * Datenbank; alles davon wäre wertlos gewesen.
- */
-describe('Sammel-Einladung im Offline-Stand', () => {
-  it('erzeugt nichts, verschickt nichts, kopiert nichts', async () => {
-    const { container, dispatch } = zeige({ staleAt: Date.now() - 3600_000 })
-    fireEvent.click(knopf(container, t.alleEinladen))
-
-    await waitFor(() =>
-      expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.offlineReadOnly }),
-    )
-    expect(dispatch.mock.calls.some((c) => c[0].type === 'addInvite')).toBe(false)
-    expect(sendInviteMails).not.toHaveBeenCalled()
-    expect(copyText).not.toHaveBeenCalled()
   })
 })

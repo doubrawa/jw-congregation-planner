@@ -856,25 +856,49 @@ Unter **Personen** pflegst du alle Mitglieder der Versammlung.
 ![Personenliste](screenshots/planer-personen.png)
 
 - Die Liste steht alphabetisch nach dem **Nachnamen** und zeigt ihn deshalb
-  zuerst: „Krüger, Simon". Überall sonst – im Detail, in den Zuteilungen, in
-  Mitteilungen – steht der Name wie gesprochen: „Simon Krüger".
-- **+ Neue Person anlegen** erstellt einen neuen Eintrag; **+ Alle ohne Konto
-  einladen** verschickt Einladungscodes an alle, die noch kein Konto haben.
-- Über **Suchen** findest du schnell eine Person – gesucht wird in **Name,
+  zuerst: „Krüger, Simon". Überall sonst – bei der Person, in den Zuteilungen,
+  in Mitteilungen – steht der Name wie gesprochen: „Simon Krüger".
+- Unter jedem Namen stehen **Gruppe und Rolle**, rechts das Recht (**Admin**
+  oder **Planer**). Wer heute abwesend ist, steht mit dem Zeitraum da, etwa
+  „abwesend 7.–11. September".
+- Der **Punkt** vor dem Namen zeigt, wie weit die Person mit der App ist:
+  voll – **angemeldet** (ein Konto ist mit ihr verknüpft), blass –
+  **eingeladen** (sie hat einen Code, aber noch kein Konto), gestrichelt –
+  **nicht eingeladen**. Wer nicht angemeldet ist, steht statt mit der Rolle mit
+  seinem Stand da: Er erfährt nichts von selbst, weder „Plan senden" noch die
+  Erinnerungen erreichen ihn.
+- Oben zählt die Karte **Stand der Anmeldung** alle drei. Ein Tipp auf eine
+  Zahl zeigt nur diese Personen, ein zweiter wieder alle. Darunter stehen
+  **Alle**, **Noch nicht angemeldet** (eingeladen oder nicht eingeladen) und
+  **Abwesend** (wer heute fehlt), jeweils mit ihrer Zahl. Am Desktop stehen die
+  drei Stände gleich in dieser Reihe.
+- In der Auswahl **Nicht eingeladen** steht **Alle einladen**: Es erstellt für
+  jede Person, die die Liste gerade zeigt, einen Einladungscode und verschickt
+  ihn an alle mit E‑Mail‑Adresse. Suche und Filter grenzen dabei mit ein – so
+  lädst du etwa eine Gruppe nach der anderen ein. Die Liste „Name: Code" liegt
+  zusätzlich in der Zwischenablage – für alle ohne Adresse.
+- Über **Name suchen** findest du schnell eine Person – gesucht wird in **Name,
   Telefonnummer und E‑Mail‑Adresse**. Bei Telefonnummern ist die Schreibweise
   egal: „01701234567" findet auch „0170 123 4567".
-- Darunter kannst du die Liste nach **Geschlecht**, **Rolle**,
-  **Predigtdienstgruppe** und **Aufgabenbereich** einschränken (jeweils
-  alphabetisch sortiert). Die Felder wirken zusammen (z. B. alle Brüder aus
-  Gruppe 2 mit dem Bereich Mikrofone); „—" bedeutet „nicht eingeschränkt". Die
-  Zahl neben der Überschrift zeigt, wie viele Personen gerade übrig bleiben.
-  Unter **Aufgabenbereich** stehen auch die beiden festen Rollen
-  **Wachtturm-Studium-Leiter** und **Vertreter (Wachtturm-Studium)** – so
-  findest du schnell, wer sie trägt. Suche und Filter bleiben stehen, wenn du
-  eine Person öffnest und über **‹ Alle Personen** zurückkommst – so lassen
-  sich die Gefundenen nacheinander bearbeiten. Erst ein anderer Bildschirm
-  setzt sie zurück.
-- Ein Tippen auf eine Person öffnet ihr Detail:
+- **Filter** öffnet ein Blatt, in dem du die Liste nach **Geschlecht**,
+  **Rolle**, **Predigtdienstgruppe** und **Aufgabenbereich** einschränkst
+  (jeweils alphabetisch sortiert). Die Felder wirken zusammen (z. B. alle Brüder
+  aus Gruppe 2 mit dem Bereich Mikrofone); „—" bedeutet „nicht eingeschränkt",
+  **Zurücksetzen** hebt alle vier auf. Unter **Aufgabenbereich** stehen auch die
+  beiden festen Rollen **Wachtturm-Studium-Leiter** und **Vertreter
+  (Wachtturm-Studium)** – so findest du schnell, wer sie trägt. Am Knopf steht,
+  wie viele Felder gesetzt sind, über der Liste, wie viele Personen übrig
+  bleiben.
+- Suche und Filter bleiben stehen, wenn du eine Person öffnest und
+  zurückkommst – so lassen sich die Gefundenen nacheinander bearbeiten. Erst ein
+  anderer Bildschirm setzt sie zurück.
+- **Person anlegen** (der runde Knopf mit dem Plus, am Desktop mit dem Wort)
+  öffnet ein Blatt: Vorname, Nachname, E‑Mail (freiwillig), Geschlecht, Gruppe
+  und Rolle. Angelegt wird erst mit **Hinzufügen**; danach öffnet sich die neue
+  Person, und du legst ihre Aufgabenbereiche fest. Einen Namen, den es schon
+  gibt, nimmt das Blatt nicht an – es nennt, wer ihn trägt.
+- Ein Tippen auf eine Person öffnet sie. Am Desktop steht sie rechts neben der
+  Liste, ihre Zeile ist umrandet:
 
 ![Person bearbeiten](screenshots/planer-person-detail.png)
 
@@ -980,9 +1004,8 @@ Verlässt du das Detail, während der Hinweis noch steht, behält die Person den
 Namen, den sie beim Öffnen hatte – in der Liste und in den bereits geplanten
 Wochen. Unten am Bildschirm erscheint dazu kurz „Name nicht geändert: Paul
 Beispiel gibt es schon". Was du sonst geändert hast, etwa Telefon oder
-Aufgabenbereiche, bleibt gespeichert. Eine gerade neu angelegte Person legt die
-App in diesem Fall gar nicht an („Nicht angelegt: Paul Beispiel gibt es
-schon"), und was du bei ihr schon eingetragen hattest, verwirft sie mit.
+Aufgabenbereiche, bleibt gespeichert. Beim **Anlegen** nimmt das Blatt einen
+solchen Namen gar nicht erst an.
 
 Verglichen wird der ganze Name, wie er angezeigt wird. Groß- und
 Kleinschreibung und doppelte Leerzeichen zählen dabei nicht – „paul beispiel"
@@ -995,42 +1018,42 @@ Gleichnamige wären dort nicht auseinanderzuhalten.
 ### Warnung: feste Rolle mehrfach vergeben
 
 Leiter und Vertreter des Wachtturm-Studiums sind je **eine** Person. Ist einer
-der beiden Schalter bei mehreren eingeschaltet, erscheint über der Liste das
-Warnbanner **FESTE ROLLEN** mit einer Zeile je Rolle, etwa
+der beiden Schalter bei mehreren eingeschaltet, erscheint über der Liste der
+Hinweis **Feste Rollen** mit einer Zeile je Rolle, etwa
 „Wachtturm-Studium-Leiter" · 2 Personen, und darunter den Namen aller, die sie
 tragen. Beim automatischen Zuteilen nimmt die App dann irgendeinen von ihnen –
 nicht unbedingt den, den du meinst.
 
-Abhilfe: Tippe im Banner auf einen Namen. Es öffnet sich das Detail der Person,
-dort schaltest du in der Karte **Feste Rollen** die Rolle ab, wenn sie nicht zu
-ihr gehört – an bleibt sie nur bei einer Person. Das Banner gilt für die ganze
-Versammlung, Suche und Filter blenden es nicht aus. Es verschwindet, sobald
+Abhilfe: Tippe im Hinweis auf einen Namen. Es öffnet sich die Person, dort
+schaltest du in der Karte **Feste Rollen** die Rolle ab, wenn sie nicht zu ihr
+gehört – an bleibt sie nur bei einer Person. Der Hinweis gilt für die ganze
+Versammlung, Suche und Filter blenden ihn nicht aus. Er verschwindet, sobald
 jede Rolle höchstens einmal vergeben ist.
 
 ### Warnung: ohne Predigtdienstgruppe
 
 Jeder Verkündiger gehört zu einer Predigtdienstgruppe. Ist jemand keiner
-zugeordnet, erscheint über der Liste das Warnbanner **OHNE
-PREDIGTDIENSTGRUPPE** mit allen betroffenen Namen. Das passiert zum Beispiel
-nach dem Löschen einer Gruppe: Ihre Mitglieder stehen danach ohne Gruppe da.
+zugeordnet, erscheint über der Liste der Hinweis **Ohne Predigtdienstgruppe**
+mit allen betroffenen Namen. Das passiert zum Beispiel nach dem Löschen einer
+Gruppe: Ihre Mitglieder stehen danach ohne Gruppe da.
 
 Das hat eine sichtbare Folge: Ein Gruppentreffpunkt erscheint im Programm nur
 bei den Mitgliedern **dieser** Gruppe. Wer ohne Gruppe dasteht, sieht nur die
 Treffpunkte der Versammlung.
 
-Abhilfe: Tippe im Banner auf einen Namen. Es öffnet sich das Detail der Person,
-dort wählst du unter **Predigtdienstgruppe** die richtige Gruppe. Das Banner
-gilt für die ganze Versammlung, Suche und Filter blenden es nicht aus. Es
+Abhilfe: Tippe im Hinweis auf einen Namen. Es öffnet sich die Person, dort
+wählst du unter **Predigtdienstgruppe** die richtige Gruppe. Der Hinweis gilt
+für die ganze Versammlung, Suche und Filter blenden ihn nicht aus. Er
 verschwindet, sobald alle zugeordnet sind.
 
 Nicht gewarnt wird bei Personen mit der Rolle **Keine**, also Schülern ohne
 Verkündiger‑Status: Sie gehören zu keiner Gruppe. Solange noch gar keine Gruppe
-angelegt ist, bleibt das Banner ebenfalls aus.
+angelegt ist, bleibt der Hinweis ebenfalls aus.
 
 ### Konten ohne Person
 
-Ganz unten in der Personenliste steht der Abschnitt **KONTEN OHNE PERSON**:
-angemeldete Konten, die noch keinem Eintrag zugeordnet sind. Solange die
+Über der Personenliste steht die Karte **Konten ohne Person**: angemeldete
+Konten, die noch keinem Eintrag zugeordnet sind. Solange die
 Zuordnung fehlt, sieht dieses Konto **keine eigenen Aufgaben** — die App weiß
 ja nicht, wer dahintersteht. Über das Auswahlfeld ordnest du das Konto der
 richtigen Person zu; mit ✕ entfernst du es aus der Versammlung.

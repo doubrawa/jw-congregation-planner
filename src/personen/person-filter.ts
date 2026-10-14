@@ -1,6 +1,14 @@
 import { enthaelt } from '../components/suche'
 import { displayName, privWert } from '../data/helpers'
 import type { Person, Role } from '../data/types'
+import type { AnmeldeStand, PersonLage } from './person-lage'
+
+/**
+ * **Die Auswahl über der Liste** (T121, Entwurf `GPersonen`) — eine zur Zeit:
+ * ein Stand der Anmeldung (oben gezählt), „Nicht angemeldet" (eingeladen oder
+ * noch nicht) oder wer heute abwesend ist. Leer heißt: alle.
+ */
+export type Auswahl = '' | AnmeldeStand | 'nichtAngemeldet' | 'abwesend'
 
 /**
  * Zustand der Suchleiste über der Personenliste. Leerer String = kein Filter,
@@ -8,13 +16,25 @@ import type { Person, Role } from '../data/types'
  */
 export interface PersonFilter {
   q: string // Volltext über Name, Telefon, E-Mail
+  auswahl: Auswahl
   sex: '' | 'm' | 'w'
   role: '' | Role
   grp: string // Group.id
   priv: string // Aufgabenbereich-Key (fest, feste Rolle wie `wtLeiter` oder `svc:<dienst>`)
 }
 
-export const KEIN_FILTER: PersonFilter = { q: '', sex: '', role: '', grp: '', priv: '' }
+/**
+ * Die Felder, die das Blatt „Filter" setzt — Geschlecht, Rolle, Gruppe und
+ * Aufgabenbereich —, alle leer. „Zurücksetzen" setzt genau diese.
+ */
+export const OHNE_BLATTFILTER = { sex: '', role: '', grp: '', priv: '' } as const satisfies Partial<PersonFilter>
+
+export const KEIN_FILTER: PersonFilter = { q: '', auswahl: '', ...OHNE_BLATTFILTER }
+
+/** Wie viele Felder des Blatts gesetzt sind — die Zahl am Knopf „Filter". */
+export function gesetzteBlattfilter(f: PersonFilter): number {
+  return (Object.keys(OHNE_BLATTFILTER) as Array<keyof typeof OHNE_BLATTFILTER>).filter((feld) => f[feld] !== '').length
+}
 
 /** Eingabe, die nur aus Telefon-Zeichen besteht (Ziffern und deren Trenner). */
 const NUR_TELEFON = /^[\d\s+()./-]+$/
@@ -41,8 +61,26 @@ function passtZuText(person: Person, q: string): boolean {
   return nur.length > 0 && ziffern(person.tel).includes(nur)
 }
 
-/** Erfüllt die Person alle gesetzten Filter? */
-export function passtZumFilter(person: Person, f: PersonFilter): boolean {
+/** Fällt die Person unter die Auswahl über der Liste? */
+export function passtZurAuswahl(auswahl: Auswahl, lage: PersonLage): boolean {
+  switch (auswahl) {
+    case '':
+      return true
+    case 'nichtAngemeldet':
+      return lage.stand !== 'angemeldet'
+    case 'abwesend':
+      return lage.abwesenheit !== undefined
+    default:
+      return lage.stand === auswahl
+  }
+}
+
+/**
+ * Erfüllt die Person Suche und Felder — alles außer der Auswahl? Die Liste
+ * fragt beides getrennt: So zählen die Knöpfe der Auswahl, wie viele es **unter
+ * den übrigen Filtern** wären.
+ */
+export function passtOhneAuswahl(person: Person, f: PersonFilter): boolean {
   const q = f.q.trim().toLowerCase()
   if (q && !passtZuText(person, q)) return false
   if (f.sex && (f.sex === 'w') !== Boolean(person.female)) return false

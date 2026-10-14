@@ -52,6 +52,12 @@
   background: var(--feld);
 }
 
+/* Etwas Neues anlegen (Person anlegen): der runde Knopf in Minze. */
+.rund-knopf--akzent {
+  background: var(--akzent);
+  color: var(--auf-akzent);
+}
+
 /* ---- Titel einer Seite und eines Bereichs ------------------------------- */
 
 .seitentitel {
@@ -257,6 +263,20 @@
   border-radius: 25px;
   background-color: var(--feld);
   color: var(--text);
+}
+
+/* Ein gesetzter Filter hebt sich ab — sonst übersieht man, warum die Liste kurz ist. */
+.feld-wahl.is-gesetzt {
+  border-color: var(--akzent-text);
+  color: var(--akzent-text);
+  font-weight: 600;
+}
+
+/* Was an einer Eingabe nicht geht (ein Name, den es schon gibt). */
+.feld-fehler {
+  color: var(--problem);
+  font-size: calc(13.5px * var(--fs));
+  line-height: 1.4;
 }
 
 /* Die Felder eines Blatts untereinander, je mit ihrer Marke darüber. */

@@ -21,6 +21,13 @@ const PFADE = {
   /** Ohne Verbindung. */
   wolke: <path d="M7.2 18.6h9.8a4 4 0 0 0 .6-7.9 5.5 5.5 0 0 0-10.7 1.2 3.5 3.5 0 0 0 .3 6.7z" />,
   haken: <path d="m6.5 12.5 3.7 3.7L17.5 8.5" />,
+  /** Die Lupe im Suchfeld (`werk.mjs`, dort 20 × 20). */
+  suche: (
+    <>
+      <circle cx="10.8" cy="10.8" r="6.2" />
+      <path d="m15.6 15.6 4.2 4.2" />
+    </>
+  ),
   drucken: (
     <>
       <path d="M7.5 9V4.5h9V9" />

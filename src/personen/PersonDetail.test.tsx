@@ -74,7 +74,7 @@ describe('PersonDetail — Aufgaben und Hilfsdienste sind zwei Bereiche (T73)', 
 
   it('die Hilfsdienste stehen in einem eigenen Bereich, nicht bei den Aufgaben', () => {
     const { container } = zeige(dienste)
-    const aufgaben = bereich(container, 'AUFGABENBEREICHE')
+    const aufgaben = bereich(container, 'Aufgabenbereiche')
     const hilfsdienste = bereich(container, t.hilfsdienste)
 
     expect(hilfsdienste).toContain('Tonanlage')
@@ -87,7 +87,7 @@ describe('PersonDetail — Aufgaben und Hilfsdienste sind zwei Bereiche (T73)', 
     const sortiert = (liste: string[]) => [...liste].sort((a, b) => a.localeCompare(b, 'de'))
 
     expect(bereich(container, t.hilfsdienste)).toEqual(['Mikrofone', 'Ordner', 'Tonanlage'])
-    const aufgaben = bereich(container, 'AUFGABENBEREICHE')
+    const aufgaben = bereich(container, 'Aufgabenbereiche')
     expect(aufgaben).toEqual(sortiert(aufgaben))
   })
 

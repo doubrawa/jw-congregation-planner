@@ -19,18 +19,6 @@
   margin-top: 3px;
 }
 
-/* Kopfzeile Titel + rechte Notiz (Planen, Personen) */
-.screen-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
-.screen-head-note {
-  font-size: calc(11.5px * var(--fs));
-  color: var(--mut);
-}
-
 /* ---- Primär-Button (Akzentfläche, Pille) ---------------------------------- */
 
 .btn-primary {
