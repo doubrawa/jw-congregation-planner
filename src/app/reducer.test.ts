@@ -494,6 +494,29 @@ describe('Personen', () => {
     expect(next.invites[0].planner).toBe(true)
   })
 
+  it('updatePerson spiegelt ebenso das Recht „Planer" (zuteiler) — Konto und offener Code, das eigene ausgenommen', () => {
+    // Der Zweig lief bis zum 15.10.2026 in keinem Test (Abdeckung als
+    // Landkarte): Er ist das Gegenstück zum Admin-Recht darüber.
+    const target = person('Manfred Albrecht')
+    const s = makeState({
+      userId: 'me',
+      members: [
+        { userId: 'u1', email: 'u1@x', personId: target.id, planner: false, zuteiler: false },
+        { userId: 'me', email: 'me@x', personId: target.id, planner: false, zuteiler: false },
+      ],
+      invites: [{ id: 'i1', code: 'ABC', personId: target.id, planner: false, zuteiler: false }],
+    })
+    const an = reducer(s, { type: 'updatePerson', id: target.id, patch: { zuteilerVorgemerkt: true } })
+    expect(an.members.find((m) => m.userId === 'u1')!.zuteiler).toBe(true)
+    expect(an.members.find((m) => m.userId === 'me')!.zuteiler).toBe(false)
+    expect(an.invites[0]!.zuteiler).toBe(true)
+    // Das Admin-Recht bleibt dabei unberührt.
+    expect(an.members.find((m) => m.userId === 'u1')!.planner).toBe(false)
+    const aus = reducer(an, { type: 'updatePerson', id: target.id, patch: { zuteilerVorgemerkt: false } })
+    expect(aus.members.find((m) => m.userId === 'u1')!.zuteiler).toBe(false)
+    expect(aus.invites[0]!.zuteiler).toBe(false)
+  })
+
   it('removePerson löst Gruppen-, Konto- und Code-Referenzen', () => {
     const s = makeState({
       groups: [{ id: 'g1', name: 'G1', overseerId: 'p1', assistantId: 'p6' }],
