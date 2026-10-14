@@ -161,6 +161,25 @@ describe('Zurück am Handy', () => {
     expect(amGrund()).toBe(true)
   })
 
+  it('eine Unteransicht der Einstellungen schließt zuerst, dann geht es zu Start', async () => {
+    const { container } = zeige()
+    klickMenue(container, t.navEinstellungen)
+    const gruppen = [...container.querySelectorAll<HTMLElement>('.einst-zeile')].find(
+      (z) => z.querySelector('.einst-zeile-name')?.textContent === t.gruppenTitel,
+    )!
+    fireEvent.click(gruppen)
+    await ausklingen()
+    expect(container.querySelector('.unteransicht-kopf')).not.toBeNull()
+
+    await zurueck()
+    expect(container.querySelector('.unteransicht-kopf'), 'die Unteransicht blieb offen').toBeNull()
+    expect(aktiv(container)).toBe(t.navEinstellungen)
+
+    await zurueck()
+    expect(aktiv(container)).toBe(t.navStart)
+    expect(amGrund()).toBe(true)
+  })
+
   it('ein geöffneter Plan schließt zuerst, dann die Liste', async () => {
     const { container } = zeige({ plaene: [PLAN], planEintraege: [] })
     klickMenue(container, t.navWeiterePlaene)

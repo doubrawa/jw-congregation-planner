@@ -131,7 +131,7 @@ export default {
   "mitteilungenUndErinnerungen": "Notificări și mementouri",
   "werPlant": "Cine planifică",
   "werPlantNiemand": "Încă nimeni.",
-  "beiDerPersonAendern": "Modifică la persoană",
+  "beiDerPersonAendern": "Modifică în datele persoanei",
   "remKurz": "Primul {erste}, ultimul {letzte}",
   "remVorher": "cu {dauer} înainte",
   "remAmTagKurz": "în ziua însărcinării",

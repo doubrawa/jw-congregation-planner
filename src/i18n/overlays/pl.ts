@@ -131,7 +131,7 @@ export default {
   "mitteilungenUndErinnerungen": "Powiadomienia i przypomnienia",
   "werPlant": "Kto planuje",
   "werPlantNiemand": "Jeszcze nikt.",
-  "beiDerPersonAendern": "Zmień przy osobie",
+  "beiDerPersonAendern": "Zmień w danych osoby",
   "remKurz": "Pierwsze {erste}, ostatnie {letzte}",
   "remVorher": "{dauer} wcześniej",
   "remAmTagKurz": "w dniu zadania",

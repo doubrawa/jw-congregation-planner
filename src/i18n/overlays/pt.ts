@@ -131,7 +131,7 @@ export default {
   "mitteilungenUndErinnerungen": "Notificações e lembretes",
   "werPlant": "Quem planeja",
   "werPlantNiemand": "Ninguém ainda.",
-  "beiDerPersonAendern": "Alterar na pessoa",
+  "beiDerPersonAendern": "Alterar nos dados da pessoa",
   "remKurz": "Primeiro {erste}, último {letzte}",
   "remVorher": "{dauer} antes",
   "remAmTagKurz": "no dia da designação",

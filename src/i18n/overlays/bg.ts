@@ -134,7 +134,7 @@ export default {
   "beiDerPersonAendern": "Промяна при човека",
   "remKurz": "Първо {erste}, последно {letzte}",
   "remVorher": "{dauer} по-рано",
-  "remAmTagKurz": "в деня",
+  "remAmTagKurz": "в деня на назначението",
   "programmsprachen": "Езици на програмата",
   "spracheHinzu": "Добави език",
   "hdDesc": "Брой хора на задача — прилага се веднага към програмата и планирането.",

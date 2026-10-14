@@ -131,7 +131,7 @@ export default {
   "mitteilungenUndErinnerungen": "Bildirimler ve hatırlatmalar",
   "werPlant": "Kim planlıyor",
   "werPlantNiemand": "Henüz kimse yok.",
-  "beiDerPersonAendern": "Kişide değiştir",
+  "beiDerPersonAendern": "Kişinin sayfasında değiştir",
   "remKurz": "İlki {erste}, sonuncusu {letzte}",
   "remVorher": "{dauer} önce",
   "remAmTagKurz": "görev günü",

@@ -131,7 +131,7 @@ export default {
   "mitteilungenUndErinnerungen": "Mga abiso at paalala",
   "werPlant": "Sino ang nagpaplano",
   "werPlantNiemand": "Wala pa.",
-  "beiDerPersonAendern": "Baguhin sa tao",
+  "beiDerPersonAendern": "Baguhin sa pahina ng tao",
   "remKurz": "Una {erste}, huli {letzte}",
   "remVorher": "{dauer} bago",
   "remAmTagKurz": "sa araw ng atas",
