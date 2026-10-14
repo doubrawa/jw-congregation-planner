@@ -6652,7 +6652,7 @@ Der nächste Import holt die Sprache auch für schon geladene Wochen nach
 der App nur die Treffpunkte der ersten (`overseerGroup`), die Datenbank erlaubt
 beide (`eigene_gruppen()`).
 
-**Stand am 15. Oktober 2026:** Phase 7, die Trolleys, ist gebaut. Statt fester
+**Stand am 14. Oktober 2026:** Phase 7, die Trolleys, ist gebaut und live. Statt fester
 Termine mit Schichten legt die Versammlung ihre Trolleys an (Einstellungen
 „Gruppen und Trolleys": Name, wo man ihn abholt, Hinweis), und wer das
 Trolley-Recht hat, trägt sich selbst ein — von 6 bis 22 Uhr in halben Stunden,
@@ -6821,7 +6821,7 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
-| **T121** | Neues Design | ☐ Umbau läuft, Phase für Phase auf main: 1 bis 6 sind live (zuletzt das Review der Verwaltung), es folgen 7 bis 10. Am 13. Oktober nachentschieden, was die ersten Phasen offen ließen; die Leinwand wird nicht mehr veröffentlicht. T106 und T114 gehen hier auf (Phase 8) |
+| **T121** | Neues Design | ☐ Umbau läuft, Phase für Phase auf main: 1 bis 7 sind live (zuletzt die Trolleys), es folgen 8 bis 10. Am 13. Oktober nachentschieden, was die ersten Phasen offen ließen; die Leinwand wird nicht mehr veröffentlicht. T106 und T114 gehen hier auf (Phase 8) |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
@@ -7199,7 +7199,7 @@ Umbau T121 offen; was sonst aussteht, braucht den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **T121** | Neues Design | Umbau läuft, Phase für Phase auf main: 1 bis 6 sind live, 7 bis 10 folgen (siehe T121). Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
+| **T121** | Neues Design | Umbau läuft, Phase für Phase auf main: 1 bis 7 sind live, 8 bis 10 folgen (siehe T121). Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
 | **Vor Phase 8** | Resend, `INVITE_FROM` | richtet der Betreiber ein (zugesagt am 13. Oktober). Ob danach noch ein SMTP-Server für Supabase Auth gebraucht wird, klärt Phase 8 — ohne Passwort und Registrieren fallen dessen Mails weg |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
