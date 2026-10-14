@@ -169,6 +169,34 @@ const SPANNE_MONAT = /^(\d+)\.–(\d+)\. ([A-Za-zäöü]+)$/
 const SPANNE_KURZ = /^(\d+)\. ([A-Za-zäöü]{3}) – (\d+)\. ([A-Za-zäöü]{3})$/
 /** „27. April–3. Mai" — Monatswechsel, ausgeschrieben. Die Form von jw.org. */
 const SPANNE_LANG = /^(\d+)\. ([A-Za-zäöü]+) ?– ?(\d+)\. ([A-Za-zäöü]+)$/
+/**
+ * „29. Dezember 2025 – 4. Januar 2026" — über den Jahreswechsel trägt die
+ * Kopfzeile von jw.org beide Jahre (gemessen an der Ausgabe November/Dezember
+ * 2025). Ohne diese Form blieb der Kopf genau dieser einen Woche im Jahr in
+ * jeder fremden Oberfläche deutsch stehen.
+ */
+const SPANNE_JAHR = /^(\d+)\. ([A-Za-zäöü]+) (\d{4}) ?– ?(\d+)\. ([A-Za-zäöü]+) (\d{4})$/
+
+/**
+ * Regel für die Spanne mit Jahreszahlen — in beiden Pfaden über `Intl`: Die
+ * Daten sind vollständig, und der Kalender der Sprache setzt Tag, Monat und
+ * Jahr selbst. `null` (deutsch stehen lassen), wenn ein Monat unbekannt ist
+ * oder die Laufzeit die Spanne nicht formatieren mag.
+ */
+function jahresSpannenRegel(locale: string): Rule {
+  return ausweichen(SPANNE_JAHR, (m) => {
+    const mon1 = monatIndex(g(m, 2))
+    const mon2 = monatIndex(g(m, 5))
+    if (mon1 === undefined || mon2 === undefined) return null
+    const a = new Date(Date.UTC(+g(m, 3), mon1, +g(m, 1)))
+    const b = new Date(Date.UTC(+g(m, 6), mon2, +g(m, 4)))
+    try {
+      return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).formatRange(a, b)
+    } catch {
+      return null
+    }
+  })
+}
 
 /**
  * Regel „Wochentag, Tag. Monat" — Gruppe 1 Wochentag, 2 Tag, 3 Monat.
@@ -342,6 +370,7 @@ function makeTrIntl(code: string): (s: string) => string {
     // nur im Muster.
     monatsRegel(SPANNE_KURZ, [2, 4], (m, mon1, mon2) => intlRange(locale, +g(m, 1), mon1, +g(m, 3), mon2)),
     monatsRegel(SPANNE_LANG, [2, 4], (m, mon1, mon2) => intlRange(locale, +g(m, 1), mon1, +g(m, 3), mon2)),
+    jahresSpannenRegel(locale),
     [/^mit (.+)$/, m => ex.mit(g(m, 1))],
     [/^in (\d+) Tagen$/, m => ex.tage(g(m, 1))],
     [/^(\d+) Zuteilungen$/, m => ex.zut(g(m, 1))],
@@ -414,6 +443,7 @@ export function makeTr(code: string): (s: string) => string {
       const a = L.mon[mon1], b = L.mon[mon2]
       return a && b ? L.range2(g(m, 1), a, g(m, 3), b) : null
     }),
+    jahresSpannenRegel(LOCALES[code] ?? code),
     ...verweisRegeln(code),
     ...buchRegeln(code),
     [/^Studienartikel (\d+)$/, m => L.artikel(g(m, 1))],

@@ -5727,6 +5727,20 @@ export const KATALOG = [
     ersetzen: "  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)",
   },
   {
+    id: "jahresspanne-intl",
+    datei: "supabase/functions/_shared/i18n/translate.ts",
+    regel: "Der Wochenkopf über den Jahreswechsel (mit Jahreszahlen) wird in den Intl-Sprachen übersetzt.",
+    suchen: "    jahresSpannenRegel(locale),\n",
+    ersetzen: "",
+  },
+  {
+    id: "jahresspanne-woerterbuch",
+    datei: "supabase/functions/_shared/i18n/translate.ts",
+    regel: "Der Wochenkopf über den Jahreswechsel wird auch in den Wörterbuch-Sprachen (en/es/fr) übersetzt.",
+    suchen: "    jahresSpannenRegel(LOCALES[code] ?? code),\n",
+    ersetzen: "",
+  },
+  {
     id: "zurueck-verlaesst-feld",
     datei: "src/components/useBackDismiss.ts",
     regel: "Die Zurück-Taste verlässt erst das aktive Feld, dann schließt sie die Ebene — seine Eingabe geht nicht verloren.",

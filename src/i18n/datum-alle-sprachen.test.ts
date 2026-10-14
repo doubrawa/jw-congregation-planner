@@ -245,7 +245,7 @@ describe('Nichts wird zu „undefined"', () => {
   const ALLES = [
     'Dienstag, 8. September', 'Mi, 29. Februar', 'Montag, 29. Februar',
     'So, 1. Januar', 'Sa 10:00', '7.–13. September', '27. April–3. Mai',
-    '28. Sep – 4. Okt', '31. Dezember–6. Januar', 'Lied 151', '1 Min.',
+    '28. Sep – 4. Okt', '31. Dezember–6. Januar', '29. Dezember 2025 – 4. Januar 2026', 'Lied 151', '1 Min.',
     'ca. 19:35', 'Ende ca. 11:45', 'th Lektion 11', 'lmd Lektion 1 Punkt 5',
     'Gruppe 2', 'Vers. Nordheim', 'mit A. Hoffmann', 'in 4 Tagen',
     '3 Zuteilungen', 'Studienartikel 28', 'Jeremia 32–33', 'Jer 32:6-18',
@@ -258,6 +258,27 @@ describe('Nichts wird zu „undefined"', () => {
       expect(tr(form), `${code}: ${form}`).not.toMatch(/undefined|NaN|Invalid Date/)
       expect(tr(form), `${code}: ${form}`).not.toBe('')
     }
+  })
+})
+
+describe('Der Kopf der Woche über den Jahreswechsel', () => {
+  /*
+   * Über den Jahreswechsel trägt die Kopfzeile von jw.org beide Jahre
+   * („29. Dezember 2025 – 4. Januar 2026", gemessen an der Ausgabe
+   * November/Dezember 2025). Keine Spannen-Regel kannte die Form: Der Kopf
+   * genau dieser einen Woche im Jahr blieb in jeder fremden Oberfläche deutsch
+   * (15.10.2026).
+   */
+  const KOPF = '29. Dezember 2025 – 4. Januar 2026'
+
+  it.each(FREMD)('%s: übersetzt, mit beiden Jahren', (code) => {
+    const text = makeTr(code)(KOPF)
+    expect(text, code).not.toBe(KOPF)
+    // Ganze Wörter: „January" (en) und „Januari" (id, sw) sind richtig.
+    expect(text, code).not.toMatch(/\b(Dezember|Januar)\b/u)
+    // Die Jahre in der Ziffernschrift der Sprache — gezählt über alle Schriften.
+    const jahre = [...text.matchAll(/\p{Nd}{4}/gu)].map((m) => zahl(m[0]))
+    expect(jahre, `${code}: ${text}`).toEqual(expect.arrayContaining([2025, 2026]))
   })
 })
 
