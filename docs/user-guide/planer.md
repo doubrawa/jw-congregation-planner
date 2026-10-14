@@ -1321,7 +1321,27 @@ andere Gruppe gibst. Ihre Wochen (bzw. Monate) in den **Weiteren Plänen**
 bleiben stehen, nur ohne Gruppe – dort verteilst du sie neu (siehe
 [Weitere Pläne](#5a-weitere-pläne)).
 
-<!-- ERINNERUNGEN: Absatz kommt aus 6c-4 -->
+### Erinnerungen
+
+Unter **Mitteilungen › Erinnerungen** siehst du als Zeitleiste, wie die App eine
+Aufgabe begleitet. Sobald du **Plan senden** drückst, bekommt jede eingeteilte
+Person sofort **Neue Zuteilung** mit der Bitte um Zusage. Die **Erste
+Erinnerung** stellst du mit **−** und **+** ein, 1 bis 21 Tage vor der Aufgabe.
+**Täglich wiederholen** erinnert an jedem Tag dazwischen, bis die Zusage da ist.
+Bei der **Letzten Erinnerung** wählst du **Am Tag** oder **1 Tag vorher**. Stand
+dort noch ein Wert von früher (2 bis 7 Tage), erscheint er als dritte
+Möglichkeit, bis du umstellst. Ab der Aufgabe selbst meldet sich die App nicht
+mehr. Erinnert wird nur, wer weder zu- noch abgesagt hat – per Push und in der
+Glocke, nie per E‑Mail. Wer am Tag der letzten Erinnerung noch offen ist und
+keine Push-Benachrichtigungen bekommt, wird dir und den anderen Admins und
+Planern gemeldet, damit ihr ihn persönlich erinnert.
+
+Darunter steht unter **Sofort gemeldet**, was ohne jede Einstellung gleich
+hinausgeht: eine **Absage** an die Admins und Planer; bei einem Hilfsdienst
+zusätzlich **Ersatz gesucht** an alle mit diesem Aufgabenbereich, die an dem
+Tag nicht abwesend sind; und **Zuteilung zurückgezogen** an die Person, wenn du
+ihr einen Platz nimmst, für den sie schon zugesagt hatte. E‑Mails verschickt
+die App nur für Einladungen.
 
 ### Wer plant
 

@@ -354,71 +354,15 @@
   opacity: 0.45;
 }
 
-/* ---- Hilfsdienste ------------------------------------------------------------ */
+/* ---- Reste der alten Panels ------------------------------------------------- */
 
-.svc-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 11px 0;
-  border-bottom: 1px solid var(--panel-hair);
-}
-
-/*
- * Letzte Zeile einer Karte: gleiche Schrift und gleiche Abstände wie die
- * übrigen, aber ohne Trenner — eine Haarlinie am Kartenende wäre ein Strich
- * ins Leere.
- */
-.svc-row--schluss {
-  border-bottom: none;
-}
-
-.svc-name {
-  font-size: calc(12.5px * var(--fs));
-  font-weight: 600;
-}
-
-.svc-sub {
-  font-size: calc(10.5px * var(--fs));
-  color: var(--mut);
-  margin-top: 1px;
-}
-
-/* Die Freigabe-Liste selbst: die Zeilen sind dieselben wie im Personen-Detail
-   und erwarten deren Haarlinie — im Sheet gibt es kein Panel, das sie setzt. */
+/* Die Freigabe-Liste im Blatt eines Dienstes: die Zeilen sind dieselben wie bei
+   der Person und erwarten deren Haarlinie — im Sheet gibt es kein Panel, das sie setzt. */
 .svc-persons {
   --panel-hair: var(--line);
 }
 
-/* Die Bedienzeile eines Dienstes (die einer Treffpunkt-Regel steht seit T120
-   mit dem Grundplan in planen.css). */
-.svc-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.stepper-btn {
-  width: 26px;
-  height: 26px;
-  flex: none;
-  border-radius: 50%;
-  border: 1px solid var(--bord4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--mut);
-  font-size: calc(13px * var(--fs));
-}
-
-.svc-count {
-  width: 16px;
-  text-align: center;
-  font-size: calc(13px * var(--fs));
-  font-weight: 600;
-}
-
+/* Das ✕ an einem Konto ohne Person (Personen, `OrphanAccounts`). */
 .svc-remove {
   width: 26px;
   height: 26px;
@@ -432,4 +376,3 @@
   font-size: calc(11px * var(--fs));
   margin-inline-start: 4px;
 }
-

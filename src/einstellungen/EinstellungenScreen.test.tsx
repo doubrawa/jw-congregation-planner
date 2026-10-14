@@ -324,6 +324,12 @@ describe('Am Desktop (`GDesktopEinstellungen`)', () => {
     expect(zeile(container, t.hilfsdienste)).toBeUndefined()
   })
 
+  it('„Mitteilungen und Erinnerungen" zeigt die Zeitleiste der Erinnerungen', () => {
+    const { container } = zeige()
+    fireEvent.click(eintrag(container, t.mitteilungenUndErinnerungen))
+    expect(container.querySelector('.erin-zeitleiste')).not.toBeNull()
+  })
+
   it('die Gruppen stehen am Desktop als Tabelle (`GDesktopEinstellungen`)', () => {
     const { container } = zeige()
     fireEvent.click(eintrag(container, t.gruppenTitel))

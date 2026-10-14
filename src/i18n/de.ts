@@ -531,10 +531,29 @@ export const DE = {
     toastErinnert: 'Erinnerte Personen: {n}',
     toastSchonErinnert: 'Heute wurde schon erinnert',
     toastNiemandZuErinnern: 'Es war niemand zu erinnern',
-    erinnerungenCard: 'Erinnerungen', remDesc: 'Automatische Mitteilungen zu Zuteilungen, bis sie bestätigt sind.',
+    erinnerungenCard: 'Erinnerungen',
     remErste: 'Erste Erinnerung', remLetzte: 'Letzte Erinnerung',
-    remTageVorher: 'Tage vorher: {n}', remAmTag: 'Am Tag der Aufgabe',
     remRepeat: 'Täglich wiederholen, bis bestätigt',
+    // Die Erinnerungen als Zeitleiste (T121, Phase 6c-4, Entwurf `GErinnerungen`).
+    // {titel} ist der echte Titel der Mitteilung (`notifZuteilung`) — zitiert,
+    // nicht abgeschrieben. Die beiden `…Option` stehen allein in der Wahl der
+    // letzten Erinnerung und beginnen deshalb groß; `remAmTagKurz` und
+    // `remVorher` stehen mitten im Satz. {dauer} kommt aus Intl („1 Tag").
+    erinEinleitung: 'So begleitet die App eine Aufgabe – von der Zuteilung bis zum Tag selbst.',
+    erinPlanGesendet: 'Plan gesendet', erinPlanSofort: 'Sofort: „{titel}“ mit der Bitte um Zusage',
+    erinTageVorAufgabe: 'Tage vor der Aufgabe', erinTaeglich: 'Täglich wiederholen', erinBisZusage: 'bis die Zusage da ist',
+    remAmTagOption: 'Am Tag', remVorherOption: '{dauer} vorher',
+    erinDieAufgabe: 'Die Aufgabe', erinDanachStill: 'Ab hier meldet sich die App nicht mehr.',
+    // Was ohne Einstellung sofort hinausgeht und an wen — am Code gemessen
+    // (14.10.2026): die Absage über `notify_planners` (an jedes Mitglied mit
+    // `planner` oder `zuteiler`, also Admins und Planer — Wortlaut wie
+    // `wpEntwurfHint`), das Ersatzgesuch in `substitute` (nur Hilfsdienste,
+    // ohne die an dem Tag Abwesenden), der Entzug in `send-plan` (nur eine
+    // Zuteilung, die schon zugesagt war).
+    erinSofortGemeldet: 'Sofort gemeldet', erinAbsage: 'Absage', erinAnPlaner: 'an Admins und Planer',
+    erinErsatzAn: 'nur bei Hilfsdiensten: an alle mit diesem Aufgabenbereich, die an dem Tag nicht abwesend sind',
+    erinEntzugAn: 'an die Person, wenn sie schon zugesagt hatte',
+    erinMailNur: 'E-Mails verschickt die App nur für Einladungen.',
     coWoche: 'Besuch des Kreisaufsehers',
     memWoche: 'Gedächtnismahl',
     kongress: 'Kongress',

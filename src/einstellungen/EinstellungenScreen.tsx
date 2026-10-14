@@ -9,11 +9,11 @@ import { langLabel, useLangNames } from '../i18n/langnames'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 import { EinstellZeile } from './EinstellZeile'
+import { ErinnerungenInhalt } from './ErinnerungenInhalt'
 import { erinnerungKurz, werPlant, zusammenkunftText } from './einstellungen-anzeige'
 import { GruppenInhalt } from './GruppenInhalt'
 import { HilfsdiensteInhalt } from './HilfsdiensteInhalt'
 import { ProgrammKarte } from './ProgrammKarte'
-import { RemindersPanel } from './RemindersPanel'
 import { SprachenInhalt } from './SprachenInhalt'
 import { TextBlatt } from './TextBlatt'
 import { useWochenImport } from './useWochenImport'
@@ -107,7 +107,7 @@ function UnteransichtInhalt({ welche }: { welche: Unteransicht }) {
     case 'gruppen':
       return <GruppenInhalt />
     case 'erinnerungen':
-      return <RemindersPanel />
+      return <ErinnerungenInhalt />
   }
 }
 
@@ -136,7 +136,7 @@ function EinstellungenDesktop() {
     zusammenkuenfte: () => <ZusammenkuenfteKarte />,
     hilfsdienste: () => <HilfsdiensteInhalt />,
     gruppen: () => <GruppenInhalt tabelle />,
-    erinnerungen: () => <RemindersPanel />,
+    erinnerungen: () => <ErinnerungenInhalt />,
     werPlant: () => <WerPlantKarte />,
     programm: () => <ProgrammKarte />,
   }

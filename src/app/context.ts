@@ -333,6 +333,22 @@ export interface AppState {
 export type LacDir = -1 | 1
 export type ReminderKey = 'first' | 'last'
 
+/**
+ * **Die Grenzen der beiden Erinnerungen** in Tagen vor der Aufgabe: die erste
+ * 1–21, die letzte 0–7 (0 = am Tag selbst).
+ *
+ * Dieselben Zahlen prüft die Datenbank (`reminder_first`, `reminder_last` in
+ * `supabase/schema.sql`). Hier stehen sie einmal für beide Seiten der App: Der
+ * Reducer klemmt an ihnen, und − und + sperren an ihnen
+ * (`ErinnerungenInhalt`). Als Abschrift in der Oberfläche liefen sie
+ * irgendwann auseinander — dann bliebe ein Knopf bedienbar, dessen Wert der
+ * Reducer stillschweigend zurückholt.
+ */
+export const ERINNERUNG_GRENZEN: Readonly<Record<ReminderKey, { min: number; max: number }>> = {
+  first: { min: 1, max: 21 },
+  last: { min: 0, max: 7 },
+}
+
 export type AppAction =
   // `welcome`: nur beim tatsächlichen Anmelden. Eine wiederhergestellte
   // Sitzung beim App-Start meldet ebenfalls „login", soll aber nicht begrüßen.
@@ -513,6 +529,9 @@ export type AppAction =
   | { type: 'closingSong'; song: string } // Schlusslied-Nummer ("" = entfernen)
   // Erinnerungen
   | { type: 'changeReminder'; key: ReminderKey; delta: 1 | -1 }
+  // Einen Wert unmittelbar setzen (die Wahl „Am Tag" / „1 Tag vorher") —
+  // geklemmt an denselben Grenzen wie `changeReminder`.
+  | { type: 'setReminder'; key: ReminderKey; value: number }
   | { type: 'toggleReminderRepeat' }
   // Sprache
   | { type: 'setLang'; lang: Lang }

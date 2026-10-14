@@ -1013,6 +1013,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       platzFuellen(action.key)
       break
     case 'changeReminder':
+    case 'setReminder':
     case 'toggleReminderRepeat':
     case 'setAuxClass':
     case 'setCongLang':

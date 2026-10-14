@@ -94,7 +94,7 @@ import type {
   SubstituteReq,
   Week,
 } from '../data/types'
-import type { AppAction, AppState } from './context'
+import { type AppAction, type AppState, ERINNERUNG_GRENZEN } from './context'
 
 /** Nächster Toast (id erzwingt Timer-/Animations-Neustart bei gleichem Text). */
 function nextToast(state: AppState, text: string): AppState['toast'] {
@@ -1714,9 +1714,15 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ...state,
         weeks: setClosingSong(state.weeks, state.week, action.song),
       }
-    case 'changeReminder': {
-      const bounds = action.key === 'first' ? { min: 1, max: 21 } : { min: 0, max: 7 }
-      const value = Math.max(bounds.min, Math.min(bounds.max, state.reminders[action.key] + action.delta))
+    case 'changeReminder':
+    case 'setReminder': {
+      // Schrittweise (− und +) oder unmittelbar (die Wahl der letzten
+      // Erinnerung) — beide Wege enden an denselben Grenzen, die auch die
+      // Datenbank prüft. Ein Wert darüber hinaus wird geklemmt, nicht
+      // abgewiesen: So schreibt `persist` nie etwas, das die Spalte ablehnt.
+      const { min, max } = ERINNERUNG_GRENZEN[action.key]
+      const gewuenscht = action.type === 'setReminder' ? action.value : state.reminders[action.key] + action.delta
+      const value = Math.max(min, Math.min(max, gewuenscht))
       return { ...state, reminders: { ...state.reminders, [action.key]: value } }
     }
     case 'toggleReminderRepeat':
