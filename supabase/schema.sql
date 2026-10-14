@@ -447,6 +447,20 @@ create table if not exists public.fs_weeks (
   unique (congregation_id, start)
 );
 
+-- Stand der Treffpunkt-Woche (15.10.2026) — derselbe Schutz wie
+-- `weeks.updated_at` (T39): Wer schreibt, nennt den Stand, auf dem seine
+-- Fassung beruht (`saveFsWeek`). Die Treffpunkte einer Woche sind **eine**
+-- Liste; ohne Stand schrieb, wer mit einem älteren Stand schrieb, die
+-- Änderung eines anderen an derselben Woche still zurück. Gesetzt vom
+-- Trigger, nicht vom Client.
+alter table public.fs_weeks
+  add column if not exists updated_at timestamptz not null default now();
+
+drop trigger if exists fs_weeks_touch_updated_at on public.fs_weeks;
+create trigger fs_weeks_touch_updated_at
+  before update on public.fs_weeks
+  for each row execute function public.touch_updated_at();
+
 -- Besuche des Dienstaufsehers bei den Predigtdienstgruppen (T120, Phase 2).
 -- Gemessen am Buch „Organisiert, Jehovas Willen zu tun", Kap. 5 Abs. 36: je
 -- Monat an einem Wochenende eine andere Gruppe; dabei leitet er die

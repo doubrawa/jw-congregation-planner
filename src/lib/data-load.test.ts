@@ -18,7 +18,7 @@ vi.mock('./supabase', () => ({
   supabase: { from: fromMock },
 }))
 
-import { loadCongregationData, SENT_LOG_LIMIT, WEEK_LIMIT } from './data'
+import { loadCongregationData, saveFsWeek, SENT_LOG_LIMIT, WEEK_LIMIT } from './data'
 import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 
 function chainFor(table: string) {
@@ -152,6 +152,22 @@ describe('loadCongregationData', () => {
       seedResponses()
       await loadCongregationData('u1')
       expect(seiten('confirmations')).toEqual([[0, 999]])
+    })
+
+    it('der Stand jeder geladenen Treffpunkt-Woche geht beim Schreiben mit (15.10.2026)', async () => {
+      // Ohne ihn schrieb `saveFsWeek` als Upsert und nahm zurück, was ein
+      // anderer inzwischen an derselben Woche geändert hatte.
+      seedResponses({
+        fs_weeks: [
+          { data: [{ start: '2026-09-07', data: [], updated_at: 'F7' }], error: null },
+          { data: { updated_at: 'F8' }, error: null },
+        ],
+      })
+      await loadCongregationData('u1')
+      store.filter = []
+      saveFsWeek('c1', '2026-09-07', [])
+      await new Promise((r) => setTimeout(r, 0))
+      expect(store.filter).toContainEqual(['fs_weeks', 'eq', 'updated_at', 'F7'])
     })
 
     it('auch Abwesenheiten und Plan-Einträge kommen seitenweise — beide werden nie aufgeräumt', async () => {

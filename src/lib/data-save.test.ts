@@ -170,9 +170,12 @@ describe('Upsert-Schreiber (onConflict)', () => {
     expect(chain.in).toHaveBeenCalledWith('id', ['r7', 'r8'])
     expect(chain.upsert).toHaveBeenCalled()
   })
-  it('saveFsWeek → fs_weeks upsert je Wochen-Kennung', () => {
+  it('saveFsWeek legt eine Woche ohne bekannten Stand an — kein Upsert mehr (15.10.2026)', async () => {
+    // Den Ablauf mit Stand und Konflikt prüft `fs-woche-konflikt.test.ts`.
     saveFsWeek('c1', '2026-09-14', [])
-    expect(chain.upsert).toHaveBeenCalledWith({ congregation_id: 'c1', start: '2026-09-14', data: [] }, { onConflict: 'congregation_id,start' })
+    await geschrieben()
+    expect(chain.insert).toHaveBeenCalledWith({ congregation_id: 'c1', start: '2026-09-14', data: [] })
+    expect(chain.upsert).not.toHaveBeenCalled()
   })
   it('saveFsWeek schreibt ebenfalls nichts ohne Kennung', () => {
     saveFsWeek('c1', '', [])

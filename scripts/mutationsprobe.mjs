@@ -5727,6 +5727,20 @@ export const KATALOG = [
     ersetzen: "  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)",
   },
   {
+    id: "fs-woche-mit-stand",
+    datei: "src/lib/data.ts",
+    regel: "Eine Treffpunkt-Woche wird nur auf dem Stand geschrieben, auf dem sie beruht — nichts eines anderen wird still zurückgenommen.",
+    suchen: "          .eq('start', woche)\n          .eq('updated_at', stand)\n          .select('updated_at')\n          .maybeSingle()\n  if (error) {\n    // 23505",
+    ersetzen: "          .eq('start', woche)\n          .select('updated_at')\n          .maybeSingle()\n  if (error) {\n    // 23505",
+  },
+  {
+    id: "fs-woche-stand-geladen",
+    datei: "src/lib/data.ts",
+    regel: "Den Stand jeder geladenen Treffpunkt-Woche merkt sich der Ladevorgang — sonst legte der erste Schreibvorgang neu an.",
+    suchen: "  fsStaendeSetzen(fsZeilen.flatMap(",
+    ersetzen: "  fsStaendeSetzen([] || fsZeilen.flatMap(",
+  },
+  {
     id: "jahresspanne-intl",
     datei: "supabase/functions/_shared/i18n/translate.ts",
     regel: "Der Wochenkopf über den Jahreswechsel (mit Jahreszahlen) wird in den Intl-Sprachen übersetzt.",

@@ -613,7 +613,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .limit(WEEK_LIMIT)
   const fsWochenAbfrage = supabase
     .from('fs_weeks')
-    .select('start, data')
+    .select('start, data, updated_at')
     .eq('congregation_id', congregationId)
     .order('start', { ascending: false })
     .limit(WEEK_LIMIT)
@@ -828,9 +828,11 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // führen dieselbe Kennung, und nur so bleiben Treffpunkte an ihrer Woche,
   // wenn im Bestand eine fehlt.
   const fsNachWoche = new Map<string, FsInstance[]>()
-  for (const row of imFenster((fsWeeksRows.data ?? []) as { start: string; data: FsInstance[] }[])) {
-    fsNachWoche.set(row.start, row.data)
-  }
+  const fsZeilen = imFenster((fsWeeksRows.data ?? []) as { start: string; data: FsInstance[]; updated_at: string }[])
+  for (const row of fsZeilen) fsNachWoche.set(row.start, row.data)
+  // Stände merken wie bei den Wochen (`staendeSetzen`) — eine Woche ohne Zeile
+  // hat keinen und wird beim ersten Schreiben angelegt.
+  fsStaendeSetzen(fsZeilen.flatMap((r): Array<[string, string]> => (r.updated_at ? [[r.start, r.updated_at]] : [])))
   const storedFsWeeks: FsInstance[][] = weekList.map((w) => fsNachWoche.get(w.start) ?? [])
   const ausgerichtet = fsRules.length
     ? regenFsWeeks(weekList.map((w) => w.start), storedFsWeeks, fsRules)
@@ -1270,23 +1272,81 @@ export function savePlanEintraege(congregationId: string, eintraege: PlanEintrag
 }
 
 /**
- * Materialisierte Treffpunkte einer Woche (Kennung → FsInstance[]).
+ * Stand je Treffpunkt-Woche (`fs_weeks.updated_at`) und die Schreibkette dazu —
+ * derselbe Schutz wie bei den Wochen der Zusammenkünfte (T39, `wochenStand`).
  *
- * Eine Abweisung des Triggers `fs_weeks_pruefen` (42501: der Gruppenaufseher
- * änderte eine fremde Gruppe, der Planer mehr als den Leiter) entsteht nur auf
- * einem veralteten Stand — die Oberfläche bietet beides nicht an. Darum lädt
- * sie nach (`zeilenRun`), statt bloß einen Fehler zu melden.
+ * Bis zum 15.10.2026 ging die Woche als Upsert hinaus, ohne Stand. Die
+ * Treffpunkte einer Woche liegen als **eine** Liste in einer Zeile; wer mit
+ * einem älteren Stand schrieb, schrieb die ganze Liste zurück. Gegen den
+ * Gruppenaufseher half zufällig der Trigger (`fs_weeks_pruefen` weist eine
+ * geänderte fremde Gruppe ab) — Admin und Planer prüft er aber nicht oder nur
+ * ohne Leiter: Wer abends einen Leiter zuteilte, ohne seit dem Morgen neu
+ * geladen zu haben, nahm still zurück, was ein Gruppenaufseher mittags in
+ * derselben Woche eingetragen hatte.
+ */
+const fsWochenStand = new Map<string, string>()
+const fsWochenKette = new Map<string, Promise<void>>()
+
+function fsStaendeSetzen(paare: Array<[string, string]>): void {
+  fsWochenStand.clear()
+  fsWochenKette.clear()
+  for (const [woche, stand] of paare) fsWochenStand.set(woche, stand)
+}
+
+/**
+ * Materialisierte Treffpunkte einer Woche (Kennung → FsInstance[]) — mit
+ * Vergleiche-und-Tausche auf ihren Stand, je Woche hintereinander.
+ *
+ * Ein Fehltreffer heißt: ein anderer hat die Woche inzwischen geschrieben —
+ * nachladen (`konfliktMelder`), nicht überschreiben. Ebenso eine Abweisung des
+ * Triggers `fs_weeks_pruefen` (42501: der Gruppenaufseher änderte eine fremde
+ * Gruppe, der Planer mehr als den Leiter): Sie entsteht nur auf einem
+ * veralteten Stand, die Oberfläche bietet beides nicht an.
  */
 export function saveFsWeek(congregationId: string, woche: string, insts: FsInstance[]): void {
   if (!supabase || !woche) return
-  void zeilenRun(
-    supabase
-      .from('fs_weeks')
-      .upsert(
-        { congregation_id: congregationId, start: woche, data: insts },
-        { onConflict: 'congregation_id,start' },
-      ),
+  const vorher = fsWochenKette.get(woche) ?? Promise.resolve()
+  // `catch` vor dem Anhängen: ein Fehlschlag darf die Kette nicht abreißen
+  // lassen, sonst schriebe diese Woche nie wieder.
+  const naechster = vorher.then(() =>
+    fsWocheSchreiben(congregationId, woche, insts).catch((err: unknown) =>
+      schreibfehler({ message: err instanceof Error ? err.message : String(err) }),
+    ),
   )
+  fsWochenKette.set(woche, naechster)
+}
+
+async function fsWocheSchreiben(congregationId: string, woche: string, insts: FsInstance[]): Promise<void> {
+  if (!supabase) return
+  const stand = fsWochenStand.get(woche)
+  const { data, error } =
+    stand === undefined
+      ? await supabase
+          .from('fs_weeks')
+          .insert({ congregation_id: congregationId, start: woche, data: insts })
+          .select('updated_at')
+          .maybeSingle()
+      : await supabase
+          .from('fs_weeks')
+          .update({ data: insts })
+          .eq('congregation_id', congregationId)
+          .eq('start', woche)
+          .eq('updated_at', stand)
+          .select('updated_at')
+          .maybeSingle()
+  if (error) {
+    // 23505 beim Anlegen: Die Zeile gab es längst, ein anderer hat sie angelegt.
+    if (standVeraltet(error)) {
+      console.error('[persistenz]', error.message)
+      konfliktMelder?.()
+    } else schreibfehler(error)
+    return
+  }
+  if (data) {
+    fsWochenStand.set(woche, data.updated_at as string)
+    return
+  }
+  konfliktMelder?.()
 }
 
 export function deletePersonRow(id: string): void {
