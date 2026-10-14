@@ -256,6 +256,21 @@ function waechterAufstellen(lage: Lage, Klasse: new () => Waechter): void {
 }
 
 /**
+ * **Erst das Feld verlassen, dann schließen** (Griff 35, 15.10.2026).
+ *
+ * Felder, die beim Verlassen übernehmen (Vortragsthema, Lieder, Titel eines
+ * Punkts), verschwinden mit ihrer Ebene — und die Zurück-Taste nimmt den
+ * Fokus nicht mit: Das Feld ging ohne `blur`, die Eingabe war weg. Das Blatt
+ * verließ sein Feld schon selbst (`Sheet`, `beenden`), Bildschirm und
+ * Unteransicht nicht; hier gilt es für jede Ebene, solange der Zustand noch der
+ * alte ist.
+ */
+function feldVerlassen(): void {
+  const aktiv = document.activeElement
+  if (aktiv instanceof HTMLElement && aktiv !== document.body) aktiv.blur()
+}
+
+/**
  * @param ebene Wo die Ebene liegt — ein Blatt (Standard) über einer
  *   Unteransicht über einem Bildschirm.
  */
@@ -276,7 +291,10 @@ export function useBackDismiss(active: boolean, onDismiss: () => void, ebene: Eb
       nr: ++einhaengungen,
       verbraucht: false,
       waechter: null,
-      schliessen: () => dismiss.current(),
+      schliessen: () => {
+        feldVerlassen()
+        dismiss.current()
+      },
     }
     const Klasse = waechterKlasse()
     if (Klasse && ohneGeste() && stapel.every((andere) => andere.waechter)) {

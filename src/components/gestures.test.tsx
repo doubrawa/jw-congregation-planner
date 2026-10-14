@@ -130,6 +130,23 @@ describe('useBackDismiss', () => {
     expect(onDismiss).toHaveBeenCalledTimes(1)
   })
 
+  it('Zurück verlässt erst das Feld, dann schließt es — die Eingabe geht nicht verloren (15.10.2026)', () => {
+    // Ein Feld, das beim Verlassen übernimmt, verschwand mit seiner Ebene, und
+    // die Zurück-Taste nimmt den Fokus nicht mit: kein `blur`, Eingabe weg.
+    const reihenfolge: string[] = []
+    const r = render(
+      <>
+        <input data-testid="feld" onBlur={(e) => reihenfolge.push(`verlassen:${e.target.value}`)} />
+        <BackHarness active onDismiss={() => reihenfolge.push('geschlossen')} />
+      </>,
+    )
+    const feld = r.getByTestId('feld') as HTMLInputElement
+    feld.focus()
+    feld.value = 'Neues Thema'
+    window.dispatchEvent(new PopStateEvent('popstate'))
+    expect(reihenfolge).toEqual(['verlassen:Neues Thema', 'geschlossen'])
+  })
+
   it('nach dem Schließen reagiert es nicht mehr auf Zurück', () => {
     const onDismiss = vi.fn()
     const { unmount } = render(<BackHarness active onDismiss={onDismiss} />)

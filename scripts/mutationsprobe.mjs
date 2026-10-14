@@ -5727,6 +5727,13 @@ export const KATALOG = [
     ersetzen: "  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)",
   },
   {
+    id: "zurueck-verlaesst-feld",
+    datei: "src/components/useBackDismiss.ts",
+    regel: "Die Zurück-Taste verlässt erst das aktive Feld, dann schließt sie die Ebene — seine Eingabe geht nicht verloren.",
+    suchen: "        feldVerlassen()\n",
+    ersetzen: "",
+  },
+  {
     id: "wischen-verlaesst-feld",
     datei: "src/components/useSwipeWeek.ts",
     regel: "Vor dem Blättern per Wischen wird ein Feld im Streifen verlassen — seine Eingabe übernimmt noch die alte Woche.",
