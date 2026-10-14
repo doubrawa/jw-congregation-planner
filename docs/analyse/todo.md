@@ -6640,6 +6640,15 @@ Feinschliff. Nicht gebaut ist bisher die Wochenspalte links aus
 10, mit ihr der Programm-Import, der bis dahin als letzte Karte in den
 Einstellungen steht.
 
+Für Phase 10 vorgemerkt aus dem Review der Phase 6 (vorbestehend, klein): Wird
+eine weitere Programmsprache zur Sprache der Versammlung, bleibt sie zusätzlich
+unter den weiteren stehen („Englisch, Englisch"; `setCongLang` im Reducer).
+Der Toast „Programmsprache hinzugefügt — gilt für neue Importe" untertreibt:
+Der nächste Import holt die Sprache auch für schon geladene Wochen nach
+(`missingVariants`). Eigener Vorgang: Wer Aufseher zweier Gruppen ist, plant in
+der App nur die Treffpunkte der ersten (`overseerGroup`), die Datenbank erlaubt
+beide (`eigene_gruppen()`).
+
 Offen aus Phase 5g, zur Entscheidung beim Betreiber: Der Schritt „Zusagen" der
 Spur wird in einer Woche mit Personen ohne Konto nie fertig — sie können nicht
 zusagen, und der Haken „weiß Bescheid" zählt nicht als Zusage.
