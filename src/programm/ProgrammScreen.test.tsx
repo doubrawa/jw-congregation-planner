@@ -841,6 +841,11 @@ describe('Gruppenbesuche beim Ansehen (T120, Phase 2)', () => {
     expect(container.querySelector('.bereich-tabs')).toBeNull()
   })
 
+  it('mit einem Trolley kommt sein Reiter dazu — für alle, auch ohne Besuch', () => {
+    const { container } = mitBesuchen({ gruppenbesuche: [], trolleys: [{ id: 'tr1', name: 'Trolley 1', ort: '', hinweis: '' }] })
+    expect(reiter(seite(container))).toEqual([t.fsTreffpunkteTab, t.fsTrolleysTab])
+  })
+
   it('mit Besuchen: Treffpunkte und Gruppenbesuche — den Grundplan gibt es nur beim Planen', () => {
     const { container, dispatch } = mitBesuchen()
     expect(reiter(seite(container))).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab])
@@ -926,7 +931,6 @@ describe('Drucken: Pläne ohne Woche', () => {
   const GRUPPE = { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null }
   /** Fern genug, dass die Uhr den Test nie überholt. */
   const BESUCH = { id: 'b1', woche: '2099-01-05', grp: 'g1', pid: null }
-  const TERMIN = { id: 't1', wd: 6, von: '10:00', bis: '12:00', ort: 'Testplatz', plaetze: 2 }
   const PLAN = { id: 'pl1', name: 'Saalreinigung', von: '2099-01-05', bis: '2099-03-29', entwurf: false }
 
   const kopf = (c: HTMLElement) => [...c.querySelectorAll('.prog-print-head span')].map((s) => s.textContent)
@@ -944,20 +948,6 @@ describe('Drucken: Pläne ohne Woche', () => {
     expect(kopf(container)).toEqual(['Nordheim', t.navWeiterePlaene])
     fireEvent.click(knopf(container))
     expect(print).toHaveBeenCalledTimes(1)
-  })
-
-  it('Zeugnisgeben: gedruckt wird der ganze Plan, nicht nur die ersten vier Wochen', () => {
-    const { container } = zeige({ tab: 'fs', fsBereich: 'zeugnis', ozTermine: [TERMIN], ozEintraege: [] })
-    const wochen = () => container.querySelectorAll('.panel[data-farbe="gold"]').length
-    expect(wochen()).toBe(4)
-    let imDruck = 0
-    print.mockImplementation(() => {
-      imDruck = wochen()
-    })
-    expect(kopf(container)).toEqual(['Nordheim', t.privZeugnis])
-    fireEvent.click(knopf(container))
-    expect(print).toHaveBeenCalledTimes(1)
-    expect(imDruck).toBeGreaterThan(4)
   })
 
   it('räumt ein stehengebliebenes Kennzeichen ab — sonst käme das Blatt als Monat heraus', () => {

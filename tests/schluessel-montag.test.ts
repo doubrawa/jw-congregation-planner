@@ -1,33 +1,24 @@
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { fromIso, tagNach } from '../src/data/meeting-dates'
-import { ozDatum, ozSchicht, ozTaskKey, ozTerminText } from '../src/data/zeugnis'
-import type { OzTermin } from '../src/data/types'
-import { offeneZeugnisEintraege, ozWoche } from '../supabase/functions/_shared/zuteilungen.ts'
+import { fromIso, montagVon } from '../src/data/meeting-dates'
+import { wochenTage } from '../src/trolleys/trolley-anzeige'
+import { deutschesDatum } from '../supabase/functions/_shared/planung.ts'
+import { trolleyRumpf } from '../supabase/functions/_shared/trolley.ts'
 
 /**
- * **Zeugnisgeben: drei Laufzeiten, ein Montag** (T120).
+ * **Trolleys: zwei Laufzeiten, ein Tag** (T121; bis zum 14.10.2026 dieselbe
+ * Probe für die Schlüssel von Stand und Schicht, T120).
  *
- * `oz|<montag>|<id>` nennt den Montag der Woche, in der der Tag liegt. Den
- * bildet jede Laufzeit selbst:
+ * Den Tag eines Termins lesen zwei Seiten:
  *
- * - der **Client** über die Ortszeit (`montagVon`: örtlicher Mittag, `setDate`),
- * - die **Functions** über UTC (`montagUndVersatz` in `_shared/zuteilungen.ts`)
- *   — dieselbe Rechnung liefert im Browser die Zahl am Knopf „Plan senden",
- *   läuft also auch in der Zeitzone des Planers,
- * - die **Datenbank** über `isodow` (`task_gehoert_mir` in `schema.sql`).
- *
- * Bilden zwei davon verschiedene Montage, schreibt der Bruder seine Zusage unter
- * einem Schlüssel, den die Datenbank für fremd hält, und das Bestätigen
- * scheitert an der Richtlinie. Oder die Function sucht die Zusage unter einem
- * anderen Schlüssel und erinnert weiter.
+ * - der **Client** in Ortszeit — die Woche, in der er ihn zeigt
+ *   (`montagVon`, `wochenTage`),
+ * - die **Functions** in UTC — der Tag im Rumpf der Mitteilung und der
+ *   Erinnerung am Vortag (`trolleyRumpf`).
  *
  * Auseinanderlaufen können sie nur an den Rändern: am Sonntag (in JavaScript
- * Tag 0, in `isodow` Tag 7, in `dow` wieder 0), am Jahreswechsel, an den
- * Zeitumstellungen und am Schalttag. Dazu kommen Zeitzonen weit weg von UTC: Dort
- * ist ein Datum, als UTC-Mitternacht gelesen, örtlich noch der Vortag. Heute
- * stimmt alles; die Probe hält es fest (3.10.2026).
+ * Tag 0), am Jahreswechsel, an den Zeitumstellungen und am Schalttag — und in
+ * Zeitzonen weit weg von UTC, wo ein Datum, als UTC-Mitternacht gelesen,
+ * örtlich noch der Vortag ist.
  */
 
 /** Tag → Montag seiner Woche, von Hand nachgerechnet. */
@@ -50,8 +41,7 @@ const RAENDER: Array<[tag: string, montag: string, was: string]> = [
 /**
  * Zeitzonen, in denen ein Browser stehen kann — mit dem Versatz, den sie am
  * 1.1.2027 mittags haben. Mit und ohne Sommerzeit, weit östlich (UTC+14) und
- * weit westlich (UTC−11): Dort ist UTC-Mitternacht örtlich schon Mittag bzw.
- * noch der Vortag.
+ * weit westlich (UTC−11).
  */
 const ZONEN: Array<[zone: string, versatzMinuten: number]> = [
   ['Europe/Berlin', -60],
@@ -61,13 +51,6 @@ const ZONEN: Array<[zone: string, versatzMinuten: number]> = [
   ['Pacific/Kiritimati', -840],
   ['Pacific/Pago_Pago', 660],
 ]
-
-/** Ein Tag vor allen Rändern — nichts davon ist vorbei. */
-const VORHER = Date.UTC(2026, 0, 1)
-
-const termin = (wd: number): OzTermin => ({ id: 't1', wd, von: '10:00', bis: '12:00', ort: 'Marktplatz', plaetze: 2 })
-const ozZeile = (datum: string) => ({ id: 'e1', termin_id: 't1', datum, person_id: 'p1', selbst: false })
-const NAMEN = new Map([['p1', 'Anna Beispiel']])
 
 describe.each(ZONEN)('Zeitzone %s', (zone, versatzMinuten) => {
   const vorher = process.env.TZ
@@ -83,89 +66,16 @@ describe.each(ZONEN)('Zeitzone %s', (zone, versatzMinuten) => {
     expect(new Date(2027, 0, 1, 12).getTimezoneOffset()).toBe(versatzMinuten)
   })
 
-  it.each(RAENDER)('%s → %s (%s)', (tag, montag) => {
-    // Client und Function nennen denselben Montag …
-    expect(ozTaskKey({ id: 'e1', datum: tag })).toBe(`oz|${montag}|e1`)
-    expect(ozWoche(tag)).toBe(montag)
-    const [oz] = offeneZeugnisEintraege([ozZeile(tag)], [termin(fromIso(tag).getDay())], NAMEN, new Map(), VORHER)
-    expect(oz?.key).toBe(`oz|${montag}|e1`)
-    // … und denselben Termin: „Meine Aufgaben" und die Erinnerung lesen sich gleich.
-    expect(oz?.eintrag.datum).toBe(ozTerminText(tag, termin(0)))
+  it.each(RAENDER)('%s → Woche ab %s (%s)', (tag, montag) => {
+    // Die Ansicht zeigt den Tag in der Woche seines Montags …
+    expect(montagVon(tag)).toBe(montag)
+    expect(wochenTage(montag)).toContain(tag)
+    // … und die Mitteilung nennt denselben Tag wie die App.
+    expect(trolleyRumpf({ trolley: 'T', datum: tag, von: '10:00', bis: '12:00' })).toContain(deutschesDatum(fromIso(tag)))
   })
 
-  it.each(RAENDER)('%s: eine Zusage aus dem Client kennt die Function', (tag) => {
-    // Der Ablauf über die Grenze hinweg: Der Bruder bestätigt im Browser, der
-    // Versand am nächsten Morgen sucht die Zusage — und erinnert nicht mehr.
-    const zusagen = new Map([[ozTaskKey({ id: 'e1', datum: tag }), 'bestätigt']])
-    expect(offeneZeugnisEintraege([ozZeile(tag)], [termin(fromIso(tag).getDay())], NAMEN, zusagen, VORHER)).toEqual([])
-  })
-
-  it('Neujahr steht als Freitag im Termin, nicht als Donnerstag', () => {
+  it('Neujahr steht als Freitag in der Mitteilung, nicht als Donnerstag', () => {
     // Gegenprobe für die Gleichheit oben: zwei gleich falsche Seiten wären auch gleich.
-    expect(ozTerminText('2027-01-01', termin(5))).toBe('Freitag, 1. Januar · 10:00–12:00 · Marktplatz')
-  })
-})
-
-/*
- * **Die Datenbank rechnet in SQL** — dort läuft kein Test. Gelesen wird deshalb
- * der Ausdruck selbst aus `schema.sql` und hier nachgerechnet, mit der einen
- * Eigenheit, auf die es ankommt: `dow` zählt den Sonntag als 0, `isodow` als 7.
- * Mit `dow` gehörte jeder Sonntag zur **folgenden** Woche — ein Bruder mit einer
- * Sonntagsschicht könnte sie nie bestätigen.
- */
-const SCHEMA = readFileSync(join(process.cwd(), 'supabase/schema.sql'), 'utf8')
-
-/**
- * Der Zweig von `task_gehoert_mir` für `oz|` — bis zu seinem eigenen `end if;`
- * am Zeilenanfang, nicht bis zum ersten (`if meine is null then return false;
- * end if;` steht gleich in der zweiten Zeile).
- */
-function zweig(): string {
-  const ab = SCHEMA.indexOf("  if n = 3 and teile[1] = 'oz' then")
-  if (ab < 0) throw new Error('Zweig für oz| in task_gehoert_mir nicht gefunden — Probe nachziehen')
-  return SCHEMA.slice(ab, SCHEMA.indexOf('\n  end if;', ab))
-}
-
-/** Eine Postgres-Wochentagszahl: `dow` 0 (So) … 6, `isodow` 1 (Mo) … 7 (So). */
-function sqlWochentag(einheit: string, tag: string): number {
-  const js = new Date(`${tag}T00:00:00Z`).getUTCDay()
-  if (einheit === 'isodow') return js === 0 ? 7 : js
-  if (einheit === 'dow') return js
-  throw new Error(`unbekannte Einheit ${einheit}`)
-}
-
-/** `to_char(x.datum - (extract(<einheit> from x.datum)::int - <n>), 'YYYY-MM-DD') = teile[2]`, nachgerechnet. */
-function sqlMontag(tag: string): string {
-  const m = /to_char\((\w+)\.datum - \(extract\((\w+) from \1\.datum\)::int - (\d+)\), 'YYYY-MM-DD'\) = teile\[2\]/.exec(zweig())
-  if (!m) throw new Error('Montagsrechnung im Zweig oz| hat eine neue Form — Probe nachziehen')
-  return tagNach(tag, -(sqlWochentag(m[2]!, tag) - Number(m[3])))
-}
-
-describe('Datenbank: task_gehoert_mir bildet denselben Montag', () => {
-  it.each(RAENDER)('%s → %s (%s)', (tag, montag) => {
-    expect(sqlMontag(tag)).toBe(montag)
-  })
-})
-
-/*
- * Derselbe Rand eine Stelle früher: Der Auslöser `oz_platz_pruefen` weist einen
- * Eintrag ab, dessen Tag nicht der Wochentag des Termins ist. Der Termin trägt
- * den Wochentag des Clients (0 = Sonntag). Rechnete die Datenbank hier mit
- * `isodow`, wiese sie jeden Eintrag an einem Sonntagstermin ab.
- */
-describe('Datenbank: der Wochentag eines Eintrags zählt wie im Client', () => {
-  const pruefung = /extract\((\w+) from new\.datum\)::int <> termin\.wd/.exec(SCHEMA)
-
-  it('die Prüfung steht noch in dieser Form da', () => {
-    expect(pruefung, 'oz_platz_pruefen hat eine neue Form — Probe nachziehen').not.toBeNull()
-  })
-
-  it.each(RAENDER)('%s (%s)', (tag, montag) => {
-    const wd = fromIso(tag).getDay()
-    // Der Client legt den Termin genau auf diesen Tag und nimmt ihn an …
-    expect(ozDatum(montag, wd)).toBe(tag)
-    expect(ozSchicht([termin(wd)], [], 't1', tag)).not.toBeNull()
-    // … und die Datenbank auch.
-    expect(sqlWochentag(pruefung![1]!, tag)).toBe(wd)
+    expect(trolleyRumpf({ trolley: 'T', datum: '2027-01-01', von: '10:00', bis: '12:00' })).toContain('Freitag, 1. Januar')
   })
 })

@@ -1,9 +1,14 @@
 import { useEffect, useRef } from 'react'
 import { useApp } from '../app/context'
+import { eigenePerson } from '../app/eigene-person'
+import { useKalendertag } from '../app/useKalendertag'
 import { Punkt } from '../bausteine/Punkt'
 import { Zeichen } from '../bausteine/Zeichen'
+import { fromIso } from '../data/meeting-dates'
 import { LAGE_DER_ZUSAGE } from '../data/saal'
+import { eigeneTermine } from '../data/trolleys'
 import { aufgabenLabel, aufgabenTp, useT } from '../i18n/useT'
+import { mitWem, tagKurz, trolleyNameVon, zeitSpanne, zuDenTrolleys } from '../trolleys/trolley-anzeige'
 import { aufgabeWann } from './aufgabe-anzeige'
 import { AngebotText, GesuchText } from './Angebot'
 import { AufgabeKarte } from './AufgabeKarte'
@@ -12,8 +17,9 @@ import './aufgaben.css'
 /**
  * **Meine Aufgaben** (T121): alles, was ansteht — die nächste Aufgabe groß,
  * die übrigen je eine Zeile mit einem Haken zum Bestätigen, „Alle bestätigen"
- * für alles auf einmal. Darunter, was man übernehmen kann: Ersatzgesuche
- * (Einspringen) und freie Plätze gesendeter Wochen. Die eigenen Abwesenheiten
+ * für alles auf einmal; dann die eigenen Trolley-Termine. Darunter, was man
+ * übernehmen kann: Ersatzgesuche (Einspringen) und freie Plätze gesendeter
+ * Wochen. Die eigenen Abwesenheiten
  * stehen seit dem Umbau im Profil, der Hinweis auf Benachrichtigungen auf den
  * Mitteilungen.
  */
@@ -95,6 +101,8 @@ export function AufgabenScreen() {
         </div>
       )}
 
+      <TrolleyTermine />
+
       {gesucheOffen && (
         <section ref={einspringenRef} className="aufgaben-abschnitt" data-bereich="einspringen">
           {/* tabIndex -1: fokussierbar für den Sprung aus dem Push, ohne in die Tab-Reihenfolge zu geraten. */}
@@ -144,6 +152,41 @@ export function AufgabenScreen() {
           </div>
         </section>
       )}
+    </section>
+  )
+}
+
+/**
+ * **Trolley** (T121, Phase 7, Entwurf `GAufgaben`): die eigenen Trolley-Termine
+ * — für sich, denn wer sich eingetragen hat, hat sich verabredet; eine Zusage
+ * gibt es nicht. Ein Tipp führt zu den Trolleys.
+ */
+function TrolleyTermine() {
+  const { state, dispatch } = useApp()
+  const { t } = useT()
+  const heute = useKalendertag()
+  const ich = eigenePerson(state)?.id
+  const termine = eigeneTermine(state.trolleyTermine, ich, fromIso(heute))
+  if (termine.length === 0) return null
+  return (
+    <section className="aufgaben-abschnitt" data-bereich="trolley">
+      <h2 className="abschnitt-titel">{t.privZeugnis}</h2>
+      <div className="karte aufgaben-liste">
+        {termine.map((termin) => (
+          <div key={termin.id} className="aufgaben-zeile">
+            <Punkt art={termin.partner ? 'voll' : 'offen'} />
+            <button type="button" className="aufgaben-zeile-text" onClick={() => zuDenTrolleys(dispatch)}>
+              <span className="aufgaben-zeile-titel" dir="auto">
+                {`${trolleyNameVon(state.trolleys, termin.trolleyId)} · ${mitWem(termin, ich, state.persons, t)}`}
+              </span>
+              <span className="klein-text">{`${tagKurz(termin.datum, state.lang)} · ${zeitSpanne(termin)} · ${t.trolleyOhneZusage}`}</span>
+            </button>
+            <span className="aufgaben-zeile-pfeil">
+              <Zeichen name="weiter" />
+            </span>
+          </div>
+        ))}
+      </div>
     </section>
   )
 }

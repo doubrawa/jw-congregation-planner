@@ -166,11 +166,6 @@ describe('Das Absage-Blatt', () => {
     expect(container.querySelector('.absage-erklaerung')?.textContent).toBe(t.ersatzHint)
   })
 
-  it('beim Zeugnisgeben keine Spur — der Platz wird einfach frei', () => {
-    const { container } = absagen({ id: 'oz|2026-09-07|e1' })
-    expect(container.querySelector('.spur')).toBeNull()
-  })
-
   it('„Absagen" sagt ab und gibt die Nachricht mit', () => {
     const { container, dispatch } = absagen()
     fireEvent.change(container.querySelector('input.feld')!, { target: { value: 'bin verreist' } })

@@ -6,7 +6,7 @@ import { displayName, gehoertZu } from '../data/helpers'
 import { fromIso, kalendertagMs, meetingDate, meetingTime } from '../data/meeting-dates'
 import { deriveMyTasks, taskKeyWeek, wochenIndex } from '../data/planning'
 import type { Person } from '../data/types'
-import { ozEintragGilt } from '../data/zeugnis'
+import { istDabei } from '../data/trolleys'
 
 /**
  * Ein Eintrag der Zeitleiste im Personen-Detail — für beide Arten gleich
@@ -38,8 +38,8 @@ export type TimelineEntry = {
       rolle?: string
     }
   | { kind: 'fs'; ort: string }
-  /** Eine Schicht im öffentlichen Zeugnisgeben (T120) — eingetragen oder zugeteilt. */
-  | { kind: 'oz'; ort: string }
+  /** Ein Trolley-Termin (T121) — mit dem Namen des Trolleys. */
+  | { kind: 'trolley'; trolley: string }
   /** Ein vorgemerkter Gruppenbesuch: Die Woche ist noch nicht geladen (T120). */
   | { kind: 'besuch'; grp: string }
   | {
@@ -65,16 +65,16 @@ export type TimelineDaten = Pick<
   | 'fsWeeks'
   | 'absences'
   | 'fsRules'
-  | 'ozTermine'
-  | 'ozEintraege'
+  | 'trolleys'
+  | 'trolleyTermine'
   | 'gruppenbesuche'
 >
 
 /**
  * Alle Zuteilungen einer Person in zeitlicher Reihenfolge: Programmpunkte,
  * Ratgeber und Hilfsdienste der Zusammenkünfte (deriveMyTasks — dieselbe
- * Quelle wie „Meine Aufgaben") plus die geleiteten Treffpunkte, die Schichten
- * im öffentlichen Zeugnisgeben und vorgemerkte Gruppenbesuche.
+ * Quelle wie „Meine Aufgaben") plus die geleiteten Treffpunkte, die
+ * Trolley-Termine und vorgemerkte Gruppenbesuche.
  *
  * Datum und Uhrzeit werden gerechnet: importierte Wochen tragen im `date`-Feld
  * nur die Wochenspanne („7.–13. September"). Der Tag ergibt sich aus dem Montag
@@ -150,24 +150,21 @@ export function personTimeline(
   })
 
   /*
-   * **Öffentliches Zeugnisgeben** (T120): die Schichten, in denen die Person
-   * steht — eingetragen oder zugeteilt. Bis zum 5.10.2026 fehlten sie hier,
-   * während „Meine Aufgaben" sie längst zeigte; wer zuteilte, sah die Last
-   * einer Person ohne sie. Was nicht mehr gilt (gestrichen, alter Wochentag),
-   * fällt heraus wie dort (`ozEintragGilt`).
+   * **Trolley-Termine** (T121, Phase 7): wo die Person sich verabredet hat —
+   * selbst eingetragen oder als Partner. Geladen sind sie ab dem Montag dieser
+   * Woche; Älteres zeigt die Zeitleiste deshalb nicht.
    */
-  for (const eintrag of state.ozEintraege) {
-    if (eintrag.pid !== person.id) continue
-    const termin = state.ozTermine.find((t) => t.id === eintrag.terminId)
-    if (!ozEintragGilt(eintrag, termin, heute)) continue
-    const datum = fromIso(eintrag.datum)
+  const trolleyName = new Map(state.trolleys.map((t) => [t.id, t.name]))
+  for (const termin of state.trolleyTermine) {
+    if (!istDabei(termin, person.id)) continue
+    const datum = fromIso(termin.datum)
     entries.push({
-      kind: 'oz',
-      key: `oz|${eintrag.id}`,
+      kind: 'trolley',
+      key: `trolley|${termin.id}`,
       datum,
       zeit: termin.von,
       vergangen: datum < grenze,
-      ort: termin.ort,
+      trolley: trolleyName.get(termin.trolleyId) ?? '',
     })
   }
 

@@ -148,18 +148,13 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     expect(fn).not.toContain("'^\\d+$'")
   })
 
-  it('einen Eintrag im öffentlichen Zeugnisgeben bestätigt nur, wem er gehört (T120)', () => {
-    // Ohne eigenen Zweig liefe `oz|…` als „keine der bekannten Formen" durch,
-    // und jedes Mitglied hätte fremde Einträge bestätigen oder absagen können.
-    // Der Zweig muss **vor** diesem Durchlass stehen.
+  it('Stand und Schicht sind entfernt — ihre Schlüsselform ist eine unbekannte (T121)', () => {
+    // Mit den Trolleys sagt niemand mehr zu; `oz|…` gehört zu keinem Platz.
     const fn = funktionsRuempfe(schema).get('task_gehoert_mir') ?? ''
-    const zweig = fn.indexOf("if n = 3 and teile[1] = 'oz' then")
-    const durchlass = fn.indexOf("if n < 3 or teile[2] not in ('mid', 'we') then return true;")
-    expect(zweig).toBeGreaterThan(-1)
-    expect(durchlass).toBeGreaterThan(zweig)
-    const rumpf = fn.slice(zweig, durchlass)
-    expect(rumpf).toContain('e.person_id = meine')
-    expect(rumpf).toContain('e.congregation_id = cong')
+    expect(fn).not.toContain("teile[1] = 'oz'")
+    expect(normiert(schema)).toContain('drop table if exists public.oz_eintraege cascade;')
+    expect(normiert(schema)).toContain('drop table if exists public.oz_termine cascade;')
+    expect(schema).not.toMatch(/create table if not exists public\.oz_/)
   })
 
   it('Weitere Pläne: Entwürfe sehen nur Admin und Planer, Veröffentlichtes die eigene Versammlung (T120, Phase 5)', () => {
@@ -180,42 +175,48 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     expect(r.get('plan_eintraege_write') ?? '').toContain('public.darf_zuteilen()')
   })
 
-  it('selbst eintragen nur mit Aufgabenbereich, nur für sich, nur als „selbst" (T120)', () => {
-    const rein = richtlinien(schema).get('oz_eintraege_selbst_rein') ?? ''
-    expect(rein).toContain('person_id = public.my_person_id()')
-    expect(rein).toContain('public.darf_zeugnis()')
-    expect(rein).toContain('selbst')
-    // Austragen darf jeder nur sich selbst.
-    expect(richtlinien(schema).get('oz_eintraege_selbst_raus') ?? '').toContain('person_id = public.my_person_id()')
+  it('Trolley-Termine schreibt kein Mitglied selbst — nur die Function `trolley` (T121)', () => {
+    // Jede Änderung sagt einem anderen Bescheid; das tut die Function.
+    // Gelesen wird in der eigenen Versammlung, geschrieben gar nicht.
+    const r = richtlinien(schema)
+    const termine = [...r.keys()].filter((name) => name.startsWith('trolley_termine_'))
+    expect(termine).toEqual(['trolley_termine_select'])
+    expect(r.get('trolley_termine_select') ?? '').toContain('congregation_id = public.my_congregation_id()')
+    // Die Trolleys pflegt der Admin, nicht der Planer.
+    expect(r.get('trolleys_write') ?? '').toContain('public.is_planner()')
+    expect(r.get('trolleys_write') ?? '').not.toContain('darf_zuteilen')
   })
 
-  it('eine gestrichene Schicht: kein Eintrag mehr hinein, und was drin war, räumt die Datenbank (4.10.2026)', () => {
-    expect(tabelle('oz_termine')).toMatch(/^\s*aus\s+date\[\] not null default '\{\}'/m)
-    // Eine bestehende Datenbank bekommt die Spalte beim nächsten Einspielen.
-    expect(normiert(schema)).toContain("alter table public.oz_termine add column if not exists aus date[] not null default '{}';")
-    // Wer sich nach dem Streichen eintragen will, prallt ab — unter derselben
-    // Sperre auf dem Termin wie beim letzten freien Platz.
-    const pruefen = funktionsRuempfe(schema).get('oz_platz_pruefen') ?? ''
-    expect(pruefen).toContain('for update')
-    expect(pruefen).toContain("if new.datum = any (termin.aus) then raise exception 'oz_faellt_aus'")
-    // Wer sich vorher eingetragen hatte, ohne dass die App des Planers es
-    // wusste, geht mit dem Streichen.
-    const raeumen = funktionsRuempfe(schema).get('oz_ausfall_raeumen') ?? ''
-    expect(raeumen).toContain('delete from public.oz_eintraege where termin_id = new.id and datum = any (new.aus);')
+  it('ein Termin hält, was die App verspricht: Raster, freier Trolley, niemand doppelt, nur mit Recht (T121)', () => {
+    const t = tabelle('trolley_termine')
+    expect(t).toContain("von >= time '06:00' and bis <= time '22:00' and von < bis")
+    expect(t).toContain('extract(minute from von) in (0, 30)')
+    expect(t).toContain('partner_id is distinct from person_id')
+    const pruefen = funktionsRuempfe(schema).get('trolley_termin_pruefen') ?? ''
+    // Eine Sperre je Versammlung und Tag ordnet, was gleichzeitig kommt — nicht
+    // nur denselben Trolley (belegt), auch dieselbe Person an zwei Trolleys
+    // (doppelt). Gesperrt wird vor beiden Prüfungen.
+    const sperre = pruefen.indexOf("pg_advisory_xact_lock(hashtextextended('trolley|' || new.congregation_id || '|' || new.datum, 0))")
+    expect(sperre).toBeGreaterThan(-1)
+    for (const grund of ['trolley_belegt', 'trolley_doppelt', 'trolley_ohne_recht', 'trolley_unveraenderlich']) {
+      expect(pruefen, grund).toContain(`raise exception '${grund}'`)
+    }
+    expect(pruefen.indexOf("raise exception 'trolley_belegt'")).toBeGreaterThan(sperre)
+    expect(pruefen.indexOf("raise exception 'trolley_doppelt'")).toBeGreaterThan(sperre)
     expect(normiert(schema)).toContain(
-      'create trigger oz_termine_ausfall after update of aus on public.oz_termine for each row when (new.aus is distinct from old.aus) execute function public.oz_ausfall_raeumen();',
+      'create trigger trolley_termine_pruefen before insert or update on public.trolley_termine for each row execute function public.trolley_termin_pruefen();',
     )
   })
 
-  it('ein anderer Wochentag: die Datenbank räumt kommende Einträge am alten Tag ab — erst ab übermorgen (4.10.2026)', () => {
-    const raeumen = funktionsRuempfe(schema).get('oz_tagwechsel_raeumen') ?? ''
-    expect(raeumen).toContain(
-      'delete from public.oz_eintraege where termin_id = new.id and datum > current_date + 1 and extract(dow from datum)::int <> new.wd;',
-    )
-    // Ohne `security definer`: Den Termin ändert ohnehin nur ein Planer.
-    expect(raeumen).not.toContain('security definer')
+  it('austragen scheitert nie daran, dass dem Bleibenden das Recht inzwischen fehlt (T121)', () => {
+    // Geprüft wird beim Ändern nur, wer neu dazukommt; ohne ihn geht es durch.
+    const pruefen = funktionsRuempfe(schema).get('trolley_termin_pruefen') ?? ''
+    const neu = pruefen.indexOf('cardinality(neu) = 0')
+    expect(neu).toBeGreaterThan(-1)
+    expect(pruefen.indexOf('trolley_ohne_recht')).toBeGreaterThan(neu)
+    // Geht der Partner, sucht der andere wieder einen; geht die Person, geht ihr Termin.
     expect(normiert(schema)).toContain(
-      'create trigger oz_termine_tagwechsel after update of wd on public.oz_termine for each row when (new.wd is distinct from old.wd) execute function public.oz_tagwechsel_raeumen();',
+      'constraint trolley_termine_partner_fk foreign key (partner_id, congregation_id) references public.persons (id, congregation_id) on delete set null (partner_id)',
     )
   })
 
@@ -343,10 +344,9 @@ describe('die Rechteprüfungen stehen im Schema', () => {
       )
     })
 
-    it('Zeugnis-Schichten besetzen Admin und Planer, die Termine nur der Admin', () => {
-      expect(r().get('oz_eintraege_planer') ?? '').toContain('public.darf_zuteilen()')
-      expect(r().get('oz_termine_write') ?? '').toContain('public.is_planner()')
-      expect(r().get('oz_termine_write') ?? '').not.toContain('darf_zuteilen')
+    it('Trolleys pflegt nur der Admin; ihre Termine schreibt die Function (T121)', () => {
+      expect(r().get('trolleys_write') ?? '').toContain('public.is_planner()')
+      expect(r().has('trolley_termine_write')).toBe(false)
     })
 
     it('vorgemerkte Vorträge (T122): lesen und schreiben nur Admin und Planer — sonst niemand', () => {
@@ -479,16 +479,16 @@ describe('kein Altbestand mehr im Schema', () => {
       expect(angelegt, m[1]).toBeGreaterThan(-1)
       expect(angelegt, m[1]).toBeLessThan(m.index)
     }
-    // Gegenprobe: Es gibt solche Zeilen überhaupt — die drei der Redner, die der
-    // Familienpläne und die zwei Trigger, die Einträge eines Termins räumen
-    // (`oz_ausfall_raeumen`, `oz_tagwechsel_raeumen`). Die laufen zwar erst
-    // beim Ändern eines Termins, stehen aber ebenso hinter ihrer Tabelle.
+    // Gegenprobe: Es gibt solche Zeilen überhaupt — je drei für die Redner
+    // auswärts und für Stand und Schicht (ihre Schlüssel) und die der
+    // Familienpläne.
     expect(loeschen.map((m) => m[1]).sort()).toEqual([
       'assignment_log',
+      'assignment_log',
+      'confirmations',
       'confirmations',
       'notifications',
-      'oz_eintraege',
-      'oz_eintraege',
+      'notifications',
       'plaene',
     ])
   })

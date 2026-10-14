@@ -7,9 +7,6 @@
 
 import { fsTaskKeyWoche } from '../data/fs'
 import { type EntzogeneZusage, entzogeneZusagen } from '../data/plan-versand'
-import { ozEntzogeneZusagen, ozGeaenderteSchichten, type OzVergleich } from '../data/zeugnis'
-import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
-import { eigenePerson } from './eigene-person'
 import {
   deleteAbsenceRow,
   deleteConfirmationRows,
@@ -34,26 +31,24 @@ import {
   saveInvite,
   saveInviteRechte,
   saveMemberRow,
-  saveOzEintraege,
-  saveOzTermine,
   savePerson,
   savePersonGroup,
   saveService,
   savePlaene,
   savePlanEintraege,
   saveSettings,
+  saveTrolleys,
   saveVortraege,
   saveWeek,
   substituteSeek,
   substituteTake,
   substituteWithdraw,
   sendPlanEntzug,
-  sendPlanZeugnisAenderung,
   platzFuellen,
 } from '../lib/data'
 import { helperKeyParts } from '../data/planning'
 import { supabase } from '../lib/supabase'
-import type { FsInstance, Person, Week } from '../data/types'
+import type { FsInstance, Person, Trolley, Week } from '../data/types'
 import type { AppAction, AppState } from './context'
 
 /**
@@ -67,12 +62,6 @@ const SAVE_DELAY = 600
 
 interface DebouncedWriter<K, V> {
   schedule: (key: K, value: V) => void
-  /**
-   * Einen wartenden Wert auf den neuesten Stand bringen, **ohne** die Ruhezeit
-   * neu zu starten — nichts, wenn keiner wartet. Für Werte, die mehr tragen als
-   * das, was sie ausgelöst hat (die Einträge zu geänderten Zeugnis-Terminen).
-   */
-  nachziehen: (key: K, value: V) => void
   cancel: (key: K) => void
   flush: () => void
 }
@@ -134,10 +123,6 @@ function createDebouncedWriter<K, V>(
       if (timer) clearTimeout(timer)
       timer = setTimeout(flush, delayMs)
     },
-    nachziehen(key, value) {
-      const alt = pending.get(key)
-      if (alt !== undefined) pending.set(key, merge ? merge(alt, value) : value)
-    },
     cancel(key) {
       pending.delete(key)
     },
@@ -187,8 +172,9 @@ const fsWeekSaves = createDebouncedWriter<string, { congId: string; insts: FsIns
 )
 /*
  * **Tabellen „eine Zeile je …", gebündelt geschrieben** — der Grundplan der
- * Treffpunkte, die Termine des Zeugnisgebens, die Weiteren Pläne. Alle drei
- * hängen an einem Freitextfeld (Ort, Name) und ändern sich je Tastenanschlag.
+ * Treffpunkte, die Trolleys, die Weiteren Pläne. Alle drei hängen an
+ * Freitextfeldern (Ort, Name), und der Grundplan und die Pläne ändern sich je
+ * Tastenanschlag.
  *
  * Mitgeführt wird nur, **was dieser Planer geändert oder entfernt hat** —
  * geschrieben wird genau das, gelöscht genau das (siehe `saveFsRules`). Bis
@@ -233,64 +219,10 @@ function zeilenSchreiber<T extends { id: string }>(
 }
 
 const fsRuleSaves = zeilenSchreiber(saveFsRules)
-const ozTerminSaves = zeilenSchreiber(saveOzTermine)
+// Trolleys schreibt dieser Weg nur an — entfernt werden sie über die Function
+// `trolley`, die den Eingetragenen Bescheid sagt (`saveTrolleys`).
+const trolleySaves = zeilenSchreiber<Trolley>((congId, zeilen) => saveTrolleys(congId, zeilen))
 const planSaves = zeilenSchreiber(savePlaene)
-
-/*
- * **Geänderte Zeugnis-Schichten melden — erst, wenn die Eingabe ruht**
- * (5.10.2026).
- *
- * Uhrzeit und Ort eines Termins ändern sich je Tastendruck. Je Anschlag eine
- * Nachricht hieße „Mar", „Markt", „Marktplatz" auf jedem Handy der
- * Eingetragenen. Gesammelt wird deshalb ein Vergleich: der Stand **vor** der
- * ersten Änderung und der neueste (`nachziehen` hält ihn auch über Aktionen
- * dazwischen aktuell, etwa ein Austragen). Hinaus geht nach `MELDE_RUHE` ohne
- * weitere Änderung an den Terminen oder beim Verlassen der Ansicht
- * (`ALLE_FLUSHES`) — und nur, was sich dann wirklich unterscheidet. Wer den
- * alten Wert wieder einstellt, schickt nichts.
- *
- * Ein Schlüssel für alle Termine: Der Vergleich deckt sie gemeinsam ab, und je
- * Termin einer hätte beim Flush jede Änderung mehrfach gemeldet.
- */
-const MELDE_RUHE = 5000
-
-const ozAenderungen = createDebouncedWriter<'termine', OzVergleich>(
-  MELDE_RUHE,
-  (_key, vergleich) => {
-    // Eine Nachricht, die nicht zustande kommt, darf nichts mitreißen: Der
-    // Flush beim Verlassen schreibt danach noch weitere Bündel.
-    try {
-      const geaendert = ozGeaenderteSchichten(vergleich)
-      if (geaendert.length > 0) sendPlanZeugnisAenderung(geaendert)
-    } catch (err) {
-      console.error('[zeugnis-geaendert]', err)
-    }
-  },
-  // Der Stand vor der ersten Änderung bleibt; alles andere ist der neueste.
-  (alt, neu) => ({ ...neu, vorher: alt.vorher }),
-)
-
-/**
- * Der Vergleich zweier Stände, wie die Zeugnis-Meldungen ihn brauchen.
- *
- * Jede Liste mit Rückfall auf leer: Diese Rechnung läuft in der
- * Nebeneffekt-Schicht, und ein Fehler hier risse das Speichern mit — lieber
- * keine Nachricht als eine verlorene Änderung (wie bei `entzogeneZusagen`).
- * Dieselbe Referenz bleibt dabei dieselbe, damit „unverändert" erkannt wird.
- */
-const LEER: readonly never[] = []
-function ozVergleich(prev: AppState, next: AppState): OzVergleich {
-  return {
-    vorher: { termine: prev.ozTermine ?? LEER, eintraege: prev.ozEintraege ?? LEER },
-    nachher: { termine: next.ozTermine ?? LEER, eintraege: next.ozEintraege ?? LEER },
-    persons: next.persons ?? LEER,
-    // Gegen den vorigen Stand: Der Reducer hat die Zusagen verschwundener
-    // Einträge schon verworfen (`ohneVerwaisteZeugnisZusagen`).
-    confirmations: prev.confirmations ?? {},
-    sentLog: prev.sentLog ?? {},
-    ausser: eigenePerson(prev)?.id,
-  }
-}
 
 /** Was sich zwischen zwei Ständen einer Tabelle geändert hat, ins Bündel — nichts, wenn nichts. */
 function zeilenPlanen<T extends { id: string }>(
@@ -465,10 +397,8 @@ function wochePlanen(congId: string, weeks: Week[], wi: number, nurZuteilen: boo
  * removeService), nur `lacRemove` las ab. Eine künftige Ausnahme im Reducer
  * kommt so von selbst in der Datenbank an.
  *
- * Die Zusammenkunfts-Schlüssel gehen sofort hinaus (Block unter dem Switch),
- * ebenso die des öffentlichen Zeugnisgebens (`oz|…`): Deren Eintrag ist mit
- * dieser Aktion gelöscht, auf kein Wochenblatt muss gewartet werden. Die
- * Treffpunkt-Schlüssel gehen **erst mit dem Schreiben ihrer Woche**
+ * Die Zusammenkunfts-Schlüssel gehen sofort hinaus (Block unter dem Switch).
+ * Die Treffpunkt-Schlüssel gehen **erst mit dem Schreiben ihrer Woche**
  * (`fsWocheSpeichern`, `fsWochePlanen`): Fehlt die Woche, behält die
  * Datenbank den alten Leiter, also gehört ihm auch weiter seine Zusage.
  *
@@ -626,33 +556,9 @@ function vortraegeSpeichern(congId: string, prev: AppState, next: AppState): voi
 }
 
 /**
- * Öffentliches Zeugnisgeben (T120): Termine gebündelt, Einträge sofort.
- *
- * Geschrieben wird je Zeile nur, was sich geändert hat, und gelöscht nur, was
- * hier entfernt wurde — wie bei den Gruppenbesuchen. Ein Eintrag wird nie
- * geändert, nur angelegt oder entfernt; die Datenbank prüft beim Anlegen, ob
- * der Platz noch frei ist (`oz_platz_pruefen`).
- *
- * **Erst die Termine.** Ein neuer Eintrag zeigt womöglich auf einen Termin,
- * der noch im Bündel wartet — „Termin hinzufügen" und gleich darauf
- * „Automatisch zuteilen". Der Termin geht deshalb vorher hinaus, und die
- * Schreibschicht hält die Reihenfolge (`ozNacheinander` in `lib/data.ts`).
- */
-function zeugnisSpeichern(congId: string, prev: AppState, next: AppState): void {
-  zeilenPlanen(ozTerminSaves, congId, prev.ozTermine, next.ozTermine)
-  if (next.ozEintraege === prev.ozEintraege) return
-  // `neu` nach Kennung, nicht nach Referenz: Ein Eintrag wird eingefügt, nie
-  // ersetzt — ein zweites Einfügen derselben Zeile wiese die Datenbank ab.
-  const { neu, entfernt } = zeilenAenderung(prev.ozEintraege, next.ozEintraege)
-  if (!neu.length && !entfernt.length) return
-  ozTerminSaves.flush()
-  saveOzEintraege(congId, neu, entfernt)
-}
-
-/**
  * Weitere Pläne (T120, Phase 5): Pläne gebündelt, Einträge sofort — und vor
- * einem Eintrag immer erst der Plan, auf den er zeigt (wie beim Zeugnisgeben;
- * die Schreibschicht hält die Reihenfolge in `planNacheinander`).
+ * einem Eintrag immer erst der Plan, auf den er zeigt (die Schreibschicht hält
+ * die Reihenfolge in `planNacheinander`).
  *
  * Geschrieben wird je Eintrag nur, was neu oder geändert ist (neue Referenz),
  * gelöscht nur, was hier entfernt wurde.
@@ -725,16 +631,10 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'vortragsplanUebernehmen':
       vortraegeSpeichern(congId, prev, next)
       break
-    case 'ozTerminAdd':
-    case 'ozTerminUpdate':
-    case 'ozTerminRemove':
-    case 'ozSchichtAus':
-    case 'ozEintragen':
-    case 'ozZuteilen':
-    case 'ozAustragen':
-    case 'ozAutoAssign':
-    case 'ozLeeren':
-      zeugnisSpeichern(congId, prev, next)
+    case 'trolleyAnlegen':
+    case 'trolleyAendern':
+      // Wie der Grundplan: Was sich geändert hat, geht gebündelt als Upsert hinaus.
+      zeilenPlanen(trolleySaves, congId, prev.trolleys, next.trolleys)
       break
     case 'wpPlanAnlegen':
     case 'wpPlanAendern':
@@ -915,13 +815,6 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       }
       break
     case 'declineTask':
-      // Öffentliches Zeugnisgeben: Die Absage gibt den Platz frei, statt eine
-      // Verhinderung zu hinterlegen (`ozAbsage` im Reducer). Die Planer
-      // erfahren es über die Mitteilung unter dem Switch.
-      if (schluesselTeile(action.id)?.art === 'oz') {
-        zeugnisSpeichern(congId, prev, next)
-        break
-      }
       saveConfirmation(congId, userId, action.id, 'verhindert')
       // Hilfsdienst: automatisch Ersatz suchen (qualifizierte Personen anpingen).
       if (helperKeyParts(action.id)) substituteSeek(action.id)
@@ -1051,22 +944,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         )
       }
     }
-    // Öffentliches Zeugnisgeben (T120): dieselbe Frage an die dritte Quelle.
-    // Wer sich selbst austrägt, sagt ab — das ist keine Wegnahme (`ausser`).
-    // Fällt die Schicht weg (gestrichen, anderer Wochentag, Termin gelöscht),
-    // heißt es „Schicht fällt aus" (`grund`, 5.10.2026).
-    const vergleich = ozVergleich(prev, next)
-    entzogen.push(...ozEntzogeneZusagen(vergleich))
     // Der Regelfall: nichts verloren, nichts zu schicken.
     if (entzogen.length > 0) sendPlanEntzug(entzogen)
-
-    // Uhrzeit oder Ort einer Schicht geändert: gesammelt, bis die Eingabe ruht.
-    if (prev.ozTermine !== next.ozTermine) ozAenderungen.schedule('termine', vergleich)
-    else ozAenderungen.nachziehen('termine', vergleich)
-  } else {
-    // Vor dem Neuladen geht hinaus, was dieser Planer geändert hat — gerechnet
-    // mit seinem Stand. Danach käme ein fremder dazwischen, und die Meldung
-    // nennte dessen Änderung.
-    ozAenderungen.flush()
   }
 }

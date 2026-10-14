@@ -129,10 +129,10 @@ export interface PlanEintrag {
  * der Gruppenaufseher kam nur seinetwegen überhaupt in die Einstellungen.
  *
  * Grundplan gibt es nur beim Planen; beim Ansehen gilt er als „Treffpunkte".
- * Das öffentliche Zeugnisgeben (Phase 3) steht zwischen den Gruppenbesuchen und
- * dem Grundplan.
+ * Die Trolleys (T121, Phase 7) gibt es umgekehrt nur beim Ansehen: Für sie
+ * plant niemand, man trägt sich selbst ein.
  */
-export type FsBereich = 'treffpunkte' | 'gruppenbesuche' | 'zeugnis' | 'grundplan'
+export type FsBereich = 'treffpunkte' | 'gruppenbesuche' | 'trolleys' | 'grundplan'
 
 /**
  * Ein **Besuch des Dienstaufsehers** bei einer Predigtdienstgruppe (T120,
@@ -162,44 +162,42 @@ export interface Gruppenbesuch {
 }
 
 /**
- * Ein **Termin** des öffentlichen Zeugnisgebens (T120, Phase 3): Stand oder
- * Trolley, jede Woche am selben Tag, zur selben Zeit, am selben Ort — so
- * empfiehlt es Unser Königreichsdienst (Nov. 2013, Abs. 8). Aus ihm entsteht
- * jede Woche eine **Schicht** (`ozSchichten`), wie die Treffpunkte aus dem
- * Grundplan; anders als dort wird sie nicht gespeichert, nur ihre Einträge.
+ * Ein **Trolley** der Versammlung (T121, Phase 7) — mit dem Ort, an dem man ihn
+ * abholt. „Man steht mit dem Trolley ja nur 15 Minuten an einem Platz": Wo
+ * man mit ihm steht, plant niemand; geplant wird, wann er unterwegs ist
+ * (`TrolleyTermin`).
  */
-export interface OzTermin {
+export interface Trolley {
   /** Vom Client vergeben (`t<uuid>`). */
   id: string
-  wd: number // JS-Wochentag 0=So … 6=Sa, wie FsRule.wd
-  von: string // "10:00"
-  bis: string // "12:00"
+  name: string
+  /** Wo man ihn abholt („Depot", „Königreichssaal"). */
   ort: string
-  /** Wie viele Verkündiger dort stehen — am Infostand immer zwei (Königreichsdienst Nov. 2014). */
-  plaetze: number
-  /**
-   * Tage (ISO), an denen die Schicht **ausfällt** — der Planer hat sie
-   * gestrichen (4.10.2026). Gemerkt am Termin wie beim Grundplan der
-   * Treffpunkte (`FsRule.aus`): Die Schicht selbst wird nicht gespeichert,
-   * ohne die Marke käme sie mit jeder Rechnung wieder.
-   */
-  aus?: string[]
+  /** Freiwillig, etwa „Schlüssel im Fach neben der Bühne". */
+  hinweis: string
 }
 
 /**
- * Ein **Eintrag**: eine Person in einer Schicht. Eine Zeile je Person — so
- * darf ein Verkündiger sich selbst eintragen (RLS: nur sich, nur mit dem
- * Aufgabenbereich), ohne die Zeilen der anderen anzufassen.
+ * Ein **Trolley-Termin**: ein Trolley, ein Tag, eine Zeit, eine oder zwei
+ * Personen. Niemand teilt zu, niemand sagt zu — wer sich einträgt, hat sich
+ * verabredet. Geschrieben wird er nur über die Edge Function `trolley`
+ * (`lib/trolley.ts`), die dem Partner Bescheid sagt.
  */
-export interface OzEintrag {
-  /** Vom Client vergeben (`e<uuid>`, `neueEintragId` im Reducer) — steckt im Aufgaben-Schlüssel. */
+export interface TrolleyTermin {
+  /** Vom Client vergeben (`r<uuid>`). */
   id: string
-  terminId: string
-  /** Der Tag der Schicht (ISO), ein Wochentag des Termins. */
+  trolleyId: string
+  /** Der Tag (ISO). */
   datum: string
+  /** Frei von 6 bis 22 Uhr in halben Stunden (`TROLLEY_ZEITEN`). */
+  von: string
+  bis: string
+  /** Wer eingetragen hat — oder geblieben ist, als der andere ging. */
   pid: string
-  /** Selbst eingetragen — damit hat die Person zugesagt. Sonst vom Planer zugeteilt. */
-  selbst: boolean
+  /** Der Partner; `null` heißt „Partner gesucht". */
+  partner: string | null
+  /** `pid` hat beide eingetragen („Jonas hat euch beide eingetragen"). Gilt nur mit Partner. */
+  gemeinsam: boolean
 }
 
 /**
@@ -334,10 +332,11 @@ export interface FesteBereiche {
   studium?: boolean // Studium leiten
   treffpunkt?: boolean // Treffpunkte leiten (Zusammenkünfte für den Predigtdienst)
   /**
-   * Öffentliches Zeugnisgeben mit Stand oder Trolley (T120, Phase 3). Die
-   * Ältestenschaft organisiert es (Unser Königreichsdienst 2013); wer diesen
-   * Bereich hat, darf sich selbst eintragen und wird bei der Auto-Zuteilung
-   * vorgeschlagen. Kein Brüder-Bereich — Schwestern nehmen teil.
+   * Mit dem Trolley gehen (T121, Phase 7; bis dahin das öffentliche
+   * Zeugnisgeben mit Stand und Schicht — der Schlüssel ist geblieben). Wer
+   * diesen Bereich hat, trägt sich selbst ein, auf Wunsch mit einem Partner,
+   * der ihn ebenso hat (`data/trolleys.ts`). Kein Brüder-Bereich — Schwestern
+   * nehmen teil.
    */
   zeugnis?: boolean
   ratgeber?: boolean // Ratgeber der Zusätzlichen Klasse (Anweisungen S-38, Absatz 27)

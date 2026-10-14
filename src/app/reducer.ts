@@ -24,20 +24,8 @@ import { displayName, isSong, linkFamily, mtab, unlinkFamily } from '../data/hel
 import { darfPlanen, erlaubteScreens, rechteVon, themaVon } from '../data/rechte'
 import { besuchAustragen, besuchEintragen, besuchsLage, besuchStand, nachWoche } from '../data/gruppenbesuche'
 import { vortragsplanAnwenden, vortragsplanVorschau } from '../data/vortragsplan'
-import {
-  deriveMyOzTasks,
-  ozAb,
-  ozAutoAssign,
-  ozKannEintragen,
-  ozNachDatum,
-  ozSchicht,
-  ozSchichten,
-  ozTaskKey,
-  ozTerminText,
-  ozVorbei,
-  ozWegBeiTagwechsel,
-} from '../data/zeugnis'
-import { FS_LEITER, OZ_DIENST } from '../../supabase/functions/_shared/zuteilungen.ts'
+import { termineSortiert } from '../data/trolleys'
+import { FS_LEITER } from '../../supabase/functions/_shared/zuteilungen.ts'
 import { dropPersonPid, renameInWeeks } from '../data/namensbindung'
 import { localizedWeeks } from '../data/localize'
 import { alsFreitext } from '../i18n/translate'
@@ -87,8 +75,6 @@ import type {
   MyTask,
   Notification,
   NotificationType,
-  OzEintrag,
-  OzTermin,
   Screen,
   SubstituteReq,
   Week,
@@ -136,6 +122,13 @@ function toastKey(
   params?: Record<string, string | number>,
 ): AppState['toast'] {
   return nextToast(state, fill(dict(state.lang)[key], params ?? {}))
+}
+
+/** Der Toast nach einer Trolley-Aktion — was die Function `trolley` getan hat. */
+const TROLLEY_TOAST: Record<NonNullable<Extract<AppAction, { type: 'trolleyTermin' }>['toast']>, keyof Dict> = {
+  eingetragen: 'toastTrolleyEingetragen',
+  dazu: 'toastTrolleyDazu',
+  ausgetragen: 'toastTrolleyAusgetragen',
 }
 
 function makeNotif(
@@ -223,11 +216,14 @@ function ohnePerson(state: AppState, id: string): AppState {
     vortraege: state.vortraege.some((v) => v.pid === id)
       ? state.vortraege.map((v) => (v.pid === id ? { ...v, pid: null } : v))
       : state.vortraege,
-    // Ihre Einträge im öffentlichen Zeugnisgeben gehen mit — wie in der
-    // Datenbank (`on delete cascade`): Ein Platz ohne Person ist frei.
-    ozEintraege: state.ozEintraege.some((e) => e.pid === id)
-      ? state.ozEintraege.filter((e) => e.pid !== id)
-      : state.ozEintraege,
+    // Trolley-Termine wie in der Datenbank: Wer eingetragen hat, nimmt seinen
+    // Termin mit (`on delete cascade`); als Partner fehlt er nur — der andere
+    // sucht wieder einen (`on delete set null`).
+    trolleyTermine: state.trolleyTermine.some((t) => t.pid === id || t.partner === id)
+      ? state.trolleyTermine
+          .filter((t) => t.pid !== id)
+          .map((t) => (t.partner === id ? { ...t, partner: null, gemeinsam: false } : t))
+      : state.trolleyTermine,
     members: state.members.map((m) => (m.personId === id ? { ...m, personId: null } : m)),
     invites: state.invites.map((i) => (i.personId === id ? { ...i, personId: null } : i)),
   }
@@ -276,8 +272,8 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   const inLesersprache = new Set(weeks.filter((w, i) => w !== state.weeks[i]).map((w) => w.start))
   const markieren = <T extends object>(eintrag: T, key: string): T => {
     const teile = schluesselTeile(key)
-    // Nur Plätze einer Zusammenkunft haben Programmtext. Treffpunkt und
-    // Zeugnisgeben rechnen ihren Termin selbst.
+    // Nur Plätze einer Zusammenkunft haben Programmtext. Der Treffpunkt
+    // rechnet seinen Termin selbst.
     return teile && 'tab' in teile && inLesersprache.has(teile.woche)
       ? { ...eintrag, lesersprache: true as const }
       : eintrag
@@ -304,9 +300,6 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
           // `aufgabenLabel` ohnehin übersetzt.
           FS_LEITER,
         ),
-        // Öffentliches Zeugnisgeben (T120): aus demselben Grund kanonisch
-        // (`OZ_WORD`).
-        ...deriveMyOzTasks(state.ozTermine, state.ozEintraege, me.id, state.confirmations),
       ]
         /*
          * Vergangenes fällt heraus (T77). Eine Aufgabe von letzter Woche legte
@@ -458,8 +451,6 @@ function ableitungsQuellen(s: AppState): readonly unknown[] {
     s.congLang,
     s.weeks,
     s.fsWeeks,
-    s.ozTermine,
-    s.ozEintraege,
     s.services,
     s.confirmations,
     s.congregation.times,
@@ -484,68 +475,12 @@ export function reducer(state: AppState, action: AppAction): AppState {
   // vor, wenn etwas offen ist.
   if (action.type === 'hydrate') return withDerivedTasks(baseReducer(state, action), true)
   const next = ohneVerwaisteTreffpunktZusagen(state, baseReducer(state, action))
-  const bereinigt = ohneVerwaisteZeugnisZusagen(state, next)
-  return quellenGeaendert(state, bereinigt) ? withDerivedTasks(bereinigt, false) : bereinigt
+  return quellenGeaendert(state, next) ? withDerivedTasks(next, false) : next
 }
 
-/**
- * Zusagen abräumen, deren Eintrag im öffentlichen Zeugnisgeben es nicht mehr
- * gibt — aus demselben Grund wie bei den Treffpunkten **an einer Stelle für
- * alle Wege**: austragen, absagen, leeren, einen Termin streichen oder
- * verlegen, eine Person löschen.
- *
- * Einfacher als dort: Der Schlüssel trägt die Kennung des **Eintrags**, und
- * ein Eintrag gehört genau einer Person. Wer neu auf den Platz kommt, bekommt
- * einen neuen Eintrag und damit einen neuen Schlüssel — erben kann er nichts,
- * es bleibt nur der alte abzuräumen. `persist.ts` löscht ihn in der Datenbank
- * (`verfalleneZusagen`).
- */
-function ohneVerwaisteZeugnisZusagen(vorher: AppState, nachher: AppState): AppState {
-  if (vorher.ozEintraege === nachher.ozEintraege) return nachher
-  const bleibt = new Set(nachher.ozEintraege.map((e) => e.id))
-  const keys = vorher.ozEintraege.filter((e) => !bleibt.has(e.id)).map(ozTaskKey)
-  const confirmations = dropConfirmations(nachher.confirmations, keys)
-  return confirmations === nachher.confirmations ? nachher : { ...nachher, confirmations }
-}
-
-/** Die Einträge, die zu einer Liste neuer hinzukommen — sortiert wie im Zustand. */
-function ozMit(state: AppState, neu: readonly OzEintrag[]): OzEintrag[] {
-  return ozNachDatum([...state.ozEintraege, ...neu])
-}
-
-/** Eine neue Kennung für einen Eintrag — eindeutig und lesbar, wie bei den Besuchen. */
+/** Eine neue Kennung für einen Eintrag eines Weiteren Plans — eindeutig und lesbar, wie bei den Besuchen. */
 function neueEintragId(): string {
   return `e${crypto.randomUUID()}`
-}
-
-/**
- * Ein **eigener** Eintrag im öffentlichen Zeugnisgeben wird abgesagt — aus
- * „Meine Aufgaben" (`declineTask`) wie aus der Ansicht (`ozAustragen`).
- *
- * **Der Platz wird frei**, statt als „verhindert" stehen zu bleiben: Andere
- * können sich sofort eintragen, und genau das ist hier der Ersatz. Die Planer
- * erfahren es wie bei jeder Verhinderung (`notify_planners`) — kanonisch
- * deutsch und **mit dem Termin**: Bei einem Dutzend Schichten im Monat
- * wüssten sie mit „Öffentliches Zeugnisgeben — Name" allein nicht, welche.
- */
-function ozAbsage(state: AppState, eintrag: OzEintrag, nachricht?: string): AppState {
-  const termin = state.ozTermine.find((t) => t.id === eintrag.terminId)
-  const was = termin ? `${OZ_DIENST} · ${ozTerminText(eintrag.datum, termin)}` : OZ_DIENST
-  const notif = makeNotif(
-    'verhindert',
-    'Verhinderung gemeldet',
-    `${was} — ${alsFreitext(currentUserName(state))}${nachrichtAtom(nachricht)}`,
-    // Wohin ein Tipp in der Glocke des Planers führt (`mitteilungsZiel`).
-    ozTaskKey(eintrag),
-  )
-  return {
-    ...state,
-    ozEintraege: state.ozEintraege.filter((e) => e !== eintrag),
-    notifs: [notif, ...state.notifs],
-    myTaskId: null,
-    absageId: null,
-    toast: toastKey(state, 'toastOzAbgesagt'),
-  }
 }
 
 /**
@@ -1222,117 +1157,38 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
     }
     /*
-     * Öffentliches Zeugnisgeben (T120, Phase 3). Ein Termin ist die Regel, ein
-     * Eintrag eine Person in einer Schicht; die Schichten selbst werden nur
-     * gerechnet (`ozSchichten`). Zusagen verschwundener Einträge räumt
-     * `ohneVerwaisteZeugnisZusagen` ab, und wer eine bestätigte verliert,
-     * erfährt es über `persist.ts` — wie bei jedem anderen Platz.
+     * Trolleys (T121, Phase 7). Die Trolleys pflegt der Admin; Termine ändert
+     * nur die Edge Function `trolley` — hier landet, was sie zurückgibt
+     * (`trolleyTermin`). Entfernt wird ein Trolley erst nach ihr
+     * (`trolleyEntfernt`): Sie hat ihn samt Terminen gelöscht und den
+     * Eingetragenen Bescheid gesagt.
      */
-    case 'ozTerminAdd': {
-      // Samstagvormittag als Vorschlag, wie beim Treffpunkt (`fsRuleAdd`).
-      const termin: OzTermin = { id: `t${crypto.randomUUID()}`, wd: 6, von: '10:00', bis: '12:00', ort: '', plaetze: 2 }
-      return { ...state, ozTermine: [...state.ozTermine, termin], toast: toastKey(state, 'toastOzTerminAdd') }
+    case 'trolleyAnlegen':
+      if (state.trolleys.some((t) => t.id === action.trolley.id)) return state
+      return { ...state, trolleys: [...state.trolleys, action.trolley] }
+    case 'trolleyAendern': {
+      const alt = state.trolleys.find((t) => t.id === action.id)
+      // Ohne Namen ist es kein Trolley — die Datenbank weist ihn ab.
+      if (!alt || action.patch.name?.trim() === '') return state
+      return { ...state, trolleys: state.trolleys.map((t) => (t === alt ? { ...alt, ...action.patch } : t)) }
     }
-    case 'ozTerminUpdate': {
-      const alt = state.ozTermine.find((t) => t.id === action.id)
-      if (!alt) return state
-      const neu = { ...alt, ...action.patch }
-      const ozTermine = state.ozTermine.map((t) => (t === alt ? neu : t))
-      if (neu.wd === alt.wd) return { ...state, ozTermine }
-      // Ein anderer Wochentag: Die kommenden Einträge gehen (`ozWegBeiTagwechsel`).
-      // Gefragt hat vorher die Oberfläche, mit derselben Rechnung (`TerminZeile`).
-      const weg = new Set(ozWegBeiTagwechsel(state.ozEintraege, alt.id))
-      const ozEintraege = weg.size ? state.ozEintraege.filter((e) => !weg.has(e)) : state.ozEintraege
-      return { ...state, ozTermine, ozEintraege }
-    }
-    case 'ozTerminRemove': {
-      if (!state.ozTermine.some((t) => t.id === action.id)) return state
+    case 'trolleyEntfernt':
+      if (!state.trolleys.some((t) => t.id === action.id)) return state
       return {
         ...state,
-        ozTermine: state.ozTermine.filter((t) => t.id !== action.id),
-        // Seine Einträge gehen mit — in der Datenbank per Kaskade.
-        ozEintraege: state.ozEintraege.filter((e) => e.terminId !== action.id),
-        toast: toastKey(state, 'toastOzTerminDel'),
+        trolleys: state.trolleys.filter((t) => t.id !== action.id),
+        // Seine Termine gingen in der Datenbank per Kaskade mit.
+        trolleyTermine: state.trolleyTermine.filter((t) => t.trolleyId !== action.id),
+        toast: toastKey(state, 'toastTrolleyEntfernt'),
       }
-    }
-    case 'ozSchichtAus': {
-      // Eine Schicht streichen oder zurückholen (4.10.2026): „Es kann ja sein,
-      // dass mal eine Woche nichts stattfindet." Nur Kommendes, und nur an
-      // einem Tag, an dem der Termin stattfindet (`ozSchicht`).
-      const schicht = ozSchicht(state.ozTermine, state.ozEintraege, action.terminId, action.datum)
-      if (!schicht || ozVorbei(schicht) || schicht.gestrichen === action.aus) return state
-      const termin = schicht.termin
-      const bisher = termin.aus ?? []
-      // Was vor dieser Woche liegt, zeigt keine Liste mehr — es fällt dabei heraus.
-      const ab = ozAb()
-      const aus = (action.aus ? [...bisher, action.datum] : bisher.filter((d) => d !== action.datum))
-        .filter((d) => d >= ab)
-        .sort()
-      const ozTermine = state.ozTermine.map((t) => (t === termin ? { ...t, aus } : t))
-      if (!action.aus) return { ...state, ozTermine }
-      // Die Einträge des Tages gehen mit. Wer zugesagt hatte, erfährt es
-      // (`persist.ts`), wie beim Austragen; in der Datenbank räumt ein Trigger
-      // auch die ab, die diese App nicht kennt (`oz_ausfall_raeumen`).
+    case 'trolleyTermin': {
+      // Einen Termin räumen, den es hier nicht (mehr) gibt, ändert nichts.
+      if (!action.termin && !state.trolleyTermine.some((t) => t.id === action.id)) return state
+      const ohne = state.trolleyTermine.filter((t) => t.id !== action.id)
       return {
         ...state,
-        ozTermine,
-        ozEintraege: state.ozEintraege.filter((e) => e.terminId !== termin.id || e.datum !== action.datum),
-      }
-    }
-    case 'ozEintragen': {
-      // Selbst eintragen: nur mit dem Aufgabenbereich und nur in einen freien
-      // Platz — dieselben Regeln prüft die Datenbank (`oz_eintraege_selbst_rein`,
-      // `oz_platz_pruefen`).
-      const me = eigenePerson(state)
-      const schicht = ozSchicht(state.ozTermine, state.ozEintraege, action.terminId, action.datum)
-      if (!me || !schicht || !ozKannEintragen(me, schicht)) return state
-      const eintrag: OzEintrag = { id: neueEintragId(), terminId: action.terminId, datum: action.datum, pid: me.id, selbst: true }
-      return { ...state, ozEintraege: ozMit(state, [eintrag]), toast: toastKey(state, 'toastOzEingetragen') }
-    }
-    case 'ozZuteilen': {
-      const person = state.persons.find((p) => p.id === action.pid)
-      const schicht = ozSchicht(state.ozTermine, state.ozEintraege, action.terminId, action.datum)
-      if (!person || !schicht || schicht.frei <= 0 || ozVorbei(schicht)) return state
-      if (schicht.eintraege.some((e) => e.pid === person.id)) return state
-      const eintrag: OzEintrag = { id: neueEintragId(), terminId: action.terminId, datum: action.datum, pid: person.id, selbst: false }
-      return { ...state, ozEintraege: ozMit(state, [eintrag]), toast: toastKey(state, 'toastZugeteilt') }
-    }
-    case 'ozAustragen': {
-      const eintrag = state.ozEintraege.find((e) => e.id === action.id)
-      if (!eintrag) return state
-      // Wer sich selbst austrägt, sagt ab — die Planer erfahren es. Wer
-      // zuteilt (Admin oder Planer) und seinen Plan aufräumt, meldet sich
-      // nichts selbst.
-      if (!rechteVon(state).zuteilen && eintrag.pid === eigenePerson(state)?.id) return ozAbsage(state, eintrag)
-      return {
-        ...state,
-        ozEintraege: state.ozEintraege.filter((e) => e !== eintrag),
-        toast: toastKey(state, 'toastOzAusgetragen'),
-      }
-    }
-    case 'ozAutoAssign': {
-      const ab = ozAb()
-      const neu = ozAutoAssign({
-        schichten: ozSchichten(state.ozTermine, state.ozEintraege, ab),
-        // Der geladene Rückblick zählt mit: reihum über die Vierteljahre.
-        bisher: state.ozEintraege.filter((e) => e.datum < ab),
-        persons: state.persons,
-        absences: state.absences,
-        neueId: neueEintragId,
-      })
-      if (!neu.length) return { ...state, toast: toastKey(state, 'toastKeinePassende') }
-      return { ...state, ozEintraege: ozMit(state, neu), toast: toastKey(state, 'toastAutoN', { n: neu.length }) }
-    }
-    case 'ozLeeren': {
-      // Nur Zugeteiltes und nur Kommendes. Wer sich selbst eingetragen hat, hat
-      // zugesagt — das räumt kein Knopf des Planers ab; Vergangenes bleibt als
-      // Rückblick stehen.
-      const weg = new Set(state.ozEintraege.filter((e) => !e.selbst && !ozVorbei(e)))
-      if (!weg.size) return { ...state, toast: toastKey(state, 'toastGeleertN', { n: 0 }) }
-      return {
-        ...state,
-        ozEintraege: state.ozEintraege.filter((e) => !weg.has(e)),
-        toast: toastKey(state, 'toastGeleertN', { n: weg.size }),
+        trolleyTermine: action.termin ? termineSortiert([...ohne, action.termin]) : ohne,
+        ...(action.toast ? { toast: toastKey(state, TROLLEY_TOAST[action.toast]) } : {}),
       }
     }
     /*
@@ -1436,12 +1292,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         toast: toastKey(state, 'toastBestaetigt'),
       }
     case 'declineTask': {
-      // Öffentliches Zeugnisgeben: Absagen gibt den Platz frei (`ozAbsage`).
-      const teile = schluesselTeile(action.id)
-      if (teile?.art === 'oz') {
-        const eintrag = state.ozEintraege.find((e) => e.id === teile.eintragId)
-        return eintrag ? ozAbsage(state, eintrag, action.nachricht) : state
-      }
       const task = state.myTasks.find((t) => t.id === action.id)
       // Kanonisch deutsch in die Mitteilung — beide Hälften, denn dort steht
       // kein Übersetzer dazwischen (die Glocke übersetzt beim Anzeigen).
@@ -1766,8 +1616,9 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         gruppenbesuche: p.gruppenbesuche ?? [],
         // Momentaufnahmen von vor T122 kennen die Vormerkungen nicht.
         vortraege: p.vortraege ?? [],
-        ozTermine: p.ozTermine ?? [],
-        ozEintraege: p.ozEintraege ?? [],
+        // Momentaufnahmen von vor T121 kennen die Trolleys nicht.
+        trolleys: p.trolleys ?? [],
+        trolleyTermine: p.trolleyTermine ?? [],
         plaene: p.plaene ?? [],
         planEintraege: p.planEintraege ?? [],
         absences: p.absences,

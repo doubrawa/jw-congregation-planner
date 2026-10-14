@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { describe, expect, it } from 'vitest'
-import { fsKey, helferKey, ozKey, punktKey, ratgeberKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
+import { fsKey, helferKey, punktKey, ratgeberKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { rechteVon } from '../data/rechte'
 import type { MyTask, Notification, SubstituteReq, Week } from '../data/types'
 import { NOTIF_TITLE_KEY } from '../i18n/ui'
@@ -44,7 +44,8 @@ const aufgabe = (id: string): MyTask => ({ id, title: '', date: '', at: null, st
 const PUNKT = punktKey('2026-09-14', 'mid', 'k3f9x', 0)
 const HILFSDIENST = helferKey('2026-09-14', 'we', 'mik', 1)
 const TREFFPUNKT = fsKey('2026-09-14', 'i1')
-const ZEUGNIS = ozKey('2026-09-14', 'e1')
+/** Ein Schlüssel von Stand und Schicht (bis 14.10.2026) — eine Form, die es nicht mehr gibt. */
+const SCHICHT = 'oz|2026-09-14|e1'
 /** Eine Woche, die nicht geladen ist. */
 const FERN = punktKey('2027-03-01', 'mid', 'k1', 0)
 
@@ -88,11 +89,13 @@ describe('mitteilungsZiel — ein Tipp führt dorthin, wo die Mitteilung herkomm
     ])
   })
 
-  it('… das öffentliche Zeugnisgeben: sein Reiter — es hat keine Wochenleiste', () => {
-    expect(mitteilungsZiel(zeile({ taskId: ZEUGNIS }), lage({ zuteilen: true }))).toEqual([
-      { type: 'navigate', screen: 'planen', thema: 'predigtdienst' },
-      { type: 'setFsBereich', bereich: 'zeugnis' },
-    ])
+  it('… eine Schicht aus der Zeit vor den Trolleys: wie ohne Schlüssel', () => {
+    // Die Glocke hält ihre Zeilen 30 Tage; der Schlüssel führt nirgends mehr hin.
+    // Der Planer landet bei den Zusammenkünften, jeder andere in seinen Aufgaben.
+    for (const zuteilen of [true, false]) {
+      expect(mitteilungsZiel(zeile({ taskId: SCHICHT }), lage({ zuteilen }))).toEqual(mitteilungsZiel(zeile(), lage({ zuteilen })))
+    }
+    expect(mitteilungsZiel(zeile({ taskId: SCHICHT }), lage())).toEqual([{ type: 'navigate', screen: 'aufgaben' }])
   })
 
   it('… eine Woche außerhalb des Ladefensters: wenigstens ihr Thema', () => {
@@ -228,12 +231,6 @@ describe('Ablauf: Mitteilungen offen → Tipp → angekommen', () => {
     const s = offen({ planner: true, fsBereich: 'grundplan' })
     const nach = tippen(s, zeile({ taskId: fsKey(s.weeks[0]!.start, 'i1') }))
     expect(nach).toMatchObject({ screen: 'planen', week: 0, tab: 'fs', fsBereich: 'treffpunkte' })
-  })
-
-  it('… beim Zeugnisgeben in dessen Reiter', () => {
-    const s = offen({ planner: true })
-    const nach = tippen(s, zeile({ taskId: ozKey(s.weeks[0]!.start, 'e1') }))
-    expect(nach).toMatchObject({ screen: 'planen', tab: 'fs', fsBereich: 'zeugnis' })
   })
 
   it('der Verkündiger landet bei seiner Aufgabe — das Blatt ist offen', () => {

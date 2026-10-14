@@ -13,11 +13,11 @@
  */
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reset as resetPush, sent as sentPush } from './web-push.stub'
-import { pushTexte } from '../send-reminders/texte.ts'
+import { pushTexte, TITEL_TROLLEY } from '../send-reminders/texte.ts'
 import { alsFreitext } from '../_shared/i18n/freitext.ts'
 import { APP_LANGS } from '../../../src/i18n/langs'
 import { makeTr } from '../../../src/i18n/translate'
-import { jsonRes, schreibZugriff } from './attrappe.ts'
+import { filterWert, jsonRes, schreibZugriff } from './attrappe.ts'
 
 /* ---- Fixture ------------------------------------------------------------- */
 
@@ -180,9 +180,9 @@ let subs: typeof SUBS
 let persons: typeof PERSONS
 /** Erinnerungs-Einstellungen der Versammlung — je Test überschreibbar. */
 let reminders: { first: number; last: number; repeat: boolean }
-/** Öffentliches Zeugnisgeben (T120): Termine und Einträge, wie sie in der Datenbank stehen. */
-let ozTermine: unknown[]
-let ozEintraege: { id: string; termin_id: string; datum: string; person_id: string; selbst: boolean }[]
+/** Trolleys (T121) und ihre Termine, wie sie in der Datenbank stehen. */
+let trolleys: { id: string; name: string }[]
+let trolleyTermine: { trolley_id: string; datum: string; von: string; bis: string; person_id: string; partner_id: string | null }[]
 /** Versand-Tagebuch: wem der Planer persönlich Bescheid gegeben hat (`persoenlich_at` gesetzt). */
 let bescheidGegeben: { task_key: string; name: string }[]
 /**
@@ -217,13 +217,12 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   if (path.startsWith('reminder_log')) return jsonRes(reminderLog)
   if (path.startsWith('weeks')) return jsonRes(weeks)
   if (path.startsWith('fs_weeks')) return jsonRes(fsWeeks)
-  if (path.startsWith('oz_termine')) return jsonRes(ozTermine)
-  if (path.startsWith('oz_eintraege')) {
-    // Die Filter werden ausgewertet: nur Zugeteiltes, nur im Fenster.
-    const nurZugeteilt = /[?&]selbst=is\.false/.test(path)
-    const ab = decodeURIComponent(/[?&]datum=gte\.([^&]*)/.exec(path)?.[1] ?? '')
-    const bis = decodeURIComponent(/[?&]datum=lte\.([^&]*)/.exec(path)?.[1] ?? '9999')
-    return jsonRes(ozEintraege.filter((e) => (!nurZugeteilt || !e.selbst) && e.datum >= ab && e.datum <= bis))
+  if (path.startsWith('trolleys')) return jsonRes(trolleys)
+  if (path.startsWith('trolley_termine')) {
+    // Der Tag wird ausgewertet: Ohne den Filter käme gar nichts — ein fehlender
+    // fiele so sofort auf.
+    const tag = filterWert(path, 'datum')
+    return jsonRes(trolleyTermine.filter((t) => t.datum === tag))
   }
   if (path.startsWith('assignment_log')) {
     // Gelesen werden nur die abgehakten Zeilen — der Filter muss dastehen.
@@ -303,8 +302,8 @@ beforeEach(() => {
   members = [...MEMBERS]
   persons = [...PERSONS]
   reminders = { first: 7, last: 1, repeat: true }
-  ozTermine = []
-  ozEintraege = []
+  trolleys = []
+  trolleyTermine = []
   bescheidGegeben = []
   fehlendeTabellen = new Set()
   resetPush()
@@ -747,108 +746,101 @@ describe('send-reminders: Scharfbetrieb als Gegenprobe', () => {
   })
 })
 
-describe('send-reminders: öffentliches Zeugnisgeben (T120)', () => {
-  // Mittwoch, 9. September — zwei Tage nach „heute" (Montag): an Wiederholungstagen fällig.
-  const MITTWOCH = { id: 't-mi', wd: 3, von: '10:00:00', bis: '12:00:00', ort: 'Marktplatz' }
-  const eintrag = (patch: Partial<(typeof ozEintraege)[number]> = {}) => ({
-    id: 'e1',
-    termin_id: MITTWOCH.id,
-    datum: '2026-09-09',
+/*
+ * **Trolley morgen** (T121, Phase 7): Am Vortag eines Trolley-Termins
+ * erinnert die App beide — ohne Zusage, ohne Wiederholung, ohne Meldung an
+ * die Planer. „Heute" ist Montag, 7. September; morgen der Dienstag.
+ */
+describe('send-reminders: Trolley morgen (T121)', () => {
+  const termin = (patch: Partial<(typeof trolleyTermine)[number]> = {}) => ({
+    trolley_id: 'tr3',
+    datum: '2026-09-08',
+    von: '09:00:00',
+    bis: '11:00:00',
     person_id: 'p-max',
-    selbst: false,
+    partner_id: 'p-nina' as string | null,
     ...patch,
   })
+  const TAG = 'Dienstag, 8. September · 09:00–11:00'
 
   beforeEach(() => {
-    weeks = [] // nur das Zeugnisgeben soll in der Erinnerung stehen
-    ozTermine = [MITTWOCH]
+    weeks = [] // nur die Trolleys sollen erinnern
+    trolleys = [{ id: 'tr3', name: 'Trolley 3' }]
   })
 
-  it('erinnert, wer zugeteilt wurde und noch nicht bestätigt hat — Termin mit Ort und Zeitspanne', async () => {
-    ozEintraege = [eintrag()]
-    expect(previewFor(await run(), U_MAX)?.body).toBe(
-      'Mittwoch, 9. September · 10:00–12:00 · Marktplatz: Öffentliches Zeugnisgeben',
-    )
+  it('am Vortag erinnert sie beide — jeder liest, mit wem', async () => {
+    trolleyTermine = [termin()]
+    const r = await run()
+    const max = previewFor(r, U_MAX)
+    expect(max?.title).toBe(pushTexte('de').trolley)
+    expect(max?.body).toContain('Nina Nolink')
+    expect(max?.body).toContain(TAG)
+    expect(max?.body).toContain('Trolley 3')
+    expect(previewFor(r, U_NINA)?.body).toContain('Max Mustermann')
   })
 
-  it('wer sich selbst eingetragen hat, hat zugesagt — keine Erinnerung', async () => {
-    ozEintraege = [eintrag({ selbst: true })]
+  it('wer allein steht, liest Trolley, Tag und Zeit — ohne Namen', async () => {
+    trolleyTermine = [termin({ partner_id: null })]
+    const r = await run()
+    expect(previewFor(r, U_MAX)?.body).toBe(makeTr('de')(`${alsFreitext('Trolley 3')} · ${TAG}`))
+    expect(previewFor(r, U_NINA)).toBeUndefined()
+  })
+
+  it('nur morgen — heute und übermorgen nicht', async () => {
+    trolleyTermine = [termin({ datum: '2026-09-07' }), termin({ datum: '2026-09-09' })]
     expect(previewFor(await run(), U_MAX)).toBeUndefined()
+    // Gegenprobe: Der Termin selbst ist es nicht — morgen kommt sie.
+    trolleyTermine = [termin()]
+    expect(previewFor(await run(), U_MAX)).toBeDefined()
   })
 
-  it('wer bestätigt hat, auch nicht', async () => {
-    ozEintraege = [eintrag()]
-    confirmations = [{ task_key: `oz|${WEEK_START}|e1`, status: 'bestätigt' }]
-    expect(previewFor(await run(), U_MAX)).toBeUndefined()
-  })
-
-  it('am Tag der ersten Erinnerung geht auch die Glocke — mit dem Schlüssel des Eintrags', async () => {
-    ozEintraege = [eintrag({ datum: '2026-09-14' })] // genau 7 Tage = `first`
-    ozTermine = [{ ...MITTWOCH, wd: 1 }]
+  it('Glocke kanonisch deutsch und eine eigene Sperre je Person („trolley")', async () => {
+    trolleyTermine = [termin()]
     await live()
-    // Nur die neuen Zeilen — der Lauf räumt außerdem alte Glocken-Zeilen ab (DELETE).
     const glocke = writesTo('notifications')
       .filter((w) => w.method === 'POST')
       .flatMap((w) => (Array.isArray(w.body) ? w.body : [w.body])) as Record<string, unknown>[]
-    expect(glocke).toEqual([expect.objectContaining({ task_key: 'oz|2026-09-14|e1' })])
+    expect(glocke).toEqual([
+      expect.objectContaining({ user_id: U_MAX, type: 'erinnerung', title: TITEL_TROLLEY, body: `${alsFreitext('Nina Nolink')} · ${alsFreitext('Trolley 3')} · ${TAG}` }),
+      expect.objectContaining({ user_id: U_NINA, title: TITEL_TROLLEY, body: `${alsFreitext('Max Mustermann')} · ${alsFreitext('Trolley 3')} · ${TAG}` }),
+    ])
+    const sperre = writesTo('reminder_log').flatMap((w) => (Array.isArray(w.body) ? w.body : [w.body])) as Record<string, unknown>[]
+    expect(sperre).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ user_id: U_MAX, kind: 'trolley' }),
+        expect.objectContaining({ user_id: U_NINA, kind: 'trolley' }),
+      ]),
+    )
   })
 
-  /*
-   * Bis hierher lag jeder Eintrag an einem fälligen Tag. Eine Regression, die das
-   * Zeugnisgeben täglich erinnert, bliebe grün — für die Zusammenkünfte ist
-   * genau das oben festgehalten, hier fehlte es (3.10.2026).
-   */
-  it('ohne Wiederholung nur an den beiden Haupttagen — dazwischen schweigt sie', async () => {
-    ozEintraege = [eintrag()] // Mittwoch: zwei Tage weg, weder `first` noch `last`
-    reminders = { first: 7, last: 1, repeat: false }
+  it('heute schon an den Trolley erinnert → nicht noch einmal; die Sperre der Aufgaben zählt dafür nicht', async () => {
+    trolleyTermine = [termin()]
+    reminderLog = [{ user_id: U_MAX, kind: 'trolley' }]
     expect(previewFor(await run(), U_MAX)).toBeUndefined()
-    // Gegenprobe: Mit Wiederholung kommt sie — am Eintrag selbst liegt es nicht.
-    reminders = { first: 7, last: 1, repeat: true }
-    expect(previewFor(await run(), U_MAX)).toBeDefined()
+    reminderLog = [{ user_id: U_MAX, kind: 'self' }]
+    expect(previewFor(await run(), U_MAX)?.title).toBe(pushTexte('de').trolley)
   })
 
-  it('am Tag der Schicht selbst schweigt sie (last = 1)', async () => {
-    ozTermine = [{ ...MITTWOCH, wd: 1 }]
-    ozEintraege = [eintrag({ datum: '2026-09-07' })] // heute, Montag
-    expect(previewFor(await run(), U_MAX)).toBeUndefined()
-    // Gegenprobe: Mit „am Tag" (last = 0) kommt sie.
-    reminders = { first: 7, last: 0, repeat: true }
-    expect(previewFor(await run(), U_MAX)).toBeDefined()
-  })
-
-  it('wer nicht erreichbar ist, wird am letzten Erinnerungstag den Planern gemeldet', async () => {
-    // Dienstag, 8. September: einen Tag weg = `last`.
-    ozTermine = [{ ...MITTWOCH, wd: 2 }]
+  it('wer kein Konto hat, bekommt nichts — und die Planer erfahren davon nichts', async () => {
     persons = [...PERSONS, { id: 'p-otto', fn: 'Otto', ln: 'Ohnekonto' }]
-    const amDienstag = (id: string, person_id: string) => eintrag({ id, person_id, datum: '2026-09-08' })
-    ozEintraege = [
-      amDienstag('e-nina', 'p-nina'), // Konto, aber kein Push-Abo
-      amDienstag('e-otto', 'p-otto'), // gar kein Konto
-      amDienstag('e-max', 'p-max'), // erreichbar — gehört nicht in die Meldung
-    ]
-    const termin = 'Dienstag, 8. September · 10:00–12:00 · Marktplatz: Öffentliches Zeugnisgeben'
-    const planer = previewFor(await run(), U_PLANER)
-    expect(planer?.title).toBe(pushTexte('de').unerreichbar)
-    expect(planer?.body).toBe(`${alsFreitext('Nina Nolink')} — ${termin} · ${alsFreitext('Otto Ohnekonto')} — ${termin}`)
+    trolleyTermine = [termin({ person_id: 'p-otto', partner_id: null })]
+    const r = await run()
+    expect(r.preview ?? []).toEqual([])
+    expect(previewFor(r, U_PLANER)).toBeUndefined()
   })
 
-  it('an einem Wiederholungstag erfahren es die Planer nicht', async () => {
-    ozEintraege = [eintrag({ person_id: 'p-nina' })] // Mittwoch: zwei Tage weg
-    expect(previewFor(await run(), U_PLANER)).toBeUndefined()
-  })
-
-  it.each(['oz_termine', 'oz_eintraege'])('fehlt %s, laufen die Zusammenkünfte weiter', async (tabelle) => {
+  it.each(['trolleys', 'trolley_termine'])('fehlt %s, laufen die Zusammenkünfte weiter', async (tabelle) => {
     weeks = [{ start: WEEK_START, data: { mid: midMeeting() } }]
-    ozEintraege = [eintrag()]
+    trolleyTermine = [termin()]
     fehlendeTabellen.add(tabelle)
     const log = vi.spyOn(console, 'error').mockImplementation(() => {})
     try {
       const r = await run()
       expect(r.ok).toBe(true)
-      const body = previewFor(r, U_MAX)?.body ?? ''
-      expect(body).toContain('Schatzgraben')
-      expect(body).not.toContain('Öffentliches Zeugnisgeben')
-      expect(log).toHaveBeenCalledWith(expect.stringContaining('oz_termine/oz_eintraege nicht lesbar'))
+      const max = r.preview?.filter((p) => p.userId === U_MAX) ?? []
+      expect(max.map((p) => p.body).join(' ')).toContain('Schatzgraben')
+      expect(max.some((p) => p.title === pushTexte('de').trolley)).toBe(false)
+      expect(log).toHaveBeenCalledWith(expect.stringContaining('trolley_termine/trolleys nicht lesbar'))
     } finally {
       log.mockRestore()
     }

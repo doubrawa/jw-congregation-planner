@@ -12,11 +12,9 @@ import { type Erinnert, erinnerungSenden, type PlanVersand, sendPlan } from '../
 
 /**
  * **Der Versand eines Plans** — was die Sendeknöpfe teilen: der Aktionsleiste
- * und des Blatts „Plan senden" (T121) und des öffentlichen Zeugnisgebens
- * (`PlanSendenPanel.tsx`); dazu „Jetzt erinnern" in den Zusagen der Woche.
- * Eigene Datei, weil es Hooks sind und
- * keine Bausteine: Neben Komponenten exportiert, hielten sie das schnelle
- * Neuladen beim Entwickeln an.
+ * und des Blatts „Plan senden" (T121); dazu „Jetzt erinnern" in den Zusagen
+ * der Woche. Eigene Datei, weil es Hooks sind und keine Bausteine: Neben
+ * Komponenten exportiert, hielten sie das schnelle Neuladen beim Entwickeln an.
  */
 
 /** Der Aufruf, der sendet — mit der Kennung, zu der er gehört. */
@@ -33,11 +31,11 @@ export interface VersandStand {
 }
 
 /**
- * Senden — für die Woche, die Gruppe und das öffentliche Zeugnisgeben derselbe
- * Weg: senden, das Ergebnis melden, die Namen ohne Konto festhalten.
+ * Senden — für die Woche und die Gruppe derselbe Weg: senden, das Ergebnis
+ * melden, die Namen ohne Konto festhalten.
  *
  * Namen ohne App-Konto aus dem letzten Versand bleiben stehen — **mit der
- * Kennung, zu der sie gehören** (der Woche; das Zeugnisgeben hat eine feste).
+ * Kennung, zu der sie gehören** (der Woche).
  * Sie stehen im Tagebuch wie alle anderen — sonst zeigte der Knopf für sie auf
  * ewig „noch nicht gesendet", obwohl niemand sie erreichen kann. Damit
  * verschwinden sie aber aus der Liste oben, und genau sie sind die, die der
@@ -49,9 +47,6 @@ export interface VersandStand {
  * die Genannten gar nichts haben. Verglichen statt zurückgesetzt, weil ein
  * Effekt hier nur eine zweite Buchführung über dasselbe wäre. Ohne Kennung
  * (keine Woche geladen) gibt es nichts zu senden.
- *
- * Bis zum 5.10.2026 stand der Weg für die Woche und für das Zeugnisgeben je
- * einmal da.
  */
 export function useSenden(kennung: string | null, versand: Versand): VersandStand {
   const [laeuft, setLaeuft] = useState(false)

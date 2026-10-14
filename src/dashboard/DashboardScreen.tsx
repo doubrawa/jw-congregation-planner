@@ -10,8 +10,10 @@ import { treffpunktTitel } from '../components/treffpunkt-beschriftung'
 import { eigeneGruppen } from '../data/fs'
 import { fromIso } from '../data/meeting-dates'
 import { rechteVon } from '../data/rechte'
-import type { MyTask } from '../data/types'
+import { eigeneTermine } from '../data/trolleys'
+import type { MyTask, TrolleyTermin } from '../data/types'
 import { aufgabenLabel, useT } from '../i18n/useT'
+import { zeitSpanne, zuDenTrolleys } from '../trolleys/trolley-anzeige'
 import { termineDieserWoche, type Termin } from './diese-woche'
 import { PlanungsKarte } from './PlanungsKarte'
 import './dashboard.css'
@@ -28,6 +30,7 @@ const WEITERE_AUFGABEN = 3
  *     darunter. Liegt sie in einer Zusammenkunft, steht der Saal darüber: wie
  *     weit der Abend besetzt ist, und wo man selbst sitzt.
  *  3. **Die nächsten danach**, je eine Zeile; ein Tipp öffnet die Aufgabe.
+ *     Dazwischen, nach dem Tag, die eigenen Trolley-Termine.
  *  4. **Diese Woche in der Versammlung** — die Zusammenkünfte und Treffpunkte,
  *     die noch kommen.
  *  5. Für Planer: **die Planung** der kommenden Wochen (T95), ab dem Tablet
@@ -54,6 +57,7 @@ export function DashboardScreen() {
       termineDieserWoche(weeks, fsWeeks, state.congregation.times, eigeneGruppen(persons, groups, personId), fromIso(tag)),
     [weeks, fsWeeks, state.congregation.times, persons, groups, personId, tag],
   )
+  const trolley = eigeneTermine(state.trolleyTermine, me?.id, fromIso(tag))
 
   return (
     <section className="screen start">
@@ -66,7 +70,7 @@ export function DashboardScreen() {
           ) : (
             <p className="karte karte--held start-leer">{t.dashKeineAufgabe}</p>
           )}
-          {danach.length > 0 && <WeitereAufgaben aufgaben={danach.slice(0, WEITERE_AUFGABEN)} />}
+          {(danach.length > 0 || trolley.length > 0) && <WeitereAufgaben aufgaben={danach} trolley={trolley} />}
           {termine.length > 0 && <DieseWoche termine={termine} />}
         </div>
         {/* Wer zuteilt — Admin oder Planer —, sieht seine Arbeit gleich daneben
@@ -82,23 +86,49 @@ export function DashboardScreen() {
   )
 }
 
-/** Die Aufgaben nach der nächsten: Tag und was, ein Tipp öffnet sie. */
-function WeitereAufgaben({ aufgaben }: { aufgaben: readonly MyTask[] }) {
+/** Eine Zeile unter der großen Karte: Tag, was — und wohin ein Tipp führt. */
+interface StartZeile {
+  key: string
+  tag: string | null
+  text: string
+  onTipp: () => void
+}
+
+/**
+ * Was nach der nächsten Aufgabe kommt, nach dem Tag: die Aufgaben — ein Tipp
+ * öffnet sie — und die eigenen Trolley-Termine, ein Tipp führt zu den Trolleys
+ * (Entwurf `GStart`). Am selben Tag steht die Aufgabe vorn; ohne Tag steht sie
+ * am Ende (Vorlagen).
+ */
+function WeitereAufgaben({ aufgaben, trolley }: { aufgaben: readonly MyTask[]; trolley: readonly TrolleyTermin[] }) {
   const { state, dispatch } = useApp()
   const i18n = useT()
   const kurz = datumsFormat(state.lang, 'wochentagZahl')
+  const zeilen: StartZeile[] = [
+    ...aufgaben.map((task) => ({
+      key: task.id,
+      tag: aufgabeTag(task),
+      text: aufgabenLabel(task, i18n),
+      onTipp: () => dispatch({ type: 'openMyTask', id: task.id }),
+    })),
+    ...trolley.map((termin) => ({
+      key: termin.id,
+      tag: termin.datum,
+      text: `${i18n.t.privZeugnis} · ${zeitSpanne(termin)}`,
+      onTipp: () => zuDenTrolleys(dispatch),
+    })),
+  ]
+  const ohneTag = '9999-12-31'
+  zeilen.sort((a, b) => (a.tag ?? ohneTag).localeCompare(b.tag ?? ohneTag))
   return (
     <div className="karte start-liste">
-      {aufgaben.map((task) => {
-        const tag = aufgabeTag(task)
-        return (
-          <button key={task.id} type="button" className="start-zeile" onClick={() => dispatch({ type: 'openMyTask', id: task.id })}>
-            <span className="start-zeile-tag">{tag ? kurz.format(fromIso(tag)) : ''}</span>
-            <span className="start-zeile-text">{aufgabenLabel(task, i18n)}</span>
-            <Zeichen name="weiter" />
-          </button>
-        )
-      })}
+      {zeilen.slice(0, WEITERE_AUFGABEN).map((zeile) => (
+        <button key={zeile.key} type="button" className="start-zeile" onClick={zeile.onTipp}>
+          <span className="start-zeile-tag">{zeile.tag ? kurz.format(fromIso(zeile.tag)) : ''}</span>
+          <span className="start-zeile-text">{zeile.text}</span>
+          <Zeichen name="weiter" />
+        </button>
+      ))}
     </div>
   )
 }

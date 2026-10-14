@@ -8,7 +8,7 @@
  * `supabase/schema.sql` entscheidet damit, ob eine Bestätigung zur eigenen
  * Aufgabe gehört).
  *
- * Fünf Formen:
+ * Vier Formen:
  *
  * | Form       | Aufbau                                     |
  * | ---------- | ------------------------------------------ |
@@ -16,11 +16,12 @@
  * | Ratgeber   | `<montag>\|<mid\|we>\|ratgeber`              |
  * | Hilfsdienst| `<montag>\|<mid\|we>\|helper\|<dienst>\|<pos>` |
  * | Treffpunkt | `fs\|<montag>\|<instanzId>`                  |
- * | Öffentliches Zeugnisgeben | `oz\|<montag>\|<eintragId>` (T120)  |
  *
- * Eine sechste, `va|<montag>|<vortragId>` für die Redner auswärts, gab es vom
- * 3. bis 4.10.2026; mit dem Plan ist sie wieder gegangen. Ein übrig gebliebener
- * Schlüssel dieser Form ist seither eine unbekannte (`null`).
+ * Zwei weitere gab es eine Zeit lang: `va|<montag>|<vortragId>` für die Redner
+ * auswärts (3. bis 4.10.2026) und `oz|<montag>|<eintragId>` für Stand und
+ * Schicht (3. bis 14.10.2026). Mit ihren Plänen sind sie gegangen — einen
+ * Trolley-Termin plant niemand, also sagt auch niemand zu. Ein übrig
+ * gebliebener Schlüssel dieser Formen ist seither eine unbekannte (`null`).
  *
  * Gebaut wurde das bis September 2026 an **fünf** Stellen und zerlegt an
  * **sechs**, verteilt über drei Laufzeiten: die App (`planning.ts`, `fs.ts`,
@@ -47,7 +48,6 @@ export type SchluesselTeile =
   | { art: 'ratgeber'; woche: string; tab: Tab }
   | { art: 'helper'; woche: string; tab: Tab; svc: string; pos: number }
   | { art: 'fs'; woche: string; instId: string }
-  | { art: 'oz'; woche: string; eintragId: string }
 
 /**
  * Ist das eine Wochen-Kennung (T66)?
@@ -105,16 +105,6 @@ export function fsKey(woche: string, instId: string): string {
 }
 
 /**
- * Schlüssel eines Eintrags im öffentlichen Zeugnisgeben (T120, Phase 3) — der
- * Montag der Woche und die Kennung des Eintrags (`oz_eintraege.id`). Der
- * Eintrag gehört genau einer Person; wird er ersetzt, entsteht ein neuer
- * Schlüssel, und die Zusage des alten geht mit ihm.
- */
-export function ozKey(woche: string, eintragId: string): string {
-  return `oz|${woche}|${eintragId}`
-}
-
-/**
  * Die beiden Präfixe, mit denen **jeder** Schlüssel einer Woche beginnt:
  * `<montag>|` für die Zusammenkünfte, `fs|<montag>|` für die Treffpunkte.
  *
@@ -152,12 +142,6 @@ export function schluesselTeile(key: string): SchluesselTeile | null {
     const woche = p[1] ?? ''
     return p.length === 3 && istWochenKennung(woche) && p[2]
       ? { art: 'fs', woche, instId: p[2] }
-      : null
-  }
-  if (p[0] === 'oz') {
-    const woche = p[1] ?? ''
-    return p.length === 3 && istWochenKennung(woche) && p[2]
-      ? { art: 'oz', woche, eintragId: p[2] }
       : null
   }
   const woche = p[0] ?? ''

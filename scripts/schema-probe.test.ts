@@ -1,23 +1,27 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   ATTRAPPE_SCHLUESSEL,
   ATTRAPPE_URL,
   type Aufruf,
   befunde,
   fahre,
+  type FunktionsAntwort,
+  type FunktionsKontext,
   REDET_MIT_DB,
   schemaFehler,
   schemaFunktion,
   schemaSpalten,
   tabelleVon,
   type Umgebung,
+  type Zeile,
 } from './schema-attrappe'
 import { probeDateiText, wertAusEnvText } from './gemeinsam.mjs'
 import { eigeneSlots, ersterMontagAb, fremdeSlots, stufenAnlage } from './mitgliedsrechte-probe.mjs'
 import { uuid5 } from './wochenplanung-importieren.mjs'
+import { wasBleibt, zeitraumGueltig } from '../supabase/functions/_shared/trolley.ts'
 
 /**
  * **Jedes Wartungsskript fährt einmal gegen die Attrappe, und jeder seiner
@@ -120,6 +124,81 @@ interface Lauf {
   dateien?: Record<string, unknown>
   /** Aufrufe, die der Lauf erreicht haben muss: „METHODE tabelle". */
   erwartet: string[]
+}
+
+/** Das Trolley-Recht einer Person, wie die Function es liest (`darfTrolley`). */
+const hatTrolleyRecht = (person: Zeile): boolean => Boolean((person.priv as Record<string, unknown> | null | undefined)?.zeugnis)
+
+/**
+ * **Die Function `trolley`**, so weit nachgestellt, dass die Probe ihre
+ * Antworten bekommt (T121, Phase 7): die Tür aus `trolley/index.ts` mit den
+ * Regeln aus `_shared/trolley.ts`. Eintragen nur mit dem Trolley-Recht der
+ * eigenen Person (`darf`), austragen nur, wer im Termin steht, einen Trolley
+ * entfernen nur der Admin — dann gehen seine Termine mit. Einen Rumpf, den die
+ * echte Function nicht verstünde, weist sie wie diese mit `bad-request` ab, und
+ * die Probe meldete ihn als kaputt.
+ *
+ * Geschrieben wird wie dort mit der Dienstrolle, an jeder Richtlinie vorbei.
+ * Was die Probe nicht schickt — einen Partner, `dazukommen` —, kennt sie nicht
+ * und sagt es, statt still etwas zu erfinden.
+ */
+function trolleyFunktion(
+  rumpf: Record<string, unknown>,
+  { tabellen, wer }: FunktionsKontext,
+  darf: (person: Zeile) => boolean = hatTrolleyRecht,
+): FunktionsAntwort {
+  const nein = (error: string): FunktionsAntwort => ({
+    status: error === 'kein-recht' || error === 'forbidden' ? 403 : error === 'bad-request' ? 400 : 409,
+    json: { error },
+  })
+  // Wie `istKennung` in `trolley/index.ts`.
+  const kennung = (s: unknown): s is string => typeof s === 'string' && s.length > 0 && s.length <= 80
+  const ich = (tabellen.members ?? []).find((m) => m.user_id === wer?.id)
+  const person = (tabellen.persons ?? []).find((p) => p.id === ich?.person_id)
+  if (!ich || !person) return { status: 403, json: { error: 'no-person' } }
+  const termine = (tabellen.trolley_termine ??= [])
+  const trolleys = (tabellen.trolleys ??= [])
+  const entfernen = (liste: Zeile[], z: Zeile): void => {
+    liste.splice(liste.indexOf(z), 1)
+  }
+
+  if (rumpf.aktion === 'eintragen') {
+    const t = (rumpf.termin ?? {}) as Record<string, unknown>
+    if (t.partner !== null) throw new Error('Attrappe: einen Partner kennt die nachgestellte Function nicht — die Probe trägt allein ein')
+    const { datum, von, bis } = t
+    if (!kennung(t.id) || !kennung(t.trolleyId) || typeof datum !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(datum)) return nein('bad-request')
+    if (typeof von !== 'string' || typeof bis !== 'string' || !zeitraumGueltig(von, bis)) return nein('bad-request')
+    if (!darf(person)) return nein('kein-recht')
+    if (!trolleys.some((x) => x.id === t.trolleyId)) return nein('weg')
+    const termin = {
+      id: t.id, congregation_id: ich.congregation_id, trolley_id: t.trolleyId, datum, von, bis,
+      person_id: person.id, partner_id: null, gemeinsam: false,
+    }
+    termine.push(termin)
+    return { json: { ok: true, termin } }
+  }
+  if (rumpf.aktion === 'austragen') {
+    if (!kennung(rumpf.id)) return nein('bad-request')
+    const termin = termine.find((x) => x.id === rumpf.id)
+    if (!termin) return nein('weg')
+    const bleibt = wasBleibt(String(termin.person_id), (termin.partner_id as string | null) ?? null, String(person.id))
+    if (bleibt === undefined) return nein('forbidden')
+    if (bleibt) Object.assign(termin, { person_id: bleibt.person, partner_id: null, gemeinsam: false })
+    else entfernen(termine, termin)
+    return { json: { ok: true, termin: bleibt ? termin : null } }
+  }
+  if (rumpf.aktion === 'entfernen') {
+    if (!kennung(rumpf.trolleyId)) return nein('bad-request')
+    if (!ich.planner) return nein('forbidden')
+    const trolley = trolleys.find((x) => x.id === rumpf.trolleyId)
+    if (!trolley) return nein('weg')
+    entfernen(trolleys, trolley)
+    // Die Kaskade, die die Attrappe selbst nicht kennt.
+    const seine = termine.filter((x) => x.trolley_id === trolley.id)
+    for (const x of seine) entfernen(termine, x)
+    return { json: { ok: true, termine: seine.length } }
+  }
+  throw new Error(`Attrappe: die Aktion ${String(rumpf.aktion)} kennt die nachgestellte Function nicht`)
 }
 
 const LAEUFE: Record<string, Lauf[]> = {
@@ -464,16 +543,18 @@ const LAEUFE: Record<string, Lauf[]> = {
             woche.data = rumpf.data
             return { json: { ok: true, stand: '2026-08-21T10:00:00+00:00' } }
           },
-          // Die Tür wie in `send-plan/index.ts`: Senden und Melden darf, wer
-          // zuteilt. Den Zweig des Gruppenaufsehers für die Treffpunkte seiner
-          // Gruppe kennt die Attrappe nicht — die Probe misst ihn nicht. Dahinter
-          // ins Leere: keine Woche im Jahr 2100, kein Konto zum Namen.
+          // Die Tür wie in `send-plan/index.ts`: Senden darf, wer zuteilt. Den
+          // Zweig des Gruppenaufsehers für die Treffpunkte seiner Gruppe kennt
+          // die Attrappe nicht — die Probe misst ihn nicht. Dahinter ins Leere:
+          // keine Woche im Jahr 2100. Eine andere Aktion kennt die Function
+          // nicht (mehr), etwa die des Zeugnisgebens bis zum 14.10.2026.
           'send-plan': (rumpf, { tabellen, wer }) => {
             const ich = (tabellen.members ?? []).find((m) => m.user_id === wer?.id)
             if (!ich?.planner && !ich?.zuteiler) return { status: 403, json: { error: 'forbidden' } }
             if (rumpf.action === 'plan') return { status: 404, json: { error: 'no-week' } }
-            return { json: { ok: true, personen: 0, push: 0, ohneKonto: [] } }
+            return { status: 400, json: { error: 'bad-request' } }
           },
+          trolley: trolleyFunktion,
         },
       },
       erwartet: [
@@ -481,7 +562,6 @@ const LAEUFE: Record<string, Lauf[]> = {
         'POST absences', 'DELETE absences', 'GET persons',
         // T120: die Anlage des Admins, die Versuche des Mitglieds, das Aufräumen.
         'POST gruppenbesuche', 'GET gruppenbesuche', 'DELETE gruppenbesuche',
-        'POST oz_termine', 'POST oz_eintraege', 'DELETE oz_eintraege', 'DELETE oz_termine', 'PATCH persons',
         'POST plaene', 'GET plaene', 'DELETE plaene', 'POST plan_eintraege', 'GET plan_eintraege', 'DELETE plan_eintraege',
         // (6) und (6b): der Meldeweg eines Mitglieds seit dem 24.9.2026.
         'POST rpc/notify_planners',
@@ -491,6 +571,9 @@ const LAEUFE: Record<string, Lauf[]> = {
         'POST fs_rules', 'GET fs_rules', 'DELETE fs_rules', 'PATCH gruppenbesuche',
         // Die Vormerkungen des Vortragsplans (T122): anlegen, sehen, aufräumen.
         'POST vortraege', 'GET vortraege', 'DELETE vortraege',
+        // Die Trolleys (T121, Phase 7): der Trolley des Admins, das Trolley-Recht
+        // des Mitglieds, der Termin an der Function vorbei, das Aufräumen.
+        'POST trolleys', 'GET trolleys', 'DELETE trolleys', 'PATCH persons', 'POST trolley_termine', 'GET trolley_termine',
       ],
     },
   ],
@@ -675,40 +758,21 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
   })
 
   /*
-    T120 (seit 3.10.2026): Die Probe legt als Planer an, was sie misst, und
-    ändert für (15)/(16) vorübergehend die Person des Mitglieds. Die
+    T120 (seit 3.10.2026): Die Probe legt als Admin an, was sie misst. Die
     Attrappe kennt keine Richtlinien — jeder Versuch kommt dort durch. Gerade
     deshalb läuft hier jeder Aufräum-Zweig, und am Ende muss alles weg sein.
   */
   const istProbe = (z: Record<string, unknown>) => String(z.id ?? '').startsWith('PROBE-')
 
-  it('mitgliedsrechte-probe (T120): räumt alles weg, was es angelegt hat — die Person des Mitglieds ist wie vorher', async () => {
+  it('mitgliedsrechte-probe (T120): räumt alles weg, was es angelegt hat', async () => {
     const { tabellen, ausgabe } = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
-    for (const t of ['gruppenbesuche', 'oz_termine', 'oz_eintraege', 'plaene', 'plan_eintraege']) {
+    for (const t of ['gruppenbesuche', 'plaene', 'plan_eintraege']) {
       expect((tabellen[t] ?? []).filter(istProbe), t).toEqual([])
     }
-    expect((tabellen.confirmations ?? []).filter((z) => String(z.task_key).includes('PROBE-'))).toEqual([])
-    const mitglied = tabellen.persons!.find((p) => p.id === P2)!
-    expect(mitglied.priv).toEqual({ 'svc:mik': true })
     const text = ausgabe.join('\n')
-    expect(text).toMatch(/\(15\) sich selbst eintragen, mit Aufgabenbereich\n.*ANGEKOMMEN \(HTTP 201\) — der Weg steht offen/)
     // Gesehen wird der ganze Plan: der Plan und seine Woche.
     expect(text).toMatch(/\(29\) den veröffentlichten Königreichssaal sehen\n.*SICHTBAR \(HTTP 200; Plan 1\/1, Einträge 1\/1\)/)
     expect(text).toMatch(/alles mit Kennzeichen PROBE-\d+ wieder entfernt/)
-  })
-
-  it('mitgliedsrechte-probe (T120): (13)–(15) mit Aufgabenbereich, (16) ohne — jeder Versuch prüft genau eine Regel', async () => {
-    const { aufrufe } = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
-    const setzt = (wert: boolean) =>
-      aufrufe.findIndex((a: Aufruf) => a.method === 'PATCH' && tabelleVon(a) === 'persons' && (a.body as { priv?: { zeugnis?: boolean } }).priv?.zeugnis === wert)
-    const versuch = (endung: string) =>
-      aufrufe.findIndex((a: Aufruf) => a.method === 'POST' && tabelleVon(a) === 'oz_eintraege' && String((a.body as { id?: string }).id).endsWith(endung))
-    expect(setzt(true)).toBeGreaterThan(-1)
-    for (const e of ['-oz-fuer-andere', '-oz-als-zugeteilt', '-oz-selbst']) {
-      expect(versuch(e), e).toBeGreaterThan(setzt(true))
-      expect(versuch(e), e).toBeLessThan(setzt(false))
-    }
-    expect(versuch('-oz-ohne-bereich')).toBeGreaterThan(setzt(false))
   })
 
   it('mitgliedsrechte-probe: die Absage geht über notify_planners an die Planer, und sie wird wieder gelöscht', async () => {
@@ -753,8 +817,8 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     expect(text).toMatch(/\(28\) einen Plan im Entwurf sehen\n.*PROBE KAPUTT — Anlage als Admin scheiterte \(plaene, HTTP 400\)/)
     expect(text).not.toMatch(/unsichtbar — einen Entwurf sehen nur Admin und Planer/)
     expect(text).toMatch(/Nicht gemessen — die Probe selbst scheiterte: .*\(28\), \(29\), \(33\), \(34\)/)
-    // Aufgeräumt wird trotzdem — der Termin des Zeugnisgebens stand ja schon.
-    expect((tabellen.oz_termine ?? []).filter(istProbe)).toEqual([])
+    // Aufgeräumt wird trotzdem — der Gruppenbesuch aus (12) stand ja schon.
+    expect((tabellen.gruppenbesuche ?? []).filter(istProbe)).toEqual([])
   })
 
   /*
@@ -802,7 +866,7 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     expect(tabellen.members!.find((m) => m.user_id === U3)!.planner).toBe(false)
     // Was die Probe anlegte, ist weg: die Treffpunkt-Woche und jede Zeile mit Kennzeichen.
     expect(tabellen.fs_weeks ?? []).toEqual([])
-    for (const t of ['fs_rules', 'gruppenbesuche', 'oz_termine', 'oz_eintraege', 'plaene', 'plan_eintraege', 'vortraege']) {
+    for (const t of ['fs_rules', 'gruppenbesuche', 'plaene', 'plan_eintraege', 'vortraege']) {
       expect((tabellen[t] ?? []).filter(istProbe), t).toEqual([])
     }
     // Auch die Absage aus (6), die seit dem 4.10.2026 beim Planer ebenfalls ankommt.
@@ -812,42 +876,22 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     expect(text).toMatch(/\(40\) Planer: über „zuteilen" einen Platz freigeben\n.*GEÄNDERT \(HTTP 200\) — der Weg steht offen\n.*\(wieder zurückgestellt\)/)
     expect(text).toMatch(/\(47\) Gruppenaufseher: den Ort eines Treffpunkts der eigenen Gruppe ändern\n.*GEÄNDERT \(HTTP 201\) — der Weg steht offen/)
     expect(text).toMatch(/\(61\) Planer: die Absage eines Mitglieds bekommen \(notify_planners\)\n.*ANGEKOMMEN \(HTTP 204\) — kommt an/)
-    expect(text).toMatch(/· \(62\) Gruppenaufseher: „Schicht geändert" melden\n.*abgewiesen \(HTTP 403\) — geänderte Schichten melden nur Admin und Planer \(forbidden\)/)
-    expect(text).toMatch(/· \(63\) Mitglied: „Schicht geändert" melden\n.*abgewiesen \(HTTP 403\)/)
-    expect(text).toMatch(/· \(64\) Planer: „Schicht geändert" melden\n.*DURCHGELASSEN \(HTTP 200\) — der Weg steht offen/)
     expect(text).toMatch(/· \(69\) Planer: einen vorgemerkten Vortrag sehen\n.*SICHTBAR \(HTTP 200\) — er übernimmt den Vortragsplan/)
     expect(text).toMatch(/· \(70\) Planer: einen Vortrag vormerken \(Upsert wie die App\)\n.*ANGEKOMMEN \(HTTP 201\) — der Weg steht offen\n.*\(Zeile wieder gelöscht\)/)
-    // Jeder Fall von 35 bis 70 kam zu einem Ergebnis — keiner blieb ungemessen.
-    for (let nr = 35; nr <= 70; nr++) expect(text, `(${nr})`).toMatch(new RegExp(`[·!] \\(${nr}\\) `))
   })
 
-  it('mitgliedsrechte-probe (Rechte-Stufen): ist der Planer zu streng abgewiesen, fällt (64) auf', async () => {
-    const l = lauf('mitgliedsrechte-probe.mjs')
-    const modul = (await MODULE['./mitgliedsrechte-probe.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
-    const zu = await fahre(() => l.fahren(modul, ''), {
-      ...l.umgebung,
-      funktionen: { ...l.umgebung!.funktionen, 'send-plan': () => ({ status: 403, json: { error: 'forbidden' } }) },
-    })
-    const text = zu.ausgabe.join('\n')
-    expect(text).toMatch(/! \(64\) Planer: „Schicht geändert" melden\n.*abgewiesen \(HTTP 403\) — ZU STRENG — ändert der Planer eine Schicht, erfährt es niemand \(forbidden\)/)
-    expect(text).toMatch(/Abweichend von der Erwartung: .*\(64\)/)
-  })
-
-  it('mitgliedsrechte-probe (Rechte-Stufen): leitet der Gruppenaufseher keine Gruppe, bleiben (37) und (62) ungemessen', async () => {
-    // Die Tür wiese ihn dann schon wie ein Mitglied ab; ein „abgewiesen" gälte
-    // nicht der Regel fürs Zeugnisgeben.
+  it('mitgliedsrechte-probe (Rechte-Stufen): leitet der Gruppenaufseher keine Gruppe, bleiben (42)–(61) ungemessen — der Rest misst trotzdem', async () => {
+    // Seine Versuche mäßen sonst ein anderes Recht als das genannte; ein
+    // „abgewiesen" gälte nicht der Regel, um die es geht.
     const ohneAufseher = [
       { id: G1, congregation_id: C, name: 'Probe', position: 0 },
       { id: G2, congregation_id: C, name: 'Probe Zwei', position: 1 },
     ]
     const text = (await mitBestand({ groups: ohneAufseher })).ausgabe.join('\n')
-    for (const nr of [37, 62]) {
-      expect(text, `(${nr})`).toMatch(new RegExp(`\\? \\(${nr}\\) Gruppenaufseher: .* — der Gruppenaufseher leitet keine Gruppe, nicht gemessen`))
-      expect(text, `(${nr})`).not.toMatch(new RegExp(`[·!] \\(${nr}\\) `))
-    }
-    // Das Mitglied und der Planer brauchen keine Gruppe.
-    expect(text).toMatch(/· \(63\) /)
-    expect(text).toMatch(/· \(64\) /)
+    expect(text).toMatch(/\? \(42–61\) .* — der Gruppenaufseher leitet keine Gruppe, nicht gemessen/)
+    for (let nr = 42; nr <= 61; nr++) expect(text, `(${nr})`).not.toMatch(new RegExp(`[·!] \\(${nr}\\) `))
+    // Die Türen, die Vormerkungen und die Trolleys brauchen keine Gruppe.
+    for (const nr of [35, 36, 65, 70, 71, 79]) expect(text, `(${nr})`).toMatch(new RegExp(`[·!] \\(${nr}\\) `))
   })
 
   it('mitgliedsrechte-probe (Rechte-Stufen): sagt die Function erst hinter der Tür „keine Woche", hat sie durchgelassen', async () => {
@@ -863,7 +907,7 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
   })
 
   const fsStart = stufenAnlage({
-    marke: 'PROBE-0', versammlung: C, tag0: ersterMontagAb('2099-01-01'), adminPid: P1, zuteilerPid: P3, mitgliedPid: P2, eigeneGruppe: G1, fremdeGruppe: G2,
+    marke: 'PROBE-0', versammlung: C, tag0: ersterMontagAb('2099-01-01'), adminPid: P1, zuteilerPid: P3, eigeneGruppe: G1, fremdeGruppe: G2,
   }).fsStart
 
   it('mitgliedsrechte-probe (Rechte-Stufen): eine Treffpunkt-Woche, die nicht von der Probe ist, bleibt unberührt', async () => {
@@ -879,6 +923,150 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     const { tabellen, ausgabe } = await mitBestand({ fs_weeks: [liegengeblieben] })
     expect(tabellen.fs_weeks ?? []).toEqual([])
     expect(ausgabe.join('\n')).toMatch(/\(47\) Gruppenaufseher: den Ort eines Treffpunkts der eigenen Gruppe ändern\n.*GEÄNDERT/)
+  })
+
+  /*
+    Die Trolleys (seit 14.10.2026): Termine schreibt nur die Function, und die
+    stellt die Attrappe nach (`trolleyFunktion`). Richtlinien kennt sie auch
+    hier nicht — (71)–(73) kommen durch, und gerade deshalb läuft jeder
+    Aufräum-Zweig.
+  */
+  it('mitgliedsrechte-probe (Trolleys): misst (71)–(79) und räumt alles weg — das Trolley-Recht des Mitglieds ist wie vorher', async () => {
+    const { tabellen, ausgabe, aufrufe } = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
+    for (const t of ['trolleys', 'trolley_termine']) expect((tabellen[t] ?? []).filter(istProbe), t).toEqual([])
+    expect(tabellen.persons!.find((p) => p.id === P2)!.priv).toEqual({ 'svc:mik': true })
+    // Direkt in die Termine schreibt die Probe allein den Versuch (71) — auch
+    // weggeräumt wird über die Function. Ein Löschen an ihr vorbei träfe in der
+    // echten Datenbank nichts, die Attrappe aber nähme es hin.
+    expect(aufrufe.filter((a) => a.method !== 'GET' && tabelleVon(a) === 'trolley_termine').map((a) => a.method)).toEqual(['POST'])
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/\(71\) .*\n.*ANGEKOMMEN \(HTTP 201\) — AUCH DAS!\n.*\(Zeile wieder gelöscht\)/)
+    expect(text).toMatch(/· \(74\) .*\n.*nicht eingetragen \(HTTP 403\) — abgewiesen — eintragen nur mit dem Trolley-Recht \(kein-recht\)/)
+    expect(text).toMatch(/· \(75\) .*\n.*EINGETRAGEN \(HTTP 200\) — der Weg steht offen/)
+    expect(text).toMatch(/· \(76\) .*\n.*SICHTBAR \(HTTP 200\) — er steht in der App/)
+    expect(text).toMatch(/· \(77\) .*\n.*nicht ausgetragen \(HTTP 403\) — abgewiesen — austragen nur, wer im Termin steht \(forbidden\)/)
+    expect(text).toMatch(/· \(78\) .*\n.*AUSGETRAGEN \(HTTP 200\) — der Weg steht offen/)
+    expect(text).toMatch(/· \(79\) .*\n.*nicht entfernt \(HTTP 403\) — abgewiesen — Trolleys entfernt nur der Admin \(forbidden\)/)
+    expect(text).toMatch(/alles mit Kennzeichen PROBE-\d+ wieder entfernt, das Trolley-Recht des Mitglieds wie vorher/)
+  })
+
+  it('mitgliedsrechte-probe (Trolleys): (71) schreibt mit Trolley-Recht — ohne wiese schon der Trigger ab, nicht die Richtlinie', async () => {
+    // (74) und (75) zeigen das Recht an ihrem Urteil: Die nachgestellte
+    // Function liest es. Den Trigger hinter (71) stellt die Attrappe nicht nach.
+    const { aufrufe } = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
+    const recht = (wert: boolean) =>
+      aufrufe.findIndex((a) => a.method === 'PATCH' && tabelleVon(a) === 'persons' && (a.body as { priv?: { zeugnis?: boolean } }).priv?.zeugnis === wert)
+    const direkt = aufrufe.findIndex((a) => a.method === 'POST' && tabelleVon(a) === 'trolley_termine')
+    expect(recht(true)).toBeGreaterThan(-1)
+    expect(direkt).toBeGreaterThan(recht(true))
+    expect(direkt).toBeLessThan(recht(false))
+  })
+
+  /**
+   * **Die Richtlinien der Trolleys**, wie `schema.sql` sie setzt: Trolleys
+   * schreibt nur der Admin (`trolleys_write`), Termine niemand — eine
+   * Schreib-Richtlinie für `trolley_termine` gibt es nicht, nur die Function
+   * schreibt, mit der Dienstrolle. Die Attrappe kennt keine Richtlinien; diese
+   * steht vor ihr wie RLS vor der Tabelle. Nachgestellt ist das Einfügen —
+   * anderes schreibt die Probe an diesen Tabellen nicht, gelöscht wird nur der
+   * Trolley, vom Admin. Wer einfügt, sagt das Token der Anfrage; zu welchem
+   * Konto es gehört, liest die Wache bei der Anmeldung mit.
+   */
+  const trolleyRichtlinien = (admins: readonly string[]) => {
+    const konten = new Map<string, string>()
+    let wer: string | undefined
+    const mitWache = (holen: (adresse: string | URL, init?: RequestInit) => Promise<Response>) =>
+      async (adresse: string | URL, init?: RequestInit): Promise<Response> => {
+        wer = konten.get(new Headers(init?.headers).get('Authorization') ?? '')
+        const antwort = await holen(adresse, init)
+        if (new URL(String(adresse)).pathname === '/auth/v1/token' && antwort.ok) {
+          const { access_token: token, user } = (await antwort.clone().json()) as { access_token: string; user: { id: string } }
+          konten.set(`Bearer ${token}`, user.id)
+        }
+        return antwort
+      }
+    return {
+      /** Was die Datenbank auf ein Einfügen antwortet, das keine Richtlinie zulässt. */
+      stoerung: (a: Aufruf): FunktionsAntwort | undefined => {
+        const tabelle = tabelleVon(a)
+        const verboten = a.method === 'POST' && (tabelle === 'trolley_termine' || (tabelle === 'trolleys' && !admins.includes(wer ?? '')))
+        return verboten ? { status: 403, json: { code: '42501', message: `new row violates row-level security policy for table "${tabelle}"` } } : undefined
+      },
+      /** Einen Lauf fahren, mit der Wache vor der Attrappe. */
+      fahren: (lauf: () => Promise<unknown>) => () => {
+        vi.stubGlobal('fetch', mitWache(globalThis.fetch))
+        return lauf()
+      },
+    }
+  }
+
+  it('mitgliedsrechte-probe (Trolleys): unter den Richtlinien aus schema.sql kommt jeder Fall zu seinem Urteil', async () => {
+    const l = lauf('mitgliedsrechte-probe.mjs')
+    const modul = (await MODULE['./mitgliedsrechte-probe.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const richtlinien = trolleyRichtlinien([U1])
+    const { ausgabe, tabellen } = await fahre(richtlinien.fahren(() => l.fahren(modul, '')), { ...l.umgebung, stoerung: richtlinien.stoerung })
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/· \(71\) .*\n.*nicht angekommen \(HTTP 403\) — abgewiesen — Termine schreibt nur die Function/)
+    expect(text).toMatch(/· \(72\) Mitglied: einen Trolley anlegen\n.*nicht angekommen \(HTTP 403\) — abgewiesen — Trolleys pflegt der Admin/)
+    expect(text).toMatch(/· \(73\) Planer: einen Trolley anlegen\n.*nicht angekommen \(HTTP 403\) — abgewiesen — Trolleys pflegt der Admin/)
+    // Den Trolley des Admins ließ die Wache durch — sonst mäßen (74)–(79) nichts.
+    for (let nr = 71; nr <= 79; nr++) expect(text, `(${nr})`).toMatch(new RegExp(`· \\(${nr}\\) `))
+    expect((tabellen.trolleys ?? []).filter(istProbe)).toEqual([])
+  })
+
+  /** Die Probe mit einer anderen Function `trolley` — für die Gegenproben ihres Urteils. */
+  const mitTrolley = async (trolley: NonNullable<Umgebung['funktionen']>[string]) => {
+    const l = lauf('mitgliedsrechte-probe.mjs')
+    const modul = (await MODULE['./mitgliedsrechte-probe.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    return fahre(() => l.fahren(modul, ''), { ...l.umgebung, funktionen: { ...l.umgebung!.funktionen, trolley } })
+  }
+
+  it('mitgliedsrechte-probe (Trolleys): weist die Function auch das Mitglied mit Recht ab, fällt (75) auf', async () => {
+    const { ausgabe } = await mitTrolley((rumpf, kontext) => trolleyFunktion(rumpf, kontext, () => false))
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/! \(75\) .*\n.*nicht eingetragen \(HTTP 403\) — ZU STRENG — niemand kann sich mehr eintragen \(kein-recht\)/)
+    expect(text).toMatch(/Abweichend von der Erwartung: .*\(75\)/)
+    // Ohne den Termin aus (75) messen (76)–(78) nichts — und sagen es.
+    for (const nr of [76, 77, 78]) {
+      expect(text, `(${nr})`).toMatch(new RegExp(`\\(${nr}\\) .*\\n.*PROBE KAPUTT — kein eigener Termin aus \\(75\\)`))
+    }
+  })
+
+  it('mitgliedsrechte-probe (Trolleys): eine Abweisung, die nichts über das Recht sagt, ist kein Urteil — auch nicht mit 403', async () => {
+    // `belegt` hieße, der Versuch traf eine andere Regel; `no-person`, dass dem
+    // Konto die Person fehlt. Beides weist ab und sähe ohne `TROLLEY_RECHT` aus
+    // wie die Grenze, die greift.
+    const { ausgabe } = await mitTrolley((rumpf) =>
+      rumpf.aktion === 'eintragen' ? { status: 409, json: { error: 'belegt' } } : { status: 403, json: { error: 'no-person' } },
+    )
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/\(74\) .*\n.*PROBE KAPUTT — Schreiben scheiterte \(HTTP 409\)/)
+    expect(text).toMatch(/\(79\) .*\n.*PROBE KAPUTT — Schreiben scheiterte \(HTTP 403\)/)
+    expect(text).not.toMatch(/abgewiesen — eintragen nur mit dem Trolley-Recht/)
+    expect(text).not.toMatch(/abgewiesen — Trolleys entfernt nur der Admin/)
+    expect(text).toMatch(/Nicht gemessen — die Probe selbst scheiterte: .*\(74\), \(75\), \(76\), \(77\), \(78\), \(79\)/)
+  })
+
+  it('mitgliedsrechte-probe (Trolleys): lässt die Function ein Mitglied ohne Recht ein, fällt (74) auf — und der Termin geht wieder', async () => {
+    const { ausgabe, tabellen } = await mitTrolley((rumpf, kontext) => trolleyFunktion(rumpf, kontext, () => true))
+    expect(ausgabe.join('\n')).toMatch(/! \(74\) .*\n.*EINGETRAGEN \(HTTP 200\) — AUCH DAS!\n.*Die Function antwortete: .*\n.*\(wieder ausgetragen\)/)
+    expect((tabellen.trolley_termine ?? []).filter(istProbe)).toEqual([])
+  })
+
+  it('mitgliedsrechte-probe: jede Nummer der Tabelle im Kopf misst der Lauf genau einmal — und keine andere', async () => {
+    // Die Tabelle im Kopf ist das Inhaltsverzeichnis der Probe; Protokolle und
+    // Notizen zeigen auf ihre Nummern. Ein Fall, der dort fehlt, eine Nummer,
+    // die der Code zweimal vergibt oder die frei bleiben sollte, führte jeden
+    // in die Irre, der ein Protokoll von damals liest.
+    const quelle = fs.readFileSync(path.join(dir, 'mitgliedsrechte-probe.mjs'), 'utf8')
+    const kopf = quelle.slice(0, quelle.indexOf('\nimport '))
+    const tabelle = [...kopf.matchAll(/^ \* {2,3}(\d+b?)\. /gm)].map((m) => m[1]!)
+    expect(new Set(tabelle).size, 'eine Nummer steht zweimal im Kopf').toBe(tabelle.length)
+    // Im vollen Bestand der Attrappe fehlt keinem Fall die Voraussetzung: Jeder
+    // kommt zu einem Ergebnis, keiner bleibt ungemessen.
+    const { ausgabe } = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
+    const gemessen = [...ausgabe.join('\n').matchAll(/^ {2}[·!] \((\S+)\) /gm)].map((m) => m[1]!)
+    expect([...gemessen].sort()).toEqual([...tabelle].sort())
   })
 
   it('mandanten-nachweis: ein 400 auf den Einfügeversuch heißt „PROBE KAPUTT", nicht „abgewiesen"', async () => {

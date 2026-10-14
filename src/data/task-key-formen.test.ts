@@ -68,7 +68,7 @@ function erzeuger(): Record<string, string> {
 }
 
 describe('Formen der task_key — bekannt im Schema', () => {
-  it('es sind genau diese fünf Vorlagen', () => {
+  it('es sind genau diese vier Vorlagen', () => {
     /*
      * Die Tabelle steht wörtlich so über `task_gehoert_mir` in
      * `supabase/schema.sql`. Ändert sich hier etwas, muss es dort mit — sonst
@@ -78,21 +78,20 @@ describe('Formen der task_key — bekannt im Schema', () => {
      * `part` und `aux` teilen sich die Vorlage (die Art steht als Ausdruck
      * drin), deshalb vier Erzeuger für fünf Formen.
      *
-     * **Eine fünfte stand hier bis zum 17. September 2026**: `partTaskKey`,
+     * **Eine weitere stand hier bis zum 17. September 2026**: `partTaskKey`,
      * der positionsbasierte Schlüssel. Er fiel mit der Altlasten-Räumung weg —
      * jeder Programmpunkt trägt seine Kennung seit dem Import.
      *
-     * **Die fünfte heute** ist das öffentliche Zeugnisgeben (T120, Phase 3):
-     * `oz|<Montag>|<Eintrag>`. Ohne seinen Zweig in `task_gehoert_mir` liefe
-     * die Form dort als „unbekannt" durch, und jedes Mitglied hätte fremde
-     * Einträge bestätigen oder absagen können.
+     * **Und bis zum 14. Oktober 2026** das öffentliche Zeugnisgeben
+     * (`oz|<Montag>|<Eintrag>`, T120, Phase 3). Die Trolleys haben keine
+     * Aufgaben-Schlüssel: Ein Termin ist verabredet, nicht zugeteilt — es gibt
+     * nichts zu bestätigen oder abzusagen (T121, Phase 7).
      */
     expect(erzeuger()).toEqual({
       punktKey: '<>|<>|<>|<>|<>', // stabile Kennung des Punkts (T37)
       ratgeberKey: '<>|<>|ratgeber',
       helferKey: '<>|<>|helper|<>|<>',
       fsKey: 'fs|<>|<>',
-      ozKey: 'oz|<>|<>',
     })
   })
 

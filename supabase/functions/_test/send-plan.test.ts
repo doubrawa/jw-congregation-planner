@@ -22,7 +22,7 @@
  */
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reset as resetPush, sent as sentPush } from './web-push.stub'
-import { TITEL_AUSFALL, TITEL_ENTZUG, TITEL_GEAENDERT, TITEL_ZUTEILUNG } from '../send-plan/texte.ts'
+import { TITEL_ENTZUG, TITEL_ZUTEILUNG } from '../send-plan/texte.ts'
 import { pushTexte, TITEL_ERINNERUNG } from '../send-reminders/texte.ts'
 import {
   filterWert,
@@ -157,9 +157,6 @@ let log: { task_key: string; name: string }[]
 let fsWoche: unknown[]
 /** Die Lesepfade auf `confirmations`/`assignment_log` eines Laufs. */
 let gelesen: string[]
-/** Öffentliches Zeugnisgeben (T120): Termine und Einträge, wie sie in der Datenbank stehen. */
-let ozTermine: unknown[]
-let ozEintraege: { id: string; termin_id: string; datum: string; person_id: string; selbst: boolean }[]
 /** Die Sperre der Erinnerungen (`reminder_log`): wer an welchem Tag schon erinnert wurde. */
 let erinnert: { user_id: string; kind: string; sent_on: string }[]
 
@@ -230,13 +227,6 @@ const fakeFetch = async (
     const start = filterWert(path, 'start')
     return jsonRes(start === WOCHE && !fremd ? [{ start: WOCHE, data: fsWoche }] : [])
   }
-  if (path.startsWith('oz_termine')) return jsonRes(fremd ? [] : ozTermine)
-  if (path.startsWith('oz_eintraege')) {
-    // Auch hier werden die Filter ausgewertet: nur Zugeteiltes, nur ab heute.
-    const nurZugeteilt = /[?&]selbst=is\.false/.test(path)
-    const ab = decodeURIComponent(/[?&]datum=gte\.([^&]*)/.exec(path)?.[1] ?? '')
-    return jsonRes(fremd ? [] : ozEintraege.filter((e) => (!nurZugeteilt || !e.selbst) && e.datum >= ab))
-  }
   if (path.startsWith('weeks')) {
     const start = filterWert(path, 'start')
     return jsonRes(start === WOCHE && !fremd ? [{ start: WOCHE, data: woche }] : [])
@@ -289,8 +279,6 @@ beforeEach(() => {
   log = []
   fsWoche = []
   gelesen = []
-  ozTermine = []
-  ozEintraege = []
   erinnert = []
   resetPush()
 })
@@ -363,89 +351,6 @@ describe('Plan senden: jede eingeteilte Person erfährt von ihrer Aufgabe', () =
     expect(sentPush.map((p) => p.endpoint)).toEqual(['https://push.test/anna'])
   })
 })
-
-/* ---- Öffentliches Zeugnisgeben (T120, Phase 3) ---------------------------- */
-
-describe('Plan senden im öffentlichen Zeugnisgeben', () => {
-  // `time` kommt aus der Datenbank mit Sekunden — der Termin nennt sie ohne.
-  const MITTWOCH = { id: 't-mi', wd: 3, von: '10:00:00', bis: '12:00:00', ort: 'Marktplatz' }
-  const eintrag = (id: string, person_id: string, selbst = false, datum = '2026-09-09') => ({
-    id,
-    termin_id: MITTWOCH.id,
-    datum,
-    person_id,
-    selbst,
-  })
-  const zeugnis = () => ruf({ action: 'zeugnis' })
-
-  beforeEach(() => {
-    ozTermine = [MITTWOCH]
-  })
-
-  it('wer zugeteilt wurde, erfährt es — mit Termin und Bezeichnung, und das Tagebuch merkt es sich', async () => {
-    ozEintraege = [eintrag('e1', 'p-anna')]
-    const res = await zeugnis()
-    expect(res.status).toBe(200)
-    expect(await res.json()).toMatchObject({ personen: 1, aufgaben: 1, ohneKonto: [] })
-    expect(zeilenIn('notifications')).toEqual([
-      expect.objectContaining({
-        user_id: U_ANNA,
-        title: TITEL_ZUTEILUNG,
-        body: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz: Öffentliches Zeugnisgeben',
-        task_key: 'oz|2026-09-07|e1',
-      }),
-    ])
-    expect(zeilenIn('assignment_log')).toEqual([
-      expect.objectContaining({ task_key: 'oz|2026-09-07|e1', name: 'Anna Berg', person_id: 'p-anna', user_id: U_ANNA }),
-    ])
-    expect(sentPush.map((p) => p.endpoint)).toEqual(['https://push.test/anna'])
-  })
-
-  it('wer sich selbst eingetragen hat, weiß Bescheid — er bekommt nichts', async () => {
-    ozEintraege = [eintrag('e1', 'p-anna', true)]
-    expect(await (await zeugnis()).json()).toMatchObject({ personen: 0, aufgaben: 0 })
-    expect(writesTo('notifications')).toEqual([])
-  })
-
-  it('auch nicht, wer bestätigt hat oder schon gemeldet ist — gelesen nur für die Wochen der Einträge', async () => {
-    ozEintraege = [eintrag('e1', 'p-anna'), eintrag('e2', 'p-bernd')]
-    confirmations = [{ task_key: 'oz|2026-09-07|e1', status: 'bestätigt' }]
-    log = [{ task_key: 'oz|2026-09-07|e2', name: 'Bernd Cohn' }]
-    expect(await (await zeugnis()).json()).toMatchObject({ personen: 0, aufgaben: 0 })
-    expect(gelesen.length).toBeGreaterThan(0)
-    for (const pfad of gelesen) expect(likeMuster(pfad, 'task_key')).toEqual(['oz|2026-09-07|*'])
-  })
-
-  it('was vorbei ist, geht nicht mehr hinaus', async () => {
-    vi.setSystemTime(new Date('2026-09-10T08:00:00Z')) // Donnerstag
-    ozEintraege = [eintrag('e1', 'p-anna')]
-    expect(await (await zeugnis()).json()).toMatchObject({ personen: 0, aufgaben: 0 })
-  })
-
-  it('ohne Konto: nicht zuzustellen, aber genannt und im Tagebuch', async () => {
-    ozEintraege = [eintrag('e1', 'p-ohne')]
-    expect(await (await zeugnis()).json()).toMatchObject({ personen: 0, aufgaben: 1, ohneKonto: ['Karl Onto'] })
-    expect(zeilenIn('assignment_log')).toEqual([expect.objectContaining({ task_key: 'oz|2026-09-07|e1', name: 'Karl Onto' })])
-  })
-
-  it('nur wer zuteilt, darf — auch kein Gruppenaufseher', async () => {
-    ozEintraege = [eintrag('e1', 'p-anna')]
-    authUser = U_MITGLIED
-    expect((await zeugnis()).status).toBe(403)
-    authUser = U_AUFSEHER
-    expect((await zeugnis()).status).toBe(403)
-    expect(writesTo('notifications')).toEqual([])
-  })
-
-  it('der Planer sendet die Schichten wie der Admin (4.10.2026)', async () => {
-    ozEintraege = [eintrag('e1', 'p-anna')]
-    authUser = U_ZUTEILER
-    expect((await zeugnis()).status).toBe(200)
-    expect(zeilenIn('assignment_log')).toEqual([expect.objectContaining({ task_key: 'oz|2026-09-07|e1' })])
-  })
-})
-
-/* ---- Nicht zweimal ------------------------------------------------------- */
 
 describe('Was schon gemeldet ist, bleibt liegen', () => {
   it('ein zweiter Druck ohne Änderung schickt nichts', async () => {
@@ -892,98 +797,6 @@ describe('Entzug als Liste: ein Aufruf für alle', () => {
   })
 })
 
-/*
- * **Eine Zeugnis-Schicht fällt aus oder ändert sich** (5.10.2026).
- *
- * Fällt sie aus — gestrichen, anderer Wochentag, Termin gelöscht —, heißt die
- * Nachricht „Schicht fällt aus" statt „Zuteilung zurückgezogen": Der Termin ist
- * weg, nicht die Person. Ändern sich Uhrzeit oder Ort, bekommt sie „Schicht
- * geändert" mit dem neuen Termin, und ihr Platz bleibt ihr — im Tagebuch wie
- * in der Schicht.
- */
-describe('Zeugnis-Schicht: Ausfall und Änderung', () => {
-  const KEY_OZ = 'oz|2026-09-07|e1'
-  const OZ = { taskKey: KEY_OZ, name: 'Anna Berg', pid: 'p-anna', label: 'Öffentliches Zeugnisgeben' }
-  const pushTitel = () => sentPush.map((p) => (JSON.parse(p.payload) as { title: string }).title)
-
-  it('„Schicht fällt aus" mit dem alten Termin — und der Platz verschwindet aus dem Tagebuch', async () => {
-    const res = await ruf({
-      action: 'entzug',
-      entzuege: [{ ...OZ, datum: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz', grund: 'ausfall' }],
-    })
-    expect(res.status).toBe(200)
-    const zeilen = zeilenIn('notifications')
-    expect(zeilen).toEqual([expect.objectContaining({ user_id: U_ANNA, title: TITEL_AUSFALL })])
-    expect(String(zeilen[0]!.body)).toContain('Marktplatz')
-    expect(pushTitel()).toEqual([TITEL_AUSFALL])
-    expect(writes.some((w) => w.method === 'DELETE' && w.path.includes(encodeURIComponent(KEY_OZ)))).toBe(true)
-  })
-
-  it('der Grund zählt nur bei einer Schicht — sonst bleibt es der Entzug', async () => {
-    await ruf({
-      action: 'entzug',
-      entzuege: [{ taskKey: KEY_ANNA, name: 'Anna Berg', pid: 'p-anna', label: 'Bibellesung', datum: 'Di', grund: 'ausfall' }],
-    })
-    expect(zeilenIn('notifications')).toEqual([expect.objectContaining({ title: TITEL_ENTZUG })])
-  })
-
-  it('Entzug und Ausfall derselben Person: zwei Nachrichten, je mit ihrem Titel', async () => {
-    await ruf({
-      action: 'entzug',
-      entzuege: [
-        { taskKey: KEY_ANNA, name: 'Anna Berg', pid: 'p-anna', label: 'Bibellesung', datum: 'Di' },
-        { ...OZ, datum: 'Mi', grund: 'ausfall' },
-      ],
-    })
-    expect(zeilenIn('notifications').map((z) => z.title).sort()).toEqual([TITEL_AUSFALL, TITEL_ENTZUG].sort())
-  })
-
-  it('„Schicht geändert" mit dem neuen Termin — das Tagebuch bleibt', async () => {
-    const res = await ruf({
-      action: 'zeugnis-geaendert',
-      aenderungen: [{ ...OZ, datum: 'Mittwoch, 9. September · 09:00–11:00 · Rathausplatz' }],
-    })
-    expect(res.status).toBe(200)
-    const zeilen = zeilenIn('notifications')
-    expect(zeilen).toEqual([expect.objectContaining({ user_id: U_ANNA, title: TITEL_GEAENDERT })])
-    expect(String(zeilen[0]!.body)).toContain('Rathausplatz')
-    expect(pushTitel()).toEqual([TITEL_GEAENDERT])
-    expect(writes.filter((w) => w.method === 'DELETE')).toEqual([])
-  })
-
-  it('der Planer meldet es wie der Admin', async () => {
-    authUser = U_ZUTEILER
-    expect((await ruf({ action: 'zeugnis-geaendert', aenderungen: [{ ...OZ, datum: 'Mi' }] })).status).toBe(200)
-  })
-
-  it('kein Mitglied, kein Gruppenaufseher', async () => {
-    for (const wer of [U_MITGLIED, U_AUFSEHER]) {
-      authUser = wer
-      expect((await ruf({ action: 'zeugnis-geaendert', aenderungen: [{ ...OZ, datum: 'Mi' }] })).status, wer).toBe(403)
-    }
-    expect(writes).toEqual([])
-  })
-
-  it('nur Schlüssel des Zeugnisgebens — eine Liste ohne brauchbaren Eintrag ist ein Fehler', async () => {
-    expect((await ruf({ action: 'zeugnis-geaendert', aenderungen: [] })).status).toBe(400)
-    expect(
-      (await ruf({ action: 'zeugnis-geaendert', aenderungen: [{ taskKey: KEY_ANNA, name: 'Anna Berg', datum: 'Di' }] }))
-        .status,
-    ).toBe(400)
-    expect(writes).toEqual([])
-  })
-})
-
-/*
- * **Das Tagebuch muss geschrieben werden können, auch wenn eine Zeile schon
- * dasteht.**
- *
- * Ein INSERT ist in Postgres ganz oder gar nicht. Eine einzige Dublette verwarf
- * damit den ganzen Stapel — und `restInsert` schluckt den Fehler, die Antwort
- * meldete weiter Erfolg. Der teure Teil kommt danach: Ohne Tagebuch-Zeilen gilt
- * jeder Platz weiter als ungemeldet, und **jeder** weitere Druck schickt allen
- * dieselbe Nachricht erneut. Für immer, denn die störende Zeile bleibt liegen.
- */
 describe('Das Versand-Tagebuch verträgt eine Dublette', () => {
   it('der Stapel bittet um „überspringen", nicht um „alles verwerfen"', async () => {
     await plan()

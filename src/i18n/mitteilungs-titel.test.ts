@@ -13,19 +13,20 @@ import { DEMO_NOTIFICATIONS } from '../../tests/testdaten/testdaten'
  * ausgegeben — auf Deutsch, in allen 33 Fremdsprachen, ohne Fehler und ohne
  * dass irgendwo etwas rot würde.
  *
- * Die Titel entstehen an **fünf** Stellen, vier davon außerhalb der App:
+ * Die Titel entstehen an **sechs** Stellen, fünf davon außerhalb der App:
  *
  *  - `src/app/reducer.ts` — Import und Verhinderung,
  *  - `supabase/functions/send-reminders/texte.ts` — die Erinnerung und die
  *    Sammelmeldung an die Planer,
  *  - `supabase/functions/substitute/texte.ts` — Ersatz gesucht/gefunden,
- *  - `supabase/functions/send-plan/texte.ts` — „Plan senden", der Entzug
- *    einer bestätigten Zuteilung (T99) und die Zeugnis-Schicht, die ausfällt
- *    oder sich ändert (5.10.2026),
+ *  - `supabase/functions/send-plan/texte.ts` — „Plan senden" und der Entzug
+ *    einer bestätigten Zuteilung (T99),
+ *  - `supabase/functions/trolley/texte.ts` — die Trolley-Termine (T121): für
+ *    den Partner eingetragen, abgesagt, Partner gefunden, entfällt,
  *  - `tests/testdaten/testdaten.ts` — der Bestand der Entwicklerseite (er
  *    sieht aus wie echte Daten und wird auch so angezeigt).
  *
- * Vier Quellen, eine Tabelle, und niemand, der sie zusammenhält: Genau diese
+ * Fünf Quellen, eine Tabelle, und niemand, der sie zusammenhält: Genau diese
  * Bauart hat hier schon zweimal zu einem stillen Auseinanderlaufen geführt
  * (B8, T40). Deshalb liest diese Prüfung die Titel aus dem **Quelltext** der
  * Erzeuger, statt sie abzuschreiben.
@@ -66,7 +67,7 @@ function titelAusReducer(): string[] {
 }
 
 /**
- * Titel der drei Functions — alle führen sie als benannte Konstanten in ihrer
+ * Titel der vier Functions — alle führen sie als benannte Konstanten in ihrer
  * `texte.ts`: `TITEL_…` ist zugleich der kanonisch deutsche Text und der
  * Schlüssel, unter dem die Glocke übersetzt.
  *
@@ -83,6 +84,7 @@ function titelAusKonstanten(datei: string): string[] {
 
 const titelAusErsatz = (): string[] => titelAusKonstanten('substitute/texte.ts')
 const titelAusPlan = (): string[] => titelAusKonstanten('send-plan/texte.ts')
+const titelAusTrolley = (): string[] => titelAusKonstanten('trolley/texte.ts')
 /**
  * Beide Titel der Erinnerungs-Function: die persönliche Erinnerung und die
  * Sammelmeldung an die Planer, die seit T99 ebenfalls in die Glocke geht.
@@ -94,6 +96,7 @@ const ALLE_ERZEUGTEN = [
   ...titelAusErinnerung(),
   ...titelAusErsatz(),
   ...titelAusPlan(),
+  ...titelAusTrolley(),
   ...DEMO_NOTIFICATIONS.map((n) => n.title),
 ]
 
@@ -115,6 +118,9 @@ const ABGELEGT = new Set([
   'Plan veröffentlicht',
   'Zuteilung gesendet',
   'Zuteilungen gesendet',
+  // Stand und Schicht (5. bis 14.10.2026) — mit den Trolleys gibt es keine Schichten mehr.
+  'Schicht fällt aus',
+  'Schicht geändert',
 ])
 
 beforeAll(async () => {
@@ -122,7 +128,7 @@ beforeAll(async () => {
 })
 
 describe('Jeder erzeugte Mitteilungs-Titel steht in der Zuordnung', () => {
-  it('die Prüfung findet überhaupt Titel — an jeder der vier Quellen', () => {
+  it('die Prüfung findet überhaupt Titel — an jeder der Quellen', () => {
     /*
       Ohne diese Zeile wäre ein zu enger Ausdruck von „alles in Ordnung" nicht
       zu unterscheiden. Und genau das passiert leicht: Die Erzeuger sind
@@ -130,10 +136,12 @@ describe('Jeder erzeugte Mitteilungs-Titel steht in der Zuordnung', () => {
       damit ein Muster ins Leere greift.
     */
     expect(titelAusReducer().length, 'reducer.ts').toBeGreaterThan(1)
-    expect(titelAusErinnerung().length, 'send-reminders/texte.ts').toBe(2)
+    // Die Erinnerung, die Sammelmeldung an die Planer und „Trolley morgen" (T121).
+    expect(titelAusErinnerung().length, 'send-reminders/texte.ts').toBe(3)
     expect(titelAusErsatz().length, 'substitute/texte.ts').toBe(2)
-    // Zuteilung, Entzug — und seit dem 5.10.2026 Ausfall und Änderung einer Zeugnis-Schicht.
-    expect(titelAusPlan().length, 'send-plan/texte.ts').toBe(4)
+    // Zuteilung und Entzug.
+    expect(titelAusPlan().length, 'send-plan/texte.ts').toBe(2)
+    expect(titelAusTrolley().length, 'trolley/texte.ts').toBe(4)
     expect(DEMO_NOTIFICATIONS.length, 'Demo-Bestand').toBeGreaterThan(0)
   })
 

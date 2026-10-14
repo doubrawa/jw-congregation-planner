@@ -103,10 +103,12 @@ const SPIEGEL: Record<string, Spiegel> = {
     spalten: { person_id: 'pid' },
     basis: { id: 'zz', woche: '2026-11-09', redner: 'Z', versammlung: '', eigener: true, pid: null, thema: '', lied: '' },
   },
-  oz_eintraege: {
-    feld: 'ozEintraege',
-    spalten: { person_id: 'pid' },
-    basis: { id: 'zz', terminId: 't1', datum: '2026-09-09', pid: null, selbst: false },
+  // Wer eingetragen hat, nimmt seinen Termin mit; als Partner fehlt er nur — der
+  // andere sucht wieder einen (T121).
+  trolley_termine: {
+    feld: 'trolleyTermine',
+    spalten: { person_id: 'pid', partner_id: 'partner' },
+    basis: { id: 'zz', trolleyId: 'tr1', datum: '2026-09-09', von: '10:00', bis: '12:00', pid: 'p-x', partner: null, gemeinsam: false },
   },
   plan_eintraege: {
     feld: 'planEintraege',
@@ -125,7 +127,7 @@ const FK = fremdschluessel()
 describe('Fremdschlüssel auf Personen und Gruppen — jeder hat eine Entscheidung', () => {
   it('die Probe findet die Fremdschlüssel überhaupt (sonst prüfte sie nichts)', () => {
     expect(FK.length).toBeGreaterThanOrEqual(12)
-    expect(FK).toContainEqual({ tabelle: 'oz_eintraege', spalte: 'person_id', ziel: 'persons', aktion: 'cascade' })
+    expect(FK).toContainEqual({ tabelle: 'trolley_termine', spalte: 'person_id', ziel: 'persons', aktion: 'cascade' })
     expect(FK).toContainEqual({ tabelle: 'persons', spalte: 'grp', ziel: 'groups', aktion: 'set null' })
   })
 

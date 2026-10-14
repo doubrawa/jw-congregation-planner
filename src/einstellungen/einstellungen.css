@@ -184,23 +184,34 @@
   padding-inline: 4px;
 }
 
-/* Am Desktop eine Tabelle: Gruppe, Aufseher, Gehilfe, Personen. */
-.gruppen-kopf,
-.gruppen-zeile {
+/*
+ * Am Desktop Tabellen: Gruppe, Aufseher, Gehilfe, Personen — Trolley, Abholen,
+ * Hinweis, kommende Termine. Die Spalten bringt die Karte mit (`--spalten`).
+ */
+.gruppen-tabelle {
+  --spalten: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1.3fr) 80px 20px;
+}
+
+.trolleys-tabelle {
+  --spalten: minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 0.8fr) 20px;
+}
+
+.einst-tabelle-kopf,
+.einst-tabelle-zeile {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1.3fr) 80px 20px;
+  grid-template-columns: var(--spalten);
   align-items: center;
   column-gap: 14px;
 }
 
-.gruppen-kopf {
+.einst-tabelle-kopf {
   min-height: 36px;
   color: var(--text3);
   font-size: calc(13px * var(--fs));
   font-weight: 600;
 }
 
-.gruppen-zeile {
+.einst-tabelle-zeile {
   width: 100%;
   min-height: 54px;
   border-block-start: 1px solid var(--linie);
@@ -208,16 +219,16 @@
   text-align: start;
 }
 
-.gruppen-zeile > .einst-zeile-name {
+.einst-tabelle-zeile > .einst-zeile-name {
   color: var(--text);
 }
 
-.gruppen-zeile > .zeichen {
+.einst-tabelle-zeile > .zeichen {
   color: var(--text3);
 }
 
-/* Im Blatt der Gruppe: was beim Entfernen verloren geht, je Folge ein roter Punkt. */
-.gruppe-folgen {
+/* Im Blatt einer Gruppe, eines Trolleys: was beim Entfernen verloren geht, je Folge ein roter Punkt. */
+.blatt-folgen {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -226,7 +237,7 @@
   border-radius: 18px;
 }
 
-.gruppe-folgen p {
+.blatt-folgen p {
   display: flex;
   align-items: baseline;
   gap: 8px;
@@ -234,7 +245,7 @@
   font-size: calc(14px * var(--fs));
 }
 
-.gruppe-folgen p::before {
+.blatt-folgen p::before {
   content: '';
   flex: none;
   width: 6px;

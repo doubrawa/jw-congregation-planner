@@ -3,7 +3,7 @@ import { zeitspanne } from '../components/datum-anzeige'
 import { fsGruppeEntfernen } from '../data/fs'
 import { personCompare } from '../data/helpers'
 import { rechteDerPerson } from '../data/rechte'
-import type { Group, Lang, MeetingTime, Member, Person, Reminders } from '../data/types'
+import type { Group, Lang, MeetingTime, Member, Person, Reminders, Trolley } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import { wochentagNameAusWd } from '../planen/wochentage'
@@ -49,33 +49,48 @@ export function werPlant(persons: readonly Person[], members: readonly Member[],
 }
 
 /**
- * Der Name einer neuen Gruppe: „Gruppe N" mit der nächsten Zahl — nicht wieder
- * bei 1, wenn „Gruppe 1" und „Gruppe 3" schon stehen. Ein Name ohne Zahl (sie
- * sind frei, entschieden am 11.10.2026) zählt als 0. Gespeichert wird er
- * kanonisch deutsch, angezeigt übersetzt (`tu`).
+ * Die Zahl nach der höchsten in den Namen — nicht wieder 1, wenn „Gruppe 1"
+ * und „Gruppe 3" schon stehen. Ein Name ohne Zahl (sie sind frei, entschieden
+ * am 11.10.2026) zählt als 0.
  */
-export function neuerGruppenName(groups: readonly Pick<Group, 'name'>[]): string {
-  const hoechste = groups.reduce((m, g) => Math.max(m, Number.parseInt(g.name.replace(/\D/g, ''), 10) || 0), 0)
-  return `Gruppe ${hoechste + 1}`
+function naechsteZahl(liste: readonly { name: string }[]): number {
+  return liste.reduce((m, x) => Math.max(m, Number.parseInt(x.name.replace(/\D/g, ''), 10) || 0), 0) + 1
 }
 
 /**
- * **Trägt eine andere Gruppe schon diesen Namen?** — so, wie er gespeichert
- * ist, oder so, wie man ihn liest (`tu`: „Gruppe 2" heißt auf Englisch „Group
- * 2"). Groß- und Kleinschreibung und doppelte Leerzeichen zählen nicht, wie
- * bei den Personen (`namensSchluessel`). Gibt die andere Gruppe zurück — der
- * Hinweis nennt sie.
+ * Der Name einer neuen Gruppe: „Gruppe N" mit der nächsten Zahl. Gespeichert
+ * wird er kanonisch deutsch, angezeigt übersetzt (`tu`).
  */
-export function gruppenDublette(
-  groups: readonly Group[],
+export function neuerGruppenName(groups: readonly Pick<Group, 'name'>[]): string {
+  return `Gruppe ${naechsteZahl(groups)}`
+}
+
+/**
+ * Der Name eines neuen Trolleys: das Wort der Oberfläche (`wort`, „Trolley")
+ * mit der nächsten Zahl. Anders als die Gruppe wird er nicht übersetzt — die
+ * Versammlung nennt ihre Trolleys, wie sie will, und so steht er da.
+ */
+export function neuerTrolleyName(trolleys: readonly Pick<Trolley, 'name'>[], wort: string): string {
+  return `${wort} ${naechsteZahl(trolleys)}`
+}
+
+/**
+ * **Trägt schon ein anderer Eintrag diesen Namen?** — so, wie er gespeichert
+ * ist, oder so, wie man ihn liest (`lesen`, bei Gruppen `tu`: „Gruppe 2" heißt
+ * auf Englisch „Group 2"). Groß- und Kleinschreibung und doppelte Leerzeichen
+ * zählen nicht, wie bei den Personen (`namensSchluessel`). Gibt den anderen
+ * zurück — der Hinweis nennt ihn.
+ */
+export function doppelterName<T extends { id: string; name: string }>(
+  liste: readonly T[],
   id: string,
   name: string,
-  tu: (text: string) => string,
-): Group | undefined {
+  lesen: (text: string) => string = (text) => text,
+): T | undefined {
   const schluessel = (text: string) => text.trim().replace(/\s+/g, ' ').toLowerCase()
   const gesucht = schluessel(name)
   if (!gesucht) return undefined
-  return groups.find((g) => g.id !== id && (schluessel(g.name) === gesucht || schluessel(tu(g.name)) === gesucht))
+  return liste.find((x) => x.id !== id && (schluessel(x.name) === gesucht || schluessel(lesen(x.name)) === gesucht))
 }
 
 /** Was mit einer Gruppe verloren geht, je eine Folge. */

@@ -27,7 +27,6 @@ import { ersteZahl } from '../../src/data/ziffern'
 import { TESTDATEN_DOMAIN, TESTDATEN_RUFNUMMERN } from './kennzeichen'
 import type {
   Absence,
-  ConfirmationMap,
   FsInstance,
   FsRule,
   Congregation,
@@ -36,8 +35,6 @@ import type {
   HelperSlot,
   MyTask,
   Notification,
-  OzEintrag,
-  OzTermin,
   PartItem,
   Person,
   QualificationKey,
@@ -49,6 +46,8 @@ import type {
   SlotAssignment,
   SongItem,
   PlanEintrag,
+  Trolley,
+  TrolleyTermin,
   WeitererPlan,
   Week,
 } from '../../src/data/types'
@@ -276,37 +275,40 @@ export const DEMO_GRUPPENBESUCHE: Gruppenbesuch[] = [
 ]
 
 /**
- * Öffentliches Zeugnisgeben (T120, Phase 3) — nur für die Entwicklerseite,
- * aus demselben Grund wie die Gruppenbesuche: Die Tests laufen mit der echten
- * Uhr. Zwei Termine; in den ersten Wochen je eine Lage zum Ansehen:
- * selbst eingetragen (grün), zugeteilt und bestätigt, zugeteilt und offen
- * (Simon, p9 — mit `me=p9` bestätigt oder sagt er ab), Niklas (p10) an einem
- * Tag, an dem er abwesend ist (Konflikt), freie Plätze — und am 23. September
- * fällt die Schicht am Marktplatz aus (gestrichen, 4.10.2026).
+ * Trolleys (T121, Phase 7) — nur für die Entwicklerseite, aus demselben Grund
+ * wie die Gruppenbesuche: Die Tests laufen mit der echten Uhr. Drei Trolleys
+ * wie im Szenario der Entwürfe, zwei im Depot, einer im Saal.
  */
-export const DEMO_OZ_TERMINE: OzTermin[] = [
-  { id: 'oz-mi', wd: 3, von: '10:00', bis: '12:00', ort: 'Marktplatz', plaetze: 2, aus: ['2026-09-23'] },
-  { id: 'oz-sa', wd: 6, von: '09:00', bis: '11:00', ort: 'Bahnhofsvorplatz', plaetze: 2 },
+export const DEMO_TROLLEYS: Trolley[] = [
+  { id: 'tr1', name: 'Trolley 1', ort: 'Depot', hinweis: '' },
+  { id: 'tr2', name: 'Trolley 2', ort: 'Depot', hinweis: '' },
+  { id: 'tr3', name: 'Trolley 3', ort: 'Königreichssaal', hinweis: 'Schlüssel im Fach neben der Bühne' },
 ]
-
-export const DEMO_OZ_EINTRAEGE: OzEintrag[] = [
-  { id: 'oz1', terminId: 'oz-mi', datum: '2026-09-09', pid: 'p15', selbst: true },
-  { id: 'oz2', terminId: 'oz-mi', datum: '2026-09-09', pid: 'p16', selbst: true },
-  { id: 'oz3', terminId: 'oz-sa', datum: '2026-09-12', pid: 'p6', selbst: false },
-  { id: 'oz4', terminId: 'oz-mi', datum: '2026-09-16', pid: 'p10', selbst: true },
-  { id: 'oz5', terminId: 'oz-sa', datum: '2026-09-19', pid: 'p9', selbst: false },
-  { id: 'oz6', terminId: 'oz-sa', datum: '2026-09-26', pid: 'p13', selbst: false },
-]
-
-/** Die Zusage zu `oz3` — zugeteilt und bestätigt. */
-export const DEMO_OZ_ZUSAGEN: ConfirmationMap = { 'oz|2026-09-07|oz3': 'bestätigt' }
 
 /**
- * Wer auf der Entwicklerseite den Aufgabenbereich „Öffentliches Zeugnisgeben"
- * hat. Nicht in `DEMO_PERSONS`: Ein neuer Bereich dort verschöbe Zählungen und
- * Auswahlen in Tests, die mit dem Zeugnisgeben nichts zu tun haben.
+ * Termine in den ersten beiden Wochen, je eine Lage zum Ansehen: zu zweit,
+ * einer sucht einen Partner (Jonas, p6), und Simon (p9) hat Jonas beide
+ * eingetragen — mit `me=p9` steht der Termin unter „Deine Termine". Einer liegt
+ * heute (r7): Am Handy öffnet der Tagesplan auf dem Tag der gestellten Uhr,
+ * Montag, 7. September.
  */
-export const DEMO_OZ_PERSONEN: readonly string[] = ['p6', 'p7', 'p9', 'p10', 'p13', 'p15', 'p16']
+export const DEMO_TROLLEY_TERMINE: TrolleyTermin[] = [
+  { id: 'r1', trolleyId: 'tr1', datum: '2026-09-09', von: '10:00', bis: '12:00', pid: 'p15', partner: 'p16', gemeinsam: true },
+  { id: 'r2', trolleyId: 'tr3', datum: '2026-09-09', von: '15:00', bis: '17:00', pid: 'p6', partner: null, gemeinsam: false },
+  { id: 'r3', trolleyId: 'tr2', datum: '2026-09-11', von: '16:00', bis: '18:00', pid: 'p10', partner: 'p7', gemeinsam: true },
+  { id: 'r4', trolleyId: 'tr1', datum: '2026-09-12', von: '09:00', bis: '11:00', pid: 'p13', partner: 'p8', gemeinsam: true },
+  { id: 'r5', trolleyId: 'tr3', datum: '2026-09-12', von: '09:30', bis: '12:00', pid: 'p4', partner: 'p5', gemeinsam: true },
+  { id: 'r6', trolleyId: 'tr3', datum: '2026-09-19', von: '09:00', bis: '11:00', pid: 'p6', partner: 'p9', gemeinsam: true },
+  // Hinten angehängt, damit die Stellen der übrigen bleiben — die Tests greifen über sie zu.
+  { id: 'r7', trolleyId: 'tr2', datum: '2026-09-07', von: '16:00', bis: '18:00', pid: 'p8', partner: 'p13', gemeinsam: true },
+]
+
+/**
+ * Wer auf der Entwicklerseite mit dem Trolley gehen darf (Aufgabenbereich
+ * `zeugnis`). Nicht in `DEMO_PERSONS`: Ein neuer Bereich dort verschöbe
+ * Zählungen und Auswahlen in Tests, die mit den Trolleys nichts zu tun haben.
+ */
+export const DEMO_TROLLEY_PERSONEN: readonly string[] = ['p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p13', 'p15', 'p16']
 
 /**
  * Weitere Pläne (T120, Phase 5) — nur für die Entwicklerseite, wie die übrigen

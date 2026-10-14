@@ -5,14 +5,14 @@ import {
   CONGREGATION,
   DEMO_FS_RULES,
   DEMO_GRUPPENBESUCHE,
-  DEMO_OZ_EINTRAEGE,
-  DEMO_OZ_TERMINE,
   DEMO_PERSONS,
   DEMO_SERVICES,
+  DEMO_TROLLEY_TERMINE,
+  DEMO_TROLLEYS,
 } from '../../tests/testdaten/testdaten'
 import { displayName } from '../data/helpers'
 import { fromIso, isoDay, tageZwischen } from '../data/meeting-dates'
-import type { Absence, OzEintrag } from '../data/types'
+import type { Absence } from '../data/types'
 import { personTimeline, type TimelineDaten, type TimelineEntry } from './person-timeline'
 
 function daten(patch: Partial<TimelineDaten> = {}): TimelineDaten {
@@ -24,8 +24,8 @@ function daten(patch: Partial<TimelineDaten> = {}): TimelineDaten {
     fsWeeks: buildDemoFsWeeks(),
     absences: [],
     fsRules: [],
-    ozTermine: [],
-    ozEintraege: [],
+    trolleys: [],
+    trolleyTermine: [],
     gruppenbesuche: [],
     ...patch,
   }
@@ -288,50 +288,32 @@ describe('Abwesenheiten in der Zeitleiste', () => {
 })
 
 /**
- * **Zeugnis-Schichten und vorgemerkte Gruppenbesuche** (5.10.2026).
+ * **Trolley-Termine und vorgemerkte Gruppenbesuche** (5.10.2026; die Trolleys
+ * seit T121).
  *
- * Beide fehlten in der Leiste. „Meine Aufgaben" zeigte die Schichten längst;
- * wer zuteilte, sah die Last einer Person aber ohne sie. Und ein Besuch des
- * Dienstaufsehers stand dort nur, wenn seine Woche schon importiert war —
- * „Reihum verteilen" plant ein halbes Jahr voraus.
+ * Wer zuteilt, sieht die Last einer Person — auch die Termine, für die sie
+ * sich selbst verabredet hat. Und ein Besuch des Dienstaufsehers stand dort
+ * nur, wenn seine Woche schon importiert war — „Reihum verteilen" plante ein
+ * halbes Jahr voraus.
  */
-describe('Zeugnis-Schichten und vorgemerkte Gruppenbesuche', () => {
+describe('Trolley-Termine und vorgemerkte Gruppenbesuche', () => {
   /** Mo 7.9.2026, 9 Uhr — die Uhr der Entwicklerseite; alles hier liegt danach. */
   const HEUTE = new Date(2026, 8, 7, 9, 0)
   const JONAS = DEMO_PERSONS.find((p) => p.id === 'p6')!
   const KONRAD = DEMO_PERSONS.find((p) => p.id === 'p5')!
-  const zeile = (e: TimelineEntry) => [isoDay(e.datum), e.zeit, e.kind === 'oz' ? e.ort : e.kind === 'besuch' ? e.grp : '']
+  const zeile = (e: TimelineEntry) => [isoDay(e.datum), e.zeit, e.kind === 'trolley' ? e.trolley : e.kind === 'besuch' ? e.grp : '']
   const nur = (art: TimelineEntry['kind'], eintraege: TimelineEntry[]) => eintraege.filter((e) => e.kind === art).map(zeile)
-  const schicht = (over: Partial<OzEintrag>): OzEintrag => ({
-    id: 'neu', terminId: 'oz-mi', datum: '2026-09-16', pid: JONAS.id, selbst: true, ...over,
-  })
+  const TROLLEY = { trolleys: DEMO_TROLLEYS, trolleyTermine: DEMO_TROLLEY_TERMINE }
 
-  it('nennt die Schichten der Person mit Tag, Beginn und Ort', () => {
-    const eintraege = personTimeline(JONAS, daten({ ozTermine: DEMO_OZ_TERMINE, ozEintraege: DEMO_OZ_EINTRAEGE }), HEUTE)
-    // oz3: zugeteilt am Samstag, 12.9., 9–11 Uhr am Bahnhofsvorplatz.
-    expect(nur('oz', eintraege)).toEqual([['2026-09-12', '09:00', 'Bahnhofsvorplatz']])
-  })
-
-  it('eine gestrichene Schicht steht nicht darin — auch bevor die Datenbank den Eintrag abgeräumt hat', () => {
-    // Am 23.9. fällt der Marktplatz aus (`aus` am Termin).
-    const gestrichen = schicht({ datum: '2026-09-23' })
-    const eintraege = personTimeline(JONAS, daten({ ozTermine: DEMO_OZ_TERMINE, ozEintraege: [gestrichen] }), HEUTE)
-    expect(nur('oz', eintraege)).toEqual([])
-  })
-
-  it('ein kommender Eintrag am alten Wochentag fällt heraus, ein vergangener bleibt', () => {
-    // Der Marktplatz ist auf Donnerstag gewechselt; zwei Einträge stehen noch am Mittwoch.
-    const donnerstag = DEMO_OZ_TERMINE.map((t) => (t.id === 'oz-mi' ? { ...t, wd: 4 } : t))
-    const eintraege = personTimeline(
-      JONAS,
-      daten({
-        ozTermine: donnerstag,
-        ozEintraege: [schicht({ id: 'alt', datum: '2026-09-02' }), schicht({ id: 'kommend', datum: '2026-09-16' })],
-      }),
-      HEUTE,
-    )
-    expect(nur('oz', eintraege)).toEqual([['2026-09-02', '10:00', 'Marktplatz']])
-    expect(eintraege.find((e) => e.kind === 'oz')?.vergangen).toBe(true)
+  it('nennt die Termine der Person mit Tag, Beginn und Trolley — eingetragen oder als Partner', () => {
+    const eintraege = personTimeline(JONAS, daten(TROLLEY), HEUTE)
+    // r2: Jonas sucht am 9.9. einen Partner; r6: er hat Simon und sich am 19.9. eingetragen.
+    expect(nur('trolley', eintraege)).toEqual([
+      ['2026-09-09', '15:00', 'Trolley 3'],
+      ['2026-09-19', '09:00', 'Trolley 3'],
+    ])
+    const simon = DEMO_PERSONS.find((p) => p.id === 'p9')!
+    expect(nur('trolley', personTimeline(simon, daten(TROLLEY), HEUTE))).toEqual([['2026-09-19', '09:00', 'Trolley 3']])
   })
 
   it('nennt einen vorgemerkten Besuch an den Tagen laut Grundplan', () => {
@@ -361,9 +343,9 @@ describe('Zeugnis-Schichten und vorgemerkte Gruppenbesuche', () => {
   it('nimmt nur, was dieser Person gehört', () => {
     const eintraege = personTimeline(
       person,
-      daten({ ozTermine: DEMO_OZ_TERMINE, ozEintraege: DEMO_OZ_EINTRAEGE, fsRules: DEMO_FS_RULES, gruppenbesuche: DEMO_GRUPPENBESUCHE }),
+      daten({ ...TROLLEY, fsRules: DEMO_FS_RULES, gruppenbesuche: DEMO_GRUPPENBESUCHE }),
       HEUTE,
     )
-    expect(eintraege.some((e) => e.kind === 'oz' || e.kind === 'besuch')).toBe(false)
+    expect(eintraege.some((e) => e.kind === 'trolley' || e.kind === 'besuch')).toBe(false)
   })
 })

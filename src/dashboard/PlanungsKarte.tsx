@@ -8,7 +8,6 @@ import { useBesuchsLage } from '../components/useBesuchsLage'
 import { fromIso } from '../data/meeting-dates'
 import { planungsstand, type Wochenstand } from '../data/planungsstand'
 import type { FsBereich } from '../data/types'
-import { ozStand } from '../data/zeugnis'
 import { useWochenImport } from '../einstellungen/useWochenImport'
 import { LOCALES } from '../i18n/langs'
 import { fill, useProgWeeks, useT } from '../i18n/useT'
@@ -45,7 +44,7 @@ export function PlanungsKarte() {
   // zählte die gemerkte Karte am Mittwoch noch den Dienstag.
   const tag = useKalendertag()
   // Offline (Momentaufnahme) geht nichts hinaus — dann nennt die Karte auch
-  // kein „Plan senden", weder je Woche noch beim Zeugnisgeben.
+  // kein „Plan senden".
   const sendenMoeglich = state.staleAt === null
 
   /*
@@ -136,30 +135,7 @@ export function PlanungsKarte() {
     dispatch({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
   }
 
-  /*
-   * **Öffentliches Zeugnisgeben** (T120): dieselben drei Zahlen wie die Banner
-   * dort — Konflikte über das ganze Vierteljahr, freie Plätze in den Wochen,
-   * die beim Planen offen dastehen, und was „Plan senden" noch zu tun hat
-   * (`ozStand`). Auch das liegt außerhalb des Vier-Wochen-Fensters der
-   * Wochenzeilen: Die Schichten sind nicht an importierte Wochen gebunden.
-   */
-  const zeugnis = useMemo(
-    () =>
-      ozStand({
-        termine: state.ozTermine,
-        eintraege: state.ozEintraege,
-        persons: state.persons,
-        absences: state.absences,
-        confirmations: state.confirmations,
-        sentLog: state.sentLog,
-        sendenMoeglich,
-        heute: fromIso(tag),
-      }),
-    [tag, sendenMoeglich, state.ozTermine, state.ozEintraege, state.persons, state.absences, state.confirmations, state.sentLog],
-  )
-  const zeugnisZuTun = zeugnis.konflikte + zeugnis.frei + zeugnis.nichtGesendet > 0
-
-  if (stand.wochen.length === 0 && !stand.vorratKnapp && besuchsKonflikte === 0 && !zeugnisZuTun) {
+  if (stand.wochen.length === 0 && !stand.vorratKnapp && besuchsKonflikte === 0) {
     return (
       <section className="dash-plan">
         <h2 className="abschnitt-titel">{t.dashPlanung}</h2>
@@ -211,14 +187,6 @@ export function PlanungsKarte() {
             <Chip art="konflikte" titel={t.konflikteTitle} n={besuchsKonflikte} />
           </BereichZeile>
         )}
-        {zeugnisZuTun && (
-          <BereichZeile titel={t.privZeugnis} onClick={() => zumBereich('zeugnis')}>
-            {/* In der Reihenfolge der Banner dort: Konflikte, freie Plätze, Versand. */}
-            {zeugnis.konflikte > 0 && <Chip art="konflikte" titel={t.konflikteTitle} n={zeugnis.konflikte} />}
-            {zeugnis.frei > 0 && <Chip art="offen" titel={t.ozFreiePlaetze} n={zeugnis.frei} />}
-            {zeugnis.nichtGesendet > 0 && <Chip art="senden" titel={t.planSendenTitle} n={zeugnis.nichtGesendet} />}
-          </BereichZeile>
-        )}
         {/* Importieren ist Sache des Admins (4.10.2026): Ein neues Programm
             ändert den Plan, es teilt nichts zu. */}
         {stand.vorratKnapp && state.planner && (
@@ -237,7 +205,7 @@ export function PlanungsKarte() {
 }
 
 /**
- * Eine Zeile für einen Plan ohne Woche (Gruppenbesuche, Zeugnisgeben): sein
+ * Eine Zeile für einen Plan ohne Woche (Gruppenbesuche): sein
  * Titel und darunter seine Banner im Kleinen (`Chip`). Gebaut wie die Zeile
  * einer Woche darüber; ein Tipp führt in den Plan.
  */

@@ -8,7 +8,7 @@ import { useT } from '../i18n/useT'
 /**
  * Der Saal zu einer eigenen Aufgabe (T121): die Besetzung ihrer Zusammenkunft
  * mit dem eigenen Platz — oder `null`, wo es keine Zusammenkunft gibt
- * (Treffpunkt, Zeugnisgeben) oder ihre Woche nicht geladen ist.
+ * (Treffpunkt, Trolley) oder ihre Woche nicht geladen ist.
  */
 export function useSaal(task: MyTask | undefined): { lagen: SaalLage[]; label: string } | null {
   const { state } = useApp()

@@ -17,6 +17,8 @@
 //  - Personen mit fälliger letzter Erinnerung, die nicht per Push erreichbar
 //    sind (kein App-Konto ODER kein aktiviertes Push-Abo), werden den Planern
 //    als Sammel-Push gemeldet, damit sie persönlich erinnern können.
+//  - Trolley-Termine (T121): am Vortag eine Erinnerung an beide, die sich
+//    verabredet haben — ohne Zusage, ohne Wiederholung, ohne Planer-Meldung.
 //  - Empfangen kann nur, wer in der App (Profil) Push aktiviert hat
 //    (Tabelle push_subscriptions). Abgelaufene Abos (404/410)
 //    werden automatisch gelöscht.
@@ -48,6 +50,7 @@ import { json, restKlient, wert } from '../_shared/rest.ts'
 import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import {
   istAusgefallenFuer,
+  kurzeZeit,
   personDisplayName,
   tageBisTermin,
   terminText,
@@ -62,9 +65,6 @@ import {
   type FsInstance,
   kanonisch,
   nachSprache,
-  offeneZeugnisEintraege,
-  type OzEintragRow,
-  type OzTerminRow,
   pendingOfFsWeek,
   pendingOfMeeting,
   type Pending,
@@ -77,7 +77,8 @@ import {
 } from '../_shared/zuteilungen.ts'
 import { alsFreitext } from '../_shared/i18n/freitext.ts'
 import { bibelbuecherLaden } from '../_shared/i18n/translate.ts'
-import { pushTexte, TITEL_ERINNERUNG, TITEL_UNERREICHBAR } from './texte.ts'
+import { trolleyRumpf } from '../_shared/trolley.ts'
+import { pushTexte, TITEL_ERINNERUNG, TITEL_TROLLEY, TITEL_UNERREICHBAR } from './texte.ts'
 
 declare const Deno: {
   serve: (handler: (req: Request) => Promise<Response> | Response) => void
@@ -176,6 +177,16 @@ interface Push {
   title: string
   body: string
   url?: string // Deep-Link-Ziel (#go=…); Klick öffnet den passenden Screen
+}
+
+/** Ein Trolley-Termin, wie die Erinnerung ihn liest. */
+interface TrolleyTerminRow {
+  trolley_id: string
+  datum: string
+  von: string
+  bis: string
+  person_id: string
+  partner_id: string | null
 }
 
 Deno.serve(async (req: Request) => {
@@ -291,18 +302,17 @@ Deno.serve(async (req: Request) => {
         ),
       ])
 
-      // Öffentliches Zeugnisgeben (T120): die Termine und die Einträge im
-      // Erinnerungsfenster, nur die zugeteilten. Fehlen die Tabellen (Schema
-      // nicht eingespielt), erinnert der Lauf trotzdem an alles andere.
-      const ozBis = new Date(todayUTC + Math.max(rem.first, rem.last) * 864e5).toISOString().slice(0, 10)
-      const [ozTermine, ozEintraege] = await Promise.all([
-        klient.get<OzTerminRow[]>(`oz_termine?select=id,wd,von,bis,ort&congregation_id=eq.${wert(cong.id)}`),
-        klient.get<OzEintragRow[]>(
-          `oz_eintraege?select=id,termin_id,datum,person_id,selbst&congregation_id=eq.${wert(cong.id)}` +
-            `&selbst=is.false&datum=gte.${wert(todayISO)}&datum=lte.${wert(ozBis)}`,
+      // Trolley-Termine von morgen (T121). Fehlen die Tabellen (Schema nicht
+      // eingespielt), erinnert der Lauf trotzdem an alles andere.
+      const morgen = new Date(todayUTC + 864e5).toISOString().slice(0, 10)
+      const [trolleyTermine, trolleys] = await Promise.all([
+        klient.get<TrolleyTerminRow[]>(
+          `trolley_termine?select=trolley_id,datum,von,bis,person_id,partner_id` +
+            `&congregation_id=eq.${wert(cong.id)}&datum=eq.${wert(morgen)}`,
         ),
-      ]).catch((err): [OzTerminRow[], OzEintragRow[]] => {
-        console.error(`oz_termine/oz_eintraege nicht lesbar: ${(err as Error).message}`)
+        klient.get<{ id: string; name: string }[]>(`trolleys?select=id,name&congregation_id=eq.${wert(cong.id)}`),
+      ]).catch((err): [TrolleyTerminRow[], { id: string; name: string }[]] => {
+        console.error(`trolley_termine/trolleys nicht lesbar: ${(err as Error).message}`)
         return [[], []]
       })
       /*
@@ -343,8 +353,8 @@ Deno.serve(async (req: Request) => {
 
       /**
        * Einen fälligen Platz vormerken — für seine Person und, wo sie nicht
-       * erreichbar ist, für die Planer. Alle drei Quellen (Zusammenkünfte,
-       * Treffpunkte, öffentliches Zeugnisgeben) enden hier.
+       * erreichbar ist, für die Planer. Beide Quellen (Zusammenkünfte und
+       * Treffpunkte) enden hier.
        *
        * „Wirklich erreichbar" = App-Konto UND mindestens ein aktives Push-Abo.
        * Wer ein Konto hat, bekommt trotzdem die persönliche Erinnerung (Push an
@@ -412,18 +422,6 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      // Öffentliches Zeugnisgeben (T120): nur zugeteilte, unbestätigte Einträge
-      // — wer sich selbst einträgt, hat damit zugesagt
-      // (`offeneZeugnisEintraege`). Gelesen wird nur das Erinnerungsfenster.
-      const namen = new Map(persons.map((p) => [p.id, personDisplayName(p.fn, p.ln)]))
-      for (const pend of offeneZeugnisEintraege(ozEintraege, ozTermine, namen, conf, todayUTC)) {
-        const days = tageBisTermin(pend.woche, pend.offset, todayUTC)
-        if (days === null) continue
-        const kind = dueKind(rem, days)
-        if (!kind) continue
-        vormerken(pend, kind, days, { ...pend.eintrag, key: pend.key })
-      }
-
       for (const [userId, entries] of entriesByUser) {
         // Doppel-Versand-Sperre: heute schon persönlich erinnert → überspringen
         // (gilt auch für die Glocke, die untrennbar zur selben Erinnerung gehört).
@@ -466,6 +464,56 @@ Deno.serve(async (req: Request) => {
         }
         logRows.push({ congregation_id: cong.id, user_id: userId, kind: 'self' })
       }
+
+      /*
+       * **Trolley morgen** (T121, Phase 7): Am Vortag erinnert die App beide,
+       * die sich verabredet haben (Entwurf `GErinnerungen`). Kein Rhythmus,
+       * keine Zusage und keine Meldung an die Planer — einen Trolley-Termin
+       * plant niemand; vergessen soll ihn trotzdem keiner. Der Rumpf nennt den
+       * anderen, damit man weiß, mit wem; wer allein steht, liest nur Trolley,
+       * Tag und Zeit. Eine eigene Sperre (`trolley`) neben der der Aufgaben:
+       * Beide Erinnerungen an einem Morgen sind zwei verschiedene Auskünfte.
+       */
+      const namen = new Map(persons.map((p) => [p.id, personDisplayName(p.fn, p.ln)]))
+      const trolleyName = new Map(trolleys.map((t) => [t.id, t.name]))
+      const trolleyJeKonto = new Map<string, string[]>()
+      for (const t of trolleyTermine) {
+        for (const [ich, anderer] of [
+          [t.person_id, t.partner_id],
+          [t.partner_id, t.person_id],
+        ] as const) {
+          const userId = ich ? kontoFuer(ich, '') : undefined
+          if (!userId) continue
+          const rumpf = trolleyRumpf({
+            trolley: trolleyName.get(t.trolley_id) ?? '',
+            datum: t.datum,
+            von: kurzeZeit(t.von, t.von),
+            bis: kurzeZeit(t.bis, t.bis),
+            person: anderer ? namen.get(anderer) : undefined,
+          })
+          trolleyJeKonto.set(userId, [...(trolleyJeKonto.get(userId) ?? []), rumpf])
+        }
+      }
+      for (const [userId, ruempfe] of trolleyJeKonto) {
+        if (sentToday.has(`${userId}|trolley`)) {
+          skipped++
+          continue
+        }
+        const rumpf = ruempfe.join(' · ')
+        for (const [lang, subs] of nachSprache(subsByUser.get(userId) ?? [])) {
+          const push: Push = {
+            userId,
+            title: pushTexte(lang).trolley,
+            body: uebersetzer(lang)(rumpf),
+            url: `${APP_URL}#go=aufgaben`,
+          }
+          preview.push(push)
+          sendQueue.push({ push, subs })
+        }
+        notifRows.push({ congregation_id: cong.id, user_id: userId, type: 'erinnerung', title: TITEL_TROLLEY, body: rumpf })
+        logRows.push({ congregation_id: cong.id, user_id: userId, kind: 'trolley' })
+      }
+
       if (unreachable.length > 0) {
         // Der Rumpf ist für **alle** Planer derselbe und hängt nur an der
         // Sprache. Beides stand bis hierher in der Planer-Schleife und wurde

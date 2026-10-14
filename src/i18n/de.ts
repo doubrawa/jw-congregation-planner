@@ -45,9 +45,10 @@ export const DE = {
     tabFs: 'Predigtdienst', fsShort: 'Treffpunkte',
     fsVers: 'Versammlungstreffpunkt', fsKeine: 'Keine Treffpunkte in dieser Woche.',
     privTreffpunkt: 'Treffpunkte leiten',
-    // Der Aufgabenbereich und der Reiter im Predigtdienst (T120, Phase 3).
-    // Gemessen: od Kap. 9 Abs. 47 in jeder Sprache, fa/ur über die WOL-Suche.
-    privZeugnis: 'Öffentliches Zeugnisgeben',
+    // Der Aufgabenbereich „Trolley" (T121, Phase 7; davor „Öffentliches
+    // Zeugnisgeben" mit Stand und Schicht). Der Schlüssel ist geblieben: Er
+    // steht als `zeugnis` in `persons.priv` jeder Person.
+    privZeugnis: 'Trolley',
     fsNurWoche: 'Änderungen hier gelten nur für diese Woche.',
     fsLeiterLbl: 'Treffpunkt-Leiter',
     // Dasselbe Wort als Rolle **einer** Aufgabe („Meine Aufgaben", Glocke, Push).
@@ -114,38 +115,77 @@ export const DE = {
     vpFormat: 'Die Datei ist kein Vortragsplan in Version 1.',
     vpZeitraum: 'Der Zeitraum in der Datei (von/bis) ist ungültig.',
     toastVortraegeUebernommen: 'Vortragsplan übernommen',
-    // Öffentliches Zeugnisgeben (T120, Phase 3). Termine sind die Regel, aus
-    // der jede Woche ihre Schichten bekommt; Zahlen stehen hinter einer
-    // Bezeichnung („Frei: 1"), damit keine Sprache eine Mehrzahl braucht.
-    ozTermine: 'Termine',
-    ozTermineHint: 'Aus diesen Terminen entstehen die Schichten jeder Woche – wie die Treffpunkte aus dem Grundplan.',
-    ozKeineTermine: 'Noch keine Termine. Lege einen an: Wochentag, Uhrzeit, Ort und wie viele dabei sein sollen.',
-    ozTerminAdd: '+ TERMIN HINZUFÜGEN',
-    ozPlaetze: 'Plätze: {n}',
-    // Rückfrage vor einem anderen Wochentag (`TerminZeile`), wenn dabei kommende
-    // Einträge gehen. Tag und Zahl stehen hinter einer Bezeichnung — keine
-    // Sprache muss beugen oder zählen.
-    ozTagWechselFrage: 'Neuer Wochentag: {tag} – kommende Einträge, die dabei entfallen: {n}',
-    ozTagWechseln: 'Verlegen', abbrechen: 'Abbrechen',
-    ozAutoHint: 'Vorgeschlagen wird, wer diesen Aufgabenbereich hat. Wer sich selbst einträgt, hat damit zugesagt – „Leeren“ lässt solche Einträge stehen.',
-    ozFreiePlaetze: 'FREIE PLÄTZE',
-    ozFrei: 'Frei: {n}',
-    ozAbwesend: '{name} ist an diesem Tag abwesend',
-    ozMehrWochen: 'Weitere Wochen',
-    // Eine gestrichene Schicht (`SchichtKopf`) und beim Planen der Knopf, der
-    // sie zurückholt.
-    ozFaelltAus: 'Fällt aus', wiederherstellen: 'Wiederherstellen',
-    ozAnsichtHint: 'Freie Plätze kannst du selbst übernehmen. Wer sich einträgt, hat damit zugesagt.',
-    ozNichtFreigegeben: 'Eintragen kann sich, wer für das öffentliche Zeugnisgeben vorgesehen ist. Sprich dafür die Ältesten an.',
-    ozEintragen: '+ EINTRAGEN',
-    ozAbsagen: 'Absagen',
-    ozDuEingetragen: 'Eingetragen – damit hast du zugesagt.',
-    ozSendenOffen: 'Noch niemandem mitgeteilte Zuteilungen: {n}',
-    ozSendenAlle: 'Alle Zugeteilten wissen Bescheid.',
-    toastOzTerminAdd: 'Termin hinzugefügt', toastOzTerminDel: 'Termin entfernt',
-    toastOzEingetragen: 'Eingetragen · damit hast du zugesagt',
-    toastOzAusgetragen: 'Ausgetragen',
-    toastOzAbgesagt: 'Abgesagt · der Platz ist wieder frei, die Admins sind informiert',
+    // „Verlegen" öffnet in „Woche einrichten" die Abweichung einer
+    // Zusammenkunft (`WochePanel`).
+    verlegen: 'Verlegen', abbrechen: 'Abbrechen',
+    // Trolleys (T121, Phase 7): Wer das Trolley-Recht hat, verabredet sich und
+    // trägt sich ein — frei von 6 bis 22 Uhr in halben Stunden, mit Partner
+    // oder allein mit „Partner gesucht". Niemand plant, niemand sagt zu.
+    fsTrolleysTab: 'Trolleys',
+    toastTrolleyEingetragen: 'Eingetragen',
+    toastTrolleyDazu: 'Du bist dabei',
+    toastTrolleyAusgetragen: 'Ausgetragen',
+    toastTrolleyEntfernt: 'Trolley entfernt',
+    // Die Ansicht (Entwürfe `GZeugnis`, `GDesktopTrolleys`). Namen, Tage und
+    // Zeiten stehen hinter einer Bezeichnung oder in einem eigenen Satzteil —
+    // keine Sprache muss beugen.
+    trolleyIntro: 'Verabredet euch und tragt euch ein. So sehen alle, wann ein Trolley unterwegs ist.',
+    trolleyDeineTermine: 'Deine Termine',
+    trolleyPartnerGesucht: 'Partner gesucht',
+    trolleyDazukommen: 'Dazukommen',
+    trolleyEintragen: 'Eintragen',
+    trolleyEintragenLabel: 'Für den Trolley eintragen',
+    trolleyMit: 'mit {name}',
+    trolleyBeideEingetragen: '{name} hat euch beide eingetragen',
+    trolleyAbholen: 'abholen: {ort}',
+    trolleyTag: 'Tag',
+    trolleyTagMitTerminen: '{tag}, mit Terminen',
+    trolleyWocheLabel: 'Trolleys in der Woche {woche}',
+    trolleyTippFrei: 'Tippe auf eine freie Zeit, um dich dort einzutragen.',
+    trolleyKlickFrei: 'Klicke in ein freies Feld, dann stehen Tag und Trolley rechts schon drin.',
+    trolleyFreiWaehlen: '{trolley}: freie Zeit wählen und eintragen',
+    trolleyFreiZelle: '{tag}, {trolley}: frei, eintragen',
+    trolleyTerminLabel: '{trolley}, {zeit}: {wer}',
+    trolleyUnd: '{a} und {b}',
+    trolleySuchtPartner: '{name} sucht einen Partner',
+    // Das Blatt „Eintragen" (`GTrolleyEintragen`) und das Blatt eines Termins.
+    trolleyZeitHinweis: 'Zwischen 6 und 22 Uhr, in halben Stunden.',
+    trolleyMitWem: 'Mit wem',
+    trolleyMitPartner: 'Mit Partner',
+    trolleyPartner: 'Partner',
+    trolleyPartnerWaehlen: 'Partner wählen',
+    trolleyPartnerHinweis: '{name} bekommt eine Mitteilung. Am Vortag erinnert die App euch beide.',
+    trolleyGesuchtHinweis: 'Wer mitkommen möchte, sieht dich unter „Partner gesucht“. Am Vortag erinnert dich die App.',
+    trolleyWer: 'Wer dabei ist',
+    trolleyAustragen: 'Austragen',
+    trolleyAustragenHinweis: '{name} bekommt Bescheid und sucht dann wieder einen Partner.',
+    // Was nicht ging — dieselben Gründe, die die Function `trolley` nennt.
+    trolleyFehlerKeinRecht: 'Eintragen kann sich, wer mit dem Trolley gehen darf. Sprich dafür die Ältesten an.',
+    trolleyFehlerVorbei: 'Dieser Tag ist schon vorbei.',
+    trolleyFehlerZeit: '„Bis“ muss nach „Von“ liegen.',
+    trolleyFehlerBelegt: 'Der Trolley ist zu dieser Zeit schon unterwegs.',
+    trolleyFehlerDoppelt: 'Du bist zu dieser Zeit schon eingetragen.',
+    trolleyFehlerPartnerDoppelt: '{name} ist zu dieser Zeit schon eingetragen.',
+    trolleyFehlerPartnerRecht: '{name} darf nicht mit dem Trolley gehen.',
+    trolleyFehlerSchonPartner: 'Da ist schon jemand dazugekommen.',
+    trolleyFehlerWeg: 'Diesen Termin gibt es nicht mehr.',
+    trolleyFehlerStand: 'Inzwischen hat sich etwas geändert. Der Stand ist neu geladen.',
+    trolleyFehlerNetz: 'Keine Verbindung. Versuche es später noch einmal.',
+    // Die Trolleys der Versammlung pflegt der Admin (Einstellungen „Gruppen und
+    // Trolleys", Entwürfe `GGruppenStandorte`, `GTrolley`).
+    trolleyHinzu: 'Trolley hinzufügen',
+    trolleyOrtLbl: 'Wo man ihn abholt',
+    trolleyHinweisLbl: 'Hinweis (freiwillig)',
+    trolleyOrtKopf: 'Abholen',
+    trolleyHinweisKopf: 'Hinweis',
+    trolleyKommende: 'Kommende Termine',
+    trolleyTermineN: 'Termine: {n}',
+    trolleyWennEntfernt: 'Wenn du den Trolley entfernst',
+    trolleyDelTermine: 'Die kommenden Termine entfallen.',
+    trolleyDelBescheid: 'Wer eingetragen ist, bekommt Bescheid.',
+    trolleyEntfernen: 'Trolley entfernen',
+    // Der eigene Termin in „Meine Aufgaben" (Entwurf `GAufgaben`): verabredet, keine Zusage.
+    trolleyOhneZusage: 'verabredet, ohne Zusage',
     // Weitere Pläne (T120, Phase 5): Ankündigungen ohne Zuteilung. Ein Plan
     // heißt „Königreichssaal" wie `saal`; gemessen am od Kap. 11 Abs. 10 („Im
     // Allgemeinen wechseln sich die Predigtdienstgruppen mit der Saalreinigung
@@ -331,6 +371,7 @@ export const DE = {
     unterDerWoche: 'Unter der Woche', amWochenende: 'Am Wochenende',
     auxKurz: 'Für die Schulungsaufgaben',
     gruppenTitel: 'Gruppen', gruppenN: 'Gruppen: {n}', diensteN: 'Dienste: {n}',
+    gruppenUndTrolleys: 'Gruppen und Trolleys', trolleysN: 'Trolleys: {n}',
     mitteilungenUndErinnerungen: 'Mitteilungen und Erinnerungen',
     werPlant: 'Wer plant', werPlantNiemand: 'Noch niemand.', beiDerPersonAendern: 'Bei der Person ändern',
     // „Erste 7 Tage vorher, letzte am Tag" — {dauer} kommt aus Intl („1 Tag", „7 Tage").
@@ -344,7 +385,7 @@ export const DE = {
     // ein Dienst für Personen (`HilfsdienstNeuBlatt`).
     hdEntfernenHinweisGruppen: 'Mit dem Dienst gehen seine Plätze in allen Wochen. Neu anlegen lässt sich ein Gruppen-Dienst nicht.',
     ohneGruppeN: 'Ohne Gruppe: {n}', ohneGruppeKurz: 'Bei der Person eine Gruppe wählen',
-    gruppeBeiPerson: 'Wer zu welcher Gruppe gehört, legst du bei der Person fest.',
+    gruppeTrolleyBeiPerson: 'Wer zu welcher Gruppe gehört und wer mit dem Trolley gehen darf, legst du bei der Person fest.',
     gruppeWennEntfernt: 'Wenn du die Gruppe entfernst', gruppeDelBesuche: 'Ihre Gruppenbesuche entfallen.',
     gruppeDelPlaene: 'In den weiteren Plänen bleiben ihre Zeiträume ohne Gruppe.',
     gruppeEntfernen: 'Gruppe entfernen',
@@ -397,8 +438,17 @@ export const DE = {
     importFehler: 'Import fehlgeschlagen',
     notifZuteilung: 'Neue Zuteilung', notifErinnerung: 'Erinnerung', notifPlan: 'Plan veröffentlicht',
     notifEntzug: 'Zuteilung zurückgezogen',
-    // Zeugnisgeben (5.10.2026): eine Schicht fällt aus oder hat eine neue Zeit oder einen neuen Ort.
+    // Abgelegt (Stand und Schicht, 5. bis 14.10.2026): Eine Schicht fiel aus
+    // oder hatte eine neue Zeit oder einen neuen Ort. Die Glocke hält die
+    // Zeilen 30 Tage.
     notifOzAusfall: 'Schicht fällt aus', notifOzGeaendert: 'Schicht geändert',
+    // Trolleys (T121, Phase 7) — aus der Function `trolley` und, am Vortag,
+    // aus `send-reminders`.
+    notifTrolleyEingetragen: 'Für den Trolley eingetragen',
+    notifTrolleyAbgesagt: 'Trolley-Termin abgesagt',
+    notifTrolleyDazu: 'Partner gefunden',
+    notifTrolleyEntfaellt: 'Trolley-Termin entfällt',
+    notifTrolleyMorgen: 'Erinnerung: Trolley morgen',
     notifUnerreichbar: 'Unbestätigte Zuteilungen (nicht erreichbar)',
     notifErinnerungBest: 'Erinnerung: Zuteilung bestätigen',
     notifErsatzGesucht: 'Ersatz gesucht', notifErsatzGefunden: 'Ersatz gefunden',
@@ -456,8 +506,7 @@ export const DE = {
     einspringenTitle: 'Einspringen', einspringenHint: 'Für diese Hilfsdienste wird ein Ersatz gesucht — kannst du übernehmen?',
     uebernehmen: 'Übernehmen',
     // Freie Plätze unter „Meine Aufgaben" (4.10.2026): unbesetzte Plätze
-    // gesendeter Wochen, für die man den Aufgabenbereich hat. Der Titel ist das
-    // Wort des Zeugnisgebens (`ozFreiePlaetze`) — dieselbe Sache, dasselbe Wort.
+    // gesendeter Wochen, für die man den Aufgabenbereich hat.
     freiePlaetzeTitle: 'Freie Plätze',
     freiePlaetzeHint: 'Hier ist noch niemand eingeteilt, und du hast den Aufgabenbereich dafür. Wer zuerst übernimmt, ist eingetragen und hat damit zugesagt.',
     toastPlatzUebernommen: 'Danke! Du bist eingetragen',
@@ -557,6 +606,12 @@ export const DE = {
     erinSofortGemeldet: 'Sofort gemeldet', erinAbsage: 'Absage', erinAnPlaner: 'an Admins und Planer',
     erinErsatzAn: 'nur bei Hilfsdiensten: an alle mit diesem Aufgabenbereich, die an dem Tag nicht abwesend sind',
     erinEntzugAn: 'an die Person, wenn sie schon zugesagt hatte',
+    // Die Function `trolley` meldet dem anderen im Termin, was der eine getan
+    // hat; entfernt der Admin einen Trolley, allen Eingetragenen. Am Vortag
+    // erinnert `send-reminders` jeden, der eingetragen ist.
+    erinTrolley: 'Trolley-Termin eingetragen, dazugekommen oder abgesagt',
+    erinTrolleyAn: 'an den Partner; wird ein Trolley entfernt, an alle Eingetragenen',
+    erinTrolleyVortag: 'Am Vortag eines Trolley-Termins erinnert die App alle, die eingetragen sind.',
     // Auch das Anmelden verschickt welche (Supabase: Bestätigung, neues Kennwort;
     // ab Phase 8 der Link) — erinnert wird dagegen nie per E-Mail.
     erinMailNur: 'E-Mails verschickt die App nur für Einladungen und die Anmeldung.',
@@ -625,7 +680,7 @@ export const DE = {
     // Predigtdienstgruppe löschen (Zwei-Tipp-Bestätigung) und Warnung „ohne Gruppe"
     loeschenSicher: 'Wirklich löschen?',
     // Dasselbe für das, was nur herausgenommen wird (`EntfernenKnopf`): eine
-    // Person aus einer Schicht, eine Sprache aus dem Programm, ein Konto.
+    // Person von ihrem Platz, eine Sprache aus dem Programm, ein Konto.
     entfernenSicher: 'Wirklich entfernen?',
     gruppeDelMitglieder: 'Die Mitglieder dieser Gruppe sind danach keiner Gruppe mehr zugeordnet.',
     gruppeDelTreffpunkte: 'Die Treffpunkte dieser Gruppe entfallen.',

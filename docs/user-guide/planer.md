@@ -11,7 +11,7 @@ Versammlungseinstellungen pflegen.
 
 > **Löschen fragt immer nach.** Der erste Tipp auf **✕** (oder **Entfernen**)
 > zeigt **Wirklich löschen?** – bei dem, was nur herausgenommen wird, etwa eine
-> Person aus einer Schicht, **Wirklich entfernen?**. Erst der zweite Tipp führt
+> Person von ihrem Platz, **Wirklich entfernen?**. Erst der zweite Tipp führt
 > es aus; ein Tipp daneben bricht ab. So geht nichts durch einen Fehltipp
 > verloren, und niemand bekommt versehentlich die Nachricht, dass seine
 > Zuteilung zurückgezogen ist.
@@ -72,11 +72,6 @@ der Stelle von „Diese Woche in der Versammlung".
 - **Gruppenbesuche des Dienstaufsehers** mit möglichen Konflikten stehen als
   eigene Zeile darunter, auch wenn der Besuch Monate voraus liegt; ein Tipp
   führt zu den Gruppenbesuchen (Abschnitt 5).
-- **Öffentliches Zeugnisgeben** steht ebenso als eigene Zeile da, sobald dort
-  etwas zu tun ist – mit denselben Hinweisen wie beim Planen: **Mögliche
-  Konflikte** (jemand ist an seinem Tag abwesend, im ganzen Vierteljahr),
-  **Freie Plätze** (in den vier Wochen, die dort offen dastehen) und **Plan
-  senden**. Ein Tipp führt zum öffentlichen Zeugnisgeben (Abschnitt 5).
 - Ist nichts zu tun, schrumpft die Karte auf eine Zeile **„Alles zugeteilt"** –
   darunter der Zeitraum, für den das gilt. Wochen dahinter hat sie nicht
   angesehen.
@@ -108,18 +103,21 @@ an und lässt sich nicht umlegen.
 | Vortragsplan aus dem Planungsprogramm übernehmen | – | – | ✓ | ✓ |
 | Treffpunkt-Leiter zuteilen | – | seine Gruppe | alle | alle |
 | Treffpunkte ändern: Zeit, Ort, hinzufügen, entfernen, Grundplan | – | seine Gruppe | – | alle |
-| Schichten im öffentlichen Zeugnisgeben besetzen | sich selbst | – | ✓ | ✓ |
+| Sich für den Trolley eintragen (mit dem Aufgabenbereich **Trolley**) | ✓ | ✓ | ✓ | ✓ |
 | Gruppenbesuche: Besucher wechseln | – | – | ✓ | ✓ |
 | Weitere Pläne: Gruppen verteilen | – | – | ✓ | ✓ |
 | **Plan senden** | – | Treffpunkte seiner Gruppe | ✓ | ✓ |
 | **Woche einrichten** (Anlass, Sonderwoche, Termine), Punkte unter „Unser Leben als Christ" anlegen, umbenennen, verschieben, Minuten | – | – | – | ✓ |
-| Termine des Zeugnisgebens, Gruppenbesuche planen, Weitere Pläne anlegen | – | – | – | ✓ |
+| Trolleys anlegen, Gruppenbesuche planen, Weitere Pläne anlegen | – | – | – | ✓ |
 | Programm importieren, Personen, Abwesenheiten anderer, Einstellungen, Mitglieder, Einladungen | – | – | – | ✓ |
 
 Die Meldungen an die Planer – eine **Verhinderung**, **Ersatz gefunden**,
 **unbestätigte Zuteilungen** – bekommen Admins und Planer: Wer zuteilt, sucht
 auch den Ersatz. Was einem Planer nicht zusteht, zeigt die App ihm gar nicht
 erst an; die Datenbank weist es zusätzlich ab.
+
+Für den Trolley trägt sich jeder selbst ein, auf Wunsch gleich mit einem
+Partner; zuteilen kann dort niemand (siehe [Trolleys](#trolleys)).
 
 Unter dem eigenen Namen unten in der Seitenleiste (am Handy im Menü) steht,
 was jemand darf: **Admin**, **Planer**, **Gruppenaufseher** bzw. **Gehilfe**
@@ -509,11 +507,12 @@ Beim Durchgehen der Zusammenkunft fällt er von selbst auf.
 Verkündiger können eine Zuteilung in ihren Aufgaben absagen. Du bekommst dann
 eine Mitteilung („Verhinderung gemeldet"), und der Punkt an der Zuteilung wird
 **rot**. Ein Tipp auf die Mitteilung öffnet **Planen in der Woche der
-abgesagten Aufgabe** – bei einem Treffpunkt im Predigtdienst, beim öffentlichen
-Zeugnisgeben dessen Reiter. Auch die übrigen Mitteilungen an dich als Planer
-(„Programm importiert", „Unbestätigte Zuteilungen", „Ersatz gefunden") führen
-ins Planen; in den Mitteilungen (Glocke oben rechts, am Computer im Menü) steht
-jede höchstens zwei Zeilen lang.
+abgesagten Aufgabe** – bei einem Treffpunkt im Predigtdienst. Auch die übrigen
+Mitteilungen an dich als Planer („Programm importiert", „Unbestätigte
+Zuteilungen", „Ersatz gefunden") führen ins Planen; in den Mitteilungen (Glocke
+oben rechts, am Computer im Menü) steht jede höchstens zwei Zeilen lang.
+Trägt sich jemand von einem Trolley-Termin aus, erfährt es nur sein Partner –
+eine Absage an die Planer gibt es dort nicht (siehe [Trolleys](#trolleys)).
 
 Bei **Hilfsdiensten** übernimmt die App den ersten Schritt selbst: Sie
 benachrichtigt alle, die für diesen Dienst eingetragen und an dem Tag nicht
@@ -621,8 +620,9 @@ Schritt **Zuteilen** der Spur — führt wieder in den Plan.
 
 Die **Zusammenkünfte für den Predigtdienst** („Treffpunkte") sind ein eigenes
 Thema im Menü: **Predigtdienst**. Schalte oben rechts auf **Planen**; dort gibt
-es vier Reiter: **Treffpunkte**, **Gruppenbesuche** und **Öffentliches
-Zeugnisgeben** (beide siehe unten) und **Grundplan**.
+es drei Reiter: **Treffpunkte**, **Gruppenbesuche** (siehe unten) und
+**Grundplan**. Die **Trolleys** stehen nur beim **Ansehen** (siehe
+[Trolleys](#trolleys)).
 
 ![Treffpunkte im Programm](screenshots/programm-treffpunkte.png)
 
@@ -742,59 +742,32 @@ Monate voraus, und gerade dann lässt sich noch etwas ändern.
 Gruppe mit Treffpunkt, darunter alle in Kurzform. Gruppenaufseher planen die
 Besuche nicht.
 
-### Öffentliches Zeugnisgeben
+### Trolleys
 
-Die Ältestenschaft organisiert das Zeugnisgeben mit Ständen oder Trolleys —
-am besten **immer am selben Ort, am selben Wochentag und zur selben Uhrzeit**
-(*Unser Königreichsdienst*, November 2013). Unter **Predigtdienst › Planen ›
-Öffentliches Zeugnisgeben** legst du dafür die **Termine** an: Wochentag,
-Uhrzeit von–bis, Ort und wie viele dabei sein sollen (am Infostand immer
-zwei). Aus jedem Termin entsteht jede Woche eine **Schicht** — wie die
-Treffpunkte aus dem Grundplan. Gezeigt werden die nächsten vier Wochen,
-**Weitere Wochen** zeigt das ganze Vierteljahr.
+Für den Trolley braucht es keinen Plan: Man steht mit ihm nur eine
+Viertelstunde an einem Platz, und was zählt, ist, dass man sich verabreden
+kann. Deshalb **plant niemand, und niemand sagt zu**. Beim Planen gibt es dafür
+keinen Reiter; die **Trolleys** stehen beim **Ansehen** des Predigtdienstes,
+für alle, sobald die Versammlung einen hat. Auch die Planungs‑Karte der
+Startseite und **Plan senden** kennen sie nicht.
 
-![Öffentliches Zeugnisgeben planen](screenshots/planer-zeugnis.png)
-
-- **Wer mitmachen darf**, legt der Aufgabenbereich **Öffentliches
-  Zeugnisgeben** fest (Personen › Aufgabenbereiche). Nur diese Personen schlägt
-  die App vor, und nur sie können sich selbst eintragen.
-- **Selbst eintragen ist eine Zusage.** Wer sich in einen freien Platz
-  einträgt, steht sofort als bestätigt da (voller Punkt) — er muss nichts mehr bestätigen und bekommt
-  keine Erinnerung.
-- **Zuteilen** kannst du in jeden freien Platz („— zuteilen"). Eine Zuteilung
-  wartet auf Bestätigung wie jeder andere Platz; **Plan senden** unten teilt sie
-  allen mit, die noch nichts wissen — über alle kommenden Schichten auf einmal,
-  nicht Woche für Woche. Bis zur Bestätigung wird erinnert.
-- **Automatisch zuteilen** füllt die freien Plätze des Vierteljahrs. Wer im
-  Zeitraum am wenigsten hat, kommt zuerst; niemand steht am selben Tag
-  zweimal, und wer abwesend ist, bleibt draußen. **Leeren** nimmt nur
-  Zugeteiltes, das noch kommt — Selbsteingetragenes bleibt.
-- **✕** an einem Namen trägt ihn aus. Hatte er zugesagt (oder sich selbst
-  eingetragen), bekommt er sofort die Nachricht, dass die Zuteilung
-  zurückgezogen ist. Ändert sich der **Wochentag** eines Termins, gehen seine
-  kommenden Einträge mit — wer davon wusste, bekommt **„Schicht fällt aus"**.
-- **Uhrzeit oder Ort ändern**: Wer in einer kommenden Schicht dieses Termins
-  steht und davon weiß — selbst eingetragen, bestätigt oder über **Plan
-  senden** benachrichtigt —, bekommt **„Schicht geändert"** mit dem neuen
-  Termin. Die App wartet damit, bis du ein paar Sekunden nichts mehr änderst
-  oder die Ansicht verlässt; stellst du den alten Wert wieder ein, geht nichts
-  hinaus.
-- **Eine Schicht fällt aus**: Findet in einer Woche nichts statt, tippe auf das
-  **✕** rechts neben der Schicht und dann auf **Wirklich löschen?**. Die Schicht
-  bleibt mit **Fällt aus** stehen — so sehen alle, dass in dieser Woche nichts
-  stattfindet, statt eine fehlende Woche für ein Versehen zu halten. Ihre
-  Einträge gehen; wer davon wusste — selbst eingetragen, bestätigt oder schon
-  benachrichtigt —, bekommt **„Schicht fällt aus"**. **Wiederherstellen** holt
-  die Schicht zurück — leer.
-- **Mögliche Konflikte** nennen, wer an seinem Tag abwesend ist; **Freie
-  Plätze** zählt, was in den gezeigten Wochen noch offen ist. Beides und „Plan
-  senden" stehen auch auf der **Planungs‑Karte der Startseite**.
-
-**Alle sehen die Schichten**: Beim **Ansehen** gibt es den Reiter, sobald es
-Termine gibt. Wer den Aufgabenbereich hat, trägt sich dort mit **+ Eintragen**
-ein; wer zugeteilt wurde, bestätigt dort oder unter „Meine Aufgaben". **Absagen**
-gibt den Platz frei, und die Admins bekommen eine Verhinderungs-Meldung mit Tag
-und Ort.
+- **Die Trolleys legt der Admin an**, in den Einstellungen mit dem Ort, an dem
+  man sie abholt (siehe [Gruppen und Trolleys](#gruppen-und-trolleys)).
+- **Wer mit dem Trolley gehen darf**, legt der Aufgabenbereich **Trolley** bei
+  der Person fest (siehe [Aufgabenbereiche](#aufgabenbereiche)). Ohne ihn sieht
+  man die Termine, kann sich aber nicht eintragen – auch als Admin oder Planer
+  nicht.
+- **Eintragen, Dazukommen und Austragen** beschreibt das
+  [Handbuch für Verkündiger](verkuendiger.md#trolleys). Eingetragen wird
+  immer man selbst, auf Wunsch gleich mit einem Partner. Austragen kann sich
+  nur, wer im Termin steht – einen anderen austragen kann niemand, auch der
+  Admin nicht.
+- **Die Mitteilungen schickt der Server, nicht das Gerät.** Eintragen,
+  Dazukommen und Austragen laufen über ihn: Er prüft Recht und Zeiten und sagt
+  erst dann dem anderen Bescheid. So kann niemand einem anderen eine Mitteilung
+  schicken, ohne ihn wirklich ein- oder ausgetragen zu haben. Am Vortag
+  erinnert die App alle, die eingetragen sind (siehe
+  [Erinnerungen](#erinnerungen)).
 
 ---
 
@@ -937,8 +910,8 @@ stehen.
 
 Die **Zeitleiste** zeigt alle Aufgaben dieser Person aus den geladenen Wochen,
 chronologisch, jeweils mit Wochentag, Datum und Uhrzeit – Programmpunkte,
-Hilfsdienste, geleitete Treffpunkte und Schichten im öffentlichen
-Zeugnisgeben. Beim Dienstaufseher stehen auch seine **vorgemerkten
+Hilfsdienste, geleitete Treffpunkte und Trolley-Termine (diese ab der
+laufenden Woche). Beim Dienstaufseher stehen auch seine **vorgemerkten
 Gruppenbesuche** darin – Besuche in Wochen, die noch nicht importiert sind, an
 den Tagen laut Grundplan. Vergangenes wird blasser dargestellt. Hat jemand
 weder Zuteilung noch Abwesenheit, entfällt die Karte.
@@ -1011,8 +984,8 @@ Rollen in ihrer Folge.
   dort alle Ältesten und Dienstamtgehilfen. Eingeteilt wird er ohnehin von
   Hand – die Automatik lässt ihn aus.
 - **Hilfsdienste** – dasselbe für die Dienste (Ton, Mikrofone, Ordner …).
-- **Predigtdienst** – **Treffpunkte leiten** und **Öffentliches
-  Zeugnisgeben**.
+- **Predigtdienst** – **Treffpunkte leiten** und **Trolley** (wer mit dem
+  Trolley gehen darf, siehe [Trolleys](#trolleys)).
 - **Feste Rollen** – die beiden des Wachtturm-Studiums:
   - **Wachtturm-Studium-Leiter** – der feste Leiter des Wachtturm-Studiums.
   - **Vertreter (Wachtturm-Studium)** – sein Vertreter.
@@ -1116,8 +1089,8 @@ richtigen Person zu; mit ✕ entfernst du es aus der Versammlung.
 
 Unter **Einstellungen** pflegst du, was für die ganze Versammlung gilt: ihren
 Namen und ihre Sprachen, wann die Zusammenkünfte sind, die Hilfsdienste, die
-Predigtdienstgruppen und die Erinnerungen. Die Einstellungen sieht nur, wer
-Admin ist.
+Predigtdienstgruppen, die Trolleys und die Erinnerungen. Die Einstellungen
+sieht nur, wer Admin ist.
 
 ![Einstellungen](screenshots/planer-einstellungen.png)
 
@@ -1126,7 +1099,8 @@ Am Handy stehen untereinander sechs Karten:
 - **Versammlung** – **Name**, **Königreichssaal** und **Programmsprachen**.
 - **Zusammenkünfte** – **Unter der Woche** und **Am Wochenende**, der Schalter
   **Zusätzliche Klasse** und die **Hilfsdienste**.
-- **Predigtdienst** – die **Gruppen**.
+- **Predigtdienst** – die **Gruppen** und die **Trolleys**, je mit ihrer Zahl;
+  beide Zeilen öffnen dieselbe Seite **Gruppen und Trolleys**.
 - **Mitteilungen** – die **Erinnerungen**.
 - **Wer plant** – alle, die planen dürfen.
 - **Programm-Import** – holt die nächste Woche des Arbeitshefts von jw.org;
@@ -1135,23 +1109,25 @@ Am Handy stehen untereinander sechs Karten:
 Jede Zeile nennt, was eingestellt wird, und dazu, was gerade gilt – etwa
 „Dienstag 19:00". So siehst du alles auf einen Blick, ohne etwas zu öffnen. Ein
 Tipp auf die Zeile öffnet ein Blatt, in dem du es änderst. Hinter
-**Programmsprachen**, **Hilfsdienste**, **Gruppen** und **Erinnerungen** liegt
-statt eines Blatts eine eigene Seite, eine Ebene unter der Übersicht – oben
-führt der Pfeil zurück, ebenso die Zurück-Taste.
+**Programmsprachen**, **Hilfsdienste**, **Gruppen**, **Trolleys** und
+**Erinnerungen** liegt statt eines Blatts eine eigene Seite, eine Ebene unter
+der Übersicht – oben führt der Pfeil zurück, ebenso die Zurück-Taste.
 
 Was du einstellst, gilt sofort. Ein Speichern gibt es nicht; **Fertig** schließt
-nur das Blatt. Zwei Ausnahmen: Ein neuer Hilfsdienst entsteht erst mit
-**Hinzufügen**, und der Name einer Gruppe gilt erst, wenn du ihr Blatt
-schließt.
+nur das Blatt. Drei Ausnahmen: Ein neuer Hilfsdienst entsteht erst mit
+**Hinzufügen**, der Name einer Gruppe gilt erst, wenn du ihr Blatt schließt,
+und bei einem Trolley gelten Name, Abholort und Hinweis ebenso erst beim
+Schließen.
 
 Am Desktop stehen links untereinander die Abschnitte – **Versammlung**,
-**Zusammenkünfte**, **Hilfsdienste**, **Gruppen**, **Mitteilungen und
-Erinnerungen**, **Wer plant** und **Programm-Import** –, jeder mit einer
-Kurzfassung darunter, etwa „Dienstag 19:00 · Sonntag 10:00" oder „Gruppen: 4".
-Rechts steht der gewählte Abschnitt mit allem, was am Handy hinter seinen
-Zeilen liegt. Zuerst ist **Versammlung** gewählt; die Sprachen stehen dort
-gleich unter Name und Königreichssaal. Die Hilfsdienste sind am Desktop ein
-eigener Abschnitt, die Gruppen eine Tabelle.
+**Zusammenkünfte**, **Hilfsdienste**, **Gruppen und Trolleys**, **Mitteilungen
+und Erinnerungen**, **Wer plant** und **Programm-Import** –, jeder mit einer
+Kurzfassung darunter, etwa „Dienstag 19:00 · Sonntag 10:00" oder
+„Gruppen: 4 · Trolleys: 3". Rechts steht der gewählte Abschnitt mit allem, was
+am Handy hinter seinen Zeilen liegt. Zuerst ist **Versammlung** gewählt; die
+Sprachen stehen dort gleich unter Name und Königreichssaal. Die Hilfsdienste
+sind am Desktop ein eigener Abschnitt, die Gruppen und die Trolleys je eine
+Tabelle.
 
 ### Versammlung und Sprachen
 
@@ -1228,7 +1204,7 @@ Reihenfolge, je Dienst eine Zeile:
 - Bei der **Reinigung** steht statt der Personen **Gruppen-Rotation**: Sie geht
   nicht an eine Person, sondern an eine Predigtdienstgruppe. **Automatisch**
   nimmt Woche für Woche die nächste; von Hand wählst du beim Zuteilen eine
-  Gruppe aus (siehe [Gruppen](#gruppen)).
+  Gruppe aus (siehe [Gruppen und Trolleys](#gruppen-und-trolleys)).
 
 Darunter führt **Wer darf was?** zu den **Personen**: Dort vergibst du jeder
 Person ihre Aufgabenbereiche, die Hilfsdienste eingeschlossen (siehe
@@ -1269,11 +1245,15 @@ Die Reinigung lässt sich entfernen, in der App aber nicht wieder anlegen: Ein
 neuer Dienst geht immer an Personen, nie reihum an Gruppen. Das steht in ihrem
 Blatt auch über dem Knopf.
 
-### Gruppen
+### Gruppen und Trolleys
 
-Unter **Gruppen** stehen die **Predigtdienstgruppen**, jede mit Aufseher und
-Gehilfe und der Zahl ihrer Personen („Personen: 26"). Am Desktop ist es eine
-Tabelle mit den Spalten **Gruppe**, **Aufseher**, **Gehilfe** und **Personen**.
+Am Handy führen beide Zeilen der Karte **Predigtdienst** – **Gruppen** und
+**Trolleys** – auf diese Seite; am Desktop ist es der Abschnitt **Gruppen und
+Trolleys**. Oben stehen die Gruppen, darunter die Trolleys.
+
+Die Karte **Predigtdienstgruppen** nennt jede Gruppe mit Aufseher und Gehilfe
+und der Zahl ihrer Personen („Personen: 26"). Am Desktop ist es eine Tabelle
+mit den Spalten **Gruppe**, **Aufseher**, **Gehilfe** und **Personen**.
 
 - Ist jemand keiner Gruppe zugeordnet, steht darüber **Ohne Gruppe: 2** mit
   „Bei der Person eine Gruppe wählen". Ein Tipp führt zu den **Personen**, wo
@@ -1327,6 +1307,35 @@ Gruppe**, bis du ihnen bei der Person eine andere Gruppe gibst. Ihre Wochen
 (bzw. Monate) in den **Weiteren Plänen** verteilst du dort neu (siehe
 [Weitere Pläne](#5a-weitere-pläne)).
 
+Unter den Gruppen steht die Karte **Trolleys**, nach dem Namen geordnet: je
+Trolley sein Name, darunter, wo man ihn abholt („abholen: Depot"), rechts, wie
+viele Termine noch kommen („Termine: 3"). Am Desktop ist es eine Tabelle mit
+den Spalten **Trolley**, **Abholen**, **Hinweis** und **Kommende Termine**.
+Darunter steht: „Wer zu welcher Gruppe gehört und wer mit dem Trolley gehen
+darf, legst du bei der Person fest." – das Trolley-Recht ist dort der
+Aufgabenbereich **Trolley** (siehe [Aufgabenbereiche](#aufgabenbereiche)).
+
+**Trolley hinzufügen** legt sofort einen neuen an – mit der nächsten Zahl,
+nach „Trolley 3" also „Trolley 4", das Wort in der Sprache, in der du die App
+benutzt – und öffnet sein Blatt. Übersetzt wird der Name nicht: So, wie er
+dasteht, sehen ihn alle.
+
+Ein Tipp auf einen Trolley öffnet sein Blatt:
+
+- **Name**, **Wo man ihn abholt** und **Hinweis (freiwillig)**, etwa
+  „Schlüssel im Fach neben der Bühne". Alle drei gelten erst, wenn du das Blatt
+  schließt (**Fertig**), wie bei einer Gruppe. Bleibt der Name leer oder trägt
+  ihn schon ein anderer Trolley, behält er den alten, und ein Hinweis sagt
+  warum – etwa „Name nicht geändert: Trolley 2 gibt es schon".
+- **Kommende Termine** mit ihrer Zahl – ein Tipp führt zu den Trolleys.
+- **Wenn du den Trolley entfernst** – steht da, sobald Termine anstehen: „Die
+  kommenden Termine entfallen." und „Wer eingetragen ist, bekommt Bescheid."
+
+**Trolley entfernen** fragt erst nach („Wirklich löschen?"). Dann entfernt ihn
+der Server samt seinen Terminen und schickt allen, die für einen kommenden
+Termin eingetragen sind, **„Trolley-Termin entfällt"** – dir selbst nicht. Ohne
+Verbindung bleibt der Trolley stehen, und das Blatt sagt es.
+
 ### Erinnerungen
 
 Unter **Mitteilungen › Erinnerungen** siehst du als Zeitleiste, wie die App eine
@@ -1345,9 +1354,15 @@ Planern gemeldet, damit ihr ihn persönlich erinnert.
 Darunter steht unter **Sofort gemeldet**, was ohne jede Einstellung gleich
 hinausgeht: eine **Absage** an die Admins und Planer; bei einem Hilfsdienst
 zusätzlich **Ersatz gesucht** an alle mit diesem Aufgabenbereich, die an dem
-Tag nicht abwesend sind; und **Zuteilung zurückgezogen** an die Person, wenn du
-ihr einen Platz nimmst, für den sie schon zugesagt hatte. E‑Mails verschickt
-die App nur für Einladungen und die Anmeldung.
+Tag nicht abwesend sind; **Zuteilung zurückgezogen** an die Person, wenn du
+ihr einen Platz nimmst, für den sie schon zugesagt hatte; und **Trolley-Termin
+eingetragen, dazugekommen oder abgesagt** an den Partner – wird ein Trolley
+entfernt, an alle Eingetragenen (siehe [Trolleys](#trolleys)).
+
+Unter der Karte steht: „Am Vortag eines Trolley-Termins erinnert die App alle,
+die eingetragen sind." Diese Erinnerung kommt einmal, ohne Bitte um Zusage, und
+hängt nicht an den Einstellungen oben. E‑Mails verschickt die App nur für
+Einladungen und die Anmeldung.
 
 ### Wer plant
 
@@ -1444,10 +1459,8 @@ beide mit: jede auf einer eigenen Seite, beim Monat Woche für Woche. Im Kopf
 steht dann **Zusammenkünfte**.
 
 Auch die Pläne ohne Woche haben beim **Ansehen** einen **Drucken**‑Knopf: die
-**Gruppenbesuche**, das **öffentliche Zeugnisgeben** und die **Weiteren
-Pläne**. Gedruckt wird ohne Auswahl, mit Versammlung und Plan im Kopf; beim
-Zeugnisgeben kommen alle Wochen des Vierteljahrs aufs Blatt, nicht nur die
-ersten vier – für den Aushang. Bei mehreren Weiteren Plänen kommt der aufs
+**Gruppenbesuche** und die **Weiteren Pläne**. Gedruckt wird ohne Auswahl, mit
+Versammlung und Plan im Kopf. Bei mehreren Weiteren Plänen kommt der aufs
 Blatt, den du oben gewählt hast.
 
 ### Was auf dem Blatt steht

@@ -1,7 +1,7 @@
 // =============================================================================
 // Supabase Edge Function: send-plan — „Plan senden"
 // =============================================================================
-// Vier Aktionen (Aufruf mit Nutzer-JWT, supabase.functions.invoke):
+// Drei Aktionen (Aufruf mit Nutzer-JWT, supabase.functions.invoke):
 //
 //   { action: 'plan', weekStart, heute? }
 //     Der Planer hat eine Woche fertig und gibt sie frei. Jede eingeteilte
@@ -13,25 +13,10 @@
 //     Planers („YYYY-MM-DD"), damit Knopf und Versand denselben Tag meinen
 //     (`heuteUtc`, _shared/planung.ts).
 //
-//   { action: 'zeugnis', heute? }
-//     „Plan senden" im öffentlichen Zeugnisgeben (T120): Wer **zugeteilt**
-//     wurde und davon noch nichts weiß, bekommt eine Nachricht — über alle
-//     kommenden Schichten, nicht je Woche. Wer sich selbst eingetragen hat,
-//     weiß Bescheid und hat damit zugesagt. Versand, Tagebuch und „je Person
-//     eine Nachricht" wie bei der Woche (`versenden`).
-//
-//   { action: 'entzug', entzuege: [{ taskKey, name, pid?, label?, datum?, grund? }, …] }
+//   { action: 'entzug', entzuege: [{ taskKey, name, pid?, label?, datum? }, …] }
 //     Eine oder mehrere bereits **bestätigte** Zuteilungen wurden zurückgezogen
 //     oder verlegt. Die Betroffenen erfahren es sofort. Ohne diesen Weg
 //     bereitete jemand weiter etwas vor, das ihm längst genommen war.
-//     `grund: 'ausfall'` (5.10.2026): Eine Schicht im Zeugnisgeben fällt aus —
-//     die Nachricht heißt dann „Schicht fällt aus".
-//
-//   { action: 'zeugnis-geaendert', aenderungen: [{ taskKey, name, pid?, label?, datum? }, …] }
-//     Uhrzeit oder Ort einer Schicht im Zeugnisgeben haben sich geändert
-//     (5.10.2026); `datum` ist der neue Termin. Wer dort eingetragen ist und
-//     davon weiß, bekommt „Schicht geändert". Das Tagebuch bleibt unberührt —
-//     der Platz gehört ihm weiter.
 //
 //   { action: 'erinnern', weekStart, heute? }
 //     „Jetzt erinnern" in den Zusagen der Woche (T121, Phase 5g): Wer von
@@ -90,10 +75,6 @@ import {
   kanonisch,
   nachSprache,
   offeneDerWoche,
-  offeneZeugnisEintraege,
-  type OzEintragRow,
-  type OzTerminRow,
-  ozWoche,
   type Pending,
   type ServiceRow,
   type SubscriptionRow,
@@ -146,17 +127,6 @@ interface EntzugRumpf {
   pid?: string
   label?: string
   datum?: string
-  /**
-   * `'ausfall'`: Die Schicht im Zeugnisgeben fällt aus (5.10.2026) — die
-   * Nachricht heißt dann „Schicht fällt aus". Gilt nur für Schlüssel des
-   * Zeugnisgebens (`oz|…`); sonst bleibt es der Entzug.
-   */
-  grund?: string
-}
-
-/** Die Art der Nachricht zu einem Entzug: „Schicht fällt aus" nur, wo es eine Schicht ist. */
-function entzugsArt(e: EntzugRumpf & { taskKey: string }): 'entzug' | 'ausfall' {
-  return e.grund === 'ausfall' && schluesselTeile(e.taskKey)?.art === 'oz' ? 'ausfall' : 'entzug'
 }
 
 /* ---- Versand ------------------------------------------------------------- */
@@ -261,11 +231,9 @@ async function verschicken(
 /**
  * **Versenden, was neu ist** — je Person eine Nachricht, danach das Tagebuch.
  *
- * Die Woche und das öffentliche Zeugnisgeben (T120) tun dieselbe Arbeit, nur
- * mit anderen Plätzen. Zwei Abschriften davon liefen früher oder später
- * auseinander — und genau hier stecken die Regeln, an die man sich nicht
- * zweimal erinnern will: eine Nachricht je Person, die ohne Konto ins
- * Tagebuch, das Tagebuch erst nach dem Versand.
+ * Hier stecken die Regeln, an die man sich nicht zweimal erinnern will: eine
+ * Nachricht je Person, die ohne Konto ins Tagebuch, das Tagebuch erst nach dem
+ * Versand.
  */
 async function versenden(
   cong: string,
@@ -408,15 +376,13 @@ async function erinnern(
 }
 
 /**
- * **Je Person und Art eine Nachricht** — für den Entzug, den Ausfall einer
- * Schicht und eine geänderte Schicht (5.10.2026). Bezeichnung und Termin kommen
- * vom Client, kanonisch deutsch, wie beim Entzug seit T99: Er hat den Platz
- * gerade in der Hand, die Function könnte ihn nach dem Überschreiben nicht mehr
- * nachschlagen.
+ * **Je Person und Art eine Nachricht** — für den Entzug. Bezeichnung und Termin
+ * kommen vom Client, kanonisch deutsch, wie beim Entzug seit T99: Er hat den
+ * Platz gerade in der Hand, die Function könnte ihn nach dem Überschreiben
+ * nicht mehr nachschlagen.
  *
- * Getrennt nach Art, weil jede Art ihren Titel trägt: Wer an einem Tag einen
- * Platz verliert und dessen Schicht am anderen ausfällt, bekommt zwei
- * Nachrichten — aber nie zwei derselben Art.
+ * Getrennt nach Art, weil jede Art ihren Titel trägt — nie zwei Nachrichten
+ * derselben Art an eine Person.
  */
 async function jePersonMelden(
   cong: string,
@@ -516,8 +482,7 @@ async function nurEigeneTreffpunkte<T extends { taskKey: string }>(
  * Je Präfix eine einfache `like`-Abfrage, parallel, statt eines `or=`: Ihre
  * Bedeutung ist ohne Nachschlagen in der PostgREST-Grammatik zu erkennen. Die
  * Präfixe tragen nur geprüfte Montage (`YYYY-MM-DD`), also weder `%` noch `_`,
- * die als Muster wirkten. Bis zum 5.10.2026 stand dieser Helfer zweimal da —
- * für die Woche und für das Zeugnisgeben.
+ * die als Muster wirkten.
  */
 async function jePraefix<T>(cong: string, tabelle: string, spalten: string, praefixe: readonly string[]): Promise<T[]> {
   const teile = await Promise.all(
@@ -592,26 +557,6 @@ async function wocheLesen(cong: string, weekStart: string): Promise<GeleseneWoch
   }
 }
 
-/**
- * Zusagen und Versand-Tagebuch des öffentlichen Zeugnisgebens
- * (`oz|<Montag>|…`), eines Plans ohne Woche — für die Wochen dieser Einträge.
- * Der Montag kommt aus dem Datum der Datenbank.
- */
-async function zusagenUndTagebuch(
-  cong: string,
-  daten: readonly string[],
-): Promise<{ conf: Map<string, string>; schonGemeldet: Set<string> }> {
-  const praefixe = [...new Set(daten.map(ozWoche).filter(Boolean))].map((w) => `oz|${w}|`)
-  const [confs, log] = await Promise.all([
-    jePraefix<{ task_key: string; status: string }>(cong, 'confirmations', 'task_key,status', praefixe),
-    jePraefix<{ task_key: string; name: string }>(cong, 'assignment_log', 'task_key,name', praefixe),
-  ])
-  return {
-    conf: new Map(confs.map((c) => [c.task_key, c.status])),
-    schonGemeldet: new Set(log.map((r) => tagebuchSchluessel(r.task_key, r.name))),
-  }
-}
-
 /* ---- Handler ------------------------------------------------------------- */
 
 Deno.serve(async (req: Request) => {
@@ -626,10 +571,9 @@ Deno.serve(async (req: Request) => {
           weekStart?: string
           heute?: string
           entzuege?: EntzugRumpf[]
-          aenderungen?: EntzugRumpf[]
         } & EntzugRumpf)
       | null
-    const aktionen = ['plan', 'entzug', 'zeugnis', 'zeugnis-geaendert', 'erinnern']
+    const aktionen = ['plan', 'entzug', 'erinnern']
     if (!payload?.action || !aktionen.includes(payload.action)) {
       return json({ error: 'bad-request' }, 400)
     }
@@ -639,9 +583,8 @@ Deno.serve(async (req: Request) => {
     // Versammlungen. Senden darf, wer zuteilt: Admin und Planer (4.10.2026).
     // Der Gruppenaufseher sendet die Treffpunkte **seiner** Gruppe — den Plan
     // der Woche nur für sie und den Entzug einer Leitung dort
-    // (`nurEigeneTreffpunkte`); das Zeugnisgeben gar nicht — weder den Plan
-    // noch eine geänderte Schicht — und auch keine Erinnerung aus den Zusagen
-    // der Woche, die nur sieht, wer zuteilt.
+    // (`nurEigeneTreffpunkte`) — und keine Erinnerung aus den Zusagen der
+    // Woche, die nur sieht, wer zuteilt.
     const eigene = await rest.get<(MemberRow & { zuteiler?: boolean })[]>(
       `members?select=user_id,person_id,planner,zuteiler,congregation_id&user_id=eq.${wert(userId)}`,
     )
@@ -650,9 +593,7 @@ Deno.serve(async (req: Request) => {
     if (!cong) return json({ error: 'no-congregation' }, 403)
     const darfZuteilen = Boolean(mich?.planner || mich?.zuteiler)
     const aufseherVon = darfZuteilen ? null : await geleiteteGruppen(cong, mich?.person_id ?? null)
-    const zeugnisAktion = payload.action === 'zeugnis' || payload.action === 'zeugnis-geaendert'
-    const nurWerZuteilt = zeugnisAktion || payload.action === 'erinnern'
-    if (aufseherVon && (nurWerZuteilt || aufseherVon.size === 0)) {
+    if (aufseherVon && (payload.action === 'erinnern' || aufseherVon.size === 0)) {
       return json({ error: 'forbidden' }, 403)
     }
 
@@ -707,58 +648,14 @@ Deno.serve(async (req: Request) => {
         ),
       )
 
-      // Je Person und Art **eine** Nachricht, wie beim „Plan senden": Wer beim
+      // Je Person **eine** Nachricht, wie beim „Plan senden": Wer beim
       // Umbesetzen einer Zusammenkunft zwei Plätze verliert, soll einmal
-      // hinsehen müssen und nicht zweimal erschrecken. Fällt zugleich eine
-      // Schicht aus, ist das eine eigene Nachricht mit eigenem Titel.
+      // hinsehen müssen und nicht zweimal erschrecken.
       return await jePersonMelden(
         cong,
-        entzuege.map((e) => ({ ...e, art: entzugsArt(e) })),
+        entzuege.map((e) => ({ ...e, art: 'entzug' as const })),
         kontoFuer,
         empfaengerFuer,
-      )
-    }
-
-    /* ---- Aktion: Uhrzeit oder Ort einer Zeugnis-Schicht geändert (5.10.2026) ---- */
-    if (payload.action === 'zeugnis-geaendert') {
-      // Nur Schlüssel des Zeugnisgebens, nur mit Namen. Der Gruppenaufseher ist
-      // oben schon abgewiesen — Termine ändert, wer zuteilt.
-      const roh = Array.isArray(payload.aenderungen) ? payload.aenderungen : []
-      const gueltig = roh.filter(
-        (e): e is EntzugRumpf & { taskKey: string; name: string } =>
-          Boolean(e?.taskKey && e?.name) && schluesselTeile(String(e.taskKey))?.art === 'oz',
-      )
-      if (gueltig.length === 0) return json({ error: 'bad-request' }, 400)
-      // Das Tagebuch bleibt: Der Platz gehört der Person weiter, nur der Termin ist neu.
-      return await jePersonMelden(
-        cong,
-        gueltig.map((e) => ({ ...e, art: 'geaendert' as const })),
-        kontoFuer,
-        empfaengerFuer,
-      )
-    }
-
-    /* ---- Aktion: Plan des öffentlichen Zeugnisgebens senden (T120) ---- */
-    if (payload.action === 'zeugnis') {
-      const heute = heuteUtc(payload.heute)
-      const ab = new Date(heute).toISOString().slice(0, 10)
-      // Nur Zugeteiltes und nur Kommendes — Selbsteingetragenes weiß Bescheid.
-      const [termine, eintraege] = await Promise.all([
-        rest.get<OzTerminRow[]>(`oz_termine?select=id,wd,von,bis,ort&congregation_id=eq.${wert(cong)}`),
-        rest.get<OzEintragRow[]>(
-          `oz_eintraege?select=id,termin_id,datum,person_id,selbst&congregation_id=eq.${wert(cong)}` +
-            `&selbst=is.false&datum=gte.${wert(ab)}`,
-        ),
-      ])
-      const { conf, schonGemeldet } = await zusagenUndTagebuch(cong, eintraege.map((e) => e.datum))
-      const namen = new Map(persons.map((p) => [p.id, personDisplayName(p.fn, p.ln)]))
-      const offen = offeneZeugnisEintraege(eintraege, termine, namen, conf, heute)
-      return await versenden(
-        cong,
-        offen.filter((p) => !schonGemeldet.has(tagebuchSchluessel(p.key, p.name))),
-        kontoFuer,
-        empfaengerFuer,
-        personByName,
       )
     }
 

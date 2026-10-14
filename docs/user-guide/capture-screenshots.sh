@@ -95,10 +95,6 @@ SHOTS=(
   # Besuche mit, der erste mit Konflikt. Höher, damit Konflikt und erste
   # Monate ins Bild passen; angemeldet, damit die Sidebar einen Namen trägt.
   "planer-gruppenbesuche|s=planen&tab=fs&fb=gruppenbesuche&me=p6|${W}x1500"
-  # Öffentliches Zeugnisgeben (T120, Phase 3): Termine, Konflikt (Niklas ist
-  # abwesend), freie Plätze und die ersten Wochen — in der dritten fällt die
-  # Schicht am 23. September aus („Wiederherstellen"). Hoch genug bis dorthin.
-  "planer-zeugnis|s=planen&tab=fs&fb=zeugnis&me=p6|${W}x2100"
   # Weitere Pläne (T120, Phase 5): die Liste — der Winterdienst aktuell, die
   # Grundreinigung als Entwurf. Einen Plan öffnet kein Hash.
   "planer-weitere-plaene|s=planen&tab=wp&me=p6"
@@ -117,10 +113,11 @@ SHOTS=(
   "verkuendiger-gruppenaufseher|s=planen&tab=fs&pl=0&me=p1"
   # Simon (p9) ist in Gruppe 1: oben der Besuch bei seiner Gruppe, darunter alle.
   "verkuendiger-gruppenbesuche|s=programm&tab=fs&fb=gruppenbesuche&pl=0&me=p9"
-  # Simon hat den Aufgabenbereich: freie Plätze mit „+ Eintragen", am
-  # 19. September ist er zugeteilt — Bestätigen oder Absagen —, und am
-  # 23. September fällt die Schicht aus.
-  "verkuendiger-zeugnis|s=programm&tab=fs&fb=zeugnis&pl=0&me=p9|${W}x1500"
+  # Trolleys (T121, Phase 7): Simon darf mit dem Trolley gehen — oben sein
+  # Termin am 19. September (Jonas hat beide eingetragen) und wo Jonas einen
+  # Partner sucht, darunter der Tagesplan von heute, Montag 7. September, mit
+  # dem Termin am Nachmittag.
+  "verkuendiger-trolleys|s=programm&tab=fs&fb=trolleys&pl=0&me=p9|${W}x1500"
   # Simon (p9) ist in Gruppe 1: Er sieht den Winterdienst mit „Deine Gruppe ist
   # dran", den Entwurf nicht. Hoch genug für alle Wochen.
   "verkuendiger-weitere-plaene|s=programm&tab=wp&pl=0&me=p9|${W}x1400"

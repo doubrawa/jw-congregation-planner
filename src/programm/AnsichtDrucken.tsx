@@ -1,33 +1,27 @@
-import { flushSync } from 'react-dom'
 import { useApp } from '../app/context'
 import { TABLET_BREITE, useMedia } from '../components/useMedia'
 import { druckKennzeichen } from './druck'
 import { DruckKnopf } from './DruckKnopf'
 
 /**
- * **Drucken für die Pläne ohne Woche** (5.10.2026): Gruppenbesuche,
- * öffentliches Zeugnisgeben und Weitere Pläne (T120).
+ * **Drucken für die Pläne ohne Woche** (5.10.2026): Gruppenbesuche und
+ * Weitere Pläne (T120).
  *
  * Bis dahin hatten nur das Programm und die Treffpunkte einen Druckknopf. Der
- * Reinigungsplan und die Zeugnis-Schichten gehören aber genauso an den Aushang.
- * Gedruckt wird die Ansicht, wie sie dasteht — ohne Bedienelemente und ohne
- * App-Rahmen (`print.css`), mit einer Kopfzeile, die das Blatt zuordnet:
- * Versammlung und Plan. Ein eigenes Kennzeichen braucht es nicht; die Regeln
- * der Woche gelten (`druckKennzeichen(null)` räumt ein stehengebliebenes ab).
- *
- * `vorbereiten` läuft vor dem Druck und landet sofort im DOM (`flushSync`) —
- * so klappt das Zeugnisgeben alle Wochen auf, bevor der Druckdialog das Blatt
- * aufnimmt, wie beim Monat des Programms.
+ * Reinigungsplan gehört aber genauso an den Aushang. Gedruckt wird die
+ * Ansicht, wie sie dasteht — ohne Bedienelemente und ohne App-Rahmen
+ * (`print.css`), mit einer Kopfzeile, die das Blatt zuordnet: Versammlung und
+ * Plan. Ein eigenes Kennzeichen braucht es nicht; die Regeln der Woche gelten
+ * (`druckKennzeichen(null)` räumt ein stehengebliebenes ab).
  *
  * Der Knopf sieht aus wie der der Woche (T121): am Handy das Zeichen, ab dem
  * Tablet mit Wort.
  */
-export function AnsichtDrucken({ titel, vorbereiten }: { titel: string; vorbereiten?: () => void }) {
+export function AnsichtDrucken({ titel }: { titel: string }) {
   const { state } = useApp()
   const breit = useMedia(TABLET_BREITE)
 
   const drucken = () => {
-    if (vorbereiten) flushSync(vorbereiten)
     druckKennzeichen(null)
     window.print()
   }

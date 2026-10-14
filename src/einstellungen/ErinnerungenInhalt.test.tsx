@@ -201,12 +201,13 @@ describe('Sofort gemeldet', () => {
   const zeilen = (k: HTMLElement) =>
     [...k.querySelectorAll('.erin-meldung')].map((z) => [z.querySelector('.erin-meldung-titel')?.textContent, z.querySelector('.klein-text')?.textContent])
 
-  it('drei Fälle, je mit denen, an die sie gehen — eine Absage an Admins und Planer, ein Ersatzgesuch nur bei Hilfsdiensten', () => {
+  it('vier Fälle, je mit denen, an die sie gehen — eine Absage an Admins und Planer, ein Ersatzgesuch nur bei Hilfsdiensten', () => {
     const { container } = zeige()
     expect(zeilen(karte(container, t.erinSofortGemeldet))).toEqual([
       [t.erinAbsage, t.erinAnPlaner],
       [t.notifErsatzGesucht, t.erinErsatzAn],
       [t.notifEntzug, t.erinEntzugAn],
+      [t.erinTrolley, t.erinTrolleyAn],
     ])
     expect(t.erinErsatzAn).toContain('Hilfsdiensten')
   })
@@ -215,12 +216,12 @@ describe('Sofort gemeldet', () => {
     const en = dict('en')
     const { container } = zeige(STANDARD, 'en')
     const titelDerZeilen = zeilen(karte(container, en.erinSofortGemeldet)).map(([name]) => name)
-    expect(titelDerZeilen.slice(1)).toEqual(['Substitute needed', 'Assignment withdrawn'])
+    expect(titelDerZeilen.slice(1, 3)).toEqual(['Substitute needed', 'Assignment withdrawn'])
   })
 
-  it('am Ende: E-Mails nur für Einladungen und die Anmeldung — erinnert wird nie per E-Mail', () => {
+  it('am Ende: die Erinnerung am Vortag eines Trolley-Termins, und E-Mails nur für Einladungen und die Anmeldung', () => {
     const { container } = zeige()
-    expect(container.querySelector('.erin-fuss')?.textContent).toBe(t.erinMailNur)
+    expect([...container.querySelectorAll('.erin-fuss')].map((p) => p.textContent)).toEqual([t.erinTrolleyVortag, t.erinMailNur])
   })
 })
 

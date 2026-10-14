@@ -127,7 +127,7 @@ describe('entwicklerStart – was der Hash der Entwicklerseite verlangt', () => 
   it('fb=<Bereich> wählt den Reiter im Predigtdienst (T120) — nur bekannte Bereiche', () => {
     expect(entwicklerStart('#s=planen&tab=fs&fb=gruppenbesuche').fsBereich).toBe('gruppenbesuche')
     expect(entwicklerStart('#s=planen&tab=fs&fb=grundplan').fsBereich).toBe('grundplan')
-    expect(entwicklerStart('#s=planen&tab=fs&fb=zeugnis').fsBereich).toBe('zeugnis')
+    expect(entwicklerStart('#s=programm&tab=fs&fb=trolleys').fsBereich).toBe('trolleys')
     expect(entwicklerStart('#s=planen&tab=fs&fb=quatsch').fsBereich).toBe('treffpunkte')
   })
 
@@ -138,14 +138,14 @@ describe('entwicklerStart – was der Hash der Entwicklerseite verlangt', () => 
     expect(demoZustand().gruppenbesuche).toEqual([])
   })
 
-  it('ebenso das öffentliche Zeugnisgeben, samt Aufgabenbereich — der Testbestand nicht', () => {
+  it('ebenso die Trolleys, samt Aufgabenbereich — der Testbestand nicht', () => {
     const seite = entwicklerStart('')
-    expect(seite.ozTermine.length).toBeGreaterThan(0)
-    expect(seite.ozEintraege.length).toBeGreaterThan(0)
+    expect(seite.trolleys.length).toBeGreaterThan(0)
+    expect(seite.trolleyTermine.length).toBeGreaterThan(0)
     expect(seite.persons.find((p) => p.id === 'p9')?.priv.zeugnis).toBe(true)
     const tests = demoZustand()
-    expect(tests.ozTermine).toEqual([])
-    expect(tests.ozEintraege).toEqual([])
+    expect(tests.trolleys).toEqual([])
+    expect(tests.trolleyTermine).toEqual([])
     expect(tests.persons.some((p) => p.priv.zeugnis)).toBe(false)
   })
 

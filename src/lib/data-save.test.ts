@@ -47,12 +47,12 @@ import {
   saveInvite,
   saveInviteRechte,
   saveMemberRow,
-  saveOzTermine,
   savePerson,
   savePersonGroup,
   savePushSubscription,
   saveService,
   saveSettings,
+  saveTrolleys,
   saveWeek,
   setKonfliktMelder,
   setSchreibfehlerMelder,
@@ -61,7 +61,6 @@ import {
   substituteWithdraw,
   platzFuellen,
   sendPlanEntzug,
-  sendPlanZeugnisAenderung,
 } from './data'
 import type { Group, Person, Service, Week } from '../data/types'
 import { isoDay } from '../data/meeting-dates'
@@ -130,19 +129,16 @@ describe('Upsert-Schreiber (onConflict)', () => {
     ])
   })
 
-  it('saveOzTermine → eine Zeile je Termin, die gestrichenen Tage immer dabei', async () => {
-    // Auch leer: Holt der Planer den letzten gestrichenen Tag zurück, muss die
-    // leere Liste hinaus — sonst bliebe er in der Datenbank gestrichen.
-    saveOzTermine('c1', [
-      { id: 't1', wd: 3, von: '10:00', bis: '12:00', ort: 'Markt', plaetze: 2, aus: ['2026-09-16'] },
-      { id: 't2', wd: 6, von: '09:00', bis: '11:00', ort: '', plaetze: 2 },
-    ])
+  it('saveTrolleys → eine Zeile je Trolley, und gelöscht wird nie', async () => {
+    // Einen Trolley entfernt die Function `trolley`, die den Eingetragenen
+    // Bescheid sagt — dieser Weg schreibt nur an.
+    saveTrolleys('c1', [{ id: 'tr1', name: 'Trolley 1', ort: 'Depot', hinweis: '' }])
     await geschrieben()
-    expect(chain.from).toHaveBeenCalledWith('oz_termine')
+    expect(chain.from).toHaveBeenCalledWith('trolleys')
     expect(chain.upsert).toHaveBeenCalledWith([
-      { id: 't1', congregation_id: 'c1', wd: 3, von: '10:00', bis: '12:00', ort: 'Markt', plaetze: 2, aus: ['2026-09-16'] },
-      { id: 't2', congregation_id: 'c1', wd: 6, von: '09:00', bis: '11:00', ort: '', plaetze: 2, aus: [] },
+      { id: 'tr1', congregation_id: 'c1', name: 'Trolley 1', ort: 'Depot', hinweis: '' },
     ])
+    expect(chain.delete).not.toHaveBeenCalled()
   })
 
   it('saveFsRules ohne Streichungen löscht nichts — auch nicht die Regel eines anderen', async () => {
@@ -463,45 +459,27 @@ describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
 })
 
 /**
- * **Was an `send-plan` geht, wenn eine Zeugnis-Schicht ausfällt oder sich
- * ändert** (5.10.2026). Feldnamen und Aktion müssen genau die sein, die die
- * Function liest (`entzuege[].grund`, `zeugnis-geaendert` mit `aenderungen`) —
+ * **Was an `send-plan` geht, wenn eine bestätigte Zuteilung zurückgezogen
+ * wird.** Feldnamen und Aktion müssen genau die sein, die die Function liest —
  * ein Tippfehler auf einer Seite ginge still unter: Die Function antwortete
  * 400, der Client protokollierte es nur.
  */
-describe('send-plan: Ausfall und Änderung einer Zeugnis-Schicht', () => {
+describe('send-plan: der Entzug', () => {
   const abwarten = () => new Promise((r) => setTimeout(r, 0))
-  const SCHICHT = { key: 'oz|2026-09-07|e1', name: 'A B', pid: 'p1', label: 'Öffentliches Zeugnisgeben', datum: 'Mi' }
 
-  it('der Entzug trägt den Grund, wo es einer ist — und nur dort', async () => {
+  it('je Entzug Schlüssel, Name, Person, Bezeichnung und Termin — in einem Aufruf', async () => {
     chain.functions.invoke.mockClear()
-    sendPlanEntzug([{ ...SCHICHT, grund: 'ausfall' }, { ...SCHICHT, key: 'oz|2026-09-07|e2' }])
+    const ENTZUG = { key: '2026-09-07|mid|helper|mik|0', name: 'A B', pid: 'p1', label: 'Mikrofone', datum: 'Di' }
+    sendPlanEntzug([ENTZUG, { ...ENTZUG, key: '2026-09-07|mid|helper|mik|1' }])
     await abwarten()
+    expect(chain.functions.invoke).toHaveBeenCalledTimes(1)
     const [name, optionen] = chain.functions.invoke.mock.calls[0] as [string, { body: { action: string; entzuege: unknown[] } }]
     expect(name).toBe('send-plan')
     expect(optionen.body.action).toBe('entzug')
     expect(optionen.body.entzuege).toEqual([
-      { taskKey: 'oz|2026-09-07|e1', name: 'A B', pid: 'p1', label: 'Öffentliches Zeugnisgeben', datum: 'Mi', grund: 'ausfall' },
-      { taskKey: 'oz|2026-09-07|e2', name: 'A B', pid: 'p1', label: 'Öffentliches Zeugnisgeben', datum: 'Mi' },
+      { taskKey: '2026-09-07|mid|helper|mik|0', name: 'A B', pid: 'p1', label: 'Mikrofone', datum: 'Di' },
+      { taskKey: '2026-09-07|mid|helper|mik|1', name: 'A B', pid: 'p1', label: 'Mikrofone', datum: 'Di' },
     ])
-  })
-
-  it('eine geänderte Schicht geht als `zeugnis-geaendert` mit `aenderungen`', async () => {
-    chain.functions.invoke.mockClear()
-    sendPlanZeugnisAenderung([SCHICHT])
-    await abwarten()
-    const [name, optionen] = chain.functions.invoke.mock.calls[0] as [string, { body: unknown }]
-    expect(name).toBe('send-plan')
-    expect(optionen.body).toEqual({
-      action: 'zeugnis-geaendert',
-      aenderungen: [{ taskKey: 'oz|2026-09-07|e1', name: 'A B', pid: 'p1', label: 'Öffentliches Zeugnisgeben', datum: 'Mi' }],
-    })
-  })
-
-  it('eine leere Liste ruft gar nicht erst', () => {
-    chain.functions.invoke.mockClear()
-    sendPlanZeugnisAenderung([])
-    expect(chain.functions.invoke).not.toHaveBeenCalled()
   })
 })
 

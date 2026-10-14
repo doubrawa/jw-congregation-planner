@@ -12,7 +12,7 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import { dict } from '../i18n/ui'
-import type { MyTask, Person, S89Payload, SubstituteReq } from '../data/types'
+import type { MyTask, Person, S89Payload, SubstituteReq, TrolleyTermin } from '../data/types'
 import { AufgabenScreen } from './AufgabenScreen'
 
 /**
@@ -246,6 +246,46 @@ describe('Freie Plätze', () => {
     const bereiche = [...container.querySelectorAll('.aufgaben-abschnitt')]
     expect(bereiche).toHaveLength(2)
     expect(bereiche[1]).toBe(karte(container))
+  })
+})
+
+/**
+ * **Trolley** (T121, Phase 7, Entwurf `GAufgaben`): die eigenen Trolley-Termine
+ * für sich — wer sich eingetragen hat, hat sich verabredet; einen Haken zum
+ * Bestätigen gibt es nicht. Ein Tipp führt zu den Trolleys.
+ */
+describe('Trolley', () => {
+  const tag = (n: number) => new Date(inTagen(n)).toISOString().slice(0, 10)
+  const JONAS: Person = { ...ICH, id: 'p-j', fn: 'Jonas', ln: 'Berger' }
+  const termin = (over: Partial<TrolleyTermin> = {}): TrolleyTermin => ({
+    id: 'r1', trolleyId: 'tr3', datum: tag(5), von: '09:00', bis: '11:00', pid: 'p-j', partner: 'p-a', gemeinsam: true, ...over,
+  })
+  const mit = (termine: TrolleyTermin[]) =>
+    zeige({ persons: [ICH, JONAS], trolleys: [{ id: 'tr3', name: 'Trolley 3', ort: '', hinweis: '' }], trolleyTermine: termine })
+  const bereich = (c: HTMLElement) => c.querySelector('[data-bereich="trolley"]')
+
+  it('ohne eigene kommende Termine steht der Bereich nicht da — fremde und vergangene zählen nicht', () => {
+    const { container } = mit([termin({ partner: null }), termin({ id: 'alt', datum: tag(-2), pid: 'p-a', partner: null })])
+    expect(bereich(container)).toBeNull()
+  })
+
+  it('je Termin: Trolley und mit wem, darunter Tag und Zeit — verabredet, ohne Zusage, ohne Haken', () => {
+    const { container } = mit([termin(), termin({ id: 'r2', datum: tag(7), pid: 'p-a', partner: null, gemeinsam: false })])
+    const b = bereich(container)!
+    expect(b.querySelector('h2')?.textContent).toBe(t.privZeugnis)
+    expect([...b.querySelectorAll('.aufgaben-zeile-titel')].map((e) => e.textContent)).toEqual([
+      'Trolley 3 · mit Jonas Berger',
+      `Trolley 3 · ${t.trolleyPartnerGesucht}`,
+    ])
+    expect(b.querySelector('.aufgaben-zeile .klein-text')?.textContent).toMatch(/ · 09:00–11:00 · verabredet, ohne Zusage$/)
+    expect(b.querySelector('.knopf-haken')).toBeNull()
+  })
+
+  it('ein Tipp führt zu den Trolleys', () => {
+    const { container, dispatch } = mit([termin()])
+    fireEvent.click(bereich(container)!.querySelector('.aufgaben-zeile-text')!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'setFsBereich', bereich: 'trolleys' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'programm', thema: 'predigtdienst' })
   })
 })
 

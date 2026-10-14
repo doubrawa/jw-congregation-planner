@@ -300,22 +300,29 @@ describe('loadCongregationData', () => {
 })
 
 /**
- * **Die fünf Tabellen aus T120** — Gruppenbesuche, Zeugnis-Termine und
- * -Einträge, Weitere Pläne und ihre Einträge.
+ * **Die Tabellen der Pläne ohne Woche** — Gruppenbesuche und Weitere Pläne
+ * samt Einträgen (T120), dazu die Trolleys und ihre Termine (T121).
  *
  * Bis zum 3.10.2026 lief keine ihrer Zuordnungen je in einem Test: Der Stub
  * gab für sie nichts zurück, also blieb `…FromRow` stumm. Ein falscher
  * Spaltenname wäre erst im Betrieb aufgefallen — als leerer Plan.
  */
 describe('loadCongregationData: die Pläne aus T120', () => {
-  const T120 = ['gruppenbesuche', 'oz_termine', 'oz_eintraege', 'plaene', 'plan_eintraege']
+  const T120 = ['gruppenbesuche', 'trolleys', 'trolley_termine', 'plaene', 'plan_eintraege']
 
   /** Normale Antworten plus je eine Zeile der neuen Tabellen — einzelne per Argument überschreiben. */
   function mitPlaenen(over: Partial<Record<string, Array<{ data: unknown; error: unknown }>>> = {}) {
     seedResponses({
       gruppenbesuche: [{ data: [{ id: 'b1', woche: '2026-10-05', grp: 'g1', person_id: 'p1' }], error: null }],
-      oz_termine: [{ data: [{ id: 't1', wd: 3, von: '10:00:00', bis: '12:30:00', ort: 'Marktplatz', plaetze: 2 }], error: null }],
-      oz_eintraege: [{ data: [{ id: 'e1', termin_id: 't1', datum: '2026-09-09', person_id: 'p1', selbst: true }], error: null }],
+      trolleys: [{ data: [{ id: 'tr1', name: 'Trolley 1', ort: 'Depot', hinweis: '' }], error: null }],
+      trolley_termine: [
+        {
+          data: [
+            { id: 'r1', trolley_id: 'tr1', datum: '2026-09-09', von: '10:00:00', bis: '12:30:00', person_id: 'p1', partner_id: null, gemeinsam: false },
+          ],
+          error: null,
+        },
+      ],
       plaene: [
         { data: [{ id: 'pl1', name: 'Winterdienst', von: '2026-09-07', bis: '2026-11-29', entwurf: false, takt: 'monat' }], error: null },
       ],
@@ -346,32 +353,14 @@ describe('loadCongregationData: die Pläne aus T120', () => {
     if (!res.ok) return
     const d = res.data
     expect(d.gruppenbesuche).toEqual([{ id: 'b1', woche: '2026-10-05', grp: 'g1', pid: 'p1' }])
-    expect(d.ozTermine).toEqual([{ id: 't1', wd: 3, von: '10:00', bis: '12:30', ort: 'Marktplatz', plaetze: 2 }])
-    expect(d.ozEintraege).toEqual([{ id: 'e1', terminId: 't1', datum: '2026-09-09', pid: 'p1', selbst: true }])
+    expect(d.trolleys).toEqual([{ id: 'tr1', name: 'Trolley 1', ort: 'Depot', hinweis: '' }])
+    expect(d.trolleyTermine).toEqual([
+      { id: 'r1', trolleyId: 'tr1', datum: '2026-09-09', von: '10:00', bis: '12:30', pid: 'p1', partner: null, gemeinsam: false },
+    ])
     // Der Takt kommt mit (4.10.2026) — sonst wechselte ein Monatsplan nach dem Laden wieder wöchentlich.
     expect(d.plaene).toEqual([{ id: 'pl1', name: 'Winterdienst', von: '2026-09-07', bis: '2026-11-29', entwurf: false, takt: 'monat' }])
     // Der Eintrag eines nicht geladenen Plans fällt heraus — er gehörte zu nichts, was die App zeigt.
     expect(d.planEintraege).toEqual([{ id: 'pe1', planId: 'pl1', datum: '2026-09-07', grp: 'g1' }])
-  })
-
-  it('gestrichene Tage eines Termins kommen mit — eine leere Liste nicht', async () => {
-    mitPlaenen({
-      oz_termine: [
-        {
-          data: [
-            { id: 't1', wd: 3, von: '10:00:00', bis: '12:00:00', ort: 'Markt', plaetze: 2, aus: ['2026-09-16'] },
-            { id: 't2', wd: 6, von: '09:00:00', bis: '11:00:00', ort: '', plaetze: 2, aus: [] },
-          ],
-          error: null,
-        },
-      ],
-    })
-    const res = await loadCongregationData('u1')
-    if (!res.ok) throw new Error('nicht geladen')
-    expect(res.data.ozTermine.map((t) => t.aus)).toEqual([['2026-09-16'], undefined])
-    // Und gefragt wird nach ihnen — sonst kämen sie aus der Datenbank nie.
-    const spalten = store.filter.find(([t, m]) => t === 'oz_termine' && m === 'select')?.[2] ?? ''
-    expect(spalten.split(',').map((s) => s.trim())).toContain('aus')
   })
 
   it('jede der fünf Abfragen nennt die eigene Versammlung', async () => {
@@ -382,16 +371,17 @@ describe('loadCongregationData: die Pläne aus T120', () => {
     }
   })
 
-  it('Einträge und Pläne ab einem Vierteljahr zurück — Besuche, Termine und Plan-Einträge ohne Grenze', async () => {
+  it('Pläne ab einem Vierteljahr zurück, Trolley-Termine ab dieser Woche — Besuche, Trolleys und Plan-Einträge ohne Grenze', async () => {
     mitPlaenen()
     await loadCongregationData('u1')
     // 91 Tage vor Montag, dem 7. September 2026.
     const gte = (tabelle: string) => store.filter.find(([t, m]) => t === tabelle && m === 'gte')
-    expect(gte('oz_eintraege')).toEqual(['oz_eintraege', 'gte', 'datum', '2026-06-08'])
+    // Ab dem Montag dieser Woche: Davor zeigt die App keinen Termin mehr.
+    expect(gte('trolley_termine')).toEqual(['trolley_termine', 'gte', 'datum', '2026-09-07'])
     // Bei den Plänen zählt das Ende: Ein laufender Plan kann lange vorher begonnen haben.
     expect(gte('plaene')).toEqual(['plaene', 'gte', 'bis', '2026-06-08'])
     expect(gte('gruppenbesuche')).toBeUndefined()
-    expect(gte('oz_termine')).toBeUndefined()
+    expect(gte('trolleys')).toBeUndefined()
     expect(gte('plan_eintraege')).toBeUndefined()
   })
 
@@ -405,13 +395,14 @@ describe('loadCongregationData: die Pläne aus T120', () => {
     expect(res.data.persons).toHaveLength(1)
     const teile = {
       gruppenbesuche: res.data.gruppenbesuche,
-      oz_termine: res.data.ozTermine,
-      oz_eintraege: res.data.ozEintraege,
+      trolleys: res.data.trolleys,
+      trolley_termine: res.data.trolleyTermine,
       plaene: res.data.plaene,
       plan_eintraege: res.data.planEintraege,
     }
     for (const [name, liste] of Object.entries(teile)) {
-      // Ohne Pläne gehört auch kein Plan-Eintrag mehr zu etwas.
+      // Ohne Pläne gehört auch kein Plan-Eintrag mehr zu etwas; Trolley-Termine
+      // stehen dagegen für sich.
       const leer = name === tabelle || (tabelle === 'plaene' && name === 'plan_eintraege')
       expect(liste, name).toHaveLength(leer ? 0 : 1)
     }

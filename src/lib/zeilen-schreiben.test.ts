@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  * der Termin gelöscht, das Recht entzogen — oder das Netz ist weg. Das erste
  * erklärt nur ein veralteter Stand; dann muss nachgeladen werden, sonst steht
  * lokal weiter „Du bist eingetragen" für einen Platz, den es so nicht gibt
- * (bis zum 3.10.2026 lud nur `oz_voll` und eine Dublette nach). Das letzte ist
+ * (bis zum 3.10.2026 lud nur ein voller Platz und eine Dublette nach). Das letzte ist
  * ein Schreibfehler: melden, nicht nachladen.
  *
  * Der Stub antwortet je Tabelle und Vorgang, kann einen Vorgang aufhalten und
@@ -47,15 +47,10 @@ vi.mock('./supabase', () => ({ supabase: db.client }))
 import {
   saveFsRules,
   saveGruppenbesuche,
-  saveOzEintraege,
-  saveOzTermine,
   setKonfliktMelder,
   setSchreibfehlerMelder,
 } from './data'
-import type { FsRule, Gruppenbesuch, OzEintrag, OzTermin } from '../data/types'
-
-const termin: OzTermin = { id: 't1', wd: 3, von: '10:00', bis: '12:00', ort: 'Marktplatz', plaetze: 2 }
-const eintrag = (id: string, pid = 'x1'): OzEintrag => ({ id, terminId: 't1', datum: '2026-09-09', pid, selbst: false })
+import type { FsRule, Gruppenbesuch } from '../data/types'
 
 /** Bis alles Wartende durch die Schlange ist (sie hängt Versprechen aneinander). */
 const ruhe = () => new Promise((r) => setTimeout(r, 0))
@@ -73,80 +68,6 @@ beforeEach(async () => {
   setKonfliktMelder(konflikt)
   setSchreibfehlerMelder(schreibfehler)
   vi.spyOn(console, 'error').mockImplementation(() => {})
-})
-
-describe('Öffentliches Zeugnisgeben: Reihenfolge', () => {
-  it('ein Eintrag wartet, bis sein Termin angekommen ist', async () => {
-    let loslassen!: () => void
-    db.zustand.bremse.oz_termine = new Promise<void>((r) => (loslassen = r))
-    saveOzTermine('c1', [termin])
-    saveOzEintraege('c1', [eintrag('e1')])
-    await ruhe()
-    expect(db.protokoll).toEqual([])
-    loslassen()
-    await ruhe()
-    expect(db.protokoll).toEqual(['upsert oz_termine t1', 'insert oz_eintraege e1'])
-  })
-
-  it('erst gelöscht, dann eingefügt — und nur, was entfernt wurde', async () => {
-    saveOzEintraege('c1', [eintrag('e2')], ['e1'])
-    await ruhe()
-    expect(db.protokoll).toEqual(['delete oz_eintraege e1', 'insert oz_eintraege e2'])
-  })
-})
-
-describe('Öffentliches Zeugnisgeben: was die Datenbank abweist', () => {
-  it('ein besetzter Platz im Stapel: die freien kommen an, nachgeladen wird einmal', async () => {
-    // Die Auto-Zuteilung schickt viele auf einmal; die Datenbank verwirft den
-    // Stapel als Ganzes, wenn einer davon keinen Platz mehr hat.
-    db.zustand.abweisen = (_t, vorgang, ids) =>
-      vorgang === 'insert' && ids.includes('e2') ? { code: '23514', message: 'oz_voll' } : null
-    saveOzEintraege('c1', [eintrag('e1'), eintrag('e2', 'x2'), eintrag('e3', 'x3')])
-    await ruhe()
-    expect(db.protokoll).toEqual([
-      'insert oz_eintraege e1,e2,e3 ✗23514',
-      'insert oz_eintraege e1',
-      'insert oz_eintraege e2 ✗23514',
-      'insert oz_eintraege e3',
-    ])
-    expect(konflikt).toHaveBeenCalledTimes(1)
-    expect(schreibfehler).not.toHaveBeenCalled()
-  })
-
-  it.each([
-    ['der Termin ist inzwischen gelöscht', '23503', 'oz_termin_fehlt'],
-    ['der Termin liegt inzwischen auf einem anderen Wochentag', '23514', 'oz_falscher_tag'],
-    ['die Schicht ist inzwischen gestrichen', '23514', 'oz_faellt_aus'],
-    ['das Recht ist inzwischen entzogen', '42501', 'new row violates row-level security policy'],
-    ['dieselbe Person steht schon in der Schicht', '23505', 'duplicate key value'],
-  ])('%s: nachladen statt nur melden', async (_fall, code, message) => {
-    db.zustand.abweisen = (_t, vorgang) => (vorgang === 'insert' ? { code, message } : null)
-    saveOzEintraege('c1', [eintrag('e1')])
-    await ruhe()
-    // Ein einzelner Eintrag wird nicht noch einmal versucht.
-    expect(db.protokoll).toEqual([`insert oz_eintraege e1 ✗${code}`])
-    expect(konflikt).toHaveBeenCalledTimes(1)
-    expect(schreibfehler).not.toHaveBeenCalled()
-  })
-
-  it('ein Netzfehler wird gemeldet, nicht nachgeladen — und hält die Schlange nicht an', async () => {
-    db.zustand.abweisen = (_t, _v, ids) => (ids.includes('e1') ? { code: '', message: 'Failed to fetch' } : null)
-    saveOzEintraege('c1', [eintrag('e1'), eintrag('e2', 'x2')])
-    saveOzEintraege('c1', [eintrag('e3', 'x3')])
-    await ruhe()
-    // Kein Einzelversuch: Ein Netzfehler erklärt sich nicht durch einen besetzten Platz.
-    expect(db.protokoll).toEqual(['insert oz_eintraege e1,e2 ✗', 'insert oz_eintraege e3'])
-    expect(schreibfehler).toHaveBeenCalledTimes(1)
-    expect(konflikt).not.toHaveBeenCalled()
-  })
-
-  it('ein abgewiesenes Löschen hält das Einfügen zurück', async () => {
-    db.zustand.abweisen = (_t, vorgang) => (vorgang === 'delete' ? { code: '', message: 'Failed to fetch' } : null)
-    saveOzEintraege('c1', [eintrag('e2')], ['e1'])
-    await ruhe()
-    expect(db.protokoll).toEqual(['delete oz_eintraege e1 ✗'])
-    expect(schreibfehler).toHaveBeenCalledTimes(1)
-  })
 })
 
 describe('Die übrigen Tabellen „eine Zeile je …"', () => {

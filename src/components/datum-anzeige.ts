@@ -4,7 +4,7 @@
  * Ein `Intl.DateTimeFormat` zu bauen kostet rund hundertmal so viel wie damit
  * zu formatieren (gemessen am 3.10.2026: 76 µs gegen 0,8 µs; `formatRange`
  * 115 µs gegen 16 µs). Die Pläne formatieren in Schleifen über Wochen,
- * Schichten und Auswahllisten — bei jedem Render, und der kommt mit jedem
+ * Termine und Auswahllisten — bei jedem Render, und der kommt mit jedem
  * Tastenanschlag. Bis dahin baute jeder Helfer seinen Formatierer je Aufruf.
  */
 
@@ -27,6 +27,8 @@ const FORMATE = {
   wochentag: { weekday: 'long' },
   /** „So." — vor den Aufgaben am anderen Tag der Woche, im Zuteilen-Blatt */
   wochentagKurz: { weekday: 'short' },
+  /** „12" — die Zahl unter dem Wochentag bei der Wahl eines Tages (Trolleys) */
+  tagNummer: { day: 'numeric' },
   /** „12. Oktober" — als Spanne „12.–18. Oktober" */
   tagMonat: { day: 'numeric', month: 'long' },
   /** „1. Dezember 2026" — als Zeitraum „1. Dezember 2026 – 28. Februar 2027" */

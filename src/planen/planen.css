@@ -1,12 +1,5 @@
 /* Planen (Screen 3, nur Planer) — die Woche, ihre Plätze, das Zuteilungs-Sheet. */
 
-/* Hinweis über einem Plan (Treffpunkte, Besuche, Zeugnisgeben). */
-.plan-hint {
-  margin-top: 12px;
-  font-size: calc(11.5px * var(--fs));
-  color: var(--mut);
-}
-
 /* ---- Die Woche planen (T121, Entwurf `GPlanen`) ---------------------------- */
 
 /* Ein Platz: Punkt nach seiner Lage, Name, Rolle, rechts was nicht stimmt.
@@ -146,9 +139,6 @@
 /* Auto-Zuteilen / Leeren — je eine Zeile für Aufgaben und Hilfsdienste:
    Bereichs-Label, darunter der gefüllte „Automatisch"-Button (primär) und der
    dezente „Leeren"-Button (Umriss, Zwei-Tipp-Bestätigung) auf einer Linie. */
-.plan-auto {
-  margin-top: 12px;
-}
 
 .plan-auto-row + .plan-auto-row {
   margin-top: 12px;
@@ -234,31 +224,6 @@
 
 /* ---- Konflikt-Warnungen ------------------------------------------------- */
 
-/* Der gemeinsame Kasten der vier Banner unter dem Plan (Konflikte, offene
-   Plätze, Engpass, „Plan senden"). Sie standen viermal ausgeschrieben da und
-   waren dabei schon auseinandergelaufen — verschiedene Innenabstände, einer
-   ohne Schatten. Farbe und Abstand nach oben bleiben je Banner eigen; alles
-   andere gehört allen. */
-.plan-banner-box {
-  margin-top: 12px;
-  border: 1.5px solid;
-  border-radius: 14px;
-  padding: 12px 14px 13px;
-}
-
-.plan-conflicts {
-  margin-top: 14px;
-  background: var(--tWein);
-  border-color: var(--wein);
-  box-shadow: 0 3px 12px -6px var(--wein);
-}
-
-.plan-open {
-  background: var(--tAcc);
-  border-color: var(--acc);
-  box-shadow: 0 3px 12px -6px var(--acc);
-}
-
 /* Kopfzeile beider Banner: Rund-Badge (!/?) · Titel · Zähler-Pille rechts.
    Badge und Pille wachsen mit der Schriftstufe: Ihre Zeilenhöhe tut es, und
    in einem festen Kasten rutschte die Ziffer ab Stufe > 1 unten heraus. */
@@ -301,59 +266,6 @@
   text-align: center;
 }
 
-.plan-conflicts .plan-banner-badge,
-.plan-conflicts .plan-banner-count {
-  background: var(--wein);
-}
-
-.plan-conflicts .plan-banner-title {
-  color: var(--wein);
-}
-
-.plan-open .plan-banner-badge,
-.plan-open .plan-banner-count {
-  background: var(--acc);
-}
-
-.plan-open .plan-banner-title {
-  color: var(--acc);
-}
-
-/* Konfliktzeile: kleiner farbiger Punkt (Farbe je Art) + dunkler Text. */
-.plan-conflict-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  margin-top: 10px;
-  font-size: calc(11.5px * var(--fs));
-  line-height: 1.4;
-  color: var(--ink);
-  overflow-wrap: anywhere;
-}
-
-.plan-conflict-dot {
-  flex: none;
-  width: 8px;
-  height: 8px;
-  margin-top: 4px;
-  border-radius: 50%;
-  background: var(--wein);
-}
-
-/* Offene Zuteilung: Präfix (Zusammenkunft) in Akzentfarbe, Aufgabe dunkel. */
-.plan-open-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 9px;
-  font-size: calc(11.5px * var(--fs));
-  line-height: 1.4;
-}
-
-.plan-open-label {
-  color: var(--ink);
-  overflow-wrap: anywhere;
-}
-
 /* ---- Slot-Chips (Treffpunkte) und der Titel des Kreisaufseher-Punkts ------- */
 
 .plan-item-title {
@@ -369,26 +281,13 @@
   overflow-wrap: anywhere;
 }
 
-/* Ein Konflikt an einer Person der Schichten im Zeugnisgeben — ein Punkt vor
-   dem Namen. Logischer Rand, damit er in RTL auf der anderen Seite steht. */
-.slot-konflikt-dot {
-  display: inline-block;
-  width: 5px;
-  height: 5px;
-  margin-inline-end: 5px;
-  border-radius: 50%;
-  background: var(--wein);
-  vertical-align: middle;
-}
-
 /*
- * Punkt der Zusage (Zeugnisgeben, Gruppenbesuche): voll bestätigt, blass
- * wartet, rot abgesagt (vorher „✓" und „…"). Die Farben stehen in tokens.css
+ * Punkt der Zusage (Gruppenbesuche): voll bestätigt, blass wartet, rot
+ * abgesagt (vorher „✓" und „…"). Die Farben stehen in tokens.css
  * (`--zusage-*`).
  *
  * Größe in em, damit er mit der Schrift wächst (`--fs`) — an der Person wie in
- * der Legende. Der Konflikt-Punkt vor dem Namen bleibt mit 5px deutlich
- * kleiner und steht auf der anderen Seite: zwei Punkte, zwei Bedeutungen.
+ * der Legende.
  */
 .zusage-punkt {
   display: inline-block;
@@ -628,39 +527,6 @@
 .regel-zeile .zeichen {
   grid-area: pfeil;
   color: var(--text3);
-}
-
-.fs-select {
-  border: 1px solid var(--bord2);
-  /* background-color, nicht die Kurzschreibweise: `background:` setzt auch Bild,
-     Wiederholung und Lage zurück und hebelt das app-weite Chevron aus
-     (components.css). Hell verschwand es, dunkel kachelte es als Zickzack über
-     das ganze Feld — `:root[data-theme='dunkel'] select` setzt das Bild mit höherer
-     Spezifität wieder ein, die Wiederholung aber blieb zurückgesetzt. Wache:
-     tests/auswahlfeld-chevron.test.ts. */
-  background-color: var(--card);
-  color: var(--ink);
-  border-radius: 10px;
-  padding: 7px 10px;
-  /* Kompaktes Chevron: näher am Rand als app-weit (14 px / 40 px). Die Felder
-     stehen zu zweit oder dritt in einer Zeile; mit dem vollen Abstand schnitte
-     „Jeden 1. im Monat" auf einem 360-px-Handy schon in der Standardschrift ab. */
-  padding-inline-end: 26px;
-  background-position: right 8px center;
-  font-size: calc(12px * var(--fs));
-  font-weight: 600;
-}
-
-[dir='rtl'] .fs-select {
-  background-position: left 8px center;
-}
-
-/* So breit wie der Inhalt: Uhrzeit plus Chevron. Fest 78 px reichten nur,
-   solange das Chevron fehlte — mit ihm schnitte „09:30" schon in der
-   Standard-Schriftstufe ab, und die Uhrzeit ist das einzige, was hier steht. */
-.fs-select--time {
-  flex: none;
-  width: auto;
 }
 
 /* Beschriftung einer Eingabezeile (Anfangs- und Schlusslied, Grundplan). */
@@ -984,9 +850,9 @@
 .sonder-grund {
   border: 1px solid var(--bord3);
   border-radius: 8px;
-  /* background-color, nicht `background:` — dieselbe Falle wie bei .fs-select:
-     die Kurzschreibweise löschte das Chevron (hell) bzw. ließ es kacheln
-     (dunkel). */
+  /* background-color, nicht `background:` — die Kurzschreibweise löschte das
+     Chevron (hell) bzw. ließ es kacheln (dunkel); siehe
+     `tests/auswahlfeld-chevron.test.ts`. */
   background-color: transparent;
   color: inherit;
   font: inherit;
@@ -1454,125 +1320,6 @@ body:has(.planen-leiste) .toast {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   padding-top: 16px;
-}
-
-/* ---- „Plan senden" (T99) --------------------------------------------------
-   Der letzte Schritt einer Woche: Der Planer gibt sie frei, und erst dann
-   erfahren die Eingeteilten davon. Optisch ein Banner wie die darüber — es
-   gehört in dieselbe Reihe von Aussagen über den Stand der Woche —, aber in
-   --gld statt --acc/--wein: Es warnt nicht, es steht bereit.
-   Jede Schriftgröße über calc(px * var(--fs)), sonst folgt sie dem Regler
-   nicht (siehe Schriftgrößen-Token). */
-.plan-senden {
-  margin-top: 16px;
-  background: var(--tGld);
-  border-color: var(--gld);
-  box-shadow: 0 3px 12px -6px var(--gld);
-}
-
-.plan-senden .plan-banner-title {
-  color: var(--gld);
-}
-
-.plan-senden .plan-banner-count {
-  background: var(--gld);
-}
-
-.plan-senden-hint {
-  margin: 8px 0 0;
-  font-size: calc(12px * var(--fs));
-  line-height: 1.45;
-  color: var(--ink);
-}
-
-/* Die Namen derer, die noch nichts wissen — eine bloße Zahl ließe den Planer
-   suchen, wen sie meint. */
-.plan-senden-namen {
-  margin-top: 6px;
-  font-size: calc(11.5px * var(--fs));
-  line-height: 1.5;
-  color: var(--mut);
-}
-
-.plan-senden-zuletzt {
-  margin: 6px 0 0;
-  font-size: calc(10.5px * var(--fs));
-  color: var(--mut);
-}
-
-/* Wer kein Konto hat, ist auf keinem Weg zu erreichen: der Planer muss selbst
-   hingehen. Deshalb in der Warnfarbe und nicht als bloße Randnotiz. */
-.plan-senden-ohne {
-  margin: 8px 0 0;
-  font-size: calc(11.5px * var(--fs));
-  line-height: 1.45;
-  color: var(--wein);
-}
-
-.plan-senden .plan-auto-btn {
-  margin-top: 12px;
-  width: 100%;
-}
-
-.plan-senden .plan-auto-btn:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-/* ---- Termine des Zeugnisgebens --------------------------------------------
-   Zeilen mit Auswahl und Eingabe (`ZeugnisPlan`). Sie stammen aus dem alten
-   Grundplan der Treffpunkte; der steht seit T121 (Phase 5e) in Tageskarten
-   (`.regel-zeile`). */
-
-.fsr-row {
-  padding: 10px 0;
-  border-bottom: 1px solid var(--lineNeu);
-}
-
-/* Die Bedienzeile einer Treffpunkt-Regel. */
-.fsr-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.fsr-line + .fsr-line {
-  margin-top: 8px;
-}
-
-/* Wochentag und Häufigkeit: nebeneinander, solange beide ganz lesbar sind.
-   Die Grundbreite jedes Felds ist sein längster Eintrag (`flex-basis: auto`),
-   also bricht die Häufigkeit in eine zweite Reihe um, sobald die Zeile dafür
-   nicht reicht — große Schrift, schmales Handy. Kürzen soll hier nichts:
-   „Jeden 1. im Monat" und „Jede Woche" sähen abgeschnitten gleich aus. Das ✕
-   steht außerhalb und bleibt deshalb rechts neben beiden Reihen. */
-.fsr-wahl {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.fsr-wahl > .fs-select {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.fsr-input {
-  flex: 1;
-  min-width: 0;
-  box-sizing: border-box;
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--bord2);
-  background: var(--card);
-  font-size: calc(12.5px * var(--fs));
-  color: var(--ink);
-}
-
-.fsr-add {
-  margin-top: 10px;
 }
 
 /* ---- Vortragsplan aus dem Planungsprogramm (T122) ------------------------- */

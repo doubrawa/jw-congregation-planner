@@ -123,7 +123,7 @@ function hydrateAus(s: AppState, sentLog: AppState['sentLog']) {
     congregationId: s.congregationId, userId: s.userId, empty: false, congregation: s.congregation,
     planner: s.planner, personId: s.personId, persons: s.persons, services: s.services, groups: s.groups,
     weeks: s.weeks, fsRules: s.fsRules, fsWeeks: s.fsWeeks, gruppenbesuche: s.gruppenbesuche,
-    ozTermine: s.ozTermine, ozEintraege: s.ozEintraege, plaene: s.plaene, planEintraege: s.planEintraege,
+    trolleys: s.trolleys, trolleyTermine: s.trolleyTermine, plaene: s.plaene, planEintraege: s.planEintraege,
     absences: s.absences, notifications: s.notifs, confirmations: s.confirmations, sentLog,
     reminders: s.reminders, congLang: s.congLang, progLangs: s.progLangs, auxClass: s.auxClass,
     members: s.members, invites: s.invites,

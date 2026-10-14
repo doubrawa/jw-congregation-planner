@@ -47,11 +47,15 @@ function dateien(dir: string, endung: string): Array<[string, string]> {
   return out
 }
 
-/** Klassen, die ein `<select>` im Quelltext trägt (feste Teile des className). */
+/**
+ * Klassen, die ein `<select>` im Quelltext trägt (feste Teile des className) —
+ * auch die, die ein Aufrufer `ZeitWahl` und `WochentagWahl` mitgibt: Die
+ * beiden reichen sie an ihr `<select>` weiter.
+ */
 function auswahlKlassen(tsx: ReadonlyArray<[string, string]>): Set<string> {
   const klassen = new Set<string>()
   for (const [, text] of tsx) {
-    for (const [, attrs] of text.matchAll(/<select\b([^>]*)>/g)) {
+    for (const [, attrs] of text.matchAll(/<(?:select|ZeitWahl|WochentagWahl)\b([^>]*)>/g)) {
       const cn = attrs!.match(/className=(?:"([^"]+)"|\{`([^`]+)`\})/)
       if (!cn) continue
       const fest = (cn[1] ?? cn[2] ?? '').replace(/\$\{[^}]*\}/g, ' ')
@@ -122,8 +126,9 @@ describe('Auswahlfelder behalten ihr Chevron', () => {
   it('die Prüfung sieht die Auswahlfelder, an denen sie entstanden ist', () => {
     // Ohne diese Zeile wäre ein zu enger Suchausdruck nicht von „alles sauber"
     // zu unterscheiden. `feld-wahl` ist das Auswahlfeld der Blätter seit T121 —
-    // auch das der Gruppe einer Person (vorher `pers-grp-select`).
-    for (const k of ['fs-select', 'sonder-select', 'mem-select', 'feld-wahl']) {
+    // auch das der Gruppe einer Person (vorher `pers-grp-select`);
+    // `treff-zeit-wahl` kommt über `ZeitWahl` (vorher `fs-select`).
+    for (const k of ['treff-zeit-wahl', 'sonder-select', 'mem-select', 'feld-wahl']) {
       expect(klassen, k).toContain(k)
     }
   })

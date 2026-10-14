@@ -133,10 +133,13 @@ export const NOTIF_TITLE_KEY: Record<string, keyof Dict> = {
   // und dass eine bestätigte Zusage zurückgezogen wurde, erfuhr niemand (T99).
   'Neue Zuteilung': 'notifZuteilung',
   'Zuteilung zurückgezogen': 'notifEntzug',
-  // Ebenfalls aus `send-plan`, an die Eingetragenen einer Zeugnis-Schicht
-  // (5.10.2026): Sie fällt aus, oder Uhrzeit bzw. Ort haben sich geändert.
-  'Schicht fällt aus': 'notifOzAusfall',
-  'Schicht geändert': 'notifOzGeaendert',
+  // Trolleys (T121, Phase 7): aus der Function `trolley` an den, den es
+  // angeht — und am Vortag aus `send-reminders` an beide.
+  'Für den Trolley eingetragen': 'notifTrolleyEingetragen',
+  'Trolley-Termin abgesagt': 'notifTrolleyAbgesagt',
+  'Partner gefunden': 'notifTrolleyDazu',
+  'Trolley-Termin entfällt': 'notifTrolleyEntfaellt',
+  'Erinnerung: Trolley morgen': 'notifTrolleyMorgen',
   // Titel der Erinnerungen aus send-reminders — steht kanonisch deutsch in der
   // Datenbank und wird hier in die Sprache des Lesers gebracht.
   'Erinnerung: Zuteilung bestätigen': 'notifErinnerungBest',
@@ -163,4 +166,9 @@ export const NOTIF_TITLE_KEY: Record<string, keyof Dict> = {
   // wird dort vom Fragment-Übersetzer erledigt.
   'Ersatz gesucht': 'notifErsatzGesucht',
   'Ersatz gefunden': 'notifErsatzGefunden',
+  // Abgelegt wie die vier oben: An die Eingetragenen einer Zeugnis-Schicht
+  // (5. bis 14.10.2026, Stand und Schicht) — sie fiel aus, oder Uhrzeit bzw.
+  // Ort hatten sich geändert. Seit den Trolleys gibt es keine Schichten mehr.
+  'Schicht fällt aus': 'notifOzAusfall',
+  'Schicht geändert': 'notifOzGeaendert',
 }

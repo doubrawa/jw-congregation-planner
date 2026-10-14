@@ -104,10 +104,10 @@ describe('Die Liste', () => {
 
   it('am Desktop als Tabelle: Gruppe, Aufseher, Gehilfe, Personen', () => {
     const { container } = zeige({ persons: [{ ...AELTESTER, grp: 'g1' }, BRUDER] }, true)
-    expect([...container.querySelectorAll('.gruppen-kopf span')].map((s) => s.textContent)).toEqual([
+    expect([...container.querySelectorAll('.gruppen-tabelle .einst-tabelle-kopf span')].map((s) => s.textContent)).toEqual([
       t.gbGruppe, t.aufseherLbl, t.gehilfeLbl, t.navPersonen,
     ])
-    const zeile = container.querySelector('.gruppen-zeile')!
+    const zeile = container.querySelector('.gruppen-tabelle .einst-tabelle-zeile')!
     expect([...zeile.querySelectorAll(':scope > span')].map((s) => s.textContent)).toEqual([
       'Gruppe 1', 'Anton Alt', 'Carlo Cohn', '1',
     ])
@@ -226,7 +226,7 @@ describe('Der Name gilt beim Schließen', () => {
 })
 
 describe('Gruppe entfernen', () => {
-  const folgen = () => [...blatt().querySelectorAll('.gruppe-folgen p')].map((p) => p.textContent)
+  const folgen = () => [...blatt().querySelectorAll('.blatt-folgen p')].map((p) => p.textContent)
 
   it('der erste Tipp entfernt nicht — er fragt; erst der zweite entfernt', () => {
     const { dispatch } = oeffne()
@@ -256,7 +256,7 @@ describe('Gruppe entfernen', () => {
 
   it('eine leere Gruppe ohne Treffpunkte: keine erfundenen Folgen', () => {
     oeffne()
-    expect(blatt().querySelector('.gruppe-folgen')).toBeNull()
+    expect(blatt().querySelector('.blatt-folgen')).toBeNull()
   })
 
   it('die Mitglieder einer anderen Gruppe sind keine Folge dieser', () => {
@@ -264,6 +264,6 @@ describe('Gruppe entfernen', () => {
       groups: [GRUPPE_1, { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null }],
       persons: [{ ...BRUDER, grp: 'g2' }],
     })
-    expect(blatt().querySelector('.gruppe-folgen')).toBeNull()
+    expect(blatt().querySelector('.blatt-folgen')).toBeNull()
   })
 })

@@ -75,8 +75,10 @@ export const RLS_TABELLEN = [
   // Vorgemerkte Vorträge (T122): nur Admin und Planer lesen — ein Mitglied
   // ohne Zuteilungsrecht sieht auch in der eigenen Versammlung keine Zeile.
   { name: 'vortraege', spalte: 'congregation_id' },
-  { name: 'oz_termine', spalte: 'congregation_id' },
-  { name: 'oz_eintraege', spalte: 'congregation_id' },
+  // Trolleys (T121): Termine liest die Versammlung; geschrieben werden sie nur
+  // über die Edge Function `trolley`.
+  { name: 'trolleys', spalte: 'congregation_id' },
+  { name: 'trolley_termine', spalte: 'congregation_id' },
   { name: 'plaene', spalte: 'congregation_id' },
   { name: 'plan_eintraege', spalte: 'congregation_id' },
   { name: 'absences', spalte: 'congregation_id' },

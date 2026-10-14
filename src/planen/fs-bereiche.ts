@@ -30,9 +30,10 @@ function kuenftigeBesuche(state: AppState, heute = new Date()): boolean {
  *   sie nicht (so auch die Datenbank). Beim Ansehen für alle, sobald einer
  *   ansteht: Die Gruppe soll wissen, wann der Dienstaufseher kommt; ohne Besuch
  *   bliebe dort nur ein leerer Reiter.
- * - **Öffentliches Zeugnisgeben** beim Planen für Admin und Planer (die
- *   Ältestenschaft organisiert es; der Planer besetzt die Schichten), beim
- *   Ansehen für alle, sobald es Termine gibt — dort trägt man sich ein.
+ * - **Trolleys** (T121, Phase 7) nur beim Ansehen, sobald die Versammlung
+ *   einen hat — für alle: So sehen alle, wann ein Trolley unterwegs ist.
+ *   Planen gibt es dort nichts; wer das Trolley-Recht hat, trägt sich selbst
+ *   ein.
  * - **Grundplan** nur beim Planen, und nur für den, der ihn ändern darf: der
  *   Admin ganz, der Gruppenaufseher seine Gruppe. Der Planer teilt zu — am
  *   Grundplan gibt es nichts zuzuteilen.
@@ -41,12 +42,12 @@ export function fsBereiche(state: AppState): FsBereich[] {
   const planen = state.screen === 'planen'
   const rechte = rechteVon(state)
   const besuche = planen ? rechte.zuteilen : kuenftigeBesuche(state)
-  const zeugnis = planen ? rechte.zuteilen : state.ozTermine.length > 0
+  const trolleys = !planen && state.trolleys.length > 0
   const grundplan = planen && (rechte.admin || rechte.gruppe !== null)
   return [
     'treffpunkte',
     ...(besuche ? (['gruppenbesuche'] as const) : []),
-    ...(zeugnis ? (['zeugnis'] as const) : []),
+    ...(trolleys ? (['trolleys'] as const) : []),
     ...(grundplan ? (['grundplan'] as const) : []),
   ]
 }

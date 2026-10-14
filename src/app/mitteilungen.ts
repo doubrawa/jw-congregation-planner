@@ -119,10 +119,6 @@ function wocheZeigen(
   weeks: readonly Week[],
 ): AppAction[] {
   if (!teile) return [{ type: 'navigate', screen, thema: 'zusammenkuenfte' }]
-  // Das öffentliche Zeugnisgeben zeigt seine Termine ohne Wochenleiste.
-  if (teile.art === 'oz') {
-    return [{ type: 'navigate', screen, thema: 'predigtdienst' }, { type: 'setFsBereich', bereich: 'zeugnis' }]
-  }
   const tab = teile.art === 'fs' ? 'fs' : teile.tab
   const wi = wochenIndex(weeks, teile.woche)
   const hin: AppAction =

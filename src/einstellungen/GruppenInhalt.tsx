@@ -8,13 +8,15 @@ import { fill, useT } from '../i18n/useT'
 import { EinstellZeile } from './EinstellZeile'
 import { neuerGruppenName } from './einstellungen-anzeige'
 import { GruppeBlatt } from './GruppeBlatt'
+import { TrolleysKarte } from './TrolleysKarte'
 
 /**
- * **Gruppen** (T121, Entwurf `GGruppenStandorte` — die Trolleys darin kommen mit
- * Phase 7; am Desktop `GDesktopEinstellungen` als Tabelle): oben, wer ohne
- * Gruppe ist — dort lässt eine entfernte Gruppe ihre Mitglieder zurück, und
- * zugeordnet wird bei der Person. Darunter die Predigtdienstgruppen mit
- * Aufseher, Gehilfe und Zahl; ein Tipp öffnet die Gruppe (`GruppeBlatt`).
+ * **Gruppen und Trolleys** (T121, Entwurf `GGruppenStandorte`; am Desktop
+ * `GDesktopEinstellungen` als Tabellen): oben, wer ohne Gruppe ist — dort
+ * lässt eine entfernte Gruppe ihre Mitglieder zurück, und zugeordnet wird bei
+ * der Person. Darunter die Predigtdienstgruppen mit Aufseher, Gehilfe und
+ * Zahl; ein Tipp öffnet die Gruppe (`GruppeBlatt`). Dann die Trolleys
+ * (`TrolleysKarte`).
  *
  * „Gruppe hinzufügen" legt sie gleich an, mit der nächsten Nummer, und öffnet
  * sie — Name, Aufseher und Gehilfe stehen dann im Blatt.
@@ -49,10 +51,10 @@ export function GruppenInhalt({ tabelle = false }: { tabelle?: boolean }) {
           <Zeichen name="weiter" />
         </button>
       )}
-      <section className="karte einst-karte">
+      <section className={tabelle ? 'karte einst-karte gruppen-tabelle' : 'karte einst-karte'}>
         <h2 className="abschnitt-titel karte-titel">{t.gruppenCard}</h2>
         {tabelle && (
-          <div className="gruppen-kopf" aria-hidden="true">
+          <div className="einst-tabelle-kopf" aria-hidden="true">
             <span>{t.gbGruppe}</span>
             <span>{t.aufseherLbl}</span>
             <span>{t.gehilfeLbl}</span>
@@ -61,7 +63,7 @@ export function GruppenInhalt({ tabelle = false }: { tabelle?: boolean }) {
         )}
         {state.groups.map((g) =>
           tabelle ? (
-            <button key={g.id} type="button" className="gruppen-zeile" onClick={() => setOffen(g.id)}>
+            <button key={g.id} type="button" className="einst-tabelle-zeile" onClick={() => setOffen(g.id)}>
               <span className="einst-zeile-name" dir="auto">
                 {tu(g.name)}
               </span>
@@ -86,7 +88,8 @@ export function GruppenInhalt({ tabelle = false }: { tabelle?: boolean }) {
           {t.gruppeHinzu}
         </button>
       </section>
-      <p className="klein-text einst-fuss">{t.gruppeBeiPerson}</p>
+      <TrolleysKarte tabelle={tabelle} />
+      <p className="klein-text einst-fuss">{t.gruppeTrolleyBeiPerson}</p>
       {gruppe && <GruppeBlatt key={gruppe.id} gruppe={gruppe} onClose={() => setOffen(null)} />}
     </>
   )

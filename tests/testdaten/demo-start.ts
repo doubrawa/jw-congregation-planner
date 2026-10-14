@@ -38,10 +38,9 @@ import {
   DEMO_GRUPPENBESUCHE,
   DEMO_MY_TASKS,
   DEMO_NOTIFICATIONS,
-  DEMO_OZ_EINTRAEGE,
-  DEMO_OZ_PERSONEN,
-  DEMO_OZ_TERMINE,
-  DEMO_OZ_ZUSAGEN,
+  DEMO_TROLLEY_PERSONEN,
+  DEMO_TROLLEY_TERMINE,
+  DEMO_TROLLEYS,
   DEMO_PERSONS,
   DEMO_PLAENE,
   demoPlanEintraege,
@@ -109,7 +108,7 @@ export interface DebugHash {
    */
   me?: string
   tab?: MeetingTab // Programm/Planen-Tab (mid|we|fs|wp) — für Doku-Screenshots
-  fsBereich?: FsBereich // fb=<treffpunkte|gruppenbesuche|zeugnis|grundplan> — Reiter im Predigtdienst (T120)
+  fsBereich?: FsBereich // fb=<treffpunkte|gruppenbesuche|trolleys|grundplan> — Reiter im Predigtdienst (T120)
   planner?: boolean // Rechte erzwingen (pl=0 Verkündiger, pl=1 Admin, pl=2 Planer)
   /** `pl=2`: Planer — teilt zu und sendet, ändert die Pläne nicht (4.10.2026). */
   zuteiler?: boolean
@@ -143,7 +142,7 @@ export function parseDebugHash(hash: string, jetzt = Date.now()): DebugHash | nu
   const tab = p.get('tab')
   if (tab === 'mid' || tab === 'we' || tab === 'fs' || tab === 'wp' || tab === 'zusagen') out.tab = tab
   const fb = p.get('fb')
-  if (fb === 'treffpunkte' || fb === 'gruppenbesuche' || fb === 'zeugnis' || fb === 'grundplan') out.fsBereich = fb
+  if (fb === 'treffpunkte' || fb === 'gruppenbesuche' || fb === 'trolleys' || fb === 'grundplan') out.fsBereich = fb
   const pl = p.get('pl')
   if (pl === '0' || pl === '1') out.planner = pl === '1'
   if (pl === '2') {
@@ -208,17 +207,16 @@ export function entwicklerStart(hash: string = location.hash): AppState {
     // mit der echten Uhr, und ein Besuch im Bestand machte jede Ansicht des
     // Predigtdienstes vom Kalender abhängig. Die Seite hat ihre gestellte.
     gruppenbesuche: DEMO_GRUPPENBESUCHE,
-    // Öffentliches Zeugnisgeben (T120) ebenso nur hier — samt dem
-    // Aufgabenbereich der Beteiligten und einer bestätigten Zuteilung.
-    ozTermine: DEMO_OZ_TERMINE,
-    ozEintraege: DEMO_OZ_EINTRAEGE,
+    // Trolleys (T121) ebenso nur hier — samt dem Aufgabenbereich derer, die
+    // mit ihm gehen dürfen.
+    trolleys: DEMO_TROLLEYS,
+    trolleyTermine: DEMO_TROLLEY_TERMINE,
     persons: basis.persons.map((p) =>
-      DEMO_OZ_PERSONEN.includes(p.id) ? { ...p, priv: { ...p.priv, zeugnis: true } } : p,
+      DEMO_TROLLEY_PERSONEN.includes(p.id) ? { ...p, priv: { ...p.priv, zeugnis: true } } : p,
     ),
     // Und die Weiteren Pläne (Phase 5).
     plaene: DEMO_PLAENE,
     planEintraege: demoPlanEintraege(),
-    confirmations: { ...basis.confirmations, ...DEMO_OZ_ZUSAGEN },
     sentLog: versand,
     persoenlich: demoPersoenlich(versand),
     screen: debug?.screen ?? 'start',

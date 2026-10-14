@@ -317,9 +317,9 @@ describe('Die Reiter', () => {
     expect(reiter(container)).toEqual(['Dienstag', 'Sonntag', t.wocheEinrichten])
   })
 
-  it('der Predigtdienst hat vier: Treffpunkte der Woche, Gruppenbesuche, öffentliches Zeugnisgeben und Grundplan', () => {
-    const { container } = zeige({ tab: 'fs' })
-    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.privZeugnis, t.fsGrundplan])
+  it('der Predigtdienst hat drei: Treffpunkte der Woche, Gruppenbesuche und Grundplan — die Trolleys plant niemand', () => {
+    const { container } = zeige({ tab: 'fs', trolleys: [{ id: 'tr1', name: 'Trolley 1', ort: '', hinweis: '' }] })
+    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.fsGrundplan])
   })
 
   it('ein Reiterwechsel schlägt durch', () => {
@@ -395,7 +395,7 @@ describe('Der Grundplan im Predigtdienst (T120)', () => {
   it('auch, solange noch keine Woche geladen ist — eine neue Versammlung richtet ihn vorher ein', () => {
     const leer = zeige({ tab: 'fs', weeks: [], fsWeeks: [] })
     expect(leer.container.textContent).toContain(t.keineWochenTitel)
-    expect(reiter(leer.container)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.privZeugnis, t.fsGrundplan])
+    expect(reiter(leer.container)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.fsGrundplan])
     cleanup()
     const { container } = zeige({ tab: 'fs', weeks: [], fsWeeks: [], fsBereich: 'grundplan' })
     expect(container.textContent).not.toContain(t.keineWochenTitel)
@@ -708,12 +708,12 @@ describe('Der Planer teilt zu, ändert den Plan aber nicht (4.10.2026)', () => {
 
   it('im Predigtdienst kein Grundplan — es gibt dort nichts zuzuteilen', () => {
     const { container } = zeige({ ...ALS_PLANER, tab: 'fs' })
-    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.privZeugnis])
+    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab])
   })
 
   it('ist er zugleich Gruppenaufseher, pflegt er den Grundplan seiner Gruppe', () => {
     const { container } = zeige({ ...ALS_PLANER, personId: AUFSEHER.id, tab: 'fs' })
-    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.privZeugnis, t.fsGrundplan])
+    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.fsGrundplan])
   })
 })
 

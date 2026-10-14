@@ -117,6 +117,13 @@ export interface Rest {
    * welche Spalten zurückkommen, sagt ein `select=` im Pfad.
    */
   patchZeilen<T>(path: string, body: unknown): Promise<T[] | null>
+  /**
+   * Anlegen oder Löschen mit Rückmeldung: die getroffenen Zeilen, `[]` bei
+   * verfehltem Filter, `null` bei einem Fehler — wie `patchZeilen`. Gebraucht,
+   * wo ein Trigger abweisen darf und der Aufrufer es erfahren muss
+   * (`trolley`: zwei wollten zugleich dieselbe Zeit).
+   */
+  zeilenSchreiben<T>(method: 'POST' | 'DELETE', path: string, body?: unknown): Promise<T[] | null>
   /** Eingeloggten Nutzer aus dem mitgeschickten JWT auflösen. */
   userId(req: Request): Promise<string | null>
 }
@@ -125,21 +132,23 @@ export function restKlient(supabaseUrl: string, serviceKey: string): Rest {
   const AUTH = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` }
   const ziel = (path: string): string => `${supabaseUrl}/rest/v1/${path}`
 
-  // Eine Funktion für beide PATCH-Wege, nicht über `this`: `patchIf` stünde
-  // sonst ohne seinen Bezug da, sobald jemand es aus dem Klienten herausnimmt.
-  async function patchZeilen<T>(path: string, body: unknown): Promise<T[] | null> {
+  // Eine Funktion für alle Wege mit Rückmeldung, nicht über `this`: `patchIf`
+  // stünde sonst ohne seinen Bezug da, sobald jemand es aus dem Klienten
+  // herausnimmt.
+  async function zeilenSchreiben<T>(method: string, path: string, body?: unknown): Promise<T[] | null> {
     const res = await fetch(ziel(path), {
-      method: 'PATCH',
+      method,
       headers: { ...AUTH, 'Content-Type': 'application/json', Prefer: 'return=representation' },
-      body: JSON.stringify(body),
+      body: body === undefined ? undefined : JSON.stringify(body),
     })
     if (!res.ok) {
-      console.error(`PATCH ${path} ${res.status}: ${await res.text()}`)
+      console.error(`${method} ${path} ${res.status}: ${await res.text()}`)
       return null
     }
     const rows = (await res.json().catch(() => [])) as unknown
     return Array.isArray(rows) ? (rows as T[]) : []
   }
+  const patchZeilen = <T>(path: string, body: unknown): Promise<T[] | null> => zeilenSchreiben<T>('PATCH', path, body)
 
   return {
     async get<T>(path: string): Promise<T> {
@@ -175,6 +184,7 @@ export function restKlient(supabaseUrl: string, serviceKey: string): Rest {
     },
 
     patchZeilen,
+    zeilenSchreiben,
 
     async userId(req): Promise<string | null> {
       const res = await fetch(`${supabaseUrl}/auth/v1/user`, {

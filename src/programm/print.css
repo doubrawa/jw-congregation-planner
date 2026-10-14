@@ -283,26 +283,6 @@
     display: none;
   }
 
-  /* Die Schichten des Zeugnisgebens leihen sich den alten Kopf des Treffpunkts. */
-  .fs-time {
-    font-size: 9.5pt;
-  }
-
-  .fs-title {
-    font-size: 10pt;
-    line-height: 1.25;
-  }
-
-  .fs-place {
-    margin-top: 0.3mm;
-    font-size: 8.5pt;
-  }
-
-  /* „DU“ ist eine Bildschirm-Markierung für den angemeldeten Nutzer. */
-  .chip-du {
-    display: none;
-  }
-
   /* Am Bildschirm ausgeblendet (programm.css) — hier erscheint sie. */
   .prog-footer {
     display: flex;
@@ -314,31 +294,22 @@
     font-size: 8.5pt;
   }
 
-  /* Pläne ohne Woche (5.10.2026): Gruppenbesuche, Zeugnisgeben, Weitere
-     Pläne. Wie die Treffpunkte in festen Größen — und ohne das, was nur den
-     Leser angeht oder etwas bedient: Eintragen, die eigene Zusage, „Weitere
-     Wochen" (der Druck hat sie schon aufgeklappt), „Deine Gruppe ist dran",
-     die Wahl des Plans. Der Kopf des Zeugnisgebens erklärt das Eintragen; den
-     Plan nennt die Kopfzeile des Ausdrucks. */
-  .oz-kopf,
-  .oz-eintragen,
-  .oz-eigen,
-  .oz-mehr,
+  /* Pläne ohne Woche (5.10.2026): Gruppenbesuche und Weitere Pläne. Wie die
+     Treffpunkte in festen Größen — und ohne das, was nur den Leser angeht
+     oder etwas bedient: „Deine Gruppe ist dran", „Nur zur Info", die Wahl
+     des Plans. Den Plan nennt die Kopfzeile des Ausdrucks. */
   .wp-wahl,
   .wp-dran,
   .wp-info {
     display: none !important;
   }
 
-  .oz-person,
-  .oz-faellt-aus,
   .gb-besuch-woche,
   .gb-liste-zeile,
   .wp-liste-zeile {
     font-size: 9.5pt;
   }
 
-  .oz-frei,
   .gb-besuch-treffpunkt,
   .gb-besuch-leiter,
   .wp-ort,

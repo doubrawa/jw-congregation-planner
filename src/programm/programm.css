@@ -13,7 +13,7 @@
 }
 
 /* Den Abstand regelt hier die Spalte; die Karten der alten Oberfläche brächten
-   ihren eigenen Rand obendrauf mit (Zeugnisgeben bis zu den Trolleys). */
+   ihren eigenen Rand obendrauf mit (der Hinweis ohne geladene Wochen). */
 .screen.prog > .panel {
   margin-top: 0;
 }
@@ -643,52 +643,4 @@
 
 .gb-liste-zeile.is-eigen .gb-liste-gruppe {
   color: var(--text);
-}
-
-/* ---- Kopf einer Zeugnis-Schicht -------------------------------------------- */
-
-/* Früher die Kopfzeile der Treffpunkte; die Schichten des Zeugnisgebens
-   (`SchichtKopf`) leihen sie sich, bis die Trolleys sie ablösen (T121). */
-.fs-row-main {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  min-width: 0;
-}
-
-/* Titel und Ort als eigene Spalte neben der Zeit — ohne `min-width: 0` darf
-   sie nicht unter ihre kleinste Inhaltsbreite, und die ist ein ganzes langes
-   Wort (vgl. `.prog-row-text`). */
-.fs-row-text {
-  min-width: 0;
-}
-
-.fs-time {
-  flex: none;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-weight: 500;
-  font-size: calc(14px * var(--fs));
-  color: var(--gld);
-}
-
-.fs-title {
-  font-family: var(--font-serif);
-  font-size: calc(14.5px * var(--fs));
-  font-weight: 500;
-  line-height: 1.3;
-  /* Silbentrennung nach der Sprache am <html>-Element, `break-word` als
-     Notbremse für Wörter, die der Browser nicht trennen kann — wie bei
-     `.prog-title`. */
-  -webkit-hyphens: auto;
-  hyphens: auto;
-  overflow-wrap: break-word;
-}
-
-.fs-place {
-  font-size: calc(11.5px * var(--fs));
-  color: var(--mut);
-  margin-top: 2px;
-  /* Freitext der Versammlung — ein langer Ortsname bricht um. */
-  overflow-wrap: break-word;
 }

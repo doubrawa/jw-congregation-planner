@@ -13,7 +13,7 @@ import './components.css'
  * davor bringt `className` mit, sie ist je Liste eine andere.
  *
  * `frage` ist für das, was nur herausgenommen wird, nicht gelöscht — eine
- * Person aus einer Schicht, eine Sprache aus dem Programm: „Wirklich
+ * Person von ihrem Platz, eine Sprache aus dem Programm: „Wirklich
  * entfernen?" (`entfernenSicher`).
  *
  * `text` steht statt des ✕ da, wo der Knopf ein Wort trägt („Entfernen" im

@@ -28,16 +28,12 @@ export function aufgabeWann(task: MyTask, lang: Lang, i18n: Pick<I18n, 'tp' | 't
  * Was nach einer Absage geschieht — davon hängt ab, was das Absage-Blatt
  * erzählt:
  *  - `hilfsdienst`: Es wird von selbst ein Ersatz gesucht (`substituteSeek`).
- *  - `zeugnis`: Der Platz wird frei; wer kann, trägt sich ein.
  *  - `programm`: Der Planer erfährt es und teilt neu zu — auch beim Treffpunkt.
  */
-export type AbsageArt = 'hilfsdienst' | 'zeugnis' | 'programm'
+export type AbsageArt = 'hilfsdienst' | 'programm'
 
 export function absageArt(taskId: string): AbsageArt {
-  const teile = schluesselTeile(taskId)
-  if (teile?.art === 'helper') return 'hilfsdienst'
-  if (teile?.art === 'oz') return 'zeugnis'
-  return 'programm'
+  return schluesselTeile(taskId)?.art === 'helper' ? 'hilfsdienst' : 'programm'
 }
 
 /** Der Kalendertag einer Aufgabe als ISO-Datum — oder `null` ohne Termin (Vorlagen). */

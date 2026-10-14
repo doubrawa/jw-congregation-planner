@@ -32,7 +32,7 @@ const ABSCHNITT_TITEL = {
   versammlung: 'versammlungCard',
   zusammenkuenfte: 'navZusammenkuenfte',
   hilfsdienste: 'hilfsdienste',
-  gruppen: 'gruppenTitel',
+  gruppen: 'gruppenUndTrolleys',
   erinnerungen: 'mitteilungenUndErinnerungen',
   werPlant: 'werPlant',
   programm: 'importCard',
@@ -41,15 +41,15 @@ const ABSCHNITT_TITEL = {
 const UNTERANSICHT_TITEL = {
   sprachen: 'programmsprachen',
   hilfsdienste: 'hilfsdienste',
-  gruppen: 'gruppenTitel',
+  gruppen: 'gruppenUndTrolleys',
   erinnerungen: 'erinnerungenCard',
 } as const satisfies Record<Unteransicht, keyof Dict>
 
 /**
  * **Einstellungen** (T121, Entwürfe `GEinstellungen`, `GDesktopEinstellungen`;
  * nur Admins): am Handy Karten mit Zeilen — ein Tipp öffnet ein Blatt oder
- * eine Unteransicht (Programmsprachen, Hilfsdienste, Gruppen, Erinnerungen);
- * am Desktop links die Abschnitte, rechts der gewählte.
+ * eine Unteransicht (Programmsprachen, Hilfsdienste, Gruppen und Trolleys,
+ * Erinnerungen); am Desktop links die Abschnitte, rechts der gewählte.
  *
  * Konten und Einladungen laufen bei der Person (Karte „Konto"), die Rechte
  * ebenso — hier steht nur, wer plant. Der Grundplan der Treffpunkte steht im
@@ -80,9 +80,11 @@ function EinstellungenHandy() {
       <h1 className="seitentitel">{t.einstellungen}</h1>
       <VersammlungKarte onSprachen={() => setOffen('sprachen')} />
       <ZusammenkuenfteKarte onHilfsdienste={() => setOffen('hilfsdienste')} />
+      {/* Gruppen und Trolleys stehen in einer Unteransicht — zwei Zeilen, ein Ziel. */}
       <section className="karte einst-karte">
         <h2 className="abschnitt-titel karte-titel">{t.tabFs}</h2>
         <EinstellZeile name={t.gruppenTitel} wert={String(state.groups.length)} onTipp={() => setOffen('gruppen')} />
+        <EinstellZeile name={t.fsTrolleysTab} wert={String(state.trolleys.length)} onTipp={() => setOffen('gruppen')} />
       </section>
       <section className="karte einst-karte">
         <h2 className="abschnitt-titel karte-titel">{t.mitteilungen}</h2>
@@ -121,7 +123,7 @@ function EinstellungenDesktop() {
     versammlung: [state.congregation.name, sprachenText(state.congLang, state.progLangs, state.lang)].filter(Boolean).join(' · '),
     zusammenkuenfte: `${zusammenkunftText(state.congregation.times.mid, state.lang)} · ${zusammenkunftText(state.congregation.times.we, state.lang)}`,
     hilfsdienste: fill(t.diensteN, { n: state.services.length }),
-    gruppen: fill(t.gruppenN, { n: state.groups.length }),
+    gruppen: `${fill(t.gruppenN, { n: state.groups.length })} · ${fill(t.trolleysN, { n: state.trolleys.length })}`,
     erinnerungen: erinnerungKurz(state.reminders, t, state.lang),
     werPlant: fill(t.personenCount, { n: werPlant(state.persons, state.members, state.lang).length }),
     programm: geladenBis ? fill(t.geladenBis, { datum: geladenBis }) : t.geladenNichts,

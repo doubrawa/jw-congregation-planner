@@ -141,9 +141,9 @@ export function monatNach(monat: string, monate = 1): string {
 }
 
 /**
- * Ist dieser Tag (ISO) um? Für Termine ohne Woche — Schichten, Vorträge,
- * Pläne; das Gegenstück zu `fsTagVorbei`. Stand bis zum 3.10.2026 dreimal
- * gleich da (`ozVorbei`, `vaVorbei`, `planVorbei`).
+ * Ist dieser Tag (ISO) um? Für Termine ohne Woche — Vorträge, Pläne; das
+ * Gegenstück zu `fsTagVorbei`. Stand bis zum 3.10.2026 dreimal gleich da
+ * (`ozVorbei`, `vaVorbei`, `planVorbei`).
  */
 export function tagVorbei(datum: string, heute = new Date()): boolean {
   return istVorbei(kalendertagMs(fromIso(datum)), heute)

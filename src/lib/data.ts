@@ -14,10 +14,10 @@ import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
 import { kurzeZeit, zeitenAus } from '../../supabase/functions/_shared/planung.ts'
 import { fsLeiterBinden, regenFsWeeks } from '../data/fs'
 import { sentKey, taskKeyVorbei } from '../data/planning'
-import type { EntzogeneZusage, GeaenderteSchicht } from '../data/plan-versand'
+import type { EntzogeneZusage } from '../data/plan-versand'
 import { pidsNachtragen } from '../data/namensbindung'
 import { normalizeChairKeys } from '../data/helpers'
-import { isoDay, tagNach } from '../data/meeting-dates'
+import { isoDay, montagVon, tagNach } from '../data/meeting-dates'
 import { taktVon } from '../data/weitere-plaene'
 import type {
   Absence,
@@ -29,8 +29,8 @@ import type {
   Gruppenbesuch,
   Invite,
   MeetingTimes,
-  OzEintrag,
-  OzTermin,
+  Trolley,
+  TrolleyTermin,
   WeitererPlan,
   PlanEintrag,
   PlanTakt,
@@ -83,64 +83,45 @@ interface GroupRow {
   position: number
 }
 
-/** Öffentliches Zeugnisgeben (T120): ein Termin, eine Zeile. */
-interface OzTerminRow {
+/** Ein Trolley (T121, Phase 7): eine Zeile. */
+interface TrolleyRow {
   id: string
-  wd: number
-  von: string
-  bis: string
+  name: string
   ort: string
-  plaetze: number
-  aus: string[] | null
+  hinweis: string
 }
 
-function ozTerminFromRow(r: OzTerminRow): OzTermin {
+function trolleyFromRow(r: TrolleyRow): Trolley {
+  return { id: r.id, name: r.name, ort: r.ort, hinweis: r.hinweis }
+}
+
+function trolleyToRow(t: Trolley, congregationId: string) {
+  return { id: t.id, congregation_id: congregationId, name: t.name, ort: t.ort, hinweis: t.hinweis }
+}
+
+/** Ein Trolley-Termin, wie die Datenbank und die Function `trolley` ihn liefern. */
+export interface TrolleyTerminRow {
+  id: string
+  trolley_id: string
+  datum: string
+  von: string
+  bis: string
+  person_id: string
+  partner_id: string | null
+  gemeinsam: boolean
+}
+
+export function trolleyTerminFromRow(r: TrolleyTerminRow): TrolleyTermin {
   // `time` kommt als „10:00:00" — die App führt „10:00", wie bei den Regeln.
   return {
     id: r.id,
-    wd: r.wd,
+    trolleyId: r.trolley_id,
+    datum: r.datum,
     von: kurzeZeit(r.von, '00:00'),
     bis: kurzeZeit(r.bis, '00:00'),
-    ort: r.ort,
-    plaetze: r.plaetze,
-    ...(r.aus?.length ? { aus: r.aus } : {}),
-  }
-}
-
-function ozTerminToRow(t: OzTermin, congregationId: string) {
-  return {
-    id: t.id,
-    congregation_id: congregationId,
-    wd: t.wd,
-    von: t.von,
-    bis: t.bis,
-    ort: t.ort,
-    plaetze: t.plaetze,
-    aus: t.aus ?? [],
-  }
-}
-
-/** Ein Eintrag: eine Person in einer Schicht. */
-interface OzEintragRow {
-  id: string
-  termin_id: string
-  datum: string
-  person_id: string
-  selbst: boolean
-}
-
-function ozEintragFromRow(r: OzEintragRow): OzEintrag {
-  return { id: r.id, terminId: r.termin_id, datum: r.datum, pid: r.person_id, selbst: r.selbst }
-}
-
-function ozEintragToRow(e: OzEintrag, congregationId: string) {
-  return {
-    id: e.id,
-    congregation_id: congregationId,
-    termin_id: e.terminId,
-    datum: e.datum,
-    person_id: e.pid,
-    selbst: e.selbst,
+    pid: r.person_id,
+    partner: r.partner_id,
+    gemeinsam: r.gemeinsam,
   }
 }
 
@@ -194,20 +175,14 @@ function planEintragToRow(e: PlanEintrag, congregationId: string) {
 }
 
 /**
- * Wie weit die Einträge des öffentlichen Zeugnisgebens zurück geladen werden:
- * ein Vierteljahr. Die Auto-Zuteilung zählt sie mit (`bisher` in
- * `ozAutoAssign`), damit es über die Vierteljahre hinweg reihum geht — mehr
- * braucht es nicht, eine Schicht ist danach Geschichte.
+ * Wie weit Weitere Pläne zurück geladen werden: die, die seit höchstens einem
+ * Vierteljahr vorbei sind.
  */
-export const OZ_RUECKBLICK_TAGE = 91
+const RUECKBLICK_TAGE = 91
 
-/**
- * Der erste Tag des Rückblicks (ISO): Ab ihm werden die Einträge des
- * Zeugnisgebens geladen und die Weiteren Pläne, die noch nicht länger vorbei
- * sind.
- */
+/** Der erste Tag des Rückblicks (ISO). */
 function rueckblickAb(): string {
-  return tagNach(isoDay(new Date()), -OZ_RUECKBLICK_TAGE)
+  return tagNach(isoDay(new Date()), -RUECKBLICK_TAGE)
 }
 
 /**
@@ -520,9 +495,9 @@ export interface CongregationData {
    * Admin und Planer (RLS) — die Versammlung sieht einen Vortrag in seiner Woche.
    */
   vortraege: VorgemerkterVortrag[]
-  /** Öffentliches Zeugnisgeben (T120): Termine und die Einträge ab `OZ_RUECKBLICK_TAGE` zurück. */
-  ozTermine: OzTermin[]
-  ozEintraege: OzEintrag[]
+  /** Trolleys (T121, Phase 7) und ihre Termine ab dem Montag dieser Woche. */
+  trolleys: Trolley[]
+  trolleyTermine: TrolleyTermin[]
   /** Weitere Pläne (T120, Phase 5), deren Zeitraum frühestens ein Vierteljahr zurück endet. */
   plaene: WeitererPlan[]
   planEintraege: PlanEintrag[]
@@ -586,7 +561,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .order('start', { ascending: false })
     .limit(WEEK_LIMIT)
 
-  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, vortragRows, ozTerminRows, ozEintragRows, planRows, planEintragRows] = await Promise.all([
+  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, vortragRows, trolleyRows, trolleyTerminRows, planRows, planEintragRows] = await Promise.all([
     supabase.from('congregations').select(CONG_SPALTEN.join(', ')).eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
@@ -639,19 +614,18 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       .select('id, woche, redner, versammlung, eigener, person_id, thema, lied')
       .eq('congregation_id', congregationId)
       .order('woche'),
-    // Öffentliches Zeugnisgeben (T120): alle Termine, die Einträge ab einem
-    // Vierteljahr zurück.
+    // Trolleys (T121): alle, und ihre Termine ab dem Montag dieser Woche —
+    // was davor liegt, zeigt die App nirgends mehr.
+    supabase.from('trolleys').select('id, name, ort, hinweis').eq('congregation_id', congregationId),
     supabase
-      .from('oz_termine')
-      .select('id, wd, von, bis, ort, plaetze, aus')
+      .from('trolley_termine')
+      .select('id, trolley_id, datum, von, bis, person_id, partner_id, gemeinsam')
       .eq('congregation_id', congregationId)
-      .order('created_at'),
-    supabase
-      .from('oz_eintraege')
-      .select('id, termin_id, datum, person_id, selbst')
-      .eq('congregation_id', congregationId)
-      .gte('datum', rueckblickAb())
-      .order('datum'),
+      .gte('datum', montagVon(isoDay(new Date())))
+      // Nach Tag und Zeit, wie der Reducer sie hält (`termineSortiert`) — zwei
+      // Termine in einer Zelle des Rasters stehen dann in der Folge des Tages.
+      .order('datum')
+      .order('von'),
     // Weitere Pläne (T120, Phase 5): was frühestens ein Vierteljahr zurück
     // endet — die abgeschlossenen stehen beim Planen noch eine Weile als
     // Rückblick da. Ein Mitglied bekommt nur, was es sehen darf (RLS).
@@ -699,9 +673,9 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   if (besuchRows.error) console.error('[gruppenbesuche]', besuchRows.error.message)
   // Ebenso die vorgemerkten Vorträge (T122).
   if (vortragRows.error) console.error('[vortraege]', vortragRows.error.message)
-  // Ebenso das öffentliche Zeugnisgeben (T120, Phase 3).
-  if (ozTerminRows.error) console.error('[oz_termine]', ozTerminRows.error.message)
-  if (ozEintragRows.error) console.error('[oz_eintraege]', ozEintragRows.error.message)
+  // Ebenso die Trolleys (T121, Phase 7).
+  if (trolleyRows.error) console.error('[trolleys]', trolleyRows.error.message)
+  if (trolleyTerminRows.error) console.error('[trolley_termine]', trolleyTerminRows.error.message)
   // Und die weiteren Pläne (Phase 5).
   if (planRows.error) console.error('[plaene]', planRows.error.message)
   if (planEintragRows.error) console.error('[plan_eintraege]', planEintragRows.error.message)
@@ -800,8 +774,8 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     fsWeeks,
     gruppenbesuche: ((besuchRows.data ?? []) as GruppenbesuchRow[]).map(gruppenbesuchFromRow),
     vortraege: ((vortragRows.data ?? []) as VortragRow[]).map(vortragFromRow),
-    ozTermine: ((ozTerminRows.data ?? []) as OzTerminRow[]).map(ozTerminFromRow),
-    ozEintraege: ((ozEintragRows.data ?? []) as OzEintragRow[]).map(ozEintragFromRow),
+    trolleys: ((trolleyRows.data ?? []) as TrolleyRow[]).map(trolleyFromRow),
+    trolleyTermine: ((trolleyTerminRows.data ?? []) as TrolleyTerminRow[]).map(trolleyTerminFromRow),
     plaene: planListe,
     planEintraege: ((planEintragRows.data ?? []) as PlanEintragRow[])
       .map(planEintragFromRow)
@@ -1136,8 +1110,7 @@ export function savePerson(congregationId: string, person: Person): void {
  * **Geschrieben wird ebenso nur, was er angelegt oder geändert hat** — mehr
  * übergibt `persist.ts` nicht. Bis zum 3.10.2026 ging der ganze Grundplan als
  * Upsert hinaus und stellte zurück, was ein anderer Planer inzwischen geändert
- * oder gelöscht hatte; derselbe Weg gilt für die Termine des Zeugnisgebens und
- * die Weiteren Pläne.
+ * oder gelöscht hatte; derselbe Weg gilt für die Weiteren Pläne.
  *
  * Nacheinander, nicht nebeneinander — sonst könnte das Löschen eine gerade
  * erst geschriebene Zeile treffen.
@@ -1174,72 +1147,25 @@ export function saveVortraege(congregationId: string, vortraege: VorgemerkterVor
 }
 
 /**
- * Schreibvorgänge des öffentlichen Zeugnisgebens **hintereinander**.
+ * Trolleys (T121, Phase 7) — wie die Gruppenbesuche: geschrieben wird, was der
+ * Admin angelegt oder geändert hat.
  *
- * Ein Eintrag zeigt auf seinen Termin (Fremdschlüssel, Trigger
- * `oz_platz_pruefen`). Liefe sein Einfügen neben dem Anlegen des Termins her,
- * könnte es zuerst ankommen und abgewiesen werden — „Termin hinzufügen" und
- * gleich darauf „Automatisch zuteilen" genügten dafür. Hintereinander kommt
- * jede Zeile in der Reihenfolge an, in der der Planer gehandelt hat.
+ * **Gelöscht wird hier nie.** Mit einem Trolley gehen seine Termine, und wer
+ * eingetragen war, soll es erfahren — das tut die Edge Function `trolley`
+ * (`trolleyEntfernen` in `lib/trolley.ts`), bevor der Zustand ihn verliert.
+ * Löschte dieser Weg mit, käme er ihr womöglich zuvor, und niemand bekäme
+ * Bescheid.
  */
-const ozNacheinander = schreibSchlange()
-
-/**
- * Termine des öffentlichen Zeugnisgebens (T120) — wie der Grundplan: Geschrieben
- * wird, was dieser Planer angelegt oder geändert hat, gelöscht, was er
- * entfernt hat; die Einträge eines gelöschten Termins gehen per Kaskade mit.
- */
-export function saveOzTermine(congregationId: string, termine: OzTermin[], entfernt: string[] = []): void {
+export function saveTrolleys(congregationId: string, trolleys: Trolley[]): void {
   if (!supabase) return
-  const client = supabase
-  ozNacheinander(() => loeschenDannSchreiben(client, 'oz_termine', congregationId, termine, entfernt, ozTerminToRow))
-}
-
-/**
- * Einträge des öffentlichen Zeugnisgebens (T120): neue einfügen, entfernte
- * löschen — geändert wird ein Eintrag nie, nur ersetzt.
- *
- * **Einfügen, nicht upserten.** Ein Verkündiger darf nur einfügen (RLS), und
- * der Trigger `oz_platz_pruefen` prüft die Plätze nur beim Einfügen. Ist der
- * letzte Platz inzwischen vergeben — oder der Termin gelöscht, verlegt, der
- * Aufgabenbereich entzogen —, weist die Datenbank ab, und die Schlange lädt
- * nach (`zeilenRun`): Die Ansicht zeigt dann, wer den Platz bekommen hat.
- *
- * **Ein Stapel scheitert nur an sich selbst.** Die Auto-Zuteilung fügt viele
- * Einträge mit einer Anfrage ein, und die Datenbank verwirft sie dann als
- * Ganzes, wenn ein einziger Platz inzwischen besetzt ist. Dann geht jeder
- * einzeln: Was frei ist, kommt an; nachgeladen wird einmal.
- */
-export function saveOzEintraege(congregationId: string, neu: OzEintrag[], entfernt: string[] = []): void {
-  if (!supabase) return
-  const client = supabase
-  ozNacheinander(async () => {
-    if (entfernt.length) {
-      const { error } = await client
-        .from('oz_eintraege')
-        .delete()
-        .eq('congregation_id', congregationId)
-        .in('id', entfernt)
-      if (error) return { error }
-    }
-    if (!neu.length) return { error: null }
-    const zeilen = neu.map((e) => ozEintragToRow(e, congregationId))
-    const { error } = await client.from('oz_eintraege').insert(zeilen)
-    if (!error || zeilen.length === 1 || !standVeraltet(error)) return { error }
-    let ersterFehler: Zeilenfehler | null = null
-    for (const zeile of zeilen) {
-      const { error: einzeln } = await client.from('oz_eintraege').insert(zeile)
-      ersterFehler ??= einzeln
-    }
-    return { error: ersterFehler }
-  })
+  void zeilenRun(loeschenDannSchreiben(supabase, 'trolleys', congregationId, trolleys, [], trolleyToRow))
 }
 
 /**
  * Weitere Pläne (T120, Phase 5): Pläne und Einträge in **einer** Schlange.
  * Ein neuer Eintrag zeigt auf einen Plan, der womöglich noch im Bündel wartet
  * („Neuer Plan" und gleich „Reihum verteilen"); der Plan geht deshalb vorher
- * hinaus, und die Schlange hält die Reihenfolge — wie beim Zeugnisgeben.
+ * hinaus, und die Schlange hält die Reihenfolge.
  */
 const planNacheinander = schreibSchlange()
 
@@ -1575,22 +1501,12 @@ export function sendPlan(weekStart: string, heute: string): Promise<PlanVersand 
 }
 
 /**
- * „Plan senden" im öffentlichen Zeugnisgeben (T120): Wer **zugeteilt** wurde
- * und davon noch nichts weiß, bekommt eine Nachricht — über alle kommenden
- * Schichten, nicht je Woche. Die meisten Einträge entstehen dort durch
- * Selbsteintragen; wer sich selbst einträgt, weiß Bescheid.
- */
-export function sendZeugnisPlan(heute: string): Promise<PlanVersand | null> {
-  return planSenden({ action: 'zeugnis', heute })
-}
-
-/**
  * Der eine Aufruf hinter den Knöpfen, die auf die Antwort von `send-plan`
  * warten — „Plan senden" (bis zum 3.10.2026 dreimal abgeschrieben) und „Jetzt
  * erinnern". `null`: Er ist gescheitert.
  */
 async function sendPlanAntwort<T>(body: {
-  action: 'plan' | 'zeugnis' | 'erinnern'
+  action: 'plan' | 'erinnern'
   heute: string
   weekStart?: string
 }): Promise<Partial<T> | null> {
@@ -1603,7 +1519,7 @@ async function sendPlanAntwort<T>(body: {
   return (data ?? {}) as Partial<T>
 }
 
-async function planSenden(body: { action: 'plan' | 'zeugnis'; heute: string; weekStart?: string }): Promise<PlanVersand | null> {
+async function planSenden(body: { action: 'plan'; heute: string; weekStart: string }): Promise<PlanVersand | null> {
   const res = await sendPlanAntwort<PlanVersand>(body)
   return res && { personen: res.personen ?? 0, ohneKonto: res.ohneKonto ?? [] }
 }
@@ -1670,40 +1586,11 @@ export function sendPlanEntzug(entzuege: EntzogeneZusage[]): void {
           pid: z.pid,
           label: z.label,
           datum: z.datum,
-          // „Schicht fällt aus" statt „Zuteilung zurückgezogen" (5.10.2026).
-          // Eine ältere Function übergeht das Feld und meldet den Entzug.
-          ...(z.grund ? { grund: z.grund } : {}),
         })),
       },
     })
     .then(({ error }) => {
       if (error) console.error('[send-plan/entzug]', error.message)
-    })
-}
-
-/**
- * **Uhrzeit oder Ort einer Zeugnis-Schicht hat sich geändert** (5.10.2026):
- * Wer dort eingetragen ist und davon weiß, bekommt den neuen Termin — Glocke
- * und Push über `send-plan` (Aktion `zeugnis-geaendert`). Wann das geschieht
- * und wer es erfährt, entscheidet `persist.ts` (`ozGeaenderteSchichten`).
- *
- * Fehler nur ins Protokoll, wie beim Entzug: Gespeichert ist die Änderung
- * längst, und eine Warnung „nicht gespeichert" wäre falsch.
- *
- * **Reihenfolge beim Ausrollen:** erst die Function deployen — eine ältere
- * kennt die Aktion nicht und antwortet mit 400.
- */
-export function sendPlanZeugnisAenderung(aenderungen: GeaenderteSchicht[]): void {
-  if (!supabase || aenderungen.length === 0) return
-  void supabase.functions
-    .invoke('send-plan', {
-      body: {
-        action: 'zeugnis-geaendert',
-        aenderungen: aenderungen.map((z) => ({ taskKey: z.key, name: z.name, pid: z.pid, label: z.label, datum: z.datum })),
-      },
-    })
-    .then(({ error }) => {
-      if (error) console.error('[send-plan/zeugnis-geaendert]', error.message)
     })
 }
 

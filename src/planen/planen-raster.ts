@@ -24,7 +24,7 @@ export const zumPlanDerWoche: AppAction = { type: 'setTab', tab: 'mid' }
  *   des Plans, kein Plan einer Zusammenkunft;
  * - zu den **Treffpunkten der Woche** für den, der zuteilt, und für den
  *   Gruppenaufseher, der die Treffpunkte seiner Gruppe besetzt. Die übrigen
- *   Reiter des Predigtdienstes (Besuche, Zeugnisgeben, Grundplan) haben keine
+ *   Reiter des Predigtdienstes beim Planen (Besuche, Grundplan) haben keine
  *   Woche und keine Leiste.
  */
 export function planArt(state: AppState): PlanArt | null {

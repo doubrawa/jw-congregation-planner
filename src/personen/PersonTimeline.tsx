@@ -11,7 +11,7 @@ import { personTimeline, type TimelineEntry } from './person-timeline'
  * Zeitleiste einer Person: je Eintrag Datum und Art, vergangene blasser.
  *
  * Sie führt **beide Richtungen** zusammen — wann jemand dran ist (Zuteilungen,
- * geleitete Treffpunkte, Zeugnis-Schichten, vorgemerkte Gruppenbesuche) und
+ * geleitete Treffpunkte, Trolley-Termine, vorgemerkte Gruppenbesuche) und
  * wann er nicht kann (Abwesenheiten). Zwei Punkte markieren Beginn und Ende
  * eines Zeitraums, und die Strecke dazwischen ist eingefärbt: Was in diesen
  * Abschnitt fällt, liegt sichtbar darin.
@@ -33,8 +33,9 @@ export function PersonTimeline({ person }: { person: Person }) {
   const beschriftung = (e: TimelineEntry): string => {
     if (e.kind === 'meeting') return aufgabenLabel({ title: e.titel, rolle: e.rolle }, i18n)
     if (e.kind === 'fs') return `${t.privTreffpunkt} · ${tu(e.ort)}`
-    // Ohne Ort stünde ein Trenner ohne etwas dahinter — der Ort ist beim Termin freiwillig.
-    if (e.kind === 'oz') return [t.privZeugnis, tu(e.ort)].filter(Boolean).join(' · ')
+    // Der Name, wie die Versammlung ihn vergeben hat („Trolley 3") — er sagt,
+    // was es ist; übersetzt wird er nicht.
+    if (e.kind === 'trolley') return e.trolley || t.privZeugnis
     if (e.kind === 'besuch') return `${t.gbMarker} · ${besuchsGruppe(e, state.groups, tu)}`
     return abwesenheitsArt(e.grund, t.abwesendChip)
   }

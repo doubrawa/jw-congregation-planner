@@ -57,7 +57,11 @@ Wichtigste zusammen.
   je Platz, **voll** heißt zugesagt, **blass** wartet noch auf Zusage, **rot**
   ist abgesagt, **gestrichelt** noch offen. Dein eigener Platz trägt einen Ring.
 - Darunter **deine nächsten Aufgaben** danach, je eine Zeile; ein Tipp öffnet
-  die Aufgabe. Alle zusammen stehen unter **Meine Aufgaben**.
+  die Aufgabe. Nach dem Tag einsortiert stehen dort auch deine
+  [Trolley-Termine](#trolleys) („Trolley · 09:00–11:00"); ein Tipp darauf
+  führt zu den Trolleys. Die Liste zeigt höchstens drei Zeilen, alle zusammen
+  stehen unter **Meine Aufgaben**. Die große Karte wird ein Trolley-Termin
+  nie – er hat keine Zusage.
 - **Diese Woche in der Versammlung** – die Zusammenkünfte und die Treffpunkte
   deiner Gruppe, die in dieser Woche noch kommen.
 
@@ -119,27 +123,99 @@ Treffpunkt deiner Gruppe **„Besuch des Dienstaufsehers"**.
 
 ![Besuche des Dienstaufsehers](screenshots/verkuendiger-gruppenbesuche.png)
 
-### Öffentliches Zeugnisgeben
+### Trolleys
 
-Organisiert eure Versammlung Stände oder Trolleys, hat der Predigtdienst den
-Reiter **Öffentliches Zeugnisgeben**: die kommenden Schichten mit Ort, Tag und
-Uhrzeit und wer dabei ist.
+Hat eure Versammlung Trolleys, hat der Predigtdienst für alle den Reiter
+**Trolleys**; beim Planen gibt es ihn nicht. Mit dem Trolley steht man nur eine
+Viertelstunde an einem Platz – was es braucht, ist ein Terminplan, in dem man
+sich verabredet. Deshalb **plant niemand, und niemand sagt zu**: Wer mit dem
+Trolley gehen darf, trägt sich selbst ein, mit einem Partner oder allein. Oben
+steht: „Verabredet euch und tragt euch ein. So sehen alle, wann ein Trolley
+unterwegs ist."
 
-![Öffentliches Zeugnisgeben](screenshots/verkuendiger-zeugnis.png)
+![Trolleys](screenshots/verkuendiger-trolleys.png)
 
-- **Selbst eintragen**: Bist du dafür vorgesehen (die Ältesten legen das fest),
-  steht an jeder Schicht mit freiem Platz **+ Eintragen**. Wer sich einträgt,
-  hat damit zugesagt — eine Bestätigung brauchst du nicht.
-- **Zugeteilt**: Haben dich die Admins eingeteilt, bestätigst du hier oder unter
-  „Meine Aufgaben" — wie jede andere Aufgabe.
-- **Absagen** gibt deinen Platz wieder frei, damit ihn jemand anders übernehmen
-  kann; die Admins erfahren es.
-- **Fällt aus**: Steht das an einer Schicht, findet in dieser Woche nichts
-  statt. Hattest du dich eingetragen, zugesagt oder schon die Nachricht über
-  deine Zuteilung bekommen, erreicht dich **„Schicht fällt aus"** — auch, wenn
-  der Termin auf einen anderen Wochentag wandert oder ganz entfällt.
-- **Neue Uhrzeit oder neuer Ort**: Ändern die Admins eine Schicht, in der du
-  stehst, bekommst du **„Schicht geändert"** mit dem neuen Termin.
+Darunter stehen, sobald es welche gibt, zwei Karten:
+
+- **Deine Termine** – deine kommenden Termine: Tag und Zeit, darunter der
+  Trolley und mit wem („mit Jonas Berger") oder **Partner gesucht**. Hat dein
+  Partner euch beide eingetragen, steht dabei „Jonas hat euch beide
+  eingetragen". Ein Tipp öffnet den Termin.
+- **Partner gesucht** – wo andere allein stehen: Tag, Zeit, Trolley und Name.
+  **Dazukommen** (nur mit dem Trolley-Recht, siehe unten) trägt dich sofort
+  als Partner ein; wer gesucht hat, bekommt „Partner gefunden".
+
+Darunter wählst du mit ‹ › die Woche, bis ein Vierteljahr voraus.
+
+**Am Handy und am Tablet** wählst du im Streifen von Montag bis Sonntag den
+Tag; ein Punkt unter einem Tag heißt, dass dort Termine stehen. Darunter steht
+der **Tagesplan von 6 bis 22 Uhr**, eine Spalte je Trolley. **Tippe auf eine
+freie Zeit, um dich dort einzutragen**: Das Blatt **Eintragen** öffnet mit Tag
+und Trolley und schlägt zwei Stunden ab der angetippten halben Stunde vor,
+höchstens bis zum nächsten Termin dieses Trolleys und bis 22 Uhr. Der Knopf
+**Eintragen** über dem Tagesplan öffnet das Blatt ebenfalls, dann mit 10 bis
+12 Uhr.
+
+**Am Computer** steht die ganze Woche als Raster da: je Tag eine Zeile, je
+Trolley eine Spalte, im Kopf jedes Trolleys, wo man ihn abholt („abholen:
+Depot"). Rechts daneben steht das Formular **Eintragen** schon offen. **Klicke
+in ein freies Feld, dann stehen Tag und Trolley rechts schon drin.**
+
+In beiden Ansichten stehen Termine mit Partner gefüllt da, wer einen Partner
+sucht, gestrichelt.
+
+**Das Formular „Eintragen":**
+
+- **Tag**, **Von** und **Bis** – „Zwischen 6 und 22 Uhr, in halben Stunden."
+- **Trolley** – bis zu drei stehen nebeneinander zur Wahl, bei mehr eine Liste.
+- **Mit wem** – **Mit Partner** (vorgewählt; unter **Partner** wählst du, wer
+  mitkommt – zur Wahl steht, wer mit dem Trolley gehen darf) oder **Partner
+  gesucht**.
+
+Darunter steht, wer es erfährt: mit Partner „Jonas bekommt eine Mitteilung. Am
+Vortag erinnert die App euch beide.", allein „Wer mitkommen möchte, sieht dich
+unter „Partner gesucht". Am Vortag erinnert dich die App." Hat dein Partner
+kein Konto in der App, erreicht ihn keine Mitteilung – sag es ihm dann selbst.
+
+**Was im Weg steht, steht schon vor dem Absenden da**, und **Eintragen** bleibt
+gesperrt: Der Tag ist vorbei; **Bis** liegt nicht nach **Von**; **der Trolley
+ist zu dieser Zeit schon unterwegs** (ein Trolley, eine Zeit – wer um 11 Uhr
+übernimmt, wo einer um 11 aufhört, stört niemanden); **du bist zu dieser Zeit
+schon eingetragen** (niemand ist an zwei Orten zugleich); dasselbe für deinen
+Partner. Gesperrt bleibt der Knopf auch, solange bei **Mit Partner** noch
+niemand gewählt ist. War jemand anders im selben Moment schneller, sagt es die
+App nach dem Absenden an derselben Stelle und lädt den neuen Stand.
+
+**Ein Termin** (ein Tipp darauf) nennt den Trolley, Tag und Zeit, wo man ihn
+abholt („abholen: Königreichssaal"), seinen Hinweis („Schlüssel im Fach neben
+der Bühne") und wer dabei ist.
+
+- **Austragen** fragt erst nach („Wirklich entfernen?"). Seid ihr zu zweit,
+  bleibt der andere eingetragen, bekommt Bescheid und sucht dann wieder einen
+  Partner. Warst du allein, ist der Termin weg.
+- Sucht dort jemand einen Partner, steht im Termin **Dazukommen**.
+- Was vorbei ist, steht nur noch da.
+
+**Ohne Trolley-Recht** siehst du den Plan, kannst dich aber nicht eintragen.
+Statt des Knopfs **Eintragen** (am Computer statt des Formulars) steht:
+„Eintragen kann sich, wer mit dem Trolley gehen darf. Sprich dafür die
+Ältesten an." Das Recht ist der Aufgabenbereich **Trolley** bei deiner Person;
+ihn vergibt der Admin.
+
+Deine Termine stehen auch auf der [Startseite](#2-startseite-dashboard) und
+unter [Meine Aufgaben](#4-meine-aufgaben). **Mitteilungen** dazu bekommst du in
+der Glocke und, wo aktiviert, als Push:
+
+- **„Für den Trolley eingetragen"** – jemand hat dich als Partner eingetragen.
+- **„Partner gefunden"** – jemand ist zu deinem Termin dazugekommen.
+- **„Trolley-Termin abgesagt"** – dein Partner hat sich ausgetragen; du suchst
+  jetzt wieder einen Partner.
+- **„Trolley-Termin entfällt"** – der Admin hat den Trolley entfernt.
+- **„Erinnerung: Trolley morgen"** – am Vortag an jeden, der eingetragen ist,
+  mit dem Namen des anderen.
+
+Ein Tipp auf eine dieser Mitteilungen führt zu **Meine Aufgaben**, wo deine
+Trolley-Termine stehen.
 
 ### Weitere Pläne
 
@@ -181,9 +257,8 @@ Er öffnet ein Blatt: **Diese Woche** ist vorgewählt, oder du wählst den
 **ganzen Monat** – erst **Drucken** druckt, gedruckt wird jeweils, was du
 gerade siehst, ohne die Bedienelemente der App. Am Computer sind das beide
 Zusammenkünfte, jede auf einer eigenen Seite. Wo bei dir **„Du"**
-steht, druckt das Blatt deinen Namen; der Aushang gilt allen. Auch die **Gruppenbesuche**, das **öffentliche
-Zeugnisgeben** und die **Weiteren Pläne** haben einen **Drucken**‑Knopf; beim
-Zeugnisgeben kommen dabei alle Wochen aufs Blatt, nicht nur die ersten vier.
+steht, druckt das Blatt deinen Namen; der Aushang gilt allen. Auch die
+**Gruppenbesuche** und die **Weiteren Pläne** haben einen **Drucken**‑Knopf.
 Nötig ist das nicht: Deine eigenen Aufgaben stehen unter **Meine Aufgaben**,
 und das Programm ist hier immer aktuell.
 
@@ -214,9 +289,8 @@ Weitere Nachrichten können dich erreichen:
 - **„Zuteilung zurückgezogen"** – der Koordinator hat dir eine Aufgabe wieder
   genommen, die du **schon bestätigt** hattest. Dann brauchst du dich nicht
   weiter vorzubereiten.
-- **„Schicht fällt aus"** und **„Schicht geändert"** – im öffentlichen
-  Zeugnisgeben findet deine Schicht nicht statt, oder sie hat eine neue
-  Uhrzeit oder einen neuen Ort (siehe oben).
+- **„Für den Trolley eingetragen"**, **„Partner gefunden"** und die übrigen
+  Mitteilungen zu deinen Trolley-Terminen (siehe [Trolleys](#trolleys)).
 
 ### Die Mitteilungen
 
@@ -256,6 +330,12 @@ ihren Stand (blass: wartet, voll: zugesagt, rot: abgesagt):
 - **Antippen** öffnet die Aufgabe. Dort kannst du sie auch **absagen** – und
   eine Absage später wieder zurücknehmen.
 - **S‑89** – siehe unten.
+
+Unter den Aufgaben stehen deine **Trolley-Termine** im eigenen Abschnitt
+**Trolley**: je Termin „Trolley 3 · mit Jonas Berger" (oder „Trolley 3 ·
+Partner gesucht"), darunter „Sa., 19. Sept. · 09:00–11:00 · verabredet, ohne
+Zusage". Einen Haken gibt es dort nicht – wer sich eingetragen hat, hat sich
+verabredet. Ein Tipp führt zu den [Trolleys](#trolleys).
 
 > **Tipp:** Bestätige zeitnah. Dein Koordinator sieht offene Bestätigungen und
 > weiß dann, dass alles steht.

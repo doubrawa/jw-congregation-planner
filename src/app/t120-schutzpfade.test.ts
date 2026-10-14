@@ -41,25 +41,16 @@ import { buildFsWeeks } from '../data/fs'
 import { besuchEintragen } from '../data/gruppenbesuche'
 import { DE as t } from '../i18n/de'
 import { fill } from '../i18n/useT'
-import type { Gruppenbesuch, OzEintrag, OzTermin, PlanEintrag, WeitererPlan } from '../data/types'
+import type { Gruppenbesuch, PlanEintrag, Trolley, WeitererPlan } from '../data/types'
 
 /* Die Uhr steht auf Montag, 7. September 2026. */
-const MITTWOCH: OzTermin = { id: 't-mi', wd: 3, von: '10:00', bis: '12:00', ort: 'Marktplatz', plaetze: 2 }
-const NAECHSTER_MITTWOCH = '2026-09-09'
-const LETZTER_MITTWOCH = '2026-09-02'
-const oz = (datum: string, pid: string, selbst = false): OzEintrag => ({
-  id: `e-${datum}-${pid}`,
-  terminId: MITTWOCH.id,
-  datum,
-  pid,
-  selbst,
-})
+const TROLLEY: Trolley = { id: 'tr1', name: 'Trolley 1', ort: 'Depot', hinweis: '' }
 const SAAL: WeitererPlan = { id: 'pl-s', name: 'Winterdienst', von: '2026-09-07', bis: '2026-10-04', entwurf: true }
 const WOCHE: PlanEintrag = { id: 'e-woche', planId: 'pl-s', datum: '2026-09-14', grp: 'g1' }
 /** Konrad (p5) besucht Gruppe 2 in der zweiten Demo-Woche — und ist dort schon eingetragen. */
 const BESUCH: Gruppenbesuch = { id: 'b1', woche: '2026-09-14', grp: 'g2', pid: 'p5' }
 
-/** Simon (p9) ist angemeldet und Planer; er, Manfred (p1) und Konrad (p5) haben den Aufgabenbereich. */
+/** Simon (p9) ist angemeldet und Admin; er, Manfred (p1) und Konrad (p5) dürfen mit dem Trolley gehen. */
 function zustand(over: Partial<AppState> = {}): AppState {
   const demo = demoZustand()
   const kennungen = demo.weeks.map((w) => w.start)
@@ -73,8 +64,7 @@ function zustand(over: Partial<AppState> = {}): AppState {
     persons,
     fsWeeks: besuchEintragen(buildFsWeeks(kennungen, DEMO_FS_RULES), kennungen, BESUCH, persons),
     gruppenbesuche: [BESUCH],
-    ozTermine: [MITTWOCH],
-    ozEintraege: [oz(NAECHSTER_MITTWOCH, 'p1')],
+    trolleys: [TROLLEY],
     plaene: [SAAL],
     planEintraege: [WOCHE],
     confirmations: {},
@@ -110,8 +100,8 @@ afterEach(() => {
 })
 
 it('Gegenprobe: das Gerüst sieht ein Schreiben — sonst hieße „nichts geschrieben" nichts', () => {
-  tue(zustand(), { type: 'ozZuteilen', terminId: MITTWOCH.id, datum: NAECHSTER_MITTWOCH, pid: 'p9' })
-  expect(geschrieben()).toEqual(['saveOzEintraege'])
+  tue(zustand(), { type: 'wpEintragSetzen', planId: SAAL.id, datum: '2026-09-21', grp: 'g2' })
+  expect(geschrieben()).toEqual(['savePlanEintraege'])
 })
 
 it('Ausgangslage: Konrad leitet die Treffpunkte von Gruppe 2 in der zweiten Woche schon', () => {
@@ -125,20 +115,13 @@ it('Ausgangslage: Konrad leitet die Treffpunkte von Gruppe 2 in der zweiten Woch
 })
 
 describe('Abgelehnt: derselbe Zustand, nichts geschrieben', () => {
-  const voll = { ozEintraege: [oz(NAECHSTER_MITTWOCH, 'p1'), oz(NAECHSTER_MITTWOCH, 'p5')] }
   const faelle: Array<[was: string, over: Partial<AppState>, action: AppAction]> = [
-    // Öffentliches Zeugnisgeben
-    ['Zuteilen in eine volle Schicht', voll, { type: 'ozZuteilen', terminId: MITTWOCH.id, datum: NAECHSTER_MITTWOCH, pid: 'p9' }],
-    ['Zuteilen in eine vergangene Schicht', {}, { type: 'ozZuteilen', terminId: MITTWOCH.id, datum: LETZTER_MITTWOCH, pid: 'p9' }],
-    ['Zuteilen an einem Tag, an dem der Termin nicht ist', {}, { type: 'ozZuteilen', terminId: MITTWOCH.id, datum: '2026-09-10', pid: 'p9' }],
-    ['Zuteilen zu einem Termin, den es nicht gibt', {}, { type: 'ozZuteilen', terminId: 't-weg', datum: NAECHSTER_MITTWOCH, pid: 'p9' }],
-    ['Zuteilen einer Person, die es nicht gibt', {}, { type: 'ozZuteilen', terminId: MITTWOCH.id, datum: NAECHSTER_MITTWOCH, pid: 'p-weg' }],
-    ['Zuteilen derselben Person ein zweites Mal', {}, { type: 'ozZuteilen', terminId: MITTWOCH.id, datum: NAECHSTER_MITTWOCH, pid: 'p1' }],
-    ['Eintragen in einen Termin, den es nicht gibt', { planner: false }, { type: 'ozEintragen', terminId: 't-weg', datum: NAECHSTER_MITTWOCH }],
-    ['Eintragen ohne eigene Person', { planner: false, personId: null }, { type: 'ozEintragen', terminId: MITTWOCH.id, datum: NAECHSTER_MITTWOCH }],
-    ['Austragen eines Eintrags, den es nicht gibt', {}, { type: 'ozAustragen', id: 'e-weg' }],
-    ['einen Termin ändern, den es nicht gibt', {}, { type: 'ozTerminUpdate', id: 't-weg', patch: { ort: 'Bahnhof' } }],
-    ['einen Termin streichen, den es nicht gibt', {}, { type: 'ozTerminRemove', id: 't-weg' }],
+    // Trolleys (T121)
+    ['einen Trolley mit vergebener Kennung anlegen', {}, { type: 'trolleyAnlegen', trolley: { ...TROLLEY, name: 'Doppelt' } }],
+    ['einen Trolley ändern, den es nicht gibt', {}, { type: 'trolleyAendern', id: 'tr-weg', patch: { name: 'X' } }],
+    ['einem Trolley den Namen nehmen', {}, { type: 'trolleyAendern', id: TROLLEY.id, patch: { name: '  ' } }],
+    ['einen Trolley entfernen, den es nicht gibt', {}, { type: 'trolleyEntfernt', id: 'tr-weg' }],
+    ['einen Termin räumen, den es nicht gibt', {}, { type: 'trolleyTermin', id: 'r-weg', termin: null }],
     // Weitere Pläne
     ['einen Plan mit vergebener Kennung anlegen', {}, { type: 'wpPlanAnlegen', plan: { ...SAAL, name: 'Doppelt' } }],
     ['einen Plan ändern, den es nicht gibt', {}, { type: 'wpPlanAendern', id: 'pl-weg', patch: { name: 'X' } }],
@@ -169,26 +152,14 @@ describe('Nichts zu tun: nur eine Meldung, nichts geschrieben', () => {
   const plandaten = (s: AppState) => ({
     gruppenbesuche: s.gruppenbesuche,
     fsWeeks: s.fsWeeks,
-    ozTermine: s.ozTermine,
-    ozEintraege: s.ozEintraege,
+    trolleys: s.trolleys,
+    trolleyTermine: s.trolleyTermine,
     plaene: s.plaene,
     planEintraege: s.planEintraege,
     confirmations: s.confirmations,
   })
 
   const faelle: Array<[was: string, over: Partial<AppState>, action: AppAction, meldung: string]> = [
-    [
-      'automatisch zuteilen, wenn niemand den Aufgabenbereich hat',
-      { persons: demoZustand().persons },
-      { type: 'ozAutoAssign' },
-      t.toastKeinePassende,
-    ],
-    [
-      'leeren, wenn nur Selbsteingetragenes und Vergangenes da ist',
-      { ozEintraege: [oz(LETZTER_MITTWOCH, 'p1'), oz(NAECHSTER_MITTWOCH, 'p9', true)] },
-      { type: 'ozLeeren' },
-      fill(t.toastGeleertN, { n: 0 }),
-    ],
     ['Gruppen verteilen ohne Gruppen', { groups: [] }, { type: 'wpGruppenVerteilen', planId: SAAL.id, abGruppe: 'g1' }, fill(t.toastWpVerteilt, { n: 0 })],
   ]
 
@@ -202,16 +173,6 @@ describe('Nichts zu tun: nur eine Meldung, nichts geschrieben', () => {
 })
 
 describe('Ein zweiter Druck auf denselben Knopf schreibt nichts', () => {
-  it('automatisch zuteilen: beim zweiten Mal ist jede Schicht voll', () => {
-    const erst = tue(zustand({ ozEintraege: [] }), { type: 'ozAutoAssign' })
-    expect(geschrieben()).toEqual(['saveOzEintraege'])
-    vi.clearAllMocks()
-    const zweit = tue(erst, { type: 'ozAutoAssign' })
-    expect(zweit.ozEintraege).toBe(erst.ozEintraege)
-    expect(zweit.toast?.text).toBe(t.toastKeinePassende)
-    expect(geschrieben()).toEqual([])
-  })
-
   it('Gruppen verteilen: beim zweiten Mal bleibt jede Woche, wie sie ist', () => {
     const erst = tue(zustand(), { type: 'wpGruppenVerteilen', planId: SAAL.id, abGruppe: 'g1' })
     expect(geschrieben()).toEqual(['savePlanEintraege'])
@@ -220,16 +181,6 @@ describe('Ein zweiter Druck auf denselben Knopf schreibt nichts', () => {
     // Dieselben Zeilen in derselben Reihenfolge — nur die Liste ist neu gebaut.
     expect(zweit.planEintraege).toEqual(erst.planEintraege)
     expect(zweit.planEintraege.every((e, i) => e === erst.planEintraege[i])).toBe(true)
-    expect(geschrieben()).toEqual([])
-  })
-
-  it('Leeren: beim zweiten Mal ist nichts mehr da', () => {
-    const erst = tue(zustand(), { type: 'ozLeeren' })
-    expect(geschrieben()).toEqual(['saveOzEintraege'])
-    vi.clearAllMocks()
-    const zweit = tue(erst, { type: 'ozLeeren' })
-    expect(zweit.ozEintraege).toBe(erst.ozEintraege)
-    expect(zweit.toast?.text).toBe(fill(t.toastGeleertN, { n: 0 }))
     expect(geschrieben()).toEqual([])
   })
 })

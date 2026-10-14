@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { emptyQualifications } from '../data/helpers'
 import type { Group, Member, Person } from '../data/types'
 import { dict } from '../i18n/ui'
-import { erinnerungKurz, gruppenDublette, werPlant, zusammenkunftText } from './einstellungen-anzeige'
+import { erinnerungKurz, doppelterName, neuerGruppenName, neuerTrolleyName, werPlant, zusammenkunftText } from './einstellungen-anzeige'
 
 /**
  * **Was die Einstellungen in ihren Zeilen sagen** — am Handy rechts in der
@@ -65,22 +65,34 @@ describe('Wer plant', () => {
   })
 })
 
-describe('Ein doppelter Gruppenname', () => {
+describe('Ein doppelter Name', () => {
   const gruppe = (id: string, name: string): Group => ({ id, name, overseerId: null, assistantId: null })
   const GRUPPEN = [gruppe('g1', 'Gruppe 1'), gruppe('g2', 'Gruppe 2')]
   /** So liest ein englischer Planer die gespeicherten Namen. */
   const englisch = (text: string) => text.replace('Gruppe', 'Group')
 
   it('ist auch der, den man in seiner Sprache liest — „Group 2" neben gespeichertem „Gruppe 2"', () => {
-    expect(gruppenDublette(GRUPPEN, 'g1', 'Group 2', englisch)?.id).toBe('g2')
+    expect(doppelterName(GRUPPEN, 'g1', 'Group 2', englisch)?.id).toBe('g2')
   })
 
-  it('Schreibweise und Leerzeichen zählen nicht', () => {
-    expect(gruppenDublette(GRUPPEN, 'g1', '  gruppe   2 ', (s) => s)?.id).toBe('g2')
+  it('Schreibweise und Leerzeichen zählen nicht — auch ohne Übersetzung (Trolleys)', () => {
+    expect(doppelterName(GRUPPEN, 'g1', '  gruppe   2 ')?.id).toBe('g2')
   })
 
-  it('die eigene Gruppe ist nie ihre Dublette, ein leerer Name keine', () => {
-    expect(gruppenDublette(GRUPPEN, 'g2', 'Gruppe 2', (s) => s)).toBeUndefined()
-    expect(gruppenDublette(GRUPPEN, 'g1', '   ', (s) => s)).toBeUndefined()
+  it('der eigene Eintrag ist nie seine Dublette, ein leerer Name keine', () => {
+    expect(doppelterName(GRUPPEN, 'g2', 'Gruppe 2')).toBeUndefined()
+    expect(doppelterName(GRUPPEN, 'g1', '   ')).toBeUndefined()
+  })
+})
+
+describe('Der Name eines neuen Eintrags zählt weiter', () => {
+  it('die Gruppe kanonisch deutsch, der Trolley mit dem Wort der Oberfläche', () => {
+    expect(neuerGruppenName([{ name: 'Gruppe 1' }, { name: 'Gruppe 3' }])).toBe('Gruppe 4')
+    expect(neuerTrolleyName([{ name: 'Trolley 2' }, { name: 'Saal' }], 'Literature cart')).toBe('Literature cart 3')
+  })
+
+  it('ohne Einträge — oder nur mit Namen ohne Zahl — bei 1', () => {
+    expect(neuerTrolleyName([], 'Trolley')).toBe('Trolley 1')
+    expect(neuerGruppenName([{ name: 'Nord' }])).toBe('Gruppe 1')
   })
 })

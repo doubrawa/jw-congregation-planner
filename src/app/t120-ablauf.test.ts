@@ -38,10 +38,9 @@ import { tagNach } from '../data/meeting-dates'
 import { fsSetLeader, fsTaskKey } from '../data/fs'
 import { displayName } from '../data/helpers'
 import { neuerPlan } from '../data/weitere-plaene'
-import { OZ_DIENST } from '../../supabase/functions/_shared/zuteilungen.ts'
-import type { OzTermin, WeitererPlan } from '../data/types'
+import type { Trolley, TrolleyTermin, WeitererPlan } from '../data/types'
 
-/** Mit dem Aufgabenbereich „Öffentliches Zeugnisgeben": Manfred (p1) und Simon (p9). */
+/** Mit dem Trolley-Recht (`zeugnis`): Manfred (p1) und Simon (p9). */
 function start(over: Partial<AppState> = {}): AppState {
   const demo = demoZustand()
   return {
@@ -76,7 +75,6 @@ function ablauf(anfang: AppState) {
   }
 }
 
-const MARKT: OzTermin = { id: 't1', wd: 3, von: '10:00', bis: '12:00', ort: 'Marktplatz', plaetze: 2 }
 const reihenfolge = (fn: unknown, i = 0) => vi.mocked(fn as (...a: unknown[]) => void).mock.invocationCallOrder[i]
 
 beforeEach(() => {
@@ -89,95 +87,62 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-describe('Öffentliches Zeugnisgeben als Ablauf', () => {
-  it('Termin anlegen → Ort tippen → automatisch besetzen → abmelden', () => {
-    const a = ablauf(start())
-    a.tue({ type: 'ozTerminAdd' })
-    const id = a.state.ozTermine[0]!.id
-    for (const ort of ['M', 'Ma', 'Markt']) a.tue({ type: 'ozTerminUpdate', id, patch: { ort } })
-    // Getippt wird gebündelt — noch ist nichts hinaus.
-    expect(data.saveOzTermine).not.toHaveBeenCalled()
+/*
+ * **Trolleys (T121, Phase 7) als Ablauf**: Den Trolley legt der Admin an und
+ * tippt seinen Namen — geschrieben wird einmal, beim Abmelden spätestens. Die
+ * Termine schreibt die Function `trolley`; was sie zurückgibt, landet im
+ * Zustand, ohne dass hier noch etwas hinausgeht.
+ */
+describe('Trolleys als Ablauf', () => {
+  const T1: Trolley = { id: 'tr1', name: 'Trolley 1', ort: 'Depot', hinweis: '' }
+  const TERMIN: TrolleyTermin = {
+    id: 'r1',
+    trolleyId: 'tr1',
+    datum: '2026-09-09',
+    von: '10:00',
+    bis: '12:00',
+    pid: 'p9',
+    partner: 'p1',
+    gemeinsam: true,
+  }
 
-    a.tue({ type: 'ozAutoAssign' })
-    // Der Termin geht **vor** den Einträgen hinaus, die auf ihn zeigen — einmal,
-    // in seiner neuesten Fassung.
-    expect(data.saveOzTermine).toHaveBeenCalledTimes(1)
-    expect(data.saveOzTermine).toHaveBeenCalledWith('c1', [expect.objectContaining({ id, ort: 'Markt' })], [])
-    expect(data.saveOzEintraege).toHaveBeenCalledTimes(1)
-    const [, neu, entfernt] = vi.mocked(data.saveOzEintraege).mock.calls[0]!
-    expect(entfernt).toEqual([])
-    expect(neu.length).toBeGreaterThan(0)
-    expect(neu).toEqual(a.state.ozEintraege)
-    expect(neu.every((e) => e.terminId === id && !e.selbst && ['p1', 'p9'].includes(e.pid))).toBe(true)
-    expect(reihenfolge(data.saveOzTermine)).toBeLessThan(reihenfolge(data.saveOzEintraege)!)
-
+  it('Trolley anlegen → Namen tippen → abmelden: ein Schreiben, mit dem letzten Namen', () => {
+    const a = ablauf(start({ planner: true }))
+    a.tue({ type: 'trolleyAnlegen', trolley: T1 })
+    for (const name of ['T', 'Tr', 'Trolley Saal']) a.tue({ type: 'trolleyAendern', id: 'tr1', patch: { name } })
+    expect(data.saveTrolleys).not.toHaveBeenCalled()
     a.tue({ type: 'logout' })
+    expect(data.saveTrolleys).toHaveBeenCalledTimes(1)
+    expect(data.saveTrolleys).toHaveBeenCalledWith('c1', [expect.objectContaining({ id: 'tr1', name: 'Trolley Saal' })])
+  })
+
+  it('ein Termin aus der Function und der entfernte Trolley: kein Schreiben, und seine Termine gehen mit', () => {
+    const a = ablauf(start({ trolleys: [T1] }))
+    a.tue({ type: 'trolleyTermin', id: 'r1', termin: TERMIN, toast: 'eingetragen' })
+    expect(a.state.trolleyTermine).toEqual([TERMIN])
+    a.tue({ type: 'trolleyEntfernt', id: 'tr1' })
+    expect(a.state.trolleys).toEqual([])
+    expect(a.state.trolleyTermine).toEqual([])
     vi.runOnlyPendingTimers()
-    // Nichts geht ein zweites Mal hinaus.
-    expect(data.saveOzTermine).toHaveBeenCalledTimes(1)
-    expect(data.saveOzEintraege).toHaveBeenCalledTimes(1)
+    for (const [name, fn] of Object.entries(data)) {
+      if (vi.isMockFunction(fn)) expect(fn, name).not.toHaveBeenCalled()
+    }
   })
 
-  it('einen Ort ändern, einen anderen Termin streichen: ein Schreiben, nur diese beiden', () => {
-    // Der dritte Termin ist unberührt — ein zweiter Planer hat ihn womöglich
-    // gerade geändert oder gestrichen. Bis zum 3.10.2026 ging er hier mit.
-    const a = ablauf(start({ ozTermine: [MARKT, { ...MARKT, id: 't2', wd: 6 }, { ...MARKT, id: 't3', wd: 5 }] }))
-    a.tue({ type: 'ozTerminUpdate', id: 't1', patch: { ort: 'Bahnhof' } })
-    a.tue({ type: 'ozTerminRemove', id: 't2' })
-    a.tue({ type: 'navigate', screen: 'start' })
-    expect(data.saveOzTermine).toHaveBeenCalledTimes(1)
-    expect(data.saveOzTermine).toHaveBeenCalledWith('c1', [expect.objectContaining({ id: 't1', ort: 'Bahnhof' })], ['t2'])
+  it('geht eine Person, geht ihr Termin mit — als Partner fehlt sie nur, und der andere sucht wieder', () => {
+    // Wie die Fremdschlüssel: Wer eingetragen hat, `on delete cascade`; der Partner `on delete set null`.
+    const eigener: TrolleyTermin = { ...TERMIN, id: 'r2', pid: 'p1', partner: null, gemeinsam: false }
+    const a = ablauf(start({ trolleys: [T1], trolleyTermine: [TERMIN, eigener] }))
+    a.tue({ type: 'removePerson', id: 'p1' })
+    expect(a.state.trolleyTermine).toEqual([{ ...TERMIN, partner: null, gemeinsam: false }])
   })
 
-  it('ein Verkündiger trägt sich ein und sagt wieder ab: Platz frei, die Planer erfahren es', () => {
-    const a = ablauf(start({ planner: false, personId: 'p9', ozTermine: [MARKT] }))
-    a.tue({ type: 'ozEintragen', terminId: 't1', datum: '2026-09-09' })
-    const [, neu] = vi.mocked(data.saveOzEintraege).mock.calls[0]!
-    expect(neu).toEqual([expect.objectContaining({ terminId: 't1', datum: '2026-09-09', pid: 'p9', selbst: true })])
-    const key = `oz|2026-09-07|${neu[0]!.id}`
-    // Wer sich einträgt, hat zugesagt — ohne eigene Zeile in `confirmations`.
-    expect(a.state.myTasks.find((t) => t.id === key)?.status).toBe('bestätigt')
-    expect(data.saveConfirmation).not.toHaveBeenCalled()
-
-    a.tue({ type: 'declineTask', id: key })
-    expect(data.saveOzEintraege).toHaveBeenLastCalledWith('c1', [], [neu[0]!.id])
-    expect(data.notifyPlanners).toHaveBeenCalledWith(
-      'verhindert',
-      'Verhinderung gemeldet',
-      expect.stringContaining(`${OZ_DIENST} · Mittwoch, 9. September · 10:00–12:00 · Marktplatz`),
-      // Der Schlüssel des Eintrags: Ein Tipp in der Glocke des Planers führt
-      // zum Zeugnisgeben (4.10.2026).
-      key,
-    )
-    // Die eigene Absage ist keine Wegnahme, und eine Verhinderung bleibt nicht stehen.
-    expect(data.sendPlanEntzug).not.toHaveBeenCalled()
-    expect(data.saveConfirmation).not.toHaveBeenCalled()
-    expect(a.state.myTasks.some((t) => t.id === key)).toBe(false)
-  })
-
-  it('ein voller Platz nimmt niemanden mehr auf — weder selbst noch zugeteilt', () => {
-    const a = ablauf(start({ planner: false, personId: 'p9', ozTermine: [{ ...MARKT, plaetze: 1 }] }))
-    a.setze({ ozEintraege: [{ id: 'z1', terminId: 't1', datum: '2026-09-09', pid: 'p1', selbst: true }] })
-    a.tue({ type: 'ozEintragen', terminId: 't1', datum: '2026-09-09' })
-    expect(a.state.ozEintraege).toHaveLength(1)
-    expect(data.saveOzEintraege).not.toHaveBeenCalled()
-  })
-
-  it('der Planer verlegt einen Termin: Kommendes geht, wer zugesagt hatte, erfährt den alten Tag', () => {
-    const a = ablauf(start({ ozTermine: [MARKT] }))
-    a.tue({ type: 'ozZuteilen', terminId: 't1', datum: '2026-09-09', pid: 'p1' })
-    const id = a.state.ozEintraege[0]!.id
-    const key = `oz|2026-09-07|${id}`
-    // Manfred hat auf seinem Gerät bestätigt — hier kommt das mit dem Nachladen an.
-    a.setze({ confirmations: { [key]: 'bestätigt' } })
-
-    a.tue({ type: 'ozTerminUpdate', id: 't1', patch: { wd: 4 } })
-    expect(a.state.ozEintraege).toEqual([])
-    expect(data.saveOzEintraege).toHaveBeenLastCalledWith('c1', [], [id])
-    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [key])
-    expect(data.sendPlanEntzug).toHaveBeenCalledWith([
-      expect.objectContaining({ key, pid: 'p1', datum: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz' }),
-    ])
+  it('Termine aus der Function stehen nach dem Tag und der Zeit — wie die Ansicht sie liest', () => {
+    const spaeter: TrolleyTermin = { ...TERMIN, id: 'r2', datum: '2026-09-10' }
+    const frueher: TrolleyTermin = { ...TERMIN, id: 'r3', von: '08:00', bis: '09:00' }
+    const a = ablauf(start({ trolleys: [T1] }))
+    for (const termin of [spaeter, TERMIN, frueher]) a.tue({ type: 'trolleyTermin', id: termin.id, termin })
+    expect(a.state.trolleyTermine.map((t) => t.id)).toEqual(['r3', 'r1', 'r2'])
   })
 })
 

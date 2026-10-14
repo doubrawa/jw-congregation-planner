@@ -6,7 +6,7 @@
  *   node scripts/uebersetzungs-matrix.mjs <basis> [präfix] > matrix.txt
  *
  * `<basis>` ist ein Git-Stand (`ad08902~1`, `origin/main`), `präfix` grenzt auf
- * Schlüssel ein, die so beginnen (`gb`, `oz`, `wp` …).
+ * Schlüssel ein, die so beginnen (`gb`, `trolley`, `wp` …).
  *
  * Warum es das gibt (Betreiber, 5.10.2026): „die hatten schon sehr oft Fehler,
  * weil es nicht alles durchgeschaut wurde, sondern nur stichprobenartig." Die
@@ -18,10 +18,12 @@
  * Worauf beim Lesen achten:
  *  - **Anrede** wie im übrigen Wörterbuch der Sprache (`duMarker`,
  *    `nameDoppelt`): förmlich sind el, fa, id, ru, uk, ur, ja, ko.
- *  - **Genus**, wo Schwestern gemeint sein können (Zeugnisgeben, freie Plätze).
+ *  - **Genus**, wo Schwestern gemeint sein können („Partner" beim Trolley und
+ *    bei den Schulungsaufgaben, freie Plätze).
  *  - **Zitierte Knöpfe** in Hinweisen gegen den echten Schlüssel
  *    (`„Plan senden"` ↔ `planSenden`).
- *  - **Dasselbe Fachwort** für dieselbe Sache (`privZeugnis`, `tabFs` …).
+ *  - **Dasselbe Fachwort** für dieselbe Sache (`privZeugnis` — seit T121 der
+ *    Trolley —, `tabFs` …).
  *  - **Bedeutungswandel** alter Schlüssel, die mitgemeint sind, ohne geändert
  *    zu sein — `tabFs` war bis T120 der Treffpunkt-Reiter, seitdem Titel des
  *    ganzen Predigtdienstes.

@@ -20,7 +20,6 @@ import { FsBereichTabs } from './FsBereichTabs'
 import { aktiverFsBereich } from './fs-bereiche'
 import { WeiterePlaenePlan } from './WeiterePlaenePlan'
 import { GruppenbesuchePlan } from './GruppenbesuchePlan'
-import { ZeugnisPlan } from './ZeugnisPlan'
 import { FsPlan } from './FsPlan'
 import { FsRulesPanel } from './FsRulesPanel'
 import { AuxCounselorPanel } from './AuxCounselorPanel'
@@ -62,26 +61,22 @@ export function PlanenScreen() {
   // an seiner Stelle.
   if (state.tab === 'wp' && rechte.zuteilen) return <WeiterePlaenePlan />
 
-  // Grundplan, Gruppenbesuche und öffentliches Zeugnisgeben haben keine Woche:
-  // Sie stehen ohne den Wochenstreifen da — und auch, solange noch gar keine
-  // Woche geladen ist, denn eine neue Versammlung richtet den Grundplan ein,
-  // bevor sie importiert. Den Predigtdienst plant hier, wer den Reiter gewählt
-  // hat — und der Gruppenaufseher, der nur ihn plant (`geplantesThema`).
+  // Grundplan und Gruppenbesuche haben keine Woche: Sie stehen ohne den
+  // Wochenstreifen da — und auch, solange noch gar keine Woche geladen ist,
+  // denn eine neue Versammlung richtet den Grundplan ein, bevor sie
+  // importiert. Den Predigtdienst plant hier, wer den Reiter gewählt hat — und
+  // der Gruppenaufseher, der nur ihn plant (`geplantesThema`).
   const bereich = aktiverFsBereich(state)
   if (geplantesThema(rechte, state.tab) === 'predigtdienst' && bereich !== 'treffpunkte') {
     return (
-      // Grundplan und Besuche stehen in derselben Spalte wie die Woche
-      // (`.screen.prog`): Karten mit Abstand. Das Zeugnisgeben bringt als alter
-      // Baustein seine eigenen Ränder mit — bis zu seinem Umbau (Phase 7) ohne sie.
-      <section className={bereich === 'zeugnis' ? 'screen' : 'screen prog'}>
+      // In derselben Spalte wie die Woche (`.screen.prog`): Karten mit Abstand.
+      <section className="screen prog">
         <Bereichstitel thema="predigtdienst" />
         <FsBereichTabs />
         {bereich === 'grundplan' ? (
           // Den Grundplan ändert der Admin ganz, der Gruppenaufseher seine
           // Gruppe — auch, wenn er zugleich Planer ist (`fsBereiche`).
           <FsRulesPanel onlyGroup={rechte.admin ? null : rechte.gruppe} />
-        ) : bereich === 'zeugnis' ? (
-          <ZeugnisPlan />
         ) : (
           <GruppenbesuchePlan />
         )}

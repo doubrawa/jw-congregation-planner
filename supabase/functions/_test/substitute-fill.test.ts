@@ -149,6 +149,9 @@ const rest: Rest = {
   async patchZeilen<T>(path: string, body: unknown): Promise<T[] | null> {
     return (await this.patchIf(path, body)) ? ([{ updated_at: stand }] as T[]) : []
   },
+  async zeilenSchreiben(method, path): Promise<null> {
+    throw new Error(`Füllen schreibt nicht über zeilenSchreiben: ${method} ${path}`)
+  },
   async userId(): Promise<string | null> {
     return null
   },
@@ -224,7 +227,7 @@ describe('fill: der Weg, der gehen soll', () => {
 describe('fill: was abgewiesen wird — und dann nichts schreibt', () => {
   it.each([
     ['ein Treffpunkt', `fs|${MONTAG}|i1`],
-    ['das Zeugnisgeben', `oz|${MONTAG}|e1`],
+    ['eine Schicht von Stand und Schicht (entfernt)', `oz|${MONTAG}|e1`],
     ['Unsinn', 'kaputt'],
   ])('%s → 400', async (_name, key) => {
     expect((await fuellen(key)).status).toBe(400)

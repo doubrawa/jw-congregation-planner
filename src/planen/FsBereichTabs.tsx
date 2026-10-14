@@ -8,14 +8,14 @@ import { aktiverFsBereich, fsBereiche } from './fs-bereiche'
 const BESCHRIFTUNG: Record<FsBereich, keyof Dict> = {
   treffpunkte: 'fsTreffpunkteTab',
   gruppenbesuche: 'fsGruppenbesucheTab',
-  zeugnis: 'privZeugnis',
+  trolleys: 'fsTrolleysTab',
   grundplan: 'fsGrundplan',
 }
 
 /**
  * Reiter des Predigtdienstes (T120; T121, Baustein `GDienstTabs`): die
- * Treffpunkte der Woche, die Gruppenbesuche des Dienstaufsehers, das
- * öffentliche Zeugnisgeben und — beim Planen — der Grundplan der Treffpunkte.
+ * Treffpunkte der Woche, die Gruppenbesuche des Dienstaufsehers, beim Ansehen
+ * die Trolleys und beim Planen der Grundplan der Treffpunkte.
  * Welche es hier gibt, sagt `fsBereiche`. Der gewählte steht kräftig mit
  * einem Punkt in Minze darunter. Gibt es nur einen Bereich, steht gar keine
  * Leiste da.

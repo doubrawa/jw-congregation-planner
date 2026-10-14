@@ -164,8 +164,8 @@ export const LEEREN = [
   // Die vorgemerkten Vorträge (T122) ebenso: Planung aus dem Vortragsplan —
   // nach dem Zurücksetzen übernimmt ihn der Planer neu.
   'vortraege',
-  // Die Einträge des öffentlichen Zeugnisgebens (T120) ebenso: Planung.
-  'oz_eintraege',
+  // Die Trolley-Termine (T121) ebenso: Verabredungen, keine Stammdaten.
+  'trolley_termine',
   // Und die Weiteren Pläne (Phase 5) — die Einträge zuerst, sie zeigen auf die Pläne.
   'plan_eintraege',
   'plaene',
@@ -180,7 +180,7 @@ export const BEHALTEN = {
   invites: 'offene Einladungscodes bleiben gültig',
   services: 'die Hilfsdienste der Versammlung (werden nur angelegt, wenn keine da sind)',
   fs_rules: 'der Treffpunkt-Grundplan — er beschreibt die Versammlung, nicht eine Woche',
-  oz_termine: 'die Termine des öffentlichen Zeugnisgebens — wie der Grundplan Sache der Versammlung',
+  trolleys: 'die Trolleys der Versammlung — wie der Grundplan Sache der Versammlung',
 }
 
 /**

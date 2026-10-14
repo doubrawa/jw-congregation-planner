@@ -136,8 +136,12 @@ describe('Was nichts schreibt, darf offline laufen', () => {
    * `startImport` setzt nur ein Merkzeichen; der Import selbst braucht aber das
    * Netz und endet offline ohnehin im Fehler. Der Hinweis „nur lesen" ist dort
    * die richtige Antwort, nicht ein Ladebalken, der nie fertig wird.
+   *
+   * `trolleyTermin` und `trolleyEntfernt` legen in den Zustand, was die
+   * Function `trolley` schon geschrieben hat — ohne sie gibt es nichts
+   * hineinzulegen (`useTrolleyAktion` ruft sie offline gar nicht erst).
    */
-  const ABSICHTLICH_GESPERRT = new Set(['startImport'])
+  const ABSICHTLICH_GESPERRT = new Set(['startImport', 'trolleyTermin', 'trolleyEntfernt'])
 
   it('jede Aktion ohne Schreibfall ist eine Ansichts-Aktion', () => {
     const wochen = wochenSchreiber()
@@ -202,6 +206,11 @@ describe('Direkte Function-Aufrufe prüfen den Offline-Stand', () => {
     'substituteSeek(',
     'substituteTake(',
     'substituteWithdraw(',
+    // Trolleys (T121, Phase 7): Erst die Function, dann der Zustand.
+    'trolleyEintragen(',
+    'trolleyDazukommen(',
+    'trolleyAustragen(',
+    'trolleyEntfernen(',
   ]
 
   const bausteine = (): Array<[string, string]> =>

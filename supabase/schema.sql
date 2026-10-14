@@ -510,64 +510,72 @@ create table if not exists public.vortraege (
     references public.persons (id, congregation_id) on delete set null (person_id)
 );
 
--- Öffentliches Zeugnisgeben mit Stand oder Trolley (T120, Phase 3). Gemessen am
--- Königreichsdienst: Die Ältestenschaft organisiert es, am besten immer am
--- selben Ort, am selben Wochentag und zur selben Uhrzeit (Nov. 2013); ein
--- Infostand wird immer von zwei Verkündigern betreut (Nov. 2014).
---
--- Ein **Termin** ist die wöchentliche Regel; die Schicht einer Woche wird nicht
--- gespeichert, nur ihre **Einträge** — je Person einer. So darf ein Verkündiger
--- sich selbst eintragen (RLS unten), ohne die Zeilen anderer anzufassen, und
--- zwei, die gleichzeitig den letzten Platz wollen, überschreiben sich nicht:
--- Der Trigger `oz_platz_pruefen` lässt nur so viele Einträge zu, wie der Termin
--- Plätze hat.
-create table if not exists public.oz_termine (
+-- Trolleys (T121, Phase 7 — seit 14.10.2026; davor Stand und Schicht, siehe
+-- „Entfernt" unten). „Man steht mit dem Trolley ja nur 15 Minuten an einem
+-- Platz … was man eigentlich braucht, ist ein Terminplan, wo man sich
+-- verabreden kann" (der Betreiber, 11.10.2026). Die Versammlung legt ihre
+-- **Trolleys** an, mit dem Ort, an dem man sie abholt; wer das Trolley-Recht
+-- hat (`persons.priv.zeugnis`), trägt sich ein — frei von 6 bis 22 Uhr in
+-- halben Stunden, mit Partner oder allein mit „Partner gesucht". Niemand
+-- plant, niemand sagt zu.
+create table if not exists public.trolleys (
   -- `text` wie bei `fs_rules`: Die Kennung vergibt der Client (`t<uuid>`).
   id              text primary key check (id <> ''),
   congregation_id uuid not null references public.congregations (id) on delete cascade,
-  wd              smallint not null check (wd between 0 and 6),  -- 0 = Sonntag
-  von             time not null,
-  bis             time not null,
+  name            text not null check (btrim(name) <> ''),
+  -- Wo man ihn abholt („Depot", „Königreichssaal").
   ort             text not null default '',
-  plaetze         smallint not null default 2 check (plaetze between 1 and 6),
-  -- Tage, an denen die Schicht ausfällt — der Planer hat sie gestrichen. Wie
-  -- `fs_rules.aus`: Die Schicht selbst steht nirgends, also die Ausnahme hier.
-  aus             date[] not null default '{}',
+  -- Freiwillig, etwa „Schlüssel im Fach neben der Bühne".
+  hinweis         text not null default '',
   created_at      timestamptz not null default now(),
 
-  unique (id, congregation_id)                      -- Ziel der Verweise der Einträge
+  unique (id, congregation_id)                      -- Ziel der Verweise der Termine
 );
 
--- Nachträglich (4.10.2026) — eine schon angelegte Tabelle bekommt sie hier.
-alter table public.oz_termine
-  add column if not exists aus date[] not null default '{}';
+create index if not exists trolleys_congregation_idx
+  on public.trolleys (congregation_id);
 
-create index if not exists oz_termine_congregation_idx
-  on public.oz_termine (congregation_id);
-
-create table if not exists public.oz_eintraege (
-  -- Die Kennung vergibt der Client (`e<uuid>`); sie steckt im Aufgaben-Schlüssel
-  -- (`oz|<montag>|<id>`), an dem Zusage und Erinnerung hängen.
+-- Ein **Termin**: ein Trolley, ein Tag, eine Zeit — und eine oder zwei
+-- Personen. Geschrieben wird er nur von der Edge Function `trolley`
+-- (Eintragen, Dazukommen, Austragen): Sie prüft das Recht und sagt dem
+-- Partner Bescheid. Ein Mitglied liest nur (Richtlinien unten).
+create table if not exists public.trolley_termine (
+  -- Die Kennung vergibt der Client (`r<uuid>`).
   id              text primary key check (id <> ''),
   congregation_id uuid not null references public.congregations (id) on delete cascade,
-  termin_id       text not null,
-  datum           date not null,                    -- der Tag der Schicht
+  trolley_id      text not null,
+  datum           date not null,
+  -- Frei von 6 bis 22 Uhr in halben Stunden (`TROLLEY_ZEITEN` in
+  -- `_shared/trolley.ts`), das Ende nach dem Anfang.
+  von             time not null,
+  bis             time not null,
+  -- Wer eingetragen hat — oder geblieben ist, als der andere ging.
   person_id       uuid not null,
-  -- Selbst eingetragen: Damit hat die Person zugesagt. Sonst vom Planer zugeteilt.
-  selbst          boolean not null default false,
+  -- Der Partner; leer heißt „Partner gesucht".
+  partner_id      uuid,
+  -- Die Person hat beide eingetragen („Jonas hat euch beide eingetragen") —
+  -- nicht, wenn der Partner von selbst dazukam. Gilt nur mit Partner.
+  gemeinsam       boolean not null default false,
   created_at      timestamptz not null default now(),
 
-  -- Dieselbe Person nur einmal je Schicht — zugleich der Index fürs Zählen.
-  unique (termin_id, datum, person_id),
-  constraint oz_eintraege_termin_fk foreign key (termin_id, congregation_id)
-    references public.oz_termine (id, congregation_id) on delete cascade,
-  -- Geht die Person, geht ihr Eintrag: Der Platz ist dann wieder frei.
-  constraint oz_eintraege_person_fk foreign key (person_id, congregation_id)
-    references public.persons (id, congregation_id) on delete cascade
+  constraint trolley_termine_zeit check (
+    von >= time '06:00' and bis <= time '22:00' and von < bis
+    and extract(minute from von) in (0, 30) and extract(minute from bis) in (0, 30)
+    and extract(second from von) = 0 and extract(second from bis) = 0
+  ),
+  constraint trolley_termine_zwei check (partner_id is distinct from person_id),
+  constraint trolley_termine_trolley_fk foreign key (trolley_id, congregation_id)
+    references public.trolleys (id, congregation_id) on delete cascade,
+  -- Geht die Person, geht ihr Termin mit.
+  constraint trolley_termine_person_fk foreign key (person_id, congregation_id)
+    references public.persons (id, congregation_id) on delete cascade,
+  -- Geht der Partner, sucht der andere wieder einen.
+  constraint trolley_termine_partner_fk foreign key (partner_id, congregation_id)
+    references public.persons (id, congregation_id) on delete set null (partner_id)
 );
 
-create index if not exists oz_eintraege_congregation_idx
-  on public.oz_eintraege (congregation_id, datum);
+create index if not exists trolley_termine_congregation_idx
+  on public.trolley_termine (congregation_id, datum);
 
 -- Weitere Pläne (T120, Phase 5): Ankündigungen ohne Zuteilung — niemand
 -- bestätigt etwas, niemand wird erinnert. Ein Plan ist ein Königreichssaal-
@@ -649,11 +657,17 @@ create table if not exists public.reminder_log (
   id              uuid primary key default gen_random_uuid(),
   congregation_id uuid not null references public.congregations (id) on delete cascade,
   user_id         uuid not null references auth.users (id) on delete cascade,
-  kind            text not null check (kind in ('self', 'planner')),
+  kind            text not null check (kind in ('self', 'planner', 'trolley')),
   sent_on         date not null default current_date,
   created_at      timestamptz not null default now(),
   unique (user_id, kind, sent_on)
 );
+
+-- Seit T121 (14.10.2026) auch die Erinnerung am Vortag eines Trolley-Termins
+-- (`trolley`) — eine schon angelegte Tabelle bekommt die erweiterte Prüfung hier.
+alter table public.reminder_log drop constraint if exists reminder_log_kind_check;
+alter table public.reminder_log
+  add constraint reminder_log_kind_check check (kind in ('self', 'planner', 'trolley'));
 
 create index if not exists reminder_log_sent_on_idx
   on public.reminder_log (sent_on);
@@ -724,6 +738,26 @@ drop table if exists public.vortraege_auswaerts cascade;
 delete from public.confirmations where task_key like 'va|%';
 delete from public.notifications where task_key like 'va|%';
 delete from public.assignment_log where task_key like 'va|%';
+
+-- ---------------------------------------------------------------------------
+-- Entfernt: Stand und Schicht (T120, Phase 3 — vom 3. bis 14.10.2026)
+-- ---------------------------------------------------------------------------
+-- Statt fester Termine, deren Schichten ein Planer besetzt, verabredet man
+-- sich seit T121 selbst für einen Trolley (oben). Mit den Tabellen gehen ihre
+-- Trigger und Richtlinien; die Funktionen dazu fallen eigens. Ihre
+-- Aufgaben-Schlüssel (`oz|<montag>|<id>`) gehören danach zu nichts mehr:
+-- Zusagen, Glocken-Mitteilungen und Tagebucheinträge dazu gehen mit. Ein
+-- zweiter Lauf findet nichts mehr; der Block kann fort, sobald er überall
+-- eingespielt ist.
+drop table if exists public.oz_eintraege cascade;
+drop table if exists public.oz_termine cascade;
+drop function if exists public.oz_platz_pruefen();
+drop function if exists public.oz_ausfall_raeumen();
+drop function if exists public.oz_tagwechsel_raeumen();
+drop function if exists public.darf_zeugnis();
+delete from public.confirmations where task_key like 'oz|%';
+delete from public.notifications where task_key like 'oz|%';
+delete from public.assignment_log where task_key like 'oz|%';
 
 -- ---------------------------------------------------------------------------
 -- RLS-Hilfsfunktionen (security definer, um Rekursion über members zu vermeiden)
@@ -807,20 +841,6 @@ as $$
       and m.person_id is not null
       and (g.overseer_id = m.person_id or g.assistant_id = m.person_id)
   )
-$$;
-
--- Hat die eigene Person den Aufgabenbereich „Öffentliches Zeugnisgeben"
--- (`persons.priv.zeugnis`, T120)? Nur dann darf sie sich selbst eintragen.
-create or replace function public.darf_zeugnis()
-returns boolean
-language sql stable security definer
-set search_path = public
-as $$
-  select coalesce((
-    select (p.priv ->> 'zeugnis')::boolean
-    from public.persons p
-    where p.id = public.my_person_id()
-  ), false)
 $$;
 
 -- Sieht die eigene Person diesen Plan (Weitere Pläne, T120 Phase 5)? Admin und
@@ -958,103 +978,85 @@ create trigger gruppenbesuche_pruefen
   before insert or update on public.gruppenbesuche
   for each row execute function public.gruppenbesuche_pruefen();
 
--- Nie mehr Einträge als Plätze, und nur am Wochentag des Termins.
+-- **Ein Trolley-Termin hält, was die App verspricht** (T121, Phase 7): Der
+-- Trolley ist zu der Zeit frei, niemand steht zur selben Zeit zweimal
+-- irgendwo, und mit dem Trolley geht nur, wer das Recht dazu hat. Die Function
+-- `trolley` prüft dasselbe vorher (`_shared/trolley.ts`) und nennt den Grund;
+-- hier steht es ein zweites Mal, weil zwei, die gleichzeitig dieselbe Zeit
+-- wollen, beide an ihrer Prüfung vorbeikämen.
 --
--- `security definer`, weil die Sperre (`for update`) auf dem Termin sonst eine
--- Schreib-Richtlinie bräuchte, die ein Verkündiger nicht hat. Die Sperre ist der
--- Kern: Zwei, die gleichzeitig den letzten Platz nehmen, zählen sonst beide noch
--- einen freien. Mit ihr wartet der zweite, zählt danach und wird abgewiesen.
-create or replace function public.oz_platz_pruefen()
+-- Die Sperre ist der Kern — eine je Versammlung und Tag, nicht je Trolley:
+-- Mit ihr wartet der Zweite, sieht danach den Ersten und wird abgewiesen, ob
+-- er denselben Trolley will oder dieselbe Person an einem anderen einträgt.
+-- Eine Sperre auf der Zeile des Trolleys ordnete nur das Erste; zwei, die
+-- Simon zugleich an zwei Trolleys eintragen, kämen beide durch.
+--
+-- **Geändert wird nur, wer dabei ist.** Austragen lässt den anderen stehen,
+-- Dazukommen setzt den Partner, und ein gelöschter Partner wird leer
+-- (Fremdschlüssel). Trolley, Tag und Zeit bleiben; wer anders will, trägt
+-- sich aus und neu ein. Geprüft wird beim Ändern deshalb nur, wer neu
+-- dazukommt — ein Austragen darf nie daran scheitern, dass dem Bleibenden
+-- inzwischen das Recht fehlt.
+create or replace function public.trolley_termin_pruefen()
 returns trigger
-language plpgsql security definer
+language plpgsql
 set search_path = public
 as $$
 declare
-  termin public.oz_termine%rowtype;
+  neu uuid[];
 begin
-  select * into termin from public.oz_termine where id = new.termin_id for update;
-  if not found then
-    raise exception 'oz_termin_fehlt' using errcode = 'foreign_key_violation';
+  if tg_op = 'INSERT' then
+    neu := array_remove(array[new.person_id, new.partner_id], null);
+  else
+    if new.trolley_id <> old.trolley_id or new.datum <> old.datum
+       or new.von <> old.von or new.bis <> old.bis then
+      raise exception 'trolley_unveraenderlich' using errcode = 'check_violation';
+    end if;
+    -- Neu ist, wer vorher nicht dabei war — beim Dazukommen der Partner.
+    neu := array_remove(array[
+      case when new.person_id in (old.person_id, old.partner_id) then null else new.person_id end,
+      case when new.partner_id in (old.person_id, old.partner_id) then null else new.partner_id end
+    ], null);
+    if cardinality(neu) = 0 then
+      return new;
+    end if;
   end if;
-  if extract(dow from new.datum)::int <> termin.wd then
-    raise exception 'oz_falscher_tag' using errcode = 'check_violation';
+
+  perform pg_advisory_xact_lock(hashtextextended('trolley|' || new.congregation_id || '|' || new.datum, 0));
+
+  if tg_op = 'INSERT' and exists (
+    select 1 from public.trolley_termine t
+     where t.trolley_id = new.trolley_id and t.congregation_id = new.congregation_id
+       and t.datum = new.datum and t.von < new.bis and new.von < t.bis
+  ) then
+    raise exception 'trolley_belegt' using errcode = 'check_violation';
   end if;
-  if new.datum = any (termin.aus) then
-    raise exception 'oz_faellt_aus' using errcode = 'check_violation';
+  if exists (
+    select 1 from public.trolley_termine t
+     where t.congregation_id = new.congregation_id and t.id <> new.id
+       and t.datum = new.datum and t.von < new.bis and new.von < t.bis
+       and (t.person_id = any (neu) or t.partner_id = any (neu))
+  ) then
+    raise exception 'trolley_doppelt' using errcode = 'check_violation';
   end if;
-  if (select count(*) from public.oz_eintraege
-      where termin_id = new.termin_id and datum = new.datum) >= termin.plaetze then
-    raise exception 'oz_voll' using errcode = 'check_violation';
+  if exists (
+    select 1 from unnest(neu) as wer
+     where not exists (
+       select 1 from public.persons p
+        where p.id = wer and p.congregation_id = new.congregation_id
+          and coalesce((p.priv ->> 'zeugnis')::boolean, false)
+     )
+  ) then
+    raise exception 'trolley_ohne_recht' using errcode = 'check_violation';
   end if;
   return new;
 end
 $$;
 
-drop trigger if exists oz_eintraege_platz on public.oz_eintraege;
-create trigger oz_eintraege_platz
-  before insert on public.oz_eintraege
-  for each row execute function public.oz_platz_pruefen();
-
--- Eine gestrichene Schicht nimmt ihre Einträge mit (4.10.2026). Die App des
--- Planers löscht nur, was sie kennt; wer sich nach ihrem letzten Laden
--- eingetragen hat, bliebe stehen — unsichtbar, weil die Schicht ausfällt, und
--- `send-reminders` erinnerte ihn trotzdem. Danach weist `oz_platz_pruefen`
--- jeden weiteren Eintrag an dem Tag ab; die Sperre dort auf dem Termin wartet
--- auf diese Änderung.
---
--- Ohne `security definer`: Ändern darf den Termin nur ein Planer, und der darf
--- auch die Einträge löschen.
-create or replace function public.oz_ausfall_raeumen()
-returns trigger
-language plpgsql
-set search_path = public
-as $$
-begin
-  delete from public.oz_eintraege
-   where termin_id = new.id
-     and datum = any (new.aus);
-  return null;
-end
-$$;
-
-drop trigger if exists oz_termine_ausfall on public.oz_termine;
-create trigger oz_termine_ausfall
-  after update of aus on public.oz_termine
-  for each row
-  when (new.aus is distinct from old.aus)
-  execute function public.oz_ausfall_raeumen();
-
--- Ein anderer Wochentag nimmt die kommenden Einträge mit (4.10.2026) — wie beim
--- Streichen auch die, die die App des Planers nicht kannte. Sie löscht nur, was
--- sie kennt (`ozWegBeiTagwechsel`); ein Eintrag, den jemand nach ihrem letzten
--- Laden angelegt hat, bliebe am alten Tag stehen — im Plan unsichtbar, beim
--- Verkündiger als Aufgabe, und `send-reminders` erinnerte ihn.
---
--- **Erst ab übermorgen (UTC).** Die App lässt den Eintrag von heute stehen —
--- heute nach ihrer Uhr. Die Datenbank kennt nur UTC, und „heute" liegt dort je
--- nach Zeitzone einen Tag früher oder später; ab übermorgen ist ein Tag überall
--- schon kommend. Für den einen Tag dazwischen blenden ihn die App
--- (`deriveMyOzTasks`) und die Functions (`offeneZeugnisEintraege`) aus.
-create or replace function public.oz_tagwechsel_raeumen()
-returns trigger
-language plpgsql
-set search_path = public
-as $$
-begin
-  delete from public.oz_eintraege
-   where termin_id = new.id
-     and datum > current_date + 1
-     and extract(dow from datum)::int <> new.wd;
-  return null;
-end
-$$;
-
-drop trigger if exists oz_termine_tagwechsel on public.oz_termine;
-create trigger oz_termine_tagwechsel
-  after update of wd on public.oz_termine
-  for each row
-  when (new.wd is distinct from old.wd)
-  execute function public.oz_tagwechsel_raeumen();
+drop trigger if exists trolley_termine_pruefen on public.trolley_termine;
+create trigger trolley_termine_pruefen
+  before insert or update on public.trolley_termine
+  for each row execute function public.trolley_termin_pruefen();
 
 -- Name der eigenen Person — wie `displayName()` in der App: Vor- und Nachname.
 -- Gebraucht für Plätze, die nur einen Namen tragen und keine Person-Id: Ein
@@ -1086,10 +1088,11 @@ $$;
 --   <woche>|<mid|we>|ratgeber                 Ratgeber der Zusätzlichen Klasse
 --   <woche>|<mid|we>|helper|<dienst>|<pos>    Hilfsdienst
 --   fs|<montag>|<instanzId>                   Treffpunkt-Leitung
---   oz|<montag>|<eintragId>                   Öffentliches Zeugnisgeben (T120)
 --
 -- `va|<montag>|<vortragId>` (Vortrag auswärts) gab es vom 3. bis 4.10.2026; die
--- Form ist mit dem Plan gegangen und seither eine unbekannte.
+-- Form ist mit dem Plan gegangen und seither eine unbekannte. Ebenso
+-- `oz|<montag>|<eintragId>` (Stand und Schicht, vom 3. bis 14.10.2026): Mit den
+-- Trolleys (T121) gibt es keine Zusage mehr, die ihm gehören könnte.
 --
 -- **Unbekannte Formen bleiben erlaubt.** Eine zu strenge Richtlinie bricht das
 -- Bestätigen fast lautlos (der Client schreibt fire-and-forget); eine erfundene
@@ -1135,26 +1138,6 @@ begin
     if coalesce(slot->>'lext', 'false') = 'true' then return false; end if;
     return slot->>'lpid' = meine::text
         or (slot->>'lpid' is null and slot->>'leader' = public.mein_anzeigename());
-  end if;
-
-  -- Öffentliches Zeugnisgeben (T120): Der Schlüssel trägt die Kennung des
-  -- Eintrags, und ein Eintrag gehört genau einer Person — nachgeschlagen wird
-  -- die Zeile, kein JSONB. Der Montag muss zu ihrem Tag passen: dieselbe Art in
-  -- fremder Schreibweise bleibt draußen, wie bei den übrigen Formen.
-  --
-  -- **Ohne diesen Zweig liefe die Form unten durch** („keine der bekannten
-  -- Formen") — jedes Mitglied hätte fremde Einträge bestätigen oder absagen
-  -- können.
-  if n = 3 and teile[1] = 'oz' then
-    if meine is null then return false; end if;
-    return exists (
-      select 1
-        from public.oz_eintraege e
-       where e.congregation_id = cong
-         and e.id = teile[3]
-         and e.person_id = meine
-         and to_char(e.datum - (extract(isodow from e.datum)::int - 1), 'YYYY-MM-DD') = teile[2]
-    );
   end if;
 
   -- Alles Übrige hängt an einer Zusammenkunft. Was nicht so aussieht, ist keine
@@ -1501,50 +1484,28 @@ create policy vortraege_zuteilen on public.vortraege
   using (congregation_id = public.my_congregation_id() and public.darf_zuteilen())
   with check (congregation_id = public.my_congregation_id() and public.darf_zuteilen());
 
--- Öffentliches Zeugnisgeben: Termine pflegen nur Planer; die Einträge sieht die
--- ganze Versammlung (freie Plätze will jeder sehen). Ein Verkündiger mit dem
--- Aufgabenbereich trägt **sich selbst** ein (`selbst`) und wieder aus — mehr
--- nicht: Er kann niemand anderen eintragen und keinen fremden Eintrag löschen.
--- Ändern (`update`) gibt es für ihn nicht.
-alter table public.oz_termine enable row level security;
-alter table public.oz_eintraege enable row level security;
+-- Trolleys (T121, Phase 7): Die Trolleys pflegt der Admin; Trolleys und
+-- Termine sieht die ganze Versammlung — so sehen alle, wann einer unterwegs
+-- ist. **Termine schreibt kein Mitglied selbst**: Eintragen, Dazukommen und
+-- Austragen gehen über die Edge Function `trolley`, die das Recht prüft und
+-- dem Partner Bescheid sagt. Eine Richtlinie zum Schreiben gibt es deshalb
+-- nicht; die Function arbeitet mit der Dienstrolle.
+alter table public.trolleys enable row level security;
+alter table public.trolley_termine enable row level security;
 
-drop policy if exists oz_termine_select on public.oz_termine;
-create policy oz_termine_select on public.oz_termine
+drop policy if exists trolleys_select on public.trolleys;
+create policy trolleys_select on public.trolleys
   for select using (congregation_id = public.my_congregation_id());
 
-drop policy if exists oz_termine_write on public.oz_termine;
-create policy oz_termine_write on public.oz_termine
+drop policy if exists trolleys_write on public.trolleys;
+create policy trolleys_write on public.trolleys
   for all
   using (congregation_id = public.my_congregation_id() and public.is_planner())
   with check (congregation_id = public.my_congregation_id() and public.is_planner());
 
-drop policy if exists oz_eintraege_select on public.oz_eintraege;
-create policy oz_eintraege_select on public.oz_eintraege
+drop policy if exists trolley_termine_select on public.trolley_termine;
+create policy trolley_termine_select on public.trolley_termine
   for select using (congregation_id = public.my_congregation_id());
-
--- Besetzen ist Zuteilen: Admin und Planer (4.10.2026). Die Termine bleiben
--- beim Admin (`oz_termine_write`).
-drop policy if exists oz_eintraege_planer on public.oz_eintraege;
-create policy oz_eintraege_planer on public.oz_eintraege
-  for all
-  using (congregation_id = public.my_congregation_id() and public.darf_zuteilen())
-  with check (congregation_id = public.my_congregation_id() and public.darf_zuteilen());
-
-drop policy if exists oz_eintraege_selbst_rein on public.oz_eintraege;
-create policy oz_eintraege_selbst_rein on public.oz_eintraege
-  for insert
-  with check (
-    congregation_id = public.my_congregation_id()
-    and person_id = public.my_person_id()
-    and selbst
-    and public.darf_zeugnis()
-  );
-
-drop policy if exists oz_eintraege_selbst_raus on public.oz_eintraege;
-create policy oz_eintraege_selbst_raus on public.oz_eintraege
-  for delete
-  using (congregation_id = public.my_congregation_id() and person_id = public.my_person_id());
 
 -- Weitere Pläne: Den Plan pflegt der Admin; die Gruppen darin verteilen Admin
 -- und Planer (4.10.2026). Sehen darf ein Mitglied, was `plan_sichtbar`

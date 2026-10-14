@@ -3,9 +3,10 @@ import { FS_TIME_OPTIONS } from '../data/fs'
 import { WOCHENTAGE_AB_MONTAG, wochentagNameAusWd } from './wochentage'
 
 /*
- * **Uhrzeit und Wochentag zur Wahl** — Treffpunkte der Woche, Grundplan und
- * Termine des Zeugnisgebens fragen dasselbe. Bis zum 5.10.2026 stand die
- * Auswahl fünf- bzw. dreimal ausgeschrieben da.
+ * **Uhrzeit und Wochentag zur Wahl** — die Treffpunkte der Woche und der
+ * Grundplan fragen dasselbe. Bis zum 5.10.2026 stand die Auswahl fünf- bzw.
+ * dreimal ausgeschrieben da. Die Form bringt der Aufrufer mit (`className`):
+ * im Blatt `feld-wahl`, im Kopf des Treffpunkts `treff-zeit-wahl`.
  */
 
 /** Eine Uhrzeit aus dem Raster der Treffpunkte (`FS_TIME_OPTIONS`). */
@@ -13,12 +14,12 @@ export function ZeitWahl({
   value,
   label,
   onChange,
-  className = 'fs-select fs-select--time',
+  className,
 }: {
   value: string
   label: string
   onChange: (zeit: string) => void
-  className?: string
+  className: string
 }) {
   return (
     <select className={className} value={value} aria-label={label} onChange={(e) => onChange(e.target.value)}>
@@ -36,12 +37,12 @@ export function WochentagWahl({
   value,
   label,
   onChange,
-  className = 'fs-select',
+  className,
 }: {
   value: number
   label: string
   onChange: (wd: number) => void
-  className?: string
+  className: string
 }) {
   const { state } = useApp()
   return (

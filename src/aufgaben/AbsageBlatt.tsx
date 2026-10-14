@@ -14,12 +14,8 @@ import './aufgaben.css'
 /** Längste Nachricht an den Planer — sie steht in seiner Mitteilung und im Push. */
 const NACHRICHT_MAX = 200
 
-/**
- * Was nach der Absage geschieht, als Spur — beim Zeugnisgeben keine: Dort wird
- * der Platz einfach frei.
- */
-function spurDanach(art: AbsageArt, t: Dict): SpurSchritt[] | null {
-  if (art === 'zeugnis') return null
+/** Was nach der Absage geschieht, als Spur. */
+function spurDanach(art: AbsageArt, t: Dict): SpurSchritt[] {
   const weiter =
     art === 'hilfsdienst' ? [t.spurErsatzGesucht, t.spurUebernommen] : [t.spurPlanerErfaehrt, t.spurNeuZugeteilt]
   return [
@@ -83,15 +79,9 @@ export function AbsageBlatt({ task }: { task: MyTask }) {
       onClose={() => dispatch({ type: 'closeAbsage' })}
     >
       <div className="sheet-inhalt absage">
-        {spur && (
-          <>
-            <p className="absage-intro">{t.absageIntro}</p>
-            <Spur schritte={spur} label={t.absageIntro} />
-            <p className="klein-text absage-erklaerung">
-              {art === 'hilfsdienst' ? t.ersatzHint : t.absageErklaerung}
-            </p>
-          </>
-        )}
+        <p className="absage-intro">{t.absageIntro}</p>
+        <Spur schritte={spur} label={t.absageIntro} />
+        <p className="klein-text absage-erklaerung">{art === 'hilfsdienst' ? t.ersatzHint : t.absageErklaerung}</p>
         <div className="absage-nachricht">
           <label className="feld-marke" htmlFor={feldId}>
             {t.absageNachricht}

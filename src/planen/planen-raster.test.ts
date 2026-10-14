@@ -76,7 +76,7 @@ describe('planArt — welche Leiste der Plan trägt (T121, Phase 5e)', () => {
   })
 
   it('die Bereiche ohne Woche haben keine Leiste', () => {
-    for (const fsBereich of ['gruppenbesuche', 'zeugnis', 'grundplan'] as const) {
+    for (const fsBereich of ['gruppenbesuche', 'grundplan'] as const) {
       expect(planArt(zustand({ tab: 'fs', fsBereich })), fsBereich).toBeNull()
     }
   })

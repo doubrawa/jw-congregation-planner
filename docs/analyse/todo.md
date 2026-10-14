@@ -6435,6 +6435,9 @@ still die Tür für Mitglieder. Die Attrappe der Schema-Probe bildet die Tür vo
 **Gemessen am 5. Oktober 2026, 23:00**, gegen `send-plan` v23 mit einer neu
 angelegten Testversammlung: 0 von 37 verbotenen Versuchen kamen durch, alle 19
 Gegenproben gingen durch, nichts ungemessen, alles wieder aufgeräumt.
+(Nachtrag 14.10.2026: Mit Stand und Schicht sind die Fälle (13)–(21), (37),
+(56), (57) und (62)–(64) samt `schichtInsLeere` entfallen; die Trolleys misst
+die Probe seither mit (71)–(79), T121 Phase 7.)
 
 ## Aufgenommen am 10. Oktober 2026 — Neues Design (T121)
 
@@ -6649,9 +6652,24 @@ Der nächste Import holt die Sprache auch für schon geladene Wochen nach
 der App nur die Treffpunkte der ersten (`overseerGroup`), die Datenbank erlaubt
 beide (`eigene_gruppen()`).
 
-Offen aus Phase 5g, zur Entscheidung beim Betreiber: Der Schritt „Zusagen" der
-Spur wird in einer Woche mit Personen ohne Konto nie fertig — sie können nicht
-zusagen, und der Haken „weiß Bescheid" zählt nicht als Zusage.
+**Stand am 15. Oktober 2026:** Phase 7, die Trolleys, ist gebaut. Statt fester
+Termine mit Schichten legt die Versammlung ihre Trolleys an (Einstellungen
+„Gruppen und Trolleys": Name, wo man ihn abholt, Hinweis), und wer das
+Trolley-Recht hat, trägt sich selbst ein — von 6 bis 22 Uhr in halben Stunden,
+mit Partner oder allein mit „Partner gesucht", ein anderer kann dazukommen.
+Geschrieben wird nur über die Function `trolley`, die dem anderen Bescheid sagt;
+die Datenbank prüft Raster, freien Trolley, niemanden doppelt und das Recht
+unter einer Sperre je Versammlung und Tag. Am Vortag erinnert `send-reminders`
+alle, die eingetragen sind. Der eigene Termin steht auf Start und unter „Meine
+Aufgaben" (verabredet, ohne Zusage). Das öffentliche Zeugnisgeben mit Stand und
+Schicht ist fort — Tabellen, Schlüssel (`oz|…`), Mitteilungen, Proben (die
+Mitgliedsrechte-Probe misst jetzt die Fälle (71)–(79)). Das Partner-Wort ist je
+Sprache an jw.org gemessen (Leitfaden für Trolleys 2015, Arbeitsheft 2021,
+Index), nicht das des S-89-Zettels.
+
+Entschieden am 14. Oktober 2026 (aus Phase 5g, „A"): Der Haken „weiß Bescheid"
+zählt im Schritt „Zusagen" der Spur wie eine Zusage, und wer ihn hat, steht
+nicht mehr in der Meldung „nicht erreichbar" (`98630c5`).
 
 **Nachentschieden am 13. Oktober 2026** — was in den ersten Phasen offen
 geblieben war, auf *„kannst du mich alles abfragen, was offen ist oder wo ich

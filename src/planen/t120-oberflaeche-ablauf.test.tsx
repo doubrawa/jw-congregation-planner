@@ -31,7 +31,7 @@ const { ProgrammScreen } = await import('../programm/ProgrammScreen')
 
 const t = dict('de')
 
-/** Manfred (p1) und Simon (p9) haben den Aufgabenbereich „Öffentliches Zeugnisgeben". */
+/** Manfred (p1) und Simon (p9) dürfen mit dem Trolley gehen (`zeugnis`). */
 function start(over: Partial<AppState>): AppState {
   const demo = demoZustand()
   return {
@@ -61,8 +61,6 @@ const klick = (c: Element, text: string) => {
   if (!b) throw new Error(`Kein Knopf „${text}"`)
   fireEvent.click(b)
 }
-
-const MARKT = { id: 't1', wd: 3, von: '10:00', bis: '12:00', ort: 'Marktplatz', plaetze: 2 }
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
@@ -117,93 +115,51 @@ describe('Weitere Pläne', () => {
   })
 })
 
-describe('Öffentliches Zeugnisgeben', () => {
-  const zeile = (c: Element) =>
-    [...c.querySelectorAll('.oz-schicht')].find((s) => s.textContent?.includes('Mittwoch, 9. September'))!
-
-  it('Verkündiger: eintragen → „Eingetragen", absagen → der Platz ist wieder frei', () => {
-    const { container } = zeige(ProgrammScreen, {
-      screen: 'programm',
-      tab: 'fs',
-      fsBereich: 'zeugnis',
-      planner: false,
-      personId: 'p9',
-      ozTermine: [MARKT],
-      ozEintraege: [],
-    })
-    klick(zeile(container), t.ozEintragen)
-    expect(zeile(container).textContent).toContain(t.ozDuEingetragen)
-    expect(zeile(container).querySelector('.chip-du')).not.toBeNull()
-    expect(knopf(zeile(container), t.ozEintragen)).toBeUndefined()
-
-    klick(zeile(container), t.ozAbsagen)
-    expect(zeile(container).textContent).not.toContain(t.ozDuEingetragen)
-    expect(zeile(container).querySelector('.chip-du')).toBeNull()
-    expect(knopf(zeile(container), t.ozEintragen)).toBeDefined()
+/*
+ * **Trolleys (T121, Phase 7)** an der Oberfläche: eintragen, im Plan sehen,
+ * austragen. Ohne Datenbank rechnet `lib/trolley.ts` die Antwort der Function
+ * selbst — dieselben Regeln (`wasBleibt`), damit der Ablauf derselbe ist.
+ */
+describe('Trolleys', () => {
+  // Handy-Breite: Tagesplan und Blätter; jsdom kennt matchMedia nicht.
+  beforeEach(() => {
+    window.matchMedia = vi
+      .fn()
+      .mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as unknown as typeof window.matchMedia
+  })
+  afterEach(() => {
+    delete (window as { matchMedia?: unknown }).matchMedia
   })
 
-  it('Planer: Wochentag ändern → Rückfrage → „Verlegen" → die Schichten stehen am neuen Tag, die Einträge sind fort', () => {
-    const { container } = zeige(PlanenScreen, {
-      screen: 'planen',
-      tab: 'fs',
-      fsBereich: 'zeugnis',
-      planner: true,
-      ozTermine: [MARKT],
-      ozEintraege: [{ id: 'e1', terminId: 't1', datum: '2026-09-09', pid: 'p9', selbst: true }],
-    })
-    expect(container.querySelectorAll('.oz-person')).toHaveLength(1)
-    fireEvent.change(container.querySelector(`select[aria-label="${t.a11yWeekday}"]`)!, { target: { value: '4' } })
-    // Noch steht alles wie vorher — erst der Knopf verlegt.
-    expect(container.querySelectorAll('.oz-person')).toHaveLength(1)
-    klick(container, t.ozTagWechseln)
-    const tage = [...container.querySelectorAll('.oz-schicht .fs-place')].map((e) => e.textContent)
-    expect(tage[0]).toBe('Donnerstag, 10. September · 10:00–12:00')
-    expect(container.querySelectorAll('.oz-person')).toHaveLength(0)
+  const TROLLEY = { id: 'tr1', name: 'Trolley 1', ort: 'Depot', hinweis: '' }
+  const ansicht: Partial<AppState> = { screen: 'programm', tab: 'fs', fsBereich: 'trolleys', trolleys: [TROLLEY], trolleyTermine: [] }
+
+  it('Simon trägt sich ein, allein mit „Partner gesucht" → der Termin steht da; austragen (zweimal getippt) → er ist fort', async () => {
+    const { container } = zeige(ProgrammScreen, { ...ansicht, personId: 'p9' })
+    klick(container, t.trolleyEintragen)
+    const blatt = document.querySelector('[role="dialog"]')!
+    klick(blatt, t.trolleyPartnerGesucht)
+    klick(blatt.querySelector('.sheet-fuss-ende')!, t.trolleyEintragen)
+
+    // Unter „Deine Termine" und im Tagesplan, gestrichelt: Partner gesucht.
+    await vi.waitFor(() => expect(container.querySelector('.trolley-karte .trolley-zeile')).not.toBeNull())
+    expect(container.querySelector('.trolley-karte')?.textContent).toContain(t.trolleyPartnerGesucht)
+    expect(container.querySelector('.trolley-termin.is-gesucht')).not.toBeNull()
+    expect(document.querySelector('[role="dialog"]')).toBeNull()
+
+    fireEvent.click(container.querySelector('.trolley-karte .trolley-zeile')!)
+    const termin = document.querySelector('[role="dialog"]')!
+    klick(termin, t.trolleyAustragen)
+    klick(termin, t.entfernenSicher)
+    await vi.waitFor(() => expect(container.querySelector('.trolley-termin')).toBeNull())
+    expect(container.querySelector('.trolley-karte')).toBeNull()
   })
 
-  it('Planer: Schicht streichen (zweimal getippt) → „Fällt aus", der Eintrag ist fort; „Wiederherstellen" → wieder zwei freie Plätze', () => {
-    const { container } = zeige(PlanenScreen, {
-      screen: 'planen',
-      tab: 'fs',
-      fsBereich: 'zeugnis',
-      planner: true,
-      ozTermine: [MARKT],
-      ozEintraege: [{ id: 'e1', terminId: 't1', datum: '2026-09-09', pid: 'p9', selbst: true }],
-    })
-    const x = () => zeile(container).querySelector('.oz-streichen') as HTMLButtonElement
-    fireEvent.click(x())
-    // Erst die Rückfrage — noch steht alles.
-    expect(zeile(container).querySelector('.oz-person')).not.toBeNull()
-    fireEvent.click(x())
-    expect(zeile(container).textContent).toContain(t.ozFaelltAus)
-    expect(zeile(container).querySelector('.oz-person')).toBeNull()
-    // Die übrigen Wochen stehen unverändert da.
-    expect(container.querySelectorAll('.oz-schicht.is-gestrichen')).toHaveLength(1)
-
-    klick(zeile(container), t.wiederherstellen)
-    expect(zeile(container).textContent).not.toContain(t.ozFaelltAus)
-    expect(zeile(container).querySelectorAll('select.oz-zuteilen')).toHaveLength(2)
-  })
-
-  it('Planer: automatisch besetzen füllt die freien Plätze, „Leeren" (zweimal getippt) räumt nur Zugeteiltes', () => {
-    const { container } = zeige(PlanenScreen, {
-      screen: 'planen',
-      tab: 'fs',
-      fsBereich: 'zeugnis',
-      planner: true,
-      ozTermine: [MARKT],
-      // Selbst eingetragen — bleibt beim Leeren stehen.
-      ozEintraege: [{ id: 'e1', terminId: 't1', datum: '2026-09-09', pid: 'p9', selbst: true }],
-    })
-    klick(container, t.autoZuteilen)
-    const vorher = container.querySelectorAll('.oz-person').length
-    expect(vorher).toBeGreaterThan(1)
-    klick(container, t.leeren)
-    klick(container, t.leerenSicher)
-    // Übrig ist der selbst Eingetragene.
-    const uebrig = [...container.querySelectorAll('.oz-person')].map((p) => p.textContent)
-    expect(uebrig).toHaveLength(1)
-    expect(uebrig[0]).toContain('Simon Krüger')
+  it('wer kein Trolley-Recht hat, sieht den Plan — aber statt „Eintragen" den Hinweis', () => {
+    const { container } = zeige(ProgrammScreen, { ...ansicht, personId: 'p11' })
+    expect(knopf(container, t.trolleyEintragen)).toBeUndefined()
+    expect(container.textContent).toContain(t.trolleyFehlerKeinRecht)
+    expect(container.querySelector('.trolley-frei')).toBeNull()
   })
 })
 

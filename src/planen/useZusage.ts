@@ -11,8 +11,8 @@ import type { FsInstance, MeetingKey, PartItem, TaskStatus } from '../data/types
  * Die Zusage an jedem besetzten Platz: bestätigt, wartet, abgesagt
  * (14. September 2026, vorher ✓ und …). Hier stehen Stufen und Nachschlagen.
  * Gezeigt wird sie seit T121 als Punkt der Lage — voll, blass, rot —, an den
- * Plätzen der Zusammenkünfte über `PlatzZeile`, an Treffpunkten und beim
- * Zeugnisgeben am Chip (`ZusageStatus.tsx`).
+ * Plätzen der Zusammenkünfte über `PlatzZeile`, an Treffpunkten am Chip
+ * (`ZusageStatus.tsx`).
  *
  * Die Farben stehen als Tokens in `tokens.css` (`--zusage-*`, abgeleitet aus
  * `--text`, `--wartet` und `--problem`). Allein auf die Farbe verlässt sich der

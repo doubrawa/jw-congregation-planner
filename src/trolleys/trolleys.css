@@ -1,0 +1,341 @@
+/* ---- Trolleys (T121, Phase 7) -------------------------------------------------
+   Entwürfe `GZeugnis` (Handy), `GTabletTrolleys` und `GDesktopTrolleys`: oben
+   die eigenen Termine und wer einen Partner sucht, darunter ein Tag mit einer
+   Spalte je Trolley — am Desktop die Woche als Raster mit dem Formular
+   „Eintragen" rechts. */
+
+.trolley-ansicht,
+.trolley-haupt,
+.trolley-listen {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.trolley-intro {
+  margin: 0;
+}
+
+/* Die Karten oben — mit dem Rand des Entwurfs (`S.karte('6px 10px 4px 18px')`). */
+.trolley-karte {
+  padding: 6px 12px 4px 18px;
+}
+
+/* Eine Zeile: Punkt, Tag und Zeit, darunter Trolley und Partner — rechts der
+   Pfeil oder „Dazukommen". */
+.trolley-zeile {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 14px;
+  min-height: 72px;
+  padding-block: 8px;
+  border-block-start: 1px solid var(--linie);
+  color: var(--text);
+  text-align: start;
+}
+
+.trolley-zeile-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.trolley-zeile-titel {
+  font-weight: 600;
+}
+
+/* ---- Die Tage der Woche zur Wahl ---------------------------------------------- */
+
+.trolley-tagwahl {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.trolley-tagknopf {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 64px;
+  border-radius: 18px;
+  color: var(--text2);
+}
+
+.trolley-tagknopf[aria-pressed='true'] {
+  background: var(--text);
+  color: var(--grund);
+}
+
+.trolley-tagknopf-kurz {
+  font-size: calc(12.5px * var(--fs));
+}
+
+.trolley-tagknopf-zahl {
+  font-size: calc(17px * var(--fs));
+  font-weight: 600;
+}
+
+.trolley-tagknopf[aria-pressed='true'] .trolley-tagknopf-zahl {
+  font-weight: 700;
+}
+
+/* Ein Punkt unter Tagen mit Terminen — die übrigen tragen ihn unsichtbar, damit
+   alle Knöpfe gleich hoch sind. */
+.trolley-tagknopf-punkt {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.trolley-tagknopf-punkt.is-belegt {
+  background: var(--akzent-text);
+}
+
+.trolley-tagknopf[aria-pressed='true'] .trolley-tagknopf-punkt.is-belegt {
+  background: var(--grund);
+}
+
+.trolley-eintragen {
+  width: 100%;
+  min-height: 50px;
+}
+
+/* ---- Ein Tag: eine Spalte je Trolley, 6 bis 22 Uhr ----------------------------- */
+
+.trolley-tag {
+  padding: 6px 10px 14px;
+}
+
+.trolley-tag-kopf,
+.trolley-plan {
+  display: grid;
+  grid-template-columns: 34px repeat(var(--trolleys), minmax(0, 1fr));
+}
+
+.trolley-tag-kopf {
+  padding-block-end: 14px;
+}
+
+.trolley-spaltenkopf {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  text-align: center;
+}
+
+.trolley-spaltenkopf-name {
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* Sechzehn Stunden, je 36 px auf Stufe 1 — mit der Schrift wächst der Plan,
+   und die Termine stehen als Anteil darin (`lageImPlan`). */
+.trolley-plan {
+  position: relative;
+  height: calc(16 * 36px * var(--fs));
+}
+
+.trolley-uhr {
+  position: relative;
+}
+
+.trolley-uhr span {
+  position: absolute;
+  inset-inline-end: 8px;
+  color: var(--text3);
+  font-size: calc(11.5px * var(--fs));
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+/* Die Linien der Stunden zieht die Spalte selbst: eine je Sechzehntel. */
+.trolley-spalte {
+  position: relative;
+  border-inline-start: 1px solid var(--linie);
+  border-block-end: 1px solid var(--linie);
+  background-image: repeating-linear-gradient(to bottom, var(--linie) 0 1px, transparent 1px calc(100% / 16));
+}
+
+/* Die ganze Spalte nimmt den Tipp auf eine freie Zeit; die Termine liegen darüber. */
+.trolley-frei {
+  position: absolute;
+  inset: 0;
+}
+
+.trolley-termin {
+  position: absolute;
+  inset-inline: 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  overflow: hidden;
+  padding: 4px 6px;
+  border-radius: 10px;
+  border-inline-start: 3px solid var(--text);
+  background: var(--feld);
+  color: var(--text);
+  font-size: calc(12.5px * var(--fs));
+  line-height: 1.2;
+  text-align: start;
+}
+
+.trolley-termin.is-gesucht,
+.trolley-buchung.is-gesucht {
+  border: 1.5px dashed var(--ring);
+  background: transparent;
+}
+
+.trolley-termin-zeit {
+  color: var(--text3);
+  font-size: calc(11.5px * var(--fs));
+}
+
+.trolley-termin-name {
+  font-weight: 600;
+}
+
+.trolley-termin-gesucht {
+  color: var(--akzent-text);
+  font-weight: 700;
+}
+
+.trolley-tipp {
+  margin: 0;
+  padding: 14px 8px 0;
+}
+
+/* ---- Desktop: die Woche als Raster, das Formular rechts ----------------------- */
+
+.trolley-woche {
+  padding: 6px 16px 10px;
+}
+
+.trolley-woche-kopf,
+.trolley-woche-zeile {
+  display: grid;
+  grid-template-columns: 88px repeat(var(--trolleys), minmax(0, 1fr));
+  column-gap: 10px;
+}
+
+.trolley-woche-kopf {
+  align-items: center;
+  min-height: 52px;
+}
+
+.trolley-woche-kopf .trolley-spaltenkopf {
+  align-items: flex-start;
+  text-align: start;
+}
+
+.trolley-woche-zeile {
+  align-items: stretch;
+  min-height: 56px;
+  padding-block: 6px;
+  border-block-start: 1px solid var(--linie);
+}
+
+.trolley-woche-tag {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.trolley-woche-tag-kurz {
+  font-weight: 700;
+}
+
+.trolley-woche-zelle {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trolley-woche-frei {
+  border-radius: 12px;
+}
+
+.trolley-woche-frei:hover {
+  background: var(--feld);
+}
+
+.trolley-buchung {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 7px 10px;
+  border-radius: 12px;
+  border-inline-start: 3px solid var(--text);
+  background: var(--feld);
+  color: var(--text);
+  font-size: calc(13.5px * var(--fs));
+  line-height: 1.3;
+  text-align: start;
+}
+
+.trolley-seite {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 24px;
+  background: var(--karte);
+}
+
+.trolley-seite-kopf {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 1180px) {
+  /* Raster und Formular brauchen mehr als die übliche Spalte. */
+  .screen.prog--trolleys {
+    max-width: 1200px;
+  }
+
+  .trolley-ansicht.is-desktop {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    align-items: start;
+    gap: 24px;
+  }
+
+  .trolley-ansicht.is-desktop .trolley-listen {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 16px;
+  }
+}
+
+/* ---- Die Blätter ------------------------------------------------------------- */
+
+/* Von und Bis nebeneinander. */
+.trolley-zeiten {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.trolley-termin-blatt {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trolley-personen {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  font-weight: 600;
+  list-style: none;
+}

@@ -179,10 +179,8 @@ function ZusammenkunftZeile({ tab }: { tab: MeetingKey }) {
           <span className="einrichten-wann">{istAusgefallen(week, tab) ? <s>{wann}</s> : wann}</span>
           <span className="klein-text">{tab === 'we' ? t.tabWe : t.tabMid}</span>
         </span>
-        {/* „Verlegen" — dasselbe Wort wie beim Zeugnisgeben, wo ein Termin
-            auf einen anderen Tag geht (`ozTagWechseln`). */}
         <button type="button" className="verweis-leise" aria-expanded={offen} onClick={() => setOffen((o) => !o)}>
-          {t.ozTagWechseln}
+          {t.verlegen}
         </button>
       </div>
       {offen && <SonderwochePanel tab={tab} />}

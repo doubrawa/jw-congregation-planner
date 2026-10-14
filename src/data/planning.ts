@@ -1198,7 +1198,7 @@ export function sentKey(taskKey: string, name: string): string {
 /**
  * Woche und Zusammenkunft eines task_key — jeder beginnt mit `<wi>|<tab>|…`,
  * gleich ob Programmpunkt, Ratgeber oder Hilfsdienst. null bei Fremdformaten
- * und bei Plätzen ohne Zusammenkunft (Treffpunkt, öffentliches Zeugnisgeben).
+ * und bei Plätzen ohne Zusammenkunft (Treffpunkt).
  */
 export function taskKeyWeek(key: string): { woche: string; tab: MeetingKey } | null {
   const teile = schluesselTeile(key)

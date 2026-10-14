@@ -26,7 +26,7 @@ import { GruppenbesucheAnsicht } from './GruppenbesucheAnsicht'
 import { MonatDruckenContext, MonatsDruck } from './MonatsDruck'
 import { useBeideTage } from './useBeideTage'
 import { WeiterePlaeneAnsicht } from './WeiterePlaeneAnsicht'
-import { ZeugnisAnsicht } from './ZeugnisAnsicht'
+import { TrolleyAnsicht } from '../trolleys/TrolleyAnsicht'
 import { BeideTage, ZusammenkunftAnsicht } from './ZusammenkunftAnsicht'
 import './programm.css'
 import './print.css'
@@ -72,15 +72,15 @@ export function ProgrammScreen() {
     )
   }
 
-  // Gruppenbesuche und öffentliches Zeugnisgeben (T120) haben keine Woche —
+  // Gruppenbesuche (T120) und Trolleys (T121) haben keine Woche des Programms —
   // ohne Streifen, wie beim Planen.
   const bereich = state.tab === 'fs' ? aktiverFsBereich(state) : null
-  if (bereich === 'gruppenbesuche' || bereich === 'zeugnis') {
+  if (bereich === 'gruppenbesuche' || bereich === 'trolleys') {
     return (
-      <section className="screen prog">
+      <section className={bereich === 'trolleys' ? 'screen prog prog--trolleys' : 'screen prog'}>
         <Bereichstitel />
         <FsBereichTabs />
-        {bereich === 'zeugnis' ? <ZeugnisAnsicht /> : <GruppenbesucheAnsicht />}
+        {bereich === 'trolleys' ? <TrolleyAnsicht /> : <GruppenbesucheAnsicht />}
       </section>
     )
   }

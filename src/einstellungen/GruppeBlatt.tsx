@@ -8,7 +8,7 @@ import { personCompare, personLabel } from '../data/helpers'
 import type { Group, Person } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
-import { gruppenDublette, gruppenFolgen, zusammenkunftText, type GruppenFolge } from './einstellungen-anzeige'
+import { gruppenFolgen, doppelterName, zusammenkunftText, type GruppenFolge } from './einstellungen-anzeige'
 
 /** Der Satz zu jeder Folge des Entfernens. */
 const FOLGE_TEXT = {
@@ -43,7 +43,7 @@ export function GruppeBlatt({ gruppe, onClose }: { gruppe: Group; onClose: () =>
   const update = (patch: Partial<Pick<Group, 'name' | 'overseerId' | 'assistantId'>>) =>
     dispatch({ type: 'updateGroup', id: gruppe.id, patch })
   const leer = name.trim() === ''
-  const dublette = gruppenDublette(state.groups, gruppe.id, name, tu)
+  const dublette = doppelterName(state.groups, gruppe.id, name, tu)
   // Was beim Schließen statt des neuen Namens gilt — und schon am Feld steht.
   const fehler = leer ? t.toastNameLeer : dublette ? fill(t.toastNameNichtGeaendert, { name: tu(dublette.name) }) : null
 
@@ -119,7 +119,7 @@ export function GruppeBlatt({ gruppe, onClose }: { gruppe: Group; onClose: () =>
         )}
         <p>{fill(t.mitgliederN, { n: mitglieder })}</p>
         {folgen.length > 0 && (
-          <section className="gruppe-folgen" aria-label={t.gruppeWennEntfernt}>
+          <section className="blatt-folgen" aria-label={t.gruppeWennEntfernt}>
             <h3 className="feld-marke">{t.gruppeWennEntfernt}</h3>
             {folgen.map((folge) => (
               <p key={folge}>{t[FOLGE_TEXT[folge]]}</p>

@@ -115,7 +115,7 @@ describe('Die Wochen-Ansicht', () => {
     expect(zeilen.map((z) => z.querySelector('.klein-text')?.textContent)).toEqual([t.tabMid, t.tabWe])
     // Zu, solange nichts abweicht.
     expect(queryAllByRole('switch')).toHaveLength(0)
-    for (const knopf of getAllByRole('button', { name: t.ozTagWechseln })) fireEvent.click(knopf)
+    for (const knopf of getAllByRole('button', { name: t.verlegen })) fireEvent.click(knopf)
     const namen = getAllByRole('switch').map((el) => el.getAttribute('aria-label'))
     expect(namen).toEqual([t.tabMid, t.tabWe])
   })

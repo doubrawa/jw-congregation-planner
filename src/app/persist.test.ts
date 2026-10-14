@@ -5,7 +5,7 @@ import { buildDemoFsWeeks, buildDemoWeeks, DEMO_FS_RULES, DEMO_PERSONS, DEMO_SER
 import { syncAuxSlots } from '../data/aux-class'
 import { fsGruppeEntfernen, fsTaskKey, neueRegel } from '../data/fs'
 import { sentKey } from '../data/planning'
-import type { MyTask, Week } from '../data/types'
+import type { MyTask, Trolley, TrolleyTermin, Week } from '../data/types'
 
 // Supabase truthy (Guard soll durchlassen) — kein echter Client/Netz.
 vi.mock('../lib/supabase', () => ({ supabase: {} }))
@@ -51,20 +51,18 @@ vi.mock('../lib/data', async (importActual) => ({
   saveInvite: vi.fn(),
   saveInviteRechte: vi.fn(),
   saveMemberRow: vi.fn(),
-  saveOzEintraege: vi.fn(),
-  saveOzTermine: vi.fn(),
   savePerson: vi.fn(),
   savePersonGroup: vi.fn(),
   savePlaene: vi.fn(),
   savePlanEintraege: vi.fn(),
   saveService: vi.fn(),
   saveSettings: vi.fn(),
+  saveTrolleys: vi.fn(),
   saveWeek: vi.fn(),
   substituteSeek: vi.fn(),
   substituteTake: vi.fn(),
   substituteWithdraw: vi.fn(),
   sendPlanEntzug: vi.fn(),
-  sendPlanZeugnisAenderung: vi.fn(),
   platzFuellen: vi.fn(),
 }))
 
@@ -553,270 +551,57 @@ describe('Vortragsplan (T122)', () => {
   })
 })
 
-describe('Öffentliches Zeugnisgeben (T120)', () => {
-  const T1 = { id: 't1', wd: 3, von: '10:00', bis: '12:00', ort: 'Marktplatz', plaetze: 2 }
-  const T2 = { ...T1, id: 't2', wd: 6 }
-  const eintrag = (id: string, pid: string, selbst = false) => ({ id, terminId: 't1', datum: '2026-09-09', pid, selbst })
-  const KEY = (id: string) => `oz|2026-09-07|${id}`
+describe('Trolleys (T121, Phase 7)', () => {
+  const T1: Trolley = { id: 'tr1', name: 'Trolley 1', ort: 'Depot', hinweis: '' }
+  const TERMIN: TrolleyTermin = {
+    id: 'r1',
+    trolleyId: 'tr1',
+    datum: '2026-09-09',
+    von: '10:00',
+    bis: '12:00',
+    pid: 'p1',
+    partner: null,
+    gemeinsam: false,
+  }
 
-  beforeEach(() => vi.setSystemTime(new Date(2026, 8, 7, 9, 0)))
-
-  it('ein neuer Eintrag wird eingefügt — Unveränderte gehen nicht noch einmal hinaus', () => {
-    const e1 = eintrag('e1', 'p1')
-    const e2 = eintrag('e2', 'p9', true)
-    // Dieselbe Liste der Termine — der Reducer lässt Unberührtem seine Referenz.
-    const termine = [T1]
-    persist(st({ ozTermine: termine, ozEintraege: [e1] }), st({ ozTermine: termine, ozEintraege: [e1, e2] }), {
-      type: 'ozEintragen',
-      terminId: 't1',
-      datum: '2026-09-09',
-    })
-    expect(data.saveOzEintraege).toHaveBeenCalledWith('c1', [e2], [])
-    expect(data.saveOzTermine).not.toHaveBeenCalled()
-  })
-
-  it('ein Termin wartet im Bündel — aber nie hinter einem Eintrag, der auf ihn zeigt', () => {
-    const vorher = st({ ozTermine: [], ozEintraege: [] })
-    const mitTermin = st({ ozTermine: [T1], ozEintraege: [] })
-    persist(vorher, mitTermin, { type: 'ozTerminAdd' })
-    expect(data.saveOzTermine).not.toHaveBeenCalled()
-    persist(mitTermin, st({ ozTermine: [T1], ozEintraege: [eintrag('e1', 'p1')] }), {
-      type: 'ozZuteilen',
-      terminId: 't1',
-      datum: '2026-09-09',
-      pid: 'p1',
-    })
-    const termin = vi.mocked(data.saveOzTermine).mock.invocationCallOrder[0]
-    const einfuegen = vi.mocked(data.saveOzEintraege).mock.invocationCallOrder[0]
-    expect(termin).toBeDefined()
-    expect(einfuegen).toBeGreaterThan(termin!)
-  })
-
-  it('zwei gelöschte Termine im selben Bündel gehen beide hinaus', () => {
-    const a = st({ ozTermine: [T1, T2] })
-    const b = st({ ozTermine: [T2] })
-    persist(a, b, { type: 'ozTerminRemove', id: 't1' })
-    persist(b, st({ ozTermine: [] }), { type: 'ozTerminRemove', id: 't2' })
+  it('ein neuer Trolley wartet im Bündel und geht dann hinaus — nur er', () => {
+    persist(st({ trolleys: [] }), st({ trolleys: [T1] }), { type: 'trolleyAnlegen', trolley: T1 })
+    expect(data.saveTrolleys).not.toHaveBeenCalled()
     vi.runOnlyPendingTimers()
-    expect(data.saveOzTermine).toHaveBeenCalledTimes(1)
-    expect(data.saveOzTermine).toHaveBeenCalledWith('c1', [], ['t1', 't2'])
+    expect(data.saveTrolleys).toHaveBeenCalledWith('c1', [T1])
   })
 
-  it('Absagen aus „Meine Aufgaben": der Eintrag geht, keine Verhinderung, die Planer erfahren es', () => {
-    const e = eintrag('e1', 'p9')
-    const notif = { id: 'n', type: 'verhindert', title: 'Verhinderung gemeldet', text: 'x', at: '', read: false, local: true, taskId: KEY('e1') }
-    persist(
-      st({ ozTermine: [T1], ozEintraege: [e], confirmations: { [KEY('e1')]: 'bestätigt' } }),
-      st({ ozTermine: [T1], ozEintraege: [], confirmations: {}, notifs: [notif] as AppState['notifs'] }),
-      { type: 'declineTask', id: KEY('e1') },
-    )
-    expect(data.saveOzEintraege).toHaveBeenCalledWith('c1', [], ['e1'])
-    expect(data.saveConfirmation).not.toHaveBeenCalled()
-    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [KEY('e1')])
-    expect(data.notifyPlanners).toHaveBeenCalledWith('verhindert', 'Verhinderung gemeldet', 'x', KEY('e1'))
-    // Die eigene Absage ist keine Wegnahme.
-    expect(data.sendPlanEntzug).not.toHaveBeenCalled()
-  })
-
-  it('nimmt der Planer einen zugesagten Eintrag, erfährt es die Person sofort', () => {
-    const e = eintrag('e1', 'p1', true)
-    persist(st({ ozTermine: [T1], ozEintraege: [e] }), st({ ozTermine: [T1], ozEintraege: [] }), {
-      type: 'ozAustragen',
-      id: 'e1',
-    })
-    expect(data.sendPlanEntzug).toHaveBeenCalledWith([
-      {
-        key: KEY('e1'),
-        name: 'Manfred Albrecht',
-        pid: 'p1',
-        label: 'Öffentliches Zeugnisgeben',
-        datum: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz',
-      },
-    ])
-  })
-
-  it('ein unbestätigter, zugeteilter Eintrag ist Entwurf — kein Entzug', () => {
-    persist(st({ ozTermine: [T1], ozEintraege: [eintrag('e1', 'p1')] }), st({ ozTermine: [T1], ozEintraege: [] }), {
-      type: 'ozLeeren',
-    })
-    expect(data.saveOzEintraege).toHaveBeenCalledWith('c1', [], ['e1'])
-    expect(data.sendPlanEntzug).not.toHaveBeenCalled()
-  })
-
-  it('ein gestrichener Termin: wer sich eingetragen hatte, erfährt es — „Schicht fällt aus"', () => {
-    persist(st({ ozTermine: [T1], ozEintraege: [eintrag('e1', 'p1', true)] }), st({ ozTermine: [], ozEintraege: [] }), {
-      type: 'ozTerminRemove',
-      id: 't1',
-    })
-    expect(data.sendPlanEntzug).toHaveBeenCalledWith([
-      expect.objectContaining({
-        key: KEY('e1'),
-        pid: 'p1',
-        datum: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz',
-        grund: 'ausfall',
-      }),
-    ])
-  })
-
-  it('ein verlegter Termin: die Nachricht nennt den alten Tag — den, für den zugesagt war', () => {
-    persist(
-      st({ ozTermine: [T1], ozEintraege: [eintrag('e1', 'p1', true)] }),
-      st({ ozTermine: [{ ...T1, wd: 4 }], ozEintraege: [] }),
-      { type: 'ozTerminUpdate', id: 't1', patch: { wd: 4 } },
-    )
-    expect(data.saveOzEintraege).toHaveBeenCalledWith('c1', [], ['e1'])
-    expect(data.sendPlanEntzug).toHaveBeenCalledWith([
-      expect.objectContaining({ key: KEY('e1'), datum: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz', grund: 'ausfall' }),
-    ])
-    // Ein anderer Wochentag ist ein Ausfall, keine Änderung.
+  it('getippt wird je Taste — hinaus geht der Name einmal, in seiner neuesten Fassung', () => {
+    const a = st({ trolleys: [T1] })
+    const b = st({ trolleys: [{ ...T1, name: 'Trolley' }] })
+    const c = st({ trolleys: [{ ...T1, name: 'Trolley Saal' }] })
+    persist(a, b, { type: 'trolleyAendern', id: 'tr1', patch: { name: 'Trolley' } })
+    persist(b, c, { type: 'trolleyAendern', id: 'tr1', patch: { name: 'Trolley Saal' } })
     vi.runOnlyPendingTimers()
-    expect(data.sendPlanZeugnisAenderung).not.toHaveBeenCalled()
-  })
-
-  /**
-   * **Uhrzeit oder Ort geändert** (5.10.2026): Wer dort eingetragen ist und
-   * davon weiß, bekommt den neuen Termin — aber erst, wenn die Eingabe ruht.
-   * Der Ort ändert sich je Tastendruck; je Anschlag eine Nachricht hieße
-   * „R", „Ra", „Rathausplatz" auf jedem Handy.
-   */
-  describe('Uhrzeit oder Ort geändert', () => {
-    const selbst = eintrag('e1', 'p1', true)
-    const tippen = (...orte: string[]) => {
-      let vorher = st({ ozTermine: [T1], ozEintraege: [selbst] })
-      for (const ort of orte) {
-        const nachher = st({ ozTermine: [{ ...T1, ort }], ozEintraege: [selbst] })
-        persist(vorher, nachher, { type: 'ozTerminUpdate', id: 't1', patch: { ort } })
-        vorher = nachher
-      }
-      return vorher
-    }
-    const NEU = [
-      {
-        key: KEY('e1'),
-        name: 'Manfred Albrecht',
-        pid: 'p1',
-        label: 'Öffentliches Zeugnisgeben',
-        datum: 'Mittwoch, 9. September · 10:00–12:00 · Rathausplatz',
-      },
-    ]
-
-    it('erst nach der Ruhe, einmal, mit dem letzten Stand', () => {
-      tippen('R', 'Ra', 'Rathausplatz')
-      vi.advanceTimersByTime(4999)
-      expect(data.sendPlanZeugnisAenderung).not.toHaveBeenCalled()
-      vi.advanceTimersByTime(1)
-      expect(data.sendPlanZeugnisAenderung).toHaveBeenCalledTimes(1)
-      expect(data.sendPlanZeugnisAenderung).toHaveBeenCalledWith(NEU)
-      // Gespeichert wird weiter nach der kurzen Ruhe der Termine.
-      expect(data.saveOzTermine).toHaveBeenCalledTimes(1)
-    })
-
-    it('zurück auf den alten Ort: nichts', () => {
-      tippen('R', 'Marktplatz')
-      vi.runOnlyPendingTimers()
-      expect(data.sendPlanZeugnisAenderung).not.toHaveBeenCalled()
-    })
-
-    it('wer die Ansicht verlässt, schickt sofort', () => {
-      const zuletzt = tippen('Rathausplatz')
-      persist(zuletzt, zuletzt, { type: 'navigate', screen: 'start' } as AppAction)
-      expect(data.sendPlanZeugnisAenderung).toHaveBeenCalledWith(NEU)
-    })
-
-    it('vor dem Neuladen geht hinaus, was dieser Planer geändert hat', () => {
-      const zuletzt = tippen('Rathausplatz')
-      persist(zuletzt, st({ ozTermine: [{ ...T1, ort: 'Fremd' }], ozEintraege: [] }), { type: 'hydrate' } as AppAction)
-      expect(data.sendPlanZeugnisAenderung).toHaveBeenCalledWith(NEU)
-    })
-
-    it('wer inzwischen ausgetragen wurde, bekommt keine Änderung mehr — nur den Entzug', () => {
-      const zuletzt = tippen('Rathausplatz')
-      const ohne = st({ ozTermine: zuletzt.ozTermine, ozEintraege: [] })
-      persist(zuletzt, ohne, { type: 'ozAustragen', id: 'e1' })
-      expect(data.sendPlanEntzug).toHaveBeenCalledTimes(1)
-      vi.runOnlyPendingTimers()
-      expect(data.sendPlanZeugnisAenderung).not.toHaveBeenCalled()
-    })
+    expect(data.saveTrolleys).toHaveBeenCalledTimes(1)
+    expect(data.saveTrolleys).toHaveBeenCalledWith('c1', c.trolleys)
   })
 
   /*
-   * **Nur, was dieser Planer geändert hat** (3.10.2026). Bis dahin ging die
-   * ganze Liste der Termine als Upsert hinaus: Hatte ein zweiter Planer
-   * inzwischen einen Termin gestrichen, holte das nächste Tippen hier ihn zurück
-   * — leer, denn seine Einträge waren per Kaskade fort.
+   * Einen Trolley entfernt die Function `trolley` — sie sagt den
+   * Eingetragenen Bescheid, und erst danach verliert ihn der Zustand. Löschte
+   * dieser Weg mit, käme er ihr womöglich zuvor.
    */
-  it('der Ort eines Termins schreibt nur diesen Termin', () => {
-    const getippt = { ...T1, ort: 'Bahnhof' }
-    persist(st({ ozTermine: [T1, T2] }), st({ ozTermine: [getippt, T2] }), {
-      type: 'ozTerminUpdate',
-      id: 't1',
-      patch: { ort: 'Bahnhof' },
-    })
+  it('ein entfernter Trolley geht hier nicht hinaus — das hat die Function schon getan', () => {
+    // Nachher aus Vorher: `st()` baut jedes Mal neue Wochen, und die gingen sonst als Änderung hinaus.
+    const vorher = st({ trolleys: [T1], trolleyTermine: [TERMIN] })
+    persist(vorher, { ...vorher, trolleys: [], trolleyTermine: [] }, { type: 'trolleyEntfernt', id: 'tr1' })
     vi.runOnlyPendingTimers()
-    expect(data.saveOzTermine).toHaveBeenCalledTimes(1)
-    expect(data.saveOzTermine).toHaveBeenCalledWith('c1', [getippt], [])
+    expect(data.saveTrolleys).not.toHaveBeenCalled()
+    expect(data.saveWeek).not.toHaveBeenCalled()
   })
 
-  it('zwei Termine im selben Bündel: jeder in seiner neuesten Fassung, einmal', () => {
-    const a = st({ ozTermine: [T1, T2] })
-    const b = st({ ozTermine: [{ ...T1, ort: 'B' }, T2] })
-    const c = st({ ozTermine: [b.ozTermine[0]!, { ...T2, ort: 'C' }] })
-    const d = st({ ozTermine: [{ ...T1, ort: 'Bahnhof' }, c.ozTermine[1]!] })
-    persist(a, b, { type: 'ozTerminUpdate', id: 't1', patch: { ort: 'B' } })
-    persist(b, c, { type: 'ozTerminUpdate', id: 't2', patch: { ort: 'C' } })
-    persist(c, d, { type: 'ozTerminUpdate', id: 't1', patch: { ort: 'Bahnhof' } })
+  it('ein Termin, den die Function zurückgibt, geht nicht noch einmal hinaus', () => {
+    const vorher = st({ trolleyTermine: [] })
+    persist(vorher, { ...vorher, trolleyTermine: [TERMIN] }, { type: 'trolleyTermin', id: 'r1', termin: TERMIN })
     vi.runOnlyPendingTimers()
-    expect(data.saveOzTermine).toHaveBeenCalledTimes(1)
-    expect(data.saveOzTermine).toHaveBeenCalledWith('c1', d.ozTermine, [])
-  })
-
-  it('eine Schicht fällt aus: erst der Termin mit dem Tag, dann die Einträge — wer zugesagt hatte, erfährt es', () => {
-    // Die Reihenfolge trägt: Kommt der Termin zuerst an, räumt die Datenbank
-    // auch Einträge ab, die diese App nicht kennt (`oz_ausfall_raeumen`).
-    const gestrichen = { ...T1, aus: ['2026-09-09'] }
-    persist(
-      st({ ozTermine: [T1], ozEintraege: [eintrag('e1', 'p1', true)] }),
-      st({ ozTermine: [gestrichen], ozEintraege: [] }),
-      { type: 'ozSchichtAus', terminId: 't1', datum: '2026-09-09', aus: true },
-    )
-    expect(data.saveOzTermine).toHaveBeenCalledWith('c1', [gestrichen], [])
-    expect(data.saveOzEintraege).toHaveBeenCalledWith('c1', [], ['e1'])
-    const termin = vi.mocked(data.saveOzTermine).mock.invocationCallOrder[0]
-    expect(termin).toBeDefined()
-    expect(vi.mocked(data.saveOzEintraege).mock.invocationCallOrder[0]).toBeGreaterThan(termin!)
-    expect(data.sendPlanEntzug).toHaveBeenCalledWith([
-      expect.objectContaining({
-        key: KEY('e1'),
-        pid: 'p1',
-        datum: 'Mittwoch, 9. September · 10:00–12:00 · Marktplatz',
-        grund: 'ausfall',
-      }),
-    ])
-  })
-
-  it('wiederherstellen schreibt nur den Termin', () => {
-    const gestrichen = { ...T1, aus: ['2026-09-09'] }
-    const zurueck = { ...T1, aus: [] }
-    persist(st({ ozTermine: [gestrichen] }), st({ ozTermine: [zurueck] }), {
-      type: 'ozSchichtAus',
-      terminId: 't1',
-      datum: '2026-09-09',
-      aus: false,
-    })
-    vi.runOnlyPendingTimers()
-    expect(data.saveOzTermine).toHaveBeenCalledWith('c1', [zurueck], [])
-    expect(data.saveOzEintraege).not.toHaveBeenCalled()
-  })
-
-  it('erst getippt, dann gestrichen: der Termin geht nur als Löschung hinaus', () => {
-    // Schriebe die Schicht ihn nach dem Löschen, stünde er wieder da.
-    const a = st({ ozTermine: [T1, T2] })
-    const b = st({ ozTermine: [{ ...T1, ort: 'B' }, T2] })
-    const c = st({ ozTermine: [T2] })
-    persist(a, b, { type: 'ozTerminUpdate', id: 't1', patch: { ort: 'B' } })
-    persist(b, c, { type: 'ozTerminRemove', id: 't1' })
-    vi.runOnlyPendingTimers()
-    expect(data.saveOzTermine).toHaveBeenCalledWith('c1', [], ['t1'])
+    expect(data.saveTrolleys).not.toHaveBeenCalled()
+    expect(data.saveWeek).not.toHaveBeenCalled()
   })
 })
 
@@ -892,28 +677,28 @@ describe('Weitere Pläne (T120, Phase 5)', () => {
  * dafür in einer Liste von Hand — die beiden aus T120 fehlten.
  */
 describe('Ansicht verlassen mitten im Tippen', () => {
-  const TERMIN = { id: 't1', wd: 3, von: '10:00', bis: '12:00', ort: 'M', plaetze: 2 }
+  const TROLLEY: Trolley = { id: 'tr1', name: 'T', ort: '', hinweis: '' }
   const PLAN = { id: 'pl', vorlage: 'saal' as const, name: '', von: '2026-09-07', bis: '2026-10-04', entwurf: true }
 
   it.each<AppAction>([
     { type: 'logout' },
     { type: 'navigate', screen: 'start' },
     { type: 'selectPerson', id: null },
-  ])('$type: Ort eines Termins und Name eines Plans gehen sofort hinaus', (verlassen) => {
-    const a = st({ ozTermine: [TERMIN], plaene: [PLAN] })
-    const b = st({ ozTermine: [{ ...TERMIN, ort: 'Ma' }], plaene: [PLAN] })
-    const c = st({ ozTermine: b.ozTermine, plaene: [{ ...PLAN, name: 'W' }] })
-    persist(a, b, { type: 'ozTerminUpdate', id: 't1', patch: { ort: 'Ma' } })
+  ])('$type: Name eines Trolleys und Name eines Plans gehen sofort hinaus', (verlassen) => {
+    const a = st({ trolleys: [TROLLEY], plaene: [PLAN] })
+    const b = st({ trolleys: [{ ...TROLLEY, name: 'Tr' }], plaene: [PLAN] })
+    const c = st({ trolleys: b.trolleys, plaene: [{ ...PLAN, name: 'W' }] })
+    persist(a, b, { type: 'trolleyAendern', id: 'tr1', patch: { name: 'Tr' } })
     persist(b, c, { type: 'wpPlanAendern', id: 'pl', patch: { name: 'W' } })
-    expect(data.saveOzTermine).not.toHaveBeenCalled()
+    expect(data.saveTrolleys).not.toHaveBeenCalled()
     expect(data.savePlaene).not.toHaveBeenCalled()
 
     persist(c, c, verlassen)
-    expect(data.saveOzTermine).toHaveBeenCalledWith('c1', c.ozTermine, [])
+    expect(data.saveTrolleys).toHaveBeenCalledWith('c1', c.trolleys)
     expect(data.savePlaene).toHaveBeenCalledWith('c1', c.plaene, [])
     // Und nichts geht danach ein zweites Mal hinaus.
     vi.runOnlyPendingTimers()
-    expect(data.saveOzTermine).toHaveBeenCalledTimes(1)
+    expect(data.saveTrolleys).toHaveBeenCalledTimes(1)
     expect(data.savePlaene).toHaveBeenCalledTimes(1)
   })
 })
@@ -1156,7 +941,7 @@ describe('Die Mock-Liste deckt jeden Schreibweg ab', () => {
     // `[^}]*`, nicht `[\s\S]*?`: Das faule Muster begann beim ersten
     // `import {` der Datei und schluckte alle Importe bis zu diesem — ein
     // einzelner Name aus einem anderen Modul galt dann als Import aus lib/data
-    // (5.10.2026, `ozGeaenderteSchichten` aus `data/zeugnis`).
+    // (5.10.2026, damals ein Helfer des öffentlichen Zeugnisgebens).
     const block = /import \{([^}]*)\} from '\.\.\/lib\/data'/.exec(quelle)?.[1]
     expect(block, 'Import-Block aus lib/data nicht gefunden — Muster nachziehen').toBeDefined()
     const namen = (block ?? '')
@@ -1992,7 +1777,7 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
     .filter((feld): feld is string => feld !== undefined && !(feld in NICHT_JE_FALL))
 
   it('der Ladeumfang ist gelesen, und jede Ausnahme gibt es dort', () => {
-    expect(DAUERHAFT).toEqual(expect.arrayContaining(['persons', 'fsRules', 'gruppenbesuche', 'ozTermine', 'ozEintraege']))
+    expect(DAUERHAFT).toEqual(expect.arrayContaining(['persons', 'fsRules', 'gruppenbesuche', 'trolleys', 'trolleyTermine']))
     expect(DAUERHAFT).not.toContain('weeks')
     const geladen = (/export interface HydratePayload \{([\s\S]*?)\n\}/.exec(roh(CONTEXT))?.[1] ?? '')
     const tot = Object.keys(NICHT_JE_FALL).filter((feld) => !new RegExp(`^\\s+${feld}\\??:`, 'm').test(geladen))
@@ -2001,10 +1786,11 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
 
   /**
    * Aktionen, die einen dauerhaften Teil setzen und trotzdem keinen Schreibweg
-   * brauchen — beide, weil sie **gelesene** Daten einsetzen statt neue zu
-   * erzeugen.
+   * brauchen — alle, weil sie **gelesene** Daten einsetzen statt neue zu
+   * erzeugen: Laden und Glocke aus der Datenbank, die Trolleys (T121) aus der
+   * Antwort der Function `trolley`, die schon geschrieben hat.
    */
-  const AUS_DER_DATENBANK = new Set(['hydrate', 'setNotifs'])
+  const AUS_DER_DATENBANK = new Set(['hydrate', 'setNotifs', 'trolleyTermin', 'trolleyEntfernt'])
 
   const faelle = (): Array<[string, string]> => reducerFaelle(roh(REDUCER))
 

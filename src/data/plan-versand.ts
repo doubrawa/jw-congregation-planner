@@ -160,21 +160,7 @@ export interface EntzogeneZusage {
   label: string
   /** Termin, kanonisch deutsch („Dienstag, 8. September · 19:00"). */
   datum: string
-  /**
-   * Warum der Platz weg ist, wo es nicht um die Person ging: Die Schicht im
-   * Zeugnisgeben **fällt aus** — gestrichen, auf einen anderen Wochentag gelegt
-   * oder ihr Termin gelöscht (5.10.2026). Die Nachricht heißt dann „Schicht
-   * fällt aus" statt „Zuteilung zurückgezogen".
-   */
-  grund?: 'ausfall'
 }
-
-/**
- * Eine Zeugnis-Schicht mit neuer Uhrzeit oder neuem Ort (5.10.2026) — für die
- * Person, die dort eingetragen ist. Dieselben Felder wie ein Entzug; `datum`
- * ist der **neue** Termin.
- */
-export type GeaenderteSchicht = Omit<EntzogeneZusage, 'grund'>
 
 /**
  * **Bestätigte** Zuteilungen, die zwischen zwei Ständen einer Woche
@@ -322,9 +308,6 @@ function platzNochDa(nachher: Week | undefined, key: string, fsLeer: boolean): b
   // die Nachricht lieber zurück als sie fälschlich zu unterdrücken.
   if (!teile) return true
   if (teile.art === 'fs') return !fsLeer
-  // Pläne ohne Zusammenkunft (öffentliches Zeugnisgeben) haben eigene Entzüge
-  // und kommen hier nicht vor — aber auch nicht wegfiltern, wenn doch.
-  if (!('tab' in teile)) return true
   if (!nachher) return false
   if (istAusgefallen(nachher, teile.tab)) return false
   // Zusätzliche Klasse: die Plätze der zweiten Reihe und ihr Ratgeber hängen
@@ -354,8 +337,8 @@ export function zuletztGesendet(sentLog: SentLog, weekStart: string): string | n
 
 /**
  * Der jüngste Zeitstempel im Versand-Tagebuch unter den Schlüsseln, die
- * `gehoert` annimmt — für die Woche wie für das Zeugnisgeben (`oz|`), einen
- * Plan ohne Woche. Stand bis zum 3.10.2026 dreimal als eigene Schleife da.
+ * `gehoert` annimmt — für die Woche wie für eine einzelne Zusammenkunft
+ * (`offene-plaetze.ts`). Stand bis zum 3.10.2026 dreimal als eigene Schleife da.
  */
 export function neuesterVersand(sentLog: SentLog, gehoert: (schluessel: string) => boolean): string | null {
   let neuster: string | null = null

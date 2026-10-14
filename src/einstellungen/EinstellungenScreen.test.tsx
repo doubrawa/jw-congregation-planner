@@ -39,6 +39,10 @@ function zeige(over: Partial<AppState> = {}) {
     persons: [person('p-a', 'Anna', 'Aal'), person('p-b', 'Bernd', 'Berg')],
     members: [{ userId: 'u1', email: '', personId: 'p-a', planner: true, zuteiler: false }],
     groups: [{ id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null }],
+    trolleys: [
+      { id: 'tr1', name: 'Trolley 1', ort: 'Depot', hinweis: '' },
+      { id: 'tr2', name: 'Trolley 2', ort: 'Saal', hinweis: '' },
+    ],
     services: [], weeks: [], fsWeeks: [], fsRules: [], absences: [],
     congLang: 'de', progLangs: ['en'],
     reminders: { first: 7, last: 0, repeat: true },
@@ -102,6 +106,7 @@ describe('Die Übersicht am Handy', () => {
     expect(wert(container, t.unterDerWoche)).toBe('Dienstag 19:00')
     expect(wert(container, t.amWochenende)).toBe('Sonntag 10:00')
     expect(wert(container, t.gruppenTitel)).toBe('1')
+    expect(wert(container, t.fsTrolleysTab)).toBe('2')
     expect(zeile(container, t.erinnerungenCard)?.querySelector('.klein-text')?.textContent).toBe(
       'Erste 7 Tage vorher, letzte am Tag',
     )
@@ -232,7 +237,9 @@ describe('Die Unteransichten am Handy', () => {
   it.each([
     [t.programmsprachen, t.programmsprachen],
     [t.hilfsdienste, t.hilfsdienste],
-    [t.gruppenTitel, t.gruppenTitel],
+    // Gruppen und Trolleys: zwei Zeilen, eine Unteransicht (`GGruppenStandorte`).
+    [t.gruppenTitel, t.gruppenUndTrolleys],
+    [t.fsTrolleysTab, t.gruppenUndTrolleys],
     [t.erinnerungenCard, t.erinnerungenCard],
   ])('„%s" öffnet sich mit Titel, und Zurück führt zur Übersicht', (name, kopf) => {
     const { container } = zeige()
@@ -295,13 +302,13 @@ describe('Am Desktop (`GDesktopEinstellungen`)', () => {
   it('links die Abschnitte, jeder mit dem, was gilt', () => {
     const { container } = zeige()
     expect(eintraege(container).map((e) => e.querySelector('.einst-nav-name')?.textContent)).toEqual([
-      t.versammlungCard, t.navZusammenkuenfte, t.hilfsdienste, t.gruppenTitel, t.mitteilungenUndErinnerungen,
+      t.versammlungCard, t.navZusammenkuenfte, t.hilfsdienste, t.gruppenUndTrolleys, t.mitteilungenUndErinnerungen,
       t.werPlant, t.importCard,
     ])
     const kurz = (name: string) => eintrag(container, name).querySelector('.klein-text')?.textContent
     expect(kurz(t.versammlungCard)).toBe('Nordheim · Deutsch, Englisch')
     expect(kurz(t.navZusammenkuenfte)).toBe('Dienstag 19:00 · Sonntag 10:00')
-    expect(kurz(t.gruppenTitel)).toBe('Gruppen: 1')
+    expect(kurz(t.gruppenUndTrolleys)).toBe('Gruppen: 1 · Trolleys: 2')
     expect(kurz(t.mitteilungenUndErinnerungen)).toBe('Erste 7 Tage vorher, letzte am Tag')
     expect(kurz(t.werPlant)).toBe('Personen: 1')
   })
@@ -338,10 +345,11 @@ describe('Am Desktop (`GDesktopEinstellungen`)', () => {
     expect(container.querySelector('.erin-zeitleiste')).not.toBeNull()
   })
 
-  it('die Gruppen stehen am Desktop als Tabelle (`GDesktopEinstellungen`)', () => {
+  it('Gruppen und Trolleys stehen am Desktop als Tabellen (`GDesktopEinstellungen`)', () => {
     const { container } = zeige()
-    fireEvent.click(eintrag(container, t.gruppenTitel))
-    expect(container.querySelector('.gruppen-kopf')).not.toBeNull()
-    expect(container.querySelectorAll('.gruppen-zeile')).toHaveLength(1)
+    fireEvent.click(eintrag(container, t.gruppenUndTrolleys))
+    expect(container.querySelectorAll('.einst-tabelle-kopf')).toHaveLength(2)
+    expect(container.querySelectorAll('.gruppen-tabelle .einst-tabelle-zeile')).toHaveLength(1)
+    expect(container.querySelectorAll('.trolleys-tabelle .einst-tabelle-zeile')).toHaveLength(2)
   })
 })

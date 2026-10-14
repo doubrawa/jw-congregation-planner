@@ -11,16 +11,14 @@ import {
   fremdeSlots,
   gruppenWahl,
   helferSchluessel,
-  montagDerWoche,
-  ozSchluessel,
   planAenderung,
   PROBE_KONTEN,
   qualifiziertFuer,
-  schichtInsLeere,
   slotSchluessel,
   stufenAnlage,
   t120Anlage,
   tagPlus,
+  trolleyAnlage,
   vortragAnlage,
   wochentag,
   zugangAus,
@@ -29,14 +27,10 @@ import {
 import { TEST_KONTEN } from './testversammlung-anlegen.mjs'
 import { helferKey, punktKey } from '../src/data/planning'
 import { isQualified, serviceQualKey } from '../src/data/helpers'
-import { montagVon } from '../src/data/meeting-dates'
-import { ozTaskKey } from '../src/data/zeugnis'
 import type { PartItem, Person } from '../src/data/types'
 import { pidsNachtragen } from '../src/data/namensbindung'
 import { nurZuteilungen } from '../supabase/functions/_shared/zuteilen-grenze.ts'
-import { schluesselTeile } from '../supabase/functions/_shared/aufgaben-schluessel.ts'
-import { kontoAufloeser } from '../supabase/functions/_shared/konten.ts'
-import { personDisplayName } from '../supabase/functions/_shared/planung.ts'
+import { ueberschneiden, zeitraumGueltig } from '../supabase/functions/_shared/trolley.ts'
 import { buildDemoWeeks, DEMO_PERSONS } from '../tests/testdaten/testdaten'
 
 /**
@@ -335,22 +329,15 @@ describe('Woher die Probe ihren Zugang nimmt', () => {
   })
 })
 
-describe('T120: Tage und Schlüssel wie in der App', () => {
+describe('Tage wie in der Datenbank', () => {
   /*
-    Dieselbe Gefahr wie beim Programmschlüssel oben: Ein Schlüssel, der um
-    einen Tag verrutscht, beträfe keinen Eintrag. Die Bestätigung des eigenen
-    Eintrags (18) schiene dann „ZU STRENG" abgewiesen, die fremde (17)
-    „abgewiesen — greift", und beides wäre nicht gemessen.
+    Gruppenbesuche, Vormerkungen und Treffpunkt-Wochen verlangen einen Montag
+    (`extract(isodow …) = 1`). Ein Tag, der um eins verrutscht, scheiterte an
+    der Datenbank — und die Probe hielte das für eine Abweisung über die Rechte.
   */
   const tage = (von: string, anzahl: number) => Array.from({ length: anzahl }, (_, i) => tagPlus(von, i))
 
-  it('der Montag der Woche ist derselbe wie in der App — ein Jahr lang, samt Zeitumstellung, und 2099', () => {
-    for (const tag of [...tage('2026-01-01', 366), ...tage('2098-12-25', 21)]) {
-      expect(montagDerWoche(tag), tag).toBe(montagVon(tag))
-    }
-  })
-
-  it('der Wochentag zählt wie oz_termine.wd: 0 ist Sonntag', () => {
+  it('der Wochentag zählt wie `extract(dow …)` in Postgres: 0 ist Sonntag', () => {
     expect(wochentag('2026-10-04')).toBe(0) // Sonntag
     expect(wochentag('2026-10-05')).toBe(1) // Montag
   })
@@ -360,12 +347,6 @@ describe('T120: Tage und Schlüssel wie in der App', () => {
       const montag = ersterMontagAb(tag)
       expect(wochentag(montag)).toBe(1)
       expect(montag >= tag && montag <= tagPlus(tag, 6), `${tag} → ${montag}`).toBe(true)
-    }
-  })
-
-  it('Zeugnisschlüssel wie ozTaskKey', () => {
-    for (const datum of ['2099-01-05', '2099-01-11', '2026-10-04', '2026-10-25']) {
-      expect(ozSchluessel(datum, 'z1')).toBe(ozTaskKey({ id: 'z1', datum }))
     }
   })
 })
@@ -400,26 +381,13 @@ describe('T120: einen Leseversuch bewerten', () => {
 
 describe('T120: die Anlage erfüllt die Regeln der Datenbank, die mit den Rechten nichts zu tun haben', () => {
   /*
-    Scheiterte eine Zeile an einer anderen Regel — falscher Wochentag, doppelt
-    in derselben Schicht, zwei Einträge auf einem Platz —, sähe das aus wie
-    eine Abweisung über die Rechte, und die Probe meldete „greift", ohne dort
-    gewesen zu sein.
+    Scheiterte eine Zeile an einer anderen Regel — ein Gruppenbesuch nicht am
+    Montag, zwei Einträge auf einem Platz —, sähe das aus wie eine Abweisung
+    über die Rechte, und die Probe meldete „greift", ohne dort gewesen zu sein.
   */
   const marke = 'PROBE-1'
   const a = t120Anlage({ marke, versammlung: 'c', tag0: ersterMontagAb('2099-01-01'), planerPid: 'p-planer', mitgliedPid: 'p-mitglied', gruppe: 'g1' })
-  const oz = [a.ozFremd, a.ozZugeteilt, a.ozFuerAndere, a.ozAlsZugeteilt, a.ozSelbst, a.ozOhneBereich]
   const eintraege = [...Object.values(a.eintraege).flat(), a.eintragVersuch]
-
-  it('jeder Zeugnis-Eintrag liegt am Wochentag seines Termins (sonst: oz_falscher_tag)', () => {
-    for (const e of oz) expect(wochentag(e.datum), e.id).toBe(a.termin.wd)
-  })
-
-  it('keine Person zweimal in derselben Schicht, keine Schicht über ihre Plätze', () => {
-    expect(new Set(oz.map((e) => `${e.datum}|${e.person_id}`)).size).toBe(oz.length)
-    for (const tag of new Set(oz.map((e) => e.datum))) {
-      expect(oz.filter((e) => e.datum === tag).length, tag).toBeLessThanOrEqual(a.termin.plaetze)
-    }
-  })
 
   it('Gruppenbesuche an einem Montag, dieselbe Gruppe nicht zweimal in einer Woche', () => {
     for (const b of [a.besuch!, a.besuchVersuch!]) expect(wochentag(b.woche)).toBe(1)
@@ -438,31 +406,17 @@ describe('T120: die Anlage erfüllt die Regeln der Datenbank, die mit den Rechte
   })
 
   it('jede Kennung trägt das Kennzeichen — daran findet das Aufräumen genau diese Zeilen', () => {
-    const ids = [a.termin, ...oz, ...Object.values(a.plaene), a.planVersuch, ...eintraege, a.besuch!, a.besuchVersuch!].map((z) => z.id)
+    const ids = [...Object.values(a.plaene), a.planVersuch, ...eintraege, a.besuch!, a.besuchVersuch!].map((z) => z.id)
     expect(ids.every((id) => id.startsWith(`${marke}-`))).toBe(true)
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  it('jeder Versuch des Mitglieds zielt auf genau eine Regel', () => {
-    // (13) fremde Person — „selbst" und Aufgabenbereich stimmen.
-    expect(a.ozFuerAndere).toMatchObject({ person_id: 'p-planer', selbst: true })
-    // (14) die eigene Person, nur ohne „selbst".
-    expect(a.ozAlsZugeteilt).toMatchObject({ person_id: 'p-mitglied', selbst: false })
-    // (16) beides richtig — es fehlt allein der Aufgabenbereich.
-    expect(a.ozOhneBereich).toMatchObject({ person_id: 'p-mitglied', selbst: true })
-    // (34) eine freie Woche des veröffentlichten Plans — abweisen kann nur
+  it('(34) zielt auf genau eine Regel: eine freie Woche des veröffentlichten Plans', () => {
+    // Sehen darf das Mitglied den Plan, die Woche ist frei — abweisen kann nur
     // noch die Schreib-Richtlinie.
     expect(a.eintragVersuch).toMatchObject({ plan_id: a.plaene.saal.id })
     expect(a.plaene.saal.entwurf).toBe(false)
     expect(a.eintraege.saal.map((e) => e.datum)).not.toContain(a.eintragVersuch.datum)
-  })
-
-  it('(19) ist der eigene Eintrag unter einem anderen Montag — nicht irgendein Schlüssel', () => {
-    const richtig = ozSchluessel(a.ozZugeteilt.datum, a.ozZugeteilt.id)
-    expect(a.ozFalscherMontag).not.toBe(richtig)
-    expect(a.ozFalscherMontag.split('|')[0]).toBe('oz')
-    expect(a.ozFalscherMontag.split('|')[2]).toBe(a.ozZugeteilt.id)
-    expect(wochentag(a.ozFalscherMontag.split('|')[1]!)).toBe(1)
   })
 
   it('ohne Gruppe gibt es keinen Gruppenbesuch — (11) und (12) bleiben dann ungemessen', () => {
@@ -597,8 +551,7 @@ describe('Rechte-Stufen: welche Gruppe die eigene ist und welche die fremde', ()
 describe('Rechte-Stufen: die Anlage — jeder Versuch trifft genau eine Regel', () => {
   const tag0 = ersterMontagAb('2099-01-01')
   const a = stufenAnlage({
-    marke: 'PROBE-1', versammlung: 'c', tag0, adminPid: 'p-admin', zuteilerPid: 'p-zuteiler', mitgliedPid: 'p-mitglied',
-    eigeneGruppe: 'g-eigen', fremdeGruppe: 'g-fremd',
+    marke: 'PROBE-1', versammlung: 'c', tag0, adminPid: 'p-admin', zuteilerPid: 'p-zuteiler', eigeneGruppe: 'g-eigen', fremdeGruppe: 'g-fremd',
   })
 
   /** Was ein Versuch an den Treffpunkten der Anlage ändert: `<Kennung>.<Feld>`. */
@@ -657,9 +610,7 @@ describe('Rechte-Stufen: die Anlage — jeder Versuch trifft genau eine Regel', 
     expect(new Set([a.besuch, verschoben, neu].map((b) => `${b.woche}|${b.grp}`)).size).toBe(3)
   })
 
-  it('Zeugnis und Pläne erfüllen die Regeln der Datenbank, die mit den Rechten nichts zu tun haben', () => {
-    expect(wochentag(a.ozPlaner.datum)).toBe(a.termin.wd)
-    expect(a.ozPlaner).toMatchObject({ person_id: 'p-mitglied', selbst: false, termin_id: a.termin.id })
+  it('die Pläne erfüllen die Regeln der Datenbank, die mit den Rechten nichts zu tun haben', () => {
     for (const e of [a.planEintrag, a.eintragVersuch]) {
       expect(wochentag(e.datum)).toBe(1)
       expect(e.datum >= a.plan.von && e.datum <= a.plan.bis, e.id).toBe(true)
@@ -671,7 +622,7 @@ describe('Rechte-Stufen: die Anlage — jeder Versuch trifft genau eine Regel', 
 
   it('alles liegt hinter den Wochen von T120 — die Treffpunkt-Woche ist ein Montag', () => {
     const t120 = t120Anlage({ marke: 'PROBE-1', versammlung: 'c', tag0, planerPid: 'p-admin', mitgliedPid: 'p-mitglied', gruppe: 'g-fremd' })
-    const spaetestens = [t120.ozOhneBereich.datum, t120.plaene.saal.bis, t120.besuch!.woche].sort().at(-1)!
+    const spaetestens = [t120.plaene.saal.bis, t120.besuch!.woche].sort().at(-1)!
     expect(wochentag(a.fsStart)).toBe(1)
     expect(a.fsStart > spaetestens).toBe(true)
     expect(a.besuch.woche >= a.fsStart).toBe(true)
@@ -679,8 +630,7 @@ describe('Rechte-Stufen: die Anlage — jeder Versuch trifft genau eine Regel', 
 
   it('jede Kennung trägt das Kennzeichen — daran findet das Aufräumen genau diese Zeilen', () => {
     const zeilen = [
-      ...a.treffpunkte, ...Object.values(a.regeln), a.besuch, a.besuchVersuche.neu, a.termin, a.ozPlaner, a.terminVersuch,
-      a.plan, a.planEintrag, a.eintragVersuch, a.planVersuch,
+      ...a.treffpunkte, ...Object.values(a.regeln), a.besuch, a.besuchVersuche.neu, a.plan, a.planEintrag, a.eintragVersuch, a.planVersuch,
     ]
     const ids = zeilen.map((z) => z.id)
     expect(ids.every((id) => id.startsWith('PROBE-1-'))).toBe(true)
@@ -689,24 +639,54 @@ describe('Rechte-Stufen: die Anlage — jeder Versuch trifft genau eine Regel', 
   })
 })
 
-describe('„Schicht geändert" ins Leere — (62) bis (64)', () => {
-  const montag = ersterMontagAb('2100-01-01')
-  const rumpf = schichtInsLeere('PROBE-1', montag)
-  const aenderung = rumpf.aenderungen[0]!
+describe('Trolleys: die Anlage erfüllt die Regeln, die mit den Rechten nichts zu tun haben', () => {
+  /*
+    Scheiterte ein Versuch an einer anderen Regel — eine Zeit außerhalb des
+    Rasters, der Trolley schon unterwegs, das Mitglied zur selben Zeit schon
+    eingetragen —, wiese ihn die Function mit `bad-request`, `belegt` oder
+    `doppelt` ab, der Trigger mit einem 400. Die Probe meldete „kaputt" statt
+    eines Urteils, und bei (71) fragte die Datenbank die Richtlinie gar nicht
+    erst. Gehalten an den Regeln der Function (`_shared/trolley.ts`), nicht
+    an einer Abschrift.
+  */
+  const marke = 'PROBE-1'
+  const a = trolleyAnlage({ marke, versammlung: 'c', tag0: ersterMontagAb('2099-01-01'), mitgliedPid: 'p-mitglied' })
+  /** Jeder Termin der Probe: (71) direkt in der Tabelle, (74) und (75) über die Function. */
+  const termine = [
+    { fall: '(71)', datum: a.direkt.datum, von: a.direkt.von, bis: a.direkt.bis },
+    { fall: '(74)', datum: a.ohneRecht.datum, von: a.ohneRecht.von, bis: a.ohneRecht.bis },
+    { fall: '(75)', datum: a.eigener.datum, von: a.eigener.von, bis: a.eigener.bis },
+  ]
 
-  it('der Schlüssel besteht die Prüfung von `send-plan` — sonst mäße die Gegenprobe (64) nur ein 400', () => {
-    expect(rumpf.action).toBe('zeugnis-geaendert')
-    expect(rumpf.aenderungen).toHaveLength(1)
-    expect(schluesselTeile(aenderung.taskKey)).toEqual({ art: 'oz', woche: montag, eintragId: 'PROBE-1-oz-leer' })
+  it('jede Zeit liegt im Raster der Function: 6 bis 22 Uhr, halbe Stunden, das Ende nach dem Anfang', () => {
+    for (const t of termine) expect(zeitraumGueltig(t.von, t.bis), t.fall).toBe(true)
   })
 
-  it('der Name findet kein Konto, auch wenn jede Person eines hat — eine offene Tür stellte nichts zu', () => {
-    const persons = DEMO_PERSONS.map((p) => ({ id: p.id, fn: p.fn, ln: p.ln }))
-    const konto = kontoAufloeser(persons.map((p, i) => ({ user_id: `u${i}`, person_id: p.id })), persons)
-    expect(konto(undefined, aenderung.name)).toBeUndefined()
-    // Gegenprobe am selben Auflöser: Ein echter Name findet sein Konto.
-    expect(konto(undefined, personDisplayName(persons[0]!.fn, persons[0]!.ln))).toBe('u0')
-    expect(aenderung.name).toContain('PROBE-1')
-    expect('pid' in aenderung).toBe(false)
+  it('jeder Termin an einem eigenen Tag im Jahr 2099 — kommt einer unerwartet durch, belegt er nichts für den nächsten', () => {
+    for (const t of termine) expect(t.datum.startsWith('2099-'), t.fall).toBe(true)
+    for (const x of termine) {
+      for (const y of termine) if (x !== y) expect(ueberschneiden(x, y), `${x.fall} und ${y.fall}`).toBe(false)
+    }
+  })
+
+  it('jeder am Trolley der Anlage, allein, mit „Partner gesucht" — so geht keine Mitteilung hinaus', () => {
+    for (const t of [a.ohneRecht, a.eigener]) expect(t, t.id).toMatchObject({ trolleyId: a.trolley.id, partner: null })
+    expect(a.direkt).toMatchObject({ trolley_id: a.trolley.id, partner_id: null, gemeinsam: false })
+  })
+
+  it('(71) trägt das Mitglied selbst ein, wie die Function es täte — abweisen kann allein die fehlende Schreib-Richtlinie', () => {
+    expect(a.direkt).toMatchObject({ congregation_id: 'c', person_id: 'p-mitglied' })
+  })
+
+  it('jeder Trolley hat einen Namen und eine eigene Kennung — sonst scheiterte (72) oder (73) an `btrim(name)` oder am Schlüssel', () => {
+    const trolleys = [a.trolley, ...Object.values(a.versuche)]
+    for (const t of trolleys) expect(t.name.trim(), t.id).not.toBe('')
+    expect(new Set(trolleys.map((t) => t.id)).size).toBe(trolleys.length)
+  })
+
+  it('jede Kennung trägt das Kennzeichen — daran findet das Aufräumen genau diese Zeilen', () => {
+    const ids = [a.trolley, ...Object.values(a.versuche), a.direkt, a.ohneRecht, a.eigener].map((z) => z.id)
+    expect(ids.every((id) => id.startsWith(`${marke}-`))).toBe(true)
+    expect(new Set(ids).size).toBe(ids.length)
   })
 })

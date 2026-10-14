@@ -30,9 +30,9 @@ import type {
   FsRule,
   Group,
   Gruppenbesuch,
-  OzEintrag,
-  OzTermin,
   PlanEintrag,
+  Trolley,
+  TrolleyTermin,
   WeitererPlan,
   Invite,
   Lang,
@@ -99,8 +99,8 @@ export interface HydratePayload {
   fsWeeks: FsInstance[][]
   gruppenbesuche: Gruppenbesuch[]
   vortraege: VorgemerkterVortrag[]
-  ozTermine: OzTermin[]
-  ozEintraege: OzEintrag[]
+  trolleys: Trolley[]
+  trolleyTermine: TrolleyTermin[]
   plaene: WeitererPlan[]
   planEintraege: PlanEintrag[]
   absences: Absence[]
@@ -205,12 +205,12 @@ export interface AppState {
    */
   vortraege: VorgemerkterVortrag[]
   /**
-   * Öffentliches Zeugnisgeben (T120, Phase 3): die wöchentlichen Termine und
-   * die Einträge der Personen in ihren Schichten (`data/zeugnis.ts`). Wie die
-   * Gruppenbesuche nicht an das Ladefenster der Wochen gebunden.
+   * Trolleys (T121, Phase 7): die der Versammlung und ihre Termine ab dem
+   * Montag dieser Woche (`data/trolleys.ts`). Termine ändert nur die Edge
+   * Function `trolley` (`lib/trolley.ts`); hier landet, was sie zurückgibt.
    */
-  ozTermine: OzTermin[]
-  ozEintraege: OzEintrag[]
+  trolleys: Trolley[]
+  trolleyTermine: TrolleyTermin[]
   /**
    * Weitere Pläne (T120, Phase 5): Ankündigungen ohne Zuteilung. Ein Mitglied
    * bekommt nur Veröffentlichtes (RLS); Planer alles.
@@ -383,25 +383,17 @@ export type AppAction =
   // Vorschau mit dem dann gültigen Stand neu (`data/vortragsplan.ts`).
   | { type: 'vortragsplanUebernehmen'; plan: Vortragsplan }
   /*
-   * Öffentliches Zeugnisgeben (T120, Phase 3). Termine pflegt der Planer; in
-   * die Schichten trägt er Personen ein — oder sie sich selbst
-   * (`ozEintragen`, nur mit dem Aufgabenbereich).
+   * Trolleys (T121, Phase 7). Die Trolleys pflegt der Admin; den neuen legt
+   * der Bildschirm mit seiner Kennung an, damit er ihn gleich öffnen kann.
+   * Entfernt wird erst, nachdem die Function `trolley` ihn samt Terminen
+   * gelöscht und den Eingetragenen Bescheid gesagt hat.
    */
-  | { type: 'ozTerminAdd' }
-  | { type: 'ozTerminUpdate'; id: string; patch: Partial<Omit<OzTermin, 'id'>> }
-  | { type: 'ozTerminRemove'; id: string }
-  // Eine Schicht fällt aus (`aus: true`) oder doch nicht — ihre Einträge gehen mit.
-  | { type: 'ozSchichtAus'; terminId: string; datum: string; aus: boolean }
-  // Sich selbst in eine Schicht eintragen — damit ist zugesagt.
-  | { type: 'ozEintragen'; terminId: string; datum: string }
-  // Der Planer teilt eine Person zu.
-  | { type: 'ozZuteilen'; terminId: string; datum: string; pid: string }
-  // Einen Eintrag entfernen — der Planer jeden, ein Verkündiger den eigenen
-  // (Absagen: der Platz wird frei, die Admins erfahren es).
-  | { type: 'ozAustragen'; id: string }
-  | { type: 'ozAutoAssign' }
-  // Alle künftigen, zugeteilten Einträge entfernen; Selbst-Eingetragene bleiben.
-  | { type: 'ozLeeren' }
+  | { type: 'trolleyAnlegen'; trolley: Trolley }
+  | { type: 'trolleyAendern'; id: string; patch: Partial<Omit<Trolley, 'id'>> }
+  | { type: 'trolleyEntfernt'; id: string }
+  // Was die Function `trolley` über einen Termin zurückgibt — wie er jetzt
+  // dasteht, oder `null`: Er ist weg. Ein Toast sagt, was geschehen ist.
+  | { type: 'trolleyTermin'; id: string; termin: TrolleyTermin | null; toast?: 'eingetragen' | 'dazu' | 'ausgetragen' }
   /*
    * Weitere Pläne (T120, Phase 5) — nur Planer. Die Kennung eines neuen Plans
    * vergibt der Bildschirm, damit er ihn gleich öffnen kann.

@@ -3,7 +3,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { aufgabenAbgeleitet, reducer } from './reducer'
 import type { AppState } from './context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
-import { FS_LEITER, OZ_DIENST } from '../../supabase/functions/_shared/zuteilungen.ts'
+import { FS_LEITER } from '../../supabase/functions/_shared/zuteilungen.ts'
 import { alsFreitext, makeTr } from '../i18n/translate'
 import { loadOverlay } from '../i18n/ui'
 
@@ -42,16 +42,6 @@ describe('Verhinderung aus einer englischen App', () => {
     expect(text).toContain(FS_LEITER)
     expect(text).not.toContain('conductor')
   })
-
-  it('öffentliches Zeugnisgeben', () => {
-    const s = englisch('p9', {
-      ozTermine: [{ id: 't1', wd: 3, von: '10:00', bis: '12:00', ort: 'Marktplatz', plaetze: 2 }],
-      ozEintraege: [{ id: 'e1', terminId: 't1', datum: '2026-09-09', pid: 'p9', selbst: true }],
-    })
-    const text = reducer(s, { type: 'declineTask', id: 'oz|2026-09-07|e1' }).notifs[0]!.text
-    expect(text).toContain(`${OZ_DIENST} · Mittwoch, 9. September`)
-    expect(text).not.toContain('Public witnessing')
-  })
 })
 
 /**
@@ -82,14 +72,5 @@ describe('Nachricht an den Planer', () => {
   it('ohne Nachricht — oder nur mit Leerzeichen — kein leeres Atom', () => {
     expect(absage()).toBe(absage('   '))
     expect(absage()).not.toMatch(/ · $/)
-  })
-
-  it('auch beim Zeugnisgeben', () => {
-    const s = englisch('p9', {
-      ozTermine: [{ id: 't1', wd: 3, von: '10:00', bis: '12:00', ort: 'Marktplatz', plaetze: 2 }],
-      ozEintraege: [{ id: 'e1', terminId: 't1', datum: '2026-09-09', pid: 'p9', selbst: true }],
-    })
-    const text = reducer(s, { type: 'declineTask', id: 'oz|2026-09-07|e1', nachricht: 'krank' }).notifs[0]!.text
-    expect(text).toMatch(new RegExp(` · ${alsFreitext('krank')}$`))
   })
 })

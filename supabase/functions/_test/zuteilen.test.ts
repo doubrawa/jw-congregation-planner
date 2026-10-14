@@ -93,6 +93,9 @@ const rest: Rest = {
   async patchIf(path, body): Promise<boolean> {
     return ((await this.patchZeilen(path, body)) ?? []).length > 0
   },
+  async zeilenSchreiben(method, path): Promise<null> {
+    throw new Error(`zuteilen schreibt nicht über zeilenSchreiben: ${method} ${path}`)
+  },
   async patchZeilen<T>(path: string, body: unknown): Promise<T[] | null> {
     aufrufe.push({ method: 'PATCH', path, body })
     if (aussetzer > 0) {
