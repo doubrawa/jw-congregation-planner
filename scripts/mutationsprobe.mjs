@@ -5727,6 +5727,20 @@ export const KATALOG = [
     ersetzen: "  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)",
   },
   {
+    id: "einstellungen-nur-geaendertes",
+    datei: "src/app/persist.ts",
+    regel: "Die Einstellungen der Versammlung schreiben nur, was die Aktion geändert hat — kein älterer Stand überschreibt fremde Änderungen.",
+    suchen: "  if (Object.keys(aenderung).length > 0) saveSettings(congId, aenderung)",
+    ersetzen: "  saveSettings(congId, { reminders: next.reminders, congLang: next.congLang, progLangs: next.progLangs, auxClass: next.auxClass })",
+  },
+  {
+    id: "stammdaten-nur-geaendertes",
+    datei: "src/app/persist.ts",
+    regel: "Die Stammdaten der Versammlung schreiben nur die geänderten Felder, gesammelt über die Tastenanschläge.",
+    suchen: "      const info = geaenderteFelder(prev.congregation, next.congregation)\n",
+    ersetzen: "      const info = next.congregation\n",
+  },
+  {
     id: "varianten-ueber-montag",
     datei: "src/app/reducer.ts",
     regel: "Nachgeladene Sprachvarianten finden ihre Woche über den Montag; gibt es sie nicht mehr, ändert sich nichts.",

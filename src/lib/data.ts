@@ -1708,48 +1708,59 @@ export function markNotificationsRead(congregationId: string, userId: string): v
   )
 }
 
-export function saveCongregationInfo(congregationId: string, info: Congregation): void {
+/**
+ * Stammdaten der Versammlung — **nur, was sich geändert hat** (15.10.2026).
+ *
+ * Hier gingen Name, Saal und alle vier Zeit-Spalten bei jeder Änderung
+ * hinaus. Zwei Admins, die zugleich Verschiedenes einstellten, überschrieben
+ * sich dabei still: Wer den Saal umbenannte, schrieb mit seinem älteren Stand
+ * die Zusammenkunftszeit zurück, die der andere eben geändert hatte. Die Zeiten
+ * bleiben eine Einheit — sie werden zusammen eingestellt.
+ */
+export function saveCongregationInfo(congregationId: string, info: Partial<Congregation>): void {
   if (!supabase) return
-  void run(
-    supabase
-      .from('congregations')
-      .update({
-        name: info.name,
-        hall: info.hall,
-        mid_wd: info.times.mid.wd,
-        mid_time: info.times.mid.time,
-        we_wd: info.times.we.wd,
-        we_time: info.times.we.time,
-      })
-      .eq('id', congregationId),
-  )
+  const spalten = {
+    ...(info.name !== undefined ? { name: info.name } : {}),
+    ...(info.hall !== undefined ? { hall: info.hall } : {}),
+    ...(info.times
+      ? { mid_wd: info.times.mid.wd, mid_time: info.times.mid.time, we_wd: info.times.we.wd, we_time: info.times.we.time }
+      : {}),
+  }
+  if (Object.keys(spalten).length === 0) return
+  void run(supabase.from('congregations').update(spalten).eq('id', congregationId))
+}
+
+/** Was sich an den Einstellungen der Versammlung geändert hat. */
+export interface EinstellungsAenderung {
+  reminders?: Reminders
+  congLang?: string
+  progLangs?: string[]
+  auxClass?: boolean
 }
 
 /**
- * Versammlungsweite Einstellungen (Erinnerungen, Sprachen, Zusätzliche Klasse).
+ * Versammlungsweite Einstellungen (Erinnerungen, Sprachen, Zusätzliche Klasse)
+ * — **nur, was sich geändert hat**, aus demselben Grund wie bei den
+ * Stammdaten: Wer die Erinnerung verstellte, schrieb sonst die Zusätzliche
+ * Klasse eines zweiten Admins mit seinem älteren Stand zurück.
  *
  * Bis zum 17. September 2026 gingen sie als ein JSONB-Objekt `settings` in eine
  * einzige Spalte. Jetzt sind es Spalten mit Typ und Grenzen — die Zusagen
  * „1..21 Tage" und „0..7 Tage" standen vorher nur im Eingabefeld.
  */
-export function saveSettings(
-  congregationId: string,
-  settings: { reminders: Reminders; congLang: string; progLangs: string[]; auxClass: boolean },
-): void {
+export function saveSettings(congregationId: string, aenderung: EinstellungsAenderung): void {
   if (!supabase) return
-  void run(
-    supabase
-      .from('congregations')
-      .update({
-        reminder_first: settings.reminders.first,
-        reminder_last: settings.reminders.last,
-        reminder_repeat: settings.reminders.repeat,
-        cong_lang: settings.congLang,
-        prog_langs: settings.progLangs,
-        aux_class: settings.auxClass,
-      })
-      .eq('id', congregationId),
-  )
+  const { reminders, congLang, progLangs, auxClass } = aenderung
+  const spalten = {
+    ...(reminders
+      ? { reminder_first: reminders.first, reminder_last: reminders.last, reminder_repeat: reminders.repeat }
+      : {}),
+    ...(congLang !== undefined ? { cong_lang: congLang } : {}),
+    ...(progLangs ? { prog_langs: progLangs } : {}),
+    ...(auxClass !== undefined ? { aux_class: auxClass } : {}),
+  }
+  if (Object.keys(spalten).length === 0) return
+  void run(supabase.from('congregations').update(spalten).eq('id', congregationId))
 }
 
 /** Bestätigung/Verhinderung einer Aufgabe (eigene Zeile je Nutzer+Slot). */

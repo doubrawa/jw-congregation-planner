@@ -1304,25 +1304,44 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     ])
   })
 
-  it('Erinnerungen/Sprache → saveSettings', () => {
-    for (const action of [
-      { type: 'changeReminder', key: 'first', delta: 1 },
-      { type: 'toggleReminderRepeat' },
-      { type: 'setCongLang', name: 'Englisch' },
-      { type: 'addProgLang', name: 'X' },
-      { type: 'removeProgLang', name: 'X' },
-    ] as AppAction[]) {
+  it('Einstellungen → saveSettings, nur was die Aktion geändert hat (15.10.2026)', () => {
+    // Bis zum 15.10.2026 gingen bei jeder Einstellung alle Spalten hinaus: Ein
+    // zweiter Admin mit älterem Stand schrieb so still zurück, was der erste
+    // eben geändert hatte (die Zusätzliche Klasse, die Programmsprachen …).
+    const vorher = st({ congLang: 'de', progLangs: ['en'], auxClass: false })
+    const faelle: Array<[AppAction, object]> = [
+      [{ type: 'changeReminder', key: 'first', delta: -1 }, { reminders: expect.anything() }],
+      [{ type: 'toggleReminderRepeat' }, { reminders: expect.anything() }],
+      [{ type: 'setCongLang', code: 'fr' }, { congLang: 'fr' }],
+      [{ type: 'addProgLang', code: 'es' }, { progLangs: ['en', 'es'] }],
+      [{ type: 'removeProgLang', code: 'en' }, { progLangs: [] }],
+      [{ type: 'setAuxClass', on: true }, { auxClass: true }],
+    ]
+    for (const [action, erwartet] of faelle) {
       vi.clearAllMocks()
-      persist(st(), st(), action)
-      expect(data.saveSettings).toHaveBeenCalledWith('c1', { reminders: expect.anything(), congLang: 'de', progLangs: [] })
+      persist(vorher, reducer(vorher, action), action)
+      expect(data.saveSettings, action.type).toHaveBeenCalledWith('c1', erwartet)
     }
+    // Ändert eine Aktion nichts, geht nichts hinaus.
+    vi.clearAllMocks()
+    const doppelt: AppAction = { type: 'addProgLang', code: 'en' }
+    persist(vorher, reducer(vorher, doppelt), doppelt)
+    expect(data.saveSettings).not.toHaveBeenCalled()
   })
 
-  it('updateCongregation schreibt gebündelt (Debounce)', () => {
-    persist(st(), st({ congregation: { name: 'Neu', hall: '', times: STANDARD_ZEITEN } }), { type: 'updateCongregation', patch: { name: 'Neu' } })
+  it('updateCongregation schreibt gebündelt (Debounce) — nur die geänderten Felder (15.10.2026)', () => {
+    const vorher = st()
+    const name: AppAction = { type: 'updateCongregation', patch: { name: 'Neu' } }
+    const mitName = reducer(vorher, name)
+    persist(vorher, mitName, name)
+    const saal: AppAction = { type: 'updateCongregation', patch: { hall: 'Saal' } }
+    persist(mitName, reducer(mitName, saal), saal)
     expect(data.saveCongregationInfo).not.toHaveBeenCalled()
     vi.advanceTimersByTime(600)
-    expect(data.saveCongregationInfo).toHaveBeenCalledWith('c1', { name: 'Neu', hall: '', times: STANDARD_ZEITEN })
+    // Beide Tipp-Änderungen in einem Schreibvorgang — aber ohne die Zeiten, die
+    // niemand angefasst hat.
+    expect(data.saveCongregationInfo).toHaveBeenCalledTimes(1)
+    expect(data.saveCongregationInfo).toHaveBeenCalledWith('c1', { name: 'Neu', hall: 'Saal' })
   })
 
   it('updateCongregation speichert die Wochen, deren Endzeit mitgewandert ist', () => {

@@ -308,6 +308,22 @@ describe('Update-Schreiber', () => {
       aux_class: false,
     })
   })
+
+  it('Stammdaten und Einstellungen schreiben nur die übergebenen Spalten (15.10.2026)', () => {
+    // Ein zweiter Admin mit älterem Stand schrieb sonst zurück, was der erste
+    // eben geändert hatte — hier gehen nur die Spalten der Änderung hinaus.
+    saveSettings('c1', { auxClass: true })
+    expect(chain.update).toHaveBeenCalledWith({ aux_class: true })
+    vi.clearAllMocks()
+    saveCongregationInfo('c1', { hall: 'Saal' })
+    expect(chain.update).toHaveBeenCalledWith({ hall: 'Saal' })
+    vi.clearAllMocks()
+    // Nichts zu ändern, nichts zu schreiben.
+    saveSettings('c1', {})
+    saveCongregationInfo('c1', {})
+    expect(chain.update).not.toHaveBeenCalled()
+  })
+
   it('saveMemberRow / saveInviteRechte — beide Rechte in derselben Zeile', () => {
     saveMemberRow({ userId: 'u1', email: '', personId: 'p1', planner: true, zuteiler: false })
     expect(chain.from).toHaveBeenCalledWith('members')

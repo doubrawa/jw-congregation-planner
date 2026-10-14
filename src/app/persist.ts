@@ -142,10 +142,32 @@ const weekSaves = createDebouncedWriter<string, { congId: string; week: Week; nu
   SAVE_DELAY,
   (_woche, { congId, week, nurZuteilen }) => saveWeek(congId, week, nurZuteilen),
 )
-const congSaves = createDebouncedWriter<'info', { congId: string; info: AppState['congregation'] }>(
+// Nur die geänderten Felder (`geaenderteFelder`) — gesammelt über die
+// Tastenanschläge, die neueste Fassung je Feld.
+const congSaves = createDebouncedWriter<'info', { congId: string; info: Partial<AppState['congregation']> }>(
   SAVE_DELAY,
   (_key, { congId, info }) => saveCongregationInfo(congId, info),
+  (alt, neu) => ({ ...neu, info: { ...alt.info, ...neu.info } }),
 )
+
+/** Die Felder, die sich zwischen zwei Ständen geändert haben (Referenzvergleich, eine Ebene). */
+function geaenderteFelder<T extends object>(vorher: T, nachher: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(nachher).filter(([k, v]) => vorher[k as keyof T] !== v),
+  ) as Partial<T>
+}
+
+/**
+ * Die Einstellungen der Versammlung — nur, was diese Aktion geändert hat
+ * (siehe `saveSettings`). Hat sie nichts geändert, geht nichts hinaus.
+ */
+function einstellungenSpeichern(congId: string, prev: AppState, next: AppState): void {
+  const aenderung = geaenderteFelder(
+    { reminders: prev.reminders, congLang: prev.congLang, progLangs: prev.progLangs, auxClass: prev.auxClass },
+    { reminders: next.reminders, congLang: next.congLang, progLangs: next.progLangs, auxClass: next.auxClass },
+  )
+  if (Object.keys(aenderung).length > 0) saveSettings(congId, aenderung)
+}
 /*
  * Treffpunkt-Zusagen, deren Löschen auf das gebündelte Schreiben ihrer Woche
  * wartet — je Woche (Kennung).
@@ -841,16 +863,13 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'setCongLang':
     case 'addProgLang':
     case 'removeProgLang':
-      saveSettings(congId, {
-        reminders: next.reminders,
-        congLang: next.congLang,
-        progLangs: next.progLangs,
-        auxClass: next.auxClass,
-      })
+      einstellungenSpeichern(congId, prev, next)
       break
-    case 'updateCongregation':
-      congSaves.schedule('info', { congId, info: next.congregation })
+    case 'updateCongregation': {
+      const info = geaenderteFelder(prev.congregation, next.congregation)
+      if (Object.keys(info).length > 0) congSaves.schedule('info', { congId, info })
       break
+    }
     case 'updateMember': {
       const member = next.members.find((m) => m.userId === action.userId)
       if (member) saveMemberRow(member)
