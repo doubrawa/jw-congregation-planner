@@ -80,7 +80,13 @@ export function DatePicker({ value, onChange, locale, min, max, placeholder, ari
       </button>
 
       {open && (
-        <div className="dp-pop" role="dialog" aria-label={ariaLabel}>
+        // **Steht der Wähler in einer Marke** (`BlattFeld`, eine `<label>`),
+        // gibt der Browser jeden Klick auf eine Fläche ohne eigenen Knopf —
+        // Monatstitel, Wochentage, die Fugen des Rasters — an das erste Feld der
+        // Marke weiter: an den Auslöser, der den Kalender wieder zuklappte
+        // (gemessen am 15.10.2026, Trolley eintragen). Ein Klick hier drin ist
+        // erledigt; die Knöpfe haben ihn da schon bekommen.
+        <div className="dp-pop" role="dialog" aria-label={ariaLabel} onClick={(e) => e.preventDefault()}>
           <div className="dp-head">
             <button type="button" className="dp-nav" aria-label={prevLabel} onClick={() => shift(-1)}>
               <Chevron dir="prev" />

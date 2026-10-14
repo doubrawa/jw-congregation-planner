@@ -237,3 +237,51 @@ describe('Der Datumswähler in anderen Sprachen', () => {
     expect(en[41]?.textContent).toBe(de[41]?.textContent)
   })
 })
+
+describe('Der Datumswähler in einer Marke (`BlattFeld`)', () => {
+  /*
+   * Gemessen am 15.10.2026 im Browser (Trolley eintragen): Ein Tipp auf den
+   * Monatstitel des offenen Kalenders schloss ihn. Die `<label>` um das Feld
+   * gibt jeden Klick auf eine Fläche ohne eigenen Knopf an ihr erstes Feld
+   * weiter — und das ist der Auslöser, der auf- und zuklappt.
+   */
+  const inMarke = () => {
+    const r = render(
+      <label>
+        <span className="marke">{t.trolleyTag}</span>
+        <DatePicker
+          value="2026-10-20"
+          onChange={vi.fn()}
+          locale="de-DE"
+          min="2026-10-15"
+          placeholder={t.datumPh}
+          ariaLabel={t.trolleyTag}
+          prevLabel={t.a11yPrevMonth}
+          nextLabel={t.a11yNextMonth}
+        />
+      </label>,
+    )
+    const offen = () => r.container.querySelector('.dp-pop') !== null
+    return { ...r, offen }
+  }
+
+  it.each([
+    ['den Monatstitel', '.dp-title'],
+    ['einen Wochentag', '.dp-weekdays span'],
+    ['das Raster zwischen den Tagen', '.dp-grid'],
+  ])('ein Tipp auf %s lässt den Kalender offen', (_was, wahl) => {
+    const { container, offen } = inMarke()
+    fireEvent.click(container.querySelector('.dp-field')!)
+    expect(offen()).toBe(true)
+    fireEvent.click(container.querySelector(wahl)!)
+    expect(offen()).toBe(true)
+  })
+
+  it('die Marke selbst öffnet ihn weiter — und ein Tag wählt und schließt', () => {
+    const { container, offen } = inMarke()
+    fireEvent.click(container.querySelector('.marke')!)
+    expect(offen()).toBe(true)
+    fireEvent.click([...container.querySelectorAll('.dp-day')].find((b) => b.textContent === '21')!)
+    expect(offen()).toBe(false)
+  })
+})

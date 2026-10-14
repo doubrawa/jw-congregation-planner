@@ -107,7 +107,7 @@
   min-height: 60px;
 }
 
-.week-arrow:disabled {
+.week-arrow[aria-disabled='true'] {
   opacity: 0.35;
   cursor: default;
 }

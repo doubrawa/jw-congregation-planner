@@ -141,7 +141,7 @@ describe('Kopf und Navigation', () => {
   it('am Rand steht die Navigation still', () => {
     const { container } = zeige()
     const pfeile = [...seite(container).querySelectorAll<HTMLButtonElement>('.week-arrow')]
-    expect(pfeile.every((b) => b.disabled)).toBe(true)
+    expect(pfeile.every((b) => b.getAttribute('aria-disabled') === 'true')).toBe(true)
   })
 
   it('zwei Karten: unter der Woche und Wochenende — mit Tag und Uhrzeit (T121)', () => {

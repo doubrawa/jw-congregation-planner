@@ -216,8 +216,19 @@ describe('Die Wochen-Navigation', () => {
   it('am Rand ist der jeweilige Pfeil gesperrt — er liefe ins Leere', () => {
     const { container } = nav(false, true)
     const pfeile = [...container.querySelectorAll<HTMLButtonElement>('.week-arrow')]
-    expect(pfeile[0]!.disabled).toBe(true)
-    expect(pfeile[1]!.disabled).toBe(false)
+    expect(pfeile[0]!.getAttribute('aria-disabled')).toBe('true')
+    expect(pfeile[1]!.getAttribute('aria-disabled')).toBe('false')
+  })
+
+  it('gesperrt per aria-disabled, nicht per disabled — der Fokus bleibt am Pfeil (15.10.2026)', () => {
+    // Wer mit der Tastatur bis zur letzten Woche blättert, sperrt den Pfeil
+    // unter dem eigenen Fokus. Ein `disabled` gab den Fokus an die Seite ab
+    // (im Browser gemessen), und der nächste Tab begann wieder oben.
+    const { container } = nav(false, false)
+    for (const pfeil of container.querySelectorAll<HTMLButtonElement>('.week-arrow')) {
+      expect(pfeil.disabled).toBe(false)
+      expect(pfeil.getAttribute('aria-disabled')).toBe('true')
+    }
   })
 
   it('ein gesperrter Pfeil löst auch beim Tippen nichts aus', () => {

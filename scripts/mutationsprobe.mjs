@@ -5726,6 +5726,20 @@ export const KATALOG = [
     suchen: "  try {\n    return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)\n  } catch {\n    return null\n  }",
     ersetzen: "  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)",
   },
+  {
+    id: "datumswaehler-in-marke",
+    datei: "src/components/DatePicker.tsx",
+    regel: "Ein Klick in den offenen Kalender (Monatstitel, Wochentage, Fugen) klappt ihn nicht zu, auch wenn er in einer Marke steht.",
+    suchen: ' onClick={(e) => e.preventDefault()}>',
+    ersetzen: '>',
+  },
+  {
+    id: "wochenpfeil-fokus-bleibt",
+    datei: "src/components/WeekNav.tsx",
+    regel: "Am Rand gesperrte Wochenpfeile behalten den Fokus — aria-disabled statt disabled.",
+    suchen: '      <GesperrterKnopf className="rund-knopf week-arrow" label={t.a11yPrevWeek} gesperrt={!canPrev} onTipp={onPrev}>\n        <Zeichen name="zurueck" />\n      </GesperrterKnopf>',
+    ersetzen: '      <button type="button" className="rund-knopf week-arrow" aria-label={t.a11yPrevWeek} disabled={!canPrev} onClick={onPrev}>\n        <Zeichen name="zurueck" />\n      </button>',
+  },
 ]
 
 /**
