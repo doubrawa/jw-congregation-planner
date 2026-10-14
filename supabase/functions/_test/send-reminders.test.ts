@@ -17,7 +17,7 @@ import { pushTexte, TITEL_TROLLEY } from '../send-reminders/texte.ts'
 import { alsFreitext } from '../_shared/i18n/freitext.ts'
 import { APP_LANGS } from '../../../src/i18n/langs'
 import { makeTr } from '../../../src/i18n/translate'
-import { filterWert, jsonRes, schreibZugriff } from './attrappe.ts'
+import { filterWert, jsonRes, likeMuster, passtAufMuster, schreibZugriff } from './attrappe.ts'
 
 /* ---- Fixture ------------------------------------------------------------- */
 
@@ -229,7 +229,14 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     if (!/[?&]persoenlich_at=not\.is\.null/.test(path)) return jsonRes([])
     return jsonRes(bescheidGegeben)
   }
-  if (path.startsWith('confirmations')) return jsonRes(confirmations)
+  if (path.startsWith('confirmations')) {
+    // Die Wochen-Präfixe werden ausgewertet: Ein Präfix, der danebenliegt,
+    // ließe eine Zusage weg — und die bestätigte Zuteilung würde erinnert.
+    // Ohne Filter bleibt es beim ganzen Bestand, wie in der Datenbank.
+    const muster = likeMuster(path, 'task_key')
+    if (muster.length === 0) return jsonRes(confirmations)
+    return jsonRes(confirmations.filter((c) => muster.some((m) => passtAufMuster(c.task_key, m))))
+  }
   if (path.startsWith('members')) return jsonRes(members)
   if (path.startsWith('persons')) return jsonRes(persons)
   if (path.startsWith('services')) return jsonRes(SERVICES)
@@ -411,6 +418,18 @@ describe('send-reminders: wer NICHT erinnert wird', () => {
   it('Gruppen-Dienste (Reinigung) lösen nichts aus', async () => {
     const r = await run()
     expect((r.preview ?? []).map((p) => p.body).join(' | ')).not.toMatch(/Reinigung/)
+  })
+
+  it('die Zusagen werden nur für die Wochen im Fenster gelesen — je Woche ihr Präfix (14.10.2026)', async () => {
+    // Die ganze Tabelle sprengte nach gut einem halben Jahr die Zeilengrenze
+    // von PostgREST (`max-rows`); was dahinter lag, fehlte still, und
+    // erinnert wurde, wer längst zugesagt hatte.
+    fsWeeks = [{ start: '2026-09-14', data: [] }]
+    await run()
+    const pfade = leseWege.filter((p) => p.startsWith('confirmations'))
+    expect(pfade.length).toBeGreaterThan(0)
+    for (const pfad of pfade) expect(likeMuster(pfad, 'task_key'), pfad).toHaveLength(1)
+    expect(pfade.flatMap((p) => likeMuster(p, 'task_key')).sort()).toEqual([`${WEEK_START}|*`, 'fs|2026-09-14|*'])
   })
 
   it('bestätigte und verhinderte Zuteilungen lösen nichts aus', async () => {

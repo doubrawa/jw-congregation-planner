@@ -64,7 +64,7 @@
 // (OHNE --no-verify-jwt — der Aufruf braucht ein gültiges Nutzer-Login.)
 // =============================================================================
 
-import { CORS, json, restKlient, wert } from '../_shared/rest.ts'
+import { CORS, json, restKlient, wert, zeilenJePraefix } from '../_shared/rest.ts'
 import { schluesselTeile, wochenPraefixe } from '../_shared/aufgaben-schluessel.ts'
 import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import { heuteUtc, type MeetingTimes, personDisplayName, zeitenAus, type ZeitenRow } from '../_shared/planung.ts'
@@ -470,31 +470,6 @@ async function nurEigeneTreffpunkte<T extends { taskKey: string }>(
     .map((x) => x.e)
 }
 
-/**
- * Zeilen einer `task_key`-Tabelle (`confirmations`, `assignment_log`), deren
- * Schlüssel mit einem der Präfixe beginnt — **nur, was gebraucht wird**.
- *
- * Beide Tabellen wurden hier je Knopfdruck ganz gelesen. Sie wachsen mit der
- * Zeit (gut 35 Plätze je Woche, und das Tagebuch wird nie aufgeräumt),
- * gebraucht werden aber immer nur ein paar Wochen. Nach ein paar Jahren holte
- * ein Druck Zehntausende Zeilen, um in dreißig davon nachzusehen.
- *
- * Je Präfix eine einfache `like`-Abfrage, parallel, statt eines `or=`: Ihre
- * Bedeutung ist ohne Nachschlagen in der PostgREST-Grammatik zu erkennen. Die
- * Präfixe tragen nur geprüfte Montage (`YYYY-MM-DD`), also weder `%` noch `_`,
- * die als Muster wirkten.
- */
-async function jePraefix<T>(cong: string, tabelle: string, spalten: string, praefixe: readonly string[]): Promise<T[]> {
-  const teile = await Promise.all(
-    praefixe.map((praefix) =>
-      rest.get<T[]>(
-        `${tabelle}?select=${spalten}&congregation_id=eq.${wert(cong)}` + `&task_key=like.${wert(`${praefix}*`)}`,
-      ),
-    ),
-  )
-  return teile.flat()
-}
-
 /** Eine Woche, wie „Plan senden" und „Jetzt erinnern" sie lesen (`wocheLesen`). */
 interface GeleseneWoche {
   week: Week
@@ -533,11 +508,12 @@ async function wocheLesen(cong: string, weekStart: string): Promise<GeleseneWoch
       console.error(`fs_weeks nicht lesbar: ${(err as Error).message}`)
       return [] as { start: string; data: FsInstance[] }[]
     }),
-    jePraefix<{ task_key: string; status: string }>(cong, 'confirmations', 'task_key,status', praefixe),
+    // Beide `task_key`-Tabellen nur für diese Woche (`zeilenJePraefix`).
+    zeilenJePraefix<{ task_key: string; status: string }>(rest, cong, 'confirmations', 'task_key,status', praefixe),
     rest.get<ServiceRow[]>(
       `services?select=key,name,count,groups&congregation_id=eq.${wert(cong)}&order=position.asc`,
     ),
-    jePraefix<{ task_key: string; name: string }>(cong, 'assignment_log', 'task_key,name', praefixe).catch((err) => {
+    zeilenJePraefix<{ task_key: string; name: string }>(rest, cong, 'assignment_log', 'task_key,name', praefixe).catch((err) => {
       // Fehlt das Tagebuch (Migration nicht eingespielt), würde ohne diesen
       // Fang gar nichts hinausgehen. Lieber senden — schlimmstenfalls eine
       // Wiederholung, nie ein Ausfall.

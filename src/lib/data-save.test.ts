@@ -410,15 +410,21 @@ describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
     expect(melder).not.toHaveBeenCalled()
   })
 
-  it('meldet auch fehlgeschlagene Edge-Function-Aufrufe (Einspringen)', async () => {
+  it('Einspringen, das der Server abweist, lädt nach — statt nur zu melden (14.10.2026)', async () => {
     // takeSubstitute ist der Fall, in dem ein stiller Fehlschlag am meisten
     // wehtut: der Aufrufer hat „Übernommen" gesehen, der Slot blieb unverändert.
+    // Bis zum 14.10.2026 kam nur die Meldung — und er stand weiter als
+    // eingesprungen da, wo längst ein anderer stand. Wie beim freien Platz.
     const melder = vi.fn()
+    const konflikt = vi.fn()
     setSchreibfehlerMelder(melder)
-    chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: null, error: { message: 'boom' } }))
+    setKonfliktMelder(konflikt)
+    chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: null, error: { message: 'slot-taken' } }))
     substituteTake('k1')
     await abwarten()
-    expect(melder).toHaveBeenCalledTimes(1)
+    expect(konflikt).toHaveBeenCalledTimes(1)
+    expect(melder).not.toHaveBeenCalled()
+    setKonfliktMelder(null)
   })
 
   it('ein freier Platz, den der Server abweist, lädt nach — statt nur zu melden (4.10.2026)', async () => {

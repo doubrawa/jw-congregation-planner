@@ -257,6 +257,15 @@ export interface ConfirmationRow {
   status: string
 }
 
+/** Eine Zeile des Versand-Tagebuchs (`assignment_log`), wie die App sie lädt. */
+interface SentLogRow {
+  task_key: string
+  name: string
+  sent_at: string
+  user_id: string | null
+  persoenlich_at: string | null
+}
+
 /**
  * Bestätigungs-Zeilen zur Karte `task_key → Status`.
  *
@@ -476,6 +485,51 @@ function fensterAnfang(juengste: string | undefined): string {
   return d.toISOString().slice(0, 10)
 }
 
+/**
+ * Zeilen je Seite — die Grenze, die PostgREST gehostet je Abfrage höchstens
+ * liefert (`max-rows`, Vorgabe von Supabase: 1000).
+ */
+const SEITE = 1000
+
+/** Eine Seite, wie supabase-js sie liefert; `count` nur mit `{ count: 'exact' }`. */
+interface Seite<T> {
+  data: T[] | null
+  error: Zeilenfehler | null
+  count?: number | null
+}
+
+/**
+ * **Alle Zeilen einer wachsenden Tabelle — nicht nur die erste Seite.**
+ *
+ * PostgREST liefert je Abfrage höchstens `max-rows` Zeilen, und zwar
+ * **still**: kein Fehler, kein Hinweis, nur weniger Zeilen. Die Zusagen
+ * wachsen mit jeder Woche um gut 35 und werden nie aufgeräumt; nach gut einem
+ * halben Jahr fiel damit ein beliebiger Teil weg, und ein bestätigter Platz
+ * stand wieder als offen da. Das Tagebuch sollte bis zu `SENT_LOG_LIMIT` Zeilen
+ * bringen und brachte nie mehr als 1000.
+ *
+ * Die Zählung (`count: 'exact'`) sagt, wann alles da ist — so stört auch eine
+ * kleinere Zeilengrenze nicht. `hoechstens` kappt bewusst (das Tagebuch: nur
+ * die jüngsten). Die Abfrage braucht eine **eindeutige** Sortierung, sonst
+ * verschieben sich die Seiten gegeneinander und eine Zeile fehlt oder kommt
+ * doppelt.
+ */
+async function alleSeiten<T>(
+  seite: (von: number, bis: number) => PromiseLike<Seite<T>>,
+  hoechstens = Number.POSITIVE_INFINITY,
+): Promise<{ data: T[]; error: Zeilenfehler | null }> {
+  const zeilen: T[] = []
+  for (;;) {
+    const von = zeilen.length
+    const { data, error, count } = await seite(von, Math.min(von + SEITE, hoechstens) - 1)
+    if (error) return { data: zeilen, error }
+    const neu = data ?? []
+    zeilen.push(...neu)
+    const gesamt = Math.min(count ?? zeilen.length, hoechstens)
+    if (neu.length === 0 || zeilen.length >= gesamt) return { data: zeilen, error: null }
+  }
+}
+
 export interface CongregationData {
   congregation: Congregation
   planner: boolean
@@ -527,6 +581,9 @@ export type LoadResult =
  */
 export async function loadCongregationData(userId: string): Promise<LoadResult> {
   if (!supabase) return { ok: false, reason: 'error', message: 'kein Client' }
+  // Für die Seiten-Abfragen unten: In einem Rückruf vergisst TypeScript, dass
+  // der importierte Client hier schon geprüft ist.
+  const db = supabase
 
   const { data: member, error: memberErr } = await supabase
     .from('members')
@@ -573,7 +630,16 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     supabase.from('absences').select('*').eq('congregation_id', congregationId).order('from_date'),
     // Dieselbe Abfrage, die auch das Nachladen beim Öffnen der Glocke benutzt.
     notifAbfrage(supabase, congregationId),
-    supabase.from('confirmations').select('task_key, status').eq('congregation_id', congregationId),
+    // Seitenweise (`alleSeiten`): Die Zusagen wachsen ohne Grenze.
+    alleSeiten<ConfirmationRow>((von, bis) =>
+      db
+        .from('confirmations')
+        .select('task_key, status', { count: 'exact' })
+        .eq('congregation_id', congregationId)
+        .order('task_key')
+        .order('user_id')
+        .range(von, bis),
+    ),
     // Nicht-Planer sehen per RLS nur die eigene Zeile bzw. keine Einladungen
     supabase.from('members').select('user_id, person_id, planner, zuteiler, email').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('invites').select('id, code, person_id, planner, zuteiler').eq('congregation_id', congregationId).is('redeemed_by', null).order('created_at'),
@@ -592,12 +658,19 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     // geladenen Wochen zählt, wurde zuletzt gemeldet und steht damit vorn.
     // Ohne `user_id` hat die Nachricht niemanden erreicht — die Zusagen der
     // Woche nennen diese Personen, und der Planer hakt ab (`persoenlich_at`).
-    supabase
-      .from('assignment_log')
-      .select('task_key, name, sent_at, user_id, persoenlich_at')
-      .eq('congregation_id', congregationId)
-      .order('sent_at', { ascending: false })
-      .limit(SENT_LOG_LIMIT),
+    // Seitenweise bis zur Grenze (`alleSeiten`): Eine Abfrage allein brachte
+    // nie mehr als die Zeilengrenze von PostgREST, ein Drittel davon.
+    alleSeiten<SentLogRow>(
+      (von, bis) =>
+        db
+          .from('assignment_log')
+          .select('task_key, name, sent_at, user_id, persoenlich_at', { count: 'exact' })
+          .eq('congregation_id', congregationId)
+          .order('sent_at', { ascending: false })
+          .order('id')
+          .range(von, bis),
+      SENT_LOG_LIMIT,
+    ),
     // Gruppenbesuche des Dienstaufsehers (T120) — alle, nicht nur das
     // Ladefenster: Ein Besuch darf in einer Woche liegen, die noch nicht
     // importiert ist. Es sind wenige (einer je Monat).
@@ -663,13 +736,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .find((r) => r.error)?.error
   if (firstErr) return { ok: false, reason: 'error', message: firstErr.message }
   if (sentLogRows.error) console.error('[assignment_log]', sentLogRows.error.message)
-  const tagebuch = (sentLogRows.data ?? []) as {
-    task_key: string
-    name: string
-    sent_at: string
-    user_id: string | null
-    persoenlich_at: string | null
-  }[]
+  const tagebuch = sentLogRows.data
   if (besuchRows.error) console.error('[gruppenbesuche]', besuchRows.error.message)
   // Ebenso die vorgemerkten Vorträge (T122).
   if (vortragRows.error) console.error('[vortraege]', vortragRows.error.message)
@@ -1431,12 +1498,20 @@ export function substituteSeek(taskKey: string): void {
  * setzt die Bestätigung und informiert Ursprungsperson + Planer. Nötig, weil
  * Wochen/Bestätigungen nur der Planer schreiben darf (RLS). Fire-and-forget —
  * der Client aktualisiert seinen Stand optimistisch.
+ *
+ * Scheitert es — ein anderer war schneller, das Gesuch ist erledigt, die
+ * Zusammenkunft fällt aus —, wird **nachgeladen** (`konfliktMelder`), wie
+ * beim Füllen eines freien Platzes. Bis zum 14.10.2026 stand hier `run()`: Es
+ * meldete einen Schreibfehler, und der Aufrufer stand trotzdem weiter als
+ * eingesprungen da, wo längst ein anderer stand — bis zum nächsten Laden.
  */
 export function substituteTake(taskKey: string): void {
   if (!supabase) return
-  // Über run(): scheitert die Übernahme, hat der Aufrufer sonst „Übernommen"
-  // gesehen, während der Slot serverseitig unverändert blieb.
-  void run(supabase.functions.invoke('substitute', { body: { action: 'take', taskKey } }))
+  void supabase.functions.invoke('substitute', { body: { action: 'take', taskKey } }).then(({ error }) => {
+    if (!error) return
+    console.error('[substitute/take]', error.message)
+    konfliktMelder?.()
+  })
 }
 
 /**

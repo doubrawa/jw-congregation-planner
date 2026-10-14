@@ -5690,6 +5690,42 @@ export const KATALOG = [
     suchen: "      ['das Trolley-Recht des Mitglieds', () => planer.rest(`persons?id=eq.${mitglied.pid}`, 'PATCH', { priv: privVorher }, 'return=minimal')],",
     ersetzen: "",
   },
+  // ── Repo-Review, Runde 1 (14.10.2026) ─────────────────────────────────────
+  {
+    id: "woche-schreiben-wurf-zweiter-versuch",
+    datei: "supabase/functions/_shared/woche-schreiben.ts",
+    regel: "Auch ein Netzfehler, der wirft, bekommt beim Schreiben einer Woche den zweiten Versuch.",
+    suchen: "    } catch (err) {\n      console.error('wocheSchreiben:', err instanceof Error ? err.message : String(err))\n      return null\n    }",
+    ersetzen: "    } catch (err) {\n      throw err\n    }",
+  },
+  {
+    id: "einspringen-stand-der-woche",
+    datei: "supabase/functions/substitute/index.ts",
+    regel: "Einspringen schreibt die Woche nur auf dem gelesenen Stand — was der Admin dazwischen ändert, bleibt stehen.",
+    suchen: "    const stand = weekRows[0]?.updated_at\n",
+    ersetzen: "    const stand = (await rest.get<{ updated_at: string }[]>(`weeks?select=updated_at&congregation_id=eq.${wert(cong)}&start=eq.${wert(parts.woche)}`))[0]?.updated_at\n",
+  },
+  {
+    id: "erinnerung-zusagen-je-woche",
+    datei: "supabase/functions/send-reminders/index.ts",
+    regel: "Der Erinnerungslauf liest die Zusagen nur der Wochen im Fenster, je Woche ihr Präfix — nicht die ganze Tabelle.",
+    suchen: "        [...weeks.map((w) => wochenPraefixe(w.start)[0]), ...fsWeeks.map((w) => wochenPraefixe(w.start)[1])],\n",
+    ersetzen: "        [''],\n",
+  },
+  {
+    id: "import-jahreswechsel",
+    datei: "supabase/functions/import-week/wochen-slug.ts",
+    regel: "Die Woche über den Jahreswechsel („28-Dezember-2026-3-Januar-2027“) wird erkannt, nicht übersprungen.",
+    suchen: "  for (const form of FORMEN) {",
+    ersetzen: "  for (const form of FORMEN.slice(1)) {",
+  },
+  {
+    id: "spanne-jahreswechsel-wirft-nicht",
+    datei: "supabase/functions/_shared/i18n/translate.ts",
+    regel: "Wirft formatRange bei einer Spanne über den Jahreswechsel, bleibt sie deutsch stehen, statt die Seite zu reißen.",
+    suchen: "  try {\n    return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)\n  } catch {\n    return null\n  }",
+    ersetzen: "  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)",
+  },
 ]
 
 /**

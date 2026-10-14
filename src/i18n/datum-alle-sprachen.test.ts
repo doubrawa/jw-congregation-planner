@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { APP_LANGS, LOCALES } from './langs'
 import { bibelbuecherLaden, makeTr } from './translate'
 import { buchTabelle } from '../../supabase/functions/_shared/i18n/bible-books.ts'
@@ -257,6 +257,33 @@ describe('Nichts wird zu „undefined"', () => {
       expect(() => tr(form), `${code}: ${form}`).not.toThrow()
       expect(tr(form), `${code}: ${form}`).not.toMatch(/undefined|NaN|Invalid Date/)
       expect(tr(form), `${code}: ${form}`).not.toBe('')
+    }
+  })
+})
+
+describe('Spanne über den Jahreswechsel in einer älteren Laufzeit', () => {
+  /*
+   * Über Intl formatiert der Übersetzer eine Spanne im festen Jahr 2025 — über
+   * den Jahreswechsel liegt das Ende dann vor dem Anfang. Aktuelle Laufzeiten
+   * nehmen das hin, ältere werfen nach der ersten Fassung von ECMA-402 einen
+   * `RangeError`, und zwar mitten im Rendern (T1). Nachgestellt: ein
+   * `formatRange`, das bei Ende vor Anfang wirft.
+   */
+  it('wirft formatRange, bleibt die Spanne deutsch stehen — statt die Seite zu reißen', () => {
+    const echt = Intl.DateTimeFormat.prototype.formatRange
+    const spion = vi
+      .spyOn(Intl.DateTimeFormat.prototype, 'formatRange')
+      .mockImplementation(function (this: Intl.DateTimeFormat, a, b) {
+        if (Number(a) > Number(b)) throw new RangeError('startDate is larger than endDate')
+        return echt.call(this, a, b)
+      })
+    try {
+      const tr = makeTr('ko')
+      expect(tr('31. Dezember–6. Januar')).toBe('31. Dezember–6. Januar')
+      // Gegenprobe: dieselbe Regel übersetzt weiter, wo nichts wirft.
+      expect(tr('7.–13. September')).not.toBe('7.–13. September')
+    } finally {
+      spion.mockRestore()
     }
   })
 })

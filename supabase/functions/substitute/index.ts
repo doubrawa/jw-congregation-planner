@@ -14,7 +14,7 @@
 //     (Woche wird aktualisiert), setzt seine Bestätigung, entfernt die alte
 //     Bestätigung und informiert Ursprungsperson + Planer (In-App + Push).
 //     Läuft mit Service-Role, weil Wochen/Bestätigungen nur der Planer schreibt.
-//     Der Slot wird bedingt geschrieben (409, wenn jemand schneller war).
+//     Die Woche wird bedingt geschrieben (409, wenn jemand schneller war).
 //
 //   { action: 'withdraw', taskKey }
 //     „Doch bestätigen" nach einer Absage: Das Gesuch ist erledigt, bevor
@@ -27,7 +27,7 @@
 //     und setzt seine Zusage; keine Mitteilung (Betreiber). `heute` ist der
 //     Kalendertag des Geräts — was davor liegt, ist vorbei.
 //
-// Alle drei Aktionen weisen eine **ausgefallene** Zusammenkunft ab (T30, 409
+// Alle vier Aktionen weisen eine **ausgefallene** Zusammenkunft ab (T30, 409
 // 'meeting-cancelled'): dort ist nichts zu vertreten. Die App zeigt solche
 // Aufgaben gar nicht erst an — hier landet nur, wer den Ausfall noch nicht
 // gesehen hat.
@@ -46,6 +46,7 @@
 // =============================================================================
 
 import { CORS, json, restKlient, wert } from '../_shared/rest.ts'
+import { wocheSchreiben } from '../_shared/woche-schreiben.ts'
 import { schluesselTeile } from '../_shared/aufgaben-schluessel.ts'
 import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import {
@@ -120,7 +121,7 @@ interface Absence {
  * Zusammenkunft, prüfte die Ersatzsuche die Abwesenheit am regulären Tag und
  * bot jemanden an, der am echten fehlt. Jetzt gilt `versatzMitAbweichung` aus
  * `_shared/planung.ts`, dieselbe Rangfolge wie im Client und in
- * send-reminders: Abweichung → eigener Termin im `date`-Feld → Rhythmus.
+ * send-reminders: Abweichung vor Rhythmus.
  */
 
 /** ISO-Tag der Zusammenkunft aus dem Wochenstart; null ohne Startdatum. */
@@ -332,8 +333,8 @@ Deno.serve(async (req: Request) => {
       ),
       // `start` aus der **Spalte**, nicht aus dem Blob (T66): die Kennung steht
       // dort, `data.start` ist nur noch Beifang und könnte jederzeit wegfallen.
-      rest.get<{ start: string; data: Week }[]>(
-        `weeks?select=start,data&congregation_id=eq.${wert(cong)}&start=eq.${wert(parts.woche)}`,
+      rest.get<{ start: string; data: Week; updated_at: string }[]>(
+        `weeks?select=start,data,updated_at&congregation_id=eq.${wert(cong)}&start=eq.${wert(parts.woche)}`,
       ),
       rest.get<{ key: string; name: string }[]>(
         `services?select=key,name&congregation_id=eq.${wert(cong)}`,
@@ -378,8 +379,8 @@ Deno.serve(async (req: Request) => {
      * ob sie aus dem Push oder aus dem Aufgaben-Blatt kam.
      *
      * `terminText` ist die Regel, nach der auch `send-reminders` und
-     * `send-plan` rechnen: eigener Termin im `date`-Feld vor gerechnetem Datum,
-     * eine Abweichung vor beidem.
+     * `send-plan` rechnen: der Tag aus Wochenstart und Versatz, eine
+     * Abweichung vor dem Rhythmus.
      */
     const date = terminText(
       weekRows[0]?.start ?? '',
@@ -530,21 +531,25 @@ Deno.serve(async (req: Request) => {
     )
     if (absagen.length === 0) return json({ error: 'not-sought' }, 409)
 
-    // Slot auf den Aufrufer umschreiben — aber nur, solange dort noch der
-    // Name steht, den wir gelesen haben. Sonst war jemand schneller; ohne
-    // diese Bedingung überschrieben sich zwei Übernahmen gegenseitig und der
-    // Zweite löschte danach die Bestätigung des Ersten.
+    /*
+     * Slot auf den Aufrufer umschreiben — aber nur, solange die Woche auf dem
+     * Stand ist, den wir gelesen haben (`_shared/woche-schreiben.ts`, wie beim
+     * Füllen eines freien Platzes und beim Zuteilen). Sonst war jemand
+     * schneller; ohne Bedingung überschrieben sich zwei Übernahmen gegenseitig,
+     * und der Zweite löschte danach die Bestätigung des Ersten.
+     *
+     * **Der Stand der ganzen Woche, nicht nur der Name im Platz.** Geschrieben
+     * wird die ganze gelesene Woche. Bis zum 14.10.2026 hing die Bedingung nur
+     * am Namen in diesem einen Platz: Zwei Übernahmen schlossen sich aus, aber
+     * was der Admin zwischen Lesen und Schreiben an derselben Woche änderte,
+     * schrieb die Übernahme mit dem gelesenen Stand still wieder zurück.
+     */
     slot.name = callerName
     slot.pid = callerPerson.id
-    // `originalName` ist hier nie leer (oben abgewiesen), der Filter also immer
-    // ein Namensvergleich.
-    const nameFilter = `data->${parts.tab}->helpers->${wert(parts.svc)}->${parts.pos}->>name`
-    const bedingung = `${nameFilter}=eq.${wert(`"${originalName}"`)}`
-    const geschrieben = await rest.patchIf(
-      `weeks?congregation_id=eq.${wert(cong)}&start=eq.${wert(parts.woche)}&${bedingung}`,
-      { data: week },
-    )
-    if (!geschrieben) return json({ error: 'slot-taken' }, 409)
+    const stand = weekRows[0]?.updated_at
+    if (!stand || !(await wocheSchreiben(rest, cong, parts.woche, stand, week))) {
+      return json({ error: 'slot-taken' }, 409)
+    }
 
     // Die Suche ist beendet: Die Zeilen „Ersatz gesucht" in den Glocken ALLER
     // Qualifizierten weg (T86). Sie standen dort sonst weiter, obwohl es nichts

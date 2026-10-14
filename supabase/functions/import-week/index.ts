@@ -23,6 +23,7 @@
 import { CORS, dienstSchluessel, json, mitDienstSchluessel, restKlient, wert } from '../_shared/rest.ts'
 import { applyGoldSlots, mitLiedNummer, parseWorkbookWeek, type ImportedWeek } from './parse.ts'
 import { articleTitle, MONTHS, songs, studyIssueSlugs, studySynopses } from './study.ts'
+import { wochenStart } from './wochen-slug.ts'
 import {
   gedaechtnismahlDatum,
   gedaechtnismahlWoche,
@@ -85,22 +86,6 @@ async function fetchText(url: string): Promise<string> {
   const text = await res.text()
   cache.set(url, { at: Date.now(), text })
   return text
-}
-
-/** Startdatum aus einem deutschen Wochen-Slug (…Zusammenkunft-6-12-Juli-2026). */
-function weekStart(url: string): Date | null {
-  const tail = decodeURIComponent((url.split('Zusammenkunft-')[1] || '').replace(/\/$/, ''))
-  const cross = tail.match(/^(\d+)-([A-Za-zäöü]+)-\d+-([A-Za-zäöü]+)-(\d{4})/)
-  if (cross) {
-    const mo = MONTHS[cross[2].toLowerCase()]
-    if (mo) return new Date(Date.UTC(Number(cross[4]), mo - 1, Number(cross[1])))
-  }
-  const same = tail.match(/^(\d+)-\d+-([A-Za-zäöü]+)-(\d{4})/)
-  if (same) {
-    const mo = MONTHS[same[2].toLowerCase()]
-    if (mo) return new Date(Date.UTC(Number(same[3]), mo - 1, Number(same[1])))
-  }
-  return null
 }
 
 /**
@@ -172,7 +157,7 @@ async function discoverWeeks(): Promise<Wocheneintrag[]> {
     const page = await fetchText(`${BASE}/de/bibliothek/jw-arbeitsheft/${p.slug}/`)
     const re = new RegExp(`/de/bibliothek/jw-arbeitsheft/${p.slug}/[^"'>]*Zusammenkunft-[^"'>]*`, 'g')
     for (const href of new Set([...page.matchAll(re)].map((m) => m[0]))) {
-      const start = weekStart(href)
+      const start = wochenStart(href)
       if (start) weeks.push({ start, url: `${BASE}${href}` })
     }
     // Danach, nicht davor: erst wenn die Seiten dieser Ausgabe stehen, ist zu

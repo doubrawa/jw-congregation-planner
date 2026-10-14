@@ -7,7 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
  * maybeSingle, einmal als Liste) → zwei Einträge in Reihenfolge.
  */
 const store = vi.hoisted(() => ({
-  responses: {} as Record<string, Array<{ data: unknown; error: unknown }>>,
+  /** Je Tabelle die Antworten in Reihenfolge; `count` nur bei Seiten-Abfragen (`count: 'exact'`). */
+  responses: {} as Record<string, Array<{ data: unknown; error: unknown; count?: number }>>,
   /** Mitgeschriebene Filter: `[Tabelle, Methode, Spalte, Wert]`. */
   filter: [] as Array<[string, string, string, unknown]>,
 }))
@@ -17,7 +18,7 @@ vi.mock('./supabase', () => ({
   supabase: { from: fromMock },
 }))
 
-import { loadCongregationData, WEEK_LIMIT } from './data'
+import { loadCongregationData, SENT_LOG_LIMIT, WEEK_LIMIT } from './data'
 import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 
 function chainFor(table: string) {
@@ -36,6 +37,11 @@ function chainFor(table: string) {
   // (und in der Sortierung), nicht mehr in einem `gte` aus einer Vorabfrage.
   chain.limit = (wert: unknown) => {
     store.filter.push([table, 'limit', '', wert])
+    return chain
+  }
+  // Ebenso die Seiten: Wachsende Tabellen kommen seitenweise (`alleSeiten`).
+  chain.range = (von: number, bis: number) => {
+    store.filter.push([table, 'range', '', [von, bis]])
     return chain
   }
   // Filter werden mitgeschrieben: seit T66 steckt im `gte` das Ladefenster, und
@@ -63,7 +69,7 @@ const serviceRow = { key: 'mik', name: 'Mikrofone', count: 2, priv: null, groups
 const groupRow = { id: 'g1', name: 'Gruppe 1', overseer_id: null, assistant_id: null, position: 0 }
 
 /** Alle Tabellen mit „normalen" Antworten füllen; einzelne per Argument überschreiben. */
-function seedResponses(over: Partial<Record<string, Array<{ data: unknown; error: unknown }>>> = {}) {
+function seedResponses(over: Partial<Record<string, Array<{ data: unknown; error: unknown; count?: number }>>> = {}) {
   store.responses = {
     members: [
       { data: { congregation_id: 'c1', person_id: 'p9', planner: true }, error: null },
@@ -111,6 +117,57 @@ describe('loadCongregationData', () => {
     expect(res.data.progLangs).toEqual(['en'])
     expect(res.data.confirmations['k1']).toBe('bestätigt')
     expect(res.empty).toBe(false)
+  })
+
+  /**
+   * **Seitenweise, was wächst** (14.10.2026). PostgREST liefert je Abfrage
+   * höchstens `max-rows` Zeilen (gehostet 1000) — still, ohne Fehler. Die
+   * Zusagen wachsen ohne Grenze: Ohne Seiten fiel nach gut einem halben Jahr
+   * ein beliebiger Teil weg, und ein bestätigter Platz stand wieder als offen
+   * da. Das Tagebuch sollte bis `SENT_LOG_LIMIT` bringen und brachte nie mehr
+   * als die Grenze.
+   */
+  describe('Seitenweise', () => {
+    /** Die Seiten, mit denen `table` abgefragt wurde. */
+    const seiten = (table: string): unknown[] =>
+      store.filter.filter(([t, m]) => t === table && m === 'range').map(([, , , wert]) => wert)
+
+    it('die Zusagen kommen über die Zeilengrenze hinweg vollständig an', async () => {
+      seedResponses({
+        confirmations: [
+          { data: [{ task_key: 'k1', status: 'bestätigt' }], error: null, count: 2 },
+          { data: [{ task_key: 'k2', status: 'verhindert' }], error: null, count: 2 },
+        ],
+      })
+      const res = await loadCongregationData('u1')
+      expect(res.ok).toBe(true)
+      if (!res.ok) return
+      expect(res.data.confirmations).toEqual({ k1: 'bestätigt', k2: 'verhindert' })
+      // Die zweite Seite beginnt hinter dem, was die erste wirklich brachte —
+      // auch wenn die Grenze kleiner ist als die erbetene Seite.
+      expect(seiten('confirmations')).toEqual([[0, 999], [1, 1000]])
+    })
+
+    it('ist alles da, folgt keine zweite Abfrage', async () => {
+      seedResponses()
+      await loadCongregationData('u1')
+      expect(seiten('confirmations')).toEqual([[0, 999]])
+    })
+
+    it('das Tagebuch kommt bis SENT_LOG_LIMIT, nicht weiter', async () => {
+      const zeilen = (n: number) =>
+        Array.from({ length: n }, (_, i) => ({ task_key: `k${i}`, name: 'N', sent_at: '2026-09-01T10:00:00Z', user_id: null, persoenlich_at: null }))
+      seedResponses({
+        assignment_log: [
+          { data: zeilen(1000), error: null, count: 5000 },
+          { data: zeilen(1000), error: null, count: 5000 },
+          { data: zeilen(1000), error: null, count: 5000 },
+          { data: zeilen(SENT_LOG_LIMIT - 3000), error: null, count: 5000 },
+        ],
+      })
+      await loadCongregationData('u1')
+      expect(seiten('assignment_log')).toEqual([[0, 999], [1000, 1999], [2000, 2999], [3000, SENT_LOG_LIMIT - 1]])
+    })
   })
 
   /**

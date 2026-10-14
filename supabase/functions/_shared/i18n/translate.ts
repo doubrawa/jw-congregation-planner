@@ -84,10 +84,23 @@ function intlWeekdayShort(locale: string, weekdayIdx: number): string {
   const d = findDateForWeekday(0, 1, weekdayIdx)
   return new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' }).format(d)
 }
-function intlRange(locale: string, d1: number, mo1: number, d2: number, mo2: number): string {
+/**
+ * Eine Wochenspanne ohne Jahr, im festen Jahr 2025 formatiert — `null`, wenn
+ * die Laufzeit sie nicht formatieren mag.
+ *
+ * Über den Jahreswechsel („31. Dezember–6. Januar") liegt das Ende dabei vor
+ * dem Anfang. Aktuelle Laufzeiten nehmen das hin; ältere werfen nach der
+ * ersten Fassung von ECMA-402 einen `RangeError` — mitten im Rendern, also der
+ * Totalausfall aus T1. Dann bleibt die Spanne eben deutsch stehen.
+ */
+function intlRange(locale: string, d1: number, mo1: number, d2: number, mo2: number): string | null {
   const a = new Date(Date.UTC(2025, mo1, d1))
   const b = new Date(Date.UTC(2025, mo2, d2))
-  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)
+  try {
+    return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)
+  } catch {
+    return null
+  }
 }
 
 type Rule = [RegExp, (m: RegExpMatchArray) => string]

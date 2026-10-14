@@ -46,7 +46,8 @@
 // Deploy:  npx supabase functions deploy send-reminders --no-verify-jwt
 // =============================================================================
 
-import { json, restKlient, wert } from '../_shared/rest.ts'
+import { json, restKlient, wert, zeilenJePraefix } from '../_shared/rest.ts'
+import { wochenPraefixe } from '../_shared/aufgaben-schluessel.ts'
 import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import {
   istAusgefallenFuer,
@@ -268,7 +269,7 @@ Deno.serve(async (req: Request) => {
       const zeiten = zeitenAus(cong)
       const [vonWoche, bisWoche] = wochenFenster(todayUTC, rem)
 
-      const [weeks, fsWeeks, confs, members, persons, services, subs] = await Promise.all([
+      const [weeks, fsWeeks, members, persons, services, subs] = await Promise.all([
         // Die Kennung kommt aus der Spalte, nicht aus dem Blob: Sie ist der
         // Primärschlüssel der Woche, der Blob trägt nur das Programm.
         klient.get<{ start: string; data: Week }[]>(
@@ -285,9 +286,6 @@ Deno.serve(async (req: Request) => {
           console.error(`fs_weeks nicht lesbar: ${(err as Error).message}`)
           return [] as { start: string; data: FsInstance[] }[]
         }),
-        klient.get<{ task_key: string; status: string }[]>(
-          `confirmations?select=task_key,status&congregation_id=eq.${wert(cong.id)}`,
-        ),
         klient.get<{ user_id: string; person_id: string | null; planner: boolean; zuteiler?: boolean }[]>(
           `members?select=user_id,person_id,planner,zuteiler&congregation_id=eq.${wert(cong.id)}`,
         ),
@@ -301,6 +299,23 @@ Deno.serve(async (req: Request) => {
           `push_subscriptions?select=id,user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${wert(cong.id)}`,
         ),
       ])
+      /*
+       * **Die Zusagen nur der Wochen im Fenster** — je Woche ihr Präfix, eine
+       * Zusammenkunfts-Woche `<Montag>|`, eine Treffpunkt-Woche `fs|<Montag>|`.
+       *
+       * Hier stand die ganze Tabelle der Versammlung. Sie wächst mit jeder
+       * Woche um gut 35 Zeilen und wird nie aufgeräumt; nach gut einem halben
+       * Jahr lag sie über der Zeilengrenze von PostgREST (`max-rows`,
+       * gehostet 1000), und was dahinter lag, fehlte still — erinnert wurde,
+       * wer längst zugesagt hatte.
+       */
+      const confs = await zeilenJePraefix<{ task_key: string; status: string }>(
+        klient,
+        cong.id,
+        'confirmations',
+        'task_key,status',
+        [...weeks.map((w) => wochenPraefixe(w.start)[0]), ...fsWeeks.map((w) => wochenPraefixe(w.start)[1])],
+      )
 
       // Trolley-Termine von morgen (T121). Fehlen die Tabellen (Schema nicht
       // eingespielt), erinnert der Lauf trotzdem an alles andere.

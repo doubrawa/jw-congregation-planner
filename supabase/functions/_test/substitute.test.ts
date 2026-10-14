@@ -130,6 +130,8 @@ interface Write {
 let handler: (req: Request) => Promise<Response>
 let authUser: string | null
 let week: unknown
+/** Stand der Woche (`updated_at`) — jede Änderung, auch die eines anderen, rückt ihn weiter. */
+let stand: string
 let writes: Write[]
 /** Vorhandene `verhindert`-Zeilen (Tabelle confirmations). */
 let absagen: { user_id: string; task_key: string }[]
@@ -160,16 +162,14 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   if (method !== 'GET') {
     const body = init?.body ? JSON.parse(String(init.body)) : undefined
     writes.push({ method, path, body })
-    // Bedingtes PATCH auf weeks nachbilden: der Filter `…->>name=eq."X"` darf
-    // nur greifen, solange im gespeicherten Slot noch X steht. Ohne diese
+    // Bedingtes PATCH auf weeks nachbilden: die Bedingung `updated_at=eq.<Stand>`
+    // darf nur greifen, solange die Woche auf diesem Stand ist. Ohne diese
     // Auswertung könnte der Vergleiche-und-Tausche im Test nie fehlschlagen.
-    const bedingt = /helpers->[^&]*->\d+->>name=(eq\.%22(.*?)%22|is\.null)/.exec(path)
-    if (method === 'PATCH' && path.startsWith('weeks') && bedingt) {
-      const erwartet = bedingt[2] === undefined ? null : decodeURIComponent(bedingt[2])
-      const aktuell = gespeicherterName()
-      if (erwartet !== aktuell) return jsonRes([]) // niemand getroffen → jemand war schneller
+    if (method === 'PATCH' && path.startsWith('weeks')) {
+      if (filterWert(path, 'updated_at') !== stand) return jsonRes([]) // jemand war schneller
       week = (body as { data: unknown }).data
-      return jsonRes([{ start: WI, data: week }])
+      stand = `${stand}+1`
+      return jsonRes([{ updated_at: stand }])
     }
     return new Response(null, { status: 204 })
   }
@@ -210,10 +210,13 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     // sie aus dem Blob — der Tag der Zusammenkunft (und damit die
     // Abwesenheitsprüfung) hing dadurch an einem Feld, das jederzeit wegfallen
     // kann. Ohne die Spalte hier bliebe der Fehler unbemerkt.
-    const antwort = jsonRes(pos === WI ? [{ start: WI, data: week }] : []) // andere Woche → gibt es nicht
+    const antwort = jsonRes(pos === WI ? [{ start: WI, data: week, updated_at: stand }] : []) // andere Woche → gibt es nicht
     if (pos === WI && konkurrent) {
+      // Der Konkurrent schreibt — und rückt damit den Stand weiter, wie die
+      // Datenbank bei jedem Schreiben.
       konkurrent()
       konkurrent = null
+      stand = `${stand}+fremd`
     }
     return antwort
   }
@@ -246,6 +249,7 @@ beforeAll(async () => {
 beforeEach(() => {
   authUser = U_ME
   week = freshWeek()
+  stand = '2026-09-01T10:00:00.000000+00:00'
   writes = []
   // Ausgangslage für „take": Otto steht im Slot und hat abgesagt. Ohne eine
   // solche Absage gibt es nichts zu übernehmen — genau das prüft die Function
@@ -411,10 +415,11 @@ describe('substitute: die Versammlung kommt nicht aus dem Rumpf', () => {
     await call(take({ congregationId: boese }))
 
     const patch = writesTo('weeks').find((w) => w.method === 'PATCH')!
-    // Die Woche und der erwartete Name müssen im Pfad ankommen, sonst trifft
-    // das PATCH mehr als den einen Platz.
+    // Die Woche und ihr gelesener Stand müssen im Pfad ankommen, sonst trifft
+    // das PATCH mehr als die eine Woche — oder überschreibt, was ein anderer
+    // inzwischen geschrieben hat.
     expect(patch.path).toContain(`start=eq.${WI}`)
-    expect(patch.path).toContain('->>name=eq.')
+    expect(filterWert(patch.path, 'updated_at')).not.toBeNull()
 
     // Beide DELETEs nennen die Aufgabe. Ohne diesen Filter löschen sie die
     // Bestätigungen bzw. Mitteilungen der ganzen Versammlung.
@@ -726,6 +731,22 @@ describe('substitute: zwei Übernahmen gleichzeitig', () => {
     const res = await call(take())
     expect(res.status).toBe(200)
     expect(gespeicherterName()).toBe('Ich Selbst')
+  })
+
+  it('ändert der Admin dieselbe Woche zwischen Lesen und Schreiben, bleibt seine Änderung stehen (14.10.2026)', async () => {
+    // Bis zum 14.10.2026 hing die Bedingung nur am Namen in diesem einen
+    // Platz: Die Übernahme schrieb die ganze gelesene Woche zurück — samt dem
+    // alten Stand jedes anderen Platzes, den der Admin gerade besetzt hatte.
+    type Wochenstand = { we: { helpers: Record<string, { name?: string }[]> } }
+    konkurrent = () => {
+      ;(week as Wochenstand).we.helpers[SVC] = [{ name: 'Paul Aner' }]
+    }
+    const res = await call(take())
+    expect(res.status).toBe(409)
+    await expect(res.json()).resolves.toEqual({ error: 'slot-taken' })
+    expect((week as Wochenstand).we.helpers[SVC]?.[0]?.name).toBe('Paul Aner')
+    expect(gespeicherterName()).toBe('Otto Riginal')
+    expect(writesTo('confirmations')).toEqual([])
   })
 })
 

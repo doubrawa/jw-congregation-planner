@@ -65,12 +65,6 @@ export function personDisplayName(fn: string, ln: string): string {
 const BLOCK_LABELS = new Set<string>(['ERÖFFNUNG', 'ABSCHLUSS'])
 
 /**
- * Beschriftung einer Zuteilung — Zweitschrift von `zuteilungsLabel`
- * (src/data/helpers.ts). Dort steht die Begründung; hier steht sie, weil die
- * Edge-Laufzeit nicht auf `src/` zugreifen kann. `edge-parity.test.ts` hält
- * beide Fassungen zusammen.
- */
-/**
  * Rolle und Herkunft als ein Text — Spiegelbild von `rolleMitHerkunft` in
  * `src/data/helpers.ts` (gegengeprüft in `edge-parity.test.ts`).
  *
@@ -83,6 +77,12 @@ export function rolleMitHerkunft(slot: { rolle?: string; herkunft?: string } | u
   return slot?.herkunft ? `${basis} · ${slot.herkunft}` : basis
 }
 
+/**
+ * Beschriftung einer Zuteilung — Zweitschrift von `zuteilungsLabel`
+ * (src/data/helpers.ts). Dort steht die Begründung; hier steht sie, weil die
+ * Edge-Laufzeit nicht auf `src/` zugreifen kann. `edge-parity.test.ts` hält
+ * beide Fassungen zusammen.
+ */
 export function zuteilungsLabel(
   sectionLabel: string,
   title: string,
@@ -288,9 +288,10 @@ export function versatzMitAbweichung(
  * **Der Termin einer Zusammenkunft als Text** — „Dienstag, 8. September · 19:00".
  *
  * Die eine Stelle, an der aus Wochenkennung, Wochentag und Uhrzeit ein Datum
- * wird; Gegenstück zu `meetingDateText` im Client, und dieselbe Rangfolge:
- * eigener Termin im `date`-Feld vor gerechnetem Datum, eine Abweichung vor
- * beidem.
+ * wird; Gegenstück zu `meetingDateText` im Client und wie dort **immer
+ * gerechnet** — den Versatz samt Abweichung bringt der Aufrufer mit
+ * (`versatzMitAbweichung`). Das `date`-Feld zählt nur, wo es kein lesbares
+ * Startdatum gibt.
  *
  * **Warum das Feld allein nicht reicht.** Importierte Wochen tragen im `date`
  * nur die Wochenspanne („7.–13. September") — die jw.org-Überschrift nennt

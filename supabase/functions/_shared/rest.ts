@@ -98,23 +98,14 @@ export interface Rest {
   send(method: string, path: string, body?: unknown): Promise<void>
   /**
    * Bedingtes PATCH: schreibt nur, wenn der Filter im Pfad noch zutrifft, und
-   * meldet zurück, ob dabei eine Zeile getroffen wurde.
-   *
-   * Das ist ein Vergleiche-und-Tausche in einer einzigen Anweisung — genau das
-   * fehlte beim Einspringen. Zwischen Lesen und Schreiben lag nichts: zwei
-   * gleichzeitige Übernahmen überschrieben sich, und der zweite Aufruf löschte
-   * anschließend sogar die Bestätigung des ersten.
+   * liefert die getroffenen Zeilen — `[]` bei verfehltem Filter, `null` bei
+   * einem Fehler. Das ist ein Vergleiche-und-Tausche in einer einzigen
+   * Anweisung (`_shared/woche-schreiben.ts`); welche Spalten zurückkommen,
+   * sagt ein `select=` im Pfad.
    *
    * `return=representation` ist der Weg, die Trefferzahl zu erfahren:
    * PostgREST liefert die geänderten Zeilen zurück, bei verfehltem Filter ein
    * leeres Array.
-   */
-  patchIf(path: string, body: unknown): Promise<boolean>
-  /**
-   * Wie `patchIf`, liefert aber die getroffenen Zeilen — `[]` bei verfehltem
-   * Filter, `null` bei einem Fehler. Gebraucht, wo der Aufrufer den **neuen
-   * Stand** braucht (`zuteilen`: der Client schreibt mit ihm weiter, T39);
-   * welche Spalten zurückkommen, sagt ein `select=` im Pfad.
    */
   patchZeilen<T>(path: string, body: unknown): Promise<T[] | null>
   /**
@@ -132,9 +123,9 @@ export function restKlient(supabaseUrl: string, serviceKey: string): Rest {
   const AUTH = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` }
   const ziel = (path: string): string => `${supabaseUrl}/rest/v1/${path}`
 
-  // Eine Funktion für alle Wege mit Rückmeldung, nicht über `this`: `patchIf`
-  // stünde sonst ohne seinen Bezug da, sobald jemand es aus dem Klienten
-  // herausnimmt.
+  // Eine Funktion für alle Wege mit Rückmeldung, nicht über `this`:
+  // `patchZeilen` stünde sonst ohne seinen Bezug da, sobald jemand es aus dem
+  // Klienten herausnimmt (`rest.patchZeilen` als Rückruf weitergereicht).
   async function zeilenSchreiben<T>(method: string, path: string, body?: unknown): Promise<T[] | null> {
     const res = await fetch(ziel(path), {
       method,
@@ -178,11 +169,6 @@ export function restKlient(supabaseUrl: string, serviceKey: string): Rest {
       if (!res.ok) console.error(`${method} ${path} ${res.status}: ${await res.text()}`)
     },
 
-    async patchIf(path, body): Promise<boolean> {
-      const rows = await patchZeilen<unknown>(path, body)
-      return rows !== null && rows.length > 0
-    },
-
     patchZeilen,
     zeilenSchreiben,
 
@@ -195,4 +181,37 @@ export function restKlient(supabaseUrl: string, serviceKey: string): Rest {
       return user.id ?? null
     },
   }
+}
+
+/**
+ * **Zeilen einer `task_key`-Tabelle** (`confirmations`, `assignment_log`),
+ * deren Schlüssel mit einem der Präfixe beginnt — nur, was gebraucht wird.
+ *
+ * Beide Tabellen wachsen ohne Grenze (gut 35 Plätze je Woche, aufgeräumt wird
+ * nie), gebraucht werden immer nur ein paar Wochen. Ganz gelesen holte eine
+ * Abfrage nach ein paar Jahren Zehntausende Zeilen — und schon nach gut einem
+ * halben Jahr mehr, als PostgREST je Abfrage überhaupt liefert (`max-rows`,
+ * gehostet 1000). Der Rest fällt dann still weg: kein Fehler, nur fehlende
+ * Zeilen, und ein bestätigter Platz gilt als offen.
+ *
+ * Je Präfix eine einfache `like`-Abfrage, parallel, statt eines `or=`: Ihre
+ * Bedeutung ist ohne Nachschlagen in der PostgREST-Grammatik zu erkennen. Die
+ * Präfixe tragen nur Montage (`YYYY-MM-DD`, `wochenPraefixe`), also weder `%`
+ * noch `_`, die als Muster wirkten.
+ */
+export async function zeilenJePraefix<T>(
+  rest: Rest,
+  cong: string,
+  tabelle: string,
+  spalten: string,
+  praefixe: readonly string[],
+): Promise<T[]> {
+  const teile = await Promise.all(
+    praefixe.map((praefix) =>
+      rest.get<T[]>(
+        `${tabelle}?select=${spalten}&congregation_id=eq.${wert(cong)}&task_key=like.${wert(`${praefix}*`)}`,
+      ),
+    ),
+  )
+  return teile.flat()
 }

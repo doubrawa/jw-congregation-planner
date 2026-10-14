@@ -64,6 +64,8 @@ let aufrufe: Aufruf[]
 let konkurrent: (() => void) | null
 /** So oft scheitert ein Schreibversuch, ohne dass jemand geschrieben hat — ein Aussetzer (Netz, Zeitüberschreitung). */
 let aussetzer: number
+/** Der Aussetzer wirft, statt mit einem Fehlerstatus zu antworten — ein abgebrochenes `fetch`. */
+let aussetzerWirft: boolean
 /** Läuft einmal nach einem Aussetzer — ein anderer schreibt genau zwischen erstem und zweitem Versuch. */
 let zwischendurch: (() => void) | null
 
@@ -90,9 +92,6 @@ const rest: Rest = {
   async send(method, path, body): Promise<void> {
     aufrufe.push({ method, path, body })
   },
-  async patchIf(path, body): Promise<boolean> {
-    return ((await this.patchZeilen(path, body)) ?? []).length > 0
-  },
   async zeilenSchreiben(method, path): Promise<null> {
     throw new Error(`zuteilen schreibt nicht über zeilenSchreiben: ${method} ${path}`)
   },
@@ -102,6 +101,7 @@ const rest: Rest = {
       aussetzer--
       zwischendurch?.()
       zwischendurch = null
+      if (aussetzerWirft) throw new Error('connection reset')
       return null
     }
     if (!path.startsWith('weeks') || filterWert(path, 'congregation_id') !== CONG) return []
@@ -122,6 +122,7 @@ beforeEach(() => {
   aufrufe = []
   konkurrent = null
   aussetzer = 0
+  aussetzerWirft = false
   zwischendurch = null
 })
 
@@ -231,6 +232,18 @@ describe('zuteilen: der Stand', () => {
     const patches = geschrieben().filter((a) => a.method === 'PATCH')
     expect(patches).toHaveLength(2)
     expect(patches.map((p) => filterWert(p.path, 'updated_at'))).toEqual([vorher, vorher])
+    expect(woche.mid.sections[0]!.items[0]!.names[0]).toMatchObject({ name: 'Paul Beispiel' })
+  })
+
+  it('auch ein Netzfehler, der wirft, bekommt den zweiten Versuch (14.10.2026)', async () => {
+    // Ein abgebrochenes `fetch` liefert keine Antwort, es wirft. Bis zum
+    // 14.10.2026 flog der Wurf an der Wiederholung vorbei: 500, der Client lud
+    // nach, und die Zuteilung des Planers war weg.
+    aussetzer = 1
+    aussetzerWirft = true
+    const res = await aufruf(U_PLANER, { woche: MONTAG, stand, data: zugeteilt() })
+    expect(res.status).toBe(200)
+    expect(geschrieben().filter((a) => a.method === 'PATCH')).toHaveLength(2)
     expect(woche.mid.sections[0]!.items[0]!.names[0]).toMatchObject({ name: 'Paul Beispiel' })
   })
 

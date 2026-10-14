@@ -24,6 +24,12 @@ import { type Rest, wert } from './rest.ts'
  * sobald beim Nachsehen noch der alte Stand dastand. Schrieb genau zwischen
  * Nachsehen und zweitem Versuch ein anderer, ging seine Änderung lautlos
  * verloren.
+ *
+ * **Auch ein Netzfehler zählt als verfehlter Versuch.** Ein abgebrochenes
+ * `fetch` wirft, statt eine Antwort zu liefern; bis zum 14.10.2026 flog der
+ * Wurf hier durch, an der Wiederholung vorbei, und die Function antwortete
+ * mit 500. Der Client lädt darauf genauso nach wie bei einem Konflikt — die
+ * Arbeit war weg, obwohl der zweite Versuch sie gerettet hätte.
  */
 export async function wocheSchreiben(
   rest: Rest,
@@ -35,7 +41,13 @@ export async function wocheSchreiben(
   const pfad =
     `weeks?congregation_id=eq.${wert(cong)}&start=eq.${wert(woche)}` +
     `&updated_at=eq.${wert(stand)}&select=updated_at`
-  const versuchen = async (): Promise<string | null> =>
-    (await rest.patchZeilen<{ updated_at: string }>(pfad, { data }))?.[0]?.updated_at ?? null
+  const versuchen = async (): Promise<string | null> => {
+    try {
+      return (await rest.patchZeilen<{ updated_at: string }>(pfad, { data }))?.[0]?.updated_at ?? null
+    } catch (err) {
+      console.error('wocheSchreiben:', err instanceof Error ? err.message : String(err))
+      return null
+    }
+  }
   return (await versuchen()) ?? versuchen()
 }

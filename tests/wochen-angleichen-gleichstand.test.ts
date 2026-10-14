@@ -20,7 +20,7 @@ vi.mock('../src/lib/supabase', () => ({
   supabase: {
     from: (tabelle: string) => {
       const kette: Record<string, unknown> = {}
-      for (const m of ['select', 'eq', 'gte', 'in', 'is', 'order', 'limit', 'maybeSingle']) kette[m] = () => kette
+      for (const m of ['select', 'eq', 'gte', 'in', 'is', 'order', 'limit', 'range', 'maybeSingle']) kette[m] = () => kette
       kette.then = (fertig: (v: unknown) => void) => fertig({ data: (antworten.je[tabelle] ?? []).shift() ?? null, error: null })
       return kette
     },

@@ -131,23 +131,20 @@ const rest: Rest = {
   async send(method, path, body): Promise<void> {
     aufrufe.push({ method, path, body })
   },
-  async patchIf(path, body): Promise<boolean> {
+  async patchZeilen<T>(path: string, body: unknown): Promise<T[] | null> {
     aufrufe.push({ method: 'PATCH', path, body })
     if (aussetzer > 0) {
       aussetzer--
       zwischendurch?.()
       zwischendurch = null
-      return false
+      return []
     }
-    if (!path.startsWith('weeks') || filterWert(path, 'congregation_id') !== CONG) return false
+    if (!path.startsWith('weeks') || filterWert(path, 'congregation_id') !== CONG) return []
     const bedingung = filterWert(path, 'updated_at')
-    if (bedingung !== null && bedingung !== stand) return false
+    if (bedingung !== null && bedingung !== stand) return []
     woche = (body as { data: Week }).data
     stand = `${stand}+1`
-    return true
-  },
-  async patchZeilen<T>(path: string, body: unknown): Promise<T[] | null> {
-    return (await this.patchIf(path, body)) ? ([{ updated_at: stand }] as T[]) : []
+    return [{ updated_at: stand }] as T[]
   },
   async zeilenSchreiben(method, path): Promise<null> {
     throw new Error(`Füllen schreibt nicht über zeilenSchreiben: ${method} ${path}`)
