@@ -5727,6 +5727,13 @@ export const KATALOG = [
     ersetzen: "  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)",
   },
   {
+    id: "alle-seiten-holt-weiter",
+    datei: "src/lib/data.ts",
+    regel: "Wachsende Tabellen kommen über die Zeilengrenze von PostgREST hinweg vollständig an — Seite für Seite.",
+    suchen: "    if (neu.length === 0 || zeilen.length >= gesamt) return { data: zeilen, error: null }",
+    ersetzen: "    return { data: zeilen, error: null }",
+  },
+  {
     id: "datumswaehler-in-marke",
     datei: "src/components/DatePicker.tsx",
     regel: "Ein Klick in den offenen Kalender (Monatstitel, Wochentage, Fugen) klappt ihn nicht zu, auch wenn er in einer Marke steht.",

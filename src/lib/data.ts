@@ -627,7 +627,17 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     // Versammlungsweit, nicht nur die eigenen: die Planung muss wissen, wer
     // fehlt (RLS erlaubt der Versammlung ohnehin das Lesen). „Deine Einträge"
     // im persönlichen Bereich filtert selbst auf die eigene user_id.
-    supabase.from('absences').select('*').eq('congregation_id', congregationId).order('from_date'),
+    // Seitenweise wie die Zusagen: Abwesenheiten werden nie aufgeräumt, und
+    // eine, die hinter der Zeilengrenze läge, bekäme der Planer nicht zu sehen.
+    alleSeiten<AbsenceRow>((von, bis) =>
+      db
+        .from('absences')
+        .select('*', { count: 'exact' })
+        .eq('congregation_id', congregationId)
+        .order('from_date')
+        .order('id')
+        .range(von, bis),
+    ),
     // Dieselbe Abfrage, die auch das Nachladen beim Öffnen der Glocke benutzt.
     notifAbfrage(supabase, congregationId),
     // Seitenweise (`alleSeiten`): Die Zusagen wachsen ohne Grenze.
@@ -710,13 +720,18 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       .order('von'),
     // Die Einträge **ohne** Datumsgrenze: Ein laufender Plan kann vor mehr als
     // einem Vierteljahr begonnen haben, und ein fehlender alter Eintrag sähe
-    // für die Verteilung wie ein freier Platz aus. Es sind wenige; was zu
-    // keinem geladenen Plan gehört, fällt unten heraus.
-    supabase
-      .from('plan_eintraege')
-      .select('id, plan_id, datum, grp')
-      .eq('congregation_id', congregationId)
-      .order('datum'),
+    // für die Verteilung wie ein freier Platz aus. Was zu keinem geladenen
+    // Plan gehört, fällt unten heraus. Seitenweise (`alleSeiten`): Ein Plan
+    // mit einer Zeile je Woche wächst mit jedem Jahr um gut fünfzig.
+    alleSeiten<PlanEintragRow>((von, bis) =>
+      db
+        .from('plan_eintraege')
+        .select('id, plan_id, datum, grp', { count: 'exact' })
+        .eq('congregation_id', congregationId)
+        .order('datum')
+        .order('id')
+        .range(von, bis),
+    ),
   ])
 
   // Alle dreizehn Abfragen prüfen, nicht zehn: fehlten fs_rules/fs_weeks in der

@@ -154,6 +154,21 @@ describe('loadCongregationData', () => {
       expect(seiten('confirmations')).toEqual([[0, 999]])
     })
 
+    it('auch Abwesenheiten und Plan-Einträge kommen seitenweise — beide werden nie aufgeräumt', async () => {
+      seedResponses({
+        absences: [
+          { data: [{ id: 'a1', person_id: 'p1', user_id: null, from_date: '2026-09-01', to_date: '2026-09-02', reason: '' }], error: null, count: 2 },
+          { data: [{ id: 'a2', person_id: 'p1', user_id: null, from_date: '2026-10-01', to_date: '2026-10-02', reason: '' }], error: null, count: 2 },
+        ],
+      })
+      const res = await loadCongregationData('u1')
+      expect(res.ok).toBe(true)
+      if (!res.ok) return
+      expect(res.data.absences.map((a) => a.id)).toEqual(['a1', 'a2'])
+      expect(seiten('absences')).toEqual([[0, 999], [1, 1000]])
+      expect(seiten('plan_eintraege')).toEqual([[0, 999]])
+    })
+
     it('das Tagebuch kommt bis SENT_LOG_LIMIT, nicht weiter', async () => {
       const zeilen = (n: number) =>
         Array.from({ length: n }, (_, i) => ({ task_key: `k${i}`, name: 'N', sent_at: '2026-09-01T10:00:00Z', user_id: null, persoenlich_at: null }))

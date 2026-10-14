@@ -1373,8 +1373,12 @@ create policy confirmations_write on public.confirmations
   );
 
 -- Beim Neu-Zuteilen den Status eines Platzes abräumen (alle Nutzer-Zeilen):
--- Admin und Planer überall, Gruppenaufseher bei den Treffpunkten, die sie
--- selbst besetzen.
+-- Admin und Planer überall, Gruppenaufseher bei den Treffpunkten — bei
+-- **allen**, nicht nur denen seiner Gruppe (Stand 15.10.2026). Welche Gruppe
+-- ein Schlüssel `fs|<Montag>|<Treffpunkt>` meint, steht nur in `fs_weeks`;
+-- eine Regel, die dort nachsieht und zu streng greift, ließe beim Umbesetzen
+-- die Zusage des alten Leiters stehen — der neue gälte still als bestätigt.
+-- Die App löscht nur Zusagen der Treffpunkte, die der Aufseher selbst ändert.
 drop policy if exists confirmations_delete_planner on public.confirmations;
 create policy confirmations_delete_planner on public.confirmations
   for delete using (
