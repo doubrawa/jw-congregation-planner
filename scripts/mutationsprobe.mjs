@@ -5727,6 +5727,13 @@ export const KATALOG = [
     ersetzen: "  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)",
   },
   {
+    id: "wischen-verlaesst-feld",
+    datei: "src/components/useSwipeWeek.ts",
+    regel: "Vor dem Blättern per Wischen wird ein Feld im Streifen verlassen — seine Eingabe übernimmt noch die alte Woche.",
+    suchen: "      if (aktiv instanceof HTMLElement && el.contains(aktiv)) aktiv.blur()\n",
+    ersetzen: "",
+  },
+  {
     id: "einstellungen-nur-geaendertes",
     datei: "src/app/persist.ts",
     regel: "Die Einstellungen der Versammlung schreiben nur, was die Aktion geändert hat — kein älterer Stand überschreibt fremde Änderungen.",

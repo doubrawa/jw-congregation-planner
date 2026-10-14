@@ -145,6 +145,17 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
      */
     const slide = (ziel: 'prev' | 'next') => {
       laeuft = true
+      /*
+       * **Erst das Feld verlassen, dann blättern** (Griff 35, gemessen am
+       * 15.10.2026). Die Freitextfelder einer Woche (Vortragsthema, Thema des
+       * Kreisaufsehers, Lieder) übernehmen beim Verlassen und tragen die Woche
+       * im Schlüssel: Beim Wechsel tauscht React sie aus, und das fokussierte
+       * verschwand ohne `blur` — wer tippte und dann wischte, verlor die
+       * Eingabe still. Verlassen wird, solange noch die alte Woche gilt. Die
+       * Pfeile brauchen das nicht: Der Tipp auf sie nimmt den Fokus mit.
+       */
+      const aktiv = document.activeElement
+      if (aktiv instanceof HTMLElement && el.contains(aktiv)) aktiv.blur()
       const richtung = ziel === 'prev' ? vorigeSeite() : -vorigeSeite()
       /*
        * Verschoben wird um die Breite des BILDSCHIRMS, nicht des Fensters. Die

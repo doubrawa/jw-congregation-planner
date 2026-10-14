@@ -170,6 +170,17 @@ function WeekHarness({ onPrev = () => {}, onNext = () => {}, canPrev = true, can
   return <section ref={ref} data-testid="screen" />
 }
 
+/** Ein Streifen mit einem Feld darin, das beim Verlassen übernimmt — wie das Vortragsthema. */
+function WeekMitFeld({ onNext, onBlur }: { onNext: () => void; onBlur: (wert: string) => void }) {
+  const ref = useRef<HTMLElement>(null)
+  useSwipeWeek(ref, { onPrev: () => {}, onNext, canPrev: true, canNext: true })
+  return (
+    <section ref={ref} data-testid="screen">
+      <input data-testid="feld" onBlur={(e) => onBlur(e.target.value)} />
+    </section>
+  )
+}
+
 describe('useSwipeWeek', () => {
   // Blättern läuft als Animation: hinaus, Woche wechseln, herein. Das Ergebnis
   // steht erst danach fest — deshalb hier simulierte Zeit.
@@ -177,6 +188,23 @@ describe('useSwipeWeek', () => {
   afterEach(() => vi.useRealTimers())
   /** Animation zu Ende laufen lassen. */
   const fertig = () => vi.advanceTimersByTime(600)
+
+  it('ein Feld im Streifen wird vor dem Blättern verlassen — die Eingabe geht nicht verloren (15.10.2026)', () => {
+    // Im Browser gemessen: Vortragsthema getippt, gewischt, zurückgewischt —
+    // das alte Thema stand wieder da. Das Feld trägt die Woche im Schlüssel und
+    // verschwand beim Wechsel ohne `blur`.
+    cleanup()
+    const reihenfolge: string[] = []
+    const r = render(
+      <WeekMitFeld onNext={() => reihenfolge.push('weiter')} onBlur={(wert) => reihenfolge.push(`verlassen:${wert}`)} />,
+    )
+    const feld = r.getByTestId('feld') as HTMLInputElement
+    feld.focus()
+    feld.value = 'Neues Thema'
+    swipe(r.getByTestId('screen'), [200, 300], [100, 300])
+    fertig()
+    expect(reihenfolge).toEqual(['verlassen:Neues Thema', 'weiter'])
+  })
 
   // Manche Tests prüfen beide Richtungen und rendern deshalb zweimal — vorher
   // abräumen, sonst liegen zwei Screens gleichzeitig im Dokument.
