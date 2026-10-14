@@ -19,7 +19,7 @@
  */
 import type { AppState } from '../../src/app/context'
 import { initialState } from '../../src/app/init'
-import { aufgabenAbgeleitet, namensStand } from '../../src/app/reducer'
+import { aufgabenAbgeleitet } from '../../src/app/reducer'
 import { asFontScale, asTheme, type FontScale } from '../../src/data/constants'
 import { fsLeiterBinden } from '../../src/data/fs'
 import { pidsNachtragen } from '../../src/data/namensbindung'
@@ -230,9 +230,6 @@ export function entwicklerStart(hash: string = location.hash): AppState {
     zuteiler: debug?.zuteiler ?? basis.zuteiler,
     personId: debug?.me ?? null,
     selectedPersonId: debug?.personId ?? null,
-    // Wie beim Öffnen über die Liste (`selectPerson`): Sonst spränge ein
-    // doppelter Name beim Verlassen nicht zurück (T110).
-    nameBeimOeffnen: namensStand(basis.persons.find((p) => p.id === debug?.personId)),
     staleAt: debug?.staleAt ?? null,
     // Liegt nichts vor (ohne `me=` keine eigenen Aufgaben), bleibt es zu —
     // die Ableitung prüft das (`vorzulegen`).

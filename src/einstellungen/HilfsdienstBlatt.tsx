@@ -99,7 +99,9 @@ export function HilfsdienstBlatt({ svcKey }: { svcKey: string }) {
         )}
       </div>
       <div className="hd-fuss">
-        <p className="klein-text">{t.hdEntfernenHinweis}</p>
+        {/* Ein Gruppen-Dienst hat keine Freigaben — und lässt sich nicht neu anlegen
+            (`HilfsdienstNeuBlatt` legt nur Dienste für Personen an). */}
+        <p className="klein-text">{service.groups ? t.hdEntfernenHinweisGruppen : t.hdEntfernenHinweis}</p>
         <div className="sheet-fuss-ende">
           {/* Ohne eigene Frage: Mit dem Dienst geht gespeicherte Planung —
               „Wirklich löschen?", nicht „entfernen" (`EntfernenKnopf`). */}

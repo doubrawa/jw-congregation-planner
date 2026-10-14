@@ -1069,14 +1069,11 @@ export function fsLeiterBinden(
  * Getroffen wird über die `lpid`; ohne sie (Altdaten) über den alten Namen —
  * dieselbe Rangfolge wie in `gehoertZu`. Unveränderte Wochen behalten ihre
  * Referenz, daran erkennt der Aufrufer, welche er speichern muss.
- *
- * `oldName: null` heißt **nur über die `lpid`** — wie bei `renameInWeeks`,
- * solange der alte oder der neue Name doppelt dasteht (T110).
  */
 export function fsRenameLeader(
   fsWeeks: FsInstance[][],
   id: string,
-  oldName: string | null,
+  oldName: string,
   newName: string,
 ): FsInstance[][] {
   // Ohne alten Namen nichts tun: sonst bekämen offene Plätze (leerer Leiter)

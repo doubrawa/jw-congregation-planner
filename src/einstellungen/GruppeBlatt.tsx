@@ -15,6 +15,7 @@ const FOLGE_TEXT = {
   mitglieder: 'gruppeDelMitglieder',
   treffpunkte: 'gruppeDelTreffpunkte',
   besuche: 'gruppeDelBesuche',
+  plaene: 'gruppeDelPlaene',
 } as const satisfies Record<GruppenFolge, keyof Dict>
 
 /**

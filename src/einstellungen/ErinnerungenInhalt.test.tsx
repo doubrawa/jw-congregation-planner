@@ -218,7 +218,7 @@ describe('Sofort gemeldet', () => {
     expect(titelDerZeilen.slice(1)).toEqual(['Substitute needed', 'Assignment withdrawn'])
   })
 
-  it('am Ende: E-Mails nur für Einladungen', () => {
+  it('am Ende: E-Mails nur für Einladungen und die Anmeldung — erinnert wird nie per E-Mail', () => {
     const { container } = zeige()
     expect(container.querySelector('.erin-fuss')?.textContent).toBe(t.erinMailNur)
   })

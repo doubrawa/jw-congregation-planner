@@ -180,4 +180,9 @@ describe('Ein Gruppen-Dienst (Reinigung)', () => {
     expect(container.querySelector('.lang-search')).toBeNull()
     expect(knopf(container, DE.hdEntfernen)).toBeDefined()
   })
+
+  it('der Hinweis vor dem Entfernen nennt keine Freigaben — und dass er nicht wiederkommt', () => {
+    const { container } = zeige({}, 'rein')
+    expect(container.querySelector('.hd-fuss .klein-text')?.textContent).toBe(DE.hdEntfernenHinweisGruppen)
+  })
 })

@@ -47,7 +47,7 @@ function zeige(over: Partial<AppState> = {}, tabelle = false) {
   const state: AppState = {
     ...demoZustand(),
     dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
-    persons: PERSONEN, groups: [GRUPPE_1], fsRules: [], fsWeeks: [], gruppenbesuche: [],
+    persons: PERSONEN, groups: [GRUPPE_1], fsRules: [], fsWeeks: [], gruppenbesuche: [], planEintraege: [],
     ...over,
   }
   function Buehne() {
@@ -236,13 +236,14 @@ describe('Gruppe entfernen', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'removeGroup', id: 'g1' })
   })
 
-  it('vorher steht da, was verloren geht: Zuordnung, Treffpunkte, Gruppenbesuche', () => {
+  it('vorher steht da, was verloren geht: Zuordnung, Treffpunkte, Gruppenbesuche, weitere Pläne', () => {
     oeffne({
       persons: [{ ...BRUDER, grp: 'g1' }, SCHWESTER],
       fsRules: [{ id: 'r1', grp: 'g1', wd: 6, time: '09:30', place: 'Saal', monthly: 0, skipCong: true }],
       gruppenbesuche: [{ id: 'b1', woche: '2026-11-09', grp: 'g1', pid: 'p-ae' }],
+      planEintraege: [{ id: 'e1', planId: 'p1', datum: '2026-11-02', grp: 'g1' }],
     })
-    expect(folgen()).toEqual([t.gruppeDelMitglieder, t.gruppeDelTreffpunkte, t.gruppeDelBesuche])
+    expect(folgen()).toEqual([t.gruppeDelMitglieder, t.gruppeDelTreffpunkte, t.gruppeDelBesuche, t.gruppeDelPlaene])
   })
 
   it('auch ein nur für eine Woche angelegter Treffpunkt der Gruppe wird genannt', () => {

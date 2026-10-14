@@ -35,13 +35,11 @@ export function normalizePriv(raw: Qualifications | null | undefined): Qualifica
  * müssen). Sprachvarianten (Week.alt) tragen keine Namen — nur die kanonische
  * Woche wird angefasst.
  *
- * `oldName: null` heißt **nur über die Id** (T110). So ruft es der Reducer,
- * solange der alte oder der neue Name doppelt dasteht: Ein doppelter Name sagt
- * nicht, wessen Platz es ist — ein Platz ohne Id, der ihn trägt, gehört ebenso
- * gut der anderen Person. Nach dem Laden trägt ohnehin jeder Platz einer
- * Person ihre Id (`pidsNachtragen`).
+ * Bis zur Phase 6b (T121) nahm sie auch `oldName: null` — nur über die Id, für
+ * einen Namen, der beim Tippen vorübergehend doppelt dastand (T110). Seither
+ * nimmt „Person bearbeiten" einen doppelten Namen gar nicht erst an.
  */
-export function renameInWeeks(weeks: Week[], id: string, oldName: string | null, newName: string): Week[] {
+export function renameInWeeks(weeks: Week[], id: string, oldName: string, newName: string): Week[] {
   // Leerer alter Name: nichts tun (sonst würden offene Slots mit leerem Namen
   // versehentlich mit-umbenannt). Ein zugeteilter Slot trägt immer einen Namen.
   if (oldName === '' || oldName === newName) return weeks

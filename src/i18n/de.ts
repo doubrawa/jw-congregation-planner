@@ -340,9 +340,13 @@ export const DE = {
     werDarfWas: 'Wer darf was?', bereicheBeiPerson: 'Aufgabenbereiche vergibst du bei der Person',
     hdEntfernen: 'Hilfsdienst entfernen',
     hdEntfernenHinweis: 'Mit dem Dienst gehen seine Plätze in allen Wochen und die Freigaben bei den Personen.',
+    // Für die Reinigung: Sie hat keine Freigaben, und neu anlegen lässt sich nur
+    // ein Dienst für Personen (`HilfsdienstNeuBlatt`).
+    hdEntfernenHinweisGruppen: 'Mit dem Dienst gehen seine Plätze in allen Wochen. Neu anlegen lässt sich ein Gruppen-Dienst nicht.',
     ohneGruppeN: 'Ohne Gruppe: {n}', ohneGruppeKurz: 'Bei der Person eine Gruppe wählen',
     gruppeBeiPerson: 'Wer zu welcher Gruppe gehört, legst du bei der Person fest.',
     gruppeWennEntfernt: 'Wenn du die Gruppe entfernst', gruppeDelBesuche: 'Ihre Gruppenbesuche entfallen.',
+    gruppeDelPlaene: 'In den weiteren Plänen bleiben ihre Zeiträume ohne Gruppe.',
     gruppeEntfernen: 'Gruppe entfernen',
     hdDesc: 'Die Zahl sagt, wie viele Plätze es je Zusammenkunft gibt. Die Reihenfolge gilt auch im Programm.',
     gruppenRotation: 'Gruppen-Rotation', eigenerBereich: 'Eigener Aufgabenbereich',
@@ -553,7 +557,9 @@ export const DE = {
     erinSofortGemeldet: 'Sofort gemeldet', erinAbsage: 'Absage', erinAnPlaner: 'an Admins und Planer',
     erinErsatzAn: 'nur bei Hilfsdiensten: an alle mit diesem Aufgabenbereich, die an dem Tag nicht abwesend sind',
     erinEntzugAn: 'an die Person, wenn sie schon zugesagt hatte',
-    erinMailNur: 'E-Mails verschickt die App nur für Einladungen.',
+    // Auch das Anmelden verschickt welche (Supabase: Bestätigung, neues Kennwort;
+    // ab Phase 8 der Link) — erinnert wird dagegen nie per E-Mail.
+    erinMailNur: 'E-Mails verschickt die App nur für Einladungen und die Anmeldung.',
     coWoche: 'Besuch des Kreisaufsehers',
     memWoche: 'Gedächtnismahl',
     kongress: 'Kongress',
@@ -616,7 +622,6 @@ export const DE = {
     // Toasts, wenn man das Detail mit dieser Meldung verlässt: Der Name springt
     // auf den Stand beim Öffnen zurück, eine neue Person wird nicht angelegt.
     toastNameNichtGeaendert: 'Name nicht geändert: {name} gibt es schon',
-    toastNichtAngelegt: 'Nicht angelegt: {name} gibt es schon',
     // Predigtdienstgruppe löschen (Zwei-Tipp-Bestätigung) und Warnung „ohne Gruppe"
     loeschenSicher: 'Wirklich löschen?',
     // Dasselbe für das, was nur herausgenommen wird (`EntfernenKnopf`): eine

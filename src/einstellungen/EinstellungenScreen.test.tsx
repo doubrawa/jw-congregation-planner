@@ -314,6 +314,14 @@ describe('Am Desktop (`GDesktopEinstellungen`)', () => {
     expect(zeile(container, t.programmsprachen)).toBeUndefined()
   })
 
+  it('der Titel steht einmal — als Überschrift des Abschnitts, nicht noch einmal über der Karte', () => {
+    const { container } = zeige()
+    for (const name of [t.versammlungCard, t.navZusammenkuenfte, t.werPlant, t.importCard]) {
+      fireEvent.click(eintrag(container, name))
+      expect(titel(container), name).not.toContain(name)
+    }
+  })
+
   it('ein Tipp wählt einen anderen Abschnitt', () => {
     const { container } = zeige()
     fireEvent.click(eintrag(container, t.navZusammenkuenfte))

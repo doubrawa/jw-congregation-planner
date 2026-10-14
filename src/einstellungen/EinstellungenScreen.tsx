@@ -127,18 +127,19 @@ function EinstellungenDesktop() {
     programm: geladenBis ? fill(t.geladenBis, { datum: geladenBis }) : t.geladenNichts,
   }
   const inhalt: Record<Abschnitt, () => ReactNode> = {
+    // Ohne Kartentitel, wo er dem des Abschnitts gleicht — sonst stünde er zweimal da.
     versammlung: () => (
       <>
-        <VersammlungKarte />
+        <VersammlungKarte mitTitel={false} />
         <SprachenInhalt />
       </>
     ),
-    zusammenkuenfte: () => <ZusammenkuenfteKarte />,
+    zusammenkuenfte: () => <ZusammenkuenfteKarte mitTitel={false} />,
     hilfsdienste: () => <HilfsdiensteInhalt />,
     gruppen: () => <GruppenInhalt tabelle />,
     erinnerungen: () => <ErinnerungenInhalt />,
-    werPlant: () => <WerPlantKarte />,
-    programm: () => <ProgrammKarte />,
+    werPlant: () => <WerPlantKarte mitTitel={false} />,
+    programm: () => <ProgrammKarte mitTitel={false} />,
   }
   return (
     <div className="einst-raster">
@@ -176,8 +177,10 @@ function sprachenText(congLang: string, progLangs: readonly string[], lang: Para
  * **Versammlung**: Name und Königreichssaal — je ein Blatt — und am Handy die
  * Programmsprachen als Unteransicht. Am Desktop stehen die Sprachen gleich
  * darunter (`SprachenInhalt`).
+ *
+ * `mitTitel`: Am Desktop steht der Titel schon über dem Abschnitt.
  */
-function VersammlungKarte({ onSprachen }: { onSprachen?: () => void }) {
+function VersammlungKarte({ onSprachen, mitTitel = true }: { onSprachen?: () => void; mitTitel?: boolean }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
   const [blatt, setBlatt] = useState<'name' | 'saal' | null>(null)
@@ -185,7 +188,7 @@ function VersammlungKarte({ onSprachen }: { onSprachen?: () => void }) {
   const feld = blatt === 'saal' ? 'hall' : 'name'
   return (
     <section className="karte einst-karte">
-      <h2 className="abschnitt-titel karte-titel">{t.versammlungCard}</h2>
+      {mitTitel && <h2 className="abschnitt-titel karte-titel">{t.versammlungCard}</h2>}
       <EinstellZeile name={t.nameLbl} wert={state.congregation.name} eigen onTipp={() => setBlatt('name')} />
       <EinstellZeile name={t.saal} wert={state.congregation.hall} eigen onTipp={() => setBlatt('saal')} />
       {onSprachen && (
@@ -211,8 +214,10 @@ function VersammlungKarte({ onSprachen }: { onSprachen?: () => void }) {
  * **Zusammenkünfte**: wann sie sind (je ein Blatt), die zusätzliche Klasse —
  * und am Handy die Hilfsdienste als Unteransicht; am Desktop sind sie ein
  * eigener Abschnitt.
+ *
+ * `mitTitel`: Am Desktop steht der Titel schon über dem Abschnitt.
  */
-function ZusammenkuenfteKarte({ onHilfsdienste }: { onHilfsdienste?: () => void }) {
+function ZusammenkuenfteKarte({ onHilfsdienste, mitTitel = true }: { onHilfsdienste?: () => void; mitTitel?: boolean }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
   const [blatt, setBlatt] = useState<MeetingKey | null>(null)
@@ -222,7 +227,7 @@ function ZusammenkuenfteKarte({ onHilfsdienste }: { onHilfsdienste?: () => void 
   ]
   return (
     <section className="karte einst-karte">
-      <h2 className="abschnitt-titel karte-titel">{t.navZusammenkuenfte}</h2>
+      {mitTitel && <h2 className="abschnitt-titel karte-titel">{t.navZusammenkuenfte}</h2>}
       {zeilen.map(([welche, name]) => (
         <EinstellZeile
           key={welche}

@@ -245,8 +245,9 @@ export function namensDublette(
 /**
  * **Hat die Person gar keinen Namen?** — weder Vor- noch Nachnamen, auch nicht
  * aus Leerzeichen. Einen solchen nehmen „Person anlegen" und „Person
- * bearbeiten" nicht an (T121); eine namenlose Person aus älterer Zeit verwirft
- * der Reducer beim Verlassen ihres Details (`dropNamelessSelected`).
+ * bearbeiten" nicht an (T121). Eine namenlose Person aus älterer Zeit steht als
+ * „—" in der Liste und lässt sich dort entfernen; still verworfen wird sie seit
+ * der Phase 6b nicht mehr.
  */
 export function isNameless(p: Pick<Person, 'fn' | 'ln'>): boolean {
   return !`${p.fn}${p.ln}`.trim()

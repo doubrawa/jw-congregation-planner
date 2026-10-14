@@ -52,7 +52,6 @@ import {
   platzFuellen,
 } from '../lib/data'
 import { helperKeyParts } from '../data/planning'
-import { namensDublette } from '../data/helpers'
 import { supabase } from '../lib/supabase'
 import type { FsInstance, Person, Week } from '../data/types'
 import type { AppAction, AppState } from './context'
@@ -537,28 +536,9 @@ function fsWochePlanen(
 }
 
 /**
- * Den wartenden Zwischenstand einer Umbenennung verwerfen (T110): die
- * Personenzeile und die Wochen und Treffpunkte, durch die der Reducer den Namen
- * gerade gezogen hat. Es sind dieselben, die der Tastendruck davor eingeplant
- * hat — `renameInWeeks` und `fsRenameLeader` fassen bei jedem Buchstaben die
- * Plätze derselben Person an.
- */
-function zwischenstandVerwerfen(prev: AppState, next: AppState, id: string): void {
-  personSaves.cancel(id)
-  for (let i = 0; i < next.weeks.length; i++) {
-    const woche = next.weeks[i]
-    if (!woche) continue
-    if (woche !== prev.weeks[i]) weekSaves.cancel(woche.start)
-    if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWeekSaves.cancel(woche.start)
-  }
-}
-
-/**
  * Eine Person ist aus dem Zustand verschwunden (`ohnePerson` im Reducer) — die
- * Datenbank zieht nach. Zwei Wege führen hierher: das Löschen (`removePerson`)
- * und das Verwerfen beim Verlassen des Details (namenlos, oder neu mit
- * doppeltem Namen). Die Treffpunkte, aus denen ihre Id genommen wurde,
- * schreibt der Aufrufer.
+ * Datenbank zieht nach (`removePerson`). Die Treffpunkte, aus denen ihre Id
+ * genommen wurde, schreibt der Aufrufer.
  */
 function personEntfernt(prev: AppState, next: AppState, id: string): void {
   // Kein ausstehender Save darf sie danach wiederbeleben.
@@ -701,18 +681,6 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   const verfallen = verfalleneZusagen(prev, next)
   const fsVerwaist = verfallen.fs
 
-  /*
-   * Steht der Name der gerade bearbeiteten Person vorübergehend doppelt da
-   * (T110)? Dann geht **nichts** hinaus, was an ihm hängt — die Personenzeile,
-   * die Treffpunkte und die Wochen, in denen er als Text steht. Gesetzt wird
-   * das im Fall `updatePerson`, gelesen auch noch unter dem Switch: Der
-   * Reducer hat den neuen Namen längst in die Wochen gezogen
-   * (`renameInWeeks`), und schriebe man sie, trüge die Datenbank den Namen
-   * zweimal — einmal bei A und einmal bei B, während `persons` noch den alten
-   * Stand hält.
-   */
-  let nameUneindeutig = false
-
   switch (action.type) {
     case 'assign': {
       // Treffpunkt-Leiter (fs): eigene Wochen-Tabelle. Die Zusammenkunfts-Woche
@@ -785,37 +753,9 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'updatePerson': {
       // Auto-Speichern mit Debounce: Tipp-Änderungen werden gebündelt
       const p = next.persons.find((x) => x.id === action.id)
-      /*
-       * **Einen doppelten Namen schreibt die App gar nicht erst** (T110).
-       *
-       * Vor- und Nachname sind je Versammlung eindeutig, und der Index
-       * `persons_name_eindeutig` setzt das durch. Beim Tippen entstehen aber
-       * zwangsläufig Zwischenstände: Wer „Paul Beispiel" zu „Paul Beispiel sen."
-       * ergänzt, ist nach dem letzten Buchstaben von „Beispiel" für einen
-       * Wimpernschlag die Dublette des anderen Paul Beispiel. Ginge der Stand
-       * hinaus, käme er als Schreibfehler zurück — eine rote Meldung für eine
-       * Eingabe, die gerade erst halb fertig ist.
-       *
-       * Angehalten wird deshalb hier, nicht in der Eingabe: Der Zustand nimmt
-       * jeden Tastendruck an, das Feld meldet die Dublette (`PersonDetail`),
-       * und geschrieben wird erst wieder, sobald der Name eindeutig ist.
-       *
-       * Angehalten wird alles, was **am Namen hängt** — die Personenzeile und
-       * die Treffpunkte, in denen er als Text steht (die Wochen weiter unten
-       * ebenso). Nicht angehalten wird das **Planer-Recht**: Es liegt in
-       * `members`, hat mit dem Namen nichts zu tun, und ein halb getippter
-       * Name soll einen Rechte-Schalter nicht verschlucken.
-       *
-       * **Angehalten heißt auch: Was schon wartet, verfällt.** Der Schreiber
-       * hält den vorigen Tastendruck noch 600 ms vor — bei „Thomas Lindner"
-       * also „Thomas Lindne". Bis zum 4.10.2026 blieb hier nur das Einplanen
-       * aus, der wartende Zwischenstand ging trotzdem hinaus, und nach dem
-       * Neuladen hieß die Person so. Was die Datenbank stattdessen bekommt,
-       * entscheidet das Verlassen des Details (`dubletteVerwerfen` im Reducer).
-       */
-      nameUneindeutig = Boolean(p && namensDublette(next.persons, p))
-      if (p && nameUneindeutig) zwischenstandVerwerfen(prev, next, p.id)
-      if (p && !nameUneindeutig) personSaves.schedule(p.id, { congId, person: p })
+      // Einen doppelten oder leeren Namen nimmt „Person bearbeiten" gar nicht
+      // erst an (T110, seit T121 Phase 6b) — was hier ankommt, darf hinaus.
+      if (p) personSaves.schedule(p.id, { congId, person: p })
       // Die Namensänderung in den Wochen (renameInWeeks) schreibt der Block
       // unter dem Switch — hier bleiben die Treffpunkte (fsRenameLeader):
       // eigene Tabelle, eigener Schreibweg. Ohne dies hielte der neue Name nur
@@ -826,7 +766,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // leitet — bei zwanzig geleiteten Wochen 240 Anfragen für eine
       // berichtigte Schreibweise. `flush()` beim Verlassen der Ansicht holt sie
       // ein (`selectPerson`/`navigate`/`logout`).
-      for (let i = 0; i < next.fsWeeks.length && !nameUneindeutig; i++) {
+      for (let i = 0; i < next.fsWeeks.length; i++) {
         if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWochePlanen(congId, next.weeks, next.fsWeeks, i, fsVerwaist)
       }
       // Admin- und Planer-Recht sofort in gespiegelte Konten und offene Codes
@@ -844,23 +784,6 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'selectPerson':
     case 'navigate':
     case 'logout': {
-      /*
-       * Was der Reducer beim Verlassen des Details mit der offenen Person
-       * getan hat, zieht hier nach. Eine namenlose — auch eine neue, deren
-       * Name doppelt war — hat er verworfen; einer bestehenden mit doppeltem
-       * Namen den Namen vom Öffnen zurückgegeben (T110). Die Wochen dazu
-       * schreibt der Block unter dem Switch. Zeile und Treffpunkte gehen
-       * gebündelt mit dem Flush darunter: So ersetzt der neue Stand einen, der
-       * noch wartet, statt nach ihm anzukommen.
-       */
-      const sel = prev.selectedPersonId
-      const vorher = prev.persons.find((p) => p.id === sel)
-      const nachher = next.persons.find((p) => p.id === sel)
-      if (vorher && !nachher) personEntfernt(prev, next, vorher.id)
-      else if (nachher && nachher !== vorher) personSaves.schedule(nachher.id, { congId, person: nachher })
-      for (let i = 0; i < next.fsWeeks.length; i++) {
-        if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWochePlanen(congId, next.weeks, next.fsWeeks, i, fsVerwaist)
-      }
       // Ansicht verlassen → alle ausstehenden Debounce-Saves sofort schreiben
       for (const flush of ALLE_FLUSHES) flush()
       break
@@ -1046,7 +969,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   }
 
   // Jede Woche, die sich geändert hat — siehe `geaenderteWochenSpeichern`.
-  if (!OHNE_WOCHENSCHREIBEN.includes(action.type) && !nameUneindeutig) {
+  if (!OHNE_WOCHENSCHREIBEN.includes(action.type)) {
     geaenderteWochenSpeichern(congId, prev.weeks, next.weeks, GEBUENDELT.includes(action.type), !next.planner)
   }
   // Jede Zusammenkunfts-Zusage, die verfallen ist — siehe `verfalleneZusagen`.

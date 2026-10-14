@@ -79,7 +79,7 @@ export function gruppenDublette(
 }
 
 /** Was mit einer Gruppe verloren geht, je eine Folge. */
-export type GruppenFolge = 'mitglieder' | 'treffpunkte' | 'besuche'
+export type GruppenFolge = 'mitglieder' | 'treffpunkte' | 'besuche' | 'plaene'
 
 /**
  * **Was beim Entfernen einer Gruppe mitgeht** — gefragt wird dieselbe Stelle,
@@ -89,7 +89,7 @@ export type GruppenFolge = 'mitglieder' | 'treffpunkte' | 'besuche'
  * hat keine Folgen — erfunden wird keine.
  */
 export function gruppenFolgen(
-  daten: Pick<AppState, 'persons' | 'fsRules' | 'fsWeeks' | 'gruppenbesuche'>,
+  daten: Pick<AppState, 'persons' | 'fsRules' | 'fsWeeks' | 'gruppenbesuche' | 'planEintraege'>,
   gruppeId: string,
 ): GruppenFolge[] {
   const folgen: GruppenFolge[] = []
@@ -97,5 +97,7 @@ export function gruppenFolgen(
   const rest = fsGruppeEntfernen(daten.fsRules, daten.fsWeeks, gruppeId)
   if (rest.fsRules !== daten.fsRules || rest.fsWeeks !== daten.fsWeeks) folgen.push('treffpunkte')
   if (daten.gruppenbesuche.some((b) => b.grp === gruppeId)) folgen.push('besuche')
+  // Ihre Zeiträume in den weiteren Plänen bleiben, nur ohne Gruppe (`removeGroup`).
+  if (daten.planEintraege.some((e) => e.grp === gruppeId)) folgen.push('plaene')
   return folgen
 }

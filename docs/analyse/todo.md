@@ -6622,11 +6622,23 @@ ist, wer wartet und wer zugesagt hat, am Desktop als Spalten (`21f5b7c`); darin
 „persönlich Bescheid gegeben", gespeichert in `assignment_log.persoenlich_at`
 (`068db49`) — und unter den Wartenden, wann die nächste Erinnerung von selbst
 hinausgeht, samt „Jetzt erinnern" (`202831d`, Aktion `erinnern` von
-`send-plan`, je Person und Tag höchstens eine Erinnerung). Es folgen 6
-Verwaltung, 7 Trolleys, 8 Anmelden per Link, 9 Druckbögen — dort auch „Drucken"
-in der Leiste von „Plan bearbeiten" — und 10 Feinschliff. Nicht gebaut ist
-bisher die Wochenspalte links aus `GDesktopPlanen` („Planung" mit Wochenkarten
-und „Holen") — sie kommt in Phase 10.
+`send-plan`, je Person und Tag höchstens eine Erinnerung).
+
+**Stand am 14. Oktober 2026:** Phase 6, die Verwaltung, ist live — die
+Personenliste mit „Person anlegen" als Blatt (`82812ba`), die Person mit
+Karten und „Person bearbeiten" (`a6f69c4`; der Name gilt beim Schließen), die
+Einstellungen als Übersicht mit Unteransichten bzw. am Desktop mit Abschnitten
+links (`8b57a41`, `7f82c10`), Hilfsdienste mit Reihenfolge und Gruppen mit
+freiem Namen (`a487590`) und die Erinnerungen als Zeitleiste (`8cafb79`, von
+einem Helfer im eigenen Worktree gebaut). Danach das Review über die ganze
+Phase: eine umbenannte Gruppe zieht jetzt durch die geplante Reinigung, ein
+doppelter Gruppenname wird abgewiesen, die tote Namens-Absicherung aus der Zeit
+vor „Person bearbeiten" ist fort. Es folgen 7 Trolleys, 8 Anmelden per Link, 9
+Druckbögen — dort auch „Drucken" in der Leiste von „Plan bearbeiten" — und 10
+Feinschliff. Nicht gebaut ist bisher die Wochenspalte links aus
+`GDesktopPlanen` („Planung" mit Wochenkarten und „Holen") — sie kommt in Phase
+10, mit ihr der Programm-Import, der bis dahin als letzte Karte in den
+Einstellungen steht.
 
 Offen aus Phase 5g, zur Entscheidung beim Betreiber: Der Schritt „Zusagen" der
 Spur wird in einer Woche mit Personen ohne Konto nie fertig — sie können nicht
@@ -6782,7 +6794,7 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
-| **T121** | Neues Design | ☐ Umbau läuft, Phase für Phase auf main: 1 bis 5g sind live (zuletzt `202831d`, Jetzt erinnern), es folgen 6 bis 10. Am 13. Oktober nachentschieden, was die ersten Phasen offen ließen; die Leinwand wird nicht mehr veröffentlicht. T106 und T114 gehen hier auf (Phase 8) |
+| **T121** | Neues Design | ☐ Umbau läuft, Phase für Phase auf main: 1 bis 6 sind live (zuletzt das Review der Verwaltung), es folgen 7 bis 10. Am 13. Oktober nachentschieden, was die ersten Phasen offen ließen; die Leinwand wird nicht mehr veröffentlicht. T106 und T114 gehen hier auf (Phase 8) |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
@@ -7160,7 +7172,7 @@ Umbau T121 offen; was sonst aussteht, braucht den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **T121** | Neues Design | Umbau läuft, Phase für Phase auf main: 1 bis 5g sind live, 6 bis 10 folgen (siehe T121). Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
+| **T121** | Neues Design | Umbau läuft, Phase für Phase auf main: 1 bis 6 sind live, 7 bis 10 folgen (siehe T121). Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
 | **Vor Phase 8** | Resend, `INVITE_FROM` | richtet der Betreiber ein (zugesagt am 13. Oktober). Ob danach noch ein SMTP-Server für Supabase Auth gebraucht wird, klärt Phase 8 — ohne Passwort und Registrieren fallen dessen Mails weg |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |

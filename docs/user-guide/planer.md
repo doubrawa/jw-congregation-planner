@@ -1262,7 +1262,8 @@ Gruppe **Hilfsdienste** – bei einem neuen Dienst zunächst überall aus.
   an, beginnt er wieder ohne Freigaben.
 
 Die Reinigung lässt sich entfernen, in der App aber nicht wieder anlegen: Ein
-neuer Dienst geht immer an Personen, nie reihum an Gruppen.
+neuer Dienst geht immer an Personen, nie reihum an Gruppen. Das steht in ihrem
+Blatt auch über dem Knopf.
 
 ### Gruppen
 
@@ -1314,11 +1315,12 @@ Ein Tipp auf eine Gruppe öffnet das Blatt **Predigtdienstgruppe**:
   - „Die Treffpunkte dieser Gruppe entfallen." – im Grundplan wie in den
     geplanten Wochen.
   - „Ihre Gruppenbesuche entfallen."
+  - „In den weiteren Plänen bleiben ihre Zeiträume ohne Gruppe."
 
-**Gruppe entfernen** löscht die Gruppe, wie jedes Löschen mit zwei Tipps. Ihre
-Mitglieder stehen danach unter **Ohne Gruppe**, bis du ihnen bei der Person eine
-andere Gruppe gibst. Ihre Wochen (bzw. Monate) in den **Weiteren Plänen**
-bleiben stehen, nur ohne Gruppe – dort verteilst du sie neu (siehe
+**Gruppe entfernen** löscht die Gruppe, wie jedes Löschen mit zwei Tipps: Der
+erste fragt „Wirklich löschen?". Ihre Mitglieder stehen danach unter **Ohne
+Gruppe**, bis du ihnen bei der Person eine andere Gruppe gibst. Ihre Wochen
+(bzw. Monate) in den **Weiteren Plänen** verteilst du dort neu (siehe
 [Weitere Pläne](#5a-weitere-pläne)).
 
 ### Erinnerungen
@@ -1341,7 +1343,7 @@ hinausgeht: eine **Absage** an die Admins und Planer; bei einem Hilfsdienst
 zusätzlich **Ersatz gesucht** an alle mit diesem Aufgabenbereich, die an dem
 Tag nicht abwesend sind; und **Zuteilung zurückgezogen** an die Person, wenn du
 ihr einen Platz nimmst, für den sie schon zugesagt hatte. E‑Mails verschickt
-die App nur für Einladungen.
+die App nur für Einladungen und die Anmeldung.
 
 ### Wer plant
 

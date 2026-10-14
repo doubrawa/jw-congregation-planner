@@ -14,7 +14,7 @@ type Geschlecht = 'm' | 'w'
 
 /**
  * **Person anlegen** (T121, Entwurf `GPersonNeu`): Name, E-Mail (freiwillig),
- * Geschlecht, Gruppe und Rolle — erst „Anlegen" legt sie an und öffnet sie.
+ * Geschlecht, Gruppe und Rolle — erst „Hinzufügen" legt sie an und öffnet sie.
  * Aufgabenbereiche und Rechte stehen danach bei der Person.
  *
  * Bis dahin legte „Neue Person" sofort eine leere an, die selbst speicherte:

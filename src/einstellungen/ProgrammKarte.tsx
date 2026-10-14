@@ -10,15 +10,17 @@ import { useWochenImport } from './useWochenImport'
  * Der Entwurf der Einstellungen (T121) zeigt den Import nicht mehr: Er zieht in
  * Phase 10 in die Wochenspalte links (`GWochen`, `GImport`). Bis dahin steht er
  * hier als letzte Karte.
+ *
+ * `mitTitel`: Am Desktop steht der Titel schon über dem Abschnitt.
  */
-export function ProgrammKarte() {
+export function ProgrammKarte({ mitTitel = true }: { mitTitel?: boolean }) {
   const { state } = useApp()
   const { t } = useT()
   const { importieren, knopf, geladenBis } = useWochenImport()
 
   return (
     <section className="karte einst-karte">
-      <h2 className="abschnitt-titel karte-titel">{t.importCard}</h2>
+      {mitTitel && <h2 className="abschnitt-titel karte-titel">{t.importCard}</h2>}
       <p className="klein-text">{t.importDesc}</p>
       <p className="einst-stand">
         <span>{geladenBis ? fill(t.geladenBis, { datum: geladenBis }) : t.geladenNichts}</span>
