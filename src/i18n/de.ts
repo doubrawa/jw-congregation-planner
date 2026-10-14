@@ -386,6 +386,11 @@ export const DE = {
     hdEntfernenHinweisGruppen: 'Mit dem Dienst gehen seine Plätze in allen Wochen. Neu anlegen lässt sich ein Gruppen-Dienst nicht.',
     ohneGruppeN: 'Ohne Gruppe: {n}', ohneGruppeKurz: 'Bei der Person eine Gruppe wählen',
     gruppeTrolleyBeiPerson: 'Wer zu welcher Gruppe gehört und wer mit dem Trolley gehen darf, legst du bei der Person fest.',
+    // Aufseher und Gehilfe kommen aus der Gruppe (14.10.2026): im Blatt der
+    // Gruppe, warum jemand fehlt; bei der Person, was ein Gruppenwechsel mitnimmt.
+    gruppeWahlMitglieder: 'Zur Wahl stehen nur Mitglieder dieser Gruppe. Wer zu ihr gehört, legst du bei der Person fest.',
+    gruppeWechselAufseher: 'Aufseher dieser Gruppe – bei einem Wechsel endet das Amt.',
+    gruppeWechselGehilfe: 'Gehilfe dieser Gruppe – bei einem Wechsel endet das Amt.',
     gruppeWennEntfernt: 'Wenn du die Gruppe entfernst', gruppeDelBesuche: 'Ihre Gruppenbesuche entfallen.',
     gruppeDelPlaene: 'In den weiteren Plänen bleiben ihre Zeiträume ohne Gruppe.',
     gruppeEntfernen: 'Gruppe entfernen',

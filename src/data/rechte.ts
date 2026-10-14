@@ -41,6 +41,10 @@ export interface Rechte {
    * Die Gruppe, die jemand als Aufseher oder Gehilfe betreut — `null`, wenn
    * keine. Beim Admin immer `null`: Er plant ohnehin alles, und die
    * Einschränkung auf eine Gruppe wäre dann falsch (`aufseherGruppe`).
+   *
+   * Eine, keine Liste: Wer eine Gruppe leitet, gehört ihr an, und jeder gehört
+   * genau einer an (`overseerGroup`). Die Datenbank fragt trotzdem eine Liste
+   * (`eigene_gruppen()`) — dort kostet das nichts.
    */
   gruppe: string | null
 }

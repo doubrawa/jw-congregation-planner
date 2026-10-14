@@ -31,6 +31,8 @@ export function GruppenbesucheAnsicht() {
   const tag = useKalendertag()
   const me = eigenePerson(state)
   // Die eigene Gruppe: die, in der man geführt ist — sonst die, die man leitet.
+  // Nach der Regel ist das dieselbe (`overseerGroup`); der Rückfall trägt Daten,
+  // die von außen anders kommen.
   const meineGruppe = me?.grp ?? overseerGroup(state.groups, state.personId)
 
   const lage = useBesuchsLage()

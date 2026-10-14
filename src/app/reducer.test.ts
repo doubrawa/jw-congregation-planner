@@ -22,6 +22,7 @@ import { displayName, isGuestRole, isNameless, isSong, istAusgefallen, ROLE_OWN_
 import { allePlaetze, platzKey } from '../data/plaetze'
 import { fsTaskKey, genFsWeek, neueRegel } from '../data/fs'
 import { deriveMyTasks, punktKey } from '../data/planning'
+import { rechteVon } from '../data/rechte'
 import { itemMinutes } from '../data/meeting-edit'
 import { DE as t } from '../i18n/de'
 import { alsFreitext } from '../i18n/translate'
@@ -546,6 +547,52 @@ describe('Personen', () => {
     const slot = (geloescht.weeks[0].mid.sections[sel.si].items[sel.ii] as PartItem).names[0]
     expect(slot.name).toBe('Anna Beispiel') // Name bleibt
     expect(slot.pid).toBeUndefined() // Id ist gelöst
+  })
+
+  /*
+    Jeder gehört genau einer Gruppe an, und wer eine leitet, gehört ihr an
+    (Betreiber, 14.10.2026). Wechselt der Aufseher die Gruppe, ist er es in der
+    alten nicht mehr: Sonst plante er sie weiter, ohne dazuzugehören — und
+    leitete er auch die neue, sähe er in der App nur eine von beiden
+    (`overseerGroup` findet die erste).
+  */
+  describe('Ein Gruppenwechsel beendet das Amt in der alten Gruppe', () => {
+    // Demo: Manfred Albrecht (p1) ist Aufseher von Gruppe 1, Jonas Berger (p6) ihr Gehilfe.
+    const gruppe = (s: AppState, id: string) => s.groups.find((g) => g.id === id)
+    const plantGruppe = (s: AppState, personId: string) =>
+      rechteVon({ planner: false, zuteiler: false, groups: s.groups, personId }).gruppe
+
+    it('der Aufseher wechselt: Gruppe 1 hat keinen mehr, und er plant sie nicht mehr', () => {
+      const s = makeState()
+      expect(plantGruppe(s, 'p1')).toBe('g1')
+      const next = reducer(s, { type: 'updatePerson', id: 'p1', patch: { grp: 'g2' } })
+      expect(gruppe(next, 'g1')).toMatchObject({ overseerId: null, assistantId: 'p6' })
+      // Die neue Gruppe behält ihren Aufseher — er wird dort nicht von selbst einer.
+      expect(gruppe(next, 'g2')).toBe(gruppe(s, 'g2'))
+      expect(plantGruppe(next, 'p1')).toBeNull()
+    })
+
+    it('der Gehilfe ebenso — auch wenn er gar keine Gruppe mehr hat', () => {
+      const next = reducer(makeState(), { type: 'updatePerson', id: 'p6', patch: { grp: null } })
+      expect(gruppe(next, 'g1')).toMatchObject({ overseerId: 'p1', assistantId: null })
+    })
+
+    it('wer in die Gruppe wechselt, die er schon leitet, behält dort das Amt', () => {
+      // Altbestand gegen die Regel: Thomas Lindner (p2) leitet Gruppe 2, ist
+      // aber in Gruppe 3 geführt. Ihn in Gruppe 2 zu setzen ist genau die
+      // Reparatur — sie darf ihm das Amt dort nicht nehmen.
+      const s = makeState({ persons: DEMO_PERSONS.map((p) => (p.id === 'p2' ? { ...p, grp: 'g3' } : p)) })
+      const next = reducer(s, { type: 'updatePerson', id: 'p2', patch: { grp: 'g2' } })
+      expect(gruppe(next, 'g2')?.overseerId).toBe('p2')
+      expect(plantGruppe(next, 'p2')).toBe('g2')
+    })
+
+    it('alles andere an der Person lässt das Amt stehen — auch dieselbe Gruppe noch einmal', () => {
+      const s = makeState()
+      for (const patch of [{ fn: 'Manfredo' }, { role: 'dienstamtgehilfe' as const }, { grp: 'g1' }]) {
+        expect(reducer(s, { type: 'updatePerson', id: 'p1', patch }).groups).toBe(s.groups)
+      }
+    })
   })
 })
 

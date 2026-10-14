@@ -5020,7 +5020,7 @@ export const KATALOG = [
     datei: 'src/app/persist.ts',
     regel: 'Nach dem Verschieben bekommen beide Dienste ihre neue Position in der Datenbank — sonst stünde nach dem Laden die alte Folge da.',
     suchen:
-      '// Zwei Dienste tauschen die Plätze — beide bekommen ihre neue Position.\n      positionenNachziehen(prev.services, next.services, (svc, pos) => saveService(congId, svc, pos))',
+      '// Zwei Dienste tauschen die Plätze — beide bekommen ihre neue Position.\n      geaenderteSchreiben(prev.services, next.services, (svc, pos) => saveService(congId, svc, pos))',
     ersetzen: '// Zwei Dienste tauschen die Plätze — beide bekommen ihre neue Position.',
   },
   {
@@ -5115,19 +5115,116 @@ export const KATALOG = [
     suchen: '    if (neu !== gelesen) {',
     ersetzen: '    if (neu === neu) {',
   },
+  // Seit dem 14.10.2026 steht die Wahl an einer Stelle (`amtKandidaten`).
   {
     id: 'gruppen-aufseher-aelteste-und-dag',
-    datei: 'src/einstellungen/GruppeBlatt.tsx',
+    datei: 'src/data/helpers.ts',
     regel: 'Als Aufseher einer Gruppe stehen nur Älteste und Dienstamtgehilfen zur Wahl.',
-    suchen: "sortiert.filter((p) => p.role === 'aeltester' || p.role === 'dienstamtgehilfe')",
-    ersetzen: 'sortiert',
+    suchen: "  overseerId: (p) => p.role === 'aeltester' || p.role === 'dienstamtgehilfe',\n",
+    ersetzen: '  overseerId: () => true,\n',
   },
   {
     id: 'gruppen-gehilfe-keine-schwester',
-    datei: 'src/einstellungen/GruppeBlatt.tsx',
+    datei: 'src/data/helpers.ts',
     regel: 'Als Gehilfe einer Gruppe steht jeder Bruder zur Wahl, keine Schwester.',
-    suchen: 'sortiert.filter((p) => !p.female)',
-    ersetzen: 'sortiert',
+    suchen: "  assistantId: (p) => !p.female && p.role !== 'keine',\n",
+    ersetzen: "  assistantId: (p) => p.role !== 'keine',\n",
+  },
+  {
+    id: 'gruppen-gehilfe-nicht-keine',
+    datei: 'src/data/helpers.ts',
+    regel: 'Gehilfe wird kein Bruder mit der Rolle „Keine" — inaktive Schüler sind keine Verkündiger.',
+    suchen: "  assistantId: (p) => !p.female && p.role !== 'keine',\n",
+    ersetzen: '  assistantId: (p) => !p.female,\n',
+  },
+  // ── Eine Gruppe je Person (Betreiber, 14.10.2026) ────────────────────────
+  // „Man leitet auch keine Gruppe, in der man nicht ist." Die Rechte fragen
+  // nach *der* geleiteten Gruppe (`overseerGroup`); stimmt die Regel nicht,
+  // plant ein Aufseher zweier Gruppen nur die erste.
+  {
+    id: 'gruppen-amt-nur-mitglieder',
+    datei: 'src/data/helpers.ts',
+    regel: 'Aufseher und Gehilfe stehen nur aus den Mitgliedern der Gruppe zur Wahl — niemand leitet zwei Gruppen.',
+    suchen: '(p.grp === gruppe.id && AMT_MOEGLICH[amt](p))',
+    ersetzen: 'AMT_MOEGLICH[amt](p)',
+  },
+  {
+    id: 'gruppen-amt-inhaber-sichtbar',
+    datei: 'src/data/helpers.ts',
+    regel: 'Wer das Amt hat, bleibt im Feld stehen, auch wenn er nicht mehr passt — sonst zeigte es „—", während er die Gruppe plant.',
+    suchen: 'persons.filter((p) => p.id === gruppe[amt] || (',
+    ersetzen: 'persons.filter((p) => (',
+  },
+  {
+    id: 'gruppen-amt-niemand-beides',
+    datei: 'src/data/helpers.ts',
+    regel: 'Niemand ist Aufseher und Gehilfe derselben Gruppe — wird der Gehilfe Aufseher, rückt er auf.',
+    suchen: '  const ohne = (id: string | null): string | null => (personId !== null && id === personId ? null : id)\n',
+    ersetzen: '  const ohne = (id: string | null): string | null => id\n',
+  },
+  {
+    id: 'gruppen-wahl-hinweis',
+    datei: 'src/einstellungen/GruppeBlatt.tsx',
+    regel: 'Das Blatt der Gruppe sagt, dass nur ihre Mitglieder zur Wahl stehen — auch einer neuen, die noch niemanden hat.',
+    suchen: '        <p id={wahlHinweisId} className="klein-text">\n          {t.gruppeWahlMitglieder}\n        </p>\n',
+    ersetzen: '',
+  },
+  {
+    id: 'gruppen-wahl-hinweis-am-feld',
+    datei: 'src/einstellungen/GruppeBlatt.tsx',
+    regel: 'Aufseher- und Gehilfenfeld verweisen auf den Hinweis — ein Vorleseprogramm liest ihn beim Feld vor.',
+    suchen: '      aria-describedby={wahlHinweisId}\n',
+    ersetzen: '',
+  },
+  {
+    id: 'gruppenwechsel-beendet-amt',
+    datei: 'src/app/reducer.ts',
+    regel: 'Wer die Gruppe wechselt, ist in der alten weder Aufseher noch Gehilfe — und plant sie nicht mehr.',
+    suchen: "      if ('grp' in action.patch) next.groups = aemterBeenden(state.groups, action.id, action.patch.grp ?? null)\n",
+    ersetzen: '',
+  },
+  // Hier stand `gruppenwechsel-nur-bei-wechsel` („dieselbe Gruppe noch einmal
+  // beendet nichts"): Die Probe meldete es unbewacht, weil die Bedingung seit
+  // `bleibt` nichts mehr bewirkt — in der eigenen Gruppe bleibt das Amt ohnehin.
+  // Sie ist gestrichen; der Fall steht weiter in `reducer.test.ts`.
+  {
+    id: 'gruppenwechsel-amt-in-neuer-gruppe-bleibt',
+    datei: 'src/data/helpers.ts',
+    regel: 'Wer in die Gruppe wechselt, die er schon leitet, behält dort das Amt — die Reparatur nimmt es ihm nicht.',
+    suchen: 'g.id !== bleibt && (g.overseerId === personId || g.assistantId === personId)',
+    ersetzen: '(g.overseerId === personId || g.assistantId === personId)',
+  },
+  {
+    id: 'gruppenwechsel-gespeichert',
+    datei: 'src/app/persist.ts',
+    regel: 'Das beendete Amt geht in die Datenbank — sonst stünde der Aufseher nach dem Laden wieder da.',
+    // Die Zeile darunter steht genauso beim Entfernen einer Gruppe — der
+    // Kommentar davor macht die Stelle eindeutig.
+    suchen:
+      '      // nächsten Laden wieder als ihr Aufseher da und plante sie weiter.\n      geaenderteSchreiben(prev.groups, next.groups, (grp, pos) => saveGroupRow(congId, grp, pos))\n',
+    ersetzen: '      // nächsten Laden wieder als ihr Aufseher da und plante sie weiter.\n',
+  },
+  {
+    id: 'gruppenwechsel-hinweis-vorher',
+    datei: 'src/personen/PersonBearbeitenBlatt.tsx',
+    regel: 'Beim Aufseher und beim Gehilfen steht unter der Gruppe, dass ein Wechsel das Amt beendet.',
+    suchen:
+      '        {amtHinweis && (\n          <p id={amtHinweisId} className="klein-text">\n            {amtHinweis}\n          </p>\n        )}\n',
+    ersetzen: '',
+  },
+  {
+    id: 'gruppenwechsel-hinweis-am-feld',
+    datei: 'src/personen/PersonBearbeitenBlatt.tsx',
+    regel: 'Das Gruppenfeld verweist auf den Hinweis zum Amt — ein Vorleseprogramm liest ihn vor dem Wechsel.',
+    suchen: '              aria-describedby={amtHinweis ? amtHinweisId : undefined}\n',
+    ersetzen: '',
+  },
+  {
+    id: 'person-weg-amt-weg',
+    datei: 'src/app/reducer.ts',
+    regel: 'Wer gelöscht wird, ist danach nirgends mehr Aufseher oder Gehilfe.',
+    suchen: '    groups: aemterBeenden(state.groups, id),\n',
+    ersetzen: '',
   },
   {
     id: 'gruppen-folgen-nennen-besuche',

@@ -21,9 +21,12 @@ import { GruppenInhalt } from './GruppenInhalt'
  * Treffpunkte, was beim Entfernen mitgeht.
  *
  * **Aufseher und Gehilfe** sind nicht beliebig besetzbar: Aufseher nur Älteste
- * und Dienstamtgehilfen, Gehilfe jeder Bruder. **Entfernen nur mit Rückfrage**
- * (gemeldet am 13.9.2026): Ein Tipp löschte die Gruppe sofort, und ihre
- * Mitglieder standen still ohne Gruppe da.
+ * und Dienstamtgehilfen, Gehilfe jeder Bruder — und beide nur aus der Gruppe
+ * selbst (Betreiber, 14.10.2026: „man leitet auch keine Gruppe, in der man
+ * nicht ist"). Stand jeder Älteste der Versammlung zur Wahl, konnte einer zwei
+ * Gruppen leiten, und die App plante für ihn nur die erste. **Entfernen nur mit
+ * Rückfrage** (gemeldet am 13.9.2026): Ein Tipp löschte die Gruppe sofort, und
+ * ihre Mitglieder standen still ohne Gruppe da.
  */
 
 vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false, performLogout: vi.fn() }))
@@ -154,24 +157,30 @@ describe('Gruppe hinzufügen', () => {
   })
 })
 
+/** Alle vier in Gruppe 1 — so steht die Wahl nur noch unter der Rolle. */
+const MITGLIEDER = PERSONEN.map((p) => ({ ...p, grp: 'g1' }))
+const wahl = (marke: string) => [...feld(marke).querySelectorAll('option')].map((o) => o.textContent)
+
 describe('Das Blatt der Gruppe', () => {
   it('als Aufseher stehen nur Älteste und Dienstamtgehilfen zur Wahl', () => {
-    oeffne()
-    expect([...feld(t.aufseherLbl).querySelectorAll('option')].map((o) => o.textContent)).toEqual([
-      '—', 'Anton Alt', 'Bernd Brand',
-    ])
+    oeffne({ persons: MITGLIEDER })
+    expect(wahl(t.aufseherLbl)).toEqual(['—', 'Anton Alt', 'Bernd Brand'])
   })
 
-  it('als Gehilfe jeder Bruder — aber keine Schwester', () => {
-    oeffne()
-    const namen = [...feld(t.gehilfeLbl).querySelectorAll('option')].map((o) => o.textContent)
-    expect(namen).toEqual(['—', 'Anton Alt', 'Bernd Brand', 'Carlo Cohn'])
+  it('als Gehilfe jeder Bruder, der Verkündiger ist — keine Schwester, keiner mit der Rolle „Keine"', () => {
+    // „Keine" tragen inaktive Schüler ohne Verkündiger-Status: Gehilfe des
+    // Gruppenaufsehers kann so jemand nicht sein.
+    const SCHUELER = person('p-k', 'Emil', 'Ehm', { role: 'keine', grp: 'g1' })
+    oeffne({ persons: [...MITGLIEDER, SCHUELER] })
+    expect(wahl(t.gehilfeLbl)).toEqual(['—', 'Anton Alt', 'Bernd Brand', 'Carlo Cohn'])
   })
 
   it('„—" nimmt die Besetzung zurück — als null, nicht als leerer String', () => {
     const { dispatch } = oeffne()
     fireEvent.change(feld(t.aufseherLbl), { target: { value: '' } })
-    expect(updates(dispatch)).toEqual([{ type: 'updateGroup', id: 'g1', patch: { overseerId: null } }])
+    expect(updates(dispatch)).toEqual([
+      { type: 'updateGroup', id: 'g1', patch: { overseerId: null, assistantId: 'p-v' } },
+    ])
   })
 
   it('nennt die Treffpunkte der Gruppe und wie viele zu ihr gehören', () => {
@@ -181,6 +190,81 @@ describe('Das Blatt der Gruppe', () => {
     })
     expect(blatt().textContent).toContain('Am Markt, Samstag 09:30')
     expect(blatt().textContent).toContain('Mitglieder: 1')
+  })
+})
+
+describe('Aufseher und Gehilfe kommen aus der Gruppe (14.10.2026)', () => {
+  /*
+    Jeder gehört genau einer Gruppe an, und wer sie leitet, gehört ihr an. Die
+    Rechte fragen deshalb nach *der* Gruppe, die jemand leitet (`overseerGroup`).
+    Stünde ein Ältester der Nachbargruppe zur Wahl, leitete er danach zwei — und
+    plante in der App nur eine davon.
+  */
+  const ERNST = person('p-ae2', 'Ernst', 'Eck', { role: 'aeltester' })
+
+  it('ein Ältester einer anderen Gruppe steht nicht zur Wahl, einer ohne Gruppe auch nicht', () => {
+    oeffne({
+      persons: [
+        { ...AELTESTER, grp: 'g1' },
+        { ...GEHILFE, grp: 'g2' },
+        ERNST,
+        { ...BRUDER, grp: 'g1' },
+        { ...SCHWESTER, grp: 'g1' },
+      ],
+      groups: [GRUPPE_1, { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null }],
+    })
+    expect(wahl(t.aufseherLbl)).toEqual(['—', 'Anton Alt'])
+    expect(wahl(t.gehilfeLbl)).toEqual(['—', 'Anton Alt', 'Carlo Cohn'])
+  })
+
+  it('der Hinweis sagt, woher sie kommen — auch bei einer neuen Gruppe, die noch niemanden hat', () => {
+    // „Gruppe hinzufügen" öffnet gleich ihr Blatt; ohne Hinweis stünden dort
+    // zwei leere Felder ohne Grund. Beide Felder verweisen auf ihn — ein
+    // Vorleseprogramm liest ihn beim Feld vor, nicht erst am Ende des Blatts.
+    oeffne({ groups: [{ id: 'g9', name: 'Gruppe 9', overseerId: null, assistantId: null }] })
+    expect(wahl(t.aufseherLbl)).toEqual(['—'])
+    expect(wahl(t.gehilfeLbl)).toEqual(['—'])
+    const hinweis = [...blatt().querySelectorAll('p')].find((p) => p.textContent === t.gruppeWahlMitglieder)
+    expect(hinweis?.id).toBeTruthy()
+    for (const marke of [t.aufseherLbl, t.gehilfeLbl]) {
+      expect(feld(marke).getAttribute('aria-describedby')).toBe(hinweis?.id)
+    }
+  })
+
+  it('wer das Amt hat, bleibt sichtbar, auch wenn er nicht mehr passt — sonst stünde dort „—"', () => {
+    // Anton ist nach einem Rollenwechsel kein Ältester mehr und (Altbestand)
+    // in Gruppe 2 geführt. Er plant Gruppe 1 weiter, bis jemand anderes
+    // gewählt ist; das Feld muss ihn zeigen.
+    oeffne({ persons: [{ ...AELTESTER, role: 'verkuendiger', grp: 'g2' }, { ...BRUDER, grp: 'g1' }] })
+    const aufseher = feld(t.aufseherLbl) as HTMLSelectElement
+    expect(aufseher.value).toBe('p-ae')
+    expect(aufseher.selectedOptions[0]?.textContent).toBe('Anton Alt')
+    expect(wahl(t.aufseherLbl)).toEqual(['—', 'Anton Alt'])
+  })
+
+  it('gewählt wird mit der Person-Id in das Amt, das das Feld nennt — das andere bleibt', () => {
+    // Vorgabe: Anton ist Aufseher, Carlo Gehilfe.
+    const { dispatch } = oeffne({ persons: MITGLIEDER })
+    fireEvent.change(feld(t.aufseherLbl), { target: { value: 'p-dg' } })
+    fireEvent.change(feld(t.gehilfeLbl), { target: { value: 'p-dg' } })
+    expect(updates(dispatch)).toEqual([
+      { type: 'updateGroup', id: 'g1', patch: { overseerId: 'p-dg', assistantId: 'p-v' } },
+      { type: 'updateGroup', id: 'g1', patch: { overseerId: 'p-ae', assistantId: 'p-dg' } },
+    ])
+  })
+
+  it('wird der Gehilfe Aufseher, rückt er auf — sein Platz als Gehilfe wird frei, und umgekehrt', () => {
+    // Niemand ist beides: Geht der Aufseher, wird oft sein Gehilfe Aufseher.
+    // Stünde er danach in beiden Feldern, hätte die Gruppe in Wahrheit keinen
+    // Gehilfen, und die Liste nennte ihn zweimal. Vorgabe: Anton ist Aufseher,
+    // Bernd Gehilfe.
+    const { dispatch } = oeffne({ persons: MITGLIEDER, groups: [{ ...GRUPPE_1, assistantId: 'p-dg' }] })
+    fireEvent.change(feld(t.aufseherLbl), { target: { value: 'p-dg' } })
+    fireEvent.change(feld(t.gehilfeLbl), { target: { value: 'p-ae' } })
+    expect(updates(dispatch)).toEqual([
+      { type: 'updateGroup', id: 'g1', patch: { overseerId: 'p-dg', assistantId: null } },
+      { type: 'updateGroup', id: 'g1', patch: { overseerId: null, assistantId: 'p-ae' } },
+    ])
   })
 })
 

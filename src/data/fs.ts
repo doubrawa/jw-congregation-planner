@@ -250,8 +250,8 @@ export function regenFsWeeks(
  *
  * Ein Versammlungstreffpunkt (`grp: null`) gilt allen und wird allen gezeigt. Ein
  * Gruppentreffpunkt ist die Sache seiner Gruppe: ihn sieht, wer zu ihr gehört
- * (`Person.grp`) oder sie leitet (Aufseher/Gehilfe — er muss nicht in ihr
- * geführt sein). Der Planer sieht alles; er plant alle Gruppen.
+ * (`Person.grp`) oder sie leitet (Aufseher/Gehilfe, `eigeneGruppen`). Der
+ * Planer sieht alles; er plant alle Gruppen.
  *
  * **Das ist eine Anzeige-Regel, keine Sperre.** Alle Treffpunkte einer Woche
  * liegen in *einer* jsonb-Zeile (`fs_weeks.data`); RLS kann darin keine
@@ -279,9 +279,14 @@ export function fsVisible(
 
 /**
  * **Die Gruppen, die jemanden angehen**: die, in der er geführt ist
- * (`Person.grp`), und die, die er leitet (Aufseher oder Gehilfe — er muss
- * nicht in ihr geführt sein). Nach derselben Menge zeigt `fsVisible` die
- * Treffpunkte, und die Ansicht markiert „Deine Gruppe".
+ * (`Person.grp`), und die, die er leitet (Aufseher oder Gehilfe). Nach
+ * derselben Menge zeigt `fsVisible` die Treffpunkte, und die Ansicht markiert
+ * „Deine Gruppe".
+ *
+ * Nach der Regel ist beides dieselbe Gruppe: Wer eine leitet, gehört ihr an
+ * (`amtKandidaten`, `aemterBeenden`). Gefragt wird trotzdem beides — kommen
+ * die Daten von außen anders an, sieht er wenigstens, was er plant
+ * (`overseerGroup`).
  */
 export function eigeneGruppen(
   persons: readonly Person[],

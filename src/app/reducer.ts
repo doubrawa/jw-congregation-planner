@@ -20,7 +20,7 @@ import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meet
 import { eigenePerson } from './eigene-person'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsRegelAussetzen, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, regenFsWeeks } from '../data/fs'
 import { neueWocheEinordnen } from '../data/neue-woche'
-import { displayName, isSong, linkFamily, mtab, unlinkFamily } from '../data/helpers'
+import { aemterBeenden, displayName, isSong, linkFamily, mtab, unlinkFamily } from '../data/helpers'
 import { darfPlanen, erlaubteScreens, rechteVon, themaVon } from '../data/rechte'
 import { besuchAustragen, besuchEintragen, besuchsLage, besuchStand, nachWoche } from '../data/gruppenbesuche'
 import { vortragsplanAnwenden, vortragsplanVorschau } from '../data/vortragsplan'
@@ -200,11 +200,7 @@ function ohnePerson(state: AppState, id: string): AppState {
     // niemandem (`absence.ts`), und mit toter Id stünde sie hier bis zum
     // nächsten Laden herum (T118). Die Datenbank räumt `persist.ts`.
     absences: state.absences.filter((a) => a.personId !== id),
-    groups: state.groups.map((g) => ({
-      ...g,
-      overseerId: g.overseerId === id ? null : g.overseerId,
-      assistantId: g.assistantId === id ? null : g.assistantId,
-    })),
+    groups: aemterBeenden(state.groups, id),
     // Ein Gruppenbesuch verliert seinen Besucher, nicht sich selbst — wie
     // die Datenbank (`on delete set null`). Der Plan zeigt ihn dann ohne
     // Besucher, und der Planer setzt einen neuen ein.
@@ -696,6 +692,11 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ...state,
         persons: state.persons.map((p) => (p.id === action.id ? { ...p, ...action.patch } : p)),
       }
+      // Wer die Gruppe wechselt, ist in der alten weder Aufseher noch Gehilfe:
+      // Er gehört ihr nicht mehr an (`aemterBeenden`, 14.10.2026). Seine
+      // Ämter in der Gruppe, der er jetzt angehört, bleiben — bei derselben
+      // Gruppe noch einmal also alle.
+      if ('grp' in action.patch) next.groups = aemterBeenden(state.groups, action.id, action.patch.grp ?? null)
       // Namensänderung in bereits geplanten Wochen nachziehen — der
       // Anzeigename ist der in den Wochen gespeicherte Text. Die Zusagen
       // bleiben stehen: Sie hängen am Platz, und die Person darauf ist dieselbe.

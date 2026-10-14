@@ -276,6 +276,35 @@ describe('Person bearbeiten: Geschlecht, Rolle, Gruppe', () => {
   it('ohne angelegte Gruppen fragt es nach keiner', () => {
     expect(bearbeiten(zeige(person(), { groups: [] }).container).querySelector('#pers-grp')).toBeNull()
   })
+
+  /*
+    Ein Gruppenwechsel beendet das Amt in der alten Gruppe (`aemterBeenden`,
+    14.10.2026) — wer dort Aufseher oder Gehilfe ist, liest das, bevor er
+    wechselt. Bei allen anderen steht nichts: Für sie geht nichts verloren.
+  */
+  it('beim Aufseher und beim Gehilfen steht unter der Gruppe, dass ein Wechsel das Amt beendet', () => {
+    // Das Feld verweist auf den Hinweis — ein Vorleseprogramm liest ihn mit,
+    // bevor jemand die Gruppe wechselt.
+    const hinweisZumFeld = (b: HTMLElement) => {
+      const id = feld(b, 'pers-grp').getAttribute('aria-describedby')
+      return id ? b.querySelector(`[id="${id}"]`)?.textContent : undefined
+    }
+    const aufseher = zeige(person({ grp: 'g1', role: 'aeltester' }), {
+      groups: [{ ...GRUPPEN[0]!, overseerId: 'p-a' }],
+    })
+    expect(hinweisZumFeld(bearbeiten(aufseher.container))).toBe(t.gruppeWechselAufseher)
+    cleanup()
+    const gehilfe = zeige(person({ grp: 'g1' }), { groups: [{ ...GRUPPEN[0]!, assistantId: 'p-a' }] })
+    expect(hinweisZumFeld(bearbeiten(gehilfe.container))).toBe(t.gruppeWechselGehilfe)
+  })
+
+  it('wer in seiner Gruppe kein Amt hat, liest keinen Hinweis', () => {
+    // Bernd ist Aufseher, Anton nur Mitglied derselben Gruppe.
+    const b = bearbeiten(zeige(person({ grp: 'g1' }), { groups: [{ ...GRUPPEN[0]!, overseerId: 'p-b' }] }).container)
+    expect(b.textContent).not.toContain(t.gruppeWechselAufseher)
+    expect(b.textContent).not.toContain(t.gruppeWechselGehilfe)
+    expect(feld(b, 'pers-grp').hasAttribute('aria-describedby')).toBe(false)
+  })
 })
 
 describe('Person bearbeiten: Familie', () => {

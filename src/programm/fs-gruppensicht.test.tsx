@@ -86,9 +86,11 @@ describe('fsVisible — die Regel', () => {
 
   it('der Gruppenaufseher sieht seine Gruppe, auch ohne selbst in ihr geführt zu sein', () => {
     /*
-     * `Person.grp` und `groups.overseerId` sind zwei Angaben. In der Regel decken sie
-     * sich, aber der Aufseher, der (noch) keiner Gruppe zugeordnet ist, säße
-     * sonst vor einem leeren Programm — und darf seine Treffpunkte planen.
+     * `Person.grp` und `groups.overseerId` sind zwei Angaben. Nach der Regel
+     * decken sie sich (14.10.2026: wer eine Gruppe leitet, gehört ihr an — das
+     * Gruppenblatt bietet nur Mitglieder an, ein Gruppenwechsel beendet das
+     * Amt). Kommen die Daten von außen doch anders an, säße der Aufseher ohne
+     * Gruppe sonst vor einem leeren Programm — und darf seine Treffpunkte planen.
      */
     expect(orte(fsVisible(WOCHE, PERSONEN, GRUPPEN, 'p-ov1', false))).toEqual([
       'Königreichssaal', 'Bäckerei Eins',

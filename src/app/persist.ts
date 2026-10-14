@@ -354,21 +354,26 @@ const GEBUENDELT: readonly AppAction['type'][] = [
 const OHNE_WOCHENSCHREIBEN: readonly AppAction['type'][] = ['hydrate', 'takeSubstitute', 'platzUebernehmen']
 
 /**
- * Nach einem Löschen die **Nachrücker** neu nummerieren.
+ * **Was sich in einer Liste geändert hat, in die Datenbank** — jeder Eintrag,
+ * der an seiner Stelle nicht mehr derselbe ist, mit seinem Index als Position.
  *
- * `position` ist der Index in der Liste (Dienste wie Gruppen). Wird aus der
- * Mitte gelöscht, rutscht alles dahinter eine Stelle vor — bleiben die alten
- * Nummern stehen, entsteht eine Lücke, und die nächste **neu angelegte** Zeile
- * bekommt `Länge − 1`, also eine Nummer, die es schon gibt. `.order('position')`
- * ist dann für zwei Zeilen unentschieden: Die Liste kann beim nächsten Laden
- * kippen, und mit ihr die Reinigungs-Rotation, die über die Gruppenreihenfolge
- * läuft (`groups[weekIndex % groups.length]` in `autoAssignMeeting`).
+ * Der Reducer bildet Listen ab oder filtert sie; unberührte Einträge behalten
+ * ihre Referenz. Steht an Index `i` ein anderes Objekt als vorher, ist es
+ * verschoben oder geändert — beides muss hinaus, sonst nichts.
  *
- * Geschrieben wird nur, was wirklich verrutscht ist: Der Reducer filtert die
- * Liste, unberührte Einträge behalten also ihre Referenz — steht an Index `i`
- * ein anderes Objekt als vorher, ist es verschoben.
+ * Verschoben wird nach einem Löschen: `position` ist der Index in der Liste
+ * (Dienste wie Gruppen). Wird aus der Mitte gelöscht, rutscht alles dahinter
+ * eine Stelle vor — bleiben die alten Nummern stehen, entsteht eine Lücke, und
+ * die nächste **neu angelegte** Zeile bekommt `Länge − 1`, also eine Nummer,
+ * die es schon gibt. `.order('position')` ist dann für zwei Zeilen
+ * unentschieden: Die Liste kann beim nächsten Laden kippen, und mit ihr die
+ * Reinigungs-Rotation, die über die Gruppenreihenfolge läuft
+ * (`groups[weekIndex % groups.length]` in `autoAssignMeeting`).
+ *
+ * Geändert wird nebenbei: die Bereiche der Personen, wenn ein Dienst geht; das
+ * Amt in der alten Gruppe, wenn jemand die Gruppe wechselt.
  */
-function positionenNachziehen<T>(
+function geaenderteSchreiben<T>(
   vorher: readonly T[],
   nachher: readonly T[],
   schreiben: (eintrag: T, position: number) => void,
@@ -656,6 +661,10 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // Einen doppelten oder leeren Namen nimmt „Person bearbeiten" gar nicht
       // erst an (T110, seit T121 Phase 6b) — was hier ankommt, darf hinaus.
       if (p) personSaves.schedule(p.id, { congId, person: p })
+      // Ein Gruppenwechsel beendet das Amt in der alten Gruppe (`aemterBeenden`)
+      // — die Gruppe ist eine eigene Zeile. Ohne sie stünde er nach dem
+      // nächsten Laden wieder als ihr Aufseher da und plante sie weiter.
+      geaenderteSchreiben(prev.groups, next.groups, (grp, pos) => saveGroupRow(congId, grp, pos))
       // Die Namensänderung in den Wochen (renameInWeeks) schreibt der Block
       // unter dem Switch — hier bleiben die Treffpunkte (fsRenameLeader):
       // eigene Tabelle, eigener Schreibweg. Ohne dies hielte der neue Name nur
@@ -743,21 +752,18 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     }
     case 'moveService':
       // Zwei Dienste tauschen die Plätze — beide bekommen ihre neue Position.
-      positionenNachziehen(prev.services, next.services, (svc, pos) => saveService(congId, svc, pos))
+      geaenderteSchreiben(prev.services, next.services, (svc, pos) => saveService(congId, svc, pos))
       break
     case 'removeService': {
       deleteServiceRow(congId, action.key)
-      positionenNachziehen(prev.services, next.services, (svc, pos) => saveService(congId, svc, pos))
+      geaenderteSchreiben(prev.services, next.services, (svc, pos) => saveService(congId, svc, pos))
       // Die drei Spuren des Dienstes (data/dienste.ts) hat der Reducer aus dem
       // Zustand genommen — die Bereiche gehen hier an die Datenbank, die
       // Platzreihen und Zusagen im Block unter dem Switch. Nur die wirklich
       // geänderten Personen: unveränderte behalten ihre Referenz, und die
       // Listen sind indexgleich (`dienstBereichEntfernen` bildet der Reihe
       // nach ab).
-      for (let i = 0; i < next.persons.length; i++) {
-        const p = next.persons[i]
-        if (p && p !== prev.persons[i]) savePerson(congId, p)
-      }
+      geaenderteSchreiben(prev.persons, next.persons, (p) => savePerson(congId, p))
       break
     }
     case 'addGroup':
@@ -774,7 +780,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     }
     case 'removeGroup':
       deleteGroupRow(action.id)
-      positionenNachziehen(prev.groups, next.groups, (grp, pos) => saveGroupRow(congId, grp, pos))
+      geaenderteSchreiben(prev.groups, next.groups, (grp, pos) => saveGroupRow(congId, grp, pos))
       // Mitglieder der Gruppe haben grp=null bekommen → mitschreiben
       for (const p of next.persons) {
         if (prev.persons.find((q) => q.id === p.id)?.grp === action.id) savePersonGroup(p)

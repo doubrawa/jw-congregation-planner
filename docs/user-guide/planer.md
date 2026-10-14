@@ -111,6 +111,12 @@ an und lässt sich nicht umlegen.
 | Trolleys anlegen, Gruppenbesuche planen, Weitere Pläne anlegen | – | – | – | ✓ |
 | Programm importieren, Personen, Abwesenheiten anderer, Einstellungen, Mitglieder, Einladungen | – | – | – | ✓ |
 
+**Gruppenaufseher und Gehilfe** ist, wen du im Blatt seiner
+Predigtdienstgruppe einträgst; dort stehen nur ihre Mitglieder zur Wahl (siehe
+[Gruppen und Trolleys](#gruppen-und-trolleys)). Jeder gehört genau einer Gruppe an, also leitet auch
+jeder höchstens eine – „seine Gruppe" in der Tabelle ist die, der er
+angehört.
+
 Die Meldungen an die Planer – eine **Verhinderung**, **Ersatz gefunden**,
 **unbestätigte Zuteilungen** – bekommen Admins und Planer: Wer zuteilt, sucht
 auch den Ersatz. Was einem Planer nicht zusteht, zeigt die App ihm gar nicht
@@ -948,7 +954,12 @@ Der **Stift** öffnet das Blatt **Person bearbeiten**:
 
 - **Vorname** und **Nachname**, **Telefon**, **E‑Mail**, **Geschlecht**.
 - **Predigtdienstgruppe** – Zuordnung zur Gruppe. Jeder Verkündiger braucht
-  eine; fehlt sie, warnt die Personenliste.
+  eine; fehlt sie, warnt die Personenliste. Jeder gehört genau einer Gruppe
+  an. Ist die Person **Aufseher** oder **Gehilfe** ihrer Gruppe, steht darunter
+  etwa „Aufseher dieser Gruppe – bei einem Wechsel endet das Amt." Wechselst
+  du ihre Gruppe (oder stellst „—" ein), ist sie es in der alten Gruppe nicht
+  mehr; die hat dann keinen Aufseher bzw. Gehilfen, bis du unter
+  [Gruppen und Trolleys](#gruppen-und-trolleys) jemand Neues wählst.
 - **Rolle** – Ältester, Dienstamtgehilfe, Verkündiger oder **Keine** (für
   Schüler ohne Verkündiger‑Status).
 - **Familie** – wer zur selben Familie gehört. Familienangehörige dürfen bei
@@ -1267,7 +1278,8 @@ mit den Spalten **Gruppe**, **Aufseher**, **Gehilfe** und **Personen**.
   an.
 
 **Gruppe hinzufügen** legt sofort eine neue Gruppe an – mit der nächsthöheren
-Nummer, nach „Gruppe 4" also „Gruppe 5" – und öffnet ihr Blatt.
+Nummer, nach „Gruppe 4" also „Gruppe 5" – und öffnet ihr Blatt. Aufseher und
+Gehilfe wählst du dort, sobald ihr bei den Personen jemand zugeordnet ist.
 
 Ein Tipp auf eine Gruppe öffnet das Blatt **Predigtdienstgruppe**:
 
@@ -1279,8 +1291,18 @@ Ein Tipp auf eine Gruppe öffnet das Blatt **Predigtdienstgruppe**:
   trägt – „Name nicht geändert: Gruppe 2 gibt es schon"; Groß- und
   Kleinschreibung zählen dabei nicht. Die Reinigung kennt eine Gruppe nur beim
   Namen, zwei gleich benannte wären dort nicht auseinanderzuhalten.
-- **Aufseher** – zur Wahl stehen die Ältesten und Dienstamtgehilfen.
-  **Gehilfe** – jeder Bruder. Beides gilt sofort; „—" heißt niemand.
+- **Aufseher** – zur Wahl stehen die Ältesten und Dienstamtgehilfen **dieser
+  Gruppe**. **Gehilfe** – jeder Bruder der Gruppe, außer mit der Rolle
+  **Keine**. Beides gilt sofort; „—" heißt niemand. Niemand ist beides: Wählst
+  du den Gehilfen als Aufseher, rückt er auf, und das Feld **Gehilfe** steht
+  danach auf „—" (ebenso umgekehrt).
+
+  Wer eine Gruppe leitet, gehört ihr an, und jeder gehört genau einer an – so
+  leitet niemand zwei. Daran erinnert der Satz unter beiden Feldern: „Zur Wahl
+  stehen nur Mitglieder dieser Gruppe. Wer zu ihr gehört, legst du bei der
+  Person fest." Fehlt jemand in der Auswahl, gib ihm zuerst bei der Person
+  diese Gruppe (siehe [Person bearbeiten](#person-bearbeiten)). Wechselt ein
+  Aufseher oder Gehilfe später die Gruppe, endet sein Amt hier.
 
   Aufseher und Gehilfe planen die **Treffpunkte ihrer Gruppe** – Uhrzeit, Ort,
   Leiter und Grundplan – und senden sie, auch ohne Planer- oder Admin-Recht,

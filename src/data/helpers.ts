@@ -73,10 +73,72 @@ export function dauerAbtrennen(meta: string, mins: number | undefined): { dauer:
 /**
  * Gruppen-Id, deren Aufseher (ov) oder Gehilfe (as) die Person ist — sonst null.
  * Grundlage der Treffpunkt-Planungsrechte für Gruppenaufseher.
+ *
+ * **Höchstens eine** (Betreiber, 14.10.2026): Jeder gehört genau einer Gruppe
+ * an, und wer eine leitet, gehört ihr an — „man leitet auch keine Gruppe, in
+ * der man nicht ist". Die App hält das an zwei Stellen fest: Zur Wahl stehen
+ * nur die Mitglieder der Gruppe (`amtKandidaten`), und ein Gruppenwechsel
+ * beendet das Amt (`aemterBeenden`). Deshalb genügt hier `find`.
  */
 export function overseerGroup(groups: readonly Group[], personId: string | null): string | null {
   if (!personId) return null
   return groups.find((g) => g.overseerId === personId || g.assistantId === personId)?.id ?? null
+}
+
+/** Die beiden Ämter einer Predigtdienstgruppe — die Felder an `Group`. */
+export type GruppenAmt = 'overseerId' | 'assistantId'
+
+/**
+ * Wer ein Amt übernehmen kann: Aufseher die Ältesten und Dienstamtgehilfen,
+ * Gehilfe jeder Bruder, der Verkündiger ist — „Keine" tragen inaktive Schüler.
+ */
+const AMT_MOEGLICH: Record<GruppenAmt, (p: Person) => boolean> = {
+  overseerId: (p) => p.role === 'aeltester' || p.role === 'dienstamtgehilfe',
+  assistantId: (p) => !p.female && p.role !== 'keine',
+}
+
+/**
+ * **Wer in dieser Gruppe Aufseher oder Gehilfe werden kann** — nur ihre
+ * Mitglieder. So leitet niemand zwei Gruppen und keiner eine, in der er nicht
+ * ist; in New World Scheduler hängt das Amt ohnehin an der Person und ihrer
+ * Gruppe. Bis zum 14.10.2026 stand jeder Älteste der Versammlung zur Wahl.
+ *
+ * Wer das Amt hat, bleibt dabei, auch wenn er nicht mehr passt — etwa nach
+ * einem Wechsel der Rolle: Ein Auswahlfeld ohne seinen Wert zeigte „—",
+ * während er die Gruppe weiter plant. Eine neue Liste, in der Reihenfolge von
+ * `persons` — wer sie sortiert, ändert `persons` nicht.
+ */
+export function amtKandidaten(persons: readonly Person[], gruppe: Group, amt: GruppenAmt): Person[] {
+  return persons.filter((p) => p.id === gruppe[amt] || (p.grp === gruppe.id && AMT_MOEGLICH[amt](p)))
+}
+
+/**
+ * **Ein Amt besetzen** — als Patch für beide Ämter der Gruppe. Niemand ist
+ * beides: Wird der Gehilfe Aufseher, rückt er auf, und sein Platz als Gehilfe
+ * wird frei (und umgekehrt). So geht es oft, wenn ein Aufseher geht.
+ */
+export function amtBesetzen(gruppe: Pick<Group, GruppenAmt>, amt: GruppenAmt, personId: string | null): Pick<Group, GruppenAmt> {
+  const ohne = (id: string | null): string | null => (personId !== null && id === personId ? null : id)
+  return amt === 'overseerId'
+    ? { overseerId: personId, assistantId: ohne(gruppe.assistantId) }
+    : { overseerId: ohne(gruppe.overseerId), assistantId: personId }
+}
+
+/**
+ * **Die Ämter einer Person enden** — wenn sie geht und wenn sie die Gruppe
+ * wechselt (Betreiber, 14.10.2026: „Endet automatisch"). In der alten Gruppe
+ * steht danach niemand, bis der Admin einen neuen wählt. Gruppen ohne ihr Amt
+ * behalten ihre Referenz; gespeichert wird, was sich geändert hat.
+ *
+ * `bleibt` ist die Gruppe, der sie jetzt angehört: Dort darf sie Aufseher oder
+ * Gehilfe bleiben. Wer gegen die Regel eine fremde Gruppe leitet und in genau
+ * sie wechselt, repariert damit den Bestand — und behält das Amt.
+ */
+export function aemterBeenden(groups: Group[], personId: string, bleibt: string | null = null): Group[] {
+  const leitet = (g: Group): boolean => g.id !== bleibt && (g.overseerId === personId || g.assistantId === personId)
+  const ohne = (id: string | null): string | null => (id === personId ? null : id)
+  if (!groups.some(leitet)) return groups
+  return groups.map((g) => (leitet(g) ? { ...g, overseerId: ohne(g.overseerId), assistantId: ohne(g.assistantId) } : g))
 }
 
 /** Die beiden Vorsitz-Bereiche, die je Zusammenkunft umzuschlüsseln sind. */
@@ -545,6 +607,7 @@ export const MEETING_TABS: readonly MeetingKey[] = ['mid', 'we']
 
 /**
  * Die Gruppe, die jemand als **Gruppenaufseher** betreut — `null`, wenn keine.
+ * Es ist höchstens eine, und zwar seine eigene (`overseerGroup`).
  *
  * Ein Planer ist nie Gruppenaufseher: er plant ohnehin alles, und die
  * Einschränkung auf eine Gruppe wäre dann falsch. Genau diese Verbindung stand

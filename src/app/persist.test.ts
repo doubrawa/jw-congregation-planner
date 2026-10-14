@@ -1,7 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { persist } from './persist'
 import type { AppAction, AppState } from './context'
-import { buildDemoFsWeeks, buildDemoWeeks, DEMO_FS_RULES, DEMO_PERSONS, DEMO_SERVICES } from '../../tests/testdaten/testdaten'
+import {
+  buildDemoFsWeeks,
+  buildDemoWeeks,
+  DEMO_FS_RULES,
+  DEMO_GROUPS,
+  DEMO_PERSONS,
+  DEMO_SERVICES,
+} from '../../tests/testdaten/testdaten'
 import { syncAuxSlots } from '../data/aux-class'
 import { fsGruppeEntfernen, fsTaskKey, neueRegel } from '../data/fs'
 import { sentKey } from '../data/planning'
@@ -899,6 +906,28 @@ describe('Personen (inkl. Debounce)', () => {
     expect(data.savePerson).not.toHaveBeenCalled()
     persist(st(), st(), { type: 'navigate', screen: 'programm' })
     expect(data.savePerson).toHaveBeenCalledTimes(1)
+  })
+
+  /*
+    Ein Gruppenwechsel beendet das Amt in der alten Gruppe (14.10.2026) — im
+    Zustand macht das der Reducer, in der Datenbank dieser Weg: Die Gruppe ist
+    eine eigene Zeile. Ohne ihn stünde der Aufseher nach dem nächsten Laden
+    wieder da und plante eine Gruppe, der er nicht mehr angehört
+    (`eigene_gruppen()`). Demo: Manfred Albrecht (p1) ist Aufseher von Gruppe 1.
+  */
+  it('ein Gruppenwechsel schreibt die Gruppe mit, deren Amt endet — nur sie, an ihrer Stelle', () => {
+    const vorher = st({ groups: [...DEMO_GROUPS] })
+    const aktion = { type: 'updatePerson', id: 'p1', patch: { grp: 'g2' } } as const
+    persist(vorher, reducer(vorher, aktion), aktion)
+    expect(data.saveGroupRow).toHaveBeenCalledTimes(1)
+    expect(data.saveGroupRow).toHaveBeenCalledWith('c1', { ...DEMO_GROUPS[0]!, overseerId: null }, 0)
+  })
+
+  it('jede andere Änderung an der Person schreibt keine Gruppe', () => {
+    const vorher = st({ groups: [...DEMO_GROUPS] })
+    const aktion = { type: 'updatePerson', id: 'p1', patch: { tel: '0123' } } as const
+    persist(vorher, reducer(vorher, aktion), aktion)
+    expect(data.saveGroupRow).not.toHaveBeenCalled()
   })
 
   it('removePerson löscht die Zeile und löst Konto-Verknüpfungen', () => {

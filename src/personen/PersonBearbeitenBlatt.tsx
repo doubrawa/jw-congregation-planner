@@ -22,7 +22,8 @@ import { fill, useT } from '../i18n/useT'
  * verwarf die App die Person samt Zeile in der Datenbank. Jetzt bleibt der Name
  * im Blatt, bis es zugeht: eindeutig und nicht leer, dann wird er übernommen;
  * sonst bleibt der alte, und ein Hinweis sagt, warum. Alles Übrige gilt sofort,
- * wie in den anderen Blättern.
+ * wie in den anderen Blättern — auch die Gruppe: Wer sie wechselt, ist in der
+ * alten nicht mehr Aufseher oder Gehilfe, und das steht vorher unter dem Feld.
  */
 export function PersonBearbeitenBlatt({ person, onClose }: { person: Person; onClose: () => void }) {
   const { state, dispatch } = useApp()
@@ -30,6 +31,7 @@ export function PersonBearbeitenBlatt({ person, onClose }: { person: Person; onC
   const [fn, setFn] = useState(person.fn)
   const [ln, setLn] = useState(person.ln)
   const fehlerId = useId()
+  const amtHinweisId = useId()
   const update = (patch: Partial<Person>) => dispatch({ type: 'updatePerson', id: person.id, patch })
 
   const name = { id: person.id, fn: fn.trim(), ln: ln.trim() }
@@ -45,6 +47,14 @@ export function PersonBearbeitenBlatt({ person, onClose }: { person: Person; onC
     }
     onClose()
   }
+
+  const eigeneGruppe = state.groups.find((g) => g.id === person.grp)
+  const amtHinweis =
+    eigeneGruppe?.overseerId === person.id
+      ? t.gruppeWechselAufseher
+      : eigeneGruppe?.assistantId === person.id
+        ? t.gruppeWechselGehilfe
+        : null
 
   const familie = familyMembers(state.persons, person)
   const imHaushalt = new Set([person.id, ...familie.map((m) => m.id)])
@@ -127,6 +137,7 @@ export function PersonBearbeitenBlatt({ person, onClose }: { person: Person; onC
               id="pers-grp"
               className="feld-wahl"
               value={person.grp ?? ''}
+              aria-describedby={amtHinweis ? amtHinweisId : undefined}
               onChange={(e) => update({ grp: e.target.value || null })}
             >
               <option value="">—</option>
@@ -137,6 +148,12 @@ export function PersonBearbeitenBlatt({ person, onClose }: { person: Person; onC
               ))}
             </select>
           </BlattFeld>
+        )}
+        {/* Vorher sagen, was ein Wechsel mitnimmt: das Amt in dieser Gruppe (`aemterBeenden`). */}
+        {amtHinweis && (
+          <p id={amtHinweisId} className="klein-text">
+            {amtHinweis}
+          </p>
         )}
         <BlattFeld marke={t.rolle}>
           <select

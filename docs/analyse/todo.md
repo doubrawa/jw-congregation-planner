@@ -6648,9 +6648,12 @@ eine weitere Programmsprache zur Sprache der Versammlung, bleibt sie zusätzlich
 unter den weiteren stehen („Englisch, Englisch"; `setCongLang` im Reducer).
 Der Toast „Programmsprache hinzugefügt — gilt für neue Importe" untertreibt:
 Der nächste Import holt die Sprache auch für schon geladene Wochen nach
-(`missingVariants`). Eigener Vorgang: Wer Aufseher zweier Gruppen ist, plant in
-der App nur die Treffpunkte der ersten (`overseerGroup`), die Datenbank erlaubt
-beide (`eigene_gruppen()`).
+(`missingVariants`). Der eigene Vorgang „Aufseher zweier Gruppen" (die App
+plante nur die erste, `overseerGroup`) ist am 14.10.2026 erledigt — ohne
+Gruppenlisten in den Rechten: Fachlich gehört jeder genau einer Gruppe an, und
+wer eine leitet, gehört ihr an (Betreiber). Das Gruppenblatt bietet als
+Aufseher und Gehilfe nur Mitglieder an, niemand ist beides, und ein
+Gruppenwechsel beendet das Amt in der alten Gruppe.
 
 **Stand am 14. Oktober 2026:** Phase 7, die Trolleys, ist gebaut und live. Statt fester
 Termine mit Schichten legt die Versammlung ihre Trolleys an (Einstellungen
