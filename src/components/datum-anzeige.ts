@@ -70,3 +70,12 @@ export function tageSpanne(von: string, bis: string, lang: string, format: Datum
   const fmt = datumsFormat(lang, format)
   return von === bis ? fmt.format(fromIso(von)) : fmt.formatRange(fromIso(von), fromIso(bis))
 }
+
+/**
+ * Eine Anzahl Tage, Wochen oder Monate in Worten der Sprache: „1 Tag",
+ * „7 Tage", „13 Wochen". Die Mehrzahl kennt `Intl` — ein „{n} Tage" in den
+ * Übersetzungen kennte sie nicht.
+ */
+export function zeitspanne(n: number, einheit: 'day' | 'week' | 'month', lang: string): string {
+  return new Intl.NumberFormat(LOCALES[lang as Lang] ?? lang, { style: 'unit', unit: einheit, unitDisplay: 'long' }).format(n)
+}

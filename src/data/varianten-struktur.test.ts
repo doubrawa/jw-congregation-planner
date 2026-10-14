@@ -16,7 +16,7 @@ import type { Meeting, PartItem, Week } from './types'
  * **Eine nachgeholte Sprachvariante darf keine fremden Titel aufsetzen.**
  *
  * Wird eine Programmsprache erst **nach** dem Import einer Woche hinzugefügt,
- * holt `ImportPanel` die fehlende Variante nach (`missingVariants` →
+ * holt der Import (`useWochenImport`) die fehlende Variante nach (`missingVariants` →
  * `mergeWeekAlt`). Die kommt frisch von jw.org und weiß nichts von dem, was der
  * Planer inzwischen an der Woche geändert hat.
  *

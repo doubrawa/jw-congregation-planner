@@ -307,6 +307,19 @@
   font-weight: 700;
 }
 
+/* Etwas Neues anlegen als letzte Zeile einer Karte („Programmpunkt einfügen",
+   „Sprache hinzufügen") — mit dem Plus, im Akzent, auf der Linie der Zeilen. */
+.zeile-hinzu {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  border-block-start: 1px solid var(--linie);
+  color: var(--akzent-text);
+  font-weight: 600;
+  text-align: start;
+}
+
 /* ---- Karten ---------------------------------------------------------------- */
 
 .karte {

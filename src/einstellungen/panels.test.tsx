@@ -12,26 +12,16 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import { dict } from '../i18n/ui'
 import type { Group, Person } from '../data/types'
-import { CongregationPanel } from './CongregationPanel'
-import { EinstellungenScreen } from './EinstellungenScreen'
 import { GroupsPanel } from './GroupsPanel'
-import { LanguagePanel } from './LanguagePanel'
 import { RemindersPanel } from './RemindersPanel'
 
 /**
- * **Die Einstellungen — hier stellt der Koordinator ein, was für alle gilt.**
+ * **Predigtdienstgruppen und Erinnerungen** — die beiden Panels, die bis zu
+ * ihrem Umbau (T121, Phase 6c) als Unteransicht der Einstellungen stehen. Die
+ * Übersicht prüft `EinstellungenScreen.test.tsx`.
  *
- * `meeting-times.ts` prüft das Zerlegen und Zusammensetzen der Zeiten für sich;
- * geprüft wird hier, was der Screen daraus macht. Drei Dinge tragen Fachlogik:
- *
- * - Die **Zusammenkunftszeit** wird als *ein* kanonischer String gespeichert
- *   („Di 19:00 · So 10:00"). Ändert man nur den Tag der Wochenmitte, muss der
- *   Rest unverändert mitgeschrieben werden — sonst verliert das Wochenende
- *   seine Zeit.
- * - **Aufseher und Gehilfe** einer Predigtdienstgruppe sind nicht beliebig
- *   besetzbar: Aufseher nur Älteste/Dienstamtgehilfen, Gehilfe keine Schwester.
- * - Der **Gruppenaufseher** sieht in den Einstellungen ausschließlich den
- *   Grundplan seiner Gruppe — die Versammlungsdaten gehen ihn nichts an.
+ * **Aufseher und Gehilfe** einer Predigtdienstgruppe sind nicht beliebig
+ * besetzbar: Aufseher nur Älteste/Dienstamtgehilfen, Gehilfe keine Schwester.
  */
 
 vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false, performLogout: vi.fn() }))
@@ -51,10 +41,7 @@ const PERSONEN = [AELTESTER, GEHILFE, BRUDER, SCHWESTER]
 
 const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-ae', assistantId: null }]
 
-function zeige(
-  was: 'cong' | 'groups' | 'reminders' | 'lang' | 'screen',
-  over: Partial<AppState> = {},
-) {
+function zeige(was: 'groups' | 'reminders', over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
     ...demoZustand(),
@@ -71,11 +58,8 @@ function zeige(
       <AppDispatchContext.Provider value={dispatch}>
         <AppStoreContext.Provider value={store}>
           <AppStateContext.Provider value={state}>
-            {was === 'cong' && <CongregationPanel />}
             {was === 'groups' && <GroupsPanel />}
             {was === 'reminders' && <RemindersPanel />}
-            {was === 'lang' && <LanguagePanel />}
-            {was === 'screen' && <EinstellungenScreen />}
           </AppStateContext.Provider>
         </AppStoreContext.Provider>
       </AppDispatchContext.Provider>
@@ -84,96 +68,7 @@ function zeige(
   return { dispatch, ...render(<Buehne />) }
 }
 
-const patches = (dispatch: ReturnType<typeof vi.fn>) =>
-  dispatch.mock.calls.filter((c) => c[0].type === 'updateCongregation').map((c) => c[0].patch)
-
 afterEach(cleanup)
-
-describe('Versammlung: Name und Saal', () => {
-  it('stehen in Feldern und werden beim Tippen gespeichert', () => {
-    const { container, dispatch } = zeige('cong')
-    const name = container.querySelector<HTMLInputElement>('#cong-name')!
-    expect(name.value).toBe('Nordheim')
-    fireEvent.change(name, { target: { value: 'Südheim' } })
-    expect(patches(dispatch)).toContainEqual({ name: 'Südheim' })
-    fireEvent.change(container.querySelector('#cong-hall')!, { target: { value: 'Saal 2' } })
-    expect(patches(dispatch)).toContainEqual({ hall: 'Saal 2' })
-  })
-})
-
-describe('Zusammenkunftszeiten', () => {
-  it('Tag und Uhrzeit stehen je Zusammenkunft getrennt zur Wahl', () => {
-    const { container } = zeige('cong')
-    const tage = [...container.querySelectorAll<HTMLSelectElement>('.cong-day')]
-    const zeiten = [...container.querySelectorAll<HTMLSelectElement>('.cong-time')]
-    // Die Auswahl steht in Tagen nach Montag: Dienstag = 1, Sonntag = 6.
-    expect(tage.map((s) => s.value)).toEqual(['1', '6'])
-    expect(zeiten.map((s) => s.value)).toEqual(['19:00', '10:00'])
-  })
-
-  it('die Wochentage stehen in der Sprache des Lesers, gespeichert wird die Zahl', () => {
-    const { container } = zeige('cong')
-    const wahl = container.querySelector<HTMLSelectElement>('.cong-day')!
-    const optionen = [...wahl.querySelectorAll('option')]
-    expect(optionen[0]?.textContent).toBe('Montag')
-    // Der Wert ist der Versatz ab Montag; gespeichert wird daraus der Wochentag
-    // (`wd`, 0 = Sonntag). Hier stand das deutsche Kürzel „Mo" — es war der
-    // gespeicherte Wert, und damit hing die Regelzeit an einer Sprache.
-    expect(optionen[0]?.value).toBe('0')
-    expect(optionen).toHaveLength(7)
-  })
-
-  it('ein neuer Tag der Wochenmitte lässt das Wochenende unangetastet', () => {
-    // Beide Termine stehen in EINEM Feld (`times`) — wird der Rest nicht
-    // mitgeschrieben, ist er weg.
-    const { container, dispatch } = zeige('cong')
-    fireEvent.change(container.querySelectorAll('.cong-day')[0]!, { target: { value: '3' } })
-    expect(patches(dispatch)).toContainEqual({ times: { mid: { wd: 4, time: '19:00' }, we: { wd: 0, time: '10:00' } } })
-  })
-
-  it('und eine neue Wochenend-Uhrzeit die Wochenmitte ebenso', () => {
-    const { container, dispatch } = zeige('cong')
-    fireEvent.change(container.querySelectorAll('.cong-time')[1]!, { target: { value: '09:30' } })
-    expect(patches(dispatch)).toContainEqual({ times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '09:30' } } })
-  })
-
-  it('eine krumme Bestandszeit bleibt wählbar — sonst spränge sie beim Öffnen um', () => {
-    const { container } = zeige('cong', {
-      congregation: { name: 'N', hall: 'S', times: { mid: { wd: 2, time: '19:20' }, we: { wd: 0, time: '10:00' } } },
-    })
-    const wahl = container.querySelector<HTMLSelectElement>('.cong-time')!
-    expect(wahl.value).toBe('19:20')
-    expect([...wahl.querySelectorAll('option')].map((o) => o.value)).toContain('19:20')
-  })
-
-  /*
-   * Hier stand: „unlesbare Bestandsdaten fallen auf Di 19:00 / So 10:00 zurück"
-   * — mit der Versammlungszeit `'völlig kaputt'`. Beides, Tag und Uhrzeit,
-   * wurde aus einem Anzeigetext zurückgelesen, und ein Text, der nicht passte,
-   * fiel stumm auf den üblichen Rhythmus zurück. Der Fall ist mit den Werten
-   * (`Congregation.times`) verschwunden: Unlesbares lässt sich nicht mehr
-   * hinterlegen, die Grenzen stehen in der Datenbank (`mid_wd between 0 and 6`).
-   */
-})
-
-describe('Zusätzliche Klasse (S-38 Abs. 27)', () => {
-  it('ist ein Schalter der Versammlung, nicht des Geräts — mit der Begründung darunter', () => {
-    const { container } = zeige('cong')
-    const schalter = container.querySelector('.rem-toggle-row [role="switch"]')!
-    expect(schalter.getAttribute('aria-checked')).toBe('false')
-    expect(container.querySelector('.panel-hint')?.textContent).toBe(t.auxDesc)
-  })
-
-  it('ein Tipp schaltet sie ein, ein weiterer aus', () => {
-    const { container, dispatch } = zeige('cong', { auxClass: false })
-    fireEvent.click(container.querySelector('.rem-toggle-row [role="switch"]')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'setAuxClass', on: true })
-    cleanup()
-    const zweiter = zeige('cong', { auxClass: true })
-    fireEvent.click(zweiter.container.querySelector('.rem-toggle-row [role="switch"]')!)
-    expect(zweiter.dispatch).toHaveBeenCalledWith({ type: 'setAuxClass', on: false })
-  })
-})
 
 describe('Predigtdienstgruppen', () => {
   it('jede Gruppe nennt Namen und Mitgliederzahl', () => {
@@ -399,59 +294,5 @@ describe('Erinnerungen', () => {
     const { container, dispatch } = zeige('reminders')
     fireEvent.click(zeilen(container)[2]!.querySelector('[role="switch"]')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'toggleReminderRepeat' })
-  })
-})
-
-describe('Sprache', () => {
-  it('nennt die Versammlungssprache und führt ins Sheet', () => {
-    const { container, dispatch } = zeige('lang', { congLang: 'de' })
-    expect(container.querySelector('.lang-card-val')?.textContent).toContain('Deutsch')
-    fireEvent.click(container.querySelector('.lang-card-row')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'openLangSheet' })
-  })
-
-  it('weitere Programmsprachen stehen als Chips und lassen sich entfernen', () => {
-    const { container, dispatch } = zeige('lang', { progLangs: ['en', 'es'] })
-    const chips = [...container.querySelectorAll('.proglang-chip')]
-    expect(chips).toHaveLength(2)
-    const x = () => chips[0]!.querySelector('.proglang-chip-x')!
-    fireEvent.click(x())
-    // Erst die Rückfrage — herausgenommen, nicht gelöscht.
-    expect(dispatch).not.toHaveBeenCalled()
-    expect(x().textContent).toBe(t.entfernenSicher)
-    fireEvent.click(x())
-    expect(dispatch).toHaveBeenCalledWith({ type: 'removeProgLang', code: 'en' })
-  })
-
-  it('„hinzufügen" öffnet dasselbe Sheet im anderen Modus — sonst überschriebe es die Hauptsprache', () => {
-    const { container, dispatch } = zeige('lang')
-    fireEvent.click([...container.querySelectorAll('button')].find((b) => b.textContent === t.hinzufuegen)!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'openLangSheet', mode: 'alt' })
-  })
-
-  it('ohne weitere Sprachen bleibt nur der Hinzufügen-Knopf stehen', () => {
-    const { container } = zeige('lang', { progLangs: [] })
-    expect(container.querySelectorAll('.proglang-chip')).toHaveLength(0)
-  })
-})
-
-describe('Wer welche Einstellungen sieht', () => {
-  it('der Planer bekommt alle Panels — den Grundplan der Treffpunkte nicht mehr', () => {
-    const { container } = zeige('screen')
-    const ueberschriften = [...container.querySelectorAll('.panel-label')].map((x) => x.textContent)
-    expect(ueberschriften).toContain(t.versammlungCard)
-    expect(ueberschriften).toContain(t.gruppenCard)
-    expect(ueberschriften).toContain(t.spracheCard)
-    expect(ueberschriften).toContain(t.erinnerungenCard)
-    // Der Grundplan steht seit T120 im Predigtdienst (Planen › Grundplan,
-    // `planen/FsRulesPanel.test.tsx`). Damit kam auch der Gruppenaufseher nur
-    // noch seinetwegen hierher — er sieht die Einstellungen nicht mehr
-    // (`data/rechte.test.ts`).
-    expect(ueberschriften.filter((u) => u?.startsWith(`${t.fsShort} · `))).toEqual([])
-  })
-
-  it('der Kopf nennt die Versammlung — man sieht, worauf man gerade schreibt', () => {
-    const { container } = zeige('screen')
-    expect(container.querySelector('.screen-subtitle')?.textContent).toContain('Nordheim')
   })
 })

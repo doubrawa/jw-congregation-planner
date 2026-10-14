@@ -727,11 +727,30 @@ describe('Rechts-nach-links', () => {
    * `dir="auto"` löst beides zugleich: ein arabischer Name läuft rechts nach
    * links, ein lateinischer und eine Nummer links nach rechts.
    */
-  /** Die Textfelder eines Bildschirms — bei der Person die im Blatt „Person bearbeiten" (T121, Phase 6b). */
+  /**
+   * Die Textfelder eines Bildschirms — seit T121 in Blättern: bei der Person in
+   * „Person bearbeiten" (Phase 6b), in den Einstellungen je eines für Name und
+   * Königreichssaal (Phase 6c).
+   */
   const textfelder = (container: HTMLElement, lang: Lang): HTMLInputElement[] => {
-    const stift = container.querySelector(`[aria-label="${dict(lang).personBearbeiten}"]`)
-    if (stift) fireEvent.click(stift)
-    return [...document.body.querySelectorAll<HTMLInputElement>('input.field-input, input.feld')]
+    const t = dict(lang)
+    const felder = () => [...document.body.querySelectorAll<HTMLInputElement>('input.feld')]
+    const stift = container.querySelector(`[aria-label="${t.personBearbeiten}"]`)
+    if (stift) {
+      fireEvent.click(stift)
+      return felder()
+    }
+    // Einstellungen: je Zeile ein Blatt — öffnen, Feld merken, mit „Fertig" schließen.
+    return [t.nameLbl, t.saal].flatMap((name) => {
+      const zeile = [...container.querySelectorAll<HTMLElement>('.einst-zeile')].find(
+        (z) => z.querySelector('.einst-zeile-name')?.textContent === name,
+      )
+      if (!zeile) return []
+      fireEvent.click(zeile)
+      const gefunden = felder()
+      fireEvent.click([...document.body.querySelectorAll('button')].find((b) => b.textContent === t.fertig)!)
+      return gefunden
+    })
   }
 
   it.each([

@@ -136,7 +136,7 @@ function ProgrammAbschnitt({
         )
       })}
       {lac && (
-        <button type="button" className="programm-einfuegen" onClick={onNeu}>
+        <button type="button" className="zeile-hinzu" onClick={onNeu}>
           <Zeichen name="plus" />
           {t.programmpunktEinfuegen}
         </button>

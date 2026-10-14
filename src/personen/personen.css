@@ -524,25 +524,6 @@
   color: var(--text2);
 }
 
-/* ---- Noch alte Form (Phase 6c) --------------------------------------------------- */
-
-/* Der Knopf „Hinzufügen" der Programmsprachen in den Einstellungen. */
-.role-chip {
-  border: 1px solid var(--bord3);
-  background: transparent;
-  color: var(--mut);
-  border-radius: var(--r-pill);
-  padding: 6px 13px;
-  font-size: calc(11.5px * var(--fs));
-  font-weight: 600;
-}
-
-.role-chip.is-active {
-  border-color: var(--acc);
-  background: var(--acc);
-  color: var(--onAcc);
-}
-
 /* Konten ohne Person (über der Liste) */
 .pers-orphans {
   margin-top: 18px;

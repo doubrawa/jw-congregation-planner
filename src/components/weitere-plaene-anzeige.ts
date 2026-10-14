@@ -10,10 +10,9 @@
 import { fromIso } from '../data/meeting-dates'
 import { taktVon, type PlanStand } from '../data/weitere-plaene'
 import type { Group, Lang, WeitererPlan } from '../data/types'
-import { LOCALES } from '../i18n/langs'
 import type { Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
-import { datumsFormat } from './datum-anzeige'
+import { datumsFormat, zeitspanne } from './datum-anzeige'
 import { besuchsWocheText } from './gruppenbesuch-anzeige'
 
 /** Der Zeitraum: „1. Dezember 2026 – 28. Februar 2027", zusammengezogen, wo Monat oder Jahr gleich sind. */
@@ -53,8 +52,7 @@ export function planUnterzeile(
  * nicht.
  */
 export function spannenAnzahl(plan: Pick<WeitererPlan, 'takt'>, n: number, lang: Lang): string {
-  const unit = taktVon(plan) === 'monat' ? 'month' : 'week'
-  return new Intl.NumberFormat(LOCALES[lang] ?? lang, { style: 'unit', unit, unitDisplay: 'long' }).format(n)
+  return zeitspanne(n, taktVon(plan) === 'monat' ? 'month' : 'week', lang)
 }
 
 /** Eine Spanne des Plans, je nach Takt: die Woche „12.–18. Oktober" oder der Monat „Oktober 2026". */

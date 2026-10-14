@@ -6,6 +6,7 @@ import { GesperrterKnopf } from '../bausteine/GesperrterKnopf'
 import { Punkt, type PunktArt } from '../bausteine/Punkt'
 import { Spur } from '../bausteine/Spur'
 import { datumsFormat } from '../components/datum-anzeige'
+import { namenSatz } from '../components/namen-satz'
 import { UnteransichtKopf } from '../components/UnteransichtKopf'
 import { WochenWahl } from '../components/WochenWahl'
 import { fromIso, meetingDate, meetingDateMs } from '../data/meeting-dates'
@@ -13,7 +14,6 @@ import { platzAuswahl } from '../data/offene-plaetze'
 import { weekConflicts } from '../data/planning'
 import { naechsteErinnerung, zusagenDerWoche, type ZusagePlatz } from '../data/zusagen'
 import type { Lang, MeetingKey, Week } from '../data/types'
-import { LOCALES } from '../i18n/langs'
 import { relativeDayLabel } from '../i18n/relative-time'
 import type { Dict } from '../i18n/ui'
 import { aufgabenLabel, fill, useT } from '../i18n/useT'
@@ -262,17 +262,7 @@ function PersoenlichZeile({ platz, aufgabe }: { platz: ZusagePlatz; aufgabe: str
   )
 }
 
-/**
- * Die Namen der Zugesagten als ein Satz — „Anna Test, Carl Test und Dora
- * Test", die Verbindung aus `Intl` in der Sprache des Lesers; wer zwei
- * Aufgaben hat, steht einmal da. Kennt `Intl` die Sprache nicht, stehen sie
- * mit Komma da.
- */
+/** Die Namen der Zugesagten als ein Satz (`namenSatz`); wer zwei Aufgaben hat, steht einmal da. */
 function namenListe(plaetze: readonly ZusagePlatz[], lang: Lang): string {
-  const namen = [...new Set(plaetze.map((p) => p.slot.name))]
-  try {
-    return new Intl.ListFormat(LOCALES[lang] ?? lang, { type: 'conjunction', style: 'long' }).format(namen)
-  } catch {
-    return namen.join(', ')
-  }
+  return namenSatz([...new Set(plaetze.map((p) => p.slot.name))], lang)
 }

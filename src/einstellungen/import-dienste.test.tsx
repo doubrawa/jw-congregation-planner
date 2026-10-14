@@ -42,7 +42,7 @@ vi.mock('../lib/import', async (orig) => ({
   importWeekVariants: (a: string, b: string, c: string[]) => importWeekVariants(a, b, c),
 }))
 
-const { ImportPanel } = await import('./ImportPanel')
+const { ProgrammKarte } = await import('./ProgrammKarte')
 const { ServicesPanel } = await import('./ServicesPanel')
 
 const t = dict('de')
@@ -85,7 +85,7 @@ function zeige(was: 'import' | 'dienste', over: Partial<AppState> = {}) {
       <AppDispatchContext.Provider value={dispatch}>
         <AppStoreContext.Provider value={store}>
           <AppStateContext.Provider value={state}>
-            {was === 'import' ? <ImportPanel /> : <ServicesPanel />}
+            {was === 'import' ? <ProgrammKarte /> : <ServicesPanel />}
           </AppStateContext.Provider>
         </AppStoreContext.Provider>
       </AppDispatchContext.Provider>
@@ -106,20 +106,20 @@ afterEach(cleanup)
 describe('„Geladen bis" beantwortet die häufigste Frage', () => {
   it('nennt das Ende der spätesten Woche und zählt die geladenen', () => {
     const { container } = zeige('import', { weeks: [woche('2026-09-07'), woche('2026-09-14')] })
-    const status = container.querySelector('.imp-status')?.textContent ?? ''
+    const status = container.querySelector('.einst-stand')?.textContent ?? ''
     expect(status).toContain('20') // Sonntag der zweiten Woche, 20. September
-    expect(container.querySelector('.imp-count')?.textContent).toBe('Geladene Wochen: 2')
+    expect(container.querySelector('.einst-stand .klein-text')?.textContent).toBe('Geladene Wochen: 2')
   })
 
   it('ohne ISO-Datum (Demo, Vorlagen) den Wochenbereich im Klartext', () => {
     const { container } = zeige('import', { weeks: [woche(undefined, '7.–13. September')] })
-    expect(container.querySelector('.kv-key')?.textContent).toContain('7.–13. September')
+    expect(container.querySelector('.einst-stand > :first-child')?.textContent).toContain('7.–13. September')
   })
 
   it('ganz ohne Woche einen eigenen Satz statt einer leeren Angabe', () => {
     const { container } = zeige('import', { weeks: [] })
-    expect(container.querySelector('.kv-key')?.textContent).toBe(t.geladenNichts)
-    expect(container.querySelector('.imp-count')).toBeNull()
+    expect(container.querySelector('.einst-stand > :first-child')?.textContent).toBe(t.geladenNichts)
+    expect(container.querySelector('.einst-stand .klein-text')).toBeNull()
   })
 })
 
@@ -128,13 +128,13 @@ describe('Import in der Produktion', () => {
     const { container } = zeige('import', {
       weeks: [woche('2026-09-07')], congLang: 'en',
     })
-    fireEvent.click(container.querySelector('.imp-btn')!)
+    fireEvent.click(container.querySelector('.einst-import')!)
     await waitFor(() => expect(importNextWeek).toHaveBeenCalledWith('2026-09-07', 'en', []))
   })
 
   it('unbekannte Versammlungssprache fällt auf Deutsch zurück statt leer zu bleiben', async () => {
     const { container } = zeige('import', { congLang: 'xx-erfunden' })
-    fireEvent.click(container.querySelector('.imp-btn')!)
+    fireEvent.click(container.querySelector('.einst-import')!)
     await waitFor(() => expect(importNextWeek).toHaveBeenCalledWith(undefined, 'de', []))
   })
 
@@ -142,7 +142,7 @@ describe('Import in der Produktion', () => {
     const { container } = zeige('import', {
       congLang: 'de', progLangs: ['en', 'de'],
     })
-    fireEvent.click(container.querySelector('.imp-btn')!)
+    fireEvent.click(container.querySelector('.einst-import')!)
     await waitFor(() => expect(importNextWeek).toHaveBeenCalledWith(undefined, 'de', ['en']))
   })
 
@@ -150,7 +150,7 @@ describe('Import in der Produktion', () => {
     const neue = woche('2026-09-14')
     importNextWeek.mockResolvedValue({ ok: true, week: neue })
     const { container, dispatch } = zeige('import')
-    fireEvent.click(container.querySelector('.imp-btn')!)
+    fireEvent.click(container.querySelector('.einst-import')!)
     await waitFor(() =>
       expect(dispatch).toHaveBeenCalledWith({ type: 'addImportedWeek', week: neue }),
     )
@@ -159,7 +159,7 @@ describe('Import in der Produktion', () => {
   it('ein Fehler beendet den Lauf und sagt, was los ist', async () => {
     importNextWeek.mockResolvedValue({ ok: false, error: 'Keine weitere Woche verfügbar' })
     const { container, dispatch } = zeige('import')
-    fireEvent.click(container.querySelector('.imp-btn')!)
+    fireEvent.click(container.querySelector('.einst-import')!)
     await waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'stopImport' }))
     expect(dispatch).toHaveBeenCalledWith({
       type: 'showToast', text: 'Keine weitere Woche verfügbar',
@@ -171,7 +171,7 @@ describe('Import in der Produktion', () => {
     // Bis zum 2.10.2026 hängte er dort eine erfundene Woche an (`finishImport`).
     importNextWeek.mockResolvedValue({ ok: false, error: 'ohne-datenbank' })
     const { container, dispatch } = zeige('import')
-    fireEvent.click(container.querySelector('.imp-btn')!)
+    fireEvent.click(container.querySelector('.einst-import')!)
     await waitFor(() =>
       expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.importOhneDb }),
     )
@@ -180,7 +180,7 @@ describe('Import in der Produktion', () => {
   it('hat das Heft keine weitere Woche, sagt der Import das — in der Sprache des Nutzers', async () => {
     importNextWeek.mockResolvedValue({ ok: false, error: 'ende' })
     const { container, dispatch } = zeige('import')
-    fireEvent.click(container.querySelector('.imp-btn')!)
+    fireEvent.click(container.querySelector('.einst-import')!)
     await waitFor(() =>
       expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.toastAlleWochen }),
     )
@@ -189,7 +189,7 @@ describe('Import in der Produktion', () => {
   it('ein unbekannter Fehler bekommt den allgemeinen Satz', async () => {
     importNextWeek.mockResolvedValue({ ok: false, error: 'unbekannt' })
     const { container, dispatch } = zeige('import')
-    fireEvent.click(container.querySelector('.imp-btn')!)
+    fireEvent.click(container.querySelector('.einst-import')!)
     await waitFor(() =>
       expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.importFehler }),
     )
@@ -202,7 +202,7 @@ describe('Import in der Produktion', () => {
     const { container, dispatch } = zeige('import', {
       weeks: [woche('2026-09-07')], congLang: 'de', progLangs: ['en'],
     })
-    fireEvent.click(container.querySelector('.imp-btn')!)
+    fireEvent.click(container.querySelector('.einst-import')!)
     await waitFor(() => expect(importWeekVariants).toHaveBeenCalledWith('2026-09-07', 'de', ['en']))
     await waitFor(() =>
       expect(dispatch.mock.calls.some((c) => c[0].type === 'mergeWeekAlt')).toBe(true),
@@ -237,7 +237,7 @@ describe('Import in der Produktion', () => {
 
     const wochen = ['2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28', '2026-10-05'].map((s) => woche(s))
     const { container } = zeige('import', { weeks: wochen, congLang: 'de', progLangs: ['en'] })
-    fireEvent.click(container.querySelector('.imp-btn')!)
+    fireEvent.click(container.querySelector('.einst-import')!)
 
     // Erster Block: vier gleichzeitig, die fünfte wartet noch.
     await waitFor(() => expect(importWeekVariants).toHaveBeenCalledTimes(4))
@@ -252,14 +252,14 @@ describe('Import in der Produktion', () => {
 
   it('während eines laufenden Imports löst ein zweiter Tipp nichts aus', () => {
     const { container } = zeige('import', { importing: true })
-    fireEvent.click(container.querySelector('.imp-btn')!)
+    fireEvent.click(container.querySelector('.einst-import')!)
     expect(importNextWeek).not.toHaveBeenCalled()
   })
 
   it('der Knopf sagt, was gerade ist', () => {
-    expect(zeige('import').container.querySelector('.imp-btn')?.textContent).toBe(t.importBtn)
+    expect(zeige('import').container.querySelector('.einst-import')?.textContent).toBe(t.importBtn)
     cleanup()
-    expect(zeige('import', { importing: true }).container.querySelector('.imp-btn')?.textContent)
+    expect(zeige('import', { importing: true }).container.querySelector('.einst-import')?.textContent)
       .toBe(t.importiere)
   })
 })

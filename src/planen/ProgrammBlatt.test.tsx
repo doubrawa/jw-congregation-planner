@@ -114,7 +114,7 @@ describe('Das Programm der Woche', () => {
     const koepfe = [...document.querySelectorAll('.prog-abschnitt-kopf .prog-lied')].map((k) => k.textContent)
     expect(koepfe[0]).toBe(t.ausArbeitsheft)
     // Einfügen gibt es nur dort, wo es eigene Punkte gibt.
-    expect(document.querySelectorAll('.programm-einfuegen')).toHaveLength(1)
+    expect(document.querySelectorAll('.zeile-hinzu')).toHaveLength(1)
   })
 
   it('nennt den Abschnitt, in dem umgeordnet wird, beim Namen', () => {
@@ -295,7 +295,7 @@ describe('Ein Programmpunkt', () => {
 describe('Ein eigener Punkt', () => {
   it('braucht einen Titel — leer bittet darum', () => {
     const { dispatch } = zeige()
-    fireEvent.click(document.querySelector('.programm-einfuegen')!)
+    fireEvent.click(document.querySelector('.zeile-hinzu')!)
     fireEvent.click(knopf(oben(), t.hinzufuegenKnopf))
     expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.toastNameEingeben })
     expect(dispatch.mock.calls.some((c) => (c[0] as { type: string }).type === 'lacAdd')).toBe(false)
@@ -303,7 +303,7 @@ describe('Ein eigener Punkt', () => {
 
   it('mit Titel wird er eingefügt, und das Blatt geht zu', () => {
     const { dispatch } = zeige()
-    fireEvent.click(document.querySelector('.programm-einfuegen')!)
+    fireEvent.click(document.querySelector('.zeile-hinzu')!)
     fireEvent.change(oben().querySelector<HTMLInputElement>('input')!, { target: { value: 'Örtliche Bedürfnisse' } })
     fireEvent.click(knopf(oben(), t.hinzufuegenKnopf))
     expect(dispatch).toHaveBeenCalledWith({ type: 'lacAdd', si: LAC, title: 'Örtliche Bedürfnisse' })

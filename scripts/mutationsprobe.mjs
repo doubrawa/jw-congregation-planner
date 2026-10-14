@@ -5235,8 +5235,8 @@ export const KATALOG = [
     id: 'zusagen-namen-einmal',
     datei: 'src/planen/ZusagenAnsicht.tsx',
     regel: 'Wer zwei Aufgaben zugesagt hat, steht unter „Zugesagt" einmal.',
-    suchen: '  const namen = [...new Set(plaetze.map((p) => p.slot.name))]\n',
-    ersetzen: '  const namen = plaetze.map((p) => p.slot.name)\n',
+    suchen: 'namenSatz([...new Set(plaetze.map((p) => p.slot.name))], lang)',
+    ersetzen: 'namenSatz(plaetze.map((p) => p.slot.name), lang)',
   },
   /* ---- Noch nicht angemeldet (T121, Phase 5g-2, 13.10.2026) ---- */
   {

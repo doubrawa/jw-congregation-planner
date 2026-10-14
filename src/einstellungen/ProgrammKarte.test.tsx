@@ -10,7 +10,7 @@ import {
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import type { Week } from '../data/types'
-import { ImportPanel } from './ImportPanel'
+import { ProgrammKarte } from './ProgrammKarte'
 
 /**
  * Die Statuszeile trug früher eine feste Beschriftung („Arbeitsheft Sep/Okt
@@ -31,7 +31,7 @@ function Buehne({ state }: { state: AppState }) {
     <AppDispatchContext.Provider value={() => {}}>
       <AppStoreContext.Provider value={store}>
         <AppStateContext.Provider value={state}>
-          <ImportPanel />
+          <ProgrammKarte />
         </AppStateContext.Provider>
       </AppStoreContext.Provider>
     </AppDispatchContext.Provider>
@@ -44,7 +44,7 @@ function zeige(weeks: Week[], patch: Partial<AppState> = {}) {
 
 afterEach(cleanup)
 
-describe('ImportPanel — „Geladen bis"', () => {
+describe('Programm-Import — „Geladen bis"', () => {
   it('nennt das Ende der spätesten Woche, nicht deren Anfang', () => {
     const { getByText } = zeige([woche({ start: '2026-08-31' }), woche({ start: '2026-09-07' })])
     expect(getByText(/Geladen bis 13\. Sept\. 2026/)).toBeTruthy()

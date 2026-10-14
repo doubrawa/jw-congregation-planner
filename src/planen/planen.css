@@ -1120,17 +1120,6 @@
   overflow-wrap: break-word;
 }
 
-.programm-einfuegen {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 56px;
-  border-block-start: 1px solid var(--linie);
-  color: var(--akzent-text);
-  font-weight: 600;
-  text-align: start;
-}
-
 .programmpunkt {
   display: flex;
   flex-direction: column;

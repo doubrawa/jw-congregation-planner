@@ -1,23 +1,7 @@
 /*
- * Wiederkehrende UI-Muster (mehrere Screens): Screen-Titel, Wochen-
- * Navigation, Meeting-Tabs, Bereichs-Panels. Werte aus dem Prototyp.
+ * Wiederkehrende UI-Muster (mehrere Screens): Wochen-Navigation,
+ * Meeting-Tabs, Bereichs-Panels. Werte aus dem Prototyp.
  */
-
-/* ---- Screen-Titel ------------------------------------------------------- */
-
-.screen-title {
-  font-family: var(--font-serif);
-  font-size: calc(26px * var(--fs));
-  font-weight: 500;
-}
-
-.screen-subtitle {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: calc(14px * var(--fs));
-  color: var(--mut);
-  margin-top: 3px;
-}
 
 /* ---- Primär-Button (Akzentfläche, Pille) ---------------------------------- */
 
@@ -310,12 +294,6 @@
   font-size: calc(11.5px * var(--fs));
   color: var(--mut);
   margin-top: 4px;
-}
-
-/* ---- Schlüssel (Einstellungen: Import) ------------------------------------ */
-
-.kv-key {
-  color: var(--mut);
 }
 
 /* ---- Formularfeld (Label in Caps + Input) ---------------------------------- */
