@@ -11,7 +11,8 @@ import { describe, expect, it } from 'vitest'
  * herausgelöst, und sein Kopf nennt die Lücke beim Namen: „`MyTaskSheet` und
  * `ConfirmDialog` fehlte er, was beim Lesen einer einzelnen Datei nicht
  * auffällt". Nach dem Herauslösen fehlte er dort weiter — bei `MyTaskSheet`
- * ohne Grund, dazu bei `ServicePersonsSheet`, das erst später dazukam.
+ * ohne Grund, dazu bei `ServicePersonsSheet` (heute `HilfsdienstBlatt`), das
+ * erst später dazukam.
  *
  * Ein Aufruf neben `useBackDismiss` macht die Lücke sichtbar, sobald jemand
  * hinsieht. Dieser Test sieht hin, ohne dass jemand daran denken muss.

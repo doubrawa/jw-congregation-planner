@@ -183,6 +183,7 @@ function folge(s: AppState): AppAction[] {
     { type: 'updatePerson', id: person.id, patch: { tel: person.tel } },
     { type: 'updateCongregation', patch: { hall: CONGREGATION.hall } },
     { type: 'changeServiceCount', key: svc.key, delta: 1 },
+    { type: 'moveService', key: svc.key, dir: -1 }, // steht schon ganz oben
     { type: 'updateGroup', id: grp.id, patch: { overseerId: grp.overseerId } },
     { type: 'fsRuleUpdate', id: regel.id, patch: { time: regel.time } },
     { type: 'fsClear', onlyGroup: null },

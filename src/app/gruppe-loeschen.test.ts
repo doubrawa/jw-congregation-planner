@@ -18,7 +18,7 @@ import type { FsInstance, Group, Person } from '../data/types'
  *
  * Gemeldet vom Betreiber am 13. September 2026: Eine Gruppe ließ sich mit einem
  * Tipp löschen, ohne Rückfrage, und ihre Mitglieder standen danach still ohne
- * Gruppe da. Die Rückfrage selbst prüft `einstellungen/panels.test.tsx`; hier
+ * Gruppe da. Die Rückfrage selbst prüft `einstellungen/GruppenInhalt.test.tsx`; hier
  * geht es um das, was das Löschen **anrichtet**, und um die Frage, die die
  * Warnung danach stellt:
  *

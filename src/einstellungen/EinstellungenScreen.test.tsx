@@ -323,4 +323,11 @@ describe('Am Desktop (`GDesktopEinstellungen`)', () => {
     // Die Hilfsdienste sind am Desktop ein eigener Abschnitt — keine Zeile hier.
     expect(zeile(container, t.hilfsdienste)).toBeUndefined()
   })
+
+  it('die Gruppen stehen am Desktop als Tabelle (`GDesktopEinstellungen`)', () => {
+    const { container } = zeige()
+    fireEvent.click(eintrag(container, t.gruppenTitel))
+    expect(container.querySelector('.gruppen-kopf')).not.toBeNull()
+    expect(container.querySelectorAll('.gruppen-zeile')).toHaveLength(1)
+  })
 })

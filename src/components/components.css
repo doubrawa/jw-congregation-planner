@@ -296,15 +296,7 @@
   margin-top: 4px;
 }
 
-/* ---- Formularfeld (Label in Caps + Input) ---------------------------------- */
-
-.field-label {
-  display: block;
-  font-size: calc(9.5px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  color: var(--mut);
-}
+/* ---- Formularfeld (Input) ---------------------------------------------------- */
 
 .field-input {
   display: block;

@@ -9,24 +9,19 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
-import { privSetzen, emptyQualifications, serviceQualKey } from '../data/helpers'
 import { dict } from '../i18n/ui'
-import type { Person, Qualifications, Service, Week } from '../data/types'
+import type { Service, Week } from '../data/types'
 
 /**
- * **Programm-Import und Hilfsdienste — die beiden Einstellungen, die den Plan
- * überhaupt erst möglich machen.**
+ * **Programm-Import — die Einstellung, die den Plan überhaupt erst möglich
+ * macht.**
  *
  * Der Import ist der einzige Weg, an ein Wochenprogramm zu kommen. Auf der
  * Entwicklerseite ohne Datenbank sagt derselbe Knopf, dass er nichts holen
  * kann — vorgetäuscht wird dort kein Abruf mehr.
  *
- * Bei den Hilfsdiensten geht es um einen Fall, der sonst unsichtbar bleibt
- * (T79): Ein **neu angelegter** Dienst bringt einen Aufgabenbereich mit, den
- * bis dahin keine Person gesetzt hat. Sein Platz bleibt dann Woche für Woche
- * offen, ohne dass irgendwo stünde, woran es liegt. Genau deshalb steht die
- * Zahl der freigegebenen Personen an der Zeile — und wird hervorgehoben, wenn
- * sie 0 ist.
+ * Die Hilfsdienste standen bis zur Phase 6c-2 (T121) mit in dieser Datei; sie
+ * prüft jetzt `HilfsdiensteInhalt.test.tsx`.
  */
 
 const importNextWeek = vi.fn((_after?: string, _lang?: string, _alt?: string[]) =>
@@ -43,19 +38,8 @@ vi.mock('../lib/import', async (orig) => ({
 }))
 
 const { ProgrammKarte } = await import('./ProgrammKarte')
-const { ServicesPanel } = await import('./ServicesPanel')
 
 const t = dict('de')
-
-const priv = (...keys: string[]): Qualifications => {
-  const q = emptyQualifications()
-  for (const k of keys) privSetzen(q, k, true)
-  return q
-}
-
-const person = (id: string, ln: string, ...q: string[]): Person => ({
-  id, fn: 'Max', ln, role: 'verkuendiger', female: false, tel: '', mail: '', priv: priv(...q),
-})
 
 function woche(start: string | undefined, range = '7.–13. September'): Week {
   return {
@@ -70,7 +54,8 @@ const DIENSTE: Service[] = [
   { key: 'rein', name: 'Reinigung', count: 1, groups: true },
 ]
 
-function zeige(was: 'import' | 'dienste', over: Partial<AppState> = {}) {
+/** `was` bleibt als Wort im Aufruf stehen — es sagt beim Lesen, was gezeigt wird. */
+function zeige(_was: 'import', over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
     ...demoZustand(),
@@ -85,7 +70,7 @@ function zeige(was: 'import' | 'dienste', over: Partial<AppState> = {}) {
       <AppDispatchContext.Provider value={dispatch}>
         <AppStoreContext.Provider value={store}>
           <AppStateContext.Provider value={state}>
-            {was === 'import' ? <ProgrammKarte /> : <ServicesPanel />}
+            <ProgrammKarte />
           </AppStateContext.Provider>
         </AppStoreContext.Provider>
       </AppDispatchContext.Provider>
@@ -94,7 +79,6 @@ function zeige(was: 'import' | 'dienste', over: Partial<AppState> = {}) {
   return { dispatch, ...render(<Buehne />) }
 }
 
-const zeilen = (c: HTMLElement) => [...c.querySelectorAll('.svc-row')]
 
 beforeEach(() => {
   vi.useRealTimers()
@@ -261,98 +245,5 @@ describe('Import in der Produktion', () => {
     cleanup()
     expect(zeige('import', { importing: true }).container.querySelector('.einst-import')?.textContent)
       .toBe(t.importiere)
-  })
-})
-
-describe('Hilfsdienste anlegen, zählen, löschen', () => {
-  it('jeder Dienst steht mit Name und Platzzahl da', () => {
-    const { container } = zeige('dienste')
-    expect(zeilen(container)).toHaveLength(2)
-    expect(zeilen(container)[0]!.querySelector('.svc-name')?.textContent).toBe('Mikrofone')
-    expect(zeilen(container)[0]!.querySelector('.svc-count')?.textContent).toBe('2')
-  })
-
-  it('die Platzzahl lässt sich in Einerschritten ändern', () => {
-    const { container, dispatch } = zeige('dienste')
-    const zeile = zeilen(container)[0]!
-    fireEvent.click(zeile.querySelector(`[aria-label="${t.a11yIncrease}"]`)!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'changeServiceCount', key: 'mik', delta: 1 })
-    fireEvent.click(zeile.querySelector(`[aria-label="${t.a11yDecrease}"]`)!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'changeServiceCount', key: 'mik', delta: -1 })
-  })
-
-  it('ein Dienst lässt sich löschen — erst nach der Rückfrage', () => {
-    const { container, dispatch } = zeige('dienste')
-    const x = () => zeilen(container)[0]!.querySelector('.svc-remove')!
-    fireEvent.click(x())
-    expect(dispatch).not.toHaveBeenCalledWith({ type: 'removeService', key: 'mik' })
-    expect(x().textContent).toBe(t.loeschenSicher)
-    fireEvent.click(x())
-    expect(dispatch).toHaveBeenCalledWith({ type: 'removeService', key: 'mik' })
-  })
-
-  it('ein neuer Dienst braucht einen Namen — leer wird darum gebeten', () => {
-    const { container, dispatch } = zeige('dienste')
-    fireEvent.click(container.querySelector('.svc-add-btn')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.toastNameEingeben })
-    expect(dispatch.mock.calls.some((c) => c[0].type === 'addService')).toBe(false)
-  })
-
-  it('mit Namen entsteht er mit einem Platz und eigenem Schlüssel', () => {
-    const { container, dispatch } = zeige('dienste')
-    const feld = container.querySelector<HTMLInputElement>('.svc-add-input')!
-    fireEvent.change(feld, { target: { value: '  Parkplatz  ' } })
-    fireEvent.click(container.querySelector('.svc-add-btn')!)
-    const svc = dispatch.mock.calls.find((c) => c[0].type === 'addService')![0].service
-    expect(svc).toMatchObject({ name: 'Parkplatz', count: 1, groups: false })
-    expect(svc.key).toMatch(/^svc-/)
-    expect(feld.value).toBe('')
-  })
-
-  it('zwei nacheinander angelegte bekommen verschiedene Schlüssel', () => {
-    const { container, dispatch } = zeige('dienste')
-    const feld = container.querySelector<HTMLInputElement>('.svc-add-input')!
-    for (const name of ['Eins', 'Zwei']) {
-      fireEvent.change(feld, { target: { value: name } })
-      fireEvent.click(container.querySelector('.svc-add-btn')!)
-    }
-    const keys = dispatch.mock.calls.filter((c) => c[0].type === 'addService').map((c) => c[0].service.key)
-    expect(new Set(keys).size).toBe(2)
-  })
-})
-
-describe('Für wie viele der Dienst freigegeben ist (T79)', () => {
-  it('zählt die Personen mit diesem Aufgabenbereich', () => {
-    const { container } = zeige('dienste', {
-      persons: [person('p1', 'Alt', serviceQualKey('mik')), person('p2', 'Brand'), person('p3', 'Cohn', serviceQualKey('mik'))],
-    })
-    expect(zeilen(container)[0]!.querySelector('.svc-sub')?.textContent).toBe('Personen: 2')
-  })
-
-  it('hebt hervor, wenn niemand freigegeben ist — der Fall des neuen Dienstes', () => {
-    // Sein Platz bliebe sonst Woche für Woche offen, ohne erkennbaren Grund.
-    const { container } = zeige('dienste', { persons: [person('p1', 'Alt')] })
-    expect(zeilen(container)[0]!.querySelector('.svc-sub--leer')).toBeTruthy()
-  })
-
-  it('mit Freigegebenen nicht mehr', () => {
-    const { container } = zeige('dienste', {
-      persons: [person('p1', 'Alt', serviceQualKey('mik'))],
-    })
-    expect(zeilen(container)[0]!.querySelector('.svc-sub--leer')).toBeNull()
-  })
-
-  it('die Zeile führt in die Freigabe-Liste', () => {
-    const { container, dispatch } = zeige('dienste')
-    fireEvent.click(zeilen(container)[0]!.querySelector('.svc-open')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'openServiceSheet', key: 'mik' })
-  })
-
-  it('die Gruppen-Rotation braucht niemanden — keine Liste, keine Hervorhebung', () => {
-    const { container } = zeige('dienste', { persons: [] })
-    const rein = zeilen(container)[1]!
-    expect(rein.querySelector('.svc-open')).toBeNull()
-    expect(rein.querySelector('.svc-sub')?.textContent).toBe(t.gruppenRotation)
-    expect(rein.querySelector('.svc-sub--leer')).toBeNull()
   })
 })

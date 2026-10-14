@@ -918,6 +918,10 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       if (svc) saveService(congId, svc, idx)
       break
     }
+    case 'moveService':
+      // Zwei Dienste tauschen die Plätze — beide bekommen ihre neue Position.
+      positionenNachziehen(prev.services, next.services, (svc, pos) => saveService(congId, svc, pos))
+      break
     case 'removeService': {
       deleteServiceRow(congId, action.key)
       positionenNachziehen(prev.services, next.services, (svc, pos) => saveService(congId, svc, pos))

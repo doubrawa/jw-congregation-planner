@@ -13,6 +13,16 @@
   padding-block-start: 6px;
 }
 
+/* Ohne Überschrift darüber trägt die erste Zeile keine Linie (Entwurf: „Wer darf was?"). */
+.einst-karte > .einst-zeile:first-child {
+  border-block-start-color: transparent;
+}
+
+/* Der Satz über einer Unteransicht (Hilfsdienste). */
+.einst-einleitung {
+  color: var(--text2);
+}
+
 /* Eine Zeile: was eingestellt wird, rechts der Wert, dann der Winkel. */
 .einst-zeile {
   display: grid;
@@ -21,6 +31,8 @@
   column-gap: 8px;
   width: 100%;
   min-height: 56px;
+  /* Bricht die Unterzeile um (Aufseher und Gehilfe einer Gruppe), bleibt Luft zur Linie. */
+  padding-block: 8px;
   border-block-start: 1px solid var(--linie);
   text-align: start;
 }
@@ -36,8 +48,12 @@
   min-width: 0;
 }
 
+/* Ein langes Wort („Rundgangsordner" neben − und +) trennt mit Strich nach den
+   Regeln der Sprache (`<html lang>`), statt mitten im Wort umzubrechen. */
 .einst-zeile-name {
   font-weight: 600;
+  -webkit-hyphens: auto;
+  hyphens: auto;
   overflow-wrap: break-word;
 }
 
@@ -82,6 +98,150 @@
 
 .einst-import {
   margin-block-end: 14px;
+}
+
+/* ---- Hilfsdienste (Phase 6c-2, Entwurf `GHilfsdienste`) ---- */
+
+/* Rechts nur wenig Rand: Die runden − und + reichen bis an die Kante. */
+.hd-karte {
+  padding-inline-end: 6px;
+}
+
+.hd-zeile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  min-height: 60px;
+  border-block-start: 1px solid var(--linie);
+}
+
+.hd-zeile:first-child {
+  border-block-start-color: transparent;
+}
+
+/* Hier steht nur eine Ziffer (1–6), nicht „10 Min." wie beim Programmpunkt —
+   der Name daneben bekommt den Platz. */
+.hd-zeile .plus-minus-wert {
+  min-width: 2em;
+}
+
+/* Name und Freigaben: der Weg in das Blatt des Dienstes. */
+.hd-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 48px;
+  justify-content: center;
+  text-align: start;
+}
+
+/* Niemand darf den Dienst übernehmen — sein Platz bliebe offen (T79). */
+.hd-niemand {
+  color: var(--problem);
+  font-weight: 600;
+}
+
+/* Im Blatt eines Dienstes: oben die Reihenfolge, unten Entfernen mit seinem Hinweis. */
+.hd-blatt {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hd-reihenfolge {
+  display: flex;
+  gap: 8px;
+  padding-block-end: 8px;
+}
+
+.hd-fuss {
+  flex: none;
+  padding-block-start: 12px;
+}
+
+/* ---- Gruppen (Phase 6c-3, Entwürfe `GGruppenStandorte`, `GGruppe`) ---- */
+
+/* Wer ohne Gruppe ist: gestrichelt wie alles, was noch offen ist; führt zu den Personen. */
+.gruppen-ohne {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) 20px;
+  align-items: center;
+  column-gap: 12px;
+  padding: 14px 14px 14px 18px;
+  border: 1.5px dashed var(--umriss);
+  border-radius: 20px;
+  background: var(--karte);
+  text-align: start;
+}
+
+.gruppen-ohne > .zeichen {
+  color: var(--text3);
+}
+
+/* Die Fußnote unter einer Liste („Wer zu welcher Gruppe gehört …"). */
+.einst-fuss {
+  padding-inline: 4px;
+}
+
+/* Am Desktop eine Tabelle: Gruppe, Aufseher, Gehilfe, Personen. */
+.gruppen-kopf,
+.gruppen-zeile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1.3fr) 80px 20px;
+  align-items: center;
+  column-gap: 14px;
+}
+
+.gruppen-kopf {
+  min-height: 36px;
+  color: var(--text3);
+  font-size: calc(13px * var(--fs));
+  font-weight: 600;
+}
+
+.gruppen-zeile {
+  width: 100%;
+  min-height: 54px;
+  border-block-start: 1px solid var(--linie);
+  color: var(--text2);
+  text-align: start;
+}
+
+.gruppen-zeile > .einst-zeile-name {
+  color: var(--text);
+}
+
+.gruppen-zeile > .zeichen {
+  color: var(--text3);
+}
+
+/* Im Blatt der Gruppe: was beim Entfernen verloren geht, je Folge ein roter Punkt. */
+.gruppe-folgen {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1.5px dashed var(--umriss);
+  border-radius: 18px;
+}
+
+.gruppe-folgen p {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--text2);
+  font-size: calc(14px * var(--fs));
+}
+
+.gruppe-folgen p::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--problem);
+  transform: translateY(-2px);
 }
 
 /* ---- Am Desktop: links die Abschnitte, rechts der gewählte ---- */
@@ -162,10 +322,8 @@
   font-weight: 400;
 }
 
-/* Zeile 2: alle Controls (Dropdown · Planer · Switch · ✕) auf einer Mittellinie —
-   dieselbe Zeile wie der Kopf einer Gruppe. */
-.mem-line,
-.grp-head {
+/* Zeile 2: alle Controls (Dropdown · Planer · Switch · ✕) auf einer Mittellinie. */
+.mem-line {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -194,140 +352,6 @@
 
 .mem-line .switch:disabled {
   opacity: 0.45;
-}
-
-/* ---- Predigtdienstgruppen ---------------------------------------------- */
-
-.grp-block {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--panel-hair);
-}
-
-.grp-name {
-  font-size: calc(13px * var(--fs));
-  font-weight: 600;
-  flex: 1;
-  min-width: 0;
-}
-
-.grp-count {
-  font-size: calc(11px * var(--fs));
-  color: var(--mut);
-  flex: none;
-}
-
-.grp-selects {
-  display: flex;
-  gap: 12px;
-  margin-top: 8px;
-}
-
-.grp-field {
-  flex: 1;
-  min-width: 0;
-}
-
-.grp-field .field-label {
-  display: block;
-}
-
-.grp-field .mem-select {
-  width: 100%;
-}
-
-.grp-add {
-  margin-top: 14px;
-}
-
-/* Gruppe löschen, erster Tipp: Aus dem ✕ wird ein Knopf mit „Wirklich
-   löschen?", darunter steht, was verloren geht. Der Knopf wächst vom ✕ aus
-   nach innen — der zweite Tipp trifft dieselbe Stelle. Darf schrumpfen und
-   umbrechen, sonst schöbe ein langes Wort den Kopf über den Rand. */
-.grp-remove.is-armed {
-  flex: 0 1 auto;
-  width: auto;
-  height: auto;
-  min-height: 26px;
-  padding-block: 4px;
-  padding-inline: 12px;
-  border-radius: var(--r-pill);
-  border-color: var(--wein);
-  background: var(--tWein);
-  font-size: calc(11.5px * var(--fs));
-  font-weight: 600;
-  line-height: 1.25;
-  text-align: center;
-}
-
-.grp-del-warn {
-  margin: 8px 0 0;
-  padding-block: 8px;
-  padding-inline: 12px;
-  border-radius: 10px;
-  background: var(--tWein);
-  color: var(--ink);
-  font-size: calc(11.5px * var(--fs));
-  line-height: 1.45;
-}
-
-/* Hinweis „Ohne Predigtdienstgruppe": Wein-Optik der Warnungen, führt in die
-   Personenliste, wo die Namen stehen. */
-.grp-ohne {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  width: 100%;
-  margin-top: 12px;
-  padding-block: 9px;
-  padding-inline: 12px;
-  border-radius: 12px;
-  border: 1.5px solid var(--wein);
-  background: var(--tWein);
-  color: var(--wein);
-  text-align: start;
-}
-
-/* Badge und Zähler wachsen mit der Schriftstufe — wie im Planen-Banner. */
-.grp-ohne-badge {
-  flex: none;
-  width: calc(21px * var(--fs));
-  height: calc(21px * var(--fs));
-  border-radius: 50%;
-  background: var(--wein);
-  color: var(--onAcc);
-  font-size: calc(13px * var(--fs));
-  font-weight: 700;
-  line-height: calc(21px * var(--fs));
-  text-align: center;
-}
-
-.grp-ohne-title {
-  flex: 1;
-  min-width: 0;
-  font-size: calc(11.5px * var(--fs));
-  font-weight: 700;
-  letter-spacing: 0.12em;
-}
-
-.grp-ohne-count {
-  flex: none;
-  min-width: calc(22px * var(--fs));
-  height: calc(22px * var(--fs));
-  padding-inline: 7px;
-  box-sizing: border-box;
-  border-radius: var(--r-pill);
-  background: var(--wein);
-  color: var(--onAcc);
-  font-size: calc(12px * var(--fs));
-  font-weight: 700;
-  line-height: calc(22px * var(--fs));
-  text-align: center;
-}
-
-.grp-ohne .chev {
-  flex: none;
-  width: calc(14px * var(--fs));
-  height: calc(14px * var(--fs));
 }
 
 /* ---- Hilfsdienste ------------------------------------------------------------ */
@@ -359,40 +383,6 @@
   font-size: calc(10.5px * var(--fs));
   color: var(--mut);
   margin-top: 1px;
-}
-
-/* Niemand freigegeben — dieser Dienst kann nie automatisch besetzt werden
-   (T79). Dieselbe Warnfarbe wie die Konflikte im Planen. */
-.svc-sub--leer {
-  color: var(--wein);
-  font-weight: 600;
-}
-
-/* Name + Zahl sind der Weg in die Freigabe-Liste des Dienstes: ein Schalter,
-   der wie die Zeile aussieht (Rand, Fläche, Polster weg) und links ausrichtet.
-   Der Winkel sagt, dass es weitergeht. */
-.svc-open {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  text-align: start;
-  color: inherit;
-  cursor: pointer;
-}
-
-.svc-open .svc-name,
-.svc-open .svc-sub {
-  display: block;
-}
-
-.svc-open .chev {
-  flex: none;
-  color: var(--mut);
 }
 
 /* Die Freigabe-Liste selbst: die Zeilen sind dieselben wie im Personen-Detail
@@ -443,33 +433,3 @@
   margin-inline-start: 4px;
 }
 
-.svc-add-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 14px;
-}
-
-.svc-add-input {
-  flex: 1;
-  min-width: 0;
-  padding: 9px 12px;
-  border-radius: var(--r-pill);
-  border: 1px solid var(--bord2);
-  background: var(--card);
-  font-size: calc(12.5px * var(--fs));
-  color: var(--ink);
-}
-
-.svc-add-btn {
-  border: 1px solid var(--acc);
-  color: var(--acc);
-  border-radius: var(--r-pill);
-  padding: 9px 14px;
-  font-size: calc(11.5px * var(--fs));
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.svc-add-btn:hover {
-  background: var(--tAcc);
-}

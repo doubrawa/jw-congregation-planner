@@ -19,7 +19,7 @@ import { OeffnenBlatt } from '../aufgaben/OeffnenBlatt'
 import { AbmeldenKnopf } from '../components/AbmeldenKnopf'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { LanguageSheet } from '../components/LanguageSheet'
-import { ServicePersonsSheet } from '../einstellungen/ServicePersonsSheet'
+import { HilfsdienstBlatt } from '../einstellungen/HilfsdienstBlatt'
 import { S89Sheet } from '../components/S89Sheet'
 import { EinstellungenScreen } from '../einstellungen/EinstellungenScreen'
 import { LoginScreen } from '../login/LoginScreen'
@@ -341,7 +341,7 @@ export function AppShell() {
         */}
         {zuteilenBlatt && blatt(<AssignSheet sel={zuteilenBlatt} />)}
         {state.langSheetOpen && blatt(<LanguageSheet />)}
-        {state.svcSheet && blatt(<ServicePersonsSheet svcKey={state.svcSheet} />)}
+        {state.svcSheet && blatt(<HilfsdienstBlatt svcKey={state.svcSheet} />)}
         {state.s89 && blatt(<S89Sheet payload={state.s89} />)}
         {meineAufgabe && blatt(<AufgabeBlatt task={meineAufgabe} />)}
         {state.confirmOpen && vorzulegen(state.myTasks, state.substituteReqs) && blatt(<OeffnenBlatt />)}

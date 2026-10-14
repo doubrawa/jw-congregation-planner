@@ -678,6 +678,32 @@ describe('Dienste', () => {
     expect(reducer(mid, { type: 'changeServiceCount', key: 'x', delta: 1 }).services[0].count).toBe(4)
   })
 
+  it('updateGroup mit neuem Namen zieht ihn durch die geplante Reinigung', () => {
+    const grundwoche = makeState().weeks[0]!
+    const woche = { ...grundwoche, mid: { ...grundwoche.mid, helpers: { rein: [{ name: 'Gruppe 1' }] } } }
+    const s = makeState({
+      groups: [{ id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null }],
+      services: [{ key: 'rein', name: 'Reinigung', count: 1, groups: true }],
+      weeks: [woche],
+    })
+    const next = reducer(s, { type: 'updateGroup', id: 'g1', patch: { name: 'Nord' } })
+    expect(next.groups[0]!.name).toBe('Nord')
+    expect(next.weeks[0]!.mid.helpers.rein).toEqual([{ name: 'Nord' }])
+    // Aufseher und Gehilfe ändern nichts an den Wochen.
+    expect(reducer(s, { type: 'updateGroup', id: 'g1', patch: { overseerId: 'p1' } }).weeks).toBe(s.weeks)
+  })
+
+  it('moveService tauscht mit dem Nachbarn — am Rand bleibt alles, wie es ist', () => {
+    const dienst = (key: string) => ({ key, name: key, count: 1, groups: false })
+    const s = makeState({ services: [dienst('a'), dienst('b'), dienst('c')] })
+    const keys = (st: typeof s) => st.services.map((d) => d.key)
+    expect(keys(reducer(s, { type: 'moveService', key: 'b', dir: -1 }))).toEqual(['b', 'a', 'c'])
+    expect(keys(reducer(s, { type: 'moveService', key: 'b', dir: 1 }))).toEqual(['a', 'c', 'b'])
+    expect(reducer(s, { type: 'moveService', key: 'a', dir: -1 })).toBe(s)
+    expect(reducer(s, { type: 'moveService', key: 'c', dir: 1 })).toBe(s)
+    expect(reducer(s, { type: 'moveService', key: 'gibt-es-nicht', dir: 1 })).toBe(s)
+  })
+
   it('addService / removeService', () => {
     const svc = { key: 'neu', name: 'Neu', count: 1, groups: false }
     expect(reducer(makeState(), { type: 'addService', service: svc }).services.at(-1)).toEqual(svc)

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { emptyQualifications } from '../data/helpers'
-import type { Member, Person } from '../data/types'
+import type { Group, Member, Person } from '../data/types'
 import { dict } from '../i18n/ui'
-import { erinnerungKurz, werPlant, zusammenkunftText } from './einstellungen-anzeige'
+import { erinnerungKurz, gruppenDublette, werPlant, zusammenkunftText } from './einstellungen-anzeige'
 
 /**
  * **Was die Einstellungen in ihren Zeilen sagen** — am Handy rechts in der
@@ -62,5 +62,25 @@ describe('Wer plant', () => {
   it('mit Konto entscheidet das Konto, nicht eine alte Vormerkung', () => {
     const vorgemerkt = { ...BERND, plannerVorgemerkt: true }
     expect(werPlant([vorgemerkt], [konto('p-b')], 'de')).toEqual([])
+  })
+})
+
+describe('Ein doppelter Gruppenname', () => {
+  const gruppe = (id: string, name: string): Group => ({ id, name, overseerId: null, assistantId: null })
+  const GRUPPEN = [gruppe('g1', 'Gruppe 1'), gruppe('g2', 'Gruppe 2')]
+  /** So liest ein englischer Planer die gespeicherten Namen. */
+  const englisch = (text: string) => text.replace('Gruppe', 'Group')
+
+  it('ist auch der, den man in seiner Sprache liest — „Group 2" neben gespeichertem „Gruppe 2"', () => {
+    expect(gruppenDublette(GRUPPEN, 'g1', 'Group 2', englisch)?.id).toBe('g2')
+  })
+
+  it('Schreibweise und Leerzeichen zählen nicht', () => {
+    expect(gruppenDublette(GRUPPEN, 'g1', '  gruppe   2 ', (s) => s)?.id).toBe('g2')
+  })
+
+  it('die eigene Gruppe ist nie ihre Dublette, ein leerer Name keine', () => {
+    expect(gruppenDublette(GRUPPEN, 'g2', 'Gruppe 2', (s) => s)).toBeUndefined()
+    expect(gruppenDublette(GRUPPEN, 'g1', '   ', (s) => s)).toBeUndefined()
   })
 })

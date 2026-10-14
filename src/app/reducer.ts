@@ -8,7 +8,14 @@ import { syncAuxSlots } from '../data/aux-class'
 import { buildAbsences } from '../data/absence'
 import { eintraegeImZeitraum, eintragSetzen, gruppenVerteilen, planNachDatum, taktVon, taktWechseln } from '../data/weitere-plaene'
 import { offenePlaetze, platzAuswahl } from '../data/offene-plaetze'
-import { dienstAusWochenEntfernen, dienstBereichEntfernen, dienstZusagenKeys, ohneDienstZusagen } from '../data/dienste'
+import {
+  dienstAusWochenEntfernen,
+  dienstBereichEntfernen,
+  dienstVerschieben,
+  dienstZusagenKeys,
+  gruppeInWochenUmbenennen,
+  ohneDienstZusagen,
+} from '../data/dienste'
 import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
 import { eigenePerson } from './eigene-person'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsRegelAussetzen, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, regenFsWeeks } from '../data/fs'
@@ -877,6 +884,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
             : s,
         ),
       }
+    case 'moveService': {
+      const services = dienstVerschieben(state.services, action.key, action.dir)
+      return services === state.services ? state : { ...state, services }
+    }
     case 'removeService': {
       // Ein Dienst hinterlässt drei Spuren, und keine räumt sich selbst auf:
       // den Aufgabenbereich bei jeder Person, die Platzreihe in jeder Woche und
@@ -931,11 +942,20 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         toast: toastKey(state, 'toastGruppeDel'),
       }
     }
-    case 'updateGroup':
+    case 'updateGroup': {
+      const vorher = state.groups.find((g) => g.id === action.id)
+      const neuerName = action.patch.name
       return {
         ...state,
         groups: state.groups.map((g) => (g.id === action.id ? { ...g, ...action.patch } : g)),
+        // Ein neuer Name zieht durch die geplante Reinigung — sie kennt die
+        // Gruppe nur beim Namen (`gruppeInWochenUmbenennen`).
+        weeks:
+          vorher && neuerName !== undefined
+            ? gruppeInWochenUmbenennen(state.weeks, state.services, vorher.name, neuerName)
+            : state.weeks,
       }
+    }
     case 'updateCongregation': {
       const congregation = { ...state.congregation, ...action.patch }
       // Ändert sich die Zusammenkunftszeit, wandern die Endzeiten der schon

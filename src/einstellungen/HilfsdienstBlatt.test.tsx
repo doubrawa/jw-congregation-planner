@@ -12,10 +12,11 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications, serviceQualKey } from '../data/helpers'
 import type { Person, Service } from '../data/types'
-import { ServicePersonsSheet } from './ServicePersonsSheet'
+import { HilfsdienstBlatt } from './HilfsdienstBlatt'
 
 /**
- * T79 — die Freigabe eines Hilfsdienstes von der anderen Seite.
+ * **Ein Hilfsdienst** — wer ihn übernehmen darf (T79), seine Stelle in der
+ * Folge und Entfernen (T121, Phase 6c-2).
  *
  * Das Personen-Detail zeigt eine Person und ihre Bereiche; für einen neuen
  * Dienst hieß das: einmal durch die ganze Versammlung. Hier steht ein Bereich
@@ -24,6 +25,8 @@ import { ServicePersonsSheet } from './ServicePersonsSheet'
 
 const DIENSTE: Service[] = [
   { key: 'rund', name: 'Rundgangsordner', count: 1, groups: false },
+  { key: 'mik', name: 'Mikrofone', count: 2, groups: false },
+  { key: 'rein', name: 'Reinigung', count: 1, groups: true },
 ]
 
 const person = (ln: string, dienste: string[] = []): Person => ({
@@ -33,7 +36,7 @@ const person = (ln: string, dienste: string[] = []): Person => ({
 
 const PERSONEN = [person('Berger', ['rund']), person('Albrecht'), person('Winkler')]
 
-function zeige(over: Partial<AppState> = {}) {
+function zeige(over: Partial<AppState> = {}, svcKey = 'rund') {
   const dispatch = vi.fn()
   const state: AppState = { ...demoZustand(), services: DIENSTE, persons: PERSONEN, ...over }
   function Buehne() {
@@ -42,7 +45,7 @@ function zeige(over: Partial<AppState> = {}) {
       <AppDispatchContext.Provider value={dispatch}>
         <AppStoreContext.Provider value={store}>
           <AppStateContext.Provider value={state}>
-            <ServicePersonsSheet svcKey="rund" />
+            <HilfsdienstBlatt svcKey={svcKey} />
           </AppStateContext.Provider>
         </AppStoreContext.Provider>
       </AppDispatchContext.Provider>
@@ -108,6 +111,13 @@ describe('T79 — Freigabe-Liste eines Hilfsdienstes', () => {
     expect(schalter(container)[0]?.getAttribute('aria-label')).toContain('Winkler')
   })
 
+  it('sie sucht wie über der Personenliste — auch „Vorname Nachname"', () => {
+    // Bis zur Phase 6c-2 fand sie nur „Nachname, Vorname", wie die Zeile ihn zeigt.
+    const { container } = zeige()
+    fireEvent.change(container.querySelector('.lang-search')!, { target: { value: 'max berger' } })
+    expect(schalter(container).map((s) => s.getAttribute('aria-label'))).toEqual(['Berger, Max'])
+  })
+
   it('das ✕, der Hintergrund und Escape schließen alle drei', () => {
     // Escape fehlte, während die Geschwister (Sprachauswahl, Zuteilungs-Sheet,
     // S-89) sie längst hatten. Am Schreibtisch ist die Taste der gewohnte Weg
@@ -124,5 +134,50 @@ describe('T79 — Freigabe-Liste eines Hilfsdienstes', () => {
     // Schlüssel ohne Dienst hereinkommt, darf hier kein halbes Blatt stehen.
     const { container } = zeige({ services: [] })
     expect(container.querySelector('.sheet')).toBeNull()
+  })
+})
+
+const knopf = (c: HTMLElement, text: string) => [...c.querySelectorAll('button')].find((b) => b.textContent === text)!
+
+describe('Die Reihenfolge — sie gilt auch im Programm', () => {
+  it('„Nach oben" und „Nach unten" verschieben den Dienst um eine Stelle', () => {
+    const { container, dispatch } = zeige({}, 'mik')
+    fireEvent.click(knopf(container, DE.a11yMoveUp))
+    expect(dispatch).toHaveBeenCalledWith({ type: 'moveService', key: 'mik', dir: -1 })
+    fireEvent.click(knopf(container, DE.a11yMoveDown))
+    expect(dispatch).toHaveBeenCalledWith({ type: 'moveService', key: 'mik', dir: 1 })
+  })
+
+  it('am Rand ist die Richtung gesperrt — ohne den Fokus abzugeben', () => {
+    const erster = zeige({}, 'rund')
+    expect(knopf(erster.container, DE.a11yMoveUp).getAttribute('aria-disabled')).toBe('true')
+    fireEvent.click(knopf(erster.container, DE.a11yMoveUp))
+    expect(erster.dispatch).not.toHaveBeenCalled()
+    cleanup()
+    const letzter = zeige({}, 'rein')
+    expect(knopf(letzter.container, DE.a11yMoveDown).getAttribute('aria-disabled')).toBe('true')
+    expect(knopf(letzter.container, DE.a11yMoveUp).getAttribute('aria-disabled')).toBe('false')
+  })
+})
+
+describe('Entfernen', () => {
+  it('nennt über dem Knopf, was mitgeht — und entfernt erst mit dem zweiten Tipp', () => {
+    const { container, dispatch } = zeige()
+    expect(container.querySelector('.hd-fuss .klein-text')?.textContent).toBe(DE.hdEntfernenHinweis)
+    fireEvent.click(knopf(container, DE.hdEntfernen))
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'removeService', key: 'rund' })
+    // „löschen", nicht „entfernen": Mit dem Dienst geht gespeicherte Planung.
+    fireEvent.click(knopf(container, DE.loeschenSicher))
+    expect(dispatch).toHaveBeenCalledWith({ type: 'removeService', key: 'rund' })
+  })
+})
+
+describe('Ein Gruppen-Dienst (Reinigung)', () => {
+  it('hat keinen Aufgabenbereich — keine Liste, nur Reihenfolge und Entfernen', () => {
+    const { container } = zeige({}, 'rein')
+    expect(container.querySelector('.sheet-sub')?.textContent).toBe(DE.gruppenRotation)
+    expect(schalter(container)).toHaveLength(0)
+    expect(container.querySelector('.lang-search')).toBeNull()
+    expect(knopf(container, DE.hdEntfernen)).toBeDefined()
   })
 })

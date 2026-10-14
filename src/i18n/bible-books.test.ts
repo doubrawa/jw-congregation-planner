@@ -166,7 +166,7 @@ describe('Mitteilungstext „Treffpunkte"', () => {
  * S-89-Formulars — beides also nicht neu übersetzt, sondern übernommen.
  */
 describe('Begriffe der Zusätzlichen Klasse', () => {
-  const KEYS = ['auxKlassen', 'auxKlasse', 'auxHauptsaal', 'auxRatgeber', 'auxDesc',
+  const KEYS = ['auxKlassen', 'auxKlasse', 'auxHauptsaal', 'auxRatgeber',
     'auxRatgeberHint', 'toastAuxAn', 'toastAuxAus'] as const
 
   it('sind in jeder App-Sprache gesetzt und nicht deutsch stehengeblieben', () => {

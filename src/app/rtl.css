@@ -47,13 +47,8 @@
   unicode-bidi: plaintext;
 }
 
-/* Ebenso der Pfeil des Hinweises „Ohne Predigtdienstgruppe" (Einstellungen) —
-   ein SVG, das sich anders als die Glyphe › nicht von selbst spiegelt. */
-[dir='rtl'] .grp-ohne .chev {
-  transform: scaleX(-1);
-}
-
 /* Die Wochen-Blätter-Pfeile spiegeln sich seit T121 selbst: Sie sind `Zeichen`
    mit Richtung (`is-richtung`, bausteine.css). Eine Regel hier auf
    `.week-arrow` kippte sie ein zweites Mal — beide zeigten dann nach innen.
-   Der Zurück-Pfeil der Person ist seit T121 ebenso ein `Zeichen`. */
+   Der Zurück-Pfeil der Person ist seit T121 ebenso ein `Zeichen`, ebenso der
+   Pfeil des Hinweises „Ohne Gruppe" in den Einstellungen (Phase 6c-3). */

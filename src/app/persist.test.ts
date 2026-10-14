@@ -1521,6 +1521,17 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
     expect(data.deleteServiceRow).toHaveBeenCalledWith('c1', 'x')
   })
 
+  it('moveService schreibt beide Dienste mit ihrer neuen Position — und nur sie', () => {
+    // Geladen wird `.order('position')`: Ohne die neuen Positionen stünde die
+    // alte Folge nach dem nächsten Laden wieder da.
+    const dienst = (key: string) => ({ key, name: key, count: 1, groups: false })
+    const [a, b, c] = [dienst('a'), dienst('b'), dienst('c')] as const
+    persist(st({ services: [a, b, c] }), st({ services: [b, a, c] }), { type: 'moveService', key: a.key, dir: 1 })
+    expect(data.saveService).toHaveBeenCalledTimes(2)
+    expect(data.saveService).toHaveBeenCalledWith('c1', b, 0)
+    expect(data.saveService).toHaveBeenCalledWith('c1', a, 1)
+  })
+
   it('addGroup / updateGroup / removeGroup (inkl. grp-Auflösung)', () => {
     /*
       **Die Position gehört dazu.** Geladen werden die Gruppen

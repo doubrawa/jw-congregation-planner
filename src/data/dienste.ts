@@ -26,7 +26,7 @@
 
 import { MEETING_TABS } from './helpers'
 import { helferKey } from './planning'
-import type { ConfirmationMap, Person, Week } from './types'
+import type { ConfirmationMap, Person, Service, Week } from './types'
 
 /** Den Aufgabenbereich eines gelöschten Dienstes aus allen Personen nehmen. */
 export function dienstBereichEntfernen(persons: Person[], key: string): Person[] {
@@ -92,5 +92,58 @@ export function ohneDienstZusagen(map: ConfirmationMap, keys: string[]): Confirm
   if (keys.length === 0 || keys.every((k) => !(k in map))) return map
   const next = { ...map }
   for (const k of keys) delete next[k]
+  return next
+}
+
+/**
+ * **Eine umbenannte Gruppe in der geplanten Reinigung nachziehen** (T121,
+ * Phase 6c-3). Ein Gruppen-Dienst merkt sich an seinem Platz nur den **Namen**
+ * der Gruppe, keine Id (`assignHelpers`, `gruppenKandidaten`). Seit die Namen
+ * frei sind, stünde nach dem Umbenennen in jeder geplanten Woche weiter der
+ * alte — wie bei einer Person, deren Name nicht durch die Wochen gezogen würde
+ * (`renameInWeeks`).
+ *
+ * Nur die Plätze der Gruppen-Dienste, nur der genaue alte Name; unveränderte
+ * Wochen behalten ihre Referenz — daran erkennt `persist.ts`, was zu schreiben
+ * ist. Einen doppelten Gruppennamen nimmt das Blatt gar nicht erst an, sonst
+ * sagte der Name nicht, wessen Platz es ist.
+ */
+export function gruppeInWochenUmbenennen(
+  weeks: Week[],
+  services: readonly Service[],
+  alt: string,
+  neu: string,
+): Week[] {
+  const keys = services.filter((s) => s.groups).map((s) => s.key)
+  if (alt === '' || alt === neu || keys.length === 0) return weeks
+  let geaendert = false
+  const next = weeks.map((week) => {
+    let kopie = week
+    for (const tab of MEETING_TABS) {
+      for (const key of keys) {
+        const arr = kopie[tab].helpers[key]
+        if (!arr?.some((platz) => platz.name === alt)) continue
+        const umbenannt = arr.map((platz) => (platz.name === alt ? { ...platz, name: neu } : platz))
+        kopie = { ...kopie, [tab]: { ...kopie[tab], helpers: { ...kopie[tab].helpers, [key]: umbenannt } } }
+      }
+    }
+    if (kopie !== week) geaendert = true
+    return kopie
+  })
+  return geaendert ? next : weeks
+}
+
+/**
+ * **Einen Dienst um eine Stelle verschieben** (T121, Phase 6c-2) — die Folge
+ * der Dienste ist die des Programms (`ZusammenkunftAnsicht`) und der Planung.
+ * Am Rand bleibt die Liste, wie sie ist: dieselbe Referenz, damit `persist.ts`
+ * nichts schreibt.
+ */
+export function dienstVerschieben(services: Service[], key: string, dir: -1 | 1): Service[] {
+  const von = services.findIndex((s) => s.key === key)
+  const nach = von + dir
+  if (von < 0 || nach < 0 || nach >= services.length) return services
+  const next = [...services]
+  next.splice(nach, 0, ...next.splice(von, 1))
   return next
 }

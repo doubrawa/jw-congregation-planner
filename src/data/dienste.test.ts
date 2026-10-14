@@ -3,11 +3,12 @@ import {
   dienstAusWochenEntfernen,
   dienstBereichEntfernen,
   dienstZusagenKeys,
+  gruppeInWochenUmbenennen,
   ohneDienstZusagen,
 } from './dienste'
 import { emptyQualifications, privWert, serviceQualKey } from './helpers'
 import { helferKey } from './planning'
-import type { Person, Week } from './types'
+import type { Person, Service, Week } from './types'
 
 /**
  * **Was ein gelöschter Hilfsdienst hinterlässt — und wer es wegräumt.**
@@ -124,5 +125,43 @@ describe('Die Bestätigungen der Plätze gehen mit', () => {
     // Ist nichts zu entfernen, bleibt dieselbe Karte — der Zustand ändert sich
     // dann gar nicht.
     expect(ohneDienstZusagen(map, ['nichts'])).toBe(map)
+  })
+})
+
+/**
+ * **Eine umbenannte Gruppe in der geplanten Reinigung** (T121, Phase 6c-3).
+ * Ein Gruppen-Dienst kennt seine Gruppe nur beim Namen. Gefunden beim
+ * Schreiben des Handbuchs: Seit die Namen frei sind, stand nach dem Umbenennen
+ * in jeder geplanten Woche weiter der alte.
+ */
+describe('Eine umbenannte Gruppe zieht durch die Reinigung', () => {
+  const DIENSTE: Service[] = [
+    { key: 'ton', name: 'Ton', count: 1, groups: false },
+    { key: 'rein', name: 'Reinigung', count: 1, groups: true },
+  ]
+  const mitReinigung = (start: string, gruppe: string): Week => {
+    const w = woche(start)
+    return { ...w, mid: { ...w.mid, helpers: { ...w.mid.helpers, rein: [{ name: gruppe }] } } }
+  }
+
+  it('ersetzt den alten Namen an den Plätzen der Gruppen-Dienste', () => {
+    const weeks = [mitReinigung('2026-09-07', 'Gruppe 3'), mitReinigung('2026-09-14', 'Gruppe 1')]
+    const next = gruppeInWochenUmbenennen(weeks, DIENSTE, 'Gruppe 3', 'Nord')
+    expect(next[0]!.mid.helpers.rein).toEqual([{ name: 'Nord' }])
+    // Die Woche einer anderen Gruppe behält ihre Referenz — `persist.ts` schreibt sie nicht.
+    expect(next[1]).toBe(weeks[1])
+  })
+
+  it('ein Dienst für Personen bleibt, auch wenn dort zufällig derselbe Text steht', () => {
+    const w = woche()
+    const weeks = [{ ...w, mid: { ...w.mid, helpers: { ...w.mid.helpers, ton: [{ name: 'Gruppe 3' }] } } }]
+    expect(gruppeInWochenUmbenennen(weeks, DIENSTE, 'Gruppe 3', 'Nord')).toBe(weeks)
+  })
+
+  it('ohne Gruppen-Dienst, ohne Änderung oder ohne alten Namen bleibt dieselbe Liste', () => {
+    const weeks = [mitReinigung('2026-09-07', 'Gruppe 3')]
+    expect(gruppeInWochenUmbenennen(weeks, DIENSTE.slice(0, 1), 'Gruppe 3', 'Nord')).toBe(weeks)
+    expect(gruppeInWochenUmbenennen(weeks, DIENSTE, 'Gruppe 3', 'Gruppe 3')).toBe(weeks)
+    expect(gruppeInWochenUmbenennen(weeks, DIENSTE, '', 'Nord')).toBe(weeks)
   })
 })

@@ -335,12 +335,20 @@ export const DE = {
     werPlant: 'Wer plant', werPlantNiemand: 'Noch niemand.', beiDerPersonAendern: 'Bei der Person ändern',
     // „Erste 7 Tage vorher, letzte am Tag" — {dauer} kommt aus Intl („1 Tag", „7 Tage").
     remKurz: 'Erste {erste}, letzte {letzte}', remVorher: '{dauer} vorher', remAmTagKurz: 'am Tag',
-    hdDesc: 'Anzahl benötigter Personen je Dienst — wirkt sofort auf Programm und Planung.',
+    // Hilfsdienste (Phase 6c-2) und Gruppen (Phase 6c-3).
+    hdPlaetzeVon: 'Plätze für {name}', hilfsdienstHinzu: 'Hilfsdienst hinzufügen',
+    werDarfWas: 'Wer darf was?', bereicheBeiPerson: 'Aufgabenbereiche vergibst du bei der Person',
+    hdEntfernen: 'Hilfsdienst entfernen',
+    hdEntfernenHinweis: 'Mit dem Dienst gehen seine Plätze in allen Wochen und die Freigaben bei den Personen.',
+    ohneGruppeN: 'Ohne Gruppe: {n}', ohneGruppeKurz: 'Bei der Person eine Gruppe wählen',
+    gruppeBeiPerson: 'Wer zu welcher Gruppe gehört, legst du bei der Person fest.',
+    gruppeWennEntfernt: 'Wenn du die Gruppe entfernst', gruppeDelBesuche: 'Ihre Gruppenbesuche entfallen.',
+    gruppeEntfernen: 'Gruppe entfernen',
+    hdDesc: 'Die Zahl sagt, wie viele Plätze es je Zusammenkunft gibt. Die Reihenfolge gilt auch im Programm.',
     gruppenRotation: 'Gruppen-Rotation', eigenerBereich: 'Eigener Aufgabenbereich',
-    gruppenCard: 'PREDIGTDIENSTGRUPPEN',
-    gruppenDesc: 'Jeder Verkündiger gehört zu einer Gruppe mit Aufseher und Gehilfen. Die Reinigung rotiert über die Gruppen.',
-    aufseherLbl: 'AUFSEHER', gehilfeLbl: 'GEHILFE', gruppeLbl: 'Predigtdienstgruppe',
-    mitgliederN: 'Mitglieder: {n}', gruppeHinzu: '+ GRUPPE HINZUFÜGEN',
+    gruppenCard: 'Predigtdienstgruppen',
+    aufseherLbl: 'Aufseher', gehilfeLbl: 'Gehilfe', gruppeLbl: 'Predigtdienstgruppe',
+    mitgliederN: 'Mitglieder: {n}', gruppeHinzu: 'Gruppe hinzufügen',
     neuerDienstPh: 'Neuer Dienst, z. B. Parkplatz', hinzufuegen: '+ HINZUFÜGEN',
     programmsprachen: 'Programmsprachen', spracheHinzu: 'Sprache hinzufügen',
     versSprache: 'Versammlungssprache',
@@ -395,19 +403,20 @@ export const DE = {
     // Zusätzliche Klasse (jw.org S-38, Absatz 27). Die Begriffe stammen aus
     // dem Artikel „Anweisungen für die Leben-und-Dienst-Zusammenkunft" in der
     // jeweiligen Sprache — auxKlassen ist dort die Abschnittsüberschrift.
-    // auxDesc ist der erste Satz von Absatz 27, in den Singular gesetzt: die
-    // Anweisungen sprechen von „zusätzlichen Klassen", die App kennt eine.
+    // Bis zum 14.10.2026 stand hier auch `auxDesc`, der erste Satz von Absatz
+    // 27 im Singular, gemessen in allen 34 Sprachen; die neuen Einstellungen
+    // (T121) zeigen statt seiner nur „Für die Schulungsaufgaben" (`auxKurz`) —
+    // wer den Satz wieder braucht, findet ihn in der Git-Geschichte.
     // auxRatgeberHint ist der Satz zum Ratgeber — wo er allein nicht lesbar
     // ist („Cada una …"), mit der Klasse ausgeschrieben. Die Stärke des Verbs
-    // folgt der S-38 der jeweiligen Sprache („soll", nicht „muss"). Beides
-    // gegen WOL 1201038 in allen 34 Sprachen gehalten am 27.9.2026. Der
+    // folgt der S-38 der jeweiligen Sprache („soll", nicht „muss"). Gegen
+    // WOL 1201038 in allen 34 Sprachen gehalten am 27.9.2026. Der
     // deutsche Satz ist für sich lesbar und steht deshalb wörtlich da („zur
     // Verfügung stehen"; bis zum 1.10.2026 umschrieben als „da sein").
     auxKlassen: 'Zusätzliche Klassen',
     auxKlasse: 'Zusätzliche Klasse',
     auxHauptsaal: 'Hauptsaal',
     auxRatgeber: 'Ratgeber',
-    auxDesc: 'Je nach Anzahl der Teilnehmer kann für die Schulungsaufgaben eine zusätzliche Klasse eingerichtet werden.',
     auxRatgeberHint: 'Für jede zusätzliche Klasse soll ein befähigter Ratgeber zur Verfügung stehen, vorzugsweise ein Ältester.',
     privVorsitz: 'Vorsitz', privVortrag: 'Vorträge', privGebet: 'Gebete',
     // Der Programmteil vor dem Vortrag (4.10.2026): „Schätze aus Gottes Wort ·

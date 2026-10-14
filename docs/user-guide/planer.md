@@ -941,7 +941,7 @@ weder Zuteilung noch Abwesenheit, entfällt die Karte.
 
 Den genauen Tag rechnet die App aus: Das Arbeitsheft kennt nur die Woche, der
 Wochentag und die Uhrzeit stehen in den [Einstellungen](#7-einstellungen)
-(„Di 19:00 · So 10:00"). Weicht eine Woche davon ab – z. B. das Gedächtnismahl –,
+(„Dienstag 19:00"). Weicht eine Woche davon ab – z. B. das Gedächtnismahl –,
 gilt der Termin dieser Woche.
 
 In derselben Leiste stehen die **Abwesenheiten** – die Gegenrichtung zu den
@@ -1110,63 +1110,234 @@ richtigen Person zu; mit ✕ entfernst du es aus der Versammlung.
 
 ## 7. Einstellungen
 
-Unter **Einstellungen** verwaltest du die versammlungsweiten Grunddaten.
+Unter **Einstellungen** pflegst du, was für die ganze Versammlung gilt: ihren
+Namen und ihre Sprachen, wann die Zusammenkünfte sind, die Hilfsdienste, die
+Predigtdienstgruppen und die Erinnerungen. Die Einstellungen sieht nur, wer
+Admin ist.
 
 ![Einstellungen](screenshots/planer-einstellungen.png)
 
-Die Seite enthält mehrere Abschnitte (nach unten scrollen):
+Am Handy stehen untereinander sechs Karten:
 
-- **Versammlung** – Name, Königreichssaal, Wochentage und Uhrzeiten der beiden
-  Zusammenkünfte.
-- **Predigtdienstgruppen** – Gruppen mit **Aufseher** und **Gehilfe**. Die
-  Reinigung rotiert automatisch über die Gruppen.
+- **Versammlung** – **Name**, **Königreichssaal** und **Programmsprachen**.
+- **Zusammenkünfte** – **Unter der Woche** und **Am Wochenende**, der Schalter
+  **Zusätzliche Klasse** und die **Hilfsdienste**.
+- **Predigtdienst** – die **Gruppen**.
+- **Mitteilungen** – die **Erinnerungen**.
+- **Wer plant** – alle, die planen dürfen.
+- **Programm-Import** – holt die nächste Woche des Arbeitshefts von jw.org;
+  wie das geht, steht unter [Programm importieren](#8-programm-importieren).
 
-  **Eine Gruppe löschen** geht nur mit Rückfrage: Der erste Tipp auf ✕ zeigt
-  **Wirklich löschen?** und darunter, was dabei verloren geht. Die Mitglieder
-  sind danach keiner Gruppe mehr zugeordnet, und die Treffpunkte der Gruppe
-  entfallen, im Grundplan wie in den geplanten Wochen. Erst der zweite Tipp
-  löscht. Tippst du woanders hin, bleibt die Gruppe bestehen.
+Jede Zeile nennt, was eingestellt wird, und dazu, was gerade gilt – etwa
+„Dienstag 19:00". So siehst du alles auf einen Blick, ohne etwas zu öffnen. Ein
+Tipp auf die Zeile öffnet ein Blatt, in dem du es änderst. Hinter
+**Programmsprachen**, **Hilfsdienste**, **Gruppen** und **Erinnerungen** liegt
+statt eines Blatts eine eigene Seite, eine Ebene unter der Übersicht – oben
+führt der Pfeil zurück, ebenso die Zurück-Taste.
 
-  Ist jemand keiner Gruppe zugeordnet, steht oben in der Karte der Hinweis
-  **OHNE PREDIGTDIENSTGRUPPE** mit der Anzahl. Ein Tipp darauf führt in die
-  Personenliste, wo die Namen stehen (siehe
+Was du einstellst, gilt sofort. Ein Speichern gibt es nicht; **Fertig** schließt
+nur das Blatt. Zwei Ausnahmen: Ein neuer Hilfsdienst entsteht erst mit
+**Hinzufügen**, und der Name einer Gruppe gilt erst, wenn du ihr Blatt
+schließt.
+
+Am Desktop stehen links untereinander die Abschnitte – **Versammlung**,
+**Zusammenkünfte**, **Hilfsdienste**, **Gruppen**, **Mitteilungen und
+Erinnerungen**, **Wer plant** und **Programm-Import** –, jeder mit einer
+Kurzfassung darunter, etwa „Dienstag 19:00 · Sonntag 10:00" oder „Gruppen: 4".
+Rechts steht der gewählte Abschnitt mit allem, was am Handy hinter seinen
+Zeilen liegt. Zuerst ist **Versammlung** gewählt; die Sprachen stehen dort
+gleich unter Name und Königreichssaal. Die Hilfsdienste sind am Desktop ein
+eigener Abschnitt, die Gruppen eine Tabelle.
+
+### Versammlung und Sprachen
+
+- **Name** – der Name der Versammlung. Er steht oben in der App und auf den
+  ausgedruckten Plänen. Am Handy setzt die App „Versammlung" davor
+  („Versammlung Musterstadt") – trag deshalb nur den Namen selbst ein.
+- **Königreichssaal** – die Anschrift eures Saals. Ein Treffpunkt, für den du
+  keinen Ort einträgst, bekommt sie als Ort (siehe
+  [Treffpunkte planen](#5-treffpunkte-planen)).
+
+Beide öffnen ein Blatt mit einem Feld; was du tippst, gilt sofort.
+
+**Programmsprachen** öffnet eine eigene Seite. In der Zeile steht schon, was
+gilt: zuerst die Sprache der Versammlung, dann die weiteren – „Deutsch,
+Englisch".
+
+- **Versammlungssprache** – in ihr holt der Import das Arbeitsheft von jw.org.
+  Ein Tipp öffnet die Sprachliste von jw.org mit einem Suchfeld; ein Tipp auf
+  eine Sprache wählt sie. Eine neue Versammlungssprache gilt für die nächsten
+  Importe – geladene Wochen bleiben in ihrer Sprache.
+- **Weitere Programmsprachen** – in diesen Sprachen holt der Import das
+  Programm zusätzlich. Wer die App in einer davon benutzt, sieht das Programm
+  dann in seiner Sprache – etwa eine englischsprachige Familie in einer
+  deutschen Versammlung. **Sprache hinzufügen** öffnet dieselbe Liste, das **✕**
+  an einer Sprache nimmt sie wieder heraus (zwei Tipps). Eine neue Sprache holt
+  der nächste Import nach, auch für die Wochen, die schon geladen sind. Eine
+  entfernte holen neue Importe nicht mehr; was schon geladen ist, bleibt.
+
+Die Versammlungssprache ist auch die Sprache der **Einladungs-Mail** an ein
+neues Mitglied: Wer eingeladen wird, hat noch kein Konto und damit keine eigene
+Spracheinstellung. Jede andere Nachricht kommt in der Sprache des Empfängers –
+Push-Erinnerungen in der Sprache, die auf seinem Gerät eingestellt ist, die
+Mitteilungen in der App in seiner App-Sprache. Wer Englisch eingestellt hat,
+liest „Reminder: confirm your assignment", auch wenn eure Versammlung deutsch
+ist.
+
+### Zusammenkünfte
+
+- **Unter der Woche** und **Am Wochenende** – Wochentag und Uhrzeit der beiden
+  Zusammenkünfte. Ein Tipp öffnet ein Blatt mit **Wochentag** und **Uhrzeit**
+  (in Viertelstunden); beides gilt sofort.
+- **Zusätzliche Klasse** („Für die Schulungsaufgaben") – der Schalter für einen
+  zweiten Raum, in dem die Schulungsaufgaben parallel laufen. Er gilt für alle
+  Wochen; was er bewirkt, steht unter
+  [Zusätzliche Klasse](#7a-zusätzliche-klasse).
+- **Hilfsdienste** – daneben steht, wie viele es gibt; ein Tipp öffnet sie
+  (siehe [Hilfsdienste](#hilfsdienste)).
+
+Das Arbeitsheft kennt nur die Woche. Tag und Uhrzeit jeder Zusammenkunft kommen
+von hier – im Programm, in „Meine Aufgaben", auf dem S‑89‑Formular und in den
+Erinnerungen. Eine Änderung gilt deshalb für alle Wochen zugleich, auch für die
+schon geplanten, und das Ende der Zusammenkunft rückt um dieselbe Zeit mit. Nur
+eine Woche mit eigenem Termin behält ihn – eine verlegte Zusammenkunft oder das
+Gedächtnismahl. Weicht nur eine einzelne Woche ab, stellst du das unter
+**Woche einrichten** ein, nicht hier (siehe
+[Sonderwoche: verlegen oder absagen](#sonderwoche-verlegen-oder-absagen)).
+
+### Hilfsdienste
+
+Oben steht: „Die Zahl sagt, wie viele Plätze es je Zusammenkunft gibt. Die
+Reihenfolge gilt auch im Programm." Darunter folgen die Dienste in eben dieser
+Reihenfolge, je Dienst eine Zeile:
+
+- Links der **Name**, darunter, **für wie viele Personen er freigegeben ist**
+  („Personen: 3"). Die Zahl steht dort, weil nur diese Personen den Dienst
+  bekommen können – beim Zuteilen von Hand wie mit **Automatisch**. Steht dort
+  **Personen: 0** (rot), bleibt sein Platz Woche für Woche offen. So beginnt
+  jeder neu angelegte Dienst.
+- Rechts mit **−** und **+**, wie viele **Plätze** er je Zusammenkunft hat, 1
+  bis 6. Die Zahl gilt sofort für alle Wochen. Verringerst du sie,
+  verschwinden die Namen auf den weggefallenen Plätzen aus Programm, Planung
+  und „Meine Aufgaben"; gespeichert bleiben sie trotzdem – erhöhst du wieder,
+  sind sie zurück.
+- Bei der **Reinigung** steht statt der Personen **Gruppen-Rotation**: Sie geht
+  nicht an eine Person, sondern an eine Predigtdienstgruppe. **Automatisch**
+  nimmt Woche für Woche die nächste; von Hand wählst du beim Zuteilen eine
+  Gruppe aus (siehe [Gruppen](#gruppen)).
+
+Darunter führt **Wer darf was?** zu den **Personen**: Dort vergibst du jeder
+Person ihre Aufgabenbereiche, die Hilfsdienste eingeschlossen (siehe
+[Aufgabenbereiche](#aufgabenbereiche)). Für einen einzelnen Dienst geht es
+schneller über sein Blatt (siehe unten).
+
+**Einen Hilfsdienst anlegen:**
+
+1. Tippe auf **Hilfsdienst hinzufügen**.
+2. Gib einen **Namen** ein, etwa „Parkplatz", und tippe auf **Hinzufügen**.
+   Solange das Feld leer ist, geht das nicht.
+3. Der Dienst steht nun unten in der Liste, mit einem Platz je Zusammenkunft.
+   Gleich danach öffnet sich sein Blatt – gib dort frei, wer ihn übernehmen
+   darf.
+
+Jeder Dienst außer der Reinigung ist ein **eigener Aufgabenbereich**: Bei jeder
+Person steht für ihn ein Schalter unter **Aufgabenbereiche › Ändern** in der
+Gruppe **Hilfsdienste** – bei einem neuen Dienst zunächst überall aus.
+
+**Das Blatt eines Dienstes** öffnet ein Tipp auf seinen Namen. Oben steht
+**Eigener Aufgabenbereich** mit der Zahl der Freigegebenen, bei der Reinigung
+**Gruppen-Rotation**. Darunter:
+
+- **Nach oben** und **Nach unten** – verschieben den Dienst um eine Stelle. Die
+  Reihenfolge gilt im Programm und beim Planen.
+- **Alle Personen mit je einem Schalter**, sortiert wie die Personenliste,
+  darüber ein Suchfeld. Hier gibst du in einem Zug frei, wer den Dienst
+  übernehmen darf. Es ist derselbe Schalter wie bei der Person, nur von der
+  anderen Seite: dort eine Person und ihre Bereiche, hier ein Dienst und seine
+  Personen. Bei der Reinigung fehlt die Liste – sie rotiert über die Gruppen.
+- **Hilfsdienst entfernen** – darüber steht, was mitgeht: „Mit dem Dienst gehen
+  seine Plätze in allen Wochen und die Freigaben bei den Personen." Mit den
+  Plätzen gehen auch die Namen, die dort schon eingeteilt waren. Wie jedes
+  Löschen braucht es zwei Tipps: Der erste fragt „Wirklich löschen?". Legst du später einen Dienst gleichen Namens
+  an, beginnt er wieder ohne Freigaben.
+
+Die Reinigung lässt sich entfernen, in der App aber nicht wieder anlegen: Ein
+neuer Dienst geht immer an Personen, nie reihum an Gruppen.
+
+### Gruppen
+
+Unter **Gruppen** stehen die **Predigtdienstgruppen**, jede mit Aufseher und
+Gehilfe und der Zahl ihrer Personen („Personen: 26"). Am Desktop ist es eine
+Tabelle mit den Spalten **Gruppe**, **Aufseher**, **Gehilfe** und **Personen**.
+
+- Ist jemand keiner Gruppe zugeordnet, steht darüber **Ohne Gruppe: 2** mit
+  „Bei der Person eine Gruppe wählen". Ein Tipp führt zu den **Personen**, wo
+  die Namen stehen (siehe
   [Warnung: ohne Predigtdienstgruppe](#warnung-ohne-predigtdienstgruppe)).
-- **Hilfsdienste** – welche Dienste es gibt und mit wie vielen Plätzen. Unter
-  jedem Dienst steht, **für wie viele Personen er freigegeben ist**. Steht dort
-  **0 Personen** (rot), kann die automatische Zuteilung diesen Dienst nie
-  besetzen – so beginnt jeder neu angelegte Dienst, denn der Schalter dafür ist
-  zunächst bei niemandem gesetzt.
+- Wer zu welcher Gruppe gehört, legst du bei der Person fest: in **Person
+  bearbeiten** unter **Predigtdienstgruppe** (siehe
+  [Person bearbeiten](#person-bearbeiten)).
+- Die **Reinigung** verteilt **Automatisch** Woche für Woche reihum auf die
+  Gruppen, in der Reihenfolge dieser Liste. Eine neue Gruppe stellt sich hinten
+  an.
 
-  Tippe auf den Dienst, und du bekommst **alle Personen mit je einem Schalter**
-  – mit Suchfeld, sortiert wie die Personenliste. Dort gibst du in einem Zug
-  frei, wer den Dienst übernehmen darf; es ist derselbe Schalter wie im
-  Personen‑Detail, nur von der anderen Seite. Die Reinigung hat keinen solchen
-  Bereich: Sie rotiert über die Predigtdienstgruppen.
-- **Erinnerungen** – wie viele Tage vorher und wie oft an offene Aufgaben erinnert
-  wird (per Push, nie per E‑Mail). **Erste Erinnerung** und **Letzte Erinnerung**
-  sind die beiden Tage, an denen auf jeden Fall erinnert wird; **Täglich
-  wiederholen** füllt die Tage **dazwischen** auf. Nach der letzten kommt nichts
-  mehr – wer auch am Tag der Zusammenkunft selbst erinnern will, stellt „Letzte
-  Erinnerung" auf **0** („am Tag"). Drei Zeilen, mehr nicht: Wann die
-  eingeteilten Personen von ihrer Aufgabe **erfahren**, steht hier nicht — das
-  entscheidest du mit „Plan senden" (siehe [Den Plan senden](#den-plan-senden)).
-- **Sprachen** – Versammlungssprache und weitere Programmsprachen. Zusätzliche
-  Sprachen werden beim Import als Varianten mitgeholt.
+**Gruppe hinzufügen** legt sofort eine neue Gruppe an – mit der nächsthöheren
+Nummer, nach „Gruppe 4" also „Gruppe 5" – und öffnet ihr Blatt.
 
-  Die Versammlungssprache ist mehr als die Sprache der Programmtexte: In ihr
-  steht auch die **Einladungs-Mail** an ein neues Mitglied. Wer eingeladen wird,
-  hat noch kein Konto und damit keine eigene Spracheinstellung — die Mail kann
-  also nur in der Sprache der Versammlung kommen.
+Ein Tipp auf eine Gruppe öffnet das Blatt **Predigtdienstgruppe**:
 
-  Die Sprache **jeder anderen** Nachricht ist dagegen die des Empfängers:
-  Push-Erinnerungen entstehen beim Verschicken in der Sprache, die auf seinem
-  Gerät eingestellt ist, die Mitteilungen in der App in seiner App-Sprache.
-  Wer Englisch eingestellt hat, liest „Reminder: confirm assignment", auch wenn
-  eure Versammlung deutsch ist.
-- **Programm‑Import** – neue Wochen von jw.org laden (siehe unten).
+- **Name** – frei wählbar, etwa „Gruppe Nord". Er gilt erst, wenn du das Blatt
+  schließt; beim Tippen entsteht so kein halber Name in den Plänen. Ein neuer
+  Name gilt auch in der schon geplanten **Reinigung**. Bleibt das Feld leer,
+  behält die Gruppe ihren Namen, und es erscheint „Name nicht geändert: Ohne
+  Namen geht es nicht". Ebenso bei einem Namen, den schon eine andere Gruppe
+  trägt – „Name nicht geändert: Gruppe 2 gibt es schon"; Groß- und
+  Kleinschreibung zählen dabei nicht. Die Reinigung kennt eine Gruppe nur beim
+  Namen, zwei gleich benannte wären dort nicht auseinanderzuhalten.
+- **Aufseher** – zur Wahl stehen die Ältesten und Dienstamtgehilfen.
+  **Gehilfe** – jeder Bruder. Beides gilt sofort; „—" heißt niemand.
 
-Der **Grundplan der Treffpunkte** stand früher ebenfalls hier. Er gehört zum
-Predigtdienst und steht jetzt dort (siehe [Treffpunkte planen](#5-treffpunkte-planen)).
+  Aufseher und Gehilfe planen die **Treffpunkte ihrer Gruppe** – Uhrzeit, Ort,
+  Leiter und Grundplan – und senden sie, auch ohne Planer- oder Admin-Recht,
+  sobald sie mit ihrem Konto angemeldet sind (siehe
+  [Treffpunkte planen](#5-treffpunkte-planen)). In der Woche, in der ihre
+  Gruppe mit der Reinigung dran ist, gibt **Automatisch** ihnen einen weiteren
+  Hilfsdienst nur, wenn sonst niemand frei ist.
+- **Treffpunkte** – die regelmäßigen Treffpunkte der Gruppe aus dem Grundplan,
+  mit Ort, Wochentag und Uhrzeit. Hier stehen sie nur zum Nachsehen; geändert
+  werden sie im Predigtdienst unter **Grundplan**. Hat die Gruppe keine, fehlt
+  die Zeile.
+- **Mitglieder: 25** – wie viele zu ihr gehören.
+- **Wenn du die Gruppe entfernst** – was dabei verloren ginge, und nur, was
+  auf diese Gruppe zutrifft:
+  - „Die Mitglieder dieser Gruppe sind danach keiner Gruppe mehr zugeordnet."
+  - „Die Treffpunkte dieser Gruppe entfallen." – im Grundplan wie in den
+    geplanten Wochen.
+  - „Ihre Gruppenbesuche entfallen."
+
+**Gruppe entfernen** löscht die Gruppe, wie jedes Löschen mit zwei Tipps. Ihre
+Mitglieder stehen danach unter **Ohne Gruppe**, bis du ihnen bei der Person eine
+andere Gruppe gibst. Ihre Wochen (bzw. Monate) in den **Weiteren Plänen**
+bleiben stehen, nur ohne Gruppe – dort verteilst du sie neu (siehe
+[Weitere Pläne](#5a-weitere-pläne)).
+
+<!-- ERINNERUNGEN: Absatz kommt aus 6c-4 -->
+
+### Wer plant
+
+Die Karte **Wer plant** nennt in einem Satz alle, die zuteilen und senden
+dürfen – mit **Darf planen** oder als **Admin** –, nach dem Nachnamen geordnet.
+Auch wer noch kein Konto hat, steht dabei, wenn das Recht bei ihm vorgemerkt
+ist. Gruppenaufseher und Gehilfen ohne eines der beiden Rechte stehen nicht
+dabei: Sie planen nur die Treffpunkte ihrer Gruppe.
+
+Vergeben wird das Recht bei der Person in der Karte **Rechte** (siehe
+[Rechte](#rechte)); **Bei der Person ändern** führt zu den **Personen**.
+
+**Nicht hier, sondern bei der Person** stehen ihr Konto mit der Einladung, ihre
+Rechte, ihre Aufgabenbereiche und ihre Gruppe (siehe
+[Personen verwalten](#6-personen-verwalten)). Den **Grundplan der Treffpunkte**
+findest du im Predigtdienst (siehe [Treffpunkte planen](#5-treffpunkte-planen)).
 
 ---
 
@@ -1174,7 +1345,7 @@ Predigtdienst und steht jetzt dort (siehe [Treffpunkte planen](#5-treffpunkte-pl
 
 Hat eure Versammlung viele Verkündiger, könnt ihr die **Schulungsaufgaben
 parallel in einem zweiten Raum** durchführen – so kommt jeder öfter dran. Den
-Schalter dafür findest du in den Einstellungen unter **Versammlung**.
+Schalter dafür findest du in den Einstellungen unter **Zusammenkünfte**.
 
 Ist er eingeschaltet, ändert sich Folgendes:
 
@@ -1184,8 +1355,8 @@ Ist er eingeschaltet, ändert sich Folgendes:
   „Nach geistigen Schätzen graben" im zweiten Raum stattfinden.
 - Es kommt eine Karte für den **Ratgeber** dazu. Für jede zusätzliche Klasse
   soll ein befähigter Ratgeber zur Verfügung stehen, vorzugsweise ein Ältester. Damit du
-  jemanden auswählen kannst, setze bei der Person unter **Aufgabenbereiche**
-  den Schalter **Ratgeber**.
+  jemanden auswählen kannst, setze bei der Person unter
+  **Aufgabenbereiche › Ändern** den Schalter **Ratgeber**.
 - **Automatisch zuteilen** besetzt beide Räume und achtet darauf, dass niemand
   gleichzeitig im Hauptsaal und in der Klasse eingeteilt ist.
 - Im **Programm** und im **Ausdruck** stehen beide Räume untereinander, jeder
@@ -1211,7 +1382,7 @@ konfiguriert, werden deren Varianten gleich mitgeladen. Zuteilungen bleiben dabe
 leer und werden anschließend unter **Planen** vergeben.
 
 Über dem Knopf steht, wie weit du schon bist: **„Geladen bis …"** nennt den
-letzten Tag, für den ein Programm vorliegt, daneben die Anzahl der geladenen
+letzten Tag, für den ein Programm vorliegt, darunter die Anzahl der geladenen
 Wochen. Jeder Druck auf den Knopf holt genau eine weitere Woche.
 
 Der Import läuft nicht von selbst. Damit er nicht in Vergessenheit gerät,
