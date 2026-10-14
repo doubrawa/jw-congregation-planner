@@ -17,8 +17,8 @@
  */
 
 import { platzKey, allePlaetze, platzMitZusage } from './plaetze'
-import { zusageStatus } from './planning'
-import type { ConfirmationMap, Meeting, MeetingKey, Service, SlotAssignment, TaskStatus } from './types'
+import { sentKey, zusageStatus } from './planning'
+import type { ConfirmationMap, Meeting, MeetingKey, PersoenlichLog, Service, SlotAssignment, TaskStatus } from './types'
 
 /** Lage eines Platzes im Bild. */
 export type SaalLage = 'voll' | 'wartet' | 'problem' | 'offen' | 'du'
@@ -96,11 +96,19 @@ export function besetzung(
 /**
  * **Wie weit die Zusagen sind**: bestätigt von allen Plätzen, die etwas zu
  * bestätigen haben (`platzMitZusage`) — die Spur beim Planen.
+ *
+ * **Der Haken „weiß Bescheid" zählt wie eine Zusage** (T121, entschieden am
+ * 14.10.2026): Wer kein Konto hat, kann nicht zusagen; der Planer sagt es ihm
+ * selbst und hakt es in den Zusagen der Woche ab (`persoenlich`, je Platz und
+ * Name wie das Versand-Tagebuch). Ohne das würde der Schritt „Zusagen" in
+ * einer Woche mit solchen Personen nie fertig. Eine Absage schlägt den Haken —
+ * sie ist ein Problem, keine Zusage.
  */
 export function zusagenStand(
   meeting: Meeting,
   services: readonly Service[],
   confirmations: ConfirmationMap,
+  persoenlich: PersoenlichLog,
   woche: string,
   tab: MeetingKey,
 ): { bestaetigt: number; gesamt: number } {
@@ -109,7 +117,10 @@ export function zusagenStand(
   for (const platz of allePlaetze(meeting, services)) {
     if (!platzMitZusage(platz)) continue
     gesamt++
-    if (zusageStatus(confirmations, platzKey(platz, woche, tab)) === 'bestätigt') bestaetigt++
+    const key = platzKey(platz, woche, tab)
+    const zusage = zusageStatus(confirmations, key)
+    const bescheid = zusage === 'offen' && persoenlich[sentKey(key, platz.slot?.name ?? '')] != null
+    if (zusage === 'bestätigt' || bescheid) bestaetigt++
   }
   return { bestaetigt, gesamt }
 }

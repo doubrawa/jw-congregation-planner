@@ -5118,6 +5118,49 @@ export const KATALOG = [
     ersetzen: 'namenSatz(plaetze.map((p) => p.slot.name), lang)',
   },
   /* ---- Noch nicht angemeldet (T121, Phase 5g-2, 13.10.2026) ---- */
+  // Der Haken „weiß Bescheid" zählt wie eine Zusage (entschieden am 14.10.2026).
+  {
+    id: 'bescheid-zaehlt-wie-zusage',
+    datei: 'src/data/saal.ts',
+    regel: 'Der Haken „weiß Bescheid" zählt im Schritt „Zusagen" der Spur wie eine Zusage — sonst würde er nie fertig.',
+    suchen: "    const bescheid = zusage === 'offen' && persoenlich[sentKey(key, platz.slot?.name ?? '')] != null\n",
+    ersetzen: '    const bescheid = false\n',
+  },
+  {
+    id: 'bescheid-absage-schlaegt-haken',
+    datei: 'src/data/saal.ts',
+    regel: 'Eine Absage schlägt den Haken — sie ist ein Problem, keine Zusage.',
+    suchen: "    const bescheid = zusage === 'offen' && persoenlich[sentKey(key, platz.slot?.name ?? '')] != null\n",
+    ersetzen: "    const bescheid = persoenlich[sentKey(key, platz.slot?.name ?? '')] != null\n",
+  },
+  {
+    id: 'bescheid-in-den-zusagen-der-woche',
+    datei: 'src/planen/ZusagenAnsicht.tsx',
+    regel: 'Die Spur der Zusagen der Woche zählt den Haken mit.',
+    suchen: 'zahlenDerWoche(rawWeek, fsWeek, { services, confirmations, persoenlich, sentLog, zeiten }, fromIso(tag))',
+    ersetzen: 'zahlenDerWoche(rawWeek, fsWeek, { services, confirmations, persoenlich: {}, sentLog, zeiten }, fromIso(tag))',
+  },
+  {
+    id: 'bescheid-in-der-spur-des-plans',
+    datei: 'src/planen/WochenStand.tsx',
+    regel: 'Auch die Spur über dem Plan zählt den Haken mit.',
+    suchen: 'wochenZahlen(week, fsWeek, tab, { services, confirmations, persoenlich, sentLog, zeiten }, fromIso(tag))',
+    ersetzen: 'wochenZahlen(week, fsWeek, tab, { services, confirmations, persoenlich: {}, sentLog, zeiten }, fromIso(tag))',
+  },
+  {
+    id: 'bescheid-nicht-unerreichbar',
+    datei: 'supabase/functions/send-reminders/index.ts',
+    regel: 'Wem der Planer persönlich Bescheid gegeben hat, der steht nicht in der Meldung „nicht erreichbar".',
+    suchen: ' && !bescheid.has(tagebuchSchluessel(entry.key, pend.name))',
+    ersetzen: '',
+  },
+  {
+    id: 'bescheid-nur-abgehakte-zeilen',
+    datei: 'supabase/functions/send-reminders/index.ts',
+    regel: 'Gelesen werden nur die abgehakten Zeilen des Versand-Tagebuchs.',
+    suchen: '&persoenlich_at=not.is.null`',
+    ersetzen: '`',
+  },
   {
     id: 'zusagen-ohne-konto-aus-tagebuch',
     datei: 'src/data/zusagen.ts',

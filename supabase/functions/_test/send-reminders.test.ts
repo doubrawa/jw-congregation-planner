@@ -183,6 +183,8 @@ let reminders: { first: number; last: number; repeat: boolean }
 /** Öffentliches Zeugnisgeben (T120): Termine und Einträge, wie sie in der Datenbank stehen. */
 let ozTermine: unknown[]
 let ozEintraege: { id: string; termin_id: string; datum: string; person_id: string; selbst: boolean }[]
+/** Versand-Tagebuch: wem der Planer persönlich Bescheid gegeben hat (`persoenlich_at` gesetzt). */
+let bescheidGegeben: { task_key: string; name: string }[]
 /**
  * Tabellen, die es (noch) nicht gibt — das Schema ist nicht eingespielt.
  *
@@ -222,6 +224,11 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     const ab = decodeURIComponent(/[?&]datum=gte\.([^&]*)/.exec(path)?.[1] ?? '')
     const bis = decodeURIComponent(/[?&]datum=lte\.([^&]*)/.exec(path)?.[1] ?? '9999')
     return jsonRes(ozEintraege.filter((e) => (!nurZugeteilt || !e.selbst) && e.datum >= ab && e.datum <= bis))
+  }
+  if (path.startsWith('assignment_log')) {
+    // Gelesen werden nur die abgehakten Zeilen — der Filter muss dastehen.
+    if (!/[?&]persoenlich_at=not\.is\.null/.test(path)) return jsonRes([])
+    return jsonRes(bescheidGegeben)
   }
   if (path.startsWith('confirmations')) return jsonRes(confirmations)
   if (path.startsWith('members')) return jsonRes(members)
@@ -298,6 +305,7 @@ beforeEach(() => {
   reminders = { first: 7, last: 1, repeat: true }
   ozTermine = []
   ozEintraege = []
+  bescheidGegeben = []
   fehlendeTabellen = new Set()
   resetPush()
 })
@@ -525,6 +533,25 @@ describe('send-reminders: Planer-Meldung nur für nicht Erreichbare', () => {
     week.mid.sections[0].items[4].names = [{ name: '' }]
     const r = await run()
     expect(previewFor(r, U_PLANER)).toBeUndefined()
+  })
+
+  it('wem der Planer schon persönlich Bescheid gegeben hat, der fehlt in ihr (14.10.2026)', async () => {
+    // Der Haken „weiß Bescheid" zählt wie eine Zusage (T121, Entscheidung A).
+    bescheidGegeben = [{ task_key: `${WEEK_START}|mid|part|gespraech|0`, name: 'Otto Ohnekonto' }]
+    const planer = previewFor(await run(), U_PLANER)
+    expect(planer?.body).toContain('Nina Nolink')
+    expect(planer?.body).not.toContain('Otto Ohnekonto')
+  })
+
+  it('ein Haken an einem anderen Platz desselben Namens zählt nicht', async () => {
+    bescheidGegeben = [{ task_key: `${WEEK_START}|mid|part|bibel|0`, name: 'Otto Ohnekonto' }]
+    expect(previewFor(await run(), U_PLANER)?.body).toContain('Otto Ohnekonto')
+  })
+
+  it('fehlt die Spalte, meldet der Lauf wie bisher alle', async () => {
+    bescheidGegeben = [{ task_key: `${WEEK_START}|mid|part|gespraech|0`, name: 'Otto Ohnekonto' }]
+    fehlendeTabellen = new Set(['assignment_log'])
+    expect(previewFor(await run(), U_PLANER)?.body).toContain('Otto Ohnekonto')
   })
 
   it('auch ein Planer bekommt sie — wer zuteilt, spricht die Unerreichbaren an (4.10.2026)', async () => {

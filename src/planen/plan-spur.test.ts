@@ -67,7 +67,7 @@ describe('wochenZahlen: die Zusammenkunft für Besetzung und Zusagen, die Woche 
       w,
       [TREFFPUNKT],
       'mid',
-      { services: SERVICES, confirmations: { [keyVon(w, 'Anna Alt')]: 'bestätigt' }, sentLog: {}, zeiten: ZEITEN },
+      { services: SERVICES, confirmations: { [keyVon(w, 'Anna Alt')]: 'bestätigt' }, persoenlich: {}, sentLog: {}, zeiten: ZEITEN },
       HEUTE,
     )
     expect(zahlen).toEqual({ besetzt: 2, gesamt: 4, neu: 2, bestaetigt: 1, zuBestaetigen: 2 })
@@ -75,7 +75,7 @@ describe('wochenZahlen: die Zusammenkunft für Besetzung und Zusagen, die Woche 
 
   it('am Wochenende zählt „neu" dieselbe Woche — der Gastredner aber nirgends mit', () => {
     const w = woche()
-    const zahlen = wochenZahlen(w, [TREFFPUNKT], 'we', { services: SERVICES, confirmations: {}, sentLog: {}, zeiten: ZEITEN }, HEUTE)
+    const zahlen = wochenZahlen(w, [TREFFPUNKT], 'we', { services: SERVICES, confirmations: {}, persoenlich: {}, sentLog: {}, zeiten: ZEITEN }, HEUTE)
     // Besetzt ist nur der Vortrag; dazu zwei leere Mikrofone. Neu sind Anna,
     // Bert und der Treffpunkt — gesendet wird die ganze Woche.
     expect(zahlen).toEqual({ besetzt: 1, gesamt: 3, neu: 3, bestaetigt: 0, zuBestaetigen: 0 })
@@ -84,7 +84,7 @@ describe('wochenZahlen: die Zusammenkunft für Besetzung und Zusagen, die Woche 
 
 /** **Die Zusagen der Woche** (Phase 5g) zählen beide Zusammenkünfte zusammen — wie ihre Liste. */
 describe('zahlenDerWoche: beide Zusammenkünfte, ohne was vorbei ist', () => {
-  const q = (w: Week) => ({ services: SERVICES, confirmations: { [keyVon(w, 'Anna Alt')]: 'bestätigt' as const }, sentLog: {}, zeiten: ZEITEN })
+  const q = (w: Week) => ({ services: SERVICES, confirmations: { [keyVon(w, 'Anna Alt')]: 'bestätigt' as const }, persoenlich: {}, sentLog: {}, zeiten: ZEITEN })
 
   it('Dienstag und Sonntag zusammen; „neu" ist dieselbe Zahl wie am Knopf', () => {
     const w = woche()

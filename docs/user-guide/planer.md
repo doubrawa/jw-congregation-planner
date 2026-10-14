@@ -605,7 +605,11 @@ zusammen, ohne was schon vorbei ist:
 - **Noch nicht angemeldet**: wer beim Senden kein Konto hatte. Ihn hat keine
   Nachricht erreicht — sag es ihm persönlich und setz dann den Haken neben
   seiner Aufgabe. Der Haken bleibt gespeichert, auch für die anderen Planer;
-  ein zweiter Tipp nimmt ihn wieder weg.
+  ein zweiter Tipp nimmt ihn wieder weg. **Der Haken zählt wie eine Zusage**:
+  Im Schritt **Zusagen** der Spur ist der Platz damit erledigt, und am Tag der
+  letzten Erinnerung steht er nicht mehr in der Meldung „nicht erreichbar".
+  Hier unter **Noch nicht angemeldet** bleibt er trotzdem stehen — so siehst
+  du, wer in der App zugesagt hat und wem du es selbst gesagt hast.
 - **Zugesagt**: die Namen derer, die schon zugesagt haben.
 
 Am Desktop stehen die Karten als Spalten nebeneinander. Zurück — oder der

@@ -2,7 +2,17 @@ import type { SpurLage, SpurSchritt } from '../bausteine/Spur'
 import { istAusgefallen, MEETING_TABS } from '../data/helpers'
 import { offeneMeldungen, vergangeneZusammenkuenfte } from '../data/plan-versand'
 import { besetztVon, besetzung, zusagenStand } from '../data/saal'
-import type { ConfirmationMap, FsInstance, MeetingKey, MeetingTimes, SentLog, Service, Week, WeitererPlan } from '../data/types'
+import type {
+  ConfirmationMap,
+  FsInstance,
+  MeetingKey,
+  MeetingTimes,
+  PersoenlichLog,
+  SentLog,
+  Service,
+  Week,
+  WeitererPlan,
+} from '../data/types'
 import type { PlanStand } from '../data/weitere-plaene'
 import type { Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
@@ -19,14 +29,23 @@ export interface WochenZahlen {
   zuBestaetigen: number
 }
 
-/** Was die Zahlen der Spur aus dem Zustand brauchen. */
-type SpurQuellen = { services: Service[]; confirmations: ConfirmationMap; sentLog: SentLog; zeiten: MeetingTimes }
+/**
+ * Was die Zahlen der Spur aus dem Zustand brauchen. `persoenlich`: wem der
+ * Planer ohne Konto Bescheid gegeben hat — der Haken zählt wie eine Zusage.
+ */
+type SpurQuellen = {
+  services: Service[]
+  confirmations: ConfirmationMap
+  persoenlich: PersoenlichLog
+  sentLog: SentLog
+  zeiten: MeetingTimes
+}
 
 /** Besetzung und Zusagen **einer** Zusammenkunft — wie der Saal (`besetzung`) und `zusagenStand`. */
 function zahlenDerZusammenkunft(week: Week, tab: MeetingKey, q: SpurQuellen): Omit<WochenZahlen, 'neu'> {
   const meeting = week[tab]
   const { besetzt, gesamt } = besetztVon(besetzung(meeting, q.services, q.confirmations, week.start, tab, null))
-  const zusagen = zusagenStand(meeting, q.services, q.confirmations, week.start, tab)
+  const zusagen = zusagenStand(meeting, q.services, q.confirmations, q.persoenlich, week.start, tab)
   return { besetzt, gesamt, bestaetigt: zusagen.bestaetigt, zuBestaetigen: zusagen.gesamt }
 }
 

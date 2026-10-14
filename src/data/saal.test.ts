@@ -7,6 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { platzKey, allePlaetze } from './plaetze'
+import { sentKey } from './planning'
 import { besetztVon, besetzung, lageVon, saalLagen, SAAL_PLAETZE, zusagenStand, type Besetzung, type SaalLage } from './saal'
 import type { ConfirmationMap, Meeting, Service } from './types'
 
@@ -99,10 +100,29 @@ describe('zusagenStand: bestätigt von allen, die etwas zu bestätigen haben', (
     const m = zusammenkunft(4, 3, ['Mik 1'])
     ;(m.sections[0]!.items[2] as { names: unknown[] }).names = [{ name: 'Gast Redner', rolle: 'Gastredner' }]
     const [a, b] = schluessel(m)
-    expect(zusagenStand(m, SERVICES, { [a!]: 'bestätigt', [b!]: 'verhindert' }, WOCHE, 'mid')).toEqual({
+    expect(zusagenStand(m, SERVICES, { [a!]: 'bestätigt', [b!]: 'verhindert' }, {}, WOCHE, 'mid')).toEqual({
       bestaetigt: 1,
       gesamt: 3,
     })
+  })
+
+  /*
+   * **Der Haken „weiß Bescheid" zählt wie eine Zusage** (entschieden am
+   * 14.10.2026): Ohne ihn würde der Schritt „Zusagen" in einer Woche mit
+   * Personen ohne Konto nie fertig.
+   */
+  it('wem der Planer ohne Konto Bescheid gegeben hat, zählt wie zugesagt', () => {
+    const m = zusammenkunft(2, 2)
+    const [a, b] = schluessel(m)
+    const persoenlich = { [sentKey(a!, 'Person 0')]: '2026-09-07T10:00:00Z', [sentKey(b!, 'Person 1')]: null }
+    expect(zusagenStand(m, SERVICES, {}, persoenlich, WOCHE, 'mid')).toEqual({ bestaetigt: 1, gesamt: 2 })
+  })
+
+  it('der Haken gilt nur für den Namen, der dort steht — und eine Absage schlägt ihn', () => {
+    const m = zusammenkunft(2, 2)
+    const [a, b] = schluessel(m)
+    const persoenlich = { [sentKey(a!, 'Jemand anderes')]: 'x', [sentKey(b!, 'Person 1')]: 'x' }
+    expect(zusagenStand(m, SERVICES, { [b!]: 'verhindert' }, persoenlich, WOCHE, 'mid')).toEqual({ bestaetigt: 0, gesamt: 2 })
   })
 })
 

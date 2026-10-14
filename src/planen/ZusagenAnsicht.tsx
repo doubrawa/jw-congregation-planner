@@ -63,8 +63,8 @@ export function ZusagenAnsicht({ week, rawWeek, tpw }: { week: Week; rawWeek: We
     })
   }, [rawWeek, weeks, state.week, persons, services, confirmations, sentLog, persoenlich, zeiten, abwesend, tag])
   const zahlen = useMemo(
-    () => zahlenDerWoche(rawWeek, fsWeek, { services, confirmations, sentLog, zeiten }, fromIso(tag)),
-    [rawWeek, fsWeek, services, confirmations, sentLog, zeiten, tag],
+    () => zahlenDerWoche(rawWeek, fsWeek, { services, confirmations, persoenlich, sentLog, zeiten }, fromIso(tag)),
+    [rawWeek, fsWeek, services, confirmations, persoenlich, sentLog, zeiten, tag],
   )
   const zumPlan = (): void => dispatch(zumPlanDerWoche)
   // „Dienstag · Gespräche beginnen · Schüler": Die Woche steht oben, der Tag

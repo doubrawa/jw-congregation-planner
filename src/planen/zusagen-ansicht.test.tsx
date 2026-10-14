@@ -190,6 +190,23 @@ describe('Noch nicht angemeldet', () => {
     fireEvent.click(haken(container))
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'persoenlichBescheid', name: 'Elke Brandt', ja: false }))
   })
+
+  /*
+   * **Der Haken zählt wie eine Zusage** (entschieden am 14.10.2026): Sonst
+   * würde der Schritt „Zusagen" in einer Woche mit Personen ohne Konto nie
+   * fertig. Elke bleibt dabei unter „Noch nicht angemeldet" stehen — der
+   * Unterschied zur Zusage in der App geht nicht verloren.
+   */
+  it('der Haken zählt in der Spur wie eine Zusage — Elke bleibt, wo sie steht', () => {
+    const wert = (c: HTMLElement) =>
+      [...ansicht(c).querySelectorAll('.spur-schritt')].find((s) => s.textContent?.startsWith(t.spurZusagen))?.querySelector('.spur-wert')?.textContent ?? ''
+    const zaehler = (text: string) => Number(text.split('/')[0])
+    const ohneHaken = zaehler(wert(zeige(gesendet()).container))
+    cleanup()
+    const { container } = zeige(gesendet('2026-09-06T19:30:00.000Z'))
+    expect(zaehler(wert(container))).toBe(ohneHaken + 1)
+    expect(karte(container, t.zusagenOhneKonto)?.textContent).toContain('Elke Brandt')
+  })
 })
 
 /**

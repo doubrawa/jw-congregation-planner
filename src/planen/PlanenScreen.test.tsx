@@ -11,7 +11,7 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { syncAuxSlots } from '../data/aux-class'
 import { emptyQualifications, privSetzen } from '../data/helpers'
-import { helferKey } from '../data/planning'
+import { helferKey, sentKey } from '../data/planning'
 import { dict } from '../i18n/ui'
 import type { FsInstance, FsRule, Group, PartItem, Person, Section, Service, SlotSelection, Week } from '../data/types'
 import { PlanenScreen } from './PlanenScreen'
@@ -136,6 +136,18 @@ describe('Der Stand der Woche (T121)', () => {
     expect(spurWert(container, t.spurZuteilen)).toBe('0/4')
     const offen = seite(container).querySelector('.klaeren-zeile[data-art="offen"]')!
     expect(offen.textContent).toContain('Offene Zuteilungen: 4')
+  })
+
+  it('der Haken „weiß Bescheid" zählt im Schritt „Zusagen" wie eine Zusage', () => {
+    // Olaf hat kein Konto; der Planer hat es ihm gesagt und abgehakt
+    // (entschieden am 14.10.2026) — sonst würde der Schritt nie fertig.
+    const w = woche()
+    w.mid.helpers = { mik: [{ name: 'Olaf Overseer', pid: AUFSEHER.id }] }
+    const tagebuch = sentKey(helferKey(w.start, 'mid', 'mik', 0), 'Olaf Overseer')
+    expect(spurWert(zeige({ weeks: [w], persoenlich: { [tagebuch]: null } }).container, t.spurZusagen)).toBe('0/1')
+    cleanup()
+    const { container } = zeige({ weeks: [w], persoenlich: { [tagebuch]: '2026-09-06T19:30:00.000Z' } })
+    expect(spurWert(container, t.spurZusagen)).toBe('1/1')
   })
 
   it('eine ausgefallene Zusammenkunft hat nichts zu besetzen (T30)', () => {

@@ -70,6 +70,7 @@ import {
   type Pending,
   type ServiceRow,
   type SubscriptionRow,
+  tagebuchSchluessel,
   uebersetzerFuer,
   uebersetzt,
   type Week,
@@ -304,6 +305,23 @@ Deno.serve(async (req: Request) => {
         console.error(`oz_termine/oz_eintraege nicht lesbar: ${(err as Error).message}`)
         return [[], []]
       })
+      /*
+       * **Wem der Planer schon persönlich Bescheid gegeben hat** (T121,
+       * entschieden am 14.10.2026): Wer ohne Konto im Versand-Tagebuch steht,
+       * den hakt der Planer in den Zusagen der Woche ab (`persoenlich_at`).
+       * Der Haken zählt wie eine Zusage — und wer abgehakt ist, gehört nicht
+       * mehr in die Meldung „nicht erreichbar". Fehlt die Spalte (Schema nicht
+       * eingespielt), meldet der Lauf wie bisher alle.
+       */
+      const bescheid = await klient
+        .get<{ task_key: string; name: string }[]>(
+          `assignment_log?select=task_key,name&congregation_id=eq.${wert(cong.id)}&persoenlich_at=not.is.null`,
+        )
+        .then((zeilen) => new Set(zeilen.map((z) => tagebuchSchluessel(z.task_key, z.name))))
+        .catch((err): Set<string> => {
+          console.error(`assignment_log.persoenlich_at nicht lesbar: ${(err as Error).message}`)
+          return new Set()
+        })
       const conf = new Map(confs.map((c) => [c.task_key, c.status]))
       // Konto einer eingeteilten Person — Id zuerst, Name nur ohne Id (siehe
       // `_shared/konten.ts`).
@@ -343,7 +361,7 @@ Deno.serve(async (req: Request) => {
             mainByUser.set(userId, [...(mainByUser.get(userId) ?? []), entry])
           }
         }
-        if (!reachable && days === rem.last) {
+        if (!reachable && days === rem.last && !bescheid.has(tagebuchSchluessel(entry.key, pend.name))) {
           unreachable.push({ name: pend.name, eintrag: entry })
         }
       }

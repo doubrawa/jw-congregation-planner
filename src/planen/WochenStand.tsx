@@ -28,7 +28,7 @@ export function PlanSpur({ tab }: { tab: MeetingKey }) {
   const tag = useKalendertag()
   const week = state.weeks[state.week]
   const fsWeek = state.fsWeeks[state.week]
-  const { services, confirmations, sentLog } = state
+  const { services, confirmations, persoenlich, sentLog } = state
   const zeiten = state.congregation.times
   /*
    * Gemerkt: Der Wochenstreifen zeichnet drei Wochen, und jeder Dispatch
@@ -40,9 +40,9 @@ export function PlanSpur({ tab }: { tab: MeetingKey }) {
   const zahlen = useMemo(
     () =>
       week && !istAusgefallen(week, tab)
-        ? wochenZahlen(week, fsWeek, tab, { services, confirmations, sentLog, zeiten }, fromIso(tag))
+        ? wochenZahlen(week, fsWeek, tab, { services, confirmations, persoenlich, sentLog, zeiten }, fromIso(tag))
         : null,
-    [week, fsWeek, tab, services, confirmations, sentLog, zeiten, tag],
+    [week, fsWeek, tab, services, confirmations, persoenlich, sentLog, zeiten, tag],
   )
   if (!zahlen) return null
   // „Zusagen" führt zu den Zusagen der Woche (Entwurf `GPlanen`: `ziele`).
