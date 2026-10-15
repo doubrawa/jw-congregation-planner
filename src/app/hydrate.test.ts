@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { loadAndHydrate } from './hydrate'
 import { loadCongregationData, type CongregationData } from '../lib/data'
+import { verfolgterFetch } from '../lib/schreiben-unterwegs'
 import { clearSnapshot, readSnapshot, saveSnapshot } from '../lib/snapshot'
 import type { AppAction } from './context'
 import { ausstehendesSchreiben } from './persist'
@@ -86,6 +87,69 @@ describe('loadAndHydrate', () => {
     await loadAndHydrate(collector().dispatch, 'u1', { silent: true })
     expect(mockSchreiben).toHaveBeenCalledTimes(1)
     expect(mockSchreiben.mock.invocationCallOrder[0]).toBeLessThan(mockLoad.mock.invocationCallOrder[0] ?? 0)
+  })
+
+  /*
+   * **Was schon hinausging, steht im geladenen Stand** (15.10.2026). Bis dahin
+   * wurde Gebündeltes nur losgeschickt, und die Abfrage konnte es überholen:
+   * Der Bildschirm zeigte danach den Stand ohne die eben getippte Änderung.
+   */
+  it('liest erst, wenn angekommen ist, was schon unterwegs war', async () => {
+    let ankommen = (): void => {}
+    const langsam = verfolgterFetch(
+      () =>
+        new Promise<Response>((weiter) => {
+          ankommen = () => weiter(new Response(null))
+        }),
+    )
+    void langsam('https://db.test/rest/v1/confirmations', { method: 'POST' })
+    mockLoad.mockResolvedValue({ ok: true, empty: false, data: emptyData, congregationId: 'c1', userId: 'u1' })
+    const fertig = loadAndHydrate(collector().dispatch, 'u1', { silent: true })
+    await new Promise((r) => setTimeout(r, 20))
+    expect(mockLoad).not.toHaveBeenCalled()
+    ankommen()
+    await fertig
+    expect(mockLoad).toHaveBeenCalledTimes(1)
+  })
+
+  /*
+   * **Ging während des Ladens etwas hinaus, wird nachgeladen** (15.10.2026).
+   * Ein Push-Klick lädt still nach, und man bestätigt auf „Meine Aufgaben"
+   * gleich — die Abfrage las vor der Zusage, und die Aufgabe stand wieder offen
+   * da, bis zum nächsten Laden. Erst eingespielt, dann nachgeholt (die Stände
+   * der Wochen kommen mit dem ersten Laden, T39).
+   */
+  it('lädt still noch einmal, wenn während des Ladens etwas hinausging', async () => {
+    const sofort = verfolgterFetch(async () => new Response(null))
+    const geladen = { ok: true, empty: false, data: emptyData, congregationId: 'c1', userId: 'u1' } as const
+    mockLoad
+      .mockImplementationOnce(async () => {
+        void sofort('https://db.test/rest/v1/confirmations', { method: 'POST' }) // die Zusage, getippt beim Laden
+        return geladen
+      })
+      .mockResolvedValue(geladen)
+    const { actions, dispatch } = collector()
+    await loadAndHydrate(dispatch, 'u1', { silent: true })
+    expect(mockLoad).toHaveBeenCalledTimes(2)
+    expect(actions.map((a) => a.type)).toEqual(['hydrate', 'hydrate'])
+  })
+
+  it('… einmal, nicht im Kreis — und ein bloßes Lesen zählt nicht', async () => {
+    const sofort = verfolgterFetch(async () => new Response(null))
+    mockLoad.mockImplementation(async () => {
+      void sofort('https://db.test/rest/v1/confirmations', { method: 'POST' })
+      return { ok: true, empty: false, data: emptyData, congregationId: 'c1', userId: 'u1' }
+    })
+    await loadAndHydrate(collector().dispatch, 'u1', { silent: true })
+    expect(mockLoad).toHaveBeenCalledTimes(2)
+
+    mockLoad.mockReset()
+    mockLoad.mockImplementation(async () => {
+      void sofort('https://db.test/rest/v1/weeks?select=*')
+      return { ok: true, empty: false, data: emptyData, congregationId: 'c1', userId: 'u1' }
+    })
+    await loadAndHydrate(collector().dispatch, 'u1', { silent: true })
+    expect(mockLoad).toHaveBeenCalledTimes(1)
   })
 
   it('sichert bei Erfolg die Offline-Momentaufnahme (dieselbe Payload)', async () => {

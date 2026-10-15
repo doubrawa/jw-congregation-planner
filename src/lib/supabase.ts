@@ -10,6 +10,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { AppAction } from '../app/context'
 import type { Dispatch } from 'react'
+import { verfolgterFetch } from './schreiben-unterwegs'
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -33,9 +34,14 @@ export const isSupabaseConfigured = Boolean(url && anonKey)
 const aufEntwicklerseite =
   import.meta.env.DEV && globalThis.location?.pathname.endsWith('/demo.html') === true
 
-/** null = keine Datenbank (keine Env-Konfiguration, oder die Entwicklerseite). */
+/**
+ * null = keine Datenbank (keine Env-Konfiguration, oder die Entwicklerseite).
+ *
+ * Der `fetch` zählt mit, was hinausgeht — das Nachladen wartet darauf
+ * (`lib/schreiben-unterwegs.ts`).
+ */
 export const supabase: SupabaseClient | null =
-  url && anonKey && !aufEntwicklerseite ? createClient(url, anonKey) : null
+  url && anonKey && !aufEntwicklerseite ? createClient(url, anonKey, { global: { fetch: verfolgterFetch() } }) : null
 
 /**
  * Adresse, auf die Auth-Mail-Links (Bestätigung, Passwort-Reset) zurückführen:

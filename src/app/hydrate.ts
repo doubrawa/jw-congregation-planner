@@ -11,6 +11,7 @@
 
 import type { Dispatch } from 'react'
 import { loadCongregationData } from '../lib/data'
+import { schreibenAbwarten, schreibStand } from '../lib/schreiben-unterwegs'
 import { clearSnapshot, readSnapshot, saveSnapshot } from '../lib/snapshot'
 import type { AppAction, HydratePayload } from './context'
 import { ausstehendesSchreiben } from './persist'
@@ -28,6 +29,33 @@ export async function loadAndHydrate(
   // Stiller Refresh (z. B. nach einem Push-Klick): kein „lädt…"-Zwischenschritt,
   // die aktuelle Ansicht bleibt stehen, bis die frischen Daten da sind.
   if (!opts?.silent) dispatch({ type: 'setDataStatus', status: 'loading' })
+  /*
+   * **Ging während des Ladens etwas hinaus, wird noch einmal geladen** — still
+   * und einmal, nicht im Kreis. Die Abfrage kann vor ihm gelesen haben, und
+   * der eingespielte Stand zeigte die eben gegebene Zusage wieder offen.
+   *
+   * Erst eingespielt, dann nachgeholt — nicht das erste Ergebnis verworfen:
+   * Das Laden setzt die Stände der Wochen schon beim Lesen (`staendeSetzen`,
+   * T39). Zeigte der Bildschirm bis zum zweiten Laden den alten Inhalt,
+   * schriebe eine Änderung darin ihn mit dem neuen Stand — lautlos über das,
+   * was ein anderer inzwischen gespeichert hat.
+   */
+  if (await ladenUndEinspielen(dispatch, userId)) {
+    ausstehendesSchreiben()
+    await ladenUndEinspielen(dispatch, userId)
+  }
+}
+
+/**
+ * Einmal laden und einspielen. `true`: Während des Ladens ging etwas hinaus,
+ * das die Abfrage verpasst haben kann (`schreibStand`).
+ */
+async function ladenUndEinspielen(dispatch: Dispatch<AppAction>, userId: string): Promise<boolean> {
+  // Was schon unterwegs ist — eben hinausgeschrieben oder vorher losgegangen —,
+  // soll im geladenen Stand stehen. Bis zum 15.10.2026 wurde es nur losgeschickt,
+  // und die Abfrage konnte es überholen.
+  await schreibenAbwarten()
+  const vorher = schreibStand()
   const res = await loadCongregationData(userId)
   if (res.ok) {
     const payload: HydratePayload = {
@@ -38,22 +66,23 @@ export async function loadAndHydrate(
     }
     saveSnapshot(payload)
     dispatch({ type: 'hydrate', payload })
-    return
+    return schreibStand() !== vorher
   }
 
   // Mitgliedschaft ist weg → der alte Stand darf nicht weiterleben.
   if (res.reason === 'no-membership') {
     clearSnapshot()
     dispatch({ type: 'setDataStatus', status: 'no-membership', userId })
-    return
+    return false
   }
 
   // Ladefehler: letzten Stand nur lesend anzeigen, wenn einer vorliegt.
   const snap = readSnapshot(userId)
   if (snap) {
     dispatch({ type: 'hydrate', payload: snap.payload, staleAt: snap.at })
-    return
+    return false
   }
   // userId mitgeben: Retry und Code-Einlösen brauchen es ohne Hydration
   dispatch({ type: 'setDataStatus', status: 'error', userId })
+  return false
 }
