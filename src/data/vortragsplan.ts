@@ -305,8 +305,7 @@ export function hatAenderungen(vorschau: Vorschau): boolean {
  *
  * Über dieselben Funktionen wie das Zuteilungsblatt und die Felder im
  * Programm (`assignSlot`, `editTalkTheme`, `setOpeningSong`) — so bleibt jede
- * ihrer Regeln gültig, und die Grenze des Planers (`zuteilen-grenze.ts`) lässt
- * genau das durch. Ohne Änderung dieselbe Referenz.
+ * ihrer Regeln gültig. Ohne Änderung dieselbe Referenz.
  */
 export function vortragSetzen(weeks: Week[], wi: number, v: Vortrag): Week[] {
   const week = weeks[wi]

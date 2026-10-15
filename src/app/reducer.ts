@@ -621,14 +621,14 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // Vier Tabs sind keine Zusammenkunft und nicht überall erlaubt:
       // „Treffpunkte" und „Weitere Pläne" (T120) gibt es in Programm und
       // Planen, „Bearbeiten" (T64) **nur** im Planen — das Programm ist für alle
-      // nur lesend — und nur für den Admin: Bearbeiten heißt den Plan ändern
-      // (4.10.2026). Die Zusagen (T121) ebenfalls nur im Planen. Beim Wechsel woandershin auf die Zusammenkunft unter der
+      // nur lesend — und nur für Admin und Planer: Bearbeiten heißt den Plan
+      // ändern (bis zum 15.10.2026 nur der Admin). Die Zusagen (T121) ebenfalls nur im Planen. Beim Wechsel woandershin auf die Zusammenkunft unter der
       // Woche zurücksetzen, sonst stünde die Ansicht auf einem Reiter, den es
       // dort nicht gibt. Die beiden Zusammenkünfte stehen nicht in der Liste —
       // sie gibt es überall.
       const erlaubt: Partial<Record<MeetingTab, boolean>> = {
         fs: screen === 'programm' || screen === 'planen',
-        edit: screen === 'planen' && rechte.admin,
+        edit: screen === 'planen' && rechte.zuteilen,
         wp: screen === 'programm' || screen === 'planen',
         // Die Zusagen der Woche (T121, Phase 5g) sieht, wer zuteilt — beim Planen.
         zusagen: screen === 'planen' && rechte.zuteilen,

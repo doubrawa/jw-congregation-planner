@@ -621,14 +621,6 @@ describe('Der Besucher bleibt sichtbar (T120)', () => {
   })
 })
 
-/**
- * **Der Planer teilt zu, ändert den Plan aber nicht** (Rechte-Stufe „Planer",
- * 4.10.2026). Was den Plan selbst ändert, steht bei ihm nicht da: der
- * Bearbeiten-Reiter, eigene Punkte, Reihenfolge und Minuten, der Grundplan.
- * Was zum Zuteilen gehört, schon — auch die vier Grenzfälle, die der Betreiber
- * ihm zugesprochen hat. Die Grenze zieht der Server (`zuteilen`); stünde hier
- * ein Knopf, den er nicht drücken darf, lüde die App beim Drücken bloß nach.
- */
 /** Montag der Testwoche: Was gesendet werden kann, liegt noch vor einem. */
 function amMontagDerTestwoche() {
   beforeEach(() => {
@@ -651,7 +643,15 @@ function amHandy() {
   })
 }
 
-describe('Der Planer teilt zu, ändert den Plan aber nicht (4.10.2026)', () => {
+/**
+ * **Der Planer plant alles** (15.10.2026, Betreiber: „ein planer plant ja
+ * schließlich die woche" — „Alles Planen"). Bis dahin teilte er nur zu, und was
+ * den Plan selbst ändert, stand bei ihm nicht da. Jetzt plant er wie der
+ * Admin: „Woche einrichten", eigene Punkte, Reihenfolge und Minuten, der
+ * Grundplan. Personen und Einstellungen bleiben beim Admin
+ * (`rechte.test.ts`).
+ */
+describe('Der Planer plant alles wie der Admin (15.10.2026)', () => {
   amMontagDerTestwoche()
   const ALS_PLANER: Partial<AppState> = { planner: false, zuteiler: true }
   const lac: Section = {
@@ -669,32 +669,19 @@ describe('Der Planer teilt zu, ändert den Plan aber nicht (4.10.2026)', () => {
     return w
   }
 
-  it('die Zusammenkünfte ohne den Bearbeiten-Reiter', () => {
-    const { container } = zeige({ ...ALS_PLANER })
-    expect(reiter(container)).toEqual(['Dienstag', 'Sonntag'])
-  })
-
-  it('ein stehengebliebener „edit"-Reiter führt ihn nicht in die Bearbeitung', () => {
-    // Gegenprobe: beim Admin steht dort der Anlass der Woche.
-    expect(seite(zeige({ tab: 'edit' }).container).querySelector('.anlass-liste')).not.toBeNull()
+  it('die Zusammenkünfte mit dem Reiter „Woche einrichten" — wie beim Admin', () => {
+    const planer = reiter(zeige({ ...ALS_PLANER }).container)
     cleanup()
+    expect(planer).toEqual(reiter(zeige({}).container))
+    expect(planer).toHaveLength(3)
+  })
+
+  it('„Woche einrichten" führt ihn in die Bearbeitung: der Anlass der Woche steht da', () => {
     const { container } = zeige({ ...ALS_PLANER, tab: 'edit' })
-    expect(seite(container).querySelector('.anlass-liste')).toBeNull()
-    expect(seite(container).querySelector('.meeting-tabs')).not.toBeNull()
+    expect(seite(container).querySelector('.anlass-liste')).not.toBeNull()
   })
 
-  it('den Ablauf ändert er nicht — die Steuerung dafür steht nur unter „Woche einrichten" (T121)', () => {
-    // Eigene Punkte, Reihenfolge und Minuten gehören dem Admin; seit Phase 5b
-    // stehen sie in dessen „Woche einrichten", nicht mehr im Plan.
-    const planer = zeige({ ...ALS_PLANER, weeks: [mitLac()] })
-    const s = seite(planer.container)
-    expect(s.querySelector('.plus-minus')).toBeNull()
-    expect(s.textContent).not.toContain(t.programmpunkteBearbeiten)
-    // Den Platz darin teilt er aber zu.
-    expect(s.textContent).toContain('Olaf Overseer')
-  })
-
-  it('der Partner am Schülerteil und das Vortragsthema gehören zum Zuteilen (Grenzfälle)', () => {
+  it('der Partner am Schülerteil und das Vortragsthema stehen bei ihm wie beim Admin', () => {
     const { container } = zeige({ ...ALS_PLANER, weeks: [mitLac()] })
     expect(seite(container).querySelector('.partner-toggle')).not.toBeNull()
     cleanup()
@@ -707,14 +694,21 @@ describe('Der Planer teilt zu, ändert den Plan aber nicht (4.10.2026)', () => {
     expect(container.querySelector('.planen-leiste .aktion-haupt')?.textContent).toContain(t.planSenden)
   })
 
-  it('im Predigtdienst kein Grundplan — es gibt dort nichts zuzuteilen', () => {
+  it('im Predigtdienst auch der Grundplan — er pflegt ihn ganz', () => {
     const { container } = zeige({ ...ALS_PLANER, tab: 'fs' })
-    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab])
+    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.fsGrundplan])
   })
 
-  it('ist er zugleich Gruppenaufseher, pflegt er den Grundplan seiner Gruppe', () => {
-    const { container } = zeige({ ...ALS_PLANER, personId: AUFSEHER.id, tab: 'fs' })
-    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.fsGrundplan])
+  it('ist er zugleich Gruppenaufseher, pflegt er den Grundplan aller Gruppen — nicht nur seiner', () => {
+    const regel = (id: string, grp: string | null): FsRule => ({ id, grp, wd: 6, time: '09:30', place: 'Saal', monthly: 0, skipCong: false })
+    const fsRules = [regel('r-eigen', 'g1'), regel('r-fremd', 'g2'), regel('r-versammlung', null)]
+    const groups: Group[] = [...GRUPPEN, { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null }]
+    const { container } = zeige({ ...ALS_PLANER, personId: AUFSEHER.id, tab: 'fs', fsBereich: 'grundplan', fsRules, groups })
+    // Gegenprobe: Der Gruppenaufseher ohne Planer-Recht sieht nur seine Regel.
+    expect(container.querySelectorAll('.regel-zeile')).toHaveLength(3)
+    cleanup()
+    const aufseher = zeige({ planner: false, zuteiler: false, personId: AUFSEHER.id, tab: 'fs', fsBereich: 'grundplan', fsRules, groups })
+    expect(aufseher.container.querySelectorAll('.regel-zeile')).toHaveLength(1)
   })
 })
 

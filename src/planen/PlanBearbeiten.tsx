@@ -16,6 +16,7 @@ import { datumsFormat } from '../components/datum-anzeige'
 import { PlanTitel } from '../components/PlanTitel'
 import { gruppenName, spannenAnzahl, spannenText } from '../components/weitere-plaene-anzeige'
 import { fromIso } from '../data/meeting-dates'
+import { rechteVon } from '../data/rechte'
 import {
   beginntMit,
   eintraegeVon,
@@ -58,7 +59,7 @@ export function PlanBearbeiten({ plan, onZurueck }: { plan: WeitererPlan; onZuru
   const tag = useKalendertag()
   const breit = useMedia(TABLET_BREITE)
   const { drucken, bogen } = useDruckBogen()
-  const admin = state.planner
+  const admin = rechteVon(state).zuteilen
   const stand = planStand(plan, fromIso(tag))
   // Ein abgeschlossener Plan ist gewesen: nichts mehr zu verteilen, zu
   // veröffentlichen oder zu zeigen (`plaeneZumAnsehen`).

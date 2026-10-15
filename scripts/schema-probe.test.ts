@@ -554,17 +554,6 @@ const LAEUFE: Record<string, Lauf[]> = {
         },
         funktionen: {
           substitute: () => ({ status: 403, json: { error: 'nicht erlaubt' } }),
-          // Die Tür wie in `zuteilen/woche.ts`, dahinter ohne die Grenze
-          // `nurZuteilungen` — die Attrappe kennt keine Richtlinien, und so
-          // laufen auch (38)–(40) in ihre Zurückstell-Zweige.
-          zuteilen: (rumpf, { tabellen, wer }) => {
-            const ich = (tabellen.members ?? []).find((m) => m.user_id === wer?.id)
-            if (!ich?.planner && !ich?.zuteiler) return { status: 403, json: { error: 'forbidden' } }
-            const woche = (tabellen.weeks ?? []).find((w) => w.start === rumpf.woche)
-            if (!woche) return { status: 404, json: { error: 'week-not-found' } }
-            woche.data = rumpf.data
-            return { json: { ok: true, stand: '2026-08-21T10:00:00+00:00' } }
-          },
           // Die Tür wie in `send-plan/index.ts`: Senden darf, wer zuteilt. Den
           // Zweig des Gruppenaufsehers für die Treffpunkte seiner Gruppe kennt
           // die Attrappe nicht — die Probe misst ihn nicht. Dahinter ins Leere:
@@ -587,10 +576,11 @@ const LAEUFE: Record<string, Lauf[]> = {
         'POST plaene', 'GET plaene', 'DELETE plaene', 'POST plan_eintraege', 'GET plan_eintraege', 'DELETE plan_eintraege',
         // (6) und (6b): der Meldeweg eines Mitglieds seit dem 24.9.2026.
         'POST rpc/notify_planners',
-        // Die Rechte-Stufen (4.10.2026): Woche, Konto, Treffpunkte, Grundplan,
-        // Besuche — samt Zurückstellen und Aufräumen.
-        'PATCH weeks', 'PATCH members', 'GET groups', 'POST fs_weeks', 'GET fs_weeks', 'PATCH fs_weeks', 'DELETE fs_weeks',
-        'POST fs_rules', 'GET fs_rules', 'DELETE fs_rules', 'PATCH gruppenbesuche',
+        // Die Rechte-Stufen (4.10.2026, seit dem 15.10.2026 „Alles Planen"):
+        // Woche, neue Woche, Konto, Treffpunkte, Grundplan, Besuche, Person und
+        // Versammlung — samt Zurückstellen und Aufräumen.
+        'PATCH weeks', 'POST weeks', 'DELETE weeks', 'PATCH members', 'GET groups', 'POST fs_weeks', 'GET fs_weeks', 'PATCH fs_weeks', 'DELETE fs_weeks',
+        'POST fs_rules', 'GET fs_rules', 'DELETE fs_rules', 'PATCH gruppenbesuche', 'POST persons', 'PATCH congregations',
         // Die Vormerkungen des Vortragsplans (T122): anlegen, sehen, aufräumen.
         'POST vortraege', 'GET vortraege', 'DELETE vortraege',
         // Die Trolleys (T121, Phase 7): der Trolley des Admins, das Trolley-Recht
@@ -882,10 +872,14 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
   it('mitgliedsrechte-probe (Rechte-Stufen): stellt jede geänderte Zeile zurück und räumt alles weg', async () => {
     const vorher = lauf('mitgliedsrechte-probe.mjs').umgebung!.bestand!
     const { tabellen, ausgabe } = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
-    // Was der Planer an Bestehendem ändern konnte, steht wieder wie vorher —
-    // die Woche (38–40) und sein eigenes Konto (41).
+    // Was an Bestehendem geändert werden konnte, steht wieder wie vorher — die
+    // Woche (35, 38, 39), das Konto des Planers (41), der Name der Versammlung
+    // (81); die Woche aus (40) und die Person aus (80) sind weg.
+    expect(tabellen.weeks).toHaveLength(1)
     expect(tabellen.weeks![0]!.data).toEqual(vorher.weeks![0]!.data)
     expect(tabellen.members!.find((m) => m.user_id === U3)!.planner).toBe(false)
+    expect(tabellen.congregations).toEqual(vorher.congregations)
+    expect(tabellen.persons!.filter((p) => String(p.fn).startsWith('PROBE-'))).toEqual([])
     // Was die Probe anlegte, ist weg: die Treffpunkt-Woche und jede Zeile mit Kennzeichen.
     expect(tabellen.fs_weeks ?? []).toEqual([])
     for (const t of ['fs_rules', 'gruppenbesuche', 'plaene', 'plan_eintraege', 'vortraege']) {
@@ -894,8 +888,14 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     // Auch die Absage aus (6), die seit dem 4.10.2026 beim Planer ebenfalls ankommt.
     expect((tabellen.notifications ?? []).filter((z) => String(z.title).startsWith('PROBE-'))).toEqual([])
     const text = ausgabe.join('\n')
-    expect(text).toMatch(/\(35\) Mitglied: eine Woche über „zuteilen" schreiben\n.*abgewiesen \(HTTP 403\) — nur Admin und Planer \(forbidden\)/)
-    expect(text).toMatch(/\(40\) Planer: über „zuteilen" einen Platz freigeben\n.*GEÄNDERT \(HTTP 200\) — der Weg steht offen\n.*\(wieder zurückgestellt\)/)
+    // Die Attrappe kennt keine Richtlinien: Was in der Datenbank abgewiesen
+    // würde (35, 80, 81), kommt hier an — und wird zurückgestellt oder gelöscht.
+    expect(text).toMatch(/\(35\) Mitglied: einen Programmpunkt der Woche umbenennen\n.*GEÄNDERT \(HTTP \d+\) — AUCH DAS!\n.*\(wieder zurückgestellt\)/)
+    expect(text).toMatch(/· \(38\) Planer: einen Programmpunkt der Woche umbenennen\n.*GEÄNDERT \(HTTP \d+\) — der Weg steht offen\n.*\(wieder zurückgestellt\)/)
+    expect(text).toMatch(/· \(39\) Planer: einen Platz der Woche freigeben\n.*GEÄNDERT \(HTTP \d+\) — der Weg steht offen\n.*\(wieder zurückgestellt\)/)
+    expect(text).toMatch(/· \(40\) Planer: eine Woche anlegen, wie der Import\n.*ANGEKOMMEN \(HTTP 201\) — der Weg steht offen\n.*\(Zeile wieder gelöscht\)/)
+    expect(text).toMatch(/\(80\) Planer: eine Person anlegen\n.*ANGEKOMMEN \(HTTP 201\) — AUCH DAS!\n.*\(Zeile wieder gelöscht\)/)
+    expect(text).toMatch(/\(81\) Planer: den Namen der Versammlung ändern\n.*GEÄNDERT \(HTTP \d+\) — AUCH DAS!\n.*\(wieder zurückgestellt\)/)
     expect(text).toMatch(/\(47\) Gruppenaufseher: den Ort eines Treffpunkts der eigenen Gruppe ändern\n.*GEÄNDERT \(HTTP 201\) — der Weg steht offen/)
     expect(text).toMatch(/\(61\) Planer: die Absage eines Mitglieds bekommen \(notify_planners\)\n.*ANGEKOMMEN \(HTTP 204\) — kommt an/)
     expect(text).toMatch(/· \(69\) Planer: einen vorgemerkten Vortrag sehen\n.*SICHTBAR \(HTTP 200\) — er übernimmt den Vortragsplan/)
@@ -912,8 +912,9 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     const text = (await mitBestand({ groups: ohneAufseher })).ausgabe.join('\n')
     expect(text).toMatch(/\? \(42–61\) .* — der Gruppenaufseher leitet keine Gruppe, nicht gemessen/)
     for (let nr = 42; nr <= 61; nr++) expect(text, `(${nr})`).not.toMatch(new RegExp(`[·!] \\(${nr}\\) `))
-    // Die Türen, die Vormerkungen und die Trolleys brauchen keine Gruppe.
-    for (const nr of [35, 36, 65, 70, 71, 79]) expect(text, `(${nr})`).toMatch(new RegExp(`[·!] \\(${nr}\\) `))
+    // Die Woche, die Tür, die Vormerkungen, Person und Versammlung und die
+    // Trolleys brauchen keine Gruppe.
+    for (const nr of [35, 36, 38, 39, 40, 41, 65, 70, 71, 79, 80, 81]) expect(text, `(${nr})`).toMatch(new RegExp(`[·!] \\(${nr}\\) `))
   })
 
   it('mitgliedsrechte-probe (Rechte-Stufen): sagt die Function erst hinter der Tür „keine Woche", hat sie durchgelassen', async () => {

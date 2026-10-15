@@ -91,10 +91,11 @@ der Stelle von „Diese Woche in der Versammlung".
 ### Wer darf was: Planer und Admin
 
 Es gibt zwei Rechte, die du bei einer Person in der Karte **Rechte** vergibst:
-**Darf planen** (der Planer) und **Admin**. Der Planer teilt zu und sendet die
-Pläne; der Admin darf zusätzlich die Pläne selbst ändern und alles Übrige. Ein
-Admin hat das Planer-Recht ohnehin – bei ihm steht der Schalter **Darf planen**
-an und lässt sich nicht umlegen.
+**Darf planen** (der Planer) und **Admin**. Der Planer plant alles: Er holt
+das Programm, richtet die Wochen ein, teilt zu und sendet, und er pflegt
+Treffpunkte, Gruppenbesuche und Weitere Pläne. Der Admin verwaltet zusätzlich
+Personen und Einstellungen. Ein Admin hat das Planer-Recht ohnehin – bei ihm
+steht der Schalter **Darf planen** an und lässt sich nicht umlegen.
 
 | | Verkündiger | Gruppenaufseher und Gehilfe | Planer | Admin |
 | --- | --- | --- | --- | --- |
@@ -102,14 +103,13 @@ an und lässt sich nicht umlegen.
 | Vortragsthema, Lieder, Partner am Schülerteil | – | – | ✓ | ✓ |
 | Vortragsplan aus dem Planungsprogramm übernehmen | – | – | ✓ | ✓ |
 | Treffpunkt-Leiter zuteilen | – | seine Gruppe | alle | alle |
-| Treffpunkte ändern: Zeit, Ort, hinzufügen, entfernen, Grundplan | – | seine Gruppe | – | alle |
+| Treffpunkte ändern: Zeit, Ort, hinzufügen, entfernen, Grundplan | – | seine Gruppe | alle | alle |
 | Sich für den Trolley eintragen (mit dem Aufgabenbereich **Trolley**) | ✓ | ✓ | ✓ | ✓ |
-| Gruppenbesuche: Besucher wechseln | – | – | ✓ | ✓ |
-| Weitere Pläne: Gruppen verteilen | – | – | ✓ | ✓ |
+| Gruppenbesuche planen: anlegen, verlegen, Besucher wechseln | – | – | ✓ | ✓ |
+| Weitere Pläne: anlegen, einstellen, veröffentlichen, Gruppen verteilen | – | – | ✓ | ✓ |
 | **Plan senden** | – | Treffpunkte seiner Gruppe | ✓ | ✓ |
-| **Woche einrichten** (Anlass, Sonderwoche, Termine), Punkte unter „Unser Leben als Christ" anlegen, umbenennen, verschieben, Minuten | – | – | – | ✓ |
-| Trolleys anlegen, Gruppenbesuche planen, Weitere Pläne anlegen | – | – | – | ✓ |
-| Programm importieren, Personen, Abwesenheiten anderer, Einstellungen, Mitglieder, Anmelde-Links | – | – | – | ✓ |
+| Programm holen, **Woche einrichten** (Anlass, Sonderwoche, Termine), Punkte unter „Unser Leben als Christ" anlegen, umbenennen, verschieben, Minuten | – | – | ✓ | ✓ |
+| Personen, Abwesenheiten anderer, Einstellungen mit Trolleys, Mitglieder, Anmelde-Links | – | – | – | ✓ |
 
 **Gruppenaufseher und Gehilfe** ist, wen du im Blatt seiner
 Predigtdienstgruppe einträgst; dort stehen nur ihre Mitglieder zur Wahl (siehe
@@ -119,8 +119,9 @@ angehört.
 
 Die Meldungen an die Planer – eine **Verhinderung**, **Ersatz gefunden**,
 **unbestätigte Zuteilungen** – bekommen Admins und Planer: Wer zuteilt, sucht
-auch den Ersatz. Was einem Planer nicht zusteht, zeigt die App ihm gar nicht
-erst an; die Datenbank weist es zusätzlich ab.
+auch den Ersatz. Personen und Einstellungen zeigt die App einem Planer gar
+nicht erst an; die Datenbank weist sie zusätzlich ab. Bis zum 15. Oktober 2026
+teilte der Planer nur zu – die Pläne selbst änderte der Admin.
 
 Für den Trolley trägt sich jeder selbst ein, auf Wunsch gleich mit einem
 Partner; zuteilen kann dort niemand (siehe [Trolleys](#trolleys)).
@@ -136,8 +137,8 @@ einer Gruppe – sonst **Verkündiger**.
 Unter **Zusammenkünfte** schaltest du oben rechts auf **Planen** und teilst die
 Aufgaben und Hilfsdienste einer Woche zu. Die Karten der beiden Tage (mit
 Datum und Uhrzeit) wechseln zwischen der **Zusammenkunft unter der Woche** und
-**am Wochenende**; daneben steht für Admins die Karte mit dem Zeichen (drei
-Regler): **Woche einrichten** (Abschnitt 3). Die Zusammenkünfte für den Predigtdienst sind ein eigenes
+**am Wochenende**; daneben steht die Karte mit dem Zeichen (drei Regler):
+**Woche einrichten** (Abschnitt 3). Die Zusammenkünfte für den Predigtdienst sind ein eigenes
 Thema im Menü (Abschnitt 5). Mit ‹ › wählst du die Woche – auf Handy und
 Tablet geht auch seitwärts wischen.
 
@@ -236,9 +237,9 @@ Gesprächsteile bevorzugt mit Verkündigern und Schwestern (nicht mit Ältesten/
 Dienstamtgehilfen) und achtet auf gleiches Geschlecht der beiden Partner.
 
 Beim Wochenende trägst du hier das **Vortragsthema** und die
-**Anfangslied‑Nummer** ein – das gehört zum Zuteilen, das darf auch der Planer.
-Den Ablauf selbst ändert der Admin unter **Woche einrichten › Programmpunkte
-bearbeiten** (Abschnitt 3, „Das Programm bearbeiten").
+**Anfangslied‑Nummer** ein. Den Ablauf selbst änderst du unter **Woche
+einrichten › Programmpunkte bearbeiten** (Abschnitt 3, „Das Programm
+bearbeiten").
 
 ---
 
@@ -270,7 +271,7 @@ Zuteilen kannst du einzelne Slots wie gewohnt noch von Hand anpassen.
 
 ### Woche einrichten
 
-Was der ganzen Woche gehört, stellt der Admin unter **Woche einrichten** ein:
+Was der ganzen Woche gehört, stellst du unter **Woche einrichten** ein:
 beim Planen der Zusammenkünfte die Karte mit dem Zeichen (drei Regler) neben
 „Dienstag" und „Sonntag". Die Seite ist eine Ebene unter dem Plan – oben führt
 der Pfeil zurück, ebenso die Zurück-Taste. Untereinander stehen vier Karten:
@@ -673,9 +674,8 @@ Admin zu sein – Uhrzeit, Ort, Leiter, zusätzliche Treffpunkte und den Grundpl
 ihrer Gruppe. Den Schalter **Planen** sehen sie nur im Predigtdienst, im
 Grundplan nur die Treffpunkte ihrer Gruppe (neue legen sie dort ohne Wahl der
 Gruppe an); **Automatisch** wirkt nur auf ihre Gruppe,
-und mit **Plan senden** benachrichtigen sie die Leiter ihrer Gruppe. Ein
-**Planer** besetzt die Leiter aller Gruppen; Uhrzeit und Ort stehen bei ihm als
-Text da, und den Grundplan sieht er nicht.
+und mit **Plan senden** benachrichtigen sie die Leiter ihrer Gruppe. Planer und
+Admin planen die Treffpunkte aller Gruppen ganz, samt Grundplan.
 
 Beim **Ansehen** sieht, wer zuteilt, die Treffpunkte **aller** Gruppen — je Tag
 eine Karte. **Deine Gruppe** steht dann am Treffpunkt der eigenen Gruppe, nicht
@@ -826,9 +826,8 @@ Veröffentlicht, Abgeschlossen), und Zurück führt wieder zur Liste.
 - **Plan löschen** fragt einmal nach.
 
 Ein abgeschlossener Plan bleibt in der Liste stehen, zum Nachsehen: Verteilen,
-Veröffentlichen und Drucken gibt es dort nicht mehr. Der **Planer** sieht Name,
-Zeitraum und Takt, ändert sie aber nicht – er verteilt die Gruppen mit
-„Beginnen mit" und in der Vorschau und druckt den Plan wie der Admin.
+Veröffentlichen und Drucken gibt es dort nicht mehr. Planer und Admin pflegen
+einen Plan gleich.
 
 **Wer was sieht**: Einen Plan sieht nach dem Veröffentlichen die ganze
 Versammlung, und jeder findet oben unter „Deine Gruppe ist dran" die Wochen
@@ -1037,8 +1036,9 @@ Rollen in ihrer Folge.
 
 Die Karte **Rechte** hat zwei Schalter:
 
-- **Darf planen** – teilt zu und sendet die Pläne, ändert sie aber nicht.
-- **Admin** – ändert auch Pläne, Personen und Einstellungen: alles, was dieses
+- **Darf planen** – holt das Programm, richtet die Pläne ein, teilt zu und
+  sendet.
+- **Admin** – verwaltet auch Personen und Einstellungen: alles, was dieses
   Handbuch beschreibt. Das Planer-Recht hat er ohnehin; bei ihm steht **Darf
   planen** an und lässt sich nicht umlegen.
 

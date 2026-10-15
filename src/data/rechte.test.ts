@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { darfPlanen, erlaubteScreens, nurZuteilen, rechteStufe, rechteVon, themaVon, type Rechte } from './rechte'
+import { darfPlanen, erlaubteScreens, rechteStufe, rechteVon, themaVon, type Rechte } from './rechte'
 import type { Group, Screen } from './types'
 
 /**
@@ -65,10 +65,8 @@ describe('Die Rechte aus dem Zustand', () => {
     expect(von(true, false, 'p-auf')).toEqual(ADMIN)
   })
 
-  it('der Planer teilt zu, ohne Admin zu sein', () => {
+  it('der Planer plant, ohne Admin zu sein', () => {
     expect(von(false, true, null)).toEqual(PLANER)
-    expect(nurZuteilen(PLANER)).toBe(true)
-    expect(nurZuteilen(ADMIN)).toBe(false)
   })
 
   it('Aufseher und Gehilfe behalten ihre Gruppe, auch als Planer', () => {
@@ -79,7 +77,6 @@ describe('Die Rechte aus dem Zustand', () => {
 
   it('wer nichts davon ist, ist Verkündiger', () => {
     expect(von(false, false, 'p-irgendwer')).toEqual(VERKUENDIGER)
-    expect(nurZuteilen(VERKUENDIGER)).toBe(false)
   })
 })
 

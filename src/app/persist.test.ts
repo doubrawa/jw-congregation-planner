@@ -82,8 +82,7 @@ function st(over: Partial<AppState> = {}): AppState {
   return {
     congregationId: 'c1',
     userId: 'u1',
-    // Ein Admin: Die Fälle hier schreiben Wochen unmittelbar. Wer nicht Admin
-    // ist, schreibt sie über die Function `zuteilen` (eigener Fall unten).
+    // Ein Admin. Der Planer schreibt Wochen genauso unmittelbar (eigener Fall unten).
     planner: true,
     zuteiler: false,
     personId: 'p9',
@@ -154,7 +153,7 @@ describe('Zuteilen', () => {
     })
     const next = st()
     persist(prev, next, { type: 'assign', name: 'A' })
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0], false)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
     expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [VERFALLEN])
   })
 
@@ -174,22 +173,21 @@ describe('Zuteilen', () => {
     const prev = st({ confirmations: { [VERFALLEN]: 'bestätigt' } })
     const next = st()
     persist(prev, next, { type: 'autoAssign' })
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0], false)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
     expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [VERFALLEN])
   })
 
   /*
-   * **Wer nicht Admin ist, schreibt seine Wochen über `zuteilen`** (Rechte-
-   * Stufe „Planer", 4.10.2026). Wochen schreibt laut RLS nur der Admin; der
-   * Planer käme dort gar nicht an — und dass er nur zugeteilt hat, prüft allein
-   * die Function. Gefragt wird am Recht, nicht an der Aktion: Dieselbe Zuteilung
-   * geht beim Admin unmittelbar in die Tabelle.
+   * **Der Planer schreibt seine Wochen wie der Admin** (15.10.2026, „Alles
+   * Planen"): unmittelbar in die Tabelle (RLS `weeks_write` mit
+   * `darf_zuteilen`). Bis dahin ging seine Woche über die Edge Function
+   * `zuteilen`, die nur Zuteilungen durchließ.
    */
-  it('beim Planer geht dieselbe Woche über die Function, die Zusagen räumt er selbst ab', () => {
+  it('beim Planer geht dieselbe Woche unmittelbar hinaus, die Zusagen räumt er selbst ab', () => {
     const prev = st({ planner: false, zuteiler: true, confirmations: { [VERFALLEN]: 'bestätigt' } })
     const next = st({ planner: false, zuteiler: true })
     persist(prev, next, { type: 'autoAssign' })
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0], true)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
     // Zusagen löschen darf der Planer selbst (RLS `confirmations_delete_planner`).
     expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [VERFALLEN])
   })
@@ -569,7 +567,7 @@ describe('Gruppenbesuche (T120)', () => {
 describe('Vortragsplan (T122)', () => {
   /*
    * Die Vormerkungen je Zeile wie die Gruppenbesuche; die Wochen, in die der
-   * Plan schrieb, über den allgemeinen Weg — beim Planer also über `zuteilen`.
+   * Plan schrieb, über den allgemeinen Weg — beim Planer wie beim Admin.
    */
   const V5 = { id: 'v5', woche: '2026-10-12', redner: 'Max Mustermann', versammlung: 'Musterstadt', eigener: false, pid: null, thema: '', lied: '' }
   const V6 = { id: 'v6', woche: '2026-10-19', redner: 'Klaus Platzhalter', versammlung: 'Nord', eigener: false, pid: null, thema: '', lied: '' }
@@ -583,7 +581,7 @@ describe('Vortragsplan (T122)', () => {
     expect(data.saveWeek).not.toHaveBeenCalled()
   })
 
-  it('die Woche, in die der Plan schrieb, geht beim Planer über die Function', () => {
+  it('die Woche, in die der Plan schrieb, geht beim Planer unmittelbar hinaus', () => {
     const vortraege = [V5]
     const prev = st({ planner: false, zuteiler: true, vortraege })
     const weeks = vortragSetzen(prev.weeks, 0, {
@@ -593,7 +591,7 @@ describe('Vortragsplan (T122)', () => {
     const next = st({ planner: false, zuteiler: true, weeks, vortraege })
     persist(prev, next, UEBERNEHMEN)
     expect(data.saveWeek).toHaveBeenCalledTimes(1)
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0], true)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
     expect(data.saveVortraege).not.toHaveBeenCalled()
   })
 })
@@ -814,7 +812,7 @@ describe('LAC / Import / Vortrag', () => {
     ] as AppAction[]) {
       vi.clearAllMocks()
       persist(st(), next, action)
-      expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0], false)
+      expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
     }
   })
 
@@ -822,13 +820,13 @@ describe('LAC / Import / Vortrag', () => {
     const neu = { range: 'Neu' } as Week
     const next = st({ weeks: [...buildDemoWeeks(), neu] })
     persist(st(), next, { type: 'addImportedWeek', week: neu })
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks.at(-1), false)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks.at(-1))
   })
 
   it('mergeWeekAlt speichert die betroffene Woche', () => {
     const next = st()
     persist(st(), next, { type: 'mergeWeekAlt', start: next.weeks[1]!.start!, alt: {} })
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[1], false)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[1])
   })
 })
 
@@ -931,7 +929,7 @@ describe('Personen (inkl. Debounce)', () => {
 
     vi.advanceTimersByTime(600)
     expect(data.saveWeek).toHaveBeenCalledTimes(1)
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', neuer2, false)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', neuer2)
   })
 
   /*
@@ -952,7 +950,7 @@ describe('Personen (inkl. Debounce)', () => {
     expect(data.saveWeek).toHaveBeenCalledTimes(1)
     vi.advanceTimersByTime(600)
     expect(data.saveWeek).toHaveBeenCalledTimes(1)
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', zugeteilt, false)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', zugeteilt)
   })
 
   /*
@@ -1509,7 +1507,7 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     vi.mocked(data.saveWeek).mockClear()
     vi.advanceTimersByTime(600)
     expect(data.saveWeek).toHaveBeenCalledTimes(1)
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', vorher.weeks[0], false)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', vorher.weeks[0])
   })
 
   it('updateCongregation speichert die Wochen, deren Endzeit mitgewandert ist', () => {
@@ -1530,7 +1528,7 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     expect(data.saveWeek).not.toHaveBeenCalled()
     vi.advanceTimersByTime(600)
     expect(data.saveWeek).toHaveBeenCalledTimes(1) // nur die eine geänderte
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', weeks[1], false)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', weeks[1])
   })
 
   it('zwei Zeitänderungen kurz nacheinander schreiben jede Woche einmal — mit dem letzten Stand (T118)', () => {
@@ -1546,7 +1544,7 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     persist(mit(w1, '18:30'), mit(w2, '18:15'), { type: 'updateCongregation', patch: { times: zeiten('18:15') } })
     vi.advanceTimersByTime(600)
     expect(data.saveWeek).toHaveBeenCalledTimes(1)
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', w2[1], false)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', w2[1])
   })
 
   it('updateCongregation ohne Zeitänderung schreibt keine Woche', () => {
@@ -1584,7 +1582,7 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
 
     expect(data.saveSettings).toHaveBeenCalled()
     expect(data.saveWeek).toHaveBeenCalledTimes(geaendert.length)
-    for (const w of geaendert) expect(data.saveWeek).toHaveBeenCalledWith('c1', w, false)
+    for (const w of geaendert) expect(data.saveWeek).toHaveBeenCalledWith('c1', w)
   })
 
   it('updateMember / removeMember', () => {

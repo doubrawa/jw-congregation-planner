@@ -344,8 +344,9 @@ export const DE = {
     keineAbwesenheiten: 'Keine eingetragen.',
     keineBereiche: 'Noch keine Aufgabenbereiche.',
     rechte: 'Rechte', rechtPlanen: 'Darf planen',
-    rechtPlanenUnter: 'Teilt zu und sendet die Pläne.',
-    rechtAdminUnter: 'Ändert auch Pläne, Personen und Einstellungen.',
+    // Seit dem 15.10.2026 plant der Planer alles; beim Admin kommt die Verwaltung dazu.
+    rechtPlanenUnter: 'Holt das Programm, richtet die Pläne ein, teilt zu und sendet.',
+    rechtAdminUnter: 'Verwaltet auch Personen und Einstellungen.',
     toastNameLeer: 'Name nicht geändert: Ohne Namen geht es nicht',
     vorname: 'Vorname', nachname: 'Nachname', telefon: 'Telefon', emailLbl: 'E-Mail',
     kontoCard: 'Konto',

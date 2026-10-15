@@ -11,13 +11,15 @@
  *  - die Treffpunkte nach dem Grundplan (`regenFsWeeks`) und ihre Leiter
  *    (`fsLeiterBinden`).
  *
- * Weicht die Datenbank davon ab, sieht für Planer und Gruppenaufseher schon ein
- * einzelner Name wie ein Umbau aus: `zuteilen` vergleicht die Woche ohne Namen
- * (`nurZuteilungen`), der Trigger `fs_weeks_pruefen` die fremden Treffpunkte.
- * Beide weisen ab, die App lädt nach — und es bleibt dabei, bis ein Admin die
- * Woche einmal speichert. Ein bekannter Auslöser war `wochen-importieren.mjs`
- * (bis zum 5.10.2026). Die Bindung von Namen und Leitern zählt dabei nicht:
- * Beide Prüfungen sehen von der Person-Id ab.
+ * Weicht die Datenbank davon ab, sieht für den Gruppenaufseher schon ein
+ * fremder Treffpunkt wie ein Umbau aus: Der Trigger `fs_weeks_pruefen`
+ * vergleicht die Treffpunkte fremder Gruppen, weist ab, die App lädt nach —
+ * und es bleibt dabei, bis Admin oder Planer die Woche einmal speichern. Ein
+ * bekannter Auslöser war `wochen-importieren.mjs` (bis zum 5.10.2026). Die
+ * Bindung der Leiter zählt dabei nicht: Der Trigger sieht von der Person-Id
+ * ab. Bis zum 15.10.2026 wies auch die Edge Function `zuteilen` den Planer
+ * ab, sobald die Woche anders dastand als geladen; Planer schreiben seitdem
+ * unmittelbar.
  *
  * Gerechnet wird mit **denselben Funktionen** wie in der App (`appCodeBereit`),
  * nicht mit einer Abschrift; dass die Kette die des Ladens ist, hält
@@ -44,24 +46,34 @@ export const GRUND_GRUNDPLAN = 'Treffpunkte nach Grundplan'
 export const GRUND_NAMEN = 'Namen gebunden'
 export const GRUND_LEITER = 'Leiter gebunden'
 
-/** Welche Abweichung wen abweisen lässt — die übrigen sehen beide Prüfungen nicht. */
+/** Welche Abweichung jemanden abweisen lässt — die übrigen sieht der Trigger nicht. */
 export function hindernis(gruende) {
-  const wer = []
-  if (gruende.includes(GRUND_KLASSE)) wer.push('Planer')
-  if (gruende.includes(GRUND_TREFFPUNKTE_FEHLEN) || gruende.includes(GRUND_GRUNDPLAN)) wer.push('Gruppenaufseher')
-  return wer.length ? `${wer.join(' und ')} abgewiesen` : ''
+  return gruende.includes(GRUND_TREFFPUNKTE_FEHLEN) || gruende.includes(GRUND_GRUNDPLAN) ? 'Gruppenaufseher abgewiesen' : ''
+}
+
+/** Tiefer Vergleich zweier JSON-Werte; die Reihenfolge der Schlüssel zählt nicht. */
+export function gleich(a, b) {
+  if (a === b) return true
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false
+    return a.every((x, i) => gleich(x, b[i]))
+  }
+  const objekt = (x) => typeof x === 'object' && x !== null
+  if (!objekt(a) || !objekt(b)) return false
+  const ka = Object.keys(a)
+  if (ka.length !== Object.keys(b).length) return false
+  return ka.every((k) => Object.hasOwn(b, k) && gleich(a[k], b[k]))
 }
 
 /** Die Funktionen der App, mit denen gerechnet wird — geladen, nicht abgeschrieben. */
 export async function appFunktionen() {
   appCodeBereit()
-  const [aux, bindung, helfer, fs, zeilen, grenze] = await Promise.all([
+  const [aux, bindung, helfer, fs, zeilen] = await Promise.all([
     import('../src/data/aux-class.ts'),
     import('../src/data/namensbindung.ts'),
     import('../src/data/helpers.ts'),
     import('../src/data/fs.ts'),
     import('../src/lib/zeilen.ts'),
-    import('../supabase/functions/_shared/zuteilen-grenze.ts'),
   ])
   return {
     syncAuxSlots: aux.syncAuxSlots,
@@ -71,7 +83,7 @@ export async function appFunktionen() {
     fsLeiterBinden: fs.fsLeiterBinden,
     personFromRow: zeilen.personFromRow,
     fsRuleFromRow: zeilen.fsRuleFromRow,
-    gleich: grenze.gleich,
+    gleich,
   }
 }
 
@@ -160,7 +172,7 @@ export async function main(argv = process.argv.slice(2)) {
   const hinderlich = abweichend.filter((e) => hindernis(e.gruende)).length
   console.log(
     abweichend.length
-      ? `\nAbweichend: ${abweichend.length} Woche(n), in ${hinderlich} davon weist die Datenbank Planer oder Gruppenaufseher ab.`
+      ? `\nAbweichend: ${abweichend.length} Woche(n), in ${hinderlich} davon weist die Datenbank den Gruppenaufseher ab.`
       : 'Nichts abweichend — der Bestand steht da, wie die App ihn lädt.',
   )
   if (!abweichend.length) return

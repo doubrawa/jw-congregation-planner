@@ -1,8 +1,8 @@
 // =============================================================================
 // Eine Woche schreiben, solange sie auf dem gelesenen Stand ist
 // =============================================================================
-// Für jede Edge Function, die eine Woche ändert: `zuteilen` (der Planer teilt
-// zu) und `substitute` (ein freier Platz wird übernommen). Dieselbe Regel wie
+// Für jede Edge Function, die eine Woche ändert — heute `substitute` (ein
+// freier Platz wird übernommen; bis zum 15.10.2026 auch `zuteilen`). Dieselbe Regel wie
 // `schreibeWoche` im Client (T39): geschrieben wird nur mit der Bedingung
 // `updated_at = <Stand>`.
 // =============================================================================

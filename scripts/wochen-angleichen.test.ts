@@ -53,10 +53,10 @@ describe('angleichen', () => {
     expect(FENSTER).toBe(WEEK_LIMIT)
   })
 
-  it('eine Woche ohne die eingeschaltete Klasse: angleichen — sonst weist `zuteilen` den Planer ab', async () => {
+  it('eine Woche ohne die eingeschaltete Klasse: angleichen — abgewiesen wird seit dem 15.10.2026 niemand mehr', async () => {
     const [e] = angleichen({ wochen: [zeile('2026-08-24')], fsWochen: [], regeln: [], personen: [], auxClass: true }, await appFunktionen())
     expect(e?.gruende).toEqual([GRUND_KLASSE])
-    expect(hindernis(e!.gruende)).toBe('Planer abgewiesen')
+    expect(hindernis(e!.gruende)).toBe('')
     expect(e?.woche?.mid.auxRatgeber).toBeDefined()
     expect(e?.treffpunkte).toBeNull()
   })
@@ -106,7 +106,7 @@ describe('main', () => {
     const { aufrufe, ausgabe } = await fahre(() => main(['--trocken']), { bestand: bestand() })
     expect(schreibend(aufrufe)).toEqual([])
     const text = ausgabe.join('\n')
-    expect(text).toContain(`2026-08-24  ${GRUND_KLASSE}, ${GRUND_TREFFPUNKTE_FEHLEN}  ← Planer und Gruppenaufseher abgewiesen`)
+    expect(text).toContain(`2026-08-24  ${GRUND_KLASSE}, ${GRUND_TREFFPUNKTE_FEHLEN}  ← Gruppenaufseher abgewiesen`)
     expect(text).toContain('nichts geschrieben')
   })
 

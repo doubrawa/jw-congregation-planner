@@ -662,6 +662,12 @@ describe('Reichen die Programme nicht mehr, steht der Import gleich auf der Kart
     expect(importKnopf(container)?.textContent).toBe(t.importBtn)
   })
 
+  it('auch der Planer holt das Programm — wer die Woche plant, holt sie (15.10.2026)', () => {
+    const weeks = [besetzt(W1)]
+    const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks), planner: false, zuteiler: true })
+    expect(importKnopf(container)?.textContent).toBe(t.importBtn)
+  })
+
   it('der Knopf holt die nächste Woche — derselbe Ablauf wie in den Einstellungen', async () => {
     const neu = importiert(W2)
     importNextWeek.mockResolvedValue({ ok: true, week: neu })

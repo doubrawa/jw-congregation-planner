@@ -19,6 +19,7 @@ import {
   t120Anlage,
   tagPlus,
   trolleyAnlage,
+  verwaltungAnlage,
   vortragAnlage,
   wochentag,
   zugangAus,
@@ -29,7 +30,6 @@ import { helferKey, punktKey } from '../src/data/planning'
 import { isQualified, serviceQualKey } from '../src/data/helpers'
 import type { PartItem, Person } from '../src/data/types'
 import { pidsNachtragen } from '../src/data/namensbindung'
-import { nurZuteilungen } from '../supabase/functions/_shared/zuteilen-grenze.ts'
 import { ueberschneiden, zeitraumGueltig } from '../supabase/functions/_shared/trolley.ts'
 import { buildDemoWeeks, DEMO_PERSONS } from '../tests/testdaten/testdaten'
 
@@ -460,57 +460,42 @@ describe('T122: die Vormerkungen erfüllen die Regeln der Datenbank, die mit den
 /** Ein Feld eines Objekts, wie die Probe es liest — ohne Typ, denn sie liest rohes JSON. */
 const feld = (o: unknown, name: string): unknown => (o as Record<string, unknown> | undefined)?.[name]
 
-describe('Rechte-Stufen: die Änderungen an der Woche treffen die Grenze von „zuteilen"', () => {
+describe('Rechte-Stufen: die Änderungen an der Woche sind je genau eine', () => {
   /*
-    (38) und (39) brauchen eine Änderung, die nur der Admin machen darf, (40)
-    eine, die der Planer machen darf. Griffe die Probe daneben — etwa zum
-    Thema eines Vortrags, das der Planer setzen darf —, meldete sie „AUCH DAS!"
-    an einer Stelle, die gar nicht offen ist, oder „ZU STRENG", wo nichts zu
-    streng ist. Deshalb an der echten Grenze gehalten, nicht an einer Abschrift.
+    (35) und (38) benennen einen Programmpunkt um, (39) gibt einen Platz frei.
+    Ändert ein Versuch mehr als das Genannte oder etwas anderes, misst er
+    nicht, was die Ausgabe behauptet. Seit dem 15.10.2026 schreibt der Planer
+    Wochen unmittelbar; bis dahin hielt dieser Test die Versuche an der Grenze
+    `nurZuteilungen` der Function `zuteilen`.
   */
   // Die Wochen der Entwicklerseite, mit Personen-Ids wie nach dem Laden —
   // ohne `pid` gäbe es keinen besetzten Platz zum Freigeben.
   const wochen = pidsNachtragen(buildDemoWeeks(), DEMO_PERSONS).map((w) => [w.start, w] as const)
   type Platz = { pid?: string }
+  type Punkt = { title?: string; names?: Platz[] }
+  const punkte = (d: unknown): Punkt[] =>
+    (d as { mid: { sections: { items: Punkt[] }[] } }).mid.sections.flatMap((s) => s.items)
   const platz = (d: unknown, s: { si: number; ii: number; ni: number }): Platz | undefined =>
     (d as { mid: { sections: { items: { names: Platz[] }[] }[] } }).mid.sections[s.si]?.items[s.ii]?.names[s.ni]
 
-  it.each(wochen)('%s: die Änderung am Plan lässt „zuteilen" nicht durch', (_start, w) => {
+  it.each(wochen)('%s: die Änderung am Plan benennt genau einen Punkt um — sonst nichts', (_start, w) => {
     const plan = planAenderung(w, 'PROBE-1')
     expect(plan).not.toBeNull()
-    expect(nurZuteilungen(w, plan!.data)).toBe(false)
+    const vorher = punkte(w)
+    const nachher = punkte(plan!.data)
+    const anders = nachher.map((p, i) => (JSON.stringify(p) === JSON.stringify(vorher[i]) ? -1 : i)).filter((i) => i >= 0)
+    expect(anders).toHaveLength(1)
+    expect(nachher[anders[0]!]!.title).toBe(`${vorher[anders[0]!]!.title} PROBE-1`)
+    expect(JSON.stringify({ ...plan!.data, mid: undefined })).toBe(JSON.stringify({ ...w, mid: undefined }))
   })
 
-  it.each(wochen)('%s: die Zuteilung lässt „zuteilen" durch — und gibt wirklich einen besetzten Platz frei', (_start, w) => {
+  it.each(wochen)('%s: die Zuteilung gibt genau einen besetzten Platz frei', (_start, w) => {
     const z = zuteilungAenderung(w)
     expect(z).not.toBeNull()
-    expect(nurZuteilungen(w, z!.data)).toBe(true)
     expect(platz(w, z!)?.pid).toBeTruthy()
     expect(platz(z!.data, z!)?.pid).toBeUndefined()
-  })
-
-  it('ein Punkt mit Redner-Platz ist kein Ändern am Plan — sein Thema setzt der Planer', () => {
-    const w = {
-      mid: {
-        sections: [
-          {
-            items: [
-              { iid: 'a', title: 'Probe-Dienstvortrag', names: [{ name: 'Probe Redner', rolle: 'Kreisaufseher' }] },
-              { iid: 'b', title: 'Probe-Vortrag', names: [{ name: 'Probe Gast', rolle: 'Gastredner · Vers. Probe' }] },
-              { iid: 'c', title: 'Probe-Punkt', names: [{ name: 'Probe Eins', pid: 'p1', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' }] },
-            ],
-          },
-        ],
-      },
-      we: { sections: [] },
-    }
-    const plan = planAenderung(w, 'PROBE-1')!
-    expect(plan.ii).toBe(2)
-    expect(nurZuteilungen(w, plan.data)).toBe(false)
-    // Am ersten Punkt hätte die Grenze die Änderung durchgelassen — zu Recht.
-    const daneben = structuredClone(w)
-    daneben.mid.sections[0]!.items[0]!.title += ' PROBE-1'
-    expect(nurZuteilungen(w, daneben)).toBe(true)
+    const besetzt = (d: unknown) => punkte(d).flatMap((p) => p.names ?? []).filter((n) => n.pid).length
+    expect(besetzt(z!.data)).toBe(besetzt(w) - 1)
   })
 
   it('ohne passenden Punkt keine Änderung — dann bleibt der Fall ungemessen, statt etwas anderes zu messen', () => {
@@ -564,7 +549,7 @@ describe('Rechte-Stufen: die Anlage — jeder Versuch trifft genau eine Regel', 
 
   it('wer was versucht, und was herauskommen soll', () => {
     expect(a.fsVersuche.map((v) => `${v.nr} ${v.wer} ${v.erwartet ? 'durch' : 'abgewiesen'}`)).toEqual([
-      '42 zuteiler abgewiesen', '43 zuteiler durch', '44 aufseher abgewiesen', '45 aufseher abgewiesen',
+      '42 zuteiler durch', '43 zuteiler durch', '44 aufseher abgewiesen', '45 aufseher abgewiesen',
       '46 aufseher abgewiesen', '47 aufseher durch', '48 aufseher durch', '49 mitglied abgewiesen',
     ])
   })
@@ -636,6 +621,30 @@ describe('Rechte-Stufen: die Anlage — jeder Versuch trifft genau eine Regel', 
     expect(ids.every((id) => id.startsWith('PROBE-1-'))).toBe(true)
     expect(new Set(ids).size).toBe(ids.length)
     expect(a.absage.startsWith('PROBE-1 ')).toBe(true)
+  })
+})
+
+describe('Was der Planer anlegt (40, 80): die Regeln, die mit den Rechten nichts zu tun haben', () => {
+  /*
+    Scheiterte (40) an `weeks_start_montag` oder am Schlüssel, sähe es aus wie
+    „ZU STRENG"; scheiterte (80) am eindeutigen Namen, wie eine Abweisung.
+  */
+  const tag0 = ersterMontagAb('2099-01-01')
+  const a = verwaltungAnlage({ marke: 'PROBE-1', versammlung: 'c', tag0, personId: '00000000-0000-4000-8000-0000000000aa' })
+  const stufen = stufenAnlage({
+    marke: 'PROBE-1', versammlung: 'c', tag0, adminPid: 'p-admin', zuteilerPid: 'p-zuteiler', eigeneGruppe: 'g-eigen', fremdeGruppe: 'g-fremd',
+  })
+
+  it('die Woche an einem Montag, hinter allem anderen der Probe — mit dem Kennzeichen im Zeitraum', () => {
+    expect(wochentag(a.woche.start)).toBe(1)
+    const spaeteste = [stufen.fsStart, stufen.besuchVersuche.neu.woche, stufen.plan.bis, vortragAnlage({ marke: 'PROBE-1', versammlung: 'c', tag0 }).versuche.planer.woche]
+    for (const tag of spaeteste) expect(a.woche.start > tag, tag).toBe(true)
+    expect(a.woche.data.range).toBe('PROBE-1')
+    expect(a.woche.data.start).toBe(a.woche.start)
+  })
+
+  it('die Person mit dem Kennzeichen im Vornamen und einer echten Kennung', () => {
+    expect(a.person).toEqual({ id: '00000000-0000-4000-8000-0000000000aa', congregation_id: 'c', fn: 'PROBE-1', ln: 'Probe' })
   })
 })
 

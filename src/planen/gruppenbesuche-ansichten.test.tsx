@@ -329,7 +329,11 @@ describe('„Besuch hinzufügen" — vorbelegt, erst „Hinzufügen" legt an (13
  * Verlegen und Streichen ist der Plan; die Datenbank lässt den Planer nur den
  * Besucher ändern (`gruppenbesuche_pruefen`).
  */
-describe('Der Planer bei den Gruppenbesuchen (4.10.2026)', () => {
+/**
+ * **Der Planer plant die Gruppenbesuche wie der Admin** (15.10.2026, „Alles
+ * Planen"). Bis dahin wechselte er nur den Besucher.
+ */
+describe('Der Planer bei den Gruppenbesuchen (15.10.2026)', () => {
   const alsPlaner = (over: Partial<AppState> = {}) => zeige({ planner: false, zuteiler: true, ...over })
 
   it('sieht die Besuche und wechselt im Blatt den Besucher', () => {
@@ -340,12 +344,12 @@ describe('Der Planer bei den Gruppenbesuchen (4.10.2026)', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'besuchBesucher', id: `b-${W1}`, pid: THOMAS.id })
   })
 
-  it('kein Hinzufügen, kein Verlegen, kein Entfernen', () => {
+  it('fügt hinzu, verlegt und entfernt — wie der Admin', () => {
     const { container } = alsPlaner({ gruppenbesuche: [besuch(W1)] })
-    expect(container.querySelector('.gb-neu')).toBeNull()
+    expect(container.querySelector('.gb-neu')).not.toBeNull()
     oeffne(container)
-    expect(feld(t.gbWoche)).toBeNull()
-    expect(feld(t.gbGruppe)).toBeNull()
-    expect(blatt()!.querySelector('.knopf-entfernen')).toBeNull()
+    expect(feld(t.gbWoche)).not.toBeNull()
+    expect(feld(t.gbGruppe)).not.toBeNull()
+    expect(blatt()!.querySelector('.knopf-entfernen')).not.toBeNull()
   })
 })

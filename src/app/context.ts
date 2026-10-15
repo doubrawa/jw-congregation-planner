@@ -153,9 +153,9 @@ export interface AppState {
   /* ---- Sitzung und Rechte ----------------------------------------------- */
   planner: boolean // „Admin": darf alles — Planen, Personen, Einstellungen
   /**
-   * „Planer" (4.10.2026): teilt zu und sendet, ändert die Pläne aber nicht.
-   * Gefragt wird fast nie danach allein, sondern über `darfZuteilen` (der
-   * Admin darf es ohnehin) und `nurZuteilen` (Planer, aber nicht Admin) in
+   * „Planer" (4.10.2026): plant seit dem 15.10.2026 alles wie der Admin, nur
+   * Personen und Einstellungen nicht. Gefragt wird fast nie danach allein,
+   * sondern über `rechteVon(…).zuteilen` (der Admin darf es ohnehin) in
    * `data/rechte.ts`.
    */
   zuteiler: boolean

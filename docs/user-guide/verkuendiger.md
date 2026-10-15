@@ -461,7 +461,7 @@ lassen sich mit dem ✕ wieder entfernen. Der erste Tipp fragt „Wirklich
 löschen?", erst der zweite entfernt den Eintrag; ein Tipp daneben bricht ab.
 Was vorbei ist, steht nicht mehr da.
 
-Dort stehen auch Zeiträume, die **nicht du** eingetragen hast: Der Planer kann
+Dort stehen auch Zeiträume, die **nicht du** eingetragen hast: Ein Admin kann
 sie für dich erfassen (etwa wenn du angerufen hast), und beim Umstieg von einem
 anderen Programm sind sie mit übernommen worden. Es ist dieselbe Liste – du
 kannst sie genauso entfernen. Umgekehrt siehst du hier **nur deine eigenen**;
@@ -650,7 +650,7 @@ Beim Planen gibt es zwei Reiter:
 Die Zusammenkünfte siehst du nur an. **Fertig** (am Handy auch das Kreuz oben)
 führt vom Planen zurück zum Ansehen.
 
-Die **Besuche des Dienstaufsehers** planen die Admins; du siehst sie beim
+Die **Besuche des Dienstaufsehers** planen Admins und Planer; du siehst sie beim
 Ansehen unter **Gruppenbesuche** und kannst deine Gruppe darauf einstellen. In
 der Besuchswoche leitet der Besucher euren Treffpunkt — er steht dann dort als
 Leiter, und du musst ihn nicht selbst eintragen.

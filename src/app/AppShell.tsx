@@ -413,7 +413,7 @@ function Content() {
   // Die leere Versammlung ist für den Verkündiger eine Sackgasse, für den
   // Planer der Anfang: Er füllt sie über Personen und „Nächste Woche
   // importieren" — und der Hinweis „wende dich an einen Koordinator" meinte ihn.
-  if (state.dataEmpty && !state.planner) return <StatusView kind="empty" />
+  if (state.dataEmpty && !rechteVon(state).zuteilen) return <StatusView kind="empty" />
 
   return <ActiveScreen screen={state.screen} />
 }

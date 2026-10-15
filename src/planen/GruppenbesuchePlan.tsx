@@ -24,6 +24,7 @@ import {
 import { displayName, isQualified, personCompare } from '../data/helpers'
 import { fromIso, montagNach, montagVon } from '../data/meeting-dates'
 import { zusageStatus } from '../data/planning'
+import { rechteVon } from '../data/rechte'
 import type { Gruppenbesuch, Person } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
@@ -56,10 +57,9 @@ export function GruppenbesuchePlan() {
   const lage = useBesuchsLage()
   const [offen, setOffen] = useState<Offen>(null)
   const schliessen = (): void => setOffen(null)
-  // Besuche anlegen, verlegen und streichen ist der Plan — das tut der Admin.
-  // Der Planer wechselt den Besucher und trägt ihn in die Treffpunkte ein
-  // (Grenzfall des Betreibers, 4.10.2026).
-  const admin = state.planner
+  // Besuche anlegen, verlegen und streichen ist der Plan — das tun Admin und
+  // Planer (seit dem 15.10.2026; bis dahin wechselte der Planer nur den Besucher).
+  const admin = rechteVon(state).zuteilen
 
   const eintraege = useMemo(() => {
     const heute = fromIso(tag)
@@ -282,8 +282,8 @@ function BesuchBlatt({ id, onClose }: { id: string; onClose: () => void }) {
   if (!besuch) return null
 
   const stand = besuchStand(besuch, lage, fromIso(tag))
-  // Woche und Gruppe verlegt und den Besuch streicht nur der Admin.
-  const verlegen = state.planner
+  // Woche und Gruppe verlegen und den Besuch streichen Admin und Planer.
+  const verlegen = rechteVon(state).zuteilen
   const andere = state.gruppenbesuche.filter((b) => b.id !== id)
   // Darf der eingesetzte Besucher inzwischen keine Treffpunkte mehr leiten,
   // steht er trotzdem zur Wahl — sonst zeigte das Feld „Besucher wählen", als

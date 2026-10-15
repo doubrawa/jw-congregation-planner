@@ -408,6 +408,11 @@ describe('Die vier Status-Ansichten der Datenanbindung', () => {
     expect(queryByText(t.stLeer)).toBeNull()
   })
 
+  it('ebenso dem Planer ohne Admin-Recht: Er holt das erste Programm (15.10.2026)', () => {
+    const { container } = zeige({ dataEmpty: true, planner: false, zuteiler: true })
+    expect(container.querySelector('.status-view')).toBeNull()
+  })
+
   it('der Status geht dem Screen vor — auch mit gesetztem screen', () => {
     const { container } = zeige({ dataStatus: 'loading', screen: 'personen' })
     expect(container.querySelector('.status-view')).toBeTruthy()

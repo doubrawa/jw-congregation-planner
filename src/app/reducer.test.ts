@@ -222,12 +222,19 @@ describe('navigate (Rechteprüfung)', () => {
     expect(next).toMatchObject({ screen: 'programm', week: 1, tab: 'mid' })
   })
 
-  it('… und nur für den Admin: Der Planer plant die Zusammenkunft statt sie zu bearbeiten (4.10.2026)', () => {
+  it('… für Admin und Planer — wer die Woche plant, richtet sie auch ein (15.10.2026)', () => {
     const admin = reducer(makeState({ planner: true }), { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'edit' } })
     expect(admin).toMatchObject({ screen: 'planen', tab: 'edit' })
-    const s = makeState({ planner: false, zuteiler: true })
-    const next = reducer(s, { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'edit' } })
-    expect(next).toMatchObject({ screen: 'planen', week: 1, tab: 'mid' })
+    const planer = reducer(makeState({ planner: false, zuteiler: true }), { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'edit' } })
+    expect(planer).toMatchObject({ screen: 'planen', week: 1, tab: 'edit' })
+    // Wer nicht plant, kommt dort nicht hin — der Gruppenaufseher plant nur
+    // Treffpunkte. Er darf ins Planen, also misst das die Grenze am Reiter.
+    const aufseher = reducer(
+      makeState({ planner: false, zuteiler: false, personId: 'p-auf', groups: [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-auf', assistantId: null }] }),
+      { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'edit' } },
+    )
+    expect(aufseher.screen).toBe('planen')
+    expect(aufseher.tab).not.toBe('edit')
   })
 
   it('der Planer kommt ins Planen aller Themen — Personen und Einstellungen bleiben zu (4.10.2026)', () => {

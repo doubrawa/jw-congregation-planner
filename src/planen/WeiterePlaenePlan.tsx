@@ -7,6 +7,7 @@ import { Bereichstitel } from '../components/Bereichstitel'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { planUnterzeile } from '../components/weitere-plaene-anzeige'
 import { fromIso } from '../data/meeting-dates'
+import { rechteVon } from '../data/rechte'
 import { neuerPlan, planStand, type PlanStand } from '../data/weitere-plaene'
 import { useT } from '../i18n/useT'
 import type { WeitererPlan } from '../data/types'
@@ -83,9 +84,8 @@ export function WeiterePlaenePlan() {
           </section>
         )
       })}
-      {/* Einen Plan legt der Admin an; der Planer verteilt darin die Gruppen
-          (4.10.2026). */}
-      {state.planner && (
+      {/* Einen Plan legen Admin und Planer an (der Planer seit dem 15.10.2026). */}
+      {rechteVon(state).zuteilen && (
         <button type="button" className="knopf-neu" onClick={anlegen}>
           <Zeichen name="plus" />
           {t.wpNeu}

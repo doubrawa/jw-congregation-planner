@@ -43,7 +43,7 @@ export function FsPlan() {
   const wi = state.week
   const rechte = rechteVon(state)
   const aendernDarf = (inst: FsInstance): boolean =>
-    rechte.admin || (rechte.gruppe !== null && inst.grp === rechte.gruppe)
+    rechte.zuteilen || (rechte.gruppe !== null && inst.grp === rechte.gruppe)
   // Gruppenaufseher, die nicht zuteilen, sehen und planen nur die Treffpunkte
   // ihrer eigenen Gruppe.
   const onlyGroup = treffpunktGruppe(rechte)
@@ -95,7 +95,7 @@ export function FsPlan() {
         </section>
       ))}
 
-      {(rechte.admin || rechte.gruppe !== null) && (
+      {(rechte.zuteilen || rechte.gruppe !== null) && (
         <button type="button" className="knopf-neu" onClick={() => setNeu(true)}>
           <Zeichen name="plus" />
           {t.fsFuerDieseWoche}
@@ -171,15 +171,15 @@ function TreffpunktKopf({
 
 /**
  * **Treffpunkt für diese Woche** — etwa ein Pioniertag oder ein zusätzlicher
- * Termin. Der Admin wählt, für wen er gilt; der Gruppenaufseher legt in seiner
- * Gruppe an. Was jede Woche gilt, gehört in den Grundplan.
+ * Termin. Admin und Planer wählen, für wen er gilt; der Gruppenaufseher legt
+ * in seiner Gruppe an. Was jede Woche gilt, gehört in den Grundplan.
  */
 function NeuerTreffpunktBlatt({ onClose }: { onClose: () => void }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
   const rechte = rechteVon(state)
-  // Wer nicht Admin ist, legt in seiner Gruppe an — ohne Wahl.
-  const anlegenIn = rechte.admin ? null : rechte.gruppe
+  // Wer nicht plant, legt in seiner Gruppe an — ohne Wahl.
+  const anlegenIn = treffpunktGruppe(rechte)
   const [grp, setGrp] = useState(anlegenIn)
   const [wd, setWd] = useState<number>(NEUER_TREFFPUNKT.wd)
   const [time, setTime] = useState<string>(NEUER_TREFFPUNKT.time)

@@ -9,23 +9,22 @@
  * beim Antippen sofort wieder auf „Programm" umlenkte. Nichts schlug fehl, es
  * sah nur kaputt aus.
  *
- * **Drei Stufen und eine Gruppe** (4.10.2026, Wunsch des Betreibers: „Planer
- * sollen Zuteilungen machen dürfen, aber nur Admins dürfen auch die Pläne
- * ändern und alles andere"):
+ * **Drei Stufen und eine Gruppe** (4.10.2026; neu gefasst am 15.10.2026,
+ * Betreiber: „ein planer plant ja schließlich die woche" — „Alles Planen"):
  *
  *  - **Admin** (`members.planner`): alles.
- *  - **Planer** (`members.zuteiler`): teilt in allen Plänen zu und sendet sie;
- *    dazu die Grenzfälle Vortragsthema, Lieder, Partner am Schülerteil,
- *    Besucher eines Gruppenbesuchs und die Gruppen der Weiteren Pläne. Den
- *    Plan selbst ändert er nicht, Personen und Einstellungen sieht er nicht.
+ *  - **Planer** (`members.zuteiler`): plant alles wie der Admin — Wochen holen
+ *    und einrichten, zuteilen, senden, Treffpunkte samt Grundplan,
+ *    Gruppenbesuche, Weitere Pläne. Personen und Einstellungen sieht er nicht.
+ *    Bis zum 15.10.2026 teilte er nur zu und änderte den Plan selbst nicht.
  *  - **Verkündiger**: plant nichts.
  *
  * Quer dazu der **Gruppenaufseher** (Aufseher oder Gehilfe einer Gruppe, ohne
  * Admin-Recht): Er pflegt die Treffpunkte seiner Gruppe ganz — Zeit, Ort,
  * Grundplan, Leiter — und sendet sie.
  *
- * Durchgesetzt wird das in der Datenbank und in der Edge Function `zuteilen`;
- * hier steht, was die App anbietet.
+ * Durchgesetzt wird das in der Datenbank (`darf_zuteilen`, `is_planner`,
+ * `eigene_gruppen`); hier steht, was die App anbietet.
  */
 
 import { aufseherGruppe } from './helpers'
@@ -33,9 +32,12 @@ import type { Group, MeetingTab, Member, Person, Screen, Thema } from './types'
 
 /** Die Rechte eines Kontos — woraus jede Antwort dieser Datei folgt. */
 export interface Rechte {
-  /** „Admin": darf alles. */
+  /** „Admin": darf alles — dazu Personen und Einstellungen. */
   admin: boolean
-  /** Darf zuteilen und senden — der Admin und der Planer. */
+  /**
+   * Darf planen: zuteilen, senden, die Pläne ändern — der Admin und der
+   * Planer. Der Name stammt aus der Zeit, als der Planer nur zuteilte.
+   */
   zuteilen: boolean
   /**
    * Die Gruppe, die jemand als Aufseher oder Gehilfe betreut — `null`, wenn
@@ -84,15 +86,6 @@ export function rechteStufe(
 }
 
 /**
- * **Planer, aber nicht Admin** — wer zuteilen, den Plan aber nicht ändern
- * darf. Daran blenden die Planen-Ansichten aus, was den Plan selbst ändert, und
- * daran schreibt `persist.ts` die Wochen über die Edge Function `zuteilen`.
- */
-export function nurZuteilen(r: Rechte): boolean {
-  return r.zuteilen && !r.admin
-}
-
-/**
  * **Wessen Treffpunkte jemand plant** — `null` heißt die aller Gruppen. So
  * plant, wer zuteilt; der Gruppenaufseher, der nicht zuteilt, plant nur die
  * seiner Gruppe. Plan, Automatik, Zuteilen und Senden fragen hier, damit sie
@@ -119,10 +112,10 @@ const NUR_PLANER: readonly Screen[] = ['planen', 'personen', 'einstellungen']
 /**
  * Die Bildschirme, die jemand sehen darf.
  *
- * Planer und Gruppenaufseher bekommen Planen dazu — der Planer zum Zuteilen,
- * der Gruppenaufseher für die Treffpunkte seiner Gruppe samt ihrem Grundplan.
- * Personen und Einstellungen bleiben beiden verschlossen: Sie gehören zu dem
- * „alles andere", das der Betreiber dem Admin vorbehalten hat.
+ * Planer und Gruppenaufseher bekommen Planen dazu — der Planer für alles, der
+ * Gruppenaufseher für die Treffpunkte seiner Gruppe samt ihrem Grundplan.
+ * Personen und Einstellungen bleiben beiden verschlossen: Sie hat der
+ * Betreiber dem Admin vorbehalten.
  */
 export function erlaubteScreens(r: Rechte): readonly Screen[] {
   if (r.admin) return ALLE
@@ -144,10 +137,10 @@ export function themaVon(tab: MeetingTab): Thema {
  * Darf jemand dieses Thema **planen** — sieht er also den Schalter
  * Ansehen/Planen?
  *
- * Admin und Planer planen jedes Thema (der Planer nur zuteilend). Der
- * Gruppenaufseher plant nur den Predigtdienst, und dort nur seine Gruppe (die
- * Einschränkung trägt `PlanenScreen`); eine Zusammenkunft plant er nicht. Alle
- * anderen sehen keinen Schalter.
+ * Admin und Planer planen jedes Thema. Der Gruppenaufseher plant nur den
+ * Predigtdienst, und dort nur seine Gruppe (die Einschränkung trägt
+ * `PlanenScreen`); eine Zusammenkunft plant er nicht. Alle anderen sehen
+ * keinen Schalter.
  */
 export function darfPlanen(r: Rechte, thema: Thema): boolean {
   return r.zuteilen || (r.gruppe !== null && thema === 'predigtdienst')

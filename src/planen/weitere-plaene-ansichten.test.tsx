@@ -417,35 +417,28 @@ describe('Planen: ein Plan', () => {
 })
 
 /**
- * **Der Planer verteilt die Gruppen, den Plan pflegt der Admin** (Rechte-Stufe
- * „Planer", 4.10.2026 — einer der vier Grenzfälle des Betreibers). Name,
- * Zeitraum, Takt, Veröffentlichen und Löschen ändern den Plan; die Einträge
- * darin sind die Zuteilung.
+ * **Der Planer plant die Weiteren Pläne wie der Admin** (15.10.2026, „Alles
+ * Planen"): anlegen, Name, Zeitraum, Takt, Veröffentlichen, Löschen. Bis dahin
+ * verteilte er nur die Gruppen darin.
  */
-describe('Der Planer in den Weiteren Plänen (4.10.2026)', () => {
+describe('Der Planer in den Weiteren Plänen (15.10.2026)', () => {
   amHandy()
   const alsPlaner = () => zeige(PlanenScreen, { screen: 'planen', planner: false, zuteiler: true })
 
-  it('legt keinen Plan an — sieht aber auch die Entwürfe, um darin zu verteilen', () => {
+  it('legt einen Plan an — und sieht die Entwürfe', () => {
     const { container } = alsPlaner()
-    expect(knopf(container, t.wpNeu)).toBeUndefined()
+    expect(knopf(container, t.wpNeu)).toBeDefined()
     expect(container.textContent).toContain('Grundreinigung')
   })
 
-  it('verteilt und setzt einzelne Wochen — ohne Name, Zeitraum, Takt, Veröffentlichen und Löschen', () => {
+  it('ändert Name, Zeitraum und Takt, veröffentlicht und verteilt die Gruppen — wie der Admin', () => {
     const { container, dispatch } = alsPlaner()
     oeffnen(container, 'Winterdienst')
-    expect(container.querySelector('input[type="text"]')).toBeNull()
-    expect(container.querySelector('.wp-datum')).toBeNull()
-    expect(container.querySelector(`[role="group"][aria-label="${t.wpTakt}"]`)).toBeNull()
-    // In der Leiste nur „Drucken" — Veröffentlichen ist Sache des Admins.
-    expect([...container.querySelectorAll('.planen-leiste button')].map((b) => b.textContent)).toEqual([t.drucken])
-    expect(knopf(container, t.wpVeroeffentlichen)).toBeUndefined()
-    expect(knopf(container, t.wpZurueckziehen)).toBeUndefined()
-    expect(knopf(container, t.wpLoeschen)).toBeUndefined()
-    // Was er sieht: den Plan, wie ihn alle sehen, und wie die Gruppen wechseln.
-    expect(container.querySelector('.wp-name')?.textContent).toBe('Winterdienst')
-    expect(container.textContent).toContain(t.wpSaalText)
+    expect(container.querySelector('input[type="text"]')).not.toBeNull()
+    expect(container.querySelector('.wp-datum')).not.toBeNull()
+    expect(container.querySelector(`[role="group"][aria-label="${t.wpTakt}"]`)).not.toBeNull()
+    expect([...container.querySelectorAll('.planen-leiste button')].map((b) => b.textContent)).toEqual([t.drucken, t.wpZurueckziehen])
+    expect(knopf(container, t.wpLoeschen)).toBeDefined()
 
     fireEvent.click(wahlKnopf(container, t.wpAbGruppe, 'Gruppe 1'))
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpGruppenVerteilen', planId: 'pl-s', abGruppe: 'g1' })

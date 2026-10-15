@@ -65,9 +65,8 @@ export function MeetingSection({
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
 
-  // Wochenende: Vortragsthema als Freitext, Anfangslied als Nummernfeld. Thema,
-  // Lieder und Partner gehören zum Zuteilen: Die setzt auch der Planer
-  // (Grenzfälle des Betreibers, `zuteilen-grenze.ts`).
+  // Wochenende: Vortragsthema als Freitext, Anfangslied als Nummernfeld — für
+  // Admin und Planer gleich.
   const isTalk = state.tab === 'we' && istArt(rawSection, 'vortrag')
   const isOpening = state.tab === 'we' && istArt(rawSection, 'eroeffnung')
   // …und am Wochenende ebenso das Schlusslied: es steht nicht im Arbeitsheft,

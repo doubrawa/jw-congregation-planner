@@ -67,12 +67,6 @@ verify_jwt = false
 [functions.send-plan]
 verify_jwt = true
 
-# Schreibweg der Rechte-Stufe „Planer": prüft selbst über /auth/v1/user, wer da
-# ruft, verlangt Planer- oder Admin-Recht und schreibt nur, was die Grenze
-# `nurZuteilungen` durchlässt. Die Versammlung kommt aus der Mitgliedszeile.
-[functions.zuteilen]
-verify_jwt = true
-
 # Schreibweg der Trolley-Termine (T121): prüft selbst über /auth/v1/user, wer da
 # ruft, und verlangt zum Eintragen das Trolley-Recht, zum Entfernen eines
 # Trolleys das Admin-Recht. Die Versammlung kommt aus der Mitgliedszeile.

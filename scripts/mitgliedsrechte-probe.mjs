@@ -87,17 +87,20 @@
  * Konto `planer@` ist dabei der **Admin** (`members.planner`, die App nannte
  * ihn bis dahin „Planer"); die Stufe „Planer" (`members.zuteiler`) hat
  * `zuteiler@`. Im Code heißt das Admin-Konto deshalb weiter `planer`, in der
- * Ausgabe „Admin". Der Planer teilt zu, ändert den Plan aber nicht — Wochen
- * schreibt er über die Edge Function `zuteilen`. Der Gruppenaufseher ändert die
- * Treffpunkte seiner Gruppe, keine fremden.
+ * Ausgabe „Admin". **Seit dem 15.10.2026 plant der Planer alles wie der
+ * Admin** („Alles Planen"): Wochen schreibt er unmittelbar, Treffpunkte,
+ * Grundplan, Gruppenbesuche und Weitere Pläne ändert er ganz — bis dahin teilte
+ * er nur zu und schrieb Wochen über die Edge Function `zuteilen`, die es nicht
+ * mehr gibt. Personen und Einstellungen bleiben beim Admin (80, 81). Der
+ * Gruppenaufseher ändert die Treffpunkte seiner Gruppe, keine fremden.
  *
- *  35. Mitglied: eine Woche über `zuteilen` schreiben          → abgewiesen
+ *  35. Mitglied: einen Programmpunkt der Woche umbenennen       → abgewiesen
  *  36. Mitglied: „Plan senden"                                  → abgewiesen
- *  38. Planer: die Woche am Server vorbei schreiben             → abgewiesen
- *  39. Planer: über `zuteilen` einen Programmpunkt umbenennen   → abgewiesen
- *  40. Planer: über `zuteilen` einen Platz freigeben            → durch
+ *  38. Planer: einen Programmpunkt der Woche umbenennen         → durch
+ *  39. Planer: einen Platz der Woche freigeben                  → durch
+ *  40. Planer: eine Woche anlegen, wie der Import               → durch
  *  41. Planer: sich selbst zum Admin machen                     → abgewiesen
- *  42. Planer: den Ort eines Treffpunkts ändern                 → abgewiesen
+ *  42. Planer: den Ort eines Treffpunkts ändern                 → durch
  *  43. Planer: den Leiter eines Treffpunkts setzen              → durch
  *  44. Gruppenaufseher: Ort, Treffpunkt einer fremden Gruppe    → abgewiesen
  *  45. Gruppenaufseher: Leiter, Treffpunkt einer fremden Gruppe → abgewiesen
@@ -106,15 +109,15 @@
  *  48. dasselbe, dazu die nachgetragene Person eines fremden
  *      Leiters (`fsLeiterBinden` beim Laden)                    → durch
  *  49. Mitglied: einen Treffpunkt ändern                        → abgewiesen
- *  50. Planer: eine Regel im Grundplan anlegen                  → abgewiesen
+ *  50. Planer: eine Regel im Grundplan anlegen                  → durch
  *  51. Gruppenaufseher: eine Regel für eine fremde Gruppe       → abgewiesen
  *  52. Gruppenaufseher: eine Regel für die eigene Gruppe        → durch
- *  53. Planer: einen Gruppenbesuch verschieben                  → abgewiesen
+ *  53. Planer: einen Gruppenbesuch verschieben                  → durch
  *  54. Planer: den Besucher eines Gruppenbesuchs wechseln       → durch
- *  55. Planer: einen Gruppenbesuch anlegen                      → abgewiesen
+ *  55. Planer: einen Gruppenbesuch anlegen                      → durch
  *  58. Planer: einen Plan im Entwurf sehen                      → sichtbar
  *  59. Planer: eine Woche eines Plans besetzen                  → durch
- *  60. Planer: einen Plan anlegen                               → abgewiesen
+ *  60. Planer: einen Plan anlegen                               → durch
  *  61. Planer: die Absage eines Mitglieds bekommen              → angekommen
  *  65. Mitglied: einen vorgemerkten Vortrag sehen               → unsichtbar
  *  66. Gruppenaufseher: einen vorgemerkten Vortrag sehen        → unsichtbar
@@ -122,15 +125,18 @@
  *  68. Gruppenaufseher: einen Vortrag vormerken                 → abgewiesen
  *  69. Planer: einen vorgemerkten Vortrag sehen                 → sichtbar
  *  70. Planer: einen Vortrag vormerken (Upsert wie die App)     → durch
+ *  80. Planer: eine Person anlegen                              → abgewiesen
+ *  81. Planer: den Namen der Versammlung ändern                 → abgewiesen
  *
- * (35) und (36) zielen ins Leere — eine Woche im Jahr 2100, die es nicht
- * gibt —, damit eine offene Tür nichts verschickt und nichts schreibt; dass
- * die Function dann „keine Woche" meldet, heißt bereits: durchgelassen.
+ * (36) zielt ins Leere — eine Woche im Jahr 2100, die es nicht gibt —, damit
+ * eine offene Tür nichts verschickt; dass die Function dann „keine Woche"
+ * meldet, heißt bereits: durchgelassen.
  *
  * Wo ein Versuch an einer **bestehenden** Zeile durchkommt (die
  * Programmwoche, ein Treffpunkt, das eigene Konto des Planers, ein
- * Gruppenbesuch), stellt der Admin sofort den vorigen Stand her. Alles Übrige
- * legt der Admin wieder im Jahr 2099 an, und am Ende geht es weg.
+ * Gruppenbesuch, der Name der Versammlung), stellt der Admin sofort den vorigen
+ * Stand her. Alles Übrige legt der Admin wieder im Jahr 2099 an — die Woche
+ * aus (40) der Planer —, und am Ende geht es weg.
  *
  * (65)–(70) kamen am 12.10.2026 mit dem Vortragsplan (T122). Vorgemerkt werden
  * Vorträge für Wochen, die es noch nicht gibt, mit dem Namen des auswärtigen
@@ -780,14 +786,6 @@ async function t120Proben(k) {
 
 /* ===================== Rechte-Stufen: die Fälle 35–70 ===================== */
 
-/**
- * Rollen am Vortragsplatz — Spiegel von `REDNER_ROLLEN` samt `rolleBasis` in
- * `supabase/functions/_shared/zuteilen-grenze.ts` („Gastredner · Vers. X"
- * zählt mit). Node lädt die TypeScript-Datei nicht; der Test hält
- * `planAenderung` an `nurZuteilungen` selbst.
- */
-const REDNER_ROLLE = /^(Redner|Gastredner|Kreisaufseher)( · |$)/
-
 /** Die Programmpunkte unter der Woche mit ihrer Stelle. */
 function punkteUnterDerWoche(daten) {
   const out = []
@@ -801,16 +799,12 @@ function punkteUnterDerWoche(daten) {
 const plaetzeVon = (item) => (Array.isArray(item?.names) ? item.names : [])
 
 /**
- * **Eine Änderung am Plan** für (38) und (39): Der erste Programmpunkt unter
- * der Woche, dessen Titel nur der Admin setzt, bekommt das Kennzeichen
- * angehängt. Punkte mit einem Redner-Platz fallen aus — deren Thema darf der
- * Planer setzen (`freieTitel`), und die Probe hielte eine offene Tür für eine
- * Lücke. `null`, wenn die Woche keinen solchen Punkt hat.
+ * **Eine Änderung am Plan** für (35) und (38): Der erste Programmpunkt unter
+ * der Woche mit einem Titel bekommt das Kennzeichen angehängt. `null`, wenn
+ * die Woche keinen hat.
  */
 export function planAenderung(daten, marke) {
-  const treffer = punkteUnterDerWoche(daten).find(
-    ({ item }) => typeof item?.title === 'string' && !plaetzeVon(item).some((s) => REDNER_ROLLE.test(s?.rolle ?? '')),
-  )
+  const treffer = punkteUnterDerWoche(daten).find(({ item }) => typeof item?.title === 'string')
   if (!treffer) return null
   const data = structuredClone(daten)
   data.mid.sections[treffer.si].items[treffer.ii].title = `${treffer.item.title} ${marke}`
@@ -818,7 +812,7 @@ export function planAenderung(daten, marke) {
 }
 
 /**
- * **Eine Zuteilung** für (40): Der erste besetzte Platz unter der Woche wird
+ * **Eine Zuteilung** für (39): Der erste besetzte Platz unter der Woche wird
  * frei — Name, Person und Herkunft weg, wie „Entfernen" in der App. Das
  * Kleinste, was ein Planer tut; der Admin stellt die Woche danach zurück.
  */
@@ -888,7 +882,7 @@ export function stufenAnlage({ marke, versammlung: c, tag0, adminPid, zuteilerPi
     {
       nr: 42, wer: 'zuteiler', was: 'Planer: den Ort eines Treffpunkts ändern',
       ziel: fs.versammlung.id, feld: 'place', wert: ort, data: mit({ versammlung: { place: ort } }),
-      erwartet: false, folge: ['AUCH DAS!', 'der Planer setzt nur den Leiter'],
+      erwartet: true, folge: ['der Weg steht offen', 'ZU STRENG — der Planer kann Treffpunkte nicht ändern'],
     },
     {
       nr: 43, wer: 'zuteiler', was: 'Planer: den Leiter eines Treffpunkts setzen',
@@ -950,6 +944,24 @@ export function stufenAnlage({ marke, versammlung: c, tag0, adminPid, zuteilerPi
     eintragVersuch: { id: id('e-planer'), congregation_id: c, plan_id: plan.id, datum: montag(7), grp: fremdeGruppe },
     planVersuch: { ...plan, id: id('plan-planer'), entwurf: false },
     absage: `${marke} — Absage auch an den Planer`,
+  }
+}
+
+/**
+ * Was der Planer für (40) und (80) anlegt — hinter allem anderen der Probe, im
+ * Jahr 2099: eine Woche, wie der Import sie anlegt (ohne Programm), und eine
+ * Person. Die Woche trägt das Kennzeichen in ihrem Zeitraum, die Person im
+ * Vornamen; die Person braucht eine echte `uuid` (`persons.id`).
+ */
+export function verwaltungAnlage({ marke, versammlung: c, tag0, personId }) {
+  const start = tagPlus(tag0, 7 * 20)
+  return {
+    woche: {
+      congregation_id: c,
+      start,
+      data: { range: marke, book: '', start, mid: { date: '', end: '', sections: [], helpers: {} }, we: { date: '', end: '', sections: [], helpers: {} } },
+    },
+    person: { id: personId, congregation_id: c, fn: marke, ln: 'Probe' },
   }
 }
 
@@ -1020,8 +1032,8 @@ async function aenderVersuch(k, { nr, was, schreiben, nachsehen, zurueck, erwart
 }
 
 /**
- * Ein Versuch an der Tür einer Edge Function — (35) und (36). Gezielt wird ins
- * Leere, damit eine offene Tür nichts verschickt und nichts schreibt. Deshalb
+ * Ein Versuch an der Tür einer Edge Function — (36). Gezielt wird ins Leere,
+ * damit eine offene Tür nichts verschickt und nichts schreibt. Deshalb
  * heißt nicht nur ein 2xx „durchgelassen", sondern auch eine Antwort, die erst
  * **hinter** der Rechteprüfung kommt (`nachDerTuer`, etwa „keine Woche"). Ein
  * Urteil über die Tür ist sonst allein `forbidden`.
@@ -1036,19 +1048,18 @@ async function tuerVersuch(k, nr, was, wer, name, rumpf, nachDerTuer, folge) {
 }
 
 /**
- * (38)–(41) Die Programmwoche: Der Planer schreibt sie nur über `zuteilen` und
- * ändert dort nur Zuteilungen; sich selbst zum Admin machen kann er nicht.
- * Nach jedem Versuch, der durchkam, stellt der Admin den vorigen Stand her.
+ * (35), (38)–(41) Die Programmwoche: Seit dem 15.10.2026 schreibt der Planer
+ * sie unmittelbar, wie der Admin — umbenennen, zuteilen, eine neue anlegen;
+ * das Mitglied nicht. Sich selbst zum Admin machen kann der Planer nicht. Nach
+ * jedem Versuch, der durchkam, stellt der Admin den vorigen Stand her.
  */
-async function wochenProben(k, woche) {
-  const { planer, zuteiler, versammlung, marke } = k
+async function wochenProben(k, woche, neu) {
+  const { planer, zuteiler, mitglied, versammlung, marke } = k
   const zeile = `weeks?congregation_id=eq.${versammlung}&start=eq.${woche}`
-  // Den Stand liest der Planer selbst — so, wie die App ihn beim Laden bekommt.
-  const lesen = () => zuteiler.rest(`weeks?select=data,updated_at&start=eq.${woche}`)
-  const vorher = await lesen()
+  const vorher = await planer.rest(`weeks?select=data&start=eq.${woche}`)
   const original = zeilenVon(vorher)[0]?.data
   if (!original) {
-    for (const nr of [38, 39, 40]) k.kaputt(nr, `Planer: die Woche ${woche} ändern`, `für den Planer nicht lesbar (HTTP ${vorher.status})`, nr === 40)
+    for (const nr of [35, 38, 39]) k.kaputt(nr, `die Woche ${woche} ändern`, `für den Admin nicht lesbar (HTTP ${vorher.status})`, nr !== 35)
   } else {
     const zurueck = () => planer.rest(zeile, 'PATCH', { data: original }, 'return=minimal')
     const beimAdmin = (pruefe) => async () => {
@@ -1056,58 +1067,52 @@ async function wochenProben(k, woche) {
       const d = zeilenVon(r)[0]?.data
       return { status: r.status, angekommen: Boolean(d) && pruefe(d), fehlt: r.status < 400 && !d ? 'die Woche ist weg' : null }
     }
-    // Der Stand **vor jedem** Aufruf: Kam ein Versuch durch und wurde
-    // zurückgestellt, hat die Woche einen neuen — mit dem alten gäbe es 409.
-    const stand = async () => zeilenVon(await lesen())[0]?.updated_at
-    const nurZuteilen = (s) => s.status < 400 || s.daten?.error === 'nur-zuteilen'
 
     const plan = planAenderung(original, marke)
     if (!plan) {
-      for (const [nr, was] of [[38, 'Planer: die Woche am Server vorbei schreiben'], [39, 'Planer: über „zuteilen" einen Programmpunkt umbenennen']]) {
-        k.ungemessen(nr, was, 'kein Programmpunkt mit festem Titel in der Woche')
+      for (const [nr, was] of [[35, 'Mitglied: einen Programmpunkt der Woche umbenennen'], [38, 'Planer: einen Programmpunkt der Woche umbenennen']]) {
+        k.ungemessen(nr, was, 'kein Programmpunkt mit Titel in der Woche')
       }
     } else {
       const umbenannt = (d) => String(d?.mid?.sections?.[plan.si]?.items?.[plan.ii]?.title ?? '').includes(marke)
       await aenderVersuch(k, {
+        nr: 35,
+        was: 'Mitglied: einen Programmpunkt der Woche umbenennen',
+        schreiben: () => mitglied.rest(zeile, 'PATCH', { data: plan.data }, 'return=minimal'),
+        nachsehen: beimAdmin(umbenannt),
+        zurueck,
+        erwartet: false,
+        folge: ['AUCH DAS!', 'Wochen schreiben Admin und Planer'],
+      })
+      await aenderVersuch(k, {
         nr: 38,
-        was: 'Planer: die Woche am Server vorbei schreiben (einen Programmpunkt umbenennen)',
+        was: 'Planer: einen Programmpunkt der Woche umbenennen',
         schreiben: () => zuteiler.rest(zeile, 'PATCH', { data: plan.data }, 'return=minimal'),
         nachsehen: beimAdmin(umbenannt),
         zurueck,
-        erwartet: false,
-        folge: ['AUCH DAS!', 'Wochen schreibt nur der Admin'],
-      })
-      const s39 = await stand()
-      await aenderVersuch(k, {
-        nr: 39,
-        was: 'Planer: über „zuteilen" einen Programmpunkt umbenennen',
-        schreiben: () => zuteiler.funktion('zuteilen', { action: 'woche', woche, stand: s39, data: plan.data }),
-        nachsehen: beimAdmin(umbenannt),
-        zurueck,
-        erwartet: false,
-        urteil: nurZuteilen,
-        folge: ['AUCH DAS!', 'zuteilen lässt nur Zuteilungen durch'],
+        erwartet: true,
+        folge: ['der Weg steht offen', 'ZU STRENG — der Planer kann die Woche nicht einrichten'],
       })
     }
 
     const zuteilung = zuteilungAenderung(original)
     if (!zuteilung) {
-      k.ungemessen(40, 'Planer: über „zuteilen" einen Platz freigeben', 'kein besetzter Platz unter der Woche')
+      k.ungemessen(39, 'Planer: einen Platz der Woche freigeben', 'kein besetzter Platz unter der Woche')
     } else {
       const frei = (d) => !d?.mid?.sections?.[zuteilung.si]?.items?.[zuteilung.ii]?.names?.[zuteilung.ni]?.pid
-      const s40 = await stand()
       await aenderVersuch(k, {
-        nr: 40,
-        was: 'Planer: über „zuteilen" einen Platz freigeben',
-        schreiben: () => zuteiler.funktion('zuteilen', { action: 'woche', woche, stand: s40, data: zuteilung.data }),
+        nr: 39,
+        was: 'Planer: einen Platz der Woche freigeben',
+        schreiben: () => zuteiler.rest(zeile, 'PATCH', { data: zuteilung.data }, 'return=minimal'),
         nachsehen: beimAdmin(frei),
         zurueck,
         erwartet: true,
-        urteil: nurZuteilen,
         folge: ['der Weg steht offen', 'ZU STRENG — der Planer kann nicht mehr zuteilen'],
       })
     }
   }
+
+  await neueWocheVersuch(k, neu)
 
   const konto = `members?user_id=eq.${zuteiler.uid}`
   await aenderVersuch(k, {
@@ -1188,26 +1193,26 @@ async function treffpunktProben(k, a, konten, mitgliedLeitet, merker) {
   }
 }
 
-/** (50)–(52) Der Grundplan: Regeln legt der Admin an — der Gruppenaufseher nur für seine Gruppe. */
+/** (50)–(52) Der Grundplan: Regeln legen Admin und Planer an — der Gruppenaufseher nur für seine Gruppe. */
 async function grundplanProben(k, a) {
   const { zuteiler, aufseher } = k
   const r = a.regeln
-  await schreibVersuch(k, 50, 'Planer: eine Regel im Grundplan anlegen', 'fs_rules', r.planer, false, ['AUCH DAS!', 'abgewiesen — den Grundplan pflegt der Admin'], { wer: zuteiler, prefer: UPSERT })
+  await schreibVersuch(k, 50, 'Planer: eine Regel im Grundplan anlegen', 'fs_rules', r.planer, true, ['der Weg steht offen', 'ZU STRENG — der Planer kann den Grundplan nicht pflegen'], { wer: zuteiler, prefer: UPSERT })
   await schreibVersuch(k, 51, 'Gruppenaufseher: eine Regel für eine fremde Gruppe anlegen', 'fs_rules', r.aufseherFremd, false, ['AUCH DAS!', 'abgewiesen — nur für die eigene Gruppe'], { wer: aufseher, prefer: UPSERT })
   await schreibVersuch(k, 52, 'Gruppenaufseher: eine Regel für die eigene Gruppe anlegen', 'fs_rules', r.aufseherEigen, true, ['der Weg steht offen', 'ZU STRENG — der Gruppenaufseher kann seinen Grundplan nicht pflegen'], { wer: aufseher, prefer: UPSERT })
 }
 
 /**
- * (53)–(55) Gruppenbesuche: Den Besucher wechselt der Planer; Woche und Gruppe
- * legt der Admin fest, und anlegen kann der Planer keinen — obwohl er für den
- * Upsert der App einfügen darf (`gruppenbesuche_pruefen`).
+ * (53)–(55) Gruppenbesuche: Seit dem 15.10.2026 plant der Planer sie ganz —
+ * verschieben, den Besucher wechseln, anlegen. Bis dahin wechselte er nur den
+ * Besucher (`gruppenbesuche_pruefen`, fort).
  */
 async function besuchProben(k, a) {
   const { planer, zuteiler } = k
   const anlage = await anlegen(planer, 'gruppenbesuche', [a.besuch])
   const v = a.besuchVersuche
   const versuche = [
-    [53, 'Planer: einen Gruppenbesuch in eine andere Woche verschieben', v.verschoben, 'woche', false, ['AUCH DAS!', 'Woche und Gruppe legt der Admin fest']],
+    [53, 'Planer: einen Gruppenbesuch in eine andere Woche verschieben', v.verschoben, 'woche', true, ['der Weg steht offen', 'ZU STRENG — der Planer kann Besuche nicht verschieben']],
     [54, 'Planer: den Besucher eines Gruppenbesuchs wechseln', v.besucher, 'person_id', true, ['der Weg steht offen', 'ZU STRENG — der Planer kann den Besucher nicht wechseln']],
   ]
   for (const [nr, was, zeile, feld, erwartet, folge] of versuche) {
@@ -1229,23 +1234,23 @@ async function besuchProben(k, a) {
       folge,
     })
   }
-  await schreibVersuch(k, 55, 'Planer: einen Gruppenbesuch anlegen', 'gruppenbesuche', v.neu, false, ['AUCH DAS!', 'abgewiesen — anlegen darf nur der Admin'], { wer: zuteiler, prefer: UPSERT })
+  await schreibVersuch(k, 55, 'Planer: einen Gruppenbesuch anlegen', 'gruppenbesuche', v.neu, true, ['der Weg steht offen', 'ZU STRENG — der Planer kann keine Besuche anlegen'], { wer: zuteiler, prefer: UPSERT })
 }
 
-/** (58)–(60) Weitere Pläne: besetzen darf der Planer, anlegen nur der Admin. */
+/** (58)–(60) Weitere Pläne: Der Planer sieht den Entwurf, besetzt und legt an — wie der Admin. */
 async function besetzenProben(k, a) {
   const { planer, zuteiler } = k
   const plan = await anlegen(planer, 'plaene', [a.plan])
   const anlage = plan.ok ? await anlegen(planer, 'plan_eintraege', [a.planEintrag]) : plan
   await leseVersuch(k, 58, 'Planer: einen Plan im Entwurf sehen', anlage, () => planSicht(zuteiler, a.plan, [a.planEintrag], true), true, [
-    'er verteilt die Gruppen, bevor der Admin veröffentlicht',
+    'er plant ihn, bevor er veröffentlicht wird',
     'ZU STRENG — der Planer sieht den Entwurf nicht',
   ])
   const was59 = 'Planer: eine Woche eines Plans besetzen'
   if (anlage.ok) {
     await schreibVersuch(k, 59, was59, 'plan_eintraege', a.eintragVersuch, true, ['der Weg steht offen', 'ZU STRENG — der Planer kann keine Gruppen verteilen'], { wer: zuteiler, prefer: UPSERT })
   } else k.kaputt(59, was59, anlage.grund, true)
-  await schreibVersuch(k, 60, 'Planer: einen Plan anlegen', 'plaene', a.planVersuch, false, ['AUCH DAS!', 'abgewiesen — Pläne legt der Admin an'], { wer: zuteiler, prefer: UPSERT })
+  await schreibVersuch(k, 60, 'Planer: einen Plan anlegen', 'plaene', a.planVersuch, true, ['der Weg steht offen', 'ZU STRENG — der Planer kann keine Pläne anlegen'], { wer: zuteiler, prefer: UPSERT })
 }
 
 /** (61) Die Absage eines Mitglieds geht an alle, die zuteilen — seit dem 4.10.2026 auch an den Planer. */
@@ -1294,7 +1299,7 @@ async function vortragProben(k, a) {
  * Admin: auch die aus (6), denn die Absage an die Planer erreicht seit dem
  * 4.10.2026 beide.
  */
-async function stufenAufraeumen(k, fsStart, merker) {
+async function stufenAufraeumen(k, fsStart, merker, neueWoche) {
   const { planer, zuteiler, marke, versammlung } = k
   const weg = (tabelle) => () => planer.rest(`${tabelle}?id=like.${marke}*`, 'DELETE', undefined, 'return=minimal')
   const mitteilungen = (wer) => () => wer.rest(`notifications?title=like.${marke}*`, 'DELETE', undefined, 'return=minimal')
@@ -1307,30 +1312,89 @@ async function stufenAufraeumen(k, fsStart, merker) {
     ...(merker.treffpunktWoche
       ? [['die Treffpunkt-Woche', () => planer.rest(`fs_weeks?congregation_id=eq.${versammlung}&start=eq.${fsStart}`, 'DELETE', undefined, 'return=minimal')]]
       : []),
+    ...(merker.woche
+      ? [['die Woche des Planers', () => planer.rest(`weeks?congregation_id=eq.${versammlung}&start=eq.${neueWoche}`, 'DELETE', undefined, 'return=minimal')]]
+      : []),
     ['die Mitteilungen an den Planer', mitteilungen(zuteiler)],
     ['die Mitteilungen an den Admin', mitteilungen(planer)],
   ])
 }
 
 /**
- * Die Fälle (35)–(70) — siehe Kopf. Aufgeräumt wird in jedem Fall, auch wenn
- * ein Fall mittendrin wirft.
+ * (40) Eine Woche anlegen, wie der Import es tut: Seit dem 15.10.2026 holt der
+ * Planer das Programm selbst. Angelegt wird hinter allem anderen der Probe —
+ * steht dort schon eine Woche, wird nichts überschrieben und nichts gemessen.
+ * `merker.woche` sagt dem Aufräumen, ob die Woche der Probe gehört.
+ */
+async function neueWocheVersuch(k, neu) {
+  const { planer, zuteiler, versammlung } = k
+  const was = 'Planer: eine Woche anlegen, wie der Import'
+  const zeile = `weeks?congregation_id=eq.${versammlung}&start=eq.${neu.woche.start}`
+  const vorher = await planer.rest(`weeks?select=start&start=eq.${neu.woche.start}`)
+  if (vorher.status >= 400 || zeilenVon(vorher).length > 0) {
+    k.kaputt(40, was, vorher.status >= 400 ? `die Woche ist nicht lesbar (HTTP ${vorher.status})` : `in der Woche ${neu.woche.start} steht schon eine — nicht überschrieben`, true)
+    return
+  }
+  neu.merker.woche = true
+  const s = await zuteiler.rest('weeks', 'POST', neu.woche, 'return=minimal')
+  const l = await planer.rest(`weeks?select=start&start=eq.${neu.woche.start}`)
+  const e = bewerteVersuch(s.status, zeilenVon(l).length > 0, true, { leseStatus: l.status })
+  k.ergebnis(40, was, e, e.durch ? 'der Weg steht offen' : 'ZU STRENG — der Planer kann kein Programm holen')
+  await k.aufraeumen(e, () => planer.rest(zeile, 'DELETE', undefined, 'return=minimal'))
+}
+
+/**
+ * (80) und (81) Was beim Admin bleibt (15.10.2026): Der Planer plant alles,
+ * Personen und Einstellungen aber nicht. Kommt einer durch, räumt der Admin die
+ * Person weg und stellt den Namen der Versammlung zurück.
+ */
+async function verwaltungProben(k, neu) {
+  const { planer, zuteiler, versammlung, marke } = k
+  await schreibVersuch(k, 80, 'Planer: eine Person anlegen', 'persons', neu.person, false, ['AUCH DAS!', 'abgewiesen — Personen pflegt der Admin'], { wer: zuteiler })
+  const was = 'Planer: den Namen der Versammlung ändern'
+  const zeile = `congregations?id=eq.${versammlung}`
+  const vorher = await planer.rest(`congregations?select=name&id=eq.${versammlung}`)
+  const name = zeilenVon(vorher)[0]?.name
+  if (typeof name !== 'string') {
+    k.kaputt(81, was, `der Name ist nicht lesbar (HTTP ${vorher.status})`, false)
+    return
+  }
+  await aenderVersuch(k, {
+    nr: 81,
+    was,
+    schreiben: () => zuteiler.rest(zeile, 'PATCH', { name: `${name} ${marke}` }, 'return=minimal'),
+    nachsehen: async () => {
+      const r = await planer.rest(`congregations?select=name&id=eq.${versammlung}`)
+      const n = zeilenVon(r)[0]?.name
+      return { status: r.status, angekommen: String(n ?? '').includes(marke), fehlt: r.status < 400 && n === undefined ? 'die Versammlung ist weg' : null }
+    },
+    zurueck: () => planer.rest(zeile, 'PATCH', { name }, 'return=minimal'),
+    erwartet: false,
+    folge: ['AUCH DAS!', 'Einstellungen ändert der Admin'],
+  })
+}
+
+/**
+ * Die Fälle (35)–(70) und (80), (81) — siehe Kopf. Aufgeräumt wird in jedem
+ * Fall, auch wenn ein Fall mittendrin wirft.
  */
 async function stufenProben(k, woche) {
   const { planer, mitglied, zuteiler, aufseher, versammlung, marke } = k
   console.log('\nDie Rechte-Stufen (seit 4.10.2026; angelegt als Admin, im Jahr 2099):')
-  const merker = { treffpunktWoche: false }
+  const merker = { treffpunktWoche: false, woche: false }
+  const tag0 = ersterMontagAb('2099-01-01')
+  const verwaltung = verwaltungAnlage({ marke, versammlung, tag0, personId: crypto.randomUUID() })
   let fsStart = null
   try {
     // Ins Leere: Eine Woche im Jahr 2100 gibt es nicht — eine offene Tür
-    // antwortete mit „keine Woche", statt etwas zu schreiben oder zu senden.
+    // antwortete mit „keine Woche", statt etwas zu senden.
     const leer = ersterMontagAb('2100-01-01')
-    await tuerVersuch(k, 35, 'Mitglied: eine Woche über „zuteilen" schreiben', mitglied, 'zuteilen', { action: 'woche', woche: leer, stand: marke, data: {} }, ['week-not-found'], 'nur Admin und Planer')
     await tuerVersuch(k, 36, 'Mitglied: „Plan senden"', mitglied, 'send-plan', { action: 'plan', weekStart: leer }, ['no-week'], 'senden nur Admin, Planer und Gruppenaufseher')
 
-    await wochenProben(k, woche)
+    await wochenProben(k, woche, { woche: verwaltung.woche, merker })
+    await verwaltungProben(k, verwaltung)
     // Vor der Prüfung auf Personen und Gruppen: Die Vormerkungen brauchen keine.
-    await vortragProben(k, vortragAnlage({ marke, versammlung, tag0: ersterMontagAb('2099-01-01') }))
+    await vortragProben(k, vortragAnlage({ marke, versammlung, tag0 }))
 
     const g = await planer.rest('groups?select=id,overseer_id,assistant_id&order=position')
     const wahl = gruppenWahl(zeilenVon(g), { aufseherPid: aufseher.pid, zuteilerPid: zuteiler.pid, mitgliedPid: mitglied.pid })
@@ -1349,7 +1413,7 @@ async function stufenProben(k, woche) {
     const a = stufenAnlage({
       marke,
       versammlung,
-      tag0: ersterMontagAb('2099-01-01'),
+      tag0,
       adminPid: planer.pid,
       zuteilerPid: zuteiler.pid,
       eigeneGruppe: wahl.eigene,
@@ -1362,7 +1426,7 @@ async function stufenProben(k, woche) {
     await besetzenProben(k, a)
     await absageProbe(k, a)
   } finally {
-    await stufenAufraeumen(k, fsStart, merker)
+    await stufenAufraeumen(k, fsStart, merker, verwaltung.woche.start)
   }
 }
 

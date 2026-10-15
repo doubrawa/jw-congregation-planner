@@ -111,9 +111,8 @@ Trigger — nicht vom Client, sonst schriebe man sich daran vorbei):
    still neu und sagt es dem Nutzer.
 
 Schreibvorgänge derselben Woche laufen hintereinander, sonst kämpfte man gegen
-sich selbst. Die Edge Functions, die Wochen schreiben (`zuteilen`,
-`substitute`), folgen derselben Regel
-(`supabase/functions/_shared/woche-schreiben.ts`).
+sich selbst. Die Edge Function, die Wochen schreibt (`substitute`), folgt
+derselben Regel (`supabase/functions/_shared/woche-schreiben.ts`).
 
 Bis zum 5.10.2026 wurde vor Schritt 3 nachgesehen und, stand dort noch der
 eigene Stand, **ohne** Bedingung geschrieben — gegen einen falschen
@@ -346,8 +345,7 @@ Migrationskette daneben soll es nicht wieder geben, siehe Kopf der Datei):
    **löscht alle Daten**, aber keine Konten (`auth.users` bleibt).
 2. `supabase/schema.sql` ausführen.
 3. Alle Edge Functions deployen (`import-week`, `send-plan`,
-   `send-reminders`, `send-invite`, `anmelden`, `substitute`, `zuteilen`,
-   `trolley`).
+   `send-reminders`, `send-invite`, `anmelden`, `substitute`, `trolley`).
 Den ganzen Rest — Versammlung, Personen, Wochen, Zuteilungen, Abwesenheiten,
 Treffpunkte — fährt **ein** Aufruf:
 
@@ -419,9 +417,9 @@ node scripts/wochen-angleichen.mjs --trocken
 ```
 
 Die App gleicht beim Laden an (Zusätzliche Klasse, Treffpunkte nach dem
-Grundplan), schreibt das aber nicht zurück. Weicht eine Woche davon ab, weisen
-`zuteilen` und der Trigger `fs_weeks_pruefen` Planer und Gruppenaufseher dort
-ab — die App lädt nur nach, bis ein Admin die Woche einmal speichert. Meldet
+Grundplan), schreibt das aber nicht zurück. Weicht eine Woche davon ab, weist
+der Trigger `fs_weeks_pruefen` den Gruppenaufseher dort ab — die App lädt nur
+nach, bis Admin oder Planer die Woche einmal speichern. Meldet
 das Skript abweichende Wochen, gleicht es sie ohne `--trocken` an (auf ihren
 Stand, wie ein Admin). Ein zweiter Lauf muss „Nichts abweichend" melden.
 

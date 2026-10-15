@@ -260,8 +260,7 @@ export function plaeneZumAnsehen(plaene: readonly WeitererPlan[], heute = new Da
 
 /**
  * Steht „Weitere Pläne" im Menü? Für Admin und Planer (`zuteilen`) immer — dort
- * legt der Admin den ersten an, und der Planer verteilt die Gruppen. Sonst,
- * sobald es etwas anzusehen gibt.
+ * legen sie den ersten an. Sonst, sobald es etwas anzusehen gibt.
  */
 export function weiterePlaeneImMenue(args: { plaene: readonly WeitererPlan[]; zuteilen: boolean; heute?: Date }): boolean {
   return args.zuteilen || plaeneZumAnsehen(args.plaene, args.heute).length > 0

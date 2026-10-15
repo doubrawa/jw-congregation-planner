@@ -1121,7 +1121,6 @@ async function schreibeWoche(
   congregationId: string,
   woche: string,
   week: Week,
-  nurZuteilen: boolean,
   geladen: number,
 ): Promise<void> {
   if (!supabase) return
@@ -1131,11 +1130,6 @@ async function schreibeWoche(
     return
   }
   const stand = wochenStand.get(woche)
-  if (nurZuteilen) {
-    await zuteilenSchreiben(woche, stand, week, geladen)
-    return
-  }
-
   if (stand === undefined) {
     const { data, error } = await supabase
       .from('weeks')
@@ -1173,46 +1167,12 @@ async function schreibeWoche(
 }
 
 /**
- * **Die Woche eines Planers** (Rechte-Stufe „Planer", 4.10.2026) — über die
- * Edge Function `zuteilen`, nicht über die Tabelle.
- *
- * Wochen schreibt laut RLS nur der Admin: Zuteilen und Plan ändern sind
- * dieselbe Zeile, und dass einer nur zugeteilt hat, kann allein die Function
- * prüfen (`nurZuteilungen`). Der Stand geht mit und kommt neu zurück — damit
- * gilt der Konfliktschutz aus T39 auch hier. Ein Planer legt keine Woche an
- * (das tut der Import); ohne bekannten Stand gibt es nichts zu schreiben.
- *
- * Jede Abweisung heißt „hier ist ein anderer Stand als dort": 409, weil ein
- * anderer schneller war, 403, weil die geladene Woche nicht mehr die der
- * Datenbank ist. Beides löst nur Nachladen — wie beim Füllen eines freien
- * Platzes (`platzFuellen`).
- */
-async function zuteilenSchreiben(woche: string, stand: string | undefined, week: Week, geladen: number): Promise<void> {
-  if (!supabase) return
-  if (stand === undefined) {
-    konfliktMelder?.()
-    return
-  }
-  const { data, error } = await supabase.functions.invoke('zuteilen', {
-    body: { action: 'woche', woche, stand, data: week },
-  })
-  if (error) {
-    console.error('[zuteilen]', error.message)
-    konfliktMelder?.()
-    return
-  }
-  const neu = (data as { stand?: unknown } | null)?.stand
-  if (typeof neu === 'string') standMerken(wochenStand, woche, neu, geladen)
-}
-
-/**
  * Eine Woche speichern. Welche Zeile gemeint ist, sagt ihre eigene Kennung —
- * kein Index von außen mehr (T66).
- *
- * `nurZuteilen`: Der Schreibende ist Planer, aber nicht Admin — die Woche geht
- * über `zuteilen` (siehe `zuteilenSchreiben`).
+ * kein Index von außen mehr (T66). Admin und Planer schreiben sie gleich —
+ * unmittelbar in die Tabelle (`weeks_write`); bis zum 15.10.2026 ging die Woche
+ * eines Planers über die Edge Function `zuteilen`.
  */
-export function saveWeek(congregationId: string, week: Week, nurZuteilen = false): void {
+export function saveWeek(congregationId: string, week: Week): void {
   if (!supabase) return
   // Ohne Kennung gibt es keine Zeile, die gemeint sein könnte. Hier stand bis
   // T66 die Platzhalter-Prüfung; sie hatte denselben Zweck — nichts schreiben,
@@ -1225,7 +1185,7 @@ export function saveWeek(congregationId: string, week: Week, nurZuteilen = false
   const geladen = ladung
   // `catch` vor dem Anhängen: ein Fehlschlag darf die Kette nicht abreißen
   // lassen, sonst schriebe diese Woche nie wieder.
-  const naechster = vorher.then(() => schreibeWoche(congregationId, woche, week, nurZuteilen, geladen).catch(() => {}))
+  const naechster = vorher.then(() => schreibeWoche(congregationId, woche, week, geladen).catch(() => {}))
   wochenKette.set(woche, naechster)
 }
 

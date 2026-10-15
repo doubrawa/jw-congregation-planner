@@ -198,9 +198,8 @@ function personSofort(congId: string, person: Person): void {
 }
 // Gebündelt wird je **Woche**, nicht je Index (T66): der Schlüssel ist ihre
 // Kennung, und der schiebt sich nicht, wenn sich die geladene Menge ändert.
-const weekSaves = createDebouncedWriter<string, { congId: string; week: Week; nurZuteilen: boolean }>(
-  SAVE_DELAY,
-  (_woche, { congId, week, nurZuteilen }) => saveWeek(congId, week, nurZuteilen),
+const weekSaves = createDebouncedWriter<string, { congId: string; week: Week }>(SAVE_DELAY, (_woche, { congId, week }) =>
+  saveWeek(congId, week),
 )
 // Nur die geänderten Felder (`geaenderteFelder`) — gesammelt über die
 // Tastenanschläge, die neueste Fassung je Feld.
@@ -353,13 +352,13 @@ function zeilenPlanen<T extends { id: string }>(
  * ganze Persistenzschicht auf (siehe `geaenderteWochenSpeichern` darunter, das
  * dieselbe Prüfung schon länger macht). Hier fehlte sie nur.
  */
-function wocheSpeichern(congId: string, vorher: Week[], weeks: Week[], wi: number, nurZuteilen: boolean): void {
+function wocheSpeichern(congId: string, vorher: Week[], weeks: Week[], wi: number): void {
   const week = weeks[wi]
   if (!week || vorher[wi] === week) return
   // Über den Bündler, nicht an ihm vorbei: Wartet dort eine ältere Fassung
   // derselben Woche (eine Umbenennung, eine neue Zusammenkunftszeit), ginge
   // sie sonst hinter dieser hinaus und nähme sie zurück.
-  weekSaves.sofort(week.start, { congId, week, nurZuteilen })
+  weekSaves.sofort(week.start, { congId, week })
 }
 
 /**
@@ -385,23 +384,18 @@ function wocheSpeichern(congId: string, vorher: Week[], weeks: Week[], wi: numbe
  * unvollständig sein: Wer dort fehlt, wird sofort geschrieben — mehr Anfragen,
  * aber nichts geht verloren. Die Frage **ob** geschrieben wird, hängt dagegen
  * an keiner Liste mehr.
- *
- * `nurZuteilen`: Wer nicht Admin ist, schreibt Wochen nur über die Edge
- * Function `zuteilen` (Rechte-Stufe „Planer", 4.10.2026). Gefragt wird am
- * Recht, nicht an der Aktion — dieselbe Abwägung wie oben.
  */
 function geaenderteWochenSpeichern(
   congId: string,
   vorher: Week[],
   nachher: Week[],
   gebuendelt: boolean,
-  nurZuteilen: boolean,
 ): void {
   if (vorher === nachher) return
   for (let wi = 0; wi < nachher.length; wi++) {
     if (nachher[wi] === vorher[wi]) continue
-    if (gebuendelt) wochePlanen(congId, nachher, wi, nurZuteilen)
-    else wocheSpeichern(congId, vorher, nachher, wi, nurZuteilen)
+    if (gebuendelt) wochePlanen(congId, nachher, wi)
+    else wocheSpeichern(congId, vorher, nachher, wi)
   }
 }
 
@@ -479,9 +473,9 @@ function geaenderteSchreiben<T>(
 }
 
 /** Wie `wocheSpeichern`, nur gebündelt — für Änderungen je Tastenanschlag. */
-function wochePlanen(congId: string, weeks: Week[], wi: number, nurZuteilen: boolean): void {
+function wochePlanen(congId: string, weeks: Week[], wi: number): void {
   const week = weeks[wi]
-  if (week) weekSaves.schedule(week.start, { congId, week, nurZuteilen })
+  if (week) weekSaves.schedule(week.start, { congId, week })
 }
 
 /**
@@ -977,7 +971,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
 
   // Jede Woche, die sich geändert hat — siehe `geaenderteWochenSpeichern`.
   if (!OHNE_WOCHENSCHREIBEN.includes(action.type)) {
-    geaenderteWochenSpeichern(congId, prev.weeks, next.weeks, GEBUENDELT.includes(action.type), !next.planner)
+    geaenderteWochenSpeichern(congId, prev.weeks, next.weeks, GEBUENDELT.includes(action.type))
   }
   // Jede Zusammenkunfts-Zusage, die verfallen ist — siehe `verfalleneZusagen`.
   if (!OHNE_WOCHENSCHREIBEN.includes(action.type) && verfallen.meeting.length > 0) {

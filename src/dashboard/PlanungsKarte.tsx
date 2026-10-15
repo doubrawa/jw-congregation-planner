@@ -7,6 +7,7 @@ import { besuchHatKonflikt, besuchStand } from '../data/gruppenbesuche'
 import { useBesuchsLage } from '../components/useBesuchsLage'
 import { fromIso } from '../data/meeting-dates'
 import { planungsstand, type Wochenstand } from '../data/planungsstand'
+import { rechteVon } from '../data/rechte'
 import type { FsBereich } from '../data/types'
 import { useWochenImport } from '../einstellungen/useWochenImport'
 import { LOCALES } from '../i18n/langs'
@@ -187,9 +188,9 @@ export function PlanungsKarte() {
             <Chip art="konflikte" titel={t.konflikteTitle} n={besuchsKonflikte} />
           </BereichZeile>
         )}
-        {/* Importieren ist Sache des Admins (4.10.2026): Ein neues Programm
-            ändert den Plan, es teilt nichts zu. */}
-        {stand.vorratKnapp && state.planner && (
+        {/* Importieren dürfen Admin und Planer — wer die Woche plant, holt
+            auch ihr Programm (15.10.2026; bis dahin nur der Admin). */}
+        {stand.vorratKnapp && rechteVon(state).zuteilen && (
           <div className="dash-plan-vorrat">
             <span className="dash-plan-vorrat-text">
               {geladenBis ? fill(t.geladenBis, { datum: geladenBis }) : t.geladenNichts}

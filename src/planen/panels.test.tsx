@@ -447,28 +447,28 @@ describe('Der Gruppenaufseher plant nur seine eigene Gruppe', () => {
   })
 })
 
-describe('Der Planer besetzt Treffpunkte, ändert sie aber nicht (4.10.2026)', () => {
+/**
+ * **Der Planer plant die Treffpunkte der Woche wie der Admin** (15.10.2026,
+ * „Alles Planen"): Zeit, Ort, hinzufügen, entfernen — in allen Gruppen. Bis
+ * dahin setzte er nur den Leiter.
+ */
+describe('Der Planer ändert die Treffpunkte der Woche wie der Admin (15.10.2026)', () => {
   const woche = [[
     inst({ id: 'f1', grp: 'g1' }),
     inst({ id: 'f2', grp: 'g2', time: '10:00', place: 'Am Markt' }),
   ]]
   const PLANER: Partial<AppState> = { planner: false, zuteiler: true, personId: null }
 
-  it('sieht alle Gruppen und setzt überall den Leiter — Zeit und Ort stehen als Text', () => {
+  it('sieht alle Gruppen und ändert jeden Treffpunkt — der Leiter-Platz zum Zuteilen dazu', () => {
     const { container } = buehne('fs', { fsWeeks: woche, ...PLANER })
     expect(titel(container)).toEqual(['Gruppe 1', 'Gruppe 2'])
-    // Nichts, was den Treffpunkt ändert …
-    expect(container.querySelector('.treff-planen-kopf.is-aenderbar')).toBeNull()
-    expect(container.querySelector('.treff-zeit-wahl, .treff-ort-feld, .treff-entfernen')).toBeNull()
-    expect(container.querySelector('.knopf-neu')).toBeNull()
-    // … aber Zeit und Ort zum Ansehen, und der Leiter-Platz zum Zuteilen.
-    expect([...container.querySelectorAll('.treff-zeit-pille')].map((x) => x.textContent)).toEqual(['09:30', '10:00'])
-    expect(container.querySelector('.treff-ort')?.textContent).toBe('Saal')
-    expect(container.textContent).toContain('Am Markt')
+    const koepfe = [...container.querySelectorAll('.treff-planen-kopf')]
+    expect(koepfe.map((k) => k.classList.contains('is-aenderbar'))).toEqual([true, true])
+    expect(container.querySelector('.knopf-neu')).not.toBeNull()
     expect(plaetze(container)).toHaveLength(2)
   })
 
-  it('ist er zugleich Gruppenaufseher, ändert er seine Gruppe — und nur sie', () => {
+  it('legt an, für wen er will — mit der Wahl der Gruppe, auch als Gruppenaufseher', () => {
     const { container } = buehne('fs', {
       fsWeeks: woche,
       ...PLANER,
@@ -476,10 +476,11 @@ describe('Der Planer besetzt Treffpunkte, ändert sie aber nicht (4.10.2026)', (
       groups: [{ ...GRUPPEN[0]!, overseerId: 'p-a' }, GRUPPEN[1]!],
     })
     const koepfe = [...container.querySelectorAll('.treff-planen-kopf')]
-    expect(koepfe.map((k) => k.classList.contains('is-aenderbar'))).toEqual([true, false])
-    // Anlegen in seiner Gruppe — ohne Wahl.
+    expect(koepfe.map((k) => k.classList.contains('is-aenderbar'))).toEqual([true, true])
+    // Gegenprobe: Der Gruppenaufseher ohne Planer-Recht legt ohne Wahl an
+    // (zwei Auswahlfelder: Tag und Zeit); hier kommt die Gruppe dazu.
     neu(container)
-    expect(blatt()!.querySelectorAll('select')).toHaveLength(2)
+    expect(blatt()!.querySelectorAll('select')).toHaveLength(3)
   })
 })
 

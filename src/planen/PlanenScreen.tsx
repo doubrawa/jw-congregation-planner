@@ -9,7 +9,7 @@ import { AusfallBanner, MemorialBanner } from '../components/WeekBadges'
 import { WochenWahl } from '../components/WochenWahl'
 import { hatAuxKlasse } from '../data/aux-class'
 import { mtab } from '../data/helpers'
-import { geplantesThema, rechteVon, type Rechte } from '../data/rechte'
+import { geplantesThema, rechteVon, treffpunktGruppe, type Rechte } from '../data/rechte'
 import type { MeetingTab } from '../data/types'
 import { useProgWeek, useT } from '../i18n/useT'
 import { PlanenAktionen } from './PlanenAktionen'
@@ -74,9 +74,9 @@ export function PlanenScreen() {
         <Bereichstitel thema="predigtdienst" />
         <FsBereichTabs />
         {bereich === 'grundplan' ? (
-          // Den Grundplan ändert der Admin ganz, der Gruppenaufseher seine
-          // Gruppe — auch, wenn er zugleich Planer ist (`fsBereiche`).
-          <FsRulesPanel onlyGroup={rechte.admin ? null : rechte.gruppe} />
+          // Den Grundplan ändern Admin und Planer ganz, der Gruppenaufseher
+          // seine Gruppe (`treffpunktGruppe`).
+          <FsRulesPanel onlyGroup={treffpunktGruppe(rechte)} />
         ) : (
           <GruppenbesuchePlan />
         )}
@@ -111,9 +111,9 @@ export function PlanenScreen() {
   )
 }
 
-/** Steht eine Unteransicht des Plans offen — „Woche einrichten" beim Admin, die Zusagen bei dem, der zuteilt? */
+/** Steht eine Unteransicht des Plans offen — „Woche einrichten" oder die Zusagen, bei dem, der plant? */
 function unteransichtDesPlans(tab: MeetingTab, rechte: Rechte): boolean {
-  return (tab === 'edit' && rechte.admin) || (tab === 'zusagen' && rechte.zuteilen)
+  return (tab === 'edit' || tab === 'zusagen') && rechte.zuteilen
 }
 
 /** Planung EINER Woche; welche, sagt der Zustand (im Streifen überschrieben). */
@@ -150,9 +150,9 @@ function PlanenBody() {
   // eine eigene Ansicht, im Streifen, damit sich die Woche wechseln lässt.
   if (state.tab === 'zusagen' && rechte.zuteilen) return <ZusagenAnsicht week={week} rawWeek={rawWeek} tpw={tpw} />
 
-  // Die Bearbeiten-Ansicht (T64) gibt es nur für den Admin: Anlass,
-  // Sonderwoche und Termine ändern den Plan, sie teilen nichts zu (4.10.2026).
-  const isEdit = state.tab === 'edit' && rechte.admin
+  // Die Bearbeiten-Ansicht (T64): Anlass, Sonderwoche und Termine — für Admin
+  // und Planer (seit dem 15.10.2026; bis dahin nur der Admin).
+  const isEdit = state.tab === 'edit' && rechte.zuteilen
   const tab = mtab(state.tab)
   const meeting = week[tab]
   const rawMeeting = rawWeek[tab]
@@ -179,7 +179,7 @@ function PlanenBody() {
         <MeetingTabs
           tab={state.tab}
           week={rawWeek}
-          showEdit={rechte.admin}
+          showEdit={rechte.zuteilen}
           onChange={(tab) => dispatch({ type: 'setTab', tab })}
         />
       )}

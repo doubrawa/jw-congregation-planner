@@ -251,10 +251,9 @@ create table if not exists public.members (
   -- hinterließ eine Zeile, deren `my_person_id()` ins Leere zeigt.
   person_id       uuid,
   planner         boolean not null default false,   -- „Admin": darf alles (`is_planner()`)
-  -- „Planer" (4.10.2026): teilt zu und sendet Pläne, ändert sie aber nicht —
-  -- das bleibt dem Admin. Wochen schreibt er über die Edge Function
-  -- `zuteilen`, die Treffpunkte prüft `fs_weeks_pruefen`. Ein Admin hat das
-  -- Recht ohnehin; gefragt wird es über `darf_zuteilen()`.
+  -- „Planer" (4.10.2026): plant seit dem 15.10.2026 alles wie der Admin —
+  -- Personen und Einstellungen nicht. Ein Admin hat das Recht ohnehin;
+  -- gefragt wird es über `darf_zuteilen()`.
   zuteiler        boolean not null default false,
   email           text not null default '',         -- Anzeige im Mitglieder-Panel
   created_at      timestamptz not null default now(),
@@ -841,10 +840,12 @@ as $$
   select person_id from public.members where user_id = auth.uid()
 $$;
 
--- Darf der aktuelle Nutzer zuteilen — als Admin (`members.planner`) oder als
--- Planer (`members.zuteiler`, 4.10.2026)? Der Planer teilt zu und sendet, ändert
--- aber die Pläne nicht; überall, wo nur besetzt wird, steht deshalb diese
--- Frage statt `is_planner()`.
+-- Darf der aktuelle Nutzer planen — als Admin (`members.planner`) oder als
+-- Planer (`members.zuteiler`, 4.10.2026)? Seit dem 15.10.2026 plant der Planer
+-- alles wie der Admin: Wochen, Treffpunkte samt Grundplan, Gruppenbesuche,
+-- Weitere Pläne („ein planer plant ja schließlich die woche"). Personen und
+-- Einstellungen bleiben beim Admin (`is_planner()`). Bis dahin teilte er nur zu
+-- und schrieb Wochen über die Edge Function `zuteilen`.
 create or replace function public.darf_zuteilen()
 returns boolean
 language sql stable security definer
@@ -891,9 +892,8 @@ as $$
 $$;
 
 -- Sieht die eigene Person diesen Plan (Weitere Pläne, T120 Phase 5)? Admin und
--- Planer alles — auch den Entwurf, denn die Gruppen verteilt der Planer, bevor
--- der Admin veröffentlicht (4.10.2026) —, sonst die ganze Versammlung, was
--- veröffentlicht ist. Bis zum 4.10.2026 stand hier dazu „Familien reihum": nur,
+-- Planer alles — auch den Entwurf, denn sie planen ihn —, sonst die ganze
+-- Versammlung, was veröffentlicht ist. Bis zum 4.10.2026 stand hier dazu „Familien reihum": nur,
 -- wer selbst oder mit seinem Haushalt als Gastgeber darin stand.
 --
 -- `security definer`, weil die Prüfung `plaene` liest — dieselbe Tabelle,
@@ -914,45 +914,47 @@ as $$
 $$;
 
 -- ---------------------------------------------------------------------------
--- Treffpunkte: wer was an einer Woche ändern darf (4.10.2026)
+-- Treffpunkte: wer was an einer Woche ändern darf (4.10.2026, 15.10.2026)
 -- ---------------------------------------------------------------------------
 -- Die Treffpunkte einer Woche liegen als **eine** Liste in `fs_weeks.data`.
 -- Schreiben dürfen Admin, Planer und Gruppenaufseher (Richtlinie unten) — aber
 -- nicht dasselbe:
 --
---  - der Admin alles;
+--  - Admin und Planer alles (der Planer seit dem 15.10.2026; bis dahin nur den
+--    Leiter);
 --  - der Gruppenaufseher (oder Gehilfe) die Treffpunkte **seiner** Gruppe
---    ganz: Zeit, Ort, hinzufügen, entfernen, Leiter;
---  - der Planer bei allen übrigen nur den Leiter.
+--    ganz: Zeit, Ort, hinzufügen, entfernen, Leiter.
 --
 -- Eine Richtlinie sieht nur „Zeile geändert"; deshalb vergleicht dieser
 -- Trigger alt und neu. Bis zum 4.10.2026 beschränkte allein die App den
 -- Gruppenaufseher auf seine Gruppe — die Datenbank ließ jede zu.
 
 -- Die Treffpunkte, die nicht zu den eigenen Gruppen gehören (Versammlungs-
--- treffpunkte eingeschlossen), nach Kennung geordnet — beim Planer ohne Leiter.
+-- treffpunkte eingeschlossen), nach Kennung geordnet.
 --
--- Die Person-Id des Leiters (`lpid`) zählt auch beim Gruppenaufseher nicht:
--- Die App bindet beim Laden Leiternamen an ihre Person (`fsLeiterBinden`) und
--- schreibt diese Bindung mit, sobald sie eine Woche speichert. Verglichen
--- wird deshalb der Name — sonst scheiterte jede Änderung eines Aufsehers an
--- einer Woche, in der irgendwo ein Leiter noch ohne Id steht.
-create or replace function public.fs_fremde(insts jsonb, eigene uuid[], ohne_leiter boolean)
+-- Die Person-Id des Leiters (`lpid`) zählt nicht: Die App bindet beim Laden
+-- Leiternamen an ihre Person (`fsLeiterBinden`) und schreibt diese Bindung mit,
+-- sobald sie eine Woche speichert. Verglichen wird deshalb der Name — sonst
+-- scheiterte jede Änderung eines Aufsehers an einer Woche, in der irgendwo ein
+-- Leiter noch ohne Id steht.
+--
+-- Bis zum 15.10.2026 nahm die Funktion einen dritten Wert (`ohne_leiter`, beim
+-- Planer ohne Leiterfelder); den alten Aufruf gibt es nicht mehr.
+drop function if exists public.fs_fremde(jsonb, uuid[], boolean);
+create or replace function public.fs_fremde(insts jsonb, eigene uuid[])
 returns jsonb
 language sql immutable
 set search_path = public
 as $$
-  select coalesce(
-    jsonb_agg(case when ohne_leiter then e.i - 'leader' - 'lpid' - 'lext' else e.i - 'lpid' end order by e.i ->> 'id'),
-    '[]'::jsonb
-  )
+  select coalesce(jsonb_agg(e.i - 'lpid' order by e.i ->> 'id'), '[]'::jsonb)
   from jsonb_array_elements(case when jsonb_typeof(insts) = 'array' then insts else '[]'::jsonb end) as e(i)
   where e.i ->> 'grp' is null or not ((e.i ->> 'grp') = any (eigene::text[]))
 $$;
 
 -- Ohne angemeldeten Nutzer schreibt die Service-Role (Edge Function,
--- Wartungsskript) — die prüft selbst. Ein Upsert kommt als INSERT an, auch
--- wenn die Woche schon besteht; verglichen wird dann mit der bestehenden.
+-- Wartungsskript) — die prüft selbst. Admin und Planer dürfen alles. Ein
+-- Upsert kommt als INSERT an, auch wenn die Woche schon besteht; verglichen
+-- wird dann mit der bestehenden.
 create or replace function public.fs_weeks_pruefen()
 returns trigger
 language plpgsql security definer
@@ -961,9 +963,8 @@ as $$
 declare
   vorher jsonb;
   eigene uuid[];
-  planer boolean;
 begin
-  if auth.uid() is null or public.is_planner() then
+  if auth.uid() is null or public.darf_zuteilen() then
     return new;
   end if;
   if tg_op = 'UPDATE' then
@@ -974,9 +975,8 @@ begin
      where f.congregation_id = new.congregation_id and f.start = new.start;
   end if;
   eigene := public.eigene_gruppen();
-  planer := public.darf_zuteilen();
-  if public.fs_fremde(coalesce(vorher, '[]'::jsonb), eigene, planer)
-     is distinct from public.fs_fremde(new.data, eigene, planer) then
+  if public.fs_fremde(coalesce(vorher, '[]'::jsonb), eigene)
+     is distinct from public.fs_fremde(new.data, eigene) then
     raise exception 'nur-eigene-gruppe' using errcode = '42501';
   end if;
   return new;
@@ -988,42 +988,11 @@ create trigger fs_weeks_pruefen
   before insert or update on public.fs_weeks
   for each row execute function public.fs_weeks_pruefen();
 
--- Gruppenbesuche: Der Planer wechselt den Besucher eines geplanten Besuchs
--- (Grenzfall, vom Betreiber zugesprochen) — Woche und Gruppe legt der Admin
--- fest. Wie bei den Treffpunkten kommt ein Upsert als INSERT an; als Planer
--- muss es den Besuch dann schon geben.
-create or replace function public.gruppenbesuche_pruefen()
-returns trigger
-language plpgsql security definer
-set search_path = public
-as $$
-declare
-  bisher public.gruppenbesuche%rowtype;
-begin
-  if auth.uid() is null or public.is_planner() then
-    return new;
-  end if;
-  if tg_op = 'UPDATE' then
-    bisher := old;
-  else
-    select * into bisher from public.gruppenbesuche b where b.id = new.id;
-    if not found then
-      raise exception 'nur-besucher' using errcode = '42501';
-    end if;
-  end if;
-  if new.woche is distinct from bisher.woche
-     or new.grp is distinct from bisher.grp
-     or new.congregation_id is distinct from bisher.congregation_id then
-    raise exception 'nur-besucher' using errcode = '42501';
-  end if;
-  return new;
-end;
-$$;
-
+-- Gruppenbesuche plant der Planer seit dem 15.10.2026 ganz, wie der Admin
+-- (`gruppenbesuche_write`). Bis dahin wechselte er nur den Besucher, und ein
+-- Trigger wies jede andere Änderung ab — beide sind fort.
 drop trigger if exists gruppenbesuche_pruefen on public.gruppenbesuche;
-create trigger gruppenbesuche_pruefen
-  before insert or update on public.gruppenbesuche
-  for each row execute function public.gruppenbesuche_pruefen();
+drop function if exists public.gruppenbesuche_pruefen();
 
 -- **Ein Trolley-Termin hält, was die App verspricht** (T121, Phase 7): Der
 -- Trolley ist zu der Zeit frei, niemand steht zur selben Zeit zweimal
@@ -1324,14 +1293,14 @@ drop policy if exists weeks_select on public.weeks;
 create policy weeks_select on public.weeks
   for select using (congregation_id = public.my_congregation_id());
 
--- Wochen schreibt unmittelbar nur der Admin. Der Planer (4.10.2026) kommt über
--- die Edge Function `zuteilen`: Zuteilen und Plan ändern sind dieselbe Zeile,
--- und nur dort lässt sich prüfen, dass er bloß zugeteilt hat.
+-- Wochen schreiben Admin und Planer — holen, einrichten, zuteilen (seit dem
+-- 15.10.2026; bis dahin schrieb der Planer über die Edge Function `zuteilen`,
+-- die nur Zuteilungen durchließ).
 drop policy if exists weeks_write on public.weeks;
 create policy weeks_write on public.weeks
   for all
-  using (congregation_id = public.my_congregation_id() and public.is_planner())
-  with check (congregation_id = public.my_congregation_id() and public.is_planner());
+  using (congregation_id = public.my_congregation_id() and public.darf_zuteilen())
+  with check (congregation_id = public.my_congregation_id() and public.darf_zuteilen());
 
 -- Abwesenheiten: Versammlung liest; der Betroffene (auch bei importierten
 -- Einträgen ohne Ersteller) oder ein Planer schreiben.
@@ -1444,9 +1413,9 @@ create policy push_subscriptions_own on public.push_subscriptions
   using (user_id = auth.uid())
   with check (user_id = auth.uid() and congregation_id = public.my_congregation_id());
 
--- Treffpunkte: Versammlung liest. Den Grundplan pflegen der Admin und der
--- Gruppenaufseher für **seine** Gruppe; die Versammlungstreffpunkte (`grp`
--- null) nur der Admin.
+-- Treffpunkte: Versammlung liest. Den Grundplan pflegen Admin und Planer ganz
+-- und der Gruppenaufseher für **seine** Gruppe; die Versammlungstreffpunkte
+-- (`grp` null) nur Admin und Planer.
 alter table public.fs_rules enable row level security;
 alter table public.fs_weeks enable row level security;
 
@@ -1457,21 +1426,21 @@ create policy fs_rules_select on public.fs_rules
 drop policy if exists fs_rules_write on public.fs_rules;
 create policy fs_rules_write on public.fs_rules
   for all
-  using (congregation_id = public.my_congregation_id() and (public.is_planner() or grp = any (public.eigene_gruppen())))
-  with check (congregation_id = public.my_congregation_id() and (public.is_planner() or grp = any (public.eigene_gruppen())));
+  using (congregation_id = public.my_congregation_id() and (public.darf_zuteilen() or grp = any (public.eigene_gruppen())))
+  with check (congregation_id = public.my_congregation_id() and (public.darf_zuteilen() or grp = any (public.eigene_gruppen())));
 
 drop policy if exists fs_weeks_select on public.fs_weeks;
 create policy fs_weeks_select on public.fs_weeks
   for select using (congregation_id = public.my_congregation_id());
 
 -- Die Wochen schreiben Admin, Planer und Gruppenaufseher — was jeder darin
--- ändern darf, prüft `fs_weeks_pruefen`. Eine ganze Woche löschen nur der
--- Admin.
+-- ändern darf, prüft `fs_weeks_pruefen`. Eine ganze Woche löschen Admin und
+-- Planer.
 drop policy if exists fs_weeks_write on public.fs_weeks;
 create policy fs_weeks_write on public.fs_weeks
   for all
-  using (congregation_id = public.my_congregation_id() and public.is_planner())
-  with check (congregation_id = public.my_congregation_id() and public.is_planner());
+  using (congregation_id = public.my_congregation_id() and public.darf_zuteilen())
+  with check (congregation_id = public.my_congregation_id() and public.darf_zuteilen());
 
 drop policy if exists fs_weeks_einfuegen on public.fs_weeks;
 create policy fs_weeks_einfuegen on public.fs_weeks
@@ -1486,8 +1455,9 @@ create policy fs_weeks_aendern on public.fs_weeks
 
 -- Gruppenbesuche: Die ganze Versammlung liest (die Gruppe soll wissen, wann
 -- der Dienstaufseher kommt — der Gruppenaufseher kündigt es an, od Kap. 5
--- Abs. 41). Schreiben nur Planer: Anders als die Treffpunkte plant der
--- Gruppenaufseher die Besuche nicht.
+-- Abs. 41). Schreiben Admin und Planer: Anders als die Treffpunkte plant der
+-- Gruppenaufseher die Besuche nicht. Bis zum 15.10.2026 wechselte der Planer
+-- nur den Besucher (Richtlinien `gruppenbesuche_besucher…`, fort).
 alter table public.gruppenbesuche enable row level security;
 
 drop policy if exists gruppenbesuche_select on public.gruppenbesuche;
@@ -1497,22 +1467,11 @@ create policy gruppenbesuche_select on public.gruppenbesuche
 drop policy if exists gruppenbesuche_write on public.gruppenbesuche;
 create policy gruppenbesuche_write on public.gruppenbesuche
   for all
-  using (congregation_id = public.my_congregation_id() and public.is_planner())
-  with check (congregation_id = public.my_congregation_id() and public.is_planner());
-
--- Den Besucher wechselt auch der Planer (4.10.2026). Dass er dabei nur den
--- Besucher ändert, prüft `gruppenbesuche_pruefen`; das Einfügen braucht er für
--- den Upsert der App, angelegt wird damit nichts.
-drop policy if exists gruppenbesuche_besucher on public.gruppenbesuche;
-create policy gruppenbesuche_besucher on public.gruppenbesuche
-  for update
   using (congregation_id = public.my_congregation_id() and public.darf_zuteilen())
   with check (congregation_id = public.my_congregation_id() and public.darf_zuteilen());
 
+drop policy if exists gruppenbesuche_besucher on public.gruppenbesuche;
 drop policy if exists gruppenbesuche_besucher_upsert on public.gruppenbesuche;
-create policy gruppenbesuche_besucher_upsert on public.gruppenbesuche
-  for insert
-  with check (congregation_id = public.my_congregation_id() and public.darf_zuteilen());
 
 -- Vorgemerkte Vorträge (T122): Lesen und schreiben darf, wer zuteilt — Admin
 -- und Planer; den Vortragsplan übernimmt der Planer (Entscheidung des
@@ -1572,9 +1531,9 @@ drop policy if exists anmelde_links_delete on public.anmelde_links;
 create policy anmelde_links_delete on public.anmelde_links
   for delete using (congregation_id = public.my_congregation_id() and public.is_planner());
 
--- Weitere Pläne: Den Plan pflegt der Admin; die Gruppen darin verteilen Admin
--- und Planer (4.10.2026). Sehen darf ein Mitglied, was `plan_sichtbar`
--- freigibt — einen Entwurf nie.
+-- Weitere Pläne: Plan und Gruppen darin pflegen Admin und Planer (der Planer
+-- den Plan selbst seit dem 15.10.2026; bis dahin verteilte er nur die Gruppen).
+-- Sehen darf ein Mitglied, was `plan_sichtbar` freigibt — einen Entwurf nie.
 alter table public.plaene enable row level security;
 alter table public.plan_eintraege enable row level security;
 
@@ -1585,8 +1544,8 @@ create policy plaene_select on public.plaene
 drop policy if exists plaene_write on public.plaene;
 create policy plaene_write on public.plaene
   for all
-  using (congregation_id = public.my_congregation_id() and public.is_planner())
-  with check (congregation_id = public.my_congregation_id() and public.is_planner());
+  using (congregation_id = public.my_congregation_id() and public.darf_zuteilen())
+  with check (congregation_id = public.my_congregation_id() and public.darf_zuteilen());
 
 drop policy if exists plan_eintraege_select on public.plan_eintraege;
 create policy plan_eintraege_select on public.plan_eintraege

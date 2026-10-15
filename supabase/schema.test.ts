@@ -162,16 +162,15 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     // Die Funktion liest dieselbe Tabelle, deren Richtlinie sie ist — ohne
     // `security definer` liefe sie in die Rekursion.
     expect(fn).toContain('security definer')
-    // Der Planer verteilt die Gruppen, bevor der Admin veröffentlicht (4.10.2026).
+    // Admin und Planer planen den Plan — auch den Entwurf.
     expect(fn).toContain('public.darf_zuteilen()')
     expect(fn).toContain('not p.entwurf')
     expect(fn).toContain('p.congregation_id = public.my_congregation_id()')
     const r = richtlinien(schema)
     expect(r.get('plaene_select') ?? '').toContain('public.plan_sichtbar(id)')
     expect(r.get('plan_eintraege_select') ?? '').toContain('public.plan_sichtbar(plan_id)')
-    // Den Plan pflegt nur der Admin; die Gruppen darin verteilt auch der Planer.
-    expect(r.get('plaene_write') ?? '').toContain('public.is_planner()')
-    expect(r.get('plaene_write') ?? '').not.toContain('darf_zuteilen')
+    // Plan und Gruppen darin pflegen Admin und Planer (seit dem 15.10.2026 auch den Plan selbst).
+    expect(r.get('plaene_write') ?? '').toContain('public.darf_zuteilen()')
     expect(r.get('plan_eintraege_write') ?? '').toContain('public.darf_zuteilen()')
   })
 
@@ -294,25 +293,26 @@ describe('die Rechteprüfungen stehen im Schema', () => {
       expect(fn('eigene_gruppen')).toContain('g.overseer_id = m.person_id or g.assistant_id = m.person_id')
     })
 
-    it('Wochen schreibt unmittelbar nur der Admin — der Planer kommt über die Function `zuteilen`', () => {
-      // Erlaubte die Richtlinie dem Planer das Schreiben, wäre die Grenze
-      // `nurZuteilungen` umgangen: Er schriebe die Woche direkt.
+    /*
+      **Der Planer plant alles** (15.10.2026, „Alles Planen"): Wochen,
+      Treffpunkte samt Grundplan, Gruppenbesuche, Weitere Pläne. Bis dahin
+      teilte er nur zu, und Wochen schrieb er über die Function `zuteilen`.
+    */
+    it('Wochen schreiben Admin und Planer — unmittelbar, ohne Umweg über eine Function', () => {
       const rumpf = r().get('weeks_write') ?? ''
-      expect(rumpf).toContain('public.is_planner()')
-      expect(rumpf).not.toContain('darf_zuteilen')
-      expect(rumpf).not.toContain('zuteiler')
+      expect(rumpf).toContain('using (congregation_id = public.my_congregation_id() and public.darf_zuteilen())')
+      expect(rumpf).toContain('with check (congregation_id = public.my_congregation_id() and public.darf_zuteilen())')
     })
 
-    it('Treffpunkte: der Grundplan nur für die eigene Gruppe, Versammlungstreffpunkte nur der Admin', () => {
+    it('Treffpunkte: den Grundplan pflegen Admin und Planer ganz, der Gruppenaufseher seine Gruppe', () => {
       const rumpf = r().get('fs_rules_write') ?? ''
-      expect(rumpf).toContain('public.is_planner() or grp = any (public.eigene_gruppen())')
+      expect(rumpf).toContain('public.darf_zuteilen() or grp = any (public.eigene_gruppen())')
       expect(rumpf).not.toContain('is_group_overseer')
-      expect(rumpf).not.toContain('darf_zuteilen')
     })
 
-    it('Treffpunkt-Wochen: schreiben dürfen Admin, Planer und Gruppenaufseher, löschen nur der Admin — und der Trigger prüft', () => {
+    it('Treffpunkt-Wochen: Admin und Planer alles, der Gruppenaufseher seine Gruppe — und der Trigger prüft', () => {
       const alle = r()
-      expect(alle.get('fs_weeks_write') ?? '').toMatch(/for all .*public\.is_planner\(\)/)
+      expect(alle.get('fs_weeks_write') ?? '').toMatch(/for all .*public\.darf_zuteilen\(\)/)
       expect(alle.get('fs_weeks_write') ?? '').not.toContain('is_group_overseer')
       expect(alle.get('fs_weeks_einfuegen') ?? '').toMatch(/for insert .*public\.darf_zuteilen\(\) or public\.is_group_overseer\(\)/)
       expect(alle.get('fs_weeks_aendern') ?? '').toMatch(/for update .*public\.darf_zuteilen\(\) or public\.is_group_overseer\(\)/)
@@ -320,34 +320,49 @@ describe('die Rechteprüfungen stehen im Schema', () => {
         'create trigger fs_weeks_pruefen before insert or update on public.fs_weeks for each row execute function public.fs_weeks_pruefen();',
       )
       const pruefen = fn('fs_weeks_pruefen')
-      expect(pruefen).toContain('if auth.uid() is null or public.is_planner() then return new;')
+      expect(pruefen).toContain('if auth.uid() is null or public.darf_zuteilen() then return new;')
       // Ein Upsert kommt als INSERT an — verglichen wird mit der bestehenden Woche.
       expect(pruefen).toContain('where f.congregation_id = new.congregation_id and f.start = new.start;')
       expect(pruefen).toContain("raise exception 'nur-eigene-gruppe' using errcode = '42501';")
+      expect(pruefen).toContain('public.fs_fremde(coalesce(vorher, \'[]\'::jsonb), eigene) is distinct from public.fs_fremde(new.data, eigene)')
       const fremde = fn('fs_fremde')
-      // Der Planer darf bei fremden Gruppen nur den Leiter setzen — der ganze
-      // Ausdruck, nicht ein Teil davon: Ein Abzug mehr (`- 'time'`) enthielte
-      // den Teil weiterhin, und die Probe ginge durch.
-      expect(fremde).toContain("case when ohne_leiter then e.i - 'leader' - 'lpid' - 'lext' else e.i - 'lpid' end")
+      // Verglichen wird alles außer der nachgetragenen Person — der ganze
+      // Ausdruck: Ein Abzug mehr (`- 'time'`) enthielte den Teil weiterhin.
+      expect(fremde).toContain("jsonb_agg(e.i - 'lpid' order by e.i ->> 'id')")
       // Fremd ist alles außerhalb der eigenen Gruppen, Versammlungstreffpunkte eingeschlossen.
       expect(fremde).toContain("where e.i ->> 'grp' is null or not ((e.i ->> 'grp') = any (eigene::text[]))")
-      // Die Reihenfolge der Liste zählt nicht.
-      expect(fremde).toContain("order by e.i ->> 'id'")
+      // Die alte Fassung mit drei Werten ist fort, nicht nur überdeckt.
+      expect(normiert(schema)).toContain('drop function if exists public.fs_fremde(jsonb, uuid[], boolean);')
     })
 
-    it('Gruppenbesuche: der Planer wechselt nur den Besucher', () => {
+    it('Gruppenbesuche planen Admin und Planer ganz — die Grenze „nur den Besucher" ist fort', () => {
       const alle = r()
-      expect(alle.get('gruppenbesuche_write') ?? '').toContain('public.is_planner()')
-      expect(alle.get('gruppenbesuche_besucher') ?? '').toMatch(/for update .*public\.darf_zuteilen\(\)/)
-      expect(alle.get('gruppenbesuche_besucher_upsert') ?? '').toMatch(/for insert .*public\.darf_zuteilen\(\)/)
-      const pruefen = fn('gruppenbesuche_pruefen')
-      expect(pruefen).toContain('new.woche is distinct from bisher.woche')
-      expect(pruefen).toContain('new.grp is distinct from bisher.grp')
-      // Anlegen kann der Planer keinen Besuch.
-      expect(pruefen).toContain("if not found then raise exception 'nur-besucher'")
-      expect(normiert(schema)).toContain(
-        'create trigger gruppenbesuche_pruefen before insert or update on public.gruppenbesuche for each row execute function public.gruppenbesuche_pruefen();',
-      )
+      expect(alle.get('gruppenbesuche_write') ?? '').toMatch(/for all .*public\.darf_zuteilen\(\)/)
+      expect(alle.has('gruppenbesuche_besucher')).toBe(false)
+      expect(alle.has('gruppenbesuche_besucher_upsert')).toBe(false)
+      expect(fn('gruppenbesuche_pruefen')).toBe('')
+      const text = normiert(schema)
+      expect(text).toContain('drop trigger if exists gruppenbesuche_pruefen on public.gruppenbesuche;')
+      expect(text).toContain('drop function if exists public.gruppenbesuche_pruefen();')
+      expect(text).toContain('drop policy if exists gruppenbesuche_besucher on public.gruppenbesuche;')
+    })
+
+    it('Personen und Einstellungen bleiben beim Admin — der Planer plant, er verwaltet nicht', () => {
+      const alle = r()
+      for (const name of [
+        'persons_write',
+        'households_write',
+        'services_write',
+        'groups_write',
+        'members_update',
+        'members_delete',
+        'congregations_update',
+        'trolleys_write',
+        'anmelde_links_delete',
+      ]) {
+        expect(alle.get(name) ?? '', name).toContain('public.is_planner()')
+        expect(alle.get(name) ?? '', name).not.toContain('darf_zuteilen')
+      }
     })
 
     it('Trolleys pflegt nur der Admin; ihre Termine schreibt die Function (T121)', () => {

@@ -14,6 +14,7 @@ export declare const GRUND_NAMEN: string
 export declare const GRUND_LEITER: string
 
 export declare function hindernis(gruende: readonly string[]): string
+export declare function gleich(a: unknown, b: unknown): boolean
 
 /** Die Funktionen der App, mit denen gerechnet wird. */
 export interface AppFunktionen {
