@@ -6652,6 +6652,9 @@ maskable), `public/logo-klein.svg` (Favicon, `SHELL` in `sw.js`) und, je nach
 Wahl, `theme_color`/`background_color` im Manifest. Die Farben auf einer
 Design-Fläche vorlegen (Graphit · Minze, hell und dunkel), nicht raten; danach
 die Handbuch-Bilder neu, die Seitenleiste zeigt das Logo fast überall.
+**Erledigt am 15.10.2026 (10a, `c2798b7b`):** gewählt „A · Graphit" — Kachel
+`#1C1E20`, Plätze `#F4F4F1`, Pult in Minze `#86E0B8`; die Form steht einmal in
+`src/bausteine/logo-form.ts`, Icons neu aus `npm run icons`.
 
 Für Phase 10 vorgemerkt (15.10.2026, vom Betreiber bestätigt): **der Code in
 der Anmelde-Mail — die Lücke am iPhone.** Die Mail trägt nur den Link. Auf dem
@@ -6664,7 +6667,11 @@ aus und kennt den Code im Klartext; „Link senden" auf der Anmeldeseite erneuer
 dagegen nur den Token (`tokenErneuern`) — der Code steht nur als Hash in
 `anmelde_links`, ein neuer Code machte den Zettel ungültig. Dazu im Handbuch
 die Reihenfolge fürs iPhone: erst zum Home-Bildschirm, dann in der App den Code
-eintippen.
+eintippen. **Erledigt am 15.10.2026 (10b, `3041c29c`):** entschieden „Immer
+neuer Code" — auch „Link senden" stellt einen neuen Link samt Code aus
+(`tokenErneuern` ist fort). Ein ausgegebener Zettel gilt danach nicht mehr,
+auch nicht für die anderen Personen mit derselben Adresse. Functions
+`anmelden` und `send-invite` ausgerollt, Handbücher nachgezogen.
 
 Für Phase 10 vorgemerkt vom Betreiber (15.10.2026, Bildschirmfoto vom Handy):
 **die Bedienleiste des Handys unten ist weiß, mit weißen Knöpfen** — Android,
@@ -6674,14 +6681,22 @@ Statusleiste oben ist dunkel, denn die färbt `meta[name="theme-color"]`, das
 noch `theme_color` und `background_color` `#ffffff` aus der Zeit vor T121. Am
 Gerät nachmessen, woher Android die Farbe der Leiste nimmt und wer die Farbe
 der Knöpfe bestimmt; Hell, Dunkel und Automatisch prüfen. Gehört zusammen mit
-den Logo-Farben (Manifest, Startbildschirm).
+den Logo-Farben (Manifest, Startbildschirm). **Behoben am 15.10.2026 (10a):**
+Die Leiste der installierten App färbt Chrome nach `theme_color` des
+Manifests; fehlt eine Leistenfarbe, zeichnet es helle Knöpfe, und das Fenster
+zeigt `background_color`. Beide stehen jetzt auf der Kachelfarbe `#1c1e20`.
+**Am Gerät noch zu prüfen:** Android übernimmt das erst mit der
+aktualisierten WebAPK (in Chrome `about://webapks` → „Update", oder die App
+neu installieren).
 
 Für Phase 10 vorgemerkt aus dem Review der Phase 6 (vorbestehend, klein): Wird
 eine weitere Programmsprache zur Sprache der Versammlung, bleibt sie zusätzlich
 unter den weiteren stehen („Englisch, Englisch"; `setCongLang` im Reducer).
 Der Toast „Programmsprache hinzugefügt — gilt für neue Importe" untertreibt:
 Der nächste Import holt die Sprache auch für schon geladene Wochen nach
-(`missingVariants`). Der eigene Vorgang „Aufseher zweier Gruppen" (die App
+(`missingVariants`). **Beides erledigt am 15.10.2026 (10b):** `setCongLang`
+nimmt die neue Versammlungssprache aus den weiteren, der Toast sagt „… der
+nächste Import holt sie auch für geladene Wochen". Der eigene Vorgang „Aufseher zweier Gruppen" (die App
 plante nur die erste, `overseerGroup`) ist am 14.10.2026 erledigt — ohne
 Gruppenlisten in den Rechten: Fachlich gehört jeder genau einer Gruppe an, und
 wer eine leitet, gehört ihr an (Betreiber). Das Gruppenblatt bietet als
@@ -6704,6 +6719,24 @@ gleich Blättern bei allen sechs Bögen; am Handy hat der Betreiber gedruckt —
 „sieht gut aus". Davor am selben
 Tag: Die App spricht zwölf Sprachen statt 34 (`97268a9`: de, en, es, fr, it, pl,
 ru, uk, ro, tr, ar, fa). Es folgt 10, der Feinschliff.
+
+**Stand am 15. Oktober 2026, spät abends:** Phase 10 läuft. Live sind 10a, das
+Logo in Graphit · Minze und die dunkle Bedienleiste am Handy (`c2798b7b`); 10b,
+der Code in der Anmelde-Mail und die Versammlungssprache nicht doppelt
+(`3041c29c`); 10c, **„Alles Planen"** (`8fab05f4`, `ecb895d4`). Der Betreiber
+dazu: *„Planer dürfen auch wochen anlegen und auch wochen ändern. ein planer
+plant ja schließlich die woche."* Der Planer holt seitdem das Programm,
+richtet die Wochen ein, teilt zu und sendet, und er pflegt Treffpunkte samt
+Grundplan, Gruppenbesuche und Weitere Pläne; nur Personen und Einstellungen
+(mit Trolleys, Gruppen, Hilfsdiensten, Links) bleiben beim Admin. Die
+Richtlinien fragen `darf_zuteilen()`, das Schema ist ausgerollt; die Function
+`zuteilen` mit ihrer Grenze ist aus dem Repo und aus Supabase gelöscht.
+**Offen beim Betreiber:** die Mitgliedsrechte-Probe fahren
+(`node scripts/mitgliedsrechte-probe.mjs`) — (35), (38)–(40), (42), (50),
+(53), (55), (60) sind umgedreht, (80) und (81) neu. **Offen in Phase 10:** die
+Wochenspalte mit „Holen" und dem Import-Blatt (`GDesktopPlanen`, `GWochen`,
+`GImport`), die alten Übergangs-Tokens, Schriftstufe und Rechts-nach-links der
+neuen Bildschirme, der Wortlaut der Toasts und die Handbuch-Bilder.
 
 **Stand am 15. Oktober 2026:** Phase 8, das Anmelden per Link, ist gebaut und live
 (`05ab564`, `ddf4069`, `c3d3926` und die Skripte danach). Ein Kennwort gibt es
@@ -6914,7 +6947,7 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
-| **T121** | Neues Design | ☐ Umbau läuft, Phase für Phase auf main: 1 bis 9 sind live (zuletzt die Druckbögen), es folgt 10, der Feinschliff — dort auch das Logo in den Farben des Designs. Am 13. Oktober nachentschieden, was die ersten Phasen offen ließen; die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
+| **T121** | Neues Design | ☐ Umbau läuft, Phase für Phase auf main: 1 bis 9 sind live (zuletzt die Druckbögen), aus 10, dem Feinschliff, 10a bis 10c (Logo und Bedienleiste, Code in der Mail, „Alles Planen"); es folgt die Wochenspalte mit „Holen". Am 13. Oktober nachentschieden, was die ersten Phasen offen ließen; die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
@@ -7292,8 +7325,9 @@ Umbau T121 offen; was sonst aussteht, braucht den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **T121** | Neues Design | Umbau läuft, Phase für Phase auf main: 1 bis 8 sind live, 9 und 10 folgen (siehe T121). Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
-| **Phase 8** | Alte Konten umstellen | wie, entscheidet der Betreiber (siehe T121, „Offen in Phase 8") |
+| **T121** | Neues Design | Umbau läuft, Phase für Phase auf main: 1 bis 9 sind live, aus 10 die Teile 10a bis 10c (siehe T121). Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
+| **Betreiber** | Mitgliedsrechte-Probe nach „Alles Planen" | `node scripts/mitgliedsrechte-probe.mjs` — die Testversammlung `edac60cb` und `.env.probe` stehen noch; umgedreht sind (35), (38)–(40), (42), (50), (53), (55), (60), neu (80) und (81) |
+| **Gerät** | Dunkle Bedienleiste am Handy | wirkt erst mit der aktualisierten WebAPK (`about://webapks` → „Update", oder neu installieren) |
 | **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
