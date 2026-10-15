@@ -15,22 +15,19 @@ import { emptyQualifications } from '../data/helpers'
 import { ratgeberKey } from '../data/planning'
 import { dict } from '../i18n/ui'
 import type { Absence, FsInstance, Group, Person, Week } from '../data/types'
-import { AutoAssignRow } from './AutoAssignRow'
 import { AuxCounselorPanel } from './AuxCounselorPanel'
 import { FsPlan } from './FsPlan'
 import { TreffpunkteAutomatikBlatt } from './TreffpunkteAutomatikBlatt'
 
 /**
- * **Die drei Panels des Planen-Screens, die noch keiner angefasst hatte.**
+ * **Panels des Planen-Screens, die noch keiner angefasst hatte:** der Ratgeber
+ * der Zusätzlichen Klasse (S-38 Abs. 27), die Wochen-Bearbeitung der
+ * Treffpunkte samt Gruppenaufseher-Beschränkung und deren Automatik.
  *
- * Der gemeinsame Nenner ist „Leeren": eine Handlung, die nicht rückgängig zu
- * machen ist und die eine ganze Woche Arbeit wegwischt. Sie ist deshalb an
- * beiden Stellen (Zusammenkünfte und Treffpunkte) mit **Zwei-Tipp-Bestätigung**
- * abgesichert — und das ist eine Zusicherung, die man messen muss, nicht eine,
- * die man sieht: Ein Fehler daran fällt erst auf, wenn die Planung weg ist.
- *
- * Dazu der Ratgeber der Zusätzlichen Klasse (S-38 Abs. 27) und die
- * Wochen-Bearbeitung der Treffpunkte samt Gruppenaufseher-Beschränkung.
+ * „Leeren" mit **Zwei-Tipp-Bestätigung** stand hier bis Phase 10 von T121 an
+ * der alten Zeile `AutoAssignRow`, die seit Phase 5c niemand mehr zeigte. Das
+ * lebende „Leeren" der Blätter prüfen `AutomatischBlatt.test.tsx` und die
+ * Treffpunkt-Automatik unten.
  */
 
 const t = dict('de')
@@ -57,7 +54,7 @@ function woche(): Week {
   }
 }
 
-function buehne(kind: 'auto' | 'aux' | 'fs' | 'fsAuto', over: Partial<AppState> = {}) {
+function buehne(kind: 'aux' | 'fs' | 'fsAuto', over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
     ...demoZustand(),
@@ -73,21 +70,6 @@ function buehne(kind: 'auto' | 'aux' | 'fs' | 'fsAuto', over: Partial<AppState> 
       <AppDispatchContext.Provider value={dispatch}>
         <AppStoreContext.Provider value={store}>
           <AppStateContext.Provider value={state}>
-            {kind === 'auto' && (
-              // Zwei Zeilen, wie im Predigtdienst Treffpunkte und Schichten.
-              <div className="plan-auto">
-                <AutoAssignRow
-                  label={t.navAufgaben}
-                  automatisch={() => dispatch({ type: 'autoAssign', scope: 'parts' })}
-                  leeren={() => dispatch({ type: 'clearAssignments', scope: 'parts' })}
-                />
-                <AutoAssignRow
-                  label={t.hilfsdienste}
-                  automatisch={() => dispatch({ type: 'autoAssign', scope: 'helpers' })}
-                  leeren={() => dispatch({ type: 'clearAssignments', scope: 'helpers' })}
-                />
-              </div>
-            )}
             {kind === 'aux' && <AuxCounselorPanel meeting={state.weeks[state.week]!.mid} />}
             {kind === 'fs' && <FsPlan />}
             {kind === 'fsAuto' && <TreffpunkteAutomatikBlatt onClose={vi.fn()} />}
@@ -99,73 +81,7 @@ function buehne(kind: 'auto' | 'aux' | 'fs' | 'fsAuto', over: Partial<AppState> 
   return { dispatch, ...render(<Buehne />) }
 }
 
-const leerenKnoepfe = (c: HTMLElement) =>
-  [...c.querySelectorAll<HTMLButtonElement>('.plan-auto-btn--clear')]
-
 afterEach(cleanup)
-
-/*
- * Welche Bereiche „Automatisch" bei den Zusammenkünften füllt, entscheiden seit
- * T121 (Phase 5c) die Kästchen im Blatt — `AutomatischBlatt.test.tsx`. Hier
- * bleibt die Zeile, die der Predigtdienst weiter nutzt.
- */
-describe('„Leeren" braucht zwei Tipps — es macht eine Woche Arbeit zunichte', () => {
-  it('der erste Tipp leert noch nichts, sondern fragt nach', () => {
-    const { container, dispatch } = buehne('auto')
-    const knopf = leerenKnoepfe(container)[0]!
-    expect(knopf.textContent).toBe(t.leeren)
-    fireEvent.click(knopf)
-    expect(dispatch.mock.calls.some((c) => c[0].type === 'clearAssignments')).toBe(false)
-    expect(knopf.textContent).toBe(t.leerenSicher)
-    expect(knopf.className).toContain('is-armed')
-  })
-
-  it('erst der zweite leert wirklich', () => {
-    const { container, dispatch } = buehne('auto')
-    const knopf = leerenKnoepfe(container)[0]!
-    fireEvent.click(knopf)
-    fireEvent.click(knopf)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'clearAssignments', scope: 'parts' })
-  })
-
-  it('danach ist er wieder entschärft — ein dritter Tipp leert nicht noch einmal', () => {
-    const { container, dispatch } = buehne('auto')
-    const knopf = leerenKnoepfe(container)[0]!
-    fireEvent.click(knopf)
-    fireEvent.click(knopf)
-    fireEvent.click(knopf)
-    expect(dispatch.mock.calls.filter((c) => c[0].type === 'clearAssignments')).toHaveLength(1)
-    expect(knopf.textContent).toBe(t.leerenSicher) // scharf für den nächsten Versuch
-  })
-
-  it('geht der Fokus weg, entschärft er sich — ein Tipp daneben nimmt die Frage zurück', () => {
-    const { container, dispatch } = buehne('auto')
-    const knopf = leerenKnoepfe(container)[0]!
-    fireEvent.click(knopf)
-    fireEvent.blur(knopf)
-    expect(knopf.textContent).toBe(t.leeren)
-    fireEvent.click(knopf)
-    expect(dispatch.mock.calls.some((c) => c[0].type === 'clearAssignments')).toBe(false)
-  })
-
-  it('„Automatisch" entschärft es ebenfalls — sonst leerte der nächste Tipp die Neuverteilung', () => {
-    const { container, dispatch } = buehne('auto')
-    const leeren = leerenKnoepfe(container)[0]!
-    fireEvent.click(leeren)
-    fireEvent.click(container.querySelectorAll('.plan-auto-btn--primary')[0]!)
-    expect(leeren.textContent).toBe(t.leeren)
-    fireEvent.click(leeren)
-    expect(dispatch.mock.calls.some((c) => c[0].type === 'clearAssignments')).toBe(false)
-  })
-
-  it('die beiden Zeilen sind unabhängig scharf — eine Frage gilt nicht für beide', () => {
-    const { container } = buehne('auto')
-    const [aufgaben, dienste] = leerenKnoepfe(container)
-    fireEvent.click(aufgaben!)
-    expect(aufgaben!.textContent).toBe(t.leerenSicher)
-    expect(dienste!.textContent).toBe(t.leeren)
-  })
-})
 
 describe('Der Ratgeber der Zusätzlichen Klasse (S-38 Abs. 27)', () => {
   const mitKlasse = () => {

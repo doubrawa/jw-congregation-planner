@@ -206,7 +206,7 @@ describe('useT weckt nur die Sprache', () => {
   function Uebersetzt({ zaehler }: { zaehler: { n: number } }) {
     const { t } = useT()
     zaehler.n++
-    return <span>{t.autoZuteilen}</span>
+    return <span>{t.autoTitel}</span>
   }
 
   function Ausloeser({ beschriftung, action }: { beschriftung: string; action: AppAction }) {
@@ -240,10 +240,10 @@ describe('useT weckt nur die Sprache', () => {
         <Ausloeser beschriftung="englisch" action={{ type: 'setLang', lang: 'en' }} />
       </AppProvider>,
     )
-    const deutsch = dict('de').autoZuteilen
+    const deutsch = dict('de').autoTitel
     expect(getByText(deutsch)).toBeTruthy()
     fireEvent.click(getByText('englisch'))
     expect(zaehler.n).toBe(2)
-    expect(getByText(dict('en').autoZuteilen)).toBeTruthy()
+    expect(getByText(dict('en').autoTitel)).toBeTruthy()
   })
 })

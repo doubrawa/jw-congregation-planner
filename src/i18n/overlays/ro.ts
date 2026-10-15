@@ -42,7 +42,6 @@ export default {
   "stand": "Situația la {datum}",
   "planen": "Planificare",
   "offeneZut": "Însărcinări de atribuit: {n}",
-  "autoZuteilen": "ATRIBUIE AUTOMAT",
   "zuteilenChip": "— atribuie",
   "offenWort": "liber",
   "offenDash": "— liber —",

@@ -111,6 +111,16 @@
   /* Fokusring für Eingabefelder — weicher als der der Knöpfe. */
   --fokus: color-mix(in srgb, var(--akzent-text) 55%, transparent);
 
+  /* Getönte Flächen, aus den Farben oben gemischt: ein Problem (Fehler,
+     abweichende Woche), die gewählte Minze (Kalender, Knopf unter dem Zeiger),
+     der Rand eines Problems, die Fläche unter dem Zeiger. Bis Phase 10 hießen
+     sie in der Sprache der alten Oberfläche `--tWein`, `--tAcc`, `--weinB`
+     und `--hov`. */
+  --problem-flaeche: color-mix(in srgb, var(--problem) 14%, var(--karte));
+  --akzent-flaeche: color-mix(in srgb, var(--akzent) 24%, var(--karte));
+  --problem-rand: color-mix(in srgb, var(--problem) 45%, var(--karte));
+  --schwebe: color-mix(in srgb, var(--text) 6%, transparent);
+
   /* Radien */
   --r-panel: 24px;
   --r-input: 12px;
@@ -132,62 +142,6 @@
 :root:lang(ar),
 :root:lang(fa) {
   --font-sans: 'Manrope Variable', 'Vazirmatn Variable', system-ui, sans-serif;
-}
-
-/* ---- Übergang (T121): die Namen der alten Oberfläche ----------------------
-   Die Bildschirme werden Phase für Phase auf die neuen Bausteine umgebaut.
-   Bis dahin lesen sie ihre alten Namen; hier zeigen diese auf die neuen
-   Werte, damit die ganze App schon jetzt in Graphit · Minze erscheint. Jede
-   Zeile fällt, sobald niemand mehr sie liest — am Ende des Umbaus ist der
-   Block leer. Neue Regeln lesen nie aus diesem Block. */
-:root {
-  --bg: var(--grund);
-  --bgT: color-mix(in srgb, var(--grund) 96%, transparent);
-  --card: var(--karte);
-
-  --tNeu: var(--feld);
-  --tNeu2: var(--feld);
-  --tPet: var(--feld);
-  --tGld: var(--feld);
-  --tWein: color-mix(in srgb, var(--problem) 14%, var(--karte));
-  --tAcc: color-mix(in srgb, var(--akzent) 24%, var(--karte));
-
-  --ink: var(--text);
-  --mut: var(--text2);
-  --mut2: var(--text3);
-
-  --acc: var(--akzent-text);
-  --accD: var(--akzent-text);
-  --onAcc: var(--karte);
-
-  --pet: var(--sek1);
-  --gld: var(--sek2);
-  --wein: var(--problem);
-
-  --line: var(--linie);
-  --line2: var(--linie);
-  --bord: var(--umriss);
-  --bord2: var(--umriss);
-  --bord3: var(--umriss);
-  --bord4: var(--umriss);
-  --dash: var(--umriss);
-  --weinB: color-mix(in srgb, var(--problem) 45%, var(--karte));
-
-  --lineNeu: var(--linie);
-  --linePet: var(--linie);
-  --lineGld: var(--linie);
-  --lineWein: var(--linie);
-
-  --knob: #ffffff;
-  --hov: color-mix(in srgb, var(--text) 6%, transparent);
-
-  /* Die Ampel am Platz spricht jetzt die Sprache der Punkte: voll = zugesagt,
-     blass = wartet, rot = Problem. */
-  --zusage-bestaetigt: var(--text);
-  --zusage-offen: var(--wartet);
-  --zusage-verhindert: var(--problem);
-
-  --font-serif: var(--font-sans);
 }
 
 /* ---- Ebenen (z-index) ------------------------------------------------------

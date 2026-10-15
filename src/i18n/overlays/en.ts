@@ -48,7 +48,6 @@ export default {
   "stand": "As of {datum}",
   "planen": "Plan",
   "offeneZut": "Open assignments: {n}",
-  "autoZuteilen": "ASSIGN AUTOMATICALLY",
   "zuteilenChip": "— assign",
   "offenWort": "open",
   "offenDash": "— open —",

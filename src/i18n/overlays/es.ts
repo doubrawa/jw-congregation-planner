@@ -42,7 +42,6 @@ export default {
   "stand": "Actualizado: {datum}",
   "planen": "Planificar",
   "offeneZut": "Asignaciones abiertas: {n}",
-  "autoZuteilen": "ASIGNAR AUTOMÁTICAMENTE",
   "zuteilenChip": "— asignar",
   "offenWort": "pendiente",
   "offenDash": "— pendiente —",

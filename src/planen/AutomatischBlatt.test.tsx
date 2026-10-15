@@ -174,6 +174,17 @@ describe('„Leeren" fragt nach', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
+  it('geht der Fokus weg, entschärft es sich — ein Tipp daneben nimmt die Frage zurück', () => {
+    // Bis Phase 10 (T121) nur an der alten Zeile `AutoAssignRow` geprüft, die
+    // seit Phase 5c niemand mehr zeigte.
+    const { dispatch } = zeige()
+    fireEvent.click(leeren())
+    fireEvent.blur(leeren())
+    expect(leeren().textContent).toBe(t.leeren)
+    fireEvent.click(leeren())
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
   it('jede andere Wahl nimmt die Frage zurück — sie galt der alten', () => {
     const { dispatch } = zeige()
     fireEvent.click(leeren())

@@ -136,140 +136,10 @@
   font-weight: 400;
 }
 
-/* Auto-Zuteilen / Leeren — je eine Zeile für Aufgaben und Hilfsdienste:
-   Bereichs-Label, darunter der gefüllte „Automatisch"-Button (primär) und der
-   dezente „Leeren"-Button (Umriss, Zwei-Tipp-Bestätigung) auf einer Linie. */
-
-.plan-auto-row + .plan-auto-row {
-  margin-top: 12px;
-}
-
-.plan-auto-label {
-  font-size: calc(9.5px * var(--fs));
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--mut);
-  margin-bottom: 6px;
-}
-
-.plan-auto-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.plan-auto-btn {
-  border-radius: var(--r-pill);
-  padding: 11px 0;
-  text-align: center;
-  font-size: calc(12px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.06em;
-}
-
-/* Primär: füllt die Zuteilungen automatisch — nimmt die restliche Breite. */
-.plan-auto-btn--primary {
-  flex: 1;
-  min-width: 0;
-  background: var(--acc);
-  color: var(--onAcc);
-}
-
-.plan-auto-btn--primary:hover {
-  background: var(--accD);
-}
-
-/* Sekundär/destruktiv: leert die Zuteilungen. Schmaler Umriss-Button. */
-.plan-auto-btn--clear {
-  flex: none;
-  min-width: 92px;
-  padding-inline: 14px;
-  background: transparent;
-  color: var(--mut);
-  border: 1px solid var(--bord);
-  text-transform: uppercase;
-}
-
-.plan-auto-btn--clear:hover {
-  border-color: var(--wein);
-  color: var(--wein);
-}
-
-/* Bewaffnet (erster Tipp): weinrot getönt, „Wirklich leeren?" braucht Platz. */
-.plan-auto-btn--clear.is-armed {
-  min-width: 132px;
-  background: var(--tWein);
-  border-color: var(--wein);
-  color: var(--wein);
-  text-transform: none;
-}
-
-/* Legende der Ampel-Punkte. Bricht auf schmalen Bildschirmen zwischen den
-   Stufen um, nie mitten in einer. */
-.plan-legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 14px;
-  margin-top: 10px;
-  font-size: calc(10.5px * var(--fs));
-  color: var(--mut);
-}
-
-.plan-legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5em;
-  white-space: nowrap;
-}
-
-/* ---- Konflikt-Warnungen ------------------------------------------------- */
-
-/* Kopfzeile beider Banner: Rund-Badge (!/?) · Titel · Zähler-Pille rechts.
-   Badge und Pille wachsen mit der Schriftstufe: Ihre Zeilenhöhe tut es, und
-   in einem festen Kasten rutschte die Ziffer ab Stufe > 1 unten heraus. */
-.plan-banner-head {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-
-.plan-banner-badge {
-  flex: none;
-  width: calc(21px * var(--fs));
-  height: calc(21px * var(--fs));
-  border-radius: 50%;
-  color: var(--onAcc);
-  font-size: calc(13px * var(--fs));
-  font-weight: 700;
-  line-height: calc(21px * var(--fs));
-  text-align: center;
-}
-
-.plan-banner-title {
-  flex: 1;
-  font-size: calc(11.5px * var(--fs));
-  font-weight: 700;
-  letter-spacing: 0.12em;
-}
-
-.plan-banner-count {
-  flex: none;
-  min-width: calc(22px * var(--fs));
-  height: calc(22px * var(--fs));
-  padding: 0 7px;
-  box-sizing: border-box;
-  border-radius: var(--r-pill);
-  color: var(--onAcc);
-  font-size: calc(12px * var(--fs));
-  font-weight: 700;
-  line-height: calc(22px * var(--fs));
-  text-align: center;
-}
-
 /* ---- Slot-Chips (Treffpunkte) und der Titel des Kreisaufseher-Punkts ------- */
 
 .plan-item-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: calc(14.5px * var(--fs));
   font-weight: 500;
   line-height: 1.3;
@@ -279,34 +149,6 @@
      Schrumpfen, overflow-wrap den Umbruch im Wort, wo es nicht anders geht. */
   min-width: 0;
   overflow-wrap: anywhere;
-}
-
-/*
- * Punkt der Zusage (Gruppenbesuche): voll bestätigt, blass wartet, rot
- * abgesagt (vorher „✓" und „…"). Die Farben stehen in tokens.css
- * (`--zusage-*`).
- *
- * Größe in em, damit er mit der Schrift wächst (`--fs`) — an der Person wie in
- * der Legende.
- */
-.zusage-punkt {
-  display: inline-block;
-  flex: none;
-  width: 0.62em;
-  height: 0.62em;
-  border-radius: 50%;
-}
-
-.zusage-punkt.is-bestaetigt {
-  background: var(--zusage-bestaetigt);
-}
-
-.zusage-punkt.is-offen {
-  background: var(--zusage-offen);
-}
-
-.zusage-punkt.is-verhindert {
-  background: var(--zusage-verhindert);
 }
 
 /* ---- „Unser Leben als Christ“ bearbeiten (`ProgrammBlatt`) --------------- */
@@ -327,11 +169,11 @@
   height: 24px;
   flex: none;
   border-radius: 50%;
-  border: 1px solid var(--weinB);
+  border: 1px solid var(--problem-rand);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--wein);
+  color: var(--problem);
   font-size: calc(10px * var(--fs));
 }
 
@@ -340,10 +182,10 @@
   min-width: 0;
   padding: 8px 12px;
   border-radius: var(--r-pill);
-  border: 1px solid var(--bord2);
-  background: var(--card);
+  border: 1px solid var(--umriss);
+  background: var(--karte);
   font-size: calc(12px * var(--fs));
-  color: var(--ink);
+  color: var(--text);
 }
 
 .lac-add-btn {
@@ -353,8 +195,8 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
-  border: 1px solid var(--acc);
-  color: var(--acc);
+  border: 1px solid var(--akzent-text);
+  color: var(--akzent-text);
   border-radius: var(--r-pill);
   padding: 9px 13px;
   font-size: calc(11px * var(--fs));
@@ -364,7 +206,7 @@
 
 .partner-toggle {
   margin-top: 8px;
-  color: var(--acc);
+  color: var(--akzent-text);
   font-size: calc(11px * var(--fs));
   font-weight: 600;
 }
@@ -374,7 +216,7 @@
 }
 
 .lac-add-btn:hover {
-  background: var(--tAcc);
+  background: var(--akzent-flaeche);
 }
 
 /* ---- Öffentlicher Vortrag (Wochenende): Thema, Anfangslied, Gastredner ---- */
@@ -385,11 +227,11 @@
   min-width: 0;
   padding: 8px 12px;
   border-radius: 10px;
-  border: 1px solid var(--bord2);
-  background: var(--card);
+  border: 1px solid var(--umriss);
+  background: var(--karte);
   font-size: calc(13px * var(--fs));
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text);
 }
 
 /* Anfangslied-Zeile in der ERÖFFNUNG (nur Wochenende) */
@@ -533,7 +375,7 @@
 .plan-helper-label {
   font-size: calc(9.5px * var(--fs));
   letter-spacing: 0.14em;
-  color: var(--mut);
+  color: var(--text2);
 }
 
 /* ---- Zuteilen (T121, Entwurf `GZuteilen`) ---------------------------------- */
@@ -663,7 +505,7 @@
 }
 
 .zuteilen-zeile:hover {
-  background: var(--hov);
+  background: var(--schwebe);
 }
 
 .zuteilen-zeile-text {
@@ -777,7 +619,7 @@
 }
 
 .sheet-empty-action {
-  border: 1px solid var(--line);
+  border: 1px solid var(--linie);
   border-radius: 999px;
   background: transparent;
   color: var(--text);
@@ -796,15 +638,15 @@
 .sonder {
   margin-top: 12px;
   padding: 10px 12px;
-  border: 1px solid var(--bord3);
+  border: 1px solid var(--umriss);
   border-radius: 10px;
 }
 
 /* Weicht die Woche ab, hebt sich das Feld ab — sonst sieht es aus wie ein
    weiteres Bedienelement unter vielen und die Sonderlage bleibt unbemerkt. */
 .sonder.is-abweichend {
-  border-color: var(--wein);
-  background: var(--tWein);
+  border-color: var(--problem);
+  background: var(--problem-flaeche);
 }
 
 .sonder-row {
@@ -842,13 +684,13 @@
   font-size: calc(9.5px * var(--fs));
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--mut);
+  color: var(--text2);
 }
 
 .sonder-select,
 .sonder-time,
 .sonder-grund {
-  border: 1px solid var(--bord3);
+  border: 1px solid var(--umriss);
   border-radius: 8px;
   /* background-color, nicht `background:` — die Kurzschreibweise löschte das
      Chevron (hell) bzw. ließ es kacheln (dunkel); siehe
@@ -1354,12 +1196,12 @@ body:has(.planen-leiste) .toast {
 }
 
 .vp-zeile {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--linie);
   padding-top: 10px;
 }
 
 .vp-zeile--blass {
-  color: var(--mut);
+  color: var(--text2);
 }
 
 .vp-kopf {
@@ -1383,24 +1225,24 @@ body:has(.planen-leiste) .toast {
 }
 
 .vp-art--neu {
-  background: var(--tPet);
-  color: var(--pet);
+  background: var(--feld);
+  color: var(--sek1);
 }
 
 .vp-art--geaendert {
-  background: var(--tGld);
-  color: var(--gld);
+  background: var(--feld);
+  color: var(--sek2);
 }
 
 .vp-art--entfaellt,
 .vp-art--fehler {
-  background: var(--tWein);
-  color: var(--wein);
+  background: var(--problem-flaeche);
+  color: var(--problem);
 }
 
 .vp-art--uebersprungen {
-  background: var(--tNeu);
-  color: var(--mut);
+  background: var(--feld);
+  color: var(--text2);
 }
 
 .vp-vortrag {
@@ -1416,12 +1258,12 @@ body:has(.planen-leiste) .toast {
 .vp-hinweis,
 .vp-notiz {
   font-size: calc(11.5px * var(--fs));
-  color: var(--mut);
+  color: var(--text2);
   margin-top: 2px;
 }
 
 .vp-hinweis--warnung {
-  color: var(--wein);
+  color: var(--problem);
 }
 
 .vp-fehler {
@@ -1455,15 +1297,15 @@ body:has(.planen-leiste) .toast {
   min-width: 0;
   font-size: calc(12.5px * var(--fs));
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text);
 }
 
 .s89-druck-btn {
   padding: 6px 14px;
-  border: 1px solid var(--acc);
+  border: 1px solid var(--akzent-text);
   border-radius: var(--r-pill);
-  background: var(--card);
-  color: var(--acc);
+  background: var(--karte);
+  color: var(--akzent-text);
   font-size: calc(11.5px * var(--fs));
   font-weight: 600;
   letter-spacing: 0.06em;

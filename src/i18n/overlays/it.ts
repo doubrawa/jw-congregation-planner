@@ -42,7 +42,6 @@ export default {
   "stand": "Aggiornato: {datum}",
   "planen": "Pianifica",
   "offeneZut": "Incarichi da assegnare: {n}",
-  "autoZuteilen": "ASSEGNA AUTOMATICAMENTE",
   "zuteilenChip": "— assegna",
   "offenWort": "aperto",
   "offenDash": "— aperto —",

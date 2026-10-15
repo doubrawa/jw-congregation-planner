@@ -282,7 +282,7 @@ export const DE = {
     treffpunkteDieserWoche: 'Treffpunkte dieser Woche',
     naechsteZusammenkunft: 'Nächste Zusammenkunft · {wann}',
     planen: 'Planen', offeneZut: 'Offene Zuteilungen: {n}',
-    autoZuteilen: 'AUTOMATISCH ZUTEILEN', leeren: 'Leeren', leerenSicher: 'Wirklich leeren?',
+    leeren: 'Leeren', leerenSicher: 'Wirklich leeren?',
     zuteilenChip: '— zuteilen', offenWort: 'offen', offenDash: '— offen —',
     // Start / Dashboard
     grussMorgen: 'Guten Morgen', grussTag: 'Guten Tag', grussAbend: 'Guten Abend',

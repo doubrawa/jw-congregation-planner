@@ -8,8 +8,8 @@
 .btn-primary {
   display: block;
   width: 100%;
-  background: var(--acc);
-  color: var(--onAcc);
+  background: var(--akzent-text);
+  color: var(--karte);
   border-radius: var(--r-pill);
   padding: 13px 0;
   text-align: center;
@@ -19,7 +19,7 @@
 }
 
 .btn-primary:hover {
-  background: var(--accD);
+  background: var(--akzent-text);
 }
 
 .btn-primary:disabled {
@@ -32,8 +32,8 @@
 .btn-outline {
   display: block;
   width: 100%;
-  border: 1px solid var(--acc);
-  color: var(--acc);
+  border: 1px solid var(--akzent-text);
+  color: var(--akzent-text);
   border-radius: var(--r-pill);
   padding: 10px 0;
   text-align: center;
@@ -43,7 +43,7 @@
 }
 
 .btn-outline:hover {
-  background: var(--tAcc);
+  background: var(--akzent-flaeche);
 }
 
 /* Abmelden nach dem ersten Tipp („Wirklich abmelden?") — in der Farbe der
@@ -288,7 +288,7 @@
 /* Erklärtext direkt unter einem Panel-Label */
 .panel-hint {
   font-size: calc(11.5px * var(--fs));
-  color: var(--mut);
+  color: var(--text2);
   margin-top: 4px;
 }
 
@@ -323,21 +323,21 @@ select {
   gap: 10px;
   margin: 20px;
   padding: 24px 20px;
-  border: 1px solid var(--lineWein);
+  border: 1px solid var(--linie);
   border-radius: var(--r-panel);
-  background: var(--tWein);
+  background: var(--problem-flaeche);
   text-align: center;
 }
 
 .err-box-title {
-  color: var(--wein);
+  color: var(--problem);
   font-size: calc(14px * var(--fs));
   font-weight: 700;
 }
 
 .err-box-text {
   max-width: 34ch;
-  color: var(--mut);
+  color: var(--text2);
   font-size: calc(12.5px * var(--fs));
   line-height: 1.4;
 }
@@ -345,10 +345,10 @@ select {
 .err-box-btn {
   min-height: 36px;
   padding: 8px 18px;
-  border: 1px solid var(--lineWein);
+  border: 1px solid var(--linie);
   border-radius: var(--r-pill);
-  background: var(--bg);
-  color: var(--wein);
+  background: var(--grund);
+  color: var(--problem);
   font-family: inherit;
   font-size: calc(12px * var(--fs));
   font-weight: 600;

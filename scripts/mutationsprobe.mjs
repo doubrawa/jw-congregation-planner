@@ -1256,11 +1256,14 @@ export const KATALOG = [
     ersetzen: '',
   },
   {
-    id: 'leeren-zwei-tipp',
-    datei: 'src/planen/AutoAssignRow.tsx',
-    regel: '„Leeren" verlangt zwei Tipps — es macht eine Woche Arbeit zunichte.',
-    suchen: '          onClick={bestaetigung.onClick}\n          onBlur={bestaetigung.onBlur}\n',
-    ersetzen: '          onClick={leeren}\n',
+    // Bis Phase 10 an der alten Zeile `AutoAssignRow`, die seit Phase 5c
+    // niemand mehr zeigte; dass erst der zweite Tipp leert, hält
+    // `zwei-tipp-bewaffnet-erst` am Hook.
+    id: 'leeren-fokus-weg',
+    datei: 'src/planen/AutomatischBlatt.tsx',
+    regel: 'Geht der Fokus von „Leeren" weg, nimmt es die Frage zurück — ein Tipp daneben leert nichts.',
+    suchen: '          onClick={leeren.onClick}\n          onBlur={leeren.onBlur}\n',
+    ersetzen: '          onClick={leeren.onClick}\n',
   },
   {
     id: 'person-loeschen-zwei-tipp',

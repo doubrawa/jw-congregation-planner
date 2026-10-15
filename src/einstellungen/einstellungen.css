@@ -318,7 +318,7 @@
 }
 
 .mem-du {
-  color: var(--mut);
+  color: var(--text2);
   font-weight: 400;
 }
 
@@ -335,12 +335,12 @@
   padding: 7px 10px;
   padding-inline-end: 40px;
   border-radius: 10px;
-  border: 1px solid var(--bord2);
+  border: 1px solid var(--umriss);
   /* background-color statt background-Shorthand, damit das Chevron-Bild der
      globalen select-Regel (image/no-repeat/position) nicht zurückgesetzt wird. */
-  background-color: var(--card);
+  background-color: var(--karte);
   font-size: calc(12px * var(--fs));
-  color: var(--ink);
+  color: var(--text);
 }
 
 .mem-line .mem-select {
@@ -359,7 +359,7 @@
 /* Die Freigabe-Liste im Blatt eines Dienstes: die Zeilen sind dieselben wie bei
    der Person und erwarten deren Haarlinie — im Sheet gibt es kein Panel, das sie setzt. */
 .svc-persons {
-  --panel-hair: var(--line);
+  --panel-hair: var(--linie);
 }
 
 /* Das ✕ an einem Konto ohne Person (Personen, `OrphanAccounts`). */
@@ -368,11 +368,11 @@
   height: 26px;
   flex: none;
   border-radius: 50%;
-  border: 1px solid var(--weinB);
+  border: 1px solid var(--problem-rand);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--wein);
+  color: var(--problem);
   font-size: calc(11px * var(--fs));
   margin-inline-start: 4px;
 }

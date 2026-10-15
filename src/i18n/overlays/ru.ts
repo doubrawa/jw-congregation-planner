@@ -42,7 +42,6 @@ export default {
   "stand": "На {datum}",
   "planen": "Планирование",
   "offeneZut": "Незаполненных назначений: {n}",
-  "autoZuteilen": "НАЗНАЧИТЬ АВТОМАТИЧЕСКИ",
   "zuteilenChip": "— назначить",
   "offenWort": "свободно",
   "offenDash": "— свободно —",

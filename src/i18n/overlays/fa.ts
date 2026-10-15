@@ -43,7 +43,6 @@ export default {
   "stand": "تا {datum}",
   "planen": "برنامه‌ریزی",
   "offeneZut": "{n} وظیفهٔ باز",
-  "autoZuteilen": "تعیین خودکار",
   "zuteilenChip": "— تعیین",
   "offenWort": "باز",
   "offenDash": "— باز —",

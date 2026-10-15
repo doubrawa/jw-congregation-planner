@@ -84,48 +84,34 @@ describe('Wochen-Streifen: Klassen und Regeln passen zusammen', () => {
 })
 
 /*
- * Der Ampel-Punkt im Planen ist ein leeres `<span>` — seine ganze Aussage steckt
- * in der Farbe, und die kommt aus CSS. jsdom rechnet kein CSS: Fehlte die Regel
- * einer Stufe oder zeigte sie auf das falsche Token, blieben alle Tests grün,
+ * Der Punkt am Platz ist ein leeres `<span>` — seine ganze Aussage steckt in
+ * der Farbe, und die kommt aus CSS. jsdom rechnet kein CSS: Fehlte die Regel
+ * einer Lage oder zeigte sie auf das falsche Token, blieben alle Tests grün,
  * und der Planer sähe einen unsichtbaren oder falsch gefärbten Punkt.
+ *
+ * Bis Phase 10 von T121 bewachte dieser Block den Punkt der Treffpunkte
+ * (`.zusage-punkt`, `ZusageStatus.tsx`); der war seit dem neuen Design tot,
+ * der Punkt der Lage (`LAGE_KLASSE`) trägt es überall.
  */
-describe('Ampel-Punkt: jede Stufe hat ihre Farbe', () => {
-  const tsx = ohneKommentare(lies('src/planen/useZusage.ts'))
+describe('Der Punkt am Platz: jede Lage hat ihre Farbe (T121)', () => {
+  const tsx = ohneKommentare(lies('src/planen/platz-anzeige.ts'))
   const css = lies('src/planen/planen.css')
-  const tokens = lies('src/styles/tokens.css')
 
-  /** Stufe → Klasse, wie `ZUSAGE_KLASSE` sie vergibt. */
+  /** Lage → Klasse, wie `LAGE_KLASSE` sie vergibt. */
   const klassen = Object.fromEntries(
-    [...tsx.matchAll(/(bestätigt|offen|verhindert): '(is-[a-z]+)'/g)].map((m) => [m[1], m[2]]),
+    [...tsx.matchAll(/(voll|wartet|problem|offen): '(is-[a-z]+)'/g)].map((m) => [m[1], m[2]]),
   )
 
-  it('die Komponente vergibt je Stufe genau eine Klasse', () => {
-    expect(klassen).toEqual({ bestätigt: 'is-bestaetigt', offen: 'is-offen', verhindert: 'is-verhindert' })
+  it('die Lagen vergeben je eine Klasse', () => {
+    expect(klassen).toEqual({ voll: 'is-voll', wartet: 'is-wartet', problem: 'is-problem', offen: 'is-offen' })
   })
 
-  it('jede Klasse hat eine Regel mit dem Token ihrer Stufe', () => {
-    // Über Kreuz vertauscht (grün auf „offen") wäre ebenso falsch wie gar nicht.
-    for (const [stufe, token] of [
-      ['is-bestaetigt', '--zusage-bestaetigt'],
-      ['is-offen', '--zusage-offen'],
-      ['is-verhindert', '--zusage-verhindert'],
-    ] as const) {
-      const regel = new RegExp(String.raw`\.zusage-punkt\.${stufe}\s*\{[^}]*background:\s*var\(${token}\)`)
-      expect(css, stufe).toMatch(regel)
-    }
-  })
-
-  it('jede Stufe spricht die Sprache der Punkte (T121): voll, blass, rot', () => {
-    // Seit dem neuen Design keine Ampel mehr: zugesagt ist ein voller Punkt in
-    // der Textfarbe, „wartet" der blasse, abgesagt der rote — in beiden Paletten,
-    // denn die Stufen zeigen auf deren Namen.
-    for (const [token, ziel] of [
-      ['--zusage-bestaetigt', '--text'],
-      ['--zusage-offen', '--wartet'],
-      ['--zusage-verhindert', '--problem'],
-    ] as const) {
-      expect(tokens, token).toMatch(new RegExp(String.raw`${token}:\s*var\(${ziel}\);`))
-    }
+  it('voll ist der volle Punkt in der Textfarbe, wartet blass, ein Problem rot, offen gestrichelt', () => {
+    // Über Kreuz vertauscht (rot auf „wartet") wäre ebenso falsch wie gar nicht.
+    expect(css).toMatch(/\.platz-punkt\s*\{[^}]*background:\s*var\(--text\)/)
+    expect(css).toMatch(/\.is-wartet > \.platz-punkt\s*\{[^}]*background:\s*var\(--wartet\)/)
+    expect(css).toMatch(/\.is-problem > \.platz-punkt\s*\{[^}]*background:\s*var\(--problem\)/)
+    expect(css).toMatch(/\.is-offen > \.platz-punkt\s*\{[^}]*border:\s*1\.5px dashed var\(--ring\)/)
   })
 })
 

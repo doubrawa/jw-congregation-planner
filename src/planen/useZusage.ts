@@ -10,34 +10,19 @@ import type { FsInstance, MeetingKey, PartItem, TaskStatus } from '../data/types
 /*
  * Die Zusage an jedem besetzten Platz: bestätigt, wartet, abgesagt
  * (14. September 2026, vorher ✓ und …). Hier stehen Stufen und Nachschlagen.
- * Gezeigt wird sie seit T121 als Punkt der Lage — voll, blass, rot —, an den
- * Plätzen der Zusammenkünfte über `PlatzZeile`, an Treffpunkten am Chip
- * (`ZusageStatus.tsx`).
+ * Gezeigt wird sie seit T121 als Punkt der Lage — voll, blass, rot — über
+ * `PlatzZeile` (`LAGE_KLASSE`); die eigenen Punkte der Treffpunkte und ihre
+ * Legende (`ZusageStatus.tsx`) sind mit Phase 10 entfallen.
  *
- * Die Farben stehen als Tokens in `tokens.css` (`--zusage-*`, abgeleitet aus
- * `--text`, `--wartet` und `--problem`). Allein auf die Farbe verlässt sich der
- * Punkt nicht: Die Legende nennt jede Stufe beim Namen, der Platz nennt sie dem
- * Screenreader.
+ * Allein auf die Farbe verlässt sich der Punkt nicht: Der Platz nennt die
+ * Stufe dem Screenreader, die Gruppenbesuche schreiben sie aus.
  */
 
-/** Die drei Stufen in dieser Reihenfolge — so stehen sie auch in der Legende. */
-export const ZUSAGE_STUFEN: readonly TaskStatus[] = ['bestätigt', 'offen', 'verhindert']
-
-/** Beschriftung je Stufe: in der Legende sichtbar, am Platz für den Screenreader. */
+/** Beschriftung je Stufe: am Platz für den Screenreader, bei den Gruppenbesuchen sichtbar. */
 export const ZUSAGE_LABEL: Record<TaskStatus, keyof Dict> = {
   bestätigt: 'zusageBestaetigt',
   offen: 'zusageWartet',
   verhindert: 'zusageAbgesagt',
-}
-
-/**
- * CSS-Klasse je Stufe. Ohne Umlaut, damit Selektor und Klasse sicher
- * zusammenpassen — `tests/css-klassen.test.ts` hält beide Seiten zusammen.
- */
-export const ZUSAGE_KLASSE: Record<TaskStatus, string> = {
-  bestätigt: 'is-bestaetigt',
-  offen: 'is-offen',
-  verhindert: 'is-verhindert',
 }
 
 /** Stand der Zusage eines Platzes, fertig zum Anzeigen: Stufe und ihr Wort. */

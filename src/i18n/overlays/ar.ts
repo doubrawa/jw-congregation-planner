@@ -39,7 +39,6 @@ export default {
   "stand": "حتى {datum}",
   "planen": "التخطيط",
   "offeneZut": "تعيينات مفتوحة: {n}",
-  "autoZuteilen": "تعيين تلقائي",
   "zuteilenChip": "— تعيين",
   "offenWort": "مفتوح",
   "offenDash": "— مفتوح —",

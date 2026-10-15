@@ -42,7 +42,6 @@ export default {
   "stand": "Stan: {datum}",
   "planen": "Planowanie",
   "offeneZut": "Zadania do przydzielenia: {n}",
-  "autoZuteilen": "PRZYDZIEL AUTOMATYCZNIE",
   "zuteilenChip": "— przydziel",
   "offenWort": "wolne",
   "offenDash": "— wolne —",

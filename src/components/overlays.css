@@ -277,10 +277,10 @@
   margin-top: 12px;
   padding: 10px 14px;
   border-radius: var(--r-pill);
-  border: 1px solid var(--bord);
-  background: var(--bg);
+  border: 1px solid var(--umriss);
+  background: var(--grund);
   font-size: calc(13px * var(--fs));
-  color: var(--ink);
+  color: var(--text);
   flex: none;
 }
 
@@ -298,21 +298,21 @@
   width: 100%;
   text-align: start;
   padding: 10px 4px;
-  border-bottom: 1px solid var(--line2);
+  border-bottom: 1px solid var(--linie);
   font-size: calc(13px * var(--fs));
-  color: var(--ink);
+  color: var(--text);
 }
 
 .lang-row:hover {
-  background: var(--hov);
+  background: var(--schwebe);
 }
 
 .lang-row.is-active {
   font-weight: 600;
-  color: var(--acc);
+  color: var(--akzent-text);
 }
 
 .lang-check {
-  color: var(--acc);
+  color: var(--akzent-text);
   font-weight: 600;
 }

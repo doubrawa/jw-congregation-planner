@@ -3,7 +3,7 @@
  * Übersetzung (tu, App-Sprache) und Programm-Inhalts-Übersetzung (tp,
  * Versammlungssprache).
  *
- *  - `t`  … UI-Strings, z. B. `t.autoZuteilen`
+ *  - `t`  … UI-Strings, z. B. `t.autoTitel`
  *  - `fill(t.offeneZut, { n })` … Platzhalter {n}/{name}/{m} ersetzen
  *  - `tu(name)` … Namen/Rollen/Zeiten in App-Sprache
  *  - `tp(title)` … Programmpunkt-Titel/Datum in Versammlungssprache

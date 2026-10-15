@@ -42,7 +42,6 @@ export default {
   "stand": "Mis à jour le {datum}",
   "planen": "Planifier",
   "offeneZut": "Attributions ouvertes\u00a0: {n}",
-  "autoZuteilen": "ATTRIBUER AUTOMATIQUEMENT",
   "zuteilenChip": "— attribuer",
   "offenWort": "à pourvoir",
   "offenDash": "— à pourvoir —",

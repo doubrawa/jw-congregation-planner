@@ -42,7 +42,6 @@ export default {
   "stand": "Durum: {datum}",
   "planen": "Planlama",
   "offeneZut": "{n} atanmamış görev",
-  "autoZuteilen": "OTOMATİK ATA",
   "zuteilenChip": "— ata",
   "offenWort": "boş",
   "offenDash": "— boş —",

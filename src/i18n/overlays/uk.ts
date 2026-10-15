@@ -42,7 +42,6 @@ export default {
   "stand": "Станом на {datum}",
   "planen": "Планування",
   "offeneZut": "Незаповнених призначень: {n}",
-  "autoZuteilen": "ПРИЗНАЧИТИ АВТОМАТИЧНО",
   "zuteilenChip": "— призначити",
   "offenWort": "вільно",
   "offenDash": "— вільно —",

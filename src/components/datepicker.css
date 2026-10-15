@@ -12,24 +12,24 @@
   gap: 8px;
   padding: 9px 12px;
   border-radius: 10px;
-  border: 1px solid var(--bord2);
-  background: var(--card);
+  border: 1px solid var(--umriss);
+  background: var(--karte);
   font-size: calc(13px * var(--fs));
-  color: var(--ink);
+  color: var(--text);
   text-align: start;
   cursor: pointer;
 }
 
 .dp-field--empty {
-  color: var(--mut);
+  color: var(--text2);
 }
 
 .dp-field:hover {
-  border-color: var(--acc);
+  border-color: var(--akzent-text);
 }
 
 .dp-icon {
-  color: var(--mut);
+  color: var(--text2);
   flex: none;
 }
 
@@ -42,8 +42,8 @@
   max-width: min(264px, 84vw);
   padding: 12px;
   border-radius: 14px;
-  background: var(--card);
-  border: 1px solid var(--bord2);
+  background: var(--karte);
+  border: 1px solid var(--umriss);
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.2);
 }
 
@@ -55,10 +55,10 @@
 }
 
 .dp-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: calc(15px * var(--fs));
   font-weight: 500;
-  color: var(--ink);
+  color: var(--text);
 }
 
 .dp-nav {
@@ -66,9 +66,9 @@
   height: 30px;
   flex: none;
   border-radius: 50%;
-  border: 1px solid var(--bord2);
+  border: 1px solid var(--umriss);
   background: transparent;
-  color: var(--acc);
+  color: var(--akzent-text);
   font-size: calc(17px * var(--fs));
   line-height: 1;
   cursor: pointer;
@@ -83,7 +83,7 @@
 }
 
 .dp-nav:hover {
-  background: var(--tAcc);
+  background: var(--akzent-flaeche);
 }
 
 .dp-weekdays,
@@ -101,7 +101,7 @@
   text-align: center;
   font-size: calc(10px * var(--fs));
   font-weight: 600;
-  color: var(--mut);
+  color: var(--text2);
   padding: 2px 0;
 }
 
@@ -111,32 +111,32 @@
   background: transparent;
   border-radius: 8px;
   font-size: calc(12.5px * var(--fs));
-  color: var(--ink);
+  color: var(--text);
   cursor: pointer;
 }
 
 .dp-day:hover:not(:disabled) {
-  background: var(--tAcc);
+  background: var(--akzent-flaeche);
 }
 
 .dp-day--muted {
-  color: var(--mut2);
+  color: var(--text3);
   opacity: 0.55;
 }
 
 .dp-day--today {
   font-weight: 700;
-  color: var(--acc);
+  color: var(--akzent-text);
 }
 
 .dp-day--sel {
-  background: var(--acc);
-  color: var(--onAcc);
+  background: var(--akzent-text);
+  color: var(--karte);
   font-weight: 600;
 }
 
 .dp-day:disabled {
-  color: var(--mut2);
+  color: var(--text3);
   opacity: 0.3;
   cursor: default;
 }

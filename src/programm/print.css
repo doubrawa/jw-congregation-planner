@@ -24,8 +24,8 @@
 
   /* Tinte auf Papier erzwingen: sonst druckt die dunkle Palette hellen Text
      auf weißes Papier. Gleiche Spezifität wie :root[data-theme='…'], gewinnt
-     über die spätere Position in der Kaskade; die alten Namen aus dem
-     Übergangsblock folgen den neuen von selbst. */
+     über die spätere Position in der Kaskade; was aus diesen Farben gemischt
+     ist (`--problem-flaeche` …), folgt von selbst. */
   :root,
   :root[data-theme] {
     color-scheme: light;
@@ -113,7 +113,7 @@
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--mut);
+    color: var(--text2);
   }
 
   /* Wochenkopf (Pfeile sind ausgeblendet → Titel linksbündig über die Breite) */
