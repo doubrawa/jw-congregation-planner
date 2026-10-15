@@ -736,4 +736,5 @@ export default {
   "druckTag": "Día",
   "druckZeit": "Hora",
   "druckTreffpunkt": "Lugar",
+  "druckTrolleyIntro": "Pónganse de acuerdo y apúntense en la aplicación, en {weg}. Con línea discontinua: alguien busca compañero; quien quiera ir, que se apunte también.",
 } satisfies Partial<Dict>

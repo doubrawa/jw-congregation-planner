@@ -18,6 +18,8 @@ import { DeineTermine, PartnerGesucht } from './TrolleyListen'
 import { TagWahl, TrolleyTag } from './TrolleyTag'
 import { TrolleyWoche } from './TrolleyWoche'
 import { trolleyFehlerText, useTrolleyAktion } from './useTrolleyAktion'
+import { TrolleyBogen } from '../druck/TrolleyBogen'
+import { AnsichtDrucken } from '../programm/AnsichtDrucken'
 import './trolleys.css'
 
 /**
@@ -73,6 +75,8 @@ export function TrolleyAnsicht() {
   return (
     <div className={desktop ? 'trolley-ansicht is-desktop' : 'trolley-ansicht'}>
       <div className="trolley-haupt">
+        {/* Zwei Wochen ab der angezeigten für den Aushang (Phase 9). */}
+        <AnsichtDrucken titel={t.fsTrolleysTab} bogen={() => <TrolleyBogen montag={montag} />} />
         <p className="klein-text trolley-intro">{t.trolleyIntro}</p>
         {(eigene.length > 0 || gesucht.length > 0) && (
           <div className="trolley-listen">

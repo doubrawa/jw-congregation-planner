@@ -736,4 +736,5 @@ export default {
   "druckTag": "Dzień",
   "druckZeit": "Godzina",
   "druckTreffpunkt": "Miejsce",
+  "druckTrolleyIntro": "Umówcie się ze sobą i zapiszcie się w aplikacji, w sekcji {weg}. Linia przerywana: ktoś szuka współpracownika – kto chce dołączyć, niech się dopisze.",
 } satisfies Partial<Dict>

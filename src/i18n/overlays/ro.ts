@@ -736,4 +736,5 @@ export default {
   "druckTag": "Ziua",
   "druckZeit": "Ora",
   "druckTreffpunkt": "Locul",
+  "druckTrolleyIntro": "Stabiliți între voi și înscrieți-vă în aplicație, la {weg}. Linie întreruptă: cineva caută un partener – cine vrea să se alăture se înscrie.",
 } satisfies Partial<Dict>

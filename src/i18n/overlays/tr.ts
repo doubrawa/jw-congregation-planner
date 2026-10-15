@@ -736,4 +736,5 @@ export default {
   "druckTag": "Gün",
   "druckZeit": "Saat",
   "druckTreffpunkt": "Yer",
+  "druckTrolleyIntro": "Birbirinizle anlaşın ve uygulamada {weg} bölümünden kaydolun. Kesikli çizgi: birisi hizmet arkadaşı arıyor – katılmak isteyen kendini ekler.",
 } satisfies Partial<Dict>

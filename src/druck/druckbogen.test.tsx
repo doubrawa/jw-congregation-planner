@@ -10,6 +10,7 @@ import type { FsInstance, FsRule, Section, Service, Week } from '../data/types'
 import { dict } from '../i18n/ui'
 import { Bogen } from './Bogen'
 import { GruppenbesuchBogen, TreffpunktBogen } from './TreffpunktBogen'
+import { TrolleyBogen } from './TrolleyBogen'
 import { useDruckBogen } from './useDruckBogen'
 import { MonatsBogen, WochenBogen } from './ZusammenkunftBogen'
 
@@ -253,6 +254,57 @@ describe('Der Bogen der Treffpunkte', () => {
     expect(besuche.map((z) => z[2])).toEqual(['Gruppe 1', 'Gruppe 2'])
     expect(besuche[0]?.[1]).toContain('Bei Familie A')
     expect(besuche[1]?.[1]).toBe('')
+  })
+})
+
+/**
+ * **Die Trolleys über zwei Wochen** (Entwurf `GDruckTrolleys`): je Tag eine
+ * Zeile, je Trolley eine Spalte; gestrichelt, wo jemand einen Partner sucht.
+ */
+describe('Der Bogen der Trolleys', () => {
+  const person = (id: string, fn: string, ln: string) => ({ ...demoZustand().persons[0]!, id, fn, ln })
+  const TROLLEYS = [
+    { id: 't1', name: 'Trolley 1', ort: 'Depot', hinweis: '' },
+    { id: 't2', name: 'Trolley 2', ort: 'Saal', hinweis: 'Schlüssel im Fach' },
+  ]
+  const termin = (id: string, trolleyId: string, datum: string, partner: string | null) => ({
+    id, trolleyId, datum, von: '09:00', bis: '11:00', pid: 'p-a', partner, gemeinsam: false,
+  })
+  const zeigeTrolleys = () =>
+    zeige(<TrolleyBogen montag="2026-09-07" />, {
+      persons: [person('p-a', 'Anton', 'Alt'), person('p-b', 'Berta', 'Brand')],
+      trolleys: TROLLEYS,
+      trolleyTermine: [
+        termin('r1', 't1', '2026-09-08', 'p-b'),
+        termin('r2', 't2', '2026-09-16', null),
+        termin('r3', 't1', '2026-09-21', 'p-b'), // die dritte Woche — nicht mehr auf dem Bogen
+      ],
+    })
+
+  it('zwei Wochen, je Tag eine Zeile — zwischen den Wochen ein Strich', () => {
+    const { container } = zeigeTrolleys()
+    const zeilen = [...container.querySelectorAll('.druck-trolley-zeile:not(.druck-trolley-zeile--kopf)')]
+    expect(zeilen).toHaveLength(14)
+    expect(zeilen.map((z, i) => (z.classList.contains('is-neue-woche') ? i : -1)).filter((i) => i >= 0)).toEqual([7])
+    expect(texte(container, '.druck-trolley-kopf')).toEqual(['Trolley 1abholen: Depot', 'Trolley 2abholen: Saal'])
+  })
+
+  it('wer mit wem steht — und gestrichelt, wo jemand einen Partner sucht', () => {
+    const { container } = zeigeTrolleys()
+    const termine = [...container.querySelectorAll('.druck-termin')]
+    expect(termine).toHaveLength(2)
+    expect(termine[0]?.textContent).toContain('09:00–11:00')
+    expect(termine[0]?.classList.contains('is-gesucht')).toBe(false)
+    expect(termine[1]?.classList.contains('is-gesucht')).toBe(true)
+    expect(termine[1]?.textContent).toContain(t.trolleyPartnerGesucht)
+  })
+
+  it('darunter die Hinweise der Trolleys und dass die App am Vortag erinnert', () => {
+    const { container } = zeigeTrolleys()
+    const hinweis = container.querySelector('.druck-trolleys .druck-hinweis')?.textContent ?? ''
+    expect(hinweis).toContain('Trolley 2 · Schlüssel im Fach')
+    expect(hinweis).not.toContain('Trolley 1 ·')
+    expect(hinweis).toContain(t.erinTrolleyVortag)
   })
 })
 

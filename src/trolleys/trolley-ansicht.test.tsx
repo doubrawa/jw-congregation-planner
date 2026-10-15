@@ -224,3 +224,25 @@ describe('am Desktop: die Woche als Raster, das Formular rechts', () => {
     expect(knopf(seite, 'Trolley 2')?.getAttribute('aria-pressed')).toBe('true')
   })
 })
+
+/**
+ * **Drucken für den Aushang** (T121, Phase 9; Entwurf `GDruckTrolleys`): zwei
+ * Wochen ab der angezeigten, je Tag eine Zeile, je Trolley eine Spalte.
+ */
+describe('Drucken', () => {
+  it('der Knopf druckt den Bogen der Trolleys — ab der angezeigten Woche', () => {
+    let imDruck = { kennzeichen: undefined as string | undefined, zeitraum: '', tage: 0 }
+    window.print = vi.fn(() => {
+      imDruck = {
+        kennzeichen: document.documentElement.dataset.print,
+        zeitraum: document.querySelector('.druck-bogen .druck-zeitraum')?.textContent ?? '',
+        tage: document.querySelectorAll('.druck-bogen .druck-trolley-tag').length,
+      }
+    })
+    const { container } = zeige()
+    fireEvent.click(container.querySelector('.druck-knopf')!)
+    expect(window.print).toHaveBeenCalledTimes(1)
+    expect(imDruck).toEqual({ kennzeichen: 'bogen', zeitraum: '7.–20. September 2026', tage: 14 })
+    delete document.documentElement.dataset.print
+  })
+})

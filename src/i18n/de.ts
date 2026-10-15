@@ -270,6 +270,8 @@ export const DE = {
     druckVersammlungstreffpunkte: 'Versammlungstreffpunkte', druckGruppentreffpunkte: 'Gruppentreffpunkte',
     druckAndersAlsSonst: 'Anders als sonst', druckEntfaellt: 'entfällt', druckZusaetzlich: 'zusätzlich',
     druckStatt: 'statt {alt}', druckTag: 'Tag', druckZeit: 'Zeit', druckTreffpunkt: 'Treffpunkt',
+    // Bogen der Trolleys (Entwurf GDruckTrolleys); {weg} ist „Predigtdienst · Trolleys".
+    druckTrolleyIntro: 'Verabredet euch und tragt euch in der App ein, unter {weg}. Gestrichelt: Hier sucht jemand einen Partner – wer mitgehen möchte, trägt sich dazu.',
     // Kongresswoche (T121): statt des Programms der leere Saal und zwei Wege.
     kongressAusfall: 'In dieser Woche fallen alle Zusammenkünfte aus.',
     treffpunkteDieserWoche: 'Treffpunkte dieser Woche',

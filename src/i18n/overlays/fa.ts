@@ -735,4 +735,5 @@ export default {
   "druckTag": "روز",
   "druckZeit": "ساعت",
   "druckTreffpunkt": "محل",
+  "druckTrolleyIntro": "با هم قرار بگذارید و در برنامه، در بخش {weg}، ثبت‌نام کنید. خط‌چین: کسی دنبال همخدمت است – هر کس می‌خواهد همراه شود، نام خود را ثبت کند.",
 } satisfies Partial<Dict>

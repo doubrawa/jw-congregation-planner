@@ -736,4 +736,5 @@ export default {
   "druckTag": "اليوم",
   "druckZeit": "الوقت",
   "druckTreffpunkt": "المكان",
+  "druckTrolleyIntro": "اتفقوا فيما بينكم وسجِّلوا أسماءكم في التطبيق، في {weg}. الخط المتقطع: أحدهم يبحث عن رفيق – من يرغب في الانضمام فليسجِّل اسمه.",
 } satisfies Partial<Dict>

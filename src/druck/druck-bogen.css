@@ -544,6 +544,83 @@
   font-weight: 700;
 }
 
+/* ---- Trolleys: je Tag eine Zeile, je Trolley eine Spalte (GDruckTrolleys) */
+
+.druck-trolleys {
+  display: flex;
+  flex-direction: column;
+}
+
+.druck-trolley-intro {
+  margin: 0 0 12px;
+  font-size: 13.5px;
+}
+
+.druck-trolley-zeile {
+  display: grid;
+  column-gap: 10px;
+  align-items: center;
+  min-height: 40px;
+  padding: 4px 0;
+  border-top: 1px solid var(--linie);
+}
+
+.druck-trolley-zeile--kopf {
+  align-items: end;
+  min-height: 0;
+  padding: 0 0 6px;
+  border-top: 0;
+  border-bottom: 1.5px solid var(--tinte);
+}
+
+/* Zwischen den beiden Wochen ein kräftigerer Strich. */
+.druck-trolley-zeile.is-neue-woche {
+  border-top: 1.5px solid var(--tinte);
+}
+
+.druck-trolley-kopf {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+}
+
+.druck-trolley-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.druck-trolley-tag {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.druck-trolley-zelle {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.druck-termin {
+  box-sizing: border-box;
+  padding: 3px 8px 4px;
+  border-inline-start: 3px solid var(--tinte);
+  display: flex;
+  flex-direction: column;
+  font-size: 12.5px;
+  line-height: 1.3;
+}
+
+/* Gestrichelt: Hier sucht jemand einen Partner. */
+.druck-termin.is-gesucht {
+  border: 1.5px dashed var(--tinte2);
+  border-radius: 6px;
+}
+
+.druck-gesucht {
+  font-weight: 700;
+  color: var(--akzent);
+}
+
 /* ---- S-89: sechs Zettel je Blatt, zum Ausschneiden (Entwurf GDruckS89) - */
 
 .s89-blatt {

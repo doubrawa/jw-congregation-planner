@@ -736,4 +736,5 @@ export default {
   "druckTag": "День",
   "druckZeit": "Время",
   "druckTreffpunkt": "Место",
+  "druckTrolleyIntro": "Договоритесь между собой и запишитесь в приложении, в разделе {weg}. Пунктиром: кто-то ищет напарника — кто хочет присоединиться, записывается.",
 } satisfies Partial<Dict>

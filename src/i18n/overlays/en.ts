@@ -736,4 +736,5 @@ export default {
   "druckTag": "Day",
   "druckZeit": "Time",
   "druckTreffpunkt": "Meeting place",
+  "druckTrolleyIntro": "Arrange a time with each other and sign up in the app under {weg}. Dashed: someone is looking for a partner – anyone who would like to join can add their name.",
 } satisfies Partial<Dict>

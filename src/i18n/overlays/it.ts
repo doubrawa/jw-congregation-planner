@@ -736,4 +736,5 @@ export default {
   "druckTag": "Giorno",
   "druckZeit": "Ora",
   "druckTreffpunkt": "Luogo",
+  "druckTrolleyIntro": "Mettetevi d’accordo e iscrivetevi nell’app, in {weg}. Tratteggiato: qualcuno cerca un compagno di servizio – chi vuole unirsi si iscrive.",
 } satisfies Partial<Dict>
