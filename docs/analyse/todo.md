@@ -6643,6 +6643,16 @@ Feinschliff. Nicht gebaut ist bisher die Wochenspalte links aus
 10, mit ihr der Programm-Import, der bis dahin als letzte Karte in den
 Einstellungen steht.
 
+Für Phase 10 vorgemerkt vom Betreiber (15.10.2026): **das Logo farblich an das
+Design anpassen.** In der App zeichnet `Logo` es schon in den Farben der
+Darstellung (Pult in Minze, Plätze in der Textfarbe). Die Dateien tragen aber
+noch die Farben vom 4. Oktober — Petrol-Kachel `#17302D`, Plätze `#FBF6EA`,
+Pult `#E7B04B`: `public/logo.svg` (daraus `npm run icons`: App-Icons, iOS-Icon,
+maskable), `public/logo-klein.svg` (Favicon, `SHELL` in `sw.js`) und, je nach
+Wahl, `theme_color`/`background_color` im Manifest. Die Farben auf einer
+Design-Fläche vorlegen (Graphit · Minze, hell und dunkel), nicht raten; danach
+die Handbuch-Bilder neu, die Seitenleiste zeigt das Logo fast überall.
+
 Für Phase 10 vorgemerkt aus dem Review der Phase 6 (vorbestehend, klein): Wird
 eine weitere Programmsprache zur Sprache der Versammlung, bleibt sie zusätzlich
 unter den weiteren stehen („Englisch, Englisch"; `setCongLang` im Reducer).
@@ -6880,7 +6890,7 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
-| **T121** | Neues Design | ☐ Umbau läuft, Phase für Phase auf main: 1 bis 9 sind live (zuletzt die Druckbögen), es folgt 10, der Feinschliff. Am 13. Oktober nachentschieden, was die ersten Phasen offen ließen; die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
+| **T121** | Neues Design | ☐ Umbau läuft, Phase für Phase auf main: 1 bis 9 sind live (zuletzt die Druckbögen), es folgt 10, der Feinschliff — dort auch das Logo in den Farben des Designs. Am 13. Oktober nachentschieden, was die ersten Phasen offen ließen; die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
