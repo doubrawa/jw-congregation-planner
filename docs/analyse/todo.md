@@ -6733,10 +6733,24 @@ Richtlinien fragen `darf_zuteilen()`, das Schema ist ausgerollt; die Function
 `zuteilen` mit ihrer Grenze ist aus dem Repo und aus Supabase gelöscht.
 **Offen beim Betreiber:** die Mitgliedsrechte-Probe fahren
 (`node scripts/mitgliedsrechte-probe.mjs`) — (35), (38)–(40), (42), (50),
-(53), (55), (60) sind umgedreht, (80) und (81) neu. **Offen in Phase 10:** die
-Wochenspalte mit „Holen" und dem Import-Blatt (`GDesktopPlanen`, `GWochen`,
-`GImport`), die alten Übergangs-Tokens, Schriftstufe und Rechts-nach-links der
-neuen Bildschirme, der Wortlaut der Toasts und die Handbuch-Bilder.
+(53), (55), (60) sind umgedreht, (80) und (81) neu.
+
+**Stand am 16. Oktober 2026, früh: Phase 10 ist fertig.** Dazu kamen 10d, die
+Wochen beim Planen (`9815d416`): am Handy, am Tablet und auf kleinen Desktops
+die Seite „Planung" mit jeder Woche ab der laufenden — Spanne, Anlass oder
+wann, „Probleme: n", „Offen: n" oder „Bereit zum Senden", die Spur —, darunter
+die nächste Woche mit „Holen" und „Auch zu planen"; ab 1400 px dieselben
+Wochen als Spalte links neben dem Plan. „Holen" öffnet das Blatt „Programm
+holen" mit Vorschau (Abschnitte, Punkte, Sprachen) und „Übernehmen und
+zuteilen", „Nur übernehmen", „Abbrechen"; der Import ist aus den
+Einstellungen fort. Dann 10e: die alten Übergangs-Tokens sind gestrichen, drei
+seit Phase 5 tote Bausteine mit ihnen (`4854021c`), die Toasts neu gefasst
+(`7e57c4d1`), die Chips der Planungs-Karte mit den Wörtern der Wochen und alle
+Handbuch-Bilder neu (`0370689a`); Schriftstufe und Rechts-nach-links
+nachgemessen, ohne Befund. Review der Phase `945e339d`. **Bewusst nicht
+gebaut:** die Karte „Als Nächstes" oben auf der Seite „Planung" (`GWochen`) —
+sie wiederholte die erste Woche darunter, und die Planungs-Karte auf dem Start
+sagt dasselbe.
 
 **Stand am 15. Oktober 2026:** Phase 8, das Anmelden per Link, ist gebaut und live
 (`05ab564`, `ddf4069`, `c3d3926` und die Skripte danach). Ein Kennwort gibt es
@@ -6947,7 +6961,7 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
-| **T121** | Neues Design | ☐ Umbau läuft, Phase für Phase auf main: 1 bis 9 sind live (zuletzt die Druckbögen), aus 10, dem Feinschliff, 10a bis 10c (Logo und Bedienleiste, Code in der Mail, „Alles Planen"); es folgt die Wochenspalte mit „Holen". Am 13. Oktober nachentschieden, was die ersten Phasen offen ließen; die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
+| **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
@@ -7325,7 +7339,7 @@ Umbau T121 offen; was sonst aussteht, braucht den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **T121** | Neues Design | Umbau läuft, Phase für Phase auf main: 1 bis 9 sind live, aus 10 die Teile 10a bis 10c (siehe T121). Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
+| **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
 | **Betreiber** | Mitgliedsrechte-Probe nach „Alles Planen" | `node scripts/mitgliedsrechte-probe.mjs` — die Testversammlung `edac60cb` und `.env.probe` stehen noch; umgedreht sind (35), (38)–(40), (42), (50), (53), (55), (60), neu (80) und (81) |
 | **Gerät** | Dunkle Bedienleiste am Handy | wirkt erst mit der aktualisierten WebAPK (`about://webapks` → „Update", oder neu installieren) |
 | **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
