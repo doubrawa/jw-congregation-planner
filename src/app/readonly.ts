@@ -19,7 +19,6 @@ const VIEW_ACTIONS: ReadonlySet<AppAction['type']> = new Set([
   'logout',
   'hydrate',
   'setDataStatus',
-  'setRecovery',
   // Navigation
   'navigate',
   'prevWeek',

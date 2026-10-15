@@ -53,7 +53,6 @@ function makeState(over: Partial<AppState> = {}): AppState {
     members: [],
     invites: [],
     auxClass: false,
-    recovery: false,
     weeks: buildDemoWeeks(),
     persons: [...DEMO_PERSONS],
     services: [...DEMO_SERVICES],
@@ -1676,7 +1675,7 @@ describe('Sprache', () => {
   })
 })
 
-describe('login / logout / setRecovery', () => {
+describe('login / logout', () => {
   it('login → Startseite', () => {
     expect(reducer(makeState({ screen: 'login' }), { type: 'login' }).screen).toBe('start')
   })
@@ -1697,13 +1696,10 @@ describe('login / logout / setRecovery', () => {
   it('logout schließt alle Overlays', () => {
     const s = makeState({ langSheetOpen: true, selectedPersonId: 'p1', confirmOpen: true })
     const next = reducer(s, { type: 'logout' })
-    expect(next).toMatchObject({ screen: 'login', langSheetOpen: false, selectedPersonId: null, confirmOpen: false, recovery: false })
+    expect(next).toMatchObject({ screen: 'login', langSheetOpen: false, selectedPersonId: null, confirmOpen: false })
   })
   it('logout verwirft den Offline-Stand', () => {
     expect(reducer(makeState({ staleAt: 123 }), { type: 'logout' }).staleAt).toBeNull()
-  })
-  it('setRecovery schaltet die Reset-Ansicht', () => {
-    expect(reducer(makeState(), { type: 'setRecovery', on: true }).recovery).toBe(true)
   })
 })
 

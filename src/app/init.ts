@@ -49,7 +49,6 @@ export function initialState(): AppState {
     staleAt: null,
     members: [],
     invites: [],
-    recovery: false,
     weeks: [],
     persons: [],
     services: [],

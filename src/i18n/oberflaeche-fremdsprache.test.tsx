@@ -484,7 +484,6 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
     ['Import läuft', { screen: 'einstellungen', importing: true }],
     ['Verkündiger ohne Planungsrecht', { screen: 'start', planner: false }],
     ['Anmeldung', { screen: 'login', congregationId: null, userId: null }, '.login'],
-    ['neues Passwort setzen', { screen: 'login', recovery: true, congregationId: null, userId: null }, '.login-logo'],
   ]
 
   it.each(ZUSTAENDE)('%s steht nicht deutsch da', (name, over) => {

@@ -9,9 +9,12 @@ import { darstellungSpiegeln } from './darstellung'
 import { isRTL } from '../i18n/langs'
 import { bibelbuecherLaden } from '../i18n/translate'
 import { dict, loadOverlay } from '../i18n/ui'
+import { mitLinkAnmelden } from '../lib/anmelden'
 import { setKonfliktMelder, setSchreibfehlerMelder } from '../lib/data'
 import { clearSnapshot } from '../lib/snapshot'
 import { supabase } from '../lib/supabase'
+import { anmeldeAdresse } from '../login/anmelde-adresse'
+import { anmeldeFehlerText } from '../login/anmelde-fehler'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -184,28 +187,47 @@ export function AppProvider({
   // `_onVisibilityChanged` → `_recoverAndRefresh`). Darauf voll neu zu laden
   // hieß bei jedem Fokus „Lädt …", eine neu aufgebaute Ansicht und ein erneut
   // vorgelegtes Bestätigungsblatt.
+  //
+  // **Kommt die App mit einem Link aus der E-Mail** (`#anmelden=…`, T121
+  // Phase 8), meldet sie zuerst damit an — auch, wenn auf dem Gerät schon
+  // jemand angemeldet ist: Der Link gehört dem, der ihn öffnet. Gilt er nicht
+  // mehr, sagt sie es, und es bleibt bei der Sitzung, die da war.
   useEffect(() => {
     if (!supabase) return
+    const client = supabase
     let geladenFuer: string | null = null
+    let vorbei = false
     const laden = (userId: string): void => {
       if (userId === geladenFuer) return
       geladenFuer = userId
       void loadAndHydrate(dispatch, userId)
     }
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        dispatch({ type: 'login' })
-        laden(data.session.user.id)
-      }
-    })
-    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data } = client.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         geladenFuer = null
         dispatch({ type: 'logout' })
-      } else if (event === 'PASSWORD_RECOVERY') dispatch({ type: 'setRecovery', on: true })
-      else if (event === 'SIGNED_IN' && session) laden(session.user.id)
+      } else if (event === 'SIGNED_IN' && session) laden(session.user.id)
     })
-    return () => data.subscription.unsubscribe()
+    void (async () => {
+      const token = anmeldeAdresse().token
+      if (token) {
+        const fehler = await mitLinkAnmelden(token)
+        if (vorbei) return
+        if (!fehler) {
+          dispatch({ type: 'login', welcome: true })
+          return
+        }
+        dispatch({ type: 'showToast', text: anmeldeFehlerText(fehler, dict(stateRef.current.lang), 'link') })
+      }
+      const { data: sitzung } = await client.auth.getSession()
+      if (vorbei || !sitzung.session) return
+      dispatch({ type: 'login' })
+      laden(sitzung.session.user.id)
+    })()
+    return () => {
+      vorbei = true
+      data.subscription.unsubscribe()
+    }
   }, [dispatch])
 
   // Darstellung auf <html> spiegeln und merken (Muster aus index.html);

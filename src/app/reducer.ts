@@ -586,7 +586,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         sprungZiel: null, // ein Sprung aus einem Push gehört zur Sitzung, die ihn bekam
         s89: null,
         confirmOpen: false,
-        recovery: false,
         staleAt: null, // Offline-Stand gilt nur für die abgemeldete Sitzung
         welcomePending: false, // eine offene Begrüßung gilt nicht für die nächste Anmeldung
       }
@@ -902,8 +901,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         invites: state.invites.filter((i) => i.id !== action.id),
         toast: toastKey(state, 'toastEinladungGeloescht'),
       }
-    case 'setRecovery':
-      return { ...state, recovery: action.on }
     case 'startImport':
       return state.importing ? state : { ...state, importing: true }
     case 'addImportedWeek': {

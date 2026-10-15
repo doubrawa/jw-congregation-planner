@@ -217,7 +217,6 @@ describe('Zugängliche Beschriftungen sind Ausdrücke', () => {
 
 /** Attributwerte, die kein Wort sind — mit Grund. */
 const ERLAUBTES_ATTRIBUT: Record<string, Grund> = {
-  '••••••••': 'kein-wort',
 }
 
 
@@ -246,11 +245,11 @@ describe('Freitextfelder tragen dir="auto"', () => {
    * Felder, die **keinen** fremden Text aufnehmen — mit Begründung.
    *
    * Ein Suchfeld hält nichts fest; sein Inhalt ist im nächsten Moment wieder
-   * weg und steht nirgends neben anderem Text. Ein Einladungscode und eine
-   * Liednummer sind Zeichenfolgen ohne Sprache.
+   * weg und steht nirgends neben anderem Text. Eine Liednummer ist eine
+   * Zeichenfolge ohne Sprache — wie der Code vom Anmelde-Zettel, der deshalb
+   * gar keinen Platzhalter trägt und von links nach rechts steht.
    */
   const OHNE_GRUND: Record<string, string> = {
-    'codePh': 'Einladungscode — Zeichenfolge ohne Sprache',
     'langSearchPh': 'Suchfeld — nichts, was gespeichert wird',
     'suchen': 'Suchfeld — nichts, was gespeichert wird',
     'liedNrPh': 'Liednummer — eine Zahl',

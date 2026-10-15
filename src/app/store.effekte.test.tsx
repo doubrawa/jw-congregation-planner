@@ -20,7 +20,7 @@ import { dict, loadOverlay } from '../i18n/ui'
  *   wurde nichts — jetzt muss der Bildschirm zurück auf den Stand der
  *   Datenbank, sonst plant man auf einer Fassung weiter, die es nicht gibt.
  * - **Die Sitzung spiegeln**: eine bestehende Session überspringt den Login,
- *   `SIGNED_OUT` wirft zurück, der Mail-Link führt in die Passwort-Ansicht.
+ *   `SIGNED_OUT` wirft zurück, der Link aus der E-Mail meldet an.
  * - **Gerätevorlieben auf `<html>`**: Theme, Schriftgröße, Sprache und
  *   Schreibrichtung. Sie stehen dort, weil das CSS sie liest — nicht als
  *   Zierde.
@@ -56,6 +56,8 @@ vi.mock('../lib/supabase', () => ({
   performLogout: vi.fn(),
 }))
 vi.mock('./hydrate', () => ({ loadAndHydrate: (...a: unknown[]) => loadAndHydrate(...(a as [])) }))
+const mitLinkAnmelden = vi.fn((_token: string) => Promise.resolve<string | null>(null))
+vi.mock('../lib/anmelden', () => ({ mitLinkAnmelden: (token: string) => mitLinkAnmelden(token) }))
 vi.mock('../lib/snapshot', () => ({
   saveSnapshot: vi.fn(), readSnapshot: vi.fn(() => null), clearSnapshot: vi.fn(),
 }))
@@ -82,6 +84,7 @@ vi.mock('../lib/data', async (orig) => ({
 
 const { AppProvider } = await import('./store')
 const { useApp } = await import('./context')
+const { anmeldeAdresseVergessen } = await import('../login/anmelde-adresse')
 
 /** Auslösen, was `data.ts` bei einem Fehlschlag auslösen würde. */
 function melderAufrufen(art: 'schreibfehler' | 'konflikt'): void {
@@ -104,6 +107,10 @@ beforeEach(() => {
   unsubscribe.mockClear()
   loadAndHydrate.mockClear().mockResolvedValue(undefined)
   getSession.mockClear().mockResolvedValue({ data: { session: null } })
+  mitLinkAnmelden.mockClear()
+  // Ohne Link in der Adresse, wie jeder gewöhnliche Start.
+  window.history.replaceState(null, '', '/')
+  anmeldeAdresseVergessen()
   localStorage.clear()
   document.documentElement.removeAttribute('data-theme')
   document.documentElement.removeAttribute('dir')
@@ -327,17 +334,6 @@ describe('Die Supabase-Sitzung wird gespiegelt', () => {
     expect(result.current.state.screen).toBe('login')
   })
 
-  it('der Mail-Link führt in die Passwort-Ansicht', async () => {
-    const { result } = starte()
-    await act(async () => {
-      await Promise.resolve()
-    })
-    await act(async () => {
-      authListener.fn?.('PASSWORD_RECOVERY', null)
-    })
-    expect(result.current.state.recovery).toBe(true)
-  })
-
   it('beim Abbauen wird das Abo gekündigt', async () => {
     const { unmount } = starte()
     await act(async () => {
@@ -354,6 +350,57 @@ describe('Die Supabase-Sitzung wird gespiegelt', () => {
       await Promise.resolve()
     })
     expect(getSession).not.toHaveBeenCalled()
+  })
+})
+
+/*
+ * **Der Link aus der E-Mail** (T121, Phase 8): Öffnet jemand die App mit
+ * `#anmelden=…`, meldet sie damit an — vor der Sitzung, die vielleicht schon
+ * auf dem Gerät liegt: Der Link gehört dem, der ihn öffnet. Gilt er nicht
+ * mehr, sagt sie es und bleibt bei dem, was da war.
+ */
+describe('Mit dem Link aus der E-Mail', () => {
+  const TOKEN = 'T'.repeat(43)
+
+  beforeEach(() => {
+    window.history.replaceState(null, '', `/#anmelden=${TOKEN}`)
+    anmeldeAdresseVergessen()
+    mitLinkAnmelden.mockReset().mockResolvedValue(null)
+  })
+
+  it('meldet mit dem Token an, begrüßt — und nimmt es aus der Adresse', async () => {
+    const { result } = starte()
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(mitLinkAnmelden).toHaveBeenCalledWith(TOKEN)
+    expect(result.current.state.screen).not.toBe('login')
+    expect(result.current.state.welcomePending).toBe(true)
+    expect(window.location.hash).toBe('')
+    // Geladen wird über das Ereignis von Supabase, nicht hier — sonst doppelt.
+    expect(getSession).not.toHaveBeenCalled()
+  })
+
+  it('gilt er nicht mehr, steht der Grund da, und es bleibt bei der Sitzung, die da war', async () => {
+    mitLinkAnmelden.mockResolvedValue('abgelaufen')
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u7' } } } })
+    const { result } = starte()
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    expect(result.current.state.toast?.text).toBe(DE.linkUngueltig)
+    expect(loadAndHydrate).toHaveBeenCalledWith(expect.anything(), 'u7')
+  })
+
+  it('ohne Link in der Adresse wird nicht angemeldet', async () => {
+    window.history.replaceState(null, '', '/')
+    anmeldeAdresseVergessen()
+    starte()
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(mitLinkAnmelden).not.toHaveBeenCalled()
   })
 })
 

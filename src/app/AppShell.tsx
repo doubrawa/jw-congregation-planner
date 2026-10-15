@@ -10,7 +10,6 @@ import { weiterePlaeneImMenue } from '../data/weitere-plaene'
 import { vorzulegen } from './reducer'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
-import { redeemInvite } from '../lib/data'
 import type { Screen, Thema } from '../data/types'
 import { AbsageBlatt } from '../aufgaben/AbsageBlatt'
 import { AufgabeBlatt } from '../aufgaben/AufgabeBlatt'
@@ -23,7 +22,6 @@ import { HilfsdienstBlatt } from '../einstellungen/HilfsdienstBlatt'
 import { S89Sheet } from '../components/S89Sheet'
 import { EinstellungenScreen } from '../einstellungen/EinstellungenScreen'
 import { LoginScreen } from '../login/LoginScreen'
-import { RecoveryScreen } from '../login/RecoveryScreen'
 import { DashboardScreen } from '../dashboard/DashboardScreen'
 import { AlleGelesen } from '../mitteilungen/AlleGelesen'
 import { MitteilungenScreen } from '../mitteilungen/MitteilungenScreen'
@@ -68,8 +66,7 @@ export function AppShell() {
   const i18n = useT()
   const { t } = i18n
   const desktop = useMedia(DESKTOP_BREITE)
-  // Recovery (Passwort-Reset-Link) nutzt das Login-Layout ohne App-Chrome
-  const isLogin = state.screen === 'login' || state.recovery
+  const isLogin = state.screen === 'login'
   const me = eigenePerson(state)
   // Der Kalendertag: Ob „Weitere Pläne" im Menü steht, hängt daran, ob ein Plan
   // noch läuft.
@@ -279,13 +276,9 @@ export function AppShell() {
         </>
       )}
 
-      <main className={isLogin ? 'app-main is-login' : 'app-main'}>
+      <main className="app-main">
         {isLogin ? (
-          state.recovery ? (
-            <RecoveryScreen />
-          ) : (
-            <LoginScreen />
-          )
+          <LoginScreen />
         ) : (
           <>
             {planen && (
@@ -429,48 +422,22 @@ function Content() {
 function StatusView({ kind }: { kind: 'loading' | 'no-membership' | 'error' | 'empty' }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
-  const [code, setCode] = useState('')
-  const [busy, setBusy] = useState(false)
 
   const retry = () => {
     if (state.userId) void loadAndHydrate(dispatch, state.userId)
-  }
-
-  const redeem = async () => {
-    const uid = state.userId
-    if (!code.trim() || !uid || busy) return
-    setBusy(true)
-    const err = await redeemInvite(code)
-    if (err) {
-      setBusy(false)
-      const text =
-        err === 'invalid-code' ? t.invCodeInvalid : err === 'already-member' ? t.invAlreadyMember : err
-      dispatch({ type: 'showToast', text })
-      return
-    }
-    await loadAndHydrate(dispatch, uid) // ersetzt diese Ansicht durch die App
   }
 
   return (
     <section className="screen status-view">
       {kind === 'loading' && <p className="status-loading">{t.laedt}</p>}
 
+      {/* Ein Konto ohne Versammlung: Der Admin hat es entfernt. Hinein kommt
+          es nur über einen neuen Link — einen Code einlösen gibt es seit dem
+          Anmelden per Link (T121, Phase 8) nicht mehr. */}
       {kind === 'no-membership' && (
         <>
           <h1 className="status-title">{t.stKeineVers}</h1>
           <p className="status-text">{t.stKeineVersText}</p>
-          <input
-            type="text"
-            className="field-input status-input"
-            placeholder={t.codePh}
-            aria-label={t.codePh}
-            autoCapitalize="characters"
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-          />
-          <button type="button" className="btn-primary status-btn" onClick={redeem} disabled={busy}>
-            {busy ? `${t.codeEinloesen} …` : t.codeEinloesen}
-          </button>
         </>
       )}
 

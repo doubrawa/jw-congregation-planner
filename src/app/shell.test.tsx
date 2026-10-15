@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { AppDispatchContext, AppStateContext, AppStoreContext, type AppState, useStaticStore } from './context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { APP_LANGS, LOCALES } from '../i18n/langs'
@@ -26,14 +26,9 @@ import type { Group, Notification, Person, SlotSelection } from '../data/types'
  */
 
 const loadAndHydrate = vi.fn(() => Promise.resolve())
-const redeemInvite = vi.fn(() => Promise.resolve<string | null>(null))
 const performLogout = vi.fn()
 
 vi.mock('./hydrate', () => ({ loadAndHydrate: (...a: unknown[]) => loadAndHydrate(...(a as [])) }))
-vi.mock('../lib/data', async (orig) => ({
-  ...(await orig<Record<string, unknown>>()),
-  redeemInvite: (...a: unknown[]) => redeemInvite(...(a as [])),
-}))
 vi.mock('../lib/supabase', () => ({
   supabase: null,
   isSupabaseConfigured: false,
@@ -107,7 +102,6 @@ const navPunkte = (c: HTMLElement) => beschriftungen(c.querySelector(LEISTE))
 
 beforeEach(() => {
   loadAndHydrate.mockClear()
-  redeemInvite.mockClear().mockResolvedValue(null)
   performLogout.mockClear()
   history.replaceState(null, '', '/')
 })
@@ -420,74 +414,19 @@ describe('Die vier Status-Ansichten der Datenanbindung', () => {
   })
 })
 
-describe('Ein Konto ohne Versammlung löst seinen Einladungscode ein', () => {
+describe('Ein Konto ohne Versammlung', () => {
+  /*
+   * Seit dem Anmelden per Link (T121, Phase 8) gibt es keinen Code mehr zum
+   * Einlösen: Ein Konto ohne Versammlung hat der Admin entfernt, hinein kommt
+   * es nur mit einem neuen Link. Die Seite sagt das — und bietet Abmelden an.
+   */
   const zeigeOhneVersammlung = () => zeige({ dataStatus: 'no-membership' })
 
-  it('nennt den Fall und bietet das Feld an', () => {
+  it('nennt den Fall und den Weg zurück — ein Feld für einen Code gibt es nicht mehr', () => {
     const { getByText, container } = zeigeOhneVersammlung()
     expect(getByText(t.stKeineVers)).toBeTruthy()
-    expect(container.querySelector<HTMLInputElement>('.status-input')).toBeTruthy()
-  })
-
-  it('Kleinschreibung wird zu Großschreibung — Codes sind großgeschrieben', () => {
-    const { container } = zeigeOhneVersammlung()
-    const feld = container.querySelector<HTMLInputElement>('.status-input')!
-    fireEvent.change(feld, { target: { value: 'abc123' } })
-    expect(feld.value).toBe('ABC123')
-  })
-
-  it('ein leeres Feld löst gar nichts aus — kein Netzaufruf', () => {
-    const { container } = zeigeOhneVersammlung()
-    fireEvent.click(container.querySelector('.status-btn')!)
-    expect(redeemInvite).not.toHaveBeenCalled()
-  })
-
-  it('ein gültiger Code lädt die Versammlung nach', async () => {
-    const { container } = zeigeOhneVersammlung()
-    fireEvent.change(container.querySelector('.status-input')!, { target: { value: 'ABC123' } })
-    fireEvent.click(container.querySelector('.status-btn')!)
-    await waitFor(() => expect(redeemInvite).toHaveBeenCalledWith('ABC123'))
-    await waitFor(() => expect(loadAndHydrate).toHaveBeenCalled())
-  })
-
-  it('ein ungültiger Code sagt es — in der Sprache der App, nicht als Fehlercode', async () => {
-    redeemInvite.mockResolvedValue('invalid-code')
-    const { container, dispatch } = zeigeOhneVersammlung()
-    fireEvent.change(container.querySelector('.status-input')!, { target: { value: 'FALSCH' } })
-    fireEvent.click(container.querySelector('.status-btn')!)
-    await waitFor(() =>
-      expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.invCodeInvalid }),
-    )
-    expect(loadAndHydrate).not.toHaveBeenCalled()
-  })
-
-  it('ein Konto, das schon Mitglied ist, bekommt seinen eigenen Satz', async () => {
-    redeemInvite.mockResolvedValue('already-member')
-    const { container, dispatch } = zeigeOhneVersammlung()
-    fireEvent.change(container.querySelector('.status-input')!, { target: { value: 'ABC123' } })
-    fireEvent.click(container.querySelector('.status-btn')!)
-    await waitFor(() =>
-      expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.invAlreadyMember }),
-    )
-  })
-
-  it('eine unbekannte Meldung wird durchgereicht statt verschluckt', async () => {
-    redeemInvite.mockResolvedValue('etwas ganz anderes')
-    const { container, dispatch } = zeigeOhneVersammlung()
-    fireEvent.change(container.querySelector('.status-input')!, { target: { value: 'ABC123' } })
-    fireEvent.click(container.querySelector('.status-btn')!)
-    await waitFor(() =>
-      expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: 'etwas ganz anderes' }),
-    )
-  })
-
-  it('nach einem Fehlschlag ist der Knopf wieder bedienbar — sonst säße man fest', async () => {
-    redeemInvite.mockResolvedValue('invalid-code')
-    const { container } = zeigeOhneVersammlung()
-    const knopf = container.querySelector<HTMLButtonElement>('.status-btn')!
-    fireEvent.change(container.querySelector('.status-input')!, { target: { value: 'FALSCH' } })
-    fireEvent.click(knopf)
-    await waitFor(() => expect(knopf.disabled).toBe(false))
+    expect(getByText(t.stKeineVersText)).toBeTruthy()
+    expect(container.querySelector('.status-view input')).toBeNull()
   })
 })
 
@@ -768,14 +707,9 @@ describe('Der Login rendert ohne App-Gerüst', () => {
     expect(container.querySelector('.leiste')).toBeNull()
     expect(container.querySelector('.schmale-leiste')).toBeNull()
     expect(container.querySelector('.kopfzeile')).toBeNull()
-    expect(container.querySelector('.app-main.is-login')).toBeTruthy()
+    expect(container.querySelector('.app-main .login')).toBeTruthy()
   })
 
-  it('die Passwort-Rücksetz-Ansicht ebenso — sie kommt aus einem Mail-Link', () => {
-    const { container } = zeige({ screen: 'start', recovery: true })
-    expect(container.querySelector('.leiste')).toBeNull()
-    expect(container.querySelector('.app-main.is-login')).toBeTruthy()
-  })
 })
 
 describe('Der Toast', () => {

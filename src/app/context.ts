@@ -168,7 +168,6 @@ export interface AppState {
   // Daten kommen aus der Offline-Momentaufnahme (lib/snapshot.ts): Zeitpunkt der
   // Aufnahme in ms, sonst null. Solange gesetzt, ist die App nur lesend.
   staleAt: number | null
-  recovery: boolean // Passwort-Reset-Ansicht aktiv (PASSWORD_RECOVERY)
 
   /* ---- Serverdaten: geladen, geändert, zurückgeschrieben ---------------- */
   congregation: Congregation
@@ -448,8 +447,6 @@ export type AppAction =
   | { type: 'removeMember'; userId: string }
   | { type: 'addInvite'; invite: Invite }
   | { type: 'removeInvite'; id: string }
-  // Passwort-Reset (PASSWORD_RECOVERY)
-  | { type: 'setRecovery'; on: boolean }
   | { type: 'startImport' }
   | { type: 'addImportedWeek'; week: Week } // die von jw.org geholte Woche
   // Nachgeladene Sprachvarianten — die Woche über ihre Kennung (T66), nicht über

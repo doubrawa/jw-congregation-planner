@@ -16,12 +16,6 @@
   color: var(--text);
 }
 
-/* Die Anmeldung steht als schmale Spalte in der Mitte. */
-.app-main.is-login {
-  max-width: 430px;
-  margin-inline: auto;
-}
-
 .app-content {
   flex: 1;
   padding-bottom: 40px;
@@ -109,15 +103,6 @@
   background: var(--tAcc);
   padding: 1px 5px;
   border-radius: 5px;
-}
-
-.status-input {
-  display: block;
-  max-width: 280px;
-  margin: 20px auto 0;
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
 }
 
 .status-btn {

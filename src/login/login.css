@@ -1,14 +1,29 @@
-/* Login — zentrierte Wortmarke + Formular (Prototyp, Screen 1). */
+/* Anmelden (T121, Phase 8; Entwürfe GAnmeldung, GCode, GDesktopAnmeldung):
+   oben das Logo mit dem Namen, darunter der Titel, die Adresse und „Link
+   senden"; unten die Karte „Ohne E-Mail-Adresse?". Am Desktop steht das alles
+   auf einer Karte in der Mitte (unten). */
 
 .login {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: 48px 32px 72px;
+  gap: 24px;
+  width: 100%;
+  max-width: 420px;
+  margin-inline: auto;
+  padding: 56px 24px 40px;
+}
+
+/* Am Handy nur eine Klammer: Ihre Teile stehen in der Spalte wie die übrigen. */
+.login-karte {
+  display: contents;
 }
 
 .login-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   text-align: center;
 }
 
@@ -16,97 +31,140 @@
   width: 72px;
   height: 72px;
   filter: var(--logo-filter);
-  /* Der globale Reset macht img zum Block — text-align des Kopfs greift nicht. */
-  margin-inline: auto;
 }
 
 .login-wordmark {
   /* Notbremse: bricht erst, wenn schon das Stück vor der `wbr`-Stelle
      überliefe (320 px auf der größten Schriftstufe). */
   overflow-wrap: anywhere;
-  font-family: var(--font-serif);
-  font-size: calc(34px * var(--fs));
-  font-weight: 500;
-  line-height: 1.15;
-  margin-top: 10px;
+  font-size: calc(19px * var(--fs));
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .login-sub {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: calc(15px * var(--fs));
-  color: var(--mut);
-  margin-top: 10px;
-  /* Zweizeilig gleich lang statt einer vollen Zeile mit einem Rest darunter
-     („… die / Versammlung verwalten."). */
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
+  /* Zweizeilig gleich lang statt einer vollen Zeile mit einem Rest darunter. */
   text-wrap: balance;
-  /* Arabisch, Hebräisch, Chinesisch, Japanisch … kennen keine Kursive; ohne
-     diese Zeile stellte der Browser ihre Zeichen künstlich schräg. Die
-     lateinische Kursive bleibt — Newsreader bringt eine echte mit. */
-  font-synthesis-style: none;
 }
 
 .login-form {
-  margin-top: 40px;
-  max-width: 366px;
-  width: 100%;
-  margin-left: auto;
-  margin-right: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.login-label {
-  display: block;
-  font-size: calc(10px * var(--fs));
+.login-titel {
+  padding-top: 8px;
+}
+
+.login-hinweis {
+  color: var(--text2);
+}
+
+.login-senden {
+  width: 100%;
+}
+
+.login-meldung {
+  line-height: 1.4;
+}
+
+/* Der Code: groß und gesperrt wie auf dem Zettel, damit man Zeichen für Zeichen vergleicht. */
+.login-code {
+  font-size: calc(19px * var(--fs));
   font-weight: 600;
-  letter-spacing: 0.14em;
-  color: var(--mut);
+  letter-spacing: 0.08em;
+  text-align: center;
 }
 
-.login-label--gap {
-  margin-top: 16px;
+.login-code-passt {
+  gap: 4px;
+  padding: 16px 18px 18px;
 }
 
-.login-input {
+.login-code-name {
+  font-size: calc(17px * var(--fs));
+  font-weight: 600;
+}
+
+.login-zurueck {
+  align-self: center;
+}
+
+/* „Ohne E-Mail-Adresse?" — die Karte unter dem Formular. */
+.login-ohne-mail {
+  gap: 4px;
+  padding: 16px 18px 18px;
+}
+
+.login-ohne-mail-titel {
+  font-size: calc(15.5px * var(--fs));
+  font-weight: 600;
+}
+
+.login-ohne-mail-knoepfe {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* Zwei Knöpfe auf 142 px: Mit dem üblichen Rand bräche „Zettel scannen" um. */
+.login-ohne-mail-knoepfe .knopf-umriss {
+  padding-inline: 12px;
+}
+
+.login-scanner-laedt {
+  text-align: center;
+}
+
+/* Der Scanner: das Bild der Kamera, quadratisch, mit einem Rahmen darin. */
+.scanner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.scanner-bild {
+  position: relative;
   width: 100%;
-  margin-top: 6px;
-  padding: 12px 14px;
-  border-radius: var(--r-input);
-  border: 1px solid var(--bord);
-  background: var(--card);
-  font-size: calc(14px * var(--fs));
-  color: var(--ink);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 24px;
+  background: var(--karte);
 }
 
-.login-submit {
-  margin-top: 24px;
+.scanner-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.login-forgot {
-  display: block;
-  margin: 16px auto 0;
-  font-size: calc(12px * var(--fs));
-  color: var(--acc);
+.scanner-rahmen {
+  position: absolute;
+  inset: 18%;
+  border: 3px solid var(--akzent);
+  border-radius: 18px;
 }
 
 .login-langs {
   display: flex;
-  gap: 6px;
   justify-content: center;
-  flex-wrap: wrap;
-  margin-top: 40px;
+  margin-top: 8px;
 }
 
 .login-lang-select {
   width: auto;
   max-width: 240px;
-  margin-top: 0;
 }
 
 .login-note {
   text-align: center;
   font-size: calc(11px * var(--fs));
-  color: var(--mut2);
-  margin-top: 20px;
+  color: var(--text3);
 }
 
 /* Kontakt für eine neue Versammlung (T113). Flex statt Leerzeichen:
@@ -119,10 +177,10 @@
   justify-content: center;
   align-items: center;
   column-gap: 0.35em;
+  margin-top: -16px;
   text-align: center;
   font-size: calc(11px * var(--fs));
-  color: var(--mut2);
-  margin-top: 4px;
+  color: var(--text3);
 }
 
 .login-kontakt a {
@@ -132,4 +190,55 @@
   min-height: 24px;
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+/* Am Desktop (Entwurf GDesktopAnmeldung): eine Karte in der Mitte, das Logo
+   klein neben dem Namen, „Ohne E-Mail-Adresse?" nur durch eine Linie
+   abgesetzt. Sprache und Kontakt bleiben darunter. */
+@media (min-width: 1180px) {
+  .login {
+    max-width: 508px;
+    justify-content: center;
+    padding-block: 48px;
+  }
+
+  .login-karte {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 36px 36px 32px;
+    border-radius: 28px;
+    background: var(--karte);
+  }
+
+  .login-head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 2px;
+    text-align: start;
+  }
+
+  .login-logo {
+    grid-row: span 2;
+    width: 48px;
+    height: 48px;
+  }
+
+  .login-wordmark {
+    font-size: calc(15.5px * var(--fs));
+  }
+
+  .login-ohne-mail {
+    margin-top: 10px;
+    padding: 18px 0 0;
+    border-radius: 0;
+    border-block-start: 1px solid var(--linie);
+    background: none;
+  }
+
+  .login-ohne-mail-knoepfe {
+    display: flex;
+  }
 }

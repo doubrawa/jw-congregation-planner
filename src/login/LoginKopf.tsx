@@ -1,8 +1,9 @@
 import { LOGO } from '../lib/logo'
 
 /**
- * Kopf der Anmelde-Seiten: Logo, Wortmarke und darunter ein Satz — auf der
- * Anmeldung, wofür die App da ist (T113), beim Passwort-Reset, was zu tun ist.
+ * Kopf der Anmeldung: Logo, Wortmarke und darunter, wofür die App da ist
+ * (T113). Die Überschrift der Seite ist der Titel darunter („Anmelden") —
+ * die Wortmarke ist deshalb ein Absatz, keine zweite `h1`.
  */
 export function LoginKopf({ untertitel }: { untertitel: string }) {
   return (
@@ -10,11 +11,11 @@ export function LoginKopf({ untertitel }: { untertitel: string }) {
       <img className="login-logo" src={LOGO} alt="" width={72} height={72} />
       {/* `wbr` statt festem Umbruch: der Name steht auf einer Zeile und
           bricht erst, wenn schmales Gerät oder große Schrift ihn drängen. */}
-      <h1 className="login-wordmark">
+      <p className="login-wordmark">
         Versammlung
         <wbr />
         .app
-      </h1>
+      </p>
       <p className="login-sub">{untertitel}</p>
     </header>
   )

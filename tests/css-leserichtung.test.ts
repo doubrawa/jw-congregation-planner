@@ -43,7 +43,6 @@ const ERLAUBT: Record<string, Record<string, Grund>> = {
   'app/shell.css': { 'left: 50%': 'zentriert' },
   'components/components.css': { 'left: 50%': 'zentriert' },
   'components/overlays.css': { 'left: 50%': 'zentriert' },
-  'login/login.css': { 'margin-left: auto': 'zentriert', 'margin-right: auto': 'zentriert' },
 }
 
 /** Jede physische Richtungsangabe einer Datei, normiert als „prop: wert". */

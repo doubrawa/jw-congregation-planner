@@ -27,8 +27,8 @@ export const DE = {
     offlineBanner: 'Offline · Stand von {m}', offlineBannerHint: 'Nur lesen — keine Änderungen möglich',
     offlineReadOnly: 'Offline — Änderungen sind erst wieder online möglich',
     offlineRetry: 'Neu laden',
-    email: 'E-MAIL', emailPh: 'name@beispiel.de', passwort: 'PASSWORT', anmelden: 'ANMELDEN',
-    pwVergessen: 'Passwort vergessen?', anmeldungOhneDb: 'Ohne Datenbank · Anmelden ist nur nachgestellt',
+    emailPh: 'name@beispiel.de',
+    anmeldungOhneDb: 'Ohne Datenbank · Anmelden ist nur nachgestellt',
     // Anmelden per Link (T121, Phase 8): kein Kennwort, ein Link per E-Mail
     // oder ein Zettel mit QR-Code und Code. `anmeldenTitel` ist die Überschrift,
     // `anmeldenKnopf` der Knopf — in manchen Sprachen zwei Wortformen.
@@ -41,6 +41,8 @@ export const DE = {
     mailNichtEingerichtet: 'Die App kann gerade keine E-Mails senden. Nimm den Code von deinem Zettel oder frag die Ältesten.',
     ohneMailFrage: 'Ohne E-Mail-Adresse?',
     ohneMailHinweis: 'Scanne den QR-Code auf deinem Zettel oder tippe den Code darunter ein. Ist der Zettel weg, bekommst du von den Ältesten einen neuen.',
+    // Wo die App nicht scannt (Desktop, ohne Kamera): nur das Eintippen, das Scannen geht mit dem Handy.
+    ohneMailHinweisTippen: 'Tippe den Code von deinem Zettel ein. Ist der Zettel weg, bekommst du von den Ältesten einen neuen. Am Handy scannst du einfach den QR-Code.',
     zettelScannen: 'Zettel scannen', codeEintippen: 'Code eintippen', mitCodeAnmelden: 'Mit Code anmelden',
     codeLbl: 'Code', codeHinweis: 'Der Code steht auf deinem Zettel unter dem QR-Code.',
     codePasst: 'Der Code passt',
@@ -667,26 +669,10 @@ export const DE = {
     toastUebernommenKonflikt: 'Übernommen · Achtung: du bist an dem Tag schon eingeteilt',
     notifVerhindert: 'Verhinderung gemeldet',
     // Konten & Mitglieder
-    kontoErstellen: 'Konto erstellen', registrieren: 'REGISTRIEREN', zurAnmeldung: '‹ Zurück zur Anmeldung',
-    regMailHinweis: 'Bestätigungs-Mail gesendet — danach hier anmelden',
-    resetMailHinweis: 'Reset-Mail gesendet — bitte Posteingang prüfen',
     resetMailFehlt: 'Bitte zuerst deine E-Mail-Adresse eintragen',
-    // Anmeldefehler — die Anbindung ordnet nur ein (lib/supabase.ts), die
-    // Worte stehen hier, damit sie der Sprachwahl folgen.
-    authFalsch: 'E-Mail oder Passwort falsch',
-    authUnbestaetigt: 'E-Mail-Adresse noch nicht bestätigt',
-    authSchonRegistriert: 'E-Mail ist bereits registriert',
-    authPwKurz: 'Passwort zu kurz (mindestens 6 Zeichen)',
-    authZuVieleVersuche: 'Zu viele Versuche — bitte kurz warten',
-    recoveryTitle: 'Neues Passwort setzen', neuesPasswort: 'NEUES PASSWORT', pwWiederholen: 'PASSWORT WIEDERHOLEN',
-    pwSpeichern: 'PASSWORT SPEICHERN', toastPwGeaendert: 'Passwort geändert',
-    toastPwMismatch: 'Passwörter stimmen nicht überein',
     laedt: 'Lädt …',
     stKeineVers: 'Noch keiner Versammlung zugeordnet',
     stKeineVersText: 'Dein Konto gehört zu keiner Versammlung mehr. Frag bitte die Ältesten nach einem neuen Link.',
-    codePh: 'Einladungscode', codeEinloesen: 'CODE EINLÖSEN',
-    invCodeInvalid: 'Code ungültig oder bereits verwendet',
-    invAlreadyMember: 'Dieses Konto ist bereits Mitglied einer Versammlung',
     stFehler: 'Daten konnten nicht geladen werden', stFehlerText: 'Es gab ein Problem beim Laden aus der Datenbank.',
     // Error Boundary — Anzeigefehler, nicht Ladefehler
     errTitel: 'Anzeige gestört', errText: 'Dieser Bereich konnte nicht angezeigt werden. Der Rest der App funktioniert weiter.',

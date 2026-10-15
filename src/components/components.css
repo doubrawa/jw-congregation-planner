@@ -292,20 +292,6 @@
   margin-top: 4px;
 }
 
-/* ---- Formularfeld (Input) ---------------------------------------------------- */
-
-.field-input {
-  display: block;
-  width: 100%;
-  margin-top: 4px;
-  padding: 9px 10px;
-  border-radius: 9px;
-  border: 1px solid var(--bord2);
-  background: var(--card);
-  font-size: calc(12.5px * var(--fs));
-  color: var(--ink);
-}
-
 /* ---- Selects app-weit: eigener Chevron mit Innenabstand (Korrektur-Brief) ---
    appearance:none + dezentes SVG-Chevron in der Farbe --text3 der Palette,
    14px vom Rand; der Text bekommt padding-inline-end, damit er nie unter den
