@@ -3,6 +3,7 @@ import { loadAndHydrate } from './hydrate'
 import { loadCongregationData, type CongregationData } from '../lib/data'
 import { clearSnapshot, readSnapshot, saveSnapshot } from '../lib/snapshot'
 import type { AppAction } from './context'
+import { ausstehendesSchreiben } from './persist'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
 
 vi.mock('../lib/data', () => ({ loadCongregationData: vi.fn() }))
@@ -11,7 +12,9 @@ vi.mock('../lib/snapshot', () => ({
   readSnapshot: vi.fn(() => null),
   clearSnapshot: vi.fn(),
 }))
+vi.mock('./persist', () => ({ ausstehendesSchreiben: vi.fn() }))
 const mockLoad = vi.mocked(loadCongregationData)
+const mockSchreiben = vi.mocked(ausstehendesSchreiben)
 const mockSave = vi.mocked(saveSnapshot)
 const mockRead = vi.mocked(readSnapshot)
 const mockClear = vi.mocked(clearSnapshot)
@@ -70,6 +73,19 @@ describe('loadAndHydrate', () => {
     if (actions[1].type === 'hydrate') {
       expect(actions[1].payload).toMatchObject({ congregationId: 'c1', userId: 'u1', empty: false })
     }
+  })
+
+  /*
+   * **Erst hinaus, was wartet** (15.10.2026). `hydrate` verwirft gebündelt
+   * Wartendes — es beruht auf dem ersetzten Stand. Ohne den Schritt davor ging
+   * eine eben getippte Änderung verloren, nur weil gerade nachgeladen wurde.
+   */
+  it('schreibt hinaus, was gebündelt wartet — vor dem Laden', async () => {
+    mockSchreiben.mockClear()
+    mockLoad.mockResolvedValue({ ok: true, empty: false, data: emptyData, congregationId: 'c1', userId: 'u1' })
+    await loadAndHydrate(collector().dispatch, 'u1', { silent: true })
+    expect(mockSchreiben).toHaveBeenCalledTimes(1)
+    expect(mockSchreiben.mock.invocationCallOrder[0]).toBeLessThan(mockLoad.mock.invocationCallOrder[0] ?? 0)
   })
 
   it('sichert bei Erfolg die Offline-Momentaufnahme (dieselbe Payload)', async () => {

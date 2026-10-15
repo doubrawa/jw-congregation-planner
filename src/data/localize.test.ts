@@ -165,12 +165,28 @@ describe('LAC-Edits halten Sprachvarianten aligned', () => {
     expect((en.mid.sections[LAC].items[1] as PartItem).title).toBe('Örtliche Bedürfnisse')
   })
 
-  it('lacMinuten zieht Minuten und Ende in der Variante nach', () => {
+  it('lacMinuten zieht die Minuten in der Variante nach — das Ende kommt aus der Versammlung', () => {
     const weeks = [makeWeek()]
     const next = lacMinuten(weeks, 0, 'mid', LAC, 0, 20)
     expect((next[0].mid.sections[LAC].items[0] as PartItem).meta).toBe('20 Min.')
     expect((next[0].alt!.en.mid.sections[LAC].items[0] as PartItem).meta).toBe('20 min.')
-    expect(next[0].alt!.en.mid.end).toBe('Ends approx. 20:50')
+    expect(localizedWeek(next[0], 'en').mid.end).toBe('Ende ca. 20:50')
+  })
+
+  /*
+   * **Die Endzeit gehört der Versammlung, nicht der Sprache** (15.10.2026).
+   * Die Variante trägt den festen Wert des Imports („Ende ca. 20:45" — der
+   * Import schreibt ihn in jeder Sprache deutsch, übersetzt wird beim
+   * Anzeigen). Die Endzeit der Versammlung rechnet sich aus ihrer
+   * Zusammenkunftszeit; stand die Variante darüber, las, wer um 18:30
+   * beginnt, in der zweiten Sprache 20:45 — und nach einer Umstellung der
+   * Zeit weiter die alte.
+   */
+  it('die Endzeit der Versammlung gilt auch in der Variante', () => {
+    const w = makeWeek()
+    w.mid.end = 'Ende ca. 20:15'
+    w.alt!.en.mid.end = 'Ende ca. 20:45'
+    expect(localizedWeek(w, 'en').mid.end).toBe('Ende ca. 20:15')
   })
 
   it('lacMove tauscht in der Variante dieselben Positionen', () => {

@@ -73,6 +73,14 @@ describe('taskKeyVorbei (T77 — abgelaufene Mitteilungen)', () => {
     expect(taskKeyVorbei('kaputt', WOCHEN, MEETINGS, am('2026-10-01'))).toBe(false)
     expect(taskKeyVorbei('', WOCHEN, MEETINGS, am('2026-10-01'))).toBe(false)
   })
+
+  it('ein Treffpunkt ist vorbei, wenn seine Woche um ist (15.10.2026)', () => {
+    // Seinen Tag kennen nur die Treffpunkt-Wochen. Bis dahin blieben seine
+    // Mitteilungen stehen, bis die Glocke sie nach 30 Tagen abräumte.
+    const FS = 'fs|2026-09-07|r1'
+    expect(taskKeyVorbei(FS, WOCHEN, MEETINGS, am('2026-09-13'))).toBe(false)
+    expect(taskKeyVorbei(FS, WOCHEN, MEETINGS, am('2026-09-14'))).toBe(true)
+  })
 })
 
 describe('naechsteZusammenkunft', () => {

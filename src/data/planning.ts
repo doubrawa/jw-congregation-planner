@@ -1218,6 +1218,11 @@ export function taskKeyWeek(key: string): { woche: string; tab: MeetingKey } | n
  *
  * Ohne erkennbaren Schlüssel: **false**. Wer nichts über den Termin weiß, lässt
  * die Zeile stehen — lieber eine zu viel als eine, die noch gebraucht wird.
+ *
+ * Ein Treffpunkt (`fs|…`) ist vorbei, wenn seine Woche um ist: Seinen Tag
+ * kennen nur die Treffpunkt-Wochen, die hier nicht vorliegen. Bis zum
+ * 15.10.2026 blieben seine Mitteilungen ganz stehen, bis die Glocke sie nach
+ * 30 Tagen abräumte.
  */
 export function taskKeyVorbei(
   key: string,
@@ -1225,14 +1230,17 @@ export function taskKeyVorbei(
   zeiten: MeetingTimes,
   heute = new Date(),
 ): boolean {
-  const teil = taskKeyWeek(key)
-  if (!teil) return false
-  const week = weeks[wochenIndex(weeks, teil.woche)]
-  if (week) return istVorbei(meetingDateMs(week, teil.tab, zeiten), heute)
+  const teile = schluesselTeile(key)
+  if (!teile) return false
+  if ('tab' in teile) {
+    const week = weeks[wochenIndex(weeks, teile.woche)]
+    if (week) return istVorbei(meetingDateMs(week, teile.tab, zeiten), heute)
+  }
   // Woche nicht geladen (der Ladebereich deckt ein Jahr um heute ab, siehe
-  // lib/data.ts). Auch dann nicht geraten, sondern gerechnet: Der Schlüssel
-  // trägt den Montag, die Zusammenkunft liegt spätestens sechs Tage später.
-  const montag = Date.parse(teil.woche)
+  // lib/data.ts), oder ein Treffpunkt. Auch dann nicht geraten, sondern
+  // gerechnet: Der Schlüssel trägt den Montag, und spätestens sechs Tage
+  // später ist der Termin gewesen.
+  const montag = Date.parse(teile.woche)
   return Number.isNaN(montag) ? false : istVorbei(montag + 6 * 864e5, heute)
 }
 

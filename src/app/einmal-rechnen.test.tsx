@@ -33,6 +33,7 @@ vi.mock('./persist', () => ({
   persist: (_prev: AppState, next: AppState) => {
     persistiert.push(next)
   },
+  ausstehendesSchreiben: vi.fn(),
 }))
 vi.mock('./hydrate', () => ({ loadAndHydrate: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('../lib/supabase', async (orig) => ({

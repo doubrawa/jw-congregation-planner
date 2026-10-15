@@ -22,7 +22,7 @@ import {
 } from './context'
 import { loadAndHydrate } from './hydrate'
 import { initialState } from './init'
-import { persist } from './persist'
+import { ausstehendesSchreiben, persist } from './persist'
 import { isViewAction } from './readonly'
 import { reducer } from './reducer'
 
@@ -163,6 +163,17 @@ export function AppProvider({
     })
     return () => setKonfliktMelder(null)
   }, [dispatch])
+
+  // Geht die App in den Hintergrund, geht hinaus, was gebündelt wartet
+  // (`ausstehendesSchreiben`): Am Handy hält das System den Zeitgeber dort an
+  // und beendet die App womöglich, bevor er abläuft.
+  useEffect(() => {
+    const beimVerlassen = (): void => {
+      if (document.visibilityState === 'hidden') ausstehendesSchreiben()
+    }
+    document.addEventListener('visibilitychange', beimVerlassen)
+    return () => document.removeEventListener('visibilitychange', beimVerlassen)
+  }, [])
 
   // Supabase-Session spiegeln (nur wenn konfiguriert): bestehende Session
   // überspringt den Login-Screen und lädt die Daten; SIGNED_IN (nach Login)

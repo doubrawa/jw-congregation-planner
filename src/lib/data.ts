@@ -698,17 +698,25 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       .eq('congregation_id', congregationId)
       .order('woche'),
     // Trolleys (T121): alle, und ihre Termine ab dem Montag dieser Woche —
-    // was davor liegt, zeigt die App nirgends mehr.
+    // was davor liegt, zeigt die App nirgends mehr. Die Termine seitenweise
+    // (`alleSeiten`): Ein Vierteljahr voraus, mehrere Trolleys, halbe Stunden —
+    // an der Zeilengrenze fehlten sonst still die spätesten, und ihr Platz
+    // stünde frei da.
     supabase.from('trolleys').select('id, name, ort, hinweis').eq('congregation_id', congregationId),
-    supabase
-      .from('trolley_termine')
-      .select('id, trolley_id, datum, von, bis, person_id, partner_id, gemeinsam')
-      .eq('congregation_id', congregationId)
-      .gte('datum', montagVon(isoDay(new Date())))
-      // Nach Tag und Zeit, wie der Reducer sie hält (`termineSortiert`) — zwei
-      // Termine in einer Zelle des Rasters stehen dann in der Folge des Tages.
-      .order('datum')
-      .order('von'),
+    alleSeiten<TrolleyTerminRow>((von, bis) =>
+      db
+        .from('trolley_termine')
+        .select('id, trolley_id, datum, von, bis, person_id, partner_id, gemeinsam', { count: 'exact' })
+        .eq('congregation_id', congregationId)
+        .gte('datum', montagVon(isoDay(new Date())))
+        // Nach Tag und Zeit, wie der Reducer sie hält (`termineSortiert`) — zwei
+        // Termine in einer Zelle des Rasters stehen dann in der Folge des Tages.
+        // Die Kennung zuletzt: Die Seiten brauchen eine eindeutige Folge.
+        .order('datum')
+        .order('von')
+        .order('id')
+        .range(von, bis),
+    ),
     // Weitere Pläne (T120, Phase 5): was frühestens ein Vierteljahr zurück
     // endet — die abgeschlossenen stehen beim Planen noch eine Weile als
     // Rückblick da. Ein Mitglied bekommt nur, was es sehen darf (RLS).
@@ -859,7 +867,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     gruppenbesuche: ((besuchRows.data ?? []) as GruppenbesuchRow[]).map(gruppenbesuchFromRow),
     vortraege: ((vortragRows.data ?? []) as VortragRow[]).map(vortragFromRow),
     trolleys: ((trolleyRows.data ?? []) as TrolleyRow[]).map(trolleyFromRow),
-    trolleyTermine: ((trolleyTerminRows.data ?? []) as TrolleyTerminRow[]).map(trolleyTerminFromRow),
+    trolleyTermine: trolleyTerminRows.data.map(trolleyTerminFromRow),
     plaene: planListe,
     planEintraege: ((planEintragRows.data ?? []) as PlanEintragRow[])
       .map(planEintragFromRow)
@@ -1031,7 +1039,35 @@ const wochenStand = new Map<string, string>()
  */
 const wochenKette = new Map<string, Promise<void>>()
 
+/**
+ * **Welcher Ladevorgang gilt** — weitergezählt, sobald ein Laden die Stände
+ * ersetzt (`staendeSetzen`, `fsStaendeSetzen`).
+ *
+ * Ein Schreibvorgang beruht auf dem Zustand, aus dem er kommt, und der stammt
+ * aus einem bestimmten Ladevorgang. Lädt die App dazwischen neu — nach einem
+ * Konflikt, nach „Plan senden", nach einem Push-Klick —, gilt der frisch
+ * geladene Stand, und der alte Inhalt passt nicht mehr zu ihm:
+ *
+ *  - **Wartet er noch in seiner Kette, geht er nicht mehr los.** Er nähme den
+ *    frischen Stand und schriebe den alten Inhalt darüber — lautlos genau das,
+ *    was der Stand verhindern soll (T39). Stattdessen meldet er einen Konflikt.
+ *  - **War er schon unterwegs, setzt seine Antwort den Stand nicht mehr.** Hat
+ *    das Laden vor ihm gelesen, zeigt der Bildschirm den Inhalt ohne ihn; mit
+ *    seinem Stand daneben nähme die nächste Änderung ihn lautlos zurück. Mit
+ *    dem geladenen Stand trifft sie einen Konflikt, und die App lädt nach.
+ *
+ * Bis zum 15.10.2026 galt einfach der jüngste Stand, auch über ein Laden
+ * hinweg.
+ */
+let ladung = 0
+
+/** Den Stand nach einem Schreibvorgang merken — nur, wenn seither nicht neu geladen wurde (`ladung`). */
+function standMerken(staende: Map<string, string>, woche: string, stand: string, geladen: number): void {
+  if (geladen === ladung) staende.set(woche, stand)
+}
+
 function staendeSetzen(paare: Array<[string, string]>): void {
+  ladung++
   wochenStand.clear()
   wochenKette.clear()
   for (const [woche, stand] of paare) wochenStand.set(woche, stand)
@@ -1069,12 +1105,26 @@ export function setKonfliktMelder(fn: Konfliktmelder | null): void {
  * derselben Bedingung hätte hier nichts geändert — einen Aussetzer meldet
  * supabase-js als Fehler, nicht als leeres Ergebnis. Die Edge Functions
  * schreiben nach derselben Regel (`_shared/woche-schreiben.ts`).
+ *
+ * `geladen`: die Ladung, aus der der Inhalt stammt (`ladung`). Wurde seither
+ * neu geladen, geht er nicht mehr hinaus.
  */
-async function schreibeWoche(congregationId: string, woche: string, week: Week, nurZuteilen: boolean): Promise<void> {
+async function schreibeWoche(
+  congregationId: string,
+  woche: string,
+  week: Week,
+  nurZuteilen: boolean,
+  geladen: number,
+): Promise<void> {
   if (!supabase) return
+  // Seit dem Festhalten neu geladen: Der Inhalt beruht auf dem ersetzten Stand (`ladung`).
+  if (geladen !== ladung) {
+    konfliktMelder?.()
+    return
+  }
   const stand = wochenStand.get(woche)
   if (nurZuteilen) {
-    await zuteilenSchreiben(woche, stand, week)
+    await zuteilenSchreiben(woche, stand, week, geladen)
     return
   }
 
@@ -1091,7 +1141,7 @@ async function schreibeWoche(congregationId: string, woche: string, week: Week, 
       else schreibfehler(error)
       return
     }
-    if (data) wochenStand.set(woche, data.updated_at as string)
+    if (data) standMerken(wochenStand, woche, data.updated_at as string, geladen)
     return
   }
 
@@ -1108,7 +1158,7 @@ async function schreibeWoche(congregationId: string, woche: string, week: Week, 
     return
   }
   if (data) {
-    wochenStand.set(woche, data.updated_at as string)
+    standMerken(wochenStand, woche, data.updated_at as string, geladen)
     return
   }
   konfliktMelder?.()
@@ -1129,7 +1179,7 @@ async function schreibeWoche(congregationId: string, woche: string, week: Week, 
  * Datenbank ist. Beides löst nur Nachladen — wie beim Füllen eines freien
  * Platzes (`platzFuellen`).
  */
-async function zuteilenSchreiben(woche: string, stand: string | undefined, week: Week): Promise<void> {
+async function zuteilenSchreiben(woche: string, stand: string | undefined, week: Week, geladen: number): Promise<void> {
   if (!supabase) return
   if (stand === undefined) {
     konfliktMelder?.()
@@ -1144,7 +1194,7 @@ async function zuteilenSchreiben(woche: string, stand: string | undefined, week:
     return
   }
   const neu = (data as { stand?: unknown } | null)?.stand
-  if (typeof neu === 'string') wochenStand.set(woche, neu)
+  if (typeof neu === 'string') standMerken(wochenStand, woche, neu, geladen)
 }
 
 /**
@@ -1162,9 +1212,12 @@ export function saveWeek(congregationId: string, week: Week, nurZuteilen = false
   const woche = week.start
   if (!woche) return
   const vorher = wochenKette.get(woche) ?? Promise.resolve()
+  // Die Ladung jetzt festhalten, nicht erst beim Losgehen: Bis dahin kann die
+  // Kette ein Laden überdauert haben.
+  const geladen = ladung
   // `catch` vor dem Anhängen: ein Fehlschlag darf die Kette nicht abreißen
   // lassen, sonst schriebe diese Woche nie wieder.
-  const naechster = vorher.then(() => schreibeWoche(congregationId, woche, week, nurZuteilen).catch(() => {}))
+  const naechster = vorher.then(() => schreibeWoche(congregationId, woche, week, nurZuteilen, geladen).catch(() => {}))
   wochenKette.set(woche, naechster)
 }
 
@@ -1288,6 +1341,7 @@ const fsWochenStand = new Map<string, string>()
 const fsWochenKette = new Map<string, Promise<void>>()
 
 function fsStaendeSetzen(paare: Array<[string, string]>): void {
+  ladung++
   fsWochenStand.clear()
   fsWochenKette.clear()
   for (const [woche, stand] of paare) fsWochenStand.set(woche, stand)
@@ -1306,18 +1360,25 @@ function fsStaendeSetzen(paare: Array<[string, string]>): void {
 export function saveFsWeek(congregationId: string, woche: string, insts: FsInstance[]): void {
   if (!supabase || !woche) return
   const vorher = fsWochenKette.get(woche) ?? Promise.resolve()
+  // Die Ladung jetzt festhalten, wie bei den Wochen (`saveWeek`).
+  const geladen = ladung
   // `catch` vor dem Anhängen: ein Fehlschlag darf die Kette nicht abreißen
   // lassen, sonst schriebe diese Woche nie wieder.
   const naechster = vorher.then(() =>
-    fsWocheSchreiben(congregationId, woche, insts).catch((err: unknown) =>
+    fsWocheSchreiben(congregationId, woche, insts, geladen).catch((err: unknown) =>
       schreibfehler({ message: err instanceof Error ? err.message : String(err) }),
     ),
   )
   fsWochenKette.set(woche, naechster)
 }
 
-async function fsWocheSchreiben(congregationId: string, woche: string, insts: FsInstance[]): Promise<void> {
+async function fsWocheSchreiben(congregationId: string, woche: string, insts: FsInstance[], geladen: number): Promise<void> {
   if (!supabase) return
+  // Seit dem Festhalten neu geladen: Der Inhalt beruht auf dem ersetzten Stand (`ladung`).
+  if (geladen !== ladung) {
+    konfliktMelder?.()
+    return
+  }
   const stand = fsWochenStand.get(woche)
   const { data, error } =
     stand === undefined
@@ -1343,7 +1404,7 @@ async function fsWocheSchreiben(congregationId: string, woche: string, insts: Fs
     return
   }
   if (data) {
-    fsWochenStand.set(woche, data.updated_at as string)
+    standMerken(fsWochenStand, woche, data.updated_at as string, geladen)
     return
   }
   konfliktMelder?.()

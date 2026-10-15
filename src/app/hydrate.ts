@@ -13,12 +13,18 @@ import type { Dispatch } from 'react'
 import { loadCongregationData } from '../lib/data'
 import { clearSnapshot, readSnapshot, saveSnapshot } from '../lib/snapshot'
 import type { AppAction, HydratePayload } from './context'
+import { ausstehendesSchreiben } from './persist'
 
 export async function loadAndHydrate(
   dispatch: Dispatch<AppAction>,
   userId: string,
   opts?: { silent?: boolean },
 ): Promise<void> {
+  // Erst hinaus, was gebündelt wartet: `hydrate` verwirft, was dann noch
+  // wartet — es beruht auf dem Stand, der gleich ersetzt wird (`persist.ts`).
+  // Ohne das ginge eine eben getippte Änderung verloren, nur weil gerade
+  // nachgeladen wird, nach „Plan senden" etwa oder einem Push-Klick.
+  ausstehendesSchreiben()
   // Stiller Refresh (z. B. nach einem Push-Klick): kein „lädt…"-Zwischenschritt,
   // die aktuelle Ansicht bleibt stehen, bis die frischen Daten da sind.
   if (!opts?.silent) dispatch({ type: 'setDataStatus', status: 'loading' })

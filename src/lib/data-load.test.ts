@@ -18,7 +18,8 @@ vi.mock('./supabase', () => ({
   supabase: { from: fromMock },
 }))
 
-import { loadCongregationData, saveFsWeek, SENT_LOG_LIMIT, WEEK_LIMIT } from './data'
+import { loadCongregationData, saveFsWeek, saveWeek, SENT_LOG_LIMIT, setKonfliktMelder, WEEK_LIMIT } from './data'
+import type { Week } from '../data/types'
 import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 
 function chainFor(table: string) {
@@ -388,6 +389,109 @@ describe('loadCongregationData', () => {
 })
 
 /**
+ * **Ein Neuladen überholt kein Schreiben** (15.10.2026).
+ *
+ * Ein Schreibvorgang beruht auf dem Zustand, aus dem er kommt — und der
+ * stammt aus einem bestimmten Ladevorgang. Bis zum 15.10.2026 galt beim
+ * Schreiben einfach der jüngste Stand, auch über ein Laden hinweg:
+ *
+ * - Wartete ein Schreibvorgang noch in seiner Kette, während die App neu lud,
+ *   ging er danach mit dem **frischen** Stand los und schrieb seinen alten
+ *   Inhalt still über das, was das Laden gebracht hatte.
+ * - Kam die Antwort eines Schreibvorgangs erst nach dem Laden, setzte sie ihren
+ *   Stand neben einen Bildschirm, der ihn womöglich gar nicht zeigte — die
+ *   nächste Änderung nahm ihn dann lautlos zurück.
+ */
+describe('Neuladen und Schreiben', () => {
+  const START = '2026-09-07'
+  const woche = (range: string): Week => ({ ...buildDemoWeeks()[0]!, start: START, range })
+  /** Eine Antwort, die erst kommt, wenn der Test es sagt. */
+  function spaeteAntwort() {
+    let geben: (stand: string) => void = () => {}
+    const antwort = new Promise((r) => {
+      geben = (stand) => r({ data: { updated_at: stand }, error: null })
+    })
+    return { antwort: antwort as unknown as { data: unknown; error: unknown }, geben }
+  }
+  /** Mit welchen Ständen `tabelle` seit dem letzten Leeren geschrieben wurde. */
+  const staendeVon = (tabelle: string): unknown[] =>
+    store.filter.filter(([t, m, spalte]) => t === tabelle && m === 'eq' && spalte === 'updated_at').map(([, , , wert]) => wert)
+  /** Ein Laden, das für Wochen und Treffpunkte diese Stände bringt. */
+  const laden = (stand: string) => {
+    seedResponses({
+      weeks: [{ data: [{ start: START, data: woche('geladen'), updated_at: stand }], error: null }],
+      fs_weeks: [{ data: [{ start: START, data: [], updated_at: `F-${stand}` }], error: null }],
+    })
+    return loadCongregationData('u1')
+  }
+  const ruhe = () => new Promise((r) => setTimeout(r, 0))
+
+  let konflikte = 0
+  beforeEach(() => {
+    konflikte = 0
+    setKonfliktMelder(() => {
+      konflikte++
+    })
+  })
+  afterEach(() => setKonfliktMelder(null))
+
+  it('eine Antwort, die erst nach dem Laden kommt, ersetzt den geladenen Stand nicht', async () => {
+    await laden('S1')
+    const spaet = spaeteAntwort()
+    store.responses.weeks = [spaet.antwort]
+    saveWeek('c1', woche('unterwegs'))
+    await ruhe()
+    await laden('S-geladen')
+    spaet.geben('S-geschrieben')
+    await ruhe()
+
+    store.filter = []
+    store.responses.weeks = [{ data: { updated_at: 'S3' }, error: null }]
+    saveWeek('c1', woche('danach'))
+    await ruhe()
+    expect(staendeVon('weeks')).toEqual(['S-geladen'])
+  })
+
+  it('was vor dem Laden in der Kette wartete, geht danach nicht mehr los — es meldet einen Konflikt', async () => {
+    await laden('S1')
+    const spaet = spaeteAntwort()
+    store.responses.weeks = [spaet.antwort]
+    saveWeek('c1', woche('erste'))
+    saveWeek('c1', woche('wartet in der Kette'))
+    await ruhe()
+    await laden('S-geladen')
+    store.filter = []
+    spaet.geben('S2')
+    await ruhe()
+    await ruhe()
+
+    expect(staendeVon('weeks')).toEqual([])
+    expect(konflikte).toBe(1)
+  })
+
+  it('bei den Treffpunkten ebenso: Wartendes geht nicht los, eine späte Antwort setzt keinen Stand', async () => {
+    await laden('S1')
+    const spaet = spaeteAntwort()
+    store.responses.fs_weeks = [spaet.antwort]
+    saveFsWeek('c1', START, [])
+    saveFsWeek('c1', START, [])
+    await ruhe()
+    await laden('S-geladen')
+    store.filter = []
+    spaet.geben('F-geschrieben')
+    await ruhe()
+    await ruhe()
+    expect(staendeVon('fs_weeks')).toEqual([])
+    expect(konflikte).toBe(1)
+
+    store.responses.fs_weeks = [{ data: { updated_at: 'F3' }, error: null }]
+    saveFsWeek('c1', START, [])
+    await ruhe()
+    expect(staendeVon('fs_weeks')).toEqual(['F-S-geladen'])
+  })
+})
+
+/**
  * **Die Tabellen der Pläne ohne Woche** — Gruppenbesuche und Weitere Pläne
  * samt Einträgen (T120), dazu die Trolleys und ihre Termine (T121).
  *
@@ -399,7 +503,7 @@ describe('loadCongregationData: die Pläne aus T120', () => {
   const T120 = ['gruppenbesuche', 'trolleys', 'trolley_termine', 'plaene', 'plan_eintraege']
 
   /** Normale Antworten plus je eine Zeile der neuen Tabellen — einzelne per Argument überschreiben. */
-  function mitPlaenen(over: Partial<Record<string, Array<{ data: unknown; error: unknown }>>> = {}) {
+  function mitPlaenen(over: Partial<Record<string, Array<{ data: unknown; error: unknown; count?: number }>>> = {}) {
     seedResponses({
       gruppenbesuche: [{ data: [{ id: 'b1', woche: '2026-10-05', grp: 'g1', person_id: 'p1' }], error: null }],
       trolleys: [{ data: [{ id: 'tr1', name: 'Trolley 1', ort: 'Depot', hinweis: '' }], error: null }],
@@ -449,6 +553,24 @@ describe('loadCongregationData: die Pläne aus T120', () => {
     expect(d.plaene).toEqual([{ id: 'pl1', name: 'Winterdienst', von: '2026-09-07', bis: '2026-11-29', entwurf: false, takt: 'monat' }])
     // Der Eintrag eines nicht geladenen Plans fällt heraus — er gehörte zu nichts, was die App zeigt.
     expect(d.planEintraege).toEqual([{ id: 'pe1', planId: 'pl1', datum: '2026-09-07', grp: 'g1' }])
+  })
+
+  it('die Trolley-Termine kommen über die Zeilengrenze hinweg vollständig an (15.10.2026)', async () => {
+    // Ein Vierteljahr voraus, mehrere Trolleys, halbe Stunden: An der Grenze
+    // fehlten still die spätesten, und ihr Platz stand frei da.
+    const termin = (id: string, datum: string) => ({
+      id, trolley_id: 'tr1', datum, von: '10:00:00', bis: '12:00:00', person_id: 'p1', partner_id: null, gemeinsam: false,
+    })
+    mitPlaenen({
+      trolley_termine: [
+        { data: [termin('r1', '2026-09-09')], error: null, count: 2 },
+        { data: [termin('r2', '2026-12-02')], error: null, count: 2 },
+      ],
+    })
+    const res = await loadCongregationData('u1')
+    expect(res.ok).toBe(true)
+    if (!res.ok) return
+    expect(res.data.trolleyTermine.map((t) => t.id)).toEqual(['r1', 'r2'])
   })
 
   it('jede der fünf Abfragen nennt die eigene Versammlung', async () => {

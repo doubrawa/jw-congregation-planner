@@ -9,17 +9,18 @@
  * Eingabe gehört: die Liste der wählbaren Uhrzeiten.
  */
 
+import { zeitenZurWahl } from '../data/helpers'
+
 /**
  * Uhrzeiten im 15-Minuten-Raster; eine krumme Bestandszeit bleibt wählbar.
  *
  * `current` kommt aus den Daten und muss in der Liste stehen, sonst zeigte das
- * Auswahlfeld eine andere Zeit an als die, die gilt.
+ * Auswahlfeld eine andere Zeit an als die, die gilt (`zeitenZurWahl`).
  */
 export function timeOptions(current: string): string[] {
   const opts: string[] = []
   for (let h = 0; h < 24; h++) {
     for (const m of ['00', '15', '30', '45']) opts.push(`${String(h).padStart(2, '0')}:${m}`)
   }
-  if (!opts.includes(current)) opts.push(current)
-  return opts.sort()
+  return zeitenZurWahl(opts, current)
 }

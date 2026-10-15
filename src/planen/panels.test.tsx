@@ -264,6 +264,15 @@ describe('Treffpunkte planen (T121, Entwurf `GTreffpunktePlanen`)', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsInstUpdate', wi: 0, id: 'f1', patch: { place: 'Marktplatz' } })
   })
 
+  it('eine krumme Zeit aus dem Import steht so da, wie sie gilt — nicht als erste der Liste (15.10.2026)', () => {
+    // Ohne eigene Option wählt React still die erste (06:00), und der Planer
+    // las eine Zeit, die nirgends gilt.
+    const { container } = buehne('fs', { fsWeeks: [[inst({ time: '09:40' })]] })
+    const wahl = container.querySelector<HTMLSelectElement>('.treff-zeit-wahl')!
+    expect(wahl.value).toBe('09:40')
+    expect(wahl.selectedOptions[0]?.textContent).toBe('09:40')
+  })
+
   it('ein Treffpunkt lässt sich aus der Woche entfernen — erst nach der Rückfrage', () => {
     const { container, dispatch } = buehne('fs', { fsWeeks: [[inst()]] })
     fireEvent.click(container.querySelector('.treff-entfernen')!)

@@ -1104,3 +1104,14 @@ export function gruppiertNach<T>(items: readonly T[], schluessel: (item: T) => s
   return gruppen
 }
 
+/**
+ * **Die Zeiten zur Wahl — samt der, die gilt.** Steht eine krumme
+ * Bestandszeit nicht im Raster (ein Treffpunkt aus dem NWS-Import um 9:40),
+ * zeigte das Auswahlfeld sonst die erste Zeit an statt der geltenden — React
+ * wählt still die erste Option, wenn keine passt. Für die Zusammenkünfte
+ * (`timeOptions`) und die Treffpunkte (`ZeitWahl`) dieselbe Regel; bis zum
+ * 15.10.2026 kannten sie nur die Zusammenkünfte.
+ */
+export function zeitenZurWahl(raster: readonly string[], aktuell: string): string[] {
+  return raster.includes(aktuell) ? [...raster] : [...raster, aktuell].sort()
+}

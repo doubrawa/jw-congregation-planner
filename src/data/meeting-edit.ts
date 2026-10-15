@@ -254,6 +254,7 @@ export function lacMinuten(
   // die dort steht: aus „٣ دق“ wird „١٥ دق“, nicht „15 دق“.
   item.mins = target
   item.meta = ersteZahlErsetzen(item.meta ?? '', target)
+  // Das Ende nur hier: Es gehört der Versammlung, die Varianten tragen keins (`mergeMeeting`).
   meeting.end = shiftEnd(meeting.end, target - cur)
   forEachAltMeeting(week, tab, (m) => {
     const vi = m.sections[si]?.items[ii]
@@ -261,7 +262,6 @@ export function lacMinuten(
       vi.mins = target
       vi.meta = ersteZahlErsetzen(vi.meta ?? '', target)
     }
-    m.end = shiftEnd(m.end, target - cur)
   })
   return next
 }
@@ -286,7 +286,6 @@ export function lacRemove(
   if (mins != null) meeting.end = shiftEnd(meeting.end, -mins)
   forEachAltMeeting(week, tab, (m) => {
     m.sections[si]?.items.splice(ii, 1)
-    if (mins != null) m.end = shiftEnd(m.end, -mins)
   })
   umbauMerken(week, tab)
   return next
@@ -420,7 +419,6 @@ export function lacAdd(
     // Die Variante trägt dieselbe Kennung wie die kanonische Woche: Sie ist
     // derselbe Punkt, nur in einer anderen Sprache.
     if (arr) arr.splice(Math.min(at, arr.length), 0, { iid: newItem.iid, title: trimmed, meta: '10 Min.', mins: 10, names: [] })
-    m.end = shiftEnd(m.end, 10)
   })
   umbauMerken(week, tab)
   return next

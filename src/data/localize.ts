@@ -34,7 +34,12 @@ function mergeMeeting(target: Meeting, alt: Meeting): void {
   if (!aligned) return
 
   if (alt.date) target.date = alt.date
-  if (alt.end) target.end = alt.end
+  // **Die Endzeit nicht** — sie gehört der Versammlung, nicht der Sprache: aus
+  // ihrer Zusammenkunftszeit (`neueWocheEinordnen`, `endenNachziehen`) und den
+  // Minuten des Programms (`lacMinuten`), kanonisch deutsch und erst beim
+  // Anzeigen übersetzt. Die Variante trägt den festen Wert des Imports
+  // („Ende ca. 20:45"); bis zum 15.10.2026 stand er über der Endzeit der
+  // Versammlung, und wer um 18:30 beginnt, las in der zweiten Sprache 20:45.
   target.sections.forEach((section, si) => {
     // Gleiche Länge ist oben geprüft; der Index-Zugriff sieht das nicht. Fehlt
     // wider Erwarten etwas, bleibt dieser Abschnitt kanonisch — dieselbe

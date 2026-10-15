@@ -62,20 +62,56 @@ const SAVE_DELAY = 600
 
 interface DebouncedWriter<K, V> {
   schedule: (key: K, value: V) => void
+  /**
+   * Jetzt schreiben, nicht erst nach der Ruhe. Wartet derselbe Schlüssel noch,
+   * geht er in diesem Schreiben auf: Sonst ginge die ältere Fassung 600 ms
+   * später hinterher und schriebe zurück, was eben gespeichert wurde.
+   */
+  sofort: (key: K, value: V) => void
   cancel: (key: K) => void
   flush: () => void
+  /** Alles Wartende fallen lassen, ohne zu schreiben (`hydrate`). */
+  verwerfen: () => void
 }
 
 /**
  * Alle gebündelten Schreiber — jeder trägt sich bei seiner Erzeugung selbst
- * ein. Beim Verlassen der Ansicht und beim Abmelden gehen sie gemeinsam hinaus.
+ * ein. Beim Verlassen der Ansicht und beim Abmelden gehen sie gemeinsam
+ * hinaus, beim Neuladen werden sie gemeinsam verworfen.
  *
  * Bis zum 3.10.2026 stand dort eine Liste von Hand, und ihr fehlten die beiden
  * Schreiber aus T120 (Zeugnis-Termine, Weitere Pläne): Wer binnen 600 ms nach
  * dem Tippen eines Orts oder Plannamens abmeldete, dessen Änderung ging erst
  * nach dem Abmelden hinaus — und scheiterte an der Anmeldung.
  */
-const ALLE_FLUSHES: (() => void)[] = []
+const ALLE_SCHREIBER: Array<Pick<DebouncedWriter<unknown, unknown>, 'flush' | 'verwerfen'>> = []
+
+/**
+ * **Was gebündelt wartet, jetzt hinaus** — beim Verlassen der Ansicht, beim
+ * Abmelden und wenn die App in den Hintergrund geht (`store.tsx`). Wer am
+ * Handy einen Namen tippt und gleich in eine andere App wechselt, dessen
+ * Änderung wartete sonst auf einen Zeitgeber, den das System im Hintergrund
+ * anhält — und mit der App beendet.
+ */
+export function ausstehendesSchreiben(): void {
+  for (const schreiber of ALLE_SCHREIBER) schreiber.flush()
+}
+
+/**
+ * **Neu geladen: Was gebündelt wartete, fällt weg.** Es beruht auf dem
+ * ersetzten Stand. Ginge es danach hinaus, nähme es den frisch geladenen Stand
+ * mit (`ladung` in lib/data.ts) und schriebe still zurück, was das Laden eben
+ * gebracht hat — eine Woche, die ein anderer Planer inzwischen geändert hat —,
+ * oder etwas, das der Bildschirm nicht mehr zeigt. So steht da, was
+ * gespeichert ist; was dabei verloren geht, sieht man.
+ *
+ * Wartendes gibt es dabei nur, wenn während des Ladens getippt wurde — was
+ * vorher wartete, schickt `loadAndHydrate` vorab hinaus.
+ */
+function wartendesVerwerfen(): void {
+  for (const schreiber of ALLE_SCHREIBER) schreiber.verwerfen()
+  ausstehendeFsLoeschungen.clear()
+}
 
 /**
  * Was sich an einer Tabelle „eine Zeile je …" geändert hat: `geaendert` sind
@@ -107,27 +143,43 @@ function createDebouncedWriter<K, V>(
 ): DebouncedWriter<K, V> {
   const pending = new Map<K, V>()
   let timer: ReturnType<typeof setTimeout> | null = null
-  const flush = (): void => {
+  const anhalten = (): void => {
     if (timer) {
       clearTimeout(timer)
       timer = null
     }
-    for (const [key, value] of pending) write(key, value)
-    pending.clear()
   }
-  ALLE_FLUSHES.push(flush)
-  return {
+  /** Die neue Fassung mit der wartenden desselben Schlüssels zusammenführen. */
+  const mitWartendem = (key: K, value: V): V => {
+    const alt = pending.get(key)
+    return alt !== undefined && merge ? merge(alt, value) : value
+  }
+  const schreiber: DebouncedWriter<K, V> = {
     schedule(key, value) {
-      const alt = pending.get(key)
-      pending.set(key, alt !== undefined && merge ? merge(alt, value) : value)
-      if (timer) clearTimeout(timer)
-      timer = setTimeout(flush, delayMs)
+      pending.set(key, mitWartendem(key, value))
+      anhalten()
+      timer = setTimeout(schreiber.flush, delayMs)
+    },
+    sofort(key, value) {
+      const fassung = mitWartendem(key, value)
+      pending.delete(key)
+      write(key, fassung)
     },
     cancel(key) {
       pending.delete(key)
     },
-    flush,
+    flush() {
+      anhalten()
+      for (const [key, value] of pending) write(key, value)
+      pending.clear()
+    },
+    verwerfen() {
+      anhalten()
+      pending.clear()
+    },
   }
+  ALLE_SCHREIBER.push(schreiber)
+  return schreiber
 }
 
 // congId ist über die Sitzung stabil, wird aber je Save mitgeführt, damit der
@@ -293,7 +345,10 @@ function zeilenPlanen<T extends { id: string }>(
 function wocheSpeichern(congId: string, vorher: Week[], weeks: Week[], wi: number, nurZuteilen: boolean): void {
   const week = weeks[wi]
   if (!week || vorher[wi] === week) return
-  saveWeek(congId, week, nurZuteilen)
+  // Über den Bündler, nicht an ihm vorbei: Wartet dort eine ältere Fassung
+  // derselben Woche (eine Umbenennung, eine neue Zusammenkunftszeit), ginge
+  // sie sonst hinter dieser hinaus und nähme sie zurück.
+  weekSaves.sofort(week.start, { congId, week, nurZuteilen })
 }
 
 /**
@@ -453,6 +508,11 @@ function verfalleneZusagen(prev: AppState, next: AppState): { meeting: string[];
  * liegen hier beide Listen. Fehlt die Woche, gibt es nichts zu bezeichnen, und
  * dann bleiben auch die Zusagen stehen: Die Datenbank behält den alten Leiter,
  * also gehört ihm auch weiter seine Zusage.
+ *
+ * Geschrieben wird über den Bündler (`sofort`): Wartet dort eine ältere
+ * Fassung derselben Woche — ein eben getippter Ort, noch ohne den Leiter, der
+ * jetzt zugeteilt wurde —, ginge sie sonst hinter dieser hinaus und nähme den
+ * Leiter zurück. Was an Zusagen für die Woche wartete, geht mit.
  */
 function fsWocheSpeichern(
   congId: string,
@@ -464,9 +524,8 @@ function fsWocheSpeichern(
   const week = weeks[wi]
   const fsWeek = fsWeeks[wi]
   if (!week || !fsWeek) return
-  saveFsWeek(congId, week.start, fsWeek)
-  const keys = verwaist.get(week.start)
-  if (keys) deleteConfirmationRows(congId, keys)
+  fsZusagenVormerken(week.start, verwaist)
+  fsWeekSaves.sofort(week.start, { congId, insts: fsWeek })
 }
 
 /**
@@ -483,13 +542,17 @@ function fsWochePlanen(
   const week = weeks[wi]
   const fsWeek = fsWeeks[wi]
   if (!week || !fsWeek) return
-  const keys = verwaist.get(week.start)
-  if (keys) {
-    const warten = ausstehendeFsLoeschungen.get(week.start) ?? new Set<string>()
-    for (const key of keys) warten.add(key)
-    ausstehendeFsLoeschungen.set(week.start, warten)
-  }
+  fsZusagenVormerken(week.start, verwaist)
   fsWeekSaves.schedule(week.start, { congId, insts: fsWeek })
+}
+
+/** Die in einer Woche verfallenen Zusagen vormerken — sie gehen mit ihrer Woche hinaus (`fsWeekSaves`). */
+function fsZusagenVormerken(woche: string, verwaist: ReadonlyMap<string, string[]>): void {
+  const keys = verwaist.get(woche)
+  if (!keys) return
+  const warten = ausstehendeFsLoeschungen.get(woche) ?? new Set<string>()
+  for (const key of keys) warten.add(key)
+  ausstehendeFsLoeschungen.set(woche, warten)
 }
 
 /**
@@ -600,6 +663,7 @@ function plaeneSpeichern(congId: string, prev: AppState, next: AppState): void {
 }
 
 export function persist(prev: AppState, next: AppState, action: AppAction): void {
+  if (action.type === 'hydrate') wartendesVerwerfen()
   const congId = next.congregationId
   const userId = next.userId
   if (!supabase || !congId || !userId) return
@@ -623,6 +687,10 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       break
     }
     case 'fsInstUpdate':
+      // Der Ort kommt je Tastenanschlag — gebündelt geht die Woche einmal
+      // hinaus statt einmal je Buchstabe.
+      fsWochePlanen(congId, next.weeks, next.fsWeeks, action.wi, fsVerwaist)
+      break
     case 'fsInstRemove':
       // Ein gestrichener Grundplan-Treffpunkt ist in seiner Regel vermerkt
       // (`FsRule.aus`) — ohne sie käme er beim nächsten Laden wieder.
@@ -716,7 +784,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'navigate':
     case 'logout': {
       // Ansicht verlassen → alle ausstehenden Debounce-Saves sofort schreiben
-      for (const flush of ALLE_FLUSHES) flush()
+      ausstehendesSchreiben()
       break
     }
     case 'removePerson': {

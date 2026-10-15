@@ -169,7 +169,8 @@ describe('lacMinuten in fremder Sprache', () => {
     const variante = w[0].alt!.ja.mid.sections[0].items[0] as PartItem
     expect(variante.mins).toBe(15)
     expect(variante.meta).toBe('15 分')
-    expect(w[0].alt!.ja.mid.end).toBe('Ende ca. 20:50')
+    // Das Ende trägt die kanonische Woche allein — die Variante zeigt es von dort (`mergeMeeting`).
+    expect(w[0].mid.end).toBe('Ende ca. 20:50')
   })
 
   it('hält die Grenzen 5 und 45 ein', () => {

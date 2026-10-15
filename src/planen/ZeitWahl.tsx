@@ -1,5 +1,6 @@
 import { useApp } from '../app/context'
 import { FS_TIME_OPTIONS } from '../data/fs'
+import { zeitenZurWahl } from '../data/helpers'
 import { WOCHENTAGE_AB_MONTAG, wochentagNameAusWd } from './wochentage'
 
 /*
@@ -9,7 +10,7 @@ import { WOCHENTAGE_AB_MONTAG, wochentagNameAusWd } from './wochentage'
  * im Blatt `feld-wahl`, im Kopf des Treffpunkts `treff-zeit-wahl`.
  */
 
-/** Eine Uhrzeit aus dem Raster der Treffpunkte (`FS_TIME_OPTIONS`). */
+/** Eine Uhrzeit aus dem Raster der Treffpunkte (`FS_TIME_OPTIONS`) — oder die krumme, die schon gilt. */
 export function ZeitWahl({
   value,
   label,
@@ -23,7 +24,7 @@ export function ZeitWahl({
 }) {
   return (
     <select className={className} value={value} aria-label={label} onChange={(e) => onChange(e.target.value)}>
-      {FS_TIME_OPTIONS.map((tm) => (
+      {zeitenZurWahl(FS_TIME_OPTIONS, value).map((tm) => (
         <option key={tm} value={tm}>
           {tm}
         </option>

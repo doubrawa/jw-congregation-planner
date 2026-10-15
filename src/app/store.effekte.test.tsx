@@ -59,7 +59,8 @@ vi.mock('./hydrate', () => ({ loadAndHydrate: (...a: unknown[]) => loadAndHydrat
 vi.mock('../lib/snapshot', () => ({
   saveSnapshot: vi.fn(), readSnapshot: vi.fn(() => null), clearSnapshot: vi.fn(),
 }))
-vi.mock('./persist', () => ({ persist: vi.fn() }))
+const ausstehendesSchreiben = vi.fn()
+vi.mock('./persist', () => ({ persist: vi.fn(), ausstehendesSchreiben: () => ausstehendesSchreiben() }))
 
 /**
  * Die beiden Melder liegen in `data.ts` als Modulvariable; ausgelöst werden sie
@@ -209,6 +210,43 @@ describe('Schreibkonflikt: ein anderer Planer war schneller (T39)', () => {
       melderAufrufen('konflikt')
     })
     expect(loadAndHydrate).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * **Geht die App in den Hintergrund, geht hinaus, was gebündelt wartet**
+ * (15.10.2026). Wer am Handy einen Namen tippt und gleich in eine andere App
+ * wechselt, dessen Änderung hing an einem Zeitgeber von 600 ms — den das
+ * System im Hintergrund anhält, und mit der App beendet.
+ */
+describe('Verlassen der App', () => {
+  /** Den Sichtbarkeitswechsel nachstellen, den der Browser beim App-Wechsel meldet. */
+  function sichtbarkeit(zustand: 'hidden' | 'visible'): void {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => zustand })
+    document.dispatchEvent(new Event('visibilitychange'))
+  }
+  afterEach(() => {
+    Reflect.deleteProperty(document, 'visibilityState')
+    ausstehendesSchreiben.mockClear()
+  })
+
+  it('in den Hintergrund: Gebündeltes geht sofort hinaus', () => {
+    starte()
+    sichtbarkeit('hidden')
+    expect(ausstehendesSchreiben).toHaveBeenCalledTimes(1)
+  })
+
+  it('beim Zurückkehren nicht — da wartet nichts, was nicht ohnehin gleich geht', () => {
+    starte()
+    sichtbarkeit('visible')
+    expect(ausstehendesSchreiben).not.toHaveBeenCalled()
+  })
+
+  it('nach dem Abbauen hört niemand mehr zu', () => {
+    const { unmount } = starte()
+    unmount()
+    sichtbarkeit('hidden')
+    expect(ausstehendesSchreiben).not.toHaveBeenCalled()
   })
 })
 

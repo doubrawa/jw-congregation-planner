@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { persist } from './persist'
+import { ausstehendesSchreiben, persist } from './persist'
 import type { AppAction, AppState } from './context'
 import {
   buildDemoFsWeeks,
@@ -310,8 +310,49 @@ describe('Treffpunkte', () => {
     const prev = st({ fsWeeks: mitLeiter('Anton Alt', 'p-a'), confirmations: zusagen })
     const next = st({ fsWeeks: mitLeiter('Anton Alt', 'p-a', '15:00'), confirmations: zusagen })
     persist(prev, next, { type: 'fsInstUpdate', wi: 0, id: 'tp1', patch: { time: '15:00' } })
+    vi.advanceTimersByTime(600)
     expect(data.saveFsWeek).toHaveBeenCalled()
     expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
+  })
+
+  /*
+   * **Der Ort kommt je Tastenanschlag** (15.10.2026). Bis dahin ging jeder
+   * Buchstabe als eigener Schreibvorgang der ganzen Woche hinaus — zehn für
+   * „Marktplatz", einer hinter dem anderen.
+   */
+  it('Zeit und Ort eines Treffpunkts gehen gebündelt hinaus — einmal, mit dem letzten Stand', () => {
+    const weeks = buildDemoWeeks()
+    let vorher = st({ weeks, fsWeeks: mitLeiter('Anton Alt', 'p-a') })
+    for (const place of ['M', 'Ma', 'Mar']) {
+      const nachher = reducer(vorher, { type: 'fsInstUpdate', wi: 0, id: 'tp1', patch: { place } })
+      persist(vorher, nachher, { type: 'fsInstUpdate', wi: 0, id: 'tp1', patch: { place } })
+      vorher = nachher
+    }
+    expect(data.saveFsWeek).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(600)
+    expect(data.saveFsWeek).toHaveBeenCalledTimes(1)
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', '2026-09-07', vorher.fsWeeks[0])
+  })
+
+  /*
+   * **Sofort überholt das Bündel** (15.10.2026). Wer den Ort tippt und gleich
+   * danach den Leiter einträgt, schreibt die Woche zweimal: gebündelt den Ort,
+   * sofort den Leiter. Ging das Gebündelte an der sofortigen Fassung vorbei,
+   * kam es 600 ms später hinterher — mit dem Ort, aber ohne den Leiter — und
+   * nahm die Zuteilung in der Datenbank still zurück.
+   */
+  it('ein Schreiben sofort nimmt die wartende Fassung derselben Woche mit — sie geht nicht hinterher', () => {
+    const weeks = buildDemoWeeks()
+    const anfang = st({ weeks, fsWeeks: mitLeiter('', '') })
+    const mitOrt = reducer(anfang, { type: 'fsInstUpdate', wi: 0, id: 'tp1', patch: { place: 'Markt' } })
+    persist(anfang, mitOrt, { type: 'fsInstUpdate', wi: 0, id: 'tp1', patch: { place: 'Markt' } })
+    const offen = { ...mitOrt, slotSel: FS_SEL }
+    const mitLeiterUndOrt = reducer(offen, { type: 'assign', name: 'Bernd Brand', pid: 'p-b' })
+    persist(offen, mitLeiterUndOrt, { type: 'assign', name: 'Bernd Brand', pid: 'p-b' })
+    vi.advanceTimersByTime(600)
+    expect(data.saveFsWeek).toHaveBeenCalledTimes(1)
+    const geschrieben = vi.mocked(data.saveFsWeek).mock.calls[0]?.[2]
+    expect(geschrieben?.[0]).toMatchObject({ place: 'Markt', leader: 'Bernd Brand' })
   })
 
   it('das Laden löscht nichts — es schreibt keine Woche, also verfällt dabei auch nichts', () => {
@@ -336,6 +377,7 @@ describe('Treffpunkte', () => {
   it('fsInstUpdate/Remove speichern die betroffene Woche', () => {
     const next = st()
     persist(st(), next, { type: 'fsInstUpdate', wi: 2, id: 'x', patch: {} })
+    vi.advanceTimersByTime(600)
     expect(data.saveFsWeek).toHaveBeenCalledWith('c1', next.weeks[2]?.start, next.fsWeeks[2])
     vi.clearAllMocks()
     persist(st(), next, { type: 'fsInstRemove', wi: 3, id: 'x' })
@@ -876,6 +918,63 @@ describe('Personen (inkl. Debounce)', () => {
     vi.advanceTimersByTime(600)
     expect(data.saveWeek).toHaveBeenCalledTimes(1)
     expect(data.saveWeek).toHaveBeenCalledWith('c1', neuer2, false)
+  })
+
+  /*
+   * **Sofort überholt das Bündel** (15.10.2026) — für die Wochen der
+   * Zusammenkünfte wie für die Treffpunkte. Eine neue Zusammenkunftszeit zieht
+   * die Endzeiten aller Wochen nach und wartet gebündelt; wer in den 600 ms
+   * danach in derselben Woche zuteilt, schreibt sie sofort. Die wartende
+   * Fassung ging bis dahin hinterher und nahm die Zuteilung still zurück.
+   */
+  it('ein Schreiben sofort nimmt die wartende Fassung derselben Woche mit', () => {
+    const p = DEMO_PERSONS[0]!
+    const w = buildDemoWeeks()[0]!
+    const umbenannt: Week = { ...w, book: `${w.book}!` }
+    persist(st({ weeks: [w] }), st({ weeks: [umbenannt] }), { type: 'updatePerson', id: p.id, patch: { ln: 'A' } })
+    const zugeteilt: Week = { ...umbenannt, range: `${w.range}?` }
+    const sel = { kind: 'part', wi: 0, tab: 'mid', si: 1, ii: 1, ni: 0, priv: null, groups: false, label: 'X' } as const
+    persist(st({ weeks: [umbenannt], slotSel: sel }), st({ weeks: [zugeteilt] }), { type: 'assign', name: 'A' })
+    expect(data.saveWeek).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(600)
+    expect(data.saveWeek).toHaveBeenCalledTimes(1)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', zugeteilt, false)
+  })
+
+  /*
+   * **Neu geladen: Was gebündelt wartete, fällt weg** (15.10.2026).
+   *
+   * Ein Konflikt lädt mitten in der Arbeit nach. Wer dabei weitertippte, dessen
+   * Änderung wartete auf dem **alten** Stand — und ging nach dem Laden mit dem
+   * **frischen** Stand hinaus (`saveWeek` nimmt den jüngsten). Damit schrieb
+   * sie still über das, was das Laden gerade gebracht hatte: die Woche, die ein
+   * anderer Planer eben geändert hat. Genau das soll der Stand verhindern (T39).
+   */
+  it('ein Neuladen verwirft, was gebündelt wartete — Woche, Person, Treffpunkte und ihre Zusagen', () => {
+    const p = DEMO_PERSONS[0]!
+    const w = buildDemoWeeks()[0]!
+    const umbenannt: Week = { ...w, book: `${w.book}!` }
+    const fsVorher = buildDemoFsWeeks()
+    const fsNachher = buildDemoFsWeeks()
+    fsNachher[0] = []
+    const vorher = st({ weeks: [w], fsWeeks: fsVorher, confirmations: { [fsTaskKey(w.start, 'x')]: 'bestätigt' } })
+    const nachher = st({ weeks: [umbenannt], fsWeeks: fsNachher, persons: [{ ...p, ln: 'A' }, ...DEMO_PERSONS.slice(1)], confirmations: {} })
+    persist(vorher, nachher, { type: 'updatePerson', id: p.id, patch: { ln: 'A' } })
+    persist(nachher, st({ weeks: [w] }), { type: 'hydrate', payload: {} } as unknown as AppAction)
+    vi.advanceTimersByTime(600)
+    expect(data.saveWeek).not.toHaveBeenCalled()
+    expect(data.savePerson).not.toHaveBeenCalled()
+    expect(data.saveFsWeek).not.toHaveBeenCalled()
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
+  })
+
+  it('beim Verlassen der App geht hinaus, was wartet (`ausstehendesSchreiben`)', () => {
+    const p = DEMO_PERSONS[0]!
+    persist(st(), st({ persons: [p, ...DEMO_PERSONS.slice(1)] }), { type: 'updatePerson', id: p.id, patch: { tel: '1' } })
+    ausstehendesSchreiben()
+    expect(data.savePerson).toHaveBeenCalledWith('c1', p)
+    vi.advanceTimersByTime(600)
+    expect(data.savePerson).toHaveBeenCalledTimes(1)
   })
 
   it('updatePerson mit Planer-Recht spiegelt Konten/Codes sofort', () => {
