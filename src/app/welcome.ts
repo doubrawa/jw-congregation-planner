@@ -15,10 +15,10 @@ import type { DataStatus } from './context'
  *                 sobald irgendwann Personendaten eintreffen.
  *  - `{ name }` — begrüßen.
  *
- * Ohne zugehörige Person (frisch registriert und noch keiner Versammlung
- * beigetreten, oder Laden fehlgeschlagen) wird bewusst gar nicht begrüßt: eine
+ * Ohne zugehörige Person (ein Konto, das der Admin aus der Versammlung
+ * genommen hat, oder Laden fehlgeschlagen) wird bewusst gar nicht begrüßt: eine
  * namenlose Begrüßung wäre kein Ersatz, und diese Bildschirme haben Wichtigeres
- * zu sagen — Einladungscode eingeben oder ein Fehler.
+ * zu sagen — dass ein neuer Link nötig ist, oder ein Fehler.
  */
 export type WelcomeDecision = 'warten' | 'verwerfen' | { name: string }
 

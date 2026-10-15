@@ -25,7 +25,7 @@ import { fsLeiterBinden } from '../../src/data/fs'
 import { pidsNachtragen } from '../../src/data/namensbindung'
 import { offeneMeldungen } from '../../src/data/plan-versand'
 import { sentKey } from '../../src/data/planning'
-import type { FsBereich, Lang, MeetingTab, PersoenlichLog, Screen, SentLog, Theme } from '../../src/data/types'
+import type { FsBereich, Lang, MeetingTab, PersoenlichLog, Person, Screen, SentLog, Theme } from '../../src/data/types'
 import { CONG_TO_JW } from '../../src/i18n/langs'
 import { buildDemoConfirmations } from './demo-zusagen'
 import {
@@ -116,6 +116,14 @@ export interface DebugHash {
   staleAt?: number // Offline-Stand vortäuschen (stale=<Stunden alt>) — Banner + nur lesen
   /** `vorlage=1`: das Blatt beim Öffnen vorlegen, wie nach dem Anmelden (T121). */
   vorlage?: boolean
+  /**
+   * `konto=1` — die Seite tritt auf wie ein angemeldeter Admin (T121, Phase 8):
+   * mit Konten und Anmelde-Links. Erst dann zeigen die Personen den Stand der
+   * Anmeldung, die Konto-Karte und „Links senden" — für die Handbuch-Aufnahmen.
+   * Ausstellen kann die Seite trotzdem nichts: Ohne Client meldet „Link
+   * senden" einen Fehler.
+   */
+  konto?: boolean
 }
 
 export function parseDebugHash(hash: string, jetzt = Date.now()): DebugHash | null {
@@ -151,6 +159,7 @@ export function parseDebugHash(hash: string, jetzt = Date.now()): DebugHash | nu
   }
   if (p.get('shot') === '1') out.shot = true
   if (p.get('vorlage') === '1') out.vorlage = true
+  if (p.get('konto') === '1') out.konto = true
   // stale=<Stunden>: Offline-Stand simulieren (ohne Netzabbruch nachstellbar)
   const stale = Number(p.get('stale'))
   if (Number.isFinite(stale) && stale > 0) out.staleAt = jetzt - stale * 3600_000
@@ -183,6 +192,28 @@ function demoPersoenlich(versand: SentLog): PersoenlichLog {
       .filter((schluessel) => DEMO_OHNE_KONTO.some((name) => schluessel.endsWith(` ${name}`)))
       .map((schluessel) => [schluessel, schluessel.includes('|we|') ? '2026-09-06T19:30:00.000Z' : null]),
   )
+}
+
+/**
+ * **Konten und Links für `konto=1`**, nach der gestellten Uhr (7.9.2026): jede
+ * dritte Person angemeldet — die erste als Admin —, jede dritte mit Link, der
+ * erste davon abgelaufen, jeder zweite per E-Mail. Mit `me=` ist das Konto
+ * dieser Person das eigene.
+ */
+function demoKonten(persons: readonly Person[], me: string | undefined): Pick<AppState, 'userId' | 'members' | 'anmeldeLinks'> {
+  const members = persons
+    .filter((_, i) => i % 3 === 0)
+    .map((p, j) => ({ userId: p.id === me ? 'demo-konto' : `konto-${p.id}`, email: p.mail, personId: p.id, planner: j === 0, zuteiler: false }))
+  const anmeldeLinks = persons
+    .filter((_, i) => i % 3 === 1)
+    .map((p, j) => ({
+      personId: p.id,
+      gueltigBis: j === 0 ? '2026-09-01T09:00:00.000Z' : '2026-10-01T09:00:00.000Z',
+      erstelltAt: j === 0 ? '2026-08-02T09:00:00.000Z' : '2026-09-01T09:00:00.000Z',
+      gesendetAt: j % 2 === 1 ? '2026-09-01T09:00:00.000Z' : null,
+      benutztAt: null,
+    }))
+  return { userId: 'demo-konto', members, anmeldeLinks }
 }
 
 /**
@@ -237,5 +268,6 @@ export function entwicklerStart(hash: string = location.hash): AppState {
     // Ein Hash mit `tab=` ist eine Wahl — sonst spränge der Reiter beim
     // ersten Navigieren weg und die Doku-Screenshots zeigten das Falsche.
     terminGewaehlt: debug?.tab != null,
+    ...(debug?.konto ? demoKonten(basis.persons, debug.me) : {}),
   })
 }

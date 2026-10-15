@@ -27,7 +27,7 @@ import type {
   FsRule,
   Group,
   Gruppenbesuch,
-  Invite,
+  AnmeldeLink,
   MeetingTimes,
   Trolley,
   TrolleyTermin,
@@ -298,12 +298,23 @@ interface MemberRow {
   email: string
 }
 
-interface InviteRow {
-  id: string
-  code: string
-  person_id: string | null
-  planner: boolean
-  zuteiler: boolean
+interface AnmeldeLinkRow {
+  person_id: string
+  gueltig_bis: string
+  erstellt_at: string
+  gesendet_at: string | null
+  benutzt_at: string | null
+}
+
+/**
+ * Die Spalten von `anmelde_links`, die die App lesen darf — **ausdrücklich**:
+ * Die Prüfsummen von Token und Code sind für sie gesperrt (Spaltenrechte), und
+ * ein `select('*')` scheiterte an ihnen als Ganzes.
+ */
+const ANMELDE_LINK_SPALTEN = 'person_id, gueltig_bis, erstellt_at, gesendet_at, benutzt_at'
+
+export function anmeldeLinkAusZeile(r: AnmeldeLinkRow): AnmeldeLink {
+  return { personId: r.person_id, gueltigBis: r.gueltig_bis, erstelltAt: r.erstellt_at, gesendetAt: r.gesendet_at, benutztAt: r.benutzt_at }
 }
 
 const NOTIF_TYPES: NotificationType[] = ['zuteilung', 'erinnerung', 'gesendet', 'import', 'verhindert']
@@ -563,7 +574,7 @@ export interface CongregationData {
   progLangs: string[] // weitere Programmsprachen (jw.org-Codes)
   auxClass: boolean // Zusaetzliche Klasse eingerichtet
   members: Member[]
-  invites: Invite[]
+  anmeldeLinks: AnmeldeLink[]
   /** Wer wurde wann über welchen Platz benachrichtigt (`assignment_log`). */
   sentLog: SentLog
   /** Wer davon kein Konto hat — und ob der Planer es ihm selbst gesagt hat. */
@@ -618,7 +629,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .order('start', { ascending: false })
     .limit(WEEK_LIMIT)
 
-  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, vortragRows, trolleyRows, trolleyTerminRows, planRows, planEintragRows] = await Promise.all([
+  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, linkRows, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, vortragRows, trolleyRows, trolleyTerminRows, planRows, planEintragRows] = await Promise.all([
     supabase.from('congregations').select(CONG_SPALTEN.join(', ')).eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
@@ -650,9 +661,9 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
         .order('user_id')
         .range(von, bis),
     ),
-    // Nicht-Planer sehen per RLS nur die eigene Zeile bzw. keine Einladungen
+    // Nicht-Admins sehen per RLS nur die eigene Zeile bzw. keine Anmelde-Links
     supabase.from('members').select('user_id, person_id, planner, zuteiler, email').eq('congregation_id', congregationId).order('created_at'),
-    supabase.from('invites').select('id, code, person_id, planner, zuteiler').eq('congregation_id', congregationId).is('redeemed_by', null).order('created_at'),
+    supabase.from('anmelde_links').select(ANMELDE_LINK_SPALTEN).eq('congregation_id', congregationId),
     supabase.from('fs_rules').select('*').eq('congregation_id', congregationId).order('created_at'),
     fsWochenAbfrage,
     // Versand-Tagebuch: welcher Platz wurde wann gemeldet. Der
@@ -755,9 +766,12 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // Datenbank, in der `schema.sql` seitdem nicht neu lief, hat sie noch nicht.
   // Die App bleibt dann benutzbar, nur ohne Besuche — gespeichert werden
   // können sie erst nach dem Schema (dann meldet der Schreibfehler-Toast).
-  const firstErr = [cong, persons, services, groups, weeks, absences, notifs, confs, members, invites, fsRulesRows, fsWeeksRows]
+  const firstErr = [cong, persons, services, groups, weeks, absences, notifs, confs, members, fsRulesRows, fsWeeksRows]
     .find((r) => r.error)?.error
   if (firstErr) return { ok: false, reason: 'error', message: firstErr.message }
+  // Ohne die Links fehlt nur der Stand der Anmeldung an den Personen — kein
+  // Grund, dem Admin die ganze App zu verweigern.
+  if (linkRows.error) console.error('[anmelde_links]', linkRows.error.message)
   if (sentLogRows.error) console.error('[assignment_log]', sentLogRows.error.message)
   const tagebuch = sentLogRows.data
   if (besuchRows.error) console.error('[gruppenbesuche]', besuchRows.error.message)
@@ -888,13 +902,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       planner: r.planner,
       zuteiler: r.zuteiler,
     })),
-    invites: ((invites.data ?? []) as InviteRow[]).map((r) => ({
-      id: r.id,
-      code: r.code,
-      personId: r.person_id,
-      planner: r.planner,
-      zuteiler: r.zuteiler,
-    })),
+    anmeldeLinks: ((linkRows.data ?? []) as AnmeldeLinkRow[]).map(anmeldeLinkAusZeile),
     sentLog: Object.fromEntries(tagebuch.map((r) => [sentKey(r.task_key, r.name), r.sent_at])),
     persoenlich: Object.fromEntries(
       tagebuch.filter((r) => r.user_id === null).map((r) => [sentKey(r.task_key, r.name), r.persoenlich_at]),
@@ -1957,7 +1965,7 @@ export function deleteConfirmationRows(congregationId: string, taskKeys: string[
   )
 }
 
-/* ---- Mitglieder & Einladungen (nur Planer, RLS-geschützt) ---------------- */
+/* ---- Mitglieder & Anmelde-Links (nur Admins, RLS-geschützt) -------------- */
 
 export function saveMemberRow(member: Member): void {
   if (!supabase) return
@@ -1974,51 +1982,11 @@ export function deleteMemberRow(userId: string): void {
   void run(supabase.from('members').delete().eq('user_id', userId))
 }
 
-/** Rechte eines offenen Codes nachziehen (das vorgemerkte Recht der Person hat sich geändert). */
-export function saveInviteRechte(invite: Invite): void {
-  if (!supabase) return
-  void run(supabase.from('invites').update({ planner: invite.planner, zuteiler: invite.zuteiler }).eq('id', invite.id))
-}
-
-export function saveInvite(congregationId: string, invite: Invite): void {
-  if (!supabase) return
-  void run(
-    supabase.from('invites').insert({
-      id: invite.id,
-      congregation_id: congregationId,
-      code: invite.code,
-      person_id: invite.personId,
-      planner: invite.planner,
-      zuteiler: invite.zuteiler,
-    }),
-  )
-}
-
-export function deleteInviteRow(id: string): void {
-  if (!supabase) return
-  void run(supabase.from('invites').delete().eq('id', id))
-}
-
 /**
- * Einladungscode einlösen (redeem_invite, security definer). Liefert null bei
- * Erfolg, sonst den Fehlercode 'already-member' | 'invalid-code' | Meldung.
+ * Den Anmelde-Link einer Person zurückziehen — Link und Zettel melden danach
+ * niemanden mehr an. Ausgestellt wird er nur von der Function `send-invite`.
  */
-export async function redeemInvite(code: string): Promise<string | null> {
-  if (!supabase) return 'invalid-code'
-  // Leerer/nur-Leerzeichen-Code gar nicht erst an den Server schicken.
-  if (!code.trim()) return 'invalid-code'
-  const { data, error } = await supabase.rpc('redeem_invite', { invite_code: code })
-  if (error) return error.message
-  return (data as string | null) ?? null
-}
-
-/**
- * Gut lesbarer Einladungscode: 8 Zeichen ohne 0/O/1/I (32er-Alphabet). Da 32
- * die 256 möglichen Byte-Werte glatt teilt, ist die Verteilung ohne Modulo-Bias.
- */
-export function generateInviteCode(): string {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  const bytes = new Uint8Array(8)
-  crypto.getRandomValues(bytes)
-  return [...bytes].map((b) => alphabet[b % alphabet.length]).join('')
+export function deleteAnmeldeLink(personId: string): void {
+  if (!supabase) return
+  void run(supabase.from('anmelde_links').delete().eq('person_id', personId))
 }

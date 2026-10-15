@@ -5,7 +5,7 @@
 // App-Wörterbuch (`linkMailBetreff` / `linkMailText` in `src/i18n/de.ts` und den
 // Overlays) — dieselbe E-Mail, die der Admin aus seinem eigenen Mail-Programm
 // schickt, solange die App selbst keine senden kann. Ein Test hält beide
-// Fassungen zusammen (`_test/anmelde-texte.test.ts`).
+// Fassungen zusammen (`_test/anmeldung.test.ts`).
 //
 // Zwei Functions schicken sie: `send-invite` (der Admin stellt Links aus) und
 // `anmelden` (Selbstbedienung auf der Anmeldeseite, „Link senden"). Die

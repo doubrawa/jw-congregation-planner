@@ -14,7 +14,7 @@ import { alleS89DerWoche } from '../data/planning'
 import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 import type { PartItem } from '../data/types'
 import { S89Bogen } from './S89Bogen'
-import { seiten } from './s89-seiten'
+import { seiten } from '../components/druck-seiten'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
 
 /**

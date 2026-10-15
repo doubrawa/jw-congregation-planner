@@ -68,7 +68,7 @@ function ladung(weeks: Week[]): HydratePayload {
     progLangs: [],
     auxClass: false,
     members: [],
-    invites: [],
+    anmeldeLinks: [],
   }
 }
 

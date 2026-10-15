@@ -424,7 +424,7 @@
   font-weight: 600;
 }
 
-/* Die eine Handlung einer Karte, die weiterführt („Einladen"): Rand und Wort in Minze. */
+/* Die eine Handlung einer Karte, die weiterführt („Link senden"): Rand und Wort in Minze. */
 .knopf-pille--akzent {
   border-color: var(--akzent-text);
   color: var(--akzent-text);

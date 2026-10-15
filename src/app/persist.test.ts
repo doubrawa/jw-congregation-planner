@@ -39,7 +39,7 @@ vi.mock('../lib/data', async (importActual) => ({
   deleteGroupRow: vi.fn(),
   deleteHouseholdRow: vi.fn(),
   deletePersonRow: vi.fn(),
-  deleteInviteRow: vi.fn(),
+  deleteAnmeldeLink: vi.fn(),
   deleteMemberRow: vi.fn(),
   deleteServiceRow: vi.fn(),
   markNotificationRead: vi.fn(),
@@ -55,8 +55,6 @@ vi.mock('../lib/data', async (importActual) => ({
   saveVortraege: vi.fn(),
   saveFsWeek: vi.fn(),
   saveGroupRow: vi.fn(),
-  saveInvite: vi.fn(),
-  saveInviteRechte: vi.fn(),
   saveMemberRow: vi.fn(),
   savePerson: vi.fn(),
   savePersonGroup: vi.fn(),
@@ -98,7 +96,7 @@ function st(over: Partial<AppState> = {}): AppState {
     persons: [...DEMO_PERSONS],
     groups: [],
     members: [],
-    invites: [],
+    anmeldeLinks: [],
     notifs: [],
     absences: [],
     slotSel: null,
@@ -993,26 +991,22 @@ describe('Personen (inkl. Debounce)', () => {
     expect(data.savePerson).toHaveBeenCalledTimes(1)
   })
 
-  it('updatePerson mit Planer-Recht spiegelt Konten/Codes sofort', () => {
+  it('updatePerson mit Admin-Recht spiegelt die Konten sofort', () => {
     const p = DEMO_PERSONS[0]
     const next = st({
       members: [{ userId: 'm1', email: '', personId: p.id, planner: true, zuteiler: false }, { userId: 'u1', email: '', personId: p.id, planner: true, zuteiler: false }],
-      invites: [{ id: 'i1', code: 'A', personId: p.id, planner: true, zuteiler: false }],
     })
     persist(st(), next, { type: 'updatePerson', id: p.id, patch: { plannerVorgemerkt: true } })
     expect(data.saveMemberRow).toHaveBeenCalledTimes(1) // eigenes Konto (u1) ausgenommen
-    expect(data.saveInviteRechte).toHaveBeenCalledWith(next.invites[0]!)
   })
 
   it('updatePerson mit Planer-Recht (zuteiler) spiegelt ebenso — dieselbe Zeile, beide Rechte', () => {
     const p = DEMO_PERSONS[0]!
     const next = st({
       members: [{ userId: 'm1', email: '', personId: p.id, planner: false, zuteiler: true }],
-      invites: [{ id: 'i1', code: 'A', personId: p.id, planner: false, zuteiler: true }],
     })
     persist(st(), next, { type: 'updatePerson', id: p.id, patch: { zuteilerVorgemerkt: true } })
     expect(data.saveMemberRow).toHaveBeenCalledWith(next.members[0]!)
-    expect(data.saveInviteRechte).toHaveBeenCalledWith(next.invites[0]!)
   })
 
   it('Verlassen der Ansicht holt die gebündelten Saves sofort nach', () => {
@@ -1591,17 +1585,32 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     for (const w of geaendert) expect(data.saveWeek).toHaveBeenCalledWith('c1', w, false)
   })
 
-  it('updateMember / removeMember / addInvite / removeInvite', () => {
+  it('updateMember / removeMember', () => {
     const m = { userId: 'm1', email: '', personId: null, planner: true, zuteiler: false }
     persist(st({ members: [m] }), st({ members: [m] }), { type: 'updateMember', userId: 'm1', patch: { planner: true } })
     expect(data.saveMemberRow).toHaveBeenCalledWith(m)
     persist(st(), st(), { type: 'removeMember', userId: 'm1' })
     expect(data.deleteMemberRow).toHaveBeenCalledWith('m1')
-    const inv = { id: 'i1', code: 'A', personId: null, planner: false, zuteiler: false }
-    persist(st(), st(), { type: 'addInvite', invite: inv })
-    expect(data.saveInvite).toHaveBeenCalledWith('c1', inv)
-    persist(st(), st(), { type: 'removeInvite', id: 'i1' })
-    expect(data.deleteInviteRow).toHaveBeenCalledWith('i1')
+  })
+
+  it('mit dem Konto geht der Link der Person — sonst käme sie mit ihm gleich wieder herein', () => {
+    const m = { userId: 'm1', email: '', personId: 'p-a', planner: false, zuteiler: false }
+    persist(st({ members: [m] }), st(), { type: 'removeMember', userId: 'm1' })
+    expect(data.deleteMemberRow).toHaveBeenCalledWith('m1')
+    expect(data.deleteAnmeldeLink).toHaveBeenCalledWith('p-a')
+  })
+
+  it('ein Konto ohne Person hat keinen Link zu löschen', () => {
+    const m = { userId: 'm1', email: '', personId: null, planner: false, zuteiler: false }
+    persist(st({ members: [m] }), st(), { type: 'removeMember', userId: 'm1' })
+    expect(data.deleteAnmeldeLink).not.toHaveBeenCalled()
+  })
+
+  it('ausgestellte Links schreibt die Function selbst — hier geht nichts hinaus', () => {
+    const link = { personId: 'p-a', gueltigBis: '2026-10-07T09:00:00.000Z', erstelltAt: '2026-09-07T09:00:00.000Z', gesendetAt: null, benutztAt: null }
+    persist(st(), st({ anmeldeLinks: [link] }), { type: 'linksAusgestellt', links: [link] })
+    expect(data.deleteAnmeldeLink).not.toHaveBeenCalled()
+    expect(data.saveMemberRow).not.toHaveBeenCalled()
   })
 })
 
@@ -2025,11 +2034,12 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
    * Aktionen, die einen dauerhaften Teil setzen und trotzdem keinen Schreibweg
    * brauchen — alle, weil sie **gelesene** Daten einsetzen statt neue zu
    * erzeugen: Laden und Glocke aus der Datenbank, ein Trolley-Termin (T121) aus
-   * der Antwort der Function `trolley`, die schon geschrieben hat. Das Entfernen
+   * der Antwort der Function `trolley`, die schon geschrieben hat, ebenso die
+   * Anmelde-Links aus der Antwort von `send-invite` (Phase 8). Das Entfernen
    * eines Trolleys steht seit dem 15.10.2026 nicht mehr hier: Es räumt ein
    * wartendes Schreiben ab (`persist.ts`).
    */
-  const AUS_DER_DATENBANK = new Set(['hydrate', 'setNotifs', 'trolleyTermin'])
+  const AUS_DER_DATENBANK = new Set(['hydrate', 'setNotifs', 'trolleyTermin', 'linksAusgestellt'])
 
   const faelle = (): Array<[string, string]> => reducerFaelle(roh(REDUCER))
 

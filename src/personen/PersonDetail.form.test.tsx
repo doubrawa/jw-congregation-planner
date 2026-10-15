@@ -29,15 +29,16 @@ import { PersonDetail } from './PersonDetail'
  * - **Aufgabenbereiche** als Chips, geändert im Blatt — dort mit einem Schalter
  *   für jeden Bereich. Fehlt einer, lässt sich die Qualifikation nirgends
  *   setzen, und der zugehörige Platz bleibt für immer offen.
- * - **Entfernen mit zwei Tipps**: Es löst Gruppen-, Konto- und
- *   Code-Verknüpfungen und ist nicht rückgängig zu machen.
+ * - **Entfernen mit zwei Tipps**: Es löst Gruppen- und Konto-Verknüpfungen,
+ *   nimmt den Anmelde-Link mit und ist nicht rückgängig zu machen.
  * - Die **Familie** ist symmetrisch und darf niemanden doppelt anbieten — auch
  *   die Person selbst nicht.
  */
 
 vi.mock('../lib/clipboard', () => ({ copyText: vi.fn(() => Promise.resolve(true)) }))
-vi.mock('../lib/invite', () => ({
-  sendInviteMails: vi.fn(() => Promise.resolve({ ok: true, sent: 0, skipped: 0, notConfigured: false })),
+vi.mock('../lib/links-ausstellen', () => ({
+  linksAusstellen: vi.fn(() => Promise.resolve({ links: [], mailBereit: true, fehler: false })),
+  alsAnmeldeLink: vi.fn(),
 }))
 
 const t = dict('de')
@@ -64,7 +65,7 @@ function zeige(p: Person, over: Partial<AppState> = {}, spalte = false) {
     screen: 'personen', dataStatus: 'ready',
     congregationId: 'c1', userId: 'u1', planner: true,
     persons: [p, BRAND, COHN], groups: GRUPPEN, services: DIENSTE,
-    members: [], invites: [], weeks: [], fsWeeks: [], absences: [],
+    members: [], anmeldeLinks: [], weeks: [], fsWeeks: [], absences: [],
     ...over,
   }
   function Buehne() {

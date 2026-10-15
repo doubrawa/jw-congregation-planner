@@ -1541,11 +1541,11 @@ export const KATALOG = [
     ersetzen: 'return ziel.href',
   },
   {
-    id: 'einladungsmail-adresse-kodiert',
-    datei: 'src/personen/invite-helpers.ts',
+    id: 'linkmail-adresse-kodiert',
+    datei: 'src/personen/link-mail.ts',
     regel: 'Die Empfängeradresse wird kodiert — ein ? darin hängt sonst eigene Kopfzeilen an den Entwurf.',
-    suchen: "const an = encodeURIComponent(person.mail).replace(/%40/g, '@')",
-    ersetzen: 'const an = person.mail',
+    suchen: "  const an = encodeURIComponent(person.mail.trim()).replace(/%40/g, '@')",
+    ersetzen: '  const an = person.mail.trim()',
   },
 
   // ── Das Schema selbst (T97) ───────────────────────────────────────────────
@@ -1966,6 +1966,153 @@ export const KATALOG = [
     regel: 'Geht die Kamera nicht auf, sagt der Scanner es.',
     suchen: '        if (!aus) setKameraFehlt(true)\n',
     ersetzen: '',
+  },
+  {
+    id: 'send-invite-ohne-versand-nichts',
+    datei: 'supabase/functions/send-invite/index.ts',
+    regel: 'Kann der Server nicht senden, stellt er auf „senden" hin nichts aus — sonst verfielen die alten Links still.',
+    suchen: '    if (senden && !bereit) return json({ links: [], mailBereit: false })\n',
+    ersetzen: '',
+  },
+  {
+    id: 'links-in-teilen',
+    datei: 'src/lib/links-ausstellen.ts',
+    regel: 'Viele Personen gehen in Teilen hinaus — die Function liefe sonst an ihre Zeitgrenze.',
+    suchen: 'const JE_AUFRUF = 40\n',
+    ersetzen: 'const JE_AUFRUF = 1000\n',
+  },
+  {
+    id: 'links-ohne-versand-aufhoeren',
+    datei: 'src/lib/links-ausstellen.ts',
+    regel: 'Kann der Server nicht senden, fragt die App nicht Teil für Teil weiter.',
+    suchen: '    if (senden && !ergebnis.mailBereit) break\n',
+    ersetzen: '',
+  },
+  {
+    id: 'links-fehler-behaelt-ausgestellte',
+    datei: 'src/lib/links-ausstellen.ts',
+    regel: 'Scheitert ein Teil, bleiben die schon ausgestellten Links — sonst wüsste der Zustand nichts von ihnen.',
+    suchen: '      return { ...ergebnis, fehler: true }\n',
+    ersetzen: '      return { links: [], mailBereit: ergebnis.mailBereit, fehler: true }\n',
+  },
+  {
+    id: 'link-ersetzt-alten-im-zustand',
+    datei: 'src/app/reducer.ts',
+    regel: 'Ein neuer Link ersetzt im Zustand den alten derselben Person.',
+    suchen: '      return { ...state, anmeldeLinks: [...state.anmeldeLinks.filter((l) => !neu.has(l.personId)), ...action.links] }\n',
+    ersetzen: '      return { ...state, anmeldeLinks: [...state.anmeldeLinks, ...action.links] }\n',
+  },
+  {
+    id: 'konto-weg-link-weg',
+    datei: 'src/app/reducer.ts',
+    regel: 'Mit dem Konto geht der Link der Person aus dem Zustand.',
+    suchen: '        anmeldeLinks: personId ? state.anmeldeLinks.filter((l) => l.personId !== personId) : state.anmeldeLinks,\n',
+    ersetzen: '',
+  },
+  {
+    id: 'konto-weg-link-weg-db',
+    datei: 'src/app/persist.ts',
+    regel: 'Mit dem Konto löscht die App den Link der Person — sonst käme sie mit ihm gleich wieder herein.',
+    suchen: '      if (personId) deleteAnmeldeLink(personId)\n',
+    ersetzen: '',
+  },
+  {
+    id: 'person-weg-link-weg',
+    datei: 'src/app/reducer.ts',
+    regel: 'Mit der Person geht ihr Link aus dem Zustand (wie in der Datenbank: on delete cascade).',
+    suchen: '    anmeldeLinks: state.anmeldeLinks.filter((l) => l.personId !== id),\n',
+    ersetzen: '',
+  },
+  {
+    id: 'links-laden-ausdruecklich',
+    datei: 'src/lib/data.ts',
+    regel: 'Die Links kommen mit ausdrücklichen Spalten — die Prüfsummen darf die App nicht lesen.',
+    suchen: "const ANMELDE_LINK_SPALTEN = 'person_id, gueltig_bis, erstellt_at, gesendet_at, benutzt_at'",
+    ersetzen: "const ANMELDE_LINK_SPALTEN = '*'",
+  },
+  {
+    id: 'links-laden-nicht-fatal',
+    datei: 'src/lib/data.ts',
+    regel: 'Scheitern die Links, lädt die App trotzdem.',
+    suchen: '  const firstErr = [cong, persons, services, groups, weeks, absences, notifs, confs, members, fsRulesRows, fsWeeksRows]\n',
+    ersetzen: '  const firstErr = [cong, persons, services, groups, weeks, absences, notifs, confs, members, linkRows, fsRulesRows, fsWeeksRows]\n',
+  },
+  {
+    id: 'link-abgelaufen-wie-keiner',
+    datei: 'src/personen/person-lage.ts',
+    regel: 'Ein abgelaufener Link zählt wie keiner.',
+    suchen: '  return link.gueltigBis > heute\n',
+    ersetzen: '  return true\n',
+  },
+  {
+    id: 'link-senden-mailprogramm',
+    datei: 'src/personen/LinkSendenBlatt.tsx',
+    regel: 'Kann der Server nicht senden, öffnet sich dieselbe E-Mail im eigenen Mail-Programm.',
+    suchen: '      if (ohneVersand) r = await linksAusstellen([person.id], { senden: false, lang })\n',
+    ersetzen: '',
+  },
+  {
+    id: 'link-senden-offline',
+    datei: 'src/personen/LinkSendenBlatt.tsx',
+    regel: 'Offline sendet die Konto-Karte keinen Link.',
+    suchen: "    if (state.staleAt) {\n      dispatch({ type: 'showToast', text: t.offlineReadOnly })\n      return\n    }\n    setLaeuft(true)\n    try {\n      const lang",
+    ersetzen: '    setLaeuft(true)\n    try {\n      const lang',
+  },
+  {
+    id: 'zettel-ohne-versand',
+    datei: 'src/personen/useZettelDruck.tsx',
+    regel: '„Zettel drucken" stellt Links ohne Versand aus.',
+    suchen: '        { senden: false, lang },\n',
+    ersetzen: '        { senden: true, lang },\n',
+  },
+  {
+    id: 'zettel-bogen-weg-nach-druck',
+    datei: 'src/personen/useZettelDruck.tsx',
+    regel: 'Nach dem Druckdialog verschwindet der Bogen — die Codes darauf melden an.',
+    suchen: '      delete document.documentElement.dataset.print\n      setSatz(null)\n',
+    ersetzen: '      delete document.documentElement.dataset.print\n',
+  },
+  {
+    id: 'zettel-offline',
+    datei: 'src/personen/useZettelDruck.tsx',
+    regel: 'Offline druckt die App keine Zettel.',
+    suchen: "    if (state.staleAt) {\n      dispatch({ type: 'showToast', text: t.offlineReadOnly })\n      return\n    }\n",
+    ersetzen: '',
+  },
+  {
+    id: 'links-senden-nur-mit-adresse',
+    datei: 'src/personen/LinksSendenBlatt.tsx',
+    regel: '„Links senden" schickt nur an die mit Adresse — die übrigen bekommen den Zettel.',
+    suchen: '  const perMail = personen.filter((p) => p.mail.trim())\n',
+    ersetzen: '  const perMail = personen\n',
+  },
+  {
+    id: 'links-senden-nicht-bereit',
+    datei: 'src/personen/LinksSendenBlatt.tsx',
+    regel: 'Kann die App nicht senden, sagt „Links senden" es.',
+    suchen: "      if (!r.fehler && !r.mailBereit) {\n        dispatch({ type: 'showToast', text: t.mailNichtBereit })\n        return\n      }\n",
+    ersetzen: '',
+  },
+  {
+    id: 'links-senden-offline',
+    datei: 'src/personen/LinksSendenBlatt.tsx',
+    regel: 'Offline schickt „Links senden" nichts.',
+    suchen: "    if (state.staleAt) {\n      dispatch({ type: 'showToast', text: t.offlineReadOnly })\n      return\n    }\n",
+    ersetzen: '',
+  },
+  {
+    id: 'zugang-genau-eine-person',
+    datei: 'scripts/zugang-ausstellen.mjs',
+    regel: 'Der Notzugang stellt nur aus, wenn der Name genau eine Person trifft — er rät nicht.',
+    suchen: '  if (treffer.length === 1) return treffer[0]\n',
+    ersetzen: '  if (treffer.length >= 1) return treffer[0]\n',
+  },
+  {
+    id: 'qr-pfad-laeufe',
+    datei: 'src/personen/zettel-satz.ts',
+    regel: 'Der QR-Code des Zettels trägt genau die Module von uqr — ein Lauf ist so breit, wie er ist.',
+    suchen: '      pfad += `M${von} ${y}h${x - von + 1}v1h-${x - von + 1}z`\n',
+    ersetzen: '      pfad += `M${von} ${y}h1v1h-1z`\n',
   },
   {
     id: 'laden-wartet-auf-schreiben',
@@ -4288,16 +4435,10 @@ export const KATALOG = [
   },
   {
     id: 'warnung-name-oeffnet-sein-detail',
-    datei: 'src/personen/PersonenScreen.tsx',
+    datei: 'src/personen/NamenKnoepfe.tsx',
     regel: 'Ein Tipp auf einen Namen in einem Hinweis öffnet genau diese Person, nicht die erste.',
-    suchen:
-      '          className="personen-name-knopf"\n' +
-      '          dir="auto"\n' +
-      "          onClick={() => dispatch({ type: 'selectPerson', id: person.id })}\n",
-    ersetzen:
-      '          className="personen-name-knopf"\n' +
-      '          dir="auto"\n' +
-      "          onClick={() => dispatch({ type: 'selectPerson', id: personen[0]!.id })}\n",
+    suchen: "            dispatch({ type: 'selectPerson', id: person.id })\n",
+    ersetzen: "            dispatch({ type: 'selectPerson', id: personen[0]!.id })\n",
   },
   {
     id: 'feste-rollen-im-filter',
@@ -5167,11 +5308,11 @@ export const KATALOG = [
 
   /* ---- T121 Phase 6a: Personenliste und „Person anlegen" ---- */
   {
-    id: 'personen-konto-schlaegt-code',
+    id: 'personen-konto-schlaegt-link',
     datei: 'src/personen/person-lage.ts',
-    regel: 'Angemeldet ist, wer ein verknüpftes Konto hat — auch wenn noch ein Code offen ist.',
-    suchen: "        stand: konten.length > 0 ? 'angemeldet' : eingeladen.has(person.id) ? 'eingeladen' : 'ohne',",
-    ersetzen: "        stand: eingeladen.has(person.id) ? 'eingeladen' : konten.length > 0 ? 'angemeldet' : 'ohne',",
+    regel: 'Angemeldet ist, wer ein verknüpftes Konto hat — auch wenn sein Link noch gilt.',
+    suchen: "        stand: konten.length > 0 ? 'angemeldet' : mitLink.has(person.id) ? 'link' : 'ohne',",
+    ersetzen: "        stand: mitLink.has(person.id) ? 'link' : konten.length > 0 ? 'angemeldet' : 'ohne',",
   },
   {
     id: 'personen-heute-abwesend',
@@ -5202,12 +5343,11 @@ export const KATALOG = [
     ersetzen: '      {angemeldet && sichtbar.length > 0 && (',
   },
   {
-    id: 'personen-einladen-was-die-liste-zeigt',
+    id: 'personen-links-was-die-liste-zeigt',
     datei: 'src/personen/PersonenScreen.tsx',
-    regel: '„Alle einladen" lädt genau die ein, die die Liste zeigt — die Suche grenzt mit ein.',
-    suchen: '        <AlleEinladen personen={sichtbar.map((e) => e.person)} />',
-    ersetzen:
-      "        <AlleEinladen personen={eintraege.filter((e) => e.lage.stand === 'ohne').map((e) => e.person)} />",
+    regel: '„Links senden" geht genau an die, die die Liste zeigt — die Suche grenzt mit ein.',
+    suchen: '          personen={sichtbar.map((e) => e.person)}',
+    ersetzen: "          personen={eintraege.filter((e) => e.lage.stand === 'ohne').map((e) => e.person)}",
   },
   {
     id: 'personen-angemeldet-mit-rolle',
@@ -5275,11 +5415,11 @@ export const KATALOG = [
     ersetzen: '      bereiche: fest(QUALIFICATION_ORDER).sort(nachLabel),',
   },
   {
-    id: 'konto-spur-eingeladen',
+    id: 'konto-spur-link',
     datei: 'src/personen/KontoCard.tsx',
-    regel: 'Ein offener Code macht den Schritt „Eingeladen" voll — als Nächstes steht das Anmelden.',
-    suchen: "    { name: t.standEingeladen, lage: member || invite ? 'voll' : 'jetzt' },",
-    ersetzen: "    { name: t.standEingeladen, lage: member ? 'voll' : 'jetzt' },",
+    regel: 'Ein gültiger Link macht den Schritt „Link gesendet" voll — als Nächstes steht das Anmelden.',
+    suchen: "lage: member || offen ? 'voll' : 'jetzt' },",
+    ersetzen: "lage: member ? 'voll' : 'jetzt' },",
   },
   {
     id: 'auslastung-bis-zur-laufenden-woche',

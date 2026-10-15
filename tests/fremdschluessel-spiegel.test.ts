@@ -87,7 +87,16 @@ const SPIEGEL: Record<string, Spiegel> = {
     // Abwesenheit ohne Person gehört niemandem und käme bei jedem Laden wieder.
     gruendlicher: 'eine Abwesenheit ohne Person gehört niemandem (T118)',
   },
-  invites: { feld: 'invites', spalten: { person_id: 'personId' }, basis: { id: 'zz', code: 'Z', personId: null, planner: false } },
+  // Die Kennung eines Links ist die Person selbst (eine Zeile je Person) —
+  // erkannt wird die Zeile deshalb an einem anderen Feld. An `personId` fände
+  // die Probe sie nach dem Löschen nie wieder und hielte jede Kaskade für
+  // gespiegelt.
+  anmelde_links: {
+    feld: 'anmeldeLinks',
+    spalten: { person_id: 'personId' },
+    basis: { personId: null, gueltigBis: '2026-10-07T09:00:00.000Z', erstelltAt: 'zz', gesendetAt: null, benutztAt: null },
+    schluessel: 'erstelltAt',
+  },
   fs_rules: {
     feld: 'fsRules',
     spalten: { grp: 'grp' },
@@ -120,7 +129,7 @@ const SPIEGEL: Record<string, Spiegel> = {
 /** Tabellen mit Verweis, die im Zustand keinen Spiegel haben — mit Grund. */
 const OHNE_SPIEGEL: Record<string, string> = {
   assignment_log: 'Das Versand-Tagebuch steht im Zustand nur als `sentLog` (Schlüssel und Name → Zeitpunkt), ohne Person.',
-  anmelde_links: 'Die Anmelde-Links (T121, Phase 8) lädt die App noch nicht — sie kommen mit der Konto-Karte in den Zustand (Phase 8c).',
+  invites: 'Die Einladungscodes lädt die App seit dem Anmelden per Link nicht mehr (T121, Phase 8c); die Tabelle fällt mit der Umstellung weg (8d).',
 }
 
 const FK = fremdschluessel()

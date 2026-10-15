@@ -20,7 +20,11 @@
 // 401 { error: 'unauthorized' } · 403 { error: 'forbidden' } · 400 { error: 'bad-request' }
 //
 // Secrets: RESEND_API_KEY und INVITE_FROM (verifizierte Domain) — fehlt eins,
-// geht keine Mail hinaus (`mailBereit: false`), Links gibt es trotzdem.
+// geht keine Mail hinaus (`mailBereit: false`). **Wer dann senden will, dem
+// stellt die Function nichts aus** (`links: []`): Sonst ersetzten neue Links
+// die alten, und keiner käme an — bei „Links senden" für alle auf einmal still
+// die ganze Versammlung. Für Zettel und das eigene Mail-Programm fragt der
+// Client mit `senden: false`.
 // =============================================================================
 
 import { alsGesendet, linkAusstellen } from '../_shared/anmelde-links.ts'
@@ -66,6 +70,8 @@ Deno.serve(async (req: Request) => {
     const senden = payload?.senden === true
     const lang = typeof payload?.lang === 'string' ? payload.lang : null
     const cong = member.congregation_id
+    const bereit = mailBereit(MAIL)
+    if (senden && !bereit) return json({ links: [], mailBereit: false })
 
     const [persons, versammlung] = await Promise.all([
       rest.get<{ id: string; fn: string; mail: string }[]>(
@@ -75,7 +81,6 @@ Deno.serve(async (req: Request) => {
     ])
     const personById = new Map(persons.map((p) => [p.id, p]))
     const versammlungName = versammlung[0]?.name ?? ''
-    const bereit = mailBereit(MAIL)
 
     const links: Array<{ personId: string; url: string; zettelUrl: string; code: string; gueltigBis: string; gesendet: boolean }> = []
     let ersteMail = true
@@ -88,7 +93,7 @@ Deno.serve(async (req: Request) => {
       const url = anmeldeUrl(APP_URL, neu.token)
       let gesendet = false
       const adresse = person.mail.trim()
-      if (senden && bereit && adresse) {
+      if (senden && adresse) {
         if (!ersteMail) await pause(MAIL_ABSTAND_MS)
         ersteMail = false
         const mail = linkMail(lang, { name: person.fn, versammlung: versammlungName, url, gueltigBis: neu.gueltigBis })

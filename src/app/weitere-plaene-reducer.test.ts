@@ -169,7 +169,7 @@ describe('Das dritte Thema', () => {
         progLangs: [],
         auxClass: false,
         members: [],
-        invites: [],
+        anmeldeLinks: [],
       },
     })
     expect(nachgeladen.tab).toBe('wp')

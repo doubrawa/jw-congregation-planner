@@ -408,9 +408,9 @@ export interface Person {
   /**
    * **Vormerkung** des Planer-Rechts, nicht das Recht selbst.
    *
-   * Sie wandert beim Einladen in den Code (`Invite.planner`) und von dort in
-   * das Konto (`Member.planner`), damit jemand das Recht schon bei der ersten
-   * Anmeldung hat. Wirksam ist allein `Member.planner` — daran hängt
+   * Bei der ersten Anmeldung übernimmt sie die Function `anmelden` in das
+   * Konto (`Member.planner`), damit jemand das Recht gleich hat. Wirksam ist
+   * allein `Member.planner` — daran hängt
    * `is_planner()` in der Datenbank und `state.planner` in der App; der
    * Schalter im Personen-Detail zeigt deshalb das Konto an, sobald es eines
    * gibt (PlannerToggle).
@@ -424,7 +424,7 @@ export interface Person {
   plannerVorgemerkt?: boolean
   /**
    * Vormerkung des **Planer**-Rechts (4.10.2026) — derselbe Weg wie beim
-   * Admin: Code (`Invite.zuteiler`), dann Konto (`Member.zuteiler`).
+   * Admin: bei der ersten Anmeldung ins Konto (`Member.zuteiler`).
    */
   zuteilerVorgemerkt?: boolean
 }
@@ -894,7 +894,7 @@ export interface Absence {
   reason: string // optional
 }
 
-/* ---- Mitglieder & Einladungen (Produktionsmodus) ---- */
+/* ---- Mitglieder & Anmelde-Links (Produktionsmodus) ---- */
 
 /**
  * Ein Konto der Versammlung (Konto ↔ Person); die Liste aller sieht nur der
@@ -914,13 +914,24 @@ export interface Member {
   zuteiler: boolean
 }
 
-/** Offener Einladungscode (nur Admins sichtbar). */
-export interface Invite {
-  id: string
-  code: string
-  personId: string | null
-  planner: boolean
-  zuteiler: boolean
+/**
+ * **Der Anmelde-Link einer Person** (T121, Phase 8; nur Admins sehen ihn) —
+ * was die App davon weiß: wann er ausgestellt wurde, bis wann er gilt, ob er
+ * per E-Mail hinausging und ob schon jemand damit hereinkam. Link und Code
+ * selbst kennt nur, wer sie bekam: In der Datenbank stehen sie als Prüfsumme,
+ * und die liest die App nicht (Spaltenrechte).
+ *
+ * Eine Zeile je Person — ein neuer Link ersetzt den alten samt Zettel.
+ */
+export interface AnmeldeLink {
+  personId: string
+  /** ISO-Zeitpunkt; danach meldet er niemanden mehr an. */
+  gueltigBis: string
+  erstelltAt: string
+  /** Wann die E-Mail damit hinausging — `null`: nur ausgestellt (Zettel, eigenes Mail-Programm). */
+  gesendetAt: string | null
+  /** Wann zuletzt jemand damit hereinkam. */
+  benutztAt: string | null
 }
 
 /* ---- Persönliche Aufgaben & Bestätigungs-Flow ---- */

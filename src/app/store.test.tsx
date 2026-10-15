@@ -44,7 +44,7 @@ const payload: HydratePayload = {
   congLang: 'de',
   progLangs: [],
   members: [],
-  invites: [],
+  anmeldeLinks: [],
   auxClass: false,
 }
 

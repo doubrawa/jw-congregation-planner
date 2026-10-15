@@ -330,9 +330,17 @@ describe('send-invite: ohne eingerichteten Versand', () => {
   it.each([
     ['INVITE_FROM fehlt', { INVITE_FROM: '' }],
     ['RESEND_API_KEY fehlt', { RESEND_API_KEY: '' }],
-  ])('%s → Links ja, Mails nein, mailBereit: false', async (_fall, env) => {
+  ])('%s → wer senden will, dem wird nichts ausgestellt: Der alte Link gilt weiter', async (_fall, env) => {
     const r = await call(fuerAnna, { env })
     expect(r.status).toBe(200)
+    expect(r.body.mailBereit).toBe(false)
+    expect(r.body.links).toEqual([])
+    expect(geschriebeneLinks()).toEqual([])
+    expect(mails).toEqual([])
+  })
+
+  it('für den Zettel und das eigene Mail-Programm („senden: false") gibt es den Link trotzdem', async () => {
+    const r = await call({ ...fuerAnna, senden: false }, { env: { INVITE_FROM: '' } })
     expect(r.body.mailBereit).toBe(false)
     expect(r.body.links?.[0]?.url).toContain('#anmelden=')
     expect(mails).toEqual([])

@@ -132,24 +132,24 @@ describe('Filterfelder', () => {
  * ein Stand der Anmeldung, „Noch nicht angemeldet" oder wer heute fehlt.
  */
 describe('Auswahl', () => {
-  const lage = (stand: 'angemeldet' | 'eingeladen' | 'ohne', abwesend = false) => ({
+  const lage = (stand: 'angemeldet' | 'link' | 'ohne', abwesend = false) => ({
     stand,
     abwesenheit: abwesend ? { id: 'a', personId: 'x', userId: null, from: '2026-09-01', to: '2026-09-09', reason: '' } : undefined,
     rechte: { admin: false, planer: false },
   })
 
   it('leer heißt alle', () => {
-    for (const s of ['angemeldet', 'eingeladen', 'ohne'] as const) expect(passtZurAuswahl('', lage(s))).toBe(true)
+    for (const s of ['angemeldet', 'link', 'ohne'] as const) expect(passtZurAuswahl('', lage(s))).toBe(true)
   })
 
   it('ein Stand trifft genau ihn', () => {
-    expect(passtZurAuswahl('eingeladen', lage('eingeladen'))).toBe(true)
-    expect(passtZurAuswahl('eingeladen', lage('ohne'))).toBe(false)
-    expect(passtZurAuswahl('angemeldet', lage('eingeladen'))).toBe(false)
+    expect(passtZurAuswahl('link', lage('link'))).toBe(true)
+    expect(passtZurAuswahl('link', lage('ohne'))).toBe(false)
+    expect(passtZurAuswahl('angemeldet', lage('link'))).toBe(false)
   })
 
-  it('„Noch nicht angemeldet" heißt eingeladen oder noch nicht — nur nicht angemeldet', () => {
-    expect(passtZurAuswahl('nichtAngemeldet', lage('eingeladen'))).toBe(true)
+  it('„Noch nicht angemeldet" heißt mit Link oder ohne — nur nicht angemeldet', () => {
+    expect(passtZurAuswahl('nichtAngemeldet', lage('link'))).toBe(true)
     expect(passtZurAuswahl('nichtAngemeldet', lage('ohne'))).toBe(true)
     expect(passtZurAuswahl('nichtAngemeldet', lage('angemeldet'))).toBe(false)
   })

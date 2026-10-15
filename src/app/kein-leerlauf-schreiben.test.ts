@@ -72,8 +72,7 @@ vi.mock('../lib/data', async (importActual) => ({
   saveVortraege: vi.fn(),
   saveFsWeek: vi.fn(),
   saveGroupRow: vi.fn(),
-  saveInvite: vi.fn(),
-  saveInviteRechte: vi.fn(),
+  deleteAnmeldeLink: vi.fn(),
   saveMemberRow: vi.fn(),
   saveOzEintraege: vi.fn(),
   saveOzTermine: vi.fn(),
@@ -125,7 +124,7 @@ function ladung(): HydratePayload {
     progLangs: [],
     auxClass: true,
     members: [{ userId: 'u1', personId: DEMO_PERSONS[0]!.id, planner: true, zuteiler: false, email: 'a@b.c' }],
-    invites: [],
+    anmeldeLinks: [],
   }
 }
 
@@ -193,7 +192,6 @@ function folge(s: AppState): AppAction[] {
     { type: 'removeService', key: 'gibt-es-nicht' },
     { type: 'removeGroup', id: 'gibt-es-nicht' },
     { type: 'removePerson', id: 'gibt-es-nicht' },
-    { type: 'removeInvite', id: 'gibt-es-nicht' },
     { type: 'removeMember', userId: 'gibt-es-nicht' },
     { type: 'toggleReminderRepeat' },
     { type: 'setAuxClass', on: true }, // ist schon an

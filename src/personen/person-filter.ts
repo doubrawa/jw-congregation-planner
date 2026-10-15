@@ -5,8 +5,8 @@ import type { AnmeldeStand, PersonLage } from './person-lage'
 
 /**
  * **Die Auswahl über der Liste** (T121, Entwurf `GPersonen`) — eine zur Zeit:
- * ein Stand der Anmeldung (oben gezählt), „Nicht angemeldet" (eingeladen oder
- * noch nicht) oder wer heute abwesend ist. Leer heißt: alle.
+ * ein Stand der Anmeldung (oben gezählt), „Nicht angemeldet" (mit Link oder
+ * ohne) oder wer heute abwesend ist. Leer heißt: alle.
  */
 export type Auswahl = '' | AnmeldeStand | 'nichtAngemeldet' | 'abwesend'
 

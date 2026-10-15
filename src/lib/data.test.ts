@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { confirmationMap, generateInviteCode } from './data'
+import { confirmationMap } from './data'
 import { renameInWeeks } from '../data/namensbindung'
 import type { Meeting, PartItem, Week } from '../data/types'
 
@@ -29,14 +29,6 @@ describe('confirmationMap: ein Platz, zwei Zeilen', () => {
 
   it('unbekannte Status fallen heraus (offen = keine Zeile)', () => {
     expect(confirmationMap([{ task_key: K, status: 'irgendwas' }])).toEqual({})
-  })
-})
-
-describe('Einladungscodes', () => {
-  it('erzeugt 8 Zeichen aus dem eindeutigen Alphabet (ohne 0/O/1/I)', () => {
-    for (let i = 0; i < 200; i++) {
-      expect(generateInviteCode()).toMatch(/^[A-HJ-NP-Z2-9]{8}$/)
-    }
   })
 })
 

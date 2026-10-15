@@ -26,26 +26,22 @@ import {
   deleteAbsenceRow,
   deleteConfirmationRows,
   deleteGroupRow,
-  deleteInviteRow,
+  deleteAnmeldeLink,
   deleteMemberRow,
   deletePersonRow,
   deletePushSubscription,
   deleteServiceRow,
   erinnerungSenden,
-  generateInviteCode,
   markNotificationRead,
   markNotificationsRead,
   notifyPlanners,
   persoenlichBescheid,
-  redeemInvite,
   saveAbsence,
   saveConfirmation,
   saveCongregationInfo,
   saveFsRules,
   saveFsWeek,
   saveGroupRow,
-  saveInvite,
-  saveInviteRechte,
   saveMemberRow,
   savePerson,
   savePersonGroup,
@@ -233,11 +229,6 @@ describe('Insert-Schreiber', () => {
     saveAbsence('c1', { id: 'a2', personId: 'p1', userId: null, from: '2026-02-01', to: '2026-02-02', reason: '' })
     expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ id: 'a2', user_id: null }))
   })
-  it('saveInvite → invites insert', () => {
-    saveInvite('c1', { id: 'i1', code: 'ABC', personId: 'p1', planner: false, zuteiler: false })
-    expect(chain.from).toHaveBeenCalledWith('invites')
-    expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ id: 'i1', code: 'ABC' }))
-  })
   it('notifyPlanners → rpc notify_planners; die Empfänger sucht die Datenbank', () => {
     notifyPlanners('verhindert', 'Verhinderung gemeldet', 'B')
     expect(chain.rpc).toHaveBeenCalledWith('notify_planners', {
@@ -327,25 +318,27 @@ describe('Update-Schreiber', () => {
     expect(chain.update).not.toHaveBeenCalled()
   })
 
-  it('saveMemberRow / saveInviteRechte — beide Rechte in derselben Zeile', () => {
+  it('saveMemberRow — beide Rechte in derselben Zeile', () => {
     saveMemberRow({ userId: 'u1', email: '', personId: 'p1', planner: true, zuteiler: false })
     expect(chain.from).toHaveBeenCalledWith('members')
     expect(chain.update).toHaveBeenCalledWith({ person_id: 'p1', planner: true, zuteiler: false })
     expect(chain.eq).toHaveBeenCalledWith('user_id', 'u1')
-    saveInviteRechte({ id: 'i1', code: 'ABC', personId: 'p1', planner: false, zuteiler: true })
-    expect(chain.update).toHaveBeenCalledWith({ planner: false, zuteiler: true })
-    expect(chain.eq).toHaveBeenCalledWith('id', 'i1')
   })
 })
 
 describe('Delete-Schreiber', () => {
-  it('deletePersonRow / deleteGroupRow / deleteInviteRow (.eq id)', () => {
+  it('deletePersonRow / deleteGroupRow (.eq id)', () => {
     deletePersonRow('p1')
     expect(chain.from).toHaveBeenCalledWith('persons')
     deleteGroupRow('g1')
-    deleteInviteRow('i1')
-    expect(chain.delete).toHaveBeenCalledTimes(3)
-    expect(chain.eq).toHaveBeenCalledWith('id', 'i1')
+    expect(chain.delete).toHaveBeenCalledTimes(2)
+    expect(chain.eq).toHaveBeenCalledWith('id', 'g1')
+  })
+  it('deleteAnmeldeLink zieht den Link einer Person zurück (.eq person_id)', () => {
+    deleteAnmeldeLink('p1')
+    expect(chain.from).toHaveBeenCalledWith('anmelde_links')
+    expect(chain.delete).toHaveBeenCalledTimes(1)
+    expect(chain.eq).toHaveBeenCalledWith('person_id', 'p1')
   })
   it('deleteServiceRow (.eq.eq) / deleteMemberRow / deleteAbsenceRow / deletePushSubscription', () => {
     deleteServiceRow('c1', 'mik')
@@ -362,37 +355,6 @@ describe('Delete-Schreiber', () => {
     vi.clearAllMocks()
     deleteConfirmationRows('c1', [])
     expect(chain.from).not.toHaveBeenCalled()
-  })
-})
-
-describe('RPC / Sonstiges', () => {
-  it('redeemInvite ruft die RPC redeem_invite (Erfolg → null)', async () => {
-    const res = await redeemInvite('CODE')
-    expect(chain.rpc).toHaveBeenCalledWith('redeem_invite', { invite_code: 'CODE' })
-    expect(res).toBeNull() // Stub liefert data:null
-  })
-
-  it('redeemInvite reicht den Fehlercode der RPC durch', async () => {
-    for (const code of ['invalid-code', 'already-member'] as const) {
-      chain.rpc.mockReturnValueOnce(Promise.resolve({ data: code, error: null }))
-      expect(await redeemInvite('X')).toBe(code)
-    }
-  })
-
-  it('redeemInvite gibt bei RPC-Fehler die Meldung zurück', async () => {
-    chain.rpc.mockReturnValueOnce(Promise.resolve({ data: null, error: { message: 'boom' } }))
-    expect(await redeemInvite('X')).toBe('boom')
-  })
-
-  it('redeemInvite: leerer/Leerzeichen-Code → invalid-code ohne Netzaufruf', async () => {
-    expect(await redeemInvite('   ')).toBe('invalid-code')
-    expect(await redeemInvite('')).toBe('invalid-code')
-    expect(chain.rpc).not.toHaveBeenCalled()
-  })
-  it('generateInviteCode: 8 Zeichen ohne 0/O/1/I, praktisch eindeutig', () => {
-    const codes = new Set(Array.from({ length: 50 }, () => generateInviteCode()))
-    for (const c of codes) expect(c).toMatch(/^[A-HJ-NP-Z2-9]{8}$/)
-    expect(codes.size).toBeGreaterThan(45) // kaum Kollisionen
   })
 })
 

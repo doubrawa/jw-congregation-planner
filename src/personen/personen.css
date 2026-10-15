@@ -115,7 +115,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.personen-einladen {
+.personen-links-senden {
   align-self: flex-start;
 }
 
@@ -441,13 +441,6 @@
   overflow-wrap: anywhere;
 }
 
-/* Der Code zum Eintippen — groß und gesperrt, damit man ihn vorlesen kann. */
-.konto-code {
-  font-size: calc(22px * var(--fs));
-  font-weight: 600;
-  letter-spacing: 0.12em;
-}
-
 .konto-entfernen {
   color: var(--text2);
 }
@@ -457,6 +450,71 @@
   flex-wrap: wrap;
   gap: 8px;
   padding-block-start: 8px;
+}
+
+/* ---- Blätter „Link senden" und „Links senden" (T121, Phase 8) ------------------ */
+
+.link-blatt {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Ein Weg zum Link: per E-Mail oder auf einem Zettel — im Blatt als Feld, wie im Entwurf. */
+.link-weg {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px 16px;
+  border-radius: 20px;
+  background: var(--feld);
+}
+
+.link-weg-titel {
+  font-size: calc(15.5px * var(--fs));
+  font-weight: 600;
+}
+
+.link-adresse {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.link-spaeter {
+  align-self: center;
+}
+
+/* „So sieht die E-Mail aus", „Wer ist das?": aufgeklappt erst auf einen Tipp. */
+.link-vorschau summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--akzent-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.link-vorschau-mail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--karte);
+}
+
+/* Der Text der E-Mail mit seinen Absätzen, wie er ankommt. */
+.link-vorschau-text {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  font-size: calc(13.5px * var(--fs));
+}
+
+.link-geteilt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-block-start: 6px;
 }
 
 /* ---- Blatt „Aufgabenbereiche": die Schalter je Gruppe --------------------------- */

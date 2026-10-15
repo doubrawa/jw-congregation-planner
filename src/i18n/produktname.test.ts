@@ -32,8 +32,8 @@ import { DE, dict, loadOverlay } from './ui'
  * im Deutschen den Namen enthält — eine neue Beschriftung mit dem Produktnamen
  * ist damit vom ersten Tag an mitgeprüft, ohne sich hier eintragen zu müssen.
  *
- * **Die Serverseite braucht keine eigene Zeile.** `send-invite/texte.ts` ist
- * eine Abschrift des Wörterbuchs, und `send-invite.test.ts` hält beide
+ * **Die Serverseite braucht keine eigene Zeile.** `_shared/anmelde-texte.ts`
+ * ist eine Abschrift des Wörterbuchs, und `_test/anmeldung.test.ts` hält beide
  * zeichengenau zusammen — zusammen mit der Probe hier trägt also auch die Mail
  * in jeder Sprache den Namen. Und dass jedes Overlay jeden Schlüssel selbst
  * übersetzt (statt still auf Deutsch zurückzufallen), sichert `ui.test.ts`;
@@ -55,8 +55,11 @@ const TRAEGER = Object.entries(DE as unknown as Record<string, string>)
 describe('Der Name der App steht in jeder Sprache (T115)', () => {
   it('findet überhaupt Schlüssel, die ihn tragen — sonst prüft die Probe nichts', () => {
     // Ohne diese Zusicherung wäre eine künftige Umbenennung, die `NAME` hier zu
-    // ändern vergisst, eine grüne Prüfung über null Schlüssel.
-    expect(TRAEGER.length, `kein deutscher Wert enthält „${NAME}"`).toBeGreaterThanOrEqual(3)
+    // ändern vergisst, eine grüne Prüfung über null Schlüssel. Seit dem
+    // Anmelden per Link (T121, Phase 8) tragen ihn nur noch zwei: die E-Mail
+    // mit dem Link und der Betreff der Anfrage — die Texte der Einladungscodes
+    // sind fort.
+    expect(TRAEGER, `kein deutscher Wert enthält „${NAME}"`).toEqual(expect.arrayContaining(['linkMailText', 'anfrageBetreff']))
   })
 
   it('jede Sprache nennt ihn — unübersetzt, wie einen Markennamen', () => {

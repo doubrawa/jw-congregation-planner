@@ -21,7 +21,7 @@ import type { Group, Notification, Person, SlotSelection } from '../data/types'
  *
  * Dazu das übrige Gerüst, das sonst nirgends geprüft war: Glocke,
  * Offline-Banner, die vier Status-Ansichten (Laden / keine Versammlung /
- * Fehler / leer), das Einlösen eines Einladungscodes, die Schublade, der Kopf
+ * Fehler / leer), die Schublade, der Kopf
  * des Planens und der Push-Deep-Link.
  */
 

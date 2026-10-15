@@ -48,7 +48,7 @@ export function initialState(): AppState {
     dataEmpty: false,
     staleAt: null,
     members: [],
-    invites: [],
+    anmeldeLinks: [],
     weeks: [],
     persons: [],
     services: [],

@@ -26,11 +26,20 @@ import { rechteVon } from '../data/rechte'
 import { itemMinutes } from '../data/meeting-edit'
 import { DE as t } from '../i18n/de'
 import { alsFreitext } from '../i18n/translate'
-import type { PartItem, PartSlotSelection, Person, Week } from '../data/types'
+import type { AnmeldeLink, PartItem, PartSlotSelection, Person, Week } from '../data/types'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
 
 /** Ein Montag, den die Demo-Wochen nicht haben — für frisch importierte Wochen. */
 const NEUER_MONTAG = '2026-10-12'
+
+/** Ein Anmelde-Link, ausgestellt am Tag der Demo-Uhr. */
+const link = (personId: string): AnmeldeLink => ({
+  personId,
+  gueltigBis: '2026-10-07T09:00:00.000Z',
+  erstelltAt: '2026-09-07T09:00:00.000Z',
+  gesendetAt: null,
+  benutztAt: null,
+})
 
 /** Voller Demo-AppState; `over` überschreibt einzelne Felder je Test. */
 function makeState(over: Partial<AppState> = {}): AppState {
@@ -51,7 +60,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     dataEmpty: false,
     staleAt: null,
     members: [],
-    invites: [],
+    anmeldeLinks: [],
     auxClass: false,
     weeks: buildDemoWeeks(),
     persons: [...DEMO_PERSONS],
@@ -492,7 +501,7 @@ describe('Personen', () => {
     expect(next.fsWeeks[0]![1]!.leader).toBe('Jemand Anders')
   })
 
-  it('updatePerson spiegelt das Planer-Recht in Konten/Codes (eigenes Konto ausgenommen)', () => {
+  it('updatePerson spiegelt das Admin-Recht in die Konten (eigenes Konto ausgenommen)', () => {
     const target = person('Manfred Albrecht')
     const s = makeState({
       userId: 'me',
@@ -500,15 +509,13 @@ describe('Personen', () => {
         { userId: 'u1', email: 'u1@x', personId: target.id, planner: false, zuteiler: false },
         { userId: 'me', email: 'me@x', personId: target.id, planner: false, zuteiler: false },
       ],
-      invites: [{ id: 'i1', code: 'ABC', personId: target.id, planner: false, zuteiler: false }],
     })
     const next = reducer(s, { type: 'updatePerson', id: target.id, patch: { plannerVorgemerkt: true } })
     expect(next.members.find((m) => m.userId === 'u1')!.planner).toBe(true)
     expect(next.members.find((m) => m.userId === 'me')!.planner).toBe(false)
-    expect(next.invites[0].planner).toBe(true)
   })
 
-  it('updatePerson spiegelt ebenso das Recht „Planer" (zuteiler) — Konto und offener Code, das eigene ausgenommen', () => {
+  it('updatePerson spiegelt ebenso das Recht „Planer" (zuteiler) ins Konto, das eigene ausgenommen', () => {
     // Der Zweig lief bis zum 15.10.2026 in keinem Test (Abdeckung als
     // Landkarte): Er ist das Gegenstück zum Admin-Recht darüber.
     const target = person('Manfred Albrecht')
@@ -518,30 +525,28 @@ describe('Personen', () => {
         { userId: 'u1', email: 'u1@x', personId: target.id, planner: false, zuteiler: false },
         { userId: 'me', email: 'me@x', personId: target.id, planner: false, zuteiler: false },
       ],
-      invites: [{ id: 'i1', code: 'ABC', personId: target.id, planner: false, zuteiler: false }],
     })
     const an = reducer(s, { type: 'updatePerson', id: target.id, patch: { zuteilerVorgemerkt: true } })
     expect(an.members.find((m) => m.userId === 'u1')!.zuteiler).toBe(true)
     expect(an.members.find((m) => m.userId === 'me')!.zuteiler).toBe(false)
-    expect(an.invites[0]!.zuteiler).toBe(true)
     // Das Admin-Recht bleibt dabei unberührt.
     expect(an.members.find((m) => m.userId === 'u1')!.planner).toBe(false)
     const aus = reducer(an, { type: 'updatePerson', id: target.id, patch: { zuteilerVorgemerkt: false } })
     expect(aus.members.find((m) => m.userId === 'u1')!.zuteiler).toBe(false)
-    expect(aus.invites[0]!.zuteiler).toBe(false)
   })
 
-  it('removePerson löst Gruppen-, Konto- und Code-Referenzen', () => {
+  it('removePerson löst Gruppen- und Konto-Referenzen und nimmt den Link mit', () => {
     const s = makeState({
       groups: [{ id: 'g1', name: 'G1', overseerId: 'p1', assistantId: 'p6' }],
       members: [{ userId: 'u1', email: 'u1@x', personId: 'p1', planner: true, zuteiler: false }],
-      invites: [{ id: 'i1', code: 'ABC', personId: 'p1', planner: false, zuteiler: false }],
+      anmeldeLinks: [link('p1'), link('p6')],
     })
     const next = reducer(s, { type: 'removePerson', id: 'p1' })
     expect(next.persons.some((p) => p.id === 'p1')).toBe(false)
     expect(next.groups[0].overseerId).toBeNull()
     expect(next.members[0].personId).toBeNull()
-    expect(next.invites[0].personId).toBeNull()
+    // Wie in der Datenbank (`on delete cascade`): Der Link der Person geht mit, der anderer bleibt.
+    expect(next.anmeldeLinks.map((l) => l.personId)).toEqual(['p6'])
   })
 
   it('removePerson nimmt die Abwesenheiten der Person mit (T118)', () => {
@@ -752,10 +757,20 @@ describe('Versammlung / Mitglieder / Einladungen', () => {
     expect(reducer(s, { type: 'updateMember', userId: 'u1', patch: { planner: true } }).members[0].planner).toBe(true)
     expect(reducer(s, { type: 'removeMember', userId: 'u1' }).members).toEqual([])
   })
-  it('addInvite / removeInvite', () => {
-    const inv = { id: 'i1', code: 'ABC', personId: null, planner: false, zuteiler: false }
-    expect(reducer(makeState(), { type: 'addInvite', invite: inv }).invites).toContainEqual(inv)
-    expect(reducer(makeState({ invites: [inv] }), { type: 'removeInvite', id: 'i1' }).invites).toEqual([])
+  it('mit dem Konto geht der Link der Person — sonst käme sie mit ihm gleich wieder herein', () => {
+    const s = makeState({
+      members: [{ userId: 'u1', email: '', personId: 'p1', planner: false, zuteiler: false }],
+      anmeldeLinks: [link('p1'), link('p6')],
+    })
+    expect(reducer(s, { type: 'removeMember', userId: 'u1' }).anmeldeLinks.map((l) => l.personId)).toEqual(['p6'])
+  })
+  it('ein neuer Link ersetzt den alten derselben Person, die anderen bleiben', () => {
+    const s = makeState({ anmeldeLinks: [link('p1'), link('p6')] })
+    const neu = { ...link('p1'), gueltigBis: '2026-11-07T09:00:00.000Z', gesendetAt: '2026-10-08T09:00:00.000Z' }
+    const next = reducer(s, { type: 'linksAusgestellt', links: [neu] })
+    expect(next.anmeldeLinks).toHaveLength(2)
+    expect(next.anmeldeLinks.find((l) => l.personId === 'p1')).toEqual(neu)
+    expect(next.anmeldeLinks.find((l) => l.personId === 'p6')).toEqual(link('p6'))
   })
 })
 
@@ -1740,7 +1755,7 @@ describe('hydrate / setDataStatus', () => {
     congLang: 'de',
     progLangs: [],
     members: [],
-    invites: [],
+    anmeldeLinks: [],
   }
 
   it('eine anderswo umgeteilte Treffpunkt-Leitung behält beim Laden die Zusage des neuen Leiters', () => {

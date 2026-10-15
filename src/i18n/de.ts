@@ -303,17 +303,19 @@ export const DE = {
     absageAbwesend: 'Den Tag als abwesend eintragen',
     personen: 'Personen', personenCount: 'Personen: {n}', suchen: 'Suchen …',
     // Personenliste und „Person anlegen" (T121, Phase 6a). Der Stand steht als
-    // Etikett unter einer Zahl und an einer einzelnen Person („Gruppe 3 ·
-    // Eingeladen") — übersetzt deshalb ohne Numerus und Genus.
+    // Etikett unter einer Zahl, an einer einzelnen Person („Gruppe 3 · Link
+    // gesendet") und als Schritt der Spur ihres Kontos — übersetzt deshalb
+    // ohne Numerus und Genus. „Link gesendet" heißt seit Phase 8 auch: als
+    // Zettel ausgegeben; ein abgelaufener Link zählt als „Ohne Link".
     personAnlegen: 'Person anlegen',
     personAnlegenHinweis: 'Aufgabenbereiche legst du danach bei der Person fest.',
     emailFreiwillig: 'E-Mail (freiwillig)',
     standDerAnmeldung: 'Stand der Anmeldung',
-    standAngemeldet: 'Angemeldet', standEingeladen: 'Eingeladen', standOhne: 'Nicht eingeladen',
+    standAngemeldet: 'Angemeldet', standLink: 'Link gesendet', standOhneLink: 'Ohne Link',
     filterAlle: 'Alle', filterWeitere: 'Filter', filterZuruecksetzen: 'Zurücksetzen',
     personWaehlen: 'Wähle eine Person in der Liste, um sie hier zu sehen.',
     // Die Person (T121, Phase 6b). „Angelegt" ist der erste Schritt der Spur des
-    // Kontos, vor `standEingeladen` und `standAngemeldet` — deshalb wie diese
+    // Kontos, vor `standLink` und `standAngemeldet` — deshalb wie diese
     // ohne Numerus und Genus. {w} ist die feste Zahl der Wochen der Auslastung
     // (8): Für sie stimmt die Mehrzahl in jeder Sprache.
     person: 'Person', personBearbeiten: 'Person bearbeiten', aendern: 'Ändern',
@@ -333,23 +335,41 @@ export const DE = {
     confirmPersonDel: '„{name}“ wirklich entfernen? Bereits geplante Zuteilungen bleiben als Text in den Wochen stehen.',
     toastPersonDel: 'Person entfernt',
     kontoVerknuepft: 'Konto verknüpft',
-    einladenBtn: 'Einladen',
-    einladenHintMail: 'Erstellt einen Einladungscode und schickt die Einladung per E-Mail. Ist kein Versand eingerichtet, öffnet sich stattdessen eine fertige E-Mail in deinem Mail-Programm.',
-    einladenHintOhneMail: 'Keine E-Mail-Adresse hinterlegt — Code erstellen und per Teilen oder Kopieren persönlich weitergeben.',
-    codeOffenHint: 'Offener Einladungscode — wird beim Registrieren in der App eingelöst.',
-    mailBtn: 'E-Mail',
-    teilenBtn: 'Teilen',
-    kopierenBtn: 'Kopieren',
-    toastCodeKopiert: 'Einladung kopiert',
-    toastInviteMail: 'Einladung per E-Mail verschickt',
-    toastEinladungenMailN: 'Codes erstellt: {n} · per E-Mail verschickt: {m}',
-    // Steht nur in der Auswahl „Nicht eingeladen" — „alle" sind dort genau die.
-    alleEinladen: 'Alle einladen',
-    toastEinladungenN: 'Einladungscodes erstellt: {n} — als Liste kopiert',
-    inviteMailSubject: 'Einladung: Versammlung.app',
-    inviteMailBody: 'Hallo {name},\n\nbitte registriere dich in unserer Versammlungs-App:\n{url}\n\nLöse nach der Registrierung diesen Einladungscode ein:\n{code}',
-    inviteShareText: 'Einladung zu Versammlung.app: {url} — Einladungscode: {code}',
-    inviteListeTitel: 'Einladungscodes — App: {url}',
+    // Der Link einer Person (T121, Phase 8; Entwürfe GPerson, GEinladen). {name}
+    // ist ihr Vorname. „Link senden" heißt der Knopf auf der Anmeldeseite
+    // (`linkSenden`) wie hier: Es ist derselbe Link.
+    neuerLinkBtn: 'Neuen Link senden', zettelDrucken: 'Zettel drucken',
+    linkOffenHint: 'Der Link ist noch nicht geöffnet. Bis dahin gibst du {name} persönlich Bescheid.',
+    linkAbgelaufenHint: 'Der Link ist abgelaufen, ohne dass {name} sich angemeldet hat. Ein neuer gilt wieder 30 Tage.',
+    ohneLinkHintMail: 'Ein Tipp auf den Link in der E-Mail, und {name} ist angemeldet — ein Passwort braucht es nicht.',
+    ohneLinkHintZettel: 'Ohne E-Mail-Adresse bekommt {name} den Link auf einem Zettel mit QR-Code.',
+    perEmail: 'Per E-Mail', perEmailHint: 'Ein Tipp auf den Link, und {name} ist angemeldet.',
+    keineAdresseHint: 'Bei {name} ist keine E-Mail-Adresse eingetragen.',
+    aufZettel: 'Auf einem Zettel', aufZettelHint: 'Mit QR-Code und Code zum Eintippen. Gültig bis {datum}.',
+    neuerLinkErsetzt: 'Ein neuer Link ersetzt den alten — auch den auf einem Zettel.',
+    ohneKontoHint: 'Ein Konto anlegen oder ein Passwort wählen muss {name} nicht. Nach der Anmeldung bleibt das Gerät angemeldet.',
+    wirdGesendet: 'Wird gesendet …',
+    toastLinkGesendet: 'Link an {name} gesendet', toastMailFehler: 'Die E-Mail an {name} ging nicht hinaus.',
+    linkFehler: 'Nicht jeder Link ließ sich ausstellen. Versuche es später noch einmal.',
+    // „Links senden" für alle, die die Liste „Ohne Link" zeigt (Entwurf
+    // GAlleEinladen). Nur Links — den Plan sendet der Planer wie gewohnt.
+    linksSenden: 'Links senden',
+    linksSendenIntro: 'Jede Person bekommt ihren eigenen Link: ein Tipp darauf, und sie ist angemeldet. Ein Passwort braucht niemand.',
+    mailVorschau: 'So sieht die E-Mail aus', betreffLbl: 'Betreff: {betreff}',
+    eineAdresseMehrere: 'Eine Adresse für mehrere',
+    eineAdresseMehrereHint: '{namen} bekommen je ihren eigenen Link an dieselbe Adresse. Jeder Link meldet genau eine Person an.',
+    ohneEmail: 'Ohne E-Mail-Adresse',
+    ohneEmailListeHint: 'Sie bekommen ihren Link auf einem Zettel mit QR-Code. Scannen, und sie sind angemeldet.',
+    ohneAppHint: 'Ohne App geht es auch: Beim Senden und bei den Zusagen steht eigens da, wem du die Aufgaben persönlich sagst.',
+    werIstDas: 'Wer ist das?',
+    toastLinksGesendet: 'Links gesendet: {n}', toastLinksTeils: 'Links gesendet: {n} · nicht angekommen: {m}',
+    mailNichtBereit: 'Die App kann gerade keine E-Mails senden. Druck die Zettel, oder schick den Link bei der Person aus deinem Mail-Programm.',
+    // Der Bogen der Anmelde-Zettel (Entwurf GEinladungsZettel), gedruckt in der
+    // Sprache der Versammlung. {adresse} ist die der App („versammlung.app"),
+    // {frage} die Überschrift auf der Anmeldeseite (`ohneMailFrage`).
+    anmeldeZettel: 'Anmelde-Zettel', zumAusschneiden: 'zum Ausschneiden', seiteVon: 'Seite {n} von {m}',
+    anmeldungFuer: 'Anmeldung für', gueltigBisDatum: 'gültig bis {datum}',
+    zettelAnleitung: 'Mit der Handy-Kamera scannen, und du bist angemeldet. Geht es nicht: {adresse} öffnen und unter „{frage}“ den Code eintippen.',
     kontenOhnePerson: 'Konten ohne Person',
     kontenOhnePersonHint: 'Diese Konten sind noch keiner Person zugeordnet.',
     pushLbl: 'Push-Mitteilungen',
@@ -683,8 +703,7 @@ export const DE = {
     // Der eigene Platz in den Programm-Ansichten: dasselbe Wort wie `duMarker`,
     // seit T121 in Satzschreibung — es steht dort statt des eigenen Namens.
     chipDu: 'Du',
-    toastMitgliedEntfernt: 'Mitglied entfernt', toastEinladungErstellt: 'Einladungscode erstellt',
-    toastEinladungGeloescht: 'Einladung gelöscht',
+    toastMitgliedEntfernt: 'Mitglied entfernt',
     // Konfliktprüfungen (Planen)
     konflikteTitle: 'MÖGLICHE KONFLIKTE',
     konfliktAbsent: '{name} ist abwesend, aber eingeteilt · {tab}',

@@ -232,6 +232,21 @@ const LAEUFE: Record<string, Lauf[]> = {
     },
   ],
 
+  // Der Notzugang (T121, Phase 8): die Person suchen, ihren Link ausstellen.
+  'zugang-ausstellen.mjs': [
+    {
+      titel: 'Link ausstellen',
+      fahren: (m) => m.main!(['--person', 'Probe Planer']),
+      umgebung: {
+        bestand: {
+          congregations: [{ id: C, name: 'Probeversammlung' }],
+          persons: [{ id: P1, congregation_id: C, fn: 'Probe', ln: 'Planer' }],
+        },
+      },
+      erwartet: ['GET congregations', 'GET persons', 'POST anmelde_links'],
+    },
+  ],
+
   'rollen-nachtragen.mjs': [
     {
       titel: 'Beschriftung nachtragen',

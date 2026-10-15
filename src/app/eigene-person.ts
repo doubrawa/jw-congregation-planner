@@ -44,8 +44,8 @@ export function rolleUndGruppe(
 
 /**
  * Ist jemand mit einem Konto angemeldet? Danach richten sich die
- * Konto-Funktionen — Konto-Karte, „Alle einladen", Push: Ohne Konto gibt es
- * niemanden, der einlädt, und kein Abo, an das eine Nachricht ginge.
+ * Konto-Funktionen — Konto-Karte, „Links senden", Push: Ohne Konto gibt es
+ * niemanden, der Links ausgibt, und kein Abo, an das eine Nachricht ginge.
  *
  * Bis zum 2.10.2026 stand dieselbe Frage dreimal als „nicht im Demo-Modus" da.
  * Im Betrieb ist ohne Konto nur die Anmeldemaske zu sehen; was dahinter ohne

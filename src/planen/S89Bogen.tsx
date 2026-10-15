@@ -3,7 +3,7 @@ import { useApp } from '../app/context'
 import { S89Karte } from '../components/S89Karte'
 import { alleS89DerWoche } from '../data/planning'
 import { useT } from '../i18n/useT'
-import { seiten } from './s89-seiten'
+import { seiten } from '../components/druck-seiten'
 import './print-s89.css'
 import { Switch } from '../components/Switch'
 

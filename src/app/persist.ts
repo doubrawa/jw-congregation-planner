@@ -13,7 +13,7 @@ import {
   deleteGroupRow,
   deleteHouseholdRow,
   deletePersonRow,
-  deleteInviteRow,
+  deleteAnmeldeLink,
   deleteMemberRow,
   deleteServiceRow,
   markNotificationRead,
@@ -28,8 +28,6 @@ import {
   saveFsWeek,
   saveGroupRow,
   saveGruppenbesuche,
-  saveInvite,
-  saveInviteRechte,
   saveMemberRow,
   savePerson,
   savePersonGroup,
@@ -583,8 +581,9 @@ function personEntfernt(prev: AppState, next: AppState, id: string): void {
   // Kein ausstehender Save darf sie danach wiederbeleben.
   personSaves.cancel(id)
   // Die Verweise auf die Person räumt die Datenbank selbst
-  // (`on delete set null`): Gruppen, Einladungen, das Versand-Tagebuch —
-  // und seit T105 auch `members.person_id`. Genau die stand hier bis dahin
+  // (`on delete set null`): Gruppen, das Versand-Tagebuch — und seit T105
+  // auch `members.person_id`; ihren Anmelde-Link löscht sie mit
+  // (`on delete cascade`). `members.person_id` stand hier bis dahin
   // von Hand, weil sie als einzige ohne Fremdschlüssel auskommen musste;
   // wer eine Person per Skript löschte, hinterließ eine Mitgliedschaft,
   // deren `my_person_id()` ins Leere zeigt.
@@ -791,14 +790,11 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       for (let i = 0; i < next.fsWeeks.length; i++) {
         if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWochePlanen(congId, next.weeks, next.fsWeeks, i, fsVerwaist)
       }
-      // Admin- und Planer-Recht sofort in gespiegelte Konten und offene Codes
-      // schreiben — beide Rechte stehen in derselben Zeile.
+      // Admin- und Planer-Recht sofort in gespiegelte Konten schreiben — beide
+      // Rechte stehen in derselben Zeile.
       if ('plannerVorgemerkt' in action.patch || 'zuteilerVorgemerkt' in action.patch) {
         for (const m of next.members) {
           if (m.personId === action.id && m.userId !== next.userId) saveMemberRow(m)
-        }
-        for (const i of next.invites) {
-          if (i.personId === action.id) saveInviteRechte(i)
         }
       }
       break
@@ -970,15 +966,13 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       if (member) saveMemberRow(member)
       break
     }
-    case 'removeMember':
+    case 'removeMember': {
       deleteMemberRow(action.userId)
+      // Den Link der Person mit — siehe Reducer.
+      const personId = prev.members.find((m) => m.userId === action.userId)?.personId
+      if (personId) deleteAnmeldeLink(personId)
       break
-    case 'addInvite':
-      saveInvite(congId, action.invite)
-      break
-    case 'removeInvite':
-      deleteInviteRow(action.id)
-      break
+    }
   }
 
   // Jede Woche, die sich geändert hat — siehe `geaenderteWochenSpeichern`.

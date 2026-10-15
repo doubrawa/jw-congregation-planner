@@ -13,7 +13,9 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications, serviceQualKey } from '../data/helpers'
 import { dict } from '../i18n/ui'
-import type { Absence, Group, Invite, Member, Person, Qualifications, Service } from '../data/types'
+import { fill } from '../i18n/useT'
+import type { Absence, AnmeldeLink, Group, Member, Person, Qualifications, Service } from '../data/types'
+import type { Ausgestellt, AusgestellterLink } from '../lib/links-ausstellen'
 import { privSetzen } from '../data/helpers'
 
 /**
@@ -30,20 +32,19 @@ import { privSetzen } from '../data/helpers'
  * - Zwei **Hinweise**, die stille Fehler sichtbar machen: doppelt vergebene
  *   feste Rollen (die Auto-Zuteilung greift sich irgendeine, F7) und Personen
  *   ohne Predigtdienstgruppe (sie sehen keine Gruppentreffpunkte).
- * - Die **Sammel-Einladung** in der Auswahl „Nicht eingeladen": Codes für
- *   alle, die noch keinen haben — und **nur** für die.
+ * - **Links senden** in der Auswahl „Ohne Link": Links für alle, die noch
+ *   keinen gültigen haben — und **nur** für die.
  * - Der **Zähler** nennt die *sichtbaren* Personen, nicht alle.
  */
 
-interface MailErgebnis { ok: boolean; sent: number; skipped: number; notConfigured: boolean }
-const copyText = vi.fn((_text: string) => Promise.resolve(true))
-const sendInviteMails = vi.fn((_liste: Array<{ personId: string; code: string }>) =>
-  Promise.resolve<MailErgebnis>({ ok: true, sent: 0, skipped: 0, notConfigured: false }),
+const linksAusstellen = vi.fn((_ids: readonly string[], _wie: { senden: boolean; lang: string }) =>
+  Promise.resolve<Ausgestellt>({ links: [], mailBereit: true, fehler: false }),
 )
 
-vi.mock('../lib/clipboard', () => ({ copyText: (text: string) => copyText(text) }))
-vi.mock('../lib/invite', () => ({
-  sendInviteMails: (liste: Array<{ personId: string; code: string }>) => sendInviteMails(liste),
+// Nur der Aufruf der Function ist nachgestellt — was der Zustand daraus macht, ist echt.
+vi.mock('../lib/links-ausstellen', async (echt) => ({
+  ...(await echt<typeof import('../lib/links-ausstellen')>()),
+  linksAusstellen: (ids: readonly string[], wie: { senden: boolean; lang: string }) => linksAusstellen(ids, wie),
 }))
 vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false, performLogout: vi.fn() }))
 
@@ -76,9 +77,26 @@ const DIENSTE: Service[] = [
 const konto = (personId: string | null, over: Partial<Member> = {}): Member => ({
   userId: `u-${personId}`, personId, email: '', planner: false, zuteiler: false, ...over,
 })
-// Bernd hat ein Konto, Clara einen offenen Code, Anton nichts.
+/** Ein Link, der noch `tage` Tage gilt (negativ: abgelaufen) — gerechnet von heute, wie die Liste. */
+const link = (personId: string, tage = 10): AnmeldeLink => ({
+  personId,
+  gueltigBis: new Date(Date.now() + tage * 86_400_000).toISOString(),
+  erstelltAt: new Date().toISOString(),
+  gesendetAt: null,
+  benutztAt: null,
+})
+/** Was die Function für eine Person zurückgibt. */
+const ausgestellt = (personId: string, gesendet = false): AusgestellterLink => ({
+  personId,
+  url: `https://versammlung.app/#anmelden=${'T'.repeat(43)}`,
+  zettelUrl: 'https://versammlung.app/#code=K7RD2QWM',
+  code: 'K7RD-2QWM',
+  gueltigBis: '2026-11-14T09:00:00.000Z',
+  gesendet,
+})
+// Bernd hat ein Konto, Clara einen gültigen Link, Anton nichts.
 const BRAND_KONTO: Member[] = [konto('p-b')]
-const COHN_CODE: Invite[] = [{ id: 'i1', code: 'ABC123', personId: 'p-c', planner: false, zuteiler: false }]
+const COHN_LINK: AnmeldeLink[] = [link('p-c')]
 
 function zustand(over: Partial<AppState> = {}): AppState {
   return {
@@ -86,7 +104,7 @@ function zustand(over: Partial<AppState> = {}): AppState {
     screen: 'personen',
     dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
     persons: PERSONEN, groups: GRUPPEN, services: DIENSTE,
-    members: [], invites: [], weeks: [], fsWeeks: [], absences: [],
+    members: [], anmeldeLinks: [], weeks: [], fsWeeks: [], absences: [],
     selectedPersonId: null,
     ...over,
   }
@@ -148,8 +166,7 @@ const hinweis = (c: HTMLElement, titel: string) =>
 
 beforeEach(() => {
   breite(false)
-  copyText.mockClear().mockResolvedValue(true)
-  sendInviteMails.mockClear().mockResolvedValue({ ok: true, sent: 0, skipped: 0, notConfigured: false })
+  linksAusstellen.mockClear().mockResolvedValue({ links: [], mailBereit: true, fehler: false })
 })
 afterEach(() => {
   cleanup()
@@ -195,11 +212,11 @@ describe('Die Liste', () => {
  * Sprache wie überall und, bei allen ohne Konto, statt der Rolle als Wort.
  */
 describe('Stand der Anmeldung', () => {
-  const MIT_STAENDEN: Partial<AppState> = { members: BRAND_KONTO, invites: COHN_CODE }
+  const MIT_STAENDEN: Partial<AppState> = { members: BRAND_KONTO, anmeldeLinks: COHN_LINK }
 
-  it('jede Person trägt ihren Punkt: voll angemeldet, blass eingeladen, gestrichelt noch nicht', () => {
+  it('jede Person trägt ihren Punkt: voll angemeldet, blass mit Link, gestrichelt ohne', () => {
     const { container } = zeige(MIT_STAENDEN)
-    // Reihenfolge: Alt (nichts), Brand (Konto), Cohn (Code).
+    // Reihenfolge: Alt (nichts), Brand (Konto), Cohn (Link).
     expect(zeilen(container).map((z) => z.querySelector('.punkt')?.className)).toEqual([
       'punkt is-offen',
       'punkt is-voll',
@@ -209,23 +226,23 @@ describe('Stand der Anmeldung', () => {
 
   it('wer noch nicht angemeldet ist, steht statt mit der Rolle mit seinem Stand da', () => {
     const { container } = zeige(MIT_STAENDEN)
-    expect(unter(container, 0)).toBe(t.standOhne)
+    expect(unter(container, 0)).toBe(t.standOhneLink)
     expect(unter(container, 1)).toBe('Gruppe 1 · Ältester')
-    // Ein offener Code macht niemanden erreichbar — eingeladen ist nicht angemeldet.
-    expect(unter(container, 2)).toBe(t.standEingeladen)
+    // Ein Link macht niemanden erreichbar — wer einen hat, ist noch nicht angemeldet.
+    expect(unter(container, 2)).toBe(t.standLink)
   })
 
   it('oben gezählt — ein Tipp grenzt ein, ein zweiter hebt es wieder auf', () => {
     const { container } = zeige(MIT_STAENDEN)
     expect([...container.querySelectorAll('.personen-stand-zahl')].map((z) => z.textContent)).toEqual(['1', '1', '1'])
-    fireEvent.click(stand(container, t.standEingeladen))
+    fireEvent.click(stand(container, t.standLink))
     expect(namen(container)).toEqual(['Cohn, Clara'])
-    expect(stand(container, t.standEingeladen).getAttribute('aria-pressed')).toBe('true')
-    fireEvent.click(stand(container, t.standEingeladen))
+    expect(stand(container, t.standLink).getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(stand(container, t.standLink))
     expect(namen(container)).toHaveLength(3)
   })
 
-  it('„Noch nicht angemeldet" zeigt Eingeladene und nicht Eingeladene', () => {
+  it('„Noch nicht angemeldet" zeigt, wer einen Link hat, und wer keinen hat', () => {
     const { container } = zeige(MIT_STAENDEN)
     fireEvent.click(auswahl(container, t.zusagenOhneKonto))
     expect(namen(container)).toEqual(['Alt, Anton', 'Cohn, Clara'])
@@ -523,19 +540,19 @@ describe('Am Desktop (`GDesktopPersonen`)', () => {
   })
 
   it('jede Zeile in Spalten: Name, Gruppe und Rolle, dann Stand und Recht', () => {
-    const { container } = zeige({ members: [konto('p-b', { planner: true })], invites: COHN_CODE })
+    const { container } = zeige({ members: [konto('p-b', { planner: true })], anmeldeLinks: COHN_LINK })
     const zellen = zeilen(container).map((z) => [...z.querySelectorAll('.personen-zelle')].map((s) => s.textContent))
     expect(zellen).toEqual([
-      ['Alt, Anton', 'Verkündiger', t.standOhne],
+      ['Alt, Anton', 'Verkündiger', t.standOhneLink],
       ['Brand, Bernd', 'Gruppe 1 · Ältester', `${t.standAngemeldet} · ${t.planerLbl}`],
-      ['Cohn, Clara', 'Verkündiger', t.standEingeladen],
+      ['Cohn, Clara', 'Verkündiger', t.standLink],
     ])
   })
 
   it('die drei Stände stehen als Knöpfe in der Reihe — statt der Karte darüber', () => {
-    const { container } = zeige({ members: BRAND_KONTO, invites: COHN_CODE })
+    const { container } = zeige({ members: BRAND_KONTO, anmeldeLinks: COHN_LINK })
     expect(container.querySelector('.personen-stand')).toBeNull()
-    fireEvent.click(auswahl(container, t.standOhne))
+    fireEvent.click(auswahl(container, t.standOhneLink))
     expect(namen(container)).toEqual(['Alt, Anton'])
   })
 })
@@ -684,110 +701,138 @@ describe('Hinweis: ohne Predigtdienstgruppe', () => {
   })
 })
 
-describe('Alle einladen', () => {
-  const MIT_STAENDEN: Partial<AppState> = { members: BRAND_KONTO, invites: COHN_CODE }
-  /** Der Knopf steht in der Auswahl „Nicht eingeladen" — dorthin und ihn holen. */
-  const einladen = (c: HTMLElement) => {
-    fireEvent.click(stand(c, t.standOhne))
-    return knopf(c, t.alleEinladen)
+/**
+ * **Links senden** (T121, Phase 8; Entwurf `GAlleEinladen`): allen, die die
+ * Liste in der Auswahl „Ohne Link" zeigt, auf einmal ihren Zugang — wer eine
+ * Adresse hat, per E-Mail, die übrigen auf einem Zettel. Wer schon einen
+ * gültigen Link hat, bekommt keinen neuen: Er ersetzte den alten samt Zettel.
+ */
+describe('Links senden', () => {
+  const MIT_STAENDEN: Partial<AppState> = { members: BRAND_KONTO, anmeldeLinks: COHN_LINK }
+  const DAHL = person('p-d', 'Dora', 'Dahl', { mail: 'dora@example.org' })
+  const ERNST = person('p-e', 'Emil', 'Ernst')
+  const dialog = () => document.querySelector<HTMLElement>(`[role="dialog"][aria-label="${t.linksSenden}"]`)
+  /** In die Auswahl „Ohne Link" und das Blatt öffnen. */
+  const blatt = (c: HTMLElement) => {
+    fireEvent.click(stand(c, t.standOhneLink))
+    fireEvent.click(knopf(c, t.linksSenden))
+    return dialog()!
   }
+  const toasts = (dispatch: ReturnType<typeof vi.fn>) =>
+    dispatch.mock.calls.map((c) => c[0] as AppAction).flatMap((a) => (a.type === 'showToast' ? [a.text] : []))
 
-  it('steht nur in der Auswahl „Nicht eingeladen" — „alle" sind dort genau die', () => {
+  it('steht nur in der Auswahl „Ohne Link" — „alle" sind dort genau die', () => {
     const { container } = zeige(MIT_STAENDEN)
-    expect(knopf(container, t.alleEinladen)).toBeUndefined()
-    expect(einladen(container)).toBeDefined()
+    expect(knopf(container, t.linksSenden)).toBeUndefined()
+    fireEvent.click(stand(container, t.standOhneLink))
+    expect(knopf(container, t.linksSenden)).toBeDefined()
   })
 
-  it('ohne angemeldetes Konto gibt es ihn gar nicht — niemand, der einlädt (Entwicklerseite)', () => {
+  it('ohne angemeldetes Konto gibt es ihn gar nicht — niemand, der Links ausgibt (Entwicklerseite)', () => {
     const { container } = zeige({ userId: null, congregationId: null })
     expect(container.querySelector('.personen-stand')).toBeNull()
-    expect(knopf(container, t.alleEinladen)).toBeUndefined()
+    expect(knopf(container, t.linksSenden)).toBeUndefined()
   })
 
-  it('hat jeder ein Konto oder einen Code, steht er nicht da — die Auswahl ist leer', () => {
-    const { container } = zeige({ members: [konto('p-a'), konto('p-b')], invites: COHN_CODE })
-    fireEvent.click(stand(container, t.standOhne))
+  it('hat jeder ein Konto oder einen gültigen Link, steht er nicht da — die Auswahl ist leer', () => {
+    const { container } = zeige({ members: [konto('p-a'), konto('p-b')], anmeldeLinks: COHN_LINK })
+    fireEvent.click(stand(container, t.standOhneLink))
     expect(zeilen(container)).toHaveLength(0)
-    expect(knopf(container, t.alleEinladen)).toBeUndefined()
+    expect(knopf(container, t.linksSenden)).toBeUndefined()
   })
 
-  it('erzeugt einen Code je Person ohne Konto und ohne offenen Code', async () => {
-    const { container, dispatch } = zeige(MIT_STAENDEN)
-    fireEvent.click(einladen(container))
-    await waitFor(() => expect(dispatch.mock.calls.some((c) => c[0].type === 'addInvite')).toBe(true))
-    const codes = dispatch.mock.calls.filter((c) => c[0].type === 'addInvite')
-    // Bernd hat ein Konto, Clara einen offenen Code → nur Anton bleibt übrig.
-    expect(codes).toHaveLength(1)
-    expect(codes[0]![0].invite.personId).toBe('p-a')
+  it('ein abgelaufener Link zählt wie keiner — wer so steht, ist dabei', () => {
+    const { container } = zeige({ members: BRAND_KONTO, anmeldeLinks: [link('p-c', -1)] })
+    fireEvent.click(stand(container, t.standOhneLink))
+    expect(namen(container)).toEqual(['Alt, Anton', 'Cohn, Clara'])
   })
 
-  it('lädt genau die ein, die die Liste zeigt — die Suche grenzt mit ein', async () => {
-    const DAHL = person('p-d', 'Dora', 'Dahl')
-    const { container, dispatch } = zeige({ ...MIT_STAENDEN, persons: [...PERSONEN, DAHL] })
-    fireEvent.click(stand(container, t.standOhne))
+  it('teilt in „Per E-Mail" und „Ohne E-Mail-Adresse", jeweils mit Zahl', () => {
+    const b = blatt(zeige({ ...MIT_STAENDEN, persons: [...PERSONEN, DAHL, ERNST] }).container)
+    const titel = [...b.querySelectorAll('.link-weg-titel')].map((x) => x.textContent)
+    expect(titel).toEqual([`${t.perEmail} · 2`, `${t.ohneEmail} · 1`])
+  })
+
+  it('„Links senden" schickt die mit Adresse — mit Versand, in der Sprache der Versammlung', async () => {
+    const b = blatt(zeige({ ...MIT_STAENDEN, persons: [...PERSONEN, DAHL, ERNST] }).container)
+    fireEvent.click(knopf(b, t.linksSenden))
+    await waitFor(() => expect(linksAusstellen).toHaveBeenCalledWith(['p-a', 'p-d'], { senden: true, lang: 'de' }))
+  })
+
+  it('genau die, die die Liste zeigt — die Suche grenzt mit ein', async () => {
+    const { container } = zeige({ ...MIT_STAENDEN, persons: [...PERSONEN, DAHL] })
+    fireEvent.click(stand(container, t.standOhneLink))
     fireEvent.change(suche(container), { target: { value: 'dahl' } })
-    fireEvent.click(knopf(container, t.alleEinladen))
-    await waitFor(() => expect(dispatch.mock.calls.some((c) => c[0].type === 'addInvite')).toBe(true))
-    const codes = dispatch.mock.calls.filter((c) => c[0].type === 'addInvite')
-    // Anton ist ebenso nicht eingeladen, steht aber nicht in der Liste.
-    expect(codes.map((c) => c[0].invite.personId)).toEqual(['p-d'])
+    fireEvent.click(knopf(container, t.linksSenden))
+    fireEvent.click(knopf(dialog()!, t.linksSenden))
+    // Anton hat ebenso keinen Link, steht aber nicht in der Liste.
+    await waitFor(() => expect(linksAusstellen).toHaveBeenCalledWith(['p-d'], { senden: true, lang: 'de' }))
   })
 
-  it('legt die Liste zugleich in die Zwischenablage — für alle ohne E-Mail', async () => {
-    const { container } = zeige(MIT_STAENDEN)
-    fireEvent.click(einladen(container))
-    await waitFor(() => expect(copyText).toHaveBeenCalled())
-    expect(copyText.mock.calls[0]![0]).toContain('Anton Alt')
-  })
-
-  it('verschickt nur an Personen mit hinterlegter Adresse', async () => {
-    const { container } = zeige(MIT_STAENDEN)
-    fireEvent.click(einladen(container))
-    await waitFor(() => expect(sendInviteMails).toHaveBeenCalled())
-    expect(sendInviteMails.mock.calls[0]![0]).toEqual([{ personId: 'p-a', code: expect.any(String) }])
-  })
-
-  it('meldet, wie viele Codes entstanden und wie viele Mails rausgingen', async () => {
-    sendInviteMails.mockResolvedValue({ ok: true, sent: 1, skipped: 0, notConfigured: false })
+  it('die ausgestellten Links kommen in den Zustand — der Stand stimmt gleich', async () => {
+    linksAusstellen.mockResolvedValue({ links: [ausgestellt('p-a', true)], mailBereit: true, fehler: false })
     const { container, dispatch } = zeige(MIT_STAENDEN)
-    fireEvent.click(einladen(container))
-    await waitFor(() =>
-      expect(dispatch).toHaveBeenCalledWith({
-        type: 'showToast', text: 'Codes erstellt: 1 · per E-Mail verschickt: 1',
-      }),
+    fireEvent.click(knopf(blatt(container), t.linksSenden))
+    await waitFor(() => expect(dispatch.mock.calls.some((c) => c[0].type === 'linksAusgestellt')).toBe(true))
+    const aktion = dispatch.mock.calls.find((c) => c[0].type === 'linksAusgestellt')![0]
+    expect(aktion.links).toEqual([expect.objectContaining({ personId: 'p-a', gueltigBis: '2026-11-14T09:00:00.000Z', benutztAt: null })])
+    expect(aktion.links[0].gesendetAt).not.toBeNull()
+  })
+
+  it('sind alle angekommen, sagt es das und schließt', async () => {
+    linksAusstellen.mockResolvedValue({ links: [ausgestellt('p-a', true)], mailBereit: true, fehler: false })
+    const { container, dispatch } = zeige(MIT_STAENDEN)
+    fireEvent.click(knopf(blatt(container), t.linksSenden))
+    await waitFor(() => expect(toasts(dispatch)).toContain(fill(t.toastLinksGesendet, { n: 1 })))
+    await waitFor(() => expect(dialog()).toBeNull())
+  })
+
+  it('kam eine nicht an, sagt es wie viele — und bleibt offen, für die Zettel', async () => {
+    linksAusstellen.mockResolvedValue({ links: [ausgestellt('p-a', true), ausgestellt('p-d', false)], mailBereit: true, fehler: false })
+    const { container, dispatch } = zeige({ ...MIT_STAENDEN, persons: [...PERSONEN, DAHL] })
+    fireEvent.click(knopf(blatt(container), t.linksSenden))
+    await waitFor(() => expect(toasts(dispatch)).toContain(fill(t.toastLinksTeils, { n: 1, m: 1 })))
+    expect(dialog()).not.toBeNull()
+  })
+
+  it('kann die App nicht senden, sagt sie es — und kein Link wurde ersetzt', async () => {
+    linksAusstellen.mockResolvedValue({ links: [], mailBereit: false, fehler: false })
+    const { container, dispatch } = zeige(MIT_STAENDEN)
+    fireEvent.click(knopf(blatt(container), t.linksSenden))
+    await waitFor(() => expect(toasts(dispatch)).toContain(t.mailNichtBereit))
+    expect(dispatch.mock.calls.some((c) => c[0].type === 'linksAusgestellt')).toBe(false)
+  })
+
+  it('zwei an derselben Adresse: Jeder bekommt seinen eigenen Link, und das Blatt sagt es', () => {
+    const lena = person('p-l', 'Lena', 'Hoffmann', { mail: 'familie@example.org' })
+    const andrea = person('p-n', 'Andrea', 'Hoffmann', { mail: ' Familie@example.org' })
+    const b = blatt(zeige({ persons: [lena, andrea, ALT] }).container)
+    expect(b.querySelector('.link-geteilt')?.textContent).toBe(
+      t.eineAdresseMehrere + fill(t.eineAdresseMehrereHint, { namen: 'Andrea Hoffmann und Lena Hoffmann' }),
     )
   })
 
-  it('ohne Mail-Versand nennt es nur die Codes — die Liste steht in der Zwischenablage', async () => {
-    sendInviteMails.mockResolvedValue({ ok: false, sent: 0, skipped: 1, notConfigured: true })
-    const { container, dispatch } = zeige(MIT_STAENDEN)
-    fireEvent.click(einladen(container))
-    await waitFor(() =>
-      expect(dispatch).toHaveBeenCalledWith({
-        type: 'showToast', text: 'Einladungscodes erstellt: 1 — als Liste kopiert',
-      }),
-    )
+  it('„Zettel drucken" stellt für die ohne Adresse Links aus, ohne Versand — und druckt sie', async () => {
+    const drucken = vi.fn()
+    window.print = drucken
+    linksAusstellen.mockResolvedValue({ links: [ausgestellt('p-e')], mailBereit: true, fehler: false })
+    const b = blatt(zeige({ ...MIT_STAENDEN, persons: [...PERSONEN, ERNST] }).container)
+    fireEvent.click(knopf(b, t.zettelDrucken))
+    await waitFor(() => expect(drucken).toHaveBeenCalled())
+    expect(linksAusstellen).toHaveBeenCalledWith(['p-e'], { senden: false, lang: 'de' })
+    expect([...document.querySelectorAll('.anmelde-zettel .anmelde-name')].map((n) => n.textContent)).toEqual(['Emil Ernst'])
+    expect(document.documentElement.dataset.print).toBe('anmeldezettel')
+    // Nach dem Druckdialog ist der Bogen wieder fort — die Codes darauf melden an.
+    fireEvent(window, new Event('afterprint'))
+    await waitFor(() => expect(document.querySelector('.anmelde-bogen')).toBeNull())
+    expect(document.documentElement.dataset.print).toBeUndefined()
   })
 
-  it('eine misslungene Zwischenablage hält den Versand nicht auf — die Codes stehen an der Person', async () => {
-    copyText.mockResolvedValue(false)
-    const { container, dispatch } = zeige(MIT_STAENDEN)
-    fireEvent.click(einladen(container))
-    await waitFor(() => expect(sendInviteMails).toHaveBeenCalled())
-    expect(dispatch.mock.calls.some((c) => c[0].type === 'addInvite')).toBe(true)
-  })
-
-  /**
-   * Im Offline-Stand entsteht keine einzige Zeile in der Datenbank: Codes,
-   * Mails und Liste wären alle wertlos gewesen.
-   */
-  it('im Offline-Stand erzeugt es nichts, verschickt nichts, kopiert nichts', async () => {
+  it('im Offline-Stand stellt es nichts aus und verschickt nichts', async () => {
     const { container, dispatch } = zeige({ ...MIT_STAENDEN, staleAt: Date.now() - 3600_000 })
-    fireEvent.click(einladen(container))
-    await waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.offlineReadOnly }))
-    expect(dispatch.mock.calls.some((c) => c[0].type === 'addInvite')).toBe(false)
-    expect(sendInviteMails).not.toHaveBeenCalled()
-    expect(copyText).not.toHaveBeenCalled()
+    fireEvent.click(knopf(blatt(container), t.linksSenden))
+    await waitFor(() => expect(toasts(dispatch)).toContain(t.offlineReadOnly))
+    expect(linksAusstellen).not.toHaveBeenCalled()
   })
 })
 
@@ -813,8 +858,8 @@ describe('Konten ohne verknüpfte Person', () => {
   it('bietet nur Personen ohne eigenes Konto an', () => {
     /*
       Die Verknüpfung ist eins zu eins gedacht — die ganze Oberfläche
-      unterstellt es: `linkedMember` nimmt das **erste** passende Mitglied, die
-      Konto-Karte zeigt genau eines, und `send-plan` wie `send-reminders`
+      unterstellt es: Die Konto-Karte nimmt das **erste** passende Mitglied und
+      zeigt genau eines, und `send-plan` wie `send-reminders`
       führen je Person genau eine Konto-Id (`userByPerson`).
     */
     const { container } = zeige({

@@ -126,6 +126,6 @@ function hydrateAus(s: AppState, sentLog: AppState['sentLog']) {
     trolleys: s.trolleys, trolleyTermine: s.trolleyTermine, plaene: s.plaene, planEintraege: s.planEintraege,
     absences: s.absences, notifications: s.notifs, confirmations: s.confirmations, sentLog,
     reminders: s.reminders, congLang: s.congLang, progLangs: s.progLangs, auxClass: s.auxClass,
-    members: s.members, invites: s.invites,
+    members: s.members, anmeldeLinks: s.anmeldeLinks,
   } as Parameters<typeof reducer>[1] extends { type: 'hydrate'; payload: infer P } ? P : never
 }

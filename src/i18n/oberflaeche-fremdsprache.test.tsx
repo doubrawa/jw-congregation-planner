@@ -206,7 +206,7 @@ function zustand(over: Partial<AppState> = {}): AppState {
     myTasks: [AUFGABE],
     substituteReqs: [],
     members: [],
-    invites: [],
+    anmeldeLinks: [],
     week: 0,
     tab: 'mid',
     terminGewaehlt: true,

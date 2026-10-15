@@ -33,9 +33,12 @@ export interface NeuerLink {
 /**
  * Einen neuen Link für eine Person ausstellen. Ersetzt den alten ganz: Token,
  * Code, Gültigkeit. `null`, wenn die Datenbank ablehnt.
+ *
+ * Verlangt vom Klienten nur `upsert` — so stellt auch der Notzugang
+ * (`scripts/zugang-ausstellen.mjs`) mit seinem Node-Klienten aus.
  */
 export async function linkAusstellen(
-  rest: Rest,
+  rest: Pick<Rest, 'upsert'>,
   personId: string,
   congregationId: string,
   jetzt = new Date(),
@@ -63,7 +66,7 @@ export async function linkAusstellen(
  * ist der Link abgelaufen, gilt er wieder dreißig Tage, sonst bis wann er galt.
  */
 export async function tokenErneuern(
-  rest: Rest,
+  rest: Pick<Rest, 'patchZeilen'>,
   link: Pick<LinkZeile, 'person_id' | 'gueltig_bis'>,
   jetzt = new Date(),
 ): Promise<{ token: string; gueltigBis: string } | null> {
@@ -77,6 +80,6 @@ export async function tokenErneuern(
 }
 
 /** Vermerken, dass der Link eben per E-Mail hinausging. */
-export async function alsGesendet(rest: Rest, personId: string, jetzt = new Date()): Promise<void> {
+export async function alsGesendet(rest: Pick<Rest, 'send'>, personId: string, jetzt = new Date()): Promise<void> {
   await rest.send('PATCH', `anmelde_links?person_id=eq.${wert(personId)}`, { gesendet_at: jetzt.toISOString() })
 }

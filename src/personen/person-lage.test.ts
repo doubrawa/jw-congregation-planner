@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyQualifications } from '../data/helpers'
-import type { Absence, Invite, Member, Person } from '../data/types'
-import { mitLage } from './person-lage'
+import type { Absence, AnmeldeLink, Member, Person } from '../data/types'
+import { linkGilt, mitLage } from './person-lage'
 
 /**
  * **Was die Personenliste über jede Person sagt** (T121, Entwurf
@@ -14,21 +14,28 @@ const person = (id: string, over: Partial<Person> = {}): Person => ({
 const konto = (personId: string | null, over: Partial<Member> = {}): Member => ({
   userId: `u-${personId}`, email: '', personId, planner: false, zuteiler: false, ...over,
 })
-const code = (personId: string): Invite => ({ id: `i-${personId}`, code: 'ABC', personId, planner: false, zuteiler: false })
+const link = (personId: string, gueltigBis = '2026-10-07T09:00:00.000Z'): AnmeldeLink => ({
+  personId, gueltigBis, erstelltAt: '2026-09-07T09:00:00.000Z', gesendetAt: null, benutztAt: null,
+})
 const abwesend = (personId: string, from: string, to: string): Absence => ({
   id: `a-${personId}-${from}`, personId, userId: null, from, to, reason: '',
 })
 
-const keine = { members: [], invites: [], absences: [] }
+const keine = { members: [], anmeldeLinks: [], absences: [] }
 
 describe('Stand der Anmeldung', () => {
-  it('angemeldet ist, wer ein verknüpftes Konto hat — eingeladen, wer nur einen offenen Code hat', () => {
-    const lagen = mitLage([person('a'), person('b'), person('c')], { members: [konto('a')], invites: [code('b')], absences: [] }, '2026-09-07')
-    expect(lagen.map((e) => e.lage.stand)).toEqual(['angemeldet', 'eingeladen', 'ohne'])
+  it('angemeldet ist, wer ein verknüpftes Konto hat — „Link gesendet", wer nur einen gültigen Link hat', () => {
+    const lagen = mitLage([person('a'), person('b'), person('c')], { members: [konto('a')], anmeldeLinks: [link('b')], absences: [] }, '2026-09-07')
+    expect(lagen.map((e) => e.lage.stand)).toEqual(['angemeldet', 'link', 'ohne'])
   })
 
-  it('ein Konto schlägt einen offenen Code — wer angemeldet ist, ist nicht mehr bloß eingeladen', () => {
-    const [e] = mitLage([person('a')], { members: [konto('a')], invites: [code('a')], absences: [] }, '2026-09-07')
+  it('ein abgelaufener Link zählt wie keiner — wer so steht, braucht einen neuen', () => {
+    const [e] = mitLage([person('a')], { ...keine, anmeldeLinks: [link('a', '2026-09-06T23:00:00.000Z')] }, '2026-09-07')
+    expect(e?.lage.stand).toBe('ohne')
+  })
+
+  it('ein Konto schlägt den Link — wer angemeldet ist, hat nicht mehr bloß einen Link', () => {
+    const [e] = mitLage([person('a')], { members: [konto('a')], anmeldeLinks: [link('a')], absences: [] }, '2026-09-07')
     expect(e?.lage.stand).toBe('angemeldet')
   })
 
@@ -39,6 +46,15 @@ describe('Stand der Anmeldung', () => {
 
   it('die Folge bleibt die gegebene — die Liste sortiert vorher', () => {
     expect(mitLage([person('z'), person('a')], keine, '2026-09-07').map((e) => e.person.id)).toEqual(['z', 'a'])
+  })
+})
+
+describe('Gilt der Link noch?', () => {
+  it('tagesgenau: am Tag, an dem er abläuft, noch — am Tag danach nicht mehr', () => {
+    const bis = { gueltigBis: '2026-10-07T09:00:00.000Z' }
+    expect(linkGilt(bis, '2026-10-06')).toBe(true)
+    expect(linkGilt(bis, '2026-10-07')).toBe(true)
+    expect(linkGilt(bis, '2026-10-08')).toBe(false)
   })
 })
 

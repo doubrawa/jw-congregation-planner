@@ -1,0 +1,150 @@
+/*
+ * Der Bogen der Anmelde-Zettel (T121, Phase 8; Entwurf GEinladungsZettel) —
+ * sechs auf ein A4, zum Ausschneiden.
+ *
+ * Am Bildschirm unsichtbar, im DOM nur für die Dauer des Druckdialogs. Er
+ * hängt direkt unter `body` (Portal): Das Kennzeichen `data-print=
+ * "anmeldezettel"` blendet damit im Druck alles andere mit einer Regel aus,
+ * gleich, auf welchem Bildschirm der Admin gerade steht — anders als die
+ * S-89-Zettel, die im Planen mitten im Bildschirm stehen (`print-s89.css`).
+ *
+ * Wie die anderen Druckbögen ohne Tonflächen und immer hell: Browser drucken
+ * Hintergründe standardmäßig nicht, und der Zettel soll mit wie ohne
+ * „Hintergrundgrafiken drucken" gleich aussehen. Der QR-Code trägt seine
+ * Farben selbst (schwarz auf weiß), unabhängig von der Darstellung.
+ */
+
+.anmelde-bogen {
+  display: none;
+}
+
+@media print {
+  :root[data-print='anmeldezettel'] body > :not(.anmelde-bogen) {
+    display: none !important;
+  }
+
+  :root[data-print='anmeldezettel'] .anmelde-bogen {
+    display: block !important;
+  }
+
+  /* Tinte auf Papier, wie bei den anderen Bögen. */
+  :root[data-print='anmeldezettel'] {
+    color-scheme: light;
+    --karte: #fff;
+    --grund: #fff;
+    --text: #000;
+    --text2: #444;
+    --text3: #555;
+    --akzent: #17694a;
+  }
+
+  :root[data-print='anmeldezettel'] body {
+    background: #fff;
+  }
+
+  /* Je Blatt eine Tabelle mit erzwungenem Umbruch dahinter (siehe `seiten`). */
+  .anmelde-seite {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .anmelde-seite:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .anmelde-seite-kopf {
+    display: flex;
+    justify-content: space-between;
+    gap: 4mm;
+    padding-inline: 3mm;
+    font-size: 8pt;
+    color: #555;
+  }
+
+  .anmelde-tabelle {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 3mm;
+    table-layout: fixed;
+  }
+
+  .anmelde-tabelle td {
+    width: 50%;
+    vertical-align: top;
+  }
+
+  /* Feste Höhe: drei Reihen à 82 mm auf 297 mm Papier abzüglich Rand. Die
+     gestrichelte Linie ist die Schnittkante. */
+  .anmelde-zettel {
+    display: flex;
+    flex-direction: column;
+    gap: 3mm;
+    height: 82mm;
+    padding: 5mm;
+    border: 1px dashed #999;
+    border-radius: 2mm;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .anmelde-zettel-kopf {
+    display: flex;
+    align-items: center;
+    gap: 2mm;
+    font-size: 9pt;
+    font-weight: 600;
+  }
+
+  .anmelde-zettel-fuer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5mm;
+  }
+
+  .anmelde-klein {
+    font-size: 8pt;
+    color: #555;
+  }
+
+  .anmelde-name {
+    font-size: 14pt;
+    font-weight: 600;
+  }
+
+  .anmelde-zettel-code {
+    display: flex;
+    align-items: center;
+    gap: 4mm;
+  }
+
+  .anmelde-qr {
+    flex: none;
+    width: 30mm;
+    height: 30mm;
+  }
+
+  .anmelde-code-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5mm;
+  }
+
+  /* Groß und gesperrt wie im Feld der Anmeldeseite — Zeichen für Zeichen vergleichbar. */
+  .anmelde-code {
+    font-size: 15pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .anmelde-anleitung {
+    margin-top: auto;
+    font-size: 8pt;
+    line-height: 1.35;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 9mm;
+  }
+}

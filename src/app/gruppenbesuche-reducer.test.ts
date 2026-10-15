@@ -204,7 +204,7 @@ describe('Wege ohne eigene Aktion', () => {
       progLangs: [],
       auxClass: false,
       members: [],
-      invites: [],
+      anmeldeLinks: [],
     } satisfies HydratePayload
     const next = reducer({ ...s, gruppenbesuche: [besuch('2026-10-12', 'g1')] }, {
       type: 'hydrate',

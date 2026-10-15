@@ -185,7 +185,8 @@ export function darfAbwesenheitBearbeiten(
  * Das Recht steht an **zwei** Stellen, und nur eine entscheidet: Sobald ein
  * Konto verknüpft ist, zählt das Konto (`members.planner`, `members.zuteiler`
  * — daran hängt `is_planner()` in der Datenbank). Die Vormerkung an der Person
- * trägt nur, wo es keines gibt; sie geht beim Einladen in den Code über.
+ * trägt nur, wo es keines gibt; bei der ersten Anmeldung übernimmt sie die
+ * Function `anmelden` ins Konto.
  * Angezeigt wurde bis August 2026 die Vormerkung — der Personen-Neuaufbau aus
  * New World Scheduler schreibt sie aber gar nicht mit, und der Betreiber sah
  * bei sich selbst „Admin: aus".

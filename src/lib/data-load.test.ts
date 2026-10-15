@@ -98,7 +98,7 @@ function seedResponses(over: Partial<Record<string, Array<{ data: unknown; error
     absences: [{ data: [], error: null }],
     notifications: [{ data: [], error: null }],
     confirmations: [{ data: [{ task_key: 'k1', status: 'bestätigt' }], error: null }],
-    invites: [{ data: [], error: null }],
+    anmelde_links: [{ data: [], error: null }],
     fs_rules: [{ data: [], error: null }],
     fs_weeks: [{ data: [], error: null }],
     ...over,
@@ -397,6 +397,30 @@ describe('loadCongregationData', () => {
     seedResponses({ persons: [{ data: [], error: null }], weeks: [{ data: [], error: null }] })
     const res = await loadCongregationData('u1')
     expect(res.ok && res.empty).toBe(true)
+  })
+})
+
+describe('Die Anmelde-Links (T121, Phase 8)', () => {
+  const ZEILE = { person_id: 'p9', gueltig_bis: '2026-10-07T09:00:00Z', erstellt_at: '2026-09-07T09:00:00Z', gesendet_at: null, benutzt_at: null }
+
+  it('kommen mit ausdrücklichen Spalten — die Prüfsummen darf die App nicht lesen, ein `*` scheiterte an ihnen', async () => {
+    seedResponses({ anmelde_links: [{ data: [ZEILE], error: null }] })
+    const res = await loadCongregationData('u1')
+    const spalten = store.filter.find(([t, m]) => t === 'anmelde_links' && m === 'select')?.[2] ?? ''
+    expect(spalten.split(',').map((s) => s.trim()).sort()).toEqual(['benutzt_at', 'erstellt_at', 'gesendet_at', 'gueltig_bis', 'person_id'])
+    expect(store.filter).toContainEqual(['anmelde_links', 'eq', 'congregation_id', 'c1'])
+    expect(res.ok && res.data.anmeldeLinks).toEqual([
+      { personId: 'p9', gueltigBis: '2026-10-07T09:00:00Z', erstelltAt: '2026-09-07T09:00:00Z', gesendetAt: null, benutztAt: null },
+    ])
+  })
+
+  it('scheitern sie, lädt die App trotzdem — es fehlt nur der Stand an den Personen', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    seedResponses({ anmelde_links: [{ data: null, error: { message: 'kaputt' } }] })
+    const res = await loadCongregationData('u1')
+    expect(res.ok && res.data.anmeldeLinks).toEqual([])
+    expect(err).toHaveBeenCalledWith('[anmelde_links]', 'kaputt')
+    err.mockRestore()
   })
 })
 

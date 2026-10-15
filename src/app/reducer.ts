@@ -238,7 +238,8 @@ function ohnePerson(state: AppState, id: string): AppState {
           .map((t) => (t.partner === id ? { ...t, partner: null, gemeinsam: false } : t))
       : state.trolleyTermine,
     members: state.members.map((m) => (m.personId === id ? { ...m, personId: null } : m)),
-    invites: state.invites.map((i) => (i.personId === id ? { ...i, personId: null } : i)),
+    // Ihr Anmelde-Link geht mit ihr (`on delete cascade`).
+    anmeldeLinks: state.anmeldeLinks.filter((l) => l.personId !== id),
   }
 }
 
@@ -758,16 +759,14 @@ function baseReducer(state: AppState, action: AppAction): AppState {
           next.fsWeeks = fsRenameLeader(state.fsWeeks, action.id, oldName, newName)
         }
       }
-      // Planer-Recht in verknüpfte Konten und offene Einladungscodes spiegeln
-      // (members.planner = Quelle der Rechteprüfung); das eigene Konto ist per
-      // UI-Sperre ausgenommen.
+      // Admin-Recht in verknüpfte Konten spiegeln (members.planner = Quelle der
+      // Rechteprüfung); das eigene Konto ist per UI-Sperre ausgenommen. Wer
+      // noch keines hat, bekommt es bei der ersten Anmeldung aus der
+      // Vormerkung (Function `anmelden`).
       if ('plannerVorgemerkt' in action.patch) {
         const on = Boolean(action.patch.plannerVorgemerkt)
         next.members = state.members.map((m) =>
           m.personId === action.id && m.userId !== state.userId ? { ...m, planner: on } : m,
-        )
-        next.invites = state.invites.map((i) =>
-          i.personId === action.id ? { ...i, planner: on } : i,
         )
       }
       // Ebenso das Planer-Recht (4.10.2026). Vom eigenen Konto aus nimmt es
@@ -778,7 +777,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         next.members = next.members.map((m) =>
           m.personId === action.id && m.userId !== state.userId ? { ...m, zuteiler: on } : m,
         )
-        next.invites = next.invites.map((i) => (i.personId === action.id ? { ...i, zuteiler: on } : i))
       }
       return next
     }
@@ -883,24 +881,22 @@ function baseReducer(state: AppState, action: AppAction): AppState {
           m.userId === action.userId ? { ...m, ...action.patch } : m,
         ),
       }
-    case 'removeMember':
+    case 'removeMember': {
+      // Mit dem Konto geht der Link der Person — sonst käme sie mit ihm gleich
+      // wieder herein, und die Function legte ihr ein neues Konto an.
+      const personId = state.members.find((m) => m.userId === action.userId)?.personId
       return {
         ...state,
         members: state.members.filter((m) => m.userId !== action.userId),
+        anmeldeLinks: personId ? state.anmeldeLinks.filter((l) => l.personId !== personId) : state.anmeldeLinks,
         toast: toastKey(state, 'toastMitgliedEntfernt'),
       }
-    case 'addInvite':
-      return {
-        ...state,
-        invites: [...state.invites, action.invite],
-        toast: toastKey(state, 'toastEinladungErstellt'),
-      }
-    case 'removeInvite':
-      return {
-        ...state,
-        invites: state.invites.filter((i) => i.id !== action.id),
-        toast: toastKey(state, 'toastEinladungGeloescht'),
-      }
+    }
+    case 'linksAusgestellt': {
+      // Ein neuer Link ersetzt den alten derselben Person.
+      const neu = new Set(action.links.map((l) => l.personId))
+      return { ...state, anmeldeLinks: [...state.anmeldeLinks.filter((l) => !neu.has(l.personId)), ...action.links] }
+    }
     case 'startImport':
       return state.importing ? state : { ...state, importing: true }
     case 'addImportedWeek': {
@@ -1667,7 +1663,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         congLang: p.congLang,
         progLangs: p.progLangs,
         members: p.members,
-        invites: p.invites,
+        anmeldeLinks: p.anmeldeLinks ?? [],
         week: gewaehlt >= 0 ? gewaehlt : aktuell >= 0 ? aktuell : 0,
         slotSel,
       }

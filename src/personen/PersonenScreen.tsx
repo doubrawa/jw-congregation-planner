@@ -8,13 +8,10 @@ import { abwesendText } from '../components/abwesenheit-anzeige'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { DESKTOP_BREITE, useMedia } from '../components/useMedia'
 import { displayName, doppelteFesteRollen, listName, ohneGruppe, personCompare } from '../data/helpers'
-import type { Person } from '../data/types'
-import { congAppCode } from '../i18n/langs'
 import { ROLE_KEY, type Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
-import { copyText } from '../lib/clipboard'
-import { sendInviteMails } from '../lib/invite'
-import { appUrl, makeInvite } from './invite-helpers'
+import { LinksSendenBlatt } from './LinksSendenBlatt'
+import { NamenKnoepfe } from './NamenKnoepfe'
 import { OrphanAccounts } from './OrphanAccounts'
 import { PersonAnlegenBlatt } from './PersonAnlegenBlatt'
 import { PersonDetail } from './PersonDetail'
@@ -34,17 +31,17 @@ import './personen.css'
 /** Der Punkt eines Stands — dieselbe Sprache wie überall: voll, blass, gestrichelt. */
 const PUNKT_DES_STANDS: Record<AnmeldeStand, PunktArt> = {
   angemeldet: 'voll',
-  eingeladen: 'wartet',
+  link: 'wartet',
   ohne: 'offen',
 }
 
 const STAND_KEY = {
   angemeldet: 'standAngemeldet',
-  eingeladen: 'standEingeladen',
-  ohne: 'standOhne',
+  link: 'standLink',
+  ohne: 'standOhneLink',
 } as const satisfies Record<AnmeldeStand, keyof Dict>
 
-const STAENDE: readonly AnmeldeStand[] = ['angemeldet', 'eingeladen', 'ohne']
+const STAENDE: readonly AnmeldeStand[] = ['angemeldet', 'link', 'ohne']
 
 /**
  * **Personen** (T121, Entwurf `GPersonen`, nur Admins): die Liste mit Suche,
@@ -92,7 +89,7 @@ function PersonList({
   const { state } = useApp()
   const { t } = useT()
   const heute = useKalendertag()
-  const [blatt, setBlatt] = useState<'anlegen' | 'filter' | null>(null)
+  const [blatt, setBlatt] = useState<'anlegen' | 'filter' | 'links' | null>(null)
   const setz = (patch: Partial<PersonFilter>) => setFilter((f) => ({ ...f, ...patch }))
   // Ein Tipp auf die gewählte Auswahl hebt sie wieder auf; „Alle" bleibt dabei „Alle".
   const waehle = (auswahl: Auswahl) => setz({ auswahl: filter.auswahl === auswahl ? '' : auswahl })
@@ -108,17 +105,17 @@ function PersonList({
    * Bei 300 Personen kostete ein Buchstabe sonst rund 2 500 Namensvergleiche
    * (`personCompare` ruft `localeCompare`).
    */
-  const { persons, lang, members, invites, absences, groups } = state
+  const { persons, lang, members, anmeldeLinks, absences, groups } = state
   const { eintraege, mehrfachRollen, ohne } = useMemo(() => {
     const sortiert = [...persons].sort((a, b) => personCompare(a, b, lang))
     return {
-      eintraege: mitLage(sortiert, { members, invites, absences }, heute),
+      eintraege: mitLage(sortiert, { members, anmeldeLinks, absences }, heute),
       // Beide aus der sortierten Liste — die Namen in den Warnungen stehen
       // dann in derselben Folge wie unten.
       mehrfachRollen: doppelteFesteRollen(sortiert),
       ohne: ohneGruppe(sortiert, groups),
     }
-  }, [persons, lang, members, invites, absences, groups, heute])
+  }, [persons, lang, members, anmeldeLinks, absences, groups, heute])
   // Was Suche und Blatt übrig lassen — daran zählen die Knöpfe der Auswahl.
   const basis = eintraege.filter((e) => passtOhneAuswahl(e.person, filter))
   const zahl = (auswahl: Auswahl) => basis.filter((e) => passtZurAuswahl(auswahl, e.lage)).length
@@ -240,10 +237,12 @@ function PersonList({
         </button>
       </div>
 
-      {/* Wer noch nicht eingeladen ist, bekommt hier seinen Code — alle, die die
-          Liste gerade zeigt, auf einmal. */}
+      {/* Wer noch keinen Link hat, bekommt hier seinen — alle, die die Liste
+          gerade zeigt, auf einmal. */}
       {angemeldet && filter.auswahl === 'ohne' && sichtbar.length > 0 && (
-        <AlleEinladen personen={sichtbar.map((e) => e.person)} />
+        <button type="button" className="knopf-umriss personen-links-senden" onClick={() => setBlatt('links')}>
+          {t.linksSenden}
+        </button>
       )}
 
       {/* Wie viele übrig sind — nur, wenn Suche oder Auswahl einschränken; sonst
@@ -267,6 +266,13 @@ function PersonList({
 
       {blatt === 'anlegen' && <PersonAnlegenBlatt onClose={() => setBlatt(null)} />}
       {blatt === 'filter' && <PersonenFilterBlatt filter={filter} setz={setz} onClose={() => setBlatt(null)} />}
+      {blatt === 'links' && (
+        <LinksSendenBlatt
+          personen={sichtbar.map((e) => e.person)}
+          zahlen={{ angelegt: basis.length, link: zahl('link'), angemeldet: zahl('angemeldet') }}
+          onClose={() => setBlatt(null)}
+        />
+      )}
     </section>
   )
 }
@@ -366,88 +372,5 @@ function Hinweis({
       <p className="klein-text personen-hinweis-text">{text}</p>
       {children}
     </section>
-  )
-}
-
-/**
- * Die Namen in einem Hinweis, als Knöpfe: Ein Tipp öffnet die Person, bei der
- * sich die Ursache beheben lässt. Chips statt Zeilen, damit auch eine lange
- * Liste die Personenliste darunter nicht unter sich begräbt.
- */
-function NamenKnoepfe({ personen }: { personen: readonly Person[] }) {
-  const { dispatch } = useApp()
-  return (
-    <div className="personen-namen">
-      {personen.map((person) => (
-        <button
-          key={person.id}
-          type="button"
-          className="personen-name-knopf"
-          dir="auto"
-          onClick={() => dispatch({ type: 'selectPerson', id: person.id })}
-        >
-          {listName(person)}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-/**
- * **Alle einladen**: ein Code für jeden, den die Liste in der Auswahl „Nicht
- * eingeladen" gerade zeigt — also weder mit Konto noch mit offenem Code; Suche
- * und Filter grenzen weiter ein (etwa auf eine Gruppe). Mit eingerichtetem
- * Versand gehen die Mails direkt hinaus (`send-invite`); die Liste „Name:
- * Code" landet zusätzlich in der Zwischenablage — für alle ohne E-Mail oder
- * wenn kein Versand eingerichtet ist.
- *
- * Bis Phase 6a stand der Knopf über der ganzen Liste und lud jeden ohne Konto
- * ein, gleich, was gesucht war.
- */
-function AlleEinladen({ personen }: { personen: readonly Person[] }) {
-  const { state, dispatch } = useApp()
-  const { t } = useT()
-  const einladen = async () => {
-    /*
-     * **Offline-Stand: gar nicht erst anfangen.**
-     *
-     * Der Reducer weist Schreib-Aktionen im Offline-Stand ab (`readonly.ts`) —
-     * aber nur den Reducer. Was danach in derselben Funktion steht, lief
-     * weiter: Die Codes entstehen hier im Baustein, keiner davon landet im
-     * Zustand oder in der Datenbank — und die Mails gingen trotzdem an **alle**
-     * ohne Konto, samt Liste in der Zwischenablage. Lauter Codes, die
-     * `redeem_invite` nicht kennt.
-     *
-     * „Plan senden" (`sendeUmfang`) zieht dieselbe Grenze und aus demselben
-     * Grund: Wer eine Edge Function unmittelbar ruft, kommt am Reducer vorbei.
-     */
-    if (state.staleAt) {
-      dispatch({ type: 'showToast', text: t.offlineReadOnly })
-      return
-    }
-    const zeilen: string[] = []
-    const perMail: Array<{ personId: string; code: string }> = []
-    for (const person of personen) {
-      const invite = makeInvite(person)
-      dispatch({ type: 'addInvite', invite })
-      zeilen.push(`${displayName(person)}: ${invite.code}`)
-      if (person.mail) perMail.push({ personId: person.id, code: invite.code })
-    }
-    // Zwischenablage nach Kräften — misslingt sie, stehen die Codes weiterhin
-    // an den Personen (Konto-Karte).
-    await copyText(`${fill(t.inviteListeTitel, { url: appUrl() })}\n\n${zeilen.join('\n')}`)
-    const res = perMail.length > 0 ? await sendInviteMails(perMail, congAppCode(state.congLang)) : null
-    dispatch({
-      type: 'showToast',
-      text:
-        res?.ok && res.sent > 0
-          ? fill(t.toastEinladungenMailN, { n: personen.length, m: res.sent })
-          : fill(t.toastEinladungenN, { n: personen.length }),
-    })
-  }
-  return (
-    <button type="button" className="knopf-umriss personen-einladen" onClick={() => void einladen()}>
-      {t.alleEinladen}
-    </button>
   )
 }

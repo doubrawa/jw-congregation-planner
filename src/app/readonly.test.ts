@@ -56,7 +56,7 @@ describe('isViewAction', () => {
     'startImport',
     'changeReminder',
     'setCongLang',
-    'addInvite',
+    'linksAusgestellt',
     'updateMember',
   ]
   it.each(writes)('blockiert %s (Schreibzugriff)', (type) => {
@@ -140,8 +140,9 @@ describe('Was nichts schreibt, darf offline laufen', () => {
    * `trolleyTermin` und `trolleyEntfernt` legen in den Zustand, was die
    * Function `trolley` schon geschrieben hat — ohne sie gibt es nichts
    * hineinzulegen (`useTrolleyAktion` ruft sie offline gar nicht erst).
+   * Ebenso `linksAusgestellt` mit der Antwort von `send-invite` (Phase 8).
    */
-  const ABSICHTLICH_GESPERRT = new Set(['startImport', 'trolleyTermin', 'trolleyEntfernt'])
+  const ABSICHTLICH_GESPERRT = new Set(['startImport', 'trolleyTermin', 'trolleyEntfernt', 'linksAusgestellt'])
 
   it('jede Aktion ohne Schreibfall ist eine Ansichts-Aktion', () => {
     const wochen = wochenSchreiber()
@@ -199,7 +200,8 @@ describe('Direkte Function-Aufrufe prüfen den Offline-Stand', () => {
 
   /** Aufrufe, die ohne Umweg über den Reducer nach draußen gehen. */
   const DIREKT = [
-    'sendInviteMails(',
+    // Anmelde-Links (T121, Phase 8): Der neue ersetzt den alten samt Zettel.
+    'linksAusstellen(',
     'sendPlan(',
     'importNextWeek(',
     'importWeekVariants(',

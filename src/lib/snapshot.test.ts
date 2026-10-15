@@ -32,7 +32,7 @@ const payload = (over: Partial<HydratePayload> = {}): HydratePayload => ({
   progLangs: [],
   auxClass: false,
   members: [],
-  invites: [],
+  anmeldeLinks: [],
   ...over,
 })
 

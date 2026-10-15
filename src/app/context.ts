@@ -21,6 +21,7 @@ import type { Abschnitt } from './deeplink'
 import type {
   Anlass,
   AnlassArt,
+  AnmeldeLink,
   Abweichung,
   Absence,
   Congregation,
@@ -34,7 +35,6 @@ import type {
   Trolley,
   TrolleyTermin,
   WeitererPlan,
-  Invite,
   Lang,
   MeetingKey,
   MeetingTab,
@@ -114,7 +114,8 @@ export interface HydratePayload {
   progLangs: string[]
   auxClass: boolean
   members: Member[]
-  invites: Invite[]
+  /** Fehlt in einer Momentaufnahme von vor Phase 8c (`lib/snapshot.ts`). */
+  anmeldeLinks?: AnmeldeLink[]
 }
 
 /**
@@ -172,7 +173,7 @@ export interface AppState {
   /* ---- Serverdaten: geladen, geändert, zurückgeschrieben ---------------- */
   congregation: Congregation
   members: Member[] // Mitglieder-Verwaltung (Planer; Nicht-Planer: nur eigene Zeile)
-  invites: Invite[] // offene Einladungscodes (nur Planer)
+  anmeldeLinks: AnmeldeLink[] // je Person der Anmelde-Link (nur Admins)
   /**
    * Die geladenen Wochen, aufsteigend nach ihrem Startdatum.
    *
@@ -442,11 +443,11 @@ export type AppAction =
   | { type: 'removeGroup'; id: string }
   | { type: 'updateGroup'; id: string; patch: Partial<Pick<Group, 'name' | 'overseerId' | 'assistantId'>> }
   | { type: 'updateCongregation'; patch: Partial<Congregation> } // speichert automatisch (debounced)
-  // Mitglieder & Einladungen (nur Planer)
+  // Mitglieder & Anmelde-Links (nur Admins)
   | { type: 'updateMember'; userId: string; patch: Partial<Pick<Member, 'personId' | 'planner' | 'zuteiler'>> }
   | { type: 'removeMember'; userId: string }
-  | { type: 'addInvite'; invite: Invite }
-  | { type: 'removeInvite'; id: string }
+  // Die Function `send-invite` hat Links ausgestellt — geschrieben hat sie selbst.
+  | { type: 'linksAusgestellt'; links: AnmeldeLink[] }
   | { type: 'startImport' }
   | { type: 'addImportedWeek'; week: Week } // die von jw.org geholte Woche
   // Nachgeladene Sprachvarianten — die Woche über ihre Kennung (T66), nicht über
