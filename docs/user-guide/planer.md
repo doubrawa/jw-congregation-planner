@@ -1497,6 +1497,8 @@ und die Programmsprachen. Dann wählst du:
 - **Abbrechen** – nichts ändert sich.
 
 Jedes Holen bringt genau eine weitere Woche, und es läuft nicht von selbst.
+Liegt die zuletzt geholte Woche schon zurück, beginnt es bei der laufenden –
+vergangene Wochen holt es nicht nach.
 Damit es nicht in Vergessenheit gerät, erinnert dich die **Planungs‑Karte auf
 der Startseite**, sobald die Programme weniger als drei Wochen voraus reichen –
 mit **„Geladen bis …"** und demselben **Holen** (Abschnitt 1).

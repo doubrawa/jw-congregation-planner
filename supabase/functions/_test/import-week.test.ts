@@ -328,6 +328,15 @@ describe('import-week: die gewöhnliche Woche', () => {
     expect(week?.start).toBe('2026-04-20')
   })
 
+  it('ohne `after` die laufende Woche — am Montag wie am Sonntag (16.10.2026)', async () => {
+    // Sonntags kam bis dahin die nächste: Die Grenze lag auf dem eigenen
+    // Montag, und gesucht wird dahinter. Die App sagt bei „Holen" die
+    // laufende an (`naechsteHolWoche`).
+    expect((await hole({})).week?.start).toBe('2026-03-02')
+    vi.setSystemTime(new Date('2026-03-08T21:00:00Z'))
+    expect((await hole({})).week?.start).toBe('2026-03-02')
+  })
+
   it('eine Woche, die es nicht gibt, ist ein 404 mit Meldung', async () => {
     const { week, error } = await hole({ start: '2026-04-21' }) // kein Montag
     expect(week).toBeUndefined()

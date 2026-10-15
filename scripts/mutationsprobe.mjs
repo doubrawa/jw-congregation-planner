@@ -6996,7 +6996,7 @@ export const KATALOG = [
     id: 'wochen-holen-nach-der-letzten',
     datei: 'src/planen/wochen-uebersicht.ts',
     regel: '„Holen" nennt die Woche nach der spätesten geladenen — wie `import-week` sie wählt.',
-    suchen: '  return letzte ? montagNach(letzte, 1) : montagVon(isoDay(heute))\n',
+    suchen: '  return nach ? montagNach(nach, 1) : montagVon(isoDay(heute))\n',
     ersetzen: '  return montagVon(isoDay(heute))\n',
   },
   {
@@ -7082,6 +7082,34 @@ export const KATALOG = [
     regel: 'Eine Abwesenheit, die vor dem Tag beginnt und nach ihm endet, zählt.',
     suchen: '&from_date=lte.${wert(tagISO)}&to_date=gte.${wert(tagISO)}',
     ersetzen: '&from_date=eq.${wert(tagISO)}&to_date=gte.${wert(tagISO)}',
+  },
+  {
+    id: 'holen-nie-vor-der-vorwoche',
+    datei: 'src/lib/import.ts',
+    regel: '„Holen" sucht nach einer Pause nicht Wochen zurück, sondern ab der laufenden Woche.',
+    suchen: '  return letzte > vorwoche ? letzte : vorwoche\n',
+    ersetzen: '  return letzte\n',
+  },
+  {
+    id: 'holen-ab-heute',
+    datei: 'src/planen/useWochenImport.ts',
+    regel: '„Holen" rechnet vom heutigen Tag aus — wie die Karte bei den Wochen.',
+    suchen: 'importNextWeek(holenNach(state.weeks, fromIso(heute)), langCode, altCodes)',
+    ersetzen: 'importNextWeek(holenNach(state.weeks, new Date(0)), langCode, altCodes)',
+  },
+  {
+    id: 'holen-karte-wie-holen',
+    datei: 'src/planen/wochen-uebersicht.ts',
+    regel: 'Die Karte „Holen" nennt die Woche, die „Holen" auch holt — nach einer Pause die laufende.',
+    suchen: '  const nach = holenNach(weeks, heute)\n',
+    ersetzen: '  const nach = holenNach(weeks, new Date(0))\n',
+  },
+  {
+    id: 'import-week-sonntag-laufende',
+    datei: 'supabase/functions/import-week/index.ts',
+    regel: 'Ohne `after` kommt die laufende Woche — auch am Sonntag, nicht schon die nächste.',
+    suchen: 'new Date(todayUtc - 7 * 864e5)',
+    ersetzen: 'new Date(todayUtc - 6 * 864e5)',
   },
 ]
 

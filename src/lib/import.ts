@@ -4,7 +4,7 @@
  * CORS). Ohne Datenbank (keine Konfiguration, Entwicklerseite) nicht verfügbar.
  */
 
-import { weekEndMs } from '../data/meeting-dates'
+import { isoDay, montagNach, montagVon, weekEndMs } from '../data/meeting-dates'
 import type { Week } from '../data/types'
 import { supabase } from './supabase'
 
@@ -47,6 +47,20 @@ export type ImportResult = { ok: true; week: Week } | { ok: false; error: Import
 export function latestImportedStart(weeks: Week[]): string | undefined {
   const starts = weeks.map((w) => w.start).filter((s): s is string => Boolean(s)).sort()
   return starts[starts.length - 1]
+}
+
+/**
+ * **Wonach „Holen" sucht** — `after` für `import-week`: die späteste geladene
+ * Woche, aber keine vor der Vorwoche. Eine vergangene Woche plant niemand
+ * mehr. Bis zum 16.10.2026 holte „Holen" nach einer Pause die Woche nach der
+ * zuletzt geladenen, Wochen zurück — und die laufende erst viele Abrufe
+ * später. Ohne geladene Woche `undefined`: Dann wählt der Server die laufende.
+ */
+export function holenNach(weeks: Week[], heute: Date): string | undefined {
+  const letzte = latestImportedStart(weeks)
+  if (!letzte) return undefined
+  const vorwoche = montagNach(montagVon(isoDay(heute)), -1)
+  return letzte > vorwoche ? letzte : vorwoche
 }
 
 /**

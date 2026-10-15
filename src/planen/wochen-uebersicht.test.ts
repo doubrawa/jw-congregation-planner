@@ -156,4 +156,9 @@ describe('Welche Woche „Holen" als Nächstes holt', () => {
   it('ohne geladene Woche die laufende, ab ihrem Montag', () => {
     expect(naechsteHolWoche([], am(10))).toBe(A)
   })
+
+  it('nach einer Pause die laufende, nicht die nach der zuletzt geladenen (16.10.2026)', () => {
+    // Geladen bis zur Woche ab 7.9., heute ist Mittwoch, der 30.
+    expect(naechsteHolWoche([woche(A)], am(30))).toBe('2026-09-28')
+  })
 })

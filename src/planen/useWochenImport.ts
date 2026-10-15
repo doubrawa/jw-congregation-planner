@@ -1,10 +1,12 @@
 import { useMemo } from 'react'
 import { useApp } from '../app/context'
+import { useKalendertag } from '../app/useKalendertag'
 import { missingVariants } from '../data/localize'
+import { fromIso } from '../data/meeting-dates'
 import type { Week } from '../data/types'
 import { JW_TO_CONG, LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
-import { type ImportFehler, importNextWeek, importWeekVariants, latestImportedStart, loadedUntilMs } from '../lib/import'
+import { holenNach, type ImportFehler, importNextWeek, importWeekVariants, loadedUntilMs } from '../lib/import'
 
 /**
  * Wie viele Wochen ihre Sprachvarianten gleichzeitig nachholen dürfen.
@@ -52,6 +54,7 @@ export function useWochenImport(): {
 } {
   const { state, dispatch } = useApp()
   const { t, tp } = useT()
+  const heute = useKalendertag()
 
   /**
    * Bis wann Programme vorliegen. Vorher stand im Import-Panel eine feste
@@ -151,7 +154,8 @@ export function useWochenImport(): {
         }
       })
     }
-    const res = await importNextWeek(latestImportedStart(state.weeks), langCode, altCodes)
+    // Ab demselben Tag gerechnet wie „Holen" bei den Wochen (`naechsteHolWoche`).
+    const res = await importNextWeek(holenNach(state.weeks, fromIso(heute)), langCode, altCodes)
     // Geholt ist geholt: Ob die Woche übernommen wird, entscheidet das Blatt.
     dispatch({ type: 'stopImport' })
     if (res.ok) return res.week

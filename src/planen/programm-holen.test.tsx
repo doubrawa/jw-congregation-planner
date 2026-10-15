@@ -111,9 +111,21 @@ afterEach(cleanup)
 
 describe('Holen in der Produktion', () => {
   it('holt die nächste Woche in der Versammlungssprache', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9, 0)) // Montag der geladenen Woche
     const { container } = zeige({ weeks: [woche('2026-09-07')], congLang: 'en' })
     holen(container)
     await waitFor(() => expect(importNextWeek).toHaveBeenCalledWith('2026-09-07', 'en', []))
+  })
+
+  it('nach einer Pause die laufende Woche, nicht die nach der zuletzt geladenen (16.10.2026)', async () => {
+    // Geladen bis zur Woche ab 7.9., heute ist Mittwoch, der 30. — gesucht
+    // wird nach der Vorwoche, es kommt die Woche ab 28.9. (`holenNach`).
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 30, 9, 0))
+    const { container } = zeige({ weeks: [woche('2026-09-07')], congLang: 'en' })
+    holen(container)
+    await waitFor(() => expect(importNextWeek).toHaveBeenCalledWith('2026-09-21', 'en', []))
   })
 
   it('unbekannte Versammlungssprache fällt auf Deutsch zurück statt leer zu bleiben', async () => {

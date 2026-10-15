@@ -1,7 +1,7 @@
 import { isoDay, kalendertagMs, montagNach, montagVon, weekEndMs } from '../data/meeting-dates'
 import { wochenstand, type PlanungsQuellen, type Wochenstand } from '../data/planungsstand'
 import type { PersoenlichLog, Week } from '../data/types'
-import { latestImportedStart } from '../lib/import'
+import { holenNach } from '../lib/import'
 import { zahlenDerWoche, type WochenZahlen } from './plan-spur'
 
 /**
@@ -57,10 +57,10 @@ export function lageDerWoche(stand: Wochenstand): WochenLage {
 
 /**
  * **Der Montag der Woche, die „Holen" als Nächstes holt** — wie `import-week`
- * sie wählt: die Woche nach der spätesten geladenen, ohne geladene die
+ * sie zu `holenNach` wählt: die Woche danach, ohne geladene Woche die
  * laufende.
  */
 export function naechsteHolWoche(weeks: Week[], heute: Date): string {
-  const letzte = latestImportedStart(weeks)
-  return letzte ? montagNach(letzte, 1) : montagVon(isoDay(heute))
+  const nach = holenNach(weeks, heute)
+  return nach ? montagNach(nach, 1) : montagVon(isoDay(heute))
 }

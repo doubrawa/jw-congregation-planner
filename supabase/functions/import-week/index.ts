@@ -338,8 +338,11 @@ Deno.serve(async (req: Request) => {
     } else {
       const now = new Date()
       const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
-      // Standard: die Woche, die diese Woche beginnt (bis 6 Tage zurück).
-      const cutoff = after ? new Date(after) : new Date(todayUtc - 6 * 864e5)
+      // Standard: die Woche, die diese Woche beginnt (bis 6 Tage zurück). Die
+      // Grenze liegt einen Tag davor, gesucht wird dahinter (`>`): Mit sechs
+      // Tagen fiel bis zum 16.10.2026 sonntags der eigene Montag heraus, und es
+      // kam die nächste Woche — die App sagte bei „Holen" die laufende an.
+      const cutoff = after ? new Date(after) : new Date(todayUtc - 7 * 864e5)
       // Auf die letzte Woche des Hefts zurückfallen darf nur der erste Import.
       // Mit `after` ist sie schon da, und ein zweites Mal geliefert überschrieb
       // sie im Client die bereits geplante Woche. `ende` sagt dem Client, dass

@@ -3,11 +3,32 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const invoke = vi.hoisted(() => vi.fn())
 vi.mock('./supabase', () => ({ supabase: { functions: { invoke } } }))
 
-import { importNextWeek, importWeekVariants, latestImportedStart, loadedUntilMs } from './import'
+import { holenNach, importNextWeek, importWeekVariants, latestImportedStart, loadedUntilMs } from './import'
 import type { Week } from '../data/types'
 
 /** Minimal-Woche nur mit dem für die Sortierung relevanten `start`. */
 const wk = (start?: string): Week => ({ start } as Week)
+
+describe('holenNach — wonach „Holen" sucht', () => {
+  /** Mittwoch, 30. September 2026, örtlich — die Woche ab Montag, 28.9. */
+  const heute = new Date(2026, 8, 30, 9, 0)
+
+  it('nach der spätesten geladenen Woche, solange sie nicht zurückliegt', () => {
+    expect(holenNach([wk('2026-09-28'), wk('2026-10-12'), wk('2026-10-05')], heute)).toBe('2026-10-12')
+    // Die Vorwoche selbst: Danach kommt die laufende, wie bisher.
+    expect(holenNach([wk('2026-09-21')], heute)).toBe('2026-09-21')
+  })
+
+  it('nach einer Pause nicht Wochen zurück, sondern die laufende (16.10.2026)', () => {
+    // Zuletzt geladen ist der 7.9. — geholt würde sonst der 14.9.
+    expect(holenNach([wk('2026-09-07')], heute)).toBe('2026-09-21')
+  })
+
+  it('ohne geladene Woche wählt der Server', () => {
+    expect(holenNach([wk(), wk()], heute)).toBeUndefined()
+    expect(holenNach([], heute)).toBeUndefined()
+  })
+})
 
 describe('latestImportedStart', () => {
   it('liefert das späteste ISO-Startdatum', () => {
