@@ -6666,6 +6666,16 @@ dagegen nur den Token (`tokenErneuern`) — der Code steht nur als Hash in
 die Reihenfolge fürs iPhone: erst zum Home-Bildschirm, dann in der App den Code
 eintippen.
 
+Für Phase 10 vorgemerkt vom Betreiber (15.10.2026, Bildschirmfoto vom Handy):
+**die Bedienleiste des Handys unten ist weiß, mit weißen Knöpfen** — Android,
+installierte App, dunkle Darstellung, Navigation mit drei Knöpfen. Die
+Statusleiste oben ist dunkel, denn die färbt `meta[name="theme-color"]`, das
+`index.html` und `darstellung.ts` je Darstellung setzen. Das Manifest trägt aber
+noch `theme_color` und `background_color` `#ffffff` aus der Zeit vor T121. Am
+Gerät nachmessen, woher Android die Farbe der Leiste nimmt und wer die Farbe
+der Knöpfe bestimmt; Hell, Dunkel und Automatisch prüfen. Gehört zusammen mit
+den Logo-Farben (Manifest, Startbildschirm).
+
 Für Phase 10 vorgemerkt aus dem Review der Phase 6 (vorbestehend, klein): Wird
 eine weitere Programmsprache zur Sprache der Versammlung, bleibt sie zusätzlich
 unter den weiteren stehen („Englisch, Englisch"; `setCongLang` im Reducer).
