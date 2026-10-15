@@ -43,12 +43,6 @@ export function machKonfliktVon(persons: Person[], conflicts: Conflict[]): (z: Z
   return (z) => (z?.name ? je.get(werIst(z as { name: string; pid?: string }) ?? kennungVon(z.name)) : undefined)
 }
 
-/** Steht diese Zuteilung in einem der Konflikte? (`machKonfliktVon`) */
-export function machBetrifft(persons: Person[], conflicts: Conflict[]): (z: Zugeteilt | undefined) => boolean {
-  const von = machKonfliktVon(persons, conflicts)
-  return (z) => von(z) !== undefined
-}
-
 /**
  * Die Konflikte der angezeigten Zusammenkunft — einmal gerechnet, zweimal
  * gebraucht: „Zu klären" zählt sie auf, und die Plätze darunter werden danach

@@ -427,12 +427,3 @@ export function zuletztGesendetFuer(sentLog: SentLog, taskKeys: Iterable<string>
   const praefixe = [...taskKeys].map((k) => sentKey(k, ''))
   return neuesterVersand(sentLog, (schluessel) => praefixe.some((p) => schluessel.startsWith(p)))
 }
-
-/**
- * Was von den offenen Aufgaben noch nicht im Versand-Tagebuch steht — die
- * Meldungen für „Plan senden" ohne Woche. Gerechnet werden die offenen mit
- * derselben Funktion wie in `send-plan`; hier fällt nur weg, was schon hinaus ist.
- */
-export function nochNichtGemeldet(offen: readonly { key: string; name: string }[], sentLog: SentLog): OffeneMeldung[] {
-  return offen.filter((p) => !sentLog[sentKey(p.key, p.name)]).map((p) => ({ key: p.key, name: p.name }))
-}
