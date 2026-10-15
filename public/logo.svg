@@ -1,13 +1,16 @@
 <!-- Logo-Original (Vektor), seit dem 4.10.2026: „Versammelt" — drei Sitzreihen
      mit 4, 6 und 8 Plätzen um ein Rednerpult, von oben gesehen. Jede Reihe hat
      eine gerade Zahl, darum bleibt unter dem Pult ein Mittelgang frei.
-     Flach, ohne Verläufe und Schatten, damit es auch als 16-px-Favicon trägt.
-     Der viewBox umschließt die Kachel eng — die Polsterung für App-Icons
-     (Safe-Zone) fügt scripts/make-icons.mjs hinzu, deren Hintergrund dort die
-     Kachelfarbe ist (KACHEL). -->
+     Flach, ohne Verläufe und Schatten. Quelle der App-Icons
+     (scripts/make-icons.mjs, deren Hintergrund die Kachelfarbe ist); in der
+     App zeichnet bausteine/Logo.tsx dieselbe Form ohne Kachel.
+     Farben seit dem 15.10.2026 die der dunklen Darstellung (Graphit · Minze,
+     T121): Kachel wie --karte, Plätze wie --text, Pult in --akzent — bis
+     dahin Petrol, Creme und Gold. tests/logo-farben.test.ts hält beides
+     gleich. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Sitzreihen um ein Rednerpult">
-  <rect width="512" height="512" rx="116" fill="#17302D"></rect>
-  <g fill="#FBF6EA">
+  <rect width="512" height="512" rx="116" fill="#1C1E20"></rect>
+  <g fill="#F4F4F1">
     <circle cx="171.33" cy="213.32" r="15"></circle>
     <circle cx="224.43" cy="247.46" r="15"></circle>
     <circle cx="287.57" cy="247.46" r="15"></circle>
@@ -31,5 +34,5 @@
       <circle cx="448.87" cy="282.84" r="15"></circle>
     </g>
   </g>
-  <circle cx="256" cy="140" r="30" fill="#E7B04B"></circle>
+  <circle cx="256" cy="140" r="30" fill="#86E0B8"></circle>
 </svg>

@@ -12,9 +12,9 @@
  *  - `any`-Icons (Launcher-Fallback, Notification): fast randfüllend.
  *  - `maskable`: Android legt seine eigene Maske darüber (Kreis, Squircle, …)
  *    und garantiert nur einen Kreis von 80 % Durchmesser — und zeigt dasselbe
- *    Icon groß auf dem Startbildschirm der installierten App. Deshalb Weiß wie
- *    `background_color` im Manifest und die ganze Kachel in der Safe-Zone
- *    (siehe TARGETS).
+ *    Icon groß auf dem Startbildschirm der installierten App. Deshalb
+ *    randfüllend in der Kachelfarbe wie `background_color` im Manifest, das
+ *    Motiv in der Safe-Zone (siehe TARGETS).
  *  - apple-touch-icon: iOS ignoriert SVG und füllt Transparenz mit Schwarz,
  *    braucht also eine eigene deckende PNG-Datei; die Ecken rundet iOS selbst,
  *    darum dort die Kachelfarbe als Fläche.
@@ -31,8 +31,8 @@ const PUBLIC = join(ROOT, 'public')
 
 /**
  * Die Kachelfarbe des Logos — die Füllung seines ersten `<rect>`. Sie ist die
- * Fläche des apple-touch-icon: iOS rundet die Ecken selbst, auf Weiß stünde dort
- * eine kleinere Kachel in einer größeren.
+ * Fläche des apple-touch-icon (iOS rundet die Ecken selbst, auf Weiß stünde dort
+ * eine kleinere Kachel in einer größeren) und des maskable-Icons.
  */
 function kachelfarbe(svg) {
   const fill = /<rect\b[^>]*\bfill="(#[0-9a-fA-F]{6})"/.exec(svg)?.[1]
@@ -40,24 +40,22 @@ function kachelfarbe(svg) {
   return fill
 }
 
-/** Wie `background_color` in `public/manifest.webmanifest` — die Fläche des Startbildschirms. */
-const WEISS = '#ffffff'
-
 /**
  * name, Kantenlänge, Anteil den das Motiv füllt, Hintergrund
- * (`transparent`, `weiss` oder `kachel`).
+ * (`transparent` oder `kachel`).
  *
  *  - `any`-Icons (Launcher/Desktop/Taskleiste, Notification): transparent, damit
  *    unter Windows nur die abgerundete Kachel erscheint statt eines weißen
  *    Quadrats. Das Motiv selbst ist deckend, nur der Rand außen ist frei.
- *  - `maskable`: Weiß, die ganze Kachel in der Safe-Zone. Android zeigt dieses
- *    Icon auch groß auf dem Startbildschirm der installierten App. Vollflächig
- *    in der Kachelfarbe (so stand es kurz am 4.10.2026) erschien dort ein
- *    Quadrat mit spitzen Ecken, überall sonst ist die Kachel rund (Betreiber).
- *    Auf Weiß geht die Fläche im Hintergrund des Startbildschirms auf. Wie
- *    groß: Die Kachel reicht bis 0,613 ihrer Breite vom Mittelpunkt (die runden
- *    Ecken, rx = 116/512); mit 0,64 bleibt sie bei 0,39 — innerhalb des Kreises
- *    von 0,4, den Android garantiert.
+ *  - `maskable`: randfüllend in der Kachelfarbe. Android zeigt dieses Icon
+ *    auch groß auf dem Startbildschirm der installierten App, auf
+ *    `background_color` — und die ist seit dem 15.10.2026 die Kachelfarbe
+ *    (`tests/logo-farben.test.ts`). Bis dahin war sie Weiß, und vollflächig
+ *    erschien dort ein Quadrat mit spitzen Ecken (Betreiber, 4.10.2026); auf
+ *    der gleichen Farbe geht es im Startbildschirm auf. Die eigene Kachel des
+ *    SVG verschwindet in der gleichen Fläche; das Motiv reicht bis 0,41 der
+ *    Breite vom Mittelpunkt, mit 0,76 bleibt es bei 0,31 — innerhalb des
+ *    Kreises von 0,4, den Android garantiert, und der Ränder der Masken.
  *  - apple-touch-icon: die Kachelfarbe (siehe `kachelfarbe`).
  *
  * Deckende Ziele dürfen NICHT transparent sein, sonst zeigt Androids Maske
@@ -66,7 +64,7 @@ const WEISS = '#ffffff'
 const TARGETS = [
   { file: 'icon-192.png', size: 192, share: 0.9, hintergrund: 'transparent' },
   { file: 'icon-512.png', size: 512, share: 0.9, hintergrund: 'transparent' },
-  { file: 'icon-512-maskable.png', size: 512, share: 0.64, hintergrund: 'weiss' },
+  { file: 'icon-512-maskable.png', size: 512, share: 0.76, hintergrund: 'kachel' },
   { file: 'apple-touch-icon.png', size: 180, share: 0.86, hintergrund: 'kachel' },
 ]
 
@@ -116,7 +114,7 @@ try {
   for (const { file, size, share, hintergrund } of TARGETS) {
     const box = Math.round(size * share)
     const transparent = hintergrund === 'transparent'
-    const bg = { transparent: 'transparent', weiss: WEISS, kachel: KACHEL }[hintergrund]
+    const bg = { transparent: 'transparent', kachel: KACHEL }[hintergrund]
     if (!bg) throw new Error(`${file}: unbekannter Hintergrund ${hintergrund}`)
     const html = `<!doctype html><meta charset="utf-8"><style>
 html,body{margin:0;padding:0}

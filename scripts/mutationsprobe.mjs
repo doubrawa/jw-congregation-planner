@@ -6873,6 +6873,49 @@ export const KATALOG = [
     suchen: "    alleSeiten<TrolleyTerminRow>((von, bis) =>\n",
     ersetzen: "    ((seite) => seite(0, 999))((von, bis) =>\n",
   },
+  /* ---- Logo in den Farben des Designs (T121, Phase 10a, 15.10.2026) ---- */
+  {
+    id: 'manifest-leiste-dunkel',
+    datei: 'public/manifest.webmanifest',
+    regel: 'Das Manifest färbt die Bedienleiste der installierten App in der Kachelfarbe — sonst weiße Knöpfe auf Weiß.',
+    suchen: '  "theme_color": "#1c1e20",\n',
+    ersetzen: '  "theme_color": "#ffffff",\n',
+  },
+  {
+    id: 'manifest-startbild-kachel',
+    datei: 'public/manifest.webmanifest',
+    regel: 'Der Startbildschirm der installierten App trägt die Kachelfarbe — das randfüllende Icon geht darin auf.',
+    suchen: '  "background_color": "#1c1e20",\n',
+    ersetzen: '  "background_color": "#ffffff",\n',
+  },
+  {
+    id: 'logo-datei-pult-minze',
+    datei: 'public/logo.svg',
+    regel: 'Das App-Icon trägt das Pult in Minze, wie die Darstellung.',
+    suchen: '<circle cx="256" cy="140" r="30" fill="#86E0B8">',
+    ersetzen: '<circle cx="256" cy="140" r="30" fill="#E7B04B">',
+  },
+  {
+    id: 'logo-klein-datei-kachel',
+    datei: 'public/logo-klein.svg',
+    regel: 'Das Favicon trägt die Kachel in Graphit, wie die Karte der dunklen Darstellung.',
+    suchen: '<rect width="512" height="512" rx="116" fill="#1C1E20">',
+    ersetzen: '<rect width="512" height="512" rx="116" fill="#17302D">',
+  },
+  {
+    id: 'logo-form-gross-wie-datei',
+    datei: 'src/bausteine/logo-form.ts',
+    regel: 'Die große Fassung in der App hat dieselben Plätze wie logo.svg.',
+    suchen: '    [[171.33, 213.32], [224.43, 247.46], [287.57, 247.46], [340.67, 213.32]],\n',
+    ersetzen: '    [[171.33, 213.32], [224.43, 247.46], [287.57, 247.46]],\n',
+  },
+  {
+    id: 'anmeldung-logo-gross',
+    datei: 'src/login/LoginKopf.tsx',
+    regel: 'Die Anmeldung zeigt das Logo groß, mit 4, 6 und 8 Plätzen.',
+    suchen: '      <Logo gross breite={150} className="login-logo" />\n',
+    ersetzen: '      <Logo breite={150} className="login-logo" />\n',
+  },
 ]
 
 /**

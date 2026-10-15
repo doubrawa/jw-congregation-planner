@@ -106,6 +106,17 @@ describe('Ohne Kennwort', () => {
     expect(container.textContent).toContain(t.ohnePasswort)
     expect(knopf(container, t.linkSenden)).toBeDefined()
   })
+
+  it('oben das Logo groß, mit 4, 6 und 8 Plätzen, ohne Kachel — in den Farben der Darstellung', () => {
+    // Entwurf `GAnmeldung` (T121, Phase 10): bis dahin stand hier `logo.svg`
+    // samt Kachel, in Petrol und Gold auf Graphit.
+    const { container } = zeige()
+    const logo = container.querySelector('.login-head .login-logo')!
+    expect(logo.tagName.toLowerCase()).toBe('svg')
+    expect(logo.querySelectorAll('.logo-platz circle')).toHaveLength(4 + 6 + 8)
+    expect(logo.querySelectorAll('.logo-pult')).toHaveLength(1)
+    expect(logo.querySelector('rect, img')).toBeNull()
+  })
 })
 
 describe('Link senden', () => {

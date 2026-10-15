@@ -1,13 +1,17 @@
-<!-- Das Logo für kleine Größen (seit dem 4.10.2026): Favicon, Kopfzeile am Handy
-     (22 px), Seitenleiste (40 px). Dieselben drei Bögen um das Pult wie
-     logo.svg (Radien 112, 176, 240; 64 Einheiten Bogenabstand zwischen zwei
-     Plätzen), aber nur 3, 5 und 7 Plätze und kräftigere Punkte — klein
-     verschwammen die 18 Plätze von 4-6-8 zu Streifen. Bei ungerader Zahl
-     steht ein Platz genau unter dem Pult. Groß (Anmeldung, App-Icons) bleibt
-     logo.svg. Entworfen auf der Design-Fläche, Board „Klein · weniger Plätze". -->
+<!-- Das Logo für kleine Größen (seit dem 4.10.2026): das Favicon. Dieselben
+     drei Bögen um das Pult wie logo.svg (Radien 112, 176, 240; 64 Einheiten
+     Bogenabstand zwischen zwei Plätzen), aber nur 3, 5 und 7 Plätze und
+     kräftigere Punkte — klein verschwammen die 18 Plätze von 4-6-8 zu
+     Streifen. Bei ungerader Zahl steht ein Platz genau unter dem Pult. Menü
+     und Druckbögen zeichnen dieselbe Form ohne Kachel (bausteine/Logo.tsx).
+     Entworfen auf der Design-Fläche, Board „Klein · weniger Plätze".
+     Farben seit dem 15.10.2026 die der dunklen Darstellung (Graphit · Minze,
+     T121): Kachel wie --karte, Plätze wie --text, Pult in --akzent — bis
+     dahin Petrol, Creme und Gold. tests/logo-farben.test.ts hält beides
+     gleich. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Sitzreihen um ein Rednerpult">
-  <rect width="512" height="512" rx="116" fill="#17302D"></rect>
-  <g fill="#FBF6EA">
+  <rect width="512" height="512" rx="116" fill="#1C1E20"></rect>
+  <g fill="#F4F4F1">
     <circle cx="195.43" cy="234.21" r="21"></circle>
     <circle cx="256.00" cy="252.00" r="21"></circle>
     <circle cx="316.57" cy="234.21" r="21"></circle>
@@ -28,5 +32,5 @@
       <circle cx="428.17" cy="307.21" r="21"></circle>
     </g>
   </g>
-  <circle cx="256" cy="140" r="34" fill="#E7B04B"></circle>
+  <circle cx="256" cy="140" r="34" fill="#86E0B8"></circle>
 </svg>

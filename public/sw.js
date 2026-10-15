@@ -26,8 +26,9 @@ const DEV = new URL(self.location.href).searchParams.has('dev')
 
 // Relative URLs lösen gegen den SW-Pfad auf, also den App-Basispfad
 // (unter versammlung.app und im Dev gleichermaßen /).
-// `logo-klein.svg` trägt Kopfzeile und Seitenleiste, `logo.svg` die Anmeldung.
-const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'logo.svg', 'logo-klein.svg', 'icon-192.png']
+// `logo-klein.svg` ist das Favicon, `icon-192.png` sein Ersatz. Das Logo in der
+// App (Menü, Anmeldung) zeichnet `bausteine/Logo.tsx` selbst.
+const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'logo-klein.svg', 'icon-192.png']
 
 /**
  * Die gehashten Bündel, auf die `index.html` verweist — Skript, vorab geladene
