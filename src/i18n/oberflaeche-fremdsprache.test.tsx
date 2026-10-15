@@ -270,7 +270,7 @@ const CODES = APP_LANGS.map((l) => l.code)
 beforeAll(async () => {
   // Die Overlays sind lazy (Code-Splitting). Ohne Nachladen liefert `dict()`
   // den EN-Rückfall — und die Prüfung sähe eine englische statt einer
-  // koreanischen Oberfläche.
+  // ukrainischen Oberfläche.
   await Promise.all(CODES.map((code) => loadOverlay(code)))
 })
 
@@ -364,7 +364,7 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
    */
   // Die Versammlungssprache ist der jw.org-Code — für diese drei derselbe
   // Text wie der App-Code, seit der Zustand nicht mehr den Namen führt.
-  it.each(['en', 'ko', 'ar'] as const)('%s', (code) => {
+  it.each(['en', 'uk', 'ar'] as const)('%s', (code) => {
     const gefunden: string[] = []
     for (const screen of SCREENS) {
       // Die Versammlung läuft in derselben Sprache: Dann steht auch der
@@ -555,7 +555,7 @@ describe('Kanonisch deutsche Datenwerte erscheinen übersetzt', () => {
    * Hier stand eine Tabelle App-Code → deutscher Name; für diese drei ist der
    * jw.org-Code derselbe Text wie der App-Code.
    */
-  it.each(['en', 'es', 'ja'] as const)('%s: Rollen und Dienste stehen nicht deutsch da', (code) => {
+  it.each(['en', 'es', 'ru'] as const)('%s: Rollen und Dienste stehen nicht deutsch da', (code) => {
     const gefunden: string[] = []
     for (const screen of ['start', 'programm', 'aufgaben', 'planen', 'personen'] as Screen[]) {
       const { container } = zeige({ screen, lang: code, congLang: code })
@@ -625,8 +625,9 @@ describe('Jeder Bildschirm rendert in jeder Sprache', () => {
    * und es rendert weiter tadellos — nur eben deutsch.
    *
    * Geprüft wird deshalb der **Unterschied**: Dieselbe Ansicht auf Deutsch und
-   * auf Koreanisch, und an der genannten Stelle muss etwas anderes stehen.
-   * Koreanisch, weil dort keine zufällige Namensgleichheit möglich ist.
+   * auf Ukrainisch, und an der genannten Stelle muss etwas anderes stehen.
+   * Ukrainisch, weil in kyrillischer Schrift keine zufällige
+   * Namensgleichheit möglich ist.
    */
   const INTL_STELLEN: Array<[string, Partial<AppState>, string]> = [
     ['Reiter der Zusammenkünfte', { screen: 'programm' }, '.meeting-tab'],
@@ -643,10 +644,10 @@ describe('Jeder Bildschirm rendert in jeder Sprache', () => {
       return el?.textContent ?? ''
     })()
     cleanup()
-    const { container } = zeige({ ...over, lang: 'ko', congLang: 'de' })
-    const koreanisch = container.querySelector(marke)?.textContent ?? ''
-    expect(koreanisch, `${name}: leer`).toBeTruthy()
-    expect(koreanisch, `${name}: blieb „${deutsch}"`).not.toBe(deutsch)
+    const { container } = zeige({ ...over, lang: 'uk', congLang: 'de' })
+    const ukrainisch = container.querySelector(marke)?.textContent ?? ''
+    expect(ukrainisch, `${name}: leer`).toBeTruthy()
+    expect(ukrainisch, `${name}: blieb „${deutsch}"`).not.toBe(deutsch)
   })
 
   it('der Treffpunkt-Reiter zeigt seinen Wochentag in der Sprache des Lesers', () => {
@@ -656,14 +657,14 @@ describe('Jeder Bildschirm rendert in jeder Sprache', () => {
     const { container: de } = zeige({ screen: 'programm', tab: 'fs', lang: 'de', congLang: 'de' })
     const deutsch = sichtbarerText(de)
     cleanup()
-    const { container: ko } = zeige({ screen: 'programm', tab: 'fs', lang: 'ko', congLang: 'de' })
-    const koreanisch = sichtbarerText(ko)
+    const { container: uk } = zeige({ screen: 'programm', tab: 'fs', lang: 'uk', congLang: 'de' })
+    const ukrainisch = sichtbarerText(uk)
     expect(deutsch).toMatch(/Samstag/)
-    expect(koreanisch).not.toMatch(/Samstag/)
-    expect(koreanisch).toMatch(/토요일/)
+    expect(ukrainisch).not.toMatch(/Samstag/)
+    expect(ukrainisch).toMatch(/субот/i)
     // Der Ort bleibt in beiden derselbe — er ist keine Übersetzung wert.
     expect(deutsch).toContain('Zubo 3')
-    expect(koreanisch).toContain('Zubo 3')
+    expect(ukrainisch).toContain('Zubo 3')
   })
 
   it.each(CODES)('%s: auch mit fremder Versammlungssprache', (code) => {
@@ -692,14 +693,14 @@ describe('Jeder Bildschirm rendert in jeder Sprache', () => {
 /* ---- 4. Rechts nach links ------------------------------------------------ */
 
 describe('Rechts-nach-links', () => {
-  it('genau vier App-Sprachen laufen von rechts nach links', () => {
+  it('genau zwei App-Sprachen laufen von rechts nach links', () => {
     const rtl = CODES.filter((c) => isRTL(c))
-    expect(rtl.sort()).toEqual(['ar', 'fa', 'he', 'ur'])
+    expect(rtl.sort()).toEqual(['ar', 'fa'])
   })
 
-  it.each(['ar', 'he', 'fa', 'ur'] as const)('%s: der Bildschirm bleibt lesbar', (code) => {
+  it.each(['ar', 'fa'] as const)('%s: der Bildschirm bleibt lesbar', (code) => {
     // Kein Layout-Test — jsdom rechnet nichts. Geprüft wird, dass die Inhalte
-    // ankommen: In diesen vier Sprachen laufen zusätzlich eigene Ziffern und
+    // ankommen: In diesen Sprachen laufen zusätzlich eigene Ziffern und
     // Zweirichtungs-Marken durch die Textfunktionen.
     const { container } = zeige({ screen: 'planen', lang: code, congLang: 'ar' })
     const text = sichtbarerText(container)
@@ -886,21 +887,21 @@ describe('Die Pläne (T120) in einer fremden Sprache', () => {
   })
 
   /*
-   * Auf Koreanisch, nicht auf Englisch: In lateinischer Schrift trifft die
+   * Auf Ukrainisch, nicht auf Englisch: In lateinischer Schrift trifft die
    * Suche auch englische Wörter, die deutsch genauso lauten. Der geöffnete
    * Königreichssaal sagt „Start with" (`wpAbGruppe`) — und „Start" ist
    * deutsch `navStart`. Ein fest ins JSX geschriebenes deutsches Wort fände
-   * Koreanisch genauso, ohne diesen Zufall.
+   * Ukrainisch genauso, ohne diesen Zufall.
    */
   it.each(ANSICHTEN)('%s: kein deutsches Wörterbuchwort', (name, over, _marke, oeffnen) => {
-    const { text } = ansicht(over, oeffnen, 'ko')
-    const gefunden = deutscheWerte('ko')
+    const { text } = ansicht(over, oeffnen, 'uk')
+    const gefunden = deutscheWerte('uk')
       .filter(([, wert]) => stehtDrin(text, wert))
       .map(([key, wert]) => `${key} = „${wert}"`)
     expect(gefunden, name).toEqual([])
   })
 
-  it.each(['en', 'es', 'ja'] as const)('%s: Dienst, Rolle, Versammlung und Termine stehen nicht deutsch da', (code) => {
+  it.each(['en', 'es', 'ru'] as const)('%s: Dienst, Rolle, Versammlung und Termine stehen nicht deutsch da', (code) => {
     const gefunden: string[] = []
     for (const [name, over, , oeffnen] of ANSICHTEN) {
       const { text } = ansicht(over, oeffnen, code)

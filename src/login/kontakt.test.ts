@@ -95,7 +95,7 @@ describe('Die Adresse des Betreibers', () => {
   it('die Suche sieht die Wörterbücher und die Anmeldeseite wirklich — sonst bewiese sie nichts', () => {
     const pfade = QUELLEN.map(([pfad]) => pfad)
     expect(pfade).toContain('i18n/de.ts')
-    expect(pfade).toContain('i18n/overlays/ja.ts')
+    expect(pfade).toContain('i18n/overlays/uk.ts')
     expect(pfade).toContain('login/LoginScreen.tsx')
   })
 })

@@ -11,6 +11,7 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { FONT_SCALES, THEME_LIST } from '../data/constants'
 import { emptyQualifications } from '../data/helpers'
+import { APP_LANGS } from '../i18n/langs'
 import { dict } from '../i18n/ui'
 import type { Member, Person } from '../data/types'
 
@@ -249,7 +250,7 @@ describe('App-Sprache', () => {
     const { container } = zeige({ lang: 'de' })
     const wahl = sprachwahl(container)
     expect(wahl.value).toBe('de')
-    expect(wahl.querySelectorAll('option').length).toBeGreaterThan(30)
+    expect(wahl.querySelectorAll('option').length).toBe(APP_LANGS.length)
   })
 
   it('ein Wechsel schlägt durch', () => {

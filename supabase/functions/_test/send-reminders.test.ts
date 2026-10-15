@@ -1014,19 +1014,19 @@ describe('send-reminders: die Sprache am Push-Abo', () => {
   })
 
   it('der Titel steht in der Sprache des Geräts', async () => {
-    subs = [abo('s-ko', 'ko')]
+    subs = [abo('s-uk', 'uk')]
     const p = previewFor(await run(), U_MAX)
-    expect(p?.title).toBe(pushTexte('ko').erinnerung)
+    expect(p?.title).toBe(pushTexte('uk').erinnerung)
     expect(p?.title).not.toBe(pushTexte('de').erinnerung)
   })
 
   it('zwei Geräte in zwei Sprachen bekommen zwei Nachrichten', async () => {
-    // Die Sprache gehört zum Abo. Wer die App auf dem Handy koreanisch und am
+    // Die Sprache gehört zum Abo. Wer die App auf dem Handy ukrainisch und am
     // Tablet englisch nutzt, soll auf jedem Gerät seine Sprache lesen — ein
     // Versand je Sprache, nicht einer für den Nutzer.
-    subs = [abo('s-ko', 'ko'), abo('s-en', 'en'), abo('s-ko2', 'ko')]
+    subs = [abo('s-uk', 'uk'), abo('s-en', 'en'), abo('s-uk2', 'uk')]
     const titel = (await run()).preview?.filter((p) => p.userId === U_MAX).map((p) => p.title) ?? []
-    expect(titel.sort()).toEqual([pushTexte('en').erinnerung, pushTexte('ko').erinnerung].sort())
+    expect(titel.sort()).toEqual([pushTexte('en').erinnerung, pushTexte('uk').erinnerung].sort())
   })
 
   it('ein Abo ohne Sprache bekommt Deutsch', async () => {
@@ -1034,12 +1034,28 @@ describe('send-reminders: die Sprache am Push-Abo', () => {
     expect(previewFor(await run(), U_MAX)?.title).toBe(pushTexte('de').erinnerung)
   })
 
+  /*
+    Am 15.10.2026 sind 22 App-Sprachen entfallen. Ein Abo kann eine davon noch
+    tragen — dann geht die Erinnerung ganz deutsch hinaus, nicht gemischt: Bis
+    dahin lieferte der Intl-Weg das Datum auf Koreanisch, die Bruchstücke auf
+    Englisch, den Titel auf Deutsch.
+  */
+  it('ein Abo mit einer entfallenen Sprache bekommt Deutsch — Titel und Rumpf', async () => {
+    subs = [abo('s-alt', 'ko')]
+    const alt = previewFor(await run(), U_MAX)
+    subs = [abo('s-de', 'de')]
+    const deutsch = previewFor(await run(), U_MAX)
+    expect(alt?.title).toBe(deutsch?.title)
+    expect(alt?.body).toBe(deutsch?.body)
+  })
+
   /**
    * **Der Rumpf spricht dieselbe Sprache wie der Titel.**
    *
    * Bis zum 28.8.2026 tat er das nicht: Der Titel wurde je Abo übersetzt, der
    * Rumpf ging kanonisch deutsch hinaus — ein koreanischer Verkündiger las
-   * einen koreanischen Titel über einer deutschen Zeile. Grund war eine
+   * einen koreanischen Titel über einer deutschen Zeile (damals gemessen; seit
+   * dem 15.10.2026 prüft es Ukrainisch). Grund war eine
    * Trennung, keine Absicht: Der Fragment-Übersetzer lag im Client-Bündel, und
    * die Edge-Laufzeit kommt nicht an `src/` heran.
    *
@@ -1047,17 +1063,17 @@ describe('send-reminders: die Sprache am Push-Abo', () => {
    * benutzt, keine zweite Abschrift (siehe den Kopf von `translate.ts`).
    */
   it('der Rumpf kommt in der Sprache des Geräts', async () => {
-    subs = [abo('s-ko', 'ko')]
-    const koreanisch = previewFor(await run(), U_MAX)
+    subs = [abo('s-uk', 'uk')]
+    const ukrainisch = previewFor(await run(), U_MAX)
     subs = [abo('s-de', 'de')]
     const deutsch = previewFor(await run(), U_MAX)
 
-    expect(koreanisch?.body, 'der Rumpf ist leer — dann prüft das hier nichts').toBeTruthy()
-    expect(koreanisch?.title).not.toBe(deutsch?.title)
-    expect(koreanisch?.body).not.toBe(deutsch?.body)
+    expect(ukrainisch?.body, 'der Rumpf ist leer — dann prüft das hier nichts').toBeTruthy()
+    expect(ukrainisch?.title).not.toBe(deutsch?.title)
+    expect(ukrainisch?.body).not.toBe(deutsch?.body)
     // Kein deutscher Wochentag, kein deutscher Monat mehr.
-    expect(koreanisch?.body).not.toMatch(/Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag/)
-    expect(koreanisch?.body).not.toMatch(/Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember/)
+    expect(ukrainisch?.body).not.toMatch(/Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag/)
+    expect(ukrainisch?.body).not.toMatch(/Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember/)
     // Die deutsche Fassung dagegen sehr wohl — sonst prüfte die Zeile darüber
     // nur, dass irgendetwas anders ist.
     expect(deutsch?.body).toMatch(/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), /)
@@ -1067,7 +1083,7 @@ describe('send-reminders: die Sprache am Push-Abo', () => {
     // Übersetzt werden Wochentag, Monat und die Rollen — nicht die Uhrzeit und
     // nicht die Trennzeichen. Sonst stünde in der Erinnerung eine andere Zeit
     // als in der App.
-    subs = [abo('s-ko', 'ko')]
+    subs = [abo('s-uk', 'uk')]
     const p = previewFor(await run(), U_MAX)
     expect(p?.body).toContain('19:00')
     expect(p?.body).toContain(': ')
@@ -1081,7 +1097,7 @@ describe('send-reminders: die Sprache am Push-Abo', () => {
       Stück. Genau das prüft diese Zeile: Kommt jemand auf die Idee, erst zu
       verbinden und dann zu übersetzen, bleibt der mittlere Teil deutsch.
     */
-    subs = [abo('s-ko', 'ko')]
+    subs = [abo('s-uk', 'uk')]
     const p = previewFor(await run(), U_MAX)
     const teile = (p?.body ?? '').split(' · ')
     expect(teile.length, 'nur ein Stück — dann prüft das hier nichts').toBeGreaterThan(1)
@@ -1104,14 +1120,14 @@ describe('send-reminders: die Sprache am Push-Abo', () => {
       schlimmer als ein deutscher Buchname.
     */
     weeks = [{ start: WEEK_START, data: { mid: midMitSchriftstelle() } }]
-    subs = [abo('s-ko', 'ko')]
+    subs = [abo('s-uk', 'uk')]
     const body = previewFor(await run(), U_MAX)?.body ?? ''
     expect(body, `Rumpf: ${body}`).not.toContain('Jer ')
     expect(body).toContain('38:1-13')
   })
 
   it('zwei Geräte in zwei Sprachen bekommen zwei verschiedene Rümpfe', async () => {
-    subs = [abo('s-ko', 'ko'), abo('s-ar', 'ar')]
+    subs = [abo('s-uk', 'uk'), abo('s-ar', 'ar')]
     const rumpfe = (await run()).preview?.filter((p) => p.userId === U_MAX).map((p) => p.body) ?? []
     expect(rumpfe).toHaveLength(2)
     expect(rumpfe[0]).not.toBe(rumpfe[1])
@@ -1125,7 +1141,7 @@ describe('send-reminders: die Sprache am Push-Abo', () => {
       (`tu` in `NotificationsPanel`). Wer sie hier mitübersetzte, legte die
       Sprache eines *Geräts* auf einen Datensatz fest, den alle Geräte lesen.
     */
-    subs = [abo('s-ko', 'ko')]
+    subs = [abo('s-uk', 'uk')]
     await live()
     const notifs = writesTo('notifications')
       .filter((w) => w.method === 'POST')

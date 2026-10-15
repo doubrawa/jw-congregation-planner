@@ -619,16 +619,17 @@ describe('Hinweis auf doppelt vergebene feste Rollen (F7)', () => {
     expect(chips(container, 'wtVertreter')).toEqual([])
   })
 
-  it('sortiert in der Sprache des Lesers — schwedisch steht Å hinter Z', () => {
-    // Deutsch stünde „Åberg" bei A, also vorn: Die Gegenprobe zeigt, dass die
-    // Folge wirklich an der Sprache hängt und nicht zufällig stimmt.
-    const aberg = person('p-5', 'Per', 'Åberg', { priv: priv('wtLeiter') })
-    const zander = person('p-6', 'Ola', 'Zander', { priv: priv('wtLeiter') })
-    const schwedisch = zeige({ persons: [aberg, zander], lang: 'sv' }).container
-    expect(texte(chips(schwedisch, 'wtLeiter'))).toEqual(['Zander, Ola', 'Åberg, Per'])
+  it('sortiert in der Sprache des Lesers — türkisch steht Ö hinter O', () => {
+    // Deutsch gilt Ö als O, „Ötken" steht also vor „Ozan": Die Gegenprobe
+    // zeigt, dass die Folge wirklich an der Sprache hängt und nicht zufällig
+    // stimmt. (Bis zum 15.10.2026 schwedisch gemessen, Å hinter Z.)
+    const oetken = person('p-5', 'Ali', 'Ötken', { priv: priv('wtLeiter') })
+    const ozan = person('p-6', 'Can', 'Ozan', { priv: priv('wtLeiter') })
+    const tuerkisch = zeige({ persons: [oetken, ozan], lang: 'tr' }).container
+    expect(texte(chips(tuerkisch, 'wtLeiter'))).toEqual(['Ozan, Can', 'Ötken, Ali'])
     cleanup()
-    const deutsch = zeige({ persons: [aberg, zander] }).container
-    expect(texte(chips(deutsch, 'wtLeiter'))).toEqual(['Åberg, Per', 'Zander, Ola'])
+    const deutsch = zeige({ persons: [oetken, ozan] }).container
+    expect(texte(chips(deutsch, 'wtLeiter'))).toEqual(['Ötken, Ali', 'Ozan, Can'])
   })
 
   it('die Suche engt die Liste ein, den Hinweis nicht — er gilt der ganzen Versammlung', () => {

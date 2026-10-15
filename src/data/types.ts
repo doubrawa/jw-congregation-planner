@@ -25,11 +25,14 @@ export type Theme = FarbModus | 'auto'
  * überschreiben (fehlt eine Übersetzung, fällt die App auf Englisch zurück).
  * RTL-Sprachen (Arabisch etc.) folgen separat (brauchen dir="rtl"-Layout).
  */
+/**
+ * Die App-Sprachen. Seit dem 15.10.2026 zwölf statt 34: die meistgesprochenen
+ * in Deutschland, dazu Französisch und Spanisch (Entscheid des Betreibers,
+ * damit weniger zu übersetzen ist).
+ */
 export type Lang =
-  | 'de' | 'en' | 'es' | 'fr' | 'it' | 'pt' | 'nl' | 'pl' | 'ru' | 'uk'
-  | 'ro' | 'el' | 'cs' | 'sk' | 'hu' | 'hr' | 'sr' | 'bg' | 'sv' | 'da'
-  | 'fi' | 'no' | 'tr' | 'zh' | 'ja' | 'ko' | 'id' | 'tl' | 'vi' | 'sw'
-  | 'ar' | 'he' | 'fa' | 'ur' // RTL-Sprachen (Rechts-nach-links)
+  | 'de' | 'en' | 'es' | 'fr' | 'it' | 'pl' | 'ru' | 'uk' | 'ro' | 'tr'
+  | 'ar' | 'fa' // RTL-Sprachen (Rechts-nach-links)
 
 /** Sichtbare Bereiche. `planen`, `personen` und `einstellungen` nur für Planer (und Gruppenaufseher, eingeschränkt). */
 export type Screen =

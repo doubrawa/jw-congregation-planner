@@ -97,7 +97,7 @@ describe('useProgWeek', () => {
    * war.**
    *
    * Eine Versammlung hält ihr Programm auf Spanisch; ein Bruder hat die App auf
-   * Japanisch. Beim Import wurde die japanische Fassung mitgeholt (`Week.alt`).
+   * Russisch. Beim Import wurde die russische Fassung mitgeholt (`Week.alt`).
    * Dann — und nur dann — **wechselt die ganze Woche die Sprache**: Titel und
    * Lieder kommen aus der Variante, und die Vorlagen-Strings, die es dort nicht
    * gibt (Wochenend-Vorlage, eigene LAC-Punkte), gehen durch `makeTr` in die
@@ -117,20 +117,20 @@ describe('useProgWeek', () => {
       }],
       helpers: {},
     }
-    const jaMid: Meeting = {
-      date: '9月8日火曜日 · 19:00',
-      end: '約20:45終了',
+    const ruMid: Meeting = {
+      date: 'вторник, 8 сентября · 19:00',
+      end: 'Окончание ок. 20:45',
       sections: [{
-        label: '神の言葉の宝', kind: 'schaetze', farbe: 'petrol',
-        items: [{ iid: 'i64', num: 1, title: '霊的な宝を探る', meta: '10分', names: [] }],
+        label: 'СОКРОВИЩА ИЗ СЛОВА БОГА', kind: 'schaetze', farbe: 'petrol',
+        items: [{ iid: 'i64', num: 1, title: 'Ищем духовные жемчужины', meta: '10 мин', names: [] }],
       }],
       helpers: {},
     }
     return {
-      range: '7.–13. September', book: 'JEREMIA 32', start: '2026-09-07', 
+      range: '7.–13. September', book: 'JEREMIA 32', start: '2026-09-07',
       mid, we: structuredClone(leer),
       alt: {
-        ja: { range: '9月7–13日', book: 'エレミヤ 32', mid: jaMid, we: structuredClone(leer) },
+        ru: { range: '7–13 сентября', book: 'ИЕРЕМИЯ 32', mid: ruMid, we: structuredClone(leer) },
       },
     }
   }
@@ -138,36 +138,36 @@ describe('useProgWeek', () => {
   it('App-Sprache mit eigener Variante: die Woche wechselt die Sprache', () => {
     const week = wocheMitVariante()
     const { result } = renderHook(() => useProgWeek(week), {
-      wrapper: wrapper({ lang: 'ja', congLang: 'es' }),
+      wrapper: wrapper({ lang: 'ru', congLang: 'es' }),
     })
     expect(result.current.week).not.toBe(week)
     const gezeigt = result.current.week!
     const abschnitt = gezeigt.mid.sections[0]!
     const punkt = abschnitt.items[0] as PartItem
-    expect(gezeigt.range).toBe('9月7–13日')
-    expect(abschnitt.label).toBe('神の言葉の宝')
+    expect(gezeigt.range).toBe('7–13 сентября')
+    expect(abschnitt.label).toBe('СОКРОВИЩА ИЗ СЛОВА БОГА')
     // Die Zuteilung bleibt kanonisch — die Variante trägt keine.
     expect(punkt.names[0]!.name).toBe('T. Lindner')
   })
 
   it('und tpw übersetzt Vorlagen-Texte dann in die App-Sprache, nicht in die der Versammlung', () => {
     // Der Kern: „Lied 5" steht in der Wochenend-Vorlage kanonisch deutsch und
-    // kommt in keiner Variante vor. Es muss japanisch werden (Sprache des
+    // kommt in keiner Variante vor. Es muss russisch werden (Sprache des
     // Lesers), nicht spanisch (Sprache der Versammlung) — sonst stünde mitten
-    // im japanischen Programm ein spanisches Lied.
+    // im russischen Programm ein spanisches Lied.
     const { result } = renderHook(() => useProgWeek(wocheMitVariante()), {
-      wrapper: wrapper({ lang: 'ja', congLang: 'es' }),
+      wrapper: wrapper({ lang: 'ru', congLang: 'es' }),
     })
-    expect(result.current.tpw('Lied 5')).toBe(makeTr('ja')('Lied 5'))
+    expect(result.current.tpw('Lied 5')).toBe(makeTr('ru')('Lied 5'))
     expect(result.current.tpw('Lied 5')).not.toBe(makeTr('es')('Lied 5'))
   })
 
   it('ohne passende Variante bleibt es bei der Versammlungssprache', () => {
-    // Dieselbe Woche, aber die App läuft auf Koreanisch — dafür wurde nichts
+    // Dieselbe Woche, aber die App läuft auf Ukrainisch — dafür wurde nichts
     // mitgeholt. Dann zeigt die App das spanische Programm, und `tpw` ist `tp`.
     const week = wocheMitVariante()
     const { result } = renderHook(() => useProgWeek(week), {
-      wrapper: wrapper({ lang: 'ko', congLang: 'es' }),
+      wrapper: wrapper({ lang: 'uk', congLang: 'es' }),
     })
     expect(result.current.week).toBe(week)
     expect(result.current.tpw('Lied 5')).toBe(makeTr('es')('Lied 5'))
@@ -178,7 +178,7 @@ describe('useProgWeek', () => {
     // Sprachen dieselben sind: Das Programm steht schon in der richtigen.
     const week = wocheMitVariante()
     const { result } = renderHook(() => useProgWeek(week), {
-      wrapper: wrapper({ lang: 'ja', congLang: 'ja' }),
+      wrapper: wrapper({ lang: 'ru', congLang: 'ru' }),
     })
     expect(result.current.week).toBe(week)
   })

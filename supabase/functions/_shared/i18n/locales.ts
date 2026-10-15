@@ -11,7 +11,7 @@
  *
  * **Persisch trägt `-u-ca-gregory`, und das ist kein Schönheitsfehler.**
  * `fa-IR` bringt als Vorgabe den persischen (Dschalali-)Kalender mit — als
- * einzige der 34 Locales hier. Aus „Dienstag, 8. September" wurde damit
+ * einzige der Locales hier. Aus „Dienstag, 8. September" wurde damit
  * „سه‌شنبه ۱۷ شهریور": ein anderer Tag, ein anderer Monat. Das ist gleich
  * dreifach falsch:
  *
@@ -33,19 +33,14 @@
  * steht sie hier und nicht als `calendar: 'gregory'` in jedem einzelnen
  * `Intl.DateTimeFormat`. Zahl- und Monatsnamen bleiben persisch: „۸ سپتامبر".
  *
- * **Portugiesisch ist brasilianisch (`pt-BR`).** Hier stand `pt-PT`, während
- * die Programmvariante (`APP_TO_JW.pt` → jw.org „pt") und die Einladungs-Mail
- * brasilianisch waren und das Wörterbuch beides mischte. Seit dem 25.9.2026
- * ist es durchgehend eine Variante.
+ * **Zwölf Sprachen seit dem 15.10.2026** (vorher 34): die meistgesprochenen in
+ * Deutschland, dazu Französisch und Spanisch — Entscheid des Betreibers, damit
+ * weniger zu übersetzen ist.
  */
 export const LOCALES = {
   de: 'de-DE', en: 'en-US', es: 'es-ES', fr: 'fr-FR', it: 'it-IT',
-  pt: 'pt-BR', nl: 'nl-NL', pl: 'pl-PL', ru: 'ru-RU', uk: 'uk-UA',
-  ro: 'ro-RO', el: 'el-GR', cs: 'cs-CZ', sk: 'sk-SK', hu: 'hu-HU',
-  hr: 'hr-HR', sr: 'sr-Latn-RS', bg: 'bg-BG', sv: 'sv-SE', da: 'da-DK',
-  fi: 'fi-FI', no: 'nb-NO', tr: 'tr-TR', zh: 'zh-CN', ja: 'ja-JP',
-  ko: 'ko-KR', id: 'id-ID', tl: 'fil-PH', vi: 'vi-VN', sw: 'sw-KE',
-  ar: 'ar', he: 'he-IL', fa: 'fa-IR-u-ca-gregory', ur: 'ur-PK',
+  pl: 'pl-PL', ru: 'ru-RU', uk: 'uk-UA', ro: 'ro-RO', tr: 'tr-TR',
+  ar: 'ar', fa: 'fa-IR-u-ca-gregory',
 }
 
 /** Dieselbe Tabelle mit beliebigem Schlüssel — für Nachschläge zur Laufzeit. */

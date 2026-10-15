@@ -19,41 +19,25 @@
 import type { Lang } from '../data/types'
 import { LOCALES as SHARED_LOCALES } from '../../supabase/functions/_shared/i18n/locales.ts'
 
+/**
+ * Die zwölf App-Sprachen (seit dem 15.10.2026, vorher 34): die
+ * meistgesprochenen in Deutschland — Türkisch, Russisch, Arabisch, Polnisch,
+ * Englisch, Rumänisch, Ukrainisch, Italienisch, Persisch —, dazu Französisch
+ * und Spanisch. Weniger Sprachen, weniger zu übersetzen.
+ */
 export const APP_LANGS: ReadonlyArray<{ code: Lang; label: string }> = [
   { code: 'de', label: 'Deutsch' },
   { code: 'en', label: 'English' },
   { code: 'es', label: 'Español' },
   { code: 'fr', label: 'Français' },
   { code: 'it', label: 'Italiano' },
-  { code: 'pt', label: 'Português' },
-  { code: 'nl', label: 'Nederlands' },
   { code: 'pl', label: 'Polski' },
   { code: 'ru', label: 'Русский' },
   { code: 'uk', label: 'Українська' },
   { code: 'ro', label: 'Română' },
-  { code: 'el', label: 'Ελληνικά' },
-  { code: 'cs', label: 'Čeština' },
-  { code: 'sk', label: 'Slovenčina' },
-  { code: 'hu', label: 'Magyar' },
-  { code: 'hr', label: 'Hrvatski' },
-  { code: 'sr', label: 'Srpski' },
-  { code: 'bg', label: 'Български' },
-  { code: 'sv', label: 'Svenska' },
-  { code: 'da', label: 'Dansk' },
-  { code: 'fi', label: 'Suomi' },
-  { code: 'no', label: 'Norsk' },
   { code: 'tr', label: 'Türkçe' },
-  { code: 'zh', label: '中文' },
-  { code: 'ja', label: '日本語' },
-  { code: 'ko', label: '한국어' },
-  { code: 'id', label: 'Bahasa Indonesia' },
-  { code: 'tl', label: 'Tagalog' },
-  { code: 'vi', label: 'Tiếng Việt' },
-  { code: 'sw', label: 'Kiswahili' },
   { code: 'ar', label: 'العربية' },
-  { code: 'he', label: 'עברית' },
   { code: 'fa', label: 'فارسی' },
-  { code: 'ur', label: 'اردو' },
 ]
 
 /** App-Sprachen alphabetisch nach nativem Namen — für die Sprach-Dropdowns. */
@@ -62,7 +46,7 @@ export const APP_LANGS_SORTED: ReadonlyArray<{ code: Lang; label: string }> = [.
 )
 
 /** RTL-Sprachen (Rechts-nach-links); steuern dir="rtl" + gespiegeltes Layout. */
-const RTL_LANGS: ReadonlySet<Lang> = new Set<Lang>(['ar', 'he', 'fa', 'ur'])
+const RTL_LANGS: ReadonlySet<Lang> = new Set<Lang>(['ar', 'fa'])
 
 /** true, wenn die App-Sprache von rechts nach links läuft. */
 export function isRTL(lang: Lang): boolean {
@@ -137,25 +121,19 @@ export const JW_TO_CONG: Readonly<Record<string, string>> = Object.fromEntries(
 )
 
 /**
- * jw.org-Sprachcode -> App-Uebersetzungscode (Lang), fuer die 30 Sprachen mit
+ * jw.org-Sprachcode -> App-Uebersetzungscode (Lang), fuer die App-Sprachen mit
  * Programmuebersetzung (FRAG/EXTRA in translate.ts). Damit werden auch bei
  * importierten Wochen unsere eigenen Vorlage-Strings (Wochenend-Sektionslabels,
  * ERÖFFNUNG/ABSCHLUSS, Platzhalter) via `tp` in die Versammlungssprache
- * uebersetzt. Skript-Varianten ohne passende Uebersetzung (cmn-hant, sr-cyrl …)
- * bleiben bewusst ohne Mapping -> Rueckfall auf Deutsch.
+ * uebersetzt. Jede andere jw.org-Sprache bleibt bewusst ohne Mapping ->
+ * Rueckfall auf Deutsch; das Programm selbst kommt trotzdem in ihr.
+ *
+ * Seit dem 15.10.2026 zwölf statt 34 (siehe `APP_LANGS`).
  */
 export const JW_TO_APP: Readonly<Record<string, Lang>> = {
   de: 'de', en: 'en', es: 'es', fr: 'fr', it: 'it',
-  pt: 'pt', 'pt-pt': 'pt', 'pt-ao': 'pt',
-  nl: 'nl', pl: 'pl', ru: 'ru', uk: 'uk', ro: 'ro', el: 'el',
-  cs: 'cs', sk: 'sk', hu: 'hu', hr: 'hr', 'sr-latn': 'sr', bg: 'bg',
-  sv: 'sv', da: 'da', fi: 'fi', no: 'no', tr: 'tr',
-  'cmn-hans': 'zh', ja: 'ja', ko: 'ko', id: 'id', tl: 'tl', vi: 'vi', sw: 'sw',
-  // Diese vier kamen später dazu und fehlten hier: ihre Wörterbücher gibt es
-  // längst, aber ohne Eintrag blieb für eine arabisch-, hebräisch-, persisch-
-  // oder urdusprachige Versammlung das ganze Programm deutsch stehen.
-  ar: 'ar', he: 'he', fa: 'fa', ur: 'ur',
-
+  pl: 'pl', ru: 'ru', uk: 'uk', ro: 'ro', tr: 'tr',
+  ar: 'ar', fa: 'fa',
 }
 
 /**
@@ -172,8 +150,9 @@ export function congAppCode(code: string): Lang | undefined {
 
 /**
  * App-Sprache -> jw.org-Sprachcode (Umkehrung von JW_TO_APP; bei mehreren
- * jw-Codes je App-Sprache gewinnt der erste Eintrag, z. B. pt statt pt-pt).
- * Dient dem Nachschlagen der passenden Programm-Sprachvariante (Week.alt).
+ * jw-Codes je App-Sprache gewönne der erste Eintrag — bei den zwölf heutigen
+ * fallen beide Codes zusammen). Dient dem Nachschlagen der passenden
+ * Programm-Sprachvariante (Week.alt).
  */
 export const APP_TO_JW: Readonly<Partial<Record<Lang, string>>> = (() => {
   const out: Partial<Record<Lang, string>> = {}

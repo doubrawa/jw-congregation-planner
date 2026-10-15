@@ -253,8 +253,9 @@ function monatsRegel(re: RegExp, monatsGruppen: number[], fn: Ausweichend): Rule
  * (Datums-Wörterbuch und Intl) dieselben Regeln aus derselben Tabelle.
  *
  * Fehlt eine Vorlage, entfällt die Regel und der deutsche Verweis bleibt
- * stehen: In den Arbeitsheften von zh/ja/ko/ar/he/fa/ur stehen die
- * Publikationskürzel gar nicht, dort gibt es nichts zu übersetzen.
+ * stehen: In den Arbeitsheften von ar/fa (gemessen, als es noch zh/ja/ko/he/ur
+ * gab, auch dort) stehen die Publikationskürzel gar nicht, dort gibt es nichts
+ * zu übersetzen.
  */
 function verweisRegeln(code: string): Rule[] {
   const ref: RefDict | undefined = REF[code]
@@ -405,7 +406,7 @@ function makeTrIntl(code: string): (s: string) => string {
     /*
      * FEHLT HIER: „Studienartikel 28" — der Verweis in der Meta-Zeile des
      * Wachtturm-Studiums. Die Regel gibt es nur im Wörterbuch-Pfad
-     * (`makeTr`, also en/es/fr); über Intl laufen die übrigen 30 Sprachen,
+     * (`makeTr`, also en/es/fr); über Intl laufen die übrigen App-Sprachen,
      * und dort bleibt der Verweis deutsch stehen. Dieselbe Sorte Lücke, die
      * der Kommentar bei REF beschreibt („deshalb blieb ‚Gruppe 2‘ in 30
      * Sprachen deutsch").
@@ -431,8 +432,15 @@ export function ohneMarken(s: string): string {
   return s == null || s === '' ? s : ohneAlleMarken(s)
 }
 
+/**
+ * Der Übersetzer für eine App-Sprache. **Jeder andere Code bleibt deutsch** —
+ * wie bei `texteFuer`: fehlend, unbekannt oder eine der 22 Sprachen, die am
+ * 15.10.2026 entfallen sind und noch an einem alten Push-Abo stehen können.
+ * Bis dahin nahm der Intl-Weg auch sie: Datum in der fremden Sprache,
+ * Bruchstücke auf Englisch, der Titel daneben deutsch.
+ */
 export function makeTr(code: string): (s: string) => string {
-  if (!code || code === 'de') return ohneMarken
+  if (!code || code === 'de' || !Object.hasOwn(LOCALES, code)) return ohneMarken
   const L: DateDict | undefined = D[code]
   if (!L) return makeTrIntl(code) // Zusatz-Sprachen: Intl-Datum + FRAG/EXTRA
   const M: Record<string, string> = FRAG[code] ?? {}

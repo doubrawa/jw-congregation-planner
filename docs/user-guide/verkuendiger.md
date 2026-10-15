@@ -512,7 +512,7 @@ dich ab. Admins finden am Handy hier auch **Personen** und **Einstellungen**.
 - **Schriftgröße** – ein Regler von **Klein** bis **Sehr groß**. Standard ist die
   bisherige Größe; wenn dir der Text zu klein ist, schiebe ihn nach rechts. Die
   Änderung wirkt sofort in der ganzen App und gilt nur für dein Gerät.
-- **Sprache** – die Anzeigesprache der App, in 34 Sprachen. Sie gilt nur für
+- **Sprache** – die Anzeigesprache der App, in 12 Sprachen. Sie gilt nur für
   dich: Deine Versammlung kann deutsch planen, während du alles auf Englisch
   liest.
   - **Das Programm wird mit übersetzt.** Die Titel der Programmpunkte, die

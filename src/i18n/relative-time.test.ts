@@ -196,10 +196,11 @@ describe('Jede App-Sprache bekommt ihren eigenen Chip', () => {
   })
 
   it('ein Tag weiter kann trotzdem ein eigenes Wort sein', () => {
-    // Japanisch hat für „übermorgen" ein Wort (明後日) und schreibt dort keine
-    // Zahl. Wer prüft „ab zwei Tagen steht eine Zahl da", prüft eine deutsche
-    // Eigenheit — deshalb steht das hier als Merkposten und nicht als Regel.
-    expect(relativeDayLabel(NOW + 2 * day, 'ja', NOW)).not.toMatch(/\p{Nd}/u)
-    expect(relativeDayLabel(NOW + 4 * day, 'ja', NOW)).toMatch(/\p{Nd}/u)
+    // Russisch hat für „übermorgen" ein Wort (послезавтра) und schreibt dort
+    // keine Zahl. Wer prüft „ab zwei Tagen steht eine Zahl da", prüft eine
+    // deutsche Eigenheit — deshalb steht das hier als Merkposten und nicht als
+    // Regel.
+    expect(relativeDayLabel(NOW + 2 * day, 'ru', NOW)).not.toMatch(/\p{Nd}/u)
+    expect(relativeDayLabel(NOW + 4 * day, 'ru', NOW)).toMatch(/\p{Nd}/u)
   })
 })

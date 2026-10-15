@@ -160,9 +160,9 @@ describe('REF — Verweis-Vorlagen', () => {
   /**
    * `lmdAnh` gehört dazu: Hier stand es bis zum 26.9.2026 unter Altbestand
    * („wird inzwischen als lmd Lektion 1 Punkt 5 zitiert"). Die Wochen 27 und
-   * 32/2026 zitieren aber wieder „lmd Anhang A Punkt 17/19" — in allen 34
-   * Sprachen nachgemessen, die vier fehlenden Vorlagen (sr/tr/fa/ur) sind seither
-   * eingetragen.
+   * 32/2026 zitieren aber wieder „lmd Anhang A Punkt 17/19" — damals in allen
+   * 34 Sprachen nachgemessen, die fehlenden Vorlagen (darunter tr/fa) sind
+   * seither eingetragen.
    */
   const AKTUELL: Array<keyof RefDict> = ['thLek', 'lmdLekP', 'lffLekP', 'wcgKap', 'lmdAnh', 'gruppe', 'vers']
 
@@ -179,23 +179,16 @@ describe('REF — Verweis-Vorlagen', () => {
    */
   const ALTBESTAND: Array<keyof RefDict> = ['lmdLek', 'lffLek']
 
-  /**
-   * Bulgarisch behandelt im Versammlungsbibelstudium eine andere Publikation —
-   * für `wcg` gibt es dort keine gemessene Vorlage, und Erfundenes wäre
-   * schlimmer als ein erkennbar unübersetzter Verweis.
+  /*
+   * Hier stand bis zum 15.10.2026 eine Ausnahme für Bulgarisch (`wcg` ohne
+   * gemessene Vorlage). Mit der Sprache ist sie entfallen: Jede App-Sprache hat
+   * jetzt jede heute erzeugte Vorlage.
    */
-  const OHNE_WCG = new Set(['bg'])
-
   it.each(CODES)('%s hat alle heute erzeugten Vorlagen', (code) => {
     const ref = REF[code]
     expect(ref, `${code}: REF fehlt ganz`).toBeDefined()
-    const noetig = AKTUELL.filter((f) => !(f === 'wcgKap' && OHNE_WCG.has(code)))
-    const fehlend = noetig.filter((f) => typeof ref?.[f] !== 'function')
+    const fehlend = AKTUELL.filter((f) => typeof ref?.[f] !== 'function')
     expect(fehlend, `${code}: Vorlage für eine aktuelle Verweisform fehlt`).toEqual([])
-  })
-
-  it('die wcg-Ausnahme ist ausdrücklich benannt und wächst nicht heimlich', () => {
-    expect([...OHNE_WCG]).toEqual(['bg'])
   })
 
   it('die Altbestand-Lücken sind vollständig verzeichnet', () => {
@@ -208,16 +201,7 @@ describe('REF — Verweis-Vorlagen', () => {
         if (typeof REF[code]?.[f] !== 'function') luecken.push(`${code}.${f}`)
       }
     }
-    expect(luecken.sort()).toEqual(
-      [
-        'cs.lffLek', 'cs.lmdLek',
-        'hu.lffLek', 'hu.lmdLek',
-        'ko.lffLek', 'ko.lmdLek',
-        'sk.lffLek', 'sk.lmdLek',
-        'tr.lffLek', 'tr.lmdLek',
-        'zh.lffLek', 'zh.lmdLek',
-      ].sort(),
-    )
+    expect(luecken.sort()).toEqual(['tr.lffLek', 'tr.lmdLek'])
   })
 })
 

@@ -488,7 +488,7 @@ describe('Gerätevorlieben stehen auf <html> — dort liest das CSS sie', () => 
     expect(document.documentElement.dir).toBe(isRTL(code) ? 'rtl' : 'ltr')
   })
 
-  it('genau vier Sprachen drehen das Layout — und die Rückkehr dreht es zurück', async () => {
+  it('genau zwei Sprachen drehen das Layout — und die Rückkehr dreht es zurück', async () => {
     // Der Rückweg ist die Hälfte, die man vergisst: Wer von Arabisch auf
     // Deutsch wechselt, muss wieder von links nach rechts lesen. Ein `dir`,
     // das nur gesetzt und nie zurückgenommen wird, fällt beim Umschalten in
@@ -501,7 +501,7 @@ describe('Gerätevorlieben stehen auf <html> — dort liest das CSS sie', () => 
       })
       if (document.documentElement.dir === 'rtl') rtl.push(code)
     }
-    expect(rtl.sort()).toEqual(['ar', 'fa', 'he', 'ur'])
+    expect(rtl.sort()).toEqual(['ar', 'fa'])
     await act(async () => {
       result.current.dispatch({ type: 'setLang', lang: 'de' })
     })
@@ -513,19 +513,19 @@ describe('Gerätevorlieben stehen auf <html> — dort liest das CSS sie', () => 
       Die Overlays liegen als eigene Chunks (Code-Splitting). Bis eines da ist,
       liefert `dict()` den **englischen** Rückfall. Der Nachladeschritt stößt
       deshalb ein zweites `setLang` an — ohne das bliebe die Oberfläche für
-      jede der ~30 lazy geladenen Sprachen dauerhaft englisch, ohne Fehler und
+      jede der lazy geladenen Sprachen dauerhaft englisch, ohne Fehler und
       ohne dass ein Test es sähe.
     */
     const { result } = starte()
     await act(async () => {
-      result.current.dispatch({ type: 'setLang', lang: 'ko' })
+      result.current.dispatch({ type: 'setLang', lang: 'uk' })
     })
     // Der Effekt löst den Import aus; abwarten, bis er durch ist.
     await act(async () => {
-      await loadOverlay('ko')
+      await loadOverlay('uk')
     })
-    expect(dict('ko').navProfil).not.toBe(dict('en').navProfil)
-    expect(dict('ko').navProfil).not.toBe(dict('de').navProfil)
+    expect(dict('uk').navProfil).not.toBe(dict('en').navProfil)
+    expect(dict('uk').navProfil).not.toBe(dict('de').navProfil)
   })
 })
 

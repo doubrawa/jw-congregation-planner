@@ -11,8 +11,8 @@
  *    Daten werden nicht verdreht) und arabischer Inhalt in einer LTR-Oberfläche
  *    korrekt RTL. Gilt für Content-Textknoten, NICHT für reine UI-Labels.
  * 2) Richtungsabhängige Icons (Wochen-Pfeile ‹ ›) werden in RTL gespiegelt.
- * 3) Arabische, persische, Urdu- und hebräische Schrift braucht mehr Zeilenhöhe
- *    als Manrope: 1,5 statt 1,35 (Entwurf T121). Die Schrift selbst wählt
+ * 3) Arabische und persische Schrift braucht mehr Zeilenhöhe als Manrope:
+ *    1,5 statt 1,35 (Entwurf T121). Die Schrift selbst wählt
  *    `--font-sans` je Sprache (tokens.css). */
 
 :root[dir='rtl'] body {

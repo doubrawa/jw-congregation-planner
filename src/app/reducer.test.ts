@@ -2353,31 +2353,31 @@ describe('Toasts in der Sprache des Nutzers', () => {
     ['geleert', { type: 'clearAssignments', scope: 'parts' }],
   ]
 
-  it.each(AKTIONEN)('%s: koreanisch statt deutsch', async (name, action, over) => {
+  it.each(AKTIONEN)('%s: ukrainisch statt deutsch', async (name, action, over) => {
     const { loadOverlay } = await import('../i18n/ui')
-    await loadOverlay('ko')
+    await loadOverlay('uk')
     const deutsch = reducer(makeState({ lang: 'de', ...over }), action).toast?.text ?? ''
-    const koreanisch = reducer(makeState({ lang: 'ko', ...over }), action).toast?.text ?? ''
+    const ukrainisch = reducer(makeState({ lang: 'uk', ...over }), action).toast?.text ?? ''
     expect(deutsch, `${name}: gar keine Meldung`).toBeTruthy()
-    expect(koreanisch, `${name}: gar keine Meldung`).toBeTruthy()
-    expect(koreanisch, `${name}: blieb deutsch`).not.toBe(deutsch)
+    expect(ukrainisch, `${name}: gar keine Meldung`).toBeTruthy()
+    expect(ukrainisch, `${name}: blieb deutsch`).not.toBe(deutsch)
   })
 
   it('eine Meldung mit Zahl behält ihre Zahl', () => {
     // `fill()` setzt `{n}` ein — in jeder Sprache dieselbe Zahl, nur an
     // womöglich anderer Stelle im Satz.
     const de = reducer(makeState({ lang: 'de' }), { type: 'autoAssign', scope: 'all' })
-    const ko = reducer(makeState({ lang: 'ko' }), { type: 'autoAssign', scope: 'all' })
+    const uk = reducer(makeState({ lang: 'uk' }), { type: 'autoAssign', scope: 'all' })
     const zahl = (s: string) => (s.match(/\d+/) ?? [''])[0]
     expect(zahl(de.toast!.text)).toBeTruthy()
-    expect(zahl(ko.toast!.text)).toBe(zahl(de.toast!.text))
+    expect(zahl(uk.toast!.text)).toBe(zahl(de.toast!.text))
   })
 
   it('kein Platzhalter bleibt ungefüllt stehen', () => {
     // Ein vergessenes `fill()` zeigt sich als „{n}" im Text — sichtbar, aber
     // nur, wenn jemand hinsieht.
     for (const [name, action, over] of AKTIONEN) {
-      const text = reducer(makeState({ lang: 'ko', ...over }), action).toast?.text ?? ''
+      const text = reducer(makeState({ lang: 'uk', ...over }), action).toast?.text ?? ''
       expect(text, `${name}: ${text}`).not.toMatch(/\{\w+\}/)
     }
   })

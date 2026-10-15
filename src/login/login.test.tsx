@@ -9,6 +9,7 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
+import { APP_LANGS } from '../i18n/langs'
 import { dict, loadOverlay } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import type { AnmeldeFehler, CodeGeprueft, LinkAngefordert } from '../lib/anmelden'
@@ -332,7 +333,7 @@ describe('Die Sprache lässt sich schon vor dem Anmelden wählen', () => {
     const { container } = zeige({ lang: 'de' })
     const wahl = container.querySelector<HTMLSelectElement>('.login-lang-select')!
     expect(wahl.value).toBe('de')
-    expect(wahl.querySelectorAll('option').length).toBeGreaterThan(30)
+    expect(wahl.querySelectorAll('option').length).toBe(APP_LANGS.length)
   })
 
   it('ein Wechsel schlägt sofort durch — man muss sich nicht erst anmelden', () => {
@@ -347,11 +348,11 @@ describe('Die Sprache lässt sich schon vor dem Anmelden wählen', () => {
  * wendet (T113).** Wer ohne Link hierher kommt, kennt die App nicht: Er soll
  * lesen können, was sie tut, und eine Adresse finden, unter der er seine
  * Versammlung anfragen kann. Beides in seiner Sprache. Was der Betreff in allen
- * 34 Sprachen aushalten muss, prüft `kontakt.test.ts`.
+ * Sprachen aushalten muss, prüft `kontakt.test.ts`.
  */
 describe('Wofür die App da ist und wo man eine Versammlung anfragt', () => {
   beforeAll(async () => {
-    await Promise.all([loadOverlay('ja'), loadOverlay('ar')])
+    await Promise.all([loadOverlay('uk'), loadOverlay('ar')])
   })
 
   const zweck = (c: HTMLElement) => c.querySelector('.login-head .login-sub')?.textContent
@@ -373,13 +374,13 @@ describe('Wofür die App da ist und wo man eine Versammlung anfragt', () => {
     expect(betreff(verweis(container))).toBe(t.anfrageBetreff)
   })
 
-  it('auf Japanisch kommt alles japanisch an, auch der Betreff — kodiert, damit der Verweis hält', () => {
-    const ja = dict('ja')
-    expect(ja.appZweck).not.toBe(dict('en').appZweck)
-    const { container } = zeige({ lang: 'ja' })
-    expect(zweck(container)).toBe(ja.appZweck)
+  it('auf Ukrainisch kommt alles ukrainisch an, auch der Betreff — kodiert, damit der Verweis hält', () => {
+    const uk = dict('uk')
+    expect(uk.appZweck).not.toBe(dict('en').appZweck)
+    const { container } = zeige({ lang: 'uk' })
+    expect(zweck(container)).toBe(uk.appZweck)
     expect(verweis(container).getAttribute('href')).toMatch(/^[\x21-\x7e]+$/)
-    expect(betreff(verweis(container))).toBe(ja.anfrageBetreff)
+    expect(betreff(verweis(container))).toBe(uk.anfrageBetreff)
   })
 
   it('auf Arabisch bleibt die Adresse links-nach-rechts', () => {

@@ -21,7 +21,7 @@ Mitteilungen und Einstellungen.
 > umgesetzt. Dazu die **v3-Funktionen**: Kreisaufseher- und Gedächtnismahl-Woche,
 > Bestätigungs-Flow (Zuteilungen bestätigen/verhindern), S-89-Formular,
 > konfigurierbare Erinnerungen und **Mehrsprachigkeit** (Oberfläche in
-> 34 Sprachen, separate Versammlungssprache für die Programm-Inhalte). Mit
+> 12 Sprachen, separate Versammlungssprache für die Programm-Inhalte). Mit
 > konfiguriertem **Supabase** (echtes Login + Postgres mit RLS) werden alle
 > Versammlungsdaten geladen und zurückgeschrieben — inkl. abgeleiteter
 > „Meine Aufgaben" und persistenter Bestätigungen. Erfundene Daten enthält die
@@ -166,7 +166,7 @@ src/
     helpers.ts      Anzeigename, Initialen, Qualifikations- und Auslastungsprüfung
     planning.ts     Zuteilungslogik (zuteilen/entfernen, Auto-Zuteilung, offene Slots)
   i18n/
-    ui.ts           UI-Wörterbücher (34 Sprachen) + Schlüssel-Maps
+    ui.ts           UI-Wörterbücher (12 Sprachen) + Schlüssel-Maps
     translate.ts    Programm-Inhalts-Übersetzer (makeTr): S-38-Begriffe, Daten, Referenzen
     langs.ts        jw.org-Sprachliste (Versammlungssprache) + App-Sprachen
     useT.ts         Hook: t (UI), tu (App-Sprache), tp (Versammlungssprache)
@@ -512,7 +512,7 @@ der jw.org-Seite (`otherAvailLangsChooser`, je Sprache ein `data-url`) die
 lokalisierte URL auf. Der Client schickt den jw.org-Sprachcode aus
 [`langs.ts`](src/i18n/langs.ts) (`CONG_TO_JW`, Name → Code); die
 Versammlungssprache lässt sich frei aus der vollen jw.org-Liste wählen (die
-App-Oberfläche deckt davon 34 Sprachen ab). Programm-Inhalte (Titel, Lieder,
+App-Oberfläche deckt davon 12 Sprachen ab). Programm-Inhalte (Titel, Lieder,
 Schriftstellen, Sektions-Überschriften, Rahmen) stehen dadurch **direkt in der
 Zielsprache**; unsere eigenen Labels (ERÖFFNUNG/ABSCHLUSS, Rollen wie
 Vorsitz/Gebet) bleiben app-sprachig.
@@ -629,10 +629,13 @@ umgekehrt. Die Regeln sind in
    (abwesend trotz Zuteilung, mehrfach in einer Zusammenkunft, Wochen-Serie,
    sowie **Hilfsdienst + Programmpunkt am selben Tag**)
 
-## App-Sprachen (34)
+## App-Sprachen (12)
 
-Die App-Oberfläche gibt es in 34 Sprachen (Europa + Weltsprachen) — Deutsch und
-33 Übersetzungen. Umschaltbar
+Die App-Oberfläche gibt es in 12 Sprachen — Deutsch und 11 Übersetzungen: die
+meistgesprochenen in Deutschland (Türkisch, Russisch, Arabisch, Polnisch,
+Englisch, Rumänisch, Ukrainisch, Italienisch, Persisch), dazu Französisch und
+Spanisch. Bis zum 15.10.2026 waren es 34; gekürzt, damit weniger zu übersetzen
+ist. Umschaltbar
 im Login und im Profil. DE ist die Basis; fehlt eine Übersetzung, greift
 Englisch als Fallback. Datums-/Wochentagsnamen der Zusatz-Sprachen kommen über
 `Intl` (keine handgepflegten Listen). Getrennt davon ist die

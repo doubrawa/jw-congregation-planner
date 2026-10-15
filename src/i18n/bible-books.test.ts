@@ -24,9 +24,7 @@ describe('Bibelbücher', () => {
     }
   })
 
-  it('deckt alle 66 Bücher ab — auch Urdu', () => {
-    // Urdu stand bis zum 26.9.2026 bei 57: Die Übersetzung ist dort noch
-    // Teilausgabe. WOL führt die Namen der übrigen neun inzwischen trotzdem.
+  it('deckt in jeder App-Sprache alle 66 Bücher ab', () => {
     for (const { code: lang } of APP_LANGS) {
       if (lang === 'de') continue
       expect(buchTabelle(lang).voll.size, lang).toBe(66)
@@ -37,10 +35,10 @@ describe('Bibelbücher', () => {
   it('schreibt die Bibellesung so, wie das Heft der Sprache sie schreibt', () => {
     // Gemessen an der Zeile „(4 Min.) Jer 36:1-13" der Woche 21.–27.9.2026:
     // die Kurzform ist je Sprache eine andere WOL-Form, Persisch kürzt gar nicht.
-    expect(makeTr('pt')('Jer 36:1-13')).toBe('Jer. 36:1-13')
-    expect(makeTr('ur')('Jer 36:1-13')).toBe('یرم 36:1-13')
+    expect(makeTr('it')('Jer 36:1-13')).toBe('Ger 36:1-13')
+    expect(makeTr('ar')('Jer 36:1-13')).toBe('إر 36:1-13')
     expect(makeTr('fa')('Jer 36:1-13')).toBe('اِرْمیا 36:1-13')
-    expect(makeTr('ja')('1Pe 5:2')).toBe('ペテ一 5:2')
+    expect(makeTr('ru')('1Pe 5:2')).toBe('1Пт 5:2')
     expect(makeTr('en')('Jer 36:1-13')).toBe('Jer 36:1-13')
   })
 
@@ -61,7 +59,7 @@ describe('Bibelbücher', () => {
   it('übersetzt den Kopf der Bibellese in Versalien — wie das Arbeitsheft ihn schreibt', () => {
     expect(makeTr('en')('JEREMIA 42-44')).toBe('JEREMIAH 42-44')
     expect(makeTr('fr')('1. KÖNIGE 3')).toBe('1 ROIS 3')
-    expect(makeTr('ja')('JEREMIA 42-44')).toBe('エレミヤ 42-44')
+    expect(makeTr('ru')('JEREMIA 42-44')).toBe('ИЕРЕМИЯ 42-44')
   })
 
   it('eine Stelle endet vor „ — " — der Rest des Atoms wird für sich übersetzt', () => {
@@ -81,8 +79,8 @@ describe('Bibelbücher', () => {
 
   it('greift auch in den Intl-Sprachen (die hatten vorher gar keine Regel)', () => {
     expect(makeTr('pl')('Jeremia 32–33')).toBe('Jeremiasza 32–33')
-    expect(makeTr('ja')('Matthäus 5–6')).toBe('マタイ 5–6')
-    expect(makeTr('sw')('1. Mose 1–3')).toBe('Mwanzo 1–3')
+    expect(makeTr('tr')('Matthäus 5–6')).toBe('Matta 5–6')
+    expect(makeTr('ar')('1. Mose 1–3')).toBe('التكوين 1–3')
   })
 
   it('lässt fremde Zahlen-Segmente in Ruhe', () => {
@@ -129,7 +127,7 @@ describe('Bibelbücher', () => {
     // Schriftstelle. Ginge die Regel ganz verloren, bliebe der Test oben grün.
     expect(makeTr('en')('Markus 5–6')).toBe('Mark 5–6')
     expect(makeTr('ru')('Ruth 1:16')).toBe('Руфь 1:16')
-    expect(makeTr('ko')('Daniel 2')).toBe('다니엘 2')
+    expect(makeTr('uk')('Daniel 2')).toBe('Даниїла 2')
   })
 
   it('zerlegt zusammengesetzte Titel weiterhin an ihren Trennern', () => {
@@ -147,17 +145,18 @@ describe('Bibelbücher', () => {
 describe('Wochentag im Programmdatum', () => {
   // Nur die Intl-Sprachen gehen durch diese Suche; en/es/fr haben eigene
   // Wochentagslisten und waren nie betroffen.
-  const nl = makeTr('nl')
+  const it_ = makeTr('it')
 
   it('trifft auch den 29. Februar an jedem Wochentag', () => {
-    // Vorher wurde daraus „zaterdag 1 maart" — falscher Tag UND falsches
-    // Datum, weil der Rückfall auf ein Datum zeigte, das es nicht gibt.
-    expect(nl('Montag, 29. Februar')).toBe('maandag 29 februari')
-    expect(nl('Samstag, 29. Februar')).toBe('zaterdag 29 februari')
+    // Vorher wurde daraus (niederländisch gemessen) „zaterdag 1 maart" —
+    // falscher Tag UND falsches Datum, weil der Rückfall auf ein Datum zeigte,
+    // das es nicht gibt.
+    expect(it_('Montag, 29. Februar')).toBe('lunedì 29 febbraio')
+    expect(it_('Samstag, 29. Februar')).toBe('sabato 29 febbraio')
   })
 
   it('bleibt bei gewöhnlichen Daten korrekt', () => {
-    expect(nl('Dienstag, 8. September')).toBe('dinsdag 8 september')
+    expect(it_('Dienstag, 8. September')).toBe('martedì 8 settembre')
   })
 })
 

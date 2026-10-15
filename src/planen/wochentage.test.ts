@@ -118,19 +118,19 @@ describe('wochentagName in jeder App-Sprache', () => {
   })
 })
 
-describe('Rechts-nach-links und ostasiatische Schriften', () => {
-  it('arabisch, hebräisch, persisch und urdu liefern ihre eigenen Namen', () => {
-    // Diese vier laufen zusätzlich durch das gespiegelte Layout (`isRTL`).
+describe('Rechts-nach-links und kyrillische Schrift', () => {
+  it('arabisch und persisch liefern ihre eigenen Namen', () => {
+    // Diese beiden laufen zusätzlich durch das gespiegelte Layout (`isRTL`).
     // Käme dort ein lateinischer Name an, fiele es im Auswahlfeld sofort auf —
     // im Test bisher nicht.
-    for (const code of ['ar', 'he', 'fa', 'ur'] as const) {
+    for (const code of ['ar', 'fa'] as const) {
       const montag = wochentagName(0, code)
       expect(montag, code).not.toMatch(/^[A-Za-z]/)
     }
   })
 
-  it('chinesisch, japanisch und koreanisch ebenso', () => {
-    for (const code of ['zh', 'ja', 'ko'] as const) {
+  it('russisch und ukrainisch ebenso', () => {
+    for (const code of ['ru', 'uk'] as const) {
       expect(wochentagName(0, code), code).not.toMatch(/^[A-Za-z]/)
     }
   })

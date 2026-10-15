@@ -55,14 +55,6 @@ const TEXTE: Record<string, PlanTexte> = {
     zuteilung: 'Nuovo incarico',
     entzug: 'Incarico ritirato',
   },
-  pt: {
-    zuteilung: 'Nova designação',
-    entzug: 'Designação retirada',
-  },
-  nl: {
-    zuteilung: 'Nieuwe toewijzing',
-    entzug: 'Toewijzing ingetrokken',
-  },
   pl: {
     zuteilung: 'Nowy przydział',
     entzug: 'Zadanie wycofane',
@@ -79,97 +71,17 @@ const TEXTE: Record<string, PlanTexte> = {
     zuteilung: 'Însărcinare nouă',
     entzug: 'Sarcină retrasă',
   },
-  el: {
-    zuteilung: 'Νέα ανάθεση',
-    entzug: 'Η ανάθεση αποσύρθηκε',
-  },
-  cs: {
-    zuteilung: 'Nové přidělení',
-    entzug: 'Úkol byl zrušen',
-  },
-  sk: {
-    zuteilung: 'Nové pridelenie',
-    entzug: 'Úloha bola zrušená',
-  },
-  hu: {
-    zuteilung: 'Új kiosztás',
-    entzug: 'Feladat visszavonva',
-  },
-  hr: {
-    zuteilung: 'Nova dodjela',
-    entzug: 'Zadatak povučen',
-  },
-  sr: {
-    zuteilung: 'Novo zaduženje',
-    entzug: 'Zadatak povučen',
-  },
-  bg: {
-    zuteilung: 'Ново назначение',
-    entzug: 'Назначението е оттеглено',
-  },
-  sv: {
-    zuteilung: 'Ny tilldelning',
-    entzug: 'Uppgiften har dragits tillbaka',
-  },
-  da: {
-    zuteilung: 'Ny tildeling',
-    entzug: 'Opgaven er trukket tilbage',
-  },
-  fi: {
-    zuteilung: 'Uusi tehtävä',
-    entzug: 'Tehtävä peruttu',
-  },
-  no: {
-    zuteilung: 'Ny tildeling',
-    entzug: 'Oppgaven er trukket tilbake',
-  },
   tr: {
     zuteilung: 'Yeni görev',
     entzug: 'Görev geri alındı',
-  },
-  zh: {
-    zuteilung: '新分配',
-    entzug: '分配已取消',
-  },
-  ja: {
-    zuteilung: '新しい割り当て',
-    entzug: '割り当てが取り消されました',
-  },
-  ko: {
-    zuteilung: '새 임명',
-    entzug: '임명이 취소되었습니다',
-  },
-  id: {
-    zuteilung: 'Penetapan baru',
-    entzug: 'Tugas ditarik',
-  },
-  tl: {
-    zuteilung: 'Bagong atas',
-    entzug: 'Binawi ang atas',
-  },
-  vi: {
-    zuteilung: 'Phân công mới',
-    entzug: 'Phân công đã bị rút lại',
-  },
-  sw: {
-    zuteilung: 'Mgawo mpya',
-    entzug: 'Mgawo umeondolewa',
   },
   ar: {
     zuteilung: 'تعيين جديد',
     entzug: 'تم سحب التعيين',
   },
-  he: {
-    zuteilung: 'מטלה חדשה',
-    entzug: 'השיבוץ בוטל',
-  },
   fa: {
     zuteilung: 'وظیفهٔ جدید',
     entzug: 'وظیفه لغو شد',
-  },
-  ur: {
-    zuteilung: 'نئی ذمہ داری',
-    entzug: 'ذمہ داری واپس لے لی گئی',
   },
 }
 

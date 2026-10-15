@@ -9,19 +9,15 @@
  * sie beim ersten Gebrauch ab wie jedes andere Asset unter `/assets/`.
  *
  * Seit dem neuen Design (T121, 12.10.2026) **Manrope** für die ganze
- * Oberfläche; IBM Plex Sans und Newsreader sind entfallen. Dazu die drei
- * Schriften für Rechts-nach-links, gewählt am 11.10.2026: Vazirmatn (Arabisch,
- * Persisch), Noto Nastaliq Urdu und Heebo (Hebräisch) — in welcher Sprache
- * welche gilt, steht in `tokens.css` (`--font-sans` je `:lang`).
+ * Oberfläche; IBM Plex Sans und Newsreader sind entfallen. Dazu Vazirmatn für
+ * Rechts-nach-links (Arabisch, Persisch, gewählt am 11.10.2026) — wo sie gilt,
+ * steht in `tokens.css` (`--font-sans` je `:lang`). Noto Nastaliq Urdu und
+ * Heebo (Hebräisch) sind am 15.10.2026 mit ihren Sprachen entfallen.
  *
- * Alle vier als **variable** Schrift: ein Gewichtsbereich in einer Datei je
+ * Beide als **variable** Schrift: ein Gewichtsbereich in einer Datei je
  * Schriftsystem statt eines Schnitts je Gewicht. Jede `@font-face`-Regel trägt
  * ihre `unicode-range`; der Browser lädt nur, was der Text wirklich braucht —
- * die arabische, hebräische und Urdu-Schrift also nur, wenn solcher Text auf dem
- * Bildschirm steht. Chinesisch, Japanisch und Koreanisch deckt keine davon ab;
- * dort greift die Systemschrift aus dem Stapel.
+ * die arabische Schrift also nur, wenn solcher Text auf dem Bildschirm steht.
  */
 @import '@fontsource-variable/manrope/wght.css';
 @import '@fontsource-variable/vazirmatn/wght.css';
-@import '@fontsource-variable/noto-nastaliq-urdu/wght.css';
-@import '@fontsource-variable/heebo/wght.css';

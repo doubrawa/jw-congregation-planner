@@ -213,7 +213,7 @@ describe('Es wird überhaupt übersetzt', () => {
     // Gegenprobe zum `beforeAll`: Ohne Nachladen bliebe hier „Jeremia" stehen.
     // Diese Zeile belegt, dass die Prüfung oben wirklich etwas gesehen hat.
     expect(makeTr('en')('Jeremia 32–33')).toBe('Jeremiah 32–33')
-    expect(makeTr('el')('Jer 32:6-18')).not.toContain('Jer ')
+    expect(makeTr('ru')('Jer 32:6-18')).not.toContain('Jer ')
   })
 })
 
@@ -299,7 +299,7 @@ describe('Spanne über den Jahreswechsel in einer älteren Laufzeit', () => {
         return echt.call(this, a, b)
       })
     try {
-      const tr = makeTr('ko')
+      const tr = makeTr('pl')
       expect(tr('31. Dezember–6. Januar')).toBe('31. Dezember–6. Januar')
       // Gegenprobe: dieselbe Regel übersetzt weiter, wo nichts wirft.
       expect(tr('7.–13. September')).not.toBe('7.–13. September')
@@ -408,12 +408,10 @@ describe('Jede Locale ist der Laufzeit bekannt', () => {
  * keine fehlende Übersetzung — es fällt in keiner der übrigen Prüfungen auf,
  * und genau deshalb steht es hier gemessen.
  *
- * **Befund (28.8.2026):** Von den vier Sprachen mit eigener Schrift schreibt
- * nur **Persisch** seine eigenen Ziffern (`arabext`, wie das Arbeitsheft).
- * Arabisch, Urdu und Hebräisch bekommen von CLDR westliche — für Hebräisch
- * stimmt das mit der Wochenseite überein (gemessen in
- * `parse.sprachen.test.ts`: „‏(‏10 דק׳)‏"), für **Arabisch nicht**: dort steht
- * „(١٠ دق)".
+ * **Befund (28.8.2026):** Von den Sprachen in arabischer Schrift schreibt nur
+ * **Persisch** seine eigenen Ziffern (`arabext`, wie das Arbeitsheft).
+ * Arabisch bekommt von CLDR westliche — anders als die Wochenseite: dort
+ * steht „(١٠ دق)".
  *
  * Nicht stillschweigend geändert: `ar-u-nu-arab` zu erzwingen hieße, für alle
  * arabischsprachigen Gegenden zu entscheiden — der Maghreb schreibt westlich,
@@ -439,9 +437,7 @@ describe('Ziffernsätze der Anzeige', () => {
     expect(text).not.toMatch(/[0-9]/)
   })
 
-  it('Arabisch, Urdu und Hebräisch schreiben westlich — sichtbar festgehalten', () => {
-    for (const code of ['ar', 'ur', 'he'] as const) {
-      expect(makeTr(code)('Dienstag, 8. September'), code).toMatch(/8/)
-    }
+  it('Arabisch schreibt westlich — sichtbar festgehalten', () => {
+    expect(makeTr('ar')('Dienstag, 8. September')).toMatch(/8/)
   })
 })

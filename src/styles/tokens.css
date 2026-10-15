@@ -124,22 +124,14 @@
 }
 
 /*
- * Schriften für Rechts-nach-links, gewählt am 11.10.2026: Vazirmatn für
- * Arabisch und Persisch, Noto Nastaliq Urdu, Heebo für Hebräisch. Manrope bleibt
- * vorn — sie deckt die arabische und hebräische Schrift nicht ab, die Zeichen
- * fallen also auf die zweite Familie, Ziffern und lateinische Namen nicht.
+ * Schrift für Rechts-nach-links, gewählt am 11.10.2026: Vazirmatn für
+ * Arabisch und Persisch. Manrope bleibt vorn — sie deckt die arabische Schrift
+ * nicht ab, die Zeichen fallen also auf die zweite Familie, Ziffern und
+ * lateinische Namen nicht.
  */
 :root:lang(ar),
 :root:lang(fa) {
   --font-sans: 'Manrope Variable', 'Vazirmatn Variable', system-ui, sans-serif;
-}
-
-:root:lang(ur) {
-  --font-sans: 'Manrope Variable', 'Noto Nastaliq Urdu Variable', system-ui, sans-serif;
-}
-
-:root:lang(he) {
-  --font-sans: 'Manrope Variable', 'Heebo Variable', system-ui, sans-serif;
 }
 
 /* ---- Übergang (T121): die Namen der alten Oberfläche ----------------------

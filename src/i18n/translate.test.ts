@@ -62,8 +62,8 @@ describe('makeTr — Programm-Inhalts-Übersetzer', () => {
     expect(it('ÖFFENTLICHER VORTRAG')).toBe('DISCORSO PUBBLICO')
     expect(it('ERÖFFNUNG')).toBe('INTRODUZIONE')
     expect(it('ABSCHLUSS')).toBe('CONCLUSIONE')
-    // makeTrIntl-Pfad (kein Hand-Datums-Dict): el
-    expect(makeTr('el')('WACHTTURM-STUDIUM')).not.toBe('WACHTTURM-STUDIUM')
+    // makeTrIntl-Pfad (kein Hand-Datums-Dict): ru
+    expect(makeTr('ru')('WACHTTURM-STUDIUM')).not.toBe('WACHTTURM-STUDIUM')
   })
 
   it('übersetzt zusammengesetzte Wochenend-Titel inkl. „Lied“-Atom', () => {
@@ -89,9 +89,11 @@ describe('makeTr — Programm-Inhalts-Übersetzer', () => {
 
 describe('congAppCode — Versammlungssprache → App-Übersetzungscode', () => {
   it('mappt unterstützte Sprachen', () => {
-    expect(congAppCode('el')).toBe('el')
+    expect(congAppCode('ru')).toBe('ru')
     expect(congAppCode('it')).toBe('it')
-    expect(congAppCode('cmn-hans')).toBe('zh')
+    // Entfallene App-Sprachen (15.10.2026) haben keine Programmübersetzung mehr.
+    expect(congAppCode('el')).toBeUndefined()
+    expect(congAppCode('cmn-hans')).toBeUndefined()
   })
   it('gibt undefined für nicht unterstützte Sprachen (Rückfall auf Deutsch)', () => {
     expect(congAppCode('ceb')).toBeUndefined()
@@ -150,9 +152,8 @@ describe('makeTr(en) — jede Wörterbuch-Regel', () => {
 describe('Rollen und Verweise — auch in den Zusatz-Sprachen', () => {
   // Diese Begriffe blieben früher deutsch stehen: die Rollen fehlten im
   // Wörterbuch, die Verweis-/Gruppen-Regeln gab es nur für en/es/fr.
-  // Die Wörter der S-38 (1201038, p40/p74): ja 相手役, ar الناصح.
+  // Die Wörter der S-38 (1201038, p40/p74): ar الناصح.
   it('Gesprächspartner und Ratgeber sind überall übersetzt', () => {
-    expect(makeTr('ja')('Partner')).toBe('相手役')
     expect(makeTr('pl')('Partner')).toBe('Pomocnik')
     expect(makeTr('ru')('Ratgeber')).toBe('Советник')
     expect(makeTr('ar')('Ratgeber')).toBe('الناصح')
@@ -160,48 +161,40 @@ describe('Rollen und Verweise — auch in den Zusatz-Sprachen', () => {
 
   it('Kreisaufseher auch in den zuletzt ergänzten Sprachen', () => {
     expect(makeTr('ar')('Kreisaufseher')).toBe('ناظر الدائرة')
-    expect(makeTr('ur')('Kreisaufseher')).toBe('حلقے کا نگہبان')
+    expect(makeTr('fa')('Kreisaufseher')).toBe('سرپرست حوزه')
   })
 
   it('Gruppen und Versammlungen in den Zusatz-Sprachen', () => {
     expect(makeTr('ru')('Gruppe 2')).toBe('Группа 2')
-    expect(makeTr('hu')('Gruppe 2')).toBe('2. csoport') // Zahl voran
     expect(makeTr('tr')('Vers. Nordheim')).toBe('Cemaat Nordheim')
   })
 
   it('Studienstoff-Verweise stehen so im Arbeitsheft der Sprache', () => {
-    // Gemessen, nicht übersetzt: Tschechisch stellt die Zahl voran, und „th"
+    // Gemessen, nicht übersetzt: Türkisch stellt die Zahl voran, und „th"
     // heißt im Englischen study, lmd/lff dagegen lesson.
-    expect(makeTr('cs')('lmd Lektion 1 Punkt 5')).toBe('lmd 1. lekce 5. bod')
-    expect(makeTr('cs')('th Lektion 11')).toBe('th 11. lekce')
+    expect(makeTr('tr')('lmd Lektion 1 Punkt 5')).toBe('lmd 1. bölüm 5. nokta')
+    expect(makeTr('en')('th Lektion 11')).toBe('th study 11')
     expect(makeTr('en')('lff Lektion 20 Punkt 4')).toBe('lff lesson 20 point 4')
-    expect(makeTr('sk')('wcg Kap. 15')).toBe('wcg 15. kap.')
+    expect(makeTr('tr')('wcg Kap. 15')).toBe('wcg 15. bölüm')
     expect(makeTr('en')('lmd Anhang A Punkt 21')).toBe('lmd appendix A point 21')
     expect(makeTr('pl')('lmd Anhang A Punkt 21')).toBe('lmd dodatek A, punkt 21')
   })
 
   it('übersetzt auch das Publikationskürzel, wo die Sprache das tut', () => {
-    // Ostasien und die RTL-Sprachen schreiben nicht „th", sondern ein eigenes
-    // Kürzel — und je Publikation ein anderes. Eine gemeinsame Regel für alle
-    // Buch-Kürzel setzte hier das falsche ein.
-    expect(makeTr('ja')('th Lektion 11')).toBe('教励 第11課')
-    expect(makeTr('zh')('lmd Lektion 1 Punkt 5')).toBe('《爱心》第1课第5点')
-    expect(makeTr('ko')('wcg Kap. 16')).toBe('「용하」 16장')
-    expect(makeTr('he')('th Lektion 11')).toBe('הר שיעור 11')
+    // Die RTL-Sprachen schreiben nicht „th", sondern ein eigenes Kürzel — und
+    // je Publikation ein anderes. Eine gemeinsame Regel für alle Buch-Kürzel
+    // setzte hier das falsche ein.
+    expect(makeTr('fa')('th Lektion 11')).toBe('ب-تعلیم درس 11')
+    expect(makeTr('ar')('lmd Lektion 1 Punkt 5')).toBe('أن الدرس 1 النقطة 5')
     // th und wcg sind verschiedene Publikationen → verschiedene Kürzel
-    expect(makeTr('ko')('th Lektion 16')).toBe('「읽가」 16과')
-  })
-
-  it('bleibt deutsch, wo keine Vorlage gemessen werden konnte', () => {
-    // Bulgarisch behandelt im Versammlungsbibelstudium eine andere Publikation;
-    // Erfundenes wäre schlimmer als ein erkennbar unübersetzter Verweis.
-    expect(makeTr('bg')('wcg Kap. 15')).toBe('wcg Kap. 15')
+    expect(makeTr('fa')('wcg Kap. 16')).toBe('ک-شجاع فصل 16')
+    expect(makeTr('fa')('th Lektion 16')).not.toContain(makeTr('fa')('wcg Kap. 16').split(' ')[0])
   })
 })
 
-describe('makeTr(el) — Intl-Pfad (kein Hand-Datums-Dict)', () => {
-  const el = makeTr('el')
-  const changed = (s: string) => expect(el(s)).not.toBe(s)
+describe('makeTr(ru) — Intl-Pfad (kein Hand-Datums-Dict)', () => {
+  const ru = makeTr('ru')
+  const changed = (s: string) => expect(ru(s)).not.toBe(s)
   it('feuert jede Intl-Regel (Datum/Zeit/Bereich/Extras)', () => {
     changed('Lied 5')
     changed('4 Min.')
@@ -209,14 +202,14 @@ describe('makeTr(el) — Intl-Pfad (kein Hand-Datums-Dict)', () => {
     changed('ca. 19:35')
     changed('Dienstag, 8. September')
     changed('Mo, 8. September')
-    expect(el('Mo 19:00')).toMatch(/19:00$/)
+    expect(ru('Mo 19:00')).toMatch(/19:00$/)
     changed('7.–13. September')
     changed('28. Sep – 4. Okt')
     changed('27. April–3. Mai')
     changed('mit Anna')
     changed('in 4 Tagen')
     changed('2 Zuteilungen')
-    expect(el('Völlig unbekannt xyz')).toBe('Völlig unbekannt xyz') // Rückfall
+    expect(ru('Völlig unbekannt xyz')).toBe('Völlig unbekannt xyz') // Rückfall
   })
 
   it('verarbeitet auch den Kurzmonat, statt zu werfen', () => {

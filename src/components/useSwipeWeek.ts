@@ -113,9 +113,9 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
      * **Wohin die vorige Woche gehört: +1 nach rechts, −1 nach links.**
      *
      * Der Streifen ist eine Zeitachse, und die läuft in die Leserichtung: Auf
-     * Deutsch liegt die vorige Woche links, auf Arabisch, Hebräisch, Persisch
-     * und Urdu rechts (`week-strip.css` setzt beide Nachbarn seit dieser
-     * Änderung über `inset-inline-*`).
+     * Deutsch liegt die vorige Woche links, auf Arabisch und Persisch rechts
+     * (`week-strip.css` setzt beide Nachbarn seit dieser Änderung über
+     * `inset-inline-*`).
      *
      * Damit dreht sich auch die Geste um. Ohne das war beides gegenläufig: Der
      * Leser zog nach rechts — dorthin, wo für ihn die Vergangenheit liegt — und

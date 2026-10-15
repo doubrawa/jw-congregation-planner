@@ -169,8 +169,8 @@
 
 /* Kontakt für eine neue Versammlung (T113). Flex statt Leerzeichen:
    Bezeichnung und Adresse brechen je als Ganzes um, der Abstand gilt auch
-   hinter dem breiten Doppelpunkt von Chinesisch und Japanisch, und in
-   Rechts-nach-links-Sprachen dreht sich die Reihenfolge von selbst. */
+   hinter einem breiten Doppelpunkt, und in Rechts-nach-links-Sprachen
+   dreht sich die Reihenfolge von selbst. */
 .login-kontakt {
   display: flex;
   flex-wrap: wrap;

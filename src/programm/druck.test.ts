@@ -76,7 +76,7 @@ describe('monatsName', () => {
 
   it('auch in fremden Schriften — und ohne Absturz bei einem unbekannten Sprach-Tag', () => {
     expect(monatsName('2026-09', 'ar')).not.toContain('September')
-    expect(monatsName('2026-09', 'ja')).toContain('2026')
+    expect(monatsName('2026-09', 'ru')).toContain('2026')
     expect(() => monatsName('2026-09', 'xx-quatsch' as never)).not.toThrow()
   })
 })

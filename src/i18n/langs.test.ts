@@ -24,11 +24,11 @@ describe('App-Sprachlisten', () => {
 })
 
 describe('Sprachcode-Zuordnungen (jw.org ↔ App)', () => {
-  it('APP_TO_JW: erster jw-Code gewinnt bei mehreren je App-Sprache', () => {
-    expect(APP_TO_JW.de).toBe('de')
-    expect(APP_TO_JW.pt).toBe('pt') // nicht pt-pt/pt-ao
-    expect(APP_TO_JW.zh).toBe('cmn-hans')
-    expect(APP_TO_JW.sr).toBe('sr-latn')
+  it('APP_TO_JW: jede App-Sprache hat ihren jw.org-Code', () => {
+    // Bei den zwölf App-Sprachen fallen beide Codes zusammen (seit dem
+    // 15.10.2026; Varianten wie pt-pt oder cmn-hans gab es nur bei den
+    // entfallenen).
+    for (const { code } of APP_LANGS) expect(APP_TO_JW[code], code).toBe(code)
   })
 
   it('congAppCode: jw.org-Code der Versammlungssprache → App-Code', () => {

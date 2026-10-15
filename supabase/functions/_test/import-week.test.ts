@@ -679,7 +679,7 @@ describe('import-week: weitere Programmsprachen als Varianten', () => {
     // … und genau deshalb übersetzbar. Ohne diese Zeile bliebe offen, ob das
     // Deutsche eine Absicht ist oder eine Lücke.
     expect(makeTr('es')(week?.range ?? '')).not.toBe(week?.range)
-    expect(makeTr('ja')(week?.range ?? '')).not.toBe(week?.range)
+    expect(makeTr('ru')(week?.range ?? '')).not.toBe(week?.range)
   })
 })
 

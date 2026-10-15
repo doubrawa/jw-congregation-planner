@@ -245,7 +245,7 @@ export function AppProvider({
     localStorage.setItem('fontScale', String(state.fontScale))
   }, [state.fontScale])
 
-  // App-Sprache merken + Schreibrichtung (RTL für Arabisch/Hebräisch/…)
+  // App-Sprache merken + Schreibrichtung (RTL für Arabisch und Persisch)
   useEffect(() => {
     localStorage.setItem('lang', state.lang)
     document.documentElement.lang = state.lang

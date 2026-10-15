@@ -35,10 +35,8 @@ describe('Sprachnamen je Bediensprache', () => {
    * Liste nicht angekommen.
    */
   const EIGENE_SCHRIFT: Array<[string, RegExp]> = [
-    ['ru', /\p{Script=Cyrillic}/u], ['uk', /\p{Script=Cyrillic}/u], ['bg', /\p{Script=Cyrillic}/u],
-    ['el', /\p{Script=Greek}/u], ['zh', /\p{Script=Han}/u], ['ja', /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u],
-    ['ko', /\p{Script=Hangul}/u], ['ar', /\p{Script=Arabic}/u], ['he', /\p{Script=Hebrew}/u],
-    ['fa', /\p{Script=Arabic}/u], ['ur', /\p{Script=Arabic}/u],
+    ['ru', /\p{Script=Cyrillic}/u], ['uk', /\p{Script=Cyrillic}/u],
+    ['ar', /\p{Script=Arabic}/u], ['fa', /\p{Script=Arabic}/u],
   ]
 
   it.each(EIGENE_SCHRIFT)('%s benennt sich selbst in eigener Schrift', (code, schrift) => {
@@ -52,7 +50,7 @@ describe('Sprachnamen je Bediensprache', () => {
 
   it('deckt jede Sprache mit eigener Schrift ab', () => {
     // Sonst fiele eine aus der Prüfung, sobald jemand eine Sprache hinzufügt.
-    const ohneLatein = CODES.filter((c) => !/^(en|es|fr|it|pt|nl|pl|ro|cs|sk|hu|hr|sr|sv|da|fi|no|tr|id|tl|vi|sw)$/.test(c))
+    const ohneLatein = CODES.filter((c) => !/^(en|es|fr|it|pl|ro|tr)$/.test(c))
     expect(ohneLatein.sort()).toEqual(EIGENE_SCHRIFT.map(([c]) => c).sort())
   })
 
@@ -60,7 +58,7 @@ describe('Sprachnamen je Bediensprache', () => {
     // Der Rückfall muss lesbar sein, nicht leer: bis zum Nachladen — und nach
     // einem Deployment, wenn der alte Chunk fehlt — steht schlicht Deutsch da.
     expect(langLabel('he', 'de')).toBe('Hebräisch')
-    expect(langLabel('gibt-es-nicht', 'he')).toBe('gibt-es-nicht')
+    expect(langLabel('gibt-es-nicht', 'ar')).toBe('gibt-es-nicht')
   })
 
   it('Deutsch braucht keine eigene Liste', () => {
@@ -70,10 +68,10 @@ describe('Sprachnamen je Bediensprache', () => {
   })
 
   it('die Liste ist in der Bediensprache sortiert', () => {
-    // Sonst stünde eine griechische Liste in deutscher Buchstabenfolge da.
-    const el = langChoices('el').map((l) => l.label)
-    const sortiert = [...el].sort((a, b) => a.localeCompare(b, 'el'))
-    expect(el).toEqual(sortiert)
+    // Sonst stünde eine russische Liste in deutscher Buchstabenfolge da.
+    const ru = langChoices('ru').map((l) => l.label)
+    const sortiert = [...ru].sort((a, b) => a.localeCompare(b, 'ru'))
+    expect(ru).toEqual(sortiert)
   })
 
   it('der gespeicherte Schlüssel ist der jw.org-Code', () => {
@@ -81,13 +79,13 @@ describe('Sprachnamen je Bediensprache', () => {
     // Anzeige darf ihn nicht mitnehmen, sonst findet keine bestehende
     // Versammlung ihre Sprache wieder. Bis September 2026 war es der deutsche
     // Name; ein Name ist keine Kennung.
-    expect(langChoices('he').every((l) => JW_LANGS.some((j) => j.code === l.key))).toBe(true)
+    expect(langChoices('ar').every((l) => JW_LANGS.some((j) => j.code === l.key))).toBe(true)
   })
 
   it('der deutsche Name bleibt für die Suche dabei', () => {
-    // Wer nach einem Sprachwechsel nur noch „Hebräisch" weiß, soll עברית finden.
-    const he = langChoices('he').find((l) => l.key === 'he')!
-    expect(he.deutsch).toBe('Hebräisch')
-    expect(he.label).not.toBe('Hebräisch')
+    // Wer nach einem Sprachwechsel nur noch „Arabisch" weiß, soll العربية finden.
+    const ar = langChoices('ar').find((l) => l.key === 'ar')!
+    expect(ar.deutsch).toBe('Arabisch')
+    expect(ar.label).not.toBe('Arabisch')
   })
 })

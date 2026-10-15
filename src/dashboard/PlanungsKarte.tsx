@@ -105,7 +105,7 @@ export function PlanungsKarte() {
   /*
    * Wofür „Alles zugeteilt" gilt: die angesehenen Wochen, als Zeitraum in der
    * Sprache des Lesers. `formatRange` legt Monat und Jahr zusammen, wo sie gleich
-   * sind — ohne ein eigenes Wort, das in 34 Sprachen zu übersetzen wäre.
+   * sind — ohne ein eigenes Wort, das in jeder Sprache zu übersetzen wäre.
    */
   const zeitraum = useMemo(() => {
     if (!stand.zeitraum) return null
