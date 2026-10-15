@@ -5874,6 +5874,20 @@ export const KATALOG = [
     ersetzen: "      {FS_TIME_OPTIONS.map((tm) => (",
   },
   {
+    id: "senden-wartet-auf-woche",
+    datei: "src/planen/wochen-versand.ts",
+    regel: '„Plan senden" geht erst los, wenn die eben geänderte Woche geschrieben ist — die Function liest sie aus der Datenbank.',
+    suchen: "    await wocheDraussen(kennung)\n",
+    ersetzen: "",
+  },
+  {
+    id: "woche-geschrieben-wartet",
+    datei: "src/lib/data.ts",
+    regel: "`wocheGeschrieben` wartet auf die Ketten der Woche — Zusammenkünfte und Treffpunkte.",
+    suchen: "  await Promise.all([wochenKette.get(woche), fsWochenKette.get(woche)])\n",
+    ersetzen: "  await Promise.all([])\n",
+  },
+  {
     id: "einspringen-stand-uebernehmen",
     datei: "src/lib/data.ts",
     regel: "Nach dem Einspringen kennt die App den Stand, den die Function geschrieben hat — die nächste Änderung meldet keinen falschen Konflikt.",

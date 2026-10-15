@@ -39,7 +39,14 @@ import { PlanenAktionen } from './PlanenAktionen'
 const t = dict('de')
 
 const sendPlan = vi.fn()
-vi.mock('../lib/data', () => ({ sendPlan: (w: string, heute: string) => sendPlan(w, heute) }))
+/** Wann die Woche geschrieben ist — sofort, außer ein Fall hält es auf. */
+const wocheGeschrieben = vi.fn((_woche: string) => Promise.resolve())
+const ausstehendesSchreiben = vi.fn()
+vi.mock('../lib/data', () => ({
+  sendPlan: (w: string, heute: string) => sendPlan(w, heute),
+  wocheGeschrieben: (w: string) => wocheGeschrieben(w),
+}))
+vi.mock('../app/persist', () => ({ ausstehendesSchreiben: () => ausstehendesSchreiben() }))
 vi.mock('../app/hydrate', () => ({ loadAndHydrate: vi.fn(() => Promise.resolve()) }))
 
 // Das Blatt lässt sich nach unten wegwischen; die Geste fragt zuerst, ob wir am
@@ -268,6 +275,25 @@ describe('Senden', () => {
     // Der Index ordnet seit T66 nur noch; die Kennung ist der Montag.
     zeige()
     fireEvent.click(senden())
+    await waitFor(() => expect(sendPlan).toHaveBeenCalledWith(MONTAG, '2026-09-07'))
+  })
+
+  /*
+   * **Erst draußen, was eben geändert wurde** (15.10.2026). Die Function liest
+   * die Woche aus der Datenbank; ging sie los, während die letzte Zuteilung
+   * noch unterwegs war oder der eben getippte Ort eines Treffpunkts gebündelt
+   * wartete, verschickte sie den Stand davor.
+   */
+  it('sendet erst, wenn die Woche geschrieben ist — Gebündeltes geht vorher hinaus', async () => {
+    let fertig: () => void = () => {}
+    wocheGeschrieben.mockImplementationOnce(() => new Promise<void>((r) => (fertig = r)))
+    ausstehendesSchreiben.mockClear()
+    zeige()
+    fireEvent.click(senden())
+    await waitFor(() => expect(wocheGeschrieben).toHaveBeenCalledWith(MONTAG))
+    expect(ausstehendesSchreiben).toHaveBeenCalledTimes(1)
+    expect(sendPlan).not.toHaveBeenCalled()
+    fertig()
     await waitFor(() => expect(sendPlan).toHaveBeenCalledWith(MONTAG, '2026-09-07'))
   })
 

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useApp, type AppState } from '../app/context'
 import { loadAndHydrate } from '../app/hydrate'
+import { ausstehendesSchreiben } from '../app/persist'
 import { fsInGruppe, fsTaskKey } from '../data/fs'
 import { fromIso } from '../data/meeting-dates'
 import { type OffeneWochenMeldung, offeneMeldungen, zuletztGesendet, zuletztGesendetFuer } from '../data/plan-versand'
@@ -8,7 +9,7 @@ import { rechteVon, treffpunktGruppe } from '../data/rechte'
 import type { Week } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
-import { type Erinnert, erinnerungSenden, type PlanVersand, sendPlan } from '../lib/data'
+import { type Erinnert, erinnerungSenden, type PlanVersand, sendPlan, wocheGeschrieben } from '../lib/data'
 
 /**
  * **Der Versand eines Plans** — was die Sendeknöpfe teilen: der Aktionsleiste
@@ -55,6 +56,7 @@ export function useSenden(kennung: string | null, versand: Versand): VersandStan
   const senden = async (): Promise<void> => {
     if (kennung === null) return
     setLaeuft(true)
+    await wocheDraussen(kennung)
     const res = await versand(kennung)
     setLaeuft(false)
     if (res) setOhneKonto({ kennung, namen: res.ohneKonto })
@@ -62,6 +64,17 @@ export function useSenden(kennung: string | null, versand: Versand): VersandStan
   }
   const ohneKonto = kennung !== null && ohneKontoStand?.kennung === kennung ? ohneKontoStand.namen : []
   return { laeuft, ohneKonto, senden }
+}
+
+/**
+ * **Erst draußen, was hier eben geändert wurde** — bevor eine Function die
+ * Woche aus der Datenbank liest. Sonst ging der Stand vor der letzten
+ * Zuteilung hinaus, die noch unterwegs war, oder vor dem eben getippten Ort
+ * eines Treffpunkts, der gebündelt wartete (bis zum 15.10.2026).
+ */
+async function wocheDraussen(woche: string): Promise<void> {
+  ausstehendesSchreiben()
+  await wocheGeschrieben(woche)
 }
 
 /**
@@ -106,6 +119,7 @@ export function useErinnern(week: Week, tag: string): { laeuft: boolean; erinner
   const [laeuft, setLaeuft] = useState(false)
   const erinnern = async (): Promise<void> => {
     setLaeuft(true)
+    await wocheDraussen(week.start)
     const res = await erinnerungSenden(week.start, tag)
     setLaeuft(false)
     dispatch({ type: 'showToast', text: erinnertMeldung(res, t) })

@@ -1221,6 +1221,17 @@ export function saveWeek(congregationId: string, week: Week, nurZuteilen = false
   wochenKette.set(woche, naechster)
 }
 
+/**
+ * **Warten, bis die Woche geschrieben ist** — die Zusammenkünfte und die
+ * Treffpunkte, alles, was schon in ihren Ketten steht. Für die Aufrufe, die
+ * danach auf dem Server lesen, was hier eben geändert wurde (`wocheDraussen`
+ * in `planen/wochen-versand.ts`). Die Ketten fangen ihre Fehler selbst, das
+ * Warten scheitert also nie.
+ */
+export async function wocheGeschrieben(woche: string): Promise<void> {
+  await Promise.all([wochenKette.get(woche), fsWochenKette.get(woche)])
+}
+
 export function savePerson(congregationId: string, person: Person): void {
   if (!supabase) return
   void run(supabase.from('persons').upsert(personToRow(person, congregationId)))

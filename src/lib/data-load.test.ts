@@ -29,6 +29,7 @@ import {
   setKonfliktMelder,
   substituteTake,
   WEEK_LIMIT,
+  wocheGeschrieben,
 } from './data'
 import type { Week } from '../data/types'
 import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
@@ -499,6 +500,22 @@ describe('Neuladen und Schreiben', () => {
     saveFsWeek('c1', START, [])
     await ruhe()
     expect(staendeVon('fs_weeks')).toEqual(['F-S-geladen'])
+  })
+
+  it('`wocheGeschrieben` wartet, bis die Woche draußen ist — für „Plan senden" (15.10.2026)', async () => {
+    await laden('S1')
+    const spaet = spaeteAntwort()
+    store.responses.weeks = [spaet.antwort]
+    saveWeek('c1', woche('unterwegs'))
+    let draussen = false
+    void wocheGeschrieben(START).then(() => {
+      draussen = true
+    })
+    await ruhe()
+    expect(draussen).toBe(false)
+    spaet.geben('S2')
+    await ruhe()
+    expect(draussen).toBe(true)
   })
 
   /*
