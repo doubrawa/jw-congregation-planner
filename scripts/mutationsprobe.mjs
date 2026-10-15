@@ -7069,6 +7069,20 @@ export const KATALOG = [
     suchen: '    await verwaltungProben(k, verwaltung)\n',
     ersetzen: '',
   },
+  {
+    id: 'ersatz-abwesenheiten-nur-am-tag',
+    datei: 'supabase/functions/substitute/index.ts',
+    regel: 'Die Ersatzsuche liest nur die Abwesenheiten, die den Tag einschließen — alle der Versammlung kamen nicht über die Zeilengrenze von PostgREST.',
+    suchen: "    `absences?select=person_id&congregation_id=eq.${wert(cong)}` +\n      `&from_date=lte.${wert(tagISO)}&to_date=gte.${wert(tagISO)}`,\n",
+    ersetzen: "    `absences?select=person_id&congregation_id=eq.${wert(cong)}`,\n",
+  },
+  {
+    id: 'ersatz-abwesenheit-umschliesst-tag',
+    datei: 'supabase/functions/substitute/index.ts',
+    regel: 'Eine Abwesenheit, die vor dem Tag beginnt und nach ihm endet, zählt.',
+    suchen: '&from_date=lte.${wert(tagISO)}&to_date=gte.${wert(tagISO)}',
+    ersetzen: '&from_date=eq.${wert(tagISO)}&to_date=gte.${wert(tagISO)}',
+  },
 ]
 
 /**

@@ -105,12 +105,6 @@ interface Person {
   ln: string
   priv: Record<string, boolean>
 }
-interface Absence {
-  person_id: string | null
-  from_date: string
-  to_date: string
-}
-
 /* `meetingDayOffsets`, `WEEKDAY_OFFSET` und `displayName` stehen jetzt in
    `_shared/planung.ts` — dieselbe Rechnung wie in send-reminders und im
    Client. Getrennte Kopien hatten schon einmal auseinandergefunden (B8/T40). */
@@ -133,25 +127,27 @@ function meetingISO(startISO: string | undefined, offset: number): string | null
 }
 
 /**
- * Wer an diesem Tag fehlt — einmal je Anfrage, nicht je Person.
+ * Wer an diesem Tag fehlt — gelesen werden nur die Abwesenheiten, die ihn
+ * einschließen. Ohne Tag (Vorlagenwoche) fehlt niemand.
  *
- * Abwesenheiten sammeln sich unbegrenzt an; die Frage gilt aber genau einem
- * Tag. Ein Durchgang baut die Menge, danach ist die Auskunft ein Nachschlagen.
- * Ohne Tag (Vorlagenwoche) fehlt niemand.
+ * Bis zum 16.10.2026 kamen alle der Versammlung, für jede Aktion. Die Tabelle
+ * wird nie aufgeräumt, und PostgREST liefert je Abfrage höchstens `max-rows`
+ * Zeilen (gehostet 1000) — ohne Fehler, ohne Hinweis. Ab der tausendsten
+ * fehlten beliebige, und wer an dem Tag weg ist, bekam trotzdem „Ersatz
+ * gesucht".
  */
-function abwesendeAm(absences: Absence[], tagISO: string | null): ReadonlySet<string> {
+async function abwesendeAm(cong: string, tagISO: string | null): Promise<ReadonlySet<string>> {
   if (!tagISO) return new Set()
-  const out = new Set<string>()
-  for (const a of absences) {
-    // Ohne Person gehört die Abwesenheit niemandem: Sie kam von einem Konto
-    // ohne verknüpfte Person, oder die Person wurde gelöscht (`on delete set
-    // null`). Der Client zieht dieselbe Grenze (`absence.ts`); hier landete
-    // stattdessen ein `null` in einer Menge von Kennungen — wirkungslos, weil
-    // keine Id darauf passt, aber eben auch nur zufällig.
-    if (!a.person_id) continue
-    if (a.from_date <= tagISO && tagISO <= a.to_date) out.add(a.person_id)
-  }
-  return out
+  const zeilen = await rest.get<{ person_id: string | null }[]>(
+    `absences?select=person_id&congregation_id=eq.${wert(cong)}` +
+      `&from_date=lte.${wert(tagISO)}&to_date=gte.${wert(tagISO)}`,
+  )
+  // Ohne Person gehört die Abwesenheit niemandem: Sie kam von einem Konto
+  // ohne verknüpfte Person, oder die Person wurde gelöscht (`on delete set
+  // null`). Der Client zieht dieselbe Grenze (`absence.ts`); hier landete
+  // stattdessen ein `null` in einer Menge von Kennungen — wirkungslos, weil
+  // keine Id darauf passt, aber eben auch nur zufällig.
+  return new Set(zeilen.flatMap((a) => (a.person_id ? [a.person_id] : [])))
 }
 
 interface Member {
@@ -327,7 +323,7 @@ Deno.serve(async (req: Request) => {
     if (!caller) return json({ error: 'forbidden' }, 403)
     const cong = caller.congregation_id
 
-    const [members, weekRows, services, persons, subsRows, congRows, absences] = await Promise.all([
+    const [members, weekRows, services, persons, subsRows, congRows] = await Promise.all([
       rest.get<Member[]>(
         `members?select=user_id,person_id,planner,zuteiler&congregation_id=eq.${wert(cong)}`,
       ),
@@ -344,9 +340,6 @@ Deno.serve(async (req: Request) => {
         `push_subscriptions?select=id,user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${wert(cong)}`,
       ),
       rest.get<ZeitenRow[]>(`congregations?select=mid_wd,mid_time,we_wd,we_time&id=eq.${wert(cong)}`),
-      rest.get<Absence[]>(
-        `absences?select=person_id,from_date,to_date&congregation_id=eq.${wert(cong)}`,
-      ),
     ])
     const week = weekRows[0]?.data
     const meeting = week?.[parts.tab]
@@ -460,7 +453,7 @@ Deno.serve(async (req: Request) => {
       if (!(await darfGesuchFuehren())) return json({ error: 'forbidden' }, 403)
 
       const declinedBy = slot.name ?? ''
-      const abwesende = abwesendeAm(absences, tagISO)
+      const abwesende = await abwesendeAm(cong, tagISO)
       /*
        * Der Absagende selbst wird nicht gefragt — **über die Id**, wo der Platz
        * eine trägt.

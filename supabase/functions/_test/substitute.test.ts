@@ -19,7 +19,7 @@ import { reset as resetPush, sent as sentPush } from './web-push.stub'
 import { APP_LANGS } from '../../../src/i18n/langs'
 import { makeTr } from '../../../src/i18n/translate'
 import { dict, NOTIF_TITLE_KEY, loadOverlay } from '../../../src/i18n/ui'
-import { filterWert, jsonRes, ohneFragment, schreibZugriff } from './attrappe.ts'
+import { erfuelltVergleiche, filterWert, jsonRes, MAX_ROWS, ohneFragment, schreibZugriff } from './attrappe.ts'
 import { parseGoAbschnitt, parseGoTarget } from '../../../src/app/deeplink'
 import { TITEL_GESUCHT } from '../substitute/texte.ts'
 
@@ -139,6 +139,8 @@ let absagen: { user_id: string; task_key: string }[]
 let konkurrent: (() => void) | null
 /** Versand-Tagebuch (`assignment_log`): ohne Eintrag ist der Plan nicht gesendet. */
 let versandLog: string[]
+/** Die Abwesenheiten der Versammlung (Tabelle absences), je Fall frisch aus `ABSENCES`. */
+let absences: { person_id: string | null; from_date: string; to_date: string }[]
 
 /** Alle schreibenden REST-Aufrufe (PATCH/POST/DELETE) dieses Testlaufs. */
 const { writesTo } = schreibZugriff(() => writes)
@@ -190,7 +192,12 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   if (path.startsWith('persons')) return jsonRes(fremd ? [] : PERSONS)
   if (path.startsWith('push_subscriptions')) return jsonRes(fremd ? [] : SUBS)
   if (path.startsWith('congregations')) return jsonRes(CONGREGATIONS)
-  if (path.startsWith('absences')) return jsonRes(fremd ? [] : ABSENCES)
+  if (path.startsWith('absences')) {
+    // Wie die Datenbank: nur, was die Datumsfilter durchlassen, und höchstens
+    // `MAX_ROWS` Zeilen.
+    const zeilen = (fremd ? [] : absences).filter((a) => erfuelltVergleiche(a, path, ['from_date', 'to_date']))
+    return jsonRes(zeilen.slice(0, MAX_ROWS))
+  }
   if (path.startsWith('assignment_log')) return jsonRes(fremd ? [] : versandLog.map((task_key) => ({ task_key })))
   if (path.startsWith('confirmations')) {
     const wer = filterWert(path, 'user_id')
@@ -257,6 +264,7 @@ beforeEach(() => {
   absagen = [{ user_id: U_ORIG, task_key: KEY }]
   konkurrent = null
   versandLog = []
+  absences = [...ABSENCES]
   resetPush()
 })
 
@@ -596,6 +604,29 @@ describe('substitute: seek benachrichtigt nur die richtigen Personen', () => {
     expect(res.status).toBe(200)
     const rows = writesTo('notifications')[0]?.body as { user_id: string }[]
     expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ME, U_ABSENT, U_ORIG_ZWILL]))
+  })
+
+  /*
+   * Die Abwesenheiten werden nie aufgeräumt, und PostgREST liefert je Abfrage
+   * höchstens `max-rows` Zeilen — still. Bis zum 16.10.2026 las die Ersatzsuche
+   * die der ganzen Versammlung: Hinter tausend älteren fehlte Annas, und sie
+   * bekam „Ersatz gesucht", obwohl sie an dem Tag weg ist.
+   */
+  it('wer am Tag fehlt, wird auch hinter tausend älteren Abwesenheiten nicht gefragt (16.10.2026)', async () => {
+    const alt = { person_id: 'p-unqual', from_date: '2025-01-06', to_date: '2025-01-10' }
+    absences = [...Array.from({ length: MAX_ROWS }, () => alt), ...ABSENCES]
+    const res = await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
+    expect(res.status).toBe(200)
+    const rows = writesTo('notifications')[0]?.body as { user_id: string }[]
+    expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ME, U_ORIG_ZWILL]))
+  })
+
+  it('eine Abwesenheit, die vor dem Tag beginnt und nach ihm endet, zählt', async () => {
+    absences = [{ person_id: 'p-absent', from_date: '2026-08-24', to_date: '2026-09-30' }]
+    const res = await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
+    expect(res.status).toBe(200)
+    const rows = writesTo('notifications')[0]?.body as { user_id: string }[]
+    expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ME, U_ORIG_ZWILL]))
   })
 })
 

@@ -24,17 +24,48 @@ export function jsonRes(body: unknown, status = 200): Response {
 }
 
 /**
- * Wert eines `spalte=eq.…`-Filters aus dem Pfad, dekodiert — oder null.
+ * Wert eines `spalte=eq.…`-Filters aus dem Pfad, dekodiert — oder null. Mit
+ * `op` ebenso für die anderen Vergleiche (`lte`, `gte`).
  *
  * Die Attrappe wertet Filter aus, statt jede Tabelle pauschal auszugeben. Erst
  * dadurch kann ein fehlender oder abgeschnittener Filter im Test überhaupt
  * auffallen: Gäbe sie weiterhin alles zurück, sähe „Filter weg" genauso aus
  * wie „Filter da".
  */
-export function filterWert(path: string, spalte: string): string | null {
-  const m = new RegExp(`[?&]${spalte}=eq\\.([^&]*)`).exec(path)
+export function filterWert(path: string, spalte: string, op: 'eq' | 'lte' | 'gte' = 'eq'): string | null {
+  const m = new RegExp(`[?&]${spalte}=${op}\\.([^&]*)`).exec(path)
   return m ? decodeURIComponent(m[1]) : null
 }
+
+/**
+ * Erfüllt die Zeile jeden `eq`-, `lte`- und `gte`-Filter des Pfades auf diesen
+ * Spalten? Verglichen wird als Zeichenkette — bei ISO-Tagen dasselbe wie in
+ * der Datenbank.
+ *
+ * Alle drei Vergleiche je Spalte, nicht nur die, die die Function gerade
+ * schickt: Wertete die Attrappe nur `lte` aus, sähe ein versehentliches `eq`
+ * hier wie gar kein Filter aus — und die Prüfung bliebe grün.
+ */
+export function erfuelltVergleiche(zeile: Record<string, unknown>, path: string, spalten: string[]): boolean {
+  return spalten.every((spalte) => {
+    const wert = String(zeile[spalte])
+    const gleich = filterWert(path, spalte)
+    const hoechstens = filterWert(path, spalte, 'lte')
+    const mindestens = filterWert(path, spalte, 'gte')
+    return (
+      (gleich === null || wert === gleich) &&
+      (hoechstens === null || wert <= hoechstens) &&
+      (mindestens === null || wert >= mindestens)
+    )
+  })
+}
+
+/**
+ * Die Zeilengrenze von PostgREST (`max-rows`, gehostet 1000): Mehr liefert
+ * eine Abfrage nicht — ohne Fehler, ohne Hinweis. Eine Attrappe, die sie
+ * nachbildet, lässt eine Abfrage ohne Grenze an genau dieser Stelle scheitern.
+ */
+export const MAX_ROWS = 1000
 
 /**
  * Muster aller `spalte=like.…`-Filter eines Pfades, dekodiert.
