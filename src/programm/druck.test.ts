@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
-import { afterEach, describe, expect, it } from 'vitest'
-import { druckKennzeichen, monatDerWoche, monatsName, wochenDesMonats } from './druck'
+import { describe, expect, it } from 'vitest'
+import { monatDerWoche, monatsName, wochenDesMonats } from './druck'
 
 /**
  * **Welche Wochen auf ein Monatsblatt gehören** (T105).
@@ -78,22 +78,5 @@ describe('monatsName', () => {
     expect(monatsName('2026-09', 'ar')).not.toContain('September')
     expect(monatsName('2026-09', 'ru')).toContain('2026')
     expect(() => monatsName('2026-09', 'xx-quatsch' as never)).not.toThrow()
-  })
-})
-
-describe('druckKennzeichen: die Weiche zwischen den Ausdrucken', () => {
-  afterEach(() => {
-    delete document.documentElement.dataset.print
-  })
-
-  it('setzt das Kennzeichen für den Monat', () => {
-    druckKennzeichen('monat')
-    expect(document.documentElement.getAttribute('data-print')).toBe('monat')
-  })
-
-  it('ohne Kennzeichen druckt die Woche — auch ein fremdes wird abgeräumt', () => {
-    document.documentElement.dataset.print = 's89'
-    druckKennzeichen(null)
-    expect(document.documentElement.hasAttribute('data-print')).toBe(false)
   })
 })

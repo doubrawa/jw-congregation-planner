@@ -737,4 +737,7 @@ export default {
   "druckZeit": "الوقت",
   "druckTreffpunkt": "المكان",
   "druckTrolleyIntro": "اتفقوا فيما بينكم وسجِّلوا أسماءكم في التطبيق، في {weg}. الخط المتقطع: أحدهم يبحث عن رفيق – من يرغب في الانضمام فليسجِّل اسمه.",
+  "druckPlanJeWoche": "كل أسبوع يتولى فريق، من الاثنين إلى الأحد.",
+  "druckPlanJeMonat": "كل شهر يتولى فريق.",
+  "druckMonatSpalte": "الشهر",
 } satisfies Partial<Dict>

@@ -737,4 +737,7 @@ export default {
   "druckZeit": "Ora",
   "druckTreffpunkt": "Locul",
   "druckTrolleyIntro": "Stabiliți între voi și înscrieți-vă în aplicație, la {weg}. Linie întreruptă: cineva caută un partener – cine vrea să se alăture se înscrie.",
+  "druckPlanJeWoche": "În fiecare săptămână e rândul unei grupe, de luni până duminică.",
+  "druckPlanJeMonat": "În fiecare lună e rândul unei grupe.",
+  "druckMonatSpalte": "Luna",
 } satisfies Partial<Dict>

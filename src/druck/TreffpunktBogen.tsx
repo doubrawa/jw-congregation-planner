@@ -9,10 +9,12 @@ import { besuchStand } from '../data/gruppenbesuche'
 import { fromIso } from '../data/meeting-dates'
 import { rechteVon } from '../data/rechte'
 import type { FsInstance } from '../data/types'
+import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 import { Bogen, type DruckBlock } from './Bogen'
 import { Offen } from './DruckBlatt'
-import { DruckTabelle, type DruckZeile } from './DruckTabelle'
+import type { DruckZeile, TabellenForm } from './DruckTabelle'
+import { tabellenBloecke } from './tabellen-bloecke'
 
 /** Gruppenbesuche auf dem Bogen — die nächsten, wie im Entwurf ein halbes Jahr. */
 const BESUCHE_HOECHSTENS = 6
@@ -97,35 +99,28 @@ export function TreffpunktBogen({ wochen, zeitraum }: { wochen: readonly number[
 
   const besuche = useBesuchsZeilen({ ab: state.weeks[wochen[0] ?? -1]?.start ?? '', hoechstens: BESUCHE_HOECHSTENS })
 
-  const bloecke: DruckBlock[] = []
-  if (versammlung.length) {
-    bloecke.push({
-      key: 'versammlung',
-      inhalt: (
-        <DruckTabelle
-          titel={t.druckVersammlungstreffpunkte}
-          farbe="petrol"
-          spalten="120px 64px minmax(0, 1fr) 190px"
-          kopf={[t.druckTag, t.druckZeit, t.druckTreffpunkt, tu('Leiter')]}
-          zeilen={versammlung}
-        />
-      ),
-    })
-  }
-  if (gruppen.length) {
-    bloecke.push({
-      key: 'gruppen',
-      inhalt: (
-        <DruckTabelle
-          titel={t.druckGruppentreffpunkte}
-          farbe="wein"
-          spalten="120px 64px 96px minmax(0, 1fr) 170px"
-          kopf={[t.druckTag, t.druckZeit, t.gbGruppe, t.druckTreffpunkt, tu('Leiter')]}
-          zeilen={gruppen}
-        />
-      ),
-    })
-  }
+  const bloecke: DruckBlock[] = [
+    ...tabellenBloecke(
+      'versammlung',
+      {
+        titel: t.druckVersammlungstreffpunkte,
+        farbe: 'petrol',
+        spalten: '120px 64px minmax(0, 1fr) 190px',
+        kopf: [t.druckTag, t.druckZeit, t.druckTreffpunkt, tu('Leiter')],
+      },
+      versammlung,
+    ),
+    ...tabellenBloecke(
+      'gruppen',
+      {
+        titel: t.druckGruppentreffpunkte,
+        farbe: 'wein',
+        spalten: '120px 64px 96px minmax(0, 1fr) 170px',
+        kopf: [t.druckTag, t.druckZeit, t.gbGruppe, t.druckTreffpunkt, tu('Leiter')],
+      },
+      gruppen,
+    ),
+  ]
   if (anders.length) {
     bloecke.push({
       key: 'anders',
@@ -143,7 +138,7 @@ export function TreffpunktBogen({ wochen, zeitraum }: { wochen: readonly number[
       ),
     })
   }
-  if (besuche.length) bloecke.push({ key: 'besuche', inhalt: <BesuchsTabelle zeilen={besuche} /> })
+  bloecke.push(...tabellenBloecke('besuche', besuchsForm(t), besuche))
   if (bloecke.length === 0) bloecke.push({ key: 'leer', inhalt: <p className="druck-hinweis">{t.fsKeine}</p> })
 
   return <Bogen titel={t.tabFs} zeitraum={`${t.fsShort} · ${zeitraum}`} bloecke={bloecke} />
@@ -157,26 +152,24 @@ export function TreffpunktBogen({ wochen, zeitraum }: { wochen: readonly number[
 export function GruppenbesuchBogen() {
   const { t } = useT()
   const besuche = useBesuchsZeilen({ ab: '', hoechstens: Infinity, nurKommende: true })
+  const bloecke = tabellenBloecke('besuche', besuchsForm(t), besuche)
   return (
     <Bogen
       titel={t.gbTitel}
       zeitraum={t.fsGruppenbesucheTab}
-      bloecke={[{ key: 'besuche', inhalt: besuche.length ? <BesuchsTabelle zeilen={besuche} /> : <p className="druck-hinweis">{t.gbLeer}</p> }]}
+      bloecke={bloecke.length ? bloecke : [{ key: 'leer', inhalt: <p className="druck-hinweis">{t.gbLeer}</p> }]}
     />
   )
 }
 
-function BesuchsTabelle({ zeilen }: { zeilen: readonly DruckZeile[] }) {
-  const { t } = useT()
-  return (
-    <DruckTabelle
-      titel={t.fsGruppenbesucheTab}
-      farbe="gold"
-      spalten="170px minmax(0, 1fr) 120px"
-      kopf={[t.gbWoche, t.druckTreffpunkt, t.gbGruppe]}
-      zeilen={zeilen}
-    />
-  )
+/** Die Tabelle der Gruppenbesuche — auf beiden Bögen dieselbe. */
+function besuchsForm(t: Pick<Dict, 'fsGruppenbesucheTab' | 'gbWoche' | 'druckTreffpunkt' | 'gbGruppe'>): TabellenForm {
+  return {
+    titel: t.fsGruppenbesucheTab,
+    farbe: 'gold',
+    spalten: '170px minmax(0, 1fr) 120px',
+    kopf: [t.gbWoche, t.druckTreffpunkt, t.gbGruppe],
+  }
 }
 
 /**

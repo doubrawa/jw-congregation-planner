@@ -737,4 +737,7 @@ export default {
   "druckZeit": "Godzina",
   "druckTreffpunkt": "Miejsce",
   "druckTrolleyIntro": "Umówcie się ze sobą i zapiszcie się w aplikacji, w sekcji {weg}. Linia przerywana: ktoś szuka współpracownika – kto chce dołączyć, niech się dopisze.",
+  "druckPlanJeWoche": "Co tydzień kolej na jedną grupę, od poniedziałku do niedzieli.",
+  "druckPlanJeMonat": "Co miesiąc kolej na jedną grupę.",
+  "druckMonatSpalte": "Miesiąc",
 } satisfies Partial<Dict>

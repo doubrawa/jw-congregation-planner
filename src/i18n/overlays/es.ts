@@ -737,4 +737,7 @@ export default {
   "druckZeit": "Hora",
   "druckTreffpunkt": "Lugar",
   "druckTrolleyIntro": "Pónganse de acuerdo y apúntense en la aplicación, en {weg}. Con línea discontinua: alguien busca compañero; quien quiera ir, que se apunte también.",
+  "druckPlanJeWoche": "Cada semana le toca a un grupo, de lunes a domingo.",
+  "druckPlanJeMonat": "Cada mes le toca a un grupo.",
+  "druckMonatSpalte": "Mes",
 } satisfies Partial<Dict>

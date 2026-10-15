@@ -736,4 +736,7 @@ export default {
   "druckZeit": "ساعت",
   "druckTreffpunkt": "محل",
   "druckTrolleyIntro": "با هم قرار بگذارید و در برنامه، در بخش {weg}، ثبت‌نام کنید. خط‌چین: کسی دنبال همخدمت است – هر کس می‌خواهد همراه شود، نام خود را ثبت کند.",
+  "druckPlanJeWoche": "هر هفته نوبت یک گروه است، از دوشنبه تا یکشنبه.",
+  "druckPlanJeMonat": "هر ماه نوبت یک گروه است.",
+  "druckMonatSpalte": "ماه",
 } satisfies Partial<Dict>

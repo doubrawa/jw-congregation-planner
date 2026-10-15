@@ -737,4 +737,7 @@ export default {
   "druckZeit": "Saat",
   "druckTreffpunkt": "Yer",
   "druckTrolleyIntro": "Birbirinizle anlaşın ve uygulamada {weg} bölümünden kaydolun. Kesikli çizgi: birisi hizmet arkadaşı arıyor – katılmak isteyen kendini ekler.",
+  "druckPlanJeWoche": "Her hafta sıra bir grupta, pazartesiden pazara kadar.",
+  "druckPlanJeMonat": "Her ay sıra bir grupta.",
+  "druckMonatSpalte": "Ay",
 } satisfies Partial<Dict>

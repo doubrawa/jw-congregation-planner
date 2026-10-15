@@ -737,4 +737,7 @@ export default {
   "druckZeit": "Ora",
   "druckTreffpunkt": "Luogo",
   "druckTrolleyIntro": "Mettetevi d’accordo e iscrivetevi nell’app, in {weg}. Tratteggiato: qualcuno cerca un compagno di servizio – chi vuole unirsi si iscrive.",
+  "druckPlanJeWoche": "Ogni settimana tocca a un gruppo, dal lunedì alla domenica.",
+  "druckPlanJeMonat": "Ogni mese tocca a un gruppo.",
+  "druckMonatSpalte": "Mese",
 } satisfies Partial<Dict>

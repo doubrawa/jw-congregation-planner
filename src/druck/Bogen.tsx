@@ -7,6 +7,8 @@ import { blaetterVerteilen, BLATT_HOEHE, type Blatt } from './verteilen'
 export interface DruckBlock {
   key: string
   inhalt: ReactNode
+  /** Schließt ohne Abstand an den Block davor an: die nächste Zeile einer Tabelle (`tabellenBloecke`). */
+  anschluss?: boolean
 }
 
 /**
@@ -56,18 +58,17 @@ export function Bogen({
     const kopf = hoehe(blatt.querySelector('.druck-blatt-kopf') ?? undefined)
     const fuss = hoehe(blatt.querySelector('.druck-blatt-fuss') ?? undefined)
     const hoehen = kinder.filter((el) => el.classList.contains('druck-block')).map(hoehe)
+    const anschluss = bloecke.map((block) => block.anschluss === true)
     // Kopf, Fuß und je ein Abstand davor und dahinter sind auf jedem Blatt gleich.
-    setBlaetter(blaetterVerteilen(hoehen, BLATT_HOEHE - rand - kopf - fuss - abstand, abstand))
-  }, [blaetter])
+    setBlaetter(blaetterVerteilen(hoehen, BLATT_HOEHE - rand - kopf - fuss - abstand, abstand, anschluss))
+  }, [blaetter, bloecke])
 
   if (blaetter === null) {
     return createPortal(
       <div ref={messung} className="druck-messen" aria-hidden="true">
         <DruckBlatt titel={titel} zeitraum={zeitraum} art={art}>
           {bloecke.map((block) => (
-            <div key={block.key} className="druck-block">
-              {block.inhalt}
-            </div>
+            <Block key={block.key} block={block} />
           ))}
         </DruckBlatt>
       </div>,
@@ -89,16 +90,14 @@ export function Bogen({
         >
           {seite.indizes.map((bi) => {
             const block = bloecke[bi]
-            return (
-              block && (
-                <div key={block.key} className="druck-block">
-                  {block.inhalt}
-                </div>
-              )
-            )
+            return block && <Block key={block.key} block={block} />
           })}
         </DruckBlatt>
       ))}
     </>
   )
+}
+
+function Block({ block }: { block: DruckBlock }) {
+  return <div className={block.anschluss ? 'druck-block druck-block--anschluss' : 'druck-block'}>{block.inhalt}</div>
 }

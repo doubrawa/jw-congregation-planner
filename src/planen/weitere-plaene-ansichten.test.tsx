@@ -99,7 +99,17 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   vi.useRealTimers()
+  delete document.documentElement.dataset.print
 })
+
+/** Was im Druckdialog auf dem Bogen steht: sein Titel, je Druck einer. */
+function druckeMit(): string[] {
+  const titel: string[] = []
+  window.print = vi.fn(() => {
+    titel.push(document.querySelector('.druck-bogen .druck-titel')?.textContent ?? '')
+  })
+  return titel
+}
 
 describe('Ansehen', () => {
   it('Veröffentlichtes sieht jeder, gleich welcher Gruppe — Entwürfe nie', () => {
@@ -225,7 +235,7 @@ describe('Planen: ein Plan', () => {
     fireEvent.change(vorschau(container)[1]!, { target: { value: '' } })
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-09-14', grp: null })
 
-    fireEvent.click(container.querySelector('.planen-leiste .aktion-neben')!)
+    fireEvent.click(knopf(container.querySelector('.planen-leiste')!, t.wpZurueckziehen)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpPlanAendern', id: 'pl-s', patch: { entwurf: true } })
   })
 
@@ -245,6 +255,27 @@ describe('Planen: ein Plan', () => {
     oeffnen(container, 'Grundreinigung')
     expect(container.querySelector('.unteransicht-kopf .aktion-haupt')?.textContent).toBe(t.wpVeroeffentlichen)
     expect(container.querySelector('.planen-leiste')).toBeNull()
+  })
+
+  it('Drucken steht am Handy vorn in der Leiste — gedruckt wird der Bogen des Plans, auch eines Entwurfs', () => {
+    const gedruckt = druckeMit()
+    const { container } = planen()
+    oeffnen(container, 'Grundreinigung')
+    const leiste = container.querySelector('.planen-leiste')!
+    expect([...leiste.querySelectorAll('button')].map((b) => b.textContent)).toEqual([t.drucken, t.wpVeroeffentlichen])
+    fireEvent.click(knopf(leiste, t.drucken)!)
+    expect(gedruckt).toEqual(['Grundreinigung'])
+  })
+
+  it('ab dem Tablet steht Drucken mit Wort neben dem Titel, vor „Veröffentlichen"', () => {
+    window.matchMedia = vi.fn((q: string) => ({ matches: q.includes('768') })) as unknown as typeof window.matchMedia
+    const gedruckt = druckeMit()
+    const { container } = planen()
+    oeffnen(container, 'Winterdienst')
+    const kopf = container.querySelector('.unteransicht-kopf')!
+    expect([...kopf.querySelectorAll('button')].map((b) => b.textContent).slice(-2)).toEqual([t.drucken, t.wpZurueckziehen])
+    fireEvent.click(knopf(kopf, t.drucken)!)
+    expect(gedruckt).toEqual(['Winterdienst'])
   })
 
   it('„Beginnen mit" verteilt ab dieser Woche — gedrückt ist, womit die Reihe jetzt beginnt', () => {
@@ -407,7 +438,10 @@ describe('Der Planer in den Weiteren Plänen (4.10.2026)', () => {
     expect(container.querySelector('input[type="text"]')).toBeNull()
     expect(container.querySelector('.wp-datum')).toBeNull()
     expect(container.querySelector(`[role="group"][aria-label="${t.wpTakt}"]`)).toBeNull()
-    expect(container.querySelector('.planen-leiste')).toBeNull()
+    // In der Leiste nur „Drucken" — Veröffentlichen ist Sache des Admins.
+    expect([...container.querySelectorAll('.planen-leiste button')].map((b) => b.textContent)).toEqual([t.drucken])
+    expect(knopf(container, t.wpVeroeffentlichen)).toBeUndefined()
+    expect(knopf(container, t.wpZurueckziehen)).toBeUndefined()
     expect(knopf(container, t.wpLoeschen)).toBeUndefined()
     // Was er sieht: den Plan, wie ihn alle sehen, und wie die Gruppen wechseln.
     expect(container.querySelector('.wp-name')?.textContent).toBe('Winterdienst')

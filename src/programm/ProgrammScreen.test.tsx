@@ -1002,15 +1002,20 @@ describe('Drucken: Pläne ohne Woche', () => {
     expect(print).toHaveBeenCalledTimes(1)
   })
 
-  it('räumt ein stehengebliebenes Kennzeichen ab — sonst käme das Blatt als Monat heraus', () => {
+  it('gedruckt wird der Bogen des Plans — ein stehengebliebenes Kennzeichen setzt er selbst um', () => {
+    // Ein abgebrochener Druck vorher (kein `afterprint`) ließ früher das
+    // nächste Blatt als Monat herauskommen.
     document.documentElement.dataset.print = 'monat'
-    let kennzeichen: string | undefined = 'nicht gedruckt'
+    let imDruck = { kennzeichen: 'nicht gedruckt' as string | undefined, titel: '' }
     print.mockImplementation(() => {
-      kennzeichen = document.documentElement.dataset.print
+      imDruck = {
+        kennzeichen: document.documentElement.dataset.print,
+        titel: document.querySelector('.druck-bogen .druck-titel')?.textContent ?? '',
+      }
     })
     const { container } = zeige({ tab: 'wp', plaene: [PLAN], planEintraege: [] })
     fireEvent.click(knopf(container))
-    expect(kennzeichen).toBeUndefined()
+    expect(imDruck).toEqual({ kennzeichen: 'bogen', titel: 'Saalreinigung' })
   })
 })
 

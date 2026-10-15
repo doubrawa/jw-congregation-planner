@@ -37,6 +37,12 @@ describe('blaetterVerteilen', () => {
     ])
   })
 
+  it('die nächste Zeile einer Tabelle schließt ohne Abstand an — so passen mehr aufs Blatt', () => {
+    // 3 × 300 = 900 passt genau; mit zwei Abständen von 10 nicht mehr.
+    expect(blaetterVerteilen([300, 300, 300], 900, 10).map((b) => b.indizes)).toEqual([[0, 1], [2]])
+    expect(blaetterVerteilen([300, 300, 300], 900, 10, [false, true, true]).map((b) => b.indizes)).toEqual([[0, 1, 2]])
+  })
+
   it('ohne Blöcke ein leeres Blatt — sonst druckte der Bogen gar nichts', () => {
     expect(blaetterVerteilen([], 900, 10)).toEqual([{ indizes: [], ueberlang: false }])
   })

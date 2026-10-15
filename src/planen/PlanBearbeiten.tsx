@@ -5,6 +5,7 @@ import { useKalendertag } from '../app/useKalendertag'
 import { BlattFeld } from '../bausteine/BlattFeld'
 import { Spur } from '../bausteine/Spur'
 import { Wahl } from '../bausteine/Wahl'
+import { Zeichen } from '../bausteine/Zeichen'
 import { ZeitraumKalender } from '../bausteine/ZeitraumKalender'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import type { ZeitraumEnde } from '../components/kalender'
@@ -25,7 +26,10 @@ import {
   vorschauSpannen,
 } from '../data/weitere-plaene'
 import type { PlanTakt, WeitererPlan } from '../data/types'
+import { PlanBogen } from '../druck/PlanBogen'
+import { useDruckBogen } from '../druck/useDruckBogen'
 import { useT } from '../i18n/useT'
+import { DruckKnopf } from '../programm/DruckKnopf'
 import { spurDesPlans } from './plan-spur'
 import '../components/weitere-plaene.css'
 
@@ -44,25 +48,29 @@ const WAHL_GRUPPEN = 4
  * Name, Zeitraum, Takt, Veröffentlichen und Löschen sind der Plan selbst — die
  * ändert der Admin. Der Planer sieht sie und verteilt die Gruppen (4.10.2026).
  * Veröffentlichen steht am Handy in der Leiste am unteren Rand, ab dem Tablet
- * neben dem Titel — wie „Plan senden" beim Planen der Woche. Drucken, links in
- * der Leiste des Entwurfs, kommt mit den Druckbögen (Phase 9).
+ * neben dem Titel — wie „Plan senden" beim Planen der Woche. Drucken steht
+ * links davon (Phase 9): der Bogen des Plans (`PlanBogen`), auch im Entwurf —
+ * zum Durchsehen, bevor er veröffentlicht wird —, nicht mehr nach dem Ende.
  */
 export function PlanBearbeiten({ plan, onZurueck }: { plan: WeitererPlan; onZurueck: () => void }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
   const tag = useKalendertag()
   const breit = useMedia(TABLET_BREITE)
+  const { drucken, bogen } = useDruckBogen()
   const admin = state.planner
   const stand = planStand(plan, fromIso(tag))
   // Ein abgeschlossener Plan ist gewesen: nichts mehr zu verteilen, zu
   // veröffentlichen oder zu zeigen (`plaeneZumAnsehen`).
   const laeuft = stand !== 'abgeschlossen'
   const veroeffentlichen = admin && laeuft ? <VeroeffentlichenKnopf plan={plan} /> : null
+  const planDrucken = () => drucken(<PlanBogen plan={plan} />)
 
   return (
     <>
       <section className="screen prog">
         <UnteransichtKopf titel={t.wpPlanBearbeiten} onZurueck={onZurueck}>
+          {breit && laeuft && <DruckKnopf mitText onClick={planDrucken} />}
           {breit && veroeffentlichen}
         </UnteransichtKopf>
         <Spur schritte={spurDesPlans(plan, stand, t)} label={t.spurPlan} />
@@ -85,7 +93,16 @@ export function PlanBearbeiten({ plan, onZurueck }: { plan: WeitererPlan; onZuru
           />
         )}
       </section>
-      {!breit && veroeffentlichen && <div className="planen-leiste">{veroeffentlichen}</div>}
+      {!breit && laeuft && (
+        <div className="planen-leiste">
+          <button type="button" className="aktion-neben" onClick={planDrucken}>
+            <Zeichen name="drucken" />
+            {t.drucken}
+          </button>
+          {veroeffentlichen}
+        </div>
+      )}
+      {bogen}
     </>
   )
 }

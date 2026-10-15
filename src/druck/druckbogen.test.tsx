@@ -6,9 +6,12 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { setAnlass } from '../data/anlass'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
 import { genFsWeek } from '../data/fs'
-import type { FsInstance, FsRule, Section, Service, Week } from '../data/types'
+import type { FsInstance, FsRule, PlanEintrag, Section, Service, Week, WeitererPlan } from '../data/types'
+import { spannenText, zeitraumText } from '../components/weitere-plaene-anzeige'
 import { dict } from '../i18n/ui'
 import { Bogen } from './Bogen'
+import { PlanBogen } from './PlanBogen'
+import { tabellenBloecke } from './tabellen-bloecke'
 import { GruppenbesuchBogen, TreffpunktBogen } from './TreffpunktBogen'
 import { TrolleyBogen } from './TrolleyBogen'
 import { useDruckBogen } from './useDruckBogen'
@@ -209,10 +212,13 @@ describe('Der Bogen der Treffpunkte', () => {
       ],
       ...over,
     })
-  const tabelle = (c: HTMLElement, titel: string) =>
-    [...c.querySelectorAll('.druck-tabelle')]
-      .find((s) => s.querySelector('.druck-tabelle-titel')?.textContent === titel)
-      ?.querySelectorAll('.druck-tabelle-zeile:not(.druck-tabelle-zeile--kopf)') ?? []
+  /** Die Zeilen der Tabelle mit diesem Titel: die erste in ihrem Block, die übrigen schließen an (`tabellenBloecke`). */
+  const tabelle = (c: HTMLElement, titel: string): Element[] => {
+    const start = [...c.querySelectorAll('.druck-block')].find((b) => b.querySelector('.druck-tabelle-titel')?.textContent === titel)
+    const bloecke: Element[] = start ? [start] : []
+    for (let b = start?.nextElementSibling; b?.classList.contains('druck-block--anschluss'); b = b.nextElementSibling) bloecke.push(b)
+    return bloecke.flatMap((b) => [...b.querySelectorAll('.druck-tabelle-zeile:not(.druck-tabelle-zeile--kopf)')])
+  }
   const zellen = (zeilen: Iterable<Element>) => [...zeilen].map((z) => [...z.children].map((c) => c.textContent))
 
   it('wer zuteilt, druckt Versammlung und alle Gruppen je Datum — ein freier Leiter gepunktet', () => {
@@ -354,6 +360,136 @@ describe('Bogen: Blöcke nach gemessener Höhe verteilen', () => {
     expect(erst?.classList.contains('druck-blatt--ueberlang')).toBe(false)
     expect(lang?.classList.contains('druck-blatt--ueberlang')).toBe(true)
   })
+
+  /** Eine Tabelle mit 30 Zeilen zu je 40 px. */
+  const langeTabelle = () =>
+    tabellenBloecke(
+      't',
+      { titel: 'Tabelle', spalten: '1fr', kopf: ['Spalte'] },
+      Array.from({ length: 30 }, (_, i) => ({
+        key: `z${i}`,
+        zellen: [
+          <span key="z" data-hoehe={40}>
+            Zeile {i}
+          </span>,
+        ],
+      })),
+    )
+
+  it('eine lange Tabelle läuft Zeile für Zeile auf dem nächsten Blatt weiter — Überschrift und Spaltenköpfe nur oben', () => {
+    const { container } = zeige(<Bogen titel="T" zeitraum="Z" bloecke={langeTabelle()} />)
+    // Platz 1010, je Zeile 40: 25 aufs erste Blatt, der Rest aufs zweite.
+    expect(blaetter(container).map((b) => b.length)).toEqual([25, 5])
+    const [erstes, zweites] = [...container.querySelectorAll('.druck-blatt')]
+    expect(erstes!.querySelectorAll('.druck-tabelle-titel, .druck-tabelle-zeile--kopf')).toHaveLength(2)
+    expect(zweites!.querySelector('.druck-tabelle-titel, .druck-tabelle-zeile--kopf')).toBeNull()
+    // Oben auf dem zweiten Blatt die nächste Zeile — ohne den Abstand, der sie sonst an die davor rückt.
+    expect(zweites!.querySelector('.druck-block')?.className).toBe('druck-block druck-block--anschluss')
+    expect(erstes!.querySelector('.druck-block')?.className).toBe('druck-block')
+  })
+
+  it('zwischen den Zeilen einer Tabelle zählt der Abstand der Blöcke nicht — sonst bliebe das Blatt halb leer', () => {
+    const echt = window.getComputedStyle.bind(window)
+    vi.spyOn(window, 'getComputedStyle').mockImplementation((el, pseudo) =>
+      el.classList.contains('druck-blatt')
+        ? ({ paddingTop: '0px', paddingBottom: '0px', rowGap: '16px' } as CSSStyleDeclaration)
+        : echt(el, pseudo),
+    )
+    // Platz: 1010 − 16 (Abstand unter dem Kopf) = 994. Ohne Abstände 24 Zeilen;
+    // zählte zwischen ihnen je einer mit, wären es 18.
+    const { container } = zeige(<Bogen titel="T" zeitraum="Z" bloecke={langeTabelle()} />)
+    expect(blaetter(container).map((b) => b.length)).toEqual([24, 6])
+  })
+
+  it('eine Tabelle ohne Zeilen steht gar nicht da', () => {
+    expect(tabellenBloecke('t', { spalten: '1fr', kopf: ['Spalte'] }, [], <p>davor</p>)).toEqual([])
+  })
+})
+
+/**
+ * **Ein Weiterer Plan auf Papier** (Entwurf `GDruckPlaene`, dort der
+ * Winterdienst): je Woche oder Monat eine Zeile, wer dran ist und wer die
+ * Gruppe leitet. Jede Zeile ein Block, damit ein langer Plan weiterläuft —
+ * hier je Block 40 px statt eines Layouts, das jsdom nicht rechnet.
+ */
+describe('Der Bogen eines Weiteren Plans', () => {
+  beforeEach(() => {
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const hoehe = this.classList.contains('druck-blatt-kopf')
+        ? 85
+        : this.classList.contains('druck-blatt-fuss')
+          ? 27
+          : this.classList.contains('druck-block')
+            ? 40
+            : 0
+      return { height: hoehe, width: 0, top: 0, left: 0, right: 0, bottom: hoehe, x: 0, y: 0, toJSON: () => ({}) } as DOMRect
+    })
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  const AUFSEHER = { ...demoZustand().persons[0]!, id: 'p-auf', fn: 'Otto', ln: 'Ober' }
+  const GRUPPEN = [
+    { id: 'g1', name: 'Gruppe 1', overseerId: 'p-auf', assistantId: null },
+    { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
+  ]
+  const PLAN: WeitererPlan = { id: 'pl', name: 'Winterdienst', von: '2026-09-07', bis: '2026-09-27', entwurf: false }
+  const eintrag = (datum: string, grp: string | null): PlanEintrag => ({ id: `e-${datum}`, planId: 'pl', datum, grp })
+  const zeigePlan = (plan: WeitererPlan, planEintraege: PlanEintrag[] = []) =>
+    zeige(<PlanBogen plan={plan} />, { persons: [AUFSEHER], groups: GRUPPEN, plaene: [plan], planEintraege })
+  const datenZeilen = (c: ParentNode) => [...c.querySelectorAll('.druck-tabelle-zeile:not(.druck-tabelle-zeile--kopf)')]
+  const zellen = (c: ParentNode) => datenZeilen(c).map((z) => [...z.children].map((s) => s.textContent))
+
+  it('je Woche des Zeitraums eine Zeile: wann, welche Gruppe, ihr Aufseher — eine Woche ohne Gruppe gepunktet', () => {
+    const { container } = zeigePlan(PLAN, [eintrag('2026-09-07', 'g1'), eintrag('2026-09-21', 'g2')])
+    expect(texte(container, '.druck-titel')).toEqual(['Winterdienst'])
+    expect(texte(container, '.druck-zeitraum')).toEqual([`${t.saal} · ${zeitraumText(PLAN, 'de')}`])
+    expect(texte(container, '.druck-plan-intro')).toEqual([t.druckPlanJeWoche])
+    expect(texte(container, '.druck-tabelle-zeile--kopf > span')).toEqual([t.gbWoche, t.gbGruppe, t.rolleGruppenaufseher])
+    expect(zellen(container)).toEqual([
+      [spannenText(PLAN, '2026-09-07', 'de'), 'Gruppe 1', 'Otto Ober'],
+      // Ohne Eintrag — etwa nachdem der Zeitraum verlängert wurde — steht die Woche trotzdem da.
+      [spannenText(PLAN, '2026-09-14', 'de'), '', ''],
+      [spannenText(PLAN, '2026-09-21', 'de'), 'Gruppe 2', ''],
+    ])
+    expect(datenZeilen(container)[1]!.querySelector('.druck-offen')).not.toBeNull()
+  })
+
+  it('fett steht die Gruppe, die dran ist — der Aufseher leise daneben', () => {
+    const { container } = zeigePlan(PLAN, [eintrag('2026-09-07', 'g1')])
+    expect([...datenZeilen(container)[0]!.children].map((s) => s.className)).toEqual(['', 'is-betont', 'druck-leise'])
+  })
+
+  it('im Monatstakt je Monat eine Zeile — mit eigenem Satz und Spaltenkopf', () => {
+    const monate: WeitererPlan = { ...PLAN, bis: '2026-11-30', takt: 'monat' }
+    const { container } = zeigePlan(monate, [eintrag('2026-10-01', 'g2')])
+    expect(texte(container, '.druck-plan-intro')).toEqual([t.druckPlanJeMonat])
+    expect(texte(container, '.druck-tabelle-zeile--kopf > span')[0]).toBe(t.druckMonatSpalte)
+    expect(zellen(container).map((z) => z.slice(0, 2))).toEqual([
+      ['September 2026', ''],
+      ['Oktober 2026', 'Gruppe 2'],
+      ['November 2026', ''],
+    ])
+  })
+
+  it('ein Plan ohne Namen heißt auf Papier wie in der App', () => {
+    const { container } = zeigePlan({ ...PLAN, name: '' })
+    expect(texte(container, '.druck-titel')).toEqual([t.wpOhneName])
+  })
+
+  it('ein Plan über ein Jahr läuft auf dem nächsten Blatt weiter — und die Seitenzahlen stimmen', () => {
+    // 52 Wochen zu je 40 px, Platz 1010: 25, 25 und 2.
+    const { container } = zeigePlan({ ...PLAN, bis: '2027-09-05' })
+    const blaetter = [...container.querySelectorAll('.druck-blatt')]
+    expect(blaetter.map((b) => datenZeilen(b).length)).toEqual([25, 25, 2])
+    expect(texte(container, '.druck-blatt-fuss').map((f) => f.slice(f.lastIndexOf('·') + 2))).toEqual([
+      'Seite 1 von 3',
+      'Seite 2 von 3',
+      'Seite 3 von 3',
+    ])
+    expect(container.querySelector('.druck-blatt--ueberlang')).toBeNull()
+  })
 })
 
 describe('useDruckBogen', () => {
@@ -418,5 +554,35 @@ describe('useDruckBogen', () => {
       window.dispatchEvent(new Event('afterprint'))
     })
     expect(document.documentElement.dataset.print).toBe('s89')
+  })
+
+  it('kam kein „afterprint", verteilt der nächste Druck seine Blöcke neu — nicht nach dem vorigen Bogen', () => {
+    // Gefunden am 15.10.2026 im Browser: Ein Plan, auf ein Jahr verlängert,
+    // kam mit den 13 Wochen des ersten Drucks heraus.
+    function Zwei() {
+      const { drucken, bogen } = useDruckBogen()
+      const bogenMit = (n: number) => (
+        <Bogen
+          titel="T"
+          zeitraum="Z"
+          bloecke={Array.from({ length: n }, (_, i) => ({ key: `b${i}`, inhalt: <p className="inhalt">{`Block ${i}`}</p> }))}
+        />
+      )
+      return (
+        <>
+          <button type="button" onClick={() => drucken(bogenMit(1))}>
+            Kurz
+          </button>
+          <button type="button" onClick={() => drucken(bogenMit(3))}>
+            Lang
+          </button>
+          {bogen}
+        </>
+      )
+    }
+    const { getByText } = zeige(<Zwei />)
+    fireEvent.click(getByText('Kurz'))
+    fireEvent.click(getByText('Lang'))
+    expect(imDruck.inhalt).toEqual(['Block 0', 'Block 1', 'Block 2'])
   })
 })

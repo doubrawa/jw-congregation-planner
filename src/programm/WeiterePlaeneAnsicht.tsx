@@ -8,6 +8,7 @@ import { fromIso } from '../data/meeting-dates'
 import { eintraegeVon, plaeneZumAnsehen, spanneVon, spannenDerGruppe, taktVon } from '../data/weitere-plaene'
 import { useT } from '../i18n/useT'
 import type { WeitererPlan } from '../data/types'
+import { PlanBogen } from '../druck/PlanBogen'
 import { AnsichtDrucken } from './AnsichtDrucken'
 import '../components/weitere-plaene.css'
 
@@ -38,7 +39,7 @@ export function WeiterePlaeneAnsicht() {
   }
   return (
     <>
-      <AnsichtDrucken titel={t.navWeiterePlaene} />
+      <AnsichtDrucken titel={t.navWeiterePlaene} bogen={() => <PlanBogen plan={plan} />} />
       {plaene.length > 1 && (
         <div className="wp-wahl" role="group" aria-label={t.navWeiterePlaene}>
           {plaene.map((p) => (

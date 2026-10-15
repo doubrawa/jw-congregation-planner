@@ -31,10 +31,15 @@ export interface DruckBogen {
  * **Jede Stelle räumt nur ihren eigenen Druck ab** (`meiner`): Der
  * Wochenstreifen zeichnet seinen Inhalt dreimal, also gibt es diesen Hook
  * mehrfach zugleich — wie beim Anmelde-Zettel (`useZettelDruck`).
+ *
+ * **Jeder Druck zeichnet neu** (`nr`): Meldet ein Browser kein `afterprint`,
+ * steht der vorige Bogen beim nächsten Druck noch da — und React behielte für
+ * den neuen Inhalt die Verteilung auf die Blätter, die `Bogen` für den alten
+ * gemessen hat. Die zweite Woche käme dann mit den Blättern der ersten heraus.
  */
 export function useDruckBogen(): DruckBogen {
   const lang = useAppSelector((s) => s.lang)
-  const [inhalt, setInhalt] = useState<ReactNode>(null)
+  const [druck, setDruck] = useState<{ nr: number; inhalt: ReactNode } | null>(null)
   const meiner = useRef(false)
 
   useEffect(() => {
@@ -42,7 +47,7 @@ export function useDruckBogen(): DruckBogen {
       if (!meiner.current) return
       meiner.current = false
       delete document.documentElement.dataset.print
-      setInhalt(null)
+      setDruck(null)
     }
     window.addEventListener('afterprint', fertig)
     return () => {
@@ -51,19 +56,19 @@ export function useDruckBogen(): DruckBogen {
     }
   }, [])
 
-  const drucken = useCallback((neu: ReactNode) => {
-    flushSync(() => setInhalt(neu))
+  const drucken = useCallback((inhalt: ReactNode) => {
+    flushSync(() => setDruck((vorher) => ({ nr: (vorher?.nr ?? 0) + 1, inhalt })))
     meiner.current = true
     document.documentElement.dataset.print = BOGEN
     window.print()
   }, [])
 
   const bogen =
-    inhalt === null
+    druck === null
       ? null
       : createPortal(
-          <div className="druck-bogen" lang={lang} dir={isRTL(lang) ? 'rtl' : 'ltr'} aria-hidden="true" inert>
-            {inhalt}
+          <div key={druck.nr} className="druck-bogen" lang={lang} dir={isRTL(lang) ? 'rtl' : 'ltr'} aria-hidden="true" inert>
+            {druck.inhalt}
           </div>,
           document.body,
         )

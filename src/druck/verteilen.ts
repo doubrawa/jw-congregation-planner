@@ -16,18 +16,25 @@ export interface Blatt {
  *
  * `hoehen` sind die gemessenen Höhen der Blöcke, `platz` ist, was auf einem
  * Blatt zwischen Kopf und Fuß bleibt, `abstand` der Abstand zwischen zwei
- * Blöcken. Die Reihenfolge bleibt; ein Block geht nie über zwei Blätter. Passt
- * einer allein nicht auf ein Blatt, bekommt er eins für sich (`ueberlang`).
+ * Blöcken. Ein Block mit `anschluss` (die nächste Zeile einer Tabelle) steht
+ * ohne Abstand unter dem davor. Die Reihenfolge bleibt; ein Block geht nie
+ * über zwei Blätter. Passt einer allein nicht auf ein Blatt, bekommt er eins
+ * für sich (`ueberlang`).
  *
  * Ohne Blöcke ein leeres Blatt: Ein Bogen ohne Seite druckte gar nichts, und
  * der Druckdialog zeigte ein weißes Nichts.
  */
-export function blaetterVerteilen(hoehen: readonly number[], platz: number, abstand: number): Blatt[] {
+export function blaetterVerteilen(
+  hoehen: readonly number[],
+  platz: number,
+  abstand: number,
+  anschluss: readonly boolean[] = [],
+): Blatt[] {
   const blaetter: Blatt[] = []
   let aktuell: Blatt | null = null
   let belegt = 0
   hoehen.forEach((hoehe, i) => {
-    const mitAbstand = aktuell && aktuell.indizes.length > 0 ? belegt + abstand + hoehe : hoehe
+    const mitAbstand = aktuell ? belegt + (anschluss[i] ? 0 : abstand) + hoehe : hoehe
     if (aktuell && mitAbstand <= platz) {
       aktuell.indizes.push(i)
       belegt = mitAbstand

@@ -85,22 +85,3 @@ export function wochenZeitraum(week: Pick<Week, 'start'>, lang: Lang, ersatz: st
     return ersatz
   }
 }
-
-/**
- * **Die Weiche zwischen den Ausdrucken.**
- *
- * Mehrere Regelwerke sagen im Druck „alles außer mir ausblenden": der
- * gedruckte Bildschirm (`print.css`, der Normalfall), der Monat der
- * Treffpunkte (`print-monat.css`) und die Druckbögen (`druck-bogen.css`, die
- * ihr Kennzeichen selbst setzen, `useDruckBogen`). Welches gilt, sagt das
- * Kennzeichen `data-print` am Wurzelelement — gesetzt beim Klick, abgeräumt,
- * wenn der Druckdialog durch ist. Ohne Kennzeichen druckt der Bildschirm.
- *
- * Hier gesetzt statt an jedem Knopf von Hand: Ein stehengebliebenes
- * Kennzeichen (ein Abbruch vor `afterprint`) ließe sonst den nächsten
- * Wochen-Ausdruck still als Monat oder als Zettelbogen herauskommen.
- */
-export function druckKennzeichen(kennzeichen: 'monat' | null): void {
-  if (kennzeichen) document.documentElement.dataset.print = kennzeichen
-  else delete document.documentElement.dataset.print
-}

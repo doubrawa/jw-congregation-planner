@@ -270,6 +270,9 @@ export const DE = {
     druckVersammlungstreffpunkte: 'Versammlungstreffpunkte', druckGruppentreffpunkte: 'Gruppentreffpunkte',
     druckAndersAlsSonst: 'Anders als sonst', druckEntfaellt: 'entfällt', druckZusaetzlich: 'zusätzlich',
     druckStatt: 'statt {alt}', druckTag: 'Tag', druckZeit: 'Zeit', druckTreffpunkt: 'Treffpunkt',
+    // Bogen eines Weiteren Plans (Entwurf GDruckPlaene), je nach Takt.
+    druckPlanJeWoche: 'Jede Woche ist eine Gruppe dran, von Montag bis Sonntag.',
+    druckPlanJeMonat: 'Jeden Monat ist eine Gruppe dran.', druckMonatSpalte: 'Monat',
     // Bogen der Trolleys (Entwurf GDruckTrolleys); {weg} ist „Predigtdienst · Trolleys".
     druckTrolleyIntro: 'Verabredet euch und tragt euch in der App ein, unter {weg}. Gestrichelt: Hier sucht jemand einen Partner – wer mitgehen möchte, trägt sich dazu.',
     // Kongresswoche (T121): statt des Programms der leere Saal und zwei Wege.
