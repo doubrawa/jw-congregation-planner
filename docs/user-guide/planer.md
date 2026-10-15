@@ -819,13 +819,16 @@ Veröffentlicht, Abgeschlossen), und Zurück führt wieder zur Liste.
 - **Veröffentlichen** macht den Plan sichtbar, **Zurück zum Entwurf** nimmt
   ihn wieder zurück. Einen Entwurf sehen nur Admins und Planer. Am Handy steht
   der Knopf unten in der Leiste, ab dem Tablet neben dem Titel.
+- **Drucken** steht davor – am Handy vorn in der Leiste, ab dem Tablet neben
+  dem Titel – und druckt den Bogen des Plans, auch eines Entwurfs: zum
+  Durchsehen, bevor die Versammlung ihn sieht (siehe
+  [Pläne drucken](#9-pläne-drucken)).
 - **Plan löschen** fragt einmal nach.
 
-Ein abgeschlossener Plan bleibt in der Liste stehen, zum Nachsehen: Verteilen
-und Veröffentlichen gibt es dort nicht mehr. Der **Planer** sieht Name,
+Ein abgeschlossener Plan bleibt in der Liste stehen, zum Nachsehen: Verteilen,
+Veröffentlichen und Drucken gibt es dort nicht mehr. Der **Planer** sieht Name,
 Zeitraum und Takt, ändert sie aber nicht – er verteilt die Gruppen mit
-„Beginnen mit" und in der Vorschau. Gedruckt wird ein Plan beim Ansehen
-(siehe [Pläne drucken](#9-pläne-drucken)).
+„Beginnen mit" und in der Vorschau und druckt den Plan wie der Admin.
 
 **Wer was sieht**: Einen Plan sieht nach dem Veröffentlichen die ganze
 Versammlung, und jeder findet oben unter „Deine Gruppe ist dran" die Wochen
@@ -1475,47 +1478,43 @@ Blättern kommst du deshalb nur bis zur ältesten geladenen Woche zurück.
 
 ## 9. Pläne drucken
 
+Gedruckt wird nicht der Bildschirm, sondern ein eigener **Bogen auf A4** – für
+den Aushang am schwarzen Brett. Jedes Blatt nennt oben die Versammlung, was
+gedruckt ist, und den Zeitraum samt Jahr; unten den **Stand** (den Tag, an dem
+du gedruckt hast), den Hinweis, dass Änderungen in der App stehen, und die
+Seitenzahl. Freie Plätze stehen **gepunktet** da, zum Eintragen von Hand. Wo am
+Bildschirm **„Du"** steht, druckt der Bogen den Namen – der Aushang gilt
+allen. Tonflächen gibt es nicht: Browser drucken Hintergründe nur auf Wunsch,
+deshalb trägt der Bogen über Linien und Schrift.
+
+### Zusammenkünfte und Treffpunkte
+
 Beim **Ansehen** der Zusammenkünfte steht neben dem Termin jeder Zusammenkunft
 das **Drucker**‑Zeichen – und im **Predigtdienst** über den Treffpunkten
 genauso. Ab dem Tablet steht stattdessen der Knopf **Drucken** rechts neben
 der Woche. Ein Tipp darauf öffnet das Blatt **Drucken** mit der Wahl; erst
 **Drucken** darin druckt:
 
-- **Diese Woche** (vorgewählt) – die Woche und die Zusammenkunft, die gerade zu
-  sehen sind.
-- **Ganzer Monat · September 2026** – alle Wochen dieses Monats hintereinander,
-  für den Aushang am schwarzen Brett.
+- **Diese Woche** (vorgewählt) – beide Zusammenkünfte auf einem Blatt: links
+  unter der Woche, rechts das Wochenende, je Programmpunkt die Personen mit
+  ihrer Rolle, darunter die **Hilfsdienste** beider Tage. Fällt ein Tag aus,
+  steht er durchgestrichen da, mit dem Grund.
+- **Ganzer Monat · September 2026** – alle Wochen des Monats, knapp: je
+  Programmpunkt eine Zeile, die Namen rechts, Schüler und Partner in einer.
+  Auf ein Blatt kommen so viele Wochen, wie passen; eine Woche wird nie
+  zerteilt. Eine Kongresswoche steht mit einem Satz da, dazu, wann die nächste
+  Zusammenkunft ist.
 
-Wo am Bildschirm **„Du"** steht, druckt das Blatt den Namen.
+Aus welchem Reiter du druckst – unter der Woche oder Wochenende –, ist gleich:
+Der Bogen nimmt immer beide Zusammenkünfte mit.
 
-Gedruckt wird immer nur, was du gerade siehst. Am Handy und am Tablet druckst
-du für alle drei – unter der Woche, Wochenende, Treffpunkte – dreimal. **Am
-Computer** stehen beide Zusammenkünfte nebeneinander, und das Blatt nimmt
-beide mit: jede auf einer eigenen Seite, beim Monat Woche für Woche. Im Kopf
-steht dann **Zusammenkünfte**.
-
-Auch die Pläne ohne Woche haben beim **Ansehen** einen **Drucken**‑Knopf: die
-**Gruppenbesuche** und die **Weiteren Pläne**. Gedruckt wird ohne Auswahl, mit
-Versammlung und Plan im Kopf. Bei mehreren Weiteren Plänen kommt der aufs
-Blatt, den du oben gewählt hast.
-
-### Was auf dem Blatt steht
-
-Der Ausdruck zeigt das Programm sauber ohne die Bedienelemente der App und
-**ohne die Hilfsdienste**. Er füllt die Seite in der Breite und passt sich dem
-im Druckdialog eingestellten Papierformat an (z. B. A4). Tonflächen gibt es
-nicht: Browser drucken Hintergründe standardmäßig nicht, deshalb trägt der
-Ausdruck über Überschriften und feine Linien.
-
-Beim Monat steht der Kopf **einmal** über dem ganzen Blatt – Versammlung,
-Reiter und Monat – statt über jeder Woche. Die Zusammenkunft **unter der
-Woche** füllt allein etwa eine Seite, deshalb bekommt dort jede Woche ihre
-eigene – am Computer, mit beiden Zusammenkünften, ebenso; beim **Wochenende**
-und bei den **Treffpunkten** passen mehrere untereinander, getrennt durch eine
-Linie. Eine Woche wird nie mitten auf der Seite zerteilt.
-
-Unten steht der **Stand** – der Tag, an dem du gedruckt hast; bei einer
-einzelnen Zusammenkunft auch, wann sie endet.
+Bei den **Treffpunkten** druckt dasselbe Blatt die Woche oder den Monat: die
+Treffpunkte der **Versammlung** und der **Gruppen** je Datum, mit Uhrzeit, Ort
+und Leiter. Darunter steht, was **anders ist als sonst** – ein Treffpunkt des
+Grundplans, der entfällt, einer, der dazukommt, einer mit anderer Zeit oder
+anderem Ort, ein Besuch des Dienstaufsehers –, und die nächsten
+**Gruppenbesuche**. Wer zuteilt, druckt alle Gruppen; sonst stehen die
+Versammlung und die eigene Gruppe auf dem Bogen, wie am Bildschirm.
 
 ### Welche Wochen zum Monat gehören
 
@@ -1529,6 +1528,25 @@ oder außerhalb der geladenen 52 Wochen liegen (siehe
 unvollständig herauskommt, lohnt vorher ein Blick, ob die Wochen überhaupt
 schon da sind.
 
+### Die Pläne ohne Woche
+
+Auch die **Gruppenbesuche**, die **Trolleys** und die **Weiteren Pläne** haben
+beim **Ansehen** einen **Drucken**‑Knopf. Gedruckt wird ohne Auswahl:
+
+- **Gruppenbesuche** – die kommenden Besuche mit Woche, Treffpunkt und Gruppe.
+  Den Treffpunkt einer fremden Gruppe nennt der Bogen nur, wenn du zuteilst.
+- **Trolleys** – zwei Wochen ab der Woche, die du gerade siehst: je Tag eine
+  Zeile, je Trolley eine Spalte. Gestrichelt steht, wo jemand einen Partner
+  sucht; darunter die Hinweise der Trolleys.
+- **Weitere Pläne** – je Woche oder Monat des Zeitraums die Gruppe, die dran
+  ist, und ihr Gruppenaufseher; eine Woche ohne Gruppe steht gepunktet da. Bei
+  mehreren Plänen kommt der aufs Blatt, den du oben gewählt hast. Aus **Plan
+  bearbeiten** druckst du ihn auch als Entwurf, zum Durchsehen vor dem
+  Veröffentlichen (siehe [Weitere Pläne](#5a-weitere-pläne)).
+
+Eine lange Tabelle – ein Plan über ein Jahr, die Treffpunkte eines Monats mit
+vielen Gruppen – läuft auf dem nächsten Blatt weiter.
+
 ### S‑89: die Aufgabenzuteilung
 
 Für Schulungsaufgaben gibt es zusätzlich das **S‑89‑Formular** – die
@@ -1540,6 +1558,11 @@ Es enthält Name und Gesprächspartner, Datum, Aufgabe, Schulungspunkt und den
 Raum (**Hauptsaal** oder **Zusätzliche Klasse**). Alle Angaben kommen aus der
 Zuteilung und dem importierten Programm – auszufüllen ist nichts. Da jeder
 Beteiligte es in der App sieht, muss es nicht ausgedruckt und verteilt werden.
+
+Soll es doch Papier sein: Alle Zettel einer Woche druckst du beim Planen unter
+der Karte **Besetzung** (siehe [Planen](#2-planen-zuteilungen-vornehmen)),
+sechs je Blatt zum Ausschneiden. Ab dem Tablet druckt **Diesen Zettel drucken**
+im Formular nur den einen Zettel.
 
 ---
 

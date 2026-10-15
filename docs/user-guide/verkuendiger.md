@@ -261,14 +261,14 @@ dieser Woche** und zur **nächsten Zusammenkunft**, die stattfindet.
 
 Neben dem Termin jeder Zusammenkunft und über den Treffpunkten steht das
 **Drucker**‑Zeichen, ab dem Tablet der Knopf **Drucken** rechts neben der Woche.
-Er öffnet ein Blatt: **Diese Woche** ist vorgewählt, oder du wählst den
-**ganzen Monat** – erst **Drucken** druckt, gedruckt wird jeweils, was du
-gerade siehst, ohne die Bedienelemente der App. Am Computer sind das beide
-Zusammenkünfte, jede auf einer eigenen Seite. Wo bei dir **„Du"**
-steht, druckt das Blatt deinen Namen; der Aushang gilt allen. Auch die
-**Gruppenbesuche** und die **Weiteren Pläne** haben einen **Drucken**‑Knopf.
-Nötig ist das nicht: Deine eigenen Aufgaben stehen unter **Meine Aufgaben**,
-und das Programm ist hier immer aktuell.
+Er öffnet ein Blatt: **Diese Woche** ist vorgewählt – beide Zusammenkünfte auf
+einem Blatt, mit den Hilfsdiensten –, oder du wählst den **ganzen Monat**,
+knapp, Woche für Woche. Erst **Drucken** druckt. Gedruckt wird ein eigener
+Bogen auf A4, nicht der Bildschirm; freie Plätze stehen gepunktet da. Wo bei
+dir **„Du"** steht, druckt der Bogen deinen Namen; der Aushang gilt allen. Auch
+die **Gruppenbesuche**, die **Trolleys** und die **Weiteren Pläne** haben einen
+**Drucken**‑Knopf. Nötig ist das nicht: Deine eigenen Aufgaben stehen unter
+**Meine Aufgaben**, und das Programm ist hier immer aktuell.
 
 ---
 
@@ -432,7 +432,8 @@ sie sonst auf Papier ausgeteilt wird:
 
 Quelle und Schulungspunkt stehen im Arbeitsheft; das Formular nennt sie, soweit
 sie beim Import mitgekommen sind. Du kannst es ansehen und deinem Gehilfen
-zeigen – ausdrucken musst du es nicht.
+zeigen – ausdrucken musst du es nicht. Ab dem Tablet steht darunter **Diesen
+Zettel drucken**, falls du es doch auf Papier willst.
 
 ---
 
