@@ -2285,8 +2285,8 @@ export const KATALOG = [
     id: 'haushalt-vor-person',
     datei: 'src/app/persist.ts',
     regel: 'Der Haushalt geht vor den Personen hinaus — sonst weist der Fremdschlüssel sie ab.',
-    suchen: '      if (haushalt) saveFamily(congId, haushalt, geaendert)\n      else for (const p of geaendert) savePerson(congId, p)',
-    ersetzen: '      for (const p of geaendert) savePerson(congId, p)',
+    suchen: '        saveFamily(congId, haushalt, geaendert)\n',
+    ersetzen: '        for (const p of geaendert) personSofort(congId, p)\n',
   },
   {
     id: 'push-gesucht-einspringen',
@@ -5872,6 +5872,27 @@ export const KATALOG = [
     regel: "Eine krumme Treffpunkt-Zeit steht so da, wie sie gilt — nicht als erste Zeit der Liste.",
     suchen: "      {zeitenZurWahl(FS_TIME_OPTIONS, value).map((tm) => (",
     ersetzen: "      {FS_TIME_OPTIONS.map((tm) => (",
+  },
+  {
+    id: "person-sofort-ueberholt-buendel",
+    datei: "src/app/persist.ts",
+    regel: "Eine sofort geschriebene Person nimmt ihre wartende Fassung mit — die ältere geht nicht hinterher.",
+    suchen: "  personSaves.sofort(person.id, { congId, person })\n",
+    ersetzen: "  savePerson(congId, person)\n",
+  },
+  {
+    id: "haushalt-raeumt-wartendes-ab",
+    datei: "src/app/persist.ts",
+    regel: "Wer einem Haushalt beitritt, verliert ihn nicht an eine wartende ältere Fassung seiner Person.",
+    suchen: "        for (const p of geaendert) personSaves.cancel(p.id)\n",
+    ersetzen: "",
+  },
+  {
+    id: "trolley-entfernt-raeumt-buendel",
+    datei: "src/app/persist.ts",
+    regel: "Ein entfernter Trolley fällt aus dem wartenden Bündel — das Schreiben legte ihn sonst wieder an.",
+    suchen: "    case 'trolleyEntfernt':\n",
+    ersetzen: "",
   },
   {
     id: "variante-ohne-ende",

@@ -188,6 +188,16 @@ const personSaves = createDebouncedWriter<string, { congId: string; person: Pers
   SAVE_DELAY,
   (_id, { congId, person }) => savePerson(congId, person),
 )
+
+/**
+ * Eine Person **sofort** schreiben — über den Bündler, wie die Wochen
+ * (`sofort`): Wartete von ihr noch eine ältere Fassung (die Telefonnummer, eben
+ * getippt), ginge sie sonst hinterher und nähme zurück, was jetzt dazukam (den
+ * Haushalt, gleich danach gewählt).
+ */
+function personSofort(congId: string, person: Person): void {
+  personSaves.sofort(person.id, { congId, person })
+}
 // Gebündelt wird je **Woche**, nicht je Index (T66): der Schlüssel ist ihre
 // Kennung, und der schiebt sich nicht, wenn sich die geladene Menge ändert.
 const weekSaves = createDebouncedWriter<string, { congId: string; week: Week; nurZuteilen: boolean }>(
@@ -294,8 +304,11 @@ function zeilenSchreiber<T extends { id: string }>(
 
 const fsRuleSaves = zeilenSchreiber(saveFsRules)
 // Trolleys schreibt dieser Weg nur an — entfernt werden sie über die Function
-// `trolley`, die den Eingetragenen Bescheid sagt (`saveTrolleys`).
-const trolleySaves = zeilenSchreiber<Trolley>((congId, zeilen) => saveTrolleys(congId, zeilen))
+// `trolley`, die den Eingetragenen Bescheid sagt (`saveTrolleys`). Bleibt nach
+// einem Entfernen nichts zu schreiben, geht nichts hinaus.
+const trolleySaves = zeilenSchreiber<Trolley>((congId, zeilen) => {
+  if (zeilen.length > 0) saveTrolleys(congId, zeilen)
+})
 const planSaves = zeilenSchreiber(savePlaene)
 
 /** Was sich zwischen zwei Ständen einer Tabelle geändert hat, ins Bündel — nichts, wenn nichts. */
@@ -728,7 +741,11 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       break
     case 'trolleyAnlegen':
     case 'trolleyAendern':
+    case 'trolleyEntfernt':
       // Wie der Grundplan: Was sich geändert hat, geht gebündelt als Upsert hinaus.
+      // Ein entfernter Trolley (die Function hat ihn gelöscht) fällt dabei aus
+      // dem Bündel — wartete er dort noch, legte ihn das Schreiben wieder an,
+      // wie eine Person, die ihr eigenes Speichern wiederbelebt (`personEntfernt`).
       zeilenPlanen(trolleySaves, congId, prev.trolleys, next.trolleys)
       break
     case 'wpPlanAnlegen':
@@ -743,7 +760,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       if (next.persoenlich !== prev.persoenlich) persoenlichBescheid(action.key, action.name, action.ja)
       break
     case 'addPerson':
-      savePerson(congId, action.person)
+      personSofort(congId, action.person)
       break
     case 'updatePerson': {
       // Auto-Speichern mit Debounce: Tipp-Änderungen werden gebündelt
@@ -807,8 +824,12 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // muss also **vor** den Personen dastehen. `saveFamily` hält diese
       // Reihenfolge ein; sie ist der einzige Grund, warum es die Funktion gibt.
       const haushalt = geaendert.find((p) => p.fam)?.fam
-      if (haushalt) saveFamily(congId, haushalt, geaendert)
-      else for (const p of geaendert) savePerson(congId, p)
+      if (haushalt) {
+        // Was von ihnen gebündelt wartet, steckt in diesem Stand schon — und
+        // ginge hinterher mit dem alten Haushalt hinaus (`personSofort`).
+        for (const p of geaendert) personSaves.cancel(p.id)
+        saveFamily(congId, haushalt, geaendert)
+      } else for (const p of geaendert) personSofort(congId, p)
       // Der letzte Haushalt, den niemand mehr trägt, verschwindet. Ohne das
       // bliebe eine leere Zeile stehen, an der nie wieder jemand hängt.
       const verwaist = new Set(
@@ -853,7 +874,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // geänderten Personen: unveränderte behalten ihre Referenz, und die
       // Listen sind indexgleich (`dienstBereichEntfernen` bildet der Reihe
       // nach ab).
-      geaenderteSchreiben(prev.persons, next.persons, (p) => savePerson(congId, p))
+      geaenderteSchreiben(prev.persons, next.persons, (p) => personSofort(congId, p))
       break
     }
     case 'addGroup':

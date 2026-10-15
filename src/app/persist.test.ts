@@ -645,6 +645,22 @@ describe('Trolleys (T121, Phase 7)', () => {
     expect(data.saveWeek).not.toHaveBeenCalled()
   })
 
+  /*
+   * Wartete der Trolley noch im Bündel (eben umbenannt), legte ihn das
+   * Schreiben nach dem Entfernen wieder an — `saveTrolleys` ist ein Upsert und
+   * löscht nie. Derselbe Fall wie bei der Person (`personEntfernt`).
+   */
+  it('ein wartendes Schreiben des entfernten Trolleys fällt weg (15.10.2026)', () => {
+    const T2: Trolley = { id: 'tr2', name: 'Trolley 2', ort: '', hinweis: '' }
+    const a = st({ trolleys: [T1, T2] })
+    const b = { ...a, trolleys: [{ ...T1, name: 'Trolley Saal' }, { ...T2, ort: 'Keller' }] }
+    persist(a, b, { type: 'trolleyAendern', id: 'tr1', patch: { name: 'Trolley Saal' } })
+    persist(b, { ...b, trolleys: [b.trolleys[1]!] }, { type: 'trolleyEntfernt', id: 'tr1' })
+    vi.runOnlyPendingTimers()
+    expect(data.saveTrolleys).toHaveBeenCalledTimes(1)
+    expect(data.saveTrolleys).toHaveBeenCalledWith('c1', [{ ...T2, ort: 'Keller' }])
+  })
+
   it('ein Termin, den die Function zurückgibt, geht nicht noch einmal hinaus', () => {
     const vorher = st({ trolleyTermine: [] })
     persist(vorher, { ...vorher, trolleyTermine: [TERMIN] }, { type: 'trolleyTermin', id: 'r1', termin: TERMIN })
@@ -1117,6 +1133,37 @@ describe('Haushalte: erst die Zeile, dann die Person', () => {
     const next = st()
     persist(prev, next, { type: 'setFamily', id: 'p1', memberId: 'p1', add: false })
     expect(data.deleteHouseholdRow).toHaveBeenCalledWith('h1')
+  })
+
+  /*
+   * **Sofort neben gebündelt** (15.10.2026): Die Telefonnummer, eben getippt,
+   * wartet gebündelt — mit dem alten Haushalt. Wird gleich danach eine Familie
+   * gewählt, schreibt das die Person sofort; die wartende Fassung ging bis
+   * dahin 600 ms später hinterher und nahm den Haushalt in der Datenbank
+   * zurück.
+   */
+  it('was von der Person gebündelt wartete, geht nicht hinter dem Haushalt her', () => {
+    const p1 = st().persons.find((p) => p.id === 'p1')!
+    const mitTel = st({ persons: st().persons.map((p) => (p.id === 'p1' ? { ...p, tel: '0123' } : p)) })
+    persist(st(), mitTel, { type: 'updatePerson', id: 'p1', patch: { tel: '0123' } })
+    const verbunden = st({
+      persons: mitTel.persons.map((p) => (p.id === 'p1' || p.id === 'p2' ? { ...p, fam: 'h1' } : p)),
+    })
+    persist(mitTel, verbunden, { type: 'setFamily', id: 'p1', memberId: 'p2', add: true })
+    vi.advanceTimersByTime(600)
+    expect(data.saveFamily).toHaveBeenCalledWith('c1', 'h1', expect.arrayContaining([{ ...p1, tel: '0123', fam: 'h1' }]))
+    expect(data.savePerson).not.toHaveBeenCalled()
+  })
+
+  it('ohne neuen Haushalt dasselbe — die Person geht einmal hinaus, mit beidem', () => {
+    const beide = st().persons.map((p) => (p.id === 'p1' || p.id === 'p2' ? { ...p, fam: 'h1' } : p))
+    const mitTel = st({ persons: beide.map((p) => (p.id === 'p1' ? { ...p, tel: '0123' } : p)) })
+    persist(st({ persons: beide }), mitTel, { type: 'updatePerson', id: 'p1', patch: { tel: '0123' } })
+    const getrennt = st({ persons: mitTel.persons.map((p) => (p.id === 'p1' ? { ...p, fam: null } : p)) })
+    persist(mitTel, getrennt, { type: 'setFamily', id: 'p1', memberId: 'p1', add: false })
+    vi.advanceTimersByTime(600)
+    expect(data.savePerson).toHaveBeenCalledTimes(1)
+    expect(data.savePerson).toHaveBeenCalledWith('c1', expect.objectContaining({ id: 'p1', tel: '0123', fam: null }))
   })
 
   it('wohnt noch jemand darin, bleibt die Zeile stehen', () => {
@@ -1934,10 +1981,12 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
   /**
    * Aktionen, die einen dauerhaften Teil setzen und trotzdem keinen Schreibweg
    * brauchen — alle, weil sie **gelesene** Daten einsetzen statt neue zu
-   * erzeugen: Laden und Glocke aus der Datenbank, die Trolleys (T121) aus der
-   * Antwort der Function `trolley`, die schon geschrieben hat.
+   * erzeugen: Laden und Glocke aus der Datenbank, ein Trolley-Termin (T121) aus
+   * der Antwort der Function `trolley`, die schon geschrieben hat. Das Entfernen
+   * eines Trolleys steht seit dem 15.10.2026 nicht mehr hier: Es räumt ein
+   * wartendes Schreiben ab (`persist.ts`).
    */
-  const AUS_DER_DATENBANK = new Set(['hydrate', 'setNotifs', 'trolleyTermin', 'trolleyEntfernt'])
+  const AUS_DER_DATENBANK = new Set(['hydrate', 'setNotifs', 'trolleyTermin'])
 
   const faelle = (): Array<[string, string]> => reducerFaelle(roh(REDUCER))
 
