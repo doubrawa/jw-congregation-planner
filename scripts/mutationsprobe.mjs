@@ -5534,9 +5534,9 @@ export const KATALOG = [
   {
     id: 'bescheid-nur-abgehakte-zeilen',
     datei: 'supabase/functions/send-reminders/index.ts',
-    regel: 'Gelesen werden nur die abgehakten Zeilen des Versand-Tagebuchs.',
-    suchen: '&persoenlich_at=not.is.null`',
-    ersetzen: '`',
+    regel: 'Nur abgehakte Zeilen des Versand-Tagebuchs zählen — gemeldet heißt nicht abgehakt.',
+    suchen: '.then((zeilen) => new Set(zeilen.filter((z) => z.persoenlich_at).map(',
+    ersetzen: '.then((zeilen) => new Set(zeilen.map(',
   },
   {
     id: 'zusagen-ohne-konto-aus-tagebuch',
@@ -6570,8 +6570,8 @@ export const KATALOG = [
     id: "erinnerung-zusagen-je-woche",
     datei: "supabase/functions/send-reminders/index.ts",
     regel: "Der Erinnerungslauf liest die Zusagen nur der Wochen im Fenster, je Woche ihr Präfix — nicht die ganze Tabelle.",
-    suchen: "        [...weeks.map((w) => wochenPraefixe(w.start)[0]), ...fsWeeks.map((w) => wochenPraefixe(w.start)[1])],\n",
-    ersetzen: "        [''],\n",
+    suchen: "        'task_key,status',\n        praefixe,\n",
+    ersetzen: "        'task_key,status',\n        [''],\n",
   },
   {
     id: "import-jahreswechsel",
@@ -7103,6 +7103,13 @@ export const KATALOG = [
     regel: 'Die Karte „Holen" nennt die Woche, die „Holen" auch holt — nach einer Pause die laufende.',
     suchen: '  const nach = holenNach(weeks, heute)\n',
     ersetzen: '  const nach = holenNach(weeks, new Date(0))\n',
+  },
+  {
+    id: 'erinnerung-haken-je-woche',
+    datei: 'supabase/functions/send-reminders/index.ts',
+    regel: 'Die Haken „weiß Bescheid" werden nur für die Wochen im Fenster gelesen — alle der Versammlung kamen nicht über die Zeilengrenze.',
+    suchen: "      const bescheid = await zeilenJePraefix<{ task_key: string; name: string; persoenlich_at: string | null }>(\n        klient,\n        cong.id,\n        'assignment_log',\n        'task_key,name,persoenlich_at',\n        praefixe,\n      )\n",
+    ersetzen: "      const bescheid = await klient\n        .get<{ task_key: string; name: string; persoenlich_at: string | null }[]>(\n          `assignment_log?select=task_key,name,persoenlich_at&congregation_id=eq.${wert(cong.id)}&persoenlich_at=not.is.null`,\n        )\n",
   },
   {
     id: 'import-week-sonntag-laufende',

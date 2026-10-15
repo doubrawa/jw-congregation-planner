@@ -17,7 +17,7 @@ import { pushTexte, TITEL_TROLLEY } from '../send-reminders/texte.ts'
 import { alsFreitext } from '../_shared/i18n/freitext.ts'
 import { APP_LANGS } from '../../../src/i18n/langs'
 import { makeTr } from '../../../src/i18n/translate'
-import { filterWert, jsonRes, likeMuster, passtAufMuster, schreibZugriff } from './attrappe.ts'
+import { filterWert, jsonRes, likeMuster, MAX_ROWS, passtAufMuster, schreibZugriff } from './attrappe.ts'
 
 /* ---- Fixture ------------------------------------------------------------- */
 
@@ -183,8 +183,12 @@ let reminders: { first: number; last: number; repeat: boolean }
 /** Trolleys (T121) und ihre Termine, wie sie in der Datenbank stehen. */
 let trolleys: { id: string; name: string }[]
 let trolleyTermine: { trolley_id: string; datum: string; von: string; bis: string; person_id: string; partner_id: string | null }[]
-/** Versand-Tagebuch: wem der Planer persönlich Bescheid gegeben hat (`persoenlich_at` gesetzt). */
-let bescheidGegeben: { task_key: string; name: string }[]
+/**
+ * Versand-Tagebuch: wem der Planer persönlich Bescheid gegeben hat — ohne
+ * Angabe mit gesetztem `persoenlich_at`, mit `null` gemeldet, aber nicht
+ * abgehakt.
+ */
+let bescheidGegeben: { task_key: string; name: string; persoenlich_at?: string | null }[]
 /**
  * Tabellen, die es (noch) nicht gibt — das Schema ist nicht eingespielt.
  *
@@ -225,9 +229,16 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     return jsonRes(trolleyTermine.filter((t) => t.datum === tag))
   }
   if (path.startsWith('assignment_log')) {
-    // Gelesen werden nur die abgehakten Zeilen — der Filter muss dastehen.
-    if (!/[?&]persoenlich_at=not\.is\.null/.test(path)) return jsonRes([])
-    return jsonRes(bescheidGegeben)
+    // Wie die Datenbank: Präfixe und Haken-Filter werden ausgewertet, und mehr
+    // als `MAX_ROWS` Zeilen kommen nicht — ohne Präfix fehlten dahinter still
+    // die Haken der Wochen, um die es geht.
+    const muster = likeMuster(path, 'task_key')
+    const nurAbgehakt = /[?&]persoenlich_at=not\.is\.null/.test(path)
+    const zeilen = bescheidGegeben
+      .map((z) => ({ ...z, persoenlich_at: z.persoenlich_at === undefined ? '2026-09-01T10:00:00Z' : z.persoenlich_at }))
+      .filter((z) => muster.length === 0 || muster.some((m) => passtAufMuster(z.task_key, m)))
+      .filter((z) => !nurAbgehakt || z.persoenlich_at !== null)
+    return jsonRes(zeilen.slice(0, MAX_ROWS))
   }
   if (path.startsWith('confirmations')) {
     // Die Wochen-Präfixe werden ausgewertet: Ein Präfix, der danebenliegt,
@@ -564,6 +575,19 @@ describe('send-reminders: Planer-Meldung nur für nicht Erreichbare', () => {
   it('ein Haken an einem anderen Platz desselben Namens zählt nicht', async () => {
     bescheidGegeben = [{ task_key: `${WEEK_START}|mid|part|bibel|0`, name: 'Otto Ohnekonto' }]
     expect(previewFor(await run(), U_PLANER)?.body).toContain('Otto Ohnekonto')
+  })
+
+  it('gemeldet, aber nicht abgehakt, zählt nicht', async () => {
+    bescheidGegeben = [{ task_key: `${WEEK_START}|mid|part|gespraech|0`, name: 'Otto Ohnekonto', persoenlich_at: null }]
+    expect(previewFor(await run(), U_PLANER)?.body).toContain('Otto Ohnekonto')
+  })
+
+  it('der Haken zählt auch hinter tausend älteren (16.10.2026)', async () => {
+    // Bis dahin kamen alle Haken der Versammlung, und an der Zeilengrenze
+    // fehlten die späteren still — Otto stand wieder als „nicht erreichbar" da.
+    const alt = { task_key: '2025-01-06|mid|part|gespraech|0', name: 'Otto Ohnekonto' }
+    bescheidGegeben = [...Array.from({ length: MAX_ROWS }, () => alt), { task_key: `${WEEK_START}|mid|part|gespraech|0`, name: 'Otto Ohnekonto' }]
+    expect(previewFor(await run(), U_PLANER)?.body).not.toContain('Otto Ohnekonto')
   })
 
   it('fehlt die Spalte, meldet der Lauf wie bisher alle', async () => {

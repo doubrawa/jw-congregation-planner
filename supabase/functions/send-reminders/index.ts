@@ -309,12 +309,13 @@ Deno.serve(async (req: Request) => {
        * gehostet 1000), und was dahinter lag, fehlte still — erinnert wurde,
        * wer längst zugesagt hatte.
        */
+      const praefixe = [...weeks.map((w) => wochenPraefixe(w.start)[0]), ...fsWeeks.map((w) => wochenPraefixe(w.start)[1])]
       const confs = await zeilenJePraefix<{ task_key: string; status: string }>(
         klient,
         cong.id,
         'confirmations',
         'task_key,status',
-        [...weeks.map((w) => wochenPraefixe(w.start)[0]), ...fsWeeks.map((w) => wochenPraefixe(w.start)[1])],
+        praefixe,
       )
 
       // Trolley-Termine von morgen (T121). Fehlen die Tabellen (Schema nicht
@@ -337,12 +338,20 @@ Deno.serve(async (req: Request) => {
        * Der Haken zählt wie eine Zusage — und wer abgehakt ist, gehört nicht
        * mehr in die Meldung „nicht erreichbar". Fehlt die Spalte (Schema nicht
        * eingespielt), meldet der Lauf wie bisher alle.
+       *
+       * Wie die Zusagen nur die Wochen im Fenster. Bis zum 16.10.2026 kamen
+       * alle Haken der Versammlung; jede Woche kommen welche dazu, und nach
+       * ein, zwei Jahren lagen sie über der Zeilengrenze — wer abgehakt war,
+       * stand still wieder als „nicht erreichbar" da.
        */
-      const bescheid = await klient
-        .get<{ task_key: string; name: string }[]>(
-          `assignment_log?select=task_key,name&congregation_id=eq.${wert(cong.id)}&persoenlich_at=not.is.null`,
-        )
-        .then((zeilen) => new Set(zeilen.map((z) => tagebuchSchluessel(z.task_key, z.name))))
+      const bescheid = await zeilenJePraefix<{ task_key: string; name: string; persoenlich_at: string | null }>(
+        klient,
+        cong.id,
+        'assignment_log',
+        'task_key,name,persoenlich_at',
+        praefixe,
+      )
+        .then((zeilen) => new Set(zeilen.filter((z) => z.persoenlich_at).map((z) => tagebuchSchluessel(z.task_key, z.name))))
         .catch((err): Set<string> => {
           console.error(`assignment_log.persoenlich_at nicht lesbar: ${(err as Error).message}`)
           return new Set()
