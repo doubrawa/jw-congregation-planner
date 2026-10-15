@@ -277,6 +277,13 @@ describe('Zettel scannen', () => {
     return r
   }
 
+  it('auch beim Scannen hat die Seite ihre Überschrift — genau eine', async () => {
+    const r = zeige()
+    fireEvent.click(knopf(r.container, t.zettelScannen)!)
+    await waitFor(() => expect(r.container.querySelector('.test-scan')).toBeTruthy())
+    expect([...r.container.querySelectorAll('h1')].map((h) => h.textContent)).toEqual([t.zettelScannen])
+  })
+
   it('der QR-Code des Zettels füllt den Code — angemeldet wird erst auf den Knopf', async () => {
     const { container } = await scannen('https://versammlung.app/#code=K7RD2QWM')
     expect(codeFeld(container).value).toBe('K7RD-2QWM')

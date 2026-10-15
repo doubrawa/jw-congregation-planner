@@ -39,6 +39,8 @@ declare const Deno: {
   serve: (handler: (req: Request) => Promise<Response> | Response) => void
   env: { get: (key: string) => string | undefined }
 }
+/** Arbeit nach der Antwort zu Ende bringen — gibt es auf der Plattform, nicht in den Tests. */
+declare const EdgeRuntime: { waitUntil(arbeit: Promise<unknown>): void } | undefined
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -109,15 +111,20 @@ async function versammlungsName(congregationId: string): Promise<string> {
   return zeilen[0]?.name ?? ''
 }
 
+/** Die Konto-Id der Person in ihrer Versammlung — `undefined`, wenn sie noch keins hat. */
+async function kontoIdDer(personId: string, congregationId: string): Promise<string | undefined> {
+  const mitglied = await rest.get<{ user_id: string }[]>(
+    `members?select=user_id&person_id=eq.${wert(personId)}&congregation_id=eq.${wert(congregationId)}`,
+  )
+  return mitglied[0]?.user_id
+}
+
 /**
  * Das Konto der Person — vorhanden oder jetzt angelegt — und seine Adresse.
  * `null`, wenn es nicht ging (die Person ist dann nicht angemeldet).
  */
 async function kontoDer(person: PersonZeile, congregationId: string): Promise<{ email: string } | null> {
-  const mitglied = await rest.get<{ user_id: string }[]>(
-    `members?select=user_id&person_id=eq.${wert(person.id)}&congregation_id=eq.${wert(congregationId)}`,
-  )
-  const vorhanden = mitglied[0]?.user_id
+  const vorhanden = await kontoIdDer(person.id, congregationId)
   if (vorhanden) {
     const konto = await konten.kontoLesen(vorhanden)
     return konto ? { email: konto.email } : null
@@ -133,7 +140,11 @@ async function kontoDer(person: PersonZeile, congregationId: string): Promise<{ 
     zuteiler: Boolean(person.zuteiler_vorgemerkt),
     email: '',
   })
-  return angelegt && angelegt.length > 0 ? { email: konto.email } : null
+  if (angelegt && angelegt.length > 0) return { email: konto.email }
+  // Zwei erste Anmeldungen zugleich (Doppeltipp, Handy und Tablet): Die andere
+  // hat die Zeile eben geschrieben, diese prallt daran ab — angemeldet ist sie
+  // trotzdem.
+  return (await kontoIdDer(person.id, congregationId)) === konto.id ? { email: konto.email } : null
 }
 
 /** Mit einem gültigen Link anmelden: Konto sicherstellen, Sitzung ausstellen. */
@@ -187,12 +198,26 @@ function adresseVon(roh: unknown): string | null {
  * hereingelassen hat, der bekommt nichts: Den ersten Link stellt er aus.
  *
  * Die Antwort ist immer dieselbe, gleich ob es die Adresse gibt — sonst ließe
- * sich hier nachsehen, wer zu einer Versammlung gehört.
+ * sich hier nachsehen, wer zu einer Versammlung gehört. **Und sie kommt gleich
+ * schnell:** Gesucht und gesendet wird erst nach der Antwort
+ * (`EdgeRuntime.waitUntil`). Bis zum 15.10.2026 wartete sie auf beides, und
+ * eine Adresse, an die eine Mail hinausging, brauchte merklich länger als eine
+ * unbekannte — die Dauer verriet, was der Text verschwieg.
  */
 async function perMail(roh: unknown, lang: unknown, jetzt: number): Promise<Response> {
   if (!mailBereit(MAIL)) return json({ error: 'not-configured' })
   const adresse = adresseVon(roh)
   if (!adresse) return json({ error: 'bad-request' }, 400)
+  const arbeit = linksPerMail(adresse, typeof lang === 'string' ? lang : null, jetzt).catch((err: unknown) => {
+    console.error('anmelden (mail):', err instanceof Error ? err.message : String(err))
+  })
+  if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(arbeit)
+  else await arbeit
+  return json({ ok: true })
+}
+
+/** Die Links der Personen mit dieser Adresse erneuern und schicken (siehe `perMail`). */
+async function linksPerMail(adresse: string, sprache: string | null, jetzt: number): Promise<void> {
   // Groß und klein egal (`ilike`), sonst genau diese Adresse: `_` ist im Muster
   // ein Platzhalter für ein Zeichen und wird deshalb maskiert; `%` und `*`
   // lässt `adresseVon` gar nicht erst durch.
@@ -200,7 +225,7 @@ async function perMail(roh: unknown, lang: unknown, jetzt: number): Promise<Resp
   const kandidaten = await rest.get<{ id: string; fn: string; mail: string; congregation_id: string }[]>(
     `persons?select=id,fn,mail,congregation_id&mail=ilike.${wert(muster)}&limit=10`,
   )
-  if (kandidaten.length === 0) return json({ ok: true })
+  if (kandidaten.length === 0) return
 
   const ids = kandidaten.map((p) => wert(p.id)).join(',')
   const [links, mitglieder] = await Promise.all([
@@ -209,7 +234,13 @@ async function perMail(roh: unknown, lang: unknown, jetzt: number): Promise<Resp
   ])
   const linkVon = new Map(links.map((l) => [l.person_id, l]))
   const mitKonto = new Set(mitglieder.map((m) => m.person_id))
-  const sprache = typeof lang === 'string' ? lang : null
+  // Teilen sich zwei eine Adresse, sind sie meist in derselben Versammlung — ihr Name einmal geholt.
+  const namen = new Map<string, Promise<string>>()
+  const versammlungVon = (id: string): Promise<string> => {
+    const name = namen.get(id) ?? versammlungsName(id)
+    namen.set(id, name)
+    return name
+  }
 
   for (const person of kandidaten) {
     const link = linkVon.get(person.id)
@@ -219,13 +250,12 @@ async function perMail(roh: unknown, lang: unknown, jetzt: number): Promise<Resp
     if (!neu) continue
     const mail = linkMail(sprache, {
       name: person.fn,
-      versammlung: await versammlungsName(person.congregation_id),
+      versammlung: await versammlungVon(person.congregation_id),
       url: anmeldeUrl(APP_URL, neu.token),
       gueltigBis: neu.gueltigBis,
     })
     if (await mailSenden(MAIL, adresse, mail)) await alsGesendet(rest, person.id, new Date(jetzt))
   }
-  return json({ ok: true })
 }
 
 Deno.serve(async (req: Request) => {

@@ -15,7 +15,8 @@ import { dict } from '../i18n/ui'
 
 const gelesen: Array<string | null> = []
 const leser = vi.fn(() => Promise.resolve(gelesen.shift() ?? null))
-vi.mock('./qr-leser', () => ({ leserFuer: () => Promise.resolve(leser) }))
+const leserLaden = vi.fn(() => Promise.resolve(leser))
+vi.mock('./qr-leser', () => ({ leserFuer: () => leserLaden() }))
 
 const { default: ZettelScanner } = await import('./ZettelScanner')
 const t = dict('de')
@@ -47,6 +48,7 @@ function kameraFrage(antwort: Promise<MediaStream>) {
 beforeEach(() => {
   gelesen.length = 0
   leser.mockClear()
+  leserLaden.mockReset().mockImplementation(() => Promise.resolve(leser))
   // jsdom spielt kein Video ab und hat nie ein Bild — beides nachgestellt.
   vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
   Object.defineProperty(HTMLMediaElement.prototype, 'readyState', { get: () => 4, configurable: true })
@@ -103,6 +105,15 @@ describe('Zettel scannen', () => {
     const { container } = zeige()
     await waitFor(() => expect(container.querySelector('[role="alert"]')?.textContent).toBe(t.kameraFehlt))
     expect(container.querySelector('video')).toBeNull()
+  })
+
+  it('lädt der Leser nicht (offline), geht die Kamera aus, und er sagt es', async () => {
+    const { spur, strom } = kamera()
+    kameraFrage(Promise.resolve(strom))
+    leserLaden.mockImplementation(() => Promise.reject(new Error('Failed to fetch dynamically imported module')))
+    const { container } = zeige()
+    await waitFor(() => expect(container.querySelector('[role="alert"]')?.textContent).toBe(t.kameraFehlt))
+    expect(spur.stop).toHaveBeenCalled()
   })
 
   it('„Abbrechen" führt zurück', () => {

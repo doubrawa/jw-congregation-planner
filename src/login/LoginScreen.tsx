@@ -90,9 +90,13 @@ export function LoginScreen() {
             }}
           />
         ) : ansicht.art === 'scannen' ? (
-          <Suspense fallback={<p className="klein-text login-scanner-laedt">{t.laedt}</p>}>
-            <ZettelScanner onGefunden={(text) => void gescannt(text)} onAbbrechen={() => setAnsicht({ art: 'start' })} />
-          </Suspense>
+          <>
+            {/* Die Überschrift der Seite — wie „Anmelden" und „Mit Code anmelden" in den anderen Ansichten. */}
+            <h1 className="seitentitel seitentitel--gross login-titel">{t.zettelScannen}</h1>
+            <Suspense fallback={<p className="klein-text login-scanner-laedt">{t.laedt}</p>}>
+              <ZettelScanner onGefunden={(text) => void gescannt(text)} onAbbrechen={() => setAnsicht({ art: 'start' })} />
+            </Suspense>
+          </>
         ) : (
           <>
             <LinkAnfordern onNachgestellt={angemeldet} />

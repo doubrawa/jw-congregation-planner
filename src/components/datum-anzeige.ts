@@ -31,6 +31,8 @@ const FORMATE = {
   tagNummer: { day: 'numeric' },
   /** „12. Oktober" — als Spanne „12.–18. Oktober" */
   tagMonat: { day: 'numeric', month: 'long' },
+  /** „4. Sept." — der Tag unter einem Schritt der Spur (Link gesendet) */
+  tagMonatKurz: { day: 'numeric', month: 'short' },
   /** „1. Dezember 2026" — als Zeitraum „1. Dezember 2026 – 28. Februar 2027" */
   tagMonatJahr: { day: 'numeric', month: 'long', year: 'numeric' },
   /** „28. Feb. 2027" — Von und Bis eines Weiteren Plans, zwei Felder nebeneinander */

@@ -45,14 +45,18 @@ export function kontoAdmin(supabaseUrl: string, serviceKey: string): KontoAdmin 
       : null
   }
 
+  // Eine Funktion, nicht über `this`: `kontoAnlegen` stünde sonst ohne seinen
+  // Bezug da, sobald jemand es aus dem Objekt herausnimmt (wie in `rest.ts`).
+  async function kontoLesen(id: string): Promise<{ id: string; email: string } | null> {
+    const res = await fetch(auth(`admin/users/${encodeURIComponent(id)}`), { headers: KOPF })
+    if (res.status === 404) return null
+    if (!res.ok) throw new Error(`admin/users ${res.status}: ${await res.text()}`)
+    const konto = (await res.json()) as { id?: string; email?: string }
+    return konto.id ? { id: konto.id, email: konto.email ?? '' } : null
+  }
+
   return {
-    async kontoLesen(id) {
-      const res = await fetch(auth(`admin/users/${encodeURIComponent(id)}`), { headers: KOPF })
-      if (res.status === 404) return null
-      if (!res.ok) throw new Error(`admin/users ${res.status}: ${await res.text()}`)
-      const konto = (await res.json()) as { id?: string; email?: string }
-      return konto.id ? { id: konto.id, email: konto.email ?? '' } : null
-    },
+    kontoLesen,
 
     async kontoAnlegen(id, email) {
       const res = await fetch(auth('admin/users'), {
@@ -63,7 +67,7 @@ export function kontoAdmin(supabaseUrl: string, serviceKey: string): KontoAdmin 
       if (res.ok) return true
       console.error(`admin/users anlegen ${res.status}: ${await res.text()}`)
       // Zwei Anmeldungen zugleich: Das andere Mal hat es eben angelegt.
-      return (await this.kontoLesen(id)) !== null
+      return (await kontoLesen(id)) !== null
     },
 
     async sitzungFuer(email) {

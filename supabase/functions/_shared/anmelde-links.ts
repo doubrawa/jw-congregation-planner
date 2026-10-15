@@ -62,8 +62,16 @@ export async function linkAusstellen(
 }
 
 /**
- * Nur das Token erneuern — für die Selbstbedienung per E-Mail. Der Code bleibt;
- * ist der Link abgelaufen, gilt er wieder dreißig Tage, sonst bis wann er galt.
+ * Nur das Token erneuern — für die Selbstbedienung per E-Mail. Gilt der Link
+ * noch, bleiben Code und Gültigkeit: Der Zettel gilt weiter, sonst nähme jeder,
+ * der eine Adresse kennt, ihrem Besitzer den Zettel weg.
+ *
+ * Ist er abgelaufen, gilt der neue wieder dreißig Tage — mit einem **neuen
+ * Code**, den niemand kennt. Bis zum 15.10.2026 blieb der alte, und damit
+ * lebte jeder abgelaufene (oder weggeworfene) Zettel wieder auf, sobald
+ * irgendwer mit der Adresse seines Besitzers „Link senden" drückte: Wer den
+ * Zettel gefunden hatte, war damit angemeldet. Den Link bekommt der Besitzer
+ * ja per E-Mail; einen Code braucht er dafür nicht.
  */
 export async function tokenErneuern(
   rest: Pick<Rest, 'patchZeilen'>,
@@ -71,10 +79,13 @@ export async function tokenErneuern(
   jetzt = new Date(),
 ): Promise<{ token: string; gueltigBis: string } | null> {
   const token = neuesToken()
-  const bis = new Date(link.gueltig_bis) > jetzt ? link.gueltig_bis : gueltigBis(jetzt)
+  const gilt = new Date(link.gueltig_bis) > jetzt
+  const bis = gilt ? link.gueltig_bis : gueltigBis(jetzt)
   const zeilen = await rest.patchZeilen<{ person_id: string }>(
     `anmelde_links?person_id=eq.${wert(link.person_id)}&select=person_id`,
-    { token_hash: await pruefsumme(token), gueltig_bis: bis },
+    gilt
+      ? { token_hash: await pruefsumme(token) }
+      : { token_hash: await pruefsumme(token), code_hash: await pruefsumme(neuerCode()), gueltig_bis: bis },
   )
   return zeilen && zeilen.length > 0 ? { token, gueltigBis: bis } : null
 }

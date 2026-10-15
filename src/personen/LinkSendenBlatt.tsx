@@ -3,13 +3,13 @@ import { createPortal } from 'react-dom'
 import { gueltigBis } from '../../supabase/functions/_shared/anmeldung.ts'
 import { useApp } from '../app/context'
 import { Spur } from '../bausteine/Spur'
+import { datumsFormat } from '../components/datum-anzeige'
 import { Sheet } from '../components/Sheet'
 import { displayName } from '../data/helpers'
 import type { Person } from '../data/types'
-import { congAppCode, LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
-import { alsAnmeldeLink, linksAusstellen } from '../lib/links-ausstellen'
 import { linkMailEntwurf } from './link-mail'
+import { sprachDerVersammlung, useLinksAusstellen } from './useLinksAusstellen'
 
 /**
  * **Link senden** (T121, Phase 8; Entwurf `GEinladen`): einer Person ihren
@@ -27,36 +27,32 @@ import { linkMailEntwurf } from './link-mail'
 export function LinkSendenBlatt({ person, onZettel, onClose }: { person: Person; onZettel: () => void; onClose: () => void }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
+  const ausstellen = useLinksAusstellen()
   const [laeuft, setLaeuft] = useState(false)
   const name = person.fn || displayName(person)
   const adresse = person.mail.trim()
   const hatLink = state.anmeldeLinks.some((l) => l.personId === person.id)
   const angemeldet = state.members.some((m) => m.personId === person.id)
   // Bis wann ein Link gälte, der jetzt entsteht — in der Sprache dessen, der ihn ausstellt.
-  const bis = new Intl.DateTimeFormat(LOCALES[state.lang], { day: 'numeric', month: 'long' }).format(new Date(gueltigBis(new Date())))
+  const bis = datumsFormat(state.lang, 'tagMonat').format(new Date(gueltigBis(new Date())))
 
   const senden = async () => {
     if (laeuft) return
-    // Die Function ruft man am Reducer vorbei — offline also gar nicht erst.
-    if (state.staleAt) {
-      dispatch({ type: 'showToast', text: t.offlineReadOnly })
-      return
-    }
     setLaeuft(true)
     try {
-      const lang = congAppCode(state.congLang) ?? 'de'
-      let r = await linksAusstellen([person.id], { senden: true, lang })
+      let r = await ausstellen([person.id], true)
+      if (!r) return
       // Ohne Versand stellt der Server auf `senden` hin nichts aus — dann den
       // Link ohne Versand und die E-Mail aus dem eigenen Mail-Programm.
       const ohneVersand = !r.fehler && !r.mailBereit
-      if (ohneVersand) r = await linksAusstellen([person.id], { senden: false, lang })
-      if (r.links.length > 0) dispatch({ type: 'linksAusgestellt', links: r.links.map((l) => alsAnmeldeLink(l, new Date())) })
-      const neu = r.links[0]
+      if (ohneVersand) r = await ausstellen([person.id], false)
+      const neu = r?.links[0]
       if (!neu) {
         dispatch({ type: 'showToast', text: t.linkFehler })
         return
       }
       if (ohneVersand) {
+        const lang = sprachDerVersammlung(state.congLang)
         window.location.href = await linkMailEntwurf(person, neu, { lang, versammlung: state.congregation.name })
         onClose()
         return

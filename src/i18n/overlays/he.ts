@@ -671,7 +671,7 @@ export default {
   "codeLbl": "קוד",
   "codeHinweis": "הקוד מופיע על הפתק שלך מתחת לקוד ה־QR.",
   "codePasst": "הקוד נכון",
-  "codeNichtDu": "זה לא אתה? אז שאל בקהילה שלך.",
+  "codeNichtDu": "הקוד לא שלך? אפשר לשאול בקהילה שלך.",
   "codeUnbekannt": "קוד כזה לא קיים. בדוק אותו שוב.",
   "codeAbgelaufen": "הקוד הזה כבר לא בתוקף. בקש מזקני הקהילה פתק חדש.",
   "angemeldetBleiben": "אחר כך המכשיר הזה יישאר מחובר.",
@@ -721,5 +721,5 @@ export default {
   "seiteVon": "עמוד {n} מתוך {m}",
   "anmeldungFuer": "כניסה עבור",
   "gueltigBisDatum": "בתוקף עד {datum}",
-  "zettelAnleitung": "סרוק במצלמת הטלפון ואתה בפנים. אם זה לא עובד: פתח את {adresse} והקלד את הקוד תחת ”{frage}”.",
+  "zettelAnleitung": "סריקה במצלמת הטלפון — והכניסה מיידית. אם זה לא עובד: לפתוח את {adresse} ולהקליד את הקוד תחת ”{frage}”.",
 } satisfies Partial<Dict>

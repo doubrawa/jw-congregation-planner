@@ -59,6 +59,8 @@ let angelegt: Array<{ id: string; email: string; email_confirm: boolean }>
 /** Welcher `type` beim Einlösen gilt — neuere Fassungen von Auth nennen ihn „email". */
 let verifyTyp: 'magiclink' | 'email'
 let verifyKaputt: boolean
+/** Eine zweite erste Anmeldung derselben Person schreibt ihre `members`-Zeile kurz vor dieser. */
+let wettlauf: boolean
 
 const zukunft = () => new Date(Date.now() + 10 * 864e5).toISOString()
 
@@ -147,6 +149,10 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   if (path.startsWith('congregations')) return jsonRes([{ name: 'Musterstadt' }])
   if (path.startsWith('members')) {
     if (method === 'POST') {
+      if (wettlauf) {
+        wettlauf = false
+        members.push({ ...body })
+      }
       if (members.some((m) => m.user_id === body.user_id)) return new Response('{"code":"23505"}', { status: 409 })
       members.push(body)
       return jsonRes([{ user_id: body.user_id }])
@@ -215,6 +221,7 @@ beforeEach(async () => {
   angelegt = []
   verifyTyp = 'magiclink'
   verifyKaputt = false
+  wettlauf = false
 })
 
 describe('anmelden: mit dem Link aus der E-Mail', () => {
@@ -254,6 +261,16 @@ describe('anmelden: mit dem Link aus der E-Mail', () => {
   it('vermerkt, wann er benutzt wurde', async () => {
     await call({ aktion: 'link', token: TOKEN_ANNA })
     expect(links.find((l) => l.person_id === P_ANNA)?.benutzt_at).toBeTruthy()
+  })
+
+  it('zwei erste Anmeldungen zugleich (Doppeltipp): Auch die zweite ist angemeldet, ein Konto, eine Zeile', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    wettlauf = true
+    const r = await call({ aktion: 'link', token: TOKEN_ANNA })
+    expect(r.status).toBe(200)
+    expect(r.body.sitzung).toBeDefined()
+    expect(members.filter((m) => m.person_id === P_ANNA)).toHaveLength(1)
+    err.mockRestore()
   })
 
   it.each([
@@ -382,6 +399,18 @@ describe('anmelden: „Link senden" auf der Anmeldeseite', () => {
     expect(bis - Date.now()).toBeGreaterThan(29 * 864e5)
   })
 
+  it('ein abgelaufener Zettel lebt dabei nicht wieder auf — wer ihn gefunden hat, kommt nicht herein', async () => {
+    // Der Angriff: einen alten Zettel aufheben, die Adresse seines Besitzers
+    // kennen, „Link senden" drücken — und mit dem Code vom Zettel anmelden.
+    links[0]!.gueltig_bis = new Date(Date.now() - 1000).toISOString()
+    await call({ aktion: 'mail', email: 'anna@example.org' })
+    const link = links.find((l) => l.person_id === P_ANNA)!
+    expect(link.code_hash).not.toBe(await pruefsumme(CODE_ANNA))
+    const r = await call({ aktion: 'code', code: CODE_ANNA })
+    expect(r.status).toBe(404)
+    expect(r.body.sitzung).toBeUndefined()
+  })
+
   it('wer ein Konto hat, aber keinen Link, bekommt einen neuen', async () => {
     await call({ aktion: 'mail', email: 'bert@example.org' })
     expect(mails).toHaveLength(1)
@@ -423,6 +452,67 @@ describe('anmelden: „Link senden" auf der Anmeldeseite', () => {
   it('in der Sprache, die auf der Anmeldeseite eingestellt ist', async () => {
     await call({ aktion: 'mail', email: 'bert@example.org', lang: 'en' })
     expect(mails[0]?.text).toMatch(/^Hello Bert,/)
+  })
+
+  /*
+    Die Antwort verrät nicht, ob es die Adresse gibt — auch nicht über ihre
+    Dauer. Auf der Plattform kommt sie, bevor gesucht und gesendet wird
+    (`EdgeRuntime.waitUntil`); hier hängt der Versand, und die Antwort ist
+    trotzdem da.
+  */
+  it('die Antwort wartet nicht auf Suche und Versand — ihre Dauer verrät nichts', async () => {
+    const g = globalThis as Record<string, unknown>
+    const arbeiten: Promise<unknown>[] = []
+    g.EdgeRuntime = { waitUntil: (arbeit: Promise<unknown>) => arbeiten.push(arbeit) }
+    let freigeben: () => void = () => {}
+    const gesperrt = new Promise<void>((r) => (freigeben = r))
+    try {
+      const handler = await loadFn()
+      // Erst nach `loadFn` — das setzt `fetch` neu: Jede Abfrage hängt, bis die Antwort da ist.
+      g.fetch = async (...a: Parameters<typeof fetch>) => {
+        await gesperrt
+        return (fakeFetch as unknown as typeof fetch)(...a)
+      }
+      const res = await Promise.race([
+        handler(
+          new Request('https://fn.test/anmelden', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-forwarded-for': '203.0.113.7' },
+            body: JSON.stringify({ aktion: 'mail', email: 'anna@example.org' }),
+          }),
+        ),
+        new Promise<never>((_, nein) => setTimeout(() => nein(new Error('die Antwort wartet auf den Versand')), 2000)),
+      ])
+      expect(await res.json()).toEqual({ ok: true })
+      expect(mails).toEqual([])
+      expect(arbeiten).toHaveLength(1)
+      freigeben()
+      await arbeiten[0]
+      expect(mails.map((m) => m.text.split('\n')[0])).toEqual(['Hallo Anna,', 'Hallo Dora,'])
+    } finally {
+      freigeben()
+      delete g.EdgeRuntime
+    }
+  })
+
+  it('scheitert die Suche, bleibt die Antwort dieselbe — der Fehler geht nur in die Logs', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const handler = await loadFn()
+      ;(globalThis as Record<string, unknown>).fetch = async () => new Response('{"message":"kaputt"}', { status: 500 })
+      const res = await handler(
+        new Request('https://fn.test/anmelden', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ aktion: 'mail', email: 'anna@example.org' }),
+        }),
+      )
+      expect(res.status).toBe(200)
+      expect(await res.json()).toEqual({ ok: true })
+      expect(err).toHaveBeenCalledWith('anmelden (mail):', expect.stringContaining('500'))
+    } finally {
+      err.mockRestore()
+    }
   })
 })
 

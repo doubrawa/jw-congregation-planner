@@ -38,7 +38,14 @@ export default function ZettelScanner({ onGefunden, onAbbrechen }: { onGefunden:
       }
       video.srcObject = strom
       await video.play().catch(() => {})
-      const lesen = await leserFuer()
+      // Lädt der Leser nicht (offline, `jsqr` nie geladen), läse die Kamera ins
+      // Leere: dann aus und sagen, dass es nicht geht — der Code lässt sich tippen.
+      const lesen = await leserFuer().catch(() => null)
+      if (!lesen) {
+        strom.getTracks().forEach((spur) => spur.stop())
+        if (!aus) setKameraFehlt(true)
+        return
+      }
       const leinwand = document.createElement('canvas')
       const schritt = async (): Promise<void> => {
         if (aus) return

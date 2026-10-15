@@ -1,13 +1,12 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
 import { useApp } from '../app/context'
 import { displayName } from '../data/helpers'
 import type { Person } from '../data/types'
-import { congAppCode } from '../i18n/langs'
 import { dict, loadOverlay } from '../i18n/ui'
 import { useT } from '../i18n/useT'
-import { alsAnmeldeLink, linksAusstellen } from '../lib/links-ausstellen'
 import { AnmeldeZettelBogen } from './AnmeldeZettelBogen'
+import { sprachDerVersammlung, useLinksAusstellen } from './useLinksAusstellen'
 import type { ZettelSatz } from './zettel-satz'
 
 /** Das Kennzeichen am Wurzelelement, solange gedruckt wird (`print-anmeldezettel.css`). */
@@ -35,45 +34,49 @@ export interface ZettelDruck {
  * Gedruckt wird erst, wenn der Bogen im DOM steht (`flushSync`) — und nicht
  * aus einem Effekt heraus: Den ruft React im Entwicklungsbetrieb zweimal, und
  * dann kämen zwei Druckdialoge.
+ *
+ * **Jede Stelle räumt nur ihren eigenen Druck ab** (`meiner`). Am Desktop
+ * stehen die Konto-Karte und „Links senden" nebeneinander, jede mit diesem
+ * Hook. Fragten beide nur das Kennzeichen am Wurzelelement, nähme die erste,
+ * die nach dem Druck dran ist, es weg — und die andere fände es nicht mehr
+ * und ließe ihren Bogen samt Codes im DOM stehen.
  */
 export function useZettelDruck(): ZettelDruck {
   const { state, dispatch } = useApp()
   const { t } = useT()
+  const ausstellen = useLinksAusstellen()
   const [satz, setSatz] = useState<ZettelSatz | null>(null)
   const [laeuft, setLaeuft] = useState(false)
+  const meiner = useRef(false)
 
   useEffect(() => {
     const fertig = () => {
-      if (document.documentElement.dataset.print !== DRUCK) return
+      if (!meiner.current) return
+      meiner.current = false
       delete document.documentElement.dataset.print
       setSatz(null)
     }
     window.addEventListener('afterprint', fertig)
     return () => {
       window.removeEventListener('afterprint', fertig)
-      if (document.documentElement.dataset.print === DRUCK) delete document.documentElement.dataset.print
+      fertig()
     }
   }, [])
 
   const drucken = async (personen: readonly Person[]) => {
     if (laeuft || personen.length === 0) return
-    // Wie beim Senden: Die Function ruft man am Reducer vorbei — offline also gar nicht erst.
-    if (state.staleAt) {
-      dispatch({ type: 'showToast', text: t.offlineReadOnly })
-      return
-    }
     setLaeuft(true)
-    const lang = congAppCode(state.congLang) ?? 'de'
     try {
-      const r = await linksAusstellen(
+      const r = await ausstellen(
         personen.map((p) => p.id),
-        { senden: false, lang },
+        false,
       )
-      if (r.links.length > 0) dispatch({ type: 'linksAusgestellt', links: r.links.map((l) => alsAnmeldeLink(l, new Date())) })
+      if (!r) return
       if (r.links.length === 0) {
         dispatch({ type: 'showToast', text: t.linkFehler })
         return
       }
+      const lang = sprachDerVersammlung(state.congLang)
       const [{ zettelSatz }] = await Promise.all([import('./zettel-satz'), loadOverlay(lang)])
       const neu = zettelSatz(r.links, {
         namen: new Map(personen.map((p) => [p.id, displayName(p)])),
@@ -83,6 +86,7 @@ export function useZettelDruck(): ZettelDruck {
       })
       if (r.fehler) dispatch({ type: 'showToast', text: t.linkFehler })
       flushSync(() => setSatz(neu))
+      meiner.current = true
       document.documentElement.dataset.print = DRUCK
       window.print()
     } finally {

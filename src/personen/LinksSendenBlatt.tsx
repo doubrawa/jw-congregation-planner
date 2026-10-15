@@ -6,10 +6,10 @@ import { Spur } from '../bausteine/Spur'
 import { Sheet } from '../components/Sheet'
 import { displayName } from '../data/helpers'
 import type { Person } from '../data/types'
-import { congAppCode, LOCALES } from '../i18n/langs'
+import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
-import { alsAnmeldeLink, linksAusstellen } from '../lib/links-ausstellen'
 import { NamenKnoepfe } from './NamenKnoepfe'
+import { sprachDerVersammlung, useLinksAusstellen } from './useLinksAusstellen'
 import { useZettelDruck } from './useZettelDruck'
 
 /** Wie viele Personen wie weit sind — die Spur oben im Blatt. */
@@ -45,36 +45,32 @@ function geteilteAdressen(personen: readonly Person[]): string[][] {
 export function LinksSendenBlatt({ personen, zahlen, onClose }: { personen: readonly Person[]; zahlen: AnmeldeZahlen; onClose: () => void }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
+  const ausstellen = useLinksAusstellen()
   const druck = useZettelDruck()
   const [laeuft, setLaeuft] = useState(false)
   const [vorschau, setVorschau] = useState<{ betreff: string; text: string } | null>(null)
   const perMail = personen.filter((p) => p.mail.trim())
   const ohneMail = personen.filter((p) => !p.mail.trim())
   const liste = new Intl.ListFormat(LOCALES[state.lang], { type: 'conjunction' })
-  const lang = congAppCode(state.congLang) ?? 'de'
 
   // Die E-Mail, wie die erste Person sie bekäme — erst beim Aufklappen geladen.
   const vorschauLaden = async () => {
     if (vorschau || !perMail[0]) return
     const { linkMail } = await import('../../supabase/functions/_shared/anmelde-mail.ts')
     const url = `${new URL(import.meta.env.BASE_URL, window.location.origin).href}#anmelden=…`
+    const lang = sprachDerVersammlung(state.congLang)
     setVorschau(linkMail(lang, { name: perMail[0].fn, versammlung: state.congregation.name, url, gueltigBis: gueltigBis(new Date()) }))
   }
 
   const senden = async () => {
     if (laeuft || perMail.length === 0) return
-    // Die Function ruft man am Reducer vorbei — offline also gar nicht erst.
-    if (state.staleAt) {
-      dispatch({ type: 'showToast', text: t.offlineReadOnly })
-      return
-    }
     setLaeuft(true)
     try {
-      const r = await linksAusstellen(
+      const r = await ausstellen(
         perMail.map((p) => p.id),
-        { senden: true, lang },
+        true,
       )
-      if (r.links.length > 0) dispatch({ type: 'linksAusgestellt', links: r.links.map((l) => alsAnmeldeLink(l, new Date())) })
+      if (!r) return
       if (!r.fehler && !r.mailBereit) {
         dispatch({ type: 'showToast', text: t.mailNichtBereit })
         return
