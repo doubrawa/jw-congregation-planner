@@ -969,9 +969,9 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         // Geänderte Slots: alten Bestätigungs-Status abräumen (sonst erbt die
         // neue Person ein fremdes „bestätigt“/„verhindert“).
         //
-        // Wer hier eine **bestätigte** Zusage verliert, erfährt es sofort —
-        // persist.ts liest das aus dem Vorher/Nachher-Vergleich und ruft
-        // `send-plan` mit 'entzug' (T99). Der Reducer bleibt rein.
+        // Wer hier einen Platz verliert, von dem er wusste (zugesagt oder
+        // gemeldet), erfährt es sofort — persist.ts liest das aus dem
+        // Vorher/Nachher-Vergleich und ruft `send-plan` mit 'entzug' (T99).
         confirmations: dropConfirmations(
           state.confirmations,
           geaenderteSlots(state.weeks, weeks, sel.wi, sel.tab, state.services),
