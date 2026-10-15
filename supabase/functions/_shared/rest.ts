@@ -94,6 +94,11 @@ export interface Rest {
    * `ON CONFLICT DO NOTHING`: Was schon dasteht, bleibt; was fehlt, kommt hinzu.
    */
   insert(path: string, rows: unknown[], opts?: { ignoreDuplicates?: boolean }): Promise<void>
+  /**
+   * Zeilen anlegen oder, wo es sie schon gibt, ersetzen (`on_conflict=` im Pfad
+   * nennt die Spalten). `true`, wenn PostgREST es angenommen hat.
+   */
+  upsert(path: string, rows: unknown[]): Promise<boolean>
   /** Schreiben ohne Rückgabe (DELETE, PATCH, POST) — Fehler nur in die Logs. */
   send(method: string, path: string, body?: unknown): Promise<void>
   /**
@@ -158,6 +163,17 @@ export function restKlient(supabaseUrl: string, serviceKey: string): Rest {
         body: JSON.stringify(rows),
       })
       if (!res.ok) console.error(`POST ${path} ${res.status}: ${await res.text()}`)
+    },
+
+    async upsert(path, rows): Promise<boolean> {
+      if (rows.length === 0) return true
+      const res = await fetch(ziel(path), {
+        method: 'POST',
+        headers: { ...AUTH, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify(rows),
+      })
+      if (!res.ok) console.error(`POST ${path} ${res.status}: ${await res.text()}`)
+      return res.ok
     },
 
     async send(method, path, body): Promise<void> {

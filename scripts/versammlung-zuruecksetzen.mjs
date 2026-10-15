@@ -169,6 +169,10 @@ export const LEEREN = [
   // Und die Weiteren Pläne (Phase 5) — die Einträge zuerst, sie zeigen auf die Pläne.
   'plan_eintraege',
   'plaene',
+  // Die Anmelde-Links (T121, Phase 8) gingen mit den Personen ohnehin per
+  // Kaskade. Wer schon ein Konto hat, braucht keinen mehr; den übrigen stellt
+  // der Admin nach dem Zurücksetzen neue aus.
+  'anmelde_links',
 ]
 
 /** Gelöscht **und** im selben Lauf aus dem SQL neu angelegt (feste IDs). */

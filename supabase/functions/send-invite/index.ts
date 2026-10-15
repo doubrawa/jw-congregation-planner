@@ -1,36 +1,32 @@
 // =============================================================================
-// Supabase Edge Function: send-invite — Einladungs-E-Mails über Resend
+// Supabase Edge Function: send-invite — Anmelde-Links ausstellen und mailen
 // =============================================================================
-// Verschickt die Einladungs-Mail (App-Link + Einladungscode) an Personen der
-// eigenen Versammlung. Nur Admins (members.planner) dürfen aufrufen; die
-// Empfängeradresse kommt IMMER aus der Personen-Tabelle der eigenen
-// Versammlung — die Function kann nicht als offenes Mail-Relay missbraucht
-// werden (frei wählbar ist nur der Code-String in der Vorlage).
+// Der Admin gibt Personen ihren Zugang (T121, Phase 8): je Person ein neuer
+// Link — er ersetzt den alten sofort, auch dessen Zettel — und, wo eine Adresse
+// dasteht, die E-Mail dazu. Für Personen ohne Adresse kommt der Code für den
+// Zettel zurück, für den Fall ohne Versand der Link fürs eigene Mail-Programm.
 //
-// Request  (mit Nutzer-JWT, supabase.functions.invoke):
-//   { invites: [{ personId: string, code: string }, …], lang?: string }  (max. 200)
-//   lang = App-Sprachcode der Versammlung; fehlt er, geht die Mail deutsch
-//   hinaus (siehe mailText / texte.ts).
+// **Gehärtet gegenüber den Einladungscodes:** Den Link erzeugt die Function
+// selbst; vom Client kommen nur Personen-Ids. Bis zum Umbau schickte der
+// Client den Code mit, und frei wählbar war damit der Text in der Mail. Die
+// Empfängeradresse kommt weiter **immer** aus der Personen-Tabelle der eigenen
+// Versammlung — kein offenes Mail-Relay.
+//
+// Request (mit Nutzer-Sitzung, supabase.functions.invoke):
+//   { personIds: string[] (höchstens 200), senden: boolean, lang?: string }
+//   lang = App-Sprachcode der Versammlung (die E-Mail geht in ihrer Sprache).
 // Response 200:
-//   { sent: n, skipped: n }          skipped = Person ohne E-Mail/nicht gefunden
-//   { error: 'not-configured' }      INVITE_FROM fehlt → Client nutzt mailto
-//   { error: '…' }                   sonstige Fehler
+//   { links: [{ personId, url, zettelUrl, code, gueltigBis, gesendet }], mailBereit }
+// 401 { error: 'unauthorized' } · 403 { error: 'forbidden' } · 400 { error: 'bad-request' }
 //
-// Benötigte Secrets:
-//  - RESEND_API_KEY   Resend-API-Key (bereits gesetzt)
-//  - INVITE_FROM      Absender mit VERIFIZIERTER Domain, z. B.
-//                     "Versammlung.app <einladung@deine-domain.de>"
-//                     → solange nicht gesetzt, antwortet die Function mit
-//                     'not-configured' und die App fällt auf mailto zurück.
-//  - APP_URL          optional; Link in der Mail
-// SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY sind automatisch da.
-//
-// Deploy:  npx supabase functions deploy send-invite
-// (OHNE --no-verify-jwt — der Aufruf braucht ein gültiges Nutzer-Login.)
+// Secrets: RESEND_API_KEY und INVITE_FROM (verifizierte Domain) — fehlt eins,
+// geht keine Mail hinaus (`mailBereit: false`), Links gibt es trotzdem.
 // =============================================================================
 
+import { alsGesendet, linkAusstellen } from '../_shared/anmelde-links.ts'
+import { linkMail, mailBereit, mailSenden } from '../_shared/anmelde-mail.ts'
+import { anmeldeUrl, codeAnzeige, codeUrl } from '../_shared/anmeldung.ts'
 import { CORS, json, restKlient, wert } from '../_shared/rest.ts'
-import { fuellen, inviteTexte } from './texte.ts'
 
 declare const Deno: {
   serve: (handler: (req: Request) => Promise<Response> | Response) => void
@@ -39,49 +35,21 @@ declare const Deno: {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? ''
-const INVITE_FROM = Deno.env.get('INVITE_FROM') ?? ''
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://versammlung.app/'
+const MAIL = { apiKey: Deno.env.get('RESEND_API_KEY') ?? '', von: Deno.env.get('INVITE_FROM') ?? '' }
+/** Abstand zwischen zwei Mails: Resend nimmt je Sekunde nur wenige an. */
+const MAIL_ABSTAND_MS = Number(Deno.env.get('MAIL_ABSTAND_MS') ?? '550')
 
 const rest = restKlient(SUPABASE_URL, SERVICE_KEY)
 
-/**
- * Betreff und Rumpf der Einladung — in der Sprache, die der Aufrufer nennt.
- *
- * Bis hierher stand hier ein fester deutscher Text. Für den Empfänger ist die
- * Einladung die **erste** Berührung mit dieser App; er hat noch kein Konto und
- * also auch keine eingestellte Sprache. Der Client schickt deshalb die Sprache
- * der **Versammlung** mit (`congAppCode(state.congLang)`) — dieselbe, in der
- * die Zusammenkünfte gehalten werden.
- *
- * Dass ein Aufrufer hier einen beliebigen Code hineinschreiben könnte, ist
- * ohne Folgen: Er wählt einen Text aus einer festen Tabelle aus, mehr nicht.
- * Unbekanntes fällt auf Deutsch zurück.
- */
-function mailText(fn: string, code: string, lang: string | null): { subject: string; body: string } {
-  const texte = inviteTexte(lang)
-  return {
-    subject: texte.subject,
-    body: `${fuellen(texte.body, { name: fn, url: APP_URL, code })}\n`,
-  }
-}
+const pause = (ms: number): Promise<void> => new Promise((weiter) => setTimeout(weiter, ms))
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   try {
-    /*
-     * **Erst wer fragt, dann ob versandt werden kann.** Bis zum 1.10.2026 stand
-     * die Konfiguration vorn, und wer den öffentlichen Schlüssel aus dem Bündel
-     * nahm, bekam ohne Anmeldung `200 {"error":"not-configured"}` — eine Auskunft
-     * über die Einrichtung an jeden. Die Anmeldung ist ein Auth-Aufruf, keine
-     * Datenbankabfrage; ohne Versand bleibt es deshalb dabei, dass nichts gelesen
-     * wird (siehe Test „vor jeder Datenbank-Abfrage").
-     */
+    // Erst wer fragt — vor allem anderen, auch vor der Auskunft über den Versand.
     const userId = await rest.userId(req)
     if (!userId) return json({ error: 'unauthorized' }, 401)
-
-    if (!INVITE_FROM) return json({ error: 'not-configured' })
-    if (!RESEND_API_KEY) return json({ error: 'not-configured' })
 
     // Nur Admins; alles Weitere ist auf ihre Versammlung beschränkt.
     const membership = await rest.get<{ congregation_id: string; planner: boolean }[]>(
@@ -90,51 +58,49 @@ Deno.serve(async (req: Request) => {
     const member = membership[0]
     if (!member?.planner) return json({ error: 'forbidden' }, 403)
 
-    const payload = (await req.json().catch(() => null)) as {
-      invites?: Array<{ personId?: string; code?: string }>
-      /** Sprache der Versammlung (App-Code) — siehe `mailText`. */
-      lang?: string
-    } | null
+    const payload = (await req.json().catch(() => null)) as { personIds?: unknown; senden?: unknown; lang?: unknown } | null
+    const ids = Array.isArray(payload?.personIds)
+      ? [...new Set(payload.personIds.filter((id): id is string => typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id)))]
+      : []
+    if (ids.length === 0 || ids.length > 200) return json({ error: 'bad-request' }, 400)
+    const senden = payload?.senden === true
     const lang = typeof payload?.lang === 'string' ? payload.lang : null
-    const invites = (payload?.invites ?? []).slice(0, 200)
-    if (invites.length === 0) return json({ error: 'keine Einladungen übergeben' }, 400)
+    const cong = member.congregation_id
 
-    const persons = await rest.get<{ id: string; fn: string; mail: string }[]>(
-      `persons?select=id,fn,mail&congregation_id=eq.${wert(member.congregation_id)}`,
-    )
+    const [persons, versammlung] = await Promise.all([
+      rest.get<{ id: string; fn: string; mail: string }[]>(
+        `persons?select=id,fn,mail&congregation_id=eq.${wert(cong)}&id=in.(${ids.map(wert).join(',')})`,
+      ),
+      rest.get<{ name: string }[]>(`congregations?select=name&id=eq.${wert(cong)}`),
+    ])
     const personById = new Map(persons.map((p) => [p.id, p]))
+    const versammlungName = versammlung[0]?.name ?? ''
+    const bereit = mailBereit(MAIL)
 
-    let sent = 0
-    let skipped = 0
-    for (const inv of invites) {
-      const person = inv.personId ? personById.get(inv.personId) : undefined
-      const code = (inv.code ?? '').trim()
-      if (!person || !person.mail || !code) {
-        skipped++
-        continue
+    const links: Array<{ personId: string; url: string; zettelUrl: string; code: string; gueltigBis: string; gesendet: boolean }> = []
+    let ersteMail = true
+    for (const id of ids) {
+      // Nur Personen der eigenen Versammlung — eine fremde Id fällt still heraus.
+      const person = personById.get(id)
+      if (!person) continue
+      const neu = await linkAusstellen(rest, person.id, cong)
+      if (!neu) continue
+      const url = anmeldeUrl(APP_URL, neu.token)
+      let gesendet = false
+      const adresse = person.mail.trim()
+      if (senden && bereit && adresse) {
+        if (!ersteMail) await pause(MAIL_ABSTAND_MS)
+        ersteMail = false
+        const mail = linkMail(lang, { name: person.fn, versammlung: versammlungName, url, gueltigBis: neu.gueltigBis })
+        gesendet = await mailSenden(MAIL, adresse, mail)
+        if (gesendet) await alsGesendet(rest, person.id)
       }
-      const { subject, body } = mailText(person.fn, code, lang)
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: INVITE_FROM, to: person.mail, subject, text: body }),
-      })
-      if (res.ok) {
-        sent++
-      } else {
-        console.error(`Resend ${res.status}: ${await res.text()}`)
-        skipped++
-      }
+      links.push({ personId: person.id, url, zettelUrl: codeUrl(APP_URL, neu.code), code: codeAnzeige(neu.code), gueltigBis: neu.gueltigBis, gesendet })
     }
-    return json({ sent, skipped })
+    return json({ links, mailBereit: bereit })
   } catch (err) {
-    // Nur in die Logs, nicht in die Antwort — dieselbe Linie wie in
-    // `substitute`, `send-plan` und `import-week`: Die REST-Fehler tragen Pfad
-    // und rohen PostgREST-Rumpf, verraten also Tabellen, Spalten und die
-    // Bedingung, an der ein Versuch scheiterte. Diese Function war als einzige
-    // der vier noch bei der alten Fassung. Der Aufrufer sieht ohnehin nur, ob
-    // der Versand geklappt hat: bei `ok: false` fällt der Client auf das
-    // Mail-Programm zurück (`KontoCard`), der Text wird nirgends angezeigt.
+    // Nur in die Logs, nicht in die Antwort: Die REST-Fehler tragen Pfad und
+    // rohen PostgREST-Rumpf, verraten also Tabellen und Spalten.
     console.error('send-invite:', err instanceof Error ? err.message : String(err))
     return json({ error: 'server-error' }, 500)
   }

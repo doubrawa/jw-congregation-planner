@@ -56,6 +56,8 @@ import { alsSkript, anfrageKaputt, pruefKlient } from './gemeinsam.mjs'
 /**
  * Die Tabellen mit RLS. `spalte` ist die Spalte, an der die Zugehörigkeit
  * hängt; `keineZeilen` heißt: Hier darf **niemand** etwas sehen.
+ * `keinZugriff` heißt mehr: Kein Client hat überhaupt ein Recht an der Tabelle,
+ * die Abfrage wird abgewiesen (401/403) — das ist hier das Ergebnis.
  *
  * Die Liste steht hier und wird von `mandanten-nachweis.test.ts` gegen
  * `schema.sql` gehalten — eine neue Tabelle mit RLS, die hier fehlt, fällt
@@ -94,6 +96,13 @@ export const RLS_TABELLEN = [
   // wird nur mit der Service-Role, deshalb steht es hier wie jede andere
   // Tabelle mit Mandanten-Spalte und nicht als „keine Zeilen".
   { name: 'assignment_log', spalte: 'congregation_id' },
+  // Anmelde-Links (T121, Phase 8): der Admin liest die eigene Versammlung, die
+  // Prüfsummen-Spalten niemand (Spaltenrechte) — gefragt wird deshalb nur die
+  // Mandanten-Spalte, wie bei allen.
+  { name: 'anmelde_links', spalte: 'congregation_id' },
+  // Fehlversuche beim Anmelden: kein Recht für irgendeinen Client, nicht einmal
+  // Lesen — abgewiesen ist hier das Ergebnis, nicht der Fehler (`keinZugriff`).
+  { name: 'anmelde_fehlversuche', spalte: 'id', keinZugriff: true },
 ]
 
 /** Tabellen, aus denen eine „Landmarke" der anderen Seite geholt wird. */
@@ -277,7 +286,8 @@ export async function main(arg = process.argv.slice(2)) {
     for (const t of RLS_TABELLEN) {
       const { status, daten } = await seite.rest(`${t.name}?select=${t.spalte}&limit=1000`)
       if (status >= 400) {
-        zeile(false, `${t.name.padEnd(19)} Abfrage scheiterte (${status})`)
+        const gesperrt = t.keinZugriff && !anfrageKaputt(status)
+        zeile(gesperrt, `${t.name.padEnd(19)} ${gesperrt ? `abgewiesen (${status}) — gesperrt` : `Abfrage scheiterte (${status})`}`)
         continue
       }
       const e = bewerteListe(daten ?? [], t.spalte, seite.eigene, t.keineZeilen)

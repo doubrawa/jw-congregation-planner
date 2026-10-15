@@ -740,6 +740,50 @@ alter table public.invites
 create index if not exists invites_congregation_idx
   on public.invites (congregation_id);
 
+-- Anmelde-Links (T121, Phase 8): Ein Kennwort gibt es nicht mehr. Wer in die
+-- App soll, bekommt vom Admin einen Link — per E-Mail oder auf einem Zettel mit
+-- QR-Code und einem Code zum Eintippen (`send-invite` stellt aus, `anmelden`
+-- löst ein). **Eine Zeile je Person**: Ein neuer Link ersetzt den alten sofort.
+-- Er gilt mehrfach (Handy und Tablet), bis `gueltig_bis` (30 Tage).
+--
+-- Token und Code stehen nur als SHA-256 da (`_shared/anmeldung.ts`), und auch
+-- die sieht kein Client: Die Spalten sind für die App gesperrt (unten). Die
+-- 40 Bit des Codes hielten einem Angriff auf die Prüfsumme nicht lange stand.
+--
+-- Das Konto selbst entsteht erst bei der ersten Anmeldung — „angemeldet" heißt
+-- weiter: Es gibt eine `members`-Zeile.
+create table if not exists public.anmelde_links (
+  person_id       uuid primary key,
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  token_hash      text not null unique,
+  code_hash       text not null unique,
+  gueltig_bis     timestamptz not null,
+  erstellt_at     timestamptz not null default now(),
+  -- Zuletzt per E-Mail verschickt — bremst die Selbstbedienung auf der
+  -- Anmeldeseite (eine Mail je Person in zehn Minuten).
+  gesendet_at     timestamptz,
+  -- Zuletzt zum Anmelden benutzt.
+  benutzt_at      timestamptz,
+
+  constraint anmelde_links_person_fk foreign key (person_id, congregation_id)
+    references public.persons (id, congregation_id) on delete cascade
+);
+
+create index if not exists anmelde_links_congregation_idx
+  on public.anmelde_links (congregation_id);
+
+-- Fehlgeschlagene Anmeldeversuche mit einem Code — die Bremse gegen Raten
+-- (`anmelden`): je Absender und insgesamt eine Grenze je Stunde. Nur die
+-- Function liest und schreibt; ältere Zeilen räumt sie selbst ab.
+create table if not exists public.anmelde_fehlversuche (
+  id  bigint generated always as identity primary key,
+  ip  text not null,
+  at  timestamptz not null default now()
+);
+
+create index if not exists anmelde_fehlversuche_at_idx
+  on public.anmelde_fehlversuche (at);
+
 -- ---------------------------------------------------------------------------
 -- Entfernt: Redner auswärts (T120, Phase 4 — vom 3. bis 4.10.2026)
 -- ---------------------------------------------------------------------------
@@ -1524,6 +1568,28 @@ create policy trolleys_write on public.trolleys
 drop policy if exists trolley_termine_select on public.trolley_termine;
 create policy trolley_termine_select on public.trolley_termine
   for select using (congregation_id = public.my_congregation_id());
+
+-- Anmelde-Links (T121, Phase 8): Der Admin sieht, wer einen hat und bis wann er
+-- gilt, und zieht ihn zurück (ein Konto entfernen nimmt den Link mit).
+-- Ausgestellt wird nur über `send-invite`, eingelöst über `anmelden` — beide mit
+-- der Dienstrolle. **Die Prüfsummen bleiben unsichtbar**: Spaltenrechte statt
+-- einer Ansicht, damit `select=*` scheitert, statt sie doch zu zeigen.
+alter table public.anmelde_links enable row level security;
+alter table public.anmelde_fehlversuche enable row level security;
+
+revoke all on public.anmelde_links from anon, authenticated;
+revoke all on public.anmelde_fehlversuche from anon, authenticated;
+grant select (person_id, congregation_id, gueltig_bis, erstellt_at, gesendet_at, benutzt_at)
+  on public.anmelde_links to authenticated;
+grant delete on public.anmelde_links to authenticated;
+
+drop policy if exists anmelde_links_select on public.anmelde_links;
+create policy anmelde_links_select on public.anmelde_links
+  for select using (congregation_id = public.my_congregation_id() and public.is_planner());
+
+drop policy if exists anmelde_links_delete on public.anmelde_links;
+create policy anmelde_links_delete on public.anmelde_links
+  for delete using (congregation_id = public.my_congregation_id() and public.is_planner());
 
 -- Weitere Pläne: Den Plan pflegt der Admin; die Gruppen darin verteilen Admin
 -- und Planer (4.10.2026). Sehen darf ein Mitglied, was `plan_sichtbar`

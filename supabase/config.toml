@@ -36,8 +36,18 @@ project_id = "jw-congregation-planner"
 [functions.import-week]
 verify_jwt = true
 
-# Prüft zusätzlich selbst über /auth/v1/user, wer da ruft.
+# Prüft zusätzlich selbst über /auth/v1/user, wer da ruft, und verlangt das
+# Admin-Recht. Stellt Anmelde-Links aus (T121, Phase 8).
 [functions.send-invite]
+verify_jwt = true
+
+# Die Anmeldung ohne Kennwort (T121, Phase 8): Wer sich anmeldet, hat noch keine
+# Sitzung, also ist diese Funktion **öffentlich** — der Publishable-Key aus dem
+# Bündel genügt dem Gateway (siehe oben). Sie schützt sich selbst: Link und Code
+# sind der Ausweis (nur als Prüfsumme gespeichert), Raten wird je Absender und
+# insgesamt gebremst, „Link senden" antwortet immer gleich und schickt nur an
+# Personen, die schon ein Konto oder einen Link haben.
+[functions.anmelden]
 verify_jwt = true
 
 # Ebenso — die Berechtigung hängt an der aufrufenden Person.

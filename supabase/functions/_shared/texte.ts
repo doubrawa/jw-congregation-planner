@@ -39,3 +39,8 @@ export function texteFuer<T>(
 ): (lang: string | null | undefined) => T {
   return (lang) => tabelle[lang ?? ''] ?? de
 }
+
+/** Platzhalter `{name}`, `{url}` … einsetzen — wie `fill` im Client. Fehlende bleiben leer. */
+export function fuellen(vorlage: string, werte: Record<string, string>): string {
+  return vorlage.replace(/\{(\w+)\}/g, (_treffer, schluessel: string) => werte[schluessel] ?? '')
+}

@@ -120,6 +120,7 @@ const SPIEGEL: Record<string, Spiegel> = {
 /** Tabellen mit Verweis, die im Zustand keinen Spiegel haben — mit Grund. */
 const OHNE_SPIEGEL: Record<string, string> = {
   assignment_log: 'Das Versand-Tagebuch steht im Zustand nur als `sentLog` (Schlüssel und Name → Zeitpunkt), ohne Person.',
+  anmelde_links: 'Die Anmelde-Links (T121, Phase 8) lädt die App noch nicht — sie kommen mit der Konto-Karte in den Zustand (Phase 8c).',
 }
 
 const FK = fremdschluessel()

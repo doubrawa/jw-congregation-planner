@@ -128,6 +128,9 @@ const rest: Rest = {
   async insert(path, rows): Promise<void> {
     aufrufe.push({ method: 'POST', path, body: rows })
   },
+  async upsert(path): Promise<boolean> {
+    throw new Error(`fuellen schreibt nicht über upsert: ${path}`)
+  },
   async send(method, path, body): Promise<void> {
     aufrufe.push({ method, path, body })
   },

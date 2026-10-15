@@ -28,7 +28,37 @@ export const DE = {
     offlineReadOnly: 'Offline — Änderungen sind erst wieder online möglich',
     offlineRetry: 'Neu laden',
     email: 'E-MAIL', emailPh: 'name@beispiel.de', passwort: 'PASSWORT', anmelden: 'ANMELDEN',
-    pwVergessen: 'Passwort vergessen?', anmeldungOhneDb: 'Ohne Datenbank · Zugangsdaten beliebig',
+    pwVergessen: 'Passwort vergessen?', anmeldungOhneDb: 'Ohne Datenbank · Anmelden ist nur nachgestellt',
+    // Anmelden per Link (T121, Phase 8): kein Kennwort, ein Link per E-Mail
+    // oder ein Zettel mit QR-Code und Code. `anmeldenTitel` ist die Überschrift,
+    // `anmeldenKnopf` der Knopf — in manchen Sprachen zwei Wortformen.
+    // „Link senden" steht in der E-Mail (`linkMailText`) und auf dem Zettel
+    // als zitierter Knopf: Beide müssen ihn wörtlich so nennen.
+    anmeldenTitel: 'Anmelden', anmeldenKnopf: 'Anmelden',
+    ohnePasswort: 'Ein Passwort gibt es nicht. Du bekommst einen Link per E-Mail.',
+    linkSenden: 'Link senden',
+    linkUnterwegs: 'Ist die Adresse in einer Versammlung eingetragen, kommt gleich eine E-Mail mit deinem Link.',
+    mailNichtEingerichtet: 'Die App kann gerade keine E-Mails senden. Nimm den Code von deinem Zettel oder frag die Ältesten.',
+    ohneMailFrage: 'Ohne E-Mail-Adresse?',
+    ohneMailHinweis: 'Scanne den QR-Code auf deinem Zettel oder tippe den Code darunter ein. Ist der Zettel weg, bekommst du von den Ältesten einen neuen.',
+    zettelScannen: 'Zettel scannen', codeEintippen: 'Code eintippen', mitCodeAnmelden: 'Mit Code anmelden',
+    codeLbl: 'Code', codeHinweis: 'Der Code steht auf deinem Zettel unter dem QR-Code.',
+    codePasst: 'Der Code passt',
+    codeNichtDu: 'Das bist nicht du? Dann frag bitte in deiner Versammlung nach.',
+    codeUnbekannt: 'Diesen Code gibt es nicht. Prüfe ihn bitte noch einmal.',
+    codeAbgelaufen: 'Dieser Code gilt nicht mehr. Frag die Ältesten nach einem neuen Zettel.',
+    angemeldetBleiben: 'Danach bleibst du auf diesem Gerät angemeldet.',
+    linkUngueltig: 'Dieser Link gilt nicht mehr. Lass dir einen neuen schicken oder frag die Ältesten.',
+    anmeldenFehler: 'Die Anmeldung hat nicht geklappt. Versuche es bitte noch einmal.',
+    zuVieleVersuche: 'Zu viele Versuche. Versuche es in einer Stunde noch einmal.',
+    scannenHinweis: 'Halte den QR-Code auf deinem Zettel vor die Kamera.',
+    kameraFehlt: 'Die Kamera lässt sich nicht öffnen. Tippe den Code stattdessen ein.',
+    scanFremd: 'Das ist kein Anmelde-Zettel dieser App.',
+    // Die E-Mail mit dem Link — vom Server (`send-invite`, `anmelden`) wie aus
+    // dem eigenen Mail-Programm. {versammlung} ist der Name der Versammlung,
+    // {datum} der letzte Tag, an dem der Link gilt (aus `Intl`).
+    linkMailBetreff: 'Dein Zugang zur Versammlung {versammlung}',
+    linkMailText: 'Hallo {name},\n\ndie Versammlung {versammlung} plant die Zusammenkünfte und den Predigtdienst mit Versammlung.app. Dein Zugang ist eingerichtet.\n\nJetzt anmelden:\n{url}\n\nDer Link gilt bis {datum} und meldet nur dich an. Ein Passwort brauchst du nicht. Ist er abgelaufen, öffne die App und tippe auf „Link senden“.\n\nDu bekommst diese E-Mail, weil du in der Versammlung {versammlung} eingetragen bist. Bei Fragen sprich die Ältesten an.',
     nurMitglieder: 'Zugang nur für Mitglieder der Versammlung',
     // Anmeldeseite (T113): wofür die App da ist, und der Weg zum Betreiber für
     // eine neue Versammlung. Die Adresse selbst steht in login/kontakt.ts.
@@ -653,7 +683,7 @@ export const DE = {
     toastPwMismatch: 'Passwörter stimmen nicht überein',
     laedt: 'Lädt …',
     stKeineVers: 'Noch keiner Versammlung zugeordnet',
-    stKeineVersText: 'Dein Konto ist angemeldet, aber noch keiner Versammlung zugewiesen. Gib den Einladungscode ein, den du von einem Admin bekommen hast.',
+    stKeineVersText: 'Dein Konto gehört zu keiner Versammlung mehr. Frag bitte die Ältesten nach einem neuen Link.',
     codePh: 'Einladungscode', codeEinloesen: 'CODE EINLÖSEN',
     invCodeInvalid: 'Code ungültig oder bereits verwendet',
     invAlreadyMember: 'Dieses Konto ist bereits Mitglied einer Versammlung',
