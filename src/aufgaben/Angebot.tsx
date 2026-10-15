@@ -34,13 +34,16 @@ export function AngebotText({
   )
 }
 
-/** Ein Ersatzgesuch: der Dienst, sein Termin und wer abgesagt hat. */
+/**
+ * Ein Ersatzgesuch: der Dienst, sein Termin und wer abgesagt hat — sein Name
+ * ohne Übersetzer, wie überall (`platzName`).
+ */
 export function GesuchText({ req }: { req: SubstituteReq }) {
   const i18n = useT()
   return (
     <AngebotText
       titel={i18n.tu(req.title)}
-      wann={`${aufgabenTp(req, i18n)(req.date)} · ${i18n.tu(req.declinedBy)}`}
+      wann={`${aufgabenTp(req, i18n)(req.date)} · ${req.declinedBy}`}
       schonHeute={req.schonHeute}
     />
   )

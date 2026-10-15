@@ -11,6 +11,7 @@ import {
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
+import { bibelbuecherLaden, makeTr } from '../i18n/translate'
 import { dict } from '../i18n/ui'
 import type { Conflict } from '../data/planning'
 import type { Meeting, Person, Service, Week } from '../data/types'
@@ -321,5 +322,44 @@ describe('Der Grund am Platz: die Abwesenheit vor der Doppelbelegung', () => {
     const platz = { name: 'Anna', pid: anna.id }
     expect(machKonfliktVon([anna], [doppelt, weg])(platz)?.kind).toBe('absent')
     expect(machKonfliktVon([anna], [weg, doppelt])(platz)?.kind).toBe('absent')
+  })
+})
+
+/*
+ * **Der Name am Platz** (15.10.2026): Eine Person steht da, wie sie heißt —
+ * der Übersetzer erkennt Bibelstellen und machte auf Englisch aus dem Zusatz
+ * gegen Namensgleichheit ein Bibelbuch („Mark 2 Weber"). Nur der Name einer
+ * Gruppe (Reinigung) steht kanonisch deutsch im Platz und wird übersetzt.
+ */
+describe('Der Name am Hilfsdienst-Platz', () => {
+  const namen = (c: HTMLElement) => [...c.querySelectorAll('.platz-name')].map((x) => x.textContent ?? '')
+
+  it('in fremder Oberfläche: die Person, wie sie heißt — die Gruppe übersetzt', async () => {
+    // Die Buchtabellen kommen nachgeladen; ohne sie griffe die Buch-Regel gar
+    // nicht, und der Test prüfte nichts — deshalb erst die Gegenprobe.
+    await bibelbuecherLaden()
+    expect(makeTr('en')('Markus 2 Weber')).toBe('Mark 2 Weber')
+    const markus = person('p-m', 'Markus 2 Weber')
+    const meeting = zusammenkunft([{ name: '' }], {
+      mik: [{ name: 'Markus 2 Weber', pid: markus.id }],
+      rein: [{ name: 'Gruppe 1' }],
+    })
+    const state = basis({
+      weeks: [woche(0, meeting)],
+      week: 0,
+      persons: [markus],
+      lang: 'en',
+      services: [
+        { key: 'mik', name: 'Mikrofone', count: 1, groups: false },
+        { key: 'rein', name: 'Reinigung', count: 1, groups: true },
+      ],
+    })
+    const { container } = render(
+      <Buehne state={state}>
+        <HelpersPanel meeting={meeting} />
+      </Buehne>,
+    )
+    expect(makeTr('en')('Gruppe 1')).not.toBe('Gruppe 1')
+    expect(namen(container)).toEqual(['Markus 2 Weber', makeTr('en')('Gruppe 1')])
   })
 })

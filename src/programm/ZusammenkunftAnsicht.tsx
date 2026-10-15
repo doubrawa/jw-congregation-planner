@@ -4,7 +4,7 @@ import { hatAuxKlasse } from '../data/aux-class'
 import { dauerAbtrennen, gehoertZu, istAusgefallen, istBlockSektion, isSong, MEETING_TABS, mtab, splitOpeningSong } from '../data/helpers'
 import { deutschesDatum, meetingDate, meetingDateText, meetingTime } from '../data/meeting-dates'
 import type { HelperSlot, Meeting, MeetingKey, MeetingTab, PartItem, Person, Section, Service, Week } from '../data/types'
-import { fill, useT } from '../i18n/useT'
+import { fill, platzName, useT } from '../i18n/useT'
 import { datumsFormat } from '../components/datum-anzeige'
 import { AusfallBanner, MemorialBanner } from '../components/WeekBadges'
 import { PersonZeile } from './PersonZeile'
@@ -340,7 +340,7 @@ function Hilfsdienste({ helpers, me }: { helpers: Meeting['helpers']; me: Person
       {state.services.map((service) => (
         <div key={service.key} className="prog-dienst">
           <span className="prog-dienst-name">{tu(service.name)}</span>
-          <DienstWer plaetze={plaetzeVon(helpers, service)} me={me} />
+          <DienstWer helpers={helpers} service={service} me={me} />
         </div>
       ))}
     </section>
@@ -388,7 +388,7 @@ function HilfsdiensteTabelle({ week, rawWeek, me }: { week: Week; rawWeek: Week;
               </th>
               {MEETING_TABS.map((key) => (
                 <td key={key}>
-                  <DienstWer plaetze={plaetzeVon(week[key].helpers, service)} me={me} />
+                  <DienstWer helpers={week[key].helpers} service={service} me={me} />
                 </td>
               ))}
             </tr>
@@ -400,13 +400,15 @@ function HilfsdiensteTabelle({ week, rawWeek, me }: { week: Week; rawWeek: Week;
 }
 
 /** Wer einen Dienst hat: „Du" vorn, wenn man selbst dabei ist, dann die übrigen Namen, „offen" für jeden freien Platz. */
-function DienstWer({ plaetze, me }: { plaetze: Array<HelperSlot | undefined>; me: Person | undefined }) {
-  const { t, tu } = useT()
+function DienstWer({ helpers, service, me }: { helpers: Meeting['helpers']; service: Service; me: Person | undefined }) {
+  const i18n = useT()
+  const { t } = i18n
+  const plaetze = plaetzeVon(helpers, service)
   const meiner = (slot: HelperSlot | undefined): boolean => Boolean(me && slot?.name && gehoertZu(slot, me))
   const du = plaetze.some(meiner)
   const namen = plaetze
     .filter((slot): slot is HelperSlot => Boolean(slot?.name) && !meiner(slot))
-    .map((slot) => tu(slot.name))
+    .map((slot) => platzName(slot.name, Boolean(service.groups), i18n))
   const offen = plaetze.some((slot) => !slot?.name)
   return (
     <span className="prog-dienst-wer">

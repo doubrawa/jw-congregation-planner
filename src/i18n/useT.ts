@@ -93,6 +93,20 @@ export function zuteilungenText(
   return liste.map((a) => (a.lang === 'u' ? i18n.tu(a.text) : i18n.tp(a.text))).join(', ')
 }
 
+/**
+ * **Wer an einem Platz steht** — eine Gruppe (Reinigung, `Service.groups`) in
+ * der Sprache des Lesers, eine Person so, wie sie heißt.
+ *
+ * Gruppennamen trägt der Platz kanonisch deutsch („Gruppe 1", siehe
+ * `assignName` der Gruppen-Kandidaten). Ein Personenname dagegen darf nie
+ * durch den Übersetzer: Der erkennt darin Bibelstellen und machte aus dem
+ * Zusatz gegen Namensgleichheit ein Bibelbuch („Markus 2 Weber" → „Mark 2
+ * Weber").
+ */
+export function platzName(name: string, gruppe: boolean, i18n: Pick<I18n, 'tu'>): string {
+  return gruppe ? i18n.tu(name) : name
+}
+
 /** Platzhalter {n}, {name}, {m} … in einer Übersetzung ersetzen. */
 export function fill(template: string, params: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (_, key: string) => String(params[key] ?? ''))

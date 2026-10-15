@@ -11,6 +11,7 @@ import {
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
+import { bibelbuecherLaden, makeTr } from '../i18n/translate'
 import { dict } from '../i18n/ui'
 import type { MyTask, Person, S89Payload, SubstituteReq, TrolleyTermin } from '../data/types'
 import { AufgabenScreen } from './AufgabenScreen'
@@ -171,6 +172,16 @@ describe('Einspringen', () => {
     expect(zeile.querySelector('.angebot-titel')?.textContent).toBe('Mikrofone')
     expect(zeile.querySelector('.klein-text')?.textContent).toContain('8. September')
     expect(zeile.querySelector('.klein-text')?.textContent).toContain('Bernd Brand')
+  })
+
+  it('wer abgesagt hat, steht in fremder Oberfläche da, wie er heißt — kein Bibelbuch', async () => {
+    // Bis zum 15.10.2026 lief der Name durch den Übersetzer: Aus dem Zusatz
+    // gegen Namensgleichheit wurde auf Englisch „Mark 2 Weber". Die
+    // Buchtabellen kommen nachgeladen — ohne sie prüfte der Test nichts.
+    await bibelbuecherLaden()
+    expect(makeTr('en')('Markus 2 Weber')).toBe('Mark 2 Weber')
+    const { container } = zeige({ lang: 'en', substituteReqs: [gesuch({ declinedBy: 'Markus 2 Weber' })] })
+    expect(bereich(container)!.querySelector('.aufgaben-angebot .klein-text')?.textContent).toContain('Markus 2 Weber')
   })
 
   it('was ich an dem Tag schon habe, steht VOR dem Zusagen da', () => {

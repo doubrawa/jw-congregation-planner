@@ -1,6 +1,6 @@
 import { useApp } from '../app/context'
 import { mtab, serviceQualKey } from '../data/helpers'
-import { useT } from '../i18n/useT'
+import { platzName, useT } from '../i18n/useT'
 import type { Meeting, Service } from '../data/types'
 import { platzAnzeige } from './platz-anzeige'
 import { istGewaehlt } from './planen-raster'
@@ -60,7 +60,7 @@ export function HelpersPanel({ meeting }: { meeting: Meeting }) {
             return (
               <PlatzZeile
                 key={`${service.key}-${pos}`}
-                name={name ? tu(name) : ''}
+                name={platzName(name, gruppe, { tu })}
                 rolle={tu(service.name)}
                 {...platzAnzeige(slot, stand, gruppe ? undefined : konflikte.von(slot), t, t.spurErsatzGesucht)}
                 gewaehlt={istGewaehlt(state.slotSel, { kind: 'helper', wi: state.week, tab, svc: service.key, pos })}

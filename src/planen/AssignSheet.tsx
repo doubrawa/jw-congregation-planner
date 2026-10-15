@@ -13,7 +13,7 @@ import { meetingDate } from '../data/meeting-dates'
 import { buildS89ForSlot } from '../data/planning'
 import type { S89Payload, SlotAssignment, SlotSelection, Week } from '../data/types'
 import { wochenHer } from '../i18n/relative-time'
-import { fill, useProgWeek, useT, zuteilungenText, type I18n } from '../i18n/useT'
+import { fill, platzName, useProgWeek, useT, zuteilungenText, type I18n } from '../i18n/useT'
 import { kandidaten, type Candidate } from './kandidaten'
 import { auswahlImPlan } from './planen-raster'
 import { useAktuellerPlatz, type AktuellerPlatz } from './useAktuellerPlatz'
@@ -292,6 +292,7 @@ function ZuteilenInhalt({
       {aktuell && (
         <AktuellKarte
           aktuell={aktuell}
+          gruppe={sel.groups}
           s89={s89}
           onS89={(payload) => dispatch({ type: 'openS89', payload })}
           onEntfernen={freimachen}
@@ -410,17 +411,21 @@ function ZuteilenInhalt({
  */
 function AktuellKarte({
   aktuell,
+  gruppe,
   s89,
   onS89,
   onEntfernen,
 }: {
   aktuell: AktuellerPlatz
+  /** Der Platz rotiert unter den Gruppen (Reinigung) — dann steht dort ein Gruppenname. */
+  gruppe: boolean
   s89: S89Payload | null
   onS89: (payload: S89Payload) => void
   onEntfernen: () => void
 }) {
   const { state } = useApp()
-  const { t, tu } = useT()
+  const i18n = useT()
+  const { t } = i18n
   const { anzeige, abwesenheit } = aktuell
   const zeile = abwesenheit ? abwesendText(abwesenheit, t, state.lang) : (anzeige.hinweis ?? anzeige.status)
   const problem = anzeige.lage === 'problem'
@@ -429,7 +434,7 @@ function AktuellKarte({
       <Punkt art={anzeige.lage} />
       <span className="zuteilen-aktuell-text">
         <span className="sr-only">{t.aktuellLbl} </span>
-        <span className="zuteilen-name">{tu(aktuell.name)}</span>
+        <span className="zuteilen-name">{platzName(aktuell.name, gruppe, i18n)}</span>
         {zeile && <span className={problem ? 'zuteilen-info is-problem' : 'zuteilen-info'}>{zeile}</span>}
         {s89 && (
           <button type="button" className="verweis-leise zuteilen-s89" onClick={() => onS89(s89)}>

@@ -12,6 +12,7 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { syncAuxSlots } from '../data/aux-class'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
 import { emptyQualifications } from '../data/helpers'
+import { bibelbuecherLaden, makeTr } from '../i18n/translate'
 import { dict } from '../i18n/ui'
 import type { FsInstance, PartItem, Person, Section, Service, Week } from '../data/types'
 import { ProgrammScreen } from './ProgrammScreen'
@@ -404,6 +405,36 @@ describe('Die Hilfsdienst-Übersicht', () => {
   it('der Dienstname steht da, wie er heißt', () => {
     const { container } = zeige()
     expect(seite(container).querySelector('.prog-dienst-name')?.textContent).toBe('Mikrofone')
+  })
+
+  /*
+   * **Ein Personenname geht nie durch den Übersetzer** (15.10.2026). Der
+   * erkennt Bibelstellen und machte in einer englischen App aus dem Zusatz
+   * gegen Namensgleichheit ein Bibelbuch („Markus 2 Weber" → „Mark 2 Weber").
+   * Ein Gruppenname dagegen steht kanonisch deutsch im Platz — er wird
+   * übersetzt wie überall.
+   */
+  it('ein Personenname bleibt in fremder Oberfläche, wie er heißt', async () => {
+    // Die Buchtabellen kommen nachgeladen; ohne sie griffe die Buch-Regel gar
+    // nicht, und der Test prüfte nichts — deshalb erst die Gegenprobe.
+    await bibelbuecherLaden()
+    expect(makeTr('en')('Markus 2 Weber')).toBe('Mark 2 Weber')
+    const w = woche()
+    w.mid.helpers.mik = [{ name: 'Markus 2 Weber', pid: 'p-m' }]
+    const { container } = zeige({ weeks: [w], lang: 'en' })
+    expect(dienst(container).namen).toBe('Markus 2 Weber')
+  })
+
+  it('ein Gruppenname (Reinigung) steht in der Sprache des Lesers', () => {
+    const w = woche()
+    w.mid.helpers = { rein: [{ name: 'Gruppe 1' }] }
+    const { container } = zeige({
+      weeks: [w],
+      lang: 'en',
+      services: [{ key: 'rein', name: 'Reinigung', count: 1, groups: true }],
+    })
+    expect(makeTr('en')('Gruppe 1')).not.toBe('Gruppe 1')
+    expect(dienst(container).namen).toBe(makeTr('en')('Gruppe 1'))
   })
 
   it('ganz ohne Zuteilung steht der Dienst offen', () => {

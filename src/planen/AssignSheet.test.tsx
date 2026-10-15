@@ -13,6 +13,7 @@ import { syncAuxSlots } from '../data/aux-class'
 import { emptyQualifications } from '../data/helpers'
 import { LOAD_WEEKS } from '../data/auslastung'
 import { ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER } from '../data/helpers'
+import { bibelbuecherLaden, makeTr } from '../i18n/translate'
 import { dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import type {
@@ -470,6 +471,27 @@ describe('Wer den Platz gerade hat, steht oben — mit derselben Lage wie im Pla
   it('an einem leeren Platz steht die Karte gar nicht', () => {
     const { container } = zeige(SEL_SCHUELER)
     expect(container.querySelector('.zuteilen-aktuell')).toBeNull()
+  })
+
+  /*
+   * Der Name geht nicht durch den Übersetzer (15.10.2026): Der erkennt
+   * Bibelstellen und zeigte auf Englisch „Mark 2 Weber" für den Zusatz gegen
+   * Namensgleichheit. Nur eine Gruppe (Reinigung) steht übersetzt da.
+   */
+  it('in fremder Oberfläche steht die Person da, wie sie heißt — die Gruppe übersetzt', async () => {
+    // Die Buchtabellen kommen nachgeladen; ohne sie griffe die Buch-Regel gar
+    // nicht, und der Test prüfte nichts — deshalb erst die Gegenprobe.
+    await bibelbuecherLaden()
+    expect(makeTr('en')('Markus 2 Weber')).toBe('Mark 2 Weber')
+    const w = woche('2026-09-07')
+    schuelerPlatz(w).name = 'Markus 2 Weber'
+    w.mid.helpers.rein = [{ name: 'Gruppe 1' }]
+    const person = zeige(SEL_SCHUELER, { weeks: [w], lang: 'en' })
+    expect(karte(person.container).querySelector('.zuteilen-name')?.textContent).toBe('Markus 2 Weber')
+    cleanup()
+    const gruppe = zeige(SEL_GRUPPE, { weeks: [w], lang: 'en' })
+    expect(makeTr('en')('Gruppe 1')).not.toBe('Gruppe 1')
+    expect(karte(gruppe.container).querySelector('.zuteilen-name')?.textContent).toBe(makeTr('en')('Gruppe 1'))
   })
 
   it('bei einer Schulungsaufgabe führt von hier das S-89-Formular weg', () => {
