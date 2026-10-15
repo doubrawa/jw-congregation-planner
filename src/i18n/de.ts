@@ -369,7 +369,7 @@ export const DE = {
     neuerLinkErsetzt: 'Ein neuer Link ersetzt den alten — auch den auf einem Zettel.',
     ohneKontoHint: 'Ein Konto anlegen oder ein Passwort wählen muss {name} nicht. Nach der Anmeldung bleibt das Gerät angemeldet.',
     wirdGesendet: 'Wird gesendet …',
-    toastLinkGesendet: 'Link an {name} gesendet', toastMailFehler: 'Die E-Mail an {name} ging nicht hinaus.',
+    toastLinkGesendet: 'Link an {name} gesendet', toastMailFehler: 'Die E-Mail an {name} ging nicht hinaus',
     linkFehler: 'Nicht jeder Link ließ sich ausstellen. Versuche es später noch einmal.',
     // „Links senden" für alle, die die Liste „Ohne Link" zeigt (Entwurf
     // GAlleEinladen). Nur Links — den Plan sendet der Planer wie gewohnt.
@@ -434,7 +434,7 @@ export const DE = {
     schriftSehrGross: 'Sehr groß',
     toastPushAn: 'Push-Mitteilungen aktiviert',
     toastPushAus: 'Push-Mitteilungen deaktiviert',
-    toastPushVerweigert: 'Benachrichtigungen wurden nicht erlaubt',
+    toastPushVerweigert: 'Push-Mitteilungen wurden nicht erlaubt',
     keineWochenTitel: 'KEIN PROGRAMM GELADEN',
     keineWochenHinweis: 'Es sind noch keine Wochen geladen. Wer plant, holt das Programm unter „Planung“ mit „Holen“.',
     rolle: 'Rolle', aufgabenbereiche: 'Aufgabenbereiche',
@@ -509,8 +509,8 @@ export const DE = {
     // Die Spalte zum Zuteilen am Desktop, solange kein Platz gewählt ist.
     zuteilenLeer: 'Wähle im Programm einen Platz, um ihn zu besetzen.',
     toastWillkommen: 'Willkommen, {name}!', toastZugeteilt: 'Zugeteilt · noch nicht gesendet',
-    toastEntfernt: 'Zuteilung entfernt', toastKeineOffen: 'Keine offenen Zuteilungen in dieser Ansicht',
-    toastKeinePassende: 'Keine passende Person für die offenen Slots frei',
+    toastEntfernt: 'Zuteilung entfernt', toastKeineOffen: 'Keine offenen Plätze',
+    toastKeinePassende: 'Für die offenen Plätze ist niemand Passendes frei',
     toastAutoN: 'Automatisch vergebene Zuteilungen: {n}', toastGeleertN: 'Geleerte Zuteilungen: {n}',
     toastAbsentP: '{name} ist in dieser Woche abwesend',
     toastVonBis: 'Bitte Von und Bis angeben',
@@ -518,12 +518,13 @@ export const DE = {
     toastPersonNeu: 'Neue Person angelegt',
     toastDienstDel: 'Dienst entfernt', toastDienstAdd: 'Dienst hinzugefügt', toastNameEingeben: 'Bitte einen Namen eingeben',
     toastGruppeNeu: 'Gruppe hinzugefügt', toastGruppeDel: 'Gruppe entfernt',
-    toastProgLangAdd: 'Programmsprache hinzugefügt — der nächste Import holt sie auch für geladene Wochen',
+    toastProgLangAdd: 'Programmsprache hinzugefügt — beim nächsten Holen kommt sie auch für geladene Wochen',
     toastProgLangDel: 'Programmsprache entfernt',
     toastAuxAn: 'Zusätzliche Klasse eingerichtet', toastAuxAus: 'Zusätzliche Klasse aufgehoben',
-    toastAlleWochen: 'Alle verfügbaren Wochen sind importiert', toastImportiert: 'Arbeitsheft-Woche importiert',
-    importOhneDb: 'Import nicht möglich — keine Datenbank angebunden',
-    importFehler: 'Import fehlgeschlagen',
+    // Nach „Holen" und „Übernehmen" (T121, Phase 10) — bis dahin sprachen sie vom Import.
+    toastAlleWochen: 'Das Arbeitsheft hat noch keine weitere Woche', toastImportiert: 'Woche übernommen',
+    importOhneDb: 'Holen nicht möglich — keine Datenbank angebunden',
+    importFehler: 'Das Programm ließ sich nicht holen',
     notifZuteilung: 'Neue Zuteilung', notifErinnerung: 'Erinnerung', notifPlan: 'Plan veröffentlicht',
     notifEntzug: 'Zuteilung zurückgezogen',
     // Abgelegt (Stand und Schicht, 5. bis 14.10.2026): Eine Schicht fiel aus
@@ -715,8 +716,9 @@ export const DE = {
     rednerNamePh: 'Name des Redners', rednerVersPh: 'Versammlung des Redners',
     uebernehmenBtn: 'Übernehmen', oderPersonWaehlen: 'Oder aus der eigenen Versammlung wählen:',
     toastLacAdd: 'Programmpunkt eingefügt · Zeiten angepasst', toastLacDel: 'Programmpunkt entfernt · Zeiten angepasst',
-    toastBestaetigt: 'Bestätigt · die Admins sehen den Status',
-    toastVerhindert: 'Gemeldet · die Admins werden informiert',
+    // Seit „Alles Planen" (15.10.2026) sehen es Admin und Planer — wer plant.
+    toastBestaetigt: 'Bestätigt · wer plant, sieht es',
+    toastVerhindert: 'Gemeldet · wer plant, erfährt es',
     toastErsatzGesucht: 'Abgesagt · es wird ein Ersatz gesucht',
     toastUebernommen: 'Danke! Du hast den Hilfsdienst übernommen',
     toastUebernommenKonflikt: 'Übernommen · Achtung: du bist an dem Tag schon eingeteilt',
