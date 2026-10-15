@@ -6653,6 +6653,19 @@ Wahl, `theme_color`/`background_color` im Manifest. Die Farben auf einer
 Design-Fläche vorlegen (Graphit · Minze, hell und dunkel), nicht raten; danach
 die Handbuch-Bilder neu, die Seitenleiste zeigt das Logo fast überall.
 
+Für Phase 10 vorgemerkt (15.10.2026, vom Betreiber bestätigt): **der Code in
+der Anmelde-Mail — die Lücke am iPhone.** Die Mail trägt nur den Link. Auf dem
+iPhone öffnet ein Tipp darauf immer Safari, nie die installierte App vom
+Home-Bildschirm, und die hat einen eigenen Speicher: Wer seinen Link per Mail
+bekommt, kann sich in der installierten App nicht anmelden und bekommt dort
+keine Push-Mitteilungen. Abhilfe: den Code zum Eintippen mit in die Mail
+(Texte in `_shared/anmelde-texte.ts`). `send-invite` stellt einen neuen Link
+aus und kennt den Code im Klartext; „Link senden" auf der Anmeldeseite erneuert
+dagegen nur den Token (`tokenErneuern`) — der Code steht nur als Hash in
+`anmelde_links`, ein neuer Code machte den Zettel ungültig. Dazu im Handbuch
+die Reihenfolge fürs iPhone: erst zum Home-Bildschirm, dann in der App den Code
+eintippen.
+
 Für Phase 10 vorgemerkt aus dem Review der Phase 6 (vorbestehend, klein): Wird
 eine weitere Programmsprache zur Sprache der Versammlung, bleibt sie zusätzlich
 unter den weiteren stehen („Englisch, Englisch"; `setCongLang` im Reducer).
@@ -6677,7 +6690,8 @@ Weiteren Pläne, auch aus „Plan bearbeiten" (`93561e0`). Lange Tabellen laufen
 Zeile für Zeile auf dem nächsten Blatt weiter, und jeder Druck zeichnet neu —
 ohne `afterprint` behielt der zweite Druck sonst die Blätter des ersten.
 Handbücher `feb3e55`, Review `2f006b7`. Gemessen mit `Page.printToPDF`: Seiten
-gleich Blättern bei allen sechs Bögen; am Handy nicht geprüft. Davor am selben
+gleich Blättern bei allen sechs Bögen; am Handy hat der Betreiber gedruckt —
+„sieht gut aus". Davor am selben
 Tag: Die App spricht zwölf Sprachen statt 34 (`97268a9`: de, en, es, fr, it, pl,
 ru, uk, ro, tr, ar, fa). Es folgt 10, der Feinschliff.
 
