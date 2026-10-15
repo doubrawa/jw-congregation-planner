@@ -1490,6 +1490,32 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     expect(data.saveCongregationInfo).toHaveBeenCalledWith('c1', { name: 'Neu', hall: 'Saal' })
   })
 
+  /*
+   * **Getippte Wochenfelder gehen gebündelt hinaus** (15.10.2026): Der Grund
+   * einer Sonderwoche, Titel und Ort eines weiteren Termins kommen je
+   * Tastenanschlag. Bis dahin ging dafür jedes Mal die ganze Woche hinaus.
+   */
+  it.each([
+    ['der Grund einer Sonderwoche', (g: string): AppAction => ({ type: 'setAbweichung', tab: 'mid', patch: { reason: g } })],
+    ['der Titel eines weiteren Termins', (g: string): AppAction => ({ type: 'terminUpdate', id: 't1', patch: { title: g } })],
+  ])('%s: je Tastenanschlag gebündelt — einmal, mit dem letzten Stand', (_was, aktion) => {
+    const anfang = st({ week: 0 })
+    const s0 = reducer(anfang, { type: 'terminAdd' })
+    const termin = s0.weeks[0]?.termine?.[0]?.id ?? 't1'
+    let vorher = s0
+    for (const g of ['S', 'Sa', 'Saa']) {
+      const a = aktion(g)
+      const echt = a.type === 'terminUpdate' ? { ...a, id: termin } : a
+      const nachher = reducer(vorher, echt)
+      persist(vorher, nachher, echt)
+      vorher = nachher
+    }
+    vi.mocked(data.saveWeek).mockClear()
+    vi.advanceTimersByTime(600)
+    expect(data.saveWeek).toHaveBeenCalledTimes(1)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', vorher.weeks[0], false)
+  })
+
   it('updateCongregation speichert die Wochen, deren Endzeit mitgewandert ist', () => {
     // Die Endzeit steht in der Wochenzeile, nicht in den Einstellungen: ohne
     // dieses saveWeek stünde nach dem nächsten Laden wieder die alte da.

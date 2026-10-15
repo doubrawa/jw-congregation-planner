@@ -1687,6 +1687,20 @@ export const KATALOG = [
     ersetzen: '    if (false) continue',
   },
   {
+    id: 'sonderwoche-grund-gebuendelt',
+    datei: 'src/app/persist.ts',
+    regel: 'Der Grund einer Sonderwoche geht gebündelt hinaus — einmal, nicht je Tastenanschlag.',
+    suchen: "  'setAbweichung',\n",
+    ersetzen: '',
+  },
+  {
+    id: 'termin-titel-gebuendelt',
+    datei: 'src/app/persist.ts',
+    regel: 'Titel und Ort eines weiteren Termins gehen gebündelt hinaus — einmal, nicht je Tastenanschlag.',
+    suchen: "  'terminUpdate',\n]",
+    ersetzen: ']',
+  },
+  {
     id: 's89-bogen-nicht-bei-ausfall',
     datei: 'src/data/planning.ts',
     regel: 'Fällt die Zusammenkunft aus, bietet der S-89-Bogen keine Zettel an — gehalten wird keine Aufgabe.',

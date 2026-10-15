@@ -419,12 +419,18 @@ function geaenderteWochenSpeichern(
  * sind zwei Auswahlfelder, also zwei Aktionen kurz nacheinander — sofort
  * geschrieben wären das zweimal bis zu 52 Anfragen, gebündelt geht jede Woche
  * einmal hinaus, mit dem letzten Stand (T118).
+ *
+ * `setAbweichung` und `terminUpdate` seit dem 15.10.2026: Der Grund einer
+ * Sonderwoche, Titel und Ort eines weiteren Termins kommen je Tastenanschlag —
+ * bis dahin ging dafür jedes Mal die ganze Woche hinaus, eine nach der anderen.
  */
 const GEBUENDELT: readonly AppAction['type'][] = [
   'updatePerson',
   'removePerson',
   'removeService',
   'updateCongregation',
+  'setAbweichung',
+  'terminUpdate',
 ]
 
 /**
