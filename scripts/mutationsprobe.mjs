@@ -1771,6 +1771,20 @@ export const KATALOG = [
     ersetzen: '          gruppe\n',
   },
   {
+    id: 'uset-buecher-im-memo',
+    datei: 'src/i18n/useT.ts',
+    regel: 'Nach dem Nachladen der Bibelbücher baut useT seinen Übersetzer neu — sonst bleiben Buchnamen deutsch, bis der Baustein neu entsteht.',
+    suchen: '  }, [lang, congLang, overlayGen, buecher])\n',
+    ersetzen: '  }, [lang, congLang, overlayGen])\n',
+  },
+  {
+    id: 'bibelbuecher-danach-neu-zeichnen',
+    datei: 'src/app/store.tsx',
+    regel: 'Sind die Bibelbücher nachgeladen, zeichnet die App neu — wie nach einem Sprach-Overlay.',
+    suchen: "        if (geladen) dispatch({ type: 'setLang', lang: stateRef.current.lang })\n",
+    ersetzen: '        void geladen\n',
+  },
+  {
     id: 'gesuch-name-ohne-uebersetzer',
     datei: 'src/aufgaben/Angebot.tsx',
     regel: 'Wer einen Hilfsdienst abgesagt hat, steht im Ersatzgesuch da, wie er heißt — ohne Übersetzer.',

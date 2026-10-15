@@ -18,7 +18,7 @@
 import type { Lang } from '../data/types'
 import { makeTr as makeTrShared } from '../../supabase/functions/_shared/i18n/translate.ts'
 
-export { bibelbuecherLaden, ohneMarken } from '../../supabase/functions/_shared/i18n/translate.ts'
+export { bibelbuecherGeladen, bibelbuecherLaden, ohneMarken } from '../../supabase/functions/_shared/i18n/translate.ts'
 export { alsFreitext } from '../../supabase/functions/_shared/i18n/freitext.ts'
 
 /** Übersetzer für eine App-Sprache; `de` liefert die Identität. */

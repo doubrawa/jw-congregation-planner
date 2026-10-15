@@ -14,7 +14,7 @@ import { useAppSelector } from '../app/context'
 import { localizedWeek } from '../data/localize'
 import type { MeetingAssignment, Week } from '../data/types'
 import { APP_TO_JW, congAppCode } from './langs'
-import { makeTr, ohneMarken } from './translate'
+import { bibelbuecherGeladen, makeTr, ohneMarken } from './translate'
 import { dict, overlayGeneration, type Dict } from './ui'
 
 export interface I18n {
@@ -135,6 +135,10 @@ export function useT(): I18n {
   // overlayGen invalidiert das Memo, wenn ein Sprach-Overlay nachgeladen
   // wurde (lazy, siehe ui.ts) — lang/congLang ändern sich dabei nicht.
   const overlayGen = overlayGeneration()
+  // Ebenso die Bibelbuch-Tabellen: Ein Übersetzer von vor ihrem Laden kennt
+  // keine Bücher, und das Neuzeichnen danach (`store.tsx`) allein baut ihn
+  // nicht neu.
+  const buecher = bibelbuecherGeladen()
   return useMemo(() => {
     const congCode = congAppCode(congLang)
     return {
@@ -144,7 +148,7 @@ export function useT(): I18n {
       progFallback: !congCode,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang, congLang, overlayGen])
+  }, [lang, congLang, overlayGen, buecher])
 }
 
 export interface ProgWeek {

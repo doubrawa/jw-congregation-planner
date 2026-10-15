@@ -53,6 +53,15 @@ export async function bibelbuecherLaden(): Promise<boolean> {
 }
 
 /**
+ * Sind die Tabellen schon da? Ein Übersetzer kennt die Bücher nur, wenn er
+ * danach erzeugt wurde (`makeTr` stellt seine Regeln beim Erzeugen zusammen) —
+ * wer Übersetzer aufhebt, baut sie neu, sobald das hier umspringt (`useT`).
+ */
+export function bibelbuecherGeladen(): boolean {
+  return buchTabelle !== null
+}
+
+/**
  * Datum mit passendem Jahr finden, damit Intl den richtigen Wochentag zeigt.
  * Gesucht wird nur das Jahr — Tag und Monat stehen fest.
  *
