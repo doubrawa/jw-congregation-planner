@@ -290,12 +290,21 @@ function verweisRegeln(code: string): Rule[] {
  * 3" schlucken und — schlimmer — Segmente mit „ — " am rekursiven Aufteilen in
  * buildTranslator vorbeiführen. Längste zuerst, damit „1. Johannes" nicht an
  * einem kürzeren Namen hängen bleibt.
+ *
+ * **Großgeschrieben wie auf jw.org.** Den Kopf der Bibellese (`Week.book`)
+ * schreibt das Arbeitsheft in Versalien („JEREMIA 42-44", gemessen am
+ * 15.10.2026) — und gerade für ihn gibt es die vollen Namen. Die Regel
+ * kannte bis dahin nur „Jeremia 32–33" aus den Testdaten und ließ jeden echten
+ * Kopf deutsch stehen. Ein großgeschriebener Name kommt deshalb in der
+ * Großschreibung der Zielsprache zurück („JEREMIAH 42-44").
  */
 function buchRegeln(code: string): Rule[] {
   if (!buchTabelle) return [] // noch nicht nachgeladen
   const { voll, kurz } = buchTabelle(code)
   if (voll.size === 0) return [] // Sprache nicht auf jw.org geführt → deutsch lassen
-  const namen = [...voll.keys(), ...kurz.keys()].sort((a, b) => b.length - a.length)
+  const ort = LOCALES[code] ?? code
+  const versal = new Map([...voll].map(([de, ziel]) => [de.toLocaleUpperCase('de'), ziel.toLocaleUpperCase(ort)]))
+  const namen = [...voll.keys(), ...kurz.keys(), ...versal.keys()].sort((a, b) => b.length - a.length)
   const muster = namen.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
   return [
     [
@@ -313,19 +322,29 @@ function buchRegeln(code: string): Rule[] {
        * wörtlich „Markusevangelium Weber").
        *
        * Eine Schriftstelle trägt hinter dem Buch **immer** eine Zahl:
-       * „Jeremia 32–33", „Jer 32:6-18". Ein Name nie. `\p{Nd}` statt `\d`,
-       * weil die Wochendaten einer fremdsprachigen Versammlung ihre Kapitel in
-       * der eigenen Schrift schreiben können.
+       * „Jeremia 32–33", „Jer 32:6-18". Ein Name fast nie — der Zusatz gegen
+       * Namensgleichheit („Markus 2 Weber") trägt eine. Deshalb gehen Namen
+       * gar nicht erst durch den Übersetzer (`alsFreitext`, in der App
+       * `platzName`). `\p{Nd}` statt `\d`, weil die Wochendaten einer
+       * fremdsprachigen Versammlung ihre Kapitel in der eigenen Schrift
+       * schreiben können.
        *
        * Der Kopf über dieser Funktion verwirft `^(.+) (\d.*)$` — einen
        * Fänger, der jeden Vorspann schluckt. Das gilt weiter: Gefangen wird
        * nach wie vor nur, was auch wirklich ein Buchname ist. Die Ziffer kommt
        * als **zweite** Bedingung dazu, nicht an die Stelle der ersten.
+       *
+       * **Und die Stelle endet vor „ — ".** Die Regeln greifen am ganzen
+       * Atom, bevor `buildTranslator` an „ — " teilt; mit `.*` verschluckte
+       * die Stelle den Rest. Aus dem Import-Hinweis „JEREMIA 42-44 — ohne
+       * Zuteilungen" wurde so „JEREMIAH 42-44 — ohne Zuteilungen". Eine
+       * Schriftstelle enthält nie „ — ", also endet sie davor, und der Rest
+       * kommt einzeln an die Reihe.
        */
-      new RegExp(`^(${muster}) (\\p{Nd}.*)$`, 'u'),
+      new RegExp(`^(${muster}) (\\p{Nd}(?:(?! — ).)*)$`, 'u'),
       (m) => {
         const buch = g(m, 1)
-        return `${voll.get(buch) ?? kurz.get(buch) ?? buch} ${g(m, 2)}`
+        return `${voll.get(buch) ?? kurz.get(buch) ?? versal.get(buch) ?? buch} ${g(m, 2)}`
       },
     ],
   ]

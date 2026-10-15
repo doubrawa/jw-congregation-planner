@@ -52,6 +52,26 @@ describe('Bibelbücher', () => {
     expect(en('Offenbarung 1–3')).toBe('Revelation 1–3')
   })
 
+  /*
+   * **Der Kopf der Bibellese, wie jw.org ihn schreibt** (15.10.2026). Gemessen
+   * an der Woche 12.–18. Oktober 2026: „JEREMIA 42-44" — in Versalien und mit
+   * Bindestrich. Die Regel kannte nur die Form der Testdaten („Jeremia
+   * 32–33") und ließ jeden echten Kopf deutsch stehen.
+   */
+  it('übersetzt den Kopf der Bibellese in Versalien — wie das Arbeitsheft ihn schreibt', () => {
+    expect(makeTr('en')('JEREMIA 42-44')).toBe('JEREMIAH 42-44')
+    expect(makeTr('fr')('1. KÖNIGE 3')).toBe('1 ROIS 3')
+    expect(makeTr('ja')('JEREMIA 42-44')).toBe('エレミヤ 42-44')
+  })
+
+  it('eine Stelle endet vor „ — " — der Rest des Atoms wird für sich übersetzt', () => {
+    // Der Import-Hinweis in der Glocke: Wochenspanne · Buch — „ohne Zuteilungen".
+    // Die Buch-Regel verschluckte den Rest, bevor an „ — " geteilt wurde.
+    const en = makeTr('en')
+    expect(en('JEREMIA 42-44 — ohne Zuteilungen')).toBe('JEREMIAH 42-44 — without assignments')
+    expect(en('Jeremia 32–33 — ohne Zuteilungen')).toBe('Jeremiah 32–33 — without assignments')
+  })
+
   it('übersetzt auch die Kürzel in Bibelstellen', () => {
     // „Bibellesung · Jer 32:6-18" — Kapitel und Verse bleiben unangetastet.
     expect(makeTr('en')('Jer 32:6-18')).toBe('Jer 32:6-18')

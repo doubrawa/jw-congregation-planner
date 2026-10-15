@@ -1771,6 +1771,20 @@ export const KATALOG = [
     ersetzen: '          gruppe\n',
   },
   {
+    id: 'buch-regel-versalien',
+    datei: 'supabase/functions/_shared/i18n/translate.ts',
+    regel: 'Den Kopf der Bibellese schreibt jw.org in Versalien (JEREMIA 42-44) — auch so wird das Buch übersetzt.',
+    suchen: '  const namen = [...voll.keys(), ...kurz.keys(), ...versal.keys()].sort((a, b) => b.length - a.length)\n',
+    ersetzen: '  const namen = [...voll.keys(), ...kurz.keys()].sort((a, b) => b.length - a.length)\n',
+  },
+  {
+    id: 'buch-stelle-endet-vor-strich',
+    datei: 'supabase/functions/_shared/i18n/translate.ts',
+    regel: 'Eine Bibelstelle endet vor dem Gedankenstrich — der Rest des Atoms wird für sich übersetzt.',
+    suchen: "(?:(?! — ).)*)$`, 'u'),",
+    ersetzen: ".*)$`, 'u'),",
+  },
+  {
     id: 'uset-buecher-im-memo',
     datei: 'src/i18n/useT.ts',
     regel: 'Nach dem Nachladen der Bibelbücher baut useT seinen Übersetzer neu — sonst bleiben Buchnamen deutsch, bis der Baustein neu entsteht.',
