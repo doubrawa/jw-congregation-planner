@@ -3,6 +3,8 @@ import { createPortal, flushSync } from 'react-dom'
 import { useApp } from '../app/context'
 import { Option } from '../bausteine/Option'
 import { Sheet } from '../components/Sheet'
+import { useDruckBogen } from '../druck/useDruckBogen'
+import { MonatsBogen, WochenBogen } from '../druck/ZusammenkunftBogen'
 import { fill, useT } from '../i18n/useT'
 import { druckKennzeichen, monatDerWoche, monatsName } from './druck'
 import { DruckKnopf } from './DruckKnopf'
@@ -38,16 +40,36 @@ export function DruckWahl({
 }) {
   const { state } = useApp()
   const { t } = useT()
-  const monatDrucken = useMonatDrucken()
+  const monatDruckenFs = useMonatDrucken()
+  const { drucken, bogen } = useDruckBogen()
   const monat = monatDerWoche(state.weeks[state.week])
   const [offen, setOffen] = useState(false)
+  // Die Zusammenkünfte haben ihre Bögen (Phase 9); die Treffpunkte drucken
+  // bis auf Weiteres den Bildschirm.
+  const zusammenkunft = state.tab !== 'fs'
+  const wi = state.week
 
   const woche = () => {
+    if (zusammenkunft) {
+      drucken(<WochenBogen wi={wi} />)
+      return
+    }
     druckKennzeichen(null) // die Woche ist der Normalfall — kein Kennzeichen
     window.print()
   }
+  const ganzerMonat = (m: string) => {
+    if (zusammenkunft) drucken(<MonatsBogen monat={m} />)
+    else monatDruckenFs?.(m)
+  }
+  const mitMonat = monat !== null && (zusammenkunft || monatDruckenFs !== null)
 
-  if (!monat || !monatDrucken) return <DruckKnopf mitText={mitText} onClick={woche} />
+  if (!mitMonat)
+    return (
+      <>
+        <DruckKnopf mitText={mitText} onClick={woche} />
+        {bogen}
+      </>
+    )
 
   return (
     <>
@@ -58,15 +80,16 @@ export function DruckWahl({
           erklaerung={erklaerung}
           monatText={fill(t.druckMonat, { monat: monatsName(monat, state.lang) })}
           onClose={() => setOffen(false)}
-          onDrucken={(ganzerMonat) => {
+          onDrucken={(monatGewaehlt) => {
             // Erst das Blatt weg, dann drucken: Der Druckdialog nimmt den Stand
             // auf, der in diesem Moment im DOM steht.
             flushSync(() => setOffen(false))
-            if (ganzerMonat) monatDrucken(monat)
+            if (monatGewaehlt) ganzerMonat(monat)
             else woche()
           }}
         />
       )}
+      {bogen}
     </>
   )
 }

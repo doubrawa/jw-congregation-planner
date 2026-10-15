@@ -739,6 +739,23 @@ export function weichtAb(week: Week | undefined, tab: MeetingKey): boolean {
   return Boolean(a && (a.cancelled || a.wd != null || a.time))
 }
 
+/**
+ * Die erste Zusammenkunft nach der Woche `wi`, die stattfindet — in der
+ * Reihenfolge der Wochen, je Woche unter der Woche vor dem Wochenende. Für die
+ * Kongresswoche: am Bildschirm der Weg dorthin, auf dem Monatsbogen der Satz.
+ */
+export function naechsteZusammenkunft(
+  weeks: readonly Week[],
+  wi: number,
+): { wi: number; tab: MeetingKey; week: Week } | null {
+  for (let i = wi + 1; i < weeks.length; i++) {
+    const week = weeks[i]
+    const tab = MEETING_TABS.find((key) => !istAusgefallen(week, key))
+    if (week && tab) return { wi: i, tab, week }
+  }
+  return null
+}
+
 /* ---- Wer den öffentlichen Vortrag hält (Rollen-Vokabular) ---- */
 
 /**

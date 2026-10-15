@@ -723,4 +723,7 @@ export default {
   "anmeldungFuer": "Вхід для",
   "gueltigBisDatum": "діє до {datum}",
   "zettelAnleitung": "Відскануйте камерою телефона — і ви ввійдете. Якщо не виходить: відкрийте {adresse} і введіть код у розділі «{frage}».",
+  "aenderungenInDerApp": "Зміни видно в застосунку",
+  "druckNochFrei": "ще вільно — хто може взяти, нехай повідомить у застосунку або старійшинам.",
+  "druckMit": "{a} і {b}",
 } satisfies Partial<Dict>

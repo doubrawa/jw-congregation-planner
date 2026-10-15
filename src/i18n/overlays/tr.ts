@@ -723,4 +723,7 @@ export default {
   "anmeldungFuer": "Kimin için:",
   "gueltigBisDatum": "son geçerlilik: {datum}",
   "zettelAnleitung": "Telefonun kamerasıyla tara, hemen içeridesin. Olmazsa: {adresse} adresini aç ve “{frage}” bölümünde kodu yaz.",
+  "aenderungenInDerApp": "Değişiklikler uygulamada görünür",
+  "druckNochFrei": "henüz boş – üstlenebilecek olan uygulamadan ya da ihtiyarlara bildirsin.",
+  "druckMit": "{a} ile {b}",
 } satisfies Partial<Dict>

@@ -723,4 +723,7 @@ export default {
   "anmeldungFuer": "Accesso per",
   "gueltigBisDatum": "valido fino al {datum}",
   "zettelAnleitung": "Scansionalo con la fotocamera del telefono e hai accesso. Se non funziona: apri {adresse} e digita il codice sotto «{frage}».",
+  "aenderungenInDerApp": "Le modifiche compaiono nell’app",
+  "druckNochFrei": "ancora libero – chi può occuparsene lo segnali nell’app o agli anziani.",
+  "druckMit": "{a} con {b}",
 } satisfies Partial<Dict>

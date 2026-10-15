@@ -722,4 +722,7 @@ export default {
   "anmeldungFuer": "ورود برای",
   "gueltigBisDatum": "معتبر تا {datum}",
   "zettelAnleitung": "با دوربین گوشی اسکن کنید و وارد می‌شوید. اگر نشد: {adresse} را باز کنید و کد را زیر «{frage}» وارد کنید.",
+  "aenderungenInDerApp": "تغییرات در برنامه نمایش داده می‌شود",
+  "druckNochFrei": "هنوز خالی است – هر کس می‌تواند آن را بر عهده بگیرد، در برنامه یا به پیران جماعت اطلاع دهد.",
+  "druckMit": "{a} با {b}",
 } satisfies Partial<Dict>

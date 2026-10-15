@@ -258,6 +258,12 @@ export const DE = {
     druckWoche: 'Diese Woche', druckMonat: 'Ganzer Monat · {monat}',
     // Unter dem Titel des Druck-Blatts der Zusammenkünfte (T121).
     druckZusammenkuenfte: 'Zusammenkünfte mit allen Zuteilungen.',
+    // Druckbögen (T121, Phase 9): Fuß jedes Blatts hinter „Stand: …"; unter den
+    // Hilfsdiensten, was die gepunktete Linie heißt; auf dem Monatsbogen
+    // Schüler und Partner in einer Zeile.
+    aenderungenInDerApp: 'Änderungen stehen in der App',
+    druckNochFrei: 'noch frei – wer übernehmen kann, meldet sich in der App oder bei den Ältesten.',
+    druckMit: '{a} mit {b}',
     // Kongresswoche (T121): statt des Programms der leere Saal und zwei Wege.
     kongressAusfall: 'In dieser Woche fallen alle Zusammenkünfte aus.',
     treffpunkteDieserWoche: 'Treffpunkte dieser Woche',

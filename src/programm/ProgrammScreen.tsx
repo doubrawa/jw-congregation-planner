@@ -5,10 +5,9 @@ import { eigenePerson } from '../app/eigene-person'
 import { Saal } from '../bausteine/Saal'
 import { Zeichen } from '../bausteine/Zeichen'
 import { anlassArt } from '../data/anlass'
-import { istAusgefallen, MEETING_TABS } from '../data/helpers'
+import { naechsteZusammenkunft } from '../data/helpers'
 import { meetingDate } from '../data/meeting-dates'
 import { SAAL_PLAETZE, type SaalLage } from '../data/saal'
-import type { MeetingKey, Week } from '../data/types'
 import { Bereichstitel } from '../components/Bereichstitel'
 import { datumsFormat } from '../components/datum-anzeige'
 import { MeetingTabs } from '../components/MeetingTabs'
@@ -206,7 +205,7 @@ const LEERER_SAAL: readonly SaalLage[] = Array.from({ length: SAAL_PLAETZE }, ()
 function KongressKarte({ wi }: { wi: number }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
-  const naechste = naechsteNach(state.weeks, wi)
+  const naechste = naechsteZusammenkunft(state.weeks, wi)
   return (
     <>
       <section className="karte karte--held kongress-karte">
@@ -244,15 +243,3 @@ function KongressKarte({ wi }: { wi: number }) {
   )
 }
 
-/**
- * Die erste Zusammenkunft nach der Woche `wi`, die stattfindet — in der
- * Reihenfolge der Wochen, je Woche unter der Woche vor dem Wochenende.
- */
-function naechsteNach(weeks: readonly Week[], wi: number): { wi: number; tab: MeetingKey; week: Week } | null {
-  for (let i = wi + 1; i < weeks.length; i++) {
-    const week = weeks[i]
-    const tab = MEETING_TABS.find((key) => !istAusgefallen(week, key))
-    if (week && tab) return { wi: i, tab, week }
-  }
-  return null
-}

@@ -1,9 +1,10 @@
 import { Fragment, useId, type ReactNode } from 'react'
 import { useApp } from '../app/context'
 import { hatAuxKlasse } from '../data/aux-class'
-import { dauerAbtrennen, gehoertZu, istAusgefallen, istBlockSektion, isSong, MEETING_TABS, mtab, splitOpeningSong } from '../data/helpers'
+import { dauerAbtrennen, gehoertZu, istAusgefallen, MEETING_TABS, mtab } from '../data/helpers'
 import { deutschesDatum, meetingDate, meetingDateText, meetingTime } from '../data/meeting-dates'
 import type { HelperSlot, Meeting, MeetingKey, MeetingTab, PartItem, Person, Section, Service, Week } from '../data/types'
+import { abschnittZeilen, plaetzeVon } from './programm-zeilen'
 import { fill, platzName, useT } from '../i18n/useT'
 import { datumsFormat } from '../components/datum-anzeige'
 import { AusfallBanner, MemorialBanner } from '../components/WeekBadges'
@@ -227,18 +228,7 @@ function Abschnitt({
   tpw: Uebersetzer
   ebene: Ebene
 }) {
-  const sammeltitel = rawSection ? istBlockSektion(rawSection) : false
-  const lieder: string[] = []
-  const zeilen: Array<{ item: PartItem; title?: string }> = []
-  for (const item of section.items) {
-    if (isSong(item)) {
-      lieder.push(tpw(item.song))
-      continue
-    }
-    const { song, rest } = sammeltitel ? splitOpeningSong(tpw(item.title)) : { song: null, rest: '' }
-    if (song) lieder.push(song)
-    zeilen.push(song ? { item, title: rest } : { item })
-  }
+  const { lieder, zeilen } = abschnittZeilen(section, rawSection, tpw)
   const Ueberschrift = ebene
   return (
     <section className="prog-abschnitt" data-farbe={section.farbe}>
@@ -312,20 +302,6 @@ function ProgramRow({
       </div>
     </div>
   )
-}
-
-/**
- * Die Plätze eines Dienstes, Platz für Platz — genau so weit, wie
- * `service.count` reicht; ein freier Platz ist `undefined`.
- *
- * Die gleiche Grenze, nach der `countOpenSlots`, `deriveMyTasks` und
- * `helperWorkload` rechnen. Reduziert der Planer die Platzzahl, bleiben die
- * Namen dahinter in den Wochendaten stehen; das Programmblatt nannte dann
- * jemanden, den die Aufgabenliste, die Auslastung und der Planen-Screen längst
- * nicht mehr kennen.
- */
-function plaetzeVon(helpers: Meeting['helpers'], service: Service): Array<HelperSlot | undefined> {
-  return Array.from({ length: service.count }, (_unused, pos) => helpers[service.key]?.[pos])
 }
 
 /** Die Hilfsdienste einer Zusammenkunft: je Dienst eine Zeile. */

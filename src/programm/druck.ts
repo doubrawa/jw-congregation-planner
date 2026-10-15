@@ -69,6 +69,24 @@ export function monatsName(monat: string, lang: Lang): string {
 }
 
 /**
+ * „7.–13. September 2026" in der Sprache des Lesers — der Kopf des
+ * Wochenbogens. Aus dem Montag der Woche (`start`) bis zum Sonntag, nicht aus
+ * der Überschrift (`range`), die in der Sprache der Versammlung steht und kein
+ * Jahr trägt. Ohne gültiges Datum bleibt `ersatz`.
+ */
+export function wochenZeitraum(week: Pick<Week, 'start'>, lang: Lang, ersatz: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(week.start ?? '')) return ersatz
+  const montag = fromIso(week.start)
+  const sonntag = new Date(montag)
+  sonntag.setDate(montag.getDate() + 6)
+  try {
+    return datumsFormat(lang, 'tagMonatJahr').formatRange(montag, sonntag)
+  } catch {
+    return ersatz
+  }
+}
+
+/**
  * **Die Weiche zwischen den Ausdrucken.**
  *
  * Drei Regelwerke sagen im Druck „alles außer mir ausblenden": das Programm

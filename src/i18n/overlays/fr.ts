@@ -723,4 +723,7 @@ export default {
   "anmeldungFuer": "Connexion pour",
   "gueltigBisDatum": "valable jusqu’au {datum}",
   "zettelAnleitung": "Scanne-la avec l’appareil photo du téléphone, et tu as accès à l’application. Si ça ne marche pas\u00a0: ouvre {adresse} et tape le code sous «\u00a0{frage}\u00a0».",
+  "aenderungenInDerApp": "Les changements figurent dans l’application",
+  "druckNochFrei": "encore libre – qui peut s’en charger le signale dans l’application ou aux anciens.",
+  "druckMit": "{a} avec {b}",
 } satisfies Partial<Dict>

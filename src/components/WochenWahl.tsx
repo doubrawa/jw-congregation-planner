@@ -4,6 +4,7 @@ import { anlassArt } from '../data/anlass'
 import { currentWeekIndex } from '../data/meeting-dates'
 import type { Week } from '../data/types'
 import { useT } from '../i18n/useT'
+import { anlassName } from './anlass-name'
 import { WeekNav } from './WeekNav'
 import './components.css'
 
@@ -64,8 +65,7 @@ function WochenZeile({
   tpw: (s: string) => string
 }) {
   const { t } = useT()
-  const art = anlassArt(rawWeek)
-  const anlass = art === 'co' ? t.coWoche : art === 'mem' ? t.memWoche : art === 'kongress' ? t.kongress : null
+  const anlass = anlassName(anlassArt(rawWeek), t)
   return (
     <>
       <span className="woche-zeitraum">{tpw(week.range)}</span>

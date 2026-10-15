@@ -1,0 +1,477 @@
+/*
+ * Die Druckbögen (T121, Phase 9; Entwürfe GDruck…): je Blatt eine feste
+ * A4-Seite, Tinte auf Papier.
+ *
+ * Am Bildschirm unsichtbar, im DOM nur für die Dauer des Druckdialogs
+ * (`useDruckBogen`). Der Bogen hängt direkt unter `body`; das Kennzeichen
+ * `data-print="bogen"` blendet im Druck alles andere mit einer Regel aus.
+ *
+ * **Feste Größen, kein `--fs`:** Das Blatt ist A4, unabhängig von der
+ * Schriftstufe am Gerät — wie die übrigen Druck-Regeln. Die Maße stammen aus
+ * dem Entwurf (794 × 1123 px bei 96 dpi = A4); im Druck ist ein CSS-Pixel
+ * 1/96 Zoll, sie gelten also unverändert.
+ *
+ * **Keine Tonflächen:** Browser drucken Hintergründe nur auf Wunsch. Der
+ * Farbbalken ist deshalb ein Rand, die freien Plätze sind gepunktete Linien.
+ */
+
+.druck-bogen {
+  display: none;
+}
+
+@page bogen {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  :root[data-print='bogen'] body > :not(.druck-bogen) {
+    display: none !important;
+  }
+
+  :root[data-print='bogen'] .druck-bogen {
+    display: block !important;
+  }
+
+  :root[data-print='bogen'] {
+    color-scheme: light;
+  }
+
+  :root[data-print='bogen'] body {
+    background: #fff;
+  }
+}
+
+/* ---- Die Blätter — am Bildschirm nur beim Messen zu sehen (`Bogen`) ---- */
+
+.druck-bogen,
+.druck-messen {
+  --tinte: #141516;
+  --tinte2: #45484b;
+  --linie: #bfc2c4;
+  --akzent: #17694a;
+  color: var(--tinte);
+}
+
+/* Die Abschnittsfarben des Arbeitshefts, als Tinte (Entwurf FARBE_DRUCK). */
+:is(.druck-bogen, .druck-messen) [data-farbe] {
+  --farbe: var(--tinte2);
+}
+
+:is(.druck-bogen, .druck-messen) [data-farbe='petrol'] {
+  --farbe: #1b6c78;
+}
+
+:is(.druck-bogen, .druck-messen) [data-farbe='gold'] {
+  --farbe: #7d5700;
+}
+
+:is(.druck-bogen, .druck-messen) [data-farbe='wein'] {
+  --farbe: #a03a34;
+}
+
+/* ---- Das Blatt ------------------------------------------------------- */
+
+.druck-blatt {
+  page: bogen;
+  box-sizing: border-box;
+  width: 794px;
+  /* Ein Pixel unter A4 (1123 px wären 297,1 mm): Sonst schiebt die
+     Rundung ein leeres Blatt hinterher. Dieselbe Zahl in `verteilen.ts`. */
+  height: 1122px;
+  padding: 44px 48px 36px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #fff;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.35;
+  break-after: page;
+  page-break-after: always;
+}
+
+.druck-blatt:last-child {
+  break-after: auto;
+  page-break-after: auto;
+}
+
+/* Ein Block allein ist höher als ein Blatt: Er läuft weiter, statt
+   abgeschnitten zu werden (`Bogen`). */
+.druck-blatt--ueberlang {
+  height: auto;
+  min-height: 1122px;
+  overflow: visible;
+}
+
+.druck-block {
+  flex: none;
+  break-inside: avoid;
+}
+
+/* Gemessen wird in natürlicher Höhe, unsichtbar neben dem Bildschirm. */
+.druck-messen {
+  position: fixed;
+  top: 0;
+  inset-inline-start: -10000px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.druck-messen .druck-blatt {
+  height: auto;
+  overflow: visible;
+}
+
+.druck-blatt-kopf {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--tinte);
+}
+
+.druck-blatt-kopf-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.druck-versammlung {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tinte2);
+}
+
+.druck-titel {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.druck-zeitraum {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.druck-blatt-kopf .logo-pult {
+  fill: var(--akzent);
+}
+
+.druck-blatt-kopf .logo-platz {
+  fill: var(--tinte);
+}
+
+.druck-blatt-fuss {
+  flex: none;
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--linie);
+  font-size: 12px;
+  color: var(--tinte2);
+}
+
+.druck-offen {
+  display: inline-block;
+  max-inline-size: 100%;
+  height: 14px;
+  vertical-align: bottom;
+  border-bottom: 1.5px dotted var(--tinte2);
+}
+
+.druck-balken {
+  flex: none;
+  display: inline-block;
+  height: 13px;
+  border-inline-start: 4px solid var(--farbe);
+  border-radius: 2px;
+}
+
+.druck-leise {
+  color: var(--tinte2);
+}
+
+/* ---- Abschnitte und Punkte (Woche, ausführlich) ---------------------- */
+
+.druck-woche {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+  column-gap: 30px;
+  align-items: start;
+}
+
+.druck-spalte {
+  display: flex;
+  flex-direction: column;
+}
+
+.druck-tag-kopf {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 2px;
+}
+
+.druck-tag-datum {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.druck-tag-zeit {
+  font-size: 12.5px;
+  color: var(--tinte2);
+}
+
+.druck-ausfall {
+  margin: 0;
+  padding-top: 8px;
+  font-size: 13.5px;
+}
+
+.druck-abschnitt-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 0 5px;
+}
+
+.druck-abschnitt-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--farbe);
+}
+
+.druck-lied {
+  font-size: 12.5px;
+  color: var(--tinte2);
+}
+
+.druck-punkt {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  column-gap: 4px;
+  padding: 6px 0 7px;
+  border-top: 1px solid var(--linie);
+}
+
+.druck-punkt-nr {
+  font-size: 13.5px;
+  color: var(--tinte2);
+}
+
+.druck-punkt-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.druck-punkt-kopf {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.druck-punkt-titel {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.druck-punkt-min,
+.druck-punkt-sub {
+  font-size: 12px;
+  color: var(--tinte2);
+}
+
+.druck-punkt-min {
+  flex: none;
+}
+
+.druck-personen {
+  font-size: 13.5px;
+}
+
+.druck-name {
+  font-weight: 600;
+}
+
+.druck-raum {
+  font-size: 12px;
+  color: var(--tinte2);
+}
+
+/* ---- Hilfsdienste: eine Zeile je Dienst, eine Spalte je Tag ----------- */
+
+.druck-hilfsdienste {
+  display: flex;
+  flex-direction: column;
+  padding-top: 22px;
+}
+
+.druck-dienst-zeile {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: baseline;
+  padding: 6px 0 7px;
+  border-top: 1px solid var(--linie);
+  font-size: 13.5px;
+}
+
+.druck-dienst-zeile--kopf {
+  align-items: end;
+  padding: 0 0 4px;
+  border-top: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tinte2);
+}
+
+.druck-dienst-zeile > :first-child {
+  color: var(--tinte2);
+}
+
+.druck-dienst-zeile:not(.druck-dienst-zeile--kopf) > :not(:first-child) {
+  font-weight: 600;
+}
+
+.druck-hinweis {
+  margin: 0;
+  padding-top: 10px;
+  font-size: 12px;
+  color: var(--tinte2);
+}
+
+.druck-hinweis .druck-offen {
+  height: 10px;
+  margin-inline-end: 6px;
+}
+
+/* ---- Monat: zwei Wochen je Blatt, je Punkt eine Zeile ---------------- */
+
+.druck-blatt--monat {
+  gap: 14px;
+}
+
+.druck-monat-woche {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.druck-monat-kopf {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 4px;
+  border-bottom: 1.5px solid var(--tinte);
+}
+
+.druck-monat-titel {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.druck-anlass {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--akzent);
+}
+
+.druck-monat-tage {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
+  column-gap: 24px;
+  align-items: start;
+}
+
+.druck-knapp-tag {
+  display: flex;
+  flex-direction: column;
+}
+
+.druck-knapp-tag-titel {
+  padding-bottom: 3px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.druck-knapp-abschnitt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0 1px;
+}
+
+.druck-knapp-abschnitt .druck-abschnitt-name,
+.druck-knapp-abschnitt .druck-lied {
+  font-size: 12px;
+}
+
+.druck-knapp-zeile {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 6px;
+  align-items: baseline;
+  padding: 0 0 1px;
+  border-top: 1px solid var(--linie);
+  font-size: 12px;
+  line-height: 1.22;
+}
+
+.druck-knapp-zeile > :first-child {
+  color: var(--tinte2);
+}
+
+.druck-knapp-zeile > :last-child {
+  font-weight: 600;
+  text-align: end;
+}
+
+.druck-rechts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.druck-hilfsdienste--knapp {
+  padding-top: 0;
+}
+
+.druck-hilfsdienste--knapp .druck-dienst-zeile {
+  grid-template-columns: 104px minmax(0, 1fr) minmax(0, 1fr);
+  padding: 1px 0 2px;
+  font-size: 12px;
+  line-height: 1.22;
+}
+
+.druck-hilfsdienste--knapp .druck-dienst-zeile--kopf {
+  padding: 0 0 4px;
+  font-size: 12px;
+}
+
+.druck-kongress {
+  margin: 0;
+  font-size: 14px;
+}

@@ -723,4 +723,7 @@ export default {
   "anmeldungFuer": "الدخول باسم",
   "gueltigBisDatum": "صالح حتى {datum}",
   "zettelAnleitung": "امسحها بكاميرا الهاتف فتدخل مباشرة. إذا لم ينجح ذلك: افتح {adresse} واكتب الرمز تحت «{frage}».",
+  "aenderungenInDerApp": "التغييرات تظهر في التطبيق",
+  "druckNochFrei": "لا يزال شاغرًا – من يستطيع توليه فليُبلغ عبر التطبيق أو الشيوخ.",
+  "druckMit": "{a} مع {b}",
 } satisfies Partial<Dict>

@@ -723,4 +723,7 @@ export default {
   "anmeldungFuer": "Autentificare pentru",
   "gueltigBisDatum": "valabil până la {datum}",
   "zettelAnleitung": "Scanează-l cu camera telefonului și ai acces. Dacă nu merge: deschide {adresse} și introdu codul la „{frage}”.",
+  "aenderungenInDerApp": "Modificările apar în aplicație",
+  "druckNochFrei": "încă liber – cine poate prelua să anunțe în aplicație sau bătrânilor.",
+  "druckMit": "{a} cu {b}",
 } satisfies Partial<Dict>

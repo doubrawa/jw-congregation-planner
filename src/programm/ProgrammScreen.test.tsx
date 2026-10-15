@@ -569,16 +569,20 @@ describe('Drucken: diese Woche oder der ganze Monat', () => {
     delete document.documentElement.dataset.print
   })
 
-  type ImDruck = { kennzeichen?: string; wochen: string[]; kopf: string; seitenweise: boolean }
+  type ImDruck = { kennzeichen?: string; wochen: string[]; kopf: string; blaetter: number }
 
-  /** Druckt den Monat und hält fest, was im Moment des Druckens im DOM stand. */
+  /**
+   * Druckt den Monat und hält fest, was im Moment des Druckens im DOM stand.
+   * Der Bogen hängt per Portal unter `body` (`useDruckBogen`), nicht im
+   * Bildschirm.
+   */
   function monatDrucken(container: HTMLElement): ImDruck {
-    const imDruck: ImDruck = { wochen: [], kopf: '', seitenweise: false }
+    const imDruck: ImDruck = { wochen: [], kopf: '', blaetter: 0 }
     print.mockImplementation(() => {
       imDruck.kennzeichen = document.documentElement.dataset.print
-      imDruck.wochen = [...container.querySelectorAll('.monat-woche .woche-zeitraum')].map((e) => e.textContent ?? '')
-      imDruck.kopf = container.querySelector('.monat-kopf')?.textContent ?? ''
-      imDruck.seitenweise = container.querySelector('.monat-druck')?.classList.contains('monat-druck--seitenweise') ?? false
+      imDruck.wochen = [...document.querySelectorAll('.druck-bogen .druck-monat-titel')].map((e) => e.textContent ?? '')
+      imDruck.kopf = document.querySelector('.druck-bogen .druck-blatt-kopf')?.textContent ?? ''
+      imDruck.blaetter = document.querySelectorAll('.druck-bogen .druck-blatt').length
     })
     drucke(container, 1)
     return imDruck
@@ -596,33 +600,36 @@ describe('Drucken: diese Woche oder der ganze Monat', () => {
     expect(optionen().map((o) => o.getAttribute('aria-checked'))).toEqual(['true', 'false'])
   })
 
-  it('„Diese Woche" druckt ohne Kennzeichen — auch wenn eins stehen geblieben ist', () => {
-    // Ein abgebrochener Druck vorher (kein `afterprint`) ließe sonst den
-    // Wochen-Ausdruck still als Monat oder Zettelbogen herauskommen.
+  it('„Diese Woche" druckt den Wochenbogen — beide Tage und die Hilfsdienste, ohne das Blatt „Drucken"', () => {
+    // Ein abgebrochener Druck vorher (kein `afterprint`) ließ früher den
+    // nächsten Ausdruck still als Monat oder Zettelbogen herauskommen — der
+    // Bogen setzt sein Kennzeichen jetzt selbst.
     document.documentElement.dataset.print = 'monat'
     let kennzeichen: string | undefined = 'nicht gedruckt'
-    print.mockImplementation(() => {
-      kennzeichen = document.documentElement.dataset.print
-    })
     let blattImDruck: boolean | undefined
+    let tage: string[] = []
+    let dienste = 0
     print.mockImplementation(() => {
       kennzeichen = document.documentElement.dataset.print
       // Der Druckdialog nimmt auf, was in diesem Moment im DOM steht.
       blattImDruck = document.querySelector('.druck-optionen') !== null
+      tage = [...document.querySelectorAll('.druck-bogen .druck-tag-datum')].map((e) => e.textContent ?? '')
+      dienste = document.querySelectorAll('.druck-bogen .druck-hilfsdienste').length
     })
     const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2 })
     drucke(container, 0)
     expect(print).toHaveBeenCalledTimes(1)
-    expect(kennzeichen).toBeUndefined()
+    expect(kennzeichen).toBe('bogen')
     expect(blattImDruck, 'das Blatt „Drucken" stand noch im Ausdruck').toBe(false)
-    expect(container.querySelector('.monat-druck')).toBeNull()
+    expect(tage).toEqual(['Dienstag, 15. September', 'Sonntag, 20. September'])
+    expect(dienste).toBe(1)
   })
 
   it('„Ganzer Monat" druckt jede Woche, deren Montag im Monat liegt — und nur die', () => {
     const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2 })
     const imDruck = monatDrucken(container)
     expect(print).toHaveBeenCalledTimes(1)
-    expect(imDruck.kennzeichen).toBe('monat')
+    expect(imDruck.kennzeichen).toBe('bogen')
     expect(imDruck.wochen).toEqual([
       'Woche ab 2026-09-07', 'Woche ab 2026-09-14', 'Woche ab 2026-09-21', 'Woche ab 2026-09-28',
     ])
@@ -637,41 +644,33 @@ describe('Drucken: diese Woche oder der ganze Monat', () => {
     expect(monatDrucken(okt).wochen).toEqual(['Woche ab 2026-10-05'])
   })
 
-  it('das Blatt trägt einen Kopf mit Versammlung, Reiter und Monat', () => {
-    const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2 })
+  it('das Blatt trägt einen Kopf mit Versammlung, Thema und Monat — gleich, welcher Reiter gewählt ist', () => {
+    // Der Bogen hat immer beide Tage; „Unter der Woche" im Kopf wäre falsch.
+    const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2, tab: 'we' })
     const { kopf } = monatDrucken(container)
-    expect(kopf).toContain('Nordheim')
-    expect(kopf).toContain(t.tabMid)
+    expect(kopf).toContain('Versammlung Nordheim')
+    expect(kopf).toContain(t.navZusammenkuenfte)
+    expect(kopf).not.toContain(t.tabWe)
     expect(kopf).toContain('September 2026')
   })
 
-  it('unter der Woche kommt jede Woche auf ein eigenes Blatt, am Wochenende nicht', () => {
-    // Die Zusammenkunft unter der Woche füllt allein etwa eine Seite; die vom
-    // Wochenende ist kurz, dort passen mehrere Wochen auf ein Blatt.
-    const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2, tab: 'mid' })
-    expect(monatDrucken(container).seitenweise).toBe(true)
-    cleanup()
-    const { container: we } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2, tab: 'we' })
-    expect(monatDrucken(we).seitenweise).toBe(false)
-  })
-
-  it('nach dem Druckdialog räumt der Monat sich wieder ab', () => {
+  it('nach dem Druckdialog räumt der Bogen sich wieder ab', () => {
     const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2 })
     monatDrucken(container)
-    expect(container.querySelector('.monat-druck')).not.toBeNull()
+    expect(document.querySelector('.druck-bogen')).not.toBeNull()
     act(() => {
       window.dispatchEvent(new Event('afterprint'))
     })
-    expect(container.querySelector('.monat-druck')).toBeNull()
+    expect(document.querySelector('.druck-bogen')).toBeNull()
     expect(document.documentElement.dataset.print).toBeUndefined()
   })
 
-  it('der Monat ist am Bildschirm aus dem Weg: nicht bedienbar, nicht vorgelesen', () => {
+  it('der Bogen ist am Bildschirm aus dem Weg: nicht bedienbar, nicht vorgelesen', () => {
     const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2 })
     monatDrucken(container)
-    const monat = container.querySelector('.monat-druck')!
-    expect(monat.getAttribute('aria-hidden')).toBe('true')
-    expect(monat.hasAttribute('inert')).toBe(true)
+    const bogen = document.querySelector('.druck-bogen')!
+    expect(bogen.getAttribute('aria-hidden')).toBe('true')
+    expect(bogen.hasAttribute('inert')).toBe(true)
   })
 
   it('Escape schließt die Wahl, der Fokus geht zurück auf den Knopf', () => {
@@ -1116,21 +1115,19 @@ describe('Am Desktop', () => {
     expect(seite(container).querySelector('.prog-print-head')?.textContent).toContain(t.navZusammenkuenfte)
   })
 
-  it('der Monat nimmt beide Tage mit — Kopf „Zusammenkünfte", jede Woche ein eigenes Blatt', () => {
-    let imDruck = { kopf: '', seitenweise: false, tage: 0 }
+  it('der Monat nimmt beide Tage mit — Kopf „Zusammenkünfte"', () => {
+    let imDruck = { kopf: '', tage: 0 }
     window.print = vi.fn(() => {
       imDruck = {
-        kopf: container.querySelector('.monat-kopf')?.textContent ?? '',
-        seitenweise: container.querySelector('.monat-druck')?.classList.contains('monat-druck--seitenweise') ?? false,
-        tage: container.querySelectorAll('.monat-woche .prog-tag').length,
+        kopf: document.querySelector('.druck-bogen .druck-blatt-kopf')?.textContent ?? '',
+        tage: document.querySelectorAll('.druck-bogen .druck-knapp-tag').length,
       }
     })
-    // Gewählt war zuletzt das Wochenende — am Desktop zählt das nicht mehr.
+    // Gewählt war zuletzt das Wochenende — auf dem Bogen zählt das nicht.
     const { container } = zeige({ tab: 'we', weeks: [woche(), woche({ start: '2026-09-14' })], week: 0 })
     drucke(container, 1)
     expect(imDruck.kopf).toContain(t.navZusammenkuenfte)
     expect(imDruck.kopf).not.toContain(t.tabWe)
-    expect(imDruck.seitenweise).toBe(true)
     expect(imDruck.tage).toBe(4)
   })
 

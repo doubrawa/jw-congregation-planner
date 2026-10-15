@@ -723,4 +723,7 @@ export default {
   "anmeldungFuer": "Logowanie dla",
   "gueltigBisDatum": "ważny do {datum}",
   "zettelAnleitung": "Zeskanuj aparatem w telefonie i masz dostęp. Jeśli to nie działa: otwórz {adresse} i wpisz kod w części „{frage}”.",
+  "aenderungenInDerApp": "Zmiany są widoczne w aplikacji",
+  "druckNochFrei": "jeszcze wolne – kto może się tym zająć, niech zgłosi się w aplikacji lub u starszych.",
+  "druckMit": "{a} i {b}",
 } satisfies Partial<Dict>
