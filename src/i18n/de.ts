@@ -295,9 +295,8 @@ export const DE = {
     abwEintragen: 'Abwesenheit eintragen',
     abwHinweis: 'In dieser Zeit wirst du nicht eingeteilt. Bestehende Zuteilungen sehen die Planer als Konflikt.',
     // Warnung im Planen: Für diesen Bereich sind an dem Tag weniger Leute da
-    // als Plätze. Der Zähler im Kopf nennt die Plätze, die offen bleiben
-    // MÜSSEN — anders als „offene Zuteilungen", die nur noch nicht getan sind.
-    engpassTitle: 'NICHT BESETZBAR',
+    // als Plätze — Plätze, die offen bleiben MÜSSEN, anders als „offene
+    // Zuteilungen", die nur noch nicht getan sind.
     engpassZeile: '{bereich} · nötig {b} · verfügbar {v} · abwesend {a} von {q}',
     // Überschrift der Leiste im Personen-Detail. Sie hieß „AUFGABEN", zeigt
     // aber seit den Abwesenheiten beide Richtungen — wann jemand dran ist und
@@ -351,7 +350,6 @@ export const DE = {
     vorname: 'Vorname', nachname: 'Nachname', telefon: 'Telefon', emailLbl: 'E-Mail',
     kontoCard: 'Konto',
     persLoeschen: 'Person entfernen',
-    offeneTitle: 'OFFENE ZUTEILUNGEN',
     confirmPersonDel: '„{name}“ wirklich entfernen? Bereits geplante Zuteilungen bleiben als Text in den Wochen stehen.',
     toastPersonDel: 'Person entfernt',
     kontoVerknuepft: 'Konto verknüpft',
@@ -484,6 +482,8 @@ export const DE = {
     // „Probleme: 2", nicht „2 Probleme" —, damit die Form in jeder Sprache stimmt.
     alleWochen: 'Alle Wochen', wochenLbl: 'Wochen', naechsteWoche: 'Nächste Woche',
     lageProbleme: 'Probleme: {n}', lageOffen: 'Offen: {n}', lageBereit: 'Bereit zum Senden',
+    // Auf der Planungs-Karte des Starts: was noch hinaus muss (`nichtGesendet`).
+    lageSenden: 'Zu senden: {n}',
     programmNichtGeholt: 'Programm noch nicht geholt', holen: 'Holen',
     programmHolen: 'Programm holen',
     programmHolenText: 'Das Programm der Woche kommt aus dem Arbeitsheft auf jw.org.',
@@ -660,7 +660,6 @@ export const DE = {
     // „Plan senden": der Planer gibt die fertige Woche frei, und erst dann
     // erfahren die Eingeteilten davon. Der Knopf spricht von der ganzen Woche,
     // nicht vom Reiter darüber — sonst hielte man ihn für dessen Aktion.
-    planSendenTitle: 'PLAN SENDEN',
     planSenden: 'Plan senden',
     planSendenOffen: 'Noch niemandem mitgeteilte Zuteilungen dieser Woche: {n}',
     planSendenAlle: 'Alle Eingeteilten dieser Woche wissen Bescheid.',
@@ -740,7 +739,6 @@ export const DE = {
     chipDu: 'Du',
     toastMitgliedEntfernt: 'Mitglied entfernt',
     // Konfliktprüfungen (Planen)
-    konflikteTitle: 'MÖGLICHE KONFLIKTE',
     konfliktAbsent: '{name} ist abwesend, aber eingeteilt · {tab}',
     konfliktDouble: '{name} ist {n}× in einer Zusammenkunft · {tab}',
     konfliktHelperTask: '{name} hat Hilfsdienst und Aufgabe am selben Tag · {tab}',

@@ -2761,6 +2761,15 @@ export const KATALOG = [
     ersetzen: '    if (!betroffen(key, inst.leader)) continue\n',
   },
   {
+    id: 'planung-engpass-ist-problem',
+    datei: 'src/dashboard/PlanungsKarte.tsx',
+    // Seit Phase 10 (T121) mit den Wörtern der Wochen beim Planen: „Probleme"
+    // umfasst Konflikte und was nicht besetzbar ist (`lageDerWoche`).
+    regel: 'Was nicht besetzbar ist, nennt die Karte als Problem — auch ohne Konflikt in der Woche.',
+    suchen: '                {w.konflikte + w.nichtBesetzbar > 0 && (\n',
+    ersetzen: '                {w.konflikte > 0 && (\n',
+  },
+  {
     id: 'planung-offline-kein-senden',
     datei: 'src/dashboard/PlanungsKarte.tsx',
     /*

@@ -166,22 +166,16 @@
   gap: 4px 12px;
 }
 
-/* Ein Banner aus Planen im Kleinen: sein Titel und seine Zahl. */
+/* Was ansteht, im Kleinen — mit den Wörtern und Farben der Wochen beim Planen
+   (`.wochen-karte-lage`): Probleme rot, Offenes leise, der Versand in Minze. */
 .dash-chip {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
   color: var(--text2);
   font-size: calc(13.5px * var(--fs));
+  font-weight: 600;
   white-space: nowrap;
 }
 
-.dash-chip-n {
-  font-weight: 700;
-}
-
-.dash-chip[data-art='konflikte'],
-.dash-chip[data-art='engpass'] {
+.dash-chip[data-art='probleme'] {
   color: var(--problem);
 }
 
@@ -189,7 +183,7 @@
   color: var(--akzent-text);
 }
 
-/* Die Programme reichen nicht mehr weit genug: Stand und Import-Knopf. */
+/* Die Programme reichen nicht mehr weit genug: Stand und „Holen". */
 .dash-plan-vorrat {
   display: flex;
   flex-wrap: wrap;

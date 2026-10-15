@@ -51,12 +51,13 @@ der Stelle von „Diese Woche in der Versammlung".
   höchstens vier Wochen voraus. Fertig geplante und gesendete Wochen erscheinen
   nicht. Auch eine Kongresswoche erscheint, wenn dort ein Treffpunkt noch einen
   Leiter braucht.
-- Die Zeile nennt, was ansteht – dieselben Hinweise, die beim **Planen** unter
-  **Zu klären** stehen (Abschnitt 4):
-  - **Mögliche Konflikte** – z. B. jemand ist eingeteilt, aber abwesend,
-  - **Nicht besetzbar** – an dem Tag sind für einen Bereich zu wenige Leute da,
-  - **Offene Zuteilungen** – noch unbesetzte Plätze, auch Treffpunkte ohne Leiter,
-  - **Plan senden** – Zuteilungen, von denen die Eingeteilten noch nichts wissen.
+- Die Zeile nennt, was ansteht – mit denselben Wörtern wie die Wochen unter
+  **Planung** (Abschnitt 8); was dahintersteht, zeigt beim **Planen** die Liste
+  **Zu klären** (Abschnitt 4):
+  - **Probleme** – mögliche Konflikte, z. B. jemand ist eingeteilt, aber
+    abwesend, und Bereiche, für die an dem Tag zu wenige Leute da sind,
+  - **Offen** – noch unbesetzte Plätze, auch Treffpunkte ohne Leiter,
+  - **Zu senden** – Zuteilungen, von denen die Eingeteilten noch nichts wissen.
 
   Die Zahlen gelten für die **ganze Woche**; beim Planen verteilen sie sich auf
   die Reiter. Ein Tipp auf die Zeile öffnet die **Planung** genau auf dieser
@@ -1472,6 +1473,8 @@ Das Programm einer Woche holt die App aus dem Arbeitsheft auf jw.org – mit
 Liedern, Bibelbuch, Schulungspunkten und dem Ablauf der Zusammenkünfte. Sind
 weitere Programmsprachen eingestellt, kommen ihre Fassungen gleich mit. Holen
 dürfen Planer und Admin.
+
+![Die Wochen beim Planen](screenshots/planer-wochen.png)
 
 **Die Wochen** stehen unter **Planung** im Menü. Am Handy und am Tablet ist das
 eine eigene Seite mit allen Wochen ab der laufenden; am breiten Bildschirm

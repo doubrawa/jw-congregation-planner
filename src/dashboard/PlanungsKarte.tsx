@@ -21,14 +21,15 @@ import { useWochenImport } from '../planen/useWochenImport'
  * Stelle.
  *
  * **Eine Zeile je Woche, und nur, wo etwas zu tun ist.** Ein Tipp öffnet Planen
- * auf genau dieser Woche. Die Chips darin heißen wie die Banner, die der Planer
- * dort vorfindet — dasselbe Wort, dieselbe Farbe —, damit er sie wiedererkennt,
- * statt eine zweite Sprache für denselben Stand zu lernen. Die Zahlen gelten für
- * die ganze Woche und nur für das, was noch ansteht; in Planen verteilen sich
- * die Banner auf die Reiter (siehe `planungsstand.ts`). Die Form „Titel + Zahl"
- * hat dabei kein Pluralproblem: „1 Konflikte" stand bis hierher auf der alten
- * Kachel, und in Sprachen mit drei Pluralformen wäre jede feste Wendung
- * irgendwo falsch (siehe T96).
+ * auf genau dieser Woche. Die Chips darin sagen es mit den Wörtern der Wochen
+ * beim Planen — „Probleme: 2", „Offen: 3", „Zu senden: 2" (`lageDerWoche`) —,
+ * damit der Planer denselben Stand an beiden Stellen wiedererkennt. Bis Phase
+ * 10 von T121 trugen sie die Titel der alten Banner in Versalien; die Banner
+ * sind seit Phase 5 „Zu klären" beim Planen. Die Zahlen gelten für die ganze
+ * Woche und nur für das, was noch ansteht (siehe `planungsstand.ts`). Die Form
+ * „Wort: Zahl" hat dabei kein Pluralproblem: „1 Konflikte" stand bis T95 auf
+ * der alten Kachel, und in Sprachen mit drei Pluralformen wäre jede feste
+ * Wendung irgendwo falsch (siehe T96).
  *
  * **Reichen die Programme nicht mehr weit genug**, steht „Holen" gleich hier.
  * Der Hinweis verschwindet, sobald der Vorrat wieder reicht — der Knopf ist
@@ -173,14 +174,15 @@ export function PlanungsKarte() {
           <button key={w.wi} type="button" className="dash-plan-woche" onClick={() => oeffnen(w)}>
             <span className="dash-plan-kopf">
               <span className="dash-plan-range">{w.spanne}</span>
-              {/* In der Reihenfolge von „Zu klären" beim Planen: erst was nicht
-                  stimmt, dann was nicht geht, dann was fehlt, zuletzt der
-                  Versand. */}
+              {/* Mit den Wörtern der Wochen beim Planen (`lageDerWoche`): erst
+                  die Probleme — Konflikte und was nicht besetzbar ist —, dann
+                  die offenen Plätze, zuletzt der Versand. */}
               <span className="dash-plan-chips">
-                {w.konflikte > 0 && <Chip art="konflikte" titel={t.konflikteTitle} n={w.konflikte} />}
-                {w.nichtBesetzbar > 0 && <Chip art="engpass" titel={t.engpassTitle} n={w.nichtBesetzbar} />}
-                {w.offen > 0 && <Chip art="offen" titel={t.offeneTitle} n={w.offen} />}
-                {w.nichtGesendet > 0 && <Chip art="senden" titel={t.planSendenTitle} n={w.nichtGesendet} />}
+                {w.konflikte + w.nichtBesetzbar > 0 && (
+                  <Chip art="probleme" text={fill(t.lageProbleme, { n: w.konflikte + w.nichtBesetzbar })} />
+                )}
+                {w.offen > 0 && <Chip art="offen" text={fill(t.lageOffen, { n: w.offen })} />}
+                {w.nichtGesendet > 0 && <Chip art="senden" text={fill(t.lageSenden, { n: w.nichtGesendet })} />}
               </span>
             </span>
             <Zeichen name="weiter" />
@@ -188,7 +190,7 @@ export function PlanungsKarte() {
         ))}
         {besuchsKonflikte > 0 && (
           <BereichZeile titel={t.gbTitel} onClick={() => zumBereich('gruppenbesuche')}>
-            <Chip art="konflikte" titel={t.konflikteTitle} n={besuchsKonflikte} />
+            <Chip art="probleme" text={fill(t.lageProbleme, { n: besuchsKonflikte })} />
           </BereichZeile>
         )}
         {/* Holen dürfen Admin und Planer — wer die Woche plant, holt auch ihr
@@ -223,9 +225,9 @@ function PlanungKopf() {
 }
 
 /**
- * Eine Zeile für einen Plan ohne Woche (Gruppenbesuche): sein
- * Titel und darunter seine Banner im Kleinen (`Chip`). Gebaut wie die Zeile
- * einer Woche darüber; ein Tipp führt in den Plan.
+ * Eine Zeile für einen Plan ohne Woche (Gruppenbesuche): sein Titel und
+ * darunter, was ansteht (`Chip`). Gebaut wie die Zeile einer Woche darüber;
+ * ein Tipp führt in den Plan.
  */
 function BereichZeile({ titel, onClick, children }: { titel: string; onClick: () => void; children: ReactNode }) {
   return (
@@ -239,20 +241,11 @@ function BereichZeile({ titel, onClick, children }: { titel: string; onClick: ()
   )
 }
 
-/** Ein Banner aus Planen im Kleinen: sein Titel und seine Zahl. */
-function Chip({
-  art,
-  titel,
-  n,
-}: {
-  art: 'konflikte' | 'engpass' | 'offen' | 'senden'
-  titel: string
-  n: number
-}) {
+/** Was ansteht, im Kleinen — „Probleme: 2", „Offen: 3", „Zu senden: 2". */
+function Chip({ art, text }: { art: 'probleme' | 'offen' | 'senden'; text: string }) {
   return (
     <span className="dash-chip" data-art={art}>
-      <span>{titel}</span>
-      <span className="dash-chip-n">{n}</span>
+      {text}
     </span>
   )
 }

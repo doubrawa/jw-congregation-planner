@@ -14,6 +14,7 @@ import { helferKey, punktKey, sentKey } from '../data/planning'
 import { APP_TO_JW } from '../i18n/langs'
 import { makeTr } from '../i18n/translate'
 import { dict } from '../i18n/ui'
+import { fill } from '../i18n/useT'
 import type {
   Absence,
   ConfirmationMap,
@@ -480,12 +481,9 @@ function planer(over: Partial<AppState> = {}) {
   })
 }
 
-const chip = (root: Element, art: string) => {
-  const el = root.querySelector(`.dash-chip[data-art="${art}"]`)
-  return el
-    ? { titel: el.firstElementChild?.textContent, n: el.querySelector('.dash-chip-n')?.textContent }
-    : null
-}
+/** Was ein Chip sagt — „Offen: 5" —, oder null, wenn es ihn nicht gibt. */
+const chip = (root: Element, art: 'probleme' | 'offen' | 'senden') =>
+  root.querySelector(`.dash-chip[data-art="${art}"]`)?.textContent ?? null
 
 /** „Holen" auf der Karte — derselbe Knopf wie bei den Wochen. */
 const importKnopf = (root: Element) => root.querySelector<HTMLButtonElement>('.dash-plan-vorrat button')
@@ -544,47 +542,48 @@ describe('Eine Zeile je Woche, in der etwas zu tun ist', () => {
   /** Vier Wochen: die erste frisch importiert, die übrigen fertig und bestätigt. */
   const ersteOffen = (): Week[] => [importiert(W1), ...WOCHEN.slice(1).map(besetzt)]
 
-  it('nennt die Woche und die offenen Zuteilungen — Titel und Zahl des Banners in Planen', () => {
+  it('nennt die Woche und die offenen Plätze — mit dem Wort der Wochen beim Planen', () => {
     const weeks = ersteOffen()
     const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks) })
     const zeilen = container.querySelectorAll('.dash-plan-woche')
     expect(zeilen).toHaveLength(1)
     expect(zeilen[0]!.querySelector('.dash-plan-range')?.textContent).toBe(`Woche ab ${W1}`)
-    expect(chip(zeilen[0]!, 'offen')).toEqual({ titel: t.offeneTitle, n: '5' })
-    // Nur, was zutrifft: keine Konflikte, nichts nicht besetzbar, nichts zu senden.
-    expect(chip(zeilen[0]!, 'konflikte')).toBeNull()
-    expect(chip(zeilen[0]!, 'engpass')).toBeNull()
+    expect(chip(zeilen[0]!, 'offen')).toBe(fill(t.lageOffen, { n: 5 }))
+    // Nur, was zutrifft: keine Probleme, nichts zu senden.
+    expect(chip(zeilen[0]!, 'probleme')).toBeNull()
     expect(chip(zeilen[0]!, 'senden')).toBeNull()
   })
 
-  it('ein Konflikt steht als Titel neben seiner Zahl — nicht mehr „1 Konflikte"', () => {
+  it('Konflikt und Engpass zählen zusammen als Probleme — „Probleme: 2", nicht „1 Konflikte"', () => {
     const weeks = WOCHEN.map(besetzt)
     const absences: Absence[] = [
-      // Anton hält am Dienstag die Bibellesung und ist an dem Tag weg.
+      // Anton hält am Dienstag die Bibellesung und ist an dem Tag weg: ein
+      // Konflikt (eingeteilt, aber abwesend) — und weil nur er sie halten
+      // kann, ist sie an dem Tag auch nicht besetzbar.
       { id: 'a1', personId: 'p-a', userId: null, from: '2026-09-08', to: '2026-09-08', reason: '' },
     ]
     const { container } = planer({ weeks, absences, confirmations: allesBestaetigt(weeks) })
     const karte = container.querySelector('.dash-planung')!
-    expect(chip(karte, 'konflikte')).toEqual({ titel: t.konflikteTitle, n: '1' })
+    expect(chip(karte, 'probleme')).toBe(fill(t.lageProbleme, { n: 2 }))
     expect(karte.textContent).not.toMatch(/1 Konflikte/)
   })
 
-  it('nicht besetzbar: an einem Tag zu wenige Leute für die Plätze (T96)', () => {
+  it('nicht besetzbar zählt ebenso als Problem: an einem Tag zu wenige Leute für die Plätze (T96)', () => {
     // Nur Anton kann Mikrofone — zwei Plätze je Zusammenkunft, je einer bleibt offen.
     const weeks = ersteOffen()
     const { container } = planer({ weeks, persons: [LEUTE[0]!], confirmations: allesBestaetigt(weeks) })
     const erste = container.querySelector('.dash-plan-woche')!
-    expect(chip(erste, 'engpass')).toEqual({ titel: t.engpassTitle, n: '2' })
+    expect(chip(erste, 'probleme')).toBe(fill(t.lageProbleme, { n: 2 }))
   })
 
-  it('eine fertig geplante Woche, von der noch niemand weiß, sagt „Plan senden" (T99)', () => {
+  it('eine fertig geplante Woche, von der noch niemand weiß, sagt „Zu senden" (T99)', () => {
     const weeks = WOCHEN.map(besetzt)
     // Nur die erste Woche ist noch nicht hinaus.
     const confirmations = allesBestaetigt(weeks.slice(1))
     const { container } = planer({ weeks, confirmations })
     const zeilen = container.querySelectorAll('.dash-plan-woche')
     expect(zeilen).toHaveLength(1)
-    expect(chip(zeilen[0]!, 'senden')).toEqual({ titel: t.planSendenTitle, n: '5' })
+    expect(chip(zeilen[0]!, 'senden')).toBe(fill(t.lageSenden, { n: 5 }))
   })
 
   it('offline kein „Plan senden" — Planen blendet den Knopf dann auch aus', () => {
@@ -608,7 +607,7 @@ describe('Eine Zeile je Woche, in der etwas zu tun ist', () => {
     const weeks = ersteOffen()
     const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks) })
     const erste = container.querySelector('.dash-plan-woche')!
-    expect(chip(erste, 'offen')?.n).toBe('2')
+    expect(chip(erste, 'offen')).toBe(fill(t.lageOffen, { n: 2 }))
     fireEvent.click(erste)
     // Und Planen öffnet dort, wo noch etwas zu tun ist.
     expect(dispatch).toHaveBeenCalledWith({
@@ -628,7 +627,7 @@ describe('Eine Zeile je Woche, in der etwas zu tun ist', () => {
     })
     expect(container.querySelector('.dash-plan-text')).toBeNull() // kein „Alles zugeteilt"
     const zeile = [...container.querySelectorAll('.dash-plan-woche')].find((z) => z.textContent?.includes(t.gbTitel))!
-    expect(chip(zeile, 'konflikte')?.n).toBe('1')
+    expect(chip(zeile, 'probleme')).toBe(fill(t.lageProbleme, { n: 1 }))
     fireEvent.click(zeile)
     expect(dispatch).toHaveBeenCalledWith({ type: 'setFsBereich', bereich: 'gruppenbesuche' })
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
@@ -789,13 +788,13 @@ describe('Die Karte rechnet mit dem Tag, der gerade ist', () => {
     vi.setSystemTime(new Date(2026, 8, 8, 21, 0)) // Dienstagabend
     const weeks = [importiert(W1), ...WOCHEN.slice(1).map(besetzt)]
     const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks) })
-    expect(chip(container.querySelector('.dash-plan-woche')!, 'offen')?.n).toBe('5')
+    expect(chip(container.querySelector('.dash-plan-woche')!, 'offen')).toBe(fill(t.lageOffen, { n: 5 }))
 
     vi.setSystemTime(new Date(2026, 8, 9, 7, 30)) // die Nacht vergeht im Hintergrund
     act(() => {
       document.dispatchEvent(new Event('visibilitychange'))
     })
-    expect(chip(container.querySelector('.dash-plan-woche')!, 'offen')?.n).toBe('2')
+    expect(chip(container.querySelector('.dash-plan-woche')!, 'offen')).toBe(fill(t.lageOffen, { n: 2 }))
   })
 })
 
@@ -854,7 +853,7 @@ describe('Die Karte gibt Treffpunkte, Abwesenheiten und Tagebuch weiter', () => 
       fsWeeks: [[offen], [], [], []],
     })
     const zeile = container.querySelector('.dash-plan-woche')!
-    expect(chip(zeile, 'offen')).toEqual({ titel: t.offeneTitle, n: '1' })
+    expect(chip(zeile, 'offen')).toBe(fill(t.lageOffen, { n: 1 }))
     fireEvent.click(zeile)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', woche: { wi: 0, tab: 'fs' } })
   })
@@ -869,10 +868,7 @@ describe('Die Karte gibt Treffpunkte, Abwesenheiten und Tagebuch weiter', () => 
       { id: 'a1', personId: 'p-a', userId: null, from: '2026-09-09', to: '2026-09-09', reason: '' },
     ]
     const { container } = planer({ weeks, confirmations, absences, fsWeeks: [[leitung], [], [], []] })
-    expect(chip(container.querySelector('.dash-plan-woche')!, 'konflikte')).toEqual({
-      titel: t.konflikteTitle,
-      n: '1',
-    })
+    expect(chip(container.querySelector('.dash-plan-woche')!, 'probleme')).toBe(fill(t.lageProbleme, { n: 1 }))
   })
 
   it('was im Tagebuch steht, ist gesendet — die Woche verschwindet von der Karte', () => {
