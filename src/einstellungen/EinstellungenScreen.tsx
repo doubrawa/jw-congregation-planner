@@ -5,7 +5,7 @@ import { UnteransichtKopf } from '../components/UnteransichtKopf'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { DESKTOP_BREITE, useMedia } from '../components/useMedia'
 import type { MeetingKey } from '../data/types'
-import { langLabel, useLangNames } from '../i18n/langnames'
+import { sprachenListe, useLangNames } from '../i18n/langnames'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 import { EinstellZeile } from './EinstellZeile'
@@ -13,16 +13,18 @@ import { ErinnerungenInhalt } from './ErinnerungenInhalt'
 import { erinnerungKurz, werPlant, zusammenkunftText } from './einstellungen-anzeige'
 import { GruppenInhalt } from './GruppenInhalt'
 import { HilfsdiensteInhalt } from './HilfsdiensteInhalt'
-import { ProgrammKarte } from './ProgrammKarte'
 import { SprachenInhalt } from './SprachenInhalt'
 import { TextBlatt } from './TextBlatt'
-import { useWochenImport } from './useWochenImport'
 import { WerPlantKarte } from './WerPlantKarte'
 import { ZusammenkunftBlatt } from './ZusammenkunftBlatt'
 import './einstellungen.css'
 
-/** Die Abschnitte — am Desktop die Einträge links, in dieser Folge (Entwurf `GDesktopEinstellungen`). */
-const ABSCHNITTE = ['versammlung', 'zusammenkuenfte', 'hilfsdienste', 'gruppen', 'erinnerungen', 'werPlant', 'programm'] as const
+/**
+ * Die Abschnitte — am Desktop die Einträge links, in dieser Folge (Entwurf
+ * `GDesktopEinstellungen`). Der Programm-Import stand bis Phase 10 als letzter
+ * hier; er gehört zu den Wochen beim Planen („Holen").
+ */
+const ABSCHNITTE = ['versammlung', 'zusammenkuenfte', 'hilfsdienste', 'gruppen', 'erinnerungen', 'werPlant'] as const
 type Abschnitt = (typeof ABSCHNITTE)[number]
 
 /** Was am Handy hinter einer Zeile als eigene Unteransicht liegt. */
@@ -35,7 +37,6 @@ const ABSCHNITT_TITEL = {
   gruppen: 'gruppenUndTrolleys',
   erinnerungen: 'mitteilungenUndErinnerungen',
   werPlant: 'werPlant',
-  programm: 'importCard',
 } as const satisfies Record<Abschnitt, keyof Dict>
 
 const UNTERANSICHT_TITEL = {
@@ -95,7 +96,6 @@ function EinstellungenHandy() {
         />
       </section>
       <WerPlantKarte />
-      <ProgrammKarte />
     </section>
   )
 }
@@ -117,16 +117,14 @@ function EinstellungenDesktop() {
   const { state } = useApp()
   const { t } = useT()
   const [gewaehlt, setGewaehlt] = useState<Abschnitt>('versammlung')
-  const { geladenBis } = useWochenImport()
   useLangNames(state.lang)
   const kurz: Record<Abschnitt, string> = {
-    versammlung: [state.congregation.name, sprachenText(state.congLang, state.progLangs, state.lang)].filter(Boolean).join(' · '),
+    versammlung: [state.congregation.name, sprachenListe(state.congLang, state.progLangs, state.lang)].filter(Boolean).join(' · '),
     zusammenkuenfte: `${zusammenkunftText(state.congregation.times.mid, state.lang)} · ${zusammenkunftText(state.congregation.times.we, state.lang)}`,
     hilfsdienste: fill(t.diensteN, { n: state.services.length }),
     gruppen: `${fill(t.gruppenN, { n: state.groups.length })} · ${fill(t.trolleysN, { n: state.trolleys.length })}`,
     erinnerungen: erinnerungKurz(state.reminders, t, state.lang),
     werPlant: fill(t.personenCount, { n: werPlant(state.persons, state.members, state.lang).length }),
-    programm: geladenBis ? fill(t.geladenBis, { datum: geladenBis }) : t.geladenNichts,
   }
   const inhalt: Record<Abschnitt, () => ReactNode> = {
     // Ohne Kartentitel, wo er dem des Abschnitts gleicht — sonst stünde er zweimal da.
@@ -141,7 +139,6 @@ function EinstellungenDesktop() {
     gruppen: () => <GruppenInhalt tabelle />,
     erinnerungen: () => <ErinnerungenInhalt />,
     werPlant: () => <WerPlantKarte mitTitel={false} />,
-    programm: () => <ProgrammKarte mitTitel={false} />,
   }
   return (
     <div className="einst-raster">
@@ -170,11 +167,6 @@ function EinstellungenDesktop() {
   )
 }
 
-/** „Deutsch, Englisch" — die Sprache der Versammlung zuerst, dann die weiteren. */
-function sprachenText(congLang: string, progLangs: readonly string[], lang: Parameters<typeof langLabel>[1]): string {
-  return [congLang, ...progLangs].map((code) => langLabel(code, lang)).join(', ')
-}
-
 /**
  * **Versammlung**: Name und Königreichssaal — je ein Blatt — und am Handy die
  * Programmsprachen als Unteransicht. Am Desktop stehen die Sprachen gleich
@@ -196,7 +188,7 @@ function VersammlungKarte({ onSprachen, mitTitel = true }: { onSprachen?: () => 
       {onSprachen && (
         <EinstellZeile
           name={t.programmsprachen}
-          wert={sprachenText(state.congLang, state.progLangs, state.lang)}
+          wert={sprachenListe(state.congLang, state.progLangs, state.lang)}
           onTipp={onSprachen}
         />
       )}

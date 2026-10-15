@@ -11,6 +11,7 @@ import {
 import { BILDSCHIRME } from '../../tests/testdaten/bildschirme'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
+import { isoDay, montagVon } from '../data/meeting-dates'
 import { APP_LANGS, isRTL } from './langs'
 import { DE, dict, loadOverlay } from './ui'
 import type {
@@ -481,7 +482,11 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
     ['Daten laden', { screen: 'start', dataStatus: 'loading' }],
     ['kein Mitglied', { screen: 'start', dataStatus: 'no-membership' }],
     ['Ladefehler', { screen: 'start', dataStatus: 'error' }],
-    ['Import läuft', { screen: 'einstellungen', importing: true }],
+    // Die Wochen beim Planen (T121, Phase 10): eine Woche ab heute — sonst
+    // zeigt die Seite nur „Holen", denn vergangene Wochen stehen dort nicht.
+    // Bis dahin stand hier „Import läuft" in den Einstellungen; den Import
+    // führen sie nicht mehr.
+    ['Wochen beim Planen', { screen: 'planung', weeks: [{ ...woche(), start: montagVon(isoDay(new Date())) }], fsWeeks: [[]] }],
     ['Verkündiger ohne Planungsrecht', { screen: 'start', planner: false }],
     ['Anmeldung', { screen: 'login', congregationId: null, userId: null }, '.login'],
   ]

@@ -89,17 +89,6 @@
   font-size: calc(14px * var(--fs));
 }
 
-/* Programm-Import: bis wann Programme da sind, darunter der Knopf. */
-.einst-stand {
-  display: flex;
-  flex-direction: column;
-  padding-block: 12px;
-}
-
-.einst-import {
-  margin-block-end: 14px;
-}
-
 /* ---- Hilfsdienste (Phase 6c-2, Entwurf `GHilfsdienste`) ---- */
 
 /* Rechts nur wenig Rand: Die runden − und + reichen bis an die Kante. */

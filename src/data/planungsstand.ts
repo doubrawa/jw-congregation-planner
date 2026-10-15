@@ -184,7 +184,11 @@ function horizont(weeks: readonly Week[], heute: Date): number[] {
   return out
 }
 
-function wochenstand(q: PlanungsQuellen, wi: number, heute: Date): Wochenstand {
+/**
+ * Der Stand **einer** Woche — für die Karte, wo etwas zu tun ist, und für die
+ * Übersicht aller Wochen beim Planen (`wochenKarten`), dort für jede.
+ */
+export function wochenstand(q: Omit<PlanungsQuellen, 'geladenBisMs'>, wi: number, heute: Date): Wochenstand {
   const week = q.weeks[wi]
   if (!week) return { wi, tab: 'mid', konflikte: 0, nichtBesetzbar: 0, offen: 0, nichtGesendet: 0 }
   const kennung = week.start

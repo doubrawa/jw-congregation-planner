@@ -199,7 +199,9 @@ describe('Zurück am Handy', () => {
 
   it('die Zusagen der Woche schließen zuerst — Zurück führt in den Plan, dann zu Start (Phase 5g)', async () => {
     const { container } = zeige()
-    klickMenue(container, t.dashPlanung)
+    // In den Plan über „Planen" am Titel: „Planung" führt am Handy erst zu den Wochen.
+    klickMenue(container, t.navZusammenkuenfte)
+    fireEvent.click(container.querySelector('.bereichstitel .planen-knopf')!)
     await ausklingen()
     fireEvent.click([...container.querySelectorAll('.spur-ziel')].find((b) => b.textContent?.startsWith(t.spurZusagen))!)
     await ausklingen()
@@ -212,6 +214,17 @@ describe('Zurück am Handy', () => {
     await zurueck()
     expect(aktiv(container)).toBe(t.navStart)
     expect(amGrund()).toBe(true)
+  })
+
+  it('die Seite aller Wochen: ein Druck führt zu Start (T121, Phase 10)', async () => {
+    const { container } = zeige()
+    klickMenue(container, t.dashPlanung)
+    await ausklingen()
+    expect(container.querySelector('.screen.planung'), 'die Wochen sind nicht offen').not.toBeNull()
+
+    await zurueck()
+    expect(aktiv(container)).toBe(t.navStart)
+    expect(amGrund(), 'ein Eintrag zu viel oder zu wenig').toBe(true)
   })
 
   it('ein neuer Plan steht gleich offen da — Zurück führt zur Liste, dann zu Start', async () => {

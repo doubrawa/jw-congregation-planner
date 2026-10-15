@@ -17,6 +17,7 @@ export const BILDSCHIRME = Object.keys({
   aufgaben: true,
   mitteilungen: true,
   planen: true,
+  planung: true,
   personen: true,
   einstellungen: true,
   profil: true,

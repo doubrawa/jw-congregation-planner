@@ -1,24 +1,11 @@
 import { useMemo } from 'react'
 import { useApp } from '../app/context'
 import { missingVariants } from '../data/localize'
+import type { Week } from '../data/types'
 import { JW_TO_CONG, LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import { importNextWeek, importWeekVariants, latestImportedStart, loadedUntilMs } from '../lib/import'
 
-/**
- * **Der Programm-Import als eine Handlung** — dieselbe hinter zwei Knöpfen.
- *
- * Er stand bis T95 nur im Import-Panel der Einstellungen. Der Start-Bildschirm
- * sagt dem Planer jetzt, wenn die Programme knapp werden, und bietet den Knopf
- * gleich dort an. Stünde der Ablauf zweimal da, liefe er auseinander — und die
- * Grenzen darin sind keine Kleinigkeiten: Offline wird gar nicht erst
- * angefangen, und fehlende Sprachvarianten werden vor der neuen Woche
- * nachgeholt.
- *
- * Holt die nächste Woche von jw.org. Weitere Programmsprachen werden als
- * Varianten mitgeholt, fehlende Varianten bereits geladener Wochen
- * nachgezogen.
- */
 /**
  * Wie viele Wochen ihre Sprachvarianten gleichzeitig nachholen dürfen.
  *
@@ -28,11 +15,36 @@ import { importNextWeek, importWeekVariants, latestImportedStart, loadedUntilMs 
  */
 const VARIANTEN_BLOCK = 4
 
+/**
+ * **Der Programm-Import als eine Handlung** — dieselbe hinter jedem „Holen".
+ *
+ * Er stand bis T95 nur im Import-Panel der Einstellungen, danach auch auf dem
+ * Start, seit Phase 10 von T121 bei den Wochen (`GWochen`, `GDesktopPlanen`)
+ * und auf dem Start — die Einstellungen führen ihn nicht mehr. Stünde der
+ * Ablauf mehrmals da, liefe er auseinander — und die Grenzen darin sind keine
+ * Kleinigkeiten: Offline wird gar nicht erst angefangen, und fehlende
+ * Sprachvarianten werden vor der neuen Woche nachgeholt.
+ *
+ * **Holen und Übernehmen sind zwei Schritte** (Entwurf `GImport`): Erst zeigt
+ * das Blatt, was aus dem Arbeitsheft kam, dann hängt „Übernehmen" die Woche
+ * an — auf Wunsch gleich mit dem automatischen Zuteilen.
+ */
 export function useWochenImport(): {
-  /** Startet den Import (nichts, solange einer läuft). */
-  importieren: () => Promise<void>
-  /** Beschriftung des Knopfs: bereit oder läuft. */
-  knopf: string
+  /**
+   * Darf jetzt geholt werden? Nicht im Offline-Stand (dann mit Hinweis) und
+   * nicht, solange schon geholt wird.
+   */
+  holenMoeglich: () => boolean
+  /**
+   * Holt die nächste Woche von jw.org, ohne sie anzuhängen. `null`, wenn
+   * nichts kam — warum, sagt der Toast.
+   */
+  holen: () => Promise<Week | null>
+  /**
+   * Hängt eine geholte Woche an. Mit `zuteilen` öffnet sich ihr Plan, und die
+   * offenen Plätze der ganzen Woche werden automatisch besetzt.
+   */
+  uebernehmen: (week: Week, zuteilen: boolean) => void
   /** Bis wann Programme vorliegen, als Text — `null`, wenn keine Woche geladen ist. */
   geladenBis: string | null
   /** Dasselbe als Kalendertag (`loadedUntilMs`) — `null` ohne Kalenderdaten. */
@@ -71,25 +83,29 @@ export function useWochenImport(): {
     return { geladenBis: text, geladenBisMs: bisMs }
   }, [state.weeks, state.lang, tp])
 
-  const importieren = async (): Promise<void> => {
-    if (state.importing) return
+  const holenMoeglich = (): boolean => {
+    if (state.importing) return false
     /*
      * **Offline-Stand: gar nicht erst anfangen.**
      *
      * Der Reducer weist Schreib-Aktionen im Offline-Stand ab (`readonly.ts`) —
      * aber nur den Reducer. Was danach in derselben Funktion steht, lief
-     * weiter: Der Abruf lief weiter — eine Woche von jw.org holen, Varianten
-     * nachladen, und am Ende wirft der abgewiesene `addImportedWeek` alles
-     * wieder weg. `startImport` steht mit Absicht nicht in der Positivliste;
-     * die Antwort darauf ist der Hinweis, nicht ein Ladebalken ins Leere.
+     * weiter: eine Woche von jw.org holen, Varianten nachladen, und am Ende
+     * wirft der abgewiesene `addImportedWeek` alles wieder weg. `startImport`
+     * steht mit Absicht nicht in der Positivliste; die Antwort darauf ist der
+     * Hinweis, nicht ein Ladebalken ins Leere.
      *
      * „Plan senden" (`sendeUmfang`) zieht dieselbe Grenze und aus demselben
      * Grund: Wer eine Edge Function unmittelbar ruft, kommt am Reducer vorbei.
      */
     if (state.staleAt) {
       dispatch({ type: 'showToast', text: t.offlineReadOnly })
-      return
+      return false
     }
+    return true
+  }
+
+  const holen = async (): Promise<Week | null> => {
     // Abruf der nächsten Woche von jw.org (Edge Function), direkt in der
     // Versammlungssprache (jw.org-Code, sonst Deutsch). Einen eigenen Zweig
     // für die Entwicklerseite gibt es nicht mehr: Bis zum 2.10.2026 hängte er
@@ -136,27 +152,40 @@ export function useWochenImport(): {
       })
     }
     const res = await importNextWeek(latestImportedStart(state.weeks), langCode, altCodes)
-    if (!res.ok) {
-      dispatch({ type: 'stopImport' })
-      // Keine Datenbank angebunden (auch: Entwicklerseite), der Abruf ist gar
-      // nicht möglich. Hier stand früher der Anmeldehinweis (heute
-      // anmeldungOhneDb) — der redet vom Anmelden („Zugangsdaten beliebig")
-      // und passte nicht.
-      const text =
-        res.error === 'ohne-datenbank'
-          ? t.importOhneDb
-          : res.error === 'unbekannt'
-            ? t.importFehler
-            : res.error === 'ende'
-              ? t.toastAlleWochen
-              : res.error
-      dispatch({ type: 'showToast', text })
-      return
-    }
-    dispatch({ type: 'addImportedWeek', week: res.week })
+    // Geholt ist geholt: Ob die Woche übernommen wird, entscheidet das Blatt.
+    dispatch({ type: 'stopImport' })
+    if (res.ok) return res.week
+    // Keine Datenbank angebunden (auch: Entwicklerseite), der Abruf ist gar
+    // nicht möglich. Hier stand früher der Anmeldehinweis (heute
+    // anmeldungOhneDb) — der redet vom Anmelden („Zugangsdaten beliebig")
+    // und passte nicht.
+    const text =
+      res.error === 'ohne-datenbank'
+        ? t.importOhneDb
+        : res.error === 'unbekannt'
+          ? t.importFehler
+          : res.error === 'ende'
+            ? t.toastAlleWochen
+            : res.error
+    dispatch({ type: 'showToast', text })
+    return null
   }
 
-  const knopf = state.importing ? t.importiere : t.importBtn
+  const uebernehmen = (week: Week, zuteilen: boolean): void => {
+    /*
+     * Die Woche kommt ans Ende (`addImportedWeek`): Geholt wird immer die nach
+     * der spätesten. Steht dieselbe schon da, hängt der Reducer nichts an und
+     * sagt es — dann gibt es auch keinen Plan zu öffnen.
+     */
+    const neu = !state.weeks.some((w) => w.start === week.start)
+    const wi = state.weeks.length
+    dispatch({ type: 'addImportedWeek', week })
+    if (!zuteilen || !neu) return
+    // Der Reducer arbeitet die Aktionen der Reihe nach ab: Der Sprung sieht die
+    // neue Woche schon, das Zuteilen den Sprung.
+    dispatch({ type: 'navigate', screen: 'planen', woche: { wi, tab: 'mid' } })
+    dispatch({ type: 'autoAssign', scope: 'all', umfang: 'woche' })
+  }
 
-  return { importieren, knopf, geladenBis, geladenBisMs }
+  return { holenMoeglich, holen, uebernehmen, geladenBis, geladenBisMs }
 }

@@ -34,7 +34,11 @@ export type Lang =
   | 'de' | 'en' | 'es' | 'fr' | 'it' | 'pl' | 'ru' | 'uk' | 'ro' | 'tr'
   | 'ar' | 'fa' // RTL-Sprachen (Rechts-nach-links)
 
-/** Sichtbare Bereiche. `planen`, `personen` und `einstellungen` nur für Planer (und Gruppenaufseher, eingeschränkt). */
+/**
+ * Sichtbare Bereiche. `planen`, `personen` und `einstellungen` nur für Planer
+ * (und Gruppenaufseher, eingeschränkt). `planung` ist die Seite aller Wochen
+ * (T121, Phase 10, Entwurf `GWochen`) — für den, der zuteilt.
+ */
 export type Screen =
   | 'login'
   | 'start'
@@ -42,6 +46,7 @@ export type Screen =
   | 'aufgaben'
   | 'mitteilungen'
   | 'planen'
+  | 'planung'
   | 'personen'
   | 'einstellungen'
   | 'profil'

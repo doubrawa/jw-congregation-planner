@@ -34,11 +34,16 @@ const linie = (vorher: SpurLage | undefined): string =>
  * wie weit eine Woche ist. Eine geordnete Liste; der laufende Schritt trägt
  * `aria-current="step"`. Ein Schritt mit `ziel` ist ganz ein Knopf: Beim Planen
  * führt „Zusagen" zu den Zusagen der Woche und „Zuteilen" zurück in den Plan.
+ *
+ * `knapp`: die kleine Spur einer Wochenkarte (Entwürfe `GWochen`,
+ * `GDesktopPlanen`) — linksbündig, der Punkt vorn, die Zahl über dem Namen,
+ * und wo es noch keine Zahl gibt, ein Strich.
  */
-export function Spur({ schritte, label }: { schritte: readonly SpurSchritt[]; label: string }) {
+export function Spur({ schritte, label, knapp = false }: { schritte: readonly SpurSchritt[]; label: string; knapp?: boolean }) {
   return (
-    <ol className="spur" aria-label={label}>
+    <ol className={knapp ? 'spur spur--knapp' : 'spur'} aria-label={label}>
       {schritte.map((s, i) => {
+        const wert = s.wert ?? (knapp ? '–' : undefined)
         const inhalt = (
           <>
             <span className="spur-bahn" aria-hidden="true">
@@ -47,7 +52,7 @@ export function Spur({ schritte, label }: { schritte: readonly SpurSchritt[]; la
               <span className={i === schritte.length - 1 ? linie(undefined) : linie(s.lage)} />
             </span>
             <span className="spur-name">{s.name}</span>
-            {s.wert && <span className="spur-wert">{s.wert}</span>}
+            {wert && <span className="spur-wert">{wert}</span>}
           </>
         )
         return (

@@ -13,3 +13,12 @@ export const zumAnsehen = (thema: Thema): AppAction => ({ type: 'navigate', scre
 
 /** Einen Bereich planen — mit „Planen" am Titel und über „Planung" im Menü. */
 export const zumPlanen = (thema: Thema): AppAction => ({ type: 'navigate', screen: 'planen', thema })
+
+/**
+ * **„Planung"** für den, der zuteilt — aus dem Menü und mit „Alle Wochen" auf
+ * dem Start (T121, Phase 10): Wo neben dem Plan Platz für die Wochen ist
+ * (`WOCHEN_SPALTE_BREITE`), gleich in den Plan der Zusammenkünfte mit der
+ * Spalte daneben, sonst auf die Seite aller Wochen.
+ */
+export const zurPlanung = (mitSpalte: boolean): AppAction =>
+  mitSpalte ? zumPlanen('zusammenkuenfte') : { type: 'navigate', screen: 'planung' }

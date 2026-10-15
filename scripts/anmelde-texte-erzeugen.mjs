@@ -17,7 +17,6 @@
  * `send-invite` und `anmelden` ausrollen.
  */
 import { writeFileSync } from 'node:fs'
-import { pathToFileURL } from 'node:url'
 import { alsSkript, appCodeBereit } from './gemeinsam.mjs'
 
 const REPO = new URL('../', import.meta.url)

@@ -104,6 +104,22 @@
    Eine Zeile je Woche, in der etwas zu tun ist: Spanne, darunter die Banner
    aus Planen im Kleinen. Ist nichts zu tun, eine Zeile „Alles zugeteilt". */
 
+/* Über der Karte: „Planung", rechts „Alle Wochen" (Entwurf `GStartPlaner`). */
+.dash-plan-titel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+}
+
+.dash-plan-alle {
+  min-height: 44px;
+  color: var(--akzent-text);
+  font-size: calc(14px * var(--fs));
+  font-weight: 600;
+}
+
 .dash-plan-woche {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 20px;

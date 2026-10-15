@@ -42,7 +42,11 @@
 .sheet-title,
 .zeit-datum,
 .zeit-art,
-.dash-plan-range {
+.dash-plan-range,
+.wochen-karte-knopf,
+.wochen-karte-unter,
+.holen-spanne,
+.holen-abschnitt-name {
   unicode-bidi: plaintext;
 }
 

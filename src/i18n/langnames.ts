@@ -126,3 +126,12 @@ export function langChoices(lang: Lang): LangChoice[] {
 export function langLabel(code: string, lang: Lang): string {
   return GELADEN.get(lang)?.get(code) || JW_TO_CONG[code] || code
 }
+
+/**
+ * „Deutsch, Englisch" — die Programmsprachen der Versammlung in der
+ * Bediensprache: ihre eigene zuerst, dann die weiteren. So stehen sie in den
+ * Einstellungen und im Blatt „Programm holen".
+ */
+export function sprachenListe(congLang: string, progLangs: readonly string[], lang: Lang): string {
+  return [congLang, ...progLangs].map((code) => langLabel(code, lang)).join(', ')
+}

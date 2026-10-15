@@ -95,19 +95,24 @@ export function treffpunktGruppe(r: Rechte): string | null {
   return r.zuteilen ? null : r.gruppe
 }
 
-const ALLE: readonly Screen[] = [
-  'start',
-  'programm',
-  'aufgaben',
-  'mitteilungen',
-  'planen',
-  'personen',
-  'einstellungen',
-  'profil',
-]
+/**
+ * Jeder Bildschirm außer der Anmeldung — aus dem Typ abgeleitet, damit ein
+ * neuer nicht in der Liste fehlt (`satisfies` verlangt jeden).
+ */
+const ALLE = Object.keys({
+  start: true,
+  programm: true,
+  aufgaben: true,
+  mitteilungen: true,
+  planen: true,
+  planung: true,
+  personen: true,
+  einstellungen: true,
+  profil: true,
+} satisfies Record<Exclude<Screen, 'login'>, true>) as readonly Screen[]
 
 /** Bildschirme, die ein einfacher Verkündiger nicht sieht. */
-const NUR_PLANER: readonly Screen[] = ['planen', 'personen', 'einstellungen']
+const NUR_PLANER: readonly Screen[] = ['planen', 'planung', 'personen', 'einstellungen']
 
 /**
  * Die Bildschirme, die jemand sehen darf.
@@ -115,11 +120,14 @@ const NUR_PLANER: readonly Screen[] = ['planen', 'personen', 'einstellungen']
  * Planer und Gruppenaufseher bekommen Planen dazu — der Planer für alles, der
  * Gruppenaufseher für die Treffpunkte seiner Gruppe samt ihrem Grundplan.
  * Personen und Einstellungen bleiben beiden verschlossen: Sie hat der
- * Betreiber dem Admin vorbehalten.
+ * Betreiber dem Admin vorbehalten. Die Seite aller Wochen (`planung`) gilt
+ * den Zusammenkünften — sie bleibt bei dem, der zuteilt.
  */
 export function erlaubteScreens(r: Rechte): readonly Screen[] {
   if (r.admin) return ALLE
-  if (r.zuteilen || r.gruppe !== null) return ALLE.filter((s) => s !== 'personen' && s !== 'einstellungen')
+  const ohneVerwaltung = ALLE.filter((s) => s !== 'personen' && s !== 'einstellungen')
+  if (r.zuteilen) return ohneVerwaltung
+  if (r.gruppe !== null) return ohneVerwaltung.filter((s) => s !== 'planung')
   return ALLE.filter((s) => !NUR_PLANER.includes(s))
 }
 

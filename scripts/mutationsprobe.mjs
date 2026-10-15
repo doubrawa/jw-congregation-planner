@@ -962,8 +962,8 @@ export const KATALOG = [
     // Seit dem 4.10.2026 dieselbe Zeile für Planer und Gruppenaufseher.
     regel: 'Planer und Gruppenaufseher sehen Planen, aber nicht Personen.',
     // Die Mutation nimmt den Abzug weg und gibt ihnen die Personen mit dazu.
-    suchen: "  if (r.zuteilen || r.gruppe !== null) return ALLE.filter((s) => s !== 'personen' && s !== 'einstellungen')",
-    ersetzen: "  if (r.zuteilen || r.gruppe !== null) return ALLE.filter((s) => s !== 'einstellungen')",
+    suchen: "  const ohneVerwaltung = ALLE.filter((s) => s !== 'personen' && s !== 'einstellungen')",
+    ersetzen: "  const ohneVerwaltung = ALLE.filter((s) => s !== 'einstellungen')",
   },
   {
     id: 'nav-gruppenaufseher-ohne-einstellungen',
@@ -971,8 +971,16 @@ export const KATALOG = [
     // Bis T120 bekam er sie für den Grundplan seiner Gruppe; der steht seitdem
     // im Predigtdienst. Ein Rest-Eintrag führte in eine leere Seite.
     regel: 'Planer und Gruppenaufseher sehen keine Einstellungen — die gehören dem Admin.',
-    suchen: "  if (r.zuteilen || r.gruppe !== null) return ALLE.filter((s) => s !== 'personen' && s !== 'einstellungen')",
-    ersetzen: "  if (r.zuteilen || r.gruppe !== null) return ALLE.filter((s) => s !== 'personen')",
+    suchen: "  const ohneVerwaltung = ALLE.filter((s) => s !== 'personen' && s !== 'einstellungen')",
+    ersetzen: "  const ohneVerwaltung = ALLE.filter((s) => s !== 'personen')",
+  },
+  {
+    id: 'nav-wochen-nur-wer-zuteilt',
+    datei: 'src/data/rechte.ts',
+    // T121, Phase 10: Die Seite aller Wochen gilt den Zusammenkünften.
+    regel: 'Die Seite aller Wochen sieht nur, wer zuteilt — der Gruppenaufseher plant allein Treffpunkte.',
+    suchen: "  if (r.gruppe !== null) return ohneVerwaltung.filter((s) => s !== 'planung')",
+    ersetzen: '  if (r.gruppe !== null) return ohneVerwaltung',
   },
   // ── Rechte-Stufe „Planer" (4.10.2026) ──────────────────────────────────────
   // Zuteilen und Plan ändern sind dieselbe Zeile. Die Grenze zieht der Server:
@@ -5799,7 +5807,8 @@ export const KATALOG = [
   },
   {
     id: 'programmsprachen-versammlung-zuerst',
-    datei: 'src/einstellungen/EinstellungenScreen.tsx',
+    // Seit Phase 10 eine Stelle für die Einstellungen und das Blatt „Programm holen".
+    datei: 'src/i18n/langnames.ts',
     regel: 'Bei den Programmsprachen steht die Sprache der Versammlung vor den weiteren.',
     suchen: 'return [congLang, ...progLangs].map(',
     ersetzen: 'return [...progLangs, congLang].map(',
@@ -6894,8 +6903,88 @@ export const KATALOG = [
     id: 'vorrat-import-beim-planer',
     datei: 'src/dashboard/PlanungsKarte.tsx',
     regel: 'Reichen die Programme nicht, holt auch der Planer sie von der Karte aus.',
-    suchen: '        {stand.vorratKnapp && rechteVon(state).zuteilen && (',
-    ersetzen: '        {stand.vorratKnapp && state.planner && (',
+    // Die Karte sieht nur, wer zuteilt (`DashboardScreen`); eine zweite Frage
+    // nach dem Admin nähme dem Planer „Holen".
+    suchen: '        {stand.vorratKnapp && (\n',
+    ersetzen: '        {stand.vorratKnapp && state.planner && (\n',
+  },
+  // ── Planung: alle Wochen und „Holen" (T121, Phase 10) ─────────────────────
+  {
+    id: 'holen-erst-im-blatt',
+    datei: 'src/planen/useWochenImport.ts',
+    regel: '„Holen" hängt die Woche nicht an — das Blatt zeigt sie erst, übernommen wird dort.',
+    suchen: '    if (res.ok) return res.week\n',
+    ersetzen: "    if (res.ok) {\n      dispatch({ type: 'addImportedWeek', week: res.week })\n      return res.week\n    }\n",
+  },
+  {
+    id: 'uebernehmen-zuteilen-neue-woche',
+    datei: 'src/planen/useWochenImport.ts',
+    regel: '„Übernehmen und zuteilen" öffnet die neue Woche — sie kommt ans Ende —, nicht die gezeigte.',
+    suchen: '    const wi = state.weeks.length\n',
+    ersetzen: '    const wi = state.week\n',
+  },
+  {
+    id: 'uebernehmen-doppelt-kein-sprung',
+    datei: 'src/planen/useWochenImport.ts',
+    regel: 'Kam dieselbe Woche noch einmal, wird weder gesprungen noch zugeteilt — es gibt keine neue.',
+    suchen: '    if (!zuteilen || !neu) return\n',
+    ersetzen: '    if (!zuteilen) return\n',
+  },
+  {
+    id: 'holen-abgebrochen-verfaellt',
+    datei: 'src/planen/ProgrammHolen.tsx',
+    regel: 'Wird das Blatt geschlossen, während geholt wird, kommt es mit dem Ergebnis nicht von selbst zurück.',
+    suchen: '      if (lauf.current === nr) setStand(',
+    ersetzen: '      if (nr > 0) setStand(',
+  },
+  {
+    id: 'holen-offline-kein-blatt',
+    datei: 'src/planen/ProgrammHolen.tsx',
+    regel: 'Offline öffnet „Holen" kein Blatt — es sagt nur, dass gerade nichts geht.',
+    suchen: '    if (!holenMoeglich()) return\n',
+    ersetzen: '    holenMoeglich()\n',
+  },
+  {
+    id: 'wochen-ab-heute',
+    datei: 'src/planen/wochen-uebersicht.ts',
+    regel: 'Vergangene Wochen stehen nicht unter den Wochen — am Montag rückt die Liste weiter.',
+    suchen: '    if (sonntag === null || sonntag < heuteMs) return\n',
+    ersetzen: '    if (sonntag === null) return\n',
+  },
+  {
+    id: 'wochen-lage-probleme-vorn',
+    datei: 'src/planen/wochen-uebersicht.ts',
+    regel: 'Probleme stehen vor offenen Plätzen — dieselbe Rangfolge wie die Chips der Planungs-Karte.',
+    suchen: "  if (probleme > 0) return { art: 'probleme', n: probleme }\n",
+    ersetzen: '',
+  },
+  {
+    id: 'wochen-holen-nach-der-letzten',
+    datei: 'src/planen/wochen-uebersicht.ts',
+    regel: '„Holen" nennt die Woche nach der spätesten geladenen — wie `import-week` sie wählt.',
+    suchen: '  return letzte ? montagNach(letzte, 1) : montagVon(isoDay(heute))\n',
+    ersetzen: '  return montagVon(isoDay(heute))\n',
+  },
+  {
+    id: 'wochen-spalte-behaelt-reiter',
+    datei: 'src/planen/WochenUebersicht.tsx',
+    regel: 'In der Spalte neben dem Plan wechselt ein Tipp nur die Woche — Zusammenkunft oder Treffpunkte bleiben.',
+    suchen: '    dispatch({ type: \'navigate\', screen: \'planen\', woche: { wi: k.wi, tab: spalte ? state.tab : k.stand.tab } })\n',
+    ersetzen: "    dispatch({ type: 'navigate', screen: 'planen', woche: { wi: k.wi, tab: k.stand.tab } })\n",
+  },
+  {
+    id: 'wochen-spalte-nur-wer-zuteilt',
+    datei: 'src/planen/PlanenScreen.tsx',
+    regel: 'Die Wochen neben dem Plan bekommt nur, wer zuteilt — nicht der Gruppenaufseher.',
+    suchen: '  const wochenSpalte = useMedia(WOCHEN_SPALTE_BREITE) && rechte.zuteilen\n',
+    ersetzen: '  const wochenSpalte = useMedia(WOCHEN_SPALTE_BREITE)\n',
+  },
+  {
+    id: 'planung-menue-nach-breite',
+    datei: 'src/app/AppShell.tsx',
+    regel: '„Planung" führt dorthin, wo die Wochen stehen: wo die Spalte passt, ins Planen, sonst auf ihre Seite.',
+    suchen: "dispatch(planungsThema === 'zusammenkuenfte' ? zurPlanung(wochenSpalte) : zumPlanen(planungsThema))",
+    ersetzen: "dispatch(planungsThema === 'zusammenkuenfte' ? zurPlanung(false) : zumPlanen(planungsThema))",
   },
   {
     id: 'leere-versammlung-beim-planer',

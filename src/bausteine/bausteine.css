@@ -805,3 +805,53 @@
 .spur-schritt.is-problem .spur-wert {
   color: var(--problem);
 }
+
+/* Die kleine Spur einer Wochenkarte: linksbündig, der Punkt vorn und die
+   Linie bis zum nächsten, die Zahl über dem Namen. */
+.spur--knapp .spur-schritt {
+  align-items: flex-start;
+  gap: 2px;
+  text-align: start;
+}
+
+.spur--knapp .spur-bahn {
+  order: -2;
+  height: 14px;
+}
+
+.spur--knapp .spur-bahn > .spur-linie:first-child {
+  display: none;
+}
+
+.spur--knapp .spur-bahn > .spur-linie:last-child {
+  margin-inline-end: 6px;
+  border-block-start-width: 1.5px;
+}
+
+.spur--knapp .spur-punkt {
+  width: 10px;
+  height: 10px;
+}
+
+.spur--knapp .spur-schritt.is-jetzt .spur-punkt {
+  outline: none;
+}
+
+.spur--knapp .spur-wert,
+.spur--knapp .spur-schritt.is-jetzt .spur-wert {
+  order: -1;
+  color: var(--text);
+  font-size: calc(14px * var(--fs));
+  font-weight: 600;
+}
+
+.spur--knapp .spur-schritt.is-leer .spur-wert {
+  color: var(--text3);
+}
+
+.spur--knapp .spur-name,
+.spur--knapp .spur-schritt.is-jetzt .spur-name {
+  color: var(--text3);
+  font-size: calc(12px * var(--fs));
+  font-weight: 500;
+}

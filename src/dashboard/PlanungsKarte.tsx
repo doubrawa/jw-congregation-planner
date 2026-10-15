@@ -1,17 +1,19 @@
 import { useMemo, type ReactNode } from 'react'
+import { zurPlanung } from '../app/bereich'
 import { useApp } from '../app/context'
 import { Zeichen } from '../bausteine/Zeichen'
 import { useAbwesend } from '../app/useAbwesend'
 import { useKalendertag } from '../app/useKalendertag'
 import { besuchHatKonflikt, besuchStand } from '../data/gruppenbesuche'
 import { useBesuchsLage } from '../components/useBesuchsLage'
+import { WOCHEN_SPALTE_BREITE, useMedia } from '../components/useMedia'
 import { fromIso } from '../data/meeting-dates'
 import { planungsstand, type Wochenstand } from '../data/planungsstand'
-import { rechteVon } from '../data/rechte'
 import type { FsBereich } from '../data/types'
-import { useWochenImport } from '../einstellungen/useWochenImport'
 import { LOCALES } from '../i18n/langs'
 import { fill, useProgWeeks, useT } from '../i18n/useT'
+import { HolenKnopf } from '../planen/ProgrammHolen'
+import { useWochenImport } from '../planen/useWochenImport'
 
 /**
  * **Die Planungs-Karte** — was der Planer in den kommenden Wochen noch zu tun
@@ -28,9 +30,10 @@ import { fill, useProgWeeks, useT } from '../i18n/useT'
  * Kachel, und in Sprachen mit drei Pluralformen wäre jede feste Wendung
  * irgendwo falsch (siehe T96).
  *
- * **Reichen die Programme nicht mehr weit genug**, steht der Import gleich hier.
+ * **Reichen die Programme nicht mehr weit genug**, steht „Holen" gleich hier.
  * Der Hinweis verschwindet, sobald der Vorrat wieder reicht — der Knopf ist
- * derselbe wie in den Einstellungen (`useWochenImport`).
+ * derselbe wie bei den Wochen (`HolenKnopf`). Alle Wochen zeigt „Alle Wochen"
+ * über der Karte (Entwurf `GStartPlaner`).
  *
  * Ist nichts zu tun, schrumpft die Karte auf eine Zeile — mit dem Zeitraum, für
  * den das gilt. Dann rückt die eigene nächste Aufgabe darunter nach oben.
@@ -40,7 +43,7 @@ export function PlanungsKarte() {
   const abwesend = useAbwesend()
   const { t } = useT()
   const progWeek = useProgWeeks()
-  const { importieren, knopf, geladenBis, geladenBisMs } = useWochenImport()
+  const { geladenBis, geladenBisMs } = useWochenImport()
   // Der Tag gehört zu den Abhängigkeiten: „vorbei" rechnet mit ihm, und ohne ihn
   // zählte die gemerkte Karte am Mittwoch noch den Dienstag.
   const tag = useKalendertag()
@@ -139,7 +142,7 @@ export function PlanungsKarte() {
   if (stand.wochen.length === 0 && !stand.vorratKnapp && besuchsKonflikte === 0) {
     return (
       <section className="dash-plan">
-        <h2 className="abschnitt-titel">{t.dashPlanung}</h2>
+        <PlanungKopf />
         <div className="karte">
           <button
             type="button"
@@ -164,7 +167,7 @@ export function PlanungsKarte() {
 
   return (
     <section className="dash-planung">
-      <h2 className="abschnitt-titel">{t.dashPlanung}</h2>
+      <PlanungKopf />
       <div className="karte">
         {zeilen.map((w) => (
           <button key={w.wi} type="button" className="dash-plan-woche" onClick={() => oeffnen(w)}>
@@ -188,20 +191,34 @@ export function PlanungsKarte() {
             <Chip art="konflikte" titel={t.konflikteTitle} n={besuchsKonflikte} />
           </BereichZeile>
         )}
-        {/* Importieren dürfen Admin und Planer — wer die Woche plant, holt
-            auch ihr Programm (15.10.2026; bis dahin nur der Admin). */}
-        {stand.vorratKnapp && rechteVon(state).zuteilen && (
+        {/* Holen dürfen Admin und Planer — wer die Woche plant, holt auch ihr
+            Programm (15.10.2026; bis dahin nur der Admin). Die Karte sehen
+            ohnehin nur sie (`DashboardScreen`). */}
+        {stand.vorratKnapp && (
           <div className="dash-plan-vorrat">
             <span className="dash-plan-vorrat-text">
               {geladenBis ? fill(t.geladenBis, { datum: geladenBis }) : t.geladenNichts}
             </span>
-            <button type="button" className="knopf-pille" onClick={() => void importieren()}>
-              {knopf}
-            </button>
+            <HolenKnopf className="knopf-pille" />
           </div>
         )}
       </div>
     </section>
+  )
+}
+
+/** Die Überschrift der Karte, rechts „Alle Wochen" (Entwurf `GStartPlaner`). */
+function PlanungKopf() {
+  const { dispatch } = useApp()
+  const { t } = useT()
+  const mitSpalte = useMedia(WOCHEN_SPALTE_BREITE)
+  return (
+    <div className="dash-plan-titel">
+      <h2 className="abschnitt-titel">{t.dashPlanung}</h2>
+      <button type="button" className="dash-plan-alle" onClick={() => dispatch(zurPlanung(mitSpalte))}>
+        {t.alleWochen}
+      </button>
+    </div>
   )
 }
 

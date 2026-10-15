@@ -3,7 +3,7 @@ import { MeetingTabs } from '../components/MeetingTabs'
 import { Bereichstitel } from '../components/Bereichstitel'
 import { UnteransichtKopf } from '../components/UnteransichtKopf'
 import { useBackDismiss } from '../components/useBackDismiss'
-import { DESKTOP_BREITE, TABLET_BREITE, useMedia } from '../components/useMedia'
+import { DESKTOP_BREITE, TABLET_BREITE, WOCHEN_SPALTE_BREITE, useMedia } from '../components/useMedia'
 import { WeekStrip } from '../components/WeekStrip'
 import { AusfallBanner, MemorialBanner } from '../components/WeekBadges'
 import { WochenWahl } from '../components/WochenWahl'
@@ -28,6 +28,7 @@ import { HelpersPanel } from './HelpersPanel'
 import { VortragsplanPanel } from './VortragsplanPanel'
 import { MeetingSection } from './MeetingSection'
 import { BesetzungKarte, PlanSpur } from './WochenStand'
+import { WochenSpalte } from './WochenUebersicht'
 import { ZusagenAnsicht } from './ZusagenAnsicht'
 // Die Karten der Abschnitte und die Zeilen der Punkte teilt das Planen mit dem
 // Ansehen (T121).
@@ -49,6 +50,9 @@ export function PlanenScreen() {
   const rechte = rechteVon(state)
   const breit = useMedia(TABLET_BREITE)
   const desktop = useMedia(DESKTOP_BREITE)
+  // Links die Wochen (Entwurf `GDesktopPlanen`) — für den, der zuteilt, und nur
+  // bei den Plänen einer Woche: Zusammenkünfte und Treffpunkte.
+  const wochenSpalte = useMedia(WOCHEN_SPALTE_BREITE) && rechte.zuteilen
   // „Woche einrichten" und die Zusagen der Woche sind Unteransichten des Plans:
   // Die Zurück-Taste führt in den Plan zurück (`unteransicht`), nicht gleich zu
   // Start. Hier und nicht im Rumpf, den der Wochenstreifen dreimal zeichnet.
@@ -95,19 +99,24 @@ export function PlanenScreen() {
     </WeekStrip>
   )
   const art = planArt(state)
-  if (desktop && art) {
-    return (
+  const mitZuteilen =
+    desktop && art ? (
       <div className="planen-raster">
         <div className="planen-raster-plan">{plan}</div>
         <ZuteilenSpalte />
       </div>
+    ) : (
+      <>
+        {plan}
+        {!breit && art && <PlanenAktionen art={art} leiste />}
+      </>
     )
-  }
+  if (!wochenSpalte) return mitZuteilen
   return (
-    <>
-      {plan}
-      {!breit && art && <PlanenAktionen art={art} leiste />}
-    </>
+    <div className="planen-wochen">
+      <WochenSpalte />
+      <div className="planen-wochen-plan">{mitZuteilen}</div>
+    </div>
   )
 }
 

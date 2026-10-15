@@ -165,10 +165,23 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
   })
 
-  it('„Planung" führt den Planer ins Planen der Zusammenkünfte', () => {
+  it('„Planung" führt den Planer zu den Wochen — ohne Platz für die Spalte auf ihre Seite (T121, Phase 10)', () => {
+    // jsdom kennt keine Breite: Hier gilt die Fassung des Handys.
     const { container, dispatch } = zeige({ planner: true })
     tippe(container, t.dashPlanung)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planung' })
+  })
+
+  it('… und wo die Wochen neben den Plan passen, gleich ins Planen der Zusammenkünfte', () => {
+    // Nur die Breite der Spalte zählt (`WOCHEN_SPALTE_BREITE`), nicht schon der Desktop.
+    window.matchMedia = vi.fn((abfrage: string) => ({ matches: abfrage === '(min-width: 1400px)' })) as unknown as typeof window.matchMedia
+    try {
+      const { container, dispatch } = zeige({ planner: true })
+      tippe(container, t.dashPlanung)
+      expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte' })
+    } finally {
+      delete (window as { matchMedia?: unknown }).matchMedia
+    }
   })
 
   it('das Profil ist kein Menüpunkt — der Name im Fuß führt hin und nennt es', () => {
@@ -250,6 +263,7 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
       [{ screen: 'programm', tab: 'fs' }, t.tabFs],
       [{ screen: 'planen', tab: 'edit' }, t.dashPlanung],
       [{ screen: 'planen', tab: 'fs' }, t.dashPlanung],
+      [{ screen: 'planung' }, t.dashPlanung],
       [{ screen: 'aufgaben' }, t.navAufgabenLong],
       [{ screen: 'mitteilungen' }, t.mitteilungen],
     ] as const) {

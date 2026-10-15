@@ -14,6 +14,14 @@ export const TABLET_BREITE = '(min-width: 768px)'
 export const DESKTOP_BREITE = '(min-width: 1180px)'
 
 /**
+ * Ab hier steht beim Planen links die Spalte der Wochen (Entwurf
+ * `GDesktopPlanen`, gezeichnet für 1440 px): Menü 248, Wochen 260 und
+ * Zuteilen 320 lassen dem Plan noch 572 px. Darunter führt „Planung" auf die
+ * Seite aller Wochen.
+ */
+export const WOCHEN_SPALTE_BREITE = '(min-width: 1400px)'
+
+/**
  * **Trifft eine Medienabfrage zu?** — und ein neuer Render, wenn sich das
  * ändert (Fenster breiter gezogen, Tablet gedreht).
  *

@@ -436,7 +436,7 @@ export const DE = {
     toastPushAus: 'Push-Mitteilungen deaktiviert',
     toastPushVerweigert: 'Benachrichtigungen wurden nicht erlaubt',
     keineWochenTitel: 'KEIN PROGRAMM GELADEN',
-    keineWochenHinweis: 'Es sind noch keine Wochen vorhanden. Admins können das Programm in den Einstellungen über „Nächste Woche importieren“ laden.',
+    keineWochenHinweis: 'Es sind noch keine Wochen geladen. Wer plant, holt das Programm unter „Planung“ mit „Holen“.',
     rolle: 'Rolle', aufgabenbereiche: 'Aufgabenbereiche',
     einstellungen: 'Einstellungen', versammlungCard: 'Versammlung', saal: 'Königreichssaal',
     // Einstellungen (T121, Phase 6c): Zeilen und Abschnitte.
@@ -478,11 +478,22 @@ export const DE = {
     progLangsLbl: 'Weitere Programmsprachen',
     progLangsDesc: 'Neue Importe holen das Programm zusätzlich in diesen Sprachen — jeder sieht es dann automatisch in seiner App-Sprache.',
     langSearchPh: 'Sprache suchen …', langCount: 'Sprachen: {n}', langListNote: 'Sprachliste von jw.org',
-    importCard: 'Programm-Import',
-    importDesc: 'Die Wochenprogramme stammen aus dem Arbeitsheft auf jw.org und werden ohne Zuteilungen importiert.',
     geladenBis: 'Geladen bis {datum}', geladenNichts: 'Noch keine Woche geladen',
-    wochenGeladen: 'Geladene Wochen: {n}',
-    importBtn: 'Nächste Woche importieren', importiere: 'Importiere …',
+    // Planung: alle Wochen und „Holen" (T121, Phase 10, Entwürfe `GWochen`,
+    // `GDesktopPlanen`, `GImport`). Die Zahlen stehen hinter dem Wort —
+    // „Probleme: 2", nicht „2 Probleme" —, damit die Form in jeder Sprache stimmt.
+    alleWochen: 'Alle Wochen', wochenLbl: 'Wochen', naechsteWoche: 'Nächste Woche',
+    lageProbleme: 'Probleme: {n}', lageOffen: 'Offen: {n}', lageBereit: 'Bereit zum Senden',
+    programmNichtGeholt: 'Programm noch nicht geholt', holen: 'Holen',
+    programmHolen: 'Programm holen',
+    programmHolenText: 'Das Programm der Woche kommt aus dem Arbeitsheft auf jw.org.',
+    // Die Schritte im Blatt — eigene Schlüssel neben dem Knopf „Holen": Manche
+    // Sprachen nennen Schritte im Infinitiv und Knöpfe im Imperativ (it).
+    holtProgramm: 'Das Programm wird geholt …', spurHolen: 'Holen', spurPruefen: 'Prüfen',
+    programmpunkteN: 'Programmpunkte: {n}', punkteN: 'Punkte: {n}',
+    holenHinweis: 'Feste Rollen und Abwesenheiten werden beim Zuteilen beachtet.',
+    uebernehmenZuteilen: 'Übernehmen und zuteilen', nurUebernehmen: 'Nur übernehmen',
+    auchZuPlanen: 'Auch zu planen', treffpunkteBesuche: 'Treffpunkte und Gruppenbesuche',
     aktuellLbl: 'Aktuell:', entfernen: 'Entfernen', abwesendChip: 'Abwesend',
     sheetSchonHeute: 'An diesem Tag schon',
     // {w} = Breite des Auslastungs-Fensters (LOAD_WEEKS in data/auslastung.ts).

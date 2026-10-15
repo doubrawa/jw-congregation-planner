@@ -92,11 +92,10 @@ afterEach(() => {
 })
 
 describe('Die Übersicht am Handy', () => {
-  it('die Karten in der Folge des Entwurfs', () => {
+  it('die Karten in der Folge des Entwurfs — der Programm-Import gehört seit Phase 10 zu den Wochen', () => {
     const { container } = zeige()
-    expect(titel(container)).toEqual([
-      t.versammlungCard, t.navZusammenkuenfte, t.tabFs, t.mitteilungen, t.werPlant, t.importCard,
-    ])
+    expect(titel(container)).toEqual([t.versammlungCard, t.navZusammenkuenfte, t.tabFs, t.mitteilungen, t.werPlant])
+    expect([...container.querySelectorAll('button')].some((b) => b.textContent === t.holen)).toBe(false)
   })
 
   it('jede Zeile nennt ihren Wert — man sieht, was gilt, ohne zu öffnen', () => {
@@ -284,15 +283,6 @@ describe('Programmsprachen', () => {
   })
 })
 
-describe('Programm-Import', () => {
-  it('sagt, bis wann Programme da sind, und holt die nächste Woche', () => {
-    const { container } = zeige({ weeks: [] })
-    const karte = [...container.querySelectorAll('.einst-karte')].at(-1)!
-    expect(karte.querySelector('.einst-stand')?.textContent).toBe(t.geladenNichts)
-    expect(karte.querySelector('.einst-import')?.textContent).toBe(t.importBtn)
-  })
-})
-
 describe('Am Desktop (`GDesktopEinstellungen`)', () => {
   beforeEach(() => breite(true))
   const eintraege = (c: HTMLElement) => [...c.querySelectorAll<HTMLButtonElement>('.einst-nav-eintrag')]
@@ -303,7 +293,7 @@ describe('Am Desktop (`GDesktopEinstellungen`)', () => {
     const { container } = zeige()
     expect(eintraege(container).map((e) => e.querySelector('.einst-nav-name')?.textContent)).toEqual([
       t.versammlungCard, t.navZusammenkuenfte, t.hilfsdienste, t.gruppenUndTrolleys, t.mitteilungenUndErinnerungen,
-      t.werPlant, t.importCard,
+      t.werPlant,
     ])
     const kurz = (name: string) => eintrag(container, name).querySelector('.klein-text')?.textContent
     expect(kurz(t.versammlungCard)).toBe('Nordheim · Deutsch, Englisch')
@@ -323,7 +313,7 @@ describe('Am Desktop (`GDesktopEinstellungen`)', () => {
 
   it('der Titel steht einmal — als Überschrift des Abschnitts, nicht noch einmal über der Karte', () => {
     const { container } = zeige()
-    for (const name of [t.versammlungCard, t.navZusammenkuenfte, t.werPlant, t.importCard]) {
+    for (const name of [t.versammlungCard, t.navZusammenkuenfte, t.werPlant]) {
       fireEvent.click(eintrag(container, name))
       expect(titel(container), name).not.toContain(name)
     }

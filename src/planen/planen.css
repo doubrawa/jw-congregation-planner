@@ -1469,3 +1469,272 @@ body:has(.planen-leiste) .toast {
   letter-spacing: 0.06em;
   cursor: pointer;
 }
+
+/* ---- Planung: alle Wochen und „Holen" (T121, Phase 10) ----------------------
+   Entwürfe `GWochen` (Seite), `GDesktopPlanen` (Spalte links), `GImport`
+   (Blatt). */
+
+.screen.planung {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.planung-wochen,
+.wochen-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Eine Woche: Spanne und Lage, darunter Anlass oder wann, unten die Spur. Der
+   Knopf über der Spanne deckt die ganze Karte (`::after`). */
+.wochen-karte {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 18px;
+  border: 1.5px solid transparent;
+  border-radius: 24px;
+  background: var(--karte);
+}
+
+.wochen-karte.is-gewaehlt {
+  border-color: var(--text);
+}
+
+.wochen-karte-kopf {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.wochen-karte-knopf {
+  min-width: 0;
+  color: inherit;
+  font-size: calc(16px * var(--fs));
+  font-weight: 600;
+  text-align: start;
+}
+
+.wochen-karte-knopf::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+/* Den Fokus trägt die Karte, nicht die Zeile mit der Spanne. */
+.wochen-karte-knopf:focus-visible {
+  outline: none;
+}
+
+.wochen-karte-knopf:focus-visible::after {
+  outline: 2px solid var(--akzent-text);
+  outline-offset: 2px;
+}
+
+.wochen-karte-lage {
+  flex: none;
+  color: var(--text2);
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 600;
+}
+
+.wochen-karte-lage[data-art='probleme'] {
+  color: var(--problem);
+}
+
+.wochen-karte-lage[data-art='bereit'] {
+  color: var(--akzent-text);
+}
+
+.wochen-karte-unter {
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
+}
+
+.wochen-karte .spur {
+  padding-block-start: 12px;
+}
+
+/* Die nächste Woche ohne Programm: gestrichelt, rechts „Holen". */
+.holen-karte {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  padding: 14px 10px 14px 18px;
+  border: 1.5px dashed var(--umriss);
+  border-radius: 24px;
+}
+
+.holen-karte-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.holen-karte-spanne {
+  font-size: calc(16px * var(--fs));
+  font-weight: 600;
+}
+
+/* Am Desktop links neben dem Plan; bleibt stehen, während der Plan scrollt. */
+.planen-wochen {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  align-items: start;
+}
+
+.planen-wochen-plan {
+  min-width: 0;
+}
+
+.wochen-spalte {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 100svh;
+  overflow-y: auto;
+  padding: 24px 16px;
+  border-inline-end: 1px solid var(--linie);
+}
+
+.wochen-spalte-titel {
+  margin-inline-start: 6px;
+  padding-block-end: 8px;
+  font-size: calc(20px * var(--fs));
+  font-weight: 600;
+}
+
+/* In der schmalen Spalte steht die Lage neben der Unterzeile, nicht neben der
+   Spanne (Entwurf `GDesktopPlanen`) — sonst bräche die Spanne um. */
+.wochen-spalte .wochen-karte {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'spanne spanne'
+    'unter lage'
+    'spur spur';
+  column-gap: 8px;
+  padding: 12px 16px;
+  border-radius: 22px;
+}
+
+.wochen-spalte .wochen-karte-kopf {
+  display: contents;
+}
+
+.wochen-spalte .wochen-karte-knopf {
+  grid-area: spanne;
+}
+
+.wochen-spalte .wochen-karte-unter {
+  grid-area: unter;
+  min-width: 0;
+  font-size: calc(13px * var(--fs));
+}
+
+.wochen-spalte .wochen-karte-lage {
+  grid-area: lage;
+  align-self: baseline;
+  font-size: calc(13px * var(--fs));
+}
+
+.wochen-spalte .wochen-karte .spur {
+  grid-area: spur;
+  padding-block-start: 10px;
+}
+
+.wochen-spalte .wochen-karte-knopf,
+.wochen-spalte .holen-karte-spanne {
+  font-size: calc(15.5px * var(--fs));
+}
+
+.wochen-spalte .holen-karte {
+  padding: 12px 10px 12px 16px;
+  border-radius: 22px;
+}
+
+/* Das Blatt „Programm holen": was aus dem Arbeitsheft kam. */
+.holen {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.holen-woche {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 16px;
+  border-radius: 20px;
+  background: var(--feld);
+}
+
+.holen-kopf,
+.holen-abschnitt,
+.holen-sprachen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 46px;
+}
+
+.holen-abschnitt,
+.holen-sprachen {
+  border-block-start: 1px solid var(--linie);
+}
+
+.holen-spanne {
+  font-size: calc(16px * var(--fs));
+  font-weight: 600;
+}
+
+.holen-abschnitt-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  font-weight: 500;
+}
+
+.holen-abschnitt-name::before {
+  content: '';
+  flex: none;
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--text2);
+}
+
+.holen-abschnitt[data-farbe='petrol'] .holen-abschnitt-name::before {
+  background: var(--sek1);
+}
+
+.holen-abschnitt[data-farbe='gold'] .holen-abschnitt-name::before {
+  background: var(--sek2);
+}
+
+.holen-abschnitt[data-farbe='wein'] .holen-abschnitt-name::before {
+  background: var(--sek3);
+}
+
+.holen-sprachen > .klein-text {
+  color: var(--text2);
+  text-align: end;
+}
+
+.holen-hinweis {
+  padding-inline: 4px;
+}
+
+.holen-laedt {
+  padding-block: 24px;
+  color: var(--text2);
+  text-align: center;
+}

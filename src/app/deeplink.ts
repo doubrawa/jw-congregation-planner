@@ -7,6 +7,7 @@ const VALID: readonly Screen[] = [
   'aufgaben',
   'mitteilungen',
   'planen',
+  'planung',
   'personen',
   'einstellungen',
   'profil',

@@ -61,6 +61,10 @@ vi.mock('../lib/import', async (orig) => ({
 
 const t = dict('de')
 
+// jsdom kennt `matchMedia` nicht; das Blatt „Programm holen" fragt danach
+// (Wischen am Handy). Keine Abfrage trifft zu: die Fassung des Handys.
+window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
+
 const ICH: Person = {
   id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger', female: false,
   tel: '', mail: '', priv: emptyQualifications(),
@@ -483,8 +487,12 @@ const chip = (root: Element, art: string) => {
     : null
 }
 
-/** Der Import-Knopf auf der Karte — er heißt wie der in den Einstellungen. */
+/** „Holen" auf der Karte — derselbe Knopf wie bei den Wochen. */
 const importKnopf = (root: Element) => root.querySelector<HTMLButtonElement>('.dash-plan-vorrat button')
+
+/** Ein Knopf im Blatt „Programm holen", nach seiner Beschriftung. */
+const blattKnopf = (root: Element, text: string) =>
+  [...root.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find((b) => b.textContent === text)
 
 describe('Die Planungs-Karte gehört dem Planer — und steht bei ihm gleich daneben (T95)', () => {
   beforeEach(() => {
@@ -516,6 +524,13 @@ describe('Die Planungs-Karte gehört dem Planer — und steht bei ihm gleich dan
     expect(spalten).toHaveLength(2)
     expect(spalten[0]!.querySelector('.aufgabe-karte')).not.toBeNull()
     expect(spalten[1]!.querySelector('.dash-planung')).not.toBeNull()
+  })
+
+  it('„Alle Wochen" führt zu den Wochen — ohne Platz für die Spalte auf ihre Seite (T121, Phase 10)', () => {
+    // jsdom kennt keine Breite: Hier gilt die Fassung des Handys.
+    const { container, dispatch } = planer({ weeks: [importiert(W1)] })
+    fireEvent.click([...container.querySelectorAll('button')].find((b) => b.textContent === t.alleWochen)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planung' })
   })
 })
 
@@ -647,7 +662,7 @@ describe('Eine Zeile je Woche, in der etwas zu tun ist', () => {
   })
 })
 
-describe('Reichen die Programme nicht mehr, steht der Import gleich auf der Karte', () => {
+describe('Reichen die Programme nicht mehr, steht „Holen" gleich auf der Karte', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(MONTAG)
@@ -659,25 +674,62 @@ describe('Reichen die Programme nicht mehr, steht der Import gleich auf der Kart
     const weeks = [besetzt(W1)]
     const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks) })
     expect(container.querySelector('.dash-plan-vorrat-text')?.textContent).toMatch(/^Geladen bis 13\. Sept\. 2026$/)
-    expect(importKnopf(container)?.textContent).toBe(t.importBtn)
+    expect(importKnopf(container)?.textContent).toBe(t.holen)
   })
 
   it('auch der Planer holt das Programm — wer die Woche plant, holt sie (15.10.2026)', () => {
     const weeks = [besetzt(W1)]
     const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks), planner: false, zuteiler: true })
-    expect(importKnopf(container)?.textContent).toBe(t.importBtn)
+    expect(importKnopf(container)?.textContent).toBe(t.holen)
   })
 
-  it('der Knopf holt die nächste Woche — derselbe Ablauf wie in den Einstellungen', async () => {
+  it('der Knopf holt die nächste Woche und legt sie vor — übernommen wird erst im Blatt', async () => {
     const neu = importiert(W2)
     importNextWeek.mockResolvedValue({ ok: true, week: neu })
     const weeks = [besetzt(W1)]
     const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks), dataStatus: 'ready' })
     fireEvent.click(importKnopf(container)!)
     // Ab der zuletzt geladenen Woche, in der Versammlungssprache.
-    await waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'addImportedWeek', week: neu }))
+    await waitFor(() => expect(blattKnopf(container, t.nurUebernehmen)?.disabled).toBe(false))
     expect(importNextWeek).toHaveBeenCalledWith(W1, 'de', [])
     expect(dispatch).toHaveBeenCalledWith({ type: 'startImport' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'stopImport' })
+    // Geholt ist noch nicht übernommen: Das Blatt zeigt erst, was kam.
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'addImportedWeek', week: neu })
+    fireEvent.click(blattKnopf(container, t.nurUebernehmen)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'addImportedWeek', week: neu })
+    // „Nur übernehmen" öffnet nichts und teilt nichts zu.
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'autoAssign' }))
+    expect(container.querySelector('[role="dialog"]')).toBeNull()
+  })
+
+  it('„Übernehmen und zuteilen" öffnet die neue Woche und besetzt ihre offenen Plätze', async () => {
+    const neu = importiert(W2)
+    importNextWeek.mockResolvedValue({ ok: true, week: neu })
+    const weeks = [besetzt(W1)]
+    const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks), dataStatus: 'ready' })
+    fireEvent.click(importKnopf(container)!)
+    await waitFor(() => expect(blattKnopf(container, t.uebernehmenZuteilen)?.disabled).toBe(false))
+    dispatch.mockClear()
+    fireEvent.click(blattKnopf(container, t.uebernehmenZuteilen)!)
+    // In dieser Reihenfolge: anhängen, zur neuen Woche (sie kommt ans Ende), zuteilen.
+    expect(dispatch.mock.calls.map(([a]) => a)).toEqual([
+      { type: 'addImportedWeek', week: neu },
+      { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'mid' } },
+      { type: 'autoAssign', scope: 'all', umfang: 'woche' },
+    ])
+  })
+
+  it('„Abbrechen" verwirft die geholte Woche', async () => {
+    const neu = importiert(W2)
+    importNextWeek.mockResolvedValue({ ok: true, week: neu })
+    const weeks = [besetzt(W1)]
+    const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks), dataStatus: 'ready' })
+    fireEvent.click(importKnopf(container)!)
+    await waitFor(() => expect(blattKnopf(container, t.nurUebernehmen)?.disabled).toBe(false))
+    fireEvent.click(blattKnopf(container, t.abbrechen)!)
+    expect(container.querySelector('[role="dialog"]')).toBeNull()
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'addImportedWeek', week: neu })
   })
 
   it('offline fängt er gar nicht erst an', () => {

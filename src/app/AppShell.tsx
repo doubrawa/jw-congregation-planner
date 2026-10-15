@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Zeichen, type ZeichenName } from '../bausteine/Zeichen'
 import { datumsFormat } from '../components/datum-anzeige'
 import { useBackDismiss } from '../components/useBackDismiss'
-import { DESKTOP_BREITE, useMedia } from '../components/useMedia'
+import { DESKTOP_BREITE, WOCHEN_SPALTE_BREITE, useMedia } from '../components/useMedia'
 import { displayName, initials } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import { darfPlanen, erlaubteScreens, geplantesThema, rechteVon, themaVon } from '../data/rechte'
@@ -28,6 +28,7 @@ import { MitteilungenScreen } from '../mitteilungen/MitteilungenScreen'
 import { PersonenScreen } from '../personen/PersonenScreen'
 import { AssignSheet } from '../planen/AssignSheet'
 import { PlanenScreen } from '../planen/PlanenScreen'
+import { PlanungScreen } from '../planen/PlanungScreen'
 import { zuteilenInSpalte } from '../planen/planen-raster'
 import { ProfilScreen } from '../profil/ProfilScreen'
 import { ProgrammScreen } from '../programm/ProgrammScreen'
@@ -37,7 +38,7 @@ import { parseGoAbschnitt, parseGoTarget, type Abschnitt } from './deeplink'
 import { loadAndHydrate } from './hydrate'
 import { sichtbareMitteilungen } from './mitteilungen'
 import { useKalendertag } from './useKalendertag'
-import { bereichsTitel, zumAnsehen, zumPlanen } from './bereich'
+import { bereichsTitel, zumAnsehen, zumPlanen, zurPlanung } from './bereich'
 import { Kopfzeile, PlanenKopf, UnterseiteKopf } from './Kopfzeile'
 import { SchmaleLeiste, Schublade, Seitenmenue, type MenueAbschnitt, type MenueEintrag, type ProfilFuss } from './Menue'
 import { welcomeDecision } from './welcome'
@@ -49,7 +50,8 @@ import './rtl.css'
  * App-Gerüst im neuen Design (T121): das Menü an der Seite — am Handy als
  * Schublade, am Tablet hochkant als schmale Leiste, ab 1180 px fest links —,
  * die Kopfzeile (am Handy beim Planen der Kopf des Planens, auf den
- * Mitteilungen der Kopf mit Zurück), der Inhalt, die Blätter und der Toast.
+ * Mitteilungen und der Seite aller Wochen der Kopf mit Zurück), der Inhalt,
+ * die Blätter und der Toast.
  * Login rendert ohne App-Chrome.
  */
 
@@ -66,6 +68,7 @@ export function AppShell() {
   const i18n = useT()
   const { t } = i18n
   const desktop = useMedia(DESKTOP_BREITE)
+  const wochenSpalte = useMedia(WOCHEN_SPALTE_BREITE)
   const isLogin = state.screen === 'login'
   const me = eigenePerson(state)
   // Der Kalendertag: Ob „Weitere Pläne" im Menü steht, hängt daran, ob ein Plan
@@ -187,7 +190,8 @@ export function AppShell() {
     onClick: () => zuThema(thema),
   })
   // Geplant wird zuerst, was man planen darf: der Gruppenaufseher allein die
-  // Treffpunkte seiner Gruppe.
+  // Treffpunkte seiner Gruppe. Wer die Zusammenkünfte plant, kommt über die
+  // Wochen hinein — als Seite oder als Spalte neben dem Plan (`zurPlanung`).
   const planungsThema: Thema = darfPlanen(rechte, 'zusammenkuenfte') ? 'zusammenkuenfte' : 'predigtdienst'
   const planung: MenueEintrag[] = darfPlanen(rechte, planungsThema)
     ? [
@@ -195,10 +199,10 @@ export function AppShell() {
           key: 'planung',
           label: t.dashPlanung,
           zeichen: 'planung',
-          aktiv: state.screen === 'planen',
+          aktiv: state.screen === 'planen' || state.screen === 'planung',
           onClick: () => {
             setMenuOpen(false)
-            dispatch(zumPlanen(planungsThema))
+            dispatch(planungsThema === 'zusammenkuenfte' ? zurPlanung(wochenSpalte) : zumPlanen(planungsThema))
           },
         },
       ]
@@ -248,7 +252,8 @@ export function AppShell() {
     onClick: () => navigate('profil'),
   }
   const planen = state.screen === 'planen'
-  const unterseite = state.screen === 'mitteilungen'
+  // Unterseiten mit Zurück am Handy: die Mitteilungen und die Seite aller Wochen.
+  const unterseite = state.screen === 'mitteilungen' || state.screen === 'planung'
   const geplant = geplantesThema(rechte, state.tab)
   const menue = abschnitte([])
   // Texte für die Error Boundaries: die Klasse kann useT() nicht aufrufen.
@@ -286,7 +291,7 @@ export function AppShell() {
             )}
             {unterseite && (
               <UnterseiteKopf onZurueck={() => navigate('start')}>
-                {ungelesen > 0 && <AlleGelesen className="unterseitenkopf-aktion" />}
+                {state.screen === 'mitteilungen' && ungelesen > 0 && <AlleGelesen className="unterseitenkopf-aktion" />}
               </UnterseiteKopf>
             )}
             {/* Die Versammlung im Kopf, nicht die Wortmarke (T107); solange
@@ -488,6 +493,8 @@ function ActiveScreen({ screen }: { screen: Screen }) {
       return <MitteilungenScreen />
     case 'planen':
       return <PlanenScreen />
+    case 'planung':
+      return <PlanungScreen />
     case 'personen':
       return <PersonenScreen />
     case 'einstellungen':

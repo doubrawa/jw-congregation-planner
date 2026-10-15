@@ -31,7 +31,7 @@ Versammlungseinstellungen pflegen.
 6. [Personen verwalten](#6-personen-verwalten)
 7. [Einstellungen](#7-einstellungen)
    – [Zusätzliche Klasse](#7a-zusätzliche-klasse)
-8. [Programm importieren](#8-programm-importieren)
+8. [Programm holen](#8-programm-holen)
 9. [Pläne drucken](#9-pläne-drucken)
 10. [Ohne Internet (offline)](#10-ohne-internet-offline)
 
@@ -66,9 +66,11 @@ der Stelle von „Diese Woche in der Versammlung".
   was am Wochenende offen ist; den Dienstag kann niemand mehr besetzen. Die
   Karte merkt den Tageswechsel auch, wenn die App über Nacht offen war.
 - Reichen die geladenen Programme **weniger als drei Wochen** voraus, steht in
-  der Karte **„Geladen bis …"** mit dem Knopf **Nächste Woche importieren** –
-  derselbe wie in den Einstellungen (Abschnitt 8). Der Hinweis verschwindet,
-  sobald der Vorrat wieder reicht.
+  der Karte **„Geladen bis …"** mit dem Knopf **Holen** – derselbe wie bei den
+  Wochen (Abschnitt 8). Der Hinweis verschwindet, sobald der Vorrat wieder
+  reicht.
+- **Alle Wochen** über der Karte führt zu allen Wochen, auch den fertigen
+  (Abschnitt 8).
 - **Gruppenbesuche des Dienstaufsehers** mit möglichen Konflikten stehen als
   eigene Zeile darunter, auch wenn der Besuch Monate voraus liegt; ein Tipp
   führt zu den Gruppenbesuchen (Abschnitt 5).
@@ -82,8 +84,10 @@ der Stelle von „Diese Woche in der Versammlung".
   erreichst du über deinen Namen ganz unten.
 - **Ansehen oder Planen.** Die Bereiche im Menü öffnen immer zum Ansehen: so,
   wie es alle sehen. Neben dem Titel steht **Planen** – damit kommst du zu den
-  Zuteilungen, ebenso über **Planung** im Menü. Beim Planen steht am Handy oben
-  ein Kreuz und **Fertig**; beides führt zurück zum Ansehen.
+  Zuteilungen. **Planung** im Menü führt zu allen Wochen: am Handy und am
+  Tablet auf eine eigene Seite, am breiten Bildschirm in den Plan, mit den
+  Wochen links daneben (Abschnitt 8). Beim Planen steht am Handy oben ein Kreuz
+  und **Fertig**; beides führt zurück zum Ansehen.
 - **Gruppenaufseher** planen nur den Predigtdienst ihrer Gruppe: Sie sehen
   **Planen** nur dort, unter **Planen und verwalten** nur die **Planung**, und
   die Startseite wie Verkündiger, ohne Planungs‑Karte.
@@ -456,7 +460,7 @@ Ausgabe des Programms.
   Unveränderte und vergangene Wochen stehen nur gezählt da. Geschrieben wird
   erst mit **Übernehmen**.
 - **Wochen, deren Programm noch nicht geholt ist,** werden vorgemerkt: Der
-  Vortrag steht in der Woche, sobald ihr Programm importiert ist.
+  Vortrag steht in der Woche, sobald ihr Programm geholt ist.
 - **Ein eigener Redner** wird über seinen Namen mit seiner Person verbunden und
   bekommt Aufgabe, Bestätigung und Erinnerung wie bei jeder Zuteilung. Gibt es
   niemanden mit genau diesem Namen, sagt es die Vorschau.
@@ -728,9 +732,9 @@ im Buch *Organisiert, Jehovas Willen zu tun*, Kapitel 5). Unter
   was es schon gibt: eine Woche, in der die Gruppe bereits besucht wird. Der
   **Besucher** lässt sich für diesen einen Besuch ändern. **Entfernen** fragt
   vorher nach; der Treffpunkt ist danach wieder frei.
-- **Vorgemerkt** heißt: Die Woche ist noch nicht importiert. Der Besuch nennt
-  vorab den Treffpunkt laut Grundplan und wird eingetragen, sobald die Woche
-  importiert ist.
+- **Vorgemerkt** heißt: Das Programm der Woche ist noch nicht geholt. Der Besuch nennt
+  vorab den Treffpunkt laut Grundplan und wird eingetragen, sobald ihr
+  Programm geholt ist.
 
 **Mögliche Konflikte** stehen an der Zeile und im Blatt des Besuchs:
 
@@ -941,7 +945,7 @@ Die **Zeitleiste** zeigt alle Aufgaben dieser Person aus den geladenen Wochen,
 chronologisch, jeweils mit Wochentag, Datum und Uhrzeit – Programmpunkte,
 Hilfsdienste, geleitete Treffpunkte und Trolley-Termine (diese ab der
 laufenden Woche). Beim Dienstaufseher stehen auch seine **vorgemerkten
-Gruppenbesuche** darin – Besuche in Wochen, die noch nicht importiert sind, an
+Gruppenbesuche** darin – Besuche in Wochen, deren Programm noch nicht geholt ist, an
 den Tagen laut Grundplan. Vergangenes wird blasser dargestellt. Hat jemand
 weder Zuteilung noch Abwesenheit, entfällt die Karte.
 
@@ -1129,7 +1133,7 @@ sieht nur, wer Admin ist.
 
 ![Einstellungen](screenshots/planer-einstellungen.png)
 
-Am Handy stehen untereinander sechs Karten:
+Am Handy stehen untereinander fünf Karten:
 
 - **Versammlung** – **Name**, **Königreichssaal** und **Programmsprachen**.
 - **Zusammenkünfte** – **Unter der Woche** und **Am Wochenende**, der Schalter
@@ -1138,8 +1142,10 @@ Am Handy stehen untereinander sechs Karten:
   beide Zeilen öffnen dieselbe Seite **Gruppen und Trolleys**.
 - **Mitteilungen** – die **Erinnerungen**.
 - **Wer plant** – alle, die planen dürfen.
-- **Programm-Import** – holt die nächste Woche des Arbeitshefts von jw.org;
-  wie das geht, steht unter [Programm importieren](#8-programm-importieren).
+
+Das Programm der Wochen holst du nicht hier, sondern bei den Wochen unter
+**Planung** ([Abschnitt 8](#8-programm-holen)); bis zum 15. Oktober 2026 stand
+der Import als letzte Karte in den Einstellungen.
 
 Jede Zeile nennt, was eingestellt wird, und dazu, was gerade gilt – etwa
 „Dienstag 19:00". So siehst du alles auf einen Blick, ohne etwas zu öffnen. Ein
@@ -1156,7 +1162,7 @@ Schließen.
 
 Am Desktop stehen links untereinander die Abschnitte – **Versammlung**,
 **Zusammenkünfte**, **Hilfsdienste**, **Gruppen und Trolleys**, **Mitteilungen
-und Erinnerungen**, **Wer plant** und **Programm-Import** –, jeder mit einer
+und Erinnerungen** und **Wer plant** –, jeder mit einer
 Kurzfassung darunter, etwa „Dienstag 19:00 · Sonntag 10:00" oder
 „Gruppen: 4 · Trolleys: 3". Rechts steht der gewählte Abschnitt mit allem, was
 am Handy hinter seinen Zeilen liegt. Zuerst ist **Versammlung** gewählt; die
@@ -1460,21 +1466,37 @@ nur der **Ratgeber**.
 
 ---
 
-## 8. Programm importieren
+## 8. Programm holen
 
-Über den **Import** in den Einstellungen holt die App das Arbeitsheft‑Programm der
-kommenden Woche direkt von jw.org – inklusive Liedern, Bibelbuch,
-Schulungspunkten und der Struktur der Zusammenkünfte. Sind weitere Programmsprachen
-konfiguriert, werden deren Varianten gleich mitgeladen. Zuteilungen bleiben dabei
-leer und werden anschließend unter **Planen** vergeben.
+Das Programm einer Woche holt die App aus dem Arbeitsheft auf jw.org – mit
+Liedern, Bibelbuch, Schulungspunkten und dem Ablauf der Zusammenkünfte. Sind
+weitere Programmsprachen eingestellt, kommen ihre Fassungen gleich mit. Holen
+dürfen Planer und Admin.
 
-Über dem Knopf steht, wie weit du schon bist: **„Geladen bis …"** nennt den
-letzten Tag, für den ein Programm vorliegt, darunter die Anzahl der geladenen
-Wochen. Jeder Druck auf den Knopf holt genau eine weitere Woche.
+**Die Wochen** stehen unter **Planung** im Menü. Am Handy und am Tablet ist das
+eine eigene Seite mit allen Wochen ab der laufenden; am breiten Bildschirm
+stehen sie links neben dem Plan, die gezeigte Woche umrandet. Jede Woche nennt
+rechts, was zu tun ist – **Probleme**, **Offen** oder **Bereit zum Senden** –,
+darunter, wann sie ist oder was sie besonders macht, und unten, wie weit sie
+ist: **Zuteilen**, **Senden**, **Zusagen**. Ein Tipp öffnet ihren Plan; am
+breiten Bildschirm wechselt er nur die Woche. Unter den Wochen steht
+gestrichelt die nächste, deren Programm noch fehlt, mit **Holen**. Am Handy
+folgt **Auch zu planen** mit dem Predigtdienst und den Weiteren Plänen.
 
-Der Import läuft nicht von selbst. Damit er nicht in Vergessenheit gerät,
-erinnert dich die **Planungs‑Karte auf der Startseite**, sobald die Programme
-weniger als drei Wochen voraus reichen – mit demselben Knopf (Abschnitt 1).
+**Holen** öffnet das Blatt **Programm holen**. Es zeigt erst, was aus dem
+Arbeitsheft kam: die Woche, ihre Abschnitte mit der Zahl der Programmpunkte
+und die Programmsprachen. Dann wählst du:
+
+- **Übernehmen und zuteilen** – die Woche kommt dazu, ihr Plan öffnet sich, und
+  die offenen Plätze der ganzen Woche werden automatisch besetzt. Feste Rollen
+  und Abwesenheiten werden dabei beachtet.
+- **Nur übernehmen** – die Woche kommt dazu; zugeteilt wird später.
+- **Abbrechen** – nichts ändert sich.
+
+Jedes Holen bringt genau eine weitere Woche, und es läuft nicht von selbst.
+Damit es nicht in Vergessenheit gerät, erinnert dich die **Planungs‑Karte auf
+der Startseite**, sobald die Programme weniger als drei Wochen voraus reichen –
+mit **„Geladen bis …"** und demselben **Holen** (Abschnitt 1).
 
 **Die App arbeitet mit den letzten 52 Wochen.** Ältere Wochen bleiben gespeichert
 und gehen nicht verloren, werden beim Start aber nicht mehr mitgeladen – ein Jahr
@@ -1529,9 +1551,9 @@ Versammlung und die eigene Gruppe auf dem Bogen, wie am Bildschirm.
 28. September bis 4. Oktober steht also auf dem September‑Blatt, die vom
 5. Oktober auf dem Oktober‑Blatt – so hängt jede Woche an genau einem Aushang.
 
-Gedruckt wird nur, was **geladen** ist. Wochen, die noch nicht importiert sind
-oder außerhalb der geladenen 52 Wochen liegen (siehe
-[Abschnitt 8](#8-programm-importieren)), fehlen auf dem Blatt. Wenn ein Monat
+Gedruckt wird nur, was **geladen** ist. Wochen, deren Programm noch nicht
+geholt ist oder die außerhalb der geladenen 52 Wochen liegen (siehe
+[Abschnitt 8](#8-programm-holen)), fehlen auf dem Blatt. Wenn ein Monat
 unvollständig herauskommt, lohnt vorher ein Blick, ob die Wochen überhaupt
 schon da sind.
 
@@ -1581,7 +1603,7 @@ Ein Hinweisstreifen nennt den Zeitpunkt der Aufnahme:
 ![Offline-Stand](screenshots/offline-stand.png)
 
 **Planen ist offline gesperrt.** Zuteilen, automatisch zuteilen, Personen
-bearbeiten, Einstellungen ändern und Importieren funktionieren nur online. Beim
+bearbeiten, Einstellungen ändern und Holen funktionieren nur online. Beim
 Versuch erscheint ein kurzer Hinweis; die Schaltflächen bleiben sichtbar, damit
 du siehst, was verfügbar wäre.
 
