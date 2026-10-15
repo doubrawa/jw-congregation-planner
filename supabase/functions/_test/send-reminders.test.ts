@@ -174,7 +174,8 @@ let leseWege: string[]
 let weeks: { start: string; data: unknown }[]
 let fsWeeks: { start: string; data: unknown }[]
 let confirmations: { task_key: string; status: string }[]
-let reminderLog: { user_id: string; kind: string }[]
+/** Heutige Versand-Sperre (`reminder_log`); ohne Angabe gehört ein Eintrag zu `CONG`. */
+let reminderLog: { user_id: string; kind: string; congregation_id?: string }[]
 let subs: typeof SUBS
 /** Personen der Versammlung — je Test überschreibbar (Namensvetter). */
 let persons: typeof PERSONS
@@ -218,7 +219,12 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
       { id: CONG, mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00', reminder_first: reminders.first, reminder_last: reminders.last, reminder_repeat: reminders.repeat },
     ])
   }
-  if (path.startsWith('reminder_log')) return jsonRes(reminderLog)
+  if (path.startsWith('reminder_log')) {
+    // Wie die Datenbank: die Versammlung wird ausgewertet, und mehr als
+    // `MAX_ROWS` Zeilen kommen nicht.
+    const cong = filterWert(path, 'congregation_id')
+    return jsonRes(reminderLog.filter((z) => cong === null || (z.congregation_id ?? CONG) === cong).slice(0, MAX_ROWS))
+  }
   if (path.startsWith('weeks')) return jsonRes(weeks)
   if (path.startsWith('fs_weeks')) return jsonRes(fsWeeks)
   if (path.startsWith('trolleys')) return jsonRes(trolleys)
@@ -526,6 +532,14 @@ describe('send-reminders: wer NICHT erinnert wird', () => {
         expect(previewFor(await run(), U_MAX), tag).toBeDefined()
       }
     })
+  })
+
+  it('die Sperre hält auch neben tausend Einträgen anderer Versammlungen (16.10.2026)', async () => {
+    // Bis dahin kam der ganze Tag aller Versammlungen in einer Abfrage — an
+    // der Zeilengrenze fehlte Max' Eintrag, und er wurde noch einmal erinnert.
+    const fremd = { user_id: 'user-fremd', kind: 'self', congregation_id: 'cong-fremd' }
+    reminderLog = [...Array.from({ length: MAX_ROWS }, () => fremd), { user_id: U_MAX, kind: 'self' }]
+    expect(previewFor(await run(), U_MAX)).toBeUndefined()
   })
 
   it('heute schon erinnert → übersprungen, kein zweiter Versand', async () => {

@@ -97,11 +97,19 @@ const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? ''
 
 const klient = restKlient(SUPABASE_URL, SERVICE_KEY)
 
-/** Heutige Versand-Einträge als Menge "userId|kind" (Doppel-Versand-Sperre). */
-async function loadSentToday(todayISO: string): Promise<Set<string>> {
+/**
+ * Heutige Versand-Einträge der Versammlung als Menge "userId|kind"
+ * (Doppel-Versand-Sperre).
+ *
+ * Je Versammlung, nicht für alle zusammen: Bis zum 16.10.2026 kam der ganze
+ * Tag aller Versammlungen in einer Abfrage, und ab der Zeilengrenze von
+ * PostgREST (`max-rows`, gehostet 1000) fehlten still Einträge — wer schon
+ * erinnert war, bekam es am selben Tag noch einmal.
+ */
+async function loadSentToday(todayISO: string, cong: string): Promise<Set<string>> {
   try {
     const rows = await klient.get<{ user_id: string; kind: string }[]>(
-      `reminder_log?select=user_id,kind&sent_on=eq.${wert(todayISO)}`,
+      `reminder_log?select=user_id,kind&congregation_id=eq.${wert(cong)}&sent_on=eq.${wert(todayISO)}`,
     )
     return new Set(rows.map((r) => `${r.user_id}|${r.kind}`))
   } catch (err) {
@@ -210,8 +218,6 @@ Deno.serve(async (req: Request) => {
     const now = new Date()
     const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
     const todayISO = new Date(todayUTC).toISOString().slice(0, 10)
-    // Wer heute schon benachrichtigt wurde ("userId|kind") → nicht erneut senden.
-    const sentToday = await loadSentToday(todayISO)
 
     const congs = await klient.get<
       {
@@ -269,7 +275,9 @@ Deno.serve(async (req: Request) => {
       const zeiten = zeitenAus(cong)
       const [vonWoche, bisWoche] = wochenFenster(todayUTC, rem)
 
-      const [weeks, fsWeeks, members, persons, services, subs] = await Promise.all([
+      const [sentToday, weeks, fsWeeks, members, persons, services, subs] = await Promise.all([
+        // Wer heute schon benachrichtigt wurde ("userId|kind") → nicht erneut senden.
+        loadSentToday(todayISO, cong.id),
         // Die Kennung kommt aus der Spalte, nicht aus dem Blob: Sie ist der
         // Primärschlüssel der Woche, der Blob trägt nur das Programm.
         klient.get<{ start: string; data: Week }[]>(

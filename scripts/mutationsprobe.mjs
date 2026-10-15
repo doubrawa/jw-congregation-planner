@@ -7112,6 +7112,13 @@ export const KATALOG = [
     ersetzen: "      const bescheid = await klient\n        .get<{ task_key: string; name: string; persoenlich_at: string | null }[]>(\n          `assignment_log?select=task_key,name,persoenlich_at&congregation_id=eq.${wert(cong.id)}&persoenlich_at=not.is.null`,\n        )\n",
   },
   {
+    id: 'erinnerung-sperre-je-versammlung',
+    datei: 'supabase/functions/send-reminders/index.ts',
+    regel: 'Die Doppel-Versand-Sperre liest den Tag je Versammlung — alle zusammen kamen nicht über die Zeilengrenze.',
+    suchen: '`reminder_log?select=user_id,kind&congregation_id=eq.${wert(cong)}&sent_on=eq.${wert(todayISO)}`',
+    ersetzen: '`reminder_log?select=user_id,kind&sent_on=eq.${wert(todayISO)}`',
+  },
+  {
     id: 'import-week-sonntag-laufende',
     datei: 'supabase/functions/import-week/index.ts',
     regel: 'Ohne `after` kommt die laufende Woche — auch am Sonntag, nicht schon die nächste.',
