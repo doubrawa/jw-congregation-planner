@@ -476,6 +476,74 @@
   font-size: 14px;
 }
 
+/* ---- Tabellen: Treffpunkte, Gruppenbesuche, Weitere Pläne ------------- */
+
+.druck-tabelle {
+  display: flex;
+  flex-direction: column;
+}
+
+.druck-tabelle-titel {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding-bottom: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--farbe);
+}
+
+.druck-tabelle-zeile {
+  display: grid;
+  column-gap: 12px;
+  align-items: baseline;
+  padding: 6px 0 7px;
+  border-top: 1px solid var(--linie);
+  font-size: 13.5px;
+}
+
+.druck-tabelle-zeile--kopf {
+  padding: 0 0 5px;
+  border-top: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tinte2);
+}
+
+.druck-tabelle-zeile:not(.druck-tabelle-zeile--kopf) > :last-child {
+  font-weight: 600;
+}
+
+/* Was anders ist als sonst — ein Kasten, damit es am Aushang auffällt. */
+.druck-anders {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--tinte);
+  border-radius: 10px;
+}
+
+.druck-anders-titel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tinte2);
+}
+
+.druck-anders-zeile {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  column-gap: 8px;
+  font-size: 13.5px;
+}
+
+.druck-anders-zeile > :first-child {
+  font-weight: 700;
+}
+
 /* ---- S-89: sechs Zettel je Blatt, zum Ausschneiden (Entwurf GDruckS89) - */
 
 .s89-blatt {

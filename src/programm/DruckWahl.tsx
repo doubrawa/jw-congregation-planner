@@ -3,12 +3,12 @@ import { createPortal, flushSync } from 'react-dom'
 import { useApp } from '../app/context'
 import { Option } from '../bausteine/Option'
 import { Sheet } from '../components/Sheet'
+import { TreffpunktBogen } from '../druck/TreffpunktBogen'
 import { useDruckBogen } from '../druck/useDruckBogen'
 import { MonatsBogen, WochenBogen } from '../druck/ZusammenkunftBogen'
 import { fill, useT } from '../i18n/useT'
-import { druckKennzeichen, monatDerWoche, monatsName } from './druck'
+import { monatDerWoche, monatsName, wochenDesMonats, wochenZeitraum } from './druck'
 import { DruckKnopf } from './DruckKnopf'
-import { useMonatDrucken } from './MonatsDruck'
 
 /**
  * **Drucken: diese Woche oder der ganze Monat** (T105; T121, Entwurf
@@ -16,15 +16,16 @@ import { useMonatDrucken } from './MonatsDruck'
  *
  * Für den Aushang will der Planer den Monat am Stück — **wahlweise**, wie der
  * Betreiber es gesagt hat, nicht statt der Woche. Deshalb öffnet der Knopf ein
- * Blatt mit der Wahl, statt sofort zu drucken.
+ * Blatt mit der Wahl, statt sofort zu drucken. Gedruckt wird ein Bogen (Phase
+ * 9): bei den Zusammenkünften der Wochen- oder Monatsbogen, im Predigtdienst
+ * der Bogen der Treffpunkte.
  *
  * Das Blatt hängt per Portal am Dokument: Der Knopf liegt im Wochenstreifen,
  * und der wird zum Wischen per `transform` verschoben — ein festes Blatt darin
  * säße nicht mehr am Bildschirm, sondern am Streifen.
  *
- * Ohne Monat (die Woche trägt kein gültiges Datum) oder ohne Bildschirm, der
- * ihn drucken kann, druckt der Knopf wie früher gleich die Woche — eine Wahl
- * mit einem einzigen Eintrag wäre ein Tipp zu viel.
+ * Ohne Monat (die Woche trägt kein gültiges Datum) druckt der Knopf gleich die
+ * Woche — eine Wahl mit einem einzigen Eintrag wäre ein Tipp zu viel.
  *
  * Am Handy ein rundes Zeichen neben dem Termin; ab dem Tablet steht das Wort
  * dabei (`mitText`), rechts neben der Wochenwahl (`GTabletWoche`).
@@ -40,30 +41,31 @@ export function DruckWahl({
 }) {
   const { state } = useApp()
   const { t } = useT()
-  const monatDruckenFs = useMonatDrucken()
   const { drucken, bogen } = useDruckBogen()
-  const monat = monatDerWoche(state.weeks[state.week])
-  const [offen, setOffen] = useState(false)
-  // Die Zusammenkünfte haben ihre Bögen (Phase 9); die Treffpunkte drucken
-  // bis auf Weiteres den Bildschirm.
-  const zusammenkunft = state.tab !== 'fs'
   const wi = state.week
+  const week = state.weeks[wi]
+  const monat = monatDerWoche(week)
+  const [offen, setOffen] = useState(false)
+  const treffpunkte = state.tab === 'fs'
 
-  const woche = () => {
-    if (zusammenkunft) {
-      drucken(<WochenBogen wi={wi} />)
-      return
-    }
-    druckKennzeichen(null) // die Woche ist der Normalfall — kein Kennzeichen
-    window.print()
-  }
-  const ganzerMonat = (m: string) => {
-    if (zusammenkunft) drucken(<MonatsBogen monat={m} />)
-    else monatDruckenFs?.(m)
-  }
-  const mitMonat = monat !== null && (zusammenkunft || monatDruckenFs !== null)
+  const woche = () =>
+    drucken(
+      treffpunkte ? (
+        <TreffpunktBogen wochen={[wi]} zeitraum={week ? wochenZeitraum(week, state.lang, zeitraum ?? '') : (zeitraum ?? '')} />
+      ) : (
+        <WochenBogen wi={wi} />
+      ),
+    )
+  const ganzerMonat = (m: string) =>
+    drucken(
+      treffpunkte ? (
+        <TreffpunktBogen wochen={wochenDesMonats(state.weeks, m)} zeitraum={monatsName(m, state.lang)} />
+      ) : (
+        <MonatsBogen monat={m} />
+      ),
+    )
 
-  if (!mitMonat)
+  if (!monat)
     return (
       <>
         <DruckKnopf mitText={mitText} onClick={woche} />

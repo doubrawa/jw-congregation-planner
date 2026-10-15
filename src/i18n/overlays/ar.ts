@@ -727,4 +727,13 @@ export default {
   "druckNochFrei": "لا يزال شاغرًا – من يستطيع توليه فليُبلغ عبر التطبيق أو الشيوخ.",
   "druckMit": "{a} مع {b}",
   "s89DieserZettel": "طباعة هذه البطاقة",
+  "druckVersammlungstreffpunkte": "اجتماعات خدمة الحقل للجماعة",
+  "druckGruppentreffpunkte": "اجتماعات خدمة الحقل للفرق",
+  "druckAndersAlsSonst": "على غير المعتاد",
+  "druckEntfaellt": "لا يُعقد",
+  "druckZusaetzlich": "إضافي",
+  "druckStatt": "بدلًا من {alt}",
+  "druckTag": "اليوم",
+  "druckZeit": "الوقت",
+  "druckTreffpunkt": "المكان",
 } satisfies Partial<Dict>

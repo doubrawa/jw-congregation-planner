@@ -727,4 +727,13 @@ export default {
   "druckNochFrei": "încă liber – cine poate prelua să anunțe în aplicație sau bătrânilor.",
   "druckMit": "{a} cu {b}",
   "s89DieserZettel": "Tipărește acest bilețel",
+  "druckVersammlungstreffpunkte": "Întrunirile congregației pentru serviciu",
+  "druckGruppentreffpunkte": "Întrunirile grupelor pentru serviciu",
+  "druckAndersAlsSonst": "Altfel decât de obicei",
+  "druckEntfaellt": "nu are loc",
+  "druckZusaetzlich": "în plus",
+  "druckStatt": "în loc de {alt}",
+  "druckTag": "Ziua",
+  "druckZeit": "Ora",
+  "druckTreffpunkt": "Locul",
 } satisfies Partial<Dict>

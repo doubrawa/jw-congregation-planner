@@ -264,6 +264,12 @@ export const DE = {
     aenderungenInDerApp: 'Änderungen stehen in der App',
     druckNochFrei: 'noch frei – wer übernehmen kann, meldet sich in der App oder bei den Ältesten.',
     druckMit: '{a} mit {b}',
+    // Bogen der Treffpunkte (Entwurf GDruckTreffpunkte): Überschriften, Spalten
+    // und was gegenüber dem Grundplan anders ist — „statt {alt}" nennt Zeit und
+    // Ort, die sonst gelten.
+    druckVersammlungstreffpunkte: 'Versammlungstreffpunkte', druckGruppentreffpunkte: 'Gruppentreffpunkte',
+    druckAndersAlsSonst: 'Anders als sonst', druckEntfaellt: 'entfällt', druckZusaetzlich: 'zusätzlich',
+    druckStatt: 'statt {alt}', druckTag: 'Tag', druckZeit: 'Zeit', druckTreffpunkt: 'Treffpunkt',
     // Kongresswoche (T121): statt des Programms der leere Saal und zwei Wege.
     kongressAusfall: 'In dieser Woche fallen alle Zusammenkünfte aus.',
     treffpunkteDieserWoche: 'Treffpunkte dieser Woche',

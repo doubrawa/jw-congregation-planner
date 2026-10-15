@@ -10,6 +10,7 @@ import {
 } from '../components/gruppenbesuch-anzeige'
 import { besuchStand } from '../data/gruppenbesuche'
 import { useBesuchsLage } from '../components/useBesuchsLage'
+import { GruppenbesuchBogen } from '../druck/TreffpunktBogen'
 import { overseerGroup } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import { fill, useT } from '../i18n/useT'
@@ -49,7 +50,7 @@ export function GruppenbesucheAnsicht() {
 
   return (
     <>
-      <AnsichtDrucken titel={t.gbTitel} />
+      <AnsichtDrucken titel={t.gbTitel} bogen={() => <GruppenbesuchBogen />} />
       {gruppe && (
         <section className="karte gb-karte">
           <h2 className="gb-karte-titel is-eigen">{`${t.gbDeineGruppe} · ${tu(gruppe.name)}`}</h2>

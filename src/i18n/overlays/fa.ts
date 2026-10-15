@@ -726,4 +726,13 @@ export default {
   "druckNochFrei": "هنوز خالی است – هر کس می‌تواند آن را بر عهده بگیرد، در برنامه یا به پیران جماعت اطلاع دهد.",
   "druckMit": "{a} با {b}",
   "s89DieserZettel": "چاپ این کارت",
+  "druckVersammlungstreffpunkte": "جلسات خدمت موعظهٔ جماعت",
+  "druckGruppentreffpunkte": "جلسات خدمت موعظهٔ گروه‌ها",
+  "druckAndersAlsSonst": "متفاوت با همیشه",
+  "druckEntfaellt": "برگزار نمی‌شود",
+  "druckZusaetzlich": "اضافه",
+  "druckStatt": "به جای {alt}",
+  "druckTag": "روز",
+  "druckZeit": "ساعت",
+  "druckTreffpunkt": "محل",
 } satisfies Partial<Dict>

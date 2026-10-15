@@ -727,4 +727,13 @@ export default {
   "druckNochFrei": "ancora libero – chi può occuparsene lo segnali nell’app o agli anziani.",
   "druckMit": "{a} con {b}",
   "s89DieserZettel": "Stampa questo foglietto",
+  "druckVersammlungstreffpunkte": "Adunanze per il servizio della congregazione",
+  "druckGruppentreffpunkte": "Adunanze per il servizio dei gruppi",
+  "druckAndersAlsSonst": "Diverso dal solito",
+  "druckEntfaellt": "non si tiene",
+  "druckZusaetzlich": "in più",
+  "druckStatt": "invece di {alt}",
+  "druckTag": "Giorno",
+  "druckZeit": "Ora",
+  "druckTreffpunkt": "Luogo",
 } satisfies Partial<Dict>

@@ -727,4 +727,13 @@ export default {
   "druckNochFrei": "aún libre – quien pueda encargarse, que lo diga en la aplicación o a los ancianos.",
   "druckMit": "{a} con {b}",
   "s89DieserZettel": "Imprimir esta tarjeta",
+  "druckVersammlungstreffpunkte": "Reuniones para el servicio de la congregación",
+  "druckGruppentreffpunkte": "Reuniones para el servicio de los grupos",
+  "druckAndersAlsSonst": "Distinto de lo habitual",
+  "druckEntfaellt": "no se realiza",
+  "druckZusaetzlich": "adicional",
+  "druckStatt": "en lugar de {alt}",
+  "druckTag": "Día",
+  "druckZeit": "Hora",
+  "druckTreffpunkt": "Lugar",
 } satisfies Partial<Dict>

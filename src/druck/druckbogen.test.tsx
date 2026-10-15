@@ -5,9 +5,11 @@ import { AppDispatchContext, AppStateContext, AppStoreContext, type AppState, us
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { setAnlass } from '../data/anlass'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
-import type { Section, Service, Week } from '../data/types'
+import { genFsWeek } from '../data/fs'
+import type { FsInstance, FsRule, Section, Service, Week } from '../data/types'
 import { dict } from '../i18n/ui'
 import { Bogen } from './Bogen'
+import { GruppenbesuchBogen, TreffpunktBogen } from './TreffpunktBogen'
 import { useDruckBogen } from './useDruckBogen'
 import { MonatsBogen, WochenBogen } from './ZusammenkunftBogen'
 
@@ -169,6 +171,88 @@ describe('Der Monatsbogen', () => {
     expect(kongress.querySelector('.druck-kongress')?.textContent).toBe(t.kongressAusfall)
     expect(kongress.querySelector('.druck-hinweis')?.textContent).toContain('Dienstag, 15. September')
     expect(kongress.querySelector('.druck-knapp-tag')).toBeNull()
+  })
+})
+
+/**
+ * **Der Bogen der Treffpunkte** (Entwurf `GDruckTreffpunkte`): Versammlung und
+ * Gruppen je Datum, was anders ist als sonst, die nächsten Gruppenbesuche —
+ * mit dem, was der Leser auch am Bildschirm sieht (`fsVisible`).
+ */
+describe('Der Bogen der Treffpunkte', () => {
+  const GRUPPEN = [
+    { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null },
+    { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
+  ]
+  const REGELN: FsRule[] = [
+    { id: 'rv', grp: null, wd: 3, time: '09:30', place: 'Königreichssaal', monthly: 0, skipCong: false },
+    { id: 'r1', grp: 'g1', wd: 6, time: '09:30', place: 'Bei Familie A', monthly: 0, skipCong: false },
+    { id: 'r2', grp: 'g2', wd: 6, time: '10:00', place: 'Bei Familie B', monthly: 0, skipCong: false, aus: ['2026-09-14'] },
+  ]
+  const STARTS = ['2026-09-07', '2026-09-14']
+  const fsWeeks = (): FsInstance[][] =>
+    STARTS.map((start) => genFsWeek(start, REGELN).map((inst) => (inst.id === 'rv' ? { ...inst, leader: 'Leo Leiter' } : inst)))
+  const ICH_IN_G1 = { id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger' as const, female: false, tel: '', mail: '', priv: demoZustand().persons[0]!.priv, grp: 'g1' }
+
+  const zeigeBogen = (over: Partial<AppState>) =>
+    zeige(<TreffpunktBogen wochen={[0, 1]} zeitraum="September 2026" />, {
+      weeks: STARTS.map((start) => woche({ start })),
+      fsWeeks: fsWeeks(),
+      fsRules: REGELN,
+      groups: GRUPPEN,
+      persons: [ICH_IN_G1],
+      personId: 'p-a',
+      gruppenbesuche: [
+        { id: 'b1', woche: '2026-09-14', grp: 'g1', pid: null },
+        { id: 'b2', woche: '2026-10-12', grp: 'g2', pid: null },
+      ],
+      ...over,
+    })
+  const tabelle = (c: HTMLElement, titel: string) =>
+    [...c.querySelectorAll('.druck-tabelle')]
+      .find((s) => s.querySelector('.druck-tabelle-titel')?.textContent === titel)
+      ?.querySelectorAll('.druck-tabelle-zeile:not(.druck-tabelle-zeile--kopf)') ?? []
+  const zellen = (zeilen: Iterable<Element>) => [...zeilen].map((z) => [...z.children].map((c) => c.textContent))
+
+  it('wer zuteilt, druckt Versammlung und alle Gruppen je Datum — ein freier Leiter gepunktet', () => {
+    const { container } = zeigeBogen({ planner: true })
+    expect(zellen(tabelle(container, t.druckVersammlungstreffpunkte)).map((z) => [z[2], z[3]])).toEqual([
+      ['Königreichssaal', 'Leo Leiter'],
+      ['Königreichssaal', 'Leo Leiter'],
+    ])
+    const gruppen = [...tabelle(container, t.druckGruppentreffpunkte)]
+    expect(gruppen.map((z) => z.children[2]?.textContent)).toEqual(['Gruppe 1', 'Gruppe 2', 'Gruppe 1'])
+    expect(gruppen.every((z) => z.querySelector('.druck-offen') !== null)).toBe(true)
+  })
+
+  it('„Anders als sonst": was entfällt, und der Besuch des Dienstaufsehers', () => {
+    const { container } = zeigeBogen({ planner: true })
+    const anders = texte(container, '.druck-anders-zeile')
+    expect(anders).toContainEqual(expect.stringContaining(`Gruppe 2 · ${t.druckEntfaellt}`))
+    expect(anders).toContainEqual(expect.stringContaining(`Gruppe 1 · ${t.gbMarker}`))
+  })
+
+  it('der Bogen der Gruppenbesuche nennt die kommenden — vorbeigegangene nicht, wie die Ansicht', () => {
+    const { container } = zeige(<GruppenbesuchBogen />, {
+      planner: true,
+      groups: GRUPPEN,
+      gruppenbesuche: [
+        { id: 'alt', woche: '2020-01-06', grp: 'g1', pid: null },
+        { id: 'neu', woche: '2099-03-02', grp: 'g2', pid: null },
+      ],
+    })
+    expect(container.querySelector('.druck-blatt-kopf')?.textContent).toContain(t.gbTitel)
+    expect(zellen(tabelle(container, t.fsGruppenbesucheTab)).map((z) => z[2])).toEqual(['Gruppe 2'])
+  })
+
+  it('wer nicht zuteilt, druckt die Versammlung und die eigene Gruppe — von fremden Besuchen nur Woche und Gruppe', () => {
+    const { container } = zeigeBogen({ planner: false, zuteiler: false })
+    expect([...tabelle(container, t.druckGruppentreffpunkte)].map((z) => z.children[2]?.textContent)).toEqual(['Gruppe 1', 'Gruppe 1'])
+    expect(texte(container, '.druck-anders-zeile').some((z) => z.includes('Gruppe 2'))).toBe(false)
+    const besuche = zellen(tabelle(container, t.fsGruppenbesucheTab))
+    expect(besuche.map((z) => z[2])).toEqual(['Gruppe 1', 'Gruppe 2'])
+    expect(besuche[0]?.[1]).toContain('Bei Familie A')
+    expect(besuche[1]?.[1]).toBe('')
   })
 })
 

@@ -727,4 +727,13 @@ export default {
   "druckNochFrei": "ещё свободно — кто может взять, пусть сообщит в приложении или старейшинам.",
   "druckMit": "{a} и {b}",
   "s89DieserZettel": "Распечатать эту карточку",
+  "druckVersammlungstreffpunkte": "Общие встречи для проповеди",
+  "druckGruppentreffpunkte": "Встречи групп для проповеди",
+  "druckAndersAlsSonst": "Не как обычно",
+  "druckEntfaellt": "не проводится",
+  "druckZusaetzlich": "дополнительно",
+  "druckStatt": "вместо {alt}",
+  "druckTag": "День",
+  "druckZeit": "Время",
+  "druckTreffpunkt": "Место",
 } satisfies Partial<Dict>

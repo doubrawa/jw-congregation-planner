@@ -727,4 +727,13 @@ export default {
   "druckNochFrei": "henüz boş – üstlenebilecek olan uygulamadan ya da ihtiyarlara bildirsin.",
   "druckMit": "{a} ile {b}",
   "s89DieserZettel": "Bu kartı yazdır",
+  "druckVersammlungstreffpunkte": "Tüm cemaat için tarla buluşmaları",
+  "druckGruppentreffpunkte": "Grupların tarla buluşmaları",
+  "druckAndersAlsSonst": "Normalden farklı",
+  "druckEntfaellt": "yapılmıyor",
+  "druckZusaetzlich": "ek olarak",
+  "druckStatt": "{alt} yerine",
+  "druckTag": "Gün",
+  "druckZeit": "Saat",
+  "druckTreffpunkt": "Yer",
 } satisfies Partial<Dict>

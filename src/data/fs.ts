@@ -146,6 +146,40 @@ export function genFsWeek(wochenStart: string, rules: FsRule[]): FsInstance[] {
   return out
 }
 
+/** Ein Treffpunkt einer Woche, der vom Grundplan abweicht (`fsAbweichungen`). */
+export interface FsAbweichung {
+  art: 'entfaellt' | 'zusaetzlich' | 'anders'
+  inst: FsInstance
+  /** Die Regel, nach der er sonst wäre — bei `anders` und `entfaellt`. */
+  regel?: FsRule
+}
+
+/**
+ * **Was in dieser Woche anders ist als sonst** (T121, Phase 9; Entwurf
+ * `GDruckTreffpunkte`): ein Treffpunkt des Grundplans, der entfällt (der
+ * Planer hat ihn für die Woche entfernt, `FsRule.aus`), einer, der nur in
+ * dieser Woche dazukommt, und einer mit anderer Zeit oder anderem Ort.
+ *
+ * Verglichen wird mit dem, was der Grundplan **ohne** die ausgesetzten Wochen
+ * ergäbe — genau das unterscheidet „entfällt" von „gibt es nicht": Eine
+ * Monatsregel, die in dieser Woche gar nicht greift, entfällt nicht.
+ */
+export function fsAbweichungen(wochenStart: string, rules: FsRule[], ist: readonly FsInstance[]): FsAbweichung[] {
+  const soll = genFsWeek(wochenStart, rules.map((r) => ({ ...r, aus: [] })))
+  const regelVon = new Map(rules.map((r) => [r.id, r]))
+  const istNachRegel = new Map(ist.filter((i) => i.ruleId).map((i) => [i.ruleId, i]))
+  const out: FsAbweichung[] = []
+  for (const s of soll) {
+    if (!istNachRegel.has(s.ruleId)) out.push({ art: 'entfaellt', inst: s, regel: s.ruleId ? regelVon.get(s.ruleId) : undefined })
+  }
+  for (const i of ist) {
+    const regel = i.ruleId ? regelVon.get(i.ruleId) : undefined
+    if (!i.ruleId) out.push({ art: 'zusaetzlich', inst: i })
+    else if (regel && (regel.time !== i.time || regel.place !== i.place || regel.wd !== i.wd)) out.push({ art: 'anders', inst: i, regel })
+  }
+  return out.sort((a, b) => fsSort(a.inst, b.inst))
+}
+
 /**
  * Baut die Treffpunkte aller Wochen aus dem Grundplan; `seedLeaders` belegt
  * vorab Leiter (Demo). Reine Funktion — je Aufruf frische Objekte.

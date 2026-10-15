@@ -742,11 +742,20 @@ describe('Drucken im Reiter Predigtdienst', () => {
     expect(seite(container).querySelector('.druck-knopf')).not.toBeNull()
   })
 
-  it('„Ganzer Monat" druckt die Treffpunkte aller Wochen des Monats — und nur die', () => {
+  /** Die Orte, die im Moment des Druckens auf dem Bogen der Treffpunkte stehen. */
+  function orteImDruck(): () => string[] {
     let orte: string[] = []
     print.mockImplementation(() => {
-      orte = [...document.querySelectorAll('.monat-woche .treff-ort')].map((e) => e.textContent ?? '')
+      // Spalte 3 der Versammlungstreffpunkte: Tag, Zeit, Treffpunkt, Leiter.
+      orte = [...document.querySelectorAll('.druck-bogen .druck-tabelle-zeile:not(.druck-tabelle-zeile--kopf)')].map(
+        (z) => z.children[2]?.textContent ?? '',
+      )
     })
+    return () => orte
+  }
+
+  it('„Ganzer Monat" druckt die Treffpunkte aller Wochen des Monats — und nur die', () => {
+    const orte = orteImDruck()
     const { container } = zeige({
       tab: 'fs', week: 0,
       weeks: MONTAGE.map((start) => woche({ start })),
@@ -754,7 +763,20 @@ describe('Drucken im Reiter Predigtdienst', () => {
     })
     drucke(container, 1)
     expect(print).toHaveBeenCalledTimes(1)
-    expect(orte).toEqual(['Saal', 'Marktplatz'])
+    expect(orte()).toEqual(['Saal', 'Marktplatz'])
+    expect(document.querySelector('.druck-bogen .druck-blatt-kopf')?.textContent).toContain(`${t.fsShort} · September 2026`)
+  })
+
+  it('„Diese Woche" druckt nur ihre Treffpunkte', () => {
+    const orte = orteImDruck()
+    const { container } = zeige({
+      tab: 'fs', week: 1,
+      weeks: MONTAGE.map((start) => woche({ start })),
+      fsWeeks: [[treff('a', 'Saal')], [treff('b', 'Marktplatz')], [treff('c', 'Oktoberort')]],
+    })
+    drucke(container, 0)
+    expect(orte()).toEqual(['Marktplatz'])
+    expect(document.querySelector('.druck-bogen .druck-blatt-kopf')?.textContent).toContain('14.–20. September 2026')
   })
 })
 

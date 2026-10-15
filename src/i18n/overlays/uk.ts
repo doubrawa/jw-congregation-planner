@@ -727,4 +727,13 @@ export default {
   "druckNochFrei": "ще вільно — хто може взяти, нехай повідомить у застосунку або старійшинам.",
   "druckMit": "{a} і {b}",
   "s89DieserZettel": "Надрукувати цю картку",
+  "druckVersammlungstreffpunkte": "Спільні зустрічі для служіння",
+  "druckGruppentreffpunkte": "Зустрічі груп для служіння",
+  "druckAndersAlsSonst": "Не як завжди",
+  "druckEntfaellt": "не проводиться",
+  "druckZusaetzlich": "додатково",
+  "druckStatt": "замість {alt}",
+  "druckTag": "День",
+  "druckZeit": "Час",
+  "druckTreffpunkt": "Місце",
 } satisfies Partial<Dict>

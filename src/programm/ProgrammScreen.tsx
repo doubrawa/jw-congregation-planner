@@ -1,5 +1,3 @@
-import { useCallback, useState } from 'react'
-import { flushSync } from 'react-dom'
 import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
 import { Saal } from '../bausteine/Saal'
@@ -18,11 +16,10 @@ import { WochenWahl } from '../components/WochenWahl'
 import { fill, useProgWeek, useT } from '../i18n/useT'
 import { FsBereichTabs } from '../planen/FsBereichTabs'
 import { aktiverFsBereich } from '../planen/fs-bereiche'
-import { druckKennzeichen, druckThema } from './druck'
+import { druckThema } from './druck'
 import { DruckWahl } from './DruckWahl'
 import { FsProgram } from './FsProgram'
 import { GruppenbesucheAnsicht } from './GruppenbesucheAnsicht'
-import { MonatDruckenContext, MonatsDruck } from './MonatsDruck'
 import { useBeideTage } from './useBeideTage'
 import { WeiterePlaeneAnsicht } from './WeiterePlaeneAnsicht'
 import { TrolleyAnsicht } from '../trolleys/TrolleyAnsicht'
@@ -40,26 +37,6 @@ import './print.css'
  */
 export function ProgrammScreen() {
   const { state } = useApp()
-  // Der Monat, der gerade gedruckt wird (T105) — sonst null.
-  const [druckMonat, setDruckMonat] = useState<string | null>(null)
-
-  /*
-   * Erst zeichnen, dann drucken — im selben Klick. `flushSync` legt den Monat
-   * sofort ins DOM, bevor der Druckdialog das Blatt aufnimmt. Kein Effekt nach
-   * dem Rendern: Den ließe StrictMode in der Entwicklung zweimal laufen, und
-   * es gingen zwei Druckdialoge auf. Abgeräumt wird, wenn der Dialog durch ist.
-   */
-  const monatDrucken = useCallback((monat: string) => {
-    flushSync(() => setDruckMonat(monat))
-    druckKennzeichen('monat')
-    const fertig = () => {
-      window.removeEventListener('afterprint', fertig)
-      druckKennzeichen(null)
-      setDruckMonat(null)
-    }
-    window.addEventListener('afterprint', fertig)
-    window.print()
-  }, [])
 
   // Die Weiteren Pläne (T120, Phase 5): ein eigenes Thema ohne Woche.
   if (state.tab === 'wp') {
@@ -87,16 +64,9 @@ export function ProgrammScreen() {
   // Der Streifen zeichnet dieselben Inhalte dreimal — vorige, aktuelle und
   // naechste Woche — und uebernimmt das Wischen.
   return (
-    <MonatDruckenContext.Provider value={monatDrucken}>
-      <WeekStrip>
-        <ProgrammBody />
-      </WeekStrip>
-      {druckMonat && (
-        <MonatsDruck monat={druckMonat}>
-          <ProgrammBody />
-        </MonatsDruck>
-      )}
-    </MonatDruckenContext.Provider>
+    <WeekStrip>
+      <ProgrammBody />
+    </WeekStrip>
   )
 }
 

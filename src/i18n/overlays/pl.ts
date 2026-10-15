@@ -727,4 +727,13 @@ export default {
   "druckNochFrei": "jeszcze wolne – kto może się tym zająć, niech zgłosi się w aplikacji lub u starszych.",
   "druckMit": "{a} i {b}",
   "s89DieserZettel": "Wydrukuj tę karteczkę",
+  "druckVersammlungstreffpunkte": "Zbiórki dla całego zboru",
+  "druckGruppentreffpunkte": "Zbiórki grup",
+  "druckAndersAlsSonst": "Inaczej niż zwykle",
+  "druckEntfaellt": "nie odbywa się",
+  "druckZusaetzlich": "dodatkowo",
+  "druckStatt": "zamiast {alt}",
+  "druckTag": "Dzień",
+  "druckZeit": "Godzina",
+  "druckTreffpunkt": "Miejsce",
 } satisfies Partial<Dict>

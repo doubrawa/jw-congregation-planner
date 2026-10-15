@@ -727,4 +727,13 @@ export default {
   "druckNochFrei": "encore libre – qui peut s’en charger le signale dans l’application ou aux anciens.",
   "druckMit": "{a} avec {b}",
   "s89DieserZettel": "Imprimer cette fiche",
+  "druckVersammlungstreffpunkte": "Réunions pour la prédication de l’assemblée",
+  "druckGruppentreffpunkte": "Réunions pour la prédication des groupes",
+  "druckAndersAlsSonst": "Différent de d’habitude",
+  "druckEntfaellt": "n’a pas lieu",
+  "druckZusaetzlich": "en plus",
+  "druckStatt": "au lieu de {alt}",
+  "druckTag": "Jour",
+  "druckZeit": "Heure",
+  "druckTreffpunkt": "Lieu",
 } satisfies Partial<Dict>

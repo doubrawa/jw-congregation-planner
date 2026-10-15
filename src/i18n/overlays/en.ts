@@ -727,4 +727,13 @@ export default {
   "druckNochFrei": "still open – whoever can take it, please say so in the app or tell the elders.",
   "druckMit": "{a} with {b}",
   "s89DieserZettel": "Print this slip",
+  "druckVersammlungstreffpunkte": "Congregation field service meetings",
+  "druckGruppentreffpunkte": "Group field service meetings",
+  "druckAndersAlsSonst": "Different from usual",
+  "druckEntfaellt": "cancelled",
+  "druckZusaetzlich": "additional",
+  "druckStatt": "instead of {alt}",
+  "druckTag": "Day",
+  "druckZeit": "Time",
+  "druckTreffpunkt": "Meeting place",
 } satisfies Partial<Dict>
