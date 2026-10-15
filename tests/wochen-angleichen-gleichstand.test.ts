@@ -4,8 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
  * **Das Prüfskript rechnet, was das Laden rechnet** (5.10.2026, Befund 9).
  *
  * `scripts/wochen-angleichen.mjs` bringt den Bestand dorthin, wo die App ihn
- * nach dem Laden hat — sonst weisen `zuteilen` und `fs_weeks_pruefen` Planer
- * und Gruppenaufseher ab. Es nimmt dieselben Funktionen, aber die Kette, in der
+ * nach dem Laden hat — sonst weist `fs_weeks_pruefen` den Gruppenaufseher ab. Es nimmt dieselben Funktionen, aber die Kette, in der
  * sie laufen, steht dort ein zweites Mal. Kommt beim Laden ein Schritt dazu
  * (`loadCongregationData`, `hydrate`) und im Skript nicht, fällt es hier auf —
  * gemessen am echten Ladeweg, nicht an einer Nacherzählung.
