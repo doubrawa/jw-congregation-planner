@@ -109,7 +109,7 @@ an und lässt sich nicht umlegen.
 | **Plan senden** | – | Treffpunkte seiner Gruppe | ✓ | ✓ |
 | **Woche einrichten** (Anlass, Sonderwoche, Termine), Punkte unter „Unser Leben als Christ" anlegen, umbenennen, verschieben, Minuten | – | – | – | ✓ |
 | Trolleys anlegen, Gruppenbesuche planen, Weitere Pläne anlegen | – | – | – | ✓ |
-| Programm importieren, Personen, Abwesenheiten anderer, Einstellungen, Mitglieder, Einladungen | – | – | – | ✓ |
+| Programm importieren, Personen, Abwesenheiten anderer, Einstellungen, Mitglieder, Anmelde-Links | – | – | – | ✓ |
 
 **Gruppenaufseher und Gehilfe** ist, wen du im Blatt seiner
 Predigtdienstgruppe einträgst; dort stehen nur ihre Mitglieder zur Wahl (siehe
@@ -847,21 +847,27 @@ Unter **Personen** pflegst du alle Mitglieder der Versammlung.
   oder **Planer**). Wer heute abwesend ist, steht mit dem Zeitraum da, etwa
   „abwesend 7.–11. September".
 - Der **Punkt** vor dem Namen zeigt, wie weit die Person mit der App ist:
-  voll – **angemeldet** (ein Konto ist mit ihr verknüpft), blass –
-  **eingeladen** (sie hat einen Code, aber noch kein Konto), gestrichelt –
-  **nicht eingeladen**. Wer nicht angemeldet ist, steht statt mit der Rolle mit
-  seinem Stand da: Er erfährt nichts von selbst, weder „Plan senden" noch die
+  voll – **angemeldet** (ein Konto ist mit ihr verknüpft), blass – **Link
+  gesendet** (sie hat einen gültigen Link, per E‑Mail oder auf einem Zettel,
+  aber noch kein Konto), gestrichelt – **ohne Link**. Ein abgelaufener Link zählt
+  wie keiner. Wer nicht angemeldet ist, steht statt mit der Rolle mit seinem
+  Stand da: Er erfährt nichts von selbst, weder „Plan senden" noch die
   Erinnerungen erreichen ihn.
 - Oben zählt die Karte **Stand der Anmeldung** alle drei. Ein Tipp auf eine
   Zahl zeigt nur diese Personen, ein zweiter wieder alle. Darunter stehen
-  **Alle**, **Noch nicht angemeldet** (eingeladen oder nicht eingeladen) und
+  **Alle**, **Noch nicht angemeldet** (mit Link oder ohne) und
   **Abwesend** (wer heute fehlt), jeweils mit ihrer Zahl. Am Desktop stehen die
   drei Stände gleich in dieser Reihe.
-- In der Auswahl **Nicht eingeladen** steht **Alle einladen**: Es erstellt für
-  jede Person, die die Liste gerade zeigt, einen Einladungscode und verschickt
-  ihn an alle mit E‑Mail‑Adresse. Suche und Filter grenzen dabei mit ein – so
-  lädst du etwa eine Gruppe nach der anderen ein. Die Liste „Name: Code" liegt
-  zusätzlich in der Zwischenablage – für alle ohne Adresse.
+- In der Auswahl **Ohne Link** steht **Links senden**. Das Blatt teilt die
+  Personen, die die Liste gerade zeigt: **Per E‑Mail** bekommt jede mit
+  Adresse ihren eigenen Link (**So sieht die E‑Mail aus** zeigt sie vorher),
+  **Ohne E‑Mail‑Adresse** druckst du die Zettel. Teilen sich mehrere eine
+  Adresse, bekommt trotzdem jede ihren eigenen Link. Suche und Filter grenzen
+  dabei mit ein – so gibst du etwa einer Gruppe nach der anderen ihren Zugang.
+  Es gehen nur die Links hinaus; den Plan sendest du wie gewohnt.
+- Kann die App gerade keine E‑Mails senden, sagt **Links senden** es und
+  ersetzt keinen Link. Dann druckst du die Zettel, oder du schickst den Link bei
+  der Person aus deinem eigenen Mail‑Programm (siehe unten).
 - Über **Name suchen** findest du schnell eine Person – gesucht wird in **Name,
   Telefonnummer und E‑Mail‑Adresse**. Bei Telefonnummern ist die Schreibweise
   egal: „01701234567" findet auch „0170 123 4567".
@@ -893,13 +899,19 @@ Oben stehen Name, Gruppe und Rolle, daneben der **Stift** für
 [Person bearbeiten](#person-bearbeiten). Darunter folgen Karten:
 
 - **Konto** – wie weit die Person mit der App ist, als Spur mit drei
-  Schritten: **Angelegt**, **Eingeladen**, **Angemeldet**. Darunter steht, was
-  als Nächstes geht. Ohne Einladung ist das **Einladen**: Mit E‑Mail‑Adresse
-  geht die Einladung gleich hinaus, sonst entsteht nur der Code. Mit offenem
-  Code stehen der Code selbst und **E‑Mail**, **Teilen** und **Kopieren** da;
-  das ✕ zieht den Code zurück. Ist die Person angemeldet, steht die Adresse
-  ihres Kontos da, und das ✕ nimmt das Konto aus der Versammlung – beim eigenen
-  fehlt es.
+  Schritten: **Angelegt**, **Link gesendet** (mit dem Tag), **Angemeldet**.
+  Darunter steht, was als Nächstes geht. **Link senden** öffnet ein Blatt mit
+  zwei Wegen: **Per E‑Mail** an die Adresse der Person – kann die App gerade
+  nicht senden, öffnet sich dieselbe E‑Mail in deinem Mail‑Programm – oder
+  **Auf einem Zettel** mit QR‑Code und Code zum Eintippen. Ein Konto anlegen
+  oder ein Passwort wählen muss niemand: Das Konto entsteht bei der ersten
+  Anmeldung. Hat die Person einen Link, steht daneben **Zettel drucken**; ein
+  neuer Link ersetzt den alten, auch den auf einem Zettel. Ist die Person
+  angemeldet, steht die Adresse ihres Kontos da, und das ✕ nimmt das Konto aus
+  der Versammlung – mit ihm geht ihr Link. Beim eigenen fehlt es.
+- **Zettel** druckt die App auf A4, sechs je Blatt zum Ausschneiden, in der
+  Sprache der Versammlung: Name, QR‑Code, Code und bis wann er gilt. Der
+  Zettel meldet an – gib ihn nur der Person selbst.
 - **Aufgabenbereiche** – als Chips, was die Person übernehmen darf, nach
   Gruppen geordnet. **Ändern** öffnet die Schalter (siehe
   [Aufgabenbereiche](#aufgabenbereiche)).
@@ -1022,7 +1034,7 @@ Die Karte **Rechte** hat zwei Schalter:
 
 Was Planer und Admin im Einzelnen dürfen, steht unter „Wer darf was" in
 Abschnitt 1. Hat die Person noch kein Konto, merkt die App die Rechte vor; sie
-gelten, sobald sie sich mit ihrem Einladungscode anmeldet. Deine eigenen
+gelten, sobald sie sich zum ersten Mal mit ihrem Link anmeldet. Deine eigenen
 Schalter kannst du nicht umlegen – so sperrt sich niemand selbst aus.
 
 ### Zwei Personen mit demselben Namen
@@ -1169,9 +1181,9 @@ Englisch".
   der nächste Import nach, auch für die Wochen, die schon geladen sind. Eine
   entfernte holen neue Importe nicht mehr; was schon geladen ist, bleibt.
 
-Die Versammlungssprache ist auch die Sprache der **Einladungs-Mail** an ein
-neues Mitglied: Wer eingeladen wird, hat noch kein Konto und damit keine eigene
-Spracheinstellung. Jede andere Nachricht kommt in der Sprache des Empfängers –
+Die Versammlungssprache ist auch die Sprache der **E‑Mail mit dem Link** an
+ein neues Mitglied und der **Zettel**: Wer sie bekommt, hat noch kein Konto und
+damit keine eigene Spracheinstellung. Jede andere Nachricht kommt in der Sprache des Empfängers –
 Push-Erinnerungen in der Sprache, die auf seinem Gerät eingestellt ist, die
 Mitteilungen in der App in seiner App-Sprache. Wer Englisch eingestellt hat,
 liest „Reminder: confirm your assignment", auch wenn eure Versammlung deutsch
@@ -1399,7 +1411,7 @@ dabei: Sie planen nur die Treffpunkte ihrer Gruppe.
 Vergeben wird das Recht bei der Person in der Karte **Rechte** (siehe
 [Rechte](#rechte)); **Bei der Person ändern** führt zu den **Personen**.
 
-**Nicht hier, sondern bei der Person** stehen ihr Konto mit der Einladung, ihre
+**Nicht hier, sondern bei der Person** stehen ihr Konto mit dem Link, ihre
 Rechte, ihre Aufgabenbereiche und ihre Gruppe (siehe
 [Personen verwalten](#6-personen-verwalten)). Den **Grundplan der Treffpunkte**
 findest du im Predigtdienst (siehe [Treffpunkte planen](#5-treffpunkte-planen)).

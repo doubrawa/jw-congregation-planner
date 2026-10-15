@@ -26,16 +26,24 @@ die App auf deinem Gerät einrichtest.
 
 ## 1. Anmelden
 
-Du meldest dich mit der E‑Mail‑Adresse an, für die du eine Einladung von deinem
-Koordinator erhalten hast, und dem selbst gewählten Passwort. Unter dem Namen
-der App steht in einem Satz, wofür sie da ist.
+Ein Passwort gibt es nicht. Du meldest dich mit einem **Link** an: Er kommt per
+E‑Mail, oder du bekommst ihn von den Ältesten auf einem **Zettel** mit QR‑Code.
+Unter dem Namen der App steht in einem Satz, wofür sie da ist.
 
 ![Anmeldebildschirm](screenshots/login.png)
 
-- **Passwort vergessen?** öffnet die Zurücksetzen‑Funktion – du bekommst eine
-  E‑Mail mit einem Link, um ein neues Passwort zu setzen.
-- **Konto erstellen** brauchst du nur beim ersten Mal, wenn dein Koordinator dir
-  einen Einladungscode gegeben hat.
+- **Mit dem Link aus der E‑Mail:** ein Tipp darauf, und du bist angemeldet.
+  Ist er abgelaufen oder die E‑Mail weg, gib auf der Anmeldeseite deine
+  Adresse ein und tippe auf **Link senden** – du bekommst einen neuen. Das geht,
+  sobald die Ältesten dir einmal einen Link gegeben haben.
+- **Mit dem Zettel:** Scanne den QR‑Code mit der Kamera deines Handys – oder
+  tippe auf der Anmeldeseite unter **Ohne E‑Mail‑Adresse?** auf **Zettel
+  scannen**. Geht das nicht, tippst du über **Code eintippen** den Code unter dem
+  QR‑Code ein. Die App zeigt dir dann, wem der Code gehört; erst **Anmelden**
+  meldet an. So merkst du es, wenn du den Zettel eines anderen erwischt hast.
+- Ein Link gilt **30 Tage** und lässt sich mehrmals benutzen, etwa auf Handy und
+  Tablet. Danach bleibt das Gerät angemeldet. Ist der Zettel weg, bekommst du
+  von den Ältesten einen neuen – der alte gilt dann nicht mehr.
 - Unten kannst du die **Sprache der App** wählen.
 - Ganz unten steht die Adresse, an die man schreibt, wenn eine **neue
   Versammlung** die App nutzen möchte. Ein Tipp darauf öffnet eine fertige
@@ -520,9 +528,10 @@ dich ab. Admins finden am Handy hier auch **Personen** und **Einstellungen**.
   - **Rechts nach links.** Bei Arabisch, Hebräisch, Persisch und Urdu läuft die
     ganze Oberfläche von rechts nach links – auch das Blättern zwischen den
     Wochen: Dort liegt die **vorige** Woche rechts.
-  - **Die Einladungs-Mail ist die Ausnahme**: Sie kommt in der Sprache der
-    Versammlung. Wer sie bekommt, hat noch kein Konto – und damit noch keine
-    eingestellte Sprache.
+  - **Die E‑Mail mit dem Link ist die Ausnahme**: Die erste kommt in der
+    Sprache der Versammlung, ebenso der Zettel – wer sie bekommt, hat noch
+    keine Sprache eingestellt. Einen neuen Link, den du auf der Anmeldeseite
+    anforderst, schreibt die App in der Sprache, die du dort gewählt hast.
 - **Push‑Mitteilungen** – Erinnerungen an anstehende Aufgaben ein‑ oder
   ausschalten (siehe [Abschnitt 8](#8-app-installieren--erinnerungen)).
 - **Abmelden** – meldet dich auf diesem Gerät ab. Der erste Tipp fragt
@@ -608,8 +617,9 @@ Zwei Dinge, die du wissen solltest:
 
 - Der angezeigte Stand kann **veraltet** sein. Steht im Streifen z. B. „Stand von
   gestern", kann sich eine Zuteilung inzwischen geändert haben.
-- Warst du **lange** nicht mehr online, kann es passieren, dass die App dich
-  wieder nach dem Passwort fragt. Das Anmelden selbst braucht Internet.
+- Warst du **lange** nicht mehr online, kann es passieren, dass du dich neu
+  anmelden musst – mit deinem Link oder Zettel (siehe [Abschnitt 1](#1-anmelden)).
+  Das Anmelden selbst braucht Internet.
 
 ---
 
