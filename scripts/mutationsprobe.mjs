@@ -2101,6 +2101,27 @@ export const KATALOG = [
     ersetzen: '',
   },
   {
+    id: 'zuruecksetzen-konto-ueber-id',
+    datei: 'scripts/versammlung-zuruecksetzen.mjs',
+    regel: 'Das Zurücksetzen verknüpft Konten über die Konto-Id — Konten ohne Adresse zeigten sonst alle auf dieselbe Person.',
+    suchen: '    const konto = v.userId ? `user_id=eq.${encodeURIComponent(v.userId)}` : `email=eq.${encodeURIComponent(v.email)}`\n',
+    ersetzen: '    const konto = `email=eq.${encodeURIComponent(v.email)}`\n',
+  },
+  {
+    id: 'zuruecksetzen-links-zurueck',
+    datei: 'scripts/versammlung-zuruecksetzen.mjs',
+    regel: 'Ausgegebene Anmelde-Links überstehen das Zurücksetzen — an der neuen Person, mit denselben Prüfsummen.',
+    suchen: "    await rest('anmelde_links', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(linkZeilen) })\n",
+    ersetzen: '',
+  },
+  {
+    id: 'anlegen-erster-admin-link',
+    datei: 'scripts/versammlung-anlegen.mjs',
+    regel: 'Eine neue Versammlung gibt ihrem ersten Admin einen Anmelde-Link.',
+    suchen: '  const link = await anmeldeLinkAusstellen(roh, planer.id, cong.id)\n',
+    ersetzen: "  const link = { url: '', code: '', zettelUrl: '', gueltigBis: new Date().toISOString() }\n",
+  },
+  {
     id: 'zugang-genau-eine-person',
     datei: 'scripts/zugang-ausstellen.mjs',
     regel: 'Der Notzugang stellt nur aus, wenn der Name genau eine Person trifft — er rät nicht.',

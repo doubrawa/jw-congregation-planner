@@ -228,7 +228,8 @@ const LAEUFE: Record<string, Lauf[]> = {
           '--name', 'Probeversammlung', '--saal', 'Probe-Saal', '--mid', '2 19:00', '--we', '0 10:00',
           '--vorname', 'Probe', '--nachname', 'Planer', '--sprache', 'de',
         ]),
-      erwartet: ['POST congregations', 'POST persons', 'POST services', 'POST invites'],
+      // Der erste Admin bekommt einen Anmelde-Link (T121, Phase 8) — keinen Code mehr.
+      erwartet: ['POST congregations', 'POST persons', 'POST services', 'POST anmelde_links'],
     },
   ],
 
@@ -432,7 +433,13 @@ const LAEUFE: Record<string, Lauf[]> = {
           congregations: [{ id: C }],
           persons: [{ id: P_ALT, congregation_id: C, fn: 'Probe', ln: 'Eins' }],
           members: [{ user_id: U1, congregation_id: C, email: 'planer@probe.invalid', person_id: P_ALT, planner: true }],
-          invites: [{ id: k(61), congregation_id: C, code: 'PRBCDE', person_id: P_ALT, planner: false, redeemed_by: null }],
+          // Ein ausgegebener Link übersteht das Zurücksetzen (T121, Phase 8).
+          anmelde_links: [
+            {
+              person_id: P_ALT, congregation_id: C, token_hash: 'pruefsumme-token', code_hash: 'pruefsumme-code',
+              gueltig_bis: '2026-10-07T09:00:00+00:00', erstellt_at: '2026-09-07T09:00:00+00:00', gesendet_at: null, benutzt_at: null,
+            },
+          ],
           groups: [{ id: G_ALT, congregation_id: C, name: 'Gruppe 1' }],
           fs_rules: [
             {
@@ -444,7 +451,7 @@ const LAEUFE: Record<string, Lauf[]> = {
       },
       erwartet: [
         'DELETE weeks', 'DELETE persons', 'DELETE groups', 'DELETE households', 'POST groups', 'POST fs_rules',
-        'POST households', 'POST persons', 'PATCH groups', 'PATCH members', 'PATCH invites', 'POST services',
+        'POST households', 'POST persons', 'PATCH groups', 'PATCH members', 'POST anmelde_links', 'POST services',
       ],
     },
   ],
@@ -456,7 +463,7 @@ const LAEUFE: Record<string, Lauf[]> = {
       umgebung: { bestand: { congregations: [{ id: C, name: 'Probe' }] } },
       erwartet: [
         'GET congregations', 'GET persons', 'GET groups', 'GET households', 'GET weeks', 'GET absences',
-        'GET fs_weeks', 'GET fs_rules', 'GET invites',
+        'GET fs_weeks', 'GET fs_rules', 'GET members', 'GET anmelde_links',
       ],
     },
   ],
@@ -1205,5 +1212,54 @@ describe('testversammlung-anlegen: jedes Konto bekommt seine Rechte-Stufe', () =
     } finally {
       fs.rmSync(datei, { force: true })
     }
+  })
+})
+
+describe('versammlung-zuruecksetzen: Konten und Links überstehen das Zurücksetzen (T121, Phase 8)', () => {
+  /*
+    Seit dem Anmelden per Link haben Konten keine Adresse mehr (`members.email`
+    leer). Die Verknüpfung über die Adresse wiederherzustellen hieße dann:
+    `email=eq.` trifft **alle** Konten auf einmal, und jedes zeigt zuletzt auf
+    die Person des letzten. Deshalb über die Konto-Id. Und die ausgegebenen
+    Links gehen mit den Personen — sie kommen über den Namen zurück, an die
+    neue Id, mit denselben Prüfsummen: Wer seinen Zettel hat, meldet sich
+    danach weiter damit an.
+  */
+  const P_ALT2 = k(36) // die zweite Person vor dem Zurücksetzen
+  const fahreZuruecksetzen = async () => {
+    const l = LAEUFE['versammlung-zuruecksetzen.mjs']![0]!
+    const modul = (await MODULE['./versammlung-zuruecksetzen.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const eingaben = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-probe-'))
+    try {
+      for (const [name, inhalt] of Object.entries(l.dateien ?? {})) fs.writeFileSync(path.join(eingaben, name), String(inhalt))
+      const bestand = {
+        ...l.umgebung!.bestand,
+        persons: [
+          { id: P_ALT, congregation_id: C, fn: 'Probe', ln: 'Eins' },
+          { id: P_ALT2, congregation_id: C, fn: 'Probe', ln: 'Zwei' },
+        ],
+        members: [
+          { user_id: U1, congregation_id: C, email: '', person_id: P_ALT, planner: true },
+          { user_id: U2, congregation_id: C, email: '', person_id: P_ALT2, planner: false },
+        ],
+      }
+      return await fahre(() => l.fahren(modul, eingaben), { ...l.umgebung, bestand })
+    } finally {
+      fs.rmSync(eingaben, { recursive: true, force: true })
+    }
+  }
+
+  it('zwei Konten ohne Adresse zeigen danach je auf ihre eigene, neue Person', async () => {
+    const { tabellen } = await fahreZuruecksetzen()
+    const zuordnung = Object.fromEntries(tabellen.members!.map((m) => [m.user_id, m.person_id]))
+    expect(zuordnung).toEqual({ [U1]: P1, [U2]: P2 })
+  })
+
+  it('der Link der Person steht danach an ihrer neuen Id — mit denselben Prüfsummen', async () => {
+    const { tabellen, ausgabe } = await fahreZuruecksetzen()
+    expect(tabellen.anmelde_links!.filter((z) => z.person_id === P1)).toEqual([
+      expect.objectContaining({ congregation_id: C, token_hash: 'pruefsumme-token', code_hash: 'pruefsumme-code', gueltig_bis: '2026-10-07T09:00:00+00:00' }),
+    ])
+    expect(ausgabe.join('\n')).toContain('1 Anmelde-Link(s) gelten weiter')
   })
 })

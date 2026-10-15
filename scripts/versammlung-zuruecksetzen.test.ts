@@ -7,6 +7,8 @@ import {
   BEHALTEN,
   KASKADIERT,
   LEEREN,
+  linksAufIds,
+  linksAufNamen,
   NEU_ANGELEGT,
   parseInsert,
   parseKuratiert,
@@ -306,5 +308,26 @@ describe('Gruppen-Treffpunkte über das Zurücksetzen retten', () => {
     // sie) — sie darf keinen `gruppenName: null` in die Sidecar-Datei tragen.
     const verwaist = [{ id: 'r9', grp: 'weg', wd: 1, time: '19:00', place: '', monthly: 0, skip_cong: false }]
     expect(regelnAufNamen(verwaist, GRUPPEN)).toEqual([])
+  })
+})
+
+describe('Anmelde-Links über das Zurücksetzen (T121, Phase 8)', () => {
+  const LINK = { person_id: 'p-alt', congregation_id: 'c1', token_hash: 't', code_hash: 'c', gueltig_bis: '2026-10-07T09:00:00Z' }
+
+  it('auf den Namen umgeschrieben — ohne die alte Id und ohne Versammlung', () => {
+    const namen = new Map([['p-alt', 'Anna Beispiel']])
+    expect(linksAufNamen([LINK, { ...LINK, person_id: 'unbekannt' }], namen)).toEqual([
+      { token_hash: 't', code_hash: 'c', gueltig_bis: '2026-10-07T09:00:00Z', personName: 'Anna Beispiel' },
+    ])
+  })
+
+  it('und zurück an die neue Id — wer im neuen Bestand fehlt, verliert seinen Link und wird genannt', () => {
+    const links = [
+      { token_hash: 't1', code_hash: 'c1', gueltig_bis: 'x', personName: 'Anna Beispiel' },
+      { token_hash: 't2', code_hash: 'c2', gueltig_bis: 'x', personName: 'Fehlt Hier' },
+    ]
+    const { zeilen, verloren } = linksAufIds(links, new Map([['Anna Beispiel', 'p-neu']]), 'c1')
+    expect(zeilen).toEqual([{ token_hash: 't1', code_hash: 'c1', gueltig_bis: 'x', person_id: 'p-neu', congregation_id: 'c1' }])
+    expect(verloren).toEqual(['Fehlt Hier'])
   })
 })

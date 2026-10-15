@@ -279,8 +279,9 @@ GitHub Pages kann **kein** Backend (nur statische Dateien). Für echtes Login,
 gemeinsame Daten mehrerer Nutzer, Persistenz und Mitteilungs-Versand ist ein
 Backend nötig. Kostengünstigste Optionen ohne eigenen Server:
 
-- **Supabase (Empfehlung):** kostenlose Stufe bietet **Auth** (E-Mail+Passwort +
-  Passwort-Reset — genau wie im Design), **Postgres**-DB und **Row-Level-Security**.
+- **Supabase (Empfehlung):** kostenlose Stufe bietet **Auth** (die App meldet
+  ohne Kennwort an, mit einem Link — siehe unten), **Postgres**-DB und
+  **Row-Level-Security**.
   RLS passt ideal zu „versammlungsintern geschützt" + Rollenmodell +
   Mandantenfähigkeit (mehrere Versammlungen). Frontend bleibt statisch (GitHub
   Pages/Cloudflare), spricht Supabase per JS-SDK an. Kostenlose Stufe pausiert
@@ -305,9 +306,12 @@ Entwicklerseite. Für echtes Login mit geschützten Daten:
    (Region z. B. Frankfurt — personenbezogene Daten in der EU).
 2. Im **SQL-Editor** den Inhalt von [`supabase/schema.sql`](supabase/schema.sql)
    ausführen (Tabellen + Row-Level-Security).
-3. **Authentication → Users**: Benutzer mit E-Mail + Passwort anlegen; dann
-   Versammlung anlegen und den Benutzer als Mitglied verknüpfen (fertige
-   `INSERT`-Beispiele stehen am Ende der `schema.sql`).
+3. Versammlung und ersten Admin mit `scripts/versammlung-anlegen.mjs` anlegen
+   (siehe unten) — es gibt den Anmelde-Link des Admins aus. Konten legt niemand
+   von Hand an: Sie entstehen, wenn jemand seinen Link zum ersten Mal öffnet.
+   Unter **Authentication → Sign In / Providers** das Registrieren abschalten
+   (**Allow new users to sign up** aus) — hereinkommen soll nur, wem der Admin
+   einen Link gegeben hat.
 4. **Project Settings → API**: `Project URL` und `anon public`-Key kopieren.
 5. Lokal: Datei `.env.local` nach Vorlage von [`.env.example`](.env.example)
    anlegen — `npm run dev` nutzt dann echtes Login.
@@ -319,8 +323,12 @@ Entwicklerseite. Für echtes Login mit geschützten Daten:
    auf die App-Adresse setzen (`https://versammlung.app/`) statt
    des Standardwerts `http://localhost:3000`, und unter **Redirect URLs** die
    App-Adressen erlauben (`https://versammlung.app/**` sowie für lokale
-   Entwicklung `http://localhost:5173/**`). Sonst führen Bestätigungs- und
-   Passwort-Reset-Links ins Leere (localhost:3000).
+   Entwicklung `http://localhost:5173/**`). Sonst führen Links aus Mails von
+   Supabase ins Leere (localhost:3000).
+8. **E-Mails mit dem Anmelde-Link** schickt die App über Resend: die Secrets
+   `RESEND_API_KEY` und `INVITE_FROM` (Absender mit verifizierter Domain) in
+   den Edge Functions setzen. Ohne sie geht es trotzdem — der Admin druckt
+   Zettel oder schickt den Link aus seinem eigenen Mail-Programm.
 
 Der `anon`-Key ist für den Browser gedacht und darf öffentlich sein — der
 Schutz der Daten kommt aus den RLS-Policies (Mitglieder sehen nur die eigene
@@ -337,8 +345,9 @@ Migrationskette daneben soll es nicht wieder geben, siehe Kopf der Datei):
 1. [`supabase/neuaufbau.sql`](supabase/neuaufbau.sql) im SQL-Editor ausführen —
    **löscht alle Daten**, aber keine Konten (`auth.users` bleibt).
 2. `supabase/schema.sql` ausführen.
-3. Alle fünf Edge Functions deployen (`import-week`, `send-plan`,
-   `send-reminders`, `send-invite`, `substitute`).
+3. Alle Edge Functions deployen (`import-week`, `send-plan`,
+   `send-reminders`, `send-invite`, `anmelden`, `substitute`, `zuteilen`,
+   `trolley`).
 Den ganzen Rest — Versammlung, Personen, Wochen, Zuteilungen, Abwesenheiten,
 Treffpunkte — fährt **ein** Aufruf:
 
@@ -360,7 +369,7 @@ Was er nacheinander tut — und was fehlte, wenn man einen Schritt ausließe:
 
 | # | Schritt | Was fehlt sonst |
 | --- | --- | --- |
-| 1 | `scripts/versammlung-anlegen.mjs` | Versammlung, Planer-Person, Standard-Dienste, Einladungscode |
+| 1 | `scripts/versammlung-anlegen.mjs` | Versammlung, Planer-Person, Standard-Dienste, sein Anmelde-Link |
 | 2 | `scripts/versammlung-zuruecksetzen.mjs --sql <personen.sql>` | Personen, Gruppen, Haushalte |
 | 3 | `scripts/wochen-importieren.mjs --anzahl 8` | die Programme |
 | 4 | `scripts/wochenplanung-importieren.mjs` | Zuteilungen, Hilfsdienste, Reinigung |
@@ -381,8 +390,10 @@ nur Wochen nachzuholen:
 node scripts/wochen-importieren.mjs --anzahl 4
 ```
 
-**Was bleibt:** sich in der App mit dem ausgegebenen Einladungscode anmelden,
-und der **Grundplan der Treffpunkte**. Den schlägt `treffpunkte-importieren.mjs`
+**Was bleibt:** sich mit dem Anmelde-Link aus Schritt 1 anmelden (er übersteht
+Schritt 2; verloren: `node scripts/zugang-ausstellen.mjs --person "Vorname
+Nachname"`), den übrigen ihre Links geben (in der App: Personen › Ohne Link ›
+Links senden), und der **Grundplan der Treffpunkte**. Den schlägt `treffpunkte-importieren.mjs`
 aus den NWS-Terminen nur vor — welche Regel dahintersteckt, ist eine
 Entscheidung und keine Zeile in den Daten. Getroffen wird sie in den
 Einstellungen (GRUNDPLAN TREFFPUNKTE) oder, wenn sie feststeht, damit:
@@ -558,9 +569,9 @@ grundlegend, muss der Parser angepasst werden. **Rechtehinweis:** Der Abruf dien
 Zusammenkunfts-Planung deiner Versammlung; es werden keine Inhalte öffentlich
 weiterverbreitet. Beachte die Nutzungsbedingungen von jw.org.
 
-**Stand:** Anmelden/Registrieren/Abmelden und Passwort-Reset (Mail-Link →
-„Neues Passwort setzen") sind verdrahtet; eine bestehende Session überspringt
-den Login. Nach dem Login werden alle Versammlungsdaten geladen (Rolle/
+**Stand:** Angemeldet wird ohne Kennwort (T121, Phase 8): mit einem Link per
+E-Mail oder einem Zettel mit QR-Code und Code (Function `anmelden`); eine
+bestehende Session überspringt den Login. Nach dem Login werden alle Versammlungsdaten geladen (Rolle/
 Versammlung aus `members`), Änderungen sofort zurückgeschrieben; eine leere
 Versammlung zeigt Verkündigern den Hinweis auf den Koordinator, Planer füllen
 sie über Personen und „Nächste Woche importieren" (angelegt wird sie mit
@@ -568,16 +579,17 @@ sie über Personen und „Nächste Woche importieren" (angelegt wird sie mit
 nicht mehr, in der App seit dem 2.10.2026 gar keine). „Meine Aufgaben" entstehen aus den Zuteilungen der über
 `members.person_id` verknüpften Person; Bestätigungen landen in
 `confirmations`, Erinnerungen und Versammlungssprache in eigenen Spalten von
-`congregations`. **Konten & Einladungen laufen
+`congregations`. **Konten & Anmelde-Links laufen
 personenzentriert im Personen-Screen:** Admin-Recht als feste Rolle im
-Personen-Detail (gespiegelt in `members.planner`), KONTO-Karte
-mit Einladen-Aktion (E-Mail über die Edge Function `send-invite`/Resend, sobald
-Secret `INVITE_FROM` mit verifizierter eigener Domain gesetzt ist — sonst
-Fallback aufs eigene Mail-Programm per `mailto:`; ohne E-Mail-Adresse
-Teilen/Kopieren) und „Alle ohne Konto einladen" in der Liste. Neue Mitglieder
-registrieren sich in der App und lösen ihren Code ein (`redeem_invite`). Nur
-die allererste Versammlung + Koordinator-Mitgliedschaft entsteht per SQL
-(siehe Ende der `schema.sql`).
+Personen-Detail (gespiegelt in `members.planner`, vorgemerkt an der Person),
+Konto-Karte mit „Link senden" (E-Mail über die Edge Function
+`send-invite`/Resend, sobald das Secret `INVITE_FROM` mit verifizierter
+eigener Domain gesetzt ist — sonst dieselbe E-Mail im eigenen Mail-Programm per
+`mailto:`; oder ein Zettel mit QR-Code) und „Links senden" in der Liste. Das
+Konto entsteht bei der ersten Anmeldung (Konto-Id = Person-Id, eine interne
+Adresse unter `.invalid`, kein Kennwort), mit den vorgemerkten Rechten. Die
+erste Versammlung samt erstem Admin legt `scripts/versammlung-anlegen.mjs` an;
+den Notzugang stellt `scripts/zugang-ausstellen.mjs` aus.
 
 **Das Schema hat genau eine Quelle: [`supabase/schema.sql`](supabase/schema.sql).**
 Daneben lag bis zum 17. September 2026 eine Kette von 25 Migrationen, und jede
@@ -609,7 +621,7 @@ umgekehrt. Die Regeln sind in
 1. Arbeitsheft-Import von jw.org: **umgesetzt** (Edge Function `import-week`,
    siehe oben) — nur die Zusammenkunft unter der Woche; Wochenende als Vorlage
 2. Auth + Mandantenfähigkeit: **umgesetzt** (Supabase Auth + Schema/RLS +
-   Daten-Persistenz + Mitglieder-Verwaltung mit Einladungscodes, siehe oben)
+   Daten-Persistenz + Mitglieder-Verwaltung mit Anmelde-Links, siehe oben)
 3. Mitteilungs-Versand: **umgesetzt als Web-Push** — Edge Function
    `send-reminders` (Browser-Benachrichtigungen + Glocken-Mitteilungen) +
    Cron-Template (siehe unten); Konfiguration/Aktivierung pro Projekt nötig
@@ -630,16 +642,20 @@ wählbar. Neue App-Sprache hinzufügen: Code in `Lang` ([types.ts](src/data/type
 [locales.ts](supabase/functions/_shared/i18n/locales.ts) + Overlay in
 [ui.ts](src/i18n/ui.ts) und optional `FRAG`/`EXTRA` in
 [translate-data.ts](supabase/functions/_shared/i18n/translate-data.ts)
-(Rollen/Dienste/Phrasen) sowie die zwei Sätze der Einladungs-Mail in
-[send-invite/texte.ts](supabase/functions/send-invite/texte.ts).
+(Rollen/Dienste/Phrasen). Die E-Mail mit dem Anmelde-Link steht im Overlay
+(`linkMailBetreff`, `linkMailText`); für die Functions wird sie daraus nach
+[_shared/anmelde-texte.ts](supabase/functions/_shared/anmelde-texte.ts)
+abgeschrieben, und ein Test hält beide gleich.
 
 Der Fragment-Übersetzer und die Locale-Tabelle liegen in
 `supabase/functions/_shared/i18n/`, weil **beide Seiten** sie brauchen: der
 Client beim Anzeigen, `send-reminders` beim Verschicken. `src/i18n/translate.ts`
 reicht sie nur durch. Ausgehende Texte tragen ihre Sprache selbst — eine
 verschickte Nachricht lässt sich beim Lesen nicht mehr übersetzen: die
-Push-Erinnerung die des Geräts, die Einladungs-Mail die der Versammlung (der
-Empfänger hat noch kein Konto und also auch keine eingestellte Sprache).
+Push-Erinnerung die des Geräts, die E-Mail mit dem Anmelde-Link und der Zettel
+die der Versammlung (der Empfänger hat noch kein Konto und also auch keine
+eingestellte Sprache) — außer beim Link, den jemand auf der Anmeldeseite selbst
+anfordert: Der kommt in der Sprache, die er dort gewählt hat.
 
 ## Mitteilungen: wer wann was erfährt
 

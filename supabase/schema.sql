@@ -137,9 +137,9 @@ create table if not exists public.persons (
   -- wtVertreter) plus je Hilfsdienst ein dynamischer Schlüssel `svc:<key>`.
   priv            jsonb not null default '{}'::jsonb,
 
-  -- **Vormerkung** des Planer-Rechts, nicht das Recht selbst: Sie wandert beim
-  -- Einladen in `invites.planner` und von dort in `members.planner`, damit
-  -- jemand das Recht schon bei der ersten Anmeldung hat. Wirksam ist allein
+  -- **Vormerkung** des Planer-Rechts, nicht das Recht selbst: Bei der ersten
+  -- Anmeldung übernimmt die Function `anmelden` sie in `members.planner`
+  -- (T121, Phase 8), damit jemand das Recht gleich hat. Wirksam ist allein
   -- `members.planner` — daran hängt `is_planner()`.
   --
   -- Die Spalte hieß bis zum 17. September 2026 ebenfalls `planner`, und dieser
@@ -148,8 +148,8 @@ create table if not exists public.persons (
   -- stand sie bei allen auf `false` — und der Personen-Bildschirm zeigte dem
   -- Betreiber „Admin: aus", während er Admin war (PlannerToggle).
   planner_vorgemerkt boolean not null default false,
-  -- Dasselbe für das Planer-Recht (4.10.2026): wandert über `invites.zuteiler`
-  -- in `members.zuteiler`.
+  -- Dasselbe für das Planer-Recht (4.10.2026): bei der ersten Anmeldung in
+  -- `members.zuteiler`.
   zuteiler_vorgemerkt boolean not null default false,
 
   -- Haushalt; null = keiner. Wird beim Löschen des Haushalts genullt.
@@ -717,29 +717,6 @@ create table if not exists public.assignment_log (
 alter table public.assignment_log
   add column if not exists persoenlich_at timestamptz;
 
--- Einladungscodes: Planer erstellen sie, registrierte Nutzer treten damit der
--- Versammlung bei (redeem_invite unten) — kein SQL für neue Mitglieder nötig.
-create table if not exists public.invites (
-  id              uuid primary key default gen_random_uuid(),
-  congregation_id uuid not null references public.congregations (id) on delete cascade,
-  code            text not null unique,             -- z. B. "K7TQ4M" (Großbuchstaben)
-  person_id       uuid,
-  planner         boolean not null default false,
-  zuteiler        boolean not null default false,   -- Planer-Recht (4.10.2026), wie `planner`
-  created_at      timestamptz not null default now(),
-  redeemed_by     uuid references auth.users (id) on delete set null,
-  redeemed_at     timestamptz,
-
-  constraint invites_person_fk foreign key (person_id, congregation_id)
-    references public.persons (id, congregation_id) on delete set null (person_id)
-);
-
-alter table public.invites
-  add column if not exists zuteiler boolean not null default false;
-
-create index if not exists invites_congregation_idx
-  on public.invites (congregation_id);
-
 -- Anmelde-Links (T121, Phase 8): Ein Kennwort gibt es nicht mehr. Wer in die
 -- App soll, bekommt vom Admin einen Link — per E-Mail oder auf einem Zettel mit
 -- QR-Code und einem Code zum Eintippen (`send-invite` stellt aus, `anmelden`
@@ -816,6 +793,18 @@ drop function if exists public.darf_zeugnis();
 delete from public.confirmations where task_key like 'oz|%';
 delete from public.notifications where task_key like 'oz|%';
 delete from public.assignment_log where task_key like 'oz|%';
+
+-- ---------------------------------------------------------------------------
+-- Entfernt: Einladungscodes (bis 15.10.2026)
+-- ---------------------------------------------------------------------------
+-- Seit dem Anmelden per Link (T121, Phase 8) registriert sich niemand mehr und
+-- löst keinen Code ein: Den Zugang gibt der Admin als Link (`anmelde_links`),
+-- das Konto entsteht bei der ersten Anmeldung (Function `anmelden`). Mit der
+-- Tabelle gehen ihre Richtlinie und ihr Index; die Funktion zum Einlösen fällt
+-- eigens. Ein zweiter Lauf findet nichts mehr; der Block kann fort, sobald er
+-- überall eingespielt ist.
+drop function if exists public.redeem_invite(text);
+drop table if exists public.invites cascade;
 
 -- ---------------------------------------------------------------------------
 -- RLS-Hilfsfunktionen (security definer, um Rekursion über members zu vermeiden)
@@ -1255,7 +1244,6 @@ alter table public.weeks         enable row level security;
 alter table public.absences      enable row level security;
 alter table public.notifications enable row level security;
 alter table public.confirmations enable row level security;
-alter table public.invites       enable row level security;
 
 -- Versammlung: Mitglieder lesen ihre eigene; ändern nur Planer.
 drop policy if exists congregations_select on public.congregations;
@@ -1447,13 +1435,6 @@ create policy confirmations_delete_planner on public.confirmations
     )
   );
 
--- Einladungen: nur Planer der Versammlung (Einlösen läuft über redeem_invite).
-drop policy if exists invites_all on public.invites;
-create policy invites_all on public.invites
-  for all
-  using (congregation_id = public.my_congregation_id() and public.is_planner())
-  with check (congregation_id = public.my_congregation_id() and public.is_planner());
-
 -- Push-Abos: jedes Mitglied verwaltet nur seine eigenen Geräte.
 alter table public.push_subscriptions enable row level security;
 
@@ -1630,51 +1611,6 @@ alter table public.assignment_log enable row level security;
 drop policy if exists assignment_log_select on public.assignment_log;
 create policy assignment_log_select on public.assignment_log
   for select using (congregation_id = public.my_congregation_id());
-
--- ---------------------------------------------------------------------------
--- Beitritt per Einladungscode (security definer: der Beitretende hat noch
--- keine Mitgliedschaft und könnte invites/members selbst nicht schreiben).
--- Rückgabe: null = Erfolg, sonst Fehlercode ('already-member' | 'invalid-code').
--- ---------------------------------------------------------------------------
-
-create or replace function public.redeem_invite(invite_code text)
-returns text
-language plpgsql security definer
-set search_path = public
-as $$
-declare
-  inv public.invites%rowtype;
-  uid uuid := auth.uid();
-begin
-  if uid is null then
-    return 'invalid-code';
-  end if;
-  if exists (select 1 from public.members where user_id = uid) then
-    return 'already-member';
-  end if;
-  -- FOR UPDATE sperrt die Einladungszeile: lösen zwei Konten denselben Code
-  -- gleichzeitig ein, wartet das zweite und sieht danach redeemed_by gesetzt
-  -- (→ 'invalid-code'), statt dass beide ein Mitglied für dieselbe Person anlegen.
-  select * into inv
-  from public.invites
-  where code = upper(trim(invite_code)) and redeemed_by is null
-  for update;
-  if not found then
-    return 'invalid-code';
-  end if;
-  insert into public.members (user_id, congregation_id, person_id, planner, zuteiler, email)
-  values (uid, inv.congregation_id, inv.person_id, inv.planner, inv.zuteiler,
-          coalesce(auth.jwt() ->> 'email', ''));
-  update public.invites
-  set redeemed_by = uid, redeemed_at = now()
-  where id = inv.id;
-  return null;
-end;
-$$;
-
-revoke all on function public.redeem_invite(text) from public;
-revoke all on function public.redeem_invite(text) from anon;
-grant execute on function public.redeem_invite(text) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Mitteilung an die Planer der eigenen Versammlung — je Planer eine Zeile mit

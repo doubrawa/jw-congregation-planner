@@ -6655,6 +6655,29 @@ wer eine leitet, gehört ihr an (Betreiber). Das Gruppenblatt bietet als
 Aufseher und Gehilfe nur Mitglieder an, niemand ist beides, und ein
 Gruppenwechsel beendet das Amt in der alten Gruppe.
 
+**Stand am 15. Oktober 2026:** Phase 8, das Anmelden per Link, ist gebaut und live
+(`05ab564`, `ddf4069`, `c3d3926` und die Skripte danach). Ein Kennwort gibt es
+nicht mehr, auch kein Registrieren: Der Admin gibt jeder Person ihren Link — per
+E-Mail (`send-invite`; ohne `INVITE_FROM` dieselbe E-Mail aus dem eigenen
+Mail-Programm) oder auf einem Zettel mit QR-Code und Code zum Eintippen, sechs je
+A4. Ein Link gilt 30 Tage und mehrfach; ein neuer ersetzt den alten samt
+Zettel. Das Konto entsteht beim ersten Öffnen (Function `anmelden`, Konto-Id =
+Person-Id, interne Adresse unter `.invalid`) mit den vorgemerkten Rechten. Auf
+der Anmeldeseite: „Link senden" (immer dieselbe Antwort, je Person höchstens
+eine Mail in zehn Minuten), „Zettel scannen" (BarcodeDetector, sonst jsqr) und
+„Code eintippen" (zeigt erst, wem der Code gehört). Codes werden je Absender
+und insgesamt gedrosselt. Die Personen zählen angemeldet · Link gesendet · ohne
+Link; „Links senden" geht an alle, die die Liste zeigt. Einladungscodes und
+`redeem_invite` sind fort. Den Notzugang stellt `scripts/zugang-ausstellen.mjs`
+aus; `versammlung-anlegen.mjs` gibt dem ersten Admin seinen Link, und
+`versammlung-zuruecksetzen.mjs` lässt ausgegebene Links gelten.
+
+**Offen in Phase 8:** die bestehenden Konten (alte Ids, mit Kennwort) — „neu
+anlegen" nähme ihnen über die Fremdschlüssel Zusagen, Mitteilungen und Push-Abos;
+wie umgestellt wird, entscheidet der Betreiber. Bis dahin melden sie sich mit
+einem Link an wie alle (ihr Konto bleibt). Dazu beim Betreiber: `INVITE_FROM`
+setzen und in Supabase das Registrieren abschalten.
+
 **Stand am 14. Oktober 2026:** Phase 7, die Trolleys, ist gebaut und live. Statt fester
 Termine mit Schichten legt die Versammlung ihre Trolleys an (Einstellungen
 „Gruppen und Trolleys": Name, wo man ihn abholt, Hinweis), und wer das
@@ -6841,7 +6864,7 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
-| **T121** | Neues Design | ☐ Umbau läuft, Phase für Phase auf main: 1 bis 7 sind live (zuletzt die Trolleys), es folgen 8 bis 10. Am 13. Oktober nachentschieden, was die ersten Phasen offen ließen; die Leinwand wird nicht mehr veröffentlicht. T106 und T114 gehen hier auf (Phase 8) |
+| **T121** | Neues Design | ☐ Umbau läuft, Phase für Phase auf main: 1 bis 8 sind live (zuletzt das Anmelden per Link), es folgen 9 und 10. Am 13. Oktober nachentschieden, was die ersten Phasen offen ließen; die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
@@ -7219,8 +7242,9 @@ Umbau T121 offen; was sonst aussteht, braucht den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **T121** | Neues Design | Umbau läuft, Phase für Phase auf main: 1 bis 7 sind live, 8 bis 10 folgen (siehe T121). Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
-| **Vor Phase 8** | Resend, `INVITE_FROM` | richtet der Betreiber ein (zugesagt am 13. Oktober). Ob danach noch ein SMTP-Server für Supabase Auth gebraucht wird, klärt Phase 8 — ohne Passwort und Registrieren fallen dessen Mails weg |
+| **T121** | Neues Design | Umbau läuft, Phase für Phase auf main: 1 bis 8 sind live, 9 und 10 folgen (siehe T121). Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
+| **Phase 8** | Alte Konten umstellen | wie, entscheidet der Betreiber (siehe T121, „Offen in Phase 8") |
+| **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
 | **Phase 7** | T42 (Testdateien) | die Sperrklinke steht bei 636 Meldungen in 32 Dateien |

@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import { linkAusstellen } from '../supabase/functions/_shared/anmelde-links.ts'
 import { pruefsumme } from '../supabase/functions/_shared/anmeldung.ts'
-import { linkKlient, personZumNamen } from './zugang-ausstellen.mjs'
+import { linkKlient } from './gemeinsam.mjs'
+import { personZumNamen } from './zugang-ausstellen.mjs'
 
 /**
  * **Der Notzugang** (T121, Phase 8): ein Link für eine Person, ausgestellt mit

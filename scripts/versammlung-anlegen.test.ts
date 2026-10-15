@@ -2,8 +2,6 @@ import fs from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { argumente } from './gemeinsam.mjs'
 import {
-  CODE_ALPHABET,
-  einladungscode,
   planerBereiche,
   STANDARD_DIENSTE as SKRIPT_DIENSTE,
   zeitSpalten,
@@ -17,7 +15,7 @@ import { STANDARD_DIENSTE } from '../src/data/vorgaben'
  * Versammlung einrichtet — und dann steht er da.
  *
  * Der Netzteil (`main`) bleibt ungeprüft; geprüft ist alles, was **entscheidet**:
- * die Dienste-Liste, das Alphabet des Einladungscodes, die Bereiche des Planers
+ * die Dienste-Liste, die Bereiche des Planers
  * und das Einlesen der Argumente.
  */
 
@@ -34,47 +32,6 @@ describe('Die Dienste des Skripts sind die der App', () => {
 
   it('und der Zoom-Ordner ist dabei', () => {
     expect(SKRIPT_DIENSTE.map((d: { key: string }) => d.key)).toContain('zoom')
-  })
-})
-
-describe('Einladungscode', () => {
-  it('sechs Zeichen aus dem Alphabet', () => {
-    const code = einladungscode()
-    expect(code).toHaveLength(6)
-    expect([...code].every((z) => CODE_ALPHABET.includes(z))).toBe(true)
-  })
-
-  /*
-    Der Code wird vorgelesen und abgetippt. Zeichen, die sich dabei
-    verwechseln lassen, sind ein Fehler im Alphabet und nicht beim Nutzer —
-    deshalb fehlen sie: 0/O, 1/I/L, 5/S, 8/B.
-  */
-  it('enthält keine verwechselbaren Zeichen', () => {
-    for (const z of ['0', 'O', '1', 'I', 'L', '5', 'S', '8', 'B']) {
-      expect(CODE_ALPHABET).not.toContain(z)
-    }
-  })
-
-  /*
-    Kein Zeichen doppelt. Ein Duplikat fällt niemandem auf — der Code sieht
-    gleich aus —, macht das Alphabet aber kleiner, als es dasteht, und
-    verschiebt die Verteilung zugunsten des doppelten Zeichens. Beim Schreiben
-    dieses Tests stand hier tatsächlich eine `3` zweimal.
-  */
-  it('enthält kein Zeichen doppelt', () => {
-    expect(new Set(CODE_ALPHABET).size).toBe(CODE_ALPHABET.length)
-  })
-
-  it('erreicht jedes Zeichen des Alphabets', () => {
-    // Über den Index gezogen statt über eine Bruchzahl: `i / len * len` ist in
-    // Gleitkomma nicht zuverlässig `i` — mit Bruchzahlen fiele hier je nach
-    // Rundung ein Zeichen aus, und der Test meldete einen Fehler, den es nicht
-    // gibt.
-    const gesehen = new Set<string>()
-    for (let i = 0; i < CODE_ALPHABET.length; i++) {
-      gesehen.add(einladungscode(() => (i + 0.5) / CODE_ALPHABET.length)[0]!)
-    }
-    expect(gesehen.size).toBe(CODE_ALPHABET.length)
   })
 })
 

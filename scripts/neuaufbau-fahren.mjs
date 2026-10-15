@@ -31,8 +31,9 @@
  *                 Trockenlauf lohnt vor allem auf einem bestehenden Bestand.
  *
  * Bricht ein Schritt ab, endet der Lauf dort und nennt die Nummer zum
- * Fortsetzen. Was danach noch von Hand kommt, sagt der Schlussbericht:
- * Anmeldung mit dem Einladungscode und der Grundplan der Treffpunkte, den
+ * Fortsetzen. Was danach noch von Hand kommt, sagt der Schlussbericht: die
+ * erste Anmeldung mit dem Link aus Schritt 1 (er übersteht Schritt 2, siehe
+ * `versammlung-zuruecksetzen.mjs`) und der Grundplan der Treffpunkte, den
  * `treffpunkte-importieren.mjs` bewusst nur vorschlägt.
  */
 
@@ -136,7 +137,9 @@ export async function bestand(url, key) {
     abwesenheiten: await zahl('absences'),
     fsWochen: await zahl('fs_weeks'),
     fsRegeln: (await hole(`fs_rules?select=id&congregation_id=eq.${cong.id}`)).length,
-    einladungen: await hole(`invites?select=code,person_id,redeemed_by&congregation_id=eq.${cong.id}`),
+    // Konten und Anmelde-Links (T121, Phase 8) — ohne `id`-Spalte gezählt.
+    konten: (await hole(`members?select=user_id&congregation_id=eq.${cong.id}`)).length,
+    links: (await hole(`anmelde_links?select=person_id&congregation_id=eq.${cong.id}`)).length,
   }
 }
 
@@ -186,9 +189,12 @@ async function main() {
   console.log(`Personen ${nachher.personen} · Gruppen ${nachher.gruppen} · Haushalte ${nachher.haushalte}`)
   console.log(`Wochen ${nachher.wochen} · Abwesenheiten ${nachher.abwesenheiten} · Treffpunkt-Wochen ${nachher.fsWochen}`)
 
-  const offen = (nachher.einladungen ?? []).filter((i) => !i.redeemed_by)
   console.log('\nWas jetzt noch von Hand kommt:')
-  for (const i of offen) console.log(`  · In der App anmelden und den Einladungscode ${i.code} einlösen.`)
+  if (!nachher.konten && nachher.links) {
+    console.log('  · Mit dem Link aus Schritt 1 anmelden — er gilt 30 Tage. Verloren?')
+    console.log('    node scripts/zugang-ausstellen.mjs --person "Vorname Nachname"')
+  }
+  console.log('  · Den übrigen ihre Links geben: in der App unter Personen › Ohne Link › Links senden.')
   if (!nachher.fsRegeln) {
     console.log('  · Den Grundplan der Treffpunkte in den Einstellungen eintragen —')
     console.log('    das Import-Skript schlägt ihn oben nur vor, es trägt ihn nicht ein.')

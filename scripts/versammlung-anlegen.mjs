@@ -13,7 +13,8 @@
  *   * die Versammlung selbst (Name, Saal, Zusammenkunftszeiten),
  *   * **eine** Person — der Planer,
  *   * die Standard-Hilfsdienste (Ton, Mikrofone, Zoom-Ordner, …),
- *   * ein Einladungscode, mit dem der Planer sein Konto verknüpft.
+ *   * ein Anmelde-Link für den Planer (T121, Phase 8) — sein Konto entsteht,
+ *     wenn er ihn öffnet; ein Kennwort gibt es nicht.
  *
  * **Keine Woche.** Die erste holt der Planer in der App über „Nächste Woche
  * importieren" — mit dem echten Programm von jw.org. Bis dahin zeigen
@@ -38,12 +39,15 @@
  * der Datenbank (Dienstag 19:00, Sonntag 10:00). `--sprache` ist der
  * **jw.org-Sprachcode** (`de`, `en`, `cmn-hant`), nicht der Anzeigename.
  *
+ * **Die Ausgabe meldet an** — Link und Code des Planers. Nur ihm geben, nicht in
+ * Protokolle kopieren. Geht er verloren: `scripts/zugang-ausstellen.mjs`.
+ *
  * Der **Service-Role-Key** umgeht RLS und darf niemals in die App oder ins
  * Repository. Er steht in Supabase unter Project Settings → API.
  *
  * `--trocken` zeigt nur, was geschähe, und schreibt nichts.
  */
-import { alsSkript, argumente, restKlient, zugangsdaten } from './gemeinsam.mjs'
+import { alsSkript, anmeldeLinkAusstellen, argumente, linkZeilen, restKlient, zugangsdaten } from './gemeinsam.mjs'
 
 /**
  * `"2 19:00"` → `{ mid_wd: 2, mid_time: '19:00' }` für die genannte
@@ -81,20 +85,6 @@ export const STANDARD_DIENSTE = [
   { key: 'rund', name: 'Rundgangsordner', count: 1, groups: false },
   { key: 'rein', name: 'Reinigung', count: 1, groups: true },
 ]
-
-/**
- * Einladungscode: sechs Zeichen, **ohne** die Paare, die sich auf Papier und am
- * Telefon verwechseln lassen (0/O, 1/I/L, 5/S, 8/B). Der Code wird vorgelesen
- * und abgetippt; ein Zeichen, das man zweimal erklären muss, ist ein Fehler im
- * Alphabet, nicht beim Nutzer.
- */
-export const CODE_ALPHABET = 'ACDEFGHJKMNPQRTUVWXY234679'
-
-export function einladungscode(zufall = () => Math.random()) {
-  let s = ''
-  for (let i = 0; i < 6; i++) s += CODE_ALPHABET[Math.floor(zufall() * CODE_ALPHABET.length)]
-  return s
-}
 
 /**
  * Bereichsprofil eines Planers: er ist Ältester und darf alles Feste.
@@ -151,7 +141,6 @@ export async function main(argv = process.argv.slice(2)) {
     ...(arg.we ? zeitSpalten('we', arg.we) : {}),
     ...(arg.sprache ? { cong_lang: arg.sprache } : {}),
   }
-  const code = einladungscode()
 
   console.log(`Versammlung:  ${versammlung.name}`)
   console.log(`Saal:         ${versammlung.hall || '—'}`)
@@ -159,7 +148,7 @@ export async function main(argv = process.argv.slice(2)) {
   console.log(`Planer:       ${arg.vorname} ${arg.nachname}`)
   console.log(`Dienste:      ${STANDARD_DIENSTE.map((d) => d.name).join(', ')}`)
   console.log(`Wochen:       keine — die erste holt der Planer über den Import`)
-  console.log(`Einladung:    ${code}`)
+  console.log(`Zugang:       ein Anmelde-Link für ${arg.vorname} ${arg.nachname} — steht nach dem Anlegen unten`)
 
   if (arg.trocken) {
     console.log('\n--trocken: nichts geschrieben.')
@@ -177,7 +166,7 @@ export async function main(argv = process.argv.slice(2)) {
     })
 
   // Reihenfolge zählt: Person und Dienste hängen per Fremdschlüssel an der
-  // Versammlung, der Einladungscode zusätzlich an der Person.
+  // Versammlung, der Anmelde-Link zusätzlich an der Person.
   const [cong] = await rest('congregations', versammlung)
   const [planer] = await rest('persons', {
     congregation_id: cong.id,
@@ -198,15 +187,13 @@ export async function main(argv = process.argv.slice(2)) {
       position: i,
     })),
   )
-  await rest('invites', {
-    congregation_id: cong.id,
-    code,
-    person_id: planer.id,
-    planner: true,
-  })
+  // Das Admin-Recht steht als Vormerkung an der Person (oben); bei der ersten
+  // Anmeldung übernimmt es die Function `anmelden` ins Konto.
+  const link = await anmeldeLinkAusstellen(roh, planer.id, cong.id)
 
   console.log(`\nAngelegt. Versammlung ${cong.id}`)
-  console.log(`Der Planer meldet sich an und gibt den Code ${code} ein.`)
+  console.log(`Der Planer öffnet den Link und ist angemeldet — sein Konto entsteht dabei.\n`)
+  console.log(linkZeilen(link).join('\n'))
 }
 
 alsSkript(import.meta.url, main)

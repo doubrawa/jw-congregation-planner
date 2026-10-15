@@ -11,13 +11,20 @@
  * ([[wochenplanung-import]]).
  *
  * **Was erhalten bleibt:** die Versammlung, die Konten (`members`) samt
- * Planer-Recht, die Hilfsdienste (`services`), die Einladungscodes — und, das ist
- * der Kern, **die Verknüpfung deines Kontos mit deiner Person**. Der bisherige
- * Personen-Import stellte sie per E-Mail-Abgleich wieder her; das scheitert,
- * sobald die Anmelde-Adresse (dienstlich, `anna@example.com`) von der
- * Personen-Mail (privat, `anna.beispiel@example.org`) abweicht. Dieses Skript
- * merkt die Verknüpfung stattdessen über den **Personennamen** und stellt sie
- * danach wieder her — unabhängig von der Adresse.
+ * Planer-Recht, die Hilfsdienste (`services`) — und, das ist der Kern, **die
+ * Verknüpfung deines Kontos mit deiner Person**. Der bisherige Personen-Import
+ * stellte sie per E-Mail-Abgleich wieder her; das scheitert, sobald die
+ * Anmelde-Adresse (dienstlich, `anna@example.com`) von der Personen-Mail
+ * (privat, `anna.beispiel@example.org`) abweicht. Dieses Skript merkt die
+ * Verknüpfung stattdessen über den **Personennamen** und stellt sie danach
+ * wieder her — über die Konto-Id, unabhängig von der Adresse. (Konten aus dem
+ * Anmelden per Link haben gar keine: `members.email` ist bei ihnen leer.)
+ *
+ * Ebenso die **Anmelde-Links** (T121, Phase 8): Wer einen Link oder Zettel
+ * bekommen hat, meldet sich danach weiter damit an. Sie hängen an der Person,
+ * gehen also mit ihr — und werden über den Namen auf die neue Person
+ * zurückgeschrieben, wie die Konten. Nur wer im neuen Bestand fehlt, verliert
+ * seinen.
  *
  * Die **Abwesenheiten** sind hier bewusst dabei (ein Zurücksetzen setzt zurück),
  * lassen sich danach aber wiederholen: `abwesenheiten-importieren.mjs` holt sie
@@ -169,10 +176,6 @@ export const LEEREN = [
   // Und die Weiteren Pläne (Phase 5) — die Einträge zuerst, sie zeigen auf die Pläne.
   'plan_eintraege',
   'plaene',
-  // Die Anmelde-Links (T121, Phase 8) gingen mit den Personen ohnehin per
-  // Kaskade. Wer schon ein Konto hat, braucht keinen mehr; den übrigen stellt
-  // der Admin nach dem Zurücksetzen neue aus.
-  'anmelde_links',
 ]
 
 /** Gelöscht **und** im selben Lauf aus dem SQL neu angelegt (feste IDs). */
@@ -181,10 +184,10 @@ export const NEU_ANGELEGT = ['persons', 'groups', 'households']
 /** Was stehen bleibt — je Tabelle mit Begründung. */
 export const BEHALTEN = {
   members: 'die Konten samt Planer-Recht — der Sinn des Skripts',
-  invites: 'offene Einladungscodes bleiben gültig',
   services: 'die Hilfsdienste der Versammlung (werden nur angelegt, wenn keine da sind)',
   fs_rules: 'der Treffpunkt-Grundplan — er beschreibt die Versammlung, nicht eine Woche',
   trolleys: 'die Trolleys der Versammlung — wie der Grundplan Sache der Versammlung',
+  anmelde_links: 'ausgegebene Links und Zettel (T121, Phase 8) — gelten nach dem Zurücksetzen weiter',
 }
 
 /**
@@ -205,6 +208,35 @@ export const BEHALTEN = {
  */
 export const KASKADIERT = {
   fs_rules: 'Gruppen-Treffpunkte hängen an groups — gesichert und wieder eingespielt',
+  anmelde_links: 'hängen an persons — über den Personennamen gesichert und der neuen Person zurückgeschrieben',
+}
+
+/**
+ * Die Anmelde-Links auf den **Personennamen** umschreiben, bevor die Personen
+ * gelöscht werden — und hinterher zurück auf die neuen Ids. Derselbe Weg wie
+ * bei den Konto-Verknüpfungen: Die Ids kommen frisch aus dem SQL.
+ *
+ * **Keine Sicherungsdatei** wie für die Konten: In den Zeilen stehen die
+ * Prüfsummen von Token und Code, und die eines achtstelligen Codes lässt sich
+ * durchprobieren. Bricht ein Lauf zwischen Löschen und Zurückschreiben ab,
+ * stellt der Admin die Links neu aus.
+ */
+export function linksAufNamen(links, nameNachId) {
+  return links
+    .filter((l) => nameNachId.has(l.person_id))
+    .map(({ person_id, congregation_id: _cong, ...rest }) => ({ ...rest, personName: nameNachId.get(person_id) }))
+}
+
+/** … und zurück: je Link die Zeile für die neue Person; wer fehlt, steht in `verloren`. */
+export function linksAufIds(links, idNachName, congregationId) {
+  const zeilen = []
+  const verloren = []
+  for (const { personName, ...rest } of links) {
+    const pid = idNachName.get(personName)
+    if (pid) zeilen.push({ ...rest, person_id: pid, congregation_id: congregationId })
+    else verloren.push(personName)
+  }
+  return { zeilen, verloren }
 }
 
 /**
@@ -288,41 +320,37 @@ export async function main(argv = process.argv.slice(2)) {
    * Die fünf Abfragen hängen nicht voneinander ab; nacheinander waren es fünf
    * Umläufe, bevor der erste Löschbefehl überhaupt hinausging. Als ein Block
    * gelesen steht auch beieinander, was dieses Skript über das Löschen hinweg
-   * retten muss: die Konto-Verknüpfungen, die offenen Einladungen und der
-   * Grundplan der Gruppen.
+   * retten muss: die Konto-Verknüpfungen, die Anmelde-Links und der Grundplan
+   * der Gruppen.
    */
-  const [dbPersonen, members, dbEinladungen, services, dbGruppen, alleRegeln] = await Promise.all([
+  const [dbPersonen, members, dbLinks, services, dbGruppen, alleRegeln] = await Promise.all([
     rest(`persons?select=id,fn,ln&congregation_id=eq.${cong}`),
-    rest(`members?select=email,person_id&congregation_id=eq.${cong}`),
-    rest(`invites?select=code,person_id&congregation_id=eq.${cong}&redeemed_by=is.null`),
+    rest(`members?select=user_id,email,person_id&congregation_id=eq.${cong}`),
+    rest(
+      `anmelde_links?select=person_id,congregation_id,token_hash,code_hash,gueltig_bis,erstellt_at,gesendet_at,benutzt_at&congregation_id=eq.${cong}`,
+    ),
     rest(`services?select=key&congregation_id=eq.${cong}`),
     rest(`groups?select=id,name&congregation_id=eq.${cong}`),
     rest(`fs_rules?select=*&congregation_id=eq.${cong}`),
   ])
 
   // Konto→Person-Verknüpfung über den Personennamen sichern (vor dem Löschen).
-  // Robust gegen Teilabbrüche: die Zuordnung (E-Mail → Personenname) wird in einer
+  // Robust gegen Teilabbrüche: die Zuordnung (Konto → Personenname) wird in einer
   // Sidecar-Datei gehalten. Läuft das Skript nach einem Abbruch erneut (persons
   // bereits gelöscht, also aus der DB nicht mehr ableitbar), kommt sie von dort —
   // sonst ginge die Anmeldung des Planers verloren.
   const nameNachId = new Map(dbPersonen.map((p) => [p.id, personDisplayName(p.fn, p.ln)]))
+  const links = linksAufNamen(dbLinks, nameNachId)
   const sidecar = `${sqlPfad}.members.json`
   let verknuepfungen = members
     .filter((m) => m.person_id && nameNachId.has(m.person_id))
-    .map((m) => ({ email: m.email, personName: nameNachId.get(m.person_id) }))
+    .map((m) => ({ userId: m.user_id, email: m.email, personName: nameNachId.get(m.person_id) }))
   if (verknuepfungen.length) {
     fs.writeFileSync(sidecar, JSON.stringify(verknuepfungen, null, 2)) // vor dem Löschen sichern
   } else if (fs.existsSync(sidecar)) {
     verknuepfungen = JSON.parse(fs.readFileSync(sidecar, 'utf8'))
     console.log(`(${verknuepfungen.length} Konto-Verknüpfung(en) aus vorherigem Lauf übernommen — DB war schon geleert.)`)
   }
-  // Dasselbe für offene Einladungen: Das Löschen der Personen nullt
-  // `invites.person_id` (Fremdschlüssel). Der Code bliebe gültig, führte aber
-  // zu einem Konto **ohne** Person — „Meine Aufgaben" bliebe leer, und niemand
-  // sähe die Ursache. Beim Neuaufbau am 18. September 2026 genau so passiert.
-  const einladungen = dbEinladungen
-    .filter((i) => i.person_id && nameNachId.has(i.person_id))
-    .map((i) => ({ code: i.code, personName: nameNachId.get(i.person_id) }))
 
   /*
    * **Den Grundplan der Gruppen über das Löschen retten** (siehe `KASKADIERT`).
@@ -347,8 +375,8 @@ export async function main(argv = process.argv.slice(2)) {
   console.log(`Löschen:      ${LEEREN.join(', ')}, groups, persons`)
   console.log(`Anlegen:      ${kuratiert.persons.length} Personen, ${kuratiert.groups.length} Gruppen`)
   console.log(`Konten:       ${members.length} (${verknuepfungen.length} Verknüpfung(en) über den Namen erhalten)`)
-  for (const v of verknuepfungen) console.log(`              ${v.email} → ${v.personName}`)
-  if (einladungen.length) console.log(`Einladungen:  ${einladungen.length} offene, werden wieder verknüpft`)
+  for (const v of verknuepfungen) console.log(`              ${v.email || v.userId} → ${v.personName}`)
+  if (links.length) console.log(`Links:        ${links.length} ausgegebene, gelten danach weiter`)
   console.log(`Dienste:      ${services.length ? `${services.length} vorhanden, bleiben` : 'keine → Standard anlegen'}`)
   if (gruppenRegeln.length) {
     console.log(`Treffpunkte:  ${gruppenRegeln.length} Gruppen-Regel(n) gesichert, werden wieder eingespielt`)
@@ -366,6 +394,9 @@ export async function main(argv = process.argv.slice(2)) {
     for (const name of verloren) {
       console.log(`  ! Gruppe „${name}" fehlt im SQL — ihr Treffpunkt ginge verloren.`)
     }
+    for (const name of linksAufIds(links, new Map(kuratiert.persons.map((p) => [personDisplayName(p.fn, p.ln), p.id])), cong).verloren) {
+      console.log(`  ! ${name} fehlt im SQL — der Link dieser Person ginge verloren.`)
+    }
     console.log('\n--trocken: nichts geschrieben.')
     return
   }
@@ -374,7 +405,7 @@ export async function main(argv = process.argv.slice(2)) {
   for (const t of LEEREN) {
     await rest(`${t}?congregation_id=eq.${cong}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } })
   }
-  // 2) Personen (nullt per FK groups.overseer/assistant und invites.person_id),
+  // 2) Personen (nullt per FK groups.overseer/assistant und members.person_id),
   //    dann Gruppen und Haushalte — die Haushalte zuletzt, denn bis hierher
   //    zeigt `persons.fam` noch auf sie.
   await rest(`persons?congregation_id=eq.${cong}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } })
@@ -438,30 +469,30 @@ export async function main(argv = process.argv.slice(2)) {
     })
   }
 
-  // 5) Konto→Person-Verknüpfung über den Namen wiederherstellen (per E-Mail des Kontos)
+  // 5) Konto→Person-Verknüpfung über den Namen wiederherstellen — über die
+  //    Konto-Id. Nicht über die Adresse: Konten aus dem Anmelden per Link haben
+  //    keine (`members.email` leer), und `email=eq.` träfe dann **alle** auf
+  //    einmal, jedes zuletzt mit der Person des letzten.
   const idNachName = new Map(kuratiert.persons.map((p) => [personDisplayName(p.fn, p.ln), p.id]))
   let verknuepft = 0
   const unverknuepft = []
   for (const v of verknuepfungen) {
     const pid = idNachName.get(v.personName)
     if (!pid) { unverknuepft.push(v.personName); continue }
-    await rest(`members?email=eq.${encodeURIComponent(v.email)}&congregation_id=eq.${cong}`, {
+    // Eine Sicherung aus einem Lauf vor dem Umbau kennt nur die Adresse.
+    const konto = v.userId ? `user_id=eq.${encodeURIComponent(v.userId)}` : `email=eq.${encodeURIComponent(v.email)}`
+    if (!v.userId && !v.email) { unverknuepft.push(v.personName); continue }
+    await rest(`members?${konto}&congregation_id=eq.${cong}`, {
       method: 'PATCH', headers: { Prefer: 'return=minimal' },
       body: JSON.stringify({ person_id: pid }),
     })
     verknuepft++
   }
 
-  // Offene Einladungen zeigen wieder auf ihre Person (siehe oben).
-  let einladungenVerknuepft = 0
-  for (const e of einladungen) {
-    const pid = idNachName.get(e.personName)
-    if (!pid) continue
-    await rest(`invites?code=eq.${encodeURIComponent(e.code)}&congregation_id=eq.${cong}`, {
-      method: 'PATCH', headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ person_id: pid }),
-    })
-    einladungenVerknuepft++
+  // Die Anmelde-Links zeigen wieder auf ihre Person (siehe `linksAufNamen`).
+  const { zeilen: linkZeilen, verloren: linksVerloren } = linksAufIds(links, idNachName, cong)
+  if (linkZeilen.length) {
+    await rest('anmelde_links', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(linkZeilen) })
   }
 
   // 6) Hilfsdienste sicherstellen (nur, wenn gar keine da sind)
@@ -477,9 +508,10 @@ export async function main(argv = process.argv.slice(2)) {
   console.log(
     `\nFertig. ${kuratiert.persons.length} Personen, ${kuratiert.groups.length} Gruppen angelegt; ` +
       `${verknuepft} Konto-Verknüpfung(en) erhalten` +
-      `${einladungenVerknuepft ? `, ${einladungenVerknuepft} Einladung(en) wieder verknüpft` : ''}.`,
+      `${linkZeilen.length ? `, ${linkZeilen.length} Anmelde-Link(s) gelten weiter` : ''}.`,
   )
   if (unverknuepft.length) console.log(`Unverknüpft (Name nicht im SQL): ${unverknuepft.join(', ')}`)
+  if (linksVerloren.length) console.log(`Link verloren — Person nicht mehr im SQL: ${linksVerloren.join(', ')}`)
   if (wieder.length) console.log(`${wieder.length} Gruppen-Treffpunkt(e) wieder eingespielt.`)
   if (verloren.length) {
     console.log(`Treffpunkt verloren — Gruppe nicht mehr im SQL: ${verloren.join(', ')}`)

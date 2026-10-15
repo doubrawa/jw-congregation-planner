@@ -6,7 +6,8 @@
  * Link abgelaufen, die App kann noch keine E-Mails senden —, stellt dieses
  * Skript einer Person einen Link aus, mit dem Service-Role-Key, also ohne
  * Anmeldung. Es geht derselbe Weg wie „Link senden" in der App
- * (`_shared/anmelde-links.ts`): Ein neuer Link ersetzt den alten samt Zettel.
+ * (`anmeldeLinkAusstellen` in `gemeinsam.mjs`): Ein neuer Link ersetzt den
+ * alten samt Zettel.
  *
  * Ein Konto legt das Skript nicht an. Das entsteht bei der ersten Anmeldung,
  * mit den Rechten aus der Vormerkung an der Person (Function `anmelden`) — wie
@@ -30,9 +31,17 @@
  * Umgebung steht (`SUPABASE_SECRET_KEY`). `--trocken` sucht nur die Person und
  * stellt nichts aus.
  */
-import { alsSkript, appCodeBereit, argumente, personDisplayName, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
-
-const APP_URL = 'https://versammlung.app/'
+import {
+  alsSkript,
+  anmeldeLinkAusstellen,
+  APP_URL,
+  argumente,
+  linkZeilen,
+  personDisplayName,
+  restKlient,
+  versammlungHolen,
+  zugangsdaten,
+} from './gemeinsam.mjs'
 
 /**
  * Wer gemeint ist: **genau eine** Person dieses Namens. Verglichen wie in der
@@ -50,26 +59,6 @@ export function personZumNamen(persons, name) {
       ? `Keine Person „${name}" in dieser Versammlung.`
       : `„${name}" trifft ${treffer.length} Personen — mit --person-id wählen.`,
   )
-}
-
-/**
- * Der Node-Klient in der Form, die `linkAusstellen` erwartet — es braucht nur
- * `upsert`. Nicht `_shared/rest.ts` selbst: Das schickt den Schlüssel auch im
- * `Authorization`-Kopf, und den nimmt PostgREST von einem `sb_secret_…` nicht
- * an (`authKopf` in `gemeinsam.mjs`). `rest` wirft bei einem Fehler; dann gibt
- * es keinen Link, und das Skript bricht mit der Meldung ab.
- */
-export function linkKlient(rest) {
-  return {
-    async upsert(pfad, zeilen) {
-      await rest(pfad, {
-        method: 'POST',
-        headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify(zeilen),
-      })
-      return true
-    },
-  }
 }
 
 /** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
@@ -93,17 +82,8 @@ export async function main(argv = process.argv.slice(2)) {
     return
   }
 
-  // Derselbe Code wie in den Functions — kein zweites Rezept für Token und Code.
-  appCodeBereit()
-  const { linkAusstellen } = await import('../supabase/functions/_shared/anmelde-links.ts')
-  const { anmeldeUrl, codeAnzeige, codeUrl } = await import('../supabase/functions/_shared/anmeldung.ts')
-  const neu = await linkAusstellen(linkKlient(rest), person.id, cong.id)
-  if (!neu) throw new Error('Die Datenbank hat den Link nicht angenommen.')
-  const app = typeof arg.app === 'string' ? arg.app : APP_URL
-  console.log(`\nLink:         ${anmeldeUrl(app, neu.token)}`)
-  console.log(`Code:         ${codeAnzeige(neu.code)}   (QR-Code-Link: ${codeUrl(app, neu.code)})`)
-  console.log(`Gültig bis:   ${new Date(neu.gueltigBis).toLocaleString('de-DE')}`)
-  console.log('\nLink und Code melden an — nicht weitergeben, nicht in Protokolle kopieren.')
+  const link = await anmeldeLinkAusstellen(rest, person.id, cong.id, typeof arg.app === 'string' ? arg.app : APP_URL)
+  console.log(`\n${linkZeilen(link).join('\n')}`)
 }
 
 alsSkript(import.meta.url, main)

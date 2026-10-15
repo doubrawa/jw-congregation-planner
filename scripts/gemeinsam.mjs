@@ -729,3 +729,59 @@ export function appCodeBereit() {
     },
   })
 }
+
+/** Die Adresse der App, wie sie im Link und im QR-Code des Zettels steht. */
+export const APP_URL = 'https://versammlung.app/'
+
+/**
+ * Der Node-Klient in der Form, die `linkAusstellen` (`_shared/anmelde-links.ts`)
+ * erwartet — es braucht nur `upsert`. Nicht `_shared/rest.ts` selbst: Das
+ * schickt den Schlüssel auch im `Authorization`-Kopf, und den nimmt PostgREST
+ * von einem `sb_secret_…` nicht an (`authKopf`). `rest` wirft bei einem
+ * Fehler; dann gibt es keinen Link, und das Skript bricht mit der Meldung ab.
+ */
+export function linkKlient(rest) {
+  return {
+    async upsert(pfad, zeilen) {
+      await rest(pfad, {
+        method: 'POST',
+        headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify(zeilen),
+      })
+      return true
+    },
+  }
+}
+
+/**
+ * **Einen Anmelde-Link ausstellen — aus einem Wartungsskript** (T121, Phase 8):
+ * derselbe Weg wie in den Functions (`send-invite`), kein zweites Rezept für
+ * Token und Code. Ein neuer Link ersetzt den alten der Person samt Zettel.
+ *
+ * Zurück kommen Link, Code und der Link im QR-Code des Zettels — **im
+ * Klartext, nur dieses eine Mal**; in der Datenbank stehen sie als Prüfsumme.
+ */
+export async function anmeldeLinkAusstellen(rest, personId, congregationId, appUrl = APP_URL) {
+  appCodeBereit()
+  const { linkAusstellen } = await import('../supabase/functions/_shared/anmelde-links.ts')
+  const { anmeldeUrl, codeAnzeige, codeUrl } = await import('../supabase/functions/_shared/anmeldung.ts')
+  const neu = await linkAusstellen(linkKlient(rest), personId, congregationId)
+  if (!neu) throw new Error('Die Datenbank hat den Link nicht angenommen.')
+  return {
+    url: anmeldeUrl(appUrl, neu.token),
+    code: codeAnzeige(neu.code),
+    zettelUrl: codeUrl(appUrl, neu.code),
+    gueltigBis: neu.gueltigBis,
+  }
+}
+
+/** Den neuen Link so ausgeben, dass man ihn weitergeben kann — und nicht vergisst, was er ist. */
+export function linkZeilen(link) {
+  return [
+    `Link:         ${link.url}`,
+    `Code:         ${link.code}   (QR-Code-Link: ${link.zettelUrl})`,
+    `Gültig bis:   ${new Date(link.gueltigBis).toLocaleString('de-DE')}`,
+    '',
+    'Link und Code melden an — nicht weitergeben, nicht in Protokolle kopieren.',
+  ]
+}

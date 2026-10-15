@@ -86,7 +86,6 @@ export const RLS_TABELLEN = [
   { name: 'absences', spalte: 'congregation_id' },
   { name: 'notifications', spalte: 'congregation_id' },
   { name: 'confirmations', spalte: 'congregation_id' },
-  { name: 'invites', spalte: 'congregation_id' },
   { name: 'push_subscriptions', spalte: 'congregation_id' },
   // Versand-Tagebuch: RLS an, aber bewusst **ohne** Policy — das sperrt alles.
   // Nur die Edge Function kommt heran, und die arbeitet mit der Service-Role.
@@ -105,8 +104,13 @@ export const RLS_TABELLEN = [
   { name: 'anmelde_fehlversuche', spalte: 'id', keinZugriff: true },
 ]
 
-/** Tabellen, aus denen eine „Landmarke" der anderen Seite geholt wird. */
-export const LANDMARKEN = ['persons', 'groups', 'services', 'weeks', 'invites']
+/**
+ * Tabellen, aus denen eine „Landmarke" der anderen Seite geholt wird — alle mit
+ * einer Spalte `id` (die Kreuzprobe fragt nach ihr). Die Einladungscodes standen
+ * bis zum Anmelden per Link hier (T121, Phase 8); die Anmelde-Links haben keine
+ * eigene Id (eine Zeile je Person).
+ */
+export const LANDMARKEN = ['persons', 'groups', 'services', 'weeks']
 
 /* ===================== Reine Bewertung (prüfbar) ========================== */
 

@@ -269,16 +269,22 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     const r = () => richtlinien(schema)
     const fn = (name: string) => funktionsRuempfe(schema).get(name) ?? ''
 
-    it('das Planer-Recht steht am Konto, an der Einladung und als Vormerkung an der Person — auch nachträglich', () => {
+    it('das Planer-Recht steht am Konto und als Vormerkung an der Person — auch nachträglich', () => {
+      // Die Vormerkung übernimmt die Function `anmelden` bei der ersten
+      // Anmeldung ins Konto (`_test/anmelden.test.ts`, T121 Phase 8).
       expect(tabelle('members')).toMatch(/^\s*zuteiler\s+boolean not null default false/m)
-      expect(tabelle('invites')).toMatch(/^\s*zuteiler\s+boolean not null default false/m)
       expect(tabelle('persons')).toMatch(/^\s*zuteiler_vorgemerkt\s+boolean not null default false/m)
       const text = normiert(schema)
       expect(text).toContain('alter table public.members add column if not exists zuteiler boolean not null default false;')
-      expect(text).toContain('alter table public.invites add column if not exists zuteiler boolean not null default false;')
       expect(text).toContain('alter table public.persons add column if not exists zuteiler_vorgemerkt boolean not null default false;')
-      // Wer mit einem Code beitritt, bekommt das vorgemerkte Recht.
-      expect(fn('redeem_invite')).toContain('inv.planner, inv.zuteiler')
+    })
+
+    it('die Einladungscodes sind fort — samt der Funktion zum Einlösen (T121, Phase 8)', () => {
+      const text = normiert(schema)
+      expect(text).toContain('drop function if exists public.redeem_invite(text);')
+      expect(text).toContain('drop table if exists public.invites cascade;')
+      expect(text).not.toContain('create table if not exists public.invites')
+      expect(fn('redeem_invite')).toBe('')
     })
 
     it('darf_zuteilen fragt Admin oder Planer, eigene_gruppen Aufseher oder Gehilfe — beide als security definer', () => {
@@ -366,8 +372,8 @@ describe('die Rechteprüfungen stehen im Schema', () => {
       )
     })
 
-    it('Personen, Gruppen, Dienste, Versammlung, Mitglieder und Einladungen bleiben beim Admin', () => {
-      for (const name of ['persons_write', 'groups_write', 'services_write', 'congregations_update', 'members_update', 'invites_all', 'households_write']) {
+    it('Personen, Gruppen, Dienste, Versammlung, Mitglieder und Anmelde-Links bleiben beim Admin', () => {
+      for (const name of ['persons_write', 'groups_write', 'services_write', 'congregations_update', 'members_update', 'anmelde_links_select', 'anmelde_links_delete', 'households_write']) {
         const rumpf = r().get(name) ?? ''
         expect(rumpf, name).toContain('public.is_planner()')
         expect(rumpf, name).not.toContain('darf_zuteilen')
