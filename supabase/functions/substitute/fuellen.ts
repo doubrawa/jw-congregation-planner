@@ -181,9 +181,8 @@ export async function platzFuellen(rest: Rest, userId: string, taskKey: string, 
   if (tag && absences.some((a) => a.from_date <= tag && tag <= a.to_date)) return json({ error: 'absent' }, 409)
 
   fund.setzen({ name: personDisplayName(person.fn, person.ln), pid: person.id })
-  if (!(await wocheSchreiben(rest, cong, teile.woche, row.updated_at, row.data))) {
-    return json({ error: 'slot-taken' }, 409)
-  }
+  const neuerStand = await wocheSchreiben(rest, cong, teile.woche, row.updated_at, row.data)
+  if (!neuerStand) return json({ error: 'slot-taken' }, 409)
 
   // Wer sich selbst einträgt, hat zugesagt. Eine alte Zeile zu diesem Platz
   // (eine Absage dessen, der ihn vorher hatte) gehört nicht zum neuen.
@@ -192,5 +191,6 @@ export async function platzFuellen(rest: Rest, userId: string, taskKey: string, 
   await rest.insert('confirmations', [
     { congregation_id: cong, user_id: userId, task_key: taskKey, status: 'bestätigt' },
   ])
-  return json({ ok: true, filled: true })
+  // Der Stand vorher und nachher — wie beim Einspringen (`index.ts`).
+  return json({ ok: true, filled: true, woche: teile.woche, vorher: row.updated_at, stand: neuerStand })
 }

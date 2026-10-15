@@ -547,9 +547,8 @@ Deno.serve(async (req: Request) => {
     slot.name = callerName
     slot.pid = callerPerson.id
     const stand = weekRows[0]?.updated_at
-    if (!stand || !(await wocheSchreiben(rest, cong, parts.woche, stand, week))) {
-      return json({ error: 'slot-taken' }, 409)
-    }
+    const neuerStand = stand ? await wocheSchreiben(rest, cong, parts.woche, stand, week) : null
+    if (!stand || !neuerStand) return json({ error: 'slot-taken' }, 409)
 
     // Die Suche ist beendet: Die Zeilen „Ersatz gesucht" in den Glocken ALLER
     // Qualifizierten weg (T86). Sie standen dort sonst weiter, obwohl es nichts
@@ -599,7 +598,10 @@ Deno.serve(async (req: Request) => {
       undefined, // die Glocken-Zeile trägt hier keinen Aufgabenschlüssel …
       payload.taskKey, // … der Push bündelt trotzdem je Aufgabe
     )
-    return json({ ok: true, taken: true })
+    // Der Stand vorher und nachher: Der Client übernimmt den neuen, wenn der
+    // alte seiner war (`standDerFunctionUebernehmen`) — sonst meldete seine
+    // nächste Änderung derselben Woche einen Konflikt, den es nicht gab.
+    return json({ ok: true, taken: true, woche: parts.woche, vorher: stand, stand: neuerStand })
   } catch (err) {
     // Nur in die Logs, nicht in die Antwort: `restGet` hängt bei einem Fehler
     // Pfad und rohen PostgREST-Rumpf an die Meldung. Das ist beim Suchen

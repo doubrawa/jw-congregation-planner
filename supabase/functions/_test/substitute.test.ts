@@ -754,9 +754,13 @@ describe('substitute: Positivfall als Gegenprobe', () => {
   // Ohne diesen Test könnten alle Negativtests bestehen, obwohl die Function
   // gar nichts tut (z. B. weil das Fixture nicht greift).
   it('qualifiziertes Mitglied übernimmt: Slot umgeschrieben, Bestätigung gesetzt', async () => {
+    const vorher = stand
     const res = await call(take())
     expect(res.status).toBe(200)
-    await expect(res.json()).resolves.toEqual({ ok: true, taken: true })
+    // Mit beiden Ständen (15.10.2026): Der Client übernimmt den neuen, wenn der
+    // alte seiner war — sonst meldete seine nächste Änderung derselben Woche
+    // einen Konflikt, den es nicht gab.
+    await expect(res.json()).resolves.toEqual({ ok: true, taken: true, woche: WI, vorher, stand: `${vorher}+1` })
     expect(savedSlotName()).toBe('Ich Selbst')
 
     expect(writesTo('weeks')[0]?.method).toBe('PATCH')

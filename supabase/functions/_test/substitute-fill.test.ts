@@ -177,7 +177,13 @@ const gespeichert = () => woche.mid?.sections?.[0]?.items?.[0] as { names: { nam
 
 describe('fill: der Weg, der gehen soll', () => {
   it('trägt in den Programmpunkt ein — Name und Person-Id — und setzt die Zusage', async () => {
-    expect(await antwort(await fuellen(K_GEBET))).toEqual({ status: 200, body: { ok: true, filled: true } })
+    const vorher = stand
+    // Mit beiden Ständen: Der Client übernimmt den neuen, wenn der alte seiner
+    // war — sonst meldete seine nächste Änderung derselben Woche einen Konflikt.
+    expect(await antwort(await fuellen(K_GEBET))).toEqual({
+      status: 200,
+      body: { ok: true, filled: true, woche: MONTAG, vorher, stand: `${vorher}+1` },
+    })
     expect(gespeichert().names[0]).toMatchObject({ name: 'Ich Selbst', pid: 'p-ich', rolle: 'Gebet', bereichsKey: 'gebet' })
     const zusage = aufrufe.find((a) => a.method === 'POST' && a.path === 'confirmations')
     expect(zusage?.body).toEqual([{ congregation_id: CONG, user_id: U_ICH, task_key: K_GEBET, status: 'bestätigt' }])

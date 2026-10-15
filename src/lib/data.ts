@@ -1643,11 +1643,35 @@ export function substituteSeek(taskKey: string): void {
  */
 export function substituteTake(taskKey: string): void {
   if (!supabase) return
-  void supabase.functions.invoke('substitute', { body: { action: 'take', taskKey } }).then(({ error }) => {
-    if (!error) return
+  const geladen = ladung
+  void supabase.functions.invoke('substitute', { body: { action: 'take', taskKey } }).then(({ data, error }) => {
+    if (!error) {
+      standDerFunctionUebernehmen(data, geladen)
+      return
+    }
     console.error('[substitute/take]', error.message)
     konfliktMelder?.()
   })
+}
+
+/**
+ * **Den Stand nach einem Schreiben der Function übernehmen** — Einspringen und
+ * ein freier Platz (`substitute`) schreiben die Woche selbst. Ohne den neuen
+ * Stand meldete die nächste eigene Änderung derselben Woche einen Konflikt, den
+ * es nicht gab: Ein Admin, der einspringt und gleich weiterplant, verlor seine
+ * Änderung an ein Nachladen (bis zum 15.10.2026).
+ *
+ * Übernommen wird nur, was auf dem Stand aufbaut, den diese App kennt
+ * (`vorher`): Dann steht dort, was auch hier steht — dieselbe Änderung hat der
+ * Reducer gemacht. Hat dazwischen ein anderer geschrieben, bleibt der alte
+ * Stand, und die nächste Änderung lädt nach, statt dessen Arbeit zu
+ * überschreiben.
+ */
+function standDerFunctionUebernehmen(antwort: unknown, geladen: number): void {
+  const { woche, vorher, stand } = (antwort ?? {}) as { woche?: unknown; vorher?: unknown; stand?: unknown }
+  if (typeof woche !== 'string' || typeof stand !== 'string') return
+  if (wochenStand.get(woche) !== vorher) return
+  standMerken(wochenStand, woche, stand, geladen)
 }
 
 /**
@@ -1666,8 +1690,12 @@ export function substituteTake(taskKey: string): void {
 export function platzFuellen(taskKey: string): void {
   if (!supabase) return
   const heute = isoDay(new Date())
-  void supabase.functions.invoke('substitute', { body: { action: 'fill', taskKey, heute } }).then(({ error }) => {
-    if (!error) return
+  const geladen = ladung
+  void supabase.functions.invoke('substitute', { body: { action: 'fill', taskKey, heute } }).then(({ data, error }) => {
+    if (!error) {
+      standDerFunctionUebernehmen(data, geladen)
+      return
+    }
     console.error('[substitute/fill]', error.message)
     konfliktMelder?.()
   })

@@ -13,12 +13,23 @@ const store = vi.hoisted(() => ({
   filter: [] as Array<[string, string, string, unknown]>,
 }))
 const fromMock = vi.hoisted(() => vi.fn())
+/** Die Edge Functions — nur für die Fälle, in denen eine Function die Woche schreibt. */
+const invokeMock = vi.hoisted(() => vi.fn())
 
 vi.mock('./supabase', () => ({
-  supabase: { from: fromMock },
+  supabase: { from: fromMock, functions: { invoke: invokeMock } },
 }))
 
-import { loadCongregationData, saveFsWeek, saveWeek, SENT_LOG_LIMIT, setKonfliktMelder, WEEK_LIMIT } from './data'
+import {
+  loadCongregationData,
+  platzFuellen,
+  saveFsWeek,
+  saveWeek,
+  SENT_LOG_LIMIT,
+  setKonfliktMelder,
+  substituteTake,
+  WEEK_LIMIT,
+} from './data'
 import type { Week } from '../data/types'
 import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 
@@ -488,6 +499,43 @@ describe('Neuladen und Schreiben', () => {
     saveFsWeek('c1', START, [])
     await ruhe()
     expect(staendeVon('fs_weeks')).toEqual(['F-S-geladen'])
+  })
+
+  /*
+   * **Der Stand nach dem Einspringen** (15.10.2026). Einspringen und ein freier
+   * Platz schreiben die Woche in der Function `substitute`. Kannte die App den
+   * neuen Stand nicht, meldete ihre nächste Änderung derselben Woche einen
+   * Konflikt, den es nicht gab — ein Admin, der einspringt und gleich
+   * weiterplant, verlor seine Änderung an ein Nachladen.
+   */
+  const KEY = `${START}|mid|helper|mik|0`
+  /** Danach schreibt die App die Woche selbst — mit welchem Stand? */
+  const naechsterStand = async (): Promise<unknown[]> => {
+    store.filter = []
+    store.responses.weeks = [{ data: { updated_at: 'S9' }, error: null }]
+    saveWeek('c1', woche('danach'))
+    await ruhe()
+    return staendeVon('weeks')
+  }
+
+  it.each([
+    ['Einspringen', () => substituteTake(KEY)],
+    ['freier Platz', () => platzFuellen(KEY)],
+  ])('%s: der Stand der Function gilt, wenn er auf dem eigenen aufbaut', async (_name, aufruf) => {
+    await laden('S1')
+    invokeMock.mockResolvedValueOnce({ data: { ok: true, woche: START, vorher: 'S1', stand: 'S2' }, error: null })
+    aufruf()
+    await ruhe()
+    expect(await naechsterStand()).toEqual(['S2'])
+    expect(konflikte).toBe(0)
+  })
+
+  it('hat dazwischen ein anderer geschrieben, bleibt der eigene — die nächste Änderung lädt nach', async () => {
+    await laden('S1')
+    invokeMock.mockResolvedValueOnce({ data: { ok: true, woche: START, vorher: 'S-fremd', stand: 'S2' }, error: null })
+    substituteTake(KEY)
+    await ruhe()
+    expect(await naechsterStand()).toEqual(['S1'])
   })
 })
 
