@@ -9,14 +9,24 @@ import type { Week } from '../data/types'
 import { supabase } from './supabase'
 
 /**
- * Fehlerfall des Imports. `'ohne-datenbank'`, `'unbekannt'` und `'ende'` (das
- * Heft hat keine weitere Woche) sind Schlüssel, die der Aufrufer in der Sprache
- * des Nutzers ausgibt — hier stand früher ein fester deutscher Satz, den auch
- * ein englischer Planer zu sehen bekam. Alles andere ist die Meldung des
- * Servers und wird unverändert durchgereicht. (`'ohne-datenbank'` hieß bis zum
+ * Fehlerfall des Imports — **nur Schlüssel**, die der Aufrufer in der Sprache
+ * des Nutzers ausgibt: `'ohne-datenbank'`, `'ende'` (das Heft hat keine weitere
+ * Woche), `'sprache-fehlt'` (die Woche gibt es in der Sprache der Versammlung
+ * noch nicht) und `'unbekannt'` für alles Übrige.
+ *
+ * Bis Phase 10 von T121 ging alles andere als Meldung des Servers unverändert
+ * durch — deutsche Sätze („Diese Woche ist in der gewählten Sprache …"), dazu
+ * „forbidden" und „Import fehlgeschlagen.", in jeder Sprache der App. Was der
+ * Server sagt, steht jetzt in der Konsole. (`'ohne-datenbank'` hieß bis zum
  * 2.10.2026 `'demo'`; einen Demo-Modus gibt es nicht mehr.)
  */
-export type ImportFehler = 'ohne-datenbank' | 'unbekannt' | 'ende' | (string & {})
+export type ImportFehler = 'ohne-datenbank' | 'unbekannt' | 'ende' | 'sprache-fehlt'
+
+/** Was der Server sagte, für die Konsole — angezeigt wird der Schlüssel. */
+function unbekannt(meldung: string | undefined): ImportFehler {
+  console.error('[import-week]', meldung ?? 'ohne Meldung')
+  return 'unbekannt'
+}
 
 /**
  * Was der Server zu einer Antwort mit Status ≠ 2xx sagt. `functions.invoke`
@@ -25,9 +35,10 @@ export type ImportFehler = 'ohne-datenbank' | 'unbekannt' | 'ende' | (string & {
  */
 async function serverFehler(error: { message: string; context?: unknown }): Promise<ImportFehler> {
   const antwort = error.context as { json?: () => Promise<unknown> } | undefined
-  const body = (await antwort?.json?.().catch(() => null)) as { error?: string; ende?: boolean } | null
+  const body = (await antwort?.json?.().catch(() => null)) as { error?: string; ende?: boolean; code?: string } | null
   if (body?.ende) return 'ende'
-  return body?.error ?? error.message
+  if (body?.code === 'sprache-fehlt') return 'sprache-fehlt'
+  return unbekannt(body?.error ?? error.message)
 }
 
 export type ImportResult = { ok: true; week: Week } | { ok: false; error: ImportFehler }
@@ -67,7 +78,7 @@ export async function importNextWeek(
   })
   if (error) return { ok: false, error: await serverFehler(error) }
   const payload = data as { week?: Week; error?: string } | null
-  if (!payload?.week) return { ok: false, error: payload?.error ?? 'unbekannt' }
+  if (!payload?.week) return { ok: false, error: unbekannt(payload?.error) }
   return { ok: true, week: payload.week }
 }
 
@@ -86,8 +97,8 @@ export async function importWeekVariants(
   const { data, error } = await supabase.functions.invoke('import-week', {
     body: { start: startISO, lang: langCode, altLangs },
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: await serverFehler(error) }
   const payload = data as { week?: Week; error?: string } | null
-  if (!payload?.week) return { ok: false, error: payload?.error ?? 'unbekannt' }
+  if (!payload?.week) return { ok: false, error: unbekannt(payload?.error) }
   return { ok: true, week: payload.week }
 }

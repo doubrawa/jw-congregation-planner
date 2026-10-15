@@ -4,7 +4,7 @@ import { missingVariants } from '../data/localize'
 import type { Week } from '../data/types'
 import { JW_TO_CONG, LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
-import { importNextWeek, importWeekVariants, latestImportedStart, loadedUntilMs } from '../lib/import'
+import { type ImportFehler, importNextWeek, importWeekVariants, latestImportedStart, loadedUntilMs } from '../lib/import'
 
 /**
  * Wie viele Wochen ihre Sprachvarianten gleichzeitig nachholen dürfen.
@@ -155,19 +155,17 @@ export function useWochenImport(): {
     // Geholt ist geholt: Ob die Woche übernommen wird, entscheidet das Blatt.
     dispatch({ type: 'stopImport' })
     if (res.ok) return res.week
-    // Keine Datenbank angebunden (auch: Entwicklerseite), der Abruf ist gar
-    // nicht möglich. Hier stand früher der Anmeldehinweis (heute
-    // anmeldungOhneDb) — der redet vom Anmelden („Zugangsdaten beliebig")
-    // und passte nicht.
-    const text =
-      res.error === 'ohne-datenbank'
-        ? t.importOhneDb
-        : res.error === 'unbekannt'
-          ? t.importFehler
-          : res.error === 'ende'
-            ? t.toastAlleWochen
-            : res.error
-    dispatch({ type: 'showToast', text })
+    // Jeder Fehler hat seinen Satz in der Sprache des Lesers — keiner kommt
+    // als Meldung des Servers durch (`ImportFehler`). Ohne Datenbank (auch:
+    // Entwicklerseite) ist der Abruf gar nicht möglich; hier stand früher der
+    // Anmeldehinweis, der vom Anmelden redet und nicht passte.
+    const TEXT: Record<ImportFehler, string> = {
+      'ohne-datenbank': t.importOhneDb,
+      ende: t.toastAlleWochen,
+      'sprache-fehlt': t.holenSpracheFehlt,
+      unbekannt: t.importFehler,
+    }
+    dispatch({ type: 'showToast', text: TEXT[res.error] })
     return null
   }
 

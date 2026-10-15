@@ -50,7 +50,11 @@ describe('loadedUntilMs', () => {
 })
 
 describe('importNextWeek', () => {
-  beforeEach(() => invoke.mockReset())
+  beforeEach(() => {
+    invoke.mockReset()
+    // Was der Server sagt, geht in die Konsole — hier still.
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
 
   it('Erfolg → ok mit Woche; ruft import-week mit after/lang/altLangs', async () => {
     const week = wk('2026-07-20')
@@ -60,37 +64,43 @@ describe('importNextWeek', () => {
     expect(invoke).toHaveBeenCalledWith('import-week', { body: { after: '2026-07-13', lang: 'de', altLangs: ['en'] } })
   })
 
-  it('Transportfehler → ok:false mit Meldung', async () => {
+  it('Transportfehler → „unbekannt", die Meldung steht in der Konsole', async () => {
     invoke.mockResolvedValue({ data: null, error: { message: 'HTTP 500' } })
-    expect(await importNextWeek()).toEqual({ ok: false, error: 'HTTP 500' })
+    expect(await importNextWeek()).toEqual({ ok: false, error: 'unbekannt' })
+    expect(console.error).toHaveBeenCalledWith('[import-week]', 'HTTP 500')
   })
 
-  it('Status ≠ 2xx: die Meldung des Servers, und „keine weitere Woche" als eigener Schlüssel', async () => {
+  it('Status ≠ 2xx: nur Schlüssel — „keine weitere Woche", „Sprache fehlt", sonst „unbekannt"', async () => {
     // `functions.invoke` legt die Antwort hinter `context` und meldet selbst
-    // nur „Edge Function returned a non-2xx status code".
+    // nur „Edge Function returned a non-2xx status code". Bis Phase 10 (T121)
+    // kam der deutsche Satz des Servers so in die App — in jeder Sprache.
     const antwort = (body: unknown) => ({
       data: null,
       error: { message: 'Edge Function returned a non-2xx status code', context: { json: async () => body } },
     })
     invoke.mockResolvedValue(antwort({ error: 'Keine kommende Woche gefunden.', ende: true }))
     expect(await importNextWeek('2026-10-05')).toEqual({ ok: false, error: 'ende' })
-    invoke.mockResolvedValue(antwort({ error: 'Diese Woche ist in der gewählten Sprache (X) noch nicht verfügbar.' }))
-    expect(await importNextWeek('2026-10-05')).toEqual({
-      ok: false,
-      error: 'Diese Woche ist in der gewählten Sprache (X) noch nicht verfügbar.',
-    })
+    invoke.mockResolvedValue(
+      antwort({ error: 'Diese Woche ist in der gewählten Sprache (X) noch nicht verfügbar.', code: 'sprache-fehlt' }),
+    )
+    expect(await importNextWeek('2026-10-05')).toEqual({ ok: false, error: 'sprache-fehlt' })
+    invoke.mockResolvedValue(antwort({ error: 'forbidden' }))
+    expect(await importNextWeek('2026-10-05')).toEqual({ ok: false, error: 'unbekannt' })
   })
 
-  it('fachlicher Fehler / keine Woche → Fehlertext', async () => {
+  it('fachlicher Fehler / keine Woche → „unbekannt"', async () => {
     invoke.mockResolvedValue({ data: { error: 'Keine kommende Woche gefunden.' }, error: null })
-    expect(await importNextWeek()).toEqual({ ok: false, error: 'Keine kommende Woche gefunden.' })
+    expect(await importNextWeek()).toEqual({ ok: false, error: 'unbekannt' })
     invoke.mockResolvedValue({ data: {}, error: null })
     expect((await importNextWeek()).ok).toBe(false)
   })
 })
 
 describe('importWeekVariants', () => {
-  beforeEach(() => invoke.mockReset())
+  beforeEach(() => {
+    invoke.mockReset()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
 
   it('holt eine Woche per ISO-Startdatum nach (start statt after)', async () => {
     const week = wk('2026-07-20')
@@ -102,6 +112,6 @@ describe('importWeekVariants', () => {
 
   it('Fehler → ok:false', async () => {
     invoke.mockResolvedValue({ data: { error: 'Woche 2026-07-20 nicht gefunden.' }, error: null })
-    expect(await importWeekVariants('2026-07-20', 'de', [])).toEqual({ ok: false, error: 'Woche 2026-07-20 nicht gefunden.' })
+    expect(await importWeekVariants('2026-07-20', 'de', [])).toEqual({ ok: false, error: 'unbekannt' })
   })
 })

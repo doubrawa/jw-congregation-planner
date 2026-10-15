@@ -368,7 +368,12 @@ Deno.serve(async (req: Request) => {
     let html = germanHtml
     if (lang && lang !== 'de') {
       const loc = localizedUrl(germanHtml, lang)
-      if (!loc) return json({ error: `Diese Woche ist in der gewählten Sprache (${lang}) noch nicht verfügbar.` }, 404)
+      // `code` liest die App und sagt es in der Sprache des Lesers; der Satz
+      // steht nur fürs Protokoll da (T121, Phase 10 — bis dahin zeigte die App
+      // ihn so, auf Deutsch, in jeder Sprache).
+      if (!loc) {
+        return json({ error: `Diese Woche ist in der gewählten Sprache (${lang}) noch nicht verfügbar.`, code: 'sprache-fehlt' }, 404)
+      }
       html = await fetchText(loc)
     }
 

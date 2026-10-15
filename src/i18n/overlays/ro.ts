@@ -751,4 +751,5 @@ export default {
   "auchZuPlanen": "Alte planificări",
   "treffpunkteBesuche": "Întruniri și vizite la grupe",
   "lageSenden": "De trimis: {n}",
+  "holenSpracheFehlt": "Această săptămână nu este încă pe jw.org în limba congregației",
 } satisfies Partial<Dict>

@@ -751,4 +751,5 @@ export default {
   "auchZuPlanen": "مزيد من التخطيط",
   "treffpunkteBesuche": "الاجتماعات وزيارات الفرق",
   "lageSenden": "للإرسال: {n}",
+  "holenSpracheFehlt": "هذا الأسبوع غير متوفر بعد على jw.org بلغة الجماعة",
 } satisfies Partial<Dict>

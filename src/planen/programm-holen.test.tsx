@@ -168,12 +168,14 @@ describe('Holen in der Produktion', () => {
     expect(dispatch.mock.calls.map(([a]) => a)).toEqual([{ type: 'addImportedWeek', week: da }])
   })
 
-  it('ein Fehler beendet den Lauf, schließt das Blatt und sagt, was los ist', async () => {
-    importNextWeek.mockResolvedValue({ ok: false, error: 'Keine weitere Woche verfügbar' })
+  it('ein Fehler beendet den Lauf, schließt das Blatt und sagt, was los ist — in der Sprache des Lesers', async () => {
+    // Fehlt die Woche in der Sprache der Versammlung, sagt es ein eigener Satz;
+    // bis Phase 10 (T121) kam der deutsche Satz des Servers in jeder Sprache.
+    importNextWeek.mockResolvedValue({ ok: false, error: 'sprache-fehlt' })
     const { container, dispatch } = zeige()
     holen(container)
     await waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'stopImport' }))
-    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: 'Keine weitere Woche verfügbar' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.holenSpracheFehlt })
     await waitFor(() => expect(blatt(container)).toBeNull())
   })
 

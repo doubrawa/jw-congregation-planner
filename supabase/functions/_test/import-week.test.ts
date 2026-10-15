@@ -507,10 +507,13 @@ describe('import-week: in der Sprache der Versammlung', () => {
       Klammern, wie ihn nur diese eine Meldung schreibt.
     */
     seiten.sprachen = ['en']
-    const { week, error, status } = await hole({ after: '2026-03-02', lang: 'es' })
-    expect(week).toBeUndefined()
-    expect(status).toBe(404)
-    expect(error).toMatch(/\(es\)/)
+    const res = (await hole({ after: '2026-03-02', lang: 'es' })) as Antwort & { code?: string }
+    expect(res.week).toBeUndefined()
+    expect(res.status).toBe(404)
+    expect(res.error).toMatch(/\(es\)/)
+    // Den Satz zeigt die App nicht — sie liest den Code und sagt es in der
+    // Sprache des Lesers (T121, Phase 10).
+    expect(res.code).toBe('sprache-fehlt')
   })
 
   it('das ISO-Startdatum bleibt sprachunabhängig — daran hängt jede Kennung', async () => {

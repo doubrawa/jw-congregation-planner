@@ -1347,9 +1347,10 @@ export const KATALOG = [
     id: 'import-sprache-kein-rueckfall',
     datei: 'supabase/functions/import-week/index.ts',
     regel: 'Fehlt die Woche in der Versammlungssprache, ist das ein Fehler — kein stiller Rückfall auf Deutsch.',
+    // Seit Phase 10 (T121) mit `code` in einem Block.
     suchen:
-      'if (!loc) return json({ error: `Diese Woche ist in der gewählten Sprache (${lang}) noch nicht verfügbar.` }, 404)',
-    ersetzen: 'if (!loc) { /* deutsche Fassung behalten */ }',
+      "        return json({ error: `Diese Woche ist in der gewählten Sprache (${lang}) noch nicht verfügbar.`, code: 'sprache-fehlt' }, 404)\n",
+    ersetzen: '        // deutsche Fassung behalten\n',
   },
   {
     id: 'import-varianten-deckel',
@@ -6921,6 +6922,27 @@ export const KATALOG = [
     ersetzen: '        {stand.vorratKnapp && state.planner && (\n',
   },
   // ── Planung: alle Wochen und „Holen" (T121, Phase 10) ─────────────────────
+  {
+    id: 'holen-sprache-fehlt-als-schluessel',
+    datei: 'src/lib/import.ts',
+    regel: 'Fehlt die Woche in der Sprache der Versammlung, sagt die App es mit eigenem Satz in der Sprache des Lesers.',
+    suchen: "  if (body?.code === 'sprache-fehlt') return 'sprache-fehlt'\n",
+    ersetzen: '',
+  },
+  {
+    id: 'holen-kein-serversatz',
+    datei: 'src/lib/import.ts',
+    regel: 'Kein Satz des Servers erscheint in der App — Unbekanntes wird zum allgemeinen Satz, die Meldung geht in die Konsole.',
+    suchen: '  return unbekannt(body?.error ?? error.message)\n',
+    ersetzen: '  return (body?.error ?? error.message) as ImportFehler\n',
+  },
+  {
+    id: 'import-week-sprache-code',
+    datei: 'supabase/functions/import-week/index.ts',
+    regel: 'Die Absage für eine fehlende Sprache trägt ihren Code — daran erkennt die App sie.',
+    suchen: ", code: 'sprache-fehlt' }, 404)",
+    ersetzen: ' }, 404)',
+  },
   {
     id: 'holen-erst-im-blatt',
     datei: 'src/planen/useWochenImport.ts',

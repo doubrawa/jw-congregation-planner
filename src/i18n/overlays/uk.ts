@@ -751,4 +751,5 @@ export default {
   "auchZuPlanen": "Також планувати",
   "treffpunkteBesuche": "Зустрічі та відвідини груп",
   "lageSenden": "До надсилання: {n}",
+  "holenSpracheFehlt": "Цього тижня ще немає на jw.org мовою збору",
 } satisfies Partial<Dict>

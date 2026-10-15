@@ -750,4 +750,5 @@ export default {
   "auchZuPlanen": "برنامه‌ریزی‌های دیگر",
   "treffpunkteBesuche": "جلسات و بازدید از گروه‌ها",
   "lageSenden": "{n} برای ارسال",
+  "holenSpracheFehlt": "این هفته هنوز در jw.org به زبان جماعت موجود نیست",
 } satisfies Partial<Dict>

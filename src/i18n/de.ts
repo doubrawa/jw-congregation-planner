@@ -525,6 +525,9 @@ export const DE = {
     toastAlleWochen: 'Das Arbeitsheft hat noch keine weitere Woche', toastImportiert: 'Woche übernommen',
     importOhneDb: 'Holen nicht möglich — keine Datenbank angebunden',
     importFehler: 'Das Programm ließ sich nicht holen',
+    // Die Woche gibt es auf jw.org noch nicht in der Sprache der Versammlung —
+    // `import-week` meldet `sprache-fehlt` (bis Phase 10 kam der Satz deutsch).
+    holenSpracheFehlt: 'Diese Woche gibt es auf jw.org noch nicht in der Sprache der Versammlung',
     notifZuteilung: 'Neue Zuteilung', notifErinnerung: 'Erinnerung', notifPlan: 'Plan veröffentlicht',
     notifEntzug: 'Zuteilung zurückgezogen',
     // Abgelegt (Stand und Schicht, 5. bis 14.10.2026): Eine Schicht fiel aus

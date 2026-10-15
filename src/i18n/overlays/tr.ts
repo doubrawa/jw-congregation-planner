@@ -751,4 +751,5 @@ export default {
   "auchZuPlanen": "Diğer planlamalar",
   "treffpunkteBesuche": "Buluşmalar ve grup ziyaretleri",
   "lageSenden": "{n} gönderilecek",
+  "holenSpracheFehlt": "Bu hafta jw.org’da henüz cemaat dilinde yok",
 } satisfies Partial<Dict>

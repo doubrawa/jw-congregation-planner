@@ -751,4 +751,5 @@ export default {
   "auchZuPlanen": "Также планировать",
   "treffpunkteBesuche": "Встречи и посещения групп",
   "lageSenden": "К отправке: {n}",
+  "holenSpracheFehlt": "Этой недели ещё нет на jw.org на языке собрания",
 } satisfies Partial<Dict>

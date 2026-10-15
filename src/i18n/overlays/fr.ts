@@ -751,4 +751,5 @@ export default {
   "auchZuPlanen": "À planifier également",
   "treffpunkteBesuche": "Réunions et visites des groupes",
   "lageSenden": "À envoyer\u00a0: {n}",
+  "holenSpracheFehlt": "Cette semaine n’est pas encore sur jw.org dans la langue de l’assemblée",
 } satisfies Partial<Dict>
