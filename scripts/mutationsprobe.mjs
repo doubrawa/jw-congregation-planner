@@ -2143,6 +2143,13 @@ export const KATALOG = [
     ersetzen: '',
   },
   {
+    id: 'versammlung-holen-mehrere',
+    datei: 'scripts/gemeinsam.mjs',
+    regel: 'Ohne --cong gilt die einzige Versammlung — gibt es mehrere, bricht das Skript ab, statt eine zu raten.',
+    suchen: '  if (zeilen.length > 1) {\n',
+    ersetzen: '  if (false) {\n',
+  },
+  {
     id: 'zuruecksetzen-konto-ueber-id',
     datei: 'scripts/versammlung-zuruecksetzen.mjs',
     regel: 'Das Zurücksetzen verknüpft Konten über die Konto-Id — Konten ohne Adresse zeigten sonst alle auf dieselbe Person.',

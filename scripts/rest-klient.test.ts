@@ -173,10 +173,20 @@ describe('versammlungHolen', () => {
     return { rest, pfade }
   }
 
-  it('ohne --cong die erste Zeile', async () => {
+  it('ohne --cong die einzige', async () => {
     const { rest, pfade } = fakeRest([{ id: 'c1' }])
     expect(await versammlungHolen(rest, {})).toEqual({ id: 'c1' })
-    expect(pfade[0]).toBe('congregations?select=id&limit=1')
+    expect(pfade[0]).toBe('congregations?select=id&limit=2')
+  })
+
+  it('ohne --cong bei mehreren: Abbruch mit der Liste, statt eine zu raten', async () => {
+    // Die Testversammlung liegt neben der echten (15.10.2026) — `limit=1`
+    // nahm, was die Datenbank zuerst lieferte, auch beim Zurücksetzen.
+    const { rest } = fakeRest([
+      { id: 'c1', name: 'Echte' },
+      { id: 'c2', name: 'Test' },
+    ])
+    await expect(versammlungHolen(rest, {})).rejects.toThrow(/Mehrere Versammlungen — mit --cong <id> wählen:\n {2}c1 {2}Echte\n {2}c2 {2}Test/)
   })
 
   it('mit --cong genau diese — und die Datenbank wird wirklich gefragt', async () => {
@@ -201,14 +211,14 @@ describe('versammlungHolen', () => {
     const { rest, pfade } = fakeRest([{ id: 'c1', hall: 'Saal' }])
     await versammlungHolen(rest, {}, 'id,hall')
     await versammlungHolen(rest, {}, 'hall')
-    expect(pfade[0]).toBe('congregations?select=id,hall&limit=1')
-    expect(pfade[1]).toBe('congregations?select=id,hall&limit=1')
+    expect(pfade[0]).toBe('congregations?select=id,hall&limit=2')
+    expect(pfade[1]).toBe('congregations?select=id,hall&limit=2')
   })
 
   it('ein Spaltenname, der `id` enthält, wird nicht dafür gehalten', async () => {
     // `'person_id'.includes('id')` wäre wahr — verglichen wird deshalb je Feld.
     const { rest, pfade } = fakeRest([{ id: 'c1' }])
     await versammlungHolen(rest, {}, 'cong_lang')
-    expect(pfade[0]).toBe('congregations?select=id,cong_lang&limit=1')
+    expect(pfade[0]).toBe('congregations?select=id,cong_lang&limit=2')
   })
 })

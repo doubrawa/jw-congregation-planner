@@ -476,11 +476,21 @@ export function fsSort(a, b) {
  * `id` ist immer dabei. Geworfen statt `process.exit`: Jedes dieser Skripte
  * hat ein `main().catch`, das die Meldung ohnehin ausgibt — und geworfen
  * lässt sich die Regel prüfen.
+ *
+ * **Ohne `--cong` gilt die einzige** — gibt es mehrere, bricht es ab und
+ * nennt sie. Bis zum 15.10.2026 stand hier `limit=1`: Seit die Testversammlung
+ * neben der echten liegt, nahm jedes Skript ohne `--cong` die, die die
+ * Datenbank zuerst lieferte — auch `versammlung-zuruecksetzen.mjs`.
  */
 export async function versammlungHolen(rest, arg, spalten = 'id') {
   const felder = spalten.split(',').includes('id') ? spalten : `id,${spalten}`
-  const filter = arg.cong ? `id=eq.${arg.cong}` : 'limit=1'
-  const row = (await rest(`congregations?select=${felder}&${filter}`))[0]
+  const filter = arg.cong ? `id=eq.${arg.cong}` : 'limit=2'
+  const zeilen = await rest(`congregations?select=${felder}&${filter}`)
+  if (zeilen.length > 1) {
+    const alle = await rest('congregations?select=id,name&order=name')
+    throw new Error(`Mehrere Versammlungen — mit --cong <id> wählen:\n${alle.map((c) => `  ${c.id}  ${c.name}`).join('\n')}`)
+  }
+  const row = zeilen[0]
   if (!row) {
     throw new Error(
       arg.cong

@@ -20,7 +20,7 @@
  *   node scripts/zugang-ausstellen.mjs --person-id <id> [--cong <id>]
  *
  * `--cong` ist die Id der Versammlung; ohne sie gilt die einzige, die es gibt
- * (`versammlungHolen`). `--app` nennt die Adresse der App, falls sie nicht
+ * (`versammlungHolen` — gibt es mehrere, bricht es ab und nennt sie). `--app` nennt die Adresse der App, falls sie nicht
  * `https://versammlung.app/` ist.
  *
  * **Die Ausgabe meldet an** — Link und Code. Nicht in Chats, Tickets oder
