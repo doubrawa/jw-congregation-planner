@@ -1127,8 +1127,12 @@ async function wochenProben(k, woche) {
 
 /**
  * (42)–(49) Die Treffpunkte einer Woche — angelegt vom Admin im Jahr 2099,
- * geschrieben wie in der App per Upsert der ganzen Woche (`saveFsWeek`). Ob
- * ein Versuch ankam, steht danach am Treffpunkt selbst.
+ * geschrieben als ganze Woche. Die App schreibt seit dem 15.10.2026 mit Stand
+ * (`saveFsWeek`: einfügen, sonst ändern unter `updated_at`); der Upsert hier
+ * geht durch dieselben Richtlinien (`fs_weeks_einfuegen`, `fs_weeks_aendern`)
+ * und denselben Trigger (`fs_weeks_pruefen`, vor Einfügen wie Ändern) — er
+ * misst also dieselbe Grenze, nur ohne Stand. Ob ein Versuch ankam, steht
+ * danach am Treffpunkt selbst.
  *
  * Vorher wird nachgesehen: Eine Woche mit Treffpunkten, die nicht von einer
  * Probe stammen, wird nicht überschrieben — eine, die ein abgebrochener Lauf
