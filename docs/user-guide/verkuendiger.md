@@ -36,6 +36,12 @@ Unter dem Namen der App steht in einem Satz, wofür sie da ist.
   Ist er abgelaufen oder die E‑Mail weg, gib auf der Anmeldeseite deine
   Adresse ein und tippe auf **Link senden** – du bekommst einen neuen. Das geht,
   sobald die Ältesten dir einmal einen Link gegeben haben.
+- **Mit dem Code aus der E‑Mail:** Unter dem Link steht ein Code. Hast du die
+  App auf dem Home‑Bildschirm, öffne sie dort, tippe auf **Code eintippen** und
+  gib ihn ein. Auf dem **iPhone** geht es nur so: Der Link öffnet immer Safari,
+  nie die App vom Home‑Bildschirm – und dort wärst du nicht angemeldet (siehe
+  [Abschnitt 8](#8-app-installieren--erinnerungen)). Jede neue E‑Mail bringt
+  einen neuen Code; ein Zettel von früher gilt dann nicht mehr.
 - **Mit dem Zettel:** Scanne den QR‑Code mit der Kamera deines Handys – oder
   tippe auf der Anmeldeseite unter **Ohne E‑Mail‑Adresse?** auf **Zettel
   scannen**. Geht das nicht, tippst du über **Code eintippen** den Code unter dem
@@ -577,7 +583,11 @@ Store zu laden. Du öffnest die Adresse im Browser und legst sie dir als App ab.
 ### Danach einmal mit Internet anmelden
 
 Melde dich nach dem Installieren einmal **mit Internetverbindung** an und sieh dir
-Programm und Aufgaben an. Erst dadurch legt die App den Stand ab, den sie dir
+Programm und Aufgaben an. Auf dem **iPhone** meldest du dich **in der App vom
+Home‑Bildschirm** an, nicht vorher in Safari: Die App hat dort einen eigenen
+Speicher, eine Anmeldung in Safari gilt in ihr nicht. Öffne sie, tippe auf
+**Code eintippen** und gib den Code aus der E‑Mail oder vom Zettel ein – der
+Link aus der E‑Mail öffnet nur Safari. Erst dadurch legt die App den Stand ab, den sie dir
 später [ohne Internet](#9-ohne-internet-offline) zeigen kann. Direkt nach dem
 Installieren ist offline noch nichts vorhanden.
 

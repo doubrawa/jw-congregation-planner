@@ -1584,6 +1584,14 @@ describe('Sprache', () => {
     expect(reducer(makeState({ langSheetOpen: true }), { type: 'setCongLang', code: 'en' })).toMatchObject({ congLang: 'en', langSheetOpen: false })
   })
 
+  it('wird eine weitere Programmsprache zur Sprache der Versammlung, ist sie keine weitere mehr', () => {
+    // Bis Phase 10 stand sie zweimal da: „Englisch, Englisch".
+    const s = makeState({ congLang: 'de', progLangs: ['en', 'fr'] })
+    expect(reducer(s, { type: 'setCongLang', code: 'en' })).toMatchObject({ congLang: 'en', progLangs: ['fr'] })
+    // Eine andere Sprache lässt die weiteren, wie sie sind — dieselbe Liste.
+    expect(reducer(s, { type: 'setCongLang', code: 'it' }).progLangs).toBe(s.progLangs)
+  })
+
   it('Programm und Planen öffnen mit der nächsten Zusammenkunft (T82)', () => {
     // Wochen ab Montag, 7. September 2026; heute ist in dieser Testumgebung
     // fest verdrahtet nicht steuerbar, deshalb prüft der Test die Weiche und

@@ -381,15 +381,28 @@ describe('anmelden: „Link senden" auf der Anmeldeseite', () => {
     expect(a).not.toBe(d)
   })
 
-  it('erneuert nur das Token — der Code vom Zettel gilt weiter', async () => {
-    const codeVorher = links.find((l) => l.person_id === P_ANNA)?.code_hash
+  /*
+    Die Mail trägt den Code (T121, Phase 10): Auf dem iPhone öffnet der Link
+    Safari, nie die App vom Home-Bildschirm — dort meldet nur der Code an. Den
+    Code gibt es nur beim Ausstellen im Klartext, also stellt „Link senden"
+    einen neuen Link aus, und der Zettel gilt nicht mehr (Betreiber, 15.10.2026).
+  */
+  it('stellt einen neuen Link aus — Token und Code; der Code steht in der Mail', async () => {
     await call({ aktion: 'mail', email: 'anna@example.org' })
     const link = links.find((l) => l.person_id === P_ANNA)!
-    expect(link.code_hash).toBe(codeVorher)
-    expect(link.token_hash).not.toBe(await pruefsumme(TOKEN_ANNA))
-    const neu = /#anmelden=([A-Za-z0-9_-]+)/.exec(mails[0]?.text ?? '')?.[1] ?? ''
-    expect(link.token_hash).toBe(await pruefsumme(neu))
+    const text = mails[0]?.text ?? ''
+    const token = /#anmelden=([A-Za-z0-9_-]+)/.exec(text)?.[1] ?? ''
+    const code = /\n([0-9A-Z]{4}-[0-9A-Z]{4})\n/.exec(text)?.[1] ?? ''
+    expect(link.token_hash).toBe(await pruefsumme(token))
+    expect(link.code_hash).toBe(await pruefsumme(code.replace('-', '')))
     expect(link.gesendet_at).toBeTruthy()
+  })
+
+  it('mit dem Code aus der Mail meldet man sich an — mit dem vom Zettel nicht mehr', async () => {
+    await call({ aktion: 'mail', email: 'anna@example.org' })
+    const code = /\n([0-9A-Z]{4}-[0-9A-Z]{4})\n/.exec(mails[0]?.text ?? '')?.[1] ?? ''
+    expect((await call({ aktion: 'code', code: CODE_ANNA })).status).toBe(404)
+    expect((await call({ aktion: 'code', code })).body.sitzung).toBeDefined()
   })
 
   it('ein abgelaufener Link gilt danach wieder dreißig Tage', async () => {

@@ -258,6 +258,8 @@ describe('Das Blatt „Link senden"', () => {
     expect(linksAusstellen).toHaveBeenNthCalledWith(2, ['p-a'], { senden: false, lang: 'de' })
     const mail = decodeURIComponent(window.location.href)
     expect(mail).toContain(`#anmelden=${'T'.repeat(43)}`)
+    // Wie die Mail des Servers: mit dem Code für die App vom Home-Bildschirm.
+    expect(mail).toContain('\nK7RD-2QWM\n')
     expect(mail).toContain('Anton')
     expect(aktionen(dispatch).some((a) => a.type === 'linksAusgestellt')).toBe(true)
   })

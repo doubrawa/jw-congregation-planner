@@ -1453,6 +1453,8 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
       [{ type: 'changeReminder', key: 'first', delta: -1 }, { reminders: expect.anything() }],
       [{ type: 'toggleReminderRepeat' }, { reminders: expect.anything() }],
       [{ type: 'setCongLang', code: 'fr' }, { congLang: 'fr' }],
+      // Die weitere Sprache, die zur Sprache der Versammlung wird, geht mit aus der Liste.
+      [{ type: 'setCongLang', code: 'en' }, { congLang: 'en', progLangs: [] }],
       [{ type: 'addProgLang', code: 'es' }, { progLangs: ['en', 'es'] }],
       [{ type: 'removeProgLang', code: 'en' }, { progLangs: [] }],
       [{ type: 'setAuxClass', on: true }, { auxClass: true }],

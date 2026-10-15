@@ -1820,12 +1820,14 @@ export const KATALOG = [
     suchen: '    if (link?.gesendet_at && jetzt - new Date(link.gesendet_at).getTime() < MAIL_PAUSE) continue\n',
     ersetzen: '',
   },
+  // `anmelden-mail-zettel-bleibt` gestrichen (T121, Phase 10b): „Link senden"
+  // stellt jetzt einen neuen Code aus, die Mail trägt ihn (Betreiber, 15.10.2026).
   {
-    id: 'anmelden-mail-zettel-bleibt',
+    id: 'anmelden-mail-traegt-code',
     datei: 'supabase/functions/anmelden/index.ts',
-    regel: '„Link senden" erneuert nur das Token — der Code auf dem Zettel gilt weiter.',
-    suchen: '    const neu = link ? await tokenErneuern(rest, link, new Date(jetzt)) : await linkAusstellen',
-    ersetzen: '    const neu = link ? await linkAusstellen(rest, person.id, person.congregation_id, new Date(jetzt)) : await linkAusstellen',
+    regel: '„Link senden" schickt den neuen Code mit — für die App vom Home-Bildschirm des iPhones.',
+    suchen: '      code: codeAnzeige(neu.code),\n',
+    ersetzen: "      code: '',\n",
   },
   {
     id: 'anmelden-rechte-aus-vormerkung',
@@ -2100,13 +2102,9 @@ export const KATALOG = [
     suchen: "      if (!r.fehler && !r.mailBereit) {\n        dispatch({ type: 'showToast', text: t.mailNichtBereit })\n        return\n      }\n",
     ersetzen: '',
   },
-  {
-    id: 'token-erneuern-neuer-code',
-    datei: 'supabase/functions/_shared/anmelde-links.ts',
-    regel: 'Ein abgelaufener Link bekommt beim Erneuern einen neuen Code — ein alter Zettel lebt nicht wieder auf.',
-    suchen: '      : { token_hash: await pruefsumme(token), code_hash: await pruefsumme(neuerCode()), gueltig_bis: bis },\n',
-    ersetzen: '      : { token_hash: await pruefsumme(token), gueltig_bis: bis },\n',
-  },
+  // `token-erneuern-neuer-code` gestrichen (T121, Phase 10b): `tokenErneuern`
+  // ist fort, „Link senden" stellt immer einen neuen Code aus. Dass ein alter
+  // Zettel danach nicht mehr anmeldet, prüft `_test/anmelden.test.ts` weiter.
   {
     id: 'anmelden-wettlauf-erste-anmeldung',
     datei: 'supabase/functions/anmelden/index.ts',
@@ -6915,6 +6913,35 @@ export const KATALOG = [
     regel: 'Die Anmeldung zeigt das Logo groß, mit 4, 6 und 8 Plätzen.',
     suchen: '      <Logo gross breite={150} className="login-logo" />\n',
     ersetzen: '      <Logo breite={150} className="login-logo" />\n',
+  },
+  /* ---- Code in der Anmelde-Mail, Sprachen (T121, Phase 10b, 15.10.2026) ---- */
+  {
+    id: 'anmeldemail-code-eingesetzt',
+    datei: 'supabase/functions/_shared/anmelde-mail.ts',
+    regel: 'Die Anmelde-Mail setzt den Code ein — kein „{code}" bleibt stehen.',
+    suchen: '    code: werte.code,\n',
+    ersetzen: '',
+  },
+  {
+    id: 'send-invite-mail-code',
+    datei: 'supabase/functions/send-invite/index.ts',
+    regel: 'Die Mail des Admins trägt denselben Code wie der Zettel.',
+    suchen: '        const mail = linkMail(lang, { name: person.fn, versammlung: versammlungName, url, code, gueltigBis: neu.gueltigBis })\n',
+    ersetzen: "        const mail = linkMail(lang, { name: person.fn, versammlung: versammlungName, url, code: '', gueltigBis: neu.gueltigBis })\n",
+  },
+  {
+    id: 'mailentwurf-code',
+    datei: 'src/personen/link-mail.ts',
+    regel: 'Die Mail aus dem eigenen Mail-Programm trägt den Code wie die des Servers.',
+    suchen: 'code: link.code, gueltigBis',
+    ersetzen: "code: '', gueltigBis",
+  },
+  {
+    id: 'versammlungssprache-nicht-doppelt',
+    datei: 'src/app/reducer.ts',
+    regel: 'Wird eine weitere Programmsprache zur Sprache der Versammlung, ist sie keine weitere mehr.',
+    suchen: '      const progLangs = state.progLangs.filter((c) => c !== action.code)\n',
+    ersetzen: '      const progLangs = state.progLangs\n',
   },
 ]
 

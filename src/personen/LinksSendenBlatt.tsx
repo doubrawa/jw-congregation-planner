@@ -59,7 +59,9 @@ export function LinksSendenBlatt({ personen, zahlen, onClose }: { personen: read
     const { linkMail } = await import('../../supabase/functions/_shared/anmelde-mail.ts')
     const url = `${new URL(import.meta.env.BASE_URL, window.location.origin).href}#anmelden=…`
     const lang = sprachDerVersammlung(state.congLang)
-    setVorschau(linkMail(lang, { name: perMail[0].fn, versammlung: state.congregation.name, url, gueltigBis: gueltigBis(new Date()) }))
+    // Link und Code gibt es erst beim Senden — je Person ein eigener.
+    const code = '····-····'
+    setVorschau(linkMail(lang, { name: perMail[0].fn, versammlung: state.congregation.name, url, code, gueltigBis: gueltigBis(new Date()) }))
   }
 
   const senden = async () => {

@@ -274,7 +274,7 @@ describe('send-invite: der Link', () => {
 })
 
 describe('send-invite: die E-Mail', () => {
-  it('Vorname, Versammlung, Link und das Datum, bis wann er gilt', async () => {
+  it('Vorname, Versammlung, Link, Code und das Datum, bis wann sie gelten', async () => {
     const r = await call(fuerAnna)
     const mail = mails[0]
     expect(mail?.to).toBe('anna@example.org')
@@ -282,6 +282,8 @@ describe('send-invite: die E-Mail', () => {
     expect(mail?.subject).toBe('Dein Zugang zur Versammlung Musterstadt')
     expect(mail?.text).toContain('Hallo Anna,')
     expect(mail?.text).toContain(r.body.links?.[0]?.url ?? '?')
+    // Derselbe Code wie auf dem Zettel — für die App vom Home-Bildschirm des iPhones.
+    expect(mail?.text).toContain(`\n${r.body.links?.[0]?.code ?? '?'}\n`)
     expect(mail?.text).not.toMatch(/\{\w+\}/)
     expect(r.body.links?.[0]?.gesendet).toBe(true)
   })

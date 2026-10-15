@@ -18,6 +18,12 @@ export interface LinkMailWerte {
   versammlung: string
   /** Der Anmelde-Link (`anmeldeUrl`). */
   url: string
+  /**
+   * Der Code zum Eintippen, wie auf dem Zettel (`codeAnzeige`). Auf dem iPhone
+   * öffnet der Link Safari, nie die App vom Home-Bildschirm mit ihrem eigenen
+   * Speicher — dort meldet nur der Code an (T121, Phase 10).
+   */
+  code: string
   /** Bis wann er gilt, als ISO-Zeitpunkt (`anmelde_links.gueltig_bis`). */
   gueltigBis: string
 }
@@ -41,7 +47,13 @@ export function linkDatum(gueltigBis: string, lang: string | null | undefined): 
 /** Betreff und Text der E-Mail in der Sprache der Versammlung. */
 export function linkMail(lang: string | null | undefined, werte: LinkMailWerte): { betreff: string; text: string } {
   const texte = linkMailTexte(lang)
-  const einsetzen = { name: werte.name, versammlung: werte.versammlung, url: werte.url, datum: linkDatum(werte.gueltigBis, lang) }
+  const einsetzen = {
+    name: werte.name,
+    versammlung: werte.versammlung,
+    url: werte.url,
+    code: werte.code,
+    datum: linkDatum(werte.gueltigBis, lang),
+  }
   return { betreff: fuellen(texte.betreff, einsetzen), text: `${fuellen(texte.text, einsetzen)}\n` }
 }
 

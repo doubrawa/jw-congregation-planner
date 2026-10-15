@@ -1560,8 +1560,18 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         weeks: syncAuxSlots(state.weeks, action.on),
         toast: toastKey(state, action.on ? 'toastAuxAn' : 'toastAuxAus'),
       }
-    case 'setCongLang':
-      return { ...state, congLang: action.code, langSheetOpen: false, langSearch: '' }
+    case 'setCongLang': {
+      // Wird eine weitere Programmsprache zur Sprache der Versammlung, ist sie
+      // keine weitere mehr — sonst stand sie zweimal da („Englisch, Englisch").
+      const progLangs = state.progLangs.filter((c) => c !== action.code)
+      return {
+        ...state,
+        congLang: action.code,
+        progLangs: progLangs.length === state.progLangs.length ? state.progLangs : progLangs,
+        langSheetOpen: false,
+        langSearch: '',
+      }
+    }
     case 'addProgLang': {
       // Versammlungssprache selbst und Duplikate ergeben keine Variante
       const skip = action.code === state.congLang || state.progLangs.includes(action.code)

@@ -915,6 +915,13 @@ Oben stehen Name, Gruppe und Rolle, daneben der **Stift** für
 - **Zettel** druckt die App auf A4, sechs je Blatt zum Ausschneiden, in der
   Sprache der Versammlung: Name, QR‑Code, Code und bis wann er gilt. Der
   Zettel meldet an – gib ihn nur der Person selbst.
+- **Die E‑Mail trägt denselben Code** wie der Zettel, unter dem Link. Auf dem
+  iPhone braucht man ihn: Der Link öffnet dort immer Safari, nie die App vom
+  Home‑Bildschirm, und angemeldet wird man in der App nur über
+  **Code eintippen**. Lässt sich jemand auf der Anmeldeseite mit **Link
+  senden** einen neuen Link schicken, kommt auch ein neuer Code – sein Zettel
+  gilt danach nicht mehr. Teilen sich mehrere eine Adresse, gilt das für jeden
+  von ihnen.
 - **Aufgabenbereiche** – als Chips, was die Person übernehmen darf, nach
   Gruppen geordnet. **Ändern** öffnet die Schalter (siehe
   [Aufgabenbereiche](#aufgabenbereiche)).

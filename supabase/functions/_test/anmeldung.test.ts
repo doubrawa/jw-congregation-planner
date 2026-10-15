@@ -92,7 +92,13 @@ describe('Token und Adressen', () => {
 })
 
 describe('Die E-Mail mit dem Link', () => {
-  const werte = { name: 'Anna', versammlung: 'Musterstadt', url: 'https://app.test/#anmelden=T', gueltigBis: '2026-11-14T08:00:00.000Z' }
+  const werte = {
+    name: 'Anna',
+    versammlung: 'Musterstadt',
+    url: 'https://app.test/#anmelden=T',
+    code: 'K7RD-2QWM',
+    gueltigBis: '2026-11-14T08:00:00.000Z',
+  }
 
   it('alle Platzhalter eingesetzt, das Datum in der Sprache der Mail', () => {
     const de = linkMail('de', werte)
@@ -100,6 +106,9 @@ describe('Die E-Mail mit dem Link', () => {
     expect(de.text).toContain('Hallo Anna,')
     expect(de.text).toContain('https://app.test/#anmelden=T')
     expect(de.text).toContain('bis 14. November')
+    // Der Code auf einer eigenen Zeile: Auf dem iPhone öffnet der Link nur
+    // Safari, in der App vom Home-Bildschirm meldet allein der Code an.
+    expect(de.text).toContain('\nK7RD-2QWM\n')
     expect(linkMail('en', werte).text).toContain('until November 14')
     for (const lang of ['de', 'en', 'fr', 'ja', 'ar', 'fa']) expect(linkMail(lang, werte).text, lang).not.toMatch(/\{\w+\}/)
   })
@@ -109,16 +118,20 @@ describe('Die E-Mail mit dem Link', () => {
     expect(linkDatum(werte.gueltigBis, 'xx')).toBe('14. November')
   })
 
-  it('jede Sprache trägt alle vier Platzhalter und „Link senden" so, wie ihr Knopf heißt', async () => {
+  it('jede Sprache trägt alle fünf Platzhalter und zitiert „Code eintippen" und „Link senden", wie die Knöpfe heißen', async () => {
     const { APP_LANGS } = await import('../../../src/i18n/langs')
     const { dict, loadOverlay } = await import('../../../src/i18n/ui')
     await Promise.all(APP_LANGS.map(({ code }) => loadOverlay(code)))
     for (const { code } of APP_LANGS) {
       const t = linkMailTexte(code)
-      for (const platz of ['{name}', '{versammlung}', '{url}', '{datum}']) expect(t.text, `${code}: ${platz}`).toContain(platz)
+      for (const platz of ['{name}', '{versammlung}', '{url}', '{code}', '{datum}']) expect(t.text, `${code}: ${platz}`).toContain(platz)
       expect(t.betreff, `${code}: Betreff ohne Versammlung`).toContain('{versammlung}')
-      // Die Mail zitiert den Knopf der Anmeldeseite — wörtlich, sonst sucht ihn niemand.
-      expect(t.text, `${code}: zitiert „${dict(code).linkSenden}" nicht`).toContain(dict(code).linkSenden)
+      // Die Mail zitiert die Knöpfe der Anmeldeseite — wörtlich, sonst sucht sie niemand.
+      for (const knopf of [dict(code).codeEintippen, dict(code).linkSenden]) {
+        expect(t.text, `${code}: zitiert „${knopf}" nicht`).toContain(knopf)
+      }
+      // Der Code steht für sich auf einer Zeile — so liest und tippt man ihn ab.
+      expect(t.text, `${code}: {code} nicht auf eigener Zeile`).toContain('\n{code}\n')
     }
   })
 
@@ -127,7 +140,7 @@ describe('Die E-Mail mit dem Link', () => {
       Zwei Fassungen derselben E-Mail: die des Servers (`anmelde-texte.ts`) und
       die des eigenen Mail-Programms (Wörterbuch). Laufen sie auseinander,
       bekommt derselbe Empfänger je nach Weg einen anderen Wortlaut.
-      Neu erzeugen: scratchpad 8-mailtexte-erzeugen.mjs.
+      Neu erzeugen: node scripts/anmelde-texte-erzeugen.mjs.
     */
     const { APP_LANGS } = await import('../../../src/i18n/langs')
     const { dict, loadOverlay } = await import('../../../src/i18n/ui')

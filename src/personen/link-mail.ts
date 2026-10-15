@@ -13,7 +13,7 @@ export async function linkMailEntwurf(
   { lang, versammlung }: { lang: string; versammlung: string },
 ): Promise<string> {
   const { linkMail } = await import('../../supabase/functions/_shared/anmelde-mail.ts')
-  const mail = linkMail(lang, { name: person.fn, versammlung, url: link.url, gueltigBis: link.gueltigBis })
+  const mail = linkMail(lang, { name: person.fn, versammlung, url: link.url, code: link.code, gueltigBis: link.gueltigBis })
   // Auch die Adresse kodieren, nicht nur Betreff und Text: Ein `?` oder `&`
   // darin hängt sonst eigene Kopfzeilen an den Entwurf — `a@b.de?bcc=…` setzt
   // beim Öffnen eine stille Kopie. Die Adresse ist ein Feld, das ein anderer

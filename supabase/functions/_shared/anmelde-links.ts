@@ -1,12 +1,12 @@
 // =============================================================================
-// Geteilt: Anmelde-Links ausstellen und erneuern (T121, Phase 8)
+// Geteilt: Anmelde-Links ausstellen (T121, Phase 8)
 // =============================================================================
 // Eine Zeile je Person in `anmelde_links` (siehe `schema.sql`). Zwei Wege
-// schreiben sie: Der Admin stellt aus (`send-invite`) — neuer Link, neuer Code,
-// der alte Zettel gilt nicht mehr. Und jemand lässt sich auf der Anmeldeseite
-// einen neuen Link schicken (`anmelden`) — dann wird nur das Token erneuert:
-// Der Zettel mit seinem Code bleibt gültig, sonst nähme jeder, der eine Adresse
-// kennt, ihrem Besitzer den Zettel weg.
+// schreiben sie, beide mit `linkAusstellen` — neuer Link, neuer Code, der alte
+// Zettel gilt nicht mehr: Der Admin stellt aus (`send-invite`), oder jemand
+// lässt sich auf der Anmeldeseite einen neuen Link schicken (`anmelden`). Seit
+// T121 Phase 10 trägt die Mail den Code, und den gibt es nur beim Ausstellen
+// im Klartext; bis dahin erneuerte die Anmeldeseite nur das Token.
 // =============================================================================
 
 import { gueltigBis, neuerCode, neuesToken, pruefsumme } from './anmeldung.ts'
@@ -59,35 +59,6 @@ export async function linkAusstellen(
     },
   ])
   return ok ? { token, code, gueltigBis: bis } : null
-}
-
-/**
- * Nur das Token erneuern — für die Selbstbedienung per E-Mail. Gilt der Link
- * noch, bleiben Code und Gültigkeit: Der Zettel gilt weiter, sonst nähme jeder,
- * der eine Adresse kennt, ihrem Besitzer den Zettel weg.
- *
- * Ist er abgelaufen, gilt der neue wieder dreißig Tage — mit einem **neuen
- * Code**, den niemand kennt. Bis zum 15.10.2026 blieb der alte, und damit
- * lebte jeder abgelaufene (oder weggeworfene) Zettel wieder auf, sobald
- * irgendwer mit der Adresse seines Besitzers „Link senden" drückte: Wer den
- * Zettel gefunden hatte, war damit angemeldet. Den Link bekommt der Besitzer
- * ja per E-Mail; einen Code braucht er dafür nicht.
- */
-export async function tokenErneuern(
-  rest: Pick<Rest, 'patchZeilen'>,
-  link: Pick<LinkZeile, 'person_id' | 'gueltig_bis'>,
-  jetzt = new Date(),
-): Promise<{ token: string; gueltigBis: string } | null> {
-  const token = neuesToken()
-  const gilt = new Date(link.gueltig_bis) > jetzt
-  const bis = gilt ? link.gueltig_bis : gueltigBis(jetzt)
-  const zeilen = await rest.patchZeilen<{ person_id: string }>(
-    `anmelde_links?person_id=eq.${wert(link.person_id)}&select=person_id`,
-    gilt
-      ? { token_hash: await pruefsumme(token) }
-      : { token_hash: await pruefsumme(token), code_hash: await pruefsumme(neuerCode()), gueltig_bis: bis },
-  )
-  return zeilen && zeilen.length > 0 ? { token, gueltigBis: bis } : null
 }
 
 /** Vermerken, dass der Link eben per E-Mail hinausging. */

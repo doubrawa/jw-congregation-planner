@@ -58,9 +58,11 @@ export const DE = {
     scanFremd: 'Das ist kein Anmelde-Zettel dieser App.',
     // Die E-Mail mit dem Link — vom Server (`send-invite`, `anmelden`) wie aus
     // dem eigenen Mail-Programm. {versammlung} ist der Name der Versammlung,
-    // {datum} der letzte Tag, an dem der Link gilt (aus `Intl`).
+    // {datum} der letzte Tag, an dem der Link gilt (aus `Intl`), {code} der
+    // Code zum Eintippen (T121, Phase 10): Auf dem iPhone öffnet der Link
+    // Safari, nie die App vom Home-Bildschirm — dort hilft nur der Code.
     linkMailBetreff: 'Dein Zugang zur Versammlung {versammlung}',
-    linkMailText: 'Hallo {name},\n\ndie Versammlung {versammlung} plant die Zusammenkünfte und den Predigtdienst mit Versammlung.app. Dein Zugang ist eingerichtet.\n\nJetzt anmelden:\n{url}\n\nDer Link gilt bis {datum} und meldet nur dich an. Ein Passwort brauchst du nicht. Ist er abgelaufen, öffne die App und tippe auf „Link senden“.\n\nDu bekommst diese E-Mail, weil du in der Versammlung {versammlung} eingetragen bist. Bei Fragen sprich die Ältesten an.',
+    linkMailText: 'Hallo {name},\n\ndie Versammlung {versammlung} plant die Zusammenkünfte und den Predigtdienst mit Versammlung.app. Dein Zugang ist eingerichtet.\n\nJetzt anmelden:\n{url}\n\nHast du die App auf dem Home-Bildschirm? Dann öffne sie dort, tippe auf „Code eintippen“ und gib diesen Code ein:\n{code}\n\nLink und Code gelten bis {datum} und melden nur dich an. Ein Passwort brauchst du nicht. Sind sie abgelaufen, öffne die App und tippe auf „Link senden“.\n\nDu bekommst diese E-Mail, weil du in der Versammlung {versammlung} eingetragen bist. Bei Fragen sprich die Ältesten an.',
     nurMitglieder: 'Zugang nur für Mitglieder der Versammlung',
     // Anmeldeseite (T113): wofür die App da ist, und der Weg zum Betreiber für
     // eine neue Versammlung. Die Adresse selbst steht in login/kontakt.ts.
@@ -504,7 +506,7 @@ export const DE = {
     toastPersonNeu: 'Neue Person angelegt',
     toastDienstDel: 'Dienst entfernt', toastDienstAdd: 'Dienst hinzugefügt', toastNameEingeben: 'Bitte einen Namen eingeben',
     toastGruppeNeu: 'Gruppe hinzugefügt', toastGruppeDel: 'Gruppe entfernt',
-    toastProgLangAdd: 'Programmsprache hinzugefügt — gilt für neue Importe',
+    toastProgLangAdd: 'Programmsprache hinzugefügt — der nächste Import holt sie auch für geladene Wochen',
     toastProgLangDel: 'Programmsprache entfernt',
     toastAuxAn: 'Zusätzliche Klasse eingerichtet', toastAuxAus: 'Zusätzliche Klasse aufgehoben',
     toastAlleWochen: 'Alle verfügbaren Wochen sind importiert', toastImportiert: 'Arbeitsheft-Woche importiert',

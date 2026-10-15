@@ -91,16 +91,17 @@ Deno.serve(async (req: Request) => {
       const neu = await linkAusstellen(rest, person.id, cong)
       if (!neu) continue
       const url = anmeldeUrl(APP_URL, neu.token)
+      const code = codeAnzeige(neu.code)
       let gesendet = false
       const adresse = person.mail.trim()
       if (senden && adresse) {
         if (!ersteMail) await pause(MAIL_ABSTAND_MS)
         ersteMail = false
-        const mail = linkMail(lang, { name: person.fn, versammlung: versammlungName, url, gueltigBis: neu.gueltigBis })
+        const mail = linkMail(lang, { name: person.fn, versammlung: versammlungName, url, code, gueltigBis: neu.gueltigBis })
         gesendet = await mailSenden(MAIL, adresse, mail)
         if (gesendet) await alsGesendet(rest, person.id)
       }
-      links.push({ personId: person.id, url, zettelUrl: codeUrl(APP_URL, neu.code), code: codeAnzeige(neu.code), gueltigBis: neu.gueltigBis, gesendet })
+      links.push({ personId: person.id, url, zettelUrl: codeUrl(APP_URL, neu.code), code, gueltigBis: neu.gueltigBis, gesendet })
     }
     return json({ links, mailBereit: bereit })
   } catch (err) {
