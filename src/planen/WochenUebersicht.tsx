@@ -4,10 +4,10 @@ import { useAbwesend } from '../app/useAbwesend'
 import { useKalendertag } from '../app/useKalendertag'
 import { Spur } from '../bausteine/Spur'
 import { anlassName } from '../components/anlass-name'
+import { wochenSpanne } from '../components/datum-anzeige'
 import { anlassArt } from '../data/anlass'
 import { fromIso, montagNach, montagVon } from '../data/meeting-dates'
 import type { Week } from '../data/types'
-import { LOCALES } from '../i18n/langs'
 import type { Dict } from '../i18n/ui'
 import { fill, useProgWeeks, useT } from '../i18n/useT'
 import { spurDerWoche } from './plan-spur'
@@ -132,16 +132,10 @@ export function WochenListe({ spalte = false }: { spalte?: boolean }) {
 function HolenKarte({ montag }: { montag: string }) {
   const { state } = useApp()
   const { t } = useT()
-  const vonMs = Date.parse(montag)
-  const spanne = new Intl.DateTimeFormat(LOCALES[state.lang], {
-    day: 'numeric',
-    month: 'long',
-    timeZone: 'UTC', // Kalendertage, keine Zeitpunkte
-  }).formatRange(vonMs, vonMs + 6 * 864e5)
   return (
     <div className="holen-karte">
       <span className="holen-karte-text">
-        <span className="holen-karte-spanne">{spanne}</span>
+        <span className="holen-karte-spanne">{wochenSpanne(montag, state.lang)}</span>
         <span className="klein-text">{t.programmNichtGeholt}</span>
       </span>
       <HolenKnopf className="knopf-pille knopf-pille--akzent" />

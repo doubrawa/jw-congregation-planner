@@ -12,8 +12,7 @@ import { taktVon, type PlanStand } from '../data/weitere-plaene'
 import type { Group, Lang, WeitererPlan } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
-import { datumsFormat, zeitspanne } from './datum-anzeige'
-import { besuchsWocheText } from './gruppenbesuch-anzeige'
+import { datumsFormat, wochenSpanne, zeitspanne } from './datum-anzeige'
 
 /** Der Zeitraum: „1. Dezember 2026 – 28. Februar 2027", zusammengezogen, wo Monat oder Jahr gleich sind. */
 export function zeitraumText(plan: Pick<WeitererPlan, 'von' | 'bis'>, lang: Lang): string {
@@ -59,7 +58,7 @@ export function spannenAnzahl(plan: Pick<WeitererPlan, 'takt'>, n: number, lang:
 export function spannenText(plan: Pick<WeitererPlan, 'takt'>, spanne: string, lang: Lang): string {
   return taktVon(plan) === 'monat'
     ? datumsFormat(lang, 'monatJahr').format(fromIso(spanne))
-    : besuchsWocheText(spanne, lang)
+    : wochenSpanne(spanne, lang)
 }
 
 /** Name einer Gruppe (übersetzt) — leer, wenn es sie nicht mehr gibt. */

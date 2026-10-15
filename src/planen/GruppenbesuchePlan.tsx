@@ -4,12 +4,11 @@ import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
 import { BlattFeld } from '../bausteine/BlattFeld'
 import { Zeichen } from '../bausteine/Zeichen'
-import { datumsFormat } from '../components/datum-anzeige'
+import { datumsFormat, wochenSpanne } from '../components/datum-anzeige'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import {
   besuchsGruppe,
   besuchsTreffpunktText,
-  besuchsWocheText,
   besucherName,
 } from '../components/gruppenbesuch-anzeige'
 import { Sheet } from '../components/Sheet'
@@ -170,7 +169,7 @@ function BesuchZeile({
   const inhalt = (
     <>
       <span className="gb-zeile-text">
-        <span className="gb-zeile-woche">{besuchsWocheText(besuch.woche, state.lang)}</span>
+        <span className="gb-zeile-woche">{wochenSpanne(besuch.woche, state.lang)}</span>
         {unterzeile && <span className="klein-text">{unterzeile}</span>}
         {problem && <span className="gb-problem">{problem.text}</span>}
       </span>
@@ -205,7 +204,7 @@ function WocheFeld({
       <select className="feld-wahl" value={value} onChange={(e) => onChange(e.target.value)}>
         {wochen.map((w) => (
           <option key={w} value={w} disabled={gesperrt(w)}>
-            {besuchsWocheText(w, state.lang)}
+            {wochenSpanne(w, state.lang)}
           </option>
         ))}
       </select>
@@ -294,7 +293,7 @@ function BesuchBlatt({ id, onClose }: { id: string; onClose: () => void }) {
   const eigener = stand.treffpunkte.find((inst) => inst.lpid && inst.lpid === besuch.pid)
   const zusage = eigener ? zusageStatus(state.confirmations, fsTaskKey(besuch.woche, eigener.id)) : null
   const aendern = (patch: { woche?: string; grp?: string }) => dispatch({ type: 'besuchAendern', id, patch })
-  const titel = besuchsWocheText(besuch.woche, state.lang)
+  const titel = wochenSpanne(besuch.woche, state.lang)
 
   return (
     <Sheet label={titel} title={titel} sub={besuchsGruppe(besuch, state.groups, tu)} onClose={onClose}>

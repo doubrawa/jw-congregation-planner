@@ -4,19 +4,13 @@
  *
  * Das Datum kommt aus `Intl`, nicht aus dem Wörterbuch: Ein Besuch kann in
  * einer Woche liegen, die noch nicht importiert ist, und dann gibt es keine
- * Wochenspanne von jw.org (`Week.range`), die man übersetzen könnte.
+ * Wochenspanne von jw.org (`Week.range`), die man übersetzen könnte. Die
+ * Woche selbst schreibt `wochenSpanne` (`datum-anzeige.ts`).
  */
 
-import { fromIso, tagNach } from '../data/meeting-dates'
 import type { FsInstance, Group, Gruppenbesuch, Lang, Person } from '../data/types'
 import { displayName } from '../data/helpers'
-import { datumsFormat } from './datum-anzeige'
 import { treffpunktTagLabel } from './treffpunkt-beschriftung'
-
-/** Die Woche eines Besuchs als Spanne von Montag bis Sonntag: „12.–18. Oktober". */
-export function besuchsWocheText(woche: string, lang: Lang): string {
-  return datumsFormat(lang, 'tagMonat').formatRange(fromIso(woche), fromIso(tagNach(woche, 6)))
-}
 
 /** Ein Treffpunkt der Besuchswoche: „Samstag, 17. Oktober · 09:15 · Königreichssaal". */
 export function besuchsTreffpunktText(

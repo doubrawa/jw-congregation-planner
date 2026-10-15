@@ -1,7 +1,7 @@
 import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
-import { datumsFormat } from '../components/datum-anzeige'
-import { besuchsGruppe, besuchsTreffpunktText, besuchsWocheText } from '../components/gruppenbesuch-anzeige'
+import { datumsFormat, wochenSpanne } from '../components/datum-anzeige'
+import { besuchsGruppe, besuchsTreffpunktText } from '../components/gruppenbesuch-anzeige'
 import { treffpunktTitel } from '../components/treffpunkt-beschriftung'
 import { useBesuchsLage } from '../components/useBesuchsLage'
 import { eigeneGruppen, fsAbweichungen, fsTag, fsVisible } from '../data/fs'
@@ -94,7 +94,7 @@ export function TreffpunktBogen({ wochen, zeitraum }: { wochen: readonly number[
         return {
           key: `besuch|${besuch.id}`,
           zellen: [
-            treffpunkt ? tagText(besuch.woche, treffpunkt.wd) : besuchsWocheText(besuch.woche, state.lang),
+            treffpunkt ? tagText(besuch.woche, treffpunkt.wd) : wochenSpanne(besuch.woche, state.lang),
             `${besuchsGruppe(besuch, state.groups, tu)} · ${t.gbMarker}`,
           ],
         }
@@ -198,7 +198,7 @@ function useBesuchsZeilen({ ab, hoechstens, nurKommende = false }: { ab: string;
       return {
         key: besuch.id,
         zellen: [
-          besuchsWocheText(besuch.woche, state.lang),
+          wochenSpanne(besuch.woche, state.lang),
           treffpunkt ? besuchsTreffpunktText(besuch.woche, treffpunkt, state.lang, tu) : '',
           besuchsGruppe(besuch, state.groups, tu),
         ],

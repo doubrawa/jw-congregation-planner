@@ -22,11 +22,6 @@ export function wochenTage(montag: string): string[] {
   return Array.from({ length: 7 }, (_, i) => tagNach(montag, i))
 }
 
-/** Die Woche in Worten: „7.–13. September". */
-export function wochenSpanne(montag: string, lang: Lang): string {
-  return datumsFormat(lang, 'tagMonat').formatRange(fromIso(montag), fromIso(tagNach(montag, 6)))
-}
-
 /** Ein Tag ausgeschrieben: „Samstag, 12. September". */
 export function tagLang(datum: string, lang: Lang): string {
   return datumsFormat(lang, 'tag').format(fromIso(datum))

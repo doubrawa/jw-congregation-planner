@@ -8,7 +8,7 @@
  * Tastenanschlag. Bis dahin baute jeder Helfer seinen Formatierer je Aufruf.
  */
 
-import { fromIso } from '../data/meeting-dates'
+import { fromIso, tagNach } from '../data/meeting-dates'
 import type { Lang } from '../data/types'
 import { LOCALES } from '../i18n/langs'
 
@@ -73,6 +73,16 @@ export function datumsFormat(lang: string, format: DatumsFormat): Intl.DateTimeF
 export function tageSpanne(von: string, bis: string, lang: string, format: DatumsFormat): string {
   const fmt = datumsFormat(lang, format)
   return von === bis ? fmt.format(fromIso(von)) : fmt.formatRange(fromIso(von), fromIso(bis))
+}
+
+/**
+ * Eine Woche in Worten, Montag bis Sonntag: „7.–13. September" — aus `Intl`,
+ * nicht aus dem Arbeitsheft (`Week.range`): für Wochen, deren Programm noch
+ * nicht da ist (Gruppenbesuche, Trolleys, „Holen"). Stand bis Phase 10 von
+ * T121 zweimal gleich da (`besuchsWocheText`, `wochenSpanne` der Trolleys).
+ */
+export function wochenSpanne(montag: string, lang: string): string {
+  return datumsFormat(lang, 'tagMonat').formatRange(fromIso(montag), fromIso(tagNach(montag, 6)))
 }
 
 /**

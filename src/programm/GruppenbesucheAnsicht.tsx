@@ -2,12 +2,8 @@ import { useMemo } from 'react'
 import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
 import { useKalendertag } from '../app/useKalendertag'
-import {
-  besuchsGruppe,
-  besuchsTreffpunktText,
-  besuchsWocheText,
-  besucherName,
-} from '../components/gruppenbesuch-anzeige'
+import { wochenSpanne } from '../components/datum-anzeige'
+import { besuchsGruppe, besuchsTreffpunktText, besucherName } from '../components/gruppenbesuch-anzeige'
 import { besuchStand } from '../data/gruppenbesuche'
 import { useBesuchsLage } from '../components/useBesuchsLage'
 import { GruppenbesuchBogen } from '../druck/TreffpunktBogen'
@@ -63,7 +59,7 @@ export function GruppenbesucheAnsicht() {
             const name = zugesagt ? besucherName(besuch, state.persons) : ''
             return (
               <div key={besuch.id} className="gb-besuch">
-                <span className="gb-besuch-woche">{besuchsWocheText(besuch.woche, state.lang)}</span>
+                <span className="gb-besuch-woche">{wochenSpanne(besuch.woche, state.lang)}</span>
                 {stand.treffpunkte.map((inst) => (
                   <span key={inst.id} className="gb-besuch-treffpunkt" dir="auto">
                     {besuchsTreffpunktText(besuch.woche, inst, state.lang, tu)}
@@ -82,7 +78,7 @@ export function GruppenbesucheAnsicht() {
         {kommend.map(({ besuch }) => (
           <div key={besuch.id} className={besuch.grp === meineGruppe ? 'gb-liste-zeile is-eigen' : 'gb-liste-zeile'}>
             <span className="gb-liste-punkt" aria-hidden="true" />
-            <span>{besuchsWocheText(besuch.woche, state.lang)}</span>
+            <span>{wochenSpanne(besuch.woche, state.lang)}</span>
             <span className="gb-liste-gruppe">{besuchsGruppe(besuch, state.groups, tu)}</span>
           </div>
         ))}

@@ -1214,7 +1214,8 @@ alter table public.absences      enable row level security;
 alter table public.notifications enable row level security;
 alter table public.confirmations enable row level security;
 
--- Versammlung: Mitglieder lesen ihre eigene; ändern nur Planer.
+-- Versammlung: Mitglieder lesen ihre eigene; ändern nur der Admin
+-- (`is_planner()` — der Name stammt aus der Zeit vor dem Planer-Recht).
 drop policy if exists congregations_select on public.congregations;
 create policy congregations_select on public.congregations
   for select using (id = public.my_congregation_id());
@@ -1223,7 +1224,7 @@ drop policy if exists congregations_update on public.congregations;
 create policy congregations_update on public.congregations
   for update using (id = public.my_congregation_id() and public.is_planner());
 
--- Mitglieder: eigene Zeile lesen; Planer sehen und verwalten alle ihrer
+-- Mitglieder: eigene Zeile lesen; der Admin sieht und verwaltet alle seiner
 -- Versammlung (sich selbst entfernen ist gesperrt).
 drop policy if exists members_select on public.members;
 create policy members_select on public.members
@@ -1246,7 +1247,8 @@ create policy members_delete on public.members
     and user_id <> auth.uid()
   );
 
--- Personen / Haushalte / Dienste / Wochen: Versammlung liest, Planer schreibt.
+-- Personen / Haushalte / Dienste / Gruppen: Versammlung liest, der Admin
+-- schreibt. Die Wochen schreiben Admin und Planer (`weeks_write` unten).
 drop policy if exists persons_select on public.persons;
 create policy persons_select on public.persons
   for select using (congregation_id = public.my_congregation_id());
@@ -1258,7 +1260,7 @@ create policy persons_write on public.persons
   with check (congregation_id = public.my_congregation_id() and public.is_planner());
 
 -- Haushalte trägt niemand für sich ein: Sie entstehen und vergehen mit der
--- Zuordnung im Personen-Detail, und die macht ein Planer.
+-- Zuordnung im Personen-Detail, und die macht der Admin.
 drop policy if exists households_select on public.households;
 create policy households_select on public.households
   for select using (congregation_id = public.my_congregation_id());
@@ -1303,7 +1305,7 @@ create policy weeks_write on public.weeks
   with check (congregation_id = public.my_congregation_id() and public.darf_zuteilen());
 
 -- Abwesenheiten: Versammlung liest; der Betroffene (auch bei importierten
--- Einträgen ohne Ersteller) oder ein Planer schreiben.
+-- Einträgen ohne Ersteller) oder der Admin schreiben.
 --
 -- Entscheidend ist die **Person**, nicht der Ersteller: Wer nur
 -- die eigene `user_id` einträgt, kann damit keine fremde `person_id` daneben
@@ -1335,9 +1337,10 @@ create policy absences_write on public.absences
   );
 
 -- Mitteilungen sind personalisiert (je Empfänger eine Zeile): jeder sieht/ändert/
--- löscht nur die eigenen. Unmittelbar schreiben nur Planer; was ein Verkündiger
--- meldet (seine Verhinderung), geht über `notify_planners` weiter unten — er
--- sieht die Planer nicht (members_select) und könnte sie nicht adressieren. Der
+-- löscht nur die eigenen. Unmittelbar schreibt nur der Admin — und die App
+-- nie: Was sie meldet (eine Verhinderung, ein geholtes Programm), geht über
+-- `notify_planners` weiter unten an alle, die planen. Ein Verkündiger sieht
+-- sie nicht (members_select) und könnte sie nicht adressieren. Der
 -- frühere Zweig „jedes Mitglied darf 'verhindert' an Planer schreiben" war
 -- deshalb nie erreichbar: Die App fand keinen Empfänger und schrieb nichts.
 drop policy if exists notifications_select on public.notifications;

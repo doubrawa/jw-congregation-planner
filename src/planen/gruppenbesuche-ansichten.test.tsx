@@ -9,7 +9,7 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
-import { besuchsWocheText } from '../components/gruppenbesuch-anzeige'
+import { wochenSpanne } from '../components/datum-anzeige'
 import { fsSetLeader, genFsWeek } from '../data/fs'
 import { besuchVorschlag } from '../data/gruppenbesuche'
 import { tagNach } from '../data/meeting-dates'
@@ -107,7 +107,7 @@ afterEach(() => {
 describe('Die Besuche als Zeilen (T121, `GGruppenbesuchePlanen`)', () => {
   it('Woche, Tag und Uhrzeit des Treffpunkts — rechts die Gruppe', () => {
     const { container } = zeige(EINGETRAGEN)
-    expect(zeile(container).querySelector('.gb-zeile-woche')?.textContent).toBe(besuchsWocheText(W1, 'de'))
+    expect(zeile(container).querySelector('.gb-zeile-woche')?.textContent).toBe(wochenSpanne(W1, 'de'))
     const treffpunkt = demo.fsWeeks[1]!.find((i) => i.grp === GRP)!
     expect(zeile(container).textContent).toContain(treffpunkt.time)
     expect(zeile(container).querySelector('.gb-gruppe-pille')?.textContent).toBe(
@@ -197,7 +197,7 @@ describe('Ein Besuch im Blatt — jede Änderung gilt gleich', () => {
   it('überschrieben mit seiner Woche, darunter die Gruppe', () => {
     const { container } = zeige(EINGETRAGEN)
     oeffne(container)
-    expect(blatt()?.getAttribute('aria-label')).toBe(besuchsWocheText(W1, 'de'))
+    expect(blatt()?.getAttribute('aria-label')).toBe(wochenSpanne(W1, 'de'))
     expect(blatt()?.querySelector('.sheet-sub')?.textContent).toBe(demo.groups.find((g) => g.id === GRP)!.name)
   })
 

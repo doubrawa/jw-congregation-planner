@@ -1,10 +1,10 @@
 import type { CSSProperties } from 'react'
 import { useApp } from '../app/context'
-import { datumsFormat } from '../components/datum-anzeige'
+import { datumsFormat, wochenSpanne } from '../components/datum-anzeige'
 import { fromIso } from '../data/meeting-dates'
 import type { Trolley, TrolleyTermin } from '../data/types'
 import { fill, useT } from '../i18n/useT'
-import { nameVon, tagLang, werImTermin, wochenSpanne, wochenTage, zeitSpanne } from './trolley-anzeige'
+import { nameVon, tagLang, werImTermin, wochenTage, zeitSpanne } from './trolley-anzeige'
 
 /**
  * **Die Woche als Raster** am Desktop (Entwurf `GDesktopTrolleys`): je Tag

@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+// Seit Phase 10 (T121) gemeinsam für Trolleys, Gruppenbesuche und „Holen".
+import { wochenSpanne } from '../components/datum-anzeige'
 import { emptyQualifications } from '../data/helpers'
 import type { Person } from '../data/types'
 import { dict } from '../i18n/ui'
@@ -11,7 +13,6 @@ import {
   trolleyNameVon,
   vornameVon,
   werImTermin,
-  wochenSpanne,
   wochenTage,
   zeitAnStelle,
 } from './trolley-anzeige'
