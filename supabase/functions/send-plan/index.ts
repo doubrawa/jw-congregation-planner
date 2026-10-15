@@ -14,9 +14,10 @@
 //     (`heuteUtc`, _shared/planung.ts).
 //
 //   { action: 'entzug', entzuege: [{ taskKey, name, pid?, label?, datum? }, …] }
-//     Eine oder mehrere bereits **bestätigte** Zuteilungen wurden zurückgezogen
-//     oder verlegt. Die Betroffenen erfahren es sofort. Ohne diesen Weg
-//     bereitete jemand weiter etwas vor, das ihm längst genommen war.
+//     Eine oder mehrere Zuteilungen, von denen die Person **wusste** (zugesagt
+//     oder schon gemeldet, seit 15.10.2026), wurden zurückgezogen oder
+//     verlegt. Die Betroffenen erfahren es sofort. Ohne diesen Weg bereitete
+//     jemand weiter etwas vor, das ihm längst genommen war.
 //
 //   { action: 'erinnern', weekStart, heute? }
 //     „Jetzt erinnern" in den Zusagen der Woche (T121, Phase 5g): Wer von
@@ -591,7 +592,7 @@ Deno.serve(async (req: Request) => {
       subs: subsByUser.get(uid) ?? [],
     })
 
-    /* ---- Aktion: bestätigte Zuteilungen wurden zurückgezogen ---- */
+    /* ---- Aktion: Zuteilungen, von denen man wusste, wurden zurückgezogen ---- */
     if (payload.action === 'entzug') {
       /*
        * **Liste oder Einzelfall.** Neue Clients schicken `entzuege`; die alte

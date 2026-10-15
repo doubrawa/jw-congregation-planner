@@ -24,7 +24,7 @@ import { texteFuer } from '../_shared/texte.ts'
 export interface PlanTexte {
   /** „Plan senden": die eigenen Aufgaben einer Woche, an die eingeteilte Person. */
   zuteilung: string
-  /** Eine bereits bestätigte Zuteilung wurde zurückgezogen oder verlegt. */
+  /** Eine Zuteilung, von der die Person wusste (zugesagt oder gemeldet), wurde zurückgezogen oder verlegt. */
   entzug: string
 }
 
