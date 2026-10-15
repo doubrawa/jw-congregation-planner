@@ -54,13 +54,17 @@ export function latestImportedStart(weeks: Week[]): string | undefined {
  * Woche, aber keine vor der Vorwoche. Eine vergangene Woche plant niemand
  * mehr. Bis zum 16.10.2026 holte „Holen" nach einer Pause die Woche nach der
  * zuletzt geladenen, Wochen zurück — und die laufende erst viele Abrufe
- * später. Ohne geladene Woche `undefined`: Dann wählt der Server die laufende.
+ * später.
+ *
+ * **Immer mit Angabe, auch ohne geladene Woche.** Ohne `after` wählt der
+ * Server die laufende Woche nach seinem Tag, und der ist UTC: Montags kurz
+ * nach Mitternacht war es dort noch Sonntag, und es kam die vergangene Woche,
+ * während die Karte „Holen" die laufende ansagte.
  */
-export function holenNach(weeks: Week[], heute: Date): string | undefined {
-  const letzte = latestImportedStart(weeks)
-  if (!letzte) return undefined
+export function holenNach(weeks: Week[], heute: Date): string {
   const vorwoche = montagNach(montagVon(isoDay(heute)), -1)
-  return letzte > vorwoche ? letzte : vorwoche
+  const letzte = latestImportedStart(weeks)
+  return letzte !== undefined && letzte > vorwoche ? letzte : vorwoche
 }
 
 /**

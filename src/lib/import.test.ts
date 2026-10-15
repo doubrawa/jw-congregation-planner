@@ -24,9 +24,11 @@ describe('holenNach — wonach „Holen" sucht', () => {
     expect(holenNach([wk('2026-09-07')], heute)).toBe('2026-09-21')
   })
 
-  it('ohne geladene Woche wählt der Server', () => {
-    expect(holenNach([wk(), wk()], heute)).toBeUndefined()
-    expect(holenNach([], heute)).toBeUndefined()
+  it('ohne geladene Woche nach der Vorwoche — der Server rechnete mit seinem UTC-Tag', () => {
+    // Montag, 0:30 Uhr in Berlin: in UTC noch Sonntag, und ohne `after` kam
+    // die vergangene Woche (16.10.2026).
+    expect(holenNach([wk(), wk()], heute)).toBe('2026-09-21')
+    expect(holenNach([], new Date(2026, 8, 28, 0, 30))).toBe('2026-09-21')
   })
 })
 

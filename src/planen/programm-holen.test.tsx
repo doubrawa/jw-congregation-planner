@@ -128,16 +128,30 @@ describe('Holen in der Produktion', () => {
     await waitFor(() => expect(importNextWeek).toHaveBeenCalledWith('2026-09-21', 'en', []))
   })
 
+  it('ohne geladene Woche nach der Vorwoche — die App sagt, wonach gesucht wird (16.10.2026)', async () => {
+    // Montag, 0:30 Uhr: Ohne Angabe rechnete der Server mit seinem UTC-Tag,
+    // noch Sonntag, und lieferte die vergangene Woche.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 14, 0, 30))
+    const { container } = zeige()
+    holen(container)
+    await waitFor(() => expect(importNextWeek).toHaveBeenCalledWith('2026-09-07', 'de', []))
+  })
+
   it('unbekannte Versammlungssprache fällt auf Deutsch zurück statt leer zu bleiben', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9, 0))
     const { container } = zeige({ congLang: 'xx-erfunden' })
     holen(container)
-    await waitFor(() => expect(importNextWeek).toHaveBeenCalledWith(undefined, 'de', []))
+    await waitFor(() => expect(importNextWeek).toHaveBeenCalledWith('2026-08-31', 'de', []))
   })
 
   it('weitere Programmsprachen kommen als Varianten mit — ohne die Hauptsprache doppelt', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9, 0))
     const { container } = zeige({ congLang: 'de', progLangs: ['en', 'de'] })
     holen(container)
-    await waitFor(() => expect(importNextWeek).toHaveBeenCalledWith(undefined, 'de', ['en']))
+    await waitFor(() => expect(importNextWeek).toHaveBeenCalledWith('2026-08-31', 'de', ['en']))
   })
 
   it('die geholte Woche wird erst mit „Nur übernehmen" angehängt', async () => {
