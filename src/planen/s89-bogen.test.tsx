@@ -123,11 +123,31 @@ describe('seiten: die Aufteilung steht im Bauplan', () => {
 describe('S89Bogen (Bedienung)', () => {
   const state = (): AppState => ({ ...demoZustand(), weeks: buildDemoWeeks(), week: 0 })
 
-  it('legt für jede Aufgabe eine Karte an', () => {
+  /**
+   * Was im Moment des Druckens auf dem Bogen steht. Der Bogen entsteht erst
+   * beim Klick, direkt unter `body` (`useDruckBogen`), und ist danach wieder
+   * fort.
+   */
+  type ImDruck = { kennzeichen?: string; zettel: number; blaetter: number; felder: number[] }
+  function drucke(container: HTMLElement): ImDruck {
+    let imDruck: ImDruck = { zettel: 0, blaetter: 0, felder: [] }
+    vi.stubGlobal('print', () => {
+      imDruck = {
+        kennzeichen: document.documentElement.dataset.print,
+        zettel: document.querySelectorAll('.druck-bogen .s89-zettel-titel').length,
+        blaetter: document.querySelectorAll('.druck-bogen .s89-blatt').length,
+        felder: [...document.querySelectorAll('.druck-bogen .s89-gitter')].map((g) => g.querySelectorAll('.s89-zettel').length),
+      }
+    })
+    fireEvent.click(container.querySelector('.s89-druck-btn')!)
+    vi.unstubAllGlobals()
+    delete document.documentElement.dataset.print
+    return imDruck
+  }
+
+  it('legt für jede Aufgabe einen Zettel an', () => {
     const { container } = render(<Buehne state={state()} />)
-    expect(container.querySelectorAll('.s89-zettel')).toHaveLength(
-      alleS89DerWoche(buildDemoWeeks(), 0, STANDARD_ZEITEN).length,
-    )
+    expect(drucke(container).zettel).toBe(alleS89DerWoche(buildDemoWeeks(), 0, STANDARD_ZEITEN).length)
   })
 
   it('der Schalter entscheidet, ob der Partner-Zettel mitkommt', () => {
@@ -135,10 +155,10 @@ describe('S89Bogen (Bedienung)', () => {
     const schalter = container.querySelector('[role="switch"]')
     // Eingeschaltet: der übliche Fall, beide bekommen einen in die Hand.
     expect(schalter?.getAttribute('aria-checked')).toBe('true')
-    const mit = container.querySelectorAll('.s89-zettel').length
+    const mit = drucke(container).zettel
 
     fireEvent.click(schalter!)
-    const ohne = container.querySelectorAll('.s89-zettel').length
+    const ohne = drucke(container).zettel
     expect(ohne).toBeLessThan(mit)
     // Genau die Gespräche fallen weg — nicht mehr und nicht weniger.
     expect(mit - ohne).toBe(alleS89DerWoche(buildDemoWeeks(), 0, STANDARD_ZEITEN, false).filter((z) => z.partner).length)
@@ -165,20 +185,32 @@ describe('S89Bogen (Bedienung)', () => {
     // Blätter = Zettel durch sechs, aufgerundet — nachgerechnet, nicht geraten:
     // Wie viele Zettel die Demo-Woche hat, hängt an ihren Gesprächen.
     const anzahl = alleS89DerWoche(buildDemoWeeks(), 0, STANDARD_ZEITEN).length
-    expect(container.querySelectorAll('.s89-seite')).toHaveLength(Math.ceil(anzahl / 6))
+    const imDruck = drucke(container)
+    expect(imDruck.blaetter).toBe(Math.ceil(anzahl / 6))
+    // Auch ein halb leeres letztes Blatt hat sechs Felder: Seine Schnittkanten
+    // stehen, wo sie auf jedem Blatt stehen.
+    expect(imDruck.felder.every((n) => n === 6)).toBe(true)
   })
 
   it('der Knopf kennzeichnet den Ausdruck und ruft den Druck', () => {
     // Ohne das Kennzeichen druckte der Bogen mit dem Programm-Ausdruck um die
     // Wette — beide sagen „alles außer mir ausblenden".
-    const drucke = vi.fn()
-    vi.stubGlobal('print', drucke)
     const { container } = render(<Buehne state={state()} />)
+    expect(drucke(container).kennzeichen).toBe('bogen')
+  })
+
+  it('jedes Blatt trägt seine Kopfzeile — Thema, Tag der Zusammenkunft, Seitenzahl', () => {
+    const { container } = render(<Buehne state={state()} />)
+    let kopf = ''
+    vi.stubGlobal('print', () => {
+      kopf = document.querySelector('.druck-bogen .s89-blatt-kopf')?.textContent ?? ''
+    })
     fireEvent.click(container.querySelector('.s89-druck-btn')!)
-    expect(document.documentElement.dataset.print).toBe('s89')
-    expect(drucke).toHaveBeenCalled()
     vi.unstubAllGlobals()
     delete document.documentElement.dataset.print
+    expect(kopf).toContain('S-89')
+    expect(kopf).toContain('Dienstag, 8. September')
+    expect(kopf).toMatch(/Seite 1 von \d/)
   })
 
   it('ohne Schulungsaufgaben steht gar nichts da', () => {

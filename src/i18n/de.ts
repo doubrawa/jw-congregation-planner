@@ -561,6 +561,8 @@ export const DE = {
     s89Title: 'Aufgabe in der Leben-und-Dienst-Zusammenkunft', s89Name: 'Name', s89Partner: 'Partner',
     s89Datum: 'Datum', s89Aufgabe: 'Aufgabe', s89Punkt: 'Schulungspunkt', s89Ort: 'Durchzuführen im',
     s89Open: 'S-89 anzeigen',
+    // Im S-89-Blatt ab dem Tablet (Entwurf GDesktopAufgaben): druckt den einen Zettel.
+    s89DieserZettel: 'Diesen Zettel drucken',
     s89Note: 'Hinweis: Quelle und Schulungspunkt für deine Aufgabe findest du im Arbeitsheft.',
     confirmTitle: 'Bitte bestätige deine Zuteilungen',
     bestaetigen: 'Bestätigen', bestaetigt: 'Bestätigt', verhindert: 'Ich bin verhindert', verhindertChip: 'Verhindert',

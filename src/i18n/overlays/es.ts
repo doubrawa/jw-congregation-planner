@@ -726,4 +726,5 @@ export default {
   "aenderungenInDerApp": "Los cambios aparecen en la aplicación",
   "druckNochFrei": "aún libre – quien pueda encargarse, que lo diga en la aplicación o a los ancianos.",
   "druckMit": "{a} con {b}",
+  "s89DieserZettel": "Imprimir esta tarjeta",
 } satisfies Partial<Dict>

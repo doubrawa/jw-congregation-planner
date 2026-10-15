@@ -252,4 +252,39 @@ describe('Das S-89-Formular', () => {
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(dispatch.mock.calls.filter((c) => c[0].type === 'closeS89')).toHaveLength(3)
   })
+
+  /*
+   * „Durchzuführen im" wie auf dem Formular (Entwurf GDruckS89): beide Räume,
+   * der richtige angekreuzt. Vorgelesen wird nur der angekreuzte — sonst hörte
+   * man „Hauptsaal Zusätzliche Klasse" und wüsste nicht, welcher gilt.
+   */
+  it('nennt beide Räume, kreuzt den richtigen an und liest nur ihn vor', () => {
+    const ort = (c: HTMLElement) => c.querySelector('.s89-row--ort')!
+    const { container } = zeige('s89', {}, PAYLOAD)
+    expect(ort(container).querySelector('.s89-ort.is-an')?.textContent).toBe(t.auxHauptsaal)
+    expect(ort(container).querySelector('.s89-ort:not(.is-an)')?.getAttribute('aria-hidden')).toBe('true')
+    cleanup()
+    const { container: klasse } = zeige('s89', {}, { ...PAYLOAD, aux: true })
+    expect(ort(klasse).querySelector('.s89-ort.is-an')?.textContent).toBe(t.auxKlasse)
+  })
+
+  it('am Handy kein Druckknopf — ab dem Tablet druckt er genau diesen Zettel', () => {
+    const { container } = zeige('s89', {}, PAYLOAD)
+    expect(container.querySelector('.s89-drucken')).toBeNull()
+    cleanup()
+    window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as unknown as typeof window.matchMedia
+    let imDruck = { zettel: [] as string[], kennzeichen: undefined as string | undefined }
+    window.print = vi.fn(() => {
+      imDruck = {
+        zettel: [...document.querySelectorAll('.druck-bogen .s89-zettel .s89-value')].map((v) => v.textContent ?? '').slice(0, 1),
+        kennzeichen: document.documentElement.dataset.print,
+      }
+    })
+    const { container: breit } = zeige('s89', {}, PAYLOAD)
+    fireEvent.click(breit.querySelector('.s89-drucken')!)
+    expect(window.print).toHaveBeenCalledTimes(1)
+    expect(imDruck).toEqual({ zettel: ['Anton Alt'], kennzeichen: 'bogen' })
+    expect(document.querySelectorAll('.druck-bogen .s89-zettel-titel')).toHaveLength(1)
+    delete document.documentElement.dataset.print
+  })
 })

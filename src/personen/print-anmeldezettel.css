@@ -5,8 +5,8 @@
  * Am Bildschirm unsichtbar, im DOM nur für die Dauer des Druckdialogs. Er
  * hängt direkt unter `body` (Portal): Das Kennzeichen `data-print=
  * "anmeldezettel"` blendet damit im Druck alles andere mit einer Regel aus,
- * gleich, auf welchem Bildschirm der Admin gerade steht — anders als die
- * S-89-Zettel, die im Planen mitten im Bildschirm stehen (`print-s89.css`).
+ * gleich, auf welchem Bildschirm der Admin gerade steht — wie die
+ * Druckbögen (`druck/druck-bogen.css`).
  *
  * Wie die anderen Druckbögen ohne Tonflächen und immer hell: Browser drucken
  * Hintergründe standardmäßig nicht, und der Zettel soll mit wie ohne

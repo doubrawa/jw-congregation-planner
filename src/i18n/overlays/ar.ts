@@ -726,4 +726,5 @@ export default {
   "aenderungenInDerApp": "التغييرات تظهر في التطبيق",
   "druckNochFrei": "لا يزال شاغرًا – من يستطيع توليه فليُبلغ عبر التطبيق أو الشيوخ.",
   "druckMit": "{a} مع {b}",
+  "s89DieserZettel": "طباعة هذه البطاقة",
 } satisfies Partial<Dict>

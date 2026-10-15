@@ -725,4 +725,5 @@ export default {
   "aenderungenInDerApp": "تغییرات در برنامه نمایش داده می‌شود",
   "druckNochFrei": "هنوز خالی است – هر کس می‌تواند آن را بر عهده بگیرد، در برنامه یا به پیران جماعت اطلاع دهد.",
   "druckMit": "{a} با {b}",
+  "s89DieserZettel": "چاپ این کارت",
 } satisfies Partial<Dict>

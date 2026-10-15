@@ -89,11 +89,12 @@ export function wochenZeitraum(week: Pick<Week, 'start'>, lang: Lang, ersatz: st
 /**
  * **Die Weiche zwischen den Ausdrucken.**
  *
- * Drei Regelwerke sagen im Druck „alles außer mir ausblenden": das Programm
- * einer Woche (`print.css`, der Normalfall), die S-89-Zettel
- * (`planen/print-s89.css`) und der Monat (`print-monat.css`). Welches gilt,
- * sagt das Kennzeichen `data-print` am Wurzelelement — gesetzt beim Klick,
- * abgeräumt, wenn der Druckdialog durch ist. Ohne Kennzeichen druckt die Woche.
+ * Mehrere Regelwerke sagen im Druck „alles außer mir ausblenden": der
+ * gedruckte Bildschirm (`print.css`, der Normalfall), der Monat der
+ * Treffpunkte (`print-monat.css`) und die Druckbögen (`druck-bogen.css`, die
+ * ihr Kennzeichen selbst setzen, `useDruckBogen`). Welches gilt, sagt das
+ * Kennzeichen `data-print` am Wurzelelement — gesetzt beim Klick, abgeräumt,
+ * wenn der Druckdialog durch ist. Ohne Kennzeichen druckt der Bildschirm.
  *
  * Hier gesetzt statt an jedem Knopf von Hand: Ein stehengebliebenes
  * Kennzeichen (ein Abbruch vor `afterprint`) ließe sonst den nächsten

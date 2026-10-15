@@ -726,4 +726,5 @@ export default {
   "aenderungenInDerApp": "Changes appear in the app",
   "druckNochFrei": "still open – whoever can take it, please say so in the app or tell the elders.",
   "druckMit": "{a} with {b}",
+  "s89DieserZettel": "Print this slip",
 } satisfies Partial<Dict>

@@ -726,4 +726,5 @@ export default {
   "aenderungenInDerApp": "Modificările apar în aplicație",
   "druckNochFrei": "încă liber – cine poate prelua să anunțe în aplicație sau bătrânilor.",
   "druckMit": "{a} cu {b}",
+  "s89DieserZettel": "Tipărește acest bilețel",
 } satisfies Partial<Dict>

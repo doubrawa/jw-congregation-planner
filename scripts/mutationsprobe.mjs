@@ -4049,11 +4049,48 @@ export const KATALOG = [
     ersetzen: '        <GesperrterKnopf className="knopf-haupt" gesperrt={laeuft}',
   },
   {
-    id: 's89-druck-ohne-aktionsleiste',
-    datei: 'src/planen/print-s89.css',
-    regel: 'Im S-89-Druck steht die Aktionsleiste des Planens nicht unter den Zetteln.',
-    suchen: "  :root[data-print='s89'] .planen-leiste,\n",
-    ersetzen: '',
+    // Ersetzt seit Phase 9 `s89-druck-ohne-aktionsleiste` (print-s89.css):
+    // Die Bögen hängen unter `body`, eine Regel blendet alles andere aus.
+    id: 'bogen-blendet-alles-andere-aus',
+    datei: 'src/druck/druck-bogen.css',
+    regel: 'Im Druck eines Bogens kommt nur der Bogen aufs Papier — nicht die App darum herum.',
+    suchen: "  :root[data-print='bogen'] body > :not(.druck-bogen) {\n",
+    ersetzen: "  :root[data-print='bogen'] body > .gibt-es-nicht {\n",
+  },
+  {
+    id: 's89-ort-angekreuzt',
+    datei: 'src/components/S89Karte.tsx',
+    regel: 'Auf dem S-89 ist der Raum angekreuzt, in dem der Teil stattfindet — die Zusätzliche Klasse, wenn er dort ist.',
+    suchen: '            <Ort an={payload.aux === true}>{t.auxKlasse}</Ort>\n',
+    ersetzen: '            <Ort an={false}>{t.auxKlasse}</Ort>\n',
+  },
+  {
+    id: 's89-nur-angekreuzter-vorgelesen',
+    datei: 'src/components/S89Karte.tsx',
+    regel: 'Vorgelesen wird nur der angekreuzte Raum — sonst wüsste man nicht, welcher gilt.',
+    suchen: "    <span className={an ? 's89-ort is-an' : 's89-ort'} aria-hidden={an ? undefined : true}>\n",
+    ersetzen: "    <span className={an ? 's89-ort is-an' : 's89-ort'}>\n",
+  },
+  {
+    id: 's89-blatt-sechs-felder',
+    datei: 'src/druck/S89Druck.tsx',
+    regel: 'Auch ein halb leeres letztes S-89-Blatt hat sechs Felder — die Schnittkanten stehen, wo sie immer stehen.',
+    suchen: '            {Array.from({ length: S89_JE_BLATT }, (_unused, i) => blatt[i]).map((z, i) => (\n',
+    ersetzen: '            {blatt.map((z, i) => (\n',
+  },
+  {
+    id: 's89-druck-ueber-den-bogen',
+    datei: 'src/planen/S89Bogen.tsx',
+    regel: 'Der S-89-Knopf im Planen druckt den Bogen mit allen Zetteln der Woche.',
+    suchen: '          <button type="button" className="s89-druck-btn" onClick={() => drucken(<S89Druck zettel={zettel} datum={datum} />)}>\n',
+    ersetzen: '          <button type="button" className="s89-druck-btn" onClick={() => window.print()}>\n',
+  },
+  {
+    id: 's89-dieser-zettel-ab-tablet',
+    datei: 'src/components/S89Sheet.tsx',
+    regel: '„Diesen Zettel drucken" steht erst ab dem Tablet — am Handy druckt kaum jemand.',
+    suchen: '        {breit && (\n',
+    ersetzen: '        {(\n',
   },
   {
     id: 'blatt-senden-ohne-konto',

@@ -212,6 +212,60 @@
   font-size: calc(13.5px * var(--fs));
 }
 
+/* „Durchzuführen im": beide Räume, der richtige angekreuzt (Entwurf GDruckS89). */
+.s89-row--ort {
+  align-items: start;
+}
+
+.s89-orte {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.s89-ort {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text3);
+  font-weight: 400;
+}
+
+.s89-ort.is-an {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.s89-ort-zeichen {
+  flex: none;
+  box-sizing: border-box;
+  inline-size: 14px;
+  block-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--umriss);
+  border-radius: 50%;
+}
+
+.s89-ort.is-an .s89-ort-zeichen {
+  border-color: var(--akzent-text);
+  color: var(--akzent-text);
+}
+
+.s89-ort-zeichen .zeichen {
+  inline-size: 12px;
+  block-size: 12px;
+}
+
+/* „Diesen Zettel drucken" — ab dem Tablet unter dem Zettel (Entwurf GDesktopAufgaben). */
+.s89-drucken {
+  gap: 8px;
+  margin-top: 8px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
 /* ---- Sprach-Sheet (Versammlungssprache) --------------------------------- */
 
 .sheet--lang {

@@ -564,9 +564,10 @@ describe('Das Programm der Zusammenkunft', () => {
   it('der S-89-Bogen steht nur unter der Woche — Schulungsaufgaben gibt es nur dort', () => {
     const mitSchueler = woche()
     ;(mitSchueler.mid.sections[1]!.items[0] as PartItem).names[0]!.name = 'Paula Planer'
-    expect(zeige({ weeks: [mitSchueler] }).container.querySelector('.s89-bogen')).toBeTruthy()
+    // Am Bildschirm steht die Leiste; der Bogen selbst entsteht erst beim Drucken.
+    expect(zeige({ weeks: [mitSchueler] }).container.querySelector('.s89-druck')).toBeTruthy()
     cleanup()
-    expect(zeige({ weeks: [mitSchueler], tab: 'we' }).container.querySelector('.s89-bogen')).toBeNull()
+    expect(zeige({ weeks: [mitSchueler], tab: 'we' }).container.querySelector('.s89-druck')).toBeNull()
   })
 
   it('die Ratgeber-Karte nur mit eingerichteter Klasse', () => {

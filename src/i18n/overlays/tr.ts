@@ -726,4 +726,5 @@ export default {
   "aenderungenInDerApp": "Değişiklikler uygulamada görünür",
   "druckNochFrei": "henüz boş – üstlenebilecek olan uygulamadan ya da ihtiyarlara bildirsin.",
   "druckMit": "{a} ile {b}",
+  "s89DieserZettel": "Bu kartı yazdır",
 } satisfies Partial<Dict>

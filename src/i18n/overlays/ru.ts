@@ -726,4 +726,5 @@ export default {
   "aenderungenInDerApp": "Изменения видны в приложении",
   "druckNochFrei": "ещё свободно — кто может взять, пусть сообщит в приложении или старейшинам.",
   "druckMit": "{a} и {b}",
+  "s89DieserZettel": "Распечатать эту карточку",
 } satisfies Partial<Dict>

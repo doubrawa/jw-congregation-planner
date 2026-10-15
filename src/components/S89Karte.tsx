@@ -1,12 +1,13 @@
+import { Zeichen } from '../bausteine/Zeichen'
 import { useT } from '../i18n/useT'
 import type { S89Payload } from '../data/types'
 
 /**
  * Der Inhalt eines S-89-Zettels — Zeilen und Fußnote, ohne Rahmenwerk.
  *
- * Zwei Stellen zeigen ihn: das Sheet aus „Meine Aufgaben" (`S89Sheet`) und der
- * Druckbogen des Planers (`planen/S89Bogen`). Sie unterscheiden sich in dem, was
- * **um** den Zettel steht — im Zettel selbst dürfen sie sich nicht
+ * Zwei Stellen zeigen ihn: das Blatt aus „Meine Aufgaben" und dem Zuteilen
+ * (`S89Sheet`) und der Druckbogen (`druck/S89Druck`). Sie unterscheiden sich in
+ * dem, was **um** den Zettel steht — im Zettel selbst dürfen sie sich nicht
  * unterscheiden, sonst zeigt das Papier etwas anderes als der Bildschirm.
  */
 export function S89Karte({ payload }: { payload: S89Payload }) {
@@ -17,9 +18,6 @@ export function S89Karte({ payload }: { payload: S89Payload }) {
     [t.s89Datum, tp(payload.date)],
     [t.s89Aufgabe, tp(payload.type)],
     ...(payload.point ? ([[t.s89Punkt, tp(payload.point)]] as [string, string][]) : []),
-    // Der Ort stand hier bis 2026-08 als Konstante „Hauptsaal" — auf jedem
-    // Zettel, auch wenn der Teil in der Zusätzlichen Klasse stattfand.
-    [t.s89Ort, payload.aux ? t.auxKlasse : t.auxHauptsaal],
   ]
 
   return (
@@ -31,8 +29,30 @@ export function S89Karte({ payload }: { payload: S89Payload }) {
             <div className="s89-value">{value}</div>
           </div>
         ))}
+        {/*
+          Der Ort wie auf dem Formular: beide Räume, der richtige angekreuzt
+          (Entwurf `GDruckS89`). Bis 2026-08 stand hier die Konstante
+          „Hauptsaal" — auf jedem Zettel, auch wenn der Teil in der
+          Zusätzlichen Klasse stattfand. Vorgelesen wird nur der angekreuzte.
+        */}
+        <div className="s89-row s89-row--ort">
+          <div className="s89-label">{t.s89Ort}</div>
+          <div className="s89-value s89-orte">
+            <Ort an={!payload.aux}>{t.auxHauptsaal}</Ort>
+            <Ort an={payload.aux === true}>{t.auxKlasse}</Ort>
+          </div>
+        </div>
       </div>
       <p className="s89-note">{t.s89Note}</p>
     </>
+  )
+}
+
+function Ort({ an, children }: { an: boolean; children: string }) {
+  return (
+    <span className={an ? 's89-ort is-an' : 's89-ort'} aria-hidden={an ? undefined : true}>
+      <span className="s89-ort-zeichen">{an && <Zeichen name="haken" />}</span>
+      {children}
+    </span>
   )
 }
