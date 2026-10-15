@@ -142,7 +142,9 @@ function DieseWoche({ termine }: { termine: readonly Termin[] }) {
   const was = (termin: Termin): string => {
     if (termin.art === 'zusammenkunft') return termin.tab === 'mid' ? t.tabMid : t.tabWe
     const titel = treffpunktTitel(termin.inst, state.groups, i18n)
-    return termin.inst.place ? `${titel} · ${termin.inst.place}` : titel
+    // Der Ort durch `tu` wie im Programm: Der Vorgabewert („Königreichssaal")
+    // steht im Wörterbuch und blieb hier als einziges Wort deutsch.
+    return termin.inst.place ? `${titel} · ${i18n.tu(termin.inst.place)}` : titel
   }
   return (
     <section className="start-woche">

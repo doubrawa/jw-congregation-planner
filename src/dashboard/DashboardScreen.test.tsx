@@ -12,6 +12,7 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications, serviceQualKey } from '../data/helpers'
 import { helferKey, punktKey, sentKey } from '../data/planning'
 import { APP_TO_JW } from '../i18n/langs'
+import { makeTr } from '../i18n/translate'
 import { dict } from '../i18n/ui'
 import type {
   Absence,
@@ -359,6 +360,25 @@ describe('Diese Woche in der Versammlung', () => {
       })
       const was = [...container.querySelectorAll('.start-woche .start-zeile-text')].map((z) => z.textContent)
       expect(was).toEqual([t.tabMid, 'Gruppe 2 · Anderswo', t.tabWe])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('der Ort steht in der Sprache des Lesers — wie im Programm', () => {
+    // Bis zum 15.10.2026 stand hier „Congregation field service meeting ·
+    // Königreichssaal": Der Vorgabewert steht im Wörterbuch, nur der Start
+    // ließ ihn aus.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9, 0)) // Montag
+    try {
+      const woche = { ...laufendeWoche(), start: '2026-09-07' }
+      const saal: FsInstance = { id: 'v1', ruleId: 'v1', grp: null, wd: 6, time: '09:30', place: 'Königreichssaal', leader: '' }
+      const { container } = zeige({ lang: 'en', weeks: [woche], fsWeeks: [[saal]] })
+      const en = makeTr('en')
+      expect(en('Königreichssaal')).not.toBe('Königreichssaal')
+      const was = [...container.querySelectorAll('.start-woche .start-zeile-text')].map((z) => z.textContent)
+      expect(was).toContain(`${dict('en').fsVers} · ${en('Königreichssaal')}`)
     } finally {
       vi.useRealTimers()
     }

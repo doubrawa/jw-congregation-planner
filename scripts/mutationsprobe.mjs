@@ -1771,6 +1771,13 @@ export const KATALOG = [
     ersetzen: '          gruppe\n',
   },
   {
+    id: 'start-ort-uebersetzt',
+    datei: 'src/dashboard/DashboardScreen.tsx',
+    regel: 'Auf dem Start steht der Ort eines Treffpunkts in der Sprache des Lesers — wie im Programm.',
+    suchen: '    return termin.inst.place ? `${titel} · ${i18n.tu(termin.inst.place)}` : titel\n',
+    ersetzen: '    return termin.inst.place ? `${titel} · ${termin.inst.place}` : titel\n',
+  },
+  {
     id: 'buch-regel-versalien',
     datei: 'supabase/functions/_shared/i18n/translate.ts',
     regel: 'Den Kopf der Bibellese schreibt jw.org in Versalien (JEREMIA 42-44) — auch so wird das Buch übersetzt.',
