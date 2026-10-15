@@ -6655,6 +6655,22 @@ wer eine leitet, gehört ihr an (Betreiber). Das Gruppenblatt bietet als
 Aufseher und Gehilfe nur Mitglieder an, niemand ist beides, und ein
 Gruppenwechsel beendet das Amt in der alten Gruppe.
 
+**Stand am 15. Oktober 2026, abends:** Phase 9, die Druckbögen, ist gebaut und
+live. Gedruckt wird nicht mehr der Bildschirm, sondern eigenes A4-Papier mit
+Kopf (Versammlung, Titel, Zeitraum samt Jahr) und Fuß (Stand, Seite x von y),
+freie Plätze gepunktet (`src/druck/`): die Woche mit beiden Zusammenkünften und
+den Hilfsdiensten, der Monat knapp und so viele Wochen je Blatt, wie gemessen
+passen (`a012e4d`); die S-89-Zettel, sechs je Blatt, und „Diesen Zettel
+drucken" ab dem Tablet (`c801149`); die Treffpunkte mit „Anders als sonst" und
+die Gruppenbesuche (`145bb30`); die Trolleys über zwei Wochen (`72f58b1`); die
+Weiteren Pläne, auch aus „Plan bearbeiten" (`93561e0`). Lange Tabellen laufen
+Zeile für Zeile auf dem nächsten Blatt weiter, und jeder Druck zeichnet neu —
+ohne `afterprint` behielt der zweite Druck sonst die Blätter des ersten.
+Handbücher `feb3e55`, Review `2f006b7`. Gemessen mit `Page.printToPDF`: Seiten
+gleich Blättern bei allen sechs Bögen; am Handy nicht geprüft. Davor am selben
+Tag: Die App spricht zwölf Sprachen statt 34 (`97268a9`: de, en, es, fr, it, pl,
+ru, uk, ro, tr, ar, fa). Es folgt 10, der Feinschliff.
+
 **Stand am 15. Oktober 2026:** Phase 8, das Anmelden per Link, ist gebaut und live
 (`05ab564`, `ddf4069`, `c3d3926` und die Skripte danach). Ein Kennwort gibt es
 nicht mehr, auch kein Registrieren: Der Admin gibt jeder Person ihren Link — per
@@ -6672,11 +6688,11 @@ Link; „Links senden" geht an alle, die die Liste zeigt. Einladungscodes und
 aus; `versammlung-anlegen.mjs` gibt dem ersten Admin seinen Link, und
 `versammlung-zuruecksetzen.mjs` lässt ausgegebene Links gelten.
 
-**Offen in Phase 8:** die bestehenden Konten (alte Ids, mit Kennwort) — „neu
-anlegen" nähme ihnen über die Fremdschlüssel Zusagen, Mitteilungen und Push-Abos;
-wie umgestellt wird, entscheidet der Betreiber. Bis dahin melden sie sich mit
-einem Link an wie alle (ihr Konto bleibt). Dazu beim Betreiber: `INVITE_FROM`
-setzen und in Supabase das Registrieren abschalten.
+**Offen in Phase 8:** beim Betreiber `INVITE_FROM` setzen und in Supabase das
+Registrieren abschalten („Allow new users to sign up" — nicht den
+E-Mail-Anbieter). Die bestehenden Konten (alte Ids, mit Kennwort) sind am
+15. Oktober gelöscht — Testbetrieb, „wir löschen einfach alles und fangen neu
+an"; die Konten der Mitgliedsrechte-Probe bleiben als Werkzeug.
 
 **Stand am 14. Oktober 2026:** Phase 7, die Trolleys, ist gebaut und live. Statt fester
 Termine mit Schichten legt die Versammlung ihre Trolleys an (Einstellungen
@@ -6864,7 +6880,7 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
-| **T121** | Neues Design | ☐ Umbau läuft, Phase für Phase auf main: 1 bis 8 sind live (zuletzt das Anmelden per Link), es folgen 9 und 10. Am 13. Oktober nachentschieden, was die ersten Phasen offen ließen; die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
+| **T121** | Neues Design | ☐ Umbau läuft, Phase für Phase auf main: 1 bis 9 sind live (zuletzt die Druckbögen), es folgt 10, der Feinschliff. Am 13. Oktober nachentschieden, was die ersten Phasen offen ließen; die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
