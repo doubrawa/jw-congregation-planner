@@ -8,7 +8,7 @@ import { eigeneGruppen, fsAbweichungen, fsTag, fsVisible } from '../data/fs'
 import { besuchStand } from '../data/gruppenbesuche'
 import { fromIso } from '../data/meeting-dates'
 import { rechteVon } from '../data/rechte'
-import type { FsInstance } from '../data/types'
+import type { FsInstance, FsRule } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 import { Bogen, type DruckBlock } from './Bogen'
@@ -44,6 +44,10 @@ export function TreffpunktBogen({ wochen, zeitraum }: { wochen: readonly number[
     return tag ? datumsFormat(state.lang, 'wochentagZahl').format(tag) : ''
   }
   const leiter = (inst: FsInstance) => (inst.leader ? inst.leader : <Offen breite={140} />)
+  // Wie es der Grundplan sonst hat — mit dem Tag, wenn er ein anderer ist:
+  // Sonst stünde bei einem verlegten Tag „statt" vor denselben Angaben.
+  const sonst = (kennung: string, inst: FsInstance, regel: FsRule) =>
+    [regel.wd !== inst.wd ? tagText(kennung, regel.wd) : '', regel.time, tu(regel.place)].filter(Boolean).join(' · ')
 
   const termine = wochen.flatMap((wi) => {
     const kennung = state.weeks[wi]?.start ?? ''
@@ -78,7 +82,7 @@ export function TreffpunktBogen({ wochen, zeitraum }: { wochen: readonly number[
               treffpunktTitel(inst, state.groups, i18n),
               ...(art === 'entfaellt' ? [t.druckEntfaellt] : [inst.time, tu(inst.place)]),
               ...(art === 'zusaetzlich' ? [t.druckZusaetzlich] : []),
-              ...(art === 'anders' && regel ? [fill(t.druckStatt, { alt: `${regel.time} · ${tu(regel.place)}` })] : []),
+              ...(art === 'anders' && regel ? [fill(t.druckStatt, { alt: sonst(kennung, inst, regel) })] : []),
             ].join(' · '),
           ],
         }))

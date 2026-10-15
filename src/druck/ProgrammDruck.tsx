@@ -271,13 +271,15 @@ function Personen({ slots, tu }: { slots: readonly SlotAssignment[]; tu: Ueberse
  * Die Personen eines Punkts in einer Zeile: „A mit B" bei Schüler und
  * Partner, „A · Leser B" bei Leiter und Leser, sonst die Namen. Fehlt einer,
  * steht der ganze Platz gepunktet da — eine halbe Besetzung ist auf dem
- * Aushang keine.
+ * Aushang keine. Der Partner ist der Platz `schulungPartner`, wie beim
+ * Zuteilen — nicht das Rollenwort, das nur seine Beschriftung ist.
  */
 function NamenKnapp({ slots }: { slots: readonly SlotAssignment[] }) {
   const { t, tu } = useT()
   if (slots.length === 0) return null
   if (slots.some((slot) => !slot.name)) return <Offen breite={84} />
   const [erster, ...rest] = slots
-  if (rest.length === 1 && rest[0]?.rolle === 'Partner') return <>{fill(t.druckMit, { a: erster?.name ?? '', b: rest[0].name })}</>
+  if (rest.length === 1 && rest[0]?.bereichsKey === 'schulungPartner')
+    return <>{fill(t.druckMit, { a: erster?.name ?? '', b: rest[0].name })}</>
   return <>{[erster?.name, ...rest.map((slot) => (slot.rolle ? `${tu(slot.rolle)} ${slot.name}` : slot.name))].join(' · ')}</>
 }

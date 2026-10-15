@@ -60,12 +60,8 @@ export function druckThema(
  * der Gruppenbesuche nehmen diese eine Fassung.
  */
 export function monatsName(monat: string, lang: Lang): string {
-  const tag = fromIso(`${monat}-01`)
-  try {
-    return datumsFormat(lang, 'monatJahr').format(tag)
-  } catch {
-    return new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(tag)
-  }
+  // Eine unbekannte Sprache fängt `datumsFormat` ab.
+  return datumsFormat(lang, 'monatJahr').format(fromIso(`${monat}-01`))
 }
 
 /**
@@ -79,9 +75,5 @@ export function wochenZeitraum(week: Pick<Week, 'start'>, lang: Lang, ersatz: st
   const montag = fromIso(week.start)
   const sonntag = new Date(montag)
   sonntag.setDate(montag.getDate() + 6)
-  try {
-    return datumsFormat(lang, 'tagMonatJahr').formatRange(montag, sonntag)
-  } catch {
-    return ersatz
-  }
+  return datumsFormat(lang, 'tagMonatJahr').formatRange(montag, sonntag)
 }

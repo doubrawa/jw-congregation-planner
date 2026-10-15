@@ -379,7 +379,7 @@
 /* ---- Monat: zwei Wochen je Blatt, je Punkt eine Zeile ---------------- */
 
 .druck-blatt--monat {
-  gap: 14px;
+  --druck-abstand: 14px;
 }
 
 .druck-monat-woche {

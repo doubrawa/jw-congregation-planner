@@ -6,9 +6,11 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { setAnlass } from '../data/anlass'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
 import { genFsWeek } from '../data/fs'
+import { isSong } from '../data/helpers'
 import type { FsInstance, FsRule, PlanEintrag, Section, Service, Week, WeitererPlan } from '../data/types'
 import { spannenText, zeitraumText } from '../components/weitere-plaene-anzeige'
 import { dict } from '../i18n/ui'
+import { fill } from '../i18n/useT'
 import { Bogen } from './Bogen'
 import { PlanBogen } from './PlanBogen'
 import { tabellenBloecke } from './tabellen-bloecke'
@@ -40,8 +42,8 @@ function mitte(): Section[] {
     {
       label: 'UNS IM DIENST VERBESSERN', farbe: 'gold',
       items: [
-        { iid: 'd4', num: 4, title: 'Gespräche beginnen', meta: '3 Min.', names: [{ name: 'Sara Schul', rolle: 'Schüler' }, { name: 'Paula Part', rolle: 'Partner' }] },
-        { iid: 'd5', num: 5, title: 'Interesse fördern', meta: '4 Min.', names: [{ name: 'Sina Solo', rolle: 'Schüler' }, { name: '', rolle: 'Partner' }] },
+        { iid: 'd4', num: 4, title: 'Gespräche beginnen', meta: '3 Min.', names: [{ name: 'Sara Schul', rolle: 'Schüler' }, { name: 'Paula Part', rolle: 'Partner', bereichsKey: 'schulungPartner' }] },
+        { iid: 'd5', num: 5, title: 'Interesse fördern', meta: '4 Min.', names: [{ name: 'Sina Solo', rolle: 'Schüler' }, { name: '', rolle: 'Partner', bereichsKey: 'schulungPartner' }] },
       ],
     },
     {
@@ -159,6 +161,28 @@ describe('Der Monatsbogen', () => {
     expect(interesse.textContent).not.toContain('Sina Solo')
   })
 
+  it('der Partner ist sein Platz, nicht das Wort davor — auch mit anderer Beschriftung „A mit B"', () => {
+    // Wie beim Zuteilen (`planning.ts`) zählt `bereichsKey`; die Rolle ist nur
+    // die Beschriftung des Platzes.
+    const umbenannt = wochen().map((w) => ({
+      ...w,
+      mid: {
+        ...w.mid,
+        sections: w.mid.sections.map((s) => ({
+          ...s,
+          items: s.items.map((item) =>
+            isSong(item)
+              ? item
+              : { ...item, names: item.names.map((n) => (n.bereichsKey === 'schulungPartner' ? { ...n, rolle: 'Gesprächspartner' } : n)) },
+          ),
+        })),
+      },
+    }))
+    const { container } = zeige(<MonatsBogen monat="2026-09" />, { weeks: umbenannt })
+    const zeilen = [...container.querySelectorAll('.druck-monat-woche .druck-knapp-zeile')].map((z) => z.children[2]?.textContent)
+    expect(zeilen).toContain('Sara Schul mit Paula Part')
+  })
+
   it('Eröffnung und Abschluss: je Person eine Zeile mit ihrer Rolle — das Lied steht im Kopf', () => {
     const { container } = zeige(<MonatsBogen monat="2026-09" />, { weeks: wochen() })
     const woche1 = container.querySelector('.druck-monat-woche')!
@@ -237,6 +261,16 @@ describe('Der Bogen der Treffpunkte', () => {
     const anders = texte(container, '.druck-anders-zeile')
     expect(anders).toContainEqual(expect.stringContaining(`Gruppe 2 · ${t.druckEntfaellt}`))
     expect(anders).toContainEqual(expect.stringContaining(`Gruppe 1 · ${t.gbMarker}`))
+  })
+
+  it('an einem anderen Tag als im Grundplan: „statt" nennt den Tag — sonst stünden dort dieselben Angaben', () => {
+    // Der Grundplan hat Gruppe 1 am Samstag; in dieser Woche steht sie am Freitag.
+    const [erste, ...rest] = fsWeeks()
+    const verlegt = [erste!.map((inst) => (inst.id === 'r1' ? { ...inst, wd: 5 } : inst)), ...rest]
+    const { container } = zeigeBogen({ planner: true, fsWeeks: verlegt })
+    expect(texte(container, '.druck-anders-zeile')).toContainEqual(
+      expect.stringContaining(fill(t.druckStatt, { alt: 'Sa., 12.9. · 09:30 · Bei Familie A' })),
+    )
   })
 
   it('der Bogen der Gruppenbesuche nennt die kommenden — vorbeigegangene nicht, wie die Ansicht', () => {
@@ -547,13 +581,13 @@ describe('useDruckBogen', () => {
     expect(document.documentElement.dataset.print).toBeUndefined()
   })
 
-  it('ein fremder Druck behält sein Kennzeichen — der S-89-Bogen ist nicht ihrer', () => {
+  it('ein fremder Druck behält sein Kennzeichen — die Anmelde-Zettel sind nicht ihrer', () => {
     zeige(<Stelle knopf="Woche" />)
-    document.documentElement.dataset.print = 's89'
+    document.documentElement.dataset.print = 'anmeldezettel'
     act(() => {
       window.dispatchEvent(new Event('afterprint'))
     })
-    expect(document.documentElement.dataset.print).toBe('s89')
+    expect(document.documentElement.dataset.print).toBe('anmeldezettel')
   })
 
   it('kam kein „afterprint", verteilt der nächste Druck seine Blöcke neu — nicht nach dem vorigen Bogen', () => {

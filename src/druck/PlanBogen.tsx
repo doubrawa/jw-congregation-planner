@@ -1,9 +1,9 @@
 import { useApp } from '../app/context'
 import { gruppenName, spannenText, zeitraumText } from '../components/weitere-plaene-anzeige'
-import { displayName } from '../data/helpers'
 import type { WeitererPlan } from '../data/types'
 import { eintraegeVon, planSpannen, taktVon } from '../data/weitere-plaene'
 import { useT } from '../i18n/useT'
+import { nameVon } from '../trolleys/trolley-anzeige'
 import { Bogen } from './Bogen'
 import { Offen } from './DruckBlatt'
 import { tabellenBloecke } from './tabellen-bloecke'
@@ -21,11 +21,7 @@ export function PlanBogen({ plan }: { plan: WeitererPlan }) {
   const monatlich = taktVon(plan) === 'monat'
   const gruppeVon = new Map(eintraegeVon(state.planEintraege, plan.id).map((e) => [e.datum, e.grp]))
   const gruppe = (grp: string | null) => gruppenName(grp, state.groups, tu) || <Offen breite={110} />
-  const aufseher = (grp: string | null): string => {
-    const id = state.groups.find((g) => g.id === grp)?.overseerId
-    const person = id ? state.persons.find((p) => p.id === id) : undefined
-    return person ? displayName(person) : ''
-  }
+  const aufseher = (grp: string | null) => nameVon(state.persons, state.groups.find((g) => g.id === grp)?.overseerId ?? null)
   const zeilen = planSpannen(plan).map((spanne) => {
     const grp = gruppeVon.get(spanne) ?? null
     return { key: spanne, zellen: [spannenText(plan, spanne, state.lang), gruppe(grp), aufseher(grp)] }

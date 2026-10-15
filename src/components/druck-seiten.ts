@@ -1,7 +1,7 @@
 /**
  * Zettel in Blätter und Blätter in Reihen zu zweit — die Aufteilung steht im
- * Bauplan, nicht im Ermessen des Browsers (T71). Für die S-89-Zettel und die
- * Anmelde-Zettel (T121, Phase 8).
+ * Bauplan, nicht im Ermessen des Browsers (T71). Für die Anmelde-Zettel (T121,
+ * Phase 8); die S-89-Zettel haben seit Phase 9 ein festes Raster (`S89Druck`).
  *
  * **Gemessen, nicht gemutmaßt:** Chrome brach den Bogen über die Seitengrenze
  * an Stellen um, die sich nicht vorhersagen ließen — aus „6 je Seite" wurden
