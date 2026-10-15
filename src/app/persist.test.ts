@@ -1681,7 +1681,7 @@ describe('Mitteilungs-Fanout', () => {
  *
  * Der Auslöser steht am Ende von `persist` und liest den Vorher/Nachher-Stand
  * der Wochen. Genau darin lag die Gefahr, und genau die prüfen die Fälle hier:
- * Die reine Rechenfunktion (`entzogeneZusagen`) hatte ihre Tests, der Auslöser
+ * Die reine Rechenfunktion (`entzogeneZuteilungen`) hatte ihre Tests, der Auslöser
  * keinen — und deshalb fiel lange nicht auf, dass ganz andere Vorgänge als das
  * Umteilen denselben Vorher/Nachher-Unterschied erzeugen.
  *
@@ -1777,6 +1777,23 @@ describe('Entzug einer bestätigten Zusage: der Auslöser', () => {
         datum: expect.any(String),
       },
     ])
+  })
+
+  it('auch wem der Platz nur gemeldet wurde, erfährt das Umteilen (15.10.2026)', () => {
+    // „Plan senden" hat ihn benachrichtigt, zugesagt hat er noch nicht — er
+    // weiß von seinem Platz und bereitet womöglich vor.
+    const vorher = wocheMitKlasse()
+    const nachher = wocheMitKlasse()
+    const punkt = nachher.mid.sections[0]?.items[0] as { names: { name: string; pid?: string }[] }
+    punkt.names[0] = { name: 'B. Neu', pid: 'pB' }
+    const gemeldet = { [sentKey(SCHLUESSEL, 'A. Berg')]: '2026-09-06T10:00:00Z' }
+
+    persist(
+      mitWoche(vorher, { confirmations: {}, sentLog: gemeldet }),
+      mitWoche(nachher, { confirmations: {}, sentLog: gemeldet }),
+      { type: 'assign', name: 'B. Neu' },
+    )
+    expect(data.sendPlanEntzug).toHaveBeenCalledWith([expect.objectContaining({ key: SCHLUESSEL, name: 'A. Berg' })])
   })
 
   it('mehrere Entzüge derselben Änderung gehen in EINEM Aufruf hinaus', () => {

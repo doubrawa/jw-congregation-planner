@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "İptal",
   "erinAnPlaner": "yöneticilere ve planlayıcılara",
   "erinErsatzAn": "yalnızca yardımcı görevlerde: bu görev alanına sahip ve o gün yokluğu olmayan herkese",
-  "erinEntzugAn": "kişiye, zaten onaylamışsa",
+  "erinEntzugAn": "kişiye, görev kendisine zaten bildirilmişse veya onaylamışsa",
   "erinMailNur": "Uygulama e-postayı yalnızca davetler ve giriş için gönderir.",
   "coWoche": "Çevre gözetmeninin ziyareti",
   "memWoche": "Anma Toplantısı",

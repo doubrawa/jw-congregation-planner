@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "Rinuncia",
   "erinAnPlaner": "agli amministratori e ai pianificatori",
   "erinErsatzAn": "solo per i servizi di supporto: a tutti quelli con questa mansione che quel giorno non sono assenti",
-  "erinEntzugAn": "alla persona, se aveva già confermato",
+  "erinEntzugAn": "alla persona, se l’incarico le era già stato comunicato o se aveva già confermato",
   "erinMailNur": "L’app invia email solo per gli inviti e per l’accesso.",
   "coWoche": "Visita del sorvegliante di circoscrizione",
   "memWoche": "Commemorazione",

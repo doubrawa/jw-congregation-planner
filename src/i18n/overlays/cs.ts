@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "Odřeknutí",
   "erinAnPlaner": "správcům a plánovačům",
   "erinErsatzAn": "jen u pomocných úkolů: všem s touto oblastí úkolů, kteří ten den nechybí",
-  "erinEntzugAn": "dané osobě, pokud už potvrdila",
+  "erinEntzugAn": "dané osobě, pokud jí už byl úkol oznámen nebo už potvrdila",
   "erinMailNur": "Aplikace posílá e-maily jen s pozvánkami a při přihlášení.",
   "coWoche": "Návštěva krajského staršího",
   "memWoche": "Památná slavnost",

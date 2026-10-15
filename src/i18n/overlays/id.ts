@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "Pembatalan",
   "erinAnPlaner": "kepada admin dan perencana",
   "erinErsatzAn": "hanya untuk tugas pendukung: kepada semua yang memiliki bidang tugas ini dan tidak absen hari itu",
-  "erinEntzugAn": "kepada orang itu, jika ia sudah mengonfirmasi",
+  "erinEntzugAn": "kepada orang itu, jika tugasnya sudah diberitahukan kepadanya atau ia sudah mengonfirmasi",
   "erinMailNur": "Aplikasi hanya mengirim email untuk undangan dan untuk masuk.",
   "coWoche": "Kunjungan pengawas wilayah",
   "memWoche": "Peringatan",

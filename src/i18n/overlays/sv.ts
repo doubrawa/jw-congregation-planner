@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "Återbud",
   "erinAnPlaner": "till administratörer och planerare",
   "erinErsatzAn": "bara vid stöduppgifter: till alla med detta uppgiftsområde som inte är frånvarande den dagen",
-  "erinEntzugAn": "till personen, om hen redan hade bekräftat",
+  "erinEntzugAn": "till personen, om hen redan hade fått uppgiften meddelad eller hade bekräftat",
   "erinMailNur": "Appen skickar e-post bara för inbjudningar och inloggning.",
   "coWoche": "Kretstillsyningsmannens besök",
   "memWoche": "Minneshögtiden",

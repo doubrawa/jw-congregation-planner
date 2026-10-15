@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "取消",
   "erinAnPlaner": "发给管理员和安排人",
   "erinErsatzAn": "仅限辅助任务：发给具有此职责且当天没有缺席的所有人",
-  "erinEntzugAn": "发给已确认的本人",
+  "erinEntzugAn": "发给已获通知或已确认的本人",
   "erinMailNur": "应用只在发送邀请和登录时使用电子邮件。",
   "coWoche": "分区监督探访",
   "memWoche": "耶稣牺牲纪念聚会",

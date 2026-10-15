@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { entzogeneZusagen, offeneMeldungen, zuletztGesendet, zuletztGesendetFuer } from './plan-versand'
+import {
+  entzogeneAller,
+  entzogeneZuteilungen,
+  offeneMeldungen,
+  type WochenVergleich,
+  zuletztGesendet,
+  zuletztGesendetFuer,
+} from './plan-versand'
 import { sentKey } from './planning'
 import type { ConfirmationMap, FsInstance, Meeting, PartItem, SentLog, Service, Week } from './types'
 import { STANDARD_ZEITEN } from './vorgaben'
@@ -15,8 +22,8 @@ import { STANDARD_ZEITEN } from './vorgaben'
  * wenn eine Seite ihn kennt und die andere nicht.
  *
  * Der zweite Teil betrifft den Fall, der nicht auf den Knopf warten darf: Wer
- * **zugesagt** hat und den Platz wieder verliert, bereitet sonst weiter etwas
- * vor, das ihm nicht mehr gehört.
+ * von seinem Platz **weiß** (zugesagt oder gemeldet) und ihn wieder verliert,
+ * bereitet sonst weiter etwas vor, das ihm nicht mehr gehört.
  */
 
 const MONTAG = '2026-09-07'
@@ -276,15 +283,31 @@ describe('Wann ging für bestimmte Plätze zuletzt etwas hinaus — etwa die Tre
 /**
  * **Der Fall, der nicht auf den Knopf warten darf.**
  *
- * Wer zugesagt hat, bereitet vor. Nimmt der Planer ihm den Platz, verwirft die
- * App seine Bestätigung still (`dropConfirmations`) — bis T99 ging dabei keine
- * Nachricht hinaus, und er übte weiter für etwas, das ihm nicht mehr gehörte.
+ * Wer von seinem Platz weiß, bereitet vor. Nimmt der Planer ihm den Platz,
+ * verwirft die App seine Bestätigung still (`dropConfirmations`) — bis T99
+ * ging dabei keine Nachricht hinaus, und er übte weiter für etwas, das ihm
+ * nicht mehr gehörte. Seit dem 15.10.2026 zählt nicht nur, wer zugesagt hat,
+ * sondern auch, wem der Platz gemeldet wurde.
  */
-describe('Wem eine bestätigte Zusage genommen wurde', () => {
+describe('Wem ein Platz genommen wurde, von dem er wusste', () => {
   const bestaetigt: ConfirmationMap = { [KEY_ERSTER]: 'bestätigt' }
   const vorher = woche(zusammenkunft([punkt('Bibellesung', 'A. Berg')]))
+  /** `entzogeneZuteilungen` mit den Vorgaben dieses Abschnitts — jeder Fall nennt nur, was er abwandelt. */
+  const entzug = (over: Partial<WochenVergleich> = {}) =>
+    entzogeneZuteilungen({
+      vorher,
+      nachher: vorher,
+      services: DIENSTE,
+      zeiten: STANDARD_ZEITEN,
+      confirmations: bestaetigt,
+      sentLog: {},
+      heute: MONTAG_FRUEH,
+      ...over,
+    })
   const ruf = (v: Week | undefined, n: Week | undefined, conf = bestaetigt) =>
-    entzogeneZusagen(v, n, [], [], DIENSTE, STANDARD_ZEITEN, conf, MONTAG_FRUEH)
+    entzug({ vorher: v, nachher: n, confirmations: conf })
+  /** Der Eintrag im Versand-Tagebuch: Diesem Namen wurde dieser Platz gemeldet. */
+  const gemeldet = (key: string, name: string): SentLog => ({ [sentKey(key, name)]: '2026-09-06T10:00:00Z' })
 
   it('umgeteilt: der bisherige Inhaber wird genannt, mit Platz und Termin', () => {
     const nachher = woche(zusammenkunft([punkt('Bibellesung', 'C. Dorn')]))
@@ -300,9 +323,49 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
     expect(ruf(vorher, nachher).map((z) => z.name)).toEqual(['A. Berg'])
   })
 
-  it('unbestätigt: nichts — bis zur Zusage ist der Plan ein Entwurf', () => {
+  it('weder zugesagt noch gemeldet: nichts — bis „Plan senden" ist der Plan ein Entwurf', () => {
     const nachher = woche(zusammenkunft([punkt('Bibellesung', 'C. Dorn')]))
     expect(ruf(vorher, nachher, {})).toEqual([])
+  })
+
+  /*
+   * **Gemeldet heißt: Er weiß davon** (15.10.2026, Entscheid des Betreibers).
+   * Wem „Plan senden" den Platz mitgeteilt hat, der bereitet womöglich schon
+   * vor, auch wenn er noch nicht geantwortet hat. Bis dahin erfuhr er beim
+   * Umbesetzen nichts.
+   */
+  it('gemeldet, noch ohne Antwort: auch er erfährt es', () => {
+    const nachher = woche(zusammenkunft([punkt('Bibellesung', 'C. Dorn')]))
+    const raus = entzug({ nachher, confirmations: {}, sentLog: gemeldet(KEY_ERSTER, 'A. Berg') })
+    expect(raus.map((z) => z.name)).toEqual(['A. Berg'])
+  })
+
+  it('gemeldet, aber abgesagt: nichts — er hat den Platz selbst abgegeben', () => {
+    const nachher = woche(zusammenkunft([punkt('Bibellesung', 'C. Dorn')]))
+    const raus = entzug({
+      nachher,
+      confirmations: { [KEY_ERSTER]: 'verhindert' },
+      sentLog: gemeldet(KEY_ERSTER, 'A. Berg'),
+    })
+    expect(raus).toEqual([])
+  })
+
+  it('gemeldet war ein anderer: nichts — der jetzige Inhaber weiß noch nicht von dem Platz', () => {
+    // Das Tagebuch führt Platz UND Name. Wurde vor A. Berg ein anderer
+    // benachrichtigt, weiß A. Berg selbst noch nichts.
+    const nachher = woche(zusammenkunft([punkt('Bibellesung', 'C. Dorn')]))
+    expect(entzug({ nachher, confirmations: {}, sentLog: gemeldet(KEY_ERSTER, 'X. Früher') })).toEqual([])
+  })
+
+  it('ein gemeldeter Treffpunkt-Leiter ebenso', () => {
+    const key = `fs|${MONTAG}|r1`
+    const raus = entzug({
+      vorherFs: [treffpunkt()],
+      nachherFs: [treffpunkt({ leader: 'M. Albrecht' })],
+      confirmations: {},
+      sentLog: gemeldet(key, 'T. Lindner'),
+    })
+    expect(raus.map((z) => z.name)).toEqual(['T. Lindner'])
   })
 
   it('dieselbe Person, andere Rolle: nichts — sie hat nichts verloren', () => {
@@ -318,32 +381,29 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
 
   it('auch ein Treffpunkt-Leiter, dem die Leitung genommen wird', () => {
     const key = `fs|${MONTAG}|r1`
-    const conf: ConfirmationMap = { [key]: 'bestätigt' }
-    const raus = entzogeneZusagen(
-      vorher, vorher,
-      [treffpunkt()],
-      [treffpunkt({ leader: 'M. Albrecht' })],
-      DIENSTE, STANDARD_ZEITEN, conf, MONTAG_FRUEH,
-    )
+    const raus = entzug({
+      vorherFs: [treffpunkt()],
+      nachherFs: [treffpunkt({ leader: 'M. Albrecht' })],
+      confirmations: { [key]: 'bestätigt' },
+    })
     expect(raus.map((z) => z.name)).toEqual(['T. Lindner'])
   })
 
-  it('ein unbestätigter Treffpunkt-Leiter nicht — solange niemand zugesagt hat, ist es ein Entwurf', () => {
+  it('ein Treffpunkt-Leiter, der weder zugesagt hat noch gemeldet wurde, nicht — es ist ein Entwurf', () => {
     /*
      * Gegenstück zum Fall darüber, und die zweite Hälfte derselben Regel: Die
-     * Zusage-Prüfung greift für Zusammenkünfte **und** Treffpunkte. Sie steht
-     * seit T101 an zwei Stellen — einmal im Besucher von `eachAssignedSlot`,
-     * einmal in der Treffpunkt-Schleife —, weil nur Bestätigtes überhaupt
+     * Prüfung, wer davon weiß, greift für Zusammenkünfte **und** Treffpunkte.
+     * Sie steht an zwei Stellen — einmal im Besucher von `eachAssignedSlot`,
+     * einmal in der Treffpunkt-Schleife —, weil nur Bekanntes überhaupt
      * aufgenommen wird. Ohne diesen Fall wäre die zweite Stelle ungedeckt: Der
      * Planer dürfte den Leiter nicht mehr wechseln, ohne dem ersten eine
-     * Rücknahme zu schicken, die er nie zugesagt hat.
+     * Rücknahme zu schicken für etwas, wovon er nie erfahren hat.
      */
-    const raus = entzogeneZusagen(
-      vorher, vorher,
-      [treffpunkt()],
-      [treffpunkt({ leader: 'M. Albrecht' })],
-      DIENSTE, STANDARD_ZEITEN, ohne, MONTAG_FRUEH,
-    )
+    const raus = entzug({
+      vorherFs: [treffpunkt()],
+      nachherFs: [treffpunkt({ leader: 'M. Albrecht' })],
+      confirmations: ohne,
+    })
     expect(raus).toEqual([])
   })
 
@@ -392,12 +452,11 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
      * dasselbe sagen.
      */
     const key = `fs|${MONTAG}|r1`
-    const raus = entzogeneZusagen(
-      vorher, vorher,
-      [treffpunkt()],
-      [treffpunkt({ leader: '' })],
-      DIENSTE, STANDARD_ZEITEN, { [key]: 'bestätigt' }, MONTAG_FRUEH,
-    )
+    const raus = entzug({
+      vorherFs: [treffpunkt()],
+      nachherFs: [treffpunkt({ leader: '' })],
+      confirmations: { [key]: 'bestätigt' },
+    })
     expect(raus).toHaveLength(1)
     expect(raus[0]!.datum).toMatch(/September/)
   })
@@ -416,13 +475,17 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
     expect(ruf(vorher, leer).map((z) => z.name)).toEqual(['A. Berg'])
   })
 
-  it('eine fehlende Bestätigungs-Liste stürzt nicht ab', () => {
+  it('fehlende Zusagen und ein fehlendes Tagebuch stürzen nicht ab', () => {
     // Diese Funktion läuft in der Nebeneffekt-Schicht (`persist.ts`). Ein
     // Fehler dort risse das **Speichern** mit — lieber keine Nachricht als
     // eine verlorene Woche.
     const nachher = woche(zusammenkunft([punkt('Bibellesung', 'C. Dorn')]))
     expect(() =>
-      entzogeneZusagen(vorher, nachher, [], [], DIENSTE, STANDARD_ZEITEN, undefined as unknown as ConfirmationMap, MONTAG_FRUEH),
+      entzug({
+        nachher,
+        confirmations: undefined as unknown as ConfirmationMap,
+        sentLog: undefined as unknown as SentLog,
+      }),
     ).not.toThrow()
   })
 
@@ -435,13 +498,13 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
   it('ein vergangener Platz: keine Nachricht, wenn er nachträglich umgeteilt wird', () => {
     const nachher = woche(zusammenkunft([punkt('Bibellesung', 'C. Dorn')]))
     const donnerstag = new Date(2026, 8, 10, 9, 0)
-    expect(entzogeneZusagen(vorher, nachher, [], [], DIENSTE, STANDARD_ZEITEN, bestaetigt, donnerstag)).toEqual([])
+    expect(entzug({ nachher, heute: donnerstag })).toEqual([])
   })
 
   it('Gegenprobe: am Tag selbst geht die Nachricht noch hinaus', () => {
     const nachher = woche(zusammenkunft([punkt('Bibellesung', 'C. Dorn')]))
     const dienstagMittag = new Date(2026, 8, 8, 12, 0)
-    const raus = entzogeneZusagen(vorher, nachher, [], [], DIENSTE, STANDARD_ZEITEN, bestaetigt, dienstagMittag)
+    const raus = entzug({ nachher, heute: dienstagMittag })
     expect(raus.map((z) => z.name)).toEqual(['A. Berg'])
   })
 
@@ -450,8 +513,44 @@ describe('Wem eine bestätigte Zusage genommen wurde', () => {
     const vorherFs = [treffpunkt({ id: 'mo', wd: 1 }), treffpunkt({ id: 'sa', wd: 6 })]
     const nachherFs = [treffpunkt({ id: 'mo', wd: 1, leader: '' }), treffpunkt({ id: 'sa', wd: 6, leader: '' })]
     const mittwoch = new Date(2026, 8, 9, 9, 0)
-    const raus = entzogeneZusagen(vorher, vorher, vorherFs, nachherFs, DIENSTE, STANDARD_ZEITEN, conf, mittwoch)
+    const raus = entzug({ vorherFs, nachherFs, confirmations: conf, heute: mittwoch })
     // Der Montag ist gewesen; der Samstag steht noch bevor.
     expect(raus.map((z) => z.key)).toEqual([`fs|${MONTAG}|sa`])
+  })
+})
+
+/**
+ * **Über alle Wochen, die sich geändert haben** — der Weg, den Reducer und
+ * `persist.ts` gehen. Unberührte Wochen behalten ihre Referenz und werden gar
+ * nicht erst verglichen; wer was wusste, sagt der **alte** Stand.
+ */
+describe('entzogeneAller', () => {
+  const A = woche(zusammenkunft([punkt('Bibellesung', 'A. Berg')]))
+  const zweite = { ...woche(zusammenkunft([punkt('Bibellesung', 'B. Born')])), start: '2026-09-14' } as Week
+  const stand = (weeks: Week[], over: { confirmations?: ConfirmationMap; sentLog?: SentLog } = {}) => ({
+    weeks,
+    fsWeeks: weeks.map((): FsInstance[] => []),
+    services: DIENSTE,
+    congregation: { times: STANDARD_ZEITEN },
+    confirmations: over.confirmations ?? {},
+    sentLog: over.sentLog ?? {},
+  })
+
+  it('nennt, was in einer geänderten Woche verloren ging', () => {
+    const vorher = stand([A, zweite], { confirmations: { [KEY_ERSTER]: 'bestätigt' } })
+    const neuA = woche(zusammenkunft([punkt('Bibellesung', 'C. Dorn')]))
+    const raus = entzogeneAller(vorher, { weeks: [neuA, zweite], fsWeeks: vorher.fsWeeks }, MONTAG_FRUEH)
+    expect(raus.map((z) => z.name)).toEqual(['A. Berg'])
+  })
+
+  it('ohne geänderte Woche: nichts, ohne zu suchen', () => {
+    const vorher = stand([A, zweite], { confirmations: { [KEY_ERSTER]: 'bestätigt' } })
+    expect(entzogeneAller(vorher, vorher, MONTAG_FRUEH)).toEqual([])
+  })
+
+  it('eine neu angehängte Woche hatte noch keinen Inhaber', () => {
+    const vorher = stand([A])
+    const neu = { ...woche(zusammenkunft([])), start: '2026-09-21' } as Week
+    expect(entzogeneAller(vorher, { weeks: [A, neu], fsWeeks: [[], []] }, MONTAG_FRUEH)).toEqual([])
   })
 })

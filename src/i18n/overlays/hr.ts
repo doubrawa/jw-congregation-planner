@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "Otkazivanje",
   "erinAnPlaner": "administratorima i planerima",
   "erinErsatzAn": "samo kod pomoćnih zadataka: svima s ovim područjem zadatka koji taj dan nisu odsutni",
-  "erinEntzugAn": "osobi, ako je već potvrdila",
+  "erinEntzugAn": "osobi, ako joj je zadatak već priopćen ili je već potvrdila",
   "erinMailNur": "Aplikacija šalje e-poštu samo za pozive i za prijavu.",
   "coWoche": "Posjet pokrajinskog nadglednika",
   "memWoche": "Obilježavanje Kristove smrti",

@@ -340,7 +340,7 @@ function gleicheBesetzung(
  * gemessen erbte ein Namensvetter mit anderer Person-Id die Zusage seines
  * Vorgängers — und die Ampel im Planen zeigte ihn grün, obwohl er nie gefragt
  * worden war. Dieselbe Rangfolge wie bei den Treffpunkten
- * (`fsVerwaisteZusagen`) und beim Entzug (`entzogeneZusagen`).
+ * (`fsVerwaisteZusagen`) und beim Entzug (`entzogeneZuteilungen`).
  *
  * **Der Punkt von vorher wird über seine Kennung gesucht, nicht über seine
  * Stelle in der Liste.** Hier stand `prev.sections[si]?.items[ii]` — dieselbe
@@ -1122,6 +1122,10 @@ export function buildS89ForSlot(
  *
  * Die Reihenfolge ist die des Programms: So liegen die Zettel hinterher in der
  * Reihenfolge, in der die Teile drankommen.
+ *
+ * **Fällt die Zusammenkunft aus, gibt es keine Zettel** — die Zuteilungen ruhen
+ * dann nur (`eachAssignedSlot`), gehalten wird keine Aufgabe. Bis zum
+ * 15.10.2026 bot der Bogen in einer Kongress-Woche trotzdem ihre Zettel an.
  */
 export function alleS89DerWoche(
   weeks: Week[],
@@ -1131,7 +1135,7 @@ export function alleS89DerWoche(
   partnerZweimal = true,
 ): S89Payload[] {
   const week = weeks[wi]
-  if (!week) return []
+  if (!week || istAusgefallen(week, 'mid')) return []
   const out: S89Payload[] = []
   // Je Aufgabe und Raum genau ein Zettel: der erste Platz, für den einer
   // entsteht, deckt den Punkt ab (der Gesprächspartner steht mit darauf).

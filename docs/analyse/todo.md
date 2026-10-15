@@ -6674,6 +6674,23 @@ Entschieden am 14. Oktober 2026 (aus Phase 5g, „A"): Der Haken „weiß Besche
 zählt im Schritt „Zusagen" der Spur wie eine Zusage, und wer ihn hat, steht
 nicht mehr in der Meldung „nicht erreichbar" (`98630c5`).
 
+**Entschieden am 15. Oktober 2026 morgens** (nach dem Review über das ganze
+Repo, Frage für Frage):
+
+- **„Zuteilung zurückgezogen" auch an Gesendete:** Wem der Platz mit „Plan
+  senden" mitgeteilt wurde, erfährt einen Entzug sofort, auch ohne Zusage; wer
+  abgesagt hat, nicht. Vor dem Senden bleibt Umsortieren still. Umgesetzt
+  (`entzogeneZuteilungen`), Handbücher und „Sofort gemeldet" in allen Sprachen
+  nachgezogen.
+- **Phase 8 (Anmelden per Link):** ein Link gilt mehrfach, 30 Tage, ein neuer
+  macht den alten ungültig; QR-Code über eine kleine Bibliothek, nur auf dem
+  Druckbogen geladen; jedes Konto mit einer internen Adresse (48 Personen ohne
+  E-Mail, 11 Adressen geteilt); die bestehenden Konten werden **neu angelegt**;
+  den Notzugang des Betreibers stellt ein Skript aus. `send-invite` wird dabei
+  gehärtet. Beginn erst nach der Mitgliedsrechte-Probe und auf ein Wort.
+- **Gelassen, wie es ist:** das Löschrecht des Gruppenaufsehers für alle
+  Treffpunkt-Zusagen und die Übersetzungs-Abwägungen der Trolleys.
+
 **Nachentschieden am 13. Oktober 2026** — was in den ersten Phasen offen
 geblieben war, auf *„kannst du mich alles abfragen, was offen ist oder wo ich
 eventuell nochmal etwas nachentscheiden sollte?"*:

@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "不参加の連絡",
   "erinAnPlaner": "管理者と計画担当へ",
   "erinErsatzAn": "補助の割り当てのみ：この担当分野があり、その日欠席でない全員へ",
-  "erinEntzugAn": "すでに確認していた場合、本人へ",
+  "erinEntzugAn": "すでに伝えられていた場合や確認していた場合、本人へ",
   "erinMailNur": "アプリがメールを送るのは、招待とログインのときだけです。",
   "coWoche": "巡回訪問",
   "memWoche": "記念式",

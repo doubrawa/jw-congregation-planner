@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "Lemondás",
   "erinAnPlaner": "az adminoknak és a tervezőknek",
   "erinErsatzAn": "csak kisegítő feladatoknál: mindenkinek, akinek megvan ez a feladatterülete, és aznap nincs távol",
-  "erinEntzugAn": "a személynek, ha már megerősítette",
+  "erinEntzugAn": "a személynek, ha már értesült a feladatról vagy megerősítette",
   "erinMailNur": "E-mailt az alkalmazás csak meghívókhoz és a bejelentkezéshez küld.",
   "coWoche": "A körzetfelvigyázó látogatása",
   "memWoche": "Emlékünnep",

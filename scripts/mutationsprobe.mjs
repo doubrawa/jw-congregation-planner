@@ -511,8 +511,8 @@ export const KATALOG = [
     id: 'fs-zusage-verfaellt-mit-leiter',
     datei: 'src/app/reducer.ts',
     regel: 'Leitet jemand anderes den Treffpunkt, erbt er die Zusage des Vorgängers nicht.',
-    suchen: 'const next = ohneVerwaisteTreffpunktZusagen(state, baseReducer(state, action))',
-    ersetzen: 'const next = baseReducer(state, action)',
+    suchen: 'const next = ohneEntzogene(state, ohneVerwaisteTreffpunktZusagen(state, baseReducer(state, action)))',
+    ersetzen: 'const next = ohneEntzogene(state, baseReducer(state, action))',
   },
   {
     id: 'fs-zusage-person-nicht-name',
@@ -1609,8 +1609,8 @@ export const KATALOG = [
     id: 'plan-bestaetigte-nicht-erneut',
     datei: 'src/data/plan-versand.ts',
     regel: 'Wer bestätigt oder abgesagt hat, weiß Bescheid — er steht nicht mehr auf der Sendeliste.',
-    suchen: '    if (confirmations[key]) return',
-    ersetzen: '    if (false) return',
+    suchen: '  return Boolean(confirmations[key]) || Boolean(sentLog[sentKey(key, name)])',
+    ersetzen: '  return Boolean(sentLog[sentKey(key, name)])',
   },
   {
     id: 'plan-tagebuch-traegt-den-namen',
@@ -1666,24 +1666,60 @@ export const KATALOG = [
     id: 'plan-entzug-braucht-zusage',
     datei: 'src/data/plan-versand.ts',
     /*
-      Seit T101 wird nur Bestätigtes überhaupt aufgenommen, statt alles
+      Seit T101 wird nur Bekanntes überhaupt aufgenommen, statt alles
       aufzunehmen und später zu verwerfen. Damit steht die Regel an zwei
       Stellen — je eine für die beiden Datenquellen —, und beide brauchen
       ihren eigenen Eintrag: Fiele nur eine weg, meldete die andere weiter,
-      und ein Eintrag über beide zusammen bliebe grün.
+      und ein Eintrag über beide zusammen bliebe grün. Seit dem 15.10.2026
+      zählt als bekannt auch, was gemeldet wurde.
     */
     regel:
-      'Solange niemand zugesagt hat, ist der Plan ein Entwurf — Umsortieren meldet nichts (Zusammenkünfte).',
-    suchen: "    if (conf[key] !== 'bestätigt') return",
+      'Was weder zugesagt noch gemeldet ist, ist Entwurf — Umsortieren meldet nichts (Zusammenkünfte).',
+    suchen: '    if (!betroffen(key, slot.name)) return',
     ersetzen: '    if (false) return',
   },
   {
     id: 'plan-entzug-braucht-zusage-treffpunkt',
     datei: 'src/data/plan-versand.ts',
     regel:
-      'Dieselbe Regel für die zweite Datenquelle: ein unbestätigter Treffpunkt-Leiter meldet beim Wechseln nichts.',
-    suchen: "    if (conf[key] !== 'bestätigt') continue",
+      'Dieselbe Regel für die zweite Datenquelle: ein Treffpunkt-Leiter, der nichts davon wusste, bekommt beim Wechseln nichts.',
+    suchen: '    if (!betroffen(key, inst.leader)) continue',
     ersetzen: '    if (false) continue',
+  },
+  {
+    id: 's89-bogen-nicht-bei-ausfall',
+    datei: 'src/data/planning.ts',
+    regel: 'Fällt die Zusammenkunft aus, bietet der S-89-Bogen keine Zettel an — gehalten wird keine Aufgabe.',
+    suchen: "  if (!week || istAusgefallen(week, 'mid')) return []\n  const out: S89Payload[] = []",
+    ersetzen: '  if (!week) return []\n  const out: S89Payload[] = []',
+  },
+  {
+    id: 'entzug-auch-gemeldete',
+    datei: 'src/data/plan-versand.ts',
+    regel: 'Auch wem der Platz nur gemeldet wurde, erfährt einen Entzug (15.10.2026) — nicht erst nach seiner Zusage.',
+    suchen: "    conf[key] !== 'verhindert' && weissBescheid(conf, gemeldet, key, name)",
+    ersetzen: "    conf[key] === 'bestätigt'",
+  },
+  {
+    id: 'entzug-nicht-an-absager',
+    datei: 'src/data/plan-versand.ts',
+    regel: 'Wer abgesagt hat, hat den Platz selbst abgegeben — er bekommt keinen Entzug.',
+    suchen: "    conf[key] !== 'verhindert' && weissBescheid(conf, gemeldet, key, name)",
+    ersetzen: '    weissBescheid(conf, gemeldet, key, name)',
+  },
+  {
+    id: 'entzug-raeumt-tagebuch',
+    datei: 'src/app/reducer.ts',
+    regel: 'Was ein Entzug nimmt, verschwindet auch aus dem Versand-Tagebuch des Zustands — wie in der Datenbank.',
+    suchen: '  for (const k of tagebuch) delete sentLog[k]\n',
+    ersetzen: '',
+  },
+  {
+    id: 'entzug-raeumt-zusage',
+    datei: 'src/app/reducer.ts',
+    regel: 'Was ein Entzug nimmt, verliert auch seine Zusage — an einer Stelle für alle Wege (auch den Anlass).',
+    suchen: '    confirmations: dropConfirmations(nachher.confirmations, weg.map((z) => z.key)),\n',
+    ersetzen: '',
   },
   {
     id: 'plan-nur-planer',
@@ -1987,15 +2023,15 @@ export const KATALOG = [
     id: 'entzug-vorbei-schweigt',
     datei: 'src/data/plan-versand.ts',
     regel: 'Ein Entzug für einen vergangenen Platz meldet nichts — wer nachträgt, nimmt niemandem etwas.',
-    suchen: "    if (conf[key] !== 'bestätigt') return\n    const wo = taskKeyWeek(key)\n    if (wo && vorbei.has(wo.tab)) return\n",
-    ersetzen: "    if (conf[key] !== 'bestätigt') return\n",
+    suchen: '    if (!betroffen(key, slot.name)) return\n    const wo = taskKeyWeek(key)\n    if (wo && vorbei.has(wo.tab)) return\n',
+    ersetzen: '    if (!betroffen(key, slot.name)) return\n',
   },
   {
     id: 'entzug-vorbei-schweigt-treffpunkt',
     datei: 'src/data/plan-versand.ts',
     regel: 'Ebenso für einen Treffpunkt, dessen Tag vorbei ist.',
-    suchen: "    if (conf[key] !== 'bestätigt') continue\n    if (fsTagVorbei(kennung, inst.wd, heute)) continue\n",
-    ersetzen: "    if (conf[key] !== 'bestätigt') continue\n",
+    suchen: '    if (!betroffen(key, inst.leader)) continue\n    if (fsTagVorbei(kennung, inst.wd, heute)) continue\n',
+    ersetzen: '    if (!betroffen(key, inst.leader)) continue\n',
   },
   {
     id: 'planung-offline-kein-senden',

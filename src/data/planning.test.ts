@@ -458,6 +458,16 @@ describe('S-89-Nutzlast', () => {
     }, STANDARD_ZEITEN)
     expect(s89).toBeNull()
   })
+
+  it('fällt die Zusammenkunft aus, druckt der Bogen keine Zettel (15.10.2026)', () => {
+    // Kongress-Woche oder Gedächtnismahl an einem Werktag: Die Zuteilungen
+    // ruhen nur (`eachAssignedSlot`), die Schulungsaufgaben finden nicht
+    // statt. Bis dahin bot der Bogen ihre Zettel trotzdem zum Druck an.
+    const w = buildDemoWeeks()
+    expect(alleS89DerWoche(w, 0, STANDARD_ZEITEN).length).toBeGreaterThan(0)
+    const aus = [{ ...w[0]!, dev: { mid: { cancelled: true } } }, ...w.slice(1)]
+    expect(alleS89DerWoche(aus, 0, STANDARD_ZEITEN)).toEqual([])
+  })
 })
 
 describe('Auslastung', () => {

@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "Pagkansela",
   "erinAnPlaner": "sa mga admin at tagaplano",
   "erinErsatzAn": "sa mga suportang atas lang: sa lahat ng may ganitong bahagi ng atas na hindi nakatalang wala sa araw na iyon",
-  "erinEntzugAn": "sa tao, kung nakumpirma na niya",
+  "erinEntzugAn": "sa tao, kung naipaalam na sa kanya ang atas o nakumpirma na niya",
   "erinMailNur": "Nagpapadala lang ng email ang app para sa mga imbitasyon at sa pag-log in.",
   "coWoche": "Dalaw ng tagapangasiwa ng sirkito",
   "memWoche": "Memoryal",

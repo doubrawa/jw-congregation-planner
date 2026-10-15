@@ -34,7 +34,7 @@
 //
 //     **Vergangenes kommt hier gar nicht erst an.** Welche Plätze vorbei sind,
 //     weiß der Client, der den alten Stand der Woche in der Hand hat
-//     (`entzogeneZusagen`); die Function bekommt nur Schlüssel und fertige
+//     (`entzogeneZuteilungen`); die Function bekommt nur Schlüssel und fertige
 //     Texte. Sie prüft das deshalb nicht noch einmal — dieselbe Arbeitsteilung
 //     wie bei Bezeichnung und Termin, die ebenfalls vom Client kommen.
 //

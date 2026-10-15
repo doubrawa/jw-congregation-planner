@@ -60,7 +60,7 @@ import {
   setOpeningSong,
 } from '../data/meeting-edit'
 import { setAnlass, setAnlassTermin } from '../data/anlass'
-import { entzogeneZusagen } from '../data/plan-versand'
+import { entzogeneAller } from '../data/plan-versand'
 import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { terminAdd, terminRemove, terminUpdate } from '../data/termine'
 import { dict, type Dict } from '../i18n/ui'
@@ -470,8 +470,35 @@ export function reducer(state: AppState, action: AppAction): AppState {
   // Zusagen kommen passend mit — und legt zusätzlich das Bestätigungs-Blatt
   // vor, wenn etwas offen ist.
   if (action.type === 'hydrate') return withDerivedTasks(baseReducer(state, action), true)
-  const next = ohneVerwaisteTreffpunktZusagen(state, baseReducer(state, action))
+  const next = ohneEntzogene(state, ohneVerwaisteTreffpunktZusagen(state, baseReducer(state, action)))
   return quellenGeaendert(state, next) ? withDerivedTasks(next, false) : next
+}
+
+/**
+ * **Wem diese Aktion einen Platz genommen hat, von dem er wusste**
+ * (`entzogeneAller`), der hat ihn nicht mehr — auch nicht in den Zusagen und im
+ * Versand-Tagebuch. `persist.ts` meldet es ihm, und die Function `send-plan`
+ * löscht dabei seinen Tagebuch-Eintrag in der Datenbank.
+ *
+ * Bliebe der Eintrag hier stehen, zählte „Plan senden" ihn bis zum nächsten
+ * Laden als schon gemeldet; teilte der Planer ihn zurück und wieder weg, bekäme
+ * er ein zweites „zurückgezogen" für einen Platz, von dem er gar nichts mehr
+ * wusste. Und eine Zusage, die bliebe, erbte, wer den Platz zurückbekommt.
+ *
+ * An einer Stelle für alle Wege, wie `ohneVerwaisteTreffpunktZusagen` — bis zum
+ * 15.10.2026 räumte allein `setAnlass` die Zusage eines Entzugs selbst ab.
+ */
+function ohneEntzogene(vorher: AppState, nachher: AppState): AppState {
+  const weg = entzogeneAller(vorher, nachher)
+  if (weg.length === 0) return nachher
+  const tagebuch = weg.map((z) => sentKey(z.key, z.name)).filter((k) => k in nachher.sentLog)
+  const sentLog = tagebuch.length > 0 ? { ...nachher.sentLog } : nachher.sentLog
+  for (const k of tagebuch) delete sentLog[k]
+  return {
+    ...nachher,
+    confirmations: dropConfirmations(nachher.confirmations, weg.map((z) => z.key)),
+    sentLog,
+  }
 }
 
 /** Eine neue Kennung für einen Eintrag eines Weiteren Plans — eindeutig und lesbar, wie bei den Besuchen. */
@@ -1436,24 +1463,11 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, weeks: setAbweichung(state.weeks, state.week, action.tab, action.patch) }
     }
     case 'setAnlass': {
-      const vorher = state.weeks[state.week]
-      if (!vorher) return state
-      const weeks = setAnlass(state.weeks, state.week, action.art)
-      // Was der Anlass einer schon zugesagten Person nimmt — der Dienstvortrag an
-      // der Stelle des Bibelstudiums —, meldet `persist` ihr als Entzug. Die
-      // Zusage verfällt mit: Holt das Zurücknehmen den Punkt samt Besetzung
-      // zurück, stünde sie sonst still wieder bestätigt da, und weder „Plan
-      // senden" noch die Erinnerungen erreichten sie je wieder.
-      const verfallen = entzogeneZusagen(
-        vorher,
-        weeks[state.week],
-        undefined,
-        undefined,
-        state.services,
-        state.congregation.times,
-        state.confirmations,
-      ).map((z) => z.key)
-      return { ...state, weeks, confirmations: dropConfirmations(state.confirmations, verfallen) }
+      if (!state.weeks[state.week]) return state
+      // Was der Anlass jemandem nimmt, der davon wusste — der Dienstvortrag an
+      // der Stelle des Bibelstudiums —, räumt `ohneEntzogene` ab, und `persist`
+      // meldet es ihm.
+      return { ...state, weeks: setAnlass(state.weeks, state.week, action.art) }
     }
     case 'setAnlassTermin': {
       if (!state.weeks[state.week]) return state

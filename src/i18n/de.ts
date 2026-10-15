@@ -606,11 +606,12 @@ export const DE = {
     // (14.10.2026): die Absage über `notify_planners` (an jedes Mitglied mit
     // `planner` oder `zuteiler`, also Admins und Planer — Wortlaut wie
     // `wpEntwurfHint`), das Ersatzgesuch in `substitute` (nur Hilfsdienste,
-    // ohne die an dem Tag Abwesenden), der Entzug in `send-plan` (nur eine
-    // Zuteilung, die schon zugesagt war).
+    // ohne die an dem Tag Abwesenden), der Entzug in `send-plan` (eine
+    // Zuteilung, von der die Person wusste: mitgeteilt oder zugesagt — seit dem
+    // 15.10.2026, `entzogeneZuteilungen`).
     erinSofortGemeldet: 'Sofort gemeldet', erinAbsage: 'Absage', erinAnPlaner: 'an Admins und Planer',
     erinErsatzAn: 'nur bei Hilfsdiensten: an alle mit diesem Aufgabenbereich, die an dem Tag nicht abwesend sind',
-    erinEntzugAn: 'an die Person, wenn sie schon zugesagt hatte',
+    erinEntzugAn: 'an die Person, wenn ihr die Zuteilung schon mitgeteilt war oder sie zugesagt hatte',
     // Die Function `trolley` meldet dem anderen im Termin, was der eine getan
     // hat; entfernt der Admin einen Trolley, allen Eingetragenen. Am Vortag
     // erinnert `send-reminders` jeden, der eingetragen ist.

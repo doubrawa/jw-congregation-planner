@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "Afzegging",
   "erinAnPlaner": "aan admins en planners",
   "erinErsatzAn": "alleen bij ondersteunende taken: aan iedereen met dit taakgebied die die dag niet afwezig is",
-  "erinEntzugAn": "aan de persoon, als die al had bevestigd",
+  "erinEntzugAn": "aan de persoon, als die de toewijzing al had doorgekregen of al had bevestigd",
   "erinMailNur": "De app verstuurt alleen e-mails voor uitnodigingen en om in te loggen.",
   "coWoche": "Bezoek van de kringopziener",
   "memWoche": "Avondmaal",

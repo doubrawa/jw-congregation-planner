@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "Cancelamento",
   "erinAnPlaner": "aos administradores e planejadores",
   "erinErsatzAn": "só para serviços de apoio: a todos com esta área de designação que não estejam ausentes nesse dia",
-  "erinEntzugAn": "à pessoa, se ela já tinha confirmado",
+  "erinEntzugAn": "à pessoa, se a designação já lhe tinha sido comunicada ou se ela já tinha confirmado",
   "erinMailNur": "O aplicativo só envia e-mails para convites e para entrar.",
   "coWoche": "Visita do superintendente de circuito",
   "memWoche": "Celebração",

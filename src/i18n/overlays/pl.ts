@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "Odwołanie",
   "erinAnPlaner": "do administratorów i planistów",
   "erinErsatzAn": "tylko przy zadaniach pomocniczych: do wszystkich z tym uprawnieniem, którzy tego dnia nie są nieobecni",
-  "erinEntzugAn": "do osoby, jeśli już potwierdziła",
+  "erinEntzugAn": "do osoby, jeśli już przekazano jej zadanie albo już potwierdziła",
   "erinMailNur": "Aplikacja wysyła e-maile tylko z zaproszeniami i przy logowaniu.",
   "coWoche": "Wizyta nadzorcy obwodu",
   "memWoche": "Pamiątka",

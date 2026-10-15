@@ -14,7 +14,7 @@ import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
 import { kurzeZeit, zeitenAus } from '../../supabase/functions/_shared/planung.ts'
 import { fsLeiterBinden, regenFsWeeks } from '../data/fs'
 import { sentKey, taskKeyVorbei } from '../data/planning'
-import type { EntzogeneZusage } from '../data/plan-versand'
+import type { EntzogeneZuteilung } from '../data/plan-versand'
 import { pidsNachtragen } from '../data/namensbindung'
 import { normalizeChairKeys } from '../data/helpers'
 import { isoDay, montagVon, tagNach } from '../data/meeting-dates'
@@ -1798,12 +1798,14 @@ export async function erinnerungSenden(weekStart: string, heute: string): Promis
 }
 
 /**
- * **Bestätigte** Zuteilungen wurden zurückgezogen oder verlegt — die
- * betroffenen Personen erfahren es sofort.
+ * Zuteilungen, von denen jemand wusste (zugesagt oder gemeldet), wurden
+ * zurückgezogen oder verlegt — die betroffenen Personen erfahren es sofort
+ * (`entzogeneZuteilungen`).
  *
  * Das ist der einzige Fall, in dem eine Zuteilungs-Nachricht nicht auf den
- * Knopf wartet: Wer zugesagt hat, bereitet vor. Bliebe es beim nächsten „Plan
- * senden", übte jemand tagelang für einen Platz, den er nicht mehr hat.
+ * Knopf wartet: Wer von seinem Platz weiß, bereitet vor. Bliebe es beim
+ * nächsten „Plan senden", übte jemand tagelang für einen Platz, den er nicht
+ * mehr hat.
  *
  * **Ein Aufruf für alle Entzüge einer Änderung.** Hier ging je Entzug ein
  * eigener `invoke` hinaus, und die Function wiederholte für jeden davor
@@ -1820,7 +1822,7 @@ export async function erinnerungSenden(weekStart: string, heute: string): Promis
  * bevor ein Client sie schickt (`npx supabase functions deploy send-plan`).
  * Umgekehrt ist es unkritisch — die alte Einzelform nimmt sie weiter an.
  */
-export function sendPlanEntzug(entzuege: EntzogeneZusage[]): void {
+export function sendPlanEntzug(entzuege: EntzogeneZuteilung[]): void {
   if (!supabase || entzuege.length === 0) return
   // **Kein `run()`**: Dessen Fehlerweg meldet „Änderung konnte nicht gespeichert
   // werden" — hier ist aber nichts zu speichern, sondern eine Nachricht zu

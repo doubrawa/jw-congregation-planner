@@ -1077,8 +1077,8 @@ export function idAufloeser(persons: readonly Person[]): (z: Zuteilung | undefin
  * halbseitiger Vergleich (eine Seite mit Id, die andere ohne) fiele sonst auf
  * „ungleich" und meldete einen Wechsel, wo nur eine Id nachgetragen wurde.
  *
- * **Eine Regel für drei Fragen:** Wurde jemandem eine Zusage genommen
- * (`entzogeneZusagen`)? Verfällt eine Zusage beim Umteilen
+ * **Eine Regel für drei Fragen:** Wurde jemandem ein Platz genommen
+ * (`entzogeneZuteilungen`)? Verfällt eine Zusage beim Umteilen
  * (`changedSlotKeys`, `fsVerwaisteZusagen`)? Stand sie vorher an zwei
  * Stellen, liefen die Antworten auseinander: Die Nachricht „Zuteilung
  * zurückgezogen" ging hinaus, während die Zusage am Platz stehen blieb.

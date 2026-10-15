@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "Peruutus",
   "erinAnPlaner": "ylläpitäjille ja suunnittelijoille",
   "erinErsatzAn": "vain tukitehtävissä: kaikille, joilla on tämä tehtäväalue ja jotka eivät ole sinä päivänä poissa",
-  "erinEntzugAn": "henkilölle, jos hän oli jo vahvistanut",
+  "erinEntzugAn": "henkilölle, jos tehtävästä oli jo ilmoitettu hänelle tai hän oli jo vahvistanut",
   "erinMailNur": "Sähköposteja sovellus lähettää vain kutsuja ja kirjautumista varten.",
   "coWoche": "Kierrosvalvojan vierailu",
   "memWoche": "Muistojuhla",

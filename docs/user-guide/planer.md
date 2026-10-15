@@ -575,10 +575,12 @@ zugesagt; eine Mitteilung bekommst du dafür nicht, im Plan steht sein Name mit
 vollem Punkt. Willst du einen Platz selbst besetzen, tu es vor dem Senden.
 
 > **Eine Ausnahme wartet nicht auf den Knopf.** Nimmst du jemandem eine Aufgabe
-> weg, die er **schon bestätigt** hatte, erfährt er das sofort („Zuteilung
-> zurückgezogen"). Wer zugesagt hat, bereitet vor — er soll nicht weiter für
-> etwas üben, das ihm nicht mehr gehört. Unbestätigte Zuteilungen darfst du
-> umsortieren, ohne dass jemand etwas merkt.
+> weg, von der er **schon weiß** – er hat sie bestätigt, oder sie wurde ihm mit
+> **Plan senden** mitgeteilt –, erfährt er das sofort („Zuteilung
+> zurückgezogen"). Wer von seiner Aufgabe weiß, bereitet vor — er soll nicht
+> weiter für etwas üben, das ihm nicht mehr gehört. Wer abgesagt hat, bekommt
+> nichts. Was du noch nicht gesendet hast, darfst du umsortieren, ohne dass
+> jemand etwas merkt.
 >
 > **Was dabei nicht als „weggenommen" gilt:** eine Zusammenkunft, die du
 > ausfallen lässt (in einer Kongress-Woche fallen alle aus) — die Zuteilungen
@@ -734,7 +736,7 @@ im Buch *Organisiert, Jehovas Willen zu tun*, Kapitel 5). Unter
 
 | Konflikt | Was du tun kannst |
 | --- | --- |
-| Den Treffpunkt leitet schon jemand anders | **Übernehmen** — der Besucher leitet. Hatte der andere zugesagt, bekommt er sofort die Nachricht, dass die Zuteilung zurückgezogen ist. |
+| Den Treffpunkt leitet schon jemand anders | **Übernehmen** — der Besucher leitet. Wusste der andere schon davon (zugesagt oder gesendet), bekommt er sofort die Nachricht, dass die Zuteilung zurückgezogen ist. |
 | Der Treffpunkt hat noch keinen Leiter | **Eintragen** — etwa, wenn der Treffpunkt erst nach dem Besuch im Grundplan entstand. |
 | Die Gruppe trifft sich in dieser Woche nicht | Am Besuch eine andere Woche wählen. |
 | Der Besucher ist abwesend | Anderen Besucher wählen oder die Woche ändern. |
@@ -1377,7 +1379,7 @@ Darunter steht unter **Sofort gemeldet**, was ohne jede Einstellung gleich
 hinausgeht: eine **Absage** an die Admins und Planer; bei einem Hilfsdienst
 zusätzlich **Ersatz gesucht** an alle mit diesem Aufgabenbereich, die an dem
 Tag nicht abwesend sind; **Zuteilung zurückgezogen** an die Person, wenn du
-ihr einen Platz nimmst, für den sie schon zugesagt hatte; und **Trolley-Termin
+ihr einen Platz nimmst, von dem sie schon weiß (zugesagt oder gesendet); und **Trolley-Termin
 eingetragen, dazugekommen oder abgesagt** an den Partner – wird ein Trolley
 entfernt, an alle Eingetragenen (siehe [Trolleys](#trolleys)).
 

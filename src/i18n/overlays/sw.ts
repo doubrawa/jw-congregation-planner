@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "Kughairi",
   "erinAnPlaner": "kwa wasimamizi na wapangaji",
   "erinErsatzAn": "kwa migawo ya usaidizi tu: kwa wote wenye eneo hili la mgawo ambao hawajaweka siku hiyo kuwa ya kutokuwepo",
-  "erinEntzugAn": "kwa mhusika, ikiwa alikuwa amethibitisha tayari",
+  "erinEntzugAn": "kwa mhusika, ikiwa alikuwa amejulishwa mgawo au alikuwa amethibitisha tayari",
   "erinMailNur": "Programu hutuma barua pepe kwa ajili ya mialiko na kuingia tu.",
   "coWoche": "Ziara ya mwangalizi wa mzunguko",
   "memWoche": "Ukumbusho",

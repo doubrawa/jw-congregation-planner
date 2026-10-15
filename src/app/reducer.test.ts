@@ -21,7 +21,7 @@ import { LABEL_VORTRAG } from '../data/constants'
 import { displayName, isGuestRole, isNameless, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
 import { allePlaetze, platzKey } from '../data/plaetze'
 import { fsTaskKey, genFsWeek, neueRegel } from '../data/fs'
-import { deriveMyTasks, punktKey } from '../data/planning'
+import { deriveMyTasks, punktKey, sentKey } from '../data/planning'
 import { rechteVon } from '../data/rechte'
 import { itemMinutes } from '../data/meeting-edit'
 import { DE as t } from '../i18n/de'
@@ -1014,6 +1014,50 @@ describe('Anlass: Kreisaufseher-Woche', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+/*
+ * **Was ein Entzug nimmt, räumt der Reducer ab** (15.10.2026). Wem ein Platz
+ * gemeldet wurde, der weiß davon. Wird er ihm genommen, löscht die Function
+ * `send-plan` beim Entzug seinen Tagebuch-Eintrag — hier verschwindet er mit.
+ * Blieb er stehen, zählte „Plan senden" ihn bis zum nächsten Laden als schon
+ * gemeldet, und ein zweites Umteilen schickte ihm noch einmal „zurückgezogen"
+ * für einen Platz, von dem er gar nichts mehr wusste.
+ */
+describe('Entzug: der Reducer räumt ab', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 1, 10)) // vor der ersten Demo-Woche
+  })
+  afterEach(() => vi.useRealTimers())
+
+  /** Der erste Programmpunkt-Platz der ersten Woche, sein Inhaber und sein Tagebuch-Eintrag. */
+  function gemeldeterPlatz() {
+    const w0 = makeState().weeks[0]!
+    const sel = firstPartSlot(w0, 'mid')
+    const item = w0.mid.sections[sel.si]!.items[sel.ii] as PartItem
+    const key = punktKey(w0.start, 'mid', item.iid, sel.ni)
+    return { sel, key, eintrag: sentKey(key, item.names[0]!.name) }
+  }
+  const FREMD = sentKey('2026-09-07|we|part|i-anderer|0', 'Jemand Anders')
+
+  it('ein gemeldeter Platz, umgeteilt: sein Tagebuch-Eintrag geht mit — andere bleiben', () => {
+    const { sel, eintrag } = gemeldeterPlatz()
+    const s = makeState({ slotSel: sel, sentLog: { [eintrag]: '2026-08-30T10:00:00Z', [FREMD]: '2026-08-30T10:00:00Z' } })
+    const next = reducer(s, { type: 'assign', name: 'Neue Person', pid: 'neu-1' })
+    expect(next.sentLog[eintrag]).toBeUndefined()
+    expect(next.sentLog[FREMD]).toBeDefined()
+  })
+
+  it('wer abgesagt hat, bekommt keinen Entzug — sein Eintrag bleibt, wie in der Datenbank', () => {
+    const { sel, key, eintrag } = gemeldeterPlatz()
+    const s = makeState({
+      slotSel: sel,
+      confirmations: { [key]: 'verhindert' },
+      sentLog: { [eintrag]: '2026-08-30T10:00:00Z' },
+    })
+    expect(reducer(s, { type: 'assign', name: 'Neue Person', pid: 'neu-1' }).sentLog[eintrag]).toBeDefined()
   })
 })
 

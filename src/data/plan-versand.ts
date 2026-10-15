@@ -96,10 +96,7 @@ export function offeneMeldungen(
 ): OffeneWochenMeldung[] {
   const out: OffeneWochenMeldung[] = []
   const nimm = (key: string, name: string, aufgabe: () => MeldungsAufgabe): void => {
-    // Wer bestätigt oder abgesagt hat, weiß Bescheid. Und was im Tagebuch
-    // steht, ist hinaus.
-    if (confirmations[key]) return
-    if (sentLog[sentKey(key, name)]) return
+    if (weissBescheid(confirmations, sentLog, key, name)) return
     out.push({ key, name, aufgabe })
   }
 
@@ -133,6 +130,18 @@ export function offeneMeldungen(
 }
 
 /**
+ * **Weiß die Person von ihrem Platz?** Sie hat zugesagt oder abgesagt, oder er
+ * ist ihr gemeldet worden — das Versand-Tagebuch führt ihn unter Platz **und**
+ * Name, ein neuer Name auf demselben Platz weiß also noch nichts.
+ *
+ * Für „Plan senden" heißt das: nichts mehr zu melden. Für den Entzug: Sie muss
+ * erfahren, wenn der Platz ihr genommen wird (`entzogeneZuteilungen`).
+ */
+function weissBescheid(confirmations: ConfirmationMap, sentLog: SentLog, key: string, name: string): boolean {
+  return Boolean(confirmations[key]) || Boolean(sentLog[sentKey(key, name)])
+}
+
+/**
  * Die Zusammenkünfte dieser Woche, deren Tag vorbei ist (T77).
  *
  * Ohne Startdatum (Demo, Vorlagen) liegt die Woche nirgends im Kalender — dann
@@ -143,8 +152,8 @@ export function vergangeneZusammenkuenfte(week: Week, zeiten: MeetingTimes, heut
   return new Set(MEETING_TABS.filter((tab) => istVorbei(meetingDateMs(week, tab, zeiten), heute)))
 }
 
-/** Eine Zusage, die jemandem wieder genommen wurde. */
-export interface EntzogeneZusage {
+/** Eine Zuteilung, die jemandem wieder genommen wurde, der von ihr wusste. */
+export interface EntzogeneZuteilung {
   key: string
   /** Wer sie hatte — der Anzeigename, unter dem er auch das Konto findet. */
   name: string
@@ -162,17 +171,39 @@ export interface EntzogeneZusage {
   datum: string
 }
 
+/** Zwei Stände einer Woche und was es braucht, um sie zu vergleichen (`entzogeneZuteilungen`). */
+export interface WochenVergleich {
+  vorher: Week | undefined
+  nachher: Week | undefined
+  vorherFs?: readonly FsInstance[]
+  nachherFs?: readonly FsInstance[]
+  services: Service[]
+  zeiten: MeetingTimes
+  /** Wer zugesagt oder abgesagt hat. */
+  confirmations: ConfirmationMap
+  /** Wem was gemeldet wurde („Plan senden"). */
+  sentLog: SentLog
+  heute?: Date
+}
+
 /**
- * **Bestätigte** Zuteilungen, die zwischen zwei Ständen einer Woche
+ * Zuteilungen, **von denen jemand weiß**, die zwischen zwei Ständen einer Woche
  * verschwunden oder an jemand anderen gegangen sind.
  *
  * Das ist der eine Fall, der nicht auf den „Plan senden"-Knopf warten darf.
- * Wer zugesagt hat, bereitet vor: Er lernt seinen Teil, sucht die Schriftstelle
- * heraus, sagt zu Hause Bescheid. Wird ihm der Platz genommen und erfährt er es
- * erst beim nächsten Öffnen der App — oder gar nicht, weil an seiner Stelle
- * jemand anderes benachrichtigt wird —, übt er weiter für etwas, das ihm nicht
- * mehr gehört. Bisher passierte genau das: Das Umteilen verwarf seine
- * Bestätigung still (`dropConfirmations`), und keine Nachricht ging hinaus.
+ * Wer von seinem Platz weiß, bereitet vor: Er lernt seinen Teil, sucht die
+ * Schriftstelle heraus, sagt zu Hause Bescheid. Wird ihm der Platz genommen und
+ * erfährt er es erst beim nächsten Öffnen der App — oder gar nicht, weil an
+ * seiner Stelle jemand anderes benachrichtigt wird —, übt er weiter für etwas,
+ * das ihm nicht mehr gehört. Bis T99 passierte genau das: Das Umteilen verwarf
+ * seine Bestätigung still (`dropConfirmations`), und keine Nachricht ging
+ * hinaus.
+ *
+ * **Wer davon weiß** (`weissBescheid`): wer zugesagt hat, und seit dem
+ * 15.10.2026 auch, wem der Platz gemeldet wurde („Plan senden") — er kennt ihn,
+ * auch wenn er noch nicht geantwortet hat (Entscheid des Betreibers). Wer
+ * abgesagt hat, hat ihn selbst abgegeben und bekommt nichts. Vor dem Senden ist
+ * der Plan Entwurf: Der Planer darf umsortieren, ohne dass jemand etwas erfährt.
  *
  * Verglichen wird **die Person je Aufgaben-Schlüssel**, nicht der Slot. Wer
  * seinen Platz behält und nur eine andere Rolle bekommt, hat nichts verloren
@@ -191,30 +222,23 @@ export interface EntzogeneZusage {
  * schickte eine Kongress-Woche — in der planmäßig **alle** Zusammenkünfte
  * ausfallen — der halben Versammlung „Zuteilung zurückgezogen".
  *
- * Unbestätigte Zuteilungen bleiben außen vor: Sie sind Entwurf. Der Planer darf
- * umsortieren, solange niemand zugesagt hat.
- *
- * **Und Vergangenes auch** — dieselbe Regel wie beim „Plan senden". Wer die
+ * **Und Vergangenes nicht** — dieselbe Regel wie beim „Plan senden". Wer die
  * Woche von gestern nachträgt (wer wirklich am Mikrofon stand), nimmt niemandem
  * etwas, das er noch vorbereiten müsste. Eine Nachricht „Zuteilung
  * zurückgezogen" über einen Termin, der gewesen ist, erschreckt nur. Gemessen
  * wird am **alten** Stand: Es geht um den Termin, den die Person hatte.
  */
-export function entzogeneZusagen(
-  vorher: Week | undefined,
-  nachher: Week | undefined,
-  vorherFs: FsInstance[] | undefined,
-  nachherFs: FsInstance[] | undefined,
-  services: Service[],
-  zeiten: MeetingTimes,
-  confirmations: ConfirmationMap,
-  heute = new Date(),
-): EntzogeneZusage[] {
+export function entzogeneZuteilungen(v: WochenVergleich): EntzogeneZuteilung[] {
+  const { vorher, nachher, vorherFs, nachherFs, services, zeiten, heute = new Date() } = v
   if (!vorher) return []
-  // Gegen eine fehlende Map abgesichert: Diese Funktion läuft in der
+  // Gegen fehlende Maps abgesichert: Diese Funktion läuft auch in der
   // Nebeneffekt-Schicht (`persist.ts`), und ein Fehler dort risse das
   // **Speichern** mit. Lieber keine Nachricht als eine verlorene Woche.
-  const conf = confirmations ?? {}
+  const conf = v.confirmations ?? {}
+  const gemeldet = v.sentLog ?? {}
+  /** Erfährt es, wer den Platz verliert? Wer von ihm weiß — außer er hat selbst abgesagt. */
+  const betroffen = (key: string, name: string): boolean =>
+    conf[key] !== 'verhindert' && weissBescheid(conf, gemeldet, key, name)
   const kennung = vorher.start
 
   /** Wer den Platz vorher hatte — die Bezeichnung erst, wenn sie gebraucht wird. */
@@ -226,11 +250,10 @@ export function entzogeneZusagen(
   const alt = new Map<string, Vorher>()
   const vorbei = vergangeneZusammenkuenfte(vorher, zeiten, heute)
   eachAssignedSlot([vorher], services, zeiten, (slot, key, task) => {
-    // Unbestätigtes gar nicht erst aufnehmen — es fiele unten ohnehin heraus.
-    // Von gut 35 Plätzen sind ein bis drei bestätigt, und diese Funktion läuft
-    // bei jeder Wochenänderung; `fsRuleAdd` und `setAuxClass` setzen alle 52
-    // Wochen auf einmal neu.
-    if (conf[key] !== 'bestätigt') return
+    // Wovon niemand weiß, gar nicht erst aufnehmen — es fiele unten ohnehin
+    // heraus. Diese Funktion läuft bei jeder Wochenänderung; `fsRuleAdd` und
+    // `setAuxClass` setzen alle 52 Wochen auf einmal neu.
+    if (!betroffen(key, slot.name)) return
     const wo = taskKeyWeek(key)
     if (wo && vorbei.has(wo.tab)) return
     // `task()` bleibt ungerufen: Es baut den ganzen S-89-Bogen mit auf. Erst
@@ -247,7 +270,7 @@ export function entzogeneZusagen(
   for (const inst of vorherFs ?? []) {
     if (!inst.leader || inst.lext) continue
     const key = fsTaskKey(kennung, inst.id)
-    if (conf[key] !== 'bestätigt') continue
+    if (!betroffen(key, inst.leader)) continue
     if (fsTagVorbei(kennung, inst.wd, heute)) continue
     alt.set(key, {
       name: inst.leader,
@@ -278,13 +301,58 @@ export function entzogeneZusagen(
   }
   const fsLeer = (nachherFs ?? []).length === 0
 
-  const out: EntzogeneZusage[] = []
+  const out: EntzogeneZuteilung[] = []
   for (const [key, war] of alt) {
     if (!platzNochDa(nachher, key, fsLeer)) continue
     const jetzt = neu.get(key)
     if (jetzt && dieselbePerson(war, jetzt)) continue // unverändert
     const { label, datum } = war.beschreiben()
     out.push({ key, name: war.name, ...(war.pid ? { pid: war.pid } : {}), label, datum })
+  }
+  return out
+}
+
+/** Was `entzogeneAller` aus einem Stand liest — Felder des App-Zustands. */
+export interface EntzugsStand {
+  weeks: Week[]
+  fsWeeks: FsInstance[][]
+  services: Service[]
+  congregation: { times: MeetingTimes }
+  confirmations: ConfirmationMap
+  sentLog: SentLog
+}
+
+/**
+ * `entzogeneZuteilungen` über alle Wochen, die sich zwischen zwei Ständen
+ * geändert haben — dem Reducer zum Abräumen, `persist.ts` zum Benachrichtigen.
+ *
+ * Unberührte Wochen behalten ihre Referenz (darauf baut die ganze
+ * Persistenzschicht); ihr Vergleich kostet nichts. Gezählt wird am **alten**
+ * Stand: Seine Wochen, Zusagen und Meldungen sagen, wer was wusste. Neue Wochen
+ * (Import, hinten angehängt) hatten noch keinen Inhaber.
+ */
+export function entzogeneAller(
+  vorher: EntzugsStand,
+  nachher: Pick<EntzugsStand, 'weeks' | 'fsWeeks'>,
+  heute = new Date(),
+): EntzogeneZuteilung[] {
+  if (vorher.weeks === nachher.weeks && vorher.fsWeeks === nachher.fsWeeks) return []
+  const out: EntzogeneZuteilung[] = []
+  for (let wi = 0; wi < vorher.weeks.length; wi++) {
+    if (vorher.weeks[wi] === nachher.weeks[wi] && vorher.fsWeeks[wi] === nachher.fsWeeks[wi]) continue
+    out.push(
+      ...entzogeneZuteilungen({
+        vorher: vorher.weeks[wi],
+        nachher: nachher.weeks[wi],
+        vorherFs: vorher.fsWeeks[wi],
+        nachherFs: nachher.fsWeeks[wi],
+        services: vorher.services,
+        zeiten: vorher.congregation.times,
+        confirmations: vorher.confirmations,
+        sentLog: vorher.sentLog,
+        heute,
+      }),
+    )
   }
   return out
 }

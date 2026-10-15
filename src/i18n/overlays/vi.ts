@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "Từ chối",
   "erinAnPlaner": "đến quản trị viên và người lập kế hoạch",
   "erinErsatzAn": "chỉ với nhiệm vụ hỗ trợ: đến tất cả những ai có lĩnh vực nhiệm vụ này và không vắng mặt hôm đó",
-  "erinEntzugAn": "đến người đó, nếu họ đã xác nhận",
+  "erinEntzugAn": "đến người đó, nếu họ đã được báo về nhiệm vụ hoặc đã xác nhận",
   "erinMailNur": "Ứng dụng chỉ gửi email cho lời mời và khi đăng nhập.",
   "coWoche": "Cuộc viếng thăm của giám thị vòng quanh",
   "memWoche": "Lễ Tưởng Niệm",

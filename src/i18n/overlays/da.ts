@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "Afbud",
   "erinAnPlaner": "til administratorer og planlæggere",
   "erinErsatzAn": "kun ved hjælpeopgaver: til alle med dette opgaveområde, som ikke er fraværende den dag",
-  "erinEntzugAn": "til personen, hvis vedkommende allerede havde bekræftet",
+  "erinEntzugAn": "til personen, hvis opgaven allerede var meddelt vedkommende, eller vedkommende allerede havde bekræftet",
   "erinMailNur": "Appen sender kun e-mails med invitationer og ved login.",
   "coWoche": "Kredstilsynsmandens besøg",
   "memWoche": "Mindehøjtiden",

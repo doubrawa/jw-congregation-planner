@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "Annulation",
   "erinAnPlaner": "aux administrateurs et aux planificateurs",
   "erinErsatzAn": "uniquement pour les services auxiliaires\u00a0: à tous ceux qui ont ce domaine d’attribution et ne sont pas absents ce jour-là",
-  "erinEntzugAn": "à la personne, si elle avait déjà confirmé",
+  "erinEntzugAn": "à la personne, si l’attribution lui avait déjà été annoncée ou si elle avait déjà confirmé",
   "erinMailNur": "L’application n’envoie des e-mails que pour les invitations et la connexion.",
   "coWoche": "Visite du responsable de circonscription",
   "memWoche": "Mémorial",

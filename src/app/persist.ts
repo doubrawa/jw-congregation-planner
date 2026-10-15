@@ -6,7 +6,7 @@
  */
 
 import { fsTaskKeyWoche } from '../data/fs'
-import { type EntzogeneZusage, entzogeneZusagen } from '../data/plan-versand'
+import { entzogeneAller } from '../data/plan-versand'
 import {
   deleteAbsenceRow,
   deleteConfirmationRows,
@@ -1012,7 +1012,9 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   if (neu?.local && neu !== prev.notifs[0]) notifyPlanners(neu.type, neu.title, neu.text, neu.taskId)
 
   /*
-   * **Wem eine bestätigte Zusage genommen wurde, erfährt es sofort** (T99).
+   * **Wem ein Platz genommen wurde, von dem er wusste, erfährt es sofort**
+   * (T99; seit dem 15.10.2026 nicht nur, wer zugesagt hat, sondern auch, wem er
+   * gemeldet wurde — `entzogeneZuteilungen`).
    *
    * Nach demselben Grundsatz wie oben an **einer** Stelle für alle Wege:
    * einzeln zuteilen, umteilen, leeren, Auto-Zuteilung, Treffpunkt-Leiter,
@@ -1022,42 +1024,23 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
    * hinaus, und der Betroffene übt weiter für einen Platz, den er nicht mehr
    * hat.
    *
-   * Verglichen wird gegen `prev.confirmations`: Der Reducer hat den Eintrag zu
-   * diesem Zeitpunkt schon verworfen (`dropConfirmations`), im vorigen Stand
-   * steht er noch.
+   * Gezählt wird am vorigen Stand: Der Reducer hat Zusage und Tagebuch-Eintrag
+   * zu diesem Zeitpunkt schon abgeräumt (`ohneEntzogene`), dort stehen sie noch.
    *
    * `hydrate` ist ausgenommen, und nur das: Dort wird der ganze Bestand
    * ersetzt, und ein Neuladen nach einem Schreibkonflikt brächte sonst Wochen
    * voller vermeintlicher Entzüge hervor.
+   *
+   * **Erst sammeln, dann einmal schicken.** Je Entzug ein eigener Aufruf hieß:
+   * Die Function las für jeden davon aufs Neue alle Mitglieder, alle Personen
+   * und alle Push-Abos der Versammlung. Eine Auto-Zuteilung fasst aber eine
+   * ganze Zusammenkunft an, und `setAuxClass` oder `fsRuleAdd` fassen alle 52
+   * Wochen auf einmal an — aus einer Handlung wurden Dutzende Aufrufe.
+   * Gesammelt ist es einer, und wer zwei Plätze verliert, bekommt eine
+   * Nachricht statt zweier.
    */
   if (action.type !== 'hydrate') {
-    /*
-     * **Erst sammeln, dann einmal schicken.** Je Entzug ein eigener Aufruf
-     * hieß: Die Function las für jeden davon aufs Neue alle Mitglieder, alle
-     * Personen und alle Push-Abos der Versammlung. Eine Auto-Zuteilung fasst
-     * aber eine ganze Zusammenkunft an, und `setAuxClass` oder `fsRuleAdd`
-     * fassen alle 52 Wochen auf einmal an — aus einer Handlung wurden Dutzende
-     * Aufrufe. Gesammelt ist es einer, und wer zwei Plätze verliert, bekommt
-     * eine Nachricht statt zweier.
-     */
-    const entzogen: EntzogeneZusage[] = []
-    if (prev.weeks !== next.weeks || prev.fsWeeks !== next.fsWeeks) {
-      for (let wi = 0; wi < prev.weeks.length; wi++) {
-        // Unberührte Wochen behalten ihre Referenz — der Vergleich kostet nichts.
-        if (prev.weeks[wi] === next.weeks[wi] && prev.fsWeeks[wi] === next.fsWeeks[wi]) continue
-        entzogen.push(
-          ...entzogeneZusagen(
-            prev.weeks[wi],
-            next.weeks[wi],
-            prev.fsWeeks[wi],
-            next.fsWeeks[wi],
-            prev.services,
-            prev.congregation.times,
-            prev.confirmations,
-          ),
-        )
-      }
-    }
+    const entzogen = entzogeneAller(prev, next)
     // Der Regelfall: nichts verloren, nichts zu schicken.
     if (entzogen.length > 0) sendPlanEntzug(entzogen)
   }

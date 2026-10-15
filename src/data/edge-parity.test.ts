@@ -26,7 +26,7 @@ import { displayName, istAusgefallen, rolleMitHerkunft, zuteilungsLabel } from '
 import { deutschesDatum, meetingDateText, meetingOffset, meetingTime, versatzAbMontag } from './meeting-dates'
 import { isGuestRole } from './helpers'
 import { sentKey } from './planning'
-import { entzogeneZusagen, offeneMeldungen } from './plan-versand'
+import { entzogeneZuteilungen, offeneMeldungen } from './plan-versand'
 import { emptyQualifications } from './helpers'
 import type { Abweichung, FsInstance, Meeting, Person, Section, Service, Week } from './types'
 import { STANDARD_ZEITEN } from './vorgaben'
@@ -475,16 +475,17 @@ describe('Treffpunkt-Schlüssel: Client und Function treffen dieselbe Menge', ()
   it('dieselbe Bezeichnung und derselbe Termin auf beiden Seiten', () => {
     const nachher = { ...inst, leader: 'A. Anders', lpid: 'p2' }
     const key = `fs|${MONTAG}|r1`
-    const client = entzogeneZusagen(
-      woche,
-      woche,
-      [inst as FsInstance],
-      [nachher as FsInstance],
-      [],
-      STANDARD_ZEITEN,
-      { [key]: 'bestätigt' },
-      VOR_DER_WOCHE,
-    )
+    const client = entzogeneZuteilungen({
+      vorher: woche,
+      nachher: woche,
+      vorherFs: [inst as FsInstance],
+      nachherFs: [nachher as FsInstance],
+      services: [],
+      zeiten: STANDARD_ZEITEN,
+      confirmations: { [key]: 'bestätigt' },
+      sentLog: {},
+      heute: VOR_DER_WOCHE,
+    })
     const server = edgeFsPending(MONTAG, [inst as never], new Map())
     expect(client).toHaveLength(1)
     expect(server).toHaveLength(1)

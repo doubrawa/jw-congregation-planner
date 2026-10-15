@@ -419,7 +419,7 @@ export default {
   "erinAbsage": "Cancellation",
   "erinAnPlaner": "to admins and planners",
   "erinErsatzAn": "support duties only: to everyone with this assignment area who is not absent that day",
-  "erinEntzugAn": "to the person, if they had already confirmed",
+  "erinEntzugAn": "to the person, if the assignment had already been announced to them or they had confirmed",
   "erinMailNur": "The app only sends emails for invitations and for signing in.",
   "coWoche": "Visit of the circuit overseer",
   "memWoche": "Memorial",

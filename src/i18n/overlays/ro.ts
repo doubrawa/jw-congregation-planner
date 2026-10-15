@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "Anulare",
   "erinAnPlaner": "administratorilor și planificatorilor",
   "erinErsatzAn": "doar la sarcinile de sprijin: tuturor celor cu acest domeniu care nu lipsesc în ziua respectivă",
-  "erinEntzugAn": "persoanei, dacă a confirmat deja",
+  "erinEntzugAn": "persoanei, dacă sarcina i-a fost deja comunicată sau a confirmat deja",
   "erinMailNur": "Aplicația trimite e-mailuri doar pentru invitații și pentru autentificare.",
   "coWoche": "Vizita supraveghetorului de circumscripție",
   "memWoche": "Comemorarea",

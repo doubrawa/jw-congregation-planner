@@ -287,8 +287,8 @@ Weitere Nachrichten können dich erreichen:
   dich auch selbst erinnern. Mehr als eine Erinnerung am Tag bekommst du nicht.
   Betrifft sie nur eine Aufgabe, kannst du direkt in der Mitteilung bestätigen.
 - **„Zuteilung zurückgezogen"** – der Koordinator hat dir eine Aufgabe wieder
-  genommen, die du **schon bestätigt** hattest. Dann brauchst du dich nicht
-  weiter vorzubereiten.
+  genommen, von der du **schon wusstest** – du hattest sie bestätigt, oder sie
+  war dir mitgeteilt worden. Dann brauchst du dich nicht weiter vorzubereiten.
 - **„Für den Trolley eingetragen"**, **„Partner gefunden"** und die übrigen
   Mitteilungen zu deinen Trolley-Terminen (siehe [Trolleys](#trolleys)).
 

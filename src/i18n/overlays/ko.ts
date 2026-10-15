@@ -300,7 +300,7 @@ export default {
   "erinAbsage": "불참 통보",
   "erinAnPlaner": "관리자와 계획 담당자에게",
   "erinErsatzAn": "보조 임명만 해당: 이 담당 분야가 있고 그날 결석하지 않는 모든 사람에게",
-  "erinEntzugAn": "이미 확인한 경우 본인에게",
+  "erinEntzugAn": "이미 전달받았거나 확인한 경우 본인에게",
   "erinMailNur": "앱은 초대와 로그인 때만 이메일을 보냅니다.",
   "coWoche": "순회 감독자 방문",
   "memWoche": "기념식",
