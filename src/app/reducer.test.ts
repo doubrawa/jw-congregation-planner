@@ -415,6 +415,21 @@ describe('einfache UI-Setter', () => {
     expect(reducer(nach, { type: 'mitteilungGelesen', id: 'weg' })).toBe(nach)
   })
 
+  /*
+   * **Gelesen bleibt gelesen** (15.10.2026). Beim Öffnen der Mitteilungen
+   * läuft eine Abfrage; wer währenddessen „Alle gelesen" tippt, bekam mit
+   * ihrer Antwort — abgefragt vor dem eigenen Schreiben — alles wieder als
+   * „Neu" zurück. Die Marke kennt nur eine Richtung.
+   */
+  it('setNotifs: eine Antwort von vor dem eigenen „gelesen" macht nichts wieder ungelesen', () => {
+    const zeile = (id: string, read: boolean) => ({ id, type: 'zuteilung' as const, title: 'Neue Zuteilung', text: '', at: '', read })
+    const gelesen = reducer(makeState({ notifs: [zeile('a', false), zeile('b', false)] }), { type: 'markAllRead' })
+    const nach = reducer(gelesen, { type: 'setNotifs', notifs: [zeile('a', false), zeile('b', false), zeile('c', false)] })
+    expect(nach.notifs.map((n) => [n.id, n.read])).toEqual([['a', true], ['b', true], ['c', false]])
+    // Was der Server schon gelesen nennt, bleibt es ohnehin.
+    expect(reducer(makeState({ notifs: [] }), { type: 'setNotifs', notifs: [zeile('d', true)] }).notifs[0]!.read).toBe(true)
+  })
+
   it('showToast / hideToast (id steigt monoton)', () => {
     const t1 = reducer(makeState(), { type: 'showToast', text: 'Hallo' })
     expect(t1.toast).toMatchObject({ text: 'Hallo', id: 1 })
@@ -1750,6 +1765,15 @@ describe('hydrate / setDataStatus', () => {
       payload: { ...payload, fsWeeks: mitLeiter(person('Jonas Berger')), confirmations: { [key]: 'bestätigt' } },
     })
     expect(next.confirmations).toEqual({ [key]: 'bestätigt' })
+  })
+
+  it('ein stilles Nachladen macht eine eben gelesene Mitteilung nicht wieder neu', () => {
+    // Die Abfrage lief schon, als die Mitteilung angetippt wurde (Push-Klick,
+    // Mitteilungen mit Neuem): Ihre Antwort kennt das „gelesen" noch nicht.
+    const zeile = { id: 'n1', type: 'zuteilung' as const, title: 'Neue Zuteilung', text: '', at: '', read: false }
+    const vorher = reducer(makeState({ notifs: [zeile] }), { type: 'mitteilungGelesen', id: 'n1' })
+    const next = reducer(vorher, { type: 'hydrate', payload: { ...payload, notifications: [zeile] } })
+    expect(next.notifs[0]!.read).toBe(true)
   })
 
   it('übernimmt die Nutzdaten, setzt ready und Woche 0', () => {

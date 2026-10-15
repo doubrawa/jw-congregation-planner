@@ -141,6 +141,23 @@ function makeNotif(
   return { id: crypto.randomUUID(), type, title, text, at: new Date().toISOString(), read: false, taskId, local: true }
 }
 
+/**
+ * **Gelesen bleibt gelesen.** Eine geladene Liste kann abgefragt worden sein,
+ * bevor das eigene „gelesen" in der Datenbank stand: Die Abfrage läuft, man
+ * tippt die Mitteilung oder „Alle gelesen" an, die Antwort kommt — und die
+ * Mitteilung stand wieder unter „Neu", der Punkt an der Glocke kam zurück. Bis
+ * zum 15.10.2026 beim Öffnen der Mitteilungen (`setNotifs`) wie bei jedem
+ * stillen Nachladen (`hydrate`).
+ *
+ * Die Marke kennt nur eine Richtung — „ungelesen" gibt es nicht —, also gewinnt
+ * immer das Gelesen, gleich, wer es zuerst weiß.
+ */
+function gelesenBehalten(neu: Notification[], bisher: readonly Notification[]): Notification[] {
+  const gelesen = new Set(bisher.filter((n) => n.read).map((n) => n.id))
+  if (gelesen.size === 0) return neu
+  return neu.map((n) => (!n.read && gelesen.has(n.id) ? { ...n, read: true } : n))
+}
+
 /** Neue Mitteilung vorne anfügen. */
 function pushNotif(
   notifs: Notification[],
@@ -679,7 +696,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'setFontScale':
       return { ...state, fontScale: action.scale }
     case 'setNotifs':
-      return { ...state, notifs: action.notifs }
+      return { ...state, notifs: gelesenBehalten(action.notifs, state.notifs) }
     case 'markAllRead':
       return { ...state, notifs: state.notifs.map((n) => ({ ...n, read: true })) }
     case 'mitteilungGelesen':
@@ -1641,7 +1658,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         plaene: p.plaene ?? [],
         planEintraege: p.planEintraege ?? [],
         absences: p.absences,
-        notifs: p.notifications,
+        notifs: gelesenBehalten(p.notifications, state.notifs),
         confirmations: p.confirmations,
         // Aus einer alten Momentaufnahme (lib/snapshot.ts) fehlt das Feld — sie
         // wurde geschrieben, bevor es das Tagebuch gab.

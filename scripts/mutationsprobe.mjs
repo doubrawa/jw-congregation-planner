@@ -1771,6 +1771,20 @@ export const KATALOG = [
     ersetzen: '          gruppe\n',
   },
   {
+    id: 'gelesen-bleibt-beim-oeffnen',
+    datei: 'src/app/reducer.ts',
+    regel: 'Eine Antwort, abgefragt vor dem eigenen gelesen, macht beim Öffnen der Mitteilungen nichts wieder ungelesen.',
+    suchen: '      return { ...state, notifs: gelesenBehalten(action.notifs, state.notifs) }\n',
+    ersetzen: '      return { ...state, notifs: action.notifs }\n',
+  },
+  {
+    id: 'gelesen-bleibt-beim-nachladen',
+    datei: 'src/app/reducer.ts',
+    regel: 'Ein stilles Nachladen macht eine eben gelesene Mitteilung nicht wieder neu.',
+    suchen: '        notifs: gelesenBehalten(p.notifications, state.notifs),\n',
+    ersetzen: '        notifs: p.notifications,\n',
+  },
+  {
     id: 'start-ort-uebersetzt',
     datei: 'src/dashboard/DashboardScreen.tsx',
     regel: 'Auf dem Start steht der Ort eines Treffpunkts in der Sprache des Lesers — wie im Programm.',

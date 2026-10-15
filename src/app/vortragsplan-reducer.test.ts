@@ -116,7 +116,10 @@ describe('Wege ohne eigene Aktion', () => {
 
   it('eine Momentaufnahme von vor T122 lädt mit leerer Liste', () => {
     const { vortraege: _weg, ...rest } = zustand({ vortraege: [vorgemerkt] })
-    const next = reducer(zustand(), { type: 'hydrate', payload: rest as unknown as HydratePayload })
+    // Der Zustand nennt die Mitteilungen `notifs`, die Ladung `notifications` —
+    // die trägt jede Ladung, auch jede Momentaufnahme (seit Juli 2026).
+    const payload = { ...rest, notifications: [] } as unknown as HydratePayload
+    const next = reducer(zustand(), { type: 'hydrate', payload })
     expect(next.vortraege).toEqual([])
   })
 })
