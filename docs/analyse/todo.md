@@ -6763,12 +6763,15 @@ Punkten, ihre Karten und der Kopf des Plans brechen um, statt abzuschneiden
 neue Ausgabe des Arbeitshefts prüft `node scripts/heft-pruefen.mjs en`
 (`4f814f5c`, import-week v49). **Offen beim Betreiber:** wie zuvor die
 Mitgliedsrechte-Probe, `INVITE_FROM` und „Allow new users to sign up" aus, die
-WebAPK am Handy aktualisieren. Offen ohne Entscheidung: (D) die Bremse gegen
-Code-Raten liest den ersten Eintrag von `x-forwarded-for` — ungemessen, weil
-die Probe Fehlversuche in die echte Datenbank schriebe. Nachgeprüft und kein
-Befund (E): Holen zwei Planer dieselbe Woche, scheitert beim zweiten das
-Speichern an `unique(congregation_id, start)`, er liest „Änderung konnte nicht
-gespeichert werden — bitte neu laden", und die App lädt still neu.
+WebAPK am Handy aktualisieren. Nachgeprüft und kein Befund: (D) Die Bremse
+gegen Code-Raten liest den ersten Eintrag von `x-forwarded-for` — gemessen mit
+einer Wegwerf-Function (danach gelöscht, nichts in der Datenbank): Die
+Plattform setzt die Kette selbst und verwirft, was der Aufrufer mitschickt; ein
+selbst gesetztes `cf-connecting-ip` weist Cloudflare ab. Steht jetzt an
+`absenderVon` (anmelden v8). (E) Holen zwei Planer dieselbe Woche, scheitert
+beim zweiten das Speichern an `unique(congregation_id, start)`, er liest
+„Änderung konnte nicht gespeichert werden — bitte neu laden", und die App lädt
+still neu.
 
 **Stand am 15. Oktober 2026:** Phase 8, das Anmelden per Link, ist gebaut und live
 (`05ab564`, `ddf4069`, `c3d3926` und die Skripte danach). Ein Kennwort gibt es

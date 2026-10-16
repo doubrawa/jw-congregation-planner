@@ -72,6 +72,14 @@ interface PersonZeile {
   zuteiler_vorgemerkt?: boolean
 }
 
+/**
+ * Wer anfragt — für die Bremse je Absender. Der erste Eintrag von
+ * `x-forwarded-for` ist die echte Adresse: Gemessen am 16.10.2026 mit einer
+ * Wegwerf-Function, setzt die Plattform die Kette selbst (`<Aufrufer>,<Aufrufer>,
+ * <intern>`) und verwirft, was der Aufrufer dort mitschickt; ein selbst gesetztes
+ * `cf-connecting-ip` weist schon Cloudflare ab (403). Fälschen lässt sich der
+ * Absender hier also nicht.
+ */
 function absenderVon(req: Request): string {
   return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('cf-connecting-ip') || 'unbekannt'
 }
