@@ -254,4 +254,75 @@ describe('Ein Leerlauf schreibt keine Woche', () => {
     expect(geschrieben, 'keine einzige Woche geschrieben').toBeGreaterThan(3)
     expect(verstoesse, verstoesse.join(' · ')).toEqual([])
   })
+
+  it('ebenso jede geschriebene Treffpunkt-Woche', () => {
+    // Seit dem 16.10.2026 liest auch hier der Block unter dem Switch ab, was
+    // sich geändert hat (`geaenderteTreffpunktWochenSpeichern`).
+    const basis = reducer(demoZustand(), { type: 'hydrate', payload: ladung() })
+    let s = basis
+    let geschrieben = 0
+    const verstoesse: string[] = []
+    const saveFsWeek = data.saveFsWeek as unknown as ReturnType<typeof vi.fn>
+    const folgeMitTreffpunkten: AppAction[] = [
+      ...folge(basis),
+      { type: 'openSlot', sel: { kind: 'fs', wi: 0, instId: basis.fsWeeks[0]![0]!.id, label: 'x', priv: null, groups: false } },
+      { type: 'assign', name: `${basis.persons[1]!.fn} ${basis.persons[1]!.ln}`, pid: basis.persons[1]!.id },
+      { type: 'fsAutoAssign', onlyGroup: null },
+      { type: 'fsInstRemove', wi: 0, id: 'gibt-es-nicht' },
+    ]
+    for (const action of folgeMitTreffpunkten) {
+      for (const lauf of [1, 2]) {
+        saveFsWeek.mockClear()
+        const next = reducer(s, action)
+        persist(s, next, action)
+        for (const aufruf of saveFsWeek.mock.calls) {
+          const [, woche, insts] = aufruf as [string, string, unknown]
+          geschrieben++
+          const wi = s.weeks.findIndex((w) => w.start === woche)
+          if (wi >= 0 && s.fsWeeks[wi] === insts) verstoesse.push(`${action.type} (${lauf}. Lauf) → ${woche} unverändert`)
+        }
+        s = next
+      }
+    }
+    expect(geschrieben, 'keine einzige Treffpunkt-Woche geschrieben').toBeGreaterThan(0)
+    expect(verstoesse, verstoesse.join(' · ')).toEqual([])
+  })
+})
+
+/**
+ * **Jede geänderte Treffpunkt-Woche geht hinaus — abgelesen, nicht aufgezählt.**
+ *
+ * Bis zum 16.10.2026 schrieb jede Aktion ihre Treffpunkt-Woche selbst, in
+ * ihrem `case` und teils über einen festen Index. Eine neue Aktion, die
+ * Treffpunkte änderte und dort fehlte, verlor ihre Änderung beim nächsten
+ * Laden. Geprüft wird deshalb mit einer Aktion, die selbst nichts mit
+ * Treffpunkten zu tun hat: Was sich geändert hat, geht trotzdem hinaus.
+ */
+describe('Eine geänderte Treffpunkt-Woche braucht keinen eigenen Fall', () => {
+  beforeEach(() => {
+    for (const [, fn] of schreiber()) fn.mockClear()
+  })
+  afterEach(() => vi.clearAllMocks())
+
+  function mitGeaenderterWoche(): { vorher: AppState; nachher: AppState } {
+    const vorher = reducer(demoZustand(), { type: 'hydrate', payload: ladung() })
+    const erste = vorher.fsWeeks[0]!
+    const geaendert = [{ ...erste[0]!, place: 'Anderswo' }, ...erste.slice(1)]
+    return { vorher, nachher: { ...vorher, fsWeeks: [geaendert, ...vorher.fsWeeks.slice(1)] } }
+  }
+
+  it('eine Aktion ohne Treffpunkt-Fall schreibt die Woche, die sich geändert hat — und nur sie', () => {
+    const { vorher, nachher } = mitGeaenderterWoche()
+    persist(vorher, nachher, { type: 'toggleReminderRepeat' })
+    expect(data.saveFsWeek).toHaveBeenCalledTimes(1)
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', vorher.weeks[0]!.start, nachher.fsWeeks[0])
+  })
+
+  it('was eine Function schreibt oder was geladen wird, geht nicht noch einmal hinaus', () => {
+    const { vorher, nachher } = mitGeaenderterWoche()
+    persist(vorher, nachher, { type: 'platzUebernehmen', key: 'x' })
+    persist(vorher, nachher, { type: 'takeSubstitute', key: 'x' })
+    persist(vorher, nachher, { type: 'hydrate', payload: ladung() })
+    expect(data.saveFsWeek).not.toHaveBeenCalled()
+  })
 })

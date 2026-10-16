@@ -929,7 +929,11 @@ describe('Index außerhalb des Fensters', () => {
 
   it('assign auf einen Treffpunkt, den es nicht gibt, schreibt nichts', () => {
     const sel = { kind: 'fs', wi: WEIT_DRAUSSEN, instId: 'x', label: '', priv: null, groups: false } as const
-    persist(st({ slotSel: sel }), st({ slotSel: sel }), { type: 'assign', name: 'A' })
+    // Geteilt wie oben: Seit dem 16.10.2026 schreibt der Block unter dem Switch
+    // jede Treffpunkt-Woche, deren Referenz sich geändert hat.
+    const weeks = buildDemoWeeks()
+    const fsWeeks = buildDemoFsWeeks()
+    persist(st({ weeks, fsWeeks, slotSel: sel }), st({ weeks, fsWeeks, slotSel: sel }), { type: 'assign', name: 'A' })
     expect(data.saveFsWeek).not.toHaveBeenCalled()
   })
 
@@ -940,7 +944,11 @@ describe('Index außerhalb des Fensters', () => {
   })
 
   it('fsInstUpdate auf eine Woche, die es nicht gibt, schreibt nichts', () => {
-    persist(st(), st(), { type: 'fsInstUpdate', wi: WEIT_DRAUSSEN, id: 'x', patch: {} })
+    const weeks = buildDemoWeeks()
+    const fsWeeks = buildDemoFsWeeks()
+    persist(st({ weeks, fsWeeks }), st({ weeks, fsWeeks }), { type: 'fsInstUpdate', wi: WEIT_DRAUSSEN, id: 'x', patch: {} })
+    // Gebündelt: erst das Verlassen der Ansicht schreibt, was aussteht.
+    persist(st({ weeks, fsWeeks }), st({ weeks, fsWeeks }), { type: 'navigate', screen: 'start' })
     expect(data.saveFsWeek).not.toHaveBeenCalled()
   })
 
@@ -2077,7 +2085,8 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
    * `weeks`: Sie haben seit dem Umbau einen allgemeinen Schreibweg — der Block
    * unter dem Switch schreibt jede Woche, deren Referenz sich geändert hat,
    * gleich welche Aktion sie angefasst hat. Dafür wacht die Probe darunter über
-   * die Ausnahmen.
+   * die Ausnahmen. `fsWeeks` ebenso, seit dem 16.10.2026: Bis dahin schrieb
+   * jede Aktion ihre Treffpunkt-Woche selbst.
    *
    * `notifications` (im Zustand `notifs`) aus demselben Grund: Eine hier
    * entstandene Mitteilung geht am `local`-Kennzeichen hinaus, nicht an der
@@ -2096,6 +2105,7 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
     planner: 'Recht des eigenen Kontos — gelesen, nie hier gesetzt',
     personId: 'Zuordnung des eigenen Kontos — gelesen, nie hier gesetzt',
     weeks: 'allgemeiner Schreibweg unter dem Switch',
+    fsWeeks: 'allgemeiner Schreibweg unter dem Switch (seit dem 16.10.2026)',
     notifications: 'geht am local-Kennzeichen hinaus',
     confirmations: 'Abräumen allgemein, Setzen eigene Probe darunter',
     sentLog: 'schreibt nur die Edge Function send-plan',
@@ -2120,6 +2130,7 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
   it('der Ladeumfang ist gelesen, und jede Ausnahme gibt es dort', () => {
     expect(DAUERHAFT).toEqual(expect.arrayContaining(['persons', 'fsRules', 'gruppenbesuche', 'trolleys', 'trolleyTermine']))
     expect(DAUERHAFT).not.toContain('weeks')
+    expect(DAUERHAFT).not.toContain('fsWeeks')
     const geladen = (/export interface HydratePayload \{([\s\S]*?)\n\}/.exec(roh(CONTEXT))?.[1] ?? '')
     const tot = Object.keys(NICHT_JE_FALL).filter((feld) => !new RegExp(`^\\s+${feld}\\??:`, 'm').test(geladen))
     expect(tot, 'Ausnahme ohne Feld im Ladeumfang').toEqual([])

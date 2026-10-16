@@ -24,8 +24,12 @@ const WORTZEICHEN = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456
  * ihren eigenen `case` in `persist.ts` verloren — sie schreiben `{ ...state,
  * weeks }` und galten damit als Aktionen, die nichts ändern.
  *
- * Nicht zählen: Zugriffe (`state.weeks`), verwandte Namen (`fsWeeks`) und
- * lokale Variablen (`const weeks = …`, `return weeks`).
+ * Nicht zählen: Zugriffe (`state.weeks`), verwandte Namen (`fsWeeks`), lokale
+ * Variablen (`const weeks = …`, `return weeks`) und das bloße Durchreichen
+ * `fsRules: state.fsRules` — als Argument (`neueWocheEinordnen(w, { fsRules:
+ * state.fsRules })`) oder im Rückgabewert: Der Wert ist dann der alte. Bis zum
+ * 16.10.2026 zählte es, und `addImportedWeek` galt als Fall, der Personen und
+ * Grundplan ändert.
  */
 export function setztFeld(text: string, feld: string): boolean {
   for (let i = text.indexOf(feld); i >= 0; i = text.indexOf(feld, i + 1)) {
@@ -33,7 +37,14 @@ export function setztFeld(text: string, feld: string): boolean {
     // (`state.weeks`).
     if (i > 0 && WORTZEICHEN.includes(text[i - 1]!)) continue
     const rest = text.slice(i + feld.length)
-    if (rest.startsWith(':')) return true
+    if (rest.startsWith(':')) {
+      const wert = rest.slice(1).trimStart()
+      const alt = `state.${feld}`
+      // Endet der Wert gleich danach (Komma, Klammer), ist es der alte. Folgt
+      // etwas — Zugriff, Aufruf, Index, `? :` —, entsteht ein neuer.
+      if (wert.startsWith(alt) && /^\s*([,})]|$)/.test(wert.slice(alt.length))) continue
+      return true
+    }
     // Kurzform: `{ …, weeks }` oder `{ …, weeks, … }` — davor eine öffnende
     // Klammer oder ein Komma, danach ein Komma oder die schließende Klammer.
     const danach = rest.trimStart()[0]

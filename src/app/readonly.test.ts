@@ -113,16 +113,17 @@ describe('Was nichts schreibt, darf offline laufen', () => {
   }
 
   /**
-   * Aktionen, deren Reducer-Fall eine Woche setzt.
+   * Aktionen, deren Reducer-Fall eine Woche oder eine Treffpunkt-Woche setzt.
    *
    * Sie brauchen in `persist.ts` **keinen** eigenen Fall mehr: Der Block unter
-   * dem Switch schreibt jede Woche, deren Referenz sich geändert hat. Sie
-   * schreiben trotzdem — und dürfen deshalb offline nicht laufen.
+   * dem Switch schreibt jede Woche, deren Referenz sich geändert hat — seit dem
+   * 16.10.2026 auch jede Treffpunkt-Woche. Sie schreiben trotzdem — und dürfen
+   * deshalb offline nicht laufen.
    */
   const wochenSchreiber = (): Set<string> =>
     new Set(
       reducerFaelle(roh(REDUCER))
-        .filter(([, rumpf]) => setztFeld(rumpf, 'weeks'))
+        .filter(([, rumpf]) => setztFeld(rumpf, 'weeks') || setztFeld(rumpf, 'fsWeeks'))
         .map(([name]) => name),
     )
 

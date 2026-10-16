@@ -33,6 +33,17 @@ describe('setztFeld', () => {
     expect(setztFeld('if (weeks === state.weeks) return state', 'weeks')).toBe(false)
     expect(setztFeld('for (const w of weeks) zaehle(w)', 'weeks')).toBe(false)
   })
+
+  it('bloßes Durchreichen setzt nichts — ein neuer Wert daraus schon', () => {
+    // So reicht `addImportedWeek` den Grundplan an `neueWocheEinordnen` weiter
+    // (16.10.2026): gelesen, nicht gesetzt.
+    expect(setztFeld('neueWocheEinordnen(w, { fsRules: state.fsRules, persons: state.persons })', 'fsRules')).toBe(false)
+    expect(setztFeld('return { ...state, fsRules: state.fsRules }', 'fsRules')).toBe(false)
+    expect(setztFeld('return { ...state, fsRules: state.fsRules.filter(behalten) }', 'fsRules')).toBe(true)
+    expect(setztFeld('return { ...state, fsRules: state.fsRulesNeu }', 'fsRules')).toBe(true)
+    expect(setztFeld('return { ...state, weeks: state.weeks[0] ? neu : alt }', 'weeks')).toBe(true)
+    expect(setztFeld('return { ...state, weeks: state.weeks ? neu : alt }', 'weeks')).toBe(true)
+  })
 })
 
 describe('reducerFaelle', () => {
