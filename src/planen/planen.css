@@ -613,9 +613,11 @@
 }
 
 .sheet-empty-label {
-  font-size: 0.78rem;
+  /* Bis zum 16.10.2026 `0.78rem` und `--text-weak` — die Schrift wuchs nicht
+     mit dem Regler, und das Token gab es nirgends. */
+  font-size: calc(12.5px * var(--fs));
   letter-spacing: 0.08em;
-  color: var(--text-weak);
+  color: var(--text3);
 }
 
 .sheet-empty-action {
@@ -630,7 +632,7 @@
 }
 
 .sheet-empty-action:hover {
-  background: var(--surface-2);
+  background: var(--schwebe);
 }
 
 /* ---- Sonderwoche: Verlegung, Ausfall, Grund (T30) ------------------------- */

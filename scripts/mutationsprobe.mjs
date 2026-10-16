@@ -387,6 +387,13 @@ export const KATALOG = [
     ersetzen: '    (n) => n,\n',
   },
   {
+    id: 'css-token-gesetzt',
+    datei: 'src/planen/planen.css',
+    regel: 'Das CSS liest nur Tokens, die es gibt — ein unbekanntes fällt still auf den Ausgangswert zurück.',
+    suchen: '  letter-spacing: 0.08em;\n  color: var(--text3);\n}\n',
+    ersetzen: '  letter-spacing: 0.08em;\n  color: var(--text-weak);\n}\n',
+  },
+  {
     id: 'zetteldruck-nur-eingehaengt',
     datei: 'src/personen/useZettelDruck.tsx',
     regel: 'Ist die Stelle beim Warten verschwunden, wird nicht gedruckt — sonst bliebe das Druck-Kennzeichen stehen.',
@@ -1144,9 +1151,10 @@ export const KATALOG = [
     datei: 'src/data/rechte.ts',
     // Seit dem 4.10.2026 dieselbe Zeile für Planer und Gruppenaufseher.
     regel: 'Planer und Gruppenaufseher sehen Planen, aber nicht Personen.',
-    // Die Mutation nimmt den Abzug weg und gibt ihnen die Personen mit dazu.
-    suchen: "  const ohneVerwaltung = ALLE.filter((s) => s !== 'personen' && s !== 'einstellungen')",
-    ersetzen: "  const ohneVerwaltung = ALLE.filter((s) => s !== 'einstellungen')",
+    // Die Mutation öffnet die Personen für den, der Planen sieht.
+    // Seit dem 16.10.2026 steht der Zugang je Bildschirm (`ZUGANG`).
+    suchen: "  personen: 'admin',\n",
+    ersetzen: "  personen: 'gruppe',\n",
   },
   {
     id: 'nav-gruppenaufseher-ohne-einstellungen',
@@ -1154,16 +1162,24 @@ export const KATALOG = [
     // Bis T120 bekam er sie für den Grundplan seiner Gruppe; der steht seitdem
     // im Predigtdienst. Ein Rest-Eintrag führte in eine leere Seite.
     regel: 'Planer und Gruppenaufseher sehen keine Einstellungen — die gehören dem Admin.',
-    suchen: "  const ohneVerwaltung = ALLE.filter((s) => s !== 'personen' && s !== 'einstellungen')",
-    ersetzen: "  const ohneVerwaltung = ALLE.filter((s) => s !== 'personen')",
+    suchen: "  einstellungen: 'admin',\n",
+    ersetzen: "  einstellungen: 'gruppe',\n",
   },
   {
     id: 'nav-wochen-nur-wer-zuteilt',
     datei: 'src/data/rechte.ts',
     // T121, Phase 10: Die Seite aller Wochen gilt den Zusammenkünften.
     regel: 'Die Seite aller Wochen sieht nur, wer zuteilt — der Gruppenaufseher plant allein Treffpunkte.',
-    suchen: "  if (r.gruppe !== null) return ohneVerwaltung.filter((s) => s !== 'planung')",
-    ersetzen: '  if (r.gruppe !== null) return ohneVerwaltung',
+    suchen: "  planung: 'planer',\n",
+    ersetzen: "  planung: 'gruppe',\n",
+  },
+  {
+    id: 'nav-verkuendiger-ohne-planen',
+    datei: 'src/data/rechte.ts',
+    // 16.10.2026: Der Verkündiger sah bis dahin „alle außer einer Liste".
+    regel: 'Ein Verkündiger sieht Planen nicht — jeder Bildschirm nennt seinen Zugang selbst.',
+    suchen: "  planen: 'gruppe',\n",
+    ersetzen: "  planen: 'alle',\n",
   },
   // ── Rechte-Stufe „Planer" (4.10.2026) ──────────────────────────────────────
   // Zuteilen und Plan ändern sind dieselbe Zeile. Die Grenze zieht der Server:

@@ -95,40 +95,41 @@ export function treffpunktGruppe(r: Rechte): string | null {
   return r.zuteilen ? null : r.gruppe
 }
 
-/**
- * Jeder Bildschirm außer der Anmeldung — aus dem Typ abgeleitet, damit ein
- * neuer nicht in der Liste fehlt (`satisfies` verlangt jeden).
- */
-const ALLE = Object.keys({
-  start: true,
-  programm: true,
-  aufgaben: true,
-  mitteilungen: true,
-  planen: true,
-  planung: true,
-  personen: true,
-  einstellungen: true,
-  profil: true,
-} satisfies Record<Exclude<Screen, 'login'>, true>) as readonly Screen[]
-
-/** Bildschirme, die ein einfacher Verkündiger nicht sieht. */
-const NUR_PLANER: readonly Screen[] = ['planen', 'planung', 'personen', 'einstellungen']
+/** Wer einen Bildschirm sieht — von allen bis zum Admin. */
+type Zugang = 'alle' | 'gruppe' | 'planer' | 'admin'
 
 /**
- * Die Bildschirme, die jemand sehen darf.
+ * **Jeder Bildschirm außer der Anmeldung, mit seinem Zugang** — aus dem Typ
+ * abgeleitet (`satisfies` verlangt jeden). Ein neuer Bildschirm muss hier
+ * sagen, wer ihn sieht. Bis zum 16.10.2026 sah der Verkündiger „alle außer
+ * einer Liste": Fehlte ein neuer Planer-Bildschirm dort, stand er allen offen.
  *
- * Planer und Gruppenaufseher bekommen Planen dazu — der Planer für alles, der
+ * Planer und Gruppenaufseher bekommen Planen — der Planer für alles, der
  * Gruppenaufseher für die Treffpunkte seiner Gruppe samt ihrem Grundplan.
- * Personen und Einstellungen bleiben beiden verschlossen: Sie hat der
- * Betreiber dem Admin vorbehalten. Die Seite aller Wochen (`planung`) gilt
- * den Zusammenkünften — sie bleibt bei dem, der zuteilt.
+ * Personen und Einstellungen hat der Betreiber dem Admin vorbehalten. Die
+ * Seite aller Wochen (`planung`) gilt den Zusammenkünften — sie bleibt bei
+ * dem, der zuteilt.
  */
+const ZUGANG = {
+  start: 'alle',
+  programm: 'alle',
+  aufgaben: 'alle',
+  mitteilungen: 'alle',
+  planen: 'gruppe',
+  planung: 'planer',
+  personen: 'admin',
+  einstellungen: 'admin',
+  profil: 'alle',
+} as const satisfies Record<Exclude<Screen, 'login'>, Zugang>
+
+/** Die Bildschirme, die jemand sehen darf — in der Reihenfolge von `ZUGANG`. */
 export function erlaubteScreens(r: Rechte): readonly Screen[] {
-  if (r.admin) return ALLE
-  const ohneVerwaltung = ALLE.filter((s) => s !== 'personen' && s !== 'einstellungen')
-  if (r.zuteilen) return ohneVerwaltung
-  if (r.gruppe !== null) return ohneVerwaltung.filter((s) => s !== 'planung')
-  return ALLE.filter((s) => !NUR_PLANER.includes(s))
+  const darf = (z: Zugang): boolean =>
+    z === 'alle' ||
+    r.admin ||
+    (z === 'planer' && r.zuteilen) ||
+    (z === 'gruppe' && (r.zuteilen || r.gruppe !== null))
+  return (Object.keys(ZUGANG) as (keyof typeof ZUGANG)[]).filter((s) => darf(ZUGANG[s]))
 }
 
 /**
