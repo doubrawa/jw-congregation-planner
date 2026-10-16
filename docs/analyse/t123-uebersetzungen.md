@@ -407,3 +407,69 @@ Rollenwort neben einem Namen bleibt `auxRatgeber` „Советник" — ein
 Muttersprachler könnte „Дающий советы" vorziehen. „напарник" (Trolley-Partner)
 ist männlich wie das deutsche „Partner". Die tote Regel `zut` schreibt
 „3 назначений" (siehe Polnisch).
+
+### uk · Ukrainisch
+
+16. Oktober 2026 · alle 747 gelesen · Anrede: ви · 41 Korrekturen im
+Wörterbuch, 1 in FRAG, 1 Function-Titel. Apostrophe per Skript gezählt: jetzt
+überall ’ (U+2019), vorher dreimal ʼ (U+02BC).
+
+| Schlüssel | alt | neu | Grund |
+| --- | --- | --- | --- |
+| `alleGelesen` | Прочитати всі | Позначити всі як прочитані | „Прочитати всі“ heißt „alle lesen“ — gemeint ist „als gelesen markieren“ |
+| `fsShort` | Служіння | Зустрічі для служіння | „Treffpunkte“ hieß wie das Thema (tabFs „Служіння“) — auf dem Treffpunkt-Bogen stand es doppelt; jw.org: „зустріч для служіння“ (Wachtturm Juni 2026) |
+| `toastFsRuleAdd` | Додано до розкладу | Додано до основного розкладу | Der Grundplan heißt „Основний розклад“ (fsGrundplan) |
+| `toastFsRuleDel` | Видалено з розкладу | Видалено з основного розкладу | wie toastFsRuleAdd |
+| `vpVorgemerkt` | Цей тиждень ще не завантажено. Промову буде внесено, щойно його програму імпортують. | Цей тиждень ще не створено. Промову буде внесено, щойно його програму буде завантажено. | Deutsch: „angelegt“ und „geholt“ — der Knopf heißt „Завантажити“ (holen) |
+| `grundPh` | напр. відпустка | напр., відпустка | „напр.,“ mit Komma wie in den übrigen Platzhaltern (fsOrtPh, absageNachrichtBeispiel) |
+| `wpNamePhSaal` | напр., Прибирання снігу | напр., прибирання снігу | Nach „напр.,“ klein wie in den übrigen Platzhaltern |
+| `neuerDienstPh` | Новий обов’язок, напр. паркування | Новий обов’язок, напр., паркування | wie grundPh |
+| `lacPh` | Новий пункт, напр. місцеві оголошення | Новий пункт, напр., місцеві оголошення | wie grundPh |
+| `druckAndersAlsSonst` | Не як завжди | Не так, як завжди | „Не як завжди“ ist unvollständig |
+| `absageErklaerung` | Планувальник одразу дізнається про це й призначає завдання іншому. | Планувальник одразу дізнається про це й призначає завдання іншій людині. | „іншому“ allein meint einen Mann |
+| `suchen` | Пошук … | Пошук… | Kein Leerzeichen vor den Auslassungspunkten (wie „Надсилання…“) |
+| `langSearchPh` | Пошук мови … | Пошук мови… | wie suchen |
+| `holtProgramm` | Завантаження програми … | Завантаження програми… | wie suchen |
+| `laedt` | Завантаження … | Завантаження… | wie suchen |
+| `linkAbgelaufenHint` | … Нове посилання знову діє 30 днів. … | … Нове посилання діятиме 30 днів. … | „Нове … знову“ doppelt (wie fr/it/pl/ru) |
+| `zuletztLange` | давно не | давно без завдань | „давно не“ bricht mitten im Satz ab |
+| `toastKeinePassende` | … на відкриті місця … | … на вільні місця … | Offene Plätze heißen sonst „вільні“ (offenWort, lageOffen, toastKeineOffen) |
+| `toastVonBis` | Вкажіть З і По | Вкажіть «З» і «По» | „З“ und „По“ sind Feldnamen (von, bis) — ohne Anführungszeichen lesen sie sich als Präpositionen; trolleyFehlerZeit setzt sie schon in « » |
+| `toastPersonNeu` | Людину створено | Людину додано | „Людину створено“ heißt „ein Mensch wurde erschaffen“ |
+| `notifEntzug` | Завдання скасовано | Призначення скасовано | Zuteilung heißt sonst „призначення“ (notifZuteilung „Нове призначення“); Function `send-plan` zieht mit |
+| `spurErsatzGesucht` | Шукається заміна | Потрібна заміна | Wie die Mitteilung (notifErsatzGesucht, Function substitute) |
+| `nameLbl` | Ім’я | Назва | benennt Versammlung, Gruppe, Trolley, Plan, Termin, Hilfsdienst — „Ім’я“ ist der Name einer Person; die hat jetzt `personNameLbl` |
+| `toastNameLeer` | Ім’я не змінено: без імені не можна | Не змінено: поле не може бути порожнім | Gilt auch für Gruppe und Trolley — „ім’я“ passte dort nicht |
+| `toastNameNichtGeaendert` | Ім’я не змінено: {name} вже є | Не змінено: {name} вже є | wie toastNameLeer |
+| `kontoVerknuepft` | Акаунт звʼязано | Акаунт зв’язано | Apostroph U+02BC statt ’ (U+2019) wie in den übrigen 42 Schlüsseln — eine Suche nach „зв’язано“ fand ihn nicht |
+| `kontenOhnePersonHint` | … привʼязані … | … прив’язані … | wie kontoVerknuepft |
+| `rednerNamePh` | Імʼя промовця | Ім’я промовця | wie kontoVerknuepft |
+| `pushPromptIos` | … «На екран „Дім“» … | … «На Початковий екран» … | Das ukrainische iOS nennt den Home-Bildschirm „Початковий екран“ (Apple-Hilfe), die Anmelde-Mail sagt schon „на початковому екрані“ — „Дім“ war aus dem Russischen übernommen |
+| `pushIosHint` | … «На екран „Дім“» … | … «На Початковий екран» … | wie pushPromptIos |
+| `freiePlaetzeHint` | … Хто першим візьме на себе, той записаний і вже підтвердив. … | … Хто першим візьме місце, отримує його й тим самим підтверджує участь. … | Genus: „записаний … підтвердив“ war männlich (das Präsens ist es nicht); „damit zugesagt“ heißt „тим самим“, nicht „вже“ (wie ru) |
+| `anlassMemText` | Зустріч цього дня не відбувається | Зібрання цього дня не відбувається | Zusammenkunft heißt sonst „зібрання“; „зустріч“ ist der Treffpunkt |
+| `zusammenkuenfteDieserWoche` | Зустрічі цього тижня | Зібрання цього тижня | wie anlassMemText |
+| `notifVerhindert` | Повідомлено про неможливість | Не зможе виконати завдання | „Повідомлено про неможливість“ bricht ab (wie ru); der Rumpf nennt Aufgabe und Person |
+| `toastMitgliedEntfernt` | Члена видалено | Акаунт видалено зі збору | Entfernt wird das Konto aus der Versammlung (kontoCard „Акаунт“) |
+| `gruppenCard` | Групи для служіння | Групи для проповідницького служіння | jw.org: „група для проповідницького служіння“ (Wachtturm Juni 2026) — das Deutsche sagt auch „Predigtdienstgruppe“ |
+| `gruppeLbl` | Група для служіння | Група для проповідницького служіння | wie gruppenCard |
+| `ohneGruppeTitle` | Без групи для служіння | Без групи для проповідницького служіння | wie gruppenCard |
+| `ohneGruppeHint` | … належить до групи для служіння. … | … належить до групи для проповідницького служіння. … | wie gruppenCard |
+| `wpSaalText` | … групи для служіння чергуються … | … групи для проповідницького служіння чергуються … | wie gruppenCard |
+| `wpSaalTextMonat` | … групи для служіння чергуються … | … групи для проповідницького служіння чергуються … | wie gruppenCard |
+| FRAG `Treffpunkte` | Служіння | Зустрічі для служіння | wie `fsShort` |
+| `send-plan` `entzug` | Завдання скасовано | Призначення скасовано | wie `notifEntzug` (Push-Titel) |
+
+Daten gelesen: FRAG (gemessen: „Кінцеві слова" und „Що можна сказати?" stehen
+so in mwb27 und der S-38), REF, EXTRA (Intl-Pfad), Bibelbücher,
+Function-Titel. Fachwörter nachgesehen und so gelassen: „служитель збору",
+„наглядач групи", „помічник", „зустріч для служіння" (Wachtturm Juni 2026),
+„районний наглядач" und „Візит районного наглядача", „учень",
+„напарник", посібник «Наше християнське життя і служіння» (S-38).
+
+Offen, nicht geändert: Den Ratgeber umschreibt auch die ukrainische S-38
+(„брат, який дає поради"); `auxRatgeber` bleibt „Порадник". Den genauen
+Wortlaut des iOS-Menüpunkts („На Початковий екран") habe ich nur aus der
+Apple-Hilfe („Початковий екран") erschlossen, nicht am Gerät gesehen.
+„напарник" (Trolley-Partner) ist männlich wie das deutsche „Partner"; die
+tote Regel `zut` schreibt „3 призначень".

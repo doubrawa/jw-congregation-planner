@@ -264,7 +264,7 @@ const FRAG: Record<string, Record<string, string>> = {
   },
   uk: {
     "Schüler": "Учень", "Partner": "Напарник", "Ratgeber": "Порадник",
-    "Treffpunkte": "Служіння",
+    "Treffpunkte": "Зустрічі для служіння",
     'ERÖFFNUNG': 'ВСТУП', 'ABSCHLUSS': 'ЗАКЛЮЧНА ЧАСТИНА',
     'SCHÄTZE AUS GOTTES WORT': 'СКАРБИ З БОЖОГО СЛОВА',
     'UNS IM DIENST VERBESSERN': 'ВДОСКОНАЛЮЙМО СВОЄ СЛУЖІННЯ', 'UNSER LEBEN ALS CHRIST': 'ХРИСТИЯНСЬКЕ ЖИТТЯ',
