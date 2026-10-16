@@ -1638,9 +1638,9 @@ Wichtig zu wissen:
 
 ## 11. Was die App wie lange aufbewahrt
 
-Die App behält nur, was sie braucht. Was älter ist, löscht sie jede Nacht von
-selbst, für alle gleich. Gezählt wird ab dem Montag der laufenden Woche, nicht
-auf den Tag genau:
+Die App behält nur, was sie braucht. Was älter ist, löscht sie einmal die
+Woche von selbst, montags früh, für alle gleich. Gezählt wird ab dem
+Montag der laufenden Woche, nicht auf den Tag genau:
 
 | Was | Wie lange |
 | --- | --- |

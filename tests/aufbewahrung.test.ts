@@ -9,7 +9,7 @@ import { schluesselTeile } from '../supabase/functions/_shared/aufgaben-schluess
  *
  * Die Fristen stehen zweimal: in der App (`src/data/aufbewahrung.ts`, danach
  * lädt sie) und in der Datenbank (`alte_daten_loeschen` in `schema.sql`, danach
- * räumt der tägliche Lauf). Liefen sie auseinander, lüde die App, was die
+ * räumt der wöchentliche Lauf). Liefen sie auseinander, lüde die App, was die
  * Datenbank längst gelöscht hat — oder die Datenbank behielte, was niemand mehr
  * lädt.
  *
@@ -139,11 +139,13 @@ describe('Aufräumen in der Datenbank', () => {
     expect(SCHEMA).not.toMatch(/grant execute on function public\.alte_daten_loeschen/)
   })
 
-  it('der Zeitplan räumt täglich, mit Löschen', () => {
+  it('der Zeitplan räumt einmal die Woche, montags, mit Löschen', () => {
     const plan = /cron\.schedule\(\s*'([^']+)',\s*'([^']+)',\s*\$\$(.*?)\$\$/s.exec(CRON)
     expect(plan?.[1]).toBe('jw-alte-daten-loeschen')
     const [, stunde, tag, monat, wochentag] = (plan?.[2] ?? '').split(/\s+/)
-    expect([tag, monat, wochentag]).toEqual(['*', '*', '*'])
+    // Montags rücken die Grenzen weiter — an jedem anderen Tag käme eine Woche
+    // erst Tage später weg.
+    expect([tag, monat, wochentag]).toEqual(['*', '*', '1'])
     expect(Number(stunde)).toBeGreaterThanOrEqual(0)
     // Ohne `true`: Der Probelauf zählt nur.
     expect(plan?.[3]?.trim()).toBe('select public.alte_daten_loeschen()')

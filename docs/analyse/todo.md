@@ -7095,7 +7095,7 @@ das echte Recht.
 
 ## Aufgenommen am 16. Oktober 2026 — Aufbewahrung und Auswertung (T125, T126)
 
-### T125 · Nur so lange aufbewahren, wie es gebraucht wird 🏗 ☐ in Arbeit
+### T125 · Nur so lange aufbewahren, wie es gebraucht wird 🏗 ✅ erledigt und ausgerollt (16. Oktober 2026)
 
 **Wortlaut:** *„überleg dir wie man es am besten macht, dass alle daten, die
 älter als 8 wochen sind, automatisch gelöscht werden, denn wir wollen ja keine
@@ -7124,7 +7124,7 @@ Konten, Push-Abos) haben kein Alter und bleiben.
 
 **Drei Stellen halten dieselbe Grenze:** das Laden (die App holt nichts
 Älteres, die Folgeseiten gleichzeitig), das Aufräumen in der Datenbank
-(`alte_daten_loeschen`, täglich per `pg_cron`, ohne Function und ohne Secret)
+(`alte_daten_loeschen`, einmal die Woche per `pg_cron`, ohne Function und ohne Secret)
 und die Importe aus NWS und jw.org. Die Zahlen stehen einmal in
 `src/data/aufbewahrung.ts`; `tests/aufbewahrung.test.ts` hält die SQL-Seite
 gleich und verlangt für jede Tabelle im Schema eine Regel oder einen Grund,
@@ -7152,9 +7152,20 @@ gebraucht wird — mit der Folge von oben (alte Wochen zeigten „wartet").
 Funktionen gehören `postgres`; anon und authenticated haben kein Recht (REST:
 `401 42501`, Gegenprobe mit erfundenem Namen `404 PGRST202`). Der Probelauf
 zählte in jeder Tabelle 0 Zeilen über der Frist, nur einen Fehlversuch beim
-Anmelden älter als einen Tag. `pg_cron` 1.6.4 ist da, als Zeitplan steht nur
-`jw-send-reminders-daily`. **Offen:** `supabase/cron-aufraeumen.sql`
-einspielen — auf ein Wort des Betreibers.
+Anmelden älter als einen Tag. `pg_cron` 1.6.4 ist da, als Zeitplan stand nur
+`jw-send-reminders-daily`.
+
+**Zeitplan angelegt am 16.10.2026, 21:33** — Betreiber: *„ja reicht, wenn es
+einmal die woche läuft"*. `jw-alte-daten-loeschen` läuft montags um 03:30 UTC
+(`30 3 * * 1`, als `postgres`), gleich nachdem die Grenzen weitergerückt sind;
+an anderen Tagen fände er nichts Neues. Die Fehlversuche beim Anmelden räumt
+`anmelden` bei jedem neuen selbst ab. Erster Lauf: 19. Oktober 2026.
+
+**Mitteilungen** löscht der Erinnerungslauf schon nach 30 Tagen, sobald er
+wirklich sendet (`pruneNotifications` in `send-reminders`, nur mit
+`SEND_PUSH`). Für sie sind die acht Wochen also die Obergrenze. Zwei Stellen
+für dieselbe Tabelle: Die 30 Tage sind älter und strenger, die Regel hier fängt
+auf, was liegen bleibt.
 
 **Später zu entscheiden:** `auth.sessions` hält je angemeldetem Gerät
 IP-Adresse und Browserkennung, solange die Anmeldung gilt. Ohne Höchstdauer
@@ -7622,14 +7633,13 @@ zurückgenommen und der Testlauf wiederholt wurde.
 **Stand 16. Oktober 2026, alles Offene an einer Stelle** (gemessen: Köpfe
 gezählt, kein Zweig außer `main`, keine PR, kein Issue; `sw.js` = HEAD; alle
 sieben Functions per `functions download` gleich dem Repo, 39 Dateien; Secrets
-ohne `INVITE_FROM`, `disable_signup` noch `false`). Im Code ist T124 offen
-(T123 am 16. Oktober erledigt und ausgerollt); was sonst aussteht, braucht den
-Betreiber oder ein Gerät.
+ohne `INVITE_FROM`, `disable_signup` noch `false`). Im Code sind T124 und
+T126 offen (T123 und T125 am 16. Oktober erledigt und ausgerollt); was sonst
+aussteht, braucht den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **T124** | Rechte zum Testen umschalten | aufgenommen am 16. Oktober, noch nicht begonnen; befristet — nach den Tests wieder ausbauen |
-| **T125** | Aufbewahrung scharf schalten | Laden, Importe und Aufräum-Funktion sind in Betrieb, das Schema samt Probelauf seit 16. Oktober abends; offen: Zeitplan anlegen (`cron-aufraeumen.sql`) — erst auf ein Wort des Betreibers |
 | **T126** | Auswertung der Zuteilungen mit Diagrammen | aufgenommen am 16. Oktober, noch nicht begonnen; Grundlage ist das Jahr aus T125 |
 | **Zurückgestellt** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт". Betreiber am 16. Oktober: „bleibt erst mal so" — wieder aufnehmen, wenn ein Muttersprachler prüft; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |

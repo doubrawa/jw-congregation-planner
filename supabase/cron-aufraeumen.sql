@@ -1,5 +1,5 @@
 -- =============================================================================
--- Täglicher Aufräumlauf (T125) — löscht, was älter ist als seine Frist
+-- Wöchentlicher Aufräumlauf (T125) — löscht, was älter ist als seine Frist
 -- =============================================================================
 -- Die Fristen stehen in `public.alte_daten_loeschen` (supabase/schema.sql):
 -- ein Jahr für die Wochen und was zu ihnen gehört, acht Wochen für alles
@@ -8,8 +8,11 @@
 --
 -- Voraussetzung: Extension pg_cron (wie für die Erinnerungen) und das Schema
 -- mit der Funktion. Ein Secret braucht es nicht — der Lauf bleibt in der
--- Datenbank. Zeit ist UTC; hier täglich um 03:30 UTC, nachts und fern vom
--- Erinnerungslauf.
+-- Datenbank. Zeit ist UTC; hier montags um 03:30 UTC, gleich nachdem die
+-- Grenzen eine Woche weitergerückt sind (sie zählen ab dem Montag). Einmal
+-- die Woche reicht (Betreiber, 16.10.2026): An den anderen Tagen fände der
+-- Lauf nichts Neues, und die Fehlversuche räumt `anmelden` bei jedem neuen
+-- selbst ab.
 --
 -- Vor dem ersten Lauf ansehen, was ginge (zählt nur, löscht nichts):
 --   select * from public.alte_daten_loeschen(true);
@@ -18,7 +21,7 @@ create extension if not exists pg_cron;
 
 select cron.schedule(
   'jw-alte-daten-loeschen',
-  '30 3 * * *',
+  '30 3 * * 1',
   $$select public.alte_daten_loeschen()$$
 );
 

@@ -808,16 +808,19 @@ Trolleys, Push-Abos) haben kein Alter.
 Das Protokoll von Supabase Auth schreibt dieses Projekt gar nicht erst in die
 Datenbank (Dashboard: Authentication → Audit Logs, „Write audit logs to the
 database" aus; die Tabelle war am 16.10.2026 leer). Die Regel greift, falls
-jemand den Schalter einschaltet.
+jemand den Schalter einschaltet. Mitteilungen löscht der Erinnerungslauf schon
+nach 30 Tagen, sobald er wirklich sendet (`SEND_PUSH`, `pruneNotifications` in
+`send-reminders`); die acht Wochen sind für sie die Obergrenze.
 
 Dieselbe Grenze gilt an drei Stellen:
 
 - **Laden:** Die App holt nichts Älteres (`loadCongregationData`).
 - **Aufräumen:** `public.alte_daten_loeschen()` in
-  [`supabase/schema.sql`](supabase/schema.sql), täglich per pg_cron
-  ([`supabase/cron-aufraeumen.sql`](supabase/cron-aufraeumen.sql)). Der Lauf
-  bleibt in der Datenbank, ohne Function und ohne Secret; aufrufen darf ihn nur
-  der Zeitplan.
+  [`supabase/schema.sql`](supabase/schema.sql), einmal die Woche per pg_cron
+  ([`supabase/cron-aufraeumen.sql`](supabase/cron-aufraeumen.sql)): montags um
+  03:30 UTC, gleich nachdem die Grenzen weitergerückt sind. Der Lauf bleibt in
+  der Datenbank, ohne Function und ohne Secret; aufrufen darf ihn nur der
+  Zeitplan.
 - **Importe:** NWS und jw.org holen nichts, was älter ist (`aufbewahrtAb`,
   `nichtVorDerFrist` in `scripts/gemeinsam.mjs`).
 
@@ -825,13 +828,13 @@ Dieselbe Grenze gilt an drei Stellen:
 App und SQL gleich und verlangt für jede Tabelle im Schema eine Regel oder einen
 Grund, warum sie keine braucht.
 
-**Einschalten (einmalig):** Schema einspielen, dann ohne Löschen nachsehen, was
-ginge, und erst danach den Zeitplan anlegen:
+**Eingeschaltet am 16.10.2026:** erst das Schema, dann ohne Löschen
+nachgesehen, was ginge (überall 0, ein alter Fehlversuch beim Anmelden), dann
+`supabase/cron-aufraeumen.sql`. Der Probelauf geht jederzeit wieder:
 
 ```sql
 select * from public.alte_daten_loeschen(true);  -- zählt nur
 ```
 
-Danach `supabase/cron-aufraeumen.sql` ausführen. Gelöscht ist gelöscht: Was der
-Lauf entfernt, steht nur noch in den Sicherungen von Supabase, solange diese
-reichen.
+Gelöscht ist gelöscht: Was der Lauf entfernt, steht nur noch in den
+Sicherungen von Supabase, solange diese reichen.

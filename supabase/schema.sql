@@ -1660,7 +1660,8 @@ grant execute on function public.persoenlich_bescheid(text, text, boolean) to au
 -- ---------------------------------------------------------------------------
 -- Aufräumen (T125, 16.10.2026): „wir wollen ja keine daten sammeln, die wir
 -- nicht brauchen" (Betreiber). Was älter ist als seine Frist, wird gelöscht —
--- täglich per pg_cron (`supabase/cron-aufraeumen.sql`), für alle Versammlungen.
+-- einmal die Woche, montags, per pg_cron (`supabase/cron-aufraeumen.sql`), für
+-- alle Versammlungen.
 --
 -- Zwei Fristen, beide ab dem Montag der laufenden Woche, wie beim Laden in der
 -- App (`src/data/aufbewahrung.ts`; `tests/aufbewahrung.test.ts` hält beide
@@ -1670,7 +1671,8 @@ grant execute on function public.persoenlich_bescheid(text, text, boolean) to au
 --     alle paar Monate eine Zuteilung;
 --   - acht Wochen für alles andere.
 -- Die Fehlversuche beim Anmelden (IP-Adressen) gehen nach einem Tag: Sie
--- bremsen nur das Raten der letzten Stunde (`anmelden`). Das Protokoll von
+-- bremsen nur das Raten der letzten Stunde. `anmelden` räumt sie bei jedem
+-- neuen Fehlversuch selbst ab, der Lauf hier nimmt den Rest. Das Protokoll von
 -- Supabase Auth (`auth.audit_log_entries`, je Anmeldung E-Mail und IP-Adresse)
 -- geht nach acht Wochen — die einzige Regel für eine Tabelle, die nicht hier
 -- steht (Betreiber, 16.10.2026).
