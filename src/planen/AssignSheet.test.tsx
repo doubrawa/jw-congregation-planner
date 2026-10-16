@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -414,7 +415,7 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
       weeks: [woche('2026-09-07', 'Anton Alt', ROLE_OWN_SPEAKER)],
     })
     fireEvent.click(knopf(container, t.entfernen))
-    fireEvent.click(knopf(container, t.entfernenSicher))
+    bestaetigen(knopf(container, t.entfernenSicher))
     expect(dispatch).toHaveBeenCalledWith({ type: 'assign', name: '', rolle: ROLE_GUEST_SPEAKER })
   })
 
@@ -423,7 +424,7 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
     schuelerPlatz(w).name = 'Anton Alt'
     const { container, dispatch } = zeige(SEL_SCHUELER, { weeks: [w] })
     fireEvent.click(knopf(container, t.entfernen))
-    fireEvent.click(knopf(container, t.entfernenSicher))
+    bestaetigen(knopf(container, t.entfernenSicher))
     expect(dispatch).toHaveBeenCalledWith({ type: 'assign', name: '' })
   })
 
@@ -437,6 +438,20 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
     fireEvent.blur(knopf(container, t.entfernenSicher))
     expect(knopf(container, t.entfernenSicher)).toBeUndefined()
     expect(knopf(container, t.entfernen)).toBeDefined()
+  })
+
+  it('ein Doppelklick auf „Entfernen" fragt nur — erst ein späterer Tipp entfernt', () => {
+    // Bis zum 16.10.2026 schärfte und bestätigte ein Doppelklick in einem: Der
+    // Platz war leer, und wer zugesagt hatte, bekam „Zuteilung zurückgezogen".
+    const w = woche('2026-09-07')
+    schuelerPlatz(w).name = 'Anton Alt'
+    const { container, dispatch } = zeige(SEL_SCHUELER, { weeks: [w] })
+    fireEvent.click(knopf(container, t.entfernen))
+    fireEvent.click(knopf(container, t.entfernenSicher))
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'assign' }))
+    expect(knopf(container, t.entfernenSicher)).toBeDefined()
+    bestaetigen(knopf(container, t.entfernenSicher))
+    expect(dispatch).toHaveBeenCalledWith({ type: 'assign', name: '' })
   })
 })
 

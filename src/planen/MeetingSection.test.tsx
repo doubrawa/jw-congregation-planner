@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -445,7 +446,7 @@ describe('Der Gesprächspartner-Platz lässt sich an- und abschalten', () => {
     const { container, dispatch } = zeige(gespraech(true))
     fireEvent.click(knopf(container, t.partnerEntfernen))
     expect(dispatch).not.toHaveBeenCalled()
-    fireEvent.click(knopf(container, t.entfernenSicher))
+    bestaetigen(knopf(container, t.entfernenSicher))
     expect(dispatch).toHaveBeenCalledWith({ type: 'togglePartner', si: 0, ii: 0 })
   })
 

@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -397,7 +398,7 @@ describe('Planen: ein Plan', () => {
     oeffnen(container, 'Grundreinigung')
     fireEvent.click(knopf(container, t.wpLoeschen)!)
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'wpPlanLoeschen', id: 'pl-e' })
-    fireEvent.click(knopf(container, t.loeschenSicher)!)
+    bestaetigen(knopf(container, t.loeschenSicher)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpPlanLoeschen', id: 'pl-e' })
   })
 

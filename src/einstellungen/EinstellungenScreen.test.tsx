@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -272,7 +273,7 @@ describe('Programmsprachen', () => {
     fireEvent.click(x())
     expect(dispatch).not.toHaveBeenCalled()
     expect(x().textContent).toBe(t.entfernenSicher)
-    fireEvent.click(x())
+    bestaetigen(x())
     expect(dispatch).toHaveBeenCalledWith({ type: 'removeProgLang', code: 'en' })
   })
 

@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -339,7 +340,7 @@ describe('Person bearbeiten: Familie', () => {
     fireEvent.click(b.querySelector('.person-familie-weg')!)
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'setFamily' }))
     expect(b.querySelector('.person-familie-weg')?.textContent).toBe(t.entfernenSicher)
-    fireEvent.click(b.querySelector('.person-familie-weg')!)
+    bestaetigen(b.querySelector('.person-familie-weg')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'setFamily', id: 'p-a', memberId: 'p-c', add: false })
   })
 
@@ -424,7 +425,7 @@ describe('Person entfernen braucht zwei Tipps', () => {
   it('erst der zweite entfernt', () => {
     const { container, dispatch } = zeige(person())
     fireEvent.click(entfernen(container))
-    fireEvent.click(entfernen(container))
+    bestaetigen(entfernen(container))
     expect(dispatch).toHaveBeenCalledWith({ type: 'removePerson', id: 'p-a' })
   })
 

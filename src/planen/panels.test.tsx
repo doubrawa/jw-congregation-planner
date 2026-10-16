@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -193,7 +194,7 @@ describe('Treffpunkte planen (T121, Entwurf `GTreffpunktePlanen`)', () => {
     const { container, dispatch } = buehne('fs', { fsWeeks: [[inst()]] })
     fireEvent.click(container.querySelector('.treff-entfernen')!)
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'fsInstRemove', wi: 0, id: 'f1' })
-    fireEvent.click(container.querySelector('.treff-entfernen')!)
+    bestaetigen(container.querySelector('.treff-entfernen')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsInstRemove', wi: 0, id: 'f1' })
   })
 })
@@ -417,7 +418,7 @@ describe('„Automatisch" bei den Treffpunkten (T121, Phase 5e)', () => {
     fireEvent.click(leeren())
     expect(dispatch.mock.calls.some((c) => c[0].type === 'fsClear')).toBe(false)
     expect(leeren().textContent).toBe(t.leerenSicher)
-    fireEvent.click(leeren())
+    bestaetigen(leeren())
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsClear', onlyGroup: null })
   })
 
@@ -441,7 +442,7 @@ describe('„Automatisch" bei den Treffpunkten (T121, Phase 5e)', () => {
     zuteilen()
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsAutoAssign', onlyGroup: 'g1' })
     fireEvent.click(leeren())
-    fireEvent.click(leeren())
+    bestaetigen(leeren())
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsClear', onlyGroup: 'g1' })
   })
 })

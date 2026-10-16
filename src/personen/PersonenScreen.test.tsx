@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import type { Dispatch } from 'react'
 import {
   AppDispatchContext,
@@ -877,7 +878,7 @@ describe('Konten ohne verknüpfte Person', () => {
     const { container, dispatch } = zeige({ members: WAISE })
     fireEvent.click(container.querySelector('.pers-orphans .svc-remove')!)
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'removeMember', userId: 'u9' })
-    fireEvent.click(container.querySelector('.pers-orphans .svc-remove')!)
+    bestaetigen(container.querySelector('.pers-orphans .svc-remove')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'removeMember', userId: 'u9' })
   })
 

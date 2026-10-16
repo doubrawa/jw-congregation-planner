@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import { useState } from 'react'
 import { AppDispatchContext, AppStateContext, AppStoreContext, type AppState, useStaticStore } from './context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
@@ -681,7 +682,7 @@ describe('Abmelden und Rollenanzeige', () => {
     fireEvent.click(imProfil!)
     expect(performLogout).not.toHaveBeenCalled()
     expect(imProfil!.textContent).toBe(t.abmeldenSicher)
-    fireEvent.click(imProfil!)
+    bestaetigen(imProfil!)
     expect(performLogout).toHaveBeenCalledWith(dispatch)
   })
 
@@ -710,7 +711,7 @@ describe('Abmelden und Rollenanzeige', () => {
     expect(knopf, 'kein Weg hinaus').toBeDefined()
     fireEvent.click(knopf!) // fragt nach …
     expect(performLogout).not.toHaveBeenCalled()
-    fireEvent.click(knopf!) // … und meldet ab
+    bestaetigen(knopf!) // … und meldet ab
     expect(performLogout).toHaveBeenCalledWith(dispatch)
   })
 

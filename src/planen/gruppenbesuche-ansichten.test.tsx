@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -245,7 +246,7 @@ describe('Ein Besuch im Blatt — jede Änderung gilt gleich', () => {
     fireEvent.click(entfernen)
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'besuchEntfernen', id: b.id })
     expect(entfernen.textContent).toBe(t.loeschenSicher)
-    fireEvent.click(entfernen)
+    bestaetigen(entfernen)
     expect(dispatch).toHaveBeenCalledWith({ type: 'besuchEntfernen', id: b.id })
     expect(blatt()).toBeNull()
   })

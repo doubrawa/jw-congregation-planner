@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -169,7 +170,7 @@ describe('„Leeren" fragt nach', () => {
     fireEvent.click(leeren())
     expect(leeren().textContent).toBe(t.leerenSicher)
     expect(dispatch).not.toHaveBeenCalled()
-    fireEvent.click(leeren())
+    bestaetigen(leeren())
     expect(dispatch).toHaveBeenCalledWith({ type: 'clearAssignments', scope: 'all', umfang: 'tag' })
     expect(onClose).toHaveBeenCalled()
   })

@@ -1463,7 +1463,14 @@ export const KATALOG = [
     regel: 'Ein zerstörender Knopf führt beim ersten Tipp nichts aus — er bewaffnet sich nur.',
     // Seit dem 25.9.2026 steht das Muster einmal im Hook; die drei Aufrufer
     // darunter prüfen, dass jeder Knopf ihn auch wirklich benutzt.
-    suchen: '      if (!armed) {\n        setArmed(true)\n        return\n      }\n',
+    suchen: '      if (!armed) {\n        geschaerftUm.current = performance.now()\n        setArmed(true)\n        return\n      }\n',
+    ersetzen: '',
+  },
+  {
+    id: 'zwei-tipp-doppelklick-bestaetigt-nicht',
+    datei: 'src/components/useZweiTipp.ts',
+    regel: 'Ein Doppelklick schärft nur — der bestätigende Tipp zählt erst 400 ms nach dem Schärfen.',
+    suchen: '      if (performance.now() - geschaerftUm.current < ZWEI_TIPP_SPERRE_MS) return\n',
     ersetzen: '',
   },
   {

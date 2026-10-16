@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import type { AppState } from '../app/context'
 
 /**
@@ -150,7 +151,7 @@ describe('Trolleys', () => {
     fireEvent.click(container.querySelector('.trolley-karte .trolley-zeile')!)
     const termin = document.querySelector('[role="dialog"]')!
     klick(termin, t.trolleyAustragen)
-    klick(termin, t.entfernenSicher)
+    bestaetigen(knopf(termin, t.entfernenSicher))
     await vi.waitFor(() => expect(container.querySelector('.trolley-termin')).toBeNull())
     expect(container.querySelector('.trolley-karte')).toBeNull()
   })
@@ -199,7 +200,7 @@ describe('Gruppenbesuche', () => {
 
     fireEvent.click(zeilen(container)[0]!)
     klick(blatt(), t.a11yRemove)
-    klick(blatt(), t.loeschenSicher)
+    bestaetigen(knopf(blatt(), t.loeschenSicher))
     expect(zeilen(container)).toHaveLength(1)
   })
 

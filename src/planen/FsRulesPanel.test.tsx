@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -205,7 +206,7 @@ describe('Eine Regel ändern — es gilt gleich', () => {
     fireEvent.click(knopf)
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'fsRuleRemove', id: 'r1' })
     expect(knopf.textContent).toBe(t.loeschenSicher)
-    fireEvent.click(knopf)
+    bestaetigen(knopf)
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsRuleRemove', id: 'r1' })
     expect(blatt()).toBeNull()
   })

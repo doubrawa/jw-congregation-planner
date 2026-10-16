@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 
 /**
  * **Die Trolleys im Predigtdienst** (T121, Phase 7; Entwürfe `GZeugnis`,
@@ -186,7 +187,7 @@ describe('am Handy: ein Tag mit einer Spalte je Trolley', () => {
     expect(blatt.textContent).toContain('Schlüssel im Fach neben der Bühne')
     fireEvent.click(knopf(blatt, t.trolleyAustragen)!)
     await act(async () => {
-      fireEvent.click(knopf(blatt, t.entfernenSicher)!)
+      bestaetigen(knopf(blatt, t.entfernenSicher)!)
     })
     expect(trolley.trolleyAustragen).toHaveBeenCalledWith(DEMO_TROLLEY_TERMINE[5], 'p9', '2026-09-07')
   })

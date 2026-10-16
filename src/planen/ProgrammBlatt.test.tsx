@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -286,7 +287,7 @@ describe('Ein Programmpunkt', () => {
     fireEvent.click(entfernen)
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'lacRemove', si: LAC, ii: 0 })
     expect(entfernen.textContent).toBe(t.entfernenSicher)
-    fireEvent.click(entfernen)
+    bestaetigen(entfernen)
     expect(dispatch).toHaveBeenCalledWith({ type: 'lacRemove', si: LAC, ii: 0 })
     expect(blaetter()).toHaveLength(1)
   })

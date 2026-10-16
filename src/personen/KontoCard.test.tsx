@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -164,7 +165,7 @@ describe('Angemeldet', () => {
     const { container, dispatch } = zeige(person(), { members: [konto()] })
     fireEvent.click(container.querySelector('.konto-entfernen')!)
     expect(dispatch).not.toHaveBeenCalled()
-    fireEvent.click(container.querySelector('.konto-entfernen')!)
+    bestaetigen(container.querySelector('.konto-entfernen')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'removeMember', userId: 'u-a' })
   })
 

@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 
 /**
  * **Die Trolleys der Versammlung** (T121, Phase 7, Entwürfe
@@ -213,7 +214,7 @@ describe('Das Blatt: kommende Termine und Entfernen', () => {
     fireEvent.click(knopf(blatt(), t.trolleyEntfernen))
     expect(trolley.trolleyEntfernen).not.toHaveBeenCalled()
     await act(async () => {
-      fireEvent.click(knopf(blatt(), t.loeschenSicher))
+      bestaetigen(knopf(blatt(), t.loeschenSicher))
     })
     expect(trolley.trolleyEntfernen).toHaveBeenCalledWith('tr3', '2026-09-07')
     expect(dispatch).toHaveBeenCalledWith({ type: 'trolleyEntfernt', id: 'tr3' })
@@ -224,7 +225,7 @@ describe('Das Blatt: kommende Termine und Entfernen', () => {
     const { dispatch } = oeffne()
     fireEvent.click(knopf(blatt(), t.trolleyEntfernen))
     await act(async () => {
-      fireEvent.click(knopf(blatt(), t.loeschenSicher))
+      bestaetigen(knopf(blatt(), t.loeschenSicher))
     })
     expect(dispatch).toHaveBeenCalledWith({ type: 'trolleyEntfernt', id: 'tr3' })
   })
@@ -234,7 +235,7 @@ describe('Das Blatt: kommende Termine und Entfernen', () => {
     const { dispatch } = oeffne()
     fireEvent.click(knopf(blatt(), t.trolleyEntfernen))
     await act(async () => {
-      fireEvent.click(knopf(blatt(), t.loeschenSicher))
+      bestaetigen(knopf(blatt(), t.loeschenSicher))
     })
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'trolleyEntfernt', id: 'tr3' })
     expect(blatt().querySelector('[role="alert"]')?.textContent).toBe(t.trolleyFehlerNetz)

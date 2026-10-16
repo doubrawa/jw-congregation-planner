@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import { DE } from '../i18n/de'
 import {
   AppDispatchContext,
@@ -167,7 +168,7 @@ describe('Entfernen', () => {
     fireEvent.click(knopf(container, DE.hdEntfernen))
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'removeService', key: 'rund' })
     // „löschen", nicht „entfernen": Mit dem Dienst geht gespeicherte Planung.
-    fireEvent.click(knopf(container, DE.loeschenSicher))
+    bestaetigen(knopf(container, DE.loeschenSicher))
     expect(dispatch).toHaveBeenCalledWith({ type: 'removeService', key: 'rund' })
   })
 })

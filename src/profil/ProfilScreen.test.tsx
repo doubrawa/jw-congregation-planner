@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -129,7 +130,7 @@ describe('Wer bin ich, wo bin ich', () => {
     fireEvent.click(knopf)
     expect(performLogout).not.toHaveBeenCalled()
     expect(knopf.textContent).toBe(t.abmeldenSicher)
-    fireEvent.click(knopf)
+    bestaetigen(knopf)
     expect(performLogout).toHaveBeenCalledWith(dispatch)
   })
 })

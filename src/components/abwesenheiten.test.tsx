@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, within } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import type { ReactNode } from 'react'
 import {
   AppDispatchContext,
@@ -128,7 +129,7 @@ describe('Bei einer Person — ihre Abwesenheiten', () => {
     // Mit Rückfrage (4.10.2026): Der erste Tipp fragt nur.
     fireEvent.click(knopf())
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'removeAbsence', id: 'a1' })
-    fireEvent.click(knopf())
+    bestaetigen(knopf())
     expect(dispatch).toHaveBeenCalledWith({ type: 'removeAbsence', id: 'a1' })
   })
 

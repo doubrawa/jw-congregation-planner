@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -237,7 +238,7 @@ describe('Weitere Termine der Woche (T63)', () => {
     const { container, dispatch } = zeige('termine', { weeks: [woche({ termine: [termin()] })] })
     fireEvent.click(container.querySelector('.fs-remove')!)
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'terminRemove', id: 'x1' })
-    fireEvent.click(container.querySelector('.fs-remove')!)
+    bestaetigen(container.querySelector('.fs-remove')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'terminRemove', id: 'x1' })
   })
 
@@ -250,7 +251,7 @@ describe('Weitere Termine der Woche (T63)', () => {
     fireEvent.click(x())
     // Geschärft ist nur das ✕ des zweiten Termins.
     expect([...container.querySelectorAll('.fs-remove.is-armed')]).toEqual([x()])
-    fireEvent.click(x())
+    bestaetigen(x())
     expect(dispatch).toHaveBeenCalledWith({ type: 'terminRemove', id: 'x2' })
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'terminRemove', id: 'x1' })
   })

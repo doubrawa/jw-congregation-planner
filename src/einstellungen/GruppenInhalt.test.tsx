@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -316,7 +317,7 @@ describe('Gruppe entfernen', () => {
     const { dispatch } = oeffne()
     fireEvent.click(knopf(blatt(), t.gruppeEntfernen))
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'removeGroup', id: 'g1' })
-    fireEvent.click(knopf(blatt(), t.loeschenSicher))
+    bestaetigen(knopf(blatt(), t.loeschenSicher))
     expect(dispatch).toHaveBeenCalledWith({ type: 'removeGroup', id: 'g1' })
   })
 
