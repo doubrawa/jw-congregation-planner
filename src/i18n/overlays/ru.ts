@@ -752,4 +752,6 @@ export default {
   "treffpunkteBesuche": "Встречи и посещения групп",
   "lageSenden": "К отправке: {n}",
   "holenSpracheFehlt": "Этой недели ещё нет на jw.org на языке собрания",
+  "personNameLbl": "Имя",
+  "toastTitelEingeben": "Введите название",
 } satisfies Partial<Dict>

@@ -53,7 +53,7 @@ export default {
   "abwEintragen": "Dodaj nieobecność",
   "engpassZeile": "{bereich} · potrzeba {b} · dostępnych {v} · nieobecnych {a} z {q}",
   "zeitleiste": "Oś czasu",
-  "nameLbl": "Imię i nazwisko",
+  "nameLbl": "Nazwa",
   "versammlungLbl": "Zbór",
   "darstellung": "Wygląd",
   "themeDunkel": "Ciemny",
@@ -752,4 +752,6 @@ export default {
   "treffpunkteBesuche": "Zbiórki i wizyty w grupach",
   "lageSenden": "Do wysłania: {n}",
   "holenSpracheFehlt": "Tego tygodnia nie ma jeszcze na jw.org w języku zboru",
+  "personNameLbl": "Imię i nazwisko",
+  "toastTitelEingeben": "Wpisz tytuł",
 } satisfies Partial<Dict>

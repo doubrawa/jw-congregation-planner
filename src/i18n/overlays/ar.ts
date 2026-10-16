@@ -752,4 +752,6 @@ export default {
   "treffpunkteBesuche": "الاجتماعات وزيارات الفرق",
   "lageSenden": "للإرسال: {n}",
   "holenSpracheFehlt": "هذا الأسبوع غير متوفر بعد على jw.org بلغة الجماعة",
+  "personNameLbl": "الاسم",
+  "toastTitelEingeben": "يُرجى إدخال عنوان",
 } satisfies Partial<Dict>

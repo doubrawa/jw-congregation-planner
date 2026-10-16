@@ -7340,6 +7340,20 @@ export const KATALOG = [
     ersetzen: '  return fmt.formatRange(a, b)\n',
   },
   {
+    id: 't123-programmpunkt-fragt-nach-titel',
+    datei: 'src/planen/ProgrammBlatt.tsx',
+    regel: 'Ein neuer Programmpunkt ohne Titel bittet um einen Titel, nicht um einen Namen — polnisch hieß das „Wpisz imię", den Vornamen eintragen.',
+    suchen: "      dispatch({ type: 'showToast', text: t.toastTitelEingeben })",
+    ersetzen: "      dispatch({ type: 'showToast', text: t.toastNameEingeben })",
+  },
+  {
+    id: 't123-freitext-leiter-personenname',
+    datei: 'src/planen/AssignSheet.tsx',
+    regel: 'Das Freitext-Feld für den Treffpunkt-Leiter fragt nach dem Namen einer Person (personNameLbl), nicht nach einer Bezeichnung — polnisch „Imię i nazwisko" statt „Nazwa".',
+    suchen: '            placeholder={t.personNameLbl}\n            aria-label={t.personNameLbl}\n',
+    ersetzen: '            placeholder={t.nameLbl}\n            aria-label={t.nameLbl}\n',
+  },
+  {
     id: 'zuteilung-vortrag-folgt-vorsitz',
     datei: 'src/data/planning.ts',
     regel: 'Den „Vortrag des Vorsitzenden" bekommt der Vorsitzende der Zusammenkunft — kein zweiter, und er bleibt nicht offen.',

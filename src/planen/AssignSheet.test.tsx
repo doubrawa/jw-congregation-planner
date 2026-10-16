@@ -14,7 +14,7 @@ import { emptyQualifications } from '../data/helpers'
 import { LOAD_WEEKS } from '../data/auslastung'
 import { ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER } from '../data/helpers'
 import { bibelbuecherLaden, makeTr } from '../i18n/translate'
-import { dict } from '../i18n/ui'
+import { dict, loadOverlay } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import type {
   Absence,
@@ -571,6 +571,22 @@ describe('Der Treffpunkt-Leiter kennt denselben Doppelweg', () => {
     const { container, dispatch } = mitTreffpunkt()
     fireEvent.click(knopf(container, t.uebernehmenBtn))
     expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.toastNameEingeben })
+  })
+
+  /*
+   * `nameLbl` benennt auch Gruppe, Trolley, Plan und Termin — auf Polnisch
+   * „Nazwa", für eine Person falsch. Bis T123 stand hier dieser Schlüssel, und
+   * weil er auf Polnisch „Imię i nazwisko" hieß, stand das wiederum über jedem
+   * Gruppen- und Trolleynamen (16.10.2026).
+   */
+  it('auf Polnisch fragt das Feld nach dem Namen einer Person, nicht nach einer Bezeichnung', async () => {
+    await loadOverlay('pl')
+    const pl = dict('pl')
+    // Gegenprobe: Nur wo beide Wörter verschieden sind, prüft der Test etwas.
+    expect(pl.personNameLbl).not.toBe(pl.nameLbl)
+    const { container } = mitTreffpunkt({ lang: 'pl' })
+    expect(feld(container).getAttribute('placeholder')).toBe(pl.personNameLbl)
+    expect(feld(container).getAttribute('aria-label')).toBe(pl.personNameLbl)
   })
 
   it('eine Person aus der Liste wird ganz normal zugeteilt — nicht als Freitext', () => {

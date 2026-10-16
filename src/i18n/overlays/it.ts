@@ -752,4 +752,6 @@ export default {
   "treffpunkteBesuche": "Adunanze e visite ai gruppi",
   "lageSenden": "Da inviare: {n}",
   "holenSpracheFehlt": "Questa settimana non è ancora su jw.org nella lingua della congregazione",
+  "personNameLbl": "Nome",
+  "toastTitelEingeben": "Inserisci un titolo",
 } satisfies Partial<Dict>

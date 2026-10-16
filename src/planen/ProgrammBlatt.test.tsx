@@ -297,7 +297,9 @@ describe('Ein eigener Punkt', () => {
     const { dispatch } = zeige()
     fireEvent.click(document.querySelector('.zeile-hinzu')!)
     fireEvent.click(knopf(oben(), t.hinzufuegenKnopf))
-    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.toastNameEingeben })
+    // Um einen Titel, nicht um einen Namen (T123): Polnisch hieß das „Wpisz
+    // imię", den Vornamen einer Person eintragen.
+    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.toastTitelEingeben })
     expect(dispatch.mock.calls.some((c) => (c[0] as { type: string }).type === 'lacAdd')).toBe(false)
   })
 

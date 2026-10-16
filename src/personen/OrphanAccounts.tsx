@@ -42,7 +42,7 @@ export function OrphanAccounts() {
           <div className="mem-line">
             <select
               className="mem-select"
-              aria-label={t.nameLbl}
+              aria-label={t.personNameLbl}
               value=""
               onChange={(e) =>
                 e.target.value &&

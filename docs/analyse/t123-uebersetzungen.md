@@ -96,6 +96,21 @@ Aktion und fielen der ersten Suche deshalb nicht auf), FRAG `Treffpunkte` und di
 „N Zuteilungen" (`zut`) erzeugt kein Erzeuger mehr — sie stehen nur noch für
 alte Zeilen da.
 
+**Ein Schlüssel, zwei Rollen — getrennt (beim Polnischen gefunden):**
+`nameLbl` benannte Versammlung, Gruppe, Trolley, Plan, Termin und Hilfsdienst
+**und** zwei Felder für eine Person (Freitext-Leiter im Zuteilungs-Blatt,
+Konto ohne Person). Polnisch, Russisch und Ukrainisch haben dafür zwei Wörter
+(„Nazwa" / „Imię i nazwisko", „Название" / „Имя", „Назва" / „Ім’я") —
+polnisch stand „Imię i nazwisko" über jedem Gruppen- und Trolleynamen. Neu:
+`personNameLbl` für die beiden Personen-Felder. Ebenso bat ein neuer
+Programmpunkt ohne Titel mit `toastNameEingeben` um einen Namen, polnisch
+„Wpisz imię" (den Vornamen) — neu `toastTitelEingeben`. Beide Schlüssel stehen
+in allen zwölf Wörterbüchern hinter `holenSpracheFehlt`; ab hier sind es 747.
+Wachen: `AssignSheet.test.tsx` (auf Polnisch, mit Gegenprobe) und
+`ProgrammBlatt.test.tsx`; Mutationsprobe `t123-freitext-leiter-personenname`
+und `t123-programmpunkt-fragt-nach-titel` bewacht. Das Russische und
+Ukrainische ziehen `nameLbl` in ihrem Durchgang nach.
+
 ### en · Englisch
 
 16. Oktober 2026 · alle 745 gelesen · Anrede: du (you) · 27 Korrekturen im

@@ -752,4 +752,6 @@ export default {
   "treffpunkteBesuche": "Зустрічі та відвідини груп",
   "lageSenden": "До надсилання: {n}",
   "holenSpracheFehlt": "Цього тижня ще немає на jw.org мовою збору",
+  "personNameLbl": "Ім’я",
+  "toastTitelEingeben": "Введіть назву",
 } satisfies Partial<Dict>

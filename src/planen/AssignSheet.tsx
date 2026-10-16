@@ -331,8 +331,8 @@ function ZuteilenInhalt({
             type="text"
             dir="auto"
             className="feld"
-            placeholder={t.nameLbl}
-            aria-label={t.nameLbl}
+            placeholder={t.personNameLbl}
+            aria-label={t.personNameLbl}
             value={externName}
             onChange={(e) => setExternName(e.target.value)}
           />

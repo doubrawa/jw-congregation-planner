@@ -752,4 +752,6 @@ export default {
   "treffpunkteBesuche": "Buluşmalar ve grup ziyaretleri",
   "lageSenden": "{n} gönderilecek",
   "holenSpracheFehlt": "Bu hafta jw.org’da henüz cemaat dilinde yok",
+  "personNameLbl": "Ad",
+  "toastTitelEingeben": "Bir başlık gir",
 } satisfies Partial<Dict>

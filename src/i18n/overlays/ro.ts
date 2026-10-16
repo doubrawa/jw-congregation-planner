@@ -752,4 +752,6 @@ export default {
   "treffpunkteBesuche": "Întruniri și vizite la grupe",
   "lageSenden": "De trimis: {n}",
   "holenSpracheFehlt": "Această săptămână nu este încă pe jw.org în limba congregației",
+  "personNameLbl": "Nume",
+  "toastTitelEingeben": "Introdu un titlu",
 } satisfies Partial<Dict>
