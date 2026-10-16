@@ -189,12 +189,15 @@ function useBesuchsZeilen({ ab, hoechstens, nurKommende = false }: { ab: string;
   const heute = fromIso(useKalendertag())
   const alle = rechteVon(state).zuteilen
   const meine = eigeneGruppen(state.persons, state.groups, state.personId)
+  // Der Stand je Besuch einmal — er sucht die Treffpunkte der Woche.
   return state.gruppenbesuche
-    .filter((besuch) => besuch.woche >= ab && (!nurKommende || besuchStand(besuch, lage, heute).art !== 'vorbei'))
-    .sort((a, b) => a.woche.localeCompare(b.woche))
+    .filter((besuch) => besuch.woche >= ab)
+    .map((besuch) => ({ besuch, stand: besuchStand(besuch, lage, heute) }))
+    .filter(({ stand }) => !nurKommende || stand.art !== 'vorbei')
+    .sort((a, b) => a.besuch.woche.localeCompare(b.besuch.woche))
     .slice(0, hoechstens)
-    .map((besuch) => {
-      const treffpunkt = alle || meine.has(besuch.grp) ? besuchStand(besuch, lage).treffpunkte[0] : undefined
+    .map(({ besuch, stand }) => {
+      const treffpunkt = alle || meine.has(besuch.grp) ? stand.treffpunkte[0] : undefined
       return {
         key: besuch.id,
         zellen: [

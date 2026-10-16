@@ -38,7 +38,7 @@
   overflow: hidden;
   /* Unten der Home-Indikator: index.html nutzt viewport-fit=cover. */
   padding: 8px 20px max(20px, env(safe-area-inset-bottom));
-  border-radius: 28px 28px 0 0;
+  border-radius: var(--r-sheet) var(--r-sheet) 0 0;
   background: var(--karte);
   z-index: calc(var(--z-sheet) + 1);
 }
@@ -55,8 +55,8 @@
     transform: translate(-50%, -50%);
     width: min(560px, calc(100vw - 64px));
     padding: 24px 28px 28px;
-    border-radius: 28px;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+    border-radius: var(--r-sheet);
+    box-shadow: var(--sh-sheet);
   }
 }
 

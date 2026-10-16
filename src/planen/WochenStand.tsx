@@ -4,6 +4,7 @@ import { useAbwesend } from '../app/useAbwesend'
 import { useKalendertag } from '../app/useKalendertag'
 import { Saal } from '../bausteine/Saal'
 import { Spur } from '../bausteine/Spur'
+import { zusammenkunftName } from '../components/anlass-name'
 import { engpaesse } from '../data/bedarf'
 import { istAusgefallen, serviceQualKey } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
@@ -170,7 +171,7 @@ export function BesetzungKarte({ tab, tpw }: { tab: MeetingKey; tpw: (s: string)
 
 /** Der Satz zu einem Konflikt der Zusammenkunft — wie im früheren Banner. */
 function konfliktText(c: Conflict, t: Dict): string {
-  const tabName = c.tab === 'we' ? t.tabWe : t.tabMid
+  const tabName = zusammenkunftName(c.tab ?? 'mid', t)
   if (c.kind === 'absent') return fill(t.konfliktAbsent, { name: c.name, tab: tabName })
   if (c.kind === 'double') return fill(t.konfliktDouble, { name: c.name, n: c.count ?? 2, tab: tabName })
   return fill(t.konfliktHelperTask, { name: c.name, tab: tabName })

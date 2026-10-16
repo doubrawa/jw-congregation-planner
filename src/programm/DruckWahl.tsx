@@ -77,7 +77,7 @@ export function DruckWahl({
     <>
       <DruckKnopf mitText={mitText} onClick={() => setOffen(true)} />
       {offen && (
-        <DruckBlatt
+        <DruckWahlBlatt
           zeitraum={zeitraum}
           erklaerung={erklaerung}
           monatText={fill(t.druckMonat, { monat: monatsName(monat, state.lang) })}
@@ -96,8 +96,11 @@ export function DruckWahl({
   )
 }
 
-/** Das Blatt mit der Wahl — die Woche ist vorgewählt. */
-function DruckBlatt({
+/**
+ * Das Blatt mit der Wahl — die Woche ist vorgewählt. Nicht zu verwechseln mit
+ * `druck/DruckBlatt` (dem A4-Blatt des Ausdrucks).
+ */
+function DruckWahlBlatt({
   zeitraum,
   erklaerung,
   monatText,

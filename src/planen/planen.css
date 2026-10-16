@@ -204,7 +204,12 @@
   white-space: nowrap;
 }
 
+/* Mindestens 24 px hoch (WCAG 2.5.8, „Trefferflächen" in components.css):
+   gemessen waren es 16. */
 .partner-toggle {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
   margin-top: 8px;
   color: var(--akzent-text);
   font-size: calc(11px * var(--fs));

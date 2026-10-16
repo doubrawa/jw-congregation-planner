@@ -5,6 +5,7 @@ import { useKalendertag } from '../app/useKalendertag'
 import { Zeichen } from '../bausteine/Zeichen'
 import { aufgabeTag } from '../aufgaben/aufgabe-anzeige'
 import { AufgabeKarte } from '../aufgaben/AufgabeKarte'
+import { zusammenkunftName } from '../components/anlass-name'
 import { datumsFormat } from '../components/datum-anzeige'
 import { treffpunktTitel } from '../components/treffpunkt-beschriftung'
 import { eigeneGruppen } from '../data/fs'
@@ -140,7 +141,7 @@ function DieseWoche({ termine }: { termine: readonly Termin[] }) {
   const { t } = i18n
   const kurz = datumsFormat(state.lang, 'wochentagZahl')
   const was = (termin: Termin): string => {
-    if (termin.art === 'zusammenkunft') return termin.tab === 'mid' ? t.tabMid : t.tabWe
+    if (termin.art === 'zusammenkunft') return zusammenkunftName(termin.tab, t)
     const titel = treffpunktTitel(termin.inst, state.groups, i18n)
     // Der Ort durch `tu` wie im Programm: Der Vorgabewert („Königreichssaal")
     // steht im Wörterbuch und blieb hier als einziges Wort deutsch.

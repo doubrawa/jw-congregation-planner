@@ -124,9 +124,6 @@
 
   .week-center {
     text-align: start;
-  }
-
-  .week-center {
     align-items: flex-start;
   }
 
@@ -210,8 +207,8 @@
   }
 
   /* Vom Desktop gedruckt stehen beide Tage im Blatt — untereinander, jeder
-     auf einer eigenen Seite, wie zwei einzeln gedruckte Wochen. Ein Bogen mit
-     beiden Tagen auf einer Seite kommt mit den Druckbögen (T121). */
+     auf einer eigenen Seite, wie zwei einzeln gedruckte Wochen. Die Woche auf
+     einem Bogen druckt „Drucken" (`ProgrammDruck`, T121 Phase 9). */
   .prog-tage {
     display: block;
   }

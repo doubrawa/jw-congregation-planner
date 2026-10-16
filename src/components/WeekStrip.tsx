@@ -86,13 +86,11 @@ function Vorschau({ offset, children }: { offset: -1 | 1; children: ReactNode })
 
 /**
  * Zeichnet `children` so, als stünde die App auf Woche `week` — **nur zum
- * Ansehen**, ohne dass etwas ausgelöst werden kann.
- *
- * Zweimal gebraucht: für die Nachbarwochen im Streifen und für den Ausdruck
- * eines ganzen Monats (`programm/MonatsDruck.tsx`, T105), der jede Woche des
- * Monats mit demselben Baustein zeichnet wie den Ausdruck einer einzelnen.
+ * Ansehen**, ohne dass etwas ausgelöst werden kann: die Nachbarwochen im
+ * Streifen (`Vorschau`). Bis Phase 9 (T121) zeichnete damit auch der
+ * Monatsdruck jede Woche; der Bogen rechnet seither selbst.
  */
-export function MitWoche({ week, children }: { week: number; children: ReactNode }) {
+function MitWoche({ week, children }: { week: number; children: ReactNode }) {
   const state = useAppState()
   // Kein useMemo: `state` ist nach jeder Aktion ein neues Objekt, der Vergleich
   // ginge also ohnehin daneben — und `children` ist bei jedem Render neu, der

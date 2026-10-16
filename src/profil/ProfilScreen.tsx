@@ -5,25 +5,30 @@ import { Zeichen } from '../bausteine/Zeichen'
 import { AbmeldenKnopf } from '../components/AbmeldenKnopf'
 import { Switch } from '../components/Switch'
 import { useInstallAvailable, usePush } from '../components/usePush'
-import { FONT_SCALES, THEME_LIST } from '../data/constants'
+import { FONT_SCALES, THEME_LIST, type FontScale } from '../data/constants'
 import { displayName, initials } from '../data/helpers'
 import { erlaubteScreens, rechteVon } from '../data/rechte'
 import type { Lang } from '../data/types'
 import { APP_LANGS_SORTED } from '../i18n/langs'
+import type { Dict } from '../i18n/ui'
 import { useT } from '../i18n/useT'
 import { promptInstall } from '../lib/install'
 import { AbwesenheitenKarte } from '../components/AbwesenheitenKarte'
 import { Diagnose } from './Diagnose'
 import './profil.css'
 
-/** Stufenname je FONT_SCALES-Position (gleiche Reihenfolge). */
-const FS_LABELS = [
-  'schriftKlein',
-  'schriftStandard',
-  'schriftGross',
-  'schriftGroesser',
-  'schriftSehrGross',
-] as const
+/**
+ * Der Name jeder Stufe des Reglers — gegen `FontScale` geprüft: Eine neue Stufe
+ * fehlt hier nicht still. Bis zum 16.10.2026 eine Liste neben `FONT_SCALES`,
+ * die nur über die Reihenfolge zusammenhing.
+ */
+const FS_LABELS = {
+  0.9: 'schriftKlein',
+  1: 'schriftStandard',
+  1.15: 'schriftGross',
+  1.3: 'schriftGroesser',
+  1.45: 'schriftSehrGross',
+} as const satisfies Record<FontScale, keyof Dict>
 
 /**
  * **Profil** (T121): wer man ist, wie die App aussieht, wann man fehlt.
@@ -41,11 +46,10 @@ export function ProfilScreen() {
   const i18n = useT()
   const { t } = i18n
   const me = eigenePerson(state)
-  // Position im Regler; unbekannter Wert (z. B. alter localStorage) → Standard.
-  const scaleIndex = Math.max(0, FONT_SCALES.indexOf(state.fontScale))
-  // Beide Listen sind gleich lang und der Index ist geklemmt; der
-  // Index-Zugriff sieht das nicht (noUncheckedIndexedAccess).
-  const scaleLabel = FS_LABELS[scaleIndex] ?? FS_LABELS[0]!
+  // Position im Regler. Die Stufe ist immer eine bekannte: Was das Gerät
+  // gespeichert hat, grenzt `asFontScale` schon beim Start ein.
+  const scaleIndex = FONT_SCALES.indexOf(state.fontScale)
+  const scaleLabel = FS_LABELS[state.fontScale]
   // Konto-E-Mail (nur Produktion; die eigene Mitglieder-Zeile sieht jeder).
   const myEmail = state.members.find((m) => m.userId === state.userId)?.email ?? ''
   const verwalten = erlaubteScreens(rechteVon(state)).includes('personen')

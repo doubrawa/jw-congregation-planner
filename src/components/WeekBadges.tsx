@@ -1,5 +1,6 @@
 import { fill, useT } from '../i18n/useT'
 import { useApp } from '../app/context'
+import { zusammenkunftName } from './anlass-name'
 import { abweichungsGrund, istAusgefallen } from '../data/helpers'
 import { versatzAbMontag } from '../data/meeting-dates'
 import { termineVon } from '../data/termine'
@@ -15,7 +16,7 @@ import './components.css'
 export function MemorialBanner({ week, tab }: { week: Week; tab: MeetingTab }) {
   const { t, tp } = useT()
   if (!week.mem || week.memCancel !== tab) return null
-  const cancelled = week.memCancel === 'we' ? t.tabWe : t.tabMid
+  const cancelled = zusammenkunftName(week.memCancel, t)
   const date = (week.memCancel === 'we' ? week.we : week.mid).date
   return (
     <div className="mem-banner">
@@ -40,7 +41,7 @@ export function MemorialBanner({ week, tab }: { week: Week; tab: MeetingTab }) {
 export function AusfallBanner({ week, tab }: { week: Week | undefined; tab: MeetingKey }) {
   const { t } = useT()
   if (!week || !istAusgefallen(week, tab)) return null
-  const name = tab === 'we' ? t.tabWe : t.tabMid
+  const name = zusammenkunftName(tab, t)
   const grund = abweichungsGrund(week, tab)
   return (
     <div className="ausfall-banner" role="status">

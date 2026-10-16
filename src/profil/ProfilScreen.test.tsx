@@ -236,10 +236,17 @@ describe('Schriftgröße', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'setFontScale', scale: FONT_SCALES[3] })
   })
 
-  it('ein unbekannter gespeicherter Wert landet auf der ersten Stufe, nicht auf −1', () => {
-    const { container } = zeige({ fontScale: 99 as AppState['fontScale'] })
-    expect(regler(container).value).toBe('0')
-    expect(stufe(container)).toBe(t.schriftKlein)
+  it('jede Stufe steht an ihrer Stelle und trägt ihren Namen', () => {
+    // Ein unbekannter gespeicherter Wert kommt hier nicht an: Ihn fängt schon
+    // der Start ab (`asFontScale`, init.test.ts). Bis zum 16.10.2026 stand
+    // dieser Fall hier — mit einem Zustand, den die App nicht erzeugt.
+    const namen = [t.schriftKlein, t.schriftStandard, t.schriftGross, t.schriftGroesser, t.schriftSehrGross]
+    FONT_SCALES.forEach((fontScale, i) => {
+      const { container } = zeige({ fontScale })
+      expect(regler(container).value).toBe(String(i))
+      expect(stufe(container)).toBe(namen[i])
+      cleanup()
+    })
   })
 })
 

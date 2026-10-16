@@ -121,16 +121,17 @@
   --problem-rand: color-mix(in srgb, var(--problem) 45%, var(--karte));
   --schwebe: color-mix(in srgb, var(--text) 6%, transparent);
 
-  /* Radien */
+  /* Radien — `--r-sheet` auch für die übrigen großen Karten (Anmelden, die
+     Karte oben auf einer Seite). */
   --r-panel: 24px;
-  --r-input: 12px;
   --r-sheet: 28px;
   --r-pill: 999px;
 
-  /* Schatten */
-  --sh-col: 0 0 60px rgba(var(--shade), 0.18);
-  --sh-overlay: 0 24px 48px rgba(var(--shade), 0.25);
-  --sh-btn: 0 1px 3px rgba(var(--shade), 0.12);
+  /* Schatten: das Blatt als Fenster (ab 920 px) und die Datumsauswahl über
+     allem. Bis zum 16.10.2026 standen beide fest verdrahtet in ihren Dateien,
+     und hier drei Werte, die niemand nahm. */
+  --sh-sheet: 0 24px 60px rgba(var(--shade), 0.35);
+  --sh-popover: 0 14px 34px rgba(var(--shade), 0.2);
 }
 
 /*
@@ -148,18 +149,17 @@
    Elf Werte zwischen 20 und 50 lagen über vier Dateien verstreut, ohne dass
    irgendwo stand, was über was liegen soll. Die Reihenfolge ist nicht
    beliebig: das S-89-Formular öffnet sich AUS dem Zuteilungs-Sheet heraus und
-   muss darüber liegen, und die Bestätigungs-Abfrage muss über dem Toast
-   stehen, der sie sonst verdeckt.
+   muss darüber liegen.
 
-   Je Ebene deckt der Wert den Schleier ab, `calc(… + 1)` den Inhalt darauf. */
+   Je Ebene deckt der Wert den Schleier ab, `calc(… + 1)` den Inhalt darauf.
+   Bis zum 16.10.2026 standen hier auch die Auswahl am Druckknopf (heute ein
+   Blatt), die Mitteilungen (heute eine Seite) und die Bestätigungs-Abfrage
+   (heute zwei Tipps, `useZweiTipp`). */
 :root {
-  --z-menue: 10; /* Auswahl am Druckknopf — unter der klebenden Kopfzeile */
   --z-nav: 20; /* Kopfzeile mobil */
   --z-leiste: 20; /* Aktionsleiste beim Planen, mobil — unten, wie die Kopfzeile oben */
-  --z-panel: 30; /* Mitteilungen */
   --z-sheet: 34; /* Zuteilungs-Sheet, Seitenmenü */
   --z-sheet-top: 38; /* S-89 — öffnet aus dem Sheet heraus */
   --z-toast: 40;
-  --z-dialog: 42; /* Bestätigungs-Abfrage: über dem Toast */
   --z-popover: 50; /* Datumsauswahl — immer obenauf */
 }

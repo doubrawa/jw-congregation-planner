@@ -6,7 +6,7 @@ import { deutschesDatum, meetingDate, meetingDateText, meetingTime } from '../da
 import type { HelperSlot, Meeting, MeetingKey, MeetingTab, PartItem, Person, Section, Service, Week } from '../data/types'
 import { abschnittZeilen, plaetzeVon } from './programm-zeilen'
 import { fill, platzName, useT } from '../i18n/useT'
-import { datumsFormat } from '../components/datum-anzeige'
+import { datumsFormat, wochentagMitZahl } from '../components/datum-anzeige'
 import { AusfallBanner, MemorialBanner } from '../components/WeekBadges'
 import { PersonZeile } from './PersonZeile'
 
@@ -332,8 +332,6 @@ function HilfsdiensteTabelle({ week, rawWeek, me }: { week: Week; rawWeek: Week;
   const { state } = useApp()
   const { t, tu } = useT()
   const titelId = useId()
-  const tagName = datumsFormat(state.lang, 'wochentag')
-  const tagZahl = datumsFormat(state.lang, 'tagZahl')
   return (
     <section className="prog-abschnitt prog-helpers" data-farbe="neutral2">
       <div className="prog-abschnitt-kopf">
@@ -347,7 +345,7 @@ function HilfsdiensteTabelle({ week, rawWeek, me }: { week: Week; rawWeek: Week;
             <td />
             {MEETING_TABS.map((key) => {
               const datum = meetingDate(rawWeek, key, state.congregation.times)
-              const tag = `${tagName.format(datum)} ${tagZahl.format(datum)}`
+              const tag = wochentagMitZahl(datum, state.lang)
               return (
                 <th key={key} scope="col">
                   {istAusgefallen(rawWeek, key) ? <s>{tag}</s> : tag}

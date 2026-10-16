@@ -4,7 +4,8 @@ import { hatAuxKlasse } from '../data/aux-class'
 import { abweichungsGrund, dauerAbtrennen, istAusgefallen, istBlockSektion, MEETING_TABS } from '../data/helpers'
 import { deutschesDatum, meetingDate, meetingTime } from '../data/meeting-dates'
 import type { MeetingKey, SlotAssignment, Week } from '../data/types'
-import { datumsFormat } from '../components/datum-anzeige'
+import { zusammenkunftName } from '../components/anlass-name'
+import { wochentagMitZahl } from '../components/datum-anzeige'
 import { fill, platzName, useT } from '../i18n/useT'
 import { abschnittZeilen, plaetzeVon } from '../programm/programm-zeilen'
 import { Balken, Offen } from './DruckBlatt'
@@ -46,7 +47,7 @@ export function TagVoll({ tab, week, rawWeek, tpw }: DruckTag) {
         <span className="druck-tag-zeit">{uhrzeit}</span>
       </div>
       {ausgefallen ? (
-        <p className="druck-ausfall">{abweichungsGrund(rawWeek, tab) || (tab === 'we' ? t.tabWe : t.tabMid)}</p>
+        <p className="druck-ausfall">{abweichungsGrund(rawWeek, tab) || zusammenkunftName(tab, t)}</p>
       ) : (
         <>
           {meeting.sections.map((section, si) => {
@@ -114,7 +115,7 @@ export function TagKnapp({ tab, week, rawWeek, tpw }: DruckTag) {
   const rawMeeting = rawWeek[tab]
   const zeiten = state.congregation.times
   const datum = meetingDate(rawWeek, tab, zeiten)
-  const tag = `${datumsFormat(state.lang, 'wochentag').format(datum)} ${datumsFormat(state.lang, 'tagZahl').format(datum)}`
+  const tag = wochentagMitZahl(datum, state.lang)
   const ausgefallen = istAusgefallen(rawWeek, tab)
   const mitAux = hatAuxKlasse(rawMeeting)
   return (
@@ -123,7 +124,7 @@ export function TagKnapp({ tab, week, rawWeek, tpw }: DruckTag) {
         <TagDatum ausgefallen={ausgefallen}>{[tag, meetingTime(rawWeek, tab, zeiten)].filter(Boolean).join(' · ')}</TagDatum>
       </span>
       {ausgefallen ? (
-        <p className="druck-ausfall">{abweichungsGrund(rawWeek, tab) || (tab === 'we' ? t.tabWe : t.tabMid)}</p>
+        <p className="druck-ausfall">{abweichungsGrund(rawWeek, tab) || zusammenkunftName(tab, t)}</p>
       ) : (
         meeting.sections.map((section, si) => {
           const rawSection = rawMeeting.sections[si]
@@ -184,8 +185,6 @@ export function HilfsdiensteDruck({ week, rawWeek, knapp = false }: { week: Week
   const { state } = useApp()
   const i18n = useT()
   const { t, tu } = i18n
-  const tagName = datumsFormat(state.lang, 'wochentag')
-  const tagZahl = datumsFormat(state.lang, 'tagZahl')
   return (
     <section className={knapp ? 'druck-hilfsdienste druck-hilfsdienste--knapp' : 'druck-hilfsdienste'} data-farbe="neutral2">
       {knapp ? (
@@ -199,7 +198,7 @@ export function HilfsdiensteDruck({ week, rawWeek, knapp = false }: { week: Week
           const datum = meetingDate(rawWeek, key, state.congregation.times)
           return (
             <span key={key}>
-              <TagDatum ausgefallen={istAusgefallen(rawWeek, key)}>{`${tagName.format(datum)} ${tagZahl.format(datum)}`}</TagDatum>
+              <TagDatum ausgefallen={istAusgefallen(rawWeek, key)}>{wochentagMitZahl(datum, state.lang)}</TagDatum>
             </span>
           )
         })}

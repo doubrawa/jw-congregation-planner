@@ -44,7 +44,7 @@
   border-radius: 14px;
   background: var(--karte);
   border: 1px solid var(--umriss);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--sh-popover);
 }
 
 .dp-head {

@@ -4385,15 +4385,15 @@ export const KATALOG = [
     id: 'besuch-fremd-ohne-treffpunkt',
     datei: 'src/druck/TreffpunktBogen.tsx',
     regel: 'Von fremden Gruppenbesuchen druckt nur, wer zuteilt, Ort und Zeit — sonst Woche und Gruppe.',
-    suchen: '      const treffpunkt = alle || meine.has(besuch.grp) ? besuchStand(besuch, lage).treffpunkte[0] : undefined\n',
-    ersetzen: '      const treffpunkt = besuchStand(besuch, lage).treffpunkte[0]\n',
+    suchen: '      const treffpunkt = alle || meine.has(besuch.grp) ? stand.treffpunkte[0] : undefined\n',
+    ersetzen: '      const treffpunkt = stand.treffpunkte[0]\n',
   },
   {
     id: 'gruppenbesuch-bogen-nur-kommende',
     datei: 'src/druck/TreffpunktBogen.tsx',
     regel: 'Der Bogen der Gruppenbesuche nennt nur die kommenden, wie die Ansicht.',
-    suchen: "    .filter((besuch) => besuch.woche >= ab && (!nurKommende || besuchStand(besuch, lage, heute).art !== 'vorbei'))\n",
-    ersetzen: '    .filter((besuch) => besuch.woche >= ab)\n',
+    suchen: "    .filter(({ stand }) => !nurKommende || stand.art !== 'vorbei')\n",
+    ersetzen: '',
   },
   {
     id: 'druckwahl-treffpunkte-bogen',
@@ -4662,6 +4662,13 @@ export const KATALOG = [
     regel: 'Die Konflikte einer Zusammenkunft werden einmal je Zustand gerechnet — für alle Bausteine, die danach fragen.',
     suchen: '  if (fertig) return fertig\n',
     ersetzen: '',
+  },
+  {
+    id: 'schrift-stufe-traegt-ihren-namen',
+    datei: 'src/profil/ProfilScreen.tsx',
+    regel: 'Jede Stufe der Schriftgröße trägt im Profil ihren eigenen Namen.',
+    suchen: "  1.3: 'schriftGroesser',\n",
+    ersetzen: "  1.3: 'schriftGross',\n",
   },
   {
     id: 'kandidaten-gemerkt-an-ihren-feldern',

@@ -1,7 +1,9 @@
 import './components.css'
 
 /**
- * Chevron-Icon für runde Blätter-Buttons (Wochen-Navigation, Datumsauswahl).
+ * Chevron-Icon für die runden Blätter-Buttons der Datumsauswahl. Die
+ * Wochenwahl nimmt seit T121 `Zeichen` (fest 24 px); hier wächst der Pfeil mit
+ * der Schrift des Knopfs.
  *
  * Bewusst ein SVG statt der Glyphen ‹ ›: das sind typografische Anführungs-
  * zeichen, deren Tinte auf x-Höhe sitzt und nicht mittig in der Zeilenbox —

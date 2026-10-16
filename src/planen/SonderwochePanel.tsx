@@ -5,6 +5,7 @@ import { meetingOffset, meetingTime, wdAusVersatz } from '../data/meeting-dates'
 import type { MeetingKey } from '../data/types'
 import { useT } from '../i18n/useT'
 import { VERSAETZE, wochentagName } from './wochentage'
+import { zusammenkunftName } from '../components/anlass-name'
 import { Switch } from '../components/Switch'
 
 /**
@@ -51,7 +52,7 @@ export function SonderwochePanel({ tab }: { tab: MeetingKey }) {
 
   const abw = abweichung(week, tab)
   const findetStatt = abw?.cancelled !== true
-  const name = tab === 'we' ? t.tabWe : t.tabMid
+  const name = zusammenkunftName(tab, t)
 
   // Der gerade geltende Termin — aus Abweichung, eigenem Termin oder
   // Einstellungen. Er ist zugleich die Vorbelegung: wählt der Planer denselben

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useApp } from '../app/context'
 import { Option } from '../bausteine/Option'
 import { Zeichen } from '../bausteine/Zeichen'
+import { zusammenkunftName } from '../components/anlass-name'
 import { DatePicker } from '../components/DatePicker'
 import { datumsFormat } from '../components/datum-anzeige'
 import { anlassArt } from '../data/anlass'
@@ -185,7 +186,7 @@ function ZusammenkunftZeile({ tab }: { tab: MeetingKey }) {
       <div className="einrichten-zeile">
         <span className="einrichten-zeile-text">
           <span className="einrichten-wann">{istAusgefallen(week, tab) ? <s>{wann}</s> : wann}</span>
-          <span className="klein-text">{tab === 'we' ? t.tabWe : t.tabMid}</span>
+          <span className="klein-text">{zusammenkunftName(tab, t)}</span>
         </span>
         <button type="button" className="verweis-leise" aria-expanded={offen} onClick={() => setOffen((o) => !o)}>
           {t.verlegen}

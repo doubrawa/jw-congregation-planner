@@ -1,4 +1,6 @@
+import { zusammenkunftName } from '../components/anlass-name'
 import { datumsFormat } from '../components/datum-anzeige'
+import { mtab } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import type { Lang, MeetingTab, Week } from '../data/types'
 import type { Dict } from '../i18n/ui'
@@ -43,8 +45,8 @@ export function wochenDesMonats(weeks: readonly Pick<Week, 'start'>[], monat: st
 /**
  * **Was der Kopf eines Ausdrucks als Thema nennt** — die Zusammenkunft oder
  * die Treffpunkte; stehen am Desktop beide Tage im Blatt (`useBeideTage`),
- * „Zusammenkünfte". Eine Stelle für die Woche und den Monat: Bis hierher
- * stand die Auswahl in beiden, und jede Erweiterung musste sie zweimal finden.
+ * „Zusammenkünfte". Bis zu den Druckbögen (T121, Phase 9) fragte auch der
+ * Monatsdruck danach; seither nur noch der Ausdruck des Bildschirms.
  */
 export function druckThema(
   t: Pick<Dict, 'navZusammenkuenfte' | 'tabWe' | 'tabMid' | 'fsShort'>,
@@ -52,7 +54,7 @@ export function druckThema(
   beideTage: boolean,
 ): string {
   if (beideTage) return t.navZusammenkuenfte
-  return tab === 'we' ? t.tabWe : tab === 'fs' ? t.fsShort : t.tabMid
+  return tab === 'fs' ? t.fsShort : zusammenkunftName(mtab(tab), t)
 }
 
 /**

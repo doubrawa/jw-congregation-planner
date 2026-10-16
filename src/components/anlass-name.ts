@@ -1,4 +1,4 @@
-import type { AnlassArt } from '../data/types'
+import type { AnlassArt, MeetingKey } from '../data/types'
 import type { Dict } from '../i18n/ui'
 
 /**
@@ -11,4 +11,12 @@ export function anlassName(
   t: Pick<Dict, 'coWoche' | 'memWoche' | 'kongress'>,
 ): string | null {
   return art === 'co' ? t.coWoche : art === 'mem' ? t.memWoche : art === 'kongress' ? t.kongress : null
+}
+
+/**
+ * Wie eine Zusammenkunft heißt — unter der Woche oder am Wochenende. Stand bis
+ * zum 16.10.2026 neunmal von Hand da (Review, UI C9), in zwei Schreibweisen.
+ */
+export function zusammenkunftName(tab: MeetingKey, t: Pick<Dict, 'tabMid' | 'tabWe'>): string {
+  return tab === 'we' ? t.tabWe : t.tabMid
 }

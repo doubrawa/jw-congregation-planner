@@ -89,12 +89,10 @@
   stroke-linejoin: round;
 }
 /*
- * **Kein `[dir='rtl'] .chev` hier.** Die richtungsabhängigen Pfeile werden
- * bereits gespiegelt, und zwar dort, wo sie sitzen: `.week-arrow` und
- * `.pers-back-chev` in `app/rtl.css`, `.dp-nav` in `datepicker.css`. Eine
- * zusätzliche Regel auf `.chev` kippte sie ein **zweites** Mal — der Knopf
- * „vorige Woche" zeigte dann wieder nach links. Nachgemessen am 28.8.2026 im
- * Vergleich zweier Aufnahmen mit und ohne die Regel.
+ * **Kein `[dir='rtl'] .chev` hier.** Gespiegelt wird dort, wo der Pfeil sitzt:
+ * `.dp-nav` in `datepicker.css` — seit der Wochenwahl mit `Zeichen` (T121) der
+ * einzige Ort des Chevrons. Eine zusätzliche Regel auf `.chev` kippte ihn ein
+ * **zweites** Mal; nachgemessen am 28.8.2026, damals noch an der Wochenwahl.
  */
 
 /* ---- Wochen-Navigation (Programm + Planen, T121: `GWoche`) ---------------- */
@@ -253,21 +251,10 @@
   background: var(--karte);
 }
 
+/* Nur der Vortragsplan trägt eine Farbe; die übrigen Panels stehen neutral.
+   Bis zum 16.10.2026 standen hier auch Gold, Wein und `acc` — keines trug sie. */
 .panel[data-farbe='petrol'] {
   --panel-accent: var(--sek1);
-}
-
-.panel[data-farbe='gold'] {
-  --panel-accent: var(--sek2);
-}
-
-/* Karten wie NÄCHSTE AUFGABEN, SPRACHE, FESTE ROLLEN */
-.panel[data-farbe='acc'] {
-  --panel-accent: var(--akzent-text);
-}
-
-.panel[data-farbe='wein'] {
-  --panel-accent: var(--sek3);
 }
 
 .panel-label {
@@ -367,13 +354,8 @@ select {
 
    Bei den Textknöpfen wächst die Fläche über die Mindesthöhe — das Schriftbild
    bleibt, nur der Knopf wird höher. Der Schalter bekommt die Fläche über ein
-   unsichtbares Pseudo-Element. */
-.partner-toggle {
-  min-height: 24px;
-  display: inline-flex;
-  align-items: center;
-}
-
+   unsichtbares Pseudo-Element. „+ Gesprächspartner" (`.partner-toggle`) hat
+   seine Regel beim Planen (planen.css), wo der Knopf allein steht. */
 .switch::after {
   content: '';
   position: absolute;

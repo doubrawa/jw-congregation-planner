@@ -76,6 +76,15 @@ export function tageSpanne(von: string, bis: string, lang: string, format: Datum
 }
 
 /**
+ * „Dienstag 8.9." — der Tag einer Zusammenkunft über ihrer Spalte, auf dem
+ * Bildschirm wie im Ausdruck. Stand bis zum 16.10.2026 dreimal
+ * zusammengesetzt da (Review, UI C9).
+ */
+export function wochentagMitZahl(datum: Date, lang: string): string {
+  return `${datumsFormat(lang, 'wochentag').format(datum)} ${datumsFormat(lang, 'tagZahl').format(datum)}`
+}
+
+/**
  * Eine Woche in Worten, Montag bis Sonntag: „7.–13. September" — aus `Intl`,
  * nicht aus dem Arbeitsheft (`Week.range`): für Wochen, deren Programm noch
  * nicht da ist (Gruppenbesuche, Trolleys, „Holen"). Stand bis Phase 10 von
