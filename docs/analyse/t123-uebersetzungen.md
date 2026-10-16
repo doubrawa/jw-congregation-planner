@@ -141,7 +141,7 @@ Offen: keine. (Erwogen und gelassen: `fsFreqM1` „1st of the month" für „jed
 ### es · Spanisch
 
 16. Oktober 2026 · alle 745 gelesen · Anrede: tú, Gruppen „ustedes" (wie
-jw.org) · 24 Korrekturen im Wörterbuch, 2 in FRAG.
+jw.org) · 24 Korrekturen im Wörterbuch, 2 in FRAG, dazu 2 als Nachtrag (unten).
 
 | Schlüssel | alt | neu | Grund |
 | --- | --- | --- | --- |
@@ -174,6 +174,14 @@ jw.org) · 24 Korrekturen im Wörterbuch, 2 in FRAG.
 
 Daten gelesen: FRAG, REF, D, Bibelbücher, Function-Titel — sonst nichts zu
 ändern.
+
+Nachtrag (beim Italienischen gefunden; die Doppelpunkt-Suche lief danach über
+alle Sprachen):
+
+| Schlüssel | alt | neu | Grund |
+| --- | --- | --- | --- |
+| `planSendenOhneKonto` | Sin cuenta en la aplicación: avísales en persona: {namen} | Sin cuenta en la aplicación — avísales en persona: {namen} | Zwei Doppelpunkte in einem Satz; Deutsch hat den Gedankenstrich |
+| `nameDoppelt` | … para distinguirlos. … | … para distinguir a las dos personas. … | Genus: „distinguirlos“ ist männlich, gleich heißen auch zwei Schwestern |
 
 Offen, nicht geändert: die Zwei-Tipp-Fragen „¿… de verdad?" (`abmeldenSicher`,
 `leerenSicher`, `loeschenSicher`, `entfernenSicher`) sind umgangssprachlich,
