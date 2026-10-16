@@ -75,7 +75,7 @@ const FRAG: Record<string, Record<string, string>> = {
   },
   fa: {
     "Schüler": "شاگرد", "Partner": "دستیار", "Ratgeber": "مشاور", "Kreisaufseher": "سرپرست حوزه",
-    "Treffpunkte": "خدمت موعظه",
+    "Treffpunkte": "جلسات خدمت موعظه",
     "ERÖFFNUNG": "آغاز",
     "ABSCHLUSS": "پایان",
     "SCHÄTZE AUS GOTTES WORT": "گنج‌هایی در کلام خدا",

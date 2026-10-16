@@ -663,3 +663,83 @@ Apple und Google; eine durchgehend neutrale Fassung (Masdar statt Imperativ,
 „كتابة الرمز" statt „اكتب الرمز") wäre eine Grundsatzentscheidung für
 Muttersprachler. „رفيق" (Trolley-Partner) ist männlich wie das deutsche
 „Partner".
+
+### fa · Persisch
+
+16. Oktober 2026 · alle 747 gelesen · Anrede: Sie (شما, Imperativ im Plural —
+durchgehend; eine Suche nach Formen der 2. Person Singular fand keine) · 29
+Korrekturen im Wörterbuch, 1 in FRAG. Das Persische kennt kein Genus und setzt
+nach Zahlen den Singular („{n} وظیفه" ist richtig) — beides prüfte sich hier
+von selbst. Schrift: nur persisches Yeh und Kaf (keine arabischen Formen),
+Tanwin durchweg nach dem Alif (36), Ezafe als ه + U+0654 (118; einmal „ۀ" in
+`anlassCoText`, wie FRAG „مطالعۀ کتاب مقدّس در جماعت" von jw.org — so
+belassen), Anführungszeichen «…» in logischer Reihenfolge wie auf jw.org (die
+vier Treffer „»…«" der Zeichenprobe stehen zwischen zwei Zitaten). `[ZWNJ]` in
+der Tabelle steht für das Halbleerzeichen (U+200C), das in der Datei steht.
+
+| Schlüssel | alt | neu | Grund |
+| --- | --- | --- | --- |
+| `fsShort` | خدمت موعظه | جلسات خدمت موعظه | „Treffpunkte“ hieß wie das Thema (tabFs „خدمت موعظه“) — auf dem Treffpunkt-Bogen stand es doppelt; sonst im Wörterbuch „جلسات خدمت موعظه“ (privTreffpunkt, treffpunkteDieserWoche) |
+| `fsGrundDesc` | … هر هفته را در زبانه جلسات تنظیم کنید. … | … هر هفته را در زبانهٔ «جلسات» تنظیم کنید. … | Der Reiter heißt „جلسات“ (fsTreffpunkteTab) — zitiert wie die anderen Knöpfe, mit Ezafe |
+| `toastFsRuleAdd` | به برنامه اضافه شد | به برنامهٔ پایه اضافه شد | Der Grundplan heißt „برنامهٔ پایه“ (fsGrundplan); „برنامه“ allein ist auch das Programm |
+| `toastFsRuleDel` | از برنامه حذف شد | از برنامهٔ پایه حذف شد | wie toastFsRuleAdd |
+| `vpVorgemerkt` | این هفته هنوز بارگذاری نشده است. سخنرانی به محض وارد شدن برنامهٔ آن ثبت می[ZWNJ]شود. | این هفته هنوز ایجاد نشده است. سخنرانی به محض دریافت برنامهٔ آن ثبت می[ZWNJ]شود. | Deutsch: „angelegt“ und „geholt“ — der Knopf heißt „دریافت“ (holen) |
+| `wpNamePhSaal` | مثلاً: برف[ZWNJ]روبی | مثلاً برف[ZWNJ]روبی | Die anderen Beispiele („مثلاً تعطیلات“, grundPh) stehen ohne Doppelpunkt |
+| `stand` | تا {datum} | به[ZWNJ]روزشده در {datum} | „تا“ heißt „bis“ — unter Programm und Druckbogen las sich das Tagesdatum als Ablauf; gemeint ist der Stand vom Datum (wie ar) |
+| `offenWort` | باز | خالی | Ein unbesetzter Platz ist „خالی“ (freiePlaetzeTitle, autoHinweis, druckNochFrei sagen es schon); „باز“ heißt „geöffnet“ |
+| `offenDash` | — باز — | — خالی — | wie offenWort |
+| `offeneZut` | {n} وظیفهٔ باز | {n} وظیفهٔ تعیین[ZWNJ]نشده | wie offenWort; „ohne Zuteilungen“ heißt in den Daten „بدون تعیین“ |
+| `lageOffen` | {n} جای باز | {n} جای خالی | wie offenWort |
+| `toastKeinePassende` | فرد واجد شرایط و آزادی برای جای[ZWNJ]های باز نیست | هیچ فرد واجد شرایطی برای جاهای خالی آزاد نیست | „جای[ZWNJ]ها“ ist kein Plural von „جا“ (→ „جاهای“), „باز“ wie offenWort; „آزادی“ las sich als „Freiheit“ |
+| `suchen` | جستجو … | جستجو… | Persisch ohne Leerzeichen vor der Ellipse — wie schon wirdGesendet |
+| `langSearchPh` | جستجوی زبان[ZWNJ]ها … | جستجوی زبان[ZWNJ]ها… | wie suchen |
+| `laedt` | در حال بارگذاری … | در حال بارگذاری… | wie suchen |
+| `holtProgramm` | در حال دریافت برنامه … | در حال دریافت برنامه… | wie suchen |
+| `linkAbgelaufenHint` | … پیوند تازه دوباره 30 روز اعتبار دارد. … | … پیوند تازه 30 روز اعتبار دارد. … | „تازه … دوباره“ (neu … wieder) doppelt — wie in den anderen Sprachen |
+| `pushPromptTitle` | هیچ تکلیفی را از دست ندهید | هیچ وظیفه[ZWNJ]ای را از دست ندهید | Die Zuteilung heißt in der App „وظیفه“ (notifZuteilung, offeneZut, Function-Titel „وظیفهٔ جدید“); „تکلیف“ nur hier und in toastUebernommenKonflikt |
+| `toastUebernommenKonflikt` | … آن روز از قبل تکلیف دارید … | … آن روز از قبل وظیفه دارید … | wie pushPromptTitle |
+| `spurErsatzGesucht` | جستجوی جایگزین | به جایگزین نیاز است | Derselbe Schritt heißt in der Mitteilung „به جایگزین نیاز است“ (notifErsatzGesucht, Function substitute) |
+| `absagen` | لغو | اعلام انصراف | Im Absage-Blatt standen zwei Knöpfe „لغو“ — Absagen und Abbrechen (abbrechen); jetzt „انصراف“ (Rücktritt von der Aufgabe) samt Spur, Hinweis und Meldung |
+| `spurDuSagstAb` | لغو می[ZWNJ]کنید | انصراف می[ZWNJ]دهید | wie absagen |
+| `ersatzHint` | … اگر وظیفهٔ کمکی را لغو کنید، … | … اگر از وظیفهٔ کمکی انصراف دهید، … | wie absagen |
+| `erinAbsage` | لغو | انصراف | wie absagen — die Meldung, die an Admins und Planer geht |
+| `toastErsatzGesucht` | لغو شد · جایگزین جستجو می[ZWNJ]شود | انصراف ثبت شد · جایگزین جستجو می[ZWNJ]شود | wie absagen |
+| `zusageAbgesagt` | رد شد | انصراف داد | „رد شد“ (wurde abgelehnt) ließ offen, wer ablehnte; beim Planer steht jetzt dasselbe Wort wie die Absage |
+| `notifVerhindert` | عدم امکان گزارش شد | انصراف از وظیفه | „عدم امکان“ (Unmöglichkeit) bricht ab — wovon? Jetzt dasselbe Wort wie die Absage (erinAbsage); der Rumpf nennt Aufgabe und Person |
+| `ohneGruppeHint` | … در بخش خدمت موعظه … | … در بخش «خدمت موعظه» … | Der Menüname (tabFs) steht zitiert — wie in den anderen Sprachen |
+| `privSchulung` | وظایف شاگرد | تکالیف شاگردان | Die S-38 sagt „تکالیف شاگردان“ (Abs. 24) — wie schon auxKurz |
+| FRAG `Treffpunkte` | خدمت موعظه | جلسات خدمت موعظه | wie `fsShort` |
+
+Neu bewacht: Das Absage-Blatt zeigt in keiner der zwölf Sprachen zwei gleich
+beschriftete Knöpfe (`src/components/overlays.test.tsx`, je Sprache gerendert,
+mit Gegenprobe, dass das Blatt die Sprache wirklich spricht). Von Hand
+gegengeprüft: mit „لغو" für `absagen` wird Persisch rot („لغو | با این حال
+تأیید | لغو"). Mutationsprobe `t123-absage-knoepfe-verschieden`: der Anker
+sitzt; gemessen ist sie nicht (sie fährt je Regel die ganze Suite).
+
+Daten gelesen: FRAG, REF (der Anhang zählt als „ضمیمهٔ 1" — so am 26.9. an
+den Wochen 27 und 32/2026 gemessen), EXTRA (Intl-Pfad), Bibelbücher (mit
+Vokalzeichen wie auf jw.org), Function-Titel und Anmelde-Mail. Fachwörter
+nachgesehen: „گروه موعظه" und „گروه خدمت موعظه" (beide), „جلسهٔ موعظه",
+„سرپرست گروه موعظه", „دستیار" (Wachtturm Juni 2026); „شاگرد", „تکالیف
+شاگردان" (Abs. 24), „مجری" (Abs. 25), „مشاور" und „کلاس فرعی" (Abs. 26/27),
+„دستیار" (Abs. 7) (S-38).
+
+Offen, nicht geändert:
+
+- Die App nennt jede Zuteilung „وظیفه" — Programmpunkt, Hilfsdienst, Trolley,
+  Treffpunkt, auch die Function-Titel („وظیفهٔ جدید"). Die S-38 sagt für einen
+  Programmpunkt „تکلیف". Angeglichen sind nur die zwei Ausreißer
+  (`pushPromptTitle`, `toastUebernommenKonflikt`); ob Programmpunkte eigens
+  „تکلیف" heißen sollen, entscheidet besser ein Muttersprachler.
+- Ziffern: Was `Intl` rechnet, steht persisch („۸ سپتامبر"), was aus
+  deutschen Vorlagen oder festen Texten kommt, westlich („30 روز", „سرود 12",
+  „19:00") — in einer Zeile gemischt. jw.org schreibt persische Ziffern.
+  Festgehalten ist das schon in `datum-alle-sprachen.test.ts` („Ziffernsätze
+  der Anzeige"); eine Umstellung wäre eine Regel im Übersetzer, keine
+  Korrektur einzelner Texte.
+- Die Wochenspanne setzt ICU als „۷ سپتامبر تا ۱۳ سپتامبر" (Monat doppelt),
+  das Arbeitsheft als „۷-۱۳ سپتامبر" (Woche 37/2026).
+- `toastMitgliedEntfernt` „عضو حذف شد" belassen: Entfernt wird das Mitglied,
+  wie im Deutschen — im Arabischen hieß es „تم حذف الحساب", das Konto
+  gelöscht.

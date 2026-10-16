@@ -7354,6 +7354,13 @@ export const KATALOG = [
     ersetzen: '            placeholder={t.nameLbl}\n            aria-label={t.nameLbl}\n',
   },
   {
+    id: 't123-absage-knoepfe-verschieden',
+    datei: 'src/i18n/overlays/fa.ts',
+    regel: 'Im Absage-Blatt heißen „Absagen" und „Abbrechen" in jeder Sprache verschieden — persisch standen zweimal „لغو" untereinander.',
+    suchen: '  "absagen": "اعلام انصراف",\n',
+    ersetzen: '  "absagen": "لغو",\n',
+  },
+  {
     id: 'zuteilung-vortrag-folgt-vorsitz',
     datei: 'src/data/planning.ts',
     regel: 'Den „Vortrag des Vorsitzenden" bekommt der Vorsitzende der Zusammenkunft — kein zweiter, und er bleibt nicht offen.',

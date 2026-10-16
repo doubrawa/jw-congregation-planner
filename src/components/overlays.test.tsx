@@ -9,7 +9,8 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
-import { dict } from '../i18n/ui'
+import { dict, loadOverlay } from '../i18n/ui'
+import { APP_LANGS } from '../i18n/langs'
 import type { MyTask, S89Payload } from '../data/types'
 import { AbsageBlatt } from '../aufgaben/AbsageBlatt'
 import { AufgabeBlatt } from '../aufgaben/AufgabeBlatt'
@@ -171,6 +172,21 @@ describe('Das Absage-Blatt', () => {
     fireEvent.change(container.querySelector('input.feld')!, { target: { value: 'bin verreist' } })
     fireEvent.click(text(container, t.absagen)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'declineTask', id: task().id, nachricht: 'bin verreist' })
+  })
+
+  /*
+   * T123 (16.10.2026): In acht von elf Sprachen hießen „Absagen" und
+   * „Abbrechen" gleich — „Cancel", „Annulla", „إلغاء", „لغو" … Untereinander
+   * standen zwei gleiche Knöpfe, der eine sagt ab, der andere schließt nur.
+   */
+  it.each(APP_LANGS.map((l) => l.code))('%s: kein Knopf des Blatts heißt wie ein anderer — Absagen ist nicht Abbrechen', async (lang) => {
+    await loadOverlay('en')
+    await loadOverlay(lang)
+    const { container } = absagen({ status: 'offen' }, { lang })
+    const beschriftungen = [...container.querySelectorAll('button')].map((b) => b.textContent ?? '').filter((s) => s.trim() !== '')
+    // Gegenprobe: Das Blatt spricht wirklich die Sprache, nicht Deutsch.
+    expect(beschriftungen).toContain(dict(lang).absagen)
+    expect(new Set(beschriftungen).size, beschriftungen.join(' | ')).toBe(beschriftungen.length)
   })
 
   it('der Tag als abwesend: der Schalter steht aus, und ohne ihn wird nichts eingetragen', () => {
