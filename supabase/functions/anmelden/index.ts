@@ -28,7 +28,7 @@
 // Vormerkung an der Person (Admin, Planer), wie früher über den Einladungscode.
 // =============================================================================
 
-import { alsGesendet, LINK_SPALTEN, linkAusstellen, type LinkZeile } from '../_shared/anmelde-links.ts'
+import { LINK_SPALTEN, linkErzeugen, linkSpeichern, type LinkZeile } from '../_shared/anmelde-links.ts'
 import { linkMail, mailBereit, mailSenden } from '../_shared/anmelde-mail.ts'
 import { anmeldeUrl, codeAnzeige, codeNormal, codeVollstaendig, interneAdresse, pruefsumme } from '../_shared/anmeldung.ts'
 import { kontoAdmin } from '../_shared/konto-admin.ts'
@@ -222,9 +222,10 @@ async function perMail(roh: unknown, lang: unknown, jetzt: number): Promise<Resp
  * öffnet der Link Safari, nie die App vom Home-Bildschirm, und dort meldet nur
  * der Code an. Der Code steht nur als Prüfsumme in der Datenbank; ihn in die
  * Mail zu schreiben heißt, einen neuen auszustellen. Damit gilt der Zettel der
- * Person nicht mehr, sobald jemand mit ihrer Adresse „Link senden" drückt —
- * vom Betreiber so entschieden (15.10.2026). Bis dahin erneuerte die Seite nur
- * das Token (`tokenErneuern`), und der Zettel galt weiter.
+ * Person nicht mehr, sobald jemand mit ihrer Adresse „Link senden" drückt und
+ * die Mail hinausgeht — vom Betreiber so entschieden (15.10.2026). Bis dahin
+ * erneuerte die Seite nur das Token (`tokenErneuern`), und der Zettel galt
+ * weiter.
  */
 async function linksPerMail(adresse: string, sprache: string | null, jetzt: number): Promise<void> {
   // Groß und klein egal (`ilike`), sonst genau diese Adresse: `_` ist im Muster
@@ -255,8 +256,14 @@ async function linksPerMail(adresse: string, sprache: string | null, jetzt: numb
     const link = linkVon.get(person.id)
     if (!link && !mitKonto.has(person.id)) continue
     if (link?.gesendet_at && jetzt - new Date(link.gesendet_at).getTime() < MAIL_PAUSE) continue
-    const neu = await linkAusstellen(rest, person.id, person.congregation_id, new Date(jetzt))
-    if (!neu) continue
+    /*
+     * **Erst gesendet, dann gespeichert.** Der neue Link ersetzt den alten samt
+     * Zettel — das darf er erst, wenn die Mail mit ihm hinausging (Betreiber,
+     * 16.10.2026). Bis dahin stand er vorher in der Datenbank: Scheiterte der
+     * Versand, galt der Zettel nicht mehr, ohne dass ein neuer Link angekommen
+     * war, und weil `gesendet_at` leer blieb, griff auch die Pause nicht.
+     */
+    const neu = linkErzeugen(new Date(jetzt))
     const mail = linkMail(sprache, {
       name: person.fn,
       versammlung: await versammlungVon(person.congregation_id),
@@ -264,7 +271,11 @@ async function linksPerMail(adresse: string, sprache: string | null, jetzt: numb
       code: codeAnzeige(neu.code),
       gueltigBis: neu.gueltigBis,
     })
-    if (await mailSenden(MAIL, adresse, mail)) await alsGesendet(rest, person.id, new Date(jetzt))
+    if (!(await mailSenden(MAIL, adresse, mail))) continue
+    if (!(await linkSpeichern(rest, person.id, person.congregation_id, neu, { jetzt: new Date(jetzt), gesendet: true }))) {
+      // Die Mail trägt dann einen Link, den es nicht gibt; der alte gilt weiter.
+      console.error('anmelden (mail): Link gesendet, aber nicht gespeichert')
+    }
   }
 }
 

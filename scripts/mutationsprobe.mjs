@@ -1773,6 +1773,20 @@ export const KATALOG = [
     suchen: '    if (link?.gesendet_at && jetzt - new Date(link.gesendet_at).getTime() < MAIL_PAUSE) continue\n',
     ersetzen: '',
   },
+  {
+    id: 'anmelden-mail-erst-nach-versand',
+    datei: 'supabase/functions/anmelden/index.ts',
+    regel: '„Link senden" ersetzt den alten Link erst, wenn die Mail hinausging — scheitert sie, gilt der Zettel weiter.',
+    suchen: '    if (!(await mailSenden(MAIL, adresse, mail))) continue\n',
+    ersetzen: '    await mailSenden(MAIL, adresse, mail)\n',
+  },
+  {
+    id: 'anmelden-mail-pause-mit-link',
+    datei: 'supabase/functions/anmelden/index.ts',
+    regel: 'Der gesendete Link trägt gleich, wann er hinausging — daran hängt die Pause von zehn Minuten.',
+    suchen: '{ jetzt: new Date(jetzt), gesendet: true }',
+    ersetzen: '{ jetzt: new Date(jetzt), gesendet: false }',
+  },
   // `anmelden-mail-zettel-bleibt` gestrichen (T121, Phase 10b): „Link senden"
   // stellt jetzt einen neuen Code aus, die Mail trägt ihn (Betreiber, 15.10.2026).
   {

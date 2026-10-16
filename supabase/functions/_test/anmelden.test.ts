@@ -61,6 +61,8 @@ let verifyTyp: 'magiclink' | 'email'
 let verifyKaputt: boolean
 /** Eine zweite erste Anmeldung derselben Person schreibt ihre `members`-Zeile kurz vor dieser. */
 let wettlauf: boolean
+/** Resend lehnt ab — die Mail geht nicht hinaus. */
+let mailKaputt: boolean
 
 const zukunft = () => new Date(Date.now() + 10 * 864e5).toISOString()
 
@@ -94,6 +96,7 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   const body = init?.body === undefined ? undefined : JSON.parse(String(init.body))
 
   if (url.startsWith('https://api.resend.com/')) {
+    if (mailKaputt) return new Response('{"message":"abgelehnt"}', { status: 500 })
     mails.push({ to: body.to, subject: body.subject, text: body.text })
     return jsonRes({ id: 'mail' })
   }
@@ -222,6 +225,7 @@ beforeEach(async () => {
   verifyTyp = 'magiclink'
   verifyKaputt = false
   wettlauf = false
+  mailKaputt = false
 })
 
 describe('anmelden: mit dem Link aus der E-Mail', () => {
@@ -441,6 +445,38 @@ describe('anmelden: „Link senden" auf der Anmeldeseite', () => {
     await call({ aktion: 'mail', email: 'bert@example.org' })
     await call({ aktion: 'mail', email: 'bert@example.org' })
     expect(mails).toHaveLength(1)
+  })
+
+  /*
+    Erst gesendet, dann gespeichert (Betreiber, 16.10.2026): Bis dahin stand
+    der neue Link vor dem Versand in der Datenbank. Scheiterte die Mail, galt
+    der Zettel nicht mehr, ohne dass ein neuer Link angekommen war.
+  */
+  it('scheitert die Mail, gilt der alte Link samt Zettel weiter (16.10.2026)', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      mailKaputt = true
+      const vorher = JSON.stringify(links)
+      expect((await call({ aktion: 'mail', email: 'anna@example.org' })).body).toEqual({ ok: true })
+      expect(JSON.stringify(links)).toBe(vorher)
+      expect((await call({ aktion: 'code', code: CODE_ANNA })).body.sitzung).toBeDefined()
+    } finally {
+      err.mockRestore()
+    }
+  })
+
+  it('… und ohne Mail keine Pause: der nächste Versuch geht hinaus', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      mailKaputt = true
+      await call({ aktion: 'mail', email: 'bert@example.org' })
+      mailKaputt = false
+      await call({ aktion: 'mail', email: 'bert@example.org' })
+      expect(mails).toHaveLength(1)
+      expect(links.find((l) => l.person_id === P_BERT)?.gesendet_at).toBeTruthy()
+    } finally {
+      err.mockRestore()
+    }
   })
 
   it('der Unterstrich ist kein Platzhalter: carl_c@… trifft nicht auch carlxc@…', async () => {
