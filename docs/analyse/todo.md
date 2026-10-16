@@ -6765,10 +6765,10 @@ neue Ausgabe des Arbeitshefts prüft `node scripts/heft-pruefen.mjs en`
 Mitgliedsrechte-Probe, `INVITE_FROM` und „Allow new users to sign up" aus, die
 WebAPK am Handy aktualisieren. Offen ohne Entscheidung: (D) die Bremse gegen
 Code-Raten liest den ersten Eintrag von `x-forwarded-for` — ungemessen, weil
-die Probe Fehlversuche in die echte Datenbank schriebe; (E) holen zwei Planer
-dieselbe Woche, liest der zweite den falschen Satz („keine weitere Woche"
-statt „schon da") — selten, die Woche selbst schützt `unique(congregation_id,
-start)`.
+die Probe Fehlversuche in die echte Datenbank schriebe. Nachgeprüft und kein
+Befund (E): Holen zwei Planer dieselbe Woche, scheitert beim zweiten das
+Speichern an `unique(congregation_id, start)`, er liest „Änderung konnte nicht
+gespeichert werden — bitte neu laden", und die App lädt still neu.
 
 **Stand am 15. Oktober 2026:** Phase 8, das Anmelden per Link, ist gebaut und live
 (`05ab564`, `ddf4069`, `c3d3926` und die Skripte danach). Ein Kennwort gibt es
