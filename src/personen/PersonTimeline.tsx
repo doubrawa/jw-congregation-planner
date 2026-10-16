@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
 import { useApp } from '../app/context'
+import { useKalendertag } from '../app/useKalendertag'
+import { fromIso } from '../data/meeting-dates'
 import { besuchsGruppe } from '../components/gruppenbesuch-anzeige'
 import { Zeitleiste, type ZeitZeile } from '../components/Zeitleiste'
 import { abwesenheitsArt, zeitleisteDatum } from '../components/zeitleiste-gemeinsam'
@@ -24,11 +26,15 @@ export function PersonTimeline({ person }: { person: Person }) {
   const { state } = useApp()
   const i18n = useT()
   const { t, tu } = i18n
+  // Was vergangen ist, misst der Kalendertag — er rückt um Mitternacht weiter,
+  // auch wenn sich sonst nichts ändert (wie bei „Meine Aufgaben"). Bis zum
+  // 16.10.2026 galt der Tag, an dem zuletzt gerechnet wurde.
+  const tag = useKalendertag()
   /*
    * Gemerkt: `personTimeline` läuft über **alle** geladenen Wochen (bis zu 52,
    * zwei Zusammenkünfte je Woche).
    */
-  const entries = useMemo(() => personTimeline(person, state), [person, state])
+  const entries = useMemo(() => personTimeline(person, state, fromIso(tag)), [person, state, tag])
 
   const beschriftung = (e: TimelineEntry): string => {
     if (e.kind === 'meeting') return aufgabenLabel({ title: e.titel, rolle: e.rolle }, i18n)

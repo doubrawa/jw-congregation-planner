@@ -387,6 +387,27 @@ export const KATALOG = [
     ersetzen: '    (n) => n,\n',
   },
   {
+    id: 'zetteldruck-nur-eingehaengt',
+    datei: 'src/personen/useZettelDruck.tsx',
+    regel: 'Ist die Stelle beim Warten verschwunden, wird nicht gedruckt — sonst bliebe das Druck-Kennzeichen stehen.',
+    suchen: '      if (!eingehaengt.current) return\n',
+    ersetzen: '',
+  },
+  {
+    id: 'naechste-zahl-je-zahl',
+    datei: 'src/einstellungen/einstellungen-anzeige.ts',
+    regel: 'Der Name eines neuen Eintrags zählt nach der höchsten Zahl — die Ziffern eines Namens werden nicht aneinandergehängt.',
+    suchen: '  return liste.reduce((m, x) => Math.max(m, ...(x.name.match(/\\d+/g) ?? []).map(Number)), 0) + 1\n',
+    ersetzen: "  return liste.reduce((m, x) => Math.max(m, Number.parseInt(x.name.replace(/\\D/g, ''), 10) || 0), 0) + 1\n",
+  },
+  {
+    id: 'zeitleiste-kalendertag',
+    datei: 'src/personen/PersonTimeline.tsx',
+    regel: 'Die Zeitleiste einer Person rückt um Mitternacht weiter — vergangen misst der Kalendertag.',
+    suchen: '  const entries = useMemo(() => personTimeline(person, state, fromIso(tag)), [person, state, tag])\n',
+    ersetzen: '  const entries = useMemo(() => personTimeline(person, state), [person, state])\n',
+  },
+  {
     id: 'bogen-zwei-abstaende',
     datei: 'src/druck/Bogen.tsx',
     regel: 'Ein Blatt zieht je einen Abstand unter dem Kopf und über dem Fuß ab — sonst ist ein volles Blatt zu hoch.',
@@ -6289,7 +6310,7 @@ export const KATALOG = [
     id: 'gruppen-neue-zaehlt-weiter',
     datei: 'src/einstellungen/einstellungen-anzeige.ts',
     regel: 'Eine neue Gruppe (und ein neuer Trolley) bekommt die nächste Nummer — nicht wieder eine vergebene.',
-    suchen: '  return liste.reduce((m, x) => Math.max(m, Number.parseInt(x.name.replace(/\\D/g, \'\'), 10) || 0), 0) + 1',
+    suchen: '  return liste.reduce((m, x) => Math.max(m, ...(x.name.match(/\\d+/g) ?? []).map(Number)), 0) + 1',
     ersetzen: '  return liste.length + 1',
   },
   {

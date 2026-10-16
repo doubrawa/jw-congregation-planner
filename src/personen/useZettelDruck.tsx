@@ -48,8 +48,11 @@ export function useZettelDruck(): ZettelDruck {
   const [satz, setSatz] = useState<ZettelSatz | null>(null)
   const [laeuft, setLaeuft] = useState(false)
   const meiner = useRef(false)
+  /** Steht die Stelle noch? Nach dem Warten wird nur gedruckt, wenn ja. */
+  const eingehaengt = useRef(false)
 
   useEffect(() => {
+    eingehaengt.current = true
     const fertig = () => {
       if (!meiner.current) return
       meiner.current = false
@@ -58,6 +61,7 @@ export function useZettelDruck(): ZettelDruck {
     }
     window.addEventListener('afterprint', fertig)
     return () => {
+      eingehaengt.current = false
       window.removeEventListener('afterprint', fertig)
       fertig()
     }
@@ -85,6 +89,11 @@ export function useZettelDruck(): ZettelDruck {
         versammlung: state.congregation.name,
       })
       if (r.fehler) dispatch({ type: 'showToast', text: t.linkFehler })
+      // Ist die Stelle beim Warten verschwunden (Blatt zu, anderer Bildschirm),
+      // wird nicht gedruckt. Bis zum 16.10.2026 kam der Druckdialog trotzdem —
+      // ohne Bogen —, und das Kennzeichen blieb am Wurzelelement stehen, weil
+      // das Aufräumen schon gelaufen war: Jeder spätere Druck blieb leer.
+      if (!eingehaengt.current) return
       flushSync(() => setSatz(neu))
       meiner.current = true
       document.documentElement.dataset.print = DRUCK

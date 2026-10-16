@@ -96,6 +96,40 @@ describe('Zettel drucken neben einer zweiten Stelle', () => {
     expect(document.documentElement.dataset.print).toBeUndefined()
   })
 
+  it('verschwindet die Stelle beim Warten, wird nicht gedruckt — und kein Kennzeichen bleibt stehen (16.10.2026)', async () => {
+    // Bis dahin kam der Druckdialog ohne Bogen, und `data-print` blieb am
+    // Wurzelelement: Jeder spätere Druck blieb leer.
+    let freigeben: () => void = () => {}
+    linksAusstellen.mockImplementationOnce(
+      (ids) =>
+        new Promise<Ausgestellt>((fertig) => {
+          freigeben = () =>
+            fertig({
+              links: ids.map((personId) => ({
+                personId,
+                url: 'https://versammlung.app/#anmelden=x',
+                zettelUrl: 'https://versammlung.app/#code=K7RD2QWM',
+                code: 'K7RD-2QWM',
+                gueltigBis: '2026-11-14T09:00:00.000Z',
+                gesendet: false,
+              })),
+              mailBereit: false,
+              fehler: false,
+            })
+        }),
+    )
+    const { getByText, unmount } = zeige()
+    fireEvent.click(getByText('drucken'))
+    await waitFor(() => expect(linksAusstellen).toHaveBeenCalled())
+    unmount()
+    await act(async () => {
+      freigeben()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(window.print).not.toHaveBeenCalled()
+    expect(document.documentElement.dataset.print).toBeUndefined()
+  })
+
   it('der Druck einer anderen Seite (S-89) lässt sie in Ruhe', async () => {
     zeige()
     document.documentElement.dataset.print = 's89'

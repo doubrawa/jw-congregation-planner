@@ -50,11 +50,13 @@ export function werPlant(persons: readonly Person[], members: readonly Member[],
 
 /**
  * Die Zahl nach der höchsten in den Namen — nicht wieder 1, wenn „Gruppe 1"
- * und „Gruppe 3" schon stehen. Ein Name ohne Zahl (sie sind frei, entschieden
- * am 11.10.2026) zählt als 0.
+ * und „Gruppe 3" schon stehen. Jede Zahl eines Namens zählt für sich; ein Name
+ * ohne Zahl (sie sind frei, entschieden am 11.10.2026) zählt als 0. Bis zum
+ * 16.10.2026 wurden die Ziffern eines Namens aneinandergehängt: Aus
+ * „Gruppe 1 (Nord 2)" wurde 12, und die nächste hieß „Gruppe 13".
  */
 function naechsteZahl(liste: readonly { name: string }[]): number {
-  return liste.reduce((m, x) => Math.max(m, Number.parseInt(x.name.replace(/\D/g, ''), 10) || 0), 0) + 1
+  return liste.reduce((m, x) => Math.max(m, ...(x.name.match(/\d+/g) ?? []).map(Number)), 0) + 1
 }
 
 /**

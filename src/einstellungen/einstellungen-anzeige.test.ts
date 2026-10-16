@@ -95,4 +95,10 @@ describe('Der Name eines neuen Eintrags zählt weiter', () => {
     expect(neuerTrolleyName([], 'Trolley')).toBe('Trolley 1')
     expect(neuerGruppenName([{ name: 'Nord' }])).toBe('Gruppe 1')
   })
+
+  it('jede Zahl eines Namens zählt für sich — die Ziffern werden nicht aneinandergehängt (16.10.2026)', () => {
+    // Aus „Gruppe 1 (Nord 2)" wurde bis dahin 12, und die nächste hieß „Gruppe 13".
+    expect(neuerGruppenName([{ name: 'Gruppe 1 (Nord 2)' }])).toBe('Gruppe 3')
+    expect(neuerTrolleyName([{ name: 'Trolley 2 Saal 1' }], 'Trolley')).toBe('Trolley 3')
+  })
 })
