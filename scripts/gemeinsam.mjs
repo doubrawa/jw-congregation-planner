@@ -548,6 +548,25 @@ export function restKlient(url, key) {
 }
 
 /**
+ * **Alle Zeilen einer Abfrage — Seite für Seite.** Mehr als 1000 Zeilen gibt
+ * PostgREST je Abfrage nicht heraus (Supabase „Max rows"), und zwar still:
+ * Die Antwort sieht vollständig aus. Wer wirklich alles meint — die
+ * Migrationen über alle Wochen aller Versammlungen —, holt so lange, bis eine
+ * Seite kürzer ist (16.10.2026, Review).
+ *
+ * `pfad` braucht eine feste Ordnung (`order=…`), sonst überschneiden sich die
+ * Seiten oder lassen Zeilen aus.
+ */
+export async function alleZeilen(rest, pfad, seite = 1000) {
+  const out = []
+  for (let ab = 0; ; ab += seite) {
+    const teil = (await rest(`${pfad}&limit=${seite}&offset=${ab}`)) ?? []
+    out.push(...teil)
+    if (teil.length < seite) return out
+  }
+}
+
+/**
  * **Ein Urteil der Richtlinien — oder nur eine kaputte Anfrage?** Für die
  * beiden RLS-Proben (`mandanten-nachweis`, `mitgliedsrechte-probe`).
  *
@@ -568,6 +587,20 @@ export const RLS_URTEILE = [401, 403]
 /** Ein Fehlerstatus, der **kein** Urteil der Richtlinien ist — die Probe hat nichts gemessen. */
 export function anfrageKaputt(status) {
   return status >= 400 && !RLS_URTEILE.includes(status)
+}
+
+/**
+ * **Ist der „anon"-Schlüssel einer Probe in Wahrheit ein Dienst-Schlüssel?**
+ * Mit ihm umginge jede Abfrage RLS, und jede Probe bestünde — gemessen hätte
+ * sie nichts. Der alte Service-Role-Schlüssel wie der neue `sb_secret_…`.
+ *
+ * Für beide RLS-Proben. Bis zum 16.10.2026 stand die Regel nur in
+ * `mitgliedsrechte-probe.mjs`; `mandanten-nachweis.mjs` verglich allein mit
+ * `SUPABASE_SERVICE_ROLE_KEY` und ließ einen `sb_secret_…` durch.
+ */
+export function istDienstSchluessel(anon, env = process.env) {
+  const k = String(anon ?? '').trim()
+  return Boolean(k) && (k.startsWith('sb_secret_') || k === env.SUPABASE_SERVICE_ROLE_KEY || k === env.SUPABASE_SECRET_KEY)
 }
 
 /**

@@ -200,7 +200,7 @@
  * Versammlung tun, weil jemand versehentlich sein eigenes Konto einträgt.
  */
 
-import { alsSkript, anfrageKaputt, probeDatei, pruefKlient, verdecktLesen, wertAusEnvDatei } from './gemeinsam.mjs'
+import { alsSkript, anfrageKaputt, istDienstSchluessel, probeDatei, pruefKlient, verdecktLesen, wertAusEnvDatei } from './gemeinsam.mjs'
 
 /* ===================== Schlüssel (Spiegel von planning.ts) ================ */
 
@@ -504,9 +504,7 @@ export function zugangAus(env, ausDatei, ausKonten = () => '') {
     mitgliedPass: wert('PROBE_MITGLIED_PASS'),
     zuteilerPass: wert('PROBE_ZUTEILER_PASS'),
     aufseherPass: wert('PROBE_AUFSEHER_PASS'),
-    dienstSchluessel:
-      Boolean(anon) &&
-      (anon.startsWith('sb_secret_') || anon === env.SUPABASE_SERVICE_ROLE_KEY || anon === env.SUPABASE_SECRET_KEY),
+    dienstSchluessel: istDienstSchluessel(anon, env),
   }
 }
 

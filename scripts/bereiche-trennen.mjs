@@ -44,7 +44,7 @@
  * Idempotent: Ein zweiter Lauf meldet „0 zu ändern".
  */
 
-import { alsSkript, argumente, restKlient, zugangsdaten } from './gemeinsam.mjs'
+import { alleZeilen, alsSkript, argumente, restKlient, zugangsdaten } from './gemeinsam.mjs'
 
 /**
  * Art eines Abschnitts unter der Woche: gespeichert (`kind`) oder an der Farbe,
@@ -140,7 +140,9 @@ export async function main(argv = process.argv.slice(2)) {
   const rest = restKlient(url, key)
 
   const filter = arg.cong ? `&congregation_id=eq.${arg.cong}` : ''
-  const rows = await rest(`weeks?select=congregation_id,start,data&order=start.asc${filter}`)
+  // Alle Wochen aller Versammlungen — seitenweise (`alleZeilen`): Mehr als 1000
+  // gäbe PostgREST in einer Abfrage nicht heraus, und es fielen die neuesten weg.
+  const rows = await alleZeilen(rest, `weeks?select=congregation_id,start,data&order=congregation_id.asc,start.asc${filter}`)
   if (!rows?.length) { console.error('Keine Wochen gefunden.'); process.exit(1) }
 
   const zuSchreiben = []

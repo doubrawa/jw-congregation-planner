@@ -376,6 +376,8 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
         const vorzeichen = richtung === 'desc' ? -1 : 1
         treffer = [...treffer].sort((a, b) => vorzeichen * String(a[spalte]).localeCompare(String(b[spalte])))
       }
+      const versatz = abfrage.get('offset')
+      if (versatz) treffer = treffer.slice(Number(versatz))
       const grenze = abfrage.get('limit')
       if (grenze) treffer = treffer.slice(0, Number(grenze))
       // Wie das Projekt: Mehr als `MAX_ZEILEN` gibt PostgREST nicht heraus, still

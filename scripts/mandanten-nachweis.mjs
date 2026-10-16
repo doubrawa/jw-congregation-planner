@@ -34,22 +34,31 @@
  *
  * ---------------------------------------------------------------- Aufruf ----
  *
- * Die Anmeldedaten kommen aus **Umgebungsvariablen**, nicht von der
- * Befehlszeile: Argumente landen in der Verlaufsdatei der Shell, das Kennwort
- * des echten Planers hat dort nichts verloren.
+ * **Einseitig ohne jede Angabe:** URL und Publishable-Key kommen aus
+ * `.env.local`, das Konto B ist der Planer der Testversammlung aus ihrer
+ * Kontendatei (`.env.probe`, siehe `testversammlung-anlegen.mjs`).
  *
- *   $env:SUPABASE_URL       = "https://<ref>.supabase.co"
- *   $env:SUPABASE_ANON_KEY  = "<anon-key aus .env.local>"
- *   $env:NACHWEIS_A_MAIL    = "<Konto der echten Versammlung>"
- *   $env:NACHWEIS_A_PASS    = "<dessen Kennwort>"
- *   $env:NACHWEIS_B_MAIL    = "planer@probe.invalid"
- *   $env:NACHWEIS_B_PASS    = "<vom Anlege-Skript ausgegeben>"
  *   node scripts/mandanten-nachweis.mjs [--ohne-schreibproben]
+ *
+ * **Beidseitig** braucht es ein zweites Konto mit Kennwort in einer anderen
+ * Versammlung (A). Seit dem 15.10.2026 hat kein Konto der echten Versammlung
+ * eines (Anmelden per Link) — A ist deshalb eine **zweite Testversammlung**,
+ * angelegt mit eigener Kontendatei und eigenen Adressen (alle vier, sonst
+ * stießen sie auf die der ersten), und ihr Planer kommt über die Umgebung
+ * dazu, nicht über die Befehlszeile: Argumente landen in der Verlaufsdatei der
+ * Shell.
+ *
+ *   $env:NACHWEIS_A_MAIL    = "<Planer der zweiten Testversammlung>"
+ *   $env:NACHWEIS_A_PASS    = "<aus deren Kontendatei>"
+ *
+ * Alles lässt sich wie bisher auch setzen (`SUPABASE_URL`,
+ * `SUPABASE_ANON_KEY`, `NACHWEIS_B_MAIL`, `NACHWEIS_B_PASS`) — die Umgebung
+ * geht vor.
  *
  * Rückgabewert 0 = alle Proben bestanden, 1 = mindestens eine nicht.
  */
 
-import { alsSkript, anfrageKaputt, pruefKlient } from './gemeinsam.mjs'
+import { alsSkript, anfrageKaputt, istDienstSchluessel, probeDatei, pruefKlient, wertAusEnvDatei } from './gemeinsam.mjs'
 
 /* ===================== Was geprüft wird =================================== */
 
@@ -183,23 +192,42 @@ export function bewerteEinfuegen(status, nachsehen) {
 
 /* ===================== Zugang ============================================= */
 
+/**
+ * URL, Schlüssel und das Konto B — aus der Umgebung, sonst wie bei
+ * `mitgliedsrechte-probe.mjs` aus `.env.local` und der Kontendatei der
+ * Testversammlung (`PROBE_DATEI`). Bis zum 16.10.2026 musste alles in der
+ * Umgebung stehen, und das Kennwort von B „gab das Anlege-Skript aus" — das tut
+ * es seit dem 5.10. nicht mehr, es steht in der Kontendatei.
+ *
+ * A ist **optional**. Ohne das zweite Konto läuft der Teil, der allein messbar
+ * ist: Sieht B irgendwo etwas, das nicht B gehört?
+ */
 function umgebung() {
-  // A ist **optional**. Ohne das Konto der echten Versammlung läuft der Teil,
-  // der auch ohne fremdes Kennwort messbar ist: Sieht B irgendwo etwas, das
-  // nicht B gehört? Das ist die kleinere Hälfte des Nachweises — aber sie ist
-  // jederzeit zu haben, und dafür muss niemand das Kennwort des echten Planers
-  // in eine Umgebungsvariable schreiben.
-  const noetig = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'NACHWEIS_B_MAIL', 'NACHWEIS_B_PASS']
-  const fehlt = noetig.filter((n) => !process.env[n])
+  const env = process.env
+  const ausKonten = (name) => wertAusEnvDatei(name, [probeDatei()])
+  const z = {
+    url: env.SUPABASE_URL || wertAusEnvDatei('VITE_SUPABASE_URL'),
+    anon: env.SUPABASE_ANON_KEY || wertAusEnvDatei('VITE_SUPABASE_ANON_KEY'),
+    bMail: env.NACHWEIS_B_MAIL || ausKonten('PROBE_PLANER_MAIL'),
+    bPass: env.NACHWEIS_B_PASS || ausKonten('PROBE_PLANER_PASS'),
+  }
+  const fehlt = Object.entries({
+    'SUPABASE_URL (oder VITE_SUPABASE_URL in .env.local)': z.url,
+    'SUPABASE_ANON_KEY (oder VITE_SUPABASE_ANON_KEY in .env.local)': z.anon,
+    'NACHWEIS_B_MAIL (oder die Kontendatei der Testversammlung)': z.bMail,
+    'NACHWEIS_B_PASS (ebenso)': z.bPass,
+  })
+    .filter(([, wert]) => !wert)
+    .map(([name]) => name)
   if (fehlt.length) {
     console.error(`Fehlt: ${fehlt.join(', ')}\n\nAufruf siehe Kopf dieser Datei.`)
     process.exit(2)
   }
-  if (process.env.SUPABASE_ANON_KEY === process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('SUPABASE_ANON_KEY ist der Service-Role-Key. Der umgeht RLS — der Nachweis wäre wertlos.')
+  if (istDienstSchluessel(z.anon, env)) {
+    console.error('Der anon-Schlüssel ist ein Dienst-Schlüssel. Der umgeht RLS — der Nachweis wäre wertlos.')
     process.exit(2)
   }
-  return { url: process.env.SUPABASE_URL, anon: process.env.SUPABASE_ANON_KEY }
+  return z
 }
 
 /** Anmelden wie die App: Kennwort gegen `/auth/v1/token`, dann mit dem Token. */
@@ -231,9 +259,9 @@ const HAKEN = (ok) => (ok ? '✓' : '✗')
 /** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
 export async function main(arg = process.argv.slice(2)) {
   const schreibproben = !arg.includes('--ohne-schreibproben')
-  const { url, anon } = umgebung()
+  const { url, anon, bMail, bPass } = umgebung()
 
-  const b = await anmelden(url, anon, process.env.NACHWEIS_B_MAIL, process.env.NACHWEIS_B_PASS)
+  const b = await anmelden(url, anon, bMail, bPass)
   const beidseitig = Boolean(process.env.NACHWEIS_A_MAIL && process.env.NACHWEIS_A_PASS)
   const a = beidseitig ? await anmelden(url, anon, process.env.NACHWEIS_A_MAIL, process.env.NACHWEIS_A_PASS) : null
 
@@ -397,8 +425,9 @@ export async function main(arg = process.argv.slice(2)) {
       a
         ? 'Alle Proben bestanden: Die beiden Versammlungen sehen einander nicht.'
         : `Alle einseitigen Proben bestanden: „${b.name}" sieht in keiner Tabelle etwas Fremdes.\n` +
-            'Für den vollen Nachweis fehlen NACHWEIS_A_MAIL/_PASS — damit kommen die\n' +
-            'gezielten Proben und die Schreibproben in beide Richtungen dazu.',
+            'Für den vollen Nachweis fehlen NACHWEIS_A_MAIL/_PASS — der Planer einer zweiten\n' +
+            'Testversammlung (siehe Kopf dieser Datei). Damit kommen die gezielten Proben\n' +
+            'und die Schreibproben in beide Richtungen dazu.',
     )
     return
   }

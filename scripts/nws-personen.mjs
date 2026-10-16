@@ -38,19 +38,29 @@ export function nwsName(p) {
  * über `"<cid>-<mid>"` (UnavailablePeriods). Alle drei zeigen auf dieselbe
  * Person — wer nur eine Form kennt, verliert eine ganze Quelle, und zwar still:
  * Sie sieht dann aus wie „Person fehlt in der App".
+ *
+ * **Eine Tabelle für alle drei Formen** — das trägt, weil sie sich nicht
+ * überschneiden: Die `ID` ist neunstellig, die `mid` sechsstellig (gemessen am
+ * 16.10.2026 an 119 Personen). Zeigte eine Referenz doch auf zwei Personen,
+ * überschriebe die spätere die frühere, und eine Abwesenheit stünde beim
+ * Falschen. Dann bricht es ab, statt zu raten.
  */
 function jeReferenz(persons, wert) {
   const m = new Map()
+  const setze = (ref, p) => {
+    const da = m.get(ref)
+    if (da && da.person !== p) throw new Error(`NWS-Referenz ${ref} zeigt auf zwei Personen — die Zuordnung wäre geraten.`)
+    m.set(ref, { person: p, wert: wert(p) })
+  }
   for (const p of persons ?? []) {
     if (p.ID == null) continue
-    const v = wert(p)
-    m.set(p.ID, v)
+    setze(p.ID, p)
     if (p.mid != null) {
-      m.set(p.mid, v)
-      if (p.cid) m.set(`${p.cid}-${p.mid}`, v)
+      setze(p.mid, p)
+      if (p.cid) setze(`${p.cid}-${p.mid}`, p)
     }
   }
-  return (ref) => m.get(ref) ?? null
+  return (ref) => m.get(ref)?.wert ?? null
 }
 
 /** Personen-Referenz → App-Person-Id (`uuid5("person:<NWS-ID>")`). */

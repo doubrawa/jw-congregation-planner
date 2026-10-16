@@ -1334,6 +1334,62 @@ describe('Importe: Wer einen Platz verliert, nimmt seine Zusage mit (16.10.2026)
   })
 })
 
+describe('mandanten-nachweis: Zugang wie die Probe der Mitgliedsrechte (16.10.2026)', () => {
+  /*
+    Bis dahin musste alles in der Umgebung stehen, das Kennwort von B „gab das
+    Anlege-Skript aus" (seit dem 5.10. steht es in der Kontendatei), und gegen
+    einen Dienst-Schlüssel half nur der Vergleich mit
+    `SUPABASE_SERVICE_ROLE_KEY` — ein `sb_secret_…` als anon-Schlüssel kam
+    durch, und jede Probe bestünde, ohne etwas gemessen zu haben.
+  */
+  const l = LAEUFE['mandanten-nachweis.mjs']![0]!
+  const modul = async () => (await MODULE['./mandanten-nachweis.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+
+  it('ein sb_secret_… als anon-Schlüssel wird abgewiesen', async () => {
+    const env = { ...l.umgebung!.env, SUPABASE_ANON_KEY: 'sb_secret_irgendeiner_000000', SUPABASE_SERVICE_ROLE_KEY: '' }
+    const m = await modul()
+    await expect(fahre(() => l.fahren(m, ''), { ...l.umgebung, env })).rejects.toThrow(/process\.exit\(2\).*Dienst-Schlüssel/)
+  })
+
+  it('ohne NACHWEIS_B_* meldet sich B aus der Kontendatei der Testversammlung an', async () => {
+    const datei = path.join(os.tmpdir(), `probe-konten-nachweis-${process.pid}-${Math.random().toString(36).slice(2)}.env`)
+    fs.writeFileSync(datei, 'PROBE_PLANER_MAIL=b@probe.invalid\nPROBE_PLANER_PASS=probe\n')
+    try {
+      const { NACHWEIS_B_MAIL: _m, NACHWEIS_B_PASS: _p, ...ohneB } = l.umgebung!.env as Record<string, string>
+      const m = await modul()
+      const { ausgabe } = await fahre(() => l.fahren(m, ''), { ...l.umgebung, env: { ...ohneB, PROBE_KONTEN_DATEI: datei } })
+      expect(ausgabe.join('\n')).toContain('B: b@probe.invalid')
+    } finally {
+      fs.rmSync(datei, { force: true })
+    }
+  })
+})
+
+describe('Migrationen über alle Wochen lesen seitenweise (16.10.2026)', () => {
+  /*
+    `rollen-nachtragen` und `bereiche-trennen` meinen ausdrücklich **alle**
+    Wochen aller Versammlungen. Gelesen haben sie die in einer Abfrage, die
+    älteste zuerst — und mehr als 1000 Zeilen gibt PostgREST nicht heraus
+    (`MAX_ZEILEN`). Ab dann blieben ausgerechnet die neuesten Wochen unberührt.
+  */
+  it('rollen-nachtragen erreicht auch die Woche hinter den ersten tausend', async () => {
+    const l = LAEUFE['rollen-nachtragen.mjs']![0]!
+    const modul = (await MODULE['./rollen-nachtragen.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const leer = { mid: { sections: [] }, we: { sections: [] } }
+    const alte = Array.from({ length: MAX_ZEILEN }, (_, i) => ({ congregation_id: C, start: plusTage('2000-01-03', 7 * i), data: leer }))
+    const neueste = {
+      congregation_id: C,
+      start: '2026-08-24',
+      data: {
+        mid: { sections: [{ items: [{ names: [{ name: '', bereichsKey: 'schulung' }, { name: '', bereichsKey: 'schulungPartner' }] }] }] },
+        we: { sections: [] },
+      },
+    }
+    const { aufrufe } = await fahre(() => modul.main!([]), { ...l.umgebung, bestand: { ...l.umgebung!.bestand, weeks: [...alte, neueste] } })
+    expect(aufrufe.filter((a) => a.method === 'PATCH').map((a) => a.pfad)).toEqual([`weeks?congregation_id=eq.${C}&start=eq.2026-08-24`])
+  })
+})
+
 describe('treffpunkt-regeln-setzen: Zusagen folgen ihrem Treffpunkt (16.10.2026)', () => {
   /*
     Geht ein importierter Termin in einer Regel-Instanz auf, wechselt er die

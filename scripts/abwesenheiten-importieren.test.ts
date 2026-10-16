@@ -65,6 +65,13 @@ describe('personIdAufloeser', () => {
   it('kennt Unbekannte nicht', () => {
     expect(aufloesen(999999999)).toBeNull()
   })
+
+  it('bricht ab, statt zu raten, wenn eine Referenz auf zwei Personen zeigt (16.10.2026)', () => {
+    // Die drei Formen teilen sich eine Tabelle. Wäre die kurze `mid` der einen
+    // die volle ID der anderen, überschriebe sie diese still.
+    const kollision = nwsPerson(430999999, 430418939, 'Carla Beispiel')
+    expect(() => personIdAufloeser([ANNA, kollision])).toThrow(/zeigt auf zwei Personen/)
+  })
 })
 
 describe('sammleZeitraeume', () => {
