@@ -20,12 +20,16 @@
  *     --mid "2 19:00" --we "0 10:00" \
  *     --vorname "Anna" --nachname "Beispiel" \
  *     --sql C:\DATA\Claude\nws-export\import-live-personen.sql \
- *     [--wochen 8] [--sprache de] [--ab-schritt 3] [--trocken]
+ *     [--wochen 8] [--sprache de] [--ab-schritt 3] [--cong <id>] [--trocken]
  *
  *   --wochen      wie viele Wochenprogramme von jw.org (Standard 8).
  *   --ab-schritt  bei Schritt N fortsetzen — für den Fall, dass einer scheitert
  *                 (jw.org nicht erreichbar, Netz weg). Ohne das müsste man von
  *                 vorn anfangen, und Schritt 1 legte eine zweite Versammlung an.
+ *   --cong        beim Fortsetzen die Versammlung — nötig, sobald eine zweite
+ *                 daneben steht (die Testversammlung): Ohne die Angabe weist
+ *                 jeder Schritt mit „Mehrere Versammlungen" ab. Nicht mit
+ *                 Schritt 1, der legt eine neue an.
  *   --trocken     jeden Schritt trocken fahren. Auf einer leeren Datenbank
  *                 findet ab Schritt 2 nichts statt, was zu zeigen wäre — der
  *                 Trockenlauf lohnt vor allem auf einem bestehenden Bestand.
@@ -43,12 +47,26 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { alsSkript, argumente, restKlient, zugangsdaten } from './gemeinsam.mjs'
 
-/** Ohne diese Angaben kann Schritt 1 nicht laufen. */
+/** Ohne diese Angaben kann Schritt 1 nicht laufen — Schritt 2 braucht davon nur die Personen-Datei. */
 export const PFLICHT = ['name', 'vorname', 'nachname', 'sql']
 
-/** Welche Pflichtangaben fehlen? Leer = vollständig. */
+/**
+ * Welche Pflichtangaben fehlen **für die Schritte, die laufen**? Leer =
+ * vollständig. Bis zum 16.10.2026 verlangte auch das Fortsetzen ab Schritt 2
+ * Name, Vor- und Nachname — die braucht nur Schritt 1.
+ */
 export function fehlendeAngaben(arg) {
-  return PFLICHT.filter((k) => typeof arg[k] !== 'string' || !arg[k].trim())
+  const ab = Number(arg['ab-schritt'] ?? 1)
+  const noetig = ab <= 1 ? PFLICHT : ab === 2 ? ['sql'] : []
+  return noetig.filter((k) => typeof arg[k] !== 'string' || !arg[k].trim())
+}
+
+/**
+ * `--cong` mit Schritt 1 widerspricht sich: Schritt 1 legt eine **neue**
+ * Versammlung an, die Schritte danach gingen aber an die genannte.
+ */
+export function congMitSchrittEins(arg) {
+  return arg.cong !== undefined && Number(arg['ab-schritt'] ?? 1) <= 1
 }
 
 /**
@@ -60,6 +78,11 @@ export function fehlendeAngaben(arg) {
  */
 export function schritte(arg) {
   const trocken = arg.trocken ? ['--trocken'] : []
+  // Ab Schritt 2 gibt es die Versammlung schon, und die Schritte fragen nach
+  // ihr (`versammlungHolen`). Steht eine zweite daneben, weisen sie ohne
+  // `--cong` ab — bis zum 16.10.2026 ließ sich die Wahl hier nicht
+  // weiterreichen, und ein Fortsetzen ging gar nicht.
+  const cong = typeof arg.cong === 'string' ? ['--cong', arg.cong] : []
   const alle = [
     {
       titel: 'Versammlung, Planer-Person und Standard-Dienste anlegen',
@@ -78,27 +101,27 @@ export function schritte(arg) {
     {
       titel: 'Personen, Gruppen und Haushalte aus den NWS-Daten',
       skript: 'versammlung-zuruecksetzen.mjs',
-      argv: ['--sql', String(arg.sql), ...trocken],
+      argv: ['--sql', String(arg.sql), ...cong, ...trocken],
     },
     {
       titel: `Wochenprogramme von jw.org (${arg.wochen ?? 8})`,
       skript: 'wochen-importieren.mjs',
-      argv: ['--anzahl', String(arg.wochen ?? 8), ...trocken],
+      argv: ['--anzahl', String(arg.wochen ?? 8), ...cong, ...trocken],
     },
     {
       titel: 'Zuteilungen, Hilfsdienste und Reinigung',
       skript: 'wochenplanung-importieren.mjs',
-      argv: [...trocken],
+      argv: [...cong, ...trocken],
     },
     {
       titel: 'Abwesenheiten',
       skript: 'abwesenheiten-importieren.mjs',
-      argv: [...trocken],
+      argv: [...cong, ...trocken],
     },
     {
       titel: 'Treffpunkte und ihre Leiter',
       skript: 'treffpunkte-importieren.mjs',
-      argv: [...trocken],
+      argv: [...cong, ...trocken],
     },
   ]
   const ab = Number(arg['ab-schritt'] ?? 1)
@@ -111,7 +134,7 @@ export function schritte(arg) {
  * lohnt gerade hier — ein Fehler wird unten zur leeren Zeile, eine vertippte
  * Spalte stünde im Abschlussbericht also still als „0".
  */
-export async function bestand(url, key) {
+export async function bestand(url, key, congId) {
   const rest = restKlient(url, key)
   /**
    * Lesen für den **Abschlussbericht**: Ein Fehler ist hier kein Abbruch,
@@ -125,7 +148,9 @@ export async function bestand(url, key) {
       return []
     }
   }
-  const cong = (await hole('congregations?select=id,name'))[0]
+  // Mit `--cong` die genannte — sonst zählte der Bericht die erste, die die
+  // Datenbank liefert, auch wenn die Schritte an eine andere gingen.
+  const cong = (await hole(`congregations?select=id,name${congId ? `&id=eq.${congId}` : ''}`))[0]
   if (!cong) return { cong: null }
   const zahl = async (t) => (await hole(`${t}?select=id&congregation_id=eq.${cong.id}`)).length
   return {
@@ -143,11 +168,12 @@ export async function bestand(url, key) {
   }
 }
 
-async function main() {
-  const arg = argumente(process.argv.slice(2))
+/** Exportiert und mit der Aufrufzeile als Parameter — für `neuaufbau-fahren.test.ts`. */
+export async function main(argv = process.argv.slice(2)) {
+  const arg = argumente(argv)
   const fehlt = fehlendeAngaben(arg)
   const ab = Number(arg['ab-schritt'] ?? 1)
-  if (fehlt.length && ab <= 2) {
+  if (fehlt.length) {
     console.error(`Es fehlen: ${fehlt.map((k) => '--' + k).join(', ')}`)
     console.error('Beispiel steht im Kopf dieser Datei und im README unter „Neuaufbau".')
     process.exit(2)
@@ -156,6 +182,12 @@ async function main() {
     console.error(`Die Personen-Datei gibt es nicht: ${arg.sql}`)
     process.exit(2)
   }
+  if (congMitSchrittEins(arg)) {
+    console.error('--cong nennt eine bestehende Versammlung — Schritt 1 legte aber eine neue an.')
+    console.error('Mit --cong fortsetzen: --ab-schritt 2 (oder später).')
+    process.exit(2)
+  }
+  const congId = typeof arg.cong === 'string' ? arg.cong : undefined
 
   const { url, key } = await zugangsdaten()
   const vorher = await bestand(url, key)
@@ -168,9 +200,13 @@ async function main() {
 
   const liste = schritte(arg)
   const hier = path.dirname(fileURLToPath(import.meta.url))
+  // URL und Schlüssel an die Schritte weiter, wie hier erfragt: Stand der
+  // Schlüssel nicht in `.env.local`, fragte bis zum 16.10.2026 jeder der sechs
+  // Schritte noch einmal danach (`zugangsdaten`).
+  const umgebung = { ...process.env, SUPABASE_URL: url, SUPABASE_SECRET_KEY: key }
   for (const s of liste) {
     console.log(`\n${'='.repeat(72)}\nSchritt ${s.nr}/6 — ${s.titel}\n${'='.repeat(72)}`)
-    const lauf = spawnSync(process.execPath, [path.join(hier, s.skript), ...s.argv], { stdio: 'inherit' })
+    const lauf = spawnSync(process.execPath, [path.join(hier, s.skript), ...s.argv], { stdio: 'inherit', env: umgebung })
     if (lauf.status !== 0) {
       console.error(`\nSchritt ${s.nr} ist ausgestiegen (Rückgabewert ${lauf.status}).`)
       console.error(`Nach dem Beheben weiter mit: --ab-schritt ${s.nr}`)
@@ -184,7 +220,7 @@ async function main() {
     return
   }
 
-  const nachher = await bestand(url, key)
+  const nachher = await bestand(url, key, congId)
   console.log(`\n${'='.repeat(72)}\nFertig — ${nachher.cong?.name ?? '?'}\n${'='.repeat(72)}`)
   console.log(`Personen ${nachher.personen} · Gruppen ${nachher.gruppen} · Haushalte ${nachher.haushalte}`)
   console.log(`Wochen ${nachher.wochen} · Abwesenheiten ${nachher.abwesenheiten} · Treffpunkt-Wochen ${nachher.fsWochen}`)

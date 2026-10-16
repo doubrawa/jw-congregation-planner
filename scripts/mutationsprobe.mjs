@@ -4664,6 +4664,57 @@ export const KATALOG = [
     ersetzen: '',
   },
   {
+    id: 'neuaufbau-schluessel-an-die-schritte',
+    datei: 'scripts/neuaufbau-fahren.mjs',
+    regel: 'Der einmal erfragte Schlüssel geht an jeden Schritt — sonst fragte jeder noch einmal.',
+    suchen: "{ stdio: 'inherit', env: umgebung }",
+    ersetzen: "{ stdio: 'inherit' }",
+  },
+  {
+    id: 'neuaufbau-fortsetzen-ohne-namen',
+    datei: 'scripts/neuaufbau-fahren.mjs',
+    regel: 'Beim Fortsetzen werden nur die Angaben verlangt, die die übrigen Schritte brauchen.',
+    suchen: "  const noetig = ab <= 1 ? PFLICHT : ab === 2 ? ['sql'] : []\n",
+    ersetzen: '  const noetig = PFLICHT\n',
+  },
+  {
+    id: 'anlegen-erst-die-angaben',
+    datei: 'scripts/versammlung-anlegen.mjs',
+    regel: 'Erst fehlende Angaben melden, dann nach dem Schlüssel fragen — und für --trocken gar nicht.',
+    suchen: '  const arg = argumente(argv)\n  // Erst die Angaben, dann der Schlüssel',
+    // Zusammengesetzt: Stünde der Aufruf hier am Stück, hielte die Schema-Probe
+    // diesen Katalog für ein Skript, das mit der Datenbank redet (`REDET_MIT_DB`).
+    ersetzen: '  const arg = argumente(argv)\n  await zugangsdaten' + '()\n  // Erst die Angaben, dann der Schlüssel',
+  },
+  {
+    id: 'neuaufbau-reicht-cong-weiter',
+    datei: 'scripts/neuaufbau-fahren.mjs',
+    regel: 'Beim Fortsetzen geht --cong an jeden Schritt — neben der Testversammlung wiese jeder sonst ab.',
+    suchen: "  const cong = typeof arg.cong === 'string' ? ['--cong', arg.cong] : []\n",
+    ersetzen: '  const cong = []\n',
+  },
+  {
+    id: 'zuruecksetzen-sicherung-nur-nach-abbruch',
+    datei: 'scripts/versammlung-zuruecksetzen.mjs',
+    regel: 'Die Sicherung der Konto-Verknüpfungen zieht nur, wenn die Personen schon gelöscht sind — sonst gilt die Datenbank.',
+    suchen: '  } else if (dbPersonen.length === 0 && fs.existsSync(sidecar)) {\n',
+    ersetzen: '  } else if (fs.existsSync(sidecar)) {\n',
+  },
+  {
+    id: 'zuruecksetzen-sicherung-danach-weg',
+    datei: 'scripts/versammlung-zuruecksetzen.mjs',
+    regel: 'Nach einem gelungenen Zurücksetzen sind die Sicherungen weg — liegen geblieben, zögen sie beim nächsten Lauf.',
+    suchen: '  for (const datei of [regelSidecar, sidecar]) if (fs.existsSync(datei)) fs.unlinkSync(datei)\n',
+    ersetzen: '  if (gruppenRegeln.length && fs.existsSync(regelSidecar)) fs.unlinkSync(regelSidecar)\n',
+  },
+  {
+    id: 'zuruecksetzen-zaehlt-was-trifft',
+    datei: 'scripts/versammlung-zuruecksetzen.mjs',
+    regel: 'Als erhalten zählt eine Konto-Verknüpfung nur, wenn sie ein Konto getroffen hat.',
+    suchen: '    if (Array.isArray(getroffen) && getroffen.length > 0) verknuepft++\n    else ohneKonto.push(v.personName)\n',
+    ersetzen: '    verknuepft++\n',
+  },
+  {
     id: 'screens-je-rechten-gemerkt',
     datei: 'src/data/rechte.ts',
     regel: 'Dieselben Rechte ergeben dieselbe Liste der Bildschirme — sonst liefe der Deep-Link-Effekt bei jedem Render.',

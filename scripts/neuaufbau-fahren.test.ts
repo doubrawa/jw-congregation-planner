@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fehlendeAngaben, PFLICHT, schritte } from './neuaufbau-fahren.mjs'
+import { congMitSchrittEins, fehlendeAngaben, PFLICHT, schritte } from './neuaufbau-fahren.mjs'
 
 /**
  * **Die Reihenfolge ist der Zweck dieses Skripts.**
@@ -41,6 +41,13 @@ describe('fehlendeAngaben', () => {
 
   it('kennt genau vier Pflichtangaben', () => {
     expect(PFLICHT).toEqual(['name', 'vorname', 'nachname', 'sql'])
+  })
+
+  it('verlangt beim Fortsetzen nur, was die übrigen Schritte brauchen (16.10.2026)', () => {
+    // Name, Vor- und Nachname braucht nur Schritt 1 (die Versammlung anlegen).
+    expect(fehlendeAngaben({ 'ab-schritt': '2' })).toEqual(['sql'])
+    expect(fehlendeAngaben({ 'ab-schritt': '2', sql: 'C:/daten/personen.sql' })).toEqual([])
+    expect(fehlendeAngaben({ 'ab-schritt': '3' })).toEqual([])
   })
 })
 
@@ -112,6 +119,26 @@ describe('schritte', () => {
   it('übergibt die Personen-Datei unverändert an das Zurücksetzen', () => {
     const zurueck = schritte(vollstaendig).find((s) => s.skript === 'versammlung-zuruecksetzen.mjs')
     expect(zurueck?.argv).toEqual(['--sql', 'C:/daten/personen.sql'])
+  })
+
+  it('reicht --cong beim Fortsetzen an jeden Schritt weiter (16.10.2026)', () => {
+    // Steht die Testversammlung neben der echten, weist jeder Schritt ohne
+    // `--cong` mit „Mehrere Versammlungen" ab — bis hierher ließ sich die Wahl
+    // nicht weiterreichen, und ein Fortsetzen ging gar nicht.
+    const liste = schritte({ ...vollstaendig, 'ab-schritt': '2', cong: 'c-echt' })
+    expect(liste.map((s) => s.nr)).toEqual([2, 3, 4, 5, 6])
+    for (const s of liste) {
+      expect(s.argv[s.argv.indexOf('--cong') + 1], s.skript).toBe('c-echt')
+    }
+    // Ohne die Angabe bleibt alles, wie es war.
+    expect(schritte(vollstaendig).some((s) => s.argv.includes('--cong'))).toBe(false)
+  })
+
+  it('weist --cong mit Schritt 1 ab — der legt eine neue Versammlung an', () => {
+    expect(congMitSchrittEins({ ...vollstaendig, cong: 'c-echt' })).toBe(true)
+    expect(congMitSchrittEins({ ...vollstaendig, cong: 'c-echt', 'ab-schritt': '1' })).toBe(true)
+    expect(congMitSchrittEins({ ...vollstaendig, cong: 'c-echt', 'ab-schritt': '2' })).toBe(false)
+    expect(congMitSchrittEins(vollstaendig)).toBe(false)
   })
 
   it('setzt Zusammenkunftszeiten nur als Rückfall, nicht über die Angabe', () => {

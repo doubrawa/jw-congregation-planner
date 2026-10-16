@@ -361,7 +361,9 @@ Er ruft die sechs Einzelskripte in der Reihenfolge auf, die die Daten verlangen,
 und holt dabei **acht Wochenprogramme** von jw.org (`--wochen N` ändert das) —
 in der App wäre das achtmal „Nächste Woche importieren". Zuerst mit `--trocken`;
 steigt ein Schritt aus, nennt der Lauf die Nummer zum Fortsetzen
-(`--ab-schritt N`), damit Schritt 1 nicht eine zweite Versammlung anlegt.
+(`--ab-schritt N`), damit Schritt 1 nicht eine zweite Versammlung anlegt. Steht
+eine zweite Versammlung daneben (die Testversammlung), gehört zum Fortsetzen
+`--cong <id>` dazu — sonst weist jeder Schritt mit „Mehrere Versammlungen" ab.
 
 Was er nacheinander tut — und was fehlte, wenn man einen Schritt ausließe:
 

@@ -339,15 +339,21 @@ export async function main(argv = process.argv.slice(2)) {
   // Sidecar-Datei gehalten. Läuft das Skript nach einem Abbruch erneut (persons
   // bereits gelöscht, also aus der DB nicht mehr ableitbar), kommt sie von dort —
   // sonst ginge die Anmeldung des Planers verloren.
+  //
+  // **Nur dann** (16.10.2026, Review): Stehen die Personen noch da, gilt die
+  // Datenbank — auch wenn gerade niemand verknüpft ist. Bis dahin zog die Datei
+  // schon in diesem Fall, und sie blieb nach jedem Lauf liegen: Ein bewusst
+  // gelöstes Konto war nach dem nächsten Zurücksetzen wieder verknüpft. Der
+  // Name trägt die Versammlung — die Testversammlung nimmt dasselbe SQL.
   const nameNachId = new Map(dbPersonen.map((p) => [p.id, personDisplayName(p.fn, p.ln)]))
   const links = linksAufNamen(dbLinks, nameNachId)
-  const sidecar = `${sqlPfad}.members.json`
+  const sidecar = `${sqlPfad}.${cong}.members.json`
   let verknuepfungen = members
     .filter((m) => m.person_id && nameNachId.has(m.person_id))
     .map((m) => ({ userId: m.user_id, email: m.email, personName: nameNachId.get(m.person_id) }))
   if (verknuepfungen.length) {
-    fs.writeFileSync(sidecar, JSON.stringify(verknuepfungen, null, 2)) // vor dem Löschen sichern
-  } else if (fs.existsSync(sidecar)) {
+    if (!arg.trocken) fs.writeFileSync(sidecar, JSON.stringify(verknuepfungen, null, 2)) // vor dem Löschen sichern
+  } else if (dbPersonen.length === 0 && fs.existsSync(sidecar)) {
     verknuepfungen = JSON.parse(fs.readFileSync(sidecar, 'utf8'))
     console.log(`(${verknuepfungen.length} Konto-Verknüpfung(en) aus vorherigem Lauf übernommen — DB war schon geleert.)`)
   }
@@ -359,14 +365,15 @@ export async function main(argv = process.argv.slice(2)) {
    * Gruppennamen umgeschrieben und in eine Sidecar-Datei gelegt, bevor
    * irgendetwas gelöscht ist. Bricht der Lauf zwischen dem Löschen der Gruppen
    * und dem Zurückschreiben ab, sind die Regeln aus der Datenbank nicht mehr zu
-   * holen — dann kommen sie beim nächsten Lauf von dort.
+   * holen — dann kommen sie beim nächsten Lauf von dort. Wie bei den Konten
+   * nur dann: Stehen die Gruppen noch da, gilt die Datenbank.
    */
   const gruppenNachId = new Map(dbGruppen.map((g) => [g.id, g.name]))
-  const regelSidecar = `${sqlPfad}.fsrules.json`
+  const regelSidecar = `${sqlPfad}.${cong}.fsrules.json`
   let gruppenRegeln = regelnAufNamen(alleRegeln, gruppenNachId)
   if (gruppenRegeln.length) {
-    fs.writeFileSync(regelSidecar, JSON.stringify(gruppenRegeln, null, 2))
-  } else if (fs.existsSync(regelSidecar)) {
+    if (!arg.trocken) fs.writeFileSync(regelSidecar, JSON.stringify(gruppenRegeln, null, 2))
+  } else if (dbGruppen.length === 0 && fs.existsSync(regelSidecar)) {
     gruppenRegeln = JSON.parse(fs.readFileSync(regelSidecar, 'utf8'))
     console.log(`(${gruppenRegeln.length} Gruppen-Treffpunkt(e) aus vorherigem Lauf übernommen — DB war schon geleert.)`)
   }
@@ -476,17 +483,21 @@ export async function main(argv = process.argv.slice(2)) {
   const idNachName = new Map(kuratiert.persons.map((p) => [personDisplayName(p.fn, p.ln), p.id]))
   let verknuepft = 0
   const unverknuepft = []
+  // Gezählt wird, was getroffen hat: Ein Konto aus der Sicherung, das es nicht
+  // mehr gibt, zählte bis zum 16.10.2026 als „erhalten".
+  const ohneKonto = []
   for (const v of verknuepfungen) {
     const pid = idNachName.get(v.personName)
     if (!pid) { unverknuepft.push(v.personName); continue }
     // Eine Sicherung aus einem Lauf vor dem Umbau kennt nur die Adresse.
     const konto = v.userId ? `user_id=eq.${encodeURIComponent(v.userId)}` : `email=eq.${encodeURIComponent(v.email)}`
     if (!v.userId && !v.email) { unverknuepft.push(v.personName); continue }
-    await rest(`members?${konto}&congregation_id=eq.${cong}`, {
-      method: 'PATCH', headers: { Prefer: 'return=minimal' },
+    const getroffen = await rest(`members?${konto}&congregation_id=eq.${cong}`, {
+      method: 'PATCH', headers: { Prefer: 'return=representation' },
       body: JSON.stringify({ person_id: pid }),
     })
-    verknuepft++
+    if (Array.isArray(getroffen) && getroffen.length > 0) verknuepft++
+    else ohneKonto.push(v.personName)
   }
 
   // Die Anmelde-Links zeigen wieder auf ihre Person (siehe `linksAufNamen`).
@@ -511,13 +522,15 @@ export async function main(argv = process.argv.slice(2)) {
       `${linkZeilen.length ? `, ${linkZeilen.length} Anmelde-Link(s) gelten weiter` : ''}.`,
   )
   if (unverknuepft.length) console.log(`Unverknüpft (Name nicht im SQL): ${unverknuepft.join(', ')}`)
+  if (ohneKonto.length) console.log(`Unverknüpft (Konto nicht mehr da): ${ohneKonto.join(', ')}`)
   if (linksVerloren.length) console.log(`Link verloren — Person nicht mehr im SQL: ${linksVerloren.join(', ')}`)
   if (wieder.length) console.log(`${wieder.length} Gruppen-Treffpunkt(e) wieder eingespielt.`)
   if (verloren.length) {
     console.log(`Treffpunkt verloren — Gruppe nicht mehr im SQL: ${verloren.join(', ')}`)
   }
-  // Erst jetzt weg: Bis hierher war die Datei die einzige Kopie der Regeln.
-  if (gruppenRegeln.length && fs.existsSync(regelSidecar)) fs.unlinkSync(regelSidecar)
+  // Erst jetzt weg: Bis hierher waren die Dateien die einzige Kopie der Regeln
+  // und der Verknüpfungen. Liegen geblieben, zögen sie bei einem späteren Lauf.
+  for (const datei of [regelSidecar, sidecar]) if (fs.existsSync(datei)) fs.unlinkSync(datei)
   /*
    * **Die Übergabeliste — vollständig.**
    *

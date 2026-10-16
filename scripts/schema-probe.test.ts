@@ -1264,3 +1264,56 @@ describe('versammlung-zuruecksetzen: Konten und Links überstehen das Zurückset
     expect(ausgabe.join('\n')).toContain('1 Anmelde-Link(s) gelten weiter')
   })
 })
+
+describe('versammlung-zuruecksetzen: die Sicherung zählt nur nach einem Abbruch (16.10.2026)', () => {
+  /*
+    Die Konto-Verknüpfungen gehen in eine Datei neben dem SQL, bevor etwas
+    gelöscht wird — für den Fall, dass ein Lauf mittendrin abbricht und die
+    Personen schon weg sind. Bis zum 16.10.2026 zog die Datei, sobald gerade
+    niemand verknüpft war, auch wenn die Personen noch dastanden, und sie blieb
+    nach jedem Lauf liegen: Ein bewusst gelöstes Konto war nach dem nächsten
+    Zurücksetzen wieder verknüpft. Und ein Konto aus der Datei, das es nicht
+    mehr gab, zählte als „erhalten".
+  */
+  const SICHERUNG = `personen.sql.${C}.members.json`
+  const fahreMit = async (bestand: Record<string, Zeile[]>, sicherung: unknown[]) => {
+    const l = LAEUFE['versammlung-zuruecksetzen.mjs']![0]!
+    const modul = (await MODULE['./versammlung-zuruecksetzen.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const eingaben = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-probe-'))
+    try {
+      for (const [name, inhalt] of Object.entries(l.dateien ?? {})) fs.writeFileSync(path.join(eingaben, name), String(inhalt))
+      fs.writeFileSync(path.join(eingaben, SICHERUNG), JSON.stringify(sicherung))
+      const lauf = await fahre(() => l.fahren(modul, eingaben), { ...l.umgebung, bestand: { ...l.umgebung!.bestand, ...bestand } })
+      return { ...lauf, sicherungDa: fs.existsSync(path.join(eingaben, SICHERUNG)) }
+    } finally {
+      fs.rmSync(eingaben, { recursive: true, force: true })
+    }
+  }
+
+  it('stehen die Personen noch da, gilt die Datenbank — ein gelöstes Konto bleibt gelöst', async () => {
+    const { tabellen, ausgabe, sicherungDa } = await fahreMit(
+      { members: [{ user_id: U1, congregation_id: C, email: '', person_id: null, planner: true }] },
+      [{ userId: U1, email: '', personName: 'Probe Eins' }],
+    )
+    expect(tabellen.members!.find((m) => m.user_id === U1)?.person_id).toBeNull()
+    expect(ausgabe.join('\n')).not.toContain('aus vorherigem Lauf')
+    expect(sicherungDa, 'nach dem Lauf weg — sie zöge sonst beim nächsten').toBe(false)
+  })
+
+  it('nach einem Abbruch kommt sie zurück — gezählt wird, was ein Konto getroffen hat', async () => {
+    const { tabellen, ausgabe, sicherungDa } = await fahreMit(
+      // Die Personen sind schon gelöscht, das Konto steht ohne Person da.
+      { persons: [], members: [{ user_id: U1, congregation_id: C, email: '', person_id: null, planner: true }] },
+      [
+        { userId: U1, email: '', personName: 'Probe Eins' },
+        { userId: U2, email: '', personName: 'Probe Zwei' }, // das Konto gibt es nicht mehr
+      ],
+    )
+    expect(tabellen.members!.find((m) => m.user_id === U1)?.person_id).toBe(P1)
+    const text = ausgabe.join('\n')
+    expect(text).toContain('aus vorherigem Lauf')
+    expect(text).toContain('1 Konto-Verknüpfung(en) erhalten')
+    expect(text).toContain('Unverknüpft (Konto nicht mehr da): Probe Zwei')
+    expect(sicherungDa).toBe(false)
+  })
+})

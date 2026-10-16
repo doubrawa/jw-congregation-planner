@@ -114,7 +114,9 @@ export function planerBereiche() {
 /** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
 export async function main(argv = process.argv.slice(2)) {
   const arg = argumente(argv)
-  const { url, key } = await zugangsdaten()
+  // Erst die Angaben, dann der Schlüssel: Bis zum 16.10.2026 fragte das Skript
+  // nach ihm, bevor es eine fehlende Angabe meldete — auch für `--trocken`,
+  // das die Datenbank gar nicht berührt.
   const fehlt = []
   if (!arg.name) fehlt.push('--name')
   if (!arg.vorname) fehlt.push('--vorname')
@@ -155,6 +157,7 @@ export async function main(argv = process.argv.slice(2)) {
     return
   }
 
+  const { url, key } = await zugangsdaten()
   // Dieses Skript legt nur an — deshalb eine POST-Hülle über dem gemeinsamen
   // Klienten statt einer eigenen Closure.
   const roh = restKlient(url, key)
