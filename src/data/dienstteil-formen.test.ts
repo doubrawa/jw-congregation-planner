@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { ministryNames } from '../../supabase/functions/import-week/parse.ts'
 import { istSchuelerteil, syncAuxSlots } from './aux-class'
 import { emptyQualifications } from './helpers'
-import { alleS89DerWoche, autoAssignMeeting } from './planning'
+import { KEINE_ABWESENHEIT } from './absence'
+import { alleS89DerWoche, autoAssignMeeting, rangfolgeFuer } from './planning'
 import type { PartItem, Person, Week } from './types'
 import { STANDARD_ZEITEN } from './vorgaben'
 
@@ -155,9 +156,52 @@ describe('Vortrag des Vorsitzenden — kein Schülerteil (ab 2027)', () => {
     expect(alleS89DerWoche([w], 0, STANDARD_ZEITEN)).toEqual([])
   })
 
-  it('die Auto-Zuteilung nimmt einen Bruder für den Vorsitz — keine Schülerin', () => {
-    const { weeks } = autoAssignMeeting([woche(VORSITZ())], 0, 'mid', MIT_VORSITZ, [])
-    expect(teile(weeks[0]!)[0]!.names.map((n) => n.pid)).toEqual(['vorsitz'])
+  /** Dieselbe Woche mit Eröffnung — dort steht der Vorsitz, dem der Vortrag folgt. */
+  const mitEroeffnung = (w: Week): Week => ({
+    ...w,
+    mid: {
+      ...w.mid,
+      sections: [
+        {
+          label: 'ERÖFFNUNG',
+          kind: 'eroeffnung',
+          farbe: 'neutral',
+          items: [
+            {
+              iid: 'e1', title: 'Lied 1 und Gebet · Einleitende Worte', meta: '1 Min.',
+              names: [
+                { name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' },
+                { name: '', rolle: 'Gebet', bereichsKey: 'gebet' },
+              ],
+            },
+          ],
+        },
+        ...w.mid.sections,
+      ],
+    },
+  })
+  const pids = (w: Week, si: number) => (w.mid.sections[si]?.items[0] as PartItem | undefined)?.names.map((n) => n.pid) ?? []
+
+  it('die Auto-Zuteilung gibt ihn dem Vorsitzenden der Zusammenkunft — keinem zweiten (16.10.2026)', () => {
+    // Zwei können den Vorsitz: Die gemeinsame Sperrliste setzte sonst den
+    // anderen auf den Vortrag, als hielte ein zweiter Vorsitzender ihn.
+    const zwei = [...MIT_VORSITZ, person('vorsitz2', { role: 'aeltester', priv: { ...emptyQualifications(), vorsitzMid: true } })]
+    const { weeks } = autoAssignMeeting([mitEroeffnung(woche(VORSITZ()))], 0, 'mid', zwei, [])
+    const [vorsitz] = pids(weeks[0]!, 0)
+    expect(vorsitz).toBeDefined()
+    expect(pids(weeks[0]!, 1)).toEqual([vorsitz])
+  })
+
+  it('… auch wenn nur einer den Vorsitz kann — sonst blieb er offen', () => {
+    const { weeks } = autoAssignMeeting([mitEroeffnung(woche(VORSITZ()))], 0, 'mid', MIT_VORSITZ, [])
+    expect(pids(weeks[0]!, 0)[0]).toBe('vorsitz')
+    expect(pids(weeks[0]!, 1)).toEqual(['vorsitz'])
+  })
+
+  it('das Zuteilen-Blatt schlägt dafür niemanden vor — er folgt dem Vorsitz wie das Anfangsgebet', () => {
+    const w = mitEroeffnung(woche(VORSITZ()))
+    const sel = { kind: 'part' as const, wi: 0, tab: 'mid' as const, si: 1, ii: 0, ni: 0, priv: 'vorsitzMid', groups: false, label: '' }
+    expect(rangfolgeFuer([w], sel, MIT_VORSITZ, [], [], KEINE_ABWESENHEIT)).toEqual([])
   })
 
   it('nur der ganze Beschreiber zählt', () => {

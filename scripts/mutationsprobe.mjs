@@ -243,10 +243,11 @@ export const KATALOG = [
     id: 'zuteilung-vorsitz-betet',
     datei: 'src/data/planning.ts',
     regel: 'Der Vorsitz spricht das Anfangsgebet (einzige erlaubte Doppel-Aufgabe).',
-    // Die Kopplung steht inzwischen in `gebetAnVorsitz`; die Mutation lässt
-    // die Funktion sofort zurückkehren — das Gebet bleibt offen wie vorher.
-    suchen: '  if (!vorsitzSlot?.name || !gebet || gebet.name) return',
-    ersetzen: '  return',
+    // Die Kopplung steht inzwischen in `anVorsitzKoppeln` (bis zum 16.10.2026
+    // `gebetAnVorsitz`); die Mutation lässt die Funktion sofort zurückkehren —
+    // das Gebet bleibt offen wie vorher.
+    suchen: '  if (!vorsitzSlot?.name) return\n',
+    ersetzen: '  return\n',
   },
   {
     id: 'zuteilung-abwesend',
@@ -7208,6 +7209,20 @@ export const KATALOG = [
     regel: 'Ein „Vortrag des Vorsitzenden" (ab 2027) bekommt den Platz des Vorsitzenden — keinen Schüler mit Partner.',
     suchen: '  if (VORSITZ_RE.test(form)) return vorsitzPlatz()\n',
     ersetzen: '',
+  },
+  {
+    id: 'zuteilung-vortrag-folgt-vorsitz',
+    datei: 'src/data/planning.ts',
+    regel: 'Den „Vortrag des Vorsitzenden" bekommt der Vorsitzende der Zusammenkunft — kein zweiter, und er bleibt nicht offen.',
+    suchen: "  return istArt(section, 'eroeffnung') ? slot.rolle === 'Gebet' : slot.rolle === 'Vorsitz'\n",
+    ersetzen: "  return istArt(section, 'eroeffnung') ? slot.rolle === 'Gebet' : false\n",
+  },
+  {
+    id: 'rangfolge-vortrag-folgt-vorsitz',
+    datei: 'src/data/planning.ts',
+    regel: 'Das Zuteilen-Blatt schlägt für den Vortrag des Vorsitzenden niemanden vor — er folgt dem Vorsitz wie das Anfangsgebet.',
+    suchen: '  if (folgtDemVorsitz(section, slot)) return []\n',
+    ersetzen: "  if (istArt(section, 'eroeffnung') && slot.rolle === 'Gebet') return []\n",
   },
   {
     id: 'import-week-sonntag-laufende',

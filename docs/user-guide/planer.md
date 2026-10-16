@@ -268,8 +268,10 @@ Knöpfe rechts neben der Woche. **Automatisch** öffnet ein Blatt:
   Predigtdienstgruppen.
 
 Die Automatik wählt bevorzugt Personen mit der **geringsten Auslastung**, lässt
-Abwesende aus und vergibt niemanden doppelt am selben Tag. Eine Ausnahme ist der
-Leiter des Wachtturm-Studiums: Sind dafür **feste Rollen** vergeben, bestimmen
+Abwesende aus und vergibt niemanden doppelt am selben Tag. Ausnahmen: Der
+Vorsitz spricht das Anfangsgebet und hält den **Vortrag des Vorsitzenden**,
+wo das Arbeitsheft einen nennt – beide Plätze folgen ihm (von Hand änderbar).
+Auch beim Leiter des Wachtturm-Studiums: Sind dafür **feste Rollen** vergeben, bestimmen
 sie ihn (siehe [Personen verwalten](#6-personen-verwalten)). Externe Redner
 (Gastredner, Kreisaufseher) bleiben offen und werden manuell eingetragen. Nach dem
 Zuteilen kannst du einzelne Slots wie gewohnt noch von Hand anpassen.
