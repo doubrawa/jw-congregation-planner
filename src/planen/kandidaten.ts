@@ -14,7 +14,7 @@
 
 import type { AppState } from '../app/context'
 import { abwesenheitAm, istAbwesend, type AbsenceSet } from '../data/absence'
-import { slotsOf } from '../data/aux-class'
+import { ratgeberSlot, slotsOf } from '../data/aux-class'
 import { fsTag } from '../data/fs'
 import {
   displayName,
@@ -241,11 +241,19 @@ function personenKandidaten(
  * passen — zum Führer **desselben Raums**. Wurde er immer im Hauptsaal
  * gesucht, richtete sich die Zusätzliche Klasse nach dem falschen Platz; die
  * Auto-Zuteilung macht es richtig und begründet es ausdrücklich (planning.ts).
+ *
+ * Den Ratgeber fragte die Liste bis zum 16.10.2026 nicht: Eine Schwester mit
+ * versehentlich gesetztem Bereich stand zur Wahl, obwohl der Platz `male` trägt.
  */
 function geschlechtsPruefung(
   state: KandidatenDaten,
   sel: Exclude<SlotSelection, { kind: 'fs' }>,
 ): (p: Person) => boolean {
+  if (sel.kind === 'ratgeber') {
+    const meeting = state.weeks[sel.wi]?.[sel.tab]
+    const nurBrueder = meeting ? ratgeberSlot(meeting).male === true : false
+    return (p: Person) => !(nurBrueder && p.female)
+  }
   if (sel.kind !== 'part') return () => true
   const item = state.weeks[sel.wi]?.[sel.tab].sections[sel.si]?.items[sel.ii]
   if (!item || isSong(item)) return () => true

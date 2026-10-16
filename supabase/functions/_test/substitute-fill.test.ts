@@ -30,7 +30,7 @@ const MEMBERS = [
   { user_id: U_OHNE, person_id: null, congregation_id: CONG },
 ]
 
-const PRIV = { gebet: true, vortrag: true, bibellesung: true, ratgeber: true, 'svc:mik': true, 'svc:rein': true }
+const PRIV: Record<string, boolean> = { gebet: true, vortrag: true, bibellesung: true, ratgeber: true, 'svc:mik': true, 'svc:rein': true }
 const PERSONS = [
   { id: 'p-ich', fn: 'Ich', ln: 'Selbst', priv: PRIV, female: false },
   { id: 'p-schwester', fn: 'Eine', ln: 'Schwester', priv: PRIV, female: true },
@@ -272,6 +272,25 @@ describe('fill: was abgewiesen wird — und dann nichts schreibt', () => {
   ])('%s wird nicht angeboten → 403 not-offered', async (_name, key) => {
     expect(await antwort(await fuellen(key))).toEqual({ status: 403, body: { error: 'not-offered' } })
     expect(geschrieben()).toEqual([])
+  })
+
+  it('den Vortrag des Vorsitzenden → 403 not-offered — der Vorsitz in der Eröffnung bleibt frei (16.10.2026)', async () => {
+    // Arbeitsheft ab Januar 2027: ein Platz „Vorsitz" unter „Uns im Dienst
+    // verbessern". Er gehört dem Vorsitzenden; bis dahin übernahm ihn, wer den
+    // Vorsitz kann — als zweiter Vorsitzender.
+    const eroeffnung = woche.mid!.sections![0]!.items![0] as PartItem
+    eroeffnung.names!.push({ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' })
+    woche.mid!.sections!.push({ label: 'UNS IM DIENST VERBESSERN', kind: 'dienst', items: [
+      { iid: 'k5', title: 'Platzhalter-Dienst', names: [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' }] },
+    ] })
+    PERSONS[0]!.priv = { ...PRIV, vorsitzMid: true }
+    try {
+      expect(await antwort(await fuellen(punktKey(MONTAG, 'mid', 'k5', 0)))).toEqual({ status: 403, body: { error: 'not-offered' } })
+      expect(geschrieben()).toEqual([])
+      expect((await fuellen(punktKey(MONTAG, 'mid', 'k1', 1))).status).toBe(200)
+    } finally {
+      PERSONS[0]!.priv = PRIV
+    }
   })
 
   it('vor „Plan senden" → 409 — ein gesendeter Treffpunkt zählt nicht', async () => {

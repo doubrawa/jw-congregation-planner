@@ -198,10 +198,14 @@ describe('Vortrag des Vorsitzenden — kein Schülerteil (ab 2027)', () => {
     expect(pids(weeks[0]!, 1)).toEqual(['vorsitz'])
   })
 
-  it('das Zuteilen-Blatt schlägt dafür niemanden vor — er folgt dem Vorsitz wie das Anfangsgebet', () => {
+  it('das Zuteilen-Blatt schlägt dafür den Vorsitzenden vor — solange der Vorsitz leer ist, niemanden', () => {
+    // Er folgt dem Vorsitz wie das Anfangsgebet. Bis zum 16.10.2026 schlug das
+    // Blatt auch bei besetztem Vorsitz niemanden vor (`sonderplaetze.test.ts`).
     const w = mitEroeffnung(woche(VORSITZ()))
     const sel = { kind: 'part' as const, wi: 0, tab: 'mid' as const, si: 1, ii: 0, ni: 0, priv: 'vorsitzMid', groups: false, label: '' }
     expect(rangfolgeFuer([w], sel, MIT_VORSITZ, [], [], KEINE_ABWESENHEIT)).toEqual([])
+    Object.assign((w.mid.sections[0]!.items[0] as PartItem).names[0]!, { name: 'vorsitz Test', pid: 'vorsitz' })
+    expect(rangfolgeFuer([w], sel, MIT_VORSITZ, [], [], KEINE_ABWESENHEIT).map((p) => p.id)).toEqual(['vorsitz'])
   })
 
   it('nur der ganze Beschreiber zählt', () => {

@@ -82,13 +82,15 @@ export function planGesendet(sentLog: SentLog, woche: string): boolean {
  * Unter welchem Aufgabenbereich ein Platz angeboten wird — `null`: gar nicht.
  *
  * Die Regel für Programmpunkt und Ratgeber steht im geteilten Edge-Ordner
- * (`programmAngebot`): Rednerplätze nicht, Schulungsaufgaben nicht. Dieselbe
+ * (`programmAngebot`): Rednerplätze nicht, Schulungsaufgaben nicht, der Vortrag
+ * des Vorsitzenden nicht — den Abschnitt gibt es nur beim Programmpunkt. Dieselbe
  * Prüfung macht der Server beim Eintragen. Bei den Hilfsdiensten fällt nur die
  * Reinigung heraus — eine Gruppe, keine Person.
  */
 export function angebotsBereich(platz: Platz): string | null {
   if (platz.art === 'helper') return platz.svc.groups ? null : serviceQualKey(platz.svc.key)
-  return programmAngebot(platz.slot)
+  if (platz.art === 'ratgeber') return programmAngebot(platz.slot)
+  return programmAngebot(platz.slot, platz.section)
 }
 
 /** Titel und Rolle eines Platzes — dieselbe Teilung wie bei den Aufgaben (`eachAssignedSlot`). */

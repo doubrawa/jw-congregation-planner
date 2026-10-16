@@ -5,7 +5,7 @@ import { angebotsBereich, offenePlaetze, planGesendet, platzAuswahl } from './of
 import { allePlaetze } from './plaetze'
 import { helferKey, punktKey, ratgeberKey, sentKey } from './planning'
 import { programmAngebot, SCHUELER_BEREICHE } from '../../supabase/functions/_shared/freie-plaetze.ts'
-import type { Absence, Meeting, Person, SentLog, Service, Week } from './types'
+import type { Absence, Meeting, PartItem, Person, SentLog, Service, Week } from './types'
 
 /**
  * **Freie Plätze, die man selbst übernehmen kann** (4.10.2026) — wann einer
@@ -69,6 +69,19 @@ function sonntag(): Meeting {
     // Am Sonntag sind die Mikrofone besetzt — dort bleibt nur der Rednerplatz offen.
     helpers: { mik: [{ name: 'Andere Person', pid: 'x' }, { name: 'Noch Jemand', pid: 'y' }] },
   } as Meeting
+}
+
+/**
+ * Das Arbeitsheft ab Januar 2027: Der Vorsitz steht in der Eröffnung, und unter
+ * „Uns im Dienst verbessern" hält er den „Vortrag des Vorsitzenden" — ein
+ * Platz „Vorsitz" außerhalb der Eröffnung.
+ */
+function mitVortragDesVorsitzenden(mid: Meeting): Meeting {
+  ;(mid.sections[0]!.items[0] as PartItem).names.push({ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' })
+  mid.sections.push({ label: 'UNS IM DIENST VERBESSERN', kind: 'dienst', farbe: 'gold', items: [
+    { iid: 'k5', title: 'Platzhalter-Dienst', names: [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' }] },
+  ] })
+  return mid
 }
 
 function woche(over: Partial<Week> = {}): Week {
@@ -141,6 +154,13 @@ describe('offenePlaetze — was angeboten wird', () => {
     expect(angebot({ absences: [weg] })).toEqual([])
   })
 
+  it('nicht den Vortrag des Vorsitzenden — der gehört dem, der den Vorsitz hat (16.10.2026)', () => {
+    // Bis dahin bekam ihn angeboten, wer den Vorsitz kann, und hielt ihn als
+    // zweiter Vorsitzender. Gegenprobe: Der Vorsitz in der Eröffnung bleibt frei.
+    const weeks = [woche({ mid: mitVortragDesVorsitzenden(dienstag()) })]
+    expect(keys(angebot({ weeks, me: ich({}, 'vorsitzMid') }))).toEqual([punktKey(MONTAG, 'mid', 'k1', 1)])
+  })
+
   it('die Zusätzliche Klasse: ihr Ratgeber und ihre Plätze nur, solange sie besteht', () => {
     const mid = dienstag()
     mid.auxRatgeber = { name: '', rolle: 'Ratgeber', bereichsKey: 'ratgeber', male: true }
@@ -198,10 +218,12 @@ describe('Eine Regel für App und Server (`programmAngebot`)', () => {
     expect(programmAngebot({})).toBeNull()
   })
 
-  it('der Client fragt genau sie — für jeden Platz der Probe-Woche', () => {
-    for (const platz of allePlaetze(dienstag(), DIENSTE)) {
+  it('der Client fragt genau sie — für jeden Platz der Probe-Woche, mit seinem Abschnitt', () => {
+    const mid = mitVortragDesVorsitzenden(dienstag())
+    mid.auxRatgeber = { name: '', rolle: 'Ratgeber', bereichsKey: 'ratgeber', male: true }
+    for (const platz of allePlaetze(mid, DIENSTE)) {
       if (platz.art === 'helper') continue
-      expect(angebotsBereich(platz)).toBe(programmAngebot(platz.slot))
+      expect(angebotsBereich(platz)).toBe(programmAngebot(platz.slot, platz.art === 'programm' ? platz.section : undefined))
     }
   })
 })

@@ -42,6 +42,46 @@ export function isGuestRole(rolle: string | undefined): boolean {
   return Boolean(rolle && SKIP_ROLE.test(rolle))
 }
 
+/** Was die Regeln unten von einem Abschnitt brauchen — gespeicherte Art und Überschrift. */
+interface AbschnittsKopf {
+  kind?: string
+  label?: string
+}
+
+/**
+ * Die Eröffnung — an ihrer gespeicherten Art, im Altbestand ohne Art an der
+ * kanonischen Überschrift (wie `abschnittsArt` im Client: `kind ?? artVonLabel`).
+ */
+function istEroeffnung(abschnitt: AbschnittsKopf): boolean {
+  const art = abschnitt.kind ?? (abschnitt.label === 'ERÖFFNUNG' ? 'eroeffnung' : undefined)
+  return art === 'eroeffnung'
+}
+
+/**
+ * **Plätze, die dem Vorsitz folgen** — das Anfangsgebet in der Eröffnung und
+ * jeder Platz „Vorsitz" außerhalb davon: der „Vortrag des Vorsitzenden"
+ * (Arbeitsheft ab Januar 2027). Die Automatik setzt dort die Person des
+ * Vorsitzes ein (`anVorsitzKoppeln`).
+ *
+ * Geteilt seit dem 16.10.2026. Bis dahin kannte nur die Automatik die Regel,
+ * und alle anderen behandelten die Plätze wie eigene: `bedarf` zählte sie als
+ * zweiten Bedarf („Vorsitz: nicht besetzbar 1"), das Zuteilen-Blatt zeigte den
+ * Vorsitzenden als „heute schon Vorsitz" weiter unten, und der Vortrag des
+ * Vorsitzenden wurde anderen Vorsitzenden als freier Platz angeboten.
+ */
+export function folgtDemVorsitz(abschnitt: AbschnittsKopf, slot: { rolle?: string } | undefined): boolean {
+  return istEroeffnung(abschnitt) ? slot?.rolle === 'Gebet' : slot?.rolle === 'Vorsitz'
+}
+
+/**
+ * Der **Vortrag des Vorsitzenden** — er gehört dem Vorsitzenden und wird keinem
+ * anderen angeboten (`programmAngebot`). Das Anfangsgebet dagegen darf auch ein
+ * anderer sprechen; es folgt dem Vorsitz nur, wenn niemand es anders einteilt.
+ */
+export function vortragDesVorsitzenden(abschnitt: AbschnittsKopf, slot: { rolle?: string } | undefined): boolean {
+  return !istEroeffnung(abschnitt) && slot?.rolle === 'Vorsitz'
+}
+
 /**
  * Der Name einer Person: „Vorname Nachname" — dieselbe Rechnung wie
  * `displayName()` in der App.

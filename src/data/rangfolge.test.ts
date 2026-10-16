@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildDemoWeeks, DEMO_GROUPS, DEMO_PERSONS, DEMO_SERVICES } from '../../tests/testdaten/testdaten'
-import { emptyQualifications, idAufloeser, isGuestRole, istArt, MEETING_TABS, partnerGenderOk, privSetzen } from './helpers'
+import { emptyQualifications, idAufloeser, isGuestRole, MEETING_TABS, partnerGenderOk, privSetzen } from './helpers'
 import { allePlaetze, platzDerAuswahl, type Platz } from './plaetze'
 import { autoAssignMeeting, rangfolgeFuer, zuletztImBereich } from './planning'
 import type { MeetingKey, MeetingSlotSelection, PartItem, Person, Week } from './types'
@@ -38,11 +38,16 @@ function mitLeeremPlatz(weeks: Week[], sel: MeetingSlotSelection): Week[] {
   return kopie
 }
 
-/** Wo die Automatik nicht wählt — dort gibt es keinen Vorschlag (`rangfolgeFuer`). */
+/**
+ * Wo die Automatik nicht wählt — dort gibt es keinen Vorschlag (`rangfolgeFuer`).
+ * Das Anfangsgebet gehört seit dem 16.10.2026 nicht mehr dazu: Die Automatik
+ * setzt dort den Vorsitzenden ein (`anVorsitzKoppeln`), und genau ihn schlägt
+ * das Blatt jetzt vor — bis dahin niemanden.
+ */
 function ohneWahl(platz: Platz): boolean {
   if (platz.art === 'helper') return platz.svc.groups === true
   if (platz.art === 'ratgeber') return false
-  return isGuestRole(platz.slot.rolle) || (istArt(platz.section, 'eroeffnung') && platz.slot.rolle === 'Gebet')
+  return isGuestRole(platz.slot.rolle)
 }
 
 /** Die Wochen 0–2 des Bestands, beide Zusammenkünfte (Woche 3 hat das Gedächtnismahl). */

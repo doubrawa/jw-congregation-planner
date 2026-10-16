@@ -115,6 +115,8 @@ export interface Section {
    * entscheidet mit, wie eine Zuteilung benannt wird (`zuteilungsLabel`).
    */
   label?: string
+  /** Die Art des Abschnitts (`eroeffnung`, …), wie der Client sie speichert — im Altbestand fehlt sie. */
+  kind?: string
   items?: Item[]
 }
 
