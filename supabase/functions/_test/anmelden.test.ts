@@ -503,6 +503,13 @@ describe('anmelden: „Link senden" auf der Anmeldeseite', () => {
     expect(mails[0]?.text).toMatch(/^Hello Bert,/)
   })
 
+  it('eine Sprache, die wie eine Eigenschaft heißt, ergibt die deutsche Mail — keinen Absturz (16.10.2026)', async () => {
+    // `lang` kommt ungeprüft aus dem Aufruf. `TEXTE["constructor"]` war die
+    // Funktion `Object`, und das Zusammensetzen der Mail warf.
+    await call({ aktion: 'mail', email: 'bert@example.org', lang: 'constructor' })
+    expect(mails[0]?.text).toMatch(/^Hallo Bert,/)
+  })
+
   /*
     Die Antwort verrät nicht, ob es die Adresse gibt — auch nicht über ihre
     Dauer. Auf der Plattform kommt sie, bevor gesucht und gesendet wird

@@ -261,7 +261,12 @@ Deno.serve(async (req: Request) => {
      */
     await bibelbuecherLaden()
 
-    for (const cong of congs) {
+    /**
+     * **Eine Versammlung** — lesen, vormerken, in die gemeinsamen Listen
+     * schreiben. Eine eigene Funktion, damit der Lauf eine Versammlung, deren
+     * Abfrage scheitert, auslassen kann, statt ganz abzubrechen (unten).
+     */
+    const versammlungBearbeiten = async (cong: (typeof congs)[number]): Promise<void> => {
       const rem: Rhythmus = {
         first: cong.reminder_first,
         last: cong.reminder_last,
@@ -607,6 +612,29 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    /*
+     * **Je Versammlung für sich.** Bis zum 16.10.2026 stand der ganze Lauf in
+     * einem einzigen `try`: Scheiterte eine Abfrage einer Versammlung — ein
+     * kurzer 5xx von PostgREST genügt —, brach er ab, bevor irgendetwas
+     * hinausging, und keine Versammlung bekam an diesem Tag eine Erinnerung.
+     * Der Cron läuft einmal täglich und wiederholt nicht. Jetzt fällt nur die
+     * eine aus; die Antwort sagt es mit Status 500, damit es im Protokoll
+     * steht.
+     *
+     * Ihre Abfragen stehen am Anfang von `versammlungBearbeiten` — scheitert
+     * eine, hat die Versammlung noch nichts in die gemeinsamen Listen
+     * geschrieben.
+     */
+    let fehlerVersammlungen = 0
+    for (const cong of congs) {
+      try {
+        await versammlungBearbeiten(cong)
+      } catch (err) {
+        fehlerVersammlungen++
+        console.error(`send-reminders (Versammlung ${cong.id}):`, err instanceof Error ? err.message : String(err))
+      }
+    }
+
     if (SEND_PUSH) {
       // Jede Zustellung ist eine eigene HTTPS-Fahrt zu FCM/Mozilla/Apple und
       // hängt an keiner anderen — gebündelt wird deshalb über den **ganzen**
@@ -642,17 +670,22 @@ Deno.serve(async (req: Request) => {
       await pruneNotifications()
     }
 
-    return json({
-      ok: true,
-      dryRun: !SEND_PUSH,
-      pushes: SEND_PUSH ? sent : preview.length,
-      skipped, // heute bereits benachrichtigt (Doppel-Versand-Sperre)
-      expired,
-      failed, // vom Push-Dienst abgewiesen — sonst sieht ein Totalausfall aus wie Ruhe
-      notifications: notifRows.length,
-      // Vorschau nur im Dry-Run — zum gefahrlosen Testen per curl
-      preview: SEND_PUSH ? undefined : preview,
-    })
+    return json(
+      {
+        ok: fehlerVersammlungen === 0,
+        dryRun: !SEND_PUSH,
+        pushes: SEND_PUSH ? sent : preview.length,
+        skipped, // heute bereits benachrichtigt (Doppel-Versand-Sperre)
+        expired,
+        failed, // vom Push-Dienst abgewiesen — sonst sieht ein Totalausfall aus wie Ruhe
+        // Versammlungen, die dieser Lauf auslassen musste (siehe oben) — die Gründe stehen im Protokoll.
+        fehlerVersammlungen,
+        notifications: notifRows.length,
+        // Vorschau nur im Dry-Run — zum gefahrlosen Testen per curl
+        preview: SEND_PUSH ? undefined : preview,
+      },
+      fehlerVersammlungen > 0 ? 500 : 200,
+    )
   } catch (err) {
     // Nur in die Logs, nicht in die Antwort — dieselbe Linie wie in
     // `substitute`, `send-plan`, `import-week` und `send-invite`: Die

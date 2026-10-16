@@ -97,9 +97,14 @@ export function anmeldeUrl(appUrl: string, token: string): string {
 
 /**
  * Die Adresse im QR-Code des Zettels: mit dem **Code**, nicht mit dem Token.
- * Beides steht ohnehin auf demselben Zettel — und so übersteht der Zettel, dass
- * sich jemand mit derselben Person auf der Anmeldeseite einen neuen Link per
- * E-Mail schicken lässt (der ersetzt nur das Token, siehe `anmelden`).
+ * Beides steht ohnehin auf demselben Zettel, und über den Code zeigt die App
+ * erst, wem er gehört, bevor sie anmeldet (`pruefen` in `anmelden`) — wer den
+ * Zettel eines anderen erwischt, merkt es.
+ *
+ * Hier stand bis zum 16.10.2026 außerdem, der Zettel überstehe ein „Link
+ * senden" auf der Anmeldeseite. Das gilt seit dem 15.10.2026 nicht mehr: Die
+ * Mail trägt den Code, also bringt jeder neue Link auch einen neuen, und der
+ * Zettel gilt danach nicht mehr (Entscheid des Betreibers).
  */
 export function codeUrl(appUrl: string, code: string): string {
   return `${basisVon(appUrl)}#${CODE_PARAMETER}=${codeNormal(code)}`

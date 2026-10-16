@@ -53,6 +53,8 @@ interface Fund {
   /** Aufgabenbereich, unter dem er angeboten wird — `null`: gar nicht. */
   bereich: string | null
   nurBrueder: boolean
+  /** Die Plätze desselben Programmpunkts im selben Raum — leer bei Ratgeber und Hilfsdienst. */
+  nebenan: readonly (Slot | null | undefined)[]
 }
 
 type Zusammenkunft = Extract<SchluesselTeile, { tab: 'mid' | 'we' }>
@@ -73,6 +75,7 @@ function platzFinden(meeting: Meeting, teile: Zusammenkunft, services: ServiceRo
       },
       bereich: programmAngebot(slot),
       nurBrueder: slot.male === true,
+      nebenan: [],
     }
   }
   if (teile.art === 'helper') {
@@ -90,6 +93,7 @@ function platzFinden(meeting: Meeting, teile: Zusammenkunft, services: ServiceRo
       },
       bereich: svc.groups ? null : `svc:${svc.key}`,
       nurBrueder: false,
+      nebenan: [],
     }
   }
   for (const section of meeting.sections ?? []) {
@@ -108,6 +112,7 @@ function platzFinden(meeting: Meeting, teile: Zusammenkunft, services: ServiceRo
         },
         bereich: programmAngebot(slot),
         nurBrueder: slot.male === true,
+        nebenan: reihe,
       }
     }
   }
@@ -174,13 +179,23 @@ export async function platzFuellen(rest: Rest, userId: string, taskKey: string, 
   if (!person || !person.priv?.[fund.bereich] || (fund.nurBrueder && person.female)) {
     return json({ error: 'not-qualified' }, 403)
   }
+  /*
+   * **Im selben Programmpunkt schon eingeteilt** (Leiter des Studiums, und der
+   * Leser fehlt): Das übernimmt man nicht zusätzlich — dieselbe Regel wie
+   * `offenePlaetze` im Client, Id vor Name. Bis zum 16.10.2026 stand sie nur
+   * dort; ein Aufruf an der App vorbei trug den Leiter auch als Leser ein.
+   */
+  const name = personDisplayName(person.fn, person.ln)
+  if (fund.nebenan.some((s) => (s?.pid ? s.pid === person.id : s?.name === name))) {
+    return json({ error: 'not-offered' }, 403)
+  }
 
   const zeiten = zeitenAus(congRows[0])
   const tag = tagDerZusammenkunft(row.start, versatzMitAbweichung(row.data.dev, teile.tab, zeiten[teile.tab].wd))
   if (tag && tag < heute) return json({ error: 'past' }, 409)
   if (tag && absences.some((a) => a.from_date <= tag && tag <= a.to_date)) return json({ error: 'absent' }, 409)
 
-  fund.setzen({ name: personDisplayName(person.fn, person.ln), pid: person.id })
+  fund.setzen({ name, pid: person.id })
   const neuerStand = await wocheSchreiben(rest, cong, teile.woche, row.updated_at, row.data)
   if (!neuerStand) return json({ error: 'slot-taken' }, 409)
 

@@ -7197,6 +7197,29 @@ export const KATALOG = [
     suchen: '`reminder_log?select=user_id,kind&congregation_id=eq.${wert(cong)}&sent_on=eq.${wert(todayISO)}`',
     ersetzen: '`reminder_log?select=user_id,kind&sent_on=eq.${wert(todayISO)}`',
   },
+  // ── Review des ganzen Codes (16.10.2026) ───────────────────────────────────
+  {
+    id: 'erinnerung-versammlung-fuer-sich',
+    datei: 'supabase/functions/send-reminders/index.ts',
+    regel: 'Scheitert eine Versammlung, erinnert der tägliche Lauf die übrigen trotzdem — und meldet den Ausfall.',
+    suchen:
+      "      try {\n        await versammlungBearbeiten(cong)\n      } catch (err) {\n        fehlerVersammlungen++\n        console.error(`send-reminders (Versammlung ${cong.id}):`, err instanceof Error ? err.message : String(err))\n      }\n",
+    ersetzen: '      await versammlungBearbeiten(cong)\n',
+  },
+  {
+    id: 'texte-nur-eigene-eintraege',
+    datei: 'supabase/functions/_shared/texte.ts',
+    regel: 'Eine Sprachtabelle liefert nur ihre eigenen Einträge — ein Code wie „constructor" ergibt Deutsch, keinen Absturz.',
+    suchen: '    const eigener = lang && Object.hasOwn(tabelle, lang) ? tabelle[lang] : undefined\n',
+    ersetzen: "    const eigener = tabelle[lang ?? '']\n",
+  },
+  {
+    id: 'fuellen-nicht-im-selben-punkt',
+    datei: 'supabase/functions/substitute/fuellen.ts',
+    regel: 'Wer im selben Programmpunkt schon steht, übernimmt den zweiten Platz nicht — auch nicht an der App vorbei.',
+    suchen: '  if (fund.nebenan.some((s) => (s?.pid ? s.pid === person.id : s?.name === name))) {\n',
+    ersetzen: '  if (false) {\n',
+  },
   {
     id: 'holen-varianten-nur-was-kommt',
     datei: 'src/planen/useWochenImport.ts',

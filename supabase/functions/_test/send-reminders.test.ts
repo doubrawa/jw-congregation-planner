@@ -199,6 +199,12 @@ let bescheidGegeben: { task_key: string; name: string; persoenlich_at?: string |
  * Tabelle fehlte nie — ohne das `.catch` an `fs_weeks` blieben alle Tests grün.
  */
 let fehlendeTabellen: Set<string>
+/**
+ * Eine zweite Versammlung **vor** der eigentlichen, deren Wochen-Abfrage mit
+ * 503 scheitert — so, wie PostgREST bei einem Aussetzer antwortet.
+ */
+let kaputteVersammlung: boolean
+const KAPUTT = 'cong-kaputt'
 
 const { writesTo } = schreibZugriff(() => writes)
 
@@ -216,6 +222,9 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   if (fehlendeTabellen.has(path.split('?')[0]!)) return new Response('{"code":"PGRST205"}', { status: 404 })
   if (path.startsWith('congregations')) {
     return jsonRes([
+      ...(kaputteVersammlung
+        ? [{ id: KAPUTT, mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00', reminder_first: 7, reminder_last: 1, reminder_repeat: true }]
+        : []),
       { id: CONG, mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00', reminder_first: reminders.first, reminder_last: reminders.last, reminder_repeat: reminders.repeat },
     ])
   }
@@ -225,7 +234,10 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     const cong = filterWert(path, 'congregation_id')
     return jsonRes(reminderLog.filter((z) => cong === null || (z.congregation_id ?? CONG) === cong).slice(0, MAX_ROWS))
   }
-  if (path.startsWith('weeks')) return jsonRes(weeks)
+  if (path.startsWith('weeks')) {
+    if (filterWert(path, 'congregation_id') === KAPUTT) return new Response('{"message":"upstream"}', { status: 503 })
+    return jsonRes(weeks)
+  }
   if (path.startsWith('fs_weeks')) return jsonRes(fsWeeks)
   if (path.startsWith('trolleys')) return jsonRes(trolleys)
   if (path.startsWith('trolley_termine')) {
@@ -330,6 +342,7 @@ beforeEach(() => {
   trolleyTermine = []
   bescheidGegeben = []
   fehlendeTabellen = new Set()
+  kaputteVersammlung = false
   resetPush()
 })
 
@@ -552,6 +565,35 @@ describe('send-reminders: wer NICHT erinnert wird', () => {
     expect(r.pushes).toBe(0)
     expect(sentPush).toEqual([])
     expect((r.skipped ?? 0)).toBeGreaterThan(0)
+  })
+})
+
+/*
+ * Bis zum 16.10.2026 stand der ganze Lauf in einem `try`: Scheiterte eine
+ * Abfrage irgendeiner Versammlung, ging für **keine** etwas hinaus — der Cron
+ * läuft einmal am Tag und wiederholt nicht.
+ */
+describe('send-reminders: eine Versammlung scheitert', () => {
+  it('die übrigen werden trotzdem erinnert — und die Antwort sagt es mit 500', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      kaputteVersammlung = true
+      const res = await (await loadFn({ SEND_PUSH: 'true', VAPID_PUBLIC_KEY: 'pub', VAPID_PRIVATE_KEY: 'priv' }))(request())
+      const r = (await res.json()) as Result & { fehlerVersammlungen?: number }
+      expect(res.status).toBe(500)
+      expect(r.fehlerVersammlungen).toBe(1)
+      expect(r.pushes).toBeGreaterThan(0)
+      expect(writesTo('notifications').length).toBeGreaterThan(0)
+      expect(err).toHaveBeenCalledWith(`send-reminders (Versammlung ${KAPUTT}):`, expect.stringContaining('503'))
+    } finally {
+      err.mockRestore()
+    }
+  })
+
+  it('ohne Ausfall ist die Antwort wie gewohnt', async () => {
+    const res = await (await loadFn())(request())
+    expect(res.status).toBe(200)
+    expect(((await res.json()) as { fehlerVersammlungen?: number }).fehlerVersammlungen).toBe(0)
   })
 })
 

@@ -23,10 +23,14 @@
 --   * Mandantenfähig über `congregations` — jede Zeile jeder Tabelle gehört
 --     zu genau einer Versammlung.
 --   * `members` verknüpft Auth-Benutzer (auth.users) mit ihrer Versammlung
---     und dem Rechte-Flag `planner` (Planen/Personen/Einstellungen).
+--     und zwei Rechten: `planner` — der **Admin**, der alles darf, auch
+--     Personen und Einstellungen (`is_planner()`) — und `zuteiler` — der
+--     **Planer**, der seit dem 15.10.2026 alles plant wie der Admin, nur
+--     Personen und Einstellungen nicht (`darf_zuteilen()`).
 --   * Row-Level-Security überall: Mitglieder lesen nur ihre Versammlung,
---     schreiben dürfen (bis auf eigene Abwesenheiten und Gelesen-Status)
---     nur Planer. Damit sind die personenbezogenen Daten versammlungsintern
+--     schreiben dürfen (bis auf eigene Abwesenheiten, eigene Zusagen und
+--     Gelesen-Status) nur Admin und Planer, Personen und Einstellungen nur der
+--     Admin. Damit sind die personenbezogenen Daten versammlungsintern
 --     geschützt — der anon-Key im Frontend genügt.
 --   * Wochenprogramme liegen als JSONB vor (Struktur = Week aus
 --     src/data/types.ts): einfach zu laden/speichern, keine Normalisierung
@@ -1654,19 +1658,16 @@ revoke all on function public.persoenlich_bescheid(text, text, boolean) from ano
 grant execute on function public.persoenlich_bescheid(text, text, boolean) to authenticated;
 
 -- ---------------------------------------------------------------------------
--- Erste Einrichtung (Beispiel — Werte anpassen und einmalig ausführen)
+-- Erste Einrichtung
 -- ---------------------------------------------------------------------------
--- 1. Versammlung anlegen (Zusammenkünfte: 0 = Sonntag … 6 = Samstag):
---    insert into public.congregations (name, hall, mid_wd, mid_time, we_wd, we_time)
---    values ('Musterstadt', 'Hauptstraße 12', 2, '19:00', 0, '10:00');
+-- Eine neue Versammlung legt `scripts/versammlung-anlegen.mjs` an: die
+-- Versammlung, ihre Standard-Dienste, die Person ihres ersten Admins (mit
+-- vorgemerktem Admin-Recht) und dessen Anmelde-Link. SQL braucht es dafür
+-- nicht.
 --
--- 2. Ersten Benutzer (Koordinator) in Supabase anlegen (Dashboard →
---    Authentication → Add user), dann mit der Versammlung verknüpfen:
---    insert into public.members (user_id, congregation_id, planner, email)
---    values ('<auth-user-uuid>', '<congregation-uuid>', true, '<email>');
---
--- Beides erledigt auch `scripts/versammlung-anlegen.mjs`.
---
--- Alle weiteren Mitglieder brauchen kein SQL: In der App registrieren und
--- einen Einladungscode einlösen (Einstellungen → Mitglieder → Einladungen).
+-- Ein Kennwort und ein Registrieren gibt es nicht (seit 15.10.2026). Jedes
+-- weitere Mitglied bekommt seinen Link vom Admin in der App — per E-Mail oder
+-- auf einem Zettel (`send-invite`); das Konto entsteht bei der ersten Anmeldung
+-- (`anmelden`), die Rechte kommen aus der Vormerkung an der Person. Bis zum
+-- 16.10.2026 stand hier noch der Weg über Dashboard-Konto und Einladungscode.
 -- =============================================================================

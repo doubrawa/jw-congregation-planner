@@ -31,13 +31,20 @@
  * niemand gewählt hat, wäre schlechter als die deutsche.
  *
  * Dass ein Aufrufer einen beliebigen Code hereinreichen könnte, ist ohne
- * Folgen: Er wählt einen Eintrag aus einer festen Tabelle, mehr nicht.
+ * Folgen: Er wählt einen Eintrag aus einer festen Tabelle, mehr nicht — aber
+ * nur aus ihren **eigenen** Einträgen (`Object.hasOwn`, wie `makeTr`). Bis zum
+ * 16.10.2026 griff `tabelle[lang]` auch auf Geerbtes: Mit `"constructor"` kam
+ * die Funktion `Object` statt der Texte zurück, und das Zusammensetzen der
+ * Anmelde-Mail stürzte ab — `lang` kommt dort ungeprüft aus dem Aufruf.
  */
 export function texteFuer<T>(
   tabelle: Record<string, T>,
   de: T,
 ): (lang: string | null | undefined) => T {
-  return (lang) => tabelle[lang ?? ''] ?? de
+  return (lang) => {
+    const eigener = lang && Object.hasOwn(tabelle, lang) ? tabelle[lang] : undefined
+    return eigener ?? de
+  }
 }
 
 /** Platzhalter `{name}`, `{url}` … einsetzen — wie `fill` im Client. Fehlende bleiben leer. */

@@ -11,7 +11,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Rest } from '../_shared/rest.ts'
 import { helferKey, punktKey, ratgeberKey } from '../_shared/aufgaben-schluessel.ts'
-import type { Week } from '../_shared/zuteilungen.ts'
+import type { PartItem, Week } from '../_shared/zuteilungen.ts'
 import { platzFuellen } from '../substitute/fuellen.ts'
 import { filterWert, likeMuster, passtAufMuster } from './attrappe.ts'
 
@@ -279,6 +279,18 @@ describe('fill: was abgewiesen wird — und dann nichts schreibt', () => {
     expect(await antwort(await fuellen(K_GEBET))).toEqual({ status: 409, body: { error: 'not-published' } })
     versand = [`fs|${MONTAG}|i1`]
     expect((await fuellen(K_GEBET)).status).toBe(409)
+    expect(geschrieben()).toEqual([])
+  })
+
+  it.each([
+    ['über die Person-Id', { name: 'Ich Selbst', pid: 'p-ich' }],
+    ['über den Namen, wo der Platz keine Id trägt', { name: 'Ich Selbst' }],
+  ])('wer im selben Programmpunkt schon steht, übernimmt den zweiten Platz nicht (%s) → 403', async (_wie, eigener) => {
+    // So bietet es auch die App nicht an (`offenePlaetze`): der Leiter des
+    // Studiums, und der Leser fehlt. Bis zum 16.10.2026 nahm der Server es an.
+    const punkt = woche.mid!.sections![0]!.items![0] as PartItem
+    punkt.names = [{ ...eigener, rolle: 'Gebet', bereichsKey: 'gebet' }, { name: '', bereichsKey: 'gebet' }]
+    expect(await antwort(await fuellen(punktKey(MONTAG, 'mid', 'k1', 1)))).toEqual({ status: 403, body: { error: 'not-offered' } })
     expect(geschrieben()).toEqual([])
   })
 
