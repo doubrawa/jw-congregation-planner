@@ -6750,7 +6750,25 @@ Handbuch-Bilder neu (`0370689a`); Schriftstufe und Rechts-nach-links
 nachgemessen, ohne Befund. Review der Phase `945e339d`. **Bewusst nicht
 gebaut:** die Karte „Als Nächstes" oben auf der Seite „Planung" (`GWochen`) —
 sie wiederholte die erste Woche darunter, und die Planungs-Karte auf dem Start
-sagt dasselbe.
+sagt dasselbe. Der Betreiber hat das am 16.10. bestätigt: Sie bleibt weg.
+
+**Stand am 16. Oktober 2026, vormittags:** Nach Phase 10 lief die Fehlersuche
+(14 Commits `a6ea6e8b`…`ccb8d72c`, darunter das Arbeitsheft ab Januar 2027 und
+der „Vortrag des Vorsitzenden"), danach ihr Review (`e19ccfbe`, kein Fehler,
+drei Bereinigungen). Die offenen Fragen hat der Betreiber entschieden, alle
+umgesetzt und live: „Link senden" macht den alten Link erst ungültig, wenn die
+Mail hinausging (`e10a927f`, anmelden v7); die Wochenspalte zeigt die Spur in
+Punkten, ihre Karten und der Kopf des Plans brechen um, statt abzuschneiden
+(`3bf72a2d`); der „Vortrag des Vorsitzenden" bleibt beim Vorsitzenden; jede
+neue Ausgabe des Arbeitshefts prüft `node scripts/heft-pruefen.mjs en`
+(`4f814f5c`, import-week v49). **Offen beim Betreiber:** wie zuvor die
+Mitgliedsrechte-Probe, `INVITE_FROM` und „Allow new users to sign up" aus, die
+WebAPK am Handy aktualisieren. Offen ohne Entscheidung: (D) die Bremse gegen
+Code-Raten liest den ersten Eintrag von `x-forwarded-for` — ungemessen, weil
+die Probe Fehlversuche in die echte Datenbank schriebe; (E) holen zwei Planer
+dieselbe Woche, liest der zweite den falschen Satz („keine weitere Woche"
+statt „schon da") — selten, die Woche selbst schützt `unique(congregation_id,
+start)`.
 
 **Stand am 15. Oktober 2026:** Phase 8, das Anmelden per Link, ist gebaut und live
 (`05ab564`, `ddf4069`, `c3d3926` und die Skripte danach). Ein Kennwort gibt es
