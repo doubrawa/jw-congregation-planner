@@ -6859,8 +6859,8 @@ export const KATALOG = [
     id: 'logo-datei-pult-minze',
     datei: 'public/logo.svg',
     regel: 'Das App-Icon trägt das Pult in Minze, wie die Darstellung.',
-    suchen: '<circle cx="256" cy="140" r="30" fill="#86E0B8">',
-    ersetzen: '<circle cx="256" cy="140" r="30" fill="#E7B04B">',
+    suchen: '<circle cx="256" cy="157.5" r="30" fill="#86E0B8">',
+    ersetzen: '<circle cx="256" cy="157.5" r="30" fill="#E7B04B">',
   },
   {
     id: 'logo-klein-datei-kachel',
@@ -6873,8 +6873,15 @@ export const KATALOG = [
     id: 'logo-form-gross-wie-datei',
     datei: 'src/bausteine/logo-form.ts',
     regel: 'Die große Fassung in der App hat dieselben Plätze wie logo.svg.',
-    suchen: '    [[171.33, 213.32], [224.43, 247.46], [287.57, 247.46], [340.67, 213.32]],\n',
-    ersetzen: '    [[171.33, 213.32], [224.43, 247.46], [287.57, 247.46]],\n',
+    suchen: '    [[171.33, 195.82], [224.43, 229.96], [287.57, 229.96], [340.67, 195.82]],\n',
+    ersetzen: '    [[171.33, 195.82], [224.43, 229.96], [287.57, 229.96]],\n',
+  },
+  {
+    id: 'logo-pult-nah-an-den-reihen',
+    datei: 'src/bausteine/logo-form.ts',
+    regel: 'Das Pult steht so nah an der ersten Reihe wie zwei Reihen beieinander (Variante D, 16.10.2026).',
+    suchen: '  pult: { mitte: [256, 157.5], r: 34 },\n',
+    ersetzen: '  pult: { mitte: [256, 140], r: 34 },\n',
   },
   {
     id: 'anmeldung-logo-gross',

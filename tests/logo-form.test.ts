@@ -48,6 +48,23 @@ describe('Die Form des Logos', () => {
     expect(kreise('logo-klein.svg')).toEqual(ausForm(LOGO_KLEIN))
   })
 
+  /*
+   * **Variante D des Betreibers** (16.10.2026): „Der zentrale Kreis ganz oben
+   * ist etwas zu weit abseits von den anderen Kreisen … er soll nicht mehr
+   * Abstand zu den anderen Kreisen haben." Bis dahin saß das Pult im
+   * Mittelpunkt der Bögen, und die Lücke zur ersten Reihe war doppelt (klein
+   * 2,6-mal) so groß wie die zwischen zwei Reihen.
+   */
+  it('das Pult steht so nah an der ersten Reihe wie zwei Reihen beieinander', () => {
+    for (const form of [LOGO_GROSS, LOGO_KLEIN]) {
+      const [px, py] = form.pult.mitte
+      const zumPult = Math.min(...form.reihen[0]!.map(([x, y]) => Math.hypot(x - px, y - py))) - form.pult.r - form.r
+      // Von Bogen zu Bogen sind es 64 Einheiten (logo-klein.svg), abzüglich zweier Plätze.
+      const zwischenReihen = 64 - 2 * form.r
+      expect(zumPult, form.viewBox).toBeCloseTo(zwischenReihen, 0)
+    }
+  })
+
   it('der Ausschnitt der App umfasst jede Fassung ganz — nichts ist abgeschnitten', () => {
     for (const form of [LOGO_GROSS, LOGO_KLEIN]) {
       const [x, y, b, h] = form.viewBox.split(' ').map(Number) as [number, number, number, number]

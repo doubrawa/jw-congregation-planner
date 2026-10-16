@@ -36,7 +36,9 @@ function farben(datei: string): { kachel?: string; platz?: string; pult?: string
   return {
     kachel: /<rect\b[^>]*\bfill="(#[0-9a-fA-F]{6})"/.exec(svg)?.[1]?.toLowerCase(),
     platz: /<g fill="(#[0-9a-fA-F]{6})"/.exec(svg)?.[1]?.toLowerCase(),
-    pult: /<circle cx="256" cy="140" r="\d+" fill="(#[0-9a-fA-F]{6})"/.exec(svg)?.[1]?.toLowerCase(),
+    // Das Pult ist der einzige Kreis mit eigener Füllung. Seine Höhe steht hier
+    // nicht: Sie hat sich am 16.10.2026 geändert, die Farbe nicht.
+    pult: /<circle cx="256" cy="[\d.]+" r="\d+" fill="(#[0-9a-fA-F]{6})"/.exec(svg)?.[1]?.toLowerCase(),
   }
 }
 

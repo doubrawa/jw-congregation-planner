@@ -7,32 +7,36 @@
      Farben seit dem 15.10.2026 die der dunklen Darstellung (Graphit · Minze,
      T121): Kachel wie --karte, Plätze wie --text, Pult in --akzent — bis
      dahin Petrol, Creme und Gold. tests/logo-farben.test.ts hält beides
-     gleich. -->
+     gleich.
+     Das Pult steht seit dem 16.10.2026 um 35 näher an den Reihen, Variante
+     D des Betreibers: Die Lücke zur ersten Reihe gleicht nun der zwischen
+     zwei Reihen (vorher doppelt so groß). Alles zusammen ist um 17,5 gehoben
+     und steht weiter mittig in der Kachel. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Sitzreihen um ein Rednerpult">
   <rect width="512" height="512" rx="116" fill="#1C1E20"></rect>
   <g fill="#F4F4F1">
-    <circle cx="171.33" cy="213.32" r="15"></circle>
-    <circle cx="224.43" cy="247.46" r="15"></circle>
-    <circle cx="287.57" cy="247.46" r="15"></circle>
-    <circle cx="340.67" cy="213.32" r="15"></circle>
+    <circle cx="171.33" cy="195.82" r="15"></circle>
+    <circle cx="224.43" cy="229.96" r="15"></circle>
+    <circle cx="287.57" cy="229.96" r="15"></circle>
+    <circle cx="340.67" cy="195.82" r="15"></circle>
     <g fill-opacity="0.76">
-      <circle cx="117.15" cy="248.15" r="15"></circle>
-      <circle cx="164.69" cy="290.46" r="15"></circle>
-      <circle cx="224.18" cy="313.10" r="15"></circle>
-      <circle cx="287.82" cy="313.10" r="15"></circle>
-      <circle cx="347.31" cy="290.46" r="15"></circle>
-      <circle cx="394.85" cy="248.15" r="15"></circle>
+      <circle cx="117.15" cy="230.65" r="15"></circle>
+      <circle cx="164.69" cy="272.96" r="15"></circle>
+      <circle cx="224.18" cy="295.60" r="15"></circle>
+      <circle cx="287.82" cy="295.60" r="15"></circle>
+      <circle cx="347.31" cy="272.96" r="15"></circle>
+      <circle cx="394.85" cy="230.65" r="15"></circle>
     </g>
     <g fill-opacity="0.52">
-      <circle cx="63.13" cy="282.84" r="15"></circle>
-      <circle cx="107.59" cy="328.61" r="15"></circle>
-      <circle cx="162.54" cy="361.06" r="15"></circle>
-      <circle cx="224.09" cy="377.87" r="15"></circle>
-      <circle cx="287.91" cy="377.87" r="15"></circle>
-      <circle cx="349.46" cy="361.06" r="15"></circle>
-      <circle cx="404.41" cy="328.61" r="15"></circle>
-      <circle cx="448.87" cy="282.84" r="15"></circle>
+      <circle cx="63.13" cy="265.34" r="15"></circle>
+      <circle cx="107.59" cy="311.11" r="15"></circle>
+      <circle cx="162.54" cy="343.56" r="15"></circle>
+      <circle cx="224.09" cy="360.37" r="15"></circle>
+      <circle cx="287.91" cy="360.37" r="15"></circle>
+      <circle cx="349.46" cy="343.56" r="15"></circle>
+      <circle cx="404.41" cy="311.11" r="15"></circle>
+      <circle cx="448.87" cy="265.34" r="15"></circle>
     </g>
   </g>
-  <circle cx="256" cy="140" r="30" fill="#86E0B8"></circle>
+  <circle cx="256" cy="157.5" r="30" fill="#86E0B8"></circle>
 </svg>
