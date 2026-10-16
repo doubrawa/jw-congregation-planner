@@ -274,7 +274,15 @@ export interface Umgebung {
   stoerung?: (aufruf: Aufruf) => FunktionsAntwort | undefined
 }
 
-/** Ein Filter aus der Adresse: `eq.x`, `neq.x`, `is.null`, `in.(a,b)`, `like.a*`. */
+/** Mehr Zeilen gibt PostgREST je Abfrage nicht heraus — die Vorgabe von Supabase („Max rows"). */
+export const MAX_ZEILEN = 1000
+
+/**
+ * Ein Filter aus der Adresse: `eq.x`, `neq.x`, `is.null`, `in.(a,b)`, `like.a*`,
+ * `gt`/`gte`/`lt`/`lte` (seit 16.10.2026). Verglichen wird als Text — für
+ * ISO-Daten und gleich lange Zahlen ist das die Ordnung der Datenbank; `null`
+ * trifft nie, wie in SQL.
+ */
 function passtFilter(wert: unknown, ausdruck: string): boolean {
   const punkt = ausdruck.indexOf('.')
   const op = ausdruck.slice(0, punkt)
@@ -282,6 +290,10 @@ function passtFilter(wert: unknown, ausdruck: string): boolean {
   switch (op) {
     case 'eq': return String(wert) === v
     case 'neq': return String(wert) !== v
+    case 'gt': return wert != null && String(wert) > v
+    case 'gte': return wert != null && String(wert) >= v
+    case 'lt': return wert != null && String(wert) < v
+    case 'lte': return wert != null && String(wert) <= v
     case 'is': return v === 'null' ? wert == null : String(wert) === v
     case 'in': return v.replace(/^\(|\)$/g, '').split(',').includes(String(wert))
     case 'like': {
@@ -364,6 +376,10 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
       }
       const grenze = abfrage.get('limit')
       if (grenze) treffer = treffer.slice(0, Number(grenze))
+      // Wie das Projekt: Mehr als `MAX_ZEILEN` gibt PostgREST nicht heraus, still
+      // (Supabase „Max rows"). Ein Skript, das alles zu lesen glaubt, sieht dann
+      // nur den Anfang — die Attrappe zeigt ihm dasselbe.
+      treffer = treffer.slice(0, MAX_ZEILEN)
       return antwort(200, treffer.map((z) => projiziere(z, abfrage.get('select'))))
     }
     if (method === 'POST') {

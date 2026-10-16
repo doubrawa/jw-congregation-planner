@@ -4664,6 +4664,27 @@ export const KATALOG = [
     ersetzen: '',
   },
   {
+    id: 'testversammlung-entfernen-nur-eigene-konten',
+    datei: 'scripts/testversammlung-anlegen.mjs',
+    regel: 'Entfernt wird nur eine Versammlung, deren Konten alle von diesem Skript stammen — nie die echte.',
+    suchen: '  if (fremde.length) {\n',
+    ersetzen: '  if (fremde.length < 0) {\n',
+  },
+  {
+    id: 'abwesenheiten-abgleich-ab-dem-tag',
+    datei: 'scripts/abwesenheiten-importieren.mjs',
+    regel: 'Der Abgleich liest nur Abwesenheiten, die einem neuen Eintrag gleichen können — sonst schneidet PostgREST bei 1000 ab.',
+    suchen: '    `absences?select=person_id,from_date,to_date&congregation_id=eq.${cong}&to_date=gte.${ab}`,\n',
+    ersetzen: '    `absences?select=person_id,from_date,to_date&congregation_id=eq.${cong}`,\n',
+  },
+  {
+    id: 'wochen-import-fragt-wie-die-app',
+    datei: 'scripts/wochen-importieren.mjs',
+    regel: 'Das Skript fragt wie der Knopf in der App: nie ohne after und nie vor der laufenden Woche.',
+    suchen: "  const ab = typeof arg.ab === 'string' ? arg.ab : holenNach(vorhandene.map((start) => ({ start })), new Date())\n",
+    ersetzen: "  const ab = typeof arg.ab === 'string' ? arg.ab : vorhandene[vorhandene.length - 1]\n",
+  },
+  {
     id: 'neuaufbau-schluessel-an-die-schritte',
     datei: 'scripts/neuaufbau-fahren.mjs',
     regel: 'Der einmal erfragte Schlüssel geht an jeden Schritt — sonst fragte jeder noch einmal.',
@@ -7468,7 +7489,7 @@ export const KATALOG = [
   },
   {
     id: 'holen-nie-vor-der-vorwoche',
-    datei: 'src/lib/import.ts',
+    datei: 'src/data/holen.ts',
     regel: '„Holen" sucht nach einer Pause nicht Wochen zurück, sondern ab der laufenden Woche.',
     suchen: '  return letzte !== undefined && letzte > vorwoche ? letzte : vorwoche\n',
     ersetzen: '  return letzte ?? vorwoche\n',

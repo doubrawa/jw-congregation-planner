@@ -546,6 +546,24 @@ async function entfernen(arg) {
 
   // Verwaiste Konten: die Adressen dieses Skripts ohne `members`-Zeile.
   const adressen = kontenAus(arg).map((k) => k.mail.toLowerCase())
+
+  /*
+   * **Nur eine Testversammlung** (16.10.2026, Review): Jedes Konto darin muss
+   * eines sein, das dieses Skript anlegt. Bis dahin hielt allein `--wirklich`
+   * die echte Versammlung auf — mit verwechselter Id gingen sie und mit ihr
+   * die echten Konten aus `auth.users`. Die echte hat Konten aus dem Anmelden
+   * per Link (ohne Adresse) und andere Adressen; sie kommt hier nie durch. Mit
+   * eigenen Adressen angelegt (`--mail-planer …`), gehören sie auch hierher.
+   */
+  const fremde = members.filter((m) => !adressen.includes((m.email ?? '').toLowerCase()))
+  if (fremde.length) {
+    console.error(
+      `„${cong.name}" (${id}) hat ${fremde.length} Konto/Konten, die dieses Skript nicht anlegt — ` +
+        'das ist keine Testversammlung. Nichts gelöscht.\n' +
+        'Mit eigenen Adressen angelegt? Dann dieselben --mail-…-Angaben wie beim Anlegen mitgeben.',
+    )
+    process.exit(1)
+  }
   const verknuepft = new Set(members.map((m) => m.user_id))
   const verwaist = (await alleKonten(auth)).filter(
     (u) => adressen.includes((u.email ?? '').toLowerCase()) && !verknuepft.has(u.id),

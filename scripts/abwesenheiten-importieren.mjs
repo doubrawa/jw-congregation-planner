@@ -217,8 +217,12 @@ export async function main(argv = process.argv.slice(2)) {
 
   const personen = await rest(`persons?select=id&congregation_id=eq.${cong}`)
   const appIds = new Set(personen.map((p) => p.id))
+  // Nur, was einem neuen Eintrag gleichen kann: Jeder endet frühestens `ab`.
+  // Bis zum 16.10.2026 kamen alle Abwesenheiten der Versammlung, auch die
+  // vergangenen — und ab 1000 Zeilen schneidet PostgREST still ab (Supabase
+  // „Max rows"). Was dahinter lag, sah der Abgleich nicht, und es kam doppelt.
   const vorhandenRows = await rest(
-    `absences?select=person_id,from_date,to_date&congregation_id=eq.${cong}`,
+    `absences?select=person_id,from_date,to_date&congregation_id=eq.${cong}&to_date=gte.${ab}`,
   )
   const vorhanden = new Set(
     vorhandenRows
@@ -238,7 +242,7 @@ export async function main(argv = process.argv.slice(2)) {
   const plan = planeImport(zeitraeume, vorhanden, appIds, personIdOf, ab)
 
   console.log(`NWS: ${zeitraeume.length} Zeiträume (Quellen: ${quellen.length}).`)
-  console.log(`App: ${personen.length} Personen, ${vorhanden.size} Abwesenheiten bereits gespeichert.`)
+  console.log(`App: ${personen.length} Personen, ${vorhanden.size} Abwesenheiten bis ${ab} oder später bereits gespeichert.`)
   console.log(
     `\nEinzufügen: ${plan.neu.length}` +
     ` · zusammengefasst: ${plan.verschmolzen}` +

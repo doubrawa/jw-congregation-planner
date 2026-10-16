@@ -46,9 +46,10 @@
  *                                       [--cong <id>] [--trocken]
  *
  *   --anzahl   wie viele Wochen (Standard 8).
- *   --ab       ab welcher Woche weitergezählt wird (ISO-Montag). Ohne Angabe:
- *              die letzte gespeicherte Woche; ist keine da, fängt die Function
- *              bei der laufenden an.
+ *   --ab       nach welcher Woche weitergezählt wird (ISO-Montag) — auch
+ *              zurück, um Wochen nachzuholen. Ohne Angabe wie der Knopf in der
+ *              App (`holenNach`): nach der letzten gespeicherten Woche, aber nie
+ *              vor der laufenden.
  *   --trocken  holt und zeigt, schreibt aber nicht.
  *
  * Gibt es zur nächsten Woche noch kein Programm auf jw.org, endet der Lauf mit
@@ -152,12 +153,22 @@ export async function main(argv = process.argv.slice(2)) {
   const cong = await versammlungHolen(rest, arg, VERSAMMLUNG_SPALTEN)
 
   const vorhandene = (await rest(`weeks?select=start&congregation_id=eq.${cong.id}&order=start`)).map((w) => w.start)
-  const ab = arg.ab || vorhandene[vorhandene.length - 1]
+  /*
+   * Wonach gesucht wird, wie beim Knopf in der App (`holenNach`). Bis zum
+   * 16.10.2026 ging ohne gespeicherte Woche gar kein `after` hinaus — dann
+   * wählt der Server nach seinem UTC-Tag, und montags kurz nach Mitternacht kam
+   * die vergangene Woche. Nach einer Pause holte das Skript außerdem Wochen
+   * zurück, die niemand mehr plant; dafür gibt es `--ab`.
+   */
+  appCodeBereit()
+  const { holenNach } = await import('../src/data/holen.ts')
+  const ab = typeof arg.ab === 'string' ? arg.ab : holenNach(vorhandene.map((start) => ({ start })), new Date())
+  const zuletzt = vorhandene[vorhandene.length - 1]
 
   console.log(`Versammlung:  ${cong.name} (${cong.id})`)
   console.log(`Sprache:      ${cong.cong_lang}${cong.prog_langs?.length ? ` (+ ${cong.prog_langs.join(', ')})` : ''}`)
-  console.log(`Vorhanden:    ${vorhandene.length} Woche(n)${ab ? `, zuletzt ${ab}` : ''}`)
-  console.log(`Holen:        ${anzahl}${ab ? ` ab ${ab}` : ' ab der laufenden Woche'}\n`)
+  console.log(`Vorhanden:    ${vorhandene.length} Woche(n)${zuletzt ? `, zuletzt ${zuletzt}` : ''}`)
+  console.log(`Holen:        ${anzahl} nach der Woche ab ${ab}\n`)
 
   const { wochen, fehler } = await wochenHolen({
     url, key, lang: cong.cong_lang, altLangs: cong.prog_langs ?? [], ab, anzahl,

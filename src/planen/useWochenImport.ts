@@ -6,7 +6,8 @@ import { fromIso, istVorbei, weekEndMs } from '../data/meeting-dates'
 import type { Week } from '../data/types'
 import { JW_TO_CONG, LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
-import { holenNach, type ImportFehler, importNextWeek, importWeekVariants, loadedUntilMs } from '../lib/import'
+import { holenNach, loadedUntilMs } from '../data/holen'
+import { type ImportFehler, importNextWeek, importWeekVariants } from '../lib/import'
 
 /**
  * Wie viele Wochen ihre Sprachvarianten gleichzeitig nachholen dürfen.

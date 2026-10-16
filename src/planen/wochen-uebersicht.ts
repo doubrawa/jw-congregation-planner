@@ -1,7 +1,7 @@
 import { kalendertagMs, montagNach, weekEndMs } from '../data/meeting-dates'
 import { wochenstand, type PlanungsQuellen, type Wochenstand } from '../data/planungsstand'
 import type { PersoenlichLog, Week } from '../data/types'
-import { holenNach } from '../lib/import'
+import { holenNach } from '../data/holen'
 import { zahlenDerWoche, type WochenZahlen } from './plan-spur'
 
 /**

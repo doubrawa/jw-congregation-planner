@@ -10,6 +10,7 @@ import {
   fahre,
   type FunktionsAntwort,
   type FunktionsKontext,
+  MAX_ZEILEN,
   REDET_MIT_DB,
   schemaFehler,
   schemaFunktion,
@@ -1214,6 +1215,25 @@ describe('testversammlung-anlegen: jedes Konto bekommt seine Rechte-Stufe', () =
       fs.rmSync(datei, { force: true })
     }
   })
+
+  it('--entfernen weist eine Versammlung mit fremden Konten ab — auch mit --wirklich (16.10.2026)', async () => {
+    // Eine verwechselte Id: die echte Versammlung, ein Konto aus dem Anmelden
+    // per Link (ohne Adresse) und eines mit einer anderen Adresse. Bis dahin
+    // hielt sie allein `--wirklich` auf; danach waren Versammlung und Konten weg.
+    const l = LAEUFE['testversammlung-anlegen.mjs']![1]!
+    const modul = await anlegeModul()
+    const bestand = {
+      congregations: [{ id: C, name: 'Probeversammlung Talheim' }],
+      members: [
+        { user_id: U1, congregation_id: C, email: '', person_id: null, planner: true },
+        { user_id: U2, congregation_id: C, email: 'planer@probe.invalid', person_id: null, planner: false },
+      ],
+    }
+    await expect(fahre(() => l.fahren(modul, ''), { ...l.umgebung, bestand })).rejects.toThrow('process.exit(1)')
+    const { aufrufe, meldungen } = await fahre(() => l.fahren(modul, '').catch(() => undefined), { ...l.umgebung, bestand })
+    expect(aufrufe.filter((a) => a.method === 'DELETE'), 'nichts gelöscht').toEqual([])
+    expect(meldungen.join('\n')).toContain('keine Testversammlung')
+  })
 })
 
 describe('versammlung-zuruecksetzen: Konten und Links überstehen das Zurücksetzen (T121, Phase 8)', () => {
@@ -1262,6 +1282,77 @@ describe('versammlung-zuruecksetzen: Konten und Links überstehen das Zurückset
       expect.objectContaining({ congregation_id: C, token_hash: 'pruefsumme-token', code_hash: 'pruefsumme-code', gueltig_bis: '2026-10-07T09:00:00+00:00' }),
     ])
     expect(ausgabe.join('\n')).toContain('1 Anmelde-Link(s) gelten weiter')
+  })
+})
+
+describe('abwesenheiten-importieren: der Abgleich sieht, was zählt (16.10.2026)', () => {
+  /*
+    Erkannt wird ein schon gespeicherter Zeitraum am Abgleich mit der
+    Datenbank. Bis dahin las das Skript dafür **alle** Abwesenheiten der
+    Versammlung, auch die vergangenen — und mehr als 1000 Zeilen gibt PostgREST
+    nicht heraus (`MAX_ZEILEN`). Mit genug alten Einträgen lag der passende
+    dahinter, und er kam ein zweites Mal hinein.
+  */
+  it('neben tausend vergangenen erkennt es den einen, der schon da ist', async () => {
+    const l = LAEUFE['abwesenheiten-importieren.mjs']![0]!
+    const modul = (await MODULE['./abwesenheiten-importieren.mjs']!()) as { main: (argv: string[]) => Promise<unknown> }
+    const eingaben = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-probe-'))
+    try {
+      for (const [name, inhalt] of Object.entries(l.dateien ?? {})) fs.writeFileSync(path.join(eingaben, name), JSON.stringify(inhalt))
+      const alt = Array.from({ length: MAX_ZEILEN }, (_, i) => ({
+        id: `alt-${i}`, congregation_id: C, person_id: NWS_PERSON, from_date: '2020-01-01', to_date: '2020-01-02', reason: '',
+      }))
+      const schonDa = { id: 'da', congregation_id: C, person_id: NWS_PERSON, from_date: '2099-01-01', to_date: '2099-01-10', reason: '' }
+      const { aufrufe } = await fahre(() => modul.main(['--daten', eingaben, '--ab', '2026-01-01']), {
+        ...l.umgebung,
+        bestand: { ...l.umgebung!.bestand, absences: [...alt, schonDa] },
+      })
+      const geschrieben = aufrufe.filter((a) => a.method === 'POST' && a.pfad.startsWith('absences'))
+      expect(geschrieben, 'nichts Neues — der Zeitraum steht schon da').toEqual([])
+    } finally {
+      fs.rmSync(eingaben, { recursive: true, force: true })
+    }
+  })
+})
+
+describe('wochen-importieren: wonach es fragt — wie der Knopf in der App (16.10.2026)', () => {
+  /*
+    Ohne gespeicherte Woche ging bis dahin gar kein `after` hinaus. Dann wählt
+    `import-week` die laufende Woche nach seinem Tag, und der ist UTC: Montags
+    kurz nach Mitternacht kam die vergangene. Nach einer Pause holte das Skript
+    außerdem Wochen zurück, die niemand mehr plant. Jetzt fragt es wie die App
+    (`holenNach`): nach der letzten gespeicherten Woche, aber nie vor der
+    laufenden.
+  */
+  const gefragtNach = async (bestand: Record<string, Zeile[]>) => {
+    const gefragt: unknown[] = []
+    const l = LAEUFE['wochen-importieren.mjs']![0]!
+    const modul = (await MODULE['./wochen-importieren.mjs']!()) as { main: (argv: string[]) => Promise<unknown> }
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 19, 0, 30)) // Montag, 19. Oktober, kurz nach Mitternacht
+    try {
+      await fahre(() => modul.main(['--anzahl', '1', '--trocken']), {
+        ...l.umgebung,
+        bestand: { ...l.umgebung!.bestand, ...bestand },
+        funktionen: {
+          'import-week': (rumpf) => {
+            gefragt.push(rumpf.after)
+            return { json: { week: probeWoche('2026-10-19') } }
+          },
+        },
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+    return gefragt
+  }
+
+  it('ohne gespeicherte Woche nach der Vorwoche — nie ohne Angabe', async () => {
+    expect(await gefragtNach({})).toEqual(['2026-10-12'])
+  })
+
+  it('nach einer Pause nicht Wochen zurück, sondern ab der laufenden', async () => {
+    expect(await gefragtNach({ weeks: [{ congregation_id: C, start: '2026-08-03', data: {} }] })).toEqual(['2026-10-12'])
   })
 })
 

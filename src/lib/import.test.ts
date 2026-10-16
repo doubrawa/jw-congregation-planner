@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const invoke = vi.hoisted(() => vi.fn())
 vi.mock('./supabase', () => ({ supabase: { functions: { invoke } } }))
 
-import { holenNach, importNextWeek, importWeekVariants, latestImportedStart, loadedUntilMs } from './import'
+import { holenNach, latestImportedStart, loadedUntilMs } from '../data/holen'
+import { importNextWeek, importWeekVariants } from './import'
 import type { Week } from '../data/types'
 
 /** Minimal-Woche nur mit dem für die Sortierung relevanten `start`. */
