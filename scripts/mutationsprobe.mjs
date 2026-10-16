@@ -4664,6 +4664,13 @@ export const KATALOG = [
     ersetzen: '',
   },
   {
+    id: 'konflikt-aufgabe-und-zwei-dienste',
+    datei: 'src/data/planning.ts',
+    regel: 'Aufgabe und zwei Hilfsdienste ergeben beide Meldungen — die Doppelung fällt nicht hinter der Hilfsdienst-Warnung weg.',
+    suchen: "      if (!raum && hc >= 2) conflicts.push({ kind: 'double', name, kennung, tab: tb, count: hc })\n",
+    ersetzen: "      else if (!raum && hc >= 2) conflicts.push({ kind: 'double', name, kennung, tab: tb, count: hc })\n",
+  },
+  {
     id: 'nws-referenz-nie-geraten',
     datei: 'scripts/nws-personen.mjs',
     regel: 'Zeigt eine NWS-Referenz auf zwei Personen, bricht die Zuordnung ab, statt still die spätere zu nehmen.',

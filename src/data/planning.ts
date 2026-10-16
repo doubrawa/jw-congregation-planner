@@ -1763,9 +1763,11 @@ export function weekConflicts(
       const raum = raumKonflikt(kennung)
       if (raum) conflicts.push({ kind: 'double', name, kennung, tab: tb, count: pc + hc })
       if (pc >= 1 && hc >= 1) conflicts.push({ kind: 'helperTask', name, kennung, tab: tb })
-      // Zwei Hilfsdienste allein sind ihre eigene Doppelung — es sei denn, die
-      // Zeile darüber hat sie mitgezählt.
-      else if (!raum && hc >= 2) conflicts.push({ kind: 'double', name, kennung, tab: tb, count: hc })
+      // Zwei Hilfsdienste sind ihre eigene Doppelung — es sei denn, der
+      // Raumkonflikt hat sie schon mitgezählt. Bis zum 16.10.2026 stand hier ein
+      // `else` zur Zeile darüber: Mit einer Aufgabe dazu fiel die Doppelung weg
+      // (Review, Daten F8).
+      if (!raum && hc >= 2) conflicts.push({ kind: 'double', name, kennung, tab: tb, count: hc })
     }
   }
 

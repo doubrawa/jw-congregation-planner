@@ -1080,6 +1080,21 @@ describe('Konfliktprüfungen (Planen)', () => {
     expect(conflicts).toContainEqual({ kind: 'double', name: 'Xaver Testhelfer', kennung: 'name:Xaver Testhelfer', tab: 'mid', count: 2 })
   })
 
+  it('Aufgabe und zwei Hilfsdienste: beide Meldungen, nicht nur eine (16.10.2026)', () => {
+    // Die Doppelung der Hilfsdienste hing per `else` an der Hilfsdienst-Warnung:
+    // Wer Vorsitz hatte und zugleich Ton und Mikrofon, bekam nur „Aufgabe und
+    // Hilfsdienst" — die zwei Hilfsdienste fielen weg, obwohl der Kopf sagt,
+    // dass die beiden Meldungen einander nicht ausschließen (Review, Daten F8).
+    const weeks = buildDemoWeeks()
+    const woche = weeks[0]!
+    woche.mid.helpers.ton = [{ name: 'Manfred Albrecht' }] // ist schon Vorsitz
+    woche.mid.helpers.mik = [{ name: 'Manfred Albrecht' }, { name: '' }]
+    const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES)
+    const kennung = kennungFuer('Manfred Albrecht')
+    expect(conflicts).toContainEqual({ kind: 'helperTask', name: 'Manfred Albrecht', kennung, tab: 'mid' })
+    expect(conflicts).toContainEqual({ kind: 'double', name: 'Manfred Albrecht', kennung, tab: 'mid', count: 2 })
+  })
+
   it('meldet zwei Programmpunkte (z. B. Vorsitz + Anfangsgebet) NICHT als Konflikt', () => {
     const weeks = buildDemoWeeks()
     // ERÖFFNUNG-Programmpunkt: beide Slots (Vorsitz + Gebet) auf dieselbe Person.
