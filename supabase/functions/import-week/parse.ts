@@ -660,6 +660,27 @@ const SZENE_RE = /^Gespielte Szene$/i
 const VORTRAG_RE = /^Vortrag$/i
 
 /**
+ * **Der Vortrag des Vorsitzenden** — eine Form, die das Arbeitsheft ab Januar
+ * 2027 kennt: „4. Menschen zu Jüngern machen (2 Min.) Vortrag des
+ * Vorsitzenden. Geh kurz auf Lektion 11 Punkt 3 … ein." Gemessen am 16.10.2026
+ * an den acht Wochen der Ausgabe Januar/Februar 2027: zweimal, beide Male bei
+ * „Menschen zu Jüngern machen", dessen Titel sonst einen Schülerteil mit
+ * Partner ergibt. Die S-38 (S-38-X 8/26) nennt die Form noch nicht; nach ihr
+ * zuzuteilen heißt hier: dem Wortlaut des Hefts folgen — Form vor Titel, wie
+ * bei der Besprechung.
+ *
+ * Ohne die Erkennung bekam der Punkt einen Schüler und einen Partner: Die
+ * Auto-Zuteilung suchte dafür Teilnehmer aus, es gab einen S-89-Zettel und
+ * eine zweite Reihe in der Zusätzlichen Klasse.
+ */
+const VORSITZ_RE = /^Vortrag des Vorsitzenden$/i
+
+/** Der Platz des Vorsitzenden — wie in der Eröffnung (`normalizeChairKeys` gleicht ihn je Zusammenkunft an). */
+function vorsitzPlatz(): ImportedSlot[] {
+  return [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' }]
+}
+
+/**
  * Der Platz eines Programmpunkts, den ein Bruder übernimmt — ein Ältester
  * oder geeigneter Dienstamtgehilfe, kein Teilnehmer der Schulung. Zwei
  * Bereiche, seit dem 4.10.2026 getrennt (Betreiber):
@@ -714,6 +735,7 @@ function besprechungsPlatz(): ImportedSlot[] {
 export function ministryNames(title: string, meta: string): ImportedSlot[] {
   const form = meta.split(' · ')[0] ?? ''
   if (BESPRECHUNG_RE.test(form)) return besprechungsPlatz()
+  if (VORSITZ_RE.test(form)) return vorsitzPlatz()
   const talk = { name: '', bereichsKey: 'schulungVortrag', male: true }
   const convo: ImportedSlot[] = [
     { name: '', rolle: 'Schüler', bereichsKey: 'schulung' },

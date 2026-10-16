@@ -7203,6 +7203,13 @@ export const KATALOG = [
     ersetzen: 'html.split(/class="synopsis/)',
   },
   {
+    id: 'import-vortrag-des-vorsitzenden',
+    datei: 'supabase/functions/import-week/parse.ts',
+    regel: 'Ein „Vortrag des Vorsitzenden" (ab 2027) bekommt den Platz des Vorsitzenden — keinen Schüler mit Partner.',
+    suchen: '  if (VORSITZ_RE.test(form)) return vorsitzPlatz()\n',
+    ersetzen: '',
+  },
+  {
     id: 'import-week-sonntag-laufende',
     datei: 'supabase/functions/import-week/index.ts',
     regel: 'Ohne `after` kommt die laufende Woche — auch am Sonntag, nicht schon die nächste.',

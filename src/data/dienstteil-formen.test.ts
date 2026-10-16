@@ -129,6 +129,43 @@ describe('Vortrag eines Schülers — eigener Bereich, aber Schülerteil wie jed
   })
 })
 
+/*
+ * **Vortrag des Vorsitzenden** (Arbeitsheft ab Januar 2027, gemessen am
+ * 16.10.2026): „Menschen zu Jüngern machen (2 Min.) Vortrag des Vorsitzenden."
+ * Der Titel allein ergäbe Schüler und Partner — der Beschreiber sagt, wer
+ * spricht.
+ */
+describe('Vortrag des Vorsitzenden — kein Schülerteil (ab 2027)', () => {
+  const VORSITZ = () => punkt('m4', 4, 'Menschen zu Jüngern machen', 'Vortrag des Vorsitzenden · 2 Min.')
+  const MIT_VORSITZ: Person[] = [
+    ...PERSONEN,
+    person('vorsitz', { role: 'aeltester', priv: { ...emptyQualifications(), vorsitzMid: true } }),
+  ]
+
+  it('ein Platz für den Vorsitzenden — kein Schüler, kein Partner', () => {
+    expect(teile(woche(VORSITZ()))[0]!.names).toEqual([{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' }])
+  })
+
+  it('wird in der Zusätzlichen Klasse nicht wiederholt und bekommt keinen S-89-Zettel', () => {
+    const w = woche(GESPRAECH(), VORSITZ())
+    expect(istSchuelerteil(teile(w)[1]!)).toBe(false)
+    const [mitKlasse] = syncAuxSlots([woche(GESPRAECH(), VORSITZ())], true)
+    expect(teile(mitKlasse!)[1]!.aux).toBeUndefined()
+    teile(w)[1]!.names = [{ name: 'Vorsitz Test', pid: 'vorsitz', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' }]
+    expect(alleS89DerWoche([w], 0, STANDARD_ZEITEN)).toEqual([])
+  })
+
+  it('die Auto-Zuteilung nimmt einen Bruder für den Vorsitz — keine Schülerin', () => {
+    const { weeks } = autoAssignMeeting([woche(VORSITZ())], 0, 'mid', MIT_VORSITZ, [])
+    expect(teile(weeks[0]!)[0]!.names.map((n) => n.pid)).toEqual(['vorsitz'])
+  })
+
+  it('nur der ganze Beschreiber zählt', () => {
+    // Ein längerer Satz ist kein Beschreiber dieser Form — dann gilt der Titel.
+    expect(ministryNames('Menschen zu Jüngern machen', 'Vortrag des Vorsitzenden der Woche · 2 Min.')).toHaveLength(2)
+  })
+})
+
 describe('Gespielte Szene — ein Schülerteil für Brüder und Schwestern', () => {
   it('die Auto-Zuteilung gibt sie einer Schülerin mit ihrer Partnerin', () => {
     // Als männliche Ansprache blieb der Platz hier offen: Die Schwestern waren

@@ -1019,6 +1019,10 @@ Rollen in ihrer Folge.
   - **Schulungsaufgaben · Vorträge** – der Vortrag eines Schülers unter „Uns im
     Dienst verbessern".
 
+  Nennt das Arbeitsheft einen Punkt unter „Uns im Dienst verbessern" einen
+  **Vortrag des Vorsitzenden** (seit Januar 2027), steht dort der Platz des
+  Vorsitzes unter der Woche – kein Schüler und kein Partner, kein S-89.
+
   Den **öffentlichen Vortrag am Sonntag** regelt kein Bereich: Zur Wahl stehen
   dort alle Ältesten und Dienstamtgehilfen. Eingeteilt wird er ohnehin von
   Hand – die Automatik lässt ihn aus.
