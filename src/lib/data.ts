@@ -1972,7 +1972,11 @@ export function saveConfirmation(
   status: Exclude<TaskStatus, 'offen'>,
 ): void {
   if (!supabase) return
-  void run(
+  // Über `zeilenRun`: Weist die Datenbank ab, weil die Aufgabe inzwischen
+  // nicht mehr meine ist (`task_gehoert_mir`, 42501), wird nachgeladen. Bis zum
+  // 16.10.2026 kam nur die Meldung, und lokal blieb „bestätigt" für einen Platz
+  // stehen, den längst ein anderer hatte.
+  void zeilenRun(
     supabase.from('confirmations').upsert(
       { congregation_id: congregationId, user_id: userId, task_key: taskKey, status },
       { onConflict: 'congregation_id,task_key,user_id' },

@@ -480,17 +480,27 @@ export function linkFamily(persons: Person[], id: string, memberId: string): Per
   const b = persons.find((p) => p.id === memberId)
   if (!a || !b) return persons
   const hid = a.fam || b.fam || crypto.randomUUID()
-  return persons.map((p) => (p.id === id || p.id === memberId ? { ...p, fam: hid } : p))
+  const next = persons.map((p) => (p.id === id || p.id === memberId ? { ...p, fam: hid } : p))
+  // Verlässt B dabei seinen alten Haushalt, gilt dort dasselbe wie beim Lösen:
+  // Bleibt nur einer übrig, ist es keiner mehr. Bis zum 16.10.2026 blieb er
+  // allein darin stehen.
+  return b.fam && b.fam !== hid ? einzelnenAufloesen(next, b.fam) : next
 }
 
 /** `memberId` aus dem Haushalt lösen; bleibt nur eine Person übrig, wird auch die gelöst. */
 export function unlinkFamily(persons: Person[], memberId: string): Person[] {
   const m = persons.find((p) => p.id === memberId)
   if (!m?.fam) return persons
-  const hid = m.fam
-  const next = persons.map((p) => (p.id === memberId ? { ...p, fam: null } : p))
-  const rest = next.filter((p) => p.fam === hid)
-  return rest.length <= 1 ? next.map((p) => (p.fam === hid ? { ...p, fam: null } : p)) : next
+  return einzelnenAufloesen(
+    persons.map((p) => (p.id === memberId ? { ...p, fam: null } : p)),
+    m.fam,
+  )
+}
+
+/** Ein Haushalt aus nur einer Person ist keiner — sie verliert die Familien-Id. */
+function einzelnenAufloesen(persons: Person[], hid: string): Person[] {
+  const rest = persons.filter((p) => p.fam === hid)
+  return rest.length <= 1 ? persons.map((p) => (p.fam === hid ? { ...p, fam: null } : p)) : persons
 }
 
 /**

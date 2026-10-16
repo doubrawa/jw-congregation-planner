@@ -1063,7 +1063,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
     }
     case 'fsAutoAssign': {
-      const { fsWeeks, count } = fsAutoAssign(
+      const { fsWeeks, count, unfilled } = fsAutoAssign(
         state.fsWeeks,
         state.week,
         state.persons,
@@ -1071,8 +1071,13 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         state.absences,
         state.weeks[state.week]?.start ?? '',
         state.groups,
+        state.weeks.map((w) => w.start),
       )
-      if (count === 0) return { ...state, toast: toastKey(state, 'toastKeineOffen') }
+      // Wie bei den Zusammenkünften: Blieb etwas offen, weil niemand frei war,
+      // ist das nicht „keine offenen" (16.10.2026).
+      if (count === 0) {
+        return { ...state, toast: toastKey(state, unfilled > 0 ? 'toastKeinePassende' : 'toastKeineOffen') }
+      }
       return { ...state, fsWeeks, toast: toastKey(state, 'toastAutoN', { n: count }) }
     }
     case 'fsClear': {

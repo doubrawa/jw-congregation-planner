@@ -25,7 +25,7 @@ import {
   isQualified,
   overseerGroup,
 } from './helpers'
-import { tieHash } from './auslastung'
+import { tieHash, wochenVersatz } from './auslastung'
 import { deutschesDatum, fromIso, istVorbei, kalendertagMs, versatzAbMontag } from './meeting-dates'
 import { fsKey, schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 // Nur der Typ — `planning.ts` kennt `fs.ts` nicht, es entsteht also kein Zyklus.
@@ -599,15 +599,23 @@ export function fsLast(
   fsWeeks: FsInstance[][],
   wi: number,
   werIst: (z: Zuteilung | undefined) => string | undefined,
+  /**
+   * Die Montage der Wochen (`week.start`) — das Fenster zählt Kalenderwochen,
+   * wie bei den Zusammenkünften (T36). Fehlte eine Woche im Bestand, reichte
+   * es bis zum 16.10.2026 über 13 und mehr Wochen zurück. Ohne Kennungen
+   * zählen die Positionen.
+   */
+  kennungen: readonly string[] = [],
 ): Map<string, number> {
   const load = new Map<string, number>()
-  const vonWoche = Math.max(0, wi - FS_LOAD_WEEKS + 1)
-  for (let i = vonWoche; i <= wi; i++) {
-    for (const inst of fsWeeks[i] ?? []) {
+  fsWeeks.forEach((week, i) => {
+    const versatz = wochenVersatz(kennungen, i, wi)
+    if (versatz > 0 || versatz <= -FS_LOAD_WEEKS) return
+    for (const inst of week) {
       const id = werIst(fsLeiterZuteilung(inst))
       if (id) load.set(id, (load.get(id) ?? 0) + 1)
     }
-  }
+  })
   return load
 }
 
@@ -639,7 +647,17 @@ export function fsAutoAssign(
   /** Montag dieser Woche (`Week.start`); leer = keine Abwesenheitsprüfung. */
   wochenStart = '',
   groups: readonly Group[] = [],
-): { fsWeeks: FsInstance[][]; count: number } {
+  /**
+   * Die Montage aller Wochen, Position für Position wie `fsWeeks` — Last und
+   * Wartezeit zählen damit Kalenderwochen (`fsLast`, 16.10.2026).
+   */
+  kennungen: readonly string[] = [],
+): {
+  fsWeeks: FsInstance[][]
+  count: number
+  /** Offen geblieben, weil niemand frei war — wie `autoAssignMeeting` (16.10.2026). */
+  unfilled: number
+} {
   const qualifiziert = persons.filter((p) => isQualified(p, 'treffpunkt'))
   /**
    * Kandidaten für einen Wochentag. Die Abwesenheit wird am echten Tag des
@@ -668,14 +686,14 @@ export function fsAutoAssign(
 
   // Grundlast: Leitungen je Person im Fenster der letzten FS_LOAD_WEEKS Wochen
   // (`fsLast`).
-  const load = fsLast(fsWeeks, wi, werIst)
+  const load = fsLast(fsWeeks, wi, werIst, kennungen)
   // Wartezeit: Abstand zur nächstgelegenen eigenen Leitung über ALLE geladenen
   // Wochen — auch außerhalb des Lastfensters, sonst wären alle dort auf null
   // Stehenden ununterscheidbar. Genau wie `assignmentDistance` es für die
-  // Aufgaben macht.
+  // Aufgaben macht: in Kalenderwochen, nicht in Einträgen.
   const abstand = new Map<string, number>()
   fsWeeks.forEach((week, i) => {
-    const d = Math.abs(i - wi)
+    const d = Math.abs(wochenVersatz(kennungen, i, wi))
     for (const inst of week) {
       const id = idVon(inst)
       if (id && (abstand.get(id) ?? Infinity) > d) abstand.set(id, d)
@@ -699,6 +717,7 @@ export function fsAutoAssign(
   }
 
   const newly: string[] = []
+  let unfilled = 0
   const week = (fsWeeks[wi] ?? []).map((inst) => {
     if (inst.leader || !fsInGruppe(inst, onlyGroup)) return inst
     const used = dayUsed.get(inst.wd) ?? new Set<string>()
@@ -753,7 +772,10 @@ export function fsAutoAssign(
         tieHash(`${a.name}|${wochenStart || wi}|${inst.wd}`) - tieHash(`${b.name}|${wochenStart || wi}|${inst.wd}`),
     )
     const pick = cand[0]
-    if (!pick) return inst
+    if (!pick) {
+      unfilled++
+      return inst
+    }
     load.set(pick.p.id, (load.get(pick.p.id) ?? 0) + 1)
     // Wer gerade drankommt, wartet ab jetzt null Wochen — sonst gewönne
     // dieselbe Person die Wartezeit auch beim nächsten Treffpunkt derselben
@@ -764,8 +786,8 @@ export function fsAutoAssign(
     newly.push(pick.name)
     return { ...inst, leader: pick.name, lpid: pick.p.id }
   })
-  if (newly.length === 0) return { fsWeeks, count: 0 }
-  return { fsWeeks: patchWeek(fsWeeks, wi, () => week), count: newly.length }
+  if (newly.length === 0) return { fsWeeks, count: 0, unfilled }
+  return { fsWeeks: patchWeek(fsWeeks, wi, () => week), count: newly.length, unfilled }
 }
 
 /** Leiter der Woche `wi` leeren (`onlyGroup` grenzt auf eine Gruppe ein). */

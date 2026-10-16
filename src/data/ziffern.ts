@@ -134,27 +134,18 @@ export function zahlWieVorlage(wert: number, vorlage: string): string {
 }
 
 /**
- * Erste Zahl im Text durch `wert` ersetzen, in der dort verwendeten Schrift:
- * („٣ دق“, 15) → „١٥ دق“. Ohne Ziffer im Text bleibt er unverändert.
- */
-export function ersteZahlErsetzen(text: string, wert: number): string {
-  const treffer = ZIFFERNFOLGE.exec(text)
-  if (!treffer) return text
-  const ende = treffer.index + treffer[0].length
-  return text.slice(0, treffer.index) + zahlWieVorlage(wert, treffer[0]) + text.slice(ende)
-}
-
-/**
  * **Eine bestimmte** Zahl im Text durch eine andere ersetzen, in der dort
  * verwendeten Schrift: („Studienartikel 28 · 60 Min.", 60, 30) →
  * „Studienartikel 28 · 30 Min.". Kommt `alt` nicht vor, bleibt der Text, wie er
  * ist.
  *
- * Warum nicht `ersteZahlErsetzen`: die Meta-Zeile eines LAC-Punkts beginnt mit
- * der Dauer, die des Wachtturm-Studiums **nicht** — dort steht zuerst die
+ * Warum nicht einfach die erste Zahl: die Meta-Zeile eines LAC-Punkts beginnt
+ * mit der Dauer, die des Wachtturm-Studiums **nicht** — dort steht zuerst die
  * Nummer des Studienartikels. Die erste Zahl zu ersetzen machte aus
  * „Studienartikel 28 · 60 Min." ein „Studienartikel 30 · 60 Min.": die Dauer
  * blieb, der Artikel wurde ein anderer. Genau das hat der Test zu T62 gefunden.
+ * Seit dem 16.10.2026 ersetzt auch `lacMinuten` so, und die Fassung „erste
+ * Zahl" (`ersteZahlErsetzen`) ist fort.
  *
  * Verglichen wird über den **Wert**, nicht über die Zeichen — „٦٠", „60" und
  * „६०" sind dieselbe Zahl. Die alte Dauer weiß der Aufrufer aus `item.mins`

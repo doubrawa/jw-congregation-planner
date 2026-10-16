@@ -154,6 +154,18 @@ export function wochenAbstand(a: Week, b: Week): number {
 }
 
 /**
+ * Wie viele Wochen liegt Position `i` von Position `wi` entfernt — **mit
+ * Vorzeichen** (davor negativ) und nach den Kennungen (`week.start`), nicht
+ * nach Einträgen. Für Listen, die neben den Wochen herlaufen (`fsWeeks`). Ohne
+ * brauchbare Kennung der Abstand der Positionen.
+ */
+export function wochenVersatz(kennungen: readonly string[], i: number, wi: number): number {
+  const von = Date.parse(kennungen[wi] ?? '')
+  const nach = Date.parse(kennungen[i] ?? '')
+  return Number.isNaN(von) || Number.isNaN(nach) ? i - wi : Math.round((nach - von) / WOCHE_MS)
+}
+
+/**
  * Laufende Nummer der Woche `weeks[wi]` im Kalender: ganze Wochen seit Montag,
  * dem 5. Januar 1970, gerechnet aus `week.start`. Ohne brauchbares Datum
  * (Vorlagen) die Position `wi`.

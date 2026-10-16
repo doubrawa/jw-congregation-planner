@@ -1623,6 +1623,22 @@ describe('Zuteilen meldet nichts mehr an die Planer (T99)', () => {
   })
 })
 
+describe('„Automatisch" bei den Treffpunkten sagt, warum nichts geschah (16.10.2026)', () => {
+  const offen = () => reducer(makeState({ week: 0 }), { type: 'fsClear', onlyGroup: null }).fsWeeks
+
+  it('offen, aber alle abwesend: „niemand Passendes frei" — nicht „keine offenen Plätze"', () => {
+    const basis = makeState()
+    const weg = basis.persons.map((p, i) => ({ id: `a${i}`, personId: p.id, userId: null, from: '2026-09-01', to: '2026-09-30', reason: '' }))
+    const s = makeState({ fsWeeks: offen(), week: 0, absences: weg })
+    expect(reducer(s, { type: 'fsAutoAssign', onlyGroup: null }).toast?.text).toBe(t.toastKeinePassende)
+  })
+
+  it('alles besetzt: „keine offenen Plätze"', () => {
+    const voll = reducer(makeState({ fsWeeks: offen(), week: 0 }), { type: 'fsAutoAssign', onlyGroup: null })
+    expect(reducer(voll, { type: 'fsAutoAssign', onlyGroup: null }).toast?.text).toBe(t.toastKeineOffen)
+  })
+})
+
 describe('Sprache', () => {
   it('setLang / setCongLang / Sprach-Sheet', () => {
     expect(reducer(makeState(), { type: 'setLang', lang: 'en' }).lang).toBe('en')

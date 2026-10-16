@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildAbsences } from './absence'
 import { emptyQualifications, isSpeakerRole } from './helpers'
 import { angebotsBereich, offenePlaetze, planGesendet, platzAuswahl } from './offene-plaetze'
+import { montagNach } from './meeting-dates'
 import { allePlaetze } from './plaetze'
 import { helferKey, punktKey, ratgeberKey, sentKey } from './planning'
 import { programmAngebot, SCHUELER_BEREICHE } from '../../supabase/functions/_shared/freie-plaetze.ts'
@@ -177,6 +178,25 @@ describe('offenePlaetze — was angeboten wird', () => {
 })
 
 describe('planGesendet', () => {
+  it('offenePlaetze liest das Tagebuch einmal, nicht je Woche (16.10.2026)', () => {
+    // Bis dahin lief für jede geladene Woche ein Durchlauf über das ganze
+    // Tagebuch — bei 52 Wochen und bis zu 3120 Einträgen 41 bis 112 ms je
+    // Ableitung, also bei jeder Zuteilung.
+    let durchlaeufe = 0
+    const sentLog = new Proxy(
+      { ...GESENDET },
+      {
+        ownKeys(ziel) {
+          durchlaeufe++
+          return Reflect.ownKeys(ziel)
+        },
+      },
+    )
+    const weeks = Array.from({ length: 10 }, (_, i) => woche({ start: montagNach(MONTAG, i) }))
+    angebot({ weeks, sentLog })
+    expect(durchlaeufe).toBe(1)
+  })
+
   it('liest nur die Zusammenkünfte der Woche', () => {
     expect(planGesendet(GESENDET, MONTAG)).toBe(true)
     expect(planGesendet(GESENDET, '2026-09-14')).toBe(false)

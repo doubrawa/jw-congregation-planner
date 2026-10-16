@@ -25,7 +25,7 @@ import {
 } from './helpers'
 import { abweichung } from './helpers'
 import type { Abweichung, Dienstwoche, Meeting, MeetingKey, MeetingTimes, PartItem, Week } from './types'
-import { ersteZahlErsetzen, nurZiffern, zahl, zahlErsetzen } from './ziffern'
+import { nurZiffern, zahl, zahlErsetzen } from './ziffern'
 
 /**
  * Minuten eines Programmpunkts — `null`, wo keine angegeben sind (Lieder,
@@ -250,17 +250,18 @@ export function lacMinuten(
   const target = Math.max(LAC_MIN_MINUTEN, Math.min(LAC_MAX_MINUTEN, Math.round(minuten)))
   if (target === cur) return weeks
   // Die Zahl ist die Wahrheit, die Meta-Zeile nur ihre Anzeige — beide müssen
-  // mit, sonst widersprechen sich Knopf und Text. Ersetzt wird in der Schrift,
+  // mit, sonst widersprechen sich Knopf und Text. Ersetzt wird die alte Dauer
+  // selbst, nicht die erste Zahl (wie `weStudiumKuerzen`), und in der Schrift,
   // die dort steht: aus „٣ دق“ wird „١٥ دق“, nicht „15 دق“.
   item.mins = target
-  item.meta = ersteZahlErsetzen(item.meta ?? '', target)
+  item.meta = zahlErsetzen(item.meta ?? '', cur, target)
   // Das Ende nur hier: Es gehört der Versammlung, die Varianten tragen keins (`mergeMeeting`).
   meeting.end = shiftEnd(meeting.end, target - cur)
   forEachAltMeeting(week, tab, (m) => {
     const vi = m.sections[si]?.items[ii]
     if (vi && !isSong(vi)) {
       vi.mins = target
-      vi.meta = ersteZahlErsetzen(vi.meta ?? '', target)
+      vi.meta = zahlErsetzen(vi.meta ?? '', cur, target)
     }
   })
   return next

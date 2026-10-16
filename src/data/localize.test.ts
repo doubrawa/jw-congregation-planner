@@ -106,6 +106,17 @@ describe('localizedWeek (Sprachvarianten)', () => {
     expect(en.range).toBe('September 7–13')
   })
 
+  it('klont die Varianten nicht mit — die Woche selbst aber schon (16.10.2026)', () => {
+    // Bei jeder Ableitung kamen sonst alle Sprachfassungen mit: 9,5 statt 3,1 ms
+    // für 52 Wochen mit je zwei Varianten.
+    const week = makeWeek()
+    const en = localizedWeek(week, 'en')
+    expect(en.alt).toBe(week.alt)
+    // Gegenprobe: Das Programm ist eine eigene Fassung — die Variante wirkt nicht aufs Original.
+    expect(en.mid).not.toBe(week.mid)
+    expect((week.mid.sections[0]!.items[0] as PartItem).title).toBe('Über Jehovas Eigenschaften')
+  })
+
   it('localizedWeeks lässt Wochen ohne Varianten unangetastet', () => {
     const weeks = [makeWeek()]
     expect(localizedWeeks(weeks, 'fr')).toBe(weeks)

@@ -21,9 +21,10 @@
 import { describe, expect, it } from 'vitest'
 import type { AbsenceSet } from './absence'
 import { buildImportWeek, DEMO_SERVICES } from '../../tests/testdaten/testdaten'
-import { fsAutoAssign, FS_LOAD_WEEKS } from './fs'
+import { fsAutoAssign, fsLast, FS_LOAD_WEEKS } from './fs'
 import { displayName, emptyQualifications, idAufloeser, programmPlaetze } from './helpers'
 import { partWorkload } from './auslastung'
+import { montagNach } from './meeting-dates'
 import { autoAssignMeeting } from './planning'
 import type { Absence, FsInstance, Person, Qualifications, Week } from './types'
 import { privSetzen } from './helpers'
@@ -446,6 +447,21 @@ describe('Kleine Kreise und Ausnahmezustände', () => {
     // Die Zahl steckt in der Dokumentation mit ihrer Messung; ändert sie sich,
     // gehört die Messung wiederholt (siehe FS_LOAD_WEEKS in fs.ts).
     expect(FS_LOAD_WEEKS).toBe(12)
+  })
+
+  it('… in Kalenderwochen: Fehlt eine Woche im Bestand, reicht das Fenster nicht weiter zurück (16.10.2026)', () => {
+    // Zwölf Einträge, aber die sechste Kalenderwoche fehlt: Der erste liegt 12
+    // Wochen zurück und damit außerhalb. Gezählt nach Einträgen lag er bis
+    // dahin noch darin — die Rangfolge verschob sich.
+    const montage = Array.from({ length: 12 }, (_, i) => montagNach('2026-01-05', i < 6 ? i : i + 1))
+    const leiter = mk(['treffpunkt'])
+    const fsWeeks: FsInstance[][] = montage.map((_, i) =>
+      i === 0 ? [{ id: 'f0', ruleId: 'r', grp: null, wd: 6, time: '09:30', place: 'Saal', leader: displayName(leiter), lpid: leiter.id }] : [],
+    )
+    const werIst = idAufloeser([leiter])
+    expect(fsLast(fsWeeks, 11, werIst, montage).get(leiter.id)).toBeUndefined()
+    // Gegenprobe: ohne Kennungen zählen die Positionen — dann ist er darin.
+    expect(fsLast(fsWeeks, 11, werIst).get(leiter.id)).toBe(1)
   })
 })
 

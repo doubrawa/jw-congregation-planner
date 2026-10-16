@@ -117,6 +117,27 @@ describe('Familien-/Haushaltszugehörigkeit', () => {
     expect(ids.sort()).toEqual(['a', 'b', 'c'])
   })
 
+  it('linkFamily: wer den Haushalt wechselt, lässt keinen Ein-Personen-Haushalt zurück (16.10.2026)', () => {
+    // A allein in H1 (mit D), B und C in H2. „B zur Familie von A" ließ C bis
+    // dahin allein in H2 zurück.
+    const mitD = [...ps(), person({ id: 'd', fn: 'Dora' })]
+    let next = linkFamily(mitD, 'a', 'd')
+    next = linkFamily(next, 'b', 'c')
+    next = linkFamily(next, 'a', 'b')
+    const fam = (id: string) => next.find((p) => p.id === id)!.fam
+    expect(fam('b')).toBe(fam('a'))
+    expect(fam('c')).toBeNull()
+    // Gegenprobe: Bleiben im alten Haushalt zwei, bleibt er bestehen.
+    let drei = linkFamily([...mitD, person({ id: 'e', fn: 'Emil' })], 'a', 'e') // H1: A, E
+    drei = linkFamily(drei, 'b', 'c')
+    drei = linkFamily(drei, 'b', 'd') // H2: B, C, D
+    drei = linkFamily(drei, 'a', 'b') // B wechselt nach H1
+    const famDrei = (id: string) => drei.find((p) => p.id === id)!.fam
+    expect(famDrei('b')).toBe(famDrei('a'))
+    expect(famDrei('c')).not.toBeNull()
+    expect(famDrei('c')).toBe(famDrei('d'))
+  })
+
   it('unlinkFamily löst eine Person; ein verbleibender Rest wird auch gelöst', () => {
     const two = linkFamily(ps(), 'a', 'b')
     const next = unlinkFamily(two, 'b')

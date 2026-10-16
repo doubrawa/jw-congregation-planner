@@ -391,6 +391,28 @@ describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
     expect(melder).not.toHaveBeenCalled()
   })
 
+  it('eine Zusage, die die Datenbank abweist (nicht mehr meine Aufgabe), lädt nach (16.10.2026)', async () => {
+    // Mit bloßer Meldung blieb lokal „bestätigt" für einen Platz stehen, den
+    // inzwischen ein anderer hat (`task_gehoert_mir` → 42501).
+    const melder = vi.fn()
+    const konflikt = vi.fn()
+    setSchreibfehlerMelder(melder)
+    setKonfliktMelder(konflikt)
+    chain.then = (resolve: (v: unknown) => void) => resolve({ data: null, error: { code: '42501', message: 'rls' } })
+    saveConfirmation('c1', 'u1', 'k1', 'bestätigt')
+    await abwarten()
+    expect(konflikt).toHaveBeenCalledTimes(1)
+    expect(melder).not.toHaveBeenCalled()
+    // Gegenprobe: Ein Netzfehler (ohne Code) bleibt eine Meldung.
+    chain.then = (resolve: (v: unknown) => void) => resolve({ data: null, error: { message: 'netz' } })
+    saveConfirmation('c1', 'u1', 'k1', 'bestätigt')
+    await abwarten()
+    expect(melder).toHaveBeenCalledTimes(1)
+    expect(konflikt).toHaveBeenCalledTimes(1)
+    chain.then = (resolve: (v: unknown) => void) => resolve({ data: null, error: null })
+    setKonfliktMelder(null)
+  })
+
   it('Einspringen, das der Server abweist, lädt nach — statt nur zu melden (14.10.2026)', async () => {
     // takeSubstitute ist der Fall, in dem ein stiller Fehlschlag am meisten
     // wehtut: der Aufrufer hat „Übernommen" gesehen, der Slot blieb unverändert.

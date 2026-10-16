@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { itemMinutes, lacMinuten } from './meeting-edit'
 import type { Meeting, PartItem, Week } from './types'
-import { ersteZahl, ersteZahlErsetzen, zahl, zahlErsetzen, zahlWieVorlage } from './ziffern'
+import { ersteZahl, zahl, zahlErsetzen, zahlWieVorlage } from './ziffern'
 
 /**
  * Die Minuten eines Programmpunkts, sprachunabhängig (T32).
@@ -92,18 +92,18 @@ describe('Ziffern fremder Schriften', () => {
     expect(zahlWieVorlage(15, 'ohne Ziffer')).toBe('15')
   })
 
-  it('ersetzt nur die erste Zahl und lässt den Rest stehen', () => {
-    expect(ersteZahlErsetzen('٣ دق', 15)).toBe('١٥ دق')
-    expect(ersteZahlErsetzen('Dak. 3', 15)).toBe('Dak. 15')
+  it('ersetzt die alte Dauer in ihrer Schrift und lässt den Rest stehen', () => {
+    expect(zahlErsetzen('٣ دق', 3, 15)).toBe('١٥ دق')
+    expect(zahlErsetzen('Dak. 3', 3, 15)).toBe('Dak. 15')
     // Thailändisch: die Quellenangabe bringt zwei weitere Zahlen mit, die
     // nichts mit der Dauer zu tun haben.
-    expect(ersteZahlErsetzen('3 นาที · lmd บทเรียน 1 ข้อ 5', 15)).toBe(
+    expect(zahlErsetzen('3 นาที · lmd บทเรียน 1 ข้อ 5', 3, 15)).toBe(
       '15 นาที · lmd บทเรียน 1 ข้อ 5',
     )
   })
 
   it('lässt einen Text ohne Ziffer unverändert', () => {
-    expect(ersteZahlErsetzen('Lied · Gebet', 15)).toBe('Lied · Gebet')
+    expect(zahlErsetzen('Lied · Gebet', 3, 15)).toBe('Lied · Gebet')
     expect(ersteZahl('Lied · Gebet')).toBeNull()
   })
 })
@@ -200,7 +200,7 @@ function woche(meta: string, mins?: number): Week {
 describe('zahlErsetzen — eine bestimmte Zahl, nicht die erste', () => {
   /*
     Beim Wachtturm-Studium beginnt die Meta-Zeile mit der Nummer des
-    Studienartikels, nicht mit der Dauer. `ersteZahlErsetzen` machte aus
+    Studienartikels, nicht mit der Dauer. Die erste Zahl zu ersetzen machte aus
     „Studienartikel 28 · 60 Min." beim Kürzen ein „Studienartikel 30 · 60 Min.":
     die Dauer blieb, der Artikel wurde ein anderer. Gefunden vom Test zu T62.
   */

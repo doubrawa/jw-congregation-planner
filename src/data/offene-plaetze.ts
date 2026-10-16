@@ -36,9 +36,8 @@ import {
 import { programmAngebot } from '../../supabase/functions/_shared/freie-plaetze.ts'
 import { istVorbei, meetingDateMs, meetingDateText } from './meeting-dates'
 import { allePlaetze, platzKey, type Platz } from './plaetze'
-import { neuesterVersand } from './plan-versand'
 import { assignmentsInMeeting, wochenIndex } from './planning'
-import { schluesselTeile, wochenPraefixe } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
+import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import type {
   MeetingAssignment,
   MeetingSlotSelection,
@@ -74,8 +73,26 @@ export interface OffenerPlatz {
  * daraus folgt nichts für das Programm.
  */
 export function planGesendet(sentLog: SentLog, woche: string): boolean {
-  const [zusammenkunft] = wochenPraefixe(woche)
-  return neuesterVersand(sentLog, (schluessel) => schluessel.startsWith(zusammenkunft)) !== null
+  return gesendeteWochen(sentLog).has(woche)
+}
+
+/**
+ * **Die Wochen, deren Plan der Zusammenkünfte hinausging** — der Montag vor dem
+ * ersten `|` jedes Schlüssels, ohne die Treffpunkte (`fs|…`). Ein Durchlauf
+ * über das Tagebuch für alle Wochen: `offenePlaetze` fragte bis zum 16.10.2026
+ * je Woche einzeln, 52 Mal über bis zu 3120 Einträge — 41 bis 112 ms bei jeder
+ * Ableitung, also bei jeder Zuteilung.
+ */
+export function gesendeteWochen(sentLog: SentLog): Set<string> {
+  const out = new Set<string>()
+  for (const schluessel of Object.keys(sentLog)) {
+    // Das erste Feld ist der Montag (`<montag>|…`). Bei den Treffpunkten
+    // (`fs|<montag>|…`, `wochenPraefixe`) ist es `fs` — sie geben die Woche nicht frei.
+    const ende = schluessel.indexOf('|')
+    const woche = ende > 0 ? schluessel.slice(0, ende) : ''
+    if (woche && woche !== 'fs') out.add(woche)
+  }
+  return out
 }
 
 /**
@@ -120,8 +137,9 @@ export function offenePlaetze(
   heute = new Date(),
 ): OffenerPlatz[] {
   const out: OffenerPlatz[] = []
+  const gesendet = gesendeteWochen(sentLog)
   weeks.forEach((week, wi) => {
-    if (!planGesendet(sentLog, week.start)) return
+    if (!gesendet.has(week.start)) return
     for (const tab of MEETING_TABS) {
       if (istAusgefallen(week, tab)) continue
       const at = meetingDateMs(week, tab, zeiten)
