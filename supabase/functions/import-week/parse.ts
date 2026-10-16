@@ -725,7 +725,12 @@ function besprechungsPlatz(): ImportedSlot[] {
  * nur die Erlaubnis je Person.
  */
 export function ministryNames(title: string, meta: string): ImportedSlot[] {
-  const form = meta.split(' · ')[0] ?? ''
+  return dienstteilPlaetze(title, meta) ?? [{ name: '', bereichsKey: 'schulung' }]
+}
+
+/** Die Plätze, wo Form oder Titel sie bestimmen — `null`, wo keins von beiden etwas sagt. */
+function dienstteilPlaetze(title: string, meta: string): ImportedSlot[] | null {
+  const form = formVon(meta)
   if (BESPRECHUNG_RE.test(form)) return besprechungsPlatz()
   if (VORSITZ_RE.test(form)) return vorsitzPlatz()
   const talk = { name: '', bereichsKey: 'schulungVortrag', male: true }
@@ -738,7 +743,30 @@ export function ministryNames(title: string, meta: string): ImportedSlot[] {
   if (CONVO_RE.test(title)) return convo
   if (TALK_RE.test(title)) return [talk]
   if (BELIEF_RE.test(title)) return SETTING_RE.test(meta) ? convo : [talk]
-  return [{ name: '', bereichsKey: 'schulung' }]
+  return null
+}
+
+/** Die Form eines Punkts: das erste Atom der Meta-Zeile — ohne Beschreiber die Zeit. */
+function formVon(meta: string): string {
+  return meta.split(' · ')[0] ?? ''
+}
+
+/**
+ * **Kennt der Parser diesen Punkt unter „Uns im Dienst verbessern"?** Die
+ * Form muss eine sein, die er kennt — ein Beschreiber aus `ministryNames`, ein
+ * Rahmen (`SETTING_RE`) oder gar keiner (nur die Zeit) —, und Form oder Titel
+ * müssen die Plätze bestimmen. Sonst rät `ministryNames` einen einzelnen
+ * Platz.
+ *
+ * Für `scripts/heft-pruefen.mjs` (Betreiber, 16.10.2026): Eine neue Form fiel
+ * bis dahin nur auf, wenn jemand die nächste Ausgabe las — „Vortrag des
+ * Vorsitzenden" kam als Schüler mit Partner an, weil der Titel das sagte.
+ */
+export function dienstteilBekannt(title: string, meta: string): boolean {
+  const form = formVon(meta)
+  const formBekannt =
+    form === '' || /\p{Nd}/u.test(form) || [BESPRECHUNG_RE, VORSITZ_RE, SZENE_RE, VORTRAG_RE, SETTING_RE].some((re) => re.test(form))
+  return formBekannt && dienstteilPlaetze(title, meta) !== null
 }
 
 /**

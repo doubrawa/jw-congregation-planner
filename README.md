@@ -423,6 +423,25 @@ nach, bis Admin oder Planer die Woche einmal speichern. Meldet
 das Skript abweichende Wochen, gleicht es sie ohne `--trocken` an (auf ihren
 Stand, wie ein Admin). Ein zweiter Lauf muss „Nichts abweichend" melden.
 
+**Erscheint eine neue Ausgabe des Arbeitshefts,** fährt dieses Skript sie gegen
+den Parser — nur lesend, ohne Datenbank und ohne Schlüssel:
+
+```powershell
+node scripts/heft-pruefen.mjs en
+```
+
+Es holt die kommenden Wochen von jw.org (dieselbe Suche wie `import-week`,
+`hefte.ts`), parst sie und meldet, was nach einer neuen Form der Seite aussieht:
+Eröffnung oder Abschluss ohne Liednummer, kein Lied unter „Unser Leben als
+Christ", Lücken in den Nummern, Punkte ohne Minuten oder Plätze, eine Form unter
+„Uns im Dienst verbessern", die der Parser nicht kennt — und je genannter
+Sprache, ob sich ihre Fassung wie die deutsche gliedert. Ohne Sprachcode prüft
+es nur Deutsch, `--alle` auch vergangene Wochen. Anlass: Ab Januar 2027 wären
+alle Lieder ohne Nummer gekommen und der „Vortrag des Vorsitzenden" als
+Schülerteil; aufgefallen ist das am 16.10.2026 nur, weil jemand die nächste
+Ausgabe gelesen hat. Meldet es etwas: erst die Seite ansehen, dann den Parser
+anpassen.
+
 **Vorher ist nichts zu setzen.** Die Projekt-URL holen sich die Skripte aus
 `.env.local` (`VITE_SUPABASE_URL`), und nach dem Secret-Schlüssel fragen sie,
 wenn keiner dasteht — verdeckt, mit dem Link aufs Dashboard daneben. Wer nicht

@@ -22,15 +22,9 @@
 
 import { CORS, dienstSchluessel, json, mitDienstSchluessel, restKlient, wert } from '../_shared/rest.ts'
 import { applyGoldSlots, mitLiedNummer, parseWorkbookWeek, type ImportedWeek } from './parse.ts'
-import { articleTitle, MONTHS, songs, studyIssueSlugs, studySynopses } from './study.ts'
-import { wochenStart } from './wochen-slug.ts'
-import {
-  gedaechtnismahlDatum,
-  gedaechtnismahlWoche,
-  istLeseprogramm,
-  leseprogrammJahr,
-  montagDerWoche,
-} from './gedaechtnismahl.ts'
+import { articleTitle, songs, studyIssueSlugs, studySynopses } from './study.ts'
+import { gedaechtnismahlWoche } from './gedaechtnismahl.ts'
+import { BASE, discoverWeeks, localizedUrl, UA } from './hefte.ts'
 
 declare const Deno: {
   serve: (handler: (req: Request) => Promise<Response> | Response) => void
@@ -42,9 +36,6 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 const DIENST_SCHLUESSEL = dienstSchluessel(Deno.env.get('SUPABASE_SECRET_KEYS'), SERVICE_KEY)
 const rest = restKlient(SUPABASE_URL, SERVICE_KEY)
-
-const BASE = 'https://www.jw.org'
-const UA = 'jw-congregation-planner/1.0 (+https://github.com/doubrawa/jw-congregation-planner)'
 
 const TTL = 10 * 60 * 1000
 const cache = new Map<string, { at: number; text: string }>()
@@ -58,8 +49,10 @@ const cache = new Map<string, { at: number; text: string }>()
  * (`http://10.0.0.5:8080/`) sind von dort erreichbar, von außen nicht.
  *
  * Die Prüfung sitzt bewusst hier, an der einen Engstelle, und nicht bei den
- * Aufrufern: `localizedUrl` liest eine Adresse aus fremdem Markup, und was
- * jw.org morgen in ein `data-url` schreibt, entscheidet nicht dieses Projekt.
+ * Aufrufern: `localizedUrl` (`hefte.ts`) liest eine Adresse aus fremdem
+ * Markup, und was jw.org morgen in ein `data-url` schreibt, entscheidet nicht
+ * dieses Projekt. Auch die Wochensuche holt deshalb über `fetchText`
+ * (`discoverWeeks(fetchText)`).
  */
 function istJwOrg(url: string): boolean {
   let u: URL
@@ -86,104 +79,6 @@ async function fetchText(url: string): Promise<string> {
   const text = await res.text()
   cache.set(url, { at: Date.now(), text })
   return text
-}
-
-/**
- * Eine Woche, die das Arbeitsheft anbietet.
- *
- * `url === null` heißt: **es gibt keine Seite** — die Woche des
- * Gedächtnismahls, die das Heft auslässt (siehe gedaechtnismahl.ts). `mem`
- * trägt das Datum des Mahls, sobald es in diese Woche fällt; das gilt auch für
- * Wochen, die ganz normal eine Seite haben (Mahl am Wochenende).
- */
-interface Wocheneintrag {
-  start: Date
-  url: string | null
-  mem?: string
-}
-
-/**
- * Das Gedächtnismahl dieser Ausgabe in die Wochenliste eintragen.
- *
- * Gemessen statt geraten: Steht auf der Ausgabenseite eine
- * Bibelleseprogramm-Seite, nennt sie den Tag ausgeschrieben. Aus ihm ergibt
- * sich der Montag seiner Woche — und erst der Vergleich mit den gefundenen
- * Wochenseiten sagt, ob eine **fehlt**.
- *
- * Eine Lücke einfach an ihrem Abstand zu erkennen wäre verlockend und falsch:
- * Zwischen zwei Ausgaben klafft ebenfalls eine, wenn die folgende noch nicht
- * veröffentlicht ist — und in Jahren mit Mahl am Wochenende gibt es gar keine.
- */
-async function mitGedaechtnismahl(slug: string, seite: string, wochen: Wocheneintrag[]): Promise<void> {
-  const re = new RegExp(`/de/bibliothek/jw-arbeitsheft/${slug}/[^"'>]*`, 'g')
-  const pfad = [...seite.matchAll(re)].map((m) => m[0]).find(istLeseprogramm)
-  if (!pfad) return
-  const jahr = leseprogrammJahr(pfad)
-  if (!jahr) return
-
-  let mem: string | null = null
-  try {
-    mem = gedaechtnismahlDatum(await fetchText(BASE + pfad), jahr)
-  } catch {
-    return // Seite nicht abrufbar: dann eben ohne — der Import bricht deswegen nicht ab
-  }
-  if (!mem) return
-
-  const montag = montagDerWoche(mem)
-  const vorhanden = wochen.find((w) => w.start.toISOString().slice(0, 10) === montag)
-  if (vorhanden) {
-    vorhanden.mem = mem // Mahl am Wochenende: die Woche gibt es, sie bekommt nur den Anlass
-    return
-  }
-  wochen.push({ start: new Date(`${montag}T00:00:00Z`), url: null, mem })
-}
-
-/** Kommende Wochen (immer aus dem deutschen Arbeitsheft), nach Startdatum. */
-async function discoverWeeks(): Promise<Wocheneintrag[]> {
-  const index = await fetchText(`${BASE}/de/bibliothek/jw-arbeitsheft/`)
-  const now = new Date()
-  const periods = [...new Set([...index.matchAll(/jw-arbeitsheft\/([a-zä]+-[a-zä]+-\d{4}-mwb)\//g)].map((m) => m[1]))]
-    .map((slug) => {
-      const m = slug.match(/^([a-zä]+)-([a-zä]+)-(\d{4})-mwb$/)
-      return m ? { slug, year: Number(m[3]), endMonth: MONTHS[m[2]] ?? 0 } : null
-    })
-    .filter((p): p is { slug: string; year: number; endMonth: number } => p != null)
-    .filter((p) => p.year > now.getFullYear() || (p.year === now.getFullYear() && p.endMonth >= now.getMonth() + 1))
-    .sort((a, b) => a.year - b.year || a.endMonth - b.endMonth)
-    .slice(0, 3)
-
-  const weeks: Wocheneintrag[] = []
-  for (const p of periods) {
-    const page = await fetchText(`${BASE}/de/bibliothek/jw-arbeitsheft/${p.slug}/`)
-    const re = new RegExp(`/de/bibliothek/jw-arbeitsheft/${p.slug}/[^"'>]*Zusammenkunft-[^"'>]*`, 'g')
-    for (const href of new Set([...page.matchAll(re)].map((m) => m[0]))) {
-      const start = wochenStart(href)
-      if (start) weeks.push({ start, url: `${BASE}${href}` })
-    }
-    // Danach, nicht davor: erst wenn die Seiten dieser Ausgabe stehen, ist zu
-    // sehen, ob die Woche des Mahls unter ihnen fehlt.
-    await mitGedaechtnismahl(p.slug, page, weeks)
-  }
-  weeks.sort((a, b) => a.start.getTime() - b.start.getTime())
-  return weeks
-}
-
-/**
- * Lokalisierte URL derselben Woche: auf der deutschen Seite trägt jede Option des
- * „Lesen in“-Umschalters `value="<code>"` und `data-url="/<code>/…"`. Liefert die
- * absolute URL für `lang` oder null, wenn die Woche in der Sprache fehlt.
- *
- * In beiden Anführungszeichen: Ab Januar 2027 schreibt jw.org Attribute teils
- * einfach angeführt (gemessen am 16.10.2026 an den Liederbuch-Links). Träfe es
- * den Umschalter, fände keine fremdsprachige Versammlung mehr ihre Woche.
- */
-function localizedUrl(germanHtml: string, lang: string): string | null {
-  const code = lang.replace(/[^a-z0-9-]/gi, '')
-  const re = new RegExp(`<option\\b[^>]*\\bvalue=(["'])${code}\\1[^>]*\\bdata-url=(["'])(.*?)\\2`, 'i')
-  const m = germanHtml.match(re)
-  if (!m) return null
-  const path = (m[3] ?? '').replace(/&amp;/g, '&')
-  return path.startsWith('http') ? path : BASE + path
 }
 
 interface StudyArticle {
@@ -330,7 +225,7 @@ Deno.serve(async (req: Request) => {
     /** Datum des Gedächtnismahls, wenn es in diese Woche fällt. */
     let mem: string | undefined
 
-    const weeks = await discoverWeeks()
+    const weeks = await discoverWeeks(fetchText)
     if (startParam) {
       // Nachimport: exakt die Woche mit diesem Startdatum (z. B. um später
       // hinzugefügte Programmsprachen für bereits geladene Wochen zu holen).

@@ -7262,7 +7262,7 @@ export const KATALOG = [
   },
   {
     id: 'import-umschalter-beide-anfuehrungszeichen',
-    datei: 'supabase/functions/import-week/index.ts',
+    datei: 'supabase/functions/import-week/hefte.ts',
     regel: 'Der „Lesen in"-Umschalter wird auch einfach angeführt gelesen — sonst fände keine fremdsprachige Versammlung ihre Woche.',
     suchen: "value=([\"'])${code}",
     ersetzen: 'value=(")${code}',
@@ -7280,6 +7280,49 @@ export const KATALOG = [
     regel: 'Ein „Vortrag des Vorsitzenden" (ab 2027) bekommt den Platz des Vorsitzenden — keinen Schüler mit Partner.',
     suchen: '  if (VORSITZ_RE.test(form)) return vorsitzPlatz()\n',
     ersetzen: '',
+  },
+  // ── Die Heft-Probe: jede neue Ausgabe gegen den Parser (Betreiber, 16.10.2026)
+  {
+    id: 'dienstteil-bekannt-form-zaehlt',
+    datei: 'supabase/functions/import-week/parse.ts',
+    regel: 'Eine Form, die der Parser nicht kennt, macht den Punkt unbekannt — auch wenn der Titel die Plätze nennt.',
+    suchen: '  return formBekannt && dienstteilPlaetze(title, meta) !== null\n',
+    ersetzen: '  return dienstteilPlaetze(title, meta) !== null\n',
+  },
+  {
+    id: 'dienstteil-bekannt-titel-zaehlt',
+    datei: 'supabase/functions/import-week/parse.ts',
+    regel: 'Ein Punkt, dessen Plätze weder Form noch Titel bestimmen, ist unbekannt — dann rät ministryNames.',
+    suchen: '  return formBekannt && dienstteilPlaetze(title, meta) !== null\n',
+    ersetzen: '  return formBekannt\n',
+  },
+  {
+    id: 'heft-probe-lied-mit-nummer',
+    datei: 'scripts/heft-pruefen.mjs',
+    regel: 'Die Heft-Probe meldet Eröffnung und Abschluss ohne Liednummer — so kam 2027 die Rückfall-Zeile.',
+    suchen: '    if (!ZIFFER.test(titel)) befunde.push(`${name} ohne Liednummer: „${titel}"`)\n',
+    ersetzen: '',
+  },
+  {
+    id: 'heft-probe-zwischenlied',
+    datei: 'scripts/heft-pruefen.mjs',
+    regel: 'Die Heft-Probe meldet, wenn unter „Unser Leben als Christ" kein Lied steht.',
+    suchen: "!leben.items.some((i) => 'song' in i)",
+    ersetzen: "!leben.items.some((i) => 'iid' in i)",
+  },
+  {
+    id: 'heft-probe-form-unbekannt',
+    datei: 'scripts/heft-pruefen.mjs',
+    regel: 'Die Heft-Probe meldet auf Deutsch jede Form unter „Uns im Dienst verbessern", die der Parser nicht kennt.',
+    suchen: "    if (deutsch && s.farbe === 'gold' && !dienstteilBekannt(p.title, p.meta ?? '')) {\n",
+    ersetzen: '    if (false) {\n',
+  },
+  {
+    id: 'heft-probe-gliederung-wie-deutsch',
+    datei: 'scripts/heft-pruefen.mjs',
+    regel: 'Die Heft-Probe meldet eine Fassung, die anders gegliedert ist als die deutsche — die Plätze kommen nach der Stelle.',
+    suchen: '  return ist === soll ? [] : [',
+    ersetzen: '  return true ? [] : [',
   },
   {
     id: 'zuteilung-vortrag-folgt-vorsitz',

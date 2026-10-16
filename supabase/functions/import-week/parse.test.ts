@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyGoldSlots,
+  dienstteilBekannt,
   ministryNames,
   parseWorkbookWeek,
   weekendTemplate,
@@ -113,6 +114,39 @@ describe('ministryNames – Slots je Schülerteil-Typ (deutscher Titel)', () => 
     expect(ministryNames('Menschen zu Jüngern machen', 'Vortrag · 5 Min.')).toEqual([
       { name: '', bereichsKey: 'schulungVortrag', male: true },
     ])
+  })
+})
+
+/*
+ * Ob der Parser einen Punkt kennt — für `scripts/heft-pruefen.mjs`, das jede
+ * neue Ausgabe gegen ihn fährt (16.10.2026). „Vortrag des Vorsitzenden" kam
+ * als Schüler mit Partner an, weil der Titel das sagte, und niemand merkte es.
+ */
+describe('dienstteilBekannt — kennt der Parser den Punkt?', () => {
+  it('jede Form, die ministryNames kennt, und Punkte ohne Beschreiber', () => {
+    for (const [title, meta] of [
+      ['Gespräche beginnen', 'VON HAUS ZU HAUS · 3 Min.'],
+      ['Interesse fördern', 'INFORMELL · 4 Min.'],
+      ['Menschen zu Jüngern machen', 'IN DER ÖFFENTLICHKEIT · 5 Min.'],
+      ['Gespräche beginnen', '3 Min.'],
+      ['Was würdest du sagen?', 'Besprechung · 6 Min.'],
+      ['Unsere Glaubensansichten erklären', 'Gespielte Szene · 5 Min. · th Lektion 17'],
+      ['Unsere Glaubensansichten erklären', 'Vortrag · 4 Min. · th Lektion 7'],
+      ['Menschen zu Jüngern machen', 'Vortrag des Vorsitzenden · 2 Min.'],
+    ]) {
+      expect(dienstteilBekannt(title!, meta!), `${title} · ${meta}`).toBe(true)
+    }
+  })
+
+  it('eine neue Form ist unbekannt — auch wenn der Titel die Plätze nennt', () => {
+    // So stand „Vortrag des Vorsitzenden" vor dem 16.10.2026 da: Der Titel
+    // ergab Schüler und Partner, die Form sagte etwas anderes.
+    expect(dienstteilBekannt('Menschen zu Jüngern machen', 'Vortrag des Vorsitzenden der Woche · 2 Min.')).toBe(false)
+  })
+
+  it('ein neuer Titel ohne Form ist unbekannt — dann rät ministryNames einen Platz', () => {
+    expect(dienstteilBekannt('Etwas ganz Neues', '5 Min.')).toBe(false)
+    expect(ministryNames('Etwas ganz Neues', '5 Min.')).toEqual([{ name: '', bereichsKey: 'schulung' }])
   })
 })
 
