@@ -251,7 +251,7 @@ describe('Neuling ohne Vergangenheit wird nicht überschüttet', () => {
 describe('Rückkehr aus langem Urlaub führt nicht zur Nachschlag-Welle', () => {
   it('Treffpunkte: nach zwölf Wochen Abwesenheit kein Schwall', () => {
     const alle = Array.from({ length: 9 }, () => mk(['treffpunkt']))
-    const weg = alle[0]
+    const weg = alle[0]!
     const VON = 30
     const BIS = 42
     const fsWeeks = planeTreffpunkte(60, () => alle, urlaub(weg.id, VON, BIS), true)
@@ -264,7 +264,7 @@ describe('Rückkehr aus langem Urlaub führt nicht zur Nachschlag-Welle', () => 
 
   it('Treffpunkte: der Rückkehrer verschwindet aber nicht dauerhaft', () => {
     const alle = Array.from({ length: 9 }, () => mk(['treffpunkt']))
-    const weg = alle[0]
+    const weg = alle[0]!
     const fsWeeks = planeTreffpunkte(60, () => alle, urlaub(weg.id, 30, 42), true)
     const r = leitungenJeWoche(fsWeeks, displayName(weg))
     expect(summe(r, 42, 60), 'nach der Rückkehr nie wieder dran').toBeGreaterThan(0)
@@ -272,7 +272,7 @@ describe('Rückkehr aus langem Urlaub führt nicht zur Nachschlag-Welle', () => 
 
   it('Aufgaben: nach zwölf Wochen Abwesenheit höchstens leicht erhöht', () => {
     const alle = Array.from({ length: 15 }, () => mk(SCHUL))
-    const weg = alle[0]
+    const weg = alle[0]!
     const VON = 20
     const BIS = 32
     const abwesend = abwesendIn(weg.id, ...Array.from({ length: BIS - VON }, (_u, i) => VON + i))
@@ -288,7 +288,7 @@ describe('Rückkehr aus langem Urlaub führt nicht zur Nachschlag-Welle', () => 
 
   it('Aufgaben: kurze Abwesenheit (zwei Wochen) verschiebt nichts nennenswert', () => {
     const alle = Array.from({ length: 15 }, () => mk(SCHUL))
-    const weg = alle[0]
+    const weg = alle[0]!
     const abwesend = abwesendIn(weg.id, 20, 21)
     const weeks = planeWochen(40, () => alle, abwesend)
     const r = summe(aufgabenJeWoche(weeks, weg), 0, 40)
@@ -366,19 +366,19 @@ describe('Kleine Kreise und Ausnahmezustände', () => {
     // obwohl jemand da ist.
     const einer = mk(['treffpunkt'])
     const fsWeeks = planeTreffpunkte(3, () => [einer])
-    expect(fsWeeks[0].every((i) => i.leader === displayName(einer))).toBe(true)
+    expect(fsWeeks[0]!.every((i) => i.leader === displayName(einer))).toBe(true)
   })
 
   it('Treffpunkte: ohne Kandidaten bleibt alles offen, ohne Fehler', () => {
     const fsWeeks = planeTreffpunkte(3, () => [])
-    expect(fsWeeks[0].every((i) => i.leader === '')).toBe(true)
+    expect(fsWeeks[0]!.every((i) => i.leader === '')).toBe(true)
   })
 
   it('Treffpunkte: sind alle abwesend, bleibt der Platz offen', () => {
     const alle = Array.from({ length: 3 }, () => mk(['treffpunkt']))
     const abw = alle.flatMap((p) => urlaub(p.id, 0, 4))
     const fsWeeks = planeTreffpunkte(3, () => alle, abw, true)
-    expect(fsWeeks[0].every((i) => i.leader === '')).toBe(true)
+    expect(fsWeeks[0]!.every((i) => i.leader === '')).toBe(true)
   })
 
   it('Treffpunkte: der zuletzt Verbliebene wird nicht doppelt am selben Tag gesetzt', () => {
@@ -391,7 +391,7 @@ describe('Kleine Kreise und Ausnahmezustände', () => {
       ],
     ]
     fsWeeks = fsAutoAssign(fsWeeks, 0, [mk(['treffpunkt'])]).fsWeeks
-    expect(fsWeeks[0].filter((i) => i.leader).length).toBe(1)
+    expect(fsWeeks[0]!.filter((i) => i.leader).length).toBe(1)
   })
 
   it('Aufgaben: eine seltene Qualifikation wird nicht von Vielseitigen verdrängt', () => {

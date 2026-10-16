@@ -146,10 +146,10 @@ describe('itemMinutes', () => {
 describe('lacMinuten in fremder Sprache', () => {
   it('ändert Zahl und Anzeigetext — und zwar in dessen eigener Schrift', () => {
     const w = lacMinuten([woche('١٠ دق', 10)], 0, 'mid', 0, 0, 15)
-    const item = w[0].mid.sections[0].items[0] as PartItem
+    const item = w[0]!.mid.sections[0]!.items[0] as PartItem
     expect(item.mins).toBe(15)
     expect(item.meta).toBe('١٥ دق')
-    expect(w[0].mid.end).toBe('Ende ca. 20:50')
+    expect(w[0]!.mid.end).toBe('Ende ca. 20:50')
   })
 
   it('ohne Minutenzahl bleibt alles, wie es ist', () => {
@@ -166,11 +166,11 @@ describe('lacMinuten in fremder Sprache', () => {
     const w0 = woche('10 Min.', 10)
     w0.alt = { ja: woche('10 分', 10) }
     const w = lacMinuten([w0], 0, 'mid', 0, 0, 15)
-    const variante = w[0].alt!.ja.mid.sections[0].items[0] as PartItem
+    const variante = w[0]!.alt!.ja!.mid.sections[0]!.items[0] as PartItem
     expect(variante.mins).toBe(15)
     expect(variante.meta).toBe('15 分')
     // Das Ende trägt die kanonische Woche allein — die Variante zeigt es von dort (`mergeMeeting`).
-    expect(w[0].mid.end).toBe('Ende ca. 20:50')
+    expect(w[0]!.mid.end).toBe('Ende ca. 20:50')
   })
 
   it('hält die Grenzen 5 und 45 ein', () => {
@@ -181,7 +181,7 @@ describe('lacMinuten in fremder Sprache', () => {
 
 function minutenNach(w0: Week, minuten: number): number | null {
   const w = lacMinuten([w0], 0, 'mid', 0, 0, minuten)
-  return itemMinutes(w[0].mid.sections[0].items[0] as PartItem)
+  return itemMinutes(w[0]!.mid.sections[0]!.items[0] as PartItem)
 }
 
 /** Kleinste Woche, die `lacMinuten` braucht: ein Punkt, eine Endzeit. */

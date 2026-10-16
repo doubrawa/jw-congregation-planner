@@ -56,10 +56,10 @@ describe('renameInWeeks', () => {
   it('ersetzt den alten Anzeigenamen in Programmpunkten und Hilfsdiensten', () => {
     const weeks = [week('Simon Krüger', 'Simon Krüger')]
     const next = renameInWeeks(weeks, 'p1', 'Simon Krüger', 'S. Krüger')
-    const item = next[0].mid.sections[0].items[1]
-    expect('names' in item && item.names[0].name).toBe('S. Krüger')
-    expect(next[0].mid.helpers.ordner[0].name).toBe('S. Krüger')
-    expect(next[0].we.helpers.ordner[0].name).toBe('S. Krüger')
+    const item = next[0]!.mid.sections[0]!.items[1]!
+    expect('names' in item && item.names[0]!.name).toBe('S. Krüger')
+    expect(next[0]!.mid.helpers.ordner![0]!.name).toBe('S. Krüger')
+    expect(next[0]!.we.helpers.ordner![0]!.name).toBe('S. Krüger')
   })
 
   it('behält die Referenz unveränderter Wochen (Aufrufer erkennt Dirty-Wochen)', () => {
@@ -68,7 +68,7 @@ describe('renameInWeeks', () => {
     const next = renameInWeeks([untouched, touched], 'p1', 'Simon Krüger', 'S. Krüger')
     expect(next[0]).toBe(untouched) // keine Namensänderung → identische Referenz
     expect(next[1]).not.toBe(touched) // enthält oldName → neue Referenz
-    expect(next[1].we).toBe(touched.we) // Wochenende unberührt → alte Referenz
+    expect(next[1]!.we).toBe(touched.we) // Wochenende unberührt → alte Referenz
   })
 
   it('lässt den gleichnamigen Gastredner stehen', () => {

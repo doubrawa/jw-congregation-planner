@@ -77,21 +77,21 @@ describe('Umbenennen erreicht jeden Ort', () => {
     // Vorher blieben Klasse und Ratgeber auf dem alten Namen stehen: sie tragen
     // `pid`, also stimmte alles außer dem, was der Planer liest.
     const next = renameInWeeks([makeWeek()], ANNA.id, 'Anna Beispiel', 'A. Beispiel-Neu')
-    const namen = alleSlots(next[0]).map((s) => s.name)
+    const namen = alleSlots(next[0]!).map((s) => s.name)
     expect(namen).toHaveLength(8) // 2 Zusammenkünfte × (Hauptsaal, Klasse, Ratgeber, Mikrofon)
     expect(new Set(namen)).toEqual(new Set(['A. Beispiel-Neu']))
   })
 
   it('lässt die pid unangetastet — sie ist die Identität, nicht der Name', () => {
     const next = renameInWeeks([makeWeek()], ANNA.id, 'Anna Beispiel', 'A. Beispiel-Neu')
-    expect(alleSlots(next[0]).every((s) => s.pid === ANNA.id)).toBe(true)
+    expect(alleSlots(next[0]!).every((s) => s.pid === ANNA.id)).toBe(true)
   })
 
   it('rührt fremde Zuteilungen nicht an', () => {
     const w = makeWeek()
     w.mid.helpers.mik = [{ name: 'Bernd Anders', pid: 'p-bernd' }]
     const next = renameInWeeks([w], ANNA.id, 'Anna Beispiel', 'A. Beispiel-Neu')
-    expect(next[0].mid.helpers.mik[0]).toEqual({ name: 'Bernd Anders', pid: 'p-bernd' })
+    expect(next[0]!.mid.helpers.mik![0]).toEqual({ name: 'Bernd Anders', pid: 'p-bernd' })
   })
 
   it('unveränderte Wochen behalten ihre Referenz', () => {
@@ -104,7 +104,7 @@ describe('Umbenennen erreicht jeden Ort', () => {
 describe('Löschen löst den Fremdschlüssel', () => {
   it('nimmt die pid überall weg, lässt den Namen stehen', () => {
     const next = dropPersonPid([makeWeek()], ANNA.id)
-    const slots = alleSlots(next[0])
+    const slots = alleSlots(next[0]!)
     expect(slots).toHaveLength(8)
     expect(slots.every((s) => s.pid === undefined)).toBe(true)
     expect(slots.every((s) => s.name === 'Anna Beispiel')).toBe(true)
@@ -125,7 +125,7 @@ describe('Löschen löst den Fremdschlüssel', () => {
     const w = makeWeek()
     w.mid.helpers.mik = [{ name: 'Bernd Anders', pid: 'p-bernd' }]
     const next = dropPersonPid([w], ANNA.id)
-    expect(next[0].mid.helpers.mik[0]).toEqual({ name: 'Bernd Anders', pid: 'p-bernd' })
+    expect(next[0]!.mid.helpers.mik![0]).toEqual({ name: 'Bernd Anders', pid: 'p-bernd' })
   })
 
   it('geht NICHT über den Namen — Gleichnamige bleiben verschont', () => {
@@ -134,7 +134,7 @@ describe('Löschen löst den Fremdschlüssel', () => {
     const w = makeWeek()
     w.we.helpers.mik = [{ name: 'Anna Beispiel', pid: 'p-zwilling' }]
     const next = dropPersonPid([w], ANNA.id)
-    expect(next[0].we.helpers.mik[0]).toEqual({ name: 'Anna Beispiel', pid: 'p-zwilling' })
+    expect(next[0]!.we.helpers.mik![0]).toEqual({ name: 'Anna Beispiel', pid: 'p-zwilling' })
   })
 
   it('unveränderte Wochen behalten ihre Referenz', () => {
@@ -151,9 +151,9 @@ describe('Treffpunkte: dieselbe Regel', () => {
   it('löst die lpid, lässt den Namen stehen', () => {
     const vorher = [[inst('a', 'Anna Beispiel', ANNA.id), inst('b', 'Bernd Anders', 'p-bernd')]]
     const next = fsDropPersonPid(vorher, ANNA.id)
-    expect(next[0][0]).toEqual({ ...inst('a', 'Anna Beispiel'), lpid: undefined })
-    expect('lpid' in next[0][0]).toBe(false)
-    expect(next[0][1].lpid).toBe('p-bernd')
+    expect(next[0]![0]).toEqual({ ...inst('a', 'Anna Beispiel'), lpid: undefined })
+    expect('lpid' in next[0]![0]!).toBe(false)
+    expect(next[0]![1]!.lpid).toBe('p-bernd')
   })
 
   it('unveränderte Wochen behalten ihre Referenz', () => {
@@ -232,11 +232,11 @@ describe('Die Zusage des Fremdschlüssels', () => {
 
   it('assignSlot schreibt pid — und löscht sie beim Leeren', () => {
     const belegt = assignSlot([makeWeek()], SLOT, 'Neue Person', undefined, 'p-neu')
-    const slot = (belegt[0].mid.sections[0].items[0] as PartItem).names[0]
+    const slot = (belegt[0]!.mid.sections[0]!.items[0] as PartItem).names[0]!
     expect(slot.pid).toBe('p-neu')
 
     const geleert = assignSlot(belegt, SLOT, '')
-    expect((geleert[0].mid.sections[0].items[0] as PartItem).names[0].pid).toBeUndefined()
+    expect((geleert[0]!.mid.sections[0]!.items[0] as PartItem).names[0]!.pid).toBeUndefined()
   })
 
   it('die Id schlägt den Namen — nie umgekehrt', () => {

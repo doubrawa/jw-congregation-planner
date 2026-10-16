@@ -43,9 +43,9 @@ function touch(
  * die Geschwindigkeit (kurz, aber schnell geworfen = schließen).
  */
 function swipePath(el: Element, points: Array<[number, number]>, ms = 0): void {
-  touch(el, 'touchstart', [points[0]], true, 0)
+  touch(el, 'touchstart', [points[0]!], true, 0)
   points.slice(1).forEach((p, i) => touch(el, 'touchmove', [p], true, (ms * (i + 1)) / (points.length - 1)))
-  touch(el, 'touchend', [points[points.length - 1]], true, ms)
+  touch(el, 'touchend', [points[points.length - 1]!], true, ms)
 }
 
 /** Gerade Wischbewegung in `steps` Zwischenschritten. */
@@ -303,9 +303,9 @@ describe('useSwipeWeek', () => {
     // gezogen, preventDefault() greift nicht mehr (cancelable = false). Die
     // Touch-Ereignisse laufen aber weiter — daran hängt die Erkennung.
     const { el, onNext } = setup()
-    touch(el, 'touchstart', [DAUMEN_NACH_LINKS[0]])
+    touch(el, 'touchstart', [DAUMEN_NACH_LINKS[0]!])
     for (const p of DAUMEN_NACH_LINKS.slice(1)) touch(el, 'touchmove', [p], false)
-    touch(el, 'touchend', [DAUMEN_NACH_LINKS[DAUMEN_NACH_LINKS.length - 1]])
+    touch(el, 'touchend', [DAUMEN_NACH_LINKS[DAUMEN_NACH_LINKS.length - 1]!])
     fertig()
     expect(onNext).toHaveBeenCalledTimes(1)
   })

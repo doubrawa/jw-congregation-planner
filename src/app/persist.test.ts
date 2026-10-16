@@ -978,13 +978,13 @@ describe('Index außerhalb des Fensters', () => {
 
 describe('Personen (inkl. Debounce)', () => {
   it('addPerson → savePerson sofort', () => {
-    const p = DEMO_PERSONS[0]
+    const p = DEMO_PERSONS[0]!
     persist(st(), st(), { type: 'addPerson', person: p })
     expect(data.savePerson).toHaveBeenCalledWith('c1', p)
   })
 
   it('updatePerson schreibt gebündelt (Debounce, nach 600 ms)', () => {
-    const p = DEMO_PERSONS[0]
+    const p = DEMO_PERSONS[0]!
     persist(st(), st({ persons: [p, ...DEMO_PERSONS.slice(1)] }), { type: 'updatePerson', id: p.id, patch: { tel: '1' } })
     expect(data.savePerson).not.toHaveBeenCalled() // noch nicht
     vi.advanceTimersByTime(600)
@@ -1076,7 +1076,7 @@ describe('Personen (inkl. Debounce)', () => {
   })
 
   it('updatePerson mit Admin-Recht spiegelt die Konten sofort', () => {
-    const p = DEMO_PERSONS[0]
+    const p = DEMO_PERSONS[0]!
     const next = st({
       members: [{ userId: 'm1', email: '', personId: p.id, planner: true, zuteiler: false }, { userId: 'u1', email: '', personId: p.id, planner: true, zuteiler: false }],
     })
@@ -1327,7 +1327,7 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
     persist(st(), st({ services: [...DEMO_SERVICES, svc] }), { type: 'addService', service: svc })
     expect(data.saveService).toHaveBeenCalledWith('c1', svc, DEMO_SERVICES.length)
     vi.clearAllMocks()
-    const key = DEMO_SERVICES[0].key
+    const key = DEMO_SERVICES[0]!.key
     persist(st(), st(), { type: 'changeServiceCount', key, delta: 1 })
     expect(data.saveService).toHaveBeenCalledWith('c1', expect.objectContaining({ key }), 0)
     persist(st(), st(), { type: 'removeService', key: 'x' })
@@ -1604,7 +1604,7 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     // Nur Position 1 bekommt ein neues Objekt — der Reducer gibt unveränderte
     // Wochen identisch zurück, und genau daran erkennt die Persistenz sie.
     const weeks = [...prev.weeks]
-    weeks[1] = { ...weeks[1], mid: { ...weeks[1].mid, end: 'Ende ca. 20:15' } }
+    weeks[1] = { ...weeks[1]!, mid: { ...weeks[1]!.mid, end: 'Ende ca. 20:15' } }
     persist(prev, st({ weeks, congregation: { name: 'K', hall: 'H', times: { mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '10:00' } } } }), {
       type: 'updateCongregation',
       patch: { times: { mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '10:00' } } },

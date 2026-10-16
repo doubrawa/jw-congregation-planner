@@ -17,7 +17,7 @@ describe('App-Sprachlisten', () => {
     )
     for (let i = 1; i < APP_LANGS_SORTED.length; i++) {
       expect(
-        APP_LANGS_SORTED[i - 1].label.localeCompare(APP_LANGS_SORTED[i].label, 'de'),
+        APP_LANGS_SORTED[i - 1]!.label.localeCompare(APP_LANGS_SORTED[i]!.label, 'de'),
       ).toBeLessThanOrEqual(0)
     }
   })

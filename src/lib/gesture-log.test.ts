@@ -12,7 +12,7 @@ describe('gestenLog', () => {
     gestenStart('start', { x: 300 })
     gestenLog('touchend', { dx: -150 })
     expect(gestenEintraege().map((e) => e.was)).toEqual(['start', 'touchend'])
-    expect(gestenEintraege()[0].daten).toEqual({ x: 300 })
+    expect(gestenEintraege()[0]!.daten).toEqual({ x: 300 })
   })
 
   it('läuft nicht voll — alte Einträge fallen hinten heraus', () => {
@@ -20,7 +20,7 @@ describe('gestenLog', () => {
     for (let i = 0; i < 200; i++) gestenLog(`e${i}`)
     const alle = gestenEintraege()
     expect(alle.length).toBeLessThanOrEqual(40)
-    expect(alle[alle.length - 1].was).toBe('e199')
+    expect(alle[alle.length - 1]!.was).toBe('e199')
   })
 
   it('rechnet die Zeit ab dem Beginn der Geste', () => {

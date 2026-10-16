@@ -17,7 +17,7 @@ describe('UI-Wörterbücher (Fallback-Kette DE ← EN ← Sprache)', () => {
       expect(Object.keys(d).sort(), code).toEqual(deKeys)
       for (const key of deKeys) {
         expect(typeof d[key], `${code}.${key}`).toBe('string')
-        expect(d[key].length, `${code}.${key}`).toBeGreaterThan(0)
+        expect(d[key]!.length, `${code}.${key}`).toBeGreaterThan(0)
       }
     }
   })
@@ -79,8 +79,8 @@ describe('UI-Wörterbücher (Fallback-Kette DE ← EN ← Sprache)', () => {
     for (const { code } of APP_LANGS) {
       const d = dict(code) as unknown as Record<string, string>
       for (const key of deKeys) {
-        const want = placeholders((DE as Record<string, string>)[key])
-        const got = placeholders(d[key])
+        const want = placeholders((DE as Record<string, string>)[key]!)
+        const got = placeholders(d[key]!)
         if (got !== want) broken.push(`${code}.${key}: [${got}] statt [${want}]`)
       }
     }
@@ -93,9 +93,9 @@ describe('UI-Wörterbücher (Fallback-Kette DE ← EN ← Sprache)', () => {
       const d = dict(code) as unknown as Record<string, string>
       for (const key of deKeys) {
         if (!suffixKeys.has(key)) {
-          expect(d[key], `${code}.${key}`).toBe(d[key].trim())
+          expect(d[key], `${code}.${key}`).toBe(d[key]!.trim())
         }
-        expect(d[key].includes('  '), `${code}.${key} doppelter Leerraum`).toBe(false)
+        expect(d[key]!.includes('  '), `${code}.${key} doppelter Leerraum`).toBe(false)
       }
     }
   })

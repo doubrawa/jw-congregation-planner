@@ -2119,6 +2119,24 @@ und die T1 verhindert hätte.
 > Test, kein Absturz beim Planer; der Nutzen steht nicht im Verhältnis zum
 > Umbau. Die Sperrklinke hält den Stand, die Zahl kann nur fallen.
 
+> **Die Testdateien — erledigt am 17. Oktober 2026** (Betreiber: *„mach t124,
+> t126 und t42"*). 624 Meldungen in 31 Dateien, abgebaut mit einem Umbau über
+> die TypeScript-API: je Meldung die Stelle, an der der Index-Zugriff das
+> `undefined` hereinbringt, und dort ein `!` — am Zugriff (`weeks[0]!.mid`),
+> an einer Eigenschaft aus einer Indexsignatur (`helpers.mik!`) oder an der
+> Zuweisung der Variable, die ihn trägt (`const w = weeks[0]!`). Rund 600
+> Stellen so, sechs von Hand (etwa ein Spread `{ ...weeks[1]! }` und ein
+> `Object.keys(FRAG.en!)`).
+> Im Test ist das `!` ehrlich: Fehlt das Element, wird der Lauf rot.
+>
+> **Damit gilt die Regel im gewöhnlichen Typcheck** — `tsconfig.app.json`
+> schaltet sie ein, für `src` samt Tests und für `tests/`; `tsc -b` (auch im
+> Build der CI) lässt keine neue Meldung mehr durch. Die Grundlinie ist leer,
+> `npm run typecheck:index` meldet 0 und ist damit überflüssig — ausbauen,
+> wenn niemand sie mehr braucht. **Noch aus** sind die Edge Functions (53
+> Meldungen) und die Skript-Tests (67): Sie schalten die Regel in ihren
+> Konfigurationen ausdrücklich ab.
+
 ---
 
 ## Phase 8 — Oberfläche und Politur (🔧 verteilt, jederzeit einschiebbar)
@@ -7704,8 +7722,9 @@ zurückgenommen und der Testlauf wiederholt wurde.
 gezählt, kein Zweig außer `main`, keine PR, kein Issue; `sw.js` = HEAD; alle
 sieben Functions per `functions download` gleich dem Repo, 39 Dateien; Secrets
 ohne `INVITE_FROM`, `disable_signup` noch `false`). Im Code ist nichts mehr
-offen außer T42 (T123, T125 und T126 am 16. Oktober erledigt und ausgerollt,
-T124 am 17.); was sonst aussteht, braucht den Betreiber oder ein Gerät.
+offen außer dem Rest von T42 (T123, T125 und T126 am 16. Oktober erledigt und
+ausgerollt, T124 und die Testdateien von T42 am 17.); was sonst aussteht,
+braucht den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
@@ -7719,7 +7738,7 @@ T124 am 17.); was sonst aussteht, braucht den Betreiber oder ein Gerät.
 | **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
-| **Phase 7** | T42 (Testdateien) | die Sperrklinke steht bei 625 Meldungen in 31 Dateien (16. Oktober; am 10. Oktober 636 in 32) |
+| **Phase 7** | T42, der Rest | `src` samt Tests ist seit 17. Oktober frei, die Regel steht in `tsconfig.app.json`. Noch aus: Edge Functions (53 Meldungen) und Skript-Tests (67); `typecheck:index` ist überflüssig geworden |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
 
 Am 13. Oktober aus der Tabelle genommen: T106 (geht in T121 Phase 8 auf), T114

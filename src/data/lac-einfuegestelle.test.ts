@@ -67,7 +67,7 @@ describe('lacAddIndex findet das Bibelstudium in jeder Sprache', () => {
     expect(lacAddIndex(items)).toBe(1)
 
     const w = lacAdd(wocheMit(items), 0, 'mid', 0, 'Örtliche Hinweise')
-    const next = w[0].mid.sections[0].items
+    const next = w[0]!.mid.sections[0]!.items
     expect(titelIndex(next, 'Örtliche Hinweise')).toBeLessThan(titelIndex(next, titel))
   })
 })
@@ -102,7 +102,7 @@ describe('Grenzfälle der Einfügestelle', () => {
     // zweite vor dem ersten einsortiert und die Reihenfolge kehrte sich um.
     const w1 = lacAdd(wocheMit([bibelstudium('Congregation Bible Study')]), 0, 'mid', 0, 'Erster')
     const w2 = lacAdd(w1, 0, 'mid', 0, 'Zweiter')
-    const items = w2[0].mid.sections[0].items
+    const items = w2[0]!.mid.sections[0]!.items
     expect(items.map((i) => (isSong(i) ? '' : (i as PartItem).title))).toEqual([
       'Erster',
       'Zweiter',

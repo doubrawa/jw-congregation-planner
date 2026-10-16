@@ -143,11 +143,11 @@ describe('openSlotLabels (Banner unbesetzter Zuteilungen)', () => {
 describe('changedSlotKeys (Bestätigungs-Abräumung bei Neuzuteilung)', () => {
   it('liefert genau die task_keys geänderter Programmpunkt- und Hilfsdienst-Slots', () => {
     const weeks = buildDemoWeeks()
-    const before = weeks[0].mid
+    const before = weeks[0]!.mid
     const after = structuredClone(before)
     // erster Nicht-Lied-Slot: Person tauschen
-    const item = after.sections[0].items.find((i) => !isSong(i)) as PartItem
-    item.names[0].name = 'Neue Person'
+    const item = after.sections[0]!.items.find((i) => !isSong(i)) as PartItem
+    item.names[0]!.name = 'Neue Person'
     // ein Hilfsdienst-Platz leeren
     after.helpers.mik = [{ name: '' }, ...(after.helpers.mik ?? []).slice(1)]
     const keys = changedSlotKeys(before, after, DEMO_SERVICES, '2026-09-07', 'mid')
@@ -158,7 +158,7 @@ describe('changedSlotKeys (Bestätigungs-Abräumung bei Neuzuteilung)', () => {
 
   it('ohne Änderung keine Keys', () => {
     const weeks = buildDemoWeeks()
-    expect(changedSlotKeys(weeks[0].mid, weeks[0].mid, DEMO_SERVICES, '2026-09-07', 'mid')).toHaveLength(0)
+    expect(changedSlotKeys(weeks[0]!.mid, weeks[0]!.mid, DEMO_SERVICES, '2026-09-07', 'mid')).toHaveLength(0)
   })
 
   it('ein Namensvetter mit anderer Person-Id ist ein Wechsel — er erbt die Zusage nicht', () => {
@@ -227,53 +227,53 @@ describe('Sonderwochen (v3)', () => {
   const weeks = buildDemoWeeks()
 
   it('Woche 2 ist Kreisaufseher-Woche mit Dienstvortrag statt VBS', () => {
-    expect(weeks[2].co).toBe(true)
-    const lac = weeks[2].mid.sections[lacSectionIndex(weeks[2].mid.sections)]
+    expect(weeks[2]!.co).toBe(true)
+    const lac = weeks[2]!.mid.sections[lacSectionIndex(weeks[2]!.mid.sections)]!
     const dv = lac.items.find((i) => !isSong(i) && i.title.startsWith('Demo-Studienartikel 2')) as PartItem
     expect(dv?.names[0]?.rolle).toBe('Kreisaufseher')
-    expect(weeks[2].we.sections.map((s) => s.label)).toContain('DIENSTVORTRAG')
+    expect(weeks[2]!.we.sections.map((s) => s.label)).toContain('DIENSTVORTRAG')
   })
 
   it('Woche 3 ist Gedächtnismahl-Woche (das Mahl am Samstagabend)', () => {
-    expect(weeks[3].anlass?.art).toBe('mem')
-    expect(weeks[3].we.sections.map((s) => s.label)).toContain('GEDÄCHTNISMAHL')
-    expect(weeks[3].we.date).toContain('Samstag, 3. Oktober')
+    expect(weeks[3]!.anlass?.art).toBe('mem')
+    expect(weeks[3]!.we.sections.map((s) => s.label)).toContain('GEDÄCHTNISMAHL')
+    expect(weeks[3]!.we.date).toContain('Samstag, 3. Oktober')
   })
 })
 
 describe('Auto-Zuteilung', () => {
   it('überspringt Kreisaufseher-Slots', () => {
     const weeks = buildDemoWeeks()
-    const lacSi = lacSectionIndex(weeks[2].mid.sections)
-    const dvIi = weeks[2].mid.sections[lacSi].items.findIndex(
+    const lacSi = lacSectionIndex(weeks[2]!.mid.sections)
+    const dvIi = weeks[2]!.mid.sections[lacSi]!.items.findIndex(
       (i) => !isSong(i) && (i as PartItem).title.startsWith('Demo-Studienartikel 2'),
     )
-    ;(weeks[2].mid.sections[lacSi].items[dvIi] as PartItem).names[0].name = ''
+    ;(weeks[2]!.mid.sections[lacSi]!.items[dvIi] as PartItem).names[0]!.name = ''
     const { weeks: next } = autoAssignMeeting(weeks, 2, 'mid', DEMO_PERSONS, DEMO_SERVICES)
-    const dv = next[2].mid.sections[lacSi].items[dvIi] as PartItem
-    expect(dv.names[0].name).toBe('')
+    const dv = next[2]!.mid.sections[lacSi]!.items[dvIi] as PartItem
+    expect(dv.names[0]!.name).toBe('')
   })
 
   it('lässt Gastredner-Slots offen', () => {
     const weeks = buildDemoWeeks()
     // Öffentlichen Vortrag (Gastredner) leeren, dann Auto-Zuteilung
-    ;(weeks[1].we.sections[1].items[0] as PartItem).names[0].name = ''
+    ;(weeks[1]!.we.sections[1]!.items[0] as PartItem).names[0]!.name = ''
     const { weeks: next } = autoAssignMeeting(weeks, 1, 'we', DEMO_PERSONS, DEMO_SERVICES)
-    const talk = next[1].we.sections[1].items[0] as PartItem
-    expect(talk.names[0].name).toBe('')
+    const talk = next[1]!.we.sections[1]!.items[0] as PartItem
+    expect(talk.names[0]!.name).toBe('')
   })
 
   it('wählt geringste Auslastung, nie Abwesende, keine Doppelbelegung', () => {
     const weeks = buildDemoWeeks()
     // Abschluss-Gebet der Woche 0 leeren und neu zuteilen
-    const closeSi = weeks[0].mid.sections.length - 1
-    ;(weeks[0].mid.sections[closeSi].items[0] as PartItem).names[0].name = ''
+    const closeSi = weeks[0]!.mid.sections.length - 1
+    ;(weeks[0]!.mid.sections[closeSi]!.items[0] as PartItem).names[0]!.name = ''
     const before = weeks.map((w) => structuredClone(w))
     const abwesend = buildAbsences(DEMO_ABSENCES, weeks, CONGREGATION.times)
     const { weeks: next, newly } = autoAssignMeeting(
       weeks, 0, 'mid', DEMO_PERSONS, DEMO_SERVICES, [], 'all', abwesend,
     )
-    const names = assignedNames(next[0], 'mid').filter((n) => !n.startsWith('Gruppe'))
+    const names = assignedNames(next[0]!, 'mid').filter((n) => !n.startsWith('Gruppe'))
     expect(new Set(names).size).toBe(names.length) // keine Doppelbelegung
     // Ulrich Lang ist in Woche 0 abwesend → nie neu vergeben
     expect(newly).not.toContain('Ulrich Lang')
@@ -294,7 +294,7 @@ describe('Auto-Zuteilung', () => {
 
   it('zählt offen gebliebene, nicht besetzbare Slots als unfilled (≠ „keine offen“)', () => {
     const weeks = buildDemoWeeks()
-    weeks[0].mid.helpers.zoom = [{ name: '' }] // Zoom-Ordner offen
+    weeks[0]!.mid.helpers.zoom = [{ name: '' }] // Zoom-Ordner offen
     // Ohne verfügbare Person kann nichts besetzt werden: count 0, aber unfilled > 0
     // (damit die UI „keine passende Person“ statt „keine offenen Zuteilungen“ zeigt).
     const { count, unfilled } = autoAssignMeeting(weeks, 0, 'mid', [], DEMO_SERVICES)
@@ -306,20 +306,20 @@ describe('Auto-Zuteilung', () => {
 describe('offene Slots zählen', () => {
   it('zählt Programmpunkte und Hilfsdienst-Plätze', () => {
     const weeks = buildDemoWeeks()
-    const before = countOpenSlots(weeks[0].mid, DEMO_SERVICES)
-    ;(weeks[0].mid.sections[closeIdx(weeks)].items[0] as PartItem).names[0].name = ''
-    expect(countOpenSlots(weeks[0].mid, DEMO_SERVICES)).toBe(before + 1)
+    const before = countOpenSlots(weeks[0]!.mid, DEMO_SERVICES)
+    ;(weeks[0]!.mid.sections[closeIdx(weeks)]!.items[0] as PartItem).names[0]!.name = ''
+    expect(countOpenSlots(weeks[0]!.mid, DEMO_SERVICES)).toBe(before + 1)
   })
 })
 
 function closeIdx(weeks: ReturnType<typeof buildDemoWeeks>) {
-  return weeks[0].mid.sections.length - 1
+  return weeks[0]!.mid.sections.length - 1
 }
 
 describe('„Unser Leben als Christ" bearbeiten', () => {
   const weeks = buildDemoWeeks()
-  const si = lacSectionIndex(weeks[0].mid.sections)
-  const gehIdx = weeks[0].mid.sections[si].items.findIndex(
+  const si = lacSectionIndex(weeks[0]!.mid.sections)
+  const gehIdx = weeks[0]!.mid.sections[si]!.items.findIndex(
     (i) => !isSong(i) && (i as PartItem).title.startsWith('Demoaufgabe 9'),
   )
 
@@ -329,10 +329,10 @@ describe('„Unser Leben als Christ" bearbeiten', () => {
   })
 
   it('lacMinuten setzt Minuten (5..45) und zieht das Ende nach', () => {
-    const minuten = (ws: Week[]) => itemMinutes(ws[0].mid.sections[si].items[gehIdx] as PartItem)
+    const minuten = (ws: Week[]) => itemMinutes(ws[0]!.mid.sections[si]!.items[gehIdx] as PartItem)
     const w = lacMinuten(weeks, 0, 'mid', si, gehIdx, 20)
     expect(minuten(w)).toBe(20)
-    expect(w[0].mid.end).toBe('Ende ca. 20:50')
+    expect(w[0]!.mid.end).toBe('Ende ca. 20:50')
     // Jede Minute ist einstellbar — bis zum 18.9.2026 ging nur jede fünfte.
     expect(minuten(lacMinuten(weeks, 0, 'mid', si, gehIdx, 19))).toBe(19)
     // Außerhalb der Grenzen wird geklemmt, statt abzulehnen: Das Eingabefeld
@@ -344,31 +344,31 @@ describe('„Unser Leben als Christ" bearbeiten', () => {
   })
 
   it('lacRemove entfernt den Punkt und kürzt das Ende', () => {
-    const count = weeks[0].mid.sections[si].items.length
+    const count = weeks[0]!.mid.sections[si]!.items.length
     const w = lacRemove(weeks, 0, 'mid', si, gehIdx)
-    expect(w[0].mid.sections[si].items.length).toBe(count - 1)
-    expect(w[0].mid.end).toBe('Ende ca. 20:30')
+    expect(w[0]!.mid.sections[si]!.items.length).toBe(count - 1)
+    expect(w[0]!.mid.end).toBe('Ende ca. 20:30')
   })
 
   it('lacAdd fügt vor dem Versammlungsbibelstudium ein (+10 Min.)', () => {
     const w = lacAdd(weeks, 0, 'mid', si, 'Örtliche Hinweise')
-    const items = w[0].mid.sections[si].items
+    const items = w[0]!.mid.sections[si]!.items
     const insertedIdx = items.findIndex((i) => !isSong(i) && (i as PartItem).title === 'Örtliche Hinweise')
     const vbsIdx = items.findIndex(
       (i) => !isSong(i) && (i as PartItem).title.startsWith('Versammlungsbibelstudium'),
     )
     expect(insertedIdx).toBeGreaterThanOrEqual(0)
     expect(insertedIdx).toBeLessThan(vbsIdx)
-    expect(w[0].mid.end).toBe('Ende ca. 20:55')
+    expect(w[0]!.mid.end).toBe('Ende ca. 20:55')
     expect(lacAdd(weeks, 0, 'mid', si, '   ')).toBe(weeks) // leerer Titel = unverändert
   })
 
   it('lacMove tauscht Nicht-Lied-Punkte, Nummern bleiben positionsfest', () => {
     const w = lacMove(weeks, 0, 'mid', si, gehIdx, 1)
-    const items = (w[0].mid.sections[si].items.filter((i) => !isSong(i)) as PartItem[])
-    expect(items[0].title.startsWith('Versammlungsbibelstudium')).toBe(true)
-    expect(items[0].num).toBe(7)
-    expect(items[1].num).toBe(8)
+    const items = (w[0]!.mid.sections[si]!.items.filter((i) => !isSong(i)) as PartItem[])
+    expect(items[0]!.title.startsWith('Versammlungsbibelstudium')).toBe(true)
+    expect(items[0]!.num).toBe(7)
+    expect(items[1]!.num).toBe(8)
   })
 })
 
@@ -376,8 +376,8 @@ describe('S-89-Nutzlast', () => {
   const weeks = buildDemoWeeks()
 
   it('parst Rahmen, Partner und Schulungspunkt aus einer Schulungsaufgabe', () => {
-    const uid = weeks[0].mid.sections.findIndex((s) => s.label === 'UNS IM DIENST VERBESSERN')
-    const ii = weeks[0].mid.sections[uid].items.findIndex(
+    const uid = weeks[0]!.mid.sections.findIndex((s) => s.label === 'UNS IM DIENST VERBESSERN')
+    const ii = weeks[0]!.mid.sections[uid]!.items.findIndex(
       (i) => !isSong(i) && (i as PartItem).title === 'Gespräche beginnen' && (i.meta ?? '').includes('Informell'),
     )
     const s89 = buildS89ForSlot(weeks, {
@@ -388,8 +388,8 @@ describe('S-89-Nutzlast', () => {
   })
 
   it('parst den Schulungspunkt der Bibellesung', () => {
-    const pet = weeks[0].mid.sections.findIndex((s) => s.label === 'SCHÄTZE AUS GOTTES WORT')
-    const ii = weeks[0].mid.sections[pet].items.findIndex(
+    const pet = weeks[0]!.mid.sections.findIndex((s) => s.label === 'SCHÄTZE AUS GOTTES WORT')
+    const ii = weeks[0]!.mid.sections[pet]!.items.findIndex(
       (i) => !isSong(i) && (i as PartItem).title.startsWith('Bibellesung'),
     )
     // Erkannt am Bereich des Platzes, nicht am Titel — `priv` trägt ihn.
@@ -500,7 +500,7 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
 
   it('listet einen verhinderten Hilfsdienst, für den ich qualifiziert bin', () => {
     const weeks = buildDemoWeeks()
-    weeks[0].mid.helpers.ton = [{ name: 'A. Absager' }]
+    weeks[0]!.mid.helpers.ton = [{ name: 'A. Absager' }]
     const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
     const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN)
     expect(reqs).toHaveLength(1)
@@ -509,14 +509,14 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
 
   it('nicht qualifiziert → kein Gesuch', () => {
     const weeks = buildDemoWeeks()
-    weeks[0].mid.helpers.ton = [{ name: 'A. Absager' }]
+    weeks[0]!.mid.helpers.ton = [{ name: 'A. Absager' }]
     const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
     expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('mik'), STANDARD_ZEITEN)).toHaveLength(0)
   })
 
   it('nur „verhindert" zählt (bestätigt/offen nicht)', () => {
     const weeks = buildDemoWeeks()
-    weeks[0].mid.helpers.ton = [{ name: 'A. Absager' }]
+    weeks[0]!.mid.helpers.ton = [{ name: 'A. Absager' }]
     const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'bestätigt' as const }
     expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN)).toHaveLength(0)
   })
@@ -567,7 +567,7 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
 
   it('eigener verhinderter Slot erscheint nicht als Einspringen-Gesuch', () => {
     const weeks = buildDemoWeeks()
-    weeks[0].mid.helpers.ton = [{ name: 'Ersatz Person' }] // = displayName(me)
+    weeks[0]!.mid.helpers.ton = [{ name: 'Ersatz Person' }] // = displayName(me)
     const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
     expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN)).toHaveLength(0)
   })
@@ -590,10 +590,10 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
       'Bibellesung · Jer 38:1-13',
       'Mikrofone',
     ])
-    expect(tasks[0].date).toBe('Dienstag, 8. September · 19:00')
-    expect(tasks[0].s89?.partner).toBe('Markus Ernst')
-    expect(tasks[1].s89).toBeNull()
-    expect(tasks[2].s89?.point).toBe('th Lektion 10')
+    expect(tasks[0]!.date).toBe('Dienstag, 8. September · 19:00')
+    expect(tasks[0]!.s89?.partner).toBe('Markus Ernst')
+    expect(tasks[1]!.s89).toBeNull()
+    expect(tasks[2]!.s89?.point).toBe('th Lektion 10')
     expect(tasks.every((t) => t.status === 'offen')).toBe(true)
     expect(deriveMyTasks(weeks, DEMO_SERVICES, '', {}, STANDARD_ZEITEN)).toEqual([])
   })
@@ -604,15 +604,15 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
     // nachgetragen" (die Spalte `weeks.start` traegt es).
     const leer = weeks.map((w) => ({ ...w, start: '' }))
     const ohne = deriveMyTasks(leer, DEMO_SERVICES, 'Simon Krüger', {}, { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } })
-    expect(ohne[0].at).toBeNull()
+    expect(ohne[0]!.at).toBeNull()
 
     // Mit ISO-Startdatum: Woche 0 Schulung liegt unter der Woche (Di = Mo + 1).
     const dated = weeks.map((w) => ({ ...w, start: '2026-09-07' })) // Montag
     const mit = deriveMyTasks(dated, DEMO_SERVICES, 'Simon Krüger', {}, { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } })
-    expect(mit[0].at).toBe(Date.parse('2026-09-08')) // Dienstag (mid = Mo + 1)
+    expect(mit[0]!.at).toBe(Date.parse('2026-09-08')) // Dienstag (mid = Mo + 1)
     // Aufgabe 1 ist Mikrofone am Wochenende → So = Mo + 6 (alle Wochen teilen
     // hier denselben Start, geprüft wird der Wochenend-Versatz).
-    expect(mit[1].at).toBe(Date.parse('2026-09-13'))
+    expect(mit[1]!.at).toBe(Date.parse('2026-09-13'))
   })
 
   it('in ERÖFFNUNG/ABSCHLUSS trägt die Rolle allein', () => {
@@ -639,9 +639,9 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
 
   it('ordnet Aufgaben über pid zu — Namensgleiche sehen keine fremden Aufgaben', () => {
     const w = buildDemoWeeks()
-    const part = w[0].mid.sections.flatMap((s) => s.items).find((it) => !isSong(it)) as PartItem
-    part.names[0].name = 'Max Muster'
-    part.names[0].pid = 'pMax'
+    const part = w[0]!.mid.sections.flatMap((s) => s.items).find((it) => !isSong(it)) as PartItem
+    part.names[0]!.name = 'Max Muster'
+    part.names[0]!.pid = 'pMax'
     // Person mit passender pid sieht die Aufgabe; gleichnamige mit anderer pid nicht.
     expect(deriveMyTasks(w, DEMO_SERVICES, 'Max Muster', {}, STANDARD_ZEITEN, 'pMax').length).toBeGreaterThan(0)
     expect(deriveMyTasks(w, DEMO_SERVICES, 'Max Muster', {}, STANDARD_ZEITEN, 'pAndere')).toEqual([])
@@ -649,7 +649,7 @@ describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
 
   it('übernimmt den Status aus der ConfirmationMap', () => {
     const open = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', {}, STANDARD_ZEITEN)
-    const conf = { [open[0].id]: 'bestätigt', [open[1].id]: 'verhindert' } as const
+    const conf = { [open[0]!.id]: 'bestätigt', [open[1]!.id]: 'verhindert' } as const
     const tasks = deriveMyTasks(weeks, DEMO_SERVICES, 'Simon Krüger', conf, STANDARD_ZEITEN)
     expect(tasks.map((t) => t.status)).toEqual(['bestätigt', 'verhindert', 'offen', 'offen'])
   })
@@ -667,7 +667,7 @@ describe('Auto-Zuteilung Schülerteile (Partner + Geschlecht)', () => {
   })
 
   function scenario() {
-    const base = buildDemoWeeks()[0]
+    const base = buildDemoWeeks()[0]!
     const week = {
       ...base,
       mid: {
@@ -701,11 +701,11 @@ describe('Auto-Zuteilung Schülerteile (Partner + Geschlecht)', () => {
 
   it('Gesprächsteil: Führer + Partner gleiches Geschlecht; Vortrag männlich; Ältester zuletzt', () => {
     const { weeks, persons } = scenario()
-    const res = autoAssignMeeting(weeks, 0, 'mid', persons, DEMO_SERVICES, [], 'parts')
-    const gold = res.weeks[0].mid.sections[0].items as PartItem[]
-    const lead = gold[0].names[0].name
-    const partner = gold[0].names[1].name
-    const talk = gold[1].names[0].name
+    const res = autoAssignMeeting(weeks!, 0, 'mid', persons, DEMO_SERVICES, [], 'parts')
+    const gold = res.weeks[0]!.mid.sections[0]!.items as PartItem[]
+    const lead = gold[0]!.names[0]!.name
+    const partner = gold[0]!.names[1]!.name
+    const talk = gold[1]!.names[0]!.name
     // Führer und Partner sind die beiden Schwestern (Bruno belegt, Emil = Malus)
     expect([lead, partner].sort()).toEqual(['Sara T', 'Sonja T'])
     // Vortrag geht an den einzigen freien Bruder (Emil), nie an eine Schwester
@@ -1066,15 +1066,15 @@ describe('Konfliktprüfungen (Planen)', () => {
 
   it('erkennt Helfer + Aufgabe am selben Tag (helperTask)', () => {
     const weeks = buildDemoWeeks()
-    weeks[0].mid.helpers.ton = [{ name: 'Manfred Albrecht' }] // ist schon Vorsitz (Programmpunkt) in derselben ZK
+    weeks[0]!.mid.helpers.ton = [{ name: 'Manfred Albrecht' }] // ist schon Vorsitz (Programmpunkt) in derselben ZK
     const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES)
     expect(conflicts).toContainEqual({ kind: 'helperTask', name: 'Manfred Albrecht', kennung: kennungFuer('Manfred Albrecht'), tab: 'mid' })
   })
 
   it('erkennt zwei Hilfsdienste am selben Tag (double)', () => {
     const weeks = buildDemoWeeks()
-    weeks[0].mid.helpers.ton = [{ name: 'Xaver Testhelfer' }] // nur Hilfsdienste, kein Programmpunkt
-    weeks[0].mid.helpers.mik = [{ name: 'Xaver Testhelfer' }, { name: '' }]
+    weeks[0]!.mid.helpers.ton = [{ name: 'Xaver Testhelfer' }] // nur Hilfsdienste, kein Programmpunkt
+    weeks[0]!.mid.helpers.mik = [{ name: 'Xaver Testhelfer' }, { name: '' }]
     const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES)
     expect(conflicts).toContainEqual({ kind: 'double', name: 'Xaver Testhelfer', kennung: 'name:Xaver Testhelfer', tab: 'mid', count: 2 })
   })
@@ -1097,17 +1097,17 @@ describe('Konfliktprüfungen (Planen)', () => {
   it('meldet zwei Programmpunkte (z. B. Vorsitz + Anfangsgebet) NICHT als Konflikt', () => {
     const weeks = buildDemoWeeks()
     // ERÖFFNUNG-Programmpunkt: beide Slots (Vorsitz + Gebet) auf dieselbe Person.
-    const opening = weeks[0].mid.sections[0].items[0] as PartItem
-    opening.names[0].name = 'Doppel Aufgabe'
-    opening.names[1].name = 'Doppel Aufgabe'
+    const opening = weeks[0]!.mid.sections[0]!.items[0] as PartItem
+    opening.names[0]!.name = 'Doppel Aufgabe'
+    opening.names[1]!.name = 'Doppel Aufgabe'
     const conflicts = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES)
     expect(conflicts.some((c) => c.name === 'Doppel Aufgabe')).toBe(false)
   })
 
   it('mit tab=mid erscheinen keine Wochenend-Konflikte (und umgekehrt)', () => {
     const weeks = buildDemoWeeks()
-    weeks[0].we.helpers.ton = [{ name: 'Nur Wochenende' }]
-    weeks[0].we.helpers.mik = [{ name: 'Nur Wochenende' }, { name: '' }] // 2 Hilfsdienste am WE
+    weeks[0]!.we.helpers.ton = [{ name: 'Nur Wochenende' }]
+    weeks[0]!.we.helpers.mik = [{ name: 'Nur Wochenende' }, { name: '' }] // 2 Hilfsdienste am WE
     const mid = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES, 'mid')
     expect(mid.some((c) => c.name === 'Nur Wochenende')).toBe(false)
     const we = weekConflicts(weeks, 0, DEMO_PERSONS, DEMO_SERVICES, 'we')
@@ -1126,8 +1126,8 @@ describe('Konfliktprüfungen (Planen)', () => {
      * bliebe die Meldung also auch früher schon aus, und der Test prüfte nichts.
      */
     const weeks = buildDemoWeeks()
-    for (const wi of [0, 1, 2]) (weeks[wi].mid.sections[0].items[0] as PartItem).names[0].name = 'R. Serie'
-    ;(weeks[3].mid.sections[0].items[0] as PartItem).names[0].name = ''
+    for (const wi of [0, 1, 2]) (weeks[wi]!.mid.sections[0]!.items[0] as PartItem).names[0]!.name = 'R. Serie'
+    ;(weeks[3]!.mid.sections[0]!.items[0] as PartItem).names[0]!.name = ''
     expect(weekConflicts(weeks, 1, [], DEMO_SERVICES).some((c) => c.name === 'R. Serie')).toBe(false)
   })
 
@@ -1229,7 +1229,7 @@ describe('Zuordnung über die Person-Id statt über den Namen', () => {
 
   function wocheMitBeiden(): Week[] {
     const weeks = buildDemoWeeks()
-    const item = weeks[0].mid.sections[0].items.find((x) => !isSong(x)) as PartItem
+    const item = weeks[0]!.mid.sections[0]!.items.find((x) => !isSong(x)) as PartItem
     item.names[0] = { ...item.names[0], name: 'Anton Muster', pid: a.id }
     item.names[1] = { ...item.names[1], name: 'Anton Muster', pid: b.id }
     return weeks
@@ -1239,8 +1239,8 @@ describe('Zuordnung über die Person-Id statt über den Namen', () => {
     // Über den Namen gesucht hätte jeder beide gesehen — und der Hinweis
     // „heute schon zugeteilt" hätte fälschlich gewarnt.
     const weeks = wocheMitBeiden()
-    expect(assignmentsInMeeting(weeks[0].mid, a, DEMO_SERVICES)).toHaveLength(1)
-    expect(assignmentsInMeeting(weeks[0].mid, b, DEMO_SERVICES)).toHaveLength(1)
+    expect(assignmentsInMeeting(weeks[0]!.mid, a, DEMO_SERVICES)).toHaveLength(1)
+    expect(assignmentsInMeeting(weeks[0]!.mid, b, DEMO_SERVICES)).toHaveLength(1)
   })
 
   it('weekConflicts meldet keine Doppelbelegung, wo zwei Personen stehen', () => {
@@ -1276,7 +1276,7 @@ describe('Auto-Zuteilung unterscheidet Namensgleiche', () => {
     const weeks = [buildImportWeek()]
     const { weeks: next } = autoAssignMeeting(weeks, 0, 'mid', zwillinge, [], [], 'parts')
 
-    const besetzt = next[0].mid.sections
+    const besetzt = next[0]!.mid.sections
       .flatMap((s) => s.items.flatMap((it) => ('names' in it ? it.names : [])))
       .filter((n) => n.name)
     // Zwei Personen → zwei Plätze (Führer und Partner desselben Punktes).
@@ -1298,7 +1298,7 @@ describe('Auto-Zuteilung unterscheidet Namensgleiche', () => {
     const zwillinge = [schueler('p-eins'), schueler('p-zwei')]
     const weeks = [buildImportWeek()]
     // Ersten Schülerteil-Platz vorbelegen — ausdrücklich mit p-eins.
-    for (const sec of weeks[0].mid.sections) {
+    for (const sec of weeks[0]!.mid.sections) {
       const treffer = sec.items.find(
         (it) => 'names' in it && it.names.some((n) => n.bereichsKey === 'schulung'),
       )
@@ -1309,7 +1309,7 @@ describe('Auto-Zuteilung unterscheidet Namensgleiche', () => {
       break
     }
     const { weeks: next } = autoAssignMeeting(weeks, 0, 'mid', zwillinge, [], [], 'parts')
-    const besetzt = next[0].mid.sections
+    const besetzt = next[0]!.mid.sections
       .flatMap((sec) => sec.items.flatMap((it) => ('names' in it ? it.names : [])))
       .filter((n) => n.name)
     const proPerson = besetzt.reduce<Record<string, number>>((acc, n) => {

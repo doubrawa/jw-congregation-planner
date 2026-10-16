@@ -61,7 +61,7 @@ const NUR_GEMESSEN_UEBERSETZBAR: Record<string, Grund> = {
   'Symbole herumreichen': 'fachbegriff-ungenutzt',
 }
 describe('FRAG — Programm-Fragmente in jeder Sprache', () => {
-  const enKeys = Object.keys(FRAG.en).sort()
+  const enKeys = Object.keys(FRAG.en!).sort()
   const ausnahmen = Object.keys(NUR_GEMESSEN_UEBERSETZBAR)
   const pflicht = enKeys.filter((k) => !(k in NUR_GEMESSEN_UEBERSETZBAR))
 
@@ -72,7 +72,7 @@ describe('FRAG — Programm-Fragmente in jeder Sprache', () => {
   it('die Ausnahmeliste beschreibt nur Vorhandenes', () => {
     // Sonst bliebe ein Tippfehler darin unbemerkt und deckte still ab, was er
     // gar nicht meint.
-    expect(ausnahmen.filter((k) => !(k in FRAG.en))).toEqual([])
+    expect(ausnahmen.filter((k) => !(k in FRAG.en!))).toEqual([])
   })
 
   it('jede Ausnahme trägt einen Grund', () => {

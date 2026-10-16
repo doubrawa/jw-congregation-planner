@@ -54,11 +54,11 @@ describe('renameInWeeks (Personen-Umbenennung in geplanten Wochen)', () => {
 
   it('ersetzt exakt den alten Anzeigenamen in Programmpunkten und Hilfsdiensten', () => {
     const [w] = renameInWeeks([week()], 'p1', 'Simon Krüger', 'Simon Müller')
-    const item = w.mid.sections[0].items[0]
-    expect('names' in item && item.names[0].name).toBe('Simon Müller')
-    expect('names' in item && item.names[1].name).toBe('Bernd Muster') // andere unberührt
-    expect(w.mid.helpers.mik).toEqual([{ name: 'Simon Müller' }, { name: 'Gruppe 1' }])
-    expect(w.we.helpers.mik[0].name).toBe('Simon Müller') // beide Zusammenkünfte
+    const item = w!.mid.sections[0]!.items[0]!
+    expect('names' in item && item.names[0]!.name).toBe('Simon Müller')
+    expect('names' in item && item.names[1]!.name).toBe('Bernd Muster') // andere unberührt
+    expect(w!.mid.helpers.mik).toEqual([{ name: 'Simon Müller' }, { name: 'Gruppe 1' }])
+    expect(w!.we.helpers.mik![0]!.name).toBe('Simon Müller') // beide Zusammenkünfte
   })
 
   it('lässt Wochen ohne Treffer als identische Referenz', () => {
@@ -90,13 +90,13 @@ describe('Personen-Id-Bindung (pid)', () => {
   const p = (id: string, fn: string): Person => ({
     id, fn, ln: '', role: 'verkuendiger', tel: '', mail: '', priv: priv(),
   })
-  const partNames = (w: Week): PartItem['names'] => (w.mid.sections[0].items[0] as PartItem).names
+  const partNames = (w: Week): PartItem['names'] => (w.mid.sections[0]!.items[0] as PartItem).names
 
   it('pidsNachtragen: eindeutige Namen bekommen pid, mehrdeutige nicht', () => {
     const persons = [p('pA', 'Anna'), p('pM1', 'Max'), p('pM2', 'Max')] // "Max" mehrdeutig
     const [w] = pidsNachtragen([wk([{ name: 'Anna' }, { name: 'Max' }])], persons)
-    expect(partNames(w)[0].pid).toBe('pA') // eindeutig zugeordnet
-    expect(partNames(w)[1].pid).toBeUndefined() // Dublette → keine Zuordnung
+    expect(partNames(w!)[0]!.pid).toBe('pA') // eindeutig zugeordnet
+    expect(partNames(w!)[1]!.pid).toBeUndefined() // Dublette → keine Zuordnung
   })
 
   it('pidsNachtragen lässt gesetzte pid unberührt (idempotent, Referenz stabil)', () => {
@@ -134,8 +134,8 @@ describe('Personen-Id-Bindung (pid)', () => {
 
   it('renameInWeeks über pid: nur der Slot der richtigen Person; Namensgleiche bleiben', () => {
     const [w] = renameInWeeks([wk([{ name: 'Max', pid: 'pM1' }, { name: 'Max', pid: 'pM2' }])], 'pM1', 'Max', 'Max Eins')
-    expect(partNames(w)[0].name).toBe('Max Eins') // pid pM1 → umbenannt
-    expect(partNames(w)[1].name).toBe('Max') // pid pM2 → unberührt trotz gleichem Namen
+    expect(partNames(w!)[0]!.name).toBe('Max Eins') // pid pM1 → umbenannt
+    expect(partNames(w!)[1]!.name).toBe('Max') // pid pM2 → unberührt trotz gleichem Namen
   })
 })
 
@@ -152,13 +152,13 @@ describe('Hilfsdienst-Id-Bindung (helpers)', () => {
 
   it('pidsNachtragen trägt pid an Hilfsdiensten nach (Gruppe bleibt ohne)', () => {
     const [w] = pidsNachtragen([wkH([{ name: 'Anna' }, { name: 'Gruppe 1' }])], [p('pA', 'Anna')])
-    expect(w.mid.helpers.mik[0]).toEqual({ name: 'Anna', pid: 'pA' })
-    expect(w.mid.helpers.mik[1]).toEqual({ name: 'Gruppe 1' }) // Rotation → keine pid
+    expect(w!.mid.helpers.mik![0]).toEqual({ name: 'Anna', pid: 'pA' })
+    expect(w!.mid.helpers.mik![1]).toEqual({ name: 'Gruppe 1' }) // Rotation → keine pid
   })
 
   it('renameInWeeks trifft den Hilfsdienst über die pid', () => {
     const [w] = renameInWeeks([wkH([{ name: 'Anna', pid: 'pA' }])], 'pA', 'Anna', 'Anna Neu')
-    expect(w.mid.helpers.mik[0].name).toBe('Anna Neu')
+    expect(w!.mid.helpers.mik![0]!.name).toBe('Anna Neu')
   })
 })
 

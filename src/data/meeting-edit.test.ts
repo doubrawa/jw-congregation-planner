@@ -59,15 +59,15 @@ describe('endenNachziehen — Endzeiten folgen einer Zeitumstellung', () => {
 
   it('verschiebt beide Zusammenkünfte um ihre eigene Differenz', () => {
     const next = endenNachziehen(importierteWochen(), { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }, { mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '09:30' } })
-    expect(next[0].mid.end).toBe('Ende ca. 20:15')
-    expect(next[0].we.end).toBe('Ende ca. 11:15')
-    expect(next[1].mid.end).toBe('Ende ca. 20:15') // alle geladenen Wochen
+    expect(next[0]!.mid.end).toBe('Ende ca. 20:15')
+    expect(next[0]!.we.end).toBe('Ende ca. 11:15')
+    expect(next[1]!.mid.end).toBe('Ende ca. 20:15') // alle geladenen Wochen
   })
 
   it('rührt die andere Zusammenkunft nicht an', () => {
     const next = endenNachziehen(importierteWochen(), { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }, { mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '10:00' } })
-    expect(next[0].mid.end).toBe('Ende ca. 20:15')
-    expect(next[0].we.end).toBe('Ende ca. 11:45') // unverändert
+    expect(next[0]!.mid.end).toBe('Ende ca. 20:15')
+    expect(next[0]!.we.end).toBe('Ende ca. 11:45') // unverändert
   })
 
   it('verschiebt, statt neu zu rechnen — die Anpassung des Planers bleibt', () => {
@@ -75,9 +75,9 @@ describe('endenNachziehen — Endzeiten folgen einer Zeitumstellung', () => {
     // Minuten versetzt (20:55 statt 20:45). Eine Zeitumstellung darf diese
     // Anpassung nicht verwerfen: 20:55 − 30 min = 20:25, nicht 18:30 + 105.
     const weeks = importierteWochen()
-    weeks[0].mid.end = 'Ende ca. 20:55'
+    weeks[0]!.mid.end = 'Ende ca. 20:55'
     const next = endenNachziehen(weeks, { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }, { mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '10:00' } })
-    expect(next[0].mid.end).toBe('Ende ca. 20:25')
+    expect(next[0]!.mid.end).toBe('Ende ca. 20:25')
   })
 
   it('lässt Zusammenkünfte mit eigener Uhrzeit unberührt', () => {
@@ -88,11 +88,11 @@ describe('endenNachziehen — Endzeiten folgen einer Zeitumstellung', () => {
     // („Dienstag, 8. September · 19:45") und wurde von dort zurückgelesen; seit
     // T30 sagt eine `Abweichung` dasselbe als Wert.
     const weeks = importierteWochen()
-    weeks[0].dev = { mid: { time: '19:45' } }
-    weeks[0].mid.end = 'Ende ca. 21:30'
+    weeks[0]!.dev = { mid: { time: '19:45' } }
+    weeks[0]!.mid.end = 'Ende ca. 21:30'
     const next = endenNachziehen(weeks, { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }, { mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '10:00' } })
-    expect(next[0].mid.end).toBe('Ende ca. 21:30') // unverändert
-    expect(next[1].mid.end).toBe('Ende ca. 20:15') // mitgezogen
+    expect(next[0]!.mid.end).toBe('Ende ca. 21:30') // unverändert
+    expect(next[1]!.mid.end).toBe('Ende ca. 20:15') // mitgezogen
   })
 
   it('eine unberührte Woche behält ihre Referenz', () => {

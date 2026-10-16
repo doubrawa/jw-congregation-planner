@@ -44,25 +44,25 @@ function makeWeek(): Week {
   }
 }
 
-const talkTitle = (w: Week): string => (w.we.sections[1].items[0] as PartItem).title
-const altTalkTitle = (w: Week): string => (w.alt!.en.we.sections[1].items[0] as PartItem).title
-const openingTitle = (w: Week): string => (w.we.sections[0].items[0] as PartItem).title
-const altOpeningTitle = (w: Week): string => (w.alt!.en.we.sections[0].items[0] as PartItem).title
-const closingTitle = (w: Week): string => (w.we.sections[2].items[0] as PartItem).title
-const altClosingTitle = (w: Week): string => (w.alt!.en.we.sections[2].items[0] as PartItem).title
+const talkTitle = (w: Week): string => (w.we.sections[1]!.items[0] as PartItem).title
+const altTalkTitle = (w: Week): string => (w.alt!.en!.we.sections[1]!.items[0] as PartItem).title
+const openingTitle = (w: Week): string => (w.we.sections[0]!.items[0] as PartItem).title
+const altOpeningTitle = (w: Week): string => (w.alt!.en!.we.sections[0]!.items[0] as PartItem).title
+const closingTitle = (w: Week): string => (w.we.sections[2]!.items[0] as PartItem).title
+const altClosingTitle = (w: Week): string => (w.alt!.en!.we.sections[2]!.items[0] as PartItem).title
 
 describe('editTalkTheme (Vortragsthema als Freitext)', () => {
   it('setzt das Thema und spiegelt es in die Sprachvariante', () => {
     const next = editTalkTheme([makeWeek()], 0, 1, 0, 'Demo-Vortragsthema 7')
-    expect(talkTitle(next[0])).toBe('Demo-Vortragsthema 7')
-    expect(altTalkTitle(next[0])).toBe('Demo-Vortragsthema 7')
+    expect(talkTitle(next[0]!)).toBe('Demo-Vortragsthema 7')
+    expect(altTalkTitle(next[0]!)).toBe('Demo-Vortragsthema 7')
   })
 
   it('leerer Text stellt den Platzhalter wieder her', () => {
     const withTheme = editTalkTheme([makeWeek()], 0, 1, 0, 'Ein Thema')
     const cleared = editTalkTheme(withTheme, 0, 1, 0, '   ')
-    expect(talkTitle(cleared[0])).toBe(TALK_PLACEHOLDER)
-    expect(altTalkTitle(cleared[0])).toBe(TALK_PLACEHOLDER)
+    expect(talkTitle(cleared[0]!)).toBe(TALK_PLACEHOLDER)
+    expect(altTalkTitle(cleared[0]!)).toBe(TALK_PLACEHOLDER)
   })
 
   it('unverändertes Thema liefert dieselbe Referenz (kein Save nötig)', () => {
@@ -74,33 +74,33 @@ describe('editTalkTheme (Vortragsthema als Freitext)', () => {
 describe('setOpeningSong (Anfangslied Wochenende)', () => {
   it('trägt die Nummer in "Lied · Gebet" ein und spiegelt in die Variante', () => {
     const next = setOpeningSong([makeWeek()], 0, '78')
-    expect(openingTitle(next[0])).toBe('Lied 78 · Gebet')
-    expect(altOpeningTitle(next[0])).toBe('Lied 78 · Gebet')
+    expect(openingTitle(next[0]!)).toBe('Lied 78 · Gebet')
+    expect(altOpeningTitle(next[0]!)).toBe('Lied 78 · Gebet')
     // ABSCHLUSS ("Schlussworte · Lied · Gebet") bleibt unangetastet
-    expect((next[0].we.sections[2].items[0] as PartItem).title).toBe('Schlussworte · Lied · Gebet')
+    expect((next[0]!.we.sections[2]!.items[0] as PartItem).title).toBe('Schlussworte · Lied · Gebet')
   })
 
   it('ersetzt eine vorhandene Nummer und entfernt sie bei leerer Eingabe', () => {
     const with78 = setOpeningSong([makeWeek()], 0, '78')
     const with12 = setOpeningSong(with78, 0, '12')
-    expect(openingTitle(with12[0])).toBe('Lied 12 · Gebet')
+    expect(openingTitle(with12[0]!)).toBe('Lied 12 · Gebet')
     const cleared = setOpeningSong(with12, 0, '')
-    expect(openingTitle(cleared[0])).toBe('Lied · Gebet')
-    expect(altOpeningTitle(cleared[0])).toBe('Lied · Gebet')
+    expect(openingTitle(cleared[0]!)).toBe('Lied · Gebet')
+    expect(altOpeningTitle(cleared[0]!)).toBe('Lied · Gebet')
   })
 
   it('räumt Altlasten aus früheren Freitext-Eingaben ab ("Lied 44 fff")', () => {
     const weeks = [makeWeek()]
-    ;(weeks[0].we.sections[0].items[0] as PartItem).title = 'Lied 44 fff · Gebet'
+    ;(weeks[0]!.we.sections[0]!.items[0] as PartItem).title = 'Lied 44 fff · Gebet'
     const fixed = setOpeningSong(weeks, 0, '44')
-    expect(openingTitle(fixed[0])).toBe('Lied 44 · Gebet')
+    expect(openingTitle(fixed[0]!)).toBe('Lied 44 · Gebet')
     const cleared = setOpeningSong(weeks, 0, '')
-    expect(openingTitle(cleared[0])).toBe('Lied · Gebet')
+    expect(openingTitle(cleared[0]!)).toBe('Lied · Gebet')
   })
 
   it('filtert alles Nicht-Numerische aus der Eingabe', () => {
     const next = setOpeningSong([makeWeek()], 0, ' Lied 78! ')
-    expect(openingTitle(next[0])).toBe('Lied 78 · Gebet')
+    expect(openingTitle(next[0]!)).toBe('Lied 78 · Gebet')
     // reiner Text ohne Ziffern = keine Nummer → Vorlage bleibt
     const weeks = [makeWeek()]
     expect(setOpeningSong(weeks, 0, 'abc')).toBe(weeks)
@@ -108,9 +108,9 @@ describe('setOpeningSong (Anfangslied Wochenende)', () => {
 
   it('openingSongNr liest die aktuelle Nummer zurück', () => {
     const weeks = [makeWeek()]
-    expect(openingSongNr(weeks[0].we)).toBe('')
+    expect(openingSongNr(weeks[0]!.we)).toBe('')
     const next = setOpeningSong(weeks, 0, '78')
-    expect(openingSongNr(next[0].we)).toBe('78')
+    expect(openingSongNr(next[0]!.we)).toBe('78')
   })
 })
 
@@ -123,28 +123,28 @@ describe('setClosingSong (Schlusslied Wochenende)', () => {
    */
   it('setzt die Nummer in das mittlere Atom, nicht in das erste', () => {
     const next = setClosingSong([makeWeek()], 0, '151')
-    expect(closingTitle(next[0])).toBe('Schlussworte · Lied 151 · Gebet')
+    expect(closingTitle(next[0]!)).toBe('Schlussworte · Lied 151 · Gebet')
   })
 
   it('spiegelt in die Sprachvariante', () => {
     const next = setClosingSong([makeWeek()], 0, '151')
-    expect(altClosingTitle(next[0])).toBe('Schlussworte · Lied 151 · Gebet')
+    expect(altClosingTitle(next[0]!)).toBe('Schlussworte · Lied 151 · Gebet')
   })
 
   it('leere Nummer entfernt sie wieder', () => {
     const gesetzt = setClosingSong([makeWeek()], 0, '151')
     const geleert = setClosingSong(gesetzt, 0, '')
-    expect(closingTitle(geleert[0])).toBe('Schlussworte · Lied · Gebet')
+    expect(closingTitle(geleert[0]!)).toBe('Schlussworte · Lied · Gebet')
   })
 
   it('lässt das Anfangslied in Ruhe — und umgekehrt', () => {
     // Beide Felder greifen auf dasselbe Atom-Muster zu; ein Fehlgriff hier
     // hieße, dass ein Feld das andere überschreibt.
     const w = setClosingSong(setOpeningSong([makeWeek()], 0, '78'), 0, '151')
-    expect(openingTitle(w[0])).toBe('Lied 78 · Gebet')
-    expect(closingTitle(w[0])).toBe('Schlussworte · Lied 151 · Gebet')
-    expect(openingSongNr(w[0].we)).toBe('78')
-    expect(closingSongNr(w[0].we)).toBe('151')
+    expect(openingTitle(w[0]!)).toBe('Lied 78 · Gebet')
+    expect(closingTitle(w[0]!)).toBe('Schlussworte · Lied 151 · Gebet')
+    expect(openingSongNr(w[0]!.we)).toBe('78')
+    expect(closingSongNr(w[0]!.we)).toBe('151')
   })
 
   it('unveränderte Nummer liefert dieselbe Referenz (kein Save nötig)', () => {
@@ -154,7 +154,7 @@ describe('setClosingSong (Schlusslied Wochenende)', () => {
 
   it('nimmt nur Ziffern entgegen', () => {
     const next = setClosingSong([makeWeek()], 0, ' Lied 151! ')
-    expect(closingTitle(next[0])).toBe('Schlussworte · Lied 151 · Gebet')
+    expect(closingTitle(next[0]!)).toBe('Schlussworte · Lied 151 · Gebet')
   })
 })
 
@@ -174,14 +174,14 @@ describe('assignSlot mit Rolle (Gastredner + Herkunfts-Versammlung)', () => {
 
   it('schreibt Name und Rolle (Freitext-Versammlung) in den Slot', () => {
     const next = assignSlot([makeWeek()], sel, 'M. Hartmann', 'Gastredner · Vers. Nordheim')
-    const slot = (next[0].we.sections[1].items[0] as PartItem).names[0]
+    const slot = (next[0]!.we.sections[1]!.items[0] as PartItem).names[0]!
     expect(slot.name).toBe('M. Hartmann')
     expect(slot.rolle).toBe('Gastredner · Vers. Nordheim')
   })
 
   it('ohne Rolle bleibt die bestehende Rolle stehen', () => {
     const next = assignSlot([makeWeek()], sel, 'M. Hartmann')
-    const slot = (next[0].we.sections[1].items[0] as PartItem).names[0]
+    const slot = (next[0]!.we.sections[1]!.items[0] as PartItem).names[0]!
     expect(slot.rolle).toBe('Gastredner')
   })
 

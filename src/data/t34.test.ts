@@ -155,14 +155,14 @@ describe('F8 — Gruppentreffpunkte bevorzugen die eigene Gruppe', () => {
     const { fsWeeks } = fsAutoAssign(
       [vorwoche, [tp({ id: 'x', grp: 'g1' })]], 1, pool, null, [], undefined, GRUPPEN,
     )
-    expect(fsWeeks[1][0].lpid).toBe('a')
+    expect(fsWeeks[1]![0]!.lpid).toBe('a')
   })
 
   it('jeder Gruppentreffpunkt bekommt seine eigene Gruppe', () => {
     const woche = [tp({ id: 'x1', grp: 'g1', time: '09:00' }), tp({ id: 'x2', grp: 'g2', time: '09:30' })]
     const { fsWeeks } = fsAutoAssign([woche], 0, pool, null, [], undefined, GRUPPEN)
-    expect(fsWeeks[0][0].lpid).toBe('a')
-    expect(['b', 'c']).toContain(fsWeeks[0][1].lpid)
+    expect(fsWeeks[0]![0]!.lpid).toBe('a')
+    expect(['b', 'c']).toContain(fsWeeks[0]![1]!.lpid)
   })
 
   it('lässt keinen Platz offen, wenn die Gruppe nicht kann', () => {
@@ -170,7 +170,7 @@ describe('F8 — Gruppentreffpunkte bevorzugen die eigene Gruppe', () => {
     // nicht unbesetzt lassen — die Bevorzugung ist eine Reihenfolge, keine
     // Bedingung.
     const { fsWeeks } = fsAutoAssign([[tp({ id: 'x', grp: 'g3' })]], 0, pool, null, [], undefined, GRUPPEN)
-    expect(fsWeeks[0][0].leader).not.toBe('')
+    expect(fsWeeks[0]![0]!.leader).not.toBe('')
   })
 
   it('wechselt innerhalb der Gruppe weiter durch', () => {
@@ -181,7 +181,7 @@ describe('F8 — Gruppentreffpunkte bevorzugen die eigene Gruppe', () => {
     for (let wi = 0; wi < 6; wi++) {
       fsWeeks = fsAutoAssign(fsWeeks, wi, pool, null, [], undefined, GRUPPEN).fsWeeks
     }
-    const folge = fsWeeks.map((w) => w[0].lpid)
+    const folge = fsWeeks.map((w) => w[0]!.lpid)
     expect(new Set(folge)).toEqual(new Set(['b', 'c']))
     expect(folge.filter((x) => x === 'b')).toHaveLength(3)
   })
@@ -192,7 +192,7 @@ describe('F8 — Gruppentreffpunkte bevorzugen die eigene Gruppe', () => {
     const ohne = [[tp({ id: 'x', grp: null })]]
     const mitGruppen = fsAutoAssign(ohne, 0, pool, null, [], undefined, GRUPPEN).fsWeeks
     const ohneGruppen = fsAutoAssign(ohne, 0, pool).fsWeeks
-    expect(mitGruppen[0][0].lpid).toBe(ohneGruppen[0][0].lpid)
+    expect(mitGruppen[0]![0]!.lpid).toBe(ohneGruppen[0]![0]!.lpid)
   })
 
   it('Aufseher gewinnt nur bei sonst völligem Gleichstand', () => {
@@ -201,7 +201,7 @@ describe('F8 — Gruppentreffpunkte bevorzugen die eigene Gruppe', () => {
     // Aufseher jede Woche.
     const g2 = [leiter('ov2', 'g2'), leiter('c', 'g2')]
     const { fsWeeks } = fsAutoAssign([[tp({ id: 'x', grp: 'g2' })]], 0, g2, null, [], undefined, GRUPPEN)
-    expect(fsWeeks[0][0].lpid).toBe('ov2')
+    expect(fsWeeks[0]![0]!.lpid).toBe('ov2')
   })
 
   it('ohne Gruppenliste bleibt die Bevorzugung nach Mitgliedschaft bestehen', () => {
@@ -210,6 +210,6 @@ describe('F8 — Gruppentreffpunkte bevorzugen die eigene Gruppe', () => {
     // wieder mit belastetem „a“ geprüft, sonst sagte es nichts.
     const vorwoche = [tp({ id: 'v', grp: 'g1', leader: 'a', lpid: 'a' })]
     const { fsWeeks } = fsAutoAssign([vorwoche, [tp({ id: 'x', grp: 'g1' })]], 1, pool)
-    expect(fsWeeks[1][0].lpid).toBe('a')
+    expect(fsWeeks[1]![0]!.lpid).toBe('a')
   })
 })

@@ -111,11 +111,11 @@ describe('Der Stand wird gelernt und mitgeschickt', () => {
     saveWeek('c1', woche('zweite', '2026-01-05'))
     await abgearbeitet()
 
-    expect(stub.aufrufe[0].op).toBe('insert')
+    expect(stub.aufrufe[0]!.op).toBe('insert')
     // Der zweite Schreibvorgang ist ein Update MIT Bedingung auf den Stand,
     // den der erste zurückbekam. Ohne die Bedingung wäre es der alte Upsert.
-    expect(stub.aufrufe[1].op).toBe('update')
-    expect(stub.aufrufe[1].filter.updated_at).toBe('S1')
+    expect(stub.aufrufe[1]!.op).toBe('update')
+    expect(stub.aufrufe[1]!.filter.updated_at).toBe('S1')
     expect(konflikte).toBe(0)
   })
 
@@ -125,8 +125,8 @@ describe('Der Stand wird gelernt und mitgeschickt', () => {
       saveWeek('c1', woche(r, '2026-01-12'))
       await abgearbeitet()
     }
-    expect(stub.aufrufe[1].filter.updated_at).toBe('S1')
-    expect(stub.aufrufe[2].filter.updated_at).toBe('S2')
+    expect(stub.aufrufe[1]!.filter.updated_at).toBe('S1')
+    expect(stub.aufrufe[2]!.filter.updated_at).toBe('S2')
   })
 
   it('schreibt nichts, was keine Woche bezeichnet', () => {
@@ -198,9 +198,9 @@ describe('Kein falscher Alarm', () => {
     await abgearbeitet()
 
     expect(konflikte).toBe(0)
-    expect(stub.aufrufe[0].op).toBe('insert')
-    expect(stub.aufrufe[1].op).toBe('update')
-    expect(stub.aufrufe[1].filter.updated_at).toBe('S1')
+    expect(stub.aufrufe[0]!.op).toBe('insert')
+    expect(stub.aufrufe[1]!.op).toBe('update')
+    expect(stub.aufrufe[1]!.filter.updated_at).toBe('S1')
   })
 })
 

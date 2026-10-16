@@ -71,8 +71,8 @@ describe('loadAndHydrate', () => {
     const { actions, dispatch } = collector()
     await loadAndHydrate(dispatch, 'u1')
     expect(actions[0]).toEqual({ type: 'setDataStatus', status: 'loading' })
-    expect(actions[1].type).toBe('hydrate')
-    if (actions[1].type === 'hydrate') {
+    expect(actions[1]!.type).toBe('hydrate')
+    if (actions[1]!.type === 'hydrate') {
       expect(actions[1].payload).toMatchObject({ congregationId: 'c1', userId: 'u1', empty: false })
     }
   })
@@ -158,7 +158,7 @@ describe('loadAndHydrate', () => {
     const { actions, dispatch } = collector()
     await loadAndHydrate(dispatch, 'u1')
     expect(mockSave).toHaveBeenCalledTimes(1)
-    if (actions[1].type === 'hydrate') expect(mockSave.mock.calls[0][0]).toEqual(actions[1].payload)
+    if (actions[1]!.type === 'hydrate') expect(mockSave.mock.calls[0]![0]).toEqual(actions[1].payload)
   })
 
   it('bei fehlender Mitgliedschaft → no-membership (mit userId für Retry), Aufnahme gelöscht', async () => {

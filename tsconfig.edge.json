@@ -32,7 +32,11 @@
     // herein, das `import.meta.glob` benutzt. Ein globales `document` entsteht
     // dadurch nicht — das käme aus `lib`, und dort steht DOM ohnehin schon für
     // `fetch`/`Request`/`Response`.
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    // Die App hält `noUncheckedIndexedAccess` ein (T42), die Functions noch
+    // nicht: 53 Meldungen am 17.10.2026. Was `src` von hier importiert
+    // (`_shared/`), prüft die App trotzdem mit der Regel.
+    "noUncheckedIndexedAccess": false
   },
   "include": ["supabase/functions"]
 }

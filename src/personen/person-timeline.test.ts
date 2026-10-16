@@ -110,8 +110,8 @@ describe('Zeitleiste einer Person', () => {
     )
     const fs = personTimeline(person, daten({ fsWeeks: mit })).filter((e) => e.kind === 'fs')
     expect(fs).toHaveLength(1)
-    if (fs[0].kind !== 'fs') throw new Error('kein Treffpunkt-Eintrag')
-    expect(fs[0].ort).toBe(mit[0][0].place)
+    if (fs[0]!.kind !== 'fs') throw new Error('kein Treffpunkt-Eintrag')
+    expect(fs[0]!.ort).toBe(mit[0]![0]!.place)
   })
 
   it('bei einer Lücke im Bestand nennt der Treffpunkt den Tag SEINER Woche', () => {

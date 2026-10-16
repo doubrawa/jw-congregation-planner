@@ -67,7 +67,7 @@ function makeWeek(): Week {
   return { range: '7.–13. September', book: '', start: '2026-09-07', mid, we }
 }
 
-const lacItems = (w: Week) => w.mid.sections[0].items as PartItem[]
+const lacItems = (w: Week) => w.mid.sections[0]!.items as PartItem[]
 
 /** Woche samt einer Bestätigung am Leiter des Bibelstudiums. */
 function vorbereitet(): { weeks: Week[]; conf: ConfirmationMap } {
@@ -111,20 +111,20 @@ describe('Der eigentliche Gewinn: Einfügen verschiebt nichts mehr', () => {
     const schluessel = punktKey('2026-09-07', 'mid', VBS, 0)
 
     const nachher = lacAdd(weeks, 0, 'mid', 0, 'Örtliche Hinweise')
-    const items = lacItems(nachher[0])
+    const items = lacItems(nachher[0]!)
     expect(items.map((i) => i.title)).toEqual([
       'Punkt A',
       'Örtliche Hinweise',
       'Versammlungsbibelstudium',
     ])
     // Das Bibelstudium steht jetzt an Position 2 — sein Schlüssel ist derselbe.
-    expect(items[2].iid).toBe(VBS)
+    expect(items[2]!.iid).toBe(VBS)
     expect(conf[schluessel]).toBe('bestätigt')
   })
 
   it('der neue Punkt bringt seine eigene Kennung mit', () => {
     const nachher = lacAdd([makeWeek()], 0, 'mid', 0, 'Örtliche Hinweise')
-    const ids = lacItems(nachher[0]).map((i) => i.iid)
+    const ids = lacItems(nachher[0]!).map((i) => i.iid)
     expect(ids[1]).toBeTruthy()
     expect(new Set(ids).size).toBe(3) // alle drei verschieden
   })
@@ -132,9 +132,9 @@ describe('Der eigentliche Gewinn: Einfügen verschiebt nichts mehr', () => {
   it('nach dem Löschen ebenso', () => {
     const { weeks, conf } = vorbereitet()
     const nachher = lacRemove(weeks, 0, 'mid', 0, 0) // Punkt A entfernen
-    const items = lacItems(nachher[0])
+    const items = lacItems(nachher[0]!)
     expect(items).toHaveLength(1)
-    expect(items[0].iid).toBe(VBS)
+    expect(items[0]!.iid).toBe(VBS)
     expect(conf[punktKey('2026-09-07', 'mid', VBS, 0)]).toBe('bestätigt')
   })
 
@@ -144,7 +144,7 @@ describe('Der eigentliche Gewinn: Einfügen verschiebt nichts mehr', () => {
     const nachher = lacAdd(weeks, 0, 'mid', 0, 'Örtliche Hinweise')
     const tasks = deriveMyTasks(nachher, [], 'B. Zweiter', conf, ZEITEN, 'p2')
     expect(tasks).toHaveLength(1)
-    expect(tasks[0].status).toBe('bestätigt')
+    expect(tasks[0]!.status).toBe('bestätigt')
     expect(person.id).toBe('p1') // Fixture-Bezug, damit der Vergleich vollständig ist
   })
 
@@ -153,15 +153,15 @@ describe('Der eigentliche Gewinn: Einfügen verschiebt nichts mehr', () => {
     // `partTaskKey` einmal gebildet hat — die Funktion selbst gibt es nicht mehr.
     const posKey = (si: number, ii: number, ni: number) => `2026-09-07|mid|part|${si}|${ii}|${ni}`
     const conf: ConfirmationMap = { [posKey(0, 1, 0)]: 'bestätigt' } // war das Bibelstudium
-    const items = lacItems(lacAdd([makeWeek()], 0, 'mid', 0, 'Örtliche Hinweise')[0])
+    const items = lacItems(lacAdd([makeWeek()], 0, 'mid', 0, 'Örtliche Hinweise')[0]!)
 
     // Position 1 ist jetzt der NEUE Punkt — und der Schlüssel zeigte auf ihn.
-    expect(items[1].title).toBe('Örtliche Hinweise')
+    expect(items[1]!.title).toBe('Örtliche Hinweise')
     expect(conf[posKey(0, 1, 0)]).toBe('bestätigt')
     // Das Bibelstudium wäre auf 2 gerutscht und stünde ohne Bestätigung da.
-    expect(items[2].title).toBe('Versammlungsbibelstudium')
+    expect(items[2]!.title).toBe('Versammlungsbibelstudium')
     expect(conf[posKey(0, 2, 0)]).toBeUndefined()
     // Mit der Kennung passiert genau das nicht.
-    expect(items[2].iid).toBe(VBS)
+    expect(items[2]!.iid).toBe(VBS)
   })
 })

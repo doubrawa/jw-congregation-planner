@@ -113,7 +113,7 @@ describe('Der eigene Redner ist eine vollwertige Zuteilung', () => {
     assignSlot([makeWeek()], REDNER, 'M. Hartmann', ROLE_OWN_SPEAKER, person.id)
 
   it('trägt Rolle und pid ein', () => {
-    const slot = vortragsSlot(mitEigenem()[0])
+    const slot = vortragsSlot(mitEigenem()[0]!)
     expect(slot.rolle).toBe(ROLE_OWN_SPEAKER)
     expect(slot.pid).toBe(person.id)
   })
@@ -150,7 +150,7 @@ describe('Ein Gastredner heißt zufällig wie ein Bruder von uns', () => {
   })
 
   it('taucht nicht als Doppelbelegung des Namensvetters auf', () => {
-    expect(assignmentsInMeeting(gast()[0].we, person, [])).toEqual([])
+    expect(assignmentsInMeeting(gast()[0]!.we, person, [])).toEqual([])
   })
 
   it('der Namens-Rückfall bleibt für Altdaten erhalten', () => {
@@ -238,22 +238,22 @@ describe('Der Weg zurück zum Gastredner', () => {
     const eigen = assignSlot([makeWeek()], REDNER, 'M. Hartmann', ROLE_OWN_SPEAKER, person.id)
     const { weeks, count } = clearAssignments(eigen, 0, 'we', 'parts')
     expect(count).toBe(1)
-    expect(vortragsSlot(weeks[0]).name).toBe('')
-    expect(vortragsSlot(weeks[0]).rolle).toBe(ROLE_GUEST_SPEAKER)
-    expect(vortragsSlot(weeks[0]).pid).toBeUndefined()
+    expect(vortragsSlot(weeks[0]!).name).toBe('')
+    expect(vortragsSlot(weeks[0]!).rolle).toBe(ROLE_GUEST_SPEAKER)
+    expect(vortragsSlot(weeks[0]!).pid).toBeUndefined()
   })
 
   it('„Leeren" lässt einen echten Gastredner unangetastet', () => {
     const gast = assignSlot([makeWeek()], REDNER, 'M. Hartmann', 'Gastredner · Vers. Nordheim')
     const { weeks, count } = clearAssignments(gast, 0, 'we', 'parts')
     expect(count).toBe(0)
-    expect(vortragsSlot(weeks[0]).name).toBe('M. Hartmann')
+    expect(vortragsSlot(weeks[0]!).name).toBe('M. Hartmann')
   })
 
   it('ein Gastredner nach einem eigenen Redner verliert die pid', () => {
     const eigen = assignSlot([makeWeek()], REDNER, 'M. Hartmann', ROLE_OWN_SPEAKER, person.id)
     const zurueck = assignSlot(eigen, REDNER, 'R. Otte', 'Gastredner · Vers. Südfeld')
-    expect(vortragsSlot(zurueck[0]).pid).toBeUndefined()
-    expect(vortragsSlot(zurueck[0]).rolle).toBe('Gastredner · Vers. Südfeld')
+    expect(vortragsSlot(zurueck[0]!).pid).toBeUndefined()
+    expect(vortragsSlot(zurueck[0]!).rolle).toBe('Gastredner · Vers. Südfeld')
   })
 })

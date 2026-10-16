@@ -174,7 +174,7 @@ describe('Ausfall: es kommt niemand zusammen', () => {
     // Nichts wird verwaist: die Namen bleiben in den Daten, sie zählen nur so
     // lange nicht, wie die Zusammenkunft nicht stattfindet.
     const w = aus()
-    expect(w.mid.sections[0].items[0]).toEqual(makeWeek().mid.sections[0].items[0])
+    expect(w.mid.sections[0]!.items[0]).toEqual(makeWeek().mid.sections[0]!.items[0])
     const zurueck: Week = { ...w, dev: { mid: { reason: 'Kongress' } } }
     expect(istAusgefallen(zurueck, 'mid')).toBe(false)
     expect(partWorkload([zurueck], person)).toBe(2)
@@ -184,11 +184,11 @@ describe('Ausfall: es kommt niemand zusammen', () => {
 describe('setAbweichung räumt hinter sich auf', () => {
   it('setzt, ergänzt und nimmt einzelne Felder zurück', () => {
     const a = setAbweichung([makeWeek()], 0, 'mid', { wd: 4 })
-    expect(a[0].dev).toEqual({ mid: { wd: 4 } })
+    expect(a[0]!.dev).toEqual({ mid: { wd: 4 } })
     const b = setAbweichung(a, 0, 'mid', { time: '18:00' })
-    expect(b[0].dev).toEqual({ mid: { wd: 4, time: '18:00' } })
+    expect(b[0]!.dev).toEqual({ mid: { wd: 4, time: '18:00' } })
     const c = setAbweichung(b, 0, 'mid', { wd: undefined })
-    expect(c[0].dev).toEqual({ mid: { time: '18:00' } })
+    expect(c[0]!.dev).toEqual({ mid: { time: '18:00' } })
   })
 
   it('entfernt die leere Abweichung ganz — sonst gälte die Woche als abweichend', () => {
@@ -196,23 +196,23 @@ describe('setAbweichung räumt hinter sich auf', () => {
     // Anlass und `weichtAb` sagte die Unwahrheit.
     const a = setAbweichung([makeWeek()], 0, 'mid', { wd: 4 })
     const b = setAbweichung(a, 0, 'mid', { wd: undefined })
-    expect(b[0].dev).toBeUndefined()
+    expect(b[0]!.dev).toBeUndefined()
     expect(weichtAb(b[0], 'mid')).toBe(false)
   })
 
   it('lässt die andere Zusammenkunft in Ruhe', () => {
     const a = setAbweichung([makeWeek()], 0, 'mid', { cancelled: true })
     const b = setAbweichung(a, 0, 'we', { time: '09:30' })
-    expect(b[0].dev).toEqual({ mid: { cancelled: true }, we: { time: '09:30' } })
+    expect(b[0]!.dev).toEqual({ mid: { cancelled: true }, we: { time: '09:30' } })
     const c = setAbweichung(b, 0, 'mid', { cancelled: undefined })
-    expect(c[0].dev).toEqual({ we: { time: '09:30' } })
+    expect(c[0]!.dev).toEqual({ we: { time: '09:30' } })
   })
 
   it('behält Leerwerte nicht: „" ist kein Grund', () => {
     const a = setAbweichung([makeWeek()], 0, 'mid', { reason: '   ' })
-    expect(a[0].dev).toBeUndefined()
+    expect(a[0]!.dev).toBeUndefined()
     const b = setAbweichung([makeWeek()], 0, 'mid', { reason: '  Kongress  ' })
-    expect(b[0].dev).toEqual({ mid: { reason: 'Kongress' } })
+    expect(b[0]!.dev).toEqual({ mid: { reason: 'Kongress' } })
   })
 
   it('rührt die Eingabe nicht an (pure Funktion)', () => {

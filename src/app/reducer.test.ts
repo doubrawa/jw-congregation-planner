@@ -109,9 +109,9 @@ function makeState(over: Partial<AppState> = {}): AppState {
 /** Erster zuteilbarer Programmpunkt-Slot (kein Lied) einer Woche. */
 function firstPartSlot(week: Week, tab: 'mid' | 'we'): PartSlotSelection {
   for (let si = 0; si < week[tab].sections.length; si++) {
-    const items = week[tab].sections[si].items
+    const items = week[tab].sections[si]!.items
     for (let ii = 0; ii < items.length; ii++) {
-      if (!isSong(items[ii]) && (items[ii] as PartItem).names.length > 0) {
+      if (!isSong(items[ii]!) && (items[ii] as PartItem).names.length > 0) {
         return { kind: 'part', wi: 0, tab, si, ii, ni: 0, priv: null, groups: false, label: 'Test' }
       }
     }
@@ -642,8 +642,8 @@ describe('Personen', () => {
     })
     const next = reducer(s, { type: 'removePerson', id: 'p1' })
     expect(next.persons.some((p) => p.id === 'p1')).toBe(false)
-    expect(next.groups[0].overseerId).toBeNull()
-    expect(next.members[0].personId).toBeNull()
+    expect(next.groups[0]!.overseerId).toBeNull()
+    expect(next.members[0]!.personId).toBeNull()
     // Wie in der Datenbank (`on delete cascade`): Der Link der Person geht mit, der anderer bleibt.
     expect(next.anmeldeLinks.map((l) => l.personId)).toEqual(['p6'])
   })
@@ -678,14 +678,14 @@ describe('Personen', () => {
       return undefined
     }
     // Eine echte Zuteilung mit pid herstellen und dann ihre Person löschen.
-    const sel = firstPartSlot(s.weeks[0], 'mid')
+    const sel = firstPartSlot(s.weeks[0]!, 'mid')
     const belegt = reducer(makeState({ slotSel: sel }), {
       type: 'assign', name: 'Anna Beispiel', pid: 'p1',
     })
-    expect(mitPid(belegt.weeks[0])?.pid).toBe('p1')
+    expect(mitPid(belegt.weeks[0]!)?.pid).toBe('p1')
 
     const geloescht = reducer(belegt, { type: 'removePerson', id: 'p1' })
-    const slot = (geloescht.weeks[0].mid.sections[sel.si].items[sel.ii] as PartItem).names[0]
+    const slot = (geloescht.weeks[0]!.mid.sections[sel.si]!.items[sel.ii] as PartItem).names[0]!
     expect(slot.name).toBe('Anna Beispiel') // Name bleibt
     expect(slot.pid).toBeUndefined() // Id ist gelöst
   })
@@ -740,11 +740,11 @@ describe('Personen', () => {
 describe('Dienste', () => {
   it('changeServiceCount bleibt in 1..6', () => {
     const s = makeState({ services: [{ key: 'x', name: 'X', count: 6, groups: false }] })
-    expect(reducer(s, { type: 'changeServiceCount', key: 'x', delta: 1 }).services[0].count).toBe(6)
+    expect(reducer(s, { type: 'changeServiceCount', key: 'x', delta: 1 }).services[0]!.count).toBe(6)
     const lo = makeState({ services: [{ key: 'x', name: 'X', count: 1, groups: false }] })
-    expect(reducer(lo, { type: 'changeServiceCount', key: 'x', delta: -1 }).services[0].count).toBe(1)
+    expect(reducer(lo, { type: 'changeServiceCount', key: 'x', delta: -1 }).services[0]!.count).toBe(1)
     const mid = makeState({ services: [{ key: 'x', name: 'X', count: 3, groups: false }] })
-    expect(reducer(mid, { type: 'changeServiceCount', key: 'x', delta: 1 }).services[0].count).toBe(4)
+    expect(reducer(mid, { type: 'changeServiceCount', key: 'x', delta: 1 }).services[0]!.count).toBe(4)
   })
 
   it('updateGroup mit neuem Namen zieht ihn durch die geplante Reinigung', () => {
@@ -786,7 +786,7 @@ describe('Gruppen', () => {
     const g = { id: 'gN', name: 'Neu', overseerId: null, assistantId: null }
     expect(reducer(makeState(), { type: 'addGroup', group: g }).groups.at(-1)).toEqual(g)
     const upd = reducer(makeState({ groups: [g] }), { type: 'updateGroup', id: 'gN', patch: { overseerId: 'p2' } })
-    expect(upd.groups[0].overseerId).toBe('p2')
+    expect(upd.groups[0]!.overseerId).toBe('p2')
   })
 
   it('removeGroup entfernt die Gruppe und löst die Mitglieder-Zuordnung', () => {
@@ -796,7 +796,7 @@ describe('Gruppen', () => {
     })
     const next = reducer(s, { type: 'removeGroup', id: 'gN' })
     expect(next.groups).toEqual([])
-    expect(next.persons[0].grp).toBeNull()
+    expect(next.persons[0]!.grp).toBeNull()
   })
 })
 
@@ -831,7 +831,7 @@ describe('Versammlung / Mitglieder / Einladungen', () => {
         patch: { times: { mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '10:00' } } },
       })
       expect(next.congregation.times).toEqual({ mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '10:00' } })
-      expect(next.weeks[0].mid.end).toBe('Ende ca. 20:15')
+      expect(next.weeks[0]!.mid.end).toBe('Ende ca. 20:15')
     })
 
     it('lässt die Wochen in Ruhe, wenn ein anderes Feld gepflegt wird', () => {
@@ -853,7 +853,7 @@ describe('Versammlung / Mitglieder / Einladungen', () => {
   })
   it('updateMember / removeMember', () => {
     const s = makeState({ members: [{ userId: 'u1', email: 'u1@x', personId: null, planner: false, zuteiler: false }] })
-    expect(reducer(s, { type: 'updateMember', userId: 'u1', patch: { planner: true } }).members[0].planner).toBe(true)
+    expect(reducer(s, { type: 'updateMember', userId: 'u1', patch: { planner: true } }).members[0]!.planner).toBe(true)
     expect(reducer(s, { type: 'removeMember', userId: 'u1' }).members).toEqual([])
   })
   it('mit dem Konto geht der Link der Person — sonst käme sie mit ihm gleich wieder herein', () => {
@@ -882,10 +882,10 @@ describe('Import', () => {
 
   it('addImportedWeek hängt die übergebene Woche an', () => {
     const s = makeState()
-    const week = { ...s.weeks[0], range: 'Testwoche', start: NEUER_MONTAG }
+    const week = { ...s.weeks[0]!, range: 'Testwoche', start: NEUER_MONTAG }
     const next = reducer(s, { type: 'addImportedWeek', week })
     expect(next.weeks.at(-1)!.range).toBe('Testwoche')
-    expect(next.notifs[0].type).toBe('import')
+    expect(next.notifs[0]!.type).toBe('import')
   })
 
   it('eine schon geladene Woche wird nicht ein zweites Mal angehängt', () => {
@@ -913,7 +913,7 @@ describe('Import', () => {
     // Ohne dieses Angleichen stünde die neue Woche ohne zweite Platzreihe und
     // ohne Ratgeber da — die Klasse verschwände ab dem nächsten Import.
     const s = makeState({ auxClass: true })
-    const week = { ...s.weeks[0], range: 'Testwoche', start: NEUER_MONTAG }
+    const week = { ...s.weeks[0]!, range: 'Testwoche', start: NEUER_MONTAG }
     const next = reducer(s, { type: 'addImportedWeek', week })
     expect(hatAuxKlasse(next.weeks.at(-1)!.mid)).toBe(true)
   })
@@ -968,9 +968,9 @@ describe('Import', () => {
 
   it('mergeWeekAlt mischt Sprachvarianten; stopImport beendet', () => {
     const s = makeState()
-    const alt = { en: s.weeks[0] }
+    const alt = { en: s.weeks[0]! }
     const next = reducer(s, { type: 'mergeWeekAlt', start: s.weeks[0]!.start!, alt })
-    expect(next.weeks[0].alt).toMatchObject({ en: expect.anything() })
+    expect(next.weeks[0]!.alt).toMatchObject({ en: expect.anything() })
     expect(reducer(makeState({ importing: true }), { type: 'stopImport' }).importing).toBe(false)
   })
 
@@ -996,7 +996,7 @@ describe('assign (Zuteilen)', () => {
 
   it('Programmpunkt: setzt Namen — und die Zusage des Vorgängers verfällt', () => {
     const s = makeState()
-    const sel = firstPartSlot(s.weeks[0], 'mid')
+    const sel = firstPartSlot(s.weeks[0]!, 'mid')
     const vorgaenger = (s.weeks[0]!.mid.sections[sel.si]!.items[sel.ii] as PartItem).names[0]!.name
     const key = deriveMyTasks(s.weeks, s.services, vorgaenger, {}, STANDARD_ZEITEN)[0]!.id
     const next = reducer(makeState({ slotSel: sel, confirmations: { [key]: 'bestätigt' } }), {
@@ -1034,7 +1034,7 @@ describe('assign (Zuteilen)', () => {
   */
   const rednerPlatz = (): PartSlotSelection => {
     const s = makeState()
-    const si = s.weeks[0].we.sections.findIndex((x) => x.label === LABEL_VORTRAG)
+    const si = s.weeks[0]!.we.sections.findIndex((x) => x.label === LABEL_VORTRAG)
     return { kind: 'part', wi: 0, tab: 'we', si, ii: 0, ni: 0, priv: 'vortrag', groups: false, label: 'Vortrag', guest: true }
   }
 
@@ -1066,16 +1066,16 @@ describe('assign (Zuteilen)', () => {
 
   it('leerer Name entfernt (kein pending, kein Mitteilungs-Push)', () => {
     const s = makeState()
-    const sel = firstPartSlot(s.weeks[0], 'mid')
+    const sel = firstPartSlot(s.weeks[0]!, 'mid')
     const before = makeState({ slotSel: sel })
     const next = reducer(before, { type: 'assign', name: '' })
-    expect((next.weeks[0].mid.sections[sel.si].items[sel.ii] as PartItem).names[0].name).toBe('')
+    expect((next.weeks[0]!.mid.sections[sel.si]!.items[sel.ii] as PartItem).names[0]!.name).toBe('')
     expect(next.notifs.length).toBe(before.notifs.length) // kein neuer Eintrag
   })
 
   it('Treffpunkt-Leiter (fs): setzt Leiter in fsWeeks, kein Wochen-Slot', () => {
     const s = makeState()
-    const inst = s.fsWeeks[0][0]
+    const inst = s.fsWeeks[0]![0]!
     const sel = { kind: 'fs', wi: 0, instId: inst.id, label: 'Leiter', priv: 'treffpunkt', groups: false } as const
     const vorher = makeState({ slotSel: sel })
     const next = reducer(vorher, { type: 'assign', name: 'Fritz Leiter', pid: 'fritz-1' })
@@ -1279,15 +1279,15 @@ describe('autoAssign / clearAssignments', () => {
 describe('Treffpunkte-Instanzen', () => {
   it('fsInstUpdate ändert Zeit/Ort der Woche', () => {
     const s = makeState()
-    const inst = s.fsWeeks[0][0]
+    const inst = s.fsWeeks[0]![0]!
     const next = reducer(s, { type: 'fsInstUpdate', wi: 0, id: inst.id, patch: { time: '11:11' } })
-    expect(next.fsWeeks[0].find((i) => i.id === inst.id)!.time).toBe('11:11')
+    expect(next.fsWeeks[0]!.find((i) => i.id === inst.id)!.time).toBe('11:11')
   })
   it('fsInstRemove entfernt die Instanz', () => {
     const s = makeState()
-    const inst = s.fsWeeks[0][0]
+    const inst = s.fsWeeks[0]![0]!
     const next = reducer(s, { type: 'fsInstRemove', wi: 0, id: inst.id })
-    expect(next.fsWeeks[0].some((i) => i.id === inst.id)).toBe(false)
+    expect(next.fsWeeks[0]!.some((i) => i.id === inst.id)).toBe(false)
     expect(next.toast?.text).toBeTruthy()
   })
   it('ein entfernter Grundplan-Treffpunkt kommt nicht wieder', () => {
@@ -1311,7 +1311,7 @@ describe('Treffpunkte-Instanzen', () => {
     const s = makeState({ week: 1 })
     const inst = { id: 'xManual', ruleId: null, grp: null, wd: 4, time: '18:00', place: 'Ort', leader: '', manual: true }
     const next = reducer(s, { type: 'fsInstAdd', inst })
-    expect(next.fsWeeks[1].some((i) => i.id === 'xManual')).toBe(true)
+    expect(next.fsWeeks[1]!.some((i) => i.id === 'xManual')).toBe(true)
   })
 })
 
@@ -1337,13 +1337,13 @@ describe('Treffpunkte-Grundplan (Regeln)', () => {
 
   it('fsRuleUpdate patcht eine Regel', () => {
     const s = makeState()
-    const id = s.fsRules[0].id
+    const id = s.fsRules[0]!.id
     const next = reducer(s, { type: 'fsRuleUpdate', id, patch: { time: '20:00' } })
     expect(next.fsRules.find((r) => r.id === id)!.time).toBe('20:00')
   })
   it('fsRuleRemove entfernt und regeneriert', () => {
     const s = makeState()
-    const id = s.fsRules[0].id
+    const id = s.fsRules[0]!.id
     const next = reducer(s, { type: 'fsRuleRemove', id })
     expect(next.fsRules.some((r) => r.id === id)).toBe(false)
     expect(next.toast?.text).toBeTruthy()
@@ -1360,7 +1360,7 @@ describe('Bestätigungs-Flow', () => {
     expect(conf.confirmations['slot|key|1']).toBe('bestätigt')
     const dec = reducer(s, { type: 'declineTask', id: 'slot|key|2' })
     expect(dec.confirmations['slot|key|2']).toBe('verhindert')
-    expect(dec.notifs[0].type).toBe('verhindert')
+    expect(dec.notifs[0]!.type).toBe('verhindert')
     // Die Meldung an die Planer trägt den Schlüssel der Aufgabe — daran
     // findet ihr Tipp in der Glocke die Woche (4.10.2026).
     expect(dec.notifs[0]!.taskId).toBe('slot|key|2')
@@ -1387,17 +1387,17 @@ describe('Bestätigungs-Flow', () => {
 })
 
 describe('LAC / Vortrag (über den Reducer)', () => {
-  const lacSi = (s: AppState) => s.weeks[0].mid.sections.findIndex((x) => x.label === 'UNSER LEBEN ALS CHRIST')
+  const lacSi = (s: AppState) => s.weeks[0]!.mid.sections.findIndex((x) => x.label === 'UNSER LEBEN ALS CHRIST')
   const gehIdx = (s: AppState) =>
-    s.weeks[0].mid.sections[lacSi(s)].items.findIndex(
+    s.weeks[0]!.mid.sections[lacSi(s)]!.items.findIndex(
       (i) => !isSong(i) && (i as PartItem).title.startsWith('Demoaufgabe 9'),
     )
 
   it('lacAdd fügt einen Punkt ein (mit Toast)', () => {
     const s = makeState({ week: 0, tab: 'mid' })
-    const before = s.weeks[0].mid.sections[lacSi(s)].items.length
+    const before = s.weeks[0]!.mid.sections[lacSi(s)]!.items.length
     const next = reducer(s, { type: 'lacAdd', si: lacSi(s), title: 'Örtliche Hinweise' })
-    expect(next.weeks[0].mid.sections[lacSi(s)].items.length).toBe(before + 1)
+    expect(next.weeks[0]!.mid.sections[lacSi(s)]!.items.length).toBe(before + 1)
     expect(next.toast?.text).toBeTruthy()
   })
 
@@ -1423,15 +1423,15 @@ describe('LAC / Vortrag (über den Reducer)', () => {
     const next = reducer(s, { type: 'lacMinuten', si, ii, mins: 19 })
     expect(next.weeks).not.toBe(s.weeks)
     expect(itemMinutes(next.weeks[0]!.mid.sections[si]!.items[ii] as PartItem)).toBe(19)
-    expect(next.weeks[0].mid.end).not.toBe(s.weeks[0].mid.end) // Endzeit nachgezogen
+    expect(next.weeks[0]!.mid.end).not.toBe(s.weeks[0]!.mid.end) // Endzeit nachgezogen
   })
 
   it('lacRemove entfernt den Punkt (mit Toast)', () => {
     const s = makeState({ week: 0, tab: 'mid' })
     const si = lacSi(s)
-    const before = s.weeks[0].mid.sections[si].items.length
+    const before = s.weeks[0]!.mid.sections[si]!.items.length
     const next = reducer(s, { type: 'lacRemove', si, ii: gehIdx(s) })
-    expect(next.weeks[0].mid.sections[si].items.length).toBe(before - 1)
+    expect(next.weeks[0]!.mid.sections[si]!.items.length).toBe(before - 1)
     expect(next.toast?.text).toBeTruthy()
   })
 
@@ -1559,19 +1559,19 @@ describe('LAC / Vortrag (über den Reducer)', () => {
     // ersten Nicht-Lied-Punkt im Wochenende finden
     let tsi = -1
     let tii = -1
-    for (let si = 0; si < s.weeks[1].we.sections.length && tsi < 0; si++) {
-      const ii = s.weeks[1].we.sections[si].items.findIndex((i) => !isSong(i))
+    for (let si = 0; si < s.weeks[1]!.we.sections.length && tsi < 0; si++) {
+      const ii = s.weeks[1]!.we.sections[si]!.items.findIndex((i) => !isSong(i))
       if (ii >= 0) {
         tsi = si
         tii = ii
       }
     }
     const next = reducer(s, { type: 'talkEdit', si: tsi, ii: tii, title: 'Mein Thema' })
-    expect((next.weeks[1].we.sections[tsi].items[tii] as PartItem).title).toBe('Mein Thema')
+    expect((next.weeks[1]!.we.sections[tsi]!.items[tii] as PartItem).title).toBe('Mein Thema')
   })
   it('openingSong setzt das Anfangslied der Wochenend-ZK', () => {
     const next = reducer(makeState({ week: 0 }), { type: 'openingSong', song: '99' })
-    const found = next.weeks[0].we.sections.some((sec) =>
+    const found = next.weeks[0]!.we.sections.some((sec) =>
       sec.items.some((it) => !isSong(it) && (it as PartItem).title.includes('Lied 99')),
     )
     expect(found).toBe(true)

@@ -394,7 +394,7 @@ describe('workloadOf hält sich an die Platzgrenze der Dienste', () => {
   function wochenMitZweitemTon(): ReturnType<typeof buildDemoWeeks> {
     const weeks = buildDemoWeeks()
     // Platz 0 gehört jemand anderem, Platz 1 liegt hinter `count: 1`.
-    weeks[1].mid.helpers.ton = [{ name: 'Erste Person' }, { name: 'Zweite Person' }]
+    weeks[1]!.mid.helpers.ton = [{ name: 'Erste Person' }, { name: 'Zweite Person' }]
     return weeks
   }
 
@@ -461,7 +461,7 @@ describe('Auslastung zählt je Person, nicht je Name', () => {
 
   function wocheMitBeiden(): ReturnType<typeof buildDemoWeeks> {
     const weeks = buildDemoWeeks()
-    const item = weeks[0].mid.sections[0].items.find((x) => !isSong(x)) as PartItem
+    const item = weeks[0]!.mid.sections[0]!.items.find((x) => !isSong(x)) as PartItem
     // Zwei Plätze, zwei verschiedene Personen — mit identischem Anzeigenamen.
     item.names[0] = { ...item.names[0], name: 'Anton Muster', pid: 'p1' }
     item.names[1] = { ...item.names[1], name: 'Anton Muster', pid: 'p2' }
@@ -478,7 +478,7 @@ describe('Auslastung zählt je Person, nicht je Name', () => {
 
   it('auch Hilfsdienste zählen je Person', () => {
     const weeks = buildDemoWeeks()
-    weeks[0].mid.helpers.ton = [
+    weeks[0]!.mid.helpers.ton = [
       { name: 'Anton Muster', pid: 'p1' },
       { name: 'Anton Muster', pid: 'p2' },
     ]

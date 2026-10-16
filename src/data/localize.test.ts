@@ -79,15 +79,15 @@ describe('localizedWeek (Sprachvarianten)', () => {
     const en = localizedWeek(week, 'en')
     expect(en).not.toBe(week)
     expect(en.range).toBe('September 7–13')
-    expect(en.mid.sections[0].label).toBe('TREASURES FROM GOD’S WORD')
-    const item = en.mid.sections[0].items[0] as PartItem
+    expect(en.mid.sections[0]!.label).toBe('TREASURES FROM GOD’S WORD')
+    const item = en.mid.sections[0]!.items[0] as PartItem
     expect(item.title).toBe('Jehovah’s Qualities')
     expect(item.meta).toBe('10 min.')
     // Zuteilungen bleiben kanonisch
-    expect(item.names[0].name).toBe('Thomas Lindner')
+    expect(item.names[0]!.name).toBe('Thomas Lindner')
     expect(en.mid.helpers.mik).toEqual([{ name: 'Simon Krüger' }])
     // Lied aus der Variante
-    expect(en.mid.sections[0].items[1]).toEqual({ song: 'Song 5' })
+    expect(en.mid.sections[0]!.items[1]).toEqual({ song: 'Song 5' })
   })
 
   it('ohne Variante bleibt die Woche identisch (gleiche Referenz)', () => {
@@ -98,10 +98,10 @@ describe('localizedWeek (Sprachvarianten)', () => {
 
   it('fällt bei Struktur-Abweichung auf die kanonische Zusammenkunft zurück', () => {
     const week = makeWeek()
-    week.alt!.en.mid.sections[0].items.pop() // Variante desynchronisieren
+    week.alt!.en!.mid.sections[0]!.items.pop() // Variante desynchronisieren
     const en = localizedWeek(week, 'en')
     // mid bleibt komplett kanonisch (falsche Zuordnung wäre schlimmer)
-    expect((en.mid.sections[0].items[0] as PartItem).title).toBe('Über Jehovas Eigenschaften')
+    expect((en.mid.sections[0]!.items[0] as PartItem).title).toBe('Über Jehovas Eigenschaften')
     // Wochen-Kopf kommt weiterhin aus der Variante
     expect(en.range).toBe('September 7–13')
   })
@@ -122,7 +122,7 @@ describe('localizedWeek (Sprachvarianten)', () => {
     expect(localizedWeeks(weeks, 'fr')).toBe(weeks)
     const localized = localizedWeeks(weeks, 'en')
     expect(localized).not.toBe(weeks)
-    expect(localized[0].range).toBe('September 7–13')
+    expect(localized[0]!.range).toBe('September 7–13')
   })
 })
 
@@ -159,29 +159,29 @@ describe('LAC-Edits halten Sprachvarianten aligned', () => {
   it('lacRemove entfernt das Item auch in der Variante', () => {
     const weeks = [makeWeek()]
     const next = lacRemove(weeks, 0, 'mid', LAC, 0)
-    expect(next[0].mid.sections[LAC].items).toHaveLength(1)
-    expect(next[0].alt!.en.mid.sections[LAC].items).toHaveLength(1)
+    expect(next[0]!.mid.sections[LAC]!.items).toHaveLength(1)
+    expect(next[0]!.alt!.en!.mid.sections[LAC]!.items).toHaveLength(1)
     // Anzeige der Variante funktioniert weiterhin (Struktur aligned)
-    const en = localizedWeek(next[0], 'en')
-    expect((en.mid.sections[LAC].items[0] as PartItem).title).toBe('Congregation Bible Study')
+    const en = localizedWeek(next[0]!, 'en')
+    expect((en.mid.sections[LAC]!.items[0] as PartItem).title).toBe('Congregation Bible Study')
   })
 
   it('lacAdd fügt den eigenen Punkt in allen Varianten ein', () => {
     const weeks = [makeWeek()]
     const next = lacAdd(weeks, 0, 'mid', LAC, 'Örtliche Bedürfnisse')
-    expect(next[0].mid.sections[LAC].items).toHaveLength(3)
-    expect(next[0].alt!.en.mid.sections[LAC].items).toHaveLength(3)
-    const en = localizedWeek(next[0], 'en')
+    expect(next[0]!.mid.sections[LAC]!.items).toHaveLength(3)
+    expect(next[0]!.alt!.en!.mid.sections[LAC]!.items).toHaveLength(3)
+    const en = localizedWeek(next[0]!, 'en')
     // Eigener Punkt bleibt in beiden Sprachen der lokale Text
-    expect((en.mid.sections[LAC].items[1] as PartItem).title).toBe('Örtliche Bedürfnisse')
+    expect((en.mid.sections[LAC]!.items[1] as PartItem).title).toBe('Örtliche Bedürfnisse')
   })
 
   it('lacMinuten zieht die Minuten in der Variante nach — das Ende kommt aus der Versammlung', () => {
     const weeks = [makeWeek()]
     const next = lacMinuten(weeks, 0, 'mid', LAC, 0, 20)
-    expect((next[0].mid.sections[LAC].items[0] as PartItem).meta).toBe('20 Min.')
-    expect((next[0].alt!.en.mid.sections[LAC].items[0] as PartItem).meta).toBe('20 min.')
-    expect(localizedWeek(next[0], 'en').mid.end).toBe('Ende ca. 20:50')
+    expect((next[0]!.mid.sections[LAC]!.items[0] as PartItem).meta).toBe('20 Min.')
+    expect((next[0]!.alt!.en!.mid.sections[LAC]!.items[0] as PartItem).meta).toBe('20 min.')
+    expect(localizedWeek(next[0]!, 'en').mid.end).toBe('Ende ca. 20:50')
   })
 
   /*
@@ -196,17 +196,17 @@ describe('LAC-Edits halten Sprachvarianten aligned', () => {
   it('die Endzeit der Versammlung gilt auch in der Variante', () => {
     const w = makeWeek()
     w.mid.end = 'Ende ca. 20:15'
-    w.alt!.en.mid.end = 'Ende ca. 20:45'
+    w.alt!.en!.mid.end = 'Ende ca. 20:45'
     expect(localizedWeek(w, 'en').mid.end).toBe('Ende ca. 20:15')
   })
 
   it('lacMove tauscht in der Variante dieselben Positionen', () => {
     const weeks = [makeWeek()]
     const next = lacMove(weeks, 0, 'mid', LAC, 0, 1)
-    expect((next[0].mid.sections[LAC].items[0] as PartItem).title).toBe('Versammlungsbibelstudium')
-    expect((next[0].alt!.en.mid.sections[LAC].items[0] as PartItem).title).toBe('Congregation Bible Study')
+    expect((next[0]!.mid.sections[LAC]!.items[0] as PartItem).title).toBe('Versammlungsbibelstudium')
+    expect((next[0]!.alt!.en!.mid.sections[LAC]!.items[0] as PartItem).title).toBe('Congregation Bible Study')
     // Nummern bleiben positionsfest — auch in der Variante
-    expect((next[0].alt!.en.mid.sections[LAC].items[0] as PartItem).num).toBe(6)
+    expect((next[0]!.alt!.en!.mid.sections[LAC]!.items[0] as PartItem).num).toBe(6)
   })
 
   /** Ein Punkt unter „Unser Leben als Christ" — mit Wächter statt `!` (T42). */

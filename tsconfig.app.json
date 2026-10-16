@@ -21,7 +21,12 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    // `arr[i]` kann `undefined` sein (T42). Seit dem 17.10.2026 hält ganz `src`
+    // die Regel ein, die Tests eingeschlossen — vorher stand sie nur in
+    // `tsconfig.index.json` mit einer Grundlinie. Edge Functions und Skripte
+    // sind noch nicht so weit und schalten sie dort ab.
+    "noUncheckedIndexedAccess": true
   },
   "include": ["src"]
 }

@@ -153,7 +153,7 @@ function einPlatz(bereich: string): Meeting {
 /** Zusammenkunft, in der `name` einen Platz belegt (Historie). */
 function belegt(name: string, bereich = 'vortrag'): Meeting {
   const m = einPlatz(bereich)
-  ;(m.sections[0].items[0] as { names: SlotAssignment[] }).names[0].name = name
+  ;(m.sections[0]!.items[0] as { names: SlotAssignment[] }).names[0]!.name = name
   return m
 }
 /** Montag der Woche `i`, ab 7. September 2026 — Wochen sind sieben Tage. */
@@ -167,7 +167,7 @@ function wk(mid: Meeting, we: Meeting = emptyMeeting(), i = 0): Week {
 /** Name auf dem einen Platz der geplanten Woche. */
 function gewaehlt(weeks: Week[], wi: number, persons: Person[]): string {
   const res = autoAssignMeeting(weeks, wi, 'mid', persons, [])
-  return partNames(res.weeks[wi].mid)[0] ?? ''
+  return partNames(res.weeks[wi]!.mid)[0] ?? ''
 }
 
 describe('Tie-Break bei gleicher Auslastung', () => {
@@ -199,9 +199,9 @@ describe('Tie-Break bei gleicher Auslastung', () => {
     const b = mk(['vortrag'], { ln: 'Bald' })
     const plan = (langHer: Person, kuerzlich: Person): string => {
       const weeks: Week[] = Array.from({ length: 12 }, (_, i) => wk(emptyMeeting(), emptyMeeting(), i))
-      weeks[0].mid = belegt(displayName(langHer)) // 10 Wochen her
-      weeks[6].mid = belegt(displayName(kuerzlich)) // 4 Wochen her
-      weeks[10].mid = einPlatz('vortrag')
+      weeks[0]!.mid = belegt(displayName(langHer)) // 10 Wochen her
+      weeks[6]!.mid = belegt(displayName(kuerzlich)) // 4 Wochen her
+      weeks[10]!.mid = einPlatz('vortrag')
       // Fenster um Woche 10 = [8..12] → beide zählen dort null.
       expect(partWorkload(weeks.slice(8), langHer)).toBe(0)
       expect(partWorkload(weeks.slice(8), kuerzlich)).toBe(0)
@@ -220,10 +220,10 @@ describe('Tie-Break bei gleicher Auslastung', () => {
     const a = mk(['vortrag'], { ln: 'Ausgelastet' })
     const b = mk(['vortrag'], { ln: 'Frei' })
     const weeks: Week[] = Array.from({ length: 14 }, (_, i) => wk(emptyMeeting(), emptyMeeting(), i))
-    weeks[8].mid = belegt(displayName(a))
-    weeks[12].mid = belegt(displayName(a))
-    weeks[9].mid = belegt(displayName(b))
-    weeks[10].mid = einPlatz('vortrag')
+    weeks[8]!.mid = belegt(displayName(a))
+    weeks[12]!.mid = belegt(displayName(a))
+    weeks[9]!.mid = belegt(displayName(b))
+    weeks[10]!.mid = einPlatz('vortrag')
     // Fenster um Woche 10 = [8..12]
     expect(partWorkload(weeks.slice(8, 13), a)).toBe(2)
     expect(partWorkload(weeks.slice(8, 13), b)).toBe(1)
@@ -234,8 +234,8 @@ describe('Tie-Break bei gleicher Auslastung', () => {
 describe('Zusätzliche Klasse zählt als Auslastung', () => {
   it('partWorkload zählt Plätze der Klasse und den Ratgeber mit', () => {
     const meeting = einPlatz('schulung')
-    const item = meeting.sections[0].items[0] as { names: SlotAssignment[]; aux?: SlotAssignment[] }
-    item.names[0].name = 'Haupt Saal'
+    const item = meeting.sections[0]!.items[0] as { names: SlotAssignment[]; aux?: SlotAssignment[] }
+    item.names[0]!.name = 'Haupt Saal'
     item.aux = [{ name: 'Zweite Klasse', bereichsKey: 'schulung' }]
     meeting.auxRatgeber = { name: 'Rolf Ratgeber', rolle: 'Ratgeber', bereichsKey: 'ratgeber' }
     const weeks = [wk(meeting)]
@@ -249,11 +249,11 @@ describe('Zusätzliche Klasse zählt als Auslastung', () => {
     const b = mk(['schulung'], { female: true, ln: 'Frei' })
     const weeks: Week[] = Array.from({ length: 3 }, () => wk(emptyMeeting()))
     const vorwoche = einPlatz('schulung')
-    const item = vorwoche.sections[0].items[0] as { names: SlotAssignment[]; aux?: SlotAssignment[] }
-    item.names[0].name = '' // Hauptsaal blieb offen …
+    const item = vorwoche.sections[0]!.items[0] as { names: SlotAssignment[]; aux?: SlotAssignment[] }
+    item.names[0]!.name = '' // Hauptsaal blieb offen …
     item.aux = [{ name: displayName(a), bereichsKey: 'schulung' }] // … A war in der Klasse
-    weeks[0].mid = vorwoche
-    weeks[1].mid = einPlatz('schulung')
+    weeks[0]!.mid = vorwoche
+    weeks[1]!.mid = einPlatz('schulung')
     expect(gewaehlt(weeks, 1, [a, b])).toBe(displayName(b))
   })
 })
@@ -288,7 +288,7 @@ describe('Verteilung über ein halbes Jahr (Simulation)', () => {
     // 3 Schulungs- und 3 Partnerplätze je Woche auf 30 Schwestern → rund fünf
     // Aufgaben je Schwester im halben Jahr. Zugelassen ist ein Unterschied von
     // einer Aufgabe; früher lag die Spanne bei 0 bis 7.
-    expect(werte.at(-1)! - werte[0]).toBeLessThanOrEqual(1)
+    expect(werte.at(-1)! - werte[0]!).toBeLessThanOrEqual(1)
   })
 
   it('lässt niemanden länger als zwei Monate warten', () => {
@@ -301,7 +301,7 @@ describe('Verteilung über ein halbes Jahr (Simulation)', () => {
     })
     for (const [name, wochen] of wochenMit) {
       let luecke = wochen.length ? wochen[0] : WOCHEN
-      for (let i = 1; i < wochen.length; i++) luecke = Math.max(luecke, wochen[i] - wochen[i - 1])
+      for (let i = 1; i < wochen.length; i++) luecke = Math.max(luecke!, wochen[i]! - wochen[i - 1]!)
       expect(luecke, `längste Pause von ${name}`).toBeLessThanOrEqual(8)
     }
   })
@@ -316,7 +316,7 @@ describe('Verteilung über ein halbes Jahr (Simulation)', () => {
     const v = [...mitKlasse.values()].sort((a, b) => a - b)
     expect(v[0]).toBeGreaterThan(0)
     // Früher: 16 bis 24 über ein Jahr, weil die Klasse keine Last erzeugte.
-    expect(v.at(-1)! - v[0]).toBeLessThanOrEqual(3)
+    expect(v.at(-1)! - v[0]!).toBeLessThanOrEqual(3)
   }, 30_000)
 
   /**
@@ -392,10 +392,10 @@ describe('Anzeige und Entscheidung nutzen dasselbe Fenster', () => {
     const a = mk(['vortrag'], { ln: 'Innen' })
     const b = mk(['vortrag'], { ln: 'Aussen' })
     const weeks: Week[] = Array.from({ length: 20 }, (_, i) => wk(emptyMeeting(), emptyMeeting(), i))
-    weeks[10 - LOAD_RADIUS].mid = belegt(displayName(a))
-    weeks[10 - LOAD_RADIUS - 1].mid = belegt(displayName(b))
-    weeks[10 + LOAD_RADIUS + 1].mid = belegt(displayName(b))
-    weeks[10].mid = einPlatz('vortrag')
+    weeks[10 - LOAD_RADIUS]!.mid = belegt(displayName(a))
+    weeks[10 - LOAD_RADIUS - 1]!.mid = belegt(displayName(b))
+    weeks[10 + LOAD_RADIUS + 1]!.mid = belegt(displayName(b))
+    weeks[10]!.mid = einPlatz('vortrag')
 
     // Das zeigen auch die Punkte im Sheet: A hat im Fenster eine Aufgabe, B keine.
     expect(workloadOf(lastFenster(weeks, 10), a)).toBe(1)
@@ -421,9 +421,9 @@ describe('Bereichs-Wartezeit als zweiter Tie-Break', () => {
     const plan = (vortragZuletzt: Person, lesungZuletzt: Person): string => {
       const weeks: Week[] = Array.from({ length: 12 }, (_, i) => wk(emptyMeeting(), emptyMeeting(), i))
       // Beide in derselben Woche dran → gleiche Last, gleicher Abstand.
-      weeks[5].mid = belegt(displayName(vortragZuletzt), 'vortrag')
-      weeks[5].we = belegt(displayName(lesungZuletzt), 'bibellesung')
-      weeks[10].mid = einPlatz('vortrag')
+      weeks[5]!.mid = belegt(displayName(vortragZuletzt), 'vortrag')
+      weeks[5]!.we = belegt(displayName(lesungZuletzt), 'bibellesung')
+      weeks[10]!.mid = einPlatz('vortrag')
       return gewaehlt(weeks, 10, [a, b])
     }
     // Wer zuletzt den Vortrag hatte, tritt beim Vortrag zurück — in beide
@@ -440,9 +440,9 @@ describe('Bereichs-Wartezeit als zweiter Tie-Break', () => {
     // A war vor 4 Wochen dran (Bibellesung — im Bereich Vortrag also nie),
     // B vor 9 Wochen (Vortrag). Nach dem Bereich müsste A gewinnen; die
     // allgemeine Wartezeit steht davor, also gewinnt B.
-    weeks[6].mid = belegt(displayName(a), 'bibellesung')
-    weeks[1].mid = belegt(displayName(b), 'vortrag')
-    weeks[10].mid = einPlatz('vortrag')
+    weeks[6]!.mid = belegt(displayName(a), 'bibellesung')
+    weeks[1]!.mid = belegt(displayName(b), 'vortrag')
+    weeks[10]!.mid = einPlatz('vortrag')
     expect(gewaehlt(weeks, 10, [a, b])).toBe(displayName(b))
   })
 })
@@ -475,6 +475,6 @@ describe('Verteilung der Hilfsdienste über ein halbes Jahr', () => {
     // 14 Ordner auf 2 Plätze × 2 Zusammenkünfte × 26 Wochen → rund 7 Einsätze
     // je Person. Gemessen 6 bis 9; vor den Korrekturen 6 bis 11.
     expect(werte[0]).toBeGreaterThan(0) // niemand bleibt außen vor
-    expect(werte.at(-1)! - werte[0]).toBeLessThanOrEqual(3)
+    expect(werte.at(-1)! - werte[0]!).toBeLessThanOrEqual(3)
   })
 })

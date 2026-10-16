@@ -143,16 +143,16 @@ describe('regenFsWeeks (Neu-Ausrichtung)', () => {
     const built = buildFsWeeks(KENN.slice(0, 1), RULE, { '0|r1': 'A. Leiter' })
     const edited = built.map((wk) => wk.map((i) => ({ ...i, place: 'Anderswo', time: '15:30' })))
     const keep = regenFsWeeks(KENN, edited, RULE)
-    expect(keep[0][0].place).toBe('Anderswo')
-    expect(keep[0][0].time).toBe('15:30')
-    expect(keep[0][0].leader).toBe('A. Leiter')
+    expect(keep[0]![0]!.place).toBe('Anderswo')
+    expect(keep[0]![0]!.time).toBe('15:30')
+    expect(keep[0]![0]!.leader).toBe('A. Leiter')
   })
   it('zurückgesetzt: Zeit/Ort auf Regelwerte zurück, Leiter bleibt', () => {
     const built = buildFsWeeks(KENN.slice(0, 1), RULE, { '0|r1': 'A. Leiter' })
     const edited = built.map((wk) => wk.map((i) => ({ ...i, place: 'Anderswo' })))
     const reset = regenFsWeeks(KENN, edited, RULE, () => true)
-    expect(reset[0][0].place).toBe('Königreichssaal')
-    expect(reset[0][0].leader).toBe('A. Leiter')
+    expect(reset[0]![0]!.place).toBe('Königreichssaal')
+    expect(reset[0]![0]!.leader).toBe('A. Leiter')
   })
   it('zurückgesetzt wird nur, wen die Frage meint — die übrigen behalten ihre Woche (5.10.2026)', () => {
     const regeln: FsRule[] = [...RULE, { id: 'r2', grp: 'g2', wd: 6, time: '09:15', place: 'Saal', monthly: 0, skipCong: false }]
@@ -188,10 +188,10 @@ describe('buildFsWeeks', () => {
     const seed = { '0|r1': 'Thomas Lindner', '3|r3': 'Simon Krüger' }
     const weeks = buildFsWeeks(KENN.slice(0, 4), RULES, seed)
     expect(weeks).toHaveLength(4)
-    expect(weeks[0].find((i) => i.id === 'r1')?.leader).toBe('Thomas Lindner')
-    expect(weeks[3].find((i) => i.id === 'r3')?.leader).toBe('Simon Krüger')
+    expect(weeks[0]!.find((i) => i.id === 'r1')?.leader).toBe('Thomas Lindner')
+    expect(weeks[3]!.find((i) => i.id === 'r3')?.leader).toBe('Simon Krüger')
     // Nicht geseedete Instanzen bleiben offen.
-    expect(weeks[0].find((i) => i.id === 'r2')?.leader).toBe('')
+    expect(weeks[0]!.find((i) => i.id === 'r2')?.leader).toBe('')
   })
 })
 
@@ -228,7 +228,7 @@ describe('fs-Wochenbearbeitung (Planen)', () => {
     const set = fsSetLeader(w, 0, 'r1', 'A. Leiter')
     expect(fsLeaderValue(set, 0, 'r1')).toBe('A. Leiter')
     expect(set[1]).toBe(w[1]) // andere Wochen behalten ihre Referenz
-    expect(w[0][0].leader).toBe('') // Original unverändert (rein)
+    expect(w[0]![0]!.leader).toBe('') // Original unverändert (rein)
     expect(fsLeaderValue(fsSetLeader(set, 0, 'r1', ''), 0, 'r1')).toBe('')
   })
 
@@ -236,7 +236,7 @@ describe('fs-Wochenbearbeitung (Planen)', () => {
     const w = build()
     // r2 (Mi 09:30) auf Mo-Zeit vorziehen → bleibt aber Mi; nur Zeit/Ort ändern
     const upd = fsUpdateInst(w, 0, 'r2', { time: '08:00', place: 'Neu' })
-    const r2 = upd[0].find((i) => i.id === 'r2')!
+    const r2 = upd[0]!.find((i) => i.id === 'r2')!
     expect(r2.time).toBe('08:00')
     expect(r2.place).toBe('Neu')
   })
@@ -244,17 +244,17 @@ describe('fs-Wochenbearbeitung (Planen)', () => {
   it('fsRemoveInst entfernt genau eine Instanz der Woche', () => {
     const w = build()
     const rm = fsRemoveInst(w, 0, 'r1')
-    expect(rm[0].some((i) => i.id === 'r1')).toBe(false)
-    expect(rm[0].some((i) => i.id === 'r2')).toBe(true)
+    expect(rm[0]!.some((i) => i.id === 'r1')).toBe(false)
+    expect(rm[0]!.some((i) => i.id === 'r2')).toBe(true)
   })
 
   it('fsAddInst fügt eine manuelle Instanz ein und sortiert', () => {
     const w = build()
     const manual: FsInstance = { id: 'xM', ruleId: null, grp: null, wd: 2, time: '07:00', place: 'X', leader: '', manual: true }
     const add = fsAddInst(w, 0, manual)
-    expect(add[0].some((i) => i.id === 'xM')).toBe(true)
+    expect(add[0]!.some((i) => i.id === 'xM')).toBe(true)
     // wd 2 (Di) liegt zwischen Mo(1) und Mi(3) → einsortiert
-    const wds = add[0].map((i) => (i.wd + 6) % 7)
+    const wds = add[0]!.map((i) => (i.wd + 6) % 7)
     expect([...wds]).toEqual([...wds].sort((a, b) => a - b))
   })
 })
@@ -265,7 +265,7 @@ describe('fsAutoAssign (Treffpunkt-Leiter automatisch)', () => {
     const persons = [tpLeader({ id: 'p1', fn: 'Anton' }), tpLeader({ id: 'p2', fn: 'Bernd' })]
     const { fsWeeks, count } = fsAutoAssign([week], 0, persons)
     expect(count).toBe(2)
-    const leaders = fsWeeks[0].map((i) => i.leader)
+    const leaders = fsWeeks[0]!.map((i) => i.leader)
     expect(leaders.every(Boolean)).toBe(true)
     expect(new Set(leaders).size).toBe(2) // Lastausgleich → zwei verschiedene
   })
@@ -278,7 +278,7 @@ describe('fsAutoAssign (Treffpunkt-Leiter automatisch)', () => {
       { id: 'x', personId: 'p1', userId: '', from: '2026-09-05', to: '2026-09-09', reason: '' },
     ]
     const { fsWeeks } = fsAutoAssign([week], 0, persons, null, abw, '2026-09-07')
-    expect(fsWeeks[0][0].leader).toBe('Bernd Muster')
+    expect(fsWeeks[0]![0]!.leader).toBe('Bernd Muster')
   })
 
   it('sperrt nur den Tag, nicht die ganze Woche', () => {
@@ -289,7 +289,7 @@ describe('fsAutoAssign (Treffpunkt-Leiter automatisch)', () => {
       { id: 'x', personId: 'p1', userId: '', from: '2026-09-12', to: '2026-09-13', reason: '' },
     ]
     const { fsWeeks } = fsAutoAssign([week], 0, persons, null, abw, '2026-09-07')
-    expect(fsWeeks[0][0].leader).toBe('Anton Muster')
+    expect(fsWeeks[0]![0]!.leader).toBe('Anton Muster')
   })
 
   it('wechselt die Reihenfolge bei Gleichstand von Woche zu Woche', () => {
@@ -308,7 +308,7 @@ describe('fsAutoAssign (Treffpunkt-Leiter automatisch)', () => {
       const wochen = Array.from({ length: wi }, (): ReturnType<typeof inst>[] => [])
       wochen.push([inst({ id: 'a', wd: 1 })])
       const { fsWeeks } = fsAutoAssign(wochen, wi, persons)
-      const leiter = fsWeeks[wi][0].leader
+      const leiter = fsWeeks[wi]![0]!.leader
       expect(leiter).toBeTruthy()
       ersteWahl.add(leiter)
     }
@@ -323,15 +323,15 @@ describe('fsAutoAssign (Treffpunkt-Leiter automatisch)', () => {
     const week = [inst({ id: 'a', grp: null, wd: 6 }), inst({ id: 'b', grp: 'g1', wd: 6 })]
     const persons = [tpLeader({ id: 'p1', fn: 'Anton' }), tpLeader({ id: 'p2', fn: 'Bernd' })]
     const { fsWeeks } = fsAutoAssign([week], 0, persons)
-    expect(new Set(fsWeeks[0].map((i) => i.leader)).size).toBe(2)
+    expect(new Set(fsWeeks[0]!.map((i) => i.leader)).size).toBe(2)
   })
 
   it('lässt bereits gesetzte Leiter unangetastet; ohne Kandidaten bleibt offen', () => {
     const week = [inst({ id: 'a', wd: 1, leader: 'Fix Belegt' }), inst({ id: 'b', wd: 3 })]
     const { fsWeeks, count } = fsAutoAssign([week], 0, []) // keine qualifizierten Kandidaten
     expect(count).toBe(0)
-    expect(fsWeeks[0][0].leader).toBe('Fix Belegt')
-    expect(fsWeeks[0][1].leader).toBe('')
+    expect(fsWeeks[0]![0]!.leader).toBe('Fix Belegt')
+    expect(fsWeeks[0]![1]!.leader).toBe('')
   })
 
   it('onlyGroup besetzt nur Treffpunkte der Gruppe', () => {
@@ -339,8 +339,8 @@ describe('fsAutoAssign (Treffpunkt-Leiter automatisch)', () => {
     const persons = [tpLeader({ id: 'p1', fn: 'Anton' })]
     const { fsWeeks, count } = fsAutoAssign([week], 0, persons, 'g1')
     expect(count).toBe(1)
-    expect(fsWeeks[0].find((i) => i.grp == null)?.leader).toBe('')
-    expect(fsWeeks[0].find((i) => i.grp === 'g1')?.leader).toBe('Anton Muster')
+    expect(fsWeeks[0]!.find((i) => i.grp == null)?.leader).toBe('')
+    expect(fsWeeks[0]!.find((i) => i.grp === 'g1')?.leader).toBe('Anton Muster')
   })
 })
 
@@ -349,15 +349,15 @@ describe('fsClear (Treffpunkt-Leiter leeren)', () => {
     const week = [inst({ id: 'a', leader: 'X' }), inst({ id: 'b', leader: 'Y' })]
     const { fsWeeks, count } = fsClear([week], 0)
     expect(count).toBe(2)
-    expect(fsWeeks[0].every((i) => !i.leader)).toBe(true)
+    expect(fsWeeks[0]!.every((i) => !i.leader)).toBe(true)
   })
 
   it('onlyGroup leert nur die Gruppe', () => {
     const week = [inst({ id: 'a', grp: null, leader: 'X' }), inst({ id: 'b', grp: 'g1', leader: 'Y' })]
     const { fsWeeks, count } = fsClear([week], 0, 'g1')
     expect(count).toBe(1)
-    expect(fsWeeks[0].find((i) => i.grp == null)?.leader).toBe('X')
-    expect(fsWeeks[0].find((i) => i.grp === 'g1')?.leader).toBe('')
+    expect(fsWeeks[0]!.find((i) => i.grp == null)?.leader).toBe('X')
+    expect(fsWeeks[0]!.find((i) => i.grp === 'g1')?.leader).toBe('')
   })
 })
 
@@ -365,7 +365,7 @@ describe('Person-Id des Leiters (lpid)', () => {
   it('fsSetLeader schreibt die Id mit', () => {
     const weeks = [[inst({ id: 'a' })]]
     const next = fsSetLeader(weeks, 0, 'a', 'Anton Muster', 'p1')
-    expect(next[0][0]).toMatchObject({ leader: 'Anton Muster', lpid: 'p1' })
+    expect(next[0]![0]).toMatchObject({ leader: 'Anton Muster', lpid: 'p1' })
   })
 
   /*
@@ -384,20 +384,20 @@ describe('Person-Id des Leiters (lpid)', () => {
     // Sonst gehörte der freie Platz weiter jemandem und stünde bei ihm in
     // „Meine Aufgaben".
     const weeks = [[inst({ id: 'a', leader: 'Anton Muster', lpid: 'p1' })]]
-    expect(fsSetLeader(weeks, 0, 'a', '')[0][0].lpid).toBeUndefined()
-    expect(fsClear(weeks, 0).fsWeeks[0][0].lpid).toBeUndefined()
+    expect(fsSetLeader(weeks, 0, 'a', '')[0]![0]!.lpid).toBeUndefined()
+    expect(fsClear(weeks, 0).fsWeeks[0]![0]!.lpid).toBeUndefined()
   })
 
   it('ohne Id (Gast, Altdaten) bleibt nur der Name stehen', () => {
     const next = fsSetLeader([[inst({ id: 'a' })]], 0, 'a', 'Ohne Konto')
-    expect(next[0][0].leader).toBe('Ohne Konto')
-    expect(next[0][0].lpid).toBeUndefined()
+    expect(next[0]![0]!.leader).toBe('Ohne Konto')
+    expect(next[0]![0]!.lpid).toBeUndefined()
   })
 
   it('die Auto-Zuteilung setzt die Id ebenfalls', () => {
     const persons = [tpLeader({ id: 'p7', fn: 'Anton' })]
     const { fsWeeks } = fsAutoAssign([[inst({ id: 'a' })]], 0, persons)
-    expect(fsWeeks[0][0]).toMatchObject({ leader: 'Anton Muster', lpid: 'p7' })
+    expect(fsWeeks[0]![0]).toMatchObject({ leader: 'Anton Muster', lpid: 'p7' })
   })
 })
 
@@ -418,10 +418,10 @@ describe('Zuteilungsregeln wie bei den Aufgaben', () => {
     // Bernd: einmal in der Vorwoche, also mitten IM Fenster.
     wochen[wi - 1] = [inst({ id: 'neu1', leader: 'Bernd Muster', lpid: 'p1' })]
     wochen[wi] = [inst({ id: 'offen' })]
-    const { fsWeeks } = fsAutoAssign(wochen, wi, [fuenf[0], fuenf[1]])
+    const { fsWeeks } = fsAutoAssign(wochen, wi, [fuenf[0]!, fuenf[1]!])
     // Im Fenster: Anton 0, Bernd 1 → Anton. Ohne Fenster wäre es umgekehrt
     // (Anton 3, Bernd 1) und Bernd käme dran, obwohl er gerade erst geleitet hat.
-    expect(fsWeeks[wi][0].leader).toBe('Anton Muster')
+    expect(fsWeeks[wi]![0]!.leader).toBe('Anton Muster')
   })
 
   it('bei gleicher Last kommt zuerst, wer am längsten nicht geleitet hat', () => {
@@ -435,7 +435,7 @@ describe('Zuteilungsregeln wie bei den Aufgaben', () => {
     })
     wochen[7] = [inst({ id: 'offen' })]
     const { fsWeeks } = fsAutoAssign(wochen, 7, fuenf)
-    expect(fsWeeks[7][0].leader).toBe('Emil Muster')
+    expect(fsWeeks[7]![0]!.leader).toBe('Emil Muster')
   })
 
   it('wer gerade drankam, gewinnt die Wartezeit nicht gleich noch einmal', () => {
@@ -444,7 +444,7 @@ describe('Zuteilungsregeln wie bei den Aufgaben', () => {
     const wochen: FsInstance[][] = Array.from({ length: 4 }, () => [])
     wochen[3] = [inst({ id: 'a', wd: 1 }), inst({ id: 'b', wd: 3 })]
     const { fsWeeks } = fsAutoAssign(wochen, 3, fuenf)
-    expect(fsWeeks[3][0].leader).not.toBe(fsWeeks[3][1].leader)
+    expect(fsWeeks[3]![0]!.leader).not.toBe(fsWeeks[3]![1]!.leader)
   })
 })
 
@@ -457,7 +457,7 @@ describe('deriveMyFsTasks — Treffpunkte in „Meine Aufgaben"', () => {
   it('liefert nur die eigenen Leitungen, zugeordnet über die Id', () => {
     const tasks = deriveMyFsTasks(wochen(), KENN, 'Anton Muster', {}, 'p1', 'Treffpunkt-Leiter')
     expect(tasks).toHaveLength(1)
-    expect(tasks[0].id).toBe('fs|2026-09-07|a')
+    expect(tasks[0]!.id).toBe('fs|2026-09-07|a')
     // „Treffpunkt-Leiter" ist eine Rolle und steht deshalb in `rolle`, nicht
     // im Titel: die Anzeige übersetzt beide Hälften verschieden (MyTask.rolle).
     expect(tasks[0]!.title).toBe('')
@@ -478,7 +478,7 @@ describe('deriveMyFsTasks — Treffpunkte in „Meine Aufgaben"', () => {
   it('Termin kanonisch deutsch, mit echtem Zeitstempel für den Countdown', () => {
     const tasks = deriveMyFsTasks(wochen(), KENN, 'Anton Muster', {}, 'p1', 'Leiter')
     // Montag der Woche 0 ist der 7.9.2026; wd 1 = Montag.
-    expect(tasks[0].date).toBe('Montag, 7. September · 14:00 · Königreichssaal')
+    expect(tasks[0]!.date).toBe('Montag, 7. September · 14:00 · Königreichssaal')
     /*
       `at` ist der **Kalendertag** als UTC-Mitternacht — dieselbe Form, die
       `meetingDateMs` für die Zusammenkünfte liefert (siehe `MyTask.at`).
@@ -487,7 +487,7 @@ describe('deriveMyFsTasks — Treffpunkte in „Meine Aufgaben"', () => {
       von UTC+12 den Vortag.
     */
     const tag = tagIn(0, 1)
-    expect(tasks[0].at).toBe(Date.UTC(tag.getFullYear(), tag.getMonth(), tag.getDate()))
+    expect(tasks[0]!.at).toBe(Date.UTC(tag.getFullYear(), tag.getMonth(), tag.getDate()))
   })
 
   it('ohne Ort endet der Termin nicht auf einem Trenner', () => {
@@ -504,15 +504,15 @@ describe('deriveMyFsTasks — Treffpunkte in „Meine Aufgaben"', () => {
 
   it('ohne Kennung kein erfundener Termin', () => {
     const tasks = deriveMyFsTasks(wochen(), [], 'Anton Muster', {}, 'p1', 'Leiter')
-    expect(tasks[0].at).toBeNull()
-    expect(tasks[0].date).toBe('14:00 · Königreichssaal')
+    expect(tasks[0]!.at).toBeNull()
+    expect(tasks[0]!.date).toBe('14:00 · Königreichssaal')
   })
 
   it('übernimmt den Bestätigungs-Status', () => {
     const conf = { 'fs|2026-09-07|a': 'bestätigt' as const }
     const tasks = deriveMyFsTasks(wochen(), KENN, 'Anton Muster', conf, 'p1', 'Leiter')
-    expect(tasks[0].status).toBe('bestätigt')
-    expect(deriveMyFsTasks(wochen(), KENN, 'Anton Muster', {}, 'p1', 'L')[0].status).toBe('offen')
+    expect(tasks[0]!.status).toBe('bestätigt')
+    expect(deriveMyFsTasks(wochen(), KENN, 'Anton Muster', {}, 'p1', 'L')[0]!.status).toBe('offen')
   })
 
   it('offene Treffpunkte gehören niemandem', () => {

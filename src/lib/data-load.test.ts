@@ -122,7 +122,7 @@ describe('loadCongregationData', () => {
     expect(res.userId).toBe('u1')
     expect(res.data.congregation.name).toBe('Krumbach')
     expect(res.data.persons.map((p) => p.fn)).toContain('Anna')
-    expect(res.data.services[0].key).toBe('mik')
+    expect(res.data.services[0]!.key).toBe('mik')
     expect(res.data.weeks).toHaveLength(1)
     // Spalte und Zustand führen denselben Wert: den jw.org-Code. Angezeigt
     // wird der Name erst beim Rendern (`langLabel`), in der Bediensprache.

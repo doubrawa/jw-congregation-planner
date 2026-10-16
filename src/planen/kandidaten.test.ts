@@ -48,9 +48,9 @@ function wocheMitKlasse(fuehrerHaupt: string, fuehrerKlasse: string): Week {
     mid: { date: '', end: '', sections: [{ label: 'X', farbe: 'gold', items: [item] }], helpers: {} },
     we: { date: '', end: '', sections: [], helpers: {} },
   }
-  const an = syncAuxSlots([w], true)[0]
-  const auxItem = an.mid.sections[0].items[0] as PartItem
-  auxItem.aux![0].name = fuehrerKlasse
+  const an = syncAuxSlots([w], true)[0]!
+  const auxItem = an.mid.sections[0]!.items[0] as PartItem
+  auxItem.aux![0]!.name = fuehrerKlasse
   return an
 }
 
@@ -165,7 +165,7 @@ describe('Kandidatenliste allgemein', () => {
 
   it('schiebt Abwesende stabil ans Ende, ohne sie zu entfernen', () => {
     const weeks = [wocheMitKlasse('Anton Alt', 'Clara Cohn')]
-    weeks[0].start = '2026-09-07'
+    weeks[0]!.start = '2026-09-07'
     const abw: Absence[] = [
       { id: 'a1', personId: BRUDER_A.id, userId: 'u', from: '2026-09-07', to: '2026-09-09', reason: '' },
     ]

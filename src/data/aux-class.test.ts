@@ -76,7 +76,7 @@ describe('Plätze angleichen', () => {
     const aux = angleichen(t)
     expect(aux).toHaveLength(2)
     expect(aux.map((s) => s.name)).toEqual(['', ''])
-    expect(aux[1].bereichsKey).toBe('schulungPartner')
+    expect(aux[1]!.bereichsKey).toBe('schulungPartner')
   })
 
   it('behält bereits vergebene Namen, wenn ein Platz dazukommt', () => {
@@ -85,9 +85,9 @@ describe('Plätze angleichen', () => {
     const t: PartItem = { ...teil('schulung', 1), aux: [{ name: 'Elke Brandt', pid: 'p7' }] }
     const erweitert: PartItem = { ...teil('schulung', 2), aux: t.aux }
     const aux = angleichen(erweitert)
-    expect(aux[0].name).toBe('Elke Brandt')
-    expect(aux[0].pid).toBe('p7')
-    expect(aux[1].name).toBe('')
+    expect(aux[0]!.name).toBe('Elke Brandt')
+    expect(aux[0]!.pid).toBe('p7')
+    expect(aux[1]!.name).toBe('')
   })
 
   it('kürzt mit, wenn ein Platz wegfällt', () => {
@@ -99,17 +99,17 @@ describe('Plätze angleichen', () => {
 describe('syncAuxSlots', () => {
   it('richtet beim Einschalten jede Schüleraufgabe her', () => {
     const w = syncAuxSlots([woche([teil('schulung', 2), teil('gebet')])], true)
-    const items = w[0].mid.sections[0].items as PartItem[]
-    expect(items[0].aux).toHaveLength(2)
-    expect(items[1].aux).toBeUndefined() // kein Schülerteil
+    const items = w[0]!.mid.sections[0]!.items as PartItem[]
+    expect(items[0]!.aux).toHaveLength(2)
+    expect(items[1]!.aux).toBeUndefined() // kein Schülerteil
   })
 
   it('behält beim Ausschalten die eingeteilten Namen', () => {
     // Wer versehentlich abschaltet, verlöre sonst die Planung mehrerer Wochen.
     const mitAux = syncAuxSlots([woche([teil('schulung')])], true)
-    ;(mitAux[0].mid.sections[0].items[0] as PartItem).aux![0].name = 'Elke Brandt'
+    ;(mitAux[0]!.mid.sections[0]!.items[0] as PartItem).aux![0]!.name = 'Elke Brandt'
     const aus = syncAuxSlots(mitAux, false)
-    expect((aus[0].mid.sections[0].items[0] as PartItem).aux?.[0].name).toBe('Elke Brandt')
+    expect((aus[0]!.mid.sections[0]!.items[0] as PartItem).aux?.[0]!.name).toBe('Elke Brandt')
   })
 
   it('gibt dieselbe Referenz zurück, wenn sich nichts ändert', () => {
@@ -135,8 +135,8 @@ describe('syncAuxSlots', () => {
 describe('Ausschalten beendet die Klasse überall', () => {
   const geplant = (): Week[] => {
     const w = syncAuxSlots([woche([teil('schulung', 2)])], true)
-    ;(w[0].mid.sections[0].items[0] as PartItem).aux![0].name = 'Elke Brandt'
-    w[0].mid.auxRatgeber = { name: 'Manfred Albrecht', bereichsKey: 'ratgeber' }
+    ;(w[0]!.mid.sections[0]!.items[0] as PartItem).aux![0]!.name = 'Elke Brandt'
+    w[0]!.mid.auxRatgeber = { name: 'Manfred Albrecht', bereichsKey: 'ratgeber' }
     return w
   }
 
@@ -144,22 +144,22 @@ describe('Ausschalten beendet die Klasse überall', () => {
     // Genau hier lag der Fehler: das Programm entschied am Vorhandensein von
     // item.aux, das beim Ausschalten stehen bleibt, und zeigte weiter beide
     // Räume. Es gibt nur eine Antwort, und die ist hatAuxKlasse.
-    expect(hatAuxKlasse(geplant()[0].mid)).toBe(true)
-    expect(hatAuxKlasse(syncAuxSlots(geplant(), false)[0].mid)).toBe(false)
+    expect(hatAuxKlasse(geplant()[0]!.mid)).toBe(true)
+    expect(hatAuxKlasse(syncAuxSlots(geplant(), false)[0]!.mid)).toBe(false)
   })
 
   it('nur noch der Hauptsaal ist zu besetzen', () => {
-    const offenMit = countOpenSlots(geplant()[0].mid, [])
-    const offenOhne = countOpenSlots(syncAuxSlots(geplant(), false)[0].mid, [])
+    const offenMit = countOpenSlots(geplant()[0]!.mid, [])
+    const offenOhne = countOpenSlots(syncAuxSlots(geplant(), false)[0]!.mid, [])
     // Mit Klasse: der leere Partnerplatz der Klasse zählt mit.
     expect(offenMit).toBe(offenOhne + 1)
   })
 
   it('und beim Wiedereinschalten ist die Planung wieder da', () => {
     const wieder = syncAuxSlots(syncAuxSlots(geplant(), false), true)
-    expect((wieder[0].mid.sections[0].items[0] as PartItem).aux?.[0].name).toBe('Elke Brandt')
+    expect((wieder[0]!.mid.sections[0]!.items[0] as PartItem).aux?.[0]!.name).toBe('Elke Brandt')
     // Nur der Ratgeber ist neu einzuteilen — er ist die Marke selbst.
-    expect(wieder[0].mid.auxRatgeber?.name).toBe('')
+    expect(wieder[0]!.mid.auxRatgeber?.name).toBe('')
   })
 })
 
@@ -194,7 +194,7 @@ describe('Ratgeber-Platz entsteht in den Daten', () => {
     // Sonst zählt ihn countOpenSlots nicht, die Auto-Zuteilung übergeht ihn
     // und send-reminders erinnert niemanden — genau so war es zuerst.
     const w = syncAuxSlots([woche([teil('schulung')])], true)
-    expect(w[0].mid.auxRatgeber).toEqual({
+    expect(w[0]!.mid.auxRatgeber).toEqual({
       name: '', rolle: 'Ratgeber', bereichsKey: 'ratgeber', male: true,
     })
   })
@@ -203,24 +203,24 @@ describe('Ratgeber-Platz entsteht in den Daten', () => {
     // Eine Woche kann durch LAC-Bearbeitung ohne Schülerteile dastehen; der
     // Ratgeber gehört trotzdem zur Zusammenkunft.
     const w = syncAuxSlots([woche([teil('gebet')])], true)
-    expect(w[0].mid.auxRatgeber?.bereichsKey).toBe('ratgeber')
+    expect(w[0]!.mid.auxRatgeber?.bereichsKey).toBe('ratgeber')
   })
 
   it('bereits besetzter Ratgeber bleibt unangetastet', () => {
     const einmal = syncAuxSlots([woche([teil('schulung')])], true)
-    einmal[0].mid.auxRatgeber = { name: 'Manfred Albrecht', bereichsKey: 'ratgeber' }
+    einmal[0]!.mid.auxRatgeber = { name: 'Manfred Albrecht', bereichsKey: 'ratgeber' }
     const nochmal = syncAuxSlots(einmal, true)
-    expect(nochmal[0].mid.auxRatgeber?.name).toBe('Manfred Albrecht')
+    expect(nochmal[0]!.mid.auxRatgeber?.name).toBe('Manfred Albrecht')
   })
 })
 
 describe('Zusätzliche Klasse zählt überall gleich mit', () => {
   /** Woche mit eingeschalteter Klasse und je einem besetzten Platz. */
   function mitKlasse(): Week {
-    const w = syncAuxSlots([woche([teil('schulung', 2)])], true)[0]
-    const item = w.mid.sections[0].items[0] as PartItem
-    item.names[0].name = 'Haupt Saal'
-    item.aux![0].name = 'Zweite Klasse'
+    const w = syncAuxSlots([woche([teil('schulung', 2)])], true)[0]!
+    const item = w.mid.sections[0]!.items[0] as PartItem
+    item.names[0]!.name = 'Haupt Saal'
+    item.aux![0]!.name = 'Zweite Klasse'
     w.mid.auxRatgeber = { name: 'Rolf Ratgeber', rolle: 'Ratgeber', bereichsKey: 'ratgeber' }
     return w
   }
@@ -252,8 +252,8 @@ describe('Zusätzliche Klasse zählt überall gleich mit', () => {
     expect(partWorkload([an], alsPerson('Zweite Klasse'))).toBe(1)
     expect(partWorkload([an], alsPerson('Rolf Ratgeber'))).toBe(1)
     // Abschalten lässt die Namen absichtlich stehen — zählen dürfen sie nicht.
-    const aus = syncAuxSlots([an], false)[0]
-    expect((aus.mid.sections[0].items[0] as PartItem).aux?.[0].name).toBe('Zweite Klasse')
+    const aus = syncAuxSlots([an], false)[0]!
+    expect((aus.mid.sections[0]!.items[0] as PartItem).aux?.[0]!.name).toBe('Zweite Klasse')
     expect(partWorkload([aus], alsPerson('Zweite Klasse'))).toBe(0)
     expect(partWorkload([aus], alsPerson('Rolf Ratgeber'))).toBe(0)
   })
@@ -262,29 +262,29 @@ describe('Zusätzliche Klasse zählt überall gleich mit', () => {
 describe('togglePartner zieht die Klasse mit (T22)', () => {
   it('nach dem Hinzufügen haben beide Räume gleich viele Plätze', () => {
     const w = syncAuxSlots([woche([teil('schulung', 1)])], true)
-    const vorher = w[0].mid.sections[0].items[0] as PartItem
+    const vorher = w[0]!.mid.sections[0]!.items[0] as PartItem
     expect(vorher.names).toHaveLength(1)
     expect(vorher.aux).toHaveLength(1)
 
-    const nachher = togglePartner(w, 0, 'mid', 0, 0)[0].mid.sections[0].items[0] as PartItem
+    const nachher = togglePartner(w, 0, 'mid', 0, 0)[0]!.mid.sections[0]!.items[0] as PartItem
     expect(nachher.names).toHaveLength(2)
     expect(nachher.aux).toHaveLength(2) // war vorher 1 → Klasse hinkte hinterher
-    expect(nachher.aux![1].bereichsKey).toBe('schulungPartner')
+    expect(nachher.aux![1]!.bereichsKey).toBe('schulungPartner')
   })
 
   it('und nach dem Entfernen ebenso, ohne vergebene Namen zu verlieren', () => {
     const w = syncAuxSlots([woche([teil('schulung', 2)])], true)
-    const item = w[0].mid.sections[0].items[0] as PartItem
-    item.aux![0].name = 'Bleibt Stehen'
-    const nachher = togglePartner(w, 0, 'mid', 0, 0)[0].mid.sections[0].items[0] as PartItem
+    const item = w[0]!.mid.sections[0]!.items[0] as PartItem
+    item.aux![0]!.name = 'Bleibt Stehen'
+    const nachher = togglePartner(w, 0, 'mid', 0, 0)[0]!.mid.sections[0]!.items[0] as PartItem
     expect(nachher.names).toHaveLength(1)
     expect(nachher.aux).toHaveLength(1)
-    expect(nachher.aux![0].name).toBe('Bleibt Stehen')
+    expect(nachher.aux![0]!.name).toBe('Bleibt Stehen')
   })
 
   it('ohne Klasse bleibt aux unangetastet', () => {
-    const nachher = togglePartner([woche([teil('schulung', 1)])], 0, 'mid', 0, 0)[0]
-      .mid.sections[0].items[0] as PartItem
+    const nachher = togglePartner([woche([teil('schulung', 1)])], 0, 'mid', 0, 0)[0]!
+      .mid.sections[0]!.items[0] as PartItem
     expect(nachher.names).toHaveLength(2)
     expect(nachher.aux).toBeUndefined()
   })
