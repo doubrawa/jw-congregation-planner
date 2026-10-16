@@ -7324,6 +7324,14 @@ export const KATALOG = [
     suchen: '  return ist === soll ? [] : [',
     ersetzen: '  return true ? [] : [',
   },
+  // ── T123: Übersetzungen ────────────────────────────────────────────────────
+  {
+    id: 't123-glocke-termin-doppelpunkt',
+    datei: 'supabase/functions/_shared/i18n/translate.ts',
+    regel: 'In der Glocke steht die Bezeichnung hinter „Termin: " übersetzt — „19:00: Bibellesung" geht in seinen Hälften durch den Übersetzer.',
+    suchen: "    if (f.includes(': ')) return f.split(': ').map(one).join(': ')\n",
+    ersetzen: '',
+  },
   {
     id: 'zuteilung-vortrag-folgt-vorsitz',
     datei: 'src/data/planning.ts',

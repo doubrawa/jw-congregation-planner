@@ -219,6 +219,104 @@ describe('Zugängliche Beschriftungen sind Ausdrücke', () => {
 const ERLAUBTES_ATTRIBUT: Record<string, Grund> = {
 }
 
+/* ---- 3. Wörter in Ausdrücken der zugänglichen Beschriftungen (T123) ------ */
+
+/**
+ * Die Zeichenketten in einem Ausdruck: der Inhalt von `'…'` und `"…"` und die
+ * festen Stücke eines Template-Literals zwischen seinen `${…}`.
+ */
+function literale(ausdruck: string): string[] {
+  const out: string[] = []
+  for (const m of ausdruck.matchAll(/'((?:[^'\\\n]|\\.)*)'|"((?:[^"\\\n]|\\.)*)"/g)) out.push(m[1] ?? m[2] ?? '')
+  for (const m of ausdruck.matchAll(/`((?:[^`\\]|\\.)*)`/g)) out.push(...(m[1] ?? '').split(/\$\{[^}]*\}/))
+  return out
+}
+
+/** Der Ausdruck hinter `attr={`, bis zur passenden schließenden Klammer. */
+function ausdruckAb(text: string, start: number): string {
+  let tiefe = 1
+  for (let i = start; i < text.length; i++) {
+    if (text[i] === '{') tiefe++
+    else if (text[i] === '}' && --tiefe === 0) return text.slice(start, i)
+  }
+  return text.slice(start)
+}
+
+/** Ein Wort aus zwei Buchstaben oder mehr — die Schwelle von `JSX_TEXT`. */
+const WORT = /[A-Za-zÄÖÜäöüß]{2,}/
+
+describe('Auch in einem Ausdruck steht kein Wort fest (T123)', () => {
+  /*
+    Die Prüfung oben sieht das Literal `aria-label="Schließen"`. Ein Ausdruck
+    entgeht ihr: `aria-label={offen ? 'Schließen' : t.oeffnen}` oder
+    `title={`Woche ${n}`}` — derselbe deutsche Text, nur in Klammern. Für die
+    Beschriftungen gilt deshalb dasselbe wie für den Text: Was darin fest steht,
+    sind Trennzeichen, keine Wörter.
+  */
+  const ATTRIBUT_AUSDRUCK = /\b(aria-label|aria-description|title|placeholder|alt)=\{/g
+
+  /**
+   * Ein Ausdruck kann ein Element sein (`title={<span dir="auto">{name}</span>}`
+   * — die Überschrift eines Blatts). Dessen Attribute sind Werte, keine Texte;
+   * seinen Text sieht die Prüfung auf festen JSX-Text oben.
+   */
+  const OHNE_JSX_ATTRIBUTE = /\b[\w-]+=(?:"[^"]*"|'[^']*')/g
+
+  const funde = (text: string): string[] =>
+    [...text.matchAll(ATTRIBUT_AUSDRUCK)].flatMap((m) =>
+      literale(ausdruckAb(text, (m.index ?? 0) + m[0].length).replace(OHNE_JSX_ATTRIBUTE, ''))
+        .filter((s) => WORT.test(s))
+        .map((s) => `${m[1]}: „${s}"`),
+    )
+
+  it('kein Wort in einem Literal innerhalb von aria-label, title, placeholder oder alt', () => {
+    const gefunden: string[] = []
+    for (const [pfad, text] of QUELLEN) {
+      if (pfad.endsWith('.tsx')) gefunden.push(...funde(text).map((f) => `${pfad} ${f}`))
+    }
+    expect(gefunden).toEqual([])
+  })
+
+  it('die Prüfung findet ein Wort im Ausdruck auch wirklich — und lässt Trennzeichen stehen', () => {
+    expect(funde(`<b aria-label={offen ? 'Schließen' : t.oeffnen} />`)).toEqual(['aria-label: „Schließen"'])
+    expect(funde('<b title={`Woche ${n}`} />')).toEqual(['title: „Woche "'])
+    expect(funde('<b aria-label={`${label}: ${t.bestaetigen}`} />')).toEqual([])
+    expect(funde('<b aria-label={t.a11yClose} />')).toEqual([])
+    expect(funde('<Sheet title={<span dir="auto">{name}</span>} />')).toEqual([])
+  })
+
+  it('die Prüfung sieht überhaupt Ausdrücke', () => {
+    const alle = [...QUELLEN].filter(([p]) => p.endsWith('.tsx')).flatMap(([, t]) => [...t.matchAll(ATTRIBUT_AUSDRUCK)])
+    expect(alle.length).toBeGreaterThan(50)
+  })
+})
+
+describe('Ein Toast trägt keinen festen Satz (T123)', () => {
+  /*
+    Ein Toast entsteht im Reducer über seinen Schlüssel (`toastKey`) oder mit
+    einem fertigen Text (`showToast`). Dieser Text kommt aus dem Wörterbuch —
+    ein Literal an dieser Stelle stünde in jeder Sprache so da, wie es getippt
+    wurde.
+  */
+  const TOAST_TEXT = /type: 'showToast',\s*text:\s*(['"`])((?:(?!\1)[^\\]|\\.)*)\1/g
+
+  const funde = (text: string): string[] =>
+    [...text.matchAll(TOAST_TEXT)].map((m) => m[2] ?? '').flatMap((s) => (m(s) ? [s] : []))
+  const m = (s: string) => WORT.test(s.replace(/\$\{[^}]*\}/g, ''))
+
+  it('kein showToast mit einem Wort im Literal', () => {
+    const gefunden: string[] = []
+    for (const [pfad, text] of QUELLEN) gefunden.push(...funde(text).map((s) => `${pfad}: „${s}"`))
+    expect(gefunden).toEqual([])
+  })
+
+  it('die Prüfung findet ein Literal auch wirklich', () => {
+    expect(funde(`dispatch({ type: 'showToast', text: 'Gespeichert' })`)).toEqual(['Gespeichert'])
+    expect(funde('dispatch({ type: \'showToast\', text: `${n} gespeichert` })')).toEqual(['${n} gespeichert'])
+    expect(funde(`dispatch({ type: 'showToast', text: t.toastSpeicherFehler })`)).toEqual([])
+  })
+})
+
 
 /**
  * **Fremder Text trägt seine eigene Schreibrichtung — geprüft am Quelltext.**

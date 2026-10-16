@@ -8,6 +8,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
+import { sichtbareTexte } from '../../tests/deutsch-erkennen'
 import { BILDSCHIRME } from '../../tests/testdaten/bildschirme'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
@@ -328,26 +329,18 @@ function deutscheWerte(ziel: Lang): Array<[string, string]> {
  * dort stand die Kurzform der Wortmarke. Seit T107 steht darin die Versammlung
  * (seit T121 mit dem Tag darüber), und die wird mitgeprüft wie jeder andere
  * Text: Sonst könnte dort unbemerkt wieder ein deutsches Wort landen.
+ *
+ * **Seit T123 (16.10.2026) unter `body`, nicht im Container**, und mit allem,
+ * was ein Vorleseprogramm sagt oder ein Feld vorbelegt (`sichtbareTexte` in
+ * `tests/deutsch-erkennen.ts`: dazu `alt`, `aria-description`,
+ * `aria-roledescription`, `aria-valuetext` und Feldwerte). Blätter, Toasts und
+ * Druckbögen hängen sich als Portal unter `body` — im Container stand von
+ * einem Blatt mit eigenem Zustand kein Wort, und „nichts Deutsches gefunden"
+ * hieß dort nur „nichts gelesen". Die Wortmarke (`.seitenmenue-app`,
+ * `.login-wordmark`) und die Diagnose im Profil bleiben dort ebenso draußen.
  */
-const WORTMARKE = '.seitenmenue-app, .login-wordmark'
-
 function sichtbarerText(container: HTMLElement): string {
-  const stuecke: string[] = []
-  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
-    acceptNode: (n) =>
-      n.parentElement?.closest(WORTMARKE) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
-  })
-  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-    const text = n.nodeValue?.trim()
-    if (text) stuecke.push(text)
-  }
-  for (const el of container.querySelectorAll('[aria-label], [title], [placeholder]')) {
-    for (const attr of ['aria-label', 'title', 'placeholder']) {
-      const wert = el.getAttribute(attr)?.trim()
-      if (wert) stuecke.push(wert)
-    }
-  }
-  return stuecke.join('\n')
+  return sichtbareTexte(container.ownerDocument.body).join('\n')
 }
 
 /** Kommt `wort` als eigenes Wort im Text vor (nicht als Teil eines längeren)? */

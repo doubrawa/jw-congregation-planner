@@ -370,6 +370,18 @@ function buildTranslator(M: Record<string, string>, rules: Rule[]): (s: string) 
     if (treffer != null) return treffer
     for (const [re, fn] of rules) { const m = f.match(re); if (m) return fn(m) }
     if (f.includes(' — ')) return f.split(' — ').map(one).join(' — ')
+    /*
+     * **Termin und Bezeichnung, mit „: " verbunden.** So steht eine Zeile von
+     * „Plan senden" und der Erinnerung in der Glocke (`kanonisch` in
+     * `_shared/zuteilungen.ts`): „Dienstag, 8. September · 19:00: Bibellesung".
+     * An „ · " zerlegt, bleibt „19:00: Bibellesung" ein einziges Stück, das
+     * kein Wörterbuch kennt — die Bezeichnung stand bis zum 16.10.2026 in jeder
+     * fremdsprachigen Glocke deutsch da („Tuesday, September 8 · 19:00:
+     * Bibellesung"). Der Push übersetzt beide Hälften getrennt (`uebersetzt`)
+     * und war nie betroffen. Wie bei „ — " geht jetzt jede Hälfte für sich durch;
+     * eine Uhrzeit trägt keinen Doppelpunkt mit Leerzeichen und bleibt heil.
+     */
+    if (f.includes(': ')) return f.split(': ').map(one).join(': ')
     return f
   }
   return (s: string): string => {
