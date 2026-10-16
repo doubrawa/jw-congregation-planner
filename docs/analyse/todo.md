@@ -7518,7 +7518,7 @@ Betreiber oder ein Gerät.
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **T124** | Rechte zum Testen umschalten | aufgenommen am 16. Oktober, noch nicht begonnen; befristet — nach den Tests wieder ausbauen |
-| **Betreiber** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт" — entscheidet ein Muttersprachler; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
+| **Zurückgestellt** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт". Betreiber am 16. Oktober: „bleibt erst mal so" — wieder aufnehmen, wenn ein Muttersprachler prüft; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
 | **Wartet** | Motion-Clip „Plan senden" | am 12. Oktober zurückgestellt, bis das neue Design steht — das ist jetzt der Fall. Das leere Motion-Artifact liegt schon bereit |
 | **Betreiber** | Mitgliedsrechte-Probe nach „Alles Planen" | `node scripts/mitgliedsrechte-probe.mjs` — die Testversammlung `edac60cb` und `.env.probe` stehen noch; umgedreht sind (35), (38)–(40), (42), (50), (53), (55), (60), neu (80) und (81) |
