@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ankerFehler, KATALOG, testlaufBefund, waechterBefund } from './mutationsprobe.mjs'
+import { ankerFehler, KATALOG, mutiert, testlaufBefund, waechterBefund } from './mutationsprobe.mjs'
 
 /**
  * **Zeigt der Katalog der Mutationsprobe noch dorthin, wo er hinzeigen soll?**
@@ -193,6 +193,18 @@ const GRUEN = lauf(
   'stderr | src/lib/week-konflikt.test.ts > Echte Schreibfehler bleiben Schreibfehler > ein Datenbankfehler meldet nicht fälschlich einen Konflikt\n' +
     '[persistenz] RLS\n\n',
 )
+
+describe('mutiert: die Mutation steht wörtlich im Text (16.10.2026)', () => {
+  it('liest $&, $1 und $\' in „ersetzen" nicht als Sonderfolgen von replace', () => {
+    // Als Zeichenkette an `replace` übergeben, würde `$&` zum gefundenen Text —
+    // die Probe schriebe dann etwas anderes, als ihr Eintrag beschreibt.
+    expect(mutiert('const a = 1', { suchen: '1', ersetzen: "$&$1$'" })).toBe("const a = $&$1$'")
+  })
+
+  it('ersetzt genau die eine Stelle', () => {
+    expect(mutiert('x x', { suchen: 'x', ersetzen: 'y' })).toBe('y x')
+  })
+})
 
 describe('testlaufBefund: ein Rot zählt nur, wenn vitest getestet hat', () => {
   it('Node findet vitest nicht — Abbruch statt Häkchen', () => {

@@ -8258,6 +8258,16 @@ function ersterWaechter(ausgabe) {
   return treffer?.[1] ?? null
 }
 
+/**
+ * Der Text mit der Mutation. `ersetzen` gilt **wörtlich**: Als Zeichenkette an
+ * `replace` übergeben, würden `$&`, `$1`, `` $` `` und `$'` darin als
+ * Sonderfolgen gelesen, und die Probe schriebe eine andere Mutation als die
+ * beschriebene (16.10.2026, Review — kein Eintrag trug bis dahin eine).
+ */
+export function mutiert(text, m) {
+  return text.replace(m.suchen, () => m.ersetzen)
+}
+
 let laufendeDatei = null
 let laufenderInhalt = null
 
@@ -8363,7 +8373,7 @@ function main() {
     laufenderInhalt = readFileSync(pfad, 'utf8')
 
     process.stdout.write(`[${i + 1}/${auswahl.length}] ${m.id} … `)
-    writeFileSync(pfad, lies(pfad).replace(m.suchen, m.ersetzen))
+    writeFileSync(pfad, mutiert(lies(pfad), m))
     const start = Date.now()
     const lauf = testlauf(vitest)
     zuruecksetzen()
