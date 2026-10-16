@@ -78,4 +78,60 @@ Teil 1).
 
 ## Teil 1 · Jede einzelne Übersetzung
 
-(folgt Sprache für Sprache)
+**So gelesen:** je Sprache alle 745 Schlüssel als Matrix — Schlüssel ·
+Deutsch · Übersetzung · wo im Code verwendet (mit dem deutschen Kommentar in
+`de.ts` daneben) —, dazu, was nicht im Wörterbuch steht: der FRAG-Block der
+Sprache in `translate-data.ts`, ihre Verweis-Vorlagen (REF), Datum und
+Kurzphrasen (D bzw. EXTRA, an Proben durch `makeTr` gelesen), die 66
+Bibelbücher mit Kürzel und die Titel der Functions (`send-plan`,
+`send-reminders`, `substitute`, `trolley`) samt Anmelde-Mail. Geändert wurde
+nur, wo der alte Wert geprüft gleich war (Skript, idempotent); die
+Anmelde-Mail der Functions entsteht danach neu aus dem Wörterbuch
+(`scripts/anmelde-texte-erzeugen.mjs`).
+
+Nebenbei gefunden, nicht geändert: `ansehen` und `zuteilenChip` benutzt kein
+Code mehr (in allen zwölf Wörterbüchern), FRAG `Treffpunkte` und die Regel
+„N Zuteilungen" (`zut`) erzeugt kein Erzeuger mehr — sie stehen nur noch für
+alte Zeilen da.
+
+### en · Englisch
+
+16. Oktober 2026 · alle 745 gelesen · Anrede: du (you) · 27 Korrekturen im
+Wörterbuch, 1 in FRAG.
+
+| Schlüssel | alt | neu | Grund |
+| --- | --- | --- | --- |
+| `linkMailText` | … ⏎⏎the {versammlung} Congregation plans … | … ⏎⏎The {versammlung} Congregation plans … | Nach der Anrede beginnt der englische Brieftext groß (im Deutschen klein) |
+| `fsShort` | Field Service | Meetings for field service | „Treffpunkte“ hieß wie das Thema „Predigtdienst“ (tabFs) — auf dem Treffpunkt-Bogen stand „Field service · Field Service“; jw.org: „meetings for field service“ |
+| `toastFsRuleAdd` | Added to schedule | Added to base schedule | Der Grundplan heißt „Base schedule“ (fsGrundplan) |
+| `toastFsRuleDel` | Removed from schedule | Removed from base schedule | wie toastFsRuleAdd |
+| `vpVorgemerkt` | This week has not been loaded yet. The talk is entered as soon as its program is imported. | This week has not been created yet. The talk is entered as soon as its program has been fetched. | Deutsch sagt „angelegt“ und „geholt“ (seit Phase 10 heißt der Knopf „Fetch“) |
+| `wpNamePhSaal` | e.g. Snow clearing | e.g., Snow clearing | „e.g.,“ wie in den übrigen Platzhaltern |
+| `absageNachrichtBeispiel` | e.g. I’m away that day | e.g., I’m away that day | „e.g.,“ wie in den übrigen Platzhaltern |
+| `personAnlegenHinweis` | You set the assignment areas on the person afterwards. | You can set the assignment areas on the person’s page afterwards. | „on the person“ ist kein Englisch; sonst überall „on the person’s page“ |
+| `standDerAnmeldung` | Sign-in status | Login status | Anmelden heißt überall „Log in“ (anmeldenKnopf, angemeldetBleiben) |
+| `standAngemeldet` | Signed in | Logged in | wie standDerAnmeldung |
+| `kontenOhnePerson` | Accounts without person | Accounts without a person | Artikel fehlte |
+| `spurErsatzGesucht` | Substitute sought | Substitute needed | Derselbe Stand heißt in der Mitteilung „Substitute needed“ (notifErsatzGesucht) |
+| `absagen` | Cancel | Decline | Im Absage-Blatt standen zwei Knöpfe „Cancel“ — Absagen und Abbrechen (abbrechen); die Absage heißt sonst „declined“ (notifVerhindert, zusageAbgesagt) |
+| `spurDuSagstAb` | You cancel | You decline | wie absagen |
+| `ersatzHint` | If you cancel a support duty, a substitute is automatically sought among those qualified. | If you decline a support duty, a substitute is automatically sought among those qualified. | wie absagen |
+| `toastErsatzGesucht` | Cancelled · a substitute is being sought | Declined · a substitute is being sought | wie absagen |
+| `erinAbsage` | Cancellation | Declined assignment | wie absagen |
+| `anlassMemText` | The meeting on this day is canceled | The meeting on this day is cancelled | sonst überall „cancelled“ |
+| `erinMailNur` | The app only sends emails for invitations and for signing in. | The app only sends emails for invitations and for logging in. | Anmelden heißt überall „log in“ |
+| `lacPh` | New item, e.g., local announcements | New part, e.g., local announcements | Programmpunkte heißen sonst „part“ (programmpunktEinfuegen, programmpunkteN) |
+| `toastLacAdd` | Item inserted · times adjusted | Part inserted · times adjusted | wie lacPh |
+| `toastLacDel` | Item removed · times adjusted | Part removed · times adjusted | wie lacPh |
+| `ohneGruppeHint` | … under Field service. … | … under “Field service”. … | Zitierter Menüpunkt (tabFs) in Anführungszeichen wie im Deutschen |
+| `suchen` | Search … | Search… | Auslassungspunkte ohne Leerzeichen wie in „Sending…“ |
+| `langSearchPh` | Search languages … | Search languages… | wie suchen |
+| `holtProgramm` | Fetching the program … | Fetching the program… | wie suchen |
+| `laedt` | Loading … | Loading… | wie suchen |
+| FRAG `Treffpunkte` | Field Service | Meetings for field service | wie `fsShort` (zweite Ablage desselben Worts) |
+
+Daten gelesen: FRAG, REF, D, Bibelbücher (NWT-Kürzel, „Ca" für das Hohelied
+ist das amtliche), Function-Titel — sonst nichts zu ändern.
+
+Offen: keine. (Erwogen und gelassen: `fsFreqM1` „1st of the month" für „jeden
+1. [Samstag] im Monat" — steht immer neben dem Wochentag und liest sich dort so.)

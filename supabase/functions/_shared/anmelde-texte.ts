@@ -25,7 +25,7 @@ export interface LinkMailTexte {
 const TEXTE: Record<string, LinkMailTexte> = {
   en: {
     betreff: "Your access to the {versammlung} Congregation",
-    text: "Hello {name},\n\nthe {versammlung} Congregation plans its meetings and field service with Versammlung.app. Your access is ready.\n\nLog in now:\n{url}\n\nIs the app on your Home Screen? Then open it there, tap “Type in code” and enter this code:\n{code}\n\nThe link and code are valid until {datum} and log only you in. You don’t need a password. If they have expired, open the app and tap “Send link”.\n\nYou are receiving this email because you are listed in the {versammlung} Congregation. If you have questions, please speak to the elders.",
+    text: "Hello {name},\n\nThe {versammlung} Congregation plans its meetings and field service with Versammlung.app. Your access is ready.\n\nLog in now:\n{url}\n\nIs the app on your Home Screen? Then open it there, tap “Type in code” and enter this code:\n{code}\n\nThe link and code are valid until {datum} and log only you in. You don’t need a password. If they have expired, open the app and tap “Send link”.\n\nYou are receiving this email because you are listed in the {versammlung} Congregation. If you have questions, please speak to the elders.",
   },
   es: {
     betreff: "Tu acceso a la congregación {versammlung}",

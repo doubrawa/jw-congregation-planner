@@ -120,7 +120,7 @@ const FRAG: Record<string, Record<string, string>> = {
   },
   en: {
     "Schüler": "Student", "Partner": "Assistant", "Ratgeber": "Counselor",
-    "Treffpunkte": "Field Service",
+    "Treffpunkte": "Meetings for field service",
     'ERÖFFNUNG': 'OPENING', 'ABSCHLUSS': 'CONCLUSION',
     'SCHÄTZE AUS GOTTES WORT': 'TREASURES FROM GOD\u2019S WORD',
     'UNS IM DIENST VERBESSERN': 'APPLY YOURSELF TO THE FIELD MINISTRY',
