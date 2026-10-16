@@ -166,8 +166,9 @@ async function pruneNotifications(): Promise<void> {
  * **Und es ist nicht nur Verschwendung.** Greift je eine Zeilengrenze
  * (PostgREST kennt `max-rows`), schneidet `asc` die **jüngsten** Zeilen ab —
  * also genau die, um die es geht. Die Erinnerungen blieben aus, und im
- * Protokoll stünde ein erfolgreicher Lauf. Der Client bündelt dieselbe Abfrage
- * seit je andersherum: absteigend mit `limit` (`WEEK_LIMIT` in `lib/data.ts`).
+ * Protokoll stünde ein erfolgreicher Lauf. Der Client begrenzt seine Abfrage
+ * ebenso nach dem Datum — ab einem Jahr zurück (`aufbewahrtAb` in
+ * `lib/data.ts`, T125).
  *
  * Die Grenzen kommen aus derselben Arithmetik wie `tageBisTermin`: Der Termin
  * liegt bei `start + offset` mit `offset` zwischen 0 und 6. Nach unten deshalb

@@ -2,8 +2,9 @@
  * Die Kennung eines Treffpunkts darf nicht an der Position seiner Woche hängen
  * (T87, gefunden bei der Modellprüfung T68).
  *
- * **Der Fall, den niemand ausprobiert hat.** Das Ladefenster hält die jüngsten
- * 52 Wochen (`WEEK_LIMIT`). Solange die Versammlung weniger hat, fängt es
+ * **Der Fall, den niemand ausprobiert hat.** Das Ladefenster hielt damals die
+ * jüngsten 52 Wochen (seit dem 16.10.2026 reicht es ein Jahr zurück, T125 —
+ * es rutscht genauso). Solange die Versammlung weniger hat, fängt es
  * immer bei derselben Woche an — die Wochennummer einer Kalenderwoche steht
  * still, und alles sieht richtig aus. Vom ersten Import jenseits eines Jahres
  * an rutscht das Fenster mit jeder neuen Woche eine weiter: Dieselbe

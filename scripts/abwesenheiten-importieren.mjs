@@ -53,14 +53,24 @@
  *
  * `--ab`      früheste Bis-Datum, das noch importiert wird (Vorgabe: heute).
  *             Vergangenes bleibt draußen — es ändert an der Planung nichts und
- *             füllte nur die persönlichen Listen.
+ *             füllte nur die persönlichen Listen. Früher als acht Wochen zurück
+ *             geht es nicht (T125): Danach räumt die Datenbank Abwesenheiten.
  * `--trocken` zeigt nur, was geschähe, und schreibt nichts.
  *
  * Der **Service-Role-Key** umgeht RLS und darf niemals in die App oder ins
  * Repository. Personenbezogene Daten — Ausgaben nicht einchecken.
  */
 
-import { alsSkript, argumente, ladeTabellen, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
+import {
+  alsSkript,
+  appCodeBereit,
+  argumente,
+  ladeTabellen,
+  nichtVorDerFrist,
+  restKlient,
+  versammlungHolen,
+  zugangsdaten,
+} from './gemeinsam.mjs'
 import { lebend, nameAufloeser, nurDatum, personIdAufloeser } from './nws-personen.mjs'
 
 /* ===================== NWS lesen ========================================== */
@@ -209,7 +219,9 @@ export async function main(argv = process.argv.slice(2)) {
   const arg = argumente(argv)
   const { url, key } = await zugangsdaten()
   const datenDir = arg.daten || 'C:/DATA/Claude/nws-export/MyData-decrypted'
-  const ab = typeof arg.ab === 'string' ? arg.ab : heuteISO()
+  appCodeBereit()
+  const { aufbewahrtAb, SONST_WOCHEN } = await import('../src/data/aufbewahrung.ts')
+  const ab = nichtVorDerFrist(typeof arg.ab === 'string' ? arg.ab : heuteISO(), aufbewahrtAb(SONST_WOCHEN))
   const rest = restKlient(url, key)
 
   const tabellen = ladeTabellen(datenDir, TABELLEN)

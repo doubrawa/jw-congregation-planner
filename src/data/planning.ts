@@ -1252,7 +1252,8 @@ export function alleS89DerWoche(
  * Das Gegenstück zum Umbau: Wer aus einem Schlüssel wieder eine Woche braucht,
  * schlägt sie hier nach, statt die Zahl als Index zu missbrauchen. Nicht
  * geladen heißt nicht ungültig — die Woche kann außerhalb des Ladefensters
- * liegen (WEEK_LIMIT), und ihr Schlüssel bleibt trotzdem richtig.
+ * liegen (ein Jahr zurück, `aufbewahrung.ts`), und ihr Schlüssel bleibt
+ * trotzdem richtig.
  */
 export function wochenIndex(weeks: readonly Week[], woche: string): number {
   return woche ? weeks.findIndex((w) => w.start === woche) : -1

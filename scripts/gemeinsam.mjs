@@ -774,6 +774,18 @@ export function appCodeBereit() {
 }
 
 /**
+ * **Nicht vor der Frist** (T125, 16.10.2026): Ein `--ab` vor `grenze` wird auf
+ * sie angehoben, und das Skript sagt es. Was davor liegt, lädt die App nicht,
+ * und die Datenbank räumt es (`aufbewahrtAb` in `src/data/aufbewahrung.ts`) —
+ * ein Import holte es also nur für die nächste Nacht.
+ */
+export function nichtVorDerFrist(gewuenscht, grenze) {
+  if (gewuenscht >= grenze) return gewuenscht
+  console.log(`--ab ${gewuenscht} liegt vor der Aufbewahrungsfrist — es gilt ${grenze}.`)
+  return grenze
+}
+
+/**
  * **Die Zusagen dieser Plätze löschen** — nach dem Schreiben ihrer Woche, wie
  * in der App (`zusagenNachDemSchreiben` in `persist.ts`).
  *

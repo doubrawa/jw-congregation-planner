@@ -47,6 +47,10 @@
  * trägt eine aus der NWS-Kennung abgeleitete Id; beim zweiten Lauf wird
  * derselbe Termin wiedergefunden statt ein zweites Mal angelegt.
  *
+ * **Höchstens ein Jahr zurück** (T125, 16.10.2026), wie die Zuteilungen der
+ * Zusammenkünfte: Ältere NWS-Termine kommen nicht hinein (`aufbewahrtAb` in
+ * `src/data/aufbewahrung.ts`).
+ *
  * ---------------------------------------------------------------- Aufruf ----
  *
  *   node scripts/treffpunkte-importieren.mjs \
@@ -360,21 +364,29 @@ export async function main(argv = process.argv.slice(2)) {
   const jeWoche = nachWoche(treffpunkte)
   console.log(`NWS: ${treffpunkte.length} Treffpunkte in ${jeWoche.size} Wochen.`)
 
-  const wochen = await rest(`weeks?select=start&congregation_id=eq.${cong}`)
-  const bekannteWochen = new Set(wochen.map((w) => w.start))
-  const fsRows = await rest(`fs_weeks?select=start,data&congregation_id=eq.${cong}`)
-  const fsNachStart = new Map(fsRows.map((r) => [r.start, r.data ?? []]))
-  console.log(`App: ${personen.length} Personen, ${wochen.length} Programmwochen, ${fsRows.length} Treffpunkt-Wochen.`)
-
   // Wechselt ein Leiter, verfällt die Zusage seines Vorgängers — dieselbe Regel
-  // wie in der App (`fsVerwaisteZusagen`, siehe `zusagenLoeschen`).
+  // wie in der App (`fsVerwaisteZusagen`, siehe `zusagenLoeschen`). Wie weit
+  // zurück, ebenso (T125).
   appCodeBereit()
-  const { fsVerwaisteZusagen } = await import('../src/data/fs.ts')
+  const [{ fsVerwaisteZusagen }, { aufbewahrtAb, VERTEILUNG_WOCHEN }] = await Promise.all([
+    import('../src/data/fs.ts'),
+    import('../src/data/aufbewahrung.ts'),
+  ])
+  const ab = aufbewahrtAb(VERTEILUNG_WOCHEN)
+
+  const wochen = await rest(`weeks?select=start&congregation_id=eq.${cong}&start=gte.${ab}`)
+  const bekannteWochen = new Set(wochen.map((w) => w.start))
+  const fsRows = await rest(`fs_weeks?select=start,data&congregation_id=eq.${cong}&start=gte.${ab}`)
+  const fsNachStart = new Map(fsRows.map((r) => [r.start, r.data ?? []]))
+  console.log(`App: ${personen.length} Personen, ${wochen.length} Programmwochen, ${fsRows.length} Treffpunkt-Wochen ab ${ab}.`)
 
   const summe = { gesetzt: 0, angelegt: 0, nachgefuehrt: 0, offen: 0, geschuetzt: 0, mehrdeutig: 0, ohnePid: 0 }
   const geschrieben = []
   let ohneWoche = 0
+  let zuAlt = 0
   for (const [montag, tps] of [...jeWoche].sort((a, b) => a[0].localeCompare(b[0]))) {
+    // Älter als ein Jahr: gar nicht erst hinein (T125).
+    if (montag < ab) { zuAlt++; continue }
     if (!bekannteWochen.has(montag)) { ohneWoche++; continue }
     const vorher = fsNachStart.get(montag) ?? []
     const z = verteileFsWoche(vorher, tps, bind, { nurLeere, standardOrt })
@@ -396,6 +408,7 @@ export async function main(argv = process.argv.slice(2)) {
   if (summe.mehrdeutig) console.log(`! ${summe.mehrdeutig} Termine passten auf mehrere Gruppentreffpunkte — nicht zugeordnet.`)
   if (summe.ohnePid) console.log(`Leiter ohne App-Person (nur Name gesetzt): ${summe.ohnePid}`)
   if (ohneWoche) console.log(`Wochen ohne jw.org-Import übersprungen: ${ohneWoche}`)
+  if (zuAlt) console.log(`Älter als ein Jahr (vor ${ab}), nicht übernommen: ${zuAlt} NWS-Wochen`)
   if (fehlendePersonen.size) {
     console.log('\nNWS-Leiter ohne App-Person (Personen neu importieren?):')
     console.log(`  ${[...fehlendePersonen].sort().join(', ')}`)

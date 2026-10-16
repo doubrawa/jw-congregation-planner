@@ -28,9 +28,9 @@ import {
   SENT_LOG_LIMIT,
   setKonfliktMelder,
   substituteTake,
-  WEEK_LIMIT,
   wocheGeschrieben,
 } from './data'
+import { aufbewahrtAb, SONST_WOCHEN, VERTEILUNG_WOCHEN } from '../data/aufbewahrung'
 import type { Week } from '../data/types'
 import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 
@@ -46,8 +46,7 @@ function chainFor(table: string) {
     store.filter.push([table, 'select', String(spalten), ''])
     return chain
   }
-  // Die Obergrenze wird mitgeschrieben: das Ladefenster steckt jetzt in ihr
-  // (und in der Sortierung), nicht mehr in einem `gte` aus einer Vorabfrage.
+  // Die Obergrenze wird mitgeschrieben: Das Tagebuch kappt bei den jüngsten.
   chain.limit = (wert: unknown) => {
     store.filter.push([table, 'limit', '', wert])
     return chain
@@ -57,25 +56,26 @@ function chainFor(table: string) {
     store.filter.push([table, 'range', '', [von, bis]])
     return chain
   }
-  // Filter werden mitgeschrieben: seit T66 steckt im `gte` das Ladefenster, und
-  // ohne diese Aufzeichnung wäre es von außen nicht mehr zu sehen.
+  // Filter werden mitgeschrieben: Im `gte` steckt das Ladefenster (T125), und
+  // ohne diese Aufzeichnung wäre es von außen nicht zu sehen.
   for (const m of ['eq', 'gte']) {
     chain[m] = (spalte: string, wert: unknown) => {
       store.filter.push([table, m, spalte, wert])
       return chain
     }
   }
-  chain.then = (resolve: (v: unknown) => void) => resolve(resp)
+  // Und wann die Antwort abgeholt wird: Daran lässt sich sehen, ob die Seiten
+  // nacheinander oder gleichzeitig hinausgehen.
+  chain.then = (resolve: (v: unknown) => void) => {
+    store.filter.push([table, 'then', '', null])
+    resolve(resp)
+  }
   return chain
 }
 
 /** Obergrenze, mit der `table` abgefragt wurde (undefined: keine). */
 const grenze = (table: string): unknown =>
   store.filter.find(([t, m]) => t === table && m === 'limit')?.[3]
-
-/** Wert des `gte`-Filters, mit dem `table` abgefragt wurde (undefined: keiner). */
-const fenster = (table: string): unknown =>
-  store.filter.find(([t, m]) => t === table && m === 'gte')?.[3]
 
 const personRow = { id: 'p1', fn: 'Anna', ln: 'Beispiel', planner: false, role: 'verkuendiger', female: true, tel: '', mail: '', priv: {}, grp: null }
 const serviceRow = { key: 'mik', name: 'Mikrofone', count: 2, priv: null, groups: false, position: 0 }
@@ -167,6 +167,26 @@ describe('loadCongregationData', () => {
       expect(seiten('confirmations')).toEqual([[0, 999]])
     })
 
+    it('die weiteren Seiten gehen gleichzeitig hinaus, nicht eine nach der anderen (Review App #5)', async () => {
+      // Nacheinander kostete jede Seite eine volle Netzrunde mehr bis zum
+      // ersten Bild — bei einem Jahr Zusagen drei.
+      const zusagen = (von: number) =>
+        Array.from({ length: 1000 }, (_, i) => ({ task_key: `k${von + i}`, status: 'bestätigt' }))
+      seedResponses({
+        confirmations: [
+          { data: zusagen(0), error: null, count: 2500 },
+          { data: zusagen(1000), error: null, count: 2500 },
+          { data: zusagen(2000).slice(0, 500), error: null, count: 2500 },
+        ],
+      })
+      const res = await loadCongregationData('u1')
+      expect(res.ok && Object.keys(res.data.confirmations)).toHaveLength(2500)
+      const ablauf = store.filter
+        .filter(([t, m]) => t === 'confirmations' && (m === 'range' || m === 'then'))
+        .map(([, m, , wert]) => (m === 'range' ? `range ${(wert as [number, number])[0]}` : 'then'))
+      expect(ablauf).toEqual(['range 0', 'then', 'range 1000', 'range 2000', 'then', 'then'])
+    })
+
     it('der Stand jeder geladenen Treffpunkt-Woche geht beim Schreiben mit (15.10.2026)', async () => {
       // Ohne ihn schrieb `saveFsWeek` als Upsert und nahm zurück, was ein
       // anderer inzwischen an derselben Woche geändert hatte.
@@ -183,7 +203,7 @@ describe('loadCongregationData', () => {
       expect(store.filter).toContainEqual(['fs_weeks', 'eq', 'updated_at', 'F7'])
     })
 
-    it('auch Abwesenheiten und Plan-Einträge kommen seitenweise — beide werden nie aufgeräumt', async () => {
+    it('auch Abwesenheiten und Plan-Einträge kommen seitenweise', async () => {
       seedResponses({
         absences: [
           { data: [{ id: 'a1', person_id: 'p1', user_id: null, from_date: '2026-09-01', to_date: '2026-09-02', reason: '' }], error: null, count: 2 },
@@ -215,7 +235,9 @@ describe('loadCongregationData', () => {
   })
 
   /**
-   * Ladefenster: nur die jüngsten WEEK_LIMIT Wochen kommen aus der Datenbank.
+   * **Ladefenster** (T125, 16.10.2026): Die Wochen kommen ab dem Montag vor
+   * einem Jahr, gezählt vom heutigen — dieselbe Frist, nach der die Datenbank
+   * aufräumt (`aufbewahrung.ts`). Bis dahin waren es die jüngsten 52 Wochen.
    *
    * Gemessen wird seit T66 am **Datum**. Bis dahin lief es über die Position,
    * und weil die zugleich Kennung war und in jedem `task_key` steckte
@@ -225,15 +247,28 @@ describe('loadCongregationData', () => {
    * vor was kommt.
    */
   describe('Ladefenster', () => {
+    /** Heute im Test: Montag, 2. März 2026 — `montag(8)`. */
+    const HEUTE = new Date(2026, 2, 2, 9, 0)
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(HEUTE)
+    })
+    afterEach(() => vi.useRealTimers())
+
     /** Montag `n` Wochen nach dem 5. Januar 2026. */
     const montag = (n: number): string =>
       new Date(Date.UTC(2026, 0, 5) + n * 7 * 864e5).toISOString().slice(0, 10)
 
+    /** Die Grenze ein Jahr zurück: der Montag 52 Wochen vor dem 2. März 2026. */
+    const EIN_JAHR = aufbewahrtAb(VERTEILUNG_WOCHEN, HEUTE)
+
+    /** Wert des `gte`-Filters auf `spalte`, mit dem `table` abgefragt wurde. */
+    const ab = (table: string, spalte: string): unknown =>
+      store.filter.find(([t, m, s]) => t === table && m === 'gte' && s === spalte)?.[3]
+
     /**
      * Antworten für eine Versammlung mit diesen Wochen (hier aufsteigend
-     * genannt, weil sich das so liest).
-     *
-     * Die Datenbank liefert **absteigend** und höchstens `WEEK_LIMIT` Zeilen —
+     * genannt, weil sich das so liest). Die Datenbank liefert **absteigend** —
      * genau das stellt der Stub nach. Sonst prüfte der Test eine Reihenfolge,
      * die es so nie gibt.
      */
@@ -241,27 +276,44 @@ describe('loadCongregationData', () => {
       seedResponses({
         weeks: [
           {
-            data: [...geladen]
-              .reverse()
-              .slice(0, WEEK_LIMIT)
-              .map((start) => ({ start, data: buildDemoWeeks()[0] })),
+            data: [...geladen].reverse().map((start) => ({ start, data: buildDemoWeeks()[0] })),
             error: null,
           },
         ],
       })
 
-    /*
-      Bis hierher wurde der Anker (`max(start)`) in einer eigenen Abfrage
-      **vor** allen anderen geholt — eine volle Netzrunde, bevor überhaupt
-      etwas geladen wurde, und das bei jeder Anmeldung, jedem SIGNED_IN und
-      jedem Konflikt-Neuladen. Zwei Proben halten fest, dass sie weg ist:
-      nichts wird mehr vor dem Bündel gefragt, und die Datumsgrenze ist kein
-      Abfrageparameter mehr, sondern wird am Ergebnis angelegt.
-    */
-    it('kommt mit einer einzigen Antwort je Wochentabelle aus', async () => {
-      // Der Stub gibt jede hinterlegte Antwort genau einmal heraus. Käme die
-      // Ankerabfrage zurück, äße sie diese eine Antwort auf und für das
-      // eigentliche Laden bliebe nichts — die Wochen kämen leer an.
+    it('die Grenze steht fest: der 3. März 2025', () => {
+      // Gegenprobe zur Rechnung in `aufbewahrung.ts`, damit die Proben unten
+      // nicht nur dieselbe Funktion zweimal fragen.
+      expect(EIN_JAHR).toBe('2025-03-03')
+    })
+
+    it('holt die Wochen ab dem Montag vor einem Jahr — die Treffpunkte genauso, ohne Obergrenze', async () => {
+      mitWochen([montag(0)])
+      await loadCongregationData('u1')
+      expect(ab('weeks', 'start')).toBe(EIN_JAHR)
+      // Dieselbe Grenze für die Treffpunkte — sonst hätte eine Woche ihre
+      // Zusammenkunft ohne ihre Treffpunkte oder umgekehrt.
+      expect(ab('fs_weeks', 'start')).toBe(EIN_JAHR)
+      // Was voraus liegt, kommt ganz: Die Frist zählt zurück, nicht vor.
+      expect(grenze('weeks')).toBeUndefined()
+      expect(grenze('fs_weeks')).toBeUndefined()
+    })
+
+    it('ebenso, was zu den Wochen gehört; Abwesenheiten nur bis acht Wochen nach ihrem Ende', async () => {
+      seedResponses()
+      await loadCongregationData('u1')
+      expect(ab('gruppenbesuche', 'woche')).toBe(EIN_JAHR)
+      expect(ab('vortraege', 'woche')).toBe(EIN_JAHR)
+      expect(ab('plan_eintraege', 'datum')).toBe(EIN_JAHR)
+      expect(ab('absences', 'to_date')).toBe(aufbewahrtAb(SONST_WOCHEN, HEUTE))
+      expect(ab('absences', 'to_date')).toBe('2026-01-05')
+    })
+
+    it('kommt mit einer einzigen Antwort je Wochentabelle aus — keine Vorabfrage', async () => {
+      // Der Stub gibt jede hinterlegte Antwort genau einmal heraus. Käme eine
+      // Vorabfrage (früher `max(start)`) zurück, äße sie diese eine Antwort auf
+      // und für das eigentliche Laden bliebe nichts — die Wochen kämen leer an.
       mitWochen([montag(0), montag(1)])
       const res = await loadCongregationData('u1')
       expect(res.ok).toBe(true)
@@ -269,46 +321,15 @@ describe('loadCongregationData', () => {
       expect(res.data.weeks.map((w) => w.start)).toEqual([montag(0), montag(1)])
     })
 
-    it('setzt die Datumsgrenze nicht mehr als Abfragefilter', async () => {
-      mitWochen([montag(0), montag(1)])
-      await loadCongregationData('u1')
-      expect(fenster('weeks')).toBeUndefined()
-      expect(fenster('fs_weeks')).toBeUndefined()
-    })
-
-    it('holt höchstens WEEK_LIMIT Wochen — auch die Treffpunkte', async () => {
-      mitWochen([montag(0)])
-      await loadCongregationData('u1')
-      expect(grenze('weeks')).toBe(WEEK_LIMIT)
-      // Dieselbe Grenze für die Treffpunkte — sonst hätte eine Woche ihre
-      // Zusammenkunft ohne ihre Treffpunkte oder umgekehrt.
-      expect(grenze('fs_weeks')).toBe(WEEK_LIMIT)
-    })
-
-    /*
-      Das Fenster misst am Datum, nicht an der Zeilenzahl. Fiele eine Kennung
-      je auf einen anderen Wochentag als Montag, kämen mehr Zeilen in denselben
-      Zeitraum — was älter ist als der Montag WEEK_LIMIT-1 Wochen vor der
-      jüngsten, gehört trotzdem nicht dazu.
-    */
-    it('schneidet ab, was älter ist als WEEK_LIMIT-1 Wochen vor der jüngsten', async () => {
+    it('was älter ist als die Grenze, fällt heraus — auch wenn die Datenbank es liefert', async () => {
+      const davor = '2025-02-24'
       seedResponses({
-        weeks: [
-          {
-            data: [montag(59), montag(59 - (WEEK_LIMIT - 1)), montag(59 - WEEK_LIMIT)].map(
-              (start) => ({ start, data: buildDemoWeeks()[0] }),
-            ),
-            error: null,
-          },
-        ],
+        weeks: [{ data: [montag(59), montag(0), EIN_JAHR, davor].map((start) => ({ start, data: buildDemoWeeks()[0] })), error: null }],
       })
       const res = await loadCongregationData('u1')
       expect(res.ok).toBe(true)
       if (!res.ok) return
-      expect(res.data.weeks.map((w) => w.start)).toEqual([
-        montag(59 - (WEEK_LIMIT - 1)),
-        montag(59),
-      ])
+      expect(res.data.weeks.map((w) => w.start)).toEqual([EIN_JAHR, montag(0), montag(59)])
     })
 
     it('reicht genau so weit zurück wie die Wochen, die es gibt', async () => {
@@ -670,7 +691,7 @@ describe('loadCongregationData: die Pläne aus T120', () => {
     }
   })
 
-  it('Pläne ab einem Vierteljahr zurück, Trolley-Termine ab dieser Woche — Besuche, Trolleys und Plan-Einträge ohne Grenze', async () => {
+  it('Pläne ab einem Vierteljahr zurück, Trolley-Termine ab dieser Woche, Besuche und Plan-Einträge ein Jahr — Trolleys ohne Grenze', async () => {
     mitPlaenen()
     await loadCongregationData('u1')
     // 91 Tage vor Montag, dem 7. September 2026.
@@ -679,9 +700,10 @@ describe('loadCongregationData: die Pläne aus T120', () => {
     expect(gte('trolley_termine')).toEqual(['trolley_termine', 'gte', 'datum', '2026-09-07'])
     // Bei den Plänen zählt das Ende: Ein laufender Plan kann lange vorher begonnen haben.
     expect(gte('plaene')).toEqual(['plaene', 'gte', 'bis', '2026-06-08'])
-    expect(gte('gruppenbesuche')).toBeUndefined()
+    // Ein Jahr wie die Wochen (T125): der Montag 52 Wochen vor dem 7. September 2026.
+    expect(gte('gruppenbesuche')).toEqual(['gruppenbesuche', 'gte', 'woche', '2025-09-08'])
+    expect(gte('plan_eintraege')).toEqual(['plan_eintraege', 'gte', 'datum', '2025-09-08'])
     expect(gte('trolleys')).toBeUndefined()
-    expect(gte('plan_eintraege')).toBeUndefined()
   })
 
   it.each(T120)('fehlt %s noch (Schema nicht eingespielt), lädt der Rest trotzdem', async (tabelle) => {

@@ -47,8 +47,9 @@
  *
  *   --anzahl   wie viele Wochen (Standard 8).
  *   --ab       nach welcher Woche weitergezählt wird (ISO-Montag) — auch
- *              zurück, um Wochen nachzuholen. Ohne Angabe wie der Knopf in der
- *              App (`holenNach`): nach der letzten gespeicherten Woche, aber nie
+ *              zurück, um Wochen nachzuholen, aber nicht vor den Montag vor
+ *              einem Jahr (T125). Ohne Angabe wie der Knopf in der App
+ *              (`holenNach`): nach der letzten gespeicherten Woche, aber nie
  *              vor der laufenden.
  *   --trocken  holt und zeigt, schreibt aber nicht.
  *
@@ -56,7 +57,16 @@
  * dem, was da war — das ist kein Fehler, sondern der Kalender.
  */
 
-import { alsSkript, appCodeBereit, argumente, funktionsKopf, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
+import {
+  alsSkript,
+  appCodeBereit,
+  argumente,
+  funktionsKopf,
+  nichtVorDerFrist,
+  restKlient,
+  versammlungHolen,
+  zugangsdaten,
+} from './gemeinsam.mjs'
 
 /** Was die Einordnung von der Versammlung braucht — Zeiten und Klasse kommen aus dieser Zeile. */
 const VERSAMMLUNG_SPALTEN = 'id,name,cong_lang,prog_langs,aux_class,mid_wd,mid_time,we_wd,we_time'
@@ -161,8 +171,15 @@ export async function main(argv = process.argv.slice(2)) {
    * zurück, die niemand mehr plant; dafür gibt es `--ab`.
    */
   appCodeBereit()
-  const { holenNach } = await import('../src/data/holen.ts')
-  const ab = typeof arg.ab === 'string' ? arg.ab : holenNach(vorhandene.map((start) => ({ start })), new Date())
+  const [{ holenNach }, { aufbewahrtAb, VERTEILUNG_WOCHEN }] = await Promise.all([
+    import('../src/data/holen.ts'),
+    import('../src/data/aufbewahrung.ts'),
+  ])
+  // Nie vor dem Montag vor einem Jahr (T125): Älteres lädt die App nicht.
+  const ab = nichtVorDerFrist(
+    typeof arg.ab === 'string' ? arg.ab : holenNach(vorhandene.map((start) => ({ start })), new Date()),
+    aufbewahrtAb(VERTEILUNG_WOCHEN),
+  )
   const zuletzt = vorhandene[vorhandene.length - 1]
 
   console.log(`Versammlung:  ${cong.name} (${cong.id})`)

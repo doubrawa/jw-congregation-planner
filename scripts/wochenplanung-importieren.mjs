@@ -15,6 +15,11 @@
  * weiterhin [[an-jw-org-messen]]: die Struktur ist die amtliche, wir erfinden
  * keine.
  *
+ * **Höchstens ein Jahr zurück** (T125, 16.10.2026): Was vor dem Montag vor einem
+ * Jahr liegt, kommt nicht hinein — die App lädt es nicht, und die Datenbank
+ * räumt es (`aufbewahrtAb` in `src/data/aufbewahrung.ts`). Gemeldet wird, wie
+ * viele NWS-Wochen deshalb draußen blieben.
+ *
  * **Zuordnung.** Alles hängt am Montag der Programmwoche. NWS datiert die
  * Zusammenkunft unter der Woche auf den Montag, das Wochenende auf den Samstag
  * (= Montag + 5) — beides wird auf den Montag der Woche zurückgerechnet, den
@@ -638,9 +643,19 @@ export async function main(argv = process.argv.slice(2)) {
     return { name: treffer[0].name, pid: treffer[0].id }
   }
 
-  const wochen = await rest(`weeks?select=start,data&congregation_id=eq.${cong}`)
+  // Welche Plätze den Inhaber wechseln, rechnet die App selbst — deren Zusagen
+  // verfallen (siehe `zusagenLoeschen`). Wie weit zurück, ebenso (T125).
+  appCodeBereit()
+  const [{ changedSlotKeys }, { MEETING_TABS }, { aufbewahrtAb, VERTEILUNG_WOCHEN }] = await Promise.all([
+    import('../src/data/planning.ts'),
+    import('../src/data/helpers.ts'),
+    import('../src/data/aufbewahrung.ts'),
+  ])
+  const ab = aufbewahrtAb(VERTEILUNG_WOCHEN)
+
+  const wochen = await rest(`weeks?select=start,data&congregation_id=eq.${cong}&start=gte.${ab}`)
   const nachStart = new Map(wochen.map((w) => [w.start, w]))
-  console.log(`App: ${personen.length} Personen, ${wochen.length} importierte Wochen.`)
+  console.log(`App: ${personen.length} Personen, ${wochen.length} importierte Wochen ab ${ab}.`)
 
   // Hilfsdienst-Zuordnung: NWS-Dienst → tatsächlicher App-Dienst. In der App
   // angelegte Dienste tragen `svc-<uuid>` statt fester Schlüssel — ohne diese
@@ -648,13 +663,6 @@ export async function main(argv = process.argv.slice(2)) {
   // `count` und `groups` für die Plätze der Hilfsdienste (`changedSlotKeys`).
   const services = await rest(`services?select=key,name,count,groups&congregation_id=eq.${cong}&order=position`)
   const keyMap = dienstZuordnung(services)
-  // Welche Plätze den Inhaber wechseln, rechnet die App selbst — deren Zusagen
-  // verfallen (siehe `zusagenLoeschen`).
-  appCodeBereit()
-  const [{ changedSlotKeys }, { MEETING_TABS }] = await Promise.all([
-    import('../src/data/planning.ts'),
-    import('../src/data/helpers.ts'),
-  ])
   console.log('\nHilfsdienst-Zuordnung (NWS → App):')
   for (const kanon of Object.keys(DIENST_ANZEIGE)) {
     const k = keyMap[kanon]
@@ -663,10 +671,12 @@ export async function main(argv = process.argv.slice(2)) {
   }
 
   // 3) Woche für Woche füllen
-  let getroffen = 0, ohneWoche = 0, sonder = 0, gestrichen = 0
+  let getroffen = 0, ohneWoche = 0, sonder = 0, gestrichen = 0, zuAlt = 0
   let gesetzt = 0, ohnePid = 0, fehlplatz = 0, helfer = 0, helferOhnePid = 0, helferOhneDienst = 0
   const geschrieben = []
   for (const [montag, roh] of [...nwsWochen].sort((a, b) => a[0].localeCompare(b[0]))) {
+    // Älter als ein Jahr: gar nicht erst hinein (T125).
+    if (montag < ab) { zuAlt++; continue }
     const zeile = nachStart.get(montag)
     if (!zeile) { ohneWoche++; continue }
     // Wochen mit Anlass bleiben dem Planer überlassen: Beim Kreisaufseher ist
@@ -705,6 +715,7 @@ export async function main(argv = process.argv.slice(2)) {
   }
 
   console.log(`\nGetroffene Wochen: ${getroffen} · ohne jw.org-Import: ${ohneWoche} · Sonderwochen übersprungen: ${sonder}`)
+  if (zuAlt) console.log(`Älter als ein Jahr (vor ${ab}), nicht übernommen: ${zuAlt} NWS-Wochen`)
   if (gestrichen) console.log(`Gestrichene Zusammenkünfte übersprungen: ${gestrichen}`)
   console.log(`Programmplätze gesetzt: ${gesetzt} (ohne pid/extern: ${ohnePid}) · Slots fehlten: ${fehlplatz}`)
   console.log(`Hilfsdienst-Plätze gesetzt: ${helfer} (ohne pid: ${helferOhnePid})`)

@@ -31,14 +31,12 @@
  *
  *   --trocken  nennt, was abweicht, und schreibt nichts.
  *
- * Gelesen wird das Ladefenster der App: die jüngsten `FENSTER` Wochen. Ein
- * zweiter Lauf muss „nichts abweichend" melden.
+ * Gelesen wird das Ladefenster der App: die Wochen ab dem Montag vor einem Jahr
+ * (T125, `aufbewahrtAb` in `src/data/aufbewahrung.ts`, aus der App geladen).
+ * Ein zweiter Lauf muss „nichts abweichend" melden.
  */
 
 import { alsSkript, appCodeBereit, argumente, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
-
-/** Das Ladefenster der App (`WEEK_LIMIT` in `src/lib/data.ts`) — der Test hält beide gleich. */
-export const FENSTER = 52
 
 export const GRUND_KLASSE = 'Zusätzliche Klasse'
 export const GRUND_TREFFPUNKTE_FEHLEN = 'Treffpunkte fehlen'
@@ -65,15 +63,19 @@ export function gleich(a, b) {
   return ka.every((k) => Object.hasOwn(b, k) && gleich(a[k], b[k]))
 }
 
-/** Die Funktionen der App, mit denen gerechnet wird — geladen, nicht abgeschrieben. */
-export async function appFunktionen() {
+/**
+ * Die Funktionen der App, mit denen gerechnet wird — geladen, nicht abgeschrieben.
+ * `ab` ist der Anfang ihres Ladefensters, gerechnet vom Tag `heute`.
+ */
+export async function appFunktionen(heute = new Date()) {
   appCodeBereit()
-  const [aux, bindung, helfer, fs, zeilen] = await Promise.all([
+  const [aux, bindung, helfer, fs, zeilen, aufbewahrung] = await Promise.all([
     import('../src/data/aux-class.ts'),
     import('../src/data/namensbindung.ts'),
     import('../src/data/helpers.ts'),
     import('../src/data/fs.ts'),
     import('../src/lib/zeilen.ts'),
+    import('../src/data/aufbewahrung.ts'),
   ])
   return {
     syncAuxSlots: aux.syncAuxSlots,
@@ -84,16 +86,8 @@ export async function appFunktionen() {
     personFromRow: zeilen.personFromRow,
     fsRuleFromRow: zeilen.fsRuleFromRow,
     gleich,
+    ab: aufbewahrung.aufbewahrtAb(aufbewahrung.VERTEILUNG_WOCHEN, heute),
   }
-}
-
-/** Erster Montag des Ladefensters — dieselbe Rechnung wie `fensterAnfang` in `src/lib/data.ts`. */
-function fensterAnfang(juengste) {
-  if (!juengste) return ''
-  const d = new Date(`${juengste}T00:00:00Z`)
-  if (Number.isNaN(d.getTime())) return ''
-  d.setUTCDate(d.getUTCDate() - (FENSTER - 1) * 7)
-  return d.toISOString().slice(0, 10)
 }
 
 /**
@@ -105,8 +99,7 @@ function fensterAnfang(juengste) {
  * `treffpunkte` (was zu schreiben ist, sonst `null`) und die Gründe.
  */
 export function angleichen({ wochen, fsWochen, regeln, personen, auxClass }, app) {
-  const ab = fensterAnfang(wochen[0]?.start)
-  const imFenster = (rows) => (ab ? rows.filter((r) => r.start >= ab) : rows).slice().reverse()
+  const imFenster = (rows) => rows.filter((r) => r.start >= app.ab).slice().reverse()
   const zeilen = imFenster(wochen)
   const persons = personen.map(app.personFromRow)
   const fsRules = regeln.map(app.fsRuleFromRow)
@@ -151,13 +144,15 @@ export async function main(argv = process.argv.slice(2)) {
   const cong = await versammlungHolen(rest, arg, 'id,name,aux_class')
   const meine = `congregation_id=eq.${cong.id}`
 
+  const app = await appFunktionen()
+  const fenster = `start=gte.${app.ab}&order=start.desc`
   const [wochen, fsWochen, regeln, personen] = await Promise.all([
-    rest(`weeks?select=start,data,updated_at&${meine}&order=start.desc&limit=${FENSTER}`),
-    rest(`fs_weeks?select=start,data&${meine}&order=start.desc&limit=${FENSTER}`),
+    rest(`weeks?select=start,data,updated_at&${meine}&${fenster}`),
+    rest(`fs_weeks?select=start,data&${meine}&${fenster}`),
     rest(`fs_rules?select=*&${meine}&order=created_at`),
     rest(`persons?select=*&${meine}&order=created_at`),
   ])
-  const ergebnis = angleichen({ wochen, fsWochen, regeln, personen, auxClass: Boolean(cong.aux_class) }, await appFunktionen())
+  const ergebnis = angleichen({ wochen, fsWochen, regeln, personen, auxClass: Boolean(cong.aux_class) }, app)
   const abweichend = ergebnis.filter((e) => e.gruende.length)
 
   console.log(`Versammlung:  ${cong.name} (${cong.id})`)

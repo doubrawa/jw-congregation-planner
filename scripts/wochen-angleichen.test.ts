@@ -1,8 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   angleichen,
   appFunktionen,
-  FENSTER,
   GRUND_GRUNDPLAN,
   GRUND_KLASSE,
   GRUND_TREFFPUNKTE_FEHLEN,
@@ -10,8 +9,11 @@ import {
   main,
 } from './wochen-angleichen.mjs'
 import { fahre, type Aufruf, tabelleVon } from './schema-attrappe'
-import { WEEK_LIMIT } from '../src/lib/data'
+import { aufbewahrtAb, VERTEILUNG_WOCHEN } from '../src/data/aufbewahrung'
 import { syncAuxSlots } from '../src/data/aux-class'
+
+/** Der Tag, an dem die Proben spielen — die Wochen unten liegen kurz davor. */
+const HEUTE = new Date(2026, 8, 7, 9, 0)
 
 /**
  * **Das Prüf- und Heilskript für Befund 9** (5.10.2026): Wochen, die nicht so
@@ -49,12 +51,19 @@ function probeWoche(start: string) {
 const zeile = (start: string, data: unknown = probeWoche(start)) => ({ congregation_id: C, start, data, updated_at: STAND })
 
 describe('angleichen', () => {
-  it('rechnet im Ladefenster der App', () => {
-    expect(FENSTER).toBe(WEEK_LIMIT)
+  it('rechnet im Ladefenster der App: ab dem Montag vor einem Jahr (T125)', async () => {
+    const app = await appFunktionen(HEUTE)
+    expect(app.ab).toBe(aufbewahrtAb(VERTEILUNG_WOCHEN, HEUTE))
+    // Was davor liegt, lädt die App nicht — also gleicht das Skript es auch nicht an.
+    const ergebnis = angleichen(
+      { wochen: [zeile('2026-08-24'), zeile('2025-09-01')], fsWochen: [], regeln: [], personen: [], auxClass: true },
+      app,
+    )
+    expect(ergebnis.map((e) => e.start)).toEqual(['2026-08-24'])
   })
 
   it('eine Woche ohne die eingeschaltete Klasse: angleichen — abgewiesen wird seit dem 15.10.2026 niemand mehr', async () => {
-    const [e] = angleichen({ wochen: [zeile('2026-08-24')], fsWochen: [], regeln: [], personen: [], auxClass: true }, await appFunktionen())
+    const [e] = angleichen({ wochen: [zeile('2026-08-24')], fsWochen: [], regeln: [], personen: [], auxClass: true }, await appFunktionen(HEUTE))
     expect(e?.gruende).toEqual([GRUND_KLASSE])
     expect(hindernis(e!.gruende)).toBe('')
     expect(e?.woche?.mid.auxRatgeber).toBeDefined()
@@ -63,13 +72,13 @@ describe('angleichen', () => {
 
   it('eine Woche, die schon dasteht wie geladen: nichts zu tun', async () => {
     const angeglichen = syncAuxSlots([probeWoche('2026-08-24') as never], true)[0]
-    const [e] = angleichen({ wochen: [zeile('2026-08-24', angeglichen)], fsWochen: [], regeln: [], personen: [], auxClass: true }, await appFunktionen())
+    const [e] = angleichen({ wochen: [zeile('2026-08-24', angeglichen)], fsWochen: [], regeln: [], personen: [], auxClass: true }, await appFunktionen(HEUTE))
     expect(e?.gruende).toEqual([])
     expect(e?.woche).toBeNull()
   })
 
   it('keine Treffpunkt-Zeile, aber ein Grundplan: anlegen — sonst weist der Trigger den Gruppenaufseher ab', async () => {
-    const [e] = angleichen({ wochen: [zeile('2026-08-24')], fsWochen: [], regeln: [REGEL], personen: [], auxClass: false }, await appFunktionen())
+    const [e] = angleichen({ wochen: [zeile('2026-08-24')], fsWochen: [], regeln: [REGEL], personen: [], auxClass: false }, await appFunktionen(HEUTE))
     expect(e?.gruende).toEqual([GRUND_TREFFPUNKTE_FEHLEN])
     expect(hindernis(e!.gruende)).toBe('Gruppenaufseher abgewiesen')
     expect(e?.neueTreffpunktZeile).toBe(true)
@@ -80,7 +89,7 @@ describe('angleichen', () => {
     const verwaist = [{ id: 'weg', ruleId: 'gibt-es-nicht', grp: G1, wd: 3, time: '18:00', place: 'Weg', leader: '' }]
     const [e] = angleichen(
       { wochen: [zeile('2026-08-24')], fsWochen: [{ start: '2026-08-24', data: verwaist }], regeln: [REGEL], personen: [], auxClass: false },
-      await appFunktionen(),
+      await appFunktionen(HEUTE),
     )
     expect(e?.gruende).toEqual([GRUND_GRUNDPLAN])
     expect(e?.neueTreffpunktZeile).toBe(false)
@@ -88,13 +97,20 @@ describe('angleichen', () => {
   })
 
   it('ohne Grundplan und ohne Zeile: keine leere Treffpunkt-Zeile', async () => {
-    const [e] = angleichen({ wochen: [zeile('2026-08-24')], fsWochen: [], regeln: [], personen: [], auxClass: false }, await appFunktionen())
+    const [e] = angleichen({ wochen: [zeile('2026-08-24')], fsWochen: [], regeln: [], personen: [], auxClass: false }, await appFunktionen(HEUTE))
     expect(e?.gruende).toEqual([])
     expect(e?.treffpunkte).toBeNull()
   })
 })
 
 describe('main', () => {
+  // `main` rechnet das Ladefenster vom heutigen Tag — im Test von HEUTE.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(HEUTE)
+  })
+  afterEach(() => vi.useRealTimers())
+
   const bestand = () => ({
     congregations: [{ id: C, name: 'Probe', aux_class: true }],
     weeks: [zeile('2026-08-24'), zeile('2026-08-31')],

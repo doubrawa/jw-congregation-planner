@@ -7091,6 +7091,87 @@ dieser Stufe (Probe über alle Bildschirme). Ein Konto ohne Admin-Recht sieht de
 Schalter nie, auch nicht über einen Hash (Probe). Nach dem Neuladen gilt wieder
 das echte Recht.
 
+## Aufgenommen am 16. Oktober 2026 — Aufbewahrung und Auswertung (T125, T126)
+
+### T125 · Nur so lange aufbewahren, wie es gebraucht wird 🏗 ☐ in Arbeit
+
+**Wortlaut:** *„überleg dir wie man es am besten macht, dass alle daten, die
+älter als 8 wochen sind, automatisch gelöscht werden, denn wir wollen ja keine
+daten sammeln, die wir nicht brauchen"* — präzisiert: *„8 wochen älter gezählt
+vom tagesaktuellen datum … das muss nicht tagesgenau sein"*, dann: *„ach ja die
+faire verteilung. dann müssen wir wohl doch länger daten behalten als 8
+wochen. vermutlich eher 1 jahr … weil manche verkündiger haben ja nur alle
+paar monate mal eine zuteilung"* und *„der import von nws soll auch maximal
+die zuteilungen von 1 jahr in der vergangenheit holen."*
+
+**Zwei Fristen, beide ab dem Montag der laufenden Woche gezählt:**
+
+- **Ein Jahr** für die Wochen und alles, was zu ihnen gehört: Programm samt
+  Zuteilungen (`weeks`), Treffpunkte (`fs_weeks`), Zusagen, Versand-Tagebuch,
+  Gruppenbesuche, vorgemerkte Vorträge, Weitere Pläne samt Einträgen. Die
+  Automatik misst „wer wartet am längsten" über alle geladenen Wochen
+  (`assignmentDistance`), das Zuteilen-Blatt zeigt „zuletzt vor 12 Wochen".
+  Was an einer Woche hängt, bleibt so lange wie sie — eine Woche ohne ihre
+  Zusagen zeigte an jedem Platz „wartet auf Bestätigung".
+- **Acht Wochen** für alles andere: Mitteilungen, Erinnerungs-Tagebuch,
+  Abwesenheiten samt Grund (ab ihrem Ende), Trolley-Termine, abgelaufene
+  Anmelde-Links. Die Fehlversuche beim Anmelden (IP-Adressen) nach einem Tag.
+
+Stammdaten (Personen, Haushalte, Gruppen, Dienste, Grundplan, Trolleys,
+Konten, Push-Abos) haben kein Alter und bleiben.
+
+**Drei Stellen halten dieselbe Grenze:** das Laden (die App holt nichts
+Älteres, die Folgeseiten gleichzeitig), das Aufräumen in der Datenbank
+(`alte_daten_loeschen`, täglich per `pg_cron`, ohne Function und ohne Secret)
+und die Importe aus NWS und jw.org. Die Zahlen stehen einmal in
+`src/data/aufbewahrung.ts`; `tests/aufbewahrung.test.ts` hält die SQL-Seite
+gleich und verlangt für jede Tabelle im Schema eine Regel oder einen Grund,
+warum sie keine braucht. Im Repo seit dem 16. Oktober 2026.
+
+**Scharf geschaltet wird erst nach einer Probe ohne Löschen**
+(`alte_daten_loeschen(true)`, Anzahl je Tabelle) und einem Wort des
+Betreibers — gelöscht ist gelöscht. Dafür braucht es das Schema in der
+Datenbank und `supabase/cron-aufraeumen.sql`.
+
+### T126 · Auswertung der Zuteilungen — mit Diagrammen 🏗 ☐ offen
+
+**Wortlaut:** *„nimm in die todo liste auf, dass wir noch eine auswertungsseite
+machen, wo wir versuchen erkenntnisse aus den zuteilungen zu ziehen, wie z.b.
+wer zu oft oder zu selten zuteilungen bekommt oder wer zu einseitig immer für
+bestimmte dinge eingeteilt wird und für andere nicht oder sonstiges"* — *„und
+das ganze am besten ein bisschen visuell mit diagrammen und so"*.
+
+**Ziel:** Eine Seite für Planer und Admin, die aus den Zuteilungen des
+letzten Jahres (T125) zeigt, wo die Verteilung schief liegt:
+
+- **Zu oft, zu selten:** Zuteilungen je Person im Zeitraum, gemessen an dem,
+  was sie kann (Aufgabenbereiche) — wer deutlich über oder unter dem
+  Durchschnitt seiner Vergleichsgruppe liegt.
+- **Einseitig:** je Person die Verteilung über die Bereiche — immer
+  Gesprächspartnerin, nie Gesprächsführerin; immer Mikrofon, nie Ton; immer
+  Gebet, nie Bibellesung, obwohl er es könnte.
+- **Wartezeiten:** wer am längsten nicht dran war, je Bereich — und wer immer
+  nach wenigen Wochen wieder.
+- **Sonstiges:** Treffpunkt-Leitungen je Person und Gruppe, Absagen je
+  Bereich, Ballungen (zwei Aufgaben in einer Woche).
+
+**Visuell:** Balken je Person, eine Übersicht Person × Bereich als
+Farbfelder, Verlauf über die Wochen. Jede Darstellung braucht eine
+Textfassung (Tabelle) für Screenreader und den Ausdruck.
+
+**Vor dem Bau klären:**
+
+- **Wer sieht es?** Vorschlag: Planer und Admin, wie das Planen. Eine Auswertung
+  über Personen ist heikler als ein einzelner Plan.
+- **Gerechnet, nicht gespeichert:** Die Seite rechnet aus den geladenen Wochen,
+  in der App, und legt nichts Neues ab (T125).
+- **Diagramme:** eigene SVG-Bausteine oder eine kleine Bibliothek, die im Bündel
+  mitkommt. Sie müssen offline gehen, RTL (ar, fa), die Schriftstufe (`--fs`),
+  Hell/Dunkel und alle zwölf Sprachen können.
+- **Messgrößen an der Automatik ausrichten:** dieselben Bereiche und
+  Abstände wie `assignmentDistance` und `rangfolge` — sonst zeigt die Seite
+  eine andere Gerechtigkeit als die, nach der verteilt wird.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -7518,6 +7599,8 @@ Betreiber oder ein Gerät.
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **T124** | Rechte zum Testen umschalten | aufgenommen am 16. Oktober, noch nicht begonnen; befristet — nach den Tests wieder ausbauen |
+| **T125** | Aufbewahrung scharf schalten | Laden, Importe und Aufräum-Funktion sind im Repo; offen: Schema einspielen, Probelauf ohne Löschen ansehen, Zeitplan anlegen — erst auf ein Wort des Betreibers |
+| **T126** | Auswertung der Zuteilungen mit Diagrammen | aufgenommen am 16. Oktober, noch nicht begonnen; Grundlage ist das Jahr aus T125 |
 | **Zurückgestellt** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт". Betreiber am 16. Oktober: „bleibt erst mal so" — wieder aufnehmen, wenn ein Muttersprachler prüft; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
 | **Wartet** | Motion-Clip „Plan senden" | am 12. Oktober zurückgestellt, bis das neue Design steht — das ist jetzt der Fall. Das leere Motion-Artifact liegt schon bereit |

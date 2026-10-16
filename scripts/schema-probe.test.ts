@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   ATTRAPPE_SCHLUESSEL,
   ATTRAPPE_URL,
@@ -23,6 +23,19 @@ import { probeDateiText, wertAusEnvText } from './gemeinsam.mjs'
 import { eigeneSlots, ersterMontagAb, fremdeSlots, stufenAnlage } from './mitgliedsrechte-probe.mjs'
 import { uuid5 } from './wochenplanung-importieren.mjs'
 import { wasBleibt, zeitraumGueltig } from '../supabase/functions/_shared/trolley.ts'
+
+/*
+ * **Die Proben spielen am Montag, dem 7. September 2026** — die Bestände unten
+ * liegen kurz davor. Seit T125 richten sich Importe und Angleichen nach dem
+ * heutigen Tag (ein Jahr zurück, acht Wochen zurück). Mit der echten Uhr fielen
+ * die Bestände von selbst aus dem Fenster, sobald genug Zeit vergangen ist, und
+ * die Proben würden rot, ohne dass sich am Code etwas geändert hätte.
+ */
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(2026, 8, 7, 9, 0))
+})
+afterEach(() => vi.useRealTimers())
 
 /**
  * **Jedes Wartungsskript fährt einmal gegen die Attrappe, und jeder seiner
@@ -1546,5 +1559,93 @@ describe('versammlung-zuruecksetzen: die Sicherung zählt nur nach einem Abbruch
     expect(text).toContain('1 Konto-Verknüpfung(en) erhalten')
     expect(text).toContain('Unverknüpft (Konto nicht mehr da): Probe Zwei')
     expect(sicherungDa).toBe(false)
+  })
+})
+
+describe('Importe holen höchstens, was aufbewahrt wird (T125, 16.10.2026)', () => {
+  /*
+    „der import von nws soll auch maximal die zuteilungen von 1 jahr in der
+    vergangenheit holen" (Betreiber). Heute ist hier der 7. September 2026
+    (oben): Die Grenze für Wochen liegt beim 8. September 2025, die für
+    Abwesenheiten beim 13. Juli 2026.
+  */
+  const fahreMit = async (skript: string, dateien: Record<string, unknown>, bestand: Record<string, Zeile[]>, argv: string[] = []) => {
+    const l = LAEUFE[skript]![0]!
+    const modul = (await MODULE[`./${skript}`]!()) as { main: (argv: string[]) => Promise<unknown> }
+    const eingaben = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-probe-'))
+    try {
+      for (const [name, inhalt] of Object.entries({ ...l.dateien, ...dateien })) {
+        fs.writeFileSync(path.join(eingaben, name), JSON.stringify(inhalt))
+      }
+      return await fahre(() => modul.main(['--daten', eingaben, ...argv]), { ...l.umgebung, bestand: { ...l.umgebung!.bestand, ...bestand } })
+    } finally {
+      fs.rmSync(eingaben, { recursive: true, force: true })
+    }
+  }
+  const geschriebeneWochen = (aufrufe: Aufruf[], tabelle: string) =>
+    aufrufe
+      .filter((a) => a.method !== 'GET' && tabelleVon(a) === tabelle)
+      .map((a) => new URL(`https://x/${a.pfad}`).searchParams.get('start') ?? (a.body as { start?: string } | undefined)?.start)
+
+  it('wochenplanung-importieren: eine NWS-Woche vor der Grenze bleibt draußen, und das Skript sagt es', async () => {
+    const alt = '2025-09-01'
+    const neu = '2026-08-24'
+    const { aufrufe, ausgabe } = await fahreMit(
+      'wochenplanung-importieren.mjs',
+      { 'Duties_7.5.json': [{ a: alt, b: 1, c: 34 }, { a: neu, b: 1, c: 34 }] },
+      { weeks: [{ congregation_id: C, start: alt, data: probeWoche(alt) }, { congregation_id: C, start: neu, data: probeWoche(neu) }] },
+    )
+    expect(geschriebeneWochen(aufrufe, 'weeks')).toEqual([`eq.${neu}`])
+    expect(ausgabe.join('\n')).toContain('Älter als ein Jahr (vor 2025-09-08), nicht übernommen: 1 NWS-Wochen')
+    // Gelesen wird auch nur das Fenster, wie in der App.
+    const gelesen = aufrufe.filter((a) => a.method === 'GET' && tabelleVon(a) === 'weeks').map((a) => a.pfad)
+    expect(gelesen.every((p) => p.includes('start=gte.2025-09-08')), gelesen.join(' · ')).toBe(true)
+  })
+
+  it('treffpunkte-importieren: ein NWS-Termin vor der Grenze bleibt draußen', async () => {
+    const { aufrufe, ausgabe } = await fahreMit(
+      'treffpunkte-importieren.mjs',
+      {
+        'FieldServiceMeetings_7.5.json': [
+          { ID: 1, a: '2025-09-02T09:30:00', g: 1, h: 101 },
+          { ID: 2, a: '2026-08-25T09:30:00', g: 1, h: 101 },
+        ],
+      },
+      { weeks: [{ congregation_id: C, start: '2025-09-01' }, { congregation_id: C, start: '2026-08-24' }], fs_weeks: [] },
+    )
+    expect(geschriebeneWochen(aufrufe, 'fs_weeks')).toEqual(['2026-08-24'])
+    expect(ausgabe.join('\n')).toContain('Älter als ein Jahr (vor 2025-09-08), nicht übernommen: 1 NWS-Wochen')
+    const gelesen = aufrufe.filter((a) => a.method === 'GET' && ['weeks', 'fs_weeks'].includes(tabelleVon(a))).map((a) => a.pfad)
+    expect(gelesen).toHaveLength(2)
+    expect(gelesen.every((p) => p.includes('start=gte.2025-09-08')), gelesen.join(' · ')).toBe(true)
+  })
+
+  it('abwesenheiten-importieren: ein --ab vor acht Wochen gilt erst ab der Frist', async () => {
+    const { aufrufe, ausgabe } = await fahreMit(
+      'abwesenheiten-importieren.mjs',
+      { 'AwayPeriods_7.5.json': [{ a: 101, b: '2026-05-04', c: '2026-06-01' }, { a: 101, b: '2099-01-01', c: '2099-01-10' }] },
+      {},
+      ['--ab', '2026-01-01'],
+    )
+    const neu = aufrufe.filter((a) => a.method === 'POST' && tabelleVon(a) === 'absences').flatMap((a) => a.body as { from_date: string }[])
+    expect(neu.map((z) => z.from_date)).toEqual(['2099-01-01'])
+    expect(ausgabe.join('\n')).toContain('--ab 2026-01-01 liegt vor der Aufbewahrungsfrist — es gilt 2026-07-13.')
+  })
+
+  it('wochen-importieren: ein --ab vor einem Jahr fragt erst ab der Frist', async () => {
+    const gefragt: unknown[] = []
+    const l = LAEUFE['wochen-importieren.mjs']![0]!
+    const modul = (await MODULE['./wochen-importieren.mjs']!()) as { main: (argv: string[]) => Promise<unknown> }
+    const { ausgabe } = await fahre(() => modul.main(['--anzahl', '1', '--ab', '2025-01-06', '--trocken']), {
+      ...l.umgebung,
+      funktionen: {
+        'import-week': (rumpf) => {
+          gefragt.push(rumpf.after)
+          return { json: { week: probeWoche('2025-09-15') } }
+        },
+      },
+    })
+    expect(gefragt).toEqual(['2025-09-08'])
+    expect(ausgabe.join('\n')).toContain('--ab 2025-01-06 liegt vor der Aufbewahrungsfrist — es gilt 2025-09-08.')
   })
 })

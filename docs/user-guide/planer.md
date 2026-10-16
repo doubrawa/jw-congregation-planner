@@ -34,6 +34,7 @@ Versammlungseinstellungen pflegen.
 8. [Programm holen](#8-programm-holen)
 9. [Pläne drucken](#9-pläne-drucken)
 10. [Ohne Internet (offline)](#10-ohne-internet-offline)
+11. [Was die App wie lange aufbewahrt](#11-was-die-app-wie-lange-aufbewahrt)
 
 ---
 
@@ -1634,6 +1635,28 @@ Wichtig zu wissen:
   eine Verbindung.
 - Nach längerer Zeit ohne Verbindung kann eine erneute Anmeldung nötig werden
   (das Anmelden selbst braucht Internet).
+
+## 11. Was die App wie lange aufbewahrt
+
+Die App behält nur, was sie braucht. Was älter ist, löscht sie jede Nacht von
+selbst, für alle gleich. Gezählt wird ab dem Montag der laufenden Woche, nicht
+auf den Tag genau:
+
+| Was | Wie lange |
+| --- | --- |
+| Wochenpläne mit allen Zuteilungen, Treffpunkte, Zusagen, wer benachrichtigt wurde, Gruppenbesuche, vorgemerkte Vorträge, Weitere Pläne | **ein Jahr** |
+| Mitteilungen in der Glocke, Erinnerungen, Abwesenheiten samt Grund (ab ihrem Ende), Trolley-Termine, abgelaufene Anmelde-Links | **acht Wochen** |
+
+**Warum ein Jahr für die Pläne:** „Automatisch" und die Vorschläge beim
+Zuteilen fragen, wer am längsten nicht dran war. Wer nur alle paar Monate eine
+Aufgabe hat, braucht dafür ein Jahr Rückblick. Was zu einer Woche gehört, etwa
+ihre Zusagen, bleibt so lange wie die Woche selbst.
+
+Personen, Gruppen, Dienste, der Grundplan der Treffpunkte, die Trolleys und die
+Konten haben kein Alter. Sie bleiben, bis du sie änderst oder entfernst.
+
+Beim Blättern reicht die App deshalb höchstens ein Jahr zurück. Auch ein Import
+aus New World Scheduler übernimmt nichts, was älter ist.
 
 ---
 

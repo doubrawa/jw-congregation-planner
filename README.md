@@ -789,3 +789,44 @@ Empfänger *heute* eingestellt hat.
   im Dry-Run prüfen, dann `SEND_PUSH=true` setzen.
 - Das Zeitfenster nutzt `week.start` (ISO), das nur bei importierten Wochen
   gesetzt ist. Abgelaufene Push-Abos (404/410) räumt der Versand automatisch ab.
+
+## Aufbewahrung (T125)
+
+„Wir wollen ja keine Daten sammeln, die wir nicht brauchen." Zwei Fristen,
+beide ab dem Montag der laufenden Woche gezählt
+([`src/data/aufbewahrung.ts`](src/data/aufbewahrung.ts)):
+
+| Frist | Was |
+| --- | --- |
+| **ein Jahr** | die Wochen und was zu ihnen gehört: Programm samt Zuteilungen (`weeks`), Treffpunkte (`fs_weeks`), Zusagen, Versand-Tagebuch, Gruppenbesuche, vorgemerkte Vorträge, Weitere Pläne samt Einträgen — die gerechte Verteilung fragt, wer am längsten wartet |
+| **acht Wochen** | Mitteilungen, Erinnerungs-Tagebuch, Abwesenheiten samt Grund (ab ihrem Ende), Trolley-Termine, abgelaufene Anmelde-Links |
+| **ein Tag** | Fehlversuche beim Anmelden (IP-Adressen) |
+
+Stammdaten (Personen, Haushalte, Gruppen, Dienste, Konten, Grundplan,
+Trolleys, Push-Abos) haben kein Alter.
+
+Dieselbe Grenze gilt an drei Stellen:
+
+- **Laden:** Die App holt nichts Älteres (`loadCongregationData`).
+- **Aufräumen:** `public.alte_daten_loeschen()` in
+  [`supabase/schema.sql`](supabase/schema.sql), täglich per pg_cron
+  ([`supabase/cron-aufraeumen.sql`](supabase/cron-aufraeumen.sql)). Der Lauf
+  bleibt in der Datenbank, ohne Function und ohne Secret; aufrufen darf ihn nur
+  der Zeitplan.
+- **Importe:** NWS und jw.org holen nichts, was älter ist (`aufbewahrtAb`,
+  `nichtVorDerFrist` in `scripts/gemeinsam.mjs`).
+
+[`tests/aufbewahrung.test.ts`](tests/aufbewahrung.test.ts) hält die Fristen in
+App und SQL gleich und verlangt für jede Tabelle im Schema eine Regel oder einen
+Grund, warum sie keine braucht.
+
+**Einschalten (einmalig):** Schema einspielen, dann ohne Löschen nachsehen, was
+ginge, und erst danach den Zeitplan anlegen:
+
+```sql
+select * from public.alte_daten_loeschen(true);  -- zählt nur
+```
+
+Danach `supabase/cron-aufraeumen.sql` ausführen. Gelöscht ist gelöscht: Was der
+Lauf entfernt, steht nur noch in den Sicherungen von Supabase, solange diese
+reichen.

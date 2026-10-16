@@ -459,7 +459,8 @@ eingeteilt.
 Deine Zeiträume, die anstehen oder gerade laufen, stehen in der Karte und
 lassen sich mit dem ✕ wieder entfernen. Der erste Tipp fragt „Wirklich
 löschen?", erst der zweite entfernt den Eintrag; ein Tipp daneben bricht ab.
-Was vorbei ist, steht nicht mehr da.
+Was vorbei ist, steht nicht mehr da. Acht Wochen nach seinem Ende löscht die
+App einen Zeitraum samt Grund von selbst; danach braucht ihn niemand mehr.
 
 Dort stehen auch Zeiträume, die **nicht du** eingetragen hast: Ein Admin kann
 sie für dich erfassen (etwa wenn du angerufen hast), und beim Umstieg von einem

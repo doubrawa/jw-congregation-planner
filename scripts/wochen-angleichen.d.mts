@@ -6,7 +6,6 @@
 import type { FsInstance, Week } from '../src/data/types'
 import type { FsRuleRow, PersonRow } from '../src/lib/zeilen'
 
-export declare const FENSTER: number
 export declare const GRUND_KLASSE: string
 export declare const GRUND_TREFFPUNKTE_FEHLEN: string
 export declare const GRUND_GRUNDPLAN: string
@@ -26,9 +25,11 @@ export interface AppFunktionen {
   personFromRow: (r: PersonRow) => unknown
   fsRuleFromRow: (r: FsRuleRow) => unknown
   gleich: (a: unknown, b: unknown) => boolean
+  /** Anfang des Ladefensters der App (ISO-Montag, ein Jahr zurück — T125). */
+  ab: string
 }
 
-export declare function appFunktionen(): Promise<AppFunktionen>
+export declare function appFunktionen(heute?: Date): Promise<AppFunktionen>
 
 export interface Angleichung {
   start: string

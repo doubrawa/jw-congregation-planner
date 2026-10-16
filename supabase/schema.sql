@@ -1658,6 +1658,91 @@ revoke all on function public.persoenlich_bescheid(text, text, boolean) from ano
 grant execute on function public.persoenlich_bescheid(text, text, boolean) to authenticated;
 
 -- ---------------------------------------------------------------------------
+-- Aufräumen (T125, 16.10.2026): „wir wollen ja keine daten sammeln, die wir
+-- nicht brauchen" (Betreiber). Was älter ist als seine Frist, wird gelöscht —
+-- täglich per pg_cron (`supabase/cron-aufraeumen.sql`), für alle Versammlungen.
+--
+-- Zwei Fristen, beide ab dem Montag der laufenden Woche, wie beim Laden in der
+-- App (`src/data/aufbewahrung.ts`; `tests/aufbewahrung.test.ts` hält beide
+-- Seiten gleich und verlangt für jede Tabelle eine Regel oder einen Grund):
+--   - ein Jahr (52 Wochen) für die Wochen und was zu ihnen gehört — die
+--     gerechte Verteilung fragt, wer am längsten wartet, und manche haben nur
+--     alle paar Monate eine Zuteilung;
+--   - acht Wochen für alles andere.
+-- Die Fehlversuche beim Anmelden (IP-Adressen) gehen nach einem Tag: Sie
+-- bremsen nur das Raten der letzten Stunde (`anmelden`).
+--
+-- Zusagen und Versand-Tagebuch tragen ihre Woche im Schlüssel
+-- (`<montag>|…` oder `fs|<montag>|…`, `_shared/aufgaben-schluessel.ts`); eine
+-- unbekannte Form fällt auf das Datum ihrer Zeile zurück. Verglichen wird als
+-- Text (ISO-Datum), damit ein verbogener Schlüssel den Lauf nicht abbricht.
+--
+-- `alte_daten_loeschen(true)` zählt nur, was ginge, und löscht nichts. Aufrufen
+-- darf sie nur der Zeitplan: kein Recht für anon oder authenticated, auch nicht
+-- über die REST-Schnittstelle.
+-- ---------------------------------------------------------------------------
+
+create or replace function public.woche_im_schluessel(task_key text)
+returns text
+language sql immutable
+as $$
+  select substring(task_key from '^(?:fs\|)?(\d{4}-\d{2}-\d{2})\|')
+$$;
+
+revoke all on function public.woche_im_schluessel(text) from public;
+revoke all on function public.woche_im_schluessel(text) from anon, authenticated;
+
+create or replace function public.alte_daten_loeschen(trocken boolean default false)
+returns table (tabelle text, zeilen bigint)
+language plpgsql security definer
+set search_path = public
+as $$
+declare
+  montag constant date := date_trunc('week', current_date)::date;
+  ein_jahr constant timestamptz := (montag - 7 * 52)::timestamptz;
+  acht_wochen constant timestamptz := (montag - 7 * 8)::timestamptz;
+  regel record;
+  n bigint;
+begin
+  for regel in
+    select r.name, r.bedingung, r.grenze
+      from (values
+        -- Die Wochen und was zu ihnen gehört: ein Jahr.
+        ('weeks', 'start < $1', ein_jahr),
+        ('fs_weeks', 'start < $1', ein_jahr),
+        ('confirmations', 'coalesce(woche_im_schluessel(task_key), to_char(created_at, ''YYYY-MM-DD'')) < to_char($1, ''YYYY-MM-DD'')', ein_jahr),
+        ('assignment_log', 'coalesce(woche_im_schluessel(task_key), to_char(sent_at, ''YYYY-MM-DD'')) < to_char($1, ''YYYY-MM-DD'')', ein_jahr),
+        ('gruppenbesuche', 'woche < $1', ein_jahr),
+        ('vortraege', 'woche < $1', ein_jahr),
+        ('plaene', 'bis < $1', ein_jahr),
+        ('plan_eintraege', 'datum < $1', ein_jahr),
+        -- Alles andere: acht Wochen.
+        ('notifications', 'created_at < $1', acht_wochen),
+        ('reminder_log', 'sent_on < $1', acht_wochen),
+        ('absences', 'to_date < $1', acht_wochen),
+        ('trolley_termine', 'datum < $1', acht_wochen),
+        ('anmelde_links', 'gueltig_bis < $1', acht_wochen),
+        -- Die Bremse gegen Raten: ein Tag.
+        ('anmelde_fehlversuche', 'at < $1', now() - interval '1 day')
+      ) as r(name, bedingung, grenze)
+  loop
+    if trocken then
+      execute format('select count(*) from public.%I where %s', regel.name, regel.bedingung) into n using regel.grenze;
+    else
+      execute format('delete from public.%I where %s', regel.name, regel.bedingung) using regel.grenze;
+      get diagnostics n = row_count;
+    end if;
+    tabelle := regel.name;
+    zeilen := n;
+    return next;
+  end loop;
+end;
+$$;
+
+revoke all on function public.alte_daten_loeschen(boolean) from public;
+revoke all on function public.alte_daten_loeschen(boolean) from anon, authenticated;
+
+-- ---------------------------------------------------------------------------
 -- Erste Einrichtung
 -- ---------------------------------------------------------------------------
 -- Eine neue Versammlung legt `scripts/versammlung-anlegen.mjs` an: die

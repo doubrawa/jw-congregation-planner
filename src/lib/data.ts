@@ -18,6 +18,7 @@ import type { EntzogeneZuteilung } from '../data/plan-versand'
 import { pidsNachtragen } from '../data/namensbindung'
 import { normalizeChairKeys } from '../data/helpers'
 import { isoDay, montagVon, tagNach } from '../data/meeting-dates'
+import { aufbewahrtAb, SONST_WOCHEN, VERTEILUNG_WOCHEN } from '../data/aufbewahrung'
 import { taktVon } from '../data/weitere-plaene'
 import type {
   Absence,
@@ -465,36 +466,14 @@ export async function loadNotifications(
 /* ---- Laden --------------------------------------------------------------- */
 
 /**
- * Wie viele Wochen höchstens geladen werden. Ein Jahr reicht für alles, was die
- * App mit Wochen tut: die Auslastung schaut ±3 Wochen weit, die Wartezeit-
- * Reihenfolge braucht nur „länger her als die anderen", und weiter zurück
- * schaut niemand. Ältere Wochen bleiben in der Datenbank stehen.
- */
-export const WEEK_LIMIT = 52
-
-/**
- * Wie viele Tagebuch-Zeilen ein Ladevorgang mitnimmt.
+ * Wie viele Tagebuch-Zeilen ein Ladevorgang höchstens mitnimmt.
  *
- * Reichlich bemessen auf das Ladefenster: Eine Woche hat gut 35 Plätze, und
- * jedes Umteilen legt eine weitere Zeile an. Sechzig je Woche lassen dafür Luft
- * und decken damit alles ab, was für die geladenen Wochen je gebraucht wird.
+ * Eine Woche hat gut 35 Plätze, und jedes Umteilen legt eine weitere Zeile an —
+ * sechzig je Woche lassen dafür Luft, für das Jahr, das die Wochen bleiben
+ * (T125). Jüngste zuerst: Was für die kommenden Wochen zählt, wurde zuletzt
+ * gemeldet und steht vorn.
  */
-export const SENT_LOG_LIMIT = WEEK_LIMIT * 60
-
-/**
- * Anfang des Ladefensters: der Montag `WEEK_LIMIT - 1` Wochen vor der jüngsten
- * Woche. Gerechnet wird in UTC, damit keine Zeitzone einen Tag verschiebt.
- *
- * Gibt es noch keine Woche, ist die Grenze gegenstandslos — dann liefert jede
- * Abfrage ohnehin nichts, und die Aufrufer lassen den Filter weg.
- */
-function fensterAnfang(juengste: string | undefined): string {
-  if (!juengste) return ''
-  const d = new Date(`${juengste}T00:00:00Z`)
-  if (Number.isNaN(d.getTime())) return ''
-  d.setUTCDate(d.getUTCDate() - (WEEK_LIMIT - 1) * 7)
-  return d.toISOString().slice(0, 10)
-}
+export const SENT_LOG_LIMIT = VERTEILUNG_WOCHEN * 60
 
 /**
  * Zeilen je Seite — die Grenze, die PostgREST gehostet je Abfrage höchstens
@@ -514,31 +493,40 @@ interface Seite<T> {
  *
  * PostgREST liefert je Abfrage höchstens `max-rows` Zeilen, und zwar
  * **still**: kein Fehler, kein Hinweis, nur weniger Zeilen. Die Zusagen
- * wachsen mit jeder Woche um gut 35 und werden nie aufgeräumt; nach gut einem
- * halben Jahr fiel damit ein beliebiger Teil weg, und ein bestätigter Platz
- * stand wieder als offen da. Das Tagebuch sollte bis zu `SENT_LOG_LIMIT` Zeilen
- * bringen und brachte nie mehr als 1000.
+ * wachsen mit jeder Woche um gut 35, ein Jahr lang (T125); ohne Seiten fiel
+ * nach gut einem halben Jahr ein beliebiger Teil weg, und ein bestätigter
+ * Platz stand wieder als offen da. Das Tagebuch sollte bis zu `SENT_LOG_LIMIT`
+ * Zeilen bringen und brachte nie mehr als 1000.
  *
- * Die Zählung (`count: 'exact'`) sagt, wann alles da ist — so stört auch eine
- * kleinere Zeilengrenze nicht. `hoechstens` kappt bewusst (das Tagebuch: nur
- * die jüngsten). Die Abfrage braucht eine **eindeutige** Sortierung, sonst
- * verschieben sich die Seiten gegeneinander und eine Zeile fehlt oder kommt
- * doppelt.
+ * Die Zählung (`count: 'exact'`) der ersten Seite sagt, wie viel es gibt. Die
+ * übrigen Seiten gehen dann **gleichzeitig** hinaus, nicht nacheinander (seit
+ * dem 16.10.2026, Review App #5): Jede weitere wäre sonst eine volle Netzrunde
+ * mehr auf dem Weg zum ersten Bild. Wie groß eine Seite ist, sagt die erste:
+ * Liefert der Server weniger als erbeten (eine kleinere Zeilengrenze), beginnt
+ * jede weitere trotzdem lückenlos dahinter.
+ *
+ * `hoechstens` kappt bewusst (das Tagebuch: nur die jüngsten). Die Abfrage
+ * braucht eine **eindeutige** Sortierung, sonst verschieben sich die Seiten
+ * gegeneinander und eine Zeile fehlt oder kommt doppelt.
  */
 async function alleSeiten<T>(
   seite: (von: number, bis: number) => PromiseLike<Seite<T>>,
   hoechstens = Number.POSITIVE_INFINITY,
 ): Promise<{ data: T[]; error: Zeilenfehler | null }> {
-  const zeilen: T[] = []
-  for (;;) {
-    const von = zeilen.length
-    const { data, error, count } = await seite(von, Math.min(von + SEITE, hoechstens) - 1)
+  const erste = await seite(0, Math.min(SEITE, hoechstens) - 1)
+  if (erste.error) return { data: [], error: erste.error }
+  const zeilen = [...(erste.data ?? [])]
+  const gesamt = Math.min(erste.count ?? zeilen.length, hoechstens)
+  const groesse = zeilen.length
+  if (groesse === 0 || groesse >= gesamt) return { data: zeilen, error: null }
+  const anfaenge: number[] = []
+  for (let von = groesse; von < gesamt; von += groesse) anfaenge.push(von)
+  const weitere = await Promise.all(anfaenge.map((von) => seite(von, Math.min(von + SEITE, hoechstens) - 1)))
+  for (const { data, error } of weitere) {
     if (error) return { data: zeilen, error }
-    const neu = data ?? []
-    zeilen.push(...neu)
-    const gesamt = Math.min(count ?? zeilen.length, hoechstens)
-    if (neu.length === 0 || zeilen.length >= gesamt) return { data: zeilen, error: null }
+    zeilen.push(...(data ?? []))
   }
+  return { data: zeilen.slice(0, gesamt), error: null }
 }
 
 export interface CongregationData {
@@ -606,28 +594,34 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
 
   const congregationId = member.congregation_id as string
 
-  // Ladefenster: nur die jüngsten WEEK_LIMIT Wochen. Gemessen wird seit T66 am
-  // Datum, nicht an einer Ordnungszahl — eine Lücke im Bestand (T65: die Woche
-  // des Gedächtnismahls fehlt im Arbeitsheft) verschiebt damit nichts mehr.
+  // **Ladefenster** (T125, 16.10.2026): was die App braucht, und nicht mehr —
+  // gezählt vom Montag der laufenden Woche (`aufbewahrung.ts`). Ein Jahr für
+  // die Wochen und was zu ihnen gehört (Treffpunkte, Gruppenbesuche,
+  // vorgemerkte Vorträge, Plan-Einträge), acht Wochen nach ihrem Ende für die
+  // Abwesenheiten. Was voraus liegt, kommt ganz. Älteres räumt die Datenbank
+  // (`alte_daten_loeschen`).
   //
-  // Der Anker dafür (`max(start)`) stand bis hierher in einer **eigenen
-  // Abfrage vor allen anderen**: eine volle Netzrunde auf dem kritischen Pfad
-  // jeder Anmeldung, jedes SIGNED_IN und jedes Konflikt-Neuladens, nur um eine
-  // Datumsgrenze zu erfahren. Die Grenze steckt aber im Ergebnis selbst — die
-  // jüngste Woche ist die erste Zeile. Also absteigend holen und die Grenze
-  // danach anlegen; beide Wochen-Tabellen fahren im selben Zug mit.
+  // Bis dahin waren es die jüngsten 52 Wochen, angelegt am Ergebnis — mit einer
+  // Frist ab heute braucht die Grenze keine Vorabfrage. Gemessen wird seit T66
+  // am Datum, nicht an einer Ordnungszahl: Eine Lücke im Bestand (T65: die Woche
+  // des Gedächtnismahls fehlt im Arbeitsheft) verschiebt nichts.
+  //
+  // Zusagen und Versand-Tagebuch tragen ihre Woche nur im Schlüssel; dort hält
+  // das Aufräumen den Bestand klein.
+  const verteilungAb = aufbewahrtAb(VERTEILUNG_WOCHEN)
+  const sonstAb = aufbewahrtAb(SONST_WOCHEN)
   const wochenAbfrage = supabase
     .from('weeks')
     .select('start, data, updated_at')
     .eq('congregation_id', congregationId)
+    .gte('start', verteilungAb)
     .order('start', { ascending: false })
-    .limit(WEEK_LIMIT)
   const fsWochenAbfrage = supabase
     .from('fs_weeks')
     .select('start, data, updated_at')
     .eq('congregation_id', congregationId)
+    .gte('start', verteilungAb)
     .order('start', { ascending: false })
-    .limit(WEEK_LIMIT)
 
   const [cong, persons, services, groups, weeks, absences, notifs, confs, members, linkRows, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, vortragRows, trolleyRows, trolleyTerminRows, planRows, planEintragRows] = await Promise.all([
     supabase.from('congregations').select(CONG_SPALTEN.join(', ')).eq('id', congregationId).maybeSingle(),
@@ -638,13 +632,15 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     // Versammlungsweit, nicht nur die eigenen: die Planung muss wissen, wer
     // fehlt (RLS erlaubt der Versammlung ohnehin das Lesen). „Deine Einträge"
     // im persönlichen Bereich filtert selbst auf die eigene user_id.
-    // Seitenweise wie die Zusagen: Abwesenheiten werden nie aufgeräumt, und
-    // eine, die hinter der Zeilengrenze läge, bekäme der Planer nicht zu sehen.
+    // Seitenweise wie die Zusagen: Eine, die hinter der Zeilengrenze läge,
+    // bekäme der Planer nicht zu sehen. Ab acht Wochen nach ihrem Ende braucht
+    // sie niemand mehr (T125).
     alleSeiten<AbsenceRow>((von, bis) =>
       db
         .from('absences')
         .select('*', { count: 'exact' })
         .eq('congregation_id', congregationId)
+        .gte('to_date', sonstAb)
         .order('from_date')
         .order('id')
         .range(von, bis),
@@ -692,21 +688,23 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
           .range(von, bis),
       SENT_LOG_LIMIT,
     ),
-    // Gruppenbesuche des Dienstaufsehers (T120) — alle, nicht nur das
-    // Ladefenster: Ein Besuch darf in einer Woche liegen, die noch nicht
-    // importiert ist. Es sind wenige (einer je Monat).
+    // Gruppenbesuche des Dienstaufsehers (T120) — alles Kommende, auch in
+    // Wochen, die noch nicht importiert sind, und zurück ein Jahr wie die
+    // Zuteilungen (T125). Es sind wenige (einer je Monat).
     supabase
       .from('gruppenbesuche')
       .select('id, woche, grp, person_id')
       .eq('congregation_id', congregationId)
+      .gte('woche', verteilungAb)
       .order('woche'),
-    // Vorgemerkte Vorträge (T122) — aus demselben Grund alle: Sie stehen für
-    // Wochen, die noch nicht importiert sind. Ein Mitglied ohne Zuteilungsrecht
-    // bekommt keine Zeile (RLS).
+    // Vorgemerkte Vorträge (T122) — ebenso alles Kommende und zurück ein Jahr
+    // wie ihre Wochen. Ein Mitglied ohne Zuteilungsrecht bekommt keine Zeile
+    // (RLS).
     supabase
       .from('vortraege')
       .select('id, woche, redner, versammlung, eigener, person_id, thema, lied')
       .eq('congregation_id', congregationId)
+      .gte('woche', verteilungAb)
       .order('woche'),
     // Trolleys (T121): alle, und ihre Termine ab dem Montag dieser Woche —
     // was davor liegt, zeigt die App nirgends mehr. Die Termine seitenweise
@@ -737,16 +735,18 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       .eq('congregation_id', congregationId)
       .gte('bis', rueckblickAb())
       .order('von'),
-    // Die Einträge **ohne** Datumsgrenze: Ein laufender Plan kann vor mehr als
-    // einem Vierteljahr begonnen haben, und ein fehlender alter Eintrag sähe
-    // für die Verteilung wie ein freier Platz aus. Was zu keinem geladenen
-    // Plan gehört, fällt unten heraus. Seitenweise (`alleSeiten`): Ein Plan
-    // mit einer Zeile je Woche wächst mit jedem Jahr um gut fünfzig.
+    // Die Einträge reichen weiter zurück als die Pläne selbst: Ein laufender
+    // Plan kann vor mehr als einem Vierteljahr begonnen haben. Ein Jahr wie
+    // die Zuteilungen (T125); verteilt wird ohnehin nur ab der laufenden
+    // Spanne (`gruppenVerteilen`). Was zu keinem geladenen Plan gehört, fällt
+    // unten heraus. Seitenweise (`alleSeiten`): Ein Plan mit einer Zeile je
+    // Woche wächst mit jedem Jahr um gut fünfzig.
     alleSeiten<PlanEintragRow>((von, bis) =>
       db
         .from('plan_eintraege')
         .select('id, plan_id, datum, grp', { count: 'exact' })
         .eq('congregation_id', congregationId)
+        .gte('datum', verteilungAb)
         .order('datum')
         .order('id')
         .range(von, bis),
@@ -788,15 +788,11 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   const personList = (persons.data ?? []).map((r) => personFromRow(r as PersonRow))
   // Absteigend geholt, aufsteigend gebraucht (`CongregationData.weeks`).
   const wochenAbsteigend = (weeks.data ?? []) as WeekRow[]
-  const ab = fensterAnfang(wochenAbsteigend[0]?.start)
-  // Die Grenze bleibt dieselbe Rechnung wie zuvor. Sie schneidet hier nichts
-  // mehr weg, was die Abfrage nicht ohnehin ausgelassen hätte: die Kennung ist
-  // ein Montag (T66) und je Versammlung eindeutig, in ein Fenster von
-  // WEEK_LIMIT Wochen passen also nie mehr als WEEK_LIMIT Wochen. Sie steht
-  // trotzdem da — als das, was das Fenster ausmacht, und als Halt, falls je
-  // eine Kennung auf einen anderen Wochentag fiele.
+  // Dieselbe Grenze noch einmal am Ergebnis. Sie schneidet nichts weg, was die
+  // Abfrage nicht ohnehin ausgelassen hätte; sie steht da als das, was das
+  // Fenster ausmacht, für beide Wochen-Tabellen gleich.
   const imFenster = <T extends { start: string }>(rows: T[]): T[] =>
-    (ab ? rows.filter((r) => r.start >= ab) : rows).slice().reverse()
+    rows.filter((r) => r.start >= verteilungAb).slice().reverse()
   const weekRows = imFenster(wochenAbsteigend)
   // Stände merken: jeder spätere Schreibvorgang nennt den Stand, auf dem er
   // beruht (T39). Vor dem Füllen leeren — ein zweiter Ladevorgang (Neuanmeldung,
