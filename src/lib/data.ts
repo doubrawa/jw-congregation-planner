@@ -1116,18 +1116,22 @@ export function setKonfliktMelder(fn: Konfliktmelder | null): void {
  *
  * `geladen`: die Ladung, aus der der Inhalt stammt (`ladung`). Wurde seither
  * neu geladen, geht er nicht mehr hinaus.
+ *
+ * `true`: Die Woche steht so in der Datenbank. Erst dann darf geschehen, was
+ * an ihr hängt — das Löschen verfallener Zusagen, die Meldung „zurückgezogen"
+ * (`persist.ts`, 16.10.2026).
  */
 async function schreibeWoche(
   congregationId: string,
   woche: string,
   week: Week,
   geladen: number,
-): Promise<void> {
-  if (!supabase) return
+): Promise<boolean> {
+  if (!supabase) return false
   // Seit dem Festhalten neu geladen: Der Inhalt beruht auf dem ersetzten Stand (`ladung`).
   if (geladen !== ladung) {
     konfliktMelder?.()
-    return
+    return false
   }
   const stand = wochenStand.get(woche)
   if (stand === undefined) {
@@ -1141,10 +1145,10 @@ async function schreibeWoche(
       // längst, wir kannten sie nur nicht — also hat sie ein anderer angelegt.
       if (error.code === '23505') konfliktMelder?.()
       else schreibfehler(error)
-      return
+      return false
     }
     if (data) standMerken(wochenStand, woche, data.updated_at as string, geladen)
-    return
+    return data !== null
   }
 
   const { data, error } = await supabase
@@ -1157,13 +1161,14 @@ async function schreibeWoche(
     .maybeSingle()
   if (error) {
     schreibfehler(error)
-    return
+    return false
   }
   if (data) {
     standMerken(wochenStand, woche, data.updated_at as string, geladen)
-    return
+    return true
   }
   konfliktMelder?.()
+  return false
 }
 
 /**
@@ -1172,21 +1177,29 @@ async function schreibeWoche(
  * unmittelbar in die Tabelle (`weeks_write`); bis zum 15.10.2026 ging die Woche
  * eines Planers über die Edge Function `zuteilen`.
  */
-export function saveWeek(congregationId: string, week: Week): void {
-  if (!supabase) return
+export function saveWeek(congregationId: string, week: Week): Promise<boolean> {
+  if (!supabase) return Promise.resolve(false)
   // Ohne Kennung gibt es keine Zeile, die gemeint sein könnte. Hier stand bis
   // T66 die Platzhalter-Prüfung; sie hatte denselben Zweck — nichts schreiben,
   // was keine Woche bezeichnet.
   const woche = week.start
-  if (!woche) return
+  if (!woche) return Promise.resolve(false)
   const vorher = wochenKette.get(woche) ?? Promise.resolve()
   // Die Ladung jetzt festhalten, nicht erst beim Losgehen: Bis dahin kann die
   // Kette ein Laden überdauert haben.
   const geladen = ladung
   // `catch` vor dem Anhängen: ein Fehlschlag darf die Kette nicht abreißen
-  // lassen, sonst schriebe diese Woche nie wieder.
-  const naechster = vorher.then(() => schreibeWoche(congregationId, woche, week, geladen).catch(() => {}))
-  wochenKette.set(woche, naechster)
+  // lassen, sonst schriebe diese Woche nie wieder. Gemeldet wird er wie bei den
+  // Treffpunkten (`saveFsWeek`) — hier stand bis zum 16.10.2026 ein stilles
+  // `catch(() => {})`.
+  const ergebnis = vorher.then(() =>
+    schreibeWoche(congregationId, woche, week, geladen).catch((err: unknown) => {
+      schreibfehler({ message: err instanceof Error ? err.message : String(err) })
+      return false
+    }),
+  )
+  wochenKette.set(woche, ergebnis.then(() => {}))
+  return ergebnis
 }
 
 /**
@@ -1233,8 +1246,22 @@ export function savePerson(congregationId: string, person: Person): void {
  */
 export function saveFsRules(congregationId: string, rules: FsRule[], entfernt: string[] = []): void {
   if (!supabase) return
-  void zeilenRun(loeschenDannSchreiben(supabase, 'fs_rules', congregationId, rules, entfernt, fsRuleToRow))
+  const client = supabase
+  regelnNacheinander(() => loeschenDannSchreiben(client, 'fs_rules', congregationId, rules, entfernt, fsRuleToRow))
 }
+
+/*
+ * **Je Tabelle eine Schlange** (`schreibSchlange`) — bis zum 16.10.2026 hatten
+ * sie nur die Pläne. Grundplan, Besuche, Vorträge und Trolleys gingen jeder
+ * Aufruf für sich los: Zwei schnelle Handlungen an derselben Zeile (den
+ * Besucher wechseln, dann den Besuch entfernen) liefen nebeneinander, und kam
+ * das Schreiben nach dem Löschen an, stand der Besuch nach dem Neuladen wieder
+ * da.
+ */
+const regelnNacheinander = schreibSchlange()
+const besucheNacheinander = schreibSchlange()
+const vortraegeNacheinander = schreibSchlange()
+const trolleysNacheinander = schreibSchlange()
 
 /**
  * Gruppenbesuche des Dienstaufsehers (T120) — eine Zeile je Besuch.
@@ -1248,7 +1275,8 @@ export function saveFsRules(congregationId: string, rules: FsRule[], entfernt: s
  */
 export function saveGruppenbesuche(congregationId: string, besuche: Gruppenbesuch[], entfernt: string[] = []): void {
   if (!supabase) return
-  void zeilenRun(loeschenDannSchreiben(supabase, 'gruppenbesuche', congregationId, besuche, entfernt, gruppenbesuchToRow))
+  const client = supabase
+  besucheNacheinander(() => loeschenDannSchreiben(client, 'gruppenbesuche', congregationId, besuche, entfernt, gruppenbesuchToRow))
 }
 
 /**
@@ -1259,7 +1287,8 @@ export function saveGruppenbesuche(congregationId: string, besuche: Gruppenbesuc
  */
 export function saveVortraege(congregationId: string, vortraege: VorgemerkterVortrag[], entfernt: string[] = []): void {
   if (!supabase) return
-  void zeilenRun(loeschenDannSchreiben(supabase, 'vortraege', congregationId, vortraege, entfernt, vortragToRow))
+  const client = supabase
+  vortraegeNacheinander(() => loeschenDannSchreiben(client, 'vortraege', congregationId, vortraege, entfernt, vortragToRow))
 }
 
 /**
@@ -1274,7 +1303,8 @@ export function saveVortraege(congregationId: string, vortraege: VorgemerkterVor
  */
 export function saveTrolleys(congregationId: string, trolleys: Trolley[]): void {
   if (!supabase) return
-  void zeilenRun(loeschenDannSchreiben(supabase, 'trolleys', congregationId, trolleys, [], trolleyToRow))
+  const client = supabase
+  trolleysNacheinander(() => loeschenDannSchreiben(client, 'trolleys', congregationId, trolleys, [], trolleyToRow))
 }
 
 /**
@@ -1336,27 +1366,29 @@ function fsStaendeSetzen(paare: Array<[string, string]>): void {
  * Gruppe, der Planer mehr als den Leiter): Sie entsteht nur auf einem
  * veralteten Stand, die Oberfläche bietet beides nicht an.
  */
-export function saveFsWeek(congregationId: string, woche: string, insts: FsInstance[]): void {
-  if (!supabase || !woche) return
+export function saveFsWeek(congregationId: string, woche: string, insts: FsInstance[]): Promise<boolean> {
+  if (!supabase || !woche) return Promise.resolve(false)
   const vorher = fsWochenKette.get(woche) ?? Promise.resolve()
   // Die Ladung jetzt festhalten, wie bei den Wochen (`saveWeek`).
   const geladen = ladung
   // `catch` vor dem Anhängen: ein Fehlschlag darf die Kette nicht abreißen
   // lassen, sonst schriebe diese Woche nie wieder.
-  const naechster = vorher.then(() =>
-    fsWocheSchreiben(congregationId, woche, insts, geladen).catch((err: unknown) =>
-      schreibfehler({ message: err instanceof Error ? err.message : String(err) }),
-    ),
+  const ergebnis = vorher.then(() =>
+    fsWocheSchreiben(congregationId, woche, insts, geladen).catch((err: unknown) => {
+      schreibfehler({ message: err instanceof Error ? err.message : String(err) })
+      return false
+    }),
   )
-  fsWochenKette.set(woche, naechster)
+  fsWochenKette.set(woche, ergebnis.then(() => {}))
+  return ergebnis
 }
 
-async function fsWocheSchreiben(congregationId: string, woche: string, insts: FsInstance[], geladen: number): Promise<void> {
-  if (!supabase) return
+async function fsWocheSchreiben(congregationId: string, woche: string, insts: FsInstance[], geladen: number): Promise<boolean> {
+  if (!supabase) return false
   // Seit dem Festhalten neu geladen: Der Inhalt beruht auf dem ersetzten Stand (`ladung`).
   if (geladen !== ladung) {
     konfliktMelder?.()
-    return
+    return false
   }
   const stand = fsWochenStand.get(woche)
   const { data, error } =
@@ -1380,13 +1412,14 @@ async function fsWocheSchreiben(congregationId: string, woche: string, insts: Fs
       console.error('[persistenz]', error.message)
       konfliktMelder?.()
     } else schreibfehler(error)
-    return
+    return false
   }
   if (data) {
     standMerken(fsWochenStand, woche, data.updated_at as string, geladen)
-    return
+    return true
   }
   konfliktMelder?.()
+  return false
 }
 
 export function deletePersonRow(id: string): void {

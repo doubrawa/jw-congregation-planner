@@ -212,4 +212,45 @@ describe('Echte Schreibfehler bleiben Schreibfehler', () => {
     expect(schreibfehler).toBe(1)
     expect(konflikte).toBe(0)
   })
+
+  /*
+   * Bis zum 16.10.2026 verschluckte die Kette eine Ausnahme still
+   * (`catch(() => {})`) — die Treffpunkte meldeten sie längst. Wer zuteilte,
+   * las „Zugeteilt", und gespeichert war nichts.
+   */
+  it('eine Ausnahme beim Schreiben wird gemeldet, und die Woche schreibt danach weiter', async () => {
+    fromMock.mockImplementationOnce(() => {
+      throw new Error('kaputt')
+    })
+    stub.antworten = [ok('S1')]
+    await expect(saveWeek('c1', woche('erste', '2026-03-02'))).resolves.toBe(false)
+    expect(schreibfehler).toBe(1)
+    await expect(saveWeek('c1', woche('zweite', '2026-03-02'))).resolves.toBe(true)
+  })
+})
+
+/*
+ * **Was das Schreiben zurückmeldet** (16.10.2026): An einer geschriebenen
+ * Woche hängt, was erst danach geschehen darf — verfallene Zusagen löschen,
+ * „zurückgezogen" melden (`persist.ts`). Dafür muss der Aufrufer wissen, ob es
+ * gelang.
+ */
+describe('Gelungen oder nicht', () => {
+  it('angelegt und geändert: true', async () => {
+    stub.antworten = [ok('S1'), ok('S2')]
+    await expect(saveWeek('c1', woche('erste', '2026-03-09'))).resolves.toBe(true)
+    await expect(saveWeek('c1', woche('zweite', '2026-03-09'))).resolves.toBe(true)
+  })
+
+  it('ein anderer war schneller: false', async () => {
+    stub.antworten = [ok('S1'), leer]
+    await saveWeek('c1', woche('erste', '2026-03-16'))
+    await expect(saveWeek('c1', woche('zweite', '2026-03-16'))).resolves.toBe(false)
+    expect(konflikte).toBe(1)
+  })
+
+  it('ein Datenbankfehler: false', async () => {
+    stub.antworten = [{ data: null, error: { code: '42501', message: 'RLS' } }]
+    await expect(saveWeek('c1', woche('erste', '2026-03-23'))).resolves.toBe(false)
+  })
 })

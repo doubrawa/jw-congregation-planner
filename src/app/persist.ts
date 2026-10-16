@@ -6,7 +6,8 @@
  */
 
 import { fsTaskKeyWoche } from '../data/fs'
-import { entzogeneAller } from '../data/plan-versand'
+import { entzogeneAller, type EntzogeneZuteilung } from '../data/plan-versand'
+import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import {
   deleteAbsenceRow,
   deleteConfirmationRows,
@@ -70,6 +71,8 @@ interface DebouncedWriter<K, V> {
   flush: () => void
   /** Alles Wartende fallen lassen, ohne zu schreiben (`hydrate`). */
   verwerfen: () => void
+  /** Wartet für diesen Schlüssel eine Fassung auf das gebündelte Schreiben? */
+  wartet: (key: K) => boolean
 }
 
 /**
@@ -108,7 +111,7 @@ export function ausstehendesSchreiben(): void {
  */
 function wartendesVerwerfen(): void {
   for (const schreiber of ALLE_SCHREIBER) schreiber.verwerfen()
-  ausstehendeFsLoeschungen.clear()
+  vorgemerktesVerwerfen()
 }
 
 /**
@@ -175,9 +178,124 @@ function createDebouncedWriter<K, V>(
       anhalten()
       pending.clear()
     },
+    wartet(key) {
+      return pending.has(key)
+    },
   }
   ALLE_SCHREIBER.push(schreiber)
   return schreiber
+}
+
+/*
+ * **Was an einer Woche hängt, geschieht erst, wenn sie geschrieben ist**
+ * (16.10.2026).
+ *
+ * Mit einer geänderten Woche gehen zwei Dinge einher: Verfallene Zusagen
+ * werden gelöscht, und wer einen Platz verlor, von dem er wusste, erfährt es
+ * (`sendPlanEntzug` — die Function löscht dabei auch seinen Tagebuch-Eintrag).
+ * Bis dahin gingen beide im selben Augenblick hinaus wie das Schreiben, gleich,
+ * ob es gelang. Traf es einen Konflikt — ein anderer Planer, ein eben
+ * übernommener freier Platz —, lud die App nach, und der Platz gehörte wieder
+ * dem Alten. Nur war seine Zusage gelöscht, und er hatte „Zuteilung
+ * zurückgezogen" bekommen.
+ *
+ * Deshalb wird es je Woche vorgemerkt (`nachDemSchreiben`), bevor sie
+ * geschrieben wird; der Bündler gibt es ihrem Schreiben mit
+ * (`mitVorgemerktem`). Gelungen: ausführen. Sonst fällt es weg — das
+ * Nachladen nach dem Konflikt bringt den Stand, zu dem das passt.
+ */
+type Danach = (geschrieben: boolean) => void
+type WochenTabelle = 'woche' | 'treffpunkte'
+
+const vorgemerkt: Record<WochenTabelle, Map<string, Danach[]>> = { woche: new Map(), treffpunkte: new Map() }
+/** Was in diesem `persist`-Aufruf vorgemerkt wurde (`liegenGebliebenesAusfuehren`). */
+const dieserAufruf: Array<[WochenTabelle, string]> = []
+
+function nachDemSchreiben(tabelle: WochenTabelle, woche: string, danach: Danach): void {
+  const liste = vorgemerkt[tabelle].get(woche) ?? []
+  liste.push(danach)
+  vorgemerkt[tabelle].set(woche, liste)
+  dieserAufruf.push([tabelle, woche])
+}
+
+/** Das Vorgemerkte einer Woche nehmen. */
+function vorgemerktes(tabelle: WochenTabelle, woche: string): Danach[] {
+  const liste = vorgemerkt[tabelle].get(woche) ?? []
+  vorgemerkt[tabelle].delete(woche)
+  return liste
+}
+
+/** Was vorgemerkt war, an dieses Schreiben hängen. */
+function mitVorgemerktem(tabelle: WochenTabelle, woche: string, schreiben: Promise<boolean>): void {
+  const danach = vorgemerktes(tabelle, woche)
+  if (danach.length === 0) return
+  void Promise.resolve(schreiben).then((geschrieben) => {
+    for (const f of danach) f(geschrieben === true)
+  })
+}
+
+/** In welcher Woche welcher Tabelle ein Platz liegt — `null`, wo der Schlüssel keine nennt. */
+function wocheDesPlatzes(key: string): { tabelle: WochenTabelle; woche: string } | null {
+  const teile = schluesselTeile(key)
+  if (!teile) return null
+  return { tabelle: 'tab' in teile ? 'woche' : 'treffpunkte', woche: teile.woche }
+}
+
+/** Verfallene Zusagen der Zusammenkünfte: je Woche gelöscht, sobald sie geschrieben ist. */
+function zusagenNachDemSchreiben(congId: string, keys: readonly string[]): void {
+  const jeWoche = new Map<string, string[]>()
+  for (const key of keys) {
+    const woche = wocheDesPlatzes(key)?.woche ?? ''
+    jeWoche.set(woche, [...(jeWoche.get(woche) ?? []), key])
+  }
+  for (const [woche, liste] of jeWoche) {
+    // Ohne Woche im Schlüssel gibt es kein Schreiben, auf das zu warten wäre.
+    if (!woche) deleteConfirmationRows(congId, liste)
+    else nachDemSchreiben('woche', woche, (geschrieben) => geschrieben && deleteConfirmationRows(congId, liste))
+  }
+}
+
+/**
+ * **„Zurückgezogen" nach dem Schreiben — und weiter in einem Aufruf.** Je Woche
+ * vorgemerkt, gesammelt, und hinaus geht, was zu geschriebenen Wochen gehört,
+ * sobald jede Woche Bescheid gegeben hat. Warum einer und nicht einer je
+ * Woche, steht unten in `persist` („Erst sammeln, dann einmal schicken").
+ */
+function entzugNachDemSchreiben(entzogen: readonly EntzogeneZuteilung[]): void {
+  if (entzogen.length === 0) return
+  const jeWoche = new Map<string, { tabelle: WochenTabelle; woche: string; liste: EntzogeneZuteilung[] }>()
+  const gelungen: EntzogeneZuteilung[] = []
+  for (const z of entzogen) {
+    const ort = wocheDesPlatzes(z.key)
+    if (!ort) {
+      gelungen.push(z)
+      continue
+    }
+    const k = `${ort.tabelle}|${ort.woche}`
+    const gruppe = jeWoche.get(k) ?? { ...ort, liste: [] }
+    gruppe.liste.push(z)
+    jeWoche.set(k, gruppe)
+  }
+  let offen = jeWoche.size
+  const fertig = (): void => {
+    if (offen === 0 && gelungen.length > 0) sendPlanEntzug(gelungen)
+  }
+  for (const { tabelle, woche, liste } of jeWoche.values()) {
+    nachDemSchreiben(tabelle, woche, (geschrieben) => {
+      if (geschrieben) gelungen.push(...liste)
+      offen--
+      fertig()
+    })
+  }
+  fertig()
+}
+
+/** Verworfen (`hydrate`): Was vorgemerkt war, geschieht nicht — die Sammler erfahren es. */
+function vorgemerktesVerwerfen(): void {
+  for (const tabelle of ['woche', 'treffpunkte'] as const) {
+    for (const liste of vorgemerkt[tabelle].values()) for (const f of liste) f(false)
+    vorgemerkt[tabelle].clear()
+  }
 }
 
 // congId ist über die Sitzung stabil, wird aber je Save mitgeführt, damit der
@@ -198,8 +316,8 @@ function personSofort(congId: string, person: Person): void {
 }
 // Gebündelt wird je **Woche**, nicht je Index (T66): der Schlüssel ist ihre
 // Kennung, und der schiebt sich nicht, wenn sich die geladene Menge ändert.
-const weekSaves = createDebouncedWriter<string, { congId: string; week: Week }>(SAVE_DELAY, (_woche, { congId, week }) =>
-  saveWeek(congId, week),
+const weekSaves = createDebouncedWriter<string, { congId: string; week: Week }>(SAVE_DELAY, (woche, { congId, week }) =>
+  mitVorgemerktem('woche', woche, saveWeek(congId, week)),
 )
 // Nur die geänderten Felder (`geaenderteFelder`) — gesammelt über die
 // Tastenanschläge, die neueste Fassung je Feld.
@@ -228,29 +346,40 @@ function einstellungenSpeichern(congId: string, prev: AppState, next: AppState):
   if (Object.keys(aenderung).length > 0) saveSettings(congId, aenderung)
 }
 /*
- * Treffpunkt-Zusagen, deren Löschen auf das gebündelte Schreiben ihrer Woche
- * wartet — je Woche (Kennung).
+ * Treffpunkte: derselbe Weg wie bei den Wochen — gebündelt je Kennung, und was
+ * an der Woche hängt, geschieht erst mit ihrem gelungenen Schreiben
+ * (`nachDemSchreiben`).
  *
  * **Nie vor der Woche.** Eine Grundplan-Änderung entfernt oder besetzt
  * Treffpunkte in vielen Wochen, geschrieben werden die Wochen aber erst nach
- * kurzer Ruhe (`fsWeekSaves`). Bis zum 15. September 2026 ging das Löschen der
- * alten Zusagen sofort hinaus. Wurde die App in diesen 600 ms geschlossen,
- * stand in der Datenbank der alte Leiter — ohne seine Zusage: Er galt als
- * unbestätigt und bekam erneut Erinnerungen. Jetzt geht beides gemeinsam oder
- * gar nicht.
+ * kurzer Ruhe. Bis zum 15. September 2026 ging das Löschen der alten Zusagen
+ * sofort hinaus. Wurde die App in diesen 600 ms geschlossen, stand in der
+ * Datenbank der alte Leiter — ohne seine Zusage: Er galt als unbestätigt und
+ * bekam erneut Erinnerungen. Bis zum 16.10.2026 ging das Löschen dann mit dem
+ * Schreiben hinaus, aber auch, wenn es scheiterte.
  */
-const ausstehendeFsLoeschungen = new Map<string, Set<string>>()
-
-// Treffpunkte: derselbe Weg wie bei den Wochen — gebündelt je Kennung.
 const fsWeekSaves = createDebouncedWriter<string, { congId: string; insts: FsInstance[] }>(
   SAVE_DELAY,
-  (woche, { congId, insts }) => {
-    saveFsWeek(congId, woche, insts)
-    const keys = ausstehendeFsLoeschungen.get(woche)
-    ausstehendeFsLoeschungen.delete(woche)
-    if (keys?.size) deleteConfirmationRows(congId, [...keys])
-  },
+  (woche, { congId, insts }) => mitVorgemerktem('treffpunkte', woche, saveFsWeek(congId, woche, insts)),
 )
+
+/** Welcher Bündler eine Woche dieser Tabelle schreibt. */
+const WOCHEN_SCHREIBER: Record<WochenTabelle, Pick<DebouncedWriter<string, unknown>, 'wartet'>> = {
+  woche: weekSaves,
+  treffpunkte: fsWeekSaves,
+}
+
+/**
+ * Vorgemerktes, das kein Schreiben in diesem Aufruf aufgenommen hat und auch
+ * auf keines wartet: Die Woche hat sich nicht geändert. Dann geschieht es
+ * gleich, wie vor dem 16.10.2026 — verloren gehen soll es nicht.
+ */
+function liegenGebliebenesAusfuehren(): void {
+  for (const [tabelle, woche] of dieserAufruf.splice(0)) {
+    if (!vorgemerkt[tabelle].has(woche) || WOCHEN_SCHREIBER[tabelle].wartet(woche)) continue
+    for (const f of vorgemerktes(tabelle, woche)) f(true)
+  }
+}
 /*
  * **Tabellen „eine Zeile je …", gebündelt geschrieben** — der Grundplan der
  * Treffpunkte, die Trolleys, die Weiteren Pläne. Alle drei hängen an
@@ -528,42 +657,54 @@ function verfalleneZusagen(prev: AppState, next: AppState): { meeting: string[];
 function fsWocheSpeichern(
   congId: string,
   weeks: Week[],
+  vorher: FsInstance[][],
   fsWeeks: FsInstance[][],
   wi: number,
   verwaist: ReadonlyMap<string, string[]>,
 ): void {
   const week = weeks[wi]
   const fsWeek = fsWeeks[wi]
-  if (!week || !fsWeek) return
-  fsZusagenVormerken(week.start, verwaist)
+  if (!week || !fsWeek || vorher[wi] === fsWeek) return
+  fsZusagenVormerken(congId, week.start, verwaist)
   fsWeekSaves.sofort(week.start, { congId, insts: fsWeek })
 }
 
 /**
  * Wie `fsWocheSpeichern`, nur gebündelt — für Änderungen je Tastenanschlag.
- * Die verfallenen Zusagen warten mit der Woche (`ausstehendeFsLoeschungen`).
+ * Die verfallenen Zusagen warten mit der Woche (`nachDemSchreiben`).
  */
 function fsWochePlanen(
   congId: string,
   weeks: Week[],
+  vorher: FsInstance[][],
   fsWeeks: FsInstance[][],
   wi: number,
   verwaist: ReadonlyMap<string, string[]>,
 ): void {
   const week = weeks[wi]
   const fsWeek = fsWeeks[wi]
-  if (!week || !fsWeek) return
-  fsZusagenVormerken(week.start, verwaist)
+  if (!week || !fsWeek || vorher[wi] === fsWeek) return
+  fsZusagenVormerken(congId, week.start, verwaist)
   fsWeekSaves.schedule(week.start, { congId, insts: fsWeek })
 }
 
-/** Die in einer Woche verfallenen Zusagen vormerken — sie gehen mit ihrer Woche hinaus (`fsWeekSaves`). */
-function fsZusagenVormerken(woche: string, verwaist: ReadonlyMap<string, string[]>): void {
+/*
+ * **Nur, was sich geändert hat** (16.10.2026). Beide Helfer schrieben ihre
+ * Woche, gleich ob sie anders war: „Automatisch" ohne passende Person,
+ * dieselbe Person noch einmal angetippt. Jedes Schreiben hebt den Stand
+ * (`updated_at`), und die nächste Änderung eines anderen Planers an dieser
+ * Woche galt als Konflikt — er lud nach und verlor, was er gerade tippte.
+ * Der Reducer gibt Unberührtem seine Referenz zurück; daran liest es sich ab,
+ * wie bei den Wochen (`wocheSpeichern`).
+ */
+
+/** Die in einer Woche verfallenen Zusagen vormerken — gelöscht wird erst, wenn die Woche geschrieben ist. */
+function fsZusagenVormerken(congId: string, woche: string, verwaist: ReadonlyMap<string, string[]>): void {
   const keys = verwaist.get(woche)
-  if (!keys) return
-  const warten = ausstehendeFsLoeschungen.get(woche) ?? new Set<string>()
-  for (const key of keys) warten.add(key)
-  ausstehendeFsLoeschungen.set(woche, warten)
+  if (!keys?.length) return
+  nachDemSchreiben('treffpunkte', woche, (geschrieben) => {
+    if (geschrieben) deleteConfirmationRows(congId, keys)
+  })
 }
 
 /**
@@ -617,7 +758,7 @@ function treffpunkteSpeichern(
   // Was dieser Planer geändert oder entfernt hat — nicht „alles, was ich kenne".
   zeilenPlanen(fsRuleSaves, congId, prev.fsRules, next.fsRules)
   for (let i = 0; i < next.fsWeeks.length; i++) {
-    if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWochePlanen(congId, next.weeks, next.fsWeeks, i, verwaist)
+    if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWochePlanen(congId, next.weeks, prev.fsWeeks, next.fsWeeks,i, verwaist)
   }
 }
 
@@ -641,7 +782,7 @@ function besucheSpeichern(
     if (geaendert.length || entfernt.length) saveGruppenbesuche(congId, geaendert, entfernt)
   }
   for (let i = 0; i < next.fsWeeks.length; i++) {
-    if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWocheSpeichern(congId, next.weeks, next.fsWeeks, i, verwaist)
+    if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWocheSpeichern(congId, next.weeks, prev.fsWeeks, next.fsWeeks,i, verwaist)
   }
 }
 
@@ -694,41 +835,48 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   // übersehener Pfad nicht in einen Schreibversuch auf veraltetem Stand läuft.
   if (next.staleAt) return
 
-  // Welche Zusagen mit dieser Aktion verfallen. Die der Treffpunkte werden
-  // erst mit dem Schreiben ihrer Woche gelöscht (`fsWocheSpeichern`,
-  // `fsWochePlanen`), die der Zusammenkünfte unter dem Switch.
+  // Welche Zusagen mit dieser Aktion verfallen — gelöscht wird jede erst, wenn
+  // ihre Woche geschrieben ist: die der Treffpunkte über `fsWocheSpeichern`
+  // bzw. `fsWochePlanen`, die der Zusammenkünfte gleich hier vorgemerkt.
   const verfallen = verfalleneZusagen(prev, next)
   const fsVerwaist = verfallen.fs
+  const wochenSchreiben = !OHNE_WOCHENSCHREIBEN.includes(action.type)
+  // Vor jedem Schreiben vormerken, was an den Wochen hängt (`nachDemSchreiben`)
+  // — das Schreiben einer Woche nimmt mit, was bis dahin vorgemerkt ist.
+  if (wochenSchreiben) zusagenNachDemSchreiben(congId, verfallen.meeting)
+  // `hydrate` ersetzt den ganzen Bestand: Ein Neuladen nach einem Konflikt
+  // brächte sonst Wochen voller vermeintlicher Entzüge hervor (siehe unten).
+  if (action.type !== 'hydrate') entzugNachDemSchreiben(entzogeneAller(prev, next))
 
   switch (action.type) {
     case 'assign': {
       // Treffpunkt-Leiter (fs): eigene Wochen-Tabelle. Die Zusammenkunfts-Woche
       // und ihre verfallenen Zusagen schreibt der Block unter dem Switch.
       const sel = prev.slotSel
-      if (sel && sel.kind === 'fs') fsWocheSpeichern(congId, next.weeks, next.fsWeeks, sel.wi, fsVerwaist)
+      if (sel && sel.kind === 'fs') fsWocheSpeichern(congId, next.weeks, prev.fsWeeks, next.fsWeeks,sel.wi, fsVerwaist)
       break
     }
     case 'fsInstUpdate':
       // Der Ort kommt je Tastenanschlag — gebündelt geht die Woche einmal
       // hinaus statt einmal je Buchstabe.
-      fsWochePlanen(congId, next.weeks, next.fsWeeks, action.wi, fsVerwaist)
+      fsWochePlanen(congId, next.weeks, prev.fsWeeks, next.fsWeeks,action.wi, fsVerwaist)
       break
     case 'fsInstRemove':
       // Ein gestrichener Grundplan-Treffpunkt ist in seiner Regel vermerkt
       // (`FsRule.aus`) — ohne sie käme er beim nächsten Laden wieder.
       zeilenPlanen(fsRuleSaves, congId, prev.fsRules, next.fsRules)
-      fsWocheSpeichern(congId, next.weeks, next.fsWeeks, action.wi, fsVerwaist)
+      fsWocheSpeichern(congId, next.weeks, prev.fsWeeks, next.fsWeeks,action.wi, fsVerwaist)
       break
     case 'fsInstAdd':
     case 'fsAutoAssign':
     case 'fsClear':
-      fsWocheSpeichern(congId, next.weeks, next.fsWeeks, prev.week, fsVerwaist)
+      fsWocheSpeichern(congId, next.weeks, prev.fsWeeks, next.fsWeeks,prev.week, fsVerwaist)
       break
     case 'addImportedWeek':
       // Die neue Woche bringt ihre Treffpunkte aus dem Grundplan mit; die Woche
       // selbst schreibt der Block unter dem Switch.
       if (next.fsWeeks !== prev.fsWeeks) {
-        fsWocheSpeichern(congId, next.weeks, next.fsWeeks, next.weeks.length - 1, fsVerwaist)
+        fsWocheSpeichern(congId, next.weeks, prev.fsWeeks, next.fsWeeks,next.weeks.length - 1, fsVerwaist)
       }
       break
     case 'fsRuleAdd':
@@ -792,7 +940,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // berichtigte Schreibweise. `flush()` beim Verlassen der Ansicht holt sie
       // ein (`selectPerson`/`navigate`/`logout`).
       for (let i = 0; i < next.fsWeeks.length; i++) {
-        if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWochePlanen(congId, next.weeks, next.fsWeeks, i, fsVerwaist)
+        if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWochePlanen(congId, next.weeks, prev.fsWeeks, next.fsWeeks,i, fsVerwaist)
       }
       // Admin- und Planer-Recht sofort in gespiegelte Konten schreiben — beide
       // Rechte stehen in derselben Zeile.
@@ -816,7 +964,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // sonst zeigt der Fremdschlüssel dort weiter ins Leere. Die
       // Zusammenkunfts-Wochen übernimmt der Block unter dem Switch.
       for (let i = 0; i < next.fsWeeks.length; i++) {
-        if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWocheSpeichern(congId, next.weeks, next.fsWeeks, i, fsVerwaist)
+        if (next.fsWeeks[i] !== prev.fsWeeks[i]) fsWocheSpeichern(congId, next.weeks, prev.fsWeeks, next.fsWeeks,i, fsVerwaist)
       }
       break
     }
@@ -979,14 +1127,9 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     }
   }
 
-  // Jede Woche, die sich geändert hat — siehe `geaenderteWochenSpeichern`.
-  if (!OHNE_WOCHENSCHREIBEN.includes(action.type)) {
-    geaenderteWochenSpeichern(congId, prev.weeks, next.weeks, GEBUENDELT.includes(action.type))
-  }
-  // Jede Zusammenkunfts-Zusage, die verfallen ist — siehe `verfalleneZusagen`.
-  if (!OHNE_WOCHENSCHREIBEN.includes(action.type) && verfallen.meeting.length > 0) {
-    deleteConfirmationRows(congId, verfallen.meeting)
-  }
+  // Jede Woche, die sich geändert hat — siehe `geaenderteWochenSpeichern`. Die
+  // verfallenen Zusagen ihrer Plätze gehen mit, wenn sie geschrieben ist (oben).
+  if (wochenSchreiben) geaenderteWochenSpeichern(congId, prev.weeks, next.weeks, GEBUENDELT.includes(action.type))
 
   /*
    * Eine hier entstandene Mitteilung (Import, „Plan gesendet", Verhinderung)
@@ -1016,9 +1159,11 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   if (neu?.local && neu !== prev.notifs[0]) notifyPlanners(neu.type, neu.title, neu.text, neu.taskId)
 
   /*
-   * **Wem ein Platz genommen wurde, von dem er wusste, erfährt es sofort**
-   * (T99; seit dem 15.10.2026 nicht nur, wer zugesagt hat, sondern auch, wem er
-   * gemeldet wurde — `entzogeneZuteilungen`).
+   * **Wem ein Platz genommen wurde, von dem er wusste, erfährt es** — sobald
+   * die Woche geschrieben ist, vorgemerkt am Anfang dieser Funktion
+   * (`entzugNachDemSchreiben`, 16.10.2026). T99; seit dem 15.10.2026 nicht nur,
+   * wer zugesagt hat, sondern auch, wem er gemeldet wurde
+   * (`entzogeneZuteilungen`).
    *
    * Nach demselben Grundsatz wie oben an **einer** Stelle für alle Wege:
    * einzeln zuteilen, umteilen, leeren, Auto-Zuteilung, Treffpunkt-Leiter,
@@ -1042,10 +1187,10 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
    * Wochen auf einmal an — aus einer Handlung wurden Dutzende Aufrufe.
    * Gesammelt ist es einer, und wer zwei Plätze verliert, bekommt eine
    * Nachricht statt zweier.
+   *
+   * Was vorgemerkt ist und von keinem Schreiben aufgenommen wurde, geschieht
+   * jetzt (`liegenGebliebenesAusfuehren`) — die Woche hat sich dann nicht
+   * geändert, oder sie schreibt eine Function (`OHNE_WOCHENSCHREIBEN`).
    */
-  if (action.type !== 'hydrate') {
-    const entzogen = entzogeneAller(prev, next)
-    // Der Regelfall: nichts verloren, nichts zu schicken.
-    if (entzogen.length > 0) sendPlanEntzug(entzogen)
-  }
+  liegenGebliebenesAusfuehren()
 }

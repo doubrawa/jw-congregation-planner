@@ -155,3 +155,25 @@ describe('Ein anderer war schneller', () => {
     expect(konflikte).toBe(0)
   })
 })
+
+/*
+ * **Was das Schreiben zurückmeldet** (16.10.2026): Die Zusage des alten Leiters
+ * wird erst gelöscht, wenn seine Woche geschrieben ist (`persist.ts`).
+ */
+describe('Gelungen oder nicht', () => {
+  it('geschrieben: true', async () => {
+    stub.antworten = [ok('S1')]
+    await expect(saveFsWeek('c1', '2026-03-02', treffpunkte('A'))).resolves.toBe(true)
+  })
+
+  it('ein anderer war schneller: false', async () => {
+    stub.antworten = [ok('S1'), leer]
+    await saveFsWeek('c1', '2026-03-09', treffpunkte('A'))
+    await expect(saveFsWeek('c1', '2026-03-09', treffpunkte('B'))).resolves.toBe(false)
+  })
+
+  it('ein Fehler: false', async () => {
+    stub.antworten = [{ data: null, error: { code: '08006', message: 'connection failure' } }]
+    await expect(saveFsWeek('c1', '2026-03-16', treffpunkte('A'))).resolves.toBe(false)
+  })
+})

@@ -97,6 +97,26 @@ describe('Die übrigen Tabellen „eine Zeile je …"', () => {
     expect(konflikt).not.toHaveBeenCalled()
   })
 
+  /*
+   * **Je Tabelle eine Schlange** (16.10.2026). Bis dahin ging jeder Aufruf der
+   * Besuche für sich los: Wechselte man den Besucher und entfernte den Besuch
+   * gleich danach, liefen beide nebeneinander. Kam das Schreiben nach dem
+   * Löschen an, stand der Besuch nach dem Neuladen wieder da.
+   */
+  it('zwei schnelle Handlungen an derselben Besuchszeile gehen nacheinander hinaus', async () => {
+    let loslassen = (): void => {}
+    db.zustand.bremse.gruppenbesuche = new Promise<void>((weiter) => (loslassen = weiter))
+    saveGruppenbesuche('c1', [besuch]) // den Besucher wechseln — die Antwort lässt auf sich warten
+    await Promise.resolve()
+    db.zustand.bremse = {}
+    saveGruppenbesuche('c1', [], [besuch.id]) // gleich danach den Besuch entfernen
+    await ruhe()
+    loslassen()
+    await ruhe()
+    await ruhe()
+    expect(db.protokoll).toEqual(['upsert gruppenbesuche b1', 'delete gruppenbesuche b1'])
+  })
+
   it('ohne Abweisung: weder gemeldet noch nachgeladen', async () => {
     saveGruppenbesuche('c1', [besuch], ['b0'])
     saveFsRules('c1', [regel])

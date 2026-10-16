@@ -32,7 +32,7 @@ import {
   zuteilbarePlaetze,
 } from './planning'
 import { emptyQualifications } from './helpers'
-import type { Meeting, PartItem, Person, Section, Service, Week } from './types'
+import type { Meeting, MeetingSlotSelection, PartItem, Person, Section, Service, Week } from './types'
 import { STANDARD_ZEITEN } from './vorgaben'
 import { privSetzen } from './helpers'
 
@@ -1427,6 +1427,24 @@ describe('Auswahl, die ins Leere zeigt', () => {
     const nach = assignSlot(weeks, sel, 'Anna Beispiel')
     expect(nach).not.toBe(weeks)
     expect(slotValue(nach, sel)).toBe('Anna Beispiel')
+  })
+
+  /*
+   * **Dieselbe Besetzung noch einmal: dieselben Wochen** (16.10.2026). Wer im
+   * Blatt dieselbe Person erneut antippte, bekam eine neue, gleiche Woche, und
+   * die ging hinaus. Jedes Schreiben hebt ihren Stand; die nächste Änderung
+   * eines anderen Planers an ihr galt dann als Konflikt.
+   */
+  it('dieselbe Person auf demselben Platz noch einmal ändert nichts — auch nicht die Referenz', () => {
+    const sel = teilAuswahl({ si: 1, ii: 1 })
+    const einmal = assignSlot(buildDemoWeeks(), sel, 'Anna Beispiel', undefined, 'p-anna')
+    expect(assignSlot(einmal, sel, 'Anna Beispiel', undefined, 'p-anna')).toBe(einmal)
+    // Eine andere Person, eine andere Id oder eine andere Rolle ist eine Änderung.
+    expect(assignSlot(einmal, sel, 'Anna Beispiel', undefined, 'p-andere')).not.toBe(einmal)
+    expect(assignSlot(einmal, sel, 'Anna Beispiel', 'Redner', 'p-anna')).not.toBe(einmal)
+    const helfer: MeetingSlotSelection = { kind: 'helper', wi: 0, tab: 'mid', svc: 'mik', pos: 0, label: '', priv: null, groups: false }
+    const mitHelfer = assignSlot(einmal, helfer, 'Bernd Beispiel', undefined, 'p-bernd')
+    expect(assignSlot(mitHelfer, helfer, 'Bernd Beispiel', undefined, 'p-bernd')).toBe(mitHelfer)
   })
 })
 

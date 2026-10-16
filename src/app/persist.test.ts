@@ -117,7 +117,18 @@ function st(over: Partial<AppState> = {}): AppState {
 beforeEach(() => {
   vi.clearAllMocks()
   vi.useFakeTimers()
+  // Die Wochen gelingen — erst danach geht hinaus, was an ihnen hängt (16.10.2026).
+  vi.mocked(data.saveWeek).mockResolvedValue(true)
+  vi.mocked(data.saveFsWeek).mockResolvedValue(true)
 })
+
+/**
+ * Bis das Schreiben einer Woche geantwortet hat: Erst dann löscht `persist`
+ * verfallene Zusagen und meldet Entzüge (`nachDemSchreiben`).
+ */
+async function geschrieben(): Promise<void> {
+  for (let i = 0; i < 5; i++) await Promise.resolve()
+}
 afterEach(() => {
   vi.runOnlyPendingTimers() // ausstehende Debounce-Writes leeren (Singleton-Writer)
   vi.useRealTimers()
@@ -146,7 +157,7 @@ describe('Zuteilen', () => {
   // `persist` liest nur ab, was im neuen Zustand fehlt (`verfalleneZusagen`).
   const VERFALLEN = '2026-09-07|mid|part|dw3|0'
 
-  it('assign (Programmpunkt) → saveWeek + verfallene Bestätigung abräumen', () => {
+  it('assign (Programmpunkt) → saveWeek + verfallene Bestätigung abräumen', async () => {
     const prev = st({
       slotSel: { kind: 'part', wi: 0, tab: 'mid', si: 1, ii: 1, ni: 0, priv: null, groups: false, label: 'X' },
       confirmations: { [VERFALLEN]: 'bestätigt' },
@@ -154,6 +165,42 @@ describe('Zuteilen', () => {
     const next = st()
     persist(prev, next, { type: 'assign', name: 'A' })
     expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
+    await geschrieben()
+    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [VERFALLEN])
+  })
+
+  /*
+   * **Erst geschrieben, dann gelöscht und gemeldet** (16.10.2026). Bis dahin
+   * gingen Löschen und Entzug im selben Augenblick hinaus wie die Woche. Traf
+   * sie einen Konflikt, lud die App nach, und der Platz gehörte wieder dem
+   * Alten — nur war seine Zusage gelöscht, und er hatte „zurückgezogen"
+   * bekommen.
+   */
+  it('scheitert das Schreiben der Woche, bleibt die Zusage stehen und niemand erfährt einen Entzug', async () => {
+    vi.mocked(data.saveWeek).mockResolvedValue(false)
+    const prev = st({
+      slotSel: { kind: 'part', wi: 0, tab: 'mid', si: 1, ii: 1, ni: 0, priv: null, groups: false, label: 'X' },
+      confirmations: { [VERFALLEN]: 'bestätigt' },
+    })
+    persist(prev, st(), { type: 'assign', name: 'A' })
+    await geschrieben()
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
+    expect(data.sendPlanEntzug).not.toHaveBeenCalled()
+  })
+
+  it('vor der Antwort der Datenbank geht weder das Löschen noch ein Entzug hinaus', async () => {
+    // Je geschriebener Woche eine Antwort, die noch aussteht.
+    const antworten: Array<(ok: boolean) => void> = []
+    vi.mocked(data.saveWeek).mockImplementation(() => new Promise((weiter) => void antworten.push(weiter)))
+    const prev = st({
+      slotSel: { kind: 'part', wi: 0, tab: 'mid', si: 1, ii: 1, ni: 0, priv: null, groups: false, label: 'X' },
+      confirmations: { [VERFALLEN]: 'bestätigt' },
+    })
+    persist(prev, st(), { type: 'assign', name: 'A' })
+    await geschrieben()
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
+    for (const antworte of antworten) antworte(true)
+    await geschrieben()
     expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [VERFALLEN])
   })
 
@@ -169,11 +216,12 @@ describe('Zuteilen', () => {
     expect(data.saveWeek).not.toHaveBeenCalled()
   })
 
-  it('autoAssign → saveWeek + verfallene Bestätigungen abräumen', () => {
+  it('autoAssign → saveWeek + verfallene Bestätigungen abräumen', async () => {
     const prev = st({ confirmations: { [VERFALLEN]: 'bestätigt' } })
     const next = st()
     persist(prev, next, { type: 'autoAssign' })
     expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
+    await geschrieben()
     expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [VERFALLEN])
   })
 
@@ -183,12 +231,13 @@ describe('Zuteilen', () => {
    * `darf_zuteilen`). Bis dahin ging seine Woche über die Edge Function
    * `zuteilen`, die nur Zuteilungen durchließ.
    */
-  it('beim Planer geht dieselbe Woche unmittelbar hinaus, die Zusagen räumt er selbst ab', () => {
+  it('beim Planer geht dieselbe Woche unmittelbar hinaus, die Zusagen räumt er selbst ab', async () => {
     const prev = st({ planner: false, zuteiler: true, confirmations: { [VERFALLEN]: 'bestätigt' } })
     const next = st({ planner: false, zuteiler: true })
     persist(prev, next, { type: 'autoAssign' })
     expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
     // Zusagen löschen darf der Planer selbst (RLS `confirmations_delete_planner`).
+    await geschrieben()
     expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [VERFALLEN])
   })
 
@@ -262,16 +311,41 @@ describe('Treffpunkte', () => {
   const zuerst = (a: { mock: { invocationCallOrder: number[] } }, b: { mock: { invocationCallOrder: number[] } }) =>
     (a.mock.invocationCallOrder[0] ?? Infinity) < (b.mock.invocationCallOrder[0] ?? Infinity)
 
-  it('ein Leiterwechsel löscht die Zusage des Vorgängers — gleich nach dem Schreiben der Woche', () => {
+  it('ein Leiterwechsel löscht die Zusage des Vorgängers — gleich nach dem Schreiben der Woche', async () => {
     const prev = st({ slotSel: FS_SEL, fsWeeks: mitLeiter('Anton Alt', 'p-a'), confirmations: { [KEY]: 'bestätigt' } })
     const next = st({ fsWeeks: mitLeiter('Bernd Brand', 'p-b'), confirmations: {} })
     persist(prev, next, { type: 'assign', name: 'Bernd Brand', pid: 'p-b' })
     expect(data.saveFsWeek).toHaveBeenCalledWith('c1', '2026-09-07', next.fsWeeks[0])
+    await geschrieben()
     expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [KEY])
     expect(zuerst(vi.mocked(data.saveFsWeek), vi.mocked(data.deleteConfirmationRows))).toBe(true)
   })
 
-  it('bei einer Grundplan-Änderung wartet das Löschen auf das gebündelte Schreiben der Woche', () => {
+  it('scheitert das Schreiben der Treffpunkt-Woche, behält der alte Leiter seine Zusage (16.10.2026)', async () => {
+    vi.mocked(data.saveFsWeek).mockResolvedValue(false)
+    const prev = st({ slotSel: FS_SEL, fsWeeks: mitLeiter('Anton Alt', 'p-a'), confirmations: { [KEY]: 'bestätigt' } })
+    const next = st({ fsWeeks: mitLeiter('Bernd Brand', 'p-b'), confirmations: {} })
+    persist(prev, next, { type: 'assign', name: 'Bernd Brand', pid: 'p-b' })
+    await geschrieben()
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
+    expect(data.sendPlanEntzug).not.toHaveBeenCalled()
+  })
+
+  /*
+   * **Nur, was sich geändert hat** (16.10.2026): „Automatisch" ohne passende
+   * Person ließ die Liste, wie sie war, und schrieb sie trotzdem. Jedes
+   * Schreiben hebt den Stand, und die nächste Änderung eines anderen Planers an
+   * dieser Woche galt als Konflikt.
+   */
+  it('eine unveränderte Treffpunkt-Woche geht nicht hinaus', () => {
+    const s = st({ slotSel: FS_SEL })
+    persist(s, { ...s, toast: { id: 1, text: 'Keine' } } as AppState, { type: 'fsAutoAssign', onlyGroup: null })
+    persist(s, s, { type: 'assign', name: 'Anton Alt', pid: 'p-a' })
+    vi.advanceTimersByTime(600)
+    expect(data.saveFsWeek).not.toHaveBeenCalled()
+  })
+
+  it('bei einer Grundplan-Änderung wartet das Löschen auf das gebündelte Schreiben der Woche', async () => {
     // Die Regel ist weg, mit ihr der Treffpunkt und seine Zusage. Geschrieben
     // wird die Woche erst nach 600 ms Ruhe — bis dahin darf nichts gelöscht
     // sein: Wird die App vorher geschlossen, bleibt die Datenbank beim alten
@@ -286,11 +360,12 @@ describe('Treffpunkte', () => {
 
     vi.advanceTimersByTime(600)
     expect(data.saveFsWeek).toHaveBeenCalledWith('c1', '2026-09-07', [])
+    await geschrieben()
     expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [KEY])
     expect(zuerst(vi.mocked(data.saveFsWeek), vi.mocked(data.deleteConfirmationRows))).toBe(true)
   })
 
-  it('… und geht beim Verlassen der Ansicht gemeinsam mit der Woche hinaus', () => {
+  it('… und geht beim Verlassen der Ansicht gemeinsam mit der Woche hinaus', async () => {
     const prev = st({ fsWeeks: mitLeiter('Anton Alt', 'p-a'), confirmations: { [KEY]: 'bestätigt' } })
     const ohneTreffpunkt = buildDemoFsWeeks()
     ohneTreffpunkt[0] = []
@@ -298,6 +373,7 @@ describe('Treffpunkte', () => {
     persist(prev, next, { type: 'fsRuleRemove', id: 'r-weg' })
     persist(next, next, { type: 'navigate', screen: 'start' })
     expect(data.saveFsWeek).toHaveBeenCalledWith('c1', '2026-09-07', [])
+    await geschrieben()
     expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [KEY])
   })
 
@@ -359,15 +435,17 @@ describe('Treffpunkte', () => {
     expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
   })
 
-  it('eine verschwundene Zusammenkunfts-Zusage geht sofort hinaus — nicht erst mit der Treffpunkt-Woche', () => {
-    // Beide Sorten liest derselbe Vergleich ab (`verfalleneZusagen`); nur der
-    // Zeitpunkt unterscheidet sich: Treffpunkt-Zusagen warten auf das Schreiben
-    // ihrer Woche, Zusammenkunfts-Zusagen nicht.
+  it('eine verschwundene Zusammenkunfts-Zusage geht mit ihrer Woche hinaus — nicht erst mit der Treffpunkt-Woche', async () => {
+    // Beide Sorten liest derselbe Vergleich ab (`verfalleneZusagen`); nur die
+    // Woche, auf die gewartet wird, unterscheidet sich: Treffpunkt-Zusagen
+    // warten auf ihre Treffpunkt-Woche, Zusammenkunfts-Zusagen auf ihre.
     const meeting = '2026-09-07|mid|part|k3f9x|0'
     const prev = st({ fsWeeks: mitLeiter('Anton Alt', 'p-a'), confirmations: { [meeting]: 'bestätigt' } })
     const next = st({ fsWeeks: mitLeiter('Anton Alt', 'p-a', '15:00'), confirmations: {} })
     persist(prev, next, { type: 'fsInstUpdate', wi: 0, id: 'tp1', patch: { time: '15:00' } })
+    await geschrieben()
     expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [meeting])
+    expect(data.saveFsWeek).not.toHaveBeenCalled()
   })
 
   it('fsInstUpdate/Remove speichern die betroffene Woche', () => {
@@ -1195,19 +1273,20 @@ describe('Ein gelöschter Dienst nimmt seine drei Spuren mit', () => {
     }),
   })
 
-  it('schreibt die geänderten Personen und Wochen und räumt die Zusagen ab', () => {
+  it('schreibt die geänderten Personen und Wochen und räumt die Zusagen ab', async () => {
     const prev = st({ confirmations: { '2026-09-07|mid|helper|ton|0': 'bestätigt' } })
     persist(prev, ohneTon(prev), { type: 'removeService', key: 'ton' })
     expect(data.deleteServiceRow).toHaveBeenCalledWith('c1', 'ton')
     // Die Personen mit dem Bereich — und nur die.
-    const geschrieben = vi.mocked(data.savePerson).mock.calls.map((c) => c[1].id)
+    const personen = vi.mocked(data.savePerson).mock.calls.map((c) => c[1].id)
     const erwartet = prev.persons.filter((p) => 'svc:ton' in p.priv).map((p) => p.id)
-    expect(geschrieben.sort()).toEqual(erwartet.sort())
-    expect(geschrieben.length).toBeGreaterThan(0)
+    expect(personen.sort()).toEqual(erwartet.sort())
+    expect(personen.length).toBeGreaterThan(0)
     // Die Wochen mit der Platzreihe — gebündelt wie jede Wochen-Änderung.
     vi.advanceTimersByTime(600)
     expect(vi.mocked(data.saveWeek).mock.calls.length).toBeGreaterThan(0)
-    // Und die Bestätigungen dieser Plätze.
+    // Und die Bestätigungen dieser Plätze — sobald ihre Woche geschrieben ist.
+    await geschrieben()
     const keys = vi.mocked(data.deleteConfirmationRows).mock.calls[0]?.[1] ?? []
     expect(keys.some((k) => k.includes('|helper|ton|'))).toBe(true)
   })
@@ -1791,7 +1870,7 @@ describe('Entzug einer bestätigten Zusage: der Auslöser', () => {
     })
   }
 
-  it('das Umteilen eines bestätigten Platzes meldet — mit Person-Id', () => {
+  it('das Umteilen eines bestätigten Platzes meldet — mit Person-Id', async () => {
     // Die Gegenprobe zu allem Folgenden: Der Weg funktioniert überhaupt.
     const vorher = wocheMitKlasse()
     const nachher = wocheMitKlasse()
@@ -1800,6 +1879,9 @@ describe('Entzug einer bestätigten Zusage: der Auslöser', () => {
 
     persist(mitWoche(vorher), mitWoche(nachher), { type: 'assign', name: 'B. Neu' })
 
+    // Erst, wenn die Woche geschrieben ist (16.10.2026).
+    expect(data.sendPlanEntzug).not.toHaveBeenCalled()
+    await geschrieben()
     expect(data.sendPlanEntzug).toHaveBeenCalledTimes(1)
     // Die Id muss mit: Zwei Gleichnamige bekämen sonst gegenseitig die
     // Nachricht des anderen — die Function stellt danach zu.
@@ -1814,7 +1896,18 @@ describe('Entzug einer bestätigten Zusage: der Auslöser', () => {
     ])
   })
 
-  it('auch wem der Platz nur gemeldet wurde, erfährt das Umteilen (15.10.2026)', () => {
+  it('scheitert das Schreiben der Woche, erfährt niemand einen Entzug — der Platz ist ja noch seiner (16.10.2026)', async () => {
+    vi.mocked(data.saveWeek).mockResolvedValue(false)
+    const vorher = wocheMitKlasse()
+    const nachher = wocheMitKlasse()
+    const punkt = nachher.mid.sections[0]?.items[0] as { names: { name: string; pid?: string }[] }
+    punkt.names[0] = { name: 'B. Neu', pid: 'pB' }
+    persist(mitWoche(vorher), mitWoche(nachher), { type: 'assign', name: 'B. Neu' })
+    await geschrieben()
+    expect(data.sendPlanEntzug).not.toHaveBeenCalled()
+  })
+
+  it('auch wem der Platz nur gemeldet wurde, erfährt das Umteilen (15.10.2026)', async () => {
     // „Plan senden" hat ihn benachrichtigt, zugesagt hat er noch nicht — er
     // weiß von seinem Platz und bereitet womöglich vor.
     const vorher = wocheMitKlasse()
@@ -1828,10 +1921,11 @@ describe('Entzug einer bestätigten Zusage: der Auslöser', () => {
       mitWoche(nachher, { confirmations: {}, sentLog: gemeldet }),
       { type: 'assign', name: 'B. Neu' },
     )
+    await geschrieben()
     expect(data.sendPlanEntzug).toHaveBeenCalledWith([expect.objectContaining({ key: SCHLUESSEL, name: 'A. Berg' })])
   })
 
-  it('mehrere Entzüge derselben Änderung gehen in EINEM Aufruf hinaus', () => {
+  it('mehrere Entzüge derselben Änderung gehen in EINEM Aufruf hinaus', async () => {
     /*
      * Je Entzug ein eigener Aufruf hieß: Die Function las für jeden davon
      * aufs Neue alle Mitglieder, Personen und Push-Abos der Versammlung. Eine
@@ -1852,6 +1946,7 @@ describe('Entzug einer bestätigten Zusage: der Auslöser', () => {
 
     persist(mitWoche(vorher), mitWoche(nachher), { type: 'autoAssign' })
 
+    await geschrieben()
     expect(data.sendPlanEntzug).toHaveBeenCalledTimes(1)
     const liste = (data.sendPlanEntzug as unknown as ReturnType<typeof vi.fn>).mock
       .calls[0]?.[0] as Array<{ key: string }>

@@ -81,7 +81,15 @@ beforeEach(() => {
   vi.clearAllMocks()
   vi.useFakeTimers()
   vi.setSystemTime(new Date(2026, 8, 7, 9, 0)) // Montag, 7.9.2026
+  // Die Wochen gelingen — erst danach geht hinaus, was an ihnen hängt (16.10.2026).
+  vi.mocked(data.saveWeek).mockResolvedValue(true)
+  vi.mocked(data.saveFsWeek).mockResolvedValue(true)
 })
+
+/** Bis das Schreiben der Woche geantwortet hat (`nachDemSchreiben` in persist.ts). */
+async function geschrieben(): Promise<void> {
+  for (let i = 0; i < 5; i++) await Promise.resolve()
+}
 afterEach(() => {
   vi.runOnlyPendingTimers() // ausstehende Bündel leeren (die Schreiber sind Modul-Singletons)
   vi.useRealTimers()
@@ -181,26 +189,28 @@ describe('Gruppenbesuche als Ablauf', () => {
     return { woche, grp, besuch, keys }
   }
 
-  it('Besuch gelöscht: der Platz wird frei, die Zusage gelöscht, der Besucher erfährt es', () => {
+  it('Besuch gelöscht: der Platz wird frei, die Zusage gelöscht, der Besucher erfährt es', async () => {
     const a = ablauf(start())
     const { woche, grp, besuch, keys } = zugesagterBesuch(a)
     a.tue({ type: 'besuchEntfernen', id: besuch.id })
     expect(seineSchluessel(a, woche, grp, BESUCHER)).toEqual([])
     expect(data.saveGruppenbesuche).toHaveBeenCalledWith('c1', [], [besuch.id])
     expect(data.saveFsWeek).toHaveBeenCalledWith('c1', woche, a.state.fsWeeks[1])
+    await geschrieben()
     expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', expect.arrayContaining(keys))
     expect(data.sendPlanEntzug).toHaveBeenCalledWith(
       expect.arrayContaining([expect.objectContaining({ key: keys[0], pid: BESUCHER })]),
     )
   })
 
-  it('anderer Besucher: der neue leitet, die Zusage des alten verfällt — er erfährt es, der neue erbt nichts', () => {
+  it('anderer Besucher: der neue leitet, die Zusage des alten verfällt — er erfährt es, der neue erbt nichts', async () => {
     const a = ablauf(start())
     const { woche, grp, besuch, keys } = zugesagterBesuch(a)
     a.tue({ type: 'besuchBesucher', id: besuch.id, pid: ANDERER })
     expect(seineSchluessel(a, woche, grp, ANDERER)).toEqual(keys)
     for (const k of keys) expect(a.state.confirmations[k]).toBeUndefined()
     expect(data.saveGruppenbesuche).toHaveBeenCalledWith('c1', [expect.objectContaining({ id: besuch.id, pid: ANDERER })], [])
+    await geschrieben()
     expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', expect.arrayContaining(keys))
     expect(data.sendPlanEntzug).toHaveBeenCalledWith(
       expect.arrayContaining([expect.objectContaining({ key: keys[0], pid: BESUCHER })]),
@@ -208,7 +218,7 @@ describe('Gruppenbesuche als Ablauf', () => {
   })
 
 
-  it('leitete der Besucher den Treffpunkt schon vor dem Besuch, geht er mit dem Besuch trotzdem (entschieden am 3.10.2026)', () => {
+  it('leitete der Besucher den Treffpunkt schon vor dem Besuch, geht er mit dem Besuch trotzdem (entschieden am 3.10.2026)', async () => {
     const a = ablauf(start())
     const { woche, grp } = besuchsLage(a)
     // Schon vorher sein Platz — etwa aus der Auto-Zuteilung, geladen.
@@ -226,6 +236,7 @@ describe('Gruppenbesuche als Ablauf', () => {
 
     a.tue({ type: 'besuchEntfernen', id: besuch.id })
     expect(a.state.fsWeeks[1]!.find((i) => i.id === inst.id)?.leader).toBe('')
+    await geschrieben()
     expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [key])
     expect(data.sendPlanEntzug).toHaveBeenCalledWith([expect.objectContaining({ key, pid: BESUCHER })])
   })

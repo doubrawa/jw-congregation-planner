@@ -270,7 +270,17 @@ export function assignSlot(
   // Vorher warf der Zugriff, und das mitten im Reducer (T42).
   const meeting = next[sel.wi]?.[sel.tab]
   if (!meeting) return weeks
+  /*
+   * **Dieselbe Besetzung noch einmal: die Eingabe zurück** (16.10.2026). Wer im
+   * Blatt dieselbe Person erneut antippte, bekam eine neue, gleiche Woche — und
+   * die ging hinaus (`persist` liest an der Identität ab, was zu schreiben ist).
+   * Jedes Schreiben hebt den Stand der Woche; die nächste Änderung eines anderen
+   * Planers an ihr galt dann als Konflikt.
+   */
+  const gleich = (slot: SlotAssignment | undefined): boolean =>
+    slot !== undefined && slot.name === name && slot.pid === (name && pid ? pid : undefined)
   if (sel.kind === 'ratgeber') {
+    if (gleich(meeting.auxRatgeber)) return weeks
     meeting.auxRatgeber = { ...ratgeberSlot(meeting), name }
     if (name && pid) meeting.auxRatgeber.pid = pid
     else delete meeting.auxRatgeber.pid
@@ -283,6 +293,9 @@ export function assignSlot(
     if (!item || isSong(item)) return weeks
     const slot = slotsOf(item, sel.aux === true)[sel.ni]
     if (!slot) return weeks
+    if (gleich(slot) && (rolle === undefined || slot.rolle === rolle) && (herkunft === undefined || (slot.herkunft ?? '') === herkunft)) {
+      return weeks
+    }
     slot.name = name
     // Person-Id als stabile Identität mitführen; beim Entfernen bzw. bei
     // externen Rednern (kein pid) das Feld sauber löschen.
@@ -297,6 +310,8 @@ export function assignSlot(
       else delete slot.herkunft
     }
   } else {
+    const alt = meeting.helpers[sel.svc]?.[sel.pos]
+    if (gleich(alt) || (alt === undefined && !name)) return weeks
     const arr = meeting.helpers[sel.svc] ?? []
     while (arr.length <= sel.pos) arr.push({ name: '' })
     arr[sel.pos] = name && pid ? { name, pid } : { name }

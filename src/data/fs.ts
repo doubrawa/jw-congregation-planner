@@ -418,6 +418,13 @@ export function fsSetLeader(
   pid?: string,
   extern = false,
 ): FsInstance[][] {
+  // Dieselbe Besetzung noch einmal (derselbe Tipp im Blatt): nichts zu tun. Eine
+  // neue, gleiche Woche ginge sonst hinaus, höbe ihren Stand und machte die
+  // nächste Änderung eines anderen Planers zum Konflikt (16.10.2026).
+  const jetzt = fsWeeks[wi]?.find((inst) => inst.id === instId)
+  const lpid = name && pid ? pid : undefined
+  const lext = name && !pid && extern ? true : undefined
+  if (jetzt && jetzt.leader === name && jetzt.lpid === lpid && jetzt.lext === lext) return fsWeeks
   return patchWeek(fsWeeks, wi, (week) =>
     week.map((inst) => {
       if (inst.id !== instId) return inst

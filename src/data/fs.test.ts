@@ -368,6 +368,18 @@ describe('Person-Id des Leiters (lpid)', () => {
     expect(next[0][0]).toMatchObject({ leader: 'Anton Muster', lpid: 'p1' })
   })
 
+  /*
+   * Derselbe Leiter noch einmal (derselbe Tipp im Blatt): dieselben Wochen
+   * (16.10.2026). Eine neue, gleiche Woche ginge hinaus und machte die nächste
+   * Änderung eines anderen Planers an ihr zum Konflikt.
+   */
+  it('derselbe Leiter noch einmal gibt dieselben Wochen zurück', () => {
+    const einmal = fsSetLeader([[inst({ id: 'a' })]], 0, 'a', 'Anton Muster', 'p1')
+    expect(fsSetLeader(einmal, 0, 'a', 'Anton Muster', 'p1')).toBe(einmal)
+    expect(fsSetLeader(einmal, 0, 'a', 'Anton Muster', 'p2')).not.toBe(einmal)
+    expect(fsSetLeader(einmal, 0, 'a', 'Anton Muster', undefined, true)).not.toBe(einmal)
+  })
+
   it('beim Leeren verschwindet die Id wieder', () => {
     // Sonst gehörte der freie Platz weiter jemandem und stünde bei ihm in
     // „Meine Aufgaben".

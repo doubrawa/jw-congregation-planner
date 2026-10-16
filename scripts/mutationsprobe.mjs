@@ -533,14 +533,14 @@ export const KATALOG = [
     id: 'fs-zusage-datenbank',
     datei: 'src/app/persist.ts',
     regel: 'Die verfallene Treffpunkt-Zusage verschwindet auch aus der Datenbank, nicht nur aus dem Zustand.',
-    suchen: '    if (keys?.size) deleteConfirmationRows(congId, [...keys])\n',
-    ersetzen: '    void keys\n',
+    suchen: '    if (geschrieben) deleteConfirmationRows(congId, keys)\n',
+    ersetzen: '    void geschrieben\n',
   },
   {
     id: 'fs-zusage-erst-mit-schreiben',
     datei: 'src/app/persist.ts',
     regel: 'Bei gebündeltem Schreiben wartet das Löschen der Zusage auf die Woche — sonst fehlt sie nach einem Abbruch.',
-    suchen: '  fsZusagenVormerken(week.start, verwaist)\n  fsWeekSaves.schedule(',
+    suchen: '  fsZusagenVormerken(congId, week.start, verwaist)\n  fsWeekSaves.schedule(',
     ersetzen: '  const sofortWeg = verwaist.get(week.start)\n  if (sofortWeg) deleteConfirmationRows(congId, sofortWeg)\n  fsWeekSaves.schedule(',
   },
   {
@@ -2609,8 +2609,8 @@ export const KATALOG = [
     */
     regel:
       'Alle Entzüge einer Änderung gehen in EINEM Aufruf hinaus — und je Person als eine Nachricht.',
-    suchen: '    if (entzogen.length > 0) sendPlanEntzug(entzogen)',
-    ersetzen: '    for (const z of entzogen) sendPlanEntzug([z])',
+    suchen: '    if (offen === 0 && gelungen.length > 0) sendPlanEntzug(gelungen)\n',
+    ersetzen: '    if (offen === 0) for (const z of gelungen) sendPlanEntzug([z])\n',
   },
   {
     id: 'treffpunkt-ort-im-termin',
@@ -4864,9 +4864,9 @@ export const KATALOG = [
     id: 'woche-konflikt-ohne-ungeschuetzten-anlauf',
     datei: 'src/lib/data.ts',
     regel: 'Trifft das Update auf den Stand nichts, ist es ein Konflikt — kein zweiter Anlauf ohne Bedingung (5.10.2026).',
-    suchen: '  if (data) {\n    standMerken(wochenStand, woche, data.updated_at as string, geladen)\n    return\n  }\n  konfliktMelder?.()\n}\n',
+    suchen: '  if (data) {\n    standMerken(wochenStand, woche, data.updated_at as string, geladen)\n    return true\n  }\n  konfliktMelder?.()\n  return false\n}\n',
     ersetzen:
-      "  if (data) {\n    standMerken(wochenStand, woche, data.updated_at as string, geladen)\n    return\n  }\n  const { data: erneut } = await supabase.from('weeks').update({ data: week }).eq('congregation_id', congregationId).eq('start', woche).select('updated_at').maybeSingle()\n  if (erneut) return\n  konfliktMelder?.()\n}\n",
+      "  if (data) {\n    standMerken(wochenStand, woche, data.updated_at as string, geladen)\n    return true\n  }\n  const { data: erneut } = await supabase.from('weeks').update({ data: week }).eq('congregation_id', congregationId).eq('start', woche).select('updated_at').maybeSingle()\n  if (erneut) return true\n  konfliktMelder?.()\n  return false\n}\n",
   },
   {
     id: 'fill-heute-vom-geraet',
@@ -6725,14 +6725,14 @@ export const KATALOG = [
     id: "ladung-wartendes-geht-nicht-los",
     datei: "src/lib/data.ts",
     regel: "Eine Woche, die vor einem Neuladen in ihrer Kette wartete, geht danach nicht mit dem frischen Stand los.",
-    suchen: "  if (geladen !== ladung) {\n    konfliktMelder?.()\n    return\n  }\n  const stand = wochenStand.get(woche)\n",
+    suchen: "  if (geladen !== ladung) {\n    konfliktMelder?.()\n    return false\n  }\n  const stand = wochenStand.get(woche)\n",
     ersetzen: "  const stand = wochenStand.get(woche)\n",
   },
   {
     id: "ladung-treffpunkte-wartendes",
     datei: "src/lib/data.ts",
     regel: "Eine Treffpunkt-Woche, die vor einem Neuladen in ihrer Kette wartete, geht danach nicht mit dem frischen Stand los.",
-    suchen: "  if (geladen !== ladung) {\n    konfliktMelder?.()\n    return\n  }\n  const stand = fsWochenStand.get(woche)\n",
+    suchen: "  if (geladen !== ladung) {\n    konfliktMelder?.()\n    return false\n  }\n  const stand = fsWochenStand.get(woche)\n",
     ersetzen: "  const stand = fsWochenStand.get(woche)\n",
   },
   {
@@ -7311,6 +7311,70 @@ export const KATALOG = [
     regel: 'Nach dem Abo gefragt wird, ohne auf einen Service Worker zu warten, der nie bereit wird.',
     suchen: '  const reg = await navigator.serviceWorker.getRegistration()\n',
     ersetzen: '  const reg = await navigator.serviceWorker.ready\n',
+  },
+  /* ---- Schreiben mit Stand: erst geschrieben, dann gelöscht (Review, 16.10.2026) ---- */
+  {
+    id: 'zusage-erst-nach-dem-schreiben',
+    datei: 'src/app/persist.ts',
+    regel: 'Eine verfallene Zusage wird erst gelöscht, wenn ihre Woche geschrieben ist — scheitert das Schreiben, bleibt sie.',
+    suchen: "    else nachDemSchreiben('woche', woche, (geschrieben) => geschrieben && deleteConfirmationRows(congId, liste))\n",
+    ersetzen: '    else deleteConfirmationRows(congId, liste)\n',
+  },
+  {
+    id: 'entzug-erst-nach-dem-schreiben',
+    datei: 'src/app/persist.ts',
+    regel: '„Zurückgezogen" geht erst hinaus, wenn die Woche geschrieben ist — scheitert sie, ist der Platz ja noch seiner.',
+    suchen: '      if (geschrieben) gelungen.push(...liste)\n',
+    ersetzen: '      gelungen.push(...liste)\n',
+  },
+  {
+    id: 'unveraenderte-treffpunkt-woche-bleibt',
+    datei: 'src/app/persist.ts',
+    regel: 'Eine unveränderte Treffpunkt-Woche geht nicht hinaus — sonst wird die nächste Änderung eines anderen zum Konflikt.',
+    suchen: '  if (!week || !fsWeek || vorher[wi] === fsWeek) return\n  fsZusagenVormerken(congId, week.start, verwaist)\n  fsWeekSaves.sofort(',
+    ersetzen: '  if (!week || !fsWeek) return\n  fsZusagenVormerken(congId, week.start, verwaist)\n  fsWeekSaves.sofort(',
+  },
+  {
+    id: 'gleiche-besetzung-gleiche-wochen',
+    datei: 'src/data/planning.ts',
+    regel: 'Dieselbe Person auf demselben Platz noch einmal ändert nichts — auch nicht die Referenz der Wochen.',
+    suchen: '    if (gleich(slot) && (rolle === undefined || slot.rolle === rolle) && (herkunft === undefined || (slot.herkunft ?? \'\') === herkunft)) {\n',
+    ersetzen: '    if (gleich(slot) && rolle === \'nie\') {\n',
+  },
+  {
+    id: 'gleicher-leiter-gleiche-wochen',
+    datei: 'src/data/fs.ts',
+    regel: 'Derselbe Treffpunkt-Leiter noch einmal gibt dieselben Wochen zurück.',
+    suchen: '  if (jetzt && jetzt.leader === name && jetzt.lpid === lpid && jetzt.lext === lext) return fsWeeks\n',
+    ersetzen: "  if (jetzt && jetzt.leader === name && name === 'nie') return fsWeeks\n",
+  },
+  {
+    id: 'woche-meldet-erfolg',
+    datei: 'src/lib/data.ts',
+    regel: 'Das Schreiben einer Woche meldet, ob es gelang — daran hängen Löschen und Entzug.',
+    suchen: '    if (data) standMerken(wochenStand, woche, data.updated_at as string, geladen)\n    return data !== null\n',
+    ersetzen: '    if (data) standMerken(wochenStand, woche, data.updated_at as string, geladen)\n    return false\n',
+  },
+  {
+    id: 'treffpunkt-woche-meldet-erfolg',
+    datei: 'src/lib/data.ts',
+    regel: 'Das Schreiben einer Treffpunkt-Woche meldet, ob es gelang.',
+    suchen: '    standMerken(fsWochenStand, woche, data.updated_at as string, geladen)\n    return true\n',
+    ersetzen: '    standMerken(fsWochenStand, woche, data.updated_at as string, geladen)\n    return false\n',
+  },
+  {
+    id: 'woche-ausnahme-gemeldet',
+    datei: 'src/lib/data.ts',
+    regel: 'Eine Ausnahme beim Schreiben einer Woche wird gemeldet, nicht verschluckt.',
+    suchen: '    schreibeWoche(congregationId, woche, week, geladen).catch((err: unknown) => {\n      schreibfehler({ message: err instanceof Error ? err.message : String(err) })\n',
+    ersetzen: '    schreibeWoche(congregationId, woche, week, geladen).catch((err: unknown) => {\n      void err\n',
+  },
+  {
+    id: 'besuche-nacheinander',
+    datei: 'src/lib/data.ts',
+    regel: 'Zwei schnelle Handlungen an derselben Besuchszeile gehen nacheinander hinaus.',
+    suchen: "  besucheNacheinander(() => loeschenDannSchreiben(client, 'gruppenbesuche', congregationId, besuche, entfernt, gruppenbesuchToRow))\n",
+    ersetzen: "  void zeilenRun(loeschenDannSchreiben(client, 'gruppenbesuche', congregationId, besuche, entfernt, gruppenbesuchToRow))\n",
   },
   /* ---- Laden mitten in der Sitzung (Review, 16.10.2026) ---- */
   {
