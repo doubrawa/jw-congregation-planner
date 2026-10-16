@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
 import { missingVariants } from '../data/localize'
-import { fromIso } from '../data/meeting-dates'
+import { fromIso, istVorbei, weekEndMs } from '../data/meeting-dates'
 import type { Week } from '../data/types'
 import { JW_TO_CONG, LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
@@ -138,8 +138,18 @@ export function useWochenImport(): {
      *
      * Und nicht alle auf einmal: Die Blöcke begrenzen, was gleichzeitig gegen
      * jw.org läuft und wie lange die Function rechnet.
+     *
+     * **Nur Wochen, die noch kommen.** Eine vergangene braucht beim Planen
+     * niemand mehr in einer weiteren Sprache — und `import-week` findet sie
+     * nach dem Ende ihrer Ausgabe gar nicht mehr (`discoverWeeks` liest nur
+     * die laufenden Ausgaben, die Antwort ist ein 404). Bis zum 16.10.2026
+     * fragte deshalb jedes „Holen" nach jeder alten Woche ohne die Sprache
+     * erneut: bei vollem Ladefenster rund vierzig vergebliche Aufrufe vor
+     * jedem Abruf, jeder mit mehreren Seiten von jw.org.
      */
-    const luecken = missingVariants(state.weeks, altCodes, langCode)
+    const luecken = missingVariants(state.weeks, altCodes, langCode).filter(
+      (luecke) => !istVorbei(weekEndMs(luecke.start), fromIso(heute)),
+    )
     for (let i = 0; i < luecken.length; i += VARIANTEN_BLOCK) {
       const block = luecken.slice(i, i + VARIANTEN_BLOCK)
       const geholt = await Promise.all(

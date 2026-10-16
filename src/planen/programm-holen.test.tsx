@@ -230,6 +230,8 @@ describe('Holen in der Produktion', () => {
 
   it('fehlende Sprachvarianten geladener Wochen werden zuerst nachgezogen', async () => {
     // Eine Programmsprache, die nach dem Import hinzukam, fehlt sonst dauerhaft.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9, 0)) // Montag der geladenen Woche
     const alt = woche('2026-09-14')
     importWeekVariants.mockResolvedValue({ ok: true, week: { ...alt, alt: { en: alt } } })
     const { container, dispatch } = zeige({ weeks: [woche('2026-09-07')], congLang: 'de', progLangs: ['en'] })
@@ -264,6 +266,8 @@ describe('Holen in der Produktion', () => {
       })
     })
 
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9, 0)) // alle fünf Wochen kommen noch
     const wochen = ['2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28', '2026-10-05'].map((s) => woche(s))
     const { container } = zeige({ weeks: wochen, congLang: 'de', progLangs: ['en'] })
     holen(container)
@@ -277,6 +281,19 @@ describe('Holen in der Produktion', () => {
     warten.splice(0).forEach((f) => f())
     // Und nie mehr als ein Block auf einmal — sonst löge die Grenze.
     expect(hoechstens).toBe(4)
+  })
+
+  it('vergangene Wochen werden nicht mehr nachgezogen — auch nicht bei jedem Holen erneut (16.10.2026)', async () => {
+    // `import-week` findet sie nach dem Ende ihrer Ausgabe nicht mehr; bis
+    // dahin kam auf jedes Holen für jede alte Woche ein vergeblicher Aufruf.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 16, 9, 0)) // Mittwoch der Woche ab 14.9.
+    const wochen = ['2026-08-31', '2026-09-07', '2026-09-14', '2026-09-21'].map((s) => woche(s))
+    const { container } = zeige({ weeks: wochen, congLang: 'de', progLangs: ['en'] })
+    holen(container)
+    await waitFor(() => expect(importNextWeek).toHaveBeenCalled())
+    // Die laufende Woche zählt noch mit, die beiden davor nicht.
+    expect(importWeekVariants.mock.calls.map(([start]) => start)).toEqual(['2026-09-14', '2026-09-21'])
   })
 
   it('während eines laufenden Abrufs löst ein zweiter Tipp nichts aus', () => {

@@ -7126,6 +7126,13 @@ export const KATALOG = [
     ersetzen: '`reminder_log?select=user_id,kind&sent_on=eq.${wert(todayISO)}`',
   },
   {
+    id: 'holen-varianten-nur-was-kommt',
+    datei: 'src/planen/useWochenImport.ts',
+    regel: 'Sprachvarianten holt „Holen" nur für Wochen, die noch kommen — vergangene findet import-week nicht mehr, und jeder Abruf fragte sie erneut.',
+    suchen: '    const luecken = missingVariants(state.weeks, altCodes, langCode).filter(\n      (luecke) => !istVorbei(weekEndMs(luecke.start), fromIso(heute)),\n    )\n',
+    ersetzen: '    const luecken = missingVariants(state.weeks, altCodes, langCode)\n',
+  },
+  {
     id: 'import-week-sonntag-laufende',
     datei: 'supabase/functions/import-week/index.ts',
     regel: 'Ohne `after` kommt die laufende Woche — auch am Sonntag, nicht schon die nächste.',

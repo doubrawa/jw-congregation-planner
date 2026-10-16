@@ -1195,8 +1195,9 @@ Englisch".
   dann in seiner Sprache – etwa eine englischsprachige Familie in einer
   deutschen Versammlung. **Sprache hinzufügen** öffnet dieselbe Liste, das **✕**
   an einer Sprache nimmt sie wieder heraus (zwei Tipps). Eine neue Sprache holt
-  der nächste Import nach, auch für die Wochen, die schon geladen sind. Eine
-  entfernte holen neue Importe nicht mehr; was schon geladen ist, bleibt.
+  der nächste Import nach, auch für die geladenen Wochen, die noch kommen;
+  vergangene Wochen bleiben ohne sie. Eine entfernte holen neue Importe nicht
+  mehr; was schon geladen ist, bleibt.
 
 Die Versammlungssprache ist auch die Sprache der **E‑Mail mit dem Link** an
 ein neues Mitglied und der **Zettel**: Wer sie bekommt, hat noch kein Konto und
