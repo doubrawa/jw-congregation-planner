@@ -103,16 +103,22 @@ const blattKnopf = (root: Element, text: string) =>
 const geholt = (root: Element) => waitFor(() => expect(blattKnopf(root, t.nurUebernehmen)?.disabled).toBe(false))
 
 beforeEach(() => {
-  vi.useRealTimers()
+  // „Heute" ist in jedem Fall Montag, der 7. September 2026, 9 Uhr — wie auf
+  // der Entwicklerseite. Wonach „Holen" sucht, hängt am Tag (`holenNach`);
+  // wer einen anderen braucht, stellt ihn selbst.
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(2026, 8, 7, 9, 0))
   importNextWeek.mockClear().mockResolvedValue({ ok: true, week: woche('2026-09-14') })
   importWeekVariants.mockClear().mockResolvedValue({ ok: false })
 })
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.useRealTimers()
+})
 
 describe('Holen in der Produktion', () => {
   it('holt die nächste Woche in der Versammlungssprache', async () => {
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date(2026, 8, 7, 9, 0)) // Montag der geladenen Woche
+    // Heute ist der Montag der geladenen Woche.
     const { container } = zeige({ weeks: [woche('2026-09-07')], congLang: 'en' })
     holen(container)
     await waitFor(() => expect(importNextWeek).toHaveBeenCalledWith('2026-09-07', 'en', []))
@@ -121,7 +127,6 @@ describe('Holen in der Produktion', () => {
   it('nach einer Pause die laufende Woche, nicht die nach der zuletzt geladenen (16.10.2026)', async () => {
     // Geladen bis zur Woche ab 7.9., heute ist Mittwoch, der 30. — gesucht
     // wird nach der Vorwoche, es kommt die Woche ab 28.9. (`holenNach`).
-    vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(2026, 8, 30, 9, 0))
     const { container } = zeige({ weeks: [woche('2026-09-07')], congLang: 'en' })
     holen(container)
@@ -131,7 +136,6 @@ describe('Holen in der Produktion', () => {
   it('ohne geladene Woche nach der Vorwoche — die App sagt, wonach gesucht wird (16.10.2026)', async () => {
     // Montag, 0:30 Uhr: Ohne Angabe rechnete der Server mit seinem UTC-Tag,
     // noch Sonntag, und lieferte die vergangene Woche.
-    vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(2026, 8, 14, 0, 30))
     const { container } = zeige()
     holen(container)
@@ -139,16 +143,12 @@ describe('Holen in der Produktion', () => {
   })
 
   it('unbekannte Versammlungssprache fällt auf Deutsch zurück statt leer zu bleiben', async () => {
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date(2026, 8, 7, 9, 0))
     const { container } = zeige({ congLang: 'xx-erfunden' })
     holen(container)
     await waitFor(() => expect(importNextWeek).toHaveBeenCalledWith('2026-08-31', 'de', []))
   })
 
   it('weitere Programmsprachen kommen als Varianten mit — ohne die Hauptsprache doppelt', async () => {
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date(2026, 8, 7, 9, 0))
     const { container } = zeige({ congLang: 'de', progLangs: ['en', 'de'] })
     holen(container)
     await waitFor(() => expect(importNextWeek).toHaveBeenCalledWith('2026-08-31', 'de', ['en']))
@@ -230,8 +230,7 @@ describe('Holen in der Produktion', () => {
 
   it('fehlende Sprachvarianten geladener Wochen werden zuerst nachgezogen', async () => {
     // Eine Programmsprache, die nach dem Import hinzukam, fehlt sonst dauerhaft.
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date(2026, 8, 7, 9, 0)) // Montag der geladenen Woche
+    // Heute ist der Montag der geladenen Woche.
     const alt = woche('2026-09-14')
     importWeekVariants.mockResolvedValue({ ok: true, week: { ...alt, alt: { en: alt } } })
     const { container, dispatch } = zeige({ weeks: [woche('2026-09-07')], congLang: 'de', progLangs: ['en'] })
@@ -266,8 +265,7 @@ describe('Holen in der Produktion', () => {
       })
     })
 
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date(2026, 8, 7, 9, 0)) // alle fünf Wochen kommen noch
+    // Heute ist der 7.9.: Alle fünf Wochen kommen noch.
     const wochen = ['2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28', '2026-10-05'].map((s) => woche(s))
     const { container } = zeige({ weeks: wochen, congLang: 'de', progLangs: ['en'] })
     holen(container)
@@ -286,7 +284,6 @@ describe('Holen in der Produktion', () => {
   it('vergangene Wochen werden nicht mehr nachgezogen — auch nicht bei jedem Holen erneut (16.10.2026)', async () => {
     // `import-week` findet sie nach dem Ende ihrer Ausgabe nicht mehr; bis
     // dahin kam auf jedes Holen für jede alte Woche ein vergeblicher Aufruf.
-    vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(2026, 8, 16, 9, 0)) // Mittwoch der Woche ab 14.9.
     const wochen = ['2026-08-31', '2026-09-07', '2026-09-14', '2026-09-21'].map((s) => woche(s))
     const { container } = zeige({ weeks: wochen, congLang: 'de', progLangs: ['en'] })

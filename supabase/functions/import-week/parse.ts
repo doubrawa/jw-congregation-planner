@@ -487,13 +487,16 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
     return i >= 0 ? [text.slice(0, i).trim(), text.slice(i + 1).trim()] : [text.trim(), '']
   }
 
-  /** Die Schlusszeile — Schlussworte, Lied und Gebet — mit dem Platz für das Schlussgebet. */
-  const abschlussAus = (text: string): ImportedPart => {
+  /** Eröffnungs- oder Schlusszeile — Lied, Gebet und Worte — mit ihren Plätzen. */
+  const blockZeile = (text: string, names: ImportedSlot[]): ImportedPart => {
     const [a, b] = pipe(text)
     const zeit = firstParen(text)
     const title = b ? `${stripParens(a)} · ${stripParens(b)}` : stripParens(a)
-    return { iid: neueItemId(), title, meta: joinMeta(zeit), mins: ersteZahl(zeit), names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }
+    return { iid: neueItemId(), title, meta: joinMeta(zeit), mins: ersteZahl(zeit), names }
   }
+
+  /** Die Schlusszeile — Schlussworte, Lied und Gebet — mit dem Platz für das Schlussgebet. */
+  const abschlussAus = (text: string): ImportedPart => blockZeile(text, [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }])
 
   for (const tok of tokens) {
     // Datum (erstes h1) und Bibellese-Kapitel (erstes farbloses h2)
@@ -522,24 +525,13 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
       // zusammengesetzt ist es die Zeile, wie sie bis 2026 in einer `h3` stand.
       const text = schlussKopf === null ? tok.text : `${schlussKopf} | ${tok.text}`
       schlussKopf = null
-      const hasPipe = text.includes('|')
-      const hasTime = TIME_ANY.test(text)
-      const [a, b] = pipe(text)
-      const zeit = firstParen(text)
       if (curColor === null) {
         // vor der ersten Sektion → Eröffnung (Vorsitz + Anfangsgebet)
-        const title = b ? `${stripParens(a)} · ${stripParens(b)}` : stripParens(a)
-        opening = {
-          iid: neueItemId(),
-          title,
-          meta: joinMeta(zeit),
-          mins: ersteZahl(zeit),
-          names: [
-            { name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' },
-            { name: '', rolle: 'Gebet', bereichsKey: 'gebet' },
-          ],
-        }
-      } else if (hasPipe || hasTime) {
+        opening = blockZeile(text, [
+          { name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' },
+          { name: '', rolle: 'Gebet', bereichsKey: 'gebet' },
+        ])
+      } else if (text.includes('|') || TIME_ANY.test(text)) {
         // nach den Sektionen mit „|“/Zeit → Abschluss (Schlussgebet)
         closing = abschlussAus(text)
       } else {

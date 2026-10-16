@@ -271,8 +271,8 @@ Die Automatik wählt bevorzugt Personen mit der **geringsten Auslastung**, läss
 Abwesende aus und vergibt niemanden doppelt am selben Tag. Ausnahmen: Der
 Vorsitz spricht das Anfangsgebet und hält den **Vortrag des Vorsitzenden**,
 wo das Arbeitsheft einen nennt – beide Plätze folgen ihm (von Hand änderbar).
-Auch beim Leiter des Wachtturm-Studiums: Sind dafür **feste Rollen** vergeben, bestimmen
-sie ihn (siehe [Personen verwalten](#6-personen-verwalten)). Externe Redner
+Und den Leiter des Wachtturm-Studiums bestimmen **feste Rollen**, wenn dafür
+welche vergeben sind (siehe [Personen verwalten](#6-personen-verwalten)). Externe Redner
 (Gastredner, Kreisaufseher) bleiben offen und werden manuell eingetragen. Nach dem
 Zuteilen kannst du einzelne Slots wie gewohnt noch von Hand anpassen.
 
@@ -1201,7 +1201,7 @@ Englisch".
   dann in seiner Sprache – etwa eine englischsprachige Familie in einer
   deutschen Versammlung. **Sprache hinzufügen** öffnet dieselbe Liste, das **✕**
   an einer Sprache nimmt sie wieder heraus (zwei Tipps). Eine neue Sprache holt
-  der nächste Import nach, auch für die geladenen Wochen, die noch kommen;
+  der nächste Import nach, auch für die geladenen Wochen ab der laufenden;
   vergangene Wochen bleiben ohne sie. Eine entfernte holen neue Importe nicht
   mehr; was schon geladen ist, bleibt.
 
