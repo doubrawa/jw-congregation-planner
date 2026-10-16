@@ -146,7 +146,7 @@ const FRAG: Record<string, Record<string, string>> = {
   },
   es: {
     "Schüler": "Estudiante", "Partner": "Ayudante", "Ratgeber": "Consejero",
-    "Treffpunkte": "Servicio del campo",
+    "Treffpunkte": "Reuniones para el servicio del campo",
     'ERÖFFNUNG': 'APERTURA', 'ABSCHLUSS': 'CONCLUSIÓN',
     'SCHÄTZE AUS GOTTES WORT': 'TESOROS DE LA BIBLIA',
     'UNS IM DIENST VERBESSERN': 'SEAMOS MEJORES MAESTROS',
@@ -155,7 +155,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Einleitende Worte': 'Palabras de introducción', 'Schlussworte': 'Palabras de conclusión',
     'Nach geistigen Schätzen graben': 'Busquemos perlas escondidas', 'Bibellesung': 'Lectura de la Biblia',
     'Gespräche beginnen': 'Empecemos conversaciones', 'Interesse fördern': 'Hagamos revisitas', 'Was würdest du sagen?': '¿Qué dirías?',
-    'Menschen zu Jüngern machen': 'Hagamos discípulos', 'Unsere Glaubensansichten erklären': 'Explique sus creencias',
+    'Menschen zu Jüngern machen': 'Hagamos discípulos', 'Unsere Glaubensansichten erklären': 'Expliquemos nuestras creencias',
     'Vortrag': 'Discurso', 'Versammlungsbibelstudium': 'Estudio bíblico de la congregación',
     'Aktuelles': 'Necesidades de la congregación', 'Besprechung': 'Análisis con el auditorio', 'Gebet': 'Oración',
     'Vorsitz': 'Presidente', 'Leiter': 'Conductor', 'Leser': 'Lector', 'Gastredner': 'Orador invitado',

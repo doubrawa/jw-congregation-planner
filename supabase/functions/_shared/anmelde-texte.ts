@@ -29,7 +29,7 @@ const TEXTE: Record<string, LinkMailTexte> = {
   },
   es: {
     betreff: "Tu acceso a la congregación {versammlung}",
-    text: "Hola, {name}:\n\nla congregación {versammlung} organiza las reuniones y el servicio del campo con Versammlung.app. Tu acceso ya está listo.\n\nInicia sesión ahora:\n{url}\n\n¿Tienes la aplicación en la pantalla de inicio? Entonces ábrela desde allí, toca “Escribir código” e introduce este código:\n{code}\n\nEl enlace y el código son válidos hasta el {datum} y solo te dan acceso a ti. No necesitas contraseña. Si han caducado, abre la aplicación y toca “Enviar enlace”.\n\nRecibes este correo porque figuras en la congregación {versammlung}. Si tienes preguntas, habla con los ancianos.",
+    text: "Hola, {name}:\n\nLa congregación {versammlung} organiza las reuniones y el servicio del campo con Versammlung.app. Tu acceso ya está listo.\n\nInicia sesión ahora:\n{url}\n\n¿Tienes la aplicación en la pantalla de inicio? Entonces ábrela desde allí, toca “Escribir código” e introduce este código:\n{code}\n\nEl enlace y el código son válidos hasta el {datum} y solo te dan acceso a ti. No necesitas contraseña. Si han caducado, abre la aplicación y toca “Enviar enlace”.\n\nRecibes este correo porque figuras en la congregación {versammlung}. Si tienes preguntas, habla con los ancianos.",
   },
   fr: {
     betreff: "Ton accès à l’assemblée de {versammlung}",

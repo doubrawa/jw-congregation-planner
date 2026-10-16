@@ -135,3 +135,45 @@ ist das amtliche), Function-Titel — sonst nichts zu ändern.
 
 Offen: keine. (Erwogen und gelassen: `fsFreqM1` „1st of the month" für „jeden
 1. [Samstag] im Monat" — steht immer neben dem Wochentag und liest sich dort so.)
+
+### es · Spanisch
+
+16. Oktober 2026 · alle 745 gelesen · Anrede: tú, Gruppen „ustedes" (wie
+jw.org) · 24 Korrekturen im Wörterbuch, 2 in FRAG.
+
+| Schlüssel | alt | neu | Grund |
+| --- | --- | --- | --- |
+| `linkMailText` | … ⏎⏎la congregación {versammlung} organiza … | … ⏎⏎La congregación {versammlung} organiza … | Nach dem Doppelpunkt der Anrede beginnt der spanische Brieftext groß |
+| `alleGelesen` | Marcar todo leído | Marcar todo como leído | „como“ fehlte |
+| `fsShort` | Servicio del campo | Reuniones para el servicio del campo | „Treffpunkte“ hieß wie das Thema (tabFs) — auf dem Treffpunkt-Bogen stand es doppelt; jw.org: „reuniones para el servicio del campo“ |
+| `toastFsRuleAdd` | Añadido al horario | Añadido al horario base | Der Grundplan heißt „Horario base“ (fsGrundplan) |
+| `toastFsRuleDel` | Eliminado del horario | Eliminado del horario base | wie toastFsRuleAdd |
+| `gbWirkung` | … «Enviar el programa» … | … “Enviar el programa” … | Anführungszeichen wie im übrigen Wörterbuch (“…”) |
+| `zettelAnleitung` | … «{frage}» … | … “{frage}” … | wie gbWirkung |
+| `vpVorgemerkt` | Esta semana aún no está cargada. El discurso se anotará cuando se importe su programa. | Esta semana aún no está creada. El discurso se anotará cuando se obtenga su programa. | Deutsch: „angelegt“ und „geholt“ — der Knopf heißt „Obtener“ (holen) |
+| `wpSaalText` | … los grupos de servicio del campo … | … los grupos para el servicio del campo … | Fachwort wie gruppenCard/gruppeLbl („grupo para el servicio del campo“) |
+| `wpSaalTextMonat` | … los grupos de servicio del campo … | … los grupos para el servicio del campo … | wie wpSaalText |
+| `absageIntro` | No pasa nada. Así sigue después: | No pasa nada. Esto es lo que pasará: | „Así sigue después“ ist kein Spanisch |
+| `suchen` | Buscar … | Buscar… | Auslassungspunkte ohne Leerzeichen (wie „Enviando…“) |
+| `langSearchPh` | Buscar idioma … | Buscar idioma… | wie suchen |
+| `holtProgramm` | Obteniendo el programa … | Obteniendo el programa… | wie suchen |
+| `laedt` | Cargando … | Cargando… | wie suchen |
+| `personAnlegenHinweis` | Después indicas las áreas de asignación en la persona. | Después indicas las áreas de asignación en los datos de la persona. | „en la persona“ ist eine Lehnübersetzung; sonst überall „en los datos de la persona“ |
+| `rechtPlanenUnter` | Obtiene el programa, prepara los programas, hace las asignaciones y las envía. | Obtiene el programa, prepara los planes, hace las asignaciones y las envía. | „Pläne“ sind die Pläne (navWeiterePlaene „Otros planes“) — „programa“ zweimal im selben Satz war missverständlich |
+| `absagen` | Cancelar | Avisar que no puedo | Im Absage-Blatt standen zwei Knöpfe „Cancelar“ — Absagen und Abbrechen (abbrechen) |
+| `freiePlaetzeHint` | … Quien se encargue primero queda apuntado y ya ha confirmado. | … La primera persona que se encargue queda anotada y con eso ya ha confirmado. | Genus: freie Plätze übernehmen auch Schwestern — „apuntado“ war männlich |
+| `lacPh` | Nuevo punto, p. ej., avisos locales | Nueva parte, p. ej., avisos locales | Programmpunkte heißen sonst „parte“ (programmpunktEinfuegen „Insertar parte“) |
+| `toastLacAdd` | Punto insertado · horarios ajustados | Parte insertada · horarios ajustados | wie lacPh |
+| `toastLacDel` | Punto eliminado · horarios ajustados | Parte eliminada · horarios ajustados | wie lacPh |
+| `notifVerhindert` | Impedimento avisado | No puede asistir | „Impedimento avisado“ ist kein Spanisch; der Rumpf nennt Aufgabe und Person |
+| `ohneGruppeHint` | … en la sección Servicio del campo … | … en la sección “Servicio del campo” … | Zitierter Menüpunkt (tabFs) in Anführungszeichen wie im Deutschen |
+| FRAG `Treffpunkte` | Servicio del campo | Reuniones para el servicio del campo | wie `fsShort` |
+| FRAG `Unsere Glaubensansichten erklären` | Explique sus creencias | Expliquemos nuestras creencias | Das Arbeitsheft schreibt seit November 2026 in der Wir-Form — WOL-Suche nach der genauen Wendung: mwb26 noviembre (28.12.2026–3.1.2027) und die S-38; „Hagamos revisitas" stand schon so |
+
+Daten gelesen: FRAG, REF, D, Bibelbücher, Function-Titel — sonst nichts zu
+ändern.
+
+Offen, nicht geändert: die Zwei-Tipp-Fragen „¿… de verdad?" (`abmeldenSicher`,
+`leerenSicher`, `loeschenSicher`, `entfernenSicher`) sind umgangssprachlich,
+aber verständlich; „¿Seguro que…?" wäre üblicher und länger — eine
+Geschmacksfrage für Muttersprachler.
