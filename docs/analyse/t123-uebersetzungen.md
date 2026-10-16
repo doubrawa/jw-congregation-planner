@@ -177,3 +177,46 @@ Offen, nicht geändert: die Zwei-Tipp-Fragen „¿… de verdad?" (`abmeldenSich
 `leerenSicher`, `loeschenSicher`, `entfernenSicher`) sind umgangssprachlich,
 aber verständlich; „¿Seguro que…?" wäre üblicher und länger — eine
 Geschmacksfrage für Muttersprachler.
+
+### fr · Französisch
+
+16. Oktober 2026 · alle 745 gelesen · Anrede: tu, Gruppen „vous" · 22
+Korrekturen im Wörterbuch, 1 in FRAG. Satzzeichen per Skript nachgezählt:
+vor `:` `;` `!` `?` und in `« »` überall das geschützte Leerzeichen (danach
+123 statt 121).
+
+| Schlüssel | alt | neu | Grund |
+| --- | --- | --- | --- |
+| `linkMailText` | … ⏎⏎l’assemblée de {versammlung} planifie … | … ⏎⏎L’assemblée de {versammlung} planifie … | Nach der Anrede beginnt der französische Brieftext groß |
+| `linkMailText` | … Ouvre-la alors depuis là, … | … Alors ouvre-la depuis cet écran, … | „depuis là“ ist holprig |
+| `alleGelesen` | Tout marquer lu | Tout marquer comme lu | „comme“ fehlte |
+| `fsShort` | Prédication | Réunions pour la prédication | „Treffpunkte“ hieß wie das Thema (tabFs „Prédication“) — auf dem Treffpunkt-Bogen stand es doppelt; jw.org: „réunions pour la prédication“ |
+| `toastFsRuleAdd` | Ajouté au programme | Ajouté au programme de base | Der Grundplan heißt „Programme de base“ (fsGrundplan) |
+| `toastFsRuleDel` | Retiré du programme | Retiré du programme de base | wie toastFsRuleAdd |
+| `vpVorgemerkt` | Cette semaine n’est pas encore chargée. Le discours sera inscrit dès que son programme sera importé. | Cette semaine n’est pas encore créée. Le discours sera inscrit dès que son programme aura été récupéré. | Deutsch: „angelegt“ und „geholt“ — der Knopf heißt „Récupérer“ (holen) |
+| `linkAbgelaufenHint` | … Un nouveau lien est de nouveau valable 30 jours. … | … Un nouveau lien sera valable 30 jours. … | „nouveau … de nouveau“ doppelt |
+| `suchen` | Rechercher … | Rechercher… | Kein Leerzeichen vor den Auslassungspunkten (wie „Envoi en cours…“) |
+| `langSearchPh` | Rechercher une langue … | Rechercher une langue… | wie suchen |
+| `holtProgramm` | Récupération du programme … | Récupération du programme… | wie suchen |
+| `laedt` | Chargement … | Chargement… | wie suchen |
+| `rolleDag` | Assistant | Assistant ministériel | Amtliche Bezeichnung (jw.org: „assistant ministériel“) — „Assistant“ allein klang wie der Gehilfe (Adjoint) |
+| `absagen` | Annuler | Me désister | Im Absage-Blatt standen zwei Knöpfe „Annuler“ — Absagen und Abbrechen (abbrechen) |
+| `spurDuSagstAb` | Tu annules | Tu te désistes | wie absagen |
+| `ersatzHint` | … Si tu annules un service auxiliaire, … | … Si tu te désistes d’un service auxiliaire, … | wie absagen |
+| `freiePlaetzeHint` | … Le premier qui s’en charge est inscrit, ce qui vaut confirmation. | … La première personne qui s’en charge est inscrite, ce qui vaut confirmation. | Genus: freie Plätze übernehmen auch Schwestern — „Le premier … inscrit“ war männlich |
+| `lacPh` | Nouveau point, p. ex. annonces locales | Nouvelle partie, p. ex. annonces locales | Programmpunkte heißen sonst „partie“ (programmpunktEinfuegen „Insérer une partie“) |
+| `toastLacAdd` | Point inséré · horaires ajustés | Partie insérée · horaires ajustés | wie lacPh |
+| `toastLacDel` | Point retiré · horaires ajustés | Partie retirée · horaires ajustés | wie lacPh |
+| `stKeineVers` | Pas encore rattaché à une assemblée | Compte pas encore rattaché à une assemblée | Genus: „rattaché“ las sich als der Nutzer (männlich) — jetzt das Konto |
+| `ohneGruppeHint` | … dans la partie Prédication les réunions … | … dans la partie « Prédication » les réunions … | Zitierter Menüpunkt (tabFs) in Anführungszeichen wie im Deutschen |
+| FRAG `Treffpunkte` | Prédication | Réunions pour la prédication | wie `fsShort` |
+
+Daten gelesen: FRAG (die Teil-Titel des Arbeitshefts stehen auf Französisch
+weiter in der Du-Form — „Engage la conversation" in mwb26 novembre und mwb27
+janvier, WOL-Suche; „Que diriez-vous ?" ist die Überschrift des Hefts und der
+S-38), REF, D, Bibelbücher, Function-Titel.
+
+Offen, nicht geändert: „Partenaire recherché" / „Partenaire trouvé" stehen im
+grammatischen Maskulinum zu „partenaire" (epizön) — für eine Schwester ließe
+sich „Recherche de partenaire" schreiben; die Function `trolley` müsste den
+Titel mitziehen.

@@ -172,7 +172,7 @@ const FRAG: Record<string, Record<string, string>> = {
   },
   fr: {
     "Schüler": "Élève", "Partner": "Interlocuteur", "Ratgeber": "Conseiller",
-    "Treffpunkte": "Prédication",
+    "Treffpunkte": "Réunions pour la prédication",
     'ERÖFFNUNG': 'OUVERTURE', 'ABSCHLUSS': 'CONCLUSION',
     'SCHÄTZE AUS GOTTES WORT': 'JOYAUX DE LA PAROLE DE DIEU',
     'UNS IM DIENST VERBESSERN': 'APPLIQUE-TOI AU MINISTÈRE',

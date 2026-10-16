@@ -33,7 +33,7 @@ const TEXTE: Record<string, LinkMailTexte> = {
   },
   fr: {
     betreff: "Ton accès à l’assemblée de {versammlung}",
-    text: "Bonjour {name},\n\nl’assemblée de {versammlung} planifie les réunions et la prédication avec Versammlung.app. Ton accès est prêt.\n\nConnecte-toi maintenant\u00a0:\n{url}\n\nAs-tu l’application sur l’écran d’accueil\u00a0? Ouvre-la alors depuis là, appuie sur «\u00a0Taper le code\u00a0» et saisis ce code\u00a0:\n{code}\n\nLe lien et le code sont valables jusqu’au {datum} et ne connectent que toi. Tu n’as pas besoin de mot de passe. S’ils ont expiré, ouvre l’application et appuie sur «\u00a0Envoyer le lien\u00a0».\n\nTu reçois cet e-mail parce que tu fais partie de l’assemblée de {versammlung}. Si tu as des questions, parles-en aux anciens.",
+    text: "Bonjour {name},\n\nL’assemblée de {versammlung} planifie les réunions et la prédication avec Versammlung.app. Ton accès est prêt.\n\nConnecte-toi maintenant\u00a0:\n{url}\n\nAs-tu l’application sur l’écran d’accueil\u00a0? Alors ouvre-la depuis cet écran, appuie sur «\u00a0Taper le code\u00a0» et saisis ce code\u00a0:\n{code}\n\nLe lien et le code sont valables jusqu’au {datum} et ne connectent que toi. Tu n’as pas besoin de mot de passe. S’ils ont expiré, ouvre l’application et appuie sur «\u00a0Envoyer le lien\u00a0».\n\nTu reçois cet e-mail parce que tu fais partie de l’assemblée de {versammlung}. Si tu as des questions, parles-en aux anciens.",
   },
   it: {
     betreff: "Il tuo accesso alla congregazione di {versammlung}",
