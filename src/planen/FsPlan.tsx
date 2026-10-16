@@ -25,11 +25,11 @@ import { ZeitWahl } from './ZeitWahl'
  * und „Plan senden" stehen in der Leiste (`PlanenAktionen`); was jede Woche
  * gilt, im Grundplan.
  *
- * **Wer was ändert** (4.10.2026): Den Leiter setzt jeder, der hier plant. Zeit,
- * Ort, Entfernen und Hinzufügen nur, wer den Treffpunkt ändern darf — der
- * Admin jeden, der Gruppenaufseher die seiner Gruppe. Der Planer teilt zu; bei
- * ihm stehen Zeit und Ort als Text da. Die Datenbank prüft dasselbe
- * (`fs_weeks_pruefen`).
+ * **Wer was ändert** (4.10.2026, 15.10.2026): Den Leiter setzt jeder, der hier
+ * plant. Zeit, Ort, Entfernen und Hinzufügen nur, wer den Treffpunkt ändern
+ * darf — Admin und Planer jeden, der Gruppenaufseher die seiner Gruppe; bei
+ * anderen Gruppen stehen Zeit und Ort als Text da. Die Datenbank prüft
+ * dasselbe (`fs_weeks_pruefen`).
  *
  * Das Blatt zum Hinzufügen hängt per Portal am Dokument: Der Plan liegt im
  * Wochenstreifen, und der wird zum Wischen per `transform` verschoben.

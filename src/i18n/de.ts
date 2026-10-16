@@ -230,14 +230,12 @@ export const DE = {
     wpAktuell: 'Aktuell', wpEntwuerfe: 'Entwürfe', wpAbgeschlossen: 'Abgeschlossen',
     wpKeine: 'Zurzeit gibt es keine weiteren Pläne.',
     wpOhneName: 'Ohne Namen',
-    wpSaalText: 'Reinigung und Instandhaltung – die Predigtdienstgruppen wechseln sich ab, je Woche eine.',
     // Der Takt (4.10.2026): je Woche oder je Monat eine Gruppe. „Jede Woche"
     // steht schon bei den Treffpunkten (`fsFreqW`) und wird hier mitbenutzt.
-    wpSaalTextMonat: 'Reinigung und Instandhaltung – die Predigtdienstgruppen wechseln sich ab, je Monat eine.',
     wpTakt: 'Die Gruppen wechseln', wpJedenMonat: 'Jeden Monat',
     wpNamePhSaal: 'z. B. Winterdienst',
-    // Seit dem 4.10.2026 auch der Planer: Er verteilt die Gruppen, bevor der
-    // Admin veröffentlicht (`plan_sichtbar` in schema.sql).
+    // Seit dem 4.10.2026 auch der Planer (`plan_sichtbar` in schema.sql); seit
+    // dem 15.10.2026 veröffentlicht er auch selbst.
     wpEntwurf: 'Entwurf', wpEntwurfHint: 'Einen Entwurf sehen nur Admins und Planer.',
     wpVeroeffentlichen: 'Veröffentlichen', wpZurueckziehen: 'Zurück zum Entwurf',
     wpSichtSaal: 'Veröffentlicht sieht ihn die ganze Versammlung.',

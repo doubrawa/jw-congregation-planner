@@ -47,9 +47,6 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
   const [offen, setOffen] = useState<Offen>(null)
   const schliessen = (): void => setOffen(null)
 
-  // Der Aufseher einer gerade gelöschten Gruppe: lieber nichts als ein Plan,
-  // in dem er für eine Gruppe anlegt, die es nicht mehr gibt.
-  if (onlyGroup !== null && !state.groups.some((g) => g.id === onlyGroup)) return null
   const regeln = state.fsRules.filter((r) => onlyGroup === null || r.grp === onlyGroup).sort(fsSort)
 
   return (

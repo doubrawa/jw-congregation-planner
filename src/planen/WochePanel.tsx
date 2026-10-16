@@ -21,17 +21,21 @@ type DictKey = keyof Dict
  * Die vier Anlässe in der Reihenfolge des Entwurfs, je mit dem, was er für die
  * Woche bedeutet. Der Kongress nennt dieselbe Folge wie seine Karte beim
  * Ansehen (`kongressAusfall`).
+ *
+ * Gegen `AnlassArt` geprüft: Ein neuer Anlass fehlt hier nicht still, sondern
+ * beim Übersetzen (Review, Planen #9, 16.10.2026).
  */
-const ANLAESSE: ReadonlyArray<readonly [AnlassArt | null, DictKey, DictKey]> = [
-  [null, 'anlassNormal', 'anlassNormalText'],
-  ['co', 'coWoche', 'anlassCoText'],
-  ['kongress', 'kongress', 'kongressAusfall'],
-  ['mem', 'memWoche', 'anlassMemText'],
-]
+const ANLAESSE = {
+  normal: ['anlassNormal', 'anlassNormalText'],
+  co: ['coWoche', 'anlassCoText'],
+  kongress: ['kongress', 'kongressAusfall'],
+  mem: ['memWoche', 'anlassMemText'],
+} as const satisfies Record<'normal' | AnlassArt, readonly [DictKey, DictKey]>
 
 /**
  * **Woche einrichten** (T121, Entwurf `GWochePlanen`; die Bearbeiten-Ansicht
- * aus T64) — hinter dem Zeichen neben den Karten der Tage, nur beim Admin.
+ * aus T64) — hinter dem Zeichen neben den Karten der Tage, für Admin und
+ * Planer (der Planer seit dem 15.10.2026).
  *
  * Entstanden ist die Ansicht, weil der Kreisaufseher-Schalter im Panel
  * **einer** Zusammenkunft stand, aber **beide** änderte. Daraus die Regel: Ein
@@ -70,15 +74,19 @@ export function WochePanel() {
       <section className="karte einrichten-karte">
         <h2 className="abschnitt-titel karte-titel">{t.anlassDerWoche}</h2>
         <div role="radiogroup" aria-label={t.anlassDerWoche} className="anlass-liste">
-          {ANLAESSE.map(([wert, name, text]) => (
-            <Option
-              key={wert ?? 'normal'}
-              an={(art ?? null) === wert}
-              titel={t[name]}
-              unter={t[text]}
-              onWahl={() => dispatch({ type: 'setAnlass', art: wert })}
-            />
-          ))}
+          {(Object.keys(ANLAESSE) as (keyof typeof ANLAESSE)[]).map((schluessel) => {
+            const wert = schluessel === 'normal' ? null : schluessel
+            const [name, text] = ANLAESSE[schluessel]
+            return (
+              <Option
+                key={schluessel}
+                an={(art ?? null) === wert}
+                titel={t[name]}
+                unter={t[text]}
+                onWahl={() => dispatch({ type: 'setAnlass', art: wert })}
+              />
+            )
+          })}
         </div>
 
         {/* Das Gedächtnismahl ist ein Abend nach Sonnenuntergang: ein Zeitpunkt. */}

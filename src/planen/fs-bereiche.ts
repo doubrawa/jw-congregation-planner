@@ -25,9 +25,9 @@ function kuenftigeBesuche(state: AppState, heute = new Date()): boolean {
  * Die Bereiche des Predigtdienstes, die hier zu sehen sind.
  *
  * - **Treffpunkte** immer.
- * - **Gruppenbesuche** beim Planen für Admin und Planer — der Admin plant sie,
- *   der Planer wechselt den Besucher (4.10.2026); der Gruppenaufseher plant
- *   sie nicht (so auch die Datenbank). Beim Ansehen für alle, sobald einer
+ * - **Gruppenbesuche** beim Planen für Admin und Planer (der Planer plant sie
+ *   seit dem 15.10.2026 ganz; davor wechselte er nur den Besucher); der
+ *   Gruppenaufseher plant sie nicht (so auch die Datenbank). Beim Ansehen für alle, sobald einer
  *   ansteht: Die Gruppe soll wissen, wann der Dienstaufseher kommt; ohne Besuch
  *   bliebe dort nur ein leerer Reiter.
  * - **Trolleys** (T121, Phase 7) nur beim Ansehen, sobald die Versammlung

@@ -1,6 +1,6 @@
 import type { AppAction, AppState } from '../app/context'
 import { darfPlanen, geplantesThema, rechteVon } from '../data/rechte'
-import type { MeetingKey, SlotSelection } from '../data/types'
+import type { SlotSelection } from '../data/types'
 import { aktiverFsBereich } from './fs-bereiche'
 
 /**
@@ -56,12 +56,18 @@ export function auswahlImPlan(state: AppState, sel: SlotSelection | null): boole
   return sel.kind === 'fs' ? art === 'treffpunkte' : art === 'zusammenkuenfte' && sel.tab === state.tab
 }
 
-/** Ein Platz ohne seine Beschriftung — so fragt der Plan, welcher gerade gewählt ist. */
-export type PlatzOrt =
-  | { kind: 'part'; wi: number; tab: MeetingKey; si: number; ii: number; ni: number; aux?: boolean }
-  | { kind: 'helper'; wi: number; tab: MeetingKey; svc: string; pos: number }
-  | { kind: 'ratgeber'; wi: number; tab: MeetingKey }
-  | { kind: 'fs'; wi: number; instId: string }
+/** Was eine Auswahl über ihren Platz nur sagt, nicht wo er steht. */
+type Beschriftung = 'label' | 'labelRolle' | 'priv' | 'groups' | 'guest'
+
+/**
+ * Ein Platz ohne seine Beschriftung — so fragt der Plan, welcher gerade
+ * gewählt ist. Aus `SlotSelection` abgeleitet, je Bauform für sich: Bekommt
+ * eine Auswahl ein Feld für den Ort dazu, steht es hier mit.
+ */
+export type PlatzOrt = OhneBeschriftung<SlotSelection>
+
+/** Je Bauform für sich (verteilt über die Vereinigung) — ein `Omit` über alle verlöre `si`, `svc` und `instId`. */
+type OhneBeschriftung<S> = S extends SlotSelection ? Omit<S, Beschriftung> : never
 
 /**
  * **Ist dieser Platz gerade gewählt?** Am Desktop hebt der Plan ihn hervor —

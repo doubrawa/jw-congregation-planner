@@ -43,7 +43,7 @@ function PartnerKnopf({ si, ii, hasPartner }: { si: number; ii: number; hasPartn
  * Wochenende Vortragsthema (Freitext) und Anfangslied.
  *
  * Den Ablauf von „Unser Leben als Christ" — Minuten, Reihenfolge, eigene
- * Punkte — ändert der Admin seit Phase 5b unter „Woche einrichten ›
+ * Punkte — ändern Admin und Planer seit Phase 5b unter „Woche einrichten ›
  * Programmpunkte bearbeiten" (`ProgrammBlatt`); hier wird zugeteilt.
  *
  * `section` ist die Anzeige-Fassung (Programmsprache), `rawSection` die

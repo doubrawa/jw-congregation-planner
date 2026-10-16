@@ -137,13 +137,6 @@ describe('Der Grundplan: je Wochentag eine Karte (T121, `GGrundplan`)', () => {
     )
     expect(titel(container)).toEqual(['Gruppe 1'])
   })
-
-  it('eine Gruppe, die es nicht mehr gibt, ergibt nichts — auch kein Anlegen', () => {
-    // Der Aufseher einer gerade gelöschten Gruppe — bis der Zustand nachzieht,
-    // steht hier lieber nichts als ein Plan für eine Gruppe ohne Gruppe.
-    const { container } = zeige('rules', {}, 'g-weg')
-    expect(container.textContent).toBe('')
-  })
 })
 
 describe('Eine Regel ändern — es gilt gleich', () => {

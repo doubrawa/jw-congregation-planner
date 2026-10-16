@@ -5,10 +5,9 @@ import { zeitraumText } from './weitere-plaene-anzeige'
 import './weitere-plaene.css'
 
 /**
- * **Ort, Name und Zeitraum eines Weiteren Plans** — oben in seiner Karte, beim
- * Ansehen (`GPlaene`) wie für den Planer, der den Plan nicht ändert
- * (`PlanBearbeiten`). Der Name ist das Wort des Admins und wird nicht
- * übersetzt.
+ * **Ort, Name und Zeitraum eines Weiteren Plans** — oben in seiner Karte beim
+ * Ansehen (`GPlaene`). Der Name ist das Wort dessen, der den Plan angelegt hat,
+ * und wird nicht übersetzt.
  */
 export function PlanTitel({ plan }: { plan: WeitererPlan }) {
   const { state } = useApp()

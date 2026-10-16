@@ -8,8 +8,9 @@ import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { Sheet } from '../components/Sheet'
 import { nameTrifft } from '../components/suche'
 import { LOAD_WEEKS } from '../data/auslastung'
-import { dauerAbtrennen, herkunftVon, isSong, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER, rolleBasis, slotsOf } from '../data/helpers'
+import { dauerAbtrennen, herkunftVon, isSong, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER, rolleBasis } from '../data/helpers'
 import { meetingDate } from '../data/meeting-dates'
+import { platzDerAuswahl } from '../data/plaetze'
 import { buildS89ForSlot } from '../data/planning'
 import type { S89Payload, SlotAssignment, SlotSelection, Week } from '../data/types'
 import { wochenHer } from '../i18n/relative-time'
@@ -198,8 +199,8 @@ function ZuteilenInhalt({
   /** Der Platz, um den es hier geht — nur bei Programmpunkten. */
   const slotJetzt = (): SlotAssignment | undefined => {
     if (sel.kind !== 'part') return undefined
-    const item = state.weeks[sel.wi]?.[sel.tab].sections[sel.si]?.items[sel.ii]
-    return !item || isSong(item) ? undefined : slotsOf(item, sel.aux === true)[sel.ni]
+    const meeting = state.weeks[sel.wi]?.[sel.tab]
+    return meeting && platzDerAuswahl(meeting, state.services, sel)?.slot
   }
   const rolleJetzt = rolleBasis(slotJetzt()?.rolle)
   const eigenerRedner = rolleJetzt === ROLE_OWN_SPEAKER
@@ -246,8 +247,16 @@ function ZuteilenInhalt({
    * Auslastung, Rangfolge und „zuletzt" über die geladenen Wochen — bei 300
    * Personen weit über hunderttausend Schritte. Ohne `useMemo` liefe das bei
    * jedem Buchstaben in der Suche und in den Freitext-Feldern.
+   *
+   * Neu gerechnet wird nur, wenn sich eines der Felder ändert, die sie liest
+   * (`KandidatenDaten`) — nicht bei jedem Toast. Fehlt hier ein Feld, das dazu
+   * kommt, meldet es der Typ.
    */
-  const candidates = useMemo(() => kandidaten(state, sel, abwesend, t, tu), [state, sel, abwesend, t, tu])
+  const { weeks, persons, groups, services, fsWeeks, absences, lang, congregation } = state
+  const candidates = useMemo(
+    () => kandidaten({ weeks, persons, groups, services, fsWeeks, absences, lang, congregation }, sel, abwesend, t, tu),
+    [weeks, persons, groups, services, fsWeeks, absences, lang, congregation, sel, abwesend, t, tu],
+  )
   const gefiltert = suche.trim() ? candidates.filter((c) => nameTrifft(c.name, suche.trim())) : candidates
   const personen = !sel.groups && candidates.length > 0
   // Gezählt wird, wer den Bereich hat — am Redner-Platz stehen statt dessen

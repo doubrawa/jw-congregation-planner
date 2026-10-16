@@ -17,7 +17,7 @@ type Offen = { iid: string } | 'neu' | null
 
 /**
  * **Das Programm bearbeiten** (T121, Entwurf `GProgramm`) — hinter „Woche
- * einrichten", also beim Admin: die Zusammenkunft unter der Woche Abschnitt für
+ * einrichten", also bei Admin und Planer: die Zusammenkunft unter der Woche Abschnitt für
  * Abschnitt. Was aus dem Arbeitsheft kommt, steht nur da; unter „Unser Leben
  * als Christ" öffnet ein Tipp den Punkt (`ProgrammpunktBlatt`), und darunter
  * lässt sich ein eigener einfügen.

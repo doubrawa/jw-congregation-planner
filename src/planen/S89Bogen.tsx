@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { datumsFormat } from '../components/datum-anzeige'
 import { Switch } from '../components/Switch'
@@ -30,12 +30,18 @@ export function S89Bogen() {
    * nur dem Schüler geben; eingeschaltet, weil das der übliche Fall ist.
    */
   const [mitPartner, setMitPartner] = useState(true)
-  const zettel = alleS89DerWoche(state.weeks, state.week, state.congregation.times, mitPartner)
-  const week = state.weeks[state.week]
+  // Gemerkt: Der Wochenstreifen zeichnet den Bogen dreimal, und jeder Dispatch
+  // rendert ihn neu — auch ein Toast.
+  const { weeks, week: wi, congregation } = state
+  const zettel = useMemo(
+    () => alleS89DerWoche(weeks, wi, congregation.times, mitPartner),
+    [weeks, wi, congregation.times, mitPartner],
+  )
+  const week = weeks[wi]
 
   if (zettel.length === 0 || !week) return null
 
-  const datum = datumsFormat(state.lang, 'tag').format(meetingDate(week, 'mid', state.congregation.times))
+  const datum = datumsFormat(state.lang, 'tag').format(meetingDate(week, 'mid', congregation.times))
 
   return (
     <>

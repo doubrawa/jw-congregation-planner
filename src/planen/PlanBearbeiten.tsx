@@ -13,10 +13,8 @@ import { Sheet } from '../components/Sheet'
 import { UnteransichtKopf } from '../components/UnteransichtKopf'
 import { TABLET_BREITE, useMedia } from '../components/useMedia'
 import { datumsFormat } from '../components/datum-anzeige'
-import { PlanTitel } from '../components/PlanTitel'
 import { gruppenName, spannenAnzahl, spannenText } from '../components/weitere-plaene-anzeige'
 import { fromIso } from '../data/meeting-dates'
-import { rechteVon } from '../data/rechte'
 import {
   beginntMit,
   eintraegeVon,
@@ -34,7 +32,7 @@ import { DruckKnopf } from '../programm/DruckKnopf'
 import { spurDesPlans } from './plan-spur'
 import '../components/weitere-plaene.css'
 
-/** Was der Admin am Plan selbst ändert: Name, Zeitraum, Takt und ob er veröffentlicht ist. */
+/** Was am Plan selbst geändert wird: Name, Zeitraum, Takt und ob er veröffentlicht ist. */
 type PlanAenderung = Extract<AppAction, { type: 'wpPlanAendern' }>['patch']
 
 /** Bis zu so vielen Gruppen stehen bei „Beginnen mit" nebeneinander (`Wahl`); mehr in einer Auswahlliste. */
@@ -46,25 +44,25 @@ const WAHL_GRUPPEN = 4
  * darunter der Plan mit „Beginnen mit", dann die Vorschau seiner Wochen oder
  * Monate, je mit ihrer Gruppe.
  *
- * Name, Zeitraum, Takt, Veröffentlichen und Löschen sind der Plan selbst — die
- * ändert der Admin. Der Planer sieht sie und verteilt die Gruppen (4.10.2026).
- * Veröffentlichen steht am Handy in der Leiste am unteren Rand, ab dem Tablet
+ * Name, Zeitraum, Takt, Veröffentlichen und Löschen sind der Plan selbst. Sie
+ * ändern Admin und Planer — der Planer seit dem 15.10.2026; davor sah er sie
+ * nur und verteilte die Gruppen. Hierher kommt nur, wer planen darf
+ * (`PlanenScreen`). Veröffentlichen steht am Handy in der Leiste am unteren Rand, ab dem Tablet
  * neben dem Titel — wie „Plan senden" beim Planen der Woche. Drucken steht
  * links davon (Phase 9): der Bogen des Plans (`PlanBogen`), auch im Entwurf —
  * zum Durchsehen, bevor er veröffentlicht wird —, nicht mehr nach dem Ende.
  */
 export function PlanBearbeiten({ plan, onZurueck }: { plan: WeitererPlan; onZurueck: () => void }) {
-  const { state, dispatch } = useApp()
+  const { dispatch } = useApp()
   const { t } = useT()
   const tag = useKalendertag()
   const breit = useMedia(TABLET_BREITE)
   const { drucken, bogen } = useDruckBogen()
-  const admin = rechteVon(state).zuteilen
   const stand = planStand(plan, fromIso(tag))
   // Ein abgeschlossener Plan ist gewesen: nichts mehr zu verteilen, zu
   // veröffentlichen oder zu zeigen (`plaeneZumAnsehen`).
   const laeuft = stand !== 'abgeschlossen'
-  const veroeffentlichen = admin && laeuft ? <VeroeffentlichenKnopf plan={plan} /> : null
+  const veroeffentlichen = laeuft ? <VeroeffentlichenKnopf plan={plan} /> : null
   const planDrucken = () => drucken(<PlanBogen plan={plan} />)
 
   return (
@@ -76,23 +74,21 @@ export function PlanBearbeiten({ plan, onZurueck }: { plan: WeitererPlan; onZuru
         </UnteransichtKopf>
         <Spur schritte={spurDesPlans(plan, stand, t)} label={t.spurPlan} />
         <section className="karte wp-plan-karte">
-          {admin ? <PlanFelder plan={plan} /> : <PlanAngaben plan={plan} />}
+          <PlanFelder plan={plan} />
           {laeuft && <BeginnenMit plan={plan} />}
         </section>
         <PlanVorschau plan={plan} />
         {laeuft && (
           <p className="klein-text wp-sicht">{plan.entwurf ? `${t.wpEntwurfHint} ${t.wpSichtSaal}` : t.wpSichtSaal}</p>
         )}
-        {admin && (
-          <EntfernenKnopf
-            className="knopf-umriss knopf-entfernen wp-loeschen"
-            text={t.wpLoeschen}
-            onEntfernen={() => {
-              dispatch({ type: 'wpPlanLoeschen', id: plan.id })
-              onZurueck()
-            }}
-          />
-        )}
+        <EntfernenKnopf
+          className="knopf-umriss knopf-entfernen wp-loeschen"
+          text={t.wpLoeschen}
+          onEntfernen={() => {
+            dispatch({ type: 'wpPlanLoeschen', id: plan.id })
+            onZurueck()
+          }}
+        />
       </section>
       {!breit && laeuft && (
         <div className="planen-leiste">
@@ -124,7 +120,7 @@ function VeroeffentlichenKnopf({ plan }: { plan: WeitererPlan }) {
 }
 
 /**
- * Was der Admin am Plan selbst ändert: Name, Zeitraum und Takt. Name und Takt
+ * Was am Plan selbst geändert wird: Name, Zeitraum und Takt. Name und Takt
  * gelten sofort; der Zeitraum öffnet den Kalender auf dem Ende, auf das man
  * tippt.
  */
@@ -180,17 +176,6 @@ function PlanFelder({ plan }: { plan: WeitererPlan }) {
       </div>
       {zeitraum && <ZeitraumBlatt plan={plan} start={zeitraum} onClose={() => setZeitraum(null)} />}
     </>
-  )
-}
-
-/** Was der Planer vom Plan selbst sieht: den Plan, wie ihn alle sehen, und wie die Gruppen wechseln. */
-function PlanAngaben({ plan }: { plan: WeitererPlan }) {
-  const { t } = useT()
-  return (
-    <div className="wp-angaben">
-      <PlanTitel plan={plan} />
-      <p className="klein-text">{taktVon(plan) === 'monat' ? t.wpSaalTextMonat : t.wpSaalText}</p>
-    </div>
   )
 }
 

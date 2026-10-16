@@ -644,7 +644,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // „Treffpunkte" und „Weitere Pläne" (T120) gibt es in Programm und
       // Planen, „Bearbeiten" (T64) **nur** im Planen — das Programm ist für alle
       // nur lesend — und nur für Admin und Planer: Bearbeiten heißt den Plan
-      // ändern (bis zum 15.10.2026 nur der Admin). Die Zusagen (T121) ebenfalls nur im Planen. Beim Wechsel woandershin auf die Zusammenkunft unter der
+      // ändern (bis zum 15.10.2026 nur der Admin). Die Zusagen (T121) ebenfalls
+      // nur im Planen. Beim Wechsel woandershin auf die Zusammenkunft unter der
       // Woche zurücksetzen, sonst stünde die Ansicht auf einem Reiter, den es
       // dort nicht gibt. Die beiden Zusammenkünfte stehen nicht in der Liste —
       // sie gibt es überall.

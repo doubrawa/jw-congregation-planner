@@ -29,6 +29,7 @@ import {
 } from '../data/helpers'
 import { lastFenster, workloadOf } from '../data/auslastung'
 import { meetingDate } from '../data/meeting-dates'
+import { platzDerAuswahl } from '../data/plaetze'
 import { assignmentsInMeeting, rangfolgeFuer, zuletztImBereich } from '../data/planning'
 import type { Absence, MeetingAssignment, MeetingKey, Person, SlotSelection } from '../data/types'
 import { ROLE_KEY, type Dict } from '../i18n/ui'
@@ -69,7 +70,12 @@ export interface Candidate {
   andererTag?: { tab: MeetingKey; aufgaben: MeetingAssignment[] }
 }
 
-/** Was die Kandidatenliste aus dem Zustand braucht (erleichtert das Testen). */
+/**
+ * Was die Kandidatenliste aus dem Zustand braucht (erleichtert das Testen) —
+ * und genau das, woran das Blatt sie neu rechnet (`AssignSheet`). Hing sie am
+ * ganzen Zustand, rechnete sie bei jedem Toast und jedem Farbschema-Wechsel
+ * neu (Review, Planen #2, 16.10.2026).
+ */
 export type KandidatenDaten = Pick<
   AppState,
   // `lang` gehört dazu, seit die Liste in der Sprache des Lesers sortiert
@@ -105,8 +111,8 @@ export function kandidaten(
  */
 function kreisaufseherPlatz(state: KandidatenDaten, sel: Exclude<SlotSelection, { kind: 'fs' }>): boolean {
   if (sel.kind !== 'part' || !sel.guest) return false
-  const item = state.weeks[sel.wi]?.[sel.tab].sections[sel.si]?.items[sel.ii]
-  return Boolean(item && !isSong(item) && slotsOf(item, sel.aux === true)[sel.ni]?.rolle === ROLE_CIRCUIT)
+  const meeting = state.weeks[sel.wi]?.[sel.tab]
+  return Boolean(meeting && platzDerAuswahl(meeting, state.services, sel)?.slot?.rolle === ROLE_CIRCUIT)
 }
 
 /**

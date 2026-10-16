@@ -1249,32 +1249,23 @@ export const KATALOG = [
     ersetzen: '  using (congregation_id = public.my_congregation_id() and (public.darf_zuteilen() or public.is_group_overseer()))',
   },
   {
+    // Bis zum 16.10.2026 stand die Prüfung zweimal in `GruppenbesuchePlan`
+    // (anlegen; verlegen und streichen). Seit „Alles Planen" war sie dort immer
+    // wahr — es entscheidet der Eingang.
     id: 'gb-planen-wer-plant',
-    datei: 'src/planen/GruppenbesuchePlan.tsx',
-    regel: 'Besuche legen Admin und Planer an.',
-    suchen: '  const admin = rechteVon(state).zuteilen\n',
-    ersetzen: '  const admin = state.planner\n',
+    datei: 'src/planen/fs-bereiche.ts',
+    regel: 'Gruppenbesuche planen (anlegen, verlegen, streichen, Besucher wechseln) Admin und Planer.',
+    suchen: '  const besuche = planen ? rechte.zuteilen : kuenftigeBesuche(state)\n',
+    ersetzen: '  const besuche = planen ? rechte.admin : kuenftigeBesuche(state)\n',
   },
   {
-    id: 'gb-verlegen-wer-plant',
-    datei: 'src/planen/GruppenbesuchePlan.tsx',
-    regel: 'Woche und Gruppe eines Besuchs verlegen und streichen Admin und Planer.',
-    suchen: '  const verlegen = rechteVon(state).zuteilen\n',
-    ersetzen: '  const verlegen = state.planner\n',
-  },
-  {
-    id: 'wp-plan-aendern-wer-plant',
-    datei: 'src/planen/PlanBearbeiten.tsx',
-    regel: 'Name, Zeitraum, Takt, Veröffentlichen und Löschen eines Plans für Admin und Planer.',
-    suchen: '  const admin = rechteVon(state).zuteilen\n',
-    ersetzen: '  const admin = state.planner\n',
-  },
-  {
-    id: 'wp-anlegen-wer-plant',
-    datei: 'src/planen/WeiterePlaenePlan.tsx',
-    regel: 'Einen Weiteren Plan legen Admin und Planer an.',
-    suchen: '      {rechteVon(state).zuteilen && (\n        <button type="button" className="knopf-neu" onClick={anlegen}>',
-    ersetzen: '      {state.planner && (\n        <button type="button" className="knopf-neu" onClick={anlegen}>',
+    // Ebenso: Bis zum 16.10.2026 prüften „Plan bearbeiten" und die Liste
+    // selbst — seit „Alles Planen" immer wahr.
+    id: 'wp-planen-wer-plant',
+    datei: 'src/planen/PlanenScreen.tsx',
+    regel: 'Weitere Pläne anlegen und ändern (Name, Zeitraum, Takt, Veröffentlichen, Löschen) Admin und Planer.',
+    suchen: "  if (state.tab === 'wp' && rechte.zuteilen) return <WeiterePlaenePlan />\n",
+    ersetzen: "  if (state.tab === 'wp' && rechte.admin) return <WeiterePlaenePlan />\n",
   },
   {
     id: 'plan-senden-auch-beim-planer',
@@ -3834,9 +3825,9 @@ export const KATALOG = [
     datei: 'src/planen/GruppenbesuchePlan.tsx',
     regel: 'Einen Gruppenbesuch zu löschen fragt erst nach — ein einzelner Tipp löscht nicht.',
     suchen:
-      "          <EntfernenKnopf\n            className=\"knopf-umriss knopf-entfernen\"\n            text={t.a11yRemove}\n            onEntfernen={() => {\n              dispatch({ type: 'besuchEntfernen', id })",
+      "        <EntfernenKnopf\n          className=\"knopf-umriss knopf-entfernen\"\n          text={t.a11yRemove}\n          onEntfernen={() => {\n            dispatch({ type: 'besuchEntfernen', id })",
     ersetzen:
-      "          <button\n            type=\"button\"\n            className=\"knopf-umriss knopf-entfernen\"\n            onClick={() => {\n              dispatch({ type: 'besuchEntfernen', id })",
+      "        <button\n          type=\"button\"\n          className=\"knopf-umriss knopf-entfernen\"\n          onClick={() => {\n            dispatch({ type: 'besuchEntfernen', id })",
   },
   {
     id: 'dienst-loeschen-fragt-nach',
@@ -4673,6 +4664,20 @@ export const KATALOG = [
     ersetzen: '',
   },
   {
+    id: 'kandidaten-gemerkt-an-ihren-feldern',
+    datei: 'src/planen/AssignSheet.tsx',
+    regel: 'Die Kandidatenliste rechnet nur neu, wenn sich ein Feld ändert, das sie liest — nicht bei Toast oder Farbschema.',
+    suchen: '    [weeks, persons, groups, services, fsWeeks, absences, lang, congregation, sel, abwesend, t, tu],\n',
+    ersetzen: '    [state, sel, abwesend, t, tu],\n',
+  },
+  {
+    id: 's89-zettel-gemerkt',
+    datei: 'src/planen/S89Bogen.tsx',
+    regel: 'Die S-89-Zettel der Woche werden nur neu gerechnet, wenn sich Wochen, Zeiten oder der Partner-Schalter ändern.',
+    suchen: '    [weeks, wi, congregation.times, mitPartner],\n',
+    ersetzen: '    [weeks, wi, congregation.times, mitPartner, {}],\n',
+  },
+  {
     id: 'abwesenheiten-einmal-je-zustand',
     datei: 'src/data/absence.ts',
     regel: 'Die Abwesenheiten werden einmal je Zustand gebaut, und alle Bausteine bekommen dasselbe Objekt.',
@@ -5455,13 +5460,6 @@ export const KATALOG = [
     regel: 'Der Gruppenaufseher sieht im Grundplan nur die Regeln seiner Gruppe.',
     suchen: 'state.fsRules.filter((r) => onlyGroup === null || r.grp === onlyGroup)',
     ersetzen: 'state.fsRules.filter(() => true)',
-  },
-  {
-    id: 'grundplan-geloeschte-gruppe-leer',
-    datei: 'src/planen/FsRulesPanel.tsx',
-    regel: 'Der Aufseher einer gelöschten Gruppe bekommt keinen Grundplan, in dem er für sie anlegen könnte.',
-    suchen: '  if (onlyGroup !== null && !state.groups.some((g) => g.id === onlyGroup)) return null\n',
-    ersetzen: '',
   },
   {
     id: 'grundplan-haeufigkeit-nur-wenn-selten',

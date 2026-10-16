@@ -61,16 +61,6 @@
   text-align: start;
 }
 
-/* Was der Planer vom Plan sieht: Ort, Name und Zeitraum wie beim Ansehen. */
-.wp-angaben {
-  display: flex;
-  flex-direction: column;
-}
-
-.wp-angaben > .klein-text {
-  padding-block-start: 8px;
-}
-
 .wp-vorschau {
   padding: 6px 10px 4px 18px;
 }

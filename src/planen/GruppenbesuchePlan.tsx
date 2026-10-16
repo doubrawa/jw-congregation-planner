@@ -23,7 +23,6 @@ import {
 import { displayName, isQualified, personCompare } from '../data/helpers'
 import { fromIso, montagNach, montagVon } from '../data/meeting-dates'
 import { zusageStatus } from '../data/planning'
-import { rechteVon } from '../data/rechte'
 import type { Gruppenbesuch, Person } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
@@ -38,8 +37,9 @@ type Offen = 'neu' | { id: string } | null
 
 /**
  * **Gruppenbesuche des Dienstaufsehers** beim Planen (T120, Phase 2; T121,
- * Entwurf `GGruppenbesuchePlanen`) — für Admin und Planer; der Planer wechselt
- * nur den Besucher (4.10.2026).
+ * Entwurf `GGruppenbesuchePlanen`) — für Admin und Planer, nur sie kommen
+ * hierher (`fsBereiche`). Bis zum 15.10.2026 wechselte der Planer nur den
+ * Besucher.
  *
  * Eine Karte mit den Besuchen, jeder eine Zeile: Woche, Tag und Zeit seines
  * Treffpunkts, was nicht aufgeht, rechts die Gruppe. Ein Tipp öffnet ihn;
@@ -56,9 +56,6 @@ export function GruppenbesuchePlan() {
   const lage = useBesuchsLage()
   const [offen, setOffen] = useState<Offen>(null)
   const schliessen = (): void => setOffen(null)
-  // Besuche anlegen, verlegen und streichen ist der Plan — das tun Admin und
-  // Planer (seit dem 15.10.2026; bis dahin wechselte der Planer nur den Besucher).
-  const admin = rechteVon(state).zuteilen
 
   const eintraege = useMemo(() => {
     const heute = fromIso(tag)
@@ -77,12 +74,10 @@ export function GruppenbesuchePlan() {
         {eintraege.map(({ besuch, stand }) => (
           <BesuchZeile key={besuch.id} besuch={besuch} stand={stand} onOeffnen={() => setOffen({ id: besuch.id })} />
         ))}
-        {admin && (
-          <button type="button" className="gb-neu" onClick={() => setOffen('neu')}>
-            <Zeichen name="plus" />
-            {t.gbHinzufuegen}
-          </button>
-        )}
+        <button type="button" className="gb-neu" onClick={() => setOffen('neu')}>
+          <Zeichen name="plus" />
+          {t.gbHinzufuegen}
+        </button>
       </section>
 
       {/* Wie jedes Blatt beim Planen am Dokument, nicht im Fluss der Seite. */}
@@ -263,11 +258,10 @@ function BesucherFeld({
 }
 
 /**
- * **Ein Besuch** — jede Änderung gilt gleich. Woche und Gruppe verlegt der
- * Admin (4.10.2026): Der Besucher geht dann aus den bisherigen Treffpunkten und
- * tritt in die neuen (`besuchAendern`); gesperrt ist, was es schon gibt, wie
- * es auch die Datenbank abweist. Den Besucher wechselt auch der Planer.
- * Darunter die Treffpunkte, die Zusage des Besuchers und was nicht aufgeht —
+ * **Ein Besuch** — jede Änderung gilt gleich. Wird er in eine andere Woche oder
+ * Gruppe verlegt, geht der Besucher aus den bisherigen Treffpunkten und tritt
+ * in die neuen (`besuchAendern`); gesperrt ist, was es schon gibt, wie es auch
+ * die Datenbank abweist. Darunter die Treffpunkte, die Zusage des Besuchers und was nicht aufgeht —
  * mit „Übernehmen" oder „Eintragen", wo der Besucher dort noch nicht leitet.
  */
 function BesuchBlatt({ id, onClose }: { id: string; onClose: () => void }) {
@@ -281,8 +275,6 @@ function BesuchBlatt({ id, onClose }: { id: string; onClose: () => void }) {
   if (!besuch) return null
 
   const stand = besuchStand(besuch, lage, fromIso(tag))
-  // Woche und Gruppe verlegen und den Besuch streichen Admin und Planer.
-  const verlegen = rechteVon(state).zuteilen
   const andere = state.gruppenbesuche.filter((b) => b.id !== id)
   // Darf der eingesetzte Besucher inzwischen keine Treffpunkte mehr leiten,
   // steht er trotzdem zur Wahl — sonst zeigte das Feld „Besucher wählen", als
@@ -298,21 +290,17 @@ function BesuchBlatt({ id, onClose }: { id: string; onClose: () => void }) {
   return (
     <Sheet label={titel} title={titel} sub={besuchsGruppe(besuch, state.groups, tu)} onClose={onClose}>
       <div className="sheet-inhalt blatt-felder">
-        {verlegen && (
-          <>
-            <WocheFeld
-              wochen={besuchsWochenAuswahl(montagVon(tag), besuch.woche)}
-              value={besuch.woche}
-              gesperrt={(w) => andere.some((b) => b.woche === w && b.grp === besuch.grp)}
-              onChange={(woche) => aendern({ woche })}
-            />
-            <BesuchsGruppeFeld
-              value={besuch.grp}
-              gesperrt={(grp) => andere.some((b) => b.woche === besuch.woche && b.grp === grp)}
-              onChange={(grp) => aendern({ grp })}
-            />
-          </>
-        )}
+        <WocheFeld
+          wochen={besuchsWochenAuswahl(montagVon(tag), besuch.woche)}
+          value={besuch.woche}
+          gesperrt={(w) => andere.some((b) => b.woche === w && b.grp === besuch.grp)}
+          onChange={(woche) => aendern({ woche })}
+        />
+        <BesuchsGruppeFeld
+          value={besuch.grp}
+          gesperrt={(grp) => andere.some((b) => b.woche === besuch.woche && b.grp === grp)}
+          onChange={(grp) => aendern({ grp })}
+        />
         {/* „Besucher wählen" allein ändert nichts — ein Besuch ohne Besucher
             entsteht nur, wenn die Person gelöscht wird. */}
         <BesucherFeld
@@ -340,18 +328,16 @@ function BesuchBlatt({ id, onClose }: { id: string; onClose: () => void }) {
           </button>
         )}
       </div>
-      {verlegen && (
-        <div className="sheet-fuss-ende">
-          <EntfernenKnopf
-            className="knopf-umriss knopf-entfernen"
-            text={t.a11yRemove}
-            onEntfernen={() => {
-              dispatch({ type: 'besuchEntfernen', id })
-              onClose()
-            }}
-          />
-        </div>
-      )}
+      <div className="sheet-fuss-ende">
+        <EntfernenKnopf
+          className="knopf-umriss knopf-entfernen"
+          text={t.a11yRemove}
+          onEntfernen={() => {
+            dispatch({ type: 'besuchEntfernen', id })
+            onClose()
+          }}
+        />
+      </div>
     </Sheet>
   )
 }
