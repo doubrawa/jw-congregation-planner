@@ -749,6 +749,10 @@ zuletzt.
   es sollte.
 - Abwesenheiten bewahrt die App bis acht Wochen nach ihrem Ende auf. Für ältere
   Wochen rechnet die Auswertung so, als wäre jeder da gewesen.
+- Seit wann jemand dabei ist oder einen Bereich hat, weiß sie nicht: Für einen
+  neuen Verkündiger oder einen frisch vergebenen Bereich rechnet sie, als wäre
+  es den ganzen Zeitraum so gewesen. Er kann deshalb unter „zu selten" stehen,
+  ohne dass etwas schief liegt.
 - Absagen bewahrt die App nicht auf; wie oft jemand abgesagt hat, zeigt die
   Auswertung deshalb nicht.
 

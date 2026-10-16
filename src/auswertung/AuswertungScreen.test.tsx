@@ -182,9 +182,11 @@ describe('Am Handy: der Überblick', () => {
     expect(hinweis.querySelector('.aw-hinweis-titel')?.textContent).toContain(displayName(erste))
     fireEvent.click(hinweis)
     expect(titel(container)).toBe(displayName(erste))
-    // Die Wochen des Zeitraums als Felder: zwanzig, in Reihen zu dreizehn.
+    // Die Wochen des Zeitraums als Felder: zwanzig, in Reihen zu dreizehn — und
+    // die Überschrift nennt so viele, wie dastehen, nicht die 52 des Zeitraums.
     expect(container.querySelectorAll('.aw-woche')).toHaveLength(20)
     expect(container.querySelectorAll('.aw-wochen-reihe')).toHaveLength(2)
+    expect(container.textContent).toContain(`Die letzten ${zeitspanne(20, 'week', 'de')}`)
     zurueck(container)
     expect(titel(container)).toBe(t.navAuswertung)
   })

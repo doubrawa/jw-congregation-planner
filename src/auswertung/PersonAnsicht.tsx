@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { personBild, ZEITRAUM_WOCHEN, lageVon } from '../data/auswertung'
+import { personBild, lageVon } from '../data/auswertung'
 import type { AbsenceSet } from '../data/absence'
 import type { Person, Week } from '../data/types'
 import { fill } from '../i18n/useT'
@@ -61,7 +61,8 @@ export function PersonAnsicht({
       </section>
 
       <section className="karte aw-gruppe" aria-label={wochenAria}>
-        <h2 className="aw-gruppe-kopf">{fill(t.awLetzte, { dauer: k.dauer(ZEITRAUM_WOCHEN[k.a.zeitraum]) })}</h2>
+        {/* So viele Wochen, wie Felder dastehen — die App kennt nicht immer den ganzen Zeitraum. */}
+        <h2 className="aw-gruppe-kopf">{fill(t.awLetzte, { dauer: k.dauer(bild.wochen.length) })}</h2>
         <WochenFelder wochen={bild.wochen} reihen={reihen} />
         <Legende
           eintraege={[
