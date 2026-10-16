@@ -485,10 +485,21 @@ function quellenGeaendert(vorher: AppState, nachher: AppState): boolean {
 }
 
 export function reducer(state: AppState, action: AppAction): AppState {
-  // `hydrate` ist der einzige Sonderfall: Es ersetzt den ganzen Bestand — die
-  // Zusagen kommen passend mit — und legt zusätzlich das Bestätigungs-Blatt
-  // vor, wenn etwas offen ist.
-  if (action.type === 'hydrate') return withDerivedTasks(baseReducer(state, action), true)
+  // `hydrate` ist der erste Sonderfall: Es ersetzt den ganzen Bestand — die
+  // Zusagen kommen passend mit — und legt beim Öffnen der App zusätzlich das
+  // Bestätigungs-Blatt vor, wenn etwas offen ist. Ein Nachladen mitten in der
+  // Arbeit nicht: Wer „Später" gesagt hatte, bekam es bis zum 16.10.2026 nach
+  // jedem „Plan senden" und jedem Konflikt wieder vorgelegt.
+  if (action.type === 'hydrate') return withDerivedTasks(baseReducer(state, action), !action.nachgeladen)
+  /*
+   * **Ein neuer Tag** ist der zweite (16.10.2026): Vergangenes fällt aus „Meine
+   * Aufgaben" (`istVorbei`), aber nur beim Ableiten — und abgeleitet wird,
+   * wenn sich eine Quelle ändert. Der Tag ist keine. Eine App, die über Nacht
+   * offen blieb, zeigte morgens die gestrige Aufgabe als nächste und zählte sie
+   * unter „noch zu bestätigen" mit. Den Anstoß gibt der Provider
+   * (`useKalendertag`).
+   */
+  if (action.type === 'neuerTag') return withDerivedTasks(state, false)
   const next = ohneEntzogene(state, ohneVerwaisteTreffpunktZusagen(state, baseReducer(state, action)))
   return quellenGeaendert(state, next) ? withDerivedTasks(next, false) : next
 }
@@ -1687,5 +1698,11 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, toast: nextToast(state, action.text) }
     case 'hideToast':
       return { ...state, toast: null }
+    case 'nachladenGescheitert':
+      // Der Bestand bleibt, wie er ist — er ist frischer als jede Momentaufnahme.
+      return { ...state, toast: toastKey(state, 'stFehler') }
+    case 'neuerTag':
+      // Wird oben im `reducer` abgeleitet; hier gibt es nichts zu ändern.
+      return state
   }
 }

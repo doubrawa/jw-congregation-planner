@@ -547,9 +547,9 @@ export const KATALOG = [
     id: 'fs-zusage-laden-zustand',
     datei: 'src/app/reducer.ts',
     regel: 'Das Laden räumt keine Zusagen ab — die eines anderswo eingeteilten Leiters kommt mit und bleibt.',
-    suchen: "if (action.type === 'hydrate') return withDerivedTasks(baseReducer(state, action), true)",
+    suchen: "if (action.type === 'hydrate') return withDerivedTasks(baseReducer(state, action), !action.nachgeladen)",
     ersetzen:
-      "if (action.type === 'hydrate') return withDerivedTasks(ohneVerwaisteTreffpunktZusagen(state, baseReducer(state, action)), true)",
+      "if (action.type === 'hydrate') return withDerivedTasks(ohneVerwaisteTreffpunktZusagen(state, baseReducer(state, action)), !action.nachgeladen)",
   },
   {
     id: 'fs-regen-freitext',
@@ -7311,6 +7311,49 @@ export const KATALOG = [
     regel: 'Nach dem Abo gefragt wird, ohne auf einen Service Worker zu warten, der nie bereit wird.',
     suchen: '  const reg = await navigator.serviceWorker.getRegistration()\n',
     ersetzen: '  const reg = await navigator.serviceWorker.ready\n',
+  },
+  /* ---- Laden mitten in der Sitzung (Review, 16.10.2026) ---- */
+  {
+    id: 'nachladen-still-behaelt-bestand',
+    datei: 'src/app/hydrate.ts',
+    regel: 'Scheitert ein stilles Nachladen, bleibt der Bestand stehen — keine Momentaufnahme, keine Fehlerseite.',
+    suchen: '  if (still) {\n',
+    ersetzen: "  if (still && userId === '') {\n",
+  },
+  {
+    id: 'nachladen-traegt-marke',
+    datei: 'src/app/hydrate.ts',
+    regel: 'Ein stilles Nachladen sagt dem Reducer, dass es eines ist.',
+    suchen: '    dispatch({ type: \'hydrate\', payload, ...(still ? { nachgeladen: true as const } : {}) })\n',
+    ersetzen: "    dispatch({ type: 'hydrate', payload })\n",
+  },
+  {
+    id: 'nachladen-legt-nicht-wieder-vor',
+    datei: 'src/app/reducer.ts',
+    regel: '„Später" hält bis zum nächsten Öffnen der App — ein Nachladen legt das Blatt nicht erneut vor.',
+    suchen: '  if (action.type === \'hydrate\') return withDerivedTasks(baseReducer(state, action), !action.nachgeladen)\n',
+    ersetzen: "  if (action.type === 'hydrate') return withDerivedTasks(baseReducer(state, action), true)\n",
+  },
+  {
+    id: 'neuer-tag-leitet-ab',
+    datei: 'src/app/reducer.ts',
+    regel: 'Ein neuer Tag nimmt Vergangenes aus „Meine Aufgaben", auch ohne sonstige Änderung.',
+    suchen: "  if (action.type === 'neuerTag') return withDerivedTasks(state, false)\n",
+    ersetzen: "  if (action.type === 'neuerTag') return state\n",
+  },
+  {
+    id: 'neuer-tag-vom-provider',
+    datei: 'src/app/store.tsx',
+    regel: 'Der Provider stößt beim Tageswechsel die neue Ableitung an.',
+    suchen: "    dispatch({ type: 'neuerTag' })\n",
+    ersetzen: '    void dispatch\n',
+  },
+  {
+    id: 'sprung-wartet-auf-daten',
+    datei: 'src/app/AppShell.tsx',
+    regel: 'Ein Push-Ziel beim Kaltstart wartet auf die Daten der Sitzung — erst dann kennt die App die Rechte.',
+    suchen: "    if (isLogin || !pendingNav || !state.userId || state.dataStatus !== 'ready') return\n",
+    ersetzen: '    if (isLogin || !pendingNav) return\n',
   },
   {
     id: 'holen-varianten-nur-was-kommt',

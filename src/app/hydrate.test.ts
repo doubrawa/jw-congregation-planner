@@ -189,6 +189,44 @@ describe('loadAndHydrate', () => {
   })
 
   /*
+   * **Ein stilles Nachladen, das scheitert, lässt den Bestand stehen**
+   * (16.10.2026). Bis dahin fiel es auf die Momentaufnahme zurück: Ein
+   * Netzaussetzer nach „Plan senden" ersetzte den Bildschirm durch den älteren
+   * Stand und sperrte ihn; ohne Momentaufnahme stand die App auf der
+   * Fehlerseite.
+   */
+  it('still gescheitert: nur ein Hinweis, keine Momentaufnahme, keine Fehlerseite', async () => {
+    mockLoad.mockResolvedValue({ ok: false, reason: 'error' })
+    mockRead.mockReturnValue({ at: 1, payload: { ...emptyData, congregationId: 'c1', userId: 'u9', empty: false } })
+    const { actions, dispatch } = collector()
+    await loadAndHydrate(dispatch, 'u9', { silent: true })
+    expect(actions).toEqual([{ type: 'nachladenGescheitert' }])
+    expect(mockRead).not.toHaveBeenCalled()
+  })
+
+  it('auch still: Ohne Mitgliedschaft gilt der alte Stand nicht weiter', async () => {
+    mockLoad.mockResolvedValue({ ok: false, reason: 'no-membership' })
+    const { actions, dispatch } = collector()
+    await loadAndHydrate(dispatch, 'u9', { silent: true })
+    expect(actions).toEqual([{ type: 'setDataStatus', status: 'no-membership', userId: 'u9' }])
+  })
+
+  /*
+   * **Ein Nachladen legt das Blatt beim Öffnen nicht erneut vor** (16.10.2026):
+   * Das tut nur das Öffnen der App. Wer „Später" gesagt hatte, bekam es nach
+   * jedem „Plan senden" und jedem Konflikt wieder vorgelegt.
+   */
+  it('still geladen trägt die Marke „nachgeladen" — das Öffnen der App nicht', async () => {
+    mockLoad.mockResolvedValue({ ok: true, empty: false, data: emptyData, congregationId: 'c1', userId: 'u1' })
+    const still = collector()
+    await loadAndHydrate(still.dispatch, 'u1', { silent: true })
+    expect(still.actions.find((a) => a.type === 'hydrate')).toMatchObject({ nachgeladen: true })
+    const offen = collector()
+    await loadAndHydrate(offen.dispatch, 'u1')
+    expect(offen.actions.find((a) => a.type === 'hydrate')).not.toHaveProperty('nachgeladen')
+  })
+
+  /*
    * **Abgemeldet, während noch geladen wurde** (16.10.2026). Die Antwort kam
    * danach an und spielte die Daten des Abgemeldeten in den eben geleerten
    * Zustand zurück, samt einer neuen Momentaufnahme im Speicher des Geräts.

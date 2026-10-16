@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
+import { useState } from 'react'
 import { AppDispatchContext, AppStateContext, AppStoreContext, type AppState, useStaticStore } from './context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { APP_LANGS, LOCALES } from '../i18n/langs'
@@ -765,6 +766,36 @@ describe('Der Push-Deep-Link führt in den erlaubten Bereich', () => {
     history.replaceState(null, '', '/#go=aufgaben')
     zeige()
     expect(location.hash).toBe('')
+  })
+
+  /*
+   * **Beim Kaltstart wartet der Sprung auf die Daten** (16.10.2026). `login`
+   * kommt vor `hydrate`: Bis dahin hält die App jeden für einen Verkündiger,
+   * und ein Planer, der bei geschlossener App auf „nicht erreichbar" tippte
+   * (`#go=planen`), landete in „Meine Aufgaben" — das Ziel war verbraucht.
+   */
+  it('beim Kaltstart springt er erst, wenn die Daten der Sitzung da sind', () => {
+    history.replaceState(null, '', '/#go=planen')
+    const dispatch = vi.fn()
+    let setzen: (s: AppState) => void = () => {}
+    function Buehne() {
+      const [state, setState] = useState(() => zustand({ planner: false, userId: null }))
+      setzen = setState
+      const store = useStaticStore(state)
+      return (
+        <AppDispatchContext.Provider value={dispatch}>
+          <AppStoreContext.Provider value={store}>
+            <AppStateContext.Provider value={state}>
+              <AppShell />
+            </AppStateContext.Provider>
+          </AppStoreContext.Provider>
+        </AppDispatchContext.Provider>
+      )
+    }
+    render(<Buehne />)
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'navigate' }))
+    act(() => setzen(zustand({ planner: true, userId: 'u1' })))
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen' })
   })
 
   it('am Login wird noch nicht gesprungen — erst nach dem Anmelden', () => {

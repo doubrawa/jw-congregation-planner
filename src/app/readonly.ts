@@ -19,6 +19,10 @@ const VIEW_ACTIONS: ReadonlySet<AppAction['type']> = new Set([
   'logout',
   'hydrate',
   'setDataStatus',
+  // Ein stilles Nachladen scheiterte (nur ein Hinweis) — und ein neuer Tag
+  // leitet „Meine Aufgaben" neu ab; beides schreibt nichts.
+  'nachladenGescheitert',
+  'neuerTag',
   // Navigation
   'navigate',
   'prevWeek',

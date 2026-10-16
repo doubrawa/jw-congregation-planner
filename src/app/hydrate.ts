@@ -44,17 +44,30 @@ export async function loadAndHydrate(
    * schriebe eine Änderung darin ihn mit dem neuen Stand — lautlos über das,
    * was ein anderer inzwischen gespeichert hat.
    */
-  if (await ladenUndEinspielen(dispatch, userId, meine)) {
+  if (await ladenUndEinspielen(dispatch, userId, meine, opts?.silent === true)) {
     ausstehendesSchreiben()
-    await ladenUndEinspielen(dispatch, userId, meine)
+    // Das zweite Laden ist eines mitten in der Sitzung — still, wie es heißt.
+    await ladenUndEinspielen(dispatch, userId, meine, true)
   }
 }
 
 /**
  * Einmal laden und einspielen. `true`: Während des Ladens ging etwas hinaus,
  * das die Abfrage verpasst haben kann (`schreibStand`).
+ *
+ * `still`: ein Nachladen mitten in der Sitzung. Es legt das Blatt beim Öffnen
+ * nicht erneut vor, und scheitert es, bleibt der Bestand stehen — er ist
+ * frischer als jede Momentaufnahme. Bis zum 16.10.2026 fiel auch ein stilles
+ * Nachladen auf die Momentaufnahme zurück: Ein Netzaussetzer nach „Plan
+ * senden" ersetzte den Bildschirm durch den älteren Stand und sperrte ihn; ohne
+ * Momentaufnahme stand die ganze App auf der Fehlerseite.
  */
-async function ladenUndEinspielen(dispatch: Dispatch<AppAction>, userId: string, meine: number): Promise<boolean> {
+async function ladenUndEinspielen(
+  dispatch: Dispatch<AppAction>,
+  userId: string,
+  meine: number,
+  still: boolean,
+): Promise<boolean> {
   // Was schon unterwegs ist — eben hinausgeschrieben oder vorher losgegangen —,
   // soll im geladenen Stand stehen. Bis zum 15.10.2026 wurde es nur losgeschickt,
   // und die Abfrage konnte es überholen.
@@ -71,7 +84,7 @@ async function ladenUndEinspielen(dispatch: Dispatch<AppAction>, userId: string,
       empty: res.empty,
     }
     saveSnapshot(payload)
-    dispatch({ type: 'hydrate', payload })
+    dispatch({ type: 'hydrate', payload, ...(still ? { nachgeladen: true as const } : {}) })
     return schreibStand() !== vorher
   }
 
@@ -82,6 +95,11 @@ async function ladenUndEinspielen(dispatch: Dispatch<AppAction>, userId: string,
     return false
   }
 
+  // Mitten in der Sitzung: Der Bestand bleibt, ein Hinweis sagt es (siehe oben).
+  if (still) {
+    dispatch({ type: 'nachladenGescheitert' })
+    return false
+  }
   // Ladefehler: letzten Stand nur lesend anzeigen, wenn einer vorliegt.
   const snap = readSnapshot(userId)
   if (snap) {

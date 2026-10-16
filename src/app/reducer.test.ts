@@ -1836,6 +1836,55 @@ describe('hydrate / setDataStatus', () => {
     expect(next.notifs[0]!.read).toBe(true)
   })
 
+  /*
+   * **„Später" hält bis zum nächsten Öffnen der App** (16.10.2026) — nicht
+   * nur bis zum nächsten Nachladen. Bis dahin legte jedes `hydrate` das Blatt
+   * wieder vor, also auch das nach „Plan senden", nach Mitteilungen mit Neuem
+   * und nach einem Konflikt: mitten in der Arbeit.
+   */
+  it('ein Nachladen legt das Blatt beim Öffnen nicht erneut vor', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9))
+    try {
+      const geoeffnet = reducer(makeState({ confirmOpen: false }), { type: 'hydrate', payload })
+      // Simon hat offene Aufgaben — beim Öffnen liegt das Blatt da.
+      expect(geoeffnet.confirmOpen).toBe(true)
+      const spaeter = reducer(geoeffnet, { type: 'closeConfirm' })
+      expect(reducer(spaeter, { type: 'hydrate', payload, nachgeladen: true }).confirmOpen).toBe(false)
+      expect(reducer(spaeter, { type: 'hydrate', payload }).confirmOpen).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  /*
+   * **Ein neuer Tag leitet „Meine Aufgaben" neu ab** (16.10.2026). Vergangenes
+   * fällt nur beim Ableiten heraus, und abgeleitet wurde nur, wenn sich eine
+   * Quelle änderte. Eine App, die über Nacht offen blieb, zeigte morgens die
+   * gestrige Aufgabe als nächste.
+   */
+  it('ein neuer Tag nimmt Vergangenes aus „Meine Aufgaben", auch ohne sonstige Änderung', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9))
+    try {
+      const geladen = reducer(makeState(), { type: 'hydrate', payload })
+      expect(geladen.myTasks.length).toBeGreaterThan(0)
+      // Wochen später: Alles davon ist vorbei.
+      vi.setSystemTime(new Date(2026, 9, 30, 9))
+      expect(reducer(geladen, { type: 'navigate', screen: 'programm' }).myTasks).toEqual(geladen.myTasks)
+      expect(reducer(geladen, { type: 'neuerTag' }).myTasks).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('ein still gescheitertes Nachladen lässt den Bestand und sagt es', () => {
+    const s = makeState()
+    const next = reducer(s, { type: 'nachladenGescheitert' })
+    expect(next.weeks).toBe(s.weeks)
+    expect(next.toast?.text).toBe(t.stFehler)
+  })
+
   it('übernimmt die Nutzdaten, setzt ready und Woche 0', () => {
     // `terminGewaehlt: false` ist die Lage beim **Start** — so steht es in
     // init.ts (nur die Entwicklerseite gibt per Hash einen Reiter vor). Nur dann darf das

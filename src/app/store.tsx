@@ -26,6 +26,7 @@ import {
 import { pushAboAbgleichen } from '../lib/push-abo'
 import { loadAndHydrate } from './hydrate'
 import { sitzungBeendet } from './sitzung'
+import { useKalendertag } from './useKalendertag'
 import { initialState } from './init'
 import { ausstehendesSchreiben, persist } from './persist'
 import { isViewAction } from './readonly'
@@ -172,6 +173,19 @@ export function AppProvider({
     })
     return () => setKonfliktMelder(null)
   }, [dispatch])
+
+  /*
+   * **Ein neuer Tag leitet „Meine Aufgaben" neu ab** (16.10.2026) — siehe
+   * `neuerTag` im Reducer. `useKalendertag` merkt den Wechsel auch dann, wenn
+   * die App über Nacht im Hintergrund lag (beim Zurückkehren).
+   */
+  const heute = useKalendertag()
+  const ersterTag = useRef(heute)
+  useEffect(() => {
+    if (heute === ersterTag.current) return
+    ersterTag.current = heute
+    dispatch({ type: 'neuerTag' })
+  }, [heute, dispatch])
 
   /*
    * **Gehört das Push-Abo dieses Geräts dem, der angemeldet ist?** Einmal je

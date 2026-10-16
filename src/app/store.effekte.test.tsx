@@ -62,6 +62,8 @@ vi.mock('../lib/snapshot', () => ({
 }))
 const ausstehendesSchreiben = vi.fn()
 vi.mock('./persist', () => ({ persist: vi.fn(), ausstehendesSchreiben: () => ausstehendesSchreiben() }))
+const kalender = vi.hoisted(() => ({ tag: '2026-10-16' }))
+vi.mock('./useKalendertag', () => ({ useKalendertag: () => kalender.tag }))
 const pushAboAbgleichen = vi.fn((_cong: string, _user: string, _lang: string) => Promise.resolve())
 vi.mock('../lib/push-abo', () => ({
   pushAboAbgleichen: (cong: string, user: string, lang: string) => pushAboAbgleichen(cong, user, lang),
@@ -277,6 +279,22 @@ describe('Konto auf diesem Gerät', () => {
       result.current.dispatch({ type: 'hydrate', payload: geladen })
     })
     expect(pushAboAbgleichen).toHaveBeenCalledTimes(1)
+  })
+
+  /*
+   * **Ein neuer Tag** (16.10.2026): „Meine Aufgaben" lassen Vergangenes nur beim
+   * Ableiten weg. Der Provider stößt es an, sobald der Kalendertag wechselt.
+   */
+  it('beim Tageswechsel stößt der Provider die neue Ableitung an — sonst nicht', async () => {
+    const persistMock = vi.mocked((await import('./persist')).persist)
+    const { rerender } = starte()
+    persistMock.mockClear()
+    rerender()
+    expect(persistMock.mock.calls.some(([, , a]) => a.type === 'neuerTag')).toBe(false)
+    kalender.tag = '2026-10-17'
+    rerender()
+    expect(persistMock.mock.calls.filter(([, , a]) => a.type === 'neuerTag')).toHaveLength(1)
+    kalender.tag = '2026-10-16'
   })
 
   it('das Abmelden beendet die Sitzung — ein Laden, das noch läuft, spielt danach nichts ein', async () => {

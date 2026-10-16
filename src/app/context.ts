@@ -534,7 +534,16 @@ export type AppAction =
   | { type: 'removeProgLang'; code: string }
   // Persistenz / Hydration
   // staleAt: gesetzt, wenn die Payload aus der Offline-Momentaufnahme kommt
-  | { type: 'hydrate'; payload: HydratePayload; staleAt?: number }
+  /**
+   * `nachgeladen`: ein Laden mitten in der Sitzung (nach „Plan senden", einem
+   * Push-Klick, einem Konflikt). Es legt das Blatt beim Öffnen nicht erneut
+   * vor — das tut nur das Öffnen der App (16.10.2026).
+   */
+  | { type: 'hydrate'; payload: HydratePayload; staleAt?: number; nachgeladen?: true }
+  /** Ein stilles Nachladen ging nicht durch: Der Bestand bleibt stehen, ein Hinweis sagt es (16.10.2026). */
+  | { type: 'nachladenGescheitert' }
+  /** Ein neuer Kalendertag — Vergangenes fällt aus „Meine Aufgaben" (16.10.2026). */
+  | { type: 'neuerTag' }
   | { type: 'setDataStatus'; status: DataStatus; userId?: string } // userId: für Retry/Code-Einlösen ohne Hydration
   | { type: 'showToast'; text: string }
   | { type: 'hideToast' }

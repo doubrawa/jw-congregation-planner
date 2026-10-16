@@ -146,14 +146,19 @@ export function AppShell() {
   // geändert (Absage/Ersatz), also die Daten still nachladen, damit z. B. der
   // „Einspringen"-Bereich die neue Anfrage sofort zeigt. Nennt der Link einen
   // Bereich, springt der Screen dorthin, sobald er steht (T109).
+  //
+  // **Erst mit den Daten der Sitzung** (16.10.2026): `userId` setzt erst
+  // `hydrate`, vorher kennt die App die Rechte nicht. Ein Planer, der bei
+  // geschlossener App auf „nicht erreichbar" tippte (`#go=planen`), landete
+  // sonst in „Meine Aufgaben" — das Ziel war schon vor dem Laden verbraucht.
   useEffect(() => {
-    if (isLogin || !pendingNav) return
+    if (isLogin || !pendingNav || !state.userId || state.dataStatus !== 'ready') return
     const target = navScreens.includes(pendingNav.screen) ? pendingNav.screen : 'aufgaben'
     const abschnitt = target === pendingNav.screen ? pendingNav.abschnitt : null
     dispatch({ type: 'navigate', screen: target, ...(abschnitt ? { abschnitt } : {}) })
     setPendingNav(null)
     if (state.userId) void loadAndHydrate(dispatch, state.userId, { silent: true })
-  }, [isLogin, pendingNav, navScreens, dispatch, state.userId])
+  }, [isLogin, pendingNav, navScreens, dispatch, state.userId, state.dataStatus])
 
   // Begrüßung nach dem Anmelden — erst, wenn feststeht, wen man vor sich hat
   // (Regel und Begründung: welcome.ts).
