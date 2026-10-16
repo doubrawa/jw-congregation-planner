@@ -30,8 +30,8 @@ interface DateDict {
 
 const FRAG: Record<string, Record<string, string>> = {
   ar: {
-    "Schüler": "الطالب", "Partner": "المعاون", "Ratgeber": "الناصح", "Kreisaufseher": "ناظر الدائرة",
-    "Treffpunkte": "خدمة الحقل",
+    "Schüler": "التلميذ", "Partner": "المعاون", "Ratgeber": "الناصح", "Kreisaufseher": "ناظر الدائرة",
+    "Treffpunkte": "اجتماعات خدمة الحقل",
     "ERÖFFNUNG": "الافتتاح",
     "ABSCHLUSS": "الختام",
     "SCHÄTZE AUS GOTTES WORT": "كنوز من كلمة اللّٰه",
@@ -75,7 +75,7 @@ const FRAG: Record<string, Record<string, string>> = {
   },
   fa: {
     "Schüler": "شاگرد", "Partner": "دستیار", "Ratgeber": "مشاور", "Kreisaufseher": "سرپرست حوزه",
-    "Treffpunkte": "خدمت موعظه",
+    "Treffpunkte": "جلسات خدمت موعظه",
     "ERÖFFNUNG": "آغاز",
     "ABSCHLUSS": "پایان",
     "SCHÄTZE AUS GOTTES WORT": "گنج‌هایی در کلام خدا",
@@ -120,7 +120,7 @@ const FRAG: Record<string, Record<string, string>> = {
   },
   en: {
     "Schüler": "Student", "Partner": "Assistant", "Ratgeber": "Counselor",
-    "Treffpunkte": "Field Service",
+    "Treffpunkte": "Meetings for field service",
     'ERÖFFNUNG': 'OPENING', 'ABSCHLUSS': 'CONCLUSION',
     'SCHÄTZE AUS GOTTES WORT': 'TREASURES FROM GOD\u2019S WORD',
     'UNS IM DIENST VERBESSERN': 'APPLY YOURSELF TO THE FIELD MINISTRY',
@@ -146,7 +146,7 @@ const FRAG: Record<string, Record<string, string>> = {
   },
   es: {
     "Schüler": "Estudiante", "Partner": "Ayudante", "Ratgeber": "Consejero",
-    "Treffpunkte": "Servicio del campo",
+    "Treffpunkte": "Reuniones para el servicio del campo",
     'ERÖFFNUNG': 'APERTURA', 'ABSCHLUSS': 'CONCLUSIÓN',
     'SCHÄTZE AUS GOTTES WORT': 'TESOROS DE LA BIBLIA',
     'UNS IM DIENST VERBESSERN': 'SEAMOS MEJORES MAESTROS',
@@ -155,7 +155,7 @@ const FRAG: Record<string, Record<string, string>> = {
     'Einleitende Worte': 'Palabras de introducción', 'Schlussworte': 'Palabras de conclusión',
     'Nach geistigen Schätzen graben': 'Busquemos perlas escondidas', 'Bibellesung': 'Lectura de la Biblia',
     'Gespräche beginnen': 'Empecemos conversaciones', 'Interesse fördern': 'Hagamos revisitas', 'Was würdest du sagen?': '¿Qué dirías?',
-    'Menschen zu Jüngern machen': 'Hagamos discípulos', 'Unsere Glaubensansichten erklären': 'Explique sus creencias',
+    'Menschen zu Jüngern machen': 'Hagamos discípulos', 'Unsere Glaubensansichten erklären': 'Expliquemos nuestras creencias',
     'Vortrag': 'Discurso', 'Versammlungsbibelstudium': 'Estudio bíblico de la congregación',
     'Aktuelles': 'Necesidades de la congregación', 'Besprechung': 'Análisis con el auditorio', 'Gebet': 'Oración',
     'Vorsitz': 'Presidente', 'Leiter': 'Conductor', 'Leser': 'Lector', 'Gastredner': 'Orador invitado',
@@ -172,7 +172,7 @@ const FRAG: Record<string, Record<string, string>> = {
   },
   fr: {
     "Schüler": "Élève", "Partner": "Interlocuteur", "Ratgeber": "Conseiller",
-    "Treffpunkte": "Prédication",
+    "Treffpunkte": "Réunions pour la prédication",
     'ERÖFFNUNG': 'OUVERTURE', 'ABSCHLUSS': 'CONCLUSION',
     'SCHÄTZE AUS GOTTES WORT': 'JOYAUX DE LA PAROLE DE DIEU',
     'UNS IM DIENST VERBESSERN': 'APPLIQUE-TOI AU MINISTÈRE',
@@ -198,7 +198,7 @@ const FRAG: Record<string, Record<string, string>> = {
   },
   it: {
     "Schüler": "Studente", "Partner": "Assistente", "Ratgeber": "Consigliere",
-    "Treffpunkte": "Servizio di campo",
+    "Treffpunkte": "Adunanze per il servizio",
     'ERÖFFNUNG': 'INTRODUZIONE', 'ABSCHLUSS': 'CONCLUSIONE',
     'SCHÄTZE AUS GOTTES WORT': 'TESORI DELLA PAROLA DI DIO',
     'UNS IM DIENST VERBESSERN': 'EFFICACI NEL MINISTERO', 'UNSER LEBEN ALS CHRIST': 'VITA CRISTIANA',
@@ -219,8 +219,8 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "senza incarichi", "Brot": "Pane", "Wein": "Vino", "nach Sonnenuntergang": "dopo il tramonto", "Montag": "Lunedì"
   },
   pl: {
-    "Schüler": "Uczeń", "Partner": "Pomocnik", "Ratgeber": "Prowadzący",
-    "Treffpunkte": "Służba",
+    "Schüler": "Uczestnik", "Partner": "Pomocnik", "Ratgeber": "Doradca",
+    "Treffpunkte": "Zbiórki do służby",
     'ERÖFFNUNG': 'ROZPOCZĘCIE', 'ABSCHLUSS': 'ZAKOŃCZENIE',
     'SCHÄTZE AUS GOTTES WORT': 'SKARBY ZE SŁOWA BOŻEGO',
     'UNS IM DIENST VERBESSERN': 'ULEPSZAJMY SWOJĄ SŁUŻBĘ', 'UNSER LEBEN ALS CHRIST': 'CHRZEŚCIJAŃSKI TRYB ŻYCIA',
@@ -242,7 +242,7 @@ const FRAG: Record<string, Record<string, string>> = {
   },
   ru: {
     "Schüler": "Учащийся", "Partner": "Помощник", "Ratgeber": "Советник",
-    "Treffpunkte": "Служение",
+    "Treffpunkte": "Встречи для проповеди",
     'ERÖFFNUNG': 'ВСТУПЛЕНИЕ', 'ABSCHLUSS': 'ЗАКЛЮЧЕНИЕ',
     'SCHÄTZE AUS GOTTES WORT': 'СОКРОВИЩА ИЗ СЛОВА БОГА',
     'UNS IM DIENST VERBESSERN': 'ОТТАЧИВАЕМ НАВЫКИ СЛУЖЕНИЯ', 'UNSER LEBEN ALS CHRIST': 'ХРИСТИАНСКАЯ ЖИЗНЬ',
@@ -264,7 +264,7 @@ const FRAG: Record<string, Record<string, string>> = {
   },
   uk: {
     "Schüler": "Учень", "Partner": "Напарник", "Ratgeber": "Порадник",
-    "Treffpunkte": "Служіння",
+    "Treffpunkte": "Зустрічі для служіння",
     'ERÖFFNUNG': 'ВСТУП', 'ABSCHLUSS': 'ЗАКЛЮЧНА ЧАСТИНА',
     'SCHÄTZE AUS GOTTES WORT': 'СКАРБИ З БОЖОГО СЛОВА',
     'UNS IM DIENST VERBESSERN': 'ВДОСКОНАЛЮЙМО СВОЄ СЛУЖІННЯ', 'UNSER LEBEN ALS CHRIST': 'ХРИСТИЯНСЬКЕ ЖИТТЯ',
@@ -285,12 +285,12 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "без завдань", "Brot": "Хліб", "Wein": "Вино", "nach Sonnenuntergang": "після заходу сонця", "Montag": "Понеділок"
   },
   ro: {
-    "Schüler": "Elev", "Partner": "Partener", "Ratgeber": "Consilier",
-    "Treffpunkte": "Serviciul de teren",
+    "Schüler": "Cursant", "Partner": "Partener", "Ratgeber": "Consilier",
+    "Treffpunkte": "Întruniri pentru serviciu",
     'ERÖFFNUNG': 'INTRODUCERE', 'ABSCHLUSS': 'ÎNCHEIERE',
     'SCHÄTZE AUS GOTTES WORT': 'COMORI DIN CUVÂNTUL LUI DUMNEZEU',
     'UNS IM DIENST VERBESSERN': 'SĂ FIM MAI EFICIENȚI ÎN PREDICARE', 'UNSER LEBEN ALS CHRIST': 'VIAȚA DE CREȘTIN',
-    'ÖFFENTLICHER VORTRAG': 'CUVÂNTARE PUBLICĂ', 'WACHTTURM-STUDIUM': 'STUDIUL TURNULUI DE VEGHERE',
+    'ÖFFENTLICHER VORTRAG': 'CUVÂNTARE PUBLICĂ', 'WACHTTURM-STUDIUM': 'STUDIUL TURNULUI DE VEGHE',
     'DIENSTVORTRAG': 'CUVÂNTARE DE SERVICIU', 'GEDÄCHTNISMAHL': 'COMEMORAREA',
     'Einleitende Worte': 'Cuvinte introductive', 'Schlussworte': 'Cuvinte de încheiere',
     'Nach geistigen Schätzen graben': 'Nestemate spirituale', 'Bibellesung': 'Citirea Bibliei',
@@ -308,7 +308,7 @@ const FRAG: Record<string, Record<string, string>> = {
   },
   tr: {
     "Schüler": "Öğrenci", "Partner": "Yardımcı", "Ratgeber": "Danışman",
-    "Treffpunkte": "Tarla hizmeti",
+    "Treffpunkte": "Tarla hizmeti buluşmaları",
     'ERÖFFNUNG': 'GİRİŞ', 'ABSCHLUSS': 'SONUÇ',
     'SCHÄTZE AUS GOTTES WORT': 'TANRI’NIN SÖZÜNDEKİ HAZİNELER',
     'UNS IM DIENST VERBESSERN': 'TARLA HİZMETİNDE KENDİNİZİ GELİŞTİRİN', 'UNSER LEBEN ALS CHRIST': 'HIRİSTİYANLAR OLARAK YAŞAM TARZIMIZ',
@@ -423,7 +423,7 @@ const FS_LEADER_WORD: Record<string, string> = {
   pl: "Prowadzący zbiórkę do służby",
   ro: "Conducătorul întrunirii pentru serviciu", ru: "Ведущий встречи для проповеди", 
   
-  tr: "Tarla buluşmasını idare eden", uk: "Ведучий зустрічі для служіння", 
+  tr: "Tarla hizmeti buluşmasını idare eden", uk: "Ведучий зустрічі для служіння",
 }
 for (const code of Object.keys(FRAG)) {
   const f = FRAG[code]

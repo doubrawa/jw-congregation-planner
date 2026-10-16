@@ -94,6 +94,21 @@ function intlWeekdayShort(locale: string, weekdayIdx: number): string {
   return new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' }).format(d)
 }
 /**
+ * Eine Spanne aus `formatRange`, aber ohne führende Null am Tag.
+ *
+ * ICU setzt sie im Italienischen in jede Spanne, obwohl `day: 'numeric'`
+ * verlangt ist: „07–13 settembre", „28 settembre – 04 ottobre". jw.org schreibt
+ * „7-13 settembre". Bis zum 16.10.2026 trug so jeder italienische Wochenkopf
+ * eine Null (T123). Weg kommt nur eine Null, vor der keine Ziffer steht und
+ * hinter der genau eine — die Jahreszahl „2025" bleibt, wie sie ist. Ohne
+ * Lookbehind, den ältere Safari nicht lesen: Dort wäre das ganze Modul nicht
+ * geladen worden.
+ */
+function spanneOhneNull(fmt: Intl.DateTimeFormat, a: Date, b: Date): string {
+  return fmt.formatRange(a, b).replace(/(^|\P{Nd})0(\p{Nd})(?!\p{Nd})/gu, '$1$2')
+}
+
+/**
  * Eine Wochenspanne ohne Jahr, im festen Jahr 2025 formatiert — `null`, wenn
  * die Laufzeit sie nicht formatieren mag.
  *
@@ -106,7 +121,7 @@ function intlRange(locale: string, d1: number, mo1: number, d2: number, mo2: num
   const a = new Date(Date.UTC(2025, mo1, d1))
   const b = new Date(Date.UTC(2025, mo2, d2))
   try {
-    return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)
+    return spanneOhneNull(new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }), a, b)
   } catch {
     return null
   }
@@ -200,7 +215,7 @@ function jahresSpannenRegel(locale: string): Rule {
     const a = new Date(Date.UTC(+g(m, 3), mon1, +g(m, 1)))
     const b = new Date(Date.UTC(+g(m, 6), mon2, +g(m, 4)))
     try {
-      return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).formatRange(a, b)
+      return spanneOhneNull(new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }), a, b)
     } catch {
       return null
     }
@@ -370,6 +385,18 @@ function buildTranslator(M: Record<string, string>, rules: Rule[]): (s: string) 
     if (treffer != null) return treffer
     for (const [re, fn] of rules) { const m = f.match(re); if (m) return fn(m) }
     if (f.includes(' — ')) return f.split(' — ').map(one).join(' — ')
+    /*
+     * **Termin und Bezeichnung, mit „: " verbunden.** So steht eine Zeile von
+     * „Plan senden" und der Erinnerung in der Glocke (`kanonisch` in
+     * `_shared/zuteilungen.ts`): „Dienstag, 8. September · 19:00: Bibellesung".
+     * An „ · " zerlegt, bleibt „19:00: Bibellesung" ein einziges Stück, das
+     * kein Wörterbuch kennt — die Bezeichnung stand bis zum 16.10.2026 in jeder
+     * fremdsprachigen Glocke deutsch da („Tuesday, September 8 · 19:00:
+     * Bibellesung"). Der Push übersetzt beide Hälften getrennt (`uebersetzt`)
+     * und war nie betroffen. Wie bei „ — " geht jetzt jede Hälfte für sich durch;
+     * eine Uhrzeit trägt keinen Doppelpunkt mit Leerzeichen und bleibt heil.
+     */
+    if (f.includes(': ')) return f.split(': ').map(one).join(': ')
     return f
   }
   return (s: string): string => {

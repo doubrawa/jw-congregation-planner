@@ -175,7 +175,7 @@ describe('Mitteilungstext „Treffpunkte"', () => {
 
   it('auch als Teil eines zusammengesetzten Textes', () => {
     // So sieht die Zeile aus: „Name — Treffpunkte · 7.–13. September"
-    expect(makeTr('en')('Simon Krüger — Treffpunkte · Jer 32:6-18')).toBe('Simon Krüger — Field Service · Jer 32:6-18')
+    expect(makeTr('en')('Simon Krüger — Treffpunkte · Jer 32:6-18')).toBe('Simon Krüger — Meetings for field service · Jer 32:6-18')
   })
 })
 

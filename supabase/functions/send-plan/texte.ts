@@ -61,15 +61,15 @@ const TEXTE: Record<string, PlanTexte> = {
   },
   ru: {
     zuteilung: 'Новое назначение',
-    entzug: 'Задание отменено',
+    entzug: 'Назначение отменено',
   },
   uk: {
     zuteilung: 'Нове призначення',
-    entzug: 'Завдання скасовано',
+    entzug: 'Призначення скасовано',
   },
   ro: {
     zuteilung: 'Însărcinare nouă',
-    entzug: 'Sarcină retrasă',
+    entzug: 'Însărcinare retrasă',
   },
   tr: {
     zuteilung: 'Yeni görev',

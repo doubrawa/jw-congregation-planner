@@ -304,7 +304,9 @@ function NeuerPunktBlatt({ si, onClose }: { si: number; onClose: () => void }) {
   const [titel, setTitel] = useState('')
   const einfuegen = () => {
     if (!titel.trim()) {
-      dispatch({ type: 'showToast', text: t.toastNameEingeben })
+      // Nach dem Titel gefragt, nicht nach einem Namen (T123): „Wpisz imię"
+      // hieß auf Polnisch, den Vornamen einer Person einzutragen.
+      dispatch({ type: 'showToast', text: t.toastTitelEingeben })
       return
     }
     dispatch({ type: 'lacAdd', si, title: titel })

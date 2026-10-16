@@ -528,6 +528,13 @@ export const DE = {
     // Die Woche gibt es auf jw.org noch nicht in der Sprache der Versammlung —
     // `import-week` meldet `sprache-fehlt` (bis Phase 10 kam der Satz deutsch).
     holenSpracheFehlt: 'Diese Woche gibt es auf jw.org noch nicht in der Sprache der Versammlung',
+    // T123: Der Name einer Person hat einen eigenen Schlüssel — `nameLbl`
+    // benennt auch Versammlung, Gruppe, Trolley, Plan, Termin und Hilfsdienst,
+    // und das sind im Polnischen, Russischen und Ukrainischen zwei Wörter
+    // („Nazwa" / „Imię i nazwisko"). Ebenso der fehlende Titel eines neuen
+    // Programmpunkts: Dort stand bis T123 „Bitte einen Namen eingeben", auf
+    // Polnisch „Wpisz imię" — der Vorname einer Person.
+    personNameLbl: 'Name', toastTitelEingeben: 'Bitte einen Titel eingeben',
     notifZuteilung: 'Neue Zuteilung', notifErinnerung: 'Erinnerung', notifPlan: 'Plan veröffentlicht',
     notifEntzug: 'Zuteilung zurückgezogen',
     // Abgelegt (Stand und Schicht, 5. bis 14.10.2026): Eine Schicht fiel aus

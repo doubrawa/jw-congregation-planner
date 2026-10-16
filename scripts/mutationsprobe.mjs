@@ -6791,8 +6791,8 @@ export const KATALOG = [
     id: "spanne-jahreswechsel-wirft-nicht",
     datei: "supabase/functions/_shared/i18n/translate.ts",
     regel: "Wirft formatRange bei einer Spanne über den Jahreswechsel, bleibt sie deutsch stehen, statt die Seite zu reißen.",
-    suchen: "  try {\n    return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)\n  } catch {\n    return null\n  }",
-    ersetzen: "  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)",
+    suchen: "  try {\n    return spanneOhneNull(new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }), a, b)\n  } catch {\n    return null\n  }",
+    ersetzen: "  return spanneOhneNull(new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }), a, b)",
   },
   {
     id: "fs-woche-mit-stand",
@@ -7737,6 +7737,42 @@ export const KATALOG = [
     regel: 'Die Heft-Probe meldet eine Fassung, die anders gegliedert ist als die deutsche — die Plätze kommen nach der Stelle.',
     suchen: '  return ist === soll ? [] : [',
     ersetzen: '  return true ? [] : [',
+  },
+  // ── T123: Übersetzungen ────────────────────────────────────────────────────
+  {
+    id: 't123-glocke-termin-doppelpunkt',
+    datei: 'supabase/functions/_shared/i18n/translate.ts',
+    regel: 'In der Glocke steht die Bezeichnung hinter „Termin: " übersetzt — „19:00: Bibellesung" geht in seinen Hälften durch den Übersetzer.',
+    suchen: "    if (f.includes(': ')) return f.split(': ').map(one).join(': ')\n",
+    ersetzen: '',
+  },
+  {
+    id: 't123-spanne-ohne-fuehrende-null',
+    datei: 'supabase/functions/_shared/i18n/translate.ts',
+    regel: 'Eine Wochenspanne trägt keinen Tag mit führender Null — ICU schreibt italienisch „07–13 settembre", jw.org „7-13 settembre".',
+    suchen: "  return fmt.formatRange(a, b).replace(/(^|\\P{Nd})0(\\p{Nd})(?!\\p{Nd})/gu, '$1$2')\n",
+    ersetzen: '  return fmt.formatRange(a, b)\n',
+  },
+  {
+    id: 't123-programmpunkt-fragt-nach-titel',
+    datei: 'src/planen/ProgrammBlatt.tsx',
+    regel: 'Ein neuer Programmpunkt ohne Titel bittet um einen Titel, nicht um einen Namen — polnisch hieß das „Wpisz imię", den Vornamen eintragen.',
+    suchen: "      dispatch({ type: 'showToast', text: t.toastTitelEingeben })",
+    ersetzen: "      dispatch({ type: 'showToast', text: t.toastNameEingeben })",
+  },
+  {
+    id: 't123-freitext-leiter-personenname',
+    datei: 'src/planen/AssignSheet.tsx',
+    regel: 'Das Freitext-Feld für den Treffpunkt-Leiter fragt nach dem Namen einer Person (personNameLbl), nicht nach einer Bezeichnung — polnisch „Imię i nazwisko" statt „Nazwa".',
+    suchen: '            placeholder={t.personNameLbl}\n            aria-label={t.personNameLbl}\n',
+    ersetzen: '            placeholder={t.nameLbl}\n            aria-label={t.nameLbl}\n',
+  },
+  {
+    id: 't123-absage-knoepfe-verschieden',
+    datei: 'src/i18n/overlays/fa.ts',
+    regel: 'Im Absage-Blatt heißen „Absagen" und „Abbrechen" in jeder Sprache verschieden — persisch standen zweimal „لغو" untereinander.',
+    suchen: '  "absagen": "اعلام انصراف",\n',
+    ersetzen: '  "absagen": "لغو",\n',
   },
   {
     id: 'zuteilung-vortrag-folgt-vorsitz',

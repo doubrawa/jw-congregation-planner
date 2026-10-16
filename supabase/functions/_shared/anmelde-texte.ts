@@ -25,15 +25,15 @@ export interface LinkMailTexte {
 const TEXTE: Record<string, LinkMailTexte> = {
   en: {
     betreff: "Your access to the {versammlung} Congregation",
-    text: "Hello {name},\n\nthe {versammlung} Congregation plans its meetings and field service with Versammlung.app. Your access is ready.\n\nLog in now:\n{url}\n\nIs the app on your Home Screen? Then open it there, tap “Type in code” and enter this code:\n{code}\n\nThe link and code are valid until {datum} and log only you in. You don’t need a password. If they have expired, open the app and tap “Send link”.\n\nYou are receiving this email because you are listed in the {versammlung} Congregation. If you have questions, please speak to the elders.",
+    text: "Hello {name},\n\nThe {versammlung} Congregation plans its meetings and field service with Versammlung.app. Your access is ready.\n\nLog in now:\n{url}\n\nIs the app on your Home Screen? Then open it there, tap “Type in code” and enter this code:\n{code}\n\nThe link and code are valid until {datum} and log only you in. You don’t need a password. If they have expired, open the app and tap “Send link”.\n\nYou are receiving this email because you are listed in the {versammlung} Congregation. If you have questions, please speak to the elders.",
   },
   es: {
     betreff: "Tu acceso a la congregación {versammlung}",
-    text: "Hola, {name}:\n\nla congregación {versammlung} organiza las reuniones y el servicio del campo con Versammlung.app. Tu acceso ya está listo.\n\nInicia sesión ahora:\n{url}\n\n¿Tienes la aplicación en la pantalla de inicio? Entonces ábrela desde allí, toca “Escribir código” e introduce este código:\n{code}\n\nEl enlace y el código son válidos hasta el {datum} y solo te dan acceso a ti. No necesitas contraseña. Si han caducado, abre la aplicación y toca “Enviar enlace”.\n\nRecibes este correo porque figuras en la congregación {versammlung}. Si tienes preguntas, habla con los ancianos.",
+    text: "Hola, {name}:\n\nLa congregación {versammlung} organiza las reuniones y el servicio del campo con Versammlung.app. Tu acceso ya está listo.\n\nInicia sesión ahora:\n{url}\n\n¿Tienes la aplicación en la pantalla de inicio? Entonces ábrela desde allí, toca “Escribir código” e introduce este código:\n{code}\n\nEl enlace y el código son válidos hasta el {datum} y solo te dan acceso a ti. No necesitas contraseña. Si han caducado, abre la aplicación y toca “Enviar enlace”.\n\nRecibes este correo porque figuras en la congregación {versammlung}. Si tienes preguntas, habla con los ancianos.",
   },
   fr: {
     betreff: "Ton accès à l’assemblée de {versammlung}",
-    text: "Bonjour {name},\n\nl’assemblée de {versammlung} planifie les réunions et la prédication avec Versammlung.app. Ton accès est prêt.\n\nConnecte-toi maintenant\u00a0:\n{url}\n\nAs-tu l’application sur l’écran d’accueil\u00a0? Ouvre-la alors depuis là, appuie sur «\u00a0Taper le code\u00a0» et saisis ce code\u00a0:\n{code}\n\nLe lien et le code sont valables jusqu’au {datum} et ne connectent que toi. Tu n’as pas besoin de mot de passe. S’ils ont expiré, ouvre l’application et appuie sur «\u00a0Envoyer le lien\u00a0».\n\nTu reçois cet e-mail parce que tu fais partie de l’assemblée de {versammlung}. Si tu as des questions, parles-en aux anciens.",
+    text: "Bonjour {name},\n\nL’assemblée de {versammlung} planifie les réunions et la prédication avec Versammlung.app. Ton accès est prêt.\n\nConnecte-toi maintenant\u00a0:\n{url}\n\nAs-tu l’application sur l’écran d’accueil\u00a0? Alors ouvre-la depuis cet écran, appuie sur «\u00a0Taper le code\u00a0» et saisis ce code\u00a0:\n{code}\n\nLe lien et le code sont valables jusqu’au {datum} et ne connectent que toi. Tu n’as pas besoin de mot de passe. S’ils ont expiré, ouvre l’application et appuie sur «\u00a0Envoyer le lien\u00a0».\n\nTu reçois cet e-mail parce que tu fais partie de l’assemblée de {versammlung}. Si tu as des questions, parles-en aux anciens.",
   },
   it: {
     betreff: "Il tuo accesso alla congregazione di {versammlung}",
@@ -41,7 +41,7 @@ const TEXTE: Record<string, LinkMailTexte> = {
   },
   pl: {
     betreff: "Twój dostęp do zboru {versammlung}",
-    text: "Cześć {name},\n\nzbór {versammlung} planuje zebrania i służbę za pomocą Versammlung.app. Twój dostęp jest gotowy.\n\nZaloguj się teraz:\n{url}\n\nMasz aplikację na ekranie początkowym? Otwórz ją tam, stuknij „Wpisz kod” i wpisz ten kod:\n{code}\n\nLink i kod są ważne do {datum} i logują tylko ciebie. Hasło nie jest potrzebne. Jeśli wygasły, otwórz aplikację i stuknij „Wyślij link”.\n\nOtrzymujesz tego e-maila, ponieważ należysz do zboru {versammlung}. Jeśli masz pytania, porozmawiaj ze starszymi.",
+    text: "Cześć {name},\n\nzbór {versammlung} planuje zebrania i służbę za pomocą Versammlung.app. Twój dostęp jest gotowy.\n\nZaloguj się teraz:\n{url}\n\nMasz aplikację na ekranie początkowym? Otwórz ją tam, stuknij „Wpisz kod” i wprowadź ten kod:\n{code}\n\nLink i kod są ważne do {datum} i logują tylko ciebie. Hasło nie jest potrzebne. Jeśli wygasły, otwórz aplikację i stuknij „Wyślij link”.\n\nOtrzymujesz tego e-maila, ponieważ należysz do zboru {versammlung}. Jeśli masz pytania, porozmawiaj ze starszymi.",
   },
   ru: {
     betreff: "Ваш доступ к собранию {versammlung}",
@@ -57,7 +57,7 @@ const TEXTE: Record<string, LinkMailTexte> = {
   },
   tr: {
     betreff: "{versammlung} Cemaatine erişimin",
-    text: "Merhaba {name},\n\n{versammlung} Cemaati ibadetleri ve tarla hizmetini Versammlung.app ile planlıyor. Erişimin hazır.\n\nŞimdi giriş yap:\n{url}\n\nUygulama ana ekranında mı? O zaman oradan aç, “Kodu yaz” düğmesine dokun ve bu kodu gir:\n{code}\n\nBağlantı ve kod {datum} tarihine kadar geçerli ve yalnızca seni giriş yaptırır. Şifreye ihtiyacın yok. Süreleri dolduysa uygulamayı aç ve “Bağlantı gönder” düğmesine dokun.\n\nBu e-postayı, {versammlung} Cemaatine bağlı olduğun için alıyorsun. Soruların varsa ihtiyarlarla konuş.",
+    text: "Merhaba {name},\n\n{versammlung} Cemaati ibadetleri ve tarla hizmetini Versammlung.app ile planlıyor. Erişimin hazır.\n\nŞimdi giriş yap:\n{url}\n\nUygulama ana ekranında mı? O zaman oradan aç, “Kodu yaz” düğmesine dokun ve bu kodu gir:\n{code}\n\nBağlantı ve kod {datum} tarihine kadar geçerli ve yalnızca senin içindir. Şifreye ihtiyacın yok. Süreleri dolduysa uygulamayı aç ve “Bağlantı gönder” düğmesine dokun.\n\nBu e-postayı, {versammlung} Cemaatine bağlı olduğun için alıyorsun. Soruların varsa ihtiyarlarla konuş.",
   },
   ar: {
     betreff: "وصولك إلى جماعة {versammlung}",
