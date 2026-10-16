@@ -743,3 +743,61 @@ Offen, nicht geändert:
 - `toastMitgliedEntfernt` „عضو حذف شد" belassen: Entfernt wird das Mitglied,
   wie im Deutschen — im Arabischen hieß es „تم حذف الحساب", das Konto
   gelöscht.
+
+### Sprachnamen
+
+16. Oktober 2026 · alle 482 Namen in allen elf Listen, per Skript. Die Namen
+sind nicht übersetzt, sondern von jw.org abgelesen (`src/i18n/langnames/`,
+siehe dort); geprüft ist deshalb, ob jede Liste vollständig ist und nirgends
+Deutsch stehen blieb. Keiner fehlt, keiner ist zu viel. In Kyrillisch und
+Arabisch steht jeder Name in eigener Schrift — außer den beiden ukrainischen
+„Cameroon Sign Language" und „Swahili (Katanga)", die jw.org auf Ukrainisch
+englisch führt (siehe Teil 2). In den lateinischen Listen lauten Namen wie im
+Deutschen (en 149, it 147, ro 142, fr 127, tr 57, pl 1, es 0) — durchgesehen:
+Eigennamen wie „Tagalog", „Swahili", „Zulu"; keine deutsche Endung („-isch",
+„Gebärden…", „Kreolisch") in keiner Liste, Umlaute nur, wo die Sprache sie
+selbst schreibt („Ngäbere", türkisch „Kürtçe"). Nichts geändert.
+
+Offen, nicht geändert: Drei Listen führen zwei Sprachen unter einem Namen —
+ru „макуа" (Kokola und Makua), ro „Sango" (Sango und Songo), fa „امبوندویی"
+(Umbundu und Mbuun). So steht es auf jw.org selbst (nachgesehen für ro:
+`jw.org/ro/languages`, `nsx` mit `name` „Sango" und `vernacularName`
+„Songo"); in der Auswahl stehen dann zwei gleiche Zeilen. Abhilfe wäre, bei
+gleichem Namen den Namen in der Sprache selbst dazuzuschreiben — eine
+Entscheidung, keine Korrektur.
+
+---
+
+## Ergebnis
+
+| Sprache | gelesen | Wörterbuch | FRAG | sonst |
+| --- | --- | --- | --- | --- |
+| en | 745 | 27 | 1 | |
+| es | 745 | 24 + 2 Nachträge | 2 | |
+| fr | 745 | 22 | 1 | |
+| it | 745 | 26 | 1 | Wochenspanne ohne führende Null (`translate.ts`) |
+| pl | 745 + 2 neue | 26 | 3 | |
+| ru | 747 | 29 | 1 | Function-Titel `send-plan` |
+| uk | 747 | 41 | 1 | Function-Titel `send-plan` |
+| ro | 747 | 38 | 3 | Function-Titel `send-plan` |
+| tr | 747 | 46 | 2 | |
+| ar | 747 | 31 + Tanwin in 15 Schlüsseln | 2 | |
+| fa | 747 | 29 | 1 | |
+
+Dazu in allen zwölf Wörterbüchern die zwei neuen Schlüssel `personNameLbl`
+und `toastTitelEingeben` (siehe oben) und aus Teil 2 die Glocke, die die
+Bezeichnung hinter „Termin: " übersetzt.
+
+**Auszurollen** (der Zweig ändert Function-Code; das Frontend kommt mit dem
+Push):
+
+- `send-plan` — eigene Titel (`send-plan/texte.ts`: Entzug ru, uk, ro) und
+  der Übersetzer.
+- `send-reminders`, `substitute`, `trolley` — sie bündeln
+  `_shared/i18n/translate.ts` und `translate-data.ts` für ihre Push-Texte
+  (FRAG-Begriffe, Wochenspanne; der Glocke-Doppelpunkt betrifft nur die App,
+  der Push übersetzte die Hälften schon getrennt).
+- `anmelden`, `send-invite` — die Anmelde-Mail (`_shared/anmelde-texte.ts`,
+  aus dem Wörterbuch erzeugt: en, es, fr, pl, tr).
+- `import-week` bündelt den Übersetzer nur mit (über `_shared/zuteilungen.ts`),
+  benutzt ihn aber nicht — kein Muss.
