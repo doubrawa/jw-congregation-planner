@@ -323,7 +323,7 @@ Trennung der Schlüssel oben), 3 in FRAG.
 | `zuletztLange` | dawno nie | od dawna bez zadania | „dawno nie“ bricht mitten im Satz ab |
 | `toastKeinePassende` | … na otwarte miejsca … | … na wolne miejsca … | Offene Plätze heißen sonst „wolne“ (offenWort, lageOffen, toastKeineOffen) |
 | `toastNameEingeben` | Wpisz imię | Wpisz imię i nazwisko | Gefragt ist der ganze Name (Gastredner, Freitext-Leiter), nicht der Vorname |
-| `auxRatgeber` | Prowadzący | Doradca | Der Ratgeber heißt in der S-38 „doradca“; „Prowadzący“ ist der Leiter |
+| `auxRatgeber` | Prowadzący | Doradca | Der Ratgeber der zusätzlichen Gruppe gibt Rat (S-38, Abs. 27: „rad powinien udzielać“); „Prowadzący“ ist der Leiter. (Berichtigt beim Arabischen: Den Titel „DORADCA“ trägt in der S-38 der Hilfsratgeber aus Abs. 26, der Älteste und Dienstamtgehilfen berät — ein eigenes Rollenwort für den Ratgeber der Gruppe hat die S-38 nicht.) |
 | `auxRatgeberHint` | W każdej dodatkowej grupie rad powinien udzielać wykwalifikowany starszy zboru. | W każdej dodatkowej grupie rad powinien udzielać wykwalifikowany starszy zboru, a jeśli nie jest to możliwe — wykwalifikowany sługa pomocniczy. | „vorzugsweise ein Ältester“ fehlte — der Satz verlangte einen Ältesten; jetzt wie S-38, Abs. 27 |
 | `privSchulung` | Zadania ucznia | Zadania uczestników | Die S-38 nennt den Schüler „uczestnik“; auxKurz sagt schon „Do zadań uczestników“ |
 | `freiePlaetzeHint` | … Kto pierwszy się podejmie, zostaje zapisany i tym samym potwierdził. … | … Pierwsza osoba, która się tego podejmie, zostaje zapisana i tym samym potwierdza udział. … | Genus: freie Plätze übernehmen auch Schwestern — „zapisany … potwierdził“ war männlich |
@@ -597,3 +597,69 @@ Offen, nicht geändert: Den Ratgeber der zweiten Klasse nennt die S-38
 als „7 – 13 Eylül" (schmale Leerzeichen), jw.org schreibt „7-13 Eylül". Für
 „lmd Lektion 9" und „lff Lektion 20" ohne Punkt fehlt die Vorlage
 (`lmdLek`, `lffLek`, siehe Teil 2) — die Zeile bleibt deutsch.
+
+### ar · Arabisch
+
+16. Oktober 2026 · alle 747 gelesen · Anrede: du (أنت), Imperativ im
+generischen Maskulinum wie in arabischen Oberflächen üblich (siehe offen) ·
+31 Korrekturen im Wörterbuch, dazu die Schreibung des Tanwin in 15
+Schlüsseln, 2 in FRAG. RTL: Platzhalter und lateinische Wörter
+(„Versammlung.app", „QR", „XML") stehen in `dir="auto"`-Zeilen; der Pfeil in
+den iOS-Hinweisen zeigt nach links (←) — beides in Ordnung.
+
+| Schlüssel | alt | neu | Grund |
+| --- | --- | --- | --- |
+| `fsShort` | خدمة الحقل | اجتماعات خدمة الحقل | „Treffpunkte“ hieß wie das Thema (tabFs „خدمة الحقل“) — auf dem Treffpunkt-Bogen stand es doppelt; sonst im Wörterbuch „اجتماعات خدمة الحقل“ |
+| `toastFsRuleAdd` | أُضيف إلى الجدول | أُضيف إلى الجدول الأساسي | Der Grundplan heißt „الجدول الأساسي“ (fsGrundplan) |
+| `toastFsRuleDel` | أُزيل من الجدول | أُزيل من الجدول الأساسي | wie toastFsRuleAdd |
+| `vpVorgemerkt` | هذا الأسبوع لم يُحمَّل بعد. سيُسجَّل الخطاب حالما يُستورد برنامجه. | هذا الأسبوع لم يُنشأ بعد. سيُسجَّل الخطاب حالما يُجلب برنامجه. | Deutsch: „angelegt“ und „geholt“ — der Knopf heißt „جلب“ (holen) |
+| `stand` | حتى {datum} | محدَّث في {datum} | „حتى“ heißt „bis“ — gemeint ist der Stand vom Datum |
+| `offenWort` | مفتوح | شاغر | Ein unbesetzter Platz ist „شاغر“ (druckNochFrei, freiePlaetzeTitle, autoHinweis sagen es schon); „مفتوح“ heißt „geöffnet“ |
+| `offenDash` | — مفتوح — | — شاغر — | wie offenWort |
+| `offeneZut` | تعيينات مفتوحة: {n} | تعيينات شاغرة: {n} | wie offenWort |
+| `lageOffen` | المفتوحة: {n} | الشاغرة: {n} | wie offenWort |
+| `toastKeineOffen` | لا توجد خانات مفتوحة | لا توجد خانات شاغرة | wie offenWort |
+| `toastKeinePassende` | لا يوجد شخص مؤهّل ومتفرّغ للخانات المفتوحة | لا يوجد شخص مؤهّل ومتفرّغ للخانات الشاغرة | wie offenWort |
+| `absageErklaerung` | يُبلَّغ المخطِّط فورًا ويُسند المهمة إلى شخص آخر. | يُبلَّغ المخطِّط فورًا ويُسند التعيين إلى شخص آخر. | Aufgabe heißt sonst „التعيين“ |
+| `linkAbgelaufenHint` | … الرابط الجديد صالح من جديد لمدة 30 يومًا. … | … الرابط الجديد صالح لمدة 30 يومًا. … | „الجديد … من جديد“ doppelt (wie in den übrigen Sprachen) |
+| `suchen` | بحث … | بحث… | Kein Leerzeichen vor den Auslassungspunkten (wie „جارٍ الإرسال…“) |
+| `langSearchPh` | ابحث عن لغة … | ابحث عن لغة… | wie suchen |
+| `holtProgramm` | جارٍ جلب البرنامج … | جارٍ جلب البرنامج… | wie suchen |
+| `laedt` | جارٍ التحميل … | جارٍ التحميل… | wie suchen |
+| `spurErsatzGesucht` | يُبحث عن بديل | مطلوب بديل | Wie die Mitteilung (notifErsatzGesucht, Function substitute) |
+| `absagen` | إلغاء | أعتذر | Im Absage-Blatt standen zwei Knöpfe „إلغاء“ — Absagen und Abbrechen (abbrechen); die Absage heißt sonst „اعتذار“ (zusageAbgesagt, erinAbsage), der Knopf in der ersten Person wie „أتولاها“ |
+| `spurDuSagstAb` | تلغي | تعتذر | wie absagen |
+| `ersatzHint` | إذا ألغيت خدمة مساندة، … | إذا اعتذرت عن خدمة مساندة، … | wie absagen |
+| `toastErsatzGesucht` | أُلغيت · يُبحث عن بديل | تم الاعتذار · يُبحث عن بديل | wie absagen |
+| `privSchulung` | تعيينات الطلاب | تعيينات التلاميذ | S-38: „تلميذ“; auxKurz sagt schon „لتعيينات التلاميذ“ |
+| `gruppenRotation` | تناوب المجموعات | تناوب الفرق | Gruppen heißen sonst „الفرق“ (gruppenTitel, wpTakt) |
+| `hdEntfernenHinweisGruppen` | … قائمة على تناوب المجموعات. … | … قائمة على تناوب الفرق. … | wie gruppenRotation |
+| `lacPh` | نقطة جديدة، مثلاً: إعلانات محلية | فقرة جديدة، مثلًا: إعلانات محلية | Programmpunkte heißen sonst „فقرة“ (programmpunktEinfuegen „إدراج فقرة“) |
+| `toastLacAdd` | أُدرجت النقطة · عُدّلت الأوقات | أُدرجت الفقرة · عُدّلت الأوقات | wie lacPh |
+| `toastLacDel` | أُزيلت النقطة · عُدّلت الأوقات | أُزيلت الفقرة · عُدّلت الأوقات | wie lacPh |
+| `stKeineVers` | غير مرتبط بأي جماعة بعد | الحساب غير مرتبط بأي جماعة بعد | Genus: „مرتبط“ las sich als der Nutzer (männlich) — jetzt das Konto (wie fr/it/ru/ro) |
+| `toastMitgliedEntfernt` | تم حذف الحساب | أُزيل الحساب من الجماعة | Das Konto wird nicht gelöscht, nur aus der Versammlung entfernt |
+| `nameDoppelt` | … هذا الاسم يحمله بالفعل {name}. … | … هذا الاسم مستخدم بالفعل لـ{name}. … | Genus: „يحمله“ (er trägt ihn) — gleich heißen auch Schwestern |
+| 15 Schlüssel (`abmeldenSicher`, `leerenSicher`, `loeschenSicher`, `entfernenSicher`, `grundPh`, `neuerDienstPh`, `progLangsDesc`, `aktuellLbl`, `toastWillkommen`, `toastAutoN`, `remRepeat`, `erinTaeglich`, `memAusfall`, `wtRollenDoppeltHint`, `resetMailFehlt`) | … فعلاً، مثلاً، أيضاً … (اً) | … فعلًا، مثلًا، أيضًا … (ًا) | Tanwin einheitlich vor dem Alif wie in den übrigen 64 Stellen — eine Suche nach „فعلًا“ fand die anderen nicht (per Skript, U+064B/U+0627 vertauscht, nachgezählt: 81 zu 0) |
+| FRAG `Treffpunkte` | خدمة الحقل | اجتماعات خدمة الحقل | wie `fsShort` |
+| FRAG `Schüler` | الطالب | التلميذ | wie `privSchulung` (S-38) |
+
+Daten gelesen: FRAG (gemessen: „إستعِد جيدًا لخدمة الحقل" und
+„كلمة اللّٰه في حياتك" sind die Abschnitts-Überschriften in mwb27 — trotz der
+Schreibung mit Hamza so belassen), REF, EXTRA (Intl-Pfad), Bibelbücher,
+Function-Titel. Fachwörter nachgesehen: „اجتماع الخدمة والحياة المسيحية",
+„تلميذ", „المعاون", „الصفوف الإضافية", „العريف", „زيارة ناظر الدائرة",
+„الذِّكرى", „الاجتماع الدائري أو السنوي" (S-38).
+
+Erwogen und zurückgenommen: `auxRatgeber` „الناصح الإضافي" — so heißt in
+der S-38 der Hilfsratgeber, der Älteste und Dienstamtgehilfen berät, nicht
+der Ratgeber der zusätzlichen Klasse; `translate.test.ts` hielt „الناصح"
+fest (S-38, Abs. 40/74). Dabei fiel auf, dass das Polnische denselben
+Unterschied hat (siehe dort).
+
+Offen, nicht geändert: Die Anrede steht als Imperativ im generischen
+Maskulinum („اكتب", „اختر", „انقر"), wie in den arabischen Oberflächen von
+Apple und Google; eine durchgehend neutrale Fassung (Masdar statt Imperativ,
+„كتابة الرمز" statt „اكتب الرمز") wäre eine Grundsatzentscheidung für
+Muttersprachler. „رفيق" (Trolley-Partner) ist männlich wie das deutsche
+„Partner".

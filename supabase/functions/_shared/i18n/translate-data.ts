@@ -30,8 +30,8 @@ interface DateDict {
 
 const FRAG: Record<string, Record<string, string>> = {
   ar: {
-    "Schüler": "الطالب", "Partner": "المعاون", "Ratgeber": "الناصح", "Kreisaufseher": "ناظر الدائرة",
-    "Treffpunkte": "خدمة الحقل",
+    "Schüler": "التلميذ", "Partner": "المعاون", "Ratgeber": "الناصح", "Kreisaufseher": "ناظر الدائرة",
+    "Treffpunkte": "اجتماعات خدمة الحقل",
     "ERÖFFNUNG": "الافتتاح",
     "ABSCHLUSS": "الختام",
     "SCHÄTZE AUS GOTTES WORT": "كنوز من كلمة اللّٰه",
