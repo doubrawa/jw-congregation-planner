@@ -7410,18 +7410,23 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 ### Was offen ist und warum
 
-**Stand 13. Oktober 2026, alles Offene an einer Stelle.** Im Code ist der
-Umbau T121 offen; was sonst aussteht, braucht den Betreiber oder ein Gerät.
+**Stand 16. Oktober 2026, alles Offene an einer Stelle** (gemessen: Köpfe
+gezählt, kein Zweig außer `main`, keine PR, kein Issue; `sw.js` = HEAD; alle
+sieben Functions per `functions download` gleich dem Repo, 39 Dateien; Secrets
+ohne `INVITE_FROM`, `disable_signup` noch `false`). Im Code ist T123 offen und
+läuft; was sonst aussteht, braucht den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
+| **T123** | Jede Übersetzung prüfen | aufgenommen am 16. Oktober; ein Helfer arbeitet daran im eigenen Worktree (erst die Oberfläche per Werkzeug, dann alle 745 Schlüssel in elf Sprachen), die Hauptsitzung liest seine Korrekturen, bevor sie nach `main` gehen |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
+| **Wartet** | Motion-Clip „Plan senden" | am 12. Oktober zurückgestellt, bis das neue Design steht — das ist jetzt der Fall. Das leere Motion-Artifact liegt schon bereit |
 | **Betreiber** | Mitgliedsrechte-Probe nach „Alles Planen" | `node scripts/mitgliedsrechte-probe.mjs` — die Testversammlung `edac60cb` und `.env.probe` stehen noch; umgedreht sind (35), (38)–(40), (42), (50), (53), (55), (60), neu (80) und (81) |
 | **Gerät** | Dunkle Bedienleiste am Handy | wirkt erst mit der aktualisierten WebAPK (`about://webapks` → „Update", oder neu installieren) |
 | **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
-| **Phase 7** | T42 (Testdateien) | die Sperrklinke steht bei 636 Meldungen in 32 Dateien |
+| **Phase 7** | T42 (Testdateien) | die Sperrklinke steht bei 625 Meldungen in 31 Dateien (16. Oktober; am 10. Oktober 636 in 32) |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
 
 Am 13. Oktober aus der Tabelle genommen: T106 (geht in T121 Phase 8 auf), T114
