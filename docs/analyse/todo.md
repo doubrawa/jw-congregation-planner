@@ -6943,7 +6943,7 @@ leert `vortraege`).
 
 ## Aufgenommen am 16. Oktober 2026 — Übersetzungen (T123)
 
-### T123 · Jede Übersetzung prüfen — im Wörterbuch und in der Oberfläche 🏗 ☐ offen
+### T123 · Jede Übersetzung prüfen — im Wörterbuch und in der Oberfläche 🏗 ✅ erledigt und ausgerollt (16. Oktober 2026)
 
 **Wortlaut:** *„nimm in die todo liste auf, dass du jede einzelne übersetzung
 prüfst. und auch in der oberfläche prüfst ob auch jeder einzelne text übersetzt
@@ -6992,6 +6992,34 @@ eine.
 **Abnahme:** jede Sprache einmal vollständig gelesen, mit Liste; in jeder
 Sprache ein Durchgang durch die Oberfläche ohne ungeklärtes Deutsch; jeder
 Fund mit Wache.
+
+**Erledigt am 16. Oktober 2026** (`61030b9c`, Bericht mit allen Korrekturen
+und ihren Gründen: [t123-uebersetzungen.md](t123-uebersetzungen.md)). Ein
+Helfer hat geprüft, die Hauptsitzung hat jede Korrektur vor dem
+Zusammenführen gelesen.
+
+- **Teil 1:** alle 745–747 Schlüssel in elf Sprachen gelesen — 341
+  Korrekturen im Wörterbuch, 18 in FRAG, 3 Function-Titel. Durchgehend:
+  „Absagen" hieß in acht Sprachen wie „Abbrechen"; die Treffpunkte heißen
+  wie auf jw.org; „offen" als „zu besetzen"; Sätze, die Schwestern
+  mitmeinen. Zwei neue Schlüssel (`personNameLbl`, `toastTitelEingeben`).
+  Sprachnamen (482 × 11) vollständig, nichts geändert.
+- **Teil 2:** `tests/oberflaeche-durchgang.test.tsx` geht durch die ganze
+  Oberfläche (Ukrainisch mit Tiefe 3 über rund 1 700 Ansichten, die
+  übrigen Sprachen mit Tiefe 1) — nirgends Deutsch. Ein Fund: Die Glocke
+  ließ die Bezeichnung hinter „Termin: " deutsch (behoben, bewacht).
+  Dazu italienische Wochenspannen ohne führende Null.
+- **Ausgerollt:** send-plan v35, send-reminders v60, substitute v44,
+  trolley v8, anmelden v11, send-invite v24, import-week v51.
+
+**Offen gelassen, mit Belegen im Bericht:** Beschreibung in Manifest und
+`<meta>` deutsch; französisches geschütztes Leerzeichen vor „:" in vom Code
+erzeugten Zeilen; „Studienartikel 28" übersetzt nur der Wörterbuch-Pfad;
+türkische Vorlage für „lmd Lektion 9" ohne Punktnummer; Anrede und Genus im
+Arabischen, der Trolley-Partner männlich; das Rollenwort des Ratgebers (ru,
+uk, tr); persisch „تکلیف" (S-38) gegen „وظیفه" (App); ICU-Wochenspannen in
+tr und fa anders als auf jw.org; die tote Regel `zut`; im Russischen heißt das
+Konto mal „учётная запись", mal „аккаунт" (beim Zusammenführen bemerkt).
 
 ---
 
@@ -7099,15 +7127,14 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 22./23. August ☑☑☑☑☑☑☑☑☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
-10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☐☐
+10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☐
 
-**121 der 124 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind drei:**
+**122 der 124 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind zwei:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T124** | Rechte zum Testen umschalten | ☐ aufgenommen am 16. Oktober: ein befristeter Schalter nur für Admins — die App als Verkündiger, Gruppenaufseher, Planer oder Admin ansehen; nach den Tests wieder ausbauen |
-| **T123** | Jede Übersetzung prüfen | ☐ aufgenommen am 16. Oktober: alle 745 Schlüssel in den elf Sprachen lesen, dazu die Texte der Functions und der jw.org-Daten; in jeder Sprache durch die Oberfläche, ob Deutsch durchrutscht |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
@@ -7484,13 +7511,14 @@ zurückgenommen und der Testlauf wiederholt wurde.
 **Stand 16. Oktober 2026, alles Offene an einer Stelle** (gemessen: Köpfe
 gezählt, kein Zweig außer `main`, keine PR, kein Issue; `sw.js` = HEAD; alle
 sieben Functions per `functions download` gleich dem Repo, 39 Dateien; Secrets
-ohne `INVITE_FROM`, `disable_signup` noch `false`). Im Code sind T123 und T124
-offen; was sonst aussteht, braucht den Betreiber oder ein Gerät.
+ohne `INVITE_FROM`, `disable_signup` noch `false`). Im Code ist T124 offen
+(T123 am 16. Oktober erledigt und ausgerollt); was sonst aussteht, braucht den
+Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **T124** | Rechte zum Testen umschalten | aufgenommen am 16. Oktober, noch nicht begonnen; befristet — nach den Tests wieder ausbauen |
-| **T123** | Jede Übersetzung prüfen | aufgenommen am 16. Oktober; ein Helfer hat im eigenen Worktree angefangen (erst die Oberfläche per Werkzeug, dann alle 745 Schlüssel in elf Sprachen) und ist seit dem 16. Oktober mittags angehalten, bis das Sitzungslimit wieder frei ist. Die Hauptsitzung liest seine Korrekturen, bevor sie nach `main` gehen |
+| **Betreiber** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт" — entscheidet ein Muttersprachler; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
 | **Wartet** | Motion-Clip „Plan senden" | am 12. Oktober zurückgestellt, bis das neue Design steht — das ist jetzt der Fall. Das leere Motion-Artifact liegt schon bereit |
 | **Betreiber** | Mitgliedsrechte-Probe nach „Alles Planen" | `node scripts/mitgliedsrechte-probe.mjs` — die Testversammlung `edac60cb` und `.env.probe` stehen noch; umgedreht sind (35), (38)–(40), (42), (50), (53), (55), (60), neu (80) und (81) |
