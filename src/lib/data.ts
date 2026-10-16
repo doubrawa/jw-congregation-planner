@@ -801,7 +801,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // Stände merken: jeder spätere Schreibvorgang nennt den Stand, auf dem er
   // beruht (T39). Vor dem Füllen leeren — ein zweiter Ladevorgang (Neuanmeldung,
   // Konflikt-Nachladen) darf keine Stände einer anderen Versammlung erben.
-  staendeSetzen(weekRows.map((r) => [r.start, r.updated_at]))
+  wochen.setzen(weekRows.map((r) => [r.start, r.updated_at]))
   // Die Kennung kommt aus der **Spalte**, nicht aus dem Blob: sie ist der
   // Primärschlüssel der Woche, der Blob trägt nur das Programm. Damit trägt
   // jede geladene Woche ihr Datum, auch die älteste.
@@ -852,9 +852,9 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   const fsNachWoche = new Map<string, FsInstance[]>()
   const fsZeilen = imFenster((fsWeeksRows.data ?? []) as { start: string; data: FsInstance[]; updated_at: string }[])
   for (const row of fsZeilen) fsNachWoche.set(row.start, row.data)
-  // Stände merken wie bei den Wochen (`staendeSetzen`) — eine Woche ohne Zeile
-  // hat keinen und wird beim ersten Schreiben angelegt.
-  fsStaendeSetzen(fsZeilen.flatMap((r): Array<[string, string]> => (r.updated_at ? [[r.start, r.updated_at]] : [])))
+  // Stände merken wie bei den Wochen — eine Woche ohne Zeile hat keinen und
+  // wird beim ersten Schreiben angelegt.
+  fsWochen.setzen(fsZeilen.flatMap((r): Array<[string, string]> => (r.updated_at ? [[r.start, r.updated_at]] : [])))
   const storedFsWeeks: FsInstance[][] = weekList.map((w) => fsNachWoche.get(w.start) ?? [])
   const ausgerichtet = fsRules.length
     ? regenFsWeeks(weekList.map((w) => w.start), storedFsWeeks, fsRules)
@@ -1025,31 +1025,8 @@ async function loeschenDannSchreiben<T>(
 /* ---- Schreibkonflikte zwischen Planern (T39) ----------------------------- */
 
 /**
- * Stand je Woche, wie ihn die Datenbank zuletzt bestätigt hat — geführt über
- * ihre Kennung (`start`), seit T66 nicht mehr über eine Ordnungszahl.
- *
- * `saveWeek` schrieb die **komplette Woche** als Upsert — ohne Sperre und ohne
- * Versionskennzeichen. Planen zwei Koordinatoren gleichzeitig, gewinnt der
- * Letzte: seine Fassung überschreibt die des anderen vollständig und lautlos.
- *
- * Die Werte werden nie selbst gebildet, sondern immer nur zurückgereicht — die
- * Zeichenkette kommt aus PostgREST und geht unverändert dorthin zurück. Damit
- * sind Genauigkeit und Zeitzone kein Thema.
- */
-const wochenStand = new Map<string, string>()
-
-/**
- * Schreibvorgänge je Woche hintereinander.
- *
- * Ohne das kämpfte man gegen sich selbst: zwei rasch aufeinanderfolgende
- * Änderungen derselben Woche gingen beide mit demselben Stand los, und die
- * zweite meldete einen Konflikt, den es nicht gab.
- */
-const wochenKette = new Map<string, Promise<void>>()
-
-/**
  * **Welcher Ladevorgang gilt** — weitergezählt, sobald ein Laden die Stände
- * ersetzt (`staendeSetzen`, `fsStaendeSetzen`).
+ * ersetzt (`setzen` in `wochenTabelle`).
  *
  * Ein Schreibvorgang beruht auf dem Zustand, aus dem er kommt, und der stammt
  * aus einem bestimmten Ladevorgang. Lädt die App dazwischen neu — nach einem
@@ -1074,13 +1051,6 @@ function standMerken(staende: Map<string, string>, woche: string, stand: string,
   if (geladen === ladung) staende.set(woche, stand)
 }
 
-function staendeSetzen(paare: Array<[string, string]>): void {
-  ladung++
-  wochenStand.clear()
-  wochenKette.clear()
-  for (const [woche, stand] of paare) wochenStand.set(woche, stand)
-}
-
 /**
  * Meldung „ein anderer Planer war schneller". Wie beim Schreibfehler kennt
  * diese Schicht weder Dispatch noch Sprache — sie meldet nur, *dass* es
@@ -1095,81 +1065,135 @@ export function setKonfliktMelder(fn: Konfliktmelder | null): void {
 }
 
 /**
- * Eine Woche schreiben und dabei den Stand prüfen.
+ * **Eine Tabelle „eine Zeile je Woche", geschrieben mit Stand** — die
+ * Zusammenkünfte (`weeks`, T39) und die Treffpunkte (`fs_weeks`, seit dem
+ * 15.10.2026) nach derselben Regel.
  *
- * Ablauf:
- *  1. Kein Stand bekannt → die Zeile gibt es hier noch nicht: einfügen.
- *  2. Stand bekannt → Update **mit** Bedingung `updated_at = <Stand>`.
- *     Eine getroffene Zeile bringt den neuen Stand zurück; fertig.
- *  3. Keine Zeile getroffen → ein anderer war schneller (oder das Recht ist
- *     weg): melden, die App lädt nach. Überschrieben wurde nichts.
+ * Bis T39 ging die **ganze Woche** als Upsert hinaus, ohne Sperre und ohne
+ * Versionskennzeichen. Planten zwei gleichzeitig, gewann der Letzte, und seine
+ * Fassung überschrieb die des anderen lautlos. Bei den Treffpunkten liegt die
+ * Woche als **eine** Liste in einer Zeile; wer mit älterem Stand schrieb, nahm
+ * still zurück, was ein Gruppenaufseher inzwischen eingetragen hatte.
  *
- * Bis zum 5.10.2026 stand zwischen 2 und 3 ein Schritt: nachsehen und, wenn
- * dort noch der eigene Stand stand, **ohne** Bedingung schreiben — gegen einen
- * falschen Konfliktalarm, für den es keinen bekannten Auslöser gibt (der Stand
- * ist die Zeichenkette, die PostgREST geliefert hat). Er öffnete genau das
- * Fenster, das die Bedingung schließen soll: Was ein anderer zwischen Nachsehen
- * und Schreiben speicherte, ging lautlos verloren. Ein zweiter Anlauf mit
- * derselben Bedingung hätte hier nichts geändert — einen Aussetzer meldet
- * supabase-js als Fehler, nicht als leeres Ergebnis. Die Edge Functions
- * schreiben nach derselben Regel (`_shared/woche-schreiben.ts`).
+ * Bis zum 16.10.2026 stand beides als Abschrift da, und die Fehlerbehandlung
+ * war auseinandergelaufen. Die Treffpunkte luden bei jeder Abweisung nach, die
+ * nur ein veralteter Stand erklärt; die Wochen nur bei einer Dublette. Eine
+ * entzogene Berechtigung (42501) meldete dort einen Schreibfehler, und der
+ * Bildschirm zeigte weiter, was nicht gespeichert war.
  *
- * `geladen`: die Ladung, aus der der Inhalt stammt (`ladung`). Wurde seither
- * neu geladen, geht er nicht mehr hinaus.
+ * Je Woche geführt, über ihre Kennung (`start`, seit T66 keine Ordnungszahl):
  *
- * `true`: Die Woche steht so in der Datenbank. Erst dann darf geschehen, was
- * an ihr hängt — das Löschen verfallener Zusagen, die Meldung „zurückgezogen"
- * (`persist.ts`, 16.10.2026).
+ *  - **der Stand**, wie ihn die Datenbank zuletzt bestätigt hat. Er wird nie
+ *    selbst gebildet, nur zurückgereicht: Die Zeichenkette kommt aus PostgREST
+ *    und geht unverändert dorthin zurück, Genauigkeit und Zeitzone sind damit
+ *    kein Thema;
+ *  - **die Schreibkette**: Vorgänge derselben Woche laufen hintereinander.
+ *    Sonst gingen zwei rasche Änderungen mit demselben Stand los, und die
+ *    zweite meldete einen Konflikt gegen sich selbst.
  */
-async function schreibeWoche(
-  congregationId: string,
-  woche: string,
-  week: Week,
-  geladen: number,
-): Promise<boolean> {
-  if (!supabase) return false
-  // Seit dem Festhalten neu geladen: Der Inhalt beruht auf dem ersetzten Stand (`ladung`).
-  if (geladen !== ladung) {
+function wochenTabelle(tabelle: 'weeks' | 'fs_weeks') {
+  const staende = new Map<string, string>()
+  const kette = new Map<string, Promise<void>>()
+
+  /**
+   * Eine Woche schreiben und dabei den Stand prüfen.
+   *
+   *  1. Kein Stand bekannt → die Zeile gibt es hier noch nicht: anlegen.
+   *  2. Stand bekannt → ändern **mit** Bedingung `updated_at = <Stand>`. Eine
+   *     getroffene Zeile bringt den neuen Stand zurück; fertig.
+   *  3. Keine Zeile getroffen, oder eine Abweisung, die nur ein veralteter Stand
+   *     erklärt (`STAND_VERALTET`: angelegt hatte sie schon ein anderer, das
+   *     Recht ist weg, der Trigger `fs_weeks_pruefen` weist ab) → melden, die
+   *     App lädt nach. Überschrieben wurde nichts.
+   *
+   * Bis zum 5.10.2026 stand zwischen 2 und 3 ein Schritt: nachsehen und, wenn
+   * dort noch der eigene Stand stand, **ohne** Bedingung schreiben — gegen einen
+   * falschen Konfliktalarm, für den es keinen bekannten Auslöser gibt. Er
+   * öffnete genau das Fenster, das die Bedingung schließen soll: Was ein anderer
+   * zwischen Nachsehen und Schreiben speicherte, ging lautlos verloren. Die Edge
+   * Functions schreiben nach derselben Regel (`_shared/woche-schreiben.ts`).
+   *
+   * `geladen`: die Ladung, aus der der Inhalt stammt (`ladung`). Wurde seither
+   * neu geladen, geht er nicht mehr hinaus.
+   *
+   * `true`: Die Woche steht so in der Datenbank. Erst dann darf geschehen, was
+   * an ihr hängt — das Löschen verfallener Zusagen, die Meldung „zurückgezogen"
+   * (`persist.ts`, 16.10.2026).
+   */
+  async function schreiben(congregationId: string, woche: string, data: unknown, geladen: number): Promise<boolean> {
+    if (!supabase) return false
+    if (geladen !== ladung) {
+      konfliktMelder?.()
+      return false
+    }
+    const stand = staende.get(woche)
+    const { data: zeile, error } =
+      stand === undefined
+        ? await supabase
+            .from(tabelle)
+            .insert({ congregation_id: congregationId, start: woche, data })
+            .select('updated_at')
+            .maybeSingle()
+        : await supabase
+            .from(tabelle)
+            .update({ data })
+            .eq('congregation_id', congregationId)
+            .eq('start', woche)
+            .eq('updated_at', stand)
+            .select('updated_at')
+            .maybeSingle()
+    if (error) {
+      if (standVeraltet(error)) {
+        console.error('[persistenz]', error.message)
+        konfliktMelder?.()
+      } else schreibfehler(error)
+      return false
+    }
+    if (zeile) {
+      standMerken(staende, woche, zeile.updated_at as string, geladen)
+      return true
+    }
     konfliktMelder?.()
     return false
   }
-  const stand = wochenStand.get(woche)
-  if (stand === undefined) {
-    const { data, error } = await supabase
-      .from('weeks')
-      .insert({ congregation_id: congregationId, start: woche, data: week })
-      .select('updated_at')
-      .maybeSingle()
-    if (error) {
-      // Verstoß gegen unique(congregation_id, start): die Zeile existiert
-      // längst, wir kannten sie nur nicht — also hat sie ein anderer angelegt.
-      if (error.code === '23505') konfliktMelder?.()
-      else schreibfehler(error)
-      return false
-    }
-    if (data) standMerken(wochenStand, woche, data.updated_at as string, geladen)
-    return data !== null
-  }
 
-  const { data, error } = await supabase
-    .from('weeks')
-    .update({ data: week })
-    .eq('congregation_id', congregationId)
-    .eq('start', woche)
-    .eq('updated_at', stand)
-    .select('updated_at')
-    .maybeSingle()
-  if (error) {
-    schreibfehler(error)
-    return false
+  return {
+    staende,
+    kette,
+    /** Nach einem Laden: die geladenen Stände übernehmen, Wartendes vergessen. */
+    setzen(paare: Array<[string, string]>): void {
+      ladung++
+      staende.clear()
+      kette.clear()
+      for (const [woche, stand] of paare) staende.set(woche, stand)
+    },
+    /**
+     * In die Kette der Woche einreihen. Ohne Kennung gibt es keine Zeile, die
+     * gemeint sein könnte — nichts schreiben (bis T66 die Platzhalter-Prüfung).
+     *
+     * Die Ladung wird jetzt festgehalten, nicht erst beim Losgehen: Bis dahin
+     * kann die Kette ein Laden überdauert haben. Das `catch` steht vor dem
+     * Anhängen, sonst risse ein Fehlschlag die Kette ab, und die Woche schriebe
+     * nie wieder; gemeldet wird er als Schreibfehler.
+     */
+    speichern(congregationId: string, woche: string, data: unknown): Promise<boolean> {
+      if (!supabase || !woche) return Promise.resolve(false)
+      const vorher = kette.get(woche) ?? Promise.resolve()
+      const geladen = ladung
+      const ergebnis = vorher.then(() =>
+        schreiben(congregationId, woche, data, geladen).catch((err: unknown) => {
+          schreibfehler({ message: err instanceof Error ? err.message : String(err) })
+          return false
+        }),
+      )
+      kette.set(woche, ergebnis.then(() => {}))
+      return ergebnis
+    },
   }
-  if (data) {
-    standMerken(wochenStand, woche, data.updated_at as string, geladen)
-    return true
-  }
-  konfliktMelder?.()
-  return false
 }
+
+const wochen = wochenTabelle('weeks')
+const fsWochen = wochenTabelle('fs_weeks')
 
 /**
  * Eine Woche speichern. Welche Zeile gemeint ist, sagt ihre eigene Kennung —
@@ -1178,28 +1202,7 @@ async function schreibeWoche(
  * eines Planers über die Edge Function `zuteilen`.
  */
 export function saveWeek(congregationId: string, week: Week): Promise<boolean> {
-  if (!supabase) return Promise.resolve(false)
-  // Ohne Kennung gibt es keine Zeile, die gemeint sein könnte. Hier stand bis
-  // T66 die Platzhalter-Prüfung; sie hatte denselben Zweck — nichts schreiben,
-  // was keine Woche bezeichnet.
-  const woche = week.start
-  if (!woche) return Promise.resolve(false)
-  const vorher = wochenKette.get(woche) ?? Promise.resolve()
-  // Die Ladung jetzt festhalten, nicht erst beim Losgehen: Bis dahin kann die
-  // Kette ein Laden überdauert haben.
-  const geladen = ladung
-  // `catch` vor dem Anhängen: ein Fehlschlag darf die Kette nicht abreißen
-  // lassen, sonst schriebe diese Woche nie wieder. Gemeldet wird er wie bei den
-  // Treffpunkten (`saveFsWeek`) — hier stand bis zum 16.10.2026 ein stilles
-  // `catch(() => {})`.
-  const ergebnis = vorher.then(() =>
-    schreibeWoche(congregationId, woche, week, geladen).catch((err: unknown) => {
-      schreibfehler({ message: err instanceof Error ? err.message : String(err) })
-      return false
-    }),
-  )
-  wochenKette.set(woche, ergebnis.then(() => {}))
-  return ergebnis
+  return wochen.speichern(congregationId, week.start, week)
 }
 
 /**
@@ -1210,7 +1213,7 @@ export function saveWeek(congregationId: string, week: Week): Promise<boolean> {
  * Warten scheitert also nie.
  */
 export async function wocheGeschrieben(woche: string): Promise<void> {
-  await Promise.all([wochenKette.get(woche), fsWochenKette.get(woche)])
+  await Promise.all([wochen.kette.get(woche), fsWochen.kette.get(woche)])
 }
 
 export function savePerson(congregationId: string, person: Person): void {
@@ -1334,92 +1337,18 @@ export function savePlanEintraege(congregationId: string, eintraege: PlanEintrag
 }
 
 /**
- * Stand je Treffpunkt-Woche (`fs_weeks.updated_at`) und die Schreibkette dazu —
- * derselbe Schutz wie bei den Wochen der Zusammenkünfte (T39, `wochenStand`).
+ * Materialisierte Treffpunkte einer Woche (Kennung → FsInstance[]) — mit Stand,
+ * je Woche hintereinander, wie die Wochen der Zusammenkünfte (`wochenTabelle`).
  *
- * Bis zum 15.10.2026 ging die Woche als Upsert hinaus, ohne Stand. Die
- * Treffpunkte einer Woche liegen als **eine** Liste in einer Zeile; wer mit
- * einem älteren Stand schrieb, schrieb die ganze Liste zurück. Gegen den
- * Gruppenaufseher half zufällig der Trigger (`fs_weeks_pruefen` weist eine
- * geänderte fremde Gruppe ab) — Admin und Planer prüft er aber nicht oder nur
- * ohne Leiter: Wer abends einen Leiter zuteilte, ohne seit dem Morgen neu
- * geladen zu haben, nahm still zurück, was ein Gruppenaufseher mittags in
- * derselben Woche eingetragen hatte.
- */
-const fsWochenStand = new Map<string, string>()
-const fsWochenKette = new Map<string, Promise<void>>()
-
-function fsStaendeSetzen(paare: Array<[string, string]>): void {
-  ladung++
-  fsWochenStand.clear()
-  fsWochenKette.clear()
-  for (const [woche, stand] of paare) fsWochenStand.set(woche, stand)
-}
-
-/**
- * Materialisierte Treffpunkte einer Woche (Kennung → FsInstance[]) — mit
- * Vergleiche-und-Tausche auf ihren Stand, je Woche hintereinander.
- *
- * Ein Fehltreffer heißt: ein anderer hat die Woche inzwischen geschrieben —
- * nachladen (`konfliktMelder`), nicht überschreiben. Ebenso eine Abweisung des
- * Triggers `fs_weeks_pruefen` (42501: der Gruppenaufseher änderte eine fremde
- * Gruppe, der Planer mehr als den Leiter): Sie entsteht nur auf einem
- * veralteten Stand, die Oberfläche bietet beides nicht an.
+ * Gegen den Gruppenaufseher half bis zum 15.10.2026 zufällig der Trigger
+ * (`fs_weeks_pruefen` weist eine geänderte fremde Gruppe ab); Admin und Planer
+ * prüft er nicht oder nur ohne Leiter. Seine Abweisung (42501: der
+ * Gruppenaufseher änderte eine fremde Gruppe, der Planer mehr als den Leiter)
+ * entsteht nur auf einem veralteten Stand, die Oberfläche bietet beides nicht
+ * an — also wird nachgeladen.
  */
 export function saveFsWeek(congregationId: string, woche: string, insts: FsInstance[]): Promise<boolean> {
-  if (!supabase || !woche) return Promise.resolve(false)
-  const vorher = fsWochenKette.get(woche) ?? Promise.resolve()
-  // Die Ladung jetzt festhalten, wie bei den Wochen (`saveWeek`).
-  const geladen = ladung
-  // `catch` vor dem Anhängen: ein Fehlschlag darf die Kette nicht abreißen
-  // lassen, sonst schriebe diese Woche nie wieder.
-  const ergebnis = vorher.then(() =>
-    fsWocheSchreiben(congregationId, woche, insts, geladen).catch((err: unknown) => {
-      schreibfehler({ message: err instanceof Error ? err.message : String(err) })
-      return false
-    }),
-  )
-  fsWochenKette.set(woche, ergebnis.then(() => {}))
-  return ergebnis
-}
-
-async function fsWocheSchreiben(congregationId: string, woche: string, insts: FsInstance[], geladen: number): Promise<boolean> {
-  if (!supabase) return false
-  // Seit dem Festhalten neu geladen: Der Inhalt beruht auf dem ersetzten Stand (`ladung`).
-  if (geladen !== ladung) {
-    konfliktMelder?.()
-    return false
-  }
-  const stand = fsWochenStand.get(woche)
-  const { data, error } =
-    stand === undefined
-      ? await supabase
-          .from('fs_weeks')
-          .insert({ congregation_id: congregationId, start: woche, data: insts })
-          .select('updated_at')
-          .maybeSingle()
-      : await supabase
-          .from('fs_weeks')
-          .update({ data: insts })
-          .eq('congregation_id', congregationId)
-          .eq('start', woche)
-          .eq('updated_at', stand)
-          .select('updated_at')
-          .maybeSingle()
-  if (error) {
-    // 23505 beim Anlegen: Die Zeile gab es längst, ein anderer hat sie angelegt.
-    if (standVeraltet(error)) {
-      console.error('[persistenz]', error.message)
-      konfliktMelder?.()
-    } else schreibfehler(error)
-    return false
-  }
-  if (data) {
-    standMerken(fsWochenStand, woche, data.updated_at as string, geladen)
-    return true
-  }
-  konfliktMelder?.()
-  return false
+  return fsWochen.speichern(congregationId, woche, insts)
 }
 
 export function deletePersonRow(id: string): void {
@@ -1720,8 +1649,8 @@ export function substituteTake(taskKey: string): void {
 function standDerFunctionUebernehmen(antwort: unknown, geladen: number): void {
   const { woche, vorher, stand } = (antwort ?? {}) as { woche?: unknown; vorher?: unknown; stand?: unknown }
   if (typeof woche !== 'string' || typeof stand !== 'string') return
-  if (wochenStand.get(woche) !== vorher) return
-  standMerken(wochenStand, woche, stand, geladen)
+  if (wochen.staende.get(woche) !== vorher) return
+  standMerken(wochen.staende, woche, stand, geladen)
 }
 
 /**

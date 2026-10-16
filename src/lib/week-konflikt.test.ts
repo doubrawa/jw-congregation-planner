@@ -206,11 +206,26 @@ describe('Kein falscher Alarm', () => {
 
 describe('Echte Schreibfehler bleiben Schreibfehler', () => {
   it('ein Datenbankfehler meldet nicht fälschlich einen Konflikt', async () => {
-    stub.antworten = [{ data: null, error: { code: '42501', message: 'RLS' } }]
+    stub.antworten = [{ data: null, error: { code: '08006', message: 'connection failure' } }]
     saveWeek('c1', woche('erste', '2026-02-23'))
     await abgearbeitet()
     expect(schreibfehler).toBe(1)
     expect(konflikte).toBe(0)
+  })
+
+  /*
+   * Bis zum 16.10.2026 meldete die Woche hier einen Schreibfehler, die
+   * Treffpunkte luden nach. Der Bildschirm zeigte dann weiter eine Zuteilung,
+   * die nicht gespeichert war — bei einem Recht, das inzwischen entzogen ist.
+   */
+  it('eine Abweisung, die nur ein veralteter Stand erklärt (42501: das Recht ist weg), lädt nach', async () => {
+    stub.antworten = [ok('S1'), { data: null, error: { code: '42501', message: 'RLS' } }]
+    saveWeek('c1', woche('erste', '2026-02-24'))
+    await abgearbeitet()
+    saveWeek('c1', woche('zweite', '2026-02-24'))
+    await abgearbeitet()
+    expect(konflikte).toBe(1)
+    expect(schreibfehler).toBe(0)
   })
 
   /*
@@ -250,7 +265,7 @@ describe('Gelungen oder nicht', () => {
   })
 
   it('ein Datenbankfehler: false', async () => {
-    stub.antworten = [{ data: null, error: { code: '42501', message: 'RLS' } }]
+    stub.antworten = [{ data: null, error: { code: '08006', message: 'connection failure' } }]
     await expect(saveWeek('c1', woche('erste', '2026-03-23'))).resolves.toBe(false)
   })
 })
