@@ -387,6 +387,27 @@ export const KATALOG = [
     ersetzen: '    (n) => n,\n',
   },
   {
+    id: 'vortragsplan-mahl-am-anlass',
+    datei: 'src/data/vortragsplan.ts',
+    regel: 'Ein Gedächtnismahl am Wochenende überspringt der Vortragsplan als „Gedächtnismahl", nicht als „Ausfall" — am Anlass erkannt.',
+    suchen: "  if (week.anlass?.art === 'mem' && istAusgefallen(week, 'we')) return 'gedaechtnismahl'\n",
+    ersetzen: "  if (week.memCancel === 'we') return 'gedaechtnismahl'\n",
+  },
+  {
+    id: 'aux-gleich-feldweise',
+    datei: 'src/data/aux-class.ts',
+    regel: 'Gleiche Plätze in anderer Feldreihenfolge (jsonb) gelten als gleich — die geladene Woche bleibt dieselbe.',
+    suchen: '  return a.every((s, i) => gleicherPlatz(s, b[i]))\n',
+    ersetzen: '  return a.every((s, i) => JSON.stringify(s) === JSON.stringify(b[i]))\n',
+  },
+  {
+    id: 'id-aufloeser-eindeutig',
+    datei: 'src/data/helpers.ts',
+    regel: 'Ein doppelter Name löst niemanden auf, statt den Letzten zu raten.',
+    suchen: '  const nachName = eindeutigeNamen(persons)\n  return (z) => {\n',
+    ersetzen: '  const nachName = new Map(persons.map((p) => [displayName(p), p.id]))\n  return (z) => {\n',
+  },
+  {
     id: 'css-token-gesetzt',
     datei: 'src/planen/planen.css',
     regel: 'Das CSS liest nur Tokens, die es gibt — ein unbekanntes fällt still auf den Ausgangswert zurück.',

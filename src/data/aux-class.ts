@@ -138,7 +138,20 @@ function einschalten(weeks: Week[]): Week[] {
 /** Zwei Platzreihen inhaltlich gleich? (Vermeidet unnötige Neuschreibungen.) */
 function gleich(a: SlotAssignment[] | undefined, b: SlotAssignment[]): boolean {
   if (!a || a.length !== b.length) return false
-  return a.every((s, i) => JSON.stringify(s) === JSON.stringify(b[i]))
+  return a.every((s, i) => gleicherPlatz(s, b[i]))
+}
+
+/**
+ * Feld für Feld, ohne die leeren — nicht über `JSON.stringify`: Das hängt an
+ * der Reihenfolge der Schlüssel, und jsonb liefert `pid, male, name, …`,
+ * während `angleichen` `name, …, pid` baut. Bis zum 16.10.2026 galt so eine
+ * unveränderte geladene Woche als geändert (Review, Daten B7).
+ */
+function gleicherPlatz(x: SlotAssignment, y: SlotAssignment | undefined): boolean {
+  if (!y) return false
+  const felder = (s: SlotAssignment) => (Object.keys(s) as (keyof SlotAssignment)[]).filter((k) => s[k] !== undefined)
+  const fx = felder(x)
+  return fx.length === felder(y).length && fx.every((k) => x[k] === y[k])
 }
 
 /**

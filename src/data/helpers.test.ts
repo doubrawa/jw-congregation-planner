@@ -6,6 +6,7 @@ import {
   namensSchluessel,
   familyMembers,
   gehoertZu,
+  idAufloeser,
   splitOpeningSong,
   initials,
   isPlainPublisher,
@@ -136,6 +137,17 @@ describe('Familien-/Haushaltszugehörigkeit', () => {
     expect(famDrei('b')).toBe(famDrei('a'))
     expect(famDrei('c')).not.toBeNull()
     expect(famDrei('c')).toBe(famDrei('d'))
+  })
+
+  it('idAufloeser: ein doppelter Name löst niemanden auf, statt den Letzten zu raten (16.10.2026)', () => {
+    // Doppelte Namen verbietet die Datenbank (T110); stünde einer doch da, wäre
+    // die Last sonst still dem Zweiten zugerechnet worden.
+    const anna = person({ id: 'a', fn: 'Anna', ln: 'Alt' })
+    const zweite = person({ id: 'b', fn: 'Anna', ln: 'Alt' })
+    expect(idAufloeser([anna, zweite])({ name: 'Anna Alt' })).toBeUndefined()
+    // Gegenprobe: allein wird sie gefunden — und die Id entscheidet immer.
+    expect(idAufloeser([anna])({ name: 'Anna Alt' })).toBe('a')
+    expect(idAufloeser([anna, zweite])({ name: 'Anna Alt', pid: 'b' })).toBe('b')
   })
 
   it('unlinkFamily löst eine Person; ein verbleibender Rest wird auch gelöst', () => {

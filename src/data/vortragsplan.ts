@@ -178,7 +178,10 @@ export type Uebersprungen = 'kreisaufseher' | 'kongress' | 'gedaechtnismahl' | '
 export function uebersprungen(week: Week): Uebersprungen | null {
   if (week.anlass?.art === 'co') return 'kreisaufseher'
   if (week.anlass?.art === 'kongress') return 'kongress'
-  if (week.memCancel === 'we') return 'gedaechtnismahl'
+  // Am Anlass und am Ausfall erkannt, wie `setAnlassTermin` es setzt
+  // (`memAusfall`). Bis zum 16.10.2026 stand hier `memCancel` — das setzt kein
+  // Code, und das Mahl am Wochenende hieß hier „Ausfall" (Review, Daten B5).
+  if (week.anlass?.art === 'mem' && istAusgefallen(week, 'we')) return 'gedaechtnismahl'
   if (istAusgefallen(week, 'we')) return 'ausfall'
   if (!vortragsPlatz(week)) return 'keinPlatz'
   return null

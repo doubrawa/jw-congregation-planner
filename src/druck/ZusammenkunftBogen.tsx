@@ -1,6 +1,6 @@
 import { useApp } from '../app/context'
 import { anlassArt } from '../data/anlass'
-import { naechsteZusammenkunft } from '../data/helpers'
+import { ersteZusammenkunftNach } from '../data/helpers'
 import { meetingDate, meetingTime } from '../data/meeting-dates'
 import { anlassName } from '../components/anlass-name'
 import { datumsFormat } from '../components/datum-anzeige'
@@ -102,7 +102,7 @@ function MonatsWoche({ wi }: { wi: number }) {
 function KongressZeilen({ wi }: { wi: number }) {
   const { state } = useApp()
   const { t } = useT()
-  const naechste = naechsteZusammenkunft(state.weeks, wi)
+  const naechste = ersteZusammenkunftNach(state.weeks, wi)
   const zeiten = state.congregation.times
   return (
     <>

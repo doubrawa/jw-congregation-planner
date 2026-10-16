@@ -762,8 +762,11 @@ export function weichtAb(week: Week | undefined, tab: MeetingKey): boolean {
  * Die erste Zusammenkunft nach der Woche `wi`, die stattfindet — in der
  * Reihenfolge der Wochen, je Woche unter der Woche vor dem Wochenende. Für die
  * Kongresswoche: am Bildschirm der Weg dorthin, auf dem Monatsbogen der Satz.
+ *
+ * Nicht zu verwechseln mit `naechsteZusammenkunft` (meeting-dates.ts), die vom
+ * heutigen Tag aus sucht. Bis zum 16.10.2026 hießen beide so (Review, Daten B4).
  */
-export function naechsteZusammenkunft(
+export function ersteZusammenkunftNach(
   weeks: readonly Week[],
   wi: number,
 ): { wi: number; tab: MeetingKey; week: Week } | null {
@@ -1094,11 +1097,13 @@ export function gehoertZuKennung(
  * kennt.
  *
  * Der Namensweg ist eindeutig, weil Vor- und Nachname je Versammlung
- * eindeutig sind (`persons_name_eindeutig`, T110).
+ * eindeutig sind (`persons_name_eindeutig`, T110). Stünde ein Name doch
+ * zweimal da, löst er niemanden auf, statt den Letzten zu raten
+ * (`eindeutigeNamen`, seit dem 16.10.2026 — vorher eine eigene Abschrift).
  */
 export function idAufloeser(persons: readonly Person[]): (z: Zuteilung | undefined) => string | undefined {
   const nachId = new Set(persons.map((p) => p.id))
-  const nachName = new Map(persons.map((p) => [displayName(p), p.id]))
+  const nachName = eindeutigeNamen(persons)
   return (z) => {
     if (!z?.name) return undefined
     if (z.pid) return nachId.has(z.pid) ? z.pid : undefined

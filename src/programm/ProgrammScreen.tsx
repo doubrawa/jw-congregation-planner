@@ -3,7 +3,7 @@ import { eigenePerson } from '../app/eigene-person'
 import { Saal } from '../bausteine/Saal'
 import { Zeichen } from '../bausteine/Zeichen'
 import { anlassArt } from '../data/anlass'
-import { naechsteZusammenkunft } from '../data/helpers'
+import { ersteZusammenkunftNach } from '../data/helpers'
 import { meetingDate } from '../data/meeting-dates'
 import { SAAL_PLAETZE, type SaalLage } from '../data/saal'
 import { Bereichstitel } from '../components/Bereichstitel'
@@ -175,7 +175,7 @@ const LEERER_SAAL: readonly SaalLage[] = Array.from({ length: SAAL_PLAETZE }, ()
 function KongressKarte({ wi }: { wi: number }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
-  const naechste = naechsteZusammenkunft(state.weeks, wi)
+  const naechste = ersteZusammenkunftNach(state.weeks, wi)
   return (
     <>
       <section className="karte karte--held kongress-karte">

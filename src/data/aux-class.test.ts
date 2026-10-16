@@ -119,6 +119,17 @@ describe('syncAuxSlots', () => {
     const aus = syncAuxSlots(einmal, false)
     expect(syncAuxSlots(aus, false)).toBe(aus)
   })
+
+  it('… auch, wenn die Felder eines Platzes in anderer Reihenfolge stehen — wie jsonb sie liefert (16.10.2026)', () => {
+    // jsonb ordnet die Schlüssel nach Länge (`pid, male, name, …`), `angleichen`
+    // baut `name, …, pid`. Über `JSON.stringify` verglichen, galt die geladene
+    // Woche bis dahin als geändert.
+    const einmal = syncAuxSlots([woche([teil('schulung')])], true)
+    const item = einmal[0]!.mid.sections[0]!.items[0] as PartItem
+    // Besetzt, und die Felder in umgekehrter Reihenfolge.
+    item.aux = item.aux!.map((s) => Object.fromEntries(Object.entries({ ...s, name: 'Elke Brandt', pid: 'p7' }).reverse()) as unknown as typeof s)
+    expect(syncAuxSlots(einmal, true)).toBe(einmal)
+  })
 })
 
 describe('Ausschalten beendet die Klasse überall', () => {
