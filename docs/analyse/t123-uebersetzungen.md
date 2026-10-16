@@ -89,8 +89,10 @@ nur, wo der alte Wert geprüft gleich war (Skript, idempotent); die
 Anmelde-Mail der Functions entsteht danach neu aus dem Wörterbuch
 (`scripts/anmelde-texte-erzeugen.mjs`).
 
-Nebenbei gefunden, nicht geändert: `ansehen` und `zuteilenChip` benutzt kein
-Code mehr (in allen zwölf Wörterbüchern), FRAG `Treffpunkte` und die Regel
+Nebenbei gefunden, nicht geändert: `ansehen`, `zuteilenChip`, `verhindert`
+und `lacAdd` benutzt kein Code mehr (in allen zwölf Wörterbüchern; die beiden
+letzten tragen nur zufällig denselben Namen wie ein Aufgabenstand bzw. eine
+Aktion und fielen der ersten Suche deshalb nicht auf), FRAG `Treffpunkte` und die Regel
 „N Zuteilungen" (`zut`) erzeugt kein Erzeuger mehr — sie stehen nur noch für
 alte Zeilen da.
 
@@ -220,3 +222,55 @@ Offen, nicht geändert: „Partenaire recherché" / „Partenaire trouvé" stehe
 grammatischen Maskulinum zu „partenaire" (epizön) — für eine Schwester ließe
 sich „Recherche de partenaire" schreiben; die Function `trolley` müsste den
 Titel mitziehen.
+
+### it · Italienisch
+
+16. Oktober 2026 · alle 745 gelesen · Anrede: tu, Gruppen „voi" · 26
+Korrekturen im Wörterbuch, 1 in FRAG, 1 im Übersetzer.
+
+| Schlüssel | alt | neu | Grund |
+| --- | --- | --- | --- |
+| `alleGelesen` | Segna tutto letto | Segna tutto come letto | „come“ fehlte |
+| `fsShort` | Servizio di campo | Adunanze per il servizio | „Treffpunkte“ hieß wie das Thema (tabFs „Servizio di campo“) — auf dem Treffpunkt-Bogen stand es doppelt; jw.org: „adunanze per il servizio (di campo)“ (381 Treffer) |
+| `toastFsRuleAdd` | Aggiunto al programma | Aggiunto al programma di base | Der Grundplan heißt „Programma di base“ (fsGrundplan) |
+| `toastFsRuleDel` | Rimosso dal programma | Rimosso dal programma di base | wie toastFsRuleAdd |
+| `vpVorgemerkt` | Questa settimana non è ancora caricata. Il discorso verrà inserito appena il suo programma sarà importato. | Questa settimana non è ancora stata creata. Il discorso verrà inserito appena il suo programma sarà stato scaricato. | Deutsch: „angelegt“ und „geholt“ — der Knopf heißt „Scarica“ (holen) |
+| `offenWort` | aperto | da assegnare | „posto aperto“ ist kein italienischer Ausdruck für einen unbesetzten Platz; offeneZut sagt schon „da assegnare“ |
+| `offenDash` | — aperto — | — da assegnare — | wie offenWort |
+| `lageOffen` | Aperti: {n} | Da assegnare: {n} | wie offenWort |
+| `toastKeineOffen` | Nessun posto aperto | Nessun posto da assegnare | wie offenWort |
+| `toastKeinePassende` | Nessuna persona qualificata e libera per i posti aperti | Nessuna persona qualificata e libera per i posti da assegnare | wie offenWort |
+| `spurErsatzGesucht` | Sostituto cercato | Cercasi sostituto | Wie die Mitteilung (notifErsatzGesucht, Function substitute) — „Sostituto cercato“ klang nach „gesuchter Ersatz“ |
+| `absageErklaerung` | Il pianificatore viene avvisato subito e affida il compito a un altro. | Il pianificatore viene avvisato subito e affida l’incarico a un’altra persona. | Aufgabe heißt sonst „incarico“; „a un altro“ war männlich |
+| `suchen` | Cerca … | Cerca… | Kein Leerzeichen vor den Auslassungspunkten |
+| `langSearchPh` | Cerca lingua … | Cerca lingua… | wie suchen |
+| `holtProgramm` | Scaricamento del programma … | Scaricamento del programma… | wie suchen |
+| `laedt` | Caricamento … | Caricamento… | wie suchen |
+| `linkAbgelaufenHint` | … Uno nuovo vale di nuovo 30 giorni. … | … Un nuovo link vale 30 giorni. … | „nuovo … di nuovo“ doppelt |
+| `zettelAnleitung` | … sotto «{frage}». … | … sotto “{frage}”. … | Einzige Stelle mit « » — sonst überall “ ” (12 Schlüssel) |
+| `absagen` | Annulla | Rinuncia | Im Absage-Blatt standen zwei Knöpfe „Annulla“ — Absagen und Abbrechen (abbrechen); erinAbsage heißt schon „Rinuncia“ |
+| `spurDuSagstAb` | Annulli | Rinunci | wie absagen |
+| `ersatzHint` | … Se annulli un servizio di supporto, … | … Se rinunci a un servizio di supporto, … | wie absagen |
+| `freiePlaetzeHint` | … Chi se ne occupa per primo è iscritto e ha già confermato. … | … La prima persona che se ne occupa viene iscritta e ha così confermato. … | Genus: freie Plätze übernehmen auch Schwestern — „per primo … iscritto“ war männlich; „damit zugesagt“ heißt „così“, nicht „già“ |
+| `planSendenOhneKonto` | Senza account nell’app: avvisali di persona: {namen} | Senza account nell’app — avvisali di persona: {namen} | Zwei Doppelpunkte in einem Satz; Deutsch hat den Gedankenstrich |
+| `stKeineVers` | Non ancora assegnato a una congregazione | Account non ancora assegnato a una congregazione | Genus: „assegnato“ las sich als der Nutzer (männlich) — jetzt das Konto |
+| `nameDoppelt` | … per distinguerli. … | … per distinguere le due persone. … | Genus: „distinguerli“ ist männlich, gleich heißen auch zwei Schwestern |
+| `ohneGruppeHint` | … nella sezione Servizio di campo le adunanze … | … nella sezione “Servizio di campo” le adunanze … | Zitierter Menüpunkt (tabFs) in Anführungszeichen wie im Deutschen |
+| FRAG `Treffpunkte` | Servizio di campo | Adunanze per il servizio | wie `fsShort` |
+| `translate.ts` (Spanne) | 07–13 settembre · 28 settembre – 04 ottobre · 29 dicembre 2025 – 04 gennaio 2026 | 7–13 settembre · 28 settembre – 4 ottobre · 29 dicembre 2025 – 4 gennaio 2026 | ICU setzt im Italienischen trotz `day: 'numeric'` eine führende Null in jede Spanne; jw.org schreibt „8-14 febbraio" — jeder italienische Wochenkopf trug sie. Jetzt `spanneOhneNull`; Wache in `datum-alle-sprachen.test.ts` für alle Sprachen, Mutationsprobe `t123-spanne-ohne-fuehrende-null` bewacht |
+
+Daten gelesen: FRAG (Teil-Titel des Arbeitshefts gemessen: „Spiegare quello
+in cui si crede" in mwb26/mwb27 und der S-38, 40 Treffer; „Discorso di servizio
+conclusivo" war schon belegt, siehe `TITEL_SCHLUSSVORTRAG`), REF, EXTRA
+(Intl-Pfad), Bibelbücher (Namen und Kürzel der NWT), Function-Titel.
+Fachwörter nachgesehen: „gruppo di servizio" / „sorvegliante del gruppo"
+(Wachtturm Juni 2026), „adunanza Vita cristiana e ministero" (S-38, mwb27) und
+„Guida per l’adunanza" (S-38) — stimmen.
+
+Offen, nicht geändert: „compagno di servizio" (Trolley-Partner, zehn
+Schlüssel samt `notifTrolleyDazu` „Compagno di servizio trovato", den die
+Function `trolley` gleich schreibt) ist männlich
+wie das deutsche „Partner"; eine neutrale Fassung wäre deutlich länger.
+„Weitere Pläne" heißen „Altri programmi" — in `rechtPlanenUnter` steht deshalb
+„Scarica il programma, prepara i programmi"; stimmig, aber doppelt („piani"
+ginge für alle vier Schlüssel).

@@ -74,6 +74,20 @@ describe('Der Tag bleibt der Tag', () => {
   })
 
   /*
+   * `zahlen` liest „07" als 7 — die Zusicherungen oben sahen deshalb nicht, dass
+   * ICU im Italienischen jede Spanne mit führender Null schreibt („07–13
+   * settembre", „28 settembre – 04 ottobre"). jw.org schreibt „7-13 settembre";
+   * bis zum 16.10.2026 stand die Null in jedem italienischen Wochenkopf (T123).
+   */
+  it.each(FREMD)('%s: kein Tag einer Spanne mit führender Null', (code) => {
+    for (const spanne of ['7.–13. September', '28. Sep – 4. Okt', '27. April–3. Mai', '29. Dezember 2025 – 4. Januar 2026']) {
+      const text = makeTr(code)(spanne)
+      // Null in jeder Ziffernschrift (westlich, arabisch-indisch, persisch), vor der keine Ziffer steht.
+      expect(text, `${code}: ${text}`).not.toMatch(/(^|\P{Nd})[0٠۰]\p{Nd}/u)
+    }
+  })
+
+  /*
    * Der Gegenbeweis zur Kalender-Regel: Ohne `-u-ca-gregory` liefert `fa-IR`
    * ein anderes Datum. Steht die Erweiterung eines Tages nicht mehr da, fällt
    * es hier auf — und nicht erst in einer persischen Versammlung.

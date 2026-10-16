@@ -6599,8 +6599,8 @@ export const KATALOG = [
     id: "spanne-jahreswechsel-wirft-nicht",
     datei: "supabase/functions/_shared/i18n/translate.ts",
     regel: "Wirft formatRange bei einer Spanne über den Jahreswechsel, bleibt sie deutsch stehen, statt die Seite zu reißen.",
-    suchen: "  try {\n    return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)\n  } catch {\n    return null\n  }",
-    ersetzen: "  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatRange(a, b)",
+    suchen: "  try {\n    return spanneOhneNull(new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }), a, b)\n  } catch {\n    return null\n  }",
+    ersetzen: "  return spanneOhneNull(new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }), a, b)",
   },
   {
     id: "fs-woche-mit-stand",
@@ -7331,6 +7331,13 @@ export const KATALOG = [
     regel: 'In der Glocke steht die Bezeichnung hinter „Termin: " übersetzt — „19:00: Bibellesung" geht in seinen Hälften durch den Übersetzer.',
     suchen: "    if (f.includes(': ')) return f.split(': ').map(one).join(': ')\n",
     ersetzen: '',
+  },
+  {
+    id: 't123-spanne-ohne-fuehrende-null',
+    datei: 'supabase/functions/_shared/i18n/translate.ts',
+    regel: 'Eine Wochenspanne trägt keinen Tag mit führender Null — ICU schreibt italienisch „07–13 settembre", jw.org „7-13 settembre".',
+    suchen: "  return fmt.formatRange(a, b).replace(/(^|\\P{Nd})0(\\p{Nd})(?!\\p{Nd})/gu, '$1$2')\n",
+    ersetzen: '  return fmt.formatRange(a, b)\n',
   },
   {
     id: 'zuteilung-vortrag-folgt-vorsitz',
