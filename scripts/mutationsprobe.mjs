@@ -387,6 +387,20 @@ export const KATALOG = [
     ersetzen: '    (n) => n,\n',
   },
   {
+    id: 'bogen-zwei-abstaende',
+    datei: 'src/druck/Bogen.tsx',
+    regel: 'Ein Blatt zieht je einen Abstand unter dem Kopf und über dem Fuß ab — sonst ist ein volles Blatt zu hoch.',
+    suchen: 'BLATT_HOEHE - rand - kopf - fuss - 2 * abstand',
+    ersetzen: 'BLATT_HOEHE - rand - kopf - fuss - abstand',
+  },
+  {
+    id: 'datumswahl-rtl-reihe',
+    datei: 'src/components/datepicker.css',
+    regel: 'In RTL spiegelt sich die Kopfzeile der Datumsauswahl von selbst — nur die Pfeile werden gedreht, sonst zeigen sie nach innen.',
+    suchen: "[dir='rtl'] .dp-nav {\n  transform: scaleX(-1);\n}\n",
+    ersetzen: "[dir='rtl'] .dp-head {\n  flex-direction: row-reverse;\n}\n\n[dir='rtl'] .dp-nav {\n  transform: scaleX(-1);\n}\n",
+  },
+  {
     id: 'familie-rest-aufloesen',
     datei: 'src/data/helpers.ts',
     regel: 'Wer den Haushalt wechselt, lässt keinen Ein-Personen-Haushalt zurück — wie beim Lösen.',
@@ -2363,8 +2377,8 @@ export const KATALOG = [
     id: 'bogen-misst-kopf-und-fuss',
     datei: 'src/druck/Bogen.tsx',
     regel: 'Der Platz je Blatt ist, was zwischen Kopf und Fuß bleibt — gemessen, nicht das ganze Blatt.',
-    suchen: '    setBlaetter(blaetterVerteilen(hoehen, BLATT_HOEHE - rand - kopf - fuss - abstand, abstand, anschluss))\n',
-    ersetzen: '    setBlaetter(blaetterVerteilen(hoehen, BLATT_HOEHE - rand - abstand, abstand, anschluss))\n',
+    suchen: '    setBlaetter(blaetterVerteilen(hoehen, BLATT_HOEHE - rand - kopf - fuss - 2 * abstand, abstand, anschluss))\n',
+    ersetzen: '    setBlaetter(blaetterVerteilen(hoehen, BLATT_HOEHE - rand - 2 * abstand, abstand, anschluss))\n',
   },
   {
     id: 'druck-bogen-erst-zeichnen',

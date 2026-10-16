@@ -59,8 +59,11 @@ export function Bogen({
     const fuss = hoehe(blatt.querySelector('.druck-blatt-fuss') ?? undefined)
     const hoehen = kinder.filter((el) => el.classList.contains('druck-block')).map(hoehe)
     const anschluss = bloecke.map((block) => block.anschluss === true)
-    // Kopf, Fuß und je ein Abstand davor und dahinter sind auf jedem Blatt gleich.
-    setBlaetter(blaetterVerteilen(hoehen, BLATT_HOEHE - rand - kopf - fuss - abstand, abstand, anschluss))
+    // Kopf, Fuß und je ein Abstand davor und dahinter sind auf jedem Blatt
+    // gleich — zwei Abstände: nach dem Kopf und vor dem Fuß. Abgezogen war bis
+    // zum 16.10.2026 nur einer; ein volles Blatt war 16 px zu hoch, und der Fuß
+    // rutschte in den Rand (`blaetterVerteilen` zählt nur die zwischen Blöcken).
+    setBlaetter(blaetterVerteilen(hoehen, BLATT_HOEHE - rand - kopf - fuss - 2 * abstand, abstand, anschluss))
   }, [blaetter, bloecke])
 
   if (blaetter === null) {

@@ -146,6 +146,12 @@ describe('Richtungsabhängige Pfeile werden gespiegelt', () => {
   it('die Monatspfeile der Datumsauswahl ebenso', () => {
     const dp = inhalt('components/datepicker.css')
     expect(dp).toMatch(/\[dir=['"]rtl['"]\]\s*\.dp-nav\s*\{[^}]*transform:\s*scaleX\(-1\)/)
+    // … und nur sie: Die Reihe spiegelt sich in RTL von selbst. Kehrte man sie
+    // zusätzlich um, zeigten beide Pfeile nach innen, und der vorige Monat lag
+    // links (bis zum 16.10.2026, im Browser gemessen). Ohne Kommentare gelesen —
+    // dort steht die Geschichte.
+    const regeln = dp.replace(/\/\*[\s\S]*?\*\//g, '')
+    expect(regeln).not.toMatch(/\.dp-head[^{]*\{[^}]*row-reverse/)
   })
 
   it('und **niemand** kippt zusätzlich die gemeinsame Klasse `.chev`', () => {

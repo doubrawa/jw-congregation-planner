@@ -445,10 +445,24 @@ describe('Bogen: Blöcke nach gemessener Höhe verteilen', () => {
         ? ({ paddingTop: '0px', paddingBottom: '0px', rowGap: '16px' } as CSSStyleDeclaration)
         : echt(el, pseudo),
     )
-    // Platz: 1010 − 16 (Abstand unter dem Kopf) = 994. Ohne Abstände 24 Zeilen;
-    // zählte zwischen ihnen je einer mit, wären es 18.
+    // Platz: 1010 − 2 × 16 (je ein Abstand unter dem Kopf und über dem Fuß) = 978.
+    // Ohne Abstände 24 Zeilen; zählte zwischen ihnen je einer mit, wären es 17.
     const { container } = zeige(<Bogen titel="T" zeitraum="Z" bloecke={langeTabelle()} />)
     expect(blaetter(container).map((b) => b.length)).toEqual([24, 6])
+  })
+
+  it('je ein Abstand unter dem Kopf und über dem Fuß — passt es nur mit einem, geht es aufs nächste Blatt (16.10.2026)', () => {
+    // Abgezogen war bis dahin nur einer: Ein volles Blatt war 16 px höher als
+    // A4, und der Fuß rutschte in den Rand des Papiers.
+    const echt = window.getComputedStyle.bind(window)
+    vi.spyOn(window, 'getComputedStyle').mockImplementation((el, pseudo) =>
+      el.classList.contains('druck-blatt')
+        ? ({ paddingTop: '0px', paddingBottom: '0px', rowGap: '16px' } as CSSStyleDeclaration)
+        : echt(el, pseudo),
+    )
+    // 485 + 16 + 485 = 986: passt in 1010 − 16 = 994, nicht in 1010 − 32 = 978.
+    const { container } = zeige(<Bogen titel="T" zeitraum="Z" bloecke={bloecke(485, 485)} />)
+    expect(blaetter(container)).toEqual([['Block 0'], ['Block 1']])
   })
 
   it('eine Tabelle ohne Zeilen steht gar nicht da', () => {

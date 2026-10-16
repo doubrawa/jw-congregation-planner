@@ -141,11 +141,13 @@
   cursor: default;
 }
 
-/* RTL: Blätter-Pfeile tauschen die Seite und zeigen nach außen. */
-[dir='rtl'] .dp-head {
-  flex-direction: row-reverse;
-}
-
+/*
+ * RTL: Die Reihe spiegelt sich von selbst — „vorher" steht rechts, „weiter"
+ * links —, die SVG-Pfeile nicht. Sie werden gedreht und zeigen dann nach außen.
+ * Bis zum 16.10.2026 stand hier dazu `row-reverse` für `.dp-head`, aus der
+ * Zeit der Zeichen ‹ ›, die die Schreibrichtung selbst umdrehte: Mit den SVG-
+ * Pfeilen zeigten beide nach innen, und der vorige Monat lag links.
+ */
 [dir='rtl'] .dp-nav {
   transform: scaleX(-1);
 }
