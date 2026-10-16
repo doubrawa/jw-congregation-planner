@@ -63,6 +63,7 @@ export function PlanenAktionen({ art, leiste = false }: { art: PlanArt; leiste?:
       {offen === 'senden' &&
         createPortal(
           <PlanSendenBlatt
+            art={art}
             meldungen={meldungen}
             zuletzt={zuletzt}
             versand={versand}

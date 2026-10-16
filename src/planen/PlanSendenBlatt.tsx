@@ -2,12 +2,13 @@ import { useApp } from '../app/context'
 import { GesperrterKnopf } from '../bausteine/GesperrterKnopf'
 import { Punkt } from '../bausteine/Punkt'
 import { Sheet } from '../components/Sheet'
-import { mtab } from '../data/helpers'
+import { istZusammenkunft } from '../data/helpers'
 import type { OffeneWochenMeldung } from '../data/plan-versand'
 import { relativeZeit } from '../i18n/zeit'
 import { aufgabenLabel, aufgabenTp, fill, useT } from '../i18n/useT'
 import type { VersandStand } from './wochen-versand'
 import { PlanSpur } from './WochenStand'
+import type { PlanArt } from './planen-raster'
 
 /**
  * Bis zu so vielen Zuteilungen lohnt die Liste; darüber steht nur die Zahl.
@@ -39,20 +40,23 @@ const LISTEN_GRENZE = 8
  * dem Finger, der gerade gesendet hat (`GesperrterKnopf`).
  */
 export function PlanSendenBlatt({
+  art,
   meldungen,
   zuletzt,
   versand,
   gruppe = false,
   onClose,
 }: {
+  /** Aus welchem Plan gesendet wird — nur der einer Zusammenkunft hat eine Spur. */
+  art: PlanArt
   meldungen: readonly OffeneWochenMeldung[]
   /** Wann für diese Woche zuletzt etwas hinausging — oder `null`. */
   zuletzt: string | null
   versand: VersandStand
   /**
    * Nur die Treffpunkte der eigenen Gruppe (der Gruppenaufseher, der nicht
-   * zuteilt, `sendeUmfang`): ohne die Spur der Zusammenkunft, die ihn nicht
-   * betrifft, und mit den Sätzen seiner Gruppe.
+   * zuteilt, `sendeUmfang`): mit den Sätzen seiner Gruppe. Eine Spur steht dort
+   * nicht — sein Plan ist der der Treffpunkte (`art`).
    */
   gruppe?: boolean
   onClose: () => void
@@ -69,7 +73,12 @@ export function PlanSendenBlatt({
   return (
     <Sheet variante="lang" label={t.planSenden} title={t.planSenden} onClose={onClose}>
       <div className="sheet-inhalt senden">
-        {!gruppe && <PlanSpur tab={mtab(state.tab)} />}
+        {/* Die Spur einer Zusammenkunft nur aus ihrem Plan. Aus den
+            Treffpunkten zeigte das Blatt sonst die Zahlen des Dienstags
+            (`mtab('fs')` ist 'mid') — dort gibt es keine Spur (16.10.2026).
+            Gefragt wird die Art des Plans, nicht der Reiter: Beim
+            Gruppenaufseher ist es immer der Plan der Treffpunkte. */}
+        {art === 'zusammenkuenfte' && istZusammenkunft(state.tab) && <PlanSpur tab={state.tab} />}
         {/* „Alle wissen Bescheid" erst, wenn etwas hinausging — eine Woche, in
             der noch niemand eingeteilt ist, beschreibt die Spur darüber. */}
         {(n > 0 || zuletzt) && <p className="senden-satz">{n > 0 ? fill(offenSatz, { n }) : alleSatz}</p>}

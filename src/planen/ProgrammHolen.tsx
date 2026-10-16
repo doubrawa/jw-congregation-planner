@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useApp } from '../app/context'
 import { GesperrterKnopf } from '../bausteine/GesperrterKnopf'
 import { Spur, type SpurSchritt } from '../bausteine/Spur'
@@ -57,14 +58,20 @@ export function HolenKnopf({ className }: { className: string }) {
       <GesperrterKnopf className={className} gesperrt={state.importing} onTipp={starten}>
         {t.holen}
       </GesperrterKnopf>
-      {stand.art !== 'zu' && (
-        <ProgrammHolenBlatt
-          week={geholt}
-          onZuteilen={uebernehmenMit(true)}
-          onUebernehmen={uebernehmenMit(false)}
-          onClose={schliessen}
-        />
-      )}
+      {/* An `body`, wie die übrigen Blätter: Der Knopf steht am Desktop in der
+          klebenden Wochenspalte, und deren Ebene liegt unter dem Wochenstreifen
+          (`transform`). Darin gerendert, lag das Blatt unter dem Plan
+          (gemessen am 16.10.2026, 1440 px). */}
+      {stand.art !== 'zu' &&
+        createPortal(
+          <ProgrammHolenBlatt
+            week={geholt}
+            onZuteilen={uebernehmenMit(true)}
+            onUebernehmen={uebernehmenMit(false)}
+            onClose={schliessen}
+          />,
+          document.body,
+        )}
     </>
   )
 }

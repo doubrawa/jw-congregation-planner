@@ -26,7 +26,7 @@ import { rechteVon } from '../data/rechte'
 import { itemMinutes } from '../data/meeting-edit'
 import { DE as t } from '../i18n/de'
 import { alsFreitext } from '../i18n/translate'
-import type { AnmeldeLink, PartItem, PartSlotSelection, Person, Week } from '../data/types'
+import type { AnmeldeLink, PartItem, PartSlotSelection, Person, SlotSelection, Week } from '../data/types'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
 
 /** Ein Montag, den die Demo-Wochen nicht haben — für frisch importierte Wochen. */
@@ -332,6 +332,49 @@ describe('navigate nach Thema (T120)', () => {
   it('eine neue Sitzung beginnt bei den Treffpunkten', () => {
     const s = makeState({ fsBereich: 'grundplan', screen: 'planen' })
     expect(reducer(s, { type: 'logout' })).toMatchObject({ screen: 'login', fsBereich: 'treffpunkte' })
+  })
+
+  it('der Sprung zu einer Woche bei den Treffpunkten zeigt ihre Treffpunkte (16.10.2026)', () => {
+    // Stand der Bereich noch auf Grundplan oder Gruppenbesuchen, zeigte der
+    // Sprung keine Woche — die Treffpunkte, um die es ging, fehlten.
+    for (const fsBereich of ['grundplan', 'gruppenbesuche'] as const) {
+      const s = makeState({ planner: true, screen: 'planen', fsBereich })
+      expect(reducer(s, { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'fs' } })).toMatchObject({
+        tab: 'fs', week: 1, fsBereich: 'treffpunkte',
+      })
+      // Gegenprobe: Ein Sprung zu einer Zusammenkunft lässt den Bereich, wie er ist.
+      expect(reducer(s, { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'mid' } }).fsBereich).toBe(fsBereich)
+    }
+  })
+})
+
+/*
+ * **Die Auswahl eines Platzes gilt in seinem Reiter** (16.10.2026). Am Desktop
+ * steht das Zuteilen-Blatt als Spalte neben dem Plan; wechselte man den Reiter
+ * oder den Bereich, blieb die Auswahl stehen und sprang als Blatt auf — für
+ * einen Platz, den dort niemand sah.
+ */
+describe('Auswahl beim Wechsel der Ansicht', () => {
+  const platz: SlotSelection = { kind: 'part', wi: 0, tab: 'mid', si: 0, ii: 0, ni: 0, label: '', priv: null, groups: false }
+  const treffpunkt: SlotSelection = { kind: 'fs', wi: 0, instId: 'a', label: '', priv: 'treffpunkt', groups: false }
+
+  it('„Woche einrichten", „Zusagen" und der andere Tag räumen sie ab', () => {
+    for (const tab of ['edit', 'zusagen', 'we', 'fs'] as const) {
+      const s = makeState({ planner: true, screen: 'planen', tab: 'mid', slotSel: platz })
+      expect(reducer(s, { type: 'setTab', tab }).slotSel, tab).toBeNull()
+    }
+  })
+
+  it('im eigenen Reiter bleibt sie — auch ein Treffpunkt bei den Treffpunkten', () => {
+    const s = makeState({ planner: true, screen: 'planen', tab: 'mid', slotSel: platz })
+    expect(reducer(s, { type: 'setTab', tab: 'mid' }).slotSel).toBe(platz)
+    const fs = makeState({ planner: true, screen: 'planen', tab: 'fs', slotSel: treffpunkt })
+    expect(reducer(fs, { type: 'setTab', tab: 'fs' }).slotSel).toBe(treffpunkt)
+  })
+
+  it('ein anderer Bereich des Predigtdienstes räumt den gewählten Treffpunkt ab', () => {
+    const s = makeState({ planner: true, screen: 'planen', tab: 'fs', slotSel: treffpunkt })
+    expect(reducer(s, { type: 'setFsBereich', bereich: 'grundplan' }).slotSel).toBeNull()
   })
 })
 

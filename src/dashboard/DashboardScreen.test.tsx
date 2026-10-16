@@ -488,9 +488,11 @@ const chip = (root: Element, art: 'probleme' | 'offen' | 'senden') =>
 /** „Holen" auf der Karte — derselbe Knopf wie bei den Wochen. */
 const importKnopf = (root: Element) => root.querySelector<HTMLButtonElement>('.dash-plan-vorrat button')
 
-/** Ein Knopf im Blatt „Programm holen", nach seiner Beschriftung. */
-const blattKnopf = (root: Element, text: string) =>
-  [...root.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find((b) => b.textContent === text)
+/** Ein Knopf im Blatt „Programm holen", nach seiner Beschriftung — das Blatt hängt an `body` (Portal). */
+const blattKnopf = (text: string) =>
+  [...document.body.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find((b) => b.textContent === text)
+/** Das Blatt „Programm holen", falls offen. */
+const holenBlatt = () => document.body.querySelector('[role="dialog"]')
 
 describe('Die Planungs-Karte gehört dem Planer — und steht bei ihm gleich daneben (T95)', () => {
   beforeEach(() => {
@@ -689,17 +691,17 @@ describe('Reichen die Programme nicht mehr, steht „Holen" gleich auf der Karte
     const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks), dataStatus: 'ready' })
     fireEvent.click(importKnopf(container)!)
     // Ab der zuletzt geladenen Woche, in der Versammlungssprache.
-    await waitFor(() => expect(blattKnopf(container, t.nurUebernehmen)?.disabled).toBe(false))
+    await waitFor(() => expect(blattKnopf(t.nurUebernehmen)?.disabled).toBe(false))
     expect(importNextWeek).toHaveBeenCalledWith(W1, 'de', [])
     expect(dispatch).toHaveBeenCalledWith({ type: 'startImport' })
     expect(dispatch).toHaveBeenCalledWith({ type: 'stopImport' })
     // Geholt ist noch nicht übernommen: Das Blatt zeigt erst, was kam.
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'addImportedWeek', week: neu })
-    fireEvent.click(blattKnopf(container, t.nurUebernehmen)!)
+    fireEvent.click(blattKnopf(t.nurUebernehmen)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'addImportedWeek', week: neu })
     // „Nur übernehmen" öffnet nichts und teilt nichts zu.
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'autoAssign' }))
-    expect(container.querySelector('[role="dialog"]')).toBeNull()
+    expect(holenBlatt()).toBeNull()
   })
 
   it('„Übernehmen und zuteilen" öffnet die neue Woche und besetzt ihre offenen Plätze', async () => {
@@ -708,9 +710,9 @@ describe('Reichen die Programme nicht mehr, steht „Holen" gleich auf der Karte
     const weeks = [besetzt(W1)]
     const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks), dataStatus: 'ready' })
     fireEvent.click(importKnopf(container)!)
-    await waitFor(() => expect(blattKnopf(container, t.uebernehmenZuteilen)?.disabled).toBe(false))
+    await waitFor(() => expect(blattKnopf(t.uebernehmenZuteilen)?.disabled).toBe(false))
     dispatch.mockClear()
-    fireEvent.click(blattKnopf(container, t.uebernehmenZuteilen)!)
+    fireEvent.click(blattKnopf(t.uebernehmenZuteilen)!)
     // In dieser Reihenfolge: anhängen, zur neuen Woche (sie kommt ans Ende), zuteilen.
     expect(dispatch.mock.calls.map(([a]) => a)).toEqual([
       { type: 'addImportedWeek', week: neu },
@@ -725,9 +727,9 @@ describe('Reichen die Programme nicht mehr, steht „Holen" gleich auf der Karte
     const weeks = [besetzt(W1)]
     const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks), dataStatus: 'ready' })
     fireEvent.click(importKnopf(container)!)
-    await waitFor(() => expect(blattKnopf(container, t.nurUebernehmen)?.disabled).toBe(false))
-    fireEvent.click(blattKnopf(container, t.abbrechen)!)
-    expect(container.querySelector('[role="dialog"]')).toBeNull()
+    await waitFor(() => expect(blattKnopf(t.nurUebernehmen)?.disabled).toBe(false))
+    fireEvent.click(blattKnopf(t.abbrechen)!)
+    expect(holenBlatt()).toBeNull()
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'addImportedWeek', week: neu })
   })
 

@@ -194,7 +194,10 @@ function PlanenBody() {
       )}
 
       {isEdit ? (
-        <WochePanel />
+        // Je Woche neu: Was aufgeklappt ist und was als Entwurf dasteht, gehört
+        // der Woche. Ohne Schlüssel nahm das Blättern es in die nächste mit
+        // (16.10.2026).
+        <WochePanel key={rawWeek?.start ?? state.week} />
       ) : isFs ? (
         // „Automatisch" und „Plan senden" stehen in der Leiste, wie bei den
         // Zusammenkünften (`PlanenAktionen`).

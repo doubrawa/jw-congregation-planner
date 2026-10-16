@@ -96,11 +96,12 @@ function zeige(over: Partial<AppState> = {}) {
 }
 
 const holen = (root: Element) => fireEvent.click(root.querySelector('.holen-probe')!)
-const blatt = (root: Element) => root.querySelector('[role="dialog"]')
-const blattKnopf = (root: Element, text: string) =>
-  [...root.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find((b) => b.textContent === text)
+/** Das Blatt hängt an `body` (Portal), nicht unter dem Knopf. */
+const blatt = () => document.body.querySelector('[role="dialog"]')
+const blattKnopf = (text: string) =>
+  [...document.body.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find((b) => b.textContent === text)
 /** Bis das Blatt vorlegt, was kam — dann gilt „Nur übernehmen". */
-const geholt = (root: Element) => waitFor(() => expect(blattKnopf(root, t.nurUebernehmen)?.disabled).toBe(false))
+const geholt = () => waitFor(() => expect(blattKnopf(t.nurUebernehmen)?.disabled).toBe(false))
 
 beforeEach(() => {
   // „Heute" ist in jedem Fall Montag, der 7. September 2026, 9 Uhr — wie auf
@@ -159,11 +160,11 @@ describe('Holen in der Produktion', () => {
     importNextWeek.mockResolvedValue({ ok: true, week: neue })
     const { container, dispatch } = zeige()
     holen(container)
-    await geholt(container)
+    await geholt()
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'addImportedWeek', week: neue })
-    fireEvent.click(blattKnopf(container, t.nurUebernehmen)!)
+    fireEvent.click(blattKnopf(t.nurUebernehmen)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'addImportedWeek', week: neue })
-    expect(blatt(container)).toBeNull()
+    expect(blatt()).toBeNull()
   })
 
   it('„Übernehmen und zuteilen" hängt an, öffnet die Woche und besetzt sie', async () => {
@@ -171,9 +172,9 @@ describe('Holen in der Produktion', () => {
     importNextWeek.mockResolvedValue({ ok: true, week: neue })
     const { container, dispatch } = zeige({ weeks: [woche('2026-09-07')] })
     holen(container)
-    await geholt(container)
+    await geholt()
     dispatch.mockClear()
-    fireEvent.click(blattKnopf(container, t.uebernehmenZuteilen)!)
+    fireEvent.click(blattKnopf(t.uebernehmenZuteilen)!)
     expect(dispatch.mock.calls.map(([a]) => a)).toEqual([
       { type: 'addImportedWeek', week: neue },
       { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'mid' } },
@@ -188,9 +189,9 @@ describe('Holen in der Produktion', () => {
     importNextWeek.mockResolvedValue({ ok: true, week: da })
     const { container, dispatch } = zeige({ weeks: [da] })
     holen(container)
-    await geholt(container)
+    await geholt()
     dispatch.mockClear()
-    fireEvent.click(blattKnopf(container, t.uebernehmenZuteilen)!)
+    fireEvent.click(blattKnopf(t.uebernehmenZuteilen)!)
     expect(dispatch.mock.calls.map(([a]) => a)).toEqual([{ type: 'addImportedWeek', week: da }])
   })
 
@@ -202,7 +203,7 @@ describe('Holen in der Produktion', () => {
     holen(container)
     await waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'stopImport' }))
     expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.holenSpracheFehlt })
-    await waitFor(() => expect(blatt(container)).toBeNull())
+    await waitFor(() => expect(blatt()).toBeNull())
   })
 
   it('ohne angebundene Datenbank steht der passende Satz — nicht der vom Anmelden', async () => {
@@ -297,7 +298,7 @@ describe('Holen in der Produktion', () => {
     const { container } = zeige({ importing: true })
     holen(container)
     expect(importNextWeek).not.toHaveBeenCalled()
-    expect(blatt(container)).toBeNull()
+    expect(blatt()).toBeNull()
   })
 
   it('gesperrt behält er den Fokus — wer das Blatt schließt, kommt bei ihm an (16.10.2026)', () => {
@@ -317,20 +318,30 @@ describe('Holen in der Produktion', () => {
     holen(container)
     expect(importNextWeek).not.toHaveBeenCalled()
     expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.offlineReadOnly })
-    expect(blatt(container)).toBeNull()
+    expect(blatt()).toBeNull()
   })
 })
 
 describe('Das Blatt zeigt, was kam (Entwurf `GImport`)', () => {
+  it('hängt an `body`, nicht unter dem Knopf — am Desktop läge es sonst unter dem Plan (16.10.2026)', async () => {
+    // Der Knopf steht dort in der klebenden Wochenspalte; deren Ebene liegt
+    // unter dem Wochenstreifen. Im Browser bei 1440 px gemessen.
+    const { container } = zeige()
+    holen(container)
+    await geholt()
+    expect(container.querySelector('[role="dialog"]')).toBeNull()
+    expect(blatt()?.parentElement).toBe(document.body)
+  })
+
   it('solange geholt wird: ein Satz dazu, beide Übernehmen gesperrt', () => {
     importNextWeek.mockReturnValue(new Promise(() => {}))
     const { container } = zeige()
     holen(container)
-    expect(blatt(container)?.textContent).toContain(t.holtProgramm)
-    expect(blattKnopf(container, t.uebernehmenZuteilen)?.disabled).toBe(true)
-    expect(blattKnopf(container, t.nurUebernehmen)?.disabled).toBe(true)
+    expect(blatt()?.textContent).toContain(t.holtProgramm)
+    expect(blattKnopf(t.uebernehmenZuteilen)?.disabled).toBe(true)
+    expect(blattKnopf(t.nurUebernehmen)?.disabled).toBe(true)
     // Die Spur steht beim Holen.
-    expect(blatt(container)?.querySelector('[aria-current="step"]')?.textContent).toBe(t.spurHolen)
+    expect(blatt()?.querySelector('[aria-current="step"]')?.textContent).toBe(t.spurHolen)
   })
 
   it('die Woche, ihre Abschnitte mit der Zahl der Punkte und die Sprachen', async () => {
@@ -346,8 +357,8 @@ describe('Das Blatt zeigt, was kam (Entwurf `GImport`)', () => {
     })
     const { container } = zeige({ congLang: 'de', progLangs: ['en'] })
     holen(container)
-    await geholt(container)
-    const dialog = blatt(container)!
+    await geholt()
+    const dialog = blatt()!
     expect(dialog.querySelector('.holen-spanne')?.textContent).toBe('14.–20. September')
     expect(dialog.querySelector('.holen-kopf .klein-text')?.textContent).toBe('Programmpunkte: 8')
     const zeilen = [...dialog.querySelectorAll('.holen-abschnitt')].map((z) => [z.getAttribute('data-farbe'), z.textContent])
@@ -369,8 +380,8 @@ describe('Das Blatt zeigt, was kam (Entwurf `GImport`)', () => {
     const en = dict('en')
     const { container } = zeige({ lang: 'en' })
     holen(container)
-    await waitFor(() => expect(blattKnopf(container, en.nurUebernehmen)?.disabled).toBe(false))
-    const text = blatt(container)!.textContent ?? ''
+    await waitFor(() => expect(blattKnopf(en.nurUebernehmen)?.disabled).toBe(false))
+    const text = blatt()!.textContent ?? ''
     for (const k of ['programmHolen', 'programmHolenText', 'spurHolen', 'spurPruefen', 'holenHinweis', 'uebernehmenZuteilen'] as const) {
       expect(text, k).toContain(en[k])
       expect(text, k).not.toContain(t[k])
@@ -383,11 +394,11 @@ describe('Das Blatt zeigt, was kam (Entwurf `GImport`)', () => {
     importNextWeek.mockReturnValue(new Promise((r) => (liefern = r)))
     const { container, dispatch } = zeige()
     holen(container)
-    fireEvent.click(blattKnopf(container, t.abbrechen)!)
-    expect(blatt(container)).toBeNull()
+    fireEvent.click(blattKnopf(t.abbrechen)!)
+    expect(blatt()).toBeNull()
     liefern({ ok: true, week: woche('2026-09-14') })
     // Der Lauf endet sauber — aber das Blatt kommt nicht von selbst zurück.
     await waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'stopImport' }))
-    expect(blatt(container)).toBeNull()
+    expect(blatt()).toBeNull()
   })
 })

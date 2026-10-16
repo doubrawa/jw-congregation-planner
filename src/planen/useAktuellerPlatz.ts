@@ -32,9 +32,11 @@ export interface AktuellerPlatz {
 export function useAktuellerPlatz(sel: SlotSelection): AktuellerPlatz | undefined {
   const { state } = useApp()
   const { t } = useT()
-  const zusage = useZusage()
+  // Die Woche des Platzes, nicht die gezeigte: Am Desktop bleibt das Blatt
+  // beim Blättern offen (16.10.2026).
+  const zusage = useZusage(sel.wi)
   // Ein Hook steht immer da — beim Treffpunkt bleibt seine Antwort ungefragt.
-  const konflikte = useKonflikte(sel.kind === 'fs' ? 'mid' : sel.tab)
+  const konflikte = useKonflikte(sel.kind === 'fs' ? 'mid' : sel.tab, sel.wi)
   const { weeks, fsWeeks, persons, absences, services, congregation } = state
   const week = weeks[sel.wi]
   if (!week) return undefined

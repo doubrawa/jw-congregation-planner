@@ -28,6 +28,7 @@ import type {
   Week,
 } from '../data/types'
 import { AssignSheet } from './AssignSheet'
+import { punktKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { privSetzen } from '../data/helpers'
 
 /**
@@ -456,6 +457,19 @@ describe('Wer den Platz gerade hat, steht oben — mit derselben Lage wie im Pla
     expect(karte(container).querySelector('.punkt')?.className).toContain('is-wartet')
     expect(info(karte(container)).textContent).toBe(t.zusageWartet)
     expect(knopf(container, t.entfernen)).toBeTruthy()
+  })
+
+  it('mit der Zusage aus der Woche seines Platzes — nicht aus der gezeigten (16.10.2026)', () => {
+    // Am Desktop bleibt das Blatt beim Blättern offen. Bis dahin las die Karte
+    // die Zusage der gezeigten Woche: „wartet" für einen bestätigten Platz.
+    const zweite = { ...belegt(), start: '2026-09-14' }
+    const { container } = zeige({ ...SEL_SCHUELER, wi: 1 }, {
+      weeks: [woche('2026-09-07'), zweite],
+      week: 0,
+      fsWeeks: [[], []],
+      confirmations: { [punktKey('2026-09-14', 'mid', 'i73', 0)]: 'bestätigt' },
+    })
+    expect(info(karte(container)).textContent).toBe(t.zusageBestaetigt)
   })
 
   it('ist die Person abwesend, steht der Platz rot da — mit dem Zeitraum', () => {

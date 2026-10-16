@@ -45,10 +45,17 @@ export interface ZusageStand {
  * Die Beschriftung kommt gleich mit: Die Übersetzung wird einmal je Abschnitt
  * geholt, nicht in jedem der gut hundert Chips des Wochenstreifens.
  */
-export function useZusage() {
+export function useZusage(
+  /**
+   * Die Woche, in der gefragt wird — sonst die gezeigte. Das Blatt eines Platzes
+   * fragt die Woche **seines** Platzes: Am Desktop bleibt es offen, während man
+   * weiterblättert, und zeigte sonst die Zusage der Nachbarwoche (16.10.2026).
+   */
+  wi?: number,
+) {
   const { state } = useApp()
   const { t } = useT()
-  const week = state.weeks[state.week]
+  const week = state.weeks[wi ?? state.week]
   const woche = week?.start ?? ''
   const stand = (key: string): ZusageStand => {
     const stufe = zusageStatus(state.confirmations, key)

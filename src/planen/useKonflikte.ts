@@ -52,10 +52,15 @@ export function machKonfliktVon(persons: Person[], conflicts: Conflict[]): (z: Z
  * aus, nennte „Zu klären" über kurz oder lang einen Konflikt, den im Programm
  * nichts hervorhebt — und der Planer sucht die Stelle, statt sie zu sehen.
  */
-export function useKonflikte(tab: MeetingKey): Konflikte {
+export function useKonflikte(
+  tab: MeetingKey,
+  /** Die Woche, in der gefragt wird — sonst die gezeigte (wie `useZusage`). */
+  wi?: number,
+): Konflikte {
   const { state } = useApp()
   const abwesend = useAbwesend()
-  const { weeks, week, persons, services } = state
+  const { weeks, persons, services } = state
+  const week = wi ?? state.week
   return useMemo(() => {
     const liste = weekConflicts(weeks, week, persons, services, tab, abwesend)
     const von = machKonfliktVon(persons, liste)

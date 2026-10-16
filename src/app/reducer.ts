@@ -77,10 +77,21 @@ import type {
   Notification,
   NotificationType,
   Screen,
+  SlotSelection,
   SubstituteReq,
   Week,
 } from '../data/types'
 import { type AppAction, type AppState, ERINNERUNG_GRENZEN } from './context'
+
+/**
+ * **Bleibt die Auswahl beim Reiterwechsel?** Nur in ihrem eigenen Reiter — dort
+ * ist ihr Platz zu sehen. Bis zum 16.10.2026 blieb sie überall stehen: Am
+ * Desktop sprang sie nach „Woche einrichten" oder „Zusagen" als Blatt auf, für
+ * einen Platz, den dort niemand sah.
+ */
+function auswahlSichtbar(sel: SlotSelection, tab: MeetingTab): boolean {
+  return (sel.kind === 'fs' ? 'fs' : sel.tab) === tab
+}
 
 /** Nächster Toast (id erzwingt Timer-/Animations-Neustart bei gleichem Text). */
 function nextToast(state: AppState, text: string): AppState['toast'] {
@@ -667,14 +678,16 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       if (action.woche && screen === action.screen) {
         const gewaehlt = action.woche.tab
         const wocheTab: MeetingTab = erlaubt[gewaehlt] === false ? 'mid' : gewaehlt
+        // Auch hier nur planen, wo man planen darf — der Gruppenaufseher die Treffpunkte.
+        const zielTab: MeetingTab = screen === 'planen' && !darfPlanen(rechte, themaVon(wocheTab)) ? 'fs' : wocheTab
         return {
           ...nachher,
           week: Math.min(Math.max(0, action.woche.wi), Math.max(0, state.weeks.length - 1)),
-          // Auch hier nur planen, wo man planen darf — der Gruppenaufseher die Treffpunkte.
-          tab:
-            screen === 'planen' && !darfPlanen(rechte, themaVon(wocheTab))
-              ? 'fs'
-              : wocheTab,
+          tab: zielTab,
+          // Eine bestimmte Woche heißt beim Predigtdienst: ihre Treffpunkte.
+          // Stand der Bereich noch auf Grundplan oder Gruppenbesuchen, zeigte
+          // der Sprung keine Woche (16.10.2026).
+          ...(zielTab === 'fs' ? { fsBereich: 'treffpunkte' as const } : {}),
           terminGewaehlt: true,
         }
       }
@@ -696,9 +709,16 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
     case 'setTab':
       // Eine eigene Wahl — ab jetzt springt die Ansicht nicht mehr (T82).
-      return { ...state, tab: action.tab, terminGewaehlt: true }
+      return {
+        ...state,
+        tab: action.tab,
+        terminGewaehlt: true,
+        slotSel: state.slotSel && auswahlSichtbar(state.slotSel, action.tab) ? state.slotSel : null,
+      }
     case 'setFsBereich':
-      return state.fsBereich === action.bereich ? state : { ...state, fsBereich: action.bereich }
+      // Grundplan, Gruppenbesuche und Trolleys zeigen keinen Platz der Woche:
+      // Eine Auswahl dort blieb sonst stehen und sprang als Blatt auf (16.10.2026).
+      return state.fsBereich === action.bereich ? state : { ...state, fsBereich: action.bereich, slotSel: null }
     case 'setTheme':
       return { ...state, theme: action.theme }
     case 'setFontScale':

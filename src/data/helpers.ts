@@ -708,7 +708,16 @@ export function abweichung(week: Week | undefined, tab: MeetingKey): Abweichung 
  * vierten Tab still falsch geworden wäre, hätte `MeetingTab` es nicht erzwungen.
  */
 export function mtab(tab: MeetingTab): MeetingKey {
-  return tab === 'mid' || tab === 'we' ? tab : 'mid'
+  return istZusammenkunft(tab) ? tab : 'mid'
+}
+
+/**
+ * Ist der Reiter eine Zusammenkunft — und nicht Treffpunkte, Bearbeiten,
+ * Weitere Pläne oder Zusagen? Für Stellen, an denen der Rückfall von `mtab`
+ * falsch wäre: Dort stünden sonst die Zahlen des Dienstags.
+ */
+export function istZusammenkunft(tab: MeetingTab): tab is MeetingKey {
+  return tab === 'mid' || tab === 'we'
 }
 
 /**

@@ -1,6 +1,8 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { useReducer } from 'react'
+import { reducer } from '../app/reducer'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -733,5 +735,62 @@ describe('Der Gruppenaufseher sendet die Treffpunkte seiner Gruppe (4.10.2026)',
     expect(blatt.textContent).toContain(t.fsSendenOffen.replace('{n}', '1'))
     expect(blatt.textContent).toContain('Paula Planer')
     expect(blatt.textContent).not.toContain('Olaf Overseer')
+  })
+})
+
+describe('„Plan senden" zeigt die Spur nur aus dem Plan einer Zusammenkunft (16.10.2026)', () => {
+  amMontagDerTestwoche()
+  amHandy()
+  const sendenBlatt = (tab: 'mid' | 'fs') => {
+    const { container } = zeige({
+      tab,
+      fsWeeks: [[{ id: 'f1', ruleId: 'r1', grp: 'g1', wd: 6, time: '09:30', place: 'Saal', leader: 'Paula Planer', lpid: PLANER.id }]],
+    })
+    fireEvent.click(container.querySelector('.planen-leiste .aktion-haupt')!)
+    return document.querySelector('[role="dialog"]')!
+  }
+
+  it('aus den Treffpunkten keine — dort standen die Zahlen des Dienstags', () => {
+    expect(sendenBlatt('fs').querySelector('.spur')).toBeNull()
+  })
+
+  it('aus dem Dienstag seine', () => {
+    expect(sendenBlatt('mid').querySelector('.spur')).not.toBeNull()
+  })
+})
+
+describe('„Woche einrichten" beim Blättern (16.10.2026)', () => {
+  amMontagDerTestwoche()
+  it('was aufgeklappt ist, gehört der Woche — das Blättern nimmt es nicht mit', () => {
+    // Woche 1 fällt am Wochenende aus: Ihre Abweichung steht offen da. Ohne
+    // Schlüssel je Woche blieb beim Blättern der Zustand der vorigen stehen.
+    const zweite = woche({ start: '2026-09-14', range: '14.–20. September', dev: { we: { cancelled: true } } })
+    const start: AppState = {
+      ...demoZustand(),
+      screen: 'planen', tab: 'edit', dataStatus: 'ready', terminGewaehlt: true,
+      congregationId: 'c1', userId: 'u1', personId: PLANER.id, planner: true,
+      persons: [PLANER], groups: [], services: DIENSTE, absences: [],
+      weeks: [woche(), zweite], fsWeeks: [[], []], fsRules: [], week: 0,
+      congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
+    }
+    function Buehne() {
+      const [state, dispatch] = useReducer(reducer, start)
+      const store = useStaticStore(state)
+      return (
+        <AppDispatchContext.Provider value={dispatch}>
+          <AppStoreContext.Provider value={store}>
+            <AppStateContext.Provider value={state}>
+              <PlanenScreen />
+            </AppStateContext.Provider>
+          </AppStoreContext.Provider>
+        </AppDispatchContext.Provider>
+      )
+    }
+    const { container } = render(<Buehne />)
+    const offen = () =>
+      [...seite(container).querySelectorAll('.einrichten-zusammenkunft')].map((z) => z.querySelector('.sonder') !== null)
+    expect(offen()).toEqual([false, false])
+    fireEvent.click(seite(container).querySelector(`button[aria-label="${t.a11yNextWeek}"]`)!)
+    expect(offen()).toEqual([false, true])
   })
 })
