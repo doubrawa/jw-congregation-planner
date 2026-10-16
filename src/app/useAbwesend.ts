@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useApp } from './context'
-import { buildAbsences, type AbsenceSet } from '../data/absence'
+import { abwesenheitenVon, type AbsenceSet } from '../data/absence'
 
 /**
  * Die Abwesenheiten der Versammlung in der Form, in der Planung und Anzeige
@@ -13,8 +13,10 @@ import { buildAbsences, type AbsenceSet } from '../data/absence'
 export function useAbwesend(): AbsenceSet {
   const { state } = useApp()
   const { absences, weeks, congregation } = state
+  // Über `abwesenheitenVon`: Jede Instanz bekommt für denselben Zustand
+  // dasselbe Objekt, statt es selbst zu bauen.
   return useMemo(
-    () => buildAbsences(absences, weeks, congregation.times),
+    () => abwesenheitenVon(absences, weeks, congregation.times),
     [absences, weeks, congregation.times],
   )
 }

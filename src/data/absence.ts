@@ -56,6 +56,30 @@ export function buildAbsences(
   return out
 }
 
+/** Die letzten Eingaben von `abwesenheitenVon` und ihr Ergebnis. */
+let zuletzt: {
+  absences: readonly Absence[]
+  weeks: readonly Week[]
+  zeiten: MeetingTimes
+  ergebnis: AbsenceSet
+} | null = null
+
+/**
+ * **Wie `buildAbsences` — für dieselben Eingaben dasselbe Ergebnis**, an den
+ * Referenzen erkannt. Der Zustand ändert sie bei jeder Änderung und nur dann.
+ * Fünf Bausteine des Planens und der Reducer fragten je Zustand jeder für sich
+ * (Review, App #9, 16.10.2026); jetzt rechnet es einer, und alle bekommen
+ * dasselbe Objekt — darauf baut der Speicher von `useKonflikte` auf.
+ */
+export function abwesenheitenVon(absences: readonly Absence[], weeks: readonly Week[], zeiten: MeetingTimes): AbsenceSet {
+  if (zuletzt && zuletzt.absences === absences && zuletzt.weeks === weeks && zuletzt.zeiten === zeiten) {
+    return zuletzt.ergebnis
+  }
+  const ergebnis = buildAbsences(absences, weeks, zeiten)
+  zuletzt = { absences, weeks, zeiten, ergebnis }
+  return ergebnis
+}
+
 /** Fehlt diese Person in dieser Zusammenkunft? */
 export function istAbwesend(
   set: AbsenceSet,

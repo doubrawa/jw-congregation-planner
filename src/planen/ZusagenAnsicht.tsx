@@ -11,7 +11,6 @@ import { UnteransichtKopf } from '../components/UnteransichtKopf'
 import { WochenWahl } from '../components/WochenWahl'
 import { fromIso, meetingDate, meetingDateMs } from '../data/meeting-dates'
 import { platzAuswahl } from '../data/offene-plaetze'
-import { weekConflicts } from '../data/planning'
 import { naechsteErinnerung, zusagenDerWoche, type ZusagePlatz } from '../data/zusagen'
 import type { Lang, MeetingKey, Week } from '../data/types'
 import { relativeDayLabel } from '../i18n/relative-time'
@@ -21,7 +20,7 @@ import { relativeZeit } from '../i18n/zeit'
 import { spurDerWoche, zahlenDerWoche } from './plan-spur'
 import { zumPlanDerWoche } from './planen-raster'
 import { problemGrund } from './platz-anzeige'
-import { machKonfliktVon } from './useKonflikte'
+import { konflikteVon, type Konflikte } from './useKonflikte'
 import { useErinnern } from './wochen-versand'
 
 /**
@@ -47,9 +46,11 @@ export function ZusagenAnsicht({ week, rawWeek, tpw }: { week: Week; rawWeek: We
   // Gemerkt: Der Wochenstreifen zeichnet drei Wochen, und jeder Dispatch
   // rendert sie neu — die Konflikte laufen über alle Personen.
   const plaetze = useMemo(() => {
-    const konfliktVon: Record<MeetingKey, ReturnType<typeof machKonfliktVon>> = {
-      mid: machKonfliktVon(persons, weekConflicts(weeks, state.week, persons, services, 'mid', abwesend)),
-      we: machKonfliktVon(persons, weekConflicts(weeks, state.week, persons, services, 'we', abwesend)),
+    // Aus dem gemeinsamen Speicher (`konflikteVon`): Dieselben Konflikte hat der
+    // Plan daneben schon gerechnet (Review, Planen #5).
+    const konfliktVon: Record<MeetingKey, Konflikte['von']> = {
+      mid: konflikteVon(weeks, state.week, persons, services, 'mid', abwesend).von,
+      we: konflikteVon(weeks, state.week, persons, services, 'we', abwesend).von,
     }
     return zusagenDerWoche({
       week: rawWeek,

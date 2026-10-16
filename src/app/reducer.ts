@@ -5,7 +5,7 @@
  */
 
 import { syncAuxSlots } from '../data/aux-class'
-import { buildAbsences } from '../data/absence'
+import { abwesenheitenVon } from '../data/absence'
 import { eintraegeImZeitraum, eintragSetzen, gruppenVerteilen, planNachDatum, taktVon, taktWechseln } from '../data/weitere-plaene'
 import { offenePlaetze, platzAuswahl } from '../data/offene-plaetze'
 import {
@@ -344,7 +344,10 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
     : []
   // Einmal für Gesuche und freie Plätze: Die Abwesenheiten über alle Wochen zu
   // legen ist das Teuerste hier, und die Ableitung läuft bei jeder Änderung.
-  const abwesend = me ? buildAbsences(state.absences, weeks, state.congregation.times) : undefined
+  // Mit `state.weeks`, nicht der Fassung in der Lesersprache: Die Tage sind
+  // dieselben, und so teilen Reducer und Bausteine das Ergebnis
+  // (`abwesenheitenVon`).
+  const abwesend = me ? abwesenheitenVon(state.absences, state.weeks, state.congregation.times) : undefined
   const substituteReqs = me
     ? deriveSubstituteReqs(weeks, state.services, state.confirmations, me, state.congregation.times, abwesend)
         .filter((req) => !istVorbei(req.at)) // niemand springt für gestern ein
@@ -1020,7 +1023,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     }
     case 'autoAssign': {
       if (!state.weeks[state.week]) return state // keine Wochen geladen
-      const abwesend = buildAbsences(state.absences, state.weeks, state.congregation.times)
+      const abwesend = abwesenheitenVon(state.absences, state.weeks, state.congregation.times)
       // Nacheinander, nicht nebeneinander: Die zweite Zusammenkunft sieht, wen
       // die erste schon eingeteilt hat — die Auslastung zählt sie mit.
       let weeks = state.weeks

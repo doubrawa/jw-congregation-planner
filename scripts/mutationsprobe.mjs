@@ -4666,6 +4666,20 @@ export const KATALOG = [
     ersetzen: '    if (!vorher) je.set(c.kennung, c)',
   },
   {
+    id: 'plan-konflikte-einmal-je-zustand',
+    datei: 'src/planen/useKonflikte.ts',
+    regel: 'Die Konflikte einer Zusammenkunft werden einmal je Zustand gerechnet — für alle Bausteine, die danach fragen.',
+    suchen: '  if (fertig) return fertig\n',
+    ersetzen: '',
+  },
+  {
+    id: 'abwesenheiten-einmal-je-zustand',
+    datei: 'src/data/absence.ts',
+    regel: 'Die Abwesenheiten werden einmal je Zustand gebaut, und alle Bausteine bekommen dasselbe Objekt.',
+    suchen: '    return zuletzt.ergebnis\n',
+    ersetzen: '',
+  },
+  {
     id: 'plan-hinweis-abwesend',
     datei: 'src/planen/platz-anzeige.ts',
     regel: 'Wer abwesend ist und eingeteilt, trägt am Platz „Abwesend" — nicht den Satz der Doppelbelegung.',
