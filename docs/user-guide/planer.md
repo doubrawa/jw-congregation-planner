@@ -321,9 +321,11 @@ Erinnerungen und zählt bei niemandem auf die Auslastung.
 **Die Zuteilungen bleiben trotzdem stehen.** Nimmst du den Ausfall zurück, ist
 deine Planung wieder da — es geht nichts verloren.
 
-> Die Gedächtnismahl-Woche ist **kein** Ausfall: dort wird der reguläre Ablauf
-> ersetzt, das Mahl hat eigene Zuteilungen. Dafür gibt es weiterhin den eigenen
-> Hinweis.
+> Beim **Gedächtnismahl** entfällt die Zusammenkunft, die es verdrängt: die
+> unter der Woche, wenn das Mahl auf Montag bis Freitag fällt, sonst die am
+> Wochenende. Das stellt die App selbst ein, sobald unter **Anlass der Woche**
+> das Datum des Mahls steht. Für diese Zusammenkunft gilt dann alles, was hier
+> über den Ausfall steht.
 
 ### Weitere Termine der Woche
 

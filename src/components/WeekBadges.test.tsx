@@ -12,7 +12,7 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { dict } from '../i18n/ui'
 import type { Week } from '../data/types'
-import { AusfallBanner, MemorialBanner, TerminListe } from './WeekBadges'
+import { AusfallBanner, TerminListe } from './WeekBadges'
 import { WeekNav } from './WeekNav'
 
 /**
@@ -23,7 +23,6 @@ import { WeekNav } from './WeekNav'
  * sind hier mehrere Regeln zusammengekommen, die nichts miteinander zu tun
  * haben und trotzdem dieselbe Fläche teilen:
  *
- * - Das **Gedächtnismahl** nennt die Zusammenkunft, die es ersetzt.
  * - Der **Grund eines Ausfalls** sind die Worte des Planers und bleiben
  *   unübersetzt. Für „entfällt" gibt es kein gemessenes Wort in jeder Sprache;
  *   der durchgestrichene Name der Zusammenkunft trägt die Aussage allein.
@@ -62,33 +61,6 @@ function buehne(kind: string, inhalt: ReactNode, over: Partial<AppState> = {}) {
 }
 
 afterEach(cleanup)
-
-describe('Das Gedächtnismahl-Banner', () => {
-  it('steht auf dem Tab der ausfallenden Zusammenkunft — und nennt ihr Datum', () => {
-    const mem = woche({ mem: true, memCancel: 'mid' } as Partial<Week>)
-    const { container } = buehne('mem', <MemorialBanner week={mem} tab="mid" />)
-    expect(container.querySelector('.mem-banner')?.textContent).toContain(t.tabMid)
-    expect(container.querySelector('.mem-banner-date')?.textContent).toBe('Di, 8. September · 19:00')
-  })
-
-  it('auf dem anderen Tab nicht — dort findet das gewohnte Programm statt', () => {
-    const mem = woche({ mem: true, memCancel: 'mid' } as Partial<Week>)
-    const { container } = buehne('mem', <MemorialBanner week={mem} tab="we" />)
-    expect(container.querySelector('.mem-banner')).toBeNull()
-  })
-
-  it('in einer gewöhnlichen Woche gar nicht', () => {
-    const { container } = buehne('mem', <MemorialBanner week={woche()} tab="mid" />)
-    expect(container.querySelector('.mem-banner')).toBeNull()
-  })
-
-  it('eine Mahl-Woche ohne ausfallende Zusammenkunft ebenso wenig', () => {
-    // Das Datum steht noch nicht fest — dann ist auch noch nichts gestrichen.
-    const mem = woche({ mem: true })
-    const { container } = buehne('mem', <MemorialBanner week={mem} tab="mid" />)
-    expect(container.querySelector('.mem-banner')).toBeNull()
-  })
-})
 
 describe('Das Ausfall-Banner (T30)', () => {
   it('streicht den Namen der Zusammenkunft durch und nennt den Grund des Planers', () => {

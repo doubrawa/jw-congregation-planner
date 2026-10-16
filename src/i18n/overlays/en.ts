@@ -393,7 +393,6 @@ export default {
   "coWoche": "Visit of the circuit overseer",
   "memWoche": "Memorial",
   "kongress": "Assembly or convention",
-  "memAusfall": "The “{m}” is cancelled this week — the Memorial is held instead:",
   "lacPh": "New part, e.g., local announcements",
   "lacAdd": "+ INSERT",
   "vortragThemaPh": "Enter talk topic",

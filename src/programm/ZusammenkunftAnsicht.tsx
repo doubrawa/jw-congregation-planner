@@ -7,7 +7,7 @@ import type { HelperSlot, Meeting, MeetingKey, MeetingTab, PartItem, Person, Sec
 import { abschnittZeilen, plaetzeVon } from './programm-zeilen'
 import { fill, platzName, useT } from '../i18n/useT'
 import { datumsFormat, wochentagMitZahl } from '../components/datum-anzeige'
-import { AusfallBanner, MemorialBanner } from '../components/WeekBadges'
+import { AusfallBanner } from '../components/WeekBadges'
 import { PersonZeile } from './PersonZeile'
 
 type Uebersetzer = (s: string) => string
@@ -28,7 +28,6 @@ type Ebene = 'h2' | 'h3'
 export function ZusammenkunftAnsicht({
   meeting,
   rawMeeting,
-  week,
   rawWeek,
   tab,
   me,
@@ -37,7 +36,6 @@ export function ZusammenkunftAnsicht({
 }: {
   meeting: Meeting
   rawMeeting: Meeting
-  week: Week
   /** Unübersetzte Woche — der Termin wird aus den kanonischen Daten gerechnet. */
   rawWeek: Week
   tab: MeetingTab
@@ -54,7 +52,6 @@ export function ZusammenkunftAnsicht({
     .join(' · ')
   return (
     <>
-      <MemorialBanner week={week} tab={tab} />
       {/* Fällt sie aus (T30), steht es hier mit dem Grund des Planers — die
           Karte des Tages darüber ist nur durchgestrichen. */}
       <AusfallBanner week={rawWeek} tab={mtab(tab)} />
@@ -132,7 +129,6 @@ function Tag({
         </h2>
         <span className="prog-meta">{uhrzeit}</span>
       </div>
-      <MemorialBanner week={week} tab={tab} />
       <AusfallBanner week={rawWeek} tab={tab} />
       <Programm meeting={meeting} rawMeeting={rawWeek[tab]} me={me} tpw={tpw} ebene="h3" />
     </section>

@@ -26,10 +26,9 @@ import { versatzAbMontag } from './meeting-dates'
 /**
  * Welcher Anlass gilt in dieser Woche?
  *
- * `co` und `mem` sind die **Wirkungen** eines Anlasses (umgebauter Ablauf,
- * Programm des Mahls), nicht der Anlass selbst — den trägt nur `anlass`. Beide
- * Felder setzt, wer den Anlass setzt (`setAnlass`, der Import), und niemand
- * sonst.
+ * `co` ist eine **Wirkung** des Anlasses (der umgebaute Ablauf), nicht der
+ * Anlass selbst — den trägt nur `anlass`. `co` setzt, wer den Anlass setzt
+ * (`setAnlass`), und niemand sonst.
  */
 export function anlassArt(week: Week | undefined): AnlassArt | undefined {
   return week?.anlass?.art
@@ -57,7 +56,7 @@ export function setAnlass(weeks: Week[], wi: number, art: AnlassArt | null): Wee
   const w = next[wi]
   if (!w) return weeks
   const kopie = [...next]
-  kopie[wi] = art === null ? ohneAnlass(w) : { ...w, anlass: { art }, ...(art === 'mem' ? { mem: true } : {}) }
+  kopie[wi] = art === null ? ohneAnlass(w) : { ...w, anlass: { art } }
   return kopie
 }
 
@@ -153,10 +152,6 @@ function wochentagVersatz(iso: string): number | null {
  * `setAnlass`, sondern `setAnlassTermin` (siehe `memAusfall`). Beim bloßen
  * Anhaken steht das Datum noch gar nicht fest; erst mit ihm ist bekannt, welche
  * Zusammenkunft verdrängt wird.
- *
- * `memCancel` bleibt dabei unangetastet. Es ist die Marke „auf diesem Reiter
- * steht das Programm des Mahls" und gehört zu den Datensätzen, die ein solches
- * mitbringen — ein Programm erzeugt dieses Modul nicht.
  */
 
 /** Wirkungen eines Anlasses zurücknehmen. */
@@ -164,14 +159,7 @@ function zuruecknehmen(weeks: Week[], wi: number, art: AnlassArt | undefined): W
   if (art === 'co') return setDienstwoche(weeks, wi, false)
   // Kongress wie Gedächtnismahl: beide entstrichen. Was der Planer selbst
   // gesetzt hat (Tag, Uhrzeit, Grund), bleibt stehen — nur der Strich geht.
-  if (art === 'kongress' || art === 'mem') {
-    const entstrichen = beideStreichen(weeks, wi, false)
-    const week = entstrichen[wi]
-    if (!week) return entstrichen
-    const next = [...entstrichen]
-    next[wi] = { ...week, mem: undefined, memCancel: undefined }
-    return next
-  }
+  if (art === 'kongress' || art === 'mem') return beideStreichen(weeks, wi, false)
   return weeks
 }
 
@@ -184,8 +172,8 @@ function beideStreichen(weeks: Week[], wi: number, aus: boolean): Week[] {
   return next
 }
 
-/** Woche ohne Anlass — die Felder werden entfernt, nicht auf `false` gesetzt. */
+/** Woche ohne Anlass — das Feld wird entfernt, nicht leer gesetzt. */
 function ohneAnlass(week: Week): Week {
   const { anlass: _anlass, ...rest } = week
-  return { ...rest, mem: undefined, memCancel: undefined }
+  return rest
 }

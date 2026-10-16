@@ -161,7 +161,6 @@ describe('gedaechtnismahlWoche: die Woche ohne Seite', () => {
   it('trägt ihre Kennung und den Anlass samt Datum', () => {
     expect(w.start).toBe('2026-03-30')
     expect(w.anlass).toEqual({ art: 'mem', von: '2026-04-02' })
-    expect(w.mem).toBe(true)
   })
 
   it('das Wochenende bekommt die übliche Vorlage — es findet statt', () => {

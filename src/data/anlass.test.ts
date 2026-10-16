@@ -84,11 +84,10 @@ describe('anlassArt: der Anlass steht in seinem Feld', () => {
     expect(anlassArt(w)).toBe('kongress')
   })
 
-  it('die Wirkungen allein (`co`, `mem`) sind kein Anlass', () => {
-    // Sie entstehen nur zusammen mit `anlass` (`setAnlass`, Import) — für sich
-    // genommen sagen sie nichts über die Woche.
+  it('die Wirkung allein (`co`) ist kein Anlass', () => {
+    // Sie entsteht nur zusammen mit `anlass` (`setAnlass`) — für sich genommen
+    // sagt sie nichts über die Woche.
     expect(anlassArt({ ...makeWeek(), co: true })).toBeUndefined()
-    expect(anlassArt({ ...makeWeek(), mem: true, memCancel: 'we' })).toBeUndefined()
   })
 
   it('ohne Feld: kein Anlass', () => {
@@ -163,10 +162,9 @@ describe('Kongress: beide Zusammenkünfte entfallen', () => {
 })
 
 describe('Gedächtnismahl: erstmals einstellbar', () => {
-  it('setzt die Marke, die es bisher nur im Datensatz gab', () => {
+  it('setzt den Anlass', () => {
     const w = eine(setAnlass([makeWeek()], 0, 'mem'))
     expect(anlassArt(w)).toBe('mem')
-    expect(w.mem).toBe(true)
   })
 
   it('streicht ohne Datum noch keine Zusammenkunft', () => {
@@ -242,12 +240,6 @@ describe('Gedächtnismahl: erstmals einstellbar', () => {
     ws = setAnlass(ws, 0, null)
     expect(istAusgefallen(eine(ws), 'mid')).toBe(false)
     expect(istAusgefallen(eine(ws), 'we')).toBe(false)
-  })
-
-  it('und räumt sie beim Aufheben wieder ab', () => {
-    const zurueck = setAnlass(setAnlass([makeWeek()], 0, 'mem'), 0, null)
-    expect(eine(zurueck).mem).toBeUndefined()
-    expect(eine(zurueck).memCancel).toBeUndefined()
   })
 
   it('wechselt sauber vom Kreisaufseher herüber — der Umbau wird zurückgenommen', () => {

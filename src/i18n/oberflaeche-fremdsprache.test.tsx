@@ -436,7 +436,7 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
     }],
     ['Gedächtnismahl-Woche', {
       screen: 'programm',
-      weeks: [{ ...woche(), anlass: { art: 'mem' }, mem: true, memCancel: 'mid' }],
+      weeks: [{ ...woche(), anlass: { art: 'mem' } }],
     }],
     ['Kreisaufseher-Woche', { screen: 'programm', weeks: [{ ...woche(), anlass: { art: 'co' }, co: true }] }],
     ['ausgefallene Zusammenkunft', {

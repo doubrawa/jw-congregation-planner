@@ -181,18 +181,6 @@ describe('Ausfall: es kommt niemand zusammen', () => {
   })
 })
 
-describe('Die Gedächtnismahl-Woche ist kein Ausfall', () => {
-  it('memCancel ersetzt den Ablauf, es findet trotzdem etwas statt', () => {
-    // Der Tab der betroffenen Zusammenkunft zeigt dann das Mahl — mit Vortrag,
-    // Gebeten und dem Herumreichen der Symbole. Als Ausfall gelesen, fielen
-    // genau diese Zuteilungen aus Auslastung, Aufgaben und Erinnerungen heraus.
-    const mahl: Week = { ...makeWeek(), mem: true, memCancel: 'we' }
-    expect(istAusgefallen(mahl, 'we')).toBe(false)
-    expect(partWorkload([mahl], person)).toBe(2)
-    expect(deriveMyTasks([mahl], [], 'A. Beispiel', {}, ZEITEN, 'p1')).toHaveLength(2)
-  })
-})
-
 describe('setAbweichung räumt hinter sich auf', () => {
   it('setzt, ergänzt und nimmt einzelne Felder zurück', () => {
     const a = setAbweichung([makeWeek()], 0, 'mid', { wd: 4 })

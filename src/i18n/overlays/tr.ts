@@ -292,7 +292,6 @@ export default {
   "coWoche": "Çevre gözetmeninin ziyareti",
   "memWoche": "Anma Toplantısı",
   "kongress": "Çevre toplantısı veya bölge kongresi",
-  "memAusfall": "“{m}” bu hafta yapılmayacak — yerine Anma Toplantısı yapılacak:",
   "lacPh": "Yeni bölüm, örn. yerel duyurular",
   "lacAdd": "+ EKLE",
   "toastLacAdd": "Bölüm eklendi · saatler ayarlandı",

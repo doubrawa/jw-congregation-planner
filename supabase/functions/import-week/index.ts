@@ -284,17 +284,13 @@ Deno.serve(async (req: Request) => {
       lang?: string
       alt?: Record<string, ImportedWeek>
       anlass?: { art: 'mem'; von: string }
-      mem?: true
     } = parseWorkbookWeek(html)
     if (start) week.start = start.toISOString().slice(0, 10)
     week.lang = lang
     // Fällt das Mahl aufs Wochenende, gibt es die Wochenseite ganz normal —
     // nur die Zusammenkunft am Wochenende entfällt. Der Anlass wird trotzdem
     // gesetzt; welche Zusammenkunft er streicht, leitet der Client daraus ab.
-    if (mem) {
-      week.anlass = { art: 'mem', von: mem }
-      week.mem = true
-    }
+    if (mem) week.anlass = { art: 'mem', von: mem }
 
     // Aufgabenart der Schülerteile (1 oder 2 Personen, männlich) immer aus der
     // deutschen Fassung ableiten — das Arbeitsheft ist weltweit strukturgleich,

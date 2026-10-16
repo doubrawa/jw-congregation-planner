@@ -292,7 +292,6 @@ export default {
   "coWoche": "Visita del superintendente de circuito",
   "memWoche": "Conmemoración",
   "kongress": "Asamblea",
-  "memAusfall": "“{m}” se cancela esta semana; en su lugar se celebra la Conmemoración:",
   "lacPh": "Nueva parte, p. ej., avisos locales",
   "lacAdd": "+ INSERTAR",
   "toastLacAdd": "Parte insertada · horarios ajustados",

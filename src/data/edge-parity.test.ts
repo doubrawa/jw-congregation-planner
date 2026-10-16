@@ -375,15 +375,6 @@ describe('Sonderwochen: Verlegung und Ausfall (T30)', () => {
     expect(istAusgefallen(aus, 'we')).toBe(false)
     expect(edgeAusgefallen(aus.dev, 'we')).toBe(false)
   })
-
-  it('die Gedächtnismahl-Woche ist KEIN Ausfall — beidseitig', () => {
-    // `memCancel` sieht aus wie ein Ausfall, ist aber eine Ersetzung: der Tab
-    // zeigt dann das Mahl, und das hat eigene Zuteilungen. Als Ausfall gelesen,
-    // fielen genau diese aus Auslastung, Aufgaben und Erinnerungen heraus.
-    const mahl: Week = { ...woche(undefined, '7.–13. September'), mem: true, memCancel: 'we' }
-    expect(istAusgefallen(mahl, 'we')).toBe(false)
-    expect(edgeAusgefallen(mahl.dev, 'we')).toBe(false)
-  })
 })
 
 /**

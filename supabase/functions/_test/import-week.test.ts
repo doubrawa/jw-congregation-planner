@@ -285,7 +285,6 @@ interface Antwort {
     start?: string
     lang?: string
     anlass?: { art: string; von: string }
-    mem?: true
     mid: { sections: unknown[] }
     we: { sections: { label: string }[] }
     alt?: Record<string, { range: string; mid: { sections: Array<{ items: Array<{ names?: unknown[] }> }> }; we: { sections: unknown[] } }>
@@ -357,10 +356,9 @@ describe('import-week: die gewöhnliche Woche', () => {
     expect(res.ende).toBe(true)
   })
 
-  it('trägt weder Anlass noch Gedächtnismahl-Marke', async () => {
+  it('trägt keinen Anlass', async () => {
     const { week } = await hole({ after: '2026-03-02' })
     expect(week?.anlass).toBeUndefined()
-    expect(week?.mem).toBeUndefined()
   })
 })
 
@@ -374,7 +372,6 @@ describe('import-week: die Woche des Gedächtnismahls', () => {
     const { week } = await hole({ after: '2026-03-23' })
     expect(week?.start).toBe('2026-03-30')
     expect(week?.anlass).toEqual({ art: 'mem', von: '2026-04-02' })
-    expect(week?.mem).toBe(true)
   })
 
   it('ihr Wochenende ist die übliche Vorlage — es findet statt', async () => {
@@ -404,13 +401,13 @@ describe('import-week: die Woche des Gedächtnismahls', () => {
   it('und die Woche danach geht ganz normal weiter', async () => {
     const { week } = await hole({ after: '2026-03-30' })
     expect(week?.start).toBe('2026-04-06')
-    expect(week?.mem).toBeUndefined()
+    expect(week?.anlass).toBeUndefined()
   })
 
   it('auch über `start` ist sie erreichbar', async () => {
     const { week } = await hole({ start: '2026-03-30' })
     expect(week?.start).toBe('2026-03-30')
-    expect(week?.mem).toBe(true)
+    expect(week?.anlass?.art).toBe('mem')
   })
 })
 
@@ -434,7 +431,6 @@ describe('import-week: Mahl am Wochenende — keine Lücke', () => {
     const { week } = await hole({ start: '2026-03-09' })
     expect(week?.start).toBe('2026-03-09')
     expect(week?.anlass).toEqual({ art: 'mem', von: '2026-03-15' })
-    expect(week?.mem).toBe(true)
     // Und sie behält ihr Programm — sie wurde geholt, nicht gebaut.
     expect(week?.mid.sections.length).toBeGreaterThan(0)
   })
@@ -461,7 +457,7 @@ describe('import-week: wenn das Leseprogramm fehlt', () => {
     seiten.leseprogramm = false
     const { week } = await hole({ after: '2026-03-23' })
     expect(week?.start).toBe('2026-04-06')
-    expect(week?.mem).toBeUndefined()
+    expect(week?.anlass).toBeUndefined()
   })
 
   it('eine unerreichbare Leseprogramm-Seite bricht den Import nicht ab', async () => {
@@ -678,7 +674,7 @@ describe('import-week: weitere Programmsprachen als Varianten', () => {
 
   it('die Gedächtnismahl-Woche bekommt keine Varianten — es gibt keine Seite dazu', async () => {
     const { week } = await hole({ after: '2026-03-23', lang: 'de', altLangs: ['en'] })
-    expect(week?.mem).toBe(true)
+    expect(week?.anlass?.art).toBe('mem')
     expect(week?.alt).toBeUndefined()
   })
 
@@ -699,7 +695,7 @@ describe('import-week: weitere Programmsprachen als Varianten', () => {
    */
   it('die Gedächtnismahl-Woche steht kanonisch deutsch da — auch auf Spanisch', async () => {
     const { week } = await hole({ after: '2026-03-23', lang: 'es' })
-    expect(week?.mem).toBe(true)
+    expect(week?.anlass?.art).toBe('mem')
     expect(week?.lang).toBe('es')
     // Der Kopf ist deutsch …
     expect(week?.range).toMatch(/März|April/)

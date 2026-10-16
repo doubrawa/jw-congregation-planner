@@ -234,9 +234,8 @@ describe('Sonderwochen (v3)', () => {
     expect(weeks[2].we.sections.map((s) => s.label)).toContain('DIENSTVORTRAG')
   })
 
-  it('Woche 3 ist Gedächtnismahl-Woche (Wochenende ausfallend)', () => {
-    expect(weeks[3].mem).toBe(true)
-    expect(weeks[3].memCancel).toBe('we')
+  it('Woche 3 ist Gedächtnismahl-Woche (das Mahl am Samstagabend)', () => {
+    expect(weeks[3].anlass?.art).toBe('mem')
     expect(weeks[3].we.sections.map((s) => s.label)).toContain('GEDÄCHTNISMAHL')
     expect(weeks[3].we.date).toContain('Samstag, 3. Oktober')
   })

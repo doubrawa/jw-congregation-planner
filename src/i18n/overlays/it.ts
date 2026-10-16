@@ -292,7 +292,6 @@ export default {
   "coWoche": "Visita del sorvegliante di circoscrizione",
   "memWoche": "Commemorazione",
   "kongress": "Assemblea o congresso",
-  "memAusfall": "“{m}” è annullata questa settimana — al suo posto si tiene la Commemorazione:",
   "lacPh": "Nuova parte, es. annunci locali",
   "lacAdd": "+ INSERISCI",
   "toastLacAdd": "Parte inserita · orari adattati",

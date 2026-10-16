@@ -146,14 +146,6 @@
     font-size: 9.5pt;
   }
 
-  .mem-banner {
-    background: none !important;
-    border: 1px solid #999;
-    padding: 2mm 2.5mm;
-    margin-bottom: 3mm;
-    font-size: 8.5pt;
-  }
-
   /* Bereichs-Karten flach: Überschrift + Linie statt Tonfläche.
      Ein Bereich soll nie über den Seitenumbruch zerrissen werden. */
   .panel,

@@ -292,7 +292,6 @@ export default {
   "coWoche": "Wizyta nadzorcy obwodu",
   "memWoche": "Pamiątka",
   "kongress": "Zgromadzenie obwodowe lub kongres",
-  "memAusfall": "„{m}” w tym tygodniu jest odwołane — zamiast niego odbywa się Pamiątka:",
   "lacPh": "Nowy punkt, np. ogłoszenia miejscowe",
   "lacAdd": "+ WSTAW",
   "toastLacAdd": "Wstawiono punkt · dostosowano godziny",

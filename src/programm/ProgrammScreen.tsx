@@ -150,7 +150,6 @@ function ProgrammBody() {
           <ZusammenkunftAnsicht
             meeting={meeting}
             rawMeeting={rawMeeting}
-            week={week}
             rawWeek={rawWeek}
             tab={state.tab}
             me={eigenePerson(state)}

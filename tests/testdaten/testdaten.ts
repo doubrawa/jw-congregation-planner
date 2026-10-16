@@ -643,7 +643,7 @@ export function buildDemoWeeks(): Week[] {
       },
     },
     {
-      range: '28. Sep – 4. Okt', start: '2026-09-28', book: 'Jeremia 40–42', mem: true, memCancel: 'we',
+      range: '28. Sep – 4. Okt', start: '2026-09-28', book: 'Jeremia 40–42',
       anlass: { art: 'mem', von: '2026-10-03' },
       // Das Gedächtnismahl ist am Samstag nach Sonnenuntergang statt am Sonntag
       // — und das steht hier als **Wert**. Bis zum 18. September 2026 stand es
@@ -673,7 +673,7 @@ export function buildDemoWeeks(): Week[] {
         ],
         helpers: H({ ton: ['Robert Simon'], mik: ['Niklas Feld', 'Jörg Roth'], eingang: ['Martin Otto', 'Ulrich Lang'], rein: ['Gruppe 2'] }),
       },
-      // Gedächtnismahl statt Wochenend-Zusammenkunft (memCancel: 'we').
+      // Das Gedächtnismahl statt der Wochenend-Zusammenkunft, mit eigenem Programm.
       we: {
         date: 'Samstag, 3. Oktober · 19:30 · Königreichssaal — nach Sonnenuntergang', end: 'Ende ca. 20:30',
         sections: [

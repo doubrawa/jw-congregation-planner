@@ -132,9 +132,9 @@ describe('Vorschau: angelegte Wochen', () => {
     const weeks = [
       woche(W0, { anlass: { art: 'co' } }),
       woche(W1, { anlass: { art: 'kongress', von: W1, bis: W1 } }),
-      // Wie `setAnlassTermin` es setzt: Anlass und Ausfall, kein `memCancel`
-      // (das setzt kein Code; bis zum 16.10.2026 las die Prüfung genau das).
-      woche(W2, { anlass: { art: 'mem' }, mem: true, dev: { we: { cancelled: true } } }),
+      // Wie `setAnlassTermin` es setzt: Anlass und Ausfall. Bis zum 16.10.2026
+      // las die Prüfung `memCancel`, das kein Code setzte.
+      woche(W2, { anlass: { art: 'mem' }, dev: { we: { cancelled: true } } }),
       woche(montagNach(W0, 3), { dev: { we: { cancelled: true } } }),
       woche(montagNach(W0, 4), { anlass: { art: 'co' } }),
     ]
@@ -338,7 +338,7 @@ describe('Eine später angelegte Woche bekommt ihren vorgemerkten Vortrag', () =
 
   it('fällt das Gedächtnismahl aufs Wochenende, bleibt der Platz leer; ohne Vormerkung dieselbe Woche', () => {
     // Wie `setAnlassTermin` es setzt: Anlass und Ausfall am Wochenende.
-    const mahl = woche(W5, { anlass: { art: 'mem' }, mem: true, dev: { we: { cancelled: true } } })
+    const mahl = woche(W5, { anlass: { art: 'mem' }, dev: { we: { cancelled: true } } })
     expect(vortragDerWoche(vortragInNeueWoche(mahl, [vorgemerkt], PERSONEN))?.redner).toBe('')
     const leer = woche(W6)
     expect(vortragInNeueWoche(leer, [vorgemerkt], PERSONEN)).toBe(leer)

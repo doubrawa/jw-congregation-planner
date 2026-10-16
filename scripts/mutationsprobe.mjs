@@ -391,7 +391,7 @@ export const KATALOG = [
     datei: 'src/data/vortragsplan.ts',
     regel: 'Ein Gedächtnismahl am Wochenende überspringt der Vortragsplan als „Gedächtnismahl", nicht als „Ausfall" — am Anlass erkannt.',
     suchen: "  if (week.anlass?.art === 'mem' && istAusgefallen(week, 'we')) return 'gedaechtnismahl'\n",
-    ersetzen: "  if (week.memCancel === 'we') return 'gedaechtnismahl'\n",
+    ersetzen: '',
   },
   {
     id: 'aux-gleich-feldweise',

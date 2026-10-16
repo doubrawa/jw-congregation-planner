@@ -717,7 +717,6 @@ export const DE = {
     coWoche: 'Besuch des Kreisaufsehers',
     memWoche: 'Gedächtnismahl',
     kongress: 'Kongress',
-    memAusfall: '„{m}“ entfällt in dieser Woche — stattdessen findet das Gedächtnismahl statt:',
     lacPh: 'Neuer Programmpunkt, z. B. Örtliche Hinweise', lacAdd: '+ EINFÜGEN',
     vortragThemaPh: 'Vortragsthema eintragen', anfangsliedLbl: 'ANFANGSLIED', liedNrPh: 'Nr.',
     rednerNamePh: 'Name des Redners', rednerVersPh: 'Versammlung des Redners',

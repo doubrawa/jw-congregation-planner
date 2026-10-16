@@ -1,33 +1,20 @@
-import { fill, useT } from '../i18n/useT'
+import { useT } from '../i18n/useT'
 import { useApp } from '../app/context'
 import { zusammenkunftName } from './anlass-name'
 import { abweichungsGrund, istAusgefallen } from '../data/helpers'
 import { versatzAbMontag } from '../data/meeting-dates'
 import { termineVon } from '../data/termine'
-import type { MeetingKey, MeetingTab, Week } from '../data/types'
+import type { MeetingKey, Week } from '../data/types'
 import { wochentagName } from '../planen/wochentage'
 import './components.css'
 
 /**
- * Hinweis-Banner auf dem Tab der ausfallenden Zusammenkunft einer
- * Gedächtnismahl-Woche: statt des normalen Programms findet das
- * Gedächtnismahl statt (das Programm darunter zeigt bereits das Mahl).
- */
-export function MemorialBanner({ week, tab }: { week: Week; tab: MeetingTab }) {
-  const { t, tp } = useT()
-  if (!week.mem || week.memCancel !== tab) return null
-  const cancelled = zusammenkunftName(week.memCancel, t)
-  const date = (week.memCancel === 'we' ? week.we : week.mid).date
-  return (
-    <div className="mem-banner">
-      {fill(t.memAusfall, { m: cancelled })}
-      <div className="mem-banner-date">{tp(date)}</div>
-    </div>
-  )
-}
-
-/**
  * Hinweis, dass diese Zusammenkunft in dieser Woche **nicht stattfindet** (T30).
+ *
+ * Auch beim Gedächtnismahl steht er da: Das Datum des Mahls streicht die
+ * Zusammenkunft, die es verdrängt (`setAnlassTermin`). Ein eigenes Banner
+ * dafür gab es bis zum 16.10.2026 (`MemorialBanner`). Es hing an
+ * `memCancel`, das kein Code setzte, und erschien deshalb nie.
  *
  * Der Text ist der Grund, den der Planer selbst eingetragen hat — seine Worte,
  * in seiner Sprache, wie ein Name oder ein Vortragsthema. Für „entfällt" gibt

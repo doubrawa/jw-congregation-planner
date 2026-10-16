@@ -787,14 +787,11 @@ export interface Week {
    * baut um und wieder zurück.
    */
   coData?: Dienstwoche
-  mem?: boolean // Gedächtnismahl-Woche (Chip + Banner)
-  memCancel?: MeetingKey // ausfallende Zusammenkunft (deren Tab zeigt das Gedächtnismahl)
   /**
    * **Anlass der Woche** (T64) — was diese Woche besonders macht, samt Termin.
    *
-   * Er ist die *Ursache*; `co`, `mem`/`memCancel` und `dev[…].cancelled` sind
-   * seine *Wirkungen* und bleiben eigene Felder. Das hat zwei Gründe, und beide
-   * sind hart:
+   * Er ist die *Ursache*; `co` und `dev[…].cancelled` sind seine *Wirkungen*
+   * und bleiben eigene Felder. Das hat zwei Gründe, und beide sind hart:
    *
    * 1. **Die Edge Functions lesen rohes JSONB.** Würde der Anlass die
    *    Wirkungen ersetzen, müssten `send-reminders` und `substitute` die
@@ -805,28 +802,30 @@ export interface Week {
    *    `AnlassArt`): solche Gründe stehen als Freitext bei der betroffenen
    *    Zusammenkunft. Ohne eigenes `cancelled` wäre der Fall nicht abbildbar.
    *
-   * **Es gibt keinen Rückfall auf `co`/`mem`.** `anlassArt()` liest allein dieses
-   * Feld; bis zum 25.9.2026 (`030012b`) las es die Wirkungen mit. Beide setzt nur,
-   * wer auch den Anlass setzt — `setAnlass` und der Import —, eine Woche mit
-   * `co`/`mem` ohne `anlass` ist also kein Altbestand, sondern ein Fehler. Hier
-   * stand bis zum 1.10.2026 noch das Gegenteil, und die Demo-Daten trugen genau
-   * diesen Fehler: Ihrer Gedächtnismahl- und Kreisaufseher-Woche fehlte der Chip.
+   * **Es gibt keinen Rückfall auf `co`.** `anlassArt()` liest allein dieses
+   * Feld; bis zum 25.9.2026 (`030012b`) las es die Wirkungen mit. `co` setzt
+   * nur, wer auch den Anlass setzt (`setAnlass`); eine Woche mit `co` ohne
+   * `anlass` ist also kein Altbestand, sondern ein Fehler. Hier stand bis zum
+   * 1.10.2026 noch das Gegenteil, und die Demo-Daten trugen genau diesen
+   * Fehler: Ihrer Gedächtnismahl- und Kreisaufseher-Woche fehlte der Chip.
+   *
+   * Das Gedächtnismahl wirkt allein über `dev[…].cancelled`: Sein Datum
+   * streicht die Zusammenkunft, die es verdrängt (`setAnlassTermin`). Die
+   * Marken `mem` und `memCancel` sind am 16.10.2026 entfallen. Gelesen hat sie
+   * nur ein Banner, und `memCancel` setzte kein Code, also erschien es nie.
    */
   anlass?: Anlass
-  /**
-   * Abweichungen je Zusammenkunft (T30) — verlegter Tag, andere Uhrzeit,
-   * Ausfall, Grund. Fehlt bei allen Wochen, die der Regel folgen.
-   *
-   * `mem`/`memCancel` bleiben daneben bestehen und werden weiterhin gelesen:
-   * eine Gedächtnismahl-Woche ist ein Ausfall mit bekanntem Grund. Gefragt
-   * wird nie direkt, sondern über `istAusgefallen(week, tab)` — die eine
-   * Stelle, die beide Quellen kennt.
-   */
   /**
    * Weitere Termine dieser Woche (T63) — Pionierbesprechung,
    * Ältestenbesprechung, was sonst ansteht.
    */
   termine?: Termin[]
+  /**
+   * Abweichungen je Zusammenkunft (T30) — verlegter Tag, andere Uhrzeit,
+   * Ausfall, Grund. Fehlt bei allen Wochen, die der Regel folgen. Gefragt wird
+   * nie direkt, sondern über die Helfer in `helpers.ts` (`istAusgefallen`,
+   * `abweichungsGrund`, `weichtAb`).
+   */
   dev?: Partial<Record<MeetingKey, Abweichung>>
   mid: Meeting // Unter der Woche
   we: Meeting // Wochenende

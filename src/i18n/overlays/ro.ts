@@ -292,7 +292,6 @@ export default {
   "coWoche": "Vizita supraveghetorului de circumscripție",
   "memWoche": "Comemorarea",
   "kongress": "Congres",
-  "memAusfall": "„{m}” este anulată în această săptămână — în locul ei are loc Comemorarea:",
   "lacPh": "Parte nouă, de ex. anunțuri locale",
   "lacAdd": "+ INSEREAZĂ",
   "toastLacAdd": "Parte inserată · orare ajustate",

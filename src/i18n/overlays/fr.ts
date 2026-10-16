@@ -292,7 +292,6 @@ export default {
   "coWoche": "Visite du responsable de circonscription",
   "memWoche": "Mémorial",
   "kongress": "Assemblée régionale ou de circonscription",
-  "memAusfall": "«\u00a0{m}\u00a0» est annulée cette semaine — le Mémorial a lieu à la place\u00a0:",
   "lacPh": "Nouvelle partie, p. ex. annonces locales",
   "lacAdd": "+ INSÉRER",
   "toastLacAdd": "Partie insérée · horaires ajustés",

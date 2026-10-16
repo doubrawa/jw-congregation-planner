@@ -163,26 +163,19 @@
   }
 }
 
-/* Hinweise zu einer Zusammenkunft (T121, Entwurf „Besuch des Kreisaufsehers"):
-   eine Karte mit Rand. Das Gedächtnismahl ersetzt sie — Minze; sie fällt aus
-   (T30) — Rot. */
-.mem-banner,
+/* Hinweis, dass eine Zusammenkunft ausfällt (T30; T121, Entwurf „Besuch des
+   Kreisaufsehers"): eine Karte mit rotem Rand. */
 .ausfall-banner {
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding: 14px 16px;
-  border: 1.5px solid var(--akzent-text);
+  border: 1.5px solid var(--problem);
   border-radius: 20px;
   background: var(--karte);
   font-weight: 600;
 }
 
-.ausfall-banner {
-  border-color: var(--problem);
-}
-
-.mem-banner-date,
 .ausfall-grund {
   color: var(--text2);
   font-size: calc(13.5px * var(--fs));

@@ -140,7 +140,6 @@ export function gedaechtnismahlWoche(montagISO: string, memISO: string): MemWoch
     we: weekendTemplate(range),
     start: montagISO,
     anlass: { art: 'mem', von: memISO },
-    mem: true,
   }
 }
 
@@ -148,7 +147,6 @@ export function gedaechtnismahlWoche(montagISO: string, memISO: string): MemWoch
 export type MemWoche = ImportedWeek & {
   start: string
   anlass: { art: 'mem'; von: string }
-  mem: true
 }
 
 /** UTC-Millisekunden → ISO-Tag. */

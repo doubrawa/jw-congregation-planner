@@ -883,7 +883,6 @@ describe('Import', () => {
       range: '30. März–5. April',
       start: '2026-03-30',
       anlass: { art: 'mem', von: '2026-04-02' }, // Donnerstag
-      mem: true,
     }
     const next = reducer(s, { type: 'addImportedWeek', week })
     const neu = next.weeks.at(-1)!
@@ -897,7 +896,6 @@ describe('Import', () => {
       ...s.weeks[0]!,
       start: '2024-03-18',
       anlass: { art: 'mem', von: '2024-03-24' }, // Sonntag — die Woche gibt es im Heft
-      mem: true,
     }
     const neu = reducer(s, { type: 'addImportedWeek', week }).weeks.at(-1)!
     expect(istAusgefallen(neu, 'we')).toBe(true)

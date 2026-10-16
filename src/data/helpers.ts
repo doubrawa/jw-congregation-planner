@@ -703,16 +703,8 @@ export function neuWennGeaendert<T>(alt: T[], neu: T[]): T[] {
 /**
  * Abweichung dieser einen Zusammenkunft, falls es eine gibt.
  *
- * **`mem`/`memCancel` gehören ausdrücklich NICHT hierher.** Sie sehen aus wie
- * ein Ausfall, sind aber eine *Ersetzung*: der Tab der betroffenen
- * Zusammenkunft zeigt dann das Gedächtnismahl, und das hat ein eigenes
- * Programm mit eigenen Zuteilungen — Vortrag, Gebete, Symbole herumreichen.
- * Wer sie als Ausfall behandelt, streicht genau diese Aufgaben aus der
- * Auslastung, aus „Meine Aufgaben" und aus den Erinnerungen. Der Abend findet
- * statt; nur der reguläre Ablauf tut es nicht.
- *
- * `cancelled` meint deshalb das Engere: **es kommt niemand zusammen**
- * (Kongresswoche, abgesagte Zusammenkunft).
+ * `cancelled` heißt: **Es kommt niemand zusammen** (Kongresswoche, abgesagte
+ * Zusammenkunft, die vom Gedächtnismahl verdrängte).
  */
 export function abweichung(week: Week | undefined, tab: MeetingKey): Abweichung | undefined {
   return week?.dev?.[tab]

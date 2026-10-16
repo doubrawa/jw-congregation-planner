@@ -5,7 +5,7 @@ import { UnteransichtKopf } from '../components/UnteransichtKopf'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { DESKTOP_BREITE, TABLET_BREITE, WOCHEN_SPALTE_BREITE, useMedia } from '../components/useMedia'
 import { WeekStrip } from '../components/WeekStrip'
-import { AusfallBanner, MemorialBanner } from '../components/WeekBadges'
+import { AusfallBanner } from '../components/WeekBadges'
 import { WochenWahl } from '../components/WochenWahl'
 import { hatAuxKlasse } from '../data/aux-class'
 import { mtab } from '../data/helpers'
@@ -204,7 +204,6 @@ function PlanenBody() {
         <FsPlan />
       ) : (
         <>
-          <MemorialBanner week={week} tab={state.tab} />
           <AusfallBanner week={rawWeek} tab={tab} />
 
           {/* Wie weit die Woche ist und was zu klären ist (T121, `GPlanen`) —
