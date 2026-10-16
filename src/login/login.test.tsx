@@ -239,6 +239,22 @@ describe('Mit Code anmelden', () => {
     await waitFor(() => expect(container.querySelector('.feld-fehler')?.textContent).toBe(t[key]))
   })
 
+  it('scheitert die Prüfung am Netz, prüft „Anmelden" noch einmal — angemeldet wird erst danach (16.10.2026)', async () => {
+    // Bis dahin blieb der Knopf gesperrt: Der Satz bat um einen neuen Versuch,
+    // und keiner ging, ohne den Code neu zu tippen.
+    codePruefen.mockResolvedValueOnce({ ok: false, fehler: 'netz' })
+    const { container, dispatch } = zumCode()
+    fireEvent.change(codeFeld(container), { target: { value: 'K7RD2QWM' } })
+    await waitFor(() => expect(container.querySelector('.feld-fehler')?.textContent).toBe(t.anmeldenFehler))
+    expect(knopf(container, t.anmeldenKnopf)!.getAttribute('aria-disabled')).toBeNull()
+    fireEvent.click(knopf(container, t.anmeldenKnopf)!)
+    await waitFor(() => expect(container.querySelector('.login-code-passt')?.textContent).toContain('Anna Alt'))
+    expect(codePruefen).toHaveBeenCalledTimes(2)
+    expect(mitCodeAnmelden).not.toHaveBeenCalled()
+    fireEvent.click(knopf(container, t.anmeldenKnopf)!)
+    await waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'login', welcome: true }))
+  })
+
   it('ein Code aus der Adresse (QR-Code mit der Handy-Kamera) steht gleich im Feld — angemeldet wird erst auf den Knopf', async () => {
     window.history.replaceState(null, '', '/#code=K7RD2QWM')
     const { container } = zeige()

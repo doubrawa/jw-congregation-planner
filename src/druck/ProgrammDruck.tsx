@@ -163,6 +163,14 @@ export function TagKnapp({ tab, week, rawWeek, tpw }: DruckTag) {
           )
         })
       )}
+      {/* Der Ratgeber der Klasse — wie im Wochenbogen am Ende des Tages, hier
+          als eine Zeile. Bis zum 16.10.2026 fehlte er im Monatsbogen, obwohl
+          die Plätze der Klasse darin standen. */}
+      {!ausgefallen && mitAux && rawMeeting.auxRatgeber && (
+        <KnappZeile nr="" punkt={`${t.auxKlasse} · ${t.auxRatgeber}`}>
+          <NamenKnapp slots={[rawMeeting.auxRatgeber]} />
+        </KnappZeile>
+      )}
     </div>
   )
 }

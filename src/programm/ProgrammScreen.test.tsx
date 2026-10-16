@@ -1217,8 +1217,20 @@ describe('Weitere Pläne ansehen (T121)', () => {
     expect(zeilen.map((z) => [z.querySelector('.wp-liste-wer')?.textContent, z.classList.contains('is-eigen')])).toEqual([
       ['Gruppe 2', false],
       ['Gruppe 1', true],
+      [t.offenDash, false],
+      [t.offenDash, false],
     ])
     expect(container.querySelectorAll('.wp-dran .wp-chip')).toHaveLength(1)
+  })
+
+  it('jede Woche des Plans steht da — eine ohne Gruppe mit „—", wie im Ausdruck (16.10.2026)', () => {
+    // Bis dahin liefen hier die Einträge: Eine Woche, der keine Gruppe
+    // zugeteilt war, fehlte einfach, und die Liste sah lückenlos aus.
+    const { container } = plaene({ plaene: [REINIGUNG] })
+    const zeilen = [...container.querySelectorAll('.wp-liste-zeile')].map((z) => z.textContent)
+    expect(zeilen).toHaveLength(4) // 7., 14., 21. und 28. September
+    expect(zeilen[2]).toContain('21.–27. September')
+    expect(zeilen[2]).toContain(t.offenDash)
   })
 
   it('ohne eigene Gruppe ist keine Zeile hervorgehoben — auch die noch offene nicht', () => {
@@ -1228,7 +1240,7 @@ describe('Weitere Pläne ansehen (T121)', () => {
       persons: [{ ...ICH, grp: null }],
       planEintraege: [...EINTRAEGE, { id: 'e4', planId: 'pl1', datum: '2026-09-21', grp: null }],
     })
-    expect(container.querySelectorAll('.wp-liste-zeile')).toHaveLength(3)
+    expect(container.querySelectorAll('.wp-liste-zeile')).toHaveLength(4)
     expect(container.querySelector('.wp-liste-zeile.is-eigen')).toBeNull()
     expect(container.querySelector('.wp-dran')).toBeNull()
   })

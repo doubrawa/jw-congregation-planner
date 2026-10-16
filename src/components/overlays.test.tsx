@@ -10,7 +10,7 @@ import {
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { dict } from '../i18n/ui'
-import type { MyTask, S89Payload } from '../data/types'
+import type { MyTask, Notification, S89Payload } from '../data/types'
 import { AbsageBlatt } from '../aufgaben/AbsageBlatt'
 import { AufgabeBlatt } from '../aufgaben/AufgabeBlatt'
 import { S89Sheet } from './S89Sheet'
@@ -220,6 +220,39 @@ describe('Das Absage-Blatt', () => {
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(dispatch.mock.calls.filter((c) => c[0].type === 'closeAbsage')).toHaveLength(4)
     expect(dispatch.mock.calls.some((c) => c[0].type === 'declineTask')).toBe(false)
+  })
+
+  describe('beantwortet ist gelesen — die Mitteilung zur Aufgabe bleibt nicht „Neu" (16.10.2026)', () => {
+    // „Ich kann nicht" in der Glocke öffnet nur dieses Blatt. Bis dahin blieb
+    // die Mitteilung danach „Neu", ohne dass es darunter noch etwas zu tun gab.
+    const notifs = (): Notification[] => [
+      { id: 'n1', type: 'zuteilung', title: 'Neue Zuteilung', text: '', at: '2026-09-01T10:00:00Z', read: false, taskId: task().id },
+      { id: 'n2', type: 'zuteilung', title: 'Neue Zuteilung', text: '', at: '2026-09-01T10:00:00Z', read: false, taskId: 'andere-aufgabe' },
+    ]
+    const gelesen = (dispatch: ReturnType<typeof vi.fn>) =>
+      dispatch.mock.calls.map((c) => c[0]).filter((a) => a.type === 'mitteilungGelesen')
+
+    it('nach „Absagen" — nur die Mitteilung dieser Aufgabe', () => {
+      const { container, dispatch } = absagen({}, { notifs: notifs() })
+      fireEvent.click(text(container, t.absagen)!)
+      expect(gelesen(dispatch)).toEqual([{ type: 'mitteilungGelesen', id: 'n1' }])
+    })
+
+    it('nach „Doch bestätigen" ebenso', () => {
+      const { container, dispatch } = absagen({}, { notifs: notifs() })
+      fireEvent.click(text(container, t.dochBestaetigen)!)
+      expect(gelesen(dispatch)).toEqual([{ type: 'mitteilungGelesen', id: 'n1' }])
+    })
+
+    it('nicht nach „Abbrechen" — und offline gar nicht', () => {
+      const weg = absagen({}, { notifs: notifs() })
+      fireEvent.click(text(weg.container, t.abbrechen)!)
+      expect(gelesen(weg.dispatch)).toEqual([])
+      cleanup()
+      const offline = absagen({}, { notifs: notifs(), staleAt: Date.now() })
+      fireEvent.click(text(offline.container, t.absagen)!)
+      expect(gelesen(offline.dispatch)).toEqual([])
+    })
   })
 })
 

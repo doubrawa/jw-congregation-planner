@@ -237,7 +237,10 @@ function CodeEingabe({ code: vorgabe, onAngemeldet, onZurueck }: { code: string;
   const [geprueft, setGeprueft] = useState<{ code: string; name: string; versammlung: string } | null>(null)
   const [fehler, setFehler] = useState<string | null>(null)
   const [laeuft, setLaeuft] = useState(false)
+  /** Zählt die Versuche der Prüfung — „Anmelden" stößt nach einem Fehlschlag die nächste an. */
+  const [versuch, setVersuch] = useState(0)
   const code = codeNormal(eingabe)
+  const passt = geprueft !== null && geprueft.code === code
 
   // Vollständig getippt (oder gescannt): nachsehen, wem der Code gehört.
   useEffect(() => {
@@ -254,12 +257,25 @@ function CodeEingabe({ code: vorgabe, onAngemeldet, onZurueck }: { code: string;
       vorbei = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code])
+  }, [code, versuch])
 
   const anmelden = async () => {
-    if (!geprueft || laeuft) return
+    if (laeuft) return
+    /*
+     * Noch nicht geprüft — die Prüfung ist gescheitert, etwa am Netz: Dann
+     * prüft der Knopf noch einmal, und angemeldet wird erst, wenn der Name zu
+     * sehen ist. Bis zum 16.10.2026 blieb er gesperrt; der Fehler bat um einen
+     * neuen Versuch, und keiner ging, ohne den Code neu zu tippen.
+     */
+    if (!passt) {
+      if (codeVollstaendig(code)) {
+        setFehler(null)
+        setVersuch((n) => n + 1)
+      }
+      return
+    }
     setLaeuft(true)
-    const r = await mitCodeAnmelden(geprueft.code)
+    const r = await mitCodeAnmelden(code)
     setLaeuft(false)
     if (r) {
       setFehler(anmeldeFehlerText(r, t, 'code'))
@@ -269,7 +285,6 @@ function CodeEingabe({ code: vorgabe, onAngemeldet, onZurueck }: { code: string;
     onAngemeldet()
   }
 
-  const passt = geprueft !== null && geprueft.code === code
   return (
     <div className="login-form">
       <h1 className="seitentitel seitentitel--gross login-titel">{t.mitCodeAnmelden}</h1>
@@ -321,7 +336,7 @@ function CodeEingabe({ code: vorgabe, onAngemeldet, onZurueck }: { code: string;
       <button
         type="button"
         className="knopf-haupt login-senden"
-        aria-disabled={!passt || laeuft || undefined}
+        aria-disabled={!codeVollstaendig(code) || laeuft || undefined}
         onClick={() => void anmelden()}
       >
         {t.anmeldenKnopf}

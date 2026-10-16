@@ -58,6 +58,20 @@ export function AbsageBlatt({ task }: { task: MyTask }) {
   const spur = spurDanach(art, t)
   const tag = eintragbarerTag(task, state.personId, state.absences)
 
+  /*
+   * **Beantwortet ist gelesen** (16.10.2026): Wer hier absagt oder doch
+   * bestätigt, hat die Mitteilungen zu dieser Aufgabe beantwortet. „Ich kann
+   * nicht" in der Glocke öffnet nur dieses Blatt — die Mitteilung blieb danach
+   * „Neu", ohne dass es darunter noch etwas zu tun gab. Wer abbricht, hat
+   * nichts beantwortet; offline wird nichts gespeichert (wie in `Mitteilung`).
+   */
+  const mitteilungenGelesen = () => {
+    if (state.staleAt) return
+    for (const n of state.notifs) {
+      if (n.taskId === task.id && !n.read) dispatch({ type: 'mitteilungGelesen', id: n.id })
+    }
+  }
+
   const absagen = () => {
     if (abwesend && tag) {
       // Ohne Grund: Die Nachricht gilt dem Planer, eine Abwesenheit aber kann
@@ -67,7 +81,12 @@ export function AbsageBlatt({ task }: { task: MyTask }) {
         absence: { id: crypto.randomUUID(), personId: state.personId, userId: state.userId, from: tag, to: tag, reason: '' },
       })
     }
+    mitteilungenGelesen()
     dispatch({ type: 'declineTask', id: task.id, nachricht })
+  }
+  const dochBestaetigen = () => {
+    mitteilungenGelesen()
+    dispatch({ type: 'confirmTask', id: task.id })
   }
 
   return (
@@ -113,7 +132,7 @@ export function AbsageBlatt({ task }: { task: MyTask }) {
         </button>
         <div className="absage-fuss-zeile">
           {task.status === 'offen' && (
-            <button type="button" className="knopf-leise is-akzent" onClick={() => dispatch({ type: 'confirmTask', id: task.id })}>
+            <button type="button" className="knopf-leise is-akzent" onClick={dochBestaetigen}>
               {t.dochBestaetigen}
             </button>
           )}

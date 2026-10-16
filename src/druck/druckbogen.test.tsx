@@ -4,6 +4,7 @@ import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { AppDispatchContext, AppStateContext, AppStoreContext, type AppState, useStaticStore } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { setAnlass } from '../data/anlass'
+import { syncAuxSlots } from '../data/aux-class'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
 import { genFsWeek } from '../data/fs'
 import { isSong } from '../data/helpers'
@@ -189,6 +190,21 @@ describe('Der Monatsbogen', () => {
     const zeilen = [...woche1.querySelectorAll('.druck-knapp-zeile')].map((z) => z.children[1]?.textContent)
     expect(zeilen.slice(0, 2)).toEqual(['Vorsitz', 'Gebet'])
     expect(texte(woche1, '.druck-knapp-abschnitt .druck-lied')).toContain('Lied 12')
+  })
+
+  it('mit Zusätzlicher Klasse steht ihr Ratgeber da — wie im Wochenbogen (16.10.2026)', () => {
+    // Bis dahin standen im Monatsbogen die Plätze der Klasse, ihr Ratgeber nicht.
+    const weeks = syncAuxSlots(wochen(), true).map((w) =>
+      w.mid.auxRatgeber ? { ...w, mid: { ...w.mid, auxRatgeber: { ...w.mid.auxRatgeber, name: 'Rolf Rat' } } } : w,
+    )
+    const { container } = zeige(<MonatsBogen monat="2026-09" />, { weeks })
+    const woche1 = container.querySelector('.druck-monat-woche')!
+    const zeilen = [...woche1.querySelectorAll('.druck-knapp-zeile')].map((z) => [...z.children].map((c) => c.textContent))
+    expect(zeilen).toContainEqual(['', `${t.auxKlasse} · ${t.auxRatgeber}`, 'Rolf Rat'])
+    // Gegenprobe: ohne Klasse keine solche Zeile.
+    cleanup()
+    const ohne = zeige(<MonatsBogen monat="2026-09" />, { weeks: wochen() }).container
+    expect(ohne.textContent).not.toContain(t.auxRatgeber)
   })
 
   it('die Kongresswoche steht mit einem Satz da — und wann die nächste Zusammenkunft ist', () => {

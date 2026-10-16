@@ -5,7 +5,7 @@ import { useKalendertag } from '../app/useKalendertag'
 import { PlanTitel } from '../components/PlanTitel'
 import { gruppenName, spannenText } from '../components/weitere-plaene-anzeige'
 import { fromIso } from '../data/meeting-dates'
-import { eintraegeVon, plaeneZumAnsehen, spanneVon, spannenDerGruppe, taktVon } from '../data/weitere-plaene'
+import { eintraegeVon, plaeneZumAnsehen, planSpannen, spanneVon, spannenDerGruppe, taktVon } from '../data/weitere-plaene'
 import { useT } from '../i18n/useT'
 import type { WeitererPlan } from '../data/types'
 import { PlanBogen } from '../druck/PlanBogen'
@@ -72,6 +72,10 @@ function PlanAnsicht({ plan, tag }: { plan: WeitererPlan; tag: string }) {
   const meineGruppe = eigenePerson(state)?.grp
   const eintraege = eintraegeVon(state.planEintraege, plan.id)
   const jetzt = spanneVon(taktVon(plan), tag)
+  // Jede Spanne des Plans, wie im Ausdruck (`PlanBogen`) — auch die, für die
+  // keine Gruppe eingetragen ist: Sie steht mit „—" da. Bis zum 16.10.2026
+  // liefen hier die Einträge, und eine Woche ohne Gruppe fehlte einfach.
+  const gruppeVon = new Map(eintraege.map((e) => [e.datum, e.grp]))
 
   return (
     <section className="karte wp-plan">
@@ -80,15 +84,18 @@ function PlanAnsicht({ plan, tag }: { plan: WeitererPlan; tag: string }) {
         <DeineGruppe plan={plan} spannen={spannenDerGruppe(eintraege, plan.id, meineGruppe).filter((s) => s >= jetzt)} />
       )}
       <div className="wp-liste">
-        {eintraege
-          .filter((e) => e.datum >= jetzt)
-          .map((e) => (
-            <div key={e.id} className={meineGruppe && e.grp === meineGruppe ? 'wp-liste-zeile is-eigen' : 'wp-liste-zeile'}>
-              <span className="wp-liste-punkt" aria-hidden="true" />
-              <span>{spannenText(plan, e.datum, state.lang)}</span>
-              <span className="wp-liste-wer">{gruppenName(e.grp, state.groups, tu) || t.offenDash}</span>
-            </div>
-          ))}
+        {planSpannen(plan)
+          .filter((spanne) => spanne >= jetzt)
+          .map((spanne) => {
+            const grp = gruppeVon.get(spanne) ?? null
+            return (
+              <div key={spanne} className={meineGruppe && grp === meineGruppe ? 'wp-liste-zeile is-eigen' : 'wp-liste-zeile'}>
+                <span className="wp-liste-punkt" aria-hidden="true" />
+                <span>{spannenText(plan, spanne, state.lang)}</span>
+                <span className="wp-liste-wer">{gruppenName(grp, state.groups, tu) || t.offenDash}</span>
+              </div>
+            )
+          })}
       </div>
       <p className="wp-info">{t.wpNurInfo}</p>
     </section>
