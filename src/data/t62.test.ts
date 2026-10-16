@@ -246,6 +246,16 @@ describe('Zurücknehmen stellt alles wieder her', () => {
     expect(partWorkload(zurueck, LEITER)).toBe(2)
   })
 
+  it('wer in der Woche den Leiter einteilt oder austauscht, behält ihn (16.10.2026)', () => {
+    // Der Leiter bleibt in der Kreisaufseher-Woche stehen und lässt sich dort
+    // ändern. Bis dahin kam beim Zurücknehmen der Stand vom Einschalten zurück,
+    // und der neue Leiter war weg. Der Leser kommt aus dem Gemerkten.
+    const an = setDienstwoche([makeWeek()], 0, true)
+    Object.assign(bei(bei(wtParts(eine(an)), 0).names, 0), { name: 'C. Neu', pid: 'p3' })
+    const zurueck = setDienstwoche(an, 0, false)
+    expect(bei(wtParts(eine(zurueck)), 0).names.map((n) => [n.rolle, n.pid])).toEqual([['Leiter', 'p3'], ['Leser', 'p2']])
+  })
+
   it('zweimal dasselbe zu setzen ändert nichts', () => {
     const weeks = [makeWeek()]
     const an = setDienstwoche(weeks, 0, true)

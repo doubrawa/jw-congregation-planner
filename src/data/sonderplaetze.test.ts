@@ -9,7 +9,8 @@ import type { Meeting, PartSlotSelection, Person, RatgeberSlotSelection, Week } 
 
 /**
  * **Plätze mit eigener Regel** (Review vom 16.10.2026): was dem Vorsitz folgt,
- * der Leiter des Wachtturm-Studiums und der Ratgeber der Zusätzlichen Klasse.
+ * der Leiter des Wachtturm-Studiums, der Platz des Kreisaufsehers und der
+ * Ratgeber der Zusätzlichen Klasse.
  *
  * Die Automatik kannte die Regeln, die übrigen Fragesteller nicht: Bedarf,
  * Zuteilen-Blatt und die Hinweise „heute schon dran" behandelten diese Plätze
@@ -123,6 +124,26 @@ describe('Der Leiter des Wachtturm-Studiums', () => {
     // Gegenprobe: Mit einem, der das Studium leitet, bleibt nichts offen.
     const leiter = person('leiter', false, 'studium')
     expect(autoAssignMeeting([woche(leer(), sonntag())], 0, 'we', [leser, leiter], []).unfilled).toBe(0)
+  })
+})
+
+describe('Der Platz des Kreisaufsehers — nur sein Name als Freitext', () => {
+  const mitRednerPlatz = (rolle: string): Meeting => ({
+    ...leer(),
+    sections: [{ label: 'UNSER LEBEN ALS CHRIST', kind: 'lac', farbe: 'wein', items: [
+      { iid: 'k1', title: 'Dienstvortrag', names: [{ name: '', rolle, bereichsKey: 'vortrag' }] },
+    ] }],
+  })
+  const SEL: PartSlotSelection = { ...platz(0, 0, 0, 'vortrag'), guest: true }
+  const AELTESTER = person('aeltester', false)
+
+  it('das Zuteilen-Blatt bietet keine Person an (16.10.2026)', () => {
+    // Bis dahin standen dort die Ältesten und Dienstamtgehilfen wie am
+    // Redner-Platz: Ein Tipp machte den Platz zum „Redner", Entfernen danach
+    // zum „Gastredner" — der Punkt des Kreisaufsehers war aus der Woche weg.
+    expect(liste([woche(mitRednerPlatz('Kreisaufseher'))], [AELTESTER], SEL)).toEqual([])
+    // Gegenprobe: Am Platz eines Gastredners bleibt die Liste.
+    expect(liste([woche(mitRednerPlatz('Gastredner'))], [AELTESTER], SEL).map((c) => c.key)).toEqual(['aeltester'])
   })
 })
 

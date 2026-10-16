@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { isSong } from './helpers'
-import { lacAdd, lacAddIndex } from './meeting-edit'
+import { isSong, TITEL_DIENSTVORTRAG } from './helpers'
+import { lacAdd, lacAddIndex, setDienstwoche } from './meeting-edit'
 import type { Meeting, PartItem, ProgramItem, Week } from './types'
 
 /**
@@ -73,10 +73,19 @@ describe('lacAddIndex findet das Bibelstudium in jeder Sprache', () => {
 })
 
 describe('Grenzfälle der Einfügestelle', () => {
-  it('ohne Leser-Slot ans Ende — die Kreisaufseher-Woche hat kein Bibelstudium', () => {
-    // Der Dienstvortrag ersetzt es; dann gibt es keine Stelle, vor die es müsste.
-    const items = [punkt(6, 'Bedürfnisse der Versammlung'), punkt(7, 'Dienstvortrag')]
+  it('ohne Leser-Slot und ohne Dienstvortrag ans Ende', () => {
+    const items = [punkt(6, 'Bedürfnisse der Versammlung'), punkt(7, 'Platzhalter-Punkt')]
     expect(lacAddIndex(items)).toBe(2)
+  })
+
+  it('in der Kreisaufseher-Woche vor den Dienstvortrag — er steht an der Stelle des Bibelstudiums (16.10.2026)', () => {
+    // Bis dahin kam der neue Punkt dahinter, und nach dem Zurücknehmen der
+    // Woche stand er hinter dem Bibelstudium.
+    const an = setDienstwoche(wocheMit([punkt(6, 'Bedürfnisse der Versammlung'), bibelstudium('Versammlungsbibelstudium')]), 0, true)
+    const mitPunkt = lacAdd(an, 0, 'mid', 0, 'Eigener Punkt')
+    const titel = (ws: Week[]) => ws[0]!.mid.sections[0]!.items.map((i) => (isSong(i) ? '' : i.title))
+    expect(titel(mitPunkt)).toEqual(['Bedürfnisse der Versammlung', 'Eigener Punkt', TITEL_DIENSTVORTRAG])
+    expect(titel(setDienstwoche(mitPunkt, 0, false))).toEqual(['Bedürfnisse der Versammlung', 'Eigener Punkt', 'Versammlungsbibelstudium'])
   })
 
   it('leerer Abschnitt ergibt Position 0', () => {

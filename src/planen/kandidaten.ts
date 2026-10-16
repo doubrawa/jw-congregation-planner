@@ -25,6 +25,7 @@ import {
   istAusgefallen,
   partnerGenderOk,
   personCompare,
+  ROLE_CIRCUIT,
 } from '../data/helpers'
 import { lastFenster, workloadOf } from '../data/auslastung'
 import { meetingDate } from '../data/meeting-dates'
@@ -87,7 +88,25 @@ export function kandidaten(
 ): Candidate[] {
   if (sel.kind === 'fs') return fsKandidaten(state, sel, t, tu)
   if (sel.groups) return gruppenKandidaten(state, t, tu)
+  if (kreisaufseherPlatz(state, sel)) return []
   return personenKandidaten(state, sel, abwesend, t)
+}
+
+/**
+ * **Ein Platz des Kreisaufsehers** (Dienstvortrag, Schlussvortrag; T62) — dort
+ * steht keine Person zur Wahl, nur sein Name als Freitext. Er steht in keiner
+ * Personenliste, und wer ihn vertritt, hält den gewöhnlichen Punkt: Dann ist
+ * es keine Kreisaufseher-Woche mehr.
+ *
+ * Bis zum 16.10.2026 bot das Blatt hier die Ältesten und Dienstamtgehilfen an
+ * wie am Redner-Platz. Ein Tipp machte den Platz zum „Redner", Entfernen danach
+ * zum „Gastredner" — der Punkt des Kreisaufsehers war aus der Woche
+ * verschwunden, und nichts führte zurück.
+ */
+function kreisaufseherPlatz(state: KandidatenDaten, sel: Exclude<SlotSelection, { kind: 'fs' }>): boolean {
+  if (sel.kind !== 'part' || !sel.guest) return false
+  const item = state.weeks[sel.wi]?.[sel.tab].sections[sel.si]?.items[sel.ii]
+  return Boolean(item && !isSong(item) && slotsOf(item, sel.aux === true)[sel.ni]?.rolle === ROLE_CIRCUIT)
 }
 
 /**
@@ -184,9 +203,8 @@ function personenKandidaten(
   // und Dienstamtgehilfe halten (Betreiber, 4.10.2026): Eingeteilt wird er
   // ohnehin von Hand, nie automatisch — ein eigener Aufgabenbereich wäre Pflege
   // ohne Nutzen. Am Platz steht weiter `vortrag`; entschieden wird am
-  // Redner-Platz (`sel.guest` = `isSpeakerRole`). Darunter fallen auch die
-  // Plätze des Kreisaufsehers (T62) — aus demselben Grund: Auch sie besetzt die
-  // Auto-Zuteilung nie, und `bedarf.ts` zählt sie nicht als Engpass.
+  // Redner-Platz (`sel.guest` = `isSpeakerRole`). Die Plätze des Kreisaufsehers
+  // kommen hier nicht an (`kreisaufseherPlatz`).
   const darf =
     sel.kind === 'part' && sel.guest
       ? (p: Person) => p.role === 'aeltester' || p.role === 'dienstamtgehilfe'

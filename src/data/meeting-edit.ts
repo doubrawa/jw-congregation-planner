@@ -378,8 +378,12 @@ function swapKeepNums(items: Meeting['sections'][number]['items'], a: number, b:
  * davor.
  */
 export function lacAddIndex(items: Meeting['sections'][number]['items']): number {
+  // In der Kreisaufseher-Woche steht an der Stelle des Bibelstudiums der
+  // Dienstvortrag, ohne Leser (`midDienstvortrag`). Ohne ihn als Marke kam der
+  // neue Punkt dahinter — und nach dem Zurücknehmen hinter das Bibelstudium
+  // (16.10.2026).
   const vbsIdx = items.findIndex(
-    (x) => !isSong(x) && x.names.some((n) => n.bereichsKey === 'leser'),
+    (x) => !isSong(x) && (x.names.some((n) => n.bereichsKey === 'leser') || istCoPunkt(x)),
   )
   return vbsIdx >= 0 ? vbsIdx : items.length
 }
@@ -695,15 +699,27 @@ function midBibelstudiumZurueck(w: Week, coData: Dienstwoche): void {
   }
 }
 
-/** Zurücknehmen, Wochenende (1 von 2): das Wachtturm-Studium in voller Länge. */
+/**
+ * Zurücknehmen, Wochenende (1 von 2): das Wachtturm-Studium in voller Länge.
+ *
+ * Der Leiter blieb in der Kreisaufseher-Woche stehen — wer ihn dort eingeteilt
+ * oder ausgetauscht hat, behält das (16.10.2026). Bis dahin kam der Stand vom
+ * Einschalten zurück, und der Leiter war wieder leer oder der alte. Nur der
+ * Leser kommt aus dem Gemerkten: Ihn gab es in der Woche nicht.
+ */
 function weStudiumZurueck(w: Week, coData: Dienstwoche): void {
   const wtIdx = abschnitt(w.we, 'wtStudium')
   const wtSection = wtIdx >= 0 ? w.we.sections[wtIdx] : undefined
   const orig = coData.weOrig
   if (!wtSection || !orig) return
   const idx = wtSection.items.findIndex((x) => !isSong(x) && x.iid === orig.iid)
-  if (idx < 0) return
-  wtSection.items[idx] = structuredClone(orig)
+  const jetzt = wtSection.items[idx]
+  if (!jetzt || isSong(jetzt)) return
+  const zurueck = structuredClone(orig)
+  zurueck.names = zurueck.names.map(
+    (n) => jetzt.names.find((j) => j.rolle === n.rolle && j.bereichsKey === n.bereichsKey) ?? n,
+  )
+  wtSection.items[idx] = zurueck
   // Und die Meta-Zeile jeder Variante ebenso — sonst zeigte die
   // englische Fassung weiter 30 Minuten für ein Studium mit 60.
   for (const [code, variant] of Object.entries(w.alt ?? {})) {
