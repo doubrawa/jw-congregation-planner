@@ -36,7 +36,17 @@
 
 import crypto from 'node:crypto'
 import fs from 'node:fs'
-import { alsSkript, argumente, fsSort, restKlient, versammlungHolen, WOCHENTAG_NAMEN, zugangsdaten } from './gemeinsam.mjs'
+import {
+  alsSkript,
+  appCodeBereit,
+  argumente,
+  fsSort,
+  restKlient,
+  versammlungHolen,
+  WOCHENTAG_NAMEN,
+  zugangsdaten,
+  zusagenLoeschen,
+} from './gemeinsam.mjs'
 
 /**
  * Datum dieses Wochentags in dieser Woche — wie `fsTag` in `src/data/fs.ts`.
@@ -62,8 +72,23 @@ export function giltInWoche(regel, wochenStart) {
  *
  * Erzeugt wie `genFsWeek`, nur mit einem Zusatz, den die App nicht braucht: Sie
  * kennt keine importierten Zeilen, dieses Skript schon.
+ *
+ * **Was danach übrig bleibt, behält nur, was von Hand dasteht** — wie
+ * `regenFsWeeks` in der App. Ein Treffpunkt des alten Grundplans (`--ersetzen`)
+ * hätte seine Regel verloren; bis zum 16.10.2026 blieb er stehen, und die App
+ * warf ihn beim nächsten Neuerzeugen weg, samt Leiter und ohne Hinweis. Jetzt
+ * entfällt er hier, und das Skript nennt ihn.
+ *
+ * `uebernommen(altId, neuId)` erfährt, welche Zeile in welcher Regel-Instanz
+ * aufgeht: Die Zusage ihres Leiters steht unter der alten Kennung
+ * (`fs|<montag>|<id>`) und zieht mit um.
+ *
+ * @param {string} wochenStart
+ * @param {any[]} regeln
+ * @param {any[]} [alte]
+ * @param {(altId: string, neuId: string) => void} [uebernommen]
  */
-export function wocheNeu(wochenStart, regeln, alte = []) {
+export function wocheNeu(wochenStart, regeln, alte = [], uebernommen = () => {}) {
   const uebrig = [...alte]
   const passend = regeln.filter((r) => giltInWoche(r, wochenStart))
   // Eine Gruppen-Regel mit `skipCong` entfällt, wenn am selben Wochentag ein
@@ -74,6 +99,7 @@ export function wocheNeu(wochenStart, regeln, alte = []) {
     .map((r) => {
       const i = uebrig.findIndex((o) => o.wd === r.wd && o.time === r.time)
       const alt = i >= 0 ? uebrig.splice(i, 1)[0] : null
+      if (alt && alt.id !== r.id) uebernommen(alt.id, r.id)
       return {
         id: r.id,
         ruleId: r.id,
@@ -86,7 +112,7 @@ export function wocheNeu(wochenStart, regeln, alte = []) {
         ...(alt?.lext ? { lext: true } : {}),
       }
     })
-  return [...ausRegeln, ...uebrig].sort(fsSort)
+  return [...ausRegeln, ...uebrig.filter((o) => o.manual)].sort(fsSort)
 }
 
 /** Was an einer Regel unbrauchbar ist — leere Liste heißt: in Ordnung. */
@@ -169,16 +195,23 @@ export async function main(argv = process.argv.slice(2)) {
   const alteNach = new Map(fsWochen.map((w) => [w.start, w.data]))
   const plan = wochen.map((w) => {
     const alt = alteNach.get(w.start) ?? []
-    const neu = wocheNeu(w.start, regeln, alt)
-    return { start: w.start, alt, neu, neuzeile: !alteNach.has(w.start) }
+    const umbenannt = []
+    const neu = wocheNeu(w.start, regeln, alt, (altId, neuId) => umbenannt.push([altId, neuId]))
+    // Was weder bleibt noch in einer Regel aufgeht, entfällt — samt Zusage.
+    const bleibt = new Set([...neu.map((i) => i.id), ...umbenannt.map(([altId]) => altId)])
+    const entfallen = alt.filter((o) => !bleibt.has(o.id))
+    return { start: w.start, alt, neu, neuzeile: !alteNach.has(w.start), umbenannt, entfallen }
   })
 
   console.log('\nWochen:')
   for (const p of plan) {
     const uebernommen = p.neu.filter((i) => i.ruleId && i.leader).length
+    const ohneLeiterWeg = p.entfallen.filter((o) => o.leader).length
     console.log(
       `  ${p.start}: ${p.alt.length} → ${p.neu.length} Treffpunkte` +
         `${uebernommen ? `, ${uebernommen} Leiter übernommen` : ''}` +
+        `${p.entfallen.length ? `, ${p.entfallen.length} des alten Grundplans entfallen` : ''}` +
+        `${ohneLeiterWeg ? ` (davon ${ohneLeiterWeg} mit Leiter)` : ''}` +
         `${p.neuzeile ? ' (Woche hatte noch keine Zeile)' : ''}`,
     )
   }
@@ -193,6 +226,8 @@ export async function main(argv = process.argv.slice(2)) {
   }
   await rest('fs_rules', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(regeln) })
 
+  appCodeBereit()
+  const { fsKey } = await import('../supabase/functions/_shared/aufgaben-schluessel.ts')
   for (const p of plan) {
     if (p.neuzeile) {
       await rest('fs_weeks', {
@@ -207,6 +242,17 @@ export async function main(argv = process.argv.slice(2)) {
         body: JSON.stringify({ data: p.neu }),
       })
     }
+    // Die Zusagen folgen ihrem Treffpunkt — nach dem Schreiben der Woche, wie
+    // in der App. Die neue Kennung ist frisch (`r<uuid>`), unter ihr steht
+    // noch keine.
+    for (const [altId, neuId] of p.umbenannt) {
+      await rest(`confirmations?congregation_id=eq.${cong.id}&task_key=eq.${encodeURIComponent(fsKey(p.start, altId))}`, {
+        method: 'PATCH',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ task_key: fsKey(p.start, neuId) }),
+      })
+    }
+    await zusagenLoeschen(rest, cong.id, p.entfallen.map((o) => fsKey(p.start, o.id)))
   }
   console.log(`\nGeschrieben: ${regeln.length} Regel(n), ${plan.length} Woche(n) neu zusammengesetzt.`)
 }

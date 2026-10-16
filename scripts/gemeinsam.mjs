@@ -740,6 +740,34 @@ export function appCodeBereit() {
   })
 }
 
+/**
+ * **Die Zusagen dieser Plätze löschen** — nach dem Schreiben ihrer Woche, wie
+ * in der App (`zusagenNachDemSchreiben` in `persist.ts`).
+ *
+ * Eine Zusage steht unter dem Schlüssel des Platzes (`task_key`), und die App
+ * liest beim Laden nur ihn (`confirmationMap`). Überschreibt ein Import den
+ * Inhaber eines Platzes, stand bis zum 16.10.2026 die Zusage des Vorgängers
+ * weiter da: Der Neue galt als zugesagt, ohne je gefragt worden zu sein
+ * (Review, scripts). Welche Plätze den Inhaber wechseln, rechnen die Importe
+ * mit den Funktionen der App (`changedSlotKeys`, `fsVerwaisteZusagen`).
+ *
+ * In Teilen zu je 50 Schlüsseln — jeder steht in der Adresse, in
+ * Anführungszeichen, weil ein Schlüssel Zeichen trägt, die PostgREST in einer
+ * Liste sonst als Trenner läse.
+ */
+export async function zusagenLoeschen(rest, congregationId, schluessel) {
+  for (let i = 0; i < schluessel.length; i += 50) {
+    const teil = schluessel
+      .slice(i, i + 50)
+      .map((k) => encodeURIComponent(`"${k}"`))
+      .join(',')
+    await rest(`confirmations?congregation_id=eq.${congregationId}&task_key=in.(${teil})`, {
+      method: 'DELETE',
+      headers: { Prefer: 'return=minimal' },
+    })
+  }
+}
+
 /** Die Adresse der App, wie sie im Link und im QR-Code des Zettels steht. */
 export const APP_URL = 'https://versammlung.app/'
 

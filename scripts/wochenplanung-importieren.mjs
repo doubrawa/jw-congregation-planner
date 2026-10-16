@@ -65,7 +65,17 @@
  */
 
 import { createHash } from 'node:crypto'
-import { alsSkript, argumente, ladeTabellen, personDisplayName, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
+import {
+  alsSkript,
+  appCodeBereit,
+  argumente,
+  ladeTabellen,
+  personDisplayName,
+  restKlient,
+  versammlungHolen,
+  zugangsdaten,
+  zusagenLoeschen,
+} from './gemeinsam.mjs'
 
 /* ===================== Stabile Identität (uuid5) ========================== */
 
@@ -635,8 +645,16 @@ export async function main(argv = process.argv.slice(2)) {
   // Hilfsdienst-Zuordnung: NWS-Dienst → tatsächlicher App-Dienst. In der App
   // angelegte Dienste tragen `svc-<uuid>` statt fester Schlüssel — ohne diese
   // Zuordnung landeten ihre Zuteilungen in einem Schlüssel, den kein Dienst zeigt.
-  const services = await rest(`services?select=key,name&congregation_id=eq.${cong}`)
+  // `count` und `groups` für die Plätze der Hilfsdienste (`changedSlotKeys`).
+  const services = await rest(`services?select=key,name,count,groups&congregation_id=eq.${cong}&order=position`)
   const keyMap = dienstZuordnung(services)
+  // Welche Plätze den Inhaber wechseln, rechnet die App selbst — deren Zusagen
+  // verfallen (siehe `zusagenLoeschen`).
+  appCodeBereit()
+  const [{ changedSlotKeys }, { MEETING_TABS }] = await Promise.all([
+    import('../src/data/planning.ts'),
+    import('../src/data/helpers.ts'),
+  ])
   console.log('\nHilfsdienst-Zuordnung (NWS → App):')
   for (const kanon of Object.keys(DIENST_ANZEIGE)) {
     const k = keyMap[kanon]
@@ -660,10 +678,18 @@ export async function main(argv = process.argv.slice(2)) {
     if (zeile.data.anlass?.art) { sonder++; continue }
     getroffen++
     const gebunden = loeseWoche(roh, bind)
+    // `verteileWoche` schreibt in die Woche selbst — der Stand davor sagt, wer
+    // einen Platz verliert.
+    const vorher = structuredClone(zeile.data)
     const z = verteileWoche(zeile.data, gebunden, nurLeere, keyMap)
     gesetzt += z.gesetzt; ohnePid += z.ohnePid; fehlplatz += z.fehlplatz; gestrichen += z.gestrichen
     helfer += z.helfer; helferOhnePid += z.helferOhnePid; helferOhneDienst += z.helferOhneDienst
-    if (z.gesetzt + z.helfer > 0) geschrieben.push({ montag, data: zeile.data, z })
+    if (z.gesetzt + z.helfer > 0) {
+      const verfallen = MEETING_TABS.flatMap((tab) =>
+        vorher[tab] && zeile.data[tab] ? changedSlotKeys(vorher[tab], zeile.data[tab], services, montag, tab) : [],
+      )
+      geschrieben.push({ montag, data: zeile.data, z, verfallen })
+    }
   }
 
   // Übersprungene Dienste zählen (Dienst 7/Garten/…) — zur Einordnung. Die
@@ -691,23 +717,29 @@ export async function main(argv = process.argv.slice(2)) {
     console.log(`  ${[...fehlendePersonen].sort().join(', ')}`)
   }
 
+  const verfallen = geschrieben.reduce((n, g) => n + g.verfallen.length, 0)
   if (arg.trocken) {
     console.log('\n--trocken: nichts geschrieben.')
     for (const g of geschrieben.slice(0, 3)) {
       console.log(`  ${g.montag}: ${g.z.gesetzt} Programm- + ${g.z.helfer} Hilfsdienst-Plätze`)
     }
+    if (verfallen) console.log(`  ${verfallen} geänderte Plätze — eine Zusage daran fiele weg.`)
     return
   }
 
-  // 4) Zurückschreiben (nur veränderte Wochen)
+  // 4) Zurückschreiben (nur veränderte Wochen) — und erst danach die Zusagen
+  //    der Plätze, die den Inhaber wechseln. Scheitert das Schreiben, bleiben
+  //    sie, wie in der App.
   for (const g of geschrieben) {
     await rest(`weeks?congregation_id=eq.${cong}&start=eq.${g.montag}`, {
       method: 'PATCH',
       headers: { Prefer: 'return=minimal' },
       body: JSON.stringify({ data: g.data }),
     })
+    await zusagenLoeschen(rest, cong, g.verfallen)
   }
   console.log(`\nGeschrieben: ${geschrieben.length} Wochen aktualisiert.`)
+  if (verfallen) console.log(`Zusagen an ${verfallen} geänderten Plätzen gelöscht (wo es welche gab).`)
 }
 
 alsSkript(import.meta.url, main)

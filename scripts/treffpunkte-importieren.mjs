@@ -68,6 +68,7 @@
 
 import {
   alsSkript,
+  appCodeBereit,
   argumente,
   fsSort,
   ladeTabellen,
@@ -76,6 +77,7 @@ import {
   versammlungHolen,
   WOCHENTAG_NAMEN,
   zugangsdaten,
+  zusagenLoeschen,
 } from './gemeinsam.mjs'
 import { lebend, nameAufloeser, nurDatum, personIdAufloeser } from './nws-personen.mjs'
 import { mondayOf, uuid5 } from './wochenplanung-importieren.mjs'
@@ -364,6 +366,11 @@ export async function main(argv = process.argv.slice(2)) {
   const fsNachStart = new Map(fsRows.map((r) => [r.start, r.data ?? []]))
   console.log(`App: ${personen.length} Personen, ${wochen.length} Programmwochen, ${fsRows.length} Treffpunkt-Wochen.`)
 
+  // Wechselt ein Leiter, verfällt die Zusage seines Vorgängers — dieselbe Regel
+  // wie in der App (`fsVerwaisteZusagen`, siehe `zusagenLoeschen`).
+  appCodeBereit()
+  const { fsVerwaisteZusagen } = await import('../src/data/fs.ts')
+
   const summe = { gesetzt: 0, angelegt: 0, nachgefuehrt: 0, offen: 0, geschuetzt: 0, mehrdeutig: 0, ohnePid: 0 }
   const geschrieben = []
   let ohneWoche = 0
@@ -373,9 +380,11 @@ export async function main(argv = process.argv.slice(2)) {
     const z = verteileFsWoche(vorher, tps, bind, { nurLeere, standardOrt })
     for (const k of Object.keys(summe)) summe[k] += z[k]
     if (z.geaendert) {
-      geschrieben.push({ montag, insts: z.insts, neu: !fsNachStart.has(montag), z })
+      const verfallen = fsVerwaisteZusagen(vorher, z.insts, montag)
+      geschrieben.push({ montag, insts: z.insts, neu: !fsNachStart.has(montag), z, verfallen })
     }
   }
+  const verfallen = geschrieben.reduce((n, g) => n + g.verfallen.length, 0)
 
   console.log(
     `\nLeiter gesetzt: ${summe.gesetzt}` +
@@ -402,9 +411,12 @@ export async function main(argv = process.argv.slice(2)) {
     for (const g of geschrieben.slice(0, 5)) {
       console.log(`  ${g.montag}: ${g.z.gesetzt} Leiter, ${g.z.angelegt} angelegt, ${g.z.nachgefuehrt} nachgeführt`)
     }
+    if (verfallen) console.log(`  ${verfallen} Zusagen fielen weg — der Treffpunkt bekäme einen anderen Leiter.`)
     return
   }
 
+  // Erst die Woche, dann die verfallenen Zusagen: Scheitert das Schreiben,
+  // bleiben sie, wie in der App.
   for (const g of geschrieben) {
     if (g.neu) {
       await rest('fs_weeks', {
@@ -419,8 +431,10 @@ export async function main(argv = process.argv.slice(2)) {
         body: JSON.stringify({ data: g.insts }),
       })
     }
+    await zusagenLoeschen(rest, cong, g.verfallen)
   }
   console.log(`\nGeschrieben: ${geschrieben.length} Treffpunkt-Wochen aktualisiert.`)
+  if (verfallen) console.log(`${verfallen} Zusagen gelöscht — ihr Treffpunkt hat einen anderen Leiter.`)
 }
 
 alsSkript(import.meta.url, main)

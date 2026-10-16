@@ -104,6 +104,20 @@ describe('Zusammenführen mit dem Import', () => {
     expect(neu.find((i) => i.time === '13:30')?.manual).toBe(true)
   })
 
+  it('meldet, welche Zeile in welcher Regel aufgeht — die Zusage zieht mit um', () => {
+    const umbenannt: [string, string][] = []
+    wocheNeu('2026-09-14', [MONTAG], [importiert({ leader: 'Simon Krüger' })], (alt, neu) => umbenannt.push([alt, neu]))
+    expect(umbenannt).toEqual([['x1430', 'r-mo']])
+  })
+
+  it('ein Treffpunkt des alten Grundplans entfällt — wie in der App (16.10.2026)', () => {
+    // Mit `--ersetzen` hat er seine Regel verloren. Bliebe er stehen, würfe die
+    // App ihn beim nächsten Neuerzeugen weg (`regenFsWeeks`), samt Leiter.
+    const alt = { id: 'r-alt', ruleId: 'r-alt', grp: null, wd: 6, time: '09:30', place: '', leader: 'Simon Krüger' }
+    const neu = wocheNeu('2026-09-14', [MONTAG], [alt, importiert({ id: 'x1330', wd: 6, time: '13:30' })])
+    expect(neu.map((i) => i.id)).toEqual(['r-mo', 'x1330'])
+  })
+
   it('räumt eine importierte Zeile nicht weg, wenn die Regel in dieser Woche gar nicht gilt', () => {
     // Sonst verschwände der Treffpunkt: Die Monatsregel greift hier nicht, die
     // importierte Zeile ist also das Einzige, was den Termin belegt.

@@ -295,7 +295,9 @@ function passtFilter(wert: unknown, ausdruck: string): boolean {
     case 'lt': return wert != null && String(wert) < v
     case 'lte': return wert != null && String(wert) <= v
     case 'is': return v === 'null' ? wert == null : String(wert) === v
-    case 'in': return v.replace(/^\(|\)$/g, '').split(',').includes(String(wert))
+    // Ein Wert in Anführungszeichen steht für sich, wie bei PostgREST (seit
+    // 16.10.2026: `zusagenLoeschen` quotet jeden Schlüssel).
+    case 'in': return v.replace(/^\(|\)$/g, '').split(',').map((x) => x.replace(/^"(.*)"$/, '$1')).includes(String(wert))
     case 'like': {
       const muster = v.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')
       return new RegExp(`^${muster}$`).test(String(wert))

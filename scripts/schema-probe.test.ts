@@ -1285,6 +1285,90 @@ describe('versammlung-zuruecksetzen: Konten und Links überstehen das Zurückset
   })
 })
 
+describe('Importe: Wer einen Platz verliert, nimmt seine Zusage mit (16.10.2026)', () => {
+  /*
+    Eine Zusage steht unter dem Schlüssel des Platzes, und die App liest beim
+    Laden nur ihn (`confirmationMap`). Überschrieb ein Import den Inhaber — NWS
+    gewinnt ohne `--nur-leere` —, stand die Zusage des Vorgängers weiter da:
+    Der Neue galt als zugesagt, ohne je gefragt worden zu sein. In der App
+    räumt der Reducer das ab; die Importe tun es seither auch, mit denselben
+    Funktionen (`changedSlotKeys`, `fsVerwaisteZusagen`).
+  */
+  const fahreImport = async (skript: string, bestand: Record<string, Zeile[]>) => {
+    const l = LAEUFE[skript]![0]!
+    const modul = (await MODULE[`./${skript}`]!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const eingaben = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-probe-'))
+    try {
+      for (const [name, inhalt] of Object.entries(l.dateien ?? {})) {
+        fs.writeFileSync(path.join(eingaben, name), typeof inhalt === 'string' ? inhalt : JSON.stringify(inhalt))
+      }
+      return await fahre(() => l.fahren(modul, eingaben), { ...l.umgebung, bestand: { ...l.umgebung!.bestand, ...bestand } })
+    } finally {
+      fs.rmSync(eingaben, { recursive: true, force: true })
+    }
+  }
+  const zusage = (id: string, task_key: string, user_id: string) => ({ id, congregation_id: C, user_id, task_key, status: 'bestätigt' })
+
+  it('wochenplanung-importieren: am neu besetzten Platz ist die Zusage weg, am unveränderten bleibt sie', async () => {
+    const K0 = '2026-08-24|mid|helper|mik|0' // NWS setzt hier „Probe Eins" statt „Probe Zwei"
+    const K1 = '2026-08-24|mid|helper|mik|1' // dazu sagt NWS nichts
+    const { tabellen } = await fahreImport('wochenplanung-importieren.mjs', {
+      weeks: [{ congregation_id: C, start: '2026-08-24', data: probeWoche('2026-08-24', [], { mik: [{ name: 'Probe Zwei' }, { name: 'Probe Drei' }] }) }],
+      services: [{ congregation_id: C, key: 'mik', name: 'Mikrofone', count: 2, groups: false, position: 0 }],
+      confirmations: [zusage('z0', K0, U1), zusage('z1', K1, U2)],
+    })
+    expect(tabellen.weeks![0]!.data).toMatchObject({ mid: { helpers: { mik: [{ name: 'Probe Eins' }, { name: 'Probe Drei' }] } } })
+    expect(tabellen.confirmations!.map((z) => z.task_key)).toEqual([K1])
+  })
+
+  it('treffpunkte-importieren: wechselt der Leiter, ist die Zusage seines Vorgängers weg', async () => {
+    const leiterWechsel = { id: 'r-di', ruleId: 'r1', grp: null, wd: 2, time: '09:30', place: 'Probe-Ort', leader: 'Probe Zwei', lpid: P_ALT }
+    const anderer = { id: 'r-sa', ruleId: 'r2', grp: null, wd: 6, time: '10:00', place: 'Probe-Ort', leader: 'Probe Drei' }
+    const { tabellen } = await fahreImport('treffpunkte-importieren.mjs', {
+      fs_weeks: [{ congregation_id: C, start: '2026-08-24', data: [leiterWechsel, anderer] }],
+      confirmations: [zusage('z0', 'fs|2026-08-24|r-di', U1), zusage('z1', 'fs|2026-08-24|r-sa', U2)],
+    })
+    const woche = tabellen.fs_weeks!.find((w) => w.start === '2026-08-24')!.data as { id: string; leader: string }[]
+    expect(woche.find((i) => i.id === 'r-di')?.leader).toBe('Probe Eins')
+    expect(tabellen.confirmations!.map((z) => z.task_key)).toEqual(['fs|2026-08-24|r-sa'])
+  })
+})
+
+describe('treffpunkt-regeln-setzen: Zusagen folgen ihrem Treffpunkt (16.10.2026)', () => {
+  /*
+    Geht ein importierter Termin in einer Regel-Instanz auf, wechselt er die
+    Kennung — die Zusage seines Leiters stand bis dahin unter der alten weiter,
+    und er galt als offen. Ein Treffpunkt des alten Grundplans (`--ersetzen`)
+    entfällt seither, und mit ihm seine Zusage.
+  */
+  it('die Zusage zieht auf die Regel um, die des entfallenen Treffpunkts ist weg', async () => {
+    const l = LAEUFE['treffpunkt-regeln-setzen.mjs']![0]!
+    const modul = (await MODULE['./treffpunkt-regeln-setzen.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const eingaben = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-probe-'))
+    try {
+      for (const [name, inhalt] of Object.entries(l.dateien ?? {})) fs.writeFileSync(path.join(eingaben, name), JSON.stringify(inhalt))
+      const importiert = { id: 'x1430', ruleId: null, grp: null, wd: 1, time: '14:30', place: 'Probe-Ort', leader: 'Probe Eins', lpid: NWS_PERSON, manual: true }
+      const alterGrundplan = { id: 'r-alt', ruleId: 'r-alt', grp: null, wd: 6, time: '09:30', place: '', leader: 'Probe Zwei' }
+      const zusage = (id: string, task_key: string, user_id: string) => ({ id, congregation_id: C, user_id, task_key, status: 'bestätigt' })
+      const { tabellen } = await fahre(() => l.fahren(modul, eingaben), {
+        ...l.umgebung,
+        bestand: {
+          ...l.umgebung!.bestand,
+          fs_weeks: [{ congregation_id: C, start: '2026-08-24', data: [importiert, alterGrundplan] }],
+          confirmations: [zusage('z0', 'fs|2026-08-24|x1430', U1), zusage('z1', 'fs|2026-08-24|r-alt', U2)],
+        },
+      })
+      const woche = tabellen.fs_weeks!.find((w) => w.start === '2026-08-24')!.data as { id: string; ruleId: string | null; leader: string }[]
+      const montag = woche.find((i) => i.ruleId && i.leader === 'Probe Eins')
+      expect(montag, 'der Leiter steht in der Regel-Instanz').toBeDefined()
+      expect(woche.some((i) => i.id === 'r-alt'), 'der alte Treffpunkt ist weg').toBe(false)
+      expect(tabellen.confirmations!.map((z) => z.task_key)).toEqual([`fs|2026-08-24|${montag!.id}`])
+    } finally {
+      fs.rmSync(eingaben, { recursive: true, force: true })
+    }
+  })
+})
+
 describe('abwesenheiten-importieren: der Abgleich sieht, was zählt (16.10.2026)', () => {
   /*
     Erkannt wird ein schon gespeicherter Zeitraum am Abgleich mit der
