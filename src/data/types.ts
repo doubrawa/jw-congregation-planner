@@ -47,6 +47,7 @@ export type Screen =
   | 'mitteilungen'
   | 'planen'
   | 'planung'
+  | 'auswertung'
   | 'personen'
   | 'einstellungen'
   | 'profil'

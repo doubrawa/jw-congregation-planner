@@ -16,6 +16,21 @@ const PFADE = {
   zurueck: <path d="m14.5 6-6 6 6 6" />,
   plus: <path d="M12 5.4v13.2M5.4 12h13.2" />,
   minus: <path d="M5.4 12h13.2" />,
+  /** Die Auswertung (T126): zu oft, zu selten, einseitig, wartet lange. */
+  pfeilHoch: <path d="M12 19V5.5M6.5 11 12 5.5l5.5 5.5" />,
+  pfeilRunter: <path d="M12 5v13.5M6.5 13l5.5 5.5 5.5-5.5" />,
+  halb: (
+    <>
+      <circle cx="12" cy="12" r="7.5" />
+      <path d="M12 4.5a7.5 7.5 0 0 1 0 15z" fill="currentColor" stroke="none" />
+    </>
+  ),
+  uhr: (
+    <>
+      <circle cx="12" cy="12" r="7.5" />
+      <path d="M12 8v4.2l2.8 1.8" />
+    </>
+  ),
   /** „Automatisch": der Zauberstab mit Funken (`werk.mjs`, dort 20 × 20). */
   stab: <path d="M4.8 19.2 15 9M16.8 3.6v3.6M15 5.4h3.6M19.8 10.8v2.4M18.6 12h2.4M10.2 3.6v2.4M9 4.8h2.4" />,
   /** Ohne Verbindung. */
@@ -72,6 +87,11 @@ const PFADE = {
     <>
       <path d="M5 19l1-4L16.6 4.4a1.8 1.8 0 0 1 2.5 0l.5.5a1.8 1.8 0 0 1 0 2.5L9 18z" />
       <path d="M14.5 6.5l3 3" />
+    </>
+  ),
+  auswertung: (
+    <>
+      <path d="M5 20v-7M10 20V6M15 20v-9M20 20V9" />
     </>
   ),
   personen: (

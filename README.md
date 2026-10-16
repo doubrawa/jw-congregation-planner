@@ -173,6 +173,7 @@ src/
     supabase.ts     Supabase-Client + Auth-Helfer (signIn/Logout/Reset)
     data.ts         Daten-Zugriff: Versammlungsdaten laden, Änderungen zurückschreiben
   aufgaben/         Meine Aufgaben (persönlicher Bereich) + Aufgaben-Ableitung
+  auswertung/       Auswertung der Zuteilungen (T126; gerechnet in data/auswertung.ts)
   einstellungen/    Einstellungen (Hilfsdienste, Programm-Import)
   login/            Login (simuliert, wie im Prototyp)
   personen/         Personenliste + Detail (Stammdaten, Rolle, Aufgabenbereiche)
@@ -212,7 +213,8 @@ eigenem Verhalten gibt es seit dem 2.10.2026 nicht mehr: „Meine Aufgaben"
 werden aus den Wochen abgeleitet (für die Person aus `me=`), Konto-Funktionen
 fehlen mangels Anmeldung. Damit das nicht vom Kalender abhängt, steht ihre Uhr
 auf Montag, 7. September 2026, 9 Uhr (`tests/testdaten/uhr.ts`) — der ersten
-Testwoche.
+Testwoche. Die Auswertung (T126) zeigt nur Vergangenes; für sie stellt
+`uhr=2026-10-12` im Hash einen späteren Tag.
 
 Die Seite gibt es nur im Dev-Server (`scripts/testdaten-grenze.mjs`), gebaut
 wird allein `index.html`. **Die App selbst kennt keine Testdaten:** Eine neue

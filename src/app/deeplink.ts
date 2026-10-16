@@ -1,17 +1,22 @@
 import type { Screen } from '../data/types'
 
-/** Screens, auf die ein Push-Klick verlinken darf (kein `login`). */
-const VALID: readonly Screen[] = [
-  'start',
-  'programm',
-  'aufgaben',
-  'mitteilungen',
-  'planen',
-  'planung',
-  'personen',
-  'einstellungen',
-  'profil',
-]
+/**
+ * Screens, auf die ein Push-Klick verlinken darf (kein `login`). Über
+ * `satisfies` verlangt TypeScript jeden Bildschirm — die Auswertung (T126)
+ * fehlte hier, solange es eine bloße Liste war.
+ */
+const VALID = Object.keys({
+  start: true,
+  programm: true,
+  aufgaben: true,
+  mitteilungen: true,
+  planen: true,
+  planung: true,
+  auswertung: true,
+  personen: true,
+  einstellungen: true,
+  profil: true,
+} satisfies Record<Exclude<Screen, 'login'>, true>) as readonly Screen[]
 
 /**
  * Ein Bereich innerhalb eines Screens, zu dem ein Push-Klick springt.

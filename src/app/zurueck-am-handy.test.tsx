@@ -227,6 +227,32 @@ describe('Zurück am Handy', () => {
     expect(amGrund(), 'ein Eintrag zu viel oder zu wenig').toBe(true)
   })
 
+  it('die Auswertung: erst die Person, dann die Unteransicht, dann der Überblick — dann Start (T126)', async () => {
+    // Die Testwochen (7.9.–4.10.2026) müssen zurückliegen, sonst hat die
+    // Auswertung nichts zu zeigen. Nur das Datum steht, die Zeitgeber laufen.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 12, 9, 0))
+    try {
+      const { container } = zeige()
+      klickMenue(container, t.navAuswertung)
+      fireEvent.click(container.querySelector('.aw-kachel')!)
+      fireEvent.click(container.querySelector('.aw-zeile-name')!)
+      await ausklingen()
+      expect(container.querySelector('.aw-wochen'), 'die Person ist nicht offen').not.toBeNull()
+
+      await zurueck()
+      expect(container.querySelector('.unteransicht-kopf h1')?.textContent).toBe(t.awVerteilungTitel)
+      await zurueck()
+      expect(container.querySelector('.aw-kachel'), 'nicht zurück im Überblick').not.toBeNull()
+      expect(aktiv(container)).toBe(t.navAuswertung)
+      await zurueck()
+      expect(aktiv(container)).toBe(t.navStart)
+      expect(amGrund(), 'ein Eintrag zu viel oder zu wenig').toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('ein neuer Plan steht gleich offen da — Zurück führt zur Liste, dann zu Start', async () => {
     const { container } = zeige({ plaene: [], planEintraege: [] })
     klickMenue(container, t.navWeiterePlaene)

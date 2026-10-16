@@ -6,14 +6,14 @@ import { Saal } from '../bausteine/Saal'
 import { Spur } from '../bausteine/Spur'
 import { zusammenkunftName } from '../components/anlass-name'
 import { engpaesse } from '../data/bedarf'
-import { istAusgefallen, serviceQualKey } from '../data/helpers'
+import { istAusgefallen } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import { openSlotLabels, type Conflict, type ConflictKind } from '../data/planning'
 import { besetztVon, besetzung, saalLagen, type PlatzLage } from '../data/saal'
-import type { MeetingKey, QualificationKey } from '../data/types'
+import type { MeetingKey } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
-import { privLabel } from '../personen/priv-label'
+import { bereichsName } from '../personen/priv-label'
 import { spurDerWoche, wochenZahlen } from './plan-spur'
 import { LAGE_KLASSE } from './platz-anzeige'
 import { useKonflikte } from './useKonflikte'
@@ -105,12 +105,7 @@ export function BesetzungKarte({ tab, tpw }: { tab: MeetingKey; tpw: (s: string)
   const { besetzt, gesamt } = besetztVon(b)
   const zahl = `${t.saalBesetzung}: ${besetzt}/${gesamt}`
   const offenGesamt = offen.reduce((summe, slot) => summe + slot.n, 0)
-  // Der Name eines Hilfsdienstes, wie ihn die Versammlung angelegt hat (`tu`,
-  // denn er ist Datum, kein UI-Text) — sonst die feste Bereichs-Beschriftung.
-  const bereichName = (key: string): string => {
-    const svc = services.find((s) => serviceQualKey(s.key) === key)
-    return svc ? tu(svc.name) : privLabel(t, key as QualificationKey)
-  }
+  const bereichName = (key: string): string => bereichsName(key, services, t, tu)
 
   return (
     <section className="karte karte--held besetzung" aria-label={t.saalBesetzung}>

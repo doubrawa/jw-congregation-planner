@@ -150,8 +150,11 @@ function assignmentDistance(
   return { part, any, je }
 }
 
-/** Der Aufgabenbereich eines Platzes, wie ihn `assignmentDistance` je Bereich führt. */
-function bereichVon(platz: Platz): string | undefined {
+/**
+ * Der Aufgabenbereich eines Platzes, wie ihn `assignmentDistance` je Bereich
+ * führt — und die Auswertung (T126) zählt.
+ */
+export function bereichVon(platz: Platz): string | undefined {
   if (platz.art === 'helper') return serviceQualKey(platz.svc.key)
   return platz.art === 'ratgeber' ? 'ratgeber' : platz.slot.bereichsKey
 }
@@ -837,7 +840,7 @@ function folgtAuswahlDemVorsitz(meeting: Meeting, sel: SlotSelection | undefined
 }
 
 /** Der Platz des Vorsitzes in der Eröffnung — `undefined`, wo es keinen gibt. */
-function vorsitzPlatz(meeting: Meeting): SlotAssignment | undefined {
+export function vorsitzPlatz(meeting: Meeting): SlotAssignment | undefined {
   const opening = meeting.sections.find((s) => istArt(s, 'eroeffnung'))
   return opening?.items.flatMap((i) => (isSong(i) ? [] : i.names)).find((s) => s.rolle === 'Vorsitz')
 }

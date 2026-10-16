@@ -95,6 +95,9 @@ const STARTS: Array<[string, Partial<AppState>]> = [
   ['planen-plaene', { screen: 'planen', tab: 'wp', terminGewaehlt: true }],
   ['planen-zusagen', { screen: 'planen', tab: 'zusagen', terminGewaehlt: true }],
   ['planung', { screen: 'planung' }],
+  // Unter der Uhr des Bestands liegt noch keine Woche zurück: nur der leere
+  // Zustand. Die Ansichten mit Zahlen liest `src/auswertung/AuswertungScreen.test.tsx`.
+  ['auswertung', { screen: 'auswertung' }],
   ['personen', { screen: 'personen' }],
   ['personen-detail', { screen: 'personen', selectedPersonId: 'p9' }],
   ['einstellungen', { screen: 'einstellungen' }],

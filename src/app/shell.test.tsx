@@ -135,9 +135,20 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
     expect(navPunkte(container)).toEqual([
       t.navStart, t.navAufgabenLong, t.mitteilungen,
       t.navZusammenkuenfte, t.tabFs, t.navWeiterePlaene,
-      t.dashPlanung, t.navPersonen, t.navEinstellungen,
+      t.dashPlanung, t.navAuswertung, t.navPersonen, t.navEinstellungen,
     ])
     expect(abschnittTitel(container)).toEqual([t.versammlungLbl, t.navPlanenVerwalten])
+  })
+
+  it('der Planer sieht die Auswertung wie der Admin — Personen und Einstellungen nicht (T126)', () => {
+    const { container, dispatch } = zeige({ planner: false, zuteiler: true })
+    expect(navPunkte(container)).toEqual([
+      t.navStart, t.navAufgabenLong, t.mitteilungen,
+      t.navZusammenkuenfte, t.tabFs, t.navWeiterePlaene,
+      t.dashPlanung, t.navAuswertung,
+    ])
+    tippe(container, t.navAuswertung)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'auswertung' })
   })
 
   it('der Verkündiger sieht dieselben Bereiche — ohne Planen und Verwalten, ohne leere Weitere Pläne', () => {

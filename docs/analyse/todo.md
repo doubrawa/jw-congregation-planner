@@ -7173,7 +7173,7 @@ für Sitzungen räumt Supabase sie nicht ab. Am 16.10. waren es 12, die älteste
 vom 12.10. Möglich wäre eine Regel für Sitzungen, die ein Jahr unbenutzt
 sind; das Gerät bräuchte danach einen neuen Link.
 
-### T126 · Auswertung der Zuteilungen — mit Diagrammen 🏗 ☐ offen
+### T126 · Auswertung der Zuteilungen — mit Diagrammen 🏗 ✅ erledigt und ausgerollt (16. Oktober 2026)
 
 **Wortlaut:** *„nimm in die todo liste auf, dass wir noch eine auswertungsseite
 machen, wo wir versuchen erkenntnisse aus den zuteilungen zu ziehen, wie z.b.
@@ -7211,6 +7211,46 @@ Textfassung (Tabelle) für Screenreader und den Ausdruck.
 - **Messgrößen an der Automatik ausrichten:** dieselben Bereiche und
   Abstände wie `assignmentDistance` und `rangfolge` — sonst zeigt die Seite
   eine andere Gerechtigkeit als die, nach der verteilt wird.
+
+**Entschieden (16. Oktober 2026):** Entwurf auf einer eigenen Design-Leinwand
+(16 Tafeln: Handy hell und dunkel, Tablet, Desktop). Der Betreiber: *„admin und
+planer"*, *„nein, nicht druckbar machen"* — und zur Leinwand: kein
+waagerechter Rollbalken.
+
+**Umgesetzt:** `src/data/auswertung.ts` rechnet, `src/auswertung/` zeigt; im Menü
+unter „Planen und verwalten" nach der Planung (`ZUGANG.auswertung = 'planer'`).
+
+- **Wie die Automatik gezählt:** jeder Platz mit Person (`platzMitZusage`), ohne
+  ausgefallene Zusammenkünfte, ohne was dem Vorsitz folgt, ohne den festen
+  Leiter des Wachtturm-Studiums. Erwartet = Plätze des Bereichs × eigene
+  anwesende Wochen ÷ die aller Berechtigten zusammen; die Hilfsdienste gegen
+  die Gesamtlast, wie `rangfolge` sie verteilt.
+- **Grenzen:** zu oft, zu selten = mehr als die Hälfte daneben **und** mindestens
+  drei; einseitig = ab sechs Zuteilungen zwei Drittel in einem Bereich, oder nie
+  in einem eigenen, den die anderen im Schnitt viermal hatten; wartet lange =
+  mehr als der doppelte übliche Abstand (Median der Mediane je Person) oder nie;
+  schnell wieder = ab drei Malen höchstens der halbe; Ballungen = zweimal in
+  einer Zusammenkunft oder drei Wochen hintereinander im selben Bereich.
+- **Diagramme aus Kästchen**, ohne Paket: offline, von rechts nach links,
+  mit der Schriftstufe, hell und dunkel; zu jedem Diagramm eine Tabelle.
+- **Ohne Rollbalken**, im Browser vermessen bei 320 bis 1440 px, mit Schrift
+  1.45 und auf Arabisch. Gefunden und behoben: die Balken der Last (hundert
+  Personen: 412 px auf 375), die Tabellen am Handy (394 px), die Ballungen bei
+  320 px — und die Tabelle Person × Bereich am Tablet: 1621 px auf 553. Sie
+  steht deshalb erst ab dem Desktop, mit senkrechten Köpfen; am Tablet stehen
+  dort die Karten „Einseitig verteilt".
+- Die Entwicklerseite stellt mit `uhr=2026-10-12` den Tag — die Auswertung zeigt
+  nur Vergangenes, und unter der gewöhnlichen Uhr (7. September) liegt keine
+  Testwoche zurück.
+- **Nicht gebaut, weil die Daten fehlen:** *Absagen je Bereich* — die App
+  bewahrt keine Absagen auf. Und Abwesenheiten kennt sie nur bis acht Wochen
+  nach ihrem Ende (T125): Für ältere Wochen rechnet die Auswertung, als wäre
+  jeder da gewesen. Beides liegt dem Betreiber zur Entscheidung vor.
+- **Proben:** die Rechnung (`src/data/auswertung.test.ts`), der Bildschirm
+  (`src/auswertung/AuswertungScreen.test.tsx`: Handy, Tablet, Desktop, Zurück,
+  dazu en, uk, ar und fr ohne deutschen Rest — die Sabotage mit dem rohen
+  Gruppennamen schlug an), Zurück am Handy, das Menü für Admin und Planer, die
+  Push-Ziele (jetzt per `satisfies` vollständig, die Auswertung fehlte dort).
 
 ## Was bewusst offen bleibt
 
@@ -7633,14 +7673,14 @@ zurückgenommen und der Testlauf wiederholt wurde.
 **Stand 16. Oktober 2026, alles Offene an einer Stelle** (gemessen: Köpfe
 gezählt, kein Zweig außer `main`, keine PR, kein Issue; `sw.js` = HEAD; alle
 sieben Functions per `functions download` gleich dem Repo, 39 Dateien; Secrets
-ohne `INVITE_FROM`, `disable_signup` noch `false`). Im Code sind T124 und
-T126 offen (T123 und T125 am 16. Oktober erledigt und ausgerollt); was sonst
+ohne `INVITE_FROM`, `disable_signup` noch `false`). Im Code ist T124 offen
+(T123, T125 und T126 am 16. Oktober erledigt und ausgerollt); was sonst
 aussteht, braucht den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **T124** | Rechte zum Testen umschalten | aufgenommen am 16. Oktober, noch nicht begonnen; befristet — nach den Tests wieder ausbauen |
-| **T126** | Auswertung der Zuteilungen mit Diagrammen | aufgenommen am 16. Oktober, noch nicht begonnen; Grundlage ist das Jahr aus T125 |
+| **Betreiber** | Daten für die Auswertung (T126) | Absagen bewahrt die App nicht auf, Abwesenheiten nur acht Wochen nach ihrem Ende — soll die Auswertung beides kennen, müssten sie länger bleiben (siehe T126) |
 | **Zurückgestellt** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт". Betreiber am 16. Oktober: „bleibt erst mal so" — wieder aufnehmen, wenn ein Muttersprachler prüft; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
 | **Wartet** | Motion-Clip „Plan senden" | am 12. Oktober zurückgestellt, bis das neue Design steht — das ist jetzt der Fall. Das leere Motion-Artifact liegt schon bereit |

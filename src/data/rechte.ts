@@ -108,7 +108,8 @@ type Zugang = 'alle' | 'gruppe' | 'planer' | 'admin'
  * Gruppenaufseher für die Treffpunkte seiner Gruppe samt ihrem Grundplan.
  * Personen und Einstellungen hat der Betreiber dem Admin vorbehalten. Die
  * Seite aller Wochen (`planung`) gilt den Zusammenkünften — sie bleibt bei
- * dem, der zuteilt.
+ * dem, der zuteilt. Ebenso die Auswertung der Zuteilungen (T126, Betreiber
+ * 16.10.2026: „admin und planer").
  */
 const ZUGANG = {
   start: 'alle',
@@ -117,6 +118,7 @@ const ZUGANG = {
   mitteilungen: 'alle',
   planen: 'gruppe',
   planung: 'planer',
+  auswertung: 'planer',
   personen: 'admin',
   einstellungen: 'admin',
   profil: 'alle',

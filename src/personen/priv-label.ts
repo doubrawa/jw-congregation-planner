@@ -1,4 +1,5 @@
-import type { QualificationKey } from '../data/types'
+import { serviceQualKey } from '../data/helpers'
+import type { QualificationKey, Service } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import { PRIV_KEY } from '../i18n/ui'
 
@@ -21,4 +22,18 @@ export function privLabel(t: Dict, key: QualificationKey): string {
   if (key === 'vortrag') return `${t.privSchaetze} · ${t.privVortrag}`
   if (key === 'schulungVortrag') return `${t.privSchulung} · ${t.privVortrag}`
   return t[PRIV_KEY[key]]
+}
+
+/**
+ * **Der Name eines Aufgabenbereichs, wie er an einem Platz steht** — ein
+ * Hilfsdienst mit dem Namen, den die Versammlung ihm gab (`tu`, denn er ist
+ * Datum, kein UI-Text), sonst die feste Beschriftung. Ein Dienst, den es nicht
+ * mehr gibt, behält seinen Schlüssel als Namen, statt leer zu bleiben.
+ * Für den Stand der Woche und die Auswertung (T126).
+ */
+export function bereichsName(key: string, services: readonly Service[], t: Dict, tu: (s: string) => string): string {
+  const svc = services.find((s) => serviceQualKey(s.key) === key)
+  if (svc) return tu(svc.name)
+  if (key.startsWith('svc:')) return key.slice('svc:'.length)
+  return privLabel(t, key as QualificationKey) ?? key
 }

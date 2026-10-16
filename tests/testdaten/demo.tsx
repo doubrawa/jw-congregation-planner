@@ -7,7 +7,7 @@
  * („vor 2 Stunden"), und das gehört zur gestellten Uhr (`uhr.ts`), nicht zur
  * echten.
  */
-import { ENTWICKLER_HEUTE, uhrStellen } from './uhr'
+import { ENTWICKLER_HEUTE, uhrAusHash, uhrStellen } from './uhr'
 
-uhrStellen(ENTWICKLER_HEUTE)
+uhrStellen(uhrAusHash(location.hash) ?? ENTWICKLER_HEUTE)
 await import('./demo-seite')

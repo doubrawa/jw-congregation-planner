@@ -36,10 +36,10 @@ dadurch bleiben Bilder und App immer konsistent. Mit Namen als Argumenten
 
 | Parameter | Bedeutung |
 | --- | --- |
-| `s`   | Bildschirm: `login`, `start`, `programm`, `aufgaben`, `planen`, `personen`, `einstellungen`, `profil` |
+| `s`   | Bildschirm: `login`, `start`, `programm`, `aufgaben`, `mitteilungen`, `planen`, `planung`, `auswertung`, `personen`, `einstellungen`, `profil` |
 | `tab` | Reiter in Programm/Planen: `mid` (unter der Woche), `we` (Wochenende), `fs` (Predigtdienst), `wp` (Weitere Pläne; Pläne bringt nur die Entwicklerseite mit), `zusagen` (die Zusagen der Woche; nur beim Planen) |
 | `fb`  | Reiter im Predigtdienst: `treffpunkte`, `gruppenbesuche` (Besuche des Dienstaufsehers; nur die Entwicklerseite bringt welche mit), `trolleys` (Trolleys; nur beim Ansehen; die Entwicklerseite bringt drei Trolleys und sechs Termine mit), `grundplan` (nur beim Planen) |
-| `pl`  | Rechte erzwingen: `0` = Verkündiger‑Ansicht, `1` = Admin, `2` = Planer (teilt zu, ändert die Pläne nicht) |
+| `pl`  | Rechte erzwingen: `0` = Verkündiger‑Ansicht, `1` = Admin, `2` = Planer (plant alles wie der Admin, nur Personen und Einstellungen nicht) |
 | `p`   | **Ausgewählte** Person‑Id — auf der Personen‑Seite öffnet es deren Detail |
 | `me`  | **Angemeldete** Person‑Id: wessen App das hier ist. Davon hängt ab, was persönlich ist — „Meine Aufgaben" und Einspringen (abgeleitet wie im Betrieb), der „DU"‑Chip, „Deine Einträge", und welche **Gruppentreffpunkte** überhaupt erscheinen (nur die der eigenen Gruppe) |
 | `t`   | Darstellung: `hell`, `dunkel` oder `auto` |
@@ -48,6 +48,7 @@ dadurch bleiben Bilder und App immer konsistent. Mit Namen als Argumenten
 | `shot` | `1` = Screenshot‑Modus: schaltet den Spaltenschatten ab, damit die Zentrier‑Lücke flach ist und randlos zugeschnitten werden kann |
 | `stale` | Offline‑Stand vortäuschen: Zahl = Alter in Stunden (`stale=5`). Zeigt das Offline‑Banner und schaltet auf „nur lesen" — ohne echten Netzabbruch |
 | `vorlage` | `1` = das Blatt beim Öffnen vorlegen, wie nach dem Anmelden (braucht `me=`, sonst liegt nichts vor) |
+| `uhr` | Die Uhr der Seite auf einen anderen Tag stellen, 9 Uhr (`uhr=2026-10-12`); sonst steht sie auf Montag, 7. September 2026. Für die **Auswertung**: Sie zeigt nur Vergangenes, und unter der gewöhnlichen Uhr liegt keine Testwoche zurück (siehe `tests/testdaten/uhr.ts`) |
 
 Nach der Aufnahme schneidet **`trim.mjs`** (pngjs) jedes Bild seitlich auf den Inhalt
 zu – es entfernt die einfarbige Zentrier‑Lücke links/rechts. Das Skript ruft es am
@@ -76,6 +77,7 @@ Ende automatisch auf; du musst nichts extra tun.
 | `planer-plan-senden.png` | `s=planen&tab=fs` (Höhe 2100) | planer |
 | `planer-gruppenbesuche.png` | `s=planen&tab=fs&fb=gruppenbesuche&me=p6` (Höhe 1500) | planer |
 | `planer-weitere-plaene.png` | `s=planen&tab=wp&me=p6` | planer |
+| `planer-auswertung.png` | `s=auswertung&me=p6&uhr=2026-10-12` (Höhe 1700) | planer |
 | `planer-personen.png` | `s=personen` | planer |
 | `planer-person-detail.png` | `s=personen&p=p1` | planer |
 | `planer-einstellungen.png` | `s=einstellungen` | planer |

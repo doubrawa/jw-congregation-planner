@@ -16,6 +16,22 @@
 export const ENTWICKLER_HEUTE = new Date(2026, 8, 7, 9, 0)
 
 /**
+ * `uhr=2026-10-12` im Hash stellt die Uhr auf diesen Tag, 9 Uhr — für die
+ * Ansicht, die nur Vergangenes zeigt: Unter der gewöhnlichen Uhr liegt keine
+ * der Testwochen zurück, und die Auswertung (T126) bliebe leer. Ohne gültigen
+ * Tag `null`: dann gilt `ENTWICKLER_HEUTE`.
+ */
+export function uhrAusHash(hash: string): Date | null {
+  const tag = new URLSearchParams(hash.replace(/^#/, '')).get('uhr')
+  const teile = tag?.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!teile) return null
+  const [jahr, monat, tagImMonat] = [Number(teile[1]), Number(teile[2]) - 1, Number(teile[3])]
+  const datum = new Date(jahr, monat, tagImMonat, 9, 0)
+  // Ein 45. Oktober rollte sonst still in den November.
+  return datum.getMonth() === monat && datum.getDate() === tagImMonat ? datum : null
+}
+
+/**
  * Stellt die Uhr der Seite: `Date.now()`, `new Date()` und `Date()` gehen ab
  * `heute`. Alles andere am Datum — rechnen, formatieren, `Date.UTC`,
  * `instanceof Date` — bleibt, wie es ist. Zurück kommt der Weg zur echten Uhr.

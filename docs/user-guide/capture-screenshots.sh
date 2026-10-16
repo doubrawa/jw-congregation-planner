@@ -101,6 +101,11 @@ SHOTS=(
   # Weitere Pläne (T120, Phase 5): die Liste — der Winterdienst aktuell, die
   # Grundreinigung als Entwurf. Einen Plan öffnet kein Hash.
   "planer-weitere-plaene|s=planen&tab=wp&me=p6"
+  # Die Auswertung (T126) zeigt nur Vergangenes: Die Uhr steht deshalb auf dem
+  # 12. Oktober (`uhr=`), sonst läge keine der vier Testwochen zurück. Im
+  # Fenster steht die Seite wie am Tablet — alles untereinander, ohne Kacheln;
+  # das Bild zeigt den Anfang bis „Zu oft, zu selten".
+  "planer-auswertung|s=auswertung&me=p6&uhr=2026-10-12|${W}x1700"
   "planer-personen|s=personen"
   # höher als der Rest: unter den Stammdaten folgen die Zeitleiste der
   # Zuteilungen, die Abwesenheiten und die beiden Bereichs-Karten (Aufgaben,

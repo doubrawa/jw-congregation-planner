@@ -12,6 +12,7 @@ import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import type { Screen, Thema } from '../data/types'
 import { AbsageBlatt } from '../aufgaben/AbsageBlatt'
+import { AuswertungScreen } from '../auswertung/AuswertungScreen'
 import { AufgabeBlatt } from '../aufgaben/AufgabeBlatt'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
 import { OeffnenBlatt } from '../aufgaben/OeffnenBlatt'
@@ -212,6 +213,8 @@ export function AppShell() {
         },
       ]
     : []
+  // Die Auswertung der Zuteilungen (T126) gleich nach der Planung — für Admin und Planer.
+  const auswertung: MenueEintrag[] = navScreens.includes('auswertung') ? [eintrag('auswertung', t.navAuswertung, 'auswertung')] : []
   const verwaltung = (['personen', 'einstellungen'] as const)
     .filter((s) => navScreens.includes(s))
     .map((s) => (s === 'personen' ? eintrag(s, t.navPersonen, 'personen') : eintrag(s, t.navEinstellungen, 'einstellungen')))
@@ -240,8 +243,8 @@ export function AppShell() {
         ...(weiterePlaeneSichtbar ? [themaEintrag('weitere', 'plaene')] : []),
       ],
     },
-    ...(planung.length + verwaltung.length > 0
-      ? [{ key: 'planen-verwalten', titel: t.navPlanenVerwalten, eintraege: [...planung, ...verwaltung] }]
+    ...(planung.length + auswertung.length + verwaltung.length > 0
+      ? [{ key: 'planen-verwalten', titel: t.navPlanenVerwalten, eintraege: [...planung, ...auswertung, ...verwaltung] }]
       : []),
   ]
   // Am Desktop gibt es keine Kopfzeile mit Glocke: Die Mitteilungen stehen in
@@ -500,6 +503,8 @@ function ActiveScreen({ screen }: { screen: Screen }) {
       return <PlanenScreen />
     case 'planung':
       return <PlanungScreen />
+    case 'auswertung':
+      return <AuswertungScreen />
     case 'personen':
       return <PersonenScreen />
     case 'einstellungen':

@@ -26,6 +26,7 @@ Versammlungseinstellungen pflegen.
    – [Vortragsplan übernehmen](#vortragsplan-übernehmen)
 4. [Konflikte und offene Zuteilungen](#4-konflikte-und-offene-zuteilungen)
    – [Die Zusagen der Woche](#die-zusagen-der-woche)
+   – [Auswertung](#4a-auswertung-wie-die-zuteilungen-verteilt-sind)
 5. [Treffpunkte planen](#5-treffpunkte-planen)
    – [Weitere Pläne](#5a-weitere-pläne)
 6. [Personen verwalten](#6-personen-verwalten)
@@ -81,9 +82,9 @@ der Stelle von „Diese Woche in der Versammlung".
   angesehen.
 - Das Menü an der Seite: oben **Start** und **Meine Aufgaben**, darunter unter
   **Versammlung** die **Zusammenkünfte**, der **Predigtdienst** und die
-  **Weiteren Pläne**, zuletzt unter **Planen und verwalten** die **Planung** und
-  – nur für Admins – **Personen** und **Einstellungen**. Dein **Profil**
-  erreichst du über deinen Namen ganz unten.
+  **Weiteren Pläne**, zuletzt unter **Planen und verwalten** die **Planung**,
+  die **Auswertung** (Abschnitt 4a) und – nur für Admins – **Personen** und
+  **Einstellungen**. Dein **Profil** erreichst du über deinen Namen ganz unten.
 - **Ansehen oder Planen.** Die Bereiche im Menü öffnen immer zum Ansehen: so,
   wie es alle sehen. Neben dem Titel steht **Planen** – damit kommst du zu den
   Zuteilungen. **Planung** im Menü führt zu allen Wochen: am Handy und am
@@ -115,6 +116,7 @@ steht der Schalter **Darf planen** an und lässt sich nicht umlegen.
 | Weitere Pläne: anlegen, einstellen, veröffentlichen, Gruppen verteilen | – | – | ✓ | ✓ |
 | **Plan senden** | – | Treffpunkte seiner Gruppe | ✓ | ✓ |
 | Programm holen, **Woche einrichten** (Anlass, Sonderwoche, Termine), Punkte unter „Unser Leben als Christ" anlegen, umbenennen, verschieben, Minuten | – | – | ✓ | ✓ |
+| **Auswertung** der Zuteilungen ansehen | – | – | ✓ | ✓ |
 | Personen, Abwesenheiten anderer, Einstellungen mit Trolleys, Mitglieder, Anmelde-Links | – | – | – | ✓ |
 
 **Gruppenaufseher und Gehilfe** ist, wen du im Blatt seiner
@@ -632,6 +634,104 @@ zusammen, ohne was schon vorbei ist:
 
 Am Desktop stehen die Karten als Spalten nebeneinander. Zurück — oder der
 Schritt **Zuteilen** der Spur — führt wieder in den Plan.
+
+---
+
+## 4a. Auswertung: wie die Zuteilungen verteilt sind
+
+Unter **Planen und verwalten** → **Auswertung** siehst du, wie sich die
+Zuteilungen der vergangenen Wochen auf die Versammlung verteilen: wer zu oft
+oder zu selten dran ist, wer immer dasselbe macht und wer lange wartet. Die
+Auswertung sehen nur Planer und Admins. Sie rechnet aus den Wochen, die die App
+kennt, und speichert nichts; drucken lässt sie sich nicht.
+
+![Auswertung der Zuteilungen](screenshots/planer-auswertung.png)
+
+- **Zeitraum** – 12, 6 oder 3 Monate, bis vor die laufende Woche. Darunter
+  steht, welche Tage das sind, wie viele Wochen die App davon kennt und wie
+  viele Zusammenkünfte stattfanden. Ausgefallene Zusammenkünfte zählen nicht.
+- **Kennzahlen** – alle Zuteilungen im Zeitraum, wie viele derer mit einem
+  Aufgabenbereich eingeteilt waren und wie viele nie dran waren.
+- **Was auffällt** – das Wichtigste zuerst: zu selten, zu oft, einseitig,
+  wartet lange. Je Person und Art steht nur der deutlichste Fall da. Ein Tipp
+  öffnet die Person; **Alle Hinweise** zeigt den Rest.
+- **Wie sich die Last verteilt** – je Person ein Balken, die meisten zuerst,
+  Aufgaben und Hilfsdienste zusammen. Die zehn oberen sind hervorgehoben, wer
+  nie dran war, steht als gestrichelte Linie da. **Als Tabelle** zeigt dieselben
+  Zahlen als Liste.
+- Am Handy führen vier Kacheln weiter – **Zu oft, zu selten**, **Einseitig
+  verteilt**, **Wartezeiten**, **Treffpunkte und Ballungen**; Zurück führt
+  wieder in den Überblick. Am Tablet steht alles auf einer Seite, am Computer
+  dazu die Tabelle **Wer bekommt was** (Person × Bereich).
+
+### Was zählt – und was erwartet wird
+
+- Gezählt wird jeder Platz, auf dem eine Person der Versammlung stand –
+  Programmpunkte und Hilfsdienste. Gastredner und Namen ohne Person zählen
+  nicht, die Reinigung (sie geht an Gruppen) auch nicht.
+- **Feste Rollen** zählen nicht: der feste Leiter des Wachtturm-Studiums und
+  was dem Vorsitz folgt, etwa das Anfangsgebet des Vorsitzenden.
+- **Erwartet** ist, was auf eine Person käme, wenn die Plätze ihrer
+  Aufgabenbereiche gleich auf alle verteilt wären, die diese Bereiche haben.
+  Wochen, in denen jemand abwesend war, zählen für ihn nicht mit.
+- **Zu oft, zu selten** heißt: mehr als die Hälfte über oder unter der
+  Erwartung **und** mindestens drei daneben – damit nicht jede kleine
+  Abweichung auffällt.
+- Die Ansicht **Zu oft, zu selten** vergleicht wahlweise die **Aufgaben**
+  (Programmpunkte), die **Schulungsaufgaben** (Gesprächsführer,
+  Gesprächspartner und Vortrag zusammen, Schwestern wie Brüder) oder alles
+  **mit den Hilfsdiensten**. Den letzten Vergleich gibt es, weil „Automatisch"
+  die Hilfsdienste nach der Gesamtlast verteilt: Wer viele Aufgaben hat,
+  bekommt weniger Hilfsdienste.
+- Im **Diagramm** ist der graue Balken die Zahl, der Strich die Erwartung, das
+  Feld dahinter der übliche Bereich; rot ist, was darüber liegt, gestrichelt,
+  was darunter fehlt. Die **Tabelle** daneben zeigt dieselben Zahlen.
+
+### Einseitig verteilt
+
+Einseitig ist, wer mindestens sechs Zuteilungen hat und zwei Drittel davon in
+einem Bereich – oder wer in einem eigenen Bereich nie dran war, obwohl die
+anderen ihn im Schnitt mindestens viermal hatten. Die Karten zeigen je Person
+ihre Bereiche mit Balken; **Alle** zeigt auch die Unauffälligen.
+
+Am Computer zeigt die Tabelle **Wer bekommt was** jede Person mit jedem
+Bereich: je dunkler das Feld, desto öfter. Gestrichelt heißt, sie hat den
+Bereich, war dort aber nie dran; ein Strich, sie hat ihn nicht. Die
+Spaltenköpfe stehen senkrecht, damit die Tabelle ohne Rollen in die Breite
+passt. Ein Tipp auf einen Namen öffnet die Person.
+
+### Wartezeiten
+
+Je Bereich – oben auszuwählen – steht da, wer am längsten nicht dran war.
+**Üblicher Abstand** ist die Zeit, die im Mittel zwischen zwei Malen derselben
+Person liegt. **Wartet lange** ist, wer mehr als doppelt so lange wartet oder
+im Zeitraum nie dran war. Darunter **Schnell wieder dran**: wer mindestens
+dreimal dran war, mit höchstens halb so viel Abstand wie üblich – je Woche ein
+Feld.
+
+### Treffpunkte und Ballungen
+
+- **Treffpunkte leiten** – wer die Zusammenkünfte für den Predigtdienst
+  geleitet hat, je Gruppe.
+- **Ballungen** – wer zweimal in einer Zusammenkunft dran war oder drei Wochen
+  und mehr hintereinander im selben Bereich.
+
+### Eine Person
+
+Ein Tipp auf einen Namen zeigt die Person: ihre Aufgaben gegen die Erwartung,
+ihre Hilfsdienste, wie oft sie abwesend war, die Wochen des Zeitraums als
+Felder (Aufgabe, Hilfsdienst, abwesend) und je Bereich, wie oft und wann
+zuletzt.
+
+### Was die Auswertung nicht weiß
+
+- Sie kennt nur die Wochen, die die App aufbewahrt – ein Jahr (Abschnitt 11).
+  Sind erst wenige Wochen da, sind die Zahlen klein, und es fällt mehr auf, als
+  es sollte.
+- Abwesenheiten bewahrt die App bis acht Wochen nach ihrem Ende auf. Für ältere
+  Wochen rechnet die Auswertung so, als wäre jeder da gewesen.
+- Absagen bewahrt die App nicht auf; wie oft jemand abgesagt hat, zeigt die
+  Auswertung deshalb nicht.
 
 ---
 

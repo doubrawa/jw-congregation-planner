@@ -1,0 +1,818 @@
+/*
+ * Die Auswertung der Zuteilungen (T126, Entwurf vom 16.10.2026). Farben nur aus
+ * tokens.css, Schriftgrößen als calc(<px> * var(--fs)), Richtungen logisch —
+ * die Balken stehen mit `inset-inline-start`, damit sie von rechts nach links
+ * mitkippen. Keine Reihe rollt waagerecht (Betreiber, 16.10.2026); nur die
+ * breite Tabelle Person × Bereich rollt in ihrem Kasten, wenn sie nicht passt.
+ */
+
+.auswertung {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.aw-kopf {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aw-zeitraum {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.aw-zeitraum-zeile {
+  margin: 0;
+}
+
+.aw-ansicht {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aw-abschnitt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aw-abschnitt-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.aw-leer {
+  padding-block: 14px;
+  color: var(--text2);
+}
+
+.aw-erklaerung {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: var(--karte);
+  color: var(--text2);
+  font-size: calc(13.5px * var(--fs));
+  line-height: 1.45;
+}
+
+.aw-fussnote {
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* „Alle zeigen", „Als Tabelle": unter einer Liste, nicht über die Breite. */
+.aw-mehr {
+  align-self: flex-start;
+  margin-block: 8px 12px;
+}
+
+/* ---- Kennzahlen ---------------------------------------------------------- */
+
+.aw-kennzahlen {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 16px 18px;
+}
+
+.aw-kennzahl {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.aw-kennzahl-wert {
+  font-size: calc(24px * var(--fs));
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.aw-kennzahl-von {
+  color: var(--text3);
+  font-size: calc(14px * var(--fs));
+  font-weight: 700;
+}
+
+.aw-kennzahl-text {
+  color: var(--text2);
+  font-size: calc(13px * var(--fs));
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* ---- Was auffällt -------------------------------------------------------- */
+
+.aw-hinweise-karte {
+  padding-block: 4px;
+}
+
+.aw-hinweise {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.aw-hinweise > li + li {
+  border-block-start: 1px solid var(--linie);
+}
+
+.aw-hinweis {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  padding-block: 10px;
+  color: var(--text);
+  text-align: start;
+}
+
+.aw-hinweis-zeichen {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: var(--feld);
+  color: var(--text2);
+}
+
+.aw-hinweis-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.aw-hinweis-titel {
+  font-size: calc(15px * var(--fs));
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.aw-hinweis-detail {
+  color: var(--text2);
+  font-size: calc(13.5px * var(--fs));
+  line-height: 1.4;
+}
+
+/* ---- Wie sich die Last verteilt ----------------------------------------- */
+
+.aw-last-karte {
+  gap: 10px;
+  padding-block: 12px 4px;
+}
+
+/* Die Lücke zwischen den Balken setzt `Last` je nach Anzahl (höchstens 2 px,
+   zusammen ein Drittel der Breite): Mit festen 2 px rollte die Seite am Handy
+   schon bei hundert Personen waagerecht (gemessen 16.10.2026: 412 px auf 375). */
+.aw-last {
+  display: flex;
+  align-items: flex-end;
+  height: 112px;
+  border-block-end: 1px solid var(--linie);
+}
+
+.aw-last-balken {
+  flex: 1;
+  min-width: 0;
+  border-start-start-radius: 3px;
+  border-start-end-radius: 3px;
+  background: var(--umriss);
+}
+
+.aw-last-balken.is-oben {
+  background: var(--akzent);
+}
+
+/* Nur die obere Kante gestrichelt: Ränder links und rechts hielten jeden
+   leeren Balken mindestens 3 px breit. Nebeneinander ergeben sie eine
+   gestrichelte Linie — die Strecke derer, die nie dran waren. */
+.aw-last-balken.is-leer {
+  height: 8px;
+  border-block-start: 1.5px dashed var(--text3);
+  background: none;
+}
+
+/* ---- Legende ------------------------------------------------------------- */
+
+.aw-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text2);
+  font-size: calc(12.5px * var(--fs));
+}
+
+.aw-legende-eintrag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.aw-muster {
+  flex: none;
+  width: 18px;
+  height: 10px;
+  border-radius: 4px;
+}
+
+.aw-muster.is-oben,
+.aw-muster.is-aufgabe {
+  background: var(--akzent);
+}
+
+.aw-muster.is-andere {
+  background: var(--umriss);
+}
+
+.aw-muster.is-hilfsdienst {
+  background: var(--text3);
+}
+
+.aw-muster.is-leer {
+  border: 1.5px dashed var(--text3);
+}
+
+.aw-muster.is-band {
+  height: 12px;
+  background: var(--band);
+}
+
+.aw-muster.is-strich {
+  width: 2px;
+  height: 14px;
+  border-radius: 0;
+  background: var(--text);
+}
+
+.aw-muster.is-ueber {
+  background: var(--problem);
+}
+
+.aw-muster.is-unter {
+  height: 0;
+  border-block-start: 2px dashed var(--text2);
+  border-radius: 0;
+}
+
+.aw-muster.is-stufe1,
+.aw-muster.is-stufe2,
+.aw-muster.is-stufe3 {
+  width: 16px;
+  height: 16px;
+}
+
+.aw-muster.is-stufe1 {
+  background: var(--akzent-flaeche);
+}
+
+.aw-muster.is-stufe2 {
+  background: var(--stufe2);
+}
+
+.aw-muster.is-stufe3 {
+  background: var(--stufe3);
+}
+
+.aw-muster.is-abwesend {
+  background: repeating-linear-gradient(135deg, var(--punkt-leer) 0 2px, transparent 2px 5px);
+}
+
+/* ---- Kacheln (Handy) ----------------------------------------------------- */
+
+.aw-kacheln {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.aw-kachel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 120px;
+  padding: 14px;
+  border-radius: 20px;
+  background: var(--karte);
+  color: var(--akzent-text);
+  text-align: start;
+}
+
+.aw-kachel-titel {
+  color: var(--text);
+  font-size: calc(15px * var(--fs));
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* ---- Gruppen und Zeilen ------------------------------------------------- */
+
+.aw-gruppe {
+  gap: 12px;
+  padding-block: 14px 16px;
+}
+
+.aw-gruppe-kopf {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  font-size: calc(15px * var(--fs));
+  font-weight: 800;
+}
+
+.aw-zeilen {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.aw-zeile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.aw-zeile-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 8px;
+}
+
+.aw-zeile-name {
+  min-height: 24px;
+  color: var(--text);
+  font-size: calc(15px * var(--fs));
+  font-weight: 600;
+  text-align: start;
+}
+
+.aw-zeile-zahl {
+  color: var(--text2);
+  font-size: calc(13.5px * var(--fs));
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Balken gegen die Erwartung ------------------------------------------ */
+
+.aw-balken {
+  position: relative;
+  height: 14px;
+}
+
+.aw-band,
+.aw-wert,
+.aw-luecke,
+.aw-strich,
+.aw-nie {
+  position: absolute;
+}
+
+.aw-band {
+  inset-block: 0;
+  inset-inline-start: 0;
+  border-radius: 4px;
+  background: var(--band);
+}
+
+.aw-wert {
+  inset-block-start: 3px;
+  inset-inline-start: 0;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--umriss);
+}
+
+.aw-wert.is-hilfsdienst {
+  background: var(--text3);
+}
+
+.aw-wert.is-ueber {
+  background: var(--problem);
+}
+
+/* „Darunter": das fehlende Stück als gestrichelte Linie — kein Kästchen, das
+   wie eine Kette aussähe (gesehen auf den Tafeln, 16.10.2026). */
+.aw-luecke {
+  inset-block-start: 6px;
+  height: 0;
+  border-block-start: 2px dashed var(--text2);
+}
+
+.aw-strich {
+  inset-block: -2px;
+  width: 2px;
+  margin-inline-start: -1px;
+  background: var(--text);
+}
+
+/* Nie im Zeitraum: der ganze Balken gestrichelt. */
+.aw-nie {
+  inset-block: 2px;
+  inset-inline: 0;
+  border: 1.5px dashed var(--text2);
+  border-radius: 5px;
+}
+
+.aw-achse {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text3);
+  font-size: calc(12px * var(--fs));
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Bereiche einer Person ----------------------------------------------- */
+
+.aw-person-karte {
+  gap: 12px;
+  padding-block: 14px 16px;
+}
+
+.aw-karte-kopf {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 44px;
+  text-align: start;
+}
+
+.aw-karte-name {
+  color: var(--text);
+  font-size: calc(16px * var(--fs));
+  font-weight: 800;
+}
+
+.aw-bereiche {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.aw-bereich {
+  display: grid;
+  grid-template-columns: minmax(0, 9em) minmax(0, 1fr) 3.2em;
+  align-items: center;
+  gap: 10px;
+  min-height: 24px;
+}
+
+.aw-bereich-name {
+  font-size: calc(13.5px * var(--fs));
+  overflow-wrap: anywhere;
+}
+
+.aw-bereich-zahl {
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.aw-bereich-zahl.is-nie {
+  color: var(--text2);
+  font-weight: 600;
+}
+
+.aw-mini {
+  position: relative;
+  display: block;
+  height: 10px;
+}
+
+.aw-mini.is-nie {
+  border: 1.5px dashed var(--text3);
+  border-radius: 5px;
+}
+
+.aw-mini-wert {
+  position: absolute;
+  inset-block: 1px;
+  inset-inline-start: 0;
+  border-radius: 4px;
+  background: var(--umriss);
+}
+
+.aw-mini-wert.is-hervor {
+  background: var(--akzent);
+}
+
+.aw-treffpunkt-gruppe {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ---- Wer bekommt was (ab dem Tablet) ------------------------------------- */
+
+.aw-matrix-karte {
+  gap: 10px;
+  padding-block: 14px 16px;
+}
+
+/* Die Tabelle passt immer in die Breite — kein waagerechter Rollbalken
+   (Betreiber, 16.10.2026). Feste Spalten: die Namen ein knappes Drittel, die
+   Bereiche teilen sich den Rest, ihre Köpfe stehen senkrecht. Mit liegenden
+   Köpfen in einem rollenden Kasten war sie am Tablet bei vierzehn Bereichen
+   1621 px breit, bei 553 px Platz. */
+.aw-matrix {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.aw-matrix th {
+  color: var(--text3);
+  font-size: calc(12px * var(--fs));
+  font-weight: 700;
+  text-align: center;
+  vertical-align: bottom;
+}
+
+/* Die Breite der Namen über `<col>`: An der ersten Kopfzelle nahm Chrome sie in
+   der festen Tabelle nicht an — die Spalte fiel auf die Breite der übrigen. */
+.aw-matrix-namen {
+  width: 24%;
+}
+
+.aw-matrix thead th:first-child {
+  text-align: start;
+}
+
+/* Senkrecht, von unten nach oben zu lesen: So braucht ein Kopf nur zwei
+   Zeilenhöhen an Breite, gleich wie lang der Bereich heißt — je Baustein
+   des Namens („Vorsitz · …") eine Zeile. */
+.aw-matrix-kopf {
+  display: inline-flex;
+  flex-direction: column;
+  transform: rotate(180deg);
+  font-size: calc(11.5px * var(--fs));
+  line-height: 1.2;
+  white-space: nowrap;
+  writing-mode: vertical-rl;
+}
+
+.aw-matrix tbody th {
+  color: var(--text);
+  overflow-wrap: anywhere;
+  text-align: start;
+  vertical-align: middle;
+}
+
+.aw-marke-einseitig {
+  display: block;
+  color: var(--problem);
+  font-size: calc(11.5px * var(--fs));
+  font-weight: 700;
+}
+
+.aw-zelle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border-radius: 8px;
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 700;
+}
+
+.aw-zelle.is-stufe1 {
+  background: var(--akzent-flaeche);
+  color: var(--text);
+}
+
+.aw-zelle.is-stufe2 {
+  background: var(--stufe2);
+  color: var(--auf-akzent);
+}
+
+.aw-zelle.is-stufe3 {
+  background: var(--stufe3);
+  color: var(--grund);
+}
+
+/* Ohne Wort: Bei vielen Bereichen ist die Spalte schmaler als „nie" — die
+   Legende sagt, was gestrichelt heißt, die Zelle sagt es dem Vorleseprogramm. */
+.aw-zelle.is-nie {
+  border: 1.5px dashed var(--text3);
+}
+
+.aw-zelle.is-ohne {
+  color: var(--punkt-leer);
+  font-weight: 400;
+}
+
+/* ---- Tabellen statt Diagramm --------------------------------------------- */
+
+/* Feste Spalten: Die Namen bekommen den meisten Platz, die Zahlen teilen sich
+   den Rest, und ein langer Kopf („Hilfsdienste", „Вспомогательные
+   обязанности") bricht um, statt die Tabelle über den Rand zu schieben — so
+   rollte die Seite am Handy waagerecht (gemessen 16.10.2026: 394 px auf 375). */
+.aw-tabelle {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: calc(14px * var(--fs));
+  font-variant-numeric: tabular-nums;
+}
+
+.aw-tabelle thead th:first-child {
+  width: 40%;
+}
+
+.aw-tabelle th,
+.aw-tabelle td {
+  padding-block: 8px;
+  padding-inline-start: 8px;
+  border-block-start: 1px solid var(--linie);
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: anywhere;
+  text-align: end;
+}
+
+.aw-tabelle thead th {
+  border-block-start: none;
+  color: var(--text3);
+  font-size: calc(12.5px * var(--fs));
+  font-weight: 700;
+}
+
+.aw-tabelle th:first-child {
+  padding-inline-start: 0;
+  text-align: start;
+}
+
+.aw-tabelle tbody th {
+  font-weight: 600;
+}
+
+/* ---- Streifen und Wochenfelder ------------------------------------------- */
+
+.aw-streifen {
+  display: flex;
+  gap: 1px;
+}
+
+.aw-streifen-feld {
+  flex: 1;
+  min-width: 0;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--punkt-leer);
+}
+
+/* Gefüllt im dunklen Grün des Akzents: In Hell wäre Minze kaum heller als
+   das leere Feld (gesehen auf den Tafeln, 16.10.2026). */
+.aw-streifen-feld.is-an {
+  background: var(--akzent-text);
+}
+
+.aw-wochen {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aw-wochen-reihe {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.aw-wochen-felder {
+  display: grid;
+  grid-template-columns: repeat(13, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.aw-woche {
+  height: 20px;
+  border-radius: 4px;
+  background: var(--feld);
+}
+
+.aw-woche.is-aufgabe {
+  background: var(--akzent);
+}
+
+.aw-woche.is-hilfsdienst {
+  background: var(--umriss);
+}
+
+.aw-woche.is-abwesend {
+  background: repeating-linear-gradient(135deg, var(--punkt-leer) 0 2px, transparent 2px 5px);
+}
+
+/* ---- Ballungen ----------------------------------------------------------- */
+
+.aw-ballungen {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.aw-ballung {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+}
+
+/* Lange Wörter („Infrasettimanale", „Bibellesung") trennen, statt über das
+   Kästchen hinauszuragen — bei 320 px rollte sonst die Seite (gemessen
+   16.10.2026: 354 px). */
+.aw-ballung-wann {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: 7.5em;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: var(--feld);
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 700;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: anywhere;
+}
+
+.aw-ballung-was {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: anywhere;
+}
+
+/* ---- Ab dem Tablet: alles auf einer Seite -------------------------------- */
+
+.aw-raster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.aw-spalte {
+  display: flex;
+  flex: 1 1 340px;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.auswertung--breit .aw-kopf {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.auswertung--breit .aw-kennzahlen {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+/* Am Desktop die Breite neben dem Menü: Die Tabelle Person × Bereich und die
+   zwei Spalten brauchen mehr als die 760 px der übrigen Bildschirme. */
+@media (min-width: 1180px) {
+  .screen.auswertung--breit {
+    max-width: 1240px;
+  }
+}

@@ -6,7 +6,7 @@ import { deriveMyTasks } from '../../src/data/planning'
 import type { Person } from '../../src/data/types'
 import { demoZustand, entwicklerStart, parseDebugHash } from './demo-start'
 import { DEMO_PERSONS, DEMO_PLANNER } from './testdaten'
-import { ENTWICKLER_HEUTE, uhrStellen } from './uhr'
+import { ENTWICKLER_HEUTE, uhrAusHash, uhrStellen } from './uhr'
 
 beforeEach(() => {
   localStorage.clear()
@@ -199,6 +199,13 @@ describe('uhrStellen – die Uhr der Entwicklerseite', () => {
       zurueck()
     }
     expect(Date).toBe(echt)
+  })
+
+  it('`uhr=` stellt einen anderen Tag, 9 Uhr — Unsinn lässt die gewöhnliche Uhr stehen', () => {
+    expect(uhrAusHash('#s=auswertung&uhr=2026-10-12')).toEqual(new Date(2026, 9, 12, 9, 0))
+    expect(uhrAusHash('#s=auswertung')).toBeNull()
+    expect(uhrAusHash('#uhr=12.10.2026')).toBeNull()
+    expect(uhrAusHash('#uhr=2026-10-45')).toBeNull()
   })
 
   it('die Zeit läuft von dort weiter — sonst stünden Toasts und Zähler still', async () => {

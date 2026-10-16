@@ -53,6 +53,14 @@
   --leiste: #141516;
   --leiste-text: #f4f4f1;
   --schleier: rgba(20, 21, 22, 0.45);
+
+  /* Die Auswertung (T126): das Feld „üblich" hinter einem Balken und die zwei
+     dunkleren Stufen der Tabelle Person × Bereich (die hellste ist
+     `--akzent-flaeche`). Auf dem Entwurf vom 16.10.2026 gemessen: Jede Stufe
+     unterscheidet sich in der Helligkeit, nicht nur im Farbton. */
+  --band: #dededa;
+  --stufe2: #86e0b8;
+  --stufe3: #17694a;
   /* Grundton der Schatten als RGB-Tripel: rgba(var(--shade), 0.3). */
   --shade: 20, 21, 22;
 }
@@ -86,6 +94,10 @@
   --leiste: #282b2e;
   --leiste-text: #f4f4f1;
   --schleier: rgba(0, 0, 0, 0.6);
+
+  --band: #383c40;
+  --stufe2: #5a9a7e;
+  --stufe3: #86e0b8;
   --shade: 0, 0, 0;
 }
 
