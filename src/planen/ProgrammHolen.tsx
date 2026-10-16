@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useApp } from '../app/context'
+import { GesperrterKnopf } from '../bausteine/GesperrterKnopf'
 import { Spur, type SpurSchritt } from '../bausteine/Spur'
 import { Sheet } from '../components/Sheet'
 import { isSong } from '../data/helpers'
@@ -50,9 +51,12 @@ export function HolenKnopf({ className }: { className: string }) {
 
   return (
     <>
-      <button type="button" className={className} disabled={state.importing} onClick={starten}>
+      {/* Gesperrt, ohne den Fokus abzugeben: Der Knopf sperrt sich mit dem
+          eigenen Tipp, und wer das Blatt während des Abrufs schließt, kommt
+          wieder bei ihm an — mit `disabled` landete der Fokus auf der Seite. */}
+      <GesperrterKnopf className={className} gesperrt={state.importing} onTipp={starten}>
         {t.holen}
-      </button>
+      </GesperrterKnopf>
       {stand.art !== 'zu' && (
         <ProgrammHolenBlatt
           week={geholt}

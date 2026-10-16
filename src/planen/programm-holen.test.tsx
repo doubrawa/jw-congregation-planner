@@ -303,6 +303,18 @@ describe('Holen in der Produktion', () => {
     expect(blatt(container)).toBeNull()
   })
 
+  it('gesperrt behält er den Fokus — wer das Blatt schließt, kommt bei ihm an (16.10.2026)', () => {
+    // Mit `disabled` gab er den Fokus ab, sobald er sich mit dem eigenen Tipp
+    // sperrte; das Blatt gab ihn beim Schließen an einen Knopf zurück, der ihn
+    // nicht nehmen kann — und er landete auf der Seite.
+    const { container } = zeige({ importing: true })
+    const knopf = container.querySelector<HTMLButtonElement>('.holen-probe')!
+    expect(knopf.disabled).toBe(false)
+    expect(knopf.getAttribute('aria-disabled')).toBe('true')
+    knopf.focus()
+    expect(document.activeElement).toBe(knopf)
+  })
+
   it('offline fängt er gar nicht erst an und öffnet auch kein Blatt', () => {
     const { container, dispatch } = zeige({ staleAt: Date.now() })
     holen(container)

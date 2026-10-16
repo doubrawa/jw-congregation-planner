@@ -7133,6 +7133,13 @@ export const KATALOG = [
     ersetzen: '    const luecken = missingVariants(state.weeks, altCodes, langCode)\n',
   },
   {
+    id: 'holen-gesperrt-behaelt-fokus',
+    datei: 'src/planen/ProgrammHolen.tsx',
+    regel: '„Holen" sperrt sich per aria-disabled, nicht per disabled — sonst landet der Fokus nach dem Blatt auf der Seite.',
+    suchen: '      <GesperrterKnopf className={className} gesperrt={state.importing} onTipp={starten}>\n        {t.holen}\n      </GesperrterKnopf>\n',
+    ersetzen: '      <button type="button" className={className} disabled={state.importing} onClick={starten}>\n        {t.holen}\n      </button>\n',
+  },
+  {
     id: 'import-week-sonntag-laufende',
     datei: 'supabase/functions/import-week/index.ts',
     regel: 'Ohne `after` kommt die laufende Woche — auch am Sonntag, nicht schon die nächste.',

@@ -376,9 +376,12 @@
 }
 
 /* Gesperrt, per `disabled` oder — wo er den Fokus behalten muss — per
-   `aria-disabled` (`GesperrterKnopf`). */
+   `aria-disabled` (`GesperrterKnopf`). Die Pille gehört dazu: „Holen" sperrt
+   sich, solange geholt wird, und sah dabei bedienbar aus. */
 .knopf-haupt:disabled,
-.knopf-haupt[aria-disabled='true'] {
+.knopf-haupt[aria-disabled='true'],
+.knopf-pille:disabled,
+.knopf-pille[aria-disabled='true'] {
   opacity: 0.45;
   cursor: default;
 }
