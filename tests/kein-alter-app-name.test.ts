@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest'
  * (T115).
  *
  * Den Namen trägt die App an zwei Sorten Ort: in den Übersetzungen, wo ihn
- * `src/i18n/produktname.test.ts` in allen 34 Sprachen einfordert — und in den
+ * `src/i18n/produktname.test.ts` in allen App-Sprachen einfordert — und in den
  * paar Dateien, die keine Sprache kennen: Seitentitel, Manifest, der Name auf
  * dem Startbildschirm eines installierten Geräts. Die stehen je einmal da und
  * werden bei einer Umbenennung genauso leicht übersehen.

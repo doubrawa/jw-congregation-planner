@@ -10,7 +10,7 @@ import { DEMO_NOTIFICATIONS } from '../../tests/testdaten/testdaten'
  * übersetzt sie erst beim Anzeigen. Für den Rumpf besorgt das der
  * Fragment-Übersetzer (`tu`), für den **Titel** eine feste Zuordnung:
  * `NOTIF_TITLE_KEY` in `i18n/ui.ts`. Was dort nicht steht, wird unverändert
- * ausgegeben — auf Deutsch, in allen 33 Fremdsprachen, ohne Fehler und ohne
+ * ausgegeben — auf Deutsch, in allen anderen App-Sprachen, ohne Fehler und ohne
  * dass irgendwo etwas rot würde.
  *
  * Die Titel entstehen an **sechs** Stellen, fünf davon außerhalb der App:

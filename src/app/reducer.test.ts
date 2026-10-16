@@ -2497,7 +2497,7 @@ describe('Index außerhalb des Fensters', () => {
  * deutsch.
  *
  * Damit wäre `dict(DE)` statt `dict(state.lang)` durch keinen Test gefallen —
- * und jede Meldung stünde für 33 Sprachen deutsch da.
+ * und jede Meldung stünde in jeder anderen Sprache deutsch da.
  */
 describe('Toasts in der Sprache des Nutzers', () => {
   /** Aktionen, die eine Meldung erzeugen — je eine je Bauart. */

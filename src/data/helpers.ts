@@ -325,10 +325,11 @@ export function initials(p: Person): string {
  * deutsch (U8/V8).
  *
  * Hier stand fest `'de'`. Für die meisten Schriften macht das keinen sichtbaren
- * Unterschied — die Wurzel-Sortierung greift ohnehin —, für eine ganze Reihe
- * der 33 Sprachen aber sehr wohl: Dänisch, Norwegisch und Schwedisch ordnen
- * Å/Ø/Æ hinter Z, deutsch stehen sie bei A und O; Türkisch trennt ı und i.
- * Der Leser fand einen Namen dann nicht dort, wo er ihn sucht.
+ * Unterschied — die Wurzel-Sortierung greift ohnehin —, für einige der
+ * App-Sprachen aber sehr wohl: Polnisch stellt Ł hinter L, Rumänisch Ș hinter
+ * S, Türkisch Ç hinter C und trennt ı von i; deutsch stehen sie jeweils beim
+ * Grundbuchstaben (nachgemessen mit `Intl.Collator` am 16.10.2026). Der Leser
+ * fand einen Namen dann nicht dort, wo er ihn sucht.
  *
  * Die Sprache kommt **als Parameter**, nicht aus einem Modulzustand: Diese
  * Datei ist die untere Schicht und kennt den Zustand nicht. Wer sie aufruft,

@@ -14,7 +14,7 @@ import type { QualificationKey } from '../data/types'
  * „Ratgeber · Zusätzliche Klasse", „Schulungsaufgaben · Gesprächspartner",
  * „Schulungsaufgaben · Vorträge" und „Schätze aus Gottes Wort · Vorträge"
  * (beide seit dem 4.10.2026). Das ist Absicht — jeder zusätzliche Schlüssel
- * hieße 34 Übersetzungen für etwas, das schon dasteht.
+ * hieße eine Übersetzung je App-Sprache für etwas, das schon dasteht.
  *
  * Der Preis ist eine Annahme, die niemand geprüft hat: dass die Bausteine in
  * **jeder** Sprache zusammenpassen. Fehlt einer, steht dort „· " mit einer

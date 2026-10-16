@@ -155,10 +155,11 @@ export function AppProvider({
   // Konflikte sind selten — eine Handvoll Planer teilt sich eine Versammlung.
   //
   // Der Text ist `toastSpeicherFehler` („Änderung konnte nicht gespeichert
-  // werden — bitte neu laden"). Er trifft genau zu und liegt in allen 34
-  // Sprachen gemessen vor. Ein eigener Wortlaut („ein anderer Planer war
-  // schneller") wäre schärfer, hieße aber 33 erfundene Übersetzungen — und eine
-  // erfundene ist schlimmer als eine zutreffende, die es schon gibt.
+  // werden — bitte neu laden"). Er trifft genau zu und liegt in allen
+  // App-Sprachen gemessen vor. Ein eigener Wortlaut („ein anderer Planer war
+  // schneller") wäre schärfer, hieße aber je Sprache eine erfundene
+  // Übersetzung — und eine erfundene ist schlimmer als eine zutreffende, die es
+  // schon gibt.
   useEffect(() => {
     let laeuft = false
     setKonfliktMelder(() => {

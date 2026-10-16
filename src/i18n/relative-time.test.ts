@@ -117,7 +117,7 @@ describe('Unbekannte Sprache: lieber kein Chip als ein Absturz', () => {
 })
 
 /**
- * **Und jetzt alle 34 — nicht nur Deutsch und Englisch.**
+ * **Und jetzt alle App-Sprachen — nicht nur Deutsch und Englisch.**
  *
  * Die Prüfungen oben messen zwei Sprachen und schließen von ihnen auf den Rest.
  * Genau dieser Schluss ist hier schon einmal danebengegangen: Die Glocke
@@ -183,7 +183,7 @@ describe('Jede App-Sprache bekommt ihren eigenen Chip', () => {
       Zählwörtern wäre die Form schlicht falsch.
 
       Belegt wird es nicht an einer Behauptung über die Wörter — die kennt hier
-      niemand für 33 Sprachen —, sondern am **Unterschied zur gezählten Form**:
+      niemand für jede Sprache —, sondern am **Unterschied zur gezählten Form**:
       Dasselbe `Intl` mit `numeric: 'always'` muss etwas anderes liefern. Tut es
       das nicht, ist die Option wirkungslos geworden.
     */

@@ -31,8 +31,8 @@ export function MemorialBanner({ week, tab }: { week: Week; tab: MeetingTab }) {
  *
  * Der Text ist der Grund, den der Planer selbst eingetragen hat — seine Worte,
  * in seiner Sprache, wie ein Name oder ein Vortragsthema. Für „entfällt" gibt
- * es kein gemessenes Wort; ein erfundenes in 33 Sprachen wäre schlechter als
- * gar keines. Der Name der Zusammenkunft steht durchgestrichen davor, und das
+ * es kein gemessenes Wort; ein erfundenes in jeder anderen Sprache wäre
+ * schlechter als gar keines. Der Name der Zusammenkunft steht durchgestrichen davor, und das
  * ist unmissverständlich — auch ohne Satz.
  *
  * Ohne Grund bleibt der durchgestrichene Name allein stehen. Das ist selten:
@@ -63,7 +63,7 @@ export function AusfallBanner({ week, tab }: { week: Week | undefined; tab: Meet
  * gehört dem Planer. Übersetzt wird nur, was gemessen vorliegt — der Wochentag
  * kommt aus `Intl`, alles andere (Bezeichnung, Ort) steht so da, wie er es
  * geschrieben hat. Ein Kopf wie „WEITERE TERMINE" wäre ein erfundenes Wort in
- * 33 Sprachen; die Zeilen tragen ihre Bedeutung selbst.
+ * jeder anderen Sprache; die Zeilen tragen ihre Bedeutung selbst.
  */
 export function TerminListe({ week }: { week: Week | undefined }) {
   const { state } = useApp()

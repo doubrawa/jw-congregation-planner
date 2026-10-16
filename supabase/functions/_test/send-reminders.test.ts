@@ -1238,7 +1238,7 @@ describe('send-reminders: die Sprache am Push-Abo', () => {
  * und geht erst in der App durch `tu` (`NotificationsPanel`). Das ist der
  * bessere Weg — er kommt ohne serverseitige Wörterbücher aus —, aber er hat
  * eine Bedingung: **Jedes Stück, das der Versand schreibt, muss im
- * Fragment-Wörterbuch stehen.** Sonst steht es in 33 Sprachen deutsch da, ohne
+ * Fragment-Wörterbuch stehen.** Sonst steht es in jeder anderen Sprache deutsch da, ohne
  * dass irgendwo ein Fehler entsteht.
  *
  * Genau so blieb „vor 3 Std." monatelang unübersetzt: Im Wörterbuch stand

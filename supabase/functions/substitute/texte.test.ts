@@ -34,7 +34,7 @@ describe('Ersatz-Texte', () => {
     // Die Function schreibt den Titel kanonisch deutsch in die Mitteilung; die
     // App schlägt ihn beim Anzeigen in NOTIF_TITLE_KEY nach. Laufen die
     // Formulierungen auseinander, greift die Zuordnung nicht mehr — und der
-    // Titel bliebe in allen 33 Fremdsprachen deutsch stehen.
+    // Titel bliebe in allen anderen Sprachen deutsch stehen.
     for (const titel of [TITEL_GESUCHT, TITEL_GEFUNDEN]) {
       const key = NOTIF_TITLE_KEY[titel]
       expect(key, titel).toBeDefined()

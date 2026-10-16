@@ -6,7 +6,7 @@ import { DatePicker } from './DatePicker'
 
 /**
  * **Der eigene Datumswähler** (statt des nativen Felds, das auf jedem Gerät
- * anders aussieht und sich nicht in 34 Sprachen führen lässt). Er steht in den
+ * anders aussieht und sich nicht in der Sprache der App führen lässt). Er steht in den
  * Plänen und Sonderwochen; das Monatsraster teilt er mit dem Zeitraum-Kalender
  * der Abwesenheiten (`kalender.ts`).
  */

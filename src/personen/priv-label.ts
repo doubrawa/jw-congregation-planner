@@ -4,7 +4,7 @@ import { PRIV_KEY } from '../i18n/ui'
 
 /**
  * Beschriftung eines festen Aufgabenbereichs. Einige Bereiche setzen sich aus
- * schon übersetzten Bausteinen zusammen, statt eigene Schlüssel in 34 Sprachen
+ * schon übersetzten Bausteinen zusammen, statt eigene Schlüssel in jeder Sprache
  * zu verlangen:
  *  - Vorsitz ist nach Zusammenkunft getrennt („Vorsitz · unter der Woche"),
  *  - der Ratgeber gehört zur Zusätzlichen Klasse,

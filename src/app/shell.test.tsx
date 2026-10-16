@@ -362,7 +362,7 @@ describe('Das Offline-Banner nennt den Stand', () => {
    * nackten Sprachcode oder die Tabelle benutzt, unterscheidet Intl bei diesem
    * rein numerischen Format nicht (es löst `tl` selbst zu `fil` auf) — ein Test
    * darauf wäre eine Behauptung ohne Deckung. Was er hält, hält er dafür für
-   * jede der 34 Sprachen: Sobald eine dabei ist, die Intl nicht selbst
+   * jede App-Sprache: Sobald eine dabei ist, die Intl nicht selbst
    * auflöst, fällt es hier auf.
    */
   it('nennt den Zeitpunkt in der Sprache des Lesers, in jeder Sprache', () => {

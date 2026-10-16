@@ -25,7 +25,7 @@ import { WeekNav } from './WeekNav'
  *
  * - Das **Gedächtnismahl** nennt die Zusammenkunft, die es ersetzt.
  * - Der **Grund eines Ausfalls** sind die Worte des Planers und bleiben
- *   unübersetzt. Für „entfällt" gibt es kein gemessenes Wort in 33 Sprachen;
+ *   unübersetzt. Für „entfällt" gibt es kein gemessenes Wort in jeder Sprache;
  *   der durchgestrichene Name der Zusammenkunft trägt die Aussage allein.
  *
  * Die Chips unter der Wochen-Navigation gibt es seit T121 nicht mehr: Den

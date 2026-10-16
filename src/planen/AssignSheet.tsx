@@ -387,8 +387,8 @@ function ZuteilenInhalt({
 
           Der Hinweis kommt ohne neuen Wörterbuch-Schlüssel aus: er benennt
           mit `gruppenCard`, was fehlt, und führt mit `navEinstellungen`
-          dorthin, wo es angelegt wird — beide Texte gibt es in allen 34
-          Sprachen.
+          dorthin, wo es angelegt wird — beide Texte gibt es in allen
+          App-Sprachen.
         */}
         {sel.groups && candidates.length === 0 && (
           <div className="sheet-empty">

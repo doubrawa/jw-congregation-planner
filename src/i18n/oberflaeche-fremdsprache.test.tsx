@@ -47,14 +47,14 @@ import type {
  * Ein Baustein schreibt einen deutschen Text direkt ins JSX, statt `t.…` zu
  * nehmen, oder gibt einen Datenwert roh aus, statt ihn durch `tu` zu schicken.
  * Das Wörterbuch ist dann vollständig, der Schlüssel ungenutzt — und der Satz
- * steht in 33 Sprachen deutsch da. So fand sich der roh ausgegebene
+ * steht in jeder anderen Sprache deutsch da. So fand sich der roh ausgegebene
  * Treffpunkt-Ort, und so standen 92 Schlüssel monatelang englisch da.
  *
  * Geprüft wird deshalb am **gerenderten DOM**, in mehreren Sprachen:
  *
  *  1. Kein deutsches Wörterbuchwort steht in einer fremdsprachigen Oberfläche.
  *  2. Kanonisch deutsche **Datenwerte** (Rollen, Dienste) erscheinen übersetzt.
- *  3. Jeder Bildschirm rendert in **jeder** der 34 Sprachen ohne Absturz und
+ *  3. Jeder Bildschirm rendert in **jeder** App-Sprache ohne Absturz und
  *     ohne leer zu bleiben.
  *  4. Rechts-nach-links-Sprachen kommen als solche an.
  *  5. Die Pläne (T120) bestehen 1. und 2. ebenso — sie brauchen einen eigenen

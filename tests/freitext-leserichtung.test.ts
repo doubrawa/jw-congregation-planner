@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url'
 /**
  * **Jedes Freitextfeld sagt, in welche Richtung es gelesen wird.**
  *
- * Die App spricht 33 Sprachen, vier davon von rechts nach links. Ein Feld ohne
+ * Zwei der App-Sprachen laufen von rechts nach links, und getippt werden kann
+ * in jeder Schrift — die Versammlungssprache ist frei. Ein Feld ohne
  * `dir="auto"` zeigt arabischen oder hebräischen Text linksbündig und schiebt
  * die Satzzeichen ans falsche Ende — der Browser richtet sich sonst nach der
  * Seite, nicht nach dem, was der Nutzer tippt.

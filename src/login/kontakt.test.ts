@@ -16,8 +16,8 @@ import { KONTAKT_MAIL, kontaktVerweis } from './kontakt'
  *   unkodierten Verweis; ein `&` in einer Übersetzung schnitte ihn still ab.
  * - Er trägt in jeder Sprache den **Namen der App**. Der Betreiber soll die
  *   Anfrage erkennen, auch wenn er ihre Schrift nicht lesen kann.
- * - Die Adresse steht an **einer** Stelle im Quelltext. In 34 Wörterbüchern
- *   liefe sie beim nächsten Wechsel auseinander, und eine vergessene Kopie
+ * - Die Adresse steht an **einer** Stelle im Quelltext. In jedem Wörterbuch
+ *   einzeln liefe sie beim nächsten Wechsel auseinander, und eine vergessene Kopie
  *   schickte Anfragen an ein totes Postfach.
  */
 
@@ -26,7 +26,7 @@ beforeAll(async () => {
 })
 
 describe('Der Betreff der Anfrage', () => {
-  it('kommt in allen 34 Sprachen Zeichen für Zeichen so an, wie er übersetzt ist', () => {
+  it('kommt in allen App-Sprachen Zeichen für Zeichen so an, wie er übersetzt ist', () => {
     const verloren: string[] = []
     for (const { code } of APP_LANGS) {
       const betreff = dict(code).anfrageBetreff

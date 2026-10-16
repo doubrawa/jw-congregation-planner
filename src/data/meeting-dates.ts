@@ -40,10 +40,18 @@ export function isoDay(d: Date): string {
   return `${d.getFullYear()}-${m}-${t}`
 }
 
-/** ISO-Datum → lokaler Mittag (kein Tagesversatz durch Zeitzonen). */
+/**
+ * ISO-Datum → lokaler Mittag (kein Tagesversatz durch Zeitzonen).
+ *
+ * **Nur für vollständige Daten** („2026-09-08"). Was fehlt, wird nicht zum
+ * ungültigen Datum: Aus `''` wird der 1.1.1900, aus „2026-09" der
+ * 1. September (nachgemessen am 16.10.2026, Review, Daten B6 — bis dahin
+ * versprach dieser Kommentar das Gegenteil). Ein ungültiges Datum wäre
+ * ehrlicher, risse aber jeden Aufrufer mit, der gleich formatiert — `Intl`
+ * wirft dann; ein leeres Datumsfeld zeigte keinen Tag mehr, sondern die
+ * Fehlerseite. Wochen ohne `start` gibt es nicht (Prüfung in schema.sql).
+ */
 export function fromIso(iso: string): Date {
-  // Ein ISO-Datum hat drei Teile; fehlt einer, entsteht ohnehin ein ungültiges
-  // Datum — dann lieber ausdrücklich als still verrechnet.
   const [y, m, d] = iso.split('-').map(Number)
   return new Date(y ?? NaN, (m ?? 1) - 1, d ?? 1, 12, 0, 0, 0)
 }

@@ -883,8 +883,8 @@ describe('substitute: Meldungen sind übersetzbar (T24)', () => {
    * waren aus den eigenen Vorgaben gefüllt worden statt aus dem, was der Code
    * erzeugt — „vor 2 Std." war übersetzt, „vor 3 Std." nicht.
    *
-   * Deshalb läuft der tatsächlich geschriebene Rumpf hier durch **jede** der 33
-   * Fremdsprachen, Atom für Atom, so wie die Glocke ihn zeigt.
+   * Deshalb läuft der tatsächlich geschriebene Rumpf hier durch **jede** andere
+   * App-Sprache, Atom für Atom, so wie die Glocke ihn zeigt.
    */
   it.each(APP_LANGS.map((l) => l.code).filter((c) => c !== 'de'))(
     '%s: jedes Atom des Rumpfs wird übersetzt',

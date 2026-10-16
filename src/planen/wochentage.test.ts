@@ -5,7 +5,7 @@ import { VERSAETZE, wochentagName } from './wochentage'
 import type { Lang } from '../data/types'
 
 /**
- * **Wochentage — eine Zahl, und ihre 34 Übersetzungen.**
+ * **Wochentage — eine Zahl, und ihre Übersetzungen.**
  *
  * Dieses Modul war ungeprüft, obwohl beide Enden daran hängen:
  *
@@ -18,8 +18,8 @@ import type { Lang } from '../data/types'
  *    lautlos um einen Tag: Der Planer wählte „Mittwoch", gespeichert wurde ein
  *    Name, den der Leser nicht auflösen konnte — oder schlimmer: einen, den er
  *    auf den falschen Index auflöste.
- *  - **Angezeigt** wird über `Intl`. Das ist Absicht (34 Sprachen × 7 Tage =
- *    238 Übersetzungen, die es geschenkt gibt), verlagert die Prüfung aber auf
+ *  - **Angezeigt** wird über `Intl`. Das ist Absicht (je App-Sprache sieben
+ *    Namen, die es geschenkt gibt), verlagert die Prüfung aber auf
  *    die Frage, ob die Laufzeitumgebung für jede Sprache wirklich etwas
  *    Eigenes liefert. Kennt sie eine Locale nicht, fällt sie **still** auf
  *    Englisch zurück.

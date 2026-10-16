@@ -855,7 +855,7 @@ export const KATALOG = [
   {
     id: 'mitteilungstitel-schluessel',
     datei: 'src/i18n/ui.ts',
-    regel: 'Jeder erzeugte Mitteilungs-Titel hat seinen Wörterbuch-Schlüssel — sonst steht er in 33 Sprachen deutsch in der Glocke.',
+    regel: 'Jeder erzeugte Mitteilungs-Titel hat seinen Wörterbuch-Schlüssel — sonst steht er in jeder anderen Sprache deutsch in der Glocke.',
     suchen: "  'Programm importiert': 'notifProgImportiert',\n",
     ersetzen: '',
   },

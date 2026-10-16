@@ -6,8 +6,9 @@ import { cssDateien } from './css-quellen'
 /**
  * **Das Layout spiegelt sich — geprüft an den Eigenschaften, die es tun müssen.**
  *
- * Vier der 34 App-Sprachen laufen von rechts nach links (`isRTL`): Arabisch,
- * Hebräisch, Persisch, Urdu. Die App setzt dafür `dir="rtl"` am `<html>`, und
+ * Zwei der App-Sprachen laufen von rechts nach links (`isRTL`): Arabisch und
+ * Persisch (bis zum 15.10.2026 auch Hebräisch und Urdu). Die App setzt dafür
+ * `dir="rtl"` am `<html>`, und
  * der Browser spiegelt daraufhin **alles, was logisch angegeben ist** —
  * `margin-inline-start`, `inset-inline-end`, `text-align: start`. Was physisch
  * dasteht (`margin-left`, `right: 12px`, `text-align: left`), bleibt stehen,

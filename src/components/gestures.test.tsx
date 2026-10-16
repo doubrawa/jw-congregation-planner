@@ -511,7 +511,7 @@ describe('useSwipeWeek', () => {
    * **Von rechts nach links gelesen dreht sich der Streifen mit.**
    *
    * Der Wochenstreifen ist eine Zeitachse, und die läuft in die Leserichtung.
-   * Auf Arabisch, Hebräisch, Persisch und Urdu liegt die **vorige** Woche
+   * Auf Arabisch und Persisch liegt die **vorige** Woche
    * rechts — dorthin zieht der Leser, um zurückzublättern.
    *
    * Vorher stimmte beides nicht zusammen: Das CSS setzte die Nachbarn mit
