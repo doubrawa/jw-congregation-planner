@@ -49,10 +49,12 @@ export interface StudySynopsis {
  */
 export function studySynopses(html: string): StudySynopsis[] {
   const out: StudySynopsis[] = []
-  for (const card of html.split(/class="synopsis/)) {
-    const ct = card.match(/contextTitle">([\s\S]*?)<\/p>/)
-    const a = card.match(/<h2>[\s\S]*?<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/)
-    if (!ct || !a) continue
+  // Attribute in beiden Anführungszeichen — wie bei den Liedern (`songs`).
+  for (const card of html.split(/class=["']synopsis/)) {
+    const ct = card.match(/contextTitle["']>([\s\S]*?)<\/p>/)
+    const link = card.match(/<h2>[\s\S]*?<a[^>]*href=(["'])(.+?)\1[^>]*>([\s\S]*?)<\/a>/)
+    if (!ct || !link) continue
+    const [, , href = '', titel = ''] = link
     const week = cleanText(ct[1])
     const dayMatch = week.match(/(\d{1,2})/)
     if (!dayMatch) continue
@@ -61,7 +63,7 @@ export function studySynopses(html: string): StudySynopsis[] {
       if (MONTHS[w]) { mon = MONTHS[w]; break }
     }
     if (!mon) continue
-    out.push({ day: Number(dayMatch[1]), mon, title: cleanText(a[2]), href: a[1].replace(/&amp;/g, '&') })
+    out.push({ day: Number(dayMatch[1]), mon, title: cleanText(titel), href: href.replace(/&amp;/g, '&') })
   }
   return out
 }

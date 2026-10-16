@@ -172,6 +172,11 @@ interface Seiten {
    * dieses Projekt. Der Fall gehört deshalb geprüft.
    */
   fremdeVariante?: { code: string; url: string }
+  /**
+   * Der Umschalter mit einfach angeführten Attributen (`value='es'`) — so
+   * schreibt jw.org ab Januar 2027 schon die Liederbuch-Links.
+   */
+  einfach?: boolean
 }
 
 let seiten: Seiten
@@ -241,7 +246,8 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
     const m = /^(\d+)-(\d+)-([A-Za-zäöü]+)-\d{4}$/.exec(t)
     const kreuz = /^(\d+)-([A-Za-zäöü]+)-(\d+)-([A-Za-zäöü]+)-\d{4}$/.exec(t)
     const kopf = m ? `${m[1]}.-${m[2]}. ${m[3]}` : kreuz ? `${kreuz[1]}. ${kreuz[2]}–${kreuz[3]}. ${kreuz[4]}` : t
-    return text(wochenSeite(kopf, umschalter(woche, seiten.sprachen, seiten.fremdeVariante)))
+    const schalter = umschalter(woche, seiten.sprachen, seiten.fremdeVariante)
+    return text(wochenSeite(kopf, seiten.einfach ? schalter.replace(/"/g, "'") : schalter))
   }
   // Wachtturm-Studienausgabe: Übersichtsseite und Artikel (siehe STUDIE).
   if (seiten.studie) {
@@ -489,6 +495,15 @@ describe('import-week: wenn das Leseprogramm fehlt', () => {
  */
 describe('import-week: in der Sprache der Versammlung', () => {
   it('holt die übersetzte Fassung über den Umschalter, nicht die deutsche', async () => {
+    const { week } = await hole({ after: '2026-03-02', lang: 'es' })
+    expect(week?.lang).toBe('es')
+    expect(geholt.some((u) => u.startsWith(`${BASE}/es/bibliothek/jw-arbeitsheft/`))).toBe(true)
+  })
+
+  it('auch mit einfach angeführtem Umschalter (16.10.2026)', async () => {
+    // Ohne das fände keine fremdsprachige Versammlung mehr ihre Woche, sobald
+    // jw.org den Umschalter so schreibt wie schon die Liederbuch-Links.
+    seiten.einfach = true
     const { week } = await hole({ after: '2026-03-02', lang: 'es' })
     expect(week?.lang).toBe('es')
     expect(geholt.some((u) => u.startsWith(`${BASE}/es/bibliothek/jw-arbeitsheft/`))).toBe(true)

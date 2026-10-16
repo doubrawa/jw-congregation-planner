@@ -7189,6 +7189,20 @@ export const KATALOG = [
     ersetzen: '  const re = /<a\\b[^>]*class="()[^"]*\\bpub-sjj\\b[^"]*"[^>]*>([\\s\\S]*?)<\\/a>\\s*([^<]*)/g\n',
   },
   {
+    id: 'import-umschalter-beide-anfuehrungszeichen',
+    datei: 'supabase/functions/import-week/index.ts',
+    regel: 'Der „Lesen in"-Umschalter wird auch einfach angeführt gelesen — sonst fände keine fremdsprachige Versammlung ihre Woche.',
+    suchen: "value=([\"'])${code}",
+    ersetzen: 'value=(")${code}',
+  },
+  {
+    id: 'studie-uebersicht-beide-anfuehrungszeichen',
+    datei: 'supabase/functions/import-week/study.ts',
+    regel: 'Die Karten der Studienausgabe werden auch mit einfach angeführten Attributen gelesen.',
+    suchen: 'html.split(/class=["\']synopsis/)',
+    ersetzen: 'html.split(/class="synopsis/)',
+  },
+  {
     id: 'import-week-sonntag-laufende',
     datei: 'supabase/functions/import-week/index.ts',
     regel: 'Ohne `after` kommt die laufende Woche — auch am Sonntag, nicht schon die nächste.',

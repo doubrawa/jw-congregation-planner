@@ -65,6 +65,12 @@ describe('studySynopses', () => {
     const hit = syn.find((s) => s.day === 7 && s.mon === 9)
     expect(hit?.title).toBe('Erster Beispielartikel')
   })
+
+  it('liest auch einfach angeführte Attribute (16.10.2026)', () => {
+    // jw.org schreibt Attribute ab Januar 2027 teils so; ohne das fände keine
+    // Woche ihren Studienartikel.
+    expect(studySynopses(FIXTURE_ISSUE.replace(/"/g, "'"))).toEqual(syn)
+  })
 })
 
 describe('articleTitle', () => {

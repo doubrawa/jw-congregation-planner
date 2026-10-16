@@ -172,13 +172,17 @@ async function discoverWeeks(): Promise<Wocheneintrag[]> {
  * Lokalisierte URL derselben Woche: auf der deutschen Seite trägt jede Option des
  * „Lesen in“-Umschalters `value="<code>"` und `data-url="/<code>/…"`. Liefert die
  * absolute URL für `lang` oder null, wenn die Woche in der Sprache fehlt.
+ *
+ * In beiden Anführungszeichen: Ab Januar 2027 schreibt jw.org Attribute teils
+ * einfach angeführt (gemessen am 16.10.2026 an den Liederbuch-Links). Träfe es
+ * den Umschalter, fände keine fremdsprachige Versammlung mehr ihre Woche.
  */
 function localizedUrl(germanHtml: string, lang: string): string | null {
   const code = lang.replace(/[^a-z0-9-]/gi, '')
-  const re = new RegExp(`<option\\b[^>]*\\bvalue="${code}"[^>]*\\bdata-url="([^"]*)"`, 'i')
+  const re = new RegExp(`<option\\b[^>]*\\bvalue=(["'])${code}\\1[^>]*\\bdata-url=(["'])(.*?)\\2`, 'i')
   const m = germanHtml.match(re)
   if (!m) return null
-  const path = m[1].replace(/&amp;/g, '&')
+  const path = (m[3] ?? '').replace(/&amp;/g, '&')
   return path.startsWith('http') ? path : BASE + path
 }
 
