@@ -23,7 +23,9 @@ import {
   type AppState,
   type AppStore,
 } from './context'
+import { pushAboAbgleichen } from '../lib/push-abo'
 import { loadAndHydrate } from './hydrate'
+import { sitzungBeendet } from './sitzung'
 import { initialState } from './init'
 import { ausstehendesSchreiben, persist } from './persist'
 import { isViewAction } from './readonly'
@@ -93,7 +95,11 @@ export function AppProvider({
       prev.staleAt && !isViewAction(action.type)
         ? { type: 'showToast', text: dict(prev.lang).offlineReadOnly }
         : action
-    if (effective.type === 'logout') clearSnapshot()
+    if (effective.type === 'logout') {
+      clearSnapshot()
+      // Ein noch laufendes Laden spielt danach nichts mehr ein (`sitzung.ts`).
+      sitzungBeendet()
+    }
     const next = reducer(prev, effective)
     stateRef.current = next
     persist(prev, next, effective)
@@ -166,6 +172,18 @@ export function AppProvider({
     })
     return () => setKonfliktMelder(null)
   }, [dispatch])
+
+  /*
+   * **Gehört das Push-Abo dieses Geräts dem, der angemeldet ist?** Einmal je
+   * Anmeldung, sobald Konto und Versammlung feststehen (`pushAboAbgleichen`).
+   * Das Abmelden löst es zwar (`lib/abmelden.ts`), aber nicht jeder Wechsel geht
+   * über das Abmelden: Ein Link meldet an, auch wenn schon jemand angemeldet
+   * ist, und eine abgelaufene Sitzung kann das Abo nicht mehr löschen.
+   */
+  const { userId, congregationId } = state
+  useEffect(() => {
+    if (userId && congregationId) void pushAboAbgleichen(congregationId, userId, stateRef.current.lang)
+  }, [userId, congregationId])
 
   // Geht die App in den Hintergrund, geht hinaus, was gebündelt wartet
   // (`ausstehendesSchreiben`): Am Handy hält das System den Zeitgeber dort an

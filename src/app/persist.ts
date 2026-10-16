@@ -676,6 +676,16 @@ function plaeneSpeichern(congId: string, prev: AppState, next: AppState): void {
 
 export function persist(prev: AppState, next: AppState, action: AppAction): void {
   if (action.type === 'hydrate') wartendesVerwerfen()
+  /*
+   * **Abmelden: Was gebündelt wartet, geht noch hinaus** — vor der Frage nach
+   * der Versammlung, denn `logout` hat den Bestand schon geleert (16.10.2026).
+   * Die wartenden Fassungen tragen ihre Versammlung selbst; die Sitzung endet
+   * erst danach (`lib/abmelden.ts`).
+   */
+  if (action.type === 'logout') {
+    ausstehendesSchreiben()
+    return
+  }
   const congId = next.congregationId
   const userId = next.userId
   if (!supabase || !congId || !userId) return
@@ -794,9 +804,9 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       break
     }
     case 'selectPerson':
-    case 'navigate':
-    case 'logout': {
+    case 'navigate': {
       // Ansicht verlassen → alle ausstehenden Debounce-Saves sofort schreiben
+      // (das Abmelden steht oben, vor der Frage nach der Versammlung)
       ausstehendesSchreiben()
       break
     }

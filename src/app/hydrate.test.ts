@@ -5,6 +5,7 @@ import { verfolgterFetch } from '../lib/schreiben-unterwegs'
 import { clearSnapshot, readSnapshot, saveSnapshot } from '../lib/snapshot'
 import type { AppAction } from './context'
 import { ausstehendesSchreiben } from './persist'
+import { sitzungBeendet } from './sitzung'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
 
 vi.mock('../lib/data', () => ({ loadCongregationData: vi.fn() }))
@@ -185,5 +186,46 @@ describe('loadAndHydrate', () => {
     expect(actions[1]).toEqual({ type: 'hydrate', payload: stored, staleAt: 1_700_000_000_000 })
     expect(mockRead).toHaveBeenCalledWith('u9') // nur die eigene Aufnahme
     expect(mockClear).not.toHaveBeenCalled()
+  })
+
+  /*
+   * **Abgemeldet, während noch geladen wurde** (16.10.2026). Die Antwort kam
+   * danach an und spielte die Daten des Abgemeldeten in den eben geleerten
+   * Zustand zurück, samt einer neuen Momentaufnahme im Speicher des Geräts.
+   */
+  it('eine Antwort nach dem Abmelden spielt nichts ein und legt nichts ab', async () => {
+    let antworten = (): void => {}
+    mockLoad.mockImplementationOnce(
+      () =>
+        new Promise((weiter) => {
+          antworten = () => weiter({ ok: true, empty: false, data: emptyData, congregationId: 'c1', userId: 'uA' })
+        }),
+    )
+    const { actions, dispatch } = collector()
+    const laden = loadAndHydrate(dispatch, 'uA')
+    await vi.waitFor(() => expect(mockLoad).toHaveBeenCalled())
+    sitzungBeendet()
+    antworten()
+    await laden
+    expect(actions.map((a) => a.type)).toEqual(['setDataStatus'])
+    expect(mockSave).not.toHaveBeenCalled()
+  })
+
+  it('auch der Rückfall auf die Momentaufnahme bleibt nach dem Abmelden aus', async () => {
+    let antworten = (): void => {}
+    mockLoad.mockImplementationOnce(
+      () =>
+        new Promise((weiter) => {
+          antworten = () => weiter({ ok: false, reason: 'error' })
+        }),
+    )
+    mockRead.mockReturnValue({ at: 1, payload: { ...emptyData, congregationId: 'c1', userId: 'uA', empty: false } })
+    const { actions, dispatch } = collector()
+    const laden = loadAndHydrate(dispatch, 'uA')
+    await vi.waitFor(() => expect(mockLoad).toHaveBeenCalled())
+    sitzungBeendet()
+    antworten()
+    await laden
+    expect(actions.map((a) => a.type)).toEqual(['setDataStatus'])
   })
 })

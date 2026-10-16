@@ -8,8 +8,6 @@
  */
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import type { AppAction } from '../app/context'
-import type { Dispatch } from 'react'
 import { verfolgterFetch } from './schreiben-unterwegs'
 
 const url = import.meta.env.VITE_SUPABASE_URL
@@ -47,11 +45,6 @@ export const supabase: SupabaseClient | null =
  * Anmelden, Registrieren und das Kennwort zurücksetzen standen hier bis zum
  * 15.10.2026. Ein Kennwort gibt es seit dem Anmelden per Link nicht mehr (T121,
  * Phase 8): Konten legt die Function `anmelden` an, eine Sitzung gibt es für
- * einen gültigen Link oder Code (`lib/anmelden.ts`).
+ * einen gültigen Link oder Code (`lib/anmelden.ts`). Das Abmelden steht seit
+ * dem 16.10.2026 in `lib/abmelden.ts`.
  */
-
-/** Abmelden: State sofort zurücksetzen, Supabase-Session beenden (falls aktiv). */
-export function performLogout(dispatch: Dispatch<AppAction>): void {
-  dispatch({ type: 'logout' })
-  void supabase?.auth.signOut()
-}

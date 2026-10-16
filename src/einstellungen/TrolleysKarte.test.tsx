@@ -20,7 +20,7 @@ const trolley = vi.hoisted(() => ({
 }))
 vi.mock('../lib/trolley', () => trolley)
 vi.mock('../app/hydrate', () => ({ loadAndHydrate: vi.fn().mockResolvedValue(undefined) }))
-vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false, performLogout: vi.fn() }))
+vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false }))
 
 import {
   AppDispatchContext,

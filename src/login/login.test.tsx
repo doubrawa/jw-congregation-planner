@@ -39,7 +39,6 @@ vi.mock('../lib/supabase', () => ({
     return konfiguriert.wert
   },
   supabase: null,
-  performLogout: vi.fn(),
 }))
 vi.mock('../lib/anmelden', () => ({
   linkAnfordern: (m: string, l: string) => linkAnfordern(m, l),

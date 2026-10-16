@@ -18,6 +18,7 @@ import {
 } from '../data/dienste'
 import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
 import { eigenePerson } from './eigene-person'
+import { leererZustand } from './init'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsRegelAussetzen, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, regenFsWeeks } from '../data/fs'
 import { neueWocheEinordnen } from '../data/neue-woche'
 import { aemterBeenden, displayName, isSong, linkFamily, mtab, unlinkFamily } from '../data/helpers'
@@ -570,26 +571,22 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'welcomeShown':
       return { ...state, welcomePending: false }
     case 'logout':
-      return {
-        ...state,
-        screen: 'login',
-        slotSel: null,
-        selectedPersonId: null,
-        langSheetOpen: false,
-        svcSheet: null,
-        // Neue Sitzung: Programm und Planen öffnen wieder mit der nächsten
-        // Zusammenkunft, nicht mit dem Reiter des Vorgängers am selben Gerät.
-        // Auch der Reiter selbst: Den Predigtdienst lässt das Nachladen stehen
-        // (`zurNaechstenZusammenkunft`), der Nächste erbte ihn sonst.
-        tab: 'mid',
-        terminGewaehlt: false,
-        fsBereich: 'treffpunkte',
-        sprungZiel: null, // ein Sprung aus einem Push gehört zur Sitzung, die ihn bekam
-        s89: null,
-        confirmOpen: false,
-        staleAt: null, // Offline-Stand gilt nur für die abgemeldete Sitzung
-        welcomePending: false, // eine offene Begrüßung gilt nicht für die nächste Anmeldung
-      }
+      /*
+       * **Abmelden leert den Bestand, nicht nur die Ansicht** (16.10.2026).
+       *
+       * Bis dahin stand hier der alte Zustand mit zurückgesetzter Ansicht:
+       * Personen, Wochen, „Meine Aufgaben", Konto und Versammlung blieben
+       * stehen. Meldete sich am selben Gerät jemand anderes an, legte ihm
+       * `login` das Bestätigungsblatt des Vorgängers vor — mit dessen
+       * Aufgaben, Namen und Versammlung im Menü, bis die eigenen Daten geladen
+       * waren. Eine Absage daraus ging als Verhinderung des Vorgängers an die
+       * eigenen Planer.
+       *
+       * Was bleibt, gehört dem Gerät (`Vorlieben`). Alles Übrige der Ansicht —
+       * Reiter, Blätter, Sprungziel, Offline-Stand, Begrüßung — beginnt wie
+       * beim Start der App.
+       */
+      return leererZustand({ theme: state.theme, fontScale: state.fontScale, lang: state.lang })
     case 'navigate': {
       // Rechteprüfung: Wer den Bildschirm nicht sehen darf, landet im Programm.
       // Dieselbe Liste bestückt die Navigation (AppShell) — eine Antwort, zwei

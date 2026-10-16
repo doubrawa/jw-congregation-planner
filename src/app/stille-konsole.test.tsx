@@ -49,7 +49,6 @@ vi.mock('./hydrate', () => ({ loadAndHydrate: () => Promise.resolve() }))
 vi.mock('../lib/supabase', () => ({
   supabase: null,
   isSupabaseConfigured: false,
-  performLogout: () => {},
 }))
 
 const { AppShell } = await import('./AppShell')

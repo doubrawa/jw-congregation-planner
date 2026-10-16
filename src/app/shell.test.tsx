@@ -32,8 +32,8 @@ vi.mock('./hydrate', () => ({ loadAndHydrate: (...a: unknown[]) => loadAndHydrat
 vi.mock('../lib/supabase', () => ({
   supabase: null,
   isSupabaseConfigured: false,
-  performLogout: (...a: unknown[]) => performLogout(...(a as [])),
 }))
+vi.mock('../lib/abmelden', () => ({ performLogout: (...a: unknown[]) => performLogout(...(a as [])) }))
 
 const { AppShell } = await import('./AppShell')
 

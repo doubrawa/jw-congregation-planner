@@ -53,7 +53,6 @@ vi.mock('../lib/supabase', () => ({
   get isSupabaseConfigured() {
     return konfiguriert.wert
   },
-  performLogout: vi.fn(),
 }))
 vi.mock('./hydrate', () => ({ loadAndHydrate: (...a: unknown[]) => loadAndHydrate(...(a as [])) }))
 const mitLinkAnmelden = vi.fn((_token: string) => Promise.resolve<string | null>(null))
@@ -63,6 +62,10 @@ vi.mock('../lib/snapshot', () => ({
 }))
 const ausstehendesSchreiben = vi.fn()
 vi.mock('./persist', () => ({ persist: vi.fn(), ausstehendesSchreiben: () => ausstehendesSchreiben() }))
+const pushAboAbgleichen = vi.fn((_cong: string, _user: string, _lang: string) => Promise.resolve())
+vi.mock('../lib/push-abo', () => ({
+  pushAboAbgleichen: (cong: string, user: string, lang: string) => pushAboAbgleichen(cong, user, lang),
+}))
 
 /**
  * Die beiden Melder liegen in `data.ts` als Modulvariable; ausgelöst werden sie
@@ -83,6 +86,8 @@ vi.mock('../lib/data', async (orig) => ({
 }))
 
 const { AppProvider } = await import('./store')
+const { aktuelleSitzung } = await import('./sitzung')
+const { STANDARD_ZEITEN } = await import('../data/vorgaben')
 const { useApp } = await import('./context')
 const { anmeldeAdresseVergessen } = await import('../login/anmelde-adresse')
 
@@ -217,6 +222,70 @@ describe('Schreibkonflikt: ein anderer Planer war schneller (T39)', () => {
       melderAufrufen('konflikt')
     })
     expect(loadAndHydrate).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * **Das Konto auf diesem Gerät** (16.10.2026): Nach dem Laden wird geprüft, ob
+ * das Push-Abo des Geräts dem Angemeldeten gehört; das Abmelden beendet die
+ * Sitzung, in der noch geladen wird.
+ */
+describe('Konto auf diesem Gerät', () => {
+  const geladen = {
+    congregation: { name: 'K', hall: '', times: STANDARD_ZEITEN },
+    planner: false,
+    zuteiler: false,
+    personId: null,
+    persons: [],
+    services: [],
+    groups: [],
+    weeks: [],
+    fsRules: [],
+    fsWeeks: [],
+    gruppenbesuche: [],
+    vortraege: [],
+    trolleys: [],
+    trolleyTermine: [],
+    plaene: [],
+    planEintraege: [],
+    absences: [],
+    notifications: [],
+    confirmations: {},
+    sentLog: {},
+    persoenlich: {},
+    reminders: { first: 7, last: 1, repeat: false },
+    congLang: 'de',
+    progLangs: [],
+    members: [],
+    anmeldeLinks: [],
+    auxClass: false,
+    congregationId: 'c1',
+    userId: 'u1',
+    empty: false,
+  }
+
+  it('nach dem Laden fragt die App einmal, ob das Push-Abo dem Angemeldeten gehört', async () => {
+    pushAboAbgleichen.mockClear()
+    const { result } = starte()
+    await act(async () => {
+      result.current.dispatch({ type: 'hydrate', payload: geladen })
+    })
+    expect(pushAboAbgleichen).toHaveBeenCalledTimes(1)
+    expect(pushAboAbgleichen).toHaveBeenCalledWith('c1', 'u1', result.current.state.lang)
+    // Ein weiteres Laden desselben Kontos fragt nicht noch einmal.
+    await act(async () => {
+      result.current.dispatch({ type: 'hydrate', payload: geladen })
+    })
+    expect(pushAboAbgleichen).toHaveBeenCalledTimes(1)
+  })
+
+  it('das Abmelden beendet die Sitzung — ein Laden, das noch läuft, spielt danach nichts ein', async () => {
+    const { result } = starte()
+    const vorher = aktuelleSitzung()
+    await act(async () => {
+      result.current.dispatch({ type: 'logout' })
+    })
+    expect(aktuelleSitzung()).toBe(vorher + 1)
   })
 })
 

@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { currentSubscription, pushSupported, registerServiceWorker, subscribePush, subscriptionFields } from './push'
+import { currentSubscription, pushSupported, registerServiceWorker, subscribePush, subscriptionFields, vorhandenesAbo } from './push'
 
 describe('subscriptionFields', () => {
   it('extrahiert endpoint/p256dh/auth aus dem Abo', () => {
@@ -63,5 +63,34 @@ describe('mit unterstütztem Browser (gestubbt)', () => {
     vi.stubGlobal('Notification', { requestPermission: vi.fn(async () => 'denied') })
     expect(await subscribePush()).toBeNull()
     expect(pushManager.subscribe).not.toHaveBeenCalled()
+  })
+})
+
+/*
+ * **Das Abo, ohne auf den Worker zu warten** (16.10.2026). `ready` löst nie
+ * auf, wenn sich der Service Worker nicht registrieren ließ — und das Abmelden
+ * fragt nach dem Abo, bevor es die Sitzung beendet (`lib/abmelden.ts`).
+ */
+describe('vorhandenesAbo', () => {
+  const sw = { ready: new Promise(() => {}), getRegistration: vi.fn(async (): Promise<unknown> => undefined) }
+  beforeEach(() => {
+    Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: sw })
+    vi.stubGlobal('PushManager', function () {})
+    vi.stubGlobal('Notification', { permission: 'default' })
+  })
+  afterEach(() => {
+    delete (navigator as unknown as { serviceWorker?: unknown }).serviceWorker
+    vi.unstubAllGlobals()
+  })
+
+  it('ohne Registrierung gibt es sofort keins — auch wenn der Worker nie bereit wird', async () => {
+    const zuLange = new Promise((_, nein) => setTimeout(() => nein(new Error('wartet auf ready')), 200))
+    await expect(Promise.race([vorhandenesAbo(), zuLange])).resolves.toBeNull()
+  })
+
+  it('mit Registrierung das Abo ihres Push-Managers', async () => {
+    const abo = { endpoint: 'x' }
+    sw.getRegistration.mockResolvedValueOnce({ pushManager: { getSubscription: async () => abo } })
+    expect(await vorhandenesAbo()).toBe(abo)
   })
 })

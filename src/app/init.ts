@@ -31,13 +31,25 @@ function getInitialLang(): Lang {
 }
 
 export function initialState(): AppState {
+  return leererZustand({ theme: getInitialTheme(), fontScale: getInitialFontScale(), lang: getInitialLang() })
+}
+
+/** Was das Gerät sich merkt: Darstellung, Schriftgröße, Sprache. Es überdauert ein Abmelden. */
+export type Vorlieben = Pick<AppState, 'theme' | 'fontScale' | 'lang'>
+
+/**
+ * **Der Zustand ohne Daten** — der Start der App und seit dem 16.10.2026 auch
+ * das Abmelden (`logout`): Von der Sitzung davor bleibt nur, was dem Gerät
+ * gehört (`Vorlieben`).
+ */
+export function leererZustand({ theme, fontScale, lang }: Vorlieben): AppState {
   return {
     screen: 'login',
     week: 0,
     tab: 'mid',
     fsBereich: 'treffpunkte',
-    theme: getInitialTheme(),
-    fontScale: getInitialFontScale(),
+    theme,
+    fontScale,
     planner: false,
     zuteiler: false,
     congregation: { name: '', hall: '', times: STANDARD_ZEITEN },
@@ -77,7 +89,7 @@ export function initialState(): AppState {
     offenePlaetze: [],
     s89: null,
     reminders: STANDARD_ERINNERUNGEN,
-    lang: getInitialLang(),
+    lang,
     langSheetOpen: false,
     langSheetFor: 'cong',
     svcSheet: null,

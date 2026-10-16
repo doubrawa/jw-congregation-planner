@@ -1515,9 +1515,47 @@ export function savePushLanguage(endpoint: string, lang: string): void {
   void run(supabase.from('push_subscriptions').update({ lang }).eq('endpoint', endpoint))
 }
 
-export function deletePushSubscription(endpoint: string): void {
+/** Die Zeile eines Abos löschen — mit Antwort, denn das Abmelden wartet darauf (`pushAboLoesen`). */
+export async function deletePushSubscription(endpoint: string): Promise<void> {
   if (!supabase) return
-  void run(supabase.from('push_subscriptions').delete().eq('endpoint', endpoint))
+  await run(supabase.from('push_subscriptions').delete().eq('endpoint', endpoint))
+}
+
+/**
+ * Steht dieses Abo als **eigenes** in der Datenbank? Die Zugriffsregel zeigt
+ * nur eigene Zeilen (`user_id = auth.uid()`) — ein fremdes Abo desselben
+ * Endpoints sieht hier niemand. `null`: Die Frage ging nicht durch.
+ */
+export async function pushAboEigen(endpoint: string): Promise<boolean | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase.from('push_subscriptions').select('endpoint').eq('endpoint', endpoint).maybeSingle()
+  if (error) return null
+  return data !== null
+}
+
+/**
+ * Ein Abo neu eintragen, **ohne** eine bestehende Zeile anzufassen. `fremd`:
+ * Den Endpoint führt schon eine Zeile, die nicht die eigene ist — sie gehört
+ * dem, der vorher auf diesem Gerät angemeldet war (`push_subscriptions.endpoint`
+ * ist eindeutig).
+ */
+export async function pushAboEintragen(
+  congregationId: string,
+  userId: string,
+  sub: { endpoint: string; p256dh: string; auth: string },
+  lang: string,
+): Promise<'eingetragen' | 'fremd' | 'fehler'> {
+  if (!supabase) return 'fehler'
+  const { error } = await supabase.from('push_subscriptions').insert({
+    congregation_id: congregationId,
+    user_id: userId,
+    endpoint: sub.endpoint,
+    p256dh: sub.p256dh,
+    auth: sub.auth,
+    lang,
+  })
+  if (!error) return 'eingetragen'
+  return error.code === '23505' ? 'fremd' : 'fehler'
 }
 
 /**

@@ -1,6 +1,6 @@
 import { useAppDispatch } from '../app/context'
 import { useT } from '../i18n/useT'
-import { performLogout } from '../lib/supabase'
+import { performLogout } from '../lib/abmelden'
 import { useZweiTipp } from './useZweiTipp'
 
 /**

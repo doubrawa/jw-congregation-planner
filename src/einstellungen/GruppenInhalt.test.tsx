@@ -29,7 +29,7 @@ import { GruppenInhalt } from './GruppenInhalt'
  * ihre Mitglieder standen still ohne Gruppe da.
  */
 
-vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false, performLogout: vi.fn() }))
+vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false }))
 
 const t = dict('de')
 

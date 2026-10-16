@@ -22,7 +22,7 @@ import { EinstellungenScreen } from './EinstellungenScreen'
  * ändern —, nicht, wie die Zeilen gebaut sind.
  */
 
-vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false, performLogout: vi.fn() }))
+vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false }))
 
 const t = dict('de')
 

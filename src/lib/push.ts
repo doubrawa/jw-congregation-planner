@@ -77,6 +77,18 @@ export async function currentSubscription(): Promise<PushSubscription | null> {
 }
 
 /**
+ * Dasselbe Abo, ohne auf den Service Worker zu warten: `ready` löst nie auf,
+ * wenn er sich nicht registrieren ließ (`registerServiceWorker`), und das
+ * Abmelden hinge dann vor dem Ende der Sitzung (`lib/abmelden.ts`).
+ * `getRegistration` antwortet sofort — ohne Registrierung gibt es kein Abo.
+ */
+export async function vorhandenesAbo(): Promise<PushSubscription | null> {
+  if (!pushSupported()) return null
+  const reg = await navigator.serviceWorker.getRegistration()
+  return (await reg?.pushManager.getSubscription()) ?? null
+}
+
+/**
  * Fragt die Berechtigung an und erstellt das Push-Abo dieses Geräts.
  * Rückgabe null, wenn der Nutzer die Berechtigung verweigert.
  */

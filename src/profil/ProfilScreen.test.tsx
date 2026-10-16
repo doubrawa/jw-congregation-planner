@@ -41,10 +41,8 @@ const push = {
 const installAvail = { wert: false }
 
 vi.mock('../lib/install', () => ({ promptInstall: () => promptInstall() }))
-vi.mock('../lib/supabase', () => ({
-  supabase: null, isSupabaseConfigured: false,
-  performLogout: (d: unknown) => performLogout(d),
-}))
+vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false }))
+vi.mock('../lib/abmelden', () => ({ performLogout: (d: unknown) => performLogout(d) }))
 vi.mock('../components/usePush', () => ({
   usePush: () => push,
   useInstallAvailable: () => installAvail.wert,

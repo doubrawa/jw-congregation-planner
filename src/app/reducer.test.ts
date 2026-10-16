@@ -1731,6 +1731,40 @@ describe('login / logout', () => {
   it('logout verwirft den Offline-Stand', () => {
     expect(reducer(makeState({ staleAt: 123 }), { type: 'logout' }).staleAt).toBeNull()
   })
+  /*
+   * **Am geteilten Gerät** (16.10.2026): A meldet sich ab, B meldet sich an.
+   * Bis dahin blieb As Bestand stehen, und `login` legte B das
+   * Bestätigungsblatt mit As Aufgaben vor — samt As Namen und Versammlung im
+   * Menü, bis Bs Daten geladen waren.
+   */
+  it('logout leert den Bestand, das nächste Anmelden legt nichts vom Vorgänger vor', () => {
+    const offen = { id: 't1', title: 'X', date: 'Di', status: 'offen' as const, s89: null }
+    const vonA = makeState({
+      userId: 'uA',
+      congregationId: 'cA',
+      personId: 'p9',
+      myTasks: [offen],
+      members: [{ userId: 'uA', email: 'a@example.org', personId: 'p9', planner: false, zuteiler: false }],
+      theme: 'dunkel',
+      fontScale: 1.3,
+      lang: 'en',
+    })
+    const leer = reducer(vonA, { type: 'logout' })
+    expect(leer).toMatchObject({
+      screen: 'login',
+      userId: null,
+      congregationId: null,
+      personId: null,
+      persons: [],
+      weeks: [],
+      members: [],
+      myTasks: [],
+      confirmations: {},
+    })
+    // Was dem Gerät gehört, bleibt.
+    expect(leer).toMatchObject({ theme: 'dunkel', fontScale: 1.3, lang: 'en' })
+    expect(reducer(leer, { type: 'login' }).confirmOpen).toBe(false)
+  })
 })
 
 describe('S-89', () => {

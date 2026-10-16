@@ -26,7 +26,7 @@ import { HilfsdiensteInhalt } from './HilfsdiensteInhalt'
  * hebt sich ab, wenn sie 0 ist.
  */
 
-vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false, performLogout: vi.fn() }))
+vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false }))
 
 const t = dict('de')
 

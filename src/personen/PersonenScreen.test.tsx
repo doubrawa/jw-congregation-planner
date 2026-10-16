@@ -46,7 +46,7 @@ vi.mock('../lib/links-ausstellen', async (echt) => ({
   ...(await echt<typeof import('../lib/links-ausstellen')>()),
   linksAusstellen: (ids: readonly string[], wie: { senden: boolean; lang: string }) => linksAusstellen(ids, wie),
 }))
-vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false, performLogout: vi.fn() }))
+vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false }))
 
 const { PersonenScreen } = await import('./PersonenScreen')
 

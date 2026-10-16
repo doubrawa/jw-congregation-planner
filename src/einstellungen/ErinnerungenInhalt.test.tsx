@@ -22,7 +22,7 @@ import { ErinnerungenInhalt } from './ErinnerungenInhalt'
  * Geprüft wird, was er liest und was ein Tipp bewirkt.
  */
 
-vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false, performLogout: vi.fn() }))
+vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false }))
 
 const t = dict('de')
 const STANDARD: Reminders = { first: 7, last: 1, repeat: false }

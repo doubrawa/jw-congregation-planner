@@ -15,12 +15,16 @@ import { schreibenAbwarten, schreibStand } from '../lib/schreiben-unterwegs'
 import { clearSnapshot, readSnapshot, saveSnapshot } from '../lib/snapshot'
 import type { AppAction, HydratePayload } from './context'
 import { ausstehendesSchreiben } from './persist'
+import { aktuelleSitzung } from './sitzung'
 
 export async function loadAndHydrate(
   dispatch: Dispatch<AppAction>,
   userId: string,
   opts?: { silent?: boolean },
 ): Promise<void> {
+  // Einmal festgehalten, für beide Durchläufe unten: Der zweite gehört zur
+  // selben Sitzung wie der erste, auch wenn dazwischen abgemeldet wurde.
+  const meine = aktuelleSitzung()
   // Erst hinaus, was gebündelt wartet: `hydrate` verwirft, was dann noch
   // wartet — es beruht auf dem Stand, der gleich ersetzt wird (`persist.ts`).
   // Ohne das ginge eine eben getippte Änderung verloren, nur weil gerade
@@ -40,9 +44,9 @@ export async function loadAndHydrate(
    * schriebe eine Änderung darin ihn mit dem neuen Stand — lautlos über das,
    * was ein anderer inzwischen gespeichert hat.
    */
-  if (await ladenUndEinspielen(dispatch, userId)) {
+  if (await ladenUndEinspielen(dispatch, userId, meine)) {
     ausstehendesSchreiben()
-    await ladenUndEinspielen(dispatch, userId)
+    await ladenUndEinspielen(dispatch, userId, meine)
   }
 }
 
@@ -50,13 +54,15 @@ export async function loadAndHydrate(
  * Einmal laden und einspielen. `true`: Während des Ladens ging etwas hinaus,
  * das die Abfrage verpasst haben kann (`schreibStand`).
  */
-async function ladenUndEinspielen(dispatch: Dispatch<AppAction>, userId: string): Promise<boolean> {
+async function ladenUndEinspielen(dispatch: Dispatch<AppAction>, userId: string, meine: number): Promise<boolean> {
   // Was schon unterwegs ist — eben hinausgeschrieben oder vorher losgegangen —,
   // soll im geladenen Stand stehen. Bis zum 15.10.2026 wurde es nur losgeschickt,
   // und die Abfrage konnte es überholen.
   await schreibenAbwarten()
   const vorher = schreibStand()
   const res = await loadCongregationData(userId)
+  // Inzwischen abgemeldet: Dieser Stand gehört niemandem mehr (`sitzung.ts`).
+  if (meine !== aktuelleSitzung()) return false
   if (res.ok) {
     const payload: HydratePayload = {
       ...res.data,

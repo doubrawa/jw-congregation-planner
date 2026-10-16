@@ -18,13 +18,8 @@ import * as modul from './supabase'
 
 beforeEach(() => vi.clearAllMocks())
 
-describe('performLogout / Konfiguration', () => {
-  it('dispatcht logout und beendet die Supabase-Session', () => {
-    const dispatch = vi.fn()
-    modul.performLogout(dispatch)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'logout' })
-    expect(auth.signOut).toHaveBeenCalled()
-  })
+// Das Abmelden steht seit dem 16.10.2026 in `abmelden.ts` (und dort seine Probe).
+describe('Konfiguration', () => {
   it('isSupabaseConfigured ist im (gemockten) konfigurierten Zustand true', () => {
     expect(modul.isSupabaseConfigured).toBe(true)
   })
