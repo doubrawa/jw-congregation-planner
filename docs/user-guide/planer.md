@@ -1488,7 +1488,8 @@ eine eigene Seite mit allen Wochen ab der laufenden; am breiten Bildschirm
 stehen sie links neben dem Plan, die gezeigte Woche umrandet. Jede Woche nennt
 rechts, was zu tun ist – **Probleme**, **Offen** oder **Bereit zum Senden** –,
 darunter, wann sie ist oder was sie besonders macht, und unten, wie weit sie
-ist: **Zuteilen**, **Senden**, **Zusagen**. Ein Tipp öffnet ihren Plan; am
+ist: **Zuteilen**, **Senden**, **Zusagen** – am breiten Bildschirm als Punkte,
+darunter der Schritt, an dem die Woche steht. Ein Tipp öffnet ihren Plan; am
 breiten Bildschirm wechselt er nur die Woche. Unter den Wochen steht
 gestrichelt die nächste, deren Programm noch fehlt, mit **Holen**. Am Handy
 folgt **Auch zu planen** mit dem Predigtdienst und den Weiteren Plänen.

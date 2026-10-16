@@ -858,3 +858,36 @@
   font-size: calc(12px * var(--fs));
   font-weight: 500;
 }
+
+/* Die Spur der schmalen Wochenspalte: nur die Punkte, darunter über die ganze
+   Breite der laufende Schritt mit seiner Zahl. In einem Drittel der Spalte
+   brachen die Namen mitten im Wort (16.10.2026). */
+.spur--punkte {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+/* Mit der Mindestbreite passt die Unterschrift (ganze Breite) nicht mehr in
+   ihre Zeile und rückt darunter; ohne sie fielen die Schritte auf null. */
+.spur--punkte .spur-schritt {
+  min-width: 24px;
+}
+
+.spur-unterschrift {
+  display: flex;
+  flex: 0 0 100%;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 6px;
+}
+
+.spur-unterschrift-wert {
+  font-size: calc(14px * var(--fs));
+  font-weight: 600;
+}
+
+.spur-unterschrift-name {
+  color: var(--text3);
+  font-size: calc(12px * var(--fs));
+  font-weight: 500;
+}

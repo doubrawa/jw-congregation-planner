@@ -143,10 +143,13 @@
 }
 
 /* Ab dem Tablet die Woche links gebündelt, rechts daneben, was die Seite zur
-   Woche anbietet (`WochenWahl`, Entwurf `GTabletWoche`). */
+   Woche anbietet (`WochenWahl`, Entwurf `GTabletWoche`). Reicht der Platz
+   nicht, rückt das Angebot unter die Woche: Neben der Wochenspalte am Desktop
+   schnitt der Kopf sonst „Автоматически" ab (Russisch, Schriftstufe 1.45). */
 @media (min-width: 768px) {
   .wochenwahl {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 12px;

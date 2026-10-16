@@ -1454,14 +1454,13 @@ body:has(.planen-leiste) .toast {
 }
 
 /* In der schmalen Spalte steht die Lage neben der Unterzeile, nicht neben der
-   Spanne (Entwurf `GDesktopPlanen`) — sonst bräche die Spanne um. */
+   Spanne (Entwurf `GDesktopPlanen`) — sonst bräche die Spanne um. Passen
+   Unterzeile und Lage nicht nebeneinander, rückt die Lage darunter: Als
+   festes Raster lief die Unterzeile sonst unter sie (Russisch, Stufe 1.45,
+   16.10.2026). */
 .wochen-spalte .wochen-karte {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    'spanne spanne'
-    'unter lage'
-    'spur spur';
+  flex-flow: row wrap;
+  align-items: baseline;
   column-gap: 8px;
   padding: 12px 16px;
   border-radius: 22px;
@@ -1472,23 +1471,23 @@ body:has(.planen-leiste) .toast {
 }
 
 .wochen-spalte .wochen-karte-knopf {
-  grid-area: spanne;
+  flex-basis: 100%;
 }
 
 .wochen-spalte .wochen-karte-unter {
-  grid-area: unter;
-  min-width: 0;
+  order: 1;
+  flex: 1 1 auto;
   font-size: calc(13px * var(--fs));
 }
 
 .wochen-spalte .wochen-karte-lage {
-  grid-area: lage;
-  align-self: baseline;
+  order: 2;
   font-size: calc(13px * var(--fs));
 }
 
 .wochen-spalte .wochen-karte .spur {
-  grid-area: spur;
+  order: 3;
+  flex-basis: 100%;
   padding-block-start: 10px;
 }
 

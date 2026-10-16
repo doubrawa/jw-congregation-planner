@@ -121,6 +121,8 @@ describe('Die Seite „Planung" (`GWochen`)', () => {
     expect(diese!.querySelector('.wochen-karte-lage')?.textContent).toBe('Offen: 4')
     expect(diese!.querySelector('.wochen-karte-lage')?.getAttribute('data-art')).toBe('offen')
     expect(diese!.querySelector('.spur--knapp')).not.toBeNull()
+    // Auf der Seite hat die Spur Platz für ihre Namen — Punkte nur in der Spalte.
+    expect(diese!.querySelector('.spur--punkte')).toBeNull()
     expect(kongress!.querySelector('.spur')).toBeNull()
   })
 
@@ -183,6 +185,18 @@ describe('Die Spalte neben dem Plan (`GDesktopPlanen`)', () => {
     expect(gewaehlt[0]!.querySelector('[aria-current="true"]')).not.toBeNull()
     fireEvent.click(karten(spalte)[0]!.querySelector('.wochen-karte-knopf')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'we' } })
+  })
+
+  it('ihre Spur zeigt nur Punkte, darunter den laufenden Schritt — die Namen brachen dort mitten im Wort (16.10.2026)', () => {
+    breite(true)
+    const { container } = zeige(<PlanenScreen />, { screen: 'planen' })
+    const spur = container.querySelector('.wochen-spalte .wochen-karte .spur')!
+    expect(spur.className).toBe('spur spur--knapp spur--punkte')
+    // Nichts besetzt: Die Woche steht beim Zuteilen.
+    expect(spur.querySelector('.spur-unterschrift-name')?.textContent).toBe(t.spurZuteilen)
+    expect(spur.querySelector('.spur-unterschrift-wert')?.textContent).toBe(
+      spur.querySelector('[aria-current="step"] .spur-wert')?.textContent,
+    )
   })
 
   it('bei den Weiteren Plänen steht sie nicht — die haben keine Woche', () => {

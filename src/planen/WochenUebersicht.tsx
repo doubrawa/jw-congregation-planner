@@ -115,7 +115,9 @@ export function WochenListe({ spalte = false }: { spalte?: boolean }) {
             </div>
             <span className="wochen-karte-unter">{unterzeile(week, p.tpw)}</span>
             {/* Fällt alles aus (Kongress), gibt es nichts zu besetzen. */}
-            {k.zahlen.gesamt > 0 && <Spur knapp schritte={spurDerWoche(k.zahlen, t)} label={t.spurWoche} />}
+            {k.zahlen.gesamt > 0 && (
+              <Spur form={spalte ? 'punkte' : 'knapp'} schritte={spurDerWoche(k.zahlen, t)} label={t.spurWoche} />
+            )}
           </div>
         )
       })}
