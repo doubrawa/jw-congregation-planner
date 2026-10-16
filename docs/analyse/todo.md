@@ -6993,6 +6993,76 @@ eine.
 Sprache ein Durchgang durch die Oberfläche ohne ungeklärtes Deutsch; jeder
 Fund mit Wache.
 
+---
+
+## Aufgenommen am 16. Oktober 2026 — Rechte zum Testen umschalten (T124)
+
+### T124 · Befristet: die App mit den Rechten einer anderen Stufe ansehen 🔧 ☐ offen
+
+**Wortlaut:** *„einen schalter, der zur laufzeit es möglich macht, dass man in
+der app umschaltet welche rechte man hat. ich würde gern testen und sehen, was
+so ein normaler verkündiger, ein planer, ein gruppenaufseher und ein admin so
+alles sehen und wo die unterschiede liegen. und es wäre hilfreich, wenn man das
+einfach umschalten kann. das würde natürlich später wieder ausgebaut werden. und
+solange es eingebaut ist, sollte es natürlich nur für admins verfügbar sein"*
+
+**Ziel:** Der Admin schaltet zur Laufzeit zwischen den vier Stufen um —
+Verkündiger, Gruppenaufseher, Planer, Admin — und sieht die App so, wie ein
+Konto mit diesen Rechten sie sieht: Navigation, Bildschirme, Knöpfe,
+Mitteilungen. Befristet: Nach den Tests wird der Schalter wieder ausgebaut.
+
+**Wo:** Jede Antwort auf „wer darf was" folgt aus `rechteVon()` in
+`src/data/rechte.ts` (rund 20 Aufrufer: Navigation, Reducer `navigate`,
+Planen, Druck, Mitteilungen). Die Ansicht legt sich dort über die echten Werte
+(`planner`, `zuteiler`, Gruppe) — eine Stelle statt zwanzig. Mitnehmen, was an
+`rechteVon` vorbei entscheidet, etwa `darfAbwesenheitBearbeiten` (liest
+`planner` selbst); eine Probe hält fest, dass kein Rechte-Entscheid mehr daran
+vorbeigeht.
+
+**Regeln:**
+
+- **Nur für Admins:** angeboten, wenn das *echte* Konto `members.planner` hat —
+  geprüft am echten Wert, nicht an der Ansicht. Sonst verschwände der Schalter
+  mit dem Umschalten auf „Verkündiger", und es gäbe kein Zurück.
+- **Nicht unter Einstellungen:** Die sieht schon der Planer nicht. Vorschlag:
+  Die Zeile unter dem Namen (Seitenleiste, Menü am Handy) wird für Admins zum
+  Schalter.
+- **Sichtbar, solange er wirkt:** eine Leiste „Ansicht als Verkündiger" mit
+  einem Tipp zurück. Vorschlag: nichts speichern — nach dem Neuladen gilt wieder
+  das echte Recht.
+- **Der Gruppenaufseher braucht eine Gruppe:** Beim Admin ist `gruppe` immer
+  `null` (`aufseherGruppe`). Die Ansicht nimmt die Gruppe, der der Admin
+  angehört, oder lässt eine wählen. Die Stufe gibt sie selbst mit: `rechteStufe`
+  fragt `overseerId` und nennte den Admin sonst „Gehilfe". Der Gehilfe hat
+  dieselben Rechte wie der Aufseher und braucht keine eigene Stufe.
+- **Fällt der Bildschirm weg, geht es zum Start** — steht man etwa auf Personen
+  und schaltet auf Planer, dieselbe Wache wie `navigate`.
+- **Beschriftung:** Die Namen der Stufen gibt es schon (`RECHTE_STUFE_KEY`); neu
+  sind nur Schalter und Leiste — in allen zwölf Sprachen, auch befristet.
+
+**Grenzen, die der Schalter nicht aufhebt:**
+
+- **Die Datenbank kennt nur das echte Recht.** Gezeigt wird, was die App einer
+  Stufe anbietet, aber mit den Daten des Admins: Was die RLS einem Verkündiger
+  gar nicht liefert (fremde `members`-Zeilen, die Rechte anderer), liegt trotzdem
+  im Speicher und erscheint überall, wo die App nicht selbst nach Rechten
+  filtert. Die echte Sicht misst weiter die Mitgliedsrechte-Probe mit den
+  Probe-Konten der Testversammlung.
+- **Was man in der Ansicht tut, ist echt:** Geschrieben wird mit dem Admin-Recht
+  in die echte Datenbank. Vor dem Bau klären: Schreiben in der Ansicht erlauben
+  (und deutlich sagen) oder sperren wie offline (`VIEW_ACTIONS` in
+  `readonly.ts`).
+
+**Ausbau:** alles in einem Modul mit einer Einhängestelle in `rechteVon` und
+einem Schalter in der Oberfläche — dann ist der Ausbau eine Datei und zwei
+Zeilen.
+
+**Wie prüfen:** Je Stufe zeigt die Ansicht dieselbe Navigation, dieselben
+Planen-Knöpfe und dieselben Mitteilungen wie `rechteVon` mit den echten Werten
+dieser Stufe (Probe über alle Bildschirme). Ein Konto ohne Admin-Recht sieht den
+Schalter nie, auch nicht über einen Hash (Probe). Nach dem Neuladen gilt wieder
+das echte Recht.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -7029,13 +7099,14 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 22./23. August ☑☑☑☑☑☑☑☑☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
-10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☐
+10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☐☐
 
-**121 der 123 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind zwei:**
+**121 der 124 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind drei:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
+| **T124** | Rechte zum Testen umschalten | ☐ aufgenommen am 16. Oktober: ein befristeter Schalter nur für Admins — die App als Verkündiger, Gruppenaufseher, Planer oder Admin ansehen; nach den Tests wieder ausbauen |
 | **T123** | Jede Übersetzung prüfen | ☐ aufgenommen am 16. Oktober: alle 745 Schlüssel in den elf Sprachen lesen, dazu die Texte der Functions und der jw.org-Daten; in jeder Sprache durch die Oberfläche, ob Deutsch durchrutscht |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
 
@@ -7413,12 +7484,13 @@ zurückgenommen und der Testlauf wiederholt wurde.
 **Stand 16. Oktober 2026, alles Offene an einer Stelle** (gemessen: Köpfe
 gezählt, kein Zweig außer `main`, keine PR, kein Issue; `sw.js` = HEAD; alle
 sieben Functions per `functions download` gleich dem Repo, 39 Dateien; Secrets
-ohne `INVITE_FROM`, `disable_signup` noch `false`). Im Code ist T123 offen und
-läuft; was sonst aussteht, braucht den Betreiber oder ein Gerät.
+ohne `INVITE_FROM`, `disable_signup` noch `false`). Im Code sind T123 und T124
+offen; was sonst aussteht, braucht den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **T123** | Jede Übersetzung prüfen | aufgenommen am 16. Oktober; ein Helfer arbeitet daran im eigenen Worktree (erst die Oberfläche per Werkzeug, dann alle 745 Schlüssel in elf Sprachen), die Hauptsitzung liest seine Korrekturen, bevor sie nach `main` gehen |
+| **T124** | Rechte zum Testen umschalten | aufgenommen am 16. Oktober, noch nicht begonnen; befristet — nach den Tests wieder ausbauen |
+| **T123** | Jede Übersetzung prüfen | aufgenommen am 16. Oktober; ein Helfer hat im eigenen Worktree angefangen (erst die Oberfläche per Werkzeug, dann alle 745 Schlüssel in elf Sprachen) und ist seit dem 16. Oktober mittags angehalten, bis das Sitzungslimit wieder frei ist. Die Hauptsitzung liest seine Korrekturen, bevor sie nach `main` gehen |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
 | **Wartet** | Motion-Clip „Plan senden" | am 12. Oktober zurückgestellt, bis das neue Design steht — das ist jetzt der Fall. Das leere Motion-Artifact liegt schon bereit |
 | **Betreiber** | Mitgliedsrechte-Probe nach „Alles Planen" | `node scripts/mitgliedsrechte-probe.mjs` — die Testversammlung `edac60cb` und `.env.probe` stehen noch; umgedreht sind (35), (38)–(40), (42), (50), (53), (55), (60), neu (80) und (81) |
