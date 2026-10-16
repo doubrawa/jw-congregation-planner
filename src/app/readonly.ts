@@ -87,6 +87,9 @@ const VIEW_ACTIONS: ReadonlySet<AppAction['type']> = new Set([
   'setTheme',
   'setFontScale',
   'setLang',
+  // Befristet (T124): die App mit den Rechten einer anderen Stufe ansehen —
+  // nur gesehen, nichts gespeichert, also auch offline.
+  'setAnsicht',
   // Rückmeldungen
   'showToast',
   'hideToast',

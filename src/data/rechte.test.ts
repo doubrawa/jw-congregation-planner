@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { darfPlanen, erlaubteScreens, rechteStufe, rechteVon, themaVon, type Rechte } from './rechte'
-import type { Group, Screen } from './types'
+import { ansichtsGruppe, type Ansicht } from './ansicht'
+import { emptyQualifications } from './helpers'
+import { darfAbwesenheitBearbeiten, darfPlanen, erlaubteScreens, rechteStufe, rechteVon, themaVon, type Rechte } from './rechte'
+import type { Group, Person, Screen } from './types'
 
 /**
  * **Wer welchen Bildschirm sehen darf — die einzige Stelle, also auch die
@@ -223,5 +225,59 @@ describe('rechteStufe', () => {
   it('alle übrigen Verkündiger — auch ohne eigene Person', () => {
     expect(stufe({ personId: 'p-x' })).toBe('verkuendiger')
     expect(stufe({ personId: null })).toBe('verkuendiger')
+  })
+})
+
+/**
+ * **Befristet (T124): die App mit den Rechten einer anderen Stufe ansehen.**
+ * Die Ansicht muss genau die Rechte ergeben, die ein echtes Konto dieser Stufe
+ * hat — sonst zeigte sie dem Admin eine App, die es so nicht gibt.
+ */
+describe('Die Ansicht einer anderen Stufe (T124)', () => {
+  const GRUPPEN: Group[] = [
+    { id: 'g1', name: 'Gruppe 1', overseerId: 'p-auf', assistantId: null },
+    { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
+  ]
+  const ADMIN_ZUSTAND = { planner: true, zuteiler: false, groups: GRUPPEN, personId: 'p-admin' }
+  const echt = (s: { zuteiler?: boolean; personId: string | null }) => rechteVon({ planner: false, zuteiler: false, groups: GRUPPEN, ...s })
+  const ansicht = (a: Ansicht) => rechteVon({ ...ADMIN_ZUSTAND, ansicht: a })
+
+  it('je Stufe dieselben Rechte und Bildschirme wie ein echtes Konto dieser Stufe', () => {
+    const paare: [Ansicht, Rechte][] = [
+      [{ stufe: 'planer', gruppe: null }, echt({ zuteiler: true, personId: 'p-x' })],
+      [{ stufe: 'gruppenaufseher', gruppe: 'g1' }, echt({ personId: 'p-auf' })],
+      [{ stufe: 'verkuendiger', gruppe: null }, echt({ personId: 'p-x' })],
+    ]
+    for (const [a, r] of paare) {
+      expect(ansicht(a), a.stufe).toEqual(r)
+      expect(erlaubteScreens(ansicht(a)), a.stufe).toEqual(erlaubteScreens(r))
+    }
+  })
+
+  it('die Stufe heißt, wie die Ansicht sie nennt — der Admin ist nicht Aufseher der gespielten Gruppe', () => {
+    const z = { ...ADMIN_ZUSTAND, ansicht: { stufe: 'gruppenaufseher', gruppe: 'g2' } as const }
+    expect(rechteStufe(rechteVon(z), z)).toBe('gruppenaufseher')
+  })
+
+  it('nur für ein echtes Admin-Konto: Ohne das Recht zählt keine Ansicht', () => {
+    const planer = { planner: false, zuteiler: true, groups: GRUPPEN, personId: 'p-x' }
+    expect(rechteVon({ ...planer, ansicht: { stufe: 'verkuendiger', gruppe: null } })).toEqual(PLANER)
+    expect(rechteStufe(rechteVon({ ...planer, ansicht: { stufe: 'verkuendiger', gruppe: null } }), { ...planer, ansicht: { stufe: 'verkuendiger', gruppe: null } })).toBe('planer')
+  })
+
+  it('als Verkündiger bearbeitet der Admin nur noch die eigenen Abwesenheiten', () => {
+    const z = { ...ADMIN_ZUSTAND, ansicht: { stufe: 'verkuendiger', gruppe: null } as const }
+    expect(darfAbwesenheitBearbeiten(ADMIN_ZUSTAND, 'p-anderer')).toBe(true)
+    expect(darfAbwesenheitBearbeiten(z, 'p-anderer')).toBe(false)
+    expect(darfAbwesenheitBearbeiten(z, 'p-admin')).toBe(true)
+  })
+
+  it('die gespielte Gruppe: die eigene, sonst die erste, ohne Gruppen keine', () => {
+    const person = (id: string, grp: string | null): Person => ({ id, fn: id, ln: 'Test', role: 'aeltester', tel: '', mail: '', priv: emptyQualifications(), grp })
+    expect(ansichtsGruppe(GRUPPEN, [person('p-admin', 'g2')], 'p-admin')).toBe('g2')
+    expect(ansichtsGruppe(GRUPPEN, [person('p-admin', null)], 'p-admin')).toBe('g1')
+    expect(ansichtsGruppe(GRUPPEN, [person('p-admin', 'g-weg')], 'p-admin')).toBe('g1')
+    expect(ansichtsGruppe(GRUPPEN, [], null)).toBe('g1')
+    expect(ansichtsGruppe([], [person('p-admin', 'g2')], 'p-admin')).toBeNull()
   })
 })

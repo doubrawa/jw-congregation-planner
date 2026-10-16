@@ -860,4 +860,10 @@ export default {
   "awWochenBild": "{name}: program bölümleri {a}, yardımcı görevler {h}, yokluk {w}",
   "awJeBereich": "Alanlara göre",
   "awZuletztVor": "en son {dauer} önce",
+  "ansichtTitel": "Test görünümü",
+  "ansichtHinweis": "Uygulamayı bu düzeydeki bir hesabın gördüğü gibi gösterir. Burada yaptığın her şey gerçektir ve kendi yetkilerinle yapılır. Yeniden yükledikten sonra yine kendi yetkilerin geçerli olur.",
+  "ansichtAlsLbl": "Şu olarak görüntüle",
+  "ansichtLeiste": "Görünüm: {stufe}",
+  "ansichtLeisteHinweis": "Yaptığın her şey gerçek – kendi yetkilerinle.",
+  "ansichtBeenden": "Bitir",
 } satisfies Partial<Dict>

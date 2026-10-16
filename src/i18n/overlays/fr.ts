@@ -860,4 +860,10 @@ export default {
   "awWochenBild": "{name}\u00a0: parties {a}, services auxiliaires {h}, absences {w}",
   "awJeBereich": "Par domaine",
   "awZuletztVor": "la dernière fois il y a {dauer}",
+  "ansichtTitel": "Vue de test",
+  "ansichtHinweis": "Montre l’application telle qu’un compte de ce niveau la voit. Ce que tu fais est réel et se fait avec tes propres droits. Après un rechargement, tes droits s’appliquent à nouveau.",
+  "ansichtAlsLbl": "Voir en tant que",
+  "ansichtLeiste": "Vue en tant que {stufe}",
+  "ansichtLeisteHinweis": "Ce que tu fais est réel – avec tes droits.",
+  "ansichtBeenden": "Terminer",
 } satisfies Partial<Dict>

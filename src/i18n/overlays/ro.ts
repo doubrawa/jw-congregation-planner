@@ -860,4 +860,10 @@ export default {
   "awWochenBild": "{name}: părți din program {a}, sarcini de sprijin {h}, absențe {w}",
   "awJeBereich": "Pe domenii",
   "awZuletztVor": "ultima dată acum {dauer}",
+  "ansichtTitel": "Vizualizare de test",
+  "ansichtHinweis": "Arată aplicația așa cum o vede un cont de acest nivel. Ce faci aici este real și se face cu propriile tale drepturi. După reîncărcare, se aplică din nou drepturile tale.",
+  "ansichtAlsLbl": "Vezi ca",
+  "ansichtLeiste": "Vizualizare ca {stufe}",
+  "ansichtLeisteHinweis": "Ce faci este real – cu drepturile tale.",
+  "ansichtBeenden": "Încheie",
 } satisfies Partial<Dict>

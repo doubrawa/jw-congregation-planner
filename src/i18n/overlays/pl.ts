@@ -860,4 +860,10 @@ export default {
   "awWochenBild": "{name}: punkty programu {a}, zadania pomocnicze {h}, nieobecności {w}",
   "awJeBereich": "Według uprawnień",
   "awZuletztVor": "ostatnio {dauer} temu",
+  "ansichtTitel": "Widok testowy",
+  "ansichtHinweis": "Pokazuje aplikację tak, jak widzi ją konto na tym poziomie. To, co robisz, jest prawdziwe i odbywa się z twoimi prawami dostępu. Po ponownym wczytaniu znów obowiązują twoje prawa dostępu.",
+  "ansichtAlsLbl": "Wyświetl jako",
+  "ansichtLeiste": "Widok jako {stufe}",
+  "ansichtLeisteHinweis": "To, co robisz, jest prawdziwe – z twoimi prawami dostępu.",
+  "ansichtBeenden": "Zakończ",
 } satisfies Partial<Dict>

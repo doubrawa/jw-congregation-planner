@@ -728,6 +728,18 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return state.fsBereich === action.bereich ? state : { ...state, fsBereich: action.bereich, slotSel: null }
     case 'setTheme':
       return { ...state, theme: action.theme }
+    case 'setAnsicht': {
+      // Befristet (T124). Nur ein echtes Admin-Konto — geprüft am echten Recht:
+      // Fragte die Wache die Ansicht, gäbe es aus „Verkündiger" kein Zurück.
+      if (!state.planner) return state
+      const nachher = { ...state, ansicht: action.ansicht }
+      // Fällt der Bildschirm unter der Ansicht weg, geht es zum Start — dieselbe
+      // Wache wie `navigate`, mit demselben Aufräumen.
+      const rechte = rechteVon(nachher)
+      const bleibt =
+        erlaubteScreens(rechte).includes(state.screen) && (state.screen !== 'planen' || darfPlanen(rechte, themaVon(state.tab)))
+      return bleibt ? nachher : reducer(nachher, { type: 'navigate', screen: 'start' })
+    }
     case 'setFontScale':
       return { ...state, fontScale: action.scale }
     case 'setNotifs':

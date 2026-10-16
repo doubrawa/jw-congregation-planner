@@ -860,4 +860,10 @@ export default {
   "awWochenBild": "{name}: partes {a}, servicios de apoyo {h}, ausente {w}",
   "awJeBereich": "Por área",
   "awZuletztVor": "la última vez hace {dauer}",
+  "ansichtTitel": "Vista de prueba",
+  "ansichtHinweis": "Muestra la aplicación como la ve una cuenta de este nivel. Lo que hagas es real y se hace con tus propios permisos. Al recargar, vuelven a valer tus permisos.",
+  "ansichtAlsLbl": "Ver como",
+  "ansichtLeiste": "Vista como {stufe}",
+  "ansichtLeisteHinweis": "Lo que hagas es real, con tus permisos.",
+  "ansichtBeenden": "Terminar",
 } satisfies Partial<Dict>

@@ -860,4 +860,10 @@ export default {
   "awWochenBild": "{name}: program parts {a}, support duties {h}, absent {w}",
   "awJeBereich": "By area",
   "awZuletztVor": "last {dauer} ago",
+  "ansichtTitel": "View for testing",
+  "ansichtHinweis": "Shows the app the way an account at this level sees it. What you do here is real and uses your own permissions. After reloading, your own permissions apply again.",
+  "ansichtAlsLbl": "View as",
+  "ansichtLeiste": "Viewing as {stufe}",
+  "ansichtLeisteHinweis": "What you do is real – with your permissions.",
+  "ansichtBeenden": "End",
 } satisfies Partial<Dict>

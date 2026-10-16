@@ -13,6 +13,7 @@ import {
   useSyncExternalStore,
   type Dispatch,
 } from 'react'
+import type { Ansicht } from '../data/ansicht'
 import type { FontScale } from '../data/constants'
 import type { OffenerPlatz } from '../data/offene-plaetze'
 import type { AssignScope, Umfang } from '../data/planning'
@@ -159,6 +160,12 @@ export interface AppState {
    * `data/rechte.ts`.
    */
   zuteiler: boolean
+  /**
+   * Befristet (T124): Der Admin sieht die App mit den Rechten einer anderen
+   * Stufe (`data/ansicht.ts`). `null` = das eigene Recht. Nirgends
+   * gespeichert — nach dem Neuladen gilt wieder das echte.
+   */
+  ansicht: Ansicht | null
   // Persistenz (Supabase); null bis zur Hydration — und ohne Datenbank
   // (Entwicklerseite) für immer. Konto-Funktionen fragen nach `userId`.
   congregationId: string | null
@@ -414,6 +421,8 @@ export type AppAction =
   | { type: 'nextWeek' }
   | { type: 'setTab'; tab: MeetingTab }
   | { type: 'setTheme'; theme: Theme }
+  /** Befristet (T124): die App mit den Rechten einer anderen Stufe ansehen — nur ein echter Admin. */
+  | { type: 'setAnsicht'; ansicht: Ansicht | null }
   | { type: 'setFontScale'; scale: FontScale }
   | { type: 'togglePartner'; si: number; ii: number } // Gesprächspartner-Slot an/aus
   | { type: 'setFamily'; id: string; memberId: string; add: boolean } // Familienangehörige

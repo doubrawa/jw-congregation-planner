@@ -139,7 +139,8 @@
   cursor: pointer;
 }
 
-.profil-sprache {
+.profil-sprache,
+.ansicht-zeile {
   display: flex;
   align-items: center;
   justify-content: space-between;

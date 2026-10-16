@@ -859,4 +859,10 @@ export default {
   "awWochenBild": "{name}: بخش‌های برنامه {a}، وظایف کمکی {h}، غیبت {w}",
   "awJeBereich": "بر اساس حوزه",
   "awZuletztVor": "آخرین بار {dauer} پیش",
+  "ansichtTitel": "نمای آزمایشی",
+  "ansichtHinweis": "برنامه را همان‌طور نشان می‌دهد که حسابی با این سطح می‌بیند. هر کاری که اینجا انجام دهید واقعی است و با دسترسی‌های خود شما انجام می‌شود. پس از بارگذاری دوباره، دسترسی‌های خودتان دوباره برقرار است.",
+  "ansichtAlsLbl": "نمایش به‌عنوان",
+  "ansichtLeiste": "نمایش به‌عنوان {stufe}",
+  "ansichtLeisteHinweis": "کارهایتان واقعی است – با دسترسی‌های شما.",
+  "ansichtBeenden": "پایان",
 } satisfies Partial<Dict>

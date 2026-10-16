@@ -55,6 +55,38 @@
   }
 }
 
+/* Befristet (T124): die Leiste, solange der Admin die App als eine andere
+   Stufe ansieht — gebaut wie die Offline-Leiste, in der Fläche des Akzents. */
+.ansicht-leiste {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-block: 0 4px;
+  margin-inline: 16px;
+  padding-block: 8px;
+  padding-inline: 16px 8px;
+  border-radius: 24px;
+  background: var(--akzent-flaeche);
+  font-size: calc(14.5px * var(--fs));
+}
+
+.ansicht-leiste-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.ansicht-leiste-hinweis {
+  color: var(--text2);
+  font-size: calc(13.5px * var(--fs));
+}
+
+@media (min-width: 768px) {
+  .ansicht-leiste {
+    margin-block: 12px 0;
+    margin-inline: 32px;
+  }
+}
+
 /* Screen-Grundfläche (je Bereich ein <section class="screen">). Die Bildschirme
    der alten Oberfläche sind für eine Spalte gebaut; bis zu ihrem Umbau (T121)
    bleibt sie auch am Desktop so breit. */

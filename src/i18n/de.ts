@@ -829,5 +829,11 @@ export const DE = {
     awAufgabenErwartet: 'Aufgaben, erwartet {e}', awAbwesend: 'Zusammenkünfte abwesend',
     awLetzte: 'Die letzten {dauer}', awAufgabe: 'Aufgabe', awHilfsdienst: 'Hilfsdienst', awAbwesendKurz: 'abwesend',
     awWochenBild: '{name}: Aufgaben {a}, Hilfsdienste {h}, abwesend {w}',
-    awJeBereich: 'Je Bereich', awZuletztVor: 'zuletzt vor {dauer}'
+    awJeBereich: 'Je Bereich', awZuletztVor: 'zuletzt vor {dauer}',
+    // Befristet (T124): die App mit den Rechten einer anderen Stufe ansehen —
+    // mit `data/ansicht.ts` wieder ausbauen. {stufe} ist der Name der Stufe.
+    ansichtTitel: 'Ansicht zum Testen',
+    ansichtHinweis: 'Zeigt die App so, wie ein Konto dieser Stufe sie sieht. Was du dabei tust, ist echt und geschieht mit deinen Rechten. Nach dem Neuladen gilt wieder dein eigenes Recht.',
+    ansichtAlsLbl: 'Ansehen als', ansichtLeiste: 'Ansicht als {stufe}',
+    ansichtLeisteHinweis: 'Was du tust, ist echt – mit deinen Rechten.', ansichtBeenden: 'Beenden'
 }

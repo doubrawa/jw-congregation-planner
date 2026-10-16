@@ -7027,7 +7027,7 @@ Konto mal „учётная запись", mal „аккаунт" (beim Zusammen
 
 ## Aufgenommen am 16. Oktober 2026 — Rechte zum Testen umschalten (T124)
 
-### T124 · Befristet: die App mit den Rechten einer anderen Stufe ansehen 🔧 ☐ offen
+### T124 · Befristet: die App mit den Rechten einer anderen Stufe ansehen 🔧 ✅ erledigt und ausgerollt (17. Oktober 2026)
 
 **Wortlaut:** *„einen schalter, der zur laufzeit es möglich macht, dass man in
 der app umschaltet welche rechte man hat. ich würde gern testen und sehen, was
@@ -7092,6 +7092,36 @@ Planen-Knöpfe und dieselben Mitteilungen wie `rechteVon` mit den echten Werten
 dieser Stufe (Probe über alle Bildschirme). Ein Konto ohne Admin-Recht sieht den
 Schalter nie, auch nicht über einen Hash (Probe). Nach dem Neuladen gilt wieder
 das echte Recht.
+
+**Umgesetzt (17. Oktober 2026, in Abwesenheit des Betreibers):**
+
+- `src/data/ansicht.ts` trägt die Stufen und ihre Rechte; `rechteVon` und
+  `rechteStufe` fragen je eine Zeile danach, nur für ein echtes Admin-Konto.
+  `ansicht` steht im Zustand, nirgends gespeichert; `setAnsicht` prüft das
+  echte Recht und führt zum Start, wenn der Bildschirm wegfällt.
+- **Schalter im Profil** („Ansicht zum Testen" → „Ansehen als"), nicht in der
+  Zeile unter dem Namen: Die ist ein Knopf zum Profil, ein Schalter darin wäre
+  ein Knopf im Knopf. Das Profil sieht jede Stufe, die Karte steht dort am
+  echten Recht. Der Gruppenaufseher spielt die eigene Gruppe, sonst die erste;
+  eine andere ist wählbar.
+- **Leiste** oben auf jedem Bildschirm, „Ansicht als …" mit **Beenden**.
+- **Schreiben bleibt erlaubt** — vorläufig entschieden, der Betreiber war nicht
+  da: Alles, was die Ansicht anbietet, darf der Admin ohnehin, und gesperrt
+  (wie offline) sähe die App anders aus als bei der Stufe. Die Leiste und die
+  Karte sagen, dass es echt ist. Zu bestätigen.
+- An `rechteVon` vorbei entschied nur `darfAbwesenheitBearbeiten` — jetzt
+  darüber. `tests/rechte-nur-ueber-rechtevon.test.ts` hält fest, dass niemand
+  sonst `planner`/`zuteiler` selbst liest.
+- **Proben:** die Rechte je Stufe gegen ein echtes Konto (`rechte.test.ts`), der
+  Reducer, die Karte im Profil, und `src/app/ansicht.test.tsx`: je Stufe jeder
+  Bildschirm (Programm und Planen je Reiter) Text für Text gleich dem echten
+  Konto — bis auf Leiste und Karte. Sieben Einträge im Mutationskatalog, alle
+  bewacht.
+- **Ausbau:** `src/data/ansicht.ts`, `src/app/AnsichtLeiste.tsx`,
+  `src/profil/AnsichtKarte.tsx`, `src/app/ansicht.test.tsx`, die Texte
+  `ansicht…` (zwölf Sprachen), das Feld `ansicht` und die Aktion `setAnsicht`,
+  je eine Zeile in `rechteVon`/`rechteStufe`, die Einträge `ansicht-…` im
+  Mutationskatalog, der Abschnitt im Handbuch.
 
 ## Aufgenommen am 16. Oktober 2026 — Aufbewahrung und Auswertung (T125, T126)
 
@@ -7673,13 +7703,13 @@ zurückgenommen und der Testlauf wiederholt wurde.
 **Stand 16. Oktober 2026, alles Offene an einer Stelle** (gemessen: Köpfe
 gezählt, kein Zweig außer `main`, keine PR, kein Issue; `sw.js` = HEAD; alle
 sieben Functions per `functions download` gleich dem Repo, 39 Dateien; Secrets
-ohne `INVITE_FROM`, `disable_signup` noch `false`). Im Code ist T124 offen
-(T123, T125 und T126 am 16. Oktober erledigt und ausgerollt); was sonst
-aussteht, braucht den Betreiber oder ein Gerät.
+ohne `INVITE_FROM`, `disable_signup` noch `false`). Im Code ist nichts mehr
+offen außer T42 (T123, T125 und T126 am 16. Oktober erledigt und ausgerollt,
+T124 am 17.); was sonst aussteht, braucht den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **T124** | Rechte zum Testen umschalten | aufgenommen am 16. Oktober, noch nicht begonnen; befristet — nach den Tests wieder ausbauen |
+| **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124). Zu bestätigen: Schreiben in der Ansicht bleibt erlaubt |
 | **Betreiber** | Daten für die Auswertung (T126) | Absagen bewahrt die App nicht auf, Abwesenheiten nur acht Wochen nach ihrem Ende — soll die Auswertung beides kennen, müssten sie länger bleiben (siehe T126) |
 | **Zurückgestellt** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт". Betreiber am 16. Oktober: „bleibt erst mal so" — wieder aufnehmen, wenn ein Muttersprachler prüft; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |

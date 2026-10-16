@@ -52,6 +52,7 @@ export function leererZustand({ theme, fontScale, lang }: Vorlieben): AppState {
     fontScale,
     planner: false,
     zuteiler: false,
+    ansicht: null,
     congregation: { name: '', hall: '', times: STANDARD_ZEITEN },
     congregationId: null,
     userId: null,

@@ -27,6 +27,7 @@
  * `eigene_gruppen`); hier steht, was die App anbietet.
  */
 
+import { rechteDerAnsicht, type Ansicht } from './ansicht'
 import { aufseherGruppe } from './helpers'
 import type { Group, MeetingTab, Member, Person, Screen, Thema } from './types'
 
@@ -51,13 +52,20 @@ export interface Rechte {
   gruppe: string | null
 }
 
-/** Die Rechte aus dem Zustand. */
-export function rechteVon(s: {
+/** Was `rechteVon` braucht: die echten Rechte des Kontos — und, befristet, die Ansicht. */
+export interface RechteQuelle {
   planner: boolean
   zuteiler: boolean
   groups: readonly Group[]
   personId: string | null
-}): Rechte {
+  /** Befristet (T124): Ein Admin sieht die App mit den Rechten einer anderen Stufe. */
+  ansicht?: Ansicht | null
+}
+
+/** Die Rechte aus dem Zustand. */
+export function rechteVon(s: RechteQuelle): Rechte {
+  // Nur ein echtes Admin-Konto (T124) — geprüft am echten Recht, nicht an der Ansicht.
+  if (s.planner && s.ansicht) return rechteDerAnsicht(s.ansicht)
   return {
     admin: s.planner,
     zuteilen: s.planner || s.zuteiler,
@@ -76,8 +84,11 @@ export type RechteStufe = 'admin' | 'planer' | 'gruppenaufseher' | 'gehilfe' | '
 
 export function rechteStufe(
   r: Rechte,
-  s: { groups: readonly Group[]; personId: string | null },
+  s: { groups: readonly Group[]; personId: string | null; planner?: boolean; ansicht?: Ansicht | null },
 ): RechteStufe {
+  // Die Ansicht nennt ihre Stufe selbst (T124): Der Admin ist nicht Aufseher der
+  // Gruppe, die er spielt — gefragt nach `overseerId`, hieße er „Gehilfe".
+  if (s.planner && s.ansicht) return s.ansicht.stufe
   if (r.admin) return 'admin'
   if (r.zuteilen) return 'planer'
   if (r.gruppe === null) return 'verkuendiger'
@@ -189,12 +200,12 @@ export function geplantesThema(r: Rechte, tab: MeetingTab): Thema {
  * dieselbe Grenze zieht die Datenbank (`absences_write`). Stünde der Knopf auch
  * anderen offen, schriebe er ins Leere, und die Zeile verschwände beim
  * nächsten Laden wieder. `personId` ist die **betroffene** Person.
+ *
+ * Über `rechteVon`, nicht über `planner` selbst: Sonst böte die Ansicht als
+ * Verkündiger (T124) die Abwesenheiten anderer weiter zum Bearbeiten an.
  */
-export function darfAbwesenheitBearbeiten(
-  s: { planner: boolean; personId: string | null },
-  personId: string | null,
-): boolean {
-  return s.planner || personId === s.personId
+export function darfAbwesenheitBearbeiten(s: RechteQuelle, personId: string | null): boolean {
+  return rechteVon(s).admin || personId === s.personId
 }
 
 /**

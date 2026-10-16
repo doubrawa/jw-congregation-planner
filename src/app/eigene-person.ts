@@ -1,5 +1,5 @@
-import { rechteStufe, rechteVon } from '../data/rechte'
-import type { Group, Person } from '../data/types'
+import { rechteStufe, rechteVon, type RechteQuelle } from '../data/rechte'
+import type { Person } from '../data/types'
 import { RECHTE_STUFE_KEY } from '../i18n/ui'
 import type { I18n } from '../i18n/useT'
 
@@ -28,13 +28,7 @@ export function eigenePerson(state: {
  * 12.10.2026 unübersetzt („Gruppe 1" auch auf Englisch), das Profil nicht.
  */
 export function rolleUndGruppe(
-  state: {
-    planner: boolean
-    zuteiler: boolean
-    groups: readonly Group[]
-    persons: readonly Person[]
-    personId: string | null
-  },
+  state: RechteQuelle & { persons: readonly Person[] },
   { t, tu }: Pick<I18n, 't' | 'tu'>,
 ): string[] {
   const rolle = t[RECHTE_STUFE_KEY[rechteStufe(rechteVon(state), state)]]

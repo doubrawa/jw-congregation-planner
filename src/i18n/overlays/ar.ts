@@ -860,4 +860,10 @@ export default {
   "awWochenBild": "{name}: فقرات البرنامج {a}، خدمات المساندة {h}، الغياب {w}",
   "awJeBereich": "حسب المجال",
   "awZuletztVor": "آخر مرة منذ {dauer}",
+  "ansichtTitel": "عرض للاختبار",
+  "ansichtHinweis": "يعرض التطبيق كما يراه حساب بهذا المستوى. ما تفعله هنا حقيقي ويتم بصلاحياتك الخاصة. بعد إعادة التحميل تعود صلاحياتك.",
+  "ansichtAlsLbl": "العرض بصفة",
+  "ansichtLeiste": "العرض بصفة {stufe}",
+  "ansichtLeisteHinweis": "ما تفعله حقيقي – بصلاحياتك.",
+  "ansichtBeenden": "إنهاء",
 } satisfies Partial<Dict>

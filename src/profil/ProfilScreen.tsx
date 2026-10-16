@@ -14,6 +14,7 @@ import type { Dict } from '../i18n/ui'
 import { useT } from '../i18n/useT'
 import { promptInstall } from '../lib/install'
 import { AbwesenheitenKarte } from '../components/AbwesenheitenKarte'
+import { AnsichtKarte } from './AnsichtKarte'
 import { Diagnose } from './Diagnose'
 import './profil.css'
 
@@ -146,6 +147,9 @@ export function ProfilScreen() {
 
         <div className="profil-spalte">
           <AbwesenheitenKarte />
+
+          {/* Befristet (T124): nur für Admins, am echten Recht gefragt. */}
+          <AnsichtKarte />
 
           {verwalten && (
             <section className="karte profil-karte profil-verwaltung">

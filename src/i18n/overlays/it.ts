@@ -860,4 +860,10 @@ export default {
   "awWochenBild": "{name}: parti {a}, servizi di supporto {h}, assenze {w}",
   "awJeBereich": "Per mansione",
   "awZuletztVor": "l’ultima volta {dauer} fa",
+  "ansichtTitel": "Vista di prova",
+  "ansichtHinweis": "Mostra l’app come la vede un account di questo livello. Ciò che fai è reale e avviene con i tuoi permessi. Dopo il ricaricamento valgono di nuovo i tuoi permessi.",
+  "ansichtAlsLbl": "Visualizza come",
+  "ansichtLeiste": "Vista come {stufe}",
+  "ansichtLeisteHinweis": "Ciò che fai è reale, con i tuoi permessi.",
+  "ansichtBeenden": "Termina",
 } satisfies Partial<Dict>

@@ -328,3 +328,62 @@ describe('Die versteckte Gesten-Diagnose', () => {
     await waitFor(() => expect(container.querySelector('.prof-diag-text')).toBeTruthy())
   })
 })
+
+/**
+ * **Befristet (T124): Ansicht zum Testen.** Nur ein echtes Admin-Konto sieht
+ * die Karte — auch dann noch, wenn es gerade als Verkündiger ansieht; sonst
+ * gäbe es kein Zurück.
+ */
+describe('Ansicht zum Testen (T124)', () => {
+  const karte = (c: HTMLElement) =>
+    [...c.querySelectorAll('.profil-karte')].find((k) => k.querySelector('h2')?.textContent === t.ansichtTitel)
+  const auswahl = (c: HTMLElement) => karte(c)!.querySelectorAll<HTMLSelectElement>('select')
+
+  it('der Planer und der Verkündiger sehen sie nicht', () => {
+    expect(karte(zeige({ planner: false, zuteiler: true }).container)).toBeUndefined()
+    cleanup()
+    expect(karte(zeige({ planner: false, zuteiler: false }).container)).toBeUndefined()
+  })
+
+  it('der Admin wählt die Stufe — zuerst steht sein eigenes Recht da', () => {
+    const { container, dispatch } = zeige({ planner: true })
+    const [stufen] = auswahl(container)
+    expect([...stufen!.options].map((o) => o.textContent)).toEqual([t.rolleKoordinator, t.rollePlaner, t.rolleGruppenaufseher, t.rolleVerkuendiger])
+    expect(stufen!.value).toBe('admin')
+    fireEvent.change(stufen!, { target: { value: 'verkuendiger' } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'setAnsicht', ansicht: { stufe: 'verkuendiger', gruppe: null } })
+  })
+
+  it('als Gruppenaufseher die eigene Gruppe — wählbar', () => {
+    const groups = [
+      { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null },
+      { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
+    ]
+    const ich = { ...ICH, grp: 'g2' }
+    const erst = zeige({ planner: true, groups, persons: [ich] })
+    fireEvent.change(auswahl(erst.container)[0]!, { target: { value: 'gruppenaufseher' } })
+    expect(erst.dispatch).toHaveBeenCalledWith({ type: 'setAnsicht', ansicht: { stufe: 'gruppenaufseher', gruppe: 'g2' } })
+    cleanup()
+    const dann = zeige({ planner: true, groups, persons: [ich], ansicht: { stufe: 'gruppenaufseher', gruppe: 'g2' } })
+    const [stufen, gruppe] = auswahl(dann.container)
+    expect(stufen!.value).toBe('gruppenaufseher')
+    expect(gruppe!.value).toBe('g2')
+    fireEvent.change(gruppe!, { target: { value: 'g1' } })
+    expect(dann.dispatch).toHaveBeenCalledWith({ type: 'setAnsicht', ansicht: { stufe: 'gruppenaufseher', gruppe: 'g1' } })
+  })
+
+  it('ohne Gruppen gibt es den Gruppenaufseher nicht', () => {
+    const { container } = zeige({ planner: true, groups: [] })
+    expect([...auswahl(container)[0]!.options].map((o) => o.value)).toEqual(['admin', 'planer', 'verkuendiger'])
+  })
+
+  it('in der Ansicht als Verkündiger steht sie weiter da — und führt zurück', () => {
+    const { container, dispatch } = zeige({ planner: true, ansicht: { stufe: 'verkuendiger', gruppe: null } })
+    const [stufen] = auswahl(container)
+    expect(stufen!.value).toBe('verkuendiger')
+    // Die Verwaltung gehört dem Admin — in der Ansicht fehlt sie wie beim Verkündiger.
+    expect(container.querySelector('.profil-verwaltung')).toBeNull()
+    fireEvent.change(stufen!, { target: { value: 'admin' } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'setAnsicht', ansicht: null })
+  })
+})

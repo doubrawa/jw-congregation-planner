@@ -860,4 +860,10 @@ export default {
   "awWochenBild": "{name}: пункти програми {a}, допоміжні обов’язки {h}, відсутність {w}",
   "awJeBereich": "За обов’язками",
   "awZuletztVor": "востаннє {dauer} тому",
+  "ansichtTitel": "Перегляд для перевірки",
+  "ansichtHinweis": "Показує застосунок так, як його бачить людина на цьому рівні. Усе, що ви при цьому робите, відбувається насправді — з вашими правами. Після перезавантаження знову діють ваші права.",
+  "ansichtAlsLbl": "Дивитися як",
+  "ansichtLeiste": "Перегляд: {stufe}",
+  "ansichtLeisteHinweis": "Усе насправді — з вашими правами.",
+  "ansichtBeenden": "Завершити",
 } satisfies Partial<Dict>

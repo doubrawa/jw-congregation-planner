@@ -117,6 +117,7 @@ steht der Schalter **Darf planen** an und lässt sich nicht umlegen.
 | **Plan senden** | – | Treffpunkte seiner Gruppe | ✓ | ✓ |
 | Programm holen, **Woche einrichten** (Anlass, Sonderwoche, Termine), Punkte unter „Unser Leben als Christ" anlegen, umbenennen, verschieben, Minuten | – | – | ✓ | ✓ |
 | **Auswertung** der Zuteilungen ansehen | – | – | ✓ | ✓ |
+| Die App mit anderen Rechten ansehen (befristet, im Profil) | – | – | – | ✓ |
 | Personen, Abwesenheiten anderer, Einstellungen mit Trolleys, Mitglieder, Anmelde-Links | – | – | – | ✓ |
 
 **Gruppenaufseher und Gehilfe** ist, wen du im Blatt seiner
@@ -137,6 +138,24 @@ Partner; zuteilen kann dort niemand (siehe [Trolleys](#trolleys)).
 Unter dem eigenen Namen unten in der Seitenleiste (am Handy im Menü) steht,
 was jemand darf: **Admin**, **Planer**, **Gruppenaufseher** bzw. **Gehilfe**
 einer Gruppe – sonst **Verkündiger**.
+
+### Die App mit anderen Rechten ansehen (befristet)
+
+Solange die App erprobt wird, kann ein **Admin** sie so ansehen, wie ein
+Planer, ein Gruppenaufseher oder ein Verkündiger sie sieht: im **Profil** unter
+**Ansicht zum Testen** → **Ansehen als**. Als Gruppenaufseher siehst du die
+eigene Gruppe; eine andere wählst du darunter. Solange die Ansicht gilt, steht
+oben die Leiste **Ansicht als …** – **Beenden** führt zurück zum eigenen Recht,
+ebenso das Neuladen der App.
+
+- Die Ansicht zeigt Menü, Bildschirme, Knöpfe und Mitteilungen der Stufe, und
+  unter deinem Namen steht die Stufe. Fällt der Bildschirm weg, auf dem du
+  gerade bist, geht es zum Start.
+- **Was du in der Ansicht tust, ist echt** und geschieht mit deinen eigenen
+  Rechten. Die Datenbank kennt nur sie: Was die App einem Verkündiger gar nicht
+  schicken würde, hat sie bei dir trotzdem geladen.
+- Planer und Verkündiger sehen die Karte nicht. Nach den Tests kommt sie wieder
+  heraus.
 
 ---
 

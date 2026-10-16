@@ -8,6 +8,7 @@ import { fromIso } from '../data/meeting-dates'
 import { darfPlanen, erlaubteScreens, geplantesThema, rechteVon, themaVon } from '../data/rechte'
 import { weiterePlaeneImMenue } from '../data/weitere-plaene'
 import { vorzulegen } from './reducer'
+import { AnsichtLeiste } from './AnsichtLeiste'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import type { Screen, Thema } from '../data/types'
@@ -316,6 +317,7 @@ export function AppShell() {
             />
 
             <OfflineBanner />
+            <AnsichtLeiste />
 
             {/* `key` am Screen: nach einem Fehler hängt der nächste
                 Screenwechsel eine frische Boundary ein — sonst bliebe der

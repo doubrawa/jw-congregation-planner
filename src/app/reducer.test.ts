@@ -52,6 +52,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     fontScale: 1,
     planner: DEMO_PLANNER,
     zuteiler: false,
+    ansicht: null,
     congregation: { ...CONGREGATION },
     congregationId: null,
     userId: null,
@@ -243,6 +244,54 @@ describe('navigate (Rechteprüfung)', () => {
     expect(reducer(s, { type: 'navigate', screen: 'planen', thema: 'weitere' })).toMatchObject({ screen: 'planen', tab: 'wp' })
     expect(reducer(s, { type: 'navigate', screen: 'personen' }).screen).toBe('programm')
     expect(reducer(s, { type: 'navigate', screen: 'einstellungen' }).screen).toBe('programm')
+  })
+})
+
+/*
+ * **Befristet (T124): die Ansicht einer anderen Stufe.** Nur ein echtes
+ * Admin-Konto schaltet; fällt der Bildschirm unter der Ansicht weg, geht es
+ * zum Start.
+ */
+describe('setAnsicht (T124)', () => {
+  const VERKUENDIGER = { stufe: 'verkuendiger', gruppe: null } as const
+  const PLANER = { stufe: 'planer', gruppe: null } as const
+
+  it('ohne echtes Admin-Recht ändert sich nichts — auch nicht für den Planer', () => {
+    const s = makeState({ planner: false, zuteiler: true, screen: 'profil' })
+    expect(reducer(s, { type: 'setAnsicht', ansicht: VERKUENDIGER })).toBe(s)
+  })
+
+  it('der Admin schaltet um und wieder zurück — der Bildschirm bleibt, wo er erlaubt ist', () => {
+    const an = reducer(makeState({ planner: true, screen: 'profil' }), { type: 'setAnsicht', ansicht: VERKUENDIGER })
+    expect(an.ansicht).toEqual(VERKUENDIGER)
+    expect(an.screen).toBe('profil')
+    const aus = reducer(an, { type: 'setAnsicht', ansicht: null })
+    expect(aus.ansicht).toBeNull()
+    expect(aus.screen).toBe('profil')
+  })
+
+  it('fällt der Bildschirm weg, geht es zum Start', () => {
+    expect(reducer(makeState({ planner: true, screen: 'personen' }), { type: 'setAnsicht', ansicht: PLANER }).screen).toBe('start')
+    expect(reducer(makeState({ planner: true, screen: 'planung' }), { type: 'setAnsicht', ansicht: VERKUENDIGER }).screen).toBe('start')
+    // Planen bleibt dem Planer — auch beim Bearbeiten des Programms.
+    expect(reducer(makeState({ planner: true, screen: 'planen', tab: 'edit' }), { type: 'setAnsicht', ansicht: PLANER }).screen).toBe('planen')
+  })
+
+  it('der Gruppenaufseher behält Planen nur bei den Treffpunkten', () => {
+    const aufseher = { stufe: 'gruppenaufseher', gruppe: 'g1' } as const
+    const groups = [{ id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null }]
+    expect(reducer(makeState({ planner: true, groups, screen: 'planen', tab: 'fs' }), { type: 'setAnsicht', ansicht: aufseher }).screen).toBe('planen')
+    expect(reducer(makeState({ planner: true, groups, screen: 'planen', tab: 'mid' }), { type: 'setAnsicht', ansicht: aufseher }).screen).toBe('start')
+  })
+
+  it('unter der Ansicht weist navigate ab, was die Stufe nicht sieht', () => {
+    const s = reducer(makeState({ planner: true, screen: 'profil' }), { type: 'setAnsicht', ansicht: VERKUENDIGER })
+    expect(reducer(s, { type: 'navigate', screen: 'personen' }).screen).toBe('programm')
+  })
+
+  it('das Abmelden beendet die Ansicht', () => {
+    const s = reducer(makeState({ planner: true, screen: 'profil' }), { type: 'setAnsicht', ansicht: VERKUENDIGER })
+    expect(reducer(s, { type: 'logout' }).ansicht).toBeNull()
   })
 })
 
