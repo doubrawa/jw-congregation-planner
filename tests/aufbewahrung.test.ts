@@ -29,16 +29,16 @@ const CRON = lies('../supabase/cron-aufraeumen.sql')
 /** Der Rumpf von `alte_daten_loeschen`. */
 const RUMPF = /create or replace function public\.alte_daten_loeschen\([\s\S]*?\n\$\$;/.exec(SCHEMA)?.[0] ?? ''
 
-/** Die Regeln: `('tabelle', 'bedingung', grenze)`. */
-const REGELN = [...RUMPF.matchAll(/^\s+\('(\w+)', '((?:[^']|'')*)', (.+?)\),?$/gm)].map((m) => ({
+/** Die Regeln: `('tabelle', 'bedingung', grenze)` — die Tabelle ohne Schema heißt `public`. */
+const REGELN = [...RUMPF.matchAll(/^\s+\('([\w.]+)', '((?:[^']|'')*)', (.+?)\),?$/gm)].map((m) => ({
   tabelle: m[1]!,
   bedingung: m[2]!.replaceAll("''", "'"),
   grenze: m[3]!.trim(),
 }))
 
 /** Jede Tabelle im Schema mit ihren Spalten. */
-const TABELLEN = new Map(
-  [...SCHEMA.matchAll(/create table if not exists public\.(\w+)\s*\(([\s\S]*?)\n\);/g)].map((m) => [
+const IM_SCHEMA = [...SCHEMA.matchAll(/create table if not exists public\.(\w+)\s*\(([\s\S]*?)\n\);/g)].map(
+  (m): [string, Set<string>] => [
     m[1]!,
     new Set(
       m[2]!
@@ -46,8 +46,19 @@ const TABELLEN = new Map(
         .map((z) => /^\s+([a-z_]+)\s/.exec(z.replace(/--.*$/, ''))?.[1])
         .filter((s): s is string => Boolean(s) && !['primary', 'unique', 'constraint', 'foreign', 'check', 'references'].includes(s!)),
     ),
-  ]),
+  ],
 )
+
+/**
+ * **Was Supabase selbst anlegt** und darum nicht im Schema steht — mit den
+ * Spalten aus den Migrationen von Supabase Auth. Ob eine Regel dort trifft,
+ * zeigt erst der Probelauf in der Datenbank.
+ */
+const VON_SUPABASE: [string, Set<string>][] = [
+  ['auth.audit_log_entries', new Set(['instance_id', 'id', 'payload', 'created_at', 'ip_address'])],
+]
+
+const TABELLEN = new Map([...IM_SCHEMA, ...VON_SUPABASE])
 
 /**
  * **Was keine Frist hat — mit Grund.** Stammdaten haben kein Alter: Sie gelten,
@@ -109,6 +120,15 @@ describe('Aufräumen in der Datenbank', () => {
       expect(frist[t], t).toBe('acht_wochen')
     }
     expect(frist.anmelde_fehlversuche).toBe("now() - interval '1 day'")
+  })
+
+  it('auch das Anmelde-Protokoll von Supabase geht nach acht Wochen — der Lauf nimmt den Namen samt Schema', () => {
+    // Je Anmeldung E-Mail und IP-Adresse (Betreiber 16.10.2026). Setzte der
+    // Lauf `public.` vor jeden Namen, bräche er an dieser Tabelle ab — und mit
+    // ihm jede andere Regel der Nacht.
+    expect(REGELN.find((r) => r.tabelle === 'auth.audit_log_entries')?.grenze).toBe('acht_wochen')
+    expect(RUMPF).toContain("execute format('delete from %s where %s', regel.name::regclass, regel.bedingung)")
+    expect(RUMPF).not.toContain('public.%I')
   })
 
   it('aufräumen darf nur der Zeitplan — nicht anon, nicht ein angemeldetes Konto', () => {

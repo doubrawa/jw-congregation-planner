@@ -799,11 +799,16 @@ beide ab dem Montag der laufenden Woche gezählt
 | Frist | Was |
 | --- | --- |
 | **ein Jahr** | die Wochen und was zu ihnen gehört: Programm samt Zuteilungen (`weeks`), Treffpunkte (`fs_weeks`), Zusagen, Versand-Tagebuch, Gruppenbesuche, vorgemerkte Vorträge, Weitere Pläne samt Einträgen — die gerechte Verteilung fragt, wer am längsten wartet |
-| **acht Wochen** | Mitteilungen, Erinnerungs-Tagebuch, Abwesenheiten samt Grund (ab ihrem Ende), Trolley-Termine, abgelaufene Anmelde-Links |
+| **acht Wochen** | Mitteilungen, Erinnerungs-Tagebuch, Abwesenheiten samt Grund (ab ihrem Ende), Trolley-Termine, abgelaufene Anmelde-Links, das Protokoll von Supabase Auth (`auth.audit_log_entries`: E-Mail und IP-Adresse je Anmeldung) |
 | **ein Tag** | Fehlversuche beim Anmelden (IP-Adressen) |
 
 Stammdaten (Personen, Haushalte, Gruppen, Dienste, Konten, Grundplan,
 Trolleys, Push-Abos) haben kein Alter.
+
+Das Protokoll von Supabase Auth schreibt dieses Projekt gar nicht erst in die
+Datenbank (Dashboard: Authentication → Audit Logs, „Write audit logs to the
+database" aus; die Tabelle war am 16.10.2026 leer). Die Regel greift, falls
+jemand den Schalter einschaltet.
 
 Dieselbe Grenze gilt an drei Stellen:
 

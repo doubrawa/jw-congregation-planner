@@ -1670,7 +1670,10 @@ grant execute on function public.persoenlich_bescheid(text, text, boolean) to au
 --     alle paar Monate eine Zuteilung;
 --   - acht Wochen für alles andere.
 -- Die Fehlversuche beim Anmelden (IP-Adressen) gehen nach einem Tag: Sie
--- bremsen nur das Raten der letzten Stunde (`anmelden`).
+-- bremsen nur das Raten der letzten Stunde (`anmelden`). Das Protokoll von
+-- Supabase Auth (`auth.audit_log_entries`, je Anmeldung E-Mail und IP-Adresse)
+-- geht nach acht Wochen — die einzige Regel für eine Tabelle, die nicht hier
+-- steht (Betreiber, 16.10.2026).
 --
 -- Zusagen und Versand-Tagebuch tragen ihre Woche im Schlüssel
 -- (`<montag>|…` oder `fs|<montag>|…`, `_shared/aufgaben-schluessel.ts`); eine
@@ -1723,15 +1726,26 @@ begin
         ('trolley_termine', 'datum < $1', acht_wochen),
         ('anmelde_links', 'gueltig_bis < $1', acht_wochen),
         -- Die Bremse gegen Raten: ein Tag.
-        ('anmelde_fehlversuche', 'at < $1', now() - interval '1 day')
+        ('anmelde_fehlversuche', 'at < $1', now() - interval '1 day'),
+        -- Das Protokoll von Supabase Auth: acht Wochen.
+        ('auth.audit_log_entries', 'created_at < $1', acht_wochen)
       ) as r(name, bedingung, grenze)
   loop
-    if trocken then
-      execute format('select count(*) from public.%I where %s', regel.name, regel.bedingung) into n using regel.grenze;
-    else
-      execute format('delete from public.%I where %s', regel.name, regel.bedingung) using regel.grenze;
-      get diagnostics n = row_count;
-    end if;
+    -- Ohne Schema heißt `public` (search_path); `regclass` schreibt den Namen
+    -- so, dass er genau diese Tabelle trifft.
+    begin
+      if trocken then
+        execute format('select count(*) from %s where %s', regel.name::regclass, regel.bedingung) into n using regel.grenze;
+      else
+        execute format('delete from %s where %s', regel.name::regclass, regel.bedingung) using regel.grenze;
+        get diagnostics n = row_count;
+      end if;
+    exception when insufficient_privilege then
+      -- Die Tabellen von Supabase gehören nicht uns. Entzieht Supabase das
+      -- Recht daran, räumen die übrigen Regeln trotzdem; `zeilen` bleibt leer.
+      raise warning 'alte_daten_loeschen: kein Recht an %', regel.name;
+      n := null;
+    end;
     tabelle := regel.name;
     zeilen := n;
     return next;

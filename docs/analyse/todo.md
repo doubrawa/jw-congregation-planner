@@ -4612,6 +4612,8 @@ Punkt 2 liest niemand mehr die ganze Tabelle; rund 2000 Zeilen im Jahr sind für
 Postgres nichts, und das Tagebuch bleibt als vollständiger Nachweis erhalten,
 wer wann benachrichtigt wurde. Die Entscheidung ist reversibel — eine
 Löschregel lässt sich jederzeit nachrüsten, gelöschte Zeilen nicht.
+*Nachgerüstet am 16.10.2026 mit T125:* „wir wollen ja keine daten sammeln, die
+wir nicht brauchen" — das Tagebuch geht jetzt nach einem Jahr mit seiner Woche.
 
 **4. Die Glocke lädt in zwei Stufen.** Ihr Öffnen löste den **vollen**
 Ladevorgang aus: dreizehn Abfragen, darunter 52 Wochen als JSONB, alle
@@ -7133,6 +7135,33 @@ warum sie keine braucht. Im Repo seit dem 16. Oktober 2026.
 Betreibers — gelöscht ist gelöscht. Dafür braucht es das Schema in der
 Datenbank und `supabase/cron-aufraeumen.sql`.
 
+**Auch das Protokoll von Supabase Auth** (`auth.audit_log_entries`, je
+Anmeldung E-Mail und IP-Adresse) geht nach acht Wochen — Betreiber auf die
+Frage: *„ja"*. Die Tabelle steht nicht in `schema.sql`; der Lauf nimmt ihren
+Namen samt Schema (`regclass`). Entzieht Supabase das Recht daran, räumen die
+übrigen Regeln trotzdem. Dieses Projekt schreibt das Protokoll gar nicht erst
+in die Datenbank (Authentication → Audit Logs): Die Tabelle war leer, nichts
+je eingefügt — die Regel greift, falls es jemand einschaltet.
+
+**Zusagen und Versand-Tagebuch** bleiben ein Jahr mit ihrer Woche. Betreiber:
+*„kann man so machen, aber die zusagen usw könnten auch früher gelöscht werden.
+aber lass es ruhig so."* Ein kürzerer Schnitt ist also erlaubt, wenn er
+gebraucht wird — mit der Folge von oben (alte Wochen zeigten „wartet").
+
+**Stand 16.10.2026, 21:15 — Schema eingespielt, Probelauf gezeigt.** Beide
+Funktionen gehören `postgres`; anon und authenticated haben kein Recht (REST:
+`401 42501`, Gegenprobe mit erfundenem Namen `404 PGRST202`). Der Probelauf
+zählte in jeder Tabelle 0 Zeilen über der Frist, nur einen Fehlversuch beim
+Anmelden älter als einen Tag. `pg_cron` 1.6.4 ist da, als Zeitplan steht nur
+`jw-send-reminders-daily`. **Offen:** `supabase/cron-aufraeumen.sql`
+einspielen — auf ein Wort des Betreibers.
+
+**Später zu entscheiden:** `auth.sessions` hält je angemeldetem Gerät
+IP-Adresse und Browserkennung, solange die Anmeldung gilt. Ohne Höchstdauer
+für Sitzungen räumt Supabase sie nicht ab. Am 16.10. waren es 12, die älteste
+vom 12.10. Möglich wäre eine Regel für Sitzungen, die ein Jahr unbenutzt
+sind; das Gerät bräuchte danach einen neuen Link.
+
 ### T126 · Auswertung der Zuteilungen — mit Diagrammen 🏗 ☐ offen
 
 **Wortlaut:** *„nimm in die todo liste auf, dass wir noch eine auswertungsseite
@@ -7477,7 +7506,8 @@ den Rest jener Durchsicht abgeräumt: Entzüge gehen in einem Aufruf hinaus stat
 einzeln, „Plan senden" liest nur noch seine Woche statt beider Tabellen ganz,
 die Glocke lädt in zwei Stufen, und der Ort eines Treffpunkts steht auf beiden
 Seiten im Termin. Eine Aufbewahrungsfrist für das Versand-Tagebuch hat der
-Betreiber dabei ausdrücklich verworfen. Davor fielen die beiden
+Betreiber dabei ausdrücklich verworfen (seit T125 am 16. Oktober: ein Jahr mit
+seiner Woche). Davor fielen die beiden
 letzten: **T72** (Abwesenheiten als Zeitstrahl) hat der Betrieb beantwortet,
 nachdem der NWS-Import sie überhaupt erst in die App gebracht hatte, und
 **T89** ist am 23. August mit der Richtlinie `task_gehoert_mir` nicht nur
@@ -7599,7 +7629,7 @@ Betreiber oder ein Gerät.
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **T124** | Rechte zum Testen umschalten | aufgenommen am 16. Oktober, noch nicht begonnen; befristet — nach den Tests wieder ausbauen |
-| **T125** | Aufbewahrung scharf schalten | Laden, Importe und Aufräum-Funktion sind im Repo; offen: Schema einspielen, Probelauf ohne Löschen ansehen, Zeitplan anlegen — erst auf ein Wort des Betreibers |
+| **T125** | Aufbewahrung scharf schalten | Laden, Importe und Aufräum-Funktion sind in Betrieb, das Schema samt Probelauf seit 16. Oktober abends; offen: Zeitplan anlegen (`cron-aufraeumen.sql`) — erst auf ein Wort des Betreibers |
 | **T126** | Auswertung der Zuteilungen mit Diagrammen | aufgenommen am 16. Oktober, noch nicht begonnen; Grundlage ist das Jahr aus T125 |
 | **Zurückgestellt** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт". Betreiber am 16. Oktober: „bleibt erst mal so" — wieder aufnehmen, wenn ein Muttersprachler prüft; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |

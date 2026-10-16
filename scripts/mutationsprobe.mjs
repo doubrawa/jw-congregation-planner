@@ -7150,6 +7150,20 @@ export const KATALOG = [
     ersetzen: "grant execute on function public.alte_daten_loeschen(boolean) to authenticated;\n",
   },
   {
+    id: "aufraeumen-anmelde-protokoll",
+    datei: "supabase/schema.sql",
+    regel: "Auch das Anmelde-Protokoll von Supabase (E-Mail und IP-Adresse je Anmeldung) geht nach acht Wochen (T125).",
+    suchen: "        ('auth.audit_log_entries', 'created_at < $1', acht_wochen)\n",
+    ersetzen: "",
+  },
+  {
+    id: "aufraeumen-name-mit-schema",
+    datei: "supabase/schema.sql",
+    regel: "Der Aufräumlauf nimmt den Tabellennamen samt Schema — ein vorgesetztes public. bräche an auth.audit_log_entries ab (T125).",
+    suchen: "        execute format('delete from %s where %s', regel.name::regclass, regel.bedingung) using regel.grenze;\n",
+    ersetzen: "        execute format('delete from public.%I where %s', regel.name, regel.bedingung) using regel.grenze;\n",
+  },
+  {
     id: "datumswaehler-in-marke",
     datei: "src/components/DatePicker.tsx",
     regel: "Ein Klick in den offenen Kalender (Monatstitel, Wochentage, Fugen) klappt ihn nicht zu, auch wenn er in einer Marke steht.",

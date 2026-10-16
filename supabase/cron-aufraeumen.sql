@@ -3,7 +3,8 @@
 -- =============================================================================
 -- Die Fristen stehen in `public.alte_daten_loeschen` (supabase/schema.sql):
 -- ein Jahr für die Wochen und was zu ihnen gehört, acht Wochen für alles
--- andere, ein Tag für die Fehlversuche beim Anmelden.
+-- andere samt dem Protokoll von Supabase Auth, ein Tag für die Fehlversuche
+-- beim Anmelden.
 --
 -- Voraussetzung: Extension pg_cron (wie für die Erinnerungen) und das Schema
 -- mit der Funktion. Ein Secret braucht es nicht — der Lauf bleibt in der
