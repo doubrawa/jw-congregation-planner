@@ -333,6 +333,16 @@ describe('Ohne Datenbank: Anmeldung nachgestellt', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'login', welcome: true })
   })
 
+  it('der Kontakt für eine neue Versammlung öffnet auch hier eine Mail (T113)', () => {
+    // Wer die Seite ohne Datenbank ansieht, ist genau der, der fragen würde.
+    // Seit Phase 8 laufen die übrigen Fälle mit Datenbank — der Kontakt war
+    // hier bis zum 16.10.2026 nur noch an ihr geprüft.
+    const a = zeige().container.querySelector<HTMLAnchorElement>('.login-kontakt a')!
+    const url = new URL(a.getAttribute('href')!)
+    expect(url.protocol).toBe('mailto:')
+    expect(url.pathname).toBe(KONTAKT_MAIL)
+  })
+
   it('mit Supabase steht dort dagegen der Hinweis auf die Mitgliedschaft', () => {
     konfiguriert.wert = true
     expect(zeige().container.querySelector('.login-note')?.textContent).toBe(t.nurMitglieder)
