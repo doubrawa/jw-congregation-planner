@@ -297,3 +297,56 @@ wie das deutsche „Partner"; eine neutrale Fassung wäre deutlich länger.
 „Weitere Pläne" heißen „Altri programmi" — in `rechtPlanenUnter` steht deshalb
 „Scarica il programma, prepara i programmi"; stimmig, aber doppelt („piani"
 ginge für alle vier Schlüssel).
+
+### pl · Polnisch
+
+16. Oktober 2026 · alle 745 gelesen (dazu die zwei neuen) · Anrede: ty,
+Gruppen „wy" · 26 Korrekturen im Wörterbuch (eine davon, `nameLbl`, mit der
+Trennung der Schlüssel oben), 3 in FRAG.
+
+| Schlüssel | alt | neu | Grund |
+| --- | --- | --- | --- |
+| `nameLbl` | Imię i nazwisko | Nazwa | benennt Versammlung, Gruppe, Trolley, Plan, Termin, Hilfsdienst — die Person hat jetzt `personNameLbl` „Imię i nazwisko“ |
+| `linkMailText` | … i wpisz ten kod: … | … i wprowadź ten kod: … | „stuknij „Wpisz kod” i wpisz ten kod“ — dasselbe Verb zweimal |
+| `anmeldungOhneDb` | Bez bazy danych · logowanie jest tylko udawane | Bez bazy danych · logowanie jest tylko symulowane | „udawane“ heißt „vorgetäuscht“; gemeint ist nachgestellt |
+| `fsShort` | Służba | Zbiórki do służby | „Treffpunkte“ hieß wie das Thema (tabFs „Służba“) — auf dem Treffpunkt-Bogen stand es doppelt; jw.org: „zbiórki“ (Wachtturm Juni 2026), sonst im Wörterbuch „zbiórki do służby“ |
+| `toastFsRuleAdd` | Dodano do planu | Dodano do planu stałego | Der Grundplan heißt „Plan stały“ (fsGrundplan) |
+| `toastFsRuleDel` | Usunięto z planu | Usunięto z planu stałego | wie toastFsRuleAdd |
+| `vpVorgemerkt` | Ten tydzień nie jest jeszcze wczytany. Wykład zostanie wpisany, gdy tylko jego program zostanie zaimportowany. | Ten tydzień nie jest jeszcze utworzony. Wykład zostanie wpisany, gdy tylko jego program zostanie pobrany. | Deutsch: „angelegt“ und „geholt“ — der Knopf heißt „Pobierz“ (holen) |
+| `toastNameLeer` | Nie zmieniono imienia i nazwiska: bez nich się nie da | Nie zmieniono: to pole nie może być puste | Gilt auch für Gruppe und Trolley — „imię i nazwisko“ (Vor- und Nachname) passte dort nicht |
+| `toastNameNichtGeaendert` | Nie zmieniono imienia i nazwiska: {name} już istnieje | Nie zmieniono: {name} już istnieje | wie toastNameLeer |
+| `linkAbgelaufenHint` | … Nowy znów jest ważny przez 30 dni. … | … Nowy będzie ważny przez 30 dni. … | „Nowy znów“ doppelt (wie fr/it) |
+| `suchen` | Szukaj … | Szukaj… | Kein Leerzeichen vor den Auslassungspunkten (wie „Wysyłanie…“) |
+| `langSearchPh` | Szukaj języka … | Szukaj języka… | wie suchen |
+| `holtProgramm` | Pobieranie programu … | Pobieranie programu… | wie suchen |
+| `laedt` | Ładowanie … | Ładowanie… | wie suchen |
+| `zuletztLange` | dawno nie | od dawna bez zadania | „dawno nie“ bricht mitten im Satz ab |
+| `toastKeinePassende` | … na otwarte miejsca … | … na wolne miejsca … | Offene Plätze heißen sonst „wolne“ (offenWort, lageOffen, toastKeineOffen) |
+| `toastNameEingeben` | Wpisz imię | Wpisz imię i nazwisko | Gefragt ist der ganze Name (Gastredner, Freitext-Leiter), nicht der Vorname |
+| `auxRatgeber` | Prowadzący | Doradca | Der Ratgeber heißt in der S-38 „doradca“; „Prowadzący“ ist der Leiter |
+| `auxRatgeberHint` | W każdej dodatkowej grupie rad powinien udzielać wykwalifikowany starszy zboru. | W każdej dodatkowej grupie rad powinien udzielać wykwalifikowany starszy zboru, a jeśli nie jest to możliwe — wykwalifikowany sługa pomocniczy. | „vorzugsweise ein Ältester“ fehlte — der Satz verlangte einen Ältesten; jetzt wie S-38, Abs. 27 |
+| `privSchulung` | Zadania ucznia | Zadania uczestników | Die S-38 nennt den Schüler „uczestnik“; auxKurz sagt schon „Do zadań uczestników“ |
+| `freiePlaetzeHint` | … Kto pierwszy się podejmie, zostaje zapisany i tym samym potwierdził. … | … Pierwsza osoba, która się tego podejmie, zostaje zapisana i tym samym potwierdza udział. … | Genus: freie Plätze übernehmen auch Schwestern — „zapisany … potwierdził“ war männlich |
+| `rednerNamePh` | Imię mówcy | Imię i nazwisko mówcy | Ein Gastredner wird mit vollem Namen eingetragen, nicht nur dem Vornamen |
+| `toastUebernommen` | Dziękujemy! To zadanie pomocnicze jest teraz Twoje | Dziękujemy! To zadanie pomocnicze jest teraz twoje | Sonst überall klein („twoje miejsce“; groß nur am Satzanfang) |
+| `konfliktDouble` | {name}: przydziały na jednym zebraniu: {n} · {tab} | {name} — przydziały na jednym zebraniu: {n} · {tab} | Zwei Doppelpunkte in einem Satz |
+| `nameDoppelt` | … aby dało się je rozróżnić. … | … aby dało się rozróżnić te osoby. … | „je“ bezog sich nicht klar auf die beiden Personen |
+| `ohneGruppeHint` | … w sekcji Służba zbiórek grup … | … w sekcji „Służba” zbiórek grup … | Zitierter Menüpunkt (tabFs) in Anführungszeichen wie im Deutschen |
+| FRAG `Treffpunkte` | Służba | Zbiórki do służby | wie `fsShort` |
+| FRAG `Ratgeber` | Prowadzący | Doradca | wie `auxRatgeber` |
+| FRAG `Schüler` | Uczeń | Uczestnik | wie `privSchulung` (S-38) |
+
+Daten gelesen: FRAG (Teil-Titel gemessen: „Co byś powiedział?" steht so in
+mwb26/mwb27 und der S-38 — männlich, aber der Titel des Hefts), REF, EXTRA
+(Intl-Pfad), Bibelbücher („Pieśń" für das Hohelied führt die
+WOL-Bücherliste genau so), Function-Titel. Fachwörter nachgesehen: „grupa
+służby (kaznodziejskiej)", „nadzorca grupy", „asystent" (Wachtturm Juni
+2026), „Dodatkowe grupy", „doradca", „pomocnik", „uczestnik", „Życie i
+służba" und „zebranie chrześcijańskiego życia i służby" (S-38). Die Anrede
+im Brief bleibt klein: nach dem Komma der Anrede schreibt das Polnische klein
+weiter (Poradnia PWN), anders als Englisch, Spanisch, Französisch.
+
+Offen, nicht geändert: Die Regel `zut` („3 Zuteilungen") schreibt „3 zadań"
+— richtig wäre „3 zadania" (2–4); ebenso im Russischen und Ukrainischen. Sie
+erzeugt kein Erzeuger mehr (siehe oben), deshalb nur vermerkt.
+„współpracownik" (Trolley-Partner) ist männlich wie das deutsche „Partner".

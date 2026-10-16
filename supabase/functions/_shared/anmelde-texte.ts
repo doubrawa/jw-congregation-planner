@@ -41,7 +41,7 @@ const TEXTE: Record<string, LinkMailTexte> = {
   },
   pl: {
     betreff: "Twój dostęp do zboru {versammlung}",
-    text: "Cześć {name},\n\nzbór {versammlung} planuje zebrania i służbę za pomocą Versammlung.app. Twój dostęp jest gotowy.\n\nZaloguj się teraz:\n{url}\n\nMasz aplikację na ekranie początkowym? Otwórz ją tam, stuknij „Wpisz kod” i wpisz ten kod:\n{code}\n\nLink i kod są ważne do {datum} i logują tylko ciebie. Hasło nie jest potrzebne. Jeśli wygasły, otwórz aplikację i stuknij „Wyślij link”.\n\nOtrzymujesz tego e-maila, ponieważ należysz do zboru {versammlung}. Jeśli masz pytania, porozmawiaj ze starszymi.",
+    text: "Cześć {name},\n\nzbór {versammlung} planuje zebrania i służbę za pomocą Versammlung.app. Twój dostęp jest gotowy.\n\nZaloguj się teraz:\n{url}\n\nMasz aplikację na ekranie początkowym? Otwórz ją tam, stuknij „Wpisz kod” i wprowadź ten kod:\n{code}\n\nLink i kod są ważne do {datum} i logują tylko ciebie. Hasło nie jest potrzebne. Jeśli wygasły, otwórz aplikację i stuknij „Wyślij link”.\n\nOtrzymujesz tego e-maila, ponieważ należysz do zboru {versammlung}. Jeśli masz pytania, porozmawiaj ze starszymi.",
   },
   ru: {
     betreff: "Ваш доступ к собранию {versammlung}",

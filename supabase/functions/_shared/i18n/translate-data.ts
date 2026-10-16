@@ -219,8 +219,8 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "senza incarichi", "Brot": "Pane", "Wein": "Vino", "nach Sonnenuntergang": "dopo il tramonto", "Montag": "Lunedì"
   },
   pl: {
-    "Schüler": "Uczeń", "Partner": "Pomocnik", "Ratgeber": "Prowadzący",
-    "Treffpunkte": "Służba",
+    "Schüler": "Uczestnik", "Partner": "Pomocnik", "Ratgeber": "Doradca",
+    "Treffpunkte": "Zbiórki do służby",
     'ERÖFFNUNG': 'ROZPOCZĘCIE', 'ABSCHLUSS': 'ZAKOŃCZENIE',
     'SCHÄTZE AUS GOTTES WORT': 'SKARBY ZE SŁOWA BOŻEGO',
     'UNS IM DIENST VERBESSERN': 'ULEPSZAJMY SWOJĄ SŁUŻBĘ', 'UNSER LEBEN ALS CHRIST': 'CHRZEŚCIJAŃSKI TRYB ŻYCIA',
