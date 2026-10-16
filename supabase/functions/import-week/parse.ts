@@ -226,6 +226,8 @@ interface Token {
   tag: string // h1|h2|h3|p
   color: Color
   music: boolean
+  /** Die Zeile **beginnt** mit einem Link ins Liederbuch — eine Lied-Zeile als Absatz (`LIED_VORN`). */
+  liedVorn: boolean
   text: string
 }
 
@@ -244,8 +246,26 @@ interface Token {
  */
 const MUSIK = /dc-icon--music|pub-sjj/
 
+/**
+ * **Die Lied-Zeile als Absatz** — die Form ab dem Arbeitsheft Januar/Februar
+ * 2027: Eröffnung, Zwischenlied und Schlusslied stehen nicht mehr als `h3`
+ * mit Noten-Symbol da, sondern als `p`, das mit dem Link ins Liederbuch
+ * **beginnt** („Lied 39 und Gebet | Einleitende Worte (1 Min.)"). Gemessen
+ * am 16.10.2026 in 13 Sprachen, überall gleich.
+ *
+ * Am Anfang, nicht irgendwo: Eine Zeitzeile, die ein Lied nur nennt, bliebe
+ * sonst nicht die Zeitzeile ihres Punkts. Die Anführungszeichen wechseln
+ * schon innerhalb einer Ausgabe (`class="pub-sjj"`, `class='pub-sjj'`).
+ */
+const LIED_VORN = /^\s*<a\b[^>]*\bpub-sjj\b/i
+
+/**
+ * Die Farbe aus dem Klassen-Attribut — in beiden Anführungszeichen: Seit
+ * Januar 2027 schreibt jw.org Attribute teils einfach angeführt, die Links
+ * schon jetzt. Träfe es die Überschriften, fehlten ohne das alle Abschnitte.
+ */
 function colorOf(attrs: string): Color {
-  const cls = (attrs.match(/class="([^"]*)"/) || [])[1] || ''
+  const cls = (attrs.match(/class=(["'])(.*?)\1/) || [])[2] || ''
   if (cls.includes('teal')) return 'teal'
   if (cls.includes('gold')) return 'gold'
   if (cls.includes('maroon') || cls.includes('red')) return 'maroon'
@@ -269,6 +289,7 @@ function tokenize(html: string): Token[] {
       tag: tag === 'li' ? 'p' : tag,
       color: colorOf(attrs),
       music: MUSIK.test(attrs) || MUSIK.test(inner),
+      liedVorn: LIED_VORN.test(inner),
       text,
     })
   }
@@ -453,11 +474,25 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
   const recs: PartRec[] = []
   let curColor: SecColor | null = null
   let curRec: PartRec | null = null
+  /**
+   * Der Kopf der Schlusszeile, solange sein Lied noch aussteht — die Form ab
+   * Januar 2027: „Schlussworte (3 Min.)" als eigene Überschrift, „Lied 98 und
+   * Gebet" als Absatz darunter. Bis dahin stand beides in **einer** `h3`.
+   */
+  let schlussKopf: string | null = null
 
   /** Eröffnungs-/Abschluss-Zeile (Noten-Icon + „|“) in Titel + Zeit zerlegen. */
   const pipe = (text: string): [string, string] => {
     const i = text.indexOf('|')
     return i >= 0 ? [text.slice(0, i).trim(), text.slice(i + 1).trim()] : [text.trim(), '']
+  }
+
+  /** Die Schlusszeile — Schlussworte, Lied und Gebet — mit dem Platz für das Schlussgebet. */
+  const abschlussAus = (text: string): ImportedPart => {
+    const [a, b] = pipe(text)
+    const zeit = firstParen(text)
+    const title = b ? `${stripParens(a)} · ${stripParens(b)}` : stripParens(a)
+    return { iid: neueItemId(), title, meta: joinMeta(zeit), mins: ersteZahl(zeit), names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }
   }
 
   for (const tok of tokens) {
@@ -475,14 +510,22 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
       curColor = tok.color
       sections[tok.color].label = tok.text
       curRec = null
+      // Nach einer farblosen Überschrift mit Zeit kam noch ein Abschnitt: Sie
+      // war nicht die Schlusszeile, und das Zwischenlied gehört nicht zu ihr.
+      schlussKopf = null
       continue
     }
-    // Lied / Eröffnung / Abschluss (Noten-Icon)
-    if (tok.tag === 'h3' && tok.music) {
-      const hasPipe = tok.text.includes('|')
-      const hasTime = TIME_ANY.test(tok.text)
-      const [a, b] = pipe(tok.text)
-      const zeit = firstParen(tok.text)
+    // Lied / Eröffnung / Abschluss — als `h3` mit Noten-Icon oder, ab 2027,
+    // als Absatz, der mit dem Link ins Liederbuch beginnt (`LIED_VORN`).
+    if ((tok.tag === 'h3' && tok.music) || (tok.tag === 'p' && tok.liedVorn)) {
+      // Steht der Kopf der Schlusszeile darüber, gehört das Lied zu ihm:
+      // zusammengesetzt ist es die Zeile, wie sie bis 2026 in einer `h3` stand.
+      const text = schlussKopf === null ? tok.text : `${schlussKopf} | ${tok.text}`
+      schlussKopf = null
+      const hasPipe = text.includes('|')
+      const hasTime = TIME_ANY.test(text)
+      const [a, b] = pipe(text)
+      const zeit = firstParen(text)
       if (curColor === null) {
         // vor der ersten Sektion → Eröffnung (Vorsitz + Anfangsgebet)
         const title = b ? `${stripParens(a)} · ${stripParens(b)}` : stripParens(a)
@@ -498,12 +541,19 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
         }
       } else if (hasPipe || hasTime) {
         // nach den Sektionen mit „|“/Zeit → Abschluss (Schlussgebet)
-        const title = b ? `${stripParens(a)} · ${stripParens(b)}` : stripParens(a)
-        closing = { iid: neueItemId(), title, meta: joinMeta(zeit), mins: ersteZahl(zeit), names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }
+        closing = abschlussAus(text)
       } else {
         // schlichtes Lied innerhalb einer Sektion
-        sections[curColor].items.push({ song: tok.text })
+        sections[curColor].items.push({ song: text })
       }
+      curRec = null
+      continue
+    }
+    // Der Kopf der Schlusszeile für sich (ab 2027): farblos, nach den
+    // Abschnitten, mit Zeit. Sein Lied folgt als Absatz — gemessen in den
+    // Ausgaben ab Januar 2027 die einzige farblose `h3` mit Zeit.
+    if (tok.tag === 'h3' && tok.color === 'none' && curColor !== null && TIME_ANY.test(tok.text)) {
+      schlussKopf = tok.text
       curRec = null
       continue
     }
@@ -523,6 +573,9 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
       curRec.time = tok.text
     }
   }
+  // Ein Kopf ohne Lied darunter ist trotzdem die Schlusszeile — in der Sprache
+  // der Seite, statt der deutschen Rückfall-Zeile.
+  if (!closing && schlussKopf !== null) closing = abschlussAus(schlussKopf)
 
   finalizeParts(recs)
 

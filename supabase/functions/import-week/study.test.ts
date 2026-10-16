@@ -86,6 +86,13 @@ describe('songs', () => {
     expect(out[0]).toBe('LIED 12 Erstes Beispiellied')
     expect(out[out.length - 1]).toBe('LIED 34 Zweites Beispiellied')
   })
+
+  it('auch einfach angeführte Liederbuch-Links (16.10.2026)', () => {
+    // Das Arbeitsheft schreibt sie ab Januar 2027 teils so. Kämen die
+    // Studienartikel nach, fehlten sonst still beide Lieder am Wochenende.
+    const einfach = FIXTURE_ARTICLE.replace(/class="pub-sjj"/g, "class='pub-sjj'")
+    expect(songs(einfach)).toEqual(['LIED 12 Erstes Beispiellied', 'LIED 34 Zweites Beispiellied'])
+  })
 })
 
 describe('cleanText (CJK/Ruby)', () => {

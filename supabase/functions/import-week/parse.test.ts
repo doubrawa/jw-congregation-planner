@@ -314,6 +314,102 @@ describe('parseWorkbookWeek (sprachunabhängig, erfundene Sprache)', () => {
 })
 
 /*
+ * **Die Form ab dem Arbeitsheft Januar/Februar 2027** — gemessen am 16.10.2026
+ * an allen acht Wochen der Ausgabe und an einer davon in 14 Sprachen, überall
+ * gleich: Eröffnung, Zwischenlied und Schlusslied stehen als Absatz, der mit
+ * dem Link ins Liederbuch beginnt, nicht mehr als `h3` mit Noten-Symbol; die
+ * Schlussworte haben eine eigene Überschrift, ihr Lied steht darunter. Die
+ * Links sind teils einfach angeführt (`class='pub-sjj'`).
+ *
+ * Der Parser fand darin kein einziges Lied: Eröffnung und Abschluss kamen als
+ * deutsche Rückfall-Zeile ohne Nummer — in jeder Sprache —, das Zwischenlied
+ * fehlte. Struktur wie die echte Seite, der Text ist Platzhalter.
+ */
+const FIXTURE_2027 = `
+<article>
+  <h1 data-pid="1" class="du-color--textSubdued">6.-12. Juli</h1>
+  <h2 data-pid="2" class="du-fontSize--base">MUSTERBUCH 13-15</h2>
+  <p data-pid="3" class="p3"><a class="pub-sjj" data-page-id="mid1" href="/de/x/lied-123/"><strong>Lied 123</strong></a> <strong>und Gebet | Einleitende Worte</strong> (1 Min.)</p>
+
+  <h2 data-pid="4" class="du-color--teal-700">SCHÄTZE AUS GOTTES WORT</h2>
+  <h3 data-pid="5" class="du-color--teal-700">1. Erster Vortrag</h3>
+  <p data-pid="6">(10 Min.)</p>
+
+  <h2 data-pid="25" class="du-color--maroon-600">UNSER LEBEN ALS CHRIST</h2>
+  <p data-pid="26" class="p26"><a class='pub-sjj' data-page-id="mid2" href='/de/x/lied-49/'><strong>Lied 49</strong></a></p>
+  <h3 data-pid="27" class="du-color--maroon-600">7. Örtliche Besprechung</h3>
+  <p data-pid="28">(15 Min.) Besprechung. Dazu passt <a class="pub-sjj" href="/de/x/lied-5/">Lied 5</a>.</p>
+  <h3 data-pid="45" class="du-color--maroon-600">8. Versammlungsbibelstudium</h3>
+  <p data-pid="46">(30 Min.) lfb Geschichte 100-101</p>
+  <h3 data-pid="47" class="du-fontSize--base du-margin-top--8">Schlussworte <span class="du-fontWeight--normal">(3 Min.)</span></h3>
+  <p data-pid="48" class="p48"><a class="pub-sjj" data-page-id="mid3" href="/de/x/lied-61/"><strong>Lied 61</strong></a> <strong>und Gebet</strong></p>
+</article>`
+
+describe('parseWorkbookWeek — die Form ab 2027 (Lieder als Absatz)', () => {
+  const wk = parseWorkbookWeek(FIXTURE_2027)
+  const byLabel = (label: string) => wk.mid.sections.find((s) => s.label === label)!
+  const lieder = (label: string) => byLabel(label).items.filter((i): i is ImportedSong => 'song' in i).map((i) => i.song)
+
+  it('die Eröffnung mit ihrem Lied — wie in der alten Form', () => {
+    const open = byLabel('ERÖFFNUNG').items[0] as ImportedPart
+    expect(open.title).toBe('Lied 123 und Gebet · Einleitende Worte')
+    expect(open.meta).toBe('1 Min.')
+    expect(open.names.map((n) => n.bereichsKey)).toEqual(['vorsitzMid', 'gebet'])
+  })
+
+  it('das Zwischenlied — auch mit einfach angeführtem Link', () => {
+    expect(lieder('UNSER LEBEN ALS CHRIST')).toEqual(['Lied 49'])
+  })
+
+  it('ein Lied mitten in einer Zeitzeile bleibt Teil der Zeile — kein Lied, kein Abschluss', () => {
+    const besprechung = byLabel('UNSER LEBEN ALS CHRIST').items.find(
+      (i): i is ImportedPart => 'names' in i && i.title === 'Örtliche Besprechung',
+    )!
+    expect(besprechung.meta).toBe('Besprechung · 15 Min.')
+    expect(besprechung.mins).toBe(15)
+  })
+
+  it('die Schlussworte mit dem Lied darunter — eine Zeile, wie bis 2026', () => {
+    const close = byLabel('ABSCHLUSS').items[0] as ImportedPart
+    expect(close.title).toBe('Schlussworte · Lied 61 und Gebet')
+    expect(close.meta).toBe('3 Min.')
+    expect(close.mins).toBe(3)
+    expect(close.names).toEqual([{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }])
+  })
+
+  it('Schlussworte ohne Lied darunter: die Zeile der Seite, nicht die deutsche Rückfall-Zeile', () => {
+    const ohneLied = FIXTURE_2027.replace(/\s*<p data-pid="48"[\s\S]*?<\/p>/, '')
+      .replace('Schlussworte <span', 'Finvorbo <span')
+      .replace('(3 Min.)', '(3 vim)')
+    const close = parseWorkbookWeek(ohneLied).mid.sections.at(-1)!.items[0] as ImportedPart
+    expect(close.title).toBe('Finvorbo')
+    expect(close.meta).toBe('3 vim')
+  })
+
+  it('eine farblose Überschrift mit Zeit vor einem weiteren Abschnitt nimmt nicht dessen Zwischenlied', () => {
+    // Gemessen ist die Schlusszeile die einzige solche Überschrift. Stünde doch
+    // eine weiter oben, darf das Zwischenlied nicht zu ihrer „Schlusszeile" werden.
+    const mitHinweis = FIXTURE_2027.replace(
+      '<h2 data-pid="25"',
+      '<h3 data-pid="20" class="du-fontSize--base">Hinweis (1 Min.)</h3>\n  <h2 data-pid="25"',
+    )
+    const w = parseWorkbookWeek(mitHinweis)
+    expect(w.mid.sections.find((s) => s.label === 'UNSER LEBEN ALS CHRIST')!.items.filter((i) => 'song' in i)).toEqual([
+      { song: 'Lied 49' },
+    ])
+    expect((w.mid.sections.at(-1)!.items[0] as ImportedPart).title).toBe('Schlussworte · Lied 61 und Gebet')
+  })
+
+  it('Überschriften mit einfach angeführter Klasse: die Abschnitte bleiben erkannt', () => {
+    // Die Links schreibt jw.org schon teils einfach angeführt; kämen die
+    // Überschriften nach, fehlten ohne das alle Abschnitte.
+    const einfach = FIXTURE_2027.replace(/class="(du-color--[a-z]+-\d+)"/g, "class='$1'")
+    expect(parseWorkbookWeek(einfach).mid.sections.map((s) => s.farbe)).toEqual(['neutral', 'petrol', 'gold', 'wein', 'neutral'])
+    expect(parseWorkbookWeek(einfach).mid.sections[1]!.items).toHaveLength(1)
+  })
+})
+
+/*
  * Bausteine einer Wochenseite in der **Form** der echten (gemessen am
  * 26.9.2026): der Programmteil „Uns im Dienst verbessern", eingebettet in die
  * übrigen Abschnitte. Der Text ist Platzhalter; echt sind nur die Wörter, an

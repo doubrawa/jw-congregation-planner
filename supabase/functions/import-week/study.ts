@@ -81,11 +81,15 @@ export function articleTitle(html: string): string | null {
  * Zielsprache.
  */
 export function songs(html: string): string[] {
-  const re = /<a\b[^>]*class="[^"]*\bpub-sjj\b[^"]*"[^>]*>([\s\S]*?)<\/a>\s*([^<]*)/g
+  // In beiden Anführungszeichen: Das Arbeitsheft schreibt die Liederbuch-Links
+  // ab Januar 2027 teils `class='pub-sjj'` (gemessen am 16.10.2026). Die
+  // Studienausgaben bis dahin noch nicht — kämen sie nach, fehlten sonst still
+  // beide Lieder am Wochenende.
+  const re = /<a\b[^>]*class=(["'])[^"']*\bpub-sjj\b[^"']*\1[^>]*>([\s\S]*?)<\/a>\s*([^<]*)/g
   const out: string[] = []
   let m: RegExpExecArray | null
   while ((m = re.exec(html))) {
-    const s = cleanText(`${m[1]} ${m[2]}`)
+    const s = cleanText(`${m[2]} ${m[3]}`)
     if (s) out.push(s)
   }
   return out
