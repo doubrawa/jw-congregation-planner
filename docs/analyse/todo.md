@@ -6941,6 +6941,58 @@ leert `vortraege`).
 
 ---
 
+## Aufgenommen am 16. Oktober 2026 — Übersetzungen (T123)
+
+### T123 · Jede Übersetzung prüfen — im Wörterbuch und in der Oberfläche 🏗 ☐ offen
+
+**Wortlaut:** *„nimm in die todo liste auf, dass du jede einzelne übersetzung
+prüfst. und auch in der oberfläche prüfst ob auch jeder einzelne text übersetzt
+wird, der übersetzt werden sollte."*
+
+Damit ist B4 (unten, am 23. August gestrichen) wieder da — diesmal prüft Claude,
+nicht der Betreiber. Bisher galt nur: jeden **neuen** Schlüssel in allen
+Sprachen lesen. Der Bestand davor ist nie als Ganzes gelesen worden.
+
+**1. Jede einzelne Übersetzung prüfen.** 745 Schlüssel aus `src/i18n/de.ts` in
+den elf Overlays (`en es fr it pl ru uk ro tr ar fa`), also gut 8 000 Texte,
+dazu, was nicht im Wörterbuch steht: die Texte der Functions
+(`send-reminders/texte.ts`, `substitute/texte.ts`, die Anmelde-Mail, „Plan
+senden"), die Begriffe aus den jw.org-Daten (`translate-data.ts`), Bibelbücher
+und Sprachnamen. Je Text:
+
+- sagt er dasselbe wie der deutsche — nicht nur ungefähr;
+- Fachwörter wie auf jw.org in dieser Sprache (Versammlung, Vorsitz, Zuteilung,
+  Dienstamtgehilfe …), und dasselbe Ding überall mit demselben Wort;
+- Anrede durchgehend gleich (du/Sie je Sprache), Genus und Zahl stimmen;
+- zitierte Knöpfe heißen so, wie der Knopf in dieser Sprache wirklich heißt;
+- Platzhalter (`{n}`, `{name}`) vollständig, Zahlen über `Intl`;
+- Satzzeichen der Sprache (Französisch: geschütztes Leerzeichen vor `:` `?`
+  `!`), in Arabisch und Persisch keine verdrehte Leserichtung;
+- gleich wie Deutsch nur, wo es gewollt ist (Eigennamen, „jw.org").
+
+Ergebnis je Sprache: eine Liste der Korrekturen, eingespielt mit Begründung.
+
+**2. In der Oberfläche prüfen, ob jeder Text übersetzt wird, der übersetzt
+werden sollte.** Jeden Bildschirm, jedes Blatt, jeden Dialog, jeden Toast, die
+Druckbögen und die Mitteilungen in jeder App-Sprache auf `/demo.html` (`l=…`)
+durchgehen und alles sammeln, was sichtbar oder vorgelesen wird — Text,
+`aria-label`, `title`, Platzhalter. Gesucht ist Deutsch, das durchrutscht: fest
+eingebaute Sätze, Meldungen des Servers, Datenwerte (Abschnitte, Rollen,
+Dienste, Rückfall-Zeilen des Imports), Seitentitel und Manifest. Was
+unübersetzt bleiben soll, bleibt es: Namen, Liedtitel und Stellenangaben, wie
+jw.org sie liefert.
+
+**Wie prüfen:** Werkzeug zuerst — je Sprache die sichtbaren Texte aller
+Zustände aus dem Handbuch-Manifest und der Blätter einsammeln und gegen die
+deutschen Werte des Wörterbuchs stellen (Treffer = Verdacht); danach von Hand
+lesen. Vorhandene Wachen erweitern (`oberflaeche-fremdsprache.test.tsx`,
+`beschriftungen-quelle.test.ts`, `rollen-uebersetzt.test.ts`), jeder Fund wird
+eine.
+
+**Abnahme:** jede Sprache einmal vollständig gelesen, mit Liste; in jeder
+Sprache ein Durchgang durch die Oberfläche ohne ungeklärtes Deutsch; jeder
+Fund mit Wache.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -6957,7 +7009,9 @@ leert `vortraege`).
   kann ich nicht verifizieren." Der Abgleich beträfe ohnehin nur das
   UI-Wörterbuch; die Programm-Inhalte kommen amtlich aus dem jw.org-Import. Und
   der Präzedenzfall T33 zeigt den Aufwand: 34 Sprachfassungen für ein einziges
-  Wort, Ergebnis „gibt es nicht einheitlich".
+  Wort, Ergebnis „gibt es nicht einheitlich". **Am 16. Oktober 2026 als T123
+  wieder aufgenommen** — prüfen soll jetzt Claude, im Wörterbuch und in der
+  Oberfläche.
 - **B6 Design-Soll-Ist** — „wir sind schon weit weg vom Prototyp und brauchen da
   nichts mehr vergleichen." Der Handoff bleibt die Referenz für Tokens und
   Bauteile, nicht mehr für den Bildvergleich.
@@ -6966,7 +7020,7 @@ leert `vortraege`).
 
 ## Fortschritt
 
-Stand 13. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 16. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -6975,13 +7029,14 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 22./23. August ☑☑☑☑☑☑☑☑☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
-10. Oktober ☐ · 12. Oktober ☑
+10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☐
 
-**121 der 122 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen ist eine:**
+**121 der 123 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind zwei:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
+| **T123** | Jede Übersetzung prüfen | ☐ aufgenommen am 16. Oktober: alle 745 Schlüssel in den elf Sprachen lesen, dazu die Texte der Functions und der jw.org-Daten; in jeder Sprache durch die Oberfläche, ob Deutsch durchrutscht |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
