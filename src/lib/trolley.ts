@@ -18,6 +18,7 @@ import { wasBleibt } from '../../supabase/functions/_shared/trolley.ts'
 import type { TrolleyHindernis } from '../data/trolleys'
 import type { TrolleyTermin } from '../data/types'
 import { trolleyTerminFromRow, type TrolleyTerminRow } from './data'
+import { fehlerAntwort } from './function-antwort'
 import { supabase } from './supabase'
 
 /**
@@ -43,16 +44,14 @@ const BEKANNT: ReadonlySet<string> = new Set<TrolleyFehler>([
 ])
 
 /**
- * Ein Aufruf der Function. Bei einem Status ≠ 2xx legt `functions.invoke` die
- * Antwort hinter `error.context` (wie beim Import, `lib/import.ts`); ein
- * unbekannter Grund gilt als veralteter Stand — die App lädt dann nach.
+ * Ein Aufruf der Function. Den Grund einer Abweisung liest `fehlerAntwort`;
+ * ein unbekannter gilt als veralteter Stand — die App lädt dann nach.
  */
 async function aufrufen(body: object): Promise<{ ok: true; termin?: TrolleyTerminRow | null } | { ok: false; fehler: TrolleyFehler }> {
   if (!supabase) return { ok: true }
   const { data, error } = await supabase.functions.invoke('trolley', { body })
   if (!error) return { ok: true, termin: (data as { termin?: TrolleyTerminRow | null } | null)?.termin }
-  const antwort = (error as { context?: { json?: () => Promise<unknown> } }).context
-  const grund = ((await antwort?.json?.().catch(() => null)) as { error?: string } | null)?.error
+  const grund = (await fehlerAntwort(error))?.error
   if (!grund) {
     console.error('[trolley]', error.message)
     return { ok: false, fehler: 'netz' }

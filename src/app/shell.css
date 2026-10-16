@@ -16,9 +16,9 @@
   color: var(--text);
 }
 
+/* Der Abstand unten steht bei den sicheren Rändern (unten in dieser Datei). */
 .app-content {
   flex: 1;
-  padding-bottom: 40px;
 }
 
 /* Offline-Stand (staleAt): getönter Hinweisstreifen über dem Inhalt. */

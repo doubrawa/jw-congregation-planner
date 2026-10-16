@@ -14,6 +14,7 @@ import {
   isSong,
   linkFamily,
   listName,
+  neuWennGeaendert,
   partnerGenderOk,
   personCompare,
   personLabel,
@@ -484,5 +485,31 @@ describe('Auslastung zählt je Person, nicht je Name', () => {
     const dienste = [{ key: 'ton', name: 'Ton', count: 2, qual: false }]
     expect(workloadOf(weeks, anton, dienste)).toBe(1)
     expect(workloadOf(weeks, zwilling, dienste)).toBe(1)
+  })
+})
+
+/**
+ * **Die alte Liste, wenn sich nichts geändert hat** (Review, App #8): Der
+ * Reducer räumt beim Löschen einer Person oder Gruppe Besuche, Vorträge,
+ * Trolley-Termine und Plan-Einträge ab — und wo nichts abzuräumen war, muss die
+ * Liste dieselbe bleiben. `persist.ts` erkennt an der Referenz, was zu
+ * schreiben ist.
+ */
+describe('neuWennGeaendert', () => {
+  const a = { id: 'a', pid: 'p1' }
+  const b = { id: 'b', pid: 'p2' }
+
+  it('ohne Änderung die alte Liste — map wie filter', () => {
+    const alt = [a, b]
+    expect(neuWennGeaendert(alt, alt.map((x) => (x.pid === 'weg' ? { ...x, pid: null } : x)))).toBe(alt)
+    expect(neuWennGeaendert(alt, alt.filter((x) => x.pid !== 'weg'))).toBe(alt)
+  })
+
+  it('mit Änderung die neue — ein geänderter Eintrag oder einer weniger', () => {
+    const alt = [a, b]
+    const geaendert = alt.map((x) => (x.pid === 'p2' ? { ...x, pid: null } : x))
+    expect(neuWennGeaendert(alt, geaendert)).toBe(geaendert)
+    const kuerzer = alt.filter((x) => x.pid !== 'p1')
+    expect(neuWennGeaendert(alt, kuerzer)).toBe(kuerzer)
   })
 })

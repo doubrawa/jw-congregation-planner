@@ -688,6 +688,18 @@ export function klonWoche(weeks: Week[], wi: number): Week[] | null {
 }
 
 /**
+ * **Die neue Liste — oder die alte, wenn sich kein Eintrag geändert hat.**
+ * Aus demselben Grund wie bei `klonWoche`: `persist.ts` erkennt an der
+ * Referenz, was zu schreiben ist; eine gleiche, aber neue Liste schriebe ohne
+ * Änderung. Für `map` und `filter`, deren unberührte Einträge sie selbst
+ * bleiben. Stand bis zum 16.10.2026 fünfmal als `xs.some(…) ? xs.map(…) : xs`
+ * im Reducer (Review, App #8).
+ */
+export function neuWennGeaendert<T>(alt: T[], neu: T[]): T[] {
+  return neu.length === alt.length && neu.every((x, i) => x === alt[i]) ? alt : neu
+}
+
+/**
  * Abweichung dieser einen Zusammenkunft, falls es eine gibt.
  *
  * **`mem`/`memCancel` gehören ausdrücklich NICHT hierher.** Sie sehen aus wie

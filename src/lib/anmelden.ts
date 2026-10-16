@@ -12,6 +12,7 @@
  * Jeder Weg gilt als gelungen, und der Aufrufer meldet selbst an.
  */
 
+import { fehlerAntwort } from './function-antwort'
 import { supabase } from './supabase'
 
 /** Warum es nicht ging. `netz`: keine Antwort; `fehler`: der Server konnte nicht. */
@@ -19,16 +20,12 @@ export type AnmeldeFehler = 'ungueltig' | 'abgelaufen' | 'zu-viele' | 'netz' | '
 
 type Antwort = Record<string, unknown>
 
-/**
- * Die Function rufen. Bei einem Status ≠ 2xx legt `functions.invoke` die
- * Antwort hinter `error.context` (wie bei den Trolleys, `lib/trolley.ts`).
- */
+/** Die Function rufen. Den Grund einer Abweisung liest `fehlerAntwort`. */
 async function rufen(body: object): Promise<{ ok: true; daten: Antwort } | { ok: false; fehler: AnmeldeFehler }> {
   if (!supabase) return { ok: true, daten: {} }
   const { data, error } = await supabase.functions.invoke('anmelden', { body })
   if (!error) return { ok: true, daten: (data ?? {}) as Antwort }
-  const antwort = (error as { context?: { json?: () => Promise<unknown> } }).context
-  const grund = ((await antwort?.json?.().catch(() => null)) as { error?: string } | null)?.error
+  const grund = (await fehlerAntwort(error))?.error
   if (grund === 'ungueltig' || grund === 'abgelaufen' || grund === 'zu-viele') return { ok: false, fehler: grund }
   console.error('[anmelden]', error.message)
   return { ok: false, fehler: grund ? 'fehler' : 'netz' }

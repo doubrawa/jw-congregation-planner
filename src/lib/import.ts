@@ -6,6 +6,7 @@
 
 import { isoDay, montagNach, montagVon, weekEndMs } from '../data/meeting-dates'
 import type { Week } from '../data/types'
+import { fehlerAntwort } from './function-antwort'
 import { supabase } from './supabase'
 
 /**
@@ -28,14 +29,9 @@ function unbekannt(meldung: string | undefined): ImportFehler {
   return 'unbekannt'
 }
 
-/**
- * Was der Server zu einer Antwort mit Status ≠ 2xx sagt. `functions.invoke`
- * meldet dann selbst nur einen festen englischen Satz und legt die Antwort
- * hinter `error.context`.
- */
-async function serverFehler(error: { message: string; context?: unknown }): Promise<ImportFehler> {
-  const antwort = error.context as { json?: () => Promise<unknown> } | undefined
-  const body = (await antwort?.json?.().catch(() => null)) as { error?: string; ende?: boolean; code?: string } | null
+/** Was der Server zu einer Antwort mit Status ≠ 2xx sagt (`fehlerAntwort`). */
+async function serverFehler(error: { message: string }): Promise<ImportFehler> {
+  const body = await fehlerAntwort(error)
   if (body?.ende) return 'ende'
   if (body?.code === 'sprache-fehlt') return 'sprache-fehlt'
   return unbekannt(body?.error ?? error.message)
@@ -85,19 +81,8 @@ export function loadedUntilMs(weeks: Week[]): number | null {
  * Versammlungssprache `langCode` (jw.org-Code, Standard "de"). `altLangs`
  * (weitere jw.org-Codes) werden als Sprachvarianten mitgeholt (Week.alt).
  */
-export async function importNextWeek(
-  afterISO?: string,
-  langCode = 'de',
-  altLangs: string[] = [],
-): Promise<ImportResult> {
-  if (!supabase) return { ok: false, error: 'ohne-datenbank' }
-  const { data, error } = await supabase.functions.invoke('import-week', {
-    body: { after: afterISO, lang: langCode, altLangs },
-  })
-  if (error) return { ok: false, error: await serverFehler(error) }
-  const payload = data as { week?: Week; error?: string } | null
-  if (!payload?.week) return { ok: false, error: unbekannt(payload?.error) }
-  return { ok: true, week: payload.week }
+export function importNextWeek(afterISO?: string, langCode = 'de', altLangs: string[] = []): Promise<ImportResult> {
+  return wocheHolen({ after: afterISO }, langCode, altLangs)
 }
 
 /**
@@ -106,14 +91,23 @@ export async function importNextWeek(
  * Programmsprache erst nach dem Import konfiguriert wurde. Verwendet wird nur
  * `week.alt` der Antwort.
  */
-export async function importWeekVariants(
-  startISO: string,
+export function importWeekVariants(startISO: string, langCode: string, altLangs: string[]): Promise<ImportResult> {
+  return wocheHolen({ start: startISO }, langCode, altLangs)
+}
+
+/**
+ * Ein Aufruf von `import-week`. `wo` sagt, welche Woche: die nächste nach
+ * `after` oder die mit diesem `start`. Bis zum 16.10.2026 stand der Rumpf in
+ * beiden Funktionen oben gleich da (Review, App #7).
+ */
+async function wocheHolen(
+  wo: { after?: string } | { start: string },
   langCode: string,
   altLangs: string[],
 ): Promise<ImportResult> {
   if (!supabase) return { ok: false, error: 'ohne-datenbank' }
   const { data, error } = await supabase.functions.invoke('import-week', {
-    body: { start: startISO, lang: langCode, altLangs },
+    body: { ...wo, lang: langCode, altLangs },
   })
   if (error) return { ok: false, error: await serverFehler(error) }
   const payload = data as { week?: Week; error?: string } | null

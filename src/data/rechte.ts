@@ -122,14 +122,29 @@ const ZUGANG = {
   profil: 'alle',
 } as const satisfies Record<Exclude<Screen, 'login'>, Zugang>
 
-/** Die Bildschirme, die jemand sehen darf — in der Reihenfolge von `ZUGANG`. */
+/** Die Listen von `erlaubteScreens`, je Kombination der Rechte einmal gebaut. */
+const SCREENS_JE_RECHTEN = new Map<string, readonly Screen[]>()
+
+/**
+ * Die Bildschirme, die jemand sehen darf — in der Reihenfolge von `ZUGANG`.
+ *
+ * **Für dieselben Rechte dieselbe Liste**: Das Ergebnis hängt nur an drei
+ * Wahrheitswerten. Bis zum 16.10.2026 war es bei jedem Aufruf neu, und der
+ * Deep-Link-Effekt in `AppShell`, der daran hängt, lief bei jedem Render
+ * (Review, App #9).
+ */
 export function erlaubteScreens(r: Rechte): readonly Screen[] {
+  const schluessel = `${r.admin}|${r.zuteilen}|${r.gruppe !== null}`
+  const gemerkt = SCREENS_JE_RECHTEN.get(schluessel)
+  if (gemerkt) return gemerkt
   const darf = (z: Zugang): boolean =>
     z === 'alle' ||
     r.admin ||
     (z === 'planer' && r.zuteilen) ||
     (z === 'gruppe' && (r.zuteilen || r.gruppe !== null))
-  return (Object.keys(ZUGANG) as (keyof typeof ZUGANG)[]).filter((s) => darf(ZUGANG[s]))
+  const screens = (Object.keys(ZUGANG) as (keyof typeof ZUGANG)[]).filter((s) => darf(ZUGANG[s]))
+  SCREENS_JE_RECHTEN.set(schluessel, screens)
+  return screens
 }
 
 /**

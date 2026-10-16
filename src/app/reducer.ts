@@ -21,7 +21,7 @@ import { eigenePerson } from './eigene-person'
 import { leererZustand } from './init'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsRegelAussetzen, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, regenFsWeeks } from '../data/fs'
 import { neueWocheEinordnen } from '../data/neue-woche'
-import { aemterBeenden, displayName, isSong, linkFamily, mtab, unlinkFamily } from '../data/helpers'
+import { aemterBeenden, displayName, isSong, linkFamily, mtab, neuWennGeaendert, unlinkFamily } from '../data/helpers'
 import { darfPlanen, erlaubteScreens, rechteVon, themaVon } from '../data/rechte'
 import { besuchAustragen, besuchEintragen, besuchsLage, besuchStand, nachWoche } from '../data/gruppenbesuche'
 import { vortragsplanAnwenden, vortragsplanVorschau } from '../data/vortragsplan'
@@ -233,22 +233,25 @@ function ohnePerson(state: AppState, id: string): AppState {
     // Ein Gruppenbesuch verliert seinen Besucher, nicht sich selbst — wie
     // die Datenbank (`on delete set null`). Der Plan zeigt ihn dann ohne
     // Besucher, und der Planer setzt einen neuen ein.
-    gruppenbesuche: state.gruppenbesuche.some((b) => b.pid === id)
-      ? state.gruppenbesuche.map((b) => (b.pid === id ? { ...b, pid: null } : b))
-      : state.gruppenbesuche,
+    gruppenbesuche: neuWennGeaendert(
+      state.gruppenbesuche,
+      state.gruppenbesuche.map((b) => (b.pid === id ? { ...b, pid: null } : b)),
+    ),
     // Ebenso ein vorgemerkter Vortrag (T122): Es bleibt der Name, den die
     // Woche beim Anlegen erneut einer Person zuzuordnen versucht.
-    vortraege: state.vortraege.some((v) => v.pid === id)
-      ? state.vortraege.map((v) => (v.pid === id ? { ...v, pid: null } : v))
-      : state.vortraege,
+    vortraege: neuWennGeaendert(
+      state.vortraege,
+      state.vortraege.map((v) => (v.pid === id ? { ...v, pid: null } : v)),
+    ),
     // Trolley-Termine wie in der Datenbank: Wer eingetragen hat, nimmt seinen
     // Termin mit (`on delete cascade`); als Partner fehlt er nur — der andere
     // sucht wieder einen (`on delete set null`).
-    trolleyTermine: state.trolleyTermine.some((t) => t.pid === id || t.partner === id)
-      ? state.trolleyTermine
-          .filter((t) => t.pid !== id)
-          .map((t) => (t.partner === id ? { ...t, partner: null, gemeinsam: false } : t))
-      : state.trolleyTermine,
+    trolleyTermine: neuWennGeaendert(
+      state.trolleyTermine,
+      state.trolleyTermine
+        .filter((t) => t.pid !== id)
+        .map((t) => (t.partner === id ? { ...t, partner: null, gemeinsam: false } : t)),
+    ),
     members: state.members.map((m) => (m.personId === id ? { ...m, personId: null } : m)),
     // Ihr Anmelde-Link geht mit ihr (`on delete cascade`).
     anmeldeLinks: state.anmeldeLinks.filter((l) => l.personId !== id),
@@ -868,14 +871,16 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         fsRules,
         fsWeeks,
         // Ihre Besuche ebenso (T120) — in der Datenbank per Kaskade.
-        gruppenbesuche: state.gruppenbesuche.some((b) => b.grp === action.id)
-          ? state.gruppenbesuche.filter((b) => b.grp !== action.id)
-          : state.gruppenbesuche,
+        gruppenbesuche: neuWennGeaendert(
+          state.gruppenbesuche,
+          state.gruppenbesuche.filter((b) => b.grp !== action.id),
+        ),
         // Eine Woche eines weiteren Plans bleibt, nur ohne Gruppe — wie in der
         // Datenbank (`on delete set null`).
-        planEintraege: state.planEintraege.some((e) => e.grp === action.id)
-          ? state.planEintraege.map((e) => (e.grp === action.id ? { ...e, grp: null } : e))
-          : state.planEintraege,
+        planEintraege: neuWennGeaendert(
+          state.planEintraege,
+          state.planEintraege.map((e) => (e.grp === action.id ? { ...e, grp: null } : e)),
+        ),
         toast: toastKey(state, 'toastGruppeDel'),
       }
     }

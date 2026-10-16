@@ -122,6 +122,15 @@ describe('Wer welchen Bildschirm sehen darf', () => {
       expect(reihenfolge(menge)).toEqual([...reihenfolge(menge)].sort((a, b) => a - b))
     }
   })
+
+  it('dieselben Rechte ergeben dieselbe Liste — auch aus einem neuen Objekt', () => {
+    // Der Deep-Link-Effekt in `AppShell` hängt an dieser Liste; war sie bei
+    // jedem Aufruf neu, lief er bei jedem Render (Review, App #9). Die Gruppe
+    // zählt nur als „hat eine": Welche, ändert die Bildschirme nicht.
+    expect(erlaubteScreens({ ...PLANER })).toBe(erlaubteScreens(PLANER))
+    expect(erlaubteScreens({ ...AUFSEHER, gruppe: 'andere' })).toBe(erlaubteScreens(AUFSEHER))
+    expect(erlaubteScreens(VERKUENDIGER)).not.toBe(erlaubteScreens(AUFSEHER))
+  })
 })
 
 describe('Wer welches Thema planen darf (T120, 4.10.2026)', () => {

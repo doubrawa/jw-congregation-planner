@@ -43,7 +43,7 @@ import { FS_LEITER } from '../../supabase/functions/_shared/zuteilungen.ts'
 import { schluesselTeile, wochenPraefixe } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { fsTag, fsTagVorbei, fsTaskKey, fsTerminText } from './fs'
 import { dieselbePerson, hatAuxKlasse, istAusgefallen, MEETING_TABS } from './helpers'
-import { istVorbei, meetingDateMs } from './meeting-dates'
+import { istVorbei, kalendertagMs, meetingDateMs } from './meeting-dates'
 import { aufgabenBezeichnung, eachAssignedSlot, sentKey, taskKeyWeek } from './planning'
 import type {
   ConfirmationMap,
@@ -330,13 +330,25 @@ export interface EntzugsStand {
  * Persistenzschicht); ihr Vergleich kostet nichts. Gezählt wird am **alten**
  * Stand: Seine Wochen, Zusagen und Meldungen sagen, wer was wusste. Neue Wochen
  * (Import, hinten angehängt) hatten noch keinen Inhaber.
+ *
+ * **Einmal je Aktion gerechnet**: Der Reducer fragt (`ohneEntzogene`), und
+ * `persist.ts` fragt mit denselben Ständen gleich danach noch einmal. Bis zum
+ * 16.10.2026 lief es zweimal — bei einer Umbenennung je Tastendruck über alle
+ * Wochen der Person (Review, App #4). Das Ergebnis ist geteilt und wird nicht
+ * verändert.
  */
 export function entzogeneAller(
   vorher: EntzugsStand,
   nachher: Pick<EntzugsStand, 'weeks' | 'fsWeeks'>,
   heute = new Date(),
-): EntzogeneZuteilung[] {
+): readonly EntzogeneZuteilung[] {
   if (vorher.weeks === nachher.weeks && vorher.fsWeeks === nachher.fsWeeks) return []
+  // „Vorbei" zählt nach Kalendertagen — derselbe Tag, dieselbe Antwort.
+  const tag = kalendertagMs(heute)
+  const z = zuletztEntzogen
+  if (z && z.vorher === vorher && z.weeks === nachher.weeks && z.fsWeeks === nachher.fsWeeks && z.tag === tag) {
+    return z.ergebnis
+  }
   const out: EntzogeneZuteilung[] = []
   for (let wi = 0; wi < vorher.weeks.length; wi++) {
     if (vorher.weeks[wi] === nachher.weeks[wi] && vorher.fsWeeks[wi] === nachher.fsWeeks[wi]) continue
@@ -354,8 +366,18 @@ export function entzogeneAller(
       }),
     )
   }
+  zuletztEntzogen = { vorher, weeks: nachher.weeks, fsWeeks: nachher.fsWeeks, tag, ergebnis: out }
   return out
 }
+
+/** Die letzte Antwort von `entzogeneAller` mit ihren Eingaben, an den Referenzen erkannt. */
+let zuletztEntzogen: {
+  vorher: EntzugsStand
+  weeks: Week[]
+  fsWeeks: FsInstance[][]
+  tag: number
+  ergebnis: readonly EntzogeneZuteilung[]
+} | null = null
 
 /**
  * Gibt es den Platz im neuen Stand überhaupt noch — unabhängig davon, wer

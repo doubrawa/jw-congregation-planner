@@ -3447,8 +3447,8 @@ export const KATALOG = [
     id: 'wp-geloeschte-gruppe-raeumt-die-woche',
     datei: 'src/app/reducer.ts',
     regel: 'Eine gelöschte Gruppe verlässt ihre Wochen — die Wochen bleiben.',
-    suchen: '          ? state.planEintraege.map((e) => (e.grp === action.id ? { ...e, grp: null } : e))',
-    ersetzen: '          ? state.planEintraege',
+    suchen: '          state.planEintraege.map((e) => (e.grp === action.id ? { ...e, grp: null } : e)),',
+    ersetzen: '          state.planEintraege,',
   },
   {
     id: 'wp-zurueck-zur-zusammenkunft',
@@ -3492,7 +3492,7 @@ export const KATALOG = [
     id: 'person-weg-eintraege-weg',
     datei: 'src/app/reducer.ts',
     regel: 'Geht eine Person, geht ihr Trolley-Termin mit — wie in der Datenbank (on delete cascade).',
-    suchen: '          .filter((t) => t.pid !== id)\n',
+    suchen: '        .filter((t) => t.pid !== id)\n',
     ersetzen: '',
   },
   /* ---- Testlücken T120 geschlossen (3.10.2026) ---- */
@@ -4661,6 +4661,27 @@ export const KATALOG = [
     datei: 'src/planen/useKonflikte.ts',
     regel: 'Die Konflikte einer Zusammenkunft werden einmal je Zustand gerechnet — für alle Bausteine, die danach fragen.',
     suchen: '  if (fertig) return fertig\n',
+    ersetzen: '',
+  },
+  {
+    id: 'screens-je-rechten-gemerkt',
+    datei: 'src/data/rechte.ts',
+    regel: 'Dieselben Rechte ergeben dieselbe Liste der Bildschirme — sonst liefe der Deep-Link-Effekt bei jedem Render.',
+    suchen: '  if (gemerkt) return gemerkt\n',
+    ersetzen: '',
+  },
+  {
+    id: 'liste-bleibt-ohne-aenderung',
+    datei: 'src/data/helpers.ts',
+    regel: 'Ändert sich kein Eintrag, bleibt die Liste dieselbe — sonst schriebe persist.ts ohne Änderung.',
+    suchen: '  return neu.length === alt.length && neu.every((x, i) => x === alt[i]) ? alt : neu\n',
+    ersetzen: '  return neu\n',
+  },
+  {
+    id: 'entzug-einmal-je-aktion',
+    datei: 'src/data/plan-versand.ts',
+    regel: 'Wem eine Aktion einen Platz nimmt, wird einmal gerechnet — Reducer und persist.ts teilen die Antwort.',
+    suchen: '    return z.ergebnis\n',
     ersetzen: '',
   },
   {
@@ -6648,8 +6669,8 @@ export const KATALOG = [
     id: "trolley-person-weg-partner-sucht",
     datei: "src/app/reducer.ts",
     regel: "Geht der Partner, bleibt der Termin — der andere sucht wieder einen (on delete set null).",
-    suchen: "          .map((t) => (t.partner === id ? { ...t, partner: null, gemeinsam: false } : t))",
-    ersetzen: "          .map((t) => t)",
+    suchen: "        .map((t) => (t.partner === id ? { ...t, partner: null, gemeinsam: false } : t)),",
+    ersetzen: "        .map((t) => t),",
   },
   {
     id: "trolley-termine-sortiert",
