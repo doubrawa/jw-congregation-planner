@@ -473,3 +473,66 @@ Wortlaut des iOS-Menüpunkts („На Початковий екран") habe ich
 Apple-Hilfe („Початковий екран") erschlossen, nicht am Gerät gesehen.
 „напарник" (Trolley-Partner) ist männlich wie das deutsche „Partner"; die
 tote Regel `zut` schreibt „3 призначень".
+
+### ro · Rumänisch
+
+16. Oktober 2026 · alle 747 gelesen · Anrede: tu, Gruppen „voi" · 38
+Korrekturen im Wörterbuch, 3 in FRAG, 1 Function-Titel.
+
+| Schlüssel | alt | neu | Grund |
+| --- | --- | --- | --- |
+| `alleGelesen` | Marchează tot citit | Marchează tot ca citit | „ca“ fehlte |
+| `fsShort` | Serviciul de teren | Întruniri pentru serviciu | „Treffpunkte“ hieß wie das Thema (tabFs „Serviciul de teren“) — auf dem Treffpunkt-Bogen stand es doppelt; jw.org: „întrunirile pentru serviciul de teren“, im Wörterbuch sonst kurz „întrunire pentru serviciu“ |
+| `toastFsRuleAdd` | Adăugat în program | Adăugat în programul de bază | Der Grundplan heißt „Program de bază“ (fsGrundplan) |
+| `toastFsRuleDel` | Eliminat din program | Eliminat din programul de bază | wie toastFsRuleAdd |
+| `vpVorgemerkt` | Această săptămână nu este încă încărcată. Cuvântarea va fi trecută imediat ce programul ei este importat. | Această săptămână nu este încă creată. Cuvântarea va fi trecută imediat ce programul ei va fi preluat. | Deutsch: „angelegt“ und „geholt“ — der Knopf heißt „Preia“ (holen) |
+| `vpOhnePerson` | … fără sarcină și fără memento … | … fără însărcinare și fără memento … | Aufgabe heißt sonst „însărcinare“; „sarcină“ ist der Hilfsdienst |
+| `wpNamePhSaal` | de ex. Deszăpezire | de ex. deszăpezire | Nach „de ex.“ klein wie in den übrigen Platzhaltern |
+| `grundPh` | ex. concediu | de ex. concediu | „de ex.“ wie in den übrigen Platzhaltern (fsOrtPh, absageNachrichtBeispiel) |
+| `neuerDienstPh` | Sarcină nouă, ex. parcare | Sarcină nouă, de ex. parcare | wie grundPh |
+| `abwHinweis` | În această perioadă nu vei primi sarcini. Planificatorii vor vedea sarcinile existente drept conflict. | În această perioadă nu vei primi însărcinări. Planificatorii vor vedea însărcinările existente drept conflict. | Zuteilungen heißen sonst „însărcinări“ (notifZuteilung, offeneZut) |
+| `absageErklaerung` | Planificatorul află imediat și dă sarcina altcuiva. | Planificatorul află imediat și dă însărcinarea altcuiva. | wie abwHinweis |
+| `suchen` | Caută … | Caută… | Kein Leerzeichen vor den Auslassungspunkten (wie „Se trimite…“) |
+| `langSearchPh` | Caută limbă … | Caută limbă… | wie suchen |
+| `holtProgramm` | Se preia programul … | Se preia programul… | wie suchen |
+| `laedt` | Se încarcă … | Se încarcă… | wie suchen |
+| `linkAbgelaufenHint` | … Unul nou este din nou valabil 30 de zile. … | … Un link nou va fi valabil 30 de zile. … | „nou … din nou“ doppelt (wie fr/it/pl/ru/uk) |
+| `werIstDas` | Cine sunt? | Cine sunt aceste persoane? | „Cine sunt?“ heißt auch „Wer bin ich?“ — gemeint ist die Liste der Personen ohne Adresse |
+| `toastKeinePassende` | … pentru locurile deschise … | … pentru locurile libere … | Offene Plätze heißen sonst „libere“ (offenWort, lageOffen, toastKeineOffen) |
+| `toastVonBis` | Completează De la și Până la | Completează „De la” și „Până la” | Feldnamen (von, bis) in Anführungszeichen, wie trolleyFehlerZeit |
+| `notifEntzug` | Sarcină retrasă | Însărcinare retrasă | Zuteilung heißt sonst „însărcinare“ (notifZuteilung „Însărcinare nouă“); Function `send-plan` zieht mit |
+| `privSchulung` | Însărcinări de elev | Teme pentru cursanți | S-38: „temă pentru cursanți“, der Schüler heißt „cursant“; auxKurz sagt schon „temele cursanților“ |
+| `privWtLeiter` | Conducătorul Studiului Turnul de veghe | Conducătorul Studiului Turnului de veghe | Genitiv: „Studiul Turnului de veghe“ (116 Treffer auf WOL) |
+| `privWtVertreter` | Înlocuitor (Studiul Turnul de veghe) | Înlocuitor (Studiul Turnului de veghe) | wie privWtLeiter |
+| `wtRollenHint` | … al Studiului Turnul de veghe; … | … al Studiului Turnului de veghe; … | wie privWtLeiter |
+| `absagen` | Anulează | Renunț | Im Absage-Blatt standen zwei Knöpfe „Anulează“ — Absagen und Abbrechen (abbrechen); wie „Preiau eu“ (uebernehmen) in der ersten Person |
+| `spurDuSagstAb` | Anulezi | Renunți | wie absagen |
+| `ersatzHint` | … Dacă anulezi o sarcină de sprijin, … | … Dacă renunți la o sarcină de sprijin, … | wie absagen |
+| `erinAbsage` | Anulare | Renunțare | wie absagen |
+| `freiePlaetzeHint` | … Cine preia primul este înscris și a confirmat deja. … | … Prima persoană care preia locul este înscrisă și astfel confirmă. … | Genus: freie Plätze übernehmen auch Schwestern — „primul … înscris“ war männlich; „damit zugesagt“ heißt „astfel“, nicht „deja“ |
+| `planSendenOffen` | Sarcini din această săptămână încă necomunicate: {n} | Însărcinări din această săptămână încă necomunicate: {n} | wie abwHinweis |
+| `fsSendenOffen` | Sarcini din grupa ta încă necomunicate: {n} | Însărcinări din grupa ta încă necomunicate: {n} | wie abwHinweis |
+| `erinEntzugAn` | persoanei, dacă sarcina i-a fost deja comunicată sau a confirmat deja | persoanei, dacă însărcinarea i-a fost deja comunicată sau dacă a confirmat-o deja | wie abwHinweis |
+| `lacPh` | Punct nou, ex. anunțuri locale | Parte nouă, de ex. anunțuri locale | Programmpunkte heißen sonst „parte“ (programmpunktEinfuegen „Inserează o parte“); „de ex.“ wie grundPh |
+| `toastLacAdd` | Punct inserat · orare ajustate | Parte inserată · orare ajustate | wie lacPh |
+| `toastLacDel` | Punct eliminat · orare ajustate | Parte eliminată · orare ajustate | wie lacPh |
+| `stKeineVers` | Încă neasociat unei congregații | Cont încă neasociat unei congregații | Genus: „neasociat“ las sich als der Nutzer (männlich) — jetzt das Konto (wie fr/it/ru) |
+| `nameDoppelt` | … ca să poată fi deosebiți. … | … ca cele două persoane să poată fi deosebite. … | Genus: „deosebiți“ ist männlich, gleich heißen auch zwei Schwestern |
+| `ohneGruppeHint` | … în secțiunea Serviciul de teren întrunirile … | … în secțiunea „Serviciul de teren” întrunirile … | Zitierter Menüpunkt (tabFs) in Anführungszeichen wie im Deutschen |
+| FRAG `Treffpunkte` | Serviciul de teren | Întruniri pentru serviciu | wie `fsShort` |
+| FRAG `Schüler` | Elev | Cursant | wie `privSchulung` (S-38) |
+| FRAG `WACHTTURM-STUDIUM` | STUDIUL TURNULUI DE VEGHERE | STUDIUL TURNULUI DE VEGHE | Die Zeitschrift heißt „Turnul de veghe“; „de veghere“ steht auf WOL nur im alten Titel „Turnul de veghere al Sionului“ |
+| `send-plan` `entzug` | Sarcină retrasă | Însărcinare retrasă | wie `notifEntzug` (Push-Titel) |
+
+Daten gelesen: FRAG, REF, EXTRA (Intl-Pfad), Bibelbücher, Function-Titel.
+Fachwörter nachgesehen: Zusammenkunft „Viața creștină și predicarea",
+„Caietul pentru întrunirea …", „cursant", „partener", „consilier",
+„clase suplimentare", „supraveghetorul de circumscripție" (S-38); „grupă de
+serviciu", „supraveghetorul grupei", „asistentul său", „slujitor auxiliar",
+„întrunirile pentru serviciul de teren" (Wachtturm Juni 2026).
+
+Offen, nicht geändert: In der Anmelde-Mail geht es nach „Bună, {name}," klein
+weiter. Ob das Rumänische dort groß schreibt (wie Englisch, Spanisch,
+Französisch) oder klein (wie Deutsch, Italienisch, Polnisch), habe ich nicht
+belegen können — eine Frage für einen Muttersprachler. „partener"
+(Trolley-Partner) ist männlich wie das deutsche „Partner".

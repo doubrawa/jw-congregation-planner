@@ -69,7 +69,7 @@ const TEXTE: Record<string, PlanTexte> = {
   },
   ro: {
     zuteilung: 'Însărcinare nouă',
-    entzug: 'Sarcină retrasă',
+    entzug: 'Însărcinare retrasă',
   },
   tr: {
     zuteilung: 'Yeni görev',

@@ -285,12 +285,12 @@ const FRAG: Record<string, Record<string, string>> = {
     "ohne Zuteilungen": "без завдань", "Brot": "Хліб", "Wein": "Вино", "nach Sonnenuntergang": "після заходу сонця", "Montag": "Понеділок"
   },
   ro: {
-    "Schüler": "Elev", "Partner": "Partener", "Ratgeber": "Consilier",
-    "Treffpunkte": "Serviciul de teren",
+    "Schüler": "Cursant", "Partner": "Partener", "Ratgeber": "Consilier",
+    "Treffpunkte": "Întruniri pentru serviciu",
     'ERÖFFNUNG': 'INTRODUCERE', 'ABSCHLUSS': 'ÎNCHEIERE',
     'SCHÄTZE AUS GOTTES WORT': 'COMORI DIN CUVÂNTUL LUI DUMNEZEU',
     'UNS IM DIENST VERBESSERN': 'SĂ FIM MAI EFICIENȚI ÎN PREDICARE', 'UNSER LEBEN ALS CHRIST': 'VIAȚA DE CREȘTIN',
-    'ÖFFENTLICHER VORTRAG': 'CUVÂNTARE PUBLICĂ', 'WACHTTURM-STUDIUM': 'STUDIUL TURNULUI DE VEGHERE',
+    'ÖFFENTLICHER VORTRAG': 'CUVÂNTARE PUBLICĂ', 'WACHTTURM-STUDIUM': 'STUDIUL TURNULUI DE VEGHE',
     'DIENSTVORTRAG': 'CUVÂNTARE DE SERVICIU', 'GEDÄCHTNISMAHL': 'COMEMORAREA',
     'Einleitende Worte': 'Cuvinte introductive', 'Schlussworte': 'Cuvinte de încheiere',
     'Nach geistigen Schätzen graben': 'Nestemate spirituale', 'Bibellesung': 'Citirea Bibliei',
