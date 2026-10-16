@@ -242,7 +242,7 @@ const FRAG: Record<string, Record<string, string>> = {
   },
   ru: {
     "Schüler": "Учащийся", "Partner": "Помощник", "Ratgeber": "Советник",
-    "Treffpunkte": "Служение",
+    "Treffpunkte": "Встречи для проповеди",
     'ERÖFFNUNG': 'ВСТУПЛЕНИЕ', 'ABSCHLUSS': 'ЗАКЛЮЧЕНИЕ',
     'SCHÄTZE AUS GOTTES WORT': 'СОКРОВИЩА ИЗ СЛОВА БОГА',
     'UNS IM DIENST VERBESSERN': 'ОТТАЧИВАЕМ НАВЫКИ СЛУЖЕНИЯ', 'UNSER LEBEN ALS CHRIST': 'ХРИСТИАНСКАЯ ЖИЗНЬ',

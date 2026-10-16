@@ -350,3 +350,60 @@ Offen, nicht geändert: Die Regel `zut` („3 Zuteilungen") schreibt „3 zadań
 — richtig wäre „3 zadania" (2–4); ebenso im Russischen und Ukrainischen. Sie
 erzeugt kein Erzeuger mehr (siehe oben), deshalb nur vermerkt.
 „współpracownik" (Trolley-Partner) ist männlich wie das deutsche „Partner".
+
+### ru · Russisch
+
+16. Oktober 2026 · alle 747 gelesen · Anrede: вы (klein, wie im übrigen
+Wörterbuch) — sie macht die Vergangenheitsformen geschlechtsneutral
+(„Вы записаны") · 29 Korrekturen im Wörterbuch, 1 in FRAG, 1 Function-Titel.
+
+| Schlüssel | alt | neu | Grund |
+| --- | --- | --- | --- |
+| `alleGelesen` | Прочитать все | Отметить все как прочитанные | „Прочитать все“ heißt „alle lesen“ — gemeint ist „als gelesen markieren“ |
+| `fsShort` | Служение | Встречи для проповеди | „Treffpunkte“ hieß wie das Thema (tabFs „Служение“) — auf dem Treffpunkt-Bogen stand es doppelt; jw.org: „встречи для проповеди“ (Wachtturm Juni 2026) |
+| `toastFsRuleAdd` | Добавлено в расписание | Добавлено в основное расписание | Der Grundplan heißt „Основное расписание“ (fsGrundplan) |
+| `toastFsRuleDel` | Удалено из расписания | Удалено из основного расписания | wie toastFsRuleAdd |
+| `vpVorgemerkt` | Эта неделя ещё не загружена. Речь будет внесена, как только её программа будет импортирована. | Эта неделя ещё не создана. Речь будет внесена, как только её программа будет загружена. | Deutsch: „angelegt“ und „geholt“ — der Knopf heißt „Загрузить“ (holen) |
+| `grundPh` | напр. отпуск | напр., отпуск | „напр.,“ mit Komma wie in den übrigen Platzhaltern (fsOrtPh, absageNachrichtBeispiel) |
+| `wpNamePhSaal` | напр., Уборка снега | напр., уборка снега | Nach „напр.,“ klein wie in den übrigen Platzhaltern |
+| `neuerDienstPh` | Новая обязанность, напр. парковка | Новая обязанность, напр., парковка | wie grundPh |
+| `lacPh` | Новый пункт, напр. местные объявления | Новый пункт, напр., местные объявления | wie grundPh |
+| `druckAndersAlsSonst` | Не как обычно | Не так, как обычно | „Не как обычно“ ist unvollständig |
+| `absageErklaerung` | Планировщик сразу узнаёт об этом и назначает задание другому. | Планировщик сразу узнаёт об этом и назначает задание другому человеку. | „другому“ allein meint einen Mann |
+| `suchen` | Поиск … | Поиск… | Kein Leerzeichen vor den Auslassungspunkten (wie „Отправка…“) |
+| `langSearchPh` | Поиск языка … | Поиск языка… | wie suchen |
+| `holtProgramm` | Загрузка программы … | Загрузка программы… | wie suchen |
+| `laedt` | Загрузка … | Загрузка… | wie suchen |
+| `linkAbgelaufenHint` | … Новая ссылка снова действует 30 дней. … | … Новая ссылка будет действовать 30 дней. … | „Новая … снова“ doppelt (wie fr/it/pl) |
+| `zuletztLange` | давно не | давно без заданий | „давно не“ bricht mitten im Satz ab |
+| `toastKeinePassende` | … на открытые места … | … на свободные места … | Offene Plätze heißen sonst „свободные“ (offenWort, lageOffen, toastKeineOffen) |
+| `toastVonBis` | Укажите С и По | Укажите «С» и «По» | „С“ und „По“ sind Feldnamen (von, bis) — ohne Anführungszeichen lesen sie sich als Präpositionen; trolleyFehlerZeit setzt sie schon in « » |
+| `toastPersonNeu` | Человек создан | Человек добавлен | „Человек создан“ heißt „ein Mensch wurde erschaffen“ |
+| `notifEntzug` | Задание отменено | Назначение отменено | Zuteilung heißt sonst „назначение“ (notifZuteilung „Новое назначение“); Function `send-plan` zieht mit |
+| `spurErsatzGesucht` | Ищется замена | Нужна замена | Wie die Mitteilung (notifErsatzGesucht, Function substitute) |
+| `nameLbl` | Имя | Название | benennt Versammlung, Gruppe, Trolley, Plan, Termin, Hilfsdienst — „Имя“ ist der Name einer Person; die hat jetzt `personNameLbl` |
+| `toastNameLeer` | Имя не изменено: без имени нельзя | Не изменено: поле не может быть пустым | Gilt auch für Gruppe und Trolley — „имя“ passte dort nicht |
+| `toastNameNichtGeaendert` | Имя не изменено: {name} уже есть | Не изменено: {name} уже есть | wie toastNameLeer |
+| `freiePlaetzeHint` | … Кто первым возьмёт на себя, тот записан и уже подтвердил. … | … Кто первым возьмёт место, получает его и тем самым подтверждает участие. … | Genus: „записан … подтвердил“ war männlich (das Präsens ist es nicht); „damit zugesagt“ heißt „тем самым“, nicht „уже“; „возьмёт на себя“ fehlte das Objekt |
+| `notifVerhindert` | Сообщено о невозможности | Не сможет выполнить задание | „Сообщено о невозможности“ bricht ab (Unmöglichkeit wovon?); der Rumpf nennt Aufgabe und Person |
+| `stKeineVers` | Ещё не привязан к собранию | Учётная запись ещё не привязана к собранию | Genus: „привязан“ las sich als der Nutzer (männlich) — jetzt das Konto (wie fr/it) |
+| `toastMitgliedEntfernt` | Член удалён | Аккаунт удалён из собрания | „Член удалён“ allein ist missverständlich; entfernt wird das Konto aus der Versammlung (kontoCard „Аккаунт“) |
+| FRAG `Treffpunkte` | Служение | Встречи для проповеди | wie `fsShort` |
+| `send-plan` `entzug` | Задание отменено | Назначение отменено | wie `notifEntzug` (Push-Titel) |
+
+Daten gelesen: FRAG, REF, EXTRA (Intl-Pfad), Bibelbücher, Function-Titel.
+Fachwörter nachgesehen und so gelassen: „помощник собрания" für den
+Dienstamtgehilfen (Wachtturm Juni 2026: „Такой помощник собрания называется
+служителем группы" — das ältere „служебный помощник" steht dort nicht),
+„группа для проповеднического служения", „ответственный за группу",
+„встреча для проповеди" (Wachtturm Juni 2026), „районный старейшина" und
+„Приезд районного старейшины", „дополнительные классы", „учащийся",
+„рабочая тетрадь" (S-38), „Руководитель изучения «Сторожевой башни»" (20
+Treffer auf WOL, „ведущий изучения" keiner).
+
+Offen, nicht geändert: Den Ratgeber der zusätzlichen Klasse nennt die S-38
+nicht „советник", sondern umschreibt ihn („брат, дающий советы"); als
+Rollenwort neben einem Namen bleibt `auxRatgeber` „Советник" — ein
+Muttersprachler könnte „Дающий советы" vorziehen. „напарник" (Trolley-Partner)
+ist männlich wie das deutsche „Partner". Die tote Regel `zut` schreibt
+„3 назначений" (siehe Polnisch).
