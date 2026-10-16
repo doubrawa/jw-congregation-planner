@@ -308,7 +308,7 @@ const FRAG: Record<string, Record<string, string>> = {
   },
   tr: {
     "Schüler": "Öğrenci", "Partner": "Yardımcı", "Ratgeber": "Danışman",
-    "Treffpunkte": "Tarla hizmeti",
+    "Treffpunkte": "Tarla hizmeti buluşmaları",
     'ERÖFFNUNG': 'GİRİŞ', 'ABSCHLUSS': 'SONUÇ',
     'SCHÄTZE AUS GOTTES WORT': 'TANRI’NIN SÖZÜNDEKİ HAZİNELER',
     'UNS IM DIENST VERBESSERN': 'TARLA HİZMETİNDE KENDİNİZİ GELİŞTİRİN', 'UNSER LEBEN ALS CHRIST': 'HIRİSTİYANLAR OLARAK YAŞAM TARZIMIZ',
@@ -423,7 +423,7 @@ const FS_LEADER_WORD: Record<string, string> = {
   pl: "Prowadzący zbiórkę do służby",
   ro: "Conducătorul întrunirii pentru serviciu", ru: "Ведущий встречи для проповеди", 
   
-  tr: "Tarla buluşmasını idare eden", uk: "Ведучий зустрічі для служіння", 
+  tr: "Tarla hizmeti buluşmasını idare eden", uk: "Ведучий зустрічі для служіння",
 }
 for (const code of Object.keys(FRAG)) {
   const f = FRAG[code]

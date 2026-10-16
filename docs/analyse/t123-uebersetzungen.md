@@ -536,3 +536,64 @@ weiter. Ob das Rumänische dort groß schreibt (wie Englisch, Spanisch,
 Französisch) oder klein (wie Deutsch, Italienisch, Polnisch), habe ich nicht
 belegen können — eine Frage für einen Muttersprachler. „partener"
 (Trolley-Partner) ist männlich wie das deutsche „Partner".
+
+### tr · Türkisch
+
+16. Oktober 2026 · alle 747 gelesen · Anrede: sen, Gruppen „siz" · 46
+Korrekturen im Wörterbuch (13 davon das eine Fachwort, unten in einer Zeile),
+2 in FRAG. Das Türkische kennt kein Genus und setzt nach Zahlen den Singular
+(„{n} kayıt" ist richtig) — beides prüfte sich hier von selbst.
+
+| Schlüssel | alt | neu | Grund |
+| --- | --- | --- | --- |
+| `anmeldungOhneDb` | … giriş yalnızca canlandırılıyor … | … giriş yalnızca simüle ediliyor … | „canlandırılıyor“ heißt „wird belebt/gespielt“; gemeint ist nachgestellt |
+| `linkMailText` | … ve yalnızca seni giriş yaptırır. … | … ve yalnızca senin içindir. … | „seni giriş yaptırır“ ist kein Türkisch („lässt dich anmelden“ ohne Objekt) |
+| `alleGelesen` | Tümünü okundu işaretle | Tümünü okundu olarak işaretle | „olarak“ fehlte |
+| `fsShort` | Tarla hizmeti | Tarla hizmeti buluşmaları | „Treffpunkte“ hieß wie das Thema (tabFs „Tarla hizmeti“) — auf dem Treffpunkt-Bogen stand es doppelt; jw.org: „tarla hizmeti buluşmaları“ (Wachtturm Juni 2026) |
+| `toastFsRuleAdd` | Programa eklendi | Temel programa eklendi | Der Grundplan heißt „Temel program“ (fsGrundplan) |
+| `toastFsRuleDel` | Programdan kaldırıldı | Temel programdan kaldırıldı | wie toastFsRuleAdd |
+| `vpVorgemerkt` | Bu hafta henüz yüklenmedi. Konuşma, haftanın programı içe aktarılır aktarılmaz işlenecek. | Bu hafta henüz oluşturulmadı. Konuşma, haftanın programı getirilir getirilmez işlenecek. | Deutsch: „angelegt“ und „geholt“ — der Knopf heißt „Getir“ (holen) |
+| `wpNamePhSaal` | örn. Kar temizliği | örn. kar temizliği | Nach „örn.“ klein wie in den übrigen Platzhaltern |
+| `absageNachrichtBeispiel` | ör. o gün yolculuktayım | örn. o gün yolculuktayım | Sonst überall „örn.“ |
+| `spurDuSagstAb` | İptal ediyorsun | Görevden çekiliyorsun | wie absagen |
+| `spurErsatzGesucht` | Yedek aranıyor | Yerine biri aranıyor | Wie die Mitteilung (notifErsatzGesucht, Function substitute) |
+| `suchen` | Ara … | Ara… | Kein Leerzeichen vor den Auslassungspunkten (wie „Gönderiliyor…“) |
+| `langSearchPh` | Dil ara … | Dil ara… | wie suchen |
+| `holtProgramm` | Program getiriliyor … | Program getiriliyor… | wie suchen |
+| `laedt` | Yükleniyor … | Yükleniyor… | wie suchen |
+| `keineAbwesenheiten` | Kayıtlı devamsızlık yok. | Henüz kayıt yok. | Abwesenheit heißt sonst „yokluk“ (abwesenheiten, abwEintragen); „devamsızlık“ ist das Fehlen in der Schule |
+| `linkAbgelaufenHint` | … Yenisi yine 30 gün geçerli. … | … Yeni bağlantı 30 gün geçerli olacak. … | „yine“ doppelt zu „yeni“ (wie fr/it/pl/ru/uk/ro) |
+| `ohneLinkHintMail` | … {name} içeride — şifre gerekmez. … | … {name} giriş yapmış olur — şifre gerekmez. … | „içeride“ (drinnen) ist salopp; sonst „giriş yap“ |
+| `perEmailHint` | Bağlantıya bir dokunuş yeter, {name} içeride. | Bağlantıya bir dokunuş yeter, {name} giriş yapmış olur. | wie ohneLinkHintMail |
+| `linksSendenIntro` | … bir dokunuşla içeridedir. … | … bir dokunuşla giriş yapar. … | wie ohneLinkHintMail |
+| `eineAdresseMehrereHint` | … Her bağlantı yalnızca bir kişiyi içeri alır. … | … Her bağlantıyla yalnızca bir kişi giriş yapar. … | wie ohneLinkHintMail |
+| `ohneEmailListeHint` | … Bir tarama yeter, içeridedirler. … | … Bir tarama yeter, giriş yapmış olurlar. … | wie ohneLinkHintMail |
+| `zettelAnleitung` | … hemen içeridesin. … | … hemen giriş yapmış olursun. … | wie ohneLinkHintMail |
+| `toastKeinePassende` | Açık yerler için uygun ve müsait kişi yok | Boş yerler için uygun ve müsait kişi yok | Offene Plätze heißen sonst „boş“ (offenWort, lageOffen, toastKeineOffen) |
+| `toastVonBis` | Başlangıç ve Bitiş gir | “Başlangıç” ve “Bitiş” gir | Feldnamen (von, bis) in Anführungszeichen, wie trolleyFehlerZeit |
+| `absagen` | İptal et | Görevden çekil | Im Absage-Blatt standen „İptal et“ (Absagen) und „İptal“ (Abbrechen) nebeneinander |
+| `ersatzHint` | Bir yardımcı görevi iptal edersen, uygun olanlar arasından otomatik olarak bir yedek aranır. | Bir yardımcı görevden çekilirsen, uygun olanlar arasından otomatik olarak yerine biri aranır. | wie absagen; Ersatz wie in der Mitteilung |
+| `erinAbsage` | İptal | Görevden çekilme | wie absagen |
+| `toastErsatzGesucht` | İptal edildi · yedek aranıyor | Görevden çekildin · yerine biri aranıyor | wie absagen und spurErsatzGesucht |
+| `lacPh` | Yeni madde, örn. yerel duyurular | Yeni bölüm, örn. yerel duyurular | Programmpunkte heißen sonst „bölüm“ (programmpunktEinfuegen „Bölüm ekle“) |
+| `toastLacAdd` | Madde eklendi · saatler ayarlandı | Bölüm eklendi · saatler ayarlandı | wie lacPh |
+| `toastLacDel` | Madde kaldırıldı · saatler ayarlandı | Bölüm kaldırıldı · saatler ayarlandı | wie lacPh |
+| `ohneGruppeHint` | … Grubu olmayan kişi Tarla hizmeti bölümünde grupların tarla buluşmalarını görmez. … | … Grubu olmayan kişi “Tarla hizmeti” bölümünde grupların tarla hizmeti buluşmalarını görmez. … | Zitierter Menüpunkt (tabFs) in Anführungszeichen wie im Deutschen; Fachwort wie fsShort |
+| 13 Schlüssel: `fsVers`, `fsKeine`, `privTreffpunkt`, `fsLeiterLbl`, `fsLeiterRolle`, `toastFsAdd`, `toastFsDel`, `fsSkipCong`, `gbWirkung`, `druckVersammlungstreffpunkte`, `druckGruppentreffpunkte`, `treffpunkteDieserWoche`, `gruppeDelTreffpunkte` | … tarla buluşması/-ları/-larını … | … tarla hizmeti buluşması/-ları/-larını … | jw.org: „tarla hizmeti buluşması“ (Wachtturm Juni 2026), wie fsShort; das bloße „buluşma“ (Reiter, Blatt) blieb |
+| FRAG `Treffpunkte` | Tarla hizmeti | Tarla hizmeti buluşmaları | wie `fsShort` |
+| FRAG `Treffpunkt-Leiter` (`FS_LEADER_WORD`) | Tarla buluşmasını idare eden | Tarla hizmeti buluşmasını idare eden | wie `fsLeiterRolle` (`rollen-uebersetzt.test.ts` hält beide zusammen) |
+
+Daten gelesen: FRAG (gemessen: „TARLA HİZMETİNDE KENDİNİZİ GELİŞTİRİN" und
+„Rastlantıda şahitlik" stehen so in mwb26), REF, EXTRA (Intl-Pfad),
+Bibelbücher, Function-Titel. Fachwörter nachgesehen: „İkinci Oda",
+„Hayatımız ve Hizmetimiz İbadeti (Kitapçığı)", „öğrenci", „yardımcısı",
+„Çevre Gözetmeninin Ziyareti", „Anma Toplantısı", „Çevre Toplantısı veya
+Bölge Kongresi" (S-38); „tarla hizmeti grubu", „grup gözetmeni",
+„hizmet görevlisi" (Wachtturm Juni 2026).
+
+Offen, nicht geändert: Den Ratgeber der zweiten Klasse nennt die S-38
+„öğüt verecek yeterli biri" (kein Rollenwort); der Hauptratgeber heißt dort
+„rehber gözetmen". `auxRatgeber` bleibt „Danışman". Die Wochenspanne setzt ICU
+als „7 – 13 Eylül" (schmale Leerzeichen), jw.org schreibt „7-13 Eylül". Für
+„lmd Lektion 9" und „lff Lektion 20" ohne Punkt fehlt die Vorlage
+(`lmdLek`, `lffLek`, siehe Teil 2) — die Zeile bleibt deutsch.

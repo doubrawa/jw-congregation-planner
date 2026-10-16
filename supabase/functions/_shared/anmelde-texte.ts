@@ -57,7 +57,7 @@ const TEXTE: Record<string, LinkMailTexte> = {
   },
   tr: {
     betreff: "{versammlung} Cemaatine erişimin",
-    text: "Merhaba {name},\n\n{versammlung} Cemaati ibadetleri ve tarla hizmetini Versammlung.app ile planlıyor. Erişimin hazır.\n\nŞimdi giriş yap:\n{url}\n\nUygulama ana ekranında mı? O zaman oradan aç, “Kodu yaz” düğmesine dokun ve bu kodu gir:\n{code}\n\nBağlantı ve kod {datum} tarihine kadar geçerli ve yalnızca seni giriş yaptırır. Şifreye ihtiyacın yok. Süreleri dolduysa uygulamayı aç ve “Bağlantı gönder” düğmesine dokun.\n\nBu e-postayı, {versammlung} Cemaatine bağlı olduğun için alıyorsun. Soruların varsa ihtiyarlarla konuş.",
+    text: "Merhaba {name},\n\n{versammlung} Cemaati ibadetleri ve tarla hizmetini Versammlung.app ile planlıyor. Erişimin hazır.\n\nŞimdi giriş yap:\n{url}\n\nUygulama ana ekranında mı? O zaman oradan aç, “Kodu yaz” düğmesine dokun ve bu kodu gir:\n{code}\n\nBağlantı ve kod {datum} tarihine kadar geçerli ve yalnızca senin içindir. Şifreye ihtiyacın yok. Süreleri dolduysa uygulamayı aç ve “Bağlantı gönder” düğmesine dokun.\n\nBu e-postayı, {versammlung} Cemaatine bağlı olduğun için alıyorsun. Soruların varsa ihtiyarlarla konuş.",
   },
   ar: {
     betreff: "وصولك إلى جماعة {versammlung}",
