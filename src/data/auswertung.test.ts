@@ -88,6 +88,28 @@ describe('Zeitraum', () => {
     expect(f.bis).toBe(MONTAG)
     expect(f.von).toBe(start(13))
     expect(f.wochen).toEqual([1, 2])
+    // Die Montage stehen in derselben Reihenfolge wie die Indizes, die älteste
+    // zuerst — nach ihnen werden die Wochenfelder beschriftet und die Streifen
+    // „Schnell wieder" gefüllt.
+    expect(f.montage).toEqual([start(13), start(1)])
+  })
+
+  it('der Streifen „Schnell wieder" folgt den Montagen: jede Woche ihr Feld, die älteste zuerst', () => {
+    // a betet in den Wochen vor 6, 5 und 4, b vor 6 und 3. Üblich sind zwei
+    // Wochen (der mittlere aus a's einer und b's drei); a ist mit einer Woche
+    // Abstand „schnell wieder" — sein Streifen zeigt die ersten drei Felder.
+    const a = person('a', ['gebet'])
+    const b = person('b', ['gebet'])
+    const weeks = Array.from({ length: 6 }, (_, i) => {
+      const vor = 6 - i
+      const w = woche(vor)
+      if (vor >= 4) setze(w.mid, 'gebet', a, 1)
+      if (vor === 6 || vor === 3) setze(w.we, 'gebet', b, 1)
+      return w
+    })
+    const z = wartezeiten(g(weeks, [a, b]), [a, b], 'gebet')
+    expect(z.schnell.map((s) => s.pid)).toEqual(['a'])
+    expect(z.schnell[0]?.wochen).toEqual([true, true, true, false, false, false])
   })
 })
 

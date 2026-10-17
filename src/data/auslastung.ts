@@ -18,8 +18,6 @@ import { montagNach, wochenZwischen } from './meeting-dates'
 import { allePlaetze } from './plaetze'
 import type { Person, Service, Week } from './types'
 
-const WOCHE_MS = 7 * 24 * 60 * 60 * 1000
-
 /**
  * Auslastung nur aus **Programmpunkten** (Aufgaben) über die gegebenen Wochen.
  *
@@ -160,9 +158,8 @@ export function wochenAbstand(a: Week, b: Week): number {
  * brauchbare Kennung der Abstand der Positionen.
  */
 export function wochenVersatz(kennungen: readonly string[], i: number, wi: number): number {
-  const von = Date.parse(kennungen[wi] ?? '')
-  const nach = Date.parse(kennungen[i] ?? '')
-  return Number.isNaN(von) || Number.isNaN(nach) ? i - wi : Math.round((nach - von) / WOCHE_MS)
+  const versatz = wochenZwischen(kennungen[wi] ?? '', kennungen[i] ?? '')
+  return Number.isNaN(versatz) ? i - wi : versatz
 }
 
 /**
@@ -176,8 +173,8 @@ export function wochenVersatz(kennungen: readonly string[], i: number, wi: numbe
  * neue Woche an derselben Stelle, und Woche für Woche reinigte dieselbe Gruppe.
  */
 export function laufendeWoche(weeks: readonly Week[], wi: number): number {
-  const ms = Date.parse(weeks[wi]?.start ?? '')
-  return Number.isNaN(ms) ? wi : Math.round((ms - Date.UTC(1970, 0, 5)) / WOCHE_MS)
+  const nummer = wochenZwischen('1970-01-05', weeks[wi]?.start ?? '')
+  return Number.isNaN(nummer) ? wi : nummer
 }
 
 /**

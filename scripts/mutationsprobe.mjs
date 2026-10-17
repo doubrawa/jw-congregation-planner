@@ -7481,6 +7481,13 @@ export const KATALOG = [
     ersetzen: "  if (!state.planner || state.ansicht) return null\n",
   },
   {
+    id: "auswertung-montage-reihenfolge",
+    datei: "src/data/auswertung.ts",
+    regel: "Die Montage des Zeitfensters stehen in der Reihenfolge seiner Wochen, die älteste zuerst — nach ihnen werden die Wochenfelder beschriftet (Review 17.10.2026).",
+    suchen: "    montage.push(w.start)\n",
+    ersetzen: "    montage.unshift(w.start)\n",
+  },
+  {
     id: "bereichsname-unbekannt-heisst-nach-schluessel",
     datei: "src/personen/priv-label.ts",
     regel: "Ein Bereich, den die App nicht kennt (Altbestand), heißt nach seinem Schlüssel — nicht leer (17.10.2026).",

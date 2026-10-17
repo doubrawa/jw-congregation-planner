@@ -123,8 +123,9 @@ export function montagNach(start: string, wochen: number): string {
 /**
  * **Ganze Wochen von Montag `a` bis Montag `b`** (beide ISO), mit Vorzeichen —
  * das Gegenstück zu `montagNach`, über UTC gerechnet. Eine Stelle für den
- * Abstand zweier Wochen: Die Auslastung (`wochenAbstand`) und die Auswertung
- * rechneten ihn bis zum 17.10.2026 je für sich.
+ * Abstand zweier Wochen: Die Auslastung (`wochenAbstand`, `wochenVersatz`,
+ * `laufendeWoche`) und die Auswertung rechneten ihn bis zum 17.10.2026 je für
+ * sich. Ohne lesbares Datum `NaN` — den Rückfall wählt der Aufrufer.
  */
 export function wochenZwischen(a: string, b: string): number {
   return Math.round((Date.parse(b) - Date.parse(a)) / (7 * 864e5))
