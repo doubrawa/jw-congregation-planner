@@ -27,13 +27,14 @@
  * Person-Id und Bereichsschlüssel. Namen und Beschriftungen setzt die Ansicht.
  */
 
+import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { folgtDemVorsitz } from '../../supabase/functions/_shared/planung.ts'
 import { istAbwesend, type AbsenceSet } from './absence'
 import { gehoertZu, idAufloeser, isQualified, istArt, istAusgefallen, MEETING_TABS } from './helpers'
 import { montagVon, tagNach } from './meeting-dates'
-import { allePlaetze, platzMitZusage, type Platz } from './plaetze'
+import { allePlaetze, platzKey, platzMitZusage, type Platz } from './plaetze'
 import { bereichVon, vorsitzPlatz } from './planning'
-import type { FsInstance, Group, Meeting, MeetingKey, Person, Service, Week } from './types'
+import type { Absage, FsInstance, Group, Meeting, MeetingKey, Person, Service, Week } from './types'
 
 /** Die Zeiträume zur Wahl, in Monaten — und wie viele Wochen jeder umfasst. */
 export const ZEITRAEUME = [12, 6, 3] as const
@@ -110,6 +111,16 @@ export function zeitfenster(weeks: readonly Week[], anzahlWochen: number, heute:
   return { von, bis, wochen }
 }
 
+/** Eine gezählte Absage: wer, wann, in welchem Bereich — `null`, wenn es den Platz nicht mehr gibt. */
+export interface AbsageEinteilung {
+  pid: string
+  wi: number
+  bereich: string | null
+}
+
+/** Der Bereich, unter dem ein abgesagter Treffpunkt zählt (`p.priv.treffpunkt`). */
+export const TREFFPUNKT_BEREICH = 'treffpunkt'
+
 export interface Grundlage {
   fenster: Zeitfenster
   einteilungen: Einteilung[]
@@ -119,6 +130,8 @@ export interface Grundlage {
   zusammenkuenfte: number
   /** Je Person: in wie vielen davon sie nicht abwesend war. */
   verfuegbar: ReadonlyMap<string, number>
+  /** Die Absagen im Zeitraum (T126, aufgezeichnet seit 17.10.2026). */
+  absagen: AbsageEinteilung[]
 }
 
 /**
@@ -145,6 +158,8 @@ export function grundlage(eingabe: {
   services: readonly Service[]
   abwesend: AbsenceSet
   fenster: Zeitfenster
+  /** Absagen (T126) — wer welchen Platz abgesagt hat, auch wenn er neu besetzt ist. */
+  absagen?: readonly Absage[]
 }): Grundlage {
   const { weeks, persons, services, abwesend, fenster } = eingabe
   const wer = idAufloeser(persons)
@@ -153,11 +168,16 @@ export function grundlage(eingabe: {
   const einteilungen: Einteilung[] = []
   const plaetze = new Map<string, number>()
   const verfuegbar = new Map<string, number>(persons.map((p) => [p.id, 0]))
+  // Der Bereich jedes Platzes, über seinen Schlüssel — für die Absagen, die
+  // nur den Schlüssel kennen. Die Woche jedes Montags im Zeitraum dazu.
+  const bereichJeSchluessel = new Map<string, string | null>()
+  const wocheJeMontag = new Map<string, number>()
   let zusammenkuenfte = 0
 
   for (const wi of fenster.wochen) {
     const week = weeks[wi]
     if (!week) continue
+    wocheJeMontag.set(week.start, wi)
     for (const tab of MEETING_TABS) {
       if (istAusgefallen(week, tab)) continue
       const meeting = week[tab]
@@ -166,6 +186,9 @@ export function grundlage(eingabe: {
         if (!istAbwesend(abwesend, p.id, wi, tab)) verfuegbar.set(p.id, (verfuegbar.get(p.id) ?? 0) + 1)
       }
       for (const platz of allePlaetze(meeting, services)) {
+        // Auch ein leerer Platz: Hat der Planer den Absagenden nur ausgetragen,
+        // steht dort noch niemand — der Bereich ist trotzdem der des Platzes.
+        bereichJeSchluessel.set(platzKey(platz, week.start, tab), bereichVon(platz) ?? null)
         if (!platzMitZusage(platz)) continue
         if (folgtGehaltenDemVorsitz(meeting, platz, persons, wer)) continue
         if (festerLeiter && platz.art === 'programm' && istArt(platz.section, 'wtStudium') && platz.slot.rolle === 'Leiter') continue
@@ -177,7 +200,26 @@ export function grundlage(eingabe: {
       }
     }
   }
-  return { fenster, einteilungen, plaetze, zusammenkuenfte, verfuegbar }
+
+  // Gezählt wird eine Absage in einer Zusammenkunft, die stattfand, von einer
+  // Person der Versammlung — wie die Zuteilungen. Ein Treffpunkt zählt unter
+  // „Treffpunkte leiten"; seine Woche reicht, den Tag kennen nur die
+  // Treffpunkt-Wochen.
+  const absagen: AbsageEinteilung[] = []
+  for (const a of eingabe.absagen ?? []) {
+    if (!bekannt.has(a.personId)) continue
+    const teile = schluesselTeile(a.taskKey)
+    const wi = teile ? wocheJeMontag.get(teile.woche) : undefined
+    if (!teile || wi === undefined) continue
+    if (teile.art === 'fs') {
+      absagen.push({ pid: a.personId, wi, bereich: TREFFPUNKT_BEREICH })
+      continue
+    }
+    const week = weeks[wi]
+    if (!week || istAusgefallen(week, teile.tab)) continue
+    absagen.push({ pid: a.personId, wi, bereich: bereichJeSchluessel.get(a.taskKey) ?? null })
+  }
+  return { fenster, einteilungen, plaetze, zusammenkuenfte, verfuegbar, absagen }
 }
 
 /**
@@ -518,6 +560,46 @@ export function treffpunkte(
   return [...groups.map((g) => gruppe(g.id)), gruppe(null)].filter((g) => g.zeilen.length > 0)
 }
 
+/* ---- Absagen --------------------------------------------------------------- */
+
+export interface AbsagenZeile {
+  bereich: string
+  n: number
+  /** Die gezählten Zuteilungen des Bereichs im Zeitraum — der Anteil bezieht sich darauf. */
+  von: number
+  /** `n / von`, höchstens 1: Derselbe Platz kann mehrmals abgesagt werden. */
+  anteil: number
+}
+
+/** „Viele Absagen": mindestens so viele — und doppelt so viel Anteil wie jeder andere Bereich. */
+export const VIELE_ABSAGEN_FAKTOR = 2
+
+/**
+ * **Absagen je Bereich** (Entwurf `HandyMehr`): wie viele Zuteilungen eines
+ * Bereichs abgesagt wurden, gemessen an allen seinen Zuteilungen. Ein
+ * Treffpunkt zählt gegen die geleiteten Treffpunkte (`treffpunktPlaetze`).
+ * Die meisten zuerst.
+ */
+export function absagenJeBereich(g: Grundlage, treffpunktPlaetze: number): AbsagenZeile[] {
+  const zahl = new Map<string, number>()
+  for (const a of g.absagen) if (a.bereich) zahl.set(a.bereich, (zahl.get(a.bereich) ?? 0) + 1)
+  return [...zahl]
+    .map(([bereich, n]) => {
+      const von = bereich === TREFFPUNKT_BEREICH ? treffpunktPlaetze : (g.plaetze.get(bereich) ?? 0)
+      return { bereich, n, von, anteil: von > 0 ? Math.min(1, n / von) : 1 }
+    })
+    .sort((a, b) => b.n - a.n || b.anteil - a.anteil || a.bereich.localeCompare(b.bereich))
+}
+
+/** Fällt ein Bereich mit seinen Absagen auf? Mindestens drei, und doppelt so viel Anteil wie jeder andere. */
+export function vieleAbsagen(zeilen: readonly AbsagenZeile[]): { zeile: AbsagenZeile; sonst: number }[] {
+  return zeilen.flatMap((zeile) => {
+    if (zeile.n < MINDESTABSTAND) return []
+    const sonst = Math.max(0, ...zeilen.filter((z) => z !== zeile).map((z) => z.anteil))
+    return zeile.anteil >= VIELE_ABSAGEN_FAKTOR * sonst ? [{ zeile, sonst }] : []
+  })
+}
+
 /* ---- Ballungen ------------------------------------------------------------- */
 
 export interface Ballungen {
@@ -568,16 +650,19 @@ export type Hinweis =
   | { art: 'selten' | 'oft'; pid: string; vergleich: Vergleich; n: number; erwartet: number }
   | { art: 'einseitig'; pid: string; zeile: EinseitigZeile }
   | { art: 'wartet'; pid: string; bereich: string; wochen: number | null; ueblich: number }
+  /** Ein Bereich, keine Person: Ein Tipp führt zu den Absagen (T126). */
+  | { art: 'absagen'; bereich: string; anteil: number; sonst: number }
 
 /**
  * **Was auffällt**, das Wichtigste zuerst: zu selten, zu oft, einseitig, wartet
- * lange. Je Person und Art nur der deutlichste Fall — wer in den Aufgaben und
- * mit den Hilfsdiensten zu selten dran ist, steht einmal da.
+ * lange, viele Absagen. Je Person und Art nur der deutlichste Fall — wer in den
+ * Aufgaben und mit den Hilfsdiensten zu selten dran ist, steht einmal da.
  */
 export function hinweise(
   verteilungen: readonly Verteilung[],
   einseitige: readonly EinseitigZeile[],
   warten: readonly Wartezeiten[],
+  absagen: readonly AbsagenZeile[] = [],
 ): Hinweis[] {
   const staerke = (n: number, e: number): number => (e > 0 ? Math.abs(n - e) / e : n)
   const besteJe = new Map<string, Extract<Hinweis, { art: 'selten' | 'oft' }>>()
@@ -608,7 +693,8 @@ export function hinweise(
     }
   }
   const wartet = [...wartenJe.values()].sort((a, b) => faktor(b) - faktor(a) || a.pid.localeCompare(b.pid))
-  return [...selten, ...oft, ...einseitig, ...wartet]
+  const viele: Hinweis[] = vieleAbsagen(absagen).map(({ zeile, sonst }) => ({ art: 'absagen', bereich: zeile.bereich, anteil: zeile.anteil, sonst }))
+  return [...selten, ...oft, ...einseitig, ...wartet, ...viele]
 }
 
 /* ---- Eine Person ----------------------------------------------------------- */
@@ -623,6 +709,8 @@ export interface PersonBild {
   hilfsdienste: number
   /** Zusammenkünfte im Zeitraum, in denen sie abwesend war. */
   abwesend: number
+  /** Ihre Absagen im Zeitraum (T126). */
+  absagen: number
   /**
    * Je Bereich der Person: wie oft, wie oft erwartet, das letzte Mal (Montag,
    * ISO) und wie viele Wochen das vor der laufenden war.
@@ -672,6 +760,7 @@ export function personBild(g: Grundlage, weeks: readonly Week[], persons: readon
     erwartetAufgaben: aufgabenBereiche.reduce((s, b) => s + b.erwartet, 0),
     hilfsdienste: eigene.filter((e) => e.hilfsdienst).length,
     abwesend: abwesendMal,
+    absagen: g.absagen.filter((a) => a.pid === pid).length,
     bereiche,
     wochen,
   }
@@ -688,6 +777,8 @@ export interface Auswertung {
   /** Je Bereich mit Plätzen. */
   wartezeiten: Wartezeiten[]
   treffpunkte: TreffpunktGruppe[]
+  /** Je Bereich mit Absagen, die meisten zuerst (T126). */
+  absagen: AbsagenZeile[]
   ballungen: Ballungen
   hinweise: Hinweis[]
 }
@@ -699,6 +790,7 @@ export function auswerten(eingabe: {
   services: readonly Service[]
   groups: readonly Group[]
   abwesend: AbsenceSet
+  absagen?: readonly Absage[]
   heute: string
   zeitraum: Zeitraum
 }): Auswertung {
@@ -711,6 +803,10 @@ export function auswerten(eingabe: {
   }
   const einseitige = einseitig(g, eingabe.persons)
   const wartezeitenListe = [...g.plaetze.keys()].map((b) => wartezeiten(g, eingabe.weeks, eingabe.persons, b))
+  const treffpunktGruppen = treffpunkte(eingabe.fsWeeks, fenster, eingabe.persons, eingabe.groups)
+  // Die geleiteten Treffpunkte — gegen sie zählen die abgesagten.
+  const geleitet = treffpunktGruppen.reduce((s, gr) => s + gr.zeilen.reduce((t, z) => t + z.n, 0), 0)
+  const absagenListe = absagenJeBereich(g, geleitet)
   return {
     zeitraum: eingabe.zeitraum,
     grundlage: g,
@@ -718,8 +814,9 @@ export function auswerten(eingabe: {
     verteilungen,
     einseitig: einseitige,
     wartezeiten: wartezeitenListe,
-    treffpunkte: treffpunkte(eingabe.fsWeeks, fenster, eingabe.persons, eingabe.groups),
+    treffpunkte: treffpunktGruppen,
+    absagen: absagenListe,
     ballungen: ballungen(g),
-    hinweise: hinweise(Object.values(verteilungen), einseitige, wartezeitenListe),
+    hinweise: hinweise(Object.values(verteilungen), einseitige, wartezeitenListe, absagenListe),
   }
 }

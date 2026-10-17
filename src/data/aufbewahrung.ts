@@ -14,10 +14,12 @@ import { isoDay, montagNach, montagVon } from './meeting-dates'
  *   (`assignmentDistance` über alle geladenen Wochen), und manche Verkündiger
  *   haben nur alle paar Monate eine Zuteilung. Was an einer Woche hängt,
  *   bleibt so lange wie sie: Eine Woche ohne ihre Zusagen zeigte an jedem
- *   Platz „wartet auf Bestätigung".
+ *   Platz „wartet auf Bestätigung". Seit dem 17.10.2026 ebenso die Absagen und
+ *   die Abwesenheiten (ab ihrem Ende) — die Auswertung rechnet mit beiden
+ *   über das ganze Jahr (T126). Den **Grund** einer Abwesenheit leert die
+ *   Datenbank nach `SONST_WOCHEN`.
  * - **`SONST_WOCHEN`** für alles andere: Mitteilungen, Erinnerungs-Tagebuch,
- *   Abwesenheiten samt Grund (ab ihrem Ende), Trolley-Termine, abgelaufene
- *   Anmelde-Links.
+ *   Trolley-Termine, abgelaufene Anmelde-Links.
  *
  * Dieselben Zahlen gelten an drei Stellen: beim Laden (`lib/data.ts`), beim
  * Aufräumen in der Datenbank (`alte_daten_loeschen` in `supabase/schema.sql`;

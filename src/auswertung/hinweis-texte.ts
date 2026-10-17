@@ -17,24 +17,33 @@ export function einseitigText(z: EinseitigZeile, k: Kontext): string {
   return k.t.awAusgewogen
 }
 
+/** Woran ein Hinweis in der Liste zu erkennen ist: Art und Person — oder Bereich. */
+export function hinweisSchluessel(h: Hinweis): string {
+  return h.art === 'absagen' ? `${h.art}|${h.bereich}` : `${h.art}|${h.pid}`
+}
+
 /** Titel und Zeile eines Hinweises. */
 export function hinweisTexte(h: Hinweis, k: Kontext): { titel: string; text: string } {
-  const name = k.name(h.pid)
   switch (h.art) {
     case 'selten':
     case 'oft':
       return {
-        titel: fill(h.art === 'oft' ? k.t.awHinweisOft : k.t.awHinweisSelten, { name }),
+        titel: fill(h.art === 'oft' ? k.t.awHinweisOft : k.t.awHinweisSelten, { name: k.name(h.pid) }),
         text: fill(k.t[TEXT_DES_VERGLEICHS[h.vergleich]], { n: k.zahl(h.n), e: k.zahl(gerundet(h.erwartet)) }),
       }
     case 'einseitig':
-      return { titel: fill(k.t.awHinweisEinseitig, { name }), text: einseitigText(h.zeile, k) }
+      return { titel: fill(k.t.awHinweisEinseitig, { name: k.name(h.pid) }), text: einseitigText(h.zeile, k) }
     case 'wartet': {
       const werte = { bereich: k.bereich(h.bereich), ueblich: k.dauer(gerundet(h.ueblich)) }
       return {
-        titel: fill(k.t.awHinweisWartet, { name }),
+        titel: fill(k.t.awHinweisWartet, { name: k.name(h.pid) }),
         text: h.wochen === null ? fill(k.t.awWartetNie, werte) : fill(k.t.awWartetSeit, { ...werte, dauer: k.dauer(h.wochen) }),
       }
     }
+    case 'absagen':
+      return {
+        titel: fill(k.t.awHinweisAbsagen, { bereich: k.bereich(h.bereich) }),
+        text: fill(k.t.awTextAbsagen, { anteil: k.prozent(h.anteil), sonst: k.prozent(h.sonst) }),
+      }
   }
 }

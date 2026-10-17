@@ -104,6 +104,9 @@ export const RLS_TABELLEN = [
   // wird nur mit der Service-Role, deshalb steht es hier wie jede andere
   // Tabelle mit Mandanten-Spalte und nicht als „keine Zeilen".
   { name: 'assignment_log', spalte: 'congregation_id' },
+  // Absagen (T126): nur Admin und Planer lesen, geschrieben nur vom Trigger an
+  // `confirmations` — ein Mitglied ohne Zuteilungsrecht sieht keine Zeile.
+  { name: 'absagen', spalte: 'congregation_id' },
   // Anmelde-Links (T121, Phase 8): der Admin liest die eigene Versammlung, die
   // Prüfsummen-Spalten niemand (Spaltenrechte) — gefragt wird deshalb nur die
   // Mandanten-Spalte, wie bei allen.

@@ -4,9 +4,44 @@ import { MiniBalken } from './Diagramme'
 import type { Kontext } from './kontext'
 
 /**
- * **Treffpunkte und Ballungen** (Entwurf `HandyMehr`): wer die Zusammenkünfte
- * für den Predigtdienst leitet, je Gruppe — und wo jemand zweimal in einer
- * Zusammenkunft oder drei Wochen hintereinander im selben Bereich dran war.
+ * **Absagen je Bereich** (Entwurf `HandyMehr`, T126): wie viele Zuteilungen
+ * jedes Bereichs abgesagt wurden, gegen alle seine Zuteilungen. Ein Bereich
+ * mit auffällig vielen steht in der Problemfarbe (wie sein Hinweis).
+ */
+function AbsagenKarte({ k }: { k: Kontext }) {
+  const { t, a } = k
+  const auffaellig = new Set(a.hinweise.flatMap((h) => (h.art === 'absagen' ? [h.bereich] : [])))
+  const max = Math.max(1, ...a.absagen.map((z) => z.n))
+  return (
+    <section className="karte aw-gruppe" aria-label={t.awAbsagenTitel}>
+      <h2 className="aw-gruppe-kopf">{t.awAbsagenTitel}</h2>
+      {a.absagen.length === 0 ? (
+        <p className="aw-leer">{t.awKeineAbsagen}</p>
+      ) : (
+        <ul className="aw-zeilen">
+          {a.absagen.map((z) => (
+            <li key={z.bereich} className="aw-zeile">
+              <div className="aw-zeile-kopf">
+                <span className="aw-zeile-name">{k.bereich(z.bereich)}</span>
+                <span className="aw-zeile-zahl">
+                  {fill(t.awAbsagenZahl, { n: k.zahl(z.n) })} · {fill(t.awAnteilVon, { anteil: k.prozent(z.anteil), m: k.zahl(z.von) })}
+                </span>
+              </div>
+              <MiniBalken n={z.n} max={max} auffaellig={auffaellig.has(z.bereich)} />
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="klein-text">{t.awAbsagenText}</p>
+    </section>
+  )
+}
+
+/**
+ * **Treffpunkte, Absagen, Ballungen** (Entwurf `HandyMehr`): wer die
+ * Zusammenkünfte für den Predigtdienst leitet, je Gruppe — wo abgesagt wurde —
+ * und wo jemand zweimal in einer Zusammenkunft oder drei Wochen hintereinander
+ * im selben Bereich dran war.
  */
 export function WeiteresAnsicht({ k }: { k: Kontext }) {
   const { t, a } = k
@@ -37,6 +72,8 @@ export function WeiteresAnsicht({ k }: { k: Kontext }) {
           </div>
         ))}
       </section>
+
+      <AbsagenKarte k={k} />
 
       <section className="karte aw-gruppe" aria-label={t.awBallungenTitel}>
         <h2 className="aw-gruppe-kopf">{t.awBallungenTitel}</h2>

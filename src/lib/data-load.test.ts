@@ -30,7 +30,7 @@ import {
   substituteTake,
   wocheGeschrieben,
 } from './data'
-import { aufbewahrtAb, SONST_WOCHEN, VERTEILUNG_WOCHEN } from '../data/aufbewahrung'
+import { aufbewahrtAb, VERTEILUNG_WOCHEN } from '../data/aufbewahrung'
 import type { Week } from '../data/types'
 import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 
@@ -218,6 +218,36 @@ describe('loadCongregationData', () => {
       expect(seiten('plan_eintraege')).toEqual([[0, 999]])
     })
 
+    it('die Absagen kommen seitenweise und zeigen auf ihre Person (T126)', async () => {
+      seedResponses({
+        absagen: [
+          { data: [{ person_id: 'p1', task_key: '2026-09-07|mid|part|k1|0', woche: '2026-09-07' }], error: null, count: 2 },
+          { data: [{ person_id: 'p9', task_key: 'fs|2026-09-14|i1', woche: '2026-09-14' }], error: null, count: 2 },
+        ],
+      })
+      const res = await loadCongregationData('u1')
+      expect(res.ok).toBe(true)
+      if (!res.ok) return
+      expect(res.data.absagen).toEqual([
+        { personId: 'p1', taskKey: '2026-09-07|mid|part|k1|0', woche: '2026-09-07' },
+        { personId: 'p9', taskKey: 'fs|2026-09-14|i1', woche: '2026-09-14' },
+      ])
+      expect(seiten('absagen')).toEqual([[0, 999], [1, 1000]])
+    })
+
+    it('ohne Absagen-Tabelle (noch nicht ausgerollt) lädt der Rest trotzdem', async () => {
+      // Die Absagen sind nur für die Auswertung — ein Fehler dort darf die
+      // Planung nicht aufhalten.
+      seedResponses({ absagen: [{ data: null, error: { message: 'relation "public.absagen" does not exist' } }] })
+      const fehler = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const res = await loadCongregationData('u1')
+      expect(res.ok).toBe(true)
+      if (!res.ok) return
+      expect(res.data.absagen).toEqual([])
+      expect(fehler).toHaveBeenCalledWith('[absagen]', 'relation "public.absagen" does not exist')
+      fehler.mockRestore()
+    })
+
     it('das Tagebuch kommt bis SENT_LOG_LIMIT, nicht weiter', async () => {
       const zeilen = (n: number) =>
         Array.from({ length: n }, (_, i) => ({ task_key: `k${i}`, name: 'N', sent_at: '2026-09-01T10:00:00Z', user_id: null, persoenlich_at: null }))
@@ -300,14 +330,16 @@ describe('loadCongregationData', () => {
       expect(grenze('fs_weeks')).toBeUndefined()
     })
 
-    it('ebenso, was zu den Wochen gehört; Abwesenheiten nur bis acht Wochen nach ihrem Ende', async () => {
+    it('ebenso, was zu den Wochen gehört, die Absagen und die Abwesenheiten bis ein Jahr nach ihrem Ende', async () => {
+      // Die Abwesenheiten bis zum 17.10.2026 nur acht Wochen — seitdem rechnet
+      // die Auswertung über das Jahr mit ihnen (T126).
       seedResponses()
       await loadCongregationData('u1')
       expect(ab('gruppenbesuche', 'woche')).toBe(EIN_JAHR)
       expect(ab('vortraege', 'woche')).toBe(EIN_JAHR)
       expect(ab('plan_eintraege', 'datum')).toBe(EIN_JAHR)
-      expect(ab('absences', 'to_date')).toBe(aufbewahrtAb(SONST_WOCHEN, HEUTE))
-      expect(ab('absences', 'to_date')).toBe('2026-01-05')
+      expect(ab('absagen', 'woche')).toBe(EIN_JAHR)
+      expect(ab('absences', 'to_date')).toBe(EIN_JAHR)
     })
 
     it('kommt mit einer einzigen Antwort je Wochentabelle aus — keine Vorabfrage', async () => {

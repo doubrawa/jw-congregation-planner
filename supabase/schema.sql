@@ -379,6 +379,24 @@ create table if not exists public.confirmations (
   unique (congregation_id, task_key, user_id)
 );
 
+-- Absagen (T126, Betreiber 17.10.2026: „ja"): In `confirmations` steht eine
+-- Absage nur, bis der Platz neu besetzt ist — dann räumt die App seine Zeilen
+-- ab (`confirmations_delete_planner`). Für die Auswertung („Absagen je
+-- Bereich") bleibt sie hier ein Jahr stehen, wie die Woche, zu der sie gehört.
+-- Nur wer, welcher Platz, welche Woche — keine Nachricht, kein Konto.
+-- Geschrieben allein vom Trigger an `confirmations` (`absage_vermerken`).
+create table if not exists public.absagen (
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  person_id       uuid not null,
+  task_key        text not null,
+  woche           date not null,
+  created_at      timestamptz not null default now(),
+  primary key (congregation_id, task_key, person_id),
+  -- Geht die Person, gehen ihre Absagen mit: Gezählt werden sie für sie.
+  constraint absagen_person_fk foreign key (person_id, congregation_id)
+    references public.persons (id, congregation_id) on delete cascade
+);
+
 -- Web-Push-Abos: je Gerät, auf dem ein Mitglied Benachrichtigungen aktiviert
 -- hat. send-reminders (Service-Role) verschickt darüber Erinnerungen.
 create table if not exists public.push_subscriptions (
@@ -1578,6 +1596,16 @@ drop policy if exists assignment_log_select on public.assignment_log;
 create policy assignment_log_select on public.assignment_log
   for select using (congregation_id = public.my_congregation_id());
 
+-- Absagen (T126): lesen nur Admin und Planer — für die Auswertung, die nur
+-- sie sehen. Geschrieben wird allein vom Trigger an `confirmations`; ohne
+-- Richtlinie zum Schreiben kann kein Konto eine Absage anlegen, ändern oder
+-- löschen.
+alter table public.absagen enable row level security;
+
+drop policy if exists absagen_select on public.absagen;
+create policy absagen_select on public.absagen
+  for select using (congregation_id = public.my_congregation_id() and public.darf_zuteilen());
+
 -- ---------------------------------------------------------------------------
 -- Mitteilung an die Planer der eigenen Versammlung — je Planer eine Zeile mit
 -- eigenem Gelesen-/Lösch-Status.
@@ -1668,7 +1696,10 @@ grant execute on function public.persoenlich_bescheid(text, text, boolean) to au
 -- Seiten gleich und verlangt für jede Tabelle eine Regel oder einen Grund):
 --   - ein Jahr (52 Wochen) für die Wochen und was zu ihnen gehört — die
 --     gerechte Verteilung fragt, wer am längsten wartet, und manche haben nur
---     alle paar Monate eine Zuteilung;
+--     alle paar Monate eine Zuteilung —, dazu seit dem 17.10.2026 die Absagen
+--     und die Abwesenheiten (ab ihrem Ende): Mit beiden rechnet die Auswertung
+--     über das ganze Jahr (T126). Der Grund einer Abwesenheit geht nach acht
+--     Wochen, der Zeitraum bleibt;
 --   - acht Wochen für alles andere.
 -- Die Fehlversuche beim Anmelden (IP-Adressen) gehen nach einem Tag: Sie
 -- bremsen nur das Raten der letzten Stunde. `anmelden` räumt sie bei jedem
@@ -1697,6 +1728,64 @@ $$;
 revoke all on function public.woche_im_schluessel(text) from public;
 revoke all on function public.woche_im_schluessel(text) from anon, authenticated;
 
+-- ---------------------------------------------------------------------------
+-- Absagen vermerken (T126, 17.10.2026)
+-- ---------------------------------------------------------------------------
+-- Wird ein Platz als „verhindert" gemeldet, steht die Absage in `absagen` —
+-- und bleibt dort, auch wenn der Platz danach neu besetzt wird und seine Zeile
+-- in `confirmations` verschwindet (auf ein Löschen reagiert der Trigger
+-- nicht). Nimmt jemand die Absage zurück („doch bestätigen"), ist es keine:
+-- Sie geht wieder. Ohne Person am Konto gibt es niemanden, für den sie zählt.
+--
+-- Hier, nicht in der App: Jeder Weg, der eine Absage schreibt — der Client,
+-- eine Function —, vermerkt sie damit. Security definer, weil kein Konto in
+-- `absagen` schreiben darf.
+create or replace function public.absage_vermerken()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  person uuid;
+  woche  text := public.woche_im_schluessel(new.task_key);
+begin
+  select m.person_id into person
+    from public.members m
+   where m.user_id = new.user_id and m.congregation_id = new.congregation_id;
+  if person is null or woche is null then
+    return new;
+  end if;
+  if new.status = 'verhindert' then
+    insert into public.absagen (congregation_id, person_id, task_key, woche)
+    values (new.congregation_id, person, new.task_key, woche::date)
+    on conflict do nothing;
+  elsif tg_op = 'UPDATE' and old.status = 'verhindert' then
+    delete from public.absagen
+     where congregation_id = new.congregation_id and task_key = new.task_key and person_id = person;
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.absage_vermerken() from public;
+revoke all on function public.absage_vermerken() from anon, authenticated;
+
+drop trigger if exists confirmations_absage on public.confirmations;
+create trigger confirmations_absage
+  after insert or update of status on public.confirmations
+  for each row execute function public.absage_vermerken();
+
+-- Was beim Einführen schon abgesagt war, gleich mitnehmen — wiederholbar.
+insert into public.absagen (congregation_id, person_id, task_key, woche)
+select c.congregation_id, m.person_id, c.task_key, public.woche_im_schluessel(c.task_key)::date
+  from public.confirmations c
+  join public.members m on m.user_id = c.user_id and m.congregation_id = c.congregation_id
+ where c.status = 'verhindert'
+   and m.person_id is not null
+   and public.woche_im_schluessel(c.task_key) is not null
+on conflict do nothing;
+
 create or replace function public.alte_daten_loeschen(trocken boolean default false)
 returns table (tabelle text, zeilen bigint)
 language plpgsql security definer
@@ -1721,10 +1810,13 @@ begin
         ('vortraege', 'woche < $1', ein_jahr),
         ('plaene', 'bis < $1', ein_jahr),
         ('plan_eintraege', 'datum < $1', ein_jahr),
+        ('absagen', 'woche < $1', ein_jahr),
+        -- Abwesenheiten ein Jahr ab ihrem Ende — die Auswertung rechnet mit ihnen
+        -- (T126, 17.10.2026). Ihr Grund geht nach acht Wochen (unten).
+        ('absences', 'to_date < $1', ein_jahr),
         -- Alles andere: acht Wochen.
         ('notifications', 'created_at < $1', acht_wochen),
         ('reminder_log', 'sent_on < $1', acht_wochen),
-        ('absences', 'to_date < $1', acht_wochen),
         ('trolley_termine', 'datum < $1', acht_wochen),
         ('anmelde_links', 'gueltig_bis < $1', acht_wochen),
         -- Die Bremse gegen Raten: ein Tag.
@@ -1752,6 +1844,18 @@ begin
     zeilen := n;
     return next;
   end loop;
+
+  -- Der Grund einer Abwesenheit: acht Wochen ab ihrem Ende. Den Zeitraum
+  -- braucht die Auswertung ein Jahr, den Grund niemand so lange (17.10.2026).
+  if trocken then
+    select count(*) into n from public.absences where to_date < acht_wochen and reason <> '';
+  else
+    update public.absences set reason = '' where to_date < acht_wochen and reason <> '';
+    get diagnostics n = row_count;
+  end if;
+  tabelle := 'absences.reason';
+  zeilen := n;
+  return next;
 end;
 $$;
 

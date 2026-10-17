@@ -124,6 +124,13 @@ const SPIEGEL: Record<string, Spiegel> = {
     spalten: { grp: 'grp' },
     basis: { id: 'zz', planId: 'p1', datum: '2026-09-07', grp: null },
   },
+  // Geht die Person, gehen ihre Absagen mit (T126) — gezählt werden sie für sie.
+  absagen: {
+    feld: 'absagen',
+    spalten: { person_id: 'personId' },
+    basis: { personId: null, taskKey: 'zz', woche: '2026-09-07' },
+    schluessel: 'taskKey',
+  },
 }
 
 /** Tabellen mit Verweis, die im Zustand keinen Spiegel haben — mit Grund. */

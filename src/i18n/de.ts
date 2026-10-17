@@ -793,7 +793,7 @@ export const DE = {
     awGenauer: 'Genauer ansehen', awVerteilungTitel: 'Zu oft, zu selten', awVerteilungStat: 'Zu oft: {n} · zu selten: {m}',
     awEinseitigTitel: 'Einseitig verteilt', awPersonenZahl: 'Personen: {n}',
     awWartezeitenTitel: 'Wartezeiten', awWartenLangeZahl: 'Warten lange: {n}',
-    awWeiteresTitel: 'Treffpunkte und Ballungen', awBallungenZahl: 'Ballungen: {n}',
+    awWeiteresTitel: 'Treffpunkte, Absagen, Ballungen', awBallungenZahl: 'Ballungen: {n}',
     awFussnote: 'Gerechnet aus den Wochen in der App, gespeichert wird nichts. Wer abwesend war, von dem wird für diese Zeit nichts erwartet. Feste Rollen und was dem Vorsitz folgt, zählen nicht mit.',
     awKeineDaten: 'Im gewählten Zeitraum fand noch keine Zusammenkunft statt, die die App kennt.',
     awVergleich: 'Vergleich', awDarstellung: 'Darstellung', awAufgaben: 'Aufgaben', awHilfsdienste: 'Hilfsdienste',
@@ -830,6 +830,12 @@ export const DE = {
     awLetzte: 'Die letzten {dauer}', awAufgabe: 'Aufgabe', awHilfsdienst: 'Hilfsdienst', awAbwesendKurz: 'abwesend',
     awWochenBild: '{name}: Aufgaben {a}, Hilfsdienste {h}, abwesend {w}',
     awJeBereich: 'Je Bereich', awZuletztVor: 'zuletzt vor {dauer}',
+    // Absagen (T126, seit 17.10.2026 aufgezeichnet). {anteil}/{sonst} sind Prozente aus `Intl`.
+    awAbsagenTitel: 'Absagen je Bereich', awAbsagenZahl: 'Absagen: {n}', awAnteilVon: '{anteil} von {m}',
+    awAbsagenText: 'Gezählt wird, wer seine Zuteilung abgesagt hat – auch wenn der Platz danach neu besetzt wurde. Der Anteil bezieht sich auf alle Zuteilungen des Bereichs.',
+    awKeineAbsagen: 'Im Zeitraum hat niemand abgesagt.',
+    awHinweisAbsagen: 'Viele Absagen: {bereich}', awTextAbsagen: '{anteil} der Zuteilungen abgesagt · sonst höchstens {sonst}',
+    awAbsagen: 'Absagen',
     // Befristet (T124): die App mit den Rechten einer anderen Stufe ansehen —
     // mit `data/ansicht.ts` wieder ausbauen. {stufe} ist der Name der Stufe.
     ansichtTitel: 'Ansicht zum Testen',

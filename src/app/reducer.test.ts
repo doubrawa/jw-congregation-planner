@@ -76,6 +76,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     plaene: [],
     planEintraege: [],
     absences: [...DEMO_ABSENCES],
+    absagen: [],
     notifs: [...DEMO_NOTIFICATIONS],
     slotSel: null,
     selectedPersonId: null,

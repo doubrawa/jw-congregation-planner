@@ -370,6 +370,29 @@ describe('die Rechteprüfungen stehen im Schema', () => {
       expect(r().has('trolley_termine_write')).toBe(false)
     })
 
+    it('Absagen (T126): lesen nur Admin und Planer, schreiben nur der Trigger an den Zusagen', () => {
+      const alle = r()
+      // Eine Regel und nur eine, und die liest nur: Schriebe ein Konto selbst,
+      // ließe sich eine Absage fälschen oder tilgen.
+      expect([...alle.keys()].filter((name) => name.startsWith('absagen_'))).toEqual(['absagen_select'])
+      const regel = alle.get('absagen_select') ?? ''
+      expect(regel).toContain('for select')
+      expect(regel).toContain('using (congregation_id = public.my_congregation_id() and public.darf_zuteilen())')
+      // Der Trigger: security definer (kein Konto darf in `absagen` schreiben),
+      // für niemanden aufrufbar, und er sieht jede neue Zusage und jeden
+      // Wechsel des Stands.
+      const fn = funktionsRuempfe(schema).get('absage_vermerken') ?? ''
+      expect(fn).toContain('security definer')
+      expect(fn).toContain('set search_path = public')
+      expect(fn).toContain("if new.status = 'verhindert' then")
+      expect(fn).toContain("elsif tg_op = 'update' and old.status = 'verhindert' then")
+      const sql = normiert(schema)
+      expect(sql).toContain('revoke all on function public.absage_vermerken() from anon, authenticated;')
+      expect(sql).toContain(
+        'create trigger confirmations_absage after insert or update of status on public.confirmations for each row execute function public.absage_vermerken();',
+      )
+    })
+
     it('vorgemerkte Vorträge (T122): lesen und schreiben nur Admin und Planer — sonst niemand', () => {
       const alle = r()
       // Eine Regel und nur eine: Eine zweite (etwa ein Lesen für alle) legte die
@@ -494,7 +517,13 @@ describe('kein Altbestand mehr im Schema', () => {
   it('das Aufräumen steht hinter den Tabellen, aus denen es löscht', () => {
     // Auf einer frischen Datenbank liefe ein `delete from` vor seinem
     // `create table` ins Leere — und das Einspielen bräche dort ab.
-    const loeschen = [...schema.matchAll(/^\s*delete from public\.(\w+)/gm)]
+    //
+    // Gemeint ist, was beim Einspielen läuft. Der Rumpf einer Funktion läuft
+    // erst, wenn sie gerufen wird (etwa `absage_vermerken`, T126) — er wird
+    // ausgeblendet, Zeichen für Zeichen, damit die Stellen bleiben. Ein
+    // `do $$`-Block dagegen läuft beim Einspielen und bleibt drin.
+    const ohneRuempfe = schema.replace(/\bas \$\$[\s\S]*?\$\$/g, (rumpf) => rumpf.replace(/[^\n]/g, ' '))
+    const loeschen = [...ohneRuempfe.matchAll(/^\s*delete from public\.(\w+)/gm)]
     for (const m of loeschen) {
       const angelegt = schema.indexOf(`create table if not exists public.${m[1]} (`)
       expect(angelegt, m[1]).toBeGreaterThan(-1)

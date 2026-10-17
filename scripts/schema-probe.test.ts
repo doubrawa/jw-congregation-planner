@@ -1620,16 +1620,18 @@ describe('Importe holen höchstens, was aufbewahrt wird (T125, 16.10.2026)', () 
     expect(gelesen.every((p) => p.includes('start=gte.2025-09-08')), gelesen.join(' · ')).toBe(true)
   })
 
-  it('abwesenheiten-importieren: ein --ab vor acht Wochen gilt erst ab der Frist', async () => {
+  it('abwesenheiten-importieren: ein --ab vor einem Jahr gilt erst ab der Frist', async () => {
+    // Bis zum 17.10.2026 acht Wochen — seitdem ein Jahr wie die Wochen: Die
+    // Auswertung rechnet damit, wer fehlte (T126).
     const { aufrufe, ausgabe } = await fahreMit(
       'abwesenheiten-importieren.mjs',
-      { 'AwayPeriods_7.5.json': [{ a: 101, b: '2026-05-04', c: '2026-06-01' }, { a: 101, b: '2099-01-01', c: '2099-01-10' }] },
+      { 'AwayPeriods_7.5.json': [{ a: 101, b: '2025-05-04', c: '2025-06-01' }, { a: 101, b: '2026-05-04', c: '2026-06-01' }] },
       {},
-      ['--ab', '2026-01-01'],
+      ['--ab', '2025-01-01'],
     )
     const neu = aufrufe.filter((a) => a.method === 'POST' && tabelleVon(a) === 'absences').flatMap((a) => a.body as { from_date: string }[])
-    expect(neu.map((z) => z.from_date)).toEqual(['2099-01-01'])
-    expect(ausgabe.join('\n')).toContain('--ab 2026-01-01 liegt vor der Aufbewahrungsfrist — es gilt 2026-07-13.')
+    expect(neu.map((z) => z.from_date)).toEqual(['2026-05-04'])
+    expect(ausgabe.join('\n')).toContain('--ab 2025-01-01 liegt vor der Aufbewahrungsfrist — es gilt 2025-09-08.')
   })
 
   it('wochen-importieren: ein --ab vor einem Jahr fragt erst ab der Frist', async () => {

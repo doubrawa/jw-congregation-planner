@@ -75,6 +75,7 @@ export function leererZustand({ theme, fontScale, lang }: Vorlieben): AppState {
     plaene: [],
     planEintraege: [],
     absences: [],
+    absagen: [],
     notifs: [],
     slotSel: null,
     selectedPersonId: null,

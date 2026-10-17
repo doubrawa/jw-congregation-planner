@@ -7123,10 +7123,11 @@ das echte Recht.
   echten Recht. Der Gruppenaufseher spielt die eigene Gruppe, sonst die erste;
   eine andere ist wählbar.
 - **Leiste** oben auf jedem Bildschirm, „Ansicht als …" mit **Beenden**.
-- **Schreiben bleibt erlaubt** — vorläufig entschieden, der Betreiber war nicht
-  da: Alles, was die Ansicht anbietet, darf der Admin ohnehin, und gesperrt
-  (wie offline) sähe die App anders aus als bei der Stufe. Die Leiste und die
-  Karte sagen, dass es echt ist. Zu bestätigen.
+- **Schreiben bleibt erlaubt** — erst vorläufig entschieden, als der Betreiber
+  nicht da war, am 17. Oktober von ihm bestätigt: *„schreiben erlaubt
+  lassen"*. Alles, was die Ansicht anbietet, darf der Admin ohnehin, und
+  gesperrt (wie offline) sähe die App anders aus als bei der Stufe. Die Leiste
+  und die Karte sagen, dass es echt ist.
 - An `rechteVon` vorbei entschied nur `darfAbwesenheitBearbeiten` — jetzt
   darüber. `tests/rechte-nur-ueber-rechtevon.test.ts` hält fest, dass niemand
   sonst `planner`/`zuteiler` selbst liest.
@@ -7221,6 +7222,13 @@ für Sitzungen räumt Supabase sie nicht ab. Am 16.10. waren es 12, die älteste
 vom 12.10. Möglich wäre eine Regel für Sitzungen, die ein Jahr unbenutzt
 sind; das Gerät bräuchte danach einen neuen Link.
 
+**Nachgezogen am 17. Oktober 2026 (für T126):** Abwesenheiten bleiben ein Jahr
+ab ihrem Ende, ihr Grund nur acht Wochen — der Lauf leert dann
+`absences.reason` (Zeile `absences.reason` in seinem Ergebnis). Dazu die neue
+Tabelle `absagen`, ein Jahr wie ihre Wochen. Betreiber auf die Frage: *„2. ja
+3. ja"*. Der erste Lauf am 19. Oktober räumt damit schon nach den neuen
+Fristen; davor hatte keiner gelöscht.
+
 ### T126 · Auswertung der Zuteilungen — mit Diagrammen 🏗 ✅ erledigt und ausgerollt (16. Oktober 2026)
 
 **Wortlaut:** *„nimm in die todo liste auf, dass wir noch eine auswertungsseite
@@ -7290,15 +7298,67 @@ unter „Planen und verwalten" nach der Planung (`ZUGANG.auswertung = 'planer'`)
 - Die Entwicklerseite stellt mit `uhr=2026-10-12` den Tag — die Auswertung zeigt
   nur Vergangenes, und unter der gewöhnlichen Uhr (7. September) liegt keine
   Testwoche zurück.
-- **Nicht gebaut, weil die Daten fehlen:** *Absagen je Bereich* — die App
-  bewahrt keine Absagen auf. Und Abwesenheiten kennt sie nur bis acht Wochen
-  nach ihrem Ende (T125): Für ältere Wochen rechnet die Auswertung, als wäre
-  jeder da gewesen. Beides liegt dem Betreiber zur Entscheidung vor.
+- **Erst nicht gebaut, weil die Daten fehlten:** *Absagen je Bereich* — die App
+  bewahrte keine Absagen auf, und Abwesenheiten kannte sie nur bis acht Wochen
+  nach ihrem Ende (T125). Dem Betreiber vorgelegt, am 17. Oktober entschieden
+  und nachgebaut (unten).
 - **Proben:** die Rechnung (`src/data/auswertung.test.ts`), der Bildschirm
   (`src/auswertung/AuswertungScreen.test.tsx`: Handy, Tablet, Desktop, Zurück,
   dazu en, uk, ar und fr ohne deutschen Rest — die Sabotage mit dem rohen
   Gruppennamen schlug an), Zurück am Handy, das Menü für Admin und Planer, die
   Push-Ziele (jetzt per `satisfies` vollständig, die Auswertung fehlte dort).
+
+**Nachgebaut am 17. Oktober 2026 — Absagen und Abwesenheiten über das Jahr.**
+Betreiber: *„2. ja 3. ja"* (Abwesenheiten ein Jahr, der Grund acht Wochen;
+Absagen aufzeichnen).
+
+- **Absagen hält die Datenbank fest:** Der Trigger `confirmations_absage`
+  schreibt beim Stand „verhindert" eine Zeile in `absagen` (Person, Schlüssel,
+  Woche). Sie bleibt, wenn der Platz neu besetzt wird und seine Zusage
+  verschwindet; nimmt der Absagende sie zurück („Doch bestätigen"), geht sie.
+  Lesen nur Admin und Planer (`darf_zuteilen`), schreiben kein Konto. Beim
+  Einspielen kamen die Absagen mit, die noch standen.
+- **In der Auswertung:** „Absagen je Bereich" in der Unteransicht „Treffpunkte,
+  Absagen, Ballungen" — gegen alle Zuteilungen des Bereichs, ein Treffpunkt
+  gegen die geleiteten. Der Bereich kommt aus dem Schlüssel über die Plätze der
+  Woche, auch über einen inzwischen leeren. Ab drei Absagen und doppelt so viel
+  Anteil wie jeder andere Bereich ein Hinweis „Viele Absagen" (führt am Handy in
+  die Unteransicht, ab dem Tablet rollt er dorthin). Die Person zeigt ihre
+  Absagen als vierte Kennzahl.
+- **Abwesenheiten** lädt die App jetzt ein Jahr nach ihrem Ende zurück (vorher
+  acht Wochen); der Import aus NWS darf ebenso weit zurück (`--ab`).
+- **Proben:** Rechnung, Bildschirm (Kachel, Liste, Hinweis am Handy und Tablet,
+  Person), Laden, Schema (Regel und Trigger), Aufbewahrung, Fremdschlüssel-Spiegel,
+  Mandanten-Nachweis, Zurücksetzen; 17 Einträge im Mutationskatalog.
+
+**Aus `/simplify` notiert (17. Oktober 2026), nicht umgesetzt** — Betreiber:
+*„mach am besten keine umsetzungen. nur notieren."* Durchgesehen wurden T126
+samt Absagen, T124 und T42; keiner der Punkte ändert, was die App zeigt. Das
+Code-Review (`/code-review max`) über dieselben Pakete steht noch aus — wegen
+des Wochenlimits nicht begonnen.
+
+| Nr. | Wo | Was |
+| --- | --- | --- |
+| 1 | `src/auswertung/Diagramme.tsx` (`WarteBalken`) | rechnet `2 * ueblich` statt mit `LANGE_AB` — die Grenze steht zweimal |
+| 2 | `src/auswertung/PersonAnsicht.tsx` (Achse je Bereich) | `1.5 * b.erwartet` statt `OBERE_GRENZE` |
+| 3 | `src/auswertung/EinseitigAnsicht.tsx` (`EinseitigKarten`) | `einseitig.filter(istEinseitig)` zweimal je Darstellung |
+| 4 | `src/auswertung/auswertung.css` (Kopf) | der Kommentar sagt, die Tabelle Person × Bereich rolle in ihrem Kasten — sie passt seit dem Umbau immer |
+| 5 | `src/data/auswertung.ts` (`AbsageEinteilung.wi`) | liest niemand |
+| 6 | `src/data/auswertung.ts` (`wartezeiten`) und `PersonAnsicht.tsx` | die Montage des Zeitraums werden zweimal aus `fenster.wochen` abgeleitet — gehören in `Zeitfenster`; dann braucht `wartezeiten` `weeks` nicht mehr |
+| 7 | `src/data/auswertung.ts` (`verteilung`) | läuft je Person über alle Einteilungen, dreimal je Rechnung — einmal nach Person gruppieren |
+| 8 | `src/data/auswertung.ts` (`einseitig`, `matrix`) | die Zählung je Person und Bereich steht zweimal |
+| 9 | `src/data/auswertung.ts` (`treffpunkte`, `ballungen`) | schreiben zwei Kennungen in einen Text-Schlüssel und zerlegen ihn wieder (`split('|')`) — verschachtelte Maps sparen das |
+| 10 | `src/data/auswertung.ts` (`wochenZwischen`) | dritte Fassung neben `wochenAbstand` (`auslastung.ts`) und `tageZwischen` (`meeting-dates.ts`) — eine Stelle in `meeting-dates.ts` |
+| 11 | `src/auswertung/EinseitigAnsicht.tsx` (`kopfZeilen`) | zerlegt den fertigen Bereichsnamen an „ · " und tauscht die Zusammenkunft per Textvergleich — besser liefert `privLabel` die Bausteine selbst |
+| 12 | `src/auswertung/AuswertungScreen.tsx` (`Last`) | eigenes Prozent-Format neben `k.prozent` (null gegen eine Nachkommastelle) — eines für beide |
+| 13 | `src/data/rechte.ts`, `src/app/AnsichtLeiste.tsx` | „Ansicht nur am echten Admin" (`planner && ansicht`) steht dreimal — ein `aktiveAnsicht()` in `ansicht.ts`; befristet, geht mit dem Ausbau von T124 |
+| 14 | `src/lib/data.ts` (`Absage.woche`) | lädt die App mit und liest es nie — die Woche steckt im Schlüssel; gebraucht wird sie nur in der Datenbank |
+| 15 | `scripts/check-index-access.mjs` samt Grundlinie | seit T42 prüft `tsconfig.app.json` selbst; die Sperrklinke meldet nur noch 0 (siehe Phase 7 unten) |
+
+Beim Durchsehen aufgefallen, kein Aufräumen: Die Kachel „Treffpunkte, Absagen,
+Ballungen" zählt alle Absagen, die Liste darunter nur die mit Bereich (eine
+Absage auf einem Platz, den es nicht mehr gibt, steht nur in der Kachel und bei
+der Person).
 
 ## Was bewusst offen bleibt
 
@@ -7723,13 +7783,13 @@ gezählt, kein Zweig außer `main`, keine PR, kein Issue; `sw.js` = HEAD; alle
 sieben Functions per `functions download` gleich dem Repo, 39 Dateien; Secrets
 ohne `INVITE_FROM`, `disable_signup` noch `false`). Im Code ist nichts mehr
 offen außer dem Rest von T42 (T123, T125 und T126 am 16. Oktober erledigt und
-ausgerollt, T124 und die Testdateien von T42 am 17.); was sonst aussteht,
-braucht den Betreiber oder ein Gerät.
+ausgerollt, T124, die Testdateien von T42 und die Absagen für die Auswertung am
+17.); was sonst aussteht, braucht den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124). Zu bestätigen: Schreiben in der Ansicht bleibt erlaubt |
-| **Betreiber** | Daten für die Auswertung (T126) | Absagen bewahrt die App nicht auf, Abwesenheiten nur acht Wochen nach ihrem Ende — soll die Auswertung beides kennen, müssten sie länger bleiben (siehe T126) |
+| **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
+| **Review** | T124, T126, T42 | `/simplify` am 17. Oktober durchgesehen, 15 Punkte notiert unter T126, nicht umgesetzt (Betreiber: „nur notieren"); `/code-review max` noch nicht begonnen (Wochenlimit) |
 | **Zurückgestellt** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт". Betreiber am 16. Oktober: „bleibt erst mal so" — wieder aufnehmen, wenn ein Muttersprachler prüft; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
 | **Wartet** | Motion-Clip „Plan senden" | am 12. Oktober zurückgestellt, bis das neue Design steht — das ist jetzt der Fall. Das leere Motion-Artifact liegt schon bereit |

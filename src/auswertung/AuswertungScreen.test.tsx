@@ -16,8 +16,12 @@ import { abwesenheitenVon } from '../data/absence'
 import { auswerten, ZEITRAEUME, type Zeitraum } from '../data/auswertung'
 import { displayName } from '../data/helpers'
 import { tagNach } from '../data/meeting-dates'
-import type { FsInstance, Lang, Week } from '../data/types'
+import { allePlaetze, platzKey } from '../data/plaetze'
+import { bereichVon } from '../data/planning'
+import type { Absage, FsInstance, Lang, Week } from '../data/types'
+import { LOCALES } from '../i18n/langs'
 import { dict, loadOverlay } from '../i18n/ui'
+import { fill } from '../i18n/useT'
 import { AuswertungScreen } from './AuswertungScreen'
 import { HINWEISE_SICHTBAR } from './Hinweise'
 
@@ -100,6 +104,7 @@ function rechnung(s: AppState, zeitraum: Zeitraum = 12) {
     services: s.services,
     groups: s.groups,
     abwesend: abwesenheitenVon(s.absences, s.weeks, s.congregation.times),
+    absagen: s.absagen,
     heute: MONTAG,
     zeitraum,
   })
@@ -177,7 +182,8 @@ describe('Am Handy: der Überblick', () => {
   it('ein Hinweis öffnet die Person — Zurück im Kopf führt in den Überblick', () => {
     const { container } = zeige(zustand())
     const a = rechnung(zustand())
-    const erste = DEMO.persons.find((p) => p.id === a.hinweise[0]!.pid)!
+    const h0 = a.hinweise[0]!
+    const erste = DEMO.persons.find((p) => h0.art !== 'absagen' && p.id === h0.pid)!
     const hinweis = container.querySelector('.aw-hinweis')!
     expect(hinweis.querySelector('.aw-hinweis-titel')?.textContent).toContain(displayName(erste))
     fireEvent.click(hinweis)
@@ -277,6 +283,105 @@ describe('Ab dem Tablet: alles auf einer Seite', () => {
     expect(container.querySelector('.aw-matrix')).toBeNull()
     zurueck(container)
     expect(container.querySelector('.aw-matrix')).not.toBeNull()
+  })
+})
+
+/* ---- Absagen ----------------------------------------------------------------- */
+
+/** Absagen von `pid` auf den ersten Platz des Bereichs in den letzten `n` Wochen des Verlaufs. */
+function absagenIn(bereich: string, n: number, pid: string): Absage[] {
+  return VERLAUF.weeks.slice(-n).map((w) => {
+    const platz = [...allePlaetze(w.mid, DEMO.services)].find((p) => bereichVon(p) === bereich)
+    if (!platz) throw new Error(`kein Platz ${bereich} am ${w.start}`)
+    return { personId: pid, taskKey: platzKey(platz, w.start, 'mid'), woche: w.start }
+  })
+}
+
+describe('Absagen (T126)', () => {
+  /** Wer im Überblick zuerst auffällt — so öffnet ein Tipp auf den ersten Hinweis die Person. */
+  const erster = (): string => {
+    const h = rechnung(zustand()).hinweise[0]!
+    if (h.art === 'absagen') throw new Error('der erste Hinweis gilt keiner Person')
+    return h.pid
+  }
+  const mitAbsagen = () => zustand({ absagen: absagenIn('gebet', 3, erster()) })
+  const kachel = (c: HTMLElement, name: string) =>
+    [...c.querySelectorAll<HTMLElement>('.aw-kachel')].find((k) => k.querySelector('.aw-kachel-titel')?.textContent === name)!
+  const karte = (c: HTMLElement) => c.querySelector(`section[aria-label="${t.awAbsagenTitel}"]`)!
+  const prozent = (anteil: number) => new Intl.NumberFormat(LOCALES.de, { style: 'percent', maximumFractionDigits: 1 }).format(anteil)
+  /** Der Hinweis auf die Absagen — „Alle Hinweise" gedrückt, wenn er hinter den ersten sechs steht. */
+  const absagenHinweis = (c: HTMLElement, s: AppState) => {
+    const i = rechnung(s).hinweise.findIndex((h) => h.art === 'absagen')
+    expect(i, 'kein Hinweis auf die Absagen').toBeGreaterThan(-1)
+    if (i >= HINWEISE_SICHTBAR) fireEvent.click(knopf(c, t.awAlleHinweise))
+    return c.querySelectorAll<HTMLElement>('.aw-hinweis')[i]!
+  }
+
+  it('die Kachel zählt sie, die Unteransicht je Bereich — gegen alle Zuteilungen des Bereichs', () => {
+    const s = mitAbsagen()
+    const a = rechnung(s)
+    expect(a.absagen).toHaveLength(1)
+    const z = a.absagen[0]!
+    expect(z).toMatchObject({ bereich: 'gebet', n: 3 })
+    const { container } = zeige(s)
+    expect(kachel(container, t.awWeiteresTitel).textContent).toContain(fill(t.awAbsagenZahl, { n: '3' }))
+    fireEvent.click(kachel(container, t.awWeiteresTitel))
+    const zeilen = karte(container).querySelectorAll('.aw-zeile')
+    expect(zeilen).toHaveLength(1)
+    expect(zeilen[0]!.querySelector('.aw-zeile-zahl')?.textContent).toBe(
+      `${fill(t.awAbsagenZahl, { n: '3' })} · ${fill(t.awAnteilVon, { anteil: prozent(z.anteil), m: String(z.von) })}`,
+    )
+    // Er fällt auf — in der Problemfarbe wie sein Hinweis.
+    expect(zeilen[0]!.querySelector('.aw-mini-wert.is-problem')).not.toBeNull()
+  })
+
+  it('ohne Absagen ein Satz statt der Liste', () => {
+    const { container } = zeige(zustand())
+    expect(kachel(container, t.awWeiteresTitel).textContent).toContain(fill(t.awAbsagenZahl, { n: '0' }))
+    fireEvent.click(kachel(container, t.awWeiteresTitel))
+    expect(karte(container).querySelector('.aw-zeile')).toBeNull()
+    expect(karte(container).querySelector('.aw-leer')?.textContent).toBe(t.awKeineAbsagen)
+  })
+
+  it('der Hinweis „Viele Absagen" führt am Handy in die Unteransicht und nennt den Bereich', () => {
+    const s = mitAbsagen()
+    const { container } = zeige(s)
+    const hinweis = absagenHinweis(container, s)
+    const titelText = hinweis.querySelector('.aw-hinweis-titel')?.textContent
+    fireEvent.click(hinweis)
+    expect(titel(container)).toBe(t.awWeiteresTitel)
+    const name = karte(container).querySelector('.aw-zeile-name')?.textContent ?? ''
+    expect(name).not.toBe('')
+    expect(titelText).toBe(fill(t.awHinweisAbsagen, { bereich: name }))
+  })
+
+  it('ab dem Tablet rollt der Hinweis zu den Absagen, statt die Seite zu wechseln', () => {
+    breite('tablet')
+    const gerollt: Element[] = []
+    const vorher = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = function (this: Element) {
+      gerollt.push(this)
+    }
+    try {
+      const s = mitAbsagen()
+      const { container } = zeige(s)
+      fireEvent.click(absagenHinweis(container, s))
+      expect(gerollt.map((e) => e.getAttribute('aria-label'))).toEqual([t.awWeiteresTitel])
+      expect(container.querySelector('.auswertung--breit')).not.toBeNull()
+    } finally {
+      if (vorher) Element.prototype.scrollIntoView = vorher
+      else delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView
+    }
+  })
+
+  it('die Person nennt ihre Absagen', () => {
+    const { container } = zeige(mitAbsagen())
+    fireEvent.click(container.querySelector('.aw-hinweis')!)
+    const kennzahlen = [...container.querySelectorAll('.aw-kennzahlen.is-vier .aw-kennzahl')].map((k) => [
+      k.querySelector('.aw-kennzahl-text')?.textContent,
+      k.querySelector('.aw-kennzahl-wert')?.textContent,
+    ])
+    expect(kennzahlen).toContainEqual([t.awAbsagen, '3'])
   })
 })
 

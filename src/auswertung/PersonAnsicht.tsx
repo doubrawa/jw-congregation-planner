@@ -45,7 +45,7 @@ export function PersonAnsicht({
 
   return (
     <div className="aw-ansicht">
-      <section aria-label={k.name(pid)} className="karte aw-kennzahlen">
+      <section aria-label={k.name(pid)} className="karte aw-kennzahlen is-vier">
         <div className="aw-kennzahl">
           <span className="aw-kennzahl-wert">{k.zahl(bild.aufgaben)}</span>
           <span className="aw-kennzahl-text">{fill(t.awAufgabenErwartet, { e: k.zahl(gerundet(bild.erwartetAufgaben)) })}</span>
@@ -57,6 +57,10 @@ export function PersonAnsicht({
         <div className="aw-kennzahl">
           <span className="aw-kennzahl-wert">{k.zahl(bild.abwesend)}</span>
           <span className="aw-kennzahl-text">{t.awAbwesend}</span>
+        </div>
+        <div className="aw-kennzahl">
+          <span className="aw-kennzahl-wert">{k.zahl(bild.absagen)}</span>
+          <span className="aw-kennzahl-text">{t.awAbsagen}</span>
         </div>
       </section>
 

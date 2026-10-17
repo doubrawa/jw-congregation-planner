@@ -176,6 +176,8 @@ export const LEEREN = [
   // Und die Weiteren Pläne (Phase 5) — die Einträge zuerst, sie zeigen auf die Pläne.
   'plan_eintraege',
   'plaene',
+  // Die Absagen (T126) gehören zu den Wochen, die hier gehen.
+  'absagen',
 ]
 
 /** Gelöscht **und** im selben Lauf aus dem SQL neu angelegt (feste IDs). */

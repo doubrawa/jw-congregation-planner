@@ -83,6 +83,18 @@
   padding: 16px 18px;
 }
 
+/* Die Person hat vier (mit den Absagen): am Handy zwei je Reihe, sonst vier. */
+.aw-kennzahlen.is-vier {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  row-gap: 14px;
+}
+
+@media (min-width: 768px) {
+  .aw-kennzahlen.is-vier {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 .aw-kennzahl {
   display: flex;
   flex-direction: column;
@@ -523,6 +535,10 @@
 
 .aw-mini-wert.is-hervor {
   background: var(--akzent);
+}
+
+.aw-mini-wert.is-problem {
+  background: var(--problem);
 }
 
 .aw-treffpunkt-gruppe {

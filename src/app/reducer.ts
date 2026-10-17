@@ -229,6 +229,8 @@ function ohnePerson(state: AppState, id: string): AppState {
     // niemandem (`absence.ts`), und mit toter Id stünde sie hier bis zum
     // nächsten Laden herum (T118). Die Datenbank räumt `persist.ts`.
     absences: state.absences.filter((a) => a.personId !== id),
+    // Ebenso ihre Absagen (T126) — die Datenbank nimmt sie per Kaskade mit.
+    absagen: state.absagen.filter((a) => a.personId !== id),
     groups: aemterBeenden(state.groups, id),
     // Ein Gruppenbesuch verliert seinen Besucher, nicht sich selbst — wie
     // die Datenbank (`on delete set null`). Der Plan zeigt ihn dann ohne
@@ -1715,6 +1717,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         plaene: p.plaene ?? [],
         planEintraege: p.planEintraege ?? [],
         absences: p.absences,
+        // Momentaufnahmen von vor dem 17.10.2026 kennen die Absagen nicht (T126).
+        absagen: p.absagen ?? [],
         notifs: gelesenBehalten(p.notifications, state.notifs),
         confirmations: p.confirmations,
         // Aus einer alten Momentaufnahme (lib/snapshot.ts) fehlt das Feld — sie

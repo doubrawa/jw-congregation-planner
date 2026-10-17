@@ -800,9 +800,17 @@ beide ab dem Montag der laufenden Woche gezählt
 
 | Frist | Was |
 | --- | --- |
-| **ein Jahr** | die Wochen und was zu ihnen gehört: Programm samt Zuteilungen (`weeks`), Treffpunkte (`fs_weeks`), Zusagen, Versand-Tagebuch, Gruppenbesuche, vorgemerkte Vorträge, Weitere Pläne samt Einträgen — die gerechte Verteilung fragt, wer am längsten wartet |
-| **acht Wochen** | Mitteilungen, Erinnerungs-Tagebuch, Abwesenheiten samt Grund (ab ihrem Ende), Trolley-Termine, abgelaufene Anmelde-Links, das Protokoll von Supabase Auth (`auth.audit_log_entries`: E-Mail und IP-Adresse je Anmeldung) |
+| **ein Jahr** | die Wochen und was zu ihnen gehört: Programm samt Zuteilungen (`weeks`), Treffpunkte (`fs_weeks`), Zusagen, Absagen (`absagen`), Versand-Tagebuch, Gruppenbesuche, vorgemerkte Vorträge, Weitere Pläne samt Einträgen — die gerechte Verteilung fragt, wer am längsten wartet; dazu die Abwesenheiten (ab ihrem Ende), mit denen die Auswertung rechnet |
+| **acht Wochen** | Mitteilungen, Erinnerungs-Tagebuch, der Grund einer Abwesenheit (ab ihrem Ende; der Lauf leert `absences.reason`), Trolley-Termine, abgelaufene Anmelde-Links, das Protokoll von Supabase Auth (`auth.audit_log_entries`: E-Mail und IP-Adresse je Anmeldung) |
 | **ein Tag** | Fehlversuche beim Anmelden (IP-Adressen) |
+
+Abwesenheiten und Absagen bleiben seit dem 17.10.2026 ein Jahr, für die
+Auswertung (T126): Wer weg war, von dem erwartet sie für diese Zeit nichts, und
+die Absagen zählt sie je Bereich. Eine Absage hält der Trigger
+`confirmations_absage` fest, sobald ein Platz als „verhindert" gemeldet wird. Sie
+bleibt, auch wenn der Platz danach neu besetzt wird; nimmt der Absagende sie
+zurück, geht sie wieder. Lesen dürfen sie nur Admin und Planer, schreiben nur
+der Trigger.
 
 Stammdaten (Personen, Haushalte, Gruppen, Dienste, Konten, Grundplan,
 Trolleys, Push-Abos) haben kein Alter.

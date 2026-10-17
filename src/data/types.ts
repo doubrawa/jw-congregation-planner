@@ -902,6 +902,20 @@ export interface Absence {
   reason: string // optional
 }
 
+/**
+ * **Eine Absage** (T126, 17.10.2026): wer welchen Platz in welcher Woche
+ * abgesagt hat. In `confirmations` verschwindet sie, sobald der Platz neu
+ * besetzt ist; hier bleibt sie ein Jahr — für die Auswertung. Lesen dürfen
+ * nur Admin und Planer, geschrieben wird sie vom Trigger an `confirmations`.
+ */
+export interface Absage {
+  personId: string
+  /** Der Schlüssel des Platzes (`_shared/aufgaben-schluessel.ts`). */
+  taskKey: string
+  /** Montag der Woche (ISO). */
+  woche: string
+}
+
 /* ---- Mitglieder & Anmelde-Links (Produktionsmodus) ---- */
 
 /**

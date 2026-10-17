@@ -74,12 +74,17 @@ export function WarteBalken({ wochen, ueblich, max, aria }: { wochen: number | n
   )
 }
 
-/** Ein schmaler Balken in einer Liste je Bereich — gestrichelt, wo nie. */
-export function MiniBalken({ n, max, hervor = false }: { n: number; max: number; hervor?: boolean }) {
+/**
+ * Ein schmaler Balken in einer Liste je Bereich — gestrichelt, wo nie.
+ * `hervor` in Minze (der überwiegende Bereich), `auffaellig` in der
+ * Problemfarbe (ein Bereich mit vielen Absagen).
+ */
+export function MiniBalken({ n, max, hervor = false, auffaellig = false }: { n: number; max: number; hervor?: boolean; auffaellig?: boolean }) {
   if (n === 0) return <span className="aw-mini is-nie" aria-hidden="true" />
+  const klasse = auffaellig ? 'aw-mini-wert is-problem' : hervor ? 'aw-mini-wert is-hervor' : 'aw-mini-wert'
   return (
     <span className="aw-mini" aria-hidden="true">
-      <span className={hervor ? 'aw-mini-wert is-hervor' : 'aw-mini-wert'} style={{ width: anteil(n, max) }} />
+      <span className={klasse} style={{ width: anteil(n, max) }} />
     </span>
   )
 }

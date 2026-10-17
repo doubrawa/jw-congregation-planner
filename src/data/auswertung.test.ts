@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildImportWeek, DEMO_SERVICES } from '../../tests/testdaten/testdaten'
 import { KEINE_ABWESENHEIT } from './absence'
 import {
+  absagenJeBereich,
   auswerten,
   ballungen,
   einseitig,
@@ -13,14 +14,18 @@ import {
   matrix,
   personBild,
   treffpunkte,
+  TREFFPUNKT_BEREICH,
   verteilung,
+  vieleAbsagen,
   wartezeiten,
   zeitfenster,
   type Grundlage,
 } from './auswertung'
 import { emptyQualifications, isSong, privSetzen, serviceQualKey } from './helpers'
 import { tagNach } from './meeting-dates'
-import type { FsInstance, Group, Meeting, Person, Week } from './types'
+import { allePlaetze, platzKey } from './plaetze'
+import { bereichVon } from './planning'
+import type { Absage, FsInstance, Group, Meeting, Person, Week } from './types'
 
 /**
  * **Die Auswertung rechnet so, wie die Automatik verteilt** (T126). Jeder Fall
@@ -366,7 +371,7 @@ describe('Was auffällt', () => {
     const persons = [a, b, c]
     const v = (['aufgaben', 'hilfsdienste'] as const).map((x) => verteilung(grund, persons, x))
     const h = hinweise(v, einseitig(grund, persons), [wartezeiten(grund, weeks, persons, 'gebet')])
-    const arten = h.map((x) => `${x.art}:${x.pid}`)
+    const arten = h.map((x) => `${x.art}:${x.art === 'absagen' ? x.bereich : x.pid}`)
     // c ist zu selten (in beiden Vergleichen, steht aber einmal da), a zu oft.
     expect(arten.filter((x) => x === 'selten:c')).toHaveLength(1)
     expect(arten.indexOf('selten:c')).toBeLessThan(arten.indexOf('oft:a'))
@@ -393,6 +398,115 @@ describe('Eine Person', () => {
 
   it('eine unbekannte Person hat kein Bild', () => {
     expect(personBild(g([], []), [], [], KEINE_ABWESENHEIT, 'x')).toBeNull()
+  })
+})
+
+/**
+ * **Absagen** (T126, 17.10.2026): Seit sie in `absagen` stehen, bleibt eine
+ * Absage auch dann gezählt, wenn der Platz längst neu besetzt ist. Zugeordnet
+ * wird über den Schlüssel des Platzes — so, wie die Automatik ihn baut.
+ */
+describe('Absagen', () => {
+  const mik = person('mik', [serviceQualKey('mik')])
+  const beter = person('beter', ['gebet'])
+  const andere = person('andere', ['gebet', serviceQualKey('mik')])
+  /** Der Schlüssel des `nth` Platzes dieses Bereichs in dieser Zusammenkunft — besetzt oder nicht. */
+  const schluessel = (w: Week, tab: 'mid' | 'we', bereich: string, nth = 0): string => {
+    const treffer = [...allePlaetze(w[tab], DEMO_SERVICES)].filter((p) => bereichVon(p) === bereich)
+    const platz = treffer[nth]
+    if (!platz) throw new Error(`kein Platz ${bereich} #${nth}`)
+    return platzKey(platz, w.start, tab)
+  }
+  const absage = (personId: string, w: Week, taskKey: string): Absage => ({ personId, taskKey, woche: w.start })
+  const grund = (weeks: Week[], absagen: Absage[], persons: Person[] = [mik, beter, andere]) =>
+    grundlage({ weeks, persons, services: DEMO_SERVICES, abwesend: KEINE_ABWESENHEIT, fenster: zeitfenster(weeks, 13, HEUTE), absagen })
+
+  it('jede Absage zählt in ihrem Bereich — auch wenn der Platz inzwischen ein anderer hat', () => {
+    const w = woche(1)
+    hilfsdienst(w.mid, 'mik', andere) // der Ersatz steht jetzt dort
+    setze(w.mid, 'gebet', andere, 1)
+    const g0 = grund([w], [absage('mik', w, schluessel(w, 'mid', serviceQualKey('mik'))), absage('beter', w, schluessel(w, 'mid', 'gebet', 1))])
+    expect(g0.absagen).toEqual([
+      { pid: 'mik', wi: 0, bereich: serviceQualKey('mik') },
+      { pid: 'beter', wi: 0, bereich: 'gebet' },
+    ])
+  })
+
+  it('auch auf einem Platz, der seitdem leer steht — der Planer hat den Absagenden nur ausgetragen', () => {
+    const w = woche(1)
+    const g0 = grund([w], [absage('mik', w, schluessel(w, 'mid', serviceQualKey('mik')))])
+    expect(g0.absagen).toEqual([{ pid: 'mik', wi: 0, bereich: serviceQualKey('mik') }])
+    // Ein leerer Platz ist trotzdem keine Zuteilung.
+    expect(g0.plaetze.get(serviceQualKey('mik'))).toBeUndefined()
+  })
+
+  it('nicht gezählt: außerhalb des Zeitraums, in einer ausgefallenen Zusammenkunft, von jemandem, der nicht mehr da ist', () => {
+    const alt = woche(20)
+    const aus = woche(2)
+    aus.dev = { mid: { cancelled: true } }
+    const w = woche(1)
+    const g0 = grund([alt, aus, w], [
+      absage('beter', alt, schluessel(alt, 'mid', 'gebet')),
+      absage('beter', aus, schluessel(aus, 'mid', 'gebet')),
+      absage('weg', w, schluessel(w, 'mid', 'gebet')),
+    ])
+    expect(g0.absagen).toEqual([])
+  })
+
+  it('einen Platz, den es nicht mehr gibt, zählt die Person — ein Bereich ist nicht zu sagen', () => {
+    const w = woche(1)
+    const g0 = grund([w], [absage('beter', w, `${w.start}|mid|part|weg|0`)])
+    expect(g0.absagen).toEqual([{ pid: 'beter', wi: 0, bereich: null }])
+  })
+
+  it('ein abgesagter Treffpunkt zählt unter „Treffpunkte leiten" — gegen die geleiteten', () => {
+    const w = woche(1)
+    const g0 = grund([w], [absage('beter', w, `fs|${w.start}|inst-1`)])
+    expect(g0.absagen).toEqual([{ pid: 'beter', wi: 0, bereich: TREFFPUNKT_BEREICH }])
+    expect(absagenJeBereich(g0, 4)).toEqual([{ bereich: TREFFPUNKT_BEREICH, n: 1, von: 4, anteil: 0.25 }])
+  })
+
+  it('je Bereich: wie viele, gegen alle Zuteilungen des Bereichs — die meisten zuerst', () => {
+    const weeks = [woche(3), woche(2), woche(1)]
+    for (const w of weeks) {
+      hilfsdienst(w.mid, 'mik', andere)
+      hilfsdienst(w.mid, 'mik', mik)
+      setze(w.mid, 'gebet', andere, 1)
+    }
+    const absagen = weeks.flatMap((w) => [absage('mik', w, schluessel(w, 'mid', serviceQualKey('mik'), 1))])
+    absagen.push(absage('beter', weeks[0]!, schluessel(weeks[0]!, 'mid', 'gebet', 1)))
+    const zeilen = absagenJeBereich(grund(weeks, absagen), 0)
+    // Sechs Mikrofon-Plätze, drei Gebete.
+    expect(zeilen).toEqual([
+      { bereich: serviceQualKey('mik'), n: 3, von: 6, anteil: 0.5 },
+      { bereich: 'gebet', n: 1, von: 3, anteil: 1 / 3 },
+    ])
+  })
+
+  it('viele Absagen: mindestens drei, und doppelt so viel Anteil wie jeder andere Bereich', () => {
+    const z = (bereich: string, n: number, von: number) => ({ bereich, n, von, anteil: n / von })
+    expect(vieleAbsagen([z('a', 9, 212), z('b', 4, 598), z('c', 1, 50)]).map((x) => x.zeile.bereich)).toEqual(['a'])
+    // Doppelt so viel Anteil fehlt: 4 % gegen 3 %.
+    expect(vieleAbsagen([z('a', 8, 200), z('b', 3, 100)])).toEqual([])
+    // Nur zwei — zu wenig, um aufzufallen.
+    expect(vieleAbsagen([z('a', 2, 10)])).toEqual([])
+    expect(vieleAbsagen([z('a', 3, 10)])).toEqual([{ zeile: z('a', 3, 10), sonst: 0 }])
+  })
+
+  it('der Hinweis steht nach den Personen, mit Anteil und dem höchsten der anderen', () => {
+    const zeilen = [
+      { bereich: 'schulung', n: 9, von: 212, anteil: 9 / 212 },
+      { bereich: 'gebet', n: 1, von: 96, anteil: 1 / 96 },
+    ]
+    expect(hinweise([], [], [], zeilen)).toEqual([{ art: 'absagen', bereich: 'schulung', anteil: 9 / 212, sonst: 1 / 96 }])
+  })
+
+  it('die Person: ihre Absagen im Zeitraum — nicht die der anderen', () => {
+    const weeks = [woche(2), woche(1)]
+    const absagen = weeks.map((w) => absage('beter', w, schluessel(w, 'mid', 'gebet')))
+    absagen.push(absage('mik', weeks[0]!, schluessel(weeks[0]!, 'mid', serviceQualKey('mik'))))
+    const bild = personBild(grund(weeks, absagen), weeks, [mik, beter, andere], KEINE_ABWESENHEIT, 'beter')
+    expect(bild?.absagen).toBe(2)
   })
 })
 

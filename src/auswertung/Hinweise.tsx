@@ -1,23 +1,24 @@
 import { useState } from 'react'
-import { Zeichen } from '../bausteine/Zeichen'
+import { Zeichen, type ZeichenName } from '../bausteine/Zeichen'
 import type { Hinweis } from '../data/auswertung'
-import { hinweisTexte } from './hinweis-texte'
+import { hinweisSchluessel, hinweisTexte } from './hinweis-texte'
 import type { Kontext } from './kontext'
 
 /** So viele stehen im Überblick, bevor „Alle Hinweise" den Rest zeigt. */
 export const HINWEISE_SICHTBAR = 6
 
-/** Das Zeichen eines Hinweises: Pfeil hinauf oder hinab, halber Kreis, Uhr. */
-function HinweisZeichen({ art }: { art: Hinweis['art'] }) {
-  if (art === 'oft') return <Zeichen name="pfeilHoch" />
-  if (art === 'selten') return <Zeichen name="pfeilRunter" />
-  if (art === 'einseitig') return <Zeichen name="halb" />
-  return <Zeichen name="uhr" />
-}
+/** Das Zeichen eines Hinweises: Pfeil hinauf oder hinab, halber Kreis, Uhr, Kreuz. */
+const ZEICHEN_DER_ART = {
+  oft: 'pfeilHoch',
+  selten: 'pfeilRunter',
+  einseitig: 'halb',
+  wartet: 'uhr',
+  absagen: 'kreuz',
+} as const satisfies Record<Hinweis['art'], ZeichenName>
 
 /**
- * **Was auffällt** — die ersten sechs, auf „Alle Hinweise" der Rest. Jeder
- * Hinweis öffnet die Person.
+ * **Was auffällt** — die ersten sechs, auf „Alle Hinweise" der Rest. Ein
+ * Hinweis zu einer Person öffnet sie, einer zu einem Bereich die Absagen.
  */
 export function HinweisListe({ k }: { k: Kontext }) {
   const [alle, setAlle] = useState(false)
@@ -30,10 +31,14 @@ export function HinweisListe({ k }: { k: Kontext }) {
         {sichtbar.map((h) => {
           const { titel, text } = hinweisTexte(h, k)
           return (
-            <li key={`${h.art}|${h.pid}`}>
-              <button type="button" className="aw-hinweis" onClick={() => k.personOeffnen(h.pid)}>
+            <li key={hinweisSchluessel(h)}>
+              <button
+                type="button"
+                className="aw-hinweis"
+                onClick={() => (h.art === 'absagen' ? k.ansichtOeffnen('weiteres') : k.personOeffnen(h.pid))}
+              >
                 <span className="aw-hinweis-zeichen" aria-hidden="true">
-                  <HinweisZeichen art={h.art} />
+                  <Zeichen name={ZEICHEN_DER_ART[h.art]} />
                 </span>
                 <span className="aw-hinweis-text">
                   <span className="aw-hinweis-titel">{titel}</span>

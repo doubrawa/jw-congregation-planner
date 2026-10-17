@@ -660,9 +660,9 @@ Schritt **Zuteilen** der Spur — führt wieder in den Plan.
 
 Unter **Planen und verwalten** → **Auswertung** siehst du, wie sich die
 Zuteilungen der vergangenen Wochen auf die Versammlung verteilen: wer zu oft
-oder zu selten dran ist, wer immer dasselbe macht und wer lange wartet. Die
-Auswertung sehen nur Planer und Admins. Sie rechnet aus den Wochen, die die App
-kennt, und speichert nichts; drucken lässt sie sich nicht.
+oder zu selten dran ist, wer immer dasselbe macht, wer lange wartet und wo oft
+abgesagt wird. Die Auswertung sehen nur Planer und Admins. Sie rechnet aus den
+Wochen, die die App kennt; drucken lässt sie sich nicht.
 
 ![Auswertung der Zuteilungen](screenshots/planer-auswertung.png)
 
@@ -672,14 +672,15 @@ kennt, und speichert nichts; drucken lässt sie sich nicht.
 - **Kennzahlen** – alle Zuteilungen im Zeitraum, wie viele derer mit einem
   Aufgabenbereich eingeteilt waren und wie viele nie dran waren.
 - **Was auffällt** – das Wichtigste zuerst: zu selten, zu oft, einseitig,
-  wartet lange. Je Person und Art steht nur der deutlichste Fall da. Ein Tipp
-  öffnet die Person; **Alle Hinweise** zeigt den Rest.
+  wartet lange, viele Absagen. Je Person und Art steht nur der deutlichste Fall
+  da. Ein Tipp öffnet die Person – bei vielen Absagen die Absagen;
+  **Alle Hinweise** zeigt den Rest.
 - **Wie sich die Last verteilt** – je Person ein Balken, die meisten zuerst,
   Aufgaben und Hilfsdienste zusammen. Die zehn oberen sind hervorgehoben, wer
   nie dran war, steht als gestrichelte Linie da. **Als Tabelle** zeigt dieselben
   Zahlen als Liste.
 - Am Handy führen vier Kacheln weiter – **Zu oft, zu selten**, **Einseitig
-  verteilt**, **Wartezeiten**, **Treffpunkte und Ballungen**; Zurück führt
+  verteilt**, **Wartezeiten**, **Treffpunkte, Absagen, Ballungen**; Zurück führt
   wieder in den Überblick. Am Tablet steht alles auf einer Seite, am Computer
   dazu die Tabelle **Wer bekommt was** (Person × Bereich).
 
@@ -728,33 +729,40 @@ im Zeitraum nie dran war. Darunter **Schnell wieder dran**: wer mindestens
 dreimal dran war, mit höchstens halb so viel Abstand wie üblich – je Woche ein
 Feld.
 
-### Treffpunkte und Ballungen
+### Treffpunkte, Absagen, Ballungen
 
 - **Treffpunkte leiten** – wer die Zusammenkünfte für den Predigtdienst
   geleitet hat, je Gruppe.
+- **Absagen je Bereich** – wie viele Zuteilungen eines Bereichs abgesagt
+  wurden, gemessen an allen seinen Zuteilungen im Zeitraum; bei den Treffpunkten
+  an den geleiteten. Gezählt wird jede Absage, auch wenn der Platz danach neu
+  besetzt wurde. Nimmt jemand seine Absage zurück (**Doch bestätigen**), zählt
+  sie nicht mehr. Hat ein Bereich mindestens drei Absagen und doppelt so viel
+  Anteil wie jeder andere, steht er rot da und unter **Was auffällt**.
 - **Ballungen** – wer zweimal in einer Zusammenkunft dran war oder drei Wochen
   und mehr hintereinander im selben Bereich.
 
 ### Eine Person
 
 Ein Tipp auf einen Namen zeigt die Person: ihre Aufgaben gegen die Erwartung,
-ihre Hilfsdienste, wie oft sie abwesend war, die Wochen des Zeitraums als
-Felder (Aufgabe, Hilfsdienst, abwesend) und je Bereich, wie oft und wann
-zuletzt.
+ihre Hilfsdienste, wie oft sie abwesend war und wie oft sie abgesagt hat, die
+Wochen des Zeitraums als Felder (Aufgabe, Hilfsdienst, abwesend) und je
+Bereich, wie oft und wann zuletzt.
 
 ### Was die Auswertung nicht weiß
 
 - Sie kennt nur die Wochen, die die App aufbewahrt – ein Jahr (Abschnitt 11).
   Sind erst wenige Wochen da, sind die Zahlen klein, und es fällt mehr auf, als
   es sollte.
-- Abwesenheiten bewahrt die App bis acht Wochen nach ihrem Ende auf. Für ältere
-  Wochen rechnet die Auswertung so, als wäre jeder da gewesen.
+- Abwesenheiten kennt sie, soweit sie in der App stehen. Aus New World
+  Scheduler kamen sie erst ab dem Tag des Imports; für die Wochen davor rechnet
+  die Auswertung so, als wäre jeder da gewesen.
 - Seit wann jemand dabei ist oder einen Bereich hat, weiß sie nicht: Für einen
   neuen Verkündiger oder einen frisch vergebenen Bereich rechnet sie, als wäre
   es den ganzen Zeitraum so gewesen. Er kann deshalb unter „zu selten" stehen,
   ohne dass etwas schief liegt.
-- Absagen bewahrt die App nicht auf; wie oft jemand abgesagt hat, zeigt die
-  Auswertung deshalb nicht.
+- Absagen merkt sich die App seit dem 17. Oktober 2026. Was davor abgesagt und
+  schon neu besetzt war, fehlt in der Auswertung.
 
 ---
 
@@ -1767,13 +1775,19 @@ Montag der laufenden Woche, nicht auf den Tag genau:
 
 | Was | Wie lange |
 | --- | --- |
-| Wochenpläne mit allen Zuteilungen, Treffpunkte, Zusagen, wer benachrichtigt wurde, Gruppenbesuche, vorgemerkte Vorträge, Weitere Pläne | **ein Jahr** |
-| Mitteilungen in der Glocke, Erinnerungen, Abwesenheiten samt Grund (ab ihrem Ende), Trolley-Termine, abgelaufene Anmelde-Links | **acht Wochen** |
+| Wochenpläne mit allen Zuteilungen, Treffpunkte, Zusagen und Absagen, wer benachrichtigt wurde, Gruppenbesuche, vorgemerkte Vorträge, Weitere Pläne, Abwesenheiten (ab ihrem Ende) | **ein Jahr** |
+| Mitteilungen in der Glocke, Erinnerungen, der Grund einer Abwesenheit (ab ihrem Ende), Trolley-Termine, abgelaufene Anmelde-Links | **acht Wochen** |
 
 **Warum ein Jahr für die Pläne:** „Automatisch" und die Vorschläge beim
 Zuteilen fragen, wer am längsten nicht dran war. Wer nur alle paar Monate eine
 Aufgabe hat, braucht dafür ein Jahr Rückblick. Was zu einer Woche gehört, etwa
 ihre Zusagen, bleibt so lange wie die Woche selbst.
+
+**Warum ein Jahr für Abwesenheiten und Absagen:** Die
+[Auswertung](#4a-auswertung-wie-die-zuteilungen-verteilt-sind) rechnet bis zu
+ein Jahr zurück. Wer abwesend war, von dem erwartet sie für diese Zeit nichts,
+und wie oft abgesagt wurde, zählt sie über den ganzen Zeitraum. Warum jemand weg
+war, braucht sie nicht: Den Grund löscht die App schon nach acht Wochen.
 
 Personen, Gruppen, Dienste, der Grundplan der Treffpunkte, die Trolleys und die
 Konten haben kein Alter. Sie bleiben, bis du sie änderst oder entfernst.

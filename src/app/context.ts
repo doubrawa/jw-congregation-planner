@@ -24,6 +24,7 @@ import type {
   AnlassArt,
   AnmeldeLink,
   Abweichung,
+  Absage,
   Absence,
   Congregation,
   ConfirmationMap,
@@ -105,6 +106,8 @@ export interface HydratePayload {
   plaene: WeitererPlan[]
   planEintraege: PlanEintrag[]
   absences: Absence[]
+  /** Absagen (T126) — nur Admin und Planer bekommen Zeilen. Fehlt in einer Momentaufnahme von davor. */
+  absagen?: Absage[]
   notifications: Notification[]
   confirmations: ConfirmationMap
   sentLog: SentLog
@@ -225,6 +228,12 @@ export interface AppState {
   plaene: WeitererPlan[]
   planEintraege: PlanEintrag[]
   absences: Absence[]
+  /**
+   * Absagen des letzten Jahres (T126): wer welchen Platz abgesagt hat, auch
+   * wenn er längst neu besetzt ist. Nur für die Auswertung; ein Mitglied ohne
+   * Zuteilungsrecht bekommt keine Zeile (RLS).
+   */
+  absagen: Absage[]
   notifs: Notification[]
   confirmations: ConfirmationMap // Slot-Pfad → Status (nur Produktionsmodus)
   /**

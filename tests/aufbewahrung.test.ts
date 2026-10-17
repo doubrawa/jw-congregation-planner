@@ -111,15 +111,23 @@ describe('Aufräumen in der Datenbank', () => {
     expect(falsch).toEqual([])
   })
 
-  it('die Wochen und was zu ihnen gehört: ein Jahr — Mitteilungen, Abwesenheiten und Termine: acht Wochen', () => {
+  it('die Wochen und was zu ihnen gehört, Absagen und Abwesenheiten: ein Jahr — Mitteilungen und Termine: acht Wochen', () => {
     const frist = Object.fromEntries(REGELN.map((r) => [r.tabelle, r.grenze]))
-    for (const t of ['weeks', 'fs_weeks', 'confirmations', 'assignment_log', 'gruppenbesuche', 'vortraege', 'plaene', 'plan_eintraege']) {
+    for (const t of ['weeks', 'fs_weeks', 'confirmations', 'assignment_log', 'gruppenbesuche', 'vortraege', 'plaene', 'plan_eintraege', 'absagen', 'absences']) {
       expect(frist[t], t).toBe('ein_jahr')
     }
-    for (const t of ['notifications', 'reminder_log', 'absences', 'trolley_termine', 'anmelde_links']) {
+    for (const t of ['notifications', 'reminder_log', 'trolley_termine', 'anmelde_links']) {
       expect(frist[t], t).toBe('acht_wochen')
     }
     expect(frist.anmelde_fehlversuche).toBe("now() - interval '1 day'")
+  })
+
+  it('der Grund einer Abwesenheit geht nach acht Wochen — der Zeitraum bleibt ein Jahr (17.10.2026)', () => {
+    // Die Auswertung braucht, wer wann fehlte, über das Jahr; warum, braucht
+    // niemand so lange.
+    expect(RUMPF).toContain("update public.absences set reason = '' where to_date < acht_wochen and reason <> '';")
+    expect(RUMPF).toContain("select count(*) into n from public.absences where to_date < acht_wochen and reason <> '';")
+    expect(RUMPF).toContain("tabelle := 'absences.reason';")
   })
 
   it('auch das Anmelde-Protokoll von Supabase geht nach acht Wochen — der Lauf nimmt den Namen samt Schema', () => {

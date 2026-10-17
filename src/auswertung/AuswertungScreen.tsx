@@ -35,6 +35,14 @@ import './auswertung.css'
  * überall als Unteransicht. Gerechnet wird in `data/auswertung.ts`; hier werden
  * die Zahlen zu Wörtern.
  */
+/** Wo jede Unteransicht ab dem Tablet auf der Seite steht — ein Hinweis rollt dorthin. */
+const ANKER = {
+  verteilung: 'aw-verteilung',
+  einseitig: 'aw-einseitig',
+  wartezeiten: 'aw-wartezeiten',
+  weiteres: 'aw-weiteres',
+} as const satisfies Record<Exclude<Ansicht, 'ueberblick'>, string>
+
 export function AuswertungScreen() {
   const { state } = useApp()
   const { t, tu } = useT()
@@ -51,14 +59,15 @@ export function AuswertungScreen() {
   useBackDismiss(unten, () => setAnsicht('ueberblick'), 'unteransicht')
   useBackDismiss(person !== null, () => setPerson(null), 'unteransicht')
 
-  const { weeks, fsWeeks, persons, services, groups, lang } = state
+  const { weeks, fsWeeks, persons, services, groups, absagen, lang } = state
   const a = useMemo(
-    () => auswerten({ weeks, fsWeeks, persons, services, groups, abwesend, heute, zeitraum }),
-    [weeks, fsWeeks, persons, services, groups, abwesend, heute, zeitraum],
+    () => auswerten({ weeks, fsWeeks, persons, services, groups, abwesend, absagen, heute, zeitraum }),
+    [weeks, fsWeeks, persons, services, groups, abwesend, absagen, heute, zeitraum],
   )
   const k = useMemo<Kontext>(() => {
     const namen = new Map(persons.map((p) => [p.id, displayName(p)]))
     const zahl = new Intl.NumberFormat(LOCALES[lang] ?? lang, { maximumFractionDigits: 1 })
+    const prozent = new Intl.NumberFormat(LOCALES[lang] ?? lang, { style: 'percent', maximumFractionDigits: 1 })
     const tag = datumsFormat(lang, 'tagMonatKurz')
     return {
       a,
@@ -70,9 +79,13 @@ export function AuswertungScreen() {
       dauer: (wochen) => zeitspanne(wochen, 'week', lang),
       zahl: (n) => zahl.format(n),
       datum: (iso) => tag.format(fromIso(iso)),
+      prozent: (anteil) => prozent.format(anteil),
       personOeffnen: setPerson,
+      // Ab dem Tablet steht die Unteransicht schon auf der Seite: dorthin rollen.
+      ansichtOeffnen: (ziel) =>
+        breit ? document.getElementById(ANKER[ziel])?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }) : setAnsicht(ziel),
     }
-  }, [a, persons, services, groups, lang, t, tu])
+  }, [a, persons, services, groups, lang, t, tu, breit])
 
   if (person !== null) {
     return (
@@ -149,25 +162,27 @@ export function AuswertungScreen() {
           <WasAuffaellt k={k} />
           <Last k={k} />
         </div>
-        <section className="aw-spalte" aria-label={t.awVerteilungTitel}>
+        <section id={ANKER.verteilung} className="aw-spalte" aria-label={t.awVerteilungTitel}>
           <h2 className="abschnitt-titel">{t.awVerteilungTitel}</h2>
           <VerteilungAnsicht k={k} />
         </section>
       </div>
       {desktop ? (
-        <EinseitigMatrix k={k} persons={persons} services={services} />
+        <div id={ANKER.einseitig}>
+          <EinseitigMatrix k={k} persons={persons} services={services} />
+        </div>
       ) : (
-        <section className="aw-abschnitt" aria-label={t.awEinseitigTitel}>
+        <section id={ANKER.einseitig} className="aw-abschnitt" aria-label={t.awEinseitigTitel}>
           <h2 className="abschnitt-titel">{t.awEinseitigTitel}</h2>
           <EinseitigKarten k={k} />
         </section>
       )}
       <div className="aw-raster">
-        <section className="aw-spalte" aria-label={t.awWartezeitenTitel}>
+        <section id={ANKER.wartezeiten} className="aw-spalte" aria-label={t.awWartezeitenTitel}>
           <h2 className="abschnitt-titel">{t.awWartezeitenTitel}</h2>
           <WartezeitenAnsicht k={k} />
         </section>
-        <section className="aw-spalte" aria-label={t.awWeiteresTitel}>
+        <section id={ANKER.weiteres} className="aw-spalte" aria-label={t.awWeiteresTitel}>
           <h2 className="abschnitt-titel">{t.awWeiteresTitel}</h2>
           <WeiteresAnsicht k={k} />
         </section>
@@ -303,7 +318,10 @@ function Kacheln({ k, zu }: { k: Kontext; zu: (ansicht: Ansicht) => void }) {
       ansicht: 'weiteres',
       zeichen: 'predigtdienst',
       titel: t.awWeiteresTitel,
-      zahl: fill(t.awBallungenZahl, { n: k.zahl(a.ballungen.zweimal.length + a.ballungen.folge.length) }),
+      zahl: [
+        fill(t.awAbsagenZahl, { n: k.zahl(a.grundlage.absagen.length) }),
+        fill(t.awBallungenZahl, { n: k.zahl(a.ballungen.zweimal.length + a.ballungen.folge.length) }),
+      ].join(' · '),
     },
   ]
   return (

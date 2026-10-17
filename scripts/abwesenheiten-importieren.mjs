@@ -52,9 +52,10 @@
  * Wer `SUPABASE_SECRET_KEY` gesetzt hat, wird nicht gefragt.
  *
  * `--ab`      früheste Bis-Datum, das noch importiert wird (Vorgabe: heute).
- *             Vergangenes bleibt draußen — es ändert an der Planung nichts und
- *             füllte nur die persönlichen Listen. Früher als acht Wochen zurück
- *             geht es nicht (T125): Danach räumt die Datenbank Abwesenheiten.
+ *             Vergangenes bleibt sonst draußen — an der Planung ändert es
+ *             nichts; nur die Auswertung (T126) rechnet damit, wer fehlte.
+ *             Früher als ein Jahr zurück geht es nicht (T125): Danach räumt
+ *             die Datenbank Abwesenheiten (bis zum 17.10.2026 acht Wochen).
  * `--trocken` zeigt nur, was geschähe, und schreibt nichts.
  *
  * Der **Service-Role-Key** umgeht RLS und darf niemals in die App oder ins
@@ -220,8 +221,8 @@ export async function main(argv = process.argv.slice(2)) {
   const { url, key } = await zugangsdaten()
   const datenDir = arg.daten || 'C:/DATA/Claude/nws-export/MyData-decrypted'
   appCodeBereit()
-  const { aufbewahrtAb, SONST_WOCHEN } = await import('../src/data/aufbewahrung.ts')
-  const ab = nichtVorDerFrist(typeof arg.ab === 'string' ? arg.ab : heuteISO(), aufbewahrtAb(SONST_WOCHEN))
+  const { aufbewahrtAb, VERTEILUNG_WOCHEN } = await import('../src/data/aufbewahrung.ts')
+  const ab = nichtVorDerFrist(typeof arg.ab === 'string' ? arg.ab : heuteISO(), aufbewahrtAb(VERTEILUNG_WOCHEN))
   const rest = restKlient(url, key)
 
   const tabellen = ladeTabellen(datenDir, TABELLEN)

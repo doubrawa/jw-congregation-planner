@@ -18,9 +18,10 @@ import type { EntzogeneZuteilung } from '../data/plan-versand'
 import { pidsNachtragen } from '../data/namensbindung'
 import { normalizeChairKeys } from '../data/helpers'
 import { isoDay, montagVon, tagNach } from '../data/meeting-dates'
-import { aufbewahrtAb, SONST_WOCHEN, VERTEILUNG_WOCHEN } from '../data/aufbewahrung'
+import { aufbewahrtAb, VERTEILUNG_WOCHEN } from '../data/aufbewahrung'
 import { taktVon } from '../data/weitere-plaene'
 import type {
+  Absage,
   Absence,
   Congregation,
   ConfirmationMap,
@@ -359,6 +360,16 @@ function serviceToRow(s: Service, congregationId: string, position: number) {
   }
 }
 
+interface AbsageRow {
+  person_id: string
+  task_key: string
+  woche: string
+}
+
+function absageFromRow(r: AbsageRow): Absage {
+  return { personId: r.person_id, taskKey: r.task_key, woche: r.woche }
+}
+
 function absenceFromRow(r: AbsenceRow): Absence {
   return {
     id: r.id,
@@ -555,6 +566,8 @@ export interface CongregationData {
   plaene: WeitererPlan[]
   planEintraege: PlanEintrag[]
   absences: Absence[]
+  /** Absagen des letzten Jahres (T126) — nur Admin und Planer bekommen Zeilen (RLS). */
+  absagen: Absage[]
   notifications: Notification[]
   confirmations: ConfirmationMap
   reminders: Reminders
@@ -597,9 +610,10 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // **Ladefenster** (T125, 16.10.2026): was die App braucht, und nicht mehr —
   // gezählt vom Montag der laufenden Woche (`aufbewahrung.ts`). Ein Jahr für
   // die Wochen und was zu ihnen gehört (Treffpunkte, Gruppenbesuche,
-  // vorgemerkte Vorträge, Plan-Einträge), acht Wochen nach ihrem Ende für die
-  // Abwesenheiten. Was voraus liegt, kommt ganz. Älteres räumt die Datenbank
-  // (`alte_daten_loeschen`).
+  // vorgemerkte Vorträge, Plan-Einträge, Absagen) und ebenso ein Jahr nach
+  // ihrem Ende für die Abwesenheiten (seit 17.10.2026, für die Auswertung;
+  // bis dahin acht Wochen). Was voraus liegt, kommt ganz. Älteres räumt die
+  // Datenbank (`alte_daten_loeschen`).
   //
   // Bis dahin waren es die jüngsten 52 Wochen, angelegt am Ergebnis — mit einer
   // Frist ab heute braucht die Grenze keine Vorabfrage. Gemessen wird seit T66
@@ -609,7 +623,6 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // Zusagen und Versand-Tagebuch tragen ihre Woche nur im Schlüssel; dort hält
   // das Aufräumen den Bestand klein.
   const verteilungAb = aufbewahrtAb(VERTEILUNG_WOCHEN)
-  const sonstAb = aufbewahrtAb(SONST_WOCHEN)
   const wochenAbfrage = supabase
     .from('weeks')
     .select('start, data, updated_at')
@@ -623,7 +636,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .gte('start', verteilungAb)
     .order('start', { ascending: false })
 
-  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, linkRows, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, vortragRows, trolleyRows, trolleyTerminRows, planRows, planEintragRows] = await Promise.all([
+  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, linkRows, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, vortragRows, trolleyRows, trolleyTerminRows, planRows, planEintragRows, absageRows] = await Promise.all([
     supabase.from('congregations').select(CONG_SPALTEN.join(', ')).eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
@@ -633,14 +646,15 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     // fehlt (RLS erlaubt der Versammlung ohnehin das Lesen). „Deine Einträge"
     // im persönlichen Bereich filtert selbst auf die eigene user_id.
     // Seitenweise wie die Zusagen: Eine, die hinter der Zeilengrenze läge,
-    // bekäme der Planer nicht zu sehen. Ab acht Wochen nach ihrem Ende braucht
-    // sie niemand mehr (T125).
+    // bekäme der Planer nicht zu sehen. Ein Jahr nach ihrem Ende, wie die
+    // Wochen: Die Auswertung rechnet über das ganze Jahr damit, wer fehlte
+    // (T126, 17.10.2026). Den Grund leert die Datenbank nach acht Wochen.
     alleSeiten<AbsenceRow>((von, bis) =>
       db
         .from('absences')
         .select('*', { count: 'exact' })
         .eq('congregation_id', congregationId)
-        .gte('to_date', sonstAb)
+        .gte('to_date', verteilungAb)
         .order('from_date')
         .order('id')
         .range(von, bis),
@@ -751,6 +765,20 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
         .order('id')
         .range(von, bis),
     ),
+    // Absagen (T126): ein Jahr wie ihre Wochen. Ein Mitglied ohne
+    // Zuteilungsrecht bekommt keine Zeile (RLS). Seitenweise: Über ein Jahr
+    // kommen leicht ein paar Hundert zusammen.
+    alleSeiten<AbsageRow>((von, bis) =>
+      db
+        .from('absagen')
+        .select('person_id, task_key, woche', { count: 'exact' })
+        .eq('congregation_id', congregationId)
+        .gte('woche', verteilungAb)
+        .order('woche')
+        .order('task_key')
+        .order('person_id')
+        .range(von, bis),
+    ),
   ])
 
   // Alle dreizehn Abfragen prüfen, nicht zehn: fehlten fs_rules/fs_weeks in der
@@ -783,6 +811,8 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // Und die weiteren Pläne (Phase 5).
   if (planRows.error) console.error('[plaene]', planRows.error.message)
   if (planEintragRows.error) console.error('[plan_eintraege]', planEintragRows.error.message)
+  // Und die Absagen (T126): Ohne sie fehlt nur ein Abschnitt der Auswertung.
+  if (absageRows.error) console.error('[absagen]', absageRows.error.message)
 
   const serviceList = (services.data ?? []).map((r) => serviceFromRow(r as ServiceRow))
   const personList = (persons.data ?? []).map((r) => personFromRow(r as PersonRow))
@@ -883,6 +913,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       .map(planEintragFromRow)
       .filter((e) => geladenePlaene.has(e.planId)),
     absences: (absences.data ?? []).map((r) => absenceFromRow(r as AbsenceRow)),
+    absagen: absageRows.data.map(absageFromRow),
     notifications: notificationsAus((notifs.data ?? []) as NotificationRow[], weekList, zeiten),
     confirmations,
     reminders,

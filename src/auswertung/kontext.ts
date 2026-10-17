@@ -26,7 +26,11 @@ export interface Kontext {
   zahl: (n: number) => string
   /** Ein Tag kurz („17. Feb."). */
   datum: (iso: string) => string
+  /** Ein Anteil (0 bis 1) als Prozent der Sprache („4 %"). */
+  prozent: (anteil: number) => string
   personOeffnen: (pid: string) => void
+  /** Zu einer Unteransicht — am Handy öffnet sie sich, ab dem Tablet rollt die Seite dorthin. */
+  ansichtOeffnen: (ansicht: Exclude<Ansicht, 'ueberblick'>) => void
 }
 
 /** Erwartet wird ganz gezählt, wie die Zuteilungen auch. */
