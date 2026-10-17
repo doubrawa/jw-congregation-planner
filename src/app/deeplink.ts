@@ -1,22 +1,13 @@
+import { ANSTEUERBARE_SCREENS } from '../data/rechte'
 import type { Screen } from '../data/types'
 
 /**
- * Screens, auf die ein Push-Klick verlinken darf (kein `login`). Über
- * `satisfies` verlangt TypeScript jeden Bildschirm — die Auswertung (T126)
- * fehlte hier, solange es eine bloße Liste war.
+ * Screens, auf die ein Push-Klick verlinken darf: jeder außer `login` — die
+ * Liste aus `rechte.ts`, die `ZUGANG` vollständig hält. Hier stand bis zum
+ * 17.10.2026 eine eigene Aufzählung; ihr fehlte die Auswertung (T126), solange
+ * sie eine bloße Liste war.
  */
-const VALID = Object.keys({
-  start: true,
-  programm: true,
-  aufgaben: true,
-  mitteilungen: true,
-  planen: true,
-  planung: true,
-  auswertung: true,
-  personen: true,
-  einstellungen: true,
-  profil: true,
-} satisfies Record<Exclude<Screen, 'login'>, true>) as readonly Screen[]
+const VALID: readonly Screen[] = ANSTEUERBARE_SCREENS
 
 /**
  * Ein Bereich innerhalb eines Screens, zu dem ein Push-Klick springt.

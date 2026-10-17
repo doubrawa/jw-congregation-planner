@@ -88,6 +88,17 @@ describe('Aufräumen in der Datenbank', () => {
     expect(RUMPF).toContain(`acht_wochen constant timestamptz := (montag - 7 * ${SONST_WOCHEN})::timestamptz;`)
   })
 
+  it('ältere Abwesenheiten anderer lesen nur Admin und Planer — mit denselben acht Wochen (Review 17.10.2026)', () => {
+    // Das Jahr braucht nur die Auswertung. Ein Verkündiger sieht wie vor dem
+    // 17.10.2026 acht Wochen zurück, die eigenen Abwesenheiten ganz.
+    const regel = /create policy absences_select on public\.absences[\s\S]*?\n {2}\);\n/.exec(SCHEMA)?.[0] ?? ''
+    expect(regel, 'absences_select nicht gefunden').not.toBe('')
+    expect(regel).toContain(`to_date >= date_trunc('week', current_date)::date - 7 * ${SONST_WOCHEN}`)
+    expect(regel).toContain('or public.darf_zuteilen()')
+    expect(regel).toContain('or user_id = auth.uid()')
+    expect(regel).toContain('or (person_id is not null and person_id = public.my_person_id())')
+  })
+
   it('jede Tabelle hat eine Regel oder einen Grund — und nicht beides', () => {
     const geregelt = new Set(REGELN.map((r) => r.tabelle))
     const offen = [...TABELLEN.keys()].filter((t) => !geregelt.has(t) && !(t in OHNE_FRIST))

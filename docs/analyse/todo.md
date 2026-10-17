@@ -7120,8 +7120,10 @@ das echte Recht.
 - **Schalter im Profil** („Ansicht zum Testen" → „Ansehen als"), nicht in der
   Zeile unter dem Namen: Die ist ein Knopf zum Profil, ein Schalter darin wäre
   ein Knopf im Knopf. Das Profil sieht jede Stufe, die Karte steht dort am
-  echten Recht. Der Gruppenaufseher spielt die eigene Gruppe, sonst die erste;
-  eine andere ist wählbar.
+  echten Recht. Der Gruppenaufseher spielt **nur die eigene Gruppe**, ohne
+  eigene fehlt die Stufe (Review 17. Oktober, Betreiber: *„Nur die eigene
+  Gruppe"*). Bis dahin die eigene, sonst die erste, und eine andere war wählbar
+  — gewirkt hat eine fremde aber nur beim Planen.
 - **Leiste** oben auf jedem Bildschirm, „Ansicht als …" mit **Beenden**.
 - **Schreiben bleibt erlaubt** — erst vorläufig entschieden, als der Betreiber
   nicht da war, am 17. Oktober von ihm bestätigt: *„schreiben erlaubt
@@ -7334,12 +7336,11 @@ Absagen aufzeichnen).
 **Aus `/simplify` notiert (17. Oktober 2026), nicht umgesetzt** — Betreiber:
 *„mach am besten keine umsetzungen. nur notieren."* Durchgesehen wurden T126
 samt Absagen, T124 und T42; keiner der Punkte ändert, was die App zeigt. Das
-Code-Review (`/code-review max`) über dieselben Pakete steht noch aus — wegen
-des Wochenlimits nicht begonnen.
+Code-Review folgte am 17. Oktober (unten); mit ihm ist Nr. 1 erledigt.
 
 | Nr. | Wo | Was |
 | --- | --- | --- |
-| 1 | `src/auswertung/Diagramme.tsx` (`WarteBalken`) | rechnet `2 * ueblich` statt mit `LANGE_AB` — die Grenze steht zweimal |
+| 1 | `src/auswertung/Diagramme.tsx` (`WarteBalken`) | rechnet `2 * ueblich` statt mit `LANGE_AB` — die Grenze steht zweimal. **Erledigt** mit Befund 5 des Code-Reviews |
 | 2 | `src/auswertung/PersonAnsicht.tsx` (Achse je Bereich) | `1.5 * b.erwartet` statt `OBERE_GRENZE` |
 | 3 | `src/auswertung/EinseitigAnsicht.tsx` (`EinseitigKarten`) | `einseitig.filter(istEinseitig)` zweimal je Darstellung |
 | 4 | `src/auswertung/auswertung.css` (Kopf) | der Kommentar sagt, die Tabelle Person × Bereich rolle in ihrem Kasten — sie passt seit dem Umbau immer |
@@ -7359,6 +7360,31 @@ Beim Durchsehen aufgefallen, kein Aufräumen: Die Kachel „Treffpunkte, Absagen
 Ballungen" zählt alle Absagen, die Liste darunter nur die mit Bereich (eine
 Absage auf einem Platz, den es nicht mehr gibt, steht nur in der Kachel und bei
 der Person).
+
+**Code-Review (`/code-review max`, 17. Oktober 2026) — umgesetzt.** Über
+dieselben Pakete (`2a4c14e9..2df75341`), die Winkel nacheinander. Elf Befunde;
+Betreiber: *„Setze alles um und frag mich jeweils, wenn du eine Entscheidung
+brauchst"* — vier brauchten eine (Nr. 1, 3, 4, 5).
+
+| Nr. | Befund | Umgesetzt |
+| --- | --- | --- |
+| 1 | Der Sonntagsvortrag des eigenen Redners zählte als Vortrag unter „Schätze" — beide tragen `bereichsKey: 'vortrag'` | Betreiber: *„Sonntagsvorträge zählen nicht in die Auswertung. Man hat so selten einen Vortrag in der eigenen Versammlung"*. `isSpeakerRole` in `zaehltDerPlatz`; die Fußnote nennt ihn, in zwölf Sprachen |
+| 2 | Absagen zählten auch auf Plätzen, die als Zuteilung nicht zählen (fester Leiter, Anfangsgebet des Vorsitzenden) — Zähler und Nenner nach verschiedenen Regeln; drei Absagen des festen Leiters ergaben „Viele Absagen: Studium" mit 50 % | eine Regel `zaehltDerPlatz` für beide; was dem Vorsitz folgt, sagt der Vorsitzende mit dem Vorsitz ab und zählt einmal |
+| 3 | Die gespielte Gruppe (T124) wirkte nur beim Planen; Programm, Start, Gruppenbesuche und die Zeile unter dem Namen zeigten die eigene | Betreiber: *„Nur die eigene Gruppe"*. Auswahl weg, ohne eigene Gruppe keine Stufe; `ansicht.test.tsx` spielt jetzt ohne Aufseher-Recht |
+| 4 | Jedes Konto lud ein Jahr Abwesenheiten aller (vorher acht Wochen) | Betreiber: *„Nur Admin und Planer"*. `absences_select`: über acht Wochen zurück nur `darf_zuteilen()` und die eigenen |
+| 5 | „Wartet lange" sah weder Abwesenheit noch schon Geplantes | Betreiber: *„Beides"*. Ganz abwesende Wochen zählen nicht (`ganzAbwesend`), wer im Bereich ab der laufenden Woche eingeteilt ist, wartet nicht (`geplant`: „geplant: …", grau, hinten) |
+| 6 | Last: bei höchstens zehn Personen alle Balken Minze, die Legende grau | „die zehn oberen" erst ab elf |
+| 7 | Hilfsdienst-Wochen und „nie" im Wartebalken in anderer Farbe als ihre Legende | angeglichen; `tests/auswertung-legende.test.ts` hält jedes Muster gegen seine Felder |
+| 8 | Feste Ziffern („1–3", „4–9", „10", „0") neben Ziffern aus `Intl` — auf Persisch gemischt | aus `k.zahl`; `awAbZehn` → `awUndMehr` mit `{n}` |
+| 9 | „nie dran" (Kennzahl, Last) und „einseitig" zählten auch, wer den ganzen Zeitraum fehlte | ausgenommen (`warDa`) |
+| 10 | Fünf Quelltext-Proben trugen je einen eigenen Dateiläufer | `tests/quelldateien.ts` |
+| 11 | `deeplink.ts` zählte die Bildschirme ein drittes Mal auf | `ANSTEUERBARE_SCREENS` aus `rechte.ts` |
+
+Neue Texte (zwölf Sprachen): `awGeplant`, `awDavonAbwesend`, `awUndMehr`, die
+Fußnote. Proben: Rechnung (neun neue Fälle), Bildschirm (Last, Wartezeiten,
+Persisch), Profil, Ansicht, Aufbewahrung, Legende. Mutationskatalog: 24 Einträge
+neu oder nachgezogen, `push-ziel-auswertung` gestrichen (die Liste bewacht jetzt
+der Übersetzer).
 
 ## Was bewusst offen bleibt
 
@@ -7789,7 +7815,7 @@ ausgerollt, T124, die Testdateien von T42 und die Absagen für die Auswertung am
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
-| **Review** | T124, T126, T42 | `/simplify` am 17. Oktober durchgesehen, 15 Punkte notiert unter T126, nicht umgesetzt (Betreiber: „nur notieren"); `/code-review max` noch nicht begonnen (Wochenlimit) |
+| **Review** | T124, T126, T42 | `/simplify` am 17. Oktober durchgesehen, 15 Punkte notiert unter T126, nicht umgesetzt (Betreiber: „nur notieren"; Nr. 1 ging mit dem Code-Review mit). `/code-review max` am 17. Oktober: elf Befunde, alle umgesetzt (unter T126) |
 | **Zurückgestellt** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт". Betreiber am 16. Oktober: „bleibt erst mal so" — wieder aufnehmen, wenn ein Muttersprachler prüft; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
 | **Wartet** | Motion-Clip „Plan senden" | am 12. Oktober zurückgestellt, bis das neue Design steht — das ist jetzt der Fall. Das leere Motion-Artifact liegt schon bereit |

@@ -9,13 +9,20 @@
  * der verteilt wird:
  *
  *  - **Gezählt wird jeder Platz, der eine Zusage kennt** (`platzMitZusage`):
- *    ohne Gastredner und Kreisaufseher, ohne die Gruppen der Reinigung, nur in
+ *    ohne Kreisaufseher, ohne die Gruppen der Reinigung, nur in
  *    Zusammenkünften, die stattfanden (T30).
+ *  - **Der öffentliche Vortrag** zählt nicht, ob Gastredner oder eigener
+ *    Redner (`isSpeakerRole`) — Betreiber 17.10.2026: „man hat so selten einen
+ *    Vortrag in der eigenen Versammlung". Er trägt `vortrag` wie der Vortrag
+ *    unter „Schätze"; gezählt, stünde er dort mit.
  *  - **Was dem Vorsitz folgt** (Anfangsgebet, Vortrag des Vorsitzenden,
  *    `folgtDemVorsitz`), zählt nicht, solange es der Vorsitzende selbst hat: Es
  *    kam mit dem Vorsitz. Spricht ein anderer das Anfangsgebet, zählt es.
  *  - **Der feste Wachtturm-Studium-Leiter** zählt nicht, solange die
  *    Versammlung einen hat (`wtLeiterZuerst`): Der Platz rotiert nicht.
+ *  - **Absagen zählen nach derselben Regel** (`zaehltDerPlatz`): Eine Absage
+ *    auf einem Platz, der selbst nicht zählt, höbe den Anteil ihres Bereichs
+ *    ohne Grund (Review 17.10.2026).
  *  - **Erwartet** ist, was auf jemanden käme, wenn die Plätze jedes seiner
  *    Bereiche gleich auf alle verteilt wären, die ihn haben — anteilig nach den
  *    Zusammenkünften, in denen jemand nicht abwesend war.
@@ -30,11 +37,11 @@
 import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { folgtDemVorsitz } from '../../supabase/functions/_shared/planung.ts'
 import { istAbwesend, type AbsenceSet } from './absence'
-import { gehoertZu, idAufloeser, isQualified, istArt, istAusgefallen, MEETING_TABS } from './helpers'
+import { idAufloeser, isQualified, isSpeakerRole, istArt, istAusgefallen, MEETING_TABS } from './helpers'
 import { montagVon, tagNach } from './meeting-dates'
 import { allePlaetze, platzKey, platzMitZusage, type Platz } from './plaetze'
 import { bereichVon, vorsitzPlatz } from './planning'
-import type { Absage, FsInstance, Group, Meeting, MeetingKey, Person, Service, Week } from './types'
+import type { Absage, FsInstance, Group, MeetingKey, Person, Service, Week } from './types'
 
 /** Die Zeiträume zur Wahl, in Monaten — und wie viele Wochen jeder umfasst. */
 export const ZEITRAEUME = [12, 6, 3] as const
@@ -83,7 +90,7 @@ export interface Einteilung {
   /** Montag der Woche (ISO). */
   start: string
   tab: MeetingKey
-  /** Der Aufgabenbereich (`bereichVon`) — `null` für einen Platz ohne, etwa den Vortrag am Sonntag. */
+  /** Der Aufgabenbereich (`bereichVon`) — `null` für einen Platz ohne (Altbestand ohne `bereichsKey`). */
   bereich: string | null
   hilfsdienst: boolean
 }
@@ -130,26 +137,47 @@ export interface Grundlage {
   zusammenkuenfte: number
   /** Je Person: in wie vielen davon sie nicht abwesend war. */
   verfuegbar: ReadonlyMap<string, number>
+  /**
+   * Je Person die Montage der Wochen im Zeitraum, in denen sie in keiner
+   * Zusammenkunft da war, die stattfand — sie zählen nicht zur Wartezeit.
+   */
+  ganzAbwesend: ReadonlyMap<string, ReadonlySet<string>>
+  /**
+   * Was ab der laufenden Woche schon eingeteilt ist, gezählt wie die
+   * Zuteilungen: Wer im Bereich schon geplant ist, wartet nicht.
+   */
+  geplant: Einteilung[]
   /** Die Absagen im Zeitraum (T126, aufgezeichnet seit 17.10.2026). */
   absagen: AbsageEinteilung[]
 }
 
 /**
- * Hatte der Vorsitzende diesen Platz, weil er dem Vorsitz folgt? Dann kam er mit
- * dem Vorsitz und zählt nicht ein zweites Mal.
+ * **Zählt dieser Platz als Zuteilung — gleich, wer ihn hält?** Eine Regel für
+ * die Zuteilungen und für die Absagen (siehe Kopf): der öffentliche Vortrag
+ * nicht, die Reinigung nicht (sie geht an Gruppen), der Leiter des
+ * Wachtturm-Studiums nicht, solange die Versammlung einen festen hat. Was dem
+ * Vorsitz folgt, hängt dazu an der Person — das prüft `grundlage`.
  */
-function folgtGehaltenDemVorsitz(
-  meeting: Meeting,
-  platz: Platz,
-  persons: readonly Person[],
-  wer: ReturnType<typeof idAufloeser>,
-): boolean {
-  if (platz.art !== 'programm' || !folgtDemVorsitz(platz.section, platz.slot)) return false
-  const vorsitz = vorsitzPlatz(meeting)
-  if (!vorsitz?.name) return false
-  const pid = wer(platz.slot)
-  const person = persons.find((p) => p.id === pid)
-  return person !== undefined && gehoertZu(vorsitz, person)
+function zaehltDerPlatz(platz: Platz, festerLeiter: boolean): boolean {
+  if (platz.art === 'helper') return !platz.svc.groups
+  if (isSpeakerRole(platz.slot.rolle)) return false
+  return !(festerLeiter && platz.art === 'programm' && istArt(platz.section, 'wtStudium') && platz.slot.rolle === 'Leiter')
+}
+
+/** Der Vorsitz einer Zusammenkunft: wer ihn hat und unter welchem Schlüssel. */
+interface VorsitzDerZusammenkunft {
+  pid: string | undefined
+  key: string | null
+}
+
+/**
+ * Ein Platz, wie ihn eine Absage braucht: sein Bereich — und der Vorsitz, wenn
+ * der Platz ihm folgt. Im Verzeichnis steht `null` für einen Platz, der nicht
+ * zählt (`zaehltDerPlatz`).
+ */
+interface PlatzFuerAbsagen {
+  bereich: string | null
+  vorsitz: VorsitzDerZusammenkunft | null
 }
 
 export function grundlage(eingabe: {
@@ -165,48 +193,85 @@ export function grundlage(eingabe: {
   const wer = idAufloeser(persons)
   const bekannt = new Set(persons.map((p) => p.id))
   const festerLeiter = persons.some((p) => p.priv.wtLeiter)
-  const einteilungen: Einteilung[] = []
-  const plaetze = new Map<string, number>()
   const verfuegbar = new Map<string, number>(persons.map((p) => [p.id, 0]))
-  // Der Bereich jedes Platzes, über seinen Schlüssel — für die Absagen, die
-  // nur den Schlüssel kennen. Die Woche jedes Montags im Zeitraum dazu.
-  const bereichJeSchluessel = new Map<string, string | null>()
+  const ganzAbwesend = new Map<string, Set<string>>()
+  // Jeder Platz über seinen Schlüssel — für die Absagen, die nur den Schlüssel
+  // kennen. Auch ein leerer: Hat der Planer den Absagenden nur ausgetragen,
+  // steht dort noch niemand, der Bereich ist trotzdem der des Platzes. Die
+  // Woche jedes Montags im Zeitraum dazu.
+  const platzJeSchluessel = new Map<string, PlatzFuerAbsagen | null>()
   const wocheJeMontag = new Map<string, number>()
   let zusammenkuenfte = 0
 
+  /** Die gezählten Plätze einer Zusammenkunft, die stattfindet, nach `ziel`. */
+  const zaehlen = (week: Week, wi: number, tab: MeetingKey, ziel: Einteilung[]): void => {
+    const meeting = week[tab]
+    const vorsitzSlot = vorsitzPlatz(meeting)
+    const vorsitz: VorsitzDerZusammenkunft = { pid: wer(vorsitzSlot), key: null }
+    for (const platz of allePlaetze(meeting, services)) {
+      const key = platzKey(platz, week.start, tab)
+      if (vorsitzSlot && platz.slot === vorsitzSlot) vorsitz.key = key
+      if (!zaehltDerPlatz(platz, festerLeiter)) {
+        platzJeSchluessel.set(key, null)
+        continue
+      }
+      const bereich = bereichVon(platz) ?? null
+      const folgt = platz.art === 'programm' && folgtDemVorsitz(platz.section, platz.slot)
+      platzJeSchluessel.set(key, { bereich, vorsitz: folgt ? vorsitz : null })
+      if (!platzMitZusage(platz)) continue
+      const pid = wer(platz.slot)
+      // Was dem Vorsitz folgt und der Vorsitzende selbst hat, kam mit dem Vorsitz.
+      if (!pid || !bekannt.has(pid) || (folgt && pid === vorsitz.pid)) continue
+      ziel.push({ pid, wi, start: week.start, tab, bereich, hilfsdienst: platz.art === 'helper' })
+    }
+  }
+
+  const einteilungen: Einteilung[] = []
   for (const wi of fenster.wochen) {
     const week = weeks[wi]
     if (!week) continue
     wocheJeMontag.set(week.start, wi)
+    const da = new Set<string>()
+    let gehalten = false
     for (const tab of MEETING_TABS) {
       if (istAusgefallen(week, tab)) continue
-      const meeting = week[tab]
+      gehalten = true
       zusammenkuenfte++
       for (const p of persons) {
-        if (!istAbwesend(abwesend, p.id, wi, tab)) verfuegbar.set(p.id, (verfuegbar.get(p.id) ?? 0) + 1)
+        if (istAbwesend(abwesend, p.id, wi, tab)) continue
+        verfuegbar.set(p.id, (verfuegbar.get(p.id) ?? 0) + 1)
+        da.add(p.id)
       }
-      for (const platz of allePlaetze(meeting, services)) {
-        // Auch ein leerer Platz: Hat der Planer den Absagenden nur ausgetragen,
-        // steht dort noch niemand — der Bereich ist trotzdem der des Platzes.
-        bereichJeSchluessel.set(platzKey(platz, week.start, tab), bereichVon(platz) ?? null)
-        if (!platzMitZusage(platz)) continue
-        if (folgtGehaltenDemVorsitz(meeting, platz, persons, wer)) continue
-        if (festerLeiter && platz.art === 'programm' && istArt(platz.section, 'wtStudium') && platz.slot.rolle === 'Leiter') continue
-        const pid = wer(platz.slot)
-        if (!pid || !bekannt.has(pid)) continue
-        const bereich = bereichVon(platz) ?? null
-        if (bereich) plaetze.set(bereich, (plaetze.get(bereich) ?? 0) + 1)
-        einteilungen.push({ pid, wi, start: week.start, tab, bereich, hilfsdienst: platz.art === 'helper' })
-      }
+      zaehlen(week, wi, tab, einteilungen)
+    }
+    // Ganz abwesend ist, wer in keiner Zusammenkunft der Woche da war — eine
+    // Woche, in der alles ausfiel, zählt für niemanden.
+    if (!gehalten) continue
+    for (const p of persons) {
+      if (da.has(p.id)) continue
+      const montage = ganzAbwesend.get(p.id) ?? new Set<string>()
+      montage.add(week.start)
+      ganzAbwesend.set(p.id, montage)
     }
   }
+  const plaetze = new Map<string, number>()
+  for (const e of einteilungen) if (e.bereich) plaetze.set(e.bereich, (plaetze.get(e.bereich) ?? 0) + 1)
+
+  // Ab der laufenden Woche, was schon eingeteilt ist — nach derselben Regel.
+  const geplant: Einteilung[] = []
+  weeks.forEach((week, wi) => {
+    if (week.start < fenster.bis) return
+    for (const tab of MEETING_TABS) if (!istAusgefallen(week, tab)) zaehlen(week, wi, tab, geplant)
+  })
 
   // Gezählt wird eine Absage in einer Zusammenkunft, die stattfand, von einer
-  // Person der Versammlung — wie die Zuteilungen. Ein Treffpunkt zählt unter
-  // „Treffpunkte leiten"; seine Woche reicht, den Tag kennen nur die
-  // Treffpunkt-Wochen.
+  // Person der Versammlung, auf einem Platz, der zählt — wie die Zuteilungen.
+  // Ein Treffpunkt zählt unter „Treffpunkte leiten"; seine Woche reicht, den
+  // Tag kennen nur die Treffpunkt-Wochen.
+  const liste = eingabe.absagen ?? []
+  const abgesagt = new Set(liste.map((a) => `${a.personId}|${a.taskKey}`))
   const absagen: AbsageEinteilung[] = []
-  for (const a of eingabe.absagen ?? []) {
+  for (const a of liste) {
     if (!bekannt.has(a.personId)) continue
     const teile = schluesselTeile(a.taskKey)
     const wi = teile ? wocheJeMontag.get(teile.woche) : undefined
@@ -217,9 +282,17 @@ export function grundlage(eingabe: {
     }
     const week = weeks[wi]
     if (!week || istAusgefallen(week, teile.tab)) continue
-    absagen.push({ pid: a.personId, wi, bereich: bereichJeSchluessel.get(a.taskKey) ?? null })
+    const platz = platzJeSchluessel.get(a.taskKey)
+    if (platz === null) continue
+    // Was dem Vorsitz folgt, sagt der Vorsitzende mit dem Vorsitz ab: Er hat
+    // ihn noch, oder er hat ihn mit abgesagt (dann sitzt dort ein anderer).
+    // Gezählt ist es mit der Absage des Vorsitzes.
+    const vorsitz = platz?.vorsitz
+    if (vorsitz && (vorsitz.pid === a.personId || (vorsitz.key !== null && abgesagt.has(`${a.personId}|${vorsitz.key}`)))) continue
+    // Einen Platz, den es nicht mehr gibt, zählt die Person — ein Bereich ist nicht zu sagen.
+    absagen.push({ pid: a.personId, wi, bereich: platz?.bereich ?? null })
   }
-  return { fenster, einteilungen, plaetze, zusammenkuenfte, verfuegbar, absagen }
+  return { fenster, einteilungen, plaetze, zusammenkuenfte, verfuegbar, ganzAbwesend, geplant, absagen }
 }
 
 /**
@@ -252,10 +325,13 @@ export interface LastZeile {
 
 export interface Kennzahlen {
   zuteilungen: number
-  /** Personen mit mindestens einem Bereich, der im Zeitraum Plätze hatte. */
+  /**
+   * Personen mit mindestens einem Bereich, der im Zeitraum Plätze hatte — ohne
+   * wen, der den ganzen Zeitraum fehlte: Von ihm wird nichts erwartet.
+   */
   mitBereichen: number
   eingeteilt: number
-  /** Mit Bereich, aber im ganzen Zeitraum nie eingeteilt. */
+  /** Mit Bereich, aber im ganzen Zeitraum nie eingeteilt — obwohl da. */
   nie: number
   /** Anteil der zehn mit den meisten Zuteilungen (0 bis 1). */
   anteilOben: number
@@ -265,10 +341,16 @@ export interface Kennzahlen {
 
 export const OBEN_ANZAHL = 10
 
+/** War die Person im Zeitraum wenigstens in einer Zusammenkunft da? */
+function warDa(g: Grundlage, p: Person): boolean {
+  return (g.verfuegbar.get(p.id) ?? 0) > 0
+}
+
 export function kennzahlen(g: Grundlage, persons: readonly Person[]): Kennzahlen {
   const je = new Map<string, number>()
   for (const e of g.einteilungen) je.set(e.pid, (je.get(e.pid) ?? 0) + 1)
-  const mitBereich = persons.filter((p) => bereicheVon(g, p).length > 0 || je.has(p.id))
+  // Wer den ganzen Zeitraum fehlte, steht weder unter „nie dran" noch in der Last.
+  const mitBereich = persons.filter((p) => je.has(p.id) || (warDa(g, p) && bereicheVon(g, p).length > 0))
   const last = mitBereich
     .map((p) => ({ pid: p.id, n: je.get(p.id) ?? 0 }))
     .sort((a, b) => b.n - a.n || a.pid.localeCompare(b.pid))
@@ -390,7 +472,8 @@ export function einseitig(g: Grundlage, persons: readonly Person[]): EinseitigZe
   const out: EinseitigZeile[] = []
   for (const p of persons) {
     const eigene = bereicheVon(g, p)
-    if (eigene.length < 2) continue
+    // Wer den ganzen Zeitraum fehlte, war in keinem Bereich „nie dran".
+    if (eigene.length < 2 || !warDa(g, p)) continue
     const bereiche = eigene
       .map((bereich) => {
         const andere = (qualifiziert.get(bereich) ?? []).filter((q) => q.id !== p.id)
@@ -445,8 +528,18 @@ export interface Warten {
   pid: string
   /** Wochen seit dem letzten Mal bis zur laufenden Woche — `null`: nie im Zeitraum. */
   wochen: number | null
+  /** Davon die Wochen, in denen die Person ganz fehlte (`Grundlage.ganzAbwesend`). */
+  abwesend: number
+  /**
+   * Die Wartezeit, wie sie zählt: `wochen` ohne die abwesenden — `null`: nie im
+   * Zeitraum. Danach wird sortiert und „wartet lange" entschieden (Betreiber
+   * 17.10.2026: Abwesenheit und Geplantes zählen).
+   */
+  wartend: number | null
   /** Montag der Woche des letzten Mals (ISO). */
   zuletzt: string | null
+  /** Montag der nächsten Woche, in der die Person im Bereich schon eingeteilt ist — wer geplant ist, wartet nicht. */
+  geplant: string | null
   lange: boolean
 }
 
@@ -496,15 +589,32 @@ export function wartezeiten(g: Grundlage, weeks: readonly Week[], persons: reado
   const plaetze = g.plaetze.get(bereich) ?? 0
   const verfuegbar = qualifiziert.reduce((s, p) => s + (g.verfuegbar.get(p.id) ?? 0), 0)
   const erwartet = (p: Person): number => (verfuegbar > 0 ? (plaetze * (g.verfuegbar.get(p.id) ?? 0)) / verfuegbar : 0)
+  // Die nächste Woche, in der jemand im Bereich schon eingeteilt ist.
+  const geplantAb = new Map<string, string>()
+  for (const e of g.geplant) {
+    if (e.bereich !== bereich) continue
+    const bisher = geplantAb.get(e.pid)
+    if (bisher === undefined || e.start < bisher) geplantAb.set(e.pid, e.start)
+  }
   const warten = qualifiziert
     .map((p): Warten => {
       const liste = male.get(p.id)
       const zuletzt = liste?.at(-1) ?? null
       const wochen = zuletzt ? wochenZwischen(zuletzt, g.fenster.bis) : null
-      const lange = ueblich !== null && (wochen === null ? erwartet(p) >= 1 : wochen > LANGE_AB * ueblich)
-      return { pid: p.id, wochen, zuletzt, lange }
+      // Wochen, in denen die Person ganz fehlte, zählen nicht zur Wartezeit.
+      const abwesend = zuletzt ? [...(g.ganzAbwesend.get(p.id) ?? [])].filter((s) => s > zuletzt).length : 0
+      const wartend = wochen === null ? null : wochen - abwesend
+      const geplant = geplantAb.get(p.id) ?? null
+      const lange = ueblich !== null && geplant === null && (wartend === null ? erwartet(p) >= 1 : wartend > LANGE_AB * ueblich)
+      return { pid: p.id, wochen, abwesend, wartend, zuletzt, geplant, lange }
     })
-    .sort((a, b) => (b.wochen ?? Infinity) - (a.wochen ?? Infinity) || a.pid.localeCompare(b.pid))
+    // Wer geplant ist, wartet nicht und steht hinten; sonst wer am längsten wartet zuerst.
+    .sort(
+      (a, b) =>
+        Number(a.geplant !== null) - Number(b.geplant !== null) ||
+        (b.wartend ?? Infinity) - (a.wartend ?? Infinity) ||
+        a.pid.localeCompare(b.pid),
+    )
 
   const starts = g.fenster.wochen.map((wi) => weeks[wi]?.start ?? '')
   const schnell: Schnell[] = []
@@ -649,7 +759,8 @@ export function ballungen(g: Grundlage): Ballungen {
 export type Hinweis =
   | { art: 'selten' | 'oft'; pid: string; vergleich: Vergleich; n: number; erwartet: number }
   | { art: 'einseitig'; pid: string; zeile: EinseitigZeile }
-  | { art: 'wartet'; pid: string; bereich: string; wochen: number | null; ueblich: number }
+  /** `wochen` seit dem letzten Mal steht im Text, `wartend` (ohne Abwesenheit) ordnet. */
+  | { art: 'wartet'; pid: string; bereich: string; wochen: number | null; wartend: number | null; ueblich: number }
   /** Ein Bereich, keine Person: Ein Tipp führt zu den Absagen (T126). */
   | { art: 'absagen'; bereich: string; anteil: number; sonst: number }
 
@@ -682,12 +793,12 @@ export function hinweise(
   const einseitig: Hinweis[] = einseitige.filter(istEinseitig).map((zeile) => ({ art: 'einseitig', pid: zeile.pid, zeile }))
 
   const wartenJe = new Map<string, Extract<Hinweis, { art: 'wartet' }>>()
-  const faktor = (h: { wochen: number | null; ueblich: number }) => (h.wochen === null ? Infinity : h.wochen / h.ueblich)
+  const faktor = (h: { wartend: number | null; ueblich: number }) => (h.wartend === null ? Infinity : h.wartend / h.ueblich)
   for (const w of warten) {
     if (w.ueblich === null) continue
     for (const z of w.warten) {
       if (!z.lange) continue
-      const kandidat = { art: 'wartet' as const, pid: z.pid, bereich: w.bereich, wochen: z.wochen, ueblich: w.ueblich }
+      const kandidat = { art: 'wartet' as const, pid: z.pid, bereich: w.bereich, wochen: z.wochen, wartend: z.wartend, ueblich: w.ueblich }
       const bisher = wartenJe.get(z.pid)
       if (!bisher || faktor(kandidat) > faktor(bisher)) wartenJe.set(z.pid, kandidat)
     }

@@ -278,7 +278,9 @@ function Last({ k }: { k: Kontext }) {
             {last.map((z, i) => (
               <span
                 key={z.pid}
-                className={z.n === 0 ? 'aw-last-balken is-leer' : i < OBEN_ANZAHL ? 'aw-last-balken is-oben' : 'aw-last-balken'}
+                // „Die zehn oberen" gibt es erst ab elf — sonst wären alle Balken
+                // Minze und die Legende grau.
+                className={z.n === 0 ? 'aw-last-balken is-leer' : viele && i < OBEN_ANZAHL ? 'aw-last-balken is-oben' : 'aw-last-balken'}
                 style={{ height: z.n === 0 ? undefined : `${Math.max(3, (z.n / max) * 100)}%` }}
               />
             ))}

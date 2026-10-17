@@ -794,7 +794,7 @@ export const DE = {
     awEinseitigTitel: 'Einseitig verteilt', awPersonenZahl: 'Personen: {n}',
     awWartezeitenTitel: 'Wartezeiten', awWartenLangeZahl: 'Warten lange: {n}',
     awWeiteresTitel: 'Treffpunkte, Absagen, Ballungen', awBallungenZahl: 'Ballungen: {n}',
-    awFussnote: 'Gerechnet aus den Wochen in der App, gespeichert wird nichts. Wer abwesend war, von dem wird für diese Zeit nichts erwartet. Feste Rollen und was dem Vorsitz folgt, zählen nicht mit.',
+    awFussnote: 'Gerechnet aus den Wochen in der App, gespeichert wird nichts. Wer abwesend war, von dem wird für diese Zeit nichts erwartet. Der öffentliche Vortrag, feste Rollen und was dem Vorsitz folgt, zählen nicht mit.',
     awKeineDaten: 'Im gewählten Zeitraum fand noch keine Zusammenkunft statt, die die App kennt.',
     awVergleich: 'Vergleich', awDarstellung: 'Darstellung', awAufgaben: 'Aufgaben', awHilfsdienste: 'Hilfsdienste',
     awDiagramm: 'Diagramm', awTabelle: 'Tabelle',
@@ -811,7 +811,7 @@ export const DE = {
     awNieSchnitt: '{bereich}: bei den anderen im Schnitt {n}',
     awMatrixTitel: 'Wer bekommt was',
     awMatrixText: 'Zuteilungen je Person und Bereich. Gestrichelt: Bereich vorhanden, dort aber nie dran.',
-    awAbZehn: '10 und mehr', awNieVorhanden: 'nie dran, Bereich vorhanden', awOhneBereich: 'Bereich nicht vorhanden',
+    awUndMehr: '{n} und mehr', awNieVorhanden: 'nie dran, Bereich vorhanden', awOhneBereich: 'Bereich nicht vorhanden',
     awEinseitigMarke: 'einseitig', awZelle: '{name}, {bereich}: {wert}',
     awBereich: 'Bereich',
     awUeblichText: 'Üblicher Abstand: {ueblich} – so lange liegt im Mittel zwischen zwei Malen derselben Person.',
@@ -830,6 +830,9 @@ export const DE = {
     awLetzte: 'Die letzten {dauer}', awAufgabe: 'Aufgabe', awHilfsdienst: 'Hilfsdienst', awAbwesendKurz: 'abwesend',
     awWochenBild: '{name}: Aufgaben {a}, Hilfsdienste {h}, abwesend {w}',
     awJeBereich: 'Je Bereich', awZuletztVor: 'zuletzt vor {dauer}',
+    // Wartezeiten (Review 17.10.2026): Wer im Bereich schon eingeteilt ist,
+    // wartet nicht; Wochen, in denen jemand ganz fehlte, zählen nicht mit.
+    awGeplant: 'geplant: {datum}', awDavonAbwesend: 'davon abwesend: {dauer}',
     // Absagen (T126, seit 17.10.2026 aufgezeichnet). {anteil}/{sonst} sind Prozente aus `Intl`.
     awAbsagenTitel: 'Absagen je Bereich', awAbsagenZahl: 'Absagen: {n}', awAnteilVon: '{anteil} von {m}',
     awAbsagenText: 'Gezählt wird, wer seine Zuteilung abgesagt hat – auch wenn der Platz danach neu besetzt wurde. Der Anteil bezieht sich auf alle Zuteilungen des Bereichs.',

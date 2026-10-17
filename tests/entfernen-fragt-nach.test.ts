@@ -1,7 +1,7 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { quelldateien, WURZEL } from './quelldateien'
 
 /**
  * **Wer löscht, fragt vorher** (4.10.2026): „Generell soll beim Löschen in der
@@ -28,20 +28,9 @@ import { describe, expect, it } from 'vitest'
  *     `…Austragen`, `clear…`, `…Leeren`).
  */
 
-const WURZEL = fileURLToPath(new URL('../', import.meta.url))
-
 /** Jede Bausteindatei unter `src/`, ohne Tests. */
 function bausteine(): string[] {
-  const out: string[] = []
-  const gehe = (rel: string): void => {
-    for (const eintrag of readdirSync(join(WURZEL, rel))) {
-      const pfad = `${rel}/${eintrag}`
-      if (statSync(join(WURZEL, pfad)).isDirectory()) gehe(pfad)
-      else if (eintrag.endsWith('.tsx') && !eintrag.includes('.test.')) out.push(pfad)
-    }
-  }
-  gehe('src')
-  return out
+  return quelldateien({ orte: ['src'], endungen: ['.tsx'], ohneTests: true })
 }
 
 /** Kommentare weg — dort darf von „aria-label={t.a11yRemove}" erzählt werden. */

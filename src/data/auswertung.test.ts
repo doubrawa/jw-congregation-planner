@@ -21,7 +21,7 @@ import {
   zeitfenster,
   type Grundlage,
 } from './auswertung'
-import { emptyQualifications, isSong, privSetzen, serviceQualKey } from './helpers'
+import { emptyQualifications, isSong, privSetzen, ROLE_OWN_SPEAKER, serviceQualKey } from './helpers'
 import { tagNach } from './meeting-dates'
 import { allePlaetze, platzKey } from './plaetze'
 import { bereichVon } from './planning'
@@ -129,6 +129,22 @@ describe('Was zählt', () => {
     const grund = g([aus, w], [beter])
     expect(grund.einteilungen).toEqual([])
     expect(grund.zusammenkuenfte).toBe(3)
+  })
+
+  it('der öffentliche Vortrag zählt nicht — auch nicht beim eigenen Redner; der Vortrag unter „Schätze" schon', () => {
+    // Beide tragen `vortrag`. Zählte der Sonntag mit, verdoppelte sich die
+    // Erwartung für jeden, der den Vortrag unter „Schätze" hält (Review
+    // 17.10.2026; Betreiber: „man hat so selten einen Vortrag in der eigenen
+    // Versammlung").
+    const redner = person('redner', ['gebet'], { role: 'aeltester' })
+    const schaetze = person('schaetze', ['vortrag'])
+    const w = woche(1)
+    setze(w.mid, 'vortrag', schaetze)
+    const sonntag = w.we.sections.flatMap((s) => s.items).flatMap((i) => (isSong(i) ? [] : i.names)).find((n) => n.bereichsKey === 'vortrag')!
+    Object.assign(sonntag, { name: 'redner Test', pid: 'redner', rolle: ROLE_OWN_SPEAKER })
+    const grund = g([w], [redner, schaetze])
+    expect(grund.einteilungen.map((e) => [e.pid, e.bereich])).toEqual([['schaetze', 'vortrag']])
+    expect(grund.plaetze.get('vortrag')).toBe(1)
   })
 
   it('Hilfsdienste zählen je Platz, die Reinigung (Gruppen) nicht', () => {
@@ -262,6 +278,23 @@ describe('Einseitig', () => {
     expect(zeilen.map((x) => x.pid)).toEqual(['claus'])
   })
 
+  it('wer den ganzen Zeitraum fehlte, war in keinem Bereich „nie dran" — ist er einmal da, schon', () => {
+    const a = person('a', ['gebet', 'bibellesung'])
+    const weg = person('weg', ['gebet', 'bibellesung'])
+    const weeks = Array.from({ length: 6 }, (_, i) => {
+      const w = woche(6 - i)
+      setze(w.mid, 'gebet', a, 1)
+      setze(w.mid, 'bibellesung', a)
+      return w
+    })
+    const ganz = new Set(weeks.flatMap((_, wi) => [`weg|${wi}|mid`, `weg|${wi}|we`]))
+    expect(einseitig(g(weeks, [a, weg], 13, ganz), [a, weg]).map((z) => z.pid)).toEqual(['a'])
+    // Gegenprobe: Am Sonntag der ersten Woche war er da — jetzt fällt er auf.
+    const fastGanz = new Set([...ganz].filter((k) => k !== 'weg|0|we'))
+    const zeile = einseitig(g(weeks, [a, weg], 13, fastGanz), [a, weg]).find((z) => z.pid === 'weg')
+    expect([...(zeile?.nie ?? [])].sort()).toEqual(['bibellesung', 'gebet'])
+  })
+
   it('die Tabelle Person × Bereich: null ohne Bereich, 0 mit Bereich und nie dran', () => {
     const a = person('a', ['gebet', 'bibellesung'])
     const b = person('b', ['gebet'])
@@ -318,6 +351,50 @@ describe('Wartezeiten', () => {
     expect(z.ueblich).toBe(4)
     expect(z.schnell.map((s) => [s.pid, s.abstand, s.mal])).toEqual([['d', 1, 12]])
     expect(z.schnell[0]?.wochen).toEqual(Array.from({ length: 12 }, () => true))
+  })
+
+  /*
+   * Betreiber 17.10.2026 (Review T126): „Wartet lange" zählt nur Wochen, in
+   * denen jemand da war — und wer im Bereich schon eingeteilt ist, wartet nicht.
+   */
+  it('Wochen, in denen jemand ganz fehlte, zählen nicht zur Wartezeit — fehlte er nur an einem Tag, schon', () => {
+    // b war vor zehn Wochen dran und danach sechs Wochen ganz weg (vor 9 bis 4):
+    // gewartet hat er vier — nicht mehr als doppelt so lange wie üblich.
+    const ganz = [9, 8, 7, 6, 5, 4].flatMap((vor) => [`b|${12 - vor}|mid`, `b|${12 - vor}|we`])
+    const abwesend = new Set([...ganz, `b|${12 - 3}|mid`])
+    const z = wartezeiten(g(weeks, [a, b, c], 13, abwesend), weeks, [a, b, c], 'gebet')
+    expect(z.warten.find((w) => w.pid === 'b')).toMatchObject({ wochen: 10, abwesend: 6, wartend: 4, lange: false })
+  })
+
+  it('wer im Bereich schon eingeteilt ist, wartet nicht — nur im selben Bereich und wo die Zusammenkunft stattfindet', () => {
+    const d = person('d', ['gebet'])
+    const naechste = woche(-1)
+    setze(naechste.mid, 'gebet', b, 1)
+    setze(naechste.mid, 'bibellesung', c) // ein anderer Bereich: c wartet weiter aufs Gebet
+    setze(naechste.we, 'gebet', d, 1)
+    naechste.dev = { we: { cancelled: true } } // d steht in einer Zusammenkunft, die ausfällt
+    const alle = [...weeks, woche(0), naechste]
+    const z = wartezeiten(g(alle, [a, b, c, d]), alle, [a, b, c, d], 'gebet')
+    const zeile = (pid: string) => z.warten.find((w) => w.pid === pid)
+    expect(zeile('b')).toMatchObject({ wochen: 10, geplant: start(-1), lange: false })
+    expect(zeile('c')).toMatchObject({ geplant: null, lange: true })
+    expect(zeile('d')).toMatchObject({ geplant: null, lange: true })
+    // Wer geplant ist, steht hinten.
+    expect(z.warten.map((w) => w.pid)).toEqual(['c', 'd', 'a', 'b'])
+  })
+
+  it('„Wartet lange" ordnet nach der Wartezeit ohne die Abwesenheit', () => {
+    // b vor zehn Wochen, danach vier Wochen ganz weg: gewartet sechs. e vor acht Wochen: acht.
+    const e = person('e', ['gebet'])
+    const mitE = weeks.map((w, i) => {
+      const kopie = structuredClone(w)
+      if (12 - i === 8) setze(kopie.we, 'gebet', e, 1)
+      return kopie
+    })
+    const ganz = new Set([9, 7, 6, 5].flatMap((vor) => [`b|${12 - vor}|mid`, `b|${12 - vor}|we`]))
+    const w = wartezeiten(g(mitE, [a, b, e], 13, ganz), mitE, [a, b, e], 'gebet')
+    expect(w.warten.filter((z) => z.lange).map((z) => [z.pid, z.wochen, z.wartend])).toEqual([['e', 8, 8], ['b', 10, 6]])
+    expect(hinweise([], [], [w]).map((h) => (h.art === 'wartet' ? h.pid : h.art))).toEqual(['e', 'b'])
   })
 })
 
@@ -459,6 +536,50 @@ describe('Absagen', () => {
     expect(g0.absagen).toEqual([{ pid: 'beter', wi: 0, bereich: null }])
   })
 
+  /*
+   * Zähler und Nenner nach derselben Regel (Review 17.10.2026): Ein Platz, der
+   * als Zuteilung nicht zählt, zählt auch abgesagt nicht — sonst stand nach
+   * drei Absagen des festen Leiters „Viele Absagen: Studium" mit 50 % da.
+   */
+  it('der öffentliche Vortrag und der Platz des festen Leiters zählen auch abgesagt nicht — ohne festen Leiter zählt das Studium', () => {
+    const redner = person('redner', ['gebet'], { role: 'aeltester' })
+    const fest = person('fest', ['studium', 'wtLeiter'])
+    const w = woche(1)
+    const sonntag = schluessel(w, 'we', 'vortrag')
+    const leiter = schluessel(w, 'we', 'studium')
+    const absagen = [absage('redner', w, sonntag), absage('fest', w, leiter)]
+    expect(grund([w], absagen, [redner, fest]).absagen).toEqual([])
+    // Gegenprobe: Ohne festen Leiter rotiert der Platz — dann zählt seine Absage.
+    const rotiert = person('fest', ['studium'])
+    expect(grund([w], absagen, [redner, rotiert]).absagen).toEqual([{ pid: 'fest', wi: 0, bereich: 'studium' }])
+  })
+
+  it('was dem Vorsitz folgt, sagt der Vorsitzende mit dem Vorsitz ab — einmal gezählt; sagt ein anderer das Anfangsgebet ab, zählt es', () => {
+    const vorsitz = person('vorsitz', ['vorsitzMid', 'gebet'])
+    const ersatz = person('ersatz', ['vorsitzMid', 'gebet'])
+    const beter2 = person('beter2', ['gebet'])
+    const [w1, w2, w3] = [woche(3), woche(2), woche(1)]
+    // w1: Er hat Vorsitz und Anfangsgebet noch und sagt nur das Gebet ab.
+    setze(w1.mid, 'vorsitzMid', vorsitz)
+    setze(w1.mid, 'gebet', vorsitz, 0)
+    // w2: Er hat beides abgesagt, der Ersatz hat beides übernommen.
+    setze(w2.mid, 'vorsitzMid', ersatz)
+    setze(w2.mid, 'gebet', ersatz, 0)
+    // w3: Ein anderer sollte das Anfangsgebet sprechen und sagt ab.
+    setze(w3.mid, 'vorsitzMid', vorsitz)
+    setze(w3.mid, 'gebet', beter2, 0)
+    const absagen = [
+      absage('vorsitz', w1, schluessel(w1, 'mid', 'gebet', 0)),
+      absage('vorsitz', w2, schluessel(w2, 'mid', 'vorsitzMid')),
+      absage('vorsitz', w2, schluessel(w2, 'mid', 'gebet', 0)),
+      absage('beter2', w3, schluessel(w3, 'mid', 'gebet', 0)),
+    ]
+    expect(grund([w1, w2, w3], absagen, [vorsitz, ersatz, beter2]).absagen).toEqual([
+      { pid: 'vorsitz', wi: 1, bereich: 'vorsitzMid' },
+      { pid: 'beter2', wi: 2, bereich: 'gebet' },
+    ])
+  })
+
   it('ein abgesagter Treffpunkt zählt unter „Treffpunkte leiten" — gegen die geleiteten', () => {
     const w = woche(1)
     const g0 = grund([w], [absage('beter', w, `fs|${w.start}|inst-1`)])
@@ -521,6 +642,20 @@ describe('Kennzahlen', () => {
     const k = kennzahlen(g([w], [a, nie, ohne]), [a, nie, ohne])
     expect(k).toMatchObject({ zuteilungen: 2, mitBereichen: 2, eingeteilt: 1, nie: 1, anteilOben: 1 })
     expect(k.last).toEqual([{ pid: 'a', n: 2 }, { pid: 'nie', n: 0 }])
+  })
+
+  it('wer den ganzen Zeitraum fehlte, ist weder „nie dran" noch in der Last — von ihm wird nichts erwartet', () => {
+    const a = person('a', ['gebet'])
+    const weg = person('weg', ['gebet'])
+    const weeks = [woche(2), woche(1)]
+    setze(weeks[0]!.mid, 'gebet', a, 1)
+    const ganz = new Set(weeks.flatMap((_, wi) => [`weg|${wi}|mid`, `weg|${wi}|we`]))
+    const k = kennzahlen(g(weeks, [a, weg], 13, ganz), [a, weg])
+    expect(k).toMatchObject({ mitBereichen: 1, eingeteilt: 1, nie: 0 })
+    expect(k.last.map((z) => z.pid)).toEqual(['a'])
+    // Gegenprobe: eine Zusammenkunft da — dann war er nie dran.
+    const einmalDa = new Set([...ganz].filter((x) => x !== 'weg|1|we'))
+    expect(kennzahlen(g(weeks, [a, weg], 13, einmalDa), [a, weg])).toMatchObject({ mitBereichen: 2, nie: 1 })
   })
 
   it('auswerten fügt alles zusammen — ohne Wochen ist alles leer, nicht kaputt', () => {

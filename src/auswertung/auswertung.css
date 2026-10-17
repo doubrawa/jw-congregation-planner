@@ -444,10 +444,12 @@
 }
 
 /* Nie im Zeitraum: der ganze Balken gestrichelt. */
+/* Dieselbe Farbe wie das Muster „nie" der Legende und jedes andere „nie" der
+   Auswertung (Review 17.10.2026: hier stand `--text2`). */
 .aw-nie {
   inset-block: 2px;
   inset-inline: 0;
-  border: 1.5px dashed var(--text2);
+  border: 1.5px dashed var(--text3);
   border-radius: 5px;
 }
 
@@ -742,8 +744,10 @@
   background: var(--akzent);
 }
 
+/* Wie der Hilfsdienst im Balken und in der Legende (`.aw-muster.is-hilfsdienst`) —
+   bis zum 17.10.2026 stand hier `--umriss`, die Legende zeigte `--text3`. */
 .aw-woche.is-hilfsdienst {
-  background: var(--umriss);
+  background: var(--text3);
 }
 
 .aw-woche.is-abwesend {

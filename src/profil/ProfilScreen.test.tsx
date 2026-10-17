@@ -345,36 +345,46 @@ describe('Ansicht zum Testen (T124)', () => {
     expect(karte(zeige({ planner: false, zuteiler: false }).container)).toBeUndefined()
   })
 
+  const GRUPPEN = [
+    { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null },
+    { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
+  ]
+
   it('der Admin wählt die Stufe — zuerst steht sein eigenes Recht da', () => {
-    const { container, dispatch } = zeige({ planner: true })
+    const { container, dispatch } = zeige({ planner: true, groups: GRUPPEN, persons: [{ ...ICH, grp: 'g1' }] })
     const [stufen] = auswahl(container)
-    expect([...stufen!.options].map((o) => o.textContent)).toEqual([t.rolleKoordinator, t.rollePlaner, t.rolleGruppenaufseher, t.rolleVerkuendiger])
+    expect([...stufen!.options].map((o) => o.textContent)).toEqual([
+      t.rolleKoordinator,
+      t.rollePlaner,
+      `${t.rolleGruppenaufseher} · Gruppe 1`,
+      t.rolleVerkuendiger,
+    ])
     expect(stufen!.value).toBe('admin')
     fireEvent.change(stufen!, { target: { value: 'verkuendiger' } })
     expect(dispatch).toHaveBeenCalledWith({ type: 'setAnsicht', ansicht: { stufe: 'verkuendiger', gruppe: null } })
   })
 
-  it('als Gruppenaufseher die eigene Gruppe — wählbar', () => {
-    const groups = [
-      { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null },
-      { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
-    ]
+  it('als Gruppenaufseher die eigene Gruppe — eine andere steht nicht zur Wahl (17.10.2026)', () => {
+    // Gewirkt hätte eine andere nur beim Planen; Programm, Start und die Zeile
+    // unter dem Namen kennen die eigene Gruppe.
     const ich = { ...ICH, grp: 'g2' }
-    const erst = zeige({ planner: true, groups, persons: [ich] })
+    const erst = zeige({ planner: true, groups: GRUPPEN, persons: [ich] })
     fireEvent.change(auswahl(erst.container)[0]!, { target: { value: 'gruppenaufseher' } })
     expect(erst.dispatch).toHaveBeenCalledWith({ type: 'setAnsicht', ansicht: { stufe: 'gruppenaufseher', gruppe: 'g2' } })
     cleanup()
-    const dann = zeige({ planner: true, groups, persons: [ich], ansicht: { stufe: 'gruppenaufseher', gruppe: 'g2' } })
-    const [stufen, gruppe] = auswahl(dann.container)
-    expect(stufen!.value).toBe('gruppenaufseher')
-    expect(gruppe!.value).toBe('g2')
-    fireEvent.change(gruppe!, { target: { value: 'g1' } })
-    expect(dann.dispatch).toHaveBeenCalledWith({ type: 'setAnsicht', ansicht: { stufe: 'gruppenaufseher', gruppe: 'g1' } })
+    const dann = zeige({ planner: true, groups: GRUPPEN, persons: [ich], ansicht: { stufe: 'gruppenaufseher', gruppe: 'g2' } })
+    const felder = auswahl(dann.container)
+    expect(felder).toHaveLength(1)
+    expect(felder[0]!.value).toBe('gruppenaufseher')
+    expect(felder[0]!.selectedOptions[0]?.textContent).toBe(`${t.rolleGruppenaufseher} · Gruppe 2`)
   })
 
-  it('ohne Gruppen gibt es den Gruppenaufseher nicht', () => {
-    const { container } = zeige({ planner: true, groups: [] })
+  it('ohne eigene Gruppe gibt es den Gruppenaufseher nicht — auch wenn die Versammlung Gruppen hat', () => {
+    const { container } = zeige({ planner: true, groups: GRUPPEN, persons: [{ ...ICH, grp: null }] })
     expect([...auswahl(container)[0]!.options].map((o) => o.value)).toEqual(['admin', 'planer', 'verkuendiger'])
+    cleanup()
+    const ohneGruppen = zeige({ planner: true, groups: [] })
+    expect([...auswahl(ohneGruppen.container)[0]!.options].map((o) => o.value)).toEqual(['admin', 'planer', 'verkuendiger'])
   })
 
   it('in der Ansicht als Verkündiger steht sie weiter da — und führt zurück', () => {

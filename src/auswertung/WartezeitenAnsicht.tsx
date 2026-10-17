@@ -55,25 +55,30 @@ export function WartezeitenAnsicht({ k }: { k: Kontext }) {
         <section className="karte aw-gruppe" aria-label={t.awWartetLaengsten}>
           <h2 className="aw-gruppe-kopf">{t.awWartetLaengsten}</h2>
           <div className="aw-achse" aria-hidden="true">
-            <span>0</span>
+            <span>{k.zahl(0)}</span>
             <span>{k.zahl(max / 2)}</span>
             <span>{k.dauer(max)}</span>
           </div>
           <ul className="aw-zeilen">
             {warten.map((z) => {
-              const wann = z.wochen === null ? t.awNieImZeitraum : fill(t.awSeit, { dauer: k.dauer(z.wochen) })
+              // „seit 20 Wochen · 2. Mai · davon abwesend: 18 Wochen · geplant: 26. Okt."
+              const zeile = [
+                z.wochen === null ? t.awNieImZeitraum : fill(t.awSeit, { dauer: k.dauer(z.wochen) }),
+                z.zuletzt && k.datum(z.zuletzt),
+                z.abwesend > 0 && fill(t.awDavonAbwesend, { dauer: k.dauer(z.abwesend) }),
+                z.geplant && fill(t.awGeplant, { datum: k.datum(z.geplant) }),
+              ]
+                .filter(Boolean)
+                .join(' · ')
               return (
                 <li key={z.pid} className="aw-zeile">
                   <div className="aw-zeile-kopf">
                     <button type="button" className="aw-zeile-name" onClick={() => k.personOeffnen(z.pid)}>
                       {k.name(z.pid)}
                     </button>
-                    <span className="aw-zeile-zahl">
-                      {wann}
-                      {z.zuletzt && ` · ${k.datum(z.zuletzt)}`}
-                    </span>
+                    <span className="aw-zeile-zahl">{zeile}</span>
                   </div>
-                  <WarteBalken wochen={z.wochen} ueblich={w.ueblich ?? 0} max={max} aria={`${k.name(z.pid)}: ${wann}`} />
+                  <WarteBalken wochen={z.wartend} ueblich={w.ueblich ?? 0} lange={z.lange} max={max} aria={`${k.name(z.pid)}: ${zeile}`} />
                 </li>
               )
             })}

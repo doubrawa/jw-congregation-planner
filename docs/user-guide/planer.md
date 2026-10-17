@@ -143,8 +143,9 @@ einer Gruppe – sonst **Verkündiger**.
 
 Solange die App erprobt wird, kann ein **Admin** sie so ansehen, wie ein
 Planer, ein Gruppenaufseher oder ein Verkündiger sie sieht: im **Profil** unter
-**Ansicht zum Testen** → **Ansehen als**. Als Gruppenaufseher siehst du die
-eigene Gruppe; eine andere wählst du darunter. Solange die Ansicht gilt, steht
+**Ansicht zum Testen** → **Ansehen als**. Als Gruppenaufseher siehst du deine
+eigene Gruppe – ihr Name steht an der Stufe; wer keiner Gruppe angehört,
+bekommt den Gruppenaufseher nicht angeboten. Solange die Ansicht gilt, steht
 oben die Leiste **Ansicht als …** – **Beenden** führt zurück zum eigenen Recht,
 ebenso das Neuladen der App.
 
@@ -670,7 +671,8 @@ Wochen, die die App kennt; drucken lässt sie sich nicht.
   steht, welche Tage das sind, wie viele Wochen die App davon kennt und wie
   viele Zusammenkünfte stattfanden. Ausgefallene Zusammenkünfte zählen nicht.
 - **Kennzahlen** – alle Zuteilungen im Zeitraum, wie viele derer mit einem
-  Aufgabenbereich eingeteilt waren und wie viele nie dran waren.
+  Aufgabenbereich eingeteilt waren und wie viele nie dran waren. Wer den ganzen
+  Zeitraum abwesend war, zählt hier nicht mit – auch nicht in der Last.
 - **Was auffällt** – das Wichtigste zuerst: zu selten, zu oft, einseitig,
   wartet lange, viele Absagen. Je Person und Art steht nur der deutlichste Fall
   da. Ein Tipp öffnet die Person – bei vielen Absagen die Absagen;
@@ -687,8 +689,10 @@ Wochen, die die App kennt; drucken lässt sie sich nicht.
 ### Was zählt – und was erwartet wird
 
 - Gezählt wird jeder Platz, auf dem eine Person der Versammlung stand –
-  Programmpunkte und Hilfsdienste. Gastredner und Namen ohne Person zählen
-  nicht, die Reinigung (sie geht an Gruppen) auch nicht.
+  Programmpunkte und Hilfsdienste. Der **öffentliche Vortrag** zählt nicht,
+  auch nicht beim eigenen Redner: Man hält ihn selten in der eigenen
+  Versammlung. Namen ohne Person zählen nicht, die Reinigung (sie geht an
+  Gruppen) auch nicht.
 - **Feste Rollen** zählen nicht: der feste Leiter des Wachtturm-Studiums und
   was dem Vorsitz folgt, etwa das Anfangsgebet des Vorsitzenden.
 - **Erwartet** ist, was auf eine Person käme, wenn die Plätze ihrer
@@ -725,9 +729,12 @@ passt. Ein Tipp auf einen Namen öffnet die Person.
 Je Bereich – oben auszuwählen – steht da, wer am längsten nicht dran war.
 **Üblicher Abstand** ist die Zeit, die im Mittel zwischen zwei Malen derselben
 Person liegt. **Wartet lange** ist, wer mehr als doppelt so lange wartet oder
-im Zeitraum nie dran war. Darunter **Schnell wieder dran**: wer mindestens
-dreimal dran war, mit höchstens halb so viel Abstand wie üblich – je Woche ein
-Feld.
+im Zeitraum nie dran war. Zur Wartezeit zählen nur Wochen, in denen die Person
+da war – wer ganz fehlte, dem steht **davon abwesend: …** dabei. Wer im Bereich
+schon für diese oder eine kommende Woche eingeteilt ist, wartet nicht: Bei ihm
+steht **geplant: …**, er steht hinten und sein Balken bleibt grau. Darunter
+**Schnell wieder dran**: wer mindestens dreimal dran war, mit höchstens halb so
+viel Abstand wie üblich – je Woche ein Feld.
 
 ### Treffpunkte, Absagen, Ballungen
 
@@ -736,9 +743,12 @@ Feld.
 - **Absagen je Bereich** – wie viele Zuteilungen eines Bereichs abgesagt
   wurden, gemessen an allen seinen Zuteilungen im Zeitraum; bei den Treffpunkten
   an den geleiteten. Gezählt wird jede Absage, auch wenn der Platz danach neu
-  besetzt wurde. Nimmt jemand seine Absage zurück (**Doch bestätigen**), zählt
-  sie nicht mehr. Hat ein Bereich mindestens drei Absagen und doppelt so viel
-  Anteil wie jeder andere, steht er rot da und unter **Was auffällt**.
+  besetzt wurde – nach denselben Regeln wie die Zuteilungen: Eine Absage des
+  öffentlichen Vortrags oder des festen Studienleiters zählt nicht, und wer den
+  Vorsitz absagt, dem zählt das Anfangsgebet nicht als zweite Absage. Nimmt
+  jemand seine Absage zurück (**Doch bestätigen**), zählt sie nicht mehr. Hat
+  ein Bereich mindestens drei Absagen und doppelt so viel Anteil wie jeder
+  andere, steht er rot da und unter **Was auffällt**.
 - **Ballungen** – wer zweimal in einer Zusammenkunft dran war oder drei Wochen
   und mehr hintereinander im selben Bereich.
 
@@ -1787,7 +1797,10 @@ ihre Zusagen, bleibt so lange wie die Woche selbst.
 [Auswertung](#4a-auswertung-wie-die-zuteilungen-verteilt-sind) rechnet bis zu
 ein Jahr zurück. Wer abwesend war, von dem erwartet sie für diese Zeit nichts,
 und wie oft abgesagt wurde, zählt sie über den ganzen Zeitraum. Warum jemand weg
-war, braucht sie nicht: Den Grund löscht die App schon nach acht Wochen.
+war, braucht sie nicht: Den Grund löscht die App schon nach acht Wochen. Und
+sehen müssen das Jahr nur, die die Auswertung sehen: Abwesenheiten, die mehr als
+acht Wochen vorbei sind, zeigt die App nur Admins und Planern – jedem anderen
+nur die eigenen.
 
 Personen, Gruppen, Dienste, der Grundplan der Treffpunkte, die Trolleys und die
 Konten haben kein Alter. Sie bleiben, bis du sie änderst oder entfernst.

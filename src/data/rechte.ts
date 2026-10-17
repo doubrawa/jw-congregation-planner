@@ -135,6 +135,14 @@ const ZUGANG = {
   profil: 'alle',
 } as const satisfies Record<Exclude<Screen, 'login'>, Zugang>
 
+/**
+ * **Jeder Bildschirm außer der Anmeldung** — die Schlüssel von `ZUGANG`, also
+ * vollständig. Ein Push-Link darf auf jeden davon zeigen (`deeplink.ts`); ob
+ * jemand ihn sehen darf, entscheidet danach `navigate`. Bis zum 17.10.2026
+ * stand dafür in `deeplink.ts` eine eigene Aufzählung.
+ */
+export const ANSTEUERBARE_SCREENS = Object.keys(ZUGANG) as readonly (keyof typeof ZUGANG)[]
+
 /** Die Listen von `erlaubteScreens`, je Kombination der Rechte einmal gebaut. */
 const SCREENS_JE_RECHTEN = new Map<string, readonly Screen[]>()
 
@@ -155,7 +163,7 @@ export function erlaubteScreens(r: Rechte): readonly Screen[] {
     r.admin ||
     (z === 'planer' && r.zuteilen) ||
     (z === 'gruppe' && (r.zuteilen || r.gruppe !== null))
-  const screens = (Object.keys(ZUGANG) as (keyof typeof ZUGANG)[]).filter((s) => darf(ZUGANG[s]))
+  const screens = ANSTEUERBARE_SCREENS.filter((s) => darf(ZUGANG[s]))
   SCREENS_JE_RECHTEN.set(schluessel, screens)
   return screens
 }

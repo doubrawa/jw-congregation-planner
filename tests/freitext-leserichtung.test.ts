@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { quelldateien, WURZEL } from './quelldateien'
 
 /**
  * **Jedes Freitextfeld sagt, in welche Richtung es gelesen wird.**
@@ -28,18 +28,8 @@ import { fileURLToPath } from 'node:url'
  * Leserichtung; `dir="auto"` hätte dort nichts zu entscheiden.
  */
 
-const SRC = fileURLToPath(new URL('../src', import.meta.url))
-
-/** Alle .tsx-Dateien unter src, ohne Prüfstände. */
-function bausteine(pfad: string): string[] {
-  const out: string[] = []
-  for (const name of readdirSync(pfad)) {
-    const voll = join(pfad, name)
-    if (statSync(voll).isDirectory()) out.push(...bausteine(voll))
-    else if (name.endsWith('.tsx') && !name.includes('.test.')) out.push(voll)
-  }
-  return out
-}
+/** Ein Baustein, gelesen — `datei` relativ zur Wurzel (`src/…`). */
+const lies = (datei: string): string => readFileSync(join(WURZEL, datei), 'utf8')
 
 /**
  * Das Attribut-Stück eines `<input …>` ab `type="text"` bis zum schließenden
@@ -52,20 +42,21 @@ function textFelder(quelle: string): string[] {
 }
 
 describe('Freitextfelder tragen dir="auto"', () => {
-  const dateien = bausteine(SRC)
+  // Alle .tsx-Dateien unter src, ohne Prüfstände.
+  const dateien = quelldateien({ orte: ['src'], endungen: ['.tsx'], ohneTests: true })
 
   it('der Prüfstand findet überhaupt Felder', () => {
     // Ohne diese Zeile wäre alles darunter grün, sobald das Muster nicht mehr
     // greift — und niemand merkte, dass nichts mehr gemessen wird.
-    const alle = dateien.flatMap((d) => textFelder(readFileSync(d, 'utf8')))
+    const alle = dateien.flatMap((d) => textFelder(lies(d)))
     expect(alle.length, 'keine Textfelder gefunden').toBeGreaterThan(10)
   })
 
   it('keines ohne Leserichtung — außer Zahl- und Code-Feldern', () => {
     const ohne: string[] = []
     for (const datei of dateien) {
-      const kurz = datei.slice(SRC.length + 1).replace(/\\/g, '/')
-      for (const feld of textFelder(readFileSync(datei, 'utf8'))) {
+      const kurz = datei.slice('src/'.length)
+      for (const feld of textFelder(lies(datei))) {
         const ohneFreitext =
           /inputMode="numeric"/.test(feld) || /autoCapitalize="characters"/.test(feld)
         if (ohneFreitext || /dir="auto"/.test(feld)) continue

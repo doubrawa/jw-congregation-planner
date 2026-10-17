@@ -68,10 +68,14 @@ export function EinseitigKarten({ k }: { k: Kontext }) {
   )
 }
 
+/** Ab so vielen Zuteilungen steht ein Feld der Tabelle in der zweiten und der dritten Stufe. */
+const STUFE2_AB = 4
+const STUFE3_AB = 10
+
 /** Die Stufe einer Zahl in der Tabelle: 1–3, 4–9, 10 und mehr. */
 function stufe(n: number): string {
-  if (n >= 10) return 'aw-zelle is-stufe3'
-  if (n >= 4) return 'aw-zelle is-stufe2'
+  if (n >= STUFE3_AB) return 'aw-zelle is-stufe3'
+  if (n >= STUFE2_AB) return 'aw-zelle is-stufe2'
   return 'aw-zelle is-stufe1'
 }
 
@@ -155,11 +159,12 @@ export function EinseitigMatrix({ k, persons, services }: { k: Kontext; persons:
           ))}
         </tbody>
       </table>
+      {/* Die Grenzen aus denselben Zahlen wie die Felder — und in den Ziffern der Sprache. */}
       <Legende
         eintraege={[
-          ['stufe1', '1–3'],
-          ['stufe2', '4–9'],
-          ['stufe3', t.awAbZehn],
+          ['stufe1', `${k.zahl(1)}–${k.zahl(STUFE2_AB - 1)}`],
+          ['stufe2', `${k.zahl(STUFE2_AB)}–${k.zahl(STUFE3_AB - 1)}`],
+          ['stufe3', fill(t.awUndMehr, { n: k.zahl(STUFE3_AB) })],
           ['leer', t.awNieVorhanden],
         ]}
       />

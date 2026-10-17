@@ -1,4 +1,4 @@
-import { OBERE_GRENZE, UNTERE_GRENZE, type Lage, type WochenArt } from '../data/auswertung'
+import { LANGE_AB, OBERE_GRENZE, UNTERE_GRENZE, type Lage, type WochenArt } from '../data/auswertung'
 
 /**
  * **Die Diagramme der Auswertung** (T126) — aus Kästchen gebaut, nicht aus einer
@@ -52,12 +52,26 @@ export function VergleichsBalken({
 }
 
 /**
- * Wochen seit dem letzten Mal: das Feld reicht bis doppelt so lange wie
- * üblich, was darüber liegt, ist rot; nie im Zeitraum ist gestrichelt.
+ * Die Wartezeit (Wochen seit dem letzten Mal, ohne die abwesenden): das Feld
+ * reicht bis `LANGE_AB`-mal so lange wie üblich, was darüber liegt, ist rot —
+ * aber nur, wenn die Person wirklich lange wartet: Wer schon geplant ist,
+ * wartet nicht, sein Balken bleibt grau. Nie im Zeitraum ist gestrichelt.
  */
-export function WarteBalken({ wochen, ueblich, max, aria }: { wochen: number | null; ueblich: number; max: number; aria: string }) {
-  const grenze = 2 * ueblich
-  const darueber = wochen === null ? 0 : wochen - grenze
+export function WarteBalken({
+  wochen,
+  ueblich,
+  lange,
+  max,
+  aria,
+}: {
+  wochen: number | null
+  ueblich: number
+  lange: boolean
+  max: number
+  aria: string
+}) {
+  const grenze = LANGE_AB * ueblich
+  const darueber = lange && wochen !== null ? wochen - grenze : 0
   return (
     <div className="aw-balken" role="img" aria-label={aria}>
       <span className="aw-band" style={{ width: anteil(grenze, max) }} />
@@ -65,7 +79,7 @@ export function WarteBalken({ wochen, ueblich, max, aria }: { wochen: number | n
         <span className="aw-nie" />
       ) : (
         <>
-          <span className="aw-wert" style={{ width: anteil(Math.min(wochen, grenze), max) }} />
+          <span className="aw-wert" style={{ width: anteil(darueber > 0 ? grenze : wochen, max) }} />
           {darueber > 0 && <span className="aw-wert is-ueber" style={{ insetInlineStart: anteil(grenze, max), width: anteil(darueber, max) }} />}
         </>
       )}

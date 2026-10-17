@@ -11,11 +11,11 @@ import {
 import { deutschFinder, sichtbareTexte } from '../../tests/deutsch-erkennen'
 import { fremdsprachigerBestand, type FremdBestand } from '../../tests/fremdsprachiger-bestand'
 import { demoZustand } from '../../tests/testdaten/demo-start'
-import { zeitspanne } from '../components/datum-anzeige'
+import { datumsFormat, zeitspanne } from '../components/datum-anzeige'
 import { abwesenheitenVon } from '../data/absence'
 import { auswerten, ZEITRAEUME, type Zeitraum } from '../data/auswertung'
 import { displayName } from '../data/helpers'
-import { tagNach } from '../data/meeting-dates'
+import { fromIso, tagNach } from '../data/meeting-dates'
 import { allePlaetze, platzKey } from '../data/plaetze'
 import { bereichVon } from '../data/planning'
 import type { Absage, FsInstance, Lang, Week } from '../data/types'
@@ -23,6 +23,7 @@ import { LOCALES } from '../i18n/langs'
 import { dict, loadOverlay } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import { AuswertungScreen } from './AuswertungScreen'
+import { WarteBalken } from './Diagramme'
 import { HINWEISE_SICHTBAR } from './Hinweise'
 
 /**
@@ -210,6 +211,19 @@ describe('Am Handy: der Überblick', () => {
     expect(karte().querySelector('tbody')).toBeNull()
   })
 
+  it('höchstens zehn in der Last: keine „zehn oberen" — die Balken grau wie ihre Legende', () => {
+    // Bis zum 17.10.2026 waren dann alle Balken Minze, die Legende grau.
+    const wenige = zustand({ persons: DEMO.persons.slice(0, 8) })
+    const { container } = zeige(wenige)
+    const karte = container.querySelector('.aw-last-karte')!
+    const balken = karte.querySelectorAll('.aw-last-balken:not(.is-leer)')
+    expect(balken.length, 'kein Balken mit Zuteilungen').toBeGreaterThan(0)
+    expect(karte.querySelectorAll('.aw-last-balken.is-oben')).toHaveLength(0)
+    const legende = [...karte.querySelectorAll('.aw-legende-eintrag')].map((e) => e.textContent)
+    expect(legende).not.toContain(t.awLegendeOben)
+    expect(legende).toContain(t.awZuteilungen)
+  })
+
   it.each([
     [t.awVerteilungTitel, '.aw-gruppe'],
     [t.awEinseitigTitel, '.aw-person-karte'],
@@ -385,6 +399,81 @@ describe('Absagen (T126)', () => {
   })
 })
 
+/* ---- Wartezeiten -------------------------------------------------------------- */
+
+/**
+ * **Wartet lange** (Betreiber 17.10.2026): Wer im Bereich schon eingeteilt ist,
+ * wartet nicht — er steht mit „geplant: …" hinten, sein Balken bleibt grau.
+ * Wochen, in denen jemand ganz fehlte, zählen nicht: „davon abwesend: …".
+ */
+describe('Wartezeiten: geplant und abwesend', () => {
+  /** Die Unteransicht „Wartezeiten" mit diesem Bereich, alle Zeilen offen. */
+  function wartezeitenZeilen(c: HTMLElement, bereich: string): HTMLElement[] {
+    fireEvent.click([...c.querySelectorAll<HTMLElement>('.aw-kachel')].find((k) => k.querySelector('.aw-kachel-titel')?.textContent === t.awWartezeitenTitel)!)
+    const wahl = c.querySelector<HTMLSelectElement>('.feld-wahl')!
+    if (wahl.value !== bereich) fireEvent.change(wahl, { target: { value: bereich } })
+    expect(wahl.value).toBe(bereich)
+    const abschnitt = c.querySelector<HTMLElement>(`section[aria-label="${t.awWartetLaengsten}"]`)!
+    const mehr = abschnitt.querySelector<HTMLElement>('.aw-mehr')
+    if (mehr) fireEvent.click(mehr)
+    return [...abschnitt.querySelectorAll<HTMLElement>('.aw-zeile')]
+  }
+
+  it('wer schon geplant ist, steht mit „geplant: …" hinten und wartet nicht mehr lange', () => {
+    // Der, der am längsten wartet, bekommt in der kommenden Woche einen Platz
+    // dieses Bereichs.
+    const vorher = rechnung(zustand()).wartezeiten
+    const w = vorher.find((x) => x.ueblich !== null && x.warten.some((z) => z.lange))
+    if (!w) throw new Error('niemand wartet lange')
+    const wartet = w.warten.find((z) => z.lange)!
+    const zuteilung = { name: displayName(DEMO.persons.find((p) => p.id === wartet.pid)!), pid: wartet.pid }
+    const kommend = { ...structuredClone(DEMO.weeks[0]!), start: tagNach(MONTAG, 7) }
+    const platz = [...allePlaetze(kommend.mid, DEMO.services)].find((p) => bereichVon(p) === w.bereich)
+    if (!platz) throw new Error(`kein Platz ${w.bereich}`)
+    if (platz.art === 'helper') (kommend.mid.helpers[platz.svc.key] ??= [])[platz.pos] = zuteilung
+    else Object.assign(platz.slot, zuteilung)
+    const s = zustand({ weeks: [...VERLAUF.weeks, kommend], fsWeeks: [...VERLAUF.fsWeeks, []] })
+    const nachher = rechnung(s).wartezeiten.find((x) => x.bereich === w.bereich)!
+    expect(nachher.warten.find((z) => z.pid === wartet.pid)).toMatchObject({ geplant: tagNach(MONTAG, 7), lange: false })
+
+    const { container } = zeige(s)
+    const zeilen = wartezeitenZeilen(container, w.bereich)
+    const geplant = fill(t.awGeplant, { datum: datumsFormat('de', 'tagMonatKurz').format(fromIso(tagNach(MONTAG, 7))) })
+    const mitPlan = zeilen.filter((z) => z.querySelector('.aw-zeile-zahl')?.textContent?.includes(geplant))
+    expect(mitPlan.length).toBe(nachher.warten.filter((z) => z.geplant !== null).length)
+    expect(mitPlan.length).toBeGreaterThan(0)
+    expect(zeilen.slice(-mitPlan.length)).toEqual(mitPlan)
+  })
+
+  it('rot ist nur, wer wirklich lange wartet — derselbe Abstand ohne „lange" bleibt grau', () => {
+    const balken = (lange: boolean) => render(<WarteBalken wochen={10} ueblich={2} lange={lange} max={52} aria="" />).container
+    expect(balken(true).querySelector('.aw-wert.is-ueber')).not.toBeNull()
+    cleanup()
+    const grau = balken(false)
+    expect(grau.querySelector('.aw-wert.is-ueber')).toBeNull()
+    // Der graue Balken reicht trotzdem bis zu den zehn Wochen.
+    expect((grau.querySelector('.aw-wert') as HTMLElement).style.width).toBe(`${(10 / 52) * 100}%`)
+  })
+
+  it('wer nach dem letzten Mal ganz fehlte, dem steht „davon abwesend: …" da', () => {
+    const a0 = rechnung(zustand())
+    const w = a0.wartezeiten.find((x) => x.ueblich !== null && x.warten.some((z) => z.wochen !== null && z.wochen >= 3))!
+    const z0 = w.warten.find((z) => z.wochen !== null && z.wochen >= 3)!
+    // Von der Woche nach dem letzten Mal bis vor die laufende: ganz weg.
+    const weg = { id: 'weg', personId: z0.pid, userId: null, from: tagNach(z0.zuletzt!, 7), to: tagNach(MONTAG, -1), reason: '' }
+    const s = zustand({ absences: [weg] })
+    const z = rechnung(s).wartezeiten.find((x) => x.bereich === w.bereich)!.warten.find((x) => x.pid === z0.pid)!
+    // Nach dem letzten Mal war er in jeder Woche weg, in der etwas stattfand —
+    // das geht von der Wartezeit ab.
+    expect(z.wochen).toBe(z0.wochen)
+    expect(z.abwesend).toBeGreaterThanOrEqual(2)
+    expect(z.wartend).toBe(z.wochen! - z.abwesend)
+    const { container } = zeige(s)
+    const zeile = wartezeitenZeilen(container, w.bereich).find((r) => r.querySelector('.aw-zeile-name')?.textContent === displayName(DEMO.persons.find((p) => p.id === z0.pid)!))!
+    expect(zeile.querySelector('.aw-zeile-zahl')?.textContent).toContain(fill(t.awDavonAbwesend, { dauer: zeitspanne(z.abwesend, 'week', 'de') }))
+  })
+})
+
 /* ---- In einer fremden Sprache ------------------------------------------------ */
 
 /**
@@ -459,6 +548,24 @@ describe('In einer fremden Sprache steht nichts Deutsches da', () => {
     expect(zeilen.length, 'kaum etwas gelesen').toBeGreaterThan(300)
     const reste = [...new Set(zeilen.flatMap((zeile) => finde(zeile).map((r) => `„${r.wort}" in „${zeile.slice(0, 100)}"`)))]
     expect(reste).toEqual([])
+  })
+
+  it('die Ziffern der Legende und der Achse kommen aus der Sprache — auf Persisch', async () => {
+    // Bis zum 17.10.2026 standen „1–3", „4–9", „10" und „0" fest da, daneben „۱۲" aus Intl.
+    await loadOverlay('fa')
+    const fa = dict('fa')
+    breite('desktop')
+    const { container } = zeige(fremd('fa'))
+    const zahl = new Intl.NumberFormat(LOCALES.fa ?? 'fa')
+    const legende = [...container.querySelectorAll('.aw-matrix-karte .aw-legende-eintrag')].map((e) => e.textContent)
+    expect(legende.slice(0, 3)).toEqual([
+      `${zahl.format(1)}–${zahl.format(3)}`,
+      `${zahl.format(4)}–${zahl.format(9)}`,
+      fill(fa.awUndMehr, { n: zahl.format(10) }),
+    ])
+    expect(legende.join(' ')).not.toMatch(/[0-9]/)
+    const achse = container.querySelector(`section[aria-label="${fa.awWartetLaengsten}"] .aw-achse span`)
+    expect(achse?.textContent).toBe(zahl.format(0))
   })
 
   it('die Probe findet Deutsch, wo es steht', () => {

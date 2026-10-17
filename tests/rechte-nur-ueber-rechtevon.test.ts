@@ -1,7 +1,7 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { quelldateien, WURZEL } from './quelldateien'
 
 /**
  * **Kein Rechte-Entscheid an `rechteVon` vorbei** (T124).
@@ -23,8 +23,6 @@ import { describe, expect, it } from 'vitest'
  * sie fragen am echten Recht, sonst gäbe es aus „Verkündiger" kein Zurück.
  */
 
-const WURZEL = fileURLToPath(new URL('../', import.meta.url))
-
 const ERLAUBT = new Set([
   'src/data/rechte.ts',
   'src/app/reducer.ts',
@@ -32,17 +30,6 @@ const ERLAUBT = new Set([
   'src/app/AnsichtLeiste.tsx',
   'src/profil/AnsichtKarte.tsx',
 ])
-
-/** Jede Quelldatei der App unter `src`, ohne Tests. */
-function quelldateien(rel = 'src'): string[] {
-  const out: string[] = []
-  for (const eintrag of readdirSync(join(WURZEL, rel))) {
-    const pfad = `${rel}/${eintrag}`
-    if (statSync(join(WURZEL, pfad)).isDirectory()) out.push(...quelldateien(pfad))
-    else if (/\.tsx?$/.test(eintrag) && !/\.test\.tsx?$/.test(eintrag)) out.push(pfad)
-  }
-  return out
-}
 
 /** Ein Lesen des Rechts als Eigenschaft — `state.planner`, `m.zuteiler`, `{ planner } = state`. */
 const LESEN = [/\.(planner|zuteiler)\b/, /\{[^}]*\b(planner|zuteiler)\b[^}]*\}\s*=\s*\w/]
@@ -53,7 +40,8 @@ const kommentar = (zeile: string): boolean => /^\s*(\*|\/\/|\/\*)/.test(zeile)
 describe('Rechte-Entscheide fragen rechteVon', () => {
   it('niemand liest planner oder zuteiler selbst — außer den erlaubten Stellen', () => {
     const funde: string[] = []
-    for (const datei of quelldateien()) {
+    // Jede Quelldatei der App unter `src`, ohne Tests.
+    for (const datei of quelldateien({ orte: ['src'], endungen: ['.ts', '.tsx'], ohneTests: true })) {
       if (ERLAUBT.has(datei)) continue
       readFileSync(join(WURZEL, datei), 'utf8')
         .split('\n')

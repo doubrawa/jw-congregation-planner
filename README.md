@@ -810,7 +810,9 @@ die Absagen zählt sie je Bereich. Eine Absage hält der Trigger
 `confirmations_absage` fest, sobald ein Platz als „verhindert" gemeldet wird. Sie
 bleibt, auch wenn der Platz danach neu besetzt wird; nimmt der Absagende sie
 zurück, geht sie wieder. Lesen dürfen sie nur Admin und Planer, schreiben nur
-der Trigger.
+der Trigger. Ebenso die Abwesenheiten über die acht Wochen hinaus: Was länger
+vorbei ist, liest nur, wer zuteilt (`absences_select`), jeder andere nur die
+eigenen (Review 17.10.2026).
 
 Stammdaten (Personen, Haushalte, Gruppen, Dienste, Konten, Grundplan,
 Trolleys, Push-Abos) haben kein Alter.

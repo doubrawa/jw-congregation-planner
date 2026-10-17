@@ -1,7 +1,7 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { quelldateien, WURZEL } from './quelldateien'
 
 /**
  * **Die App heißt „Versammlung.app" — auch außerhalb der Wörterbücher**
@@ -32,8 +32,6 @@ const NAME = 'Versammlung.app'
 /** Der Name davor — lateinisch, bis zum 20. September 2026. */
 const ALTER_NAME = 'Congregation Planner'
 
-const WURZEL = fileURLToPath(new URL('../', import.meta.url))
-
 /**
  * Verzeichnisse mit Quelltext, dazu die Seite selbst.
  *
@@ -45,23 +43,8 @@ const EINZELN = ['index.html']
 
 const ENDUNGEN = ['.ts', '.tsx', '.js', '.mjs', '.sql', '.html', '.webmanifest']
 
-/** Jede Quelldatei unter `ORTE`, rekursiv. */
-function quelldateien(): string[] {
-  const out: string[] = [...EINZELN]
-  const gehe = (rel: string): void => {
-    for (const eintrag of readdirSync(join(WURZEL, rel))) {
-      if (eintrag === 'node_modules') continue
-      const pfad = `${rel}/${eintrag}`
-      if (statSync(join(WURZEL, pfad)).isDirectory()) gehe(pfad)
-      else if (ENDUNGEN.some((e) => eintrag.endsWith(e))) out.push(pfad)
-    }
-  }
-  for (const ort of ORTE) gehe(ort)
-  return out
-}
-
 describe('Der alte App-Name kommt nicht wieder (T115)', () => {
-  const dateien = quelldateien()
+  const dateien = [...EINZELN, ...quelldateien({ orte: ORTE, endungen: ENDUNGEN })]
 
   it('findet überhaupt Quelldateien — sonst prüft die Probe nichts', () => {
     // Ohne diese Zusicherung wäre ein verrutschter Pfad eine grüne Prüfung

@@ -27,7 +27,7 @@ export type AnsichtStufe = (typeof ANSICHT_STUFEN)[number]
 
 export interface Ansicht {
   stufe: AnsichtStufe
-  /** Die Gruppe, deren Aufseher man spielt — bei den anderen Stufen `null`. */
+  /** Die Gruppe, deren Aufseher man spielt — die eigene (`ansichtsGruppe`); bei den anderen Stufen `null`. */
   gruppe: string | null
 }
 
@@ -45,9 +45,15 @@ export function rechteDerAnsicht(a: Ansicht): Rechte {
 }
 
 /**
- * Die Gruppe, als deren Aufseher der Admin die App ansieht: die seiner eigenen
- * Person, sonst die erste. `null`, wenn die Versammlung keine hat — dann gibt
- * es die Stufe nicht.
+ * Die Gruppe, als deren Aufseher der Admin die App ansieht: **nur die seiner
+ * eigenen Person** — `null`, wenn er keiner angehört; dann gibt es die Stufe
+ * nicht.
+ *
+ * Bis zum 17.10.2026 ließ sich jede Gruppe wählen (sonst die erste). Gewirkt
+ * hat die Wahl aber nur beim Planen: Programm, Start, Gruppenbesuche und die
+ * Zeile unter dem Namen fragen die eigene Gruppe (`eigeneGruppen`, `me.grp`),
+ * und ein echter Aufseher gehört der Gruppe an, die er leitet. Der Betreiber
+ * nach dem Review: „Nur die eigene Gruppe".
  */
 export function ansichtsGruppe(
   groups: readonly Group[],
@@ -55,6 +61,5 @@ export function ansichtsGruppe(
   personId: string | null,
 ): string | null {
   const eigene = persons.find((p) => p.id === personId)?.grp
-  if (eigene && groups.some((g) => g.id === eigene)) return eigene
-  return groups[0]?.id ?? null
+  return eigene && groups.some((g) => g.id === eigene) ? eigene : null
 }

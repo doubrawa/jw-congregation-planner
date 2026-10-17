@@ -1326,8 +1326,13 @@ create policy weeks_write on public.weeks
   using (congregation_id = public.my_congregation_id() and public.darf_zuteilen())
   with check (congregation_id = public.my_congregation_id() and public.darf_zuteilen());
 
--- Abwesenheiten: Versammlung liest; der Betroffene (auch bei importierten
--- Einträgen ohne Ersteller) oder der Admin schreiben.
+-- Abwesenheiten: Die Versammlung liest, was ansteht und was höchstens acht
+-- Wochen vorbei ist (`SONST_WOCHEN`, gezählt vom Montag der laufenden Woche wie
+-- in `alte_daten_loeschen`). Weiter zurück — bis zu einem Jahr, für die
+-- Auswertung (T126) — lesen nur Admin und Planer, und jeder seine eigenen
+-- (Betreiber nach dem Review am 17.10.2026: „Nur Admin und Planer"; bis dahin
+-- lud jedes Konto das ganze Jahr). Schreiben: der Betroffene (auch bei
+-- importierten Einträgen ohne Ersteller) oder der Admin.
 --
 -- Entscheidend ist die **Person**, nicht der Ersteller: Wer nur
 -- die eigene `user_id` einträgt, kann damit keine fremde `person_id` daneben
@@ -1336,7 +1341,15 @@ create policy weeks_write on public.weeks
 -- das `with check`, damit Altbestand mit fremder Person noch löschbar ist.
 drop policy if exists absences_select on public.absences;
 create policy absences_select on public.absences
-  for select using (congregation_id = public.my_congregation_id());
+  for select using (
+    congregation_id = public.my_congregation_id()
+    and (
+      to_date >= date_trunc('week', current_date)::date - 7 * 8
+      or public.darf_zuteilen()
+      or user_id = auth.uid()
+      or (person_id is not null and person_id = public.my_person_id())
+    )
+  );
 
 drop policy if exists absences_write on public.absences;
 create policy absences_write on public.absences

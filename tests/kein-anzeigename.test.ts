@@ -1,7 +1,7 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { quelldateien, WURZEL } from './quelldateien'
 
 /**
  * **Der Anzeigename ist weg — überall** (T110).
@@ -28,27 +28,10 @@ import { describe, expect, it } from 'vitest'
  * zentral richtiggestellte Regel mit dem vergessenen Aufrufer.
  */
 
-const WURZEL = fileURLToPath(new URL('../', import.meta.url))
-
 /** Verzeichnisse, die überhaupt Quelltext enthalten. */
 const ORTE = ['src', 'supabase', 'scripts', 'tests']
 
 const ENDUNGEN = ['.ts', '.tsx', '.mjs', '.sql']
-
-/** Jede Quelldatei unter `ORTE`, rekursiv. */
-function quelldateien(): string[] {
-  const out: string[] = []
-  const gehe = (rel: string): void => {
-    for (const eintrag of readdirSync(join(WURZEL, rel))) {
-      if (eintrag === 'node_modules') continue
-      const pfad = `${rel}/${eintrag}`
-      if (statSync(join(WURZEL, pfad)).isDirectory()) gehe(pfad)
-      else if (ENDUNGEN.some((e) => eintrag.endsWith(e))) out.push(pfad)
-    }
-  }
-  for (const ort of ORTE) gehe(ort)
-  return out
-}
 
 /**
  * Wie `dn` als Feld oder Spalte aussähe — nicht als Silbe in einem Wort.
@@ -65,7 +48,7 @@ const MUSTER: Array<[string, RegExp]> = [
 ]
 
 describe('Kein Anzeigename mehr (T110)', () => {
-  const dateien = quelldateien()
+  const dateien = quelldateien({ orte: ORTE, endungen: ENDUNGEN })
 
   it('findet überhaupt Quelldateien — sonst prüft die Probe nichts', () => {
     // Ohne diese Zusicherung wäre ein verrutschter Pfad eine grüne Prüfung

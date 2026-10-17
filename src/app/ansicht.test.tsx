@@ -36,12 +36,18 @@ const t = dict('de')
 window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
 
 const DEMO = demoZustand()
-/** Der Admin ist Simon (p9) — im Bestand Verkündiger, ohne Gruppe zu leiten. */
+/** Der Admin ist Simon (p9) — im Bestand Verkündiger in Gruppe 1, ohne eine Gruppe zu leiten. */
 const ICH = 'p9'
-const GRUPPE = DEMO.groups[0]!.id
-/** Als Gruppenaufseher leitet er die erste Gruppe — echt wie gespielt, sonst wären es zwei Versammlungen. */
-const ALS_AUFSEHER: Group[] = DEMO.groups.map((g, i) => (i === 0 ? { ...g, overseerId: ICH, assistantId: null } : g))
-const gruppenFuer = (stufe: AnsichtStufe): Group[] => (stufe === 'gruppenaufseher' ? ALS_AUFSEHER : DEMO.groups)
+/** Seine eigene Gruppe — nur sie spielt er als Aufseher (`ansichtsGruppe`, 17.10.2026). */
+const GRUPPE = DEMO.persons.find((p) => p.id === ICH)!.grp!
+/**
+ * Echt als Gruppenaufseher leitet er seine Gruppe. Gespielt leitet er keine —
+ * so ist es beim Admin, der die Stufe ansieht; bis zum 17.10.2026 leitete er
+ * in beiden Läufen, und die Probe sah nicht, dass eine fremde Gruppe nur beim
+ * Planen wirkte.
+ */
+const ALS_AUFSEHER: Group[] = DEMO.groups.map((g) => (g.id === GRUPPE ? { ...g, overseerId: ICH, assistantId: null } : g))
+const echteGruppen = (stufe: AnsichtStufe): Group[] => (stufe === 'gruppenaufseher' ? ALS_AUFSEHER : DEMO.groups)
 
 /** Eine Mitteilung für alle und eine nur für die Planer (`local`). */
 const MITTEILUNGEN: Notification[] = [
@@ -87,19 +93,25 @@ function zeige(state: AppState) {
   return { dispatch, ...render(<Buehne />) }
 }
 
+/** `texte` ohne den Abschnitt `teil` — dort, wo er am Stück steht. */
+function ohneAbschnitt(texte: string[], teil: string[]): string[] {
+  if (teil.length === 0) return texte
+  for (let i = 0; i + teil.length <= texte.length; i++) {
+    if (teil.every((zeile, j) => texte[i + j] === zeile)) return [...texte.slice(0, i), ...texte.slice(i + teil.length)]
+  }
+  return texte
+}
+
 /**
  * Was nur die Ansicht zeigt: ihre Leiste und — im Profil — die Karte, mit der
- * man zurückschaltet. Abgezogen wird je Zeile einmal, nicht jede gleiche.
+ * man zurückschaltet. Abgezogen wird der Abschnitt am Stück, nicht Zeile für
+ * Zeile: „Gruppenaufseher · Gruppe 1" steht in der Karte **und** unter dem
+ * Namen, und eine einzelne Zeile nähme die erste weg.
  */
 function ohneAnsicht(texte: string[]): string[] {
   const karte = [...document.querySelectorAll('section')].find((s) => s.querySelector('h2')?.textContent === t.ansichtTitel)
-  const weg = [...(karte ? sichtbareTexte(karte) : []), ...sichtbareTexte(document.querySelector('.ansicht-leiste') ?? document.createElement('div'))]
-  const rest = [...texte]
-  for (const zeile of weg) {
-    const i = rest.indexOf(zeile)
-    if (i >= 0) rest.splice(i, 1)
-  }
-  return rest
+  const leiste = document.querySelector('.ansicht-leiste')
+  return ohneAbschnitt(ohneAbschnitt(texte, karte ? sichtbareTexte(karte) : []), leiste ? sichtbareTexte(leiste) : [])
 }
 
 /** Jeder Bildschirm — Programm und Planen dazu je Reiter, der Rechte kennt. */
@@ -117,12 +129,12 @@ afterEach(cleanup)
 describe('Die Ansicht einer Stufe zeigt, was die Stufe sieht (T124)', () => {
   it.each(ANSICHT_STUFEN)('%s', (stufe) => {
     const unterschiede: string[] = []
-    const groups = gruppenFuer(stufe)
+    const gruppe = stufe === 'gruppenaufseher' ? GRUPPE : null
     for (const [screen, tab] of ORTE) {
-      zeige(zustand({ ...ECHT[stufe], groups, screen, tab }))
+      zeige(zustand({ ...ECHT[stufe], groups: echteGruppen(stufe), screen, tab }))
       const echt = sichtbareTexte()
       cleanup()
-      zeige(zustand({ planner: true, zuteiler: false, groups, ansicht: { stufe, gruppe: GRUPPE }, screen, tab }))
+      zeige(zustand({ planner: true, zuteiler: false, groups: DEMO.groups, ansicht: { stufe, gruppe }, screen, tab }))
       const gespielt = ohneAnsicht(sichtbareTexte())
       cleanup()
       if (JSON.stringify(echt) !== JSON.stringify(gespielt)) {
