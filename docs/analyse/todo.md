@@ -7413,7 +7413,7 @@ der Übersetzer).
 
 ## Fortschritt
 
-Stand 16. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 17. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -7422,20 +7422,25 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 22./23. August ☑☑☑☑☑☑☑☑☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
-10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☐
+10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑
 
-**122 der 124 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind zwei:**
+**125 der 126 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
-| **T124** | Rechte zum Testen umschalten | ☐ aufgenommen am 16. Oktober: ein befristeter Schalter nur für Admins — die App als Verkündiger, Gruppenaufseher, Planer oder Admin ansehen; nach den Tests wieder ausbauen |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
 Versammlungen legt der Betreiber per Skript an), **T122** (ausgerollt am
 12. Oktober, live seit `0d575ae`).
+
+Am 16. und 17. Oktober geschlossen: **T125** (Aufbewahrung), **T126**
+(Auswertung, samt Absagen und dem Code-Review dazu, live seit `b7011053`) und
+**T124** (Rechte zum Testen — befristet eingebaut, nach den Tests wieder
+ausbauen; Liste in T124). Bis zum 17. Oktober fehlten T125 und T126 in der
+Zeichenzeile.
 
 > **Nachgezählt am 10. Oktober 2026.** Die Zeile oben führte seit dem
 > 23. August zwei Zeichen zu wenig: „22./23. August" stand von Anfang an mit
@@ -7804,22 +7809,24 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 ### Was offen ist und warum
 
-**Stand 16. Oktober 2026, alles Offene an einer Stelle** (gemessen: Köpfe
-gezählt, kein Zweig außer `main`, keine PR, kein Issue; `sw.js` = HEAD; alle
-sieben Functions per `functions download` gleich dem Repo, 39 Dateien; Secrets
-ohne `INVITE_FROM`, `disable_signup` noch `false`). Im Code ist nichts mehr
-offen außer dem Rest von T42 (T123, T125 und T126 am 16. Oktober erledigt und
-ausgerollt, T124, die Testdateien von T42 und die Absagen für die Auswertung am
-17.); was sonst aussteht, braucht den Betreiber oder ein Gerät.
+**Stand 17. Oktober 2026 mittags, alles Offene an einer Stelle** (gemessen:
+126 Köpfe gezählt, offen nur T121; kein Zweig außer `main`, keine PR, kein
+Issue; `sw.js` = HEAD (`shell-b701105`); alle sieben Functions am 16. Oktober
+ausgerollt, seither in ihren Ordnern nur Tests geändert; Secrets ohne
+`INVITE_FROM`, `disable_signup` noch `false`). Im Code ist nichts mehr offen
+außer dem Rest von T42 (T123, T125 und T126 am 16. Oktober erledigt und
+ausgerollt; T124, die Testdateien von T42, die Absagen für die Auswertung und
+das Code-Review dazu am 17.); was sonst aussteht, braucht den Betreiber oder ein
+Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
-| **Review** | T124, T126, T42 | `/simplify` am 17. Oktober durchgesehen, 15 Punkte notiert unter T126, nicht umgesetzt (Betreiber: „nur notieren"; Nr. 1 ging mit dem Code-Review mit). `/code-review max` am 17. Oktober: elf Befunde, alle umgesetzt (unter T126) |
+| **Notiert** | 14 Punkte aus `/simplify` (T124, T126, T42) | unter T126, nicht umgesetzt (Betreiber: „nur notieren"); keiner ändert, was die App zeigt. Nr. 1 ging mit dem Code-Review mit — dessen elf Befunde sind umgesetzt und live (`b7011053`) |
 | **Zurückgestellt** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт". Betreiber am 16. Oktober: „bleibt erst mal so" — wieder aufnehmen, wenn ein Muttersprachler prüft; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
 | **Wartet** | Motion-Clip „Plan senden" | am 12. Oktober zurückgestellt, bis das neue Design steht — das ist jetzt der Fall. Das leere Motion-Artifact liegt schon bereit |
-| **Betreiber** | Mitgliedsrechte-Probe nach „Alles Planen" | `node scripts/mitgliedsrechte-probe.mjs` — die Testversammlung `edac60cb` und `.env.probe` stehen noch; umgedreht sind (35), (38)–(40), (42), (50), (53), (55), (60), neu (80) und (81) |
+| **Betreiber** | Mitgliedsrechte-Probe nach „Alles Planen" | `node scripts/mitgliedsrechte-probe.mjs` — die Testversammlung `edac60cb` und `.env.probe` stehen noch; umgedreht sind (35), (38)–(40), (42), (50), (53), (55), (60), neu (80) und (81). Die Leseregel der Abwesenheiten vom 17. Oktober (`absences_select`: über acht Wochen zurück nur, wer zuteilt) hat dort noch keinen Fall — geprüft ist sie bisher am Schema-Text und in der Mutationsprobe |
 | **Gerät** | Dunkle Bedienleiste am Handy | wirkt erst mit der aktualisierten WebAPK (`about://webapks` → „Update", oder neu installieren) |
 | **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
