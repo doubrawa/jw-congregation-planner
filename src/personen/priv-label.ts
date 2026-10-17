@@ -15,13 +15,24 @@ import { PRIV_KEY } from '../i18n/ui'
  * Wird im Personen-Detail (Schalter) und in der Filterleiste gebraucht.
  */
 export function privLabel(t: Dict, key: QualificationKey): string {
-  if (key === 'vorsitzMid') return `${t.privVorsitz} · ${t.tabMid}`
-  if (key === 'vorsitzWe') return `${t.privVorsitz} · ${t.tabWe}`
-  if (key === 'ratgeber') return `${t.auxRatgeber} · ${t.auxKlasse}`
-  if (key === 'schulungPartner') return `${t.privSchulung} · ${t.s89Partner}`
-  if (key === 'vortrag') return `${t.privSchaetze} · ${t.privVortrag}`
-  if (key === 'schulungVortrag') return `${t.privSchulung} · ${t.privVortrag}`
-  return t[PRIV_KEY[key]]
+  return privLabelTeile(t, key).join(' · ')
+}
+
+/**
+ * **Die Bausteine dieser Beschriftung** — für die senkrechten Köpfe der
+ * Tabelle Person × Bereich, die je Baustein eine Zeile setzt. `kurz` nennt die
+ * Zusammenkunft kurz („unter der Woche" statt „Zusammenkunft unter der
+ * Woche"). Bis zum 17.10.2026 zerlegte die Tabelle den fertigen Namen wieder an
+ * „ · " und tauschte die Zusammenkunft per Textvergleich.
+ */
+export function privLabelTeile(t: Dict, key: QualificationKey, kurz = false): string[] {
+  if (key === 'vorsitzMid') return [t.privVorsitz, kurz ? t.unterDerWoche : t.tabMid]
+  if (key === 'vorsitzWe') return [t.privVorsitz, kurz ? t.amWochenende : t.tabWe]
+  if (key === 'ratgeber') return [t.auxRatgeber, t.auxKlasse]
+  if (key === 'schulungPartner') return [t.privSchulung, t.s89Partner]
+  if (key === 'vortrag') return [t.privSchaetze, t.privVortrag]
+  if (key === 'schulungVortrag') return [t.privSchulung, t.privVortrag]
+  return [t[PRIV_KEY[key]]]
 }
 
 /**
@@ -32,8 +43,18 @@ export function privLabel(t: Dict, key: QualificationKey): string {
  * Für den Stand der Woche und die Auswertung (T126).
  */
 export function bereichsName(key: string, services: readonly Service[], t: Dict, tu: (s: string) => string): string {
+  return bereichsTeile(key, services, t, tu).join(' · ')
+}
+
+/**
+ * Derselbe Name in seinen Bausteinen (`privLabelTeile`) — ein Hilfsdienst ist
+ * einer, auch wenn sein Name selbst „ · " enthält. Ein Bereich, den die App
+ * nicht kennt (Altbestand), heißt nach seinem Schlüssel.
+ */
+export function bereichsTeile(key: string, services: readonly Service[], t: Dict, tu: (s: string) => string, kurz = false): string[] {
   const svc = services.find((s) => serviceQualKey(s.key) === key)
-  if (svc) return tu(svc.name)
-  if (key.startsWith('svc:')) return key.slice('svc:'.length)
-  return privLabel(t, key as QualificationKey) ?? key
+  if (svc) return [tu(svc.name)]
+  if (key.startsWith('svc:')) return [key.slice('svc:'.length)]
+  const teile = privLabelTeile(t, key as QualificationKey, kurz)
+  return teile.every(Boolean) ? teile : [key]
 }

@@ -221,16 +221,16 @@ describe('loadCongregationData', () => {
     it('die Absagen kommen seitenweise und zeigen auf ihre Person (T126)', async () => {
       seedResponses({
         absagen: [
-          { data: [{ person_id: 'p1', task_key: '2026-09-07|mid|part|k1|0', woche: '2026-09-07' }], error: null, count: 2 },
-          { data: [{ person_id: 'p9', task_key: 'fs|2026-09-14|i1', woche: '2026-09-14' }], error: null, count: 2 },
+          { data: [{ person_id: 'p1', task_key: '2026-09-07|mid|part|k1|0' }], error: null, count: 2 },
+          { data: [{ person_id: 'p9', task_key: 'fs|2026-09-14|i1' }], error: null, count: 2 },
         ],
       })
       const res = await loadCongregationData('u1')
       expect(res.ok).toBe(true)
       if (!res.ok) return
       expect(res.data.absagen).toEqual([
-        { personId: 'p1', taskKey: '2026-09-07|mid|part|k1|0', woche: '2026-09-07' },
-        { personId: 'p9', taskKey: 'fs|2026-09-14|i1', woche: '2026-09-14' },
+        { personId: 'p1', taskKey: '2026-09-07|mid|part|k1|0' },
+        { personId: 'p9', taskKey: 'fs|2026-09-14|i1' },
       ])
       expect(seiten('absagen')).toEqual([[0, 999], [1, 1000]])
     })

@@ -325,7 +325,7 @@ describe('Wartezeiten', () => {
   })
 
   it('üblich ist der mittlere Abstand; wartet lange, wer doppelt so lange nicht dran war', () => {
-    const z = wartezeiten(g(weeks, [a, b, c]), weeks, [a, b, c], 'gebet')
+    const z = wartezeiten(g(weeks, [a, b, c]), [a, b, c], 'gebet')
     expect(z.ueblich).toBe(2)
     expect(z.warten.map((w) => [w.pid, w.wochen, w.lange])).toEqual([
       ['c', null, true], // nie — und auf ihn wären vier Gebete gekommen
@@ -347,7 +347,7 @@ describe('Wartezeiten', () => {
       return w
     })
     const alle = [...vier, d]
-    const z = wartezeiten(g(mehr, alle), mehr, alle, 'gebet')
+    const z = wartezeiten(g(mehr, alle), alle, 'gebet')
     expect(z.ueblich).toBe(4)
     expect(z.schnell.map((s) => [s.pid, s.abstand, s.mal])).toEqual([['d', 1, 12]])
     expect(z.schnell[0]?.wochen).toEqual(Array.from({ length: 12 }, () => true))
@@ -362,7 +362,7 @@ describe('Wartezeiten', () => {
     // gewartet hat er vier — nicht mehr als doppelt so lange wie üblich.
     const ganz = [9, 8, 7, 6, 5, 4].flatMap((vor) => [`b|${12 - vor}|mid`, `b|${12 - vor}|we`])
     const abwesend = new Set([...ganz, `b|${12 - 3}|mid`])
-    const z = wartezeiten(g(weeks, [a, b, c], 13, abwesend), weeks, [a, b, c], 'gebet')
+    const z = wartezeiten(g(weeks, [a, b, c], 13, abwesend), [a, b, c], 'gebet')
     expect(z.warten.find((w) => w.pid === 'b')).toMatchObject({ wochen: 10, abwesend: 6, wartend: 4, lange: false })
   })
 
@@ -374,7 +374,7 @@ describe('Wartezeiten', () => {
     setze(naechste.we, 'gebet', d, 1)
     naechste.dev = { we: { cancelled: true } } // d steht in einer Zusammenkunft, die ausfällt
     const alle = [...weeks, woche(0), naechste]
-    const z = wartezeiten(g(alle, [a, b, c, d]), alle, [a, b, c, d], 'gebet')
+    const z = wartezeiten(g(alle, [a, b, c, d]), [a, b, c, d], 'gebet')
     const zeile = (pid: string) => z.warten.find((w) => w.pid === pid)
     expect(zeile('b')).toMatchObject({ wochen: 10, geplant: start(-1), lange: false })
     expect(zeile('c')).toMatchObject({ geplant: null, lange: true })
@@ -392,7 +392,7 @@ describe('Wartezeiten', () => {
       return kopie
     })
     const ganz = new Set([9, 7, 6, 5].flatMap((vor) => [`b|${12 - vor}|mid`, `b|${12 - vor}|we`]))
-    const w = wartezeiten(g(mitE, [a, b, e], 13, ganz), mitE, [a, b, e], 'gebet')
+    const w = wartezeiten(g(mitE, [a, b, e], 13, ganz), [a, b, e], 'gebet')
     expect(w.warten.filter((z) => z.lange).map((z) => [z.pid, z.wochen, z.wartend])).toEqual([['e', 8, 8], ['b', 10, 6]])
     expect(hinweise([], [], [w]).map((h) => (h.art === 'wartet' ? h.pid : h.art))).toEqual(['e', 'b'])
   })
@@ -447,7 +447,7 @@ describe('Was auffällt', () => {
     const grund = g(weeks, [a, b, c])
     const persons = [a, b, c]
     const v = (['aufgaben', 'hilfsdienste'] as const).map((x) => verteilung(grund, persons, x))
-    const h = hinweise(v, einseitig(grund, persons), [wartezeiten(grund, weeks, persons, 'gebet')])
+    const h = hinweise(v, einseitig(grund, persons), [wartezeiten(grund, persons, 'gebet')])
     const arten = h.map((x) => `${x.art}:${x.art === 'absagen' ? x.bereich : x.pid}`)
     // c ist zu selten (in beiden Vergleichen, steht aber einmal da), a zu oft.
     expect(arten.filter((x) => x === 'selten:c')).toHaveLength(1)
@@ -494,7 +494,8 @@ describe('Absagen', () => {
     if (!platz) throw new Error(`kein Platz ${bereich} #${nth}`)
     return platzKey(platz, w.start, tab)
   }
-  const absage = (personId: string, w: Week, taskKey: string): Absage => ({ personId, taskKey, woche: w.start })
+  // Die Woche steckt im Schlüssel; `w` bleibt, damit jeder Fall sagt, welche gemeint ist.
+  const absage = (personId: string, _w: Week, taskKey: string): Absage => ({ personId, taskKey })
   const grund = (weeks: Week[], absagen: Absage[], persons: Person[] = [mik, beter, andere]) =>
     grundlage({ weeks, persons, services: DEMO_SERVICES, abwesend: KEINE_ABWESENHEIT, fenster: zeitfenster(weeks, 13, HEUTE), absagen })
 
@@ -504,15 +505,15 @@ describe('Absagen', () => {
     setze(w.mid, 'gebet', andere, 1)
     const g0 = grund([w], [absage('mik', w, schluessel(w, 'mid', serviceQualKey('mik'))), absage('beter', w, schluessel(w, 'mid', 'gebet', 1))])
     expect(g0.absagen).toEqual([
-      { pid: 'mik', wi: 0, bereich: serviceQualKey('mik') },
-      { pid: 'beter', wi: 0, bereich: 'gebet' },
+      { pid: 'mik', bereich: serviceQualKey('mik') },
+      { pid: 'beter', bereich: 'gebet' },
     ])
   })
 
   it('auch auf einem Platz, der seitdem leer steht — der Planer hat den Absagenden nur ausgetragen', () => {
     const w = woche(1)
     const g0 = grund([w], [absage('mik', w, schluessel(w, 'mid', serviceQualKey('mik')))])
-    expect(g0.absagen).toEqual([{ pid: 'mik', wi: 0, bereich: serviceQualKey('mik') }])
+    expect(g0.absagen).toEqual([{ pid: 'mik', bereich: serviceQualKey('mik') }])
     // Ein leerer Platz ist trotzdem keine Zuteilung.
     expect(g0.plaetze.get(serviceQualKey('mik'))).toBeUndefined()
   })
@@ -533,7 +534,7 @@ describe('Absagen', () => {
   it('einen Platz, den es nicht mehr gibt, zählt die Person — ein Bereich ist nicht zu sagen', () => {
     const w = woche(1)
     const g0 = grund([w], [absage('beter', w, `${w.start}|mid|part|weg|0`)])
-    expect(g0.absagen).toEqual([{ pid: 'beter', wi: 0, bereich: null }])
+    expect(g0.absagen).toEqual([{ pid: 'beter', bereich: null }])
   })
 
   /*
@@ -551,7 +552,7 @@ describe('Absagen', () => {
     expect(grund([w], absagen, [redner, fest]).absagen).toEqual([])
     // Gegenprobe: Ohne festen Leiter rotiert der Platz — dann zählt seine Absage.
     const rotiert = person('fest', ['studium'])
-    expect(grund([w], absagen, [redner, rotiert]).absagen).toEqual([{ pid: 'fest', wi: 0, bereich: 'studium' }])
+    expect(grund([w], absagen, [redner, rotiert]).absagen).toEqual([{ pid: 'fest', bereich: 'studium' }])
   })
 
   it('was dem Vorsitz folgt, sagt der Vorsitzende mit dem Vorsitz ab — einmal gezählt; sagt ein anderer das Anfangsgebet ab, zählt es', () => {
@@ -575,15 +576,15 @@ describe('Absagen', () => {
       absage('beter2', w3, schluessel(w3, 'mid', 'gebet', 0)),
     ]
     expect(grund([w1, w2, w3], absagen, [vorsitz, ersatz, beter2]).absagen).toEqual([
-      { pid: 'vorsitz', wi: 1, bereich: 'vorsitzMid' },
-      { pid: 'beter2', wi: 2, bereich: 'gebet' },
+      { pid: 'vorsitz', bereich: 'vorsitzMid' },
+      { pid: 'beter2', bereich: 'gebet' },
     ])
   })
 
   it('ein abgesagter Treffpunkt zählt unter „Treffpunkte leiten" — gegen die geleiteten', () => {
     const w = woche(1)
     const g0 = grund([w], [absage('beter', w, `fs|${w.start}|inst-1`)])
-    expect(g0.absagen).toEqual([{ pid: 'beter', wi: 0, bereich: TREFFPUNKT_BEREICH }])
+    expect(g0.absagen).toEqual([{ pid: 'beter', bereich: TREFFPUNKT_BEREICH }])
     expect(absagenJeBereich(g0, 4)).toEqual([{ bereich: TREFFPUNKT_BEREICH, n: 1, von: 4, anteil: 0.25 }])
   })
 

@@ -32,6 +32,16 @@ export interface Ansicht {
 }
 
 /**
+ * **Die Ansicht, die gilt** — nur an einem echten Admin-Konto (`planner`),
+ * geprüft am echten Recht, nicht an der Ansicht: Ein Planer kann sich damit
+ * weder Rechte geben noch nehmen. Eine Stelle für `rechteVon`, `rechteStufe`
+ * und die Leiste; bis zum 17.10.2026 stand die Bedingung dreimal da.
+ */
+export function aktiveAnsicht(s: { planner: boolean; ansicht?: Ansicht | null }): Ansicht | null {
+  return s.planner && s.ansicht ? s.ansicht : null
+}
+
+/**
  * Die Rechte einer Stufe — so, wie `rechteVon` sie einem echten Konto dieser
  * Stufe gäbe: Der Planer plant alles, der Gruppenaufseher die Treffpunkte
  * seiner Gruppe, der Verkündiger nichts. Admin ist keiner von ihnen.

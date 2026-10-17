@@ -27,7 +27,7 @@
  * `eigene_gruppen`); hier steht, was die App anbietet.
  */
 
-import { rechteDerAnsicht, type Ansicht } from './ansicht'
+import { aktiveAnsicht, rechteDerAnsicht, type Ansicht } from './ansicht'
 import { aufseherGruppe } from './helpers'
 import type { Group, MeetingTab, Member, Person, Screen, Thema } from './types'
 
@@ -64,8 +64,9 @@ export interface RechteQuelle {
 
 /** Die Rechte aus dem Zustand. */
 export function rechteVon(s: RechteQuelle): Rechte {
-  // Nur ein echtes Admin-Konto (T124) — geprüft am echten Recht, nicht an der Ansicht.
-  if (s.planner && s.ansicht) return rechteDerAnsicht(s.ansicht)
+  // Befristet (T124): die Ansicht einer anderen Stufe, nur am echten Admin-Konto.
+  const ansicht = aktiveAnsicht(s)
+  if (ansicht) return rechteDerAnsicht(ansicht)
   return {
     admin: s.planner,
     zuteilen: s.planner || s.zuteiler,
@@ -88,7 +89,8 @@ export function rechteStufe(
 ): RechteStufe {
   // Die Ansicht nennt ihre Stufe selbst (T124): Der Admin ist nicht Aufseher der
   // Gruppe, die er spielt — gefragt nach `overseerId`, hieße er „Gehilfe".
-  if (s.planner && s.ansicht) return s.ansicht.stufe
+  const ansicht = aktiveAnsicht({ planner: s.planner ?? false, ansicht: s.ansicht })
+  if (ansicht) return ansicht.stufe
   if (r.admin) return 'admin'
   if (r.zuteilen) return 'planer'
   if (r.gruppe === null) return 'verkuendiger'

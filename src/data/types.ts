@@ -903,17 +903,19 @@ export interface Absence {
 }
 
 /**
- * **Eine Absage** (T126, 17.10.2026): wer welchen Platz in welcher Woche
- * abgesagt hat. In `confirmations` verschwindet sie, sobald der Platz neu
- * besetzt ist; hier bleibt sie ein Jahr — für die Auswertung. Lesen dürfen
- * nur Admin und Planer, geschrieben wird sie vom Trigger an `confirmations`.
+ * **Eine Absage** (T126, 17.10.2026): wer welchen Platz abgesagt hat. In
+ * `confirmations` verschwindet sie, sobald der Platz neu besetzt ist; hier
+ * bleibt sie ein Jahr — für die Auswertung. Lesen dürfen nur Admin und Planer,
+ * geschrieben wird sie vom Trigger an `confirmations`.
+ *
+ * Die Woche steckt im Schlüssel. Die Spalte `woche` der Tabelle braucht nur die
+ * Datenbank (Ladefenster, Aufräumen); geladen wird sie seit dem 17.10.2026
+ * nicht mehr.
  */
 export interface Absage {
   personId: string
-  /** Der Schlüssel des Platzes (`_shared/aufgaben-schluessel.ts`). */
+  /** Der Schlüssel des Platzes (`_shared/aufgaben-schluessel.ts`), samt Woche. */
   taskKey: string
-  /** Montag der Woche (ISO). */
-  woche: string
 }
 
 /* ---- Mitglieder & Anmelde-Links (Produktionsmodus) ---- */

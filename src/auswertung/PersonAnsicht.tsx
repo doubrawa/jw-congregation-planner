@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { personBild, lageVon } from '../data/auswertung'
+import { OBERE_GRENZE, personBild, lageVon } from '../data/auswertung'
 import type { AbsenceSet } from '../data/absence'
 import type { Person, Week } from '../data/types'
 import { fill } from '../i18n/useT'
@@ -29,7 +29,7 @@ export function PersonAnsicht({
   const { t } = k
   const bild = useMemo(() => personBild(k.a.grundlage, weeks, persons, abwesend, pid), [k.a.grundlage, weeks, persons, abwesend, pid])
   if (!bild) return null
-  const starts = k.a.grundlage.fenster.wochen.map((wi) => weeks[wi]?.start ?? '')
+  const starts = k.a.grundlage.fenster.montage
   const reihen = []
   for (let von = 0; von < bild.wochen.length; von += REIHE) {
     const erste = starts[von] ?? ''
@@ -94,7 +94,7 @@ export function PersonAnsicht({
                   n={b.n}
                   erwartet={b.erwartet}
                   lage={lage}
-                  max={Math.max(1, b.n, 1.5 * b.erwartet) * 1.1}
+                  max={Math.max(1, b.n, OBERE_GRENZE * b.erwartet) * 1.1}
                   aria={`${k.bereich(b.bereich)}: ${fill(t.awNErwartet, { n: k.zahl(b.n), e: k.zahl(gerundet(b.erwartet)) })}`}
                 />
               </li>

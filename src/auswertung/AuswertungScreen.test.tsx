@@ -307,7 +307,7 @@ function absagenIn(bereich: string, n: number, pid: string): Absage[] {
   return VERLAUF.weeks.slice(-n).map((w) => {
     const platz = [...allePlaetze(w.mid, DEMO.services)].find((p) => bereichVon(p) === bereich)
     if (!platz) throw new Error(`kein Platz ${bereich} am ${w.start}`)
-    return { personId: pid, taskKey: platzKey(platz, w.start, 'mid'), woche: w.start }
+    return { personId: pid, taskKey: platzKey(platz, w.start, 'mid') }
   })
 }
 

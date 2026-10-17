@@ -3,8 +3,8 @@ import { APP_LANGS } from '../i18n/langs'
 import { ratgeberSlot } from '../data/aux-class'
 import { dict, loadOverlay, PRIV_KEY } from '../i18n/ui'
 import { QUALIFICATION_ORDER, WT_ROLE_ORDER } from '../data/constants'
-import { privLabel } from './priv-label'
-import type { QualificationKey } from '../data/types'
+import { bereichsName, bereichsTeile, privLabel } from './priv-label'
+import type { QualificationKey, Service } from '../data/types'
 
 /**
  * **Die Beschriftung eines Aufgabenbereichs — zusammengesetzt statt übersetzt.**
@@ -102,6 +102,39 @@ describe('Die Zusammensetzung selbst', () => {
     // im Personen-Detail stünde ein Schalter ohne Beschriftung.
     const ohne = ALLE.filter((key) => !(key in PRIV_KEY))
     expect(ohne).toEqual([])
+  })
+})
+
+/**
+ * **Der Name eines Bereichs, wie er an einem Platz steht** (`bereichsName`) —
+ * im Stand der Woche und in der Auswertung. Die Tabelle Person × Bereich setzt
+ * je Baustein eine senkrechte Zeile (`bereichsTeile`); bis zum 17.10.2026
+ * zerlegte sie dafür den fertigen Namen wieder an „ · ".
+ */
+describe('Der Name eines Bereichs am Platz', () => {
+  const t = dict('de')
+  /** Kennzeichnet, was durch den Übersetzer der Daten ging. */
+  const tu = (s: string): string => `‹${s}›`
+  const DIENSTE: Service[] = [{ key: 'ton', name: 'Ton · Video', count: 1, groups: false }]
+
+  it('ein Hilfsdienst heißt, wie die Versammlung ihn nennt — ein Baustein, auch mit „ · " im Namen', () => {
+    expect(bereichsName('svc:ton', DIENSTE, t, tu)).toBe('‹Ton · Video›')
+    expect(bereichsTeile('svc:ton', DIENSTE, t, tu, true)).toEqual(['‹Ton · Video›'])
+  })
+
+  it('ein Dienst, den es nicht mehr gibt, behält seinen Schlüssel — ein unbekannter Bereich auch, statt leer zu bleiben', () => {
+    expect(bereichsName('svc:alt', DIENSTE, t, tu)).toBe('alt')
+    expect(bereichsName('bereich-von-damals', DIENSTE, t, tu)).toBe('bereich-von-damals')
+    expect(bereichsTeile('bereich-von-damals', DIENSTE, t, tu, true)).toEqual(['bereich-von-damals'])
+  })
+
+  it('ein fester Bereich heißt wie sein Schalter; kurz nennt die Bausteine mit der Zusammenkunft kurz', () => {
+    for (const key of ALLE) expect(bereichsName(key, DIENSTE, t, tu), key).toBe(privLabel(t, key))
+    expect(bereichsTeile('vorsitzMid', DIENSTE, t, tu, true)).toEqual([t.privVorsitz, t.unterDerWoche])
+    expect(bereichsTeile('vorsitzWe', DIENSTE, t, tu, true)).toEqual([t.privVorsitz, t.amWochenende])
+    expect(bereichsTeile('vorsitzWe', DIENSTE, t, tu)).toEqual([t.privVorsitz, t.tabWe])
+    // Gegenprobe: Die kurze Form ist wirklich kürzer — sonst bräuchte es sie nicht.
+    expect(t.unterDerWoche.length).toBeLessThan(t.tabMid.length)
   })
 })
 

@@ -45,15 +45,15 @@ function PersonKarte({ z, k }: { z: EinseitigZeile; k: Kontext }) {
  */
 export function EinseitigKarten({ k }: { k: Kontext }) {
   const [filter, setFilter] = useState<Filter>('auffaellig')
-  const zeilen = filter === 'auffaellig' ? k.a.einseitig.filter(istEinseitig) : k.a.einseitig
-  const auffaellig = k.a.einseitig.filter(istEinseitig).length
+  const einseitige = k.a.einseitig.filter(istEinseitig)
+  const zeilen = filter === 'auffaellig' ? einseitige : k.a.einseitig
   return (
     <div className="aw-ansicht">
       <p className="aw-erklaerung">{k.t.awEinseitigErklaerung}</p>
       <Wahl
         label={k.t.awEinseitigTitel}
         optionen={[
-          { wert: 'auffaellig' as const, text: `${k.t.awAuffaellig} · ${k.zahl(auffaellig)}` },
+          { wert: 'auffaellig' as const, text: `${k.t.awAuffaellig} · ${k.zahl(einseitige.length)}` },
           { wert: 'alle' as const, text: `${k.t.awAlle} · ${k.zahl(k.a.einseitig.length)}` },
         ]}
         wert={filter}
@@ -93,10 +93,6 @@ export function EinseitigMatrix({ k, persons, services }: { k: Kontext; persons:
   const { t } = k
   const titelId = useId()
   if (m.zeilen.length === 0) return null
-  // Die Zusammenkunft kurz („Vorsitz · Unter der Woche"): Die längste Zeile
-  // bestimmt, wie hoch der Kopf steht.
-  const kurz: Record<string, string> = { [t.tabMid]: t.unterDerWoche, [t.tabWe]: t.amWochenende }
-  const kopfZeilen = (name: string): string[] => name.split(' · ').map((teil) => kurz[teil] ?? teil)
   return (
     <section className="karte aw-matrix-karte" aria-labelledby={titelId}>
       <h2 id={titelId} className="karte-titel">
@@ -110,20 +106,18 @@ export function EinseitigMatrix({ k, persons, services }: { k: Kontext; persons:
         <thead>
           <tr>
             <th scope="col">{t.awPerson}</th>
-            {m.bereiche.map((b) => {
-              const name = k.bereich(b)
-              // Je Baustein („Vorsitz · …", `privLabel`) eine senkrechte Zeile;
-              // vorgelesen wird der ganze Name.
-              return (
-                <th key={b} scope="col" aria-label={name}>
-                  <span className="aw-matrix-kopf" aria-hidden="true">
-                    {kopfZeilen(name).map((teil, i) => (
-                      <span key={i}>{teil}</span>
-                    ))}
-                  </span>
-                </th>
-              )
-            })}
+            {m.bereiche.map((b) => (
+              // Je Baustein („Vorsitz · …", `privLabelTeile`) eine senkrechte
+              // Zeile, die Zusammenkunft kurz — die längste bestimmt, wie hoch
+              // der Kopf steht. Vorgelesen wird der ganze Name.
+              <th key={b} scope="col" aria-label={k.bereich(b)}>
+                <span className="aw-matrix-kopf" aria-hidden="true">
+                  {k.bereichKurz(b).map((teil, i) => (
+                    <span key={i}>{teil}</span>
+                  ))}
+                </span>
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>

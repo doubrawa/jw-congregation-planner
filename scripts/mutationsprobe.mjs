@@ -5217,7 +5217,8 @@ export const KATALOG = [
     id: 'vortrag-schaetze-beschriftung',
     datei: 'src/personen/priv-label.ts',
     regel: 'Der Vortrag aus „Schätze aus Gottes Wort" trägt seinen Programmteil im Namen — „Vorträge" allein hieß jeder Vortrag.',
-    suchen: "  if (key === 'vortrag') return `${t.privSchaetze} · ${t.privVortrag}`\n",
+    // Seit dem 17.10.2026 liefert `privLabelTeile` die Bausteine, `privLabel` fügt sie zusammen.
+    suchen: "  if (key === 'vortrag') return [t.privSchaetze, t.privVortrag]\n",
     ersetzen: '',
   },
 
@@ -7167,8 +7168,8 @@ export const KATALOG = [
     id: "absagen-ladefenster",
     datei: "src/lib/data.ts",
     regel: "Absagen lädt die App ein Jahr zurück wie ihre Wochen, nicht weiter (T126).",
-    suchen: "        .from('absagen')\n        .select('person_id, task_key, woche', { count: 'exact' })\n        .eq('congregation_id', congregationId)\n        .gte('woche', verteilungAb)\n",
-    ersetzen: "        .from('absagen')\n        .select('person_id, task_key, woche', { count: 'exact' })\n        .eq('congregation_id', congregationId)\n",
+    suchen: "        .from('absagen')\n        .select('person_id, task_key', { count: 'exact' })\n        .eq('congregation_id', congregationId)\n        .gte('woche', verteilungAb)\n",
+    ersetzen: "        .from('absagen')\n        .select('person_id, task_key', { count: 'exact' })\n        .eq('congregation_id', congregationId)\n",
   },
   {
     id: "aufraeumen-ein-jahr",
@@ -7202,8 +7203,8 @@ export const KATALOG = [
     id: "auswertung-laufende-woche",
     datei: "src/data/auswertung.ts",
     regel: "Die laufende Woche gehört nicht in die Auswertung: Was noch kommt, ist geplant, nicht gehalten (T126).",
-    suchen: "    if (w.start >= von && w.start < bis) wochen.push(wi)\n",
-    ersetzen: "    if (w.start >= von && w.start <= bis) wochen.push(wi)\n",
+    suchen: "    if (w.start < von || w.start >= bis) return\n",
+    ersetzen: "    if (w.start < von || w.start > bis) return\n",
   },
   {
     id: "auswertung-ausgefallen",
@@ -7438,16 +7439,17 @@ export const KATALOG = [
   },
   {
     id: "ansicht-nur-admin",
-    datei: "src/data/rechte.ts",
+    datei: "src/data/ansicht.ts",
     regel: "Die Ansicht einer anderen Stufe gilt nur für ein echtes Admin-Konto — ein Planer kann sich damit keine Rechte geben und keine nehmen (T124).",
-    suchen: "  if (s.planner && s.ansicht) return rechteDerAnsicht(s.ansicht)\n",
-    ersetzen: "  if (s.ansicht) return rechteDerAnsicht(s.ansicht)\n",
+    // Seit dem 17.10.2026 an einer Stelle (`aktiveAnsicht`) für Rechte, Stufe und Leiste.
+    suchen: "  return s.planner && s.ansicht ? s.ansicht : null\n",
+    ersetzen: "  return s.ansicht ?? null\n",
   },
   {
     id: "ansicht-stufe-selbst",
     datei: "src/data/rechte.ts",
     regel: "In der Ansicht heißt die Stufe, wie die Ansicht sie nennt — der Admin ist nicht Aufseher der gespielten Gruppe und hieße sonst „Gehilfe“ (T124).",
-    suchen: "  if (s.planner && s.ansicht) return s.ansicht.stufe\n",
+    suchen: "  if (ansicht) return ansicht.stufe\n",
     ersetzen: "",
   },
   {
@@ -7477,6 +7479,27 @@ export const KATALOG = [
     regel: "Die Karte zum Umschalten steht auch in der Ansicht als Verkündiger — sonst gäbe es kein Zurück (T124).",
     suchen: "  if (!state.planner) return null\n",
     ersetzen: "  if (!state.planner || state.ansicht) return null\n",
+  },
+  {
+    id: "bereichsname-unbekannt-heisst-nach-schluessel",
+    datei: "src/personen/priv-label.ts",
+    regel: "Ein Bereich, den die App nicht kennt (Altbestand), heißt nach seinem Schlüssel — nicht leer (17.10.2026).",
+    suchen: "  return teile.every(Boolean) ? teile : [key]\n",
+    ersetzen: "  return teile\n",
+  },
+  {
+    id: "bereichsname-dienst-ein-baustein",
+    datei: "src/personen/priv-label.ts",
+    regel: "Ein Hilfsdienst ist ein Baustein, auch wenn sein Name „ · “ enthält — die Tabelle setzt ihn nicht auf zwei Zeilen (17.10.2026).",
+    suchen: "  if (svc) return [tu(svc.name)]\n",
+    ersetzen: "  if (svc) return tu(svc.name).split(' · ')\n",
+  },
+  {
+    id: "matrix-kopf-zusammenkunft-kurz",
+    datei: "src/personen/priv-label.ts",
+    regel: "Im Kopf der Tabelle Person × Bereich steht die Zusammenkunft kurz — die längste Zeile bestimmt, wie hoch der Kopf steht (17.10.2026).",
+    suchen: "  if (key === 'vorsitzMid') return [t.privVorsitz, kurz ? t.unterDerWoche : t.tabMid]\n",
+    ersetzen: "  if (key === 'vorsitzMid') return [t.privVorsitz, t.tabMid]\n",
   },
   // „push-ziel-auswertung" ist am 17.10.2026 gegangen: `deeplink.ts` zählt die
   // Bildschirme nicht mehr selbst auf, sondern nimmt `ANSTEUERBARE_SCREENS` aus

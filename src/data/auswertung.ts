@@ -38,7 +38,7 @@ import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schlu
 import { folgtDemVorsitz } from '../../supabase/functions/_shared/planung.ts'
 import { istAbwesend, type AbsenceSet } from './absence'
 import { idAufloeser, isQualified, isSpeakerRole, istArt, istAusgefallen, MEETING_TABS } from './helpers'
-import { montagVon, tagNach } from './meeting-dates'
+import { montagVon, tagNach, wochenZwischen } from './meeting-dates'
 import { allePlaetze, platzKey, platzMitZusage, type Platz } from './plaetze'
 import { bereichVon, vorsitzPlatz } from './planning'
 import type { Absage, FsInstance, Group, MeetingKey, Person, Service, Week } from './types'
@@ -61,16 +61,9 @@ export const NIE_AB_SCHNITT = 4
 /** Ohne Aufgaben in diesen Bereichen fällt niemand unter „Schulungsaufgaben". */
 export const SCHULUNG = new Set(['schulung', 'schulungPartner', 'schulungVortrag'])
 
-const TAG_MS = 864e5
-
 /** Ist der Bereich ein Hilfsdienst (`svc:<dienst>`, `serviceQualKey`)? */
 export function istHilfsdienstBereich(bereich: string): boolean {
   return bereich.startsWith('svc:')
-}
-
-/** Ganze Wochen von Montag `a` bis Montag `b` (beide ISO). */
-function wochenZwischen(a: string, b: string): number {
-  return Math.round((Date.parse(b) - Date.parse(a)) / (7 * TAG_MS))
 }
 
 function median(werte: readonly number[]): number | null {
@@ -102,6 +95,8 @@ export interface Zeitfenster {
   bis: string
   /** Die Indizes der Wochen im Zeitraum, aufsteigend. */
   wochen: number[]
+  /** Ihre Montage (ISO), in derselben Reihenfolge — für die Felder je Woche. */
+  montage: string[]
 }
 
 /**
@@ -112,16 +107,18 @@ export function zeitfenster(weeks: readonly Week[], anzahlWochen: number, heute:
   const bis = montagVon(heute)
   const von = tagNach(bis, -7 * anzahlWochen)
   const wochen: number[] = []
+  const montage: string[] = []
   weeks.forEach((w, wi) => {
-    if (w.start >= von && w.start < bis) wochen.push(wi)
+    if (w.start < von || w.start >= bis) return
+    wochen.push(wi)
+    montage.push(w.start)
   })
-  return { von, bis, wochen }
+  return { von, bis, wochen, montage }
 }
 
-/** Eine gezählte Absage: wer, wann, in welchem Bereich — `null`, wenn es den Platz nicht mehr gibt. */
+/** Eine gezählte Absage: wer und in welchem Bereich — `null`, wenn es den Platz nicht mehr gibt. */
 export interface AbsageEinteilung {
   pid: string
-  wi: number
   bereich: string | null
 }
 
@@ -277,7 +274,7 @@ export function grundlage(eingabe: {
     const wi = teile ? wocheJeMontag.get(teile.woche) : undefined
     if (!teile || wi === undefined) continue
     if (teile.art === 'fs') {
-      absagen.push({ pid: a.personId, wi, bereich: TREFFPUNKT_BEREICH })
+      absagen.push({ pid: a.personId, bereich: TREFFPUNKT_BEREICH })
       continue
     }
     const week = weeks[wi]
@@ -290,7 +287,7 @@ export function grundlage(eingabe: {
     const vorsitz = platz?.vorsitz
     if (vorsitz && (vorsitz.pid === a.personId || (vorsitz.key !== null && abgesagt.has(`${a.personId}|${vorsitz.key}`)))) continue
     // Einen Platz, den es nicht mehr gibt, zählt die Person — ein Bereich ist nicht zu sagen.
-    absagen.push({ pid: a.personId, wi, bereich: platz?.bereich ?? null })
+    absagen.push({ pid: a.personId, bereich: platz?.bereich ?? null })
   }
   return { fenster, einteilungen, plaetze, zusammenkuenfte, verfuegbar, ganzAbwesend, geplant, absagen }
 }
@@ -314,6 +311,29 @@ function erwartungen(g: Grundlage, persons: readonly Person[]): Map<string, Map<
 /** Die Bereiche mit Plätzen im Zeitraum, die eine Person hat. */
 function bereicheVon(g: Grundlage, p: Person): string[] {
   return [...g.plaetze.keys()].filter((b) => isQualified(p, b))
+}
+
+/** Die Einteilungen je Person — einmal gruppiert, statt je Person über alle zu laufen. */
+function einteilungenJePerson(g: Grundlage): Map<string, Einteilung[]> {
+  const out = new Map<string, Einteilung[]>()
+  for (const e of g.einteilungen) {
+    const liste = out.get(e.pid)
+    if (liste) liste.push(e)
+    else out.set(e.pid, [e])
+  }
+  return out
+}
+
+/** Wie oft jede Person in jedem Bereich dran war: Person → Bereich → Anzahl. */
+function anzahlJeBereich(g: Grundlage): Map<string, Map<string, number>> {
+  const out = new Map<string, Map<string, number>>()
+  for (const e of g.einteilungen) {
+    if (!e.bereich) continue
+    const je = out.get(e.pid) ?? new Map<string, number>()
+    je.set(e.bereich, (je.get(e.bereich) ?? 0) + 1)
+    out.set(e.pid, je)
+  }
+  return out
 }
 
 /* ---- Kennzahlen und Last --------------------------------------------------- */
@@ -407,6 +427,7 @@ function gehoertZumVergleich(bereich: string, vergleich: Vergleich): boolean {
 
 export function verteilung(g: Grundlage, persons: readonly Person[], vergleich: Vergleich): Verteilung {
   const erwartet = erwartungen(g, persons)
+  const jePerson = einteilungenJePerson(g)
   const zeilen: VerteilungsZeile[] = []
   for (const p of persons) {
     const bereiche = bereicheVon(g, p)
@@ -415,8 +436,8 @@ export function verteilung(g: Grundlage, persons: readonly Person[], vergleich: 
     if (!dabei) continue
     let n = 0
     let hilfsdienste = 0
-    for (const e of g.einteilungen) {
-      if (e.pid !== p.id || !e.bereich || !gehoertZumVergleich(e.bereich, vergleich)) continue
+    for (const e of jePerson.get(p.id) ?? []) {
+      if (!e.bereich || !gehoertZumVergleich(e.bereich, vergleich)) continue
       n++
       if (e.hilfsdienst) hilfsdienste++
     }
@@ -464,8 +485,8 @@ export function istEinseitig(z: EinseitigZeile): boolean {
  * die einseitigen zuerst.
  */
 export function einseitig(g: Grundlage, persons: readonly Person[]): EinseitigZeile[] {
-  const zahl = new Map<string, number>()
-  for (const e of g.einteilungen) if (e.bereich) zahl.set(`${e.pid}|${e.bereich}`, (zahl.get(`${e.pid}|${e.bereich}`) ?? 0) + 1)
+  const zahl = anzahlJeBereich(g)
+  const anzahl = (pid: string, bereich: string): number => zahl.get(pid)?.get(bereich) ?? 0
   const qualifiziert = new Map<string, Person[]>()
   for (const b of g.plaetze.keys()) qualifiziert.set(b, persons.filter((p) => isQualified(p, b)))
 
@@ -477,8 +498,8 @@ export function einseitig(g: Grundlage, persons: readonly Person[]): EinseitigZe
     const bereiche = eigene
       .map((bereich) => {
         const andere = (qualifiziert.get(bereich) ?? []).filter((q) => q.id !== p.id)
-        const summe = andere.reduce((s, q) => s + (zahl.get(`${q.id}|${bereich}`) ?? 0), 0)
-        return { bereich, n: zahl.get(`${p.id}|${bereich}`) ?? 0, schnittAndere: andere.length ? summe / andere.length : 0 }
+        const summe = andere.reduce((s, q) => s + anzahl(q.id, bereich), 0)
+        return { bereich, n: anzahl(p.id, bereich), schnittAndere: andere.length ? summe / andere.length : 0 }
       })
       .sort((a, b) => b.n - a.n)
     const gesamt = bereiche.reduce((s, b) => s + b.n, 0)
@@ -507,8 +528,7 @@ export function matrix(g: Grundlage, persons: readonly Person[], zeilen: readonl
     return i < 0 ? ordnung.length : i
   }
   const bereiche = [...g.plaetze.keys()].sort((a, b) => rang(a) - rang(b) || a.localeCompare(b))
-  const zahl = new Map<string, number>()
-  for (const e of g.einteilungen) if (e.bereich) zahl.set(`${e.pid}|${e.bereich}`, (zahl.get(`${e.pid}|${e.bereich}`) ?? 0) + 1)
+  const zahl = anzahlJeBereich(g)
   const einseitigeIds = new Set(zeilen.filter(istEinseitig).map((z) => z.pid))
   return {
     bereiche,
@@ -517,7 +537,7 @@ export function matrix(g: Grundlage, persons: readonly Person[], zeilen: readonl
       .map((p) => ({
         pid: p.id,
         einseitig: einseitigeIds.has(p.id),
-        werte: bereiche.map((b) => (isQualified(p, b) ? (zahl.get(`${p.id}|${b}`) ?? 0) : null)),
+        werte: bereiche.map((b) => (isQualified(p, b) ? (zahl.get(p.id)?.get(b) ?? 0) : null)),
       })),
   }
 }
@@ -567,7 +587,7 @@ export interface Wartezeiten {
 export const LANGE_AB = 2
 export const SCHNELL_BIS = 0.5
 
-export function wartezeiten(g: Grundlage, weeks: readonly Week[], persons: readonly Person[], bereich: string): Wartezeiten {
+export function wartezeiten(g: Grundlage, persons: readonly Person[], bereich: string): Wartezeiten {
   const male = new Map<string, string[]>()
   for (const e of g.einteilungen) {
     if (e.bereich !== bereich) continue
@@ -616,7 +636,6 @@ export function wartezeiten(g: Grundlage, weeks: readonly Week[], persons: reado
         a.pid.localeCompare(b.pid),
     )
 
-  const starts = g.fenster.wochen.map((wi) => weeks[wi]?.start ?? '')
   const schnell: Schnell[] = []
   if (ueblich !== null) {
     for (const p of qualifiziert) {
@@ -624,7 +643,7 @@ export function wartezeiten(g: Grundlage, weeks: readonly Week[], persons: reado
       if (liste.length < 3) continue
       const abstand = median(abstaende(liste))
       if (abstand === null || abstand > SCHNELL_BIS * ueblich) continue
-      schnell.push({ pid: p.id, abstand, mal: liste.length, wochen: starts.map((s) => liste.includes(s)) })
+      schnell.push({ pid: p.id, abstand, mal: liste.length, wochen: g.fenster.montage.map((s) => liste.includes(s)) })
     }
     schnell.sort((a, b) => a.abstand - b.abstand || b.mal - a.mal)
   }
@@ -647,21 +666,18 @@ export function treffpunkte(
   groups: readonly Group[],
 ): TreffpunktGruppe[] {
   const bekannt = new Set(persons.map((p) => p.id))
-  const zahl = new Map<string, number>()
-  const schluessel = (gruppe: string | null, pid: string): string => `${gruppe ?? ''}|${pid}`
+  // Gruppe (die Versammlung als `null`, auch bei leerer Kennung) → Leiter → wie oft.
+  const zahl = new Map<string | null, Map<string, number>>()
   for (const wi of fenster.wochen) {
     for (const inst of fsWeeks[wi] ?? []) {
       if (!inst.lpid || inst.lext || !bekannt.has(inst.lpid)) continue
-      const k = schluessel(inst.grp, inst.lpid)
-      zahl.set(k, (zahl.get(k) ?? 0) + 1)
+      const je = zahl.get(inst.grp || null) ?? new Map<string, number>()
+      je.set(inst.lpid, (je.get(inst.lpid) ?? 0) + 1)
+      zahl.set(inst.grp || null, je)
     }
   }
   const gruppe = (id: string | null): TreffpunktGruppe => {
-    const zeilen = new Map<string, number>()
-    for (const [k, n] of zahl) {
-      const [g, pid] = k.split('|') as [string, string]
-      if ((g || null) === id) zeilen.set(pid, n)
-    }
+    const zeilen = new Map(zahl.get(id))
     if (id !== null) {
       for (const p of persons) if (p.priv.treffpunkt && p.grp === id && !zeilen.has(p.id)) zeilen.set(p.id, 0)
     }
@@ -723,15 +739,17 @@ export const FOLGE_AB = 3
 
 export function ballungen(g: Grundlage): Ballungen {
   const jeZusammenkunft = new Map<string, Einteilung[]>()
-  const jeBereich = new Map<string, string[]>()
+  // Person → Bereich → die Montage, an denen sie dort dran war.
+  const jeBereich = new Map<string, Map<string, string[]>>()
   for (const e of g.einteilungen) {
     const k = `${e.pid}|${e.start}|${e.tab}`
     jeZusammenkunft.set(k, [...(jeZusammenkunft.get(k) ?? []), e])
     if (e.bereich) {
-      const kb = `${e.pid}|${e.bereich}`
-      const liste = jeBereich.get(kb) ?? []
+      const bereiche = jeBereich.get(e.pid) ?? new Map<string, string[]>()
+      const liste = bereiche.get(e.bereich) ?? []
       if (!liste.includes(e.start)) liste.push(e.start)
-      jeBereich.set(kb, liste)
+      bereiche.set(e.bereich, liste)
+      jeBereich.set(e.pid, bereiche)
     }
   }
   const zweimal = [...jeZusammenkunft.values()]
@@ -739,15 +757,16 @@ export function ballungen(g: Grundlage): Ballungen {
     .map((liste) => ({ pid: liste[0]!.pid, start: liste[0]!.start, tab: liste[0]!.tab, bereiche: liste.map((e) => e.bereich) }))
     .sort((a, b) => a.start.localeCompare(b.start) || a.tab.localeCompare(b.tab))
   const folge: Ballungen['folge'] = []
-  for (const [k, starts] of jeBereich) {
-    const [pid, bereich] = k.split('|') as [string, string]
-    starts.sort()
-    let ab = 0
-    for (let i = 1; i <= starts.length; i++) {
-      const weiter = i < starts.length && wochenZwischen(starts[i - 1]!, starts[i]!) === 1
-      if (weiter) continue
-      if (i - ab >= FOLGE_AB) folge.push({ pid, bereich, ab: starts[ab]!, wochen: i - ab })
-      ab = i
+  for (const [pid, bereiche] of jeBereich) {
+    for (const [bereich, starts] of bereiche) {
+      starts.sort()
+      let ab = 0
+      for (let i = 1; i <= starts.length; i++) {
+        const weiter = i < starts.length && wochenZwischen(starts[i - 1]!, starts[i]!) === 1
+        if (weiter) continue
+        if (i - ab >= FOLGE_AB) folge.push({ pid, bereich, ab: starts[ab]!, wochen: i - ab })
+        ab = i
+      }
     }
   }
   folge.sort((a, b) => a.ab.localeCompare(b.ab) || a.pid.localeCompare(b.pid))
@@ -913,7 +932,7 @@ export function auswerten(eingabe: {
     hilfsdienste: verteilung(g, eingabe.persons, 'hilfsdienste'),
   }
   const einseitige = einseitig(g, eingabe.persons)
-  const wartezeitenListe = [...g.plaetze.keys()].map((b) => wartezeiten(g, eingabe.weeks, eingabe.persons, b))
+  const wartezeitenListe = [...g.plaetze.keys()].map((b) => wartezeiten(g, eingabe.persons, b))
   const treffpunktGruppen = treffpunkte(eingabe.fsWeeks, fenster, eingabe.persons, eingabe.groups)
   // Die geleiteten Treffpunkte — gegen sie zählen die abgesagten.
   const geleitet = treffpunktGruppen.reduce((s, gr) => s + gr.zeilen.reduce((t, z) => t + z.n, 0), 0)

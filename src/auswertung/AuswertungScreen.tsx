@@ -14,7 +14,7 @@ import { displayName } from '../data/helpers'
 import { fromIso, tagNach } from '../data/meeting-dates'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
-import { bereichsName } from '../personen/priv-label'
+import { bereichsName, bereichsTeile } from '../personen/priv-label'
 import { Legende } from './Diagramme'
 import { EinseitigKarten, EinseitigMatrix } from './EinseitigAnsicht'
 import { HinweisListe } from './Hinweise'
@@ -68,6 +68,7 @@ export function AuswertungScreen() {
     const namen = new Map(persons.map((p) => [p.id, displayName(p)]))
     const zahl = new Intl.NumberFormat(LOCALES[lang] ?? lang, { maximumFractionDigits: 1 })
     const prozent = new Intl.NumberFormat(LOCALES[lang] ?? lang, { style: 'percent', maximumFractionDigits: 1 })
+    const prozentGanz = new Intl.NumberFormat(LOCALES[lang] ?? lang, { style: 'percent', maximumFractionDigits: 0 })
     const tag = datumsFormat(lang, 'tagMonatKurz')
     return {
       a,
@@ -75,11 +76,12 @@ export function AuswertungScreen() {
       lang,
       name: (pid) => namen.get(pid) ?? '',
       bereich: (key) => bereichsName(key, services, t, tu),
+      bereichKurz: (key) => bereichsTeile(key, services, t, tu, true),
       gruppe: (id) => (id === null ? t.versammlungLbl : gruppenName(id, groups, tu)),
       dauer: (wochen) => zeitspanne(wochen, 'week', lang),
       zahl: (n) => zahl.format(n),
       datum: (iso) => tag.format(fromIso(iso)),
-      prozent: (anteil) => prozent.format(anteil),
+      prozent: (anteil, ganz = false) => (ganz ? prozentGanz : prozent).format(anteil),
       personOeffnen: setPerson,
       // Ab dem Tablet steht die Unteransicht schon auf der Seite: dorthin rollen.
       ansichtOeffnen: (ziel) =>
@@ -250,7 +252,7 @@ function Last({ k }: { k: Kontext }) {
   const max = Math.max(1, ...last.map((z) => z.n))
   // Erst ab elf Personen gibt es „die zehn oberen" und „alle anderen".
   const viele = last.length > OBEN_ANZAHL
-  const prozent = new Intl.NumberFormat(LOCALES[k.lang] ?? k.lang, { style: 'percent', maximumFractionDigits: 0 }).format(anteilOben)
+  const prozent = k.prozent(anteilOben, true)
   return (
     <section className="karte aw-last-karte" aria-label={t.awLastTitel}>
       <h2 className="karte-titel">{t.awLastTitel}</h2>

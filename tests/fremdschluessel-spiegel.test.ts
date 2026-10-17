@@ -128,7 +128,7 @@ const SPIEGEL: Record<string, Spiegel> = {
   absagen: {
     feld: 'absagen',
     spalten: { person_id: 'personId' },
-    basis: { personId: null, taskKey: 'zz', woche: '2026-09-07' },
+    basis: { personId: null, taskKey: 'zz' },
     schluessel: 'taskKey',
   },
 }

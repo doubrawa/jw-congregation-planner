@@ -18,6 +18,8 @@ export interface Kontext {
   name: (pid: string) => string
   /** Die Beschriftung eines Aufgabenbereichs (`bereichsName`). */
   bereich: (key: string) => string
+  /** Dieselbe in Bausteinen, die Zusammenkunft kurz — je Baustein eine Zeile (`bereichsTeile`). */
+  bereichKurz: (key: string) => string[]
   /** Der Name einer Predigtdienstgruppe, übersetzt — ohne Gruppe die Versammlung. */
   gruppe: (id: string | null) => string
   /** Eine Anzahl Wochen in Worten der Sprache („34 Wochen", `zeitspanne`). */
@@ -26,8 +28,8 @@ export interface Kontext {
   zahl: (n: number) => string
   /** Ein Tag kurz („17. Feb."). */
   datum: (iso: string) => string
-  /** Ein Anteil (0 bis 1) als Prozent der Sprache („4 %"). */
-  prozent: (anteil: number) => string
+  /** Ein Anteil (0 bis 1) als Prozent der Sprache („4,2 %"); `ganz` ohne Nachkommastelle („71 %"). */
+  prozent: (anteil: number, ganz?: boolean) => string
   personOeffnen: (pid: string) => void
   /** Zu einer Unteransicht — am Handy öffnet sie sich, ab dem Tablet rollt die Seite dorthin. */
   ansichtOeffnen: (ansicht: Exclude<Ansicht, 'ueberblick'>) => void

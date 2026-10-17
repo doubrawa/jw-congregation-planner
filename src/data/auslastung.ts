@@ -14,7 +14,7 @@
  */
 
 import { gehoertZu, istAusgefallen, MEETING_TABS } from './helpers'
-import { montagNach } from './meeting-dates'
+import { montagNach, wochenZwischen } from './meeting-dates'
 import { allePlaetze } from './plaetze'
 import type { Person, Service, Week } from './types'
 
@@ -150,7 +150,7 @@ export const LOAD_WEEKS = LOAD_RADIUS * 2 + 1
  * Grundlage ist `week.start`, der Montag der Woche (T66).
  */
 export function wochenAbstand(a: Week, b: Week): number {
-  return Math.round(Math.abs(Date.parse(a.start) - Date.parse(b.start)) / WOCHE_MS)
+  return Math.abs(wochenZwischen(a.start, b.start))
 }
 
 /**

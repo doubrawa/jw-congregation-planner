@@ -2,8 +2,9 @@
  * Die Auswertung der Zuteilungen (T126, Entwurf vom 16.10.2026). Farben nur aus
  * tokens.css, Schriftgrößen als calc(<px> * var(--fs)), Richtungen logisch —
  * die Balken stehen mit `inset-inline-start`, damit sie von rechts nach links
- * mitkippen. Keine Reihe rollt waagerecht (Betreiber, 16.10.2026); nur die
- * breite Tabelle Person × Bereich rollt in ihrem Kasten, wenn sie nicht passt.
+ * mitkippen. Nichts rollt waagerecht (Betreiber, 16.10.2026) — auch die Tabelle
+ * Person × Bereich nicht: Sie steht erst ab dem Desktop, ihre Spalten teilen
+ * sich die Breite, die Köpfe stehen senkrecht (`.aw-matrix`).
  */
 
 .auswertung {

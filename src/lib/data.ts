@@ -363,11 +363,10 @@ function serviceToRow(s: Service, congregationId: string, position: number) {
 interface AbsageRow {
   person_id: string
   task_key: string
-  woche: string
 }
 
 function absageFromRow(r: AbsageRow): Absage {
-  return { personId: r.person_id, taskKey: r.task_key, woche: r.woche }
+  return { personId: r.person_id, taskKey: r.task_key }
 }
 
 function absenceFromRow(r: AbsenceRow): Absence {
@@ -771,7 +770,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     alleSeiten<AbsageRow>((von, bis) =>
       db
         .from('absagen')
-        .select('person_id, task_key, woche', { count: 'exact' })
+        .select('person_id, task_key', { count: 'exact' })
         .eq('congregation_id', congregationId)
         .gte('woche', verteilungAb)
         .order('woche')

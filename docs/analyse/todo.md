@@ -3479,9 +3479,9 @@ Richtlinie überhaupt etwas tut:
 | | Versuch | Ergebnis |
 | --- | --- | --- |
 | 1 | Bestätigung auf eine **fremde** Aufgabe, eigene `user_id` | **angekommen (201)** — S2 bestätigt |
-| 2 | dieselbe Zeile mit **fremder** `user_id` | abgewiesen (403) — die Grenze greift |
-| 3 | Mitteilung `verhindert` mit freiem Text an den Planer | **angekommen (201)** — S3 bestätigt |
-| 4 | dieselbe Mitteilung als Typ `zuteilung` (nur Planer) | abgewiesen (403) — die Grenze greift |
+| 2 | dieselbe Zeile mit **fremder** `user_id` | abgewiesen (403) — die Grenze greift. **Erledigt** — `OBERE_GRENZE` |
+| 3 | Mitteilung `verhindert` mit freiem Text an den Planer | **angekommen (201)** — S3 bestätigt. **Erledigt** — einmal je Darstellung |
+| 4 | dieselbe Mitteilung als Typ `zuteilung` (nur Planer) | abgewiesen (403) — die Grenze greift. **Erledigt** — der Kommentar sagt jetzt, dass nichts rollt |
 
 Gemessen am schärfsten Fall: Das Mitglied setzte **„verhindert" auf einen
 fremden Hilfsdienst** (Mikrofon, Fabian Ziegler) — genau die Zeile, aus der
@@ -7333,10 +7333,12 @@ Absagen aufzeichnen).
   Person), Laden, Schema (Regel und Trigger), Aufbewahrung, Fremdschlüssel-Spiegel,
   Mandanten-Nachweis, Zurücksetzen; 17 Einträge im Mutationskatalog.
 
-**Aus `/simplify` notiert (17. Oktober 2026), nicht umgesetzt** — Betreiber:
-*„mach am besten keine umsetzungen. nur notieren."* Durchgesehen wurden T126
-samt Absagen, T124 und T42; keiner der Punkte ändert, was die App zeigt. Das
-Code-Review folgte am 17. Oktober (unten); mit ihm ist Nr. 1 erledigt.
+**Aus `/simplify` notiert (17. Oktober 2026)** — Betreiber erst: *„mach am
+besten keine umsetzungen. nur notieren."* Durchgesehen wurden T126 samt
+Absagen, T124 und T42; keiner der Punkte ändert, was die App zeigt. Nr. 1 ging
+mit dem Code-Review (unten), Nr. 2–14 am selben Tag auf *„Mach 3"*: belegt mit
+einem Abbild aller Ansichten der Auswertung vorher und nachher — 82 Ansichten
+in Deutsch, Persisch und Arabisch, byte-gleich. Nr. 15 gehört zu T42.
 
 | Nr. | Wo | Was |
 | --- | --- | --- |
@@ -7344,16 +7346,16 @@ Code-Review folgte am 17. Oktober (unten); mit ihm ist Nr. 1 erledigt.
 | 2 | `src/auswertung/PersonAnsicht.tsx` (Achse je Bereich) | `1.5 * b.erwartet` statt `OBERE_GRENZE` |
 | 3 | `src/auswertung/EinseitigAnsicht.tsx` (`EinseitigKarten`) | `einseitig.filter(istEinseitig)` zweimal je Darstellung |
 | 4 | `src/auswertung/auswertung.css` (Kopf) | der Kommentar sagt, die Tabelle Person × Bereich rolle in ihrem Kasten — sie passt seit dem Umbau immer |
-| 5 | `src/data/auswertung.ts` (`AbsageEinteilung.wi`) | liest niemand |
-| 6 | `src/data/auswertung.ts` (`wartezeiten`) und `PersonAnsicht.tsx` | die Montage des Zeitraums werden zweimal aus `fenster.wochen` abgeleitet — gehören in `Zeitfenster`; dann braucht `wartezeiten` `weeks` nicht mehr |
-| 7 | `src/data/auswertung.ts` (`verteilung`) | läuft je Person über alle Einteilungen, dreimal je Rechnung — einmal nach Person gruppieren |
-| 8 | `src/data/auswertung.ts` (`einseitig`, `matrix`) | die Zählung je Person und Bereich steht zweimal |
-| 9 | `src/data/auswertung.ts` (`treffpunkte`, `ballungen`) | schreiben zwei Kennungen in einen Text-Schlüssel und zerlegen ihn wieder (`split('|')`) — verschachtelte Maps sparen das |
-| 10 | `src/data/auswertung.ts` (`wochenZwischen`) | dritte Fassung neben `wochenAbstand` (`auslastung.ts`) und `tageZwischen` (`meeting-dates.ts`) — eine Stelle in `meeting-dates.ts` |
-| 11 | `src/auswertung/EinseitigAnsicht.tsx` (`kopfZeilen`) | zerlegt den fertigen Bereichsnamen an „ · " und tauscht die Zusammenkunft per Textvergleich — besser liefert `privLabel` die Bausteine selbst |
-| 12 | `src/auswertung/AuswertungScreen.tsx` (`Last`) | eigenes Prozent-Format neben `k.prozent` (null gegen eine Nachkommastelle) — eines für beide |
-| 13 | `src/data/rechte.ts`, `src/app/AnsichtLeiste.tsx` | „Ansicht nur am echten Admin" (`planner && ansicht`) steht dreimal — ein `aktiveAnsicht()` in `ansicht.ts`; befristet, geht mit dem Ausbau von T124 |
-| 14 | `src/lib/data.ts` (`Absage.woche`) | lädt die App mit und liest es nie — die Woche steckt im Schlüssel; gebraucht wird sie nur in der Datenbank |
+| 5 | `src/data/auswertung.ts` (`AbsageEinteilung.wi`) | liest niemand. **Erledigt** — Feld entfernt |
+| 6 | `src/data/auswertung.ts` (`wartezeiten`) und `PersonAnsicht.tsx` | die Montage des Zeitraums werden zweimal aus `fenster.wochen` abgeleitet — gehören in `Zeitfenster`; dann braucht `wartezeiten` `weeks` nicht mehr. **Erledigt** — `Zeitfenster.montage`; `wartezeiten(g, persons, bereich)` |
+| 7 | `src/data/auswertung.ts` (`verteilung`) | läuft je Person über alle Einteilungen, dreimal je Rechnung — einmal nach Person gruppieren. **Erledigt** — `einteilungenJePerson` |
+| 8 | `src/data/auswertung.ts` (`einseitig`, `matrix`) | die Zählung je Person und Bereich steht zweimal. **Erledigt** — `anzahlJeBereich` für beide |
+| 9 | `src/data/auswertung.ts` (`treffpunkte`, `ballungen`) | schreiben zwei Kennungen in einen Text-Schlüssel und zerlegen ihn wieder (`split('|')`) — verschachtelte Maps sparen das. **Erledigt** — verschachtelte Maps |
+| 10 | `src/data/auswertung.ts` (`wochenZwischen`) | dritte Fassung neben `wochenAbstand` (`auslastung.ts`) und `tageZwischen` (`meeting-dates.ts`) — eine Stelle in `meeting-dates.ts`. **Erledigt** — `wochenZwischen` in `meeting-dates.ts`, `wochenAbstand` rechnet damit |
+| 11 | `src/auswertung/EinseitigAnsicht.tsx` (`kopfZeilen`) | zerlegt den fertigen Bereichsnamen an „ · " und tauscht die Zusammenkunft per Textvergleich — besser liefert `privLabel` die Bausteine selbst. **Erledigt** — `privLabelTeile`/`bereichsTeile` mit `kurz`; ein Dienst mit „ · " im Namen bleibt ein Baustein |
+| 12 | `src/auswertung/AuswertungScreen.tsx` (`Last`) | eigenes Prozent-Format neben `k.prozent` (null gegen eine Nachkommastelle) — eines für beide. **Erledigt** — `k.prozent(anteil, ganz)` |
+| 13 | `src/data/rechte.ts`, `src/app/AnsichtLeiste.tsx` | „Ansicht nur am echten Admin" (`planner && ansicht`) steht dreimal — ein `aktiveAnsicht()` in `ansicht.ts`; befristet, geht mit dem Ausbau von T124. **Erledigt** — `aktiveAnsicht()` für `rechteVon`, `rechteStufe` und die Leiste |
+| 14 | `src/lib/data.ts` (`Absage.woche`) | lädt die App mit und liest es nie — die Woche steckt im Schlüssel; gebraucht wird sie nur in der Datenbank. **Erledigt** — `Absage.woche` wird nicht mehr geladen |
 | 15 | `scripts/check-index-access.mjs` samt Grundlinie | seit T42 prüft `tsconfig.app.json` selbst; die Sperrklinke meldet nur noch 0 (siehe Phase 7 unten) |
 
 Beim Durchsehen aufgefallen, kein Aufräumen: Die Kachel „Treffpunkte, Absagen,
@@ -7822,7 +7824,7 @@ Gerät.
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
-| **Notiert** | 14 Punkte aus `/simplify` (T124, T126, T42) | unter T126, nicht umgesetzt (Betreiber: „nur notieren"); keiner ändert, was die App zeigt. Nr. 1 ging mit dem Code-Review mit — dessen elf Befunde sind umgesetzt und live (`b7011053`) |
+| **Notiert** | Absagen: Kachel und Liste zählen verschieden | die Kachel „Treffpunkte, Absagen, Ballungen" zählt jede Absage, die Liste nur die mit Bereich (unter T126). Die übrigen `/simplify`-Punkte sind seit dem 17. Oktober erledigt, Nr. 15 geht mit T42 |
 | **Zurückgestellt** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт". Betreiber am 16. Oktober: „bleibt erst mal so" — wieder aufnehmen, wenn ein Muttersprachler prüft; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
 | **Wartet** | Motion-Clip „Plan senden" | am 12. Oktober zurückgestellt, bis das neue Design steht — das ist jetzt der Fall. Das leere Motion-Artifact liegt schon bereit |
