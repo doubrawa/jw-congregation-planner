@@ -5,7 +5,6 @@ import { Sheet } from '../components/Sheet'
 import { datumsFormat } from '../components/datum-anzeige'
 import { ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
-import { rechteVon } from '../data/rechte'
 import {
   hatAenderungen,
   personFehlt,
@@ -23,7 +22,11 @@ import './planen.css'
 
 /**
  * **Vortragsplan aus dem Planungsprogramm übernehmen** (T122) — für Planer und
- * Admin, im Reiter Wochenende.
+ * Admin, als Karte bei den Wochen unter „Holen" (`WochenListe`): auf der Seite
+ * „Planung" und am breiten Bildschirm in der Spalte neben dem Plan. Beide
+ * Importe stehen so dort, wo die kommenden Wochen vorbereitet werden. Bis zum
+ * 18.10.2026 stand das Feld ganz unten im Reiter Wochenende, unter den
+ * Hilfsdiensten — der Betreiber fand es nicht.
  *
  * Die Datei wird hier auf dem Gerät gelesen; was die App nicht kennt (Telefon,
  * E-Mail …), geht nicht weiter und wird in der Vorschau genannt. Erst
@@ -73,15 +76,17 @@ const GRUND: Partial<Record<Uebersprungen, keyof Dict>> = {
   gedaechtnismahl: 'memWoche',
 }
 
-export function VortragsplanPanel() {
+export function VortragsplanKarte() {
   const { state, dispatch } = useApp()
   const { t } = useT()
   const eingabe = useRef<HTMLInputElement>(null)
   const [gelesen, setGelesen] = useState<Gelesen | null>(null)
 
-  // Übernehmen dürfen Admin und Planer (RLS `vortraege_zuteilen`); offline
-  // weist der Reducer es ab — dann steht das Feld gar nicht erst da.
-  if (!rechteVon(state).zuteilen || state.staleAt) return null
+  // Wer die Wochen vor sich hat, plant — Seite und Spalte zeigt die App nur
+  // Admin und Planer — und darf übernehmen (RLS `vortraege_zuteilen`), wie er
+  // „Holen" darf. Offline weist der Reducer es ab; dann steht die Karte gar
+  // nicht erst da.
+  if (state.staleAt) return null
 
   const dateiGewaehlt = async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
     const datei = e.target.files?.[0]
@@ -104,10 +109,14 @@ export function VortragsplanPanel() {
   }
 
   return (
-    <div className="panel vp-panel" data-farbe="petrol">
-      <h2 className="panel-label">{t.vpTitel}</h2>
-      <p className="panel-hint">{t.vpHinweis}</p>
-      {/* Bedient wird über den Knopf darunter; das Feld selbst ist für
+    <div className="vp-karte">
+      {/* Eine Überschrift, damit der Vortragsplan beim Springen von Titel zu
+          Titel auftaucht — er steht zwischen den Wochen, nicht in ihnen. */}
+      <div className="vp-karte-text">
+        <h3 className="vp-karte-titel">{t.vpTitel}</h3>
+        <span className="klein-text">{t.vpKarteUnter}</span>
+      </div>
+      {/* Bedient wird über den Knopf daneben; das Feld selbst ist für
           Vorleseprogramme und Tabulator unsichtbar — nicht nur per CSS, das
           sieht `bedienbar.test.tsx` nicht. */}
       <input
@@ -119,14 +128,13 @@ export function VortragsplanPanel() {
         aria-hidden="true"
         onChange={(e) => void dateiGewaehlt(e)}
       />
-      <button type="button" className="btn-outline vp-knopf" onClick={() => eingabe.current?.click()}>
+      <button type="button" className="knopf-pille" onClick={() => eingabe.current?.click()}>
         {t.vpDateiWaehlen}
       </button>
-      {/* Das Blatt hängt am Dokument, nicht hier: Das Feld steht im
-          Wochen-Streifen, und dessen `transform` machte `position: fixed` zur
-          Lage im Streifen — das Blatt reichte unter den Bildrand, seine Knöpfe
-          mit. Die Wischgeste der Wochen hört auf DOM-Ereignisse des Streifens
-          und erreicht das Blatt dort nicht. */}
+      {/* Das Blatt hängt am Dokument, nicht hier: Am breiten Bildschirm steht
+          die Karte in der klebenden Wochenspalte, deren Ebene unter dem
+          Wochenstreifen liegt — darin gerendert, läge das Blatt unter dem Plan
+          (wie beim Blatt von „Holen"). */}
       {gelesen &&
         createPortal(<VortragsplanVorschau gelesen={gelesen} onClose={() => setGelesen(null)} />, document.body)}
     </div>

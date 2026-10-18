@@ -3,13 +3,14 @@
 Die öffentlichen Vorträge plant der Vortragskoordinator in einem eigenen
 Programm, oft Monate voraus. Damit sie in der App im Programm der Wochen stehen,
 gibt das Programm eine XML-Datei in diesem Format aus, und ein Planer übernimmt
-sie unter **Zusammenkünfte › Planen › Wochenende › Vortragsplan**.
+sie bei den Wochen: **Planung › Vortragsplan › XML-Datei wählen** (am breiten
+Bildschirm in der Spalte der Wochen neben dem Plan).
 
 Übernommen werden je Woche: **Redner, Versammlung, Thema und Lied.** Mehr nicht.
 Von auswärtigen Rednern dürfen nur Name und Versammlung in die Cloud. Die App
 liest die Datei auf dem Gerät des Planers; alles, was die Datei sonst noch
 enthält (Telefon, E-Mail, Adresse …), verlässt das Gerät nicht. Die Vorschau
-nennt diese Felder unter „Nicht übernommen".
+nennt diese Felder unter „Bleibt auf diesem Gerät".
 
 Ein Beispiel liegt daneben: [vortragsplan-beispiel.xml](vortragsplan-beispiel.xml).
 

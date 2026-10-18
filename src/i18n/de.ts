@@ -129,10 +129,11 @@ export const DE = {
     // muss. Abbrechen und die Anlässe der Woche sagen schon `abbrechen`,
     // `coWoche`, `kongress` und `memWoche`. „Übernehmen" und „vorgemerkt" nicht
     // von den Gruppenbesuchen leihen: Dort heißen sie „Take over" und reden in
-    // den Übersetzungen vom Besuch.
+    // den Übersetzungen vom Besuch. Die Karte steht bei den Wochen unter
+    // „Holen": Titel, darunter was kommt, daneben der Knopf.
     vpTitel: 'Vortragsplan',
-    vpHinweis: 'XML-Datei aus dem Programm, in dem die öffentlichen Vorträge geplant werden. Redner, Versammlung, Thema und Lied kommen in die Wochen; spätere Wochen werden vorgemerkt. Alles andere in der Datei bleibt auf diesem Gerät.',
-    vpDateiWaehlen: 'XML-DATEI WÄHLEN',
+    vpKarteUnter: 'Redner, Thema und Lied für die kommenden Wochen',
+    vpDateiWaehlen: 'XML-Datei wählen',
     vpVorschau: 'Vortragsplan übernehmen', vpUebernehmen: 'Übernehmen',
     vpNeu: 'Neu', vpGeaendert: 'Geändert', vpEntfaellt: 'Entfällt', vpNichtUebernommen: 'Nicht übernommen',
     vpUnveraendert: 'Unverändert: {n}',

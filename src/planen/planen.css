@@ -1173,17 +1173,53 @@ body:has(.planen-leiste) .toast {
 
 /* ---- Vortragsplan aus dem Planungsprogramm (T122) ------------------------- */
 
-.vp-panel {
-  margin-top: 12px;
+/* Die Karte bei den Wochen, unter „Holen": Titel und was kommt, daneben der
+   Knopf. Passen beide nicht nebeneinander — am Handy, in der Spalte neben dem
+   Plan, bei großer Schrift —, rückt der Knopf darunter an den Rand, wo auch
+   „Holen" steht, und seine Beschriftung bricht notfalls um, statt die Karte zu
+   sprengen. */
+.vp-karte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding-block: 14px;
+  padding-inline: 18px 10px;
+  border-radius: 24px;
+  background: var(--karte);
 }
 
-/* Die Dateiauswahl selbst bleibt unsichtbar — der Knopf darunter öffnet sie. */
+.vp-karte-text {
+  display: flex;
+  flex: 1 1 13em;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.vp-karte-titel {
+  font-size: calc(16px * var(--fs));
+  font-weight: 600;
+}
+
+.vp-karte .knopf-pille {
+  max-width: 100%;
+  margin-inline-start: auto;
+  text-align: center;
+}
+
+.wochen-spalte .vp-karte {
+  padding-block: 12px;
+  padding-inline: 16px 10px;
+  border-radius: 22px;
+}
+
+.wochen-spalte .vp-karte-titel {
+  font-size: calc(15.5px * var(--fs));
+}
+
+/* Die Dateiauswahl selbst bleibt unsichtbar — der Knopf daneben öffnet sie. */
 .vp-eingabe {
   display: none;
-}
-
-.vp-knopf {
-  margin-top: 10px;
 }
 
 .vp-liste {

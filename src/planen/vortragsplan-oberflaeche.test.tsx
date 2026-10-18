@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import type { AppState } from '../app/context'
 
 /**
@@ -8,8 +9,15 @@ import type { AppState } from '../app/context'
  *
  * Wie in `t120-oberflaeche-ablauf.test.tsx` läuft der echte Speicher; nur die
  * Datenbank fehlt. Geprüft wird der Weg des Planers: Datei wählen, Vorschau
- * lesen, übernehmen — und was danach im Programm steht. Dazu, wer das Feld
- * überhaupt sieht.
+ * lesen, übernehmen — und was danach im Programm steht. Dazu, wo er den
+ * Vortragsplan findet.
+ *
+ * **Wo er steht** (Betreiber, 18.10.2026): bei den Wochen, gleich unter
+ * „Holen" — am Handy auf der Seite „Planung", am breiten Bildschirm in der
+ * Spalte neben dem Plan. Bis dahin stand das Feld ganz unten im Reiter
+ * Wochenende, unter Hilfsdiensten und Reinigung, und der Betreiber fragte:
+ * „wo importiere ich die Termine der externen Vortragsredner? ich habe nichts
+ * in der UI gefunden". Ein zweites Feld im Plan der Woche gibt es nicht mehr.
  */
 vi.mock('../app/hydrate', () => ({ loadAndHydrate: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('../lib/supabase', async (orig) => ({
@@ -23,6 +31,7 @@ const { useApp } = await import('../app/context')
 const { demoZustand } = await import('../../tests/testdaten/demo-start')
 const { dict } = await import('../i18n/ui')
 const { PlanenScreen } = await import('./PlanenScreen')
+const { PlanungScreen } = await import('./PlanungScreen')
 
 const t = dict('de')
 
@@ -32,8 +41,20 @@ function Toast() {
   return <output className="probe-toast">{state.toast?.text ?? ''}</output>
 }
 
-/** Ein Planer (nicht Admin) im Reiter Wochenende der ersten Demo-Woche. */
-function zeige(over: Partial<AppState> = {}) {
+/**
+ * Wie breit der Bildschirm ist: Eine Abfrage `(min-width: …)` trifft zu, wenn
+ * die Breite reicht — am Handy (375) keine, bei 1440 alle, auch die der
+ * Wochenspalte neben dem Plan (`WOCHEN_SPALTE_BREITE`).
+ */
+function breite(px: number): void {
+  window.matchMedia = vi.fn((abfrage: string) => {
+    const ab = /min-width:\s*(\d+)px/.exec(abfrage)
+    return { matches: ab !== null && px >= Number(ab[1]) }
+  }) as unknown as typeof window.matchMedia
+}
+
+/** Ein Planer (nicht Admin) in der ersten Demo-Woche, im Plan des Wochenendes. */
+function zeige(inhalt: ReactNode, over: Partial<AppState> = {}) {
   const demo = demoZustand()
   const anfang: AppState = {
     ...demo,
@@ -51,11 +72,14 @@ function zeige(over: Partial<AppState> = {}) {
   }
   return render(
     <AppProvider start={() => anfang}>
-      <PlanenScreen />
+      {inhalt}
       <Toast />
     </AppProvider>,
   )
 }
+
+/** Die Seite aller Wochen, wie sie am Handy über „Planung" aufgeht. */
+const planung = (over: Partial<AppState> = {}) => zeige(<PlanungScreen />, { screen: 'planung', ...over })
 
 const toast = (c: ParentNode): string => c.querySelector('.probe-toast')?.textContent ?? ''
 
@@ -84,7 +108,7 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date(2026, 8, 7, 9, 0)) // Montag, 7. September 2026
   // jsdom kennt kein matchMedia; das Blatt fragt danach (Wischgeste nur mobil).
-  window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
+  breite(375)
 })
 afterEach(() => {
   cleanup()
@@ -92,9 +116,10 @@ afterEach(() => {
 })
 
 describe('Vortragsplan übernehmen', () => {
-  it('Datei wählen → Vorschau mit Redner und übergangenem Feld → Übernehmen → im Programm', async () => {
-    const { container } = zeige()
-    waehle(container, DATEI)
+  it('am breiten Bildschirm: Datei in der Wochenspalte wählen → Vorschau mit übergangenem Feld → Übernehmen → im Plan daneben', async () => {
+    breite(1440)
+    const { container } = zeige(<PlanenScreen />)
+    waehle(container.querySelector('.wochen-spalte')!, DATEI)
     const blatt = await waitFor(() => {
       const b = document.querySelector('[role="dialog"]')
       if (!b) throw new Error('noch keine Vorschau')
@@ -109,8 +134,8 @@ describe('Vortragsplan übernehmen', () => {
     fireEvent.click(knopf(blatt, t.vpUebernehmen)!)
     expect(document.querySelector('[role="dialog"]')).toBeNull()
     expect(toast(container)).toBe(t.toastVortraegeUebernommen)
-    // Im Programm steht der Redner an seinem Platz: der Name, darunter Rolle
-    // und Herkunft (T121, `PlatzZeile`).
+    // Im Plan neben der Spalte steht der Redner an seinem Platz: der Name,
+    // darunter Rolle und Herkunft (T121, `PlatzZeile`).
     const redner = [...container.querySelectorAll('.platz')].find(
       (p) => p.querySelector('.platz-name')?.textContent === 'Max Mustermann',
     )
@@ -122,17 +147,61 @@ describe('Vortragsplan übernehmen', () => {
   })
 
   it('eine Datei in fremdem Format: Meldung, keine Vorschau', async () => {
-    const { container } = zeige()
+    const { container } = planung()
     waehle(container, 'datum;redner;versammlung\n2026-09-13;Max Mustermann;Musterstadt')
     await waitFor(() => expect(toast(container)).toBe(t.vpKeinXml))
     expect(document.querySelector('[role="dialog"]')).toBeNull()
   })
+})
 
-  it('das Feld steht nur am Wochenende, und nicht im Offline-Stand', () => {
-    expect(zeige().container.textContent).toContain(t.vpTitel)
-    cleanup()
-    expect(zeige({ tab: 'mid' }).container.textContent).not.toContain(t.vpTitel)
-    cleanup()
-    expect(zeige({ staleAt: Date.now() }).container.textContent).not.toContain(t.vpTitel)
+describe('Wo der Planer den Vortragsplan findet', () => {
+  it('am Handy auf der Seite „Planung", gleich unter „Holen": Titel, was kommt, der Knopf', () => {
+    const { container } = planung()
+    const karte = container.querySelector('.vp-karte')
+    expect(karte?.previousElementSibling?.classList.contains('holen-karte')).toBe(true)
+    // Eine Überschrift: Wer von Titel zu Titel springt, findet ihn zwischen den Wochen.
+    expect(karte?.querySelector('h3')?.textContent).toBe(t.vpTitel)
+    expect(karte?.textContent).toContain(t.vpKarteUnter)
+    expect(karte?.querySelector('button')?.textContent).toBe(t.vpDateiWaehlen)
+  })
+
+  it('der Knopf öffnet die Dateiauswahl des Geräts', () => {
+    const { container } = planung()
+    const eingabe = container.querySelector<HTMLInputElement>('.vp-karte input[type="file"]')!
+    const oeffnen = vi.spyOn(eingabe, 'click').mockImplementation(() => {})
+    fireEvent.click(knopf(container, t.vpDateiWaehlen)!)
+    expect(oeffnen).toHaveBeenCalledTimes(1)
+  })
+
+  it('am breiten Bildschirm in der Spalte der Wochen neben dem Plan — und nur dort', () => {
+    breite(1440)
+    const { container } = zeige(<PlanenScreen />)
+    expect(container.querySelector('.wochen-spalte .vp-karte')).not.toBeNull()
+    expect(container.querySelectorAll('.vp-karte')).toHaveLength(1)
+  })
+
+  it('nicht beim Gruppenaufseher: Er plant die Treffpunkte seiner Gruppe, die Wochen samt Vortragsplan nicht — auch am breiten Bildschirm', () => {
+    breite(1440)
+    // p1 ist Aufseher von Gruppe 1, ohne Planer- und Admin-Recht.
+    const { container } = zeige(<PlanenScreen />, { personId: 'p1', zuteiler: false, tab: 'fs' })
+    expect(container.querySelector('.wochen-spalte')).toBeNull()
+    expect(container.querySelector('.vp-karte')).toBeNull()
+    expect(container.textContent).not.toContain(t.vpTitel)
+  })
+
+  it('im Plan der Woche nicht mehr — auch nicht am Wochenende, wo der Vortrag steht', () => {
+    for (const tab of ['we', 'mid'] as const) {
+      const { container } = zeige(<PlanenScreen />, { tab })
+      expect(container.querySelector('.vp-karte'), tab).toBeNull()
+      expect(container.textContent, tab).not.toContain(t.vpTitel)
+      cleanup()
+    }
+  })
+
+  it('nicht im Offline-Stand — übernehmen ginge dann nicht; die Wochen und „Holen" bleiben', () => {
+    const { container } = planung({ staleAt: Date.now() })
+    expect(container.querySelector('.holen-karte')).not.toBeNull()
+    expect(container.querySelector('.vp-karte')).toBeNull()
+    expect(container.textContent).not.toContain(t.vpTitel)
   })
 })

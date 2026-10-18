@@ -475,8 +475,12 @@ Leser übernehmen können.
 ### Vortragsplan übernehmen
 
 Plant ihr die öffentlichen Vorträge in einem eigenen Programm, übernimmst du
-dessen Plan als XML-Datei: **Planen › Zusammenkünfte › Wochenende**, ganz unten
-**Vortragsplan › XML-DATEI WÄHLEN**. Wie die Datei aufgebaut sein muss, steht in
+dessen Plan als XML-Datei. Die Karte **Vortragsplan** steht bei den Wochen,
+gleich unter der Karte mit **Holen**: am Handy und am Tablet auf der Seite
+**Planung** (im Menü unter **Planen und verwalten**), am breiten Bildschirm in
+der Spalte der Wochen links neben dem Plan (Abschnitt 8). Dort tippst du auf
+**XML-Datei wählen**. Offline steht die Karte nicht da — übernehmen geht nur
+mit Verbindung. Wie die Datei aufgebaut sein muss, steht in
 [vortragsplan-import.md](../vortragsplan-import.md) — danach richtet sich die
 Ausgabe des Programms.
 
@@ -1671,7 +1675,9 @@ darunter, wann sie ist oder was sie besonders macht, und unten, wie weit sie
 ist: **Zuteilen**, **Senden**, **Zusagen** – am breiten Bildschirm als Punkte,
 darunter der Schritt, an dem die Woche steht. Ein Tipp öffnet ihren Plan; am
 breiten Bildschirm wechselt er nur die Woche. Unter den Wochen steht
-gestrichelt die nächste, deren Programm noch fehlt, mit **Holen**. Am Handy
+gestrichelt die nächste, deren Programm noch fehlt, mit **Holen**, darunter der
+**Vortragsplan** mit **XML-Datei wählen** für die Datei aus eurem
+Planungsprogramm ([Vortragsplan übernehmen](#vortragsplan-übernehmen)). Am Handy
 folgt **Auch zu planen** mit dem Predigtdienst und den Weiteren Plänen.
 
 **Holen** öffnet das Blatt **Programm holen**. Es zeigt erst, was aus dem

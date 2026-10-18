@@ -6926,7 +6926,10 @@ Versammlung (dazu Thema und Lied je Termin), nie Telefon oder E-Mail.
   ausgefallene Zusammenkunft. Ob ein Vortrag im Zeitraum der Datei liegt,
   entscheidet der Tag der Zusammenkunft, nicht seine Woche.
 - **Oberfläche:** Planen › Zusammenkünfte › Wochenende, ganz unten „Vortragsplan"
-  (`VortragsplanPanel.tsx`), Vorschau als Blatt, erst „Übernehmen" schreibt. Das
+  (`VortragsplanPanel.tsx`) — **seit 18.10.2026 bei den Wochen**: Karte unter
+  „Holen" auf der Seite „Planung" und in der Wochenspalte am Desktop
+  (`VortragsplanKarte.tsx`; der Betreiber hatte das Feld nicht gefunden),
+  Vorschau als Blatt, erst „Übernehmen" schreibt. Das
   Blatt hängt per Portal am Dokument: Im Wochen-Streifen (`transform`) lag es
   im Browser gemessen unter dem Bildrand, samt Knöpfen. 25
   neue Texte in allen 33 Sprachen; Fachwörter wie in `translate-data.ts`

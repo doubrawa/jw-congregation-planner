@@ -552,7 +552,7 @@ export async function main(argv = process.argv.slice(2)) {
   console.log('  4. node scripts/treffpunkte-importieren.mjs     (die Leiter der Treffpunkte, ebenso)')
   // Zuletzt: Der Vortragsplan ist führend und überschreibt, was Schritt 3 aus
   // NWS an Rednern, Themen und Liedern eingetragen hat (T122).
-  console.log('  5. Vortragsplan in der App übernehmen          (Planen › Zusammenkünfte › Wochenende; die Vormerkungen sind gelöscht)')
+  console.log('  5. Vortragsplan in der App übernehmen          (Planung › Vortragsplan; die Vormerkungen sind gelöscht)')
   console.log('Die Skripte zuerst mit --trocken.')
 }
 

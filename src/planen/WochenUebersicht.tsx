@@ -12,6 +12,7 @@ import type { Dict } from '../i18n/ui'
 import { fill, useProgWeeks, useT } from '../i18n/useT'
 import { spurDerWoche } from './plan-spur'
 import { HolenKnopf } from './ProgrammHolen'
+import { VortragsplanKarte } from './VortragsplanKarte'
 import { naechsteHolWoche, wochenKarten, type WochenKarte, type WochenLage } from './wochen-uebersicht'
 
 /** Was die Lage oben rechts sagt — die Zahl hinter dem Wort. */
@@ -24,7 +25,9 @@ function lageText(lage: NonNullable<WochenLage>, t: Dict): string {
  * **Die Wochen beim Planen** (T121, Entwürfe `GWochen`, `GDesktopPlanen`): je
  * geladene Woche ab der laufenden eine Karte — Spanne, darunter der Anlass
  * oder wann sie ist, rechts was zu tun ist, unten die Spur. Darunter die
- * nächste Woche, deren Programm noch nicht geholt ist, mit „Holen".
+ * nächste Woche, deren Programm noch nicht geholt ist, mit „Holen", und der
+ * Vortragsplan aus dem Planungsprogramm (T122) — die beiden Importe für die
+ * kommenden Wochen an einer Stelle, auf der Seite wie in der Spalte.
  *
  * `spalte`: die Spalte links neben dem Plan am Desktop. Dort ist die gezeigte
  * Woche umrandet, und ein Tipp wechselt nur die Woche — Zusammenkunft oder
@@ -122,6 +125,7 @@ export function WochenListe({ spalte = false }: { spalte?: boolean }) {
         )
       })}
       <HolenKarte montag={naechsteHolWoche(state.weeks, fromIso(tag))} />
+      <VortragsplanKarte />
     </div>
   )
 }

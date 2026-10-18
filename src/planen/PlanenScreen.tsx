@@ -25,7 +25,6 @@ import { FsRulesPanel } from './FsRulesPanel'
 import { AuxCounselorPanel } from './AuxCounselorPanel'
 import { WochePanel } from './WochePanel'
 import { HelpersPanel } from './HelpersPanel'
-import { VortragsplanPanel } from './VortragsplanPanel'
 import { MeetingSection } from './MeetingSection'
 import { BesetzungKarte, PlanSpur } from './WochenStand'
 import { WochenSpalte } from './WochenUebersicht'
@@ -236,11 +235,6 @@ function PlanenBody() {
           <AuxCounselorPanel meeting={rawMeeting} />
 
           <HelpersPanel meeting={meeting} />
-
-          {/* Der Vortragsplan aus dem Planungsprogramm (T122) gilt für viele
-              Wochen auf einmal und kommt selten — deshalb unten, nur am
-              Wochenende, wo der Vortrag steht. */}
-          {tab === 'we' && <VortragsplanPanel />}
         </>
       )}
     </section>

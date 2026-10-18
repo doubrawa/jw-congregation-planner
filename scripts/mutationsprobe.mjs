@@ -5665,6 +5665,22 @@ export const KATALOG = [
     suchen: "            key={`song-${isOpening ? 'open' : 'close'}-${state.week}-${liedNr}`}\n",
     ersetzen: "            key={`song-${isOpening ? 'open' : 'close'}-${state.week}`}\n",
   },
+  // Wo der Planer den Vortragsplan findet (Betreiber, 18.10.2026): bei den
+  // Wochen, nicht mehr ganz unten im Reiter Wochenende.
+  {
+    id: 'vp-karte-bei-den-wochen',
+    datei: 'src/planen/WochenUebersicht.tsx',
+    regel: 'Den Vortragsplan findet der Planer bei den Wochen unter „Holen" — auf der Seite „Planung" und in der Spalte neben dem Plan.',
+    suchen: '      <VortragsplanKarte />\n',
+    ersetzen: '',
+  },
+  {
+    id: 'vp-karte-nur-online',
+    datei: 'src/planen/VortragsplanKarte.tsx',
+    regel: 'Im Offline-Stand steht die Karte des Vortragsplans nicht da — übernehmen ginge nicht.',
+    suchen: '  if (state.staleAt) return null\n',
+    ersetzen: '',
+  },
   {
     id: 'vp-rls-nur-zuteiler',
     datei: 'supabase/schema.sql',
