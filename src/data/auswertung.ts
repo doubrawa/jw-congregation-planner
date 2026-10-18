@@ -785,10 +785,11 @@ export function wartezeiten(g: Grundlage, persons: readonly Person[], bereich: s
   for (const liste of male.values()) liste.sort()
 
   const qualifiziert = persons.filter((p) => isQualified(p, bereich) && g.erwartet.get(bereich)?.has(p.id))
+  const tabListe = [...tabs]
   /** Konnte die Person in der Woche dieses Montags einen Platz des Bereichs bekommen? */
   const einteilbar = (pid: string, montag: string): boolean => {
     const menge = g.einteilbar.get(pid)
-    return menge !== undefined && [...tabs].some((tab) => menge.has(`${montag}|${tab}`))
+    return menge !== undefined && tabListe.some((tab) => menge.has(`${montag}|${tab}`))
   }
   // Die nächste Woche, in der jemand im Bereich schon eingeteilt ist.
   const geplantAb = new Map<string, string>()

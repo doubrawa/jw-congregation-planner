@@ -19,7 +19,8 @@ export function besuchsTreffpunktText(
   lang: Lang,
   tu: (s: string) => string,
 ): string {
-  return [treffpunktTagLabel(woche, inst.wd, lang), inst.time, tu(inst.place)].filter(Boolean).join(' · ')
+  // Der Ort ist frei und darf fehlen — auch einer aus Leerzeichen gilt als keiner.
+  return [treffpunktTagLabel(woche, inst.wd, lang), inst.time, tu(inst.place).trim()].filter(Boolean).join(' · ')
 }
 
 /** Name der besuchten Gruppe (übersetzt) — die rohe Id, falls es sie nicht mehr gibt. */

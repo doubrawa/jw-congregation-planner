@@ -1411,6 +1411,18 @@ describe('Importe: Der feste Leiter des Wachtturm-Studiums kommt in die Woche (1
     expect(fehlt.ausgabe.join('\n')).toContain('(davon Vertreter: 1)')
   })
 
+  it('wochenplanung-importieren: trägt der gespeicherte Blob keinen Montag, gilt der aus der Spalte', async () => {
+    // Die App ergänzt `start` beim Laden aus der Spalte; der Blob muss ihn nicht
+    // tragen. Ohne ihn warf die Rechnung der Abwesenheiten (Review 18.10.2026).
+    const { start: _ausDerSpalte, ...ohneMontag } = mitStudium('2026-08-24')
+    const fehlt = await fahreImport('wochenplanung-importieren.mjs', {
+      persons: PERSONEN,
+      weeks: [{ congregation_id: C, start: '2026-08-24', data: ohneMontag }],
+      absences: [weg(P1, '2026-08-30')],
+    })
+    expect(leiterIn(fehlt.tabellen.weeks![0]!.data)).toMatchObject({ name: 'Probe Vertreter', pid: P2 })
+  })
+
   it('wochenplanung-importieren: kommt nur der Leiter dazu, wird die Woche trotzdem geschrieben', async () => {
     // Ohne Mikrofon-Dienst in der App bleibt der einzige NWS-Platz der Woche
     // ungeschrieben — so steht es auch mit `--nur-leere` in einer fertig

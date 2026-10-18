@@ -128,6 +128,14 @@ describe('schritte', () => {
     expect(liste.find((s) => s.skript === 'wochen-importieren.mjs')?.titel).toContain('ab 2025-10-13')
   })
 
+  it('mit --ab, aber ohne --wochen holt es das ganze Jahr bis sieben Wochen voraus — nicht acht Wochen vor einem Jahr', () => {
+    // Acht Wochen ab vor einem Jahr ließen eine Lücke bis heute, und „Holen"
+    // füllte sie nie: Es macht ab der laufenden Woche weiter (Review 18.10.2026).
+    const wochen = schritte({ ...vollstaendig, ab: '2025-10-13' }).find((s) => s.skript === 'wochen-importieren.mjs')
+    expect(wochen?.argv).toEqual(['--anzahl', '60', '--ab', '2025-10-13'])
+    expect(wochen?.titel).toContain('60')
+  })
+
   it('ohne --ab bleibt es bei den Wochen ab der laufenden', () => {
     expect(schritte(vollstaendig).some((s) => s.argv.includes('--ab'))).toBe(false)
   })

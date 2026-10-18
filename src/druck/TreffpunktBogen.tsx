@@ -45,9 +45,10 @@ export function TreffpunktBogen({ wochen, zeitraum }: { wochen: readonly number[
   }
   const leiter = (inst: FsInstance) => (inst.leader ? inst.leader : <Offen breite={140} />)
   // Wie es der Grundplan sonst hat — mit dem Tag, wenn er ein anderer ist:
-  // Sonst stünde bei einem verlegten Tag „statt" vor denselben Angaben.
+  // Sonst stünde bei einem verlegten Tag „statt" vor denselben Angaben. Der Ort
+  // ist frei und darf fehlen, auch einer aus Leerzeichen gilt als keiner.
   const sonst = (kennung: string, inst: FsInstance, regel: FsRule) =>
-    [regel.wd !== inst.wd ? tagText(kennung, regel.wd) : '', regel.time, tu(regel.place)].filter(Boolean).join(' · ')
+    [regel.wd !== inst.wd ? tagText(kennung, regel.wd) : '', regel.time, tu(regel.place).trim()].filter(Boolean).join(' · ')
 
   const termine = wochen.flatMap((wi) => {
     const kennung = state.weeks[wi]?.start ?? ''
@@ -78,12 +79,16 @@ export function TreffpunktBogen({ wochen, zeitraum }: { wochen: readonly number[
           key: `${kennung}|${art}|${inst.id}`,
           zellen: [
             tagText(kennung, inst.wd),
+            // Ohne Ort kein Strich am Ende („Gruppe 3 · 09:30 · ") — wie beim
+            // Blatt der Gruppe und beim Zuteilen eines Treffpunkts.
             [
               treffpunktTitel(inst, state.groups, i18n),
-              ...(art === 'entfaellt' ? [t.druckEntfaellt] : [inst.time, tu(inst.place)]),
+              ...(art === 'entfaellt' ? [t.druckEntfaellt] : [inst.time, tu(inst.place).trim()]),
               ...(art === 'zusaetzlich' ? [t.druckZusaetzlich] : []),
               ...(art === 'anders' && regel ? [fill(t.druckStatt, { alt: sonst(kennung, inst, regel) })] : []),
-            ].join(' · '),
+            ]
+              .filter(Boolean)
+              .join(' · '),
           ],
         }))
     }),

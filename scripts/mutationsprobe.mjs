@@ -2655,8 +2655,8 @@ export const KATALOG = [
     id: 'treffpunkt-anders-tag',
     datei: 'src/druck/TreffpunktBogen.tsx',
     regel: 'Steht ein Treffpunkt an einem anderen Tag als im Grundplan, nennt „statt" den Tag des Grundplans.',
-    suchen: "    [regel.wd !== inst.wd ? tagText(kennung, regel.wd) : '', regel.time, tu(regel.place)].filter(Boolean).join(' · ')\n",
-    ersetzen: "    [regel.time, tu(regel.place)].filter(Boolean).join(' · ')\n",
+    suchen: "    [regel.wd !== inst.wd ? tagText(kennung, regel.wd) : '', regel.time, tu(regel.place).trim()].filter(Boolean).join(' · ')\n",
+    ersetzen: "    [regel.time, tu(regel.place).trim()].filter(Boolean).join(' · ')\n",
   },
   {
     id: 'druck-hilfsdienste-platzzahl',
@@ -4189,6 +4189,48 @@ export const KATALOG = [
     ersetzen: '',
   },
   {
+    id: 'treffpunkt-bogen-ohne-ort',
+    datei: 'src/druck/TreffpunktBogen.tsx',
+    regel: 'Im Bogen der Treffpunkte endet eine Zeile ohne Ort nicht auf einem Trenner (Review 18.10.2026).',
+    suchen: "            ]\n              .filter(Boolean)\n              .join(' · '),\n",
+    ersetzen: "            ].join(' · '),\n",
+  },
+  {
+    id: 'treffpunkt-bogen-ort-leerzeichen',
+    datei: 'src/druck/TreffpunktBogen.tsx',
+    regel: 'Ein Ort aus Leerzeichen gilt im Bogen der Treffpunkte als keiner.',
+    suchen: '[inst.time, tu(inst.place).trim()]),\n',
+    ersetzen: '[inst.time, tu(inst.place)]),\n',
+  },
+  {
+    id: 'treffpunkt-bogen-statt-ort-leerzeichen',
+    datei: 'src/druck/TreffpunktBogen.tsx',
+    regel: 'Auch in „statt …" gilt ein Ort aus Leerzeichen als keiner.',
+    suchen: 'regel.time, tu(regel.place).trim()]',
+    ersetzen: 'regel.time, tu(regel.place)]',
+  },
+  {
+    id: 'gruppenbesuch-ort-leerzeichen',
+    datei: 'src/components/gruppenbesuch-anzeige.ts',
+    regel: 'Beim Treffpunkt der Besuchswoche gilt ein Ort aus Leerzeichen als keiner — kein Trenner am Ende.',
+    suchen: 'inst.time, tu(inst.place).trim()]',
+    ersetzen: 'inst.time, tu(inst.place)]',
+  },
+  {
+    id: 'wochenplanung-montag-aus-der-spalte',
+    datei: 'scripts/wochenplanung-importieren.mjs',
+    regel: 'Der feste Studienleiter rechnet mit dem Montag aus der Spalte — der gespeicherte Blob muss ihn nicht tragen.',
+    suchen: 'festenWtLeiterEintragen({ ...zeile.data, start: montag },',
+    ersetzen: 'festenWtLeiterEintragen(zeile.data,',
+  },
+  {
+    id: 'neuaufbau-geschichte-ganzes-jahr',
+    datei: 'scripts/neuaufbau-fahren.mjs',
+    regel: 'Mit --ab holt der Neuaufbau ohne --wochen das ganze Jahr bis sieben voraus, nicht acht Wochen vor einem Jahr.',
+    suchen: 'String(arg.wochen ?? (seit.length ? 60 : 8))',
+    ersetzen: 'String(arg.wochen ?? 8)',
+  },
+  {
     id: 'lied-im-kopf-ohne-thema',
     datei: 'src/data/helpers.ts',
     regel: 'Im Kopf eines Abschnitts steht das Lied nur mit Nummer — das Liedthema aus dem Studienartikel nie (Betreiber 18.10.2026).',
@@ -4988,8 +5030,8 @@ export const KATALOG = [
     id: 'neuaufbau-ab-an-wochen',
     datei: 'scripts/neuaufbau-fahren.mjs',
     regel: 'Der Neuaufbau reicht --ab an den Wochen-Import weiter — sonst begänne die Auswertung ohne Geschichte.',
-    suchen: "      argv: ['--anzahl', String(arg.wochen ?? 8), ...seit, ...cong, ...trocken],\n",
-    ersetzen: "      argv: ['--anzahl', String(arg.wochen ?? 8), ...cong, ...trocken],\n",
+    suchen: "      argv: ['--anzahl', wochen, ...seit, ...cong, ...trocken],\n",
+    ersetzen: "      argv: ['--anzahl', wochen, ...cong, ...trocken],\n",
   },
   {
     id: 'neuaufbau-ab-an-abwesenheiten',
@@ -7650,7 +7692,7 @@ export const KATALOG = [
     id: "wartet-nur-wo-der-bereich-plaetze-hat",
     datei: "src/data/auswertung.ts",
     regel: "Zur Wartezeit zählt eine Woche nur, wenn die Person in einer Zusammenkunft mit Plätzen des Bereichs eingeteilt werden konnte (18.10.2026).",
-    suchen: "    return menge !== undefined && [...tabs].some((tab) => menge.has(`${montag}|${tab}`))\n",
+    suchen: "    return menge !== undefined && tabListe.some((tab) => menge.has(`${montag}|${tab}`))\n",
     ersetzen: "    return menge !== undefined && (menge.has(`${montag}|mid`) || menge.has(`${montag}|we`))\n",
   },
   {
@@ -9155,15 +9197,15 @@ export const KATALOG = [
     id: 'wt-leiter-nws-import',
     datei: 'scripts/wochenplanung-importieren.mjs',
     regel: 'Der Wochenplan-Import aus NWS setzt den festen Studienleiter — NWS führt ihn nicht je Woche.',
-    suchen: '    const wt = festenWtLeiterEintragen(zeile.data, appPersonen, appAbwesenheiten, zeiten)\n',
+    suchen: '    const wt = festenWtLeiterEintragen({ ...zeile.data, start: montag }, appPersonen, appAbwesenheiten, zeiten)\n',
     ersetzen: '    const wt = { week: zeile.data, eingetragen: [] }\n',
   },
   {
     id: 'wt-leiter-nws-import-abwesend',
     datei: 'scripts/wochenplanung-importieren.mjs',
     regel: 'Der Wochenplan-Import fragt die Abwesenheiten: Fehlt der Leiter, kommt sein Vertreter.',
-    suchen: '    const wt = festenWtLeiterEintragen(zeile.data, appPersonen, appAbwesenheiten, zeiten)\n',
-    ersetzen: '    const wt = festenWtLeiterEintragen(zeile.data, appPersonen, [], zeiten)\n',
+    suchen: '    const wt = festenWtLeiterEintragen({ ...zeile.data, start: montag }, appPersonen, appAbwesenheiten, zeiten)\n',
+    ersetzen: '    const wt = festenWtLeiterEintragen({ ...zeile.data, start: montag }, appPersonen, [], zeiten)\n',
   },
   {
     id: 'wt-leiter-nws-import-zeiten',
@@ -9189,13 +9231,13 @@ export const KATALOG = [
       '      argv: [...seit, ...cong, ...trocken],\n' +
       '    },\n' +
       '    {\n' +
-      "      titel: `Wochenprogramme von jw.org (${arg.wochen ?? 8}${seit.length ? ` ab ${arg.ab}` : ''})`,\n" +
+      "      titel: `Wochenprogramme von jw.org (${wochen}${seit.length ? ` ab ${arg.ab}` : ''})`,\n" +
       "      skript: 'wochen-importieren.mjs',\n" +
-      "      argv: ['--anzahl', String(arg.wochen ?? 8), ...seit, ...cong, ...trocken],\n",
+      "      argv: ['--anzahl', wochen, ...seit, ...cong, ...trocken],\n",
     ersetzen:
-      "      titel: `Wochenprogramme von jw.org (${arg.wochen ?? 8}${seit.length ? ` ab ${arg.ab}` : ''})`,\n" +
+      "      titel: `Wochenprogramme von jw.org (${wochen}${seit.length ? ` ab ${arg.ab}` : ''})`,\n" +
       "      skript: 'wochen-importieren.mjs',\n" +
-      "      argv: ['--anzahl', String(arg.wochen ?? 8), ...seit, ...cong, ...trocken],\n" +
+      "      argv: ['--anzahl', wochen, ...seit, ...cong, ...trocken],\n" +
       '    },\n' +
       '    {\n' +
       "      titel: 'Abwesenheiten',\n" +

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cssDateien } from './css-quellen'
+import { deklarationen } from './css-quellen'
 
 /**
  * **In der schmalen Wochenspalte bricht nichts mitten im Wort und läuft nichts
@@ -20,22 +20,6 @@ import { cssDateien } from './css-quellen'
  * es im Browser richten.
  */
 
-const CSS = Object.fromEntries(cssDateien())
-
-/**
- * Die Deklarationen der ersten Regel mit genau diesem Selektor — mit `nach`
- * erst ab dieser Stelle der Datei (etwa einem `@media`-Block).
- */
-function deklarationen(datei: string, selektor: string, nach = ''): string {
-  const text = CSS[datei] ?? ''
-  const ab = text.indexOf(nach)
-  expect(ab, `„${nach}" in ${datei}`).toBeGreaterThanOrEqual(0)
-  const zeilen = text.slice(ab).split('\n')
-  const kopf = zeilen.findIndex((z) => z.trim() === `${selektor} {`)
-  expect(kopf, `${selektor} in ${datei}`).toBeGreaterThanOrEqual(0)
-  const rumpf = zeilen.slice(kopf + 1)
-  return rumpf.slice(0, rumpf.findIndex((z) => z.trim() === '}')).join('\n')
-}
 
 describe('Die Wochenspalte am Desktop', () => {
   it('die Spur in Punkten: die Unterschrift in eigener Zeile, die Schritte nicht auf null', () => {

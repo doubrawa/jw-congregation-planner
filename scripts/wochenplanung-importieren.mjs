@@ -80,6 +80,7 @@
 
 import { createHash } from 'node:crypto'
 import {
+  alleZeilen,
   alsSkript,
   appCodeBereit,
   argumente,
@@ -623,9 +624,11 @@ export async function main(argv = process.argv.slice(2)) {
   const tabellen = ladeTabellen(datenDir, TABELLEN)
   const versammlung = await versammlungHolen(rest, arg, 'id,mid_wd,mid_time,we_wd,we_time')
   const cong = versammlung.id
+  // Die Abwesenheiten seitenweise (`alleZeilen`): Über 1000 Zeilen schnitte
+  // PostgREST still ab, und der feste Leiter käme in eine Woche, in der er fehlt.
   const [personen, abwesenheiten] = await Promise.all([
     rest(`persons?select=*&congregation_id=eq.${cong}`),
-    rest(`absences?select=*&congregation_id=eq.${cong}&order=from_date`),
+    alleZeilen(rest, `absences?select=*&congregation_id=eq.${cong}&order=from_date,id`),
   ])
   const nachName = new Map()
   const appById = new Map() // id → Anzeigename, für die id-basierte Auflösung
@@ -718,7 +721,9 @@ export async function main(argv = process.argv.slice(2)) {
     gesetzt += z.gesetzt; ohnePid += z.ohnePid; fehlplatz += z.fehlplatz; gestrichen += z.gestrichen
     helfer += z.helfer; helferOhnePid += z.helferOhnePid; helferOhneDienst += z.helferOhneDienst
     // Nach den NWS-Zuteilungen: Wer dort schon eingeteilt ist, leitet nicht.
-    const wt = festenWtLeiterEintragen(zeile.data, appPersonen, appAbwesenheiten, zeiten)
+    // Den Montag aus der Spalte, wie beim Laden der App: Der Blob muss ihn
+    // nicht tragen, und ohne ihn fände sich keine Abwesenheit zur Woche.
+    const wt = festenWtLeiterEintragen({ ...zeile.data, start: montag }, appPersonen, appAbwesenheiten, zeiten)
     zeile.data = wt.week
     wtLeiter += wt.eingetragen.length
     wtVertreter += wt.eingetragen.filter((p) => !p.priv.wtLeiter).length

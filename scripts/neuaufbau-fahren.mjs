@@ -26,7 +26,10 @@
  *     --sql C:\DATA\Claude\nws-export\import-live-personen.sql \
  *     [--wochen 8] [--ab 2025-10-13] [--sprache de] [--ab-schritt 3] [--cong <id>] [--trocken]
  *
- *   --wochen      wie viele Wochenprogramme von jw.org (Standard 8).
+ *   --wochen      wie viele Wochenprogramme von jw.org (Standard 8, mit `--ab`
+ *                 60 — sonst holte ein Neuaufbau mit Geschichte nur die ersten
+ *                 acht Wochen vor einem Jahr, und die Lücke bis heute füllte
+ *                 „Holen" nie: Es macht ab der laufenden Woche weiter).
  *   --ab          ab welcher Woche — für ein Jahr Geschichte der Montag vor
  *                 einem Jahr, dazu `--wochen 60`: das Jahr, die laufende Woche
  *                 und sieben voraus. Ohne Geschichte begänne die Auswertung
@@ -96,6 +99,9 @@ export function schritte(arg) {
   const cong = typeof arg.cong === 'string' ? ['--cong', arg.cong] : []
   // Ein Jahr Geschichte (18.10.2026): dieselbe Grenze für Wochen und Abwesenheiten.
   const seit = typeof arg.ab === 'string' ? ['--ab', arg.ab] : []
+  // Mit Geschichte das Jahr, die laufende Woche und sieben voraus — acht Wochen
+  // ab vor einem Jahr ließen eine Lücke bis heute, die nichts mehr füllt.
+  const wochen = String(arg.wochen ?? (seit.length ? 60 : 8))
   const alle = [
     {
       titel: 'Versammlung, Planer-Person und Standard-Dienste anlegen',
@@ -122,9 +128,9 @@ export function schritte(arg) {
       argv: [...seit, ...cong, ...trocken],
     },
     {
-      titel: `Wochenprogramme von jw.org (${arg.wochen ?? 8}${seit.length ? ` ab ${arg.ab}` : ''})`,
+      titel: `Wochenprogramme von jw.org (${wochen}${seit.length ? ` ab ${arg.ab}` : ''})`,
       skript: 'wochen-importieren.mjs',
-      argv: ['--anzahl', String(arg.wochen ?? 8), ...seit, ...cong, ...trocken],
+      argv: ['--anzahl', wochen, ...seit, ...cong, ...trocken],
     },
     {
       titel: 'Zuteilungen, Hilfsdienste und Reinigung',

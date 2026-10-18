@@ -289,6 +289,19 @@ describe('Der Bogen der Treffpunkte', () => {
     )
   })
 
+  it('ohne Ort kein Strich am Ende — weder beim Treffpunkt noch bei dem, was sonst gilt', () => {
+    // Der Ort ist frei und darf fehlen; auch einer aus Leerzeichen gilt als
+    // keiner. Bis zum 18.10.2026 stand hier „Gruppe 1 · 09:30 ·  · statt … · 09:30 ·   "
+    // (Review; der Fix „Ein Treffpunkt ohne Ort" hatte den Bogen übersehen).
+    const regeln = REGELN.map((r) => (r.id === 'r1' ? { ...r, place: '   ' } : r))
+    const [erste, ...rest] = STARTS.map((start) => genFsWeek(start, regeln))
+    const verlegt = [erste!.map((inst) => (inst.id === 'r1' ? { ...inst, wd: 5, place: '  ' } : inst)), ...rest]
+    const { container } = zeigeBogen({ planner: true, fsRules: regeln, fsWeeks: verlegt })
+    const zeile = texte(container, '.druck-anders-zeile').find((z) => z.includes('Gruppe 1') && z.includes(fill(t.druckStatt, { alt: '' }).trim()))
+    expect(zeile).toContain(`Gruppe 1 · 09:30 · ${fill(t.druckStatt, { alt: 'Sa., 12.9. · 09:30' })}`)
+    expect(zeile).not.toMatch(/·\s*·|·\s*$/)
+  })
+
   it('der Bogen der Gruppenbesuche nennt die kommenden — vorbeigegangene nicht, wie die Ansicht', () => {
     const { container } = zeige(<GruppenbesuchBogen />, {
       planner: true,

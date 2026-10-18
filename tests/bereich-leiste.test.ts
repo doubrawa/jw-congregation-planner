@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cssDateien } from './css-quellen'
+import { deklarationen } from './css-quellen'
 
 /**
  * **Die Bereiche des Predigtdienstes: groß, und bei jeder Schrift lesbar**
@@ -26,30 +26,14 @@ import { cssDateien } from './css-quellen'
  * es im Browser richten — wie in `schmale-spalte.test.ts`.
  */
 
-const CSS = Object.fromEntries(cssDateien())
 const DATEI = 'components/components.css'
-
-/**
- * Die Deklarationen der ersten Regel mit genau diesem Selektor — mit `nach`
- * erst ab dieser Stelle der Datei (etwa einem `@container`-Block).
- */
-function deklarationen(selektor: string, nach = ''): string {
-  const text = CSS[DATEI] ?? ''
-  const ab = text.indexOf(nach)
-  expect(ab, `„${nach}" in ${DATEI}`).toBeGreaterThanOrEqual(0)
-  const zeilen = text.slice(ab).split('\n')
-  const kopf = zeilen.findIndex((z) => z.trim() === `${selektor} {`)
-  expect(kopf, `${selektor} in ${DATEI}`).toBeGreaterThanOrEqual(0)
-  const rumpf = zeilen.slice(kopf + 1)
-  return rumpf.slice(0, rumpf.findIndex((z) => z.trim() === '}')).join('\n')
-}
 
 const SCHMAL = '@container (max-width: 20em)'
 const BREIT = '@container (min-width: 40em)'
 
 describe('Die Bereiche des Predigtdienstes', () => {
   it('die Leiste misst sich selbst, und ihre Schwellen wachsen mit der Schriftstufe', () => {
-    const leiste = deklarationen('.bereich-tabs')
+    const leiste = deklarationen(DATEI,'.bereich-tabs')
     expect(leiste).toMatch(/container-type:\s*inline-size/)
     // Die Schwellen in `em` meinen diese Schrift — ohne `--fs` wanderten sie nicht mit.
     expect(leiste).toMatch(/font-size:\s*calc\(13\.5px \* var\(--fs\)\)/)
@@ -57,14 +41,14 @@ describe('Die Bereiche des Predigtdienstes', () => {
   })
 
   it('ist sie für die Schrift zu schmal, stehen die Bereiche untereinander, das Zeichen vor dem Namen', () => {
-    const schmal = deklarationen('.bereich-tab', SCHMAL)
+    const schmal = deklarationen(DATEI,'.bereich-tab', SCHMAL)
     expect(schmal).toMatch(/flex-basis:\s*100%/)
     expect(schmal).toMatch(/flex-direction:\s*row/)
-    expect(deklarationen('.bereich-tab', BREIT)).toMatch(/flex-direction:\s*row/)
+    expect(deklarationen(DATEI,'.bereich-tab', BREIT)).toMatch(/flex-direction:\s*row/)
   })
 
   it('ein langer Name trennt, statt hinauszuragen — mitten im Wort bricht er nur zur Not', () => {
-    const knopf = deklarationen('.bereich-tab')
+    const knopf = deklarationen(DATEI,'.bereich-tab')
     expect(knopf).toMatch(/\bhyphens:\s*auto/)
     expect(knopf).toMatch(/overflow-wrap:\s*anywhere/)
     // Gleich breite Knöpfe, die schmaler werden dürfen als ihr längstes Wort.
@@ -74,7 +58,7 @@ describe('Die Bereiche des Predigtdienstes', () => {
   })
 
   it('jede Fläche bleibt groß genug zum Tippen, auch untereinander und am Desktop', () => {
-    for (const rumpf of [deklarationen('.bereich-tab'), deklarationen('.bereich-tab', SCHMAL), deklarationen('.bereich-tab', BREIT)]) {
+    for (const rumpf of [deklarationen(DATEI,'.bereich-tab'), deklarationen(DATEI,'.bereich-tab', SCHMAL), deklarationen(DATEI,'.bereich-tab', BREIT)]) {
       const hoehe = /min-height:\s*(\d+)px/.exec(rumpf)
       expect(hoehe, rumpf).not.toBeNull()
       expect(Number(hoehe![1])).toBeGreaterThanOrEqual(44)
@@ -82,7 +66,7 @@ describe('Die Bereiche des Predigtdienstes', () => {
   })
 
   it('der gewählte Bereich ist in der Textfarbe hinterlegt — er hängt an aria-pressed, das auch vorgelesen wird', () => {
-    const gewaehlt = deklarationen(".bereich-tab[aria-pressed='true']")
+    const gewaehlt = deklarationen(DATEI,".bereich-tab[aria-pressed='true']")
     expect(gewaehlt).toMatch(/background:\s*var\(--text\)/)
     expect(gewaehlt).toMatch(/color:\s*var\(--grund\)/)
   })

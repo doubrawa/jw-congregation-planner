@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cssDateien } from './css-quellen'
+import { deklarationen } from './css-quellen'
 
 /**
  * **Die Leiste beim Planen am Handy: nebeneinander, solange es passt — sonst
@@ -34,23 +34,7 @@ import { cssDateien } from './css-quellen'
  * es im Browser richten — wie in `bereich-leiste.test.ts`.
  */
 
-const CSS = Object.fromEntries(cssDateien())
 const DATEI = 'planen/planen.css'
-
-/**
- * Die Deklarationen der ersten Regel mit genau diesem Selektor — mit `nach`
- * erst ab dieser Stelle der Datei (etwa einem `@supports`-Block).
- */
-function deklarationen(selektor: string, nach = ''): string {
-  const text = CSS[DATEI] ?? ''
-  const ab = text.indexOf(nach)
-  expect(ab, `„${nach}" in ${DATEI}`).toBeGreaterThanOrEqual(0)
-  const zeilen = text.slice(ab).split('\n')
-  const kopf = zeilen.findIndex((z) => z.trim() === `${selektor} {`)
-  expect(kopf, `${selektor} in ${DATEI}`).toBeGreaterThanOrEqual(0)
-  const rumpf = zeilen.slice(kopf + 1)
-  return rumpf.slice(0, rumpf.findIndex((z) => z.trim() === '}')).join('\n')
-}
 
 const LEISTE = '.planen-leiste'
 /** Die Knöpfe in der Leiste — die Regel steht für beide Rollen, gefunden wird sie an der letzten Zeile. */
@@ -59,7 +43,7 @@ const ANKER = '@supports (anchor-name: --planen-leiste)'
 
 describe('Die Leiste beim Planen am Handy', () => {
   it('die Knöpfe stehen in einer Reihe, die umbricht — nicht in festen Spalten', () => {
-    const leiste = deklarationen(LEISTE)
+    const leiste = deklarationen(DATEI,LEISTE)
     expect(leiste).toMatch(/display:\s*flex/)
     expect(leiste).toMatch(/flex-wrap:\s*wrap/)
     // Feste Spalten ließen ein langes Wort aus dem Knopf ragen, statt umzubrechen.
@@ -67,7 +51,7 @@ describe('Die Leiste beim Planen am Handy', () => {
   })
 
   it('jeder Knopf wächst von null aus, wird aber nie schmaler als sein längstes Wort', () => {
-    const knopf = deklarationen(KNOPF)
+    const knopf = deklarationen(DATEI,KNOPF)
     expect(knopf).toMatch(/flex:\s*1 1 0/)
     // Die Mindestbreite bleibt `auto`, also das längste Wort: Erst daran merkt
     // die Reihe, dass sie umbrechen muss. Mit 0 schrumpfte der Knopf darunter.
@@ -76,14 +60,14 @@ describe('Die Leiste beim Planen am Handy', () => {
   })
 
   it('der zweite Knopf ist etwas breiter, wie gezeichnet', () => {
-    expect(deklarationen(`${LEISTE} > :nth-child(2)`)).toMatch(/flex-grow:\s*1\.1\b/)
+    expect(deklarationen(DATEI,`${LEISTE} > :nth-child(2)`)).toMatch(/flex-grow:\s*1\.1\b/)
   })
 
   it('ein Wort bricht in der Leiste nie, und nichts wird abgeschnitten', () => {
     // Chrome rechnet Trennstellen und `overflow-wrap: anywhere` in die
     // Mindestbreite ein: Die Knöpfe rutschten dann nie untereinander, sondern
     // brächen ihr Wort mitten durch („Автомати-чески").
-    for (const rumpf of [deklarationen(LEISTE), deklarationen(KNOPF), deklarationen('.aktion-haupt')]) {
+    for (const rumpf of [deklarationen(DATEI,LEISTE), deklarationen(DATEI,KNOPF), deklarationen(DATEI,'.aktion-haupt')]) {
       expect(rumpf).not.toMatch(/hyphens:\s*auto/)
       expect(rumpf).not.toMatch(/overflow-wrap|word-break/)
       // Untereinander ist die ganze Breite da; ein Text in einer Zeile ragte darüber hinaus.
@@ -92,17 +76,17 @@ describe('Die Leiste beim Planen am Handy', () => {
   })
 
   it('die Flächen bleiben groß genug zum Tippen, auch untereinander', () => {
-    const hoehe = /min-height:\s*(\d+)px/.exec(deklarationen(KNOPF))
+    const hoehe = /min-height:\s*(\d+)px/.exec(deklarationen(DATEI,KNOPF))
     expect(hoehe).not.toBeNull()
     expect(Number(hoehe![1])).toBeGreaterThanOrEqual(48)
   })
 
   it('eine Meldung steht über der Leiste — an ihrer Oberkante, wie hoch die Leiste auch ist', () => {
-    expect(deklarationen(LEISTE)).toMatch(/anchor-name:\s*--planen-leiste/)
-    const meldung = deklarationen('body:has(.planen-leiste) .toast', ANKER)
+    expect(deklarationen(DATEI,LEISTE)).toMatch(/anchor-name:\s*--planen-leiste/)
+    const meldung = deklarationen(DATEI,'body:has(.planen-leiste) .toast', ANKER)
     expect(meldung).toMatch(/position-anchor:\s*--planen-leiste/)
     expect(meldung).toMatch(/bottom:\s*calc\(anchor\(top\b/)
     // Wo der Browser keine Anker kennt, steht sie über der einzeiligen Leiste.
-    expect(deklarationen('body:has(.planen-leiste) .toast')).toMatch(/bottom:\s*calc\(.*\+ 86px\)/)
+    expect(deklarationen(DATEI,'body:has(.planen-leiste) .toast')).toMatch(/bottom:\s*calc\(.*\+ 86px\)/)
   })
 })

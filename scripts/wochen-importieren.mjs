@@ -68,6 +68,7 @@
  */
 
 import {
+  alleZeilen,
   alsSkript,
   appCodeBereit,
   argumente,
@@ -164,7 +165,9 @@ async function einordnungFuer(rest, cong) {
     rest(`gruppenbesuche?select=id,woche,grp,person_id&${meine}&order=woche`),
     rest(`vortraege?select=id,woche,redner,versammlung,eigener,person_id,thema,lied&${meine}&order=woche`),
     rest(`persons?select=*&${meine}&order=created_at`),
-    rest(`absences?select=*&${meine}&order=from_date`),
+    // Seitenweise: Über 1000 Zeilen schnitte PostgREST still ab, und der feste
+    // Studienleiter käme in eine Woche, in der er fehlt.
+    alleZeilen(rest, `absences?select=*&${meine}&order=from_date,id`),
   ])
   const kontext = {
     zeiten: zeitenAus(cong),
