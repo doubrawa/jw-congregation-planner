@@ -111,12 +111,21 @@ export function GruppeBlatt({ gruppe, onClose }: { gruppe: Group; onClose: () =>
         {treffpunkte.length > 0 && (
           <div className="blatt-feld">
             <span className="feld-marke">{t.fsShort}</span>
-            {treffpunkte.map((regel) => (
-              <span key={regel.id}>
-                {/* Der Ort gehört der Versammlung, der Tag der Oberfläche. */}
-                <bdi>{tu(regel.place)}</bdi>, {zusammenkunftText(regel, state.lang)}
-              </span>
-            ))}
+            {treffpunkte.map((regel) => {
+              const ort = tu(regel.place).trim()
+              return (
+                <span key={regel.id}>
+                  {/* Der Ort gehört der Versammlung, der Tag der Oberfläche. Der
+                      Ort ist frei und darf fehlen — dann steht nur der Tag da. */}
+                  {ort && (
+                    <>
+                      <bdi>{ort}</bdi>,{' '}
+                    </>
+                  )}
+                  {zusammenkunftText(regel, state.lang)}
+                </span>
+              )
+            })}
           </div>
         )}
         <p>{fill(t.mitgliederN, { n: mitglieder })}</p>

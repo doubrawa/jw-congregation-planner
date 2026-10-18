@@ -8562,6 +8562,56 @@ export const KATALOG = [
     suchen: 'new Date(todayUtc - 7 * 864e5)',
     ersetzen: 'new Date(todayUtc - 6 * 864e5)',
   },
+  // ── Ein Ort, der fehlt (Betreiber, 18.10.2026) ────────────────────────────
+  {
+    id: 'ort-fehlt-gruppe',
+    datei: 'src/einstellungen/GruppeBlatt.tsx',
+    regel: 'Ein Treffpunkt ohne Ort steht im Blatt der Gruppe als „Samstag 09:30“ — nicht als „, Samstag 09:30“ (Betreiber, 18.10.2026).',
+    suchen: '                  {ort && (\n',
+    ersetzen: '                  {true && (\n',
+  },
+  {
+    id: 'ort-fehlt-gruppe-leerzeichen',
+    datei: 'src/einstellungen/GruppeBlatt.tsx',
+    regel: 'Ein Ort aus Leerzeichen gilt im Blatt der Gruppe als keiner — der Ort eines Treffpunkts wird beim Bearbeiten ungekürzt gespeichert.',
+    suchen: '              const ort = tu(regel.place).trim()\n',
+    ersetzen: '              const ort = tu(regel.place)\n',
+  },
+  {
+    id: 'ort-fehlt-zuteilen-kopf',
+    datei: 'src/planen/AssignSheet.tsx',
+    regel: 'Ohne Ort nennt der Kopf beim Zuteilen eines Treffpunkts nur die Zeit — ohne „ · “ am Ende.',
+    suchen: "    return { label, titel: label, sub: inst ? [inst.time, tu(inst.place).trim()].filter(Boolean).join(' · ') : '' }\n",
+    ersetzen: "    return { label, titel: label, sub: inst ? `${inst.time} · ${tu(inst.place)}` : '' }\n",
+  },
+  {
+    id: 'ort-fehlt-zuteilen-kopf-leerzeichen',
+    datei: 'src/planen/AssignSheet.tsx',
+    regel: 'Ein Ort aus Leerzeichen gilt im Kopf beim Zuteilen als keiner.',
+    suchen: '[inst.time, tu(inst.place).trim()]',
+    ersetzen: '[inst.time, tu(inst.place)]',
+  },
+  {
+    id: 'ort-fehlt-zeitleiste',
+    datei: 'src/personen/PersonTimeline.tsx',
+    regel: 'Ein geleiteter Treffpunkt ohne Ort heißt in der Zeitleiste der Person nur „Treffpunkte leiten“ — ohne „ · “ am Ende.',
+    suchen: "    if (e.kind === 'fs') return [t.privTreffpunkt, tu(e.ort).trim()].filter(Boolean).join(' · ')\n",
+    ersetzen: "    if (e.kind === 'fs') return `${t.privTreffpunkt} · ${tu(e.ort)}`\n",
+  },
+  {
+    id: 'ort-fehlt-zeitleiste-leerzeichen',
+    datei: 'src/personen/PersonTimeline.tsx',
+    regel: 'Ein Ort aus Leerzeichen gilt in der Zeitleiste der Person als keiner.',
+    suchen: '[t.privTreffpunkt, tu(e.ort).trim()]',
+    ersetzen: '[t.privTreffpunkt, tu(e.ort)]',
+  },
+  {
+    id: 'ort-fehlt-trolley-bogen',
+    datei: 'src/druck/TrolleyBogen.tsx',
+    regel: 'Ein Trolley ohne Ort steht auf dem Bogen nur mit Namen — ohne „abholen:“ ins Leere.',
+    suchen: '            {trolley.ort && <span className="druck-leise">{fill(t.trolleyAbholen, { ort: trolley.ort })}</span>}\n',
+    ersetzen: '            <span className="druck-leise">{fill(t.trolleyAbholen, { ort: trolley.ort })}</span>\n',
+  },
 ]
 
 /**

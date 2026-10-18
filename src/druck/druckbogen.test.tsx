@@ -345,6 +345,14 @@ describe('Der Bogen der Trolleys', () => {
     expect(texte(container, '.druck-trolley-kopf')).toEqual(['Trolley 1abholen: Depot', 'Trolley 2abholen: Saal'])
   })
 
+  it('ein Trolley ohne Ort: nur der Name — kein „abholen:" ins Leere', () => {
+    const { container } = zeige(<TrolleyBogen montag="2026-09-07" />, {
+      trolleys: [{ id: 't1', name: 'Trolley 1', ort: '', hinweis: '' }],
+      trolleyTermine: [],
+    })
+    expect(texte(container, '.druck-trolley-kopf')).toEqual(['Trolley 1'])
+  })
+
   it('wer mit wem steht — und gestrichelt, wo jemand einen Partner sucht', () => {
     const { container } = zeigeTrolleys()
     const termine = [...container.querySelectorAll('.druck-termin')]

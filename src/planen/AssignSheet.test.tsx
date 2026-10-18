@@ -589,6 +589,15 @@ describe('Der Treffpunkt-Leiter kennt denselben Doppelweg', () => {
     expect(container.querySelector('.sheet-sub')?.textContent).toBe('09:30 · Saal')
   })
 
+  it('ohne Ort nur die Zeit — kein Punkt am Ende, auch wenn nur Leerzeichen dastehen', () => {
+    for (const place of ['', '  ']) {
+      const ohneOrt = [[{ ...FS_WOCHE[0]![0]!, place }]]
+      const { container, unmount } = mitTreffpunkt({ fsWeeks: ohneOrt as unknown as AppState['fsWeeks'] })
+      expect(container.querySelector('.sheet-sub')?.textContent, JSON.stringify(place)).toBe('09:30')
+      unmount()
+    }
+  })
+
   it('ein Freitext-Name wird als auswärtig eingetragen', () => {
     const { container, dispatch } = mitTreffpunkt()
     fireEvent.change(feld(container), { target: { value: '  Kreisaufseher  ' } })

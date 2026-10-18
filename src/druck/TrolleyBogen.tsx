@@ -40,7 +40,8 @@ export function TrolleyBogen({ montag }: { montag: string }) {
             <span className="druck-trolley-name" dir="auto">
               {trolley.name}
             </span>
-            <span className="druck-leise">{fill(t.trolleyAbholen, { ort: trolley.ort })}</span>
+            {/* Ohne Ort kein „abholen:" ins Leere — wie in der Karte der Trolleys. */}
+            {trolley.ort && <span className="druck-leise">{fill(t.trolleyAbholen, { ort: trolley.ort })}</span>}
           </span>
         ))}
       </div>

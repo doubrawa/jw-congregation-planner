@@ -126,7 +126,8 @@ function useZuteilenKopf(sel: SlotSelection): Kopf {
   if (sel.kind === 'fs') {
     const inst = state.fsWeeks[sel.wi]?.find((i) => i.id === sel.instId)
     const label = mitRolle(tu(sel.label))
-    return { label, titel: label, sub: inst ? `${inst.time} · ${tu(inst.place)}` : '' }
+    // Der Ort ist frei und darf fehlen — dann nur die Zeit, ohne Punkt am Ende.
+    return { label, titel: label, sub: inst ? [inst.time, tu(inst.place).trim()].filter(Boolean).join(' · ') : '' }
   }
 
   const datum = rawWeek ? datumsFormat(state.lang, 'tag').format(meetingDate(rawWeek, sel.tab, state.congregation.times)) : ''

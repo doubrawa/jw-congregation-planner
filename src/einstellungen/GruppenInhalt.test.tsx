@@ -192,6 +192,21 @@ describe('Das Blatt der Gruppe', () => {
     expect(blatt().textContent).toContain('Am Markt, Samstag 09:30')
     expect(blatt().textContent).toContain('Mitglieder: 1')
   })
+
+  it('ein Treffpunkt ohne Ort nennt nur Tag und Zeit — ohne Komma davor', () => {
+    // Gemeldet am 18.10.2026: „, Samstag 09:30". Der Ort ist frei und darf leer sein.
+    oeffne({
+      fsRules: [
+        { id: 'r1', grp: 'g1', wd: 6, time: '09:30', place: '', monthly: 0, skipCong: true },
+        { id: 'r2', grp: 'g1', wd: 3, time: '18:00', place: '  ', monthly: 0, skipCong: true },
+      ],
+    })
+    const feld = [...blatt().querySelectorAll('.blatt-feld')].find((f) => f.querySelector('.feld-marke')?.textContent === t.fsShort)!
+    expect([...feld.querySelectorAll(':scope > span:not(.feld-marke)')].map((s) => s.textContent)).toEqual([
+      'Samstag 09:30',
+      'Mittwoch 18:00',
+    ])
+  })
 })
 
 describe('Aufseher und Gehilfe kommen aus der Gruppe (14.10.2026)', () => {

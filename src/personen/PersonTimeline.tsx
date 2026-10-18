@@ -38,7 +38,8 @@ export function PersonTimeline({ person }: { person: Person }) {
 
   const beschriftung = (e: TimelineEntry): string => {
     if (e.kind === 'meeting') return aufgabenLabel({ title: e.titel, rolle: e.rolle }, i18n)
-    if (e.kind === 'fs') return `${t.privTreffpunkt} · ${tu(e.ort)}`
+    // Der Ort ist frei und darf fehlen — dann ohne Punkt am Ende.
+    if (e.kind === 'fs') return [t.privTreffpunkt, tu(e.ort).trim()].filter(Boolean).join(' · ')
     // Der Name, wie die Versammlung ihn vergeben hat („Trolley 3") — er sagt,
     // was es ist; übersetzt wird er nicht.
     if (e.kind === 'trolley') return e.trolley || t.privZeugnis
