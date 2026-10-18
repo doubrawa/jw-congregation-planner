@@ -349,6 +349,25 @@ describe('Absagen (T126)', () => {
     expect(zeilen[0]!.querySelector('.aw-mini-wert.is-problem')).not.toBeNull()
   })
 
+  it('die Kachel zählt wie die Liste nur Absagen mit Bereich — die Person auch die ohne', () => {
+    // Betreiber 18.10.2026: Eine Absage auf einem Platz, den es nicht mehr
+    // gibt, steht in keiner Zeile der Liste, also auch nicht in der Kachel.
+    const pid = erster()
+    const weg = { personId: pid, taskKey: `${VERLAUF.weeks.at(-1)!.start}|mid|part|weg|0` }
+    const s = zustand({ absagen: [...absagenIn('gebet', 3, pid), weg] })
+    const a = rechnung(s)
+    expect(a.grundlage.absagen).toHaveLength(4)
+    expect(a.absagen.map((z) => [z.bereich, z.n])).toEqual([['gebet', 3]])
+    const { container } = zeige(s)
+    expect(kachel(container, t.awWeiteresTitel).textContent).toContain(fill(t.awAbsagenZahl, { n: '3' }))
+    fireEvent.click(container.querySelector('.aw-hinweis')!)
+    const kennzahlen = [...container.querySelectorAll('.aw-kennzahlen.is-vier .aw-kennzahl')].map((k) => [
+      k.querySelector('.aw-kennzahl-text')?.textContent,
+      k.querySelector('.aw-kennzahl-wert')?.textContent,
+    ])
+    expect(kennzahlen).toContainEqual([t.awAbsagen, '4'])
+  })
+
   it('ohne Absagen ein Satz statt der Liste', () => {
     const { container } = zeige(zustand())
     expect(kachel(container, t.awWeiteresTitel).textContent).toContain(fill(t.awAbsagenZahl, { n: '0' }))

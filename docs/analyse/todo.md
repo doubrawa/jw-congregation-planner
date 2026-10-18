@@ -7361,7 +7361,9 @@ in Deutsch, Persisch und Arabisch, byte-gleich. Nr. 15 gehört zu T42.
 Beim Durchsehen aufgefallen, kein Aufräumen: Die Kachel „Treffpunkte, Absagen,
 Ballungen" zählt alle Absagen, die Liste darunter nur die mit Bereich (eine
 Absage auf einem Platz, den es nicht mehr gibt, steht nur in der Kachel und bei
-der Person).
+der Person). **Entschieden am 18. Oktober** — Betreiber: *„die Kachel soll wie
+die Liste nur die Absagen mit Bereich zählen"*. Die Kachel nimmt jetzt die
+Summe der Liste; die Person zählt weiter jede ihrer Absagen.
 
 **Code-Review (`/code-review max`, 17. Oktober 2026) — umgesetzt.** Über
 dieselben Pakete (`2a4c14e9..2df75341`), die Winkel nacheinander. Elf Befunde;
@@ -7819,13 +7821,12 @@ seither in ihren Ordnern nur Tests geändert; Secrets ohne `INVITE_FROM`,
 ist nichts mehr offen außer dem Rest von T42 (T123, T125 und T126 am
 16. Oktober erledigt und ausgerollt; T124, die Testdateien von T42, die Absagen
 für die Auswertung und das Code-Review dazu am 17., am Abend die
-`/simplify`-Punkte samt einem zweiten Review); was sonst aussteht, braucht den
-Betreiber oder ein Gerät.
+`/simplify`-Punkte samt einem zweiten Review, am 18. die Kachel der Absagen);
+was sonst aussteht, braucht den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
-| **Notiert** | Absagen: Kachel und Liste zählen verschieden | die Kachel „Treffpunkte, Absagen, Ballungen" zählt jede Absage, die Liste nur die mit Bereich (unter T126). Die übrigen `/simplify`-Punkte sind seit dem 17. Oktober erledigt, Nr. 15 geht mit T42 |
 | **Zurückgestellt** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт". Betreiber am 16. Oktober: „bleibt erst mal so" — wieder aufnehmen, wenn ein Muttersprachler prüft; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
 | **Wartet** | Motion-Clip „Plan senden" | am 12. Oktober zurückgestellt, bis das neue Design steht — das ist jetzt der Fall. Das leere Motion-Artifact liegt schon bereit |
@@ -7836,6 +7837,11 @@ Betreiber oder ein Gerät.
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
 | **Phase 7** | T42, der Rest | `src` samt Tests ist seit 17. Oktober frei, die Regel steht in `tsconfig.app.json`. Noch aus: Edge Functions (53 Meldungen) und Skript-Tests (67); `typecheck:index` ist überflüssig geworden |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
+
+Am 18. Oktober aus der Tabelle genommen: **Kachel und Liste der Absagen zählen
+verschieden** — entschieden, die Kachel zählt jetzt wie die Liste nur die
+Absagen mit Bereich (unter T126). Nr. 15 der `/simplify`-Liste geht mit dem Rest
+von T42 (`typecheck:index`).
 
 Am 13. Oktober aus der Tabelle genommen: T106 (geht in T121 Phase 8 auf), T114
 (entschieden), T122 (ausgerollt) und **„Zusagen an die Person binden statt an

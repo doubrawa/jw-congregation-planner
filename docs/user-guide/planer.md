@@ -746,7 +746,9 @@ viel Abstand wie üblich – je Woche ein Feld.
   besetzt wurde – nach denselben Regeln wie die Zuteilungen: Eine Absage des
   öffentlichen Vortrags oder des festen Studienleiters zählt nicht, und wer den
   Vorsitz absagt, dem zählt das Anfangsgebet nicht als zweite Absage. Nimmt
-  jemand seine Absage zurück (**Doch bestätigen**), zählt sie nicht mehr. Hat
+  jemand seine Absage zurück (**Doch bestätigen**), zählt sie nicht mehr. Eine
+  Absage auf einem Platz ohne Bereich – etwa einem, den es im Plan nicht mehr
+  gibt – zählt nur bei der Person, nicht hier und nicht in der Kachel. Hat
   ein Bereich mindestens drei Absagen und doppelt so viel Anteil wie jeder
   andere, steht er rot da und unter **Was auffällt**.
 - **Ballungen** – wer zweimal in einer Zusammenkunft dran war oder drei Wochen

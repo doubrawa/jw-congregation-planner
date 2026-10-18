@@ -7438,6 +7438,13 @@ export const KATALOG = [
     ersetzen: "    absagen: g.absagen.length,\n",
   },
   {
+    id: "absagen-kachel-wie-liste",
+    datei: "src/auswertung/AuswertungScreen.tsx",
+    regel: "Die Kachel zählt die Absagen wie die Liste, nur die mit Bereich — eine ohne steht nur bei der Person (Betreiber 18.10.2026).",
+    suchen: "        fill(t.awAbsagenZahl, { n: k.zahl(a.absagen.reduce((s, z) => s + z.n, 0)) }),\n",
+    ersetzen: "        fill(t.awAbsagenZahl, { n: k.zahl(a.grundlage.absagen.length) }),\n",
+  },
+  {
     id: "ansicht-nur-admin",
     datei: "src/data/ansicht.ts",
     regel: "Die Ansicht einer anderen Stufe gilt nur für ein echtes Admin-Konto — ein Planer kann sich damit keine Rechte geben und keine nehmen (T124).",

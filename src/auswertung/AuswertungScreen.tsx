@@ -322,8 +322,10 @@ function Kacheln({ k, zu }: { k: Kontext; zu: (ansicht: Ansicht) => void }) {
       ansicht: 'weiteres',
       zeichen: 'predigtdienst',
       titel: t.awWeiteresTitel,
+      // Die Absagen der Liste, also nur die mit Bereich (Betreiber 18.10.2026) —
+      // eine ohne steht nur bei der Person.
       zahl: [
-        fill(t.awAbsagenZahl, { n: k.zahl(a.grundlage.absagen.length) }),
+        fill(t.awAbsagenZahl, { n: k.zahl(a.absagen.reduce((s, z) => s + z.n, 0)) }),
         fill(t.awBallungenZahl, { n: k.zahl(a.ballungen.zweimal.length + a.ballungen.folge.length) }),
       ].join(' · '),
     },
