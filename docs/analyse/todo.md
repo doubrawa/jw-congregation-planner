@@ -3479,9 +3479,9 @@ Richtlinie überhaupt etwas tut:
 | | Versuch | Ergebnis |
 | --- | --- | --- |
 | 1 | Bestätigung auf eine **fremde** Aufgabe, eigene `user_id` | **angekommen (201)** — S2 bestätigt |
-| 2 | dieselbe Zeile mit **fremder** `user_id` | abgewiesen (403) — die Grenze greift. **Erledigt** — `OBERE_GRENZE` |
-| 3 | Mitteilung `verhindert` mit freiem Text an den Planer | **angekommen (201)** — S3 bestätigt. **Erledigt** — einmal je Darstellung |
-| 4 | dieselbe Mitteilung als Typ `zuteilung` (nur Planer) | abgewiesen (403) — die Grenze greift. **Erledigt** — der Kommentar sagt jetzt, dass nichts rollt |
+| 2 | dieselbe Zeile mit **fremder** `user_id` | abgewiesen (403) — die Grenze greift |
+| 3 | Mitteilung `verhindert` mit freiem Text an den Planer | **angekommen (201)** — S3 bestätigt |
+| 4 | dieselbe Mitteilung als Typ `zuteilung` (nur Planer) | abgewiesen (403) — die Grenze greift |
 
 Gemessen am schärfsten Fall: Das Mitglied setzte **„verhindert" auf einen
 fremden Hilfsdienst** (Mikrofon, Fabian Ziegler) — genau die Zeile, aus der
@@ -7343,9 +7343,9 @@ in Deutsch, Persisch und Arabisch, byte-gleich. Nr. 15 gehört zu T42.
 | Nr. | Wo | Was |
 | --- | --- | --- |
 | 1 | `src/auswertung/Diagramme.tsx` (`WarteBalken`) | rechnet `2 * ueblich` statt mit `LANGE_AB` — die Grenze steht zweimal. **Erledigt** mit Befund 5 des Code-Reviews |
-| 2 | `src/auswertung/PersonAnsicht.tsx` (Achse je Bereich) | `1.5 * b.erwartet` statt `OBERE_GRENZE` |
-| 3 | `src/auswertung/EinseitigAnsicht.tsx` (`EinseitigKarten`) | `einseitig.filter(istEinseitig)` zweimal je Darstellung |
-| 4 | `src/auswertung/auswertung.css` (Kopf) | der Kommentar sagt, die Tabelle Person × Bereich rolle in ihrem Kasten — sie passt seit dem Umbau immer |
+| 2 | `src/auswertung/PersonAnsicht.tsx` (Achse je Bereich) | `1.5 * b.erwartet` statt `OBERE_GRENZE`. **Erledigt** — die Achse rechnet mit `OBERE_GRENZE` |
+| 3 | `src/auswertung/EinseitigAnsicht.tsx` (`EinseitigKarten`) | `einseitig.filter(istEinseitig)` zweimal je Darstellung. **Erledigt** — einmal je Darstellung |
+| 4 | `src/auswertung/auswertung.css` (Kopf) | der Kommentar sagt, die Tabelle Person × Bereich rolle in ihrem Kasten — sie passt seit dem Umbau immer. **Erledigt** — der Kommentar sagt jetzt, dass nichts rollt |
 | 5 | `src/data/auswertung.ts` (`AbsageEinteilung.wi`) | liest niemand. **Erledigt** — Feld entfernt |
 | 6 | `src/data/auswertung.ts` (`wartezeiten`) und `PersonAnsicht.tsx` | die Montage des Zeitraums werden zweimal aus `fenster.wochen` abgeleitet — gehören in `Zeitfenster`; dann braucht `wartezeiten` `weeks` nicht mehr. **Erledigt** — `Zeitfenster.montage`; `wartezeiten(g, persons, bereich)` |
 | 7 | `src/data/auswertung.ts` (`verteilung`) | läuft je Person über alle Einteilungen, dreimal je Rechnung — einmal nach Person gruppieren. **Erledigt** — `einteilungenJePerson` |
@@ -7811,15 +7811,16 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 ### Was offen ist und warum
 
-**Stand 17. Oktober 2026 mittags, alles Offene an einer Stelle** (gemessen:
-126 Köpfe gezählt, offen nur T121; kein Zweig außer `main`, keine PR, kein
-Issue; `sw.js` = HEAD (`shell-b701105`); alle sieben Functions am 16. Oktober
-ausgerollt, seither in ihren Ordnern nur Tests geändert; Secrets ohne
-`INVITE_FROM`, `disable_signup` noch `false`). Im Code ist nichts mehr offen
-außer dem Rest von T42 (T123, T125 und T126 am 16. Oktober erledigt und
-ausgerollt; T124, die Testdateien von T42, die Absagen für die Auswertung und
-das Code-Review dazu am 17.); was sonst aussteht, braucht den Betreiber oder ein
-Gerät.
+**Stand 18. Oktober 2026, alles Offene an einer Stelle** (gemessen: 126 Köpfe
+gezählt, offen nur T121; kein Zweig außer `main`, keine PR, kein Issue; `sw.js`
+= HEAD (`shell-4711e01`); alle sieben Functions am 16. Oktober ausgerollt,
+seither in ihren Ordnern nur Tests geändert; Secrets ohne `INVITE_FROM`,
+`disable_signup` noch `false`; keine ruhende Sitzung zu diesem Repo). Im Code
+ist nichts mehr offen außer dem Rest von T42 (T123, T125 und T126 am
+16. Oktober erledigt und ausgerollt; T124, die Testdateien von T42, die Absagen
+für die Auswertung und das Code-Review dazu am 17., am Abend die
+`/simplify`-Punkte samt einem zweiten Review); was sonst aussteht, braucht den
+Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
