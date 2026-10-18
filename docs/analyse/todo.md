@@ -7652,9 +7652,10 @@ als NWS-Ids in `nws-export`, nicht im Repo.
   Zuteilen-Blatt schlägt den Vertreter vor. Die Texte auf Deutsch, Französisch
   und Persisch.
 
-**Im Live-Bestand** stehen Rollen und Leiter erst mit dem nächsten Neuaufbau
-(Generator, dann Zurücksetzen); bis dahin lassen sich die Rollen in der App
-setzen (Personen › Aufgabenbereiche › Feste Rollen).
+**Im Live-Bestand** stehen Rollen und Leiter seit dem Neuaufbau am
+18. Oktober abends (Generator, dann Zurücksetzen): Das Studium ist in allen
+60 Wochen besetzt, 57-mal mit dem festen Leiter, dreimal mit seinem Vertreter,
+weil der Leiter abwesend oder schon eingeteilt war.
 
 ---
 
@@ -7696,6 +7697,40 @@ Eintragen kann schon heute nur, wer den Aufgabenbereich „Trolley" hat
   sobald die Versammlung einen hat"), dazu `fsBereiche` im Kopfkommentar und
   das Bild `verkuendiger-trolleys` (Simon, p9, hat das Recht — bleibt gleich).
 
+---
+
+## Aufgenommen am 18. Oktober 2026 — Der Leser folgt dem Vorsitz (T131)
+
+### T131 · Am Wochenende liest der Vorsitzende den Wachtturm 🔧 ☐ offen
+
+**Auftrag (18. Oktober, Betreiber):** Auf die Frage aus der Jahresprobe der
+Auswertung (T126), ob am Wochenende immer der Vorsitzende den Wachtturm liest:
+„ja das ist bei uns so." Die App soll den Leser an den Vorsitz koppeln wie das
+Anfangsgebet.
+
+**Stand heute:** In NWS liest der Vorsitzende an 25 von 26 Wochenenden. Dem
+Vorsitz folgen in der App bisher nur das Anfangsgebet und der Vortrag des
+Vorsitzenden — die eine Regel dafür ist `folgtDemVorsitz`
+(`supabase/functions/_shared/planung.ts`), und sie gilt in der Automatik und
+der Rangfolge (`src/data/planning.ts`), im Bedarf (`src/data/bedarf.ts`) und in
+der Auswertung (`src/data/auswertung.ts`: was dem Vorsitz folgt, zählt nicht
+eigens, solange es der Vorsitzende selbst hat). Den Leser des
+Wachtturm-Studiums vergibt die Automatik deshalb getrennt. Die Ballungen der
+Auswertung zählen das Paar seit der Jahresprobe ohnehin nicht mehr. Der
+NWS-Import bringt den Leser aus NWS mit, ihn betrifft es nicht.
+
+**Umsetzen:** den Leser des Wachtturm-Studiums in `folgtDemVorsitz` aufnehmen —
+dann folgen Automatik, Rangfolge, Bedarf und Auswertung von selbst; die
+Konfliktprüfung kennt Vorsitz und Anfangsgebet schon als gewolltes Paar.
+
+**Beim Umsetzen klären:**
+
+- Fest oder als Einstellung der Versammlung? Der Betreiber nennt es den Brauch
+  der eigenen Versammlung; anderswo liest ein anderer Bruder. Als Einstellung
+  bräuchte es Wortlaut in zwölf Sprachen und eine Zeile im Planer-Handbuch.
+- Setzt der Planer im Einzelfall einen anderen Leser ein, zählt der wie beim
+  Anfangsgebet als eigene Zuteilung.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -7732,16 +7767,17 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 22./23. August ☑☑☑☑☑☑☑☑☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
-10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☐☑☐
+10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☐☑☐☐
 
-**127 der 130 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind drei:**
+**127 der 131 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind vier:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
 | **T128** | Kein Bruch mitten im Wort, die Zahl bei ihrer Bezeichnung | ☐ gemessen und geplant am 18. Oktober, als Simulation im echten Chrome belegt (0 Funde in 240 Fällen); der Betreiber setzt es später um |
 | **T130** | Den Reiter „Trolleys" sieht nur, wer das Trolley-Recht hat | ☐ aufgenommen am 18. Oktober; zu klären: Admin und Planer ohne Recht, Leserecht in der Datenbank |
+| **T131** | Am Wochenende liest der Vorsitzende den Wachtturm | ☐ aufgenommen am 18. Oktober; zu klären: fest oder als Einstellung der Versammlung |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
@@ -8147,6 +8183,7 @@ was sonst aussteht, braucht den Betreiber oder ein Gerät.
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
 | **T128** | Umbruch mitten im Wort, Zahl getrennt von ihrer Bezeichnung | Plan steht (zentral in `fill()`, Zeilen stapeln und Leisten wachsen lassen bei großer Schrift, Trennregeln an vier Stellen, ein weiches Trennzeichen für Türkisch); vom Betreiber auf später gelegt, weil gerade anderes läuft |
 | **T130** | Reiter „Trolleys" nur mit Trolley-Recht | aufgenommen am 18. Oktober abends, noch nicht begonnen; die offenen Fragen stehen in T130 |
+| **T131** | Der Leser folgt am Wochenende dem Vorsitz | aufgenommen am 18. Oktober abends, noch nicht begonnen; zu klären, ob fest oder als Einstellung der Versammlung |
 
 Am 18. Oktober nach der Messung oben dazugekommen und am selben Tag
 geschlossen: **T127** (Gruppen aus der Reinigung nehmen; Spalte ausgerollt,
@@ -8156,7 +8193,9 @@ T128. Danach dazugekommen und am selben Tag geschlossen: **T129** (der feste
 Leiter des Wachtturm-Studiums steht von selbst in der Woche) — damit 129 Köpfe,
 offen weiter T121 und T128. Am Abend dazugekommen und offen: **T130** (den
 Reiter „Trolleys" sieht nur, wer das Trolley-Recht hat) — damit 130 Köpfe,
-offen T121, T128 und T130.
+offen T121, T128 und T130. Danach dazugekommen und offen: **T131** (am
+Wochenende liest der Vorsitzende den Wachtturm) — damit 131 Köpfe, offen T121,
+T128, T130 und T131.
 
 Am 18. Oktober aus der Tabelle genommen: **Kachel und Liste der Absagen zählen
 verschieden** — entschieden, die Kachel zählt jetzt wie die Liste nur die
