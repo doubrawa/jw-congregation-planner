@@ -9,14 +9,14 @@ import { datumsFormat, zeitspanne } from '../components/datum-anzeige'
 import { gruppenName } from '../components/weitere-plaene-anzeige'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { DESKTOP_BREITE, TABLET_BREITE, useMedia } from '../components/useMedia'
-import { auswerten, istEinseitig, OBEN_ANZAHL, ZEITRAEUME, type Auswertung, type Zeitraum } from '../data/auswertung'
+import { auswerten, istEinseitig, ZEITRAEUME, type Auswertung, type Zeitraum } from '../data/auswertung'
 import { displayName } from '../data/helpers'
 import { fromIso, tagNach } from '../data/meeting-dates'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import { bereichsName, bereichsTeile } from '../personen/priv-label'
-import { Legende } from './Diagramme'
 import { EinseitigKarten, EinseitigMatrix } from './EinseitigAnsicht'
+import { EngpaesseAnsicht } from './EngpaesseAnsicht'
 import { HinweisListe } from './Hinweise'
 import { PersonAnsicht } from './PersonAnsicht'
 import { VerteilungAnsicht } from './VerteilungAnsicht'
@@ -29,17 +29,22 @@ import './auswertung.css'
  * **Auswertung der Zuteilungen** (T126; Entwurf auf der Leinwand „Auswertung der
  * Zuteilungen", 16.10.2026; nur Admin und Planer, nicht druckbar).
  *
- * Am Handy der Überblick — Kennzahlen, was auffällt, wie sich die Last verteilt —
- * und vier Kacheln zu den Unteransichten mit Zurück. Ab dem Tablet steht alles
- * auf einer Seite, ab dem Desktop mit der Tabelle Person × Bereich. Eine Person öffnet sich
- * überall als Unteransicht. Gerechnet wird in `data/auswertung.ts`; hier werden
- * die Zahlen zu Wörtern.
+ * Am Handy der Überblick — Kennzahlen und was auffällt — und fünf Kacheln zu
+ * den Unteransichten mit Zurück. Ab dem Tablet steht alles auf einer Seite, ab
+ * dem Desktop mit der Tabelle Person × Bereich. Eine Person öffnet sich überall
+ * als Unteransicht. Gerechnet wird in `data/auswertung.ts`; hier werden die
+ * Zahlen zu Wörtern.
+ *
+ * Die Karte „Wie sich die Last verteilt" ist mit der Jahresprobe vom 18.10.2026
+ * gegangen: Die zehn oberen lagen auf ihrer Erwartung — sie zeigte Struktur,
+ * keinen Befund. An ihrer Stelle stehen die Engpässe.
  */
 /** Wo jede Unteransicht ab dem Tablet auf der Seite steht — ein Hinweis rollt dorthin. */
 const ANKER = {
   verteilung: 'aw-verteilung',
   einseitig: 'aw-einseitig',
   wartezeiten: 'aw-wartezeiten',
+  engpaesse: 'aw-engpaesse',
   weiteres: 'aw-weiteres',
 } as const satisfies Record<Exclude<Ansicht, 'ueberblick'>, string>
 
@@ -55,6 +60,8 @@ export function AuswertungScreen() {
   const [zeitraum, setZeitraum] = useState<Zeitraum>(12)
   const [ansicht, setAnsicht] = useState<Ansicht>('ueberblick')
   const [person, setPerson] = useState<string | null>(null)
+  // Der Bereich der Wartezeiten — ein Hinweis „Lange Wartezeit" stellt ihn ein.
+  const [warteBereich, setWarteBereich] = useState<string | null>(null)
   const unten = !breit && ansicht !== 'ueberblick'
   useBackDismiss(unten, () => setAnsicht('ueberblick'), 'unteransicht')
   useBackDismiss(person !== null, () => setPerson(null), 'unteransicht')
@@ -68,7 +75,6 @@ export function AuswertungScreen() {
     const namen = new Map(persons.map((p) => [p.id, displayName(p)]))
     const zahl = new Intl.NumberFormat(LOCALES[lang] ?? lang, { maximumFractionDigits: 1 })
     const prozent = new Intl.NumberFormat(LOCALES[lang] ?? lang, { style: 'percent', maximumFractionDigits: 1 })
-    const prozentGanz = new Intl.NumberFormat(LOCALES[lang] ?? lang, { style: 'percent', maximumFractionDigits: 0 })
     const tag = datumsFormat(lang, 'tagMonatKurz')
     return {
       a,
@@ -81,13 +87,17 @@ export function AuswertungScreen() {
       dauer: (wochen) => zeitspanne(wochen, 'week', lang),
       zahl: (n) => zahl.format(n),
       datum: (iso) => tag.format(fromIso(iso)),
-      prozent: (anteil, ganz = false) => (ganz ? prozentGanz : prozent).format(anteil),
+      prozent: (anteil) => prozent.format(anteil),
       personOeffnen: setPerson,
-      // Ab dem Tablet steht die Unteransicht schon auf der Seite: dorthin rollen.
-      ansichtOeffnen: (ziel) =>
-        breit ? document.getElementById(ANKER[ziel])?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }) : setAnsicht(ziel),
+      ansichtOeffnen: (ziel, bereich) => {
+        if (bereich !== undefined) setWarteBereich(bereich)
+        // Ab dem Tablet steht die Unteransicht schon auf der Seite: dorthin rollen.
+        if (breit) document.getElementById(ANKER[ziel])?.scrollIntoView?.({ block: 'start', behavior: 'smooth' })
+        else setAnsicht(ziel)
+      },
     }
   }, [a, persons, services, groups, lang, t, tu, breit])
+  const wartezeiten = <WartezeitenAnsicht k={k} bereich={warteBereich} onBereich={setWarteBereich} />
 
   if (person !== null) {
     return (
@@ -104,6 +114,7 @@ export function AuswertungScreen() {
       verteilung: t.awVerteilungTitel,
       einseitig: t.awEinseitigTitel,
       wartezeiten: t.awWartezeitenTitel,
+      engpaesse: t.awEngpaesseTitel,
       weiteres: t.awWeiteresTitel,
     }
     return (
@@ -112,7 +123,8 @@ export function AuswertungScreen() {
         <ZeitraumZeile a={a} k={k} />
         {ansicht === 'verteilung' && <VerteilungAnsicht k={k} />}
         {ansicht === 'einseitig' && <EinseitigKarten k={k} />}
-        {ansicht === 'wartezeiten' && <WartezeitenAnsicht k={k} />}
+        {ansicht === 'wartezeiten' && wartezeiten}
+        {ansicht === 'engpaesse' && <EngpaesseAnsicht k={k} />}
         {ansicht === 'weiteres' && <WeiteresAnsicht k={k} />}
       </section>
     )
@@ -148,7 +160,6 @@ export function AuswertungScreen() {
         {kopf}
         <Kennzahlen k={k} />
         <WasAuffaellt k={k} />
-        <Last k={k} />
         <Kacheln k={k} zu={setAnsicht} />
         <p className="klein-text aw-fussnote">{t.awFussnote}</p>
       </section>
@@ -162,7 +173,10 @@ export function AuswertungScreen() {
       <div className="aw-raster">
         <div className="aw-spalte">
           <WasAuffaellt k={k} />
-          <Last k={k} />
+          <section id={ANKER.engpaesse} className="aw-abschnitt" aria-label={t.awEngpaesseTitel}>
+            <h2 className="abschnitt-titel">{t.awEngpaesseTitel}</h2>
+            <EngpaesseAnsicht k={k} />
+          </section>
         </div>
         <section id={ANKER.verteilung} className="aw-spalte" aria-label={t.awVerteilungTitel}>
           <h2 className="abschnitt-titel">{t.awVerteilungTitel}</h2>
@@ -182,7 +196,7 @@ export function AuswertungScreen() {
       <div className="aw-raster">
         <section id={ANKER.wartezeiten} className="aw-spalte" aria-label={t.awWartezeitenTitel}>
           <h2 className="abschnitt-titel">{t.awWartezeitenTitel}</h2>
-          <WartezeitenAnsicht k={k} />
+          {wartezeiten}
         </section>
         <section id={ANKER.weiteres} className="aw-spalte" aria-label={t.awWeiteresTitel}>
           <h2 className="abschnitt-titel">{t.awWeiteresTitel}</h2>
@@ -240,83 +254,24 @@ function WasAuffaellt({ k }: { k: Kontext }) {
   )
 }
 
-/**
- * **Wie sich die Last verteilt**: je Person ein Balken, die meisten zuerst — die
- * zehn oberen in Minze, wer nie dran war, gestrichelt. Auf Wunsch als Tabelle.
- */
-function Last({ k }: { k: Kontext }) {
-  const [tabelle, setTabelle] = useState(false)
-  const { t } = k
-  const { last, anteilOben } = k.a.kennzahlen
-  if (last.length === 0) return null
-  const max = Math.max(1, ...last.map((z) => z.n))
-  // Erst ab elf Personen gibt es „die zehn oberen" und „alle anderen".
-  const viele = last.length > OBEN_ANZAHL
-  const prozent = k.prozent(anteilOben, true)
-  return (
-    <section className="karte aw-last-karte" aria-label={t.awLastTitel}>
-      <h2 className="karte-titel">{t.awLastTitel}</h2>
-      {viele && <p className="klein-text">{fill(t.awLastText, { anteil: prozent })}</p>}
-      {tabelle ? (
-        <table className="aw-tabelle">
-          <thead>
-            <tr>
-              <th scope="col">{t.awPerson}</th>
-              <th scope="col">{t.awZuteilungen}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {last.map((z) => (
-              <tr key={z.pid}>
-                <th scope="row">{k.name(z.pid)}</th>
-                <td>{k.zahl(z.n)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <>
-          <div className="aw-last" role="img" aria-label={t.awLastBild} style={{ columnGap: `min(2px, ${33 / last.length}%)` }}>
-            {last.map((z, i) => (
-              <span
-                key={z.pid}
-                // „Die zehn oberen" gibt es erst ab elf — sonst wären alle Balken
-                // Minze und die Legende grau.
-                className={z.n === 0 ? 'aw-last-balken is-leer' : viele && i < OBEN_ANZAHL ? 'aw-last-balken is-oben' : 'aw-last-balken'}
-                style={{ height: z.n === 0 ? undefined : `${Math.max(3, (z.n / max) * 100)}%` }}
-              />
-            ))}
-          </div>
-          <Legende
-            eintraege={[
-              ...(viele ? ([['oben', t.awLegendeOben]] as const) : []),
-              ['andere', viele ? t.awLegendeAndere : t.awZuteilungen],
-              ...(k.a.kennzahlen.nie > 0 ? ([['leer', t.awNieDran]] as const) : []),
-            ]}
-          />
-        </>
-      )}
-      <button type="button" className="knopf-pille aw-mehr" aria-pressed={tabelle} onClick={() => setTabelle(!tabelle)}>
-        {tabelle ? t.awAlsDiagramm : t.awAlsTabelle}
-      </button>
-    </section>
-  )
-}
-
-/** Die vier Kacheln zu den Unteransichten — nur am Handy. */
+/** Die fünf Kacheln zu den Unteransichten — nur am Handy. */
 function Kacheln({ k, zu }: { k: Kontext; zu: (ansicht: Ansicht) => void }) {
   const { t, a } = k
   const v = a.hinweise
   const oft = v.filter((h) => h.art === 'oft').length
   const selten = v.filter((h) => h.art === 'selten').length
+  // Wer in zwei Bereichen lange wartet, zählt einmal.
+  const wartende = new Set(v.flatMap((h) => (h.art === 'wartet' ? h.pids : [])))
+  const engster = a.engpaesse[0]
   const kacheln: { ansicht: Exclude<Ansicht, 'ueberblick'>; zeichen: ZeichenName; titel: string; zahl: string }[] = [
     { ansicht: 'verteilung', zeichen: 'auswertung', titel: t.awVerteilungTitel, zahl: fill(t.awVerteilungStat, { n: k.zahl(oft), m: k.zahl(selten) }) },
     { ansicht: 'einseitig', zeichen: 'halb', titel: t.awEinseitigTitel, zahl: fill(t.awPersonenZahl, { n: k.zahl(a.einseitig.filter(istEinseitig).length) }) },
+    { ansicht: 'wartezeiten', zeichen: 'uhr', titel: t.awWartezeitenTitel, zahl: fill(t.awWartenLangeZahl, { n: k.zahl(wartende.size) }) },
     {
-      ansicht: 'wartezeiten',
-      zeichen: 'uhr',
-      titel: t.awWartezeitenTitel,
-      zahl: fill(t.awWartenLangeZahl, { n: k.zahl(v.filter((h) => h.art === 'wartet').length) }),
+      ansicht: 'engpaesse',
+      zeichen: 'personen',
+      titel: t.awEngpaesseTitel,
+      zahl: engster ? fill(t.awEngpassStat, { bereich: k.bereich(engster.bereich) }) : '',
     },
     {
       ansicht: 'weiteres',

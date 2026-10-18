@@ -1,7 +1,8 @@
 /**
  * **Auswertung der Zuteilungen** (T126, Entwurf auf der Leinwand „Auswertung der
  * Zuteilungen", 16.10.2026): wer zu oft, zu selten oder einseitig eingeteilt
- * ist, wer lange wartet, wer die Treffpunkte leitet, wo sich Aufgaben ballen.
+ * ist, wer lange wartet, wo die Plätze knapp sind, wer die Treffpunkte leitet,
+ * wo sich Aufgaben ballen — und wo die Bereiche einer Person nicht stimmen.
  *
  * Gerechnet aus den geladenen Wochen — höchstens ein Jahr (T125) —, gespeichert
  * wird nichts. Gemessen wird so, wie die Automatik verteilt (`waehler` in
@@ -23,12 +24,26 @@
  *  - **Absagen zählen nach derselben Regel** (`zaehltDerPlatz`): Eine Absage
  *    auf einem Platz, der selbst nicht zählt, höbe den Anteil ihres Bereichs
  *    ohne Grund (Review 17.10.2026).
- *  - **Erwartet** ist, was auf jemanden käme, wenn die Plätze jedes seiner
- *    Bereiche gleich auf alle verteilt wären, die ihn haben — anteilig nach den
- *    Zusammenkünften, in denen jemand nicht abwesend war.
+ *  - **Erwartet** ist, was auf jemanden käme, wenn **jeder Platz** gleich auf
+ *    alle verteilt wäre, die ihn in dieser Zusammenkunft hätten haben können:
+ *    die den Bereich haben, da sind, schon dabei sind und nicht auf einem
+ *    festen Platz stehen (`grundlage`). Eine Einteilung in einem Bereich, den
+ *    die Person nicht hat, zählt nicht gegen sie — sie steht unter „Bereich
+ *    ergänzen?" (`ohneBereich`).
  *  - **Hilfsdienste** vergibt die Automatik nach der Gesamtlast (`byTotal`):
  *    Wer viele Aufgaben hat, bekommt weniger. Verglichen wird dort deshalb die
  *    Summe aus Aufgaben und Hilfsdiensten.
+ *
+ * **Die Jahresprobe vom 18.10.2026** (ein Jahr echter Daten, intern gerechnet)
+ * fand rund ein Drittel Fehlalarme; daher stammen die feste Rolle in der
+ * Erwartung, „dabei seit", die Einteilungen ohne Bereich, die Erwartung beim
+ * Einseitigen, die Ballungen nur mit Hilfsdienst und dies: **Wartezeiten,
+ * Engpässe und die Pflege der Bereiche rechnen immer über das ganze Jahr**
+ * (`JAHR`), gleich welcher Zeitraum gewählt ist. Gewartet wird seit dem letzten
+ * Mal, nicht seit Beginn eines Fensters, und der übliche Abstand ist eine
+ * Eigenschaft des Bereichs — im Fenster gemessen war er zu kurz und hing von
+ * dessen Länge ab (Gebet 9, 7 und 2,5 Wochen bei 12, 6 und 3 Monaten statt
+ * gerechneter 18).
  *
  * Alles hier ist rein: Eingabe sind die Daten der App, Ausgabe Zahlen je
  * Person-Id und Bereichsschlüssel. Namen und Beschriftungen setzt die Ansicht.
@@ -47,19 +62,28 @@ import type { Absage, FsInstance, Group, MeetingKey, Person, Service, Week } fro
 export const ZEITRAEUME = [12, 6, 3] as const
 export type Zeitraum = (typeof ZEITRAEUME)[number]
 export const ZEITRAUM_WOCHEN: Record<Zeitraum, number> = { 12: 52, 6: 26, 3: 13 }
+/** Über diesen Zeitraum rechnen Wartezeiten, Engpässe und die Pflege der Bereiche — immer. */
+export const JAHR: Zeitraum = 12
 
 /** Mehr als die Hälfte über der Erwartung ist „zu oft", weniger als die Hälfte „zu selten". */
 export const OBERE_GRENZE = 1.5
 export const UNTERE_GRENZE = 0.5
 /** … und dazu mindestens so viele daneben — sonst ist eine 2 bei erwarteten 1 schon „zu oft". */
 export const MINDESTABSTAND = 3
-/** Einseitig: so viel in einem Bereich, ab so vielen Zuteilungen. */
+/**
+ * Einseitig: so viel in einem Bereich, ab so vielen Zuteilungen — und dazu um
+ * mehr als die Hälfte über dem Anteil, den der Bereich bei ihm haben sollte
+ * (`OBERE_GRENZE`): Wer Mikrofone und Bibellesung hat, hat zwangsläufig vor
+ * allem Mikrofone (Jahresprobe 18.10.2026).
+ */
 export const UEBERWIEGT_AB = 2 / 3
 export const EINSEITIG_AB = 6
 /** „Nie dran" zählt nur, wo die anderen den Bereich im Schnitt mindestens so oft hatten. */
 export const NIE_AB_SCHNITT = 4
-/** Ohne Aufgaben in diesen Bereichen fällt niemand unter „Schulungsaufgaben". */
-export const SCHULUNG = new Set(['schulung', 'schulungPartner', 'schulungVortrag'])
+/** „Bereich ergänzen?": so oft im Jahr in einem Bereich eingeteilt, den die Person nicht hat. */
+export const OHNE_BEREICH_AB = 2
+/** „Bereich noch aktuell?": so viele Plätze wären im Jahr auf die Person gekommen, und sie war nie dran. */
+export const NIE_GENUTZT_AB = MINDESTABSTAND
 
 /** Ist der Bereich ein Hilfsdienst (`svc:<dienst>`, `serviceQualKey`)? */
 export function istHilfsdienstBereich(bereich: string): boolean {
@@ -125,6 +149,9 @@ export interface AbsageEinteilung {
 /** Der Bereich, unter dem ein abgesagter Treffpunkt zählt (`p.priv.treffpunkt`). */
 export const TREFFPUNKT_BEREICH = 'treffpunkt'
 
+/** Erwartet je Bereich und Person: Bereich → Person-Id → Plätze. */
+export type Erwartung = ReadonlyMap<string, ReadonlyMap<string, number>>
+
 export interface Grundlage {
   fenster: Zeitfenster
   einteilungen: Einteilung[]
@@ -132,13 +159,22 @@ export interface Grundlage {
   plaetze: ReadonlyMap<string, number>
   /** Zusammenkünfte, die im Zeitraum stattfanden. */
   zusammenkuenfte: number
-  /** Je Person: in wie vielen davon sie nicht abwesend war. */
+  /** Je Person: in wie vielen davon sie da und schon dabei war. */
   verfuegbar: ReadonlyMap<string, number>
   /**
-   * Je Person die Montage der Wochen im Zeitraum, in denen sie in keiner
-   * Zusammenkunft da war, die stattfand — sie zählen nicht zur Wartezeit.
+   * **Erwartet je Bereich und Person** — Platz für Platz: Jeder gezählte Platz
+   * verteilt sich gleich auf alle, die ihn in seiner Zusammenkunft hätten
+   * haben können. Wer im Bereich nie in Frage kam, fehlt.
    */
-  ganzAbwesend: ReadonlyMap<string, ReadonlySet<string>>
+  erwartet: Erwartung
+  /**
+   * Je Person die Zusammenkünfte (`montag|tab`), in denen sie eingeteilt werden
+   * konnte: da, schon dabei, ohne festen Platz. Nur diese Wochen zählen zur
+   * Wartezeit.
+   */
+  einteilbar: ReadonlyMap<string, ReadonlySet<string>>
+  /** Die Montage der Wochen im Zeitraum, in denen wenigstens eine Zusammenkunft stattfand. */
+  gehalten: readonly string[]
   /**
    * Was ab der laufenden Woche schon eingeteilt ist, gezählt wie die
    * Zuteilungen: Wer im Bereich schon geplant ist, wartet nicht.
@@ -177,8 +213,72 @@ interface PlatzFuerAbsagen {
   vorsitz: VorsitzDerZusammenkunft | null
 }
 
+/**
+ * **Seit wann eine Person dabei ist** (Jahresprobe 18.10.2026): der Montag der
+ * ersten Woche, in der sie irgendwo stand — auf einem Platz, gezählt oder
+ * nicht, als Leiter eines Treffpunkts oder mit einer Absage —, über alle
+ * geladenen Wochen vor der laufenden (`bis`). Vorher wird von ihr nichts
+ * erwartet: Ein zugezogener Ältester stand sonst für die Monate vor seinem
+ * Umzug unter „zu selten" und „einseitig".
+ *
+ * Wer nie irgendwo stand, ist von Anfang an dabei — sonst fiele niemand auf,
+ * den die Planer nie eingeteilt haben. Auch nicht, wer erst geplant ist: Wen
+ * der Planer auf „Lange Wartezeit" hin einteilt, der steht dort als „geplant",
+ * statt rückwirkend aus der Rechnung zu fallen. Der Preis (vom Betreiber so
+ * gewählt): Wer lange übersehen und dann einmal eingeteilt wurde, gilt erst ab
+ * da als dabei.
+ */
+function dabeiSeit(
+  weeks: readonly Week[],
+  fsWeeks: readonly (readonly FsInstance[])[],
+  persons: readonly Person[],
+  services: readonly Service[],
+  absagen: readonly Absage[],
+  bis: string,
+): Map<string, string> {
+  const wer = idAufloeser(persons)
+  const bekannt = new Set(persons.map((p) => p.id))
+  const seit = new Map<string, string>()
+  const merken = (pid: string | undefined, montag: string): void => {
+    if (!pid || !bekannt.has(pid) || montag >= bis) return
+    const bisher = seit.get(pid)
+    if (bisher === undefined || montag < bisher) seit.set(pid, montag)
+  }
+  weeks.forEach((week, wi) => {
+    for (const tab of MEETING_TABS) {
+      if (istAusgefallen(week, tab)) continue
+      for (const platz of allePlaetze(week[tab], services)) merken(wer(platz.slot), week.start)
+    }
+    for (const inst of fsWeeks[wi] ?? []) if (!inst.lext) merken(inst.lpid, week.start)
+  })
+  for (const a of absagen) {
+    const teile = schluesselTeile(a.taskKey)
+    if (teile) merken(a.personId, teile.woche)
+  }
+  return seit
+}
+
+/**
+ * Jeder gezählte Platz einer Zusammenkunft verteilt sich gleich auf alle, die
+ * ihn hätten haben können (`frei`) und den Bereich haben. Hat ihn keiner, kommt
+ * er auf niemanden — er bleibt trotzdem ein Platz des Bereichs.
+ */
+function erwartungVerteilen(plaetze: readonly Einteilung[], frei: readonly Person[], erwartet: Map<string, Map<string, number>>): void {
+  const jeBereich = new Map<string, number>()
+  for (const e of plaetze) if (e.bereich) jeBereich.set(e.bereich, (jeBereich.get(e.bereich) ?? 0) + 1)
+  for (const [bereich, anzahl] of jeBereich) {
+    const kandidaten = frei.filter((p) => isQualified(p, bereich))
+    if (kandidaten.length === 0) continue
+    const je = erwartet.get(bereich) ?? new Map<string, number>()
+    for (const p of kandidaten) je.set(p.id, (je.get(p.id) ?? 0) + anzahl / kandidaten.length)
+    erwartet.set(bereich, je)
+  }
+}
+
 export function grundlage(eingabe: {
   weeks: readonly Week[]
+  /** Die Treffpunkte je Woche, parallel zu `weeks` — für „dabei seit". */
+  fsWeeks?: readonly (readonly FsInstance[])[]
   persons: readonly Person[]
   services: readonly Service[]
   abwesend: AbsenceSet
@@ -187,11 +287,15 @@ export function grundlage(eingabe: {
   absagen?: readonly Absage[]
 }): Grundlage {
   const { weeks, persons, services, abwesend, fenster } = eingabe
+  const liste = eingabe.absagen ?? []
   const wer = idAufloeser(persons)
   const bekannt = new Set(persons.map((p) => p.id))
   const festerLeiter = persons.some((p) => p.priv.wtLeiter)
+  const seit = dabeiSeit(weeks, eingabe.fsWeeks ?? [], persons, services, liste, fenster.bis)
   const verfuegbar = new Map<string, number>(persons.map((p) => [p.id, 0]))
-  const ganzAbwesend = new Map<string, Set<string>>()
+  const erwartet = new Map<string, Map<string, number>>()
+  const einteilbar = new Map<string, Set<string>>()
+  const gehalten: string[] = []
   // Jeder Platz über seinen Schlüssel — für die Absagen, die nur den Schlüssel
   // kennen. Auch ein leerer: Hat der Planer den Absagenden nur ausgetragen,
   // steht dort noch niemand, der Bereich ist trotzdem der des Platzes. Die
@@ -200,16 +304,22 @@ export function grundlage(eingabe: {
   const wocheJeMontag = new Map<string, number>()
   let zusammenkuenfte = 0
 
-  /** Die gezählten Plätze einer Zusammenkunft, die stattfindet, nach `ziel`. */
-  const zaehlen = (week: Week, wi: number, tab: MeetingKey, ziel: Einteilung[]): void => {
+  /**
+   * Die gezählten Plätze einer Zusammenkunft, die stattfindet, nach `ziel` —
+   * zurück kommt, wer dort auf einem Platz steht, der nicht zählt.
+   */
+  const zaehlen = (week: Week, wi: number, tab: MeetingKey, ziel: Einteilung[]): Set<string> => {
     const meeting = week[tab]
     const vorsitzSlot = vorsitzPlatz(meeting)
     const vorsitz: VorsitzDerZusammenkunft = { pid: wer(vorsitzSlot), key: null }
+    const fest = new Set<string>()
     for (const platz of allePlaetze(meeting, services)) {
       const key = platzKey(platz, week.start, tab)
       if (vorsitzSlot && platz.slot === vorsitzSlot) vorsitz.key = key
       if (!zaehltDerPlatz(platz, festerLeiter)) {
         platzJeSchluessel.set(key, null)
+        const pid = wer(platz.slot)
+        if (pid && bekannt.has(pid)) fest.add(pid)
         continue
       }
       const bereich = bereichVon(platz) ?? null
@@ -221,6 +331,7 @@ export function grundlage(eingabe: {
       if (!pid || !bekannt.has(pid) || (folgt && pid === vorsitz.pid)) continue
       ziel.push({ pid, wi, start: week.start, tab, bereich, hilfsdienst: platz.art === 'helper' })
     }
+    return fest
   }
 
   const einteilungen: Einteilung[] = []
@@ -228,28 +339,33 @@ export function grundlage(eingabe: {
     const week = weeks[wi]
     if (!week) continue
     wocheJeMontag.set(week.start, wi)
-    const da = new Set<string>()
-    let gehalten = false
+    let stattgefunden = false
     for (const tab of MEETING_TABS) {
       if (istAusgefallen(week, tab)) continue
-      gehalten = true
+      stattgefunden = true
       zusammenkuenfte++
+      const hier: Einteilung[] = []
+      // Wer auf einem festen Platz steht (der feste Studienleiter, der eigene
+      // Redner), kann in dieser Zusammenkunft nichts anderes übernehmen — von
+      // ihm wird dort nichts erwartet (Jahresprobe: Der feste Leiter „wartete
+      // lange" auf den Vorsitz am Wochenende).
+      const fest = zaehlen(week, wi, tab, hier)
+      einteilungen.push(...hier)
+      const frei: Person[] = []
       for (const p of persons) {
         if (istAbwesend(abwesend, p.id, wi, tab)) continue
+        const ab = seit.get(p.id)
+        if (ab !== undefined && week.start < ab) continue
         verfuegbar.set(p.id, (verfuegbar.get(p.id) ?? 0) + 1)
-        da.add(p.id)
+        if (fest.has(p.id)) continue
+        frei.push(p)
+        const menge = einteilbar.get(p.id) ?? new Set<string>()
+        menge.add(`${week.start}|${tab}`)
+        einteilbar.set(p.id, menge)
       }
-      zaehlen(week, wi, tab, einteilungen)
+      erwartungVerteilen(hier, frei, erwartet)
     }
-    // Ganz abwesend ist, wer in keiner Zusammenkunft der Woche da war — eine
-    // Woche, in der alles ausfiel, zählt für niemanden.
-    if (!gehalten) continue
-    for (const p of persons) {
-      if (da.has(p.id)) continue
-      const montage = ganzAbwesend.get(p.id) ?? new Set<string>()
-      montage.add(week.start)
-      ganzAbwesend.set(p.id, montage)
-    }
+    if (stattgefunden) gehalten.push(week.start)
   }
   const plaetze = new Map<string, number>()
   for (const e of einteilungen) if (e.bereich) plaetze.set(e.bereich, (plaetze.get(e.bereich) ?? 0) + 1)
@@ -265,7 +381,6 @@ export function grundlage(eingabe: {
   // Person der Versammlung, auf einem Platz, der zählt — wie die Zuteilungen.
   // Ein Treffpunkt zählt unter „Treffpunkte leiten"; seine Woche reicht, den
   // Tag kennen nur die Treffpunkt-Wochen.
-  const liste = eingabe.absagen ?? []
   const abgesagt = new Set(liste.map((a) => `${a.personId}|${a.taskKey}`))
   const absagen: AbsageEinteilung[] = []
   for (const a of liste) {
@@ -289,23 +404,12 @@ export function grundlage(eingabe: {
     // Einen Platz, den es nicht mehr gibt, zählt die Person — ein Bereich ist nicht zu sagen.
     absagen.push({ pid: a.personId, bereich: platz?.bereich ?? null })
   }
-  return { fenster, einteilungen, plaetze, zusammenkuenfte, verfuegbar, ganzAbwesend, geplant, absagen }
+  return { fenster, einteilungen, plaetze, zusammenkuenfte, verfuegbar, erwartet, einteilbar, gehalten, geplant, absagen }
 }
 
-/**
- * **Erwartet je Bereich und Person**: die Plätze des Bereichs, verteilt auf alle,
- * die ihn haben — jeder nach den Zusammenkünften, in denen er da war.
- */
-function erwartungen(g: Grundlage, persons: readonly Person[]): Map<string, Map<string, number>> {
-  const out = new Map<string, Map<string, number>>()
-  for (const [bereich, anzahl] of g.plaetze) {
-    const qualifiziert = persons.filter((p) => isQualified(p, bereich))
-    const summe = qualifiziert.reduce((s, p) => s + (g.verfuegbar.get(p.id) ?? 0), 0)
-    const je = new Map<string, number>()
-    for (const p of qualifiziert) je.set(p.id, summe > 0 ? (anzahl * (g.verfuegbar.get(p.id) ?? 0)) / summe : 0)
-    out.set(bereich, je)
-  }
-  return out
+/** Was auf die Person in diesem Bereich erwartet wurde. */
+function erwartetVon(g: Grundlage, bereich: string, pid: string): number {
+  return g.erwartet.get(bereich)?.get(pid) ?? 0
 }
 
 /** Die Bereiche mit Plätzen im Zeitraum, die eine Person hat. */
@@ -336,32 +440,22 @@ function anzahlJeBereich(g: Grundlage): Map<string, Map<string, number>> {
   return out
 }
 
-/* ---- Kennzahlen und Last --------------------------------------------------- */
-
-export interface LastZeile {
-  pid: string
-  n: number
-}
+/* ---- Kennzahlen ------------------------------------------------------------ */
 
 export interface Kennzahlen {
   zuteilungen: number
   /**
    * Personen mit mindestens einem Bereich, der im Zeitraum Plätze hatte — ohne
-   * wen, der den ganzen Zeitraum fehlte: Von ihm wird nichts erwartet.
+   * wen, der den ganzen Zeitraum fehlte oder noch nicht dabei war: Von ihm wird
+   * nichts erwartet.
    */
   mitBereichen: number
   eingeteilt: number
   /** Mit Bereich, aber im ganzen Zeitraum nie eingeteilt — obwohl da. */
   nie: number
-  /** Anteil der zehn mit den meisten Zuteilungen (0 bis 1). */
-  anteilOben: number
-  /** Je Person mit Bereich die Zuteilungen, die meisten zuerst. */
-  last: LastZeile[]
 }
 
-export const OBEN_ANZAHL = 10
-
-/** War die Person im Zeitraum wenigstens in einer Zusammenkunft da? */
+/** War die Person im Zeitraum wenigstens in einer Zusammenkunft da und schon dabei? */
 function warDa(g: Grundlage, p: Person): boolean {
   return (g.verfuegbar.get(p.id) ?? 0) > 0
 }
@@ -369,33 +463,26 @@ function warDa(g: Grundlage, p: Person): boolean {
 export function kennzahlen(g: Grundlage, persons: readonly Person[]): Kennzahlen {
   const je = new Map<string, number>()
   for (const e of g.einteilungen) je.set(e.pid, (je.get(e.pid) ?? 0) + 1)
-  // Wer den ganzen Zeitraum fehlte, steht weder unter „nie dran" noch in der Last.
+  // Wer den ganzen Zeitraum fehlte, steht nicht unter „nie dran".
   const mitBereich = persons.filter((p) => je.has(p.id) || (warDa(g, p) && bereicheVon(g, p).length > 0))
-  const last = mitBereich
-    .map((p) => ({ pid: p.id, n: je.get(p.id) ?? 0 }))
-    .sort((a, b) => b.n - a.n || a.pid.localeCompare(b.pid))
-  const zuteilungen = g.einteilungen.length
-  const oben = last.slice(0, OBEN_ANZAHL).reduce((s, z) => s + z.n, 0)
-  return {
-    zuteilungen,
-    mitBereichen: mitBereich.length,
-    eingeteilt: last.filter((z) => z.n > 0).length,
-    nie: last.filter((z) => z.n === 0).length,
-    anteilOben: zuteilungen > 0 ? oben / zuteilungen : 0,
-    last,
-  }
+  const eingeteilt = mitBereich.filter((p) => je.has(p.id)).length
+  return { zuteilungen: g.einteilungen.length, mitBereichen: mitBereich.length, eingeteilt, nie: mitBereich.length - eingeteilt }
 }
 
 /* ---- Zu oft, zu selten ----------------------------------------------------- */
 
-/** Was verglichen wird: alle Aufgaben, nur die Schulungsaufgaben, oder mit den Hilfsdiensten. */
-export type Vergleich = 'aufgaben' | 'schulung' | 'hilfsdienste'
-export const VERGLEICHE: readonly Vergleich[] = ['aufgaben', 'schulung', 'hilfsdienste']
+/**
+ * Was verglichen wird: die Aufgaben, oder alles mit den Hilfsdiensten. Die
+ * Schulungsaufgaben allein verglich die Seite bis zur Jahresprobe auch — bei
+ * Erwartungen von ein bis vier im Jahr meldete das nie etwas.
+ */
+export type Vergleich = 'aufgaben' | 'hilfsdienste'
+export const VERGLEICHE: readonly Vergleich[] = ['aufgaben', 'hilfsdienste']
 export type Lage = 'oft' | 'rahmen' | 'selten'
 
 export interface VerteilungsZeile {
   pid: string
-  /** Gezählte Zuteilungen — bei den Hilfsdiensten samt Aufgaben. */
+  /** Gezählte Zuteilungen in den eigenen Bereichen — bei den Hilfsdiensten samt Aufgaben. */
   n: number
   erwartet: number
   /** Davon Hilfsdienste (nur beim Vergleich mit den Hilfsdiensten von Belang). */
@@ -420,13 +507,10 @@ export function lageVon(n: number, erwartet: number): Lage {
 }
 
 function gehoertZumVergleich(bereich: string, vergleich: Vergleich): boolean {
-  if (vergleich === 'schulung') return SCHULUNG.has(bereich)
-  if (vergleich === 'aufgaben') return !istHilfsdienstBereich(bereich)
-  return true
+  return vergleich === 'hilfsdienste' || !istHilfsdienstBereich(bereich)
 }
 
 export function verteilung(g: Grundlage, persons: readonly Person[], vergleich: Vergleich): Verteilung {
-  const erwartet = erwartungen(g, persons)
   const jePerson = einteilungenJePerson(g)
   const zeilen: VerteilungsZeile[] = []
   for (const p of persons) {
@@ -437,12 +521,14 @@ export function verteilung(g: Grundlage, persons: readonly Person[], vergleich: 
     let n = 0
     let hilfsdienste = 0
     for (const e of jePerson.get(p.id) ?? []) {
-      if (!e.bereich || !gehoertZumVergleich(e.bereich, vergleich)) continue
+      // Eine Einteilung in einem Bereich, den die Person nicht hat, zählt nicht
+      // gegen ihre Erwartung — sie steht unter „Bereich ergänzen?".
+      if (!e.bereich || !isQualified(p, e.bereich) || !gehoertZumVergleich(e.bereich, vergleich)) continue
       n++
       if (e.hilfsdienst) hilfsdienste++
     }
     let summe = 0
-    for (const b of bereiche) if (gehoertZumVergleich(b, vergleich)) summe += erwartet.get(b)?.get(p.id) ?? 0
+    for (const b of bereiche) if (gehoertZumVergleich(b, vergleich)) summe += erwartetVon(g, b, p.id)
     zeilen.push({ pid: p.id, n, erwartet: summe, hilfsdienste, lage: lageVon(n, summe) })
   }
   const verhaeltnis = (z: VerteilungsZeile): number => (z.erwartet > 0 ? z.n / z.erwartet : z.n)
@@ -456,11 +542,18 @@ export function verteilung(g: Grundlage, persons: readonly Person[], vergleich: 
   }
 }
 
+/** Wer im Vergleich über seiner Erwartung liegt. */
+function ueberDerErwartung(v: Verteilung): Set<string> {
+  return new Set([...v.oft, ...v.rahmen, ...v.selten].filter((z) => z.n > z.erwartet).map((z) => z.pid))
+}
+
 /* ---- Einseitig ------------------------------------------------------------- */
 
 export interface BereichsZahl {
   bereich: string
   n: number
+  /** Was auf die Person in diesem Bereich erwartet wurde. */
+  erwartet: number
   /** Wie oft die anderen mit diesem Bereich ihn im Schnitt hatten. */
   schnittAndere: number
 }
@@ -470,7 +563,7 @@ export interface EinseitigZeile {
   gesamt: number
   /** Je Bereich der Person, die meisten zuerst. */
   bereiche: BereichsZahl[]
-  /** Der Bereich mit zwei Dritteln und mehr — sonst `null`. */
+  /** Der Bereich mit zwei Dritteln und mehr, deutlich über seinem erwarteten Anteil — sonst `null`. */
   ueberwiegt: string | null
   /** Bereiche, die er hat und in denen er nie dran war, obwohl die anderen sie oft hatten. */
   nie: string[]
@@ -482,9 +575,11 @@ export function istEinseitig(z: EinseitigZeile): boolean {
 
 /**
  * Je Person mit zwei und mehr Bereichen: wie sich ihre Zuteilungen verteilen —
- * die einseitigen zuerst.
+ * die einseitigen zuerst. `schonGemeldet` nennt je Person die Bereiche, die
+ * schon „Bereich noch aktuell?" meldet (`nieGenutzt`): Dort steht nicht
+ * zusätzlich „nie".
  */
-export function einseitig(g: Grundlage, persons: readonly Person[]): EinseitigZeile[] {
+export function einseitig(g: Grundlage, persons: readonly Person[], schonGemeldet: ReadonlyMap<string, readonly string[]> = new Map()): EinseitigZeile[] {
   const zahl = anzahlJeBereich(g)
   const anzahl = (pid: string, bereich: string): number => zahl.get(pid)?.get(bereich) ?? 0
   const qualifiziert = new Map<string, Person[]>()
@@ -499,28 +594,45 @@ export function einseitig(g: Grundlage, persons: readonly Person[]): EinseitigZe
       .map((bereich) => {
         const andere = (qualifiziert.get(bereich) ?? []).filter((q) => q.id !== p.id)
         const summe = andere.reduce((s, q) => s + anzahl(q.id, bereich), 0)
-        return { bereich, n: anzahl(p.id, bereich), schnittAndere: andere.length ? summe / andere.length : 0 }
+        return { bereich, n: anzahl(p.id, bereich), erwartet: erwartetVon(g, bereich, p.id), schnittAndere: andere.length ? summe / andere.length : 0 }
       })
       .sort((a, b) => b.n - a.n)
     const gesamt = bereiche.reduce((s, b) => s + b.n, 0)
+    const erwartetGesamt = bereiche.reduce((s, b) => s + b.erwartet, 0)
     const erster = bereiche[0]
-    const ueberwiegt = erster && gesamt >= EINSEITIG_AB && erster.n / gesamt >= UEBERWIEGT_AB ? erster.bereich : null
-    const nie = bereiche.filter((b) => b.n === 0 && b.schnittAndere >= NIE_AB_SCHNITT).map((b) => b.bereich)
+    // Der Anteil des stärksten Bereichs — gegen den Anteil, den er haben sollte.
+    const anteil = erster && gesamt > 0 ? erster.n / gesamt : 0
+    const sollAnteil = erster && erwartetGesamt > 0 ? erster.erwartet / erwartetGesamt : 0
+    const ueberwiegt = erster && gesamt >= EINSEITIG_AB && anteil >= UEBERWIEGT_AB && anteil >= OBERE_GRENZE * sollAnteil ? erster.bereich : null
+    // Nie dran zählt nur, wo auf ihn wenigstens ein Platz gekommen wäre — wer
+    // erst kurz dabei ist, war in den Bereichen der anderen noch nicht „nie".
+    const gemeldet = schonGemeldet.get(p.id) ?? []
+    const nie = bereiche
+      .filter((b) => b.n === 0 && b.schnittAndere >= NIE_AB_SCHNITT && b.erwartet >= 1 && !gemeldet.includes(b.bereich))
+      .map((b) => b.bereich)
     out.push({ pid: p.id, gesamt, bereiche, ueberwiegt, nie })
   }
   return out.sort((a, b) => Number(istEinseitig(b)) - Number(istEinseitig(a)) || b.gesamt - a.gesamt)
 }
 
+/** Ein Feld der Tabelle Person × Bereich. */
+export interface MatrixZelle {
+  n: number
+  /** Hat die Person den Bereich? Ohne ihn zählt `n` nicht gegen ihre Erwartung. */
+  hat: boolean
+}
+
 export interface Matrix {
   /** Die Bereiche mit Plätzen im Zeitraum, in der Reihenfolge der Spalten. */
   bereiche: string[]
-  zeilen: { pid: string; einseitig: boolean; werte: (number | null)[] }[]
+  zeilen: { pid: string; einseitig: boolean; zellen: MatrixZelle[] }[]
 }
 
 /**
- * **Wer bekommt was**: Person × Bereich. `null` heißt, er hat den Bereich nicht;
- * `0`, er hat ihn und war nie dran. `ordnung` gibt die Reihenfolge der Spalten
- * vor (Bereiche, die sie nicht kennt, kommen hinten an).
+ * **Wer bekommt was**: Person × Bereich — wie oft, und ob die Person den
+ * Bereich hat. `ordnung` gibt die Reihenfolge der Spalten vor (Bereiche, die
+ * sie nicht kennt, kommen hinten an). Eine Zeile hat, wer einen der Bereiche
+ * hat oder in einem eingeteilt war.
  */
 export function matrix(g: Grundlage, persons: readonly Person[], zeilen: readonly EinseitigZeile[], ordnung: readonly string[]): Matrix {
   const rang = (b: string): number => {
@@ -533,33 +645,93 @@ export function matrix(g: Grundlage, persons: readonly Person[], zeilen: readonl
   return {
     bereiche,
     zeilen: persons
-      .filter((p) => bereiche.some((b) => isQualified(p, b)))
+      .filter((p) => zahl.has(p.id) || bereiche.some((b) => isQualified(p, b)))
       .map((p) => ({
         pid: p.id,
         einseitig: einseitigeIds.has(p.id),
-        werte: bereiche.map((b) => (isQualified(p, b) ? (zahl.get(p.id)?.get(b) ?? 0) : null)),
+        zellen: bereiche.map((b) => ({ n: zahl.get(p.id)?.get(b) ?? 0, hat: isQualified(p, b) })),
       })),
   }
+}
+
+/* ---- Engpässe -------------------------------------------------------------- */
+
+export interface Engpass {
+  bereich: string
+  /** Die gezählten Plätze des Bereichs. */
+  plaetze: number
+  /**
+   * Die Wochen, auf die sie sich verteilen: ab der ersten mit einem Platz des
+   * Bereichs, jede, in der eine Zusammenkunft stattfand. Ab der ersten, weil
+   * die App einen Bereich oft erst ab einem Tag kennt — aus New World
+   * Scheduler kamen die Hilfsdienste fünf Monate zurück, das Programm zehn.
+   */
+  wochen: number
+  jeWoche: number
+  /** Wer den Bereich hat und wenigstens einmal für einen Platz in Frage kam. */
+  personen: number
+  /** Alle wie viele Wochen jeder dran wäre — `null`, wenn niemand den Bereich hat. */
+  abstand: number | null
+  /** Wie oft jeder im Jahr dran wäre — `null`, wenn niemand den Bereich hat. */
+  jePersonJahr: number | null
+}
+
+/**
+ * **Wie knapp ein Bereich ist** (Jahresprobe 18.10.2026): Plätze je Woche gegen
+ * die Personen, die ihn haben. Ton und Video mit acht Personen heißt: jeder
+ * alle fünf Wochen, zehnmal im Jahr. Der Abstand ist zugleich der übliche
+ * Abstand der Wartezeiten.
+ */
+export function engpass(g: Grundlage, bereich: string): Engpass | null {
+  const plaetze = g.plaetze.get(bereich) ?? 0
+  if (plaetze === 0) return null
+  let erste: string | null = null
+  for (const e of g.einteilungen) if (e.bereich === bereich && (erste === null || e.start < erste)) erste = e.start
+  const ab = erste ?? g.fenster.von
+  const wochen = Math.max(1, g.gehalten.filter((m) => m >= ab).length)
+  const jeWoche = plaetze / wochen
+  const personen = g.erwartet.get(bereich)?.size ?? 0
+  return {
+    bereich,
+    plaetze,
+    wochen,
+    jeWoche,
+    personen,
+    abstand: personen > 0 ? personen / jeWoche : null,
+    jePersonJahr: personen > 0 ? (ZEITRAUM_WOCHEN[JAHR] * jeWoche) / personen : null,
+  }
+}
+
+/** Alle Bereiche mit Plätzen, die knappsten zuerst — ohne Personen ganz vorn. */
+export function engpaesse(g: Grundlage): Engpass[] {
+  return [...g.plaetze.keys()]
+    .flatMap((b) => engpass(g, b) ?? [])
+    .sort((a, b) => (a.abstand ?? -1) - (b.abstand ?? -1) || b.jeWoche - a.jeWoche || a.bereich.localeCompare(b.bereich))
 }
 
 /* ---- Wartezeiten ----------------------------------------------------------- */
 
 export interface Warten {
   pid: string
-  /** Wochen seit dem letzten Mal bis zur laufenden Woche — `null`: nie im Zeitraum. */
+  /** Wochen seit dem letzten Mal bis zur laufenden Woche — `null`: im Jahr nie dran. */
   wochen: number | null
-  /** Davon die Wochen, in denen die Person ganz fehlte (`Grundlage.ganzAbwesend`). */
-  abwesend: number
   /**
-   * Die Wartezeit, wie sie zählt: `wochen` ohne die abwesenden — `null`: nie im
-   * Zeitraum. Danach wird sortiert und „wartet lange" entschieden (Betreiber
-   * 17.10.2026: Abwesenheit und Geplantes zählen).
+   * Davon die Wochen, in denen die Person nicht eingeteilt werden konnte:
+   * abwesend, keine Zusammenkunft, ein fester Platz, noch nicht dabei.
    */
-  wartend: number | null
+  nichtEinteilbar: number
+  /**
+   * Die Wartezeit, wie sie zählt: nur Wochen, in denen die Person hätte
+   * drankommen können — wer im Jahr nie dran war, seit der ersten Woche des
+   * Bereichs. Danach wird sortiert und „wartet lange" entschieden.
+   */
+  wartend: number
   /** Montag der Woche des letzten Mals (ISO). */
   zuletzt: string | null
   /** Montag der nächsten Woche, in der die Person im Bereich schon eingeteilt ist — wer geplant ist, wartet nicht. */
   geplant: string | null
+  /** Liegt die Person über das Jahr insgesamt über ihrer Erwartung? Dann wartet sie nicht. */
+  ueber: boolean
   lange: boolean
 }
 
@@ -568,15 +740,16 @@ export interface Schnell {
   /** Mittlerer Abstand in Wochen. */
   abstand: number
   mal: number
-  /** Je Woche des Zeitraums: dran oder nicht. */
+  /** Je Woche des Jahres: dran oder nicht. */
   wochen: boolean[]
 }
 
 export interface Wartezeiten {
   bereich: string
   /**
-   * Der übliche Abstand zwischen zwei Malen derselben Person, in Wochen: der
-   * mittlere der mittleren Abstände je Person — `null`, wenn niemand zweimal dran war.
+   * Der übliche Abstand zwischen zwei Malen derselben Person, in Wochen: die
+   * Personen mit dem Bereich geteilt durch die Plätze je Woche (`engpass`) —
+   * `null`, wenn niemand den Bereich hat.
    */
   ueblich: number | null
   warten: Warten[]
@@ -587,28 +760,36 @@ export interface Wartezeiten {
 export const LANGE_AB = 2
 export const SCHNELL_BIS = 0.5
 
-export function wartezeiten(g: Grundlage, persons: readonly Person[], bereich: string): Wartezeiten {
+/**
+ * **Wer wie lange wartet** — gerechnet über die Grundlage des Jahres
+ * (`auswerten`). Gelistet ist, wer den Bereich hat und im Jahr wenigstens
+ * einmal für einen Platz in Frage kam. Wer insgesamt über seiner Erwartung
+ * liegt (`ueberErwartung`), wartet nicht: Die vielbeschäftigten Ältesten
+ * „warteten lange" auf ein Gebet.
+ */
+export function wartezeiten(g: Grundlage, persons: readonly Person[], bereich: string, ueberErwartung: ReadonlySet<string> = new Set()): Wartezeiten {
+  const ueblich = engpass(g, bereich)?.abstand ?? null
   const male = new Map<string, string[]>()
+  // In welchen Zusammenkünften der Bereich Plätze hat — nur dort konnte man auf ihn warten.
+  const tabs = new Set<MeetingKey>()
+  let erste: string | null = null
   for (const e of g.einteilungen) {
     if (e.bereich !== bereich) continue
+    tabs.add(e.tab)
+    if (erste === null || e.start < erste) erste = e.start
     const liste = male.get(e.pid) ?? []
     if (!liste.includes(e.start)) liste.push(e.start)
     male.set(e.pid, liste)
   }
   const abstaende = (starts: string[]): number[] => starts.slice(1).map((s, i) => wochenZwischen(starts[i]!, s))
   for (const liste of male.values()) liste.sort()
-  // Üblich ist der Abstand, den die Person in der Mitte hat — je Person ihr
-  // mittlerer, darüber der mittlere. Über alle Abstände zusammen bestimmte einer,
-  // der jede Woche dran ist, das Übliche für alle.
-  const jePerson = [...male.values()].map((liste) => median(abstaende(liste))).filter((x): x is number => x !== null)
-  const ueblich = median(jePerson)
 
-  const qualifiziert = persons.filter((p) => isQualified(p, bereich))
-  // „Nie im Zeitraum" wartet nur dann lange, wenn auf ihn mindestens ein Platz
-  // gekommen wäre — sonst stünde in einem seltenen Bereich jeder da.
-  const plaetze = g.plaetze.get(bereich) ?? 0
-  const verfuegbar = qualifiziert.reduce((s, p) => s + (g.verfuegbar.get(p.id) ?? 0), 0)
-  const erwartet = (p: Person): number => (verfuegbar > 0 ? (plaetze * (g.verfuegbar.get(p.id) ?? 0)) / verfuegbar : 0)
+  const qualifiziert = persons.filter((p) => isQualified(p, bereich) && g.erwartet.get(bereich)?.has(p.id))
+  /** Konnte die Person in der Woche dieses Montags einen Platz des Bereichs bekommen? */
+  const einteilbar = (pid: string, montag: string): boolean => {
+    const menge = g.einteilbar.get(pid)
+    return menge !== undefined && [...tabs].some((tab) => menge.has(`${montag}|${tab}`))
+  }
   // Die nächste Woche, in der jemand im Bereich schon eingeteilt ist.
   const geplantAb = new Map<string, string>()
   for (const e of g.geplant) {
@@ -618,21 +799,22 @@ export function wartezeiten(g: Grundlage, persons: readonly Person[], bereich: s
   }
   const warten = qualifiziert
     .map((p): Warten => {
-      const liste = male.get(p.id)
-      const zuletzt = liste?.at(-1) ?? null
-      const wochen = zuletzt ? wochenZwischen(zuletzt, g.fenster.bis) : null
-      // Wochen, in denen die Person ganz fehlte, zählen nicht zur Wartezeit.
-      const abwesend = zuletzt ? [...(g.ganzAbwesend.get(p.id) ?? [])].filter((s) => s > zuletzt).length : 0
-      const wartend = wochen === null ? null : wochen - abwesend
+      const zuletzt = male.get(p.id)?.at(-1) ?? null
+      // Gewartet wird seit dem letzten Mal — wer nie dran war, seit der ersten Woche des Bereichs.
+      const ab = zuletzt ?? tagNach(erste ?? g.fenster.von, -7)
+      const wochen = wochenZwischen(ab, g.fenster.bis)
+      const nichtEinteilbar = g.fenster.montage.filter((m) => m > ab && !einteilbar(p.id, m)).length
+      const wartend = wochen - nichtEinteilbar
       const geplant = geplantAb.get(p.id) ?? null
-      const lange = ueblich !== null && geplant === null && (wartend === null ? erwartet(p) >= 1 : wartend > LANGE_AB * ueblich)
-      return { pid: p.id, wochen, abwesend, wartend, zuletzt, geplant, lange }
+      const ueber = ueberErwartung.has(p.id)
+      const lange = ueblich !== null && geplant === null && !ueber && wartend > LANGE_AB * ueblich
+      return { pid: p.id, wochen: zuletzt ? wochen : null, nichtEinteilbar, wartend, zuletzt, geplant, ueber, lange }
     })
     // Wer geplant ist, wartet nicht und steht hinten; sonst wer am längsten wartet zuerst.
     .sort(
       (a, b) =>
         Number(a.geplant !== null) - Number(b.geplant !== null) ||
-        (b.wartend ?? Infinity) - (a.wartend ?? Infinity) ||
+        b.wartend - a.wartend ||
         a.pid.localeCompare(b.pid),
     )
 
@@ -650,6 +832,64 @@ export function wartezeiten(g: Grundlage, persons: readonly Person[], bereich: s
   return { bereich, ueblich, warten, schnell }
 }
 
+/* ---- Pflege der Bereiche --------------------------------------------------- */
+
+export interface OhneBereich {
+  pid: string
+  /** Je Bereich, den die Person nicht hat, wie oft sie dort eingeteilt war — die meisten zuerst. */
+  bereiche: { bereich: string; n: number }[]
+}
+
+/**
+ * **Eingeteilt ohne den Bereich** (Jahresprobe 18.10.2026): Wer im Jahr
+ * mindestens zweimal in einem Bereich eingeteilt war, den er nicht hat, dem
+ * fehlt der Bereich wohl bei den Personen — „Bereich ergänzen?". Gegen die
+ * Erwartung zählen diese Einteilungen nicht (`verteilung`): Ein Ältester mit
+ * drei Bereichen und zwölf Einteilungen in fünf anderen stand sonst als „zu
+ * oft" da.
+ */
+export function ohneBereich(g: Grundlage, persons: readonly Person[]): OhneBereich[] {
+  const zahl = anzahlJeBereich(g)
+  const summe = (z: OhneBereich): number => z.bereiche.reduce((s, b) => s + b.n, 0)
+  const out: OhneBereich[] = []
+  for (const p of persons) {
+    const bereiche = [...(zahl.get(p.id) ?? [])]
+      .filter(([bereich, n]) => n >= OHNE_BEREICH_AB && !isQualified(p, bereich))
+      .map(([bereich, n]) => ({ bereich, n }))
+      .sort((a, b) => b.n - a.n || a.bereich.localeCompare(b.bereich))
+    if (bereiche.length > 0) out.push({ pid: p.id, bereiche })
+  }
+  return out.sort((a, b) => summe(b) - summe(a) || a.pid.localeCompare(b.pid))
+}
+
+export interface NieGenutzt {
+  pid: string
+  /** Die Bereiche, in denen die Person im Jahr nie dran war, die erwartetsten zuerst. */
+  bereiche: string[]
+}
+
+/**
+ * **Ein Jahr nie dran** (Jahresprobe 18.10.2026): Hat jemand einen Bereich, in
+ * dem auf ihn im Jahr mindestens drei Plätze gekommen wären, und war dort nie
+ * dran, stimmt vielleicht der Bereich nicht mehr — „Bereich noch aktuell?".
+ */
+export function nieGenutzt(g: Grundlage, persons: readonly Person[]): NieGenutzt[] {
+  const zahl = anzahlJeBereich(g)
+  const out: NieGenutzt[] = []
+  for (const p of persons) {
+    const bereiche = bereicheVon(g, p)
+      .filter((b) => !zahl.get(p.id)?.get(b) && erwartetVon(g, b, p.id) >= NIE_GENUTZT_AB)
+      .sort((a, b) => erwartetVon(g, b, p.id) - erwartetVon(g, a, p.id) || a.localeCompare(b))
+    if (bereiche.length > 0) out.push({ pid: p.id, bereiche })
+  }
+  return out.sort((a, b) => b.bereiche.length - a.bereiche.length || a.pid.localeCompare(b.pid))
+}
+
+export interface Pflege {
+  ohneBereich: OhneBereich[]
+  nieGenutzt: NieGenutzt[]
+}
+
 /* ---- Treffpunkte ----------------------------------------------------------- */
 
 export interface TreffpunktGruppe {
@@ -659,6 +899,17 @@ export interface TreffpunktGruppe {
   zeilen: LastZeile[]
 }
 
+export interface LastZeile {
+  pid: string
+  n: number
+}
+
+/**
+ * **Wer die Treffpunkte leitet**, je Gruppe und für die Versammlung. Eine
+ * Gruppe steht nur da, wenn sie im Zeitraum eigene Treffpunkte hatte — sonst
+ * listete jede Gruppe einer Versammlung ohne Gruppentreffpunkte all ihre
+ * Leiter mit „nie" (Jahresprobe 18.10.2026: sechs Gruppen, 16 Zeilen).
+ */
 export function treffpunkte(
   fsWeeks: readonly (readonly FsInstance[])[],
   fenster: Zeitfenster,
@@ -668,8 +919,11 @@ export function treffpunkte(
   const bekannt = new Set(persons.map((p) => p.id))
   // Gruppe (die Versammlung als `null`, auch bei leerer Kennung) → Leiter → wie oft.
   const zahl = new Map<string | null, Map<string, number>>()
+  // Die Gruppen mit eigenen Treffpunkten im Zeitraum — gleich, wer sie leitete.
+  const mitTreffpunkt = new Set<string>()
   for (const wi of fenster.wochen) {
     for (const inst of fsWeeks[wi] ?? []) {
+      if (inst.grp) mitTreffpunkt.add(inst.grp)
       if (!inst.lpid || inst.lext || !bekannt.has(inst.lpid)) continue
       const je = zahl.get(inst.grp || null) ?? new Map<string, number>()
       je.set(inst.lpid, (je.get(inst.lpid) ?? 0) + 1)
@@ -678,7 +932,7 @@ export function treffpunkte(
   }
   const gruppe = (id: string | null): TreffpunktGruppe => {
     const zeilen = new Map(zahl.get(id))
-    if (id !== null) {
+    if (id !== null && mitTreffpunkt.has(id)) {
       for (const p of persons) if (p.priv.treffpunkt && p.grp === id && !zeilen.has(p.id)) zeilen.set(p.id, 0)
     }
     return { gruppe: id, zeilen: [...zeilen].map(([pid, n]) => ({ pid, n })).sort((a, b) => b.n - a.n || a.pid.localeCompare(b.pid)) }
@@ -729,7 +983,7 @@ export function vieleAbsagen(zeilen: readonly AbsagenZeile[]): { zeile: AbsagenZ
 /* ---- Ballungen ------------------------------------------------------------- */
 
 export interface Ballungen {
-  /** Zwei und mehr gezählte Plätze in einer Zusammenkunft (von Hand so eingeteilt). */
+  /** Ein Hilfsdienst und noch ein Platz in derselben Zusammenkunft (von Hand so eingeteilt). */
   zweimal: { pid: string; start: string; tab: MeetingKey; bereiche: (string | null)[] }[]
   /** Drei und mehr Wochen hintereinander im selben Bereich. */
   folge: { pid: string; bereich: string; ab: string; wochen: number }[]
@@ -737,6 +991,13 @@ export interface Ballungen {
 
 export const FOLGE_AB = 3
 
+/**
+ * **Wo sich Aufgaben ballen.** Zweimal in einer Zusammenkunft zählt nur mit
+ * einem Hilfsdienst: Zwei Programmpunkte derselben Person sind meist ein
+ * gewolltes Paar — in der Jahresprobe las der Vorsitzende am Wochenende in 25
+ * von 26 Wochen den Wachtturm, dazu Vorsitz und Besprechung, Vortrag und
+ * Gebet. Wer aber Leser ist und zugleich am Zoom sitzt, ist doppelt belegt.
+ */
 export function ballungen(g: Grundlage): Ballungen {
   const jeZusammenkunft = new Map<string, Einteilung[]>()
   // Person → Bereich → die Montage, an denen sie dort dran war.
@@ -753,7 +1014,7 @@ export function ballungen(g: Grundlage): Ballungen {
     }
   }
   const zweimal = [...jeZusammenkunft.values()]
-    .filter((liste) => liste.length >= 2)
+    .filter((liste) => liste.length >= 2 && liste.some((e) => e.hilfsdienst))
     .map((liste) => ({ pid: liste[0]!.pid, start: liste[0]!.start, tab: liste[0]!.tab, bereiche: liste.map((e) => e.bereich) }))
     .sort((a, b) => a.start.localeCompare(b.start) || a.tab.localeCompare(b.tab))
   const folge: Ballungen['folge'] = []
@@ -778,21 +1039,26 @@ export function ballungen(g: Grundlage): Ballungen {
 export type Hinweis =
   | { art: 'selten' | 'oft'; pid: string; vergleich: Vergleich; n: number; erwartet: number }
   | { art: 'einseitig'; pid: string; zeile: EinseitigZeile }
-  /** `wochen` seit dem letzten Mal steht im Text, `wartend` (ohne Abwesenheit) ordnet. */
-  | { art: 'wartet'; pid: string; bereich: string; wochen: number | null; wartend: number | null; ueblich: number }
+  /** Je Bereich, wer lange wartet — wer am längsten zuerst. Ein Tipp führt zu den Wartezeiten. */
+  | { art: 'wartet'; bereich: string; pids: string[]; ueblich: number }
   /** Ein Bereich, keine Person: Ein Tipp führt zu den Absagen (T126). */
   | { art: 'absagen'; bereich: string; anteil: number; sonst: number }
+  | { art: 'ohneBereich'; pid: string; bereiche: { bereich: string; n: number }[] }
+  | { art: 'nieGenutzt'; pid: string; bereiche: string[] }
 
 /**
  * **Was auffällt**, das Wichtigste zuerst: zu selten, zu oft, einseitig, wartet
- * lange, viele Absagen. Je Person und Art nur der deutlichste Fall — wer in den
- * Aufgaben und mit den Hilfsdiensten zu selten dran ist, steht einmal da.
+ * lange, viele Absagen — dann die Pflege der Bereiche. Je Person und Art nur
+ * der deutlichste Fall — wer in den Aufgaben und mit den Hilfsdiensten zu
+ * selten dran ist, steht einmal da. Wer lange wartet, steht je Bereich: Einzeln
+ * waren es in der Jahresprobe 22 bis 25 Zeilen.
  */
 export function hinweise(
   verteilungen: readonly Verteilung[],
   einseitige: readonly EinseitigZeile[],
   warten: readonly Wartezeiten[],
   absagen: readonly AbsagenZeile[] = [],
+  pflege: Pflege = { ohneBereich: [], nieGenutzt: [] },
 ): Hinweis[] {
   const staerke = (n: number, e: number): number => (e > 0 ? Math.abs(n - e) / e : n)
   const besteJe = new Map<string, Extract<Hinweis, { art: 'selten' | 'oft' }>>()
@@ -811,20 +1077,25 @@ export function hinweise(
   const oft = [...besteJe.values()].filter((h) => h.art === 'oft').sort(nachStaerke)
   const einseitig: Hinweis[] = einseitige.filter(istEinseitig).map((zeile) => ({ art: 'einseitig', pid: zeile.pid, zeile }))
 
-  const wartenJe = new Map<string, Extract<Hinweis, { art: 'wartet' }>>()
-  const faktor = (h: { wartend: number | null; ueblich: number }) => (h.wartend === null ? Infinity : h.wartend / h.ueblich)
+  // Je Bereich, wer lange wartet. Vorn der Bereich, in dem die meisten warten —
+  // bei gleich vielen der, in dem einer am längsten wartet.
+  const wartet: Extract<Hinweis, { art: 'wartet' }>[] = []
+  const laengste = new Map<string, number>()
   for (const w of warten) {
     if (w.ueblich === null) continue
-    for (const z of w.warten) {
-      if (!z.lange) continue
-      const kandidat = { art: 'wartet' as const, pid: z.pid, bereich: w.bereich, wochen: z.wochen, wartend: z.wartend, ueblich: w.ueblich }
-      const bisher = wartenJe.get(z.pid)
-      if (!bisher || faktor(kandidat) > faktor(bisher)) wartenJe.set(z.pid, kandidat)
-    }
+    const lange = w.warten.filter((z) => z.lange).sort((a, b) => b.wartend - a.wartend || a.pid.localeCompare(b.pid))
+    const erster = lange[0]
+    if (!erster) continue
+    laengste.set(w.bereich, erster.wartend / w.ueblich)
+    wartet.push({ art: 'wartet', bereich: w.bereich, pids: lange.map((z) => z.pid), ueblich: w.ueblich })
   }
-  const wartet = [...wartenJe.values()].sort((a, b) => faktor(b) - faktor(a) || a.pid.localeCompare(b.pid))
+  const faktor = (h: { bereich: string }): number => laengste.get(h.bereich) ?? 0
+  wartet.sort((a, b) => b.pids.length - a.pids.length || faktor(b) - faktor(a) || a.bereich.localeCompare(b.bereich))
+
   const viele: Hinweis[] = vieleAbsagen(absagen).map(({ zeile, sonst }) => ({ art: 'absagen', bereich: zeile.bereich, anteil: zeile.anteil, sonst }))
-  return [...selten, ...oft, ...einseitig, ...wartet, ...viele]
+  const ohne: Hinweis[] = pflege.ohneBereich.map((z) => ({ art: 'ohneBereich', pid: z.pid, bereiche: z.bereiche }))
+  const nie: Hinweis[] = pflege.nieGenutzt.map((z) => ({ art: 'nieGenutzt', pid: z.pid, bereiche: z.bereiche }))
+  return [...selten, ...oft, ...einseitig, ...wartet, ...viele, ...ohne, ...nie]
 }
 
 /* ---- Eine Person ----------------------------------------------------------- */
@@ -834,6 +1105,7 @@ export type WochenArt = 'aufgabe' | 'hilfsdienst' | 'abwesend' | null
 
 export interface PersonBild {
   pid: string
+  /** Aufgaben in den eigenen Bereichen — so, wie „Zu oft, zu selten" sie zählt. */
   aufgaben: number
   erwartetAufgaben: number
   hilfsdienste: number
@@ -842,10 +1114,11 @@ export interface PersonBild {
   /** Ihre Absagen im Zeitraum (T126). */
   absagen: number
   /**
-   * Je Bereich der Person: wie oft, wie oft erwartet, das letzte Mal (Montag,
-   * ISO) und wie viele Wochen das vor der laufenden war.
+   * Je Bereich der Person — und je Bereich, in dem sie ohne ihn eingeteilt war
+   * (`hat: false`): wie oft, wie oft erwartet, das letzte Mal (Montag, ISO) und
+   * wie viele Wochen das vor der laufenden war.
    */
-  bereiche: { bereich: string; n: number; erwartet: number; zuletzt: string | null; vorWochen: number | null }[]
+  bereiche: { bereich: string; hat: boolean; n: number; erwartet: number; zuletzt: string | null; vorWochen: number | null }[]
   /** Je Woche des Zeitraums, die älteste zuerst. */
   wochen: WochenArt[]
 }
@@ -853,21 +1126,23 @@ export interface PersonBild {
 export function personBild(g: Grundlage, weeks: readonly Week[], persons: readonly Person[], abwesend: AbsenceSet, pid: string): PersonBild | null {
   const p = persons.find((x) => x.id === pid)
   if (!p) return null
-  const erwartet = erwartungen(g, persons)
   const eigene = g.einteilungen.filter((e) => e.pid === pid)
-  const bereiche = bereicheVon(g, p)
+  const ohne = [...new Set(eigene.flatMap((e) => (e.bereich && !isQualified(p, e.bereich) ? [e.bereich] : [])))]
+  const bereiche = [...bereicheVon(g, p), ...ohne]
     .map((bereich) => {
       const hier = eigene.filter((e) => e.bereich === bereich)
       const zuletzt = hier.reduce<string | null>((z, e) => (z === null || e.start > z ? e.start : z), null)
       return {
         bereich,
+        hat: isQualified(p, bereich),
         n: hier.length,
-        erwartet: erwartet.get(bereich)?.get(pid) ?? 0,
+        erwartet: erwartetVon(g, bereich, pid),
         zuletzt,
         vorWochen: zuletzt ? wochenZwischen(zuletzt, g.fenster.bis) : null,
       }
     })
-    .sort((a, b) => b.n - a.n || b.erwartet - a.erwartet)
+    // Die eigenen Bereiche zuerst, darin die meisten zuerst.
+    .sort((a, b) => Number(b.hat) - Number(a.hat) || b.n - a.n || b.erwartet - a.erwartet || a.bereich.localeCompare(b.bereich))
   let abwesendMal = 0
   const wochen = g.fenster.wochen.map((wi): WochenArt => {
     const week = weeks[wi]
@@ -883,10 +1158,10 @@ export function personBild(g: Grundlage, weeks: readonly Week[], persons: readon
     if (hier.length > 0) return 'hilfsdienst'
     return weg ? 'abwesend' : null
   })
-  const aufgabenBereiche = bereiche.filter((b) => !istHilfsdienstBereich(b.bereich))
+  const aufgabenBereiche = bereiche.filter((b) => b.hat && !istHilfsdienstBereich(b.bereich))
   return {
     pid,
-    aufgaben: eigene.filter((e) => !e.hilfsdienst && e.bereich).length,
+    aufgaben: aufgabenBereiche.reduce((s, b) => s + b.n, 0),
     erwartetAufgaben: aufgabenBereiche.reduce((s, b) => s + b.erwartet, 0),
     hilfsdienste: eigene.filter((e) => e.hilfsdienst).length,
     abwesend: abwesendMal,
@@ -901,11 +1176,17 @@ export function personBild(g: Grundlage, weeks: readonly Week[], persons: readon
 export interface Auswertung {
   zeitraum: Zeitraum
   grundlage: Grundlage
+  /** Die Grundlage des ganzen Jahres — dieselbe wie `grundlage`, wenn das Jahr gewählt ist. */
+  jahr: Grundlage
   kennzahlen: Kennzahlen
   verteilungen: Record<Vergleich, Verteilung>
   einseitig: EinseitigZeile[]
-  /** Je Bereich mit Plätzen. */
+  /** Je Bereich mit Plätzen im Jahr. */
   wartezeiten: Wartezeiten[]
+  /** Je Bereich mit Plätzen im Jahr, die knappsten zuerst. */
+  engpaesse: Engpass[]
+  /** Bereiche, die bei einer Person fehlen oder ein Jahr ungenutzt sind. */
+  pflege: Pflege
   treffpunkte: TreffpunktGruppe[]
   /** Je Bereich mit Absagen, die meisten zuerst (T126). */
   absagen: AbsagenZeile[]
@@ -924,29 +1205,40 @@ export function auswerten(eingabe: {
   heute: string
   zeitraum: Zeitraum
 }): Auswertung {
+  const { persons } = eingabe
   const fenster = zeitfenster(eingabe.weeks, ZEITRAUM_WOCHEN[eingabe.zeitraum], eingabe.heute)
   const g = grundlage({ ...eingabe, fenster })
+  // Wartezeiten, Engpässe und die Pflege der Bereiche über das ganze Jahr —
+  // gleich, welcher Zeitraum gewählt ist.
+  const jahr = eingabe.zeitraum === JAHR ? g : grundlage({ ...eingabe, fenster: zeitfenster(eingabe.weeks, ZEITRAUM_WOCHEN[JAHR], eingabe.heute) })
   const verteilungen = {
-    aufgaben: verteilung(g, eingabe.persons, 'aufgaben'),
-    schulung: verteilung(g, eingabe.persons, 'schulung'),
-    hilfsdienste: verteilung(g, eingabe.persons, 'hilfsdienste'),
+    aufgaben: verteilung(g, persons, 'aufgaben'),
+    hilfsdienste: verteilung(g, persons, 'hilfsdienste'),
   }
-  const einseitige = einseitig(g, eingabe.persons)
-  const wartezeitenListe = [...g.plaetze.keys()].map((b) => wartezeiten(g, eingabe.persons, b))
-  const treffpunktGruppen = treffpunkte(eingabe.fsWeeks, fenster, eingabe.persons, eingabe.groups)
+  const pflege = { ohneBereich: ohneBereich(jahr, persons), nieGenutzt: nieGenutzt(jahr, persons) }
+  const einseitige = einseitig(g, persons, new Map(pflege.nieGenutzt.map((z) => [z.pid, z.bereiche])))
+  // Wer übers Jahr insgesamt über seiner Erwartung liegt, wartet nicht — bei
+  // den Hilfsdiensten gemessen an der Gesamtlast, wie die Automatik sie verteilt.
+  const imJahr = (v: Vergleich): Verteilung => (jahr === g ? verteilungen[v] : verteilung(jahr, persons, v))
+  const ueber = { aufgaben: ueberDerErwartung(imJahr('aufgaben')), hilfsdienste: ueberDerErwartung(imJahr('hilfsdienste')) }
+  const wartezeitenListe = [...jahr.plaetze.keys()].map((b) => wartezeiten(jahr, persons, b, istHilfsdienstBereich(b) ? ueber.hilfsdienste : ueber.aufgaben))
+  const treffpunktGruppen = treffpunkte(eingabe.fsWeeks, fenster, persons, eingabe.groups)
   // Die geleiteten Treffpunkte — gegen sie zählen die abgesagten.
   const geleitet = treffpunktGruppen.reduce((s, gr) => s + gr.zeilen.reduce((t, z) => t + z.n, 0), 0)
   const absagenListe = absagenJeBereich(g, geleitet)
   return {
     zeitraum: eingabe.zeitraum,
     grundlage: g,
-    kennzahlen: kennzahlen(g, eingabe.persons),
+    jahr,
+    kennzahlen: kennzahlen(g, persons),
     verteilungen,
     einseitig: einseitige,
     wartezeiten: wartezeitenListe,
+    engpaesse: engpaesse(jahr),
+    pflege,
     treffpunkte: treffpunktGruppen,
     absagen: absagenListe,
     ballungen: ballungen(g),
-    hinweise: hinweise(Object.values(verteilungen), einseitige, wartezeitenListe, absagenListe),
+    hinweise: hinweise(Object.values(verteilungen), einseitige, wartezeitenListe, absagenListe, pflege),
   }
 }

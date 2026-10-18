@@ -3,7 +3,7 @@ import type { Lang } from '../data/types'
 import type { Dict } from '../i18n/ui'
 
 /** Die Unteransichten der Auswertung am Handy — ab dem Tablet steht alles auf einer Seite. */
-export type Ansicht = 'ueberblick' | 'verteilung' | 'einseitig' | 'wartezeiten' | 'weiteres'
+export type Ansicht = 'ueberblick' | 'verteilung' | 'einseitig' | 'wartezeiten' | 'engpaesse' | 'weiteres'
 
 /**
  * **Was jede Ansicht der Auswertung braucht**: die Zahlen und wie sie zu Wörtern
@@ -28,11 +28,14 @@ export interface Kontext {
   zahl: (n: number) => string
   /** Ein Tag kurz („17. Feb."). */
   datum: (iso: string) => string
-  /** Ein Anteil (0 bis 1) als Prozent der Sprache („4,2 %"); `ganz` ohne Nachkommastelle („71 %"). */
-  prozent: (anteil: number, ganz?: boolean) => string
+  /** Ein Anteil (0 bis 1) als Prozent der Sprache („4,2 %"). */
+  prozent: (anteil: number) => string
   personOeffnen: (pid: string) => void
-  /** Zu einer Unteransicht — am Handy öffnet sie sich, ab dem Tablet rollt die Seite dorthin. */
-  ansichtOeffnen: (ansicht: Exclude<Ansicht, 'ueberblick'>) => void
+  /**
+   * Zu einer Unteransicht — am Handy öffnet sie sich, ab dem Tablet rollt die
+   * Seite dorthin. Mit `bereich` stellen die Wartezeiten ihn ein.
+   */
+  ansichtOeffnen: (ansicht: Exclude<Ansicht, 'ueberblick'>, bereich?: string) => void
 }
 
 /** Erwartet wird ganz gezählt, wie die Zuteilungen auch. */

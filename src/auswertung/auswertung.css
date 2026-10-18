@@ -69,7 +69,7 @@
   line-height: 1.5;
 }
 
-/* „Alle zeigen", „Als Tabelle": unter einer Liste, nicht über die Breite. */
+/* „Alle zeigen", „Alle Hinweise": unter einer Liste, nicht über die Breite. */
 .aw-mehr {
   align-self: flex-start;
   margin-block: 8px 12px;
@@ -183,44 +183,6 @@
   line-height: 1.4;
 }
 
-/* ---- Wie sich die Last verteilt ----------------------------------------- */
-
-.aw-last-karte {
-  gap: 10px;
-  padding-block: 12px 4px;
-}
-
-/* Die Lücke zwischen den Balken setzt `Last` je nach Anzahl (höchstens 2 px,
-   zusammen ein Drittel der Breite): Mit festen 2 px rollte die Seite am Handy
-   schon bei hundert Personen waagerecht (gemessen 16.10.2026: 412 px auf 375). */
-.aw-last {
-  display: flex;
-  align-items: flex-end;
-  height: 112px;
-  border-block-end: 1px solid var(--linie);
-}
-
-.aw-last-balken {
-  flex: 1;
-  min-width: 0;
-  border-start-start-radius: 3px;
-  border-start-end-radius: 3px;
-  background: var(--umriss);
-}
-
-.aw-last-balken.is-oben {
-  background: var(--akzent);
-}
-
-/* Nur die obere Kante gestrichelt: Ränder links und rechts hielten jeden
-   leeren Balken mindestens 3 px breit. Nebeneinander ergeben sie eine
-   gestrichelte Linie — die Strecke derer, die nie dran waren. */
-.aw-last-balken.is-leer {
-  height: 8px;
-  border-block-start: 1.5px dashed var(--text3);
-  background: none;
-}
-
 /* ---- Legende ------------------------------------------------------------- */
 
 .aw-legende {
@@ -247,7 +209,6 @@
   border-radius: 4px;
 }
 
-.aw-muster.is-oben,
 .aw-muster.is-aufgabe {
   background: var(--akzent);
 }
@@ -307,6 +268,12 @@
 
 .aw-muster.is-abwesend {
   background: repeating-linear-gradient(135deg, var(--punkt-leer) 0 2px, transparent 2px 5px);
+}
+
+.aw-muster.is-ohne {
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--text2);
 }
 
 /* ---- Kacheln (Handy) ----------------------------------------------------- */
@@ -444,12 +411,13 @@
   background: var(--text);
 }
 
-/* Nie im Zeitraum: der ganze Balken gestrichelt. */
-/* Dieselbe Farbe wie das Muster „nie" der Legende und jedes andere „nie" der
-   Auswertung (Review 17.10.2026: hier stand `--text2`). */
+/* Im Jahr nie dran: der Balken gestrichelt, so lang, wie die Person gewartet
+   hat (`WarteBalken` setzt die Breite). Dieselbe Farbe wie das Muster „nie"
+   der Legende und jedes andere „nie" der Auswertung (Review 17.10.2026: hier
+   stand `--text2`). */
 .aw-nie {
   inset-block: 2px;
-  inset-inline: 0;
+  inset-inline-start: 0;
   border: 1.5px dashed var(--text3);
   border-radius: 5px;
 }
@@ -649,6 +617,13 @@
 .aw-zelle.is-ohne {
   color: var(--punkt-leer);
   font-weight: 400;
+}
+
+/* Eingeteilt, ohne den Bereich zu haben: umrandet, nicht gefüllt — die Zahl
+   zählt nicht gegen die Erwartung (Jahresprobe 18.10.2026). */
+.aw-zelle.is-ohne-bereich {
+  border: 1.5px solid var(--text2);
+  color: var(--text);
 }
 
 /* ---- Tabellen statt Diagramm --------------------------------------------- */

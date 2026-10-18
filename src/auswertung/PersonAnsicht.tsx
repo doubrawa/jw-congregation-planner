@@ -11,7 +11,8 @@ const REIHE = 13
 
 /**
  * **Eine Person** (Entwurf `HandyPerson`): ihre Zuteilungen gegen die Erwartung,
- * die Wochen des Zeitraums als Felder und je Bereich, wie oft und wann zuletzt.
+ * die Wochen des Zeitraums als Felder und je Bereich, wie oft und wann zuletzt —
+ * hinten die Bereiche, in denen sie eingeteilt war, ohne sie zu haben.
  */
 export function PersonAnsicht({
   k,
@@ -83,6 +84,18 @@ export function PersonAnsicht({
           {bild.bereiche.map((b) => {
             const lage = lageVon(b.n, b.erwartet)
             const wann = b.vorWochen === null ? t.awNieImZeitraum : fill(t.awZuletztVor, { dauer: k.dauer(b.vorWochen) })
+            // Ohne den Bereich eingeteilt: keine Erwartung, kein Vergleich — nur wie oft.
+            if (!b.hat) {
+              return (
+                <li key={b.bereich} className="aw-zeile">
+                  <div className="aw-zeile-kopf">
+                    <span className="aw-zeile-name">{k.bereich(b.bereich)}</span>
+                    <span className="aw-zeile-zahl">{k.zahl(b.n)}</span>
+                  </div>
+                  <span className="klein-text">{`${t.awOhneBereich} · ${wann}`}</span>
+                </li>
+              )
+            }
             return (
               <li key={b.bereich} className="aw-zeile">
                 <div className="aw-zeile-kopf">

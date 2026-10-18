@@ -22,12 +22,13 @@ import type { Absage, FsInstance, Lang, Week } from '../data/types'
 import { LOCALES } from '../i18n/langs'
 import { dict, loadOverlay } from '../i18n/ui'
 import { fill } from '../i18n/useT'
+import { bereichsName } from '../personen/priv-label'
 import { AuswertungScreen } from './AuswertungScreen'
 import { WarteBalken } from './Diagramme'
 import { HINWEISE_SICHTBAR } from './Hinweise'
 
 /**
- * **Die Auswertung, wie man sie sieht** (T126): am Handy der Überblick mit vier
+ * **Die Auswertung, wie man sie sieht** (T126): am Handy der Überblick mit fünf
  * Kacheln zu den Unteransichten, ab dem Tablet alles auf einer Seite. Was die
  * Zahlen bedeuten, prüft `data/auswertung.test.ts` — hier geht es darum, dass
  * die Seite zeigt, was die Rechnung ergibt, dass jeder Weg hinein auch wieder
@@ -60,6 +61,12 @@ function verlauf(n: number): { weeks: Week[]; fsWeeks: FsInstance[][] } {
 }
 
 const VERLAUF = verlauf(20)
+/**
+ * Ein ganzes Jahr: Erst darin warten die nie Eingeteilten länger als doppelt so
+ * lange wie üblich — die Wartezeiten rechnen über das Jahr (Jahresprobe
+ * 18.10.2026), der übliche Abstand des Gebets liegt bei vierzehn Wochen.
+ */
+const JAHR = verlauf(52)
 
 /** Trifft die Abfrage zu? Ab dem Tablet alles auf einer Seite, ab dem Desktop mit der Tabelle. */
 function breite(geraet: 'handy' | 'tablet' | 'desktop') {
@@ -184,7 +191,8 @@ describe('Am Handy: der Überblick', () => {
     const { container } = zeige(zustand())
     const a = rechnung(zustand())
     const h0 = a.hinweise[0]!
-    const erste = DEMO.persons.find((p) => h0.art !== 'absagen' && p.id === h0.pid)!
+    if (!('pid' in h0)) throw new Error('der erste Hinweis gilt keiner Person')
+    const erste = DEMO.persons.find((p) => p.id === h0.pid)!
     const hinweis = container.querySelector('.aw-hinweis')!
     expect(hinweis.querySelector('.aw-hinweis-titel')?.textContent).toContain(displayName(erste))
     fireEvent.click(hinweis)
@@ -198,40 +206,37 @@ describe('Am Handy: der Überblick', () => {
     expect(titel(container)).toBe(t.navAuswertung)
   })
 
-  it('die Last: je Person mit Bereich ein Balken — als Tabelle und zurück', () => {
+  it('die Karte „Wie sich die Last verteilt" ist fort — sie zeigte Struktur, keinen Befund', () => {
+    // Jahresprobe 18.10.2026: Die zehn oberen lagen auf ihrer Erwartung.
     const { container } = zeige(zustand())
-    const a = rechnung(zustand())
-    const karte = () => container.querySelector('.aw-last-karte')!
-    expect(karte().querySelectorAll('.aw-last-balken')).toHaveLength(a.kennzahlen.last.length)
-    expect(karte().querySelectorAll('.aw-last-balken.is-oben')).toHaveLength(10)
-    fireEvent.click(knopf(container, t.awAlsTabelle))
-    expect(karte().querySelectorAll('tbody tr')).toHaveLength(a.kennzahlen.last.length)
-    expect(karte().querySelector('.aw-last')).toBeNull()
-    fireEvent.click(knopf(container, t.awAlsDiagramm))
-    expect(karte().querySelector('tbody')).toBeNull()
+    expect(container.querySelector('.aw-last-karte')).toBeNull()
+    expect(container.querySelector('.aw-last-balken')).toBeNull()
   })
 
-  it('höchstens zehn in der Last: keine „zehn oberen" — die Balken grau wie ihre Legende', () => {
-    // Bis zum 17.10.2026 waren dann alle Balken Minze, die Legende grau.
-    const wenige = zustand({ persons: DEMO.persons.slice(0, 8) })
-    const { container } = zeige(wenige)
-    const karte = container.querySelector('.aw-last-karte')!
-    const balken = karte.querySelectorAll('.aw-last-balken:not(.is-leer)')
-    expect(balken.length, 'kein Balken mit Zuteilungen').toBeGreaterThan(0)
-    expect(karte.querySelectorAll('.aw-last-balken.is-oben')).toHaveLength(0)
-    const legende = [...karte.querySelectorAll('.aw-legende-eintrag')].map((e) => e.textContent)
-    expect(legende).not.toContain(t.awLegendeOben)
-    expect(legende).toContain(t.awZuteilungen)
+  it('die Kachel „Engpässe" nennt den knappsten Bereich — die Unteransicht je Bereich Plätze, Personen und Abstand', () => {
+    const { container } = zeige(zustand())
+    const a = rechnung(zustand())
+    const erster = a.engpaesse[0]!
+    const kachel = [...container.querySelectorAll<HTMLElement>('.aw-kachel')].find((k) => k.querySelector('.aw-kachel-titel')?.textContent === t.awEngpaesseTitel)!
+    const name = bereichsName(erster.bereich, DEMO.services, t, (s) => s)
+    expect(kachel.textContent).toContain(fill(t.awEngpassStat, { bereich: name }))
+    fireEvent.click(kachel)
+    const zeilen = [...container.querySelectorAll('.aw-engpaesse .aw-zeile')]
+    expect(zeilen).toHaveLength(a.engpaesse.length)
+    expect(zeilen[0]!.querySelector('.aw-zeile-name')?.textContent).toBe(name)
+    expect(zeilen[0]!.querySelector('.aw-zeile-zahl')?.textContent).toBe(fill(t.awAlleDauer, { dauer: zeitspanne(Math.round(erster.abstand!), 'week', 'de') }))
+    expect(zeilen[0]!.querySelector('.klein-text')?.textContent).toContain(fill(t.awPersonenZahl, { n: String(erster.personen) }))
   })
 
   it.each([
     [t.awVerteilungTitel, '.aw-gruppe'],
     [t.awEinseitigTitel, '.aw-person-karte'],
     [t.awWartezeitenTitel, '.feld-wahl'],
+    [t.awEngpaesseTitel, '.aw-engpaesse'],
     [t.awWeiteresTitel, '.aw-treffpunkt-gruppe'],
   ])('die Kachel „%s" öffnet ihre Unteransicht — Zurück führt in den Überblick', (name, marke) => {
     const { container } = zeige(zustand())
-    expect(container.querySelectorAll('.aw-kachel')).toHaveLength(4)
+    expect(container.querySelectorAll('.aw-kachel')).toHaveLength(5)
     fireEvent.click([...container.querySelectorAll('.aw-kachel')].find((k) => k.querySelector('.aw-kachel-titel')?.textContent === name)!)
     expect(titel(container)).toBe(name)
     expect(container.querySelector(marke), `${name}: ohne Inhalt`).not.toBeNull()
@@ -266,7 +271,7 @@ describe('Ab dem Tablet: alles auf einer Seite', () => {
     expect(container.querySelector('.auswertung--breit')).not.toBeNull()
     expect(container.querySelector('.aw-kachel')).toBeNull()
     const abschnitte = [...container.querySelectorAll('section[aria-label]')].map((s) => s.getAttribute('aria-label'))
-    for (const name of [t.awWasAuffaellt, t.awLastTitel, t.awVerteilungTitel, t.awEinseitigTitel, t.awWartezeitenTitel, t.awWeiteresTitel]) {
+    for (const name of [t.awWasAuffaellt, t.awEngpaesseTitel, t.awVerteilungTitel, t.awEinseitigTitel, t.awWartezeitenTitel, t.awWeiteresTitel]) {
       expect(abschnitte, name).toContain(name)
     }
     // Die Tabelle Person × Bereich passte am Tablet nur mit Rollbalken.
@@ -312,13 +317,24 @@ function absagenIn(bereich: string, n: number, pid: string): Absage[] {
 }
 
 describe('Absagen (T126)', () => {
-  /** Wer im Überblick zuerst auffällt — so öffnet ein Tipp auf den ersten Hinweis die Person. */
+  /**
+   * Wer als Erster „zu oft" dran ist — von Anfang an eingeteilt: Eine Absage
+   * macht ihn nicht erst „dabei" (das täte sie bei einem, der nie dran war).
+   */
   const erster = (): string => {
-    const h = rechnung(zustand()).hinweise[0]!
-    if (h.art === 'absagen') throw new Error('der erste Hinweis gilt keiner Person')
+    const h = rechnung(zustand()).hinweise.find((x) => x.art === 'oft')
+    if (h?.art !== 'oft') throw new Error('niemand ist zu oft dran')
     return h.pid
   }
   const mitAbsagen = () => zustand({ absagen: absagenIn('gebet', 3, erster()) })
+  /** Öffnet die Person über ihren Hinweis „Zu oft" — „Alle Hinweise" gedrückt, wenn er hinten steht. */
+  const personOeffnen = (c: HTMLElement, s: AppState, pid: string) => {
+    const i = rechnung(s).hinweise.findIndex((h) => h.art === 'oft' && h.pid === pid)
+    expect(i, `kein Hinweis zu ${pid}`).toBeGreaterThan(-1)
+    if (i >= HINWEISE_SICHTBAR) fireEvent.click(knopf(c, t.awAlleHinweise))
+    fireEvent.click(c.querySelectorAll<HTMLElement>('.aw-hinweis')[i]!)
+    expect(titel(c)).toBe(displayName(DEMO.persons.find((p) => p.id === pid)!))
+  }
   const kachel = (c: HTMLElement, name: string) =>
     [...c.querySelectorAll<HTMLElement>('.aw-kachel')].find((k) => k.querySelector('.aw-kachel-titel')?.textContent === name)!
   const karte = (c: HTMLElement) => c.querySelector(`section[aria-label="${t.awAbsagenTitel}"]`)!
@@ -360,7 +376,7 @@ describe('Absagen (T126)', () => {
     expect(a.absagen.map((z) => [z.bereich, z.n])).toEqual([['gebet', 3]])
     const { container } = zeige(s)
     expect(kachel(container, t.awWeiteresTitel).textContent).toContain(fill(t.awAbsagenZahl, { n: '3' }))
-    fireEvent.click(container.querySelector('.aw-hinweis')!)
+    personOeffnen(container, s, pid)
     const kennzahlen = [...container.querySelectorAll('.aw-kennzahlen.is-vier .aw-kennzahl')].map((k) => [
       k.querySelector('.aw-kennzahl-text')?.textContent,
       k.querySelector('.aw-kennzahl-wert')?.textContent,
@@ -408,8 +424,9 @@ describe('Absagen (T126)', () => {
   })
 
   it('die Person nennt ihre Absagen', () => {
-    const { container } = zeige(mitAbsagen())
-    fireEvent.click(container.querySelector('.aw-hinweis')!)
+    const s = mitAbsagen()
+    const { container } = zeige(s)
+    personOeffnen(container, s, erster())
     const kennzahlen = [...container.querySelectorAll('.aw-kennzahlen.is-vier .aw-kennzahl')].map((k) => [
       k.querySelector('.aw-kennzahl-text')?.textContent,
       k.querySelector('.aw-kennzahl-wert')?.textContent,
@@ -423,7 +440,9 @@ describe('Absagen (T126)', () => {
 /**
  * **Wartet lange** (Betreiber 17.10.2026): Wer im Bereich schon eingeteilt ist,
  * wartet nicht — er steht mit „geplant: …" hinten, sein Balken bleibt grau.
- * Wochen, in denen jemand ganz fehlte, zählen nicht: „davon abwesend: …".
+ * Wochen, in denen jemand nicht eingeteilt werden konnte, zählen nicht: „davon
+ * nicht einteilbar: …". Seit der Jahresprobe (18.10.2026) über das ganze Jahr,
+ * und ein Hinweis je Bereich führt dorthin.
  */
 describe('Wartezeiten: geplant und abwesend', () => {
   /** Die Unteransicht „Wartezeiten" mit diesem Bereich, alle Zeilen offen. */
@@ -441,7 +460,7 @@ describe('Wartezeiten: geplant und abwesend', () => {
   it('wer schon geplant ist, steht mit „geplant: …" hinten und wartet nicht mehr lange', () => {
     // Der, der am längsten wartet, bekommt in der kommenden Woche einen Platz
     // dieses Bereichs.
-    const vorher = rechnung(zustand()).wartezeiten
+    const vorher = rechnung(zustand(JAHR)).wartezeiten
     const w = vorher.find((x) => x.ueblich !== null && x.warten.some((z) => z.lange))
     if (!w) throw new Error('niemand wartet lange')
     const wartet = w.warten.find((z) => z.lange)!
@@ -451,7 +470,7 @@ describe('Wartezeiten: geplant und abwesend', () => {
     if (!platz) throw new Error(`kein Platz ${w.bereich}`)
     if (platz.art === 'helper') (kommend.mid.helpers[platz.svc.key] ??= [])[platz.pos] = zuteilung
     else Object.assign(platz.slot, zuteilung)
-    const s = zustand({ weeks: [...VERLAUF.weeks, kommend], fsWeeks: [...VERLAUF.fsWeeks, []] })
+    const s = zustand({ weeks: [...JAHR.weeks, kommend], fsWeeks: [...JAHR.fsWeeks, []] })
     const nachher = rechnung(s).wartezeiten.find((x) => x.bereich === w.bereich)!
     expect(nachher.warten.find((z) => z.pid === wartet.pid)).toMatchObject({ geplant: tagNach(MONTAG, 7), lange: false })
 
@@ -474,7 +493,7 @@ describe('Wartezeiten: geplant und abwesend', () => {
     expect((grau.querySelector('.aw-wert') as HTMLElement).style.width).toBe(`${(10 / 52) * 100}%`)
   })
 
-  it('wer nach dem letzten Mal ganz fehlte, dem steht „davon abwesend: …" da', () => {
+  it('wer nach dem letzten Mal ganz fehlte, dem steht „davon nicht einteilbar: …" da', () => {
     const a0 = rechnung(zustand())
     const w = a0.wartezeiten.find((x) => x.ueblich !== null && x.warten.some((z) => z.wochen !== null && z.wochen >= 3))!
     const z0 = w.warten.find((z) => z.wochen !== null && z.wochen >= 3)!
@@ -482,14 +501,122 @@ describe('Wartezeiten: geplant und abwesend', () => {
     const weg = { id: 'weg', personId: z0.pid, userId: null, from: tagNach(z0.zuletzt!, 7), to: tagNach(MONTAG, -1), reason: '' }
     const s = zustand({ absences: [weg] })
     const z = rechnung(s).wartezeiten.find((x) => x.bereich === w.bereich)!.warten.find((x) => x.pid === z0.pid)!
-    // Nach dem letzten Mal war er in jeder Woche weg, in der etwas stattfand —
-    // das geht von der Wartezeit ab.
+    // Nach dem letzten Mal war er in jeder Woche weg — das geht von der Wartezeit ab.
     expect(z.wochen).toBe(z0.wochen)
-    expect(z.abwesend).toBeGreaterThanOrEqual(2)
-    expect(z.wartend).toBe(z.wochen! - z.abwesend)
+    expect(z.nichtEinteilbar).toBe(z.wochen! - 1)
+    expect(z.wartend).toBe(1)
     const { container } = zeige(s)
     const zeile = wartezeitenZeilen(container, w.bereich).find((r) => r.querySelector('.aw-zeile-name')?.textContent === displayName(DEMO.persons.find((p) => p.id === z0.pid)!))!
-    expect(zeile.querySelector('.aw-zeile-zahl')?.textContent).toContain(fill(t.awDavonAbwesend, { dauer: zeitspanne(z.abwesend, 'week', 'de') }))
+    expect(zeile.querySelector('.aw-zeile-zahl')?.textContent).toContain(fill(t.awDavonNichtEinteilbar, { dauer: zeitspanne(z.nichtEinteilbar, 'week', 'de') }))
+  })
+
+  /** Der erste Hinweis „Lange Wartezeit" — „Alle Hinweise" gedrückt, wenn er hinter den ersten sechs steht. */
+  function warteHinweis(c: HTMLElement, s: AppState): { knopf: HTMLElement; bereich: string } {
+    const liste = rechnung(s).hinweise
+    const i = liste.findIndex((h) => h.art === 'wartet')
+    const h = liste[i]
+    if (h?.art !== 'wartet') throw new Error('kein Hinweis „Lange Wartezeit"')
+    if (i >= HINWEISE_SICHTBAR) fireEvent.click(knopf(c, t.awAlleHinweise))
+    return { knopf: c.querySelectorAll<HTMLElement>('.aw-hinweis')[i]!, bereich: h.bereich }
+  }
+
+  it('wer lange wartet, steht je Bereich: der Hinweis öffnet am Handy die Wartezeiten mit diesem Bereich', () => {
+    const s = zustand(JAHR)
+    const { container } = zeige(s)
+    const { knopf: hinweis, bereich } = warteHinweis(container, s)
+    const name = bereichsName(bereich, DEMO.services, t, (x) => x)
+    expect(hinweis.querySelector('.aw-hinweis-titel')?.textContent).toBe(fill(t.awHinweisWartezeit, { bereich: name }))
+    fireEvent.click(hinweis)
+    expect(titel(container)).toBe(t.awWartezeitenTitel)
+    expect(container.querySelector<HTMLSelectElement>('.feld-wahl')?.value).toBe(bereich)
+  })
+
+  it('ab dem Tablet rollt er zu den Wartezeiten und stellt dort den Bereich ein', () => {
+    breite('tablet')
+    const gerollt: Element[] = []
+    const vorher = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = function (this: Element) {
+      gerollt.push(this)
+    }
+    try {
+      const s = zustand(JAHR)
+      const { container } = zeige(s)
+      // Erst einen anderen Bereich wählen — der Hinweis stellt ihn zurück.
+      const wahl = container.querySelector<HTMLSelectElement>(`section[aria-label="${t.awWartezeitenTitel}"] .feld-wahl`)!
+      const { knopf: hinweis, bereich } = warteHinweis(container, s)
+      const anderer = [...wahl.options].map((o) => o.value).find((v) => v !== bereich)!
+      fireEvent.change(wahl, { target: { value: anderer } })
+      expect(wahl.value).toBe(anderer)
+      fireEvent.click(hinweis)
+      expect(gerollt.map((e) => e.getAttribute('aria-label'))).toEqual([t.awWartezeitenTitel])
+      expect(wahl.value).toBe(bereich)
+    } finally {
+      if (vorher) Element.prototype.scrollIntoView = vorher
+      else delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView
+    }
+  })
+
+  it('die Wartezeiten rechnen über das Jahr — bei drei Monaten steht derselbe übliche Abstand da', () => {
+    const { container } = zeige(zustand(JAHR))
+    fireEvent.click([...container.querySelectorAll<HTMLElement>('.aw-kachel')].find((k) => k.querySelector('.aw-kachel-titel')?.textContent === t.awWartezeitenTitel)!)
+    const jahr = container.querySelector('.aw-erklaerung')?.textContent
+    zurueck(container)
+    fireEvent.click(knopf(container, zeitspanne(3, 'month', 'de')))
+    fireEvent.click([...container.querySelectorAll<HTMLElement>('.aw-kachel')].find((k) => k.querySelector('.aw-kachel-titel')?.textContent === t.awWartezeitenTitel)!)
+    expect(container.querySelector('.aw-erklaerung')?.textContent).toBe(jahr)
+  })
+})
+
+/* ---- Pflege der Bereiche ------------------------------------------------------ */
+
+describe('Ohne Bereich eingeteilt (Jahresprobe)', () => {
+  /** Der erste Hinweis „Ohne Bereich eingeteilt" und wen er meint. */
+  const ohne = () => {
+    const h = rechnung(zustand()).hinweise.find((x) => x.art === 'ohneBereich')
+    if (h?.art !== 'ohneBereich') throw new Error('kein Hinweis „Ohne Bereich eingeteilt"')
+    return h
+  }
+
+  it('der Hinweis nennt Bereich und Zahl — die Person zeigt den Bereich hinten, ohne Erwartung', () => {
+    const h = ohne()
+    const s = zustand()
+    const { container } = zeige(s)
+    fireEvent.click(knopf(container, t.awAlleHinweise))
+    const name = displayName(DEMO.persons.find((p) => p.id === h.pid)!)
+    const hinweis = [...container.querySelectorAll<HTMLElement>('.aw-hinweis')].find((b) => b.querySelector('.aw-hinweis-titel')?.textContent === fill(t.awHinweisOhneBereich, { name }))!
+    const erster = h.bereiche[0]!
+    expect(hinweis.querySelector('.aw-hinweis-detail')?.textContent).toContain(
+      fill(t.awBereichZahl, { bereich: bereichsName(erster.bereich, DEMO.services, t, (x) => x), n: String(erster.n) }),
+    )
+    fireEvent.click(hinweis)
+    expect(titel(container)).toBe(name)
+    const zeilen = [...container.querySelectorAll(`section[aria-label="${t.awJeBereich}"] .aw-zeile`)]
+    const ohneZeilen = zeilen.filter((z) => z.querySelector('.klein-text')?.textContent?.startsWith(t.awOhneBereich))
+    expect(ohneZeilen.map((z) => z.querySelector('.aw-zeile-name')?.textContent)).toEqual(
+      expect.arrayContaining(h.bereiche.map((b) => bereichsName(b.bereich, DEMO.services, t, (x) => x))),
+    )
+    // Ohne Erwartung, ohne Vergleichsbalken — und hinter den eigenen Bereichen.
+    for (const z of ohneZeilen) expect(z.querySelector('.aw-balken')).toBeNull()
+    expect(zeilen.indexOf(ohneZeilen[0]!)).toBeGreaterThan(0)
+    expect(zeilen.slice(zeilen.indexOf(ohneZeilen[0]!))).toEqual(ohneZeilen)
+  })
+
+  it('am Desktop steht die Zahl umrandet in der Tabelle — mit eigenem Eintrag in der Legende', () => {
+    breite('desktop')
+    const { container } = zeige(zustand())
+    const zelle = container.querySelector('.aw-matrix .aw-zelle.is-ohne-bereich')!
+    expect(zelle.textContent).toMatch(/^\d+$/)
+    expect(zelle.closest('td')?.getAttribute('aria-label')).toContain(`${zelle.textContent}, ${t.awOhneBereich}`)
+    const legende = [...container.querySelectorAll('.aw-matrix-karte .aw-legende-eintrag')].map((e) => e.textContent)
+    expect(legende).toContain(t.awOhneBereichEingeteilt)
+  })
+
+  it('„Zu oft, zu selten" vergleicht Aufgaben und alles mit den Hilfsdiensten — die Schulungsaufgaben eigens nicht mehr', () => {
+    const { container } = zeige(zustand())
+    fireEvent.click([...container.querySelectorAll<HTMLElement>('.aw-kachel')][0]!)
+    const wahl = container.querySelector(`[role="group"][aria-label="${t.awVergleich}"]`)!
+    expect([...wahl.querySelectorAll('button')].map((b) => b.textContent)).toEqual([t.awAufgaben, t.awHilfsdienste])
+    expect(container.querySelector('.aw-erklaerung')?.textContent).toContain(t.awErklaerungOhneBereich)
   })
 })
 
@@ -517,7 +644,7 @@ function allesAblesen(state: AppState): string[] {
   const mehr = [...container.querySelectorAll<HTMLElement>('.aw-mehr')]
   mehr.forEach((m) => fireEvent.click(m))
   lesen()
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     fireEvent.click(container.querySelectorAll<HTMLElement>('.aw-kachel')[i]!)
     lesen()
     wahlenDruecken(container)
@@ -548,13 +675,13 @@ describe('In einer fremden Sprache steht nichts Deutsches da', () => {
     bestand = await fremdsprachigerBestand()
   })
 
-  /** Der Bestand ohne deutsche Namen, über zwanzig Wochen gestreckt wie oben. */
-  function fremd(lang: Lang): AppState {
+  /** Der Bestand ohne deutsche Namen, über `n` Wochen gestreckt wie oben. */
+  function fremd(lang: Lang, n = 20): AppState {
     const z = bestand.zustand
     const weeks: Week[] = []
     const fsWeeks: FsInstance[][] = []
-    for (let vor = 20; vor >= 1; vor--) {
-      const i = (20 - vor) % z.weeks.length
+    for (let vor = n; vor >= 1; vor--) {
+      const i = (n - vor) % z.weeks.length
       weeks.push({ ...structuredClone(z.weeks[i]!), start: tagNach(MONTAG, -7 * vor) })
       fsWeeks.push(structuredClone(z.fsWeeks[i] ?? []))
     }
@@ -565,6 +692,22 @@ describe('In einer fremden Sprache steht nichts Deutsches da', () => {
     const finde = deutschFinder(lang, bestand.erfunden)
     const zeilen = allesAblesen(fremd(lang))
     expect(zeilen.length, 'kaum etwas gelesen').toBeGreaterThan(300)
+    const reste = [...new Set(zeilen.flatMap((zeile) => finde(zeile).map((r) => `„${r.wort}" in „${zeile.slice(0, 100)}"`)))]
+    expect(reste).toEqual([])
+  })
+
+  /*
+   * Erst in einem Jahr warten welche lange: Die Hinweise „Lange Wartezeit"
+   * liest ein eigener, schmaler Durchgang — der ganze über 52 Wochen dauerte
+   * je Sprache zwanzig Sekunden.
+   */
+  it.each(SPRACHEN)('%s: die Hinweise eines Jahres', (lang) => {
+    const finde = deutschFinder(lang, bestand.erfunden)
+    const s = fremd(lang, 52)
+    expect(rechnung(s).hinweise.some((h) => h.art === 'wartet'), 'kein Hinweis „Lange Wartezeit"').toBe(true)
+    const { container } = zeige(s)
+    fireEvent.click(container.querySelector<HTMLElement>('.aw-hinweise-karte .aw-mehr')!)
+    const zeilen = sichtbareTexte()
     const reste = [...new Set(zeilen.flatMap((zeile) => finde(zeile).map((r) => `„${r.wort}" in „${zeile.slice(0, 100)}"`)))]
     expect(reste).toEqual([])
   })

@@ -4,9 +4,11 @@ import { gerundet, type Kontext } from './kontext'
 
 const TEXT_DES_VERGLEICHS = {
   aufgaben: 'awTextAufgaben',
-  schulung: 'awTextSchulung',
   hilfsdienste: 'awTextGesamt',
 } as const satisfies Record<Vergleich, string>
+
+/** So viele Namen nennt der Hinweis „Lange Wartezeit", den Rest als Zahl. */
+export const NAMEN_SICHTBAR = 3
 
 /** Wie eine einseitige Verteilung in Worten heißt: „Vor allem X, nie Y". */
 export function einseitigText(z: EinseitigZeile, k: Kontext): string {
@@ -19,7 +21,14 @@ export function einseitigText(z: EinseitigZeile, k: Kontext): string {
 
 /** Woran ein Hinweis in der Liste zu erkennen ist: Art und Person — oder Bereich. */
 export function hinweisSchluessel(h: Hinweis): string {
-  return h.art === 'absagen' ? `${h.art}|${h.bereich}` : `${h.art}|${h.pid}`
+  return h.art === 'absagen' || h.art === 'wartet' ? `${h.art}|${h.bereich}` : `${h.art}|${h.pid}`
+}
+
+/** „Anna, Ben, Carl +2" — die ersten Namen, der Rest als Zahl. */
+function namenListe(pids: readonly string[], k: Kontext): string {
+  const namen = pids.slice(0, NAMEN_SICHTBAR).map(k.name).join(', ')
+  const rest = pids.length - NAMEN_SICHTBAR
+  return rest > 0 ? `${namen} +${k.zahl(rest)}` : namen
 }
 
 /** Titel und Zeile eines Hinweises. */
@@ -33,17 +42,27 @@ export function hinweisTexte(h: Hinweis, k: Kontext): { titel: string; text: str
       }
     case 'einseitig':
       return { titel: fill(k.t.awHinweisEinseitig, { name: k.name(h.pid) }), text: einseitigText(h.zeile, k) }
-    case 'wartet': {
-      const werte = { bereich: k.bereich(h.bereich), ueblich: k.dauer(gerundet(h.ueblich)) }
+    case 'wartet':
       return {
-        titel: fill(k.t.awHinweisWartet, { name: k.name(h.pid) }),
-        text: h.wochen === null ? fill(k.t.awWartetNie, werte) : fill(k.t.awWartetSeit, { ...werte, dauer: k.dauer(h.wochen) }),
+        titel: fill(k.t.awHinweisWartezeit, { bereich: k.bereich(h.bereich) }),
+        text: fill(k.t.awTextWartezeit, { namen: namenListe(h.pids, k), ueblich: k.dauer(gerundet(h.ueblich)) }),
       }
-    }
     case 'absagen':
       return {
         titel: fill(k.t.awHinweisAbsagen, { bereich: k.bereich(h.bereich) }),
         text: fill(k.t.awTextAbsagen, { anteil: k.prozent(h.anteil), sonst: k.prozent(h.sonst) }),
+      }
+    case 'ohneBereich':
+      return {
+        titel: fill(k.t.awHinweisOhneBereich, { name: k.name(h.pid) }),
+        text: fill(k.t.awTextOhneBereich, {
+          liste: h.bereiche.map((b) => fill(k.t.awBereichZahl, { bereich: k.bereich(b.bereich), n: k.zahl(b.n) })).join(', '),
+        }),
+      }
+    case 'nieGenutzt':
+      return {
+        titel: fill(k.t.awHinweisNieGenutzt, { name: k.name(h.pid) }),
+        text: fill(k.t.awTextNieGenutzt, { bereiche: h.bereiche.map(k.bereich).join(', ') }),
       }
   }
 }

@@ -1,5 +1,5 @@
 import { useId, useState } from 'react'
-import { ZEITRAUM_WOCHEN } from '../data/auswertung'
+import { JAHR, ZEITRAUM_WOCHEN } from '../data/auswertung'
 import { fill } from '../i18n/useT'
 import { Legende, Streifen, WarteBalken } from './Diagramme'
 import { gerundet, type Kontext } from './kontext'
@@ -11,18 +11,23 @@ const WARTEN_SICHTBAR = 8
  * **Wartezeiten** (Entwurf `HandyWartezeiten`): je Bereich, wer am längsten nicht
  * dran war — gegen den üblichen Abstand —, und wer schnell wieder dran ist.
  * Der Bereich steht in einer Auswahl: Eine Versammlung hat leicht ein Dutzend.
+ *
+ * Immer über das ganze Jahr, gleich welcher Zeitraum oben gewählt ist
+ * (Jahresprobe 18.10.2026): Gewartet wird seit dem letzten Mal. `bereich` hält
+ * die Seite, damit ein Hinweis „Lange Wartezeit" ihn einstellen kann; ohne
+ * Wahl steht der Bereich des ersten Hinweises da.
  */
-export function WartezeitenAnsicht({ k }: { k: Kontext }) {
+export function WartezeitenAnsicht({ k, bereich, onBereich }: { k: Kontext; bereich: string | null; onBereich: (bereich: string) => void }) {
   const { t } = k
   const auswahlId = useId()
   const bereiche = [...k.a.wartezeiten].sort((a, b) => k.bereich(a.bereich).localeCompare(k.bereich(b.bereich), k.lang))
-  // Vorgewählt ist der Bereich des ersten Hinweises „wartet lange", sonst der erste.
   const vorwahl = k.a.hinweise.find((h) => h.art === 'wartet')
-  const [gewaehlt, setGewaehlt] = useState<string | null>(null)
-  const [alle, setAlle] = useState(false)
-  const w = bereiche.find((b) => b.bereich === (gewaehlt ?? (vorwahl?.art === 'wartet' ? vorwahl.bereich : null))) ?? bereiche[0]
+  // „Alle zeigen" gilt für den Bereich, in dem es gedrückt wurde.
+  const [alleIn, setAlleIn] = useState<string | null>(null)
+  const w = bereiche.find((b) => b.bereich === (bereich ?? (vorwahl?.art === 'wartet' ? vorwahl.bereich : null))) ?? bereiche[0]
   if (!w) return <p className="karte aw-leer">{t.awKeineDaten}</p>
-  const max = ZEITRAUM_WOCHEN[k.a.zeitraum]
+  const alle = alleIn === w.bereich
+  const max = ZEITRAUM_WOCHEN[JAHR]
   const warten = alle ? w.warten : w.warten.slice(0, WARTEN_SICHTBAR)
 
   return (
@@ -31,15 +36,7 @@ export function WartezeitenAnsicht({ k }: { k: Kontext }) {
         <label className="feld-marke" htmlFor={auswahlId}>
           {t.awBereich}
         </label>
-        <select
-          id={auswahlId}
-          className="feld-wahl"
-          value={w.bereich}
-          onChange={(e) => {
-            setGewaehlt(e.target.value)
-            setAlle(false)
-          }}
-        >
+        <select id={auswahlId} className="feld-wahl" value={w.bereich} onChange={(e) => onBereich(e.target.value)}>
           {bereiche.map((b) => (
             <option key={b.bereich} value={b.bereich}>
               {k.bereich(b.bereich)}
@@ -61,11 +58,12 @@ export function WartezeitenAnsicht({ k }: { k: Kontext }) {
           </div>
           <ul className="aw-zeilen">
             {warten.map((z) => {
-              // „seit 20 Wochen · 2. Mai · davon abwesend: 18 Wochen · geplant: 26. Okt."
+              // „seit 20 Wochen · 2. Mai · davon nicht einteilbar: 4 Wochen · geplant: 26. Okt."
               const zeile = [
-                z.wochen === null ? t.awNieImZeitraum : fill(t.awSeit, { dauer: k.dauer(z.wochen) }),
+                z.wochen === null ? t.awNieImJahr : fill(t.awSeit, { dauer: k.dauer(z.wochen) }),
                 z.zuletzt && k.datum(z.zuletzt),
-                z.abwesend > 0 && fill(t.awDavonAbwesend, { dauer: k.dauer(z.abwesend) }),
+                z.wochen !== null && z.nichtEinteilbar > 0 && fill(t.awDavonNichtEinteilbar, { dauer: k.dauer(z.nichtEinteilbar) }),
+                z.ueber && t.awUeberErwartung,
                 z.geplant && fill(t.awGeplant, { datum: k.datum(z.geplant) }),
               ]
                 .filter(Boolean)
@@ -78,13 +76,20 @@ export function WartezeitenAnsicht({ k }: { k: Kontext }) {
                     </button>
                     <span className="aw-zeile-zahl">{zeile}</span>
                   </div>
-                  <WarteBalken wochen={z.wartend} ueblich={w.ueblich ?? 0} lange={z.lange} max={max} aria={`${k.name(z.pid)}: ${zeile}`} />
+                  <WarteBalken
+                    wochen={z.wartend}
+                    nie={z.wochen === null}
+                    ueblich={w.ueblich ?? 0}
+                    lange={z.lange}
+                    max={max}
+                    aria={`${k.name(z.pid)}: ${zeile}`}
+                  />
                 </li>
               )
             })}
           </ul>
           {w.warten.length > WARTEN_SICHTBAR && (
-            <button type="button" className="knopf-pille aw-mehr" aria-expanded={alle} onClick={() => setAlle(!alle)}>
+            <button type="button" className="knopf-pille aw-mehr" aria-expanded={alle} onClick={() => setAlleIn(alle ? null : w.bereich)}>
               {alle ? t.awWeniger : t.awAlleZeigen}
             </button>
           )}
@@ -93,7 +98,7 @@ export function WartezeitenAnsicht({ k }: { k: Kontext }) {
               ['strich', `${t.awUeblich}: ${k.dauer(gerundet(w.ueblich))}`],
               ['band', t.awBisDoppelt],
               ['ueber', t.awLaenger],
-              ['leer', t.awNieImZeitraum],
+              ['leer', t.awNieImJahr],
             ]}
           />
         </section>

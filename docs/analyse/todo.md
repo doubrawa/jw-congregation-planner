@@ -7393,6 +7393,34 @@ Persisch), Profil, Ansicht, Aufbewahrung, Legende. Mutationskatalog: 24 Einträg
 neu oder nachgezogen, `push-ziel-auswertung` gestrichen (die Liste bewacht jetzt
 der Übersetzer).
 
+**Jahresprobe (18. Oktober 2026) — umgesetzt.** Die Auswertung wurde intern mit
+einem Jahr echter Daten gerechnet (64 Wochen von jw.org, NWS-Zuteilungen über
+die Importfunktionen, nur im Scratchpad; voll abgedeckt sechs Monate). Rund ein
+Drittel der Hinweise waren Fehlalarme. Der Betreiber hat alle zehn Vorschläge
+gewählt, die Karte „Wie sich die Last verteilt" gestrichen, die Engpässe an
+ihre Stelle.
+
+| Nr. | Befund | Umgesetzt |
+| --- | --- | --- |
+| 1 | „Die zehn oberen tragen 42 %" — die oberen liegen auf ihrer Erwartung, Struktur statt Befund | Karte gestrichen; am Tablet stehen dort die Engpässe |
+| 2 | „Wartet lange": üblich war der mittlere Abstand im Zeitraum — zu kurz und fensterabhängig (Gebet 9/7/2,5 Wochen statt 18); 22–25 Einzelzeilen | üblich = Personen mit dem Bereich ÷ Plätze je Woche, Wartezeit über das ganze Jahr (`JAHR`) und nur in Wochen, in denen die Person hätte drankommen können („davon nicht einteilbar"); wer übers Jahr über der eigenen Erwartung liegt, wartet nicht; im Überblick ein Hinweis je Bereich („Lange Wartezeit: …", drei Namen, Tipp stellt den Bereich ein) |
+| 3 | Der feste Studienleiter „wartete" auf den Vorsitz am Wochenende | Erwartung Platz für Platz: Wer in der Zusammenkunft auf einem Platz steht, der nicht zählt (Studienleiter, eigener Redner), von dem wird dort nichts erwartet |
+| 4 | Ein Ältester mit drei Bereichen und zwölf Einteilungen in fünf anderen stand als „zu oft" da | Einteilungen ohne den Bereich zählen nicht gegen die Erwartung; Hinweis „Ohne Bereich eingeteilt" ab zweimal je Bereich, „Bereich im Jahr ungenutzt" ab drei erwarteten Plätzen (dann nicht zusätzlich „einseitig: nie"); in der Tabelle umrandet, bei der Person hinten |
+| 5 | Ein Zugezogener stand unter „zu selten 3 statt 20" und „einseitig" | „Dabei seit": Erwartung erst ab der ersten Einteilung in den vergangenen Wochen (geplante zählen nicht — sonst fiele, wen der Planer auf „Lange Wartezeit" hin einteilt, rückwirkend heraus); „nie" im Einseitigen erst ab einem Platz, der auf die Person gekommen wäre |
+| 6 | Mikrofone (vier Plätze je Zusammenkunft) „überwog" zwangsläufig | „vor allem" nur, wenn der Anteil auch das Anderthalbfache des erwarteten Anteils erreicht |
+| 7 | Vergleich „Schulungsaufgaben" meldete bei 6 und 3 Monaten nie etwas | gestrichen; die Schulungsaufgaben zählen unter den Aufgaben |
+| 8 | Sechs Gruppen ohne Gruppentreffpunkte listeten 16 Leiter mit „nie" | eine Gruppe steht nur da, wenn sie im Zeitraum eigene Treffpunkte hatte |
+| 9 | Zwei Drittel der Ballungen waren gewollte Paare (der Vorsitzende liest am Wochenende den Wachtturm) | „zweimal in einer Zusammenkunft" nur mit einem Hilfsdienst |
+| 10 | Wo die Plätze knapp sind, sagte keine Ansicht | neue Ansicht „Engpässe": je Bereich Plätze je Woche, Personen, Abstand, je Person im Jahr; Wochen ab dem ersten Platz des Bereichs; am Handy eine fünfte Kachel („Am knappsten: …") |
+
+Texte (zwölf Sprachen): 18 neu, 5 geändert (Fußnote, Erklärung Einseitig,
+üblicher Abstand, „Zweimal …"), 13 gestrichen (Last-Karte, Schulungsaufgaben,
+Wartet-Einzelhinweis, „davon abwesend"). Proben: Rechnung neu gefasst (59
+Fälle), Bildschirm (Engpässe, Hinweis je Bereich am Handy und Tablet, Wartezeiten
+übers Jahr, ohne Bereich, Sprachdurchgang auch über ein Jahr), Legende.
+Mutationskatalog: 8 Einträge nachgezogen, einer gestrichen
+(`last-zehn-oben-erst-ab-elf`), 20 neu.
+
 ---
 
 ## Aufgenommen am 18. Oktober 2026 — Gruppen aus der Reinigung nehmen (T127)

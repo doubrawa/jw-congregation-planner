@@ -6,20 +6,26 @@ import {
   auswerten,
   ballungen,
   einseitig,
+  engpaesse,
   grundlage,
   hinweise,
   istEinseitig,
   kennzahlen,
   lageVon,
   matrix,
+  nieGenutzt,
+  ohneBereich,
   personBild,
   treffpunkte,
   TREFFPUNKT_BEREICH,
+  VERGLEICHE,
   verteilung,
   vieleAbsagen,
   wartezeiten,
   zeitfenster,
   type Grundlage,
+  type Hinweis,
+  type Wartezeiten,
 } from './auswertung'
 import { emptyQualifications, isSong, privSetzen, ROLE_OWN_SPEAKER, serviceQualKey } from './helpers'
 import { tagNach } from './meeting-dates'
@@ -31,6 +37,13 @@ import type { Absage, FsInstance, Group, Meeting, Person, Week } from './types'
  * **Die Auswertung rechnet so, wie die Automatik verteilt** (T126). Jeder Fall
  * unten baut sich seine Wochen selbst: aus der Testwoche des Arbeitshefts, mit
  * genau den Namen, um die es geht.
+ *
+ * Die Jahresprobe vom 18.10.2026 (ein Jahr echter Daten) fand rund ein Drittel
+ * Fehlalarme. Die Fälle dazu stehen hier mit dem, was vorher schieflief: der
+ * feste Studienleiter „wartete" auf den Vorsitz am Wochenende, ein Zugezogener
+ * stand unter „zu selten", Einteilungen ohne Bereich unter „zu oft", die
+ * Mikrofon-Jugend unter „einseitig", der übliche Abstand war zu kurz und hing
+ * vom Zeitraum ab.
  */
 
 const HEUTE = '2026-09-09' // ein Mittwoch; die laufende Woche beginnt am 7.9.
@@ -54,6 +67,11 @@ function woche(vorWochen: number): Week {
   return w
 }
 
+/** Die Wochen vor `n` bis vor 1, die älteste zuerst — Index `i` ist die Woche vor `n - i`. */
+function wochen(n: number): Week[] {
+  return Array.from({ length: n }, (_, i) => woche(n - i))
+}
+
 /** Setzt `p` auf den `nth` Platz dieses Bereichs (Programm). */
 function setze(meeting: Meeting, bereich: string, p: Person | string, nth = 0): void {
   let gefunden = 0
@@ -73,12 +91,30 @@ function setze(meeting: Meeting, bereich: string, p: Person | string, nth = 0): 
   throw new Error(`kein Platz ${bereich} #${nth}`)
 }
 
+/** Der Leiter des Wachtturm-Studiums am Wochenende. */
+function wtLeiter(w: Week, p: Person): void {
+  const studium = w.we.sections.find((s) => s.label === 'WACHTTURM-STUDIUM')!
+  const item = studium.items.find((i) => !isSong(i))!
+  if (isSong(item)) throw new Error('kein Punkt')
+  Object.assign(item.names[0]!, { name: `${p.fn} ${p.ln}`, pid: p.id })
+}
+
 function hilfsdienst(meeting: Meeting, svc: string, p: Person): void {
   meeting.helpers[svc] = [...(meeting.helpers[svc] ?? []), { name: `${p.fn} ${p.ln}`, pid: p.id }]
 }
 
 function g(weeks: Week[], persons: Person[], anzahlWochen = 13, abwesend = KEINE_ABWESENHEIT): Grundlage {
   return grundlage({ weeks, persons, services: DEMO_SERVICES, abwesend, fenster: zeitfenster(weeks, anzahlWochen, HEUTE) })
+}
+
+/** Alle Zeilen eines Vergleichs, gleich in welcher Lage. */
+function zeilenVon(v: ReturnType<typeof verteilung>) {
+  return [...v.oft, ...v.rahmen, ...v.selten]
+}
+
+/** Was auf die Person in diesem Bereich erwartet wurde. */
+function erwartet(grund: Grundlage, bereich: string, pid: string): number {
+  return grund.erwartet.get(bereich)?.get(pid) ?? 0
 }
 
 describe('Zeitraum', () => {
@@ -95,19 +131,19 @@ describe('Zeitraum', () => {
   })
 
   it('der Streifen „Schnell wieder" folgt den Montagen: jede Woche ihr Feld, die älteste zuerst', () => {
-    // a betet in den Wochen vor 6, 5 und 4, b vor 6 und 3. Üblich sind zwei
-    // Wochen (der mittlere aus a's einer und b's drei); a ist mit einer Woche
-    // Abstand „schnell wieder" — sein Streifen zeigt die ersten drei Felder.
+    // a betet in den Wochen vor 6, 5 und 4, b vor 6 und 3: fünf Gebete in sechs
+    // Wochen, zwei Personen — üblich sind 2,4 Wochen. a ist mit einer Woche
+    // Abstand „schnell wieder", sein Streifen zeigt die ersten drei Felder.
     const a = person('a', ['gebet'])
     const b = person('b', ['gebet'])
-    const weeks = Array.from({ length: 6 }, (_, i) => {
+    const weeks = wochen(6)
+    weeks.forEach((w, i) => {
       const vor = 6 - i
-      const w = woche(vor)
       if (vor >= 4) setze(w.mid, 'gebet', a, 1)
       if (vor === 6 || vor === 3) setze(w.we, 'gebet', b, 1)
-      return w
     })
     const z = wartezeiten(g(weeks, [a, b]), [a, b], 'gebet')
+    expect(z.ueblich).toBeCloseTo(2.4)
     expect(z.schnell.map((s) => s.pid)).toEqual(['a'])
     expect(z.schnell[0]?.wochen).toEqual([true, true, true, false, false, false])
   })
@@ -132,10 +168,7 @@ describe('Was zählt', () => {
   it('der feste Wachtturm-Studium-Leiter zählt nicht — ohne festen Leiter rotiert der Platz und zählt', () => {
     const leiter = person('leiter', ['studium'])
     const w = woche(1)
-    const studium = w.we.sections.find((s) => s.label === 'WACHTTURM-STUDIUM')!
-    const item = studium.items.find((i) => !isSong(i))!
-    if (isSong(item)) throw new Error('kein Punkt')
-    Object.assign(item.names[0]!, { name: 'leiter Test', pid: 'leiter' })
+    wtLeiter(w, leiter)
     expect(g([w], [leiter]).einteilungen).toHaveLength(1)
     const fest = { ...leiter, priv: { ...leiter.priv, wtLeiter: true } }
     expect(g([w], [fest]).einteilungen).toHaveLength(0)
@@ -179,6 +212,129 @@ describe('Was zählt', () => {
   })
 })
 
+/*
+ * Erwartet wird Platz für Platz: Jeder Platz verteilt sich gleich auf alle, die
+ * ihn in seiner Zusammenkunft hätten haben können (Jahresprobe 18.10.2026).
+ */
+describe('Erwartet wird Platz für Platz', () => {
+  it('der gleiche Anteil an den Plätzen des Bereichs', () => {
+    const a = person('a', ['gebet'])
+    const b = person('b', ['gebet'])
+    const c = person('c', ['gebet'])
+    // Neun Wochen mit je einem Schlussgebet unter der Woche: a 7, b 2, c 0. In
+    // der ersten hilft a am Mikrofon aus — so sind alle drei von Anfang an dabei.
+    const weeks = wochen(9)
+    weeks.forEach((w, i) => setze(w.mid, 'gebet', i === 0 || i === 8 ? b : a, 1))
+    hilfsdienst(weeks[0]!.mid, 'mik', a)
+    const v = verteilung(g(weeks, [a, b, c]), [a, b, c], 'aufgaben')
+    expect(v.oft.map((z) => [z.pid, z.n, z.erwartet])).toEqual([['a', 7, 3]])
+    expect(v.rahmen.map((z) => z.pid)).toEqual(['b'])
+    expect(v.selten.map((z) => [z.pid, z.n, z.erwartet])).toEqual([['c', 0, 3]])
+  })
+
+  it('wer in einer Zusammenkunft fehlte, von dem wird für ihre Plätze nichts erwartet — fehlte er in der anderen, zählt das nicht', () => {
+    const a = person('a', ['gebet'])
+    const b = person('b', ['gebet'])
+    // Vier Schlussgebete unter der Woche, alle von a.
+    const weeks = wochen(4)
+    for (const w of weeks) setze(w.mid, 'gebet', a, 1)
+    // b fehlt unter der Woche in den ersten zwei: Diese Gebete kommen allein auf a.
+    const mitte = new Set(['b|0|mid', 'b|1|mid'])
+    const v = verteilung(g(weeks, [a, b], 13, mitte), [a, b], 'aufgaben')
+    expect(zeilenVon(v).find((z) => z.pid === 'a')?.erwartet).toBeCloseTo(3)
+    expect(zeilenVon(v).find((z) => z.pid === 'b')?.erwartet).toBeCloseTo(1)
+    // Gegenprobe: Fehlt b nur an den Wochenenden, wo kein Gebet zu vergeben war,
+    // wird von ihm genauso viel erwartet wie von a.
+    const wochenende = new Set(weeks.map((_, wi) => `b|${wi}|we`))
+    const w2 = verteilung(g(weeks, [a, b], 13, wochenende), [a, b], 'aufgaben')
+    expect(zeilenVon(w2).map((z) => z.erwartet)).toEqual([2, 2])
+  })
+
+  /*
+   * Jahresprobe: Der feste Studienleiter „wartete lange" auf den Vorsitz am
+   * Wochenende (nie in 27 Wochen) — er leitet ja jedes Wochenende das Studium.
+   */
+  it('wer das Wachtturm-Studium fest leitet, von dem werden am Wochenende kein Vorsitz und kein Lesen erwartet — unter der Woche schon', () => {
+    const leiter = person('leiter', ['vorsitzWe', 'vorsitzMid', 'leser', 'studium', 'wtLeiter'])
+    const v1 = person('v1', ['vorsitzWe', 'vorsitzMid', 'leser'])
+    const v2 = person('v2', ['vorsitzWe', 'vorsitzMid', 'leser', 'studium', 'wtVertreter'])
+    const persons = [leiter, v1, v2]
+    const weeks = wochen(4)
+    weeks.forEach((w, i) => {
+      wtLeiter(w, leiter)
+      setze(w.we, 'vorsitzWe', i % 2 ? v1 : v2)
+      setze(w.we, 'leser', i % 2 ? v2 : v1)
+      setze(w.mid, 'vorsitzMid', [leiter, v1, v2, leiter][i]!)
+    })
+    const grund = g(weeks, persons)
+    expect(erwartet(grund, 'vorsitzWe', 'leiter')).toBe(0)
+    expect(erwartet(grund, 'leser', 'leiter')).toBe(0)
+    expect(erwartet(grund, 'vorsitzWe', 'v1')).toBe(2)
+    expect(erwartet(grund, 'vorsitzMid', 'leiter')).toBeCloseTo(4 / 3)
+    // Er wartet deshalb auch nicht auf den Vorsitz am Wochenende.
+    expect(wartezeiten(grund, persons, 'vorsitzWe').warten.map((z) => z.pid)).not.toContain('leiter')
+
+    // Leitet in einer Woche der Vertreter, ist er es, von dem dort nichts erwartet wird.
+    wtLeiter(weeks[3]!, v2)
+    setze(weeks[3]!.we, 'vorsitzWe', v1)
+    setze(weeks[3]!.we, 'leser', leiter)
+    const vertreten = g(weeks, persons)
+    expect(erwartet(vertreten, 'vorsitzWe', 'leiter')).toBeCloseTo(0.5)
+    expect(erwartet(vertreten, 'vorsitzWe', 'v2')).toBeCloseTo(1.5)
+
+    // Gegenprobe: Ohne festen Leiter rotiert das Studium und zählt — dann ist
+    // der Leiter in der Woche eingeteilt wie jeder andere und nicht gesperrt.
+    const ohne = persons.map((p) => ({ ...p, priv: { ...p.priv, wtLeiter: false, wtVertreter: false } }))
+    const rotierend = wochen(4)
+    for (const w of rotierend) {
+      wtLeiter(w, leiter)
+      setze(w.we, 'vorsitzWe', v1)
+    }
+    expect(erwartet(g(rotierend, ohne), 'vorsitzWe', 'leiter')).toBeCloseTo(4 / 3)
+  })
+
+  /*
+   * Jahresprobe: Ein zugezogener Ältester — 47 leere Wochen, dann drei Aufgaben
+   * — stand unter „zu selten 3 statt 20" und „einseitig".
+   */
+  it('dabei seit: von einem Zugezogenen wird erst ab seiner ersten Einteilung etwas erwartet — wer nie eingeteilt war, ist von Anfang an dabei', () => {
+    const alt = ['alt1', 'alt2', 'alt3'].map((id) => person(id, ['gebet']))
+    const neu = person('neu', ['gebet'])
+    const nie = person('nie', ['gebet'])
+    const persons = [...alt, neu, nie]
+    // Zwanzig Wochen, je zwei Schlussgebete; neu betet erst in den letzten beiden.
+    const weeks = wochen(20)
+    weeks.forEach((w, i) => {
+      setze(w.mid, 'gebet', i >= 18 ? neu : alt[i % 3]!, 1)
+      setze(w.we, 'gebet', alt[(i + 1) % 3]!, 1)
+    })
+    const grund = g(weeks, persons, 26)
+    const v = verteilung(grund, persons, 'aufgaben')
+    // Für neu: die vier Gebete seiner zwei Wochen, auf fünf verteilt.
+    expect(zeilenVon(v).find((z) => z.pid === 'neu')).toMatchObject({ n: 2, lage: 'rahmen' })
+    expect(erwartet(grund, 'gebet', 'neu')).toBeCloseTo(4 / 5)
+    // nie ist nirgends eingeteilt — von Anfang an dabei, und zu selten. (In der
+    // ersten Woche betet alt3 noch nicht: Ihre zwei Gebete teilen sich drei.)
+    expect(v.selten.map((z) => z.pid)).toEqual(['nie'])
+    expect(erwartet(grund, 'gebet', 'nie')).toBeCloseTo(2 / 3 + 34 / 4 + 4 / 5)
+  })
+
+  it('wer erst kommende Woche zum ersten Mal eingeteilt ist, gilt schon vorher als dabei — er wartet als „geplant", statt aus der Rechnung zu fallen', () => {
+    // Plant der Planer auf „Lange Wartezeit" hin jemanden ein, der nie dran war,
+    // soll er dort als „geplant" stehen — nicht rückwirkend verschwinden.
+    const a = person('a', ['gebet'])
+    const kommt = person('kommt', ['gebet'])
+    const weeks = wochen(4)
+    for (const w of weeks) setze(w.mid, 'gebet', a, 1)
+    const naechste = woche(-1)
+    setze(naechste.mid, 'gebet', kommt, 1)
+    const grund = g([...weeks, naechste], [a, kommt])
+    expect(kennzahlen(grund, [a, kommt])).toMatchObject({ mitBereichen: 2, nie: 1 })
+    expect(erwartet(grund, 'gebet', 'kommt')).toBe(2)
+    expect(wartezeiten(grund, [a, kommt], 'gebet').warten.find((z) => z.pid === 'kommt')).toMatchObject({ wochen: null, geplant: start(-1), lange: false })
+  })
+})
+
 describe('Zu oft, zu selten', () => {
   it('die Grenzen: mehr als die Hälfte daneben und mindestens drei', () => {
     expect(lageVon(7, 3)).toBe('oft')
@@ -193,64 +349,49 @@ describe('Zu oft, zu selten', () => {
     expect(lageVon(3, 0)).toBe('oft')
   })
 
-  it('erwartet ist der gleiche Anteil an den Plätzen des Bereichs', () => {
-    const a = person('a', ['gebet'])
-    const b = person('b', ['gebet'])
-    const c = person('c', ['gebet'])
-    // Neun Wochen mit je einem Schlussgebet (unter der Woche): a 7, b 2, c 0.
-    const weeks = Array.from({ length: 9 }, (_, i) => {
-      const w = woche(9 - i)
-      setze(w.mid, 'gebet', i < 7 ? a : b, 1)
-      return w
-    })
-    const v = verteilung(g(weeks, [a, b, c]), [a, b, c], 'aufgaben')
-    expect(v.oft.map((z) => [z.pid, z.n, z.erwartet])).toEqual([['a', 7, 3]])
-    expect(v.rahmen.map((z) => z.pid)).toEqual(['b'])
-    expect(v.selten.map((z) => [z.pid, z.n, z.erwartet])).toEqual([['c', 0, 3]])
-  })
-
-  it('wer abwesend war, von dem wird weniger erwartet', () => {
-    const a = person('a', ['gebet'])
-    const b = person('b', ['gebet'])
-    const weeks = Array.from({ length: 4 }, (_, i) => {
-      const w = woche(4 - i)
-      setze(w.mid, 'gebet', a, 1)
-      return w
-    })
-    // b fehlt in allen vier Zusammenkünften unter der Woche, ist am Wochenende da.
-    const abwesend = new Set(weeks.map((_, wi) => `b|${wi}|mid`))
-    const v = verteilung(g(weeks, [a, b], 13, abwesend), [a, b], 'aufgaben')
-    const alle = [...v.oft, ...v.rahmen, ...v.selten]
-    // a war in acht Zusammenkünften da, b in vier: a erwartet 4 · 8/12.
-    expect(alle.find((z) => z.pid === 'a')?.erwartet).toBeCloseTo(8 / 3)
-    expect(alle.find((z) => z.pid === 'b')?.erwartet).toBeCloseTo(4 / 3)
-  })
-
   it('Hilfsdienste: verglichen wird die Gesamtlast, wie die Automatik sie verteilt', () => {
     const viel = person('viel', ['gebet', serviceQualKey('mik')])
     const wenig = person('wenig', [serviceQualKey('mik')])
-    const weeks = Array.from({ length: 6 }, (_, i) => {
-      const w = woche(6 - i)
+    const weeks = wochen(6)
+    for (const w of weeks) {
       setze(w.mid, 'gebet', viel, 1)
       hilfsdienst(w.mid, 'mik', wenig)
-      return w
-    })
+    }
     const grund = g(weeks, [viel, wenig])
     const v = verteilung(grund, [viel, wenig], 'hilfsdienste')
-    const alle = [...v.oft, ...v.rahmen, ...v.selten]
     // viel: 6 Gebete, kein Mikrofon — mit der Gesamtlast im Rahmen, nicht „zu selten".
-    expect(alle.find((z) => z.pid === 'viel')).toMatchObject({ n: 6, hilfsdienste: 0, lage: 'rahmen' })
-    expect(alle.find((z) => z.pid === 'wenig')).toMatchObject({ n: 6, hilfsdienste: 6 })
+    expect(zeilenVon(v).find((z) => z.pid === 'viel')).toMatchObject({ n: 6, hilfsdienste: 0, lage: 'rahmen' })
+    expect(zeilenVon(v).find((z) => z.pid === 'wenig')).toMatchObject({ n: 6, hilfsdienste: 6 })
   })
 
-  it('Schulungsaufgaben: nur Schüler, Partner und Vortrag — und nur, wer sie hat', () => {
-    const s = person('s', ['schulung'])
-    const nur = person('nur', ['gebet'])
+  /*
+   * Jahresprobe: Ein Ältester mit drei Bereichen und zwölf Einteilungen in fünf
+   * anderen stand als „zu oft 9 statt 4" da.
+   */
+  it('Einteilungen in einem Bereich, den die Person nicht hat, zählen nicht als „zu oft" — sie stehen unter „Ohne Bereich eingeteilt"', () => {
+    const aelt = person('aelt', ['gebet'])
+    const b = person('b', ['gebet'])
+    const leser = person('leser', ['leser'])
+    const weeks = wochen(8)
+    weeks.forEach((w, i) => {
+      setze(w.mid, 'gebet', i % 2 ? aelt : b, 1)
+      setze(w.mid, 'leser', aelt) // ohne den Bereich „Leser"
+      setze(w.we, 'leser', leser)
+    })
+    const grund = g(weeks, [aelt, b, leser])
+    const v = verteilung(grund, [aelt, b, leser], 'aufgaben')
+    expect(zeilenVon(v).find((z) => z.pid === 'aelt')).toMatchObject({ n: 4, lage: 'rahmen' })
+    expect(ohneBereich(grund, [aelt, b, leser])).toEqual([{ pid: 'aelt', bereiche: [{ bereich: 'leser', n: 8 }] }])
+  })
+
+  it('zwei Vergleiche: die Aufgaben und alles mit den Hilfsdiensten — die Schulungsaufgaben zählen unter den Aufgaben', () => {
+    // Bis zur Jahresprobe gab es „Schulungsaufgaben" eigens; bei ein bis vier im
+    // Jahr meldete der Vergleich nie etwas.
+    expect(VERGLEICHE).toEqual(['aufgaben', 'hilfsdienste'])
+    const s = person('s', ['schulung'], { female: true })
     const w = woche(1)
     setze(w.mid, 'schulung', s)
-    setze(w.mid, 'gebet', nur, 1)
-    const v = verteilung(g([w], [s, nur]), [s, nur], 'schulung')
-    expect([...v.oft, ...v.rahmen, ...v.selten].map((z) => z.pid)).toEqual(['s'])
+    expect(zeilenVon(verteilung(g([w], [s]), [s], 'aufgaben')).map((z) => [z.pid, z.n])).toEqual([['s', 1]])
   })
 })
 
@@ -258,11 +399,10 @@ describe('Einseitig', () => {
   it('zwei Drittel in einem Bereich, ab sechs Zuteilungen — und nie Gesprächsführerin', () => {
     const lena = person('lena', ['schulung'])
     const elke = person('elke', ['schulung'])
-    const weeks = Array.from({ length: 8 }, (_, i) => {
-      const w = woche(8 - i)
+    const weeks = wochen(8)
+    weeks.forEach((w, i) => {
       setze(w.mid, 'schulungPartner', lena, i % 3)
       setze(w.mid, 'schulung', elke, i % 3)
-      return w
     })
     const zeile = einseitig(g(weeks, [lena, elke]), [lena, elke]).find((z) => z.pid === 'lena')!
     expect(zeile.ueberwiegt).toBe('schulungPartner')
@@ -273,25 +413,56 @@ describe('Einseitig', () => {
   it('unter sechs Zuteilungen überwiegt nichts — zu wenig, um es zu sagen', () => {
     const p = person('p', ['gebet', 'bibellesung'])
     const q = person('q', ['bibellesung'])
-    const weeks = Array.from({ length: 5 }, (_, i) => {
-      const w = woche(5 - i)
+    const weeks = wochen(5)
+    weeks.forEach((w, i) => {
       setze(w.mid, 'gebet', p, 1)
       if (i === 0) setze(w.mid, 'bibellesung', q)
-      return w
     })
     const [zeile] = einseitig(g(weeks, [p, q]), [p, q])
     expect(zeile).toMatchObject({ pid: 'p', gesamt: 5, ueberwiegt: null, nie: [] })
   })
 
+  /*
+   * Jahresprobe: Mikrofone hat vier Plätze je Zusammenkunft — wer Mikrofone und
+   * Bibellesung hat, hat zwangsläufig vor allem Mikrofone. Zwei junge Brüder
+   * standen deshalb als „einseitig" da.
+   */
+  it('vor allem ein Bereich ist erst einseitig, wenn er deutlich über seinem erwarteten Anteil liegt', () => {
+    const mik = serviceQualKey('mik')
+    const jung = person('jung', [mik, 'bibellesung'])
+    const mikro = ['m2', 'm3', 'm4', 'm5', 'm6'].map((id) => person(id, [mik]))
+    const leser = ['b2', 'b3', 'b4'].map((id) => person(id, ['bibellesung']))
+    const weeks = wochen(12)
+    weeks.forEach((w, i) => {
+      // Vier Mikrofone je Woche: jung in acht der 48, sonst reihum die anderen.
+      for (const [tab, k] of [['mid', 0], ['mid', 1], ['we', 2], ['we', 3]] as const) {
+        hilfsdienst(w[tab], 'mik', i < 8 && k === 0 ? jung : mikro[(i + k) % 5]!)
+      }
+      setze(w.mid, 'bibellesung', i < 2 ? jung : leser[i % 3]!)
+    })
+    // Erwartet: 8,5 Mikrofone und 4,8 Lesungen — Mikrofone sollen fast zwei
+    // Drittel sein, sind 80 %: nicht deutlich darüber.
+    const alle = [jung, ...mikro, ...leser]
+    const zeile = einseitig(g(weeks, alle), alle).find((z) => z.pid === 'jung')!
+    expect(zeile).toMatchObject({ gesamt: 10, ueberwiegt: null })
+    expect(zeile.bereiche.map((b) => [b.bereich, b.n, Math.round(b.erwartet * 10) / 10])).toEqual([
+      [mik, 8, 8.5],
+      ['bibellesung', 2, 4.8],
+    ])
+    // Gegenprobe: Hat nur jung die Bibellesung, sollte er sie zwölfmal haben —
+    // dann sind 80 % Mikrofone einseitig.
+    const ohneLeser = [jung, ...mikro, ...leser.map((p) => ({ ...p, priv: emptyQualifications() }))]
+    expect(einseitig(g(weeks, ohneLeser), ohneLeser).find((z) => z.pid === 'jung')?.ueberwiegt).toBe(mik)
+  })
+
   it('nie in einem Bereich, den die anderen im Schnitt viermal hatten', () => {
     const claus = person('claus', [serviceQualKey('mik'), serviceQualKey('saal')])
     const andere = person('andere', [serviceQualKey('saal')])
-    const weeks = Array.from({ length: 5 }, (_, i) => {
-      const w = woche(5 - i)
+    const weeks = wochen(5)
+    for (const w of weeks) {
       hilfsdienst(w.mid, 'mik', claus)
       hilfsdienst(w.mid, 'saal', andere)
-      return w
-    })
+    }
     const zeilen = einseitig(g(weeks, [claus, andere]), [claus, andere])
     const z = zeilen.find((x) => x.pid === 'claus')!
     expect(z.nie).toEqual(['svc:saal'])
@@ -300,130 +471,243 @@ describe('Einseitig', () => {
     expect(zeilen.map((x) => x.pid)).toEqual(['claus'])
   })
 
-  it('wer den ganzen Zeitraum fehlte, war in keinem Bereich „nie dran" — ist er einmal da, schon', () => {
+  it('wer den ganzen Zeitraum fehlte, war in keinem Bereich „nie dran" — erst ab einem Platz, der auf ihn gekommen wäre', () => {
     const a = person('a', ['gebet', 'bibellesung'])
     const weg = person('weg', ['gebet', 'bibellesung'])
-    const weeks = Array.from({ length: 6 }, (_, i) => {
-      const w = woche(6 - i)
+    const weeks = wochen(6)
+    for (const w of weeks) {
       setze(w.mid, 'gebet', a, 1)
       setze(w.mid, 'bibellesung', a)
-      return w
-    })
+    }
     const ganz = new Set(weeks.flatMap((_, wi) => [`weg|${wi}|mid`, `weg|${wi}|we`]))
     expect(einseitig(g(weeks, [a, weg], 13, ganz), [a, weg]).map((z) => z.pid)).toEqual(['a'])
-    // Gegenprobe: Am Sonntag der ersten Woche war er da — jetzt fällt er auf.
-    const fastGanz = new Set([...ganz].filter((k) => k !== 'weg|0|we'))
-    const zeile = einseitig(g(weeks, [a, weg], 13, fastGanz), [a, weg]).find((z) => z.pid === 'weg')
+    // Einmal da, unter der Woche: Auf ihn wäre je Bereich ein halber Platz
+    // gekommen — noch nicht „nie".
+    const einmal = new Set([...ganz].filter((k) => k !== 'weg|0|mid'))
+    expect(einseitig(g(weeks, [a, weg], 13, einmal), [a, weg]).find((z) => z.pid === 'weg')?.nie).toEqual([])
+    // Zweimal da: je ein ganzer — jetzt fällt er auf.
+    const zweimal = new Set([...einmal].filter((k) => k !== 'weg|1|mid'))
+    const zeile = einseitig(g(weeks, [a, weg], 13, zweimal), [a, weg]).find((z) => z.pid === 'weg')
     expect([...(zeile?.nie ?? [])].sort()).toEqual(['bibellesung', 'gebet'])
   })
 
-  it('die Tabelle Person × Bereich: null ohne Bereich, 0 mit Bereich und nie dran', () => {
+  it('ein Bereich, der schon „Bereich im Jahr ungenutzt" meldet, steht nicht zusätzlich unter „nie"', () => {
+    const a = person('a', ['gebet', 'bibellesung'])
+    const b = person('b', ['gebet', 'bibellesung'])
+    const weeks = wochen(6)
+    weeks.forEach((w, i) => {
+      setze(w.mid, 'gebet', a, 1)
+      setze(w.mid, 'bibellesung', a)
+      // b betet fünfmal — unter sechs überwiegt nichts, es geht nur um „nie".
+      if (i < 5) setze(w.we, 'gebet', b, 1)
+    })
+    const grund = g(weeks, [a, b])
+    expect(einseitig(grund, [a, b]).find((z) => z.pid === 'b')?.nie).toEqual(['bibellesung'])
+    const gemeldet = new Map([['b', ['bibellesung']]])
+    expect(einseitig(grund, [a, b], gemeldet).find((z) => z.pid === 'b')).toMatchObject({ nie: [], ueberwiegt: null })
+  })
+
+  it('die Tabelle Person × Bereich: ob die Person den Bereich hat, und wie oft — auch ohne ihn', () => {
     const a = person('a', ['gebet', 'bibellesung'])
     const b = person('b', ['gebet'])
+    const ohne = person('ohne', [])
     const w = woche(1)
     setze(w.mid, 'gebet', a, 1)
     setze(w.mid, 'bibellesung', a)
-    const grund = g([w], [a, b])
-    const m = matrix(grund, [a, b], einseitig(grund, [a, b]), ['gebet', 'bibellesung'])
+    setze(w.we, 'gebet', ohne, 1)
+    const grund = g([w], [a, b, ohne])
+    const m = matrix(grund, [a, b, ohne], einseitig(grund, [a, b, ohne]), ['gebet', 'bibellesung'])
     expect(m.bereiche).toEqual(['gebet', 'bibellesung'])
     expect(m.zeilen).toEqual([
-      { pid: 'a', einseitig: false, werte: [1, 1] },
-      { pid: 'b', einseitig: false, werte: [0, null] },
+      { pid: 'a', einseitig: false, zellen: [{ n: 1, hat: true }, { n: 1, hat: true }] },
+      { pid: 'b', einseitig: false, zellen: [{ n: 0, hat: true }, { n: 0, hat: false }] },
+      // Ohne einen einzigen Bereich, aber eingeteilt: Er hat trotzdem eine Zeile.
+      { pid: 'ohne', einseitig: false, zellen: [{ n: 1, hat: false }, { n: 0, hat: false }] },
     ])
   })
 })
 
+/*
+ * Engpässe (Jahresprobe 18.10.2026): je Bereich Plätze je Woche gegen die
+ * Personen, die ihn haben — Ton und Video mit acht Personen hieß zehnmal im Jahr.
+ */
+describe('Engpässe', () => {
+  const gebet = ['g1', 'g2', 'g3', 'g4'].map((id) => person(id, ['gebet']))
+  const leser = ['l1', 'l2', 'l3', 'l4', 'l5'].map((id) => person(id, ['leser']))
+  const mik = ['m1', 'm2'].map((id) => person(id, [serviceQualKey('mik')]))
+  const x = person('x', [])
+  const alle = [...gebet, ...leser, ...mik, x]
+  const weeks = wochen(10)
+  weeks.forEach((w, i) => {
+    setze(w.mid, 'gebet', gebet[(2 * i) % 4]!, 1)
+    setze(w.we, 'gebet', gebet[(2 * i + 1) % 4]!, 1)
+    setze(w.mid, 'leser', leser[i % 5]!)
+    // Mikrofone kennt die App erst seit vier Wochen.
+    if (i >= 6) for (const m of mik) hilfsdienst(w.mid, 'mik', m)
+    // Die Bibellesung hat niemand — x liest trotzdem zweimal.
+    if (i < 2) setze(w.mid, 'bibellesung', x)
+  })
+  const liste = engpaesse(g(weeks, alle))
+
+  it('je Bereich Plätze je Woche gegen die Personen mit dem Bereich — die knappsten zuerst', () => {
+    const zeile = (b: string) => liste.find((z) => z.bereich === b)
+    expect(zeile('gebet')).toMatchObject({ plaetze: 20, wochen: 10, jeWoche: 2, personen: 4, abstand: 2, jePersonJahr: 26 })
+    expect(zeile('leser')).toMatchObject({ jeWoche: 1, personen: 5, abstand: 5 })
+    expect(zeile('leser')?.jePersonJahr).toBeCloseTo(10.4)
+    expect(liste.map((z) => z.bereich)).toEqual(['bibellesung', serviceQualKey('mik'), 'gebet', 'leser'])
+  })
+
+  it('die Wochen zählen ab dem ersten Platz des Bereichs — die App kennt Hilfsdienste oft erst später', () => {
+    // Acht Mikrofone in vier Wochen sind zwei je Woche, nicht 0,8.
+    expect(liste.find((z) => z.bereich === serviceQualKey('mik'))).toMatchObject({ plaetze: 8, wochen: 4, jeWoche: 2, abstand: 1, jePersonJahr: 52 })
+  })
+
+  it('einen Bereich, den niemand hat, steht ganz vorn — ohne Abstand', () => {
+    expect(liste[0]).toMatchObject({ bereich: 'bibellesung', personen: 0, abstand: null, jePersonJahr: null })
+  })
+})
+
+/*
+ * Wartezeiten (Jahresprobe 18.10.2026): Der übliche Abstand ist der des
+ * Bereichs — Personen mit dem Bereich durch Plätze je Woche. Vorher war es der
+ * mittlere Abstand derer, die im Zeitraum zweimal dran waren: zu kurz (Gebet 9
+ * statt 18 Wochen) und je nach Zeitraum anders (bei drei Monaten 2,5).
+ */
 describe('Wartezeiten', () => {
-  // Gebete: a alle zwei Wochen, b einmal vor zehn Wochen, c nie.
+  // Zwölf Wochen, je ein Schlussgebet unter der Woche: d vor 12, a vor 11 bis 4
+  // (jede Woche), b vor 3 bis 1, c nie. Vier Personen, ein Platz je Woche.
   const a = person('a', ['gebet'])
   const b = person('b', ['gebet'])
   const c = person('c', ['gebet'])
-  const weeks = Array.from({ length: 12 }, (_, i) => {
+  const d = person('d', ['gebet'])
+  const vier = [a, b, c, d]
+  const weeks = wochen(12)
+  weeks.forEach((w, i) => {
     const vor = 12 - i
-    const w = woche(vor)
-    if (vor % 2 === 0) setze(w.mid, 'gebet', a, 1)
-    if (vor === 10) setze(w.we, 'gebet', b, 1)
-    return w
+    setze(w.mid, 'gebet', vor === 12 ? d : vor >= 4 ? a : b, 1)
   })
 
-  it('üblich ist der mittlere Abstand; wartet lange, wer doppelt so lange nicht dran war', () => {
-    const z = wartezeiten(g(weeks, [a, b, c]), [a, b, c], 'gebet')
-    expect(z.ueblich).toBe(2)
-    expect(z.warten.map((w) => [w.pid, w.wochen, w.lange])).toEqual([
-      ['c', null, true], // nie — und auf ihn wären vier Gebete gekommen
-      ['b', 10, true],
-      ['a', 2, false],
+  it('üblich ist der Abstand des Bereichs — wer mehr als doppelt so lange wartet, wartet lange', () => {
+    const z = wartezeiten(g(weeks, vier), vier, 'gebet')
+    // Der mittlere Abstand von a und b wäre eine Woche gewesen — dann „wartete"
+    // schon a nach vier Wochen lange.
+    expect(z.ueblich).toBe(4)
+    expect(z.warten.map((w) => [w.pid, w.wochen, w.wartend, w.lange])).toEqual([
+      ['c', null, 13, true], // nie — gewartet seit der ersten Woche des Bereichs
+      ['d', 12, 12, true],
+      ['a', 4, 4, false],
+      ['b', 1, 1, false],
     ])
   })
 
   it('schnell wieder: höchstens halb so lange wie üblich, mit den Wochen als Streifen', () => {
-    // Drei beten alle vier Wochen, d jede Woche: Üblich bleiben vier Wochen —
-    // einer, der ständig dran ist, verschiebt das Übliche nicht.
-    const vier = ['v1', 'v2', 'v3'].map((id) => person(id, ['gebet']))
-    const d = person('d', ['gebet'])
-    const mehr = Array.from({ length: 12 }, (_, i) => {
-      const w = woche(12 - i)
-      setze(w.we, 'gebet', d, 0) // das Anfangsgebet am Sonntag, ohne Vorsitz eingetragen
-      const wer = vier[i % 4]
+    // Drei beten reihum alle vier Wochen, e jede Woche das Anfangsgebet am
+    // Sonntag (ohne Vorsitz eingetragen): 21 Gebete in zwölf Wochen, vier Personen.
+    const drei = ['v1', 'v2', 'v3'].map((id) => person(id, ['gebet']))
+    const e = person('e', ['gebet'])
+    const mehr = wochen(12)
+    mehr.forEach((w, i) => {
+      setze(w.we, 'gebet', e, 0)
+      const wer = drei[i % 4]
       if (wer) setze(w.mid, 'gebet', wer, 1)
-      return w
     })
-    const alle = [...vier, d]
+    const alle = [...drei, e]
     const z = wartezeiten(g(mehr, alle), alle, 'gebet')
-    expect(z.ueblich).toBe(4)
-    expect(z.schnell.map((s) => [s.pid, s.abstand, s.mal])).toEqual([['d', 1, 12]])
+    expect(z.ueblich).toBeCloseTo(4 / (21 / 12))
+    expect(z.schnell.map((s) => [s.pid, s.abstand, s.mal])).toEqual([['e', 1, 12]])
     expect(z.schnell[0]?.wochen).toEqual(Array.from({ length: 12 }, () => true))
   })
 
   /*
    * Betreiber 17.10.2026 (Review T126): „Wartet lange" zählt nur Wochen, in
-   * denen jemand da war — und wer im Bereich schon eingeteilt ist, wartet nicht.
+   * denen jemand eingeteilt werden konnte — und wer im Bereich schon eingeteilt
+   * ist, wartet nicht.
    */
-  it('Wochen, in denen jemand ganz fehlte, zählen nicht zur Wartezeit — fehlte er nur an einem Tag, schon', () => {
-    // b war vor zehn Wochen dran und danach sechs Wochen ganz weg (vor 9 bis 4):
-    // gewartet hat er vier — nicht mehr als doppelt so lange wie üblich.
-    const ganz = [9, 8, 7, 6, 5, 4].flatMap((vor) => [`b|${12 - vor}|mid`, `b|${12 - vor}|we`])
-    const abwesend = new Set([...ganz, `b|${12 - 3}|mid`])
-    const z = wartezeiten(g(weeks, [a, b, c], 13, abwesend), [a, b, c], 'gebet')
-    expect(z.warten.find((w) => w.pid === 'b')).toMatchObject({ wochen: 10, abwesend: 6, wartend: 4, lange: false })
+  it('Wochen, in denen jemand nicht eingeteilt werden konnte, zählen nicht zur Wartezeit — fehlte er nur in der anderen Zusammenkunft, schon', () => {
+    // d war vor zwölf Wochen dran und danach sechs Wochen ganz weg (vor 9 bis 4),
+    // vor 3 nur am Wochenende — gebetet wird hier unter der Woche.
+    const ganz = [9, 8, 7, 6, 5, 4].flatMap((vor) => [`d|${12 - vor}|mid`, `d|${12 - vor}|we`])
+    const amWochenende = new Set([...ganz, `d|${12 - 3}|we`])
+    const z = wartezeiten(g(weeks, vier, 13, amWochenende), vier, 'gebet')
+    expect(z.warten.find((w) => w.pid === 'd')).toMatchObject({ wochen: 12, nichtEinteilbar: 6, wartend: 6, lange: false })
+    // Fehlte er vor 3 unter der Woche, wo gebetet wurde, zählt auch die nicht.
+    const unterDerWoche = new Set([...ganz, `d|${12 - 3}|mid`])
+    expect(wartezeiten(g(weeks, vier, 13, unterDerWoche), vier, 'gebet').warten.find((w) => w.pid === 'd')).toMatchObject({ nichtEinteilbar: 7, wartend: 5 })
   })
 
   it('wer im Bereich schon eingeteilt ist, wartet nicht — nur im selben Bereich und wo die Zusammenkunft stattfindet', () => {
-    const d = person('d', ['gebet'])
+    // e betete vor zwölf Wochen am Sonntag: fünf Personen, 13 Gebete in zwölf Wochen.
+    const e = person('e', ['gebet'])
+    const mitE = weeks.map((w) => structuredClone(w))
+    setze(mitE[0]!.we, 'gebet', e, 1)
     const naechste = woche(-1)
-    setze(naechste.mid, 'gebet', b, 1)
-    setze(naechste.mid, 'bibellesung', c) // ein anderer Bereich: c wartet weiter aufs Gebet
-    setze(naechste.we, 'gebet', d, 1)
-    naechste.dev = { we: { cancelled: true } } // d steht in einer Zusammenkunft, die ausfällt
-    const alle = [...weeks, woche(0), naechste]
-    const z = wartezeiten(g(alle, [a, b, c, d]), [a, b, c, d], 'gebet')
+    setze(naechste.mid, 'gebet', d, 1)
+    setze(naechste.mid, 'bibellesung', e) // ein anderer Bereich: e wartet weiter aufs Gebet
+    setze(naechste.we, 'gebet', e, 1)
+    naechste.dev = { we: { cancelled: true } } // … und eine Zusammenkunft, die ausfällt
+    const alle = [...vier, e]
+    const z = wartezeiten(g([...mitE, woche(0), naechste], alle), alle, 'gebet')
     const zeile = (pid: string) => z.warten.find((w) => w.pid === pid)
-    expect(zeile('b')).toMatchObject({ wochen: 10, geplant: start(-1), lange: false })
-    expect(zeile('c')).toMatchObject({ geplant: null, lange: true })
-    expect(zeile('d')).toMatchObject({ geplant: null, lange: true })
+    expect(zeile('d')).toMatchObject({ wochen: 12, geplant: start(-1), lange: false })
+    expect(zeile('e')).toMatchObject({ wochen: 12, geplant: null, lange: true })
     // Wer geplant ist, steht hinten.
-    expect(z.warten.map((w) => w.pid)).toEqual(['c', 'd', 'a', 'b'])
+    expect(z.warten.map((w) => w.pid)).toEqual(['c', 'e', 'a', 'b', 'd'])
   })
 
-  it('„Wartet lange" ordnet nach der Wartezeit ohne die Abwesenheit', () => {
-    // b vor zehn Wochen, danach vier Wochen ganz weg: gewartet sechs. e vor acht Wochen: acht.
-    const e = person('e', ['gebet'])
-    const mitE = weeks.map((w, i) => {
-      const kopie = structuredClone(w)
-      if (12 - i === 8) setze(kopie.we, 'gebet', e, 1)
-      return kopie
+  /*
+   * Jahresprobe: Die vielbeschäftigten Ältesten „warteten lange" auf ein Gebet.
+   */
+  it('wer insgesamt über seiner Erwartung liegt, wartet nicht — sein Balken bleibt grau', () => {
+    const z = wartezeiten(g(weeks, vier), vier, 'gebet', new Set(['d']))
+    expect(z.warten.find((w) => w.pid === 'd')).toMatchObject({ wartend: 12, ueber: true, lange: false })
+    expect(z.warten.find((w) => w.pid === 'c')).toMatchObject({ ueber: false, lange: true })
+  })
+})
+
+/*
+ * Die Pflege der Bereiche (Jahresprobe 18.10.2026): Wer ohne den Bereich
+ * eingeteilt ist, dem fehlt er wohl; wer ihn ein Jahr nicht nutzt, hat ihn
+ * vielleicht nicht mehr.
+ */
+describe('Pflege der Bereiche', () => {
+  it('ohne Bereich eingeteilt: ab zweimal je Bereich — einmal ist Aushilfe', () => {
+    const x = person('x', ['gebet'])
+    const leser = person('leser', ['leser'])
+    const weeks = wochen(4)
+    weeks.forEach((w, i) => {
+      if (i < 3) setze(w.mid, 'leser', x)
+      if (i === 0) hilfsdienst(w.mid, 'mik', x)
+      setze(w.we, 'leser', leser)
     })
-    const ganz = new Set([9, 7, 6, 5].flatMap((vor) => [`b|${12 - vor}|mid`, `b|${12 - vor}|we`]))
-    const w = wartezeiten(g(mitE, [a, b, e], 13, ganz), [a, b, e], 'gebet')
-    expect(w.warten.filter((z) => z.lange).map((z) => [z.pid, z.wochen, z.wartend])).toEqual([['e', 8, 8], ['b', 10, 6]])
-    expect(hinweise([], [], [w]).map((h) => (h.art === 'wartet' ? h.pid : h.art))).toEqual(['e', 'b'])
+    expect(ohneBereich(g(weeks, [x, leser]), [x, leser])).toEqual([{ pid: 'x', bereiche: [{ bereich: 'leser', n: 3 }] }])
+  })
+
+  it('Bereich im Jahr ungenutzt: wo auf die Person mindestens drei Plätze gekommen wären', () => {
+    const alt = person('alt', ['gebet', 'leser'])
+    const leser = ['r1', 'r2', 'r3'].map((id) => person(id, ['leser']))
+    const neu = person('neu', ['gebet', 'leser'])
+    const weeks = wochen(12)
+    weeks.forEach((w, i) => {
+      setze(w.mid, 'leser', leser[i % 3]!)
+      setze(w.we, 'leser', leser[(i + 1) % 3]!)
+      if (i === 0) setze(w.mid, 'gebet', alt, 1)
+      // neu ist erst seit zwei Wochen dabei — auf ihn kam noch kein Leser.
+      if (i >= 10) setze(w.mid, 'gebet', neu, 1)
+    })
+    const alle = [alt, ...leser, neu]
+    // Von 24 Lesungen wären auf alt rund sechs gekommen, auf neu keine ganze.
+    expect(nieGenutzt(g(weeks, alle, 52), alle)).toEqual([{ pid: 'alt', bereiche: ['leser'] }])
   })
 })
 
 describe('Treffpunkte', () => {
   const gruppe: Group = { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null }
+  const ohne: Group = { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null }
+  const co: Group = { id: 'g3', name: 'Gruppe 3', overseerId: null, assistantId: null }
   const leiter = person('leiter', ['treffpunkt'], { grp: 'g1' })
   const nie = person('nie', ['treffpunkt'], { grp: 'g1' })
+  const zwei = person('zwei', ['treffpunkt'], { grp: 'g2' })
+  const drei = person('drei', ['treffpunkt'], { grp: 'g3' })
   const inst = (grp: string | null, lpid?: string, lext = false): FsInstance => ({
     id: 'r', ruleId: 'r', grp, wd: 6, time: '09:30', place: 'Saal', leader: lpid ?? 'Kreisaufseher', ...(lpid ? { lpid } : {}), ...(lext ? { lext } : {}),
   })
@@ -437,43 +721,94 @@ describe('Treffpunkte', () => {
       { gruppe: null, zeilen: [{ pid: 'leiter', n: 1 }] },
     ])
   })
+
+  it('eine Gruppe ohne eigene Treffpunkte im Zeitraum steht nicht da — leitete sie der Kreisaufseher, schon', () => {
+    // Jahresprobe: Die Versammlung hatte keine Gruppentreffpunkte, und alle sechs
+    // Gruppen listeten ihre Leiter mit „nie".
+    const weeks = [woche(1)]
+    const fs = [[inst(null, 'leiter'), inst('g3', undefined, true)]]
+    const t = treffpunkte(fs, zeitfenster(weeks, 13, HEUTE), [leiter, nie, zwei, drei], [gruppe, ohne, co])
+    expect(t).toEqual([
+      { gruppe: 'g3', zeilen: [{ pid: 'drei', n: 0 }] },
+      { gruppe: null, zeilen: [{ pid: 'leiter', n: 1 }] },
+    ])
+  })
 })
 
 describe('Ballungen', () => {
-  it('zweimal in einer Zusammenkunft und drei Wochen hintereinander im selben Bereich', () => {
-    const p = person('p', ['bibellesung', 'leser', serviceQualKey('mik')])
-    const weeks = Array.from({ length: 4 }, (_, i) => {
-      const w = woche(4 - i)
+  /*
+   * Jahresprobe: Zwei Drittel der Fälle „zweimal" waren gewollte Paare — der
+   * Vorsitzende liest am Wochenende den Wachtturm, Vorsitz und Besprechung,
+   * Vortrag und Gebet. Ein echtes Signal war nur, wer zugleich einen
+   * Hilfsdienst hatte.
+   */
+  it('zweimal in einer Zusammenkunft nur mit einem Hilfsdienst — zwei Programmpunkte sind kein Befund', () => {
+    const p = person('p', ['bibellesung', 'leser', 'vorsitzWe', serviceQualKey('mik'), serviceQualKey('ton')])
+    const weeks = wochen(3)
+    setze(weeks[0]!.mid, 'bibellesung', p)
+    setze(weeks[0]!.mid, 'leser', p)
+    setze(weeks[1]!.we, 'vorsitzWe', p)
+    setze(weeks[1]!.we, 'leser', p)
+    setze(weeks[2]!.mid, 'leser', p)
+    hilfsdienst(weeks[2]!.mid, 'mik', p)
+    hilfsdienst(weeks[2]!.we, 'mik', p)
+    hilfsdienst(weeks[2]!.we, 'ton', p)
+    expect(ballungen(g(weeks, [p])).zweimal).toEqual([
+      { pid: 'p', start: start(1), tab: 'mid', bereiche: ['leser', serviceQualKey('mik')] },
+      { pid: 'p', start: start(1), tab: 'we', bereiche: [serviceQualKey('ton'), serviceQualKey('mik')] },
+    ])
+  })
+
+  it('drei Wochen hintereinander im selben Bereich', () => {
+    const p = person('p', [serviceQualKey('mik')])
+    const weeks = wochen(4)
+    weeks.forEach((w, i) => {
       if (i < 3) hilfsdienst(w.mid, 'mik', p)
-      return w
     })
-    setze(weeks[3]!.mid, 'bibellesung', p)
-    setze(weeks[3]!.mid, 'leser', p)
-    const b = ballungen(g(weeks, [p]))
-    expect(b.zweimal).toEqual([{ pid: 'p', start: start(1), tab: 'mid', bereiche: ['bibellesung', 'leser'] }])
-    expect(b.folge).toEqual([{ pid: 'p', bereich: 'svc:mik', ab: start(4), wochen: 3 }])
+    expect(ballungen(g(weeks, [p])).folge).toEqual([{ pid: 'p', bereich: 'svc:mik', ab: start(4), wochen: 3 }])
   })
 })
 
 describe('Was auffällt', () => {
+  /** Wer oder was ein Hinweis meint — für Listen wie „selten:c". */
+  const marke = (h: Hinweis): string => `${h.art}:${'pid' in h ? h.pid : h.bereich}`
+
   it('zu selten vor zu oft vor einseitig vor wartet — je Person der deutlichste Fall', () => {
     const a = person('a', ['gebet', serviceQualKey('mik')])
     const b = person('b', ['gebet', serviceQualKey('mik')])
     const c = person('c', ['gebet', serviceQualKey('mik')])
-    const weeks = Array.from({ length: 9 }, (_, i) => {
-      const w = woche(9 - i)
+    const weeks = wochen(9)
+    weeks.forEach((w, i) => {
       setze(w.mid, 'gebet', a, 1)
       hilfsdienst(w.mid, 'mik', i < 8 ? a : b)
-      return w
     })
     const grund = g(weeks, [a, b, c])
     const persons = [a, b, c]
-    const v = (['aufgaben', 'hilfsdienste'] as const).map((x) => verteilung(grund, persons, x))
-    const h = hinweise(v, einseitig(grund, persons), [wartezeiten(grund, persons, 'gebet')])
-    const arten = h.map((x) => `${x.art}:${x.art === 'absagen' ? x.bereich : x.pid}`)
+    const v = VERGLEICHE.map((x) => verteilung(grund, persons, x))
+    const arten = hinweise(v, einseitig(grund, persons), [wartezeiten(grund, persons, 'gebet')]).map(marke)
     // c ist zu selten (in beiden Vergleichen, steht aber einmal da), a zu oft.
     expect(arten.filter((x) => x === 'selten:c')).toHaveLength(1)
     expect(arten.indexOf('selten:c')).toBeLessThan(arten.indexOf('oft:a'))
+  })
+
+  it('wer lange wartet, steht je Bereich — der mit den meisten Wartenden zuerst, darin wer am längsten wartet', () => {
+    const zeilen = (pids: [string, number, boolean][]) =>
+      pids.map(([pid, wartend, lange]) => ({ pid, wochen: wartend, nichtEinteilbar: 0, wartend, zuletzt: null, geplant: null, ueber: false, lange }))
+    const w = (bereich: string, ueblich: number, warten: [string, number, boolean][]): Wartezeiten => ({ bereich, ueblich, warten: zeilen(warten), schnell: [] })
+    const h = hinweise([], [], [
+      w('leser', 5, [['d', 30, true]]),
+      w('gebet', 4, [['a', 9, true], ['b', 12, true], ['c', 3, false]]),
+    ])
+    expect(h).toEqual([
+      { art: 'wartet', bereich: 'gebet', pids: ['b', 'a'], ueblich: 4 },
+      { art: 'wartet', bereich: 'leser', pids: ['d'], ueblich: 5 },
+    ])
+  })
+
+  it('die Pflege der Bereiche steht nach den Absagen', () => {
+    const absagen = [{ bereich: 'gebet', n: 3, von: 10, anteil: 0.3 }]
+    const pflege = { ohneBereich: [{ pid: 'x', bereiche: [{ bereich: 'leser', n: 3 }] }], nieGenutzt: [{ pid: 'y', bereiche: ['gebet'] }] }
+    expect(hinweise([], [], [], absagen, pflege).map(marke)).toEqual(['absagen:gebet', 'ohneBereich:x', 'nieGenutzt:y'])
   })
 })
 
@@ -481,7 +816,7 @@ describe('Eine Person', () => {
   it('je Woche Aufgabe vor Hilfsdienst vor abwesend — und je Bereich wie oft, erwartet, zuletzt', () => {
     const p = person('p', ['gebet', serviceQualKey('mik')])
     const q = person('q', ['gebet'])
-    const weeks = [woche(4), woche(3), woche(2), woche(1)]
+    const weeks = wochen(4)
     setze(weeks[0]!.mid, 'gebet', p, 1)
     hilfsdienst(weeks[0]!.mid, 'mik', p)
     hilfsdienst(weeks[1]!.we, 'mik', p)
@@ -490,9 +825,23 @@ describe('Eine Person', () => {
     const bild = personBild(g(weeks, [p, q], 13, abwesend), weeks, [p, q], abwesend, 'p')!
     expect(bild.wochen).toEqual(['aufgabe', 'hilfsdienst', 'abwesend', null])
     expect(bild).toMatchObject({ aufgaben: 1, hilfsdienste: 2, abwesend: 2 })
-    expect(bild.bereiche.find((b) => b.bereich === 'gebet')).toMatchObject({ n: 1, zuletzt: start(4), vorWochen: 4 })
-    // Zwei Gebete im Zeitraum; p war in sechs von acht Zusammenkünften da, q in allen.
-    expect(bild.erwartetAufgaben).toBeCloseTo((2 * 6) / 14)
+    expect(bild.bereiche.find((b) => b.bereich === 'gebet')).toMatchObject({ hat: true, n: 1, zuletzt: start(4), vorWochen: 4 })
+    // Zwei Gebete: das erste ganz auf p — q kam erst in der letzten Woche
+    // dazu —, das zweite halb.
+    expect(bild.erwartetAufgaben).toBeCloseTo(1.5)
+  })
+
+  it('die Bereiche, in denen sie ohne ihn eingeteilt war, stehen hinten — ohne Erwartung, nicht unter den Aufgaben', () => {
+    const p = person('p', ['gebet'])
+    const weeks = wochen(2)
+    for (const w of weeks) setze(w.mid, 'leser', p)
+    setze(weeks[1]!.mid, 'gebet', p, 1)
+    const bild = personBild(g(weeks, [p]), weeks, [p], KEINE_ABWESENHEIT, 'p')!
+    expect(bild.bereiche.map((b) => [b.bereich, b.hat, b.n, b.erwartet])).toEqual([
+      ['gebet', true, 1, 1],
+      ['leser', false, 2, 0],
+    ])
+    expect(bild.aufgaben).toBe(1)
   })
 
   it('eine unbekannte Person hat kein Bild', () => {
@@ -611,7 +960,7 @@ describe('Absagen', () => {
   })
 
   it('je Bereich: wie viele, gegen alle Zuteilungen des Bereichs — die meisten zuerst', () => {
-    const weeks = [woche(3), woche(2), woche(1)]
+    const weeks = wochen(3)
     for (const w of weeks) {
       hilfsdienst(w.mid, 'mik', andere)
       hilfsdienst(w.mid, 'mik', mik)
@@ -646,7 +995,7 @@ describe('Absagen', () => {
   })
 
   it('die Person: ihre Absagen im Zeitraum — nicht die der anderen', () => {
-    const weeks = [woche(2), woche(1)]
+    const weeks = wochen(2)
     const absagen = weeks.map((w) => absage('beter', w, schluessel(w, 'mid', 'gebet')))
     absagen.push(absage('mik', weeks[0]!, schluessel(weeks[0]!, 'mid', serviceQualKey('mik'))))
     const bild = personBild(grund(weeks, absagen), weeks, [mik, beter, andere], KEINE_ABWESENHEIT, 'beter')
@@ -655,27 +1004,23 @@ describe('Absagen', () => {
 })
 
 describe('Kennzahlen', () => {
-  it('Zuteilungen, wer eingeteilt war, wer nie — und der Anteil der zehn oberen', () => {
+  it('Zuteilungen, wer eingeteilt war und wer nie', () => {
     const a = person('a', ['gebet'])
     const nie = person('nie', ['gebet'])
     const ohne = person('ohne', [])
     const w = woche(1)
     setze(w.mid, 'gebet', a, 1)
     setze(w.we, 'gebet', a, 1)
-    const k = kennzahlen(g([w], [a, nie, ohne]), [a, nie, ohne])
-    expect(k).toMatchObject({ zuteilungen: 2, mitBereichen: 2, eingeteilt: 1, nie: 1, anteilOben: 1 })
-    expect(k.last).toEqual([{ pid: 'a', n: 2 }, { pid: 'nie', n: 0 }])
+    expect(kennzahlen(g([w], [a, nie, ohne]), [a, nie, ohne])).toEqual({ zuteilungen: 2, mitBereichen: 2, eingeteilt: 1, nie: 1 })
   })
 
-  it('wer den ganzen Zeitraum fehlte, ist weder „nie dran" noch in der Last — von ihm wird nichts erwartet', () => {
+  it('wer den ganzen Zeitraum fehlte, ist nicht „nie dran" — von ihm wird nichts erwartet', () => {
     const a = person('a', ['gebet'])
     const weg = person('weg', ['gebet'])
-    const weeks = [woche(2), woche(1)]
+    const weeks = wochen(2)
     setze(weeks[0]!.mid, 'gebet', a, 1)
     const ganz = new Set(weeks.flatMap((_, wi) => [`weg|${wi}|mid`, `weg|${wi}|we`]))
-    const k = kennzahlen(g(weeks, [a, weg], 13, ganz), [a, weg])
-    expect(k).toMatchObject({ mitBereichen: 1, eingeteilt: 1, nie: 0 })
-    expect(k.last.map((z) => z.pid)).toEqual(['a'])
+    expect(kennzahlen(g(weeks, [a, weg], 13, ganz), [a, weg])).toMatchObject({ mitBereichen: 1, eingeteilt: 1, nie: 0 })
     // Gegenprobe: eine Zusammenkunft da — dann war er nie dran.
     const einmalDa = new Set([...ganz].filter((x) => x !== 'weg|1|we'))
     expect(kennzahlen(g(weeks, [a, weg], 13, einmalDa), [a, weg])).toMatchObject({ mitBereichen: 2, nie: 1 })
@@ -686,5 +1031,51 @@ describe('Kennzahlen', () => {
     expect(a.kennzahlen.zuteilungen).toBe(0)
     expect(a.hinweise).toEqual([])
     expect(a.wartezeiten).toEqual([])
+    expect(a.engpaesse).toEqual([])
+    expect(a.pflege).toEqual({ ohneBereich: [], nieGenutzt: [] })
+  })
+})
+
+/*
+ * Wartezeiten, Engpässe und die Pflege der Bereiche rechnen über das ganze Jahr
+ * (Jahresprobe 18.10.2026): Wer vor einem halben Jahr zuletzt betete, wartet —
+ * auch wenn oben drei Monate gewählt sind.
+ */
+describe('auswerten: das Jahr', () => {
+  const beter = ['b1', 'b2', 'b3', 'b4'].map((id) => person(id, ['gebet']))
+  const lang = person('lang', ['gebet'])
+  const persons = [...beter, lang]
+  const weeks = wochen(30)
+  weeks.forEach((w, i) => setze(w.mid, 'gebet', i === 0 ? lang : beter[i % 4]!, 1))
+  const rechne = (zeitraum: 12 | 3) =>
+    auswerten({ weeks, fsWeeks: [], persons, services: DEMO_SERVICES, groups: [], abwesend: KEINE_ABWESENHEIT, heute: HEUTE, zeitraum })
+
+  it('Wartezeiten, Engpässe und die Pflege sind bei drei Monaten dieselben wie beim Jahr', () => {
+    const jahr = rechne(12)
+    const quartal = rechne(3)
+    expect(quartal.wartezeiten).toEqual(jahr.wartezeiten)
+    expect(quartal.engpaesse).toEqual(jahr.engpaesse)
+    expect(quartal.pflege).toEqual(jahr.pflege)
+    // lang betete vor dreißig Wochen — im Vierteljahr nie, gewartet hat er trotzdem dreißig.
+    const zeile = quartal.wartezeiten[0]!.warten.find((z) => z.pid === 'lang')
+    expect(zeile).toMatchObject({ wochen: 30, lange: true })
+    expect(quartal.hinweise).toContainEqual({ art: 'wartet', bereich: 'gebet', pids: ['lang'], ueblich: 5 })
+    // Der Zeitraum gilt weiter für alles andere.
+    expect(quartal.kennzahlen.zuteilungen).toBe(13)
+    expect(jahr.kennzahlen.zuteilungen).toBe(30)
+  })
+
+  it('wer übers Jahr insgesamt über seiner Erwartung liegt, wartet nicht', () => {
+    // lang liest dazu jede Woche, obwohl alle lesen dürfen: weit über seiner Erwartung.
+    const mitLeser = [...beter, lang].map((p) => ({ ...p, priv: { ...p.priv, leser: true } }))
+    const viel = weeks.map((w) => {
+      const kopie = structuredClone(w)
+      setze(kopie.mid, 'leser', lang)
+      return kopie
+    })
+    const a = auswerten({ weeks: viel, fsWeeks: [], persons: mitLeser, services: DEMO_SERVICES, groups: [], abwesend: KEINE_ABWESENHEIT, heute: HEUTE, zeitraum: 12 })
+    expect(a.wartezeiten.find((w) => w.bereich === 'gebet')?.warten.find((z) => z.pid === 'lang')).toMatchObject({ ueber: true, lange: false })
+    // Auf ein Gebet wartet niemand mehr — aufs Lesen die anderen, die nie dran sind.
+    expect(a.hinweise.filter((h) => h.art === 'wartet').map((h) => h.art === 'wartet' && h.bereich)).toEqual(['leser'])
   })
 })

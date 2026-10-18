@@ -13,15 +13,14 @@ type Darstellung = 'diagramm' | 'tabelle'
 const LAGE_WORT = { oft: 'awLageOft', rahmen: 'awLageRahmen', selten: 'awLageSelten' } as const satisfies Record<Lage, string>
 const ERKLAERUNG = {
   aufgaben: 'awErklaerungAufgaben',
-  schulung: 'awErklaerungSchulung',
   hilfsdienste: 'awErklaerungHilfsdienste',
 } as const satisfies Record<Vergleich, string>
 
 /**
  * **Zu oft, zu selten** (Entwurf `HandyVerteilung`): je Person die Zuteilungen
  * gegen die Erwartung, getrennt nach zu oft, im Rahmen und zu selten. Umschaltbar
- * zwischen Aufgaben, Schulungsaufgaben und dem Vergleich mit den Hilfsdiensten,
- * dazu als Tabelle — für Vorleseprogramme und wer lieber Zahlen liest.
+ * zwischen den Aufgaben und dem Vergleich mit den Hilfsdiensten, dazu als
+ * Tabelle — für Vorleseprogramme und wer lieber Zahlen liest.
  */
 export function VerteilungAnsicht({ k }: { k: Kontext }) {
   const { t } = k
@@ -30,7 +29,7 @@ export function VerteilungAnsicht({ k }: { k: Kontext }) {
   const [alle, setAlle] = useState(false)
   const v = k.a.verteilungen[vergleich]
   const gesamt = vergleich === 'hilfsdienste'
-  const vergleichText: Record<Vergleich, string> = { aufgaben: t.awAufgaben, schulung: t.privSchulung, hilfsdienste: t.awHilfsdienste }
+  const vergleichText: Record<Vergleich, string> = { aufgaben: t.awAufgaben, hilfsdienste: t.awHilfsdienste }
   const legende: [MusterArt, string][] = [
     ['band', t.awUeblich],
     ['strich', t.awErwartet],
@@ -66,7 +65,7 @@ export function VerteilungAnsicht({ k }: { k: Kontext }) {
         wert={darstellung}
         onWahl={setDarstellung}
       />
-      <p className="aw-erklaerung">{t[ERKLAERUNG[vergleich]]}</p>
+      <p className="aw-erklaerung">{`${t[ERKLAERUNG[vergleich]]} ${t.awErklaerungOhneBereich}`}</p>
       {darstellung === 'diagramm' && <Legende eintraege={legende} />}
       {gruppen.map((g) =>
         g.anzahl === 0 ? null : (

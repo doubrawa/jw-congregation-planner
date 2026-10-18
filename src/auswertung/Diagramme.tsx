@@ -52,37 +52,36 @@ export function VergleichsBalken({
 }
 
 /**
- * Die Wartezeit (Wochen seit dem letzten Mal, ohne die abwesenden): das Feld
- * reicht bis `LANGE_AB`-mal so lange wie üblich, was darüber liegt, ist rot —
- * aber nur, wenn die Person wirklich lange wartet: Wer schon geplant ist,
- * wartet nicht, sein Balken bleibt grau. Nie im Zeitraum ist gestrichelt.
+ * Die Wartezeit (Wochen seit dem letzten Mal, nur die, in denen die Person
+ * hätte drankommen können): das Feld reicht bis `LANGE_AB`-mal so lange wie
+ * üblich, was darüber liegt, ist rot — aber nur, wenn die Person wirklich lange
+ * wartet: Wer schon geplant ist oder insgesamt über seiner Erwartung liegt,
+ * wartet nicht, sein Balken bleibt grau. Wer im Jahr nie dran war (`nie`),
+ * dessen Balken ist gestrichelt.
  */
 export function WarteBalken({
   wochen,
+  nie = false,
   ueblich,
   lange,
   max,
   aria,
 }: {
-  wochen: number | null
+  wochen: number
+  nie?: boolean
   ueblich: number
   lange: boolean
   max: number
   aria: string
 }) {
   const grenze = LANGE_AB * ueblich
-  const darueber = lange && wochen !== null ? wochen - grenze : 0
+  const darueber = lange ? wochen - grenze : 0
+  const bis = anteil(darueber > 0 ? grenze : wochen, max)
   return (
     <div className="aw-balken" role="img" aria-label={aria}>
       <span className="aw-band" style={{ width: anteil(grenze, max) }} />
-      {wochen === null ? (
-        <span className="aw-nie" />
-      ) : (
-        <>
-          <span className="aw-wert" style={{ width: anteil(darueber > 0 ? grenze : wochen, max) }} />
-          {darueber > 0 && <span className="aw-wert is-ueber" style={{ insetInlineStart: anteil(grenze, max), width: anteil(darueber, max) }} />}
-        </>
-      )}
+      {nie ? <span className="aw-nie" style={{ width: bis }} /> : <span className="aw-wert" style={{ width: bis }} />}
+      {darueber > 0 && <span className="aw-wert is-ueber" style={{ insetInlineStart: anteil(grenze, max), width: anteil(darueber, max) }} />}
       <span className="aw-strich" style={{ insetInlineStart: anteil(ueblich, max) }} />
     </div>
   )
@@ -143,7 +142,6 @@ export function WochenFelder({ wochen, reihen }: { wochen: readonly WochenArt[];
 
 /** Ein Muster in der Legende — dieselbe Form wie im Diagramm. */
 export type MusterArt =
-  | 'oben'
   | 'andere'
   | 'leer'
   | 'band'
@@ -154,11 +152,11 @@ export type MusterArt =
   | 'stufe1'
   | 'stufe2'
   | 'stufe3'
+  | 'ohne'
   | 'aufgabe'
   | 'abwesend'
 
 const MUSTER_KLASSE: Record<MusterArt, string> = {
-  oben: 'aw-muster is-oben',
   andere: 'aw-muster is-andere',
   leer: 'aw-muster is-leer',
   band: 'aw-muster is-band',
@@ -169,6 +167,7 @@ const MUSTER_KLASSE: Record<MusterArt, string> = {
   stufe1: 'aw-muster is-stufe1',
   stufe2: 'aw-muster is-stufe2',
   stufe3: 'aw-muster is-stufe3',
+  ohne: 'aw-muster is-ohne',
   aufgabe: 'aw-muster is-aufgabe',
   abwesend: 'aw-muster is-abwesend',
 }

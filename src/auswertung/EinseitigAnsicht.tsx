@@ -1,7 +1,7 @@
 import { useId, useMemo, useState } from 'react'
 import { Wahl } from '../bausteine/Wahl'
 import { QUALIFICATION_ORDER } from '../data/constants'
-import { istEinseitig, matrix, type EinseitigZeile } from '../data/auswertung'
+import { istEinseitig, matrix, type EinseitigZeile, type MatrixZelle } from '../data/auswertung'
 import { serviceQualKey } from '../data/helpers'
 import type { Person, Service } from '../data/types'
 import { fill } from '../i18n/useT'
@@ -79,11 +79,43 @@ function stufe(n: number): string {
   return 'aw-zelle is-stufe1'
 }
 
+/** Das Feld einer Zelle — und was das Vorleseprogramm über sie sagt. */
+function Zelle({ zelle, k }: { zelle: MatrixZelle; k: Kontext }) {
+  if (!zelle.hat && zelle.n === 0) {
+    return (
+      <span className="aw-zelle is-ohne" aria-hidden="true">
+        –
+      </span>
+    )
+  }
+  // Eingeteilt, ohne den Bereich zu haben (Jahresprobe 18.10.2026): umrandet.
+  if (!zelle.hat) {
+    return (
+      <span className="aw-zelle is-ohne-bereich" aria-hidden="true">
+        {k.zahl(zelle.n)}
+      </span>
+    )
+  }
+  if (zelle.n === 0) return <span className="aw-zelle is-nie" aria-hidden="true" />
+  return (
+    <span className={stufe(zelle.n)} aria-hidden="true">
+      {k.zahl(zelle.n)}
+    </span>
+  )
+}
+
+/** Was eine Zelle in Worten ist: die Zahl, „nie" oder „Bereich nicht vorhanden" — oder beides. */
+function zellenText(zelle: MatrixZelle, k: Kontext): string {
+  if (!zelle.hat) return zelle.n === 0 ? k.t.awOhneBereich : `${k.zahl(zelle.n)}, ${k.t.awOhneBereich}`
+  return zelle.n === 0 ? k.t.awNie : k.zahl(zelle.n)
+}
+
 /**
  * **Wer bekommt was** ab dem Tablet (Entwurf `TabletEinseitig`): Person × Bereich
  * als Felder — gestrichelt, wo jemand den Bereich hat und nie dran war, ein
- * Strich, wo er ihn nicht hat. Sie rollt nicht: Die Bereiche teilen sich die
- * Breite, ihre Köpfe stehen senkrecht (`auswertung.css`).
+ * Strich, wo er ihn nicht hat, umrandet, wo er ohne ihn eingeteilt war. Sie
+ * rollt nicht: Die Bereiche teilen sich die Breite, ihre Köpfe stehen senkrecht
+ * (`auswertung.css`).
  */
 export function EinseitigMatrix({ k, persons, services }: { k: Kontext; persons: readonly Person[]; services: readonly Service[] }) {
   const m = useMemo(
@@ -93,6 +125,7 @@ export function EinseitigMatrix({ k, persons, services }: { k: Kontext; persons:
   const { t } = k
   const titelId = useId()
   if (m.zeilen.length === 0) return null
+  const ohneBereich = m.zeilen.some((z) => z.zellen.some((c) => !c.hat && c.n > 0))
   return (
     <section className="karte aw-matrix-karte" aria-labelledby={titelId}>
       <h2 id={titelId} className="karte-titel">
@@ -129,23 +162,12 @@ export function EinseitigMatrix({ k, persons, services }: { k: Kontext; persons:
                 </button>
                 {z.einseitig && <span className="aw-marke-einseitig">{t.awEinseitigMarke}</span>}
               </th>
-              {z.werte.map((wert, i) => {
+              {z.zellen.map((zelle, i) => {
                 const bereich = m.bereiche[i] ?? ''
-                const text = wert === null ? t.awOhneBereich : wert === 0 ? t.awNie : k.zahl(wert)
-                const aria = fill(t.awZelle, { name: k.name(z.pid), bereich: k.bereich(bereich), wert: text })
+                const aria = fill(t.awZelle, { name: k.name(z.pid), bereich: k.bereich(bereich), wert: zellenText(zelle, k) })
                 return (
                   <td key={bereich} aria-label={aria}>
-                    {wert === null ? (
-                      <span className="aw-zelle is-ohne" aria-hidden="true">
-                        –
-                      </span>
-                    ) : wert === 0 ? (
-                      <span className="aw-zelle is-nie" aria-hidden="true" />
-                    ) : (
-                      <span className={stufe(wert)} aria-hidden="true">
-                        {k.zahl(wert)}
-                      </span>
-                    )}
+                    <Zelle zelle={zelle} k={k} />
                   </td>
                 )
               })}
@@ -160,6 +182,7 @@ export function EinseitigMatrix({ k, persons, services }: { k: Kontext; persons:
           ['stufe2', `${k.zahl(STUFE2_AB)}–${k.zahl(STUFE3_AB - 1)}`],
           ['stufe3', fill(t.awUndMehr, { n: k.zahl(STUFE3_AB) })],
           ['leer', t.awNieVorhanden],
+          ...(ohneBereich ? ([['ohne', t.awOhneBereichEingeteilt]] as const) : []),
         ]}
       />
       <p className="klein-text">– {t.awOhneBereich}</p>

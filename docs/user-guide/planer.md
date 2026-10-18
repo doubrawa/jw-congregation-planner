@@ -666,30 +666,34 @@ Schritt **Zuteilen** der Spur — führt wieder in den Plan.
 
 Unter **Planen und verwalten** → **Auswertung** siehst du, wie sich die
 Zuteilungen der vergangenen Wochen auf die Versammlung verteilen: wer zu oft
-oder zu selten dran ist, wer immer dasselbe macht, wer lange wartet und wo oft
-abgesagt wird. Die Auswertung sehen nur Planer und Admins. Sie rechnet aus den
-Wochen, die die App kennt; drucken lässt sie sich nicht.
+oder zu selten dran ist, wer immer dasselbe macht, wer lange wartet, wo die
+Plätze knapp sind und wo oft abgesagt wird. Die Auswertung sehen nur Planer und
+Admins. Sie rechnet aus den Wochen, die die App kennt; drucken lässt sie sich
+nicht.
 
 ![Auswertung der Zuteilungen](screenshots/planer-auswertung.png)
 
 - **Zeitraum** – 12, 6 oder 3 Monate, bis vor die laufende Woche. Darunter
   steht, welche Tage das sind, wie viele Wochen die App davon kennt und wie
   viele Zusammenkünfte stattfanden. Ausgefallene Zusammenkünfte zählen nicht.
+  **Wartezeiten**, **Engpässe** und die **Pflege der Bereiche** rechnen immer
+  über das ganze Jahr, gleich welcher Zeitraum gewählt ist: Gewartet wird seit
+  dem letzten Mal, nicht seit dem Beginn des Zeitraums.
 - **Kennzahlen** – alle Zuteilungen im Zeitraum, wie viele derer mit einem
   Aufgabenbereich eingeteilt waren und wie viele nie dran waren. Wer den ganzen
-  Zeitraum abwesend war, zählt hier nicht mit – auch nicht in der Last.
+  Zeitraum abwesend oder noch nicht dabei war, zählt hier nicht mit.
 - **Was auffällt** – das Wichtigste zuerst: zu selten, zu oft, einseitig,
-  wartet lange, viele Absagen. Je Person und Art steht nur der deutlichste Fall
-  da. Ein Tipp öffnet die Person – bei vielen Absagen die Absagen;
+  lange Wartezeit, viele Absagen, dann die Pflege der Bereiche (**Ohne Bereich
+  eingeteilt**, **Bereich im Jahr ungenutzt**). Je Person und Art steht nur der
+  deutlichste Fall da; wer lange wartet, steht je Bereich mit den ersten drei
+  Namen. Ein Tipp öffnet die Person – bei einer langen Wartezeit die
+  Wartezeiten mit diesem Bereich, bei vielen Absagen die Absagen;
   **Alle Hinweise** zeigt den Rest.
-- **Wie sich die Last verteilt** – je Person ein Balken, die meisten zuerst,
-  Aufgaben und Hilfsdienste zusammen. Die zehn oberen sind hervorgehoben, wer
-  nie dran war, steht als gestrichelte Linie da. **Als Tabelle** zeigt dieselben
-  Zahlen als Liste.
-- Am Handy führen vier Kacheln weiter – **Zu oft, zu selten**, **Einseitig
-  verteilt**, **Wartezeiten**, **Treffpunkte, Absagen, Ballungen**; Zurück führt
-  wieder in den Überblick. Am Tablet steht alles auf einer Seite, am Computer
-  dazu die Tabelle **Wer bekommt was** (Person × Bereich).
+- Am Handy führen fünf Kacheln weiter – **Zu oft, zu selten**, **Einseitig
+  verteilt**, **Wartezeiten**, **Engpässe** (mit dem knappsten Bereich),
+  **Treffpunkte, Absagen, Ballungen**; Zurück führt wieder in den Überblick. Am
+  Tablet steht alles auf einer Seite, die Engpässe unter **Was auffällt**, am
+  Computer dazu die Tabelle **Wer bekommt was** (Person × Bereich).
 
 ### Was zählt – und was erwartet wird
 
@@ -700,18 +704,29 @@ Wochen, die die App kennt; drucken lässt sie sich nicht.
   Gruppen) auch nicht.
 - **Feste Rollen** zählen nicht: der feste Leiter des Wachtturm-Studiums und
   was dem Vorsitz folgt, etwa das Anfangsgebet des Vorsitzenden.
-- **Erwartet** ist, was auf eine Person käme, wenn die Plätze ihrer
-  Aufgabenbereiche gleich auf alle verteilt wären, die diese Bereiche haben.
-  Wochen, in denen jemand abwesend war, zählen für ihn nicht mit.
+- **Erwartet** ist, was auf eine Person käme, wenn jeder Platz gleich auf alle
+  verteilt wäre, die ihn in seiner Zusammenkunft hätten haben können: die den
+  Bereich haben und da waren. Wer in einer Zusammenkunft fehlte, von dem wird
+  für ihre Plätze nichts erwartet. Wer das Wachtturm-Studium leitet – der feste
+  Leiter oder sein Vertreter –, von dem werden in dieser Zusammenkunft kein
+  Vorsitz und kein Lesen erwartet.
+- **Dabei seit** – erwartet wird erst ab der ersten Woche, in der jemand
+  irgendwo eingeteilt war: Ein Zugezogener stünde sonst unter „zu selten". Wer
+  noch nie eingeteilt war, gilt als von Anfang an dabei; wer erst für eine
+  kommende Woche eingeteilt ist, ebenso. Die Kehrseite: Wer lange übersehen und
+  dann einmal eingeteilt wurde, gilt erst ab da als dabei und fällt nicht mehr
+  auf.
+- Eine Einteilung in einem Bereich, den die Person **nicht hat**, zählt nicht
+  gegen ihre Erwartung – sie steht unter **Ohne Bereich eingeteilt** (siehe
+  *Pflege der Bereiche*).
 - **Zu oft, zu selten** heißt: mehr als die Hälfte über oder unter der
   Erwartung **und** mindestens drei daneben – damit nicht jede kleine
   Abweichung auffällt.
 - Die Ansicht **Zu oft, zu selten** vergleicht wahlweise die **Aufgaben**
-  (Programmpunkte), die **Schulungsaufgaben** (Gesprächsführer,
-  Gesprächspartner und Vortrag zusammen, Schwestern wie Brüder) oder alles
-  **mit den Hilfsdiensten**. Den letzten Vergleich gibt es, weil „Automatisch"
-  die Hilfsdienste nach der Gesamtlast verteilt: Wer viele Aufgaben hat,
-  bekommt weniger Hilfsdienste.
+  (Programmpunkte, die Schulungsaufgaben eingeschlossen) oder alles **mit den
+  Hilfsdiensten**. Den zweiten Vergleich gibt es, weil „Automatisch" die
+  Hilfsdienste nach der Gesamtlast verteilt: Wer viele Aufgaben hat, bekommt
+  weniger Hilfsdienste.
 - Im **Diagramm** ist der graue Balken die Zahl, der Strich die Erwartung, das
   Feld dahinter der übliche Bereich; rot ist, was darüber liegt, gestrichelt,
   was darunter fehlt. Die **Tabelle** daneben zeigt dieselben Zahlen.
@@ -719,32 +734,64 @@ Wochen, die die App kennt; drucken lässt sie sich nicht.
 ### Einseitig verteilt
 
 Einseitig ist, wer mindestens sechs Zuteilungen hat und zwei Drittel davon in
-einem Bereich – oder wer in einem eigenen Bereich nie dran war, obwohl die
-anderen ihn im Schnitt mindestens viermal hatten. Die Karten zeigen je Person
-ihre Bereiche mit Balken; **Alle** zeigt auch die Unauffälligen.
+einem Bereich – und damit deutlich mehr, als dort zu erwarten ist: Wer
+Mikrofone und Bibellesung hat, hat zwangsläufig vor allem Mikrofone, weil es
+dort viel mehr Plätze gibt. Einseitig ist auch, wer in einem eigenen Bereich
+nie dran war, obwohl die anderen ihn im Schnitt mindestens viermal hatten und
+auf die Person selbst wenigstens ein Platz gekommen wäre. Ein Bereich, der
+schon unter **Bereich im Jahr ungenutzt** steht, steht hier nicht noch einmal.
+Die Karten zeigen je Person ihre Bereiche mit Balken; **Alle** zeigt auch die
+Unauffälligen.
 
 Am Computer zeigt die Tabelle **Wer bekommt was** jede Person mit jedem
 Bereich: je dunkler das Feld, desto öfter. Gestrichelt heißt, sie hat den
-Bereich, war dort aber nie dran; ein Strich, sie hat ihn nicht. Die
-Spaltenköpfe stehen senkrecht, damit die Tabelle ohne Rollen in die Breite
-passt. Ein Tipp auf einen Namen öffnet die Person.
+Bereich, war dort aber nie dran; ein Strich, sie hat ihn nicht; umrandet, sie
+war dort eingeteilt, ohne den Bereich zu haben. Die Spaltenköpfe stehen
+senkrecht, damit die Tabelle ohne Rollen in die Breite passt. Ein Tipp auf
+einen Namen öffnet die Person.
 
 ### Wartezeiten
 
-Je Bereich – oben auszuwählen – steht da, wer am längsten nicht dran war.
-**Üblicher Abstand** ist die Zeit, die im Mittel zwischen zwei Malen derselben
-Person liegt. **Wartet lange** ist, wer mehr als doppelt so lange wartet oder
-im Zeitraum nie dran war. Zur Wartezeit zählen nur Wochen, in denen die Person
-da war – wer ganz fehlte, dem steht **davon abwesend: …** dabei. Wer im Bereich
-schon für diese oder eine kommende Woche eingeteilt ist, wartet nicht: Bei ihm
-steht **geplant: …**, er steht hinten und sein Balken bleibt grau. Darunter
-**Schnell wieder dran**: wer mindestens dreimal dran war, mit höchstens halb so
-viel Abstand wie üblich – je Woche ein Feld.
+Je Bereich – oben auszuwählen – steht da, wer am längsten nicht dran war,
+über das ganze Jahr. **Üblicher Abstand** ist der des Bereichs: die Personen,
+die ihn haben, geteilt durch seine Plätze je Woche (wie unter **Engpässe**).
+Eine **lange Wartezeit** hat, wer mehr als doppelt so lange wartet; wer im Jahr
+nie dran war, wartet seit der ersten Woche, in der der Bereich in der App
+vorkommt. Zur Wartezeit zählen nur Wochen, in denen die Person hätte
+drankommen können: nicht abwesend, eine Zusammenkunft mit Plätzen des Bereichs
+fand statt, kein fester Platz wie die Leitung des Wachtturm-Studiums, schon
+dabei. Die übrigen stehen als **davon nicht einteilbar: …** dabei.
+
+Nicht lange wartet, wer im Bereich schon für diese oder eine kommende Woche
+eingeteilt ist (**geplant: …** – diese Zeilen stehen hinten) und wer übers Jahr
+insgesamt über der eigenen Erwartung liegt (**insgesamt über der Erwartung**):
+Wer viel zu tun hat, wartet nicht auf ein Gebet. Der Balken bleibt dann grau.
+Darunter **Schnell wieder dran**: wer mindestens dreimal dran war, mit
+höchstens halb so viel Abstand wie üblich – je Woche ein Feld.
+
+### Engpässe
+
+Je Bereich über das ganze Jahr: die **Plätze je Woche**, die **Personen**, die
+den Bereich haben, daraus der **Abstand** – alle wie viele Wochen jeder dran
+wäre – und wie oft **je Person im Jahr**. Die knappsten stehen oben, ein
+Bereich, den niemand hat, ganz vorn in Rot. Gezählt werden die Wochen ab der
+ersten, in der der Bereich einen Platz hatte: Aus New World Scheduler kommen
+die Hilfsdienste oft nur wenige Monate zurück.
+
+### Pflege der Bereiche
+
+- **Ohne Bereich eingeteilt** – wer im Jahr mindestens zweimal in einem
+  Bereich eingeteilt war, den die Person nicht hat: Vielleicht fehlt ihr der
+  Bereich unter **Personen**. Ein einziges Mal gilt als Aushilfe.
+- **Bereich im Jahr ungenutzt** – wer einen Bereich hat, in dem auf die Person
+  im Jahr mindestens drei Plätze gekommen wären, und nie dran war: Vielleicht
+  stimmt der Bereich nicht mehr.
 
 ### Treffpunkte, Absagen, Ballungen
 
 - **Treffpunkte leiten** – wer die Zusammenkünfte für den Predigtdienst
-  geleitet hat, je Gruppe.
+  geleitet hat, je Gruppe. Eine Gruppe steht nur da, wenn sie im Zeitraum
+  eigene Treffpunkte hatte.
 - **Absagen je Bereich** – wie viele Zuteilungen eines Bereichs abgesagt
   wurden, gemessen an allen seinen Zuteilungen im Zeitraum; bei den Treffpunkten
   an den geleiteten. Gezählt wird jede Absage, auch wenn der Platz danach neu
@@ -756,15 +803,19 @@ viel Abstand wie üblich – je Woche ein Feld.
   gibt – zählt nur bei der Person, nicht hier und nicht in der Kachel. Hat
   ein Bereich mindestens drei Absagen und doppelt so viel Anteil wie jeder
   andere, steht er rot da und unter **Was auffällt**.
-- **Ballungen** – wer zweimal in einer Zusammenkunft dran war oder drei Wochen
-  und mehr hintereinander im selben Bereich.
+- **Ballungen** – wer in einer Zusammenkunft einen Hilfsdienst und noch einen
+  Platz hatte, oder drei Wochen und mehr hintereinander im selben Bereich. Zwei
+  Programmpunkte derselben Person in einer Zusammenkunft zählen nicht: Das ist
+  meist ein gewolltes Paar, etwa Vorsitz und Wachtturm-Lesen.
 
 ### Eine Person
 
 Ein Tipp auf einen Namen zeigt die Person: ihre Aufgaben gegen die Erwartung,
 ihre Hilfsdienste, wie oft sie abwesend war und wie oft sie abgesagt hat, die
 Wochen des Zeitraums als Felder (Aufgabe, Hilfsdienst, abwesend) und je
-Bereich, wie oft und wann zuletzt.
+Bereich, wie oft und wann zuletzt – hinten die Bereiche, in denen sie
+eingeteilt war, ohne sie zu haben (**Bereich nicht vorhanden**, ohne
+Erwartung).
 
 ### Was die Auswertung nicht weiß
 
@@ -774,10 +825,11 @@ Bereich, wie oft und wann zuletzt.
 - Abwesenheiten kennt sie, soweit sie in der App stehen. Aus New World
   Scheduler kamen sie erst ab dem Tag des Imports; für die Wochen davor rechnet
   die Auswertung so, als wäre jeder da gewesen.
-- Seit wann jemand dabei ist oder einen Bereich hat, weiß sie nicht: Für einen
-  neuen Verkündiger oder einen frisch vergebenen Bereich rechnet sie, als wäre
-  es den ganzen Zeitraum so gewesen. Er kann deshalb unter „zu selten" stehen,
-  ohne dass etwas schief liegt.
+- Seit wann jemand dabei ist, schließt sie aus der ersten Einteilung (siehe
+  **Dabei seit**). Seit wann jemand einen Bereich hat, weiß sie nicht: Für
+  einen frisch vergebenen Bereich rechnet sie, als hätte die Person ihn schon
+  das ganze Jahr. Sie kann deshalb unter „zu selten" stehen, ohne dass etwas
+  schief liegt.
 - Absagen merkt sich die App seit dem 17. Oktober 2026. Was davor abgesagt und
   schon neu besetzt war, fehlt in der Auswertung.
 

@@ -35,9 +35,8 @@ function farben(): Map<string, Set<string>> {
 
 /** Jedes Legendenmuster mit den Feldern, die es erklärt. */
 const PAARE: Array<[string, string[]]> = [
-  ['.aw-muster.is-oben', ['.aw-last-balken.is-oben']],
-  ['.aw-muster.is-andere', ['.aw-last-balken', '.aw-wert']],
-  ['.aw-muster.is-leer', ['.aw-last-balken.is-leer', '.aw-nie', '.aw-mini.is-nie', '.aw-zelle.is-nie']],
+  ['.aw-muster.is-andere', ['.aw-wert']],
+  ['.aw-muster.is-leer', ['.aw-nie', '.aw-mini.is-nie', '.aw-zelle.is-nie']],
   ['.aw-muster.is-band', ['.aw-band']],
   ['.aw-muster.is-strich', ['.aw-strich']],
   ['.aw-muster.is-ueber', ['.aw-wert.is-ueber']],
@@ -46,6 +45,7 @@ const PAARE: Array<[string, string[]]> = [
   ['.aw-muster.is-stufe1', ['.aw-zelle.is-stufe1']],
   ['.aw-muster.is-stufe2', ['.aw-zelle.is-stufe2']],
   ['.aw-muster.is-stufe3', ['.aw-zelle.is-stufe3']],
+  ['.aw-muster.is-ohne', ['.aw-zelle.is-ohne-bereich']],
   ['.aw-muster.is-aufgabe', ['.aw-woche.is-aufgabe']],
   ['.aw-muster.is-abwesend', ['.aw-woche.is-abwesend']],
 ]
