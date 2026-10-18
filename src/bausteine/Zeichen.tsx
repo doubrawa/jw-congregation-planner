@@ -110,6 +110,26 @@ const PFADE = {
       <circle cx="16" cy="17" r="2" />
     </>
   ),
+  /** Die Bereiche des Predigtdienstes (`FsBereichTabs`): die Gruppe, die besucht wird … */
+  gruppe: (
+    <>
+      <circle cx="12" cy="8.3" r="2.8" />
+      <path d="M6.9 19a5.1 5.1 0 0 1 10.2 0" />
+      <circle cx="5.6" cy="10.4" r="2" />
+      <path d="M2.6 17.6a3.4 3.4 0 0 1 3.9-3.2" />
+      <circle cx="18.4" cy="10.4" r="2" />
+      <path d="M21.4 17.6a3.4 3.4 0 0 0-3.9-3.2" />
+    </>
+  ),
+  /** … und der Trolley: Schild oben, zwei Fächer, zwei Räder. */
+  trolley: (
+    <>
+      <rect x="7" y="3" width="10" height="13" rx="1.5" />
+      <path d="M7 7h10M9.5 10.5h5M9.5 13h5M9 16v2.2M15 16v2.2" />
+      <circle cx="9" cy="19.7" r="1.3" />
+      <circle cx="15" cy="19.7" r="1.3" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>
 
 export type ZeichenName = keyof typeof PFADE

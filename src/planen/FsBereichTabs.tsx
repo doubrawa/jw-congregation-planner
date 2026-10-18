@@ -1,24 +1,28 @@
 import { useApp } from '../app/context'
+import { Zeichen, type ZeichenName } from '../bausteine/Zeichen'
 import { useT } from '../i18n/useT'
 import type { Dict } from '../i18n/ui'
 import type { FsBereich } from '../data/types'
 import { aktiverFsBereich, fsBereiche } from './fs-bereiche'
 
-/** Beschriftung je Bereich. */
-const BESCHRIFTUNG: Record<FsBereich, keyof Dict> = {
-  treffpunkte: 'fsTreffpunkteTab',
-  gruppenbesuche: 'fsGruppenbesucheTab',
-  trolleys: 'fsTrolleysTab',
-  grundplan: 'fsGrundplan',
+/** Zeichen und Beschriftung je Bereich. */
+const BEREICH: Record<FsBereich, { zeichen: ZeichenName; text: keyof Dict }> = {
+  treffpunkte: { zeichen: 'predigtdienst', text: 'fsTreffpunkteTab' },
+  gruppenbesuche: { zeichen: 'gruppe', text: 'fsGruppenbesucheTab' },
+  trolleys: { zeichen: 'trolley', text: 'fsTrolleysTab' },
+  grundplan: { zeichen: 'einstellungen', text: 'fsGrundplan' },
 }
 
 /**
- * Reiter des Predigtdienstes (T120; T121, Baustein `GDienstTabs`): die
+ * Die Bereiche des Predigtdienstes (T120; T121, Baustein `GDienstTabs`): die
  * Treffpunkte der Woche, die Gruppenbesuche des Dienstaufsehers, beim Ansehen
- * die Trolleys und beim Planen der Grundplan der Treffpunkte.
- * Welche es hier gibt, sagt `fsBereiche`. Der gewählte steht kräftig mit
- * einem Punkt in Minze darunter. Gibt es nur einen Bereich, steht gar keine
- * Leiste da.
+ * die Trolleys und beim Planen der Grundplan der Treffpunkte. Welche es hier
+ * gibt, sagt `fsBereiche`. Gibt es nur einen Bereich, steht gar keine Leiste da.
+ *
+ * Seit dem 18.10.2026 eine große Wahl über die ganze Breite, jeder Bereich mit
+ * Zeichen und Namen, der gewählte in der Textfarbe hinterlegt wie in der
+ * `Wahl`. Davor standen die Namen als schmale Reiter mit einem Punkt unter dem
+ * gewählten — der Betreiber fand den Trolley-Kalender dahinter nicht.
  */
 export function FsBereichTabs() {
   const { state, dispatch } = useApp()
@@ -32,11 +36,12 @@ export function FsBereichTabs() {
         <button
           key={bereich}
           type="button"
-          className={aktiv === bereich ? 'bereich-tab is-active' : 'bereich-tab'}
+          className="bereich-tab"
           aria-pressed={aktiv === bereich}
           onClick={() => dispatch({ type: 'setFsBereich', bereich })}
         >
-          {t[BESCHRIFTUNG[bereich]]}
+          <Zeichen name={BEREICH[bereich].zeichen} />
+          {t[BEREICH[bereich].text]}
         </button>
       ))}
     </nav>

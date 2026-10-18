@@ -119,6 +119,11 @@ stehen im Menü unter **Predigtdienst**:
 
 ![Zusammenkünfte für den Predigtdienst (Treffpunkte)](screenshots/verkuendiger-treffpunkte.png)
 
+Oben im Predigtdienst wählst du den Bereich: **Treffpunkte** und – sobald es
+sie gibt – **Gruppenbesuche** und **Trolleys**. Jeder Bereich hat ein großes
+Feld mit seinem Zeichen, das gewählte ist kräftig hinterlegt; bei großer
+Schrift stehen die Felder untereinander.
+
 Bei den Treffpunkten siehst du **Versammlungstreffpunkte** (für alle) und die
 **Gruppentreffpunkte** deiner Predigtdienstgruppe – je Tag eine Karte, darin die
 Uhrzeit, der Ort und darunter der Leiter; leitest du selbst, steht dort
@@ -130,9 +135,9 @@ keiner Gruppe zugeordnet, siehst du die Versammlungstreffpunkte.
 ### Besuche des Dienstaufsehers
 
 Der Dienstaufseher besucht reihum die Predigtdienstgruppen, an einem Wochenende
-im Monat, und leitet dann ihre Treffpunkte. Sind Besuche geplant, hat der
-Predigtdienst den Reiter **Gruppenbesuche**: oben die Besuche bei **deiner**
-Gruppe mit Treffpunkt und Besucher, darunter alle kommenden Besuche in
+im Monat, und leitet dann ihre Treffpunkte. Sind Besuche geplant, steht im
+Predigtdienst oben auch **Gruppenbesuche**. Darin stehen zuerst die Besuche bei
+**deiner** Gruppe mit Treffpunkt und Besucher, darunter alle kommenden Besuche in
 Kurzform – die deiner Gruppe hervorgehoben. In der Woche des Besuchs steht am
 Treffpunkt deiner Gruppe **„Besuch des Dienstaufsehers"**.
 
@@ -140,8 +145,9 @@ Treffpunkt deiner Gruppe **„Besuch des Dienstaufsehers"**.
 
 ### Trolleys
 
-Hat eure Versammlung Trolleys, hat der Predigtdienst für alle den Reiter
-**Trolleys**; beim Planen gibt es ihn nicht. Mit dem Trolley steht man nur eine
+Hat eure Versammlung Trolleys, steht im Predigtdienst für alle oben
+**Trolleys** – das Feld mit dem Trolley-Zeichen; ein Tipp darauf öffnet den
+Kalender. Beim Planen gibt es das Feld nicht. Mit dem Trolley steht man nur eine
 Viertelstunde an einem Platz – was es braucht, ist ein Terminplan, in dem man
 sich verabredet. Deshalb **plant niemand, und niemand sagt zu**: Wer mit dem
 Trolley gehen darf, trägt sich selbst ein, mit einem Partner oder allein. Oben

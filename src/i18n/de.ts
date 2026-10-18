@@ -108,7 +108,10 @@ export const DE = {
     // Gruppenbesuche des Dienstaufsehers (T120, Phase 2). „Dienstaufseher" ist
     // gemessen: od Kap. 5 Abs. 33/36 in jeder Sprache, fa/ur über die WOL-Suche
     // (dort fehlt das od). Abwesenheit sagt `toastAbsentP`.
-    fsGruppenbesucheTab: 'Gruppenbesuche',
+    // Die weiche Trennstelle (U+00AD): Am Handy bricht der Name in der Leiste
+    // des Predigtdienstes (`FsBereichTabs`) an der Fuge — sonst trennte das
+    // Wörterbuch so spät wie möglich („Gruppenbesu-che").
+    fsGruppenbesucheTab: 'Gruppen\u00adbesuche',
     gbTitel: 'Gruppenbesuche des Dienstaufsehers',
     gbWirkung: 'In der Besuchswoche leitet der Besucher die Treffpunkte der Gruppe. Zusage, Erinnerung und „Plan senden“ laufen über den Treffpunkt – wie bei jedem anderen Leiter.',
     gbBesucher: 'Besucher', gbBesucherWaehlen: 'Besucher wählen',

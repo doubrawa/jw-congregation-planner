@@ -786,10 +786,12 @@ Bereich, wie oft und wann zuletzt.
 ## 5. Treffpunkte planen
 
 Die **Zusammenkünfte für den Predigtdienst** („Treffpunkte") sind ein eigenes
-Thema im Menü: **Predigtdienst**. Schalte oben rechts auf **Planen**; dort gibt
-es drei Reiter: **Treffpunkte**, **Gruppenbesuche** (siehe unten) und
-**Grundplan**. Die **Trolleys** stehen nur beim **Ansehen** (siehe
-[Trolleys](#trolleys)).
+Thema im Menü: **Predigtdienst**. Schalte oben rechts auf **Planen**; darunter
+wählst du den Bereich: **Treffpunkte**, **Gruppenbesuche** (siehe unten) und
+**Grundplan** – drei große Felder über die ganze Breite, jedes mit seinem
+Zeichen, das gewählte kräftig hinterlegt. Bei großer Schrift und auf sehr
+schmalen Handys stehen sie untereinander. Die **Trolleys** stehen nur beim
+**Ansehen** (siehe [Trolleys](#trolleys)).
 
 ![Treffpunkte im Programm](screenshots/programm-treffpunkte.png)
 
@@ -903,8 +905,8 @@ Konflikte der Gruppenbesuche nennt auch die **Planungs‑Karte auf der
 Startseite** — unabhängig von ihren vier Wochen, denn ein Besuch liegt oft
 Monate voraus, und gerade dann lässt sich noch etwas ändern.
 
-**Alle sehen die Besuche**: Im Predigtdienst gibt es beim **Ansehen** den Reiter
-**Gruppenbesuche**, sobald einer ansteht — oben die Besuche bei der eigenen
+**Alle sehen die Besuche**: Im Predigtdienst steht beim **Ansehen** oben auch
+**Gruppenbesuche**, sobald einer ansteht — darin die Besuche bei der eigenen
 Gruppe mit Treffpunkt, darunter alle in Kurzform. Gruppenaufseher planen die
 Besuche nicht.
 
@@ -913,8 +915,9 @@ Besuche nicht.
 Für den Trolley braucht es keinen Plan: Man steht mit ihm nur eine
 Viertelstunde an einem Platz, und was zählt, ist, dass man sich verabreden
 kann. Deshalb **plant niemand, und niemand sagt zu**. Beim Planen gibt es dafür
-keinen Reiter; die **Trolleys** stehen beim **Ansehen** des Predigtdienstes,
-für alle, sobald die Versammlung einen hat. Auch die Planungs‑Karte der
+kein Feld; die **Trolleys** stehen beim **Ansehen** des Predigtdienstes oben
+neben **Treffpunkte**, für alle, sobald die Versammlung einen hat. Ein Tipp
+darauf öffnet den Kalender der Trolleys. Auch die Planungs‑Karte der
 Startseite und **Plan senden** kennen sie nicht.
 
 - **Die Trolleys legt der Admin an**, in den Einstellungen mit dem Ort, an dem

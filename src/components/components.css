@@ -382,43 +382,80 @@ select {
   text-decoration-thickness: 2px;
 }
 
-/* ---- Reiter eines Bereichs (T121, `GDienstTabs`): Predigtdienst ------------ */
+/* ---- Die Bereiche des Predigtdienstes (`FsBereichTabs`) --------------------
+   Eine große Wahl über die ganze Breite (18.10.2026): je Bereich ein Zeichen
+   und sein Name, der gewählte in der Textfarbe hinterlegt wie in der `Wahl`.
+   Als Reihe schmaler Reiter mit einem Punkt darunter wurde sie übersehen.
 
+   Die Leiste misst sich selbst (`container-type`). Ihre Schwellen stehen in
+   `em` ihrer Schrift und wandern so mit der Schriftstufe:
+   - unter 20em (große Schrift, 320 px): die Bereiche untereinander, das
+     Zeichen vor dem Namen — so bricht kein Name mitten im Wort, auch in den
+     Sprachen ohne Silbentrennung (pl, ro, tr, ar, fa);
+   - dazwischen (Handy): nebeneinander, das Zeichen über dem Namen; ein langer
+     Name trennt („Gruppen-besuche");
+   - ab 40em (Tablet, Desktop): nebeneinander, das Zeichen vor dem Namen. */
 .bereich-tabs {
+  container-type: inline-size;
   display: flex;
   flex-wrap: wrap;
-  gap: 0 16px;
-  min-height: 48px;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 30px;
+  background: var(--karte);
+  font-size: calc(13.5px * var(--fs));
 }
 
 .bereich-tab {
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  min-height: 48px;
-  color: var(--text3);
-  font-size: calc(14px * var(--fs));
-  font-weight: 500;
-  white-space: nowrap;
+  min-width: 0;
+  min-height: 64px;
+  padding: 8px 6px;
+  border-radius: 25px;
+  color: var(--text2);
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: anywhere;
 }
 
-/* Der Punkt darunter: nur am gewählten Reiter sichtbar. */
-.bereich-tab::after {
-  content: '';
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
+.bereich-tab[aria-pressed='false']:hover {
+  background: var(--schwebe);
 }
 
-.bereich-tab.is-active {
-  color: var(--text);
+.bereich-tab[aria-pressed='true'] {
+  background: var(--text);
+  color: var(--grund);
   font-weight: 700;
 }
 
-.bereich-tab.is-active::after {
-  background: var(--akzent);
+@container (max-width: 20em) {
+  .bereich-tab {
+    flex-basis: 100%;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    min-height: 52px;
+    padding-inline: 16px;
+    text-align: start;
+  }
+}
+
+@container (min-width: 40em) {
+  .bereich-tab {
+    flex-direction: row;
+    gap: 10px;
+    min-height: 52px;
+    padding-inline: 12px;
+    text-align: start;
+  }
 }
 
 /* ---- Weitere Termine der Woche (T63) --------------------------------------
