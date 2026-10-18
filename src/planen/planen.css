@@ -901,25 +901,43 @@
 }
 
 /* Klebt am unteren Rand, solange der Plan darüber läuft; steht er kürzer da,
-   endet die Leiste mit ihm. */
+   endet die Leiste mit ihm.
+
+   Die Knöpfe stehen nebeneinander, solange jeder sein längstes Wort fasst —
+   sonst rutscht der zweite unter den ersten, und beide nehmen die ganze
+   Breite (Entwurf, große Schrift: „was nicht mehr nebeneinander passt, steht
+   untereinander"). Feste Spalten schoben ein langes Wort („Автоматически",
+   „Veröffentlichen") zu beiden Seiten aus dem Knopf: das Zeichen links, den
+   Text rechts unter den Nachbarn (18.10.2026). */
 .planen-leiste {
   position: sticky;
   bottom: max(14px, env(safe-area-inset-bottom));
   z-index: var(--z-leiste);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin: 10px 16px 14px;
   padding: 6px;
   border-radius: 33px;
   background: var(--leiste);
+  anchor-name: --planen-leiste;
 }
 
+/* Von null aus wachsen, aber nie schmaler als das längste Wort: Die
+   Mindestbreite bleibt `auto`, daran merkt die Reihe, dass sie umbrechen
+   muss. Ein Knopf allein nimmt so die ganze Leiste — „Automatisch", solange
+   nur die Momentaufnahme da ist (`sendeUmfang`). */
 .planen-leiste > .aktion-neben,
 .planen-leiste > .aktion-haupt {
+  flex: 1 1 0;
   min-height: 54px;
   padding: 0 12px;
   border-radius: 27px;
+}
+
+/* Der zweite etwas breiter, wie gezeichnet (1 : 1,1). */
+.planen-leiste > :nth-child(2) {
+  flex-grow: 1.1;
 }
 
 .planen-leiste > .aktion-neben {
@@ -927,16 +945,20 @@
   color: var(--leiste-text);
 }
 
-/* Ein Knopf allein nimmt die ganze Leiste: „Veröffentlichen" eines Plans,
-   „Automatisch", solange nur die Momentaufnahme da ist (`sendeUmfang`). */
-.planen-leiste > :only-child {
-  grid-column: 1 / -1;
-}
-
 /* Über der Leiste, nicht auf ihr: Eine Meldung nach „Automatisch" verdeckte
-   sonst „Plan senden" für die Zeit, in der man ihn drücken will. */
+   sonst „Plan senden" für die Zeit, in der man ihn drücken will. Untereinander
+   ist die Leiste doppelt so hoch, deshalb hängt die Meldung an ihrer Oberkante.
+   Wo der Browser keine Anker kennt, steht sie über der einzeiligen Leiste;
+   untereinander verdeckt sie dann „Automatisch", „Plan senden" bleibt frei. */
 body:has(.planen-leiste) .toast {
   bottom: calc(max(14px, env(safe-area-inset-bottom)) + 86px);
+}
+
+@supports (anchor-name: --planen-leiste) {
+  body:has(.planen-leiste) .toast {
+    position-anchor: --planen-leiste;
+    bottom: calc(anchor(top, calc(max(14px, env(safe-area-inset-bottom)) + 66px)) + 20px);
+  }
 }
 
 /* Die Zahl dessen, was noch hinaus muss — auf dem Akzent in vertauschten Farben. */

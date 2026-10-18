@@ -8376,6 +8376,27 @@ export const KATALOG = [
     ersetzen: '  .wochenwahl {\n    display: flex;\n',
   },
   {
+    id: 'planen-leiste-rutscht-unter',
+    datei: 'src/planen/planen.css',
+    regel: 'Passen die Knöpfe der Leiste beim Planen nicht nebeneinander, rutscht der zweite darunter — feste Spalten schoben ein langes Wort aus dem Knopf.',
+    suchen: '  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n  margin: 10px 16px 14px;\n',
+    ersetzen: '  display: grid;\n  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);\n  gap: 6px;\n  margin: 10px 16px 14px;\n',
+  },
+  {
+    id: 'planen-leiste-wort-ganz',
+    datei: 'src/planen/planen.css',
+    regel: 'Ein Knopf der Leiste wird nie schmaler als sein längstes Wort — sonst merkt die Reihe nicht, dass sie umbrechen muss.',
+    suchen: '  flex: 1 1 0;\n  min-height: 54px;\n',
+    ersetzen: '  flex: 1 1 0;\n  min-width: 0;\n  min-height: 54px;\n',
+  },
+  {
+    id: 'meldung-an-der-leiste',
+    datei: 'src/planen/planen.css',
+    regel: 'Die Meldung hängt an der Oberkante der Leiste — untereinander ist die Leiste doppelt so hoch und läge sonst unter ihr.',
+    suchen: '    position-anchor: --planen-leiste;\n',
+    ersetzen: '',
+  },
+  {
     id: 'wochen-spalte-nur-wer-zuteilt',
     datei: 'src/planen/PlanenScreen.tsx',
     regel: 'Die Wochen neben dem Plan bekommt nur, wer zuteilt — nicht der Gruppenaufseher.',

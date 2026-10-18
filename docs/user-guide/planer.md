@@ -274,8 +274,10 @@ bearbeiten").
 ## 3. Automatisch zuteilen & leeren
 
 Beim Planen der Zusammenkünfte steht am Handy unten eine Leiste mit
-**Automatisch** und **Plan senden**; am Tablet und am Computer stehen die beiden
-Knöpfe rechts neben der Woche. **Automatisch** öffnet ein Blatt:
+**Automatisch** und **Plan senden**; bei großer Schrift und auf sehr schmalen
+Handys stehen die beiden untereinander, **Plan senden** unten. Am Tablet und am
+Computer stehen die Knöpfe rechts neben der Woche. **Automatisch** öffnet ein
+Blatt:
 
 - **Die Bereiche:** **Aufgaben im Programm** und **Hilfsdienste**, je mit ihrer
   Besetzung („Besetzung: 5/8"). Vorgewählt ist, wo am gezeigten Tag etwas offen
@@ -1037,9 +1039,9 @@ Veröffentlicht, Abgeschlossen), und Zurück führt wieder zur Liste.
 - **Veröffentlichen** macht den Plan sichtbar, **Zurück zum Entwurf** nimmt
   ihn wieder zurück. Einen Entwurf sehen nur Admins und Planer. Am Handy steht
   der Knopf unten in der Leiste, ab dem Tablet neben dem Titel.
-- **Drucken** steht davor – am Handy vorn in der Leiste, ab dem Tablet neben
-  dem Titel – und druckt den Bogen des Plans, auch eines Entwurfs: zum
-  Durchsehen, bevor die Versammlung ihn sieht (siehe
+- **Drucken** steht davor – am Handy vorn in der Leiste (bei großer Schrift
+  darüber), ab dem Tablet neben dem Titel – und druckt den Bogen des Plans,
+  auch eines Entwurfs: zum Durchsehen, bevor die Versammlung ihn sieht (siehe
   [Pläne drucken](#9-pläne-drucken)).
 - **Plan löschen** fragt einmal nach.
 
