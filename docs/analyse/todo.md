@@ -7656,6 +7656,46 @@ als NWS-Ids in `nws-export`, nicht im Repo.
 (Generator, dann Zurücksetzen); bis dahin lassen sich die Rollen in der App
 setzen (Personen › Aufgabenbereiche › Feste Rollen).
 
+---
+
+## Aufgenommen am 18. Oktober 2026 — Trolleys nur mit Trolley-Recht (T130)
+
+### T130 · Den Reiter „Trolleys" sieht nur, wer das Trolley-Recht hat 🔧 ☐ offen
+
+**Auftrag (18. Oktober, Betreiber):** „Nur diejenigen, die das Trolley-Recht
+haben, sollten den Trolley-Tab sehen."
+
+**Stand heute:** Beim Ansehen des Predigtdienstes steht der Reiter für alle,
+sobald die Versammlung einen Trolley hat (`fsBereiche` in
+`src/planen/fs-bereiche.ts`: `!planen && state.trolleys.length > 0`) — so
+entschieden in T121, Phase 7: „So sehen alle, wann ein Trolley unterwegs ist."
+Eintragen kann schon heute nur, wer den Aufgabenbereich „Trolley" hat
+(`darfTrolley`, `src/data/trolleys.ts`; Schlüssel `zeugnis` in `persons.priv`).
+
+**Was mit dem Reiter geht und was bleibt:**
+
+- Der Bogen der Trolleys wird in der Ansicht gedruckt (`TrolleyAnsicht` →
+  `AnsichtDrucken`) — er verschwindet mit dem Reiter.
+- Start und „Meine Aufgaben" zeigen nur die **eigenen** Termine
+  (`eigeneTermine`); sie betreffen ohnehin nur, wer eingetragen ist.
+- Eine Ansicht, die per Hash oder gemerktem `fsBereich` auf „Trolleys" steht,
+  fällt schon heute auf „Treffpunkte" zurück, wenn es den Bereich nicht gibt
+  (`aktiverFsBereich`).
+
+**Beim Umsetzen klären:**
+
+- Gilt es auch für Admin und Planer ohne das Recht? Der Wortlaut sagt: nur wer
+  das Recht hat. Die Trolleys selbst legt der Admin weiter in den Einstellungen
+  an.
+- Die Datenbank lässt heute jedes Mitglied Trolleys und Termine lesen
+  (`trolleys_select`, `trolley_termine_select`). Ist es nur eine Frage der
+  Übersicht, reicht die Oberfläche; soll es niemand sonst lesen, auch die
+  Richtlinien (dann ausrollen, Mitgliedsrechte-Probe um einen Fall erweitern).
+- Handbücher: `verkuendiger.md` („Hat eure Versammlung Trolleys, hat der
+  Predigtdienst für alle den Reiter **Trolleys**") und `planer.md` („für alle,
+  sobald die Versammlung einen hat"), dazu `fsBereiche` im Kopfkommentar und
+  das Bild `verkuendiger-trolleys` (Simon, p9, hat das Recht — bleibt gleich).
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -7692,15 +7732,16 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 22./23. August ☑☑☑☑☑☑☑☑☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
-10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☐☑
+10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☐☑☐
 
-**127 der 129 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind zwei:**
+**127 der 130 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind drei:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
 | **T128** | Kein Bruch mitten im Wort, die Zahl bei ihrer Bezeichnung | ☐ gemessen und geplant am 18. Oktober, als Simulation im echten Chrome belegt (0 Funde in 240 Fällen); der Betreiber setzt es später um |
+| **T130** | Den Reiter „Trolleys" sieht nur, wer das Trolley-Recht hat | ☐ aufgenommen am 18. Oktober; zu klären: Admin und Planer ohne Recht, Leserecht in der Datenbank |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
@@ -8105,6 +8146,7 @@ was sonst aussteht, braucht den Betreiber oder ein Gerät.
 | **Phase 7** | T42, der Rest | `src` samt Tests ist seit 17. Oktober frei, die Regel steht in `tsconfig.app.json`. Noch aus: Edge Functions (53 Meldungen) und Skript-Tests (67); `typecheck:index` ist überflüssig geworden |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
 | **T128** | Umbruch mitten im Wort, Zahl getrennt von ihrer Bezeichnung | Plan steht (zentral in `fill()`, Zeilen stapeln und Leisten wachsen lassen bei großer Schrift, Trennregeln an vier Stellen, ein weiches Trennzeichen für Türkisch); vom Betreiber auf später gelegt, weil gerade anderes läuft |
+| **T130** | Reiter „Trolleys" nur mit Trolley-Recht | aufgenommen am 18. Oktober abends, noch nicht begonnen; die offenen Fragen stehen in T130 |
 
 Am 18. Oktober nach der Messung oben dazugekommen und am selben Tag
 geschlossen: **T127** (Gruppen aus der Reinigung nehmen; Spalte ausgerollt,
@@ -8112,7 +8154,9 @@ dann gepusht) — damit 127 Köpfe, offen weiter nur T121. Danach dazugekommen
 und offen: **T128** (Umbruch mitten im Wort) — damit 128 Köpfe, offen T121 und
 T128. Danach dazugekommen und am selben Tag geschlossen: **T129** (der feste
 Leiter des Wachtturm-Studiums steht von selbst in der Woche) — damit 129 Köpfe,
-offen weiter T121 und T128.
+offen weiter T121 und T128. Am Abend dazugekommen und offen: **T130** (den
+Reiter „Trolleys" sieht nur, wer das Trolley-Recht hat) — damit 130 Köpfe,
+offen T121, T128 und T130.
 
 Am 18. Oktober aus der Tabelle genommen: **Kachel und Liste der Absagen zählen
 verschieden** — entschieden, die Kachel zählt jetzt wie die Liste nur die
