@@ -7460,6 +7460,107 @@ Betreiber nachentschieden: Auch die Weiteren Pläne (Königreichssaal)
   Wochen nur die reinigenden Gruppen an, verteilt wird ohne die abgeschaltete;
   eine schon eingetragene bleibt in ihrer Woche stehen.
 
+---
+
+## Aufgenommen am 18. Oktober 2026 — Umbruch mitten im Wort (T128)
+
+### T128 · Kein Bruch mitten im Wort, die Zahl bleibt bei ihrer Bezeichnung 🔧 ☐ offen
+
+**Auftrag (18. Oktober, über die Sitzung von T127):** Bei 320 px brechen
+Beschriftungen mitten im Wort ohne Trennstrich um („Königreichssaa|l",
+„Eingangsordne|r", „Rundgangsord|ner"), im Kopf des Reinigungsblatts stehen
+„Gruppen:" und die Zahl auf zwei Zeilen. Am 18. Oktober gemessen und geplant,
+**nicht umgesetzt** — der Betreiber macht es später, weil gerade anderes läuft.
+
+**Befund** (echter Chrome 155 mit Trennwörterbüchern, HEAD `546f7f73`;
+12 Sprachen × 320/375/768/1024/1180/1440 px × Stufe 1 und 1,45, je
+Einstellungen, Hilfsdienste, Blatt Reinigung, Blatt Eingangsordner = 144 Fälle):
+
+- **Die gemeldeten Brüche sind ein Artefakt des Messbrowsers.** Das
+  Browser-Pane hat keine Trennwörterbücher, `hyphens: auto` wirkt dort in
+  keiner Sprache. Im echten Chrome steht an denselben Stellen
+  „Königreichs-saal", „Eingangsord-ner", „Rundgangs-ordner".
+  `.einst-zeile-name` hat schon `hyphens: auto` + `overflow-wrap: break-word`;
+  `overflow-wrap: anywhere` ist dort nicht die Ursache.
+- **Chrome und Edge trennen nur de, en, es, fr, it, ru, uk** (Komponente
+  `hyphen-data`), nicht pl, ro, tr, ar, fa — und großgeschriebene englische
+  Wörter nie („Notificatio|ns"). `hyphens: auto` allein reicht also nicht, es
+  braucht Platz.
+- **Echte Funde:** 109 Brüche ohne Strich — 33 in `.einst-zeile-name` bei
+  320 px und Stufe 1,45 (Wert bzw. Plus/Minus nehmen ihre volle Breite, der
+  Name bekommt ~70 px), 76 in `.leisten-text` bei 768/1024 (Türkisch
+  „Değerlendir|me" schon bei Stufe 1). 94 getrennte Zahlen („Personen:|26",
+  „Grupy:|4", „4|grup", „1|Tag vorher", Datum „7|września"). 3 Ansichten zu
+  breit (Russisch 320/1,45: Titel „Вспомогательные обязанности"; im Blatt ragt
+  „Удалить вспомогательную обязанность" links hinaus). 8 mit waagerechtem
+  Rollbalken (Seitenleiste am Desktop, Deutsch, Stufe 1,45: „Zusammenkünfte"
+  31 px zu breit). Dazu Text, der aus seinem Kasten ragt: Blatt-Titel
+  „Eingangsordner" (7 px), „Дополнительный класс" (3 px), Englisch
+  „Notifications" unter dem Zähler der Seitenleiste.
+
+**Plan** — als Simulation im echten Chrome gemessen (CSS im Tab eingehängt,
+Textknoten angepasst): danach 0 in allen Arten, 240 Fälle auf `546f7f73` und
+`359c7d4b`; die Stufen 0,9 bis 1,3 ebenso.
+
+1. **Die Zahl bei ihrer Bezeichnung — zentral in `fill()`**
+   (`src/i18n/useT.ts`): Nach dem Einsetzen wird ein Leerzeichen zwischen
+   Doppelpunkt und Ziffer sowie zwischen Ziffer und Buchstabe zum geschützten
+   Leerzeichen (U+00A0), Unicode-weit (`\p{Nd}`, `\p{L}`). Das deckt alle zwölf
+   Sprachen, „{n} kişi" und Werte aus `Intl` („1 Tag" aus `zeitspanne`). Das
+   Datum der Kopfzeile kommt nicht durch `fill`: dort jedes Leerzeichen
+   schützen, das nicht hinter einem Komma steht. Gespeicherte Mitteilungen
+   baut niemand mit `fill` (kein Import in `src/data`, `src/lib`,
+   `supabase/functions`) — ihre Übersetzung bleibt unberührt. Das Zeichen per
+   `.mjs` als Escape-Folge wie in `fr.ts` schreiben, danach nachzählen.
+   Verworfen: das Zeichen in die zwölf Wörterbücher (rund 90 Schlüssel × 12,
+   dazu eine Wache für jeden neuen Text).
+2. **CSS:**
+   - `einstellungen.css`: `.einst-karte { container-type: inline-size }` und
+     `@container (max-width: 15em)` — bei `.einst-zeile` (ohne `--entfernbar`)
+     steht der Wert unter dem Namen (`grid-template-columns: minmax(0, 1fr)
+     20px`; Wert `grid-column: 1; grid-row: 2; max-width: none`; Winkel
+     `grid-row: 1 / span 2`), bei `.hd-zeile` Plus/Minus unter dem Dienst (eine
+     Spalte, `.plus-minus` mit `justify-self: end`). Die Grenze in `em` greift
+     nur bei großer Schrift (am Handy ab Stufe 1,15 bei 320 px, ab 1,45 bei
+     375 px); bei Stufe 1 bleibt alles, wie es ist. Auch Zahlen wie
+     „Hilfsdienste 7" rücken dann unter den Namen.
+   - `hyphens: auto` (mit `-webkit-`) und `overflow-wrap: break-word` für
+     `.seitentitel` und `.schalter-text` (`bausteine.css`), `.sheet-title`
+     (`overlays.css`) und `.menue-eintrag-text` (`menue.css`).
+   - `overlays.css`: `.sheet-fuss-ende { flex-wrap: wrap }`.
+   - `menue.css`: `.schmale-leiste { width: calc(88px * max(1, var(--fs))) }`
+     und `.leiste { width: max(248px, calc(124px * (1 + var(--fs)))) }` —
+     304 px bei Stufe 1,45; mit 272 und 288 px brach „Powiadomienia" neben dem
+     Zähler noch. Den Kommentar an `.leisten-text` richtigstellen: Chrome am
+     Windows-Desktop trennt sehr wohl, es fehlen pl, ro, tr, ar, fa und die
+     englischen Großwörter.
+3. **Ein weiches Trennzeichen** (U+00AD) in `overlays/tr.ts`, `navAuswertung`:
+   „Değerlen|dirme" — per `.mjs` geschrieben, nachgezählt.
+4. **Tests:** in `fill.test.ts` aus den zwölf Wörterbüchern abgeleitet — jede
+   Vorlage mit Zahl-Platzhalter neben einem Leerzeichen liefert die Zahl
+   gebunden —, mit Sabotage-Probe. Rund 18 Zusicherungen mit „Personen: 1"
+   als Wortlaut anpassen.
+5. **Prüfen:** Vorher und Nachher im echten Chrome auf dem dann aktuellen
+   Stand, auch über die übrigen Unteransichten der Einstellungen (Sprachen,
+   Gruppen und Trolleys, Erinnerungen — `.einst-karte` steht auch dort). Dann
+   `npx oxlint`, `npx tsc -b`, `npx vitest run --testTimeout=60000`; arbeiten
+   andere Sitzungen im Ordner, im eigenen Worktree.
+6. **Danach:** eine Zeile in `.claude/skills/verify/SKILL.md` („Silbentrennung
+   nur im echten Chrome prüfen"); auf Wunsch das Messskript als
+   `scripts/umbruch-probe.mjs`; `/simplify`, dann `/code-review max` anbieten.
+
+**Messweg:** Chrome 155 `--headless=new` mit frischem `--user-data-dir`, in
+das `%LOCALAPPDATA%\Google\Chrome\User Data\hyphen-data` kopiert ist; CDP über
+den `WebSocket` von Node 24, `Emulation.setDeviceMetricsOverride` je Breite.
+Bruchstellen Zeichen für Zeichen über `Range.getClientRects()`; ob ein Bruch
+eine Trennung war, zeigt ein Klon bei gleicher Breite ohne `overflow-wrap`.
+Dev-Server aus einem Worktree mit einer Hülle `vite.messung.config.mjs`
+(`server.fs.allow` auf den Hauptcheckout, sonst laden die Schriften nicht).
+Die Skripte (`messen.mjs`, `seite.js`, `auswerten.mjs`, `nachher-k7.css`, die
+Hülle) liegen im Übergabe-Ordner der Sitzung von T127
+(`side-session-notes\local_51bededf-…\umbruch-werkzeug\`) — fehlen sie, neu
+schreiben.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -7496,14 +7597,15 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 22./23. August ☑☑☑☑☑☑☑☑☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
-10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑
+10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☐
 
-**126 der 127 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen ist eine:**
+**126 der 128 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind zwei:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
+| **T128** | Kein Bruch mitten im Wort, die Zahl bei ihrer Bezeichnung | ☐ gemessen und geplant am 18. Oktober, als Simulation im echten Chrome belegt (0 Funde in 240 Fällen); der Betreiber setzt es später um |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
@@ -7907,10 +8009,13 @@ was sonst aussteht, braucht den Betreiber oder ein Gerät.
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
 | **Phase 7** | T42, der Rest | `src` samt Tests ist seit 17. Oktober frei, die Regel steht in `tsconfig.app.json`. Noch aus: Edge Functions (53 Meldungen) und Skript-Tests (67); `typecheck:index` ist überflüssig geworden |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
+| **T128** | Umbruch mitten im Wort, Zahl getrennt von ihrer Bezeichnung | Plan steht (zentral in `fill()`, Zeilen stapeln und Leisten wachsen lassen bei großer Schrift, Trennregeln an vier Stellen, ein weiches Trennzeichen für Türkisch); vom Betreiber auf später gelegt, weil gerade anderes läuft |
 
 Am 18. Oktober nach der Messung oben dazugekommen und am selben Tag
 geschlossen: **T127** (Gruppen aus der Reinigung nehmen; Spalte ausgerollt,
-dann gepusht) — damit 127 Köpfe, offen weiter nur T121.
+dann gepusht) — damit 127 Köpfe, offen weiter nur T121. Danach dazugekommen
+und offen: **T128** (Umbruch mitten im Wort) — damit 128 Köpfe, offen T121 und
+T128.
 
 Am 18. Oktober aus der Tabelle genommen: **Kachel und Liste der Absagen zählen
 verschieden** — entschieden, die Kachel zählt jetzt wie die Liste nur die
