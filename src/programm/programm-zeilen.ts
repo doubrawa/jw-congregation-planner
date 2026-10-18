@@ -1,4 +1,4 @@
-import { isSong, istBlockSektion, splitOpeningSong } from '../data/helpers'
+import { isSong, istBlockSektion, liedImKopf, splitOpeningSong } from '../data/helpers'
 import type { HelperSlot, Meeting, PartItem, Section, Service } from '../data/types'
 
 /** Ein Punkt, wie er dasteht — mit überschriebenem Titel, wenn das Lied herausgezogen ist. */
@@ -15,7 +15,8 @@ export interface AbschnittsZeile {
  * Die Lieder stehen rechts im Kopf: eigene Liedzeilen ebenso wie das Lied aus
  * dem Sammeltitel von Eröffnung und Abschluss („Lied 1 · Gebet · Einleitende
  * Worte"). Gefragt wird die **Art** des Abschnitts (`rawSection`, kanonisch),
- * nicht sein angezeigter Name.
+ * nicht sein angezeigter Name. Eine Liedzeile steht dort nur mit ihrer Nummer,
+ * ohne Liedthema (`liedImKopf`).
  */
 export function abschnittZeilen(
   section: Section,
@@ -27,7 +28,7 @@ export function abschnittZeilen(
   const zeilen: AbschnittsZeile[] = []
   for (const item of section.items) {
     if (isSong(item)) {
-      lieder.push(tpw(item.song))
+      lieder.push(tpw(liedImKopf(item.song)))
       continue
     }
     const { song, rest } = sammeltitel ? splitOpeningSong(tpw(item.title)) : { song: null, rest: '' }

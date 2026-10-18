@@ -12,6 +12,7 @@ import {
   isPlainPublisher,
   isQualified,
   isSong,
+  liedImKopf,
   linkFamily,
   listName,
   neuWennGeaendert,
@@ -186,6 +187,35 @@ describe('Name einer Person', () => {
   it('initials aus Vor- und Nachname; leer → Platzhalter', () => {
     expect(initials(person({}))).toBe('SK')
     expect(initials(person({ fn: '', ln: '' }))).toBe('–')
+  })
+})
+
+/**
+ * **Im Kopf eines Abschnitts steht das Lied nur mit seiner Nummer** (Betreiber
+ * 18.10.2026: „das Lied-Thema brauchen wir nie"). Das Lied des
+ * Wachtturm-Studiums kommt aus dem Studienartikel samt Thema, in der
+ * Schreibweise des Artikels („LIED 129 …"); am Handy ragte es über die Karte
+ * hinaus. Die Themen hier sind Platzhalter.
+ */
+describe('liedImKopf', () => {
+  it('das Lied des Wachtturm-Studiums steht ohne sein Thema da', () => {
+    expect(liedImKopf('LIED 129 Demo-Liedthema')).toBe('Lied 129')
+  })
+
+  it('auch aus einer Sprachvariante — die Übersetzung macht daraus wieder das Lied der Sprache', () => {
+    expect(liedImKopf('SONG 129 Demo song theme')).toBe('Lied 129')
+  })
+
+  it('auch mit den Ziffern einer anderen Schrift', () => {
+    expect(liedImKopf('الترنيمة ١٢٩ Demo')).toBe('Lied 129')
+  })
+
+  it('ein Lied aus dem Arbeitsheft bleibt, wie es ist', () => {
+    expect(liedImKopf('Lied 12')).toBe('Lied 12')
+  })
+
+  it('ohne Nummer — der Platzhalter, solange der Artikel fehlt — bleibt es stehen', () => {
+    expect(liedImKopf('Lied')).toBe('Lied')
   })
 })
 

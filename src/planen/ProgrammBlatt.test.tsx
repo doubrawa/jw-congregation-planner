@@ -118,6 +118,14 @@ describe('Das Programm der Woche', () => {
     expect(document.querySelectorAll('.zeile-hinzu')).toHaveLength(1)
   })
 
+  it('ein Lied steht im Kopf von „Unser Leben als Christ" nur mit Nummer — ohne Liedthema', () => {
+    const mitLied = lac()
+    mitLied.items.unshift({ song: 'LIED 158 Demo-Liedthema' })
+    zeige([woche([schaetze(), mitLied])])
+    const koepfe = [...document.querySelectorAll('.prog-abschnitt-kopf .prog-lied')].map((k) => k.textContent)
+    expect(koepfe[LAC]).toBe('Lied 158')
+  })
+
   it('nennt den Abschnitt, in dem umgeordnet wird, beim Namen', () => {
     zeige()
     expect(oben().textContent).toContain(t.programmHinweis.replace('{abschnitt}', LABEL_LAC))

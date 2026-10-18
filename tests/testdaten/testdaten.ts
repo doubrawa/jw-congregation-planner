@@ -553,7 +553,10 @@ export function buildDemoWeeks(): Week[] {
           sec('ERÖFFNUNG', 'neutral', [part(null, 'Lied 138 · Gebet', null, [['Konrad Sommer', 'Vorsitz', 'vorsitzWe'], ['Jörg Roth', 'Gebet', 'gebet']])]),
           sec('ÖFFENTLICHER VORTRAG', 'petrol', [part(null, 'Demo-Vortragsthema 7', '30 Min.', [gastredner('Michael Hartmann', 'Vers. Nordheim')])]),
           sec('WACHTTURM-STUDIUM', 'wein', [
-            song('Lied 20'),
+            // So bringt der Import das Lied aus dem Studienartikel: Nummer und
+            // Liedthema in der Schreibweise des Artikels. Im Kopf steht nur
+            // „Lied 20" (`liedImKopf`).
+            song('LIED 20 Demo-Liedthema'),
             part(null, 'Demo-Studienartikel 6', 'Studienartikel 28 · 60 Min.', [['Friedrich Neumann', 'Leiter', 'studium'], ['Paul Schröder', 'Leser', 'leser']], 60),
           ]),
           sec('ABSCHLUSS', 'neutral', [part(null, 'Schlussworte · Lied 76 · Gebet', null, [['Walter Adam', 'Gebet', 'gebet']])]),

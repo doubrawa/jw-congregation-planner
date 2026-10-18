@@ -6,7 +6,7 @@ import { PlusMinus } from '../bausteine/PlusMinus'
 import { Zeichen } from '../bausteine/Zeichen'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { Sheet } from '../components/Sheet'
-import { dauerAbtrennen, istArt, istCoPunkt, isSong } from '../data/helpers'
+import { dauerAbtrennen, istArt, istCoPunkt, isSong, liedImKopf } from '../data/helpers'
 import { meetingDateText } from '../data/meeting-dates'
 import { itemMinutes, LAC_MAX_MINUTEN, LAC_MIN_MINUTEN, movableIndices } from '../data/meeting-edit'
 import type { Meeting, PartItem, Section } from '../data/types'
@@ -104,7 +104,7 @@ function ProgrammAbschnitt({
 }) {
   const { t } = useT()
   const lac = istArt(rawSection, 'lac')
-  const lieder = section.items.flatMap((item) => (isSong(item) ? [tpw(item.song)] : []))
+  const lieder = section.items.flatMap((item) => (isSong(item) ? [tpw(liedImKopf(item.song))] : []))
   return (
     <section className="prog-abschnitt" data-farbe={section.farbe}>
       <div className="prog-abschnitt-kopf">

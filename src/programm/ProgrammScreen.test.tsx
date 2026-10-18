@@ -268,6 +268,19 @@ describe('Das Programm selbst', () => {
     expect(texte(container, '.prog-abschnitt-kopf .prog-lied')).toContain('Lied 99')
   })
 
+  it('das Lied des Wachtturm-Studiums steht im Kopf nur mit Nummer — das Liedthema nie', () => {
+    // So bringt es der Import aus dem Studienartikel: Nummer und Thema in der
+    // Schreibweise des Artikels. Am Handy ragte es über die Karte hinaus.
+    const wt: Section = {
+      label: 'WACHTTURM-STUDIUM', kind: 'wtStudium', farbe: 'wein',
+      items: [{ song: 'LIED 129 Demo-Liedthema' }, { iid: 'i104', title: 'Studienartikel', meta: '60 Min.', names: [{ name: '', rolle: 'Leiter' }] }],
+    }
+    const { container } = zeige({ tab: 'we', weeks: [woche({ we: { date: '7.–13. September', end: '11:45', sections: [wt], helpers: { mik: [] } } })] })
+    const lieder = texte(container, '.prog-abschnitt-kopf .prog-lied')
+    expect(lieder).toEqual(['Lied 129'])
+    expect(seite(container).textContent).not.toContain('Demo-Liedthema')
+  })
+
   it('die Dauer steht neben dem Titel, der Rahmen darunter (T121)', () => {
     const w = woche()
     Object.assign(w.mid.sections[1]!.items[0]!, { meta: 'Von Haus zu Haus · 3 Min.', mins: 3 })

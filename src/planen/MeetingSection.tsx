@@ -2,7 +2,7 @@ import { Fragment } from 'react'
 import { useApp, useAppDispatch } from '../app/context'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { istSchuelerteil } from '../data/aux-class'
-import { dauerAbtrennen, rolleMitHerkunft, istArt, istCoPunkt, isGuestRole, isSong, mtab, splitOpeningSong } from '../data/helpers'
+import { dauerAbtrennen, rolleMitHerkunft, istArt, istCoPunkt, isGuestRole, isSong, liedImKopf, mtab, splitOpeningSong } from '../data/helpers'
 import { closingSongNr, hatLiedPlatz, openingSongNr, TALK_PLACEHOLDER, themaVon } from '../data/meeting-edit'
 import { isSpeakerRole } from '../data/helpers'
 import { nurZiffern } from '../data/ziffern'
@@ -147,12 +147,12 @@ export function MeetingSection({
     })
   }
 
-  // Die Lieder stehen rechts im Kopf, wie beim Ansehen: eigene Liedzeilen und
-  // das Lied aus dem Sammeltitel von Eröffnung und Abschluss — außer dort, wo
-  // es am Wochenende ein Nummernfeld ist (unten).
+  // Die Lieder stehen rechts im Kopf, wie beim Ansehen: eigene Liedzeilen (nur
+  // mit Nummer, `liedImKopf`) und das Lied aus dem Sammeltitel von Eröffnung und
+  // Abschluss — außer dort, wo es am Wochenende ein Nummernfeld ist (unten).
   const lieder: string[] = []
   for (const item of section.items) {
-    const lied = isSong(item) ? tpw(item.song) : splitSong ? splitOpeningSong(tpw(item.title)).song : null
+    const lied = isSong(item) ? tpw(liedImKopf(item.song)) : splitSong ? splitOpeningSong(tpw(item.title)).song : null
     if (lied) lieder.push(lied)
   }
 

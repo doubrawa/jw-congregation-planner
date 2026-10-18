@@ -194,6 +194,12 @@ describe('Plätze als Zeilen (T121)', () => {
     expect(plaetze(container)).toHaveLength(0)
     expect(container.querySelector('.prog-abschnitt-kopf .prog-lied')?.textContent).toBe('Lied 12')
   })
+
+  it('das Lied des Wachtturm-Studiums steht im Kopf nur mit Nummer — ohne Liedthema', () => {
+    const s: Section = { label: 'WACHTTURM-STUDIUM', kind: 'wtStudium', farbe: 'wein', items: [{ song: 'LIED 129 Demo-Liedthema' }] }
+    const { container } = zeige(s)
+    expect(container.querySelector('.prog-abschnitt-kopf .prog-lied')?.textContent).toBe('Lied 129')
+  })
 })
 
 describe('Die Zusage gehört dem Platz, nicht der Person', () => {

@@ -42,6 +42,23 @@ export function splitOpeningSong(title: string): { song: string | null; rest: st
 }
 
 /**
+ * **Das Lied, wie es im Kopf eines Abschnitts steht: nur „Lied 129"** — das
+ * Liedthema nie (Betreiber 18.10.2026: „das Lied-Thema brauchen wir nie").
+ *
+ * Das Lied des Wachtturm-Studiums bringt der Import aus dem Studienartikel mit,
+ * samt Thema und in der Schreibweise des Artikels („LIED 129", dahinter das
+ * Thema des Liedes; `songs` in import-week/study.ts); am Handy ragte es über
+ * die Karte hinaus. Die Lieder aus dem Arbeitsheft stehen schon als „Lied 12" in den
+ * Daten. Mit Nummer wird jedes zur kanonischen Form, die `tpw` übersetzt wie die
+ * übrigen („Song 129"); ohne Nummer — der Platzhalter „Lied", solange der
+ * Artikel fehlt — bleibt es, wie es ist.
+ */
+export function liedImKopf(song: string): string {
+  const nr = ersteZahl(song)
+  return nr === null ? song : `Lied ${nr}`
+}
+
+/**
  * Zerlegt die Meta-Zeile eines Punkts in die **Dauer** und den Rest:
  * („Von Haus zu Haus · 3 Min.", 3) → „3 Min." und „Von Haus zu Haus". Die
  * Ansicht stellt die Dauer neben den Titel (T121).
