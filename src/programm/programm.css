@@ -243,7 +243,12 @@
   font-weight: 700;
 }
 
+/* Die Rolle steht am Ende der Zeile, wie das Lied im Kopf des Abschnitts — so
+   stehen die Rollen untereinander, gleich wie lang der Name ist (Betreiber
+   18.10.2026). Passt sie nicht mehr daneben, bricht sie um und steht auch dort
+   am Ende. */
 .prog-role {
+  margin-inline-start: auto;
   color: var(--text3);
   font-size: calc(13.5px * var(--fs));
 }

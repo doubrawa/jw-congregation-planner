@@ -103,7 +103,8 @@ Darunter stehen die beiden Zusammenkünfte als Karten, je mit Tag, Datum und
 Uhrzeit; die gewählte hat einen Rand. Fällt eine aus, ist ihr Tag
 durchgestrichen, und im Programm steht der Grund. Im Programm hat jeder
 Abschnitt seine Karte mit der Farbe des Arbeitshefts, das Lied steht rechts im
-Kopf. Neben jedem Punkt steht seine Dauer, darunter die Eingeteilten – **dein
+Kopf. Neben jedem Punkt steht seine Dauer, darunter die Eingeteilten, ihre
+Aufgabe (Vorsitz, Gebet, Partner …) rechts am Rand wie das Lied – **dein
 eigener Platz** heißt dort **„Du"**. Ab dem Tablet stehen die Namen neben dem
 Punkt. **Am Computer** stehen beide Zusammenkünfte nebeneinander, jede mit
 Datum und Uhrzeit, die Hilfsdienste beider Tage in einer gemeinsamen Tabelle;
