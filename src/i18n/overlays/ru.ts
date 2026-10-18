@@ -248,7 +248,7 @@ export default {
   "anlassNormal": "Обычная неделя",
   "anlassNormalText": "Программа как в рабочей тетради",
   "anlassCoText": "Служебная речь вместо изучения Библии в собрании",
-  "anlassMemText": "Встреча в этот день отменяется",
+  "anlassMemText": "Одна встреча на этой неделе отменяется",
   "zusammenkuenfteDieserWoche": "Встречи на этой неделе",
   "weitereTermine": "Другие мероприятия",
   "weitereTermineText": "Для всего остального, что проходит на этой неделе. Отображается у всех в программе.",

@@ -336,7 +336,7 @@ export default {
   "anlassNormal": "Normal week",
   "anlassNormalText": "Program as in the workbook",
   "anlassCoText": "Service talk instead of Congregation Bible Study",
-  "anlassMemText": "The meeting on this day is cancelled",
+  "anlassMemText": "One meeting this week is cancelled",
   "zusammenkuenfteDieserWoche": "Meetings this week",
   "weitereTermine": "Other events",
   "weitereTermineText": "For anything else that takes place this week. Appears for everyone in the program.",

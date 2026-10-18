@@ -248,7 +248,7 @@ export default {
   "anlassNormal": "Normal hafta",
   "anlassNormalText": "İbadet Kitapçığı’ndaki gibi program",
   "anlassCoText": "Cemaat Kutsal Kitap İncelemesi yerine hizmet konuşması",
-  "anlassMemText": "O günkü ibadet yapılmaz",
+  "anlassMemText": "Bu haftaki ibadetlerden biri yapılmaz",
   "zusammenkuenfteDieserWoche": "Bu haftaki ibadetler",
   "weitereTermine": "Diğer etkinlikler",
   "weitereTermineText": "Bu hafta ayrıca yapılan her şey için. Programda herkese görünür.",

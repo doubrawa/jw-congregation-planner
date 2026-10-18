@@ -645,7 +645,9 @@ export const DE = {
     anlassNormal: 'Normale Woche',
     anlassNormalText: 'Programm wie im Arbeitsheft',
     anlassCoText: 'Dienstvortrag statt Versammlungsbibelstudium',
-    anlassMemText: 'Die Zusammenkunft an diesem Tag entfällt',
+    // Welche, hängt am Datum des Mahls (`memAusfall`): Montag bis Freitag die
+    // unter der Woche, sonst die am Wochenende.
+    anlassMemText: 'Eine Zusammenkunft dieser Woche entfällt',
     zusammenkuenfteDieserWoche: 'Zusammenkünfte dieser Woche',
     weitereTermine: 'Weitere Termine',
     weitereTermineText: 'Für alles, was in dieser Woche zusätzlich stattfindet. Erscheint bei allen im Programm.',

@@ -248,7 +248,7 @@ export default {
   "anlassNormal": "Săptămână obișnuită",
   "anlassNormalText": "Program ca în caiet",
   "anlassCoText": "Cuvântare de serviciu în loc de Studiul Bibliei în congregație",
-  "anlassMemText": "Întrunirea din acea zi nu are loc",
+  "anlassMemText": "O întrunire din această săptămână nu are loc",
   "zusammenkuenfteDieserWoche": "Întrunirile din această săptămână",
   "weitereTermine": "Alte evenimente",
   "weitereTermineText": "Pentru tot ce mai are loc în această săptămână. Apare pentru toți în program.",

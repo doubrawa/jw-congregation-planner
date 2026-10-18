@@ -248,7 +248,7 @@ export default {
   "anlassNormal": "Semana normal",
   "anlassNormalText": "Programa como en la Guía de actividades",
   "anlassCoText": "Discurso de servicio en lugar del Estudio bíblico de la congregación",
-  "anlassMemText": "La reunión de ese día se cancela",
+  "anlassMemText": "Se cancela una reunión de esta semana",
   "zusammenkuenfteDieserWoche": "Reuniones de esta semana",
   "weitereTermine": "Otros eventos",
   "weitereTermineText": "Para todo lo demás que se haga esta semana. Aparece para todos en el programa.",

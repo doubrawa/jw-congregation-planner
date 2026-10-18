@@ -248,7 +248,7 @@ export default {
   "anlassNormal": "Semaine normale",
   "anlassNormalText": "Programme comme dans le cahier",
   "anlassCoText": "Discours de service au lieu de l’étude biblique de l’assemblée",
-  "anlassMemText": "La réunion de ce jour-là n’a pas lieu",
+  "anlassMemText": "Une réunion de cette semaine n’a pas lieu",
   "zusammenkuenfteDieserWoche": "Réunions de cette semaine",
   "weitereTermine": "Autres rendez-vous",
   "weitereTermineText": "Pour tout ce qui a lieu en plus cette semaine. Apparaît pour tous dans le programme.",

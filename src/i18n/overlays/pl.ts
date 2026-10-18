@@ -248,7 +248,7 @@ export default {
   "anlassNormal": "Zwykły tydzień",
   "anlassNormalText": "Program jak w periodyku „Życie i służba”",
   "anlassCoText": "Przemówienie służbowe zamiast zborowego studium Biblii",
-  "anlassMemText": "Zebranie w tym dniu się nie odbywa",
+  "anlassMemText": "Jedno zebranie w tym tygodniu się nie odbywa",
   "zusammenkuenfteDieserWoche": "Zebrania w tym tygodniu",
   "weitereTermine": "Inne wydarzenia",
   "weitereTermineText": "Na wszystko inne, co odbywa się w tym tygodniu. Wszyscy zobaczą to w programie.",

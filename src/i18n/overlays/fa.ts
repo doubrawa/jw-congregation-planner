@@ -286,7 +286,7 @@ export default {
   "anlassNormal": "هفتهٔ عادی",
   "anlassNormalText": "برنامه مطابق جزوهٔ جلسه",
   "anlassCoText": "سخنرانی خدمتی به جای مطالعۀ کتاب مقدّس در جماعت",
-  "anlassMemText": "جلسهٔ آن روز برگزار نمی‌شود",
+  "anlassMemText": "یکی از جلسات این هفته برگزار نمی‌شود",
   "zusammenkuenfteDieserWoche": "جلسات این هفته",
   "weitereTermine": "برنامه‌های دیگر",
   "weitereTermineText": "برای هر چیز دیگری که این هفته برگزار می‌شود. برای همه در برنامه نمایش داده می‌شود.",

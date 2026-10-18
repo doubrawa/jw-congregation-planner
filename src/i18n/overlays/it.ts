@@ -248,7 +248,7 @@ export default {
   "anlassNormal": "Settimana normale",
   "anlassNormalText": "Programma come nella guida per l’adunanza",
   "anlassCoText": "Discorso di servizio al posto dello studio biblico di congregazione",
-  "anlassMemText": "L’adunanza di quel giorno non si tiene",
+  "anlassMemText": "Un’adunanza di questa settimana non si tiene",
   "zusammenkuenfteDieserWoche": "Adunanze di questa settimana",
   "weitereTermine": "Altri appuntamenti",
   "weitereTermineText": "Per tutto il resto che si tiene questa settimana. Compare a tutti nel programma.",

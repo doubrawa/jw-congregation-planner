@@ -248,7 +248,7 @@ export default {
   "anlassNormal": "Звичайний тиждень",
   "anlassNormalText": "Програма як у посібнику",
   "anlassCoText": "Службова промова замість вивчення Біблії у зборі",
-  "anlassMemText": "Зібрання цього дня не відбувається",
+  "anlassMemText": "Одне зібрання цього тижня не відбувається",
   "zusammenkuenfteDieserWoche": "Зібрання цього тижня",
   "weitereTermine": "Інші події",
   "weitereTermineText": "Для всього іншого, що відбувається цього тижня. Показується всім у програмі.",

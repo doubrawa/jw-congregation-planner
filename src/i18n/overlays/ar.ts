@@ -277,7 +277,7 @@ export default {
   "anlassNormal": "أسبوع عادي",
   "anlassNormalText": "البرنامج كما في دليل الاجتماع",
   "anlassCoText": "خطاب الخدمة بدل درس الكتاب المقدس الجَماعي",
-  "anlassMemText": "يُلغى الاجتماع في هذا اليوم",
+  "anlassMemText": "يُلغى أحد اجتماعات هذا الأسبوع",
   "zusammenkuenfteDieserWoche": "اجتماعات هذا الأسبوع",
   "weitereTermine": "مواعيد أخرى",
   "weitereTermineText": "لكل ما يجري إضافةً في هذا الأسبوع. يظهر للجميع في البرنامج.",
