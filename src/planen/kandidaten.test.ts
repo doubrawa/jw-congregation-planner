@@ -432,4 +432,25 @@ describe('Gruppen-Slots liefern Gruppen statt Personen', () => {
     }
     expect(kandidaten(state, sel, KEINE_ABWESENHEIT, DE, (x) => x)).toEqual([])
   })
+
+  it('eine aus der Reinigung genommene Gruppe steht nicht zur Wahl — wie eine Person ohne den Bereich', () => {
+    // Der Admin hat Gruppe 2 im Blatt der Reinigung abgeschaltet (18.10.2026).
+    // „Automatisch" überspringt sie; böte das Blatt sie an, teilte man sie von
+    // Hand eben doch ein.
+    const gruppe = (n: number, ohneReinigung?: boolean) => ({
+      id: `g${n}`, name: `Gruppe ${n}`, overseerId: null, assistantId: null, ohneReinigung,
+    })
+    const state: KandidatenDaten = {
+      ...daten([wocheMitKlasse('Anton Alt', 'Clara Cohn')]),
+      groups: [gruppe(1), gruppe(2, true), gruppe(3)],
+    }
+    const sel: SlotSelection = {
+      kind: 'helper', wi: 0, tab: 'mid', svc: 'rein', pos: 0,
+      priv: null, groups: true, label: 'Reinigung',
+    }
+    expect(kandidaten(state, sel, KEINE_ABWESENHEIT, DE, (x) => x).map((c) => c.key)).toEqual(['g1', 'g3'])
+    // Wieder hineingenommen steht sie wieder da — an ihrer Stelle.
+    const zurueck = { ...state, groups: [gruppe(1), gruppe(2, false), gruppe(3)] }
+    expect(kandidaten(zurueck, sel, KEINE_ABWESENHEIT, DE, (x) => x).map((c) => c.key)).toEqual(['g1', 'g2', 'g3'])
+  })
 })

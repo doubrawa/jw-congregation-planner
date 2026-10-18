@@ -25,6 +25,7 @@ import {
   istAusgefallen,
   partnerGenderOk,
   personCompare,
+  reinigungsGruppen,
   ROLE_CIRCUIT,
 } from '../data/helpers'
 import { lastFenster, workloadOf } from '../data/auslastung'
@@ -168,7 +169,11 @@ function fsKandidaten(
     .sort((a, b) => Number(a.absent) - Number(b.absent))
 }
 
-/** Reinigung u. Ä.: die Predigtdienstgruppen statt einzelner Personen. */
+/**
+ * Reinigung u. Ä.: die Predigtdienstgruppen statt einzelner Personen — nur
+ * die, die reinigen (`reinigungsGruppen`). Eine herausgenommene steht nicht
+ * zur Wahl, wie eine Person ohne den Bereich eines Dienstes.
+ */
 function gruppenKandidaten(
   state: KandidatenDaten,
   t: Dict,
@@ -180,7 +185,7 @@ function gruppenKandidaten(
     const label = fill(t.mitgliederN, { n })
     return aufseher ? `${displayName(aufseher)} · ${label}` : label
   }
-  return state.groups.map((group) => ({
+  return reinigungsGruppen(state.groups).map((group) => ({
     key: group.id,
     name: tu(group.name),
     assignName: group.name,

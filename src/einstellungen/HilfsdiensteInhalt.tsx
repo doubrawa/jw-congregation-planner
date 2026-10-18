@@ -2,10 +2,9 @@ import { useState } from 'react'
 import { useApp } from '../app/context'
 import { PlusMinus } from '../bausteine/PlusMinus'
 import { Zeichen } from '../bausteine/Zeichen'
-import { isQualified, serviceQualKey } from '../data/helpers'
-import type { Service } from '../data/types'
 import { fill, useT } from '../i18n/useT'
 import { EinstellZeile } from './EinstellZeile'
+import { uebernehmenKoennen, uebernehmenText } from './einstellungen-anzeige'
 import { HilfsdienstNeuBlatt } from './HilfsdienstNeuBlatt'
 
 /**
@@ -20,14 +19,13 @@ import { HilfsdienstNeuBlatt } from './HilfsdienstNeuBlatt'
  * hervorgehoben bei niemandem: Die Auto-Zuteilung sucht über den
  * Aufgabenbereich `svc:<key>`, und ein neuer Dienst beginnt ohne Freigaben. Sein
  * Platz bliebe sonst Woche für Woche offen, ohne dass irgendwo stünde, woran es
- * liegt. Gruppen-Dienste (Reinigung) rotieren Gruppen und brauchen niemanden.
+ * liegt. Bei einem Gruppen-Dienst (Reinigung) stehen dort die Gruppen, die
+ * reinigen — hervorgehoben bei keiner, aus demselben Grund (18.10.2026).
  */
 export function HilfsdiensteInhalt() {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
   const [neu, setNeu] = useState(false)
-  const freigegeben = (service: Service): number =>
-    state.persons.filter((p) => isQualified(p, serviceQualKey(service.key))).length
 
   return (
     <>
@@ -35,8 +33,7 @@ export function HilfsdiensteInhalt() {
       <section className="karte einst-karte hd-karte">
         {state.services.map((service) => {
           const name = tu(service.name)
-          // Gruppen-Dienste haben keinen Aufgabenbereich — nichts zu zählen.
-          const anzahl = service.groups ? null : freigegeben(service)
+          const anzahl = uebernehmenKoennen(state, service)
           return (
             <div key={service.key} className="hd-zeile">
               <button
@@ -48,7 +45,7 @@ export function HilfsdiensteInhalt() {
                   {name}
                 </span>
                 <span className={anzahl === 0 ? 'klein-text hd-niemand' : 'klein-text'}>
-                  {anzahl === null ? t.gruppenRotation : fill(t.personenCount, { n: anzahl })}
+                  {uebernehmenText(t, service, anzahl)}
                 </span>
               </button>
               <PlusMinus

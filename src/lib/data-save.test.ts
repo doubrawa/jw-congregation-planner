@@ -189,6 +189,10 @@ describe('Upsert-Schreiber (onConflict)', () => {
     // Nullen entscheidet die Ablage der Datenbank — auch über die Reihenfolge,
     // in der die Reinigung rotiert.
     expect(chain.upsert).toHaveBeenCalledWith(expect.objectContaining({ id: group.id, position: 2 }))
+    // Ob sie reinigt, geht mit (18.10.2026) — auch das Zurücknehmen.
+    expect(chain.upsert).toHaveBeenLastCalledWith(expect.objectContaining({ ohne_reinigung: false }))
+    saveGroupRow('c1', { ...group, ohneReinigung: true }, 2)
+    expect(chain.upsert).toHaveBeenLastCalledWith(expect.objectContaining({ id: group.id, ohne_reinigung: true }))
     saveConfirmation('c1', 'u1', 'k1', 'bestätigt')
     expect(chain.from).toHaveBeenCalledWith('confirmations')
     expect(chain.upsert).toHaveBeenCalledWith(expect.objectContaining({ task_key: 'k1', status: 'bestätigt' }), { onConflict: 'congregation_id,task_key,user_id' })

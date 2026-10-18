@@ -7390,6 +7390,76 @@ Persisch), Profil, Ansicht, Aufbewahrung, Legende. Mutationskatalog: 24 Einträg
 neu oder nachgezogen, `push-ziel-auswertung` gestrichen (die Liste bewacht jetzt
 der Übersetzer).
 
+---
+
+## Aufgenommen am 18. Oktober 2026 — Gruppen aus der Reinigung nehmen (T127)
+
+### T127 · Reinigung: Gruppen an- und abschalten 🔧 ✅ erledigt und ausgerollt (18. Oktober 2026)
+
+**Auftrag (18. Oktober, über die Planer-Sitzung):** In den Einstellungen listet
+ein Tipp auf den Hilfsdienst „Reinigung" alle Gruppen; einzelne lassen sich aus
+der Reinigung herausnehmen und wieder hineinnehmen — aufgebaut wie der
+Personen-Dialog der übrigen Hilfsdienste, nur mit Gruppen. Am selben Tag vom
+Betreiber nachentschieden: Auch die Weiteren Pläne (Königreichssaal)
+überspringen eine herausgenommene Gruppe.
+
+**Regeln:**
+
+- **Eine Quelle:** `reinigungsGruppen` (`src/data/helpers.ts`) — die Gruppen,
+  die reinigen, in ihrer Folge. Daraus lesen die Rotation der Automatik (samt
+  dem Malus für Aufseher und Gehilfe der reinigenden Gruppe), die Wahl beim
+  Zuteilen, die Zahl in den Einstellungen und die Weiteren Pläne.
+- **Ohne angelegte Gruppen** bleibt es bei „Gruppe 1–3"; sind welche da und
+  alle herausgenommen, bleibt die Reinigung offen und wird als offen gemeldet —
+  erfunden wird keine.
+- **Was schon eingeteilt ist, bleibt stehen**, bis der Platz neu besetzt wird —
+  wie bei einer Person, der man den Bereich nimmt.
+- **Weitere Pläne:** `gruppenVerteilen` geht nur unter den reinigenden Gruppen
+  reihum; beginnt die Reihe bei einer herausgenommenen (beim Wechsel des Takts
+  die, die gerade dran war), übernimmt die nächste nach ihr. „Beginnen mit" und
+  die Wahl je Woche bieten nur reinigende an; eine schon eingetragene
+  herausgenommene bleibt in ihrer Wahl stehen, sonst stünde dort „offen".
+
+**Umgesetzt:**
+
+- Spalte `groups.ohne_reinigung boolean not null default false` in
+  `supabase/schema.sql` (in `create table` und als `alter table … add column
+  if not exists`), `Group.ohneReinigung`, Laden und Speichern in
+  `src/lib/data.ts`. `saveGroupRow` schreibt die Spalte mit — deshalb erst das
+  Schema ausrollen, dann pushen. **Ausgerollt am 18. Oktober** vor dem Push
+  (`supabase db query -f` mit genau dieser Zeile): anon-REST `200`,
+  Gegenprobe `400 42703`; in der Datenbank `boolean`, `not null`, Standard
+  `false`, keine Gruppe herausgenommen.
+- Blatt der Reinigung (`HilfsdienstBlatt.tsx`): die Gruppen in ihrer Folge, je
+  mit Schalter, ohne Suchfeld; Kopf „Gruppen-Rotation · Gruppen: n", in der
+  Liste der Hilfsdienste „Gruppen: n", rot bei 0 (`uebernehmenKoennen`). Keine
+  neuen Texte — `gruppenRotation` und `gruppenN` gab es in allen zwölf
+  Sprachen.
+- Proben: Anwendungsfall `reinigung-gruppen-ablauf.test.tsx` (echtes Blatt,
+  echter Reducer → Automatik, Wahl, Königreichssaal), dazu Automatik, Wahl,
+  Blatt, Liste, Laden, Speichern, Schema und die Weiteren Pläne (Regel und
+  Oberfläche). Mutationskatalog: 27 Einträge neu oder nachgezogen
+  (`reinigung-…`), alle bewacht.
+- Code-Review (max), zwei Befunde behoben: Der Malus gilt den Gruppen, die
+  in der Zusammenkunft eingetragen sind — bis dahin galt er allein der
+  Rotation, und eine abgeschaltete, aber noch eingetragene Gruppe gab ihrem
+  Aufseher Hilfsdienste (`reinigendeGruppen` in `planning.ts`). Und das
+  Zuteilen-Blatt sagt bei lauter abgeschalteten Gruppen „Gruppen: 0" statt
+  „Predigtdienstgruppen"; sein Knopf öffnet gleich das Blatt der Reinigung —
+  nur für den Admin, einen Planer führte „Einstellungen" ins Programm
+  (`KeineGruppeZurWahl` in `AssignSheet.tsx`).
+- `/simplify`: Die Zeile mit Namen und Schalter ist jetzt ein Baustein
+  (`BereichZeile` in `PrivToggle.tsx`) — die Bereiche einer Person, die
+  Personen eines Dienstes und die Gruppen der Reinigung teilen ihn. Die Zahl
+  unter dem Namen und im Kopf des Blatts beschriftet `uebernehmenText`.
+- Handbuch (Planer): Hilfsdienste, Gruppen und Trolleys, Automatisch, Weitere
+  Pläne.
+- Im Browser geprüft (`/demo.html`): Schalter, Zahl, Automatik und Zuteilen-Blatt;
+  320 bis 1440 px, Deutsch und Arabisch, Schriftstufe 1 und 1,45 — ohne
+  waagerechte Rollbalken. In den Weiteren Plänen bieten „Beginnen mit" und die
+  Wochen nur die reinigenden Gruppen an, verteilt wird ohne die abgeschaltete;
+  eine schon eingetragene bleibt in ihrer Woche stehen.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -7417,7 +7487,7 @@ der Übersetzer).
 
 ## Fortschritt
 
-Stand 17. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 18. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -7426,9 +7496,9 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 22./23. August ☑☑☑☑☑☑☑☑☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
-10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑
+10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑
 
-**125 der 126 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+**126 der 127 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |
@@ -7837,6 +7907,10 @@ was sonst aussteht, braucht den Betreiber oder ein Gerät.
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
 | **Phase 7** | T42, der Rest | `src` samt Tests ist seit 17. Oktober frei, die Regel steht in `tsconfig.app.json`. Noch aus: Edge Functions (53 Meldungen) und Skript-Tests (67); `typecheck:index` ist überflüssig geworden |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
+
+Am 18. Oktober nach der Messung oben dazugekommen und am selben Tag
+geschlossen: **T127** (Gruppen aus der Reinigung nehmen; Spalte ausgerollt,
+dann gepusht) — damit 127 Köpfe, offen weiter nur T121.
 
 Am 18. Oktober aus der Tabelle genommen: **Kachel und Liste der Absagen zählen
 verschieden** — entschieden, die Kachel zählt jetzt wie die Liste nur die

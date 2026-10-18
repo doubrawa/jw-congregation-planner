@@ -2,8 +2,8 @@
  * Zuteilungslogik — Kernregeln aus dem Design-Handoff ("Interaktionen &
  * Verhalten"): nur Qualifizierte, Abwesende blockiert, Auslastung über alle
  * geladenen Wochen, Auto-Zuteilung wählt geringste Auslastung, Reinigung
- * rotiert über die Predigtdienstgruppen (Wochenindex mod Gruppenzahl),
- * Gastredner-Slots werden übersprungen.
+ * rotiert über die Predigtdienstgruppen, die reinigen (Wochenindex mod deren
+ * Zahl), Gastredner-Slots werden übersprungen.
  *
  * Alle Funktionen sind pur (Eingaben bleiben unverändert) — geeignet für
  * den Reducer und später direkt testbar.
@@ -28,6 +28,7 @@ import {
   MEETING_TABS,
   partnerGenderOk,
   idAufloeser,
+  reinigungsGruppen,
   ROLE_GUEST_SPEAKER,
   ROLE_OWN_SPEAKER,
   rolleBasis,
@@ -529,10 +530,35 @@ interface Waehler {
   mitzaehlen(person?: Person): void
   /** Auflöser Zuteilung → Person-Id (nach Id, nicht nach Name). */
   werIst: (slot: Zuteilung | undefined) => string | undefined
-  /** Gruppe, die in dieser Woche reinigt — `null` ohne konfigurierte Gruppen. */
-  cleaningGroup: Group | null
+  /**
+   * Was die Reinigung in dieser Woche bekommt: die Gruppe der Rotation, ohne
+   * angelegte Gruppen „Gruppe 1–3" — und nichts (`null`), wenn jede Gruppe aus
+   * der Reinigung genommen ist. Dann bleibt ihr Platz offen.
+   */
+  reinigung: string | null
   /** Was dieser Lauf vergeben hat. */
   readonly ergebnis: { count: number; newly: string[] }
+}
+
+/**
+ * **Wer in dieser Zusammenkunft reinigt** — für den Malus der Reinigung: die
+ * Gruppen in den Plätzen der Gruppen-Dienste, auch eine inzwischen aus der
+ * Reinigung genommene (sie bleibt eingetragen, bis der Platz neu besetzt wird);
+ * ein noch leerer Platz bekommt gleich die Gruppe der Rotation (`rotation`).
+ * Bis zum 18.10.2026 galt der Malus allein der Rotation — stand eine andere
+ * Gruppe im Platz, bekam deren Aufseher Hilfsdienste, und der Aufseher der
+ * Rotation wurde geschont, obwohl er nicht reinigte.
+ */
+function reinigendeGruppen(meeting: Meeting, services: Service[], groups: Group[], rotation: Group | null): Group[] {
+  const namen = new Set<string>()
+  for (const svc of services) {
+    if (!svc.groups) continue
+    for (let pos = 0; pos < svc.count; pos++) {
+      const name = meeting.helpers[svc.key]?.[pos]?.name || rotation?.name
+      if (name) namen.add(name)
+    }
+  }
+  return groups.filter((g) => namen.has(g.name))
 }
 
 function waehler(
@@ -552,11 +578,18 @@ function waehler(
   //
   // Gezählt wird im Kalender, nicht im Ladefenster (`laufendeWoche`): Das rutscht
   // mit jedem Import, und ab 52 Wochen reinigte sonst jede Woche dieselbe Gruppe.
+  // Reihum geht es nur unter den Gruppen, die reinigen (`reinigungsGruppen`).
   const woche = laufendeWoche(weeks, weekIndex)
-  const cleaningGroup = groups.length ? (groups[woche % groups.length] ?? null) : null
+  const reihe = reinigungsGruppen(groups)
+  const cleaningGroup = reihe.length ? (reihe[woche % reihe.length] ?? null) : null
+  // Ohne angelegte Gruppen rotiert die Reinigung über „Gruppe 1–3". Sind welche
+  // da und alle herausgenommen, reinigt keine — erfunden wird dann auch keine.
+  const reinigung = cleaningGroup?.name ?? (groups.length === 0 ? `Gruppe ${1 + (woche % 3)}` : null)
   const cleaningLeaders = new Set<string>()
-  for (const pid of [cleaningGroup?.overseerId, cleaningGroup?.assistantId]) {
-    if (pid && persons.some((p) => p.id === pid)) cleaningLeaders.add(pid)
+  for (const gruppe of reinigendeGruppen(meeting, services, groups, cleaningGroup)) {
+    for (const pid of [gruppe.overseerId, gruppe.assistantId]) {
+      if (pid && persons.some((p) => p.id === pid)) cleaningLeaders.add(pid)
+    }
   }
   const HELPER_MALUS = 1e6
 
@@ -685,7 +718,7 @@ function waehler(
 
   return {
     werIst,
-    cleaningGroup,
+    reinigung,
     ergebnis,
     pick,
     rangfolge,
@@ -876,13 +909,7 @@ function anVorsitzKoppeln(meeting: Meeting, w: Waehler, persons: Person[]): void
  * 5) Die Hilfsdienste — zuletzt, damit Helfer und Aufgaben sich über die
  *    Sperrliste gegenseitig ausschließen; ausgewählt wird nach Gesamtlast.
  */
-function hilfsdiensteBesetzen(
-  meeting: Meeting,
-  services: Service[],
-  w: Waehler,
-  /** Laufende Kalenderwoche (`laufendeWoche`), nicht die Position im Fenster. */
-  woche: number,
-): number {
+function hilfsdiensteBesetzen(meeting: Meeting, services: Service[], w: Waehler): number {
   let unfilled = 0
   for (const svc of services) {
     const arr = meeting.helpers[svc.key] ?? []
@@ -894,9 +921,13 @@ function hilfsdiensteBesetzen(
       const platz = arr[pos] ?? { name: '' }
       arr[pos] = platz
       if (svc.groups) {
-        // Reinigung rotiert über die echten Predigtdienstgruppen (keine Person,
-        // daher keine pid); ohne konfigurierte Gruppen Fallback auf 1–3.
-        platz.name = w.cleaningGroup ? w.cleaningGroup.name : `Gruppe ${1 + (woche % 3)}`
+        // Die Reinigung geht an eine Gruppe, an keine Person — daher keine pid.
+        // Reinigt keine (alle aus der Reinigung genommen), bleibt der Platz offen.
+        if (!w.reinigung) {
+          unfilled++
+          continue
+        }
+        platz.name = w.reinigung
         delete platz.pid
         w.mitzaehlen()
         continue
@@ -963,7 +994,7 @@ export function autoAssignMeeting(
     anVorsitzKoppeln(meeting, w, persons)
   }
   if (scope !== 'parts') {
-    unfilled += hilfsdiensteBesetzen(meeting, services, w, laufendeWoche(weeks, weekIndex))
+    unfilled += hilfsdiensteBesetzen(meeting, services, w)
   }
 
   return { weeks: next, count: w.ergebnis.count, newly: w.ergebnis.newly, unfilled }

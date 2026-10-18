@@ -304,6 +304,22 @@ describe('Planen: ein Plan', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpGruppenVerteilen', planId: 'pl-s', abGruppe: 'g5' })
   })
 
+  it('zur Wahl stehen nur Gruppen, die reinigen — eine schon eingetragene bleibt stehen (18.10.2026)', () => {
+    // Gruppe 2 ist im Blatt der Reinigung abgeschaltet; diese und die
+    // übernächste Woche hat sie noch.
+    const { container } = planen({ groups: [gruppe(1), { ...gruppe(2), ohneReinigung: true }, gruppe(3)] })
+    oeffnen(container, 'Winterdienst')
+    const beginnen = [...container.querySelectorAll(`[role="group"][aria-label="${t.wpAbGruppe}"] button`)]
+    expect(beginnen.map((b) => b.textContent)).toEqual(['Gruppe 1', 'Gruppe 3'])
+    expect(gedrueckt(container, t.wpAbGruppe), 'die Reihe beginnt bei keiner, die reinigt').toBeUndefined()
+
+    const optionen = (s: HTMLSelectElement) => [...s.options].map((o) => o.value)
+    const [diese, naechste] = vorschau(container)
+    expect(diese!.value).toBe('g2')
+    expect(optionen(diese!)).toEqual(['', 'g1', 'g2', 'g3'])
+    expect(optionen(naechste!)).toEqual(['', 'g1', 'g3'])
+  })
+
   it('der Takt ist wählbar — wöchentlich ist vorgegeben', () => {
     const { container, dispatch } = planen()
     oeffnen(container, 'Winterdienst')

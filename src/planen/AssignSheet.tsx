@@ -12,6 +12,7 @@ import { dauerAbtrennen, herkunftVon, isSong, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAK
 import { meetingDate } from '../data/meeting-dates'
 import { platzDerAuswahl } from '../data/plaetze'
 import { buildS89ForSlot } from '../data/planning'
+import { rechteVon } from '../data/rechte'
 import type { S89Payload, SlotAssignment, SlotSelection, Week } from '../data/types'
 import { wochenHer } from '../i18n/relative-time'
 import { fill, platzName, useProgWeek, useT, zuteilungenText, type I18n } from '../i18n/useT'
@@ -380,37 +381,50 @@ function ZuteilenInhalt({
       )}
 
       <div className="zuteilen-liste">
-        {/*
-          Gruppen-Slot ohne angelegte Gruppen: die Liste blieb wortlos leer,
-          während die Auto-Zuteilung trotzdem „Gruppe 1…3" einträgt (feste
-          Dreizahl in planning.ts). Der Planer sah eine Zuteilung, die er
-          nicht ändern konnte, und nirgends einen Grund dafür.
-
-          Der Hinweis kommt ohne neuen Wörterbuch-Schlüssel aus: er benennt
-          mit `gruppenCard`, was fehlt, und führt mit `navEinstellungen`
-          dorthin, wo es angelegt wird — beide Texte gibt es in allen
-          App-Sprachen.
-        */}
-        {sel.groups && candidates.length === 0 && (
-          <div className="sheet-empty">
-            <div className="sheet-empty-label">{t.gruppenCard}</div>
-            <button
-              type="button"
-              className="sheet-empty-action"
-              onClick={() => {
-                onClose()
-                dispatch({ type: 'navigate', screen: 'einstellungen' })
-              }}
-            >
-              {t.navEinstellungen} ›
-            </button>
-          </div>
-        )}
+        {sel.groups && candidates.length === 0 && <KeineGruppeZurWahl sel={sel} onClose={onClose} />}
         {gefiltert.map((cand) => (
           <KandidatZeile key={cand.key} cand={cand} week={state.weeks[sel.wi]} i18n={i18n} onClick={() => pick(cand)} />
         ))}
       </div>
     </>
+  )
+}
+
+/**
+ * **Keine Gruppe zur Wahl** an einem Gruppen-Platz (Reinigung).
+ *
+ * Ohne angelegte Gruppen blieb die Liste wortlos leer, während die
+ * Auto-Zuteilung trotzdem „Gruppe 1…3" einträgt (feste Dreizahl in
+ * planning.ts): Der Planer sah eine Zuteilung, die er nicht ändern konnte, und
+ * nirgends einen Grund. Der Hinweis benennt mit `gruppenCard`, was fehlt, und
+ * führt in die Einstellungen.
+ *
+ * Gibt es Gruppen, sind alle aus der Reinigung genommen (18.10.2026): Dann
+ * steht „Gruppen: 0" da, wie unter der Reinigung in den Einstellungen, und der
+ * Knopf öffnet gleich ihr Blatt (`openServiceSheet`) — dort schaltet man sie
+ * wieder an. „Predigtdienstgruppen" hätte behauptet, es gäbe keine.
+ *
+ * Den Knopf bekommt nur, wer die Einstellungen sieht (`rechteVon`): Einen
+ * Planer führte er ins Programm, Gruppen ändert nur der Admin (Review
+ * 18.10.2026). Alle Texte gibt es schon in allen App-Sprachen.
+ */
+function KeineGruppeZurWahl({ sel, onClose }: { sel: SlotSelection; onClose: () => void }) {
+  const { state, dispatch } = useApp()
+  const { t, tu } = useT()
+  const dienst = sel.kind === 'helper' && state.groups.length > 0 ? state.services.find((s) => s.key === sel.svc) : undefined
+  const oeffnen = (): void => {
+    onClose()
+    dispatch(dienst ? { type: 'openServiceSheet', key: dienst.key } : { type: 'navigate', screen: 'einstellungen' })
+  }
+  return (
+    <div className="sheet-empty">
+      <div className="sheet-empty-label">{dienst ? fill(t.gruppenN, { n: 0 }) : t.gruppenCard}</div>
+      {rechteVon(state).admin && (
+        <button type="button" className="sheet-empty-action" onClick={oeffnen}>
+          {dienst ? tu(dienst.name) : t.navEinstellungen} ›
+        </button>
+      )}
+    </div>
   )
 }
 

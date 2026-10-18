@@ -83,6 +83,7 @@ interface GroupRow {
   overseer_id: string | null
   assistant_id: string | null
   position: number
+  ohne_reinigung: boolean
 }
 
 /** Ein Trolley (T121, Phase 7): eine Zeile. */
@@ -326,7 +327,13 @@ const asNotifType = (t: string): NotificationType =>
 /* ---- Mapper Row ↔ App ---------------------------------------------------- */
 
 function groupFromRow(r: GroupRow): Group {
-  return { id: r.id, name: r.name, overseerId: r.overseer_id, assistantId: r.assistant_id }
+  return {
+    id: r.id,
+    name: r.name,
+    overseerId: r.overseer_id,
+    assistantId: r.assistant_id,
+    ohneReinigung: r.ohne_reinigung || undefined,
+  }
 }
 
 function groupToRow(g: Group, congregationId: string, position: number) {
@@ -337,6 +344,7 @@ function groupToRow(g: Group, congregationId: string, position: number) {
     overseer_id: g.overseerId,
     assistant_id: g.assistantId,
     position,
+    ohne_reinigung: Boolean(g.ohneReinigung),
   }
 }
 

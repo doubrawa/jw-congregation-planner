@@ -79,7 +79,7 @@ const grenze = (table: string): unknown =>
 
 const personRow = { id: 'p1', fn: 'Anna', ln: 'Beispiel', planner: false, role: 'verkuendiger', female: true, tel: '', mail: '', priv: {}, grp: null }
 const serviceRow = { key: 'mik', name: 'Mikrofone', count: 2, priv: null, groups: false, position: 0 }
-const groupRow = { id: 'g1', name: 'Gruppe 1', overseer_id: null, assistant_id: null, position: 0 }
+const groupRow = { id: 'g1', name: 'Gruppe 1', overseer_id: null, assistant_id: null, position: 0, ohne_reinigung: false }
 
 /** Alle Tabellen mit „normalen" Antworten füllen; einzelne per Argument überschreiben. */
 function seedResponses(over: Partial<Record<string, Array<{ data: unknown; error: unknown; count?: number }>>> = {}) {
@@ -130,6 +130,15 @@ describe('loadCongregationData', () => {
     expect(res.data.progLangs).toEqual(['en'])
     expect(res.data.confirmations['k1']).toBe('bestätigt')
     expect(res.empty).toBe(false)
+  })
+
+  it('eine aus der Reinigung genommene Gruppe kommt so an — eine, die reinigt, ohne Vermerk (18.10.2026)', async () => {
+    seedResponses({
+      groups: [{ data: [{ ...groupRow, ohne_reinigung: true }, { ...groupRow, id: 'g2', name: 'Gruppe 2' }], error: null }],
+    })
+    const res = await loadCongregationData('u1')
+    if (!res.ok) throw new Error('nicht geladen')
+    expect(res.data.groups.map((g) => g.ohneReinigung)).toEqual([true, undefined])
   })
 
   /**

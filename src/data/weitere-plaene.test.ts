@@ -247,6 +247,44 @@ describe('Reihum verteilen', () => {
 })
 
 /**
+ * **Gruppen aus der Reinigung genommen** (18.10.2026): Was im Blatt der
+ * Reinigung abgeschaltet ist, ist auch im Königreichssaal nie dran.
+ */
+describe('Reihum verteilen ohne herausgenommene Gruppen', () => {
+  const ohneG2 = G.map((g) => (g.id === 'g2' ? { ...g, ohneReinigung: true } : g))
+  const verteilen = (groups: Group[], abGruppe: string) =>
+    gruppenVerteilen({ plan: saal(), eintraege: [], groups, abGruppe, heute: HEUTE, neueId }).eintraege.map((e) => e.grp)
+
+  it('eine herausgenommene Gruppe ist in keiner Woche dran — die übrigen der Reihe nach', () => {
+    expect(verteilen(ohneG2, 'g1')).toEqual(['g1', 'g3', 'g4', 'g1'])
+  })
+
+  it('beginnt die Reihe bei ihr, übernimmt die nächste nach ihr', () => {
+    // So beim Wechsel des Takts, wenn gerade sie dran war (`taktWechseln`).
+    expect(verteilen(ohneG2, 'g2')).toEqual(['g3', 'g4', 'g1', 'g3'])
+    const ohneG4 = G.map((g) => (g.id === 'g4' ? { ...g, ohneReinigung: true } : g))
+    expect(verteilen(ohneG4, 'g4'), 'nach der letzten wieder die erste').toEqual(['g1', 'g2', 'g3', 'g1'])
+  })
+
+  it('sind alle herausgenommen, wird nichts verteilt', () => {
+    const alle = G.map((g) => ({ ...g, ohneReinigung: true }))
+    const vorher = [woche('2026-09-14', 'g1')]
+    expect(gruppenVerteilen({ plan: saal(), eintraege: vorher, groups: alle, abGruppe: 'g1', heute: HEUTE, neueId })).toEqual({
+      eintraege: vorher,
+      verteilt: 0,
+    })
+  })
+
+  it('auch der Wechsel des Takts lässt sie aus', () => {
+    // Wöchentlich: g2 ist diese Woche dran, dann herausgenommen worden.
+    const plan = saal({ takt: 'monat', von: '2026-09-07', bis: '2026-11-29' })
+    const alt = planSpannen({ ...plan, takt: 'woche' }).map((w, i) => woche(w, ['g2', 'g3', 'g4', 'g1'][i % 4]!))
+    const { eintraege } = taktWechseln({ plan, eintraege: alt, groups: ohneG2, heute: HEUTE, neueId })
+    expect(eintraege.map((e) => `${e.datum} ${e.grp}`)).toEqual(['2026-09-01 g3', '2026-10-01 g4', '2026-11-01 g1'])
+  })
+})
+
+/**
  * **„Beginnen mit"** (T121, `GPlaenePlanen`): Gedrückt steht die Gruppe, mit
  * der die Reihe ab jetzt beginnt — dort, wo `gruppenVerteilen` anfinge.
  */

@@ -216,6 +216,9 @@ create table if not exists public.groups (
   overseer_id     uuid,
   assistant_id    uuid,
   position        integer not null default 0,       -- Anzeigereihenfolge
+  -- Aus der Reinigung genommen: Die Rotation überspringt die Gruppe
+  -- (18.10.2026). Jede Gruppe reinigt, bis sie herausgenommen wird.
+  ohne_reinigung  boolean not null default false,
   created_at      timestamptz not null default now(),
 
   unique (id, congregation_id),                     -- Ziel der Verweise auf eine Gruppe
@@ -224,6 +227,11 @@ create table if not exists public.groups (
   constraint groups_assistant_fk foreign key (assistant_id, congregation_id)
     references public.persons (id, congregation_id) on delete set null (assistant_id)
 );
+
+-- Nachträglich (18.10.2026) — eine schon angelegte Tabelle bekommt die Spalte
+-- hier; jede bestehende Gruppe reinigt damit weiter.
+alter table public.groups
+  add column if not exists ohne_reinigung boolean not null default false;
 
 create index if not exists groups_congregation_idx
   on public.groups (congregation_id);

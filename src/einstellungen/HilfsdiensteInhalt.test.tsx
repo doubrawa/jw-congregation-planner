@@ -10,8 +10,9 @@ import {
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications, privSetzen, serviceQualKey } from '../data/helpers'
-import type { Person, Qualifications, Service } from '../data/types'
+import type { Group, Person, Qualifications, Service } from '../data/types'
 import { dict } from '../i18n/ui'
+import { fill } from '../i18n/useT'
 import { HilfsdiensteInhalt } from './HilfsdiensteInhalt'
 
 /**
@@ -129,11 +130,27 @@ describe('Für wie viele der Dienst freigegeben ist (T79)', () => {
     expect(unter(zeilen(container)[0]!)?.classList.contains('hd-niemand')).toBe(false)
   })
 
-  it('die Gruppen-Rotation braucht niemanden — sie sagt es und hebt sich nie ab', () => {
-    const { container } = zeige({ persons: [] })
+  /*
+   * Die Reinigung geht an Gruppen, nicht an Personen: Unter ihr steht, wie
+   * viele Gruppen reinigen — seit sich Gruppen aus ihr nehmen lassen
+   * (18.10.2026). Bis dahin stand dort nur „Gruppen-Rotation".
+   */
+  const gruppe = (n: number, ohneReinigung?: boolean): Group => ({
+    id: `g${n}`, name: `Gruppe ${n}`, overseerId: null, assistantId: null, ohneReinigung,
+  })
+
+  it('bei der Reinigung zählen die Gruppen, die reinigen — nicht die Personen', () => {
+    const { container } = zeige({ persons: [], groups: [gruppe(1), gruppe(2, true), gruppe(3)] })
     const rein = zeilen(container)[1]!
-    expect(unter(rein)?.textContent).toBe(t.gruppenRotation)
+    expect(unter(rein)?.textContent).toBe(fill(t.gruppenN, { n: 2 }))
     expect(unter(rein)?.classList.contains('hd-niemand')).toBe(false)
+  })
+
+  it('reinigt keine Gruppe mehr, hebt sie sich ab — ihr Platz bliebe offen', () => {
+    const { container } = zeige({ groups: [gruppe(1, true), gruppe(2, true)] })
+    const rein = zeilen(container)[1]!
+    expect(unter(rein)?.textContent).toBe(fill(t.gruppenN, { n: 0 }))
+    expect(unter(rein)?.classList.contains('hd-niemand')).toBe(true)
   })
 })
 

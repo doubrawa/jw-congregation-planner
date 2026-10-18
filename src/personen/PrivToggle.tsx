@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { useApp } from '../app/context'
 import { Punkt } from '../bausteine/Punkt'
 import { Switch } from '../components/Switch'
@@ -36,26 +37,53 @@ export function PrivToggle({
   // ein eigener Text gäbe es nur auf Deutsch.
   const auffaellig = on && istBruderBereichBeiSchwester(person, qkey)
   return (
+    <BereichZeile
+      name={label}
+      an={on}
+      onToggle={() => {
+        const priv = { ...person.priv, [qkey]: !on }
+        // Wer Schulungsaufgaben übernimmt, ist standardmäßig auch
+        // Gesprächspartner (lässt sich danach manuell wieder abschalten).
+        if (qkey === 'schulung' && !on) priv.schulungPartner = true
+        update({ priv })
+      }}
+    >
+      {auffaellig && bruderLabel && (
+        <span className="priv-warn" role="img" aria-label={bruderLabel} title={bruderLabel}>
+          <Punkt art="problem" />
+        </span>
+      )}
+    </BereichZeile>
+  )
+}
+
+/**
+ * **Eine Zeile mit Namen und Schalter** — die Bereiche einer Person, die
+ * Personen eines Dienstes, die Gruppen der Reinigung: überall dieselbe Zeile.
+ * Was `children` mitbringt, steht hinter dem Namen (der Hinweis bei
+ * `PrivToggle`).
+ */
+export function BereichZeile({
+  name,
+  an,
+  onToggle,
+  dir,
+  children,
+}: {
+  name: string
+  an: boolean
+  onToggle: () => void
+  /** `auto` bei frei getippten Namen, etwa denen der Gruppen. */
+  dir?: 'auto'
+  children?: ReactNode
+}) {
+  return (
     <div className="schalter-zeile bereich-zeile">
-      <span className="bereich-name">
-        {label}
-        {auffaellig && bruderLabel && (
-          <span className="priv-warn" role="img" aria-label={bruderLabel} title={bruderLabel}>
-            <Punkt art="problem" />
-          </span>
-        )}
+      <span className="bereich-name" dir={dir}>
+        {name}
+        {children}
       </span>
-      <Switch
-        on={on}
-        label={label}
-        onToggle={() => {
-          const priv = { ...person.priv, [qkey]: !on }
-          // Wer Schulungsaufgaben übernimmt, ist standardmäßig auch
-          // Gesprächspartner (lässt sich danach manuell wieder abschalten).
-          if (qkey === 'schulung' && !on) priv.schulungPartner = true
-          update({ priv })
-        }}
-      />
+      <Switch on={an} label={name} onToggle={onToggle} />
     </div>
   )
 }

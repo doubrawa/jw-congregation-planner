@@ -22,6 +22,7 @@
  * Alle Funktionen sind pur.
  */
 
+import { reinigungsGruppen } from './helpers'
 import { isoDay, monatNach, montagNach, montagVon, tagNach, tagVorbei } from './meeting-dates'
 import type { Group, PlanEintrag, PlanTakt, WeitererPlan } from './types'
 
@@ -197,6 +198,11 @@ export function taktWechseln(args: {
  * Zeitraums, die Gruppen in ihrer Reihenfolge, beginnend bei `abGruppe`.
  * Vergangene Spannen bleiben, wie sie sind — sie sind gewesen.
  *
+ * Reihum gehen nur die Gruppen, die reinigen (`reinigungsGruppen`, 18.10.2026):
+ * Eine aus der Reinigung genommene ist auch hier nie dran. Ist `abGruppe` eine
+ * solche — beim Wechsel des Takts die, die gerade dran war —, beginnt die Reihe
+ * mit der nächsten nach ihr.
+ *
  * Ein Platz behält seine Kennung, wenn er nur eine andere Gruppe bekommt: Die
  * Datenbank kennt je Plan und Spanne genau einen Eintrag
  * (`plan_eintraege_woche`), und ein zweiter mit neuer Kennung würde
@@ -214,14 +220,16 @@ export function gruppenVerteilen(args: {
   const { plan, eintraege, groups, abGruppe, heute, neueId } = args
   const andere = eintraege.filter((e) => e.planId !== plan.id)
   const eigene = eintraege.filter((e) => e.planId === plan.id)
-  if (groups.length === 0) return { eintraege: [...eintraege], verteilt: 0 }
+  // Erst ab `abGruppe` drehen, dann die herausgenommenen auslassen.
+  const ab = Math.max(0, groups.findIndex((g) => g.id === abGruppe))
+  const reihe = reinigungsGruppen([...groups.slice(ab), ...groups.slice(0, ab)])
+  if (reihe.length === 0) return { eintraege: [...eintraege], verteilt: 0 }
   const jetzt = spanneVon(taktVon(plan), isoDay(heute))
-  const start = Math.max(0, groups.findIndex((g) => g.id === abGruppe))
   const bleiben = eigene.filter((e) => e.datum < jetzt)
   const neu = planSpannen(plan)
     .filter((s) => s >= jetzt)
     .map((spanne, i): PlanEintrag => {
-      const grp = groups[(start + i) % groups.length]!.id
+      const grp = reihe[i % reihe.length]!.id
       const da = eigene.find((e) => e.datum === spanne)
       if (da) return da.grp === grp ? da : { ...da, grp }
       return { id: neueId(), planId: plan.id, datum: spanne, grp }

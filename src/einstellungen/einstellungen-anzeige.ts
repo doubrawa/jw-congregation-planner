@@ -1,9 +1,9 @@
 import type { AppState } from '../app/context'
 import { zeitspanne } from '../components/datum-anzeige'
 import { fsGruppeEntfernen } from '../data/fs'
-import { personCompare } from '../data/helpers'
+import { isQualified, personCompare, reinigungsGruppen, serviceQualKey } from '../data/helpers'
 import { rechteDerPerson } from '../data/rechte'
-import type { Group, Lang, MeetingTime, Member, Person, Reminders, Trolley } from '../data/types'
+import type { Group, Lang, MeetingTime, Member, Person, Reminders, Service, Trolley } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import { wochentagNameAusWd } from '../planen/wochentage'
@@ -46,6 +46,24 @@ export function werPlant(persons: readonly Person[], members: readonly Member[],
       return rechte.admin || rechte.planer
     })
     .sort((a, b) => personCompare(a, b, lang))
+}
+
+/**
+ * **Wie viele einen Hilfsdienst übernehmen können** — die Zahl unter seinem
+ * Namen und im Kopf seines Blatts: bei einem Dienst für Personen, wer seinen
+ * Bereich hat (T79), bei einem Gruppen-Dienst (Reinigung), wie viele Gruppen
+ * reinigen (`reinigungsGruppen`). Steht da 0, bleibt sein Platz offen — nur
+ * die Reinigung rotiert ohne angelegte Gruppen über „Gruppe 1–3".
+ */
+export function uebernehmenKoennen(daten: Pick<AppState, 'persons' | 'groups'>, service: Service): number {
+  return service.groups
+    ? reinigungsGruppen(daten.groups).length
+    : daten.persons.filter((p) => isQualified(p, serviceQualKey(service.key))).length
+}
+
+/** Die Zahl als Text, gleich unter dem Namen und im Kopf des Blatts: „Gruppen: 3" oder „Personen: 12". */
+export function uebernehmenText(t: Dict, service: Service, n: number): string {
+  return fill(service.groups ? t.gruppenN : t.personenCount, { n })
 }
 
 /**

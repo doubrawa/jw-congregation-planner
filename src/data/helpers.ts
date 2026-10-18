@@ -413,6 +413,17 @@ export function ohneGruppe(persons: readonly Person[], groups: readonly Group[])
 }
 
 /**
+ * **Die Gruppen, die reinigen** — in ihrer Reihenfolge, ohne die aus der
+ * Reinigung genommenen (`Group.ohneReinigung`). Die eine Quelle für die
+ * Rotation der Automatik, für die Wahl beim Zuteilen und für die Weiteren
+ * Pläne (Reihe und Wahl, `gruppenVerteilen`): Läsen sie die Gruppen je für
+ * sich, böte ein Blatt eine Gruppe an, die „Automatisch" überspringt.
+ */
+export function reinigungsGruppen(groups: readonly Group[]): Group[] {
+  return groups.filter((g) => !g.ohneReinigung)
+}
+
+/**
  * Bereichs-Key eines Hilfsdienstes. Jeder Dienst hat genau einen Bereich, der
  * aus seinem Key abgeleitet wird — so entsteht mit jedem neuen Dienst
  * automatisch ein Schalter im Personen-Detail. Der Präfix hält die dynamischen

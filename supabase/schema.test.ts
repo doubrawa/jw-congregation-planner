@@ -427,6 +427,15 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     const check = rumpf.slice(rumpf.indexOf('with check'))
     expect(check).toContain('person_id is null or person_id = public.my_person_id()')
   })
+
+  it('eine Gruppe trägt, ob sie reinigt — ohne Angabe reinigt sie, auch nachträglich (18.10.2026)', () => {
+    // Die App schreibt die Spalte bei jedem Speichern einer Gruppe mit
+    // (`saveGroupRow`); fehlte sie in der Datenbank, scheiterte jedes davon.
+    expect(tabelle('groups')).toMatch(/^\s*ohne_reinigung\s+boolean not null default false/m)
+    expect(normiert(schema)).toContain(
+      'alter table public.groups add column if not exists ohne_reinigung boolean not null default false;',
+    )
+  })
 })
 
 describe('kein Altbestand mehr im Schema', () => {

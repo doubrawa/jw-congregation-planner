@@ -570,6 +570,36 @@ describe('Ein Gruppen-Slot ohne angelegte Gruppen bleibt nicht wortlos', () => {
     expect(zeilen(container)).toHaveLength(0)
     expect(container.querySelector('.sheet-empty')).toBeNull()
   })
+
+  /*
+   * Gruppen gibt es, nur reinigt keine mehr (18.10.2026). „Predigtdienstgruppen"
+   * behauptete, es fehlten welche, und „Einstellungen" ließ suchen, wo sie
+   * wieder anzuschalten sind (Review 18.10.2026).
+   */
+  const HERAUSGENOMMEN: Group[] = [
+    { id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null, ohneReinigung: true },
+    { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null, ohneReinigung: true },
+  ]
+
+  it('sind alle aus der Reinigung genommen, steht „Gruppen: 0" da — der Knopf öffnet ihr Blatt', () => {
+    const { container, dispatch } = zeige(SEL_GRUPPE, { groups: HERAUSGENOMMEN })
+    expect(container.querySelector('.sheet-empty-label')?.textContent).toBe(fill(t.gruppenN, { n: 0 }))
+    const knopf = container.querySelector('.sheet-empty-action')!
+    expect(knopf.textContent).toBe('Reinigung ›')
+    fireEvent.click(knopf)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'closeSlot' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'openServiceSheet', key: 'rein' })
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'navigate' }))
+  })
+
+  it('der Planer liest den Hinweis, bekommt aber keinen Knopf — die Einstellungen sieht nur der Admin', () => {
+    for (const groups of [[], HERAUSGENOMMEN]) {
+      const { container } = zeige(SEL_GRUPPE, { groups, planner: false, zuteiler: true })
+      expect(container.querySelector('.sheet-empty-label')).not.toBeNull()
+      expect(container.querySelector('.sheet-empty-action')).toBeNull()
+      cleanup()
+    }
+  })
 })
 
 describe('Der Treffpunkt-Leiter kennt denselben Doppelweg', () => {

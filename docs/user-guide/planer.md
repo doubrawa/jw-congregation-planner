@@ -288,7 +288,7 @@ Knöpfe rechts neben der Woche. **Automatisch** öffnet ein Blatt:
 - **Leeren** entfernt die Zuteilungen der gewählten Bereiche im gewählten
   Umfang. Es fragt erst nach („Wirklich leeren?"); wählst du danach etwas
   anderes, gilt die Frage nicht mehr. Die Reinigung rotiert über die
-  Predigtdienstgruppen.
+  Predigtdienstgruppen, die reinigen (siehe [Hilfsdienste](#hilfsdienste)).
 
 Die Automatik wählt bevorzugt Personen mit der **geringsten Auslastung**, lässt
 Abwesende aus und vergibt niemanden doppelt am selben Tag. Ausnahmen: Der
@@ -966,6 +966,11 @@ Veröffentlicht, Abgeschlossen), und Zurück führt wieder zur Liste.
   laufenden bis zum Ende bekommen die Gruppen der Reihe nach, beginnend mit der
   gewählten. Gedrückt steht die Gruppe, mit der die Reihe gerade beginnt; ein
   Tipp darauf ändert nichts. Vergangene Wochen bleiben, wie sie sind.
+- Reihum gehen nur die Gruppen, die **reinigen**: Hast du eine im Blatt der
+  Reinigung abgeschaltet (siehe [Hilfsdienste](#hilfsdienste)), steht sie
+  weder bei **Beginnen mit** noch in der Vorschau zur Wahl, und auch beim
+  Umstellen des Takts überspringt die Reihe sie. Wo sie schon eingetragen ist,
+  bleibt sie stehen, bis du die Zeile umstellst oder neu verteilst.
 - Die **Vorschau** zeigt die nächsten fünf Wochen oder Monate, **Alle anzeigen**
   auch die übrigen und die vergangenen. Jede kommende Zeile stellst du einzeln
   um.
@@ -1396,10 +1401,15 @@ Reihenfolge, je Dienst eine Zeile:
   verschwinden die Namen auf den weggefallenen Plätzen aus Programm, Planung
   und „Meine Aufgaben"; gespeichert bleiben sie trotzdem – erhöhst du wieder,
   sind sie zurück.
-- Bei der **Reinigung** steht statt der Personen **Gruppen-Rotation**: Sie geht
-  nicht an eine Person, sondern an eine Predigtdienstgruppe. **Automatisch**
-  nimmt Woche für Woche die nächste; von Hand wählst du beim Zuteilen eine
-  Gruppe aus (siehe [Gruppen und Trolleys](#gruppen-und-trolleys)).
+- Bei der **Reinigung** steht statt der Personen, **wie viele Gruppen
+  reinigen** („Gruppen: 4"): Sie geht nicht an eine Person, sondern an eine
+  Predigtdienstgruppe. **Automatisch** nimmt Woche für Woche die nächste; von
+  Hand wählst du beim Zuteilen eine Gruppe aus (siehe
+  [Gruppen und Trolleys](#gruppen-und-trolleys)). Welche Gruppen reinigen,
+  legst du in ihrem Blatt fest (siehe unten). **Gruppen: 0** (rot) heißt:
+  Entweder hast du alle Gruppen herausgenommen, dann bleibt ihr Platz offen –
+  oder es gibt noch keine, dann verteilt **Automatisch** sie über „Gruppe 1"
+  bis „Gruppe 3".
 
 Darunter führt **Wer darf was?** zu den **Personen**: Dort vergibst du jeder
 Person ihre Aufgabenbereiche, die Hilfsdienste eingeschlossen (siehe
@@ -1420,8 +1430,9 @@ Person steht für ihn ein Schalter unter **Aufgabenbereiche › Ändern** in der
 Gruppe **Hilfsdienste** – bei einem neuen Dienst zunächst überall aus.
 
 **Das Blatt eines Dienstes** öffnet ein Tipp auf seinen Namen. Oben steht
-**Eigener Aufgabenbereich** mit der Zahl der Freigegebenen, bei der Reinigung
-**Gruppen-Rotation**. Darunter:
+**Eigener Aufgabenbereich** mit der Zahl der Freigegebenen („Personen: 3"), bei
+der Reinigung **Gruppen-Rotation** mit der Zahl der Gruppen, die reinigen
+(„Gruppen: 4"). Darunter:
 
 - **Nach oben** und **Nach unten** – verschieben den Dienst um eine Stelle. Die
   Reihenfolge gilt im Programm und beim Planen.
@@ -1429,7 +1440,20 @@ Gruppe **Hilfsdienste** – bei einem neuen Dienst zunächst überall aus.
   darüber ein Suchfeld. Hier gibst du in einem Zug frei, wer den Dienst
   übernehmen darf. Es ist derselbe Schalter wie bei der Person, nur von der
   anderen Seite: dort eine Person und ihre Bereiche, hier ein Dienst und seine
-  Personen. Bei der Reinigung fehlt die Liste – sie rotiert über die Gruppen.
+  Personen.
+- Bei der **Reinigung** stehen an derselben Stelle **alle Gruppen mit je einem
+  Schalter** – in der Reihenfolge der Gruppenliste, denn in ihr geht die
+  Reinigung reihum. Ein Suchfeld braucht es bei einer Handvoll Gruppen nicht.
+  Schaltest du eine Gruppe ab, reinigt sie nicht mehr: **Automatisch**
+  überspringt sie Woche für Woche, beim Zuteilen steht sie nicht mehr zur
+  Wahl, und in den [Weiteren Plänen](#5a-weitere-pläne) verteilt **Beginnen
+  mit** die Wochen ohne sie. Wieder angeschaltet ist sie wieder dabei; eine
+  neue Gruppe reinigt von Anfang an mit. Der Schalter gilt sofort, wie bei den
+  Personen. Wo eine abgeschaltete Gruppe schon eingeteilt ist, bleibt sie
+  stehen, bis du den Platz neu besetzt – von Hand oder nach **Leeren** mit
+  **Automatisch**. Sind alle Gruppen abgeschaltet, bleibt die Reinigung offen;
+  das Zuteilen-Blatt sagt dann „Gruppen: 0", und als Admin öffnest du dort mit
+  **Reinigung ›** gleich dieses Blatt.
 - **Hilfsdienst entfernen** – darüber steht, was mitgeht: „Mit dem Dienst gehen
   seine Plätze in allen Wochen und die Freigaben bei den Personen." Mit den
   Plätzen gehen auch die Namen, die dort schon eingeteilt waren. Wie jedes
@@ -1459,7 +1483,8 @@ mit den Spalten **Gruppe**, **Aufseher**, **Gehilfe** und **Personen**.
   [Person bearbeiten](#person-bearbeiten)).
 - Die **Reinigung** verteilt **Automatisch** Woche für Woche reihum auf die
   Gruppen, in der Reihenfolge dieser Liste. Eine neue Gruppe stellt sich hinten
-  an.
+  an. Gruppen, die du im Blatt der Reinigung abgeschaltet hast, überspringt sie
+  (siehe [Hilfsdienste](#hilfsdienste)).
 
 **Gruppe hinzufügen** legt sofort eine neue Gruppe an – mit der nächsthöheren
 Nummer, nach „Gruppe 4" also „Gruppe 5" – und öffnet ihr Blatt. Aufseher und

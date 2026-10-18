@@ -356,8 +356,9 @@
 
 /* ---- Reste der alten Panels ------------------------------------------------- */
 
-/* Die Freigabe-Liste im Blatt eines Dienstes: die Zeilen sind dieselben wie bei
-   der Person und erwarten deren Haarlinie — im Sheet gibt es kein Panel, das sie setzt. */
+/* Die Liste im Blatt eines Dienstes — seine Personen, bei der Reinigung die Gruppen:
+   die Zeilen sind dieselben wie bei der Person und erwarten deren Haarlinie — im
+   Sheet gibt es kein Panel, das sie setzt. */
 .svc-persons {
   --panel-hair: var(--linie);
 }

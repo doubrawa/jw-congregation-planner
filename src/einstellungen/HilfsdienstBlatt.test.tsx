@@ -12,7 +12,8 @@ import {
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications, serviceQualKey } from '../data/helpers'
-import type { Person, Service } from '../data/types'
+import type { Group, Person, Service } from '../data/types'
+import { fill } from '../i18n/useT'
 import { HilfsdienstBlatt } from './HilfsdienstBlatt'
 
 /**
@@ -173,12 +174,61 @@ describe('Entfernen', () => {
   })
 })
 
-describe('Ein Gruppen-Dienst (Reinigung)', () => {
-  it('hat keinen Aufgabenbereich — keine Liste, nur Reihenfolge und Entfernen', () => {
-    const { container } = zeige({}, 'rein')
-    expect(container.querySelector('.sheet-sub')?.textContent).toBe(DE.gruppenRotation)
-    expect(schalter(container)).toHaveLength(0)
-    expect(container.querySelector('.lang-search')).toBeNull()
+/**
+ * **Ein Gruppen-Dienst (Reinigung)** geht an Gruppen statt an Personen. Sein
+ * Blatt zeigt deshalb alle Gruppen, je eine mit Schalter (18.10.2026) — sonst
+ * genauso aufgebaut wie bei den übrigen Diensten.
+ */
+describe('Ein Gruppen-Dienst (Reinigung) — seine Gruppen', () => {
+  const gruppe = (n: number, ohneReinigung?: boolean): Group => ({
+    id: `g${n}`, name: `Gruppe ${n}`, overseerId: null, assistantId: null, ohneReinigung,
+  })
+  // In ihrer Folge, nicht nach dem Namen: in ihr geht die Reinigung reihum.
+  const GRUPPEN = [gruppe(3), gruppe(1, true), gruppe(2)]
+  const reinigung = () => zeige({ groups: GRUPPEN }, 'rein')
+
+  it('zeigt alle Gruppen in ihrer Folge, je mit Schalter — an, solange sie reinigt', () => {
+    const { container } = reinigung()
+    expect(schalter(container).map((s) => s.getAttribute('aria-label'))).toEqual(['Gruppe 3', 'Gruppe 1', 'Gruppe 2'])
+    expect(schalter(container).map((s) => s.getAttribute('aria-checked'))).toEqual(['true', 'false', 'true'])
+  })
+
+  it('nennt im Kopf, wie viele Gruppen reinigen — wie die Personen eines Dienstes', () => {
+    const { container } = reinigung()
+    expect(container.querySelector('.sheet-sub')?.textContent).toBe(`${DE.gruppenRotation} · ${fill(DE.gruppenN, { n: 2 })}`)
+  })
+
+  it('ein Schalter nimmt genau diese Gruppe heraus — und nichts sonst', () => {
+    const { container, dispatch } = reinigung()
+    fireEvent.click(schalter(container)[0]!)
+    expect(dispatch).toHaveBeenCalledTimes(1)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'updateGroup', id: 'g3', patch: { ohneReinigung: true } })
+  })
+
+  it('und nimmt eine herausgenommene wieder hinein', () => {
+    const { container, dispatch } = reinigung()
+    fireEvent.click(schalter(container)[1]!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'updateGroup', id: 'g1', patch: { ohneReinigung: false } })
+  })
+
+  it('dieselben Zeilen wie bei den Personen eines Dienstes', () => {
+    const zeile = (c: HTMLElement) => c.querySelector('.lang-list > .schalter-zeile')!
+    // Woraus die Zeile besteht — der Name, dann der Schalter (an oder aus).
+    const bauplan = (z: Element) => [...z.children].map((k) => `${k.tagName}:${k.getAttribute('role') ?? k.className}`)
+    const beiGruppen = zeile(reinigung().container)
+    const beiPersonen = zeile(zeige({}, 'rund').container)
+    expect(beiGruppen.className).toBe(beiPersonen.className)
+    expect(bauplan(beiGruppen)).toEqual(bauplan(beiPersonen))
+    expect(beiGruppen.parentElement!.className).toBe(beiPersonen.parentElement!.className)
+  })
+
+  it('ohne Suchfeld — eine Handvoll Gruppen, wie beim Zuteilen der Reinigung', () => {
+    expect(reinigung().container.querySelector('.lang-search')).toBeNull()
+  })
+
+  it('Reihenfolge und Entfernen stehen wie bei jedem Dienst da', () => {
+    const { container } = reinigung()
+    expect(knopf(container, DE.a11yMoveUp)).toBeDefined()
     expect(knopf(container, DE.hdEntfernen)).toBeDefined()
   })
 

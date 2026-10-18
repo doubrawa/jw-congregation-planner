@@ -458,3 +458,83 @@ describe('Predigtdienstgruppen (Reinigung)', () => {
     expect(solo.weeks[0]!.mid.helpers.mik?.[0]?.name).toBe('Otto Overseer')
   })
 })
+
+/**
+ * **Gruppen aus der Reinigung nehmen** (18.10.2026). Im Blatt der Reinigung
+ * lässt sich jede Gruppe abschalten (`Group.ohneReinigung`) — etwa eine, die
+ * weit weg wohnt. „Automatisch" geht dann nur noch unter den übrigen reihum.
+ */
+describe('Gruppen aus der Reinigung genommen', () => {
+  const leer = (): Meeting => ({ date: '', end: '', sections: [], helpers: {} })
+  const REIN: Service[] = [{ key: 'rein', name: 'Reinigung', count: 1, groups: true }]
+  const gruppe = (n: number, extra: Partial<Group> = {}): Group => ({
+    id: `g${n}`, name: `Gruppe ${n}`, overseerId: null, assistantId: null, ...extra,
+  })
+  /** Zwölf aufeinanderfolgende Wochen — genug, dass jede Gruppe mehrmals dran wäre. */
+  const WOCHEN: Week[] = Array.from({ length: 12 }, (_unused, i) => ({
+    range: '', book: '', mid: leer(), we: leer(),
+    start: new Date(Date.UTC(2026, 8, 7) + i * 7 * 864e5).toISOString().slice(0, 10),
+  }))
+  const reinigt = (groups: Group[], wi: number): string | undefined =>
+    autoAssignMeeting(WOCHEN, wi, 'mid', [], REIN, groups).weeks[wi]?.mid.helpers.rein?.[0]?.name
+  const ueberAlle = (groups: Group[]): string[] => WOCHEN.map((_w, wi) => reinigt(groups, wi) ?? '')
+
+  it('eine herausgenommene Gruppe reinigt in keiner Woche — die übrigen wechseln sich ab', () => {
+    const groups = [gruppe(1), gruppe(2, { ohneReinigung: true }), gruppe(3)]
+    const folge = ueberAlle(groups)
+    expect(new Set(folge)).toEqual(new Set(['Gruppe 1', 'Gruppe 3']))
+    // Reihum, nicht immer dieselbe: Woche für Woche die andere.
+    for (let wi = 1; wi < folge.length; wi++) expect(folge[wi]).not.toBe(folge[wi - 1])
+  })
+
+  it('wieder hineingenommen ist sie wieder dabei', () => {
+    const folge = ueberAlle([gruppe(1), gruppe(2, { ohneReinigung: false }), gruppe(3)])
+    expect(new Set(folge)).toEqual(new Set(['Gruppe 1', 'Gruppe 2', 'Gruppe 3']))
+  })
+
+  it('sind alle herausgenommen, bleibt die Reinigung offen — und es heißt nicht „Gruppe 1"', () => {
+    // Ohne angelegte Gruppen rotiert sie über „Gruppe 1–3". Hier gibt es
+    // Gruppen; erfunden wird keine, und der Lauf meldet den Platz als offen.
+    const alle = [gruppe(1, { ohneReinigung: true }), gruppe(2, { ohneReinigung: true })]
+    const res = autoAssignMeeting(WOCHEN, 0, 'mid', [], REIN, alle)
+    expect(res.weeks[0]!.mid.helpers.rein?.[0]?.name ?? '').toBe('')
+    expect(res.count).toBe(0)
+    expect(res.unfilled).toBe(1)
+  })
+
+  it('ohne angelegte Gruppen bleibt es bei „Gruppe 1–3"', () => {
+    expect(new Set(ueberAlle([]))).toEqual(new Set(['Gruppe 1', 'Gruppe 2', 'Gruppe 3']))
+  })
+
+  const mik = (id: string, fn: string, ln: string): Person => ({
+    id, fn, ln, role: 'aeltester', tel: '', mail: '', priv: priv([MIK]),
+  })
+  const otto = mik('ov1', 'Otto', 'Overseer')
+  const paul = mik('ov2', 'Paul', 'Putz')
+  const MIK_UND_REIN: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 1, groups: false }, ...REIN]
+
+  it('Aufseher und Gehilfe einer herausgenommenen Gruppe sind nie mit der Reinigung beschäftigt', () => {
+    // Gruppe 1 reinigt nicht; ihr Aufseher Otto soll deshalb in keiner Woche
+    // hinter Frank zurückstehen. Gruppe 2 ist die einzige, die reinigt — ihr
+    // Aufseher Paul bekommt den Mikrofondienst nur, wenn sonst keiner frei ist.
+    const groups = [gruppe(1, { overseerId: 'ov1', ohneReinigung: true }), gruppe(2, { overseerId: 'ov2' })]
+    for (let wi = 0; wi < 4; wi++) {
+      const res = autoAssignMeeting(WOCHEN, wi, 'mid', [otto, paul], MIK_UND_REIN, groups)
+      expect(res.weeks[wi]!.mid.helpers.rein?.[0]?.name).toBe('Gruppe 2')
+      expect(res.weeks[wi]!.mid.helpers.mik?.[0]?.name).toBe('Otto Overseer')
+    }
+  })
+
+  it('steht eine herausgenommene Gruppe noch im Platz, ist ihr Aufseher mit der Reinigung beschäftigt', () => {
+    // Gruppe 1 ist abgeschaltet, aber noch eingetragen — sie bleibt, bis der
+    // Platz neu besetzt wird. Otto reinigt also in dieser Woche; das Mikrofon
+    // bekommt Paul, obwohl seine Gruppe 2 an der Reihe wäre (Review 18.10.2026).
+    const groups = [gruppe(1, { overseerId: 'ov1', ohneReinigung: true }), gruppe(2, { overseerId: 'ov2' })]
+    for (let wi = 0; wi < 4; wi++) {
+      const eingetragen = WOCHEN.map((w, i) => (i === wi ? { ...w, mid: { ...leer(), helpers: { rein: [{ name: 'Gruppe 1' }] } } } : w))
+      const res = autoAssignMeeting(eingetragen, wi, 'mid', [otto, paul], MIK_UND_REIN, groups)
+      expect(res.weeks[wi]!.mid.helpers.rein?.[0]?.name).toBe('Gruppe 1')
+      expect(res.weeks[wi]!.mid.helpers.mik?.[0]?.name).toBe('Paul Putz')
+    }
+  })
+})

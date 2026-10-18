@@ -450,6 +450,17 @@ export interface Group {
   name: string // z. B. "Gruppe 1"
   overseerId: string | null // Aufseher (Person.id)
   assistantId: string | null // Gehilfe (Person.id)
+  /**
+   * **Aus der Reinigung genommen** (18.10.2026): Die Gruppe reinigt nicht —
+   * die Rotation überspringt sie, und beim Zuteilen steht sie nicht zur Wahl
+   * (`reinigungsGruppen`). Gilt für jeden Gruppen-Dienst (`Service.groups`);
+   * es gibt nur die eine Rotation. Ebenso für die Weiteren Pläne
+   * (Königreichssaal): Reihum verteilt werden sie ohne diese Gruppe.
+   * Geschaltet wird im Blatt der Reinigung, wie die Freigabe eines Dienstes
+   * bei der Person — nur dass hier eine Gruppe an- und abgeschaltet wird. Ohne
+   * Angabe reinigt sie, auch jede neue.
+   */
+  ohneReinigung?: boolean
 }
 
 /** Farb-/Bereichslogik der Panels (wie im Arbeitsheft). */

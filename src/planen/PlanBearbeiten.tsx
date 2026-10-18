@@ -14,6 +14,7 @@ import { UnteransichtKopf } from '../components/UnteransichtKopf'
 import { TABLET_BREITE, useMedia } from '../components/useMedia'
 import { datumsFormat } from '../components/datum-anzeige'
 import { gruppenName, spannenAnzahl, spannenText } from '../components/weitere-plaene-anzeige'
+import { reinigungsGruppen } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import {
   beginntMit,
@@ -225,19 +226,21 @@ function ZeitraumBlatt({ plan, start, onClose }: { plan: WeitererPlan; start: Ze
  * Wochen oder Monate ab der laufenden bis zum Ende, die Gruppen der Reihe nach
  * (`gruppenVerteilen`). Gedrückt ist, womit die Reihe jetzt beginnt
  * (`beginntMit`); ein Tipp darauf lässt alles, wie es ist — auch Gruppen, die
- * von Hand gesetzt sind.
+ * von Hand gesetzt sind. Zur Wahl stehen die Gruppen, die reinigen — nur unter
+ * ihnen geht die Reihe um (18.10.2026).
  */
 function BeginnenMit({ plan }: { plan: WeitererPlan }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
   const tag = useKalendertag()
-  if (state.groups.length === 0) return null
+  const reihe = reinigungsGruppen(state.groups)
+  if (reihe.length === 0) return null
 
   const beginnt = beginntMit(plan, state.planEintraege, tag) ?? ''
   const verteilen = (grp: string): void => {
     if (grp && grp !== beginnt) dispatch({ type: 'wpGruppenVerteilen', planId: plan.id, abGruppe: grp })
   }
-  const optionen = state.groups.map((g) => ({ wert: g.id, text: tu(g.name) }))
+  const optionen = reihe.map((g) => ({ wert: g.id, text: tu(g.name) }))
 
   return (
     <div className="blatt-feld">
@@ -297,7 +300,12 @@ function PlanVorschau({ plan }: { plan: WeitererPlan }) {
   )
 }
 
-/** Eine Woche oder ein Monat der Vorschau: wann, und die Gruppe — kommend zur Wahl, vergangen als Text. */
+/**
+ * Eine Woche oder ein Monat der Vorschau: wann, und die Gruppe — kommend zur
+ * Wahl, vergangen als Text. Zur Wahl stehen die Gruppen, die reinigen, dazu
+ * die eingetragene, auch wenn sie inzwischen herausgenommen ist — sonst stünde
+ * „offen" da, wo eine Gruppe eingetragen ist.
+ */
 function VorschauZeile({
   plan,
   spanne,
@@ -312,6 +320,8 @@ function VorschauZeile({
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
   const wann = spannenText(plan, spanne, state.lang)
+  const reihe = reinigungsGruppen(state.groups)
+  const zurWahl = state.groups.filter((g) => g.id === grp || reihe.includes(g))
   return (
     <div className={vorbei ? 'wp-vorschau-zeile is-vorbei' : 'wp-vorschau-zeile'}>
       <span>{wann}</span>
@@ -327,7 +337,7 @@ function VorschauZeile({
           }
         >
           <option value="">{t.offenDash}</option>
-          {state.groups.map((g) => (
+          {zurWahl.map((g) => (
             <option key={g.id} value={g.id}>
               {tu(g.name)}
             </option>

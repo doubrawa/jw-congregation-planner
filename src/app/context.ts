@@ -459,7 +459,7 @@ export type AppAction =
   // Predigtdienstgruppen (nur Planer)
   | { type: 'addGroup'; group: Group }
   | { type: 'removeGroup'; id: string }
-  | { type: 'updateGroup'; id: string; patch: Partial<Pick<Group, 'name' | 'overseerId' | 'assistantId'>> }
+  | { type: 'updateGroup'; id: string; patch: Partial<Omit<Group, 'id'>> }
   | { type: 'updateCongregation'; patch: Partial<Congregation> } // speichert automatisch (debounced)
   // Mitglieder & Anmelde-Links (nur Admins)
   | { type: 'updateMember'; userId: string; patch: Partial<Pick<Member, 'personId' | 'planner' | 'zuteiler'>> }
