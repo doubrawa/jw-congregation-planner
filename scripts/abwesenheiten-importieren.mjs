@@ -201,7 +201,8 @@ export function planeImport(zeitraeume, vorhanden, appIds, personIdOf, ab) {
 
 /* ============================= Ausführung ================================= */
 
-const TABELLEN = {
+/** Exportiert für `nws-staende-vereinen.mjs`: Vereint wird genau, was die Importe lesen. */
+export const TABELLEN = {
   persons: 'Persons_7.5.json',
   awayPeriods: 'AwayPeriods_7.5.json',
   unavailablePeriods: 'UnavailablePeriods_7.5.json',

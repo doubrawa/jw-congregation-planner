@@ -320,7 +320,8 @@ export function grundplanVorschlag(treffpunkte) {
 
 /* ============================= Ausführung ================================= */
 
-const TABELLEN = {
+/** Exportiert für `nws-staende-vereinen.mjs`: Vereint wird genau, was die Importe lesen. */
+export const TABELLEN = {
   persons: 'Persons_7.5.json',
   meetings: 'FieldServiceMeetings_7.5.json',
   locations: 'FieldServiceLocations_7.5.json',

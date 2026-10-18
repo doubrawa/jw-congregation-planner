@@ -158,7 +158,7 @@ export function dutySlot(c) {
 
 /** Zusammenkunft, zu der ein NWS-Dienst gehört: Mo → Mitte, Sa/So → Wochenende. */
 export function meetingOfDuty(iso) {
-  const wd = new Date(`${iso}T12:00:00Z`).getUTCDay()
+  const wd = new Date(`${nurDatum(iso)}T12:00:00Z`).getUTCDay()
   if (wd === 1) return 'mid'
   if (wd === 6 || wd === 0) return 'we'
   return null
@@ -204,9 +204,22 @@ export function dienstZuordnung(services) {
 
 /* ============================= Datum ====================================== */
 
+/**
+ * Reines Datum aus einem NWS-Wert. NWS schreibt den Tag mal ohne, mal mit
+ * Uhrzeit („2026-08-10", „2026-08-10T00:00:00", in den Sicherungen bis April
+ * 2026 auch mit „Z"), nie verschoben (gemessen 18.10.2026).
+ *
+ * Steht hier und nicht mehr in `nws-personen.mjs` (das es weiterreicht), weil
+ * auch `mondayOf` es braucht: Mit angehängter Uhrzeit stieg der Import dort mit
+ * „Invalid time value" aus.
+ */
+export function nurDatum(wert) {
+  return typeof wert === 'string' ? wert.slice(0, 10) : ''
+}
+
 /** Montag (ISO) der Woche, in der `iso` liegt. NWS-Wochenende (Sa) → dieser Montag. */
 export function mondayOf(iso) {
-  const d = new Date(`${iso}T12:00:00Z`)
+  const d = new Date(`${nurDatum(iso)}T12:00:00Z`)
   const shift = (d.getUTCDay() + 6) % 7 // Mo=0 … So=6
   d.setUTCDate(d.getUTCDate() - shift)
   return d.toISOString().slice(0, 10)
@@ -553,7 +566,8 @@ export function verteileWoche(data, gebunden, nurLeere, keyMap) {
 
 /* ============================= Ausführung ================================= */
 
-const TABELLEN = {
+/** Exportiert für `nws-staende-vereinen.mjs`: Vereint wird genau, was die Importe lesen. */
+export const TABELLEN = {
   persons: 'Persons_7.5.json',
   clmAssignments: 'CLMAssignments_7.5.json',
   weekendSchedules: 'WeekendMeetingSchedules_7.5.json',

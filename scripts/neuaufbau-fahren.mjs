@@ -24,7 +24,7 @@
  *     --mid "2 19:00" --we "0 10:00" \
  *     --vorname "Anna" --nachname "Beispiel" \
  *     --sql C:\DATA\Claude\nws-export\import-live-personen.sql \
- *     [--wochen 8] [--ab 2025-10-13] [--sprache de] [--ab-schritt 3] [--cong <id>] [--trocken]
+ *     [--wochen 8] [--ab 2025-10-13] [--daten <ordner>] [--sprache de] [--ab-schritt 3] [--cong <id>] [--trocken]
  *
  *   --wochen      wie viele Wochenprogramme von jw.org (Standard 8, mit `--ab`
  *                 60 — sonst holte ein Neuaufbau mit Geschichte nur die ersten
@@ -37,6 +37,11 @@
  *                 die Wochen und an die Abwesenheiten (dort das früheste
  *                 Ende); Zuteilungen und Treffpunkte nehmen ohnehin jede Woche
  *                 bis ein Jahr zurück.
+ *   --daten       der NWS-Ordner für die drei Schritte, die NWS lesen
+ *                 (Abwesenheiten, Zuteilungen, Treffpunkte) — für ein Jahr
+ *                 Geschichte der vereinte aus `nws-staende-vereinen.mjs`, denn
+ *                 was NWS schon gelöscht hat, steht nur in seinen Sicherungen.
+ *                 Ohne die Angabe lesen sie `nws-export\MyData-decrypted`.
  *   --ab-schritt  bei Schritt N fortsetzen — für den Fall, dass einer scheitert
  *                 (jw.org nicht erreichbar, Netz weg). Ohne das müsste man von
  *                 vorn anfangen, und Schritt 1 legte eine zweite Versammlung an.
@@ -75,6 +80,19 @@ export function fehlendeAngaben(arg) {
   return noetig.filter((k) => typeof arg[k] !== 'string' || !arg[k].trim())
 }
 
+/** Die Angaben, die einen Wert brauchen — ohne ihn macht `argumente()` aus ihnen `true`. */
+export const MIT_WERT = ['name', 'saal', 'mid', 'we', 'vorname', 'nachname', 'sql', 'wochen', 'ab', 'daten', 'sprache', 'ab-schritt', 'cong']
+
+/**
+ * Welche Angaben stehen ohne Wert da? Bis zum 18.10.2026 lief ein Neuaufbau
+ * mit `--daten --cong <id>` still ohne die vereinten NWS-Stände: Der Schalter
+ * wurde zu `true`, und `schritte()` reicht nur Text weiter. Bei `--ab` fehlte
+ * ebenso still das ganze Jahr.
+ */
+export function ohneWert(arg) {
+  return MIT_WERT.filter((k) => arg[k] === true)
+}
+
 /**
  * `--cong` mit Schritt 1 widerspricht sich: Schritt 1 legt eine **neue**
  * Versammlung an, die Schritte danach gingen aber an die genannte.
@@ -102,6 +120,8 @@ export function schritte(arg) {
   // Mit Geschichte das Jahr, die laufende Woche und sieben voraus — acht Wochen
   // ab vor einem Jahr ließen eine Lücke bis heute, die nichts mehr füllt.
   const wochen = String(arg.wochen ?? (seit.length ? 60 : 8))
+  // Vereinte NWS-Stände (18.10.2026) gehen an jeden Schritt, der NWS liest.
+  const daten = typeof arg.daten === 'string' ? ['--daten', arg.daten] : []
   const alle = [
     {
       titel: 'Versammlung, Planer-Person und Standard-Dienste anlegen',
@@ -125,7 +145,7 @@ export function schritte(arg) {
     {
       titel: 'Abwesenheiten',
       skript: 'abwesenheiten-importieren.mjs',
-      argv: [...seit, ...cong, ...trocken],
+      argv: [...seit, ...daten, ...cong, ...trocken],
     },
     {
       titel: `Wochenprogramme von jw.org (${wochen}${seit.length ? ` ab ${arg.ab}` : ''})`,
@@ -135,12 +155,12 @@ export function schritte(arg) {
     {
       titel: 'Zuteilungen, Hilfsdienste und Reinigung',
       skript: 'wochenplanung-importieren.mjs',
-      argv: [...cong, ...trocken],
+      argv: [...daten, ...cong, ...trocken],
     },
     {
       titel: 'Treffpunkte und ihre Leiter',
       skript: 'treffpunkte-importieren.mjs',
-      argv: [...cong, ...trocken],
+      argv: [...daten, ...cong, ...trocken],
     },
   ]
   const ab = Number(arg['ab-schritt'] ?? 1)
@@ -190,6 +210,11 @@ export async function bestand(url, key, congId) {
 /** Exportiert und mit der Aufrufzeile als Parameter — für `neuaufbau-fahren.test.ts`. */
 export async function main(argv = process.argv.slice(2)) {
   const arg = argumente(argv)
+  const leer = ohneWert(arg)
+  if (leer.length) {
+    console.error(`Ohne Wert angegeben: ${leer.map((k) => '--' + k).join(', ')}`)
+    process.exit(2)
+  }
   const fehlt = fehlendeAngaben(arg)
   const ab = Number(arg['ab-schritt'] ?? 1)
   if (fehlt.length) {
@@ -199,6 +224,10 @@ export async function main(argv = process.argv.slice(2)) {
   }
   if (typeof arg.sql === 'string' && !fs.existsSync(arg.sql)) {
     console.error(`Die Personen-Datei gibt es nicht: ${arg.sql}`)
+    process.exit(2)
+  }
+  if (typeof arg.daten === 'string' && !fs.existsSync(arg.daten)) {
+    console.error(`Den NWS-Ordner gibt es nicht: ${arg.daten}`)
     process.exit(2)
   }
   if (congMitSchrittEins(arg)) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { congMitSchrittEins, fehlendeAngaben, PFLICHT, schritte } from './neuaufbau-fahren.mjs'
+import { congMitSchrittEins, fehlendeAngaben, ohneWert, PFLICHT, schritte } from './neuaufbau-fahren.mjs'
 
 /**
  * **Die Reihenfolge ist der Zweck dieses Skripts.**
@@ -50,6 +50,17 @@ describe('fehlendeAngaben', () => {
     expect(fehlendeAngaben({ 'ab-schritt': '2' })).toEqual(['sql'])
     expect(fehlendeAngaben({ 'ab-schritt': '2', sql: 'C:/daten/personen.sql' })).toEqual([])
     expect(fehlendeAngaben({ 'ab-schritt': '3' })).toEqual([])
+  })
+})
+
+describe('ohneWert', () => {
+  it('nennt jede Angabe ohne Wert — `--daten` ohne Ordner liefe still mit dem frischen Stand (18.10.2026)', () => {
+    // `argumente()` macht aus `--daten --cong c-echt` daten: true; `schritte()` reicht nur Text weiter.
+    expect(ohneWert({ ...vollstaendig, daten: true, ab: true, trocken: true })).toEqual(['ab', 'daten'])
+  })
+
+  it('lässt Schalter ohne Wert wie --trocken in Ruhe', () => {
+    expect(ohneWert({ ...vollstaendig, trocken: true })).toEqual([])
   })
 })
 
@@ -134,6 +145,19 @@ describe('schritte', () => {
     const wochen = schritte({ ...vollstaendig, ab: '2025-10-13' }).find((s) => s.skript === 'wochen-importieren.mjs')
     expect(wochen?.argv).toEqual(['--anzahl', '60', '--ab', '2025-10-13'])
     expect(wochen?.titel).toContain('60')
+  })
+
+  it('reicht --daten an die drei Schritte, die NWS lesen — die vereinten Stände mit der Geschichte (18.10.2026)', () => {
+    // Was NWS schon gelöscht hat, steht nur in seinen Sicherungen. Ein Schritt
+    // ohne die Angabe läse still den frischen Stand und brächte die Hälfte.
+    const liste = schritte({ ...vollstaendig, daten: 'C:/nws/vereint' })
+    const nws = ['abwesenheiten-importieren.mjs', 'wochenplanung-importieren.mjs', 'treffpunkte-importieren.mjs']
+    for (const s of liste) {
+      const i = s.argv.indexOf('--daten')
+      if (nws.includes(s.skript)) expect(s.argv[i + 1], s.skript).toBe('C:/nws/vereint')
+      else expect(i, s.skript).toBe(-1)
+    }
+    expect(schritte(vollstaendig).some((s) => s.argv.includes('--daten'))).toBe(false)
   })
 
   it('ohne --ab bleibt es bei den Wochen ab der laufenden', () => {

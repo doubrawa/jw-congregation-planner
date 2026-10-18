@@ -116,6 +116,12 @@ describe('mondayOf', () => {
     expect(mondayOf('2026-08-22')).toBe('2026-08-17') // Samstag derselben Woche
     expect(mondayOf('2026-08-23')).toBe('2026-08-17') // Sonntag derselben Woche
   })
+
+  it('liest auch Daten mit Uhrzeit, wie sie in den NWS-Sicherungen bis April 2026 stehen (18.10.2026)', () => {
+    // Mit angehängter Uhrzeit stieg der Neuaufbau mit „Invalid time value" aus.
+    expect(mondayOf('2025-06-23T00:00:00')).toBe('2025-06-23')
+    expect(mondayOf('2026-02-21T00:00:00Z')).toBe('2026-02-16')
+  })
 })
 
 describe('mitLiedNummer', () => {
@@ -283,6 +289,11 @@ describe('dutySlot / meetingOfDuty', () => {
     expect(meetingOfDuty('2026-08-17')).toBe('mid') // Montag
     expect(meetingOfDuty('2026-08-22')).toBe('we') // Samstag
     expect(meetingOfDuty('2026-08-19')).toBeNull() // Mittwoch → kein Dienst-Tag
+  })
+
+  it('liest den Tag auch aus einem Datum mit Uhrzeit (Sicherungen bis April 2026)', () => {
+    expect(meetingOfDuty('2025-11-17T00:00:00Z')).toBe('mid') // Montag
+    expect(meetingOfDuty('2025-11-15T00:00:00Z')).toBe('we') // Samstag
   })
 })
 

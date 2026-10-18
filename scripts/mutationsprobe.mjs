@@ -5037,8 +5037,8 @@ export const KATALOG = [
     id: 'neuaufbau-ab-an-abwesenheiten',
     datei: 'scripts/neuaufbau-fahren.mjs',
     regel: 'Der Neuaufbau reicht --ab auch an die Abwesenheiten weiter — die Auswertung rechnet damit, wer fehlte.',
-    suchen: '      argv: [...seit, ...cong, ...trocken],\n',
-    ersetzen: '      argv: [...cong, ...trocken],\n',
+    suchen: '      argv: [...seit, ...daten, ...cong, ...trocken],\n',
+    ersetzen: '      argv: [...daten, ...cong, ...trocken],\n',
   },
   {
     id: 'wochensuche-ab-der-gefragten-woche',
@@ -9228,7 +9228,7 @@ export const KATALOG = [
     suchen:
       "      titel: 'Abwesenheiten',\n" +
       "      skript: 'abwesenheiten-importieren.mjs',\n" +
-      '      argv: [...seit, ...cong, ...trocken],\n' +
+      '      argv: [...seit, ...daten, ...cong, ...trocken],\n' +
       '    },\n' +
       '    {\n' +
       "      titel: `Wochenprogramme von jw.org (${wochen}${seit.length ? ` ab ${arg.ab}` : ''})`,\n" +
@@ -9242,7 +9242,91 @@ export const KATALOG = [
       '    {\n' +
       "      titel: 'Abwesenheiten',\n" +
       "      skript: 'abwesenheiten-importieren.mjs',\n" +
-      '      argv: [...seit, ...cong, ...trocken],\n',
+      '      argv: [...seit, ...daten, ...cong, ...trocken],\n',
+  },
+  {
+    id: 'neuaufbau-daten-an-nws-schritte',
+    datei: 'scripts/neuaufbau-fahren.mjs',
+    regel: 'Der Neuaufbau reicht --daten an die Schritte, die NWS lesen — sonst läsen sie still den frischen Stand ohne die Geschichte aus den Sicherungen.',
+    suchen: "  const daten = typeof arg.daten === 'string' ? ['--daten', arg.daten] : []\n",
+    ersetzen: '  const daten = []\n',
+  },
+  {
+    id: 'nws-staende-loeschvermerk-gewinnt',
+    datei: 'scripts/nws-staende-vereinen.mjs',
+    regel: 'Beim Vereinen gewinnt der jüngste Stand, auch mit Löschvermerk — eine in NWS entfernte Zuteilung kommt nicht aus einer Sicherung zurück.',
+    suchen: '  for (const liste of [...listen].reverse()) {\n',
+    ersetzen: '  for (const liste of listen) {\n',
+  },
+  {
+    id: 'nws-staende-personen-ueber-mid',
+    datei: 'scripts/nws-staende-vereinen.mjs',
+    regel: 'Personen werden über die mid vereint — die ID wechselte im April 2026 ihr Format, und jede Person stünde doppelt da.',
+    suchen: '  return p.mid != null ? `mid:${p.mid}` : `id:${zeilenSchluessel(p, PERSONEN)}`\n',
+    ersetzen: '  return `id:${zeilenSchluessel(p, PERSONEN)}`\n',
+  },
+  {
+    id: 'nws-staende-letzte-lebende-fassung',
+    datei: 'scripts/nws-staende-vereinen.mjs',
+    regel: 'Von einer in NWS gelöschten Person bleibt die letzte Fassung ohne Löschvermerk — ihre alten Zuteilungen trügen sonst keinen Namen.',
+    suchen: '      if (!da || (da.Deleted && !p.Deleted)) out.set(k, p)\n',
+    ersetzen: '      if (!da) out.set(k, p)\n',
+  },
+  {
+    id: 'nws-staende-verweise-neue-id',
+    datei: 'scripts/nws-staende-vereinen.mjs',
+    regel: 'Abwesenheiten mit der alten ID werden auf die neue umgeschrieben — sonst zeigten sie auf keine App-Person und fielen still weg.',
+    suchen: '      return { ...z, [feld]: neu }\n',
+    ersetzen: '      return z\n',
+  },
+  {
+    id: 'nws-staende-juengste-zuerst',
+    datei: 'scripts/nws-staende-vereinen.mjs',
+    regel: 'Die Sicherungen eines Ordners zählen jüngste zuerst — sonst gewänne beim Vereinen die älteste.',
+    suchen: '    .sort()\n    .reverse()\n',
+    ersetzen: '    .sort()\n',
+  },
+  {
+    id: 'nws-staende-nur-zeitstempel',
+    datei: 'scripts/nws-staende-vereinen.mjs',
+    regel: 'Aus einem Ordner voller Sicherungen zählen nur Unterordner mit Zeitstempel — ein anders benannter sortierte irgendwo hinein und gewänne womöglich über Jüngere.',
+    suchen: '    .filter((e) => e.isDirectory() && SICHERUNG_NAME.test(e.name))\n',
+    ersetzen: '    .filter((e) => e.isDirectory())\n',
+  },
+  {
+    id: 'nws-staende-frisch-nicht-veraltet',
+    datei: 'scripts/nws-staende-vereinen.mjs',
+    regel: 'Ist eine Sicherung jünger als der frische Stand, vereint das Skript nicht — die Fassungen des veralteten Standes gewönnen sonst über neuere.',
+    suchen: '  return aeltere.map((d) => path.basename(d)).find((name) => (sicherungsZeit(name) ?? 0) > entschluesselt) ?? null\n',
+    ersetzen: '  return null\n',
+  },
+  {
+    id: 'nws-staende-ziel-nicht-im-stand',
+    datei: 'scripts/nws-staende-vereinen.mjs',
+    regel: 'Das Ziel darf auch nicht in einem Stand liegen — sonst schriebe das Vereinen in den Ordner der Sicherungen.',
+    suchen: "  return rel === '' || (rel !== '..' && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel))\n",
+    ersetzen: "  return rel === ''\n",
+  },
+  {
+    id: 'neuaufbau-wert-pflicht',
+    datei: 'scripts/neuaufbau-fahren.mjs',
+    regel: 'Eine Angabe ohne Wert (`--daten --cong …`) bricht den Neuaufbau ab — sonst liefe er still ohne die vereinten NWS-Stände.',
+    suchen: '  return MIT_WERT.filter((k) => arg[k] === true)\n',
+    ersetzen: '  return []\n',
+  },
+  {
+    id: 'nws-datum-mit-uhrzeit',
+    datei: 'scripts/wochenplanung-importieren.mjs',
+    regel: 'Der Wochenplan-Import liest NWS-Daten auch mit Uhrzeit — die Sicherungen bis April 2026 schreiben sie so, und der Neuaufbau stieg mit „Invalid time value" aus.',
+    suchen: '  const d = new Date(`${nurDatum(iso)}T12:00:00Z`)\n',
+    ersetzen: '  const d = new Date(`${iso}T12:00:00Z`)\n',
+  },
+  {
+    id: 'nws-dienst-tag-mit-uhrzeit',
+    datei: 'scripts/wochenplanung-importieren.mjs',
+    regel: 'Auch den Tag eines Hilfsdienstes liest der Import aus einem Datum mit Uhrzeit — sonst fiele jeder Dienst aus den Sicherungen bis April 2026 still weg.',
+    suchen: '  const wd = new Date(`${nurDatum(iso)}T12:00:00Z`).getUTCDay()\n',
+    ersetzen: '  const wd = new Date(`${iso}T12:00:00Z`).getUTCDay()\n',
   },
 ]
 

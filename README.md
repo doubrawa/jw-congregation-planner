@@ -373,6 +373,14 @@ Abwesenheiten, die seitdem endeten. Ohne beginnt die Auswertung leer, denn
 Schritt 2 leert `weeks`. Die Zuteilungen kommen aus NWS, soweit es sie noch
 hat (unter der Woche rund zehn Monate, Hilfsdienste rund fünf).
 
+**Was NWS schon gelöscht hat**, haben seine automatischen Sicherungen noch
+(18.10.2026): `scripts/nws-staende-vereinen.mjs` vereint den frischen Stand mit
+den entschlüsselten Sicherungen, und `--daten <ordner>` reicht den vereinten
+Ordner an die drei Schritte, die NWS lesen (3, 5 und 6). Die Personen kommen
+weiter aus dem frischen Stand. Am 18.10.2026 reichten so die Zuteilungen der
+Zusammenkünfte vor das Jahr zurück, Hilfsdienste und Treffpunkte bis Mitte
+November 2025, die Abwesenheiten bis März 2026.
+
 Was er nacheinander tut — und was fehlte, wenn man einen Schritt ausließe:
 
 | # | Schritt | Was fehlt sonst |

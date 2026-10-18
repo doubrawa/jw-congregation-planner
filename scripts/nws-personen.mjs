@@ -19,10 +19,8 @@ import { uuid5 } from './wochenplanung-importieren.mjs'
 /** Nicht gelöschte Zeilen einer NWS-Tabelle. */
 export const lebend = (arr) => (arr ?? []).filter((x) => !x.Deleted)
 
-/** Reines Datum aus einem NWS-Wert („2026-08-10", „2026-08-10T00:00:00"). */
-export function nurDatum(wert) {
-  return typeof wert === 'string' ? wert.slice(0, 10) : ''
-}
+/** Reines Datum aus einem NWS-Wert — steht bei `mondayOf`, das es auch braucht. */
+export { nurDatum } from './wochenplanung-importieren.mjs'
 
 /** Anzeigename einer NWS-Person (`d`, sonst Vor- + Nachname). Getrimmt. */
 export function nwsName(p) {
