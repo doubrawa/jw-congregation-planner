@@ -1738,7 +1738,10 @@ describe('Importe holen höchstens, was aufbewahrt wird (T125, 16.10.2026)', () 
     expect(ausgabe.join('\n')).toContain('--ab 2025-01-01 liegt vor der Aufbewahrungsfrist — es gilt 2025-09-08.')
   })
 
-  it('wochen-importieren: ein --ab vor einem Jahr fragt erst ab der Frist', async () => {
+  it('wochen-importieren: ein --ab vor einem Jahr holt ab der Frist — ihre erste Woche eingeschlossen', async () => {
+    // Seit dem 18.10.2026 nennt `--ab` die erste Woche, die kommt; gefragt wird
+    // nach der davor. Bis dahin war `--ab` selbst das `after`, und die Woche
+    // der Frist ließ sich nicht holen.
     const gefragt: unknown[] = []
     const l = LAEUFE['wochen-importieren.mjs']![0]!
     const modul = (await MODULE['./wochen-importieren.mjs']!()) as { main: (argv: string[]) => Promise<unknown> }
@@ -1747,11 +1750,12 @@ describe('Importe holen höchstens, was aufbewahrt wird (T125, 16.10.2026)', () 
       funktionen: {
         'import-week': (rumpf) => {
           gefragt.push(rumpf.after)
-          return { json: { week: probeWoche('2025-09-15') } }
+          return { json: { week: probeWoche('2025-09-08') } }
         },
       },
     })
-    expect(gefragt).toEqual(['2025-09-08'])
+    expect(gefragt).toEqual(['2025-09-01'])
     expect(ausgabe.join('\n')).toContain('--ab 2025-01-06 liegt vor der Aufbewahrungsfrist — es gilt 2025-09-08.')
+    expect(ausgabe.join('\n')).toContain('  2025-09-08')
   })
 })

@@ -10,8 +10,8 @@ import { makeTr } from '../../../src/i18n/translate'
  *
  * Aufbau wie send-reminders.test.ts: die echte index.ts wird geladen, `Deno`
  * steht als Global bereit und fängt den Handler ab, `fetch` liefert erfundene
- * Seiten. Die Uhr steht fest — `discoverWeeks` verwirft Ausgaben, die vor dem
- * heutigen Monat enden.
+ * Seiten. Die Uhr steht fest — `discoverWeeks` geht nicht weiter zurück als bis
+ * zum Montag vor einem Jahr und rät keine Ausgabe, die noch nicht erschienen ist.
  *
  * **Kein übernommener jw.org-Inhalt.** Die Seiten unten tragen die *gemessene
  * Struktur* (Pfadform der Wochenseiten, weiches Trennzeichen im
@@ -42,6 +42,21 @@ const WOCHEN_SLUGS = [
   'Programm-für-die-Leben-und-Dienst-Zusammenkunft-20-26-April-2026',
   'Programm-für-die-Leben-und-Dienst-Zusammenkunft-27-April-3-Mai-2026',
 ]
+
+/**
+ * Die Ausgabe davor — **im Index steht sie nicht**, wie bei jw.org jede
+ * ältere (gemessen am 18.10.2026: Der Index führt acht Ausgaben,
+ * `september-oktober-2025-mwb` antwortet ohne Eintrag). Die Suche baut ihren
+ * Slug selbst (`hefte.ts`). Ihre letzte Woche reicht in den März hinein.
+ */
+const ALT_SLUG = 'januar-februar-2026-mwb'
+const ALT_WOCHEN_SLUGS = [
+  'Programm-für-die-Leben-und-Dienst-Zusammenkunft-16-22-Februar-2026',
+  'Programm-für-die-Leben-und-Dienst-Zusammenkunft-23-Februar-1-März-2026',
+]
+const ALT_SEITE = `<html><body>
+  ${ALT_WOCHEN_SLUGS.map((s) => `<a href="/de/bibliothek/jw-arbeitsheft/${ALT_SLUG}/${s}/">Woche</a>`).join('\n')}
+</body></html>`
 
 /** Im Pfad steckt ein weiches Trennzeichen (U+00AD) — genau wie bei jw.org. */
 const LESE_SLUG = 'Bibellese­programm-für-das-Gedächtnismahl-2026'
@@ -177,6 +192,8 @@ interface Seiten {
    * schreibt jw.org ab Januar 2027 schon die Liederbuch-Links.
    */
   einfach?: boolean
+  /** Antwortet die ältere Ausgabe (`ALT_SLUG`) nicht mehr? */
+  altFehlt?: boolean
 }
 
 let seiten: Seiten
@@ -226,6 +243,7 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
 
   if (url === `${BASE}/de/bibliothek/jw-arbeitsheft/`) return text(INDEX_SEITE)
   if (url === `${BASE}${PFAD}/`) return text(ausgabenSeite(seiten.leseprogramm))
+  if (url === `${BASE}/de/bibliothek/jw-arbeitsheft/${ALT_SLUG}/`) return seiten.altFehlt ? weg() : text(ALT_SEITE)
   if (url.includes(encodeURI(LESE_SLUG)) || url.includes(LESE_SLUG)) {
     return seiten.leseKaputt ? weg() : text(leseSeite(seiten.memKopf))
   }
@@ -234,10 +252,10 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
   if (variante && variante[1] !== 'de') {
     const code = variante[1]
     if (!seiten.sprachen.includes(code)) return weg()
-    const w = WOCHEN_SLUGS.find((x) => url.includes(x))
+    const w = [...WOCHEN_SLUGS, ...ALT_WOCHEN_SLUGS].find((x) => url.includes(x))
     return w ? text(wochenSeite(`[${code}] ${w}`)) : weg()
   }
-  const woche = WOCHEN_SLUGS.find((s) => url.includes(s))
+  const woche = [...WOCHEN_SLUGS, ...ALT_WOCHEN_SLUGS].find((s) => url.includes(s))
   if (woche) {
     // Kopfzeile aus dem Slug, in der **gemessenen** Form der h1: innerhalb
     // eines Monats „23.-29. März" (mit Bindestrich, den der Parser zum
@@ -359,6 +377,54 @@ describe('import-week: die gewöhnliche Woche', () => {
   it('trägt keinen Anlass', async () => {
     const { week } = await hole({ after: '2026-03-02' })
     expect(week?.anlass).toBeUndefined()
+  })
+})
+
+/*
+  Ein Neuaufbau holt die Wochen des vergangenen Jahres (18.10.2026), damit die
+  Auswertung (T126) nicht leer beginnt. Gesucht wird deshalb ab der Ausgabe der
+  gefragten Woche — auch einer, die der Index nicht mehr nennt —, und nicht ab
+  dem heutigen Monat. Die Einzelheiten der Suche prüft `hefte.test.ts`; hier
+  geht es darum, dass die Function `after` und `start` dorthin weitergibt.
+*/
+describe('import-week: Wochen aus der Vergangenheit', () => {
+  it('`after` in der Vergangenheit liefert die Woche aus einer Ausgabe, die der Index nicht mehr nennt', async () => {
+    const { week } = await hole({ after: '2026-02-09' })
+    expect(week?.start).toBe('2026-02-16')
+    expect(week?.range).toBe('16.–22. Februar')
+    expect(geholt).toContain(`${BASE}/de/bibliothek/jw-arbeitsheft/${ALT_SLUG}/`)
+  })
+
+  it('`start` ebenso', async () => {
+    const { week } = await hole({ start: '2026-02-23' })
+    expect(week?.start).toBe('2026-02-23')
+  })
+
+  it('am Sonntag, dem 1. März, holt „Holen" die laufende Woche — nicht schon die nächste', async () => {
+    // Die App fragt nach der Vorwoche (`holenNach`). Bis zum 18.10.2026 zählte
+    // hier der heutige Monat, und die Ausgabe Januar/Februar fiel aus der
+    // Suche — mit ihr die Woche ab 23. Februar.
+    vi.setSystemTime(new Date('2026-03-01T10:00:00Z'))
+    const { week } = await hole({ after: '2026-02-16' })
+    expect(week?.start).toBe('2026-02-23')
+  })
+
+  it('antwortet die ältere Ausgabe nicht mehr, springt die Woche — der Import bricht nicht ab', async () => {
+    // `wochen-importieren.mjs` meldet den Sprung als Lücke und endet mit Code 1.
+    seiten.altFehlt = true
+    const { week, status } = await hole({ after: '2026-02-09' })
+    expect(status).toBe(200)
+    expect(week?.start).toBe('2026-03-02')
+  })
+
+  it('älter als ein Jahr liefert sie nicht und fragt jw.org gar nicht erst danach', async () => {
+    // „Heute" ist der 2. März 2026, der Montag vor einem Jahr der 3. März 2025.
+    // Der Index nennt noch Januar/Februar 2025 — angefragt wird sie trotzdem nicht.
+    const res = await hole({ start: '2025-01-06' })
+    expect(res.status).toBe(404)
+    expect(res.week).toBeUndefined()
+    expect(geholt.some((u) => u.includes('januar-februar-2025-mwb'))).toBe(false)
+    expect(geholt.some((u) => /-2024-mwb\//.test(u))).toBe(false)
   })
 })
 

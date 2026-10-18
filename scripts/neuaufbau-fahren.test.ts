@@ -114,6 +114,30 @@ describe('schritte', () => {
     expect(wochen?.argv).toEqual(['--anzahl', '12'])
   })
 
+  it('bringt mit --ab ein Jahr Geschichte mit: Wochen und Abwesenheiten ab dort (18.10.2026)', () => {
+    // Schritt 2 leert `weeks` und `absences` — ohne die Angabe begänne die
+    // Auswertung (T126) leer. Zuteilungen und Treffpunkte nehmen ohnehin jede
+    // Woche bis ein Jahr zurück, die da ist; sie brauchen sie nicht.
+    const liste = schritte({ ...vollstaendig, ab: '2025-10-13', wochen: '60' })
+    const argv = (skript: string) => liste.find((s) => s.skript === skript)?.argv ?? []
+    expect(argv('wochen-importieren.mjs')).toEqual(['--anzahl', '60', '--ab', '2025-10-13'])
+    expect(argv('abwesenheiten-importieren.mjs')).toEqual(['--ab', '2025-10-13'])
+    for (const s of liste.filter((s) => !['wochen-importieren.mjs', 'abwesenheiten-importieren.mjs'].includes(s.skript))) {
+      expect(s.argv, s.skript).not.toContain('--ab')
+    }
+    expect(liste.find((s) => s.skript === 'wochen-importieren.mjs')?.titel).toContain('ab 2025-10-13')
+  })
+
+  it('ohne --ab bleibt es bei den Wochen ab der laufenden', () => {
+    expect(schritte(vollstaendig).some((s) => s.argv.includes('--ab'))).toBe(false)
+  })
+
+  it('verwechselt --ab nicht mit --ab-schritt', () => {
+    // Beide beginnen gleich; `argumente()` hält sie auseinander, die Kette auch.
+    const liste = schritte({ ...vollstaendig, 'ab-schritt': '3' })
+    expect(liste.some((s) => s.argv.includes('--ab'))).toBe(false)
+  })
+
   it('setzt mit --ab-schritt fort, ohne die vorigen zu wiederholen', () => {
     // Nach einem Abbruch: Schritt 1 legte sonst eine zweite Versammlung an.
     const liste = schritte({ ...vollstaendig, 'ab-schritt': '4' })

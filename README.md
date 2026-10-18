@@ -367,14 +367,20 @@ steigt ein Schritt aus, nennt der Lauf die Nummer zum Fortsetzen
 eine zweite Versammlung daneben (die Testversammlung), gehört zum Fortsetzen
 `--cong <id>` dazu — sonst weist jeder Schritt mit „Mehrere Versammlungen" ab.
 
+**Mit einem Jahr Geschichte:** `--ab <Montag vor einem Jahr> --wochen 60` holt
+die Wochen ab dort — das Jahr, die laufende Woche und sieben voraus — und die
+Abwesenheiten, die seitdem endeten. Ohne beginnt die Auswertung leer, denn
+Schritt 2 leert `weeks`. Die Zuteilungen kommen aus NWS, soweit es sie noch
+hat (unter der Woche rund zehn Monate, Hilfsdienste rund fünf).
+
 Was er nacheinander tut — und was fehlte, wenn man einen Schritt ausließe:
 
 | # | Schritt | Was fehlt sonst |
 | --- | --- | --- |
 | 1 | `scripts/versammlung-anlegen.mjs` | Versammlung, Planer-Person, Standard-Dienste, sein Anmelde-Link |
 | 2 | `scripts/versammlung-zuruecksetzen.mjs --sql <personen.sql>` | Personen, Gruppen, Haushalte |
-| 3 | `scripts/abwesenheiten-importieren.mjs` | **die Abwesenheiten** — ohne sie plant die App gegen einen leeren Kalender |
-| 4 | `scripts/wochen-importieren.mjs --anzahl 8` | die Programme, mit dem festen Leiter des Wachtturm-Studiums |
+| 3 | `scripts/abwesenheiten-importieren.mjs [--ab <Montag>]` | **die Abwesenheiten** — ohne sie plant die App gegen einen leeren Kalender |
+| 4 | `scripts/wochen-importieren.mjs --anzahl 8 [--ab <Montag>]` | die Programme, mit dem festen Leiter des Wachtturm-Studiums |
 | 5 | `scripts/wochenplanung-importieren.mjs` | Zuteilungen, Hilfsdienste, Reinigung |
 | 6 | `scripts/treffpunkte-importieren.mjs` | die Leiter der Treffpunkte |
 

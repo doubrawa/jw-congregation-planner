@@ -283,8 +283,10 @@ describe('Holen in der Produktion', () => {
   })
 
   it('vergangene Wochen werden nicht mehr nachgezogen — auch nicht bei jedem Holen erneut (16.10.2026)', async () => {
-    // `import-week` findet sie nach dem Ende ihrer Ausgabe nicht mehr; bis
-    // dahin kam auf jedes Holen für jede alte Woche ein vergeblicher Aufruf.
+    // Eine vergangene Woche braucht beim Planen niemand in einer weiteren
+    // Sprache. Bis dahin kam auf jedes Holen für jede alte Woche ein
+    // vergeblicher Aufruf — und seit `import-week` ein Jahr zurück findet
+    // (18.10.2026), käme er durch: ein Jahr Wochen samt Sprachen je Holen.
     vi.setSystemTime(new Date(2026, 8, 16, 9, 0)) // Mittwoch der Woche ab 14.9.
     const wochen = ['2026-08-31', '2026-09-07', '2026-09-14', '2026-09-21'].map((s) => woche(s))
     const { container } = zeige({ weeks: wochen, congLang: 'de', progLangs: ['en'] })

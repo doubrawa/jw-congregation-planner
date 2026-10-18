@@ -43,19 +43,28 @@
  *
  * ---------------------------------------------------------------- Aufruf ----
  *
- *   node scripts/wochen-importieren.mjs [--anzahl 8] [--ab 2026-10-19]
+ *   node scripts/wochen-importieren.mjs [--anzahl 8] [--ab 2025-10-13]
  *                                       [--cong <id>] [--trocken]
  *
- *   --anzahl   wie viele Wochen (Standard 8).
- *   --ab       nach welcher Woche weitergezählt wird (ISO-Montag) — auch
- *              zurück, um Wochen nachzuholen, aber nicht vor den Montag vor
- *              einem Jahr (T125). Ohne Angabe wie der Knopf in der App
- *              (`holenNach`): nach der letzten gespeicherten Woche, aber nie
- *              vor der laufenden.
+ *   --anzahl   wie viele Wochen (Standard 8, höchstens ein Jahr und ein
+ *              halbes — weiter reicht das Arbeitsheft nicht).
+ *   --ab       ab welcher Woche (ISO-Datum, es zählt die Woche, in der es
+ *              liegt) — auch zurück, um Wochen nachzuholen, bis zum Montag vor
+ *              einem Jahr (T125). Ein Neuaufbau mit Geschichte für die
+ *              Auswertung (T126): `--ab <Montag vor einem Jahr> --anzahl 60`,
+ *              das Jahr, die laufende Woche und sieben voraus. Bis zum
+ *              18.10.2026 nannte `--ab` die Woche davor — die erste Woche der
+ *              Frist ließ sich so gar nicht holen. Ohne Angabe wie der Knopf in
+ *              der App (`holenNach`): nach der letzten gespeicherten Woche,
+ *              aber nie vor der laufenden.
  *   --trocken  holt und zeigt, schreibt aber nicht.
  *
  * Gibt es zur nächsten Woche noch kein Programm auf jw.org, endet der Lauf mit
- * dem, was da war — das ist kein Fehler, sondern der Kalender.
+ * dem, was da war — das ist kein Fehler, sondern der Kalender. Bricht die Kette
+ * dagegen ab (Function oder jw.org nicht erreichbar) oder springt sie über
+ * Wochen, schreibt der Lauf, was kam, und endet mit Code 1: Sonst ginge ein
+ * Neuaufbau (`neuaufbau-fahren.mjs`) mit halber Geschichte weiter, und nur
+ * eine Zeile mitten in der Ausgabe sagte es.
  */
 
 import {
@@ -72,10 +81,22 @@ import {
 /** Was die Einordnung von der Versammlung braucht — Zeiten und Klasse kommen aus dieser Zeile. */
 const VERSAMMLUNG_SPALTEN = 'id,name,cong_lang,prog_langs,aux_class,mid_wd,mid_time,we_wd,we_time'
 
+/** Eine Woche in Millisekunden — der Abstand zweier Montage. */
+const WOCHE_MS = 7 * 864e5
+
 /**
  * Wochen der Reihe nach holen. Jede Antwort nennt ihren Montag, und der ist
  * die Basis für die nächste Anfrage — dieselbe Kette wie in der App
  * (`latestImportedStart` → `importNextWeek`).
+ *
+ * Was zurückkommt, sagt auch, **wie** die Kette endete:
+ *  - `ende` — danach hat jw.org (noch) nichts, auch nicht in der Sprache der
+ *    Versammlung. Das ist der Kalender, kein Fehler.
+ *  - `fehler` ohne `ende` — abgebrochen: Function oder jw.org antworteten nicht.
+ *  - `luecken` — die Kette sprang über Wochen. Das Arbeitsheft hat jede Woche
+ *    (die des Gedächtnismahls baut die Function), ein Sprung heißt also, dass
+ *    eine Ausgabe fehlte (`discoverWeeks` übergeht eine vergangene, die jw.org
+ *    nicht mehr liefert).
  *
  * `holen` ist ein Parameter, damit die Probe ohne Netz messen kann.
  *
@@ -86,6 +107,7 @@ const VERSAMMLUNG_SPALTEN = 'id,name,cong_lang,prog_langs,aux_class,mid_wd,mid_t
  */
 export async function wochenHolen({ url, key, lang = 'de', altLangs = [], ab, anzahl, holen = fetch }) {
   const wochen = []
+  const luecken = []
   let cursor = ab
   for (let i = 0; i < anzahl; i++) {
     const antwort = await holen(`${url}/functions/v1/import-week`, {
@@ -98,15 +120,18 @@ export async function wochenHolen({ url, key, lang = 'de', altLangs = [], ab, an
     try {
       nutzlast = text ? JSON.parse(text) : null
     } catch {
-      return { wochen, fehler: `unlesbare Antwort (${antwort.status}): ${text.slice(0, 120)}` }
+      return { wochen, luecken, fehler: `unlesbare Antwort (${antwort.status}): ${text.slice(0, 120)}`, ende: false }
     }
     if (!nutzlast?.week) {
-      return { wochen, fehler: nutzlast?.error ?? `HTTP ${antwort.status}` }
+      const ende = nutzlast?.ende === true || nutzlast?.code === 'sprache-fehlt'
+      return { wochen, luecken, fehler: nutzlast?.error ?? `HTTP ${antwort.status}`, ende }
     }
+    const { start } = nutzlast.week
+    if (cursor && start && Date.parse(start) - Date.parse(cursor) > WOCHE_MS) luecken.push({ nach: cursor, kam: start })
     wochen.push(nutzlast.week)
-    cursor = nutzlast.week.start
+    cursor = start
   }
-  return { wochen, fehler: '' }
+  return { wochen, luecken, fehler: '', ende: false }
 }
 
 /**
@@ -156,9 +181,21 @@ async function einordnungFuer(rest, cong) {
 /** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
 export async function main(argv = process.argv.slice(2)) {
   const arg = argumente(argv)
+  appCodeBereit()
+  const [{ holenNach }, { aufbewahrtAb, VERTEILUNG_WOCHEN }, { montagNach, montagVon }] = await Promise.all([
+    import('../src/data/holen.ts'),
+    import('../src/data/aufbewahrung.ts'),
+    import('../src/data/meeting-dates.ts'),
+  ])
+  // Ein Jahr zurück und ein halbes voraus — so weit reicht das Arbeitsheft nie.
+  const hoechstens = VERTEILUNG_WOCHEN + 26
   const anzahl = Number(arg.anzahl ?? 8)
-  if (!Number.isInteger(anzahl) || anzahl < 1 || anzahl > 52) {
-    console.error('--anzahl braucht eine ganze Zahl zwischen 1 und 52.')
+  if (!Number.isInteger(anzahl) || anzahl < 1 || anzahl > hoechstens) {
+    console.error(`--anzahl braucht eine ganze Zahl zwischen 1 und ${hoechstens}.`)
+    process.exit(2)
+  }
+  if (arg.ab !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(String(arg.ab))) {
+    console.error('--ab braucht ein Datum wie 2025-10-13.')
     process.exit(2)
   }
   const { url, key } = await zugangsdaten()
@@ -172,41 +209,49 @@ export async function main(argv = process.argv.slice(2)) {
    * 16.10.2026 ging ohne gespeicherte Woche gar kein `after` hinaus — dann
    * wählt der Server nach seinem UTC-Tag, und montags kurz nach Mitternacht kam
    * die vergangene Woche. Nach einer Pause holte das Skript außerdem Wochen
-   * zurück, die niemand mehr plant; dafür gibt es `--ab`.
+   * zurück, die niemand mehr plant; dafür gibt es `--ab`: Gefragt wird nach
+   * der Woche davor, denn `import-week` liefert die erste **nach** `after`.
+   * Nie vor dem Montag vor einem Jahr (T125) — Älteres lädt die App nicht.
    */
-  appCodeBereit()
-  const [{ holenNach }, { aufbewahrtAb, VERTEILUNG_WOCHEN }] = await Promise.all([
-    import('../src/data/holen.ts'),
-    import('../src/data/aufbewahrung.ts'),
-  ])
-  // Nie vor dem Montag vor einem Jahr (T125): Älteres lädt die App nicht.
-  const ab = nichtVorDerFrist(
-    typeof arg.ab === 'string' ? arg.ab : holenNach(vorhandene.map((start) => ({ start })), new Date()),
-    aufbewahrtAb(VERTEILUNG_WOCHEN),
-  )
+  const nach =
+    typeof arg.ab === 'string'
+      ? montagNach(nichtVorDerFrist(montagVon(arg.ab), aufbewahrtAb(VERTEILUNG_WOCHEN)), -1)
+      : holenNach(vorhandene.map((start) => ({ start })), new Date())
   const zuletzt = vorhandene[vorhandene.length - 1]
 
   console.log(`Versammlung:  ${cong.name} (${cong.id})`)
   console.log(`Sprache:      ${cong.cong_lang}${cong.prog_langs?.length ? ` (+ ${cong.prog_langs.join(', ')})` : ''}`)
   console.log(`Vorhanden:    ${vorhandene.length} Woche(n)${zuletzt ? `, zuletzt ${zuletzt}` : ''}`)
-  console.log(`Holen:        ${anzahl} nach der Woche ab ${ab}\n`)
+  console.log(`Holen:        ${anzahl} Woche(n) ab ${montagNach(nach, 1)}\n`)
 
-  const { wochen, fehler } = await wochenHolen({
-    url, key, lang: cong.cong_lang, altLangs: cong.prog_langs ?? [], ab, anzahl,
+  const { wochen, luecken, fehler, ende } = await wochenHolen({
+    url, key, lang: cong.cong_lang, altLangs: cong.prog_langs ?? [], ab: nach, anzahl,
   })
   const neue = nurNeue(vorhandene, wochen)
   for (const w of neue) console.log(`  ${w.start}  ${w.range ?? ''}`)
-  if (fehler) console.log(`\nDanach nichts mehr: ${fehler}`)
-
-  if (!neue.length) {
-    console.log('\nNichts zu tun.')
-    return
+  for (const l of luecken) {
+    console.log(`\nLücke: nach ${l.nach} kam erst ${l.kam} — die Wochen dazwischen lieferte jw.org nicht.`)
   }
-  if (arg.trocken) {
-    console.log(`\n--trocken: ${neue.length} Woche(n) blieben ungeschrieben.`)
-    return
-  }
+  if (fehler) console.log(`\n${ende ? 'Danach nichts mehr' : `Abgebrochen nach ${wochen.length} Woche(n)`}: ${fehler}`)
 
+  if (!neue.length) console.log('\nNichts zu tun.')
+  else if (arg.trocken) console.log(`\n--trocken: ${neue.length} Woche(n) blieben ungeschrieben.`)
+  else await schreiben(rest, cong, neue)
+
+  /*
+   * Unvollständig endet mit Code 1, auch nach dem Schreiben — sonst liefe
+   * `neuaufbau-fahren.mjs` mit halber Geschichte weiter. Was kam, steht schon;
+   * ein zweiter Lauf schreibt nur, was noch fehlt (`nurNeue`).
+   */
+  if (luecken.length || (fehler && !ende)) {
+    const erste = luecken[0] ? luecken[0].nach : (wochen[wochen.length - 1]?.start ?? nach)
+    console.error(`\nUnvollständig. Nachholen mit: --ab ${montagNach(erste, 1)}`)
+    process.exitCode = 1
+  }
+}
+
+/** Die neuen Wochen schreiben — eingeordnet wie in der App, je eine Zeile in `weeks` und `fs_weeks`. */
+async function schreiben(rest, cong, neue) {
   const einordnen = await einordnungFuer(rest, cong)
   const mitTreffpunkten = new Set(
     (await rest(`fs_weeks?select=start&congregation_id=eq.${cong.id}`)).map((r) => r.start),

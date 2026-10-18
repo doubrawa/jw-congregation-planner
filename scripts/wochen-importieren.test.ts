@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { main, nurNeue, wochenHolen } from './wochen-importieren.mjs'
-import { fahre, type Zeile } from './schema-attrappe'
+import { fahre, type FunktionsAntwort, type Zeile } from './schema-attrappe'
 import type { AppState } from '../src/app/context'
 import { initialState } from '../src/app/init'
 import { reducer } from '../src/app/reducer'
@@ -74,24 +74,75 @@ describe('wochenHolen', () => {
     expect(kopf.apikey).toBe('sb_secret_abc')
   })
 
-  it('endet mit dem, was da war, wenn jw.org noch keine Woche hat', async () => {
+  it('endet mit dem, was da war, wenn jw.org noch keine Woche hat — das ist der Kalender', async () => {
+    // So antwortet `import-week` nach der letzten Woche des Hefts: 404 mit `ende`.
     let n = 0
     const holen = () =>
-      Promise.resolve(n++ < 2 ? antwort(woche(`2026-09-${14 + n * 7}`)) : antwort({ error: 'keine Woche gefunden' }))
+      Promise.resolve(
+        n++ < 2
+          ? antwort(woche(`2026-09-${14 + n * 7}`))
+          : antwort({ error: 'Keine kommende Woche gefunden.', ende: true }, 404),
+      )
 
-    const { wochen, fehler } = await wochenHolen({ url: 'https://x', key: 'k', anzahl: 8, holen })
+    const { wochen, fehler, ende } = await wochenHolen({ url: 'https://x', key: 'k', anzahl: 8, holen })
 
     expect(wochen).toHaveLength(2)
-    expect(fehler).toBe('keine Woche gefunden')
+    expect(fehler).toBe('Keine kommende Woche gefunden.')
+    expect(ende).toBe(true)
   })
 
-  it('stirbt nicht an einer unlesbaren Antwort', async () => {
+  it('fehlt die nächste Woche in der Sprache der Versammlung, ist das ebenso der Kalender', async () => {
+    // Die Übersetzung erscheint später als das deutsche Heft.
+    const holen = () => Promise.resolve(antwort({ error: 'Diese Woche ist … (es) noch nicht verfügbar.', code: 'sprache-fehlt' }, 404))
+
+    const { ende } = await wochenHolen({ url: 'https://x', key: 'k', lang: 'es', anzahl: 3, holen })
+
+    expect(ende).toBe(true)
+  })
+
+  it('bricht die Function ab, ist das kein Ende, sondern ein Abbruch', async () => {
+    let n = 0
+    const holen = () =>
+      Promise.resolve(n++ < 1 ? antwort(woche('2026-09-07')) : antwort({ error: 'Import fehlgeschlagen.' }, 500))
+
+    const { wochen, fehler, ende } = await wochenHolen({ url: 'https://x', key: 'k', ab: '2026-08-31', anzahl: 8, holen })
+
+    expect(wochen).toHaveLength(1)
+    expect(fehler).toBe('Import fehlgeschlagen.')
+    expect(ende).toBe(false)
+  })
+
+  it('stirbt nicht an einer unlesbaren Antwort — und hält sie nicht für das Ende', async () => {
     const holen = () => Promise.resolve({ status: 502, text: () => Promise.resolve('<html>Gateway</html>') })
 
-    const { wochen, fehler } = await wochenHolen({ url: 'https://x', key: 'k', anzahl: 3, holen })
+    const { wochen, fehler, ende } = await wochenHolen({ url: 'https://x', key: 'k', anzahl: 3, holen })
 
     expect(wochen).toEqual([])
     expect(fehler).toMatch(/502/)
+    expect(ende).toBe(false)
+  })
+
+  it('springt die Kette über Wochen, steht die Lücke da', async () => {
+    // Jede Woche hat ein Programm (die des Gedächtnismahls baut die Function).
+    // Ein Sprung heißt: Eine ältere Ausgabe lieferte jw.org nicht mehr.
+    const folge = ['2025-10-13', '2025-10-20', '2025-11-24', '2025-12-01']
+    let n = 0
+    const holen = () => Promise.resolve(antwort(woche(folge[n++] ?? '')))
+
+    const { wochen, luecken } = await wochenHolen({ url: 'https://x', key: 'k', ab: '2025-10-06', anzahl: 4, holen })
+
+    expect(wochen).toHaveLength(4)
+    expect(luecken).toEqual([{ nach: '2025-10-20', kam: '2025-11-24' }])
+  })
+
+  it('eine lückenlose Kette hat keine Lücke — auch nicht über den Monats- oder Jahreswechsel', async () => {
+    const folge = ['2025-12-22', '2025-12-29', '2026-01-05']
+    let n = 0
+    const holen = () => Promise.resolve(antwort(woche(folge[n++] ?? '')))
+
+    const { luecken } = await wochenHolen({ url: 'https://x', key: 'k', ab: '2025-12-15', anzahl: 3, holen })
+
+    expect(luecken).toEqual([])
   })
 })
 
@@ -200,5 +251,135 @@ describe('main: eingeordnet wie beim Import in der App', () => {
     })
     expect(tabellen.fs_weeks).toEqual([{ congregation_id: C, start: '2026-08-24', data: vorhanden }])
     expect(ausgabe.join('\n')).toContain('Treffpunkte schon da')
+  })
+})
+
+/**
+ * **Ein Jahr Geschichte für den Neuaufbau** (18.10.2026).
+ *
+ * `versammlung-zuruecksetzen.mjs` leert `weeks`; ohne die Wochen des
+ * vergangenen Jahres begänne die Auswertung (T126) leer. Zwei Dinge muss das
+ * Skript dafür können:
+ *
+ * - **`--ab` nennt die erste Woche, die kommt.** Bis dahin nannte es die Woche
+ *   davor — und weil `--ab` nicht vor die Frist darf, ließ sich die erste Woche
+ *   der Frist (der Montag vor einem Jahr) gar nicht holen.
+ * - **Ein unvollständiger Lauf endet mit Code 1.** Sechzig Abrufe statt acht:
+ *   Bricht einer ab oder springt die Kette, schreibt das Skript, was kam, und
+ *   `neuaufbau-fahren.mjs` bleibt stehen, statt mit halber Geschichte
+ *   weiterzumachen. Das Ende des Hefts dagegen ist der Kalender.
+ */
+describe('main: ein Jahr zurück', () => {
+  const C = '00000000-0000-4000-8000-000000000001'
+  const VERSAMMLUNG = { id: C, name: 'Probe', cong_lang: 'de', prog_langs: [], aux_class: false, mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00' }
+
+  /** Eine Woche, wie `import-week` sie liefert — Platzhalter statt Wortlaut. */
+  const probe = (start: string) => ({
+    start,
+    range: `Probewoche ${start}`,
+    book: '',
+    mid: { date: '', end: '', sections: [], helpers: {} },
+    we: { date: '', end: '', sections: [], helpers: {} },
+  })
+  const plusSieben = (iso: string) => new Date(Date.parse(`${iso}T00:00:00Z`) + 7 * 864e5).toISOString().slice(0, 10)
+  const lueckenlos = (after: string): FunktionsAntwort => ({ json: { week: probe(plusSieben(after)) } })
+
+  /**
+   * Ein Lauf am Sonntag, 18. Oktober 2026 — der Montag vor einem Jahr ist der
+   * 13. Oktober 2025. `antworten` bekommt `after` und die Nummer des Abrufs.
+   */
+  async function lauf(argv: string[], antworten: (after: string, n: number) => FunktionsAntwort = lueckenlos) {
+    const gefragt: string[] = []
+    let code: number | string | null | undefined
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-18T10:00:00Z'))
+    try {
+      const ergebnis = await fahre(
+        async () => {
+          await main(argv)
+          code = process.exitCode
+        },
+        {
+          bestand: { congregations: [VERSAMMLUNG] },
+          funktionen: {
+            'import-week': (rumpf) => {
+              gefragt.push(String(rumpf.after))
+              return antworten(String(rumpf.after), gefragt.length)
+            },
+          },
+        },
+      )
+      return { ...ergebnis, gefragt, code, text: ergebnis.ausgabe.join('\n') }
+    } finally {
+      vi.useRealTimers()
+    }
+  }
+
+  it('--ab nennt die erste Woche, die kommt — gefragt wird nach der Woche davor', async () => {
+    const { gefragt, ausgabe } = await lauf(['--ab', '2025-10-13', '--anzahl', '2', '--trocken'])
+    expect(gefragt).toEqual(['2025-10-06', '2025-10-13'])
+    expect(ausgabe).toContain('Holen:        2 Woche(n) ab 2025-10-13\n')
+    expect(ausgabe.filter((z) => /^ {2}\d{4}-/.test(z)).map((z) => z.trim().slice(0, 10))).toEqual(['2025-10-13', '2025-10-20'])
+  })
+
+  it('--ab mitten in der Woche meint ihre Woche', async () => {
+    const { gefragt } = await lauf(['--ab', '2025-10-15', '--anzahl', '1', '--trocken'])
+    expect(gefragt).toEqual(['2025-10-06'])
+  })
+
+  it('das Jahr, die laufende Woche und sieben voraus: --anzahl 60 reicht bis Ende November', async () => {
+    const { gefragt, ausgabe } = await lauf(['--ab', '2025-10-13', '--anzahl', '60', '--trocken'])
+    expect(gefragt).toHaveLength(60)
+    const wochen = ausgabe.filter((z) => /^ {2}\d{4}-/.test(z)).map((z) => z.trim().slice(0, 10))
+    expect(wochen[0]).toBe('2025-10-13')
+    expect(wochen).toContain('2026-10-12') // die laufende
+    expect(wochen.at(-1)).toBe('2026-11-30')
+  })
+
+  it('mehr als anderthalb Jahre nimmt es nicht an — weiter reicht das Arbeitsheft nie', async () => {
+    await expect(lauf(['--anzahl', '79'])).rejects.toThrow(/process\.exit\(2\).*zwischen 1 und 78/)
+    await expect(lauf(['--anzahl', '78', '--trocken'])).resolves.toBeDefined()
+  })
+
+  it('--ab ohne Datum weist es ab, bevor es etwas holt', async () => {
+    await expect(lauf(['--ab'])).rejects.toThrow(/process\.exit\(2\).*--ab braucht ein Datum/)
+    await expect(lauf(['--ab', 'letzten-oktober'])).rejects.toThrow(/process\.exit\(2\)/)
+  })
+
+  it('springt die Kette, schreibt es, was kam — und endet mit Code 1', async () => {
+    const { tabellen, code, text, meldungen } = await lauf(['--ab', '2025-10-13', '--anzahl', '2'], (after, n) =>
+      n === 1 ? lueckenlos(after) : { json: { week: probe('2025-11-24') } },
+    )
+    expect((tabellen.weeks ?? []).map((z) => z.start)).toEqual(['2025-10-13', '2025-11-24'])
+    expect(text).toContain('Lücke: nach 2025-10-13 kam erst 2025-11-24')
+    expect(code).toBe(1)
+    expect(meldungen.join('\n')).toContain('Nachholen mit: --ab 2025-10-20')
+  })
+
+  it('bricht die Function ab, endet es mit Code 1 und sagt, wo es weitergeht', async () => {
+    const { tabellen, code, text, meldungen } = await lauf(['--ab', '2025-10-13', '--anzahl', '60'], (after, n) =>
+      n <= 2 ? lueckenlos(after) : { status: 500, json: { error: 'Import fehlgeschlagen.' } },
+    )
+    expect((tabellen.weeks ?? []).map((z) => z.start)).toEqual(['2025-10-13', '2025-10-20'])
+    expect(text).toContain('Abgebrochen nach 2 Woche(n): Import fehlgeschlagen.')
+    expect(code).toBe(1)
+    expect(meldungen.join('\n')).toContain('Nachholen mit: --ab 2025-10-27')
+  })
+
+  it('auch wenn schon der erste Abruf scheitert — dann gibt es nichts zu schreiben, aber Code 1', async () => {
+    const { code, text } = await lauf(['--ab', '2025-10-13', '--anzahl', '60', '--trocken'], () => ({
+      status: 500,
+      json: { error: 'Import fehlgeschlagen.' },
+    }))
+    expect(text).toContain('Nichts zu tun.')
+    expect(code).toBe(1)
+  })
+
+  it('das Ende des Hefts ist kein Fehler — der Lauf endet ohne Code 1', async () => {
+    const { code, text } = await lauf(['--anzahl', '60', '--trocken'], (after, n) =>
+      n <= 2 ? lueckenlos(after) : { status: 404, json: { error: 'Keine kommende Woche gefunden.', ende: true } },
+    )
+    expect(text).toContain('Danach nichts mehr: Keine kommende Woche gefunden.')
+    expect(code).not.toBe(1)
   })
 })

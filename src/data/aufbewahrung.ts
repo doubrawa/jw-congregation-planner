@@ -24,7 +24,9 @@ import { isoDay, montagNach, montagVon } from './meeting-dates'
  * Dieselben Zahlen gelten an drei Stellen: beim Laden (`lib/data.ts`), beim
  * Aufräumen in der Datenbank (`alte_daten_loeschen` in `supabase/schema.sql`;
  * `tests/aufbewahrung.test.ts` hält beide Seiten gleich) und bei den Importen
- * aus NWS und von jw.org (`scripts/`).
+ * aus NWS und von jw.org (`scripts/`). Die Wochensuche von `import-week` reicht
+ * so weit zurück wie `VERTEILUNG_WOCHEN` (`RUECKBLICK_WOCHEN` in
+ * `supabase/functions/import-week/hefte.ts`, gleich gehalten von `hefte.test.ts`).
  */
 export const VERTEILUNG_WOCHEN = 52
 export const SONST_WOCHEN = 8

@@ -1,8 +1,9 @@
 // =============================================================================
 // Die Wochen des Arbeitshefts finden (import-week)
 // =============================================================================
-// Welche Wochen die laufenden Ausgaben anbieten, und wo dieselbe Woche in einer
-// anderen Sprache steht. Geteilt zwischen der Function (`index.ts`, holt mit
+// Welche Wochen die Ausgaben anbieten — die laufenden und, bis ein Jahr zurück,
+// die vergangenen —, und wo dieselbe Woche in einer anderen Sprache steht.
+// Geteilt zwischen der Function (`index.ts`, holt mit
 // Prüfung und Zwischenspeicher) und `scripts/heft-pruefen.mjs`, das jede neue
 // Ausgabe gegen den Parser fährt — wie geholt wird, sagt der Aufrufer
 // (`Holen`). Bis zum 16.10.2026 stand das in `index.ts`, die sich nicht
@@ -10,10 +11,22 @@
 // =============================================================================
 
 import { gedaechtnismahlDatum, istLeseprogramm, leseprogrammJahr, montagDerWoche } from './gedaechtnismahl.ts'
-import { MONTHS } from './study.ts'
+import { MONTH_SLUG, MONTHS } from './study.ts'
 import { wochenStart } from './wochen-slug.ts'
 
 export const BASE = 'https://www.jw.org'
+
+/**
+ * **Wie weit die Wochensuche zurückreicht:** bis zum Montag vor einem Jahr.
+ * So lange behält die App Wochen (`VERTEILUNG_WOCHEN` in
+ * `src/data/aufbewahrung.ts`, T125), und so weit rechnet die Auswertung
+ * (T126). Älteres liefert die Function nicht — die Datenbank räumte es in der
+ * nächsten Nacht. `hefte.test.ts` hält beide Zahlen gleich.
+ */
+export const RUECKBLICK_WOCHEN = 52
+
+/** Wie viele Ausgaben eine Suche liest: die, in der sie beginnt, und die zwei folgenden. */
+const FENSTER = 3
 
 /** Wer bei jw.org anfragt — klar benannt, mit Weg zum Projekt. */
 export const UA = 'jw-congregation-planner/1.0 (+https://github.com/doubrawa/jw-congregation-planner)'
@@ -71,33 +84,87 @@ async function mitGedaechtnismahl(holen: Holen, slug: string, seite: string, woc
   wochen.push({ start: new Date(`${montag}T00:00:00Z`), url: null, mem })
 }
 
-/** Kommende Wochen (immer aus dem deutschen Arbeitsheft), nach Startdatum. */
-export async function discoverWeeks(holen: Holen, now = new Date()): Promise<Wocheneintrag[]> {
-  const index = await holen(`${BASE}/de/bibliothek/jw-arbeitsheft/`)
-  const periods = [...new Set([...index.matchAll(/jw-arbeitsheft\/([a-zä]+-[a-zä]+-\d{4}-mwb)\//g)].map((m) => m[1]))]
-    .map((slug) => {
-      const m = slug.match(/^([a-zä]+)-([a-zä]+)-(\d{4})-mwb$/)
-      return m ? { slug, year: Number(m[3]), endMonth: MONTHS[m[2]] ?? 0 } : null
-    })
-    .filter((p): p is { slug: string; year: number; endMonth: number } => p != null)
-    .filter((p) => p.year > now.getFullYear() || (p.year === now.getFullYear() && p.endMonth >= now.getMonth() + 1))
-    .sort((a, b) => a.year - b.year || a.endMonth - b.endMonth)
-    .slice(0, 3)
+/**
+ * Die Ausgaben fortlaufend gezählt, sechs je Jahr, Januar/Februar zuerst: Die
+ * folgende Ausgabe hat die folgende Zahl, auch über den Jahreswechsel.
+ */
+function ausgabeVon(tag: Date): number {
+  return tag.getUTCFullYear() * 6 + Math.floor(tag.getUTCMonth() / 2)
+}
 
+/** Die Zahl einer Ausgabe aus ihrem Slug (`maerz-april-2026-mwb`) — `null`, wenn es keiner ist. */
+function ausgabeAusSlug(slug: string): number | null {
+  const m = /^[a-zä]+-([a-zä]+)-(\d{4})-mwb$/.exec(slug)
+  const endMonat = m ? MONTHS[m[1] ?? ''] : undefined
+  return m && endMonat ? Number(m[2]) * 6 + Math.floor((endMonat - 1) / 2) : null
+}
+
+/** Der Slug einer Ausgabe, wie jw.org ihn schreibt: `september-oktober-2025-mwb`. */
+function ausgabenSlug(nr: number): string {
+  const paar = nr % 6
+  return `${MONTH_SLUG[2 * paar]}-${MONTH_SLUG[2 * paar + 1]}-${Math.floor(nr / 6)}-mwb`
+}
+
+/** Der Montag `RUECKBLICK_WOCHEN` Wochen vor dem Montag der Woche von `heute` — wie `aufbewahrtAb` in der App. */
+function fruehesterMontag(heute: Date): Date {
+  const montag = new Date(`${montagDerWoche(heute.toISOString().slice(0, 10))}T00:00:00Z`)
+  montag.setUTCDate(montag.getUTCDate() - 7 * RUECKBLICK_WOCHEN)
+  return montag
+}
+
+/**
+ * Die Wochen des Arbeitshefts ab der Ausgabe, in der `ab` liegt — sie und die
+ * zwei folgenden, immer aus dem deutschen Heft, nach Startdatum.
+ *
+ * **Auch zurück, bis zum Montag vor einem Jahr** (18.10.2026). Bis dahin las
+ * die Suche nur die drei Ausgaben ab der laufenden, und ein Neuaufbau begann
+ * ohne Geschichte: Die Auswertung (T126) hätte monatelang nichts gezeigt. Der
+ * Index `/de/bibliothek/jw-arbeitsheft/` führt nur die letzten Ausgaben
+ * (gemessen am 18.10.2026: acht, die älteste November/Dezember 2025). Ältere
+ * stehen weiter auf jw.org, nur ohne Eintrag — `september-oktober-2025-mwb`
+ * antwortet mit allen Wochenlinks. Ihren Slug baut die Suche deshalb selbst,
+ * aber nur für vergangene: Eine künftige, die der Index nicht nennt, ist noch
+ * nicht erschienen. Fehlt eine gebaute, fehlen nur ihre Wochen — die übrigen
+ * kommen trotzdem, und `wochen-importieren.mjs` meldet die Lücke.
+ *
+ * `ab` ist der Tag, nach dem gesucht wird (`after` oder `start` der
+ * Function). Bis zum 18.10.2026 zählte stattdessen der heutige Monat: Am
+ * Sonntag, dem 1. März, fiel so die laufende Woche (ab 23. Februar) aus der
+ * Suche, denn ihre Ausgabe endete im Februar.
+ */
+export async function discoverWeeks(holen: Holen, ab = new Date(), heute = new Date()): Promise<Wocheneintrag[]> {
+  if (Number.isNaN(ab.getTime())) return [] // kein Datum — keine Woche, und dafür wird nichts geholt
+  const index = await holen(`${BASE}/de/bibliothek/jw-arbeitsheft/`)
+  const imIndex = new Map<number, string>()
+  for (const [, slug = ''] of index.matchAll(/jw-arbeitsheft\/([a-zä]+-[a-zä]+-\d{4}-mwb)\//g)) {
+    const nr = ausgabeAusSlug(slug)
+    if (nr !== null) imIndex.set(nr, slug)
+  }
+
+  const frist = fruehesterMontag(heute)
+  const laufende = ausgabeVon(heute)
+  const erste = Math.max(ausgabeVon(ab), ausgabeVon(frist))
   const weeks: Wocheneintrag[] = []
-  for (const p of periods) {
-    const page = await holen(`${BASE}/de/bibliothek/jw-arbeitsheft/${p.slug}/`)
-    const re = new RegExp(`/de/bibliothek/jw-arbeitsheft/${p.slug}/[^"'>]*Zusammenkunft-[^"'>]*`, 'g')
+  for (let nr = erste; nr < erste + FENSTER; nr++) {
+    const gelistet = imIndex.get(nr)
+    if (!gelistet && nr >= laufende) continue // noch nicht erschienen
+    const slug = gelistet ?? ausgabenSlug(nr)
+    const adresse = `${BASE}/de/bibliothek/jw-arbeitsheft/${slug}/`
+    // Eine gelistete Ausgabe muss da sein — fehlt sie, ist das ein Fehler wie bisher.
+    const page = gelistet ? await holen(adresse) : await holen(adresse).catch(() => null)
+    if (page === null) continue
+    const re = new RegExp(`/de/bibliothek/jw-arbeitsheft/${slug}/[^"'>]*Zusammenkunft-[^"'>]*`, 'g')
     for (const href of new Set([...page.matchAll(re)].map((m) => m[0]))) {
       const start = wochenStart(href)
       if (start) weeks.push({ start, url: `${BASE}${href}` })
     }
     // Danach, nicht davor: erst wenn die Seiten dieser Ausgabe stehen, ist zu
     // sehen, ob die Woche des Mahls unter ihnen fehlt.
-    await mitGedaechtnismahl(holen, p.slug, page, weeks)
+    await mitGedaechtnismahl(holen, slug, page, weeks)
   }
   weeks.sort((a, b) => a.start.getTime() - b.start.getTime())
-  return weeks
+  // Die Ausgabe der Frist beginnt vor ihr — was davor liegt, liefert die Suche nicht.
+  return weeks.filter((w) => w.start >= frist)
 }
 
 /**

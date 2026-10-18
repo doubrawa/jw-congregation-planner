@@ -141,12 +141,13 @@ export function useWochenImport(): {
      * jw.org läuft und wie lange die Function rechnet.
      *
      * **Nur Wochen, die noch kommen.** Eine vergangene braucht beim Planen
-     * niemand mehr in einer weiteren Sprache — und `import-week` findet sie
-     * nach dem Ende ihrer Ausgabe gar nicht mehr (`discoverWeeks` liest nur
-     * die laufenden Ausgaben, die Antwort ist ein 404). Bis zum 16.10.2026
-     * fragte deshalb jedes „Holen" nach jeder alten Woche ohne die Sprache
-     * erneut: bei vollem Ladefenster rund vierzig vergebliche Aufrufe vor
-     * jedem Abruf, jeder mit mehreren Seiten von jw.org.
+     * niemand mehr in einer weiteren Sprache. Bis zum 16.10.2026 fragte jedes
+     * „Holen" nach jeder alten Woche ohne die Sprache erneut: bei vollem
+     * Ladefenster rund vierzig Aufrufe vor jedem Abruf, jeder mit mehreren
+     * Seiten von jw.org — damals vergeblich (404), denn `import-week` las nur
+     * die laufenden Ausgaben. Seit dem 18.10.2026 findet sie Wochen bis ein
+     * Jahr zurück (`discoverWeeks`), und ohne diesen Filter kämen die Aufrufe
+     * durch: ein Jahr Wochen samt Sprachen, bei jedem „Holen".
      */
     const luecken = missingVariants(state.weeks, altCodes, langCode).filter(
       (luecke) => !istVorbei(weekEndMs(luecke.start), fromIso(heute)),

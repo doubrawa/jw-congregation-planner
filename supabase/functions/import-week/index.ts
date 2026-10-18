@@ -4,7 +4,8 @@
 // Holt das Arbeitsheft-Programm einer Woche von jw.org (serverseitig, umgeht
 // CORS) und liefert es als Week-JSON zurück. Welche Woche, ermittelt die
 // Funktion selbst (Übersicht → Zeitraum → Woche); der Aufruf sagt höchstens,
-// ab wann (`after`) oder welches Startdatum (`start`). Eine Adresse nimmt sie
+// ab wann (`after`) oder welches Startdatum (`start`) — beides auch zurück bis
+// zum Montag vor einem Jahr (`discoverWeeks`). Eine Adresse nimmt sie
 // **nicht** entgegen — geholt wird nur, was `fetchText` als jw.org durchlässt.
 //
 // MEHRSPRACHIG: Die Woche wird immer zuerst auf **Deutsch** ermittelt (der
@@ -225,7 +226,16 @@ Deno.serve(async (req: Request) => {
     /** Datum des Gedächtnismahls, wenn es in diese Woche fällt. */
     let mem: string | undefined
 
-    const weeks = await discoverWeeks(fetchText)
+    const now = new Date()
+    const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+    // Standard: die Woche, die diese Woche beginnt (bis 6 Tage zurück). Die
+    // Grenze liegt einen Tag davor, gesucht wird dahinter (`>`): Mit sechs
+    // Tagen fiel bis zum 16.10.2026 sonntags der eigene Montag heraus, und es
+    // kam die nächste Woche — die App sagte bei „Holen" die laufende an.
+    const cutoff = after ? new Date(after) : new Date(todayUtc - 7 * 864e5)
+    // Gesucht wird ab der Ausgabe der gefragten Woche, auch in der
+    // Vergangenheit — bis zum Montag vor einem Jahr (`discoverWeeks`).
+    const weeks = await discoverWeeks(fetchText, startParam ? new Date(startParam) : cutoff)
     if (startParam) {
       // Nachimport: exakt die Woche mit diesem Startdatum (z. B. um später
       // hinzugefügte Programmsprachen für bereits geladene Wochen zu holen).
@@ -235,13 +245,6 @@ Deno.serve(async (req: Request) => {
       start = hit.start
       mem = hit.mem
     } else {
-      const now = new Date()
-      const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
-      // Standard: die Woche, die diese Woche beginnt (bis 6 Tage zurück). Die
-      // Grenze liegt einen Tag davor, gesucht wird dahinter (`>`): Mit sechs
-      // Tagen fiel bis zum 16.10.2026 sonntags der eigene Montag heraus, und es
-      // kam die nächste Woche — die App sagte bei „Holen" die laufende an.
-      const cutoff = after ? new Date(after) : new Date(todayUtc - 7 * 864e5)
       // Auf die letzte Woche des Hefts zurückfallen darf nur der erste Import.
       // Mit `after` ist sie schon da, und ein zweites Mal geliefert überschrieb
       // sie im Client die bereits geplante Woche. `ende` sagt dem Client, dass

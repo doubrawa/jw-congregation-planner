@@ -24,9 +24,16 @@
  *     --mid "2 19:00" --we "0 10:00" \
  *     --vorname "Anna" --nachname "Beispiel" \
  *     --sql C:\DATA\Claude\nws-export\import-live-personen.sql \
- *     [--wochen 8] [--sprache de] [--ab-schritt 3] [--cong <id>] [--trocken]
+ *     [--wochen 8] [--ab 2025-10-13] [--sprache de] [--ab-schritt 3] [--cong <id>] [--trocken]
  *
  *   --wochen      wie viele Wochenprogramme von jw.org (Standard 8).
+ *   --ab          ab welcher Woche — für ein Jahr Geschichte der Montag vor
+ *                 einem Jahr, dazu `--wochen 60`: das Jahr, die laufende Woche
+ *                 und sieben voraus. Ohne Geschichte begänne die Auswertung
+ *                 (T126) leer, denn das Zurücksetzen leert `weeks`. Geht an
+ *                 die Wochen und an die Abwesenheiten (dort das früheste
+ *                 Ende); Zuteilungen und Treffpunkte nehmen ohnehin jede Woche
+ *                 bis ein Jahr zurück.
  *   --ab-schritt  bei Schritt N fortsetzen — für den Fall, dass einer scheitert
  *                 (jw.org nicht erreichbar, Netz weg). Ohne das müsste man von
  *                 vorn anfangen, und Schritt 1 legte eine zweite Versammlung an.
@@ -87,6 +94,8 @@ export function schritte(arg) {
   // `--cong` ab — bis zum 16.10.2026 ließ sich die Wahl hier nicht
   // weiterreichen, und ein Fortsetzen ging gar nicht.
   const cong = typeof arg.cong === 'string' ? ['--cong', arg.cong] : []
+  // Ein Jahr Geschichte (18.10.2026): dieselbe Grenze für Wochen und Abwesenheiten.
+  const seit = typeof arg.ab === 'string' ? ['--ab', arg.ab] : []
   const alle = [
     {
       titel: 'Versammlung, Planer-Person und Standard-Dienste anlegen',
@@ -110,12 +119,12 @@ export function schritte(arg) {
     {
       titel: 'Abwesenheiten',
       skript: 'abwesenheiten-importieren.mjs',
-      argv: [...cong, ...trocken],
+      argv: [...seit, ...cong, ...trocken],
     },
     {
-      titel: `Wochenprogramme von jw.org (${arg.wochen ?? 8})`,
+      titel: `Wochenprogramme von jw.org (${arg.wochen ?? 8}${seit.length ? ` ab ${arg.ab}` : ''})`,
       skript: 'wochen-importieren.mjs',
-      argv: ['--anzahl', String(arg.wochen ?? 8), ...cong, ...trocken],
+      argv: ['--anzahl', String(arg.wochen ?? 8), ...seit, ...cong, ...trocken],
     },
     {
       titel: 'Zuteilungen, Hilfsdienste und Reinigung',

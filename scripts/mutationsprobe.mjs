@@ -4909,8 +4909,122 @@ export const KATALOG = [
     id: "wochen-import-fragt-wie-die-app",
     datei: 'scripts/wochen-importieren.mjs',
     regel: 'Das Skript fragt wie der Knopf in der App: nie ohne after und nie vor der laufenden Woche.',
-    suchen: "    typeof arg.ab === 'string' ? arg.ab : holenNach(vorhandene.map((start) => ({ start })), new Date()),\n",
-    ersetzen: "    typeof arg.ab === 'string' ? arg.ab : vorhandene[vorhandene.length - 1],\n",
+    // Seit dem 18.10.2026 steht die Wahl über zwei Zeilen (`--ab` nennt die erste Woche).
+    suchen: "      : holenNach(vorhandene.map((start) => ({ start })), new Date())\n",
+    ersetzen: "      : vorhandene[vorhandene.length - 1]\n",
+  },
+  // ── Ein Jahr Geschichte für den Neuaufbau (18.10.2026) ────────────────────
+  {
+    id: 'wochen-import-ab-ist-die-erste-woche',
+    datei: 'scripts/wochen-importieren.mjs',
+    regel: '--ab nennt die erste Woche, die kommt — gefragt wird nach der davor; sonst ließe sich die Woche der Frist nie holen.',
+    suchen: "      ? montagNach(nichtVorDerFrist(montagVon(arg.ab), aufbewahrtAb(VERTEILUNG_WOCHEN)), -1)\n",
+    ersetzen: "      ? nichtVorDerFrist(montagVon(arg.ab), aufbewahrtAb(VERTEILUNG_WOCHEN))\n",
+  },
+  {
+    id: 'wochen-import-unvollstaendig-code-1',
+    datei: 'scripts/wochen-importieren.mjs',
+    regel: 'Bricht die Kette ab oder springt sie, endet der Lauf mit Code 1 — sonst liefe der Neuaufbau mit halber Geschichte weiter.',
+    suchen: '    process.exitCode = 1\n',
+    ersetzen: '',
+  },
+  {
+    id: 'wochen-import-sieht-luecken',
+    datei: 'scripts/wochen-importieren.mjs',
+    regel: 'Springt die Kette über Wochen (eine alte Ausgabe fehlte bei jw.org), steht die Lücke da.',
+    suchen: '    if (cursor && start && Date.parse(start) - Date.parse(cursor) > WOCHE_MS) luecken.push({ nach: cursor, kam: start })\n',
+    ersetzen: '',
+  },
+  {
+    id: 'wochen-import-ende-ist-kalender',
+    datei: 'scripts/wochen-importieren.mjs',
+    regel: 'Das Ende des Hefts ist der Kalender, kein Abbruch — der Lauf endet dann ohne Code 1.',
+    suchen: "      const ende = nutzlast?.ende === true || nutzlast?.code === 'sprache-fehlt'\n",
+    ersetzen: '      const ende = false\n',
+  },
+  {
+    id: 'wochen-import-fehlende-sprache-ist-kalender',
+    datei: 'scripts/wochen-importieren.mjs',
+    regel: 'Fehlt die nächste Woche in der Sprache der Versammlung, ist auch das der Kalender — die Übersetzung erscheint später.',
+    suchen: "      const ende = nutzlast?.ende === true || nutzlast?.code === 'sprache-fehlt'\n",
+    ersetzen: '      const ende = nutzlast?.ende === true\n',
+  },
+  {
+    id: 'wochen-import-anderthalb-jahre',
+    datei: 'scripts/wochen-importieren.mjs',
+    regel: 'Ein Jahr zurück und ein halbes voraus darf ein Lauf holen — mehr hat das Arbeitsheft nie.',
+    suchen: '  const hoechstens = VERTEILUNG_WOCHEN + 26\n',
+    ersetzen: '  const hoechstens = 52\n',
+  },
+  {
+    id: 'neuaufbau-ab-an-wochen',
+    datei: 'scripts/neuaufbau-fahren.mjs',
+    regel: 'Der Neuaufbau reicht --ab an den Wochen-Import weiter — sonst begänne die Auswertung ohne Geschichte.',
+    suchen: "      argv: ['--anzahl', String(arg.wochen ?? 8), ...seit, ...cong, ...trocken],\n",
+    ersetzen: "      argv: ['--anzahl', String(arg.wochen ?? 8), ...cong, ...trocken],\n",
+  },
+  {
+    id: 'neuaufbau-ab-an-abwesenheiten',
+    datei: 'scripts/neuaufbau-fahren.mjs',
+    regel: 'Der Neuaufbau reicht --ab auch an die Abwesenheiten weiter — die Auswertung rechnet damit, wer fehlte.',
+    suchen: '      argv: [...seit, ...cong, ...trocken],\n',
+    ersetzen: '      argv: [...cong, ...trocken],\n',
+  },
+  {
+    id: 'wochensuche-ab-der-gefragten-woche',
+    datei: 'supabase/functions/import-week/index.ts',
+    regel: 'Gesucht wird ab der Ausgabe der gefragten Woche, nicht ab dem heutigen Monat — sonst fehlt am 1. März die laufende Woche, und kein Neuaufbau kommt an das vergangene Jahr.',
+    suchen: '    const weeks = await discoverWeeks(fetchText, startParam ? new Date(startParam) : cutoff)\n',
+    ersetzen: '    const weeks = await discoverWeeks(fetchText)\n',
+  },
+  {
+    id: 'wochensuche-baut-alte-ausgaben',
+    datei: 'supabase/functions/import-week/hefte.ts',
+    regel: 'Eine vergangene Ausgabe, die der Index nicht mehr nennt, findet die Suche über ihren Slug.',
+    suchen: '    if (!gelistet && nr >= laufende) continue // noch nicht erschienen\n',
+    ersetzen: '    if (!gelistet) continue\n',
+  },
+  {
+    id: 'wochensuche-raet-keine-kuenftige',
+    datei: 'supabase/functions/import-week/hefte.ts',
+    regel: 'Eine künftige Ausgabe, die der Index nicht nennt, ist noch nicht erschienen — die Suche fragt nicht danach.',
+    suchen: '    if (!gelistet && nr >= laufende) continue // noch nicht erschienen\n',
+    ersetzen: '',
+  },
+  {
+    id: 'wochensuche-nicht-vor-der-frist',
+    datei: 'supabase/functions/import-week/hefte.ts',
+    regel: 'Die Suche fragt keine Ausgabe an, die vor dem Montag vor einem Jahr endet (T125).',
+    suchen: '  const erste = Math.max(ausgabeVon(ab), ausgabeVon(frist))\n',
+    ersetzen: '  const erste = ausgabeVon(ab)\n',
+  },
+  {
+    id: 'wochensuche-wochen-ab-der-frist',
+    datei: 'supabase/functions/import-week/hefte.ts',
+    regel: 'Wochen vor dem Montag vor einem Jahr liefert die Suche nicht — auch nicht aus der Ausgabe, in der die Frist liegt.',
+    suchen: '  return weeks.filter((w) => w.start >= frist)\n',
+    ersetzen: '  return weeks\n',
+  },
+  {
+    id: 'wochensuche-gebaute-darf-fehlen',
+    datei: 'supabase/functions/import-week/hefte.ts',
+    regel: 'Fehlt eine gebaute Ausgabe bei jw.org, fehlen nur ihre Wochen — die übrigen kommen.',
+    suchen: '    const page = gelistet ? await holen(adresse) : await holen(adresse).catch(() => null)\n',
+    ersetzen: '    const page = await holen(adresse)\n',
+  },
+  {
+    id: 'wochensuche-gelistete-muss-da-sein',
+    datei: 'supabase/functions/import-week/hefte.ts',
+    regel: 'Fehlt eine Ausgabe, die der Index nennt, ist das ein Fehler — sie wird nicht still übergangen.',
+    suchen: '    const page = gelistet ? await holen(adresse) : await holen(adresse).catch(() => null)\n',
+    ersetzen: '    const page = await holen(adresse).catch(() => null)\n',
+  },
+  {
+    id: 'wochensuche-jahr-wie-die-app',
+    datei: 'supabase/functions/import-week/hefte.ts',
+    regel: 'Die Suche reicht so weit zurück, wie die App Wochen behält (VERTEILUNG_WOCHEN).',
+    suchen: 'export const RUECKBLICK_WOCHEN = 52\n',
+    ersetzen: 'export const RUECKBLICK_WOCHEN = 26\n',
   },
   {
     id: "import-ab-nicht-vor-der-frist",
@@ -8481,7 +8595,7 @@ export const KATALOG = [
   {
     id: 'holen-varianten-nur-was-kommt',
     datei: 'src/planen/useWochenImport.ts',
-    regel: 'Sprachvarianten holt „Holen" nur für Wochen, die noch kommen — vergangene findet import-week nicht mehr, und jeder Abruf fragte sie erneut.',
+    regel: 'Sprachvarianten holt „Holen" nur für Wochen, die noch kommen — vergangene braucht niemand in einer weiteren Sprache, und seit import-week ein Jahr zurück findet, holte jeder Abruf sie alle neu.',
     suchen: '    const luecken = missingVariants(state.weeks, altCodes, langCode).filter(\n      (luecke) => !istVorbei(weekEndMs(luecke.start), fromIso(heute)),\n    )\n',
     ersetzen: '    const luecken = missingVariants(state.weeks, altCodes, langCode)\n',
   },
@@ -8885,21 +8999,21 @@ export const KATALOG = [
     suchen:
       "      titel: 'Abwesenheiten',\n" +
       "      skript: 'abwesenheiten-importieren.mjs',\n" +
-      '      argv: [...cong, ...trocken],\n' +
+      '      argv: [...seit, ...cong, ...trocken],\n' +
       '    },\n' +
       '    {\n' +
-      '      titel: `Wochenprogramme von jw.org (${arg.wochen ?? 8})`,\n' +
+      "      titel: `Wochenprogramme von jw.org (${arg.wochen ?? 8}${seit.length ? ` ab ${arg.ab}` : ''})`,\n" +
       "      skript: 'wochen-importieren.mjs',\n" +
-      "      argv: ['--anzahl', String(arg.wochen ?? 8), ...cong, ...trocken],\n",
+      "      argv: ['--anzahl', String(arg.wochen ?? 8), ...seit, ...cong, ...trocken],\n",
     ersetzen:
-      '      titel: `Wochenprogramme von jw.org (${arg.wochen ?? 8})`,\n' +
+      "      titel: `Wochenprogramme von jw.org (${arg.wochen ?? 8}${seit.length ? ` ab ${arg.ab}` : ''})`,\n" +
       "      skript: 'wochen-importieren.mjs',\n" +
-      "      argv: ['--anzahl', String(arg.wochen ?? 8), ...cong, ...trocken],\n" +
+      "      argv: ['--anzahl', String(arg.wochen ?? 8), ...seit, ...cong, ...trocken],\n" +
       '    },\n' +
       '    {\n' +
       "      titel: 'Abwesenheiten',\n" +
       "      skript: 'abwesenheiten-importieren.mjs',\n" +
-      '      argv: [...cong, ...trocken],\n',
+      '      argv: [...seit, ...cong, ...trocken],\n',
   },
 ]
 

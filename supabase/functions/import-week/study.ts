@@ -14,7 +14,8 @@ export const MONTHS: Record<string, number> = {
   juli: 7, august: 8, september: 9, oktober: 10, november: 11, dezember: 12,
 }
 
-const MONTH_SLUG = [
+/** Die Monate, wie jw.org sie in Adressen schreibt — auch die Ausgaben des Arbeitshefts (`hefte.ts`). */
+export const MONTH_SLUG = [
   'januar', 'februar', 'maerz', 'april', 'mai', 'juni',
   'juli', 'august', 'september', 'oktober', 'november', 'dezember',
 ]
