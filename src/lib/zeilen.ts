@@ -1,7 +1,7 @@
 /**
  * **Zeilen der Datenbank ↔ App-Objekte** — für die Tabellen, die auch die
- * Wartungsskripte lesen: Personen, Grundplan-Regeln, Gruppenbesuche,
- * vorgemerkte Vorträge.
+ * Wartungsskripte lesen: Personen, Abwesenheiten, Grundplan-Regeln,
+ * Gruppenbesuche, vorgemerkte Vorträge.
  *
  * Eine eigene Datei ohne Supabase-Client (5.10.2026): `data.ts` hängt an
  * `supabase.ts` und damit an `import.meta.env` — außerhalb von Vite lädt es
@@ -13,7 +13,7 @@
 import { ROLE_ORDER } from '../data/constants'
 import { normalizePriv } from '../data/namensbindung'
 import { kurzeZeit } from '../../supabase/functions/_shared/planung.ts'
-import type { FsRule, Gruppenbesuch, Person, Qualifications, Role } from '../data/types'
+import type { Absence, FsRule, Gruppenbesuch, Person, Qualifications, Role } from '../data/types'
 import type { VorgemerkterVortrag } from '../data/vortragsplan'
 
 /* ---- Row-Typen (Spalten aus supabase/schema.sql) ------------------------ */
@@ -32,6 +32,20 @@ export interface PersonRow {
   priv: Qualifications
   grp: string | null
   fam: string | null
+}
+
+/**
+ * Eine Abwesenheit — von Datum bis Datum, am Wochenindex hängt nichts. Die
+ * Skripte lesen sie seit dem 18.10.2026 mit: Der feste Studienleiter kommt nur
+ * in eine Woche, in der er da ist (`festenWtLeiterEintragen`).
+ */
+export interface AbsenceRow {
+  id: string
+  person_id: string | null
+  user_id: string | null // NULL = importiert (kein Konto dahinter)
+  from_date: string
+  to_date: string
+  reason: string
 }
 
 /** Eine Grundplan-Regel der Treffpunkte — seit T105 eine Zeile statt JSONB. */
@@ -102,6 +116,17 @@ export function personToRow(p: Person, congregationId: string) {
     priv: p.priv,
     grp: p.grp ?? null,
     fam: p.fam ?? null,
+  }
+}
+
+export function absenceFromRow(r: AbsenceRow): Absence {
+  return {
+    id: r.id,
+    personId: r.person_id,
+    userId: r.user_id,
+    from: r.from_date,
+    to: r.to_date,
+    reason: r.reason,
   }
 }
 

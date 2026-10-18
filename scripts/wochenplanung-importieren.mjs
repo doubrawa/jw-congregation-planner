@@ -32,8 +32,17 @@
  * Schätze/Bibellesung, Schülerteile (mit Partner), „Leben als Christ",
  * Versammlungsbibelstudium (Leiter/Leser), Ratgeber; am Wochenende Vorsitz,
  * Wachtturm-Leser, öffentlicher Vortrag (Redner + Thema, wenn vorhanden) und
- * die Lieder. Der Wochenend-Studienleiter kennt NWS nicht als eigenen Platz; er
- * bleibt offen.
+ * die Lieder.
+ *
+ * **Der Leiter des Wachtturm-Studiums** steht in NWS nicht je Woche, sondern
+ * als Einstellung der Versammlung — bis zum 18.10.2026 blieb sein Platz
+ * deshalb offen. Jetzt kommt er aus den festen Rollen der App (Personen ›
+ * Aufgabenbereiche › Feste Rollen): der feste Leiter, ist er abwesend oder am
+ * Wochenende schon eingeteilt, sein Vertreter. Dieselbe Regel wie beim Holen
+ * einer Woche (`festenWtLeiterEintragen`), nach den NWS-Zuteilungen — wer dort
+ * schon Vorsitz hat, leitet nicht auch noch. Besetzt wird nur ein leerer Platz,
+ * auch ohne `--nur-leere`: NWS weiß über ihn nichts, was einen Namen
+ * überschreiben dürfte.
  *
  * **Hilfsdienste** (NWS „Duties") werden ebenfalls gefüllt, personenbasiert und
  * je Zusammenkunft (NWS datiert sie wie die Programme: Mo = Mitte, Sa =
@@ -608,10 +617,16 @@ export async function main(argv = process.argv.slice(2)) {
   const rest = restKlient(url, key)
 
   // 1) Versammlung + App-Personen ZUERST — die NWS→App-Namensauflösung braucht
-  //    sie, um Dubletten über die stabile id aufzulösen (siehe unten).
+  //    sie, um Dubletten über die stabile id aufzulösen (siehe unten). Ganze
+  //    Zeilen: Der feste Studienleiter steht in den Bereichen (`priv`), und wann
+  //    er fehlt, sagen die Abwesenheiten und die Zeiten der Versammlung.
   const tabellen = ladeTabellen(datenDir, TABELLEN)
-  const cong = (await versammlungHolen(rest, arg)).id
-  const personen = await rest(`persons?select=id,fn,ln&congregation_id=eq.${cong}`)
+  const versammlung = await versammlungHolen(rest, arg, 'id,mid_wd,mid_time,we_wd,we_time')
+  const cong = versammlung.id
+  const [personen, abwesenheiten] = await Promise.all([
+    rest(`persons?select=*&congregation_id=eq.${cong}`),
+    rest(`absences?select=*&congregation_id=eq.${cong}&order=from_date`),
+  ])
   const nachName = new Map()
   const appById = new Map() // id → Anzeigename, für die id-basierte Auflösung
   for (const p of personen) {
@@ -644,14 +659,21 @@ export async function main(argv = process.argv.slice(2)) {
   }
 
   // Welche Plätze den Inhaber wechseln, rechnet die App selbst — deren Zusagen
-  // verfallen (siehe `zusagenLoeschen`). Wie weit zurück, ebenso (T125).
+  // verfallen (siehe `zusagenLoeschen`). Wie weit zurück, ebenso (T125), und
+  // wer das Wachtturm-Studium leitet.
   appCodeBereit()
-  const [{ changedSlotKeys }, { MEETING_TABS }, { aufbewahrtAb, VERTEILUNG_WOCHEN }] = await Promise.all([
-    import('../src/data/planning.ts'),
-    import('../src/data/helpers.ts'),
-    import('../src/data/aufbewahrung.ts'),
-  ])
+  const [{ changedSlotKeys, festenWtLeiterEintragen }, { MEETING_TABS }, { aufbewahrtAb, VERTEILUNG_WOCHEN }, zeilen, { zeitenAus }] =
+    await Promise.all([
+      import('../src/data/planning.ts'),
+      import('../src/data/helpers.ts'),
+      import('../src/data/aufbewahrung.ts'),
+      import('../src/lib/zeilen.ts'),
+      import('../supabase/functions/_shared/planung.ts'),
+    ])
   const ab = aufbewahrtAb(VERTEILUNG_WOCHEN)
+  const appPersonen = personen.map(zeilen.personFromRow)
+  const appAbwesenheiten = abwesenheiten.map(zeilen.absenceFromRow)
+  const zeiten = zeitenAus(versammlung)
 
   const wochen = await rest(`weeks?select=start,data&congregation_id=eq.${cong}&start=gte.${ab}`)
   const nachStart = new Map(wochen.map((w) => [w.start, w]))
@@ -673,6 +695,7 @@ export async function main(argv = process.argv.slice(2)) {
   // 3) Woche für Woche füllen
   let getroffen = 0, ohneWoche = 0, sonder = 0, gestrichen = 0, zuAlt = 0
   let gesetzt = 0, ohnePid = 0, fehlplatz = 0, helfer = 0, helferOhnePid = 0, helferOhneDienst = 0
+  let wtLeiter = 0, wtVertreter = 0
   const geschrieben = []
   for (const [montag, roh] of [...nwsWochen].sort((a, b) => a[0].localeCompare(b[0]))) {
     // Älter als ein Jahr: gar nicht erst hinein (T125).
@@ -694,11 +717,16 @@ export async function main(argv = process.argv.slice(2)) {
     const z = verteileWoche(zeile.data, gebunden, nurLeere, keyMap)
     gesetzt += z.gesetzt; ohnePid += z.ohnePid; fehlplatz += z.fehlplatz; gestrichen += z.gestrichen
     helfer += z.helfer; helferOhnePid += z.helferOhnePid; helferOhneDienst += z.helferOhneDienst
-    if (z.gesetzt + z.helfer > 0) {
+    // Nach den NWS-Zuteilungen: Wer dort schon eingeteilt ist, leitet nicht.
+    const wt = festenWtLeiterEintragen(zeile.data, appPersonen, appAbwesenheiten, zeiten)
+    zeile.data = wt.week
+    wtLeiter += wt.eingetragen.length
+    wtVertreter += wt.eingetragen.filter((p) => !p.priv.wtLeiter).length
+    if (z.gesetzt + z.helfer + wt.eingetragen.length > 0) {
       const verfallen = MEETING_TABS.flatMap((tab) =>
         vorher[tab] && zeile.data[tab] ? changedSlotKeys(vorher[tab], zeile.data[tab], services, montag, tab) : [],
       )
-      geschrieben.push({ montag, data: zeile.data, z, verfallen })
+      geschrieben.push({ montag, data: zeile.data, z, wt: wt.eingetragen.length, verfallen })
     }
   }
 
@@ -720,6 +748,12 @@ export async function main(argv = process.argv.slice(2)) {
   console.log(`Programmplätze gesetzt: ${gesetzt} (ohne pid/extern: ${ohnePid}) · Slots fehlten: ${fehlplatz}`)
   console.log(`Hilfsdienst-Plätze gesetzt: ${helfer} (ohne pid: ${helferOhnePid})`)
   if (helferOhneDienst) console.log(`  ! ${helferOhneDienst} Hilfsdienst-Plätze ohne passenden App-Dienst — nicht geschrieben (siehe Zuordnung oben).`)
+  console.log(`Leiter des Wachtturm-Studiums eingetragen: ${wtLeiter} (davon Vertreter: ${wtVertreter})`)
+  // Hat niemand eine der festen Rollen, bleibt der Platz in jeder Woche offen —
+  // das soll auffallen, statt still auszubleiben (etwa: Personen nicht neu erzeugt).
+  if (!appPersonen.some((p) => p.priv.wtLeiter || p.priv.wtVertreter)) {
+    console.log('  ! Niemand hat die feste Rolle „Wachtturm-Studium-Leiter" oder „Vertreter" — der Platz bleibt offen.')
+  }
   const skips = Object.entries(uebersprungen).map(([k, n]) => `${k}: ${n}`).join(' · ')
   if (skips) console.log(`Dienste ohne Import (nur gezählt): ${skips}`)
   if (dubletten.size) console.log(`Mehrdeutige Namen (nur Name, keine pid): ${[...dubletten].join(', ')}`)
@@ -732,7 +766,7 @@ export async function main(argv = process.argv.slice(2)) {
   if (arg.trocken) {
     console.log('\n--trocken: nichts geschrieben.')
     for (const g of geschrieben.slice(0, 3)) {
-      console.log(`  ${g.montag}: ${g.z.gesetzt} Programm- + ${g.z.helfer} Hilfsdienst-Plätze`)
+      console.log(`  ${g.montag}: ${g.z.gesetzt} Programm- + ${g.z.helfer} Hilfsdienst-Plätze${g.wt ? ' + Leiter des Wachtturm-Studiums' : ''}`)
     }
     if (verfallen) console.log(`  ${verfallen} geänderte Plätze — eine Zusage daran fiele weg.`)
     return

@@ -49,6 +49,8 @@ import type {
 } from '../data/types'
 import { supabase } from './supabase'
 import {
+  type AbsenceRow,
+  absenceFromRow,
   type FsRuleRow,
   fsRuleFromRow,
   fsRuleToRow,
@@ -65,9 +67,9 @@ import {
 import type { VorgemerkterVortrag } from '../data/vortragsplan'
 
 /* ---- Row-Typen (Spalten aus supabase/schema.sql) ------------------------ */
-// Personen, Grundplan-Regeln, Gruppenbesuche und vorgemerkte Vorträge stehen
-// in `zeilen.ts` — die lesen auch die Wartungsskripte, und dort hängt nichts
-// am Client.
+// Personen, Abwesenheiten, Grundplan-Regeln, Gruppenbesuche und vorgemerkte
+// Vorträge stehen in `zeilen.ts` — die lesen auch die Wartungsskripte, und dort
+// hängt nichts am Client.
 
 interface ServiceRow {
   key: string
@@ -235,15 +237,6 @@ interface WeekRow {
   updated_at: string
 }
 
-interface AbsenceRow {
-  id: string
-  person_id: string | null
-  user_id: string | null // NULL = importiert (kein Konto dahinter)
-  from_date: string
-  to_date: string
-  reason: string
-}
-
 interface NotificationRow {
   id: string
   type: string
@@ -375,17 +368,6 @@ interface AbsageRow {
 
 function absageFromRow(r: AbsageRow): Absage {
   return { personId: r.person_id, taskKey: r.task_key }
-}
-
-function absenceFromRow(r: AbsenceRow): Absence {
-  return {
-    id: r.id,
-    personId: r.person_id,
-    userId: r.user_id,
-    from: r.from_date,
-    to: r.to_date,
-    reason: r.reason,
-  }
 }
 
 /*

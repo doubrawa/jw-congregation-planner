@@ -11,7 +11,11 @@
  *
  * **Die Reihenfolge ist nicht frei.** `versammlung-zuruecksetzen.mjs` leert
  * `weeks` mit, also kommen die Wochen danach; die Wochenplanung trägt Namen in
- * Wochen ein, braucht also beide; Treffpunkte brauchen die Wochen ebenso.
+ * Wochen ein, braucht also beide; Treffpunkte brauchen die Wochen ebenso. Die
+ * Abwesenheiten kommen vor die Wochen (18.10.2026): Beim Holen und beim
+ * Wochenplan-Import kommt der feste Leiter des Wachtturm-Studiums in jede
+ * Woche, und ob er da ist oder sein Vertreter leitet, sagen sie. Danach
+ * geholt, stünde er auch in den Wochen, in denen er verreist ist.
  *
  * ---------------------------------------------------------------- Aufruf ----
  *
@@ -104,6 +108,11 @@ export function schritte(arg) {
       argv: ['--sql', String(arg.sql), ...cong, ...trocken],
     },
     {
+      titel: 'Abwesenheiten',
+      skript: 'abwesenheiten-importieren.mjs',
+      argv: [...cong, ...trocken],
+    },
+    {
       titel: `Wochenprogramme von jw.org (${arg.wochen ?? 8})`,
       skript: 'wochen-importieren.mjs',
       argv: ['--anzahl', String(arg.wochen ?? 8), ...cong, ...trocken],
@@ -111,11 +120,6 @@ export function schritte(arg) {
     {
       titel: 'Zuteilungen, Hilfsdienste und Reinigung',
       skript: 'wochenplanung-importieren.mjs',
-      argv: [...cong, ...trocken],
-    },
-    {
-      titel: 'Abwesenheiten',
-      skript: 'abwesenheiten-importieren.mjs',
       argv: [...cong, ...trocken],
     },
     {

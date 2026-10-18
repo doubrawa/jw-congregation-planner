@@ -957,8 +957,9 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       if (state.weeks.some((w) => w.start === action.week.start)) {
         return { ...state, importing: false, toast: toastKey(state, 'toastAlleWochen') }
       }
-      // Endzeiten, Zusätzliche Klasse, Gedächtnismahl, Treffpunkte: dieselbe
-      // Einordnung wie im Skript `wochen-importieren.mjs` (`neue-woche.ts`).
+      // Endzeiten, Zusätzliche Klasse, Gedächtnismahl, Treffpunkte, Vortrag und
+      // fester Studienleiter: dieselbe Einordnung wie im Skript
+      // `wochen-importieren.mjs` (`neue-woche.ts`).
       const { week, fsWeek } = neueWocheEinordnen(action.week, {
         zeiten: state.congregation.times,
         auxClass: state.auxClass,
@@ -966,6 +967,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         gruppenbesuche: state.gruppenbesuche,
         vortraege: state.vortraege,
         persons: state.persons,
+        absences: state.absences,
       })
       return {
         ...state,

@@ -9,10 +9,12 @@ import { congMitSchrittEins, fehlendeAngaben, PFLICHT, schritte } from './neuauf
  * Liste im README unvollständig war. Gemessen wird deshalb die Liste selbst —
  * ohne irgendetwas zu starten.
  *
- * Zwei Reihenfolgen sind keine Geschmacksfrage, sondern Datenverlust:
- * `versammlung-zuruecksetzen.mjs` leert `weeks` mit, muss also **vor** dem
- * Wochen-Import laufen; die Wochenplanung trägt Namen in Wochen ein und
- * braucht deshalb beide.
+ * Drei Reihenfolgen sind keine Geschmacksfrage, sondern Datenverlust oder ein
+ * falscher Plan: `versammlung-zuruecksetzen.mjs` leert `weeks` mit, muss also
+ * **vor** dem Wochen-Import laufen; die Wochenplanung trägt Namen in Wochen
+ * ein und braucht deshalb beide; und die Abwesenheiten kommen vor die Wochen,
+ * weil mit jeder Woche der feste Leiter des Wachtturm-Studiums hineinkommt —
+ * nur dort, wo er da ist (18.10.2026).
  */
 
 const vollstaendig = {
@@ -56,11 +58,22 @@ describe('schritte', () => {
     expect(namen(vollstaendig)).toEqual([
       'versammlung-anlegen.mjs',
       'versammlung-zuruecksetzen.mjs',
+      'abwesenheiten-importieren.mjs',
       'wochen-importieren.mjs',
       'wochenplanung-importieren.mjs',
-      'abwesenheiten-importieren.mjs',
       'treffpunkte-importieren.mjs',
     ])
+  })
+
+  it('holt die Abwesenheiten vor den Wochen — sonst leitete der Verreiste das Wachtturm-Studium', () => {
+    // Beim Holen (`neueWocheEinordnen`) und beim Wochenplan-Import kommt der
+    // feste Studienleiter in die Woche, und nur die Abwesenheiten sagen, wann
+    // sein Vertreter dran ist. Erst danach geholt, gälte er überall als da.
+    const liste = namen(vollstaendig)
+    const abwesenheiten = liste.indexOf('abwesenheiten-importieren.mjs')
+    expect(abwesenheiten).toBeGreaterThan(liste.indexOf('versammlung-zuruecksetzen.mjs'))
+    expect(abwesenheiten).toBeLessThan(liste.indexOf('wochen-importieren.mjs'))
+    expect(abwesenheiten).toBeLessThan(liste.indexOf('wochenplanung-importieren.mjs'))
   })
 
   it('holt die Wochen erst nach dem Zurücksetzen', () => {
@@ -103,8 +116,8 @@ describe('schritte', () => {
 
   it('setzt mit --ab-schritt fort, ohne die vorigen zu wiederholen', () => {
     // Nach einem Abbruch: Schritt 1 legte sonst eine zweite Versammlung an.
-    const liste = schritte({ ...vollstaendig, 'ab-schritt': '3' })
-    expect(liste.map((s) => s.nr)).toEqual([3, 4, 5, 6])
+    const liste = schritte({ ...vollstaendig, 'ab-schritt': '4' })
+    expect(liste.map((s) => s.nr)).toEqual([4, 5, 6])
     expect(liste[0].skript).toBe('wochen-importieren.mjs')
   })
 

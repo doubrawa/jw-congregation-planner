@@ -489,7 +489,7 @@ export const DE = {
     // Sprachen nennen Schritte im Infinitiv und Knöpfe im Imperativ (it).
     holtProgramm: 'Das Programm wird geholt …', spurHolen: 'Holen', spurPruefen: 'Prüfen',
     programmpunkteN: 'Programmpunkte: {n}', punkteN: 'Punkte: {n}',
-    holenHinweis: 'Feste Rollen und Abwesenheiten werden beim Zuteilen beachtet.',
+    holenHinweis: 'Beim Übernehmen kommt der feste Leiter des Wachtturm-Studiums gleich mit, bei Abwesenheit sein Vertreter. Abwesenheiten werden beim Zuteilen beachtet.',
     uebernehmenZuteilen: 'Übernehmen und zuteilen', nurUebernehmen: 'Nur übernehmen',
     auchZuPlanen: 'Auch zu planen', treffpunkteBesuche: 'Treffpunkte und Gruppenbesuche',
     aktuellLbl: 'Aktuell:', entfernen: 'Entfernen', abwesendChip: 'Abwesend',
@@ -584,7 +584,7 @@ export const DE = {
     privBibellesung: 'Bibellesung', privLeser: 'Leser',
     geschlecht: 'Geschlecht', bruder: 'Bruder', schwester: 'Schwester',
     privWtLeiter: 'Wachtturm-Studium-Leiter', privWtVertreter: 'Vertreter (Wachtturm-Studium)',
-    wtRollenLabel: 'Feste Rollen',wtRollenHint: 'Fester Wachtturm-Studium-Leiter; der Vertreter springt bei Abwesenheit ein.',
+    wtRollenLabel: 'Feste Rollen',wtRollenHint: 'Der feste Leiter des Wachtturm-Studiums kommt von selbst in jede neue Woche, bei Abwesenheit sein Vertreter.',
     // Die Warnung über der Personenliste, wenn eine feste Rolle mehrfach vergeben ist.
     wtRollenDoppeltHint: 'Leiter und Vertreter sind je eine Person. Ist eine Rolle mehrfach vergeben, nimmt die automatische Zuteilung irgendeinen davon. Tippe auf einen Namen, um die Rolle dort abzuschalten.',
     // `s89Partner` beschriftet drei Flächen: den Druckbogen, den einzelnen

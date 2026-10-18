@@ -295,7 +295,8 @@ Abwesende aus und vergibt niemanden doppelt am selben Tag. Ausnahmen: Der
 Vorsitz spricht das Anfangsgebet und hält den **Vortrag des Vorsitzenden**,
 wo das Arbeitsheft einen nennt – beide Plätze folgen ihm (von Hand änderbar).
 Und den Leiter des Wachtturm-Studiums bestimmen **feste Rollen**, wenn dafür
-welche vergeben sind (siehe [Personen verwalten](#6-personen-verwalten)). Externe Redner
+welche vergeben sind – meist steht er schon seit dem Holen in der Woche (siehe
+[Aufgabenbereiche](#aufgabenbereiche)). Externe Redner
 (Gastredner, Kreisaufseher) bleiben offen und werden manuell eingetragen. Nach dem
 Zuteilen kannst du einzelne Slots wie gewohnt noch von Hand anpassen.
 
@@ -1186,12 +1187,20 @@ Rollen in ihrer Folge.
   - **Wachtturm-Studium-Leiter** – der feste Leiter des Wachtturm-Studiums.
   - **Vertreter (Wachtturm-Studium)** – sein Vertreter.
 
-  Leiter und Vertreter wirken beim automatischen Zuteilen: Den Leiter-Platz des
-  Wachtturm-Studiums bekommt zuerst der feste Leiter, ist er an dem Tag
-  abwesend oder schon eingeteilt, sein Vertreter. Fehlen beide, verteilt die
-  Automatik den Platz wie jeden anderen unter allen mit dem Bereich **Studium
-  leiten**. Jede der beiden Rollen gehört genau einer Person; ist eine
-  mehrfach vergeben, warnt die Personenliste (siehe
+  Den Leiter-Platz des Wachtturm-Studiums bekommt der feste Leiter von selbst:
+  Schon beim **Holen** einer Woche steht er darin (siehe
+  [Programm holen](#8-programm-holen)), und das automatische Zuteilen nimmt ihn
+  ebenso zuerst. Ist er am Tag der Zusammenkunft abwesend oder schon
+  eingeteilt – etwa mit dem öffentlichen Vortrag –, kommt sein Vertreter.
+  Fehlen beide, bleibt der Platz beim Holen offen, und die Automatik verteilt
+  ihn wie jeden anderen unter allen mit dem Bereich **Studium leiten**.
+
+  Trägt der Leiter eine Abwesenheit erst ein, wenn er schon in der Woche steht,
+  ändert sich der Plan nicht von selbst: Die Planung meldet den Konflikt (siehe
+  [Konflikte und offene Zuteilungen](#4-konflikte-und-offene-zuteilungen)), und
+  beim Zuteilen steht sein Vertreter als **Vorschlag** oben. Jede der beiden
+  Rollen gehört genau einer Person; ist eine mehrfach vergeben, warnt die
+  Personenliste (siehe
   [Warnung: feste Rolle mehrfach vergeben](#warnung-feste-rolle-mehrfach-vergeben)).
 
 ### Rechte
@@ -1674,6 +1683,12 @@ und die Programmsprachen. Dann wählst du:
   und Abwesenheiten werden dabei beachtet.
 - **Nur übernehmen** – die Woche kommt dazu; zugeteilt wird später.
 - **Abbrechen** – nichts ändert sich.
+
+Mit beiden Arten zu übernehmen steht der **feste Leiter des Wachtturm-Studiums**
+gleich in der Woche – ist er am Tag der Zusammenkunft abwesend oder schon
+eingeteilt (etwa mit dem öffentlichen Vortrag aus dem Vortragsplan), sein
+Vertreter. Kann keiner von beiden oder ist keine feste Rolle vergeben, bleibt
+der Platz offen (siehe [Aufgabenbereiche](#aufgabenbereiche)).
 
 Jedes Holen bringt genau eine weitere Woche, und es läuft nicht von selbst.
 Liegt die zuletzt geholte Woche schon zurück, beginnt es bei der laufenden –

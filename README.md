@@ -373,14 +373,17 @@ Was er nacheinander tut — und was fehlte, wenn man einen Schritt ausließe:
 | --- | --- | --- |
 | 1 | `scripts/versammlung-anlegen.mjs` | Versammlung, Planer-Person, Standard-Dienste, sein Anmelde-Link |
 | 2 | `scripts/versammlung-zuruecksetzen.mjs --sql <personen.sql>` | Personen, Gruppen, Haushalte |
-| 3 | `scripts/wochen-importieren.mjs --anzahl 8` | die Programme |
-| 4 | `scripts/wochenplanung-importieren.mjs` | Zuteilungen, Hilfsdienste, Reinigung |
-| 5 | `scripts/abwesenheiten-importieren.mjs` | **die Abwesenheiten** — ohne sie plant die App gegen einen leeren Kalender |
+| 3 | `scripts/abwesenheiten-importieren.mjs` | **die Abwesenheiten** — ohne sie plant die App gegen einen leeren Kalender |
+| 4 | `scripts/wochen-importieren.mjs --anzahl 8` | die Programme, mit dem festen Leiter des Wachtturm-Studiums |
+| 5 | `scripts/wochenplanung-importieren.mjs` | Zuteilungen, Hilfsdienste, Reinigung |
 | 6 | `scripts/treffpunkte-importieren.mjs` | die Leiter der Treffpunkte |
 
 **Die Reihenfolge ist nicht frei:** Schritt 2 leert `weeks`, `absences` und
 `fs_weeks` mit — die Wochen kommen deshalb danach, und die Zuteilungen brauchen
-beides. Diese Liste stand bis zum 18. September 2026 unvollständig im README,
+beides. Die Abwesenheiten stehen vor den Wochen (18.10.2026): Mit jeder Woche
+kommt der feste Leiter des Wachtturm-Studiums hinein, und wo er fehlt, sein
+Vertreter — das wissen erst die Abwesenheiten. Diese Liste stand bis zum
+18. September 2026 unvollständig im README,
 und genau deshalb lief ein Neuaufbau ohne die Abwesenheiten durch; seitdem hält
 `neuaufbau-fahren.test.ts` die Reihenfolge fest, statt sie dem Gedächtnis zu
 überlassen.

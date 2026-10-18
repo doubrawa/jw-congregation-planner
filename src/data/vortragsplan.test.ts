@@ -324,6 +324,7 @@ describe('Eine später angelegte Woche bekommt ihren vorgemerkten Vortrag', () =
       gruppenbesuche: [],
       vortraege: [vorgemerkt],
       persons: PERSONEN,
+      absences: [],
     })
     expect(vortragDerWoche(week)).toEqual({ redner: 'Peter Beispiel', versammlung: '', eigener: true, pid: 'p1', thema: 'Demo-Thema 2', lied: '27' })
   })

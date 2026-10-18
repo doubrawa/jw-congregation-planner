@@ -7561,6 +7561,70 @@ Hülle) liegen im Übergabe-Ordner der Sitzung von T127
 (`side-session-notes\local_51bededf-…\umbruch-werkzeug\`) — fehlen sie, neu
 schreiben.
 
+---
+
+## Aufgenommen am 18. Oktober 2026 — Fester Leiter des Wachtturm-Studiums (T129)
+
+### T129 · Der feste Leiter steht von selbst in der Woche, bei Abwesenheit sein Vertreter 🔧 ✅ erledigt (18. Oktober 2026)
+
+**Auftrag (18. Oktober, über die Sitzung der NWS-Auswertung):** In der
+Versammlung leitet immer derselbe Bruder das Wachtturm-Studium. Sein Platz soll
+beim Planen von selbst besetzt sein, und ist er abwesend, mit seinem Vertreter.
+Nach einem NWS-Import sollen beide die richtige Rolle haben und die
+importierten Wochen den Platz besetzt bekommen — NWS führt den Studienleiter
+nur als Einstellung der Versammlung, nicht je Woche.
+
+**Was es schon gab:** die festen Rollen `wtLeiter`/`wtVertreter` (Personen ›
+Aufgabenbereiche › Feste Rollen); mit ihnen nahmen „Automatisch" und der
+Vorschlag im Zuteilen-Blatt den Leiter zuerst. Es fehlte: Der
+Personen-Generator setzte die Rollen nie, und „Nur übernehmen",
+`wochen-importieren.mjs` und der Wochenplan-Import ließen den Platz offen.
+
+**Entschieden (Betreiber, 18. Oktober):** Beim Holen eintragen, auch bei „Nur
+übernehmen". Kommt eine Abwesenheit erst danach, bleibt es beim
+Konflikt-Hinweis — die App ändert keinen Plan von selbst. Die beiden Personen
+fest im Generator hinterlegen („merk das einfach fix für unsere Versammlung"),
+als NWS-Ids in `nws-export`, nicht im Repo.
+
+**Umgesetzt:**
+
+- Eine Regel, `festerWtLeiter` (`src/data/planning.ts`): der Leiter, sonst der
+  Vertreter, jeder nur anwesend und in der Zusammenkunft noch nicht eingeteilt.
+  Daraus lesen `rangfolgeLeiter` (Automatik, Vorschlag) und
+  `festenWtLeiterEintragen`, das den leeren Leiter-Platz einer Woche besetzt —
+  nicht in einer gestrichenen Zusammenkunft. Die Sperrliste der schon
+  Eingeteilten (`eingeteilte`) und die Leiter-Plätze (`wtLeiterPlaetze`)
+  teilen sich beide.
+- `neueWocheEinordnen` trägt ihn nach dem Vortrag ein (hält der Leiter den
+  Vortrag, leitet der Vertreter) — für den Knopf in der App und
+  `wochen-importieren.mjs`; beide reichen die Abwesenheiten mit
+  (`absenceFromRow` jetzt in `src/lib/zeilen.ts`).
+- `wochenplanung-importieren.mjs` setzt ihn nach den NWS-Zuteilungen, liest
+  dafür Personen, Abwesenheiten und die Zeiten der Versammlung, schreibt eine
+  Woche auch, wenn nur er dazukam, und meldet „Leiter des Wachtturm-Studiums
+  eingetragen: n (davon Vertreter: m)" — ohne feste Rollen mit einer Warnung.
+- Neuaufbau: die Abwesenheiten vor den Wochen (`neuaufbau-fahren.mjs`, README,
+  Übergabeliste in `versammlung-zuruecksetzen.mjs`).
+- Generator (`nws-export/build-personen-sql.mjs`, kein Repo): `WT_ROLLEN` mit
+  den beiden NWS-Ids; jeder Lauf nennt beide. Gegenprobe mit beiden NWS-Ständen:
+  Am SQL ändern sich genau die zwei Personen, nur um ihre Rolle.
+- Texte: `holenHinweis` und `wtRollenHint` neu, in allen zwölf Sprachen.
+  Handbuch (Planer): Automatisch, Aufgabenbereiche › Feste Rollen, Programm
+  holen.
+- Proben: `fester-wt-leiter.test.ts` (Anwendungsfälle, Gleichstand mit
+  „Automatisch", über `neueWocheEinordnen`), Reducer, Schema-Probe für beide
+  Skripte, Reihenfolge im Neuaufbau. Mutationskatalog: 14 Einträge neu, drei
+  nachgezogen, alle bewacht.
+- Im Browser geprüft (`/demo.html`, Dev-Server aus dem Worktree): „Nur
+  übernehmen" bringt den festen Leiter mit, mit einer Abwesenheit am Sonntag
+  den Vertreter; eine nachgetragene Abwesenheit zeigt den Konflikt, und das
+  Zuteilen-Blatt schlägt den Vertreter vor. Die Texte auf Deutsch, Französisch
+  und Persisch.
+
+**Im Live-Bestand** stehen Rollen und Leiter erst mit dem nächsten Neuaufbau
+(Generator, dann Zurücksetzen); bis dahin lassen sich die Rollen in der App
+setzen (Personen › Aufgabenbereiche › Feste Rollen).
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -7597,9 +7661,9 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 22./23. August ☑☑☑☑☑☑☑☑☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
-10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☐
+10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☐☑
 
-**126 der 128 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+**127 der 129 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen sind zwei:**
 
 | | Aufgabe | Stand |
@@ -8015,7 +8079,9 @@ Am 18. Oktober nach der Messung oben dazugekommen und am selben Tag
 geschlossen: **T127** (Gruppen aus der Reinigung nehmen; Spalte ausgerollt,
 dann gepusht) — damit 127 Köpfe, offen weiter nur T121. Danach dazugekommen
 und offen: **T128** (Umbruch mitten im Wort) — damit 128 Köpfe, offen T121 und
-T128.
+T128. Danach dazugekommen und am selben Tag geschlossen: **T129** (der feste
+Leiter des Wachtturm-Studiums steht von selbst in der Woche) — damit 129 Köpfe,
+offen weiter T121 und T128.
 
 Am 18. Oktober aus der Tabelle genommen: **Kachel und Liste der Absagen zählen
 verschieden** — entschieden, die Kachel zählt jetzt wie die Liste nur die

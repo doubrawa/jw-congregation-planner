@@ -21,6 +21,9 @@
  *  - **Öffentlicher Vortrag**, wenn er aus dem Vortragsplan vorgemerkt ist
  *    (T122): Das Planungsprogramm plant Monate voraus, die Woche kommt erst
  *    mit ihrem Programm.
+ *  - **Der feste Leiter des Wachtturm-Studiums** (18.10.2026), bei Abwesenheit
+ *    sein Vertreter (`festenWtLeiterEintragen`) — nach dem Vortrag: Hält der
+ *    Leiter ihn selbst, leitet der Vertreter.
  *
  * Eine Funktion für den Knopf in der App (`addImportedWeek`) und das Skript
  * `scripts/wochen-importieren.mjs` — Gleichstand durch Bauart, nicht durch
@@ -36,7 +39,8 @@ import { syncAuxSlots } from './aux-class'
 import { genFsWeek } from './fs'
 import { besucheInNeueWoche } from './gruppenbesuche'
 import { endeAusStartzeit } from './meeting-edit'
-import type { FsInstance, FsRule, Gruppenbesuch, MeetingTimes, Person, Week } from './types'
+import { festenWtLeiterEintragen } from './planning'
+import type { Absence, FsInstance, FsRule, Gruppenbesuch, MeetingTimes, Person, Week } from './types'
 import { vortragInNeueWoche, type VorgemerkterVortrag } from './vortragsplan'
 
 export interface NeueWocheKontext {
@@ -48,6 +52,8 @@ export interface NeueWocheKontext {
   /** Vorgemerkte öffentliche Vorträge (T122). */
   vortraege: readonly VorgemerkterVortrag[]
   persons: readonly Person[]
+  /** Wer wann fehlt — der feste Studienleiter kommt nur in die Woche, wenn er da ist. */
+  absences: readonly Absence[]
 }
 
 /** Die Woche, wie die Versammlung sie speichert, und ihre Treffpunkte. */
@@ -62,6 +68,7 @@ export function neueWocheEinordnen(roh: Week, k: NeueWocheKontext): { week: Week
   if (mem) wochen = setAnlassTermin(wochen, 0, { von: mem })
   const fsWeek = besucheInNeueWoche(genFsWeek(roh.start, k.fsRules), roh.start, k.gruppenbesuche, k.persons)
   // Nach dem Gedächtnismahl: Fällt es aufs Wochenende, bleibt der Vortrag weg.
-  const week = vortragInNeueWoche(wochen[0] ?? mitEnden, k.vortraege, k.persons)
+  const mitVortrag = vortragInNeueWoche(wochen[0] ?? mitEnden, k.vortraege, k.persons)
+  const { week } = festenWtLeiterEintragen(mitVortrag, k.persons, k.absences, k.zeiten)
   return { week, fsWeek }
 }

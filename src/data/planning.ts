@@ -9,7 +9,7 @@
  * den Reducer und später direkt testbar.
  */
 
-import { istAbwesend, KEINE_ABWESENHEIT, type AbsenceSet } from './absence'
+import { buildAbsences, istAbwesend, KEINE_ABWESENHEIT, type AbsenceSet } from './absence'
 import { allePlaetze, gespeicherteHelfer, platzKey, platzMitZusage, type Platz } from './plaetze'
 import { istSchuelerBereich, programmPlaetze, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
 import {
@@ -48,6 +48,7 @@ import {
 import { ersteZahl } from './ziffern'
 import { folgtDemVorsitz } from '../../supabase/functions/_shared/planung.ts'
 import type {
+  Absence,
   ConfirmationMap,
   Group,
   Meeting,
@@ -561,6 +562,34 @@ function reinigendeGruppen(meeting: Meeting, services: Service[], groups: Group[
   return groups.filter((g) => namen.has(g.name))
 }
 
+/**
+ * **Wer in dieser Zusammenkunft schon eingeteilt ist** — als Person-Ids. Nach
+ * Id: zwei Personen desselben Namens sperrten sich sonst gegenseitig, obwohl
+ * nur eine dran ist.
+ *
+ * Über **alle vier Platzsorten**: die Plätze der Zusätzlichen Klasse sind
+ * gleichwertige Zuteilungen. Gelesen wurde hier lange nur `item.names` — wer
+ * von Hand in die Klasse eingeteilt war, fehlte in dieser Menge und bekam vom
+ * nächsten Lauf zusätzlich einen Platz im Hauptsaal. Dieselbe Person zur
+ * selben Zeit in zwei Räumen, und niemand sah es: die Klasse steht in der
+ * Ansicht daneben, nicht darin. Die Hilfsdienste über **alles Gespeicherte**:
+ * Wer hinter einer nachträglich verkleinerten Platzzahl steht, ist trotzdem
+ * eingeteilt und darf nicht zusätzlich drankommen.
+ *
+ * Damit beginnt die Sperrliste der Automatik (`waehler`), und dasselbe fragt
+ * der feste Studienleiter einer neuen Woche (`festenWtLeiterEintragen`).
+ */
+function eingeteilte(meeting: Meeting, werIst: (z: Zuteilung | undefined) => string | undefined): Set<string> {
+  const ids = new Set<string>()
+  const merken = (slot: Zuteilung | undefined): void => {
+    const id = werIst(slot)
+    if (id) ids.add(id)
+  }
+  for (const platz of allePlaetze(meeting)) merken(platz.slot)
+  for (const { slot } of gespeicherteHelfer(meeting)) merken(slot)
+  return ids
+}
+
 function waehler(
   weeks: Week[],
   weekIndex: number,
@@ -597,25 +626,9 @@ function waehler(
   // nach Id geführt, nicht nach Name (siehe idAufloeser).
   const werIst = idAufloeser(persons)
 
-  // Wer in dieser Zusammenkunft schon eingeteilt ist. Nach Id: zwei Personen
-  // desselben Namens sperrten sich sonst gegenseitig, obwohl nur eine dran ist.
-  //
-  // Über **alle vier Platzsorten**: die Plätze der Zusätzlichen Klasse sind
-  // gleichwertige Zuteilungen. Gelesen wurde hier lange nur `item.names` — wer
-  // von Hand in die Klasse eingeteilt war, fehlte in dieser Menge und bekam vom
-  // nächsten Lauf zusätzlich einen Platz im Hauptsaal. Dieselbe Person zur
-  // selben Zeit in zwei Räumen, und niemand sah es: die Klasse steht in der
-  // Ansicht daneben, nicht darin.
-  const used = new Set<string>()
-  const merken = (slot: Zuteilung | undefined): void => {
-    const id = werIst(slot)
-    if (id) used.add(id)
-  }
-  for (const platz of allePlaetze(meeting)) merken(platz.slot)
-  // Hilfsdienste über **alles Gespeicherte**: Wer hinter einer nachträglich
-  // verkleinerten Platzzahl steht, ist trotzdem eingeteilt und darf nicht
-  // zusätzlich drankommen.
-  for (const { slot } of gespeicherteHelfer(meeting)) merken(slot)
+  // Wer in dieser Zusammenkunft schon eingeteilt ist — die Sperrliste, die der
+  // Lauf in `vergeben` fortschreibt.
+  const used = eingeteilte(meeting, werIst)
 
   // Gleitendes Fenster: nur ±LOAD_RADIUS Wochen um die geplante Woche zählen,
   // damit uralte Einteilungen die aktuelle Verteilung nicht verzerren. Dasselbe
@@ -709,9 +722,7 @@ function waehler(
   const pick: Waehler['pick'] = (kind, priv, opts) => rangfolge(kind, priv, opts)[0] ?? null
 
   const rangfolgeLeiter = (): Person[] => {
-    const designated = (flag: 'wtLeiter' | 'wtVertreter'): Person | undefined =>
-      persons.find((p) => p.priv[flag] && !istAbwesend(abwesend, p.id, weekIndex, tab) && !used.has(p.id))
-    const fest = designated('wtLeiter') ?? designated('wtVertreter')
+    const fest = festerWtLeiter(persons, (p) => !istAbwesend(abwesend, p.id, weekIndex, tab) && !used.has(p.id))
     const uebrige = rangfolge('part', 'studium')
     return fest ? [fest, ...uebrige.filter((p) => p.id !== fest.id)] : uebrige
   }
@@ -800,32 +811,53 @@ function ratgeberOpts(ratgeber: SlotAssignment): WahlOptionen {
   return ratgeber.male ? nurBrueder() : {}
 }
 
+/** Der Leiter des Wachtturm-Studiums — ihn besetzt Schritt 1 (`wtLeiterZuerst`). */
+function istWtLeiter(section: Section, slot: SlotAssignment): boolean {
+  return istArt(section, 'wtStudium') && slot.rolle === 'Leiter'
+}
+
+/** Die Leiter-Plätze des Wachtturm-Studiums. Nur das Wochenende hat den Abschnitt. */
+function* wtLeiterPlaetze(meeting: Meeting): Generator<SlotAssignment> {
+  for (const section of meeting.sections) {
+    for (const item of section.items) {
+      if (isSong(item)) continue
+      for (const slot of item.names) if (istWtLeiter(section, slot)) yield slot
+    }
+  }
+}
+
+/**
+ * **Wer das Wachtturm-Studium leitet, wenn es nach den festen Rollen geht**
+ * (Personen › Aufgabenbereiche › Feste Rollen): der feste Leiter, sonst sein
+ * Vertreter — jeder nur, wenn `frei` ihn lässt. Niemand, wenn es keiner von
+ * beiden sein kann; dann wählt die Automatik unter allen, die das Studium
+ * leiten dürfen.
+ *
+ * Die eine Stelle für die Automatik (`rangfolgeLeiter`, damit auch für den
+ * Vorschlag im Zuteilen-Blatt) und für die frisch geholte Woche
+ * (`festenWtLeiterEintragen`). Stünde die Regel zweimal da, käme beim Holen
+ * ein anderer in die Woche, als „Automatisch" nähme.
+ */
+function festerWtLeiter(persons: readonly Person[], frei: (p: Person) => boolean): Person | undefined {
+  const mit = (rolle: 'wtLeiter' | 'wtVertreter'): Person | undefined => persons.find((p) => p.priv[rolle] && frei(p))
+  return mit('wtLeiter') ?? mit('wtVertreter')
+}
+
 /**
  * 1) Den Wachtturm-Studium-Leiter zuerst reservieren, damit ihn kein anderer
- *    Platz wegnimmt. Nur das Wochenende hat diesen Abschnitt.
+ *    Platz wegnimmt.
  *
  * Alle fünf Schritte geben zurück, wie viele Plätze sie offen lassen mussten.
  */
 function wtLeiterZuerst(meeting: Meeting, w: Waehler): number {
   let unfilled = 0
-  for (const section of meeting.sections) {
-    if (!istArt(section, 'wtStudium')) continue
-    for (const item of section.items) {
-      if (isSong(item)) continue
-      for (const slot of item.names) {
-        if (slot.rolle !== 'Leiter' || slot.name) continue
-        const person = w.pickConductor()
-        if (person) w.vergeben('part', person, slot)
-        else unfilled++
-      }
-    }
+  for (const slot of wtLeiterPlaetze(meeting)) {
+    if (slot.name) continue
+    const person = w.pickConductor()
+    if (person) w.vergeben('part', person, slot)
+    else unfilled++
   }
   return unfilled
-}
-
-/** Der Leiter des Wachtturm-Studiums — ihn besetzt Schritt 1 (`wtLeiterZuerst`). */
-function istWtLeiter(section: Section, slot: SlotAssignment): boolean {
-  return istArt(section, 'wtStudium') && slot.rolle === 'Leiter'
 }
 
 /**
@@ -1044,8 +1076,58 @@ export function rangfolgeFuer(
     const er = vorsitz?.name ? persons.find((p) => gehoertZu(vorsitz, p)) : undefined
     return er ? [er] : []
   }
-  if (istArt(section, 'wtStudium') && slot.rolle === 'Leiter') return w.rangfolgeLeiter()
+  if (istWtLeiter(section, slot)) return w.rangfolgeLeiter()
   return w.rangfolge('part', slot.bereichsKey, schuelerteilOpts(item, slot, sel.aux === true, persons))
+}
+
+/**
+ * **Der feste Studienleiter in einer neuen Woche** (18.10.2026, Wunsch des
+ * Betreibers): Den Leiter-Platz des Wachtturm-Studiums bekommt schon beim
+ * Holen der feste Leiter — ist er an dem Tag abwesend oder in der
+ * Zusammenkunft schon eingeteilt (hält er etwa den öffentlichen Vortrag), sein
+ * Vertreter. Danach ist es eine Zuteilung wie jede andere.
+ *
+ * Besetzt wird nur ein leerer Platz und nicht in einer gestrichenen
+ * Zusammenkunft. Kann keiner von beiden, bleibt der Platz offen: Wer ihn dann
+ * bekommt, entscheidet die Auslastung, und die gehört der Automatik.
+ *
+ * Eine Abwesenheit, die erst nach dem Holen hinzukommt, ändert den Plan nicht
+ * von selbst (Betreiber, 18.10.2026): Die Planung zeigt den Konflikt, und der
+ * Vorschlag im Zuteilen-Blatt nennt den Vertreter.
+ *
+ * Aufgerufen über `neueWocheEinordnen` (der Knopf in der App, das Skript
+ * `wochen-importieren.mjs`) und vom Wochenplan-Import aus New World Scheduler:
+ * NWS führt den Studienleiter als Einstellung der Versammlung, nicht je Woche.
+ *
+ * `eingetragen` nennt, wer einen Platz bekam; ist es leer, ist `week` die
+ * Eingabe selbst.
+ */
+export function festenWtLeiterEintragen(
+  week: Week,
+  persons: readonly Person[],
+  absences: readonly Absence[],
+  zeiten: MeetingTimes,
+): { week: Week; eingetragen: Person[] } {
+  const kopie = klonWoche([week], 0)?.[0]
+  if (!kopie) return { week, eingetragen: [] }
+  const abwesend = buildAbsences(absences, [kopie], zeiten)
+  const werIst = idAufloeser(persons)
+  const eingetragen: Person[] = []
+  for (const tab of MEETING_TABS) {
+    if (istAusgefallen(kopie, tab)) continue
+    const meeting = kopie[tab]
+    const eingeteilt = eingeteilte(meeting, werIst)
+    for (const slot of wtLeiterPlaetze(meeting)) {
+      if (slot.name) continue
+      const leiter = festerWtLeiter(persons, (p) => !istAbwesend(abwesend, p.id, 0, tab) && !eingeteilt.has(p.id))
+      if (!leiter) continue
+      slot.name = displayName(leiter)
+      slot.pid = leiter.id
+      eingeteilt.add(leiter.id)
+      eingetragen.push(leiter)
+    }
+  }
+  return eingetragen.length ? { week: kopie, eingetragen } : { week, eingetragen }
 }
 
 /**

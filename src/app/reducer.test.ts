@@ -6,6 +6,7 @@ import type { HydratePayload } from './context'
 import {
   buildDemoFsWeeks,
   buildDemoWeeks,
+  buildImportWeek,
   CONGREGATION,
   DEMO_ABSENCES,
   DEMO_FS_RULES,
@@ -17,7 +18,7 @@ import {
   DEMO_REMINDERS,
   DEMO_SERVICES,
 } from '../../tests/testdaten/testdaten'
-import { LABEL_VORTRAG } from '../data/constants'
+import { LABEL_VORTRAG, LABEL_WT_STUDIUM } from '../data/constants'
 import { displayName, isGuestRole, isNameless, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
 import { allePlaetze, platzKey } from '../data/plaetze'
 import { fsTaskKey, genFsWeek, neueRegel } from '../data/fs'
@@ -887,6 +888,22 @@ describe('Import', () => {
     const next = reducer(s, { type: 'addImportedWeek', week })
     expect(next.weeks.at(-1)!.range).toBe('Testwoche')
     expect(next.notifs[0]!.type).toBe('import')
+  })
+
+  it('addImportedWeek bringt den festen Studienleiter mit — fehlt er am Sonntag, seinen Vertreter (18.10.2026)', () => {
+    // Demo-Bestand: Manfred Albrecht (p1) leitet das Wachtturm-Studium fest,
+    // Thomas Lindner (p2) vertritt ihn. Die Woche des 12. Oktober hat ihren
+    // Sonntag am 18. — auch „Nur übernehmen" kommt hier durch.
+    const leiter = (w: Week | undefined) =>
+      w?.we.sections
+        .find((sec) => sec.label === LABEL_WT_STUDIUM)
+        ?.items.flatMap((i) => (isSong(i) ? [] : i.names))
+        .find((n) => n.rolle === 'Leiter')
+    const woche: Week = { ...buildImportWeek(), start: NEUER_MONTAG }
+    const da = reducer(makeState({ absences: [] }), { type: 'addImportedWeek', week: woche })
+    expect(leiter(da.weeks.at(-1))).toMatchObject({ name: 'Manfred Albrecht', pid: 'p1' })
+    const weg = makeState({ absences: [{ id: 'a-p1', personId: 'p1', userId: null, from: '2026-10-17', to: '2026-10-18', reason: '' }] })
+    expect(leiter(reducer(weg, { type: 'addImportedWeek', week: woche }).weeks.at(-1))).toMatchObject({ name: 'Thomas Lindner', pid: 'p2' })
   })
 
   it('eine schon geladene Woche wird nicht ein zweites Mal angehängt', () => {

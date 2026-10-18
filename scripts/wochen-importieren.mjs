@@ -15,8 +15,9 @@
  * (`neueWocheEinordnen`, `src/data/neue-woche.ts`): Endzeiten aus den eigenen
  * Zusammenkunftszeiten, die Zusätzliche Klasse, der Ausfall in der Woche des
  * Gedächtnismahls, die Treffpunkte aus dem Grundplan samt vorgemerkter
- * Gruppenbesuche und der vorgemerkte öffentliche Vortrag aus dem Vortragsplan
- * (T122). Geschrieben wird eine Zeile je Woche in `weeks` und eine in
+ * Gruppenbesuche, der vorgemerkte öffentliche Vortrag aus dem Vortragsplan
+ * (T122) und der feste Leiter des Wachtturm-Studiums, bei Abwesenheit sein
+ * Vertreter (18.10.2026). Geschrieben wird eine Zeile je Woche in `weeks` und eine in
  * `fs_weeks`. Bis zum 5.10.2026 stand hier „Geschrieben wird wie dort", und
  * geschrieben wurde die Woche, wie `import-week` sie liefert — ohne Klasse, mit
  * den festen Endzeiten des Imports, ohne Treffpunkte. Mit eingeschalteter
@@ -121,8 +122,9 @@ export function nurNeue(vorhandeneStarts, wochen) {
 
 /**
  * Die Einordnung der App, bestückt mit dieser Versammlung: Grundplan,
- * Gruppenbesuche, vorgemerkte Vorträge und Personen gelesen und umgesetzt wie
- * beim Laden der App (`src/lib/zeilen.ts`), dieselbe Reihenfolge wie dort.
+ * Gruppenbesuche, vorgemerkte Vorträge, Personen und Abwesenheiten gelesen und
+ * umgesetzt wie beim Laden der App (`src/lib/zeilen.ts`), dieselbe Reihenfolge
+ * wie dort.
  */
 async function einordnungFuer(rest, cong) {
   appCodeBereit()
@@ -132,11 +134,12 @@ async function einordnungFuer(rest, cong) {
     import('../supabase/functions/_shared/planung.ts'),
   ])
   const meine = `congregation_id=eq.${cong.id}`
-  const [regeln, besuche, vortraege, personen] = await Promise.all([
+  const [regeln, besuche, vortraege, personen, abwesenheiten] = await Promise.all([
     rest(`fs_rules?select=*&${meine}&order=created_at`),
     rest(`gruppenbesuche?select=id,woche,grp,person_id&${meine}&order=woche`),
     rest(`vortraege?select=id,woche,redner,versammlung,eigener,person_id,thema,lied&${meine}&order=woche`),
     rest(`persons?select=*&${meine}&order=created_at`),
+    rest(`absences?select=*&${meine}&order=from_date`),
   ])
   const kontext = {
     zeiten: zeitenAus(cong),
@@ -145,6 +148,7 @@ async function einordnungFuer(rest, cong) {
     gruppenbesuche: besuche.map(zeilen.gruppenbesuchFromRow),
     vortraege: vortraege.map(zeilen.vortragFromRow),
     persons: personen.map(zeilen.personFromRow),
+    absences: abwesenheiten.map(zeilen.absenceFromRow),
   }
   return (roh) => neueWocheEinordnen(roh, kontext)
 }

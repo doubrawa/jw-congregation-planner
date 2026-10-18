@@ -124,8 +124,17 @@ export const KATALOG = [
     id: 'zuteilung-wt-leiter',
     datei: 'src/data/planning.ts',
     regel: 'Der feste WT-Studium-Leiter kommt vor dem Vertreter und beide vor der freien Auswahl.',
-    suchen: "const fest = designated('wtLeiter') ?? designated('wtVertreter')",
-    ersetzen: 'const fest: Person | undefined = undefined',
+    // Seit dem 18.10.2026 steht die Regel in `festerWtLeiter` — die Automatik
+    // und das Holen einer Woche fragen beide dort.
+    suchen: "  return mit('wtLeiter') ?? mit('wtVertreter')\n",
+    ersetzen: '  return undefined\n',
+  },
+  {
+    id: 'zuteilung-wt-leiter-vor-vertreter',
+    datei: 'src/data/planning.ts',
+    regel: 'Ist der feste Leiter da, leitet er — der Vertreter springt nur ein, wenn er fehlt.',
+    suchen: "  return mit('wtLeiter') ?? mit('wtVertreter')\n",
+    ersetzen: "  return mit('wtVertreter') ?? mit('wtLeiter')\n",
   },
   {
     id: 'zuteilen-vorschlag-schuelerteil',
@@ -138,7 +147,7 @@ export const KATALOG = [
     id: 'zuteilen-vorschlag-leiter',
     datei: 'src/data/planning.ts',
     regel: 'Am Leiter-Platz des Wachtturm-Studiums schlägt das Blatt den festen Leiter vor — wie die Automatik.',
-    suchen: "  if (istArt(section, 'wtStudium') && slot.rolle === 'Leiter') return w.rangfolgeLeiter()\n",
+    suchen: '  if (istWtLeiter(section, slot)) return w.rangfolgeLeiter()\n',
     ersetzen: '',
   },
   {
@@ -5618,8 +5627,8 @@ export const KATALOG = [
     id: 'vp-vormerkung-in-neue-woche',
     datei: 'src/data/neue-woche.ts',
     regel: 'Eine später geholte Woche bekommt ihren vorgemerkten Vortrag.',
-    suchen: '  const week = vortragInNeueWoche(wochen[0] ?? mitEnden, k.vortraege, k.persons)\n',
-    ersetzen: '  const week = wochen[0] ?? mitEnden\n',
+    suchen: '  const mitVortrag = vortragInNeueWoche(wochen[0] ?? mitEnden, k.vortraege, k.persons)\n',
+    ersetzen: '  const mitVortrag = wochen[0] ?? mitEnden\n',
   },
   {
     id: 'vp-zusage-verfaellt',
@@ -8763,6 +8772,118 @@ export const KATALOG = [
     regel: 'Ein Trolley ohne Ort steht auf dem Bogen nur mit Namen — ohne „abholen:“ ins Leere.',
     suchen: '            {trolley.ort && <span className="druck-leise">{fill(t.trolleyAbholen, { ort: trolley.ort })}</span>}\n',
     ersetzen: '            <span className="druck-leise">{fill(t.trolleyAbholen, { ort: trolley.ort })}</span>\n',
+  },
+  // ── Der feste Leiter des Wachtturm-Studiums steht von selbst in der Woche (Betreiber, 18.10.2026) ──
+  {
+    id: 'wt-leiter-holen-abwesend',
+    datei: 'src/data/planning.ts',
+    regel: 'Fehlt der feste Leiter am Tag der Zusammenkunft, kommt beim Holen sein Vertreter in die Woche.',
+    suchen: '      const leiter = festerWtLeiter(persons, (p) => !istAbwesend(abwesend, p.id, 0, tab) && !eingeteilt.has(p.id))\n',
+    ersetzen: '      const leiter = festerWtLeiter(persons, (p) => !eingeteilt.has(p.id))\n',
+  },
+  {
+    id: 'wt-leiter-holen-schon-eingeteilt',
+    datei: 'src/data/planning.ts',
+    regel: 'Hält der feste Leiter in der Zusammenkunft schon eine Aufgabe (etwa den Vortrag), leitet beim Holen sein Vertreter.',
+    suchen: '      const leiter = festerWtLeiter(persons, (p) => !istAbwesend(abwesend, p.id, 0, tab) && !eingeteilt.has(p.id))\n',
+    ersetzen: '      const leiter = festerWtLeiter(persons, (p) => !istAbwesend(abwesend, p.id, 0, tab))\n',
+  },
+  {
+    id: 'wt-leiter-holen-ausgefallen',
+    datei: 'src/data/planning.ts',
+    regel: 'In eine gestrichene Zusammenkunft kommt beim Holen kein Studienleiter.',
+    suchen: '    if (istAusgefallen(kopie, tab)) continue\n',
+    ersetzen: '',
+  },
+  {
+    id: 'wt-leiter-holen-besetzt',
+    datei: 'src/data/planning.ts',
+    regel: 'Ein schon besetzter Leiter-Platz bleibt beim Holen und beim Import, wie er ist.',
+    suchen: '      if (slot.name) continue\n      const leiter = festerWtLeiter(',
+    ersetzen: '      const leiter = festerWtLeiter(',
+  },
+  {
+    id: 'wt-leiter-holen-nach-vortrag',
+    datei: 'src/data/neue-woche.ts',
+    regel: 'Beim Holen steht der vorgemerkte Vortrag vor dem Studienleiter — hält der Leiter ihn, leitet sein Vertreter.',
+    suchen:
+      '  const mitVortrag = vortragInNeueWoche(wochen[0] ?? mitEnden, k.vortraege, k.persons)\n' +
+      '  const { week } = festenWtLeiterEintragen(mitVortrag, k.persons, k.absences, k.zeiten)\n',
+    ersetzen:
+      '  const ohneVortrag = festenWtLeiterEintragen(wochen[0] ?? mitEnden, k.persons, k.absences, k.zeiten).week\n' +
+      '  const week = vortragInNeueWoche(ohneVortrag, k.vortraege, k.persons)\n',
+  },
+  {
+    id: 'wt-leiter-holen-abwesenheiten',
+    datei: 'src/data/neue-woche.ts',
+    regel: 'Die Einordnung einer geholten Woche fragt die Abwesenheiten — sonst käme der verreiste Leiter hinein.',
+    suchen: '  const { week } = festenWtLeiterEintragen(mitVortrag, k.persons, k.absences, k.zeiten)\n',
+    ersetzen: '  const { week } = festenWtLeiterEintragen(mitVortrag, k.persons, [], k.zeiten)\n',
+  },
+  {
+    id: 'wt-leiter-app-abwesenheiten',
+    datei: 'src/app/reducer.ts',
+    regel: '„Holen" in der App reicht die Abwesenheiten an die Einordnung weiter.',
+    suchen: '        persons: state.persons,\n        absences: state.absences,\n      })\n',
+    ersetzen: '        persons: state.persons,\n        absences: [],\n      })\n',
+  },
+  {
+    id: 'wt-leiter-skript-abwesenheiten',
+    datei: 'scripts/wochen-importieren.mjs',
+    regel: 'Das Skript zum Holen liest die Abwesenheiten — der feste Leiter kommt nur in Wochen, in denen er da ist.',
+    suchen: '    absences: abwesenheiten.map(zeilen.absenceFromRow),\n',
+    ersetzen: '    absences: [],\n',
+  },
+  {
+    id: 'wt-leiter-nws-import',
+    datei: 'scripts/wochenplanung-importieren.mjs',
+    regel: 'Der Wochenplan-Import aus NWS setzt den festen Studienleiter — NWS führt ihn nicht je Woche.',
+    suchen: '    const wt = festenWtLeiterEintragen(zeile.data, appPersonen, appAbwesenheiten, zeiten)\n',
+    ersetzen: '    const wt = { week: zeile.data, eingetragen: [] }\n',
+  },
+  {
+    id: 'wt-leiter-nws-import-abwesend',
+    datei: 'scripts/wochenplanung-importieren.mjs',
+    regel: 'Der Wochenplan-Import fragt die Abwesenheiten: Fehlt der Leiter, kommt sein Vertreter.',
+    suchen: '    const wt = festenWtLeiterEintragen(zeile.data, appPersonen, appAbwesenheiten, zeiten)\n',
+    ersetzen: '    const wt = festenWtLeiterEintragen(zeile.data, appPersonen, [], zeiten)\n',
+  },
+  {
+    id: 'wt-leiter-nws-import-zeiten',
+    datei: 'scripts/wochenplanung-importieren.mjs',
+    regel: 'Ob der Leiter fehlt, misst der Import am Tag, an dem diese Versammlung zusammenkommt — nicht am Standard-Sonntag.',
+    suchen: '  const zeiten = zeitenAus(versammlung)\n',
+    ersetzen: '  const zeiten = zeitenAus(undefined)\n',
+  },
+  {
+    id: 'wt-leiter-nws-import-schreiben',
+    datei: 'scripts/wochenplanung-importieren.mjs',
+    regel: 'Kommt nur der Studienleiter in eine Woche, schreibt der Import sie trotzdem.',
+    suchen: '    if (z.gesetzt + z.helfer + wt.eingetragen.length > 0) {\n',
+    ersetzen: '    if (z.gesetzt + z.helfer > 0) {\n',
+  },
+  {
+    id: 'neuaufbau-abwesenheiten-vor-wochen',
+    datei: 'scripts/neuaufbau-fahren.mjs',
+    regel: 'Im Neuaufbau kommen die Abwesenheiten vor die Wochen — sonst leitete der Verreiste das Wachtturm-Studium.',
+    suchen:
+      "      titel: 'Abwesenheiten',\n" +
+      "      skript: 'abwesenheiten-importieren.mjs',\n" +
+      '      argv: [...cong, ...trocken],\n' +
+      '    },\n' +
+      '    {\n' +
+      '      titel: `Wochenprogramme von jw.org (${arg.wochen ?? 8})`,\n' +
+      "      skript: 'wochen-importieren.mjs',\n" +
+      "      argv: ['--anzahl', String(arg.wochen ?? 8), ...cong, ...trocken],\n",
+    ersetzen:
+      '      titel: `Wochenprogramme von jw.org (${arg.wochen ?? 8})`,\n' +
+      "      skript: 'wochen-importieren.mjs',\n" +
+      "      argv: ['--anzahl', String(arg.wochen ?? 8), ...cong, ...trocken],\n" +
+      '    },\n' +
+      '    {\n' +
+      "      titel: 'Abwesenheiten',\n" +
+      "      skript: 'abwesenheiten-importieren.mjs',\n" +
+      '      argv: [...cong, ...trocken],\n',
   },
 ]
 

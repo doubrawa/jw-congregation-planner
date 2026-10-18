@@ -22,6 +22,7 @@ import {
 import { probeDateiText, wertAusEnvText } from './gemeinsam.mjs'
 import { eigeneSlots, ersterMontagAb, fremdeSlots, stufenAnlage } from './mitgliedsrechte-probe.mjs'
 import { uuid5 } from './wochenplanung-importieren.mjs'
+import { LABEL_WT_STUDIUM } from '../src/data/constants'
 import { wasBleibt, zeitraumGueltig } from '../supabase/functions/_shared/trolley.ts'
 
 /*
@@ -311,11 +312,12 @@ const LAEUFE: Record<string, Lauf[]> = {
         },
       },
       // Eingeordnet wie in der App (5.10.2026): Grundplan, Gruppenbesuche,
-      // vorgemerkte Vorträge (T122) und Personen gelesen, die Treffpunkte der
-      // neuen Wochen mitgeschrieben.
+      // vorgemerkte Vorträge (T122), Personen und Abwesenheiten (der feste
+      // Studienleiter, 18.10.2026) gelesen, die Treffpunkte der neuen Wochen
+      // mitgeschrieben.
       erwartet: [
-        'GET congregations', 'GET weeks', 'GET fs_rules', 'GET gruppenbesuche', 'GET vortraege', 'GET persons', 'GET fs_weeks',
-        'POST weeks', 'POST fs_weeks',
+        'GET congregations', 'GET weeks', 'GET fs_rules', 'GET gruppenbesuche', 'GET vortraege', 'GET persons',
+        'GET absences', 'GET fs_weeks', 'POST weeks', 'POST fs_weeks',
       ],
     },
   ],
@@ -426,7 +428,9 @@ const LAEUFE: Record<string, Lauf[]> = {
           services: [{ congregation_id: C, key: 'mik', name: 'Mikrofone' }],
         },
       },
-      erwartet: ['GET persons', 'GET weeks', 'GET services', 'PATCH weeks'],
+      // Abwesenheiten und die Zeiten der Versammlung für den festen
+      // Studienleiter (18.10.2026).
+      erwartet: ['GET congregations', 'GET persons', 'GET absences', 'GET weeks', 'GET services', 'PATCH weeks'],
     },
   ],
 
@@ -1298,6 +1302,28 @@ describe('versammlung-zuruecksetzen: Konten und Links überstehen das Zurückset
   })
 })
 
+/**
+ * Den ersten Lauf eines Import-Skripts noch einmal fahren — mit eigenem Bestand
+ * (je Tabelle ersetzt) und, wo nötig, eigenen Edge Functions.
+ */
+async function fahreImport(skript: string, bestand: Record<string, Zeile[]>, funktionen?: Umgebung['funktionen']) {
+  const l = LAEUFE[skript]![0]!
+  const modul = (await MODULE[`./${skript}`]!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+  const eingaben = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-probe-'))
+  try {
+    for (const [name, inhalt] of Object.entries(l.dateien ?? {})) {
+      fs.writeFileSync(path.join(eingaben, name), typeof inhalt === 'string' ? inhalt : JSON.stringify(inhalt))
+    }
+    return await fahre(() => l.fahren(modul, eingaben), {
+      ...l.umgebung,
+      ...(funktionen ? { funktionen } : {}),
+      bestand: { ...l.umgebung!.bestand, ...bestand },
+    })
+  } finally {
+    fs.rmSync(eingaben, { recursive: true, force: true })
+  }
+}
+
 describe('Importe: Wer einen Platz verliert, nimmt seine Zusage mit (16.10.2026)', () => {
   /*
     Eine Zusage steht unter dem Schlüssel des Platzes, und die App liest beim
@@ -1307,19 +1333,6 @@ describe('Importe: Wer einen Platz verliert, nimmt seine Zusage mit (16.10.2026)
     räumt der Reducer das ab; die Importe tun es seither auch, mit denselben
     Funktionen (`changedSlotKeys`, `fsVerwaisteZusagen`).
   */
-  const fahreImport = async (skript: string, bestand: Record<string, Zeile[]>) => {
-    const l = LAEUFE[skript]![0]!
-    const modul = (await MODULE[`./${skript}`]!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
-    const eingaben = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-probe-'))
-    try {
-      for (const [name, inhalt] of Object.entries(l.dateien ?? {})) {
-        fs.writeFileSync(path.join(eingaben, name), typeof inhalt === 'string' ? inhalt : JSON.stringify(inhalt))
-      }
-      return await fahre(() => l.fahren(modul, eingaben), { ...l.umgebung, bestand: { ...l.umgebung!.bestand, ...bestand } })
-    } finally {
-      fs.rmSync(eingaben, { recursive: true, force: true })
-    }
-  }
   const zusage = (id: string, task_key: string, user_id: string) => ({ id, congregation_id: C, user_id, task_key, status: 'bestätigt' })
 
   it('wochenplanung-importieren: am neu besetzten Platz ist die Zusage weg, am unveränderten bleibt sie', async () => {
@@ -1344,6 +1357,97 @@ describe('Importe: Wer einen Platz verliert, nimmt seine Zusage mit (16.10.2026)
     const woche = tabellen.fs_weeks!.find((w) => w.start === '2026-08-24')!.data as { id: string; leader: string }[]
     expect(woche.find((i) => i.id === 'r-di')?.leader).toBe('Probe Eins')
     expect(tabellen.confirmations!.map((z) => z.task_key)).toEqual(['fs|2026-08-24|r-sa'])
+  })
+})
+
+describe('Importe: Der feste Leiter des Wachtturm-Studiums kommt in die Woche (18.10.2026)', () => {
+  /*
+    NWS führt den Studienleiter nicht je Woche, sondern als Einstellung der
+    Versammlung — bis hierher blieb sein Platz nach jedem Import offen, und
+    jemand trug Woche für Woche denselben Namen ein. Jetzt setzen ihn beide
+    Importe aus den festen Rollen der App, mit derselben Regel wie die
+    Automatik: der Leiter, fehlt er, sein Vertreter. Ob er fehlt, sagen die
+    Abwesenheiten und die Zeiten der Versammlung — beides müssen die Skripte
+    selbst lesen, und genau das prüfen diese Läufe.
+  */
+  const PERSONEN: Zeile[] = [
+    { id: NWS_PERSON, congregation_id: C, fn: 'Probe', ln: 'Eins' },
+    { id: P1, congregation_id: C, fn: 'Probe', ln: 'Leiter', priv: { studium: true, wtLeiter: true } },
+    { id: P2, congregation_id: C, fn: 'Probe', ln: 'Vertreter', priv: { studium: true, wtVertreter: true } },
+  ]
+  const weg = (person_id: string, tag: string): Zeile => ({
+    id: `a-${person_id}-${tag}`, congregation_id: C, person_id, user_id: null, from_date: tag, to_date: tag, reason: '',
+  })
+  /** Die Probewoche mit einem Wachtturm-Studium am Wochenende — sein Leiter-Platz ist leer. */
+  const mitStudium = (start: string) => {
+    const woche = probeWoche(start)
+    const studium = {
+      label: LABEL_WT_STUDIUM,
+      farbe: 'wein',
+      items: [
+        {
+          iid: 'probe-studium', title: 'Probe-Studium', meta: '',
+          names: [{ name: '', rolle: 'Leiter', bereichsKey: 'studium' }, { name: '', rolle: 'Leser', bereichsKey: 'leser' }],
+        },
+      ],
+    }
+    return { ...woche, we: { ...woche.we, sections: [studium] } }
+  }
+  /** Jeder Lauf mit einer frischen Zeile — das Skript schreibt in die gelesene Woche. */
+  const wocheZeile = (): Zeile => ({ congregation_id: C, start: '2026-08-24', data: mitStudium('2026-08-24') })
+  const leiterIn = (data: unknown) =>
+    (data as { we: { sections: { items: { names: { name: string; pid?: string }[] }[] }[] } }).we.sections[0]!.items[0]!.names[0]
+
+  it('wochenplanung-importieren: nach den NWS-Zuteilungen leitet der feste Leiter — fehlt er am Sonntag, sein Vertreter', async () => {
+    const da = await fahreImport('wochenplanung-importieren.mjs', { persons: PERSONEN, weeks: [wocheZeile()] })
+    expect(leiterIn(da.tabellen.weeks![0]!.data)).toMatchObject({ name: 'Probe Leiter', pid: P1 })
+    expect(da.ausgabe.join('\n')).toContain('Leiter des Wachtturm-Studiums eingetragen: 1 (davon Vertreter: 0)')
+
+    // Die Woche des 24. August hat ihren Sonntag am 30.
+    const fehlt = await fahreImport('wochenplanung-importieren.mjs', {
+      persons: PERSONEN, weeks: [wocheZeile()], absences: [weg(P1, '2026-08-30')],
+    })
+    expect(leiterIn(fehlt.tabellen.weeks![0]!.data)).toMatchObject({ name: 'Probe Vertreter', pid: P2 })
+    expect(fehlt.ausgabe.join('\n')).toContain('(davon Vertreter: 1)')
+  })
+
+  it('wochenplanung-importieren: kommt nur der Leiter dazu, wird die Woche trotzdem geschrieben', async () => {
+    // Ohne Mikrofon-Dienst in der App bleibt der einzige NWS-Platz der Woche
+    // ungeschrieben — so steht es auch mit `--nur-leere` in einer fertig
+    // geplanten Woche, und gerade dort soll der Leiter nachgetragen werden.
+    const { tabellen, aufrufe } = await fahreImport('wochenplanung-importieren.mjs', {
+      persons: PERSONEN, weeks: [wocheZeile()], services: [],
+    })
+    expect(aufrufe.some((a) => a.method === 'PATCH' && tabelleVon(a) === 'weeks')).toBe(true)
+    expect(leiterIn(tabellen.weeks![0]!.data)).toMatchObject({ pid: P1 })
+  })
+
+  it('wochenplanung-importieren: es zählt der Tag der Versammlung — trifft sie sich samstags, leitet er trotz Sonntag weg', async () => {
+    const { tabellen } = await fahreImport('wochenplanung-importieren.mjs', {
+      congregations: [{ id: C, mid_wd: 2, mid_time: '19:00:00', we_wd: 6, we_time: '18:00:00' }],
+      persons: PERSONEN, weeks: [wocheZeile()], absences: [weg(P1, '2026-08-30')],
+    })
+    expect(leiterIn(tabellen.weeks![0]!.data)).toMatchObject({ pid: P1 })
+  })
+
+  it('wochenplanung-importieren: hat niemand eine feste Rolle, bleibt der Platz offen — und der Bericht sagt es', async () => {
+    const { tabellen, ausgabe } = await fahreImport('wochenplanung-importieren.mjs', {
+      persons: [PERSONEN[0]!], weeks: [wocheZeile()],
+    })
+    expect(leiterIn(tabellen.weeks![0]!.data)?.name).toBe('')
+    expect(ausgabe.join('\n')).toContain('Niemand hat die feste Rolle')
+  })
+
+  it('wochen-importieren: die geholte Woche bringt den Leiter mit — fehlt er am Sonntag, den Vertreter', async () => {
+    // Die Probe spielt am 7. September: geholt werden die Wochen des 7. und
+    // des 14. — der Leiter fehlt am Sonntag der ersten.
+    const { tabellen } = await fahreImport(
+      'wochen-importieren.mjs',
+      { persons: PERSONEN, absences: [weg(P1, '2026-09-13')] },
+      { 'import-week': ({ after }) => ({ json: { week: mitStudium(after ? plusTage(String(after), 7) : '2026-09-07') } }) },
+    )
+    const leiterJeWoche = Object.fromEntries(tabellen.weeks!.map((w) => [w.start, leiterIn(w.data)?.pid]))
+    expect(leiterJeWoche).toEqual({ '2026-09-07': P2, '2026-09-14': P1 })
   })
 })
 
