@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { startbildInstalliert } from './paletten'
 
 /**
  * **Das Logo in den Farben des Designs** (T121, Phase 10; Entscheid des
@@ -52,5 +53,20 @@ describe('Die Farben des Logos', () => {
     const kachel = farben('logo.svg').kachel
     expect(manifest.background_color?.toLowerCase()).toBe(kachel)
     expect(manifest.theme_color?.toLowerCase()).toBe(kachel)
+  })
+
+  /*
+   * **Das Startbild der installierten App setzt das Bild von Android fort**
+   * (19.10.2026): derselbe Grund wie `background_color`, das Logo in denselben
+   * Farben wie das Symbol darauf. Wiche eine ab, wechselte die Farbe in dem
+   * Augenblick, in dem die App das Bild übernimmt.
+   */
+  it('das Startbild der installierten App trägt die Farben des Bilds von Android', () => {
+    const manifest = JSON.parse(readFileSync(`${WURZEL}public/manifest.webmanifest`, 'utf8')) as Record<string, string>
+    const start = startbildInstalliert()
+    expect(start['start-grund']).toBe(manifest.background_color?.toLowerCase())
+    expect(start['start-platz']).toBe(dunkel('--text'))
+    expect(start['start-pult']).toBe(dunkel('--akzent'))
+    expect(start['start-text']).toBe(dunkel('--text2'))
   })
 })

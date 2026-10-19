@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { ALTE_DUNKLE_SCHEMATA, FONT_SCALES, THEME_LIST } from '../src/data/constants'
 import { APP_LANGS, isRTL } from '../src/i18n/langs'
-import { palette } from './paletten'
+import { palette, startbildInstalliert } from './paletten'
 
 /**
  * **Was `index.html` schon weiß, bevor die App startet — und woher es das weiß.**
@@ -97,6 +97,13 @@ describe('Und dieselbe Darstellung und dieselben Schriftgrößen', () => {
     const grund = (modus: 'hell' | 'dunkel') => palette(modus).grund
     expect(INDEX).toContain(`dunkel ? '${grund('dunkel')}' : '${grund('hell')}'`)
     expect(INDEX).toContain(`<meta name="theme-color" content="${grund('hell')}" />`)
+  })
+
+  it('in der installierten App hat sie vor dem Laden das Graphit des Startbilds (19.10.2026)', () => {
+    // Dort steht zuerst das Startbild (tokens.css, --start-grund). Wiche die
+    // Leiste ab, stünde über dem Graphit ein Streifen in der Farbe der Palette.
+    expect(INDEX).toContain("matchMedia('(display-mode: standalone)')")
+    expect(INDEX).toContain(`installiert ? '${startbildInstalliert()['start-grund']}' : dunkel ?`)
   })
 
   it('die Schriftgrößen-Stufen stimmen überein', () => {

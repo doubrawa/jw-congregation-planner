@@ -36,8 +36,12 @@
             (stored !== 'hell' && !!window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
           document.documentElement.dataset.theme = dunkel ? 'dunkel' : 'hell'
           // Statusleiste sofort passend: --grund der beiden Paletten (tokens.css).
+          // In der installierten App steht zuerst das Startbild in Graphit wie
+          // das Bild von Android davor: dessen Farbe (--start-grund), bis die
+          // App die Leiste umstellt (darstellung.ts).
           var meta = document.querySelector('meta[name="theme-color"]')
-          if (meta) meta.content = dunkel ? '#121314' : '#f1f1ef'
+          var installiert = !!window.matchMedia && window.matchMedia('(display-mode: standalone)').matches
+          if (meta) meta.content = installiert ? '#1c1e20' : dunkel ? '#121314' : '#f1f1ef'
           // Schriftgröße ebenfalls vor dem Paint (sonst springt die ganze
           // Seite). Stufen wie FONT_SCALES in src/data/constants.ts.
           var fs = localStorage.getItem('fontScale')
@@ -66,7 +70,41 @@
     <title>Versammlung.app</title>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Das Startbild, schon bevor das Skript läuft (19.10.2026): Nach dem Bild,
+         das Android beim Start zeigt, stand sonst eine leere Fläche. Dasselbe
+         Logo wie src/app/Startbild.tsx, damit React es ohne Sprung ablöst —
+         tests/startbild-vorab.test.tsx hält beide gleich. Die Farben kommen
+         aus dem CSS (shell.css, tokens.css). Die Welle läuft erst im Bild der
+         App: Hier begonnen, finge sie beim Wechsel mit einem Ruck von vorn an. -->
+    <div id="root"><div class="startbild">
+      <svg class="logo startbild-logo" width="170" height="102" viewBox="46 125.5 420 251" aria-hidden="true">
+        <circle class="logo-pult" cx="256" cy="157.5" r="30"></circle>
+        <g class="logo-platz" fill-opacity="1">
+          <circle cx="171.33" cy="195.82" r="15"></circle>
+          <circle cx="224.43" cy="229.96" r="15"></circle>
+          <circle cx="287.57" cy="229.96" r="15"></circle>
+          <circle cx="340.67" cy="195.82" r="15"></circle>
+        </g>
+        <g class="logo-platz" fill-opacity="0.76">
+          <circle cx="117.15" cy="230.65" r="15"></circle>
+          <circle cx="164.69" cy="272.96" r="15"></circle>
+          <circle cx="224.18" cy="295.6" r="15"></circle>
+          <circle cx="287.82" cy="295.6" r="15"></circle>
+          <circle cx="347.31" cy="272.96" r="15"></circle>
+          <circle cx="394.85" cy="230.65" r="15"></circle>
+        </g>
+        <g class="logo-platz" fill-opacity="0.52">
+          <circle cx="63.13" cy="265.34" r="15"></circle>
+          <circle cx="107.59" cy="311.11" r="15"></circle>
+          <circle cx="162.54" cy="343.56" r="15"></circle>
+          <circle cx="224.09" cy="360.37" r="15"></circle>
+          <circle cx="287.91" cy="360.37" r="15"></circle>
+          <circle cx="349.46" cy="343.56" r="15"></circle>
+          <circle cx="404.41" cy="311.11" r="15"></circle>
+          <circle cx="448.87" cy="265.34" r="15"></circle>
+        </g>
+      </svg>
+    </div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

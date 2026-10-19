@@ -405,11 +405,49 @@ describe('Das Offline-Banner nennt den Stand', () => {
   })
 })
 
-describe('Die vier Status-Ansichten der Datenanbindung', () => {
-  it('während des Ladens steht der Ladehinweis — und kein Screen', () => {
+describe('Die Status-Ansichten der Datenanbindung', () => {
+  /*
+   * **Geladen wird im Startbild** (19.10.2026): Bis dahin stand das Gerüst mit
+   * Menü und Kopfzeile da und darin klein „Lädt …" — eine App ohne Inhalt.
+   * Jetzt bleibt das Startbild, bis die Daten da sind.
+   */
+  it('während des Ladens steht das Startbild — kein Gerüst, kein Screen', () => {
     const { container, getByText } = zeige({ dataStatus: 'loading' })
+    expect(container.querySelector('.startbild')).not.toBeNull()
     expect(getByText(t.laedt)).toBeTruthy()
-    expect(container.querySelector('.status-view')).toBeTruthy()
+    expect(container.querySelector('.leiste'), 'das Menü').toBeNull()
+    expect(container.querySelector('.kopfzeile'), 'die Kopfzeile').toBeNull()
+    expect(container.querySelector('.screen'), 'ein Screen').toBeNull()
+  })
+
+  it('auch eine Meldung bleibt sichtbar — etwa, dass ein Link nicht mehr gilt', () => {
+    const { container } = zeige({ dataStatus: 'loading', toast: { id: 1, text: t.linkUngueltig } })
+    expect(container.querySelector('.startbild')).not.toBeNull()
+    expect(container.querySelector('.toast')?.textContent).toBe(t.linkUngueltig)
+  })
+
+  it('kommen die Daten, steht die Meldung weiter — sie läuft nicht noch einmal ein', () => {
+    // Dieselbe Meldung, erst über dem Startbild, dann über der App: Hinge
+    // React sie neu ein, spielte ihr Einlaufen ein zweites Mal.
+    const toast = { id: 1, text: t.linkUngueltig }
+    function Buehne({ state }: { state: AppState }) {
+      const store = useStaticStore(state)
+      return (
+        <AppDispatchContext.Provider value={vi.fn()}>
+          <AppStoreContext.Provider value={store}>
+            <AppStateContext.Provider value={state}>
+              <AppShell />
+            </AppStateContext.Provider>
+          </AppStoreContext.Provider>
+        </AppDispatchContext.Provider>
+      )
+    }
+    const { container, rerender } = render(<Buehne state={zustand({ dataStatus: 'loading', toast })} />)
+    const vorher = container.querySelector('.toast')
+    expect(vorher).not.toBeNull()
+    rerender(<Buehne state={zustand({ dataStatus: 'ready', toast })} />)
+    expect(container.querySelector('.startbild')).toBeNull()
+    expect(container.querySelector('.toast')).toBe(vorher)
   })
 
   it('ein Ladefehler bietet „erneut versuchen" an', () => {
@@ -441,8 +479,12 @@ describe('Die vier Status-Ansichten der Datenanbindung', () => {
   })
 
   it('der Status geht dem Screen vor — auch mit gesetztem screen', () => {
-    const { container } = zeige({ dataStatus: 'loading', screen: 'personen' })
+    const { container } = zeige({ dataStatus: 'error', screen: 'personen' })
     expect(container.querySelector('.status-view')).toBeTruthy()
+    cleanup()
+    const laden = zeige({ dataStatus: 'loading', screen: 'personen' })
+    expect(laden.container.querySelector('.startbild')).toBeTruthy()
+    expect(laden.container.querySelector('.screen')).toBeNull()
   })
 })
 
@@ -563,10 +605,11 @@ describe('Die Kopfzeile auf dem Handy nennt Tag und Versammlung', () => {
   })
 
   it('solange keine Versammlung geladen ist, steht der Produktname da — kein leerer Kopf', () => {
-    // Beim Laden und für ein Konto, das noch keinen Code eingelöst hat, gibt es
-    // keinen Versammlungsnamen. Ein leerer Kopf sähe aus wie ein Ladefehler.
+    // Für ein Konto ohne Versammlung und nach einem Ladefehler gibt es keinen
+    // Versammlungsnamen. Ein leerer Kopf sähe aus wie ein Ladefehler. (Beim
+    // Laden selbst steht das Startbild, ohne Kopf.)
     for (const over of [
-      { dataStatus: 'loading' as const },
+      { dataStatus: 'error' as const },
       { dataStatus: 'no-membership' as const },
     ]) {
       const { container } = zeige({ ...over, congregation: { ...krumbach, name: '' } })
@@ -726,10 +769,10 @@ describe('Abmelden und Rollenanzeige', () => {
     expect(performLogout).toHaveBeenCalledWith(dispatch)
   })
 
-  it('beim Laden nicht — das dauert nur einen Augenblick', () => {
+  it('beim Laden nicht — das dauert nur einen Augenblick, und es steht das Startbild', () => {
     const { container } = zeige({ dataStatus: 'loading' })
-    expect(container.querySelector('.status-view')).not.toBeNull()
-    expect([...container.querySelectorAll('.status-view button')].map((b) => b.textContent)).not.toContain(t.abmelden)
+    expect(container.querySelector('.startbild')).not.toBeNull()
+    expect([...container.querySelectorAll('button')].map((b) => b.textContent)).not.toContain(t.abmelden)
   })
 })
 

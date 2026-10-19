@@ -14,10 +14,11 @@ import { DE } from '../i18n/de'
  * Stunde zurück, geht dafür eine Anfrage übers Netz. So lange zeigte die App,
  * womit sie startet: die Anmeldung.
  *
- * Jetzt steht bis zur Antwort nur das Ladebild da, danach die Anmeldung oder
- * die App — nie beides nacheinander. Gezeichnet wird die ganze App, Provider
- * und Gerüst; Supabase ist eine Attrappe, deren Antwort der Test zurückhält,
- * bis er sie gibt.
+ * Jetzt steht bis zur Antwort das Startbild da — und weiter, bis die Daten
+ * kommen (Entwurf „B · Welle durch die Reihen"). Danach die Anmeldung oder die
+ * App, nie beides nacheinander und nie eine App ohne Inhalt. Gezeichnet wird
+ * die ganze App, Provider und Gerüst; Supabase ist eine Attrappe, deren Antwort
+ * der Test zurückhält, bis er sie gibt, ebenso die Daten.
  */
 
 type Sitzung = { user: { id: string } } | null
@@ -41,10 +42,14 @@ const attrappe = vi.hoisted(() => {
 })
 
 vi.mock('../lib/supabase', () => ({ supabase: attrappe.client, isSupabaseConfigured: true }))
-// Laden wie im Betrieb: erst „Lädt …", die Daten kommen in diesem Test nie an.
-// Der letzte Stand ist die Momentaufnahme einer kleinen Versammlung, nur lesend.
+// Laden wie im Betrieb: erst der Ladezustand, dann die Daten — wann, sagt der
+// Test (`datenKommen`). Der letzte Stand ist die Momentaufnahme einer kleinen
+// Versammlung, nur lesend.
+const laden = vi.hoisted(() => ({ dispatch: null as ((a: AppAction) => void) | null, userId: '' }))
 vi.mock('./hydrate', () => ({
-  loadAndHydrate: (dispatch: (a: AppAction) => void) => {
+  loadAndHydrate: (dispatch: (a: AppAction) => void, userId: string) => {
+    laden.dispatch = dispatch
+    laden.userId = userId
     dispatch({ type: 'setDataStatus', status: 'loading' })
     return new Promise(() => {})
   },
@@ -111,31 +116,48 @@ afterEach(() => {
 })
 
 /**
- * Die App zeichnen und mitschreiben, ob die Anmeldung je ins Fenster kam —
- * auch nur für einen Zwischenstand, der vor dem nächsten Blick schon wieder
- * weg ist. Deshalb über die eingefügten Knoten, nicht über den Stand danach.
+ * Die App zeichnen und mitschreiben, was je ins Fenster kam — auch nur für
+ * einen Zwischenstand, der vor dem nächsten Blick schon wieder weg ist: die
+ * Anmeldung, und das Menü der App, bevor die Daten da sind (bis zum 19.10.2026
+ * die Kopfzeile mit „Lädt …"). Deshalb über die eingefügten Knoten, nicht über
+ * den Stand danach.
  */
 function zeichne() {
   const container = document.body.appendChild(document.createElement('div'))
-  let anmeldungGesehen = false
+  const stand = { datenDa: false, anmeldung: false, menueOhneDaten: false }
   const notieren = (eintraege: MutationRecord[]): void => {
     for (const eintrag of eintraege) {
       for (const knoten of eintrag.addedNodes) {
-        if (knoten instanceof Element && (knoten.matches('.login') || knoten.querySelector('.login'))) {
-          anmeldungGesehen = true
-        }
+        if (!(knoten instanceof Element)) continue
+        const hat = (sel: string): boolean => knoten.matches(sel) || knoten.querySelector(sel) !== null
+        if (hat('.login')) stand.anmeldung = true
+        if (hat('.leiste') && !stand.datenDa) stand.menueOhneDaten = true
       }
     }
   }
   const beobachter = new MutationObserver(notieren)
   beobachter.observe(container, { childList: true, subtree: true })
   render(<App />, { container })
+  /** Was der Beobachter noch nicht gemeldet hat, zuerst abholen. */
+  const abholen = (): void => notieren(beobachter.takeRecords())
   return {
     container,
     anmeldungGesehen: (): boolean => {
-      // Was der Beobachter noch nicht gemeldet hat, zuerst abholen.
-      notieren(beobachter.takeRecords())
-      return anmeldungGesehen
+      abholen()
+      return stand.anmeldung
+    },
+    menueOhneDatenGesehen: (): boolean => {
+      abholen()
+      return stand.menueOhneDaten
+    },
+    /** Die Daten kommen an — wie `loadAndHydrate` sie einspielte. */
+    datenKommen: async (): Promise<void> => {
+      abholen()
+      stand.datenDa = true
+      await act(async () => {
+        laden.dispatch?.({ type: 'hydrate', payload: momentaufnahme(laden.userId) })
+        await new Promise((fertig) => setTimeout(fertig, 0))
+      })
     },
   }
 }
@@ -150,38 +172,43 @@ async function antworte(antwort: Sitzung | Error): Promise<void> {
 }
 
 describe('Erst prüfen, dann zeigen', () => {
-  it('solange Supabase die Sitzung prüft, steht nur das Ladebild da — weder Anmeldung noch App', () => {
+  it('solange Supabase die Sitzung prüft, steht nur das Startbild da — weder Anmeldung noch App', () => {
     const { container, anmeldungGesehen } = zeichne()
-    expect(container.querySelector('.ladebild')?.textContent).toBe(DE.laedt)
+    expect(container.querySelector('.startbild')).not.toBeNull()
+    // Vorleseprogramme hören, dass es lädt.
+    expect(container.querySelector('.startbild [role="status"], .startbild[role="status"]')?.textContent).toBe(DE.laedt)
     expect(anmeldungGesehen()).toBe(false)
     expect(container.querySelector('.leiste'), 'das Menü der App').toBeNull()
   })
 
-  it('wer angemeldet ist, sieht danach die App — die Anmeldung erscheint nie, auch nicht kurz', async () => {
-    const { container, anmeldungGesehen } = zeichne()
+  it('wer angemeldet ist, sieht das Startbild, bis die Daten da sind — dann die App, nie die Anmeldung', async () => {
+    const { container, anmeldungGesehen, menueOhneDatenGesehen, datenKommen } = zeichne()
     await antworte({ user: { id: 'u7' } })
-    expect(container.querySelector('.ladebild')).toBeNull()
+    // Die Daten laden noch: kein Menü ohne Inhalt, das Startbild bleibt.
+    expect(container.querySelector('.startbild')).not.toBeNull()
+    await datenKommen()
+    expect(container.querySelector('.startbild')).toBeNull()
     expect(container.querySelector('.leiste'), 'das Menü der App').not.toBeNull()
-    // Die Daten laden noch — das sagt jetzt die App selbst.
-    expect(container.querySelector('.status-loading')?.textContent).toBe(DE.laedt)
     expect(anmeldungGesehen()).toBe(false)
+    // Auch nicht kurz: bis zum 19.10.2026 stand hier das Menü mit „Lädt …".
+    expect(menueOhneDatenGesehen(), 'das Menü, bevor die Daten da waren').toBe(false)
   })
 
   it('wer nicht angemeldet ist, sieht danach die Anmeldung — und nichts von der App', async () => {
     const { container, anmeldungGesehen } = zeichne()
     await antworte(null)
-    expect(container.querySelector('.ladebild')).toBeNull()
+    expect(container.querySelector('.startbild')).toBeNull()
     expect(anmeldungGesehen()).toBe(true)
     expect(container.querySelector('.login')).not.toBeNull()
     expect(container.querySelector('.leiste'), 'das Menü der App').toBeNull()
   })
 
-  it('scheitert die Prüfung, bleibt das Ladebild nicht stehen — die Anmeldung kommt', async () => {
-    // Sonst käme man nicht einmal mehr zur Anmeldung: ein Ladebild ohne Ende.
+  it('scheitert die Prüfung, bleibt das Startbild nicht stehen — die Anmeldung kommt', async () => {
+    // Sonst käme man nicht einmal mehr zur Anmeldung: ein Startbild ohne Ende.
     const konsole = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { container } = zeichne()
     await antworte(new Error('Speicher gesperrt'))
-    expect(container.querySelector('.ladebild')).toBeNull()
+    expect(container.querySelector('.startbild')).toBeNull()
     expect(container.querySelector('.login')).not.toBeNull()
     expect(konsole).toHaveBeenCalledWith('[sitzung]', expect.any(Error))
     konsole.mockRestore()
@@ -193,7 +220,7 @@ describe('Erst prüfen, dann zeigen', () => {
     abgelegt.wert = { userId: 'u7', laeuftAb: Date.now() - 3_600_000 }
     Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false })
     const { container, anmeldungGesehen } = zeichne()
-    expect(container.querySelector('.ladebild')).toBeNull()
+    expect(container.querySelector('.startbild')).toBeNull()
     expect(container.querySelector('.offline-banner'), 'der Hinweis auf den letzten Stand').not.toBeNull()
     expect(container.querySelector('.leiste'), 'das Menü der App').not.toBeNull()
     expect(anmeldungGesehen()).toBe(false)

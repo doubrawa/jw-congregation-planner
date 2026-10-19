@@ -1,5 +1,4 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Logo } from '../bausteine/Logo'
 import { Zeichen, type ZeichenName } from '../bausteine/Zeichen'
 import { datumsFormat } from '../components/datum-anzeige'
 import { useBackDismiss } from '../components/useBackDismiss'
@@ -35,7 +34,7 @@ import { PlanungScreen } from '../planen/PlanungScreen'
 import { zuteilenInSpalte } from '../planen/planen-raster'
 import { ProfilScreen } from '../profil/ProfilScreen'
 import { ProgrammScreen } from '../programm/ProgrammScreen'
-import { useApp } from './context'
+import { useApp, type Toast } from './context'
 import { eigenePerson, rolleUndGruppe } from './eigene-person'
 import { parseGoAbschnitt, parseGoTarget, type Abschnitt } from './deeplink'
 import { loadAndHydrate } from './hydrate'
@@ -44,6 +43,7 @@ import { useKalendertag } from './useKalendertag'
 import { bereichsTitel, zumAnsehen, zumPlanen, zurPlanung } from './bereich'
 import { Kopfzeile, PlanenKopf, UnterseiteKopf } from './Kopfzeile'
 import { SchmaleLeiste, Schublade, Seitenmenue, type MenueAbschnitt, type MenueEintrag, type ProfilFuss } from './Menue'
+import { Startbild } from './Startbild'
 import { welcomeDecision } from './welcome'
 import '../components/components.css'
 import './shell.css'
@@ -172,9 +172,23 @@ export function AppShell() {
     if (d !== 'verwerfen') dispatch({ type: 'showToast', text: fill(t.toastWillkommen, d) })
   }, [state.welcomePending, state.dataStatus, me, t, dispatch])
 
-  // Erst prüfen, dann zeigen: Solange offen ist, ob jemand angemeldet ist,
-  // weder die Anmeldung noch die App (`sitzungPruefen`).
-  if (state.sitzungPruefen) return <Ladebild />
+  // Die Meldung steht im Startbild und in der App an derselben Stelle (zweites
+  // Kind des Fragments): Löst die App das Startbild ab, läuft sie nicht noch
+  // einmal ein.
+  const meldung = state.toast && <Meldung key={state.toast.id} toast={state.toast} />
+
+  // Erst prüfen, dann zeigen: Solange offen ist, ob jemand angemeldet ist
+  // (`sitzungPruefen`), und solange die Daten kommen, steht das Startbild —
+  // weder die Anmeldung noch eine App ohne Inhalt. Eine Meldung bleibt
+  // sichtbar (ein Link, der nicht mehr gilt).
+  if (state.sitzungPruefen || state.dataStatus === 'loading') {
+    return (
+      <>
+        <Startbild />
+        {meldung}
+      </>
+    )
+  }
 
   /*
    * **Das Menü** (T121, entschieden am 11.10.2026): Eigenes oben, dann die
@@ -281,110 +295,99 @@ export function AppShell() {
   const blatt = (inhalt: ReactNode) => <ErrorBoundary {...fehlerTexte}>{inhalt}</ErrorBoundary>
 
   return (
-    <div className="rahmen">
-      {!isLogin && (
-        <>
-          <aside className="leiste">
-            <Seitenmenue abschnitte={abschnitte([glockeEintrag])} versammlung={versammlung} profil={profil} />
-          </aside>
-          <SchmaleLeiste
-            abschnitte={menue}
-            profil={profil}
-            menueOffen={menuOpen}
-            onMenue={() => setMenuOpen(true)}
-          />
-        </>
-      )}
-
-      <main className="app-main">
-        {isLogin ? (
-          <LoginScreen />
-        ) : (
+    <>
+      <div className="rahmen">
+        {!isLogin && (
           <>
-            {planen && (
-              <PlanenKopf titel={bereichsTitel(t, geplant)} onBeenden={() => dispatch(zumAnsehen(geplant))} />
-            )}
-            {unterseite && (
-              <UnterseiteKopf onZurueck={() => navigate('start')}>
-                {state.screen === 'mitteilungen' && ungelesen > 0 && <AlleGelesen className="unterseitenkopf-aktion" />}
-              </UnterseiteKopf>
-            )}
-            {/* Die Versammlung im Kopf, nicht die Wortmarke (T107); solange
-                keine geladen ist (Laden, Konto ohne Versammlung), steht der
-                Produktname da, damit der Kopf nicht leer bleibt. */}
-            <Kopfzeile
-              datum={datumsFormat(state.lang, 'tag').format(fromIso(tag))}
-              versammlung={versammlung ? fill(t.congLabel, { name: versammlung }) : 'Versammlung.app'}
-              ungelesen={ungelesen}
+            <aside className="leiste">
+              <Seitenmenue abschnitte={abschnitte([glockeEintrag])} versammlung={versammlung} profil={profil} />
+            </aside>
+            <SchmaleLeiste
+              abschnitte={menue}
+              profil={profil}
               menueOffen={menuOpen}
-              amHandyErsetzt={planen || unterseite}
               onMenue={() => setMenuOpen(true)}
-              onGlocke={() => navigate('mitteilungen')}
             />
-
-            <OfflineBanner />
-            <AnsichtLeiste />
-
-            {/* `key` am Screen: nach einem Fehler hängt der nächste
-                Screenwechsel eine frische Boundary ein — sonst bliebe der
-                Auffangbereich bis zum Neuladen stehen. */}
-            <div className="app-content">
-              <ErrorBoundary key={state.screen} {...fehlerTexte}>
-                <Content />
-              </ErrorBoundary>
-            </div>
-
-            {menuOpen && (
-              <Schublade abschnitte={menue} versammlung={versammlung} profil={profil} onSchliessen={() => setMenuOpen(false)} />
-            )}
           </>
         )}
 
-        {/*
-          Jedes Blatt in seiner **eigenen** Fehlergrenze: Ein Fehler darin lässt
-          die App darunter stehen, und das nächste Öffnen beginnt frisch — die
-          Grenze geht mit dem Blatt.
+        <main className="app-main">
+          {isLogin ? (
+            <LoginScreen />
+          ) : (
+            <>
+              {planen && (
+                <PlanenKopf titel={bereichsTitel(t, geplant)} onBeenden={() => dispatch(zumAnsehen(geplant))} />
+              )}
+              {unterseite && (
+                <UnterseiteKopf onZurueck={() => navigate('start')}>
+                  {state.screen === 'mitteilungen' && ungelesen > 0 && <AlleGelesen className="unterseitenkopf-aktion" />}
+                </UnterseiteKopf>
+              )}
+              {/* Die Versammlung im Kopf, nicht die Wortmarke (T107); solange
+                  keine geladen ist (Konto ohne Versammlung, Ladefehler), steht
+                  der Produktname da, damit der Kopf nicht leer bleibt. */}
+              <Kopfzeile
+                datum={datumsFormat(state.lang, 'tag').format(fromIso(tag))}
+                versammlung={versammlung ? fill(t.congLabel, { name: versammlung }) : 'Versammlung.app'}
+                ungelesen={ungelesen}
+                menueOffen={menuOpen}
+                amHandyErsetzt={planen || unterseite}
+                onMenue={() => setMenuOpen(true)}
+                onGlocke={() => navigate('mitteilungen')}
+              />
 
-          Bis zum 12.10.2026 stand eine gemeinsame Grenze um alle Blätter, mit
-          dem obersten als `key`. Lagen zwei übereinander (S-89 über dem
-          Zuteilen, Absagen über dem Blatt beim Öffnen), hängte jeder Wechsel
-          des obersten auch das untere neu ein: Es verlor seinen
-          Verlaufseintrag, und schloss das obere per Escape, bekam das untere
-          mitten in derselben Taste einen frischen `CloseWatcher` — der die
-          Taste ein zweites Mal verarbeitete und es gleich mit schloss.
-        */}
-        {zuteilenBlatt && blatt(<AssignSheet sel={zuteilenBlatt} />)}
-        {state.langSheetOpen && blatt(<LanguageSheet />)}
-        {state.svcSheet && blatt(<HilfsdienstBlatt svcKey={state.svcSheet} />)}
-        {state.s89 && blatt(<S89Sheet payload={state.s89} />)}
-        {meineAufgabe && blatt(<AufgabeBlatt task={meineAufgabe} />)}
-        {state.confirmOpen && vorzulegen(state.myTasks, state.substituteReqs) && blatt(<OeffnenBlatt />)}
-        {/* Nach dem Blatt beim Öffnen: „Ich kann nicht" darin legt sich darüber. */}
-        {abzusagen && blatt(<AbsageBlatt key={abzusagen.id} task={abzusagen} />)}
-        {state.toast && (
-          <div key={state.toast.id} className="toast" role="status">
-            {state.toast.text}
-          </div>
-        )}
-      </main>
-    </div>
+              <OfflineBanner />
+              <AnsichtLeiste />
+
+              {/* `key` am Screen: nach einem Fehler hängt der nächste
+                  Screenwechsel eine frische Boundary ein — sonst bliebe der
+                  Auffangbereich bis zum Neuladen stehen. */}
+              <div className="app-content">
+                <ErrorBoundary key={state.screen} {...fehlerTexte}>
+                  <Content />
+                </ErrorBoundary>
+              </div>
+
+              {menuOpen && (
+                <Schublade abschnitte={menue} versammlung={versammlung} profil={profil} onSchliessen={() => setMenuOpen(false)} />
+              )}
+            </>
+          )}
+
+          {/*
+            Jedes Blatt in seiner **eigenen** Fehlergrenze: Ein Fehler darin lässt
+            die App darunter stehen, und das nächste Öffnen beginnt frisch — die
+            Grenze geht mit dem Blatt.
+
+            Bis zum 12.10.2026 stand eine gemeinsame Grenze um alle Blätter, mit
+            dem obersten als `key`. Lagen zwei übereinander (S-89 über dem
+            Zuteilen, Absagen über dem Blatt beim Öffnen), hängte jeder Wechsel
+            des obersten auch das untere neu ein: Es verlor seinen
+            Verlaufseintrag, und schloss das obere per Escape, bekam das untere
+            mitten in derselben Taste einen frischen `CloseWatcher` — der die
+            Taste ein zweites Mal verarbeitete und es gleich mit schloss.
+          */}
+          {zuteilenBlatt && blatt(<AssignSheet sel={zuteilenBlatt} />)}
+          {state.langSheetOpen && blatt(<LanguageSheet />)}
+          {state.svcSheet && blatt(<HilfsdienstBlatt svcKey={state.svcSheet} />)}
+          {state.s89 && blatt(<S89Sheet payload={state.s89} />)}
+          {meineAufgabe && blatt(<AufgabeBlatt task={meineAufgabe} />)}
+          {state.confirmOpen && vorzulegen(state.myTasks, state.substituteReqs) && blatt(<OeffnenBlatt />)}
+          {/* Nach dem Blatt beim Öffnen: „Ich kann nicht" darin legt sich darüber. */}
+          {abzusagen && blatt(<AbsageBlatt key={abzusagen.id} task={abzusagen} />)}
+        </main>
+      </div>
+      {meldung}
+    </>
   )
 }
 
-/**
- * **Das Ladebild beim Start**, solange offen ist, ob jemand angemeldet ist
- * (`sitzungPruefen`). Meist ist das nach Millisekunden entschieden; dann bleibt
- * die Fläche leer, und es blitzt nichts auf. Erst wenn es dauert — Supabase
- * erneuert das Token übers Netz —, erscheinen Logo und „Lädt …" (shell.css).
- */
-function Ladebild() {
-  const { t } = useT()
+/** Die Meldung unten. Aufgerufen mit `key` je Meldung: Eine neue läuft frisch ein. */
+function Meldung({ toast }: { toast: Toast }) {
   return (
-    <div className="rahmen">
-      <main className="app-main ladebild">
-        <Logo gross breite={150} />
-        <p className="ladebild-text">{t.laedt}</p>
-      </main>
+    <div className="toast" role="status">
+      {toast.text}
     </div>
   )
 }
@@ -446,7 +449,7 @@ function OfflineBanner() {
 function Content() {
   const { state } = useApp()
 
-  if (state.dataStatus === 'loading') return <StatusView kind="loading" />
+  // Solange die Daten kommen, steht das Startbild statt der App (oben).
   if (state.dataStatus === 'no-membership') return <StatusView kind="no-membership" />
   if (state.dataStatus === 'error') return <StatusView kind="error" />
   // Die leere Versammlung ist für den Verkündiger eine Sackgasse, für den
@@ -457,8 +460,8 @@ function Content() {
   return <ActiveScreen screen={state.screen} />
 }
 
-/** Ladezustand und Sonderfälle der Datenanbindung. */
-function StatusView({ kind }: { kind: 'loading' | 'no-membership' | 'error' | 'empty' }) {
+/** Sonderfälle der Datenanbindung. */
+function StatusView({ kind }: { kind: 'no-membership' | 'error' | 'empty' }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
 
@@ -468,8 +471,6 @@ function StatusView({ kind }: { kind: 'loading' | 'no-membership' | 'error' | 'e
 
   return (
     <section className="screen status-view">
-      {kind === 'loading' && <p className="status-loading">{t.laedt}</p>}
-
       {/* Ein Konto ohne Versammlung: Der Admin hat es entfernt. Hinein kommt
           es nur über einen neuen Link — einen Code einlösen gibt es seit dem
           Anmelden per Link (T121, Phase 8) nicht mehr. */}
@@ -510,7 +511,7 @@ function StatusView({ kind }: { kind: 'loading' | 'no-membership' | 'error' | 'e
         Weg hinaus — wer mit dem falschen Konto angemeldet war oder vor einer
         leeren Versammlung stand, säße ohne ihn fest.
       */}
-      {kind !== 'loading' && <AbmeldenKnopf className="btn-outline status-btn" />}
+      <AbmeldenKnopf className="btn-outline status-btn" />
     </section>
   )
 }

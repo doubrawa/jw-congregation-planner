@@ -471,7 +471,6 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
     ['nur lesend (Momentaufnahme)', { screen: 'start', staleAt: Date.now() - 3600_000 }],
     ['Versammlung noch leer', { screen: 'start', dataEmpty: true, planner: false }],
     ['keine Wochen geladen', { screen: 'programm', weeks: [], fsWeeks: [] }],
-    ['Daten laden', { screen: 'start', dataStatus: 'loading' }],
     ['kein Mitglied', { screen: 'start', dataStatus: 'no-membership' }],
     ['Ladefehler', { screen: 'start', dataStatus: 'error' }],
     // Die Wochen beim Planen (T121, Phase 10): eine Woche ab heute — sonst
@@ -518,6 +517,19 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
       screen: over.screen, lang: 'en', congLang: 'en',
     })
     expect(mit, `${name}: ändert nichts am Bildschirm`).not.toBe(sichtbarerText(normal))
+  })
+
+  /*
+   * **Das Startbild beim Laden** (19.10.2026) trägt nur ein Wort, „Lädt …" —
+   * zu wenig für die Zustände oben, die erst ab 20 Zeichen gelten. Es steht
+   * deshalb hier eigens: in der Sprache der App, nicht auf Deutsch.
+   */
+  it.each(['en', 'uk', 'ar'] as const)('%s: das Startbild sagt „Lädt …" in der Sprache der App', async (code) => {
+    await loadOverlay(code)
+    const { container } = zeige({ screen: 'start', dataStatus: 'loading', lang: code, congLang: code })
+    const wort = container.querySelector('.startbild')?.textContent
+    expect(wort).toBe(dict(code).laedt)
+    expect(wort).not.toBe(DE.laedt)
   })
 
   it('die Prüfung findet ein eingeschmuggeltes deutsches Wort auch wirklich', () => {

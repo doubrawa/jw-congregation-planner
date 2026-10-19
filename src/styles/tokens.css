@@ -146,6 +146,34 @@
   --sh-popover: 0 14px 34px rgba(var(--shade), 0.2);
 }
 
+/* ---- Startbild ---------------------------------------------------------------
+   Bis die App etwas zu zeigen hat (`Startbild.tsx`, 19.10.2026). Im Browser in
+   den Farben der Darstellung. Die installierte App setzt das Bild fort, das
+   Android beim Start zeigt: Graphit wie `background_color` im Manifest, das
+   Logo in den Farben der dunklen Palette — in beiden Darstellungen
+   (`tests/logo-farben.test.ts` hält die Werte gleich). Solange es steht, nimmt
+   die Statusleiste seinen Grund (`startbildMelden` in `app/darstellung.ts`). */
+:root {
+  --start-grund: var(--grund);
+  --start-platz: var(--text);
+  --start-pult: var(--akzent);
+  --start-text: var(--text2);
+  --statusleiste: var(--grund);
+}
+
+@media (display-mode: standalone) {
+  :root {
+    --start-grund: #1c1e20;
+    --start-platz: #f4f4f1;
+    --start-pult: #86e0b8;
+    --start-text: #c5c7c4;
+  }
+
+  :root[data-startbild] {
+    --statusleiste: var(--start-grund);
+  }
+}
+
 /*
  * Schrift für Rechts-nach-links, gewählt am 11.10.2026: Vazirmatn für
  * Arabisch und Persisch. Manrope bleibt vorn — sie deckt die arabische Schrift

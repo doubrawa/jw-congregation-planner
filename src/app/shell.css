@@ -101,21 +101,10 @@
   }
 }
 
-/* ---- Datenanbindung: Lade-/Sonderzustände -------------------------------- */
+/* ---- Datenanbindung: Sonderzustände (geladen wird im Startbild, unten) ---- */
 
 .status-view {
   text-align: center;
-}
-
-/* „Lädt …" sieht überall gleich aus: in der App und im Ladebild beim Start (unten). */
-.status-loading,
-.ladebild-text {
-  font-size: calc(13px * var(--fs));
-  color: var(--text2);
-}
-
-.status-loading {
-  margin-top: 40px;
 }
 
 .status-title {
@@ -147,21 +136,96 @@
   margin: 20px auto 0;
 }
 
-/* ---- Ladebild beim Start -------------------------------------------------- */
+/* ---- Startbild ------------------------------------------------------------ */
 
-/* Solange offen ist, ob jemand angemeldet ist (`sitzungPruefen`). Erst nach
-   einer halben Sekunde zu sehen: Meist ist es bis dahin entschieden, und ein
-   Logo, das nur kurz aufblitzt, wäre genau das Flackern, das es verhindern
-   soll. Ohne Bewegung (unten) erscheint es nach derselben Pause, nur ohne
-   Einblenden. */
-.ladebild {
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  animation: ladebild-erscheinen 300ms ease-out 500ms both;
+/* Bis die App etwas zu zeigen hat (`Startbild.tsx`): das Logo allein, in der
+   Mitte des Fensters wie das Bild, das Android beim Start zeigt — gemittelt
+   zwischen den sicheren Rändern, denn Android mittelt zwischen Status- und
+   Bedienleiste. Die Farben aus `tokens.css` (`--start-…`): in der installierten
+   App Graphit wie dort, im Browser die der Darstellung. index.html zeichnet
+   dasselbe schon vor dem Skript. */
+.startbild {
+  box-sizing: border-box;
+  display: grid;
+  /* Drei Zeilen: das Logo in der mittleren, die beiden anderen gleich hoch —
+     so steht es genau in der Mitte, und „Lädt …" (ohne Bewegung) darunter
+     verschiebt es nicht. */
+  grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+  justify-items: center;
+  min-height: 100svh;
+  padding-block: env(safe-area-inset-top) env(safe-area-inset-bottom);
+  background: var(--start-grund);
+  color: var(--start-text);
 }
 
-@keyframes ladebild-erscheinen {
+.startbild-logo {
+  grid-row: 2;
+}
+
+.startbild-logo .logo-pult {
+  fill: var(--start-pult);
+}
+
+.startbild-logo .logo-platz {
+  fill: var(--start-platz);
+}
+
+/* Die Welle: Minze läuft vom Pult durch die drei Reihen, wie das Wort vom Pult
+   in den Saal, dann Ruhe, dann wieder. Erst nach einer halben Sekunde: Ist die
+   App bis dahin da, bleibt es beim ruhigen Bild, und nichts zuckt. Nur im
+   Startbild der App, nicht in dem aus index.html — löst React es ab, fängt
+   eine laufende Welle sonst mit einem Ruck von vorn an. Ohne Bewegung kürzt
+   die Regel unten in dieser Datei jede Animation auf einen Augenblick — dann
+   bleibt das Bild ruhig, und das Wort steht darunter. */
+.startbild-welle .logo-platz {
+  animation: startbild-welle 1.8s ease-in-out 0.5s infinite;
+}
+
+.startbild-welle .logo-platz:nth-of-type(2) {
+  animation-delay: 0.68s;
+}
+
+.startbild-welle .logo-platz:nth-of-type(3) {
+  animation-delay: 0.86s;
+}
+
+@keyframes startbild-welle {
+  0%,
+  30%,
+  100% {
+    fill: var(--start-platz);
+  }
+
+  12% {
+    fill: var(--start-pult);
+  }
+}
+
+/* „Lädt …" hören Vorleseprogramme immer (`sr-only`); zu sehen ist es nur ohne
+   Bewegung — dann zeigt keine Welle, dass etwas geschieht. In der Zeile unter
+   dem Logo, oben an ihr. Zwei Klassen im Selektor: Er hebt `.sr-only` auf,
+   gleich in welcher Reihenfolge die Dateien laden. */
+.startbild-text {
+  font-size: calc(13.5px * var(--fs));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .startbild .startbild-text {
+    position: static;
+    grid-row: 3;
+    align-self: start;
+    width: auto;
+    height: auto;
+    margin: 18px 0 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+    text-align: center;
+    animation: startbild-wort 1ms 1s both;
+  }
+}
+
+@keyframes startbild-wort {
   from {
     opacity: 0;
   }

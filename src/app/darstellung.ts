@@ -28,9 +28,26 @@ export function darstellungSpiegeln(theme: Theme, doc: Document = document): () 
   return () => geraet.removeEventListener('change', anwenden)
 }
 
-/** Die Statusleiste nimmt den Grund der Palette — aus dem CSS, keine zweite Farbliste. */
+/**
+ * Die Statusleiste nimmt den Grund der Palette — aus dem CSS, keine zweite
+ * Farbliste: `--statusleiste`, das ist der Grund, solange in der installierten
+ * App das Startbild steht dessen Graphit (`tokens.css`). Ohne geladenes CSS
+ * bleibt der Grund.
+ */
 function statusleisteAnpassen(doc: Document): void {
   const meta = doc.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
-  const grund = doc.defaultView?.getComputedStyle(doc.documentElement).getPropertyValue('--grund').trim()
-  if (meta && grund) meta.content = grund
+  const stil = doc.defaultView?.getComputedStyle(doc.documentElement)
+  const farbe = stil?.getPropertyValue('--statusleiste').trim() || stil?.getPropertyValue('--grund').trim()
+  if (meta && farbe) meta.content = farbe
+}
+
+/**
+ * **Das Startbild steht — oder nicht mehr** (`Startbild.tsx`). Solange es
+ * steht, trägt die Statusleiste in der installierten App sein Graphit, wie
+ * schon das Bild von Android davor; danach den Grund der Darstellung.
+ */
+export function startbildMelden(steht: boolean, doc: Document = document): void {
+  if (steht) doc.documentElement.dataset.startbild = ''
+  else delete doc.documentElement.dataset.startbild
+  statusleisteAnpassen(doc)
 }
