@@ -127,6 +127,15 @@
  *  70. Planer: einen Vortrag vormerken (Upsert wie die App)     → durch
  *  80. Planer: eine Person anlegen                              → abgewiesen
  *  81. Planer: den Namen der Versammlung ändern                 → abgewiesen
+ *  82. Mitglied: eine fremde Abwesenheit, neun Wochen vorbei    → unsichtbar
+ *  83. Gruppenaufseher: dieselbe Abwesenheit                    → unsichtbar
+ *  84. Planer: dieselbe Abwesenheit                             → sichtbar
+ *  85. Mitglied: die eigene Abwesenheit, neun Wochen vorbei     → sichtbar
+ *
+ * (82)–(85) kamen am 19.10.2026 dazu: die Leseregel der Abwesenheiten vom
+ * 17.10.2026 (`absences_select`). Seit die Auswertung ein Jahr zurückblickt,
+ * bleiben Abwesenheiten ein Jahr; älter als acht Wochen sieht sie nur, wer
+ * zuteilt — und wem sie gehört.
  *
  * (36) zielt ins Leere — eine Woche im Jahr 2100, die es nicht gibt —, damit
  * eine offene Tür nichts verschickt; dass die Function dann „keine Woche"
@@ -636,6 +645,12 @@ async function schreibVersuch(k, nr, was, tabelle, zeile, erwartet, folge, { wer
   await k.aufraeumen(e, loeschen ?? (() => k.planer.rest(`${tabelle}?id=eq.${zeile.id}`, 'DELETE', undefined, 'return=minimal')))
 }
 
+/** Was `wer` von einer Zeile sieht — gelesen über ihre Kennung, für `leseVersuch`. */
+const zeileSicht = (wer, tabelle, id) => async () => {
+  const r = await wer.rest(`${tabelle}?select=id&id=eq.${id}`)
+  return { status: r.status, sichtbar: zeilenVon(r).length > 0 }
+}
+
 /** Ein Leseversuch des Mitglieds — gemessen nur, wenn die Anlage dasteht. */
 async function leseVersuch(k, nr, was, anlage, lesen, erwartet, folge) {
   if (!anlage.ok) return k.kaputt(nr, was, anlage.grund, erwartet)
@@ -675,10 +690,7 @@ async function gruppenbesucheProben(k, a) {
     'abgewiesen — gruppenbesuche_write greift',
   ])
   const anlage = await anlegen(k.planer, 'gruppenbesuche', [a.besuch])
-  const lesen = async () => {
-    const r = await k.mitglied.rest(`gruppenbesuche?select=id&id=eq.${a.besuch.id}`)
-    return { status: r.status, sichtbar: zeilenVon(r).length > 0 }
-  }
+  const lesen = zeileSicht(k.mitglied, 'gruppenbesuche', a.besuch.id)
   await leseVersuch(k, 12, 'einen Gruppenbesuch sehen, den der Planer angelegt hat', anlage, lesen, true, [
     'die Gruppe erfährt, wann der Dienstaufseher kommt',
     'ZU STRENG — die Gruppe erfährt nicht, wann der Dienstaufseher kommt',
@@ -994,6 +1006,28 @@ export function vortragAnlage({ marke, versammlung: c, tag0 }) {
   }
 }
 
+/**
+ * Die Anlage für (82)–(85), die Leseregel der Abwesenheiten (`absences_select`,
+ * 17.10.2026): je eine Abwesenheit des Admins und des Mitglieds, die neun Wochen
+ * vor dem Montag dieser Woche endete — eine mehr als die Grenze der Regel
+ * (acht Wochen), damit kein Wochenwechsel während des Laufs sie verschiebt.
+ * `absences.id` ist eine echte `uuid`; der Grund trägt das Kennzeichen.
+ */
+export function abwesenheitAnlage({ marke, versammlung: c, heute, admin, mitglied, ids }) {
+  const montag = ersterMontagAb(tagPlus(heute, -6))
+  const bis = tagPlus(montag, -7 * 9)
+  const abwesenheit = (id, wer) => ({
+    id,
+    congregation_id: c,
+    user_id: wer.uid,
+    person_id: wer.pid,
+    from_date: tagPlus(bis, -2),
+    to_date: bis,
+    reason: marke,
+  })
+  return { fremde: abwesenheit(ids[0], admin), eigene: abwesenheit(ids[1], mitglied) }
+}
+
 /** Was nach einem durchgekommenen Änderungsversuch geschieht — zurückstellen, nicht löschen. */
 const ZURUECK = ['wieder zurückgestellt', 'vorsorglich zurückgestellt']
 
@@ -1268,10 +1302,7 @@ async function absageProbe(k, a) {
 async function vortragProben(k, a) {
   const { planer, mitglied, zuteiler, aufseher } = k
   const anlage = await anlegen(planer, 'vortraege', [a.vortrag])
-  const sicht = (wer) => async () => {
-    const r = await wer.rest(`vortraege?select=id&id=eq.${a.vortrag.id}`)
-    return { status: r.status, sichtbar: zeilenVon(r).length > 0 }
-  }
+  const sicht = (wer) => zeileSicht(wer, 'vortraege', a.vortrag.id)
   const v = a.versuche
   await leseVersuch(k, 65, 'Mitglied: einen vorgemerkten Vortrag sehen', anlage, sicht(mitglied), false, [
     'AUCH DAS!',
@@ -1291,6 +1322,36 @@ async function vortragProben(k, a) {
 }
 
 /**
+ * (82)–(85) Alte Abwesenheiten (17.10.2026, `absences_select`): Über acht Wochen
+ * zurück sieht eine Abwesenheit nur, wer zuteilt — für die Auswertung über das
+ * Jahr — und wem sie gehört. Der Grund steht noch darin, solange das Aufräumen
+ * ihn nicht geleert hat; ein Mitglied sähe sonst, warum ein anderer fehlte.
+ * Weg kommen beide mit den übrigen Zeilen der Stufen (`stufenAufraeumen`, am
+ * Kennzeichen im Grund).
+ */
+async function abwesenheitProben(k, a) {
+  const { planer, mitglied, zuteiler, aufseher } = k
+  const anlage = await anlegen(planer, 'absences', [a.fremde, a.eigene])
+  const sicht = (wer, zeile) => zeileSicht(wer, 'absences', zeile.id)
+  await leseVersuch(k, 82, 'Mitglied: eine fremde Abwesenheit, neun Wochen vorbei', anlage, sicht(mitglied, a.fremde), false, [
+    'AUCH DAS!',
+    'unsichtbar — alte Abwesenheiten sieht nur, wer zuteilt',
+  ])
+  await leseVersuch(k, 83, 'Gruppenaufseher: dieselbe Abwesenheit', anlage, sicht(aufseher, a.fremde), false, [
+    'AUCH DAS!',
+    'unsichtbar — der Gruppenaufseher teilt nicht zu',
+  ])
+  await leseVersuch(k, 84, 'Planer: dieselbe Abwesenheit', anlage, sicht(zuteiler, a.fremde), true, [
+    'er sieht sie für die Auswertung über das Jahr',
+    'ZU STRENG — die Auswertung des Planers verlöre die alten Abwesenheiten',
+  ])
+  await leseVersuch(k, 85, 'Mitglied: die eigene Abwesenheit, neun Wochen vorbei', anlage, sicht(mitglied, a.eigene), true, [
+    'die eigene bleibt sichtbar',
+    'ZU STRENG — das Mitglied sieht seine eigene Abwesenheit nicht mehr',
+  ])
+}
+
+/**
  * Alles wieder weg, was die Probe für die Rechte-Stufen angelegt hat — über das
  * Kennzeichen, wie bei T120; die Treffpunkt-Woche nur, wenn sie der Probe
  * gehört. Dazu die Mitteilungen mit dem Kennzeichen beim Planer und beim
@@ -1307,6 +1368,8 @@ async function stufenAufraeumen(k, fsStart, merker, neueWoche) {
     ['die Gruppenbesuche', weg('gruppenbesuche')],
     ['die Regeln des Grundplans', weg('fs_rules')],
     ['die Vormerkungen der Vorträge', weg('vortraege')],
+    // `absences.id` ist eine echte uuid — das Kennzeichen steht im Grund (82–85).
+    ['die alten Abwesenheiten', () => planer.rest(`absences?reason=eq.${marke}`, 'DELETE', undefined, 'return=minimal')],
     ...(merker.treffpunktWoche
       ? [['die Treffpunkt-Woche', () => planer.rest(`fs_weeks?congregation_id=eq.${versammlung}&start=eq.${fsStart}`, 'DELETE', undefined, 'return=minimal')]]
       : []),
@@ -1373,7 +1436,7 @@ async function verwaltungProben(k, neu) {
 }
 
 /**
- * Die Fälle (35)–(70) und (80), (81) — siehe Kopf. Aufgeräumt wird in jedem
+ * Die Fälle (35)–(70) und (80)–(85) — siehe Kopf. Aufgeräumt wird in jedem
  * Fall, auch wenn ein Fall mittendrin wirft.
  */
 async function stufenProben(k, woche) {
@@ -1393,6 +1456,17 @@ async function stufenProben(k, woche) {
     await verwaltungProben(k, verwaltung)
     // Vor der Prüfung auf Personen und Gruppen: Die Vormerkungen brauchen keine.
     await vortragProben(k, vortragAnlage({ marke, versammlung, tag0 }))
+    // Die alten Abwesenheiten brauchen eine eigene Person je Konto: Teilten
+    // Mitglied oder Gruppenaufseher die des Admins, wäre die „fremde"
+    // Abwesenheit für sie die eigene — (82) und (83) meldeten ein Loch, das
+    // keines ist.
+    if (planer.pid && mitglied.pid && mitglied.pid !== planer.pid && aufseher.pid !== planer.pid) {
+      const heute = new Date().toISOString().slice(0, 10)
+      const ids = [crypto.randomUUID(), crypto.randomUUID()]
+      await abwesenheitProben(k, abwesenheitAnlage({ marke, versammlung, heute, admin: planer, mitglied, ids }))
+    } else {
+      for (const nr of [82, 83, 84, 85]) k.ungemessen(nr, 'alte Abwesenheit sehen', 'Admin, Mitglied und Gruppenaufseher brauchen je eine eigene Person')
+    }
 
     const g = await planer.rest('groups?select=id,overseer_id,assistant_id&order=position')
     const wahl = gruppenWahl(zeilenVon(g), { aufseherPid: aufseher.pid, zuteilerPid: zuteiler.pid, mitgliedPid: mitglied.pid })
@@ -1572,10 +1646,7 @@ async function trolleyFunktionProben(k, a, anlage, recht) {
   })
 
   const eigener = e75?.durch ? { ok: true } : { ok: false, grund: 'kein eigener Termin aus (75)' }
-  const lesen = async () => {
-    const r = await mitglied.rest(`trolley_termine?select=id&id=eq.${a.eigener.id}`)
-    return { status: r.status, sichtbar: zeilenVon(r).length > 0 }
-  }
+  const lesen = zeileSicht(mitglied, 'trolley_termine', a.eigener.id)
   await leseVersuch(k, 76, 'Mitglied: den eigenen Trolley-Termin sehen', eigener, lesen, true, [
     'er steht in der App',
     'ZU STRENG — das Mitglied sieht den eigenen Termin nicht',

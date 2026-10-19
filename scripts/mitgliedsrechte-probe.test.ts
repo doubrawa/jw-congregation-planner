@@ -3,6 +3,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { PROBE_DATEI, probeDateiText, wertAusEnvText } from './gemeinsam.mjs'
 import {
+  abwesenheitAnlage,
   bewerteSicht,
   bewerteVersuch,
   dienstAusSchluessel,
@@ -645,6 +646,35 @@ describe('Was der Planer anlegt (40, 80): die Regeln, die mit den Rechten nichts
 
   it('die Person mit dem Kennzeichen im Vornamen und einer echten Kennung', () => {
     expect(a.person).toEqual({ id: '00000000-0000-4000-8000-0000000000aa', congregation_id: 'c', fn: 'PROBE-1', ln: 'Probe' })
+  })
+})
+
+describe('Alte Abwesenheiten (82)–(85): die Anlage liegt sicher hinter der Grenze der Leseregel', () => {
+  /*
+    `absences_select` lässt sehen, was nach dem Montag dieser Woche minus acht
+    Wochen endet. Läge die Anlage auf der Grenze, sähe das Mitglied sie — und
+    (82) meldete „AUCH DAS!", ohne dass die Regel offen wäre. Darum neun Wochen,
+    gerechnet vom Montag der laufenden Woche, an jedem Wochentag.
+  */
+  const admin = { uid: 'u-admin', pid: 'p-admin' }
+  const mitglied = { uid: 'u-mitglied', pid: 'p-mitglied' }
+  const ids = ['00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000a2']
+
+  it.each(['2026-10-19', '2026-10-21', '2026-10-25'])('am %s: neun Wochen vor dem Montag dieser Woche, also vor der Grenze', (heute) => {
+    const a = abwesenheitAnlage({ marke: 'PROBE-1', versammlung: 'c', heute, admin, mitglied, ids })
+    const montag = ersterMontagAb(tagPlus(heute, -6))
+    const grenze = tagPlus(montag, -7 * 8)
+    expect(wochentag(montag)).toBe(1)
+    for (const z of [a.fremde, a.eigene]) {
+      expect(z.to_date < grenze, z.to_date).toBe(true)
+      expect(z.from_date <= z.to_date).toBe(true)
+    }
+  })
+
+  it('die fremde gehört dem Admin, die eigene dem Mitglied — beide mit dem Kennzeichen im Grund', () => {
+    const a = abwesenheitAnlage({ marke: 'PROBE-1', versammlung: 'c', heute: '2026-10-19', admin, mitglied, ids })
+    expect(a.fremde).toMatchObject({ id: ids[0], user_id: 'u-admin', person_id: 'p-admin', congregation_id: 'c', reason: 'PROBE-1' })
+    expect(a.eigene).toMatchObject({ id: ids[1], user_id: 'u-mitglied', person_id: 'p-mitglied', reason: 'PROBE-1' })
   })
 })
 
