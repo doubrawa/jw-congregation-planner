@@ -1,0 +1,6 @@
+# messen.mjs und auswerten.mjs schreiben in ihren eigenen Ordner:
+# das Chrome-Profil samt Trennwörterbüchern, Bilder und Ergebnisse eines Laufs.
+profil*/
+bilder-*/
+ergebnis-*.json
+auswertung-*.txt

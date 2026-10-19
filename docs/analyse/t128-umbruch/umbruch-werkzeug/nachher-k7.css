@@ -1,0 +1,86 @@
+/* Kandidat K4 für die Nachher-Simulation — nur im Tab eingehängt, nicht im Repo.
+   `:root` davor nur, weil Vite die CSS-Module erst nach diesem <style> einhängt;
+   im Repo stünden die Regeln in ihren Dateien hinter den bestehenden. */
+
+/* bausteine.css — Titel einer Seite und einer Unteransicht: lange Wörter trennen
+   statt hinausragen („Вспомогательные обязанности" bei 320 px, Stufe 1.45). */
+:root .seitentitel {
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+/* menue.css — Eintrag im Menü am Desktop: „Zusammenkünfte" bei Stufe 1.45
+   ragte 31 px aus seinem Kasten, die Leiste zeigte einen waagerechten Balken. */
+:root .menue-eintrag-text {
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+/* menue.css — die schmale Leiste wächst mit der Schrift (88 px bei Stufe 1). */
+:root .schmale-leiste {
+  width: calc(88px * max(1, var(--fs)));
+}
+
+/* einstellungen.css — wird die Karte für Name und Wert nebeneinander zu schmal
+   (große Schrift am Handy), steht der Wert unter dem Namen. */
+:root .einst-karte {
+  container-type: inline-size;
+}
+
+@container (max-width: 15em) {
+  :root .einst-zeile:not(.einst-zeile--entfernbar) {
+    grid-template-columns: minmax(0, 1fr) 20px;
+  }
+
+  :root .einst-zeile-wert {
+    grid-column: 1;
+    grid-row: 2;
+    max-width: none;
+  }
+
+  :root .einst-zeile > .zeichen {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  :root .hd-zeile {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 4px;
+    padding-block: 8px;
+  }
+
+  :root .hd-zeile > :last-child {
+    justify-self: end;
+  }
+}
+
+/* overlays.css — Fuß eines Blatts: passen die Knöpfe nicht nebeneinander,
+   rückt der letzte in die nächste Zeile, statt dass der erste links hinausragt
+   („Удалить вспомогательную обязанность" bei 320 px, Stufe 1.45). */
+:root .sheet-fuss-ende {
+  flex-wrap: wrap;
+}
+
+/* menue.css — die Seitenleiste am Desktop wächst mit der Schrift: 248 px bei
+   Stufe 1, gut 300 px bei 1.45 („Powiadomienia" mit Zähler daneben). */
+:root .leiste {
+  width: max(248px, calc(124px * (1 + var(--fs))));
+}
+
+/* overlays.css — Titel eines Blatts: „Eingangsordner" ragte bei 320 px und
+   Stufe 1.45 sieben Pixel aus seinem Kasten, „Распорядитель у входа" neun. */
+:root .sheet-title {
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+/* bausteine.css — Beschriftung neben einem Schalter („Дополнительный класс"
+   ragte drei Pixel hinaus). */
+:root .schalter-text {
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
+}

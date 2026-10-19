@@ -7213,7 +7213,8 @@ Anmelden älter als einen Tag. `pg_cron` 1.6.4 ist da, als Zeitplan stand nur
 einmal die woche läuft"*. `jw-alte-daten-loeschen` läuft montags um 03:30 UTC
 (`30 3 * * 1`, als `postgres`), gleich nachdem die Grenzen weitergerückt sind;
 an anderen Tagen fände er nichts Neues. Die Fehlversuche beim Anmelden räumt
-`anmelden` bei jedem neuen selbst ab. Erster Lauf: 19. Oktober 2026.
+`anmelden` bei jedem neuen selbst ab. Erster Lauf: 19. Oktober 2026 —
+nachgesehen in `cron.job_run_details`: um 03:30 UTC gelaufen, `succeeded`.
 
 **Mitteilungen** löscht der Erinnerungslauf schon nach 30 Tagen, sobald er
 wirklich sendet (`pruneNotifications` in `send-reminders`, nur mit
@@ -7588,9 +7589,15 @@ eine Trennung war, zeigt ein Klon bei gleicher Breite ohne `overflow-wrap`.
 Dev-Server aus einem Worktree mit einer Hülle `vite.messung.config.mjs`
 (`server.fs.allow` auf den Hauptcheckout, sonst laden die Schriften nicht).
 Die Skripte (`messen.mjs`, `seite.js`, `auswerten.mjs`, `nachher-k7.css`, die
-Hülle) liegen im Übergabe-Ordner der Sitzung von T127
-(`side-session-notes\local_51bededf-…\umbruch-werkzeug\`) — fehlen sie, neu
-schreiben.
+Hülle, `nebeneinander.py` für Vorher-Nachher-Bilder) liegen seit dem
+19. Oktober im Repo unter
+[`t128-umbruch/umbruch-werkzeug/`](t128-umbruch/umbruch-werkzeug/), die
+Messnotiz der Sitzung daneben
+([`umbruch-320px-messung-und-plan.md`](t128-umbruch/umbruch-320px-messung-und-plan.md)).
+Sie lagen im Übergabe-Ordner der Sitzung von T127, der mit der Sitzung
+gelöscht wurde. `messen.mjs` legt Chrome-Profil, Bilder und Ergebnisse in
+seinem eigenen Ordner ab (per `.gitignore` ausgenommen); die Hülle gehört in
+die Wurzel des Worktrees, denn sie lädt `./vite.config.ts`.
 
 ---
 
@@ -7758,7 +7765,7 @@ Konfliktprüfung kennt Vorsitz und Anfangsgebet schon als gewolltes Paar.
 
 ## Fortschritt
 
-Stand 18. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 19. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -7801,9 +7808,28 @@ Zeichenzeile.
 > `grep -E '^### T[0-9]+ ' docs/analyse/todo.md | grep -vE '✅|⛔'` lässt die
 > offenen übrig.
 
-**Der Betrieb steht auf dem Stand von `main` (5. Oktober, nachgesehen am
-10. Oktober):** Das Frontend geht mit jedem Push hinaus; vor diesem Eintrag
-lief `02094be` (`sw.js` nannte `shell-02094be`), der Kopf von `main`. Die
+**Der Betrieb steht auf dem Stand von `main` (nachgesehen am 19. Oktober
+2026, nachmittags):** Das Frontend geht mit jedem Push hinaus; vor diesem
+Eintrag lief `bc848a3` (`sw.js` nannte `shell-bc848a3`), der Kopf von `main`,
+der letzte Pages-Lauf grün. Die sieben Edge Functions tragen die Versionen
+ihrer letzten Deploys: `import-week` 53 (18. Oktober, 11:57 Uhr, nach
+`207ad6eb`), `send-reminders` 61 (16. Oktober, 20:32 Uhr), `send-plan` 35,
+`substitute` 44, `trolley` 8, `anmelden` 11 und `send-invite` 24 (16. Oktober,
+15:46 Uhr); seither haben Commits in ihren Ordnern nur Tests geändert.
+`zuteilen` ist seit dem 15. Oktober gelöscht. Im Schema kam zuletzt
+`groups.ohne_reinigung` dazu (T127), in der Datenbank da. Die Zeitpläne laufen:
+das Aufräumen aus T125 (montags 03:30 UTC) am 19. Oktober zum ersten Mal,
+erfolgreich, die Erinnerungen (täglich 08:00 UTC) ebenso. Auf GitHub steht nur
+`main`, ohne offene PRs und Issues.
+
+**Beim Betreiber liegen, außerhalb des Repos:** Resend mit dem Secret
+`INVITE_FROM` (am 19. Oktober weiter nicht gesetzt) und das Abschalten der
+Registrierung (`disable_signup` noch `false`). Einen eigenen SMTP-Server
+braucht es nicht mehr: Ohne Kennwort und Registrieren verschickt Supabase Auth
+selbst keine Mails (siehe „Was offen ist und warum").
+
+**Stand vom 10. Oktober** (`main` vom 5. Oktober): Das Frontend ging mit jedem
+Push hinaus; vor jenem Eintrag lief `02094be` (`sw.js` nannte `shell-02094be`), der Kopf von `main`. Die
 sechs Edge Functions tragen die Versionen ihrer letzten Deploys: `send-plan`
 23 (5. Oktober, 22:16 Uhr), `zuteilen` 2, `substitute` 35 und `send-reminders`
 48 (5. Oktober, 16:53 Uhr), `import-week` 38 (4. Oktober, 15:00 Uhr),
@@ -7817,8 +7843,8 @@ Davor liegt einer vom 2. Oktober, der in dieser Liste sonst nirgends steht:
 `import-week` und `send-invite` prüfen seither selbst, wer fragt (`2368189`),
 weil `verify_jwt` den öffentlichen Schlüssel durchlässt.
 
-**Vor dem Ausrollen liegt beim Betreiber, außerhalb des Repos:** ein eigener
-SMTP-Server für die Anmelde-Mails (T114; ob einer eingetragen ist, zeigt nur
+**Am 10. Oktober lag vor dem Ausrollen beim Betreiber, außerhalb des Repos:**
+ein eigener SMTP-Server für die Anmelde-Mails (T114; ob einer eingetragen ist, zeigt nur
 das Dashboard) und das Secret `INVITE_FROM` (T106; am 10. Oktober nachgesehen:
 `RESEND_API_KEY` ist gesetzt, `INVITE_FROM` nicht).
 
@@ -8157,16 +8183,19 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 ### Was offen ist und warum
 
-**Stand 18. Oktober 2026, alles Offene an einer Stelle** (gemessen: 126 Köpfe
-gezählt, offen nur T121; kein Zweig außer `main`, keine PR, kein Issue; `sw.js`
-= HEAD (`shell-4711e01`); alle sieben Functions am 16. Oktober ausgerollt,
-seither in ihren Ordnern nur Tests geändert; Secrets ohne `INVITE_FROM`,
-`disable_signup` noch `false`; keine ruhende Sitzung zu diesem Repo). Im Code
-ist nichts mehr offen außer dem Rest von T42 (T123, T125 und T126 am
-16. Oktober erledigt und ausgerollt; T124, die Testdateien von T42, die Absagen
-für die Auswertung und das Code-Review dazu am 17., am Abend die
-`/simplify`-Punkte samt einem zweiten Review, am 18. die Kachel der Absagen);
-was sonst aussteht, braucht den Betreiber oder ein Gerät.
+**Stand 19. Oktober 2026, alles Offene an einer Stelle** (gemessen: 131 Köpfe
+gezählt, offen T121, T128, T130 und T131; kein Zweig außer `main`, keine PR,
+kein Issue; `sw.js` = HEAD (`shell-bc848a3`); `import-week` am 18. Oktober
+nach seiner letzten Änderung ausgerollt, die übrigen sechs Functions am
+16. Oktober, seither in ihren Ordnern nur Tests geändert; Secrets ohne
+`INVITE_FROM`, `disable_signup` noch `false`; das Aufräumen aus T125 lief am
+19. Oktober zum ersten Mal, erfolgreich; die fünf ruhenden Sitzungen zu diesem
+Repo am 19. Oktober gelöscht, eine weitere hat noch uncommittete Änderungen
+im Ordner). Im Code offen sind T128, T130, T131 und der Rest von T42 (am
+18. Oktober erledigt: die Kachel der Absagen, T127, T129, die Auswertung nach
+der Jahresprobe und das Review des Tages; am 19. das Ladebild beim Start, der
+Offline-Start nach über einer Stunde und das Startbild); was sonst aussteht,
+braucht den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
@@ -8184,8 +8213,15 @@ was sonst aussteht, braucht den Betreiber oder ein Gerät.
 | **T128** | Umbruch mitten im Wort, Zahl getrennt von ihrer Bezeichnung | Plan steht (zentral in `fill()`, Zeilen stapeln und Leisten wachsen lassen bei großer Schrift, Trennregeln an vier Stellen, ein weiches Trennzeichen für Türkisch); vom Betreiber auf später gelegt, weil gerade anderes läuft |
 | **T130** | Reiter „Trolleys" nur mit Trolley-Recht | aufgenommen am 18. Oktober abends, noch nicht begonnen; die offenen Fragen stehen in T130 |
 | **T131** | Der Leser folgt am Wochenende dem Vorsitz | aufgenommen am 18. Oktober abends, noch nicht begonnen; zu klären, ob fest oder als Einstellung der Versammlung |
+| **In Arbeit** | Rückkehr ins Netz nach dem Offline-Start | aus `30a5a80d` (19. Oktober): Scheitert das Nachladen gleich nach der Rückkehr, bleibt der letzte Stand bis zur nächsten Token-Erneuerung (oder „Neu laden"); in der ersten Stunde holt nur „Neu laden" die Daten, weil die App nicht auf `online` hört. Die Sitzung „Login-Status-Prüfung vor Anzeige" baut gerade einen `online`-Hörer ein (am 19. Oktober nachmittags noch nicht committet) |
+| **Bewusst offen** | `sprache-fehlt` beim Wochen-Import | zählt weiter als Ende des Kalenders. Strenger gäbe es im Alltag Fehlalarme; betroffen wäre nur eine anderssprachige Versammlung mit Geschichte (Review vom 18. Oktober, `42dff943`) |
+| **Zu entscheiden** | `auth.sessions` aufräumen | IP-Adresse und Browserkennung je Gerät bleiben ohne Frist, solange die Anmeldung gilt. Möglich wäre, Sitzungen nach einem Jahr ohne Nutzung zu löschen; das Gerät bräuchte danach einen neuen Link (bei T125 unter „Später zu entscheiden") |
 
-Am 18. Oktober nach der Messung oben dazugekommen und am selben Tag
+Am 19. Oktober in die Tabelle aufgenommen: die letzten drei Zeilen. Zwei
+standen bis dahin nur in Commit-Nachrichten (`30a5a80d`, `42dff943`), eine nur
+bei T125.
+
+Am 18. Oktober nach der Messung vom Morgen dazugekommen und am selben Tag
 geschlossen: **T127** (Gruppen aus der Reinigung nehmen; Spalte ausgerollt,
 dann gepusht) — damit 127 Köpfe, offen weiter nur T121. Danach dazugekommen
 und offen: **T128** (Umbruch mitten im Wort) — damit 128 Köpfe, offen T121 und
