@@ -1899,6 +1899,7 @@ Montag der laufenden Woche, nicht auf den Tag genau:
 | --- | --- |
 | Wochenpläne mit allen Zuteilungen, Treffpunkte, Zusagen und Absagen, wer benachrichtigt wurde, Gruppenbesuche, vorgemerkte Vorträge, Weitere Pläne, Abwesenheiten (ab ihrem Ende) | **ein Jahr** |
 | Mitteilungen in der Glocke, Erinnerungen, der Grund einer Abwesenheit (ab ihrem Ende), Trolley-Termine, abgelaufene Anmelde-Links | **acht Wochen** |
+| Die Anmeldung eines Geräts, das ein Jahr nicht in der App war | **ein Jahr** – danach braucht es einen neuen Link |
 
 **Warum ein Jahr für die Pläne:** „Automatisch" und die Vorschläge beim
 Zuteilen fragen, wer am längsten nicht dran war. Wer nur alle paar Monate eine

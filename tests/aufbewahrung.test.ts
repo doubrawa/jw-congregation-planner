@@ -56,6 +56,8 @@ const IM_SCHEMA = [...SCHEMA.matchAll(/create table if not exists public\.(\w+)\
  */
 const VON_SUPABASE: [string, Set<string>][] = [
   ['auth.audit_log_entries', new Set(['instance_id', 'id', 'payload', 'created_at', 'ip_address'])],
+  // Gemessen am 19.10.2026 in `information_schema.columns` (Auswahl).
+  ['auth.sessions', new Set(['id', 'user_id', 'created_at', 'updated_at', 'not_after', 'refreshed_at', 'user_agent', 'ip'])],
 ]
 
 const TABELLEN = new Map([...IM_SCHEMA, ...VON_SUPABASE])
@@ -148,6 +150,13 @@ describe('Aufräumen in der Datenbank', () => {
     expect(REGELN.find((r) => r.tabelle === 'auth.audit_log_entries')?.grenze).toBe('acht_wochen')
     expect(RUMPF).toContain("execute format('delete from %s where %s', regel.name::regclass, regel.bedingung)")
     expect(RUMPF).not.toContain('public.%I')
+  })
+
+  it('die Anmeldung eines Geräts geht nach einem Jahr ohne Nutzung (19.10.2026)', () => {
+    // IP-Adresse und Browserkennung bleiben sonst, solange die Anmeldung gilt —
+    // ohne Höchstdauer für immer. `updated_at` zieht bei jeder Erneuerung mit
+    // (gemessen); `created_at` hätte auch täglich genutzte Geräte abgemeldet.
+    expect(REGELN.find((r) => r.tabelle === 'auth.sessions')).toEqual({ tabelle: 'auth.sessions', bedingung: 'updated_at < $1', grenze: 'ein_jahr' })
   })
 
   it('aufräumen darf nur der Zeitplan — nicht anon, nicht ein angemeldetes Konto', () => {

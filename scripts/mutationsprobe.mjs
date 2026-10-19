@@ -7588,8 +7588,15 @@ export const KATALOG = [
     id: "aufraeumen-anmelde-protokoll",
     datei: "supabase/schema.sql",
     regel: "Auch das Anmelde-Protokoll von Supabase (E-Mail und IP-Adresse je Anmeldung) geht nach acht Wochen (T125).",
-    suchen: "        ('auth.audit_log_entries', 'created_at < $1', acht_wochen)\n",
+    suchen: "        ('auth.audit_log_entries', 'created_at < $1', acht_wochen),\n",
     ersetzen: "",
+  },
+  {
+    id: "aufraeumen-sitzungen",
+    datei: "supabase/schema.sql",
+    regel: "Die Anmeldung eines Geräts geht nach einem Jahr ohne Nutzung — gezählt ab der letzten Erneuerung; ab der Anmeldung gezählt, flögen auch täglich genutzte Geräte hinaus (19.10.2026).",
+    suchen: "        ('auth.sessions', 'updated_at < $1', ein_jahr)\n",
+    ersetzen: "        ('auth.sessions', 'created_at < $1', ein_jahr)\n",
   },
   {
     id: "aufraeumen-name-mit-schema",

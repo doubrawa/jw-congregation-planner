@@ -817,7 +817,7 @@ beide ab dem Montag der laufenden Woche gezählt
 
 | Frist | Was |
 | --- | --- |
-| **ein Jahr** | die Wochen und was zu ihnen gehört: Programm samt Zuteilungen (`weeks`), Treffpunkte (`fs_weeks`), Zusagen, Absagen (`absagen`), Versand-Tagebuch, Gruppenbesuche, vorgemerkte Vorträge, Weitere Pläne samt Einträgen — die gerechte Verteilung fragt, wer am längsten wartet; dazu die Abwesenheiten (ab ihrem Ende), mit denen die Auswertung rechnet |
+| **ein Jahr** | die Wochen und was zu ihnen gehört: Programm samt Zuteilungen (`weeks`), Treffpunkte (`fs_weeks`), Zusagen, Absagen (`absagen`), Versand-Tagebuch, Gruppenbesuche, vorgemerkte Vorträge, Weitere Pläne samt Einträgen — die gerechte Verteilung fragt, wer am längsten wartet; dazu die Abwesenheiten (ab ihrem Ende), mit denen die Auswertung rechnet; und die Anmeldung eines Geräts (`auth.sessions`, IP-Adresse und Browserkennung), wenn sie ein Jahr nicht benutzt wurde — das Gerät braucht danach einen neuen Link |
 | **acht Wochen** | Mitteilungen, Erinnerungs-Tagebuch, der Grund einer Abwesenheit (ab ihrem Ende; der Lauf leert `absences.reason`), Trolley-Termine, abgelaufene Anmelde-Links, das Protokoll von Supabase Auth (`auth.audit_log_entries`: E-Mail und IP-Adresse je Anmeldung) |
 | **ein Tag** | Fehlversuche beim Anmelden (IP-Adressen) |
 

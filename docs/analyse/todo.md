@@ -7245,6 +7245,16 @@ für Sitzungen räumt Supabase sie nicht ab. Am 16.10. waren es 12, die älteste
 vom 12.10. Möglich wäre eine Regel für Sitzungen, die ein Jahr unbenutzt
 sind; das Gerät bräuchte danach einen neuen Link.
 
+**Entschieden und umgesetzt am 19. Oktober 2026** (Betreiber: nach einem
+Jahr): `alte_daten_loeschen` löscht `auth.sessions` mit `updated_at` vor
+einem Jahr. Gemessen vorher: `updated_at` zieht bei jeder Erneuerung des
+Tokens mit (wie `refreshed_at`), die Fremdschlüssel von
+`auth.refresh_tokens` und `auth.mfa_amr_claims` löschen kaskadierend mit, und
+der Eigentümer der Funktion darf löschen. Ausgerollt vor dem Push, danach
+der Probelauf (`alte_daten_loeschen(true)`). README und Planer-Handbuch
+nennen die Frist; Probe in `tests/aufbewahrung.test.ts`, Mutationseintrag
+`aufraeumen-sitzungen`.
+
 **Nachgezogen am 17. Oktober 2026 (für T126):** Abwesenheiten bleiben ein Jahr
 ab ihrem Ende, ihr Grund nur acht Wochen — der Lauf leert dann
 `absences.reason` (Zeile `absences.reason` in seinem Ergebnis). Dazu die neue
@@ -8365,11 +8375,11 @@ braucht den Betreiber oder ein Gerät.
 | **Rest aus T128** | Umbruch bei großer Schrift | T128 ist erledigt (19. Oktober). Vorher wie nachher bleiben: die Wahl der letzten Erinnerung bei 320 px (pl), Datumsspannen außerhalb von `fill` (Wochenkarten, „Holen"), Programmtexte, die nach der Sprache der App statt der Versammlung trennen, Hinweise in der Karte „Holen" bei Stufe 1,3/1,45 und Namen der Dienste im Programm bei 768 px — Einzelheiten unter T128 |
 | **Zu entscheiden** | Langsames Netz beim Start | aus dem Review des Offline-Starts in der ersten Stunde (19. Oktober abends): Lassen die Daten länger als 4 s auf sich warten, steht der letzte Stand mit „Offline · Stand von …" da, und Ändern ist gesperrt, auch wenn das Netz nur langsam ist. Kommen sie danach, legt das Blatt beim Öffnen eine seither neue Zuteilung nicht vor (nach über einer Stunde ebenso seit `30a5a80d`). Denkbar: ein eigener Hinweis statt „Offline", und das Blatt nach dem ersten frischen Laden noch einmal prüfen |
 | **Bewusst offen** | `sprache-fehlt` beim Wochen-Import | zählt weiter als Ende des Kalenders. Strenger gäbe es im Alltag Fehlalarme; betroffen wäre nur eine anderssprachige Versammlung mit Geschichte (Review vom 18. Oktober, `42dff943`) |
-| **Zu entscheiden** | `auth.sessions` aufräumen | IP-Adresse und Browserkennung je Gerät bleiben ohne Frist, solange die Anmeldung gilt. Möglich wäre, Sitzungen nach einem Jahr ohne Nutzung zu löschen; das Gerät bräuchte danach einen neuen Link (bei T125 unter „Später zu entscheiden") |
 
 Am 19. Oktober spät herausgenommen: **Phase 7** (T42, der Rest), **T131**
-(der Leser folgt am Wochenende dem Vorsitz) und **T130** (den Reiter
-„Trolleys" sieht, wer mit dem Trolley gehen darf) — erledigt, siehe dort.
+(der Leser folgt am Wochenende dem Vorsitz), **T130** (den Reiter
+„Trolleys" sieht, wer mit dem Trolley gehen darf) und **`auth.sessions`
+aufräumen** (nach einem Jahr ohne Nutzung, bei T125) — erledigt, siehe dort.
 
 Am 19. Oktober in die Tabelle aufgenommen: die letzten drei Zeilen. Die
 unteren beiden standen bis dahin nur in einer Commit-Nachricht (`42dff943`)

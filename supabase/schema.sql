@@ -1843,7 +1843,12 @@ begin
         -- Die Bremse gegen Raten: ein Tag.
         ('anmelde_fehlversuche', 'at < $1', now() - interval '1 day'),
         -- Das Protokoll von Supabase Auth: acht Wochen.
-        ('auth.audit_log_entries', 'created_at < $1', acht_wochen)
+        ('auth.audit_log_entries', 'created_at < $1', acht_wochen),
+        -- Die Anmeldung eines Geräts mit IP-Adresse und Browserkennung: ein
+        -- Jahr ohne Nutzung (19.10.2026). Ohne Höchstdauer räumt Supabase sie
+        -- nie ab; `updated_at` rückt bei jeder Erneuerung des Tokens nach
+        -- (gemessen). Das Gerät braucht danach einen neuen Link.
+        ('auth.sessions', 'updated_at < $1', ein_jahr)
       ) as r(name, bedingung, grenze)
   loop
     -- Ohne Schema heißt `public` (search_path); `regclass` schreibt den Namen
