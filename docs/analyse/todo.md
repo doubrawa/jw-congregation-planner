@@ -8345,27 +8345,32 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 ### Was offen ist und warum
 
-**Stand 19. Oktober 2026, alles Offene an einer Stelle** (gemessen: 131 Köpfe
-gezählt, offen T121, T128, T130 und T131; kein Zweig außer `main`, keine PR,
-kein Issue; `sw.js` = HEAD (`shell-bc848a3`); `import-week` am 18. Oktober
-nach seiner letzten Änderung ausgerollt, die übrigen sechs Functions am
-16. Oktober, seither in ihren Ordnern nur Tests geändert; Secrets ohne
-`INVITE_FROM`, `disable_signup` noch `false`; das Aufräumen aus T125 lief am
-19. Oktober zum ersten Mal, erfolgreich; die fünf ruhenden Sitzungen zu diesem
-Repo am 19. Oktober gelöscht, eine weitere hat noch uncommittete Änderungen
-im Ordner; seither T128 erledigt, am 19. Oktober abends). Im Code offen sind T130, T131 und der Rest von T42 (am
-18. Oktober erledigt: die Kachel der Absagen, T127, T129, die Auswertung nach
-der Jahresprobe und das Review des Tages; am 19. das Ladebild beim Start, der
-Offline-Start nach über einer Stunde, das Startbild und der Offline-Start in
-der ersten Stunde); was sonst aussteht,
-braucht den Betreiber oder ein Gerät.
+**Stand 19. Oktober 2026 spät, alles Offene an einer Stelle** (gemessen: 131
+Köpfe, offen nur noch T121; keine PR, kein Issue, außer `main` nur der lokale
+Zweig `claude/reverent-mcnulty-649811` samt Worktree aus einer früheren
+Sitzung — ohne eigenen Commit, sauber; `sw.js` = HEAD; am 19. Oktober
+ausgerollt: `send-plan` v36, `send-reminders` v62 und `import-week` v54 (T42,
+ohne Folge für das Verhalten) und die Aufräumfunktion mit `auth.sessions`, die
+übrigen vier Functions am 16. Oktober; Secrets ohne `INVITE_FROM`,
+`disable_signup` noch `false`; das Aufräumen aus T125 lief am 19. Oktober zum
+ersten Mal, erfolgreich). **Am 19. Oktober abends umgesetzt** (Betreiber: „wir
+setzen so viele punkte wie möglich um"): T128 (`38f27002`), der Rest von T42
+(`35538531`), die Fälle (82)–(85) der Mitgliedsrechte-Probe (`7c106850`), T131
+(`7e5a09c3`), T130 (`535707c1`), `auth.sessions` nach einem Jahr
+(`c5979343`) und „Verbindung langsam" beim Start (`2e5b6d10`) — jedes mit
+`/simplify`, `/code-review max`, Mutationsprobe und Push. Davor am 18. Oktober
+die Kachel der Absagen, T127, T129, die Auswertung nach der Jahresprobe und das
+Review des Tages; am 19. das Ladebild beim Start, der Offline-Start nach über
+einer Stunde, das Startbild und der Offline-Start in der ersten Stunde.
+Beschlossenes ist im Code nichts mehr offen; was aussteht, braucht den
+Betreiber, ein Gerät oder eine Entscheidung.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
+| **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124; am 19. Oktober: noch nicht). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
 | **Zurückgestellt** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт". Betreiber am 16. Oktober: „bleibt erst mal so" — wieder aufnehmen, wenn ein Muttersprachler prüft; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
-| **Wartet** | Motion-Clip „Plan senden" | am 12. Oktober zurückgestellt, bis das neue Design steht — das ist jetzt der Fall. Das leere Motion-Artifact liegt schon bereit |
+| **Wartet** | Motion-Clip „Plan senden" | am 12. Oktober zurückgestellt, bis das neue Design steht — das ist jetzt der Fall; am 19. Oktober weiter auf später (Betreiber). Das leere Motion-Artifact liegt schon bereit |
 | **Betreiber** | Mitgliedsrechte-Probe nach „Alles Planen" | `node scripts/mitgliedsrechte-probe.mjs` — die Testversammlung `edac60cb` und `.env.probe` stehen noch; umgedreht sind (35), (38)–(40), (42), (50), (53), (55), (60), neu (80) und (81). Seit dem 19. Oktober auch (82)–(85): die Leseregel der Abwesenheiten vom 17. Oktober (`absences_select`: über acht Wochen zurück nur, wer zuteilt, und die eigene) — im Skript und an der Attrappe geprüft, live noch nicht gefahren |
 | **Gerät** | Dunkle Bedienleiste am Handy | wirkt erst mit der aktualisierten WebAPK (`about://webapks` → „Update", oder neu installieren) |
 | **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
@@ -8386,10 +8391,11 @@ Laden oder meldet das Gerät kein Netz, wieder „Offline"; bei großer Schrift
 rückt „Neu laden" unter den Text). Das erneute Vorlegen des Blatts steht
 jetzt unter „Bewusst offen".
 
-Am 19. Oktober in die Tabelle aufgenommen: die letzten drei Zeilen. Die
-unteren beiden standen bis dahin nur in einer Commit-Nachricht (`42dff943`)
-und bei T125; die obere kam am Abend aus dem Review des Offline-Starts in der
-ersten Stunde. Am Abend wieder herausgenommen: **Rückkehr ins Netz nach dem
+Am 19. Oktober in die Tabelle aufgenommen: `sprache-fehlt` und
+`auth.sessions` (bis dahin nur in einer Commit-Nachricht, `42dff943`, und bei
+T125; `auth.sessions` am selben Abend erledigt) und am Abend aus dem Review des
+Offline-Starts in der ersten Stunde das langsame Netz beim Start (heute „Das
+Blatt nach einem langsamen Start"). Am Abend wieder herausgenommen: **Rückkehr ins Netz nach dem
 Offline-Start** (aus `30a5a80d`, am selben Tag aufgenommen) — die App lädt
 seitdem nach, sobald das Gerät wieder Netz meldet (`online`) oder die
 Erneuerung des Tokens gelingt, auch in der ersten Stunde. Was bleibt:
