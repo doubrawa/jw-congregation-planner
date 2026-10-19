@@ -1876,7 +1876,8 @@ sich beim nächsten Verbinden gegenseitig überschreiben. Deshalb gibt es
 
 Wichtig zu wissen:
 
-- Der Stand kann **veraltet** sein – vor dem Planen im Saal also erst
+- Der Stand kann **veraltet** sein. Meldet das Gerät wieder Netz, holt die App
+  den aktuellen Stand von selbst; sonst vor dem Planen im Saal erst
   **„Neu laden"** drücken, sobald Netz da ist.
 - Zum Nachschauen im Saal ist der Offline-Stand gedacht; zum Planen brauchst du
   eine Verbindung.

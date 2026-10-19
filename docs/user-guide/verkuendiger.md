@@ -631,7 +631,9 @@ Sekunden. Oben erscheint dann ein Hinweisstreifen mit dem Zeitpunkt:
 - **Ändern geht nicht:** Bestätigen, Abwesenheiten eintragen oder Ähnliches ist
   gesperrt – sonst würde deine Eingabe verloren gehen, weil sie niemand
   empfangen kann. Beim Antippen erscheint ein kurzer Hinweis.
-- **„Neu laden"** holt den aktuellen Stand, sobald du wieder Netz hast.
+- **Kommt das Netz zurück**, holt die App den aktuellen Stand von selbst. Zeigt
+  dein Handy Empfang an, ohne dass etwas durchkommt, merkt sie das nicht – dann
+  holt ihn **„Neu laden"**, sobald du wieder Netz hast.
 
 Zwei Dinge, die du wissen solltest:
 

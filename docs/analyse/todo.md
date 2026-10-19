@@ -8194,7 +8194,8 @@ Repo am 19. Oktober gelöscht, eine weitere hat noch uncommittete Änderungen
 im Ordner). Im Code offen sind T128, T130, T131 und der Rest von T42 (am
 18. Oktober erledigt: die Kachel der Absagen, T127, T129, die Auswertung nach
 der Jahresprobe und das Review des Tages; am 19. das Ladebild beim Start, der
-Offline-Start nach über einer Stunde und das Startbild); was sonst aussteht,
+Offline-Start nach über einer Stunde, das Startbild und der Offline-Start in
+der ersten Stunde); was sonst aussteht,
 braucht den Betreiber oder ein Gerät.
 
 | | Punkt | Warum offen |
@@ -8213,13 +8214,19 @@ braucht den Betreiber oder ein Gerät.
 | **T128** | Umbruch mitten im Wort, Zahl getrennt von ihrer Bezeichnung | Plan steht (zentral in `fill()`, Zeilen stapeln und Leisten wachsen lassen bei großer Schrift, Trennregeln an vier Stellen, ein weiches Trennzeichen für Türkisch); vom Betreiber auf später gelegt, weil gerade anderes läuft |
 | **T130** | Reiter „Trolleys" nur mit Trolley-Recht | aufgenommen am 18. Oktober abends, noch nicht begonnen; die offenen Fragen stehen in T130 |
 | **T131** | Der Leser folgt am Wochenende dem Vorsitz | aufgenommen am 18. Oktober abends, noch nicht begonnen; zu klären, ob fest oder als Einstellung der Versammlung |
-| **In Arbeit** | Rückkehr ins Netz nach dem Offline-Start | aus `30a5a80d` (19. Oktober): Scheitert das Nachladen gleich nach der Rückkehr, bleibt der letzte Stand bis zur nächsten Token-Erneuerung (oder „Neu laden"); in der ersten Stunde holt nur „Neu laden" die Daten, weil die App nicht auf `online` hört. Die Sitzung „Login-Status-Prüfung vor Anzeige" baut gerade einen `online`-Hörer ein (am 19. Oktober nachmittags noch nicht committet) |
+| **Zu entscheiden** | Langsames Netz beim Start | aus dem Review des Offline-Starts in der ersten Stunde (19. Oktober abends): Lassen die Daten länger als 4 s auf sich warten, steht der letzte Stand mit „Offline · Stand von …" da, und Ändern ist gesperrt, auch wenn das Netz nur langsam ist. Kommen sie danach, legt das Blatt beim Öffnen eine seither neue Zuteilung nicht vor (nach über einer Stunde ebenso seit `30a5a80d`). Denkbar: ein eigener Hinweis statt „Offline", und das Blatt nach dem ersten frischen Laden noch einmal prüfen |
 | **Bewusst offen** | `sprache-fehlt` beim Wochen-Import | zählt weiter als Ende des Kalenders. Strenger gäbe es im Alltag Fehlalarme; betroffen wäre nur eine anderssprachige Versammlung mit Geschichte (Review vom 18. Oktober, `42dff943`) |
 | **Zu entscheiden** | `auth.sessions` aufräumen | IP-Adresse und Browserkennung je Gerät bleiben ohne Frist, solange die Anmeldung gilt. Möglich wäre, Sitzungen nach einem Jahr ohne Nutzung zu löschen; das Gerät bräuchte danach einen neuen Link (bei T125 unter „Später zu entscheiden") |
 
-Am 19. Oktober in die Tabelle aufgenommen: die letzten drei Zeilen. Zwei
-standen bis dahin nur in Commit-Nachrichten (`30a5a80d`, `42dff943`), eine nur
-bei T125.
+Am 19. Oktober in die Tabelle aufgenommen: die letzten drei Zeilen. Die
+unteren beiden standen bis dahin nur in einer Commit-Nachricht (`42dff943`)
+und bei T125; die obere kam am Abend aus dem Review des Offline-Starts in der
+ersten Stunde. Am Abend wieder herausgenommen: **Rückkehr ins Netz nach dem
+Offline-Start** (aus `30a5a80d`, am selben Tag aufgenommen) — die App lädt
+seitdem nach, sobald das Gerät wieder Netz meldet (`online`) oder die
+Erneuerung des Tokens gelingt, auch in der ersten Stunde. Was bleibt:
+Scheitert dieses Nachladen auch nach den Wiederholungen von PostgREST (sieben
+Sekunden), steht der letzte Stand bis zum nächsten Anstoß oder „Neu laden".
 
 Am 18. Oktober nach der Messung vom Morgen dazugekommen und am selben Tag
 geschlossen: **T127** (Gruppen aus der Reinigung nehmen; Spalte ausgerollt,

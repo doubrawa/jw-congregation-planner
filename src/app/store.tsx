@@ -12,7 +12,7 @@ import { bibelbuecherLaden } from '../i18n/translate'
 import { dict, loadOverlay } from '../i18n/ui'
 import { mitLinkAnmelden } from '../lib/anmelden'
 import { setKonfliktMelder, setSchreibfehlerMelder } from '../lib/data'
-import { gespeicherteSitzung, mussErneuern } from '../lib/gespeicherte-sitzung'
+import { gespeicherteSitzung } from '../lib/gespeicherte-sitzung'
 import { clearSnapshot } from '../lib/snapshot'
 import { supabase } from '../lib/supabase'
 import { anmeldeAdresse } from '../login/anmelde-adresse'
@@ -26,7 +26,7 @@ import {
   type AppStore,
 } from './context'
 import { pushAboAbgleichen } from '../lib/push-abo'
-import { letztenStandZeigen, loadAndHydrate } from './hydrate'
+import { letztenStandZeigen, loadAndHydrate, momentaufnahmeZeigen } from './hydrate'
 import { sitzungBeendet } from './sitzung'
 import { useKalendertag } from './useKalendertag'
 import { initialState } from './init'
@@ -66,10 +66,12 @@ import { reducer } from './reducer'
 const uebernehmen = (_bisher: AppState, neu: AppState): AppState => neu
 
 /**
- * Wie lange der Start auf Supabase wartet, bevor er den letzten Stand zeigt,
- * wenn das Token einer abgelegten Sitzung erneuert werden muss (Offline-Start,
- * unten). Die Erneuerung braucht sonst unter einer Sekunde, im schwachen Netz
- * zwei, drei.
+ * Wie lange das Startbild höchstens steht, wenn ein Konto samt letztem Stand
+ * auf dem Gerät liegt — gleich, ob der Start noch auf die Sitzung wartet oder
+ * schon auf die Daten. Danach steht dieser Stand da (Offline-Start, unten).
+ * Fehlt er, kommt ohne Sitzung die Fehlerseite; laden schon die Daten, bleibt
+ * das Startbild, bis sie da sind oder scheitern. Die Erneuerung des Tokens
+ * braucht sonst unter einer Sekunde, im schwachen Netz zwei, drei.
  */
 const VORGRIFF_NACH_MS = 4000
 
@@ -244,59 +246,106 @@ export function AppProvider({
   // jedem Weg — auch wenn eine Anfrage scheitert: Bliebe das Ladebild dann
   // stehen, käme man nicht einmal mehr zur Anmeldung.
   //
-  // **Offline-Start** (19.10.2026): Muss auth-js das Token erst erneuern, weil
-  // die letzte Nutzung über eine Stunde zurückliegt, wartet jede Frage nach der
-  // Sitzung auf das Netz. Offline gibt es nach 25 s auf und meldet keine
-  // Sitzung, obwohl sie noch auf dem Gerät liegt — dann kam die Anmeldung, nie
-  // der letzte Stand. Jetzt greift der Provider vor: Muss das Token einer
-  // abgelegten Sitzung erneuert werden, zeigt er ihren letzten Stand nur lesend
-  // (`letztenStandZeigen`), sofort, wenn das Gerät offline ist, sonst nach
-  // `VORGRIFF_NACH_MS` ohne Antwort. Der Wecker ist zugleich die Obergrenze,
-  // falls die Anfrage hängt. Gelingt die Erneuerung später (`TOKEN_REFRESHED`),
-  // kommen die Daten.
+  // **Offline-Start** (19.10.2026): Ohne Netz wartete der Start lange und
+  // zeigte danach womöglich die Anmeldung. Muss auth-js das Token erneuern,
+  // weil die letzte Nutzung über eine Stunde zurückliegt, wartet jede Frage
+  // nach der Sitzung auf das Netz; offline gibt es nach 25 s auf und meldet
+  // keine Sitzung, obwohl sie noch auf dem Gerät liegt. Gilt das Token noch,
+  // antwortet es sofort — dann aber scheitern die Abfragen der Daten, und
+  // PostgREST wiederholt jede dreimal: sieben Sekunden Startbild.
+  //
+  // Jetzt greift der Provider vor, sobald ein Konto auf dem Gerät liegt: Er
+  // zeigt dessen letzten Stand nur lesend, sofort, wenn das Gerät offline ist,
+  // sonst, wenn das Startbild nach `VORGRIFF_NACH_MS` noch steht. Fehlt noch
+  // die Sitzung, kommt ohne Momentaufnahme die Fehlerseite
+  // (`letztenStandZeigen`); laden schon die Daten, bleibt dann das Startbild
+  // (`momentaufnahmeZeigen`). Ein Laden, das noch läuft, kommt still darüber.
+  // Offline wird gar nicht erst geladen, sondern sobald das Netz zurück ist
+  // (`online`) oder die Erneuerung gelingt (`TOKEN_REFRESHED`).
   useEffect(() => {
     if (!supabase) return
     const client = supabase
     const token = anmeldeAdresse().token
     let geladenFuer: string | null = null
+    /** Für wen gerade geladen wird — ein zweiter Anstoß lädt nicht daneben. */
+    let laedtFuer: string | null = null
     let vorbei = false
+    /** Steht der letzte Stand dieses Kontos? Der eines anderen gilt nicht. */
+    const ueberDemLetztenStand = (userId: string): boolean =>
+      stateRef.current.userId === userId && stateRef.current.staleAt !== null
+    /** Steht für dieses Konto statt der Daten der letzte Stand oder die Fehlerseite? */
+    const ersatzSteht = (userId: string): boolean =>
+      stateRef.current.userId === userId &&
+      (stateRef.current.staleAt !== null || stateRef.current.dataStatus === 'error')
+    /** Die Daten dieses Kontos laden — still, wenn sein letzter Stand dasteht. */
+    const ladenBeginnen = (userId: string): void => {
+      geladenFuer = userId
+      laedtFuer = userId
+      // Steht der letzte Stand dieses Kontos, kommen die frischen Daten still
+      // darüber: kein Startbild, die gewählte Woche bleibt, und scheitert es,
+      // bleibt er stehen. Gefragt wird, wenn das Laden beginnt, und noch einmal
+      // mit der Antwort: Dazwischen kann der Vorgriff ihn gezeigt haben.
+      void loadAndHydrate(dispatch, userId, { silent: () => ueberDemLetztenStand(userId) }).finally(() => {
+        if (laedtFuer === userId) laedtFuer = null
+      })
+    }
+    /** Ein Konto meldet sich (Prüfung beim Start, `SIGNED_IN`): einmal laden, offline nicht. */
     const laden = (userId: string): void => {
       if (userId === geladenFuer) return
-      geladenFuer = userId
-      // Steht der letzte Stand dieses Kontos, kommen die frischen Daten still
-      // darüber: kein „Lädt …", die gewählte Woche bleibt, und scheitert es,
-      // bleibt er stehen. Der eines anderen Kontos gilt nicht.
-      const ueberDemLetztenStand = stateRef.current.staleAt !== null && stateRef.current.userId === userId
-      if (ueberDemLetztenStand) void loadAndHydrate(dispatch, userId, { silent: true })
-      else void loadAndHydrate(dispatch, userId)
+      // Offline wäre jeder Versuch vergeblich (oben). Bis das Netz zurück ist,
+      // steht der letzte Stand, ohne ihn die Fehlerseite.
+      if (navigator.onLine === false) {
+        if (!ersatzSteht(userId)) letztenStandZeigen(dispatch, userId)
+        return
+      }
+      ladenBeginnen(userId)
     }
-    /** Steht statt der Daten der letzte Stand oder die Fehlerseite? */
-    const ersatzSteht = (): boolean => stateRef.current.staleAt !== null || stateRef.current.dataStatus === 'error'
+    /**
+     * Das Netz ist nachweislich zurück (`online`, `TOKEN_REFRESHED`): noch einmal
+     * laden, wenn statt der Daten Ersatz steht, außer es lädt schon. Auch wenn
+     * das Konto schon als geladen gilt, und ohne nach `navigator.onLine` zu
+     * fragen: Eine gelungene Erneuerung ging übers Netz, auch wenn das Gerät
+     * fälschlich „offline" meldet. Sonst bliebe der letzte Stand stehen, und
+     * „Neu laden" begänne wieder bei ihm.
+     */
+    const nachladen = (userId: string): void => {
+      if (ersatzSteht(userId) && laedtFuer !== userId) ladenBeginnen(userId)
+    }
     const { data } = client.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         geladenFuer = null
         dispatch({ type: 'logout' })
       } else if (event === 'SIGNED_IN' && session) laden(session.user.id)
-      else if (event === 'TOKEN_REFRESHED' && session && ersatzSteht()) {
-        // Die Erneuerung ging übers Netz, es ist also wieder da.
-        geladenFuer = null
-        laden(session.user.id)
-      }
+      // Die Erneuerung ging übers Netz, es ist also wieder da.
+      else if (event === 'TOKEN_REFRESHED' && session) nachladen(session.user.id)
     })
-    // Der Vorgriff, nur solange die Prüfung nichts entschieden hat — und nur
-    // einmal: Meldet sie danach noch einen Netzfehler, bleibt die Ansicht.
+    // Das Gerät hat wieder Netz. Mit gültigem Token käme sonst kein Anstoß:
+    // auth-js erneuert es erst kurz vor dem Ablauf, bis zu einer Stunde später.
+    const wiederOnline = (): void => {
+      const { userId } = stateRef.current
+      if (userId) nachladen(userId)
+    }
+    window.addEventListener('online', wiederOnline)
+    // Der Vorgriff (oben), solange das Startbild steht. Bei offener Sitzung nur
+    // einmal: Meldet die Prüfung danach noch einen Netzfehler, bleibt die Ansicht.
     const vorab = gespeicherteSitzung()
     const vorgreifen = (): void => {
-      if (vorbei || !vorab || !stateRef.current.sitzungPruefen) return
-      dispatch({ type: 'login' })
-      letztenStandZeigen(dispatch, vorab.userId)
-      dispatch({ type: 'sitzungGeprueft' })
+      if (vorbei || !vorab) return
+      if (stateRef.current.sitzungPruefen) {
+        dispatch({ type: 'login' })
+        letztenStandZeigen(dispatch, vorab.userId)
+        dispatch({ type: 'sitzungGeprueft' })
+      } else if (stateRef.current.dataStatus === 'loading' && laedtFuer === vorab.userId) {
+        // Die Sitzung steht, aber die Daten lassen auf sich warten: WLAN ohne
+        // Internet, schwacher Empfang. Das Laden läuft weiter.
+        momentaufnahmeZeigen(dispatch, vorab.userId)
+      }
     }
     let wecker: ReturnType<typeof setTimeout> | undefined
     // Solange ein Link anmeldet, greift nichts vor: Angemeldet wird, wen er
     // nennt. Scheitert er am Netz, bleibt es bei der Sitzung, die da war, mit
     // ihrem letzten Stand (unten).
-    if (!token && vorab && mussErneuern(vorab)) {
+    if (!token && vorab) {
       if (navigator.onLine === false) vorgreifen()
       else wecker = setTimeout(vorgreifen, VORGRIFF_NACH_MS)
     }
@@ -324,13 +373,13 @@ export function AppProvider({
     void pruefen()
       .catch((fehler: unknown) => console.error('[sitzung]', fehler))
       .finally(() => {
-        // Der Wecker lebt nur, solange die Prüfung läuft.
-        clearTimeout(wecker)
+        // Der Wecker bleibt: Nach der Sitzung können noch die Daten fehlen.
         if (!vorbei) dispatch({ type: 'sitzungGeprueft' })
       })
     return () => {
       vorbei = true
       clearTimeout(wecker)
+      window.removeEventListener('online', wiederOnline)
       data.subscription.unsubscribe()
     }
   }, [dispatch])

@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render } from '@testing-library/react'
 import type { AppAction, HydratePayload } from './context'
+import type { LadeOptionen } from './hydrate'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
 import { DE } from '../i18n/de'
 
@@ -42,22 +43,29 @@ const attrappe = vi.hoisted(() => {
 })
 
 vi.mock('../lib/supabase', () => ({ supabase: attrappe.client, isSupabaseConfigured: true }))
-// Laden wie im Betrieb: erst der Ladezustand, dann die Daten — wann, sagt der
-// Test (`datenKommen`). Der letzte Stand ist die Momentaufnahme einer kleinen
-// Versammlung, nur lesend.
+// Laden wie im Betrieb: erst der Ladezustand — still über dem letzten Stand
+// ohne ihn —, dann die Daten; wann, sagt der Test (`datenKommen`). Der letzte
+// Stand ist die Momentaufnahme einer kleinen Versammlung, nur lesend.
 const laden = vi.hoisted(() => ({ dispatch: null as ((a: AppAction) => void) | null, userId: '' }))
-vi.mock('./hydrate', () => ({
-  loadAndHydrate: (dispatch: (a: AppAction) => void, userId: string) => {
-    laden.dispatch = dispatch
-    laden.userId = userId
-    dispatch({ type: 'setDataStatus', status: 'loading' })
-    return new Promise(() => {})
-  },
-  letztenStandZeigen: (dispatch: (a: AppAction) => void, userId: string) =>
-    dispatch({ type: 'hydrate', payload: momentaufnahme(userId), staleAt: Date.now() - 7_200_000 }),
-}))
+vi.mock('./hydrate', () => {
+  const letzterStand = (dispatch: (a: AppAction) => void, userId: string): boolean => {
+    dispatch({ type: 'hydrate', payload: momentaufnahme(userId), staleAt: Date.now() - 7_200_000 })
+    return true
+  }
+  return {
+    loadAndHydrate: (dispatch: (a: AppAction) => void, userId: string, opts?: LadeOptionen) => {
+      laden.dispatch = dispatch
+      laden.userId = userId
+      const still = typeof opts?.silent === 'function' ? opts.silent() : opts?.silent === true
+      if (!still) dispatch({ type: 'setDataStatus', status: 'loading' })
+      return new Promise(() => {})
+    },
+    letztenStandZeigen: letzterStand,
+    momentaufnahmeZeigen: letzterStand,
+  }
+})
 /** Was auth-js auf dem Gerät abgelegt hat (echt gelesen in `gespeicherte-sitzung.test.ts`). */
-const abgelegt = vi.hoisted(() => ({ wert: null as { userId: string; laeuftAb: number } | null }))
+const abgelegt = vi.hoisted(() => ({ wert: null as { userId: string } | null }))
 vi.mock('../lib/gespeicherte-sitzung', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
   gespeicherteSitzung: () => abgelegt.wert,
@@ -109,29 +117,36 @@ beforeEach(() => {
   localStorage.clear()
   window.history.replaceState(null, '', '/')
   abgelegt.wert = null
+  laden.dispatch = null
+  laden.userId = ''
 })
 afterEach(() => {
   cleanup()
+  vi.useRealTimers()
   Reflect.deleteProperty(navigator, 'onLine')
 })
 
 /**
  * Die App zeichnen und mitschreiben, was je ins Fenster kam — auch nur für
  * einen Zwischenstand, der vor dem nächsten Blick schon wieder weg ist: die
- * Anmeldung, und das Menü der App, bevor die Daten da sind (bis zum 19.10.2026
- * die Kopfzeile mit „Lädt …"). Deshalb über die eingefügten Knoten, nicht über
- * den Stand danach.
+ * Anmeldung, das Menü der App, bevor die Daten da sind (bis zum 19.10.2026
+ * die Kopfzeile mit „Lädt …"), und das Startbild, nachdem schon die App stand.
+ * Deshalb über die eingefügten Knoten, nicht über den Stand danach.
  */
 function zeichne() {
   const container = document.body.appendChild(document.createElement('div'))
-  const stand = { datenDa: false, anmeldung: false, menueOhneDaten: false }
+  const stand = { datenDa: false, anmeldung: false, menueOhneDaten: false, app: false, startbildDanach: false }
   const notieren = (eintraege: MutationRecord[]): void => {
     for (const eintrag of eintraege) {
       for (const knoten of eintrag.addedNodes) {
         if (!(knoten instanceof Element)) continue
         const hat = (sel: string): boolean => knoten.matches(sel) || knoten.querySelector(sel) !== null
         if (hat('.login')) stand.anmeldung = true
-        if (hat('.leiste') && !stand.datenDa) stand.menueOhneDaten = true
+        if (hat('.startbild') && stand.app) stand.startbildDanach = true
+        if (hat('.leiste')) {
+          stand.app = true
+          if (!stand.datenDa) stand.menueOhneDaten = true
+        }
       }
     }
   }
@@ -149,6 +164,11 @@ function zeichne() {
     menueOhneDatenGesehen: (): boolean => {
       abholen()
       return stand.menueOhneDaten
+    },
+    /** Kam das Startbild zurück, nachdem schon die App (oder ihr letzter Stand) dastand? */
+    startbildDanachGesehen: (): boolean => {
+      abholen()
+      return stand.startbildDanach
     },
     /** Die Daten kommen an — wie `loadAndHydrate` sie einspielte. */
     datenKommen: async (): Promise<void> => {
@@ -216,13 +236,55 @@ describe('Erst prüfen, dann zeigen', () => {
 
   it('offline nach über einer Stunde: der letzte Stand mit Hinweis — kein Warten, keine Anmeldung', () => {
     // Supabase erneuerte offline 25 s lang das Token und meldete dann keine
-    // Sitzung; bis zum 19.10.2026 stand danach die Anmeldung da.
-    abgelegt.wert = { userId: 'u7', laeuftAb: Date.now() - 3_600_000 }
+    // Sitzung; bis zum 19.10.2026 stand danach die Anmeldung da. Hier antwortet
+    // es gar nicht.
+    abgelegt.wert = { userId: 'u7' }
     Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false })
     const { container, anmeldungGesehen } = zeichne()
     expect(container.querySelector('.startbild')).toBeNull()
     expect(container.querySelector('.offline-banner'), 'der Hinweis auf den letzten Stand').not.toBeNull()
     expect(container.querySelector('.leiste'), 'das Menü der App').not.toBeNull()
+    expect(anmeldungGesehen()).toBe(false)
+  })
+
+  it('offline in der ersten Stunde: ebenso — und kommt das Netz zurück, kommen die Daten ohne Startbild', async () => {
+    // Supabase antwortet sofort, aber jede Abfrage der Daten scheiterte am Netz
+    // und wurde dreimal wiederholt: bis zum 19.10.2026 abends sieben Sekunden
+    // Startbild vor demselben letzten Stand.
+    abgelegt.wert = { userId: 'u7' }
+    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false })
+    const { container, anmeldungGesehen, startbildDanachGesehen, datenKommen } = zeichne()
+    await antworte({ user: { id: 'u7' } })
+    expect(container.querySelector('.startbild')).toBeNull()
+    expect(container.querySelector('.offline-banner'), 'der Hinweis auf den letzten Stand').not.toBeNull()
+    expect(laden.userId, 'geladen wird erst mit dem Netz').toBe('')
+    Reflect.deleteProperty(navigator, 'onLine')
+    await act(async () => {
+      window.dispatchEvent(new Event('online'))
+    })
+    expect(laden.userId).toBe('u7')
+    await datenKommen()
+    expect(container.querySelector('.offline-banner'), 'mit den Daten ist der Hinweis fort').toBeNull()
+    expect(startbildDanachGesehen(), 'das Startbild über dem letzten Stand').toBe(false)
+    expect(anmeldungGesehen()).toBe(false)
+  })
+
+  it('online, aber die Daten kommen nicht: nach vier Sekunden der letzte Stand statt der Welle', async () => {
+    // WLAN ohne Internet, schwacher Empfang: Das Gerät meldet „online", und die
+    // Abfragen hängen oder scheitern erst nach ihren Wiederholungen.
+    vi.useFakeTimers()
+    abgelegt.wert = { userId: 'u7' }
+    const { container, anmeldungGesehen } = zeichne()
+    await act(async () => {
+      attrappe.offen.antworten({ user: { id: 'u7' } })
+      await vi.advanceTimersByTimeAsync(3999)
+    })
+    expect(container.querySelector('.startbild'), 'bis dahin das Startbild').not.toBeNull()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+    })
+    expect(container.querySelector('.startbild')).toBeNull()
+    expect(container.querySelector('.offline-banner'), 'der Hinweis auf den letzten Stand').not.toBeNull()
     expect(anmeldungGesehen()).toBe(false)
   })
 })

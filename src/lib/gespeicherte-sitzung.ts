@@ -12,6 +12,9 @@
  * Der Provider will vorher wissen, ob ein Konto auf dem Gerät liegt, um dann
  * den letzten Stand zu zeigen statt der Anmeldung (`store.tsx`). Das liest er
  * hier, direkt aus dem Speicher.
+ *
+ * Ob das Token noch gilt, spielt dafür keine Rolle mehr (19.10.2026): Auch
+ * mit gültigem Token wartete der Start offline, nur eben auf die Daten (dort).
  */
 
 /**
@@ -29,11 +32,9 @@ const url = import.meta.env.VITE_SUPABASE_URL
 /** Der Schlüssel dieser Umgebung; leer ohne Datenbank. */
 export const SITZUNG_SCHLUESSEL = url ? sitzungsSchluessel(url) : ''
 
-/** Was der Provider vorab wissen muss: wem die Sitzung gehört und wann ihr Token abläuft. */
+/** Was der Provider vorab wissen muss: wem die Sitzung gehört. */
 export interface GespeicherteSitzung {
   userId: string
-  /** Ablauf des Zugangs-Tokens in Millisekunden (abgelegt ist `expires_at` in Sekunden). */
-  laeuftAb: number
 }
 
 type Abgelegt = { access_token: string; refresh_token: string; expires_at: number; user: { id: string } }
@@ -59,25 +60,9 @@ export function gespeicherteSitzung(schluessel = SITZUNG_SCHLUESSEL): Gespeicher
   if (!schluessel) return null
   try {
     const abgelegt: unknown = JSON.parse(localStorage.getItem(schluessel) ?? 'null')
-    return istSitzung(abgelegt) ? { userId: abgelegt.user.id, laeuftAb: abgelegt.expires_at * 1000 } : null
+    return istSitzung(abgelegt) ? { userId: abgelegt.user.id } : null
   } catch {
     // Kein Speicher (privater Modus, gesperrt) oder kein JSON.
     return null
   }
-}
-
-/**
- * So knapp vor dem Ablauf erneuert auth-js ein Token schon (`EXPIRY_MARGIN_MS`
- * in auth-js 2.110.2). Exportiert wird es dort nicht; die Probe vergleicht mit
- * dem Paket, damit ein Update es nicht still verschiebt.
- */
-export const ERNEUERN_VOR_MS = 90_000
-
-/**
- * Erneuert auth-js das Token, bevor es antwortet? Ja, wenn es in weniger als
- * `ERNEUERN_VOR_MS` abläuft; dann geht die erste Frage nach der Sitzung übers
- * Netz. Sonst antwortet es sofort aus dem Speicher.
- */
-export function mussErneuern(sitzung: GespeicherteSitzung, jetzt = Date.now()): boolean {
-  return sitzung.laeuftAb - jetzt < ERNEUERN_VOR_MS
 }

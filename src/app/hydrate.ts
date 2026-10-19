@@ -17,10 +17,26 @@ import type { AppAction, HydratePayload } from './context'
 import { ausstehendesSchreiben } from './persist'
 import { aktuelleSitzung } from './sitzung'
 
+/** Wie `loadAndHydrate` lädt. */
+export interface LadeOptionen {
+  /**
+   * Still laden: kein Startbild, und scheitert es, bleibt stehen, was steht.
+   *
+   * **Als Frage** stellt das Laden sie zweimal (19.10.2026): vorher, ob das
+   * Startbild kommt, und mit der Antwort, wie sie eingespielt wird.
+   * Dazwischen kann der Provider den letzten Stand gezeigt haben, weil die
+   * Antwort auf sich warten ließ (Offline-Start, `store.tsx`). Dann kommen
+   * die Daten still darüber. Sonst legten sie das Blatt beim Öffnen noch
+   * einmal vor, und scheiterte das Laden, spielte es den letzten Stand ein
+   * zweites Mal ein, mitten in die Ansicht, in der man schon war.
+   */
+  silent?: boolean | (() => boolean)
+}
+
 export async function loadAndHydrate(
   dispatch: Dispatch<AppAction>,
   userId: string,
-  opts?: { silent?: boolean },
+  { silent = false }: LadeOptionen = {},
 ): Promise<void> {
   // Einmal festgehalten, für beide Durchläufe unten: Der zweite gehört zur
   // selben Sitzung wie der erste, auch wenn dazwischen abgemeldet wurde.
@@ -30,9 +46,10 @@ export async function loadAndHydrate(
   // Ohne das ginge eine eben getippte Änderung verloren, nur weil gerade
   // nachgeladen wird, nach „Plan senden" etwa oder einem Push-Klick.
   ausstehendesSchreiben()
+  const still = typeof silent === 'function' ? silent : (): boolean => silent
   // Stiller Refresh (z. B. nach einem Push-Klick): kein „lädt…"-Zwischenschritt,
   // die aktuelle Ansicht bleibt stehen, bis die frischen Daten da sind.
-  if (!opts?.silent) dispatch({ type: 'setDataStatus', status: 'loading' })
+  if (!still()) dispatch({ type: 'setDataStatus', status: 'loading' })
   /*
    * **Ging während des Ladens etwas hinaus, wird noch einmal geladen** — still
    * und einmal, nicht im Kreis. Die Abfrage kann vor ihm gelesen haben, und
@@ -44,10 +61,10 @@ export async function loadAndHydrate(
    * schriebe eine Änderung darin ihn mit dem neuen Stand — lautlos über das,
    * was ein anderer inzwischen gespeichert hat.
    */
-  if (await ladenUndEinspielen(dispatch, userId, meine, opts?.silent === true)) {
+  if (await ladenUndEinspielen(dispatch, userId, meine, still)) {
     ausstehendesSchreiben()
     // Das zweite Laden ist eines mitten in der Sitzung — still, wie es heißt.
-    await ladenUndEinspielen(dispatch, userId, meine, true)
+    await ladenUndEinspielen(dispatch, userId, meine, () => true)
   }
 }
 
@@ -55,9 +72,10 @@ export async function loadAndHydrate(
  * Einmal laden und einspielen. `true`: Während des Ladens ging etwas hinaus,
  * das die Abfrage verpasst haben kann (`schreibStand`).
  *
- * `still`: ein Nachladen mitten in der Sitzung. Es legt das Blatt beim Öffnen
- * nicht erneut vor, und scheitert es, bleibt der Bestand stehen — er ist
- * frischer als jede Momentaufnahme. Bis zum 16.10.2026 fiel auch ein stilles
+ * `still`, gefragt, wenn die Antwort da ist: ein Nachladen mitten in der
+ * Sitzung oder über dem letzten Stand. Es legt das Blatt beim Öffnen nicht
+ * erneut vor, und scheitert es, bleibt der Bestand stehen — er ist frischer
+ * als jede Momentaufnahme. Bis zum 16.10.2026 fiel auch ein stilles
  * Nachladen auf die Momentaufnahme zurück: Ein Netzaussetzer nach „Plan
  * senden" ersetzte den Bildschirm durch den älteren Stand und sperrte ihn; ohne
  * Momentaufnahme stand die ganze App auf der Fehlerseite.
@@ -66,7 +84,7 @@ async function ladenUndEinspielen(
   dispatch: Dispatch<AppAction>,
   userId: string,
   meine: number,
-  still: boolean,
+  still: () => boolean,
 ): Promise<boolean> {
   // Was schon unterwegs ist — eben hinausgeschrieben oder vorher losgegangen —,
   // soll im geladenen Stand stehen. Bis zum 15.10.2026 wurde es nur losgeschickt,
@@ -84,7 +102,7 @@ async function ladenUndEinspielen(
       empty: res.empty,
     }
     saveSnapshot(payload)
-    dispatch({ type: 'hydrate', payload, ...(still ? { nachgeladen: true as const } : {}) })
+    dispatch({ type: 'hydrate', payload, ...(still() ? { nachgeladen: true as const } : {}) })
     return schreibStand() !== vorher
   }
 
@@ -96,7 +114,7 @@ async function ladenUndEinspielen(
   }
 
   // Mitten in der Sitzung: Der Bestand bleibt, ein Hinweis sagt es (siehe oben).
-  if (still) {
+  if (still()) {
     dispatch({ type: 'nachladenGescheitert' })
     return false
   }
@@ -109,12 +127,28 @@ async function ladenUndEinspielen(
  * sonst die Fehlerseite („Erneut versuchen", „Abmelden").
  *
  * Der Rückfall, wenn das Laden scheitert, und seit dem 19.10.2026 auch der
- * Offline-Start (`store.tsx`). Dort wäre ein Ladeversuch zwecklos: Jede Abfrage
- * wartet, bis supabase-js das Token erneuert hat, offline also 25 s.
+ * Offline-Start (`store.tsx`). Dort wäre ein Ladeversuch zwecklos: Nach über
+ * einer Stunde wartet jede Abfrage, bis supabase-js das Token erneuert hat,
+ * offline also 25 s. Und auch mit gültigem Token wiederholt PostgREST jede
+ * Abfrage, die am Netz scheitert, dreimal — sieben Sekunden Startbild für
+ * nichts.
  */
 export function letztenStandZeigen(dispatch: Dispatch<AppAction>, userId: string): void {
+  // userId mitgeben: Retry und Code-Einlösen brauchen es ohne Hydration
+  if (!momentaufnahmeZeigen(dispatch, userId)) dispatch({ type: 'setDataStatus', status: 'error', userId })
+}
+
+/**
+ * **Die Momentaufnahme dieses Kontos zeigen, nur lesend** — wenn es eine gibt;
+ * `true`, wenn sie jetzt steht. Ohne sie geschieht nichts.
+ *
+ * Für den Vorgriff, während die Daten noch kommen (`store.tsx`): Lassen sie
+ * auf sich warten, steht der letzte Stand statt des Startbilds. Gibt es keinen,
+ * bleibt das Startbild, denn das Laden läuft ja noch; eine Fehlerseite wäre
+ * dort verfrüht.
+ */
+export function momentaufnahmeZeigen(dispatch: Dispatch<AppAction>, userId: string): boolean {
   const snap = readSnapshot(userId)
   if (snap) dispatch({ type: 'hydrate', payload: snap.payload, staleAt: snap.at })
-  // userId mitgeben: Retry und Code-Einlösen brauchen es ohne Hydration
-  else dispatch({ type: 'setDataStatus', status: 'error', userId })
+  return snap !== null
 }

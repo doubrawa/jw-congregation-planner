@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render, renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import type { AppAction } from './context'
+import type { LadeOptionen } from './hydrate'
 import { DE } from '../i18n/de'
 import { APP_LANGS, isRTL } from '../i18n/langs'
 import { dict, loadOverlay } from '../i18n/ui'
@@ -44,13 +45,14 @@ const supabaseStub = {
     },
   },
 }
-const loadAndHydrate = vi.fn((_dispatch: (a: AppAction) => void, _userId: string, _opts?: { silent?: boolean }) =>
+const loadAndHydrate = vi.fn((_dispatch: (a: AppAction) => void, _userId: string, _opts?: LadeOptionen) =>
   Promise.resolve(),
 )
 const letztenStandZeigen = vi.fn((_dispatch: (a: AppAction) => void, _userId: string): void => {})
+const momentaufnahmeZeigen = vi.fn((_dispatch: (a: AppAction) => void, _userId: string): boolean => false)
 const konfiguriert = { wert: true }
 /** Was auth-js auf dem Gerät abgelegt hat — echt gelesen in `gespeicherte-sitzung.test.ts`. */
-const abgelegt = vi.hoisted(() => ({ wert: null as { userId: string; laeuftAb: number } | null }))
+const abgelegt = vi.hoisted(() => ({ wert: null as { userId: string } | null }))
 vi.mock('../lib/gespeicherte-sitzung', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
   gespeicherteSitzung: () => abgelegt.wert,
@@ -67,6 +69,7 @@ vi.mock('../lib/supabase', () => ({
 vi.mock('./hydrate', () => ({
   loadAndHydrate: (...a: Parameters<typeof loadAndHydrate>) => loadAndHydrate(...a),
   letztenStandZeigen: (dispatch: (a: AppAction) => void, userId: string) => letztenStandZeigen(dispatch, userId),
+  momentaufnahmeZeigen: (dispatch: (a: AppAction) => void, userId: string) => momentaufnahmeZeigen(dispatch, userId),
 }))
 const mitLinkAnmelden = vi.fn((_token: string) => Promise.resolve<string | null>(null))
 vi.mock('../lib/anmelden', () => ({ mitLinkAnmelden: (token: string) => mitLinkAnmelden(token) }))
@@ -126,6 +129,22 @@ async function abwarten(): Promise<void> {
   })
 }
 
+/** Lädt es still? So fragt das Laden selbst (`hydrate.ts`): Die Frage gilt beim Beginn und mit der Antwort. */
+function istStill(opts?: LadeOptionen): boolean {
+  return typeof opts?.silent === 'function' ? opts.silent() : opts?.silent === true
+}
+
+/**
+ * Wie der Provider dieses Konto zuletzt geladen hat: still über dem letzten
+ * Stand oder sichtbar mit dem Startbild — so, wie das Laden jetzt fragen würde.
+ */
+function ladeweise(userId: string): 'still' | 'sichtbar' | 'gar nicht' {
+  const aufrufe = loadAndHydrate.mock.calls.filter((aufruf) => aufruf[1] === userId)
+  const letzter = aufrufe[aufrufe.length - 1]
+  if (!letzter) return 'gar nicht'
+  return istStill(letzter[2]) ? 'still' : 'sichtbar'
+}
+
 beforeEach(() => {
   konfiguriert.wert = true
   authListener.fn = null
@@ -134,6 +153,7 @@ beforeEach(() => {
   unsubscribe.mockClear()
   loadAndHydrate.mockClear().mockResolvedValue(undefined)
   letztenStandZeigen.mockReset()
+  momentaufnahmeZeigen.mockReset().mockReturnValue(false)
   abgelegt.wert = null
   getSession.mockClear().mockResolvedValue({ data: { session: null } })
   mitLinkAnmelden.mockClear()
@@ -375,7 +395,7 @@ describe('Die Supabase-Sitzung wird gespiegelt', () => {
       await Promise.resolve()
     })
     expect(result.current.state.screen).not.toBe('login')
-    expect(loadAndHydrate).toHaveBeenCalledWith(expect.anything(), 'u7')
+    expect(ladeweise('u7')).toBe('sichtbar')
   })
 
   it('ohne Sitzung bleibt der Login stehen', async () => {
@@ -396,7 +416,7 @@ describe('Die Supabase-Sitzung wird gespiegelt', () => {
     await act(async () => {
       authListener.fn?.('SIGNED_IN', { user: { id: 'u9' } })
     })
-    expect(loadAndHydrate).toHaveBeenCalledWith(expect.anything(), 'u9')
+    expect(ladeweise('u9')).toBe('sichtbar')
   })
 
   it('ein erneutes SIGNED_IN desselben Kontos lädt nicht noch einmal', async () => {
@@ -417,7 +437,7 @@ describe('Die Supabase-Sitzung wird gespiegelt', () => {
       authListener.fn?.('SIGNED_OUT', null)
       authListener.fn?.('SIGNED_IN', { user: { id: 'u7' } })
     })
-    expect(loadAndHydrate).toHaveBeenCalledWith(expect.anything(), 'u7')
+    expect(ladeweise('u7')).toBe('sichtbar')
   })
 
   it('ein SIGNED_IN ohne Sitzung lädt nichts — es gäbe kein Konto dazu', async () => {
@@ -502,7 +522,7 @@ describe('Mit dem Link aus der E-Mail', () => {
       await Promise.resolve()
     })
     expect(result.current.state.toast?.text).toBe(DE.linkUngueltig)
-    expect(loadAndHydrate).toHaveBeenCalledWith(expect.anything(), 'u7')
+    expect(ladeweise('u7')).toBe('sichtbar')
   })
 
   /*
@@ -552,24 +572,51 @@ describe('Mit dem Link aus der E-Mail', () => {
 })
 
 /*
- * **Offline-Start nach über einer Stunde** (19.10.2026). Muss auth-js das Token
- * einer abgelegten Sitzung erst erneuern, wartet jede Frage nach der Sitzung
- * auf das Netz. Offline gibt es nach 25 s auf und meldet keine Sitzung, obwohl
- * sie noch auf dem Gerät liegt; bis dahin kam danach die Anmeldung, nie der
- * letzte Stand. Jetzt greift der Provider vor. Die Momentaufnahme selbst liest
- * `letztenStandZeigen` (hier eine Attrappe, echt in `hydrate.test.ts`), die
+ * **Offline-Start** (19.10.2026). Liegt ein Konto auf dem Gerät, steht das
+ * Startbild höchstens vier Sekunden, offline gar nicht; danach der letzte
+ * Stand dieses Kontos, nur lesend.
+ *
+ * Nach über einer Stunde muss auth-js das Token erst erneuern, und jede Frage
+ * nach der Sitzung wartet auf das Netz. Offline gibt es nach 25 s auf und
+ * meldet keine Sitzung, obwohl sie noch auf dem Gerät liegt; bis dahin kam
+ * danach die Anmeldung. In der ersten Stunde antwortet es sofort, aber die
+ * Abfragen der Daten scheitern, und PostgREST wiederholt jede dreimal: sieben
+ * Sekunden Startbild. Die Momentaufnahme selbst lesen `letztenStandZeigen` und
+ * `momentaufnahmeZeigen` (hier Attrappen, echt in `hydrate.test.ts`), die
  * abgelegte Sitzung `gespeicherteSitzung` (echt in `gespeicherte-sitzung.test.ts`).
  */
-describe('Offline-Start nach über einer Stunde', () => {
-  /** Abgelegt ist eine Sitzung, deren Token seit einer Stunde abgelaufen ist. */
-  const abgelaufen = () => ({ userId: 'u7', laeuftAb: Date.now() - 3_600_000 })
-  /** Supabase antwortet nicht, solange die Erneuerung läuft. */
+describe('Offline-Start', () => {
+  /** Abgelegt ist eine Sitzung dieses Kontos. */
+  const KONTO = { userId: 'u7' }
+  /** Supabase antwortet nicht, solange es das Token erneuert — die letzte Nutzung liegt über eine Stunde zurück. */
   const haengt = (): void => {
     getSession.mockReturnValue(new Promise(() => {}))
+  }
+  /** Das Token gilt noch: Supabase antwortet sofort aus dem Speicher. */
+  const giltNoch = (): void => {
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u7' } } } })
+  }
+  /** Die Daten lassen auf sich warten: Das Laden beginnt (sichtbar mit dem Startbild) und kommt nicht an. */
+  const datenHaengen = (): void => {
+    loadAndHydrate.mockImplementation((dispatch, _userId, opts) => {
+      if (!istStill(opts)) dispatch({ type: 'setDataStatus', status: 'loading' })
+      return new Promise(() => {})
+    })
   }
   /** Das Gerät meldet: kein Netz. */
   const offline = (): void => {
     Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false })
+  }
+  /** Das Gerät hat wieder Netz — noch ohne das Ereignis `online`. */
+  const online = (): void => {
+    Reflect.deleteProperty(navigator, 'onLine')
+  }
+  /** Das Netz ist zurück, und das Gerät meldet es (`online`). */
+  const wiederOnline = async (): Promise<void> => {
+    online()
+    await act(async () => {
+      window.dispatchEvent(new Event('online'))
+    })
   }
   /** Die Wecker der Uhr laufen lassen und abwarten, was sie auslösen. */
   const vergehen = async (ms: number): Promise<void> => {
@@ -585,11 +632,11 @@ describe('Offline-Start nach über einer Stunde', () => {
     )
   })
   afterEach(() => {
-    Reflect.deleteProperty(navigator, 'onLine')
+    online()
   })
 
-  it('offline, und das Token muss erneuert werden: sofort der letzte Stand — kein Warten, keine Anmeldung', async () => {
-    abgelegt.wert = abgelaufen()
+  it('nach über einer Stunde, offline: sofort der letzte Stand — kein Warten, keine Anmeldung', async () => {
+    abgelegt.wert = KONTO
     offline()
     haengt()
     const { result } = starte()
@@ -604,7 +651,7 @@ describe('Offline-Start nach über einer Stunde', () => {
   it('online, aber Supabase antwortet nicht: nach vier Sekunden der letzte Stand — vorher nicht', async () => {
     // Im WLAN ohne Internet oder bei Empfang ohne Daten meldet das Gerät „online".
     vi.useFakeTimers()
-    abgelegt.wert = abgelaufen()
+    abgelegt.wert = KONTO
     haengt()
     const { result } = starte()
     await vergehen(3999)
@@ -615,15 +662,166 @@ describe('Offline-Start nach über einer Stunde', () => {
     expect(result.current.state).toMatchObject({ screen: 'start', sitzungPruefen: false })
   })
 
-  it('gilt das Token noch, greift nichts vor — Supabase antwortet dann ohnehin aus dem Speicher', async () => {
-    vi.useFakeTimers()
-    abgelegt.wert = { userId: 'u7', laeuftAb: Date.now() + 1_800_000 }
+  it('in der ersten Stunde, offline: ebenso sofort der letzte Stand — geladen wird erst mit dem Netz', async () => {
+    // Supabase antwortet sofort, aber jede Abfrage der Daten scheiterte am
+    // Netz und würde dreimal wiederholt: bis zum 19.10.2026 abends sieben
+    // Sekunden Startbild vor demselben letzten Stand.
+    abgelegt.wert = KONTO
+    offline()
+    giltNoch()
+    const { result } = starte()
+    await abwarten()
+    expect(letztenStandZeigen).toHaveBeenCalledTimes(1)
+    expect(letztenStandZeigen).toHaveBeenCalledWith(expect.anything(), 'u7')
+    expect(result.current.state).toMatchObject({ screen: 'start', sitzungPruefen: false, userId: 'u7' })
+    expect(result.current.state.staleAt).not.toBeNull()
+    expect(loadAndHydrate).not.toHaveBeenCalled()
+  })
+
+  it('kommt das Netz zurück, kommen die Daten — still über dem letzten Stand', async () => {
+    abgelegt.wert = KONTO
+    offline()
+    giltNoch()
+    starte()
+    await abwarten()
+    await wiederOnline()
+    expect(loadAndHydrate).toHaveBeenCalledTimes(1)
+    expect(ladeweise('u7')).toBe('still')
+  })
+
+  it('kommt es zurück, während ohne Momentaufnahme die Fehlerseite steht, kommen sie sichtbar', async () => {
+    letztenStandZeigen.mockImplementation((dispatch, userId) => dispatch({ type: 'setDataStatus', status: 'error', userId }))
+    abgelegt.wert = KONTO
+    offline()
+    giltNoch()
+    const { result } = starte()
+    await abwarten()
+    expect(result.current.state).toMatchObject({ dataStatus: 'error', userId: 'u7' })
+    await wiederOnline()
+    expect(ladeweise('u7')).toBe('sichtbar')
+  })
+
+  it('lädt es schon, lädt eine gelungene Erneuerung nicht daneben', async () => {
+    // Nach über einer Stunde erneuert das Laden selbst das Token, und auth-js
+    // meldet es mittendrin.
+    abgelegt.wert = KONTO
     offline()
     haengt()
+    starte()
+    await abwarten()
+    datenHaengen()
+    await wiederOnline()
+    await act(async () => {
+      authListener.fn?.('TOKEN_REFRESHED', { user: { id: 'u7' } })
+    })
+    expect(loadAndHydrate).toHaveBeenCalledTimes(1)
+  })
+
+  it('im Alltag lädt das Netz nichts nach — die Daten sind ja da', async () => {
+    giltNoch()
+    starte()
+    await abwarten()
+    loadAndHydrate.mockClear()
+    await wiederOnline()
+    expect(loadAndHydrate).not.toHaveBeenCalled()
+  })
+
+  it('nach dem Abbauen hört niemand mehr auf das Netz', async () => {
+    abgelegt.wert = KONTO
+    offline()
+    giltNoch()
+    const { unmount } = starte()
+    await abwarten()
+    unmount()
+    await wiederOnline()
+    expect(loadAndHydrate).not.toHaveBeenCalled()
+  })
+
+  it('in der ersten Stunde, online, aber die Daten lassen auf sich warten: nach vier Sekunden der letzte Stand', async () => {
+    // WLAN ohne Internet, schwacher Empfang: Das Gerät meldet „online", und die
+    // Abfragen hängen oder scheitern erst nach ihren Wiederholungen.
+    vi.useFakeTimers()
+    momentaufnahmeZeigen.mockImplementation((dispatch, userId) => {
+      dispatch({ type: 'hydrate', payload: { ...geladen, userId }, staleAt: Date.now() - 7_200_000 })
+      return true
+    })
+    abgelegt.wert = KONTO
+    giltNoch()
+    datenHaengen()
     const { result } = starte()
-    await vergehen(10_000)
+    await vergehen(3999)
+    expect(result.current.state.dataStatus).toBe('loading')
+    expect(momentaufnahmeZeigen).not.toHaveBeenCalled()
+    await vergehen(1)
+    expect(momentaufnahmeZeigen).toHaveBeenCalledWith(expect.anything(), 'u7')
+    expect(result.current.state).toMatchObject({ screen: 'start', dataStatus: 'ready', userId: 'u7' })
+    expect(result.current.state.staleAt).not.toBeNull()
+    // Das Laden läuft weiter, und was es bringt, kommt jetzt still darüber.
+    expect(loadAndHydrate).toHaveBeenCalledTimes(1)
+    expect(ladeweise('u7')).toBe('still')
+  })
+
+  it('… ohne Momentaufnahme bleibt dann das Startbild — eine Fehlerseite wäre verfrüht, das Laden läuft ja noch', async () => {
+    vi.useFakeTimers()
+    abgelegt.wert = KONTO
+    giltNoch()
+    datenHaengen()
+    const { result } = starte()
+    await vergehen(4000)
+    expect(momentaufnahmeZeigen).toHaveBeenCalledWith(expect.anything(), 'u7')
     expect(letztenStandZeigen).not.toHaveBeenCalled()
-    expect(result.current.state.sitzungPruefen).toBe(true)
+    expect(result.current.state.dataStatus).toBe('loading')
+  })
+
+  it('sind die Daten vor dem Wecker da, greift er nicht vor — auch wenn noch still nachgeladen wird', async () => {
+    // Ging beim Laden etwas hinaus, lädt es danach still ein zweites Mal
+    // (`hydrate.ts`); das Laden läuft dann noch, die Daten stehen aber schon.
+    vi.useFakeTimers()
+    abgelegt.wert = KONTO
+    giltNoch()
+    loadAndHydrate.mockImplementation((dispatch, userId) => {
+      dispatch({ type: 'setDataStatus', status: 'loading' })
+      dispatch({ type: 'hydrate', payload: { ...geladen, userId } })
+      return new Promise(() => {})
+    })
+    starte()
+    await vergehen(10_000)
+    expect(momentaufnahmeZeigen).not.toHaveBeenCalled()
+    expect(letztenStandZeigen).not.toHaveBeenCalled()
+  })
+
+  it('scheitert der Link am Netz und gilt das Token noch, steht offline der letzte Stand — keine leere App', async () => {
+    // Mit einem Link greift nichts vor; die Sitzung, die da war, kommt erst
+    // mit der Prüfung. Ihre Daten zu laden wäre offline vergeblich.
+    window.history.replaceState(null, '', `/#anmelden=${'T'.repeat(43)}`)
+    anmeldeAdresseVergessen()
+    mitLinkAnmelden.mockResolvedValueOnce('netz')
+    abgelegt.wert = KONTO
+    offline()
+    giltNoch()
+    const { result } = starte()
+    await abwarten()
+    expect(letztenStandZeigen).toHaveBeenCalledWith(expect.anything(), 'u7')
+    expect(result.current.state).toMatchObject({ screen: 'start', sitzungPruefen: false, userId: 'u7' })
+    expect(result.current.state.staleAt).not.toBeNull()
+    expect(loadAndHydrate).not.toHaveBeenCalled()
+  })
+
+  it('lädt ein anderes Konto als das abgelegte, zeigt der Wecker dessen Stand nicht', async () => {
+    // Die abgelegte Sitzung galt auth-js nicht mehr, und jemand meldet sich an.
+    vi.useFakeTimers()
+    abgelegt.wert = KONTO
+    datenHaengen()
+    const { result } = starte()
+    await vergehen(0)
+    expect(result.current.state).toMatchObject({ screen: 'login', sitzungPruefen: false })
+    await act(async () => {
+      authListener.fn?.('SIGNED_IN', { user: { id: 'u9' } })
+    })
+    await vergehen(4000)
+    expect(result.current.state.dataStatus).toBe('loading')
+    expect(momentaufnahmeZeigen).not.toHaveBeenCalled()
+    expect(letztenStandZeigen).not.toHaveBeenCalled()
   })
 
   it('mit dem Link aus der E-Mail greift nichts vor — angemeldet wird, wen der Link nennt', async () => {
@@ -631,7 +829,7 @@ describe('Offline-Start nach über einer Stunde', () => {
     window.history.replaceState(null, '', `/#anmelden=${'T'.repeat(43)}`)
     anmeldeAdresseVergessen()
     mitLinkAnmelden.mockReturnValueOnce(new Promise(() => {}))
-    abgelegt.wert = abgelaufen()
+    abgelegt.wert = KONTO
     offline()
     const { result } = starte()
     await vergehen(10_000)
@@ -644,7 +842,7 @@ describe('Offline-Start nach über einer Stunde', () => {
     // den Netzfehler. Ein zweiter Vorgriff spränge zurück auf den Start und
     // legte das Blatt beim Öffnen noch einmal vor.
     vi.useFakeTimers()
-    abgelegt.wert = abgelaufen()
+    abgelegt.wert = KONTO
     let antworten: (a: Antwort) => void = () => {}
     getSession.mockReturnValue(new Promise((res) => { antworten = res }))
     const { result } = starte()
@@ -662,7 +860,7 @@ describe('Offline-Start nach über einer Stunde', () => {
     window.history.replaceState(null, '', `/#anmelden=${'T'.repeat(43)}`)
     anmeldeAdresseVergessen()
     mitLinkAnmelden.mockResolvedValueOnce('netz')
-    abgelegt.wert = abgelaufen()
+    abgelegt.wert = KONTO
     getSession.mockResolvedValue({ data: { session: null }, error: new AuthRetryableFetchError('Failed to fetch', 0) })
     const { result } = starte()
     await abwarten()
@@ -671,20 +869,41 @@ describe('Offline-Start nach über einer Stunde', () => {
   })
 
   it('steht der letzte Stand eines anderen Kontos, lädt dessen Anmeldung sichtbar — nicht still darüber', async () => {
-    // Ein anderer Tab meldet B an, während hier noch der Stand von u7 steht.
-    abgelegt.wert = abgelaufen()
+    // Das Netz ist zurück, und ein anderer Tab meldet B an, während hier noch
+    // der Stand von u7 steht.
+    abgelegt.wert = KONTO
     offline()
     haengt()
     starte()
     await abwarten()
+    online()
     await act(async () => {
       authListener.fn?.('SIGNED_IN', { user: { id: 'u9' } })
     })
-    expect(loadAndHydrate).toHaveBeenCalledWith(expect.anything(), 'u9')
+    expect(ladeweise('u9')).toBe('sichtbar')
+  })
+
+  it('offline zeigt auch eine Anmeldung von anderswo nur den letzten Stand — und lädt mit dem Netz dieses Konto', async () => {
+    // auth-js meldet ein Konto aus dem Speicher auch ohne Netz, etwa wenn ein
+    // anderer Tab es angemeldet hat. Geladen wird dann dieses, nicht u7.
+    abgelegt.wert = KONTO
+    offline()
+    haengt()
+    const { result } = starte()
+    await abwarten()
+    await act(async () => {
+      authListener.fn?.('SIGNED_IN', { user: { id: 'u9' } })
+    })
+    expect(letztenStandZeigen).toHaveBeenLastCalledWith(expect.anything(), 'u9')
+    expect(result.current.state.userId).toBe('u9')
+    expect(loadAndHydrate).not.toHaveBeenCalled()
+    await wiederOnline()
+    expect(ladeweise('u9')).toBe('still')
+    expect(ladeweise('u7')).toBe('gar nicht')
   })
 
   it('scheitert die Erneuerung am Netz, bevor der Wecker klingelt, steht der letzte Stand ebenso', async () => {
-    abgelegt.wert = abgelaufen()
+    abgelegt.wert = KONTO
     getSession.mockResolvedValue({ data: { session: null }, error: new AuthRetryableFetchError('Failed to fetch', 0) })
     const { result } = starte()
     await abwarten()
@@ -694,17 +913,18 @@ describe('Offline-Start nach über einer Stunde', () => {
 
   it('ist die Sitzung wirklich weg (Token ungültig), kommt die Anmeldung — und der Wecker greift nicht mehr vor', async () => {
     vi.useFakeTimers()
-    abgelegt.wert = abgelaufen()
+    abgelegt.wert = KONTO
     // auth-js hat sie entfernt (SIGNED_OUT) und antwortet ohne Sitzung und ohne Fehler.
     getSession.mockResolvedValue({ data: { session: null }, error: null })
     const { result } = starte()
     await vergehen(10_000)
     expect(result.current.state).toMatchObject({ screen: 'login', sitzungPruefen: false })
     expect(letztenStandZeigen).not.toHaveBeenCalled()
+    expect(momentaufnahmeZeigen).not.toHaveBeenCalled()
   })
 
   it('meldet Supabase später SIGNED_OUT, geht es vom letzten Stand zur Anmeldung', async () => {
-    abgelegt.wert = abgelaufen()
+    abgelegt.wert = KONTO
     offline()
     haengt()
     const { result } = starte()
@@ -716,46 +936,66 @@ describe('Offline-Start nach über einer Stunde', () => {
   })
 
   it('kommt die Erneuerung durch, ersetzen die Daten den letzten Stand — still, ohne „Lädt …"', async () => {
-    abgelegt.wert = abgelaufen()
+    abgelegt.wert = KONTO
     offline()
     haengt()
     starte()
     await abwarten()
+    // Sie ging übers Netz; das Gerät meldet es hier nicht eigens (`online`).
+    online()
     await act(async () => {
       authListener.fn?.('TOKEN_REFRESHED', { user: { id: 'u7' } })
     })
-    expect(loadAndHydrate).toHaveBeenCalledWith(expect.anything(), 'u7', { silent: true })
+    expect(ladeweise('u7')).toBe('still')
+  })
+
+  it('… auch wenn das Gerät noch „offline" meldet — die Erneuerung ging ja übers Netz', async () => {
+    // Meldet das Gerät fälschlich „offline", lädt der Start nicht, und „Neu
+    // laden" beginnt wieder beim letzten Stand. Erst die Erneuerung kurz vor
+    // dem Ablauf des Tokens beweist das Netz.
+    abgelegt.wert = KONTO
+    offline()
+    giltNoch()
+    starte()
+    await abwarten()
+    expect(loadAndHydrate).not.toHaveBeenCalled()
+    await act(async () => {
+      authListener.fn?.('TOKEN_REFRESHED', { user: { id: 'u7' } })
+    })
+    expect(ladeweise('u7')).toBe('still')
   })
 
   it('antwortet Supabase doch noch mit der Sitzung, bleibt die Ansicht, wo sie ist', async () => {
-    abgelegt.wert = abgelaufen()
+    abgelegt.wert = KONTO
     offline()
     let antworten: (a: Antwort) => void = () => {}
     getSession.mockReturnValue(new Promise((res) => { antworten = res }))
     const { result } = starte()
     await abwarten()
-    // Inzwischen schlägt jemand das Programm auf.
+    // Inzwischen schlägt jemand das Programm auf, und das Netz kommt zurück.
     await act(async () => {
       result.current.dispatch({ type: 'navigate', screen: 'programm' })
     })
+    online()
     antworten({ data: { session: { user: { id: 'u7' } } } })
     await abwarten()
     expect(result.current.state.screen).toBe('programm')
-    expect(loadAndHydrate).toHaveBeenCalledWith(expect.anything(), 'u7', { silent: true })
+    expect(ladeweise('u7')).toBe('still')
   })
 
   it('ohne Momentaufnahme steht die Fehlerseite — die Erneuerung lädt dann sichtbar', async () => {
     letztenStandZeigen.mockImplementation((dispatch, userId) => dispatch({ type: 'setDataStatus', status: 'error', userId }))
-    abgelegt.wert = abgelaufen()
+    abgelegt.wert = KONTO
     offline()
     haengt()
     const { result } = starte()
     await abwarten()
     expect(result.current.state).toMatchObject({ screen: 'start', dataStatus: 'error', userId: 'u7' })
+    online()
     await act(async () => {
       authListener.fn?.('TOKEN_REFRESHED', { user: { id: 'u7' } })
     })
-    expect(loadAndHydrate).toHaveBeenCalledWith(expect.anything(), 'u7')
+    expect(ladeweise('u7')).toBe('sichtbar')
   })
 
   it('stand der letzte Stand nach einem gescheiterten Laden, holt die nächste Erneuerung die Daten', async () => {
@@ -772,7 +1012,8 @@ describe('Offline-Start nach über einer Stunde', () => {
     await act(async () => {
       authListener.fn?.('TOKEN_REFRESHED', { user: { id: 'u7' } })
     })
-    expect(loadAndHydrate).toHaveBeenLastCalledWith(expect.anything(), 'u7', { silent: true })
+    expect(loadAndHydrate).toHaveBeenCalledTimes(2)
+    expect(ladeweise('u7')).toBe('still')
   })
 
   it('im Alltag lädt eine Erneuerung nichts nach — die Daten sind ja da', async () => {

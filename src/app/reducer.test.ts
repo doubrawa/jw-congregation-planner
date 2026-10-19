@@ -2172,6 +2172,14 @@ describe('hydrate / setDataStatus', () => {
     expect(reducer(makeState(), { type: 'setDataStatus', status: 'error', userId: 'u9' })).toMatchObject({ dataStatus: 'error', userId: 'u9' })
     expect(reducer(makeState({ userId: 'keep' }), { type: 'setDataStatus', status: 'no-membership' }).userId).toBe('keep')
   })
+
+  it('ohne Mitgliedschaft gilt der letzte Stand nicht mehr — kein „Offline · Stand von …" über der Seite', () => {
+    // Beim Start stand schon der letzte Stand da (Offline-Start), dann meldet
+    // das Laden: Das Konto gehört keiner Versammlung mehr.
+    const ueberDemLetztenStand = makeState({ staleAt: 1_700_000_000_000, userId: 'u9' })
+    const danach = reducer(ueberDemLetztenStand, { type: 'setDataStatus', status: 'no-membership', userId: 'u9' })
+    expect(danach).toMatchObject({ dataStatus: 'no-membership', staleAt: null })
+  })
 })
 
 /**

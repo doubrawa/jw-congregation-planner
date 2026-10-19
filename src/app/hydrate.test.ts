@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { letztenStandZeigen, loadAndHydrate } from './hydrate'
-import { loadCongregationData, type CongregationData } from '../lib/data'
+import { letztenStandZeigen, loadAndHydrate, momentaufnahmeZeigen } from './hydrate'
+import { loadCongregationData, type CongregationData, type LoadResult } from '../lib/data'
 import { verfolgterFetch } from '../lib/schreiben-unterwegs'
 import { clearSnapshot, readSnapshot, saveSnapshot } from '../lib/snapshot'
 import type { AppAction } from './context'
@@ -228,6 +228,54 @@ describe('loadAndHydrate', () => {
   })
 
   /*
+   * **Ob still, entscheidet sich mit der Antwort** (19.10.2026). Lässt sie beim
+   * Öffnen auf sich warten, zeigt der Provider vorher den letzten Stand
+   * (Offline-Start, `store.tsx`). Was danach ankommt, ist ein Nachladen über
+   * ihm: Es legt das Blatt beim Öffnen nicht noch einmal vor, und scheitert es,
+   * spielt es den letzten Stand kein zweites Mal ein.
+   */
+  describe('steht beim Eintreffen der Antwort inzwischen der letzte Stand', () => {
+    /** Das Laden beginnt sichtbar; bevor die Antwort kommt, greift der Provider vor. */
+    function mitVorgriff(antwort: LoadResult) {
+      let vorgegriffen = false
+      let antworten = (): void => {}
+      mockLoad.mockImplementationOnce(
+        () =>
+          new Promise((weiter) => {
+            antworten = () => weiter(antwort)
+          }),
+      )
+      const { actions, dispatch } = collector()
+      const laden = loadAndHydrate(dispatch, 'u9', { silent: () => vorgegriffen })
+      return {
+        actions,
+        async vorgreifenUndAntworten(): Promise<void> {
+          await vi.waitFor(() => expect(mockLoad).toHaveBeenCalled())
+          vorgegriffen = true
+          antworten()
+          await laden
+        },
+      }
+    }
+
+    it('kommen die Daten still darüber — das Blatt lag beim Öffnen schon vor', async () => {
+      const probe = mitVorgriff({ ok: true, empty: false, data: emptyData, congregationId: 'c1', userId: 'u9' })
+      await probe.vorgreifenUndAntworten()
+      // Begonnen hat es sichtbar: Da stand noch das Startbild.
+      expect(probe.actions[0]).toEqual({ type: 'setDataStatus', status: 'loading' })
+      expect(probe.actions[1]).toMatchObject({ type: 'hydrate', nachgeladen: true })
+    })
+
+    it('scheitert es, bleibt er stehen — nur der Hinweis, kein zweites Einspielen', async () => {
+      mockRead.mockReturnValue({ at: 1, payload: { ...emptyData, congregationId: 'c1', userId: 'u9', empty: false } })
+      const probe = mitVorgriff({ ok: false, reason: 'error' })
+      await probe.vorgreifenUndAntworten()
+      expect(probe.actions.map((a) => a.type)).toEqual(['setDataStatus', 'nachladenGescheitert'])
+      expect(mockRead).not.toHaveBeenCalled()
+    })
+  })
+
+  /*
    * **Abgemeldet, während noch geladen wurde** (16.10.2026). Die Antwort kam
    * danach an und spielte die Daten des Abgemeldeten in den eben geleerten
    * Zustand zurück, samt einer neuen Momentaufnahme im Speicher des Geräts.
@@ -272,8 +320,9 @@ describe('loadAndHydrate', () => {
 /*
  * **Den letzten Stand zeigen, ohne zu laden** (19.10.2026): der Rückfall von
  * oben, für sich, denn der Offline-Start greift direkt danach (`store.tsx`).
- * Ein Ladeversuch wäre dort zwecklos: Jede Abfrage wartet, bis supabase-js das
- * Token erneuert hat, offline also 25 s.
+ * Ein Ladeversuch wäre dort zwecklos: Nach über einer Stunde wartet jede
+ * Abfrage, bis supabase-js das Token erneuert hat, offline also 25 s; davor
+ * wiederholt PostgREST jede, die am Netz scheitert, sieben Sekunden lang.
  */
 describe('letztenStandZeigen', () => {
   beforeEach(() => {
@@ -296,5 +345,33 @@ describe('letztenStandZeigen', () => {
     const { actions, dispatch } = collector()
     letztenStandZeigen(dispatch, 'u9')
     expect(actions).toEqual([{ type: 'setDataStatus', status: 'error', userId: 'u9' }])
+  })
+})
+
+/*
+ * **Die Momentaufnahme zeigen, sonst nichts** (19.10.2026): für den Vorgriff,
+ * während die Daten noch kommen (`store.tsx`). Eine Fehlerseite wäre dort
+ * verfrüht — das Laden läuft ja noch, und ohne Momentaufnahme bleibt das
+ * Startbild.
+ */
+describe('momentaufnahmeZeigen', () => {
+  beforeEach(() => {
+    mockRead.mockReset()
+    mockRead.mockReturnValue(null)
+  })
+
+  it('zeigt die dieses Kontos nur lesend — und sagt, dass sie steht', () => {
+    const stored = { ...emptyData, congregationId: 'c1', userId: 'u9', empty: false }
+    mockRead.mockReturnValue({ at: 1_700_000_000_000, payload: stored })
+    const { actions, dispatch } = collector()
+    expect(momentaufnahmeZeigen(dispatch, 'u9')).toBe(true)
+    expect(actions).toEqual([{ type: 'hydrate', payload: stored, staleAt: 1_700_000_000_000 }])
+    expect(mockRead).toHaveBeenCalledWith('u9')
+  })
+
+  it('ohne sie geschieht nichts — keine Fehlerseite, solange das Laden läuft', () => {
+    const { actions, dispatch } = collector()
+    expect(momentaufnahmeZeigen(dispatch, 'u9')).toBe(false)
+    expect(actions).toEqual([])
   })
 })

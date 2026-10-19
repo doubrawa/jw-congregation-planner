@@ -1,18 +1,16 @@
 /** @vitest-environment jsdom */
-import { EXPIRY_MARGIN_MS } from '@supabase/auth-js/dist/module/lib/constants.js'
 import { createClient } from '@supabase/supabase-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ERNEUERN_VOR_MS, gespeicherteSitzung, mussErneuern, sitzungsSchluessel } from './gespeicherte-sitzung'
+import { gespeicherteSitzung, sitzungsSchluessel } from './gespeicherte-sitzung'
 
 /**
  * **Die abgelegte Sitzung lesen, ohne auf Supabase zu warten** (19.10.2026).
  *
- * Beim Start will der Provider wissen, ob ein Konto auf dem Gerät liegt und ob
- * auth-js dessen Token erst übers Netz erneuern muss (`store.tsx`,
- * Offline-Start). supabase-js selbst gibt darüber erst Auskunft, wenn die
- * Erneuerung durch ist, offline nach 25 s. Deshalb liest die App den Eintrag
- * selbst, und dafür muss sie dieselbe Stelle lesen, an der supabase-js ihn
- * ablegt.
+ * Beim Start will der Provider wissen, ob ein Konto auf dem Gerät liegt
+ * (`store.tsx`, Offline-Start). supabase-js selbst gibt darüber erst Auskunft,
+ * wenn es das Token erneuert hat, offline nach 25 s. Deshalb liest die App den
+ * Eintrag selbst, und dafür muss sie dieselbe Stelle lesen, an der supabase-js
+ * ihn ablegt.
  */
 
 const URL_DER_DATENBANK = 'https://abcdefghijklmnop.supabase.co'
@@ -49,9 +47,9 @@ describe('Wo supabase-js die Sitzung ablegt', () => {
 })
 
 describe('Die abgelegte Sitzung', () => {
-  it('nennt das Konto und den Ablauf des Tokens in Millisekunden', () => {
+  it('nennt das Konto', () => {
     ablegen(SITZUNG)
-    expect(gespeicherteSitzung(SCHLUESSEL)).toEqual({ userId: 'u7', laeuftAb: 1_790_000_000_000 })
+    expect(gespeicherteSitzung(SCHLUESSEL)).toEqual({ userId: 'u7' })
   })
 
   it('ohne Eintrag gibt es keine — dann meldet sich niemand vorab an', () => {
@@ -93,29 +91,5 @@ describe('Die abgelegte Sitzung', () => {
     ablegen({ ...SITZUNG, refresh_token: undefined })
     gespeicherteSitzung(SCHLUESSEL)
     expect(localStorage.getItem(SCHLUESSEL)).not.toBeNull()
-  })
-})
-
-describe('Muss auth-js das Token vor der Antwort erneuern?', () => {
-  const jetzt = 1_790_000_000_000
-  const ablaufIn = (ms: number) => ({ userId: 'u7', laeuftAb: jetzt + ms })
-
-  it('die Grenze ist die von auth-js — verschiebt ein Update sie, wird diese Probe rot', () => {
-    // Läge sie darunter, griffe der Start nicht vor, obwohl auth-js übers Netz
-    // erneuert; läge sie darüber, griffe er vor, obwohl es sofort antwortet.
-    expect(ERNEUERN_VOR_MS).toBe(EXPIRY_MARGIN_MS)
-  })
-
-  it('ja, wenn es abgelaufen ist — die letzte Nutzung liegt über eine Stunde zurück', () => {
-    expect(mussErneuern(ablaufIn(-3_600_000), jetzt)).toBe(true)
-  })
-
-  it('ja, wenn es in weniger als 90 s abläuft — so knapp erneuert auth-js schon vorher', () => {
-    expect(mussErneuern(ablaufIn(89_999), jetzt)).toBe(true)
-  })
-
-  it('nein, wenn es noch länger gilt — dann antwortet auth-js sofort aus dem Speicher', () => {
-    expect(mussErneuern(ablaufIn(90_000), jetzt)).toBe(false)
-    expect(mussErneuern(ablaufIn(3_000_000), jetzt)).toBe(false)
   })
 })

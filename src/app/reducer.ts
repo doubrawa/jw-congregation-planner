@@ -1748,7 +1748,16 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return zurNaechstenZusammenkunft(geladen)
     }
     case 'setDataStatus':
-      return { ...state, dataStatus: action.status, userId: action.userId ?? state.userId }
+      return {
+        ...state,
+        dataStatus: action.status,
+        userId: action.userId ?? state.userId,
+        // Ohne Mitgliedschaft gilt auch der letzte Stand nicht mehr; das Laden
+        // hat ihn eben gelöscht (`hydrate.ts`). Stand er schon da
+        // (Offline-Start), hinge sonst „Offline · Stand von …" über der Seite
+        // „Keine Versammlung".
+        staleAt: action.status === 'no-membership' ? null : state.staleAt,
+      }
     case 'showToast':
       return { ...state, toast: nextToast(state, action.text) }
     case 'hideToast':
