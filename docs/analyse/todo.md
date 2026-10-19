@@ -7786,7 +7786,7 @@ weil der Leiter abwesend oder schon eingeteilt war.
 
 ## Aufgenommen am 18. Oktober 2026 — Trolleys nur mit Trolley-Recht (T130)
 
-### T130 · Den Reiter „Trolleys" sieht nur, wer das Trolley-Recht hat 🔧 ☐ offen
+### T130 · Den Reiter „Trolleys" sieht nur, wer das Trolley-Recht hat 🔧 ✅ erledigt (19. Oktober 2026)
 
 **Auftrag (18. Oktober, Betreiber):** „Nur diejenigen, die das Trolley-Recht
 haben, sollten den Trolley-Tab sehen."
@@ -7821,6 +7821,21 @@ Eintragen kann schon heute nur, wer den Aufgabenbereich „Trolley" hat
   Predigtdienst für alle den Reiter **Trolleys**") und `planer.md` („für alle,
   sobald die Versammlung einen hat"), dazu `fsBereiche` im Kopfkommentar und
   das Bild `verkuendiger-trolleys` (Simon, p9, hat das Recht — bleibt gleich).
+
+**Entschieden (19. Oktober, Betreiber):** Admin und Planer sehen den Reiter
+immer; die Datenbank bleibt, wie sie ist — jedes Mitglied darf weiter lesen,
+es geht nur um die Übersicht.
+
+**Umgesetzt (19. Oktober 2026):** `trolleyReiter` in `fs-bereiche.ts` — den
+Reiter sieht, wer zuteilt (`rechte.zuteilen`, also auch in der Ansicht einer
+anderen Stufe wie diese), wer mit dem Trolley gehen darf (`darfTrolley`) und
+**wer noch einen eigenen Termin hat** (aus dem Review: Wird das Recht
+entzogen, bleiben die Termine stehen; Start und „Meine Aufgaben" führen zu
+ihnen, und austragen kann man sich nur dort). Ein gemerkter Reiter fällt wie
+gehabt auf die Treffpunkte zurück. Handbücher `verkuendiger.md` und
+`planer.md` nachgezogen; das Bild bleibt. Proben: `fs-bereiche.test.ts`
+(neu, sieben Fälle) und der Reiter in `ProgrammScreen.test.tsx`;
+Mutationskatalog: ein Anker nachgezogen, vier Einträge `trolley-reiter-…` neu.
 
 ---
 
@@ -7914,15 +7929,14 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 22./23. August ☑☑☑☑☑☑☑☑☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
-10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☐☑
+10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑
 
-**129 der 131 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind zwei:**
+**130 der 131 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
-| **T130** | Den Reiter „Trolleys" sieht nur, wer das Trolley-Recht hat | ☐ aufgenommen am 18. Oktober; zu klären: Admin und Planer ohne Recht, Leserecht in der Datenbank |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
@@ -8349,13 +8363,13 @@ braucht den Betreiber oder ein Gerät.
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
 | **Rest aus T128** | Umbruch bei großer Schrift | T128 ist erledigt (19. Oktober). Vorher wie nachher bleiben: die Wahl der letzten Erinnerung bei 320 px (pl), Datumsspannen außerhalb von `fill` (Wochenkarten, „Holen"), Programmtexte, die nach der Sprache der App statt der Versammlung trennen, Hinweise in der Karte „Holen" bei Stufe 1,3/1,45 und Namen der Dienste im Programm bei 768 px — Einzelheiten unter T128 |
-| **T130** | Reiter „Trolleys" nur mit Trolley-Recht | aufgenommen am 18. Oktober abends, noch nicht begonnen; die offenen Fragen stehen in T130 |
 | **Zu entscheiden** | Langsames Netz beim Start | aus dem Review des Offline-Starts in der ersten Stunde (19. Oktober abends): Lassen die Daten länger als 4 s auf sich warten, steht der letzte Stand mit „Offline · Stand von …" da, und Ändern ist gesperrt, auch wenn das Netz nur langsam ist. Kommen sie danach, legt das Blatt beim Öffnen eine seither neue Zuteilung nicht vor (nach über einer Stunde ebenso seit `30a5a80d`). Denkbar: ein eigener Hinweis statt „Offline", und das Blatt nach dem ersten frischen Laden noch einmal prüfen |
 | **Bewusst offen** | `sprache-fehlt` beim Wochen-Import | zählt weiter als Ende des Kalenders. Strenger gäbe es im Alltag Fehlalarme; betroffen wäre nur eine anderssprachige Versammlung mit Geschichte (Review vom 18. Oktober, `42dff943`) |
 | **Zu entscheiden** | `auth.sessions` aufräumen | IP-Adresse und Browserkennung je Gerät bleiben ohne Frist, solange die Anmeldung gilt. Möglich wäre, Sitzungen nach einem Jahr ohne Nutzung zu löschen; das Gerät bräuchte danach einen neuen Link (bei T125 unter „Später zu entscheiden") |
 
-Am 19. Oktober spät herausgenommen: **Phase 7** (T42, der Rest) und **T131**
-(der Leser folgt am Wochenende dem Vorsitz) — erledigt, siehe dort.
+Am 19. Oktober spät herausgenommen: **Phase 7** (T42, der Rest), **T131**
+(der Leser folgt am Wochenende dem Vorsitz) und **T130** (den Reiter
+„Trolleys" sieht, wer mit dem Trolley gehen darf) — erledigt, siehe dort.
 
 Am 19. Oktober in die Tabelle aufgenommen: die letzten drei Zeilen. Die
 unteren beiden standen bis dahin nur in einer Commit-Nachricht (`42dff943`)

@@ -907,9 +907,15 @@ describe('Gruppenbesuche beim Ansehen (T120, Phase 2)', () => {
     expect(container.querySelector('.bereich-tabs')).toBeNull()
   })
 
-  it('mit einem Trolley kommt sein Reiter dazu — für alle, auch ohne Besuch', () => {
-    const { container } = mitBesuchen({ gruppenbesuche: [], trolleys: [{ id: 'tr1', name: 'Trolley 1', ort: '', hinweis: '' }] })
+  it('mit einem Trolley kommt sein Reiter dazu — für den, der mit ihm gehen darf, auch ohne Besuch (T130)', () => {
+    const trolleys = [{ id: 'tr1', name: 'Trolley 1', ort: '', hinweis: '' }]
+    const mitRecht = { ...ICH, grp: 'g1', priv: { ...ICH.priv, zeugnis: true } }
+    const { container } = mitBesuchen({ gruppenbesuche: [], trolleys, persons: [mitRecht, KONRAD] })
     expect(reiter(seite(container))).toEqual([t.fsTreffpunkteTab, t.fsTrolleysTab])
+    cleanup()
+    // Ohne das Recht bleibt der Predigtdienst ohne Reiter.
+    const ohne = mitBesuchen({ gruppenbesuche: [], trolleys })
+    expect(ohne.container.querySelector('.bereich-tabs')).toBeNull()
   })
 
   it('mit Besuchen: Treffpunkte und Gruppenbesuche — den Grundplan gibt es nur beim Planen', () => {

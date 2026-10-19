@@ -120,7 +120,8 @@ stehen im Menü unter **Predigtdienst**:
 ![Zusammenkünfte für den Predigtdienst (Treffpunkte)](screenshots/verkuendiger-treffpunkte.png)
 
 Oben im Predigtdienst wählst du den Bereich: **Treffpunkte** und – sobald es
-sie gibt – **Gruppenbesuche** und **Trolleys**. Jeder Bereich hat ein großes
+sie gibt – **Gruppenbesuche** und, wenn du mit dem Trolley gehen darfst,
+**Trolleys**. Jeder Bereich hat ein großes
 Feld mit seinem Zeichen, das gewählte ist kräftig hinterlegt; bei großer
 Schrift stehen die Felder untereinander.
 
@@ -145,7 +146,8 @@ Treffpunkt deiner Gruppe **„Besuch des Dienstaufsehers"**.
 
 ### Trolleys
 
-Hat eure Versammlung Trolleys, steht im Predigtdienst für alle oben
+Hat eure Versammlung Trolleys und darfst du mit dem Trolley gehen (oder hast du
+dort noch einen Termin), steht im Predigtdienst oben
 **Trolleys** – das Feld mit dem Trolley-Zeichen; ein Tipp darauf öffnet den
 Kalender. Beim Planen gibt es das Feld nicht. Mit dem Trolley steht man nur eine
 Viertelstunde an einem Platz – was es braucht, ist ein Terminplan, in dem man

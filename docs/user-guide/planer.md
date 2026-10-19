@@ -973,7 +973,9 @@ Für den Trolley braucht es keinen Plan: Man steht mit ihm nur eine
 Viertelstunde an einem Platz, und was zählt, ist, dass man sich verabreden
 kann. Deshalb **plant niemand, und niemand sagt zu**. Beim Planen gibt es dafür
 kein Feld; die **Trolleys** stehen beim **Ansehen** des Predigtdienstes oben
-neben **Treffpunkte**, für alle, sobald die Versammlung einen hat. Ein Tipp
+neben **Treffpunkte**, sobald die Versammlung einen hat – für alle mit dem
+Trolley-Recht, für alle mit einem eigenen Termin dort und immer für Admin und
+Planer. Ein Tipp
 darauf öffnet den Kalender der Trolleys. Auch die Planungs‑Karte der
 Startseite und **Plan senden** kennen sie nicht.
 
