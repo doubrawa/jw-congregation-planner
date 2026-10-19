@@ -15,6 +15,7 @@ import { dict } from '../i18n/ui'
 import type { Group, Person, Service, Week } from '../data/types'
 import { PlanenScreen } from './PlanenScreen'
 import { PlanungScreen } from './PlanungScreen'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Die Wochen beim Planen, wie man sie sieht** (T121, Phase 10): am Handy die
@@ -118,7 +119,7 @@ describe('Die Seite „Planung" (`GWochen`)', () => {
     const { container } = zeige(<PlanungScreen />)
     const [diese, , kongress] = karten(container)
     // Je zwei Mikrofone am Dienstag und am Sonntag — der Dienst zählt seine Plätze.
-    expect(diese!.querySelector('.wochen-karte-lage')?.textContent).toBe('Offen: 4')
+    expect(diese!.querySelector('.wochen-karte-lage')?.textContent).toBe(zahlBinden('Offen: 4'))
     expect(diese!.querySelector('.wochen-karte-lage')?.getAttribute('data-art')).toBe('offen')
     expect(diese!.querySelector('.spur--knapp')).not.toBeNull()
     // Auf der Seite hat die Spur Platz für ihre Namen — Punkte nur in der Spalte.

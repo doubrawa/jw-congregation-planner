@@ -1,6 +1,9 @@
-# messen.mjs und auswerten.mjs schreiben in ihren eigenen Ordner:
-# das Chrome-Profil samt Trennwörterbüchern, Bilder und Ergebnisse eines Laufs.
+# Die Messskripte schreiben Bilder, Ergebnisse und Mitschnitte eines Laufs in
+# ihren eigenen Ordner. Das Chrome-Profil liegt im Temp-Ordner (`profilOrdner`
+# in chrome.mjs) — im Repo lösten seine HTML-Dateien Neuladen im Dev-Server aus.
 profil*/
 bilder-*/
 ergebnis-*.json
 auswertung-*.txt
+*.log
+*.err

@@ -17,6 +17,7 @@ import { helferKey, sentKey } from '../data/planning'
 import { dict } from '../i18n/ui'
 import type { FsInstance, FsRule, Group, PartItem, Person, Section, Service, SlotSelection, Week } from '../data/types'
 import { PlanenScreen } from './PlanenScreen'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Der Planen-Screen als Ganzes — was er zusammensetzt und für wen.**
@@ -137,7 +138,7 @@ describe('Der Stand der Woche (T121)', () => {
     const { container } = zeige()
     expect(spurWert(container, t.spurZuteilen)).toBe('0/4')
     const offen = seite(container).querySelector('.klaeren-zeile[data-art="offen"]')!
-    expect(offen.textContent).toContain('Offene Zuteilungen: 4')
+    expect(offen.textContent).toContain(zahlBinden('Offene Zuteilungen: 4'))
   })
 
   it('der Haken „weiß Bescheid" zählt im Schritt „Zusagen" wie eine Zusage', () => {
@@ -732,7 +733,7 @@ describe('Der Gruppenaufseher sendet die Treffpunkte seiner Gruppe (4.10.2026)',
     expect(knopf.querySelector('.zahl-marke')?.textContent).toBe('1')
     fireEvent.click(knopf)
     const blatt = document.querySelector('[role="dialog"]')!
-    expect(blatt.textContent).toContain(t.fsSendenOffen.replace('{n}', '1'))
+    expect(blatt.textContent).toContain(zahlBinden(t.fsSendenOffen.replace('{n}', '1')))
     expect(blatt.textContent).toContain('Paula Planer')
     expect(blatt.textContent).not.toContain('Olaf Overseer')
   })

@@ -4,6 +4,7 @@ import { reducer } from './reducer'
 import type { AppState } from './context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import type { PlanEintrag, WeitererPlan } from '../data/types'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Weitere Pläne im Reducer** (T120, Phase 5). Die Regeln selbst prüft
@@ -64,7 +65,7 @@ describe('Plätze', () => {
   it('reihum verteilen: die Wochen an die Gruppen, mit Ansage — ein Plan, den es nicht gibt, ändert nichts', () => {
     const s = reducer(zustand({ plaene: [SAAL] }), { type: 'wpGruppenVerteilen', planId: 'pl-s', abGruppe: 'g2' })
     expect(s.planEintraege.map((e) => e.grp)).toEqual(['g2', 'g3', 'g4', 'g1'])
-    expect(s.toast?.text).toBe('Verteilte Wochen: 4')
+    expect(s.toast?.text).toBe(zahlBinden('Verteilte Wochen: 4'))
     const ohne = zustand({ plaene: [SAAL] })
     expect(reducer(ohne, { type: 'wpGruppenVerteilen', planId: 'pl-weg', abGruppe: 'g2' })).toBe(ohne)
   })
@@ -73,7 +74,7 @@ describe('Plätze', () => {
     const monate: WeitererPlan = { ...SAAL, von: '2026-09-01', bis: '2026-11-30', takt: 'monat' }
     const s = reducer(zustand({ plaene: [monate] }), { type: 'wpGruppenVerteilen', planId: 'pl-s', abGruppe: 'g2' })
     expect(s.planEintraege.map((e) => `${e.datum} ${e.grp}`)).toEqual(['2026-09-01 g2', '2026-10-01 g3', '2026-11-01 g4'])
-    expect(s.toast?.text).toBe('Verteilte Monate: 3')
+    expect(s.toast?.text).toBe(zahlBinden('Verteilte Monate: 3'))
   })
 
   it('ein anderer Takt verteilt ab jetzt neu — dieselbe Reihenfolge, mit Ansage', () => {
@@ -84,7 +85,7 @@ describe('Plätze', () => {
     expect(s.plaene[0]!.takt).toBe('monat')
     // Der Plan reicht bis zum 4. Oktober: September und Oktober, ab der Gruppe dieser Woche.
     expect(s.planEintraege.map((e) => `${e.datum} ${e.grp}`)).toEqual(['2026-09-01 g1', '2026-10-01 g2'])
-    expect(s.toast?.text).toBe('Verteilte Monate: 2')
+    expect(s.toast?.text).toBe(zahlBinden('Verteilte Monate: 2'))
     // Und zurück: ab dieser Woche reihum, beginnend mit der Gruppe dieses Monats.
     const zurueck = reducer(s, { type: 'wpPlanAendern', id: 'pl-s', patch: { takt: 'woche' } })
     expect(zurueck.planEintraege.map((e) => `${e.datum} ${e.grp}`)).toEqual([
@@ -93,7 +94,7 @@ describe('Plätze', () => {
       '2026-09-21 g3',
       '2026-09-28 g4',
     ])
-    expect(zurueck.toast?.text).toBe('Verteilte Wochen: 4')
+    expect(zurueck.toast?.text).toBe(zahlBinden('Verteilte Wochen: 4'))
   })
 
   it('ein Takt ohne Einteilung bleibt still — es gab nichts zu verteilen', () => {

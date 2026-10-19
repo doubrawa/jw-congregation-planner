@@ -15,6 +15,7 @@ import { fill } from '../i18n/useT'
 import type { Absence, Person, Qualifications, Section, Service, Week } from '../data/types'
 import { BesetzungKarte } from './WochenStand'
 import { privSetzen } from '../data/helpers'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Was über dem Plan steht.** Die Konflikte der Zusammenkunft sind in
@@ -162,7 +163,7 @@ describe('Nicht besetzbar (T96) — was auch mit Mühe nicht geht', () => {
   it('meldet den Bereich, in dem an diesem Tag zu wenige da sind — mit dem Grund', () => {
     // Zwei Mikrofon-Plätze, ein einziger Qualifizierter — und der ist abwesend.
     const { container } = zeige(NUR_MIKROFONE)
-    expect(engpass(container)).toEqual(['Mikrofone · nötig 2 · verfügbar 0 · abwesend 1 von 1'])
+    expect(engpass(container)).toEqual([zahlBinden('Mikrofone · nötig 2 · verfügbar 0 · abwesend 1 von 1')])
   })
 
   it('der Hilfsdienst trägt den Namen, den die Versammlung ihm gegeben hat', () => {
@@ -223,7 +224,7 @@ describe('Vollständigkeitsprobe: die beiden Angaben meinen Verschiedenes', () =
       ],
     })
     expect(offenZeile(container)?.textContent).toContain(fill(t.offeneZut, { n: 4 })) // Leser + 2 Mikrofone + Reinigung
-    expect(engpass(container)).toEqual(['Mikrofone · nötig 2 · verfügbar 0 · abwesend 1 von 1']) // nur die Mikrofone
+    expect(engpass(container)).toEqual([zahlBinden('Mikrofone · nötig 2 · verfügbar 0 · abwesend 1 von 1')]) // nur die Mikrofone
   })
 
   it('ein besetzter Platz ist nicht mehr offen — kann aber weiter unbesetzbar sein', () => {

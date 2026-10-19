@@ -16,8 +16,8 @@ export const DESKTOP_BREITE = '(min-width: 1180px)'
 /**
  * Ab hier steht beim Planen links die Spalte der Wochen (Entwurf
  * `GDesktopPlanen`, gezeichnet für 1440 px): Menü 248, Wochen 260 und
- * Zuteilen 320 lassen dem Plan noch 572 px. Darunter führt „Planung" auf die
- * Seite aller Wochen.
+ * Zuteilen 320 lassen dem Plan noch 572 px — bei Schriftstufe 1,45 wächst das
+ * Menü auf 304 px (T128). Darunter führt „Planung" auf die Seite aller Wochen.
  */
 export const WOCHEN_SPALTE_BREITE = '(min-width: 1400px)'
 

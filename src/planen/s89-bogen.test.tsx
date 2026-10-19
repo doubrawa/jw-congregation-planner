@@ -176,7 +176,8 @@ describe('S89Bogen (Bedienung)', () => {
     delete document.documentElement.dataset.print
     expect(kopf).toContain('S-89')
     expect(kopf).toContain('Dienstag, 8. September')
-    expect(kopf).toMatch(/Seite 1 von \d/)
+    // „1 von" steht gebunden (T128) — `\s` trifft beide Leerzeichen.
+    expect(kopf).toMatch(/Seite 1\svon \d/)
   })
 
   it('ohne Schulungsaufgaben steht gar nichts da', () => {

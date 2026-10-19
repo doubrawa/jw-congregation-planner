@@ -112,7 +112,8 @@ function letzteMoeglichkeiten(
 /**
  * Ein Schritt der Zeitleiste: links der Punkt und die Linie zum nächsten, dann
  * der Titel und darunter, was er bedeutet, rechts, was sich daran einstellen
- * lässt. Der letzte Schritt ist die Aufgabe selbst (`ziel`): Punkt in Minze mit
+ * lässt — oder darunter, wenn beides nicht nebeneinander passt (`erin-inhalt`,
+ * T128). Der letzte Schritt ist die Aufgabe selbst (`ziel`): Punkt in Minze mit
  * Ring und keine Linie mehr — danach kommt nichts.
  */
 function Schritt({
@@ -135,12 +136,14 @@ function Schritt({
         <span className="erin-punkt" />
         {!ziel && <span className="erin-linie" />}
       </span>
-      <div className="erin-text">
-        <span className="erin-titel">{titel}</span>
-        {unter && <span className="klein-text">{unter}</span>}
-        {children}
+      <div className="erin-inhalt">
+        <div className="erin-text">
+          <span className="erin-titel">{titel}</span>
+          {unter && <span className="klein-text">{unter}</span>}
+          {children}
+        </div>
+        {steuer}
       </div>
-      {steuer}
     </li>
   )
 }

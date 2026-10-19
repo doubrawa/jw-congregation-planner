@@ -8,11 +8,15 @@
   gap: 12px;
 }
 
+/* Wie `.bereichstitel-zeile`: Passen Titel und Knopf nicht nebeneinander, rückt
+   der Knopf in die nächste Zeile, statt dass „Personen" trennt (T128; die Regel
+   für den Titel steht in bausteine.css). */
 .personen-kopf {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px 12px;
   min-height: 52px;
 }
 
@@ -246,9 +250,13 @@
 
 /* ---- Desktop (`GDesktopPersonen`): die Person rechts neben der Liste ---------- */
 
+/* Die Person gibt ab, was die Leiste bei großer Schrift dazugewinnt
+   (`124px * (Stufe - 1)`, siehe `.leiste` in menue.css): 420 px bis Stufe 1,
+   364 px bei 1,45. So behält die Liste ihre Breite — sonst brach dort
+   „Ackermann|, Stefan" (T128). */
 .personen-raster {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 420px;
+  grid-template-columns: minmax(0, 1fr) calc(420px - 124px * max(0, var(--fs) - 1));
   align-items: start;
 }
 

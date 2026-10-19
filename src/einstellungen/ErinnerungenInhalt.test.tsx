@@ -13,6 +13,7 @@ import type { Lang, Reminders } from '../data/types'
 import { APP_LANGS } from '../i18n/langs'
 import { dict, loadOverlay } from '../i18n/ui'
 import { ErinnerungenInhalt } from './ErinnerungenInhalt'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Erinnerungen als Zeitleiste** (T121, Phase 6c-4, Entwurf `GErinnerungen`):
@@ -100,6 +101,17 @@ describe('Die Zeitleiste', () => {
     const { container } = zeige()
     expect(container.querySelector('h1, .seitentitel')).toBeNull()
   })
+
+  it('Text und Einstellung teilen sich eine Zeile, die umbricht — bei großer Schrift steht die Einstellung darunter (T128)', () => {
+    // Die Regel dafür steht in `erinnerungen.css` (`tests/kein-wortbruch.test.ts`);
+    // sie greift nur, wenn beide im selben Behälter stehen.
+    const { container } = zeige()
+    for (const name of [t.remErste, t.erinTaeglich]) {
+      const inhalt = schritt(container, name).querySelector('.erin-inhalt')
+      // Erst der Text, dahinter die Einstellung — beide Kinder desselben Behälters.
+      expect([...(inhalt?.children ?? [])].map((k) => k.classList.contains('erin-text')), name).toEqual([true, false])
+    }
+  })
 })
 
 describe('Erste Erinnerung: Tage vor der Aufgabe', () => {
@@ -153,15 +165,15 @@ describe('Täglich wiederholen, bis die Zusage da ist', () => {
 
 describe('Letzte Erinnerung: am Tag oder einen Tag vorher', () => {
   const tippe = (c: HTMLElement, text: string) => {
-    const knopf = wahl(c).find((b) => b.textContent === text)
+    const knopf = wahl(c).find((b) => b.textContent === zahlBinden(text))
     if (!knopf) throw new Error(`keine Möglichkeit „${text}"`)
     fireEvent.click(knopf)
   }
 
   it('zwei Möglichkeiten, gedrückt ist, was gilt', () => {
     const { container } = zeige({ ...STANDARD, last: 1 })
-    expect(wahl(container).map((b) => b.textContent)).toEqual(['Am Tag', '1 Tag vorher'])
-    expect(gedrueckt(container)).toEqual(['1 Tag vorher'])
+    expect(wahl(container).map((b) => b.textContent)).toEqual(['Am Tag', zahlBinden('1 Tag vorher')])
+    expect(gedrueckt(container)).toEqual([zahlBinden('1 Tag vorher')])
   })
 
   it('„Am Tag" setzt null Tage', () => {
@@ -185,8 +197,8 @@ describe('Letzte Erinnerung: am Tag oder einen Tag vorher', () => {
 
   it('ein Bestandswert über einem Tag steht als dritte Möglichkeit da — gedrückt, damit man sieht, was gilt', () => {
     const { container, dispatch } = zeige({ ...STANDARD, last: 3 })
-    expect(wahl(container).map((b) => b.textContent)).toEqual(['Am Tag', '1 Tag vorher', '3 Tage vorher'])
-    expect(gedrueckt(container)).toEqual(['3 Tage vorher'])
+    expect(wahl(container).map((b) => b.textContent)).toEqual(['Am Tag', zahlBinden('1 Tag vorher'), zahlBinden('3 Tage vorher')])
+    expect(gedrueckt(container)).toEqual([zahlBinden('3 Tage vorher')])
     tippe(container, 'Am Tag')
     expect(dispatch).toHaveBeenCalledWith({ type: 'setReminder', key: 'last', value: 0 })
   })

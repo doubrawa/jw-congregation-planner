@@ -166,9 +166,15 @@
   font-weight: 700;
 }
 
+/* „Zusammenkünfte" ragte bei Stufe 1,45 aus der Leiste am Desktop, „Notifications"
+   lief unter den Zähler (T128). Seit die Leiste mit der Schrift wächst, passen
+   die Namen; was dennoch nicht passt, trennt oder bricht, statt hinauszuragen. */
 .menue-eintrag-text {
   flex: 1;
   min-width: 0;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
 }
 
 .menue-zahl {
@@ -279,6 +285,8 @@
 
 /* ---- Die schmale Leiste (Tablet hochkant) -------------------------------- */
 
+/* Sie wächst mit der Schrift: 88 px bis Stufe 1, rund 128 px bei 1,45 — sonst
+   brachen die Namen bei großer Schrift mitten im Wort (T128). */
 .schmale-leiste {
   position: sticky;
   top: 0;
@@ -287,7 +295,7 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  width: 88px;
+  width: calc(88px * max(1, var(--fs)));
   height: 100svh;
   overflow-y: auto;
   padding: 12px 6px 20px;
@@ -312,8 +320,9 @@
   border-block-start: 1px solid var(--linie);
 }
 
-/* Volle Breite statt fester 76 px: 88 px Leiste minus Rand und Innenabstand
-   lassen 75 px — der eine Pixel zu viel zeigte einen waagerechten Rollbalken. */
+/* Volle Breite statt fester 76 px: Bei Stufe 1 lassen 88 px Leiste minus Rand
+   und Innenabstand 75 px — der eine Pixel zu viel zeigte einen waagerechten
+   Rollbalken. */
 .leisten-eintrag {
   position: relative;
   display: flex;
@@ -345,9 +354,11 @@
 }
 
 /* Lange Namen („Zusammenkünfte") trennen; die Sprache steht auf <html>.
-   Safari trennt nur mit Präfix. Ohne Trennregeln für die Sprache (Chrome am
-   Windows-Desktop) bricht `overflow-wrap` notfalls mitten im Wort — die Leiste
-   erscheint aber vor allem an Tablets, und die trennen. */
+   Safari trennt nur mit Präfix. Chrome und Edge trennen auch am Windows-Desktop,
+   aber nicht Polnisch, Rumänisch, Türkisch, Arabisch und Persisch und kein
+   großgeschriebenes englisches Wort — dort bricht `overflow-wrap` notfalls
+   mitten im Wort. Für „Değerlendirme" steht deshalb ein weiches Trennzeichen
+   im Wörterbuch (T128). */
 .leisten-text {
   max-width: 100%;
   font-size: calc(12px * var(--fs));
@@ -385,12 +396,17 @@
 
 /* ---- Die Leiste am Desktop ------------------------------------------------- */
 
+/* Sie wächst mit der Schrift: 248 px bis Stufe 1, 304 px bei 1,45. Mit 272 und
+   288 px brach „Powiadomienia" neben dem Zähler noch mitten im Wort; fest bei
+   248 px stand es allein unter seinem Zeichen und brach trotzdem (T128). Was
+   sie an Breite dazugewinnt, gibt die Person neben der Personenliste ab
+   (`.personen-raster`) — sonst brach dort „Ackermann|, Stefan". */
 .leiste {
   position: sticky;
   top: 0;
   display: none;
   flex: none;
-  width: 248px;
+  width: max(248px, calc(124px * (1 + var(--fs))));
   height: 100svh;
   overflow-y: auto;
   border-inline-end: 1px solid var(--linie);

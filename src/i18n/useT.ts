@@ -16,6 +16,7 @@ import type { MeetingAssignment, Week } from '../data/types'
 import { APP_TO_JW, congAppCode } from './langs'
 import { bibelbuecherGeladen, makeTr, ohneMarken } from './translate'
 import { dict, overlayGeneration, type Dict } from './ui'
+import { zahlBinden } from './zahl-binden'
 
 export interface I18n {
   t: Dict
@@ -107,9 +108,14 @@ export function platzName(name: string, gruppe: boolean, i18n: Pick<I18n, 'tu'>)
   return gruppe ? i18n.tu(name) : name
 }
 
-/** Platzhalter {n}, {name}, {m} … in einer Übersetzung ersetzen. */
+/**
+ * Platzhalter {n}, {name}, {m} … in einer Übersetzung ersetzen — danach bleibt
+ * jede Zahl bei ihrer Bezeichnung (`zahlBinden`, T128). Hier statt in den
+ * Wörterbüchern: Das deckt alle zwölf Sprachen und auch Werte aus `Intl` („1 Tag"),
+ * ohne dass jeder neue Text daran denken muss.
+ */
 export function fill(template: string, params: Record<string, string | number>): string {
-  return template.replace(/\{(\w+)\}/g, (_, key: string) => String(params[key] ?? ''))
+  return zahlBinden(template.replace(/\{(\w+)\}/g, (_, key: string) => String(params[key] ?? '')))
 }
 
 /**

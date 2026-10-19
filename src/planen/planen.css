@@ -3,11 +3,15 @@
 /* ---- Die Woche planen (T121, Entwurf `GPlanen`) ---------------------------- */
 
 /* Ein Platz: Punkt nach seiner Lage, Name, Rolle, rechts was nicht stimmt.
-   Die ganze Zeile ist der Knopf zum Zuteilen. */
+   Die ganze Zeile ist der Knopf zum Zuteilen. Passen Name und Rolle nicht
+   nebeneinander, rückt die Rolle in die nächste Zeile, wie im Programm — in
+   der schmalen Namensspalte am Desktop bekam der Name bei großer Schrift sonst
+   45 px und brach mitten im Wort („Albr|echt", T128). */
 .platz {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 2px 12px;
   width: 100%;
   min-height: 44px;
   text-align: start;
@@ -38,8 +42,13 @@
   background: transparent;
 }
 
+/* Der Name nimmt sich den Platz neben dem Punkt und bricht nur zwischen seinen
+   Wörtern um: Schmaler als sein längstes Wort wird er nicht (die Mindestbreite
+   eines Flex-Elements), höchstens so breit wie die Zeile neben dem Punkt — erst
+   dort bricht `overflow-wrap` als Notbremse. */
 .platz-name {
-  min-width: 0;
+  flex: 1 1 0;
+  max-width: calc(100% - 24px);
   font-weight: 500;
   overflow-wrap: break-word;
 }
@@ -50,7 +59,9 @@
   font-weight: 700;
 }
 
+/* Die Rolle steht am Ende der Zeile — auch dann, wenn sie umgebrochen ist. */
 .platz-rolle {
+  margin-inline-start: auto;
   color: var(--text3);
   font-size: calc(13.5px * var(--fs));
 }

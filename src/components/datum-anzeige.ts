@@ -11,6 +11,7 @@
 import { fromIso, tagNach } from '../data/meeting-dates'
 import type { Lang } from '../data/types'
 import { LOCALES } from '../i18n/langs'
+import { NBSP } from '../i18n/zahl-binden'
 
 const FORMATE = {
   /** „Mittwoch, 7. Oktober" */
@@ -73,6 +74,24 @@ export function datumsFormat(lang: string, format: DatumsFormat): Intl.DateTimeF
 export function tageSpanne(von: string, bis: string, lang: string, format: DatumsFormat): string {
   const fmt = datumsFormat(lang, format)
   return von === bis ? fmt.format(fromIso(von)) : fmt.formatRange(fromIso(von), fromIso(bis))
+}
+
+/**
+ * Der Tag in der Kopfzeile jedes Bildschirms („Montag, 7. September") so, dass
+ * Tag und Monat zusammenbleiben (T128: „7|września" bei 320 px). Umbrechen darf
+ * die Zeile nur neben dem Wochentag. Wo der steht, bestimmt die Sprache —
+ * Türkisch schreibt „7 Eylül Pazartesi", Französisch setzt kein Komma —, darum
+ * über die Teile von `Intl` statt über die Zeichensetzung.
+ */
+export function kopfzeilenTag(datum: Date, lang: string): string {
+  const teile = datumsFormat(lang, 'tag').formatToParts(datum)
+  return teile
+    .map((teil, i) =>
+      teil.type !== 'literal' || teile[i - 1]?.type === 'weekday' || teile[i + 1]?.type === 'weekday'
+        ? teil.value
+        : teil.value.replaceAll(' ', NBSP),
+    )
+    .join('')
 }
 
 /**

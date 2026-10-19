@@ -20,14 +20,27 @@
   list-style: none;
 }
 
-/* Ein Schritt: links Punkt und Linie, in der Mitte der Text, rechts die
-   Einstellung — oben an der Zeile, auf Höhe von Titel und Unterzeile. */
+/* Ein Schritt: links Punkt und Linie, daneben Text und Einstellung. */
 .erin-schritt {
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) auto;
+  grid-template-columns: 20px minmax(0, 1fr);
   align-items: start;
   column-gap: 14px;
   min-height: 80px;
+}
+
+/* Rechts vom Text die Einstellung — oben an der Zeile, auf Höhe von Titel und
+   Unterzeile. Passt das längste Wort des Texts nicht mehr daneben (große
+   Schrift am Handy), rückt die Einstellung darunter, statt dass der Titel
+   mitten im Wort bricht („Pierwsz|e przypo|mnienie" bei 320 px, T128). Ohne
+   Schwelle: Der Text wird nicht schmaler als sein längstes Wort. */
+.erin-inhalt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 14px;
+  min-width: 0;
+  padding-block-end: 18px;
 }
 
 .erin-schritt--ziel {
@@ -67,11 +80,16 @@
 }
 
 .erin-text {
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
-  min-width: 0;
-  padding-block-end: 18px;
+  max-width: 100%;
   overflow-wrap: break-word;
+}
+
+/* Die Einstellung bleibt am Ende der Zeile, auch darunter. */
+.erin-inhalt > :not(.erin-text) {
+  margin-inline-start: auto;
 }
 
 .erin-titel {

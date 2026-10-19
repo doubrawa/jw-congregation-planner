@@ -14,6 +14,7 @@ import { emptyQualifications } from '../data/helpers'
 import type { Group, Person } from '../data/types'
 import { dict } from '../i18n/ui'
 import { GruppenInhalt } from './GruppenInhalt'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Gruppen** (T121, Phase 6c-3, Entwürfe `GGruppenStandorte`, `GGruppe`,
@@ -98,7 +99,7 @@ describe('Die Liste', () => {
     const zeile = zeilen(container)[0]!
     expect(zeile.querySelector('.einst-zeile-name')?.textContent).toBe('Gruppe 1')
     expect(zeile.querySelector('.klein-text')?.textContent).toBe('Anton Alt · Carlo Cohn')
-    expect(zeile.querySelector('.einst-zeile-wert')?.textContent).toBe('Personen: 2')
+    expect(zeile.querySelector('.einst-zeile-wert')?.textContent).toBe(zahlBinden('Personen: 2'))
   })
 
   it('der Name steht in seiner eigenen Schreibrichtung — er ist frei', () => {
@@ -124,7 +125,7 @@ describe('Hinweis: ohne Predigtdienstgruppe', () => {
   it('nennt, wie viele ohne Gruppe sind, und führt zu den Personen', () => {
     // Vorgabe: Nur Carlo ist in g1 — die drei anderen sind es nicht.
     const { container, dispatch } = zeige({ persons: [AELTESTER, GEHILFE, { ...BRUDER, grp: 'g1' }, SCHWESTER] })
-    expect(hinweis(container)?.querySelector('.einst-zeile-name')?.textContent).toBe('Ohne Gruppe: 3')
+    expect(hinweis(container)?.querySelector('.einst-zeile-name')?.textContent).toBe(zahlBinden('Ohne Gruppe: 3'))
     fireEvent.click(hinweis(container)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'personen' })
   })
@@ -190,7 +191,7 @@ describe('Das Blatt der Gruppe', () => {
       fsRules: [{ id: 'r1', grp: 'g1', wd: 6, time: '09:30', place: 'Am Markt', monthly: 0, skipCong: true }],
     })
     expect(blatt().textContent).toContain('Am Markt, Samstag 09:30')
-    expect(blatt().textContent).toContain('Mitglieder: 1')
+    expect(blatt().textContent).toContain(zahlBinden('Mitglieder: 1'))
   })
 
   it('ein Treffpunkt ohne Ort nennt nur Tag und Zeit — ohne Komma davor', () => {
@@ -316,7 +317,7 @@ describe('Der Name gilt beim Schließen', () => {
       groups: [GRUPPE_1, { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null }],
     })
     fireEvent.change(name(), { target: { value: '  gruppe   2 ' } })
-    const hinweis = 'Name nicht geändert: Gruppe 2 gibt es schon'
+    const hinweis = zahlBinden('Name nicht geändert: Gruppe 2 gibt es schon')
     expect(blatt().querySelector('[role="alert"]')?.textContent).toBe(hinweis)
     expect(name().getAttribute('aria-invalid')).toBe('true')
     fireEvent.click(knopf(blatt(), t.fertig))

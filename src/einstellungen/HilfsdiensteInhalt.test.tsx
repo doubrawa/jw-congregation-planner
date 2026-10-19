@@ -14,6 +14,7 @@ import type { Group, Person, Qualifications, Service } from '../data/types'
 import { dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import { HilfsdiensteInhalt } from './HilfsdiensteInhalt'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Hilfsdienste** (T121, Phase 6c-2, Entwurf `GHilfsdienste`): je Dienst die
@@ -117,7 +118,7 @@ describe('Für wie viele der Dienst freigegeben ist (T79)', () => {
     const { container } = zeige({
       persons: [person('p1', 'Alt', serviceQualKey('mik')), person('p2', 'Brand'), person('p3', 'Cohn', serviceQualKey('mik'))],
     })
-    expect(unter(zeilen(container)[0]!)?.textContent).toBe('Personen: 2')
+    expect(unter(zeilen(container)[0]!)?.textContent).toBe(zahlBinden('Personen: 2'))
   })
 
   it('hebt hervor, wenn niemand freigegeben ist — der Fall des neuen Dienstes', () => {

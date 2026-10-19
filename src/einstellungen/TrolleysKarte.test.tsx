@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { bestaetigen } from '../../tests/zwei-tipps'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Die Trolleys der Versammlung** (T121, Phase 7, Entwürfe
@@ -99,17 +100,17 @@ describe('Die Liste', () => {
         z.querySelector('.einst-zeile-wert')?.textContent,
       ]),
     ).toEqual([
-      ['Trolley 1', 'abholen: Depot', 'Termine: 2'],
+      ['Trolley 1', 'abholen: Depot', zahlBinden('Termine: 2')],
       // Einer davon heute, am Nachmittag — heute zählt mit.
-      ['Trolley 2', 'abholen: Depot', 'Termine: 2'],
-      ['Trolley 3', 'abholen: Königreichssaal', 'Termine: 3'],
+      ['Trolley 2', 'abholen: Depot', zahlBinden('Termine: 2')],
+      ['Trolley 3', 'abholen: Königreichssaal', zahlBinden('Termine: 3')],
     ])
   })
 
   it('vergangene Termine zählen nicht mit', () => {
     const vorbei = { ...DEMO_TROLLEY_TERMINE[0]!, id: 'alt', datum: '2026-09-05' }
     const { container } = zeige({ trolleyTermine: [vorbei] })
-    expect(zeilen(container)[0]!.querySelector('.einst-zeile-wert')?.textContent).toBe('Termine: 0')
+    expect(zeilen(container)[0]!.querySelector('.einst-zeile-wert')?.textContent).toBe(zahlBinden('Termine: 0'))
   })
 
   it('am Desktop als Tabelle: Trolley, Abholen, Hinweis, kommende Termine', () => {
@@ -170,7 +171,7 @@ describe('Das Blatt: Name, Ort und Hinweis gelten beim Schließen', () => {
     const { dispatch } = oeffne()
     fireEvent.change(feld(t.nameLbl), { target: { value: ' trolley  2 ' } })
     fireEvent.change(feld(t.trolleyOrtLbl), { target: { value: 'Depot' } })
-    const hinweis = 'Name nicht geändert: Trolley 2 gibt es schon'
+    const hinweis = zahlBinden('Name nicht geändert: Trolley 2 gibt es schon')
     expect(blatt().querySelector('[role="alert"]')?.textContent).toBe(hinweis)
     expect(feld(t.nameLbl).getAttribute('aria-invalid')).toBe('true')
     fireEvent.click(knopf(blatt(), t.fertig))

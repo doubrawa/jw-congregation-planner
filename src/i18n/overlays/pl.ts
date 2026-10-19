@@ -269,7 +269,7 @@ export default {
   "toastBestaetigt": "Potwierdzono · planujący to widzą",
   "toastVerhindert": "Zgłoszono · planujący zostaną poinformowani",
   "notifVerhindert": "Zgłoszono przeszkodę",
-  "erinnerungenCard": "Przypomnienia",
+  "erinnerungenCard": "Przypo\u00admnienia",
   "remErste": "Pierwsze przypomnienie",
   "remLetzte": "Ostatnie przypomnienie",
   "remRepeat": "Powtarzaj codziennie do potwierdzenia",

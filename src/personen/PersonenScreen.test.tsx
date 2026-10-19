@@ -18,6 +18,7 @@ import { fill } from '../i18n/useT'
 import type { Absence, AnmeldeLink, Group, Member, Person, Qualifications, Service } from '../data/types'
 import type { Ausgestellt, AusgestellterLink } from '../lib/links-ausstellen'
 import { privSetzen } from '../data/helpers'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Die Personenliste — der Arbeitsplatz des Koordinators** (T121, Entwurf
@@ -284,7 +285,7 @@ describe('Heute abwesend', () => {
   it('wer heute fehlt, sagt in seiner Zeile, wie lange — in der Farbe der Probleme', () => {
     const { container } = zeige({ absences: [abw('p-b', '2026-09-07', '2026-09-11')] })
     const zeile = zeilen(container)[1]!.querySelector('.klein-text')!
-    expect(zeile.textContent).toBe('abwesend 7.–11. September')
+    expect(zeile.textContent).toBe(zahlBinden('abwesend 7.–11. September'))
     expect(zeile.className).toContain('is-problem')
   })
 
@@ -379,7 +380,7 @@ describe('Der Zähler nennt die sichtbaren, nicht alle', () => {
     const { container } = zeige()
     fireEvent.change(suche(container), { target: { value: 'alt' } })
     expect(namen(container)).toEqual(['Alt, Anton'])
-    expect(zaehler(container)).toBe('Personen: 1')
+    expect(zaehler(container)).toBe(zahlBinden('Personen: 1'))
   })
 
   it('die Suche findet auch über die E-Mail-Adresse', () => {
@@ -392,7 +393,7 @@ describe('Der Zähler nennt die sichtbaren, nicht alle', () => {
     const { container } = zeige()
     fireEvent.change(suche(container), { target: { value: 'zzz' } })
     expect(zeilen(container)).toHaveLength(0)
-    expect(zaehler(container)).toBe('Personen: 0')
+    expect(zaehler(container)).toBe(zahlBinden('Personen: 0'))
   })
 })
 
@@ -509,7 +510,7 @@ describe('Suche und Filter überstehen das Detail', () => {
     expect(auswahl(container, t.zusagenOhneKonto).getAttribute('aria-pressed')).toBe('true')
     expect(auswahl(container, t.filterWeitere).textContent).toBe(`${t.filterWeitere}1`)
     expect(namen(container)).toEqual(['Cohn, Clara'])
-    expect(zaehler(container)).toBe('Personen: 1')
+    expect(zaehler(container)).toBe(zahlBinden('Personen: 1'))
   })
 
   it('ein anderer Bildschirm setzt sie zurück — der Bildschirm baut sich dann ab', () => {
@@ -591,7 +592,7 @@ describe('Hinweis auf doppelt vergebene feste Rollen (F7)', () => {
     expect(hinweis(container, t.wtRollenLabel)).toBe(rollen(container))
     expect(rollen(container)?.querySelector('.personen-hinweis-text')?.textContent).toBe(t.wtRollenDoppeltHint)
     expect(rollen(container)?.querySelector('.personen-hinweis-zeile')?.textContent).toBe(
-      '„Wachtturm-Studium-Leiter“ · 2 Personen',
+      zahlBinden('„Wachtturm-Studium-Leiter“ · 2 Personen'),
     )
   })
 

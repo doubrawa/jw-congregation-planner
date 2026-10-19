@@ -14,6 +14,7 @@ import { emptyQualifications } from '../data/helpers'
 import type { Person } from '../data/types'
 import { dict } from '../i18n/ui'
 import { EinstellungenScreen } from './EinstellungenScreen'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Die Einstellungen** (T121, Phase 6c, Entwürfe `GEinstellungen` und
@@ -108,7 +109,7 @@ describe('Die Übersicht am Handy', () => {
     expect(wert(container, t.gruppenTitel)).toBe('1')
     expect(wert(container, t.fsTrolleysTab)).toBe('2')
     expect(zeile(container, t.erinnerungenCard)?.querySelector('.klein-text')?.textContent).toBe(
-      'Erste 7 Tage vorher, letzte am Tag',
+      zahlBinden('Erste 7 Tage vorher, letzte am Tag'),
     )
   })
 
@@ -299,9 +300,9 @@ describe('Am Desktop (`GDesktopEinstellungen`)', () => {
     const kurz = (name: string) => eintrag(container, name).querySelector('.klein-text')?.textContent
     expect(kurz(t.versammlungCard)).toBe('Nordheim · Deutsch, Englisch')
     expect(kurz(t.navZusammenkuenfte)).toBe('Dienstag 19:00 · Sonntag 10:00')
-    expect(kurz(t.gruppenUndTrolleys)).toBe('Gruppen: 1 · Trolleys: 2')
-    expect(kurz(t.mitteilungenUndErinnerungen)).toBe('Erste 7 Tage vorher, letzte am Tag')
-    expect(kurz(t.werPlant)).toBe('Personen: 1')
+    expect(kurz(t.gruppenUndTrolleys)).toBe(zahlBinden('Gruppen: 1 · Trolleys: 2'))
+    expect(kurz(t.mitteilungenUndErinnerungen)).toBe(zahlBinden('Erste 7 Tage vorher, letzte am Tag'))
+    expect(kurz(t.werPlant)).toBe(zahlBinden('Personen: 1'))
   })
 
   it('gewählt ist zuerst die Versammlung — rechts mit ihren Sprachen, ohne eigene Zeile dafür', () => {

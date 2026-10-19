@@ -1,23 +1,15 @@
 // Umbruchprobe im echten Chrome (mit den Trennwörterbüchern aus dem Chrome-Profil).
-// Fährt /demo.html des laufenden Dev-Servers (5173) je Sprache × Breite × Schriftstufe:
+// Fährt /demo.html des laufenden Dev-Servers je Sprache × Breite × Schriftstufe:
 // Einstellungen, Hilfsdienste, Blatt Reinigung, Blatt Eingangsordner.
 //
-// node messen.mjs --lauf vorher [--sprachen de,en] [--breiten 320,375] [--fs 1,1.45]
+// node messen.mjs --lauf vorher [--port 5176] [--sprachen de,en] [--breiten 320,375] [--fs 1,1.45]
 //                 [--css nachher.css] [--nbsp] [--bilder de:320:1,ar:320:1.45] [--ohne-woerterbuch]
-import { spawn } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { arg, profilOrdner, schlaf, starteChrome } from './chrome.mjs'
 
 const HIER = dirname(fileURLToPath(import.meta.url))
-const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe'
-const WOERTERBUCH = join(process.env.LOCALAPPDATA ?? '', 'Google/Chrome/User Data/hyphen-data')
-const arg = (name, vorgabe) => {
-  const i = process.argv.indexOf('--' + name)
-  if (i < 0) return vorgabe
-  const v = process.argv[i + 1]
-  return v === undefined || v.startsWith('--') ? true : v
-}
 // 5176: Worktree auf HEAD (fester Stand); 5173: der geteilte Ordner.
 const BASIS = `http://localhost:${arg('port', '5176')}/demo.html`
 const LAUF = arg('lauf', 'vorher')
@@ -30,84 +22,19 @@ const NBSP = arg('nbsp', false) === true
 const WEICH = arg('weich', null) ? String(arg('weich')).split(',').map((p) => p.split('=')) : null
 const OHNE_WB = arg('ohne-woerterbuch', false) === true
 const BILDER = new Set(String(arg('bilder', '')).split(',').filter(Boolean))
-// Parallele Läufe brauchen je eigenen Port und eigenes Profil (Chrome sperrt es).
-const PORT = Number(arg('cdp', OHNE_WB ? 9348 : 9347))
-const PROFIL = join(HIER, arg('profil', OHNE_WB ? 'profil-ohne' : 'profil'))
-mkdirSync(PROFIL, { recursive: true })
-if (OHNE_WB) rmSync(join(PROFIL, 'hyphen-data'), { recursive: true, force: true })
-else if (!existsSync(join(PROFIL, 'hyphen-data'))) cpSync(WOERTERBUCH, join(PROFIL, 'hyphen-data'), { recursive: true })
 const BILD_DIR = join(HIER, 'bilder-' + LAUF)
 mkdirSync(BILD_DIR, { recursive: true })
+const SEITE_JS = readFileSync(join(HIER, 'seite.js'), 'utf8')
 
-const schlaf = (ms) => new Promise((r) => setTimeout(r, ms))
-
-const chrome = spawn(
-  CHROME,
-  [
-    '--headless=new',
-    '--remote-debugging-port=' + PORT,
-    '--user-data-dir=' + PROFIL,
-    '--no-first-run',
-    '--no-default-browser-check',
-    '--disable-gpu',
-    // Ohne Wörterbuch: kein Nachladen durch den Komponenten-Updater.
-    ...(OHNE_WB ? ['--disable-component-update'] : []),
-    'about:blank',
-  ],
-  { stdio: 'ignore' },
-)
-
-let ws
+const chrome = await starteChrome({
+  port: Number(arg('cdp', OHNE_WB ? 9348 : 9347)),
+  profil: profilOrdner(arg('profil', OHNE_WB ? 'profil-ohne' : 'profil')),
+  ohneWoerterbuch: OHNE_WB,
+})
 try {
-  let liste = null
-  for (let i = 0; i < 100 && !liste; i++) {
-    try {
-      liste = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json()
-    } catch {
-      await schlaf(200)
-    }
-  }
-  const seite = liste.find((t) => t.type === 'page')
-  ws = new WebSocket(seite.webSocketDebuggerUrl)
-  await new Promise((ok, fehler) => {
-    ws.onopen = ok
-    ws.onerror = fehler
-  })
-  let id = 0
-  const offen = new Map()
-  const ereignisse = []
-  ws.onmessage = (m) => {
-    const d = JSON.parse(m.data)
-    if (d.id && offen.has(d.id)) {
-      offen.get(d.id)(d)
-      offen.delete(d.id)
-    } else if (d.method) ereignisse.push(d)
-  }
-  const cdp = (method, params = {}) =>
-    new Promise((ok, fehler) => {
-      const n = ++id
-      offen.set(n, (d) => (d.error ? fehler(new Error(method + ': ' + d.error.message)) : ok(d.result)))
-      ws.send(JSON.stringify({ id: n, method, params }))
-    })
-  const SEITE_JS = readFileSync(join(HIER, 'seite.js'), 'utf8')
-  const werte = async (ausdruck) => {
-    const r = await cdp('Runtime.evaluate', { expression: ausdruck, awaitPromise: true, returnByValue: true })
-    if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? r.exceptionDetails.text)
-    return r.result.value
-  }
-  await cdp('Page.enable')
-  await cdp('Runtime.enable')
-  await cdp('Emulation.setEmulatedMedia', {
-    features: [
-      { name: 'prefers-color-scheme', value: 'light' },
-      { name: 'prefers-reduced-motion', value: 'reduce' },
-    ],
-  })
-
+  const { cdp, werte } = chrome
   const laden = async (url) => {
-    ereignisse.length = 0
-    await cdp('Page.navigate', { url })
-    for (let i = 0; i < 150 && !ereignisse.some((e) => e.method === 'Page.loadEventFired'); i++) await schlaf(100)
+    await chrome.laden(url)
     await werte(SEITE_JS)
     if (CSS) await werte(`window.__umbruch.cssEinhaengen(${JSON.stringify(CSS)})`)
   }
@@ -159,6 +86,9 @@ try {
         const fall = `${lang}:${breite}:${fs}`
         const mitBild = BILDER.has(fall)
         const stamm = `${lang}-${breite}-fs${fs}`
+        // Unter Last steht die Seite manchmal erst halb: den Fall dann neu laden.
+        for (let versuch = 1; ; versuch++) {
+        try {
         await laden(`${BASIS}?x=${LAUF}${++x}#s=einstellungen&pl=1&l=${lang}&fs=${fs}`)
         const stand = await werte(`window.__umbruch.bereit(${JSON.stringify(lang)})`)
         const opt = JSON.stringify({ nbsp: NBSP, weich: WEICH })
@@ -190,14 +120,18 @@ try {
           })
           .join(' | ')
         console.log(fall.padEnd(14), stand.lang, stand.dir, stand.fs, stand.desktop ? 'desktop' : 'handy', '·', kurz)
+        break
+        } catch (e) {
+          console.log('  !', fall, 'Versuch', versuch, e.message)
+          if (versuch === 3) throw e
+          await schlaf(2000)
+        }
+        }
       }
     }
   }
   writeFileSync(join(HIER, `ergebnis-${LAUF}.json`), JSON.stringify(ergebnis, null, 1))
   console.log('fertig:', ergebnis.faelle.length, 'Fälle')
 } finally {
-  try {
-    ws?.close()
-  } catch {}
-  chrome.kill()
+  chrome.schliessen()
 }

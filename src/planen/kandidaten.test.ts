@@ -6,6 +6,7 @@ import { DE } from '../i18n/de'
 import { kandidaten, type KandidatenDaten } from './kandidaten'
 import type { Absence, PartItem, Person, Qualifications, Service, SlotSelection, Week } from '../data/types'
 import { privSetzen } from '../data/helpers'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * Die Auswahlliste des Zuteilungs-Sheets war der wichtigste ungetestete Code
@@ -413,7 +414,7 @@ describe('Gruppen-Slots liefern Gruppen statt Personen', () => {
     expect(liste.map((c) => c.assignName)).toEqual(['Gruppe 1'])
     // Die Zeile nennt den Aufseher und die Größe der Gruppe; Punkte gibt es
     // nicht — die Reinigung rotiert.
-    expect(liste[0]!.sub).toBe(`Anton Alt · ${DE.mitgliederN.replace('{n}', '0')}`)
+    expect(liste[0]!.sub).toBe(zahlBinden(`Anton Alt · ${DE.mitgliederN.replace('{n}', '0')}`))
     expect(liste[0]!.last).toBeUndefined()
   })
 

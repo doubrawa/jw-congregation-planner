@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { WeitererPlan } from '../data/types'
 import { dict } from '../i18n/ui'
 import { planUnterzeile, spannenAnzahl, zeitraumText } from './weitere-plaene-anzeige'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Beschriftungen der Weiteren Pläne beim Planen** (T121, `GPlaeneListe`,
@@ -22,18 +23,18 @@ const plan = (over: Partial<WeitererPlan> = {}): WeitererPlan => ({
 
 describe('Was die Liste unter dem Namen eines Plans sagt', () => {
   it('beim laufenden, bis wann er gilt — auch, wenn er heute beginnt', () => {
-    expect(planUnterzeile(plan(), 'aktuell', HEUTE, 'de', t)).toBe('bis 29. November 2026')
-    expect(planUnterzeile(plan({ von: HEUTE }), 'aktuell', HEUTE, 'de', t)).toBe('bis 29. November 2026')
+    expect(planUnterzeile(plan(), 'aktuell', HEUTE, 'de', t)).toBe(zahlBinden('bis 29. November 2026'))
+    expect(planUnterzeile(plan({ von: HEUTE }), 'aktuell', HEUTE, 'de', t)).toBe(zahlBinden('bis 29. November 2026'))
   })
 
   it('beim kommenden, ab wann', () => {
     const winter = plan({ von: '2026-11-30', bis: '2027-02-28' })
-    expect(planUnterzeile(winter, 'aktuell', HEUTE, 'de', t)).toBe('ab 30. November 2026')
+    expect(planUnterzeile(winter, 'aktuell', HEUTE, 'de', t)).toBe(zahlBinden('ab 30. November 2026'))
   })
 
   it('beim abgeschlossenen, wann er endete — mit Jahr: Sie sammeln sich über die Jahre', () => {
     const garten = plan({ von: '2025-03-01', bis: '2025-10-25' })
-    expect(planUnterzeile(garten, 'abgeschlossen', HEUTE, 'de', t)).toBe('endete am 25. Oktober 2025')
+    expect(planUnterzeile(garten, 'abgeschlossen', HEUTE, 'de', t)).toBe(zahlBinden('endete am 25. Oktober 2025'))
   })
 
   it('beim Entwurf seinen Zeitraum — wann er gelten soll', () => {

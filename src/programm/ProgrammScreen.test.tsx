@@ -16,6 +16,7 @@ import { bibelbuecherLaden, makeTr } from '../i18n/translate'
 import { dict } from '../i18n/ui'
 import type { FsInstance, PartItem, Person, Section, Service, Week } from '../data/types'
 import { ProgrammScreen } from './ProgrammScreen'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Das Programm — der Bildschirm, den man im Saal aufschlägt.**
@@ -539,7 +540,7 @@ describe('Anlass und Kongress', () => {
       weeks: zweiWochen({ anlass: { art: 'kongress' } }, { dev: { mid: { cancelled: true } } }),
     })
     const naechste = [...seite(container).querySelectorAll<HTMLButtonElement>('.kongress-weg')][1]!
-    expect(naechste.textContent).toContain('20. September')
+    expect(naechste.textContent).toContain(zahlBinden('20. September'))
     fireEvent.click(naechste)
     expect(dispatch).toHaveBeenLastCalledWith({ type: 'navigate', screen: 'programm', woche: { wi: 1, tab: 'we' } })
   })

@@ -60,11 +60,29 @@
 
 /* ---- Titel einer Seite und eines Bereichs ------------------------------- */
 
+/* Ein langes Wort trennt mit Strich, statt hinauszuragen — „Вспомогательные
+   обязанности" machte die Seite bei 320 px und großer Schrift 53 px zu breit
+   (T128). Ohne Trennregeln der Sprache bricht es notfalls ohne Strich. */
 .seitentitel {
   font-size: calc(25px * var(--fs));
   font-weight: 300;
   line-height: 1.15;
   letter-spacing: -0.02em;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+/* Steht ein Knopf neben dem Titel, rückt der Knopf in die nächste Zeile, bevor
+   der Titel trennt: Trennung senkt in Chrome die Mindestbreite, und neben
+   „Person anlegen" stand sonst „Perso-nen" (T128). Schmaler als die Zeile wird
+   er trotzdem, wenn er allein nicht hineinpasst. Die Zeilen selbst brechen um
+   (`flex-wrap`). */
+.bereichstitel-zeile > .seitentitel,
+.personen-kopf > .seitentitel,
+.mitteilungen-kopf > .seitentitel {
+  flex-shrink: 0;
+  max-width: 100%;
 }
 
 /* Arabische Schrift verbindet ihre Buchstaben; Sperren reißt sie auseinander. */
@@ -219,10 +237,15 @@
   min-height: 64px;
 }
 
+/* Neben dem Schalter bleibt wenig Platz: „Дополнительный класс" ragte drei
+   Pixel hinaus (T128). */
 .schalter-text {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
 }
 
 .klein-text {
@@ -778,11 +801,16 @@
   border: 1.5px dashed var(--ring);
 }
 
+/* Ein Name, der nicht unter seinen Punkt passt, trennt nach den Regeln der
+   Sprache und bricht nur ohne sie notfalls mitten im Wort — „Подтверждени|я"
+   bei 1400 px und Stufe 1,45, seit das Menü mit der Schrift wächst (T128). */
 .spur-name {
   max-width: 100%;
   color: var(--text2);
   font-size: calc(13.5px * var(--fs));
   font-weight: 500;
+  -webkit-hyphens: auto;
+  hyphens: auto;
   overflow-wrap: anywhere;
 }
 

@@ -11,6 +11,7 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { dict } from '../i18n/ui'
 import type { Section, Service, Week } from '../data/types'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Programm holen — der einzige Weg zu einem Wochenprogramm** (T121, Phase
@@ -362,12 +363,12 @@ describe('Das Blatt zeigt, was kam (Entwurf `GImport`)', () => {
     await geholt()
     const dialog = blatt()!
     expect(dialog.querySelector('.holen-spanne')?.textContent).toBe('14.–20. September')
-    expect(dialog.querySelector('.holen-kopf .klein-text')?.textContent).toBe('Programmpunkte: 8')
+    expect(dialog.querySelector('.holen-kopf .klein-text')?.textContent).toBe(zahlBinden('Programmpunkte: 8'))
     const zeilen = [...dialog.querySelectorAll('.holen-abschnitt')].map((z) => [z.getAttribute('data-farbe'), z.textContent])
     expect(zeilen).toEqual([
-      ['petrol', 'SCHÄTZE AUS GOTTES WORTPunkte: 3'],
-      ['gold', 'UNS IM DIENST VERBESSERNPunkte: 3'],
-      ['wein', 'UNSER LEBEN ALS CHRISTPunkte: 2'],
+      ['petrol', zahlBinden('SCHÄTZE AUS GOTTES WORTPunkte: 3')],
+      ['gold', zahlBinden('UNS IM DIENST VERBESSERNPunkte: 3')],
+      ['wein', zahlBinden('UNSER LEBEN ALS CHRISTPunkte: 2')],
     ])
     expect(dialog.querySelector('.holen-sprachen')?.textContent).toBe(`${t.programmsprachen}Deutsch, Englisch`)
     expect(dialog.textContent).toContain(t.holenHinweis)
@@ -388,7 +389,7 @@ describe('Das Blatt zeigt, was kam (Entwurf `GImport`)', () => {
       expect(text, k).toContain(en[k])
       expect(text, k).not.toContain(t[k])
     }
-    expect(text).toContain('Program parts: 3')
+    expect(text).toContain(zahlBinden('Program parts: 3'))
   })
 
   it('wird das Blatt geschlossen, während geholt wird, verfällt das Ergebnis', async () => {

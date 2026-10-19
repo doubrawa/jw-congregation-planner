@@ -674,7 +674,8 @@ describe('Reichen die Programme nicht mehr, steht „Holen" gleich auf der Karte
   it('eine Woche Vorrat: der Stand und der Knopf', () => {
     const weeks = [besetzt(W1)]
     const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks) })
-    expect(container.querySelector('.dash-plan-vorrat-text')?.textContent).toMatch(/^Geladen bis 13\. Sept\. 2026$/)
+    // Tag und Monat stehen gebunden (T128) — `\s` trifft beide Leerzeichen.
+    expect(container.querySelector('.dash-plan-vorrat-text')?.textContent).toMatch(/^Geladen bis 13\.\sSept\. 2026$/)
     expect(importKnopf(container)?.textContent).toBe(t.holen)
   })
 

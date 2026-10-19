@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Zeichen, type ZeichenName } from '../bausteine/Zeichen'
-import { datumsFormat } from '../components/datum-anzeige'
+import { kopfzeilenTag } from '../components/datum-anzeige'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { DESKTOP_BREITE, WOCHEN_SPALTE_BREITE, useMedia } from '../components/useMedia'
 import { displayName, initials } from '../data/helpers'
@@ -328,7 +328,7 @@ export function AppShell() {
                   keine geladen ist (Konto ohne Versammlung, Ladefehler), steht
                   der Produktname da, damit der Kopf nicht leer bleibt. */}
               <Kopfzeile
-                datum={datumsFormat(state.lang, 'tag').format(fromIso(tag))}
+                datum={kopfzeilenTag(fromIso(tag), state.lang)}
                 versammlung={versammlung ? fill(t.congLabel, { name: versammlung }) : 'Versammlung.app'}
                 ungelesen={ungelesen}
                 menueOffen={menuOpen}

@@ -8,6 +8,7 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { APP_LANGS, LOCALES } from '../i18n/langs'
 import { makeTr } from '../i18n/translate'
 import { dict } from '../i18n/ui'
+import { NBSP, zahlBinden } from '../i18n/zahl-binden'
 import { emptyQualifications } from '../data/helpers'
 import type { Group, Notification, Person, SlotSelection } from '../data/types'
 
@@ -312,7 +313,7 @@ describe('Die Glocke zählt nur das Ungelesene', () => {
 
   it('mit Ungelesenem nennt sie die Zahl — und trägt den Punkt', () => {
     const { container } = zeige({ notifs: [notif('n1', false), notif('n2', false), notif('n3', true)] })
-    expect(glocke(container).getAttribute('aria-label')).toBe(`${t.mitteilungen}, Neu: 2`)
+    expect(glocke(container).getAttribute('aria-label')).toBe(`${t.mitteilungen}, Neu:${NBSP}2`)
     expect(glocke(container).querySelector('.kopfzeile-neu')).not.toBeNull()
   })
 
@@ -384,8 +385,9 @@ describe('Das Offline-Banner nennt den Stand', () => {
     }
     for (const { code } of APP_LANGS) {
       const { container } = zeige({ staleAt: at, lang: code })
+      // „02:05 PM" kommt durch `fill` — die Uhrzeit bleibt bei „PM" (T128).
       expect(container.querySelector('.offline-banner')!.textContent, code).toContain(
-        new Date(at).toLocaleString(LOCALES[code], opts),
+        zahlBinden(new Date(at).toLocaleString(LOCALES[code], opts)),
       )
       cleanup()
     }
@@ -587,10 +589,12 @@ describe('Die Kopfzeile auf dem Handy nennt Tag und Versammlung', () => {
     expect(kopfName(container)?.textContent).toBe('Versammlung Krumbach')
   })
 
-  it('und darüber der heutige Tag in der Sprache der App', () => {
+  it('und darüber der heutige Tag in der Sprache der App — Tag und Monat bleiben zusammen (T128)', () => {
     const { container } = zeige({ congregation: krumbach })
     const tag = container.querySelector('.kopfzeile .kopfzeile-datum')?.textContent ?? ''
-    expect(tag).toBe(new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date()))
+    expect(tag.replaceAll(NBSP, ' ')).toBe(new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date()))
+    // „Montag, 19.|Oktober" brach bei 320 px um; umbrechen darf nur der Wochentag.
+    expect(tag).toMatch(new RegExp(`^\\p{L}+, \\d+\\.${NBSP}\\p{L}+$`, 'u'))
   })
 
   it('ein langer Name wird nicht abgeschnitten, bevor er ankommt — kürzen darf nur die Anzeige', () => {

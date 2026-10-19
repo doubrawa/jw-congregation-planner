@@ -3,6 +3,7 @@ import { emptyQualifications } from '../data/helpers'
 import type { Group, Member, Person } from '../data/types'
 import { dict } from '../i18n/ui'
 import { erinnerungKurz, doppelterName, neuerGruppenName, neuerTrolleyName, werPlant, zusammenkunftText } from './einstellungen-anzeige'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Was die Einstellungen in ihren Zeilen sagen** — am Handy rechts in der
@@ -28,19 +29,19 @@ describe('Die Zusammenkunft in einer Zeile', () => {
 
 describe('Der Rhythmus der Erinnerungen in einer Zeile', () => {
   it('nennt erste und letzte Erinnerung in Worten', () => {
-    expect(erinnerungKurz({ first: 7, last: 0, repeat: true }, t, 'de')).toBe('Erste 7 Tage vorher, letzte am Tag')
+    expect(erinnerungKurz({ first: 7, last: 0, repeat: true }, t, 'de')).toBe(zahlBinden('Erste 7 Tage vorher, letzte am Tag'))
   })
 
   it('die Mehrzahl kommt aus Intl — „1 Tag", nicht „1 Tage"', () => {
-    expect(erinnerungKurz({ first: 3, last: 1, repeat: false }, t, 'de')).toBe('Erste 3 Tage vorher, letzte 1 Tag vorher')
+    expect(erinnerungKurz({ first: 3, last: 1, repeat: false }, t, 'de')).toBe(zahlBinden('Erste 3 Tage vorher, letzte 1 Tag vorher'))
   })
 
   it('und in jeder Sprache ihre eigene: Russisch kennt drei Formen', () => {
     const ru = dict('ru')
     const text = (n: number) => erinnerungKurz({ first: n, last: 0, repeat: false }, ru, 'ru')
-    expect(text(1)).toContain('1 день')
-    expect(text(3)).toContain('3 дня')
-    expect(text(7)).toContain('7 дней')
+    expect(text(1)).toContain(zahlBinden('1 день'))
+    expect(text(3)).toContain(zahlBinden('3 дня'))
+    expect(text(7)).toContain(zahlBinden('7 дней'))
   })
 })
 

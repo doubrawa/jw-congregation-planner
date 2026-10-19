@@ -751,7 +751,7 @@ export default {
   "holenSpracheFehlt": "Bu hafta jw.org’da henüz cemaat dilinde yok",
   "personNameLbl": "Ad",
   "toastTitelEingeben": "Bir başlık gir",
-  "navAuswertung": "Değerlendirme",
+  "navAuswertung": "Değerlen\u00addirme",
   "awZeitraum": "Dönem",
   "awZusammenkuenfte": "İbadetler: {n}",
   "awZuteilungen": "Görevler",

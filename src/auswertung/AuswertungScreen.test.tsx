@@ -26,6 +26,7 @@ import { bereichsName } from '../personen/priv-label'
 import { AuswertungScreen } from './AuswertungScreen'
 import { WarteBalken } from './Diagramme'
 import { HINWEISE_SICHTBAR } from './Hinweise'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Die Auswertung, wie man sie sieht** (T126): am Handy der Überblick mit fünf
@@ -148,7 +149,7 @@ describe('Am Handy: der Überblick', () => {
     expect(wahl.querySelector('[aria-pressed="true"]')?.textContent).toBe(zeitspanne(12, 'month', 'de'))
     const a = rechnung(zustand())
     expect(zeitraumZeile(container)).toContain(zeitspanne(20, 'week', 'de'))
-    expect(zeitraumZeile(container)).toContain(`Zusammenkünfte: ${a.grundlage.zusammenkuenfte}`)
+    expect(zeitraumZeile(container)).toContain(zahlBinden(`Zusammenkünfte: ${a.grundlage.zusammenkuenfte}`))
   })
 
   it('drei Monate rechnen nur die letzten dreizehn Wochen', () => {
@@ -180,7 +181,7 @@ describe('Am Handy: der Überblick', () => {
     const a = rechnung(zustand())
     expect(a.hinweise.length, 'der Verlauf braucht mehr als sechs Hinweise').toBeGreaterThan(HINWEISE_SICHTBAR)
     expect(container.querySelectorAll('.aw-hinweis')).toHaveLength(HINWEISE_SICHTBAR)
-    expect(container.querySelector('.aw-abschnitt-kopf .klein-text')?.textContent).toBe(`Hinweise: ${a.hinweise.length}`)
+    expect(container.querySelector('.aw-abschnitt-kopf .klein-text')?.textContent).toBe(zahlBinden(`Hinweise: ${a.hinweise.length}`))
     fireEvent.click(knopf(container, t.awAlleHinweise))
     expect(container.querySelectorAll('.aw-hinweis')).toHaveLength(a.hinweise.length)
     fireEvent.click(knopf(container, t.awWeniger))
@@ -201,7 +202,7 @@ describe('Am Handy: der Überblick', () => {
     // die Überschrift nennt so viele, wie dastehen, nicht die 52 des Zeitraums.
     expect(container.querySelectorAll('.aw-woche')).toHaveLength(20)
     expect(container.querySelectorAll('.aw-wochen-reihe')).toHaveLength(2)
-    expect(container.textContent).toContain(`Die letzten ${zeitspanne(20, 'week', 'de')}`)
+    expect(container.textContent).toContain(zahlBinden(`Die letzten ${zeitspanne(20, 'week', 'de')}`))
     zurueck(container)
     expect(titel(container)).toBe(t.navAuswertung)
   })
@@ -286,7 +287,8 @@ describe('Ab dem Tablet: alles auf einer Seite', () => {
     expect(matrix.querySelectorAll('tbody tr').length).toBeGreaterThan(10)
     // Zelle für Zelle ein Satz für Vorleseprogramme: „Name, Bereich: Wert" —
     // und der Kopf liest den ganzen Namen, auch wo er kurz und senkrecht steht.
-    expect(matrix.querySelector('tbody td')?.getAttribute('aria-label')).toMatch(/^.+, .+: .+$/)
+    // Hinter dem Doppelpunkt steht die Zahl gebunden (T128) — `\s` trifft beide Leerzeichen.
+    expect(matrix.querySelector('tbody td')?.getAttribute('aria-label')).toMatch(/^.+, .+:\s.+$/)
     const vorsitz = [...matrix.querySelectorAll('thead th')].find((th) => th.getAttribute('aria-label')?.startsWith(t.privVorsitz))!
     expect(vorsitz.getAttribute('aria-label')).toBe(`${t.privVorsitz} · ${t.tabMid}`)
     expect([...vorsitz.querySelectorAll('.aw-matrix-kopf > span')].map((s) => s.textContent)).toEqual([t.privVorsitz, t.unterDerWoche])

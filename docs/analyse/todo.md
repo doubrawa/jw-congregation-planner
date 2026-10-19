@@ -7496,13 +7496,14 @@ Betreiber nachentschieden: Auch die Weiteren Pläne (Königreichssaal)
 
 ## Aufgenommen am 18. Oktober 2026 — Umbruch mitten im Wort (T128)
 
-### T128 · Kein Bruch mitten im Wort, die Zahl bleibt bei ihrer Bezeichnung 🔧 ☐ offen
+### T128 · Kein Bruch mitten im Wort, die Zahl bleibt bei ihrer Bezeichnung 🔧 ✅ erledigt (19. Oktober 2026)
 
 **Auftrag (18. Oktober, über die Sitzung von T127):** Bei 320 px brechen
 Beschriftungen mitten im Wort ohne Trennstrich um („Königreichssaa|l",
 „Eingangsordne|r", „Rundgangsord|ner"), im Kopf des Reinigungsblatts stehen
 „Gruppen:" und die Zahl auf zwei Zeilen. Am 18. Oktober gemessen und geplant,
-**nicht umgesetzt** — der Betreiber macht es später, weil gerade anderes läuft.
+am 19. Oktober umgesetzt (Betreiber: „wir setzen so viele punkte wie möglich
+um … z.b. mit t128") — Ergebnis unten unter **Umgesetzt**.
 
 **Befund** (echter Chrome 155 mit Trennwörterbüchern, HEAD `546f7f73`;
 12 Sprachen × 320/375/768/1024/1180/1440 px × Stufe 1 und 1,45, je
@@ -7598,6 +7599,106 @@ Sie lagen im Übergabe-Ordner der Sitzung von T127, der mit der Sitzung
 gelöscht wurde. `messen.mjs` legt Chrome-Profil, Bilder und Ergebnisse in
 seinem eigenen Ordner ab (per `.gitignore` ausgenommen); die Hülle gehört in
 die Wurzel des Worktrees, denn sie lädt `./vite.config.ts`.
+
+**Umgesetzt (19. Oktober 2026)** — wie geplant, dazu, was die Nachmessung
+fand:
+
+- **Die Zahl bei ihrer Bezeichnung:** `zahlBinden` (`src/i18n/zahl-binden.ts`)
+  schützt das Leerzeichen hinter „: " vor einer Ziffer und zwischen Zahl und
+  Wort; `fill` ruft es nach dem Einsetzen. Das Datum der Kopfzeile kommt nicht
+  durch `fill`: `kopfzeilenTag` (`datum-anzeige.ts`) bindet über die Teile von
+  `Intl`, umbrechbar bleibt nur der Rand am Wochentag (Türkisch stellt ihn ans
+  Ende, Französisch setzt kein Komma). Das Zeichen steht als
+  `String.fromCharCode(0xa0)` im Code, nicht als Escape.
+- **CSS wie geplant:** Container-Abfrage der Einstellungs-Karten,
+  `hyphens` an Seitentitel, Schaltertext, Blatt-Titel und Menüeintrag,
+  `flex-wrap` im Fuß der Blätter, beide Leisten wachsen mit der Schrift
+  (88 → 128 px, 248 → 304 px bei Stufe 1,45).
+- **Dazu, nach der Nachmessung am Desktop:** Steht ein Knopf neben dem
+  Seitentitel (Bereichstitel, Personen, Mitteilungen), rückt der Knopf in die
+  nächste Zeile, bevor der Titel trennt — Trennung senkt in Chrome die
+  Mindestbreite, und neben „Person anlegen" stand sonst „Perso-nen". Und was
+  die Leiste am Desktop dazugewinnt, gibt die Person neben der Personenliste
+  ab (`.personen-raster`: 420 px bis Stufe 1, 364 px bei 1,45) — sonst brach
+  die Liste „Ackermann|, Stefan". Verworfen: eine feste Leiste, deren Zähler
+  unter den Namen rückt — „Powiadomienia" passte bei 248 px nicht einmal neben
+  sein Zeichen; ohne Trennung im Seitentitel brach am Desktop „Налаштуванн|я".
+- **Weiche Trennzeichen** für Türkisch „Değerlen|dirme" (`navAuswertung`) und
+  — neu aus der Nachmessung — Polnisch „Przypo|mnienia" (`erinnerungenCard`,
+  der Titel der Unteransicht brach „Przypomnieni|a").
+- **Neu aus der Nachmessung, Planen:** Die breiteren Leisten nahmen dem Plan
+  am Desktop bis zu 56 px; die Namen der Plätze brachen dort schon vorher —
+  bei Stufe 1 „Krüge|r", bei 1,45 „Albr|echt" (Namensspalte 147 px, der Name
+  bekam 45 px). Jetzt rückt die Rolle unter den Namen, wenn beide nicht
+  nebeneinander passen, und der Name wird nicht schmaler als sein längstes
+  Wort (`.platz` in `planen.css`, ohne Schwelle). Gemessen: 113 / 362 / 805 /
+  1316 Brüche in `.platz-name` bei Stufe 1 / 1,15 / 1,3 / 1,45 → 0. Die Namen
+  der Spur trennen jetzt (`.spur-name`): bei 1400 px und 1,45 brachen sonst
+  „Confirmacione|s", „Подтверждени|я".
+- **Neu aus der Nachmessung, Erinnerungen:** Text und Einstellung eines
+  Schritts stehen in einem umbrechenden Behälter (`erin-inhalt`) — bei großer
+  Schrift rückt Plus/Minus unter den Titel, statt dass „Pierwsz|e
+  przypo|mnienie" bricht.
+- **Proben:** `zahl-binden.test.ts` (jede Vorlage aller zwölf Wörterbücher),
+  `kopfzeilen-tag.test.ts` (alle zwölf Sprachen), `tests/kein-wortbruch.test.ts`
+  (die CSS-Regeln, beide Trennzeichen), 51 Zusicherungen auf den gebundenen
+  Wortlaut nachgezogen (`zahlBinden(…)` statt Wortlaut mit Leerzeichen).
+  Mutationskatalog: 21 Einträge `umbruch-…`, alle bewacht und gegen die
+  gemeinte Testdatei gegengeprüft.
+
+**Gemessen im echten Chrome** (Werkzeug wie oben, dazu `breit.mjs`,
+`unter.mjs`, `vergleich.mjs` und das gemeinsame `chrome.mjs`; vorher = HEAD
+`a48f784d` aus einem Worktree auf Port 5176):
+
+| Lauf | Fälle | Funde vorher | nachher |
+|---|---|---|---|
+| Einstellungen, Hilfsdienste, zwei Blätter: 12 Sprachen × 320/375/768/1024 × Stufe 1/1,45 | 96 | 192 | 0 |
+| Dieselben am Desktop: 12 Sprachen × 1180/1440 × Stufe 1/1,45 | 48 | 76 | 0 |
+| Jede Unteransicht und jedes Blatt der Einstellungen: 12 Sprachen × 320/375 × 1,15/1,45 | 48 | 240 | 1 |
+| Planen: 12 Sprachen × 768–1440 × Stufe 1/1,15/1,3/1,45 | 240 | 3 179 | 366 |
+| Planen, Start, Programm: 12 Sprachen × 768–1440 × Stufe 1,3/1,45 | 360 | 2 950 | 446 |
+| Personen, Mitteilungen, Einstellungen am Desktop: 7 Sprachen × 1180/1440 × 1,3/1,45 | 84 | 414 | 303 |
+| Auswertung, Personen, Mitteilungen, Profil, Aufgaben am Desktop: 5 Sprachen × 1180/1400 × 1,3/1,45 | 100 | 809 | 662 |
+
+Alle Zahlen „nachher" sind der Endstand. Gezählt sind Brüche mitten im Wort,
+getrennte Zahlen, Überbreite, Rollbalken und Text, der aus seinem Kasten
+ragt — Trennungen mit Strich nicht. Was nachher noch dasteht, stand vorher
+genauso da (siehe unten), mit drei Ausnahmen, alle weil der Inhalt neben der
+breiteren Leiste schmaler ist: In der Personenliste bricht in sieben Zellen
+statt der Zahl jetzt das Wort davor oder der Monat (vorher 27 getrennte
+Zahlen), im Profil trennen vier Datumsspannen mehr, und im Programm bricht
+derselbe deutsche Titel ein zweites Mal (1180 px, Stufe 1,3, acht Sprachen).
+In der Auswertung stehen die Spaltenköpfe der Matrix senkrecht
+(`writing-mode: vertical-rl`, `nowrap`); das Werkzeug liest dort jeden
+Buchstaben als neue Zeile und meldet die gedrehten Kästen um 2 px
+überragt — 341 der 662 Funde, vorher wie nachher, kein Umbruch.
+
+Was bleibt (vorher wie nachher, keine Folge von T128):
+
+- **Die Wahl der letzten Erinnerung** bricht bei 320 px und Stufe 1,45 in
+  Polnisch mitten im Wort („wcześni|ej"): zwei gleich breite Knöpfe
+  nebeneinander (`Wahl`). Italienisch hält, seit „1 giorno" gebunden ist.
+  Abhilfe wäre eine Wahl, die untereinander rückt, wenn das längste Wort
+  nicht passt — sie steht an 14 Stellen, deshalb nicht nebenbei.
+- **Datumsspannen** außerhalb von `fill` binden Tag und Monat nicht:
+  Wochenkarten („7.–13.|September"), die Karte „Holen" und die Abwesenheiten im
+  Profil (`wochenSpanne`, `tageSpanne`, `week.range`) bei 1180–1440 px und
+  1,3/1,45. Bewusst nicht mitgebunden: In zu schmalen Zellen bricht ein
+  gebundenes Datum mitten im Monatsnamen — so jetzt in der Personenliste
+  („abwesend 7.–13. Septembe|r" statt „13.|September", „nieobecnoś|ć: 7–";
+  sieben Zellen bei 1180 px), deren Spalten bei großer Schrift ohnehin zu
+  schmal sind („Dienstamtg|ehilfe", vorher wie nachher). Abhilfe dort: die
+  Zeile stapeln wie in den Einstellungen.
+- **Namen der Dienste im Programm** brechen bei 768 px und Stufe 1,3/1,45
+  mitten im Wort („Eingangsordne|r", „Rundgangsord|ner"; 26 Funde) — die
+  Spalte ist schmaler als das längste Wort.
+- **Programmtexte trennen nach der Sprache der App:** Das Programm steht in
+  der Sprache der Versammlung, `<html lang>` nennt die des Lesers — in einer
+  russischen App trennt „Versammlungsbibelstudium" nach russischen Regeln
+  („Versammlung|sbibelstudium"). Abhilfe: `lang` der Versammlung an die
+  Programmtexte.
+- **Hinweise beim Planen am Desktop** ragen bei Stufe 1,3/1,45 aus ihrem Kasten
+  („Программа ещё не загружена" in der Karte „Holen").
 
 ---
 
@@ -7774,15 +7875,14 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 22./23. August ☑☑☑☑☑☑☑☑☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
-10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☐☑☐☐
+10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☐☐
 
-**127 der 131 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind vier:**
+**128 der 131 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind drei:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
-| **T128** | Kein Bruch mitten im Wort, die Zahl bei ihrer Bezeichnung | ☐ gemessen und geplant am 18. Oktober, als Simulation im echten Chrome belegt (0 Funde in 240 Fällen); der Betreiber setzt es später um |
 | **T130** | Den Reiter „Trolleys" sieht nur, wer das Trolley-Recht hat | ☐ aufgenommen am 18. Oktober; zu klären: Admin und Planer ohne Recht, Leserecht in der Datenbank |
 | **T131** | Am Wochenende liest der Vorsitzende den Wachtturm | ☐ aufgenommen am 18. Oktober; zu klären: fest oder als Einstellung der Versammlung |
 
@@ -8191,7 +8291,7 @@ nach seiner letzten Änderung ausgerollt, die übrigen sechs Functions am
 `INVITE_FROM`, `disable_signup` noch `false`; das Aufräumen aus T125 lief am
 19. Oktober zum ersten Mal, erfolgreich; die fünf ruhenden Sitzungen zu diesem
 Repo am 19. Oktober gelöscht, eine weitere hat noch uncommittete Änderungen
-im Ordner). Im Code offen sind T128, T130, T131 und der Rest von T42 (am
+im Ordner; seither T128 erledigt, am 19. Oktober abends). Im Code offen sind T130, T131 und der Rest von T42 (am
 18. Oktober erledigt: die Kachel der Absagen, T127, T129, die Auswertung nach
 der Jahresprobe und das Review des Tages; am 19. das Ladebild beim Start, der
 Offline-Start nach über einer Stunde, das Startbild und der Offline-Start in
@@ -8211,7 +8311,7 @@ braucht den Betreiber oder ein Gerät.
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
 | **Phase 7** | T42, der Rest | `src` samt Tests ist seit 17. Oktober frei, die Regel steht in `tsconfig.app.json`. Noch aus: Edge Functions (53 Meldungen) und Skript-Tests (67); `typecheck:index` ist überflüssig geworden |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
-| **T128** | Umbruch mitten im Wort, Zahl getrennt von ihrer Bezeichnung | Plan steht (zentral in `fill()`, Zeilen stapeln und Leisten wachsen lassen bei großer Schrift, Trennregeln an vier Stellen, ein weiches Trennzeichen für Türkisch); vom Betreiber auf später gelegt, weil gerade anderes läuft |
+| **Rest aus T128** | Umbruch bei großer Schrift | T128 ist erledigt (19. Oktober). Vorher wie nachher bleiben: die Wahl der letzten Erinnerung bei 320 px (pl), Datumsspannen außerhalb von `fill` (Wochenkarten, „Holen"), Programmtexte, die nach der Sprache der App statt der Versammlung trennen, Hinweise in der Karte „Holen" bei Stufe 1,3/1,45 und Namen der Dienste im Programm bei 768 px — Einzelheiten unter T128 |
 | **T130** | Reiter „Trolleys" nur mit Trolley-Recht | aufgenommen am 18. Oktober abends, noch nicht begonnen; die offenen Fragen stehen in T130 |
 | **T131** | Der Leser folgt am Wochenende dem Vorsitz | aufgenommen am 18. Oktober abends, noch nicht begonnen; zu klären, ob fest oder als Einstellung der Versammlung |
 | **Zu entscheiden** | Langsames Netz beim Start | aus dem Review des Offline-Starts in der ersten Stunde (19. Oktober abends): Lassen die Daten länger als 4 s auf sich warten, steht der letzte Stand mit „Offline · Stand von …" da, und Ändern ist gesperrt, auch wenn das Netz nur langsam ist. Kommen sie danach, legt das Blatt beim Öffnen eine seither neue Zuteilung nicht vor (nach über einer Stunde ebenso seit `30a5a80d`). Denkbar: ein eigener Hinweis statt „Offline", und das Blatt nach dem ersten frischen Laden noch einmal prüfen |

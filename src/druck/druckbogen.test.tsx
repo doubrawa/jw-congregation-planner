@@ -19,6 +19,7 @@ import { GruppenbesuchBogen, TreffpunktBogen } from './TreffpunktBogen'
 import { TrolleyBogen } from './TrolleyBogen'
 import { useDruckBogen } from './useDruckBogen'
 import { MonatsBogen, WochenBogen } from './ZusammenkunftBogen'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Die Druckbögen der Zusammenkünfte** (T121, Phase 9; Entwürfe
@@ -102,7 +103,7 @@ describe('Der Wochenbogen', () => {
     expect(kopf).toContain('Versammlung Nordheim')
     expect(kopf).toContain(t.navZusammenkuenfte)
     expect(kopf).toContain('7.–13. September 2026')
-    expect(container.querySelector('.druck-blatt-fuss')?.textContent).toContain('Seite 1 von 1')
+    expect(container.querySelector('.druck-blatt-fuss')?.textContent).toContain(zahlBinden('Seite 1 von 1'))
   })
 
   it('Namen mit Rolle, ein freier Platz gepunktet — mit seinem Namen für Vorleseprogramme', () => {
@@ -213,7 +214,7 @@ describe('Der Monatsbogen', () => {
     const kongress = container.querySelector('.druck-monat-woche')!
     expect(kongress.querySelector('.druck-anlass')?.textContent).toBe(t.kongress)
     expect(kongress.querySelector('.druck-kongress')?.textContent).toBe(t.kongressAusfall)
-    expect(kongress.querySelector('.druck-hinweis')?.textContent).toContain('Dienstag, 15. September')
+    expect(kongress.querySelector('.druck-hinweis')?.textContent).toContain(zahlBinden('Dienstag, 15. September'))
     expect(kongress.querySelector('.druck-knapp-tag')).toBeNull()
   })
 })
@@ -413,8 +414,8 @@ describe('Bogen: Blöcke nach gemessener Höhe verteilen', () => {
     const { container } = zeige(<Bogen titel="T" zeitraum="Z" bloecke={bloecke(500, 500, 500)} />)
     expect(blaetter(container)).toEqual([['Block 0', 'Block 1'], ['Block 2']])
     expect(texte(container, '.druck-blatt-fuss')).toEqual([
-      expect.stringContaining('Seite 1 von 2'),
-      expect.stringContaining('Seite 2 von 2'),
+      expect.stringContaining(zahlBinden('Seite 1 von 2')),
+      expect.stringContaining(zahlBinden('Seite 2 von 2')),
     ])
     expect(document.querySelector('.druck-messen'), 'die Messung bleibt nicht stehen').toBeNull()
   })
@@ -569,9 +570,9 @@ describe('Der Bogen eines Weiteren Plans', () => {
     const blaetter = [...container.querySelectorAll('.druck-blatt')]
     expect(blaetter.map((b) => datenZeilen(b).length)).toEqual([25, 25, 2])
     expect(texte(container, '.druck-blatt-fuss').map((f) => f.slice(f.lastIndexOf('·') + 2))).toEqual([
-      'Seite 1 von 3',
-      'Seite 2 von 3',
-      'Seite 3 von 3',
+      zahlBinden('Seite 1 von 3'),
+      zahlBinden('Seite 2 von 3'),
+      zahlBinden('Seite 3 von 3'),
     ])
     expect(container.querySelector('.druck-blatt--ueberlang')).toBeNull()
   })

@@ -213,7 +213,7 @@ describe('Der Gruppenaufseher sendet die Treffpunkte seiner Gruppe (4.10.2026)',
 describe('Wer noch nichts weiß', () => {
   it('steht mit Namen, Tag und Aufgabe da — die Zahl am Knopf', () => {
     zeige({ weeks: [woche(['A. Berg', 'B. Cohn'])] })
-    expect(blatt().querySelector('.senden-satz')?.textContent).toBe(t.planSendenOffen.replace('{n}', '2'))
+    expect(blatt().querySelector('.senden-satz')?.textContent).toBe(fill(t.planSendenOffen, { n: 2 }))
     expect(namen()).toEqual(['A. Berg', 'B. Cohn'])
     expect(zeilen()[0]!.querySelector('.klein-text')?.textContent).toMatch(/^Dienstag, 8\. September.* · Punkt 0$/)
     expect(senden().querySelector('.zahl-marke')?.textContent).toBe('2')
@@ -229,7 +229,7 @@ describe('Wer noch nichts weiß', () => {
   it('bei vielen bleibt es beim Satz — eine Wand von Namen liest niemand', () => {
     zeige({ weeks: [woche(Array.from({ length: 12 }, (_u, i) => `P${i}. Beispiel`))] })
     expect(blatt().querySelector('.senden-liste')).toBeNull()
-    expect(blatt().querySelector('.senden-satz')?.textContent).toBe(t.planSendenOffen.replace('{n}', '12'))
+    expect(blatt().querySelector('.senden-satz')?.textContent).toBe(fill(t.planSendenOffen, { n: 12 }))
   })
 })
 

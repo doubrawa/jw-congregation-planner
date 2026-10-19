@@ -99,10 +99,15 @@
   min-width: 0;
 }
 
+/* „Eingangsordner" ragte bei 320 px und großer Schrift sieben Pixel aus seinem
+   Kasten, „Распорядитель у входа" neun (T128). */
 .sheet-title {
   font-size: calc(21px * var(--fs));
   font-weight: 600;
   line-height: 1.2;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
 }
 
 .sheet-sub {
@@ -142,10 +147,13 @@
 }
 
 /* Unten in einem Blatt, das gleich beim Tippen ändert: nur ein Knopf, am Ende
-   der Zeile — etwa „Entfernen" (Programmpunkt, Regel des Grundplans). */
+   der Zeile — etwa „Entfernen" (Programmpunkt, Regel des Grundplans). Passen
+   zwei nicht nebeneinander, rückt der letzte in die nächste Zeile, statt dass
+   der erste links hinausragt („Удалить вспомогательную обязанность", T128). */
 .sheet-fuss-ende {
   flex: none;
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
   padding-top: 16px;

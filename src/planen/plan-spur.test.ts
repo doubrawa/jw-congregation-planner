@@ -3,6 +3,7 @@ import { allePlaetze, platzKey } from '../data/plaetze'
 import type { FsInstance, MeetingTimes, Service, Week } from '../data/types'
 import type { PlanStand } from '../data/weitere-plaene'
 import { dict } from '../i18n/ui'
+import { zahlBinden } from '../i18n/zahl-binden'
 import { spurDerWoche, spurDesPlans, wochenZahlen, zahlenDerWoche, type WochenZahlen } from './plan-spur'
 
 /**
@@ -138,7 +139,7 @@ describe('spurDerWoche: der laufende Schritt ist der erste, der nicht fertig ist
   it('die Zahlen stehen als „a/b" und „Neu: n" — so stimmt die Form in jeder Sprache', () => {
     const [zuteilen, senden, zusagen] = spurDerWoche(z({ besetzt: 3, neu: 2, zuBestaetigen: 3, bestaetigt: 1 }), t)
     expect(zuteilen).toEqual({ name: t.spurZuteilen, wert: '3/4', lage: 'jetzt' })
-    expect(senden!.wert).toBe(t.neuN.replace('{n}', '2'))
+    expect(senden!.wert).toBe(zahlBinden(t.neuN.replace('{n}', '2')))
     expect(zusagen!.wert).toBe('1/3')
   })
 

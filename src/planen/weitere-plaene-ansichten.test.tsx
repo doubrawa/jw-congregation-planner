@@ -16,6 +16,7 @@ import { dict } from '../i18n/ui'
 import { ProgrammScreen } from '../programm/ProgrammScreen'
 import type { Group, Person, PlanEintrag, WeitererPlan } from '../data/types'
 import { PlanenScreen } from './PlanenScreen'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Weitere Pläne an der Oberfläche** (T120, Phase 5; T121, Entwürfe
@@ -195,9 +196,9 @@ describe('Planen: die Liste', () => {
     const unter = (name: string) =>
       [...container.querySelectorAll('.wp-plan-zeile')].find((z) => z.textContent?.includes(name))?.querySelector('.klein-text')
         ?.textContent
-    expect(unter('Winterdienst')).toBe(`${t.saal} · bis 27. September 2026`)
-    expect(unter('Schneeräumen')).toBe(`${t.saal} · ab 30. November 2026`)
-    expect(unter('Gartenpflege')).toBe(`${t.saal} · endete am 30. August 2026`)
+    expect(unter('Winterdienst')).toBe(zahlBinden(`${t.saal} · bis 27. September 2026`))
+    expect(unter('Schneeräumen')).toBe(zahlBinden(`${t.saal} · ab 30. November 2026`))
+    expect(unter('Gartenpflege')).toBe(zahlBinden(`${t.saal} · endete am 30. August 2026`))
   })
 
   it('ein neuer Plan: ohne Wahl als Entwurf angelegt, ab dieser Woche ein Vierteljahr', () => {
