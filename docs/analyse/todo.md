@@ -7826,7 +7826,7 @@ Eintragen kann schon heute nur, wer den Aufgabenbereich „Trolley" hat
 
 ## Aufgenommen am 18. Oktober 2026 — Der Leser folgt dem Vorsitz (T131)
 
-### T131 · Am Wochenende liest der Vorsitzende den Wachtturm 🔧 ☐ offen
+### T131 · Am Wochenende liest der Vorsitzende den Wachtturm 🔧 ✅ erledigt (19. Oktober 2026)
 
 **Auftrag (18. Oktober, Betreiber):** Auf die Frage aus der Jahresprobe der
 Auswertung (T126), ob am Wochenende immer der Vorsitzende den Wachtturm liest:
@@ -7855,6 +7855,28 @@ Konfliktprüfung kennt Vorsitz und Anfangsgebet schon als gewolltes Paar.
   bräuchte es Wortlaut in zwölf Sprachen und eine Zeile im Planer-Handbuch.
 - Setzt der Planer im Einzelfall einen anderen Leser ein, zählt der wie beim
   Anfangsgebet als eigene Zuteilung.
+
+**Entschieden (19. Oktober, Betreiber):** fest für jede Versammlung, keine
+Einstellung.
+
+**Umgesetzt (19. Oktober 2026):**
+
+- `folgtDemVorsitz` (`_shared/planung.ts`) nimmt den Leser des
+  Wachtturm-Studiums auf. Ein Abschnitt aus dem Altbestand ohne gespeicherte
+  Art wird an seiner Überschrift erkannt (`ART_IM_ALTBESTAND`); dass das mit
+  `ART_JE_LABEL` im Client gleich entscheidet, prüft `edge-parity.test.ts`.
+- **Leitet der Vorsitzende das Studium selbst** (von Hand eingetragen, oder er
+  ist der feste Leiter), liest ein anderer. Die eine Stelle dafür ist
+  `folgtDemVorsitzIn` (`planning.ts`): Automatik, Zuteilen-Blatt („heute schon
+  dran" und Vorschlag), Bedarf und Auswertung fragen sie. Im ersten Entwurf
+  blieb der Platz offen, und den Sonderfall kannten nur Automatik und
+  Vorschlag (aus `/simplify`).
+- Auswertung: Das Lesen des Vorsitzenden zählt nicht eigens — auch für die
+  Wochen davor; liest ein anderer oder leitet er selbst, zählt es.
+- Kein Ausrollen: Die Functions nutzen `folgtDemVorsitz` nicht, nur
+  `vortragDesVorsitzenden`, und das entscheidet wie vorher.
+- Handbuch `planer.md` an drei Stellen. Mutationskatalog: drei Anker
+  nachgezogen (sie hätten `npm test` in der CI rot gemacht), drei Einträge neu.
 
 ## Was bewusst offen bleibt
 
@@ -7892,16 +7914,15 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 22./23. August ☑☑☑☑☑☑☑☑☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
-10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☐☐
+10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☐☑
 
-**128 der 131 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind drei:**
+**129 der 131 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind zwei:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
 | **T130** | Den Reiter „Trolleys" sieht nur, wer das Trolley-Recht hat | ☐ aufgenommen am 18. Oktober; zu klären: Admin und Planer ohne Recht, Leserecht in der Datenbank |
-| **T131** | Am Wochenende liest der Vorsitzende den Wachtturm | ☐ aufgenommen am 18. Oktober; zu klären: fest oder als Einstellung der Versammlung |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
@@ -8329,13 +8350,12 @@ braucht den Betreiber oder ein Gerät.
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
 | **Rest aus T128** | Umbruch bei großer Schrift | T128 ist erledigt (19. Oktober). Vorher wie nachher bleiben: die Wahl der letzten Erinnerung bei 320 px (pl), Datumsspannen außerhalb von `fill` (Wochenkarten, „Holen"), Programmtexte, die nach der Sprache der App statt der Versammlung trennen, Hinweise in der Karte „Holen" bei Stufe 1,3/1,45 und Namen der Dienste im Programm bei 768 px — Einzelheiten unter T128 |
 | **T130** | Reiter „Trolleys" nur mit Trolley-Recht | aufgenommen am 18. Oktober abends, noch nicht begonnen; die offenen Fragen stehen in T130 |
-| **T131** | Der Leser folgt am Wochenende dem Vorsitz | aufgenommen am 18. Oktober abends, noch nicht begonnen; zu klären, ob fest oder als Einstellung der Versammlung |
 | **Zu entscheiden** | Langsames Netz beim Start | aus dem Review des Offline-Starts in der ersten Stunde (19. Oktober abends): Lassen die Daten länger als 4 s auf sich warten, steht der letzte Stand mit „Offline · Stand von …" da, und Ändern ist gesperrt, auch wenn das Netz nur langsam ist. Kommen sie danach, legt das Blatt beim Öffnen eine seither neue Zuteilung nicht vor (nach über einer Stunde ebenso seit `30a5a80d`). Denkbar: ein eigener Hinweis statt „Offline", und das Blatt nach dem ersten frischen Laden noch einmal prüfen |
 | **Bewusst offen** | `sprache-fehlt` beim Wochen-Import | zählt weiter als Ende des Kalenders. Strenger gäbe es im Alltag Fehlalarme; betroffen wäre nur eine anderssprachige Versammlung mit Geschichte (Review vom 18. Oktober, `42dff943`) |
 | **Zu entscheiden** | `auth.sessions` aufräumen | IP-Adresse und Browserkennung je Gerät bleiben ohne Frist, solange die Anmeldung gilt. Möglich wäre, Sitzungen nach einem Jahr ohne Nutzung zu löschen; das Gerät bräuchte danach einen neuen Link (bei T125 unter „Später zu entscheiden") |
 
-Am 19. Oktober spät herausgenommen: **Phase 7** (T42, der Rest) — erledigt,
-siehe T42.
+Am 19. Oktober spät herausgenommen: **Phase 7** (T42, der Rest) und **T131**
+(der Leser folgt am Wochenende dem Vorsitz) — erledigt, siehe dort.
 
 Am 19. Oktober in die Tabelle aufgenommen: die letzten drei Zeilen. Die
 unteren beiden standen bis dahin nur in einer Commit-Nachricht (`42dff943`)

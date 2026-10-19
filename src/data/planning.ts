@@ -827,6 +827,26 @@ function* wtLeiterPlaetze(meeting: Meeting): Generator<SlotAssignment> {
 }
 
 /**
+ * **Folgt dieser Platz dem Vorsitz — in dieser Zusammenkunft?** Wie
+ * `folgtDemVorsitz`, nur liest der Vorsitzende nicht, wenn er das
+ * Wachtturm-Studium selbst leitet (T131; von Hand so eingetragen, oder er ist
+ * der feste Leiter) — niemand leitet und liest zugleich. Dann ist der Leser ein
+ * Platz wie jeder andere: Schritt 2 besetzt ihn, der Bedarf zählt ihn, das
+ * Zuteilen-Blatt schlägt vor wie sonst.
+ *
+ * Die eine Stelle für alle, die die Zusammenkunft kennen — Automatik, Blatt,
+ * `bedarf`, Auswertung. Im ersten Entwurf (19.10.2026) stand der Sonderfall
+ * nur bei Automatik und Vorschlag; Bedarf und „heute schon dran" kannten ihn
+ * nicht.
+ */
+export function folgtDemVorsitzIn(meeting: Meeting, section: Section, slot: SlotAssignment | undefined): boolean {
+  if (!folgtDemVorsitz(section, slot)) return false
+  if (!istArt(section, 'wtStudium')) return true
+  const vorsitz = vorsitzPlatz(meeting)
+  return !vorsitz?.name || ![...wtLeiterPlaetze(meeting)].some((leiter) => dieselbePerson(leiter, vorsitz))
+}
+
+/**
  * **Wer das Wachtturm-Studium leitet, wenn es nach den festen Rollen geht**
  * (Personen › Aufgabenbereiche › Feste Rollen): der feste Leiter, sonst sein
  * Vertreter — jeder nur, wenn `frei` ihn lässt. Niemand, wenn es keiner von
@@ -874,7 +894,7 @@ function programmpunkteBesetzen(meeting: Meeting, w: Waehler, persons: Person[])
   let unfilled = 0
   for (const { slot, section, item, aux } of programmPlaetze(meeting)) {
     if (slot.name || isGuestRole(slot.rolle)) continue
-    if (folgtDemVorsitz(section, slot) || istWtLeiter(section, slot)) continue
+    if (folgtDemVorsitzIn(meeting, section, slot) || istWtLeiter(section, slot)) continue
     // Schülerteile (gold): Geschlecht/Partner/Verteilung berücksichtigen.
     const person = w.pick('part', slot.bereichsKey, schuelerteilOpts(item, slot, aux, persons))
     if (person) w.vergeben('part', person, slot)
@@ -896,12 +916,12 @@ function ratgeberBesetzen(meeting: Meeting, w: Waehler): number {
   return 0
 }
 
-/** Folgt der ausgewählte Platz dem Vorsitz (`folgtDemVorsitz`)? */
+/** Folgt der ausgewählte Platz dem Vorsitz (`folgtDemVorsitzIn`)? */
 function folgtAuswahlDemVorsitz(meeting: Meeting, sel: SlotSelection | undefined): boolean {
   if (sel?.kind !== 'part') return false
   const section = meeting.sections[sel.si]
   const item = section?.items[sel.ii]
-  return Boolean(section && item && !isSong(item) && folgtDemVorsitz(section, slotsOf(item, sel.aux === true)[sel.ni]))
+  return Boolean(section && item && !isSong(item) && folgtDemVorsitzIn(meeting, section, slotsOf(item, sel.aux === true)[sel.ni]))
 }
 
 /** Der Platz des Vorsitzes in der Eröffnung — `undefined`, wo es keinen gibt. */
@@ -911,11 +931,12 @@ export function vorsitzPlatz(meeting: Meeting): SlotAssignment | undefined {
 }
 
 /**
- * 4) Der Vorsitz betet zu Beginn (Standard, von Hand änderbar) und hält, wo
- *    das Arbeitsheft es so nennt, den „Vortrag des Vorsitzenden" — die
- *    einzigen erlaubten Doppel-Aufgaben. Gekoppelt wird nur, was noch offen ist.
+ * 4) Der Vorsitz betet zu Beginn (Standard, von Hand änderbar), liest am
+ *    Wochenende den Wachtturm (T131) und hält, wo das Arbeitsheft es so nennt,
+ *    den „Vortrag des Vorsitzenden" — die einzigen erlaubten Doppel-Aufgaben.
+ *    Gekoppelt wird nur, was noch offen ist.
  *
- * Welche Plätze das sind, sagt `folgtDemVorsitz` — geteilt mit `bedarf`, dem
+ * Welche Plätze das sind, sagt `folgtDemVorsitzIn` — geteilt mit `bedarf`, dem
  * Angebot freier Plätze und `assignmentsInMeeting`. Schritt 2 wählt für sie
  * niemanden: Die gemeinsame Sperrliste setzte dort sonst einen **anderen**
  * Bruder hin, als hielte ein zweiter Vorsitzender den Vortrag (Arbeitsheft ab
@@ -930,7 +951,7 @@ function anVorsitzKoppeln(meeting: Meeting, w: Waehler, persons: Person[]): void
   // gekoppelte Platz trotzdem die Id der Person dahinter (16.10.2026).
   const pid = vorsitzSlot.pid ?? vorsitz?.id
   for (const { slot, section } of programmPlaetze(meeting)) {
-    if (slot === vorsitzSlot || slot.name || !folgtDemVorsitz(section, slot)) continue
+    if (slot === vorsitzSlot || slot.name || !folgtDemVorsitzIn(meeting, section, slot)) continue
     slot.name = vorsitzSlot.name
     if (pid) slot.pid = pid // dieselbe Person
     w.mitzaehlen(vorsitz)
@@ -1042,10 +1063,11 @@ export function autoAssignMeeting(
  *
  * Leer, wo die Automatik nicht wählt — Gastredner und Kreisaufseher, die
  * Reinigung (sie rotiert über die Gruppen), eine ausgefallene Zusammenkunft.
- * Was dem Vorsitz folgt (Anfangsgebet, Vortrag des Vorsitzenden,
- * `folgtDemVorsitz`), bekommt der Vorsitzende, wie in Schritt 4 — leer nur,
- * solange der Vorsitz leer ist. Wer in dieser Zusammenkunft schon eingeteilt
- * ist, auch auf diesem Platz, steht nicht darin: Gefragt ist, wer käme.
+ * Was dem Vorsitz folgt (Anfangsgebet, am Wochenende das Lesen, Vortrag des
+ * Vorsitzenden, `folgtDemVorsitzIn`), bekommt der Vorsitzende, wie in
+ * Schritt 4 — leer nur, solange der Vorsitz leer ist. Wer in dieser
+ * Zusammenkunft schon eingeteilt ist, auch auf diesem Platz, steht nicht
+ * darin: Gefragt ist, wer käme.
  */
 export function rangfolgeFuer(
   weeks: Week[],
@@ -1069,7 +1091,7 @@ export function rangfolgeFuer(
   if (!section || !item || isSong(item)) return []
   const slot = slotsOf(item, sel.aux === true)[sel.ni]
   if (!slot || isGuestRole(slot.rolle)) return []
-  if (folgtDemVorsitz(section, slot)) {
+  if (folgtDemVorsitzIn(meeting, section, slot)) {
     // Was dem Vorsitz folgt, schlägt die App dem Vorsitzenden vor (16.10.2026) —
     // bis dahin schlug sie niemanden vor und listete ihn als „heute schon dran".
     const vorsitz = vorsitzPlatz(meeting)

@@ -294,8 +294,10 @@ Blatt:
 
 Die Automatik wählt bevorzugt Personen mit der **geringsten Auslastung**, lässt
 Abwesende aus und vergibt niemanden doppelt am selben Tag. Ausnahmen: Der
-Vorsitz spricht das Anfangsgebet und hält den **Vortrag des Vorsitzenden**,
-wo das Arbeitsheft einen nennt – beide Plätze folgen ihm (von Hand änderbar).
+Vorsitz spricht das Anfangsgebet, liest am Wochenende den **Wachtturm** und hält
+den **Vortrag des Vorsitzenden**, wo das Arbeitsheft einen nennt – diese Plätze
+folgen ihm (von Hand änderbar). Leitet er das Wachtturm-Studium selbst, liest
+ein anderer – den wählt die Automatik wie für jeden Platz.
 Und den Leiter des Wachtturm-Studiums bestimmen **feste Rollen**, wenn dafür
 welche vergeben sind – meist steht er schon seit dem Holen in der Woche (siehe
 [Aufgabenbereiche](#aufgabenbereiche)). Externe Redner
@@ -705,7 +707,8 @@ nicht.
   Versammlung. Namen ohne Person zählen nicht, die Reinigung (sie geht an
   Gruppen) auch nicht.
 - **Feste Rollen** zählen nicht: der feste Leiter des Wachtturm-Studiums und
-  was dem Vorsitz folgt, etwa das Anfangsgebet des Vorsitzenden.
+  was dem Vorsitz folgt, etwa das Anfangsgebet des Vorsitzenden und am
+  Wochenende das Lesen des Wachtturms.
 - **Erwartet** ist, was auf eine Person käme, wenn jeder Platz gleich auf alle
   verteilt wäre, die ihn in seiner Zusammenkunft hätten haben können: die den
   Bereich haben und da waren. Wer in einer Zusammenkunft fehlte, von dem wird
@@ -799,7 +802,7 @@ die Hilfsdienste oft nur wenige Monate zurück.
   an den geleiteten. Gezählt wird jede Absage, auch wenn der Platz danach neu
   besetzt wurde – nach denselben Regeln wie die Zuteilungen: Eine Absage des
   öffentlichen Vortrags oder des festen Studienleiters zählt nicht, und wer den
-  Vorsitz absagt, dem zählt das Anfangsgebet nicht als zweite Absage. Nimmt
+  Vorsitz absagt, dem zählen Anfangsgebet und Lesen nicht als zweite Absage. Nimmt
   jemand seine Absage zurück (**Doch bestätigen**), zählt sie nicht mehr. Eine
   Absage auf einem Platz ohne Bereich – etwa einem, den es im Plan nicht mehr
   gibt – zählt nur bei der Person, nicht hier und nicht in der Kachel. Hat

@@ -16,9 +16,11 @@
  *    Redner (`isSpeakerRole`) — Betreiber 17.10.2026: „man hat so selten einen
  *    Vortrag in der eigenen Versammlung". Er trägt `vortrag` wie der Vortrag
  *    unter „Schätze"; gezählt, stünde er dort mit.
- *  - **Was dem Vorsitz folgt** (Anfangsgebet, Vortrag des Vorsitzenden,
- *    `folgtDemVorsitz`), zählt nicht, solange es der Vorsitzende selbst hat: Es
- *    kam mit dem Vorsitz. Spricht ein anderer das Anfangsgebet, zählt es.
+ *  - **Was dem Vorsitz folgt** (Anfangsgebet, am Wochenende das Lesen des
+ *    Wachtturms, Vortrag des Vorsitzenden, `folgtDemVorsitzIn`), zählt nicht,
+ *    solange es der Vorsitzende selbst hat: Es kam mit dem Vorsitz. Spricht ein
+ *    anderer das Anfangsgebet oder liest ein anderer, zählt es — ebenso das
+ *    Lesen des Vorsitzenden, der das Studium selbst leitet.
  *  - **Der feste Wachtturm-Studium-Leiter** zählt nicht, solange die
  *    Versammlung einen hat (`wtLeiterZuerst`): Der Platz rotiert nicht.
  *  - **Absagen zählen nach derselben Regel** (`zaehltDerPlatz`): Eine Absage
@@ -50,12 +52,11 @@
  */
 
 import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
-import { folgtDemVorsitz } from '../../supabase/functions/_shared/planung.ts'
 import { istAbwesend, type AbsenceSet } from './absence'
 import { idAufloeser, isQualified, isSpeakerRole, istArt, istAusgefallen, MEETING_TABS } from './helpers'
 import { montagVon, tagNach, wochenZwischen } from './meeting-dates'
 import { allePlaetze, platzKey, platzMitZusage, type Platz } from './plaetze'
-import { bereichVon, vorsitzPlatz } from './planning'
+import { bereichVon, folgtDemVorsitzIn, vorsitzPlatz } from './planning'
 import type { Absage, FsInstance, Group, MeetingKey, Person, Service, Week } from './types'
 
 /** Die Zeiträume zur Wahl, in Monaten — und wie viele Wochen jeder umfasst. */
@@ -323,7 +324,7 @@ export function grundlage(eingabe: {
         continue
       }
       const bereich = bereichVon(platz) ?? null
-      const folgt = platz.art === 'programm' && folgtDemVorsitz(platz.section, platz.slot)
+      const folgt = platz.art === 'programm' && folgtDemVorsitzIn(meeting, platz.section, platz.slot)
       platzJeSchluessel.set(key, { bereich, vorsitz: folgt ? vorsitz : null })
       if (!platzMitZusage(platz)) continue
       const pid = wer(platz.slot)

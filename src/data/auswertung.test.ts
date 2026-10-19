@@ -165,6 +165,24 @@ describe('Was zählt', () => {
     expect(e.filter((x) => x.pid === 'beter').map((x) => x.bereich)).toEqual(['gebet'])
   })
 
+  it('am Wochenende kam das Lesen des Vorsitzenden mit dem Vorsitz — leitet er das Studium selbst, zählt es (T131)', () => {
+    const vorsitzWe = person('vorsitzwe', ['vorsitzWe', 'leser', 'studium'])
+    const leser = person('leser', ['leser'])
+    const a = woche(1)
+    setze(a.we, 'vorsitzWe', vorsitzWe)
+    setze(a.we, 'leser', vorsitzWe) // liest, folgt dem Vorsitz
+    const b = woche(2)
+    setze(b.we, 'vorsitzWe', vorsitzWe)
+    setze(b.we, 'leser', leser) // ein anderer liest
+    const c = woche(3)
+    setze(c.we, 'vorsitzWe', vorsitzWe)
+    wtLeiter(c, vorsitzWe) // leitet selbst …
+    setze(c.we, 'leser', vorsitzWe) // … und liest von Hand auch: eine eigene Aufgabe
+    const e = g([c, b, a], [vorsitzWe, leser]).einteilungen
+    expect(e.filter((x) => x.pid === 'vorsitzwe').map((x) => x.bereich).sort()).toEqual(['leser', 'studium', 'vorsitzWe', 'vorsitzWe', 'vorsitzWe'])
+    expect(e.filter((x) => x.pid === 'leser').map((x) => x.bereich)).toEqual(['leser'])
+  })
+
   it('der feste Wachtturm-Studium-Leiter zählt nicht — ohne festen Leiter rotiert der Platz und zählt', () => {
     const leiter = person('leiter', ['studium'])
     const w = woche(1)

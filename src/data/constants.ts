@@ -172,8 +172,12 @@ export type SectionKind =
   | 'abschluss'
 
 /**
- * Die **einzige** Stelle, an der ein Abschnittsname auf seine Art abgebildet
- * wird. Alles andere fragt nach der Art, nicht nach dem Namen.
+ * Die Stelle im Client, an der ein Abschnittsname auf seine Art abgebildet
+ * wird. Alles andere fragt nach der Art, nicht nach dem Namen. Die Edge
+ * Functions können `src` nicht einbinden: Die beiden Namen, nach denen ihre
+ * Regeln fragen, stehen deshalb in `_shared/planung.ts` noch einmal
+ * (`ART_IM_ALTBESTAND`) — dass beide gleich entscheiden, prüft
+ * `edge-parity.test.ts`.
  */
 const ART_JE_LABEL: Record<string, SectionKind> = {
   [LABEL_EROEFFNUNG]: 'eroeffnung',

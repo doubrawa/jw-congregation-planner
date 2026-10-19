@@ -1,6 +1,6 @@
 import { allePlaetze } from './plaetze'
 import { isQualified, isSpeakerRole, serviceQualKey } from './helpers'
-import { folgtDemVorsitz } from '../../supabase/functions/_shared/planung.ts'
+import { folgtDemVorsitzIn } from './planning'
 import { istAbwesend, type AbsenceSet } from './absence'
 import type { MeetingKey, Meeting, Person, Service } from './types'
 
@@ -71,11 +71,13 @@ export interface Engpass {
  * ist sehr wohl eine **offene Zuteilung** — der Planer muss den Namen
  * eintragen. Er ist nur kein Engpass der Versammlung.
  *
- * **Die Plätze, die dem Vorsitz folgen, auch nicht** (`folgtDemVorsitz`, seit
- * dem 16.10.2026): Anfangsgebet und „Vortrag des Vorsitzenden" übernimmt der
- * Vorsitzende selbst, sie brauchen niemanden dazu. Bis dahin zählte der Vortrag
- * als zweiter Bedarf „Vorsitz" — und wo nur einer den Vorsitz kann, stand jede
- * Woche „nicht besetzbar: 1".
+ * **Die Plätze, die dem Vorsitz folgen, auch nicht** (`folgtDemVorsitzIn`, seit
+ * dem 16.10.2026): Anfangsgebet, „Vortrag des Vorsitzenden" und am Wochenende
+ * das Lesen des Wachtturms (T131) übernimmt der Vorsitzende selbst, sie
+ * brauchen niemanden dazu. Bis dahin zählte der Vortrag als zweiter Bedarf
+ * „Vorsitz" — und wo nur einer den Vorsitz kann, stand jede Woche „nicht
+ * besetzbar: 1". Leitet der Vorsitzende das Studium selbst, liest ein anderer —
+ * dann zählt der Leser wie jeder Platz.
  */
 export function bedarfJeBereich(meeting: Meeting, services: readonly Service[]): Map<string, number> {
   const out = new Map<string, number>()
@@ -94,7 +96,7 @@ export function bedarfJeBereich(meeting: Meeting, services: readonly Service[]):
       continue
     }
     if (isSpeakerRole(platz.slot.rolle)) continue
-    if (platz.art === 'programm' && folgtDemVorsitz(platz.section, platz.slot)) continue
+    if (platz.art === 'programm' && folgtDemVorsitzIn(meeting, platz.section, platz.slot)) continue
     zaehl(platz.slot.bereichsKey)
   }
   return out

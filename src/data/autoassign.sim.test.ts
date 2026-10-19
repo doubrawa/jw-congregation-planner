@@ -239,19 +239,28 @@ describe('Auto-Zuteilung — Simulation (~100 Personen, 12 Wochen)', () => {
     }
   })
 
-  it('einzige Doppel-Aufgabe ist Vorsitz + Anfangsgebet', () => {
+  it('mehrfach dran ist nur der Vorsitz — mit Anfangsgebet, am Wochenende auch als Leser (T131)', () => {
     for (const week of weeks) {
-      for (const meeting of [week.mid, week.we]) {
+      for (const [meeting, plaetze] of [[week.mid, 2], [week.we, 3]] as const) {
         const counts = new Map<string, number>()
         for (const name of partNames(meeting)) counts.set(name, (counts.get(name) ?? 0) + 1)
         const vorsitz = openingSlot(meeting, 'Vorsitz')
         for (const [name, count] of counts) {
           if (count > 1) {
-            expect(name).toBe(vorsitz) // nur die Vorsitz-Person darf doppelt sein
-            expect(count).toBe(2)
+            expect(name).toBe(vorsitz) // nur die Vorsitz-Person darf mehrfach dran sein
+            expect(count).toBe(plaetze)
           }
         }
       }
+    }
+  })
+
+  it('am Wochenende liest der Vorsitzende den Wachtturm (T131)', () => {
+    for (const week of weeks) {
+      const vorsitz = openingSlot(week.we, 'Vorsitz')
+      const sec = week.we.sections.find((s) => s.label === 'WACHTTURM-STUDIUM')
+      const leser = (sec?.items ?? []).flatMap((i) => (isSong(i) ? [] : i.names)).find((s) => s.rolle === 'Leser')
+      if (vorsitz && leser) expect(leser.name).toBe(vorsitz)
     }
   })
 

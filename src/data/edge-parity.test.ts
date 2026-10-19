@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   deutschesDatum as edgeDeutschesDatum,
+  folgtDemVorsitz as edgeFolgtDemVorsitz,
   heuteUtc as edgeHeuteUtc,
   istAusgefallenFuer as edgeAusgefallen,
   personDisplayName as edgeName,
@@ -22,6 +23,7 @@ import {
   tagebuchSchluessel as edgeTagebuch,
 } from '../../supabase/functions/_shared/zuteilungen.ts'
 import { STANDARD_ERINNERUNGEN } from './vorgaben'
+import * as konstanten from './constants'
 import { displayName, istAusgefallen, rolleMitHerkunft, zuteilungsLabel } from './helpers'
 import { deutschesDatum, meetingDateText, meetingOffset, meetingTime, versatzAbMontag } from './meeting-dates'
 import { isGuestRole } from './helpers'
@@ -68,6 +70,34 @@ describe('Name einer Person', () => {
 
   it.each(faelle)('„%s %s" gleich auf beiden Seiten', (fn, ln) => {
     expect(edgeName(fn, ln)).toBe(displayName(person(fn, ln)))
+  })
+})
+
+/**
+ * **Ein Abschnitt aus dem Altbestand — ohne gespeicherte Art.** Die Regeln in
+ * `_shared/planung.ts` erkennen ihn an der Überschrift (`ART_IM_ALTBESTAND`),
+ * der Client an `ART_JE_LABEL` (`constants.ts`). Die Functions können `src`
+ * nicht einbinden, deshalb stehen die Namen dort ein zweites Mal; hier steht,
+ * dass beide gleich entscheiden — für jede kanonische Überschrift und jede
+ * Rolle, ohne Art wie mit der Art des Clients. Fehlte dort der Wachtturm, läse
+ * im Altbestand nicht der Vorsitzende (T131).
+ */
+describe('Was dem Vorsitz folgt — im Altbestand an der Überschrift erkannt', () => {
+  const labels = Object.entries(konstanten)
+    .filter(([name, wert]) => name.startsWith('LABEL_') && typeof wert === 'string')
+    .map(([, wert]) => wert as string)
+
+  it('die Liste der Überschriften kommt aus `constants.ts` und kennt jede', () => {
+    expect(labels).toContain(konstanten.LABEL_EROEFFNUNG)
+    expect(labels).toContain(konstanten.LABEL_WT_STUDIUM)
+    for (const label of labels) expect(konstanten.artVonLabel(label), label).toBeDefined()
+  })
+
+  it.each(['Vorsitz', 'Gebet', 'Leser', 'Leiter'])('Rolle „%s": ohne Art wie mit der Art des Clients', (rolle) => {
+    for (const label of labels) {
+      const mitArt = edgeFolgtDemVorsitz({ label, kind: konstanten.artVonLabel(label) }, { rolle })
+      expect(edgeFolgtDemVorsitz({ label }, { rolle }), label).toBe(mitArt)
+    }
   })
 })
 

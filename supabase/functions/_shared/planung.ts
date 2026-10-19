@@ -49,28 +49,53 @@ interface AbschnittsKopf {
 }
 
 /**
- * Die Eröffnung — an ihrer gespeicherten Art, im Altbestand ohne Art an der
+ * Die kanonischen Überschriften der Abschnitte, nach denen die Regeln unten
+ * fragen — wie `ART_JE_LABEL` im Client (`constants.ts`), das die Functions
+ * nicht einbinden können; den Gleichlauf prüft `edge-parity.test.ts`.
+ */
+const ART_IM_ALTBESTAND: Record<string, string> = { 'ERÖFFNUNG': 'eroeffnung', 'WACHTTURM-STUDIUM': 'wtStudium' }
+
+/**
+ * Die Art eines Abschnitts — gespeichert, im Altbestand ohne Art an der
  * kanonischen Überschrift (wie `abschnittsArt` im Client: `kind ?? artVonLabel`).
  */
+function artVon(abschnitt: AbschnittsKopf): string | undefined {
+  return abschnitt.kind ?? ART_IM_ALTBESTAND[abschnitt.label ?? '']
+}
+
 function istEroeffnung(abschnitt: AbschnittsKopf): boolean {
-  const art = abschnitt.kind ?? (abschnitt.label === 'ERÖFFNUNG' ? 'eroeffnung' : undefined)
-  return art === 'eroeffnung'
+  return artVon(abschnitt) === 'eroeffnung'
 }
 
 /**
- * **Plätze, die dem Vorsitz folgen** — das Anfangsgebet in der Eröffnung und
- * jeder Platz „Vorsitz" außerhalb davon: der „Vortrag des Vorsitzenden"
- * (Arbeitsheft ab Januar 2027). Die Automatik setzt dort die Person des
- * Vorsitzes ein (`anVorsitzKoppeln`).
+ * **Plätze, die dem Vorsitz folgen** — das Anfangsgebet in der Eröffnung, am
+ * Wochenende der Leser des Wachtturm-Studiums und jeder Platz „Vorsitz"
+ * außerhalb der Eröffnung: der „Vortrag des Vorsitzenden" (Arbeitsheft ab
+ * Januar 2027). Die Automatik setzt dort die Person des Vorsitzes ein
+ * (`anVorsitzKoppeln`).
  *
  * Geteilt seit dem 16.10.2026. Bis dahin kannte nur die Automatik die Regel,
  * und alle anderen behandelten die Plätze wie eigene: `bedarf` zählte sie als
  * zweiten Bedarf („Vorsitz: nicht besetzbar 1"), das Zuteilen-Blatt zeigte den
  * Vorsitzenden als „heute schon Vorsitz" weiter unten, und der Vortrag des
  * Vorsitzenden wurde anderen Vorsitzenden als freier Platz angeboten.
+ *
+ * Der Leser seit dem 19.10.2026 (T131), fest für jede Versammlung — Betreiber:
+ * „ja das ist bei uns so"; in NWS las der Vorsitzende an 25 von 26
+ * Wochenenden. Der Leser im Versammlungsbibelstudium unter der Woche folgt
+ * nicht: Sein Abschnitt ist ein anderer. Leitet der Vorsitzende das Studium
+ * selbst, liest ein anderer — das sieht nur, wer die ganze Zusammenkunft kennt:
+ * Der Client fragt deshalb `folgtDemVorsitzIn` (`planning.ts`).
  */
 export function folgtDemVorsitz(abschnitt: AbschnittsKopf, slot: { rolle?: string } | undefined): boolean {
-  return istEroeffnung(abschnitt) ? slot?.rolle === 'Gebet' : slot?.rolle === 'Vorsitz'
+  switch (artVon(abschnitt)) {
+    case 'eroeffnung':
+      return slot?.rolle === 'Gebet'
+    case 'wtStudium':
+      return slot?.rolle === 'Leser'
+    default:
+      return slot?.rolle === 'Vorsitz'
+  }
 }
 
 /**

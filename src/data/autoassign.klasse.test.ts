@@ -105,13 +105,13 @@ describe('Auto-Zuteilung mit Zusätzlicher Klasse (10 Wochen)', () => {
         if (ratgeber) wo.set(ratgeber, [...(wo.get(ratgeber) ?? []), 'Ratgeber'])
         for (const [id, stellen] of wo) {
           if (stellen.length === 1) continue
-          // Die eine erlaubte Doppelung: Vorsitz + Anfangsgebet der Eröffnung.
-          const vorsitzUndGebet =
-            stellen.length === 2 &&
-            stellen.every((s) => s.includes('ERÖFFNUNG')) &&
-            stellen.some((s) => s.endsWith('Vorsitz')) &&
-            stellen.some((s) => s.endsWith('Gebet'))
-          if (!vorsitzUndGebet) doppelt.push(`W${wi}/${tab}: ${id} → ${stellen.join(' + ')}`)
+          // Die eine erlaubte Häufung: was dem Vorsitz folgt — das Anfangsgebet
+          // der Eröffnung und am Wochenende das Lesen des Wachtturms (T131).
+          // Alles im Saal; die Klasse hat weder Vorsitz noch Wachtturm.
+          const folgen = ['Saal/ERÖFFNUNG/Gebet', ...(tab === 'we' ? ['Saal/WACHTTURM-STUDIUM/Leser'] : [])]
+          const vorsitzUndWasIhmFolgt =
+            stellen[0] === 'Saal/ERÖFFNUNG/Vorsitz' && stellen.slice(1).every((s) => folgen.includes(s))
+          if (!vorsitzUndWasIhmFolgt) doppelt.push(`W${wi}/${tab}: ${id} → ${stellen.join(' + ')}`)
         }
       }
     })

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { KEINE_ABWESENHEIT } from './absence'
 import { bedarfJeBereich, engpaesse } from './bedarf'
-import { emptyQualifications, privSetzen } from './helpers'
+import { emptyQualifications, isSong, privSetzen } from './helpers'
 import { assignmentsInMeeting, autoAssignMeeting, rangfolgeFuer } from './planning'
 import { kandidaten, type KandidatenDaten } from '../planen/kandidaten'
 import { DE } from '../i18n/de'
@@ -102,6 +102,102 @@ describe('Was dem Vorsitz folgt — Anfangsgebet und Vortrag des Vorsitzenden', 
     // Nach der Rangfolge käme „vorsitz" zuerst (Name), am Vorsitz steht „zweiter".
     const w = woche(dienstag(ZWEITER))
     expect(rangfolgeFuer([w], VORTRAG, [VORSITZ, ZWEITER], [], [], KEINE_ABWESENHEIT).map((p) => p.id)).toEqual(['zweiter'])
+  })
+})
+
+/**
+ * **Am Wochenende liest der Vorsitzende den Wachtturm** (T131, Betreiber am
+ * 18.10.2026: „ja das ist bei uns so" — in NWS las er an 25 von 26
+ * Wochenenden). Fest für jede Versammlung, wie das Anfangsgebet: Die
+ * Automatik setzt ihn ein, der Bedarf zählt den Leser nicht eigens, das
+ * Zuteilen-Blatt schlägt ihn vor. Von Hand bleibt jeder andere Leser möglich.
+ */
+describe('Am Wochenende liest der Vorsitzende den Wachtturm (T131)', () => {
+  // Wer den Vorsitz hat, darf auch lesen — sonst böte ihn das Blatt nicht an.
+  const VORSITZ_WE = person('vorsitzwe', false, 'vorsitzWe', 'leser')
+  const LEITER = person('leiter', false, 'studium')
+  const LESER = person('leser', false, 'leser')
+
+  /** Ein Sonntag nach der Vorlage des Imports: Eröffnung, Wachtturm-Studium. */
+  function sonntag(vorsitz?: Person, leiter?: Person): Meeting {
+    const wer = (p?: Person) => (p ? { name: `${p.fn} ${p.ln}`, pid: p.id } : { name: '' })
+    return {
+      date: '', end: '', helpers: {},
+      sections: [
+        { label: 'ERÖFFNUNG', kind: 'eroeffnung', farbe: 'neutral', items: [
+          { iid: 'e1', title: 'Lied · Gebet', names: [
+            { ...wer(vorsitz), rolle: 'Vorsitz', bereichsKey: 'vorsitzWe' },
+            { name: '', rolle: 'Gebet', bereichsKey: 'gebet' },
+          ] },
+        ] },
+        { label: 'WACHTTURM-STUDIUM', kind: 'wtStudium', farbe: 'wein', items: [
+          { iid: 'w1', title: 'Platzhalter-Studienartikel', names: [
+            { ...wer(leiter), rolle: 'Leiter', bereichsKey: 'studium' },
+            { name: '', rolle: 'Leser', bereichsKey: 'leser' },
+          ] },
+        ] },
+      ],
+    }
+  }
+  const LESER_PLATZ: PartSlotSelection = { ...platz(1, 0, 1, 'leser'), tab: 'we' }
+  const leserIn = (m: Meeting) => m.sections[1]!.items[0]!
+
+  it('die Automatik setzt den Vorsitzenden als Leser ein — nicht den, der sonst lesen dürfte', () => {
+    const { weeks } = autoAssignMeeting([woche(leer(), sonntag())], 0, 'we', [VORSITZ_WE, LEITER, LESER], [])
+    const we = weeks[0]!.we
+    const leser = leserIn(we)
+    if (isSong(leser)) throw new Error('kein Programmpunkt')
+    expect(we.sections[0]!.items[0]).toMatchObject({ names: [{ pid: 'vorsitzwe' }, { pid: 'vorsitzwe' }] })
+    expect(leser.names[1]).toMatchObject({ pid: 'vorsitzwe', name: 'vorsitzwe Test' })
+  })
+
+  it('der Bedarf zählt den Leser nicht eigens — und das Zuteilen-Blatt sagt nicht „heute schon dran"', () => {
+    const we = sonntag(VORSITZ_WE, LEITER)
+    expect(bedarfJeBereich(we, []).has('leser')).toBe(false)
+    expect(assignmentsInMeeting(we, VORSITZ_WE, [], LESER_PLATZ)).toEqual([])
+  })
+
+  it('das Zuteilen-Blatt schlägt den Vorsitzenden vor — einen anderen Leser kann der Planer trotzdem wählen', () => {
+    const kandidatenListe = liste([woche(leer(), sonntag(VORSITZ_WE, LEITER))], [LESER, VORSITZ_WE], LESER_PLATZ)
+    expect(kandidatenListe[0]).toMatchObject({ key: 'vorsitzwe', vorschlag: true })
+    expect(kandidatenListe.map((c) => c.key)).toContain('leser')
+  })
+
+  it('leitet der Vorsitzende das Studium selbst, liest ein anderer — Automatik, Bedarf und Blatt sehen es gleich', () => {
+    // Von Hand eingetragen: Vorsitz und Leiter sind derselbe Bruder.
+    const we = sonntag(VORSITZ_WE, VORSITZ_WE)
+    const w = woche(leer(), we)
+    const { weeks, unfilled } = autoAssignMeeting([w], 0, 'we', [VORSITZ_WE, LESER], [])
+    const leser = leserIn(weeks[0]!.we)
+    if (isSong(leser)) throw new Error('kein Programmpunkt')
+    expect(leser.names[1]).toMatchObject({ pid: 'leser' })
+    expect(unfilled).toBe(0)
+    // Der Bedarf zählt den Leser wie jeden Platz …
+    expect(bedarfJeBereich(we, []).get('leser')).toBe(1)
+    // … das Blatt schlägt vor wie sonst, nicht den Vorsitzenden …
+    expect(rangfolgeFuer([w], LESER_PLATZ, [VORSITZ_WE, LESER], [], [], KEINE_ABWESENHEIT).map((p) => p.id)).toEqual(['leser'])
+    // … und bei ihm stehen Vorsitz und Leitung als „heute schon dran".
+    expect(assignmentsInMeeting(we, VORSITZ_WE, [], LESER_PLATZ)).toHaveLength(2)
+  })
+
+  it('Gegenprobe: Der Leser im Versammlungsbibelstudium unter der Woche folgt dem Vorsitz nicht', () => {
+    const mid: Meeting = {
+      ...dienstag(VORSITZ),
+      sections: [
+        ...dienstag(VORSITZ).sections,
+        { label: 'UNSER LEBEN ALS CHRIST', kind: 'lac', farbe: 'wein', items: [
+          { iid: 'l1', title: 'Versammlungsbibelstudium', names: [
+            { name: '', rolle: 'Leiter', bereichsKey: 'studium' },
+            { name: '', rolle: 'Leser', bereichsKey: 'leser' },
+          ] },
+        ] },
+      ],
+    }
+    expect(bedarfJeBereich(mid, []).get('leser')).toBe(1)
+    const { weeks } = autoAssignMeeting([woche(mid)], 0, 'mid', [VORSITZ, LESER], [])
+    const studium = weeks[0]!.mid.sections[2]!.items[0]!
+    if (isSong(studium)) throw new Error('kein Programmpunkt')
+    expect(studium.names[1]).toMatchObject({ pid: 'leser' })
   })
 })
 
