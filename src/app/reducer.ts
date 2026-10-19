@@ -1705,6 +1705,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         dataStatus: 'ready',
         dataEmpty: p.empty,
         staleAt: action.staleAt ?? null,
+        staleLangsam: action.staleAt !== undefined && action.langsam === true,
         persons: p.persons,
         services: p.services,
         groups: p.groups,
@@ -1764,7 +1765,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, toast: null }
     case 'nachladenGescheitert':
       // Der Bestand bleibt, wie er ist — er ist frischer als jede Momentaufnahme.
-      return { ...state, toast: toastKey(state, 'stFehler') }
+      // Stand der letzte Stand als „langsam" da, kommt nun nichts mehr: „Offline".
+      return { ...state, staleLangsam: false, toast: toastKey(state, 'stFehler') }
     case 'neuerTag':
       // Wird oben im `reducer` abgeleitet; hier gibt es nichts zu ändern.
       return state

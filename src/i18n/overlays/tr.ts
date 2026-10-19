@@ -504,6 +504,7 @@ export default {
   "toastNameNichtGeaendert": "Ad değiştirilmedi: {name} zaten var",
   "offlineBanner": "Çevrimdışı · {m} tarihli veriler",
   "offlineBannerHint": "Salt okunur — değişiklik yapılamaz",
+  "offlineLangsam": "Bağlantı yavaş · {m} tarihli veriler",
   "offlineReadOnly": "Çevrimdışı — değişiklikler ancak çevrimiçi olunca yapılabilir",
   "offlineRetry": "Yeniden yükle",
   "versammlungTag": "{tag} ibadeti",

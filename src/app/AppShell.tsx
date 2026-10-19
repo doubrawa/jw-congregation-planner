@@ -396,11 +396,16 @@ function Meldung({ toast }: { toast: Toast }) {
  * Hinweis auf den Offline-Stand: die Daten stammen aus der Momentaufnahme
  * (lib/snapshot.ts), sind also möglicherweise veraltet und nicht änderbar.
  * „Neu laden" holt sie, sobald wieder Netz da ist.
+ *
+ * Steht der Stand nur, weil die Daten bei bestehendem Netz auf sich warten
+ * lassen (`staleLangsam`), heißt es „Verbindung langsam" statt „Offline"
+ * (19.10.2026) — meldet das Gerät inzwischen kein Netz mehr, wieder „Offline".
  */
 function OfflineBanner() {
   const { state } = useApp()
   const { t } = useT()
   if (state.staleAt === null) return null
+  const langsam = state.staleLangsam && navigator.onLine !== false
 
   const when = new Date(state.staleAt)
   const opts: Intl.DateTimeFormatOptions = {
@@ -431,13 +436,18 @@ function OfflineBanner() {
   return (
     <div className="offline-banner" role="status">
       <Zeichen name="wolke" />
-      <div className="offline-banner-text">
-        <strong>{fill(t.offlineBanner, { m: stamp })}</strong>
-        <div className="offline-banner-hint">{t.offlineBannerHint}</div>
+      {/* Text und Knopf in einem umbrechenden Behälter: Bei großer Schrift
+          rückt „Neu laden" unter den Text, statt ihn in eine Spalte von drei
+          Wörtern zu drücken (19.10.2026, mit „Verbindung langsam"). */}
+      <div className="offline-banner-inhalt">
+        <div className="offline-banner-text">
+          <strong>{fill(langsam ? t.offlineLangsam : t.offlineBanner, { m: stamp })}</strong>
+          <div className="offline-banner-hint">{t.offlineBannerHint}</div>
+        </div>
+        <button type="button" className="knopf-pille" onClick={() => location.reload()}>
+          {t.offlineRetry}
+        </button>
       </div>
-      <button type="button" className="knopf-pille" onClick={() => location.reload()}>
-        {t.offlineRetry}
-      </button>
     </div>
   )
 }

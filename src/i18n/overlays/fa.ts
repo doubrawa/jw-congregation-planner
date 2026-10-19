@@ -503,6 +503,7 @@ export default {
   "toastNameNichtGeaendert": "نام تغییر نکرد: {name} از قبل وجود دارد",
   "offlineBanner": "آفلاین · وضعیت {m}",
   "offlineBannerHint": "فقط خواندنی — امکان تغییر نیست",
+  "offlineLangsam": "اتصال کند · وضعیت {m}",
   "offlineReadOnly": "آفلاین — پس از اتصال دوباره می‌توانید تغییر دهید",
   "offlineRetry": "بارگذاری دوباره",
   "versammlungTag": "جلسهٔ {tag}",

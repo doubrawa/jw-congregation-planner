@@ -1870,6 +1870,10 @@ Sekunden. Ein Hinweisstreifen nennt den Zeitpunkt der Aufnahme:
 
 ![Offline-Stand](screenshots/offline-stand.png)
 
+Ohne Netz heißt er **„Offline"**. Hat das Gerät Netz und die Daten lassen nur
+auf sich warten, heißt er **„Verbindung langsam"** – kommen sie noch, ersetzen
+sie den Stand still; scheitert das Laden, wird daraus wieder „Offline".
+
 **Planen ist offline gesperrt.** Zuteilen, automatisch zuteilen, Personen
 bearbeiten, Einstellungen ändern und Holen funktionieren nur online. Beim
 Versuch erscheint ein kurzer Hinweis; die Schaltflächen bleiben sichtbar, damit

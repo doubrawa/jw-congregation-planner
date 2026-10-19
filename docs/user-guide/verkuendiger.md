@@ -628,6 +628,11 @@ Sekunden. Oben erscheint dann ein Hinweisstreifen mit dem Zeitpunkt:
 
 ![Offline-Stand](screenshots/offline-stand.png)
 
+Hat dein Handy kein Netz, steht dort **„Offline"**. Hat es Netz und die Daten
+lassen nur auf sich warten, steht dort **„Verbindung langsam"** – kommen sie
+doch noch, verschwindet der Streifen von selbst. Klappt es gar nicht, wird
+daraus wieder „Offline".
+
 - **Lesen geht:** Programm, Treffpunkte, deine Aufgaben und Abwesenheiten sind
   wie zuletzt geladen sichtbar.
 - **Ändern geht nicht:** Bestätigen, Abwesenheiten eintragen oder Ähnliches ist

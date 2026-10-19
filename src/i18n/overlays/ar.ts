@@ -477,6 +477,7 @@ export default {
   "toastNameNichtGeaendert": "لم يُغيَّر الاسم: {name} مستخدم بالفعل",
   "offlineBanner": "غير متصل · بيانات {m}",
   "offlineBannerHint": "للقراءة فقط — لا يمكن إجراء تغييرات",
+  "offlineLangsam": "الاتصال بطيء · بيانات {m}",
   "offlineReadOnly": "غير متصل — يمكن إجراء التغييرات عند الاتصال بالإنترنت",
   "offlineRetry": "إعادة التحميل",
   "versammlungTag": "اجتماع {tag}",

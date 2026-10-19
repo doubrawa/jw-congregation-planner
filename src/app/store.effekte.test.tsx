@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render, renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import type { AppAction } from './context'
-import type { LadeOptionen } from './hydrate'
+import type { LadeOptionen, StandOptionen } from './hydrate'
 import { DE } from '../i18n/de'
 import { APP_LANGS, isRTL } from '../i18n/langs'
 import { dict, loadOverlay } from '../i18n/ui'
@@ -48,8 +48,8 @@ const supabaseStub = {
 const loadAndHydrate = vi.fn((_dispatch: (a: AppAction) => void, _userId: string, _opts?: LadeOptionen) =>
   Promise.resolve(),
 )
-const letztenStandZeigen = vi.fn((_dispatch: (a: AppAction) => void, _userId: string): void => {})
-const momentaufnahmeZeigen = vi.fn((_dispatch: (a: AppAction) => void, _userId: string): boolean => false)
+const letztenStandZeigen = vi.fn((_dispatch: (a: AppAction) => void, _userId: string, _wie?: StandOptionen): void => {})
+const momentaufnahmeZeigen = vi.fn((_dispatch: (a: AppAction) => void, _userId: string, _wie?: StandOptionen): boolean => false)
 const konfiguriert = { wert: true }
 /** Was auth-js auf dem Gerät abgelegt hat — echt gelesen in `gespeicherte-sitzung.test.ts`. */
 const abgelegt = vi.hoisted(() => ({ wert: null as { userId: string } | null }))
@@ -68,8 +68,11 @@ vi.mock('../lib/supabase', () => ({
 }))
 vi.mock('./hydrate', () => ({
   loadAndHydrate: (...a: Parameters<typeof loadAndHydrate>) => loadAndHydrate(...a),
-  letztenStandZeigen: (dispatch: (a: AppAction) => void, userId: string) => letztenStandZeigen(dispatch, userId),
-  momentaufnahmeZeigen: (dispatch: (a: AppAction) => void, userId: string) => momentaufnahmeZeigen(dispatch, userId),
+  // Weitergereicht wird, was kam — ohne `wie` auch ohne drittes Argument.
+  letztenStandZeigen: (dispatch: (a: AppAction) => void, userId: string, ...wie: [StandOptionen?]) =>
+    letztenStandZeigen(dispatch, userId, ...wie),
+  momentaufnahmeZeigen: (dispatch: (a: AppAction) => void, userId: string, ...wie: [StandOptionen?]) =>
+    momentaufnahmeZeigen(dispatch, userId, ...wie),
 }))
 const mitLinkAnmelden = vi.fn((_token: string) => Promise.resolve<string | null>(null))
 vi.mock('../lib/anmelden', () => ({ mitLinkAnmelden: (token: string) => mitLinkAnmelden(token) }))
@@ -626,9 +629,15 @@ describe('Offline-Start', () => {
   }
 
   beforeEach(() => {
-    // Der letzte Stand, wie ihn die Momentaufnahme einspielt: nur lesend.
-    letztenStandZeigen.mockImplementation((dispatch, userId) =>
-      dispatch({ type: 'hydrate', payload: { ...geladen, userId }, staleAt: Date.now() - 7_200_000 }),
+    // Der letzte Stand, wie ihn die Momentaufnahme einspielt: nur lesend —
+    // „langsam", wenn der Wecker ihn zeigt (`hydrate.ts`).
+    letztenStandZeigen.mockImplementation((dispatch, userId, wie) =>
+      dispatch({
+        type: 'hydrate',
+        payload: { ...geladen, userId },
+        staleAt: Date.now() - 7_200_000,
+        ...(wie?.langsam ? { langsam: true as const } : {}),
+      }),
     )
   })
   afterEach(() => {
@@ -641,8 +650,8 @@ describe('Offline-Start', () => {
     haengt()
     const { result } = starte()
     await abwarten()
-    expect(letztenStandZeigen).toHaveBeenCalledWith(expect.anything(), 'u7')
-    expect(result.current.state).toMatchObject({ screen: 'start', sitzungPruefen: false, userId: 'u7' })
+    expect(letztenStandZeigen).toHaveBeenCalledWith(expect.anything(), 'u7', { langsam: false })
+    expect(result.current.state).toMatchObject({ screen: 'start', sitzungPruefen: false, userId: 'u7', staleLangsam: false })
     expect(result.current.state.staleAt).not.toBeNull()
     // Geladen wird nicht: Jede Abfrage wartete ebenfalls auf die Erneuerung.
     expect(loadAndHydrate).not.toHaveBeenCalled()
@@ -658,8 +667,9 @@ describe('Offline-Start', () => {
     expect(result.current.state.sitzungPruefen).toBe(true)
     expect(letztenStandZeigen).not.toHaveBeenCalled()
     await vergehen(1)
-    expect(letztenStandZeigen).toHaveBeenCalledWith(expect.anything(), 'u7')
-    expect(result.current.state).toMatchObject({ screen: 'start', sitzungPruefen: false })
+    // Das Gerät meldet Netz, die Antwort kann noch kommen: „Verbindung langsam".
+    expect(letztenStandZeigen).toHaveBeenCalledWith(expect.anything(), 'u7', { langsam: true })
+    expect(result.current.state).toMatchObject({ screen: 'start', sitzungPruefen: false, staleLangsam: true })
   })
 
   it('in der ersten Stunde, offline: ebenso sofort der letzte Stand — geladen wird erst mit dem Netz', async () => {
@@ -672,7 +682,7 @@ describe('Offline-Start', () => {
     const { result } = starte()
     await abwarten()
     expect(letztenStandZeigen).toHaveBeenCalledTimes(1)
-    expect(letztenStandZeigen).toHaveBeenCalledWith(expect.anything(), 'u7')
+    expect(letztenStandZeigen).toHaveBeenCalledWith(expect.anything(), 'u7', { langsam: false })
     expect(result.current.state).toMatchObject({ screen: 'start', sitzungPruefen: false, userId: 'u7' })
     expect(result.current.state.staleAt).not.toBeNull()
     expect(loadAndHydrate).not.toHaveBeenCalled()
@@ -741,8 +751,13 @@ describe('Offline-Start', () => {
     // WLAN ohne Internet, schwacher Empfang: Das Gerät meldet „online", und die
     // Abfragen hängen oder scheitern erst nach ihren Wiederholungen.
     vi.useFakeTimers()
-    momentaufnahmeZeigen.mockImplementation((dispatch, userId) => {
-      dispatch({ type: 'hydrate', payload: { ...geladen, userId }, staleAt: Date.now() - 7_200_000 })
+    momentaufnahmeZeigen.mockImplementation((dispatch, userId, wie) => {
+      dispatch({
+        type: 'hydrate',
+        payload: { ...geladen, userId },
+        staleAt: Date.now() - 7_200_000,
+        ...(wie?.langsam ? { langsam: true as const } : {}),
+      })
       return true
     })
     abgelegt.wert = KONTO
@@ -753,8 +768,8 @@ describe('Offline-Start', () => {
     expect(result.current.state.dataStatus).toBe('loading')
     expect(momentaufnahmeZeigen).not.toHaveBeenCalled()
     await vergehen(1)
-    expect(momentaufnahmeZeigen).toHaveBeenCalledWith(expect.anything(), 'u7')
-    expect(result.current.state).toMatchObject({ screen: 'start', dataStatus: 'ready', userId: 'u7' })
+    expect(momentaufnahmeZeigen).toHaveBeenCalledWith(expect.anything(), 'u7', { langsam: true })
+    expect(result.current.state).toMatchObject({ screen: 'start', dataStatus: 'ready', userId: 'u7', staleLangsam: true })
     expect(result.current.state.staleAt).not.toBeNull()
     // Das Laden läuft weiter, und was es bringt, kommt jetzt still darüber.
     expect(loadAndHydrate).toHaveBeenCalledTimes(1)
@@ -768,7 +783,7 @@ describe('Offline-Start', () => {
     datenHaengen()
     const { result } = starte()
     await vergehen(4000)
-    expect(momentaufnahmeZeigen).toHaveBeenCalledWith(expect.anything(), 'u7')
+    expect(momentaufnahmeZeigen).toHaveBeenCalledWith(expect.anything(), 'u7', { langsam: true })
     expect(letztenStandZeigen).not.toHaveBeenCalled()
     expect(result.current.state.dataStatus).toBe('loading')
   })
@@ -856,6 +871,24 @@ describe('Offline-Start', () => {
     expect(result.current.state.screen).toBe('programm')
   })
 
+  it('zeigte der Wecker den Stand als „langsam" und scheitert danach die Prüfung am Netz, heißt er wieder „Offline"', async () => {
+    // Es kommt nichts mehr — „Verbindung langsam" verspräche ein Warten, das
+    // nichts bringt (19.10.2026).
+    vi.useFakeTimers()
+    abgelegt.wert = KONTO
+    let antworten: (a: Antwort) => void = () => {}
+    getSession.mockReturnValue(new Promise((res) => { antworten = res }))
+    const { result } = starte()
+    await vergehen(4000)
+    expect(result.current.state.staleLangsam).toBe(true)
+    antworten({ data: { session: null }, error: new AuthRetryableFetchError('Failed to fetch', 0) })
+    await vergehen(1)
+    expect(result.current.state.staleLangsam).toBe(false)
+    expect(result.current.state.staleAt).not.toBeNull()
+    expect(result.current.state.toast?.text).toBe(DE.stFehler)
+    expect(letztenStandZeigen).toHaveBeenCalledTimes(1)
+  })
+
   it('scheitert der Link am Netz, bleibt es bei der Sitzung, die da war — mit ihrem letzten Stand', async () => {
     window.history.replaceState(null, '', `/#anmelden=${'T'.repeat(43)}`)
     anmeldeAdresseVergessen()
@@ -864,7 +897,7 @@ describe('Offline-Start', () => {
     getSession.mockResolvedValue({ data: { session: null }, error: new AuthRetryableFetchError('Failed to fetch', 0) })
     const { result } = starte()
     await abwarten()
-    expect(letztenStandZeigen).toHaveBeenCalledWith(expect.anything(), 'u7')
+    expect(letztenStandZeigen).toHaveBeenCalledWith(expect.anything(), 'u7', { langsam: false })
     expect(result.current.state).toMatchObject({ screen: 'start', sitzungPruefen: false })
   })
 
@@ -902,13 +935,13 @@ describe('Offline-Start', () => {
     expect(ladeweise('u7')).toBe('gar nicht')
   })
 
-  it('scheitert die Erneuerung am Netz, bevor der Wecker klingelt, steht der letzte Stand ebenso', async () => {
+  it('scheitert die Erneuerung am Netz, bevor der Wecker klingelt, steht der letzte Stand ebenso — als „Offline"', async () => {
     abgelegt.wert = KONTO
     getSession.mockResolvedValue({ data: { session: null }, error: new AuthRetryableFetchError('Failed to fetch', 0) })
     const { result } = starte()
     await abwarten()
-    expect(letztenStandZeigen).toHaveBeenCalledWith(expect.anything(), 'u7')
-    expect(result.current.state).toMatchObject({ screen: 'start', sitzungPruefen: false })
+    expect(letztenStandZeigen).toHaveBeenCalledWith(expect.anything(), 'u7', { langsam: false })
+    expect(result.current.state).toMatchObject({ screen: 'start', sitzungPruefen: false, staleLangsam: false })
   })
 
   it('ist die Sitzung wirklich weg (Token ungültig), kommt die Anmeldung — und der Wecker greift nicht mehr vor', async () => {

@@ -328,17 +328,25 @@ export function AppProvider({
     window.addEventListener('online', wiederOnline)
     // Der Vorgriff (oben), solange das Startbild steht. Bei offener Sitzung nur
     // einmal: Meldet die Prüfung danach noch einen Netzfehler, bleibt die Ansicht.
+    //
+    // `langsam`: Der Wecker hat geklingelt, das Gerät hat Netz, und die Antwort
+    // kann noch kommen — der Streifen sagt dann „Verbindung langsam" statt
+    // „Offline" (19.10.2026; bis dahin hieß jeder Vorgriff „Offline").
     const vorab = gespeicherteSitzung()
-    const vorgreifen = (): void => {
+    const vorgreifen = (langsam: boolean): void => {
       if (vorbei || !vorab) return
       if (stateRef.current.sitzungPruefen) {
         dispatch({ type: 'login' })
-        letztenStandZeigen(dispatch, vorab.userId)
+        letztenStandZeigen(dispatch, vorab.userId, { langsam })
         dispatch({ type: 'sitzungGeprueft' })
       } else if (stateRef.current.dataStatus === 'loading' && laedtFuer === vorab.userId) {
         // Die Sitzung steht, aber die Daten lassen auf sich warten: WLAN ohne
         // Internet, schwacher Empfang. Das Laden läuft weiter.
-        momentaufnahmeZeigen(dispatch, vorab.userId)
+        momentaufnahmeZeigen(dispatch, vorab.userId, { langsam })
+      } else if (!langsam && stateRef.current.staleLangsam) {
+        // Der Wecker zeigte den letzten Stand als „langsam", jetzt scheitert
+        // die Prüfung am Netz: Es kommt nichts mehr, also „Offline".
+        dispatch({ type: 'nachladenGescheitert' })
       }
     }
     let wecker: ReturnType<typeof setTimeout> | undefined
@@ -346,8 +354,8 @@ export function AppProvider({
     // nennt. Scheitert er am Netz, bleibt es bei der Sitzung, die da war, mit
     // ihrem letzten Stand (unten).
     if (!token && vorab) {
-      if (navigator.onLine === false) vorgreifen()
-      else wecker = setTimeout(vorgreifen, VORGRIFF_NACH_MS)
+      if (navigator.onLine === false) vorgreifen(false)
+      else wecker = setTimeout(() => vorgreifen(true), VORGRIFF_NACH_MS)
     }
     const pruefen = async (): Promise<void> => {
       if (token) {
@@ -367,7 +375,7 @@ export function AppProvider({
         laden(sitzung.session.user.id)
       } else if (isAuthRetryableFetchError(error)) {
         // Der Server war nicht zu erreichen; die Sitzung liegt noch auf dem Gerät.
-        vorgreifen()
+        vorgreifen(false)
       }
     }
     void pruefen()

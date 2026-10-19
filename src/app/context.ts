@@ -190,6 +190,14 @@ export interface AppState {
   // Daten kommen aus der Offline-Momentaufnahme (lib/snapshot.ts): Zeitpunkt der
   // Aufnahme in ms, sonst null. Solange gesetzt, ist die App nur lesend.
   staleAt: number | null
+  /**
+   * Der letzte Stand steht nur, weil die Daten auf sich warten lassen — das
+   * Gerät hat Netz, und das Laden läuft noch (der Vorgriff nach
+   * `VORGRIFF_NACH_MS`, `store.tsx`). Der Streifen sagt dann „Verbindung
+   * langsam" statt „Offline" (19.10.2026). Scheitert das Laden, gilt wieder
+   * „Offline" (`nachladenGescheitert`).
+   */
+  staleLangsam: boolean
 
   /* ---- Serverdaten: geladen, geändert, zurückgeschrieben ---------------- */
   congregation: Congregation
@@ -569,9 +577,16 @@ export type AppAction =
    * `nachgeladen`: ein Laden mitten in der Sitzung (nach „Plan senden", einem
    * Push-Klick, einem Konflikt). Es legt das Blatt beim Öffnen nicht erneut
    * vor — das tut nur das Öffnen der App (16.10.2026).
+   *
+   * `langsam` (nur mit `staleAt`): Der letzte Stand steht, während die Daten
+   * noch kommen — siehe `staleLangsam`.
    */
-  | { type: 'hydrate'; payload: HydratePayload; staleAt?: number; nachgeladen?: true }
-  /** Ein stilles Nachladen ging nicht durch: Der Bestand bleibt stehen, ein Hinweis sagt es (16.10.2026). */
+  | { type: 'hydrate'; payload: HydratePayload; staleAt?: number; nachgeladen?: true; langsam?: true }
+  /**
+   * Ein stilles Nachladen ging nicht durch: Der Bestand bleibt stehen, ein
+   * Hinweis sagt es (16.10.2026). Stand der letzte Stand als „langsam" da,
+   * heißt er jetzt wieder „Offline" — es kommt nichts mehr.
+   */
   | { type: 'nachladenGescheitert' }
   /** Ein neuer Kalendertag — Vergangenes fällt aus „Meine Aufgaben" (16.10.2026). */
   | { type: 'neuerTag' }

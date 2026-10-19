@@ -24,7 +24,7 @@ export const DE = {
     // Zwei-Tipp-Bestätigung beim Abmelden (AbmeldenKnopf), wie `loeschenSicher`.
     abmeldenSicher: 'Wirklich abmelden?',
     // Offline-Stand (lib/snapshot.ts): {m} = Zeitpunkt der Momentaufnahme
-    offlineBanner: 'Offline · Stand von {m}', offlineBannerHint: 'Nur lesen — keine Änderungen möglich',
+    offlineBanner: 'Offline · Stand von {m}', offlineBannerHint: 'Nur lesen — keine Änderungen möglich', offlineLangsam: 'Verbindung langsam · Stand von {m}',
     offlineReadOnly: 'Offline — Änderungen sind erst wieder online möglich',
     offlineRetry: 'Neu laden',
     emailPh: 'name@beispiel.de',

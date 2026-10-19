@@ -63,6 +63,7 @@ export function leererZustand({ theme, fontScale, lang }: Vorlieben): AppState {
     dataStatus: 'ready',
     dataEmpty: false,
     staleAt: null,
+    staleLangsam: false,
     members: [],
     anmeldeLinks: [],
     weeks: [],

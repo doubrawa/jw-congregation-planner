@@ -133,9 +133,18 @@ async function ladenUndEinspielen(
  * Abfrage, die am Netz scheitert, dreimal — sieben Sekunden Startbild für
  * nichts.
  */
-export function letztenStandZeigen(dispatch: Dispatch<AppAction>, userId: string): void {
+export function letztenStandZeigen(dispatch: Dispatch<AppAction>, userId: string, wie: StandOptionen = {}): void {
   // userId mitgeben: Retry und Code-Einlösen brauchen es ohne Hydration
-  if (!momentaufnahmeZeigen(dispatch, userId)) dispatch({ type: 'setDataStatus', status: 'error', userId })
+  if (!momentaufnahmeZeigen(dispatch, userId, wie)) dispatch({ type: 'setDataStatus', status: 'error', userId })
+}
+
+/** Wie der letzte Stand dasteht. */
+export interface StandOptionen {
+  /**
+   * Weil die Daten auf sich warten lassen, nicht weil das Gerät offline ist —
+   * der Streifen sagt dann „Verbindung langsam" (`staleLangsam`, 19.10.2026).
+   */
+  langsam?: boolean
 }
 
 /**
@@ -147,8 +156,8 @@ export function letztenStandZeigen(dispatch: Dispatch<AppAction>, userId: string
  * bleibt das Startbild, denn das Laden läuft ja noch; eine Fehlerseite wäre
  * dort verfrüht.
  */
-export function momentaufnahmeZeigen(dispatch: Dispatch<AppAction>, userId: string): boolean {
+export function momentaufnahmeZeigen(dispatch: Dispatch<AppAction>, userId: string, { langsam = false }: StandOptionen = {}): boolean {
   const snap = readSnapshot(userId)
-  if (snap) dispatch({ type: 'hydrate', payload: snap.payload, staleAt: snap.at })
+  if (snap) dispatch({ type: 'hydrate', payload: snap.payload, staleAt: snap.at, ...(langsam ? { langsam: true as const } : {}) })
   return snap !== null
 }

@@ -39,9 +39,25 @@
   color: var(--text2);
 }
 
-.offline-banner-text {
+/* Text und „Neu laden": Bleiben neben dem Knopf keine 10em für den Text, rückt
+   der Knopf darunter (rechtsbündig). Vorher stand der Text bei 320 px und
+   großer Schrift in einer Spalte von drei Wörtern. */
+.offline-banner-inhalt {
   flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
   min-width: 0;
+}
+
+.offline-banner-text {
+  flex: 1 1 10em;
+  min-width: 0;
+}
+
+.offline-banner-inhalt > .knopf-pille {
+  margin-inline-start: auto;
 }
 
 .offline-banner-hint {

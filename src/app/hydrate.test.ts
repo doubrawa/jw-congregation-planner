@@ -374,4 +374,15 @@ describe('momentaufnahmeZeigen', () => {
     expect(momentaufnahmeZeigen(dispatch, 'u9')).toBe(false)
     expect(actions).toEqual([])
   })
+
+  it('„langsam" reicht sie an den Zustand weiter — der Streifen sagt dann „Verbindung langsam" (19.10.2026)', () => {
+    const stored = { ...emptyData, congregationId: 'c1', userId: 'u9', empty: false }
+    mockRead.mockReturnValue({ at: 1_700_000_000_000, payload: stored })
+    const { actions, dispatch } = collector()
+    momentaufnahmeZeigen(dispatch, 'u9', { langsam: true })
+    letztenStandZeigen(dispatch, 'u9', { langsam: true })
+    momentaufnahmeZeigen(dispatch, 'u9', { langsam: false })
+    const langsam = { type: 'hydrate', payload: stored, staleAt: 1_700_000_000_000, langsam: true }
+    expect(actions).toEqual([langsam, langsam, { type: 'hydrate', payload: stored, staleAt: 1_700_000_000_000 }])
+  })
 })

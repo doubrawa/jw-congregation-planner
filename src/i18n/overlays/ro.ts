@@ -504,6 +504,7 @@ export default {
   "toastNameNichtGeaendert": "Numele nu a fost schimbat: {name} există deja",
   "offlineBanner": "Offline · date de la {m}",
   "offlineBannerHint": "Doar citire — nu se pot face modificări",
+  "offlineLangsam": "Conexiune lentă · date de la {m}",
   "offlineReadOnly": "Offline — vei putea face modificări când ești din nou online",
   "offlineRetry": "Reîncarcă",
   "versammlungTag": "Întrunirea de {tag}",

@@ -504,6 +504,7 @@ export default {
   "toastNameNichtGeaendert": "Nome non modificato: {name} esiste già",
   "offlineBanner": "Offline · dati del {m}",
   "offlineBannerHint": "Sola lettura — non è possibile modificare",
+  "offlineLangsam": "Connessione lenta · dati del {m}",
   "offlineReadOnly": "Offline — potrai modificare di nuovo quando sarai online",
   "offlineRetry": "Ricarica",
   "versammlungTag": "Adunanza di {tag}",

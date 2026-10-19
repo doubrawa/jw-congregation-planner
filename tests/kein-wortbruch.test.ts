@@ -125,6 +125,13 @@ describe('Was neben einem Namen steht, rückt darunter, statt ihn zu zerbrechen'
       /margin-inline-start:\s*auto/,
     )
   })
+
+  it('im Streifen des letzten Stands rückt „Neu laden" unter den Text — bei 320 px stand er in einer Spalte von drei Wörtern', () => {
+    // 19.10.2026, mit „Verbindung langsam · Stand von …" (der längere Titel).
+    expect(deklarationen('app/shell.css', '.offline-banner-inhalt')).toMatch(/flex-wrap:\s*wrap/)
+    expect(deklarationen('app/shell.css', '.offline-banner-text')).toMatch(/flex:\s*1 1 10em/)
+    expect(deklarationen('app/shell.css', '.offline-banner-inhalt > .knopf-pille')).toMatch(/margin-inline-start:\s*auto/)
+  })
 })
 
 describe('Ein Wort ohne Trennregeln seiner Sprache bekommt eine Trennstelle', () => {

@@ -114,6 +114,8 @@ export interface DebugHash {
   zuteiler?: boolean
   shot?: boolean // Screenshot-Modus: Spaltenschatten aus (randloses Zuschneiden)
   staleAt?: number // Offline-Stand vortäuschen (stale=<Stunden alt>) — Banner + nur lesen
+  /** `langsam=1` (mit `stale=`): Der Stand steht, weil die Daten auf sich warten lassen — „Verbindung langsam". */
+  staleLangsam?: boolean
   /** `vorlage=1`: das Blatt beim Öffnen vorlegen, wie nach dem Anmelden (T121). */
   vorlage?: boolean
   /**
@@ -163,6 +165,7 @@ export function parseDebugHash(hash: string, jetzt = Date.now()): DebugHash | nu
   // stale=<Stunden>: Offline-Stand simulieren (ohne Netzabbruch nachstellbar)
   const stale = Number(p.get('stale'))
   if (Number.isFinite(stale) && stale > 0) out.staleAt = jetzt - stale * 3600_000
+  if (out.staleAt !== undefined && p.get('langsam') === '1') out.staleLangsam = true
   return Object.keys(out).length ? out : null
 }
 
@@ -260,6 +263,7 @@ export function entwicklerStart(hash: string = location.hash): AppState {
     personId: debug?.me ?? null,
     selectedPersonId: debug?.personId ?? null,
     staleAt: debug?.staleAt ?? null,
+    staleLangsam: debug?.staleLangsam ?? false,
     // Liegt nichts vor (ohne `me=` keine eigenen Aufgaben), bleibt es zu —
     // die Ableitung prüft das (`vorzulegen`).
     confirmOpen: debug?.vorlage === true,

@@ -62,6 +62,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     dataStatus: 'ready',
     dataEmpty: false,
     staleAt: null,
+    staleLangsam: false,
     members: [],
     anmeldeLinks: [],
     auxClass: false,
@@ -2027,6 +2028,21 @@ describe('hydrate / setDataStatus', () => {
     const next = reducer(s, { type: 'nachladenGescheitert' })
     expect(next.weeks).toBe(s.weeks)
     expect(next.toast?.text).toBe(t.stFehler)
+  })
+
+  /*
+   * **„Verbindung langsam" gilt nur, solange die Daten noch kommen können**
+   * (19.10.2026): Der Vorgriff zeigt den letzten Stand mit `langsam`; frische
+   * Daten nehmen ihn weg, ein gescheitertes Laden macht daraus „Offline".
+   */
+  it('„langsam" kommt nur mit dem letzten Stand — und geht mit frischen Daten oder einem Fehlschlag', () => {
+    const langsam = reducer(makeState(), { type: 'hydrate', payload, staleAt: 1_700_000_000_000, langsam: true })
+    expect(langsam).toMatchObject({ staleAt: 1_700_000_000_000, staleLangsam: true })
+    expect(reducer(makeState(), { type: 'hydrate', payload, staleAt: 1_700_000_000_000 }).staleLangsam).toBe(false)
+    // Ohne `staleAt` ist es kein letzter Stand, auch wenn `langsam` mitkäme.
+    expect(reducer(makeState(), { type: 'hydrate', payload, langsam: true }).staleLangsam).toBe(false)
+    expect(reducer(langsam, { type: 'hydrate', payload, nachgeladen: true })).toMatchObject({ staleAt: null, staleLangsam: false })
+    expect(reducer(langsam, { type: 'nachladenGescheitert' })).toMatchObject({ staleAt: 1_700_000_000_000, staleLangsam: false })
   })
 
   it('übernimmt die Nutzdaten, setzt ready und Woche 0', () => {

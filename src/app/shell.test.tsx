@@ -360,6 +360,32 @@ describe('Das Offline-Banner nennt den Stand', () => {
     expect(banner.textContent).toContain(t.offlineBannerHint)
   })
 
+  /*
+   * **„Verbindung langsam" statt „Offline"** (19.10.2026): Steht der letzte
+   * Stand nur, weil die Daten bei bestehendem Netz auf sich warten lassen,
+   * sagt der Streifen es so — „Offline" hieß es bis dahin auch dann.
+   */
+  it('lassen die Daten bei bestehendem Netz auf sich warten, heißt es „Verbindung langsam"', () => {
+    const at = new Date(2026, 7, 23, 14, 5).getTime()
+    const { container } = zeige({ staleAt: at, staleLangsam: true })
+    const titel = container.querySelector('.offline-banner strong')!.textContent
+    expect(titel).toContain(t.offlineLangsam.split(' · ')[0])
+    expect(titel).toContain('14:05')
+    expect(titel).not.toContain(t.offlineBanner.split(' ')[0])
+    expect(container.querySelector('.offline-banner')!.textContent).toContain(t.offlineBannerHint)
+  })
+
+  it('meldet das Gerät kein Netz, heißt es „Offline" — auch wenn der Wecker ihn als langsam zeigte', () => {
+    const at = new Date(2026, 7, 23, 14, 5).getTime()
+    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false })
+    try {
+      const { container } = zeige({ staleAt: at, staleLangsam: true })
+      expect(container.querySelector('.offline-banner strong')!.textContent).toContain(t.offlineBanner.split(' ')[0])
+    } finally {
+      Reflect.deleteProperty(navigator, 'onLine')
+    }
+  })
+
   it('ein unbekanntes Sprach-Tag lässt es nicht abstürzen', () => {
     // toLocaleString wirft bei einem ungültigen Tag — dann gilt die Systemsprache.
     const at = new Date(2026, 7, 23, 14, 5).getTime()

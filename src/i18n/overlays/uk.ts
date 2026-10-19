@@ -504,6 +504,7 @@ export default {
   "toastNameNichtGeaendert": "Не змінено: {name} вже є",
   "offlineBanner": "Не в мережі · дані від {m}",
   "offlineBannerHint": "Лише читання — зміни неможливі",
+  "offlineLangsam": "Повільне з’єднання · дані від {m}",
   "offlineReadOnly": "Не в мережі — зміни будуть можливі, коли з’явиться з’єднання",
   "offlineRetry": "Оновити",
   "versammlungTag": "Зібрання – {tag}",

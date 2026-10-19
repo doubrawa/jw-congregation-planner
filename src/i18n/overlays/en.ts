@@ -27,6 +27,7 @@ export default {
   "rolleGehilfe": "Assistant",
   "offlineBanner": "Offline · as of {m}",
   "offlineBannerHint": "Read-only — changes are not possible",
+  "offlineLangsam": "Slow connection · as of {m}",
   "offlineReadOnly": "Offline — changes are possible again once you are online",
   "offlineRetry": "Reload",
   "emailPh": "name@example.com",
