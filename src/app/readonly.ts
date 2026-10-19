@@ -16,6 +16,7 @@ import type { AppAction } from './context'
 const VIEW_ACTIONS: ReadonlySet<AppAction['type']> = new Set([
   // Sitzung / Hydration
   'login',
+  'sitzungGeprueft',
   'logout',
   'hydrate',
   'setDataStatus',

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { Logo } from '../bausteine/Logo'
 import { Zeichen, type ZeichenName } from '../bausteine/Zeichen'
 import { datumsFormat } from '../components/datum-anzeige'
 import { useBackDismiss } from '../components/useBackDismiss'
@@ -170,6 +171,11 @@ export function AppShell() {
     dispatch({ type: 'welcomeShown' })
     if (d !== 'verwerfen') dispatch({ type: 'showToast', text: fill(t.toastWillkommen, d) })
   }, [state.welcomePending, state.dataStatus, me, t, dispatch])
+
+  // Erst prüfen, dann zeigen: Solange offen ist, ob jemand angemeldet ist,
+  // weder die Anmeldung noch die App (`sitzungPruefen`).
+  if (state.sitzungPruefen) return <Ladebild />
+
   /*
    * **Das Menü** (T121, entschieden am 11.10.2026): Eigenes oben, dann die
    * Versammlung mit ihren Bereichen — die öffnen immer zum Ansehen —, zuletzt
@@ -360,6 +366,24 @@ export function AppShell() {
             {state.toast.text}
           </div>
         )}
+      </main>
+    </div>
+  )
+}
+
+/**
+ * **Das Ladebild beim Start**, solange offen ist, ob jemand angemeldet ist
+ * (`sitzungPruefen`). Meist ist das nach Millisekunden entschieden; dann bleibt
+ * die Fläche leer, und es blitzt nichts auf. Erst wenn es dauert — Supabase
+ * erneuert das Token übers Netz —, erscheinen Logo und „Lädt …" (shell.css).
+ */
+function Ladebild() {
+  const { t } = useT()
+  return (
+    <div className="rahmen">
+      <main className="app-main ladebild">
+        <Logo gross breite={150} />
+        <p className="ladebild-text">{t.laedt}</p>
       </main>
     </div>
   )

@@ -598,6 +598,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         confirmOpen: vorzulegen(state.myTasks, state.substituteReqs),
         welcomePending: action.welcome === true,
       }
+    case 'sitzungGeprueft':
+      return { ...state, sitzungPruefen: false }
     case 'welcomeShown':
       return { ...state, welcomePending: false }
     case 'logout':

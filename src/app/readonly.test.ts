@@ -6,6 +6,8 @@ import { reducerFaelle, setztFeld } from './quelltext-proben'
 describe('isViewAction', () => {
   const views: AppAction['type'][] = [
     'login',
+    // Ob jemand angemeldet ist, steht fest — geschrieben wird dabei nichts.
+    'sitzungGeprueft',
     'logout',
     'hydrate',
     'setDataStatus',

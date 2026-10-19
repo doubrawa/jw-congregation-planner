@@ -9328,6 +9328,35 @@ export const KATALOG = [
     suchen: '  const wd = new Date(`${nurDatum(iso)}T12:00:00Z`).getUTCDay()\n',
     ersetzen: '  const wd = new Date(`${iso}T12:00:00Z`).getUTCDay()\n',
   },
+  // Erst prüfen, dann zeigen (19.10.2026): Beim Öffnen blitzt die Anmeldung nicht auf.
+  {
+    id: 'oeffnen-ladebild-statt-anmeldung',
+    datei: 'src/app/AppShell.tsx',
+    regel: 'Solange offen ist, ob jemand angemeldet ist, zeigt die App weder die Anmeldung noch sich selbst — nur das Ladebild.',
+    suchen: '  if (state.sitzungPruefen) return <Ladebild />\n',
+    ersetzen: '',
+  },
+  {
+    id: 'oeffnen-mit-datenbank-offen',
+    datei: 'src/app/store.tsx',
+    regel: 'Mit Datenbank startet die App mit der offenen Frage, ob jemand angemeldet ist — sonst stünde die Anmeldung da, bis Supabase antwortet.',
+    suchen: '    supabase ? { ...start(), sitzungPruefen: true } : start(),\n',
+    ersetzen: '    start(),\n',
+  },
+  {
+    id: 'oeffnen-pruefung-endet-immer',
+    datei: 'src/app/store.tsx',
+    regel: 'Die Prüfung beim Start endet auf jedem Weg — ohne Sitzung und nach einem Fehlschlag ebenso; sonst bliebe das Ladebild stehen und man käme nicht einmal zur Anmeldung.',
+    suchen: "        if (!vorbei) dispatch({ type: 'sitzungGeprueft' })\n",
+    ersetzen: '        void vorbei\n',
+  },
+  {
+    id: 'oeffnen-ladebild-erst-nach-pause',
+    datei: 'src/app/shell.css',
+    regel: 'Das Ladebild erscheint erst nach einer Pause — sonst blitzt es auf, wenn die Prüfung beim Start nur Millisekunden dauert.',
+    suchen: '  animation: ladebild-erscheinen 300ms ease-out 500ms both;\n',
+    ersetzen: '  animation: ladebild-erscheinen 300ms ease-out both;\n',
+  },
 ]
 
 /**

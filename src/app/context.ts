@@ -155,6 +155,17 @@ export interface AppState {
   lang: Lang // App-Sprache (UI)
 
   /* ---- Sitzung und Rechte ----------------------------------------------- */
+  /**
+   * **Noch offen, ob auf dem Gerät jemand angemeldet ist** (19.10.2026). So
+   * startet die App mit Datenbank; der Provider fragt Supabase und räumt den
+   * Merker danach ab (`store.tsx`). Solange er steht, zeigt sie weder die
+   * Anmeldung noch sich selbst, nur das Ladebild (`AppShell`).
+   *
+   * Bis dahin stand beim Öffnen erst die Anmeldung da, und eine Sekunde später
+   * die App: Liegt die letzte Nutzung über eine Stunde zurück, erneuert
+   * Supabase das Token übers Netz, bevor es die Sitzung herausgibt.
+   */
+  sitzungPruefen: boolean
   planner: boolean // „Admin": darf alles — Planen, Personen, Einstellungen
   /**
    * „Planer" (4.10.2026): plant seit dem 15.10.2026 alles wie der Admin, nur
@@ -358,6 +369,8 @@ export type AppAction =
   // `welcome`: nur beim tatsächlichen Anmelden. Eine wiederhergestellte
   // Sitzung beim App-Start meldet ebenfalls „login", soll aber nicht begrüßen.
   | { type: 'login'; welcome?: boolean }
+  // Die Prüfung beim Start ist durch, angemeldet oder nicht (`sitzungPruefen`).
+  | { type: 'sitzungGeprueft' }
   | { type: 'welcomeShown' }
   | { type: 'logout' }
   /**

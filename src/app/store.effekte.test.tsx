@@ -106,6 +106,13 @@ function starte() {
   return renderHook(() => useApp(), { wrapper: huelle })
 }
 
+/** Alles abwarten, was gerade unterwegs ist — die Prüfung beim Start läuft über mehrere Schritte. */
+async function abwarten(): Promise<void> {
+  await act(async () => {
+    await new Promise((fertig) => setTimeout(fertig, 0))
+  })
+}
+
 beforeEach(() => {
   konfiguriert.wert = true
   authListener.fn = null
@@ -432,7 +439,9 @@ describe('Die Supabase-Sitzung wird gespiegelt', () => {
 
   it('ohne Supabase wird gar nicht erst gefragt (keine Datenbank, Entwicklerseite)', async () => {
     konfiguriert.wert = false
-    starte()
+    const { result } = starte()
+    // Dann ist auch nichts offen: Das Gerüst zeigt sofort, womit die App startet.
+    expect(result.current.state.sitzungPruefen).toBe(false)
     await act(async () => {
       await Promise.resolve()
     })
@@ -478,6 +487,41 @@ describe('Mit dem Link aus der E-Mail', () => {
     })
     expect(result.current.state.toast?.text).toBe(DE.linkUngueltig)
     expect(loadAndHydrate).toHaveBeenCalledWith(expect.anything(), 'u7')
+  })
+
+  /*
+   * **Erst prüfen, dann zeigen** (19.10.2026): Solange die Anmeldung mit dem
+   * Link läuft, ist offen, wer angemeldet ist — das Gerüst zeigt das Ladebild.
+   * Bis dahin stand die Anmeldung da, für jemanden, der sich gerade anmeldet.
+   */
+  it('bis die Anmeldung mit dem Link durch ist, bleibt offen, wer angemeldet ist', async () => {
+    let fertig: (fehler: string | null) => void = () => {}
+    mitLinkAnmelden.mockReturnValue(new Promise((res) => { fertig = res }))
+    const { result } = starte()
+    await abwarten()
+    expect(result.current.state).toMatchObject({ sitzungPruefen: true, screen: 'login' })
+    fertig(null)
+    await abwarten()
+    expect(result.current.state).toMatchObject({ sitzungPruefen: false, screen: 'start' })
+  })
+
+  it('gilt er nicht mehr und liegt keine Sitzung vor, steht die Anmeldung da — mit dem Grund', async () => {
+    mitLinkAnmelden.mockResolvedValue('abgelaufen')
+    const { result } = starte()
+    await abwarten()
+    expect(result.current.state).toMatchObject({ sitzungPruefen: false, screen: 'login' })
+    expect(result.current.state.toast?.text).toBe(DE.linkUngueltig)
+  })
+
+  it('scheitert die Anmeldung mit dem Link ganz, steht trotzdem die Anmeldung da', async () => {
+    // Ein Ladebild ohne Ende ließe nicht einmal mehr einen zweiten Versuch zu.
+    const konsole = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mitLinkAnmelden.mockRejectedValue(new Error('kaputt'))
+    const { result } = starte()
+    await abwarten()
+    expect(result.current.state).toMatchObject({ sitzungPruefen: false, screen: 'login' })
+    expect(konsole).toHaveBeenCalledWith('[sitzung]', expect.any(Error))
+    konsole.mockRestore()
   })
 
   it('ohne Link in der Adresse wird nicht angemeldet', async () => {

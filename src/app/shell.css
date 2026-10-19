@@ -107,10 +107,15 @@
   text-align: center;
 }
 
-.status-loading {
-  margin-top: 40px;
+/* „Lädt …" sieht überall gleich aus: in der App und im Ladebild beim Start (unten). */
+.status-loading,
+.ladebild-text {
   font-size: calc(13px * var(--fs));
   color: var(--text2);
+}
+
+.status-loading {
+  margin-top: 40px;
 }
 
 .status-title {
@@ -140,6 +145,30 @@
 .status-btn {
   max-width: 280px;
   margin: 20px auto 0;
+}
+
+/* ---- Ladebild beim Start -------------------------------------------------- */
+
+/* Solange offen ist, ob jemand angemeldet ist (`sitzungPruefen`). Erst nach
+   einer halben Sekunde zu sehen: Meist ist es bis dahin entschieden, und ein
+   Logo, das nur kurz aufblitzt, wäre genau das Flackern, das es verhindern
+   soll. Ohne Bewegung (unten) erscheint es nach derselben Pause, nur ohne
+   Einblenden. */
+.ladebild {
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  animation: ladebild-erscheinen 300ms ease-out 500ms both;
+}
+
+@keyframes ladebild-erscheinen {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 /* ---- Toast ---------------------------------------------------------------- */

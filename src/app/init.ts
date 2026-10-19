@@ -50,6 +50,9 @@ export function leererZustand({ theme, fontScale, lang }: Vorlieben): AppState {
     fsBereich: 'treffpunkte',
     theme,
     fontScale,
+    // Nach dem Abmelden steht fest: niemand. Beim Start mit Datenbank setzt der
+    // Provider den Merker, denn erst er fragt nach (`store.tsx`).
+    sitzungPruefen: false,
     planner: false,
     zuteiler: false,
     ansicht: null,

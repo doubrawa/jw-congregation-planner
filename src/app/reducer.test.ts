@@ -51,6 +51,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     fsBereich: 'treffpunkte',
     theme: 'auto',
     fontScale: 1,
+    sitzungPruefen: false,
     planner: DEMO_PLANNER,
     zuteiler: false,
     ansicht: null,
@@ -1888,6 +1889,20 @@ describe('login / logout', () => {
     // Was dem Gerät gehört, bleibt.
     expect(leer).toMatchObject({ theme: 'dunkel', fontScale: 1.3, lang: 'en' })
     expect(reducer(leer, { type: 'login' }).confirmOpen).toBe(false)
+  })
+
+  /*
+   * **Erst prüfen, dann zeigen** (19.10.2026): Beim Start ist offen, ob jemand
+   * angemeldet ist; bis dahin zeigt die App das Ladebild. Das Ende der Prüfung
+   * meldet der Provider (`store.tsx`) auf jedem Weg — bliebe der Merker stehen,
+   * käme man weder in die App noch zur Anmeldung.
+   */
+  it('ist die Prüfung durch, steht die Sitzung fest — ohne Anmeldung bleibt die Anmeldung stehen', () => {
+    const pruefen = makeState({ screen: 'login', sitzungPruefen: true })
+    expect(reducer(pruefen, { type: 'sitzungGeprueft' })).toMatchObject({ screen: 'login', sitzungPruefen: false })
+  })
+  it('nach dem Abmelden ist nichts mehr offen: niemand ist angemeldet', () => {
+    expect(reducer(makeState({ sitzungPruefen: true }), { type: 'logout' }).sitzungPruefen).toBe(false)
   })
 })
 

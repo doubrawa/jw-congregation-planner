@@ -71,7 +71,11 @@ export function AppProvider({
   /** Woher der erste Zustand kommt — die App startet leer, die Entwicklerseite mit Testdaten. */
   start?: () => AppState
 }) {
-  const [state, rawDispatch] = useReducer(uebernehmen, undefined, start)
+  // Mit Datenbank ist beim Start offen, ob jemand angemeldet ist — bis die
+  // Prüfung unten durch ist (`sitzungPruefen`). Ohne fragt niemand nach.
+  const [state, rawDispatch] = useReducer(uebernehmen, undefined, () =>
+    supabase ? { ...start(), sitzungPruefen: true } : start(),
+  )
 
   // Persistenz-Wrapper: berechnet den Folgezustand (Reducer ist rein),
   // schreibt die Änderung nach Supabase und aktualisiert dann React.
@@ -225,6 +229,10 @@ export function AppProvider({
   // Phase 8), meldet sie zuerst damit an — auch, wenn auf dem Gerät schon
   // jemand angemeldet ist: Der Link gehört dem, der ihn öffnet. Gilt er nicht
   // mehr, sagt sie es, und es bleibt bei der Sitzung, die da war.
+  //
+  // **Danach steht fest, ob jemand angemeldet ist** (`sitzungGeprueft`), auf
+  // jedem Weg — auch wenn eine Anfrage scheitert: Bliebe das Ladebild dann
+  // stehen, käme man nicht einmal mehr zur Anmeldung.
   useEffect(() => {
     if (!supabase) return
     const client = supabase
@@ -241,7 +249,7 @@ export function AppProvider({
         dispatch({ type: 'logout' })
       } else if (event === 'SIGNED_IN' && session) laden(session.user.id)
     })
-    void (async () => {
+    const pruefen = async (): Promise<void> => {
       const token = anmeldeAdresse().token
       if (token) {
         const fehler = await mitLinkAnmelden(token)
@@ -256,7 +264,12 @@ export function AppProvider({
       if (vorbei || !sitzung.session) return
       dispatch({ type: 'login' })
       laden(sitzung.session.user.id)
-    })()
+    }
+    void pruefen()
+      .catch((fehler: unknown) => console.error('[sitzung]', fehler))
+      .finally(() => {
+        if (!vorbei) dispatch({ type: 'sitzungGeprueft' })
+      })
     return () => {
       vorbei = true
       data.subscription.unsubscribe()
