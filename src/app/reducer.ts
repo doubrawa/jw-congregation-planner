@@ -599,7 +599,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         welcomePending: action.welcome === true,
       }
     case 'sitzungGeprueft':
-      return { ...state, sitzungPruefen: false }
+      // Zweimal gemeldet, wenn der Offline-Start vorgegriffen hat (`store.tsx`).
+      return state.sitzungPruefen ? { ...state, sitzungPruefen: false } : state
     case 'welcomeShown':
       return { ...state, welcomePending: false }
     case 'logout':

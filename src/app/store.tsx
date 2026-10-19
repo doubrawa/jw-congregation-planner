@@ -4,6 +4,7 @@
  * Supabase-Auth bzw. <html>-Attribute.
  */
 
+import { isAuthRetryableFetchError } from '@supabase/supabase-js'
 import { useCallback, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react'
 import { darstellungSpiegeln } from './darstellung'
 import { isRTL } from '../i18n/langs'
@@ -11,6 +12,7 @@ import { bibelbuecherLaden } from '../i18n/translate'
 import { dict, loadOverlay } from '../i18n/ui'
 import { mitLinkAnmelden } from '../lib/anmelden'
 import { setKonfliktMelder, setSchreibfehlerMelder } from '../lib/data'
+import { gespeicherteSitzung, mussErneuern } from '../lib/gespeicherte-sitzung'
 import { clearSnapshot } from '../lib/snapshot'
 import { supabase } from '../lib/supabase'
 import { anmeldeAdresse } from '../login/anmelde-adresse'
@@ -24,7 +26,7 @@ import {
   type AppStore,
 } from './context'
 import { pushAboAbgleichen } from '../lib/push-abo'
-import { loadAndHydrate } from './hydrate'
+import { letztenStandZeigen, loadAndHydrate } from './hydrate'
 import { sitzungBeendet } from './sitzung'
 import { useKalendertag } from './useKalendertag'
 import { initialState } from './init'
@@ -62,6 +64,14 @@ import { reducer } from './reducer'
  * weitergereicht. Damit ist die Frage strukturell erledigt statt Fall für Fall.
  */
 const uebernehmen = (_bisher: AppState, neu: AppState): AppState => neu
+
+/**
+ * Wie lange der Start auf Supabase wartet, bevor er den letzten Stand zeigt,
+ * wenn das Token einer abgelegten Sitzung erneuert werden muss (Offline-Start,
+ * unten). Die Erneuerung braucht sonst unter einer Sekunde, im schwachen Netz
+ * zwei, drei.
+ */
+const VORGRIFF_NACH_MS = 4000
 
 export function AppProvider({
   children,
@@ -233,24 +243,64 @@ export function AppProvider({
   // **Danach steht fest, ob jemand angemeldet ist** (`sitzungGeprueft`), auf
   // jedem Weg — auch wenn eine Anfrage scheitert: Bliebe das Ladebild dann
   // stehen, käme man nicht einmal mehr zur Anmeldung.
+  //
+  // **Offline-Start** (19.10.2026): Muss auth-js das Token erst erneuern, weil
+  // die letzte Nutzung über eine Stunde zurückliegt, wartet jede Frage nach der
+  // Sitzung auf das Netz. Offline gibt es nach 25 s auf und meldet keine
+  // Sitzung, obwohl sie noch auf dem Gerät liegt — dann kam die Anmeldung, nie
+  // der letzte Stand. Jetzt greift der Provider vor: Muss das Token einer
+  // abgelegten Sitzung erneuert werden, zeigt er ihren letzten Stand nur lesend
+  // (`letztenStandZeigen`), sofort, wenn das Gerät offline ist, sonst nach
+  // `VORGRIFF_NACH_MS` ohne Antwort. Der Wecker ist zugleich die Obergrenze,
+  // falls die Anfrage hängt. Gelingt die Erneuerung später (`TOKEN_REFRESHED`),
+  // kommen die Daten.
   useEffect(() => {
     if (!supabase) return
     const client = supabase
+    const token = anmeldeAdresse().token
     let geladenFuer: string | null = null
     let vorbei = false
     const laden = (userId: string): void => {
       if (userId === geladenFuer) return
       geladenFuer = userId
-      void loadAndHydrate(dispatch, userId)
+      // Steht der letzte Stand dieses Kontos, kommen die frischen Daten still
+      // darüber: kein „Lädt …", die gewählte Woche bleibt, und scheitert es,
+      // bleibt er stehen. Der eines anderen Kontos gilt nicht.
+      const ueberDemLetztenStand = stateRef.current.staleAt !== null && stateRef.current.userId === userId
+      if (ueberDemLetztenStand) void loadAndHydrate(dispatch, userId, { silent: true })
+      else void loadAndHydrate(dispatch, userId)
     }
+    /** Steht statt der Daten der letzte Stand oder die Fehlerseite? */
+    const ersatzSteht = (): boolean => stateRef.current.staleAt !== null || stateRef.current.dataStatus === 'error'
     const { data } = client.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         geladenFuer = null
         dispatch({ type: 'logout' })
       } else if (event === 'SIGNED_IN' && session) laden(session.user.id)
+      else if (event === 'TOKEN_REFRESHED' && session && ersatzSteht()) {
+        // Die Erneuerung ging übers Netz, es ist also wieder da.
+        geladenFuer = null
+        laden(session.user.id)
+      }
     })
+    // Der Vorgriff, nur solange die Prüfung nichts entschieden hat — und nur
+    // einmal: Meldet sie danach noch einen Netzfehler, bleibt die Ansicht.
+    const vorab = gespeicherteSitzung()
+    const vorgreifen = (): void => {
+      if (vorbei || !vorab || !stateRef.current.sitzungPruefen) return
+      dispatch({ type: 'login' })
+      letztenStandZeigen(dispatch, vorab.userId)
+      dispatch({ type: 'sitzungGeprueft' })
+    }
+    let wecker: ReturnType<typeof setTimeout> | undefined
+    // Solange ein Link anmeldet, greift nichts vor: Angemeldet wird, wen er
+    // nennt. Scheitert er am Netz, bleibt es bei der Sitzung, die da war, mit
+    // ihrem letzten Stand (unten).
+    if (!token && vorab && mussErneuern(vorab)) {
+      if (navigator.onLine === false) vorgreifen()
+      else wecker = setTimeout(vorgreifen, VORGRIFF_NACH_MS)
+    }
     const pruefen = async (): Promise<void> => {
-      const token = anmeldeAdresse().token
       if (token) {
         const fehler = await mitLinkAnmelden(token)
         if (vorbei) return
@@ -260,18 +310,27 @@ export function AppProvider({
         }
         dispatch({ type: 'showToast', text: anmeldeFehlerText(fehler, dict(stateRef.current.lang), 'link') })
       }
-      const { data: sitzung } = await client.auth.getSession()
-      if (vorbei || !sitzung.session) return
-      dispatch({ type: 'login' })
-      laden(sitzung.session.user.id)
+      const { data: sitzung, error } = await client.auth.getSession()
+      if (vorbei) return
+      if (sitzung.session) {
+        // Steht schon der letzte Stand (Vorgriff), bleibt die Ansicht, wo sie ist.
+        if (stateRef.current.sitzungPruefen) dispatch({ type: 'login' })
+        laden(sitzung.session.user.id)
+      } else if (isAuthRetryableFetchError(error)) {
+        // Der Server war nicht zu erreichen; die Sitzung liegt noch auf dem Gerät.
+        vorgreifen()
+      }
     }
     void pruefen()
       .catch((fehler: unknown) => console.error('[sitzung]', fehler))
       .finally(() => {
+        // Der Wecker lebt nur, solange die Prüfung läuft.
+        clearTimeout(wecker)
         if (!vorbei) dispatch({ type: 'sitzungGeprueft' })
       })
     return () => {
       vorbei = true
+      clearTimeout(wecker)
       data.subscription.unsubscribe()
     }
   }, [dispatch])

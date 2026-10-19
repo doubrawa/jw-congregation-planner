@@ -10,11 +10,19 @@ vi.hoisted(() => {
   vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'test-anon-key')
 })
 
-// createClient durch einen Fake-Auth-Client ersetzen (kein Netz).
+// createClient durch einen Fake-Auth-Client ersetzen (kein Netz). Was er beim
+// Bauen mitbekommt, wird festgehalten — gebaut wird beim Import, vor jedem Test.
 const auth = vi.hoisted(() => ({ signOut: vi.fn() }))
-vi.mock('@supabase/supabase-js', () => ({ createClient: () => ({ auth }) }))
+const gebaut = vi.hoisted(() => ({ optionen: undefined as unknown }))
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: (_url: string, _key: string, optionen: unknown) => {
+    gebaut.optionen = optionen
+    return { auth }
+  },
+}))
 
 import * as modul from './supabase'
+import { sitzungsSchluessel } from './gespeicherte-sitzung'
 
 beforeEach(() => vi.clearAllMocks())
 
@@ -22,6 +30,12 @@ beforeEach(() => vi.clearAllMocks())
 describe('Konfiguration', () => {
   it('isSupabaseConfigured ist im (gemockten) konfigurierten Zustand true', () => {
     expect(modul.isSupabaseConfigured).toBe(true)
+  })
+
+  it('die Sitzung liegt dort, wo der Provider beim Start nachsieht (Offline-Start, 19.10.2026)', () => {
+    // Ohne diesen Schlüssel fände `gespeicherteSitzung` nichts, und offline
+    // stünde nach über einer Stunde wieder die Anmeldung da statt des letzten Stands.
+    expect(gebaut.optionen).toMatchObject({ auth: { storageKey: sitzungsSchluessel('https://test.example.invalid') } })
   })
 })
 

@@ -100,13 +100,21 @@ async function ladenUndEinspielen(
     dispatch({ type: 'nachladenGescheitert' })
     return false
   }
-  // Ladefehler: letzten Stand nur lesend anzeigen, wenn einer vorliegt.
-  const snap = readSnapshot(userId)
-  if (snap) {
-    dispatch({ type: 'hydrate', payload: snap.payload, staleAt: snap.at })
-    return false
-  }
-  // userId mitgeben: Retry und Code-Einlösen brauchen es ohne Hydration
-  dispatch({ type: 'setDataStatus', status: 'error', userId })
+  letztenStandZeigen(dispatch, userId)
   return false
+}
+
+/**
+ * **Den letzten Stand zeigen, nur lesend**: die Momentaufnahme dieses Kontos,
+ * sonst die Fehlerseite („Erneut versuchen", „Abmelden").
+ *
+ * Der Rückfall, wenn das Laden scheitert, und seit dem 19.10.2026 auch der
+ * Offline-Start (`store.tsx`). Dort wäre ein Ladeversuch zwecklos: Jede Abfrage
+ * wartet, bis supabase-js das Token erneuert hat, offline also 25 s.
+ */
+export function letztenStandZeigen(dispatch: Dispatch<AppAction>, userId: string): void {
+  const snap = readSnapshot(userId)
+  if (snap) dispatch({ type: 'hydrate', payload: snap.payload, staleAt: snap.at })
+  // userId mitgeben: Retry und Code-Einlösen brauchen es ohne Hydration
+  else dispatch({ type: 'setDataStatus', status: 'error', userId })
 }

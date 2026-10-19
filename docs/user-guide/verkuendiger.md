@@ -621,7 +621,8 @@ beim Öffnen ohnehin vor. Push spart dir nur das Nachsehen.
 
 Im Saal ist der Empfang manchmal schlecht. Die App startet deshalb auch ohne
 Internet und zeigt dir den **letzten Stand**, den sie beim letzten Mal geladen
-hat. Oben erscheint dann ein Hinweisstreifen mit dem Zeitpunkt:
+hat. Zeigt dein Handy Empfang an, kommt aber nichts durch, dauert das ein paar
+Sekunden. Oben erscheint dann ein Hinweisstreifen mit dem Zeitpunkt:
 
 ![Offline-Stand](screenshots/offline-stand.png)
 

@@ -1901,6 +1901,11 @@ describe('login / logout', () => {
     const pruefen = makeState({ screen: 'login', sitzungPruefen: true })
     expect(reducer(pruefen, { type: 'sitzungGeprueft' })).toMatchObject({ screen: 'login', sitzungPruefen: false })
   })
+  it('ein zweites Melden ändert nichts — die App zeichnet nicht neu', () => {
+    // Hat der Offline-Start vorgegriffen, meldet die Prüfung ihr Ende später noch einmal.
+    const geprueft = makeState({ screen: 'start', sitzungPruefen: false })
+    expect(reducer(geprueft, { type: 'sitzungGeprueft' })).toBe(geprueft)
+  })
   it('nach dem Abmelden ist nichts mehr offen: niemand ist angemeldet', () => {
     expect(reducer(makeState({ sitzungPruefen: true }), { type: 'logout' }).sitzungPruefen).toBe(false)
   })

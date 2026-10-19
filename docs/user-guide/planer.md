@@ -1860,7 +1860,8 @@ im Formular nur den einen Zettel.
 ## 10. Ohne Internet (offline)
 
 Die App startet auch ohne Internet und zeigt den **letzten geladenen Stand**.
-Ein Hinweisstreifen nennt den Zeitpunkt der Aufnahme:
+Zeigt das Gerät Empfang an, kommt aber nichts durch, dauert das ein paar
+Sekunden. Ein Hinweisstreifen nennt den Zeitpunkt der Aufnahme:
 
 ![Offline-Stand](screenshots/offline-stand.png)
 

@@ -1,7 +1,9 @@
 /** @vitest-environment jsdom */
+import { AuthRetryableFetchError } from '@supabase/supabase-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render, renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
+import type { AppAction } from './context'
 import { DE } from '../i18n/de'
 import { APP_LANGS, isRTL } from '../i18n/langs'
 import { dict, loadOverlay } from '../i18n/ui'
@@ -31,9 +33,8 @@ import { dict, loadOverlay } from '../i18n/ui'
 
 const authListener = { fn: null as ((e: string, s: unknown) => void) | null }
 const unsubscribe = vi.fn()
-const getSession = vi.fn(() =>
-  Promise.resolve<{ data: { session: { user: { id: string } } | null } }>({ data: { session: null } }),
-)
+type Antwort = { data: { session: { user: { id: string } } | null }; error?: unknown }
+const getSession = vi.fn(() => Promise.resolve<Antwort>({ data: { session: null } }))
 const supabaseStub = {
   auth: {
     getSession: () => getSession(),
@@ -43,8 +44,17 @@ const supabaseStub = {
     },
   },
 }
-const loadAndHydrate = vi.fn(() => Promise.resolve())
+const loadAndHydrate = vi.fn((_dispatch: (a: AppAction) => void, _userId: string, _opts?: { silent?: boolean }) =>
+  Promise.resolve(),
+)
+const letztenStandZeigen = vi.fn((_dispatch: (a: AppAction) => void, _userId: string): void => {})
 const konfiguriert = { wert: true }
+/** Was auth-js auf dem Gerät abgelegt hat — echt gelesen in `gespeicherte-sitzung.test.ts`. */
+const abgelegt = vi.hoisted(() => ({ wert: null as { userId: string; laeuftAb: number } | null }))
+vi.mock('../lib/gespeicherte-sitzung', async (orig) => ({
+  ...(await orig<Record<string, unknown>>()),
+  gespeicherteSitzung: () => abgelegt.wert,
+}))
 
 vi.mock('../lib/supabase', () => ({
   get supabase() {
@@ -54,7 +64,10 @@ vi.mock('../lib/supabase', () => ({
     return konfiguriert.wert
   },
 }))
-vi.mock('./hydrate', () => ({ loadAndHydrate: (...a: unknown[]) => loadAndHydrate(...(a as [])) }))
+vi.mock('./hydrate', () => ({
+  loadAndHydrate: (...a: Parameters<typeof loadAndHydrate>) => loadAndHydrate(...a),
+  letztenStandZeigen: (dispatch: (a: AppAction) => void, userId: string) => letztenStandZeigen(dispatch, userId),
+}))
 const mitLinkAnmelden = vi.fn((_token: string) => Promise.resolve<string | null>(null))
 vi.mock('../lib/anmelden', () => ({ mitLinkAnmelden: (token: string) => mitLinkAnmelden(token) }))
 vi.mock('../lib/snapshot', () => ({
@@ -120,6 +133,8 @@ beforeEach(() => {
   melder.konflikt = null
   unsubscribe.mockClear()
   loadAndHydrate.mockClear().mockResolvedValue(undefined)
+  letztenStandZeigen.mockReset()
+  abgelegt.wert = null
   getSession.mockClear().mockResolvedValue({ data: { session: null } })
   mitLinkAnmelden.mockClear()
   // Ohne Link in der Adresse, wie jeder gewöhnliche Start.
@@ -239,40 +254,41 @@ describe('Schreibkonflikt: ein anderer Planer war schneller (T39)', () => {
  * das Push-Abo des Geräts dem Angemeldeten gehört; das Abmelden beendet die
  * Sitzung, in der noch geladen wird.
  */
-describe('Konto auf diesem Gerät', () => {
-  const geladen = {
-    congregation: { name: 'K', hall: '', times: STANDARD_ZEITEN },
-    planner: false,
-    zuteiler: false,
-    personId: null,
-    persons: [],
-    services: [],
-    groups: [],
-    weeks: [],
-    fsRules: [],
-    fsWeeks: [],
-    gruppenbesuche: [],
-    vortraege: [],
-    trolleys: [],
-    trolleyTermine: [],
-    plaene: [],
-    planEintraege: [],
-    absences: [],
-    notifications: [],
-    confirmations: {},
-    sentLog: {},
-    persoenlich: {},
-    reminders: { first: 7, last: 1, repeat: false },
-    congLang: 'de',
-    progLangs: [],
-    members: [],
-    anmeldeLinks: [],
-    auxClass: false,
-    congregationId: 'c1',
-    userId: 'u1',
-    empty: false,
-  }
+/** Was das Laden einspielt: eine kleine, leere Versammlung. */
+const geladen = {
+  congregation: { name: 'K', hall: '', times: STANDARD_ZEITEN },
+  planner: false,
+  zuteiler: false,
+  personId: null,
+  persons: [],
+  services: [],
+  groups: [],
+  weeks: [],
+  fsRules: [],
+  fsWeeks: [],
+  gruppenbesuche: [],
+  vortraege: [],
+  trolleys: [],
+  trolleyTermine: [],
+  plaene: [],
+  planEintraege: [],
+  absences: [],
+  notifications: [],
+  confirmations: {},
+  sentLog: {},
+  persoenlich: {},
+  reminders: { first: 7, last: 1, repeat: false },
+  congLang: 'de',
+  progLangs: [],
+  members: [],
+  anmeldeLinks: [],
+  auxClass: false,
+  congregationId: 'c1',
+  userId: 'u1',
+  empty: false,
+}
 
+describe('Konto auf diesem Gerät', () => {
   it('nach dem Laden fragt die App einmal, ob das Push-Abo dem Angemeldeten gehört', async () => {
     pushAboAbgleichen.mockClear()
     const { result } = starte()
@@ -532,6 +548,242 @@ describe('Mit dem Link aus der E-Mail', () => {
       await Promise.resolve()
     })
     expect(mitLinkAnmelden).not.toHaveBeenCalled()
+  })
+})
+
+/*
+ * **Offline-Start nach über einer Stunde** (19.10.2026). Muss auth-js das Token
+ * einer abgelegten Sitzung erst erneuern, wartet jede Frage nach der Sitzung
+ * auf das Netz. Offline gibt es nach 25 s auf und meldet keine Sitzung, obwohl
+ * sie noch auf dem Gerät liegt; bis dahin kam danach die Anmeldung, nie der
+ * letzte Stand. Jetzt greift der Provider vor. Die Momentaufnahme selbst liest
+ * `letztenStandZeigen` (hier eine Attrappe, echt in `hydrate.test.ts`), die
+ * abgelegte Sitzung `gespeicherteSitzung` (echt in `gespeicherte-sitzung.test.ts`).
+ */
+describe('Offline-Start nach über einer Stunde', () => {
+  /** Abgelegt ist eine Sitzung, deren Token seit einer Stunde abgelaufen ist. */
+  const abgelaufen = () => ({ userId: 'u7', laeuftAb: Date.now() - 3_600_000 })
+  /** Supabase antwortet nicht, solange die Erneuerung läuft. */
+  const haengt = (): void => {
+    getSession.mockReturnValue(new Promise(() => {}))
+  }
+  /** Das Gerät meldet: kein Netz. */
+  const offline = (): void => {
+    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false })
+  }
+  /** Die Wecker der Uhr laufen lassen und abwarten, was sie auslösen. */
+  const vergehen = async (ms: number): Promise<void> => {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(ms)
+    })
+  }
+
+  beforeEach(() => {
+    // Der letzte Stand, wie ihn die Momentaufnahme einspielt: nur lesend.
+    letztenStandZeigen.mockImplementation((dispatch, userId) =>
+      dispatch({ type: 'hydrate', payload: { ...geladen, userId }, staleAt: Date.now() - 7_200_000 }),
+    )
+  })
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, 'onLine')
+  })
+
+  it('offline, und das Token muss erneuert werden: sofort der letzte Stand — kein Warten, keine Anmeldung', async () => {
+    abgelegt.wert = abgelaufen()
+    offline()
+    haengt()
+    const { result } = starte()
+    await abwarten()
+    expect(letztenStandZeigen).toHaveBeenCalledWith(expect.anything(), 'u7')
+    expect(result.current.state).toMatchObject({ screen: 'start', sitzungPruefen: false, userId: 'u7' })
+    expect(result.current.state.staleAt).not.toBeNull()
+    // Geladen wird nicht: Jede Abfrage wartete ebenfalls auf die Erneuerung.
+    expect(loadAndHydrate).not.toHaveBeenCalled()
+  })
+
+  it('online, aber Supabase antwortet nicht: nach vier Sekunden der letzte Stand — vorher nicht', async () => {
+    // Im WLAN ohne Internet oder bei Empfang ohne Daten meldet das Gerät „online".
+    vi.useFakeTimers()
+    abgelegt.wert = abgelaufen()
+    haengt()
+    const { result } = starte()
+    await vergehen(3999)
+    expect(result.current.state.sitzungPruefen).toBe(true)
+    expect(letztenStandZeigen).not.toHaveBeenCalled()
+    await vergehen(1)
+    expect(letztenStandZeigen).toHaveBeenCalledWith(expect.anything(), 'u7')
+    expect(result.current.state).toMatchObject({ screen: 'start', sitzungPruefen: false })
+  })
+
+  it('gilt das Token noch, greift nichts vor — Supabase antwortet dann ohnehin aus dem Speicher', async () => {
+    vi.useFakeTimers()
+    abgelegt.wert = { userId: 'u7', laeuftAb: Date.now() + 1_800_000 }
+    offline()
+    haengt()
+    const { result } = starte()
+    await vergehen(10_000)
+    expect(letztenStandZeigen).not.toHaveBeenCalled()
+    expect(result.current.state.sitzungPruefen).toBe(true)
+  })
+
+  it('mit dem Link aus der E-Mail greift nichts vor — angemeldet wird, wen der Link nennt', async () => {
+    vi.useFakeTimers()
+    window.history.replaceState(null, '', `/#anmelden=${'T'.repeat(43)}`)
+    anmeldeAdresseVergessen()
+    mitLinkAnmelden.mockReturnValueOnce(new Promise(() => {}))
+    abgelegt.wert = abgelaufen()
+    offline()
+    const { result } = starte()
+    await vergehen(10_000)
+    expect(letztenStandZeigen).not.toHaveBeenCalled()
+    expect(result.current.state.sitzungPruefen).toBe(true)
+  })
+
+  it('nach dem Vorgriff greift nichts noch einmal vor — die Ansicht bleibt, wo sie ist', async () => {
+    // Der Wecker greift nach vier Sekunden vor; 25 s später meldet Supabase
+    // den Netzfehler. Ein zweiter Vorgriff spränge zurück auf den Start und
+    // legte das Blatt beim Öffnen noch einmal vor.
+    vi.useFakeTimers()
+    abgelegt.wert = abgelaufen()
+    let antworten: (a: Antwort) => void = () => {}
+    getSession.mockReturnValue(new Promise((res) => { antworten = res }))
+    const { result } = starte()
+    await vergehen(4000)
+    await act(async () => {
+      result.current.dispatch({ type: 'navigate', screen: 'programm' })
+    })
+    antworten({ data: { session: null }, error: new AuthRetryableFetchError('Failed to fetch', 0) })
+    await vergehen(1)
+    expect(letztenStandZeigen).toHaveBeenCalledTimes(1)
+    expect(result.current.state.screen).toBe('programm')
+  })
+
+  it('scheitert der Link am Netz, bleibt es bei der Sitzung, die da war — mit ihrem letzten Stand', async () => {
+    window.history.replaceState(null, '', `/#anmelden=${'T'.repeat(43)}`)
+    anmeldeAdresseVergessen()
+    mitLinkAnmelden.mockResolvedValueOnce('netz')
+    abgelegt.wert = abgelaufen()
+    getSession.mockResolvedValue({ data: { session: null }, error: new AuthRetryableFetchError('Failed to fetch', 0) })
+    const { result } = starte()
+    await abwarten()
+    expect(letztenStandZeigen).toHaveBeenCalledWith(expect.anything(), 'u7')
+    expect(result.current.state).toMatchObject({ screen: 'start', sitzungPruefen: false })
+  })
+
+  it('steht der letzte Stand eines anderen Kontos, lädt dessen Anmeldung sichtbar — nicht still darüber', async () => {
+    // Ein anderer Tab meldet B an, während hier noch der Stand von u7 steht.
+    abgelegt.wert = abgelaufen()
+    offline()
+    haengt()
+    starte()
+    await abwarten()
+    await act(async () => {
+      authListener.fn?.('SIGNED_IN', { user: { id: 'u9' } })
+    })
+    expect(loadAndHydrate).toHaveBeenCalledWith(expect.anything(), 'u9')
+  })
+
+  it('scheitert die Erneuerung am Netz, bevor der Wecker klingelt, steht der letzte Stand ebenso', async () => {
+    abgelegt.wert = abgelaufen()
+    getSession.mockResolvedValue({ data: { session: null }, error: new AuthRetryableFetchError('Failed to fetch', 0) })
+    const { result } = starte()
+    await abwarten()
+    expect(letztenStandZeigen).toHaveBeenCalledWith(expect.anything(), 'u7')
+    expect(result.current.state).toMatchObject({ screen: 'start', sitzungPruefen: false })
+  })
+
+  it('ist die Sitzung wirklich weg (Token ungültig), kommt die Anmeldung — und der Wecker greift nicht mehr vor', async () => {
+    vi.useFakeTimers()
+    abgelegt.wert = abgelaufen()
+    // auth-js hat sie entfernt (SIGNED_OUT) und antwortet ohne Sitzung und ohne Fehler.
+    getSession.mockResolvedValue({ data: { session: null }, error: null })
+    const { result } = starte()
+    await vergehen(10_000)
+    expect(result.current.state).toMatchObject({ screen: 'login', sitzungPruefen: false })
+    expect(letztenStandZeigen).not.toHaveBeenCalled()
+  })
+
+  it('meldet Supabase später SIGNED_OUT, geht es vom letzten Stand zur Anmeldung', async () => {
+    abgelegt.wert = abgelaufen()
+    offline()
+    haengt()
+    const { result } = starte()
+    await abwarten()
+    await act(async () => {
+      authListener.fn?.('SIGNED_OUT', null)
+    })
+    expect(result.current.state).toMatchObject({ screen: 'login', staleAt: null, userId: null })
+  })
+
+  it('kommt die Erneuerung durch, ersetzen die Daten den letzten Stand — still, ohne „Lädt …"', async () => {
+    abgelegt.wert = abgelaufen()
+    offline()
+    haengt()
+    starte()
+    await abwarten()
+    await act(async () => {
+      authListener.fn?.('TOKEN_REFRESHED', { user: { id: 'u7' } })
+    })
+    expect(loadAndHydrate).toHaveBeenCalledWith(expect.anything(), 'u7', { silent: true })
+  })
+
+  it('antwortet Supabase doch noch mit der Sitzung, bleibt die Ansicht, wo sie ist', async () => {
+    abgelegt.wert = abgelaufen()
+    offline()
+    let antworten: (a: Antwort) => void = () => {}
+    getSession.mockReturnValue(new Promise((res) => { antworten = res }))
+    const { result } = starte()
+    await abwarten()
+    // Inzwischen schlägt jemand das Programm auf.
+    await act(async () => {
+      result.current.dispatch({ type: 'navigate', screen: 'programm' })
+    })
+    antworten({ data: { session: { user: { id: 'u7' } } } })
+    await abwarten()
+    expect(result.current.state.screen).toBe('programm')
+    expect(loadAndHydrate).toHaveBeenCalledWith(expect.anything(), 'u7', { silent: true })
+  })
+
+  it('ohne Momentaufnahme steht die Fehlerseite — die Erneuerung lädt dann sichtbar', async () => {
+    letztenStandZeigen.mockImplementation((dispatch, userId) => dispatch({ type: 'setDataStatus', status: 'error', userId }))
+    abgelegt.wert = abgelaufen()
+    offline()
+    haengt()
+    const { result } = starte()
+    await abwarten()
+    expect(result.current.state).toMatchObject({ screen: 'start', dataStatus: 'error', userId: 'u7' })
+    await act(async () => {
+      authListener.fn?.('TOKEN_REFRESHED', { user: { id: 'u7' } })
+    })
+    expect(loadAndHydrate).toHaveBeenCalledWith(expect.anything(), 'u7')
+  })
+
+  it('stand der letzte Stand nach einem gescheiterten Laden, holt die nächste Erneuerung die Daten', async () => {
+    // Die erste Stunde: Supabase antwortet sofort, das Laden scheitert offline,
+    // und die Momentaufnahme steht. Die Erneuerung zeigt: Das Netz ist zurück.
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u7' } } } })
+    loadAndHydrate.mockImplementationOnce((dispatch) => {
+      dispatch({ type: 'hydrate', payload: { ...geladen, userId: 'u7' }, staleAt: Date.now() - 600_000 })
+      return Promise.resolve()
+    })
+    starte()
+    await abwarten()
+    expect(loadAndHydrate).toHaveBeenCalledTimes(1)
+    await act(async () => {
+      authListener.fn?.('TOKEN_REFRESHED', { user: { id: 'u7' } })
+    })
+    expect(loadAndHydrate).toHaveBeenLastCalledWith(expect.anything(), 'u7', { silent: true })
+  })
+
+  it('im Alltag lädt eine Erneuerung nichts nach — die Daten sind ja da', async () => {
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u7' } } } })
+    starte()
+    await abwarten()
+    loadAndHydrate.mockClear()
+    await act(async () => {
+      authListener.fn?.('TOKEN_REFRESHED', { user: { id: 'u7' } })
+    })
+    expect(loadAndHydrate).not.toHaveBeenCalled()
   })
 })
 

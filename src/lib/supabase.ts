@@ -8,6 +8,7 @@
  */
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { SITZUNG_SCHLUESSEL } from './gespeicherte-sitzung'
 import { verfolgterFetch } from './schreiben-unterwegs'
 
 const url = import.meta.env.VITE_SUPABASE_URL
@@ -36,10 +37,15 @@ const aufEntwicklerseite =
  * null = keine Datenbank (keine Env-Konfiguration, oder die Entwicklerseite).
  *
  * Der `fetch` zählt mit, was hinausgeht — das Nachladen wartet darauf
- * (`lib/schreiben-unterwegs.ts`).
+ * (`lib/schreiben-unterwegs.ts`). Den Schlüssel, unter dem die Sitzung liegt,
+ * bekommt der Client ausdrücklich, und zwar denselben, den supabase-js ohnehin
+ * wählt: Der Provider liest dort beim Start, ohne auf Supabase zu warten
+ * (`lib/gespeicherte-sitzung.ts`).
  */
 export const supabase: SupabaseClient | null =
-  url && anonKey && !aufEntwicklerseite ? createClient(url, anonKey, { global: { fetch: verfolgterFetch() } }) : null
+  url && anonKey && !aufEntwicklerseite
+    ? createClient(url, anonKey, { auth: { storageKey: SITZUNG_SCHLUESSEL }, global: { fetch: verfolgterFetch() } })
+    : null
 
 /*
  * Anmelden, Registrieren und das Kennwort zurücksetzen standen hier bis zum

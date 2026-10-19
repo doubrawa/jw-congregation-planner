@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { loadAndHydrate } from './hydrate'
+import { letztenStandZeigen, loadAndHydrate } from './hydrate'
 import { loadCongregationData, type CongregationData } from '../lib/data'
 import { verfolgterFetch } from '../lib/schreiben-unterwegs'
 import { clearSnapshot, readSnapshot, saveSnapshot } from '../lib/snapshot'
@@ -266,5 +266,35 @@ describe('loadAndHydrate', () => {
     antworten()
     await laden
     expect(actions.map((a) => a.type)).toEqual(['setDataStatus'])
+  })
+})
+
+/*
+ * **Den letzten Stand zeigen, ohne zu laden** (19.10.2026): der Rückfall von
+ * oben, für sich, denn der Offline-Start greift direkt danach (`store.tsx`).
+ * Ein Ladeversuch wäre dort zwecklos: Jede Abfrage wartet, bis supabase-js das
+ * Token erneuert hat, offline also 25 s.
+ */
+describe('letztenStandZeigen', () => {
+  beforeEach(() => {
+    mockLoad.mockReset()
+    mockRead.mockReset()
+    mockRead.mockReturnValue(null)
+  })
+
+  it('zeigt die Momentaufnahme dieses Kontos nur lesend — ohne etwas zu laden', () => {
+    const stored = { ...emptyData, congregationId: 'c1', userId: 'u9', empty: false }
+    mockRead.mockReturnValue({ at: 1_700_000_000_000, payload: stored })
+    const { actions, dispatch } = collector()
+    letztenStandZeigen(dispatch, 'u9')
+    expect(actions).toEqual([{ type: 'hydrate', payload: stored, staleAt: 1_700_000_000_000 }])
+    expect(mockRead).toHaveBeenCalledWith('u9') // nur die eigene Aufnahme
+    expect(mockLoad).not.toHaveBeenCalled()
+  })
+
+  it('ohne Momentaufnahme die Fehlerseite — mit dem Konto, damit „Erneut versuchen" weiß, für wen', () => {
+    const { actions, dispatch } = collector()
+    letztenStandZeigen(dispatch, 'u9')
+    expect(actions).toEqual([{ type: 'setDataStatus', status: 'error', userId: 'u9' }])
   })
 })
