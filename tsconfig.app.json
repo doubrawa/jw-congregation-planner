@@ -23,9 +23,9 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     // `arr[i]` kann `undefined` sein (T42). Seit dem 17.10.2026 hält ganz `src`
-    // die Regel ein, die Tests eingeschlossen — vorher stand sie nur in
-    // `tsconfig.index.json` mit einer Grundlinie. Edge Functions und Skripte
-    // sind noch nicht so weit und schalten sie dort ab.
+    // die Regel ein, die Tests eingeschlossen — vorher stand sie nur in einer
+    // eigenen Konfiguration mit einer Grundlinie. Seit dem 19.10.2026 auch die
+    // Edge Functions und die Skript-Tests: Ihre Konfigurationen erben sie von hier.
     "noUncheckedIndexedAccess": true
   },
   "include": ["src"]

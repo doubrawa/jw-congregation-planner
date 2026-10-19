@@ -100,9 +100,8 @@ function makeWeek(): Week {
  *
  * Bricht die Struktur, fällt der Test mit einer Ansage statt mit einem
  * `undefined`-Vergleich irgendwo weiter unten. Zugleich hält er
- * `noUncheckedIndexedAccess` ein: die Sperrklinke aus T42 gilt auch für neue
- * Testdateien, und ein Dutzend Nicht-Null-Zusätze wäre genau die Entwertung,
- * gegen die sie da ist.
+ * `noUncheckedIndexedAccess` ein (T42, gilt auch für Testdateien), ohne ein
+ * Dutzend Nicht-Null-Zusätze.
  */
 function bei<T>(arr: readonly T[] | undefined, i: number): T {
   const x = arr?.[i]

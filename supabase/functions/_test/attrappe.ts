@@ -34,7 +34,7 @@ export function jsonRes(body: unknown, status = 200): Response {
  */
 export function filterWert(path: string, spalte: string, op: 'eq' | 'lte' | 'gte' = 'eq'): string | null {
   const m = new RegExp(`[?&]${spalte}=${op}\\.([^&]*)`).exec(path)
-  return m ? decodeURIComponent(m[1]) : null
+  return m ? decodeURIComponent(m[1]!) : null
 }
 
 /**

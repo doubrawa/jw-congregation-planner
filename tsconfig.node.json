@@ -18,7 +18,9 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    // Wie überall im Repo (T42): `arr[i]` kann `undefined` sein.
+    "noUncheckedIndexedAccess": true
   },
   "include": ["vite.config.ts"]
 }

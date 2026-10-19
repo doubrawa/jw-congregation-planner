@@ -174,13 +174,13 @@ describe('schritte', () => {
     // Nach einem Abbruch: Schritt 1 legte sonst eine zweite Versammlung an.
     const liste = schritte({ ...vollstaendig, 'ab-schritt': '4' })
     expect(liste.map((s) => s.nr)).toEqual([4, 5, 6])
-    expect(liste[0].skript).toBe('wochen-importieren.mjs')
+    expect(liste[0]!.skript).toBe('wochen-importieren.mjs')
   })
 
   it('gibt die Sprache nur weiter, wenn eine genannt ist', () => {
-    const ohne = schritte(vollstaendig)[0]
+    const ohne = schritte(vollstaendig)[0]!
     expect(ohne.argv).not.toContain('--sprache')
-    const mit = schritte({ ...vollstaendig, sprache: 'en' })[0]
+    const mit = schritte({ ...vollstaendig, sprache: 'en' })[0]!
     expect(mit.argv).toContain('--sprache')
     expect(mit.argv[mit.argv.indexOf('--sprache') + 1]).toBe('en')
   })
@@ -211,8 +211,8 @@ describe('schritte', () => {
   })
 
   it('setzt Zusammenkunftszeiten nur als Rückfall, nicht über die Angabe', () => {
-    expect(schritte(vollstaendig)[0].argv).toContain('2 19:00')
-    const eigen = schritte({ ...vollstaendig, mid: '5 19:00', we: '0 10:00' })[0]
+    expect(schritte(vollstaendig)[0]!.argv).toContain('2 19:00')
+    const eigen = schritte({ ...vollstaendig, mid: '5 19:00', we: '0 10:00' })[0]!
     expect(eigen.argv).toContain('5 19:00')
     expect(eigen.argv).not.toContain('2 19:00')
   })

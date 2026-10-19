@@ -679,18 +679,19 @@ export function alsSkript(metaUrl, main) {
  * suchen: von `wurzel` aus durch jedes `node_modules` hinauf bis zum Paket,
  * dann dessen Eintrag unter `bin` in der `package.json`.
  *
- * Bis zum 26.9.2026 bauten `check-index-access.mjs` und `mutationsprobe.mjs`
- * den Pfad fest zusammen: `<wurzel>/node_modules/<paket>/…`. Ein Worktree der
- * Desktop-App (`.claude/worktrees/<name>`) hat aber kein eigenes
- * `node_modules` — `npx` findet die Pakete durch Hochwandern im
- * Hauptcheckout, der feste Pfad nicht. Node starb an „Cannot find module",
+ * Bis zum 26.9.2026 bauten `check-index-access.mjs` (die Sperrklinke von T42,
+ * seit 19.10.2026 fort) und `mutationsprobe.mjs` den Pfad fest zusammen:
+ * `<wurzel>/node_modules/<paket>/…`. Ein Worktree der Desktop-App
+ * (`.claude/worktrees/<name>`) hat aber kein eigenes `node_modules` — `npx`
+ * findet die Pakete durch Hochwandern im Hauptcheckout, der feste Pfad
+ * nicht. Node starb an „Cannot find module",
  * und beide Skripte hielten den Startfehler für ein Messergebnis: Die
  * Sperrklinke meldete alle 32 Dateien „aufgeräumt" (ein `--update` darauf
  * hätte die Grundlinie geleert), die Mutationsprobe jede Regel „bewacht
  * (unbekannt, 0s)".
  *
  * Wirft, wenn sich nichts findet. Was dann geschieht, entscheidet der
- * Aufrufer; die beiden Prüfungen brechen mit 2 ab.
+ * Aufrufer; die Mutationsprobe bricht mit 2 ab.
  */
 export function werkzeugPfad(wurzel, paket, befehl = paket) {
   const vonWurzel = createRequire(path.join(wurzel, 'package.json'))

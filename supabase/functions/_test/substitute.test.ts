@@ -297,7 +297,7 @@ function savedSlotName(): string | null {
   const body = writesTo('weeks').find((w) => w.method === 'PATCH')?.body as
     | { data: { mid: { helpers: Record<string, { name?: string }[]> } } }
     | undefined
-  return body?.data.mid.helpers[SVC][0]?.name ?? null
+  return body?.data.mid.helpers[SVC]![0]?.name ?? null
 }
 
 /* ---- Tests --------------------------------------------------------------- */
@@ -498,7 +498,7 @@ describe('substitute: Einspringen setzt ein Gesuch voraus', () => {
     // Einspringen setzt voraus, dass jemand da war. Für einen leeren Platz
     // gibt es niemanden, der abgesagt haben könnte — er gehört dem Planer.
     const w = week as { mid: { helpers: Record<string, unknown[]> } }
-    w.mid.helpers[SVC][0] = {}
+    w.mid.helpers[SVC]![0] = {}
     const res = await call(take())
     expect(res.status).toBe(409)
     await expect(res.json()).resolves.toEqual({ error: 'not-sought' })
@@ -553,7 +553,7 @@ describe('substitute: Einspringen nur mit Qualifikation', () => {
 
   it('schon selbst eingetragen → idempotent, kein zweiter Schreibzugriff', async () => {
     const w = week as { mid: { helpers: Record<string, { name?: string; pid?: string }[]> } }
-    w.mid.helpers[SVC][0] = { name: 'Ich Selbst', pid: 'p-me' }
+    w.mid.helpers[SVC]![0] = { name: 'Ich Selbst', pid: 'p-me' }
     const res = await call(take())
     expect(res.status).toBe(200)
     await expect(res.json()).resolves.toEqual({ ok: true, already: true })
@@ -746,7 +746,7 @@ describe('substitute: zwei Übernahmen gleichzeitig', () => {
     // und mit `DELETE confirmations?task_key=…` dessen Bestätigung gelöscht.
     konkurrent = () => {
       const w = week as { mid: { helpers: Record<string, { name?: string; pid?: string }[]> } }
-      w.mid.helpers[SVC][0] = { name: 'Karl Onto', pid: 'p-noacct' }
+      w.mid.helpers[SVC]![0] = { name: 'Karl Onto', pid: 'p-noacct' }
     }
     const res = await call(take())
     expect(res.status).toBe(409)
@@ -841,12 +841,12 @@ describe('substitute: Meldungen sind übersetzbar (T24)', () => {
     await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
     const rows = writesTo('notifications')[0]?.body as
       { title: string; body: string; task_key?: string }[]
-    expect(rows[0].title).toBe('Ersatz gesucht') // ohne Dienstnamen
+    expect(rows[0]!.title).toBe('Ersatz gesucht') // ohne Dienstnamen
     // Rumpf nur aus ' · '-Atomen, die der Fragment-Übersetzer erledigt.
-    expect(rows[0].body).toBe(`Mikrofone · ${TERMIN} · ${alsFreitext('Otto Riginal')}`)
+    expect(rows[0]!.body).toBe(`Mikrofone · ${TERMIN} · ${alsFreitext('Otto Riginal')}`)
     // Die Zeile weiß, worum es geht — sonst ließe sie sich
     // später weder aufräumen noch als abgelaufen erkennen.
-    expect(rows[0].task_key).toBe(KEY)
+    expect(rows[0]!.task_key).toBe(KEY)
   })
 
   it('nennt den Termin, nicht die Wochenspanne', async () => {
@@ -862,16 +862,16 @@ describe('substitute: Meldungen sind übersetzbar (T24)', () => {
     */
     await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
     const rows = writesTo('notifications')[0]?.body as { body: string }[]
-    expect(rows[0].body).toContain(TERMIN)
-    expect(rows[0].body).not.toContain('7.–13.')
+    expect(rows[0]!.body).toContain(TERMIN)
+    expect(rows[0]!.body).not.toContain('7.–13.')
   })
 
   it('dasselbe beim Einspringen', async () => {
     await call(take())
     // [0] ist das Aufräumen der Suche (DELETE), [1] die neue Mitteilung.
     const rows = writesTo('notifications')[1]?.body as { title: string; body: string }[]
-    expect(rows[0].title).toBe('Ersatz gefunden')
-    expect(rows[0].body).toBe(`Mikrofone · ${TERMIN} · ${alsFreitext('Ich Selbst')}`)
+    expect(rows[0]!.title).toBe('Ersatz gefunden')
+    expect(rows[0]!.body).toBe(`Mikrofone · ${TERMIN} · ${alsFreitext('Ich Selbst')}`)
   })
 
   /*

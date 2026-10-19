@@ -497,7 +497,7 @@ Deno.serve(async (req: Request) => {
             // Bestätigen-Knopf, und die Erinnerung lässt sich an Ort und Stelle
             // erledigen. Bei mehreren zeigte ein einzelner Knopf auf eine
             // willkürliche davon — dafür gibt es das Bestätigungsblatt.
-            ...(mainEntries.length === 1 ? { task_key: mainEntries[0].key } : {}),
+            ...(mainEntries.length === 1 ? { task_key: mainEntries[0]!.key } : {}),
           })
         }
         logRows.push({ congregation_id: cong.id, user_id: userId, kind: 'self' })

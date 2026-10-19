@@ -348,10 +348,9 @@ describe('Sprachvarianten in fremden Schriften', () => {
   /**
    * Der erste Abschnitt einer Woche, mit Wächter statt `!`.
    *
-   * Die Sperrklinke aus T42 (`noUncheckedIndexedAccess`) zählt jeden
-   * ungeprüften Index-Zugriff je Datei und lässt die Zahl nur fallen. Neue
-   * Prüfungen fangen deshalb bei null an — auch in einer Datei, die noch
-   * Altbestand trägt.
+   * `noUncheckedIndexedAccess` (T42) lässt `sections[0]` auch `undefined`
+   * sein. Der Wächter sagt, was am Testaufbau fehlt, statt dass der Test
+   * weiter unten an einem `undefined` scheitert.
    */
   // `Week | WeekVariant`: Beide tragen die beiden Zusammenkünfte, und genau
   // darauf sieht diese Hilfe — eine Variante hat weder Kennung noch Anlass.

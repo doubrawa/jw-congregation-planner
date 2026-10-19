@@ -118,7 +118,7 @@ describe('Vollständigkeitsprobe: der Bestand kann jeden Platz besetzen', () => 
   */
   it('jeder bereichsKey aus dem Import hat mindestens eine qualifizierte Person', () => {
     const quelle = fs.readFileSync(new URL('../supabase/functions/import-week/parse.ts', import.meta.url), 'utf8')
-    const keys = [...quelle.matchAll(/bereichsKey: '([^']+)'/g)].map((m) => m[1])
+    const keys = [...quelle.matchAll(/bereichsKey: '([^']+)'/g)].map((m) => m[1]!)
     expect(keys.length).toBeGreaterThan(5)
     for (const key of new Set(keys)) {
       const passend = TEST_PERSONEN.filter((p) => bereiche(p)[key])

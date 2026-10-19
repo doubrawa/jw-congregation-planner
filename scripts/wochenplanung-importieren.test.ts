@@ -315,21 +315,21 @@ describe('verteileWoche', () => {
     expect(eroeffnung[0]).toMatchObject({ name: 'P1', pid: 'id-P1', rolle: 'Vorsitz' })
     expect(eroeffnung[1]).toMatchObject({ name: 'P1', pid: 'id-P1', rolle: 'Gebet' })
 
-    const schaetze = data.mid.sections[1].items
-    expect(schaetze[0].names![0]).toMatchObject({ name: 'P3', pid: 'id-P3' }) // Vortrag
-    expect(schaetze[1].names![0]).toMatchObject({ name: 'P4' }) // Geistige Schätze
-    expect(schaetze[2].names![0]).toMatchObject({ name: 'P5' }) // Bibellesung
+    const schaetze = data.mid.sections[1]!.items
+    expect(schaetze[0]!.names![0]).toMatchObject({ name: 'P3', pid: 'id-P3' }) // Vortrag
+    expect(schaetze[1]!.names![0]).toMatchObject({ name: 'P4' }) // Geistige Schätze
+    expect(schaetze[2]!.names![0]).toMatchObject({ name: 'P5' }) // Bibellesung
 
-    const dienst = data.mid.sections[2].items
-    expect(dienst[0].names![0]).toMatchObject({ name: 'P6' })
-    expect(dienst[0].names![1]).toMatchObject({ name: 'P7', rolle: 'Partner' })
-    expect(dienst[1].names![0]).toMatchObject({ name: 'P8' })
-    expect(dienst[1].names).toHaveLength(1) // Schülervortrag: kein Partner-Slot
+    const dienst = data.mid.sections[2]!.items
+    expect(dienst[0]!.names![0]).toMatchObject({ name: 'P6' })
+    expect(dienst[0]!.names![1]).toMatchObject({ name: 'P7', rolle: 'Partner' })
+    expect(dienst[1]!.names![0]).toMatchObject({ name: 'P8' })
+    expect(dienst[1]!.names).toHaveLength(1) // Schülervortrag: kein Partner-Slot
 
-    const leben = data.mid.sections[3].items
-    expect(leben[1].names![0]).toMatchObject({ name: 'P9' }) // Bedürfnisse (Lied davor)
-    expect(leben[2].names![0]).toMatchObject({ name: 'P10', rolle: 'Leiter' })
-    expect(leben[2].names![1]).toMatchObject({ name: 'P11', rolle: 'Leser' })
+    const leben = data.mid.sections[3]!.items
+    expect(leben[1]!.names![0]).toMatchObject({ name: 'P9' }) // Bedürfnisse (Lied davor)
+    expect(leben[2]!.names![0]).toMatchObject({ name: 'P10', rolle: 'Leiter' })
+    expect(leben[2]!.names![1]).toMatchObject({ name: 'P11', rolle: 'Leser' })
 
     expect(partItems(data.mid.sections[4])[0].names[0]).toMatchObject({ name: 'P2' }) // Schlussgebet
     expect(data.mid.auxRatgeber).toMatchObject({ name: 'P12', pid: 'id-P12' })
@@ -379,18 +379,18 @@ describe('verteileWoche', () => {
   it('setzt Wochenende: Vorsitz, WT-Leser, Redner+Thema (extern ohne pid), Lieder', () => {
     const { data } = fuellen()
     expect(partItems(data.we.sections[0])[0].names[0]).toMatchObject({ name: 'P1', pid: 'id-P1' })
-    expect(data.we.sections[0].items[0].title).toBe('Lied 5 · Gebet')
+    expect(data.we.sections[0]!.items[0]!.title).toBe('Lied 5 · Gebet')
 
-    const vortrag = data.we.sections[1].items[0]
+    const vortrag = data.we.sections[1]!.items[0]!
     expect(vortrag.names![0]).toEqual({ name: 'Gustav Gast', rolle: 'Gastredner', bereichsKey: 'vortrag' })
-    expect(vortrag.names![0].pid).toBeUndefined() // externer Redner
+    expect(vortrag.names![0]!.pid).toBeUndefined() // externer Redner
     expect(vortrag.title).toBe('Ein Thema')
 
-    const wt = data.we.sections[2].items
-    expect(wt[1].names![1]).toMatchObject({ name: 'P2', rolle: 'Leser' }) // WT-Leser
-    expect(wt[1].names![0].name).toBe('') // Leiter kennt NWS nicht → offen
+    const wt = data.we.sections[2]!.items
+    expect(wt[1]!.names![1]).toMatchObject({ name: 'P2', rolle: 'Leser' }) // WT-Leser
+    expect(wt[1]!.names![0]!.name).toBe('') // Leiter kennt NWS nicht → offen
 
-    expect(data.we.sections[3].items[0].title).toBe('Schlussworte · Lied 151 · Gebet')
+    expect(data.we.sections[3]!.items[0]!.title).toBe('Schlussworte · Lied 151 · Gebet')
   })
 
   it('--nur-leere lässt bereits besetzte Plätze in Ruhe', () => {
@@ -398,12 +398,12 @@ describe('verteileWoche', () => {
     const gebunden = loeseWoche(roh, bind)
     const data = { mid: mitteWoche(), we: wochenendWoche() }
     // Vorsitz vorbesetzen
-    data.mid.sections[0].items[0].names![0].name = 'Schon da'
-    data.mid.sections[0].items[0].names![0].pid = 'alt'
+    data.mid.sections[0]!.items[0]!.names![0]!.name = 'Schon da'
+    data.mid.sections[0]!.items[0]!.names![0]!.pid = 'alt'
     verteileWoche(data, gebunden, true)
-    expect(data.mid.sections[0].items[0].names![0]).toMatchObject({ name: 'Schon da', pid: 'alt' })
+    expect(data.mid.sections[0]!.items[0]!.names![0]).toMatchObject({ name: 'Schon da', pid: 'alt' })
     // ein leerer Platz wird trotzdem gefüllt
-    expect(data.mid.sections[0].items[0].names![1]).toMatchObject({ name: 'P1' })
+    expect(data.mid.sections[0]!.items[0]!.names![1]).toMatchObject({ name: 'P1' })
   })
 
   it('--nur-leere schützt auch den Ratgeber und das Vortragsthema, nicht aber die Lieder', () => {
@@ -413,9 +413,9 @@ describe('verteileWoche', () => {
     // Ratgeber, Redner und dessen Thema hat der Planer selbst eingetragen
     data.mid.auxRatgeber.name = 'Schon da'
     data.mid.auxRatgeber.pid = 'alt'
-    const vortrag = data.we.sections[1].items[0]
-    vortrag.names![0].name = 'Max Muster'
-    vortrag.names![0].pid = 'alt-we'
+    const vortrag = data.we.sections[1]!.items[0]!
+    vortrag.names![0]!.name = 'Max Muster'
+    vortrag.names![0]!.pid = 'alt-we'
     vortrag.title = 'Handverlesenes Thema'
     verteileWoche(data, gebunden, true)
     expect(data.mid.auxRatgeber).toMatchObject({ name: 'Schon da', pid: 'alt' })
@@ -423,7 +423,7 @@ describe('verteileWoche', () => {
     // Das Thema gehört zum Redner — bleibt der stehen, bleibt auch sein Thema
     expect(vortrag.title).toBe('Handverlesenes Thema')
     // Liednummern sind Programmstruktur, keine Zuteilung: sie folgen immer NWS
-    expect(data.we.sections[0].items[0].title).toBe('Lied 5 · Gebet')
+    expect(data.we.sections[0]!.items[0]!.title).toBe('Lied 5 · Gebet')
   })
 
   it('Ratgeber ohne pid aus NWS löscht die alte pid (kein neuer Name auf fremder Id)', () => {
@@ -446,7 +446,7 @@ describe('verteileWoche', () => {
     const z = verteileWoche(data, gebunden, false)
     expect(partItems(data.mid.sections[0])[0].names[0].name).toBe('P1') // Mitte wird gefüllt
     expect(partItems(data.we.sections[0])[0].names[0].name).toBe('') // Wochenende unberührt
-    expect(data.we.sections[0].items[0].title).toBe('Lied · Gebet') // auch keine Liednummer
+    expect(data.we.sections[0]!.items[0]!.title).toBe('Lied · Gebet') // auch keine Liednummer
     expect(data.we.helpers).toEqual({})
     expect(z.gestrichen).toBe(1)
   })

@@ -85,9 +85,9 @@ describe('parseKuratiert', () => {
     const k = parseKuratiert(SQL)
     expect(k.groups).toEqual([{ id: '74af963f-fb80-4604-b776-0da94c213311', name: 'Gruppe 1', position: 0 }])
     expect(k.persons).toHaveLength(2)
-    expect(k.persons[0].priv).toEqual({ vortrag: true, 'svc:mik': true }) // JSON geparst
-    expect(k.persons[1].fam).toBeNull() // null-Feld bleibt null, nicht "null"
-    expect(k.persons[1].ln).toBe('Grünbeispiel') // Umlaut unversehrt
+    expect(k.persons[0]!.priv).toEqual({ vortrag: true, 'svc:mik': true }) // JSON geparst
+    expect(k.persons[1]!.fam).toBeNull() // null-Feld bleibt null, nicht "null"
+    expect(k.persons[1]!.ln).toBe('Grünbeispiel') // Umlaut unversehrt
     expect(k.ovas).toEqual([{
       groupId: '74af963f-fb80-4604-b776-0da94c213311',
       overseer_id: 'fffabbc7-a7c4-41d4-a116-e1ef8a5c338f',

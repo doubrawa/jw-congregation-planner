@@ -56,7 +56,7 @@ export function studySynopses(html: string): StudySynopsis[] {
     const link = card.match(/<h2>[\s\S]*?<a[^>]*href=(["'])(.+?)\1[^>]*>([\s\S]*?)<\/a>/)
     if (!ct || !link) continue
     const [, , href = '', titel = ''] = link
-    const week = cleanText(ct[1])
+    const week = cleanText(ct[1] ?? '')
     const dayMatch = week.match(/(\d{1,2})/)
     if (!dayMatch) continue
     let mon = 0
@@ -72,7 +72,7 @@ export function studySynopses(html: string): StudySynopsis[] {
 /** Lokalisierter Artikeltitel: erstes <h1> mit data-pid (Dialoge tragen keins). */
 export function articleTitle(html: string): string | null {
   const m = html.match(/<h1\b[^>]*\bdata-pid=[^>]*>([\s\S]*?)<\/h1>/i)
-  return m ? cleanText(m[1]) : null
+  return m ? cleanText(m[1] ?? '') : null
 }
 
 /**

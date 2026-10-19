@@ -7,12 +7,12 @@ import { werkzeugPfad } from './gemeinsam.mjs'
 /**
  * **Die Prüfungen finden ihr Werkzeug so, wie Node es findet.**
  *
- * `check-index-access.mjs` und `mutationsprobe.mjs` starteten tsc und vitest
- * bis zum 26.9.2026 über einen festen Pfad in `<wurzel>/node_modules`. Im
- * Worktree der Desktop-App liegt dort nichts — die Pakete liegen im
- * Hauptcheckout drei Ebenen darüber —, und beide Skripte hielten den
- * Startfehler für ein Messergebnis: „alles aufgeräumt" die eine, „bewacht" die
- * andere.
+ * `check-index-access.mjs` (die Sperrklinke von T42, seit 19.10.2026 fort) und
+ * `mutationsprobe.mjs` starteten tsc und vitest bis zum 26.9.2026 über einen
+ * festen Pfad in `<wurzel>/node_modules`. Im Worktree der Desktop-App liegt
+ * dort nichts — die Pakete liegen im Hauptcheckout drei Ebenen darüber —,
+ * und beide Skripte hielten den Startfehler für ein Messergebnis: „alles
+ * aufgeräumt" die eine, „bewacht" die andere.
  *
  * Geprüft wird an einem nachgebauten Paket in einem leeren Ordner. So wird das
  * Hochwandern überall gemessen, auch in der CI: Dort liegt `node_modules`

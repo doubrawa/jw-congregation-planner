@@ -2031,7 +2031,7 @@ Kontexte macht `readonly.ts` und einen Teil von `persist.ts` überflüssig.
 > Schreibzugriff gilt. Diese Sicherung hängt an den Aktionen, nicht an der Form
 > des Zustands, und bliebe auch nach einer Aufteilung nötig.
 
-### T42 · `noUncheckedIndexedAccess` schrittweise 🏗 ✅ erledigt — Produktionscode vollständig
+### T42 · `noUncheckedIndexedAccess` schrittweise 🏗 ✅ erledigt (19. Oktober 2026)
 213 Treffer, konzentriert genau in den Wochen-Dateien (`translate.ts` 48,
 `meeting-edit.ts` 37, `planning.ts` 31). Die Regel, die zum Datenmodell passt —
 und die T1 verhindert hätte.
@@ -2136,6 +2136,23 @@ und die T1 verhindert hätte.
 > wenn niemand sie mehr braucht. **Noch aus** sind die Edge Functions (53
 > Meldungen) und die Skript-Tests (67): Sie schalten die Regel in ihren
 > Konfigurationen ausdrücklich ab.
+
+> **Der Rest — erledigt am 19. Oktober 2026** (Betreiber: *„wir setzen so
+> viele punkte wie möglich um"*). Die Regel gilt jetzt überall: Die
+> Konfigurationen der Edge Functions und der Skript-Tests erben sie von
+> `tsconfig.app.json`, `tsconfig.node.json` (nur `vite.config.ts`) setzt sie
+> selbst. Produktionscode waren fünf Stellen in vier Functions-Dateien, alle
+> ohne Folge für das Verhalten: `send-plan` und `send-reminders` lesen den
+> einzigen Eintrag erst nach `length === 1` (`!`), `import-week` nimmt das
+> Schlusslied mit `at(-1) ?? null`, `study.ts` die Gruppe eines Treffers mit
+> `?? ''`. Die drei Functions sind ausgerollt. Der Rest sind Tests, mit `!` wie
+> in `src`. Gegenprobe: je ein ungesicherter Zugriff in `vite.config.ts`, einer
+> Function und einem Skript-Test → `tsc -b` meldet alle drei (TS2532).
+>
+> **Die Sperrklinke ist ausgebaut:** `scripts/check-index-access.mjs` samt
+> Test und Grundlinie, `tsconfig.index.json`, `npm run typecheck:index` und ihr
+> Schritt in der CI. Neue Meldungen hält `tsc -b` auf — lokal und im Build der
+> CI, vor dem Deploy.
 
 ---
 
@@ -7360,7 +7377,7 @@ in Deutsch, Persisch und Arabisch, byte-gleich. Nr. 15 gehört zu T42.
 | 12 | `src/auswertung/AuswertungScreen.tsx` (`Last`) | eigenes Prozent-Format neben `k.prozent` (null gegen eine Nachkommastelle) — eines für beide. **Erledigt** — `k.prozent(anteil, ganz)` |
 | 13 | `src/data/rechte.ts`, `src/app/AnsichtLeiste.tsx` | „Ansicht nur am echten Admin" (`planner && ansicht`) steht dreimal — ein `aktiveAnsicht()` in `ansicht.ts`; befristet, geht mit dem Ausbau von T124. **Erledigt** — `aktiveAnsicht()` für `rechteVon`, `rechteStufe` und die Leiste |
 | 14 | `src/lib/data.ts` (`Absage.woche`) | lädt die App mit und liest es nie — die Woche steckt im Schlüssel; gebraucht wird sie nur in der Datenbank. **Erledigt** — `Absage.woche` wird nicht mehr geladen |
-| 15 | `scripts/check-index-access.mjs` samt Grundlinie | seit T42 prüft `tsconfig.app.json` selbst; die Sperrklinke meldet nur noch 0 (siehe Phase 7 unten) |
+| 15 | `scripts/check-index-access.mjs` samt Grundlinie | seit T42 prüft `tsconfig.app.json` selbst; die Sperrklinke meldet nur noch 0 (siehe Phase 7 unten). **Erledigt** am 19. Oktober mit dem Rest von T42 |
 
 Beim Durchsehen aufgefallen, kein Aufräumen: Die Kachel „Treffpunkte, Absagen,
 Ballungen" zählt alle Absagen, die Liste darunter nur die mit Bereich (eine
@@ -8309,7 +8326,6 @@ braucht den Betreiber oder ein Gerät.
 | **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
-| **Phase 7** | T42, der Rest | `src` samt Tests ist seit 17. Oktober frei, die Regel steht in `tsconfig.app.json`. Noch aus: Edge Functions (53 Meldungen) und Skript-Tests (67); `typecheck:index` ist überflüssig geworden |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
 | **Rest aus T128** | Umbruch bei großer Schrift | T128 ist erledigt (19. Oktober). Vorher wie nachher bleiben: die Wahl der letzten Erinnerung bei 320 px (pl), Datumsspannen außerhalb von `fill` (Wochenkarten, „Holen"), Programmtexte, die nach der Sprache der App statt der Versammlung trennen, Hinweise in der Karte „Holen" bei Stufe 1,3/1,45 und Namen der Dienste im Programm bei 768 px — Einzelheiten unter T128 |
 | **T130** | Reiter „Trolleys" nur mit Trolley-Recht | aufgenommen am 18. Oktober abends, noch nicht begonnen; die offenen Fragen stehen in T130 |
@@ -8317,6 +8333,9 @@ braucht den Betreiber oder ein Gerät.
 | **Zu entscheiden** | Langsames Netz beim Start | aus dem Review des Offline-Starts in der ersten Stunde (19. Oktober abends): Lassen die Daten länger als 4 s auf sich warten, steht der letzte Stand mit „Offline · Stand von …" da, und Ändern ist gesperrt, auch wenn das Netz nur langsam ist. Kommen sie danach, legt das Blatt beim Öffnen eine seither neue Zuteilung nicht vor (nach über einer Stunde ebenso seit `30a5a80d`). Denkbar: ein eigener Hinweis statt „Offline", und das Blatt nach dem ersten frischen Laden noch einmal prüfen |
 | **Bewusst offen** | `sprache-fehlt` beim Wochen-Import | zählt weiter als Ende des Kalenders. Strenger gäbe es im Alltag Fehlalarme; betroffen wäre nur eine anderssprachige Versammlung mit Geschichte (Review vom 18. Oktober, `42dff943`) |
 | **Zu entscheiden** | `auth.sessions` aufräumen | IP-Adresse und Browserkennung je Gerät bleiben ohne Frist, solange die Anmeldung gilt. Möglich wäre, Sitzungen nach einem Jahr ohne Nutzung zu löschen; das Gerät bräuchte danach einen neuen Link (bei T125 unter „Später zu entscheiden") |
+
+Am 19. Oktober spät herausgenommen: **Phase 7** (T42, der Rest) — erledigt,
+siehe T42.
 
 Am 19. Oktober in die Tabelle aufgenommen: die letzten drei Zeilen. Die
 unteren beiden standen bis dahin nur in einer Commit-Nachricht (`42dff943`)

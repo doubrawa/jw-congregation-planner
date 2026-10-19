@@ -119,7 +119,7 @@ describe('vereine', () => {
 
   it('schreibt eine Abwesenheit mit der alten ID auf die neue um — die App findet die Person', () => {
     const { tabellen, umgeschrieben } = vereine([frisch, sicherung])
-    const abwesenheit = tabellen['AwayPeriods_7.5.json'].find((z) => z.ID === 'alt-a1')
+    const abwesenheit = tabellen['AwayPeriods_7.5.json']!.find((z) => z.ID === 'alt-a1')
     expect(abwesenheit?.a).toBe(NEU_ID)
     expect(umgeschrieben).toBe(1)
     // So, wie `abwesenheiten-importieren.mjs` sie auflöst: bei der App-Person aus dem frischen Stand.
@@ -128,7 +128,7 @@ describe('vereine', () => {
 
   it('lässt die Abwesenheit eines Weggezogenen, wie sie ist', () => {
     const { tabellen } = vereine([frisch, sicherung])
-    expect(tabellen['AwayPeriods_7.5.json'].find((z) => z.ID === 'alt-a2')?.a).toBe('alt-00000000000002')
+    expect(tabellen['AwayPeriods_7.5.json']!.find((z) => z.ID === 'alt-a2')?.a).toBe('alt-00000000000002')
   })
 
   it('lässt einen Verweis über die mid stehen — die blieb beim Wechsel der ID gleich', () => {

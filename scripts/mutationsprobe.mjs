@@ -49,7 +49,7 @@
  *
  * Läuft **nicht** in der CI: ein Durchgang kostet je Eintrag bis zu einen
  * vollen Testlauf. Sie ist ein Messgerät, das man ansetzt — wie `npm run
- * contrast` —, keine Sperrklinke wie `check-index-access`.
+ * contrast` —, keine Prüfung, die jeden Push anhält wie `npm test`.
  */
 
 import { spawnSync } from 'node:child_process'

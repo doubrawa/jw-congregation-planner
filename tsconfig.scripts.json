@@ -24,10 +24,9 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.scripts.tsbuildinfo",
     "types": ["vite/client", "node"],
     "allowJs": true,
-    "checkJs": false,
-    // Die App hält `noUncheckedIndexedAccess` ein (T42), die Skript-Tests noch
-    // nicht: 67 Meldungen am 17.10.2026.
-    "noUncheckedIndexedAccess": false
+    "checkJs": false
+    // `noUncheckedIndexedAccess` gilt wie in der App (T42, seit 19.10.2026
+    // auch hier).
   },
   "include": ["scripts/**/*.ts"]
 }

@@ -33,8 +33,8 @@ describe('reiheNachtragen', () => {
       { name: 'B', rolle: 'Leser', bereichsKey: 'leser' },
     ]
     expect(reiheNachtragen(slots)).toBe(0)
-    expect(slots[0].rolle).toBe('Leiter')
-    expect(slots[1].rolle).toBe('Leser')
+    expect(slots[0]!.rolle).toBe('Leiter')
+    expect(slots[1]!.rolle).toBe('Leser')
   })
 
   it('behält Namen und Kennung — nur die Beschriftung ändert sich', () => {

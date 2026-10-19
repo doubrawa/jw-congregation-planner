@@ -33,8 +33,7 @@ import { describe, expect, it } from 'vitest'
 /**
  * Quelltext aller Dateien unter `src/` — über Vite, ohne Node-Abhängigkeit
  * (wie `i18n/aufgaben-label-quelle.test.ts`). Node-Importe gingen hier nicht:
- * `tsconfig.app.json` kennt keine Node-Typen, und die Sperrklinke prüft `src`
- * mit derselben Konfiguration.
+ * `tsconfig.app.json` kennt keine Node-Typen.
  */
 const ROH = import.meta.glob('../**/*.{ts,tsx}', {
   query: '?raw',

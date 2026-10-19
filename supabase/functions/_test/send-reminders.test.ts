@@ -614,8 +614,8 @@ describe('send-reminders: Planer-Meldung nur für nicht Erreichbare', () => {
       { id: 's2', user_id: U_NINA, endpoint: 'https://push.test/nina', p256dh: 'k', auth: 'a' },
     ]
     // „Otto Ohnekonto" aus dem Programm nehmen → niemand mehr unerreichbar
-    const week = weeks[0].data as { mid: { sections: { items: { names?: { name: string }[] }[] }[] } }
-    week.mid.sections[0].items[4].names = [{ name: '' }]
+    const week = weeks[0]!.data as { mid: { sections: { items: { names?: { name: string }[] }[] }[] } }
+    week.mid.sections[0]!.items[4]!.names = [{ name: '' }]
     const r = await run()
     expect(previewFor(r, U_PLANER)).toBeUndefined()
   })
@@ -685,8 +685,8 @@ describe('send-reminders: Hilfsdienste erinnern (Slot-Objekte)', () => {
       Erinnerung Tag für Tag. Eine fehlende Erinnerung merkt der Planer, eine
       endlose merkt niemand.
     */
-    const week = weeks[0].data as { mid: { sections: { items: Record<string, unknown>[] }[] } }
-    const punkt = week.mid.sections[0].items.find((i) => i.iid === 'schatz')!
+    const week = weeks[0]!.data as { mid: { sections: { items: Record<string, unknown>[] }[] } }
+    const punkt = week.mid.sections[0]!.items.find((i) => i.iid === 'schatz')!
     delete punkt.iid
     const r = await run()
     const alle = (r.preview ?? []).map((p) => p.body).join(' | ')
@@ -709,7 +709,7 @@ describe('send-reminders: abweichender Termin (Gedächtnismahl)', () => {
   // Verlegt wird über die Abweichung der Woche (T30) — bis zum 18.9.2026 stand
   // der Termin als Text im `date`-Feld und wurde von dort zurückgelesen.
   const aufSamstag = () => {
-    const w = weeks[0].data as { dev?: Record<string, { wd: number; time: string }> }
+    const w = weeks[0]!.data as { dev?: Record<string, { wd: number; time: string }> }
     w.dev = { mid: { wd: 6, time: '19:30' } }
   }
 
@@ -789,7 +789,7 @@ describe('send-reminders: die ausgefallene Zusammenkunft erinnert nicht (T30)', 
 
   it('Gegenprobe: ohne Ausfall wird für dieselbe Woche erinnert', async () => {
     midFaelltAus()
-    const w = weeks[0].data as { dev?: unknown }
+    const w = weeks[0]!.data as { dev?: unknown }
     delete w.dev
     const texte = ((await run()).preview ?? []).map((p) => p.body).join(' | ')
     expect(texte).toContain('Dienstag')
@@ -801,7 +801,7 @@ describe('send-reminders: Termin statt Wochenspanne im Text', () => {
     // Importierte Wochen tragen im date-Feld die Überschrift der jw.org-Seite:
     // „7.–13. September" — weder Jahr noch Wochentag noch Uhrzeit. Genau das
     // stand vorher in der Erinnerung.
-    const w = weeks[0].data as { mid: { date: string } }
+    const w = weeks[0]!.data as { mid: { date: string } }
     w.mid.date = '7.–13. September'
     const r = await run()
     expect(previewFor(r, U_MAX)?.body).toContain('Dienstag, 8. September · 19:00')
@@ -811,7 +811,7 @@ describe('send-reminders: Termin statt Wochenspanne im Text', () => {
   it('eine verlegte Zusammenkunft nennt den verlegten Termin', async () => {
     // Der Termin stand bis zum 18.9.2026 als Text im `date`-Feld und wurde von
     // dort zurückgelesen; jetzt sagt ihn die Abweichung der Woche (T30).
-    const w = weeks[0].data as { dev?: Record<string, { wd: number; time: string }> }
+    const w = weeks[0]!.data as { dev?: Record<string, { wd: number; time: string }> }
     w.dev = { mid: { wd: 6, time: '19:30' } }
     vi.setSystemTime(new Date('2026-09-11T09:00:00Z'))
     expect(previewFor(await run(), U_MAX)?.body).toContain('Samstag, 12. September · 19:30')
@@ -825,7 +825,7 @@ describe('send-reminders: Scharfbetrieb als Gegenprobe', () => {
     expect(sentPush.length).toBeGreaterThan(0)
     // Nur Max hat ein Abo → nur an ihn geht ein echter Push.
     expect(sentPush.every((p) => p.endpoint === 'https://push.test/max')).toBe(true)
-    expect(JSON.parse(sentPush[0].payload).url).toBe('https://app.test/#go=aufgaben')
+    expect(JSON.parse(sentPush[0]!.payload).url).toBe('https://app.test/#go=aufgaben')
 
     const notifs = writesTo('notifications').find((w) => w.method === 'POST')?.body as {
       user_id: string

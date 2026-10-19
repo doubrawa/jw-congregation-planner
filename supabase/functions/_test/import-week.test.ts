@@ -250,7 +250,7 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
   // Fremdsprachige Fassung derselben Woche (Pfad aus dem Umschalter).
   const variante = new RegExp(`^${BASE}/([a-z-]+)/bibliothek/jw-arbeitsheft/`).exec(url)
   if (variante && variante[1] !== 'de') {
-    const code = variante[1]
+    const code = variante[1]!
     if (!seiten.sprachen.includes(code)) return weg()
     const w = [...WOCHEN_SLUGS, ...ALT_WOCHEN_SLUGS].find((x) => url.includes(x))
     return w ? text(wochenSeite(`[${code}] ${w}`)) : weg()

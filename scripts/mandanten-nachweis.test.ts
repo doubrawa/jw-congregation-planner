@@ -22,7 +22,7 @@ describe('Vollständigkeitsprobe: keine Tabelle mit RLS bleibt ungeprüft', () =
     expect(imSchema.length).toBeGreaterThan(10)
     const geprueft = new Set(RLS_TABELLEN.map((t) => t.name))
     for (const name of new Set(imSchema)) {
-      expect(`${name}: ${geprueft.has(name)}`).toBe(`${name}: true`)
+      expect(`${name}: ${geprueft.has(name!)}`).toBe(`${name}: true`)
     }
   })
 

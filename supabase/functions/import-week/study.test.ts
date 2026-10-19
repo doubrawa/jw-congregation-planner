@@ -48,8 +48,8 @@ describe('studySynopses', () => {
 
   it('ignoriert die datumslose Kopf-Karte (kein Off-by-one)', () => {
     expect(syn).toHaveLength(3)
-    expect(syn[0].title).toBe('Erster Beispielartikel')
-    expect(syn[0].href).toBe('/de/x/musterturm-mai-2099/Erster-Beispielartikel/')
+    expect(syn[0]!.title).toBe('Erster Beispielartikel')
+    expect(syn[0]!.href).toBe('/de/x/musterturm-mai-2099/Erster-Beispielartikel/')
   })
 
   it('paart Datum und Titel pro Karte korrekt', () => {

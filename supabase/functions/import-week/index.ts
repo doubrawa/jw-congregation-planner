@@ -127,7 +127,7 @@ async function studyArticle(start: Date, lang: string): Promise<StudyArticle | n
     return {
       title: articleTitle(html),
       songOpen: found[0] ?? null,
-      songClose: found.length > 1 ? found[found.length - 1] : null,
+      songClose: found.length > 1 ? (found.at(-1) ?? null) : null,
     }
   }
   return null

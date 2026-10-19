@@ -31,9 +31,9 @@ describe('applyGoldSlots – Schülerteil-Art aus der deutschen Fassung übertra
       { title: 'Talk', names: [{ name: '', bereichsKey: 'schulung' }] },
     ])
     applyGoldSlots(localized, german)
-    const gold = localized.mid.sections[0].items as ImportedPart[]
-    expect(gold[0].names.map((n) => n.bereichsKey)).toEqual(['schulung', 'schulungPartner'])
-    expect(gold[1].names[0]).toMatchObject({ bereichsKey: 'schulungVortrag', male: true })
+    const gold = localized.mid.sections[0]!.items as ImportedPart[]
+    expect(gold[0]!.names.map((n) => n.bereichsKey)).toEqual(['schulung', 'schulungPartner'])
+    expect(gold[1]!.names[0]).toMatchObject({ bereichsKey: 'schulungVortrag', male: true })
   })
 })
 
@@ -42,7 +42,7 @@ describe('ministryNames – Slots je Schülerteil-Typ (deutscher Titel)', () => 
     for (const title of ['Gespräche beginnen', 'Interesse fördern', 'Menschen zu Jüngern machen']) {
       const n = ministryNames(title, 'Von Haus zu Haus · 3 Min.')
       expect(n.map((s) => s.bereichsKey)).toEqual(['schulung', 'schulungPartner'])
-      expect(n[1].rolle).toBe('Partner')
+      expect(n[1]!.rolle).toBe('Partner')
     }
   })
 
@@ -59,7 +59,7 @@ describe('ministryNames – Slots je Schülerteil-Typ (deutscher Titel)', () => 
     expect(ministryNames('Unsere Glaubensansichten erklären', 'Informell · 4 Min.')).toHaveLength(2)
     const talk = ministryNames('Unsere Glaubensansichten erklären', '5 Min.')
     expect(talk).toHaveLength(1)
-    expect(talk[0].male).toBe(true)
+    expect(talk[0]!.male).toBe(true)
   })
 
   it('Unsere Glaubensansichten als gespielte Szene → Schüler + Partner, auch für Schwestern', () => {
@@ -202,21 +202,21 @@ describe('parseWorkbookWeek (Struktur, deutsche Seite)', () => {
     expect(byLabel('SCHÄTZE AUS GOTTES WORT').farbe).toBe('petrol')
     expect(byLabel('UNS IM DIENST VERBESSERN').farbe).toBe('gold')
     expect(byLabel('UNSER LEBEN ALS CHRIST').farbe).toBe('wein')
-    expect(parts('SCHÄTZE AUS GOTTES WORT')[0].names[0].bereichsKey).toBe('vortrag')
-    expect(parts('UNS IM DIENST VERBESSERN')[0].names[0].bereichsKey).toBe('schulung')
+    expect(parts('SCHÄTZE AUS GOTTES WORT')[0]!.names[0]!.bereichsKey).toBe('vortrag')
+    expect(parts('UNS IM DIENST VERBESSERN')[0]!.names[0]!.bereichsKey).toBe('schulung')
     // „Unser Leben als Christ" bis auf das Versammlungsbibelstudium: Besprechung.
-    expect(parts('UNSER LEBEN ALS CHRIST')[0].names).toEqual([{ name: '', bereichsKey: 'besprechung' }])
+    expect(parts('UNSER LEBEN ALS CHRIST')[0]!.names).toEqual([{ name: '', bereichsKey: 'besprechung' }])
   })
 
   it('Bibellesung (= letzter Schätze-Punkt): Schriftstelle im Titel, Quelle in Meta', () => {
     const bl = parts('SCHÄTZE AUS GOTTES WORT').at(-1)!
     expect(bl.title).toBe('Bibellesung · Mus 13:1-14')
     expect(bl.meta).toBe('4 Min. · th Lektion 2')
-    expect(bl.names[0].bereichsKey).toBe('bibellesung')
+    expect(bl.names[0]!.bereichsKey).toBe('bibellesung')
   })
 
   it('Dienst-Rahmen wird wörtlich übernommen (verbatim, sprachunabhängig)', () => {
-    expect(parts('UNS IM DIENST VERBESSERN')[0].meta).toBe('VON HAUS ZU HAUS · 3 Min. · lmd Lektion 1 Punkt 5')
+    expect(parts('UNS IM DIENST VERBESSERN')[0]!.meta).toBe('VON HAUS ZU HAUS · 3 Min. · lmd Lektion 1 Punkt 5')
   })
 
   it('Besprechung als Rahmen übernommen', () => {
@@ -239,7 +239,7 @@ describe('parseWorkbookWeek (Struktur, deutsche Seite)', () => {
   it('Abschluss mit Schlussgebet', () => {
     const close = byLabel('ABSCHLUSS').items[0] as ImportedPart
     expect(close.title).toContain('Lied 61')
-    expect(close.names[0].bereichsKey).toBe('gebet')
+    expect(close.names[0]!.bereichsKey).toBe('gebet')
   })
 
   it('erzeugt eine Wochenend-Vorlage (nicht im Arbeitsheft)', () => {
@@ -313,19 +313,19 @@ describe('parseWorkbookWeek (sprachunabhängig, erfundene Sprache)', () => {
     const bl = parts('XORBI SATO').at(-1)!
     expect(bl.title).toBe('Librolekt · Qor 13:1-14')
     expect(bl.meta).toBe('4 vim · th plek 2')
-    expect(bl.names[0].bereichsKey).toBe('bibellesung')
+    expect(bl.names[0]!.bereichsKey).toBe('bibellesung')
   })
 
   it('Rahmen + Minuten wörtlich (verbatim), Quelle über MEPS-Kürzel', () => {
-    expect(parts('SERVO XI')[0].meta).toBe('DOMO XI DOMO · 3 vim · lmd plek 1 puno 5')
-    expect(parts('SERVO XI')[0].names[0].bereichsKey).toBe('schulung')
+    expect(parts('SERVO XI')[0]!.meta).toBe('DOMO XI DOMO · 3 vim · lmd plek 1 puno 5')
+    expect(parts('SERVO XI')[0]!.names[0]!.bereichsKey).toBe('schulung')
   })
 
   it('Vortrag und Besprechung über die Position, nicht über den Text', () => {
     // Erster Schätze-Punkt = Vortrag, ein Unser-Leben-Punkt vor dem Studium =
     // Besprechung — in einer Sprache, deren Wörter der Import nicht kennt.
-    expect(parts('XORBI SATO')[0].names).toEqual([{ name: '', bereichsKey: 'vortrag' }])
-    expect(parts('VIVO KRISTO')[0].names).toEqual([{ name: '', bereichsKey: 'besprechung' }])
+    expect(parts('XORBI SATO')[0]!.names).toEqual([{ name: '', bereichsKey: 'vortrag' }])
+    expect(parts('VIVO KRISTO')[0]!.names).toEqual([{ name: '', bereichsKey: 'besprechung' }])
   })
 
   it('Zwischenlied lokalisiert übernommen', () => {
@@ -343,7 +343,7 @@ describe('parseWorkbookWeek (sprachunabhängig, erfundene Sprache)', () => {
   it('Abschluss strukturell erkannt (Schlussgebet)', () => {
     const close = byLabel('ABSCHLUSS').items[0] as ImportedPart
     expect(close.title).toBe('Finvorbo · Xylo 61 qi Preku')
-    expect(close.names[0].bereichsKey).toBe('gebet')
+    expect(close.names[0]!.bereichsKey).toBe('gebet')
   })
 })
 

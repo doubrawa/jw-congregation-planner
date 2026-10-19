@@ -509,7 +509,7 @@ describe('mins — die Dauer verlässt den Anzeigetext', () => {
       h1: 'x', buch: 'y', punkt1: '1. Erster', punkt2: '4. Zweiter',
       zeit1: '(10 Min.)', zeit2: '(3 Min.)', schluss: 'Ende (3 Min.) | Lied 1',
     })
-    const eroeffnung = parseWorkbookWeek(html).mid.sections[0].items[0] as ImportedPart
+    const eroeffnung = parseWorkbookWeek(html).mid.sections[0]!.items[0] as ImportedPart
     // Die Rückfall-Eröffnung trägt ihre eigene Minutenangabe …
     expect(eroeffnung.mins).toBe(1)
     // … ein Lied innerhalb einer Sektion dagegen gar keine.

@@ -312,7 +312,7 @@ function nachrichtenJePerson(
       eintraege: eintraege.map((e) => e.eintrag),
       // Nur bei genau einer Aufgabe: dann trägt die Glocke den
       // Bestätigen-Knopf. Bei mehreren zeigte er auf eine willkürliche davon.
-      ...(eintraege.length === 1 ? { taskKey: eintraege[0].key } : {}),
+      ...(eintraege.length === 1 ? { taskKey: eintraege[0]!.key } : {}),
     }),
   )
   return { nachrichten, ohneKonto: [...ohneKonto] }
