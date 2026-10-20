@@ -157,7 +157,7 @@ function ProgrammHolenBlatt({
         <button type="button" className="knopf-haupt" disabled={!onZuteilen} onClick={() => onZuteilen?.()}>
           {t.uebernehmenZuteilen}
         </button>
-        <div className="auto-fuss-zeile">
+        <div className="knopf-reihe">
           <button type="button" className="knopf-leise" disabled={!onUebernehmen} onClick={() => onUebernehmen?.()}>
             {t.nurUebernehmen}
           </button>

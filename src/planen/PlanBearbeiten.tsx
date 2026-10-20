@@ -12,7 +12,7 @@ import type { ZeitraumEnde } from '../components/kalender'
 import { Sheet } from '../components/Sheet'
 import { UnteransichtKopf } from '../components/UnteransichtKopf'
 import { TABLET_BREITE, useMedia } from '../components/useMedia'
-import { datumsFormat } from '../components/datum-anzeige'
+import { gebundenesDatum } from '../components/datum-anzeige'
 import { gruppenName, spannenAnzahl, spannenText } from '../components/weitere-plaene-anzeige'
 import { reinigungsGruppen } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
@@ -132,7 +132,8 @@ function PlanFelder({ plan }: { plan: WeitererPlan }) {
   const aendern = (patch: PlanAenderung): void => dispatch({ type: 'wpPlanAendern', id: plan.id, patch })
   const takt = taktVon(plan)
   // Kurz wie im Entwurf („31. Okt. 2027"): Die beiden Felder stehen nebeneinander.
-  const datum = (tag: string): string => datumsFormat(state.lang, 'tagKurzJahr').format(fromIso(tag))
+  // Gebunden (T128): „5 окт. 2026 г." brach bei 320 px zwischen Jahr und „г.".
+  const datum = (tag: string): string => gebundenesDatum(fromIso(tag), state.lang, 'tagKurzJahr')
 
   return (
     <>

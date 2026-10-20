@@ -7835,7 +7835,8 @@ Trennung, mal als Bruch (vorher wie nachher dieselben Kästen, 20 × 137 px).
 Bei den Hinweisen der Auswertung meldet es „вспом|огательными" — im Bild
 steht dort „вспо-могательными".
 
-Was bleibt (vorher wie nachher):
+Was am 20. Oktober mittags blieb (vorher wie nachher) — am 20. Oktober
+nachmittags umgesetzt, siehe **„Was bleibt" umgesetzt** unten:
 
 - **Trolleys am Desktop bei 1180 px und Stufe 1,45:** Die Spalte der Listen ist
   rund 190 px schmal. Titel der Karten ragen hinaus („Se busca compañero"
@@ -7854,6 +7855,108 @@ Was bleibt (vorher wie nachher):
   „Complete|d" (keine Trennregeln bzw. großgeschrieben).
 - **Planen am Desktop, ru, 1400/1440 px und 1,45:** der Titel der
   Wochenspalte „Планирование" ragt 4 px.
+
+**„Was bleibt" umgesetzt (20. Oktober 2026, nachmittags)** — die sechs Punkte
+aus der Liste oben (Auftrag über die Karte „Restliche Umbrüche aus T128"), dazu,
+was die Messung an Stellen fand, die bis dahin niemand am Handy gemessen hatte:
+
+- **Trolley-Listen am Desktop:** Die beiden Listen stehen nebeneinander,
+  solange jede ihr längstes Wort fasst, sonst „Partner gesucht" unter „Deine
+  Termine" (`flex-wrap` statt zweier fester Spalten, ohne Schwelle). Bei
+  1180 px braucht eine Karte je nach Sprache 6–12 em, die Hauptspalte hat bei
+  Stufe 1,45 nur 17,5 em: Dort stehen sie untereinander, bei 1,15 in den
+  meisten Sprachen nebeneinander.
+- **Knöpfe im Fuß eines Blatts:** eine Regel für alle Füße (`.sheet-fuss`,
+  `.knopf-reihe`, `overlays.css`): Die Knöpfe teilen sich die Breite, solange
+  jeder sein längstes Wort fasst, sonst steht der letzte darunter, beide über
+  die ganze Breite. Gemessen in zwölf Blättern (`wahl.mjs --ziele fuss`); schon
+  auf Deutsch ragten bei 320 px und 1,45 in neun die Knöpfe hinaus
+  („Hinzufügen" 19 px, „Zurücksetzen" 18 px). „Drucken", „Plan senden" und das
+  Blatt beim Öffnen (Haupt- und leiser Knopf: `sheet-fuss--haupt`) und die
+  Reihen in „Automatisch", „Programm holen" und im Absage-Blatt nutzen dieselbe
+  Regel; fünf eigene Raster sind weg (`druck-fuss`, `senden-fuss`,
+  `oeffnen-fuss`, `auto-fuss-zeile`, `absage-fuss-zeile`). Eine Quelltext-Probe
+  hält jeden Fuß an, der wieder als festes Raster steht.
+- **„nie" in der Auswertung:** Die Zeilen einer Liste teilen sich die Spalten
+  (`subgrid`); rechts steht die Zahl so breit wie die breiteste der Liste,
+  mindestens 3,2 em, die Balken enden in einer Flucht. „niciodată" und
+  „жодного разу" ragten bis 16 px hinaus — am Desktop ab 1024 px und, wie sich
+  zeigte, auch am Handy in „Weiteres".
+- **Namen der Spur:** weiche Trennstellen in Sprachen ohne Trennregeln in
+  Chrome (pl, ro, tr) und in englischen Großwörtern — 14 Namen in vier Sprachen
+  („Opubli-kowany", „Com-pleted", „Confir-mations", „Plani-fica-torul",
+  „çekili-yorsun"). Gemessen in allen Spuren am Handy: Weiterer Plan, Absage,
+  Woche, Zusagen, Planung, „Plan senden". `spurZusagen` ist auch der Titel der
+  Zusagen, der dort ebenso brach.
+- **Planen am Desktop, ru:** Der Titel der Wochenspalte trennt nach den Regeln
+  der Sprache, mit einer weichen Trennstelle an der Silbe („Плани-рование";
+  Chrome trennt sonst so spät wie möglich: „Планирован-ие"). Erst wuchs die
+  Spalte mit ihrem längsten Wort (`minmax(260px, min-content)`, nur ru bei 1,45
+  brauchte 264 px) — die 4 px fehlten dann dem Plan daneben, und bei 1400 px
+  brach „Hoffman|n". Platz gab es hier keinen zu gewinnen.
+- **Bezeichnung und Zahl breiter als die Zeile:** Unter 12 em gibt der Pfeil
+  der Hinweise seinen Platz an den Text ab (die ganze Zeile bleibt ein Knopf;
+  greift bei 320 px und 1,45). Auf einem echten 320-px-Handy fehlten
+  „обязанностями: 4" 2 px. Das polnische „pomocniczymi: 4" brach nur in der
+  Desktop-Emulation, die 15 px schmaler misst.
+- **Neu aus der Messung:** die Reiter der Zusammenkünfte beim Planen (ein
+  Wochentag ohne Trennregeln bleibt ganz, die Bearbeiten-Karte rückt in die
+  nächste Zeile — daneben blieben 74 px, „niedziel|a", „Tuesda|y" ab 1,15;
+  Sprachen mit Wörterbuch trennen weiter), die Wochenkarten der Planung am
+  Handy (die Lage rückt unter die Spanne — die gebundene Spanne ragte seit dem
+  Mittag bis 38 px aus ihrem Knopf), die Ballungen in „Weiteres" (das Was
+  rückt unter das Kästchen;
+  „Mikrof|one", „4 Woche|n"), die Zeilen der Zusagen und „Jetzt erinnern" (der
+  Satz ragte neben „Enviar recordatorio" bis 87 px hinaus), die S-89-Leiste
+  beim Planen („Interlocuteur" bis 34 px), Von und Bis eines Weiteren Plans
+  gebunden („5 окт. 2026 |г."), das Datum der Zeitleiste einer Person gebunden
+  („воскресенье, 20 |сентября").
+- **Proben:** `tests/kein-wortbruch.test.ts` (Füße und Knopfreihen samt der
+  Probe gegen Raster, Trolley-Listen, „nie", Titel der Wochenspalte, Hinweise,
+  Reiter, Wochenkarten, Ballungen, Zusagen, S-89, 15 neue Trennstellen),
+  `datum-spannen.test.ts` (die Zeitleiste in allen zwölf Sprachen),
+  `weitere-plaene-ansichten.test.tsx` (Von und Bis gebunden); die Proben für
+  „Plan senden" und „Drucken" greifen über `.sheet-fuss`. Mutationskatalog:
+  37 neue Einträge `umbruch-…`, alle bewacht und gegen die gemeinte Testdatei
+  gegengeprüft.
+- **Werkzeug:** `wahl.mjs --ziele fuss` (zwölf Blätter mit Fuß) und
+  `--ziele aw` (die Unteransichten der Auswertung am Handy), `breit.mjs
+  --mobil` (unter 768 px ein Handy ohne Rollbalken — sonst misst es 15 px zu
+  schmal). „Programm holen" lässt sich auf der Entwicklerseite nicht öffnen
+  (ohne Verbindung holt sie nichts).
+
+**Gemessen im echten Chrome** (vorher = HEAD `5881cb1d` aus einem Worktree auf
+Port 5176, nachher = der Endstand; gezählt wie oben, Trennungen mit Strich
+nicht):
+
+| Lauf | Fälle | Funde vorher | nachher |
+|---|---|---|---|
+| Trolleys am Desktop, als Verkündiger und als Planer: 12 Sprachen × 1024/1180/1440 × 1,15/1,3/1,45 | 216 | 20 | 0 |
+| Auswertung, ohne die gedrehten Spaltenköpfe: 12 Sprachen × 320/375/1024/1180/1400 × 1,15/1,3/1,45 | 180 | 26 | 0 |
+| Zwölf Blätter mit Fuß (`wahl.mjs --ziele fuss`): 12 Sprachen × 320/375 × 1,15/1,45 | 576 | 79 | 0 |
+| Unteransichten der Auswertung am Handy (`--ziele aw`): 12 Sprachen × 320/375 × 1,15/1,3/1,45 | 360 | 51 | 0 |
+| Weiterer Plan (Spur, Von und Bis): 12 Sprachen × 320/375 × 1/1,15/1,3/1,45 | 96 | 15 | 0 |
+| Planen, Zusagen und eine Person am Handy (`--mobil`): 12 Sprachen × 320/375 × 1,15/1,3/1,45 | 216 | 201 | 0 |
+| Planung am Handy (`--mobil`): 12 Sprachen × 320/375 × 1,15/1,3/1,45 | 72 | 100 | 0 |
+| Planen am Desktop: 12 Sprachen × 1180/1400/1440 × 1,3/1,45 | 72 | 2 | 0 |
+| Programm am Handy, Gegenprobe zu den Reitern (`--mobil`): 12 Sprachen × 320/375 × 1,15/1,3/1,45 | 72 | 0 | 0 |
+
+Nichts kam dazu (`vergleich.mjs`, „Neu dazugekommen" in allen Läufen leer).
+
+Was bleibt:
+
+- **Daten direkt aus `Intl`:** Rund ein Dutzend Anzeigen bauen ein Datum mit
+  Monatsnamen an `gebundenesDatum` vorbei (`datumsFormat(…).format(…)`: der
+  Kalender eines Zeitraums, der Tag unter „Link gesendet", der Vortragsplan,
+  die Beschriftung eines Treffpunkts, die Weiteren Pläne, das Absage-Blatt,
+  „Woche einrichten", das Programm). Gemessen gebrochen hat keine davon —
+  binden nur mit Messung: In schmalen Feldern ragt ein gebundenes Datum sonst
+  hinaus (der Kalender hat zwei halbe Breiten).
+- **Sprachen mit Trennregeln trennen weiter, wo zwei Dinge fest nebeneinander
+  stehen** (die Reiter: „воскре-сенье", „di-manche" bei 320 px) — gewollt;
+  Platz gäbe es nur, wenn die Reiter untereinander stünden.
+- Messwerkzeug: Die gedrehten Spaltenköpfe der Matrix liest es weiterhin als
+  Brüche (vorher wie nachher dieselben Kästen).
 
 ---
 
@@ -8491,8 +8594,11 @@ die Kachel der Absagen, T127, T129, die Auswertung nach der Jahresprobe und das
 Review des Tages; am 19. das Ladebild beim Start, der Offline-Start nach über
 einer Stunde, das Startbild und der Offline-Start in der ersten Stunde. Am
 20. Oktober der **Rest aus T128** (die fünf Umbrüche vom 19. Oktober und was
-die Nachmessung fand; siehe T128). Beschlossenes ist im Code nichts mehr
-offen; was aussteht, braucht den Betreiber, ein Gerät oder eine Entscheidung.
+die Nachmessung fand; siehe T128) und nachmittags, was davon noch blieb
+(Trolley-Listen, Füße der Blätter, „nie", Spur, Wochenspalte, Hinweise — dazu
+sieben Stellen, die erst die Messung am Handy fand). Beschlossenes ist im Code
+nichts mehr offen; was aussteht, braucht den Betreiber, ein Gerät oder eine
+Entscheidung.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
@@ -8506,7 +8612,7 @@ offen; was aussteht, braucht den Betreiber, ein Gerät oder eine Entscheidung.
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
-| **Rest aus T128** | Umbruch bei großer Schrift | Die fünf Punkte vom 19. Oktober sind am 20. Oktober umgesetzt (Wahl, Spannen, `lang` der Programmtexte, „Holen", Hilfsdienste), dazu, was die Nachmessung fand. Vorher wie nachher bleiben: die Listen der Trolleys am Desktop bei 1180 px und 1,45 (Spalte rund 190 px), Bezeichnung und Zahl, die zusammen breiter als die Zeile sind, Knöpfe im Fuß eines Blatts bei 320 px, „nie" in der Auswertung am Desktop, Spur-Namen in pl/en — Einzelheiten unter T128 |
+| **Rest aus T128** | Umbruch bei großer Schrift | Die fünf Punkte vom 19. Oktober und die sechs, die danach blieben, sind am 20. Oktober umgesetzt; gemessen in 1 860 weiteren Fällen, 494 Funde → 0. Offen bleiben Daten, die direkt aus `Intl` kommen und nicht gebunden sind (rund ein Dutzend Anzeigen, keine davon gemessen gebrochen — binden nur mit Messung) — Einzelheiten unter T128 |
 | **Bewusst offen** | Das Blatt nach einem langsamen Start | Kommen die Daten erst nach dem Vorgriff (4 s), legt das Blatt beim Öffnen eine seither neue Zuteilung nicht vor (nach über einer Stunde ebenso seit `30a5a80d`). Betreiber am 19. Oktober: nur der eigene Hinweis — der Streifen sagt seitdem „Verbindung langsam" statt „Offline", solange die Daten noch kommen können; das Blatt bleibt so |
 | **Bewusst offen** | `sprache-fehlt` beim Wochen-Import | zählt weiter als Ende des Kalenders. Strenger gäbe es im Alltag Fehlalarme; betroffen wäre nur eine anderssprachige Versammlung mit Geschichte (Review vom 18. Oktober, `42dff943`) |
 

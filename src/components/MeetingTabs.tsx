@@ -51,7 +51,7 @@ export function MeetingTabs({ tab, onChange, showEdit = false, week }: MeetingTa
   const tagZahl = datumsFormat(state.lang, 'tagZahl')
 
   return (
-    <div className={showEdit ? 'meeting-tabs mit-bearbeiten' : 'meeting-tabs'}>
+    <div className="meeting-tabs">
       {MEETING_TABS.map((key) => {
         // Verlegte Woche → ihr echter Tag (T30); sonst der Rhythmus, gezählt
         // vom Montag, 1. Januar 2024 — örtlich zur Mittagszeit, damit keine

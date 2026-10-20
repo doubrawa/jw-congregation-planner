@@ -327,11 +327,20 @@
     gap: 24px;
   }
 
+  /* Die beiden Listen nebeneinander, solange jede ihr längstes Wort fasst —
+     sonst steht „Partner gesucht" unter „Deine Termine". In zwei festen
+     Spalten ragten bei 1180 px und Stufe 1,45 die Titel hinaus („Programările
+     tale" 52 px, „Se busca compañero" 27 px), und „współpracow|nik" brach
+     (T128). */
   .trolley-ansicht.is-desktop .trolley-listen {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
+    flex-flow: row wrap;
+    align-items: flex-start;
     gap: 16px;
+  }
+
+  .trolley-ansicht.is-desktop .trolley-listen > * {
+    flex: 1 1 0;
+    max-width: 100%;
   }
 }
 

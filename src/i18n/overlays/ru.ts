@@ -375,7 +375,7 @@ export default {
   "grussAbend": "Добрый вечер",
   "dashKeineAufgabe": "Нет предстоящих заданий",
   "dashZuBest": "Ждут подтверждения",
-  "dashPlanung": "Планирование",
+  "dashPlanung": "Плани\u00adрование",
   "dashAllesZugeteilt": "Всё назначено",
   "tabFs": "Служение",
   "fsShort": "Встречи для проповеди",

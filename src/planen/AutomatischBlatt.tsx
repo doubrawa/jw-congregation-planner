@@ -165,7 +165,7 @@ export function AutomatikFuss({
       <button type="button" className="knopf-haupt" disabled={!zuteilen} onClick={() => zuteilen?.()}>
         {t.spurZuteilen}
       </button>
-      <div className="auto-fuss-zeile">
+      <div className="knopf-reihe">
         <button
           type="button"
           className="auto-leeren"

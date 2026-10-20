@@ -128,8 +128,8 @@ function zeige(over: Partial<AppState> = {}, art: PlanArt = 'zusammenkuenfte') {
 const blatt = () => document.querySelector<HTMLElement>('[role="dialog"]')!
 const zeilen = () => [...blatt().querySelectorAll<HTMLElement>('.senden-zeile')]
 const namen = () => zeilen().map((z) => z.querySelector('.senden-name')?.textContent)
-const senden = () => blatt().querySelector<HTMLButtonElement>('.senden-fuss .knopf-haupt')!
-const ausgang = () => blatt().querySelector<HTMLButtonElement>('.senden-fuss .knopf-leise')!
+const senden = () => blatt().querySelector<HTMLButtonElement>('.sheet-fuss .knopf-haupt')!
+const ausgang = () => blatt().querySelector<HTMLButtonElement>('.sheet-fuss .knopf-leise')!
 
 beforeEach(() => {
   // Montagmorgen der Testwoche: Vergangenes geht nicht hinaus (T77).

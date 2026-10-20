@@ -1,8 +1,10 @@
 // Jede `Wahl` an ihrer echten Stelle im echten Chrome (Rest aus T128): Profil,
 // Erinnerungen, Auswertung, die Blätter „Person anlegen", „Person bearbeiten",
-// „Automatisch", ein Weiterer Plan und das Eintragen eines Trolleys. Blätter
-// werden per Klick geöffnet; gemessen wird die ganze Ansicht (bzw. das Blatt),
-// `vergleich.mjs` trennt nach Element.
+// „Automatisch", ein Weiterer Plan und das Eintragen eines Trolleys. Dazu jedes
+// Blatt mit Knöpfen nebeneinander im Fuß (`--ziele fuss`) und die Unteransichten
+// der Auswertung am Handy (`--ziele aw`) — „Was bleibt" aus T128.
+// Blätter werden per Klick geöffnet; gemessen wird die ganze Ansicht (bzw. das
+// Blatt), `vergleich.mjs` trennt nach Element.
 //
 // node wahl.mjs --lauf nachher [--port 5173] [--ziele profil,automatisch]
 //               [--sprachen de,pl] [--breiten 320,1180] [--fs 1.15,1.45]
@@ -22,6 +24,15 @@ const SEITE_JS = readFileSync(join(HIER, 'seite.js'), 'utf8')
 
 const DIALOG = '[role=dialog]'
 const klick = (sel, i = 0) => `document.querySelectorAll(${JSON.stringify(sel)})[${i}]?.click()`
+
+/** Mehrere Schritte nacheinander: je Schritt warten, bis `sel` dasteht, dann `tun` ausführen. */
+const kette = (...schritte) => `(async () => {
+  const warte = async (sel) => {
+    const t0 = performance.now()
+    while (performance.now() - t0 < 8000 && !document.querySelector(sel)) await new Promise((r) => setTimeout(r, 100))
+  }
+  ${schritte.map(([sel, tun]) => `await warte(${JSON.stringify(sel)}); ${tun}; await new Promise((r) => setTimeout(r, 600))`).join('\n  ')}
+})()`
 
 /**
  * Wo eine Wahl steht: der Hash, ein Klick dorthin (wenn nötig), worauf zu warten
@@ -65,7 +76,71 @@ const ZIELE = {
     warte: '.trolley-seite .wahl, [role=dialog] .wahl',
   },
 }
-const NAMEN = String(arg('ziele', Object.keys(ZIELE).join(','))).split(',')
+/**
+ * Blätter mit Knöpfen nebeneinander im Fuß (`--ziele fuss` nimmt alle). Dazu
+ * gehören „person-anlegen", „automatisch" und „plan" oben; „person-bearbeiten"
+ * hat einen Fuß, der schon umbricht (`.sheet-fuss-ende`). Das Absage-Blatt
+ * zeigt dazu eine Spur.
+ */
+const ZIELE_FUSS = {
+  'person-filter': {
+    hash: 's=personen&pl=1',
+    schritt: klick('.personen-auswahl[aria-haspopup]'),
+    vorher: '.personen-auswahl[aria-haspopup]',
+    warte: `${DIALOG} .sheet-fuss`,
+    wurzel: DIALOG,
+  },
+  'hilfsdienst-neu': {
+    hash: 's=einstellungen&pl=1',
+    // Desktop: die Leiste (Hilfsdienste ist der dritte Abschnitt); Handy: die letzte Zeile der zweiten Karte.
+    schritt: kette(
+      ['.einst-nav-eintrag, .einst-karte', `document.querySelectorAll('.einst-nav-eintrag').length ? ${klick('.einst-nav-eintrag', 2)} : [...document.querySelectorAll('.einst-karte')[1].querySelectorAll('.einst-zeile')].at(-1)?.click()`],
+      ['.zeile-hinzu', klick('.zeile-hinzu')],
+    ),
+    vorher: '.einst-nav-eintrag, .einst-karte',
+    warte: `${DIALOG} .sheet-fuss`,
+    wurzel: DIALOG,
+  },
+  'treffpunkt-neu': { hash: 's=planen&tab=fs&fb=treffpunkte&pl=1', schritt: klick('.knopf-neu'), vorher: '.knopf-neu', warte: `${DIALOG} .sheet-fuss`, wurzel: DIALOG },
+  'regel-neu': { hash: 's=planen&tab=fs&fb=grundplan&pl=1', schritt: klick('.knopf-neu'), vorher: '.knopf-neu', warte: `${DIALOG} .sheet-fuss`, wurzel: DIALOG },
+  'gruppenbesuch-neu': { hash: 's=planen&tab=fs&fb=gruppenbesuche&pl=1', schritt: klick('.gb-neu'), vorher: '.gb-neu', warte: `${DIALOG} .sheet-fuss`, wurzel: DIALOG },
+  oeffnen: { hash: 's=start&pl=0&me=p9&vorlage=1', warte: `${DIALOG} .sheet-fuss`, wurzel: DIALOG },
+  absage: {
+    hash: 's=aufgaben&pl=0&me=p9',
+    schritt: klick('.aufgabe-handlungen .knopf-umriss'),
+    vorher: '.aufgabe-handlungen .knopf-umriss',
+    warte: `${DIALOG} .absage-fuss`,
+    wurzel: DIALOG,
+  },
+  // Bis zum Rest aus T128 hießen die Füße `senden-fuss` und `druck-fuss` — der Vorher-Stand braucht sie.
+  senden: {
+    hash: 's=planen&tab=mid&pl=1',
+    schritt: klick('.aktion-haupt'),
+    vorher: '.aktion-haupt',
+    warte: `${DIALOG} .sheet-fuss, ${DIALOG} .senden-fuss`,
+    wurzel: DIALOG,
+  },
+  drucken: { hash: 's=programm&pl=1', schritt: klick('.druck-knopf'), vorher: '.druck-knopf', warte: `${DIALOG} .sheet-fuss, ${DIALOG} .druck-fuss`, wurzel: DIALOG },
+  // „Programm holen" fehlt: Ohne Verbindung holt die Entwicklerseite nichts, das Blatt öffnet nicht.
+}
+
+/**
+ * Die übrigen Unteransichten der Auswertung am Handy (`--ziele aw` nimmt alle
+ * fünf): Ab 768 px stehen sie auf der Seite und misst sie `breit.mjs`.
+ */
+const ZIELE_AW = {
+  'aw-wartezeiten': { hash: 's=auswertung&uhr=2026-10-12&pl=1', nur: 'handy', schritt: klick('.aw-kachel', 2), vorher: '.aw-kachel', warte: '.unteransicht-kopf' },
+  'aw-engpaesse': { hash: 's=auswertung&uhr=2026-10-12&pl=1', nur: 'handy', schritt: klick('.aw-kachel', 3), vorher: '.aw-kachel', warte: '.unteransicht-kopf' },
+  'aw-weiteres': { hash: 's=auswertung&uhr=2026-10-12&pl=1', nur: 'handy', schritt: klick('.aw-kachel', 4), vorher: '.aw-kachel', warte: '.unteransicht-kopf' },
+}
+const ALLE = { ...ZIELE, ...ZIELE_FUSS, ...ZIELE_AW }
+const GRUPPEN = {
+  fuss: ['person-anlegen', 'automatisch', 'plan', ...Object.keys(ZIELE_FUSS)],
+  aw: ['aw-verteilung', 'aw-einseitig', ...Object.keys(ZIELE_AW)],
+}
+const NAMEN = String(arg('ziele', Object.keys(ZIELE).join(',')))
+  .split(',')
+  .flatMap((n) => GRUPPEN[n] ?? [n])
 
 /** Bis die Seite in Sprache und Schriftstufe dasteht und die Schriften geladen sind. */
 const bereit = (lang, fs) => `(async () => {
@@ -102,7 +177,7 @@ try {
     for (const fs of STUFEN) {
       for (const lang of SPRACHEN) {
         for (const name of NAMEN) {
-          const ziel = ZIELE[name]
+          const ziel = ALLE[name]
           if (!ziel) throw new Error(`unbekanntes Ziel ${name}`)
           if (ziel.nur === 'handy' && !handy) continue
           const fall = `${name}:${lang}:${breite}:${fs}`
@@ -123,7 +198,15 @@ try {
               const imWort = wahl.flatMap((f) => f.b.filter((b) => b.art === 'im-wort')).length
               const zahl = wahl.flatMap((f) => f.b.filter((b) => b.art === 'zahl-getrennt')).length
               const ragt = (a.textRaus ?? []).filter((t) => t.startsWith('button.wahl-knopf')).length
-              console.log(fall.padEnd(30), a.fehler ? `FEHLT ${a.fehler}` : `wahl: wort ${imWort} zahl ${zahl}${ragt ? ' RAGT ' + ragt : ''}${a.ueber.zuBreit ? ' ZU BREIT' : ''}`)
+              // Über die ganze Ansicht (bzw. das Blatt) — für die Ziele ohne Wahl.
+              const alleWort = a.funde.flatMap((f) => f.b.filter((b) => b.art === 'im-wort')).length
+              const alleRagt = (a.textRaus ?? []).length
+              console.log(
+                fall.padEnd(30),
+                a.fehler
+                  ? `FEHLT ${a.fehler}`
+                  : `wahl: wort ${imWort} zahl ${zahl}${ragt ? ' RAGT ' + ragt : ''} | alle: wort ${alleWort} ragt ${alleRagt}${a.ueber.zuBreit ? ' ZU BREIT' : ''}`,
+              )
               break
             } catch (e) {
               console.log(fall.padEnd(30), 'FEHLER', versuch, e.message)

@@ -184,22 +184,23 @@
 
 /* ---- Die Zusammenkünfte der Woche als Karten (T121) ---------------------- */
 
+/* Die Reiter teilen sich die Breite; beim Planen kommt die Bearbeiten-Karte
+   dazu. Ein Wochentag, den Chrome nicht trennen kann (Polnisch, Rumänisch, ein
+   englisches Großwort), bleibt ganz: Passt er nicht, rückt die Bearbeiten-Karte
+   in die nächste Zeile — neben ihr blieben bei 320 px 74 px, und „niedziel|a",
+   „Tuesda|y" brachen ab Stufe 1,15 (T128). */
 .meeting-tabs {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-}
-
-/* Beim Planen kommt die Bearbeiten-Karte dazu — schmal, mit Zeichen. */
-.meeting-tabs.mit-bearbeiten {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
 }
 
 .meeting-tab {
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
   justify-content: center;
-  min-width: 0;
+  max-width: 100%;
   min-height: 56px;
   padding: 6px 14px;
   border: 1.5px solid transparent;
@@ -214,14 +215,15 @@
   color: var(--text);
 }
 
-/* Zwei Reiter stehen fest nebeneinander: Reicht der Platz nicht, trennt der
-   Wochentag nach den Regeln der Sprache (T128: „воскресен|ье", „dimanch|e"
-   bei 320 px). */
+/* Reicht der Platz nicht, trennt der Wochentag nach den Regeln der Sprache
+   (T128: „воскресен|ье", „dimanch|e" bei 320 px). Ohne Regeln bleibt er ganz
+   — kein `anywhere`, das senkte die Mindestbreite, und das Wort bräche, statt
+   dass die Bearbeiten-Karte umrückt. */
 .meeting-tab-name {
   font-weight: 500;
   -webkit-hyphens: auto;
   hyphens: auto;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .meeting-tab.is-active .meeting-tab-name {
@@ -375,10 +377,12 @@ select {
 }
 
 /* Die Bearbeiten-Karte (T64) trägt ein Zeichen statt eines Wortes — so breit
-   wie hoch. */
+   wie hoch, und rückt sie um, steht sie am Ende der nächsten Zeile. */
 .meeting-tab--icon {
+  flex: none;
   align-items: center;
   min-width: 56px;
+  margin-inline-start: auto;
   padding-inline: 14px;
 }
 

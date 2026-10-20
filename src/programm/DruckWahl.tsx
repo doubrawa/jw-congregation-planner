@@ -124,7 +124,7 @@ function DruckWahlBlatt({
           <Option an={ganzerMonat} titel={monatText} onWahl={() => setGanzerMonat(true)} />
         </div>
       </div>
-      <div className="druck-fuss">
+      <div className="sheet-fuss sheet-fuss--haupt">
         <button type="button" className="knopf-haupt" onClick={() => onDrucken(ganzerMonat)}>
           {t.drucken}
         </button>

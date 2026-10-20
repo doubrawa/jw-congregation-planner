@@ -113,7 +113,7 @@ export function PlanSendenBlatt({
         )}
         {zuletztText && <p className="klein-text">{n > 0 ? `${t.planSendenAndere} ${zuletztText}` : zuletztText}</p>}
       </div>
-      <div className="senden-fuss">
+      <div className="sheet-fuss sheet-fuss--haupt">
         <GesperrterKnopf className="knopf-haupt" gesperrt={laeuft || n === 0} onTipp={() => void senden()}>
           {laeuft ? tu('…') : t.planSenden}
           {!laeuft && n > 0 && <span className="zahl-marke">{n}</span>}

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { APP_LANGS } from '../i18n/langs'
 import { NBSP } from '../i18n/zahl-binden'
 import { tageSpanne, wochenSpanne, zeitspanne } from './datum-anzeige'
+import { zeitleisteDatum } from './zeitleiste-gemeinsam'
 
 /**
  * **Zahl und Wort einer Spanne bleiben zusammen** (T128).
@@ -25,6 +26,8 @@ describe('Spannen und Zeiträume', () => {
       zeitspanne(1, 'day', code),
       zeitspanne(20, 'week', code),
       zeitspanne(12, 'month', code),
+      // Die Zeitleiste einer Person: „воскресенье, 20 |сентября" brach bei 320 px.
+      zeitleisteDatum(new Date(2026, 8, 20), code, '10:00'),
     ]) {
       expect(text, `${code}: ${text}`).not.toMatch(LUECKE)
     }

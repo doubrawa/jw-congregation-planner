@@ -143,6 +143,7 @@
   flex-direction: column;
   margin: 0;
   padding: 0;
+  container-type: inline-size;
   list-style: none;
 }
 
@@ -196,6 +197,16 @@
   -webkit-hyphens: auto;
   hyphens: auto;
   overflow-wrap: break-word;
+}
+
+/* Unter 12 em gibt der Pfeil seinen Platz an den Text ab (die ganze Zeile
+   bleibt ein Knopf): Bei 320 px und Stufe 1,45 fehlten „обязанностями: 4"
+   2 px, die Zahl stand allein in der nächsten Zeile (T128). Bei Stufe 1,3
+   bleibt der Pfeil. */
+@container (max-width: 12em) {
+  .aw-hinweis > .zeichen {
+    display: none;
+  }
 }
 
 /* ---- Legende ------------------------------------------------------------- */
@@ -478,10 +489,14 @@
   font-weight: 800;
 }
 
+/* Die Zeilen einer Liste teilen sich die Spalten (`subgrid`): Rechts steht die
+   Zahl oder „nie", so breit wie das breiteste der Liste, mindestens 3,2 em. In
+   einer festen Spalte ragten „niciodată" und „жодного разу" am Desktop bis
+   16 px hinaus (T128). */
 .aw-bereiche {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 9em) minmax(0, 1fr) minmax(3.2em, max-content);
+  gap: 8px 10px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -489,9 +504,9 @@
 
 .aw-bereich {
   display: grid;
-  grid-template-columns: minmax(0, 9em) minmax(0, 1fr) 3.2em;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
-  gap: 10px;
   min-height: 24px;
 }
 
@@ -768,16 +783,19 @@
   list-style: none;
 }
 
+/* Wann und Was nebeneinander, solange das Was sein längstes Wort fasst — sonst
+   steht es unter dem Kästchen. Daneben blieben bei 320 px und Stufe 1,45 rund
+   90 px: „Mikrof|one", „4 Woche|n" brachen mitten im Wort (T128). */
 .aw-ballung {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 8px 12px;
   min-height: 48px;
 }
 
-/* Lange Wörter („Infrasettimanale", „Bibellesung") trennen, statt über das
-   Kästchen hinauszuragen — bei 320 px rollte sonst die Seite (gemessen
-   16.10.2026: 354 px). */
+/* Lange Wörter im Kästchen („Infrasettimanale") trennen, statt hinauszuragen —
+   bei 320 px rollte sonst die Seite (gemessen 16.10.2026: 354 px). */
 .aw-ballung-wann {
   display: flex;
   flex: none;
@@ -793,15 +811,15 @@
   overflow-wrap: anywhere;
 }
 
+/* Ohne `min-width: 0`, Trennung und `anywhere`: Sie senkten die Mindestbreite,
+   und das Was bräche, statt unter das Kästchen zu rücken. */
 .aw-ballung-was {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
   flex-direction: column;
   gap: 1px;
-  min-width: 0;
-  -webkit-hyphens: auto;
-  hyphens: auto;
-  overflow-wrap: anywhere;
+  max-width: 100%;
+  overflow-wrap: break-word;
 }
 
 /* ---- Ab dem Tablet: alles auf einer Seite -------------------------------- */

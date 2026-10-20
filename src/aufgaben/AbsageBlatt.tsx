@@ -130,7 +130,7 @@ export function AbsageBlatt({ task }: { task: MyTask }) {
         <button type="button" className="knopf-dunkel" onClick={absagen}>
           {t.absagen}
         </button>
-        <div className="absage-fuss-zeile">
+        <div className="knopf-reihe">
           {task.status === 'offen' && (
             <button type="button" className="knopf-leise is-akzent" onClick={dochBestaetigen}>
               {t.dochBestaetigen}

@@ -82,7 +82,7 @@ export function OeffnenBlatt() {
           </section>
         )}
       </div>
-      <div className="sheet-fuss oeffnen-fuss">
+      <div className="sheet-fuss sheet-fuss--haupt">
         {offen.length > 1 ? (
           <button type="button" className="knopf-umriss" onClick={() => dispatch({ type: 'confirmAll' })}>
             {t.alleBestaetigen}

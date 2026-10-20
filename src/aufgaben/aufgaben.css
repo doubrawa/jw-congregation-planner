@@ -251,13 +251,6 @@
   padding-block-start: 16px;
 }
 
-.absage-fuss-zeile {
-  display: grid;
-  grid-auto-columns: minmax(0, 1fr);
-  grid-auto-flow: column;
-  gap: 6px;
-}
-
 .knopf-leise.is-akzent {
   color: var(--akzent-text);
 }
@@ -320,8 +313,4 @@
 
 .oeffnen-gesuche.is-nach {
   padding-block-start: 8px;
-}
-
-.oeffnen-fuss {
-  grid-template-columns: minmax(0, 1fr) auto;
 }

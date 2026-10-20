@@ -117,7 +117,7 @@ const druckKnopf = (c: HTMLElement) => seite(c).querySelector<HTMLButtonElement>
 function drucke(c: HTMLElement, wahl: 0 | 1): void {
   fireEvent.click(druckKnopf(c))
   fireEvent.click(optionen()[wahl]!)
-  fireEvent.click(document.querySelector('.druck-fuss .knopf-haupt')!)
+  fireEvent.click(document.querySelector('[role="dialog"] .sheet-fuss .knopf-haupt')!)
 }
 
 // jsdom kennt `matchMedia` nicht; das Blatt „Drucken" fragt danach (Herunterwischen).
@@ -704,7 +704,7 @@ describe('Drucken: diese Woche oder der ganze Monat', () => {
     fireEvent.click(document.querySelector('.sheet-backdrop')!)
     expect(optionen()).toHaveLength(0)
     fireEvent.click(druckKnopf(container))
-    fireEvent.click([...document.querySelectorAll('.druck-fuss button')].find((b) => b.textContent === t.abbrechen)!)
+    fireEvent.click([...document.querySelectorAll('[role="dialog"] .sheet-fuss button')].find((b) => b.textContent === t.abbrechen)!)
     expect(optionen()).toHaveLength(0)
     expect(print).not.toHaveBeenCalled()
   })

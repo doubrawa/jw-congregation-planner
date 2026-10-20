@@ -1002,22 +1002,36 @@ body:has(.planen-leiste) .toast {
 }
 
 /* Wer, welche Aufgabe — und bei einem Problem rechts „Zuteilen". Ebenso gebaut:
-   die Zeile „Jetzt erinnern" unter den Wartenden. */
+   die Zeile „Jetzt erinnern" unter den Wartenden. Passt das Daneben nicht neben
+   den Text, rückt es darunter an den Rand: Als Raster schrumpfte der Text bei
+   320 px neben „Enviar recordatorio" und ragte bis 87 px hinaus (T128). */
 .zusage-zeile,
 .zusagen-erinnern {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  column-gap: 10px;
+  gap: 4px 10px;
   min-height: 60px;
   padding-block: 8px;
   border-block-start: 1px solid var(--linie);
 }
 
+/* Der Text wird nicht schmaler als sein längstes Wort. */
+.zusage-text,
+.zusagen-erinnern > .klein-text {
+  flex: 1 1 0;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
 .zusage-text {
   display: flex;
   flex-direction: column;
-  min-width: 0;
+}
+
+.zusage-zeile > :not(.zusage-text),
+.zusagen-erinnern > .knopf-pille {
+  margin-inline-start: auto;
 }
 
 .zusage-name {
@@ -1130,12 +1144,6 @@ body:has(.planen-leiste) .toast {
   padding-top: 16px;
 }
 
-.auto-fuss-zeile {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 6px;
-}
-
 .auto-leeren {
   min-height: 46px;
   color: var(--problem);
@@ -1195,13 +1203,6 @@ body:has(.planen-leiste) .toast {
   padding: 14px 16px;
   border: 1.5px solid var(--sek2);
   border-radius: 20px;
-}
-
-.senden-fuss {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  padding-top: 16px;
 }
 
 /* ---- Vortragsplan aus dem Planungsprogramm (T122) ------------------------- */
@@ -1360,20 +1361,28 @@ body:has(.planen-leiste) .toast {
 
 /* Leiste im Planen: Schalter für die Partner-Zettel links, Druckknopf rechts.
    Wie viele auf ein Blatt kommen, steht nicht zur Wahl — sechs, siehe
-   `S89_JE_BLATT` (druck/S89Druck.tsx). */
+   `S89_JE_BLATT` (druck/S89Druck.tsx). Passen Schalter und Knopf nicht neben
+   die Beschriftung, rücken sie darunter an den Rand — „Interlocuteur" ragte
+   bei 320 px und Stufe 1,15 hinaus (T128). */
 .s89-druck-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 6px 10px;
   padding-top: 6px;
 }
 
 .s89-druck-count {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 0;
+  max-width: 100%;
   font-size: calc(12.5px * var(--fs));
   font-weight: 600;
   color: var(--text);
+  overflow-wrap: break-word;
+}
+
+.s89-druck-row > .switch {
+  margin-inline-start: auto;
 }
 
 .s89-druck-btn {
@@ -1421,19 +1430,26 @@ body:has(.planen-leiste) .toast {
   border-color: var(--text);
 }
 
+/* Spanne und Lage nebeneinander, solange die Spanne ihr längstes Stück fasst —
+   sonst rückt die Lage darunter an den Rand. Gebunden („14.–20. September")
+   ragte die Spanne in der Planung bei 320 px ab Stufe 1,3 bis 38 px aus ihrem
+   Knopf (T128). */
 .wochen-karte-kopf {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
+  gap: 2px 10px;
 }
 
 .wochen-karte-knopf {
-  min-width: 0;
+  flex: 1 1 0;
+  max-width: 100%;
   color: inherit;
   font-size: calc(16px * var(--fs));
   font-weight: 600;
   text-align: start;
+  overflow-wrap: break-word;
 }
 
 .wochen-karte-knopf::after {
@@ -1455,6 +1471,7 @@ body:has(.planen-leiste) .toast {
 
 .wochen-karte-lage {
   flex: none;
+  margin-inline-start: auto;
   color: var(--text2);
   font-size: calc(13.5px * var(--fs));
   font-weight: 600;
@@ -1532,11 +1549,18 @@ body:has(.planen-leiste) .toast {
   border-inline-end: 1px solid var(--linie);
 }
 
+/* Reicht die Spalte nicht, trennt der Titel nach den Regeln der Sprache:
+   „Планирование" ragte bei Stufe 1,45 4 px hinaus (T128). Platz gibt es dort
+   keinen zu gewinnen — eine breitere Spalte nahm ihn dem Plan, und daneben
+   brach „Hoffman|n". */
 .wochen-spalte-titel {
   margin-inline-start: 6px;
   padding-block-end: 8px;
   font-size: calc(20px * var(--fs));
   font-weight: 600;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
 }
 
 /* In der schmalen Spalte steht die Lage neben der Unterzeile, nicht neben der
@@ -1568,6 +1592,7 @@ body:has(.planen-leiste) .toast {
 
 .wochen-spalte .wochen-karte-lage {
   order: 2;
+  margin-inline-start: 0;
   font-size: calc(13px * var(--fs));
 }
 

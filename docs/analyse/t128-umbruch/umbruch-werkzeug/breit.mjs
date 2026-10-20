@@ -4,6 +4,10 @@
 //
 // node breit.mjs --lauf nachher [--port 5173] [--seiten planen,start,programm]
 //                [--sprachen de,pl] [--breiten 768,1440] [--fs 1.3,1.45] [--css datei.css]
+//                [--mobil]
+//
+// Ohne `--mobil` misst es auch schmale Breiten als Desktop — mit Rollbalken, also
+// 15 px schmaler als ein Handy. `--mobil` emuliert unter 768 px ein Handy (wie `wahl.mjs`).
 import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -20,6 +24,7 @@ const START = { port: Number(arg('cdp', 9349)), profil: profilOrdner(arg('profil
 const SEITE_JS = readFileSync(join(HIER, 'seite.js'), 'utf8')
 // --css datei.css: Regeln als <style> im Tab einhängen (Simulation, nichts im Repo).
 const CSS = arg('css', null) ? readFileSync(join(HIER, arg('css')), 'utf8') : null
+const MOBIL = Boolean(arg('mobil', false))
 
 /** Bis die Seite in Sprache und Schriftstufe dasteht und die Schriften geladen sind. */
 const bereit = (lang, fs) => `(async () => {
@@ -45,7 +50,8 @@ try {
           // Hängt Chrome, einmal frisch starten und den Fall wiederholen.
           for (let versuch = 1; versuch <= 2; versuch++) {
             try {
-              await chrome.cdp('Emulation.setDeviceMetricsOverride', { width: breite, height: 1000, deviceScaleFactor: 1, mobile: false })
+              const handy = MOBIL && breite < 768
+              await chrome.cdp('Emulation.setDeviceMetricsOverride', { width: breite, height: 1000, deviceScaleFactor: handy ? 2 : 1, mobile: handy })
               await chrome.laden(`${BASIS}?b=${LAUF}${++x}#s=${seite}&pl=1&l=${lang}&fs=${fs}`)
               await chrome.werte(SEITE_JS)
               if (CSS) await chrome.werte(`window.__umbruch.cssEinhaengen(${JSON.stringify(CSS)})`)

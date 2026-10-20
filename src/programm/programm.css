@@ -70,14 +70,6 @@
   border-color: var(--akzent-text);
 }
 
-.druck-fuss {
-  flex: none;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  padding-block-start: 16px;
-}
-
 /* ---- Ein Abschnitt als Karte --------------------------------------------------- */
 
 .prog-abschnitt {

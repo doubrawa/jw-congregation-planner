@@ -36,6 +36,9 @@ const TRENNT = [
   ['components/components.css', '.meeting-tab-name'],
   // „вспомогательными" ragte bei 320 px und Stufe 1,45 aus dem Hinweis.
   ['auswertung/auswertung.css', '.aw-hinweis-detail'],
+  // „Планирование" ragte bei 1400 px und 1,45 aus der Wochenspalte beim Planen;
+  // eine breitere Spalte nahm den Platz dem Plan, dort brach dann „Hoffman|n".
+  ['planen/planen.css', '.wochen-spalte-titel'],
 ] as const
 
 describe('Bei großer Schrift bekommt ein langes Wort Platz oder trennt', () => {
@@ -93,6 +96,45 @@ describe('Bei großer Schrift bekommt ein langes Wort Platz oder trennt', () => 
 
   it('passen zwei Knöpfe im Fuß eines Blatts nicht nebeneinander, rückt der letzte nach unten', () => {
     expect(deklarationen('components/overlays.css', '.sheet-fuss-ende')).toMatch(/flex-wrap:\s*wrap/)
+  })
+})
+
+/*
+ * Knöpfe nebeneinander im Fuß eines Blatts: als zwei feste Spalten ragte bei
+ * 320 px und Stufe 1,45 „Hinzufügen" 19 px aus seinem Knopf, „Zurücksetzen"
+ * 18 px — in neun Blättern schon auf Deutsch (Rest aus T128, 20.10.2026).
+ */
+describe('Im Fuß eines Blatts teilen sich die Knöpfe die Breite, bis einer umrückt', () => {
+  const O = 'components/overlays.css'
+
+  it('der Fuß und jede Reihe von Knöpfen darin brechen um — eine Regel für beide', () => {
+    // `deklarationen` findet eine Regel für mehrere Selektoren an ihrem letzten.
+    const quelle = Object.fromEntries(cssDateien())[O] ?? ''
+    expect(quelle).toMatch(/\.sheet-fuss,\s*\.knopf-reihe \{/)
+    expect(quelle).toMatch(/\.sheet-fuss > \*,\s*\.knopf-reihe > \* \{/)
+    expect(deklarationen(O, '.knopf-reihe')).toMatch(/flex-wrap:\s*wrap/)
+    const knopf = deklarationen(O, '.knopf-reihe > *')
+    expect(knopf).toMatch(/flex:\s*1 1 0/)
+    // Trennung und `anywhere` senkten die Mindestbreite: Das Wort bräche, statt dass der Knopf umrückt.
+    expect(knopf).not.toMatch(/min-width:\s*0|hyphens|anywhere/)
+    expect(knopf).toMatch(/max-width:\s*100%/)
+  })
+
+  it('neben dem Hauptknopf bleibt der leise so breit wie sein Wort („Drucken", „Abbrechen")', () => {
+    expect(deklarationen(O, '.sheet-fuss--haupt > :first-child')).toMatch(/flex-grow:\s*999/)
+    expect(deklarationen(O, '.sheet-fuss--haupt > :last-child')).toMatch(/flex-basis:\s*auto/)
+  })
+
+  it('kein Fuß steht mehr als festes Raster', () => {
+    // Abgeleitet statt aufgezählt: jede Regel, deren Selektor einen Fuß nennt.
+    const raster: string[] = []
+    for (const [datei, text] of cssDateien()) {
+      const ohneKommentare = text.replace(/\/\*[\s\S]*?\*\//g, '')
+      for (const m of ohneKommentare.matchAll(/([^{}]*fuss[^{}]*)\{([^{}]*)\}/g)) {
+        if (/grid-template-columns|grid-auto-columns/.test(m[2] ?? '')) raster.push(`${datei}: ${(m[1] ?? '').trim()}`)
+      }
+    }
+    expect(raster).toEqual([])
   })
 })
 
@@ -156,6 +198,20 @@ describe('Was neben einem Namen steht, rückt darunter, statt ihn zu zerbrechen'
     expect(deklarationen(A, '.aw-kennzahl-text')).not.toMatch(/anywhere/)
   })
 
+  it('die Reiter der Zusammenkünfte teilen sich die Breite — passt ein Wochentag nicht, rückt die Bearbeiten-Karte um', () => {
+    // Neben der Karte blieben beim Planen bei 320 px 74 px: „niedziel|a", „Tuesda|y" ab Stufe 1,15.
+    const C = 'components/components.css'
+    expect(deklarationen(C, '.meeting-tabs')).toMatch(/flex-wrap:\s*wrap/)
+    const reiter = deklarationen(C, '.meeting-tab')
+    expect(reiter).toMatch(/flex:\s*1 1 0/)
+    expect(reiter).not.toMatch(/min-width:\s*0/)
+    // `anywhere` senkte die Mindestbreite: Das Wort bräche, statt dass die Karte umrückt.
+    expect(deklarationen(C, '.meeting-tab-name')).not.toMatch(/anywhere/)
+    const karte = deklarationen(C, '.meeting-tab--icon')
+    expect(karte).toMatch(/flex:\s*none/)
+    expect(karte).toMatch(/margin-inline-start:\s*auto/)
+  })
+
   it('in der Personenliste am Desktop rückt eine Zelle darunter — „Dienstamtgehi|lfe" brach bei 1180 px', () => {
     const P = 'personen/personen.css'
     expect(deklarationen(P, '.personen-zellen')).toMatch(/flex-wrap:\s*wrap/)
@@ -182,12 +238,31 @@ describe('Was neben einem Namen steht, rückt darunter, statt ihn zu zerbrechen'
     ['trolleys/trolleys.css', '.trolley-zeile', '.trolley-zeile-text', '.trolley-zeile > .zeichen'],
     // Neben dem 44-px-Pfeil ragte unter „Meine Aufgaben" „współpracownik:" 36 px hinaus.
     ['aufgaben/aufgaben.css', '.aufgaben-zeile', '.aufgaben-zeile > .angebot-text', '.aufgaben-zeile > :last-child'],
+    // Bei den Zusagen ragte neben „Enviar recordatorio" der Satz zur Erinnerung bis 87 px hinaus (320 px).
+    ['planen/planen.css', '.zusagen-erinnern', '.zusagen-erinnern > .klein-text', '.zusagen-erinnern > .knopf-pille'],
+    // Neben Schalter und Knopf ragte „Interlocuteur" bei 320 px und Stufe 1,15 hinaus.
+    ['planen/planen.css', '.s89-druck-row', '.s89-druck-count', '.s89-druck-row > .switch'],
+    // Neben der Lage ragte in der Planung die gebundene Spanne bei 320 px bis 38 px aus ihrem Knopf.
+    ['planen/planen.css', '.wochen-karte-kopf', '.wochen-karte-knopf', '.wochen-karte-lage'],
   ])('%s %s: passt das Daneben nicht neben den Text, rückt es um', (datei, zeile, text, daneben) => {
     expect(deklarationen(datei, zeile)).toMatch(/flex-wrap:\s*wrap/)
     const spanne = deklarationen(datei, text)
     expect(spanne).toMatch(/flex:\s*1 1 0/)
     expect(spanne).not.toMatch(/min-width:\s*0/)
     expect(deklarationen(datei, daneben)).toMatch(/margin-inline-start:\s*auto/)
+  })
+
+  it('bei den Zusagen gelten dieselben Regeln für jede Zeile — „Zuteilen" und der Haken rücken ebenso um', () => {
+    // `deklarationen` findet eine Regel für mehrere Selektoren nur an ihrem letzten.
+    const quelle = Object.fromEntries(cssDateien())['planen/planen.css'] ?? ''
+    expect(quelle).toMatch(/\.zusage-zeile,\s*\.zusagen-erinnern \{/)
+    expect(quelle).toMatch(/\.zusage-text,\s*\.zusagen-erinnern > \.klein-text \{/)
+    expect(quelle).toMatch(/\.zusage-zeile > :not\(\.zusage-text\),\s*\.zusagen-erinnern > \.knopf-pille \{/)
+  })
+
+  it('in der Wochenspalte am Desktop bleibt die Lage, wo sie war — sie steht dort neben der Unterzeile', () => {
+    // Der Kopf löst sich dort auf (`display: contents`); ein umgerückter Rand stünde rechts.
+    expect(deklarationen('planen/planen.css', '.wochen-spalte .wochen-karte-lage')).toMatch(/margin-inline-start:\s*0/)
   })
 
   it('im Blatt „Holen" rückt neben der gebundenen Spanne die Zahl der Punkte darunter', () => {
@@ -207,6 +282,37 @@ describe('Was neben einem Namen steht, rückt darunter, statt ihn zu zerbrechen'
     // `.angebot-text` setzt sonst `min-width: 0`; in der Zeile gilt die Mindestbreite des Inhalts.
     expect(deklarationen('aufgaben/aufgaben.css', '.aufgaben-zeile > .angebot-text')).toMatch(/min-width:\s*auto/)
   })
+
+  it('am Desktop stehen die Trolley-Listen nebeneinander, solange jede ihr längstes Wort fasst — „Programările tale" ragte 52 px hinaus', () => {
+    const T = 'trolleys/trolleys.css'
+    const DESKTOP = '@media (min-width: 1180px)'
+    // In zwei festen Spalten (1180 px, Stufe 1,45) ragten die Titel hinaus, „współpracow|nik" brach.
+    const listen = deklarationen(T, '.trolley-ansicht.is-desktop .trolley-listen', DESKTOP)
+    expect(listen).toMatch(/flex-flow:\s*row wrap/)
+    expect(listen).not.toMatch(/grid-template-columns/)
+    const liste = deklarationen(T, '.trolley-ansicht.is-desktop .trolley-listen > *', DESKTOP)
+    expect(liste).toMatch(/flex:\s*1 1 0/)
+    expect(liste).not.toMatch(/min-width:\s*0/)
+  })
+
+  it('in den Bereichen der Auswertung ist die Spalte der Zahl so breit wie ihr breitestes „nie" — „niciodată" ragte 16 px hinaus', () => {
+    const A = 'auswertung/auswertung.css'
+    expect(deklarationen(A, '.aw-bereiche')).toMatch(
+      /grid-template-columns:\s*minmax\(0, 9em\) minmax\(0, 1fr\) minmax\(3\.2em, max-content\)/,
+    )
+    // Die Zeilen teilen sich die Spalten der Liste — die Balken enden in einer Flucht.
+    expect(deklarationen(A, '.aw-bereich')).toMatch(/grid-template-columns:\s*subgrid/)
+  })
+
+  it('in den Ballungen der Auswertung rückt das Was unter das Kästchen — „Mikrof|one", „4 Woche|n" brachen bei 320 px', () => {
+    const A = 'auswertung/auswertung.css'
+    expect(deklarationen(A, '.aw-ballung')).toMatch(/flex-wrap:\s*wrap/)
+    const was = deklarationen(A, '.aw-ballung-was')
+    expect(was).toMatch(/flex:\s*1 1 0/)
+    // Trennung und `anywhere` senkten die Mindestbreite: Das Wort bräche, statt dass das Was umrückt.
+    expect(was).not.toMatch(/min-width:\s*0|hyphens|anywhere/)
+  })
+
 })
 
 /*
@@ -238,13 +344,19 @@ describe('Wird eine Zeile für die Schrift zu schmal, stehen ihre Teile unterein
     expect(deklarationen(A, '.aw-kacheln')).toMatch(/container-type:\s*inline-size/)
     expect(deklarationen(A, '.aw-kachel', '@container (max-width: 20em)')).toMatch(/grid-column:\s*1 \/ -1/)
   })
+
+  it('Hinweise der Auswertung: unter 12 em gibt der Pfeil seinen Platz an den Text ab — „обязанностями: |4" bei 320 px', () => {
+    const A = 'auswertung/auswertung.css'
+    expect(deklarationen(A, '.aw-hinweise')).toMatch(/container-type:\s*inline-size/)
+    expect(deklarationen(A, '.aw-hinweis > .zeichen', '@container (max-width: 12em)')).toMatch(/display:\s*none/)
+  })
 })
 
 describe('Ein Wort ohne Trennregeln seiner Sprache bekommt eine Trennstelle', () => {
   const SHY = String.fromCharCode(0xad)
 
   beforeAll(async () => {
-    await Promise.all([loadOverlay('tr'), loadOverlay('pl')])
+    await Promise.all([loadOverlay('tr'), loadOverlay('pl'), loadOverlay('en'), loadOverlay('ro'), loadOverlay('ru')])
   })
 
   it('Türkisch: „Değerlendirme" passt in keiner Stufe in die schmale Leiste — es trennt nach „Değerlen"', () => {
@@ -257,5 +369,33 @@ describe('Ein Wort ohne Trennregeln seiner Sprache bekommt eine Trennstelle', ()
 
   it('Polnisch: „współpracownik" ragte als Titel der Karte bei 320 px über den Rand — es trennt nach „współ"', () => {
     expect(dict('pl').trolleyPartnerGesucht).toBe(`Potrzebny współ${SHY}pracownik`)
+  })
+
+  // Die Spur: drei Schritte nebeneinander, bei 320 px je ein Drittel (Weiterer
+  // Plan, Absage, Woche, Zusagen, „Plan senden"). Die übrigen Sprachen trennen
+  // dort nach ihren Regeln („Abge-schlos-sen").
+  it.each([
+    ['pl', 'spurVeroeffentlicht', 'Opublikowa|ny', `Opubli${SHY}kowany`],
+    ['pl', 'spurAbgeschlossen', 'Zakończo|ny', `Zakoń${SHY}czony`],
+    ['pl', 'spurDuSagstAb', 'Odwołuje|sz', `Odwo${SHY}łujesz`],
+    ['pl', 'spurPlanerErfaehrt', 'informacj|ę', `Planista dostaje infor${SHY}mację`],
+    ['pl', 'spurNeuZugeteilt', 'Przydzielon|e', `Przy${SHY}dzielone na nowo`],
+    ['pl', 'spurZusagen', 'Potwierdzen|ia', `Potwier${SHY}dzenia`],
+    ['ro', 'spurPlanerErfaehrt', 'Planificatoru|l', `Plani${SHY}fica${SHY}torul află`],
+    ['ro', 'spurNeuZugeteilt', 'Repartiza|t', `Repar${SHY}tizat din nou`],
+    ['ro', 'spurZusagen', 'Confirmăr|i', `Confir${SHY}mări`],
+    ['tr', 'spurAbgeschlossen', 'Tamamla|ndı', `Tamam${SHY}landı`],
+    ['tr', 'spurDuSagstAb', 'çekiliyors|un', `Görevden çekili${SHY}yorsun`],
+    // Ein großgeschriebenes englisches Wort trennt Chrome nie.
+    ['en', 'spurAbgeschlossen', 'Complete|d', `Com${SHY}pleted`],
+    ['en', 'spurNeuZugeteilt', 'Reassign|ed', `Reas${SHY}signed`],
+    ['en', 'spurZusagen', 'Confirmatio|ns', `Confir${SHY}mations`],
+  ] as const)('Spur, %s %s: brach bei 320 px „%s" — es trennt an seiner Trennstelle', (lang, schluessel, _bruch, wert) => {
+    expect(dict(lang)[schluessel]).toBe(wert)
+  })
+
+  it('Russisch: Chrome trennt „Планирование" so spät wie möglich („Планирован-ие") — die Trennstelle steht an der Silbe', () => {
+    // Der Titel der Wochenspalte beim Planen, bei 1400 px und Stufe 1,45.
+    expect(dict('ru').dashPlanung).toBe(`Плани${SHY}рование`)
   })
 })

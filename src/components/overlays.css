@@ -137,13 +137,39 @@
   min-height: 0;
 }
 
-/* Unten im Blatt: die Knöpfe, die es abschließen. */
+/* Unten im Blatt: die Knöpfe, die es abschließen (`sheet-fuss`), und jede
+   Reihe von Knöpfen darin (`knopf-reihe`). Sie teilen sich die Breite, solange
+   jeder sein längstes Wort fasst — sonst rückt der letzte in die nächste Zeile
+   und steht dort über die ganze Breite. In zwei festen Spalten ragte bei
+   320 px und Stufe 1,45 „Hinzufügen" 19 px aus seinem Knopf, „Zurücksetzen"
+   18 px (T128). */
+.sheet-fuss,
+.knopf-reihe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .sheet-fuss {
   flex: none;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 8px;
   padding-top: 16px;
+}
+
+.sheet-fuss > *,
+.knopf-reihe > * {
+  flex: 1 1 0;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+/* Vorn der Hauptknopf, daneben ein leiser, so breit wie sein Wort („Drucken",
+   „Abbrechen") — bis der leise umrückt. */
+.sheet-fuss--haupt > :first-child {
+  flex-grow: 999;
+}
+
+.sheet-fuss--haupt > :last-child {
+  flex-basis: auto;
 }
 
 /* Unten in einem Blatt, das gleich beim Tippen ändert: nur ein Knopf, am Ende

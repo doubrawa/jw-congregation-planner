@@ -10,7 +10,7 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
-import { datumsFormat } from '../components/datum-anzeige'
+import { gebundenesDatum } from '../components/datum-anzeige'
 import { emptyQualifications } from '../data/helpers'
 import { dict } from '../i18n/ui'
 import { ProgrammScreen } from '../programm/ProgrammScreen'
@@ -377,11 +377,11 @@ describe('Planen: ein Plan', () => {
     const { container, dispatch } = planen({ plaene: [herbst] })
     oeffnen(container, 'Winterdienst')
     const [von, bis] = [...container.querySelectorAll<HTMLButtonElement>('.wp-datum')]
-    // Kurz, wie im Entwurf: Die Felder stehen nebeneinander.
-    const kurz = datumsFormat('de', 'tagKurzJahr')
+    // Kurz, wie im Entwurf: Die Felder stehen nebeneinander. Gebunden (T128):
+    // Zahl und Wort brechen nicht auseinander („5 окт. 2026 |г." bei 320 px).
     expect([von!.textContent, bis!.textContent]).toEqual([
-      kurz.format(new Date(2026, 8, 7)),
-      kurz.format(new Date(2026, 9, 25)),
+      gebundenesDatum(new Date(2026, 8, 7), 'de', 'tagKurzJahr'),
+      gebundenesDatum(new Date(2026, 9, 25), 'de', 'tagKurzJahr'),
     ])
 
     fireEvent.click(bis!)
