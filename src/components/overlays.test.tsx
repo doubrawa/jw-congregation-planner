@@ -11,6 +11,7 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { dict, loadOverlay } from '../i18n/ui'
 import { APP_LANGS } from '../i18n/langs'
+import { zahlBinden } from '../i18n/zahl-binden'
 import type { MyTask, Notification, S89Payload } from '../data/types'
 import { AbsageBlatt } from '../aufgaben/AbsageBlatt'
 import { AufgabeBlatt } from '../aufgaben/AufgabeBlatt'
@@ -90,7 +91,25 @@ describe('Das Blatt zur eigenen Aufgabe — drei Zustände, drei Angebote', () =
     const { container } = mitAufgabe()
     expect(container.querySelector('.sheet-title')?.textContent).toBe('Bibellesung')
     expect(container.querySelector('.sheet-sub')?.textContent).toBe('Leser')
-    expect(container.querySelector('.aufgabe-wann')?.textContent).toContain('8. September')
+    // Tag und Monat gebunden (T128).
+    expect(container.querySelector('.aufgabe-wann')?.textContent).toContain(zahlBinden('8. September'))
+  })
+
+  it('der Titel trägt die Sprache des Programms — er trennt, und das nach ihren Regeln (T128)', () => {
+    // Russische App, deutsche Versammlung: „Bibellesung" trennte sonst russisch.
+    const programm = task()
+    const { container } = zeige('myTask', { myTasks: [programm], myTaskId: programm.id, lang: 'ru', congLang: 'de' })
+    expect(container.querySelector('.sheet-title [lang]')?.getAttribute('lang')).toBe('de')
+    cleanup()
+    // Mit Sprachvariante steht der Titel in der Sprache des Lesers.
+    const variante = task({ lesersprache: true })
+    const zwei = zeige('myTask', { myTasks: [variante], myTaskId: variante.id, lang: 'ru', congLang: 'de' })
+    expect(zwei.container.querySelector('.sheet-title [lang]')?.getAttribute('lang')).toBe('ru')
+    cleanup()
+    // Ohne Programmpunkt steht oben die Rolle — in der Sprache des Lesers, ohne eigenes `lang`.
+    const rolle = task({ title: '', rolle: 'Vorsitz' })
+    const drei = zeige('myTask', { myTasks: [rolle], myTaskId: rolle.id, lang: 'ru', congLang: 'de' })
+    expect(drei.container.querySelector('.sheet-title [lang]')).toBeNull()
   })
 
   it('offen: bestätigen — oder „Ich kann nicht", das ins Absage-Blatt führt', () => {

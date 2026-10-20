@@ -184,6 +184,19 @@ describe('Kopf und Schließen', () => {
     expect(container.querySelector('.sheet-sub')?.textContent).toBe('Dienstag, 8. September · 3 Min.')
   })
 
+  it('Punkt und Abschnitt tragen die Sprache des Programms, die Rolle dahinter nicht (T128)', () => {
+    // Der Titel trennt (`.sheet-title`), und zwar nach `lang`: In einer
+    // russischen App trennte das deutsche Programm sonst nach russischen Regeln.
+    const { container } = zeige(SEL_REDNER(), { lang: 'ru', congLang: 'de' })
+    const titel = container.querySelector('.sheet-title')!
+    const punkt = titel.querySelector('[lang]')
+    expect(punkt?.getAttribute('lang')).toBe('de')
+    expect(punkt?.textContent).toBe('Öffentlicher Vortrag')
+    // Die Rolle steht hinter dem Punkt, in der Sprache des Lesers.
+    expect(titel.textContent).toMatch(/^1 Öffentlicher Vortrag · \S/)
+    expect(container.querySelector('.zuteilen-abschnitt')?.getAttribute('lang')).toBe('de')
+  })
+
   it('ist ein modaler Dialog — mit Punkt und Rolle als Beschriftung', () => {
     const { container } = zeige(SEL_REDNER())
     const dlg = container.querySelector('.sheet')!

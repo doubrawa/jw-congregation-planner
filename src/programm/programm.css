@@ -174,8 +174,9 @@
   font-size: calc(16px * var(--fs));
   font-weight: 600;
   line-height: 1.3;
-  /* Echte Silbentrennung nach der Sprache am <html>-Element; `break-word`
-     als Notbremse für Wörter, die der Browser nicht trennen kann. */
+  /* Echte Silbentrennung nach der Sprache des Programms — die Ansichten setzen
+     sie als `lang` an die Programmtexte (T128); `break-word` als Notbremse für
+     Wörter, die der Browser nicht trennen kann. */
   -webkit-hyphens: auto;
   hyphens: auto;
   overflow-wrap: break-word;
@@ -273,14 +274,32 @@
 
 /* ---- Hilfsdienste -------------------------------------------------------------- */
 
+/* Ein Dienst: links sein Name — die Spalte wächst mit der Schrift wie die der
+   Tabelle am Desktop —, rechts, wer ihn hat. Mit fester Spalte brach bei 768 px
+   und Stufe 1,3 „Eingangsordne|r" (T128). Die Zeile misst sich selbst: Bleibt
+   neben der Spalte für die Namen zu wenig Platz (Handy, große Schrift), steht
+   der Dienst darüber (`@container` unten). */
 .prog-dienst {
+  container-type: inline-size;
   display: grid;
-  grid-template-columns: minmax(0, 132px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, calc(132px * var(--fs))) minmax(0, 1fr);
   align-items: center;
   column-gap: 8px;
   min-height: 46px;
   padding-block: 6px;
   border-block-start: 1px solid var(--linie);
+}
+
+/* In `em` der Grundschrift, die mit der Stufe wächst: Bei 320 px steht Stufe 1
+   noch nebeneinander und ab 1,15 untereinander, bei 375 px ab 1,3, bei 412 px
+   ab 1,45 (gemessen in Chrome, 20.10.2026). Die Namen behalten so neben der
+   Spalte mindestens rund 6 em. Das Browser-Pane hat einen Rollbalken und ist
+   16 px schmaler — dort stapelt 320 px schon bei Stufe 1. */
+@container (max-width: 15em) {
+  .prog-dienst-name,
+  .prog-dienst-wer {
+    grid-column: 1 / -1;
+  }
 }
 
 .prog-dienst-name {
@@ -616,24 +635,36 @@
   font-size: calc(14px * var(--fs));
 }
 
-/* „Alle Besuche": Punkt, Woche, Gruppe — die eigene hervorgehoben. */
+/* „Alle Besuche": Punkt, Woche, Gruppe — die eigene hervorgehoben. Passt die
+   Gruppe nicht neben die Woche (Tag und Monat gebunden, T128), rückt sie in die
+   nächste Zeile. */
 .gb-liste-zeile {
-  display: grid;
-  grid-template-columns: 12px minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  column-gap: 12px;
+  gap: 2px 12px;
   min-height: 50px;
+  padding-block: 4px;
   border-block-start: 1px solid var(--linie);
   font-weight: 500;
+}
+
+.gb-liste-woche {
+  flex: 1 1 0;
+  max-width: calc(100% - 24px);
+  overflow-wrap: break-word;
 }
 
 .gb-liste-zeile.is-eigen {
   font-weight: 700;
 }
 
+/* 10 px Punkt in 12 px Platz — so steht die Woche wie zuvor 24 px eingerückt. */
 .gb-liste-punkt {
+  flex: none;
   width: 10px;
   height: 10px;
+  margin-inline-end: 2px;
   border-radius: 50%;
 }
 
@@ -642,6 +673,7 @@
 }
 
 .gb-liste-gruppe {
+  margin-inline-start: auto;
   color: var(--text2);
   text-align: end;
 }

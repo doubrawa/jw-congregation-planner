@@ -1,6 +1,7 @@
 import { useApp } from '../app/context'
 import { Sheet } from '../components/Sheet'
 import { aufgabenZeilen, useT } from '../i18n/useT'
+import { zahlBinden } from '../i18n/zahl-binden'
 import { aufgabeWann } from './aufgabe-anzeige'
 import { GesuchText } from './Angebot'
 import './aufgaben.css'
@@ -34,7 +35,7 @@ export function OeffnenBlatt() {
     <Sheet
       label={offen.length > 0 ? t.confirmTitle : t.einspringenTitle}
       title={offen.length > 0 ? t.confirmTitle : t.einspringenTitle}
-      sub={offen.length > 0 ? `${t.dashZuBest}: ${offen.length}` : t.einspringenHint}
+      sub={offen.length > 0 ? zahlBinden(`${t.dashZuBest}: ${offen.length}`) : t.einspringenHint}
       schliessen={false}
       onClose={spaeter}
     >

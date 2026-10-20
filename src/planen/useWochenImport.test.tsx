@@ -10,6 +10,7 @@ import {
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import type { Week } from '../data/types'
+import { zahlBinden } from '../i18n/zahl-binden'
 import { useWochenImport } from './useWochenImport'
 
 /**
@@ -56,7 +57,8 @@ describe('„Geladen bis"', () => {
 
   it('ohne ISO-Datum den Wochenbereich im Klartext (Demo- und Vorlagenwochen)', () => {
     // Sonst stünde dort gar nichts — die Demo hat keine echten Kalenderdaten.
-    expect(geladenBis([woche({ range: '28. Sep – 4. Okt' })])).toBe('28. Sep – 4. Okt')
+    // Tag und Monat gebunden wie jede Spanne aus dem Arbeitsheft (`programmSpanne`, T128).
+    expect(geladenBis([woche({ range: '28. Sep – 4. Okt' })])).toBe(zahlBinden('28. Sep – 4. Okt'))
   })
 
   it('der Klartext-Bereich wird in die Versammlungssprache übersetzt', () => {

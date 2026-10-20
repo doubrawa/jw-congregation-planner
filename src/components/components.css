@@ -214,8 +214,13 @@
   color: var(--text);
 }
 
+/* Zwei Reiter stehen fest nebeneinander: Reicht der Platz nicht, trennt der
+   Wochentag nach den Regeln der Sprache (T128: „воскресен|ье", „dimanch|e"
+   bei 320 px). */
 .meeting-tab-name {
   font-weight: 500;
+  -webkit-hyphens: auto;
+  hyphens: auto;
   overflow-wrap: anywhere;
 }
 
@@ -506,20 +511,26 @@ select {
   padding-block-end: 12px;
 }
 
-/* Ein Zeitraum: Punkt, wann und warum, rechts das ✕. */
+/* Ein Zeitraum: Punkt, wann und warum, rechts das ✕. Passt das ✕ nicht neben
+   den Zeitraum, rückt es in die nächste Zeile: Tag und Monat sind gebunden
+   (T128), schmaler als „13. September" wird der Text nicht. */
 .abw-zeile {
-  display: grid;
-  grid-template-columns: 12px minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  column-gap: 14px;
+  gap: 4px 14px;
   min-height: 60px;
+  padding-block: 6px;
   border-block-start: 1px solid var(--linie);
 }
 
+/* Neben dem Punkt (12 px und der Abstand) bleibt der Text in seiner Zeile. */
 .abw-zeile-text {
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
-  min-width: 0;
+  max-width: calc(100% - 26px);
+  overflow-wrap: break-word;
 }
 
 .abw-zeile-zeit {
@@ -527,6 +538,7 @@ select {
 }
 
 .abw-entfernen {
+  margin-inline-start: auto;
   color: var(--text2);
 }
 

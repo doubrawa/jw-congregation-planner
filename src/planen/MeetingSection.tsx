@@ -55,12 +55,15 @@ export function MeetingSection({
   rawSection,
   mitAux,
   tpw,
+  sprache,
 }: {
   si: number
   section: Section
   rawSection: Section
   mitAux: boolean // Zusammenkunft mit Zusätzlicher Klasse
   tpw: (s: string) => string
+  /** In welcher Sprache `tpw` schreibt (`ProgWeek.sprache`) — `lang` der Programmtexte (T128). */
+  sprache: string
 }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
@@ -159,7 +162,9 @@ export function MeetingSection({
   return (
     <section className="prog-abschnitt" data-farbe={section.farbe}>
       <div className="prog-abschnitt-kopf">
-        <h2 className="prog-abschnitt-name">{tpw(section.label)}</h2>
+        <h2 className="prog-abschnitt-name" lang={sprache}>
+          {tpw(section.label)}
+        </h2>
         {lieder.length > 0 && <span className="prog-lied">{lieder.join(' · ')}</span>}
       </div>
       {section.items.map((item, ii) => {
@@ -196,7 +201,9 @@ export function MeetingSection({
                   der Anzeigesprache, die Rolle ist kanonisch.
                 */
                 <div className="plan-item-title">
-                  <span className="co-begriff">{tpw(coBegriff)}</span>
+                  <span className="co-begriff" lang={sprache}>
+                    {tpw(coBegriff)}
+                  </span>
                   <input
                     // Mit dem gespeicherten Titel im Schlüssel, wie beim
                     // Vortragsthema darunter: Ein ungesteuertes Feld zeigte
@@ -242,15 +249,25 @@ export function MeetingSection({
                   }}
                 />
               ) : (
-                <div className="prog-title">
+                // `lang` an den Texten selbst, nicht an der Zeile: Daneben steht der
+                // Knopf „Partner" in der Sprache des Lesers.
+                <div className="prog-title" lang={sprache}>
                   {item.num != null && <span className="prog-num">{item.num} </span>}
                   {song ? rest : tpw(item.title)}
                 </div>
               )}
-              {zusatz && <div className="prog-item-meta">{tpw(zusatz)}</div>}
+              {zusatz && (
+                <div className="prog-item-meta" lang={sprache}>
+                  {tpw(zusatz)}
+                </div>
+              )}
               {canPartner && <PartnerKnopf si={si} ii={ii} hasPartner={hasPartner} />}
             </div>
-            {dauer && <span className="prog-dauer">{tpw(dauer)}</span>}
+            {dauer && (
+              <span className="prog-dauer" lang={sprache}>
+                {tpw(dauer)}
+              </span>
+            )}
             <div className="prog-names">
               {/*
                 Zwei Reihen, sobald eine Zusätzliche Klasse eingerichtet ist:

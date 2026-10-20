@@ -65,14 +65,27 @@
   padding: 6px 10px 4px 18px;
 }
 
-/* Eine Woche oder ein Monat: wann, rechts die Gruppe. */
+/* Eine Woche oder ein Monat: wann, rechts die Gruppe. Passt die Gruppe nicht
+   daneben, rückt sie darunter: Tag und Monat sind gebunden (T128), schmaler
+   als „20. September" wird die Spanne nicht. */
 .wp-vorschau-zeile {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  column-gap: 10px;
+  gap: 4px 10px;
   min-height: 52px;
+  padding-block: 4px;
   border-block-start: 1px solid var(--linie);
+}
+
+.wp-vorschau-wann {
+  flex: 1 1 0;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+.wp-vorschau-zeile > .wp-gruppe-wahl {
+  margin-inline-start: auto;
 }
 
 /* Was war, bleibt, wie es war — leiser. */
@@ -81,6 +94,7 @@
 }
 
 .wp-vorschau-wer {
+  margin-inline-start: auto;
   padding-inline-end: 8px;
 }
 
@@ -220,23 +234,35 @@
   flex-direction: column;
 }
 
+/* Punkt, Woche, Gruppe. Passt die Gruppe nicht neben die gebundene Woche
+   (T128), rückt sie in die nächste Zeile. */
 .wp-liste-zeile {
-  display: grid;
-  grid-template-columns: 12px minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  column-gap: 12px;
+  gap: 2px 12px;
   min-height: 44px;
+  padding-block: 4px;
   border-block-start: 1px solid var(--linie);
   font-weight: 500;
+}
+
+.wp-liste-woche {
+  flex: 1 1 0;
+  max-width: calc(100% - 24px);
+  overflow-wrap: break-word;
 }
 
 .wp-liste-zeile.is-eigen {
   font-weight: 700;
 }
 
+/* 10 px Punkt in 12 px Platz — die Woche steht wie zuvor 24 px eingerückt. */
 .wp-liste-punkt {
+  flex: none;
   width: 10px;
   height: 10px;
+  margin-inline-end: 2px;
   border-radius: 50%;
 }
 
@@ -245,6 +271,7 @@
 }
 
 .wp-liste-wer {
+  margin-inline-start: auto;
   color: var(--text2);
   text-align: end;
 }

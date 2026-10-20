@@ -4,12 +4,15 @@ import { wochenSpanne } from '../components/datum-anzeige'
 import { emptyQualifications } from '../data/helpers'
 import type { Person } from '../data/types'
 import { dict } from '../i18n/ui'
+import { NBSP } from '../i18n/zahl-binden'
 import {
   anteilVon,
   lageImPlan,
   nameVon,
   neueEingabe,
   PLAN_STUNDEN,
+  tagKurz,
+  tagLang,
   trolleyNameVon,
   vornameVon,
   werImTermin,
@@ -52,8 +55,19 @@ describe('Woche und Namen', () => {
     ])
   })
 
+  it('ein Tag kurz und lang: die Zahl bleibt bei ihrem Wort (T128)', () => {
+    // Bei 320 px brach „Mi., 9.|Sept." in den Zeilen und „Montag, 7.|September" über dem Tag.
+    expect(tagKurz('2026-09-09', 'de')).toBe(`Mi., 9.${NBSP}Sept.`)
+    expect(tagLang('2026-09-07', 'de')).toBe(`Montag, 7.${NBSP}September`)
+    expect(tagKurz('2026-09-09', 'ru')).not.toMatch(/\p{Nd}\.? (?=\p{L})/u)
+    expect(tagLang('2026-09-07', 'tr')).toBe(`7${NBSP}Eylül Pazartesi`)
+    // Nicht am Stück: „7 de septiembre" ragte als Titel 15 px hinaus.
+    expect(tagLang('2026-09-07', 'es')).toBe(`lunes, 7${NBSP}de septiembre`)
+  })
+
   it('die Woche in Worten — in der Sprache des Lesers', () => {
-    expect(wochenSpanne('2026-09-07', 'de')).toBe('7.–13. September')
+    // Tag und Monat gebunden (T128).
+    expect(wochenSpanne('2026-09-07', 'de')).toBe(`7.–13.${NBSP}September`)
     expect(wochenSpanne('2026-09-07', 'en')).toMatch(/September 7\s*–\s*13/)
   })
 

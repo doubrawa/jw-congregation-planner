@@ -14,6 +14,7 @@ import { emptyQualifications } from '../data/helpers'
 import { sentKey } from '../data/planning'
 import { dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
+import { zahlBinden } from '../i18n/zahl-binden'
 import type { FsInstance, Group, PartItem, Person, Service, Week } from '../data/types'
 import type { PlanArt } from './planen-raster'
 import { PlanenAktionen } from './PlanenAktionen'
@@ -215,7 +216,10 @@ describe('Wer noch nichts weiß', () => {
     zeige({ weeks: [woche(['A. Berg', 'B. Cohn'])] })
     expect(blatt().querySelector('.senden-satz')?.textContent).toBe(fill(t.planSendenOffen, { n: 2 }))
     expect(namen()).toEqual(['A. Berg', 'B. Cohn'])
-    expect(zeilen()[0]!.querySelector('.klein-text')?.textContent).toMatch(/^Dienstag, 8\. September.* · Punkt 0$/)
+    // Der Termin mit gebundenem Tag und Monat (T128), dahinter die Aufgabe.
+    const zeile = zeilen()[0]!.querySelector('.klein-text')?.textContent ?? ''
+    expect(zeile.startsWith(zahlBinden('Dienstag, 8. September'))).toBe(true)
+    expect(zeile).toMatch(/ · Punkt 0$/)
     expect(senden().querySelector('.zahl-marke')?.textContent).toBe('2')
   })
 

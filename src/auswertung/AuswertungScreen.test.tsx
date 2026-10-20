@@ -150,6 +150,9 @@ describe('Am Handy: der Überblick', () => {
     const a = rechnung(zustand())
     expect(zeitraumZeile(container)).toContain(zeitspanne(20, 'week', 'de'))
     expect(zeitraumZeile(container)).toContain(zahlBinden(`Zusammenkünfte: ${a.grundlage.zusammenkuenfte}`))
+    // Auch die Spanne bindet ihre Zahlen (T128: „2026|г." bei 320 px) — nirgends
+    // steht ein Leerzeichen zwischen Zahl und Wort.
+    expect(zeitraumZeile(container)).not.toMatch(/\p{Nd}\.? (?=\p{L})/u)
   })
 
   it('drei Monate rechnen nur die letzten dreizehn Wochen', () => {

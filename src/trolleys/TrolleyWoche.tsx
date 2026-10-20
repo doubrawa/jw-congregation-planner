@@ -3,6 +3,7 @@ import { useApp } from '../app/context'
 import { datumsFormat, wochenSpanne } from '../components/datum-anzeige'
 import { fromIso } from '../data/meeting-dates'
 import type { Trolley, TrolleyTermin } from '../data/types'
+import { versammlungsSprache } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import { nameVon, tagLang, werImTermin, wochenTage, zeitSpanne } from './trolley-anzeige'
 
@@ -33,6 +34,10 @@ export function TrolleyWoche({
   const { state } = useApp()
   const { t } = useT()
   const spalten = { '--trolleys': trolleys.length } as CSSProperties
+  // Name und Ort trägt die Versammlung ein: getrennt nach ihrer Sprache, der
+  // Satz um den Ort („abholen: …") in der des Lesers (T128).
+  const sprache = versammlungsSprache(state.congLang)
+  const [vorOrt, nachOrt = ''] = t.trolleyAbholen.split('{ort}')
   return (
     <section
       className="karte trolley-woche"
@@ -42,12 +47,14 @@ export function TrolleyWoche({
         <span />
         {trolleys.map((tr) => (
           <span key={tr.id} className="trolley-spaltenkopf">
-            <span className="trolley-spaltenkopf-name" dir="auto">
+            <span className="trolley-spaltenkopf-name" dir="auto" lang={sprache}>
               {tr.name}
             </span>
             {tr.ort && (
               <span className="klein-text" dir="auto">
-                {fill(t.trolleyAbholen, { ort: tr.ort })}
+                {vorOrt}
+                <span lang={sprache}>{tr.ort}</span>
+                {nachOrt}
               </span>
             )}
           </span>

@@ -13,7 +13,7 @@ import { TABLET_BREITE, useMedia } from '../components/useMedia'
 import { TerminListe } from '../components/WeekBadges'
 import { WeekStrip } from '../components/WeekStrip'
 import { WochenWahl } from '../components/WochenWahl'
-import { fill, useProgWeek, useT } from '../i18n/useT'
+import { fill, programmSpanne, useProgWeek, useT } from '../i18n/useT'
 import { FsBereichTabs } from '../planen/FsBereichTabs'
 import { aktiverFsBereich } from '../planen/fs-bereiche'
 import { druckThema } from './druck'
@@ -75,7 +75,7 @@ function ProgrammBody() {
   const { state, dispatch } = useApp()
   const { t } = useT()
   const rawWeek = state.weeks[state.week]
-  const { week, tpw } = useProgWeek(rawWeek)
+  const { week, tpw, sprache } = useProgWeek(rawWeek)
   const breit = useMedia(TABLET_BREITE)
   const beideTage = useBeideTage()
 
@@ -104,7 +104,7 @@ function ProgrammBody() {
   // Der Druckknopf: ab dem Tablet mit Wort neben der Wochenwahl, am Handy als
   // Zeichen neben dem Termin. In der Kongresswoche gibt es nichts zu drucken.
   const druck = kongress ? null : (
-    <DruckWahl zeitraum={tpw(week.range)} erklaerung={isFs ? undefined : t.druckZusammenkuenfte} mitText={breit} />
+    <DruckWahl zeitraum={programmSpanne({ week, tpw })} erklaerung={isFs ? undefined : t.druckZusammenkuenfte} mitText={breit} />
   )
   const druckNebenTermin = breit ? null : druck
   // Die volle Breite neben dem Menü nur für die zwei Spalten — die Karte des
@@ -137,7 +137,7 @@ function ProgrammBody() {
       ) : isFs ? (
         <FsProgram druck={druckNebenTermin} />
       ) : zweiSpalten ? (
-        <BeideTage week={week} rawWeek={rawWeek} me={eigenePerson(state)} tpw={tpw} />
+        <BeideTage week={week} rawWeek={rawWeek} me={eigenePerson(state)} tpw={tpw} sprache={sprache} />
       ) : (
         <>
           {/* Die Karten gehören den Zusammenkünften; der Predigtdienst ist seit
@@ -154,6 +154,7 @@ function ProgrammBody() {
             tab={state.tab}
             me={eigenePerson(state)}
             tpw={tpw}
+            sprache={sprache}
             druck={druckNebenTermin}
           />
         </>

@@ -129,7 +129,7 @@ afterEach(cleanup)
 describe('Kopf und Navigation', () => {
   it('nennt Wochenbereich und Bibelbuch', () => {
     const { container } = zeige()
-    expect(seite(container).querySelector('.woche-zeitraum')?.textContent).toBe('7.–13. September')
+    expect(seite(container).querySelector('.woche-zeitraum')?.textContent).toBe(zahlBinden('7.–13. September'))
     expect(seite(container).querySelector('.woche-buch')?.textContent).toBe('JEREMIA 32')
   })
 
@@ -196,7 +196,7 @@ describe('Der Termin wird gerechnet, nicht abgelesen', () => {
     const { container } = zeige()
     const meta = seite(container).querySelector('.prog-meta')?.textContent ?? ''
     expect(meta).not.toBe('7.–13. September')
-    expect(meta).toContain('8. September') // Dienstag der Woche
+    expect(meta).toContain(zahlBinden('8. September')) // Dienstag der Woche
     expect(meta).toContain('19:00')
   })
 
@@ -205,7 +205,7 @@ describe('Der Termin wird gerechnet, nicht abgelesen', () => {
     w.dev = { mid: { wd: 5, time: '19:30' } } // Freitag, 11.9.
     const { container } = zeige({ weeks: [w] })
     const meta = seite(container).querySelector('.prog-meta')?.textContent ?? ''
-    expect(meta).toContain('11. September')
+    expect(meta).toContain(zahlBinden('11. September'))
     expect(meta).toContain('19:30')
   })
 
@@ -224,7 +224,7 @@ describe('Der Termin wird gerechnet, nicht abgelesen', () => {
     w.mid.date = 'Freitag, 11. September · 19:30'
     const { container } = zeige({ weeks: [w] })
     const meta = seite(container).querySelector('.prog-meta')?.textContent ?? ''
-    expect(meta).toContain('8. September') // Dienstag aus dem Rhythmus
+    expect(meta).toContain(zahlBinden('8. September')) // Dienstag aus dem Rhythmus
     expect(meta).toContain('19:00')
     expect(meta).not.toContain('19:30')
   })
@@ -232,7 +232,7 @@ describe('Der Termin wird gerechnet, nicht abgelesen', () => {
   it('am Wochenende gilt dessen Wochentag', () => {
     const { container } = zeige({ tab: 'we' })
     const meta = seite(container).querySelector('.prog-meta')?.textContent ?? ''
-    expect(meta).toContain('13. September') // Sonntag der Woche
+    expect(meta).toContain(zahlBinden('13. September')) // Sonntag der Woche
     expect(meta).toContain('10:00')
   })
 })
@@ -1059,7 +1059,7 @@ describe('Ab dem Tablet', () => {
     const s = seite(container)
     expect(s.querySelector('.wochenwahl .druck-knopf--text')?.textContent).toBe(t.drucken)
     expect(s.querySelector('.prog-meta-row .druck-knopf')).toBeNull()
-    expect(s.querySelector('.prog-meta')?.textContent).toContain('8. September')
+    expect(s.querySelector('.prog-meta')?.textContent).toContain(zahlBinden('8. September'))
   })
 
   it('ebenso über den Treffpunkten', () => {
@@ -1104,11 +1104,18 @@ describe('Am Desktop', () => {
   it('beide Tage mit Datum und Uhrzeit — statt der Karten, zwischen denen man wählt', () => {
     const { container } = zeige()
     const s = seite(container)
-    expect(texte(container, '.prog-tag-datum')).toEqual(['Dienstag, 8. September', 'Sonntag, 13. September'])
+    expect(texte(container, '.prog-tag-datum')).toEqual([zahlBinden('Dienstag, 8. September'), zahlBinden('Sonntag, 13. September')])
     expect(texte(container, '.prog-tag-kopf .prog-meta')).toEqual(['19:00 · 20:45', '10:00 · 11:45'])
     expect(s.querySelector('.meeting-tabs')).toBeNull()
     // Zwei Programme brauchen die Breite neben dem Menü.
     expect(s.classList.contains('prog--beide-tage')).toBe(true)
+  })
+
+  it('Datum und Uhrzeit der Tage stehen in der Sprache des Programms — auch in einer russischen App (T128)', () => {
+    const { container } = zeige({ lang: 'ru', congLang: 'de' })
+    const kopf = [...seite(container).querySelectorAll('.prog-tag-datum, .prog-tag-kopf .prog-meta')]
+    expect(kopf).toHaveLength(4)
+    for (const el of kopf) expect(el.getAttribute('lang'), el.textContent ?? '').toBe('de')
   })
 
   it('in der Kongresswoche bleibt die Karte in der gewohnten Spalte', () => {
@@ -1249,7 +1256,7 @@ describe('Weitere Pläne ansehen (T121)', () => {
     const { container } = plaene({ plaene: [REINIGUNG] })
     const zeilen = [...container.querySelectorAll('.wp-liste-zeile')].map((z) => z.textContent)
     expect(zeilen).toHaveLength(4) // 7., 14., 21. und 28. September
-    expect(zeilen[2]).toContain('21.–27. September')
+    expect(zeilen[2]).toContain(zahlBinden('21.–27. September'))
     expect(zeilen[2]).toContain(t.offenDash)
   })
 
@@ -1269,5 +1276,36 @@ describe('Weitere Pläne ansehen (T121)', () => {
     const { container } = plaene({ plaene: [REINIGUNG] })
     expect(container.querySelector('.wp-wahl')).toBeNull()
     expect(container.querySelector('.wp-name')?.textContent).toBe('Reinigung')
+  })
+})
+
+/**
+ * **Die Programmtexte tragen die Sprache des Programms** (T128). Nach `lang`
+ * trennt der Browser: In einer russischen App mit deutschem Programm brach
+ * „Versammlungsbibelstudium" mitten im Wort — russisch getrennt. Was in der
+ * Sprache des Lesers steht, etwa die Hilfsdienste, behält die der App.
+ */
+describe('Programmtexte in der Sprache des Programms', () => {
+  it('russische App, deutsches Programm: Termin, Abschnitt, Punkt und Dauer tragen lang="de"', () => {
+    const w = woche()
+    // Eine Dauer steht nur da, wo die Minuten in den Daten stehen.
+    ;(w.mid.sections[1]!.items[0] as PartItem).mins = 10
+    const { container } = zeige({ weeks: [w], lang: 'ru', congLang: 'de' })
+    for (const sel of ['.prog-meta', '.prog-abschnitt:not(.prog-helpers) .prog-abschnitt-name', '.prog-row-text', '.prog-dauer']) {
+      const texte = [...seite(container).querySelectorAll(sel)]
+      expect(texte.length, sel).toBeGreaterThan(0)
+      for (const el of texte) expect(el.getAttribute('lang'), `${sel} „${el.textContent}"`).toBe('de')
+    }
+    // Die Hilfsdienste: Überschrift und Dienste in der Sprache des Lesers.
+    expect(seite(container).querySelector('.prog-helpers .prog-abschnitt-name')?.closest('[lang]')).toBeNull()
+    expect(seite(container).querySelector('.prog-dienst-name')?.closest('[lang]')).toBeNull()
+  })
+
+  it('und mit Sprachvariante der Woche die Sprache der Variante', () => {
+    const w = woche({
+      alt: { ru: { range: '7–13 сентября', book: 'ИЕРЕМИЯ 32', mid: { ...woche().mid, sections: abschnitte() }, we: woche().we } },
+    })
+    const { container } = zeige({ weeks: [w], lang: 'ru', congLang: 'de' })
+    expect(seite(container).querySelector('.prog-row-text')?.getAttribute('lang')).toBe('ru')
   })
 })

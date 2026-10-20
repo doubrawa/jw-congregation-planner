@@ -8,6 +8,7 @@
 import { kalendertagMs } from '../data/meeting-dates'
 import type { Lang } from '../data/types'
 import { LOCALES } from './langs'
+import { zahlBinden } from './zahl-binden'
 
 /** Der Kalendertag eines UTC-Zeitstempels als fortlaufende Zahl. */
 function tagIndex(ms: number): number {
@@ -34,6 +35,8 @@ function heuteIndex(now: number): number {
 /**
  * Lokalisiertes Countdown-Label oder '' (kein Chip), wenn kein Zeitpunkt
  * vorliegt. Vergangene Aufgaben ergeben "vor N Tagen" — informativ und korrekt.
+ * Zahl und Wort bleiben zusammen (`zahlBinden`, T128: „Dentro de 15|días" bei
+ * 320 px unter „Meine Aufgaben").
  */
 export function relativeDayLabel(
   at: number | null | undefined,
@@ -44,7 +47,7 @@ export function relativeDayLabel(
   const days = tagIndex(at) - heuteIndex(now)
   const locale = LOCALES[lang] ?? lang
   try {
-    return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(days, 'day')
+    return zahlBinden(new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(days, 'day'))
   } catch {
     // Locale von Intl nicht unterstützt → lieber kein Chip als ein kaputter.
     return ''
@@ -56,12 +59,13 @@ export function relativeDayLabel(
  * im Zuteilen-Blatt (T121). Ebenfalls über Intl, damit jede App-Sprache die
  * grammatisch richtige Form bekommt; immer mit Zahl (`numeric: 'always'`),
  * denn „zuletzt letzte Woche" sagt niemand. '' wenn Intl die Sprache nicht
- * kennt — dann lässt das Blatt die Angabe weg.
+ * kennt — dann lässt das Blatt die Angabe weg. Zahl und Wort gebunden wie bei
+ * `relativeDayLabel` (T128).
  */
 export function wochenHer(wochen: number, lang: Lang): string {
   const locale = LOCALES[lang] ?? lang
   try {
-    return new Intl.RelativeTimeFormat(locale, { numeric: 'always' }).format(-wochen, 'week')
+    return zahlBinden(new Intl.RelativeTimeFormat(locale, { numeric: 'always' }).format(-wochen, 'week'))
   } catch {
     return ''
   }

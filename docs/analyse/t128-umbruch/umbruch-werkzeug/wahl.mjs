@@ -1,0 +1,144 @@
+// Jede `Wahl` an ihrer echten Stelle im echten Chrome (Rest aus T128): Profil,
+// Erinnerungen, Auswertung, die Blätter „Person anlegen", „Person bearbeiten",
+// „Automatisch", ein Weiterer Plan und das Eintragen eines Trolleys. Blätter
+// werden per Klick geöffnet; gemessen wird die ganze Ansicht (bzw. das Blatt),
+// `vergleich.mjs` trennt nach Element.
+//
+// node wahl.mjs --lauf nachher [--port 5173] [--ziele profil,automatisch]
+//               [--sprachen de,pl] [--breiten 320,1180] [--fs 1.15,1.45]
+import { readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { arg, profilOrdner, schlaf, starteChrome } from './chrome.mjs'
+
+const HIER = dirname(fileURLToPath(import.meta.url))
+const BASIS = `http://localhost:${arg('port', '5173')}/demo.html`
+const LAUF = arg('lauf', 'nachher')
+const SPRACHEN = String(arg('sprachen', 'de,en,es,fr,it,pl,ru,uk,ro,tr,ar,fa')).split(',')
+const BREITEN = String(arg('breiten', '320,1180')).split(',').map(Number)
+const STUFEN = String(arg('fs', '1.15,1.45')).split(',')
+const START = { port: Number(arg('cdp', 9360)), profil: profilOrdner(arg('profil', 'profil-wahl')) }
+const SEITE_JS = readFileSync(join(HIER, 'seite.js'), 'utf8')
+
+const DIALOG = '[role=dialog]'
+const klick = (sel, i = 0) => `document.querySelectorAll(${JSON.stringify(sel)})[${i}]?.click()`
+
+/**
+ * Wo eine Wahl steht: der Hash, ein Klick dorthin (wenn nötig), worauf zu warten
+ * ist und was gemessen wird. `nur` begrenzt auf Handy oder Tablet/Desktop — die
+ * Unteransichten der Auswertung stehen ab 768 px schon auf der Seite.
+ */
+const ZIELE = {
+  profil: { hash: 's=profil&pl=0&me=p9', warte: '.wahl' },
+  erinnerungen: {
+    hash: 's=einstellungen&pl=1',
+    // Desktop: die Leiste (Erinnerungen ist der fünfte Abschnitt); Handy: die neunte Zeile.
+    schritt: `document.querySelectorAll('.einst-nav-eintrag').length ? ${klick('.einst-nav-eintrag', 4)} : ${klick('.einst-karte button.einst-zeile', 8)}`,
+    vorher: '.einst-nav-eintrag, .einst-karte button.einst-zeile',
+    warte: '.erin-wahl .wahl',
+  },
+  auswertung: { hash: 's=auswertung&uhr=2026-10-12&pl=1', warte: '.aw-zeitraum .wahl' },
+  'aw-verteilung': { hash: 's=auswertung&uhr=2026-10-12&pl=1', nur: 'handy', schritt: klick('.aw-kachel', 0), vorher: '.aw-kachel', warte: '.unteransicht-kopf ~ * .wahl, .aw-ansicht .wahl' },
+  'aw-einseitig': { hash: 's=auswertung&uhr=2026-10-12&pl=1', nur: 'handy', schritt: klick('.aw-kachel', 1), vorher: '.aw-kachel', warte: '.aw-ansicht .wahl' },
+  'person-anlegen': {
+    hash: 's=personen&pl=1',
+    schritt: `(document.querySelector('.personen-kopf .knopf-haupt') ?? document.querySelector('.personen-kopf .rund-knopf--akzent'))?.click()`,
+    vorher: '.personen-kopf button',
+    warte: `${DIALOG} .wahl`,
+    wurzel: DIALOG,
+  },
+  'person-bearbeiten': {
+    hash: 's=personen&pl=1&p=p9',
+    // Am Handy steht der Stift im Kopf der Unteransicht (hinter dem Zurück), am Desktop im Kopf der Person.
+    schritt: `(document.querySelector('.person-kopf .rund-knopf') ?? document.querySelector('.unteransicht-kopf .rund-knopf:last-child'))?.click()`,
+    vorher: '.person-kopf .rund-knopf, .unteransicht-kopf .rund-knopf:last-child',
+    warte: `${DIALOG} .wahl`,
+    wurzel: DIALOG,
+  },
+  automatisch: { hash: 's=planen&tab=mid&pl=1', schritt: klick('.aktion-neben'), vorher: '.aktion-neben', warte: `${DIALOG} .wahl`, wurzel: DIALOG },
+  plan: { hash: 's=planen&tab=wp&pl=1', schritt: klick('.wp-plan-zeile'), vorher: '.wp-plan-zeile', warte: '.wahl' },
+  trolley: {
+    hash: 's=programm&tab=fs&fb=trolleys&pl=0&me=p9',
+    // Am Desktop steht das Formular rechts; am Handy öffnet ein freies Feld das Blatt.
+    schritt: `document.querySelector('.trolley-seite .wahl') ? null : ${klick('.trolley-frei')}`,
+    vorher: '.trolley-seite .wahl, .trolley-frei',
+    warte: '.trolley-seite .wahl, [role=dialog] .wahl',
+  },
+}
+const NAMEN = String(arg('ziele', Object.keys(ZIELE).join(','))).split(',')
+
+/** Bis die Seite in Sprache und Schriftstufe dasteht und die Schriften geladen sind. */
+const bereit = (lang, fs) => `(async () => {
+  const t0 = performance.now()
+  while (performance.now() - t0 < 10000) {
+    const fsJetzt = getComputedStyle(document.documentElement).getPropertyValue('--fs').trim()
+    if (document.documentElement.lang === ${JSON.stringify(lang)} && fsJetzt === ${JSON.stringify(fs)} && document.querySelector('.app-main')) break
+    await new Promise((r) => setTimeout(r, 100))
+  }
+  await document.fonts.ready
+  await new Promise((r) => setTimeout(r, 1000))
+})()`
+
+/** Bis `sel` dasteht (oder die Zeit um ist) — `true`, wenn es dasteht. */
+const warteAuf = (sel, ms = 8000) => `(async () => {
+  const t0 = performance.now()
+  while (performance.now() - t0 < ${ms}) {
+    if (document.querySelector(${JSON.stringify(sel)})) {
+      await document.fonts.ready
+      await new Promise((r) => setTimeout(r, 700))
+      return true
+    }
+    await new Promise((r) => setTimeout(r, 100))
+  }
+  return false
+})()`
+
+let chrome = await starteChrome(START)
+const ergebnis = { lauf: LAUF, faelle: [] }
+let x = 0
+try {
+  for (const breite of BREITEN) {
+    const handy = breite < 768
+    for (const fs of STUFEN) {
+      for (const lang of SPRACHEN) {
+        for (const name of NAMEN) {
+          const ziel = ZIELE[name]
+          if (!ziel) throw new Error(`unbekanntes Ziel ${name}`)
+          if (ziel.nur === 'handy' && !handy) continue
+          const fall = `${name}:${lang}:${breite}:${fs}`
+          for (let versuch = 1; versuch <= 2; versuch++) {
+            try {
+              await chrome.cdp('Emulation.setDeviceMetricsOverride', { width: breite, height: 1000, deviceScaleFactor: handy ? 2 : 1, mobile: handy })
+              await chrome.laden(`${BASIS}?w=${LAUF}${++x}#${ziel.hash}&l=${lang}&fs=${fs}`)
+              await chrome.werte(SEITE_JS)
+              await chrome.werte(bereit(lang, fs))
+              if (ziel.vorher && !(await chrome.werte(warteAuf(ziel.vorher)))) throw new Error(`nicht da: ${ziel.vorher}`)
+              if (ziel.schritt) await chrome.werte(ziel.schritt)
+              const da = await chrome.werte(warteAuf(ziel.warte))
+              const a = da
+                ? await chrome.werte(`window.__umbruch.messe(${JSON.stringify(name)}, ${ziel.wurzel ? JSON.stringify({ wurzel: ziel.wurzel }) : '{}'})`)
+                : { ansicht: name, fehler: `nicht offen: ${ziel.warte}`, funde: [], ueber: { roll: [], ragt: [] } }
+              ergebnis.faelle.push({ fall, ansichten: [a] })
+              const wahl = a.funde.filter((f) => f.el.startsWith('button.wahl-knopf'))
+              const imWort = wahl.flatMap((f) => f.b.filter((b) => b.art === 'im-wort')).length
+              const zahl = wahl.flatMap((f) => f.b.filter((b) => b.art === 'zahl-getrennt')).length
+              const ragt = (a.textRaus ?? []).filter((t) => t.startsWith('button.wahl-knopf')).length
+              console.log(fall.padEnd(30), a.fehler ? `FEHLT ${a.fehler}` : `wahl: wort ${imWort} zahl ${zahl}${ragt ? ' RAGT ' + ragt : ''}${a.ueber.zuBreit ? ' ZU BREIT' : ''}`)
+              break
+            } catch (e) {
+              console.log(fall.padEnd(30), 'FEHLER', versuch, e.message)
+              chrome.schliessen()
+              await schlaf(1000)
+              chrome = await starteChrome(START)
+              if (versuch === 2) ergebnis.faelle.push({ fall, ansichten: [{ ansicht: name, fehler: e.message, funde: [], ueber: { roll: [], ragt: [] } }] })
+            }
+          }
+        }
+      }
+    }
+  }
+  writeFileSync(join(HIER, `ergebnis-${LAUF}.json`), JSON.stringify(ergebnis, null, 1))
+  console.log('fertig:', ergebnis.faelle.length, 'Fälle')
+} finally {
+  chrome.schliessen()
+}

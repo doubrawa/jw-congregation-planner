@@ -4,7 +4,7 @@ import { ersteZusammenkunftNach } from '../data/helpers'
 import { meetingDate, meetingTime } from '../data/meeting-dates'
 import { anlassName } from '../components/anlass-name'
 import { datumsFormat } from '../components/datum-anzeige'
-import { fill, useProgWeeks, useT } from '../i18n/useT'
+import { fill, programmSpanne, useProgWeeks, useT } from '../i18n/useT'
 import { monatsName, wochenDesMonats, wochenZeitraum } from '../programm/druck'
 import { Bogen } from './Bogen'
 import { Offen } from './DruckBlatt'
@@ -43,7 +43,7 @@ export function WochenBogen({ wi }: { wi: number }) {
   return (
     <Bogen
       titel={t.navZusammenkuenfte}
-      zeitraum={wochenZeitraum(rawWeek, state.lang, tpw(week.range))}
+      zeitraum={wochenZeitraum(rawWeek, state.lang, programmSpanne({ week, tpw }))}
       bloecke={[{ key: rawWeek.start ?? String(wi), inhalt }]}
     />
   )
@@ -80,7 +80,7 @@ function MonatsWoche({ wi }: { wi: number }) {
   return (
     <section className="druck-monat-woche">
       <div className="druck-monat-kopf">
-        <h2 className="druck-monat-titel">{tpw(week.range)}</h2>
+        <h2 className="druck-monat-titel">{programmSpanne({ week, tpw })}</h2>
         {anlass && <span className="druck-anlass">{anlass}</span>}
       </div>
       {art === 'kongress' ? (

@@ -13,6 +13,7 @@ import { offeneMeldungen } from '../data/plan-versand'
 import { sentKey } from '../data/planning'
 import { dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
+import { zahlBinden } from '../i18n/zahl-binden'
 import { PlanenScreen } from './PlanenScreen'
 
 /**
@@ -61,7 +62,7 @@ function zeige(over: Partial<AppState> = {}) {
 
 /** Die Ansicht der gezeigten Woche — der Streifen zeichnet auch die Nachbarn. */
 const ansicht = (c: HTMLElement) =>
-  [...c.querySelectorAll<HTMLElement>('.screen.zusagen')].find((s) => s.textContent?.includes('7.–13. September'))!
+  [...c.querySelectorAll<HTMLElement>('.screen.zusagen')].find((s) => s.textContent?.includes(zahlBinden('7.–13. September')))!
 const karte = (c: HTMLElement, titel: string) =>
   [...ansicht(c).querySelectorAll<HTMLElement>('.zusagen-karte')].find((k) =>
     k.querySelector('.karte-titel')?.textContent?.startsWith(titel),

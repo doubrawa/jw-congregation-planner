@@ -13,6 +13,7 @@ import { besetztVon, besetzung, saalLagen, type PlatzLage } from '../data/saal'
 import type { MeetingKey } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
+import { zahlBinden } from '../i18n/zahl-binden'
 import { bereichsName } from '../personen/priv-label'
 import { spurDerWoche, wochenZahlen } from './plan-spur'
 import { LAGE_KLASSE } from './platz-anzeige'
@@ -103,7 +104,7 @@ export function BesetzungKarte({ tab, tpw }: { tab: MeetingKey; tpw: (s: string)
 
   const konfliktListe = [...konflikte.liste].sort((x, y) => (KONFLIKT_RANG[x.kind] ?? 9) - (KONFLIKT_RANG[y.kind] ?? 9))
   const { besetzt, gesamt } = besetztVon(b)
-  const zahl = `${t.saalBesetzung}: ${besetzt}/${gesamt}`
+  const zahl = zahlBinden(`${t.saalBesetzung}: ${besetzt}/${gesamt}`)
   const offenGesamt = offen.reduce((summe, slot) => summe + slot.n, 0)
   const bereichName = (key: string): string => bereichsName(key, services, t, tu)
 

@@ -16,7 +16,8 @@ import { AppProvider } from '../app/store'
 import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 import { dict } from './ui'
 import { makeTr } from './translate'
-import { fill, useProgWeek, useT } from './useT'
+import { fill, programmSpanne, useProgWeek, useT } from './useT'
+import { NBSP } from './zahl-binden'
 import type { Meeting, PartItem, Week } from '../data/types'
 
 // Die gerenderten Bühnen sonst im Dokument stehen — getByText fände dann
@@ -181,6 +182,43 @@ describe('useProgWeek', () => {
       wrapper: wrapper({ lang: 'ru', congLang: 'ru' }),
     })
     expect(result.current.week).toBe(week)
+  })
+
+  /**
+   * **`sprache` sagt, in welcher Sprache das Programm dasteht** — die Ansichten
+   * setzen sie als `lang` an die Programmtexte, und nach `lang` trennt der
+   * Browser. In einer russischen App brach das deutsche
+   * „Versammlungsbibelstudium" mitten im Wort, weil es russisch getrennt wurde
+   * (T128).
+   */
+  it.each([
+    ['mit Variante: die App-Sprache', { lang: 'ru', congLang: 'es' }, 'ru'],
+    ['ohne Variante: die Sprache der Versammlung', { lang: 'uk', congLang: 'es' }, 'es'],
+    // Ohne Übersetzung der App kommt das Programm trotzdem in ihr — ihr Code ist ein Sprach-Tag.
+    ['ohne Variante und ohne Übersetzung: der Code der Versammlung', { lang: 'uk', congLang: 'ceb' }, 'ceb'],
+  ] as const)('sprache — %s', (_fall, sprachen, erwartet) => {
+    const { result } = renderHook(() => useProgWeek(wocheMitVariante()), { wrapper: wrapper(sprachen) })
+    expect(result.current.sprache).toBe(erwartet)
+  })
+
+  it('sprache auch ohne Woche — die Sprache der Versammlung', () => {
+    const { result } = renderHook(() => useProgWeek(undefined), { wrapper: wrapper({ lang: 'ru', congLang: 'es' }) })
+    expect(result.current.sprache).toBe('es')
+  })
+})
+
+describe('programmSpanne', () => {
+  it('bindet Tag und Monat der Spanne aus dem Arbeitsheft — „7.–13.|September" brach in den Wochenkarten (T128)', () => {
+    expect(programmSpanne({ week: { range: '7.–13. September' }, tpw: (s) => s })).toBe(`7.–13.${NBSP}September`)
+  })
+
+  it('übersetzt erst und bindet dann — auch die Spanne der Sprachvariante', () => {
+    const ru = { week: { range: '7–13 сентября' }, tpw: (s: string) => s }
+    expect(programmSpanne(ru)).toBe(`7–13${NBSP}сентября`)
+    // Mit Übersetzer: Er bekommt die Spanne, wie sie im Arbeitsheft steht.
+    const gesehen: string[] = []
+    programmSpanne({ week: { range: '7.–13. September' }, tpw: (s) => (gesehen.push(s), 'September 7-13') })
+    expect(gesehen).toEqual(['7.–13. September'])
   })
 })
 

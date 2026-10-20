@@ -11,6 +11,7 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import type { MyTask, SubstituteReq } from '../data/types'
 import { dict } from '../i18n/ui'
+import { zahlBinden } from '../i18n/zahl-binden'
 import { OeffnenBlatt } from './OeffnenBlatt'
 
 /**
@@ -69,7 +70,7 @@ describe('Offene Zuteilungen', () => {
       substituteReqs: [],
     })
     expect(karten(container)).toHaveLength(2)
-    expect(container.querySelector('.sheet-sub')?.textContent).toBe(`${t.dashZuBest}: 2`)
+    expect(container.querySelector('.sheet-sub')?.textContent).toBe(zahlBinden(`${t.dashZuBest}: 2`))
   })
 
   it('„Bestätigen" trifft genau die Aufgabe seiner Karte', () => {

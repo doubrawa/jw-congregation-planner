@@ -105,7 +105,7 @@ afterEach(() => {
 describe('Die Seite „Planung" (`GWochen`)', () => {
   it('jede Woche ab der laufenden — die vergangene nicht', () => {
     const { container } = zeige(<PlanungScreen />)
-    expect(karten(container).map(spanne)).toEqual(['7.–13. September', '14.–20. September', '21.–27. September'])
+    expect(karten(container).map(spanne)).toEqual(['7.–13. September', '14.–20. September', '21.–27. September'].map(zahlBinden))
   })
 
   it('darunter, wann sie ist oder was sie besonders macht', () => {
@@ -182,7 +182,7 @@ describe('Die Spalte neben dem Plan (`GDesktopPlanen`)', () => {
     const { container, dispatch } = zeige(<PlanenScreen />, { screen: 'planen', tab: 'we', week: 2 })
     const spalte = container.querySelector('.wochen-spalte')!
     const gewaehlt = [...spalte.querySelectorAll('.wochen-karte.is-gewaehlt')]
-    expect(gewaehlt.map(spanne)).toEqual(['14.–20. September'])
+    expect(gewaehlt.map(spanne)).toEqual([zahlBinden('14.–20. September')])
     expect(gewaehlt[0]!.querySelector('[aria-current="true"]')).not.toBeNull()
     fireEvent.click(karten(spalte)[0]!.querySelector('.wochen-karte-knopf')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'we' } })

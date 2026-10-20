@@ -5,7 +5,7 @@ import { Sheet } from '../components/Sheet'
 import { istZusammenkunft } from '../data/helpers'
 import type { OffeneWochenMeldung } from '../data/plan-versand'
 import { relativeZeit } from '../i18n/zeit'
-import { aufgabenLabel, aufgabenTp, fill, useT } from '../i18n/useT'
+import { aufgabenLabel, aufgabenTermin, fill, useT } from '../i18n/useT'
 import type { VersandStand } from './wochen-versand'
 import { PlanSpur } from './WochenStand'
 import type { PlanArt } from './planen-raster'
@@ -95,7 +95,7 @@ export function PlanSendenBlatt({
                       {meldung.name}
                     </span>
                     <span className="klein-text">
-                      {`${aufgabenTp(aufgabe, i18n)(aufgabe.date)} · ${aufgabenLabel(aufgabe, i18n)}`}
+                      {`${aufgabenTermin(aufgabe, i18n)} · ${aufgabenLabel(aufgabe, i18n)}`}
                     </span>
                   </span>
                 </li>

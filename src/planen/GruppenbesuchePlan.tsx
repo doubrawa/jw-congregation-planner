@@ -4,7 +4,7 @@ import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
 import { BlattFeld } from '../bausteine/BlattFeld'
 import { Zeichen } from '../bausteine/Zeichen'
-import { datumsFormat, wochenSpanne } from '../components/datum-anzeige'
+import { gebundenesDatum, wochenSpanne } from '../components/datum-anzeige'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import {
   besuchsGruppe,
@@ -156,20 +156,23 @@ function BesuchZeile({
   const vorbei = stand.art === 'vorbei'
   const erster = stand.treffpunkte[0]
   const datum = erster ? fsTag(besuch.woche, erster.wd) : null
-  const termin = [datum ? datumsFormat(state.lang, 'kurzerTag').format(datum) : '', erster?.time ?? '']
+  // Tag und Monat gebunden (T128: „السبت، 19|سبتمبر" bei 320 px).
+  const termin = [datum ? gebundenesDatum(datum, state.lang, 'kurzerTag') : '', erster?.time ?? '']
   const marke = vorbei ? t.gbVorbei : stand.art === 'vorgemerkt' ? t.gbVorgemerkt : ''
   const unterzeile = [...termin, marke].filter(Boolean).join(' · ')
   const problem = probleme(besuch, stand, t, state.persons)[0]
 
+  // Text und Gruppe brechen gemeinsam um; der Pfeil steht daneben und bleibt
+  // rechts (T128).
   const inhalt = (
-    <>
+    <span className="gb-zeile-inhalt">
       <span className="gb-zeile-text">
         <span className="gb-zeile-woche">{wochenSpanne(besuch.woche, state.lang)}</span>
         {unterzeile && <span className="klein-text">{unterzeile}</span>}
         {problem && <span className="gb-problem">{problem.text}</span>}
       </span>
       <span className="gb-gruppe-pille">{besuchsGruppe(besuch, state.groups, tu)}</span>
-    </>
+    </span>
   )
   if (vorbei) return <div className="gb-zeile is-vorbei">{inhalt}</div>
   return (

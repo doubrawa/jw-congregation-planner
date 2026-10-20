@@ -149,6 +149,17 @@ export function congAppCode(code: string): Lang | undefined {
 }
 
 /**
+ * **In welcher Sprache die Versammlung schreibt** — als Sprach-Tag für `lang`:
+ * Ihr jw.org-Code ist einer (`ceb`, `pt-pt`, `sr-latn`). In ihr kommen das
+ * Programm ohne Sprachvariante und was die Versammlung selbst einträgt, etwa
+ * die Orte der Trolleys. Nach `lang` trennt der Browser (T128); ohne Code die
+ * Sprache der Vorlagen.
+ */
+export function versammlungsSprache(congLang: string): string {
+  return congLang || 'de'
+}
+
+/**
  * App-Sprache -> jw.org-Sprachcode (Umkehrung von JW_TO_APP; bei mehreren
  * jw-Codes je App-Sprache gewönne der erste Eintrag — bei den zwölf heutigen
  * fallen beide Codes zusammen). Dient dem Nachschlagen der passenden

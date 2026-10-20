@@ -74,11 +74,11 @@ function Buehne({ state, dispatch, onClose }: { state: AppState; dispatch: () =>
   )
 }
 
-function zeige(weeks: Week[] = [woche()]) {
+function zeige(weeks: Week[] = [woche()], over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const onClose = vi.fn()
   const state = (w: Week[]): AppState => ({
-    ...demoZustand(), dataStatus: 'ready', screen: 'planen', tab: 'edit', planner: true, weeks: w, week: 0,
+    ...demoZustand(), dataStatus: 'ready', screen: 'planen', tab: 'edit', planner: true, weeks: w, week: 0, ...over,
   })
   const r = render(<Buehne state={state(weeks)} dispatch={dispatch} onClose={onClose} />)
   const neuZeichnen = (w: Week[]) => r.rerender(<Buehne state={state(w)} dispatch={dispatch} onClose={onClose} />)
@@ -134,6 +134,16 @@ describe('Das Programm der Woche', () => {
   it('ohne Woche steht gar nichts da', () => {
     zeige([])
     expect(blaetter()).toHaveLength(0)
+  })
+
+  it('der Titel eines Punkts trägt die Sprache des Programms — er trennt nach ihren Regeln (T128)', () => {
+    // Russische App, deutsches Programm: „Versammlungsbibelstudium" trennte
+    // im Titel des Blatts sonst russisch.
+    zeige([woche()], { lang: 'ru', congLang: 'de' })
+    oeffne('Versammlungsbibelstudium')
+    const titel = oben().querySelector('.sheet-title [lang]')
+    expect(titel?.getAttribute('lang')).toBe('de')
+    expect(titel?.textContent).toBe('Versammlungsbibelstudium')
   })
 })
 

@@ -324,7 +324,7 @@ function VorschauZeile({
   const zurWahl = state.groups.filter((g) => g.id === grp || reihe.includes(g))
   return (
     <div className={vorbei ? 'wp-vorschau-zeile is-vorbei' : 'wp-vorschau-zeile'}>
-      <span>{wann}</span>
+      <span className="wp-vorschau-wann">{wann}</span>
       {vorbei ? (
         <span className="wp-vorschau-wer">{gruppenName(grp, state.groups, tu) || t.offenDash}</span>
       ) : (

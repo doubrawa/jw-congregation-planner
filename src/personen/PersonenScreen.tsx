@@ -306,7 +306,9 @@ function PersonZeile({
   const abwesend = lage.abwesenheit ? abwesendText(lage.abwesenheit, t, state.lang) : ''
   const marke = lage.rechte.admin ? t.planerLbl : lage.rechte.planer ? t.rollePlaner : ''
   const inhalt = breit ? (
-    <>
+    // Die Spalten in einem Behälter: Wird die Liste für die Schrift zu schmal,
+    // steht der Name über Gruppe und Stand (`personen.css`, T128).
+    <span className="personen-zellen">
       <span className="personen-name personen-zelle" dir="auto">
         {listName(person)}
       </span>
@@ -314,7 +316,7 @@ function PersonZeile({
       <span className={abwesend ? 'klein-text personen-zelle is-problem' : 'klein-text personen-zelle'}>
         {abwesend || [standWort, marke].filter(Boolean).join(' · ')}
       </span>
-    </>
+    </span>
   ) : (
     <>
       <span className="personen-zeile-text">

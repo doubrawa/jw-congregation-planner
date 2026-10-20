@@ -4,6 +4,7 @@ import { taskKeyWeek, wochenIndex } from '../data/planning'
 import { besetztVon, besetzung, saalLagen, type SaalLage } from '../data/saal'
 import type { MyTask } from '../data/types'
 import { useT } from '../i18n/useT'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * Der Saal zu einer eigenen Aufgabe (T121): die Besetzung ihrer Zusammenkunft
@@ -19,7 +20,7 @@ export function useSaal(task: MyTask | undefined): { lagen: SaalLage[]; label: s
     if (!task || !ort || !week) return null
     const b = besetzung(week[ort.tab], state.services, state.confirmations, ort.woche, ort.tab, task.id)
     const { besetzt, gesamt } = besetztVon(b)
-    const label = [`${t.saalBesetzung}: ${besetzt}/${gesamt}`, b.du ? t.saalDeinPlatz : ''].filter(Boolean).join(' · ')
+    const label = [zahlBinden(`${t.saalBesetzung}: ${besetzt}/${gesamt}`), b.du ? t.saalDeinPlatz : ''].filter(Boolean).join(' · ')
     return { lagen: saalLagen(b), label }
   }, [task, state.weeks, state.services, state.confirmations, t])
 }

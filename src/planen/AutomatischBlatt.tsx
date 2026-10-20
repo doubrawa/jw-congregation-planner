@@ -9,6 +9,7 @@ import { meetingDate } from '../data/meeting-dates'
 import { tabsImUmfang, zuteilbarePlaetze, type AssignScope, type Umfang } from '../data/planning'
 import type { Meeting, MeetingKey, Service, Week } from '../data/types'
 import { fill, useT } from '../i18n/useT'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /** Ein Bereich, den „Automatisch" füllt oder leert. */
 type Bereich = Exclude<AssignScope, 'all'>
@@ -104,7 +105,7 @@ export function AutomatischBlatt({ onClose }: { onClose: () => void }) {
             <label key={b} className="auto-bereich">
               <span className="auto-bereich-text">
                 <span className="auto-bereich-name">{bereichName(b)}</span>
-                <span className="klein-text">{`${t.saalBesetzung}: ${stand[b].besetzt}/${stand[b].gesamt}`}</span>
+                <span className="klein-text">{zahlBinden(`${t.saalBesetzung}: ${stand[b].besetzt}/${stand[b].gesamt}`)}</span>
               </span>
               <input type="checkbox" checked={gewaehlt.has(b)} onChange={() => umschalten(b)} />
             </label>

@@ -11,7 +11,7 @@
 import { fromIso, tagNach } from '../data/meeting-dates'
 import type { Lang } from '../data/types'
 import { LOCALES } from '../i18n/langs'
-import { NBSP } from '../i18n/zahl-binden'
+import { NBSP, zahlBinden } from '../i18n/zahl-binden'
 
 const FORMATE = {
   /** „Mittwoch, 7. Oktober" */
@@ -67,13 +67,24 @@ export function datumsFormat(lang: string, format: DatumsFormat): Intl.DateTimeF
 }
 
 /**
+ * **Ein Tag in Worten, die Zahl bei ihrem Wort** (`zahlBinden`, T128): „Mi.,
+ * 9. Sept." bricht nicht zwischen 9. und Sept. — umbrechen darf er neben dem
+ * Wochentag. Für Tage in Zeilen und Titeln; die Kopfzeile bindet strenger
+ * (`kopfzeilenTag`).
+ */
+export function gebundenesDatum(datum: Date, lang: string, format: DatumsFormat): string {
+  return zahlBinden(datumsFormat(lang, format).format(datum))
+}
+
+/**
  * Ein Zeitraum von Tag zu Tag (beide ISO) in Worten — ein einzelner Tag
  * einmal, nicht „1.–1. November". Für Abwesenheiten im Profil und im
- * Zuteilen-Blatt.
+ * Zuteilen-Blatt. Tag und Monat bleiben zusammen (`zahlBinden`, T128: „So.,
+ * 4.|Oktober" im Profil bei Stufe 1,3).
  */
 export function tageSpanne(von: string, bis: string, lang: string, format: DatumsFormat): string {
   const fmt = datumsFormat(lang, format)
-  return von === bis ? fmt.format(fromIso(von)) : fmt.formatRange(fromIso(von), fromIso(bis))
+  return zahlBinden(von === bis ? fmt.format(fromIso(von)) : fmt.formatRange(fromIso(von), fromIso(bis)))
 }
 
 /**
@@ -108,16 +119,18 @@ export function wochentagMitZahl(datum: Date, lang: string): string {
  * nicht aus dem Arbeitsheft (`Week.range`): für Wochen, deren Programm noch
  * nicht da ist (Gruppenbesuche, Trolleys, „Holen"). Stand bis Phase 10 von
  * T121 zweimal gleich da (`besuchsWocheText`, `wochenSpanne` der Trolleys).
+ * Tag und Monat bleiben zusammen (`zahlBinden`, T128: „5–11|octobre").
  */
 export function wochenSpanne(montag: string, lang: string): string {
-  return datumsFormat(lang, 'tagMonat').formatRange(fromIso(montag), fromIso(tagNach(montag, 6)))
+  return zahlBinden(datumsFormat(lang, 'tagMonat').formatRange(fromIso(montag), fromIso(tagNach(montag, 6))))
 }
 
 /**
  * Eine Anzahl Tage, Wochen oder Monate in Worten der Sprache: „1 Tag",
  * „7 Tage", „13 Wochen". Die Mehrzahl kennt `Intl` — ein „{n} Tage" in den
- * Übersetzungen kennte sie nicht.
+ * Übersetzungen kennte sie nicht. Zahl und Wort bleiben zusammen
+ * (`zahlBinden`, T128: „12|miesięcy" in der Wahl der Auswertung).
  */
 export function zeitspanne(n: number, einheit: 'day' | 'week' | 'month', lang: string): string {
-  return new Intl.NumberFormat(LOCALES[lang as Lang] ?? lang, { style: 'unit', unit: einheit, unitDisplay: 'long' }).format(n)
+  return zahlBinden(new Intl.NumberFormat(LOCALES[lang as Lang] ?? lang, { style: 'unit', unit: einheit, unitDisplay: 'long' }).format(n))
 }

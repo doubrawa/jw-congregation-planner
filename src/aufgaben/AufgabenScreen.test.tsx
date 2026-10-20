@@ -13,6 +13,7 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import { bibelbuecherLaden, makeTr } from '../i18n/translate'
 import { dict } from '../i18n/ui'
+import { zahlBinden } from '../i18n/zahl-binden'
 import type { MyTask, Person, S89Payload, SubstituteReq, TrolleyTermin } from '../data/types'
 import { AufgabenScreen } from './AufgabenScreen'
 
@@ -95,7 +96,7 @@ describe('Kopf', () => {
   it('nennt den Bildschirm und wie viel noch auf Zusage wartet', () => {
     const { container } = zeige({ myTasks: [task(), task({ id: 'T2' }), task({ id: 'T3', status: 'bestätigt' })] })
     expect(container.querySelector('h1')?.textContent).toBe(t.navAufgabenLong)
-    expect(container.querySelector('.aufgaben-zusage')?.textContent).toContain(`${t.dashZuBest}: 2`)
+    expect(container.querySelector('.aufgaben-zusage')?.textContent).toContain(zahlBinden(`${t.dashZuBest}: 2`))
   })
 
   it('„Alle bestätigen" sagt alles Offene auf einmal zu', () => {
@@ -123,8 +124,10 @@ describe('Die Aufgaben: die nächste groß, die übrigen je eine Zeile', () => {
     expect(container.querySelector('.aufgabe-karte .aufgabe-titel')?.textContent).toBe('Bibellesung')
     expect(zeilen(container)).toHaveLength(1)
     expect(zeilen(container)[0]!.querySelector('.aufgaben-zeile-titel')?.textContent).toBe('Vorsitz')
-    // Der Abstand in Worten vorn, dann der Termin — aus dem echten Kalendertag.
-    expect(zeilen(container)[0]!.querySelector('.klein-text')?.textContent).toMatch(/^Morgen · .*8\. September/)
+    // Der Abstand in Worten vorn, dann der Termin — aus dem echten Kalendertag,
+    // Tag und Monat gebunden (T128).
+    expect(zeilen(container)[0]!.querySelector('.klein-text')?.textContent).toMatch(/^Morgen · /)
+    expect(zeilen(container)[0]!.querySelector('.klein-text')?.textContent).toContain(zahlBinden('8. September'))
   })
 
   it('ein Tipp auf die Zeile öffnet das Blatt zu genau dieser Aufgabe', () => {
@@ -170,7 +173,7 @@ describe('Einspringen', () => {
     const { container } = zeige({ substituteReqs: [gesuch()] })
     const zeile = bereich(container)!.querySelector('.aufgaben-angebot')!
     expect(zeile.querySelector('.angebot-titel')?.textContent).toBe('Mikrofone')
-    expect(zeile.querySelector('.klein-text')?.textContent).toContain('8. September')
+    expect(zeile.querySelector('.klein-text')?.textContent).toContain(zahlBinden('8. September'))
     expect(zeile.querySelector('.klein-text')?.textContent).toContain('Bernd Brand')
   })
 
@@ -238,7 +241,7 @@ describe('Freie Plätze', () => {
     expect(k.querySelector('.aufgaben-angebote > .klein-text')?.textContent).toBe(t.freiePlaetzeHint)
     const titel = [...k.querySelectorAll('.angebot-titel')].map((e) => e.textContent)
     expect(titel).toEqual(['Gebet', 'Platzhalter-Thema'])
-    expect(k.querySelector('.angebot-text .klein-text')?.textContent).toContain('8. September')
+    expect(k.querySelector('.angebot-text .klein-text')?.textContent).toContain(zahlBinden('8. September'))
   })
 
   it('was ich an dem Tag schon habe, steht vor dem Übernehmen da', () => {

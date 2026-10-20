@@ -5,7 +5,7 @@ import { missingVariants } from '../data/localize'
 import { fromIso, istVorbei, weekEndMs } from '../data/meeting-dates'
 import type { Week } from '../data/types'
 import { JW_TO_CONG, LOCALES } from '../i18n/langs'
-import { useT } from '../i18n/useT'
+import { programmSpanne, useT } from '../i18n/useT'
 import { holenNach, loadedUntilMs } from '../data/holen'
 import { type ImportFehler, importNextWeek, importWeekVariants } from '../lib/import'
 
@@ -82,7 +82,7 @@ export function useWochenImport(): {
             timeZone: 'UTC', // week.start ist ein reines Kalenderdatum
           }).format(bisMs)
         : letzte
-          ? tp(letzte.range)
+          ? programmSpanne({ week: letzte, tpw: tp })
           : null
     return { geladenBis: text, geladenBisMs: bisMs }
   }, [state.weeks, state.lang, tp])

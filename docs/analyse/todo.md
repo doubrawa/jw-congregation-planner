@@ -7523,7 +7523,7 @@ Betreiber nachentschieden: Auch die Weiteren Pläne (Königreichssaal)
 
 ## Aufgenommen am 18. Oktober 2026 — Umbruch mitten im Wort (T128)
 
-### T128 · Kein Bruch mitten im Wort, die Zahl bleibt bei ihrer Bezeichnung 🔧 ✅ erledigt (19. Oktober 2026)
+### T128 · Kein Bruch mitten im Wort, die Zahl bleibt bei ihrer Bezeichnung 🔧 ✅ erledigt (19. Oktober 2026, Rest am 20. Oktober)
 
 **Auftrag (18. Oktober, über die Sitzung von T127):** Bei 320 px brechen
 Beschriftungen mitten im Wort ohne Trennstrich um („Königreichssaa|l",
@@ -7700,7 +7700,8 @@ In der Auswertung stehen die Spaltenköpfe der Matrix senkrecht
 Buchstaben als neue Zeile und meldet die gedrehten Kästen um 2 px
 überragt — 341 der 662 Funde, vorher wie nachher, kein Umbruch.
 
-Was bleibt (vorher wie nachher, keine Folge von T128):
+Was am 19. Oktober blieb (vorher wie nachher, keine Folge von T128) — am
+20. Oktober umgesetzt, siehe **Rest umgesetzt** unten:
 
 - **Die Wahl der letzten Erinnerung** bricht bei 320 px und Stufe 1,45 in
   Polnisch mitten im Wort („wcześni|ej"): zwei gleich breite Knöpfe
@@ -7726,6 +7727,133 @@ Was bleibt (vorher wie nachher, keine Folge von T128):
   Programmtexte.
 - **Hinweise beim Planen am Desktop** ragen bei Stufe 1,3/1,45 aus ihrem Kasten
   („Программа ещё не загружена" in der Karte „Holen").
+
+**Rest umgesetzt (20. Oktober 2026)** — die fünf Punkte aus der Liste oben
+(Auftrag über die Karte „Rest aus T128"), dazu, was die Nachmessung fand:
+
+- **Die Wahl** (`bausteine.css`, gilt an allen 13 Stellen): Die Knöpfe stehen
+  als umbrechende Reihe (`flex-wrap`, `flex: 1 1 0`, Mindestbreite `auto`,
+  ohne `hyphens` und `anywhere`). Passt das längste Wort einer Möglichkeit
+  nicht mehr in ihren Anteil, rückt sie in die nächste Zeile, statt zu brechen
+  („Ciem|ny", „Grup|a 1", „wcześni|ej"). Bei der kleinen Wahl („Beginnen mit")
+  rückt eine ganze Möglichkeit um (`flex-basis: auto`), sonst stand „Grupa 1"
+  neben „Grupa / 2". Gemessen mit `wahl.mjs` (neu im Werkzeug): jede Wahl an
+  ihrer Stelle, zehn Ziele.
+- **Spannen gebunden:** `wochenSpanne`, `tageSpanne` und `zeitspanne`
+  (`datum-anzeige.ts`) binden Zahl und Wort, `programmSpanne` (`useT.ts`) die
+  Spanne aus dem Arbeitsheft (`week.range`) — eine Stelle für Wochenwahl,
+  Wochenkarten, Planungs-Karte, „Holen" und Druckwahl. Dazu der Termin über
+  dem Programm („Dienstag, 8.|September"), der Zeitraum der Auswertung (nach
+  dem Binden von „4 недели" brach dort neu „2026|г."), die Tage der Trolleys
+  (`tagKurz`, `tagLang`) und der Termin eines Gruppenbesuchs. Wo eine gebundene
+  Spanne neben etwas stand, das nicht wich, ragte sie danach bis zu 100 px
+  hinaus — dort rückt jetzt das Daneben in die nächste Zeile: die Gruppe bei
+  den Gruppenbesuchen (Planen und Ansehen; der Pfeil bleibt rechts) und in den
+  Weiteren Plänen (Vorschau und Ansehen), das ✕ bei den Abwesenheiten, die Zahl
+  der Punkte im Blatt „Holen", „Dazukommen" in den Zeilen der Trolleys.
+  `tagLang` bindet nur die Zahl an ihr Wort, nicht das ganze Datum wie die
+  Kopfzeile: In der Schrift des Titels ragte „7 de septiembre" am Stück 15 px
+  hinaus.
+- **Personenliste am Desktop:** Die drei Zellen stehen in einer umbrechenden
+  Reihe; ist die Liste schmaler als 24 em (Container-Abfrage, wandert mit der
+  Schrift), steht in jeder Zeile der Name über Gruppe und Stand. Bei 1180 px
+  hält Stufe 1 in Spalten, ab 1,15 wird gestapelt.
+- **Programmtexte mit `lang`:** `useProgWeek` liefert `sprache` — mit
+  Sprachvariante die der App, sonst den Code der Versammlung
+  (`versammlungsSprache` in `langs.ts`; ein jw.org-Code ist ein Sprach-Tag,
+  auch für Sprachen ohne App-Übersetzung). Abschnitt, Titel, Zusatz, Dauer,
+  Termin und am Desktop Datum und Uhrzeit der Tage tragen sie, beim Planen
+  ebenso und im Kopf des Zuteilen-Blatts (dort der Punkt, nicht die Rolle).
+  Was in der Sprache des Lesers steht — Rollen, „Partner", Hilfsdienste —,
+  bleibt ohne. Ebenso trennen Name und Ort eines Trolleys nach der Sprache der
+  Versammlung: In einer englischen App brach sonst „Königreic|hssaal".
+- **„Holen" am Desktop:** Die Karte ist eine umbrechende Reihe; passt der
+  Knopf nicht neben den Hinweis, rückt er darunter.
+- **Hilfsdienste im Programm:** Die Spalte des Dienstes wächst mit der Schrift
+  (`132px * --fs`); unter 15 em steht der Dienst über den Namen — bei 320 px
+  ab Stufe 1,15, bei 375 px ab 1,3, bei 412 px ab 1,45 (im echten Chrome
+  ausgezählt; das Pane ist wegen seines Rollbalkens 16 px schmaler).
+- **Neu aus der Nachmessung, Auswertung:** Die Kacheln stehen unter 20 em je
+  allein (bei 320 px und 1,45 ragte „Однообразное распределение" 30 px über
+  den Rand; das längste Wort aller zwölf Sprachen, „Найнапруженіший:" (uk),
+  hat 7,8 em). Die Kennzahlen rücken um wie die Wahl („Zuteilung|en",
+  „Assignme|nts" bei 320 px, 70 Funde), die Hinweise trennen (ru ragte 17 px
+  hinaus). Die Reiter der Zusammenkünfte trennen den Wochentag
+  („воскресен|ье", „dimanch|e").
+- **Neu aus der Nachmessung, Trolleys:** Der Spaltenkopf des Tags trennt (bei
+  320 px und 1,45 ragte „Königreichssaal" über den Rand). Polnisch
+  „współ|pracownik" trennt als Titel der Karte an einem weichen Trennzeichen
+  (am Desktop ragte das Wort 109 px aus der schmalen Spalte).
+- **Aus `/simplify` und dem Review:** Den Termin einer Zusammenkunft baut
+  `programmTermin` — für das Programm und das Blatt „Programm", das ihn bis
+  dahin ungebunden abschrieb —, einen Tag in Worten `gebundenesDatum`. Der
+  Termin einer Aufgabe ist gebunden (`aufgabenTermin`: Start, „Meine
+  Aufgaben", Blätter, „Plan senden") und der Abstand in Worten ebenso
+  (`relativeDayLabel`, `wochenHer`): Auf Start und unter „Meine Aufgaben"
+  brachen bei 320 px 238 Stellen („22.|September", „Dentro de 15|días"). Die
+  Zeilen unter „Meine Aufgaben" brechen um wie die übrigen (dort ragte pl
+  „współpracownik:" 36 px aus dem Text). Die Titel der Blätter zu einer
+  Aufgabe und zu einem Programmpunkt tragen die Sprache des Programms (sie
+  trennen). Ein vergangener Gruppenbesuch hält den Platz des Pfeils frei,
+  seine Gruppe steht wieder in der Flucht. Von Hand gebaute Zeilen
+  „Bezeichnung: Zahl" (`${t.saalBesetzung}: ${besetzt}/${gesamt}`, „Zu
+  bestätigen: 5" — acht Stellen) gingen an `fill` vorbei und gehen jetzt
+  durch `zahlBinden`; eine Quelltext-Probe
+  (`tests/bezeichnung-zahl-von-hand.test.ts`) hält neue Stellen an.
+- **Proben:** `tests/kein-wortbruch.test.ts` (Wahl, Kennzahlen, „Holen",
+  Personenliste, Hilfsdienste, Kacheln, Reiter, Hinweise, Trolley-Kopf und
+  -Zeilen, Gruppenbesuche, Abwesenheiten, Weitere Pläne, Aufgaben,
+  Trennstelle pl), `datum-spannen.test.ts` (alle zwölf Sprachen),
+  `useT.test.tsx` (`sprache`, `programmSpanne`), `lang` in `ProgrammScreen`,
+  `MeetingSection`, `AssignSheet`, `ProgrammBlatt`, `overlays` und
+  `trolley-ansicht`, die Quelltext-Probe für „Bezeichnung: Zahl"; 46
+  Zusicherungen auf den gebundenen Wortlaut nachgezogen. Mutationskatalog: 56
+  neue Einträge `umbruch-…`, alle bewacht und gegen die gemeinte Testdatei
+  gegengeprüft; die Anker von
+  `planung-wochenspanne-variante` und `gesuch-name-ohne-uebersetzer` folgen
+  `programmSpanne` und `aufgabenTermin`.
+
+**Gemessen im echten Chrome** (vorher = HEAD `869c6f43` aus einem Worktree auf
+Port 5176 — für Start und „Meine Aufgaben" der Stand vor dem Review —,
+nachher = der Endstand; gezählt wie oben, Trennungen mit Strich nicht):
+
+| Lauf | Fälle | Funde vorher | nachher |
+|---|---|---|---|
+| Jede Wahl an ihrer Stelle (`wahl.mjs`): 12 Sprachen × 320/1180 × 1,15/1,45, zehn Ziele — Brüche in den Knöpfen | 432 | 116 | 0 |
+| … dieselben Ansichten im Ganzen, ohne die gedrehten Spaltenköpfe der Matrix | 432 | 578 | 35 |
+| Profil, Gruppenbesuche (Ansehen und Planen), Trolleys: 12 Sprachen × 320/375 × 1,15/1,45 | 192 | 646 | 0 |
+| Programm (Woche) und Auswertung am Handy: 12 Sprachen × 320/375 × 1,15/1,45 | 96 | 275 | 4 |
+| Start und „Meine Aufgaben" (nach dem Review): 12 Sprachen × 320/375 × 1,15/1,45 | 144 | 238 | 0 |
+| Planen, Start, Programm: 12 Sprachen × 768–1440 × 1,3/1,45 | 360 | 446 | 2 |
+| Personen und Profil am Desktop: 12 Sprachen × 1180/1400 × 1,3/1,45 | 96 | 442 | 0 |
+| Personenliste bei kleiner Schrift: 12 Sprachen × 1180/1400 × 1/1,15 | 48 | 27 | 0 |
+| Auswertung am Desktop, ohne die gedrehten Spaltenköpfe: 12 Sprachen × 1180/1400 × 1,3/1,45 | 48 | 8 | 8 |
+
+Nichts kam dazu. Die Spaltenköpfe der Matrix stehen senkrecht; das Werkzeug
+liest dort jeden Buchstaben als Zeile und wertet sie je Lauf mal als
+Trennung, mal als Bruch (vorher wie nachher dieselben Kästen, 20 × 137 px).
+Bei den Hinweisen der Auswertung meldet es „вспом|огательными" — im Bild
+steht dort „вспо-могательными".
+
+Was bleibt (vorher wie nachher):
+
+- **Trolleys am Desktop bei 1180 px und Stufe 1,45:** Die Spalte der Listen ist
+  rund 190 px schmal. Titel der Karten ragen hinaus („Se busca compañero"
+  27 px, „Partenaire recherché" 12 px, pl „pracownik" 8 px — vorher
+  „współpracownik" 109 px), „współpracow|nik: Jonas" bricht. Abhilfe wäre eine
+  Anordnung, die die Listen bei großer Schrift unter den Plan stellt.
+- **Bezeichnung und Zahl zusammen breiter als die Zeile:** Bei 320 px und 1,45
+  steht in den Hinweisen der Auswertung „pomocniczymi:" / „обязанностями:"
+  über der 4 — der Notumbruch teilt die gebundene Einheit am geschützten
+  Leerzeichen, weil „обязанностями: 4" allein nicht in die Zeile passt.
+- **Knöpfe im Fuß eines Blatts** bei 320 px: „Hinzufügen" ragt in „Person
+  anlegen" 6–19 px aus seinem Knopf (de, 1,15/1,45), „Abbrechen" 2–3 px.
+- **„nie" in der Zahlenspalte der Auswertung am Desktop** (1180 px, 1,15/1,3):
+  „niciodată" 12–14 px, „жодного разу" 9–10 px.
+- **Namen der Spur** in Polnisch und Englisch bei 320 px: „Opublikowa|ny",
+  „Complete|d" (keine Trennregeln bzw. großgeschrieben).
+- **Planen am Desktop, ru, 1400/1440 px und 1,45:** der Titel der
+  Wochenspalte „Планирование" ragt 4 px.
 
 ---
 
@@ -8361,9 +8489,10 @@ setzen so viele punkte wie möglich um"): T128 (`38f27002`), der Rest von T42
 `/simplify`, `/code-review max`, Mutationsprobe und Push. Davor am 18. Oktober
 die Kachel der Absagen, T127, T129, die Auswertung nach der Jahresprobe und das
 Review des Tages; am 19. das Ladebild beim Start, der Offline-Start nach über
-einer Stunde, das Startbild und der Offline-Start in der ersten Stunde.
-Beschlossenes ist im Code nichts mehr offen; was aussteht, braucht den
-Betreiber, ein Gerät oder eine Entscheidung.
+einer Stunde, das Startbild und der Offline-Start in der ersten Stunde. Am
+20. Oktober der **Rest aus T128** (die fünf Umbrüche vom 19. Oktober und was
+die Nachmessung fand; siehe T128). Beschlossenes ist im Code nichts mehr
+offen; was aussteht, braucht den Betreiber, ein Gerät oder eine Entscheidung.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
@@ -8377,7 +8506,7 @@ Betreiber, ein Gerät oder eine Entscheidung.
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
-| **Rest aus T128** | Umbruch bei großer Schrift | T128 ist erledigt (19. Oktober). Vorher wie nachher bleiben: die Wahl der letzten Erinnerung bei 320 px (pl), Datumsspannen außerhalb von `fill` (Wochenkarten, „Holen"), Programmtexte, die nach der Sprache der App statt der Versammlung trennen, Hinweise in der Karte „Holen" bei Stufe 1,3/1,45 und Namen der Dienste im Programm bei 768 px — Einzelheiten unter T128 |
+| **Rest aus T128** | Umbruch bei großer Schrift | Die fünf Punkte vom 19. Oktober sind am 20. Oktober umgesetzt (Wahl, Spannen, `lang` der Programmtexte, „Holen", Hilfsdienste), dazu, was die Nachmessung fand. Vorher wie nachher bleiben: die Listen der Trolleys am Desktop bei 1180 px und 1,45 (Spalte rund 190 px), Bezeichnung und Zahl, die zusammen breiter als die Zeile sind, Knöpfe im Fuß eines Blatts bei 320 px, „nie" in der Auswertung am Desktop, Spur-Namen in pl/en — Einzelheiten unter T128 |
 | **Bewusst offen** | Das Blatt nach einem langsamen Start | Kommen die Daten erst nach dem Vorgriff (4 s), legt das Blatt beim Öffnen eine seither neue Zuteilung nicht vor (nach über einer Stunde ebenso seit `30a5a80d`). Betreiber am 19. Oktober: nur der eigene Hinweis — der Streifen sagt seitdem „Verbindung langsam" statt „Offline", solange die Daten noch kommen können; das Blatt bleibt so |
 | **Bewusst offen** | `sprache-fehlt` beim Wochen-Import | zählt weiter als Ende des Kalenders. Strenger gäbe es im Alltag Fehlalarme; betroffen wäre nur eine anderssprachige Versammlung mit Geschichte (Review vom 18. Oktober, `42dff943`) |
 

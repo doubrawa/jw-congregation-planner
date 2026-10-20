@@ -6,7 +6,7 @@
  */
 
 import type { AppAction } from '../app/context'
-import { datumsFormat } from '../components/datum-anzeige'
+import { gebundenesDatum } from '../components/datum-anzeige'
 import { displayName } from '../data/helpers'
 import { fromIso, tagNach } from '../data/meeting-dates'
 import { minuten, uhrzeit } from '../data/trolleys'
@@ -22,14 +22,19 @@ export function wochenTage(montag: string): string[] {
   return Array.from({ length: 7 }, (_, i) => tagNach(montag, i))
 }
 
-/** Ein Tag ausgeschrieben: „Samstag, 12. September". */
+/**
+ * Ein Tag ausgeschrieben: „Samstag, 12. September" — die Zahl bleibt bei ihrem
+ * Wort (T128: „Montag, 7.|September" über dem Tag der Trolleys bei 320 px).
+ * Nicht ganz gebunden wie die Kopfzeile (`kopfzeilenTag`): In der Schrift des
+ * Titels ragte „7 de septiembre" am Stück 15 px hinaus.
+ */
 export function tagLang(datum: string, lang: Lang): string {
-  return datumsFormat(lang, 'tag').format(fromIso(datum))
+  return gebundenesDatum(fromIso(datum), lang, 'tag')
 }
 
-/** Ein Tag kurz, für die Zeilen: „Sa., 19. Sept.". */
+/** Ein Tag kurz, für die Zeilen: „Sa., 19. Sept." — Tag und Monat gebunden (T128). */
 export function tagKurz(datum: string, lang: Lang): string {
-  return datumsFormat(lang, 'kurzerTag').format(fromIso(datum))
+  return gebundenesDatum(fromIso(datum), lang, 'kurzerTag')
 }
 
 /** Die Zeit eines Termins: „09:00–11:00". */

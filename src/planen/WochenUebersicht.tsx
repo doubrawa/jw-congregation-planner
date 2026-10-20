@@ -9,7 +9,7 @@ import { anlassArt } from '../data/anlass'
 import { fromIso, montagNach, montagVon } from '../data/meeting-dates'
 import type { Week } from '../data/types'
 import type { Dict } from '../i18n/ui'
-import { fill, useProgWeeks, useT } from '../i18n/useT'
+import { fill, programmSpanne, useProgWeeks, useT } from '../i18n/useT'
 import { spurDerWoche } from './plan-spur'
 import { HolenKnopf } from './ProgrammHolen'
 import { VortragsplanKarte } from './VortragsplanKarte'
@@ -108,7 +108,7 @@ export function WochenListe({ spalte = false }: { spalte?: boolean }) {
                 aria-current={gewaehlt ? 'true' : undefined}
                 onClick={() => oeffnen(k)}
               >
-                {p.tpw(p.week.range)}
+                {programmSpanne(p)}
               </button>
               {k.lage && (
                 <span className="wochen-karte-lage" data-art={k.lage.art}>

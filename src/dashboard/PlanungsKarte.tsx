@@ -11,7 +11,7 @@ import { fromIso } from '../data/meeting-dates'
 import { planungsstand, type Wochenstand } from '../data/planungsstand'
 import type { FsBereich } from '../data/types'
 import { LOCALES } from '../i18n/langs'
-import { fill, useProgWeeks, useT } from '../i18n/useT'
+import { fill, programmSpanne, useProgWeeks, useT } from '../i18n/useT'
 import { HolenKnopf } from '../planen/ProgrammHolen'
 import { useWochenImport } from '../planen/useWochenImport'
 
@@ -102,7 +102,7 @@ export function PlanungsKarte() {
       stand.wochen.map((w) => {
         const week = state.weeks[w.wi]
         const p = week ? progWeek(week) : null
-        return { ...w, spanne: p ? p.tpw(p.week.range) : '' }
+        return { ...w, spanne: p ? programmSpanne(p) : '' }
       }),
     [stand.wochen, state.weeks, progWeek],
   )

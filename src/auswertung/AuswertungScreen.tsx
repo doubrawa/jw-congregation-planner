@@ -5,7 +5,7 @@ import { useKalendertag } from '../app/useKalendertag'
 import { Wahl } from '../bausteine/Wahl'
 import { Zeichen, type ZeichenName } from '../bausteine/Zeichen'
 import { UnteransichtKopf } from '../components/UnteransichtKopf'
-import { datumsFormat, zeitspanne } from '../components/datum-anzeige'
+import { datumsFormat, tageSpanne, zeitspanne } from '../components/datum-anzeige'
 import { gruppenName } from '../components/weitere-plaene-anzeige'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { DESKTOP_BREITE, TABLET_BREITE, useMedia } from '../components/useMedia'
@@ -208,10 +208,14 @@ export function AuswertungScreen() {
   )
 }
 
-/** „13. Okt. 2025 – 11. Okt. 2026 · 52 Wochen · Zusammenkünfte: 101" */
+/**
+ * „13. Okt. 2025 – 11. Okt. 2026 · 52 Wochen · Zusammenkünfte: 101" — die
+ * Spanne gebunden wie jede (T128: „2026|г." bei 320 px, seit „4 недели"
+ * zusammenbleibt).
+ */
 function ZeitraumZeile({ a, k }: { a: Auswertung; k: Kontext }) {
   const { von, bis } = a.grundlage.fenster
-  const spanne = datumsFormat(k.lang, 'tagKurzJahr').formatRange(fromIso(von), fromIso(tagNach(bis, -1)))
+  const spanne = tageSpanne(von, tagNach(bis, -1), k.lang, 'tagKurzJahr')
   return (
     <p className="klein-text aw-zeitraum-zeile">
       {[spanne, k.dauer(a.grundlage.fenster.wochen.length), fill(k.t.awZusammenkuenfte, { n: k.zahl(a.grundlage.zusammenkuenfte) })].join(' · ')}

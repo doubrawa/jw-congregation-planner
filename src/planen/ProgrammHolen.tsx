@@ -7,7 +7,7 @@ import { Sheet } from '../components/Sheet'
 import { isSong } from '../data/helpers'
 import type { Meeting, SectionColor, Week } from '../data/types'
 import { sprachenListe, useLangNames } from '../i18n/langnames'
-import { fill, useProgWeeks, useT } from '../i18n/useT'
+import { fill, programmSpanne, useProgWeeks, useT } from '../i18n/useT'
 import { useWochenImport } from './useWochenImport'
 
 /** Was beim Holen gerade ist: nichts, der Abruf läuft, oder die Woche liegt zum Prüfen da. */
@@ -129,7 +129,7 @@ function ProgrammHolenBlatt({
           <>
             <div className="holen-woche">
               <div className="holen-kopf">
-                <span className="holen-spanne">{p.tpw(p.week.range)}</span>
+                <span className="holen-spanne">{programmSpanne(p)}</span>
                 <span className="klein-text">
                   {fill(t.programmpunkteN, { n: abschnitte.reduce((n, a) => n + a.punkte, 0) })}
                 </span>

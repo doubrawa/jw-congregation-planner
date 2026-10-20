@@ -3,7 +3,7 @@ import { useApp } from '../app/context'
 import { anlassArt } from '../data/anlass'
 import { currentWeekIndex } from '../data/meeting-dates'
 import type { Week } from '../data/types'
-import { useT } from '../i18n/useT'
+import { programmSpanne, useT } from '../i18n/useT'
 import { anlassName } from './anlass-name'
 import { WeekNav } from './WeekNav'
 import './components.css'
@@ -68,7 +68,7 @@ function WochenZeile({
   const anlass = anlassName(anlassArt(rawWeek), t)
   return (
     <>
-      <span className="woche-zeitraum">{tpw(week.range)}</span>
+      <span className="woche-zeitraum">{programmSpanne({ week, tpw })}</span>
       <span className="woche-unterzeile">
         {anlass ? (
           <span className="woche-hinweis">{anlass}</span>

@@ -158,27 +158,34 @@
 
 /* ---- Wahl: wenige Möglichkeiten, eine gedrückt ---------------------------- */
 
+/* Nebeneinander, der Platz gleich verteilt — doch kein Knopf wird schmaler als
+   sein längstes Wort: Braucht einer mehr, wird er breiter als die anderen, und
+   passen nicht mehr alle in die Zeile, rückt eine Möglichkeit in die nächste,
+   statt mitten im Wort zu brechen. Ohne Schwelle (T128, 20.10.2026: in Sprachen
+   ohne Trennregeln brach „Ciem|ny", „Grup|a 1", „wcześni|ej"). */
 .wahl {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 4px;
   min-height: 52px;
   padding: 4px;
   border-radius: 26px;
   background: var(--feld);
 }
 
+/* Keine Trennung und kein `anywhere`: Beides senkte die Mindestbreite, und das
+   Wort bräche, statt dass der Knopf umrückt. Nur ein Wort, das allein nicht in
+   die Zeile passt, bricht noch (`max-width` begrenzt die Mindestbreite). */
 .wahl-knopf {
+  flex: 1 1 0;
+  max-width: 100%;
   min-height: 44px;
   padding: 4px 8px;
   border-radius: 22px;
   color: var(--text2);
   font-size: calc(14.5px * var(--fs));
   font-weight: 500;
-  /* Bei großer Schrift trennt ein langes Wort lieber, als hinauszuragen. */
-  -webkit-hyphens: auto;
-  hyphens: auto;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .wahl-knopf[aria-pressed='true'] {
@@ -187,8 +194,12 @@
   font-weight: 700;
 }
 
-/* Vier nebeneinander („Beginnen mit"): kleiner, damit „Gruppe 1" in eine Zeile passt. */
+/* Vier nebeneinander („Beginnen mit"): kleiner, damit „Gruppe 1" in eine Zeile
+   passt. Passen nicht alle einzeilig nebeneinander, rückt eine ganze
+   Möglichkeit um (`flex-basis: auto`) — sonst stand „Grupa 1" neben
+   „Grupa / 2" (Polnisch, 320 px, Stufe 1,45). */
 .wahl--klein .wahl-knopf {
+  flex-basis: auto;
   padding-inline: 4px;
   font-size: calc(13.5px * var(--fs));
 }

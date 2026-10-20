@@ -114,6 +114,10 @@ describe('Die Besuche als Zeilen (T121, `GGruppenbesuchePlanen`)', () => {
     expect(zeile(container).querySelector('.gb-gruppe-pille')?.textContent).toBe(
       demo.groups.find((g) => g.id === GRP)!.name,
     )
+    // Tag und Monat des Termins bleiben zusammen (T128: „السبت، 19|سبتمبر" bei 320 px).
+    const termin = zeile(container).querySelector('.gb-zeile-text .klein-text')?.textContent ?? ''
+    expect(termin).toContain(treffpunkt.time)
+    expect(termin).not.toMatch(/\p{Nd}\.? (?=\p{L})/u)
   })
 
   it('ohne Besuche sagt die Karte es', () => {

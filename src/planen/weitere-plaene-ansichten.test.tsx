@@ -125,13 +125,13 @@ describe('Ansehen', () => {
   it('„Deine Gruppe ist dran" nennt die Wochen der eigenen Gruppe', () => {
     const { container } = zeige(ProgrammScreen, { screen: 'programm' })
     expect(container.textContent).toContain(t.wpDeineGruppe)
-    expect([...container.querySelectorAll('.wp-chip')].map((c) => c.textContent)).toEqual(['14.–20. September'])
+    expect([...container.querySelectorAll('.wp-chip')].map((c) => c.textContent)).toEqual([zahlBinden('14.–20. September')])
   })
 
   it('die Woche der eigenen Gruppe ist hervorgehoben — und nichts ist zu bestätigen', () => {
     const { container } = zeige(ProgrammScreen, { screen: 'programm' })
     expect([...container.querySelectorAll('.wp-liste-zeile.is-eigen')].map((z) => z.textContent)).toEqual([
-      '14.–20. SeptemberGruppe 1',
+      `${zahlBinden('14.–20. September')}Gruppe 1`,
     ])
     expect(container.textContent).toContain(t.wpNurInfo)
     expect(knopf(container, t.bestaetigen)).toBeUndefined()
@@ -343,7 +343,7 @@ describe('Planen: ein Plan', () => {
       'Oktober 2026',
       'November 2026',
     ])
-    expect(container.querySelector('.wp-vorschau .karte-titel')?.textContent).toBe(`${t.wpVorschau} · 3 Monate`)
+    expect(container.querySelector('.wp-vorschau .karte-titel')?.textContent).toBe(`${t.wpVorschau} · ${zahlBinden('3 Monate')}`)
     expect(container.textContent).toContain(t.wpVerteilenHintMonat)
     expect(vorschau(container).map((z) => z.value)).toEqual(['', 'g2', ''])
     // Eine Zeile meint ihren Monat: gesetzt wird der Monatserste.
@@ -358,7 +358,7 @@ describe('Planen: ein Plan', () => {
       planEintraege: [{ id: 'a', planId: 'pl-s', datum: '2026-08-24', grp: 'g1' }],
     })
     oeffnen(container, 'Winterdienst')
-    expect(container.querySelector('.wp-vorschau .karte-titel')?.textContent).toBe(`${t.wpVorschau} · 13 Wochen`)
+    expect(container.querySelector('.wp-vorschau .karte-titel')?.textContent).toBe(`${t.wpVorschau} · ${zahlBinden('13 Wochen')}`)
     expect(container.querySelectorAll('.wp-vorschau-zeile')).toHaveLength(5)
     expect(container.querySelector('.wp-vorschau-zeile.is-vorbei')).toBeNull()
 

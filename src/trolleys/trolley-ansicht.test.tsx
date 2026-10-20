@@ -156,6 +156,14 @@ describe('am Handy: ein Tag mit einer Spalte je Trolley', () => {
     ])
   })
 
+  it('Name und Ort über den Spalten trennen nach der Sprache der Versammlung, nicht der des Lesers (T128)', () => {
+    // In einer englischen App mit deutscher Versammlung brach „Königreic|hssaal" ohne Strich.
+    const { container } = zeige({ lang: 'en', congLang: 'de' })
+    const koepfe = [...container.querySelectorAll('.trolley-tag-kopf .trolley-spaltenkopf')]
+    expect(koepfe).toHaveLength(3)
+    for (const kopf of koepfe) expect(kopf.getAttribute('lang')).toBe('de')
+  })
+
   it('wer einen Partner sucht, steht gestrichelt da', () => {
     const { container } = zeige()
     fireEvent.click(tag(container, 'Mittwoch'))
@@ -201,6 +209,19 @@ describe('am Desktop: die Woche als Raster, das Formular rechts', () => {
     expect(container.querySelectorAll('.trolley-woche-zeile')).toHaveLength(7)
     expect(container.querySelectorAll('.trolley-woche-kopf .trolley-spaltenkopf')).toHaveLength(3)
     expect(container.querySelector('aside.trolley-seite')).not.toBeNull()
+  })
+
+  it('Name und Ort über einer Spalte trennen nach der Sprache der Versammlung, der Satz drumherum nicht (T128)', () => {
+    // In einer englischen App brach „Königreichss|aal" ohne Strich.
+    const { container } = zeige({ lang: 'en', congLang: 'de' })
+    const koepfe = [...container.querySelectorAll('.trolley-woche-kopf .trolley-spaltenkopf')]
+    expect(koepfe).toHaveLength(3)
+    for (const kopf of koepfe) expect(kopf.querySelector('.trolley-spaltenkopf-name')?.getAttribute('lang')).toBe('de')
+    const abholen = koepfe.map((kopf) => kopf.querySelector('.klein-text')).find((x) => x !== null)!
+    const ort = abholen.querySelector('[lang]')!
+    expect(ort.getAttribute('lang')).toBe('de')
+    expect(abholen.textContent).toBe(fill(dict('en').trolleyAbholen, { ort: ort.textContent ?? '' }))
+    expect(abholen.getAttribute('lang')).toBeNull()
   })
 
   it('ohne Trolley-Recht kein Formular und keine freien Felder — aber der Hinweis, warum', () => {

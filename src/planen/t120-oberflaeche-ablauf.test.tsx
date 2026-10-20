@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { bestaetigen } from '../../tests/zwei-tipps'
 import type { AppState } from '../app/context'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **T120 an der Oberfläche — mit dem echten Reducer.**
@@ -83,7 +84,7 @@ describe('Weitere Pläne', () => {
     expect(container.querySelector('.spur [aria-current="step"]')?.textContent).toBe(t.wpEntwurf)
     // Ein Vierteljahr ab dieser Woche: dreizehn Wochen, noch ohne Gruppe —
     // die Vorschau zeigt die nächsten, „Alle anzeigen" alle.
-    expect(container.querySelector('.wp-vorschau .karte-titel')?.textContent).toBe(`${t.wpVorschau} · 13 Wochen`)
+    expect(container.querySelector('.wp-vorschau .karte-titel')?.textContent).toBe(`${t.wpVorschau} · ${zahlBinden('13 Wochen')}`)
     klick(container, t.alleAnzeigen)
     const wochen = [...container.querySelectorAll<HTMLSelectElement>('.wp-gruppe-wahl')]
     expect(wochen).toHaveLength(13)

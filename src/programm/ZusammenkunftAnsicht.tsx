@@ -2,10 +2,11 @@ import { Fragment, useId, type ReactNode } from 'react'
 import { useApp } from '../app/context'
 import { hatAuxKlasse } from '../data/aux-class'
 import { dauerAbtrennen, gehoertZu, istAusgefallen, MEETING_TABS, mtab } from '../data/helpers'
-import { deutschesDatum, meetingDate, meetingDateText, meetingTime } from '../data/meeting-dates'
+import { deutschesDatum, meetingDate, meetingTime } from '../data/meeting-dates'
 import type { HelperSlot, Meeting, MeetingKey, MeetingTab, PartItem, Person, Section, Service, Week } from '../data/types'
 import { abschnittZeilen, plaetzeVon } from './programm-zeilen'
-import { fill, platzName, useT } from '../i18n/useT'
+import { fill, platzName, programmTermin, useT } from '../i18n/useT'
+import { zahlBinden } from '../i18n/zahl-binden'
 import { datumsFormat, wochentagMitZahl } from '../components/datum-anzeige'
 import { AusfallBanner } from '../components/WeekBadges'
 import { PersonZeile } from './PersonZeile'
@@ -32,6 +33,7 @@ export function ZusammenkunftAnsicht({
   tab,
   me,
   tpw,
+  sprache,
   druck,
 }: {
   meeting: Meeting
@@ -42,14 +44,14 @@ export function ZusammenkunftAnsicht({
   /** Die eigene Person — für „Du". Entschieden wird über `gehoertZu`. */
   me: Person | undefined
   tpw: Uebersetzer
+  /** In welcher Sprache `tpw` schreibt (`ProgWeek.sprache`) — `lang` der Programmtexte. */
+  sprache: string
   druck?: ReactNode
 }) {
   const { state } = useApp()
   // Gerechneter Termin statt des rohen date-Felds: importierte Wochen tragen
   // dort nur die Wochenspanne („7.–13. September").
-  const termin = [tpw(meetingDateText(rawWeek, mtab(tab), state.congregation.times)), tpw(meeting.end)]
-    .filter(Boolean)
-    .join(' · ')
+  const termin = programmTermin(tpw, rawWeek, mtab(tab), state.congregation.times, meeting.end)
   return (
     <>
       {/* Fällt sie aus (T30), steht es hier mit dem Grund des Planers — die
@@ -57,11 +59,13 @@ export function ZusammenkunftAnsicht({
       <AusfallBanner week={rawWeek} tab={mtab(tab)} />
 
       <div className="prog-meta-row">
-        <p className="prog-meta">{termin}</p>
+        <p className="prog-meta" lang={sprache}>
+          {termin}
+        </p>
         {druck}
       </div>
 
-      <Programm meeting={meeting} rawMeeting={rawMeeting} me={me} tpw={tpw} ebene="h2" />
+      <Programm meeting={meeting} rawMeeting={rawMeeting} me={me} tpw={tpw} sprache={sprache} ebene="h2" />
       <Hilfsdienste helpers={meeting.helpers} me={me} />
       <ProgFooter ende={tpw(meeting.end)} />
     </>
@@ -83,17 +87,19 @@ export function BeideTage({
   rawWeek,
   me,
   tpw,
+  sprache,
 }: {
   week: Week
   rawWeek: Week
   me: Person | undefined
   tpw: Uebersetzer
+  sprache: string
 }) {
   return (
     <>
       <div className="prog-tage">
         {MEETING_TABS.map((key) => (
-          <Tag key={key} tab={key} week={week} rawWeek={rawWeek} me={me} tpw={tpw} />
+          <Tag key={key} tab={key} week={week} rawWeek={rawWeek} me={me} tpw={tpw} sprache={sprache} />
         ))}
         <HilfsdiensteTabelle week={week} rawWeek={rawWeek} me={me} />
       </div>
@@ -109,12 +115,14 @@ function Tag({
   rawWeek,
   me,
   tpw,
+  sprache,
 }: {
   tab: MeetingKey
   week: Week
   rawWeek: Week
   me: Person | undefined
   tpw: Uebersetzer
+  sprache: string
 }) {
   const { state } = useApp()
   const zeiten = state.congregation.times
@@ -124,13 +132,15 @@ function Tag({
   return (
     <section className="prog-tag" aria-labelledby={titelId}>
       <div className="prog-tag-kopf">
-        <h2 id={titelId} className="prog-tag-datum">
-          {tpw(deutschesDatum(meetingDate(rawWeek, tab, zeiten)))}
+        <h2 id={titelId} className="prog-tag-datum" lang={sprache}>
+          {zahlBinden(tpw(deutschesDatum(meetingDate(rawWeek, tab, zeiten))))}
         </h2>
-        <span className="prog-meta">{uhrzeit}</span>
+        <span className="prog-meta" lang={sprache}>
+          {uhrzeit}
+        </span>
       </div>
       <AusfallBanner week={rawWeek} tab={tab} />
-      <Programm meeting={meeting} rawMeeting={rawWeek[tab]} me={me} tpw={tpw} ebene="h3" />
+      <Programm meeting={meeting} rawMeeting={rawWeek[tab]} me={me} tpw={tpw} sprache={sprache} ebene="h3" />
     </section>
   )
 }
@@ -144,12 +154,14 @@ function Programm({
   rawMeeting,
   me,
   tpw,
+  sprache,
   ebene,
 }: {
   meeting: Meeting
   rawMeeting: Meeting
   me: Person | undefined
   tpw: Uebersetzer
+  sprache: string
   ebene: Ebene
 }) {
   const { t } = useT()
@@ -169,6 +181,7 @@ function Programm({
           mitAux={mitAux}
           me={me}
           tpw={tpw}
+          sprache={sprache}
           ebene={ebene}
         />
       ))}
@@ -215,6 +228,7 @@ function Abschnitt({
   mitAux,
   me,
   tpw,
+  sprache,
   ebene,
 }: {
   section: Section
@@ -222,6 +236,7 @@ function Abschnitt({
   mitAux: boolean
   me: Person | undefined
   tpw: Uebersetzer
+  sprache: string
   ebene: Ebene
 }) {
   const { lieder, zeilen } = abschnittZeilen(section, rawSection, tpw)
@@ -229,11 +244,13 @@ function Abschnitt({
   return (
     <section className="prog-abschnitt" data-farbe={section.farbe}>
       <div className="prog-abschnitt-kopf">
-        <Ueberschrift className="prog-abschnitt-name">{tpw(section.label)}</Ueberschrift>
+        <Ueberschrift className="prog-abschnitt-name" lang={sprache}>
+          {tpw(section.label)}
+        </Ueberschrift>
         {lieder.length > 0 && <span className="prog-lied">{lieder.join(' · ')}</span>}
       </div>
       {zeilen.map(({ item, title }) => (
-        <ProgramRow key={item.iid} item={item} title={title} mitAux={mitAux} me={me} tpw={tpw} />
+        <ProgramRow key={item.iid} item={item} title={title} mitAux={mitAux} me={me} tpw={tpw} sprache={sprache} />
       ))}
     </section>
   )
@@ -249,6 +266,7 @@ function ProgramRow({
   mitAux,
   me,
   tpw,
+  sprache,
 }: {
   /**
    * Der Programmpunkt — **ohne seine Kennung**, denn diese Zeile liest sie
@@ -263,6 +281,8 @@ function ProgramRow({
   mitAux: boolean // Zusammenkunft mit Zusätzlicher Klasse
   me: Person | undefined
   tpw: Uebersetzer
+  /** `lang` von Titel, Zusatz und Dauer — fehlt bei der Ratgeber-Zeile, die in der Sprache des Lesers steht. */
+  sprache?: string
 }) {
   const { t, tu } = useT()
   const zweiRaeume = mitAux && item.aux != null
@@ -271,14 +291,18 @@ function ProgramRow({
   const { dauer, rest } = dauerAbtrennen(item.meta ?? '', item.mins)
   return (
     <div className="prog-row">
-      <div className="prog-row-text">
+      <div className="prog-row-text" lang={sprache}>
         <div className="prog-title">
           {item.num != null && <span className="prog-num">{item.num} </span>}
           {title ?? tpw(item.title)}
         </div>
         {rest && <div className="prog-item-meta">{tpw(rest)}</div>}
       </div>
-      {dauer && <span className="prog-dauer">{tpw(dauer)}</span>}
+      {dauer && (
+        <span className="prog-dauer" lang={sprache}>
+          {tpw(dauer)}
+        </span>
+      )}
       <div className="prog-names">
         {/* Bei einer Zusätzlichen Klasse stehen beide Räume untereinander, jeder
             mit seiner Überschrift. Ohne Klasse bleibt es die schlichte Liste. */}

@@ -127,7 +127,10 @@
   padding-inline: 4px;
 }
 
+/* Die Liste misst sich selbst — in `em` ihrer Schrift, so wandert die Schwelle
+   der Spalten mit der Schriftstufe (siehe `@container` unten). */
 .personen-liste {
+  container: personen-liste / inline-size;
   padding: 4px 10px 4px 18px;
 }
 
@@ -172,15 +175,42 @@
   font-weight: 600;
 }
 
-/* Am Desktop in Spalten: der Name etwas breiter als Gruppe und Stand. */
+/* Am Desktop in Spalten: der Name etwas breiter als Gruppe und Stand. Keine
+   Zelle wird schmaler als ihr längstes Wort — reicht der Platz in einer Zeile
+   nicht, rückt die Zelle darunter, statt mitten im Wort zu brechen
+   („Dienstamtge|hilfe", „Zimmerman|n" bei 1180 px und Stufe 1,3; T128). */
+.personen-zellen {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 12px;
+  min-width: 0;
+}
+
 .personen-zelle {
   flex: 1 1 0;
-  min-width: 0;
-  overflow-wrap: anywhere;
+  max-width: 100%;
+  overflow-wrap: break-word;
 }
 
 .personen-zelle.personen-name {
   flex-grow: 1.2;
+}
+
+/* Zu schmal für drei Spalten (große Schrift neben Leiste und Person): der Name
+   über Gruppe und Stand, wie am Handy — in jeder Zeile gleich, nicht nur dort,
+   wo ein langes Wort steht. Gemessen bei 1180 px: Stufe 1 hält in Spalten,
+   ab 1,15 brach „Dienstamtgehi|lfe". */
+@container personen-liste (max-width: 24em) {
+  .personen-zelle.personen-name {
+    flex-basis: 100%;
+  }
+
+  /* Ohne Stand gehört die Zeile ganz der Gruppe und Rolle. */
+  .personen-zelle:empty {
+    display: none;
+  }
 }
 
 .personen-zeile > .zeichen {

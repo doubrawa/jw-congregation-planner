@@ -362,7 +362,7 @@ describe('Das Blatt zeigt, was kam (Entwurf `GImport`)', () => {
     holen(container)
     await geholt()
     const dialog = blatt()!
-    expect(dialog.querySelector('.holen-spanne')?.textContent).toBe('14.–20. September')
+    expect(dialog.querySelector('.holen-spanne')?.textContent).toBe(zahlBinden('14.–20. September'))
     expect(dialog.querySelector('.holen-kopf .klein-text')?.textContent).toBe(zahlBinden('Programmpunkte: 8'))
     const zeilen = [...dialog.querySelectorAll('.holen-abschnitt')].map((z) => [z.getAttribute('data-farbe'), z.textContent])
     expect(zeilen).toEqual([

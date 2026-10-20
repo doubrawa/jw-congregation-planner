@@ -16,6 +16,7 @@ import { rechteVon } from '../data/rechte'
 import type { S89Payload, SlotAssignment, SlotSelection, Week } from '../data/types'
 import { wochenHer } from '../i18n/relative-time'
 import { fill, platzName, useProgWeek, useT, zuteilungenText, type I18n } from '../i18n/useT'
+import { zahlBinden } from '../i18n/zahl-binden'
 import { kandidaten, type Candidate } from './kandidaten'
 import { auswahlImPlan } from './planen-raster'
 import { useAktuellerPlatz, type AktuellerPlatz } from './useAktuellerPlatz'
@@ -93,9 +94,9 @@ function SpaltenInhalt({ sel, onClose }: { sel: SlotSelection; onClose: () => vo
 }
 
 /** Der Abschnitt über dem Titel, in der Farbe des Arbeitshefts. */
-function AbschnittMarke({ name, farbe }: { name: string; farbe?: string }) {
+function AbschnittMarke({ name, farbe, sprache }: { name: string; farbe?: string; sprache?: string }) {
   return (
-    <div className="sheet-marke zuteilen-abschnitt" data-farbe={farbe}>
+    <div className="sheet-marke zuteilen-abschnitt" data-farbe={farbe} lang={sprache}>
       {name}
     </div>
   )
@@ -107,8 +108,8 @@ interface Kopf {
   titel: ReactNode
   /** Tag und Dauer, beim Treffpunkt Zeit und Ort. */
   sub: string
-  /** Der Abschnitt über dem Titel, in seiner Farbe — nur bei Programmpunkten. */
-  abschnitt?: { name: string; farbe?: string }
+  /** Der Abschnitt über dem Titel, in seiner Farbe und Sprache — nur bei Programmpunkten. */
+  abschnitt?: { name: string; farbe?: string; sprache?: string }
 }
 
 /**
@@ -120,7 +121,7 @@ function useZuteilenKopf(sel: SlotSelection): Kopf {
   const { state } = useApp()
   const { t, tp, tu } = useT()
   const rawWeek = state.weeks[sel.wi]
-  const { week, tpw } = useProgWeek(rawWeek)
+  const { week, tpw, sprache } = useProgWeek(rawWeek)
   const rolle = sel.labelRolle ? tu(sel.labelRolle) : ''
   const mitRolle = (titel: string) => [titel, rolle].filter(Boolean).join(' · ')
 
@@ -145,18 +146,23 @@ function useZuteilenKopf(sel: SlotSelection): Kopf {
   const section = week?.[sel.tab].sections[sel.si]
   const roh = section?.items[sel.ii]
   const item = roh && !isSong(roh) ? roh : undefined
-  const label = mitRolle(item ? tpw(item.title) : tp(sel.label))
+  const punkt = item ? tpw(item.title) : tp(sel.label)
+  const label = mitRolle(punkt)
   const dauer = item ? dauerAbtrennen(item.meta ?? '', item.mins).dauer : null
   return {
     label,
+    // Der Titel trennt (`.sheet-title`): der Punkt nach der Sprache des
+    // Programms, die Rolle dahinter — der Rest der Beschriftung — in der des
+    // Lesers (T128).
     titel: (
       <>
         {item?.num != null && <span className="prog-num">{item.num} </span>}
-        {label}
+        <span lang={item ? sprache : undefined}>{punkt}</span>
+        {label.slice(punkt.length)}
       </>
     ),
     sub: [datum, dauer ? tpw(dauer) : ''].filter(Boolean).join(' · '),
-    abschnitt: section ? { name: tpw(section.label), farbe: section.farbe } : undefined,
+    abschnitt: section ? { name: tpw(section.label), farbe: section.farbe, sprache } : undefined,
   }
 }
 
@@ -499,7 +505,7 @@ function kandidatInfo(
   if (cand.absent) {
     return { text: cand.abwesenheit ? abwesendText(cand.abwesenheit, t, lang) : t.abwesendChip, ton: 'problem' }
   }
-  if (cand.today.length > 0) return { text: `${t.sheetSchonHeute}: ${zuteilungenText(cand.today, i18n)}`, ton: 'doppelt' }
+  if (cand.today.length > 0) return { text: zahlBinden(`${t.sheetSchonHeute}: ${zuteilungenText(cand.today, i18n)}`), ton: 'doppelt' }
   const teile: string[] = []
   if (cand.zuletzt === null) teile.push(t.zuletztLange)
   else if (cand.zuletzt !== undefined) {

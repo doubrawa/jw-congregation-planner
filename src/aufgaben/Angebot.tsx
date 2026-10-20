@@ -1,5 +1,5 @@
 import type { MeetingAssignment, SubstituteReq } from '../data/types'
-import { aufgabenTp, useT, zuteilungenText } from '../i18n/useT'
+import { aufgabenTermin, useT, zuteilungenText } from '../i18n/useT'
 import './aufgaben.css'
 
 /**
@@ -43,7 +43,7 @@ export function GesuchText({ req }: { req: SubstituteReq }) {
   return (
     <AngebotText
       titel={i18n.tu(req.title)}
-      wann={`${aufgabenTp(req, i18n)(req.date)} · ${req.declinedBy}`}
+      wann={`${aufgabenTermin(req, i18n)} · ${req.declinedBy}`}
       schonHeute={req.schonHeute}
     />
   )

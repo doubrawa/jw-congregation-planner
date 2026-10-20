@@ -7,10 +7,9 @@ import { Zeichen } from '../bausteine/Zeichen'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { Sheet } from '../components/Sheet'
 import { dauerAbtrennen, istArt, istCoPunkt, isSong, liedImKopf } from '../data/helpers'
-import { meetingDateText } from '../data/meeting-dates'
 import { itemMinutes, LAC_MAX_MINUTEN, LAC_MIN_MINUTEN, movableIndices } from '../data/meeting-edit'
 import type { Meeting, PartItem, Section } from '../data/types'
-import { fill, useProgWeek, useT } from '../i18n/useT'
+import { fill, programmTermin, useProgWeek, useT } from '../i18n/useT'
 
 /** Welcher Punkt im Blatt darüber offen ist: ein bestehender (seine Kennung) oder ein neuer. */
 type Offen = { iid: string } | 'neu' | null
@@ -32,16 +31,14 @@ export function ProgrammBlatt({ onClose }: { onClose: () => void }) {
   const { state } = useApp()
   const { t } = useT()
   const rawWeek = state.weeks[state.week]
-  const { week, tpw } = useProgWeek(rawWeek)
+  const { week, tpw, sprache } = useProgWeek(rawWeek)
   const [offen, setOffen] = useState<Offen>(null)
   if (!rawWeek || !week) return null
 
   const meeting = week.mid
   const rawMeeting = rawWeek.mid
   const lacSi = rawMeeting.sections.findIndex((s) => istArt(s, 'lac'))
-  const termin = [tpw(meetingDateText(rawWeek, 'mid', state.congregation.times)), tpw(meeting.end)]
-    .filter(Boolean)
-    .join(' · ')
+  const termin = programmTermin(tpw, rawWeek, 'mid', state.congregation.times, meeting.end)
 
   return (
     <>
@@ -75,7 +72,14 @@ export function ProgrammBlatt({ onClose }: { onClose: () => void }) {
           offen === 'neu' ? (
             <NeuerPunktBlatt si={lacSi} onClose={() => setOffen(null)} />
           ) : (
-            <ProgrammpunktBlatt iid={offen.iid} meeting={rawMeeting} anzeige={meeting} tpw={tpw} onClose={() => setOffen(null)} />
+            <ProgrammpunktBlatt
+              iid={offen.iid}
+              meeting={rawMeeting}
+              anzeige={meeting}
+              tpw={tpw}
+              sprache={sprache}
+              onClose={() => setOffen(null)}
+            />
           ),
           document.body,
         )}
@@ -170,6 +174,7 @@ function ProgrammpunktBlatt({
   meeting,
   anzeige,
   tpw,
+  sprache,
   onClose,
 }: {
   iid: string
@@ -178,6 +183,8 @@ function ProgrammpunktBlatt({
   /** Dieselbe in der Programmsprache — für Titel und Ende. */
   anzeige: Meeting
   tpw: (s: string) => string
+  /** In welcher Sprache `tpw` schreibt (`ProgWeek.sprache`) — `lang` des Titels, der trennt (T128). */
+  sprache: string
   onClose: () => void
 }) {
   const { dispatch } = useApp()
@@ -211,7 +218,7 @@ function ProgrammpunktBlatt({
       variante="oben"
       label={titelText}
       eyebrow={<div className="sheet-marke">{tpw(anzeige.sections[si]?.label ?? '')}</div>}
-      title={titelText}
+      title={<span lang={sprache}>{titelText}</span>}
       onClose={onClose}
     >
       <div className="sheet-inhalt programmpunkt">

@@ -6,10 +6,9 @@
 /* Ein Besuch beim Planen: Woche, Termin und was nicht aufgeht, rechts die
    Gruppe und der Pfeil — ein Tipp öffnet ihn. */
 .gb-zeile {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto 24px;
+  display: flex;
   align-items: center;
-  column-gap: 10px;
+  gap: 10px;
   width: 100%;
   min-height: 68px;
   padding-block: 8px;
@@ -18,8 +17,23 @@
   text-align: start;
 }
 
-/* Vorbei: Er steht als Rückblick da, zum Ändern gibt es nichts mehr. */
+/* Passt die Gruppe nicht neben die Woche, rückt sie darunter — der Pfeil
+   bleibt rechts daneben. Tag und Monat der Woche sind gebunden (T128):
+   Schmaler als „20. September" wird der Text nicht. */
+.gb-zeile-inhalt {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-width: 0;
+}
+
+/* Vorbei: Er steht als Rückblick da, zum Ändern gibt es nichts mehr. Ohne Pfeil
+   hält die Zeile seinen Platz (24 px und der Abstand) frei — so steht die
+   Gruppe in der Flucht der übrigen. */
 .gb-zeile.is-vorbei {
+  padding-inline-end: 34px;
   opacity: 0.6;
 }
 
@@ -29,8 +43,14 @@
 
 .gb-zeile-text {
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
-  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+.gb-zeile-inhalt > .gb-gruppe-pille {
+  margin-inline-start: auto;
 }
 
 .gb-zeile-woche {

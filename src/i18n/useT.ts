@@ -12,8 +12,9 @@
 import { useMemo } from 'react'
 import { useAppSelector } from '../app/context'
 import { localizedWeek } from '../data/localize'
-import type { MeetingAssignment, Week } from '../data/types'
-import { APP_TO_JW, congAppCode } from './langs'
+import { meetingDateText } from '../data/meeting-dates'
+import type { MeetingAssignment, MeetingKey, MeetingTimes, Week } from '../data/types'
+import { APP_TO_JW, congAppCode, versammlungsSprache } from './langs'
 import { bibelbuecherGeladen, makeTr, ohneMarken } from './translate'
 import { dict, overlayGeneration, type Dict } from './ui'
 import { zahlBinden } from './zahl-binden'
@@ -56,12 +57,17 @@ export function aufgabenLabel(
 export function aufgabenZeilen(
   task: { title: string; rolle?: string; lesersprache?: boolean; s89?: { partner: string } | null },
   i18n: Pick<I18n, 't' | 'tp' | 'tu'>,
-): { titel: string; unter: string } {
+): {
+  titel: string
+  unter: string
+  /** Steht oben der Programmpunkt (Sprache des Programms, `aufgabenSprache`) — nicht die Rolle? */
+  titelIstPunkt: boolean
+} {
   const punkt = task.title ? aufgabenTp(task, i18n)(task.title) : ''
   const rolle = task.rolle ? i18n.tu(task.rolle) : ''
   const partner = task.s89?.partner ? `${i18n.t.s89Partner}: ${task.s89.partner}` : ''
-  if (!punkt) return { titel: rolle, unter: partner }
-  return { titel: punkt, unter: [rolle, partner].filter(Boolean).join(' · ') }
+  if (!punkt) return { titel: rolle, unter: partner, titelIstPunkt: false }
+  return { titel: punkt, unter: [rolle, partner].filter(Boolean).join(' · '), titelIstPunkt: true }
 }
 
 /**
@@ -78,6 +84,24 @@ export function aufgabenTp(
   i18n: Pick<I18n, 'tp' | 'tu'>,
 ): (s: string) => string {
   return task.lesersprache ? i18n.tu : i18n.tp
+}
+
+/**
+ * **Der Termin einer Aufgabe** („Dienstag, 22. September · 19:00") in der
+ * Sprache, in der `aufgabenTp` schreibt — Tag und Monat gebunden (T128: bei
+ * 320 px brach er auf dem Start und unter „Meine Aufgaben" „22.|September").
+ */
+export function aufgabenTermin(task: { date: string; lesersprache?: boolean }, i18n: Pick<I18n, 'tp' | 'tu'>): string {
+  return zahlBinden(aufgabenTp(task, i18n)(task.date))
+}
+
+/**
+ * In welcher Sprache `aufgabenTp` schreibt — `lang` des Titels einer Aufgabe,
+ * wo er trennt (`.sheet-title`, T128). Wie `ProgWeek.sprache`: mit
+ * Sprachvariante die des Lesers, sonst die der Versammlung.
+ */
+export function aufgabenSprache(task: { lesersprache?: boolean }, lang: string, congLang: string): string {
+  return task.lesersprache ? lang : versammlungsSprache(congLang)
 }
 
 /**
@@ -162,6 +186,13 @@ export interface ProgWeek {
   week: Week | undefined
   /** Programm-Übersetzer passend zur angezeigten Woche (statt `tp`). */
   tpw: (s: string) => string
+  /**
+   * In welcher Sprache `tpw` schreibt — für `lang` an den Programmtexten: Die
+   * Silbentrennung folgt `lang`, und in einer russischen App brach das deutsche
+   * „Versammlungsbibelstudium" mitten im Wort (T128). Auch Vorleseprogramme
+   * sprechen so die richtige Sprache.
+   */
+  sprache: string
 }
 
 /**
@@ -172,8 +203,39 @@ export interface ProgWeek {
  */
 export function useProgWeek(week: Week | undefined): ProgWeek {
   const progWeek = useProgWeeks()
+  const congLang = useAppSelector((s) => s.congLang)
   const { tp } = useT()
-  return useMemo(() => (week ? progWeek(week) : { week, tpw: tp }), [week, progWeek, tp])
+  return useMemo(
+    () => (week ? progWeek(week) : { week, tpw: tp, sprache: versammlungsSprache(congLang) }),
+    [week, progWeek, tp, congLang],
+  )
+}
+
+/**
+ * **Die Spanne einer Woche aus dem Arbeitsheft** („7.–13. September") in der
+ * Sprache ihres Programms — Tag und Monat bleiben zusammen (`zahlBinden`,
+ * T128: „7.–13.|September" in den Wochenkarten am Desktop). Die eine Stelle
+ * für jede Anzeige dieser Spanne; eine Spanne aus `Intl` liefert
+ * `wochenSpanne`, ebenfalls gebunden.
+ */
+export function programmSpanne(p: { week: Pick<Week, 'range'>; tpw: (s: string) => string }): string {
+  return zahlBinden(p.tpw(p.week.range))
+}
+
+/**
+ * **Der Termin einer Zusammenkunft** („Dienstag, 8. September · 19:00 · Ende
+ * ca. 20:45") in der Sprache ihres Programms, Tag und Monat gebunden (T128:
+ * „Dienstag, 8.|September" bei 320 px) — für das Programm und das Blatt
+ * „Programm". Gerechnet, nicht aus dem `date`-Feld (`meetingDateText`).
+ */
+export function programmTermin(
+  tpw: (s: string) => string,
+  rawWeek: Week,
+  tab: MeetingKey,
+  zeiten: MeetingTimes,
+  ende: string,
+): string {
+  return zahlBinden([tpw(meetingDateText(rawWeek, tab, zeiten)), tpw(ende)].filter(Boolean).join(' · '))
 }
 
 /**
@@ -185,18 +247,19 @@ export function useProgWeek(week: Week | undefined): ProgWeek {
  * App mit deutscher Versammlung las auf dem Start „14.–20. September" und nach
  * dem Tippen „September 14-20". Eine Regel, zwei Aufrufer.
  */
-export function useProgWeeks(): (week: Week) => { week: Week; tpw: (s: string) => string } {
+export function useProgWeeks(): (week: Week) => ProgWeek & { week: Week } {
   const lang = useAppSelector((s) => s.lang)
   const congLang = useAppSelector((s) => s.congLang)
   const { tp, tu } = useT()
   return useMemo(() => {
     const congCode = congAppCode(congLang)
     const jwCode = lang !== congCode ? APP_TO_JW[lang] : undefined
+    const sprache = versammlungsSprache(congLang)
     return (week: Week) => {
       const merged = localizedWeek(week, jwCode)
       // Mit Variante stehen die Texte in der App-Sprache — ihr Übersetzer ist
       // `tu`, derselbe, der auch Namen und Rollen übersetzt.
-      return merged === week ? { week, tpw: tp } : { week: merged, tpw: tu }
+      return merged === week ? { week, tpw: tp, sprache } : { week: merged, tpw: tu, sprache: lang }
     }
   }, [lang, congLang, tp, tu])
 }

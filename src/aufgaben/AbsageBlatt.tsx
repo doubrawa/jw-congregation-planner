@@ -7,7 +7,7 @@ import { datumsFormat } from '../components/datum-anzeige'
 import { fromIso } from '../data/meeting-dates'
 import type { Absence, MyTask } from '../data/types'
 import type { Dict } from '../i18n/ui'
-import { aufgabenLabel, aufgabenTp, useT } from '../i18n/useT'
+import { aufgabenLabel, aufgabenTermin, useT } from '../i18n/useT'
 import { absageArt, aufgabeTag, type AbsageArt } from './aufgabe-anzeige'
 import './aufgaben.css'
 
@@ -93,7 +93,7 @@ export function AbsageBlatt({ task }: { task: MyTask }) {
     <Sheet
       variante="oben"
       label={t.absageFrage}
-      eyebrow={<div className="sheet-marke">{`${aufgabenLabel(task, i18n)} · ${aufgabenTp(task, i18n)(task.date)}`}</div>}
+      eyebrow={<div className="sheet-marke">{`${aufgabenLabel(task, i18n)} · ${aufgabenTermin(task, i18n)}`}</div>}
       title={t.absageFrage}
       onClose={() => dispatch({ type: 'closeAbsage' })}
     >

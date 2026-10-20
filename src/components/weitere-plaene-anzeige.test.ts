@@ -49,11 +49,11 @@ describe('Was die Liste unter dem Namen eines Plans sagt', () => {
 
 describe('Wie viele Wochen oder Monate die Vorschau nennt', () => {
   it('in Worten der Sprache, mit ihrer Mehrzahl — die kennt Intl', () => {
-    expect(spannenAnzahl({}, 13, 'de')).toBe('13 Wochen')
-    expect(spannenAnzahl({ takt: 'monat' }, 1, 'de')).toBe('1 Monat')
-    expect(spannenAnzahl({ takt: 'monat' }, 8, 'en')).toBe('8 months')
+    expect(spannenAnzahl({}, 13, 'de')).toBe(zahlBinden('13 Wochen'))
+    expect(spannenAnzahl({ takt: 'monat' }, 1, 'de')).toBe(zahlBinden('1 Monat'))
+    expect(spannenAnzahl({ takt: 'monat' }, 8, 'en')).toBe(zahlBinden('8 months'))
     // Slawische Sprachen haben eine eigene Form für 2 bis 4.
-    expect(spannenAnzahl({}, 2, 'pl')).toBe('2 tygodnie')
-    expect(spannenAnzahl({}, 5, 'pl')).toBe('5 tygodni')
+    expect(spannenAnzahl({}, 2, 'pl')).toBe(zahlBinden('2 tygodnie'))
+    expect(spannenAnzahl({}, 5, 'pl')).toBe(zahlBinden('5 tygodni'))
   })
 })

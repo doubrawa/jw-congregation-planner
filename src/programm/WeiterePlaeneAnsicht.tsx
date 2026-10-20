@@ -91,7 +91,7 @@ function PlanAnsicht({ plan, tag }: { plan: WeitererPlan; tag: string }) {
             return (
               <div key={spanne} className={meineGruppe && grp === meineGruppe ? 'wp-liste-zeile is-eigen' : 'wp-liste-zeile'}>
                 <span className="wp-liste-punkt" aria-hidden="true" />
-                <span>{spannenText(plan, spanne, state.lang)}</span>
+                <span className="wp-liste-woche">{spannenText(plan, spanne, state.lang)}</span>
                 <span className="wp-liste-wer">{gruppenName(grp, state.groups, tu) || t.offenDash}</span>
               </div>
             )

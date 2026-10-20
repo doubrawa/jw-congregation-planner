@@ -3,7 +3,7 @@ import { isoVonKalendertag } from '../data/meeting-dates'
 import type { Lang, MyTask } from '../data/types'
 import { LOCALES } from '../i18n/langs'
 import { relativeDayLabel } from '../i18n/relative-time'
-import { aufgabenTp, type I18n } from '../i18n/useT'
+import { aufgabenTermin, type I18n } from '../i18n/useT'
 
 /**
  * Wie eine eigene Aufgabe dasteht (T121) — auf dem Start, unter „Meine
@@ -15,7 +15,7 @@ import { aufgabenTp, type I18n } from '../i18n/useT'
  * 19:00". Ohne Kalendertag (Vorlagen) nur der Termin.
  */
 export function aufgabeWann(task: MyTask, lang: Lang, i18n: Pick<I18n, 'tp' | 'tu'>): string {
-  const datum = aufgabenTp(task, i18n)(task.date)
+  const datum = aufgabenTermin(task, i18n)
   const abstand = relativeDayLabel(task.at, lang)
   if (!abstand) return datum
   // „morgen" steht hier am Satzanfang. Wo eine Schrift keine Großbuchstaben

@@ -7,7 +7,8 @@ import { Zeichen } from '../bausteine/Zeichen'
 import { fromIso } from '../data/meeting-dates'
 import { LAGE_DER_ZUSAGE } from '../data/saal'
 import { eigeneTermine } from '../data/trolleys'
-import { aufgabenLabel, aufgabenTp, useT } from '../i18n/useT'
+import { aufgabenLabel, aufgabenTermin, useT } from '../i18n/useT'
+import { zahlBinden } from '../i18n/zahl-binden'
 import { mitWem, tagKurz, trolleyNameVon, zeitSpanne, zuDenTrolleys } from '../trolleys/trolley-anzeige'
 import { aufgabeWann } from './aufgabe-anzeige'
 import { AngebotText, GesuchText } from './Angebot'
@@ -58,7 +59,7 @@ export function AufgabenScreen() {
         <h1 className="seitentitel seitentitel--gross">{t.navAufgabenLong}</h1>
         {zuBestaetigen > 0 && (
           <div className="aufgaben-zusage">
-            <span className="klein-text">{`${t.dashZuBest}: ${zuBestaetigen}`}</span>
+            <span className="klein-text">{zahlBinden(`${t.dashZuBest}: ${zuBestaetigen}`)}</span>
             {zuBestaetigen > 1 && (
               <button type="button" className="knopf-pille" onClick={() => dispatch({ type: 'confirmAll' })}>
                 {t.alleBestaetigen}
@@ -141,7 +142,7 @@ export function AufgabenScreen() {
                 <Punkt art="offen" />
                 <AngebotText
                   titel={aufgabenLabel(platz, i18n)}
-                  wann={aufgabenTp(platz, i18n)(platz.date)}
+                  wann={aufgabenTermin(platz, i18n)}
                   schonHeute={platz.schonHeute}
                 />
                 <button type="button" className="knopf-pille" onClick={() => dispatch({ type: 'platzUebernehmen', key: platz.key })}>

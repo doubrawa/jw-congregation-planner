@@ -22,32 +22,32 @@ import { cssDateien, deklarationen } from './css-quellen'
 const EINSTELLUNGEN = 'einstellungen/einstellungen.css'
 const SCHMAL = '@container (max-width: 15em)'
 
+/** Wo ein langes Wort trennt, statt hinauszuragen: [Datei, Selektor]. */
+const TRENNT = [
+  ['bausteine/bausteine.css', '.seitentitel'],
+  ['bausteine/bausteine.css', '.schalter-text'],
+  ['components/overlays.css', '.sheet-title'],
+  ['app/menue.css', '.menue-eintrag-text'],
+  [EINSTELLUNGEN, '.einst-zeile-name'],
+  ['bausteine/bausteine.css', '.spur-name'],
+  // Die Spalte ist so breit wie die des Plans darunter: „Königreichssaal" ragte bei 320 px hinaus.
+  ['trolleys/trolleys.css', '.trolley-spaltenkopf > *'],
+  // Zwei Reiter fest nebeneinander: „воскресен|ье", „dimanch|e" bei 320 px.
+  ['components/components.css', '.meeting-tab-name'],
+  // „вспомогательными" ragte bei 320 px und Stufe 1,45 aus dem Hinweis.
+  ['auswertung/auswertung.css', '.aw-hinweis-detail'],
+] as const
+
 describe('Bei großer Schrift bekommt ein langes Wort Platz oder trennt', () => {
-  it.each([
-    ['bausteine/bausteine.css', '.seitentitel'],
-    ['bausteine/bausteine.css', '.schalter-text'],
-    ['components/overlays.css', '.sheet-title'],
-    ['app/menue.css', '.menue-eintrag-text'],
-    [EINSTELLUNGEN, '.einst-zeile-name'],
-    ['bausteine/bausteine.css', '.spur-name'],
-  ])('%s %s trennt nach den Regeln der Sprache, statt hinauszuragen', (datei, selektor) => {
+  it.each(TRENNT)('%s %s trennt nach den Regeln der Sprache, statt hinauszuragen', (datei, selektor) => {
     const rumpf = deklarationen(datei, selektor)
     expect(rumpf).toMatch(/^\s*hyphens:\s*auto/m)
     // Safari trennt nur mit Präfix.
     expect(rumpf).toMatch(/-webkit-hyphens:\s*auto/)
   })
 
-  it('… und bricht ohne Trennregeln der Sprache notfalls um, statt hinauszuragen', () => {
-    for (const [datei, selektor] of [
-      ['bausteine/bausteine.css', '.seitentitel'],
-      ['bausteine/bausteine.css', '.schalter-text'],
-      ['components/overlays.css', '.sheet-title'],
-      ['app/menue.css', '.menue-eintrag-text'],
-      [EINSTELLUNGEN, '.einst-zeile-name'],
-      ['bausteine/bausteine.css', '.spur-name'],
-    ] as const) {
-      expect(deklarationen(datei, selektor), selektor).toMatch(/overflow-wrap:\s*(break-word|anywhere)/)
-    }
+  it.each(TRENNT)('%s %s bricht ohne Trennregeln der Sprache notfalls um, statt hinauszuragen', (datei, selektor) => {
+    expect(deklarationen(datei, selektor)).toMatch(/overflow-wrap:\s*(break-word|anywhere)/)
   })
 
   it('steht ein Knopf neben dem Seitentitel, rückt der Knopf in die nächste Zeile, bevor der Titel trennt', () => {
@@ -132,6 +132,112 @@ describe('Was neben einem Namen steht, rückt darunter, statt ihn zu zerbrechen'
     expect(deklarationen('app/shell.css', '.offline-banner-text')).toMatch(/flex:\s*1 1 10em/)
     expect(deklarationen('app/shell.css', '.offline-banner-inhalt > .knopf-pille')).toMatch(/margin-inline-start:\s*auto/)
   })
+
+  it('in der Wahl rückt eine ganze Möglichkeit um — „Ciem|ny", „Grup|a 1", „wcześni|ej" brachen bei 320 px', () => {
+    const B = 'bausteine/bausteine.css'
+    const wahl = deklarationen(B, '.wahl')
+    expect(wahl).toMatch(/display:\s*flex/)
+    expect(wahl).toMatch(/flex-wrap:\s*wrap/)
+    const knopf = deklarationen(B, '.wahl-knopf')
+    expect(knopf).toMatch(/flex:\s*1 1 0/)
+    // Trennung und `anywhere` senkten die Mindestbreite: Das Wort bräche, statt dass der Knopf umrückt.
+    expect(knopf).not.toMatch(/min-width:\s*0|hyphens|anywhere/)
+    expect(knopf).toMatch(/max-width:\s*100%/)
+    // Vier kleine nebeneinander: Eine ganze Möglichkeit rückt um — nicht „Grupa / 2" neben „Grupa 1".
+    expect(deklarationen(B, '.wahl--klein .wahl-knopf')).toMatch(/flex-basis:\s*auto/)
+  })
+
+  it('in den Kennzahlen der Auswertung rückt eine Zahl um — „Zuteilung|en" brach bei 320 px', () => {
+    const A = 'auswertung/auswertung.css'
+    expect(deklarationen(A, '.aw-kennzahlen')).toMatch(/flex-wrap:\s*wrap/)
+    const kennzahl = deklarationen(A, '.aw-kennzahl')
+    expect(kennzahl).toMatch(/flex:\s*1 1 0/)
+    expect(kennzahl).not.toMatch(/min-width:\s*0/)
+    expect(deklarationen(A, '.aw-kennzahl-text')).not.toMatch(/anywhere/)
+  })
+
+  it('in der Personenliste am Desktop rückt eine Zelle darunter — „Dienstamtgehi|lfe" brach bei 1180 px', () => {
+    const P = 'personen/personen.css'
+    expect(deklarationen(P, '.personen-zellen')).toMatch(/flex-wrap:\s*wrap/)
+    const zelle = deklarationen(P, '.personen-zelle')
+    expect(zelle).toMatch(/flex:\s*1 1 0/)
+    expect(zelle).not.toMatch(/min-width:\s*0|anywhere/)
+  })
+
+  /*
+   * Text und Daneben in einer umbrechenden Zeile. Seit Tag und Monat gebunden
+   * sind (`wochenSpanne`, `tageSpanne`), wird eine Spanne nicht schmaler als
+   * „20. September"; in Zeilen, deren Text auf null schrumpfen durfte, ragte sie
+   * bei 320 px hinaus — dort rückt jetzt das Daneben um.
+   */
+  it.each([
+    // In der Spalte der Wochen ragte „Programme pas encore récupéré" aus der Karte „Holen".
+    ['planen/planen.css', '.holen-karte', '.holen-karte-text', '.holen-karte > .knopf-pille'],
+    ['components/gruppenbesuche.css', '.gb-zeile-inhalt', '.gb-zeile-text', '.gb-zeile-inhalt > .gb-gruppe-pille'],
+    ['programm/programm.css', '.gb-liste-zeile', '.gb-liste-woche', '.gb-liste-gruppe'],
+    ['components/components.css', '.abw-zeile', '.abw-zeile-text', '.abw-entfernen'],
+    ['components/weitere-plaene.css', '.wp-vorschau-zeile', '.wp-vorschau-wann', '.wp-vorschau-zeile > .wp-gruppe-wahl'],
+    ['components/weitere-plaene.css', '.wp-liste-zeile', '.wp-liste-woche', '.wp-liste-wer'],
+    // Neben „Присоединиться" blieben bei 320 px rund 60 px für Tag und Zeit.
+    ['trolleys/trolleys.css', '.trolley-zeile', '.trolley-zeile-text', '.trolley-zeile > .zeichen'],
+    // Neben dem 44-px-Pfeil ragte unter „Meine Aufgaben" „współpracownik:" 36 px hinaus.
+    ['aufgaben/aufgaben.css', '.aufgaben-zeile', '.aufgaben-zeile > .angebot-text', '.aufgaben-zeile > :last-child'],
+  ])('%s %s: passt das Daneben nicht neben den Text, rückt es um', (datei, zeile, text, daneben) => {
+    expect(deklarationen(datei, zeile)).toMatch(/flex-wrap:\s*wrap/)
+    const spanne = deklarationen(datei, text)
+    expect(spanne).toMatch(/flex:\s*1 1 0/)
+    expect(spanne).not.toMatch(/min-width:\s*0/)
+    expect(deklarationen(datei, daneben)).toMatch(/margin-inline-start:\s*auto/)
+  })
+
+  it('im Blatt „Holen" rückt neben der gebundenen Spanne die Zahl der Punkte darunter', () => {
+    // Eine Regel für Kopf, Abschnitt und Sprachen; `deklarationen` findet sie am letzten Selektor.
+    expect(deklarationen('planen/planen.css', '.holen-sprachen')).toMatch(/flex-wrap:\s*wrap/)
+  })
+
+  it('beim Planen der Gruppenbesuche bleibt der Pfeil rechts — er bricht nicht mit um', () => {
+    // Zeile und Inhalt sind zweierlei: Nur der Inhalt (Text und Gruppe) bricht um.
+    expect(deklarationen('components/gruppenbesuche.css', '.gb-zeile')).not.toMatch(/flex-wrap/)
+    // Ein vergangener Besuch hat keinen Pfeil; seine Gruppe steht trotzdem in der
+    // Flucht der übrigen (24 px Pfeil und 10 px Abstand).
+    expect(deklarationen('components/gruppenbesuche.css', '.gb-zeile.is-vorbei')).toMatch(/padding-inline-end:\s*34px/)
+  })
+
+  it('unter „Meine Aufgaben" schrumpft der Text nicht unter sein längstes Wort — auch bei den Angeboten', () => {
+    // `.angebot-text` setzt sonst `min-width: 0`; in der Zeile gilt die Mindestbreite des Inhalts.
+    expect(deklarationen('aufgaben/aufgaben.css', '.aufgaben-zeile > .angebot-text')).toMatch(/min-width:\s*auto/)
+  })
+})
+
+/*
+ * Platz mit Schwelle: Wo eine Zeile aus Spalten besteht, misst sie sich selbst
+ * (`container-type`) — in `em`, so wandert die Schwelle mit der Schriftstufe.
+ * Die Schwellen sind im echten Chrome gemessen (20.10.2026); die Begründung
+ * steht am CSS.
+ */
+describe('Wird eine Zeile für die Schrift zu schmal, stehen ihre Teile untereinander', () => {
+  it('Personenliste: unter 24 em steht der Name über Gruppe und Stand', () => {
+    const P = 'personen/personen.css'
+    expect(deklarationen(P, '.personen-liste')).toMatch(/container:\s*personen-liste \/ inline-size/)
+    expect(deklarationen(P, '.personen-zelle.personen-name', '@container personen-liste (max-width: 24em)')).toMatch(
+      /flex-basis:\s*100%/,
+    )
+  })
+
+  it('Hilfsdienste im Programm: Die Spalte des Dienstes wächst mit der Schrift, unter 15 em steht er über den Namen', () => {
+    const P = 'programm/programm.css'
+    const zeile = deklarationen(P, '.prog-dienst')
+    expect(zeile).toMatch(/container-type:\s*inline-size/)
+    // Mit fester Spalte brach bei 768 px und Stufe 1,3 „Eingangsordne|r".
+    expect(zeile).toMatch(/grid-template-columns:\s*minmax\(0, calc\(132px \* var\(--fs\)\)\) minmax\(0, 1fr\)/)
+    expect(deklarationen(P, '.prog-dienst-wer', '@container (max-width: 15em)')).toMatch(/grid-column:\s*1 \/ -1/)
+  })
+
+  it('Kacheln der Auswertung: unter 20 em steht jede allein — „Однообразное распределение" ragte bei 320 px hinaus', () => {
+    const A = 'auswertung/auswertung.css'
+    expect(deklarationen(A, '.aw-kacheln')).toMatch(/container-type:\s*inline-size/)
+    expect(deklarationen(A, '.aw-kachel', '@container (max-width: 20em)')).toMatch(/grid-column:\s*1 \/ -1/)
+  })
 })
 
 describe('Ein Wort ohne Trennregeln seiner Sprache bekommt eine Trennstelle', () => {
@@ -147,5 +253,9 @@ describe('Ein Wort ohne Trennregeln seiner Sprache bekommt eine Trennstelle', ()
 
   it('Polnisch: „Przypomnienia" brach als Titel bei 320 px „Przypomnieni|a" — es trennt nach „Przypo"', () => {
     expect(dict('pl').erinnerungenCard).toBe(`Przypo${SHY}mnienia`)
+  })
+
+  it('Polnisch: „współpracownik" ragte als Titel der Karte bei 320 px über den Rand — es trennt nach „współ"', () => {
+    expect(dict('pl').trolleyPartnerGesucht).toBe(`Potrzebny współ${SHY}pracownik`)
   })
 })

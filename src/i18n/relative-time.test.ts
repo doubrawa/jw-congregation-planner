@@ -2,15 +2,18 @@ import { describe, expect, it } from 'vitest'
 import { APP_LANGS, LOCALES } from './langs'
 import { istVorbei } from '../data/meeting-dates'
 import { relativeDayLabel, wochenHer } from './relative-time'
+import { NBSP, zahlBinden } from './zahl-binden'
 
 // Fester „Jetzt"-Zeitpunkt, damit die Tage-Differenz deterministisch ist.
 const NOW = Date.parse('2026-09-07') // Montag, 00:00 UTC
 const day = 864e5
 
 describe('relativeDayLabel', () => {
-  it('formatiert künftige Tage in der App-Sprache', () => {
-    expect(relativeDayLabel(NOW + 4 * day, 'de', NOW)).toBe('in 4 Tagen')
-    expect(relativeDayLabel(NOW + 4 * day, 'en', NOW)).toBe('in 4 days')
+  it('formatiert künftige Tage in der App-Sprache — Zahl und Wort gebunden (T128)', () => {
+    expect(relativeDayLabel(NOW + 4 * day, 'de', NOW)).toBe(zahlBinden('in 4 Tagen'))
+    expect(relativeDayLabel(NOW + 4 * day, 'en', NOW)).toBe(zahlBinden('in 4 days'))
+    // Bei 320 px brach unter „Meine Aufgaben" „Dentro de 15|días".
+    expect(relativeDayLabel(NOW + 15 * day, 'es', NOW)).toBe(`dentro de 15${NBSP}días`)
   })
 
   it('nutzt "morgen"/"heute" statt "in 1 Tagen" (numeric: auto, korrekt)', () => {
@@ -27,7 +30,7 @@ describe('relativeDayLabel', () => {
   })
 
   it('vergangene Aufgaben → "vor N Tagen"', () => {
-    expect(relativeDayLabel(NOW - 3 * day, 'de', NOW)).toBe('vor 3 Tagen')
+    expect(relativeDayLabel(NOW - 3 * day, 'de', NOW)).toBe(zahlBinden('vor 3 Tagen'))
   })
 
   /*
@@ -61,7 +64,7 @@ describe('relativeDayLabel', () => {
 
   it('vier Tage vorher um 00:30 Ortszeit sind es vier, nicht fünf', () => {
     const jetzt = new Date(2026, 8, 4, 0, 30).getTime()
-    expect(relativeDayLabel(TERMIN, 'de', jetzt)).toBe('in 4 Tagen')
+    expect(relativeDayLabel(TERMIN, 'de', jetzt)).toBe(zahlBinden('in 4 Tagen'))
   })
 
   it('am Tag danach um 00:30 Ortszeit ist er vorbei — beide Auskünfte einig', () => {
@@ -79,12 +82,12 @@ describe('relativeDayLabel', () => {
 describe('wochenHer', () => {
   it('nennt die Wochen in der App-Sprache — immer mit Zahl, auch bei einer', () => {
     // „zuletzt letzte Woche" sagt niemand; `numeric: 'auto'` schriebe es.
-    expect(wochenHer(1, 'de')).toBe('vor 1 Woche')
-    expect(wochenHer(12, 'de')).toBe('vor 12 Wochen')
+    expect(wochenHer(1, 'de')).toBe(zahlBinden('vor 1 Woche'))
+    expect(wochenHer(12, 'de')).toBe(zahlBinden('vor 12 Wochen'))
   })
 
   it('nutzt die jeweilige Locale', () => {
-    expect(wochenHer(2, 'en')).toBe('2 weeks ago')
+    expect(wochenHer(2, 'en')).toBe(zahlBinden('2 weeks ago'))
   })
 })
 
@@ -191,7 +194,8 @@ describe('Jede App-Sprache bekommt ihren eigenen Chip', () => {
     const gezaehlt = new Intl.RelativeTimeFormat(locale, { numeric: 'always' })
     for (const versatz of [0, 1, -1]) {
       const auto = relativeDayLabel(NOW + versatz * day, code, NOW)
-      expect(auto, `${code}/${versatz}`).not.toBe(gezaehlt.format(versatz, 'day'))
+      // Gebunden verglichen: Sonst unterschiede schon das geschützte Leerzeichen.
+      expect(auto, `${code}/${versatz}`).not.toBe(zahlBinden(gezaehlt.format(versatz, 'day')))
     }
   })
 

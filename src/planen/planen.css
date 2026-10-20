@@ -1477,12 +1477,16 @@ body:has(.planen-leiste) .toast {
   padding-block-start: 12px;
 }
 
-/* Die nächste Woche ohne Programm: gestrichelt, rechts „Holen". */
+/* Die nächste Woche ohne Programm: gestrichelt, rechts „Holen". Passen Text
+   und Knopf nicht nebeneinander, rückt der Knopf darunter (rechtsbündig) —
+   ohne Schwelle, denn der Text wird nicht schmaler als sein längstes Wort. Als
+   Raster ragte in der Spalte der Wochen bei Stufe 1,3 „Programme pas encore
+   récupéré" aus dem Kasten (T128). */
 .holen-karte {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  column-gap: 10px;
+  gap: 8px 10px;
   padding: 14px 10px 14px 18px;
   border: 1.5px dashed var(--umriss);
   border-radius: 24px;
@@ -1490,8 +1494,14 @@ body:has(.planen-leiste) .toast {
 
 .holen-karte-text {
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
-  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+.holen-karte > .knopf-pille {
+  margin-inline-start: auto;
 }
 
 .holen-karte-spanne {
@@ -1592,13 +1602,17 @@ body:has(.planen-leiste) .toast {
   background: var(--feld);
 }
 
+/* Passen beide Teile nicht nebeneinander, rückt der zweite darunter — die
+   Spanne im Kopf ist gebunden (T128) und wird nicht schmaler als
+   „20. September". */
 .holen-kopf,
 .holen-abschnitt,
 .holen-sprachen {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 4px 12px;
   min-height: 46px;
 }
 

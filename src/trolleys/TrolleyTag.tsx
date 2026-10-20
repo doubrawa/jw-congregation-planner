@@ -3,6 +3,7 @@ import { useApp } from '../app/context'
 import { datumsFormat } from '../components/datum-anzeige'
 import { fromIso } from '../data/meeting-dates'
 import type { Trolley, TrolleyTermin } from '../data/types'
+import { versammlungsSprache } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import {
   anteilVon,
@@ -86,6 +87,7 @@ export function TrolleyTag({
   const { state } = useApp()
   const { t } = useT()
   const titel = tagLang(datum, state.lang)
+  const sprache = versammlungsSprache(state.congLang)
   const amTag = termine.filter((x) => x.datum === datum)
   const frei = (trolleyId: string) => (e: MouseEvent<HTMLButtonElement>) => {
     const feld = e.currentTarget.getBoundingClientRect()
@@ -96,8 +98,10 @@ export function TrolleyTag({
       <h2 className="karte-titel">{titel}</h2>
       <div className="trolley-tag-kopf" style={{ '--trolleys': trolleys.length } as CSSProperties}>
         <span />
+        {/* Name und Ort trägt die Versammlung ein: Getrennt wird nach ihrer
+            Sprache, nicht nach der des Lesers (T128). */}
         {trolleys.map((tr) => (
-          <span key={tr.id} className="trolley-spaltenkopf">
+          <span key={tr.id} className="trolley-spaltenkopf" lang={sprache}>
             <span className="trolley-spaltenkopf-name" dir="auto">
               {tr.name}
             </span>

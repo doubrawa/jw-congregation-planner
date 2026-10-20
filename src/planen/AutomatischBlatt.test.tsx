@@ -12,6 +12,7 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import type { Section, Service, Week } from '../data/types'
 import { dict } from '../i18n/ui'
+import { zahlBinden } from '../i18n/zahl-binden'
 import { AutomatischBlatt } from './AutomatischBlatt'
 
 /**
@@ -93,7 +94,7 @@ describe('Was das Blatt zählt', () => {
     zeige()
     expect(blatt().getAttribute('aria-label')).toBe(t.autoTitel)
     expect(bereiche().map((b) => b.querySelector('.auto-bereich-name')?.textContent)).toEqual([t.autoAufgaben, t.hilfsdienste])
-    expect(stand()).toEqual([`${t.saalBesetzung}: 1/2`, `${t.saalBesetzung}: 0/2`])
+    expect(stand()).toEqual([`${t.saalBesetzung}: 1/2`, `${t.saalBesetzung}: 0/2`].map(zahlBinden))
   })
 
   it('der Tag heißt, wie er heißt — „Nur Dienstag"', () => {
@@ -104,13 +105,13 @@ describe('Was das Blatt zählt', () => {
   it('„Ganze Woche" zählt beide Zusammenkünfte', () => {
     zeige()
     fireEvent.click(knopf(t.ganzeWoche))
-    expect(stand()).toEqual([`${t.saalBesetzung}: 1/4`, `${t.saalBesetzung}: 1/4`])
+    expect(stand()).toEqual([`${t.saalBesetzung}: 1/4`, `${t.saalBesetzung}: 1/4`].map(zahlBinden))
   })
 
   it('eine ausgefallene Zusammenkunft zählt in der ganzen Woche nicht mit (T30)', () => {
     zeige({ weeks: [woche({ dev: { we: { cancelled: true } } })] })
     fireEvent.click(knopf(t.ganzeWoche))
-    expect(stand()).toEqual([`${t.saalBesetzung}: 1/2`, `${t.saalBesetzung}: 0/2`])
+    expect(stand()).toEqual([`${t.saalBesetzung}: 1/2`, `${t.saalBesetzung}: 0/2`].map(zahlBinden))
   })
 })
 

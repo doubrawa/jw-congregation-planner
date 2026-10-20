@@ -15,6 +15,7 @@ import { APP_TO_JW } from '../i18n/langs'
 import { makeTr } from '../i18n/translate'
 import { dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
+import { zahlBinden } from '../i18n/zahl-binden'
 import type {
   Absence,
   ConfirmationMap,
@@ -196,7 +197,8 @@ describe('Die nächste Aufgabe steht groß oben', () => {
     expect(container.querySelector('.aufgabe-unter')?.textContent).toBe('Schüler')
     const wann = container.querySelector('.aufgabe-wann')?.textContent ?? ''
     expect(wann).toMatch(/^Morgen · /)
-    expect(wann).toContain('8. September')
+    // Tag und Monat gebunden (T128).
+    expect(wann).toContain(zahlBinden('8. September'))
   })
 
   it('bei einer Schulungsaufgabe steht der Partner dabei', () => {
@@ -261,7 +263,7 @@ describe('Über einer Aufgabe in einer Zusammenkunft steht der Saal', () => {
     const saal = container.querySelector('svg.saal')
     expect(saal?.getAttribute('role')).toBe('img')
     // Bibellesung (ich) + Mikrofon 1 besetzt, Mikrofon 2 offen.
-    expect(saal?.getAttribute('aria-label')).toBe(`${t.saalBesetzung}: 2/3 · ${t.saalDeinPlatz}`)
+    expect(saal?.getAttribute('aria-label')).toBe(`${zahlBinden(`${t.saalBesetzung}: 2/3`)} · ${t.saalDeinPlatz}`)
     expect(container.querySelectorAll('.saal-du')).toHaveLength(1)
   })
 

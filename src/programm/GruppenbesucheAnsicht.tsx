@@ -78,7 +78,7 @@ export function GruppenbesucheAnsicht() {
         {kommend.map(({ besuch }) => (
           <div key={besuch.id} className={besuch.grp === meineGruppe ? 'gb-liste-zeile is-eigen' : 'gb-liste-zeile'}>
             <span className="gb-liste-punkt" aria-hidden="true" />
-            <span>{wochenSpanne(besuch.woche, state.lang)}</span>
+            <span className="gb-liste-woche">{wochenSpanne(besuch.woche, state.lang)}</span>
             <span className="gb-liste-gruppe">{besuchsGruppe(besuch, state.groups, tu)}</span>
           </div>
         ))}

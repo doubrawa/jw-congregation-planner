@@ -585,7 +585,7 @@ export default {
   "toastTrolleyEntfernt": "Usunięto wózek",
   "trolleyIntro": "Umówcie się ze sobą i zapiszcie się. Dzięki temu wszyscy widzą, kiedy wózek jest w użyciu.",
   "trolleyDeineTermine": "Twoje terminy",
-  "trolleyPartnerGesucht": "Potrzebny współpracownik",
+  "trolleyPartnerGesucht": "Potrzebny współ\u00adpracownik",
   "trolleyDazukommen": "Dołącz",
   "trolleyEintragen": "Zapisz się",
   "trolleyEintragenLabel": "Zapisz się na termin przy wózku",

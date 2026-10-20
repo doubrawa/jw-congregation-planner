@@ -100,9 +100,14 @@
   padding-inline-end: 10px;
 }
 
+/* Eine Aufgabe: Punkt, Titel und Termin, rechts der Haken, der Pfeil oder
+   „Übernehmen". Passt das Rechte nicht neben den Text, rückt es darunter —
+   schmaler als sein längstes Wort wird der Text nicht. Neben dem 44-px-Pfeil
+   ragte bei 320 px und Stufe 1,45 „współpracownik:" 36 px hinaus, und der
+   Termin ist gebunden (T128). */
 .aufgaben-zeile {
-  display: grid;
-  grid-template-columns: 12px minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   column-gap: 14px;
   min-height: 68px;
@@ -112,11 +117,23 @@
   border-block-start: 1px solid var(--linie);
 }
 
-/* Titel und Termin öffnen die Aufgabe; der Haken daneben bestätigt. */
+.aufgaben-zeile > :last-child {
+  margin-inline-start: auto;
+}
+
+/* Titel und Termin öffnen die Aufgabe; der Haken daneben bestätigt. Neben dem
+   Punkt (12 px und der Abstand) bleibt der Text in seiner Zeile. */
+.aufgaben-zeile-text,
+.aufgaben-zeile > .angebot-text {
+  flex: 1 1 0;
+  min-width: auto;
+  max-width: calc(100% - 26px);
+  overflow-wrap: break-word;
+}
+
 .aufgaben-zeile-text {
   display: flex;
   flex-direction: column;
-  min-width: 0;
   padding-block: 10px;
   text-align: start;
 }

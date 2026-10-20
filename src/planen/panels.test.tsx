@@ -15,6 +15,7 @@ import { fsTaskKey } from '../data/fs'
 import { emptyQualifications } from '../data/helpers'
 import { ratgeberKey } from '../data/planning'
 import { dict } from '../i18n/ui'
+import { zahlBinden } from '../i18n/zahl-binden'
 import type { Absence, FsInstance, Group, Person, Week } from '../data/types'
 import { AuxCounselorPanel } from './AuxCounselorPanel'
 import { FsPlan } from './FsPlan'
@@ -408,7 +409,7 @@ describe('„Automatisch" bei den Treffpunkten (T121, Phase 5e)', () => {
 
   it('nennt, wie viele Leiter besetzt sind, und besetzt die offenen aller Gruppen', () => {
     const { dispatch } = buehne('fsAuto', { fsWeeks: zwei })
-    expect(blatt()!.querySelector('.auto-bereich')?.textContent).toContain(`${t.saalBesetzung}: 1/2`)
+    expect(blatt()!.querySelector('.auto-bereich')?.textContent).toContain(zahlBinden(`${t.saalBesetzung}: 1/2`))
     zuteilen()
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsAutoAssign', onlyGroup: null })
   })
@@ -438,7 +439,7 @@ describe('„Automatisch" bei den Treffpunkten (T121, Phase 5e)', () => {
       personId: 'p-a',
       groups: [{ ...GRUPPEN[0]!, overseerId: 'p-a' }, GRUPPEN[1]!],
     })
-    expect(blatt()!.querySelector('.auto-bereich')?.textContent).toContain(`${t.saalBesetzung}: 1/2`)
+    expect(blatt()!.querySelector('.auto-bereich')?.textContent).toContain(zahlBinden(`${t.saalBesetzung}: 1/2`))
     zuteilen()
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsAutoAssign', onlyGroup: 'g1' })
     fireEvent.click(leeren())

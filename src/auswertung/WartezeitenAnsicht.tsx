@@ -1,6 +1,7 @@
 import { useId, useState } from 'react'
 import { JAHR, ZEITRAUM_WOCHEN } from '../data/auswertung'
 import { fill } from '../i18n/useT'
+import { zahlBinden } from '../i18n/zahl-binden'
 import { Legende, Streifen, WarteBalken } from './Diagramme'
 import { gerundet, type Kontext } from './kontext'
 
@@ -95,7 +96,7 @@ export function WartezeitenAnsicht({ k, bereich, onBereich }: { k: Kontext; bere
           )}
           <Legende
             eintraege={[
-              ['strich', `${t.awUeblich}: ${k.dauer(gerundet(w.ueblich))}`],
+              ['strich', zahlBinden(`${t.awUeblich}: ${k.dauer(gerundet(w.ueblich))}`)],
               ['band', t.awBisDoppelt],
               ['ueber', t.awLaenger],
               ['leer', t.awNieImJahr],

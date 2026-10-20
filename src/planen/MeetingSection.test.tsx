@@ -60,7 +60,7 @@ function woche(mid: Section[], we: Section[] = []): Week {
 function zeige(
   section: Section,
   over: Partial<AppState> = {},
-  props: Partial<{ si: number; mitAux: boolean }> = {},
+  props: Partial<{ si: number; mitAux: boolean; sprache: string }> = {},
 ) {
   const dispatch = vi.fn()
   const tab = over.tab ?? 'mid'
@@ -85,6 +85,7 @@ function zeige(
               rawSection={section}
               mitAux={props.mitAux ?? false}
               tpw={(s) => s}
+              sprache={props.sprache ?? 'de'}
             />
           </AppStateContext.Provider>
         </AppStoreContext.Provider>
@@ -186,6 +187,18 @@ describe('Plätze als Zeilen (T121)', () => {
     const { container } = zeige(s)
     expect(container.querySelector('.prog-dauer')?.textContent).toBe('4 Min.')
     expect(container.querySelector('.prog-item-meta')).toBeNull()
+  })
+
+  it('Abschnitt, Titel und Dauer tragen die Sprache des Programms, die Plätze die des Lesers (T128)', () => {
+    // Nach `lang` trennt der Browser: In einer russischen App brach das
+    // deutsche „Versammlungsbibelstudium" mitten im Wort.
+    const s = mitPlaetzen()
+    ;(s.items[0] as PartItem).mins = 4
+    const { container } = zeige(s, {}, { sprache: 'es' })
+    for (const sel of ['.prog-abschnitt-name', '.prog-title', '.prog-dauer']) {
+      expect(container.querySelector(sel)?.getAttribute('lang'), sel).toBe('es')
+    }
+    expect(plaetze(container)[0]?.closest('[lang]')).toBeNull()
   })
 
   it('ein Lied ist kein Platz — es steht rechts im Kopf des Abschnitts', () => {
@@ -599,7 +612,7 @@ describe('Ändert sich ein Titel von außen, zeigt das Feld den neuen', () => {
       <AppDispatchContext.Provider value={vi.fn()}>
         <AppStoreContext.Provider value={store}>
           <AppStateContext.Provider value={state}>
-            <MeetingSection si={0} section={section} rawSection={section} mitAux={false} tpw={(s) => s} />
+            <MeetingSection si={0} section={section} rawSection={section} mitAux={false} tpw={(s) => s} sprache="de" />
           </AppStateContext.Provider>
         </AppStoreContext.Provider>
       </AppDispatchContext.Provider>

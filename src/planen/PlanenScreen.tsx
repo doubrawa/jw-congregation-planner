@@ -133,7 +133,7 @@ function PlanenBody() {
   // Anzeige in der Programmsprache des Nutzers (Sprachvariante, falls geholt);
   // die Logik (LAC-Erkennung, Minuten, Slots) läuft auf der kanonischen Woche.
   const rawWeek = state.weeks[state.week]
-  const { week, tpw } = useProgWeek(rawWeek)
+  const { week, tpw, sprache } = useProgWeek(rawWeek)
 
   const rechte = rechteVon(state)
   const thema = geplantesThema(rechte, state.tab)
@@ -228,6 +228,7 @@ function PlanenBody() {
                 rawSection={rawSection}
                 mitAux={hatAuxKlasse(rawMeeting)}
                 tpw={tpw}
+                sprache={sprache}
               />
             )
           })}
