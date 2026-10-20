@@ -8088,6 +8088,42 @@ Raster, das aus seinem Feld ragt (die Köpfe des Datumswählers), sieht es nicht
 Türkisch „8/9 Sal" (Wochentag mit Zahl, `wochentagZahl`) bindet nicht: nur
 Ziffern und Wochentag, gemessen auf dem Start ohne Bruch.
 
+**Die Kennzahlen der Auswertung standen als Spalte (gemeldet vom Betreiber am
+20. Oktober abends, mit Bild aus der Live-App: „warum ist die auswertung oben
+leer").** Mit dem Rest aus T128 (`5881cb1d`, vormittags) zogen die Kennzahlen
+vom Raster (`repeat(3, minmax(0, 1fr))`) auf `display: flex; flex-wrap: wrap`
+— „Zuteilung|en" sollte nicht mehr brechen. Auf demselben Element steht aber
+`.karte`, und die ist eine Spalte (`flex-direction: column`). Ohne eigene
+Richtung standen die drei Zahlen untereinander; am Desktop wirkte ihr
+`flex-basis: 180px` (gemeint als Mindestbreite) als Höhe: drei Kästen zu
+180 px, eine Karte von 588 px, oben fast leer. Am Handy standen sie ebenso
+untereinander, die vier einer Person auch. Gesehen hat es keine Prüfung: Die
+Messung sucht gebrochene Wörter und Überstände — untereinander bricht nichts
+—, und die Probe las `flex-wrap`, nicht die Richtung.
+
+- **Behoben:** `.aw-kennzahlen` trägt `flex-flow: row wrap`. Im echten Chrome
+  gezählt (12 Sprachen): ab 768 px eine Reihe, die Karte 84 px hoch (vorher
+  588 px); am Handy bei Stufe 1 eine Reihe (bei 320 px ru/uk zwei), bei 1,45
+  zwei bis drei — umgerückt, wo ein Wort sonst bräche. Die Person: am Handy
+  zwei je Reihe, ab 768 px vier nebeneinander.
+- **Die ganze Familie gesucht:** im echten Chrome auf 22 Seiten bei 375 und
+  1440 px jedes Element, das umbricht und dabei als Spalte steht — nur dieses
+  eine. `tests/flex-richtung.test.ts` (neu) hält jede Klassenliste eines
+  `className` an, in der eine Klasse umbricht, ohne eine Richtung zu nennen,
+  und eine andere eine Spalte ist. Der Leser der Klassenlisten
+  (`tests/klassen-im-code.ts`) und der Regeln (`cssRegeln` in
+  `tests/css-quellen.ts`) liegen dafür jetzt gemeinsam für alle Proben da.
+- **Messung im echten Chrome:** Die Übersicht der Auswertung mit demselben
+  Raster wie mittags (12 Sprachen × 320/375/1024/1180/1400 × 1,15/1,3/1,45,
+  180 Fälle), ohne die gedrehten Spaltenköpfe 0 → 0; die Person
+  (`wahl.mjs --ziele aw-person`, 72 Fälle) 0 → 0 — als Zeile bricht kein Wort
+  wieder. Die frühere „0" der Auswertung war zum Teil die Spalte selbst.
+- **Proben und Katalog:** `flex-richtung.test.ts` (neu), `kein-wortbruch.test.ts`
+  verlangt `flex-flow: row wrap`; `kennzahlen-als-zeile` neu,
+  `umbruch-kennzahl-rueckt-um` mit neuem Anker, beide bewacht und gegen die
+  gemeinte Testdatei gegengeprüft. Geprüft: `tsc -b`, oxlint (nur
+  `Spur.tsx:112`), vitest (327 Dateien, 6870 Tests), `vite build`.
+
 ---
 
 ## Aufgenommen am 18. Oktober 2026 — Fester Leiter des Wachtturm-Studiums (T129)

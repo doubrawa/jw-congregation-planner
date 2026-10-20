@@ -10111,8 +10111,15 @@ export const KATALOG = [
     id: 'umbruch-kennzahl-rueckt-um',
     datei: 'src/auswertung/auswertung.css',
     regel: 'Eine Kennzahl der Auswertung rückt in die nächste Zeile, wenn ihre Beschriftung nicht mehr passt — sonst brach „Zuteilung|en".',
-    suchen: '.aw-kennzahlen {\n  display: flex;\n  flex-wrap: wrap;\n',
-    ersetzen: '.aw-kennzahlen {\n  display: flex;\n',
+    suchen: '.aw-kennzahlen {\n  display: flex;\n  flex-flow: row wrap;\n',
+    ersetzen: '.aw-kennzahlen {\n  display: flex;\n  flex-flow: row;\n',
+  },
+  {
+    id: 'kennzahlen-als-zeile',
+    datei: 'src/auswertung/auswertung.css',
+    regel: 'Die Kennzahlen stehen als Zeile, nicht in der Richtung der Karte — als Spalte stand am Desktop jede Zahl 180 px hoch.',
+    suchen: '  flex-flow: row wrap;\n  gap: 8px;\n  padding: 16px 18px;\n',
+    ersetzen: '  flex-wrap: wrap;\n  gap: 8px;\n  padding: 16px 18px;\n',
   },
   {
     id: 'umbruch-hinweis-trennt',

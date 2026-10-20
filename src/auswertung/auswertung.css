@@ -80,10 +80,12 @@
 /* Die Zahlen nebeneinander, der Platz gleich verteilt — doch keine wird
    schmaler als das längste Wort ihrer Beschriftung: Passen nicht mehr alle in
    die Zeile, rückt eine in die nächste, statt dass „Zuteilung|en" bricht
-   (T128, 320 px ab Stufe 1,15). */
+   (T128, 320 px ab Stufe 1,15). Die Richtung steht ausdrücklich da: `.karte`
+   setzt `column`. Ohne `row` standen die Zahlen untereinander, am Desktop
+   jede 180 px hoch — `flex-basis` wirkte als Höhe (20.10.2026). */
 .aw-kennzahlen {
   display: flex;
-  flex-wrap: wrap;
+  flex-flow: row wrap;
   gap: 8px;
   padding: 16px 18px;
 }
@@ -846,8 +848,8 @@
   justify-content: space-between;
 }
 
-/* Mindestens 180 px je Zahl, sonst rückt sie in die nächste Zeile — für drei
-   wie für die vier der Person. */
+/* Mindestens 180 px je Zahl, sonst rückt sie in die nächste Zeile. Die vier
+   der Person stehen in ihrer Unteransicht, ohne `auswertung--breit`. */
 .auswertung--breit .aw-kennzahlen > .aw-kennzahl {
   flex-basis: 180px;
 }

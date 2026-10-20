@@ -195,7 +195,8 @@ describe('Was neben einem Namen steht, rückt darunter, statt ihn zu zerbrechen'
 
   it('in den Kennzahlen der Auswertung rückt eine Zahl um — „Zuteilung|en" brach bei 320 px', () => {
     const A = 'auswertung/auswertung.css'
-    expect(deklarationen(A, '.aw-kennzahlen')).toMatch(/flex-wrap:\s*wrap/)
+    // Die Richtung ausdrücklich: `.karte` daneben ist eine Spalte (`flex-richtung.test.ts`).
+    expect(deklarationen(A, '.aw-kennzahlen')).toMatch(/flex-flow:\s*row wrap/)
     const kennzahl = deklarationen(A, '.aw-kennzahl')
     expect(kennzahl).toMatch(/flex:\s*1 1 0/)
     expect(kennzahl).not.toMatch(/min-width:\s*0/)
