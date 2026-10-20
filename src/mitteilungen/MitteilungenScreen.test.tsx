@@ -12,6 +12,7 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import type { MyTask, Notification, SubstituteReq } from '../data/types'
 import { dict } from '../i18n/ui'
 import { MitteilungenScreen } from './MitteilungenScreen'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Die Mitteilungen als Seite** (T121) — bis zum Umbau die Glocke, die sich
@@ -140,7 +141,7 @@ describe('Eine Mitteilung', () => {
     // Anzeigen. Stünde dort ein gebauter deutscher Satz, bliebe er deutsch.
     const zweiStunden = new Date(Date.now() - 2 * 3600_000).toISOString()
     const { container } = zeige({ notifs: [notif({ at: zweiStunden })] })
-    expect(container.querySelector('.mitteilung-zeit')?.textContent).toBe('vor 2 Stunden')
+    expect(container.querySelector('.mitteilung-zeit')?.textContent).toBe(zahlBinden('vor 2 Stunden'))
   })
 
   it('ein unlesbarer Zeitstempel bleibt leer — nicht „Invalid Date"', () => {
@@ -152,8 +153,9 @@ describe('Eine Mitteilung', () => {
     const lang = 'Mikrofone · Sonntag, 20. September · Gebet · Dienstag, 22. September · Ordner · Sonntag, 27. September'
     const { container } = zeige({ notifs: [notif({ text: lang })] })
     const text = container.querySelector('.mitteilung-text')!
-    expect(text.textContent).toBe(lang)
-    expect(text.getAttribute('title')).toBe(lang)
+    // Tag und Monat gebunden (T128): „20. |September" brach bei 320 px.
+    expect(text.textContent).toBe(zahlBinden(lang))
+    expect(text.getAttribute('title')).toBe(zahlBinden(lang))
   })
 })
 

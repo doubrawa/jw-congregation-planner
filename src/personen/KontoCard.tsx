@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
 import { Spur, type SpurSchritt } from '../bausteine/Spur'
-import { datumsFormat } from '../components/datum-anzeige'
+import { gebundenesDatum } from '../components/datum-anzeige'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { displayName } from '../data/helpers'
 import type { Person } from '../data/types'
@@ -31,7 +31,7 @@ export function KontoCard({ person }: { person: Person }) {
   const offen = link !== undefined && linkGilt(link, heute)
   const self = member?.userId === state.userId
   const name = person.fn || displayName(person)
-  const tag = (iso: string) => datumsFormat(state.lang, 'tagMonatKurz').format(new Date(iso))
+  const tag = (iso: string) => gebundenesDatum(new Date(iso), state.lang, 'tagMonatKurz')
 
   const schritte: SpurSchritt[] = [
     { name: t.spurAngelegt, lage: 'voll' },

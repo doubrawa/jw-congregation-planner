@@ -3,7 +3,7 @@ import { useApp, type AppState } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { Punkt } from '../bausteine/Punkt'
 import { abwesendText } from '../components/abwesenheit-anzeige'
-import { datumsFormat } from '../components/datum-anzeige'
+import { datumsFormat, gebundenesDatum } from '../components/datum-anzeige'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { Sheet } from '../components/Sheet'
 import { nameTrifft } from '../components/suche'
@@ -132,7 +132,7 @@ function useZuteilenKopf(sel: SlotSelection): Kopf {
     return { label, titel: label, sub: inst ? [inst.time, tu(inst.place).trim()].filter(Boolean).join(' · ') : '' }
   }
 
-  const datum = rawWeek ? datumsFormat(state.lang, 'tag').format(meetingDate(rawWeek, sel.tab, state.congregation.times)) : ''
+  const datum = rawWeek ? gebundenesDatum(meetingDate(rawWeek, sel.tab, state.congregation.times), state.lang, 'tag') : ''
   if (sel.kind !== 'part') {
     const label = mitRolle(tu(sel.label))
     return {
@@ -161,7 +161,8 @@ function useZuteilenKopf(sel: SlotSelection): Kopf {
         {label.slice(punkt.length)}
       </>
     ),
-    sub: [datum, dauer ? tpw(dauer) : ''].filter(Boolean).join(' · '),
+    // Auch die Dauer bleibt bei ihrer Zahl („3 Min.", T128).
+    sub: zahlBinden([datum, dauer ? tpw(dauer) : ''].filter(Boolean).join(' · ')),
     abschnitt: section ? { name: tpw(section.label), farbe: section.farbe, sprache } : undefined,
   }
 }

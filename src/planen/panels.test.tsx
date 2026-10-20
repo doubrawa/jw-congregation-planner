@@ -162,7 +162,7 @@ describe('Treffpunkte planen (T121, Entwurf `GTreffpunktePlanen`)', () => {
     const { container } = buehne('fs', { fsWeeks: [[inst({ wd: 1 }), inst({ id: 'f2', wd: 6 })]] })
     const tage = [...container.querySelectorAll('.treff-tag-name')].map((x) => x.textContent)
     expect(tage[0]).toContain('Montag')
-    expect(tage[0]).toContain('7. September')
+    expect(tage[0]).toContain(zahlBinden('7. September'))
     expect(tage[1]).toContain('Samstag')
     expect(container.querySelector('.treff-leer')).toBeNull()
   })

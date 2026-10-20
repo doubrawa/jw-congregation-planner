@@ -11,6 +11,7 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import { dict } from '../i18n/ui'
+import { zahlBinden } from '../i18n/zahl-binden'
 import type { Person } from '../data/types'
 import { AbwesenheitEintragen } from './AbwesenheitEintragen'
 import { zeitraumTippen } from './kalender'
@@ -64,9 +65,9 @@ function zeige(personId: string | null, over: Partial<AppState> = {}) {
 const blatt = () => document.body.querySelector<HTMLElement>('.sheet')
 const knopf = (root: ParentNode | null, text: string) =>
   [...(root?.querySelectorAll<HTMLButtonElement>('button') ?? [])].find((b) => b.textContent === text)
-/** Einen Tag des angezeigten Monats antippen (nach seinem Namen für Vorleseprogramme). */
+/** Einen Tag des angezeigten Monats antippen (nach seinem Namen für Vorleseprogramme; Zahl und Monat gebunden). */
 const tippe = (name: string) => {
-  const tag = [...document.body.querySelectorAll<HTMLButtonElement>('.kal-tag')].find((b) => b.getAttribute('aria-label') === name)
+  const tag = [...document.body.querySelectorAll<HTMLButtonElement>('.kal-tag')].find((b) => b.getAttribute('aria-label') === zahlBinden(name))
   if (!tag) throw new Error(`Tag „${name}" nicht im Kalender`)
   fireEvent.click(tag)
 }

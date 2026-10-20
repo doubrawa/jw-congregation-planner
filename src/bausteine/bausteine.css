@@ -567,23 +567,30 @@
   flex-direction: column;
 }
 
+/* „Von" und „Bis" nebeneinander, solange jedes sein Datum fasst — sonst
+   untereinander. In zwei festen Hälften ragte bei 320 px und Stufe 1,45
+   „niedz., 25 października" bis 65 px hinaus, gebunden auch „So.,
+   25. Oktober" (T128). */
 .kal-enden {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 /* „Von" und „Bis": das Ende, das der nächste Tipp setzt, ist umrandet. */
 .kal-ende {
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
   justify-content: center;
+  max-width: 100%;
   min-height: 60px;
   padding: 6px 16px;
   border: 1.5px solid transparent;
   border-radius: 20px;
   background: var(--feld);
   text-align: start;
+  overflow-wrap: break-word;
 }
 
 .kal-ende[aria-pressed='true'] {
@@ -691,10 +698,16 @@
   background: radial-gradient(circle, var(--akzent) 0 5.5px, transparent 6.5px);
 }
 
+/* Ein langes Wort trennt nach der Sprache, notfalls irgendwo — „Dienstvortrag
+   statt Versammlungsbibelstudium" ragte bei 320 px und Stufe 1,45 39 px
+   hinaus (T128). */
 .option-text {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
 }
 
 .option-titel {

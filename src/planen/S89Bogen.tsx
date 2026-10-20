@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useApp } from '../app/context'
-import { datumsFormat } from '../components/datum-anzeige'
+import { gebundenesDatum } from '../components/datum-anzeige'
 import { Switch } from '../components/Switch'
 import { meetingDate } from '../data/meeting-dates'
 import { alleS89DerWoche } from '../data/planning'
@@ -41,7 +41,7 @@ export function S89Bogen() {
 
   if (zettel.length === 0 || !week) return null
 
-  const datum = datumsFormat(state.lang, 'tag').format(meetingDate(week, 'mid', congregation.times))
+  const datum = gebundenesDatum(meetingDate(week, 'mid', congregation.times), state.lang, 'tag')
 
   return (
     <>

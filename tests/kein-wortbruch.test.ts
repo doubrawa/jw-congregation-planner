@@ -39,6 +39,10 @@ const TRENNT = [
   // „Планирование" ragte bei 1400 px und 1,45 aus der Wochenspalte beim Planen;
   // eine breitere Spalte nahm den Platz dem Plan, dort brach dann „Hoffman|n".
   ['planen/planen.css', '.wochen-spalte-titel'],
+  // „Dienstvortrag statt Versammlungsbibelstudium" ragte bei 320 px 39 px aus einer Option.
+  ['bausteine/bausteine.css', '.option-text'],
+  // „Возвещатель" ragte am Desktop bei 1,45 aus der Spalte neben dem Bild einer Person.
+  ['personen/personen.css', '.person-unter'],
 ] as const
 
 describe('Bei großer Schrift bekommt ein langes Wort Platz oder trennt', () => {
@@ -244,6 +248,10 @@ describe('Was neben einem Namen steht, rückt darunter, statt ihn zu zerbrechen'
     ['planen/planen.css', '.s89-druck-row', '.s89-druck-count', '.s89-druck-row > .switch'],
     // Neben der Lage ragte in der Planung die gebundene Spanne bei 320 px bis 38 px aus ihrem Knopf.
     ['planen/planen.css', '.wochen-karte-kopf', '.wochen-karte-knopf', '.wochen-karte-lage'],
+    // Neben „vor 2 Stunden" brach der Titel einer Mitteilung bei 320 px in allen Sprachen.
+    ['mitteilungen/mitteilungen.css', '.mitteilung-kopf', '.mitteilung-titel', '.mitteilung-zeit'],
+    // Neben „Verlegen" ragte in „Woche einrichten" gebunden „Dienstag, 29. September · 19:00" hinaus.
+    ['planen/planen.css', '.einrichten-zeile', '.einrichten-zeile-text', '.einrichten-zeile > .verweis-leise'],
   ])('%s %s: passt das Daneben nicht neben den Text, rückt es um', (datei, zeile, text, daneben) => {
     expect(deklarationen(datei, zeile)).toMatch(/flex-wrap:\s*wrap/)
     const spanne = deklarationen(datei, text)
@@ -313,6 +321,15 @@ describe('Was neben einem Namen steht, rückt darunter, statt ihn zu zerbrechen'
     expect(was).not.toMatch(/min-width:\s*0|hyphens|anywhere/)
   })
 
+  it('im Kalender eines Zeitraums steht „Bis" unter „Von", sobald eines sein Datum nicht fasst — „niedz., 25 października" ragte 65 px hinaus', () => {
+    const B = 'bausteine/bausteine.css'
+    expect(deklarationen(B, '.kal-enden')).toMatch(/flex-wrap:\s*wrap/)
+    const ende = deklarationen(B, '.kal-ende')
+    expect(ende).toMatch(/flex:\s*1 1 0/)
+    expect(ende).toMatch(/max-width:\s*100%/)
+    // Trennung und `anywhere` senkten die Mindestbreite: Das Datum bräche, statt dass „Bis" umrückt.
+    expect(ende).not.toMatch(/min-width:\s*0|hyphens|anywhere/)
+  })
 })
 
 /*
@@ -343,6 +360,23 @@ describe('Wird eine Zeile für die Schrift zu schmal, stehen ihre Teile unterein
     const A = 'auswertung/auswertung.css'
     expect(deklarationen(A, '.aw-kacheln')).toMatch(/container-type:\s*inline-size/)
     expect(deklarationen(A, '.aw-kachel', '@container (max-width: 20em)')).toMatch(/grid-column:\s*1 \/ -1/)
+  })
+
+  it('Treffpunkte: Wird der Tag zu schmal, steht die Uhrzeit über dem Text — „Congregati|on" bei 320 px', () => {
+    expect(deklarationen('programm/programm.css', '.treff-tag')).toMatch(/container-type:\s*inline-size/)
+    // Ansehen: unter 12 em.
+    expect(deklarationen('programm/programm.css', '.treff-punkt', '@container (max-width: 12em)')).toMatch(
+      /grid-template-areas:\s*'zeit zeit'\s*'text text'/,
+    )
+    // Planen, mit dem ✕ daneben: unter 16 em.
+    const P = '@container (max-width: 16em)'
+    expect(deklarationen('planen/planen.css', '.treff-planen-kopf', P)).toMatch(/grid-template-areas:\s*'zeit \.'\s*'text text'/)
+    expect(deklarationen('planen/planen.css', '.treff-planen-kopf.is-aenderbar', P)).toMatch(
+      /grid-template-areas:\s*'zeit \. x'\s*'text text text'/,
+    )
+    expect(deklarationen('planen/planen.css', '.treff-leiter-zeile', P)).toMatch(/padding-inline-start:\s*0/)
+    // Der Grundplan im selben Tag: „Congreg|ation", „Königreich|ssaal" brachen bei 320 px und 1,45.
+    expect(deklarationen('planen/planen.css', '.regel-zeile', P)).toMatch(/grid-template-areas:\s*'zeit \. pfeil'\s*'text text text'/)
   })
 
   it('Hinweise der Auswertung: unter 12 em gibt der Pfeil seinen Platz an den Text ab — „обязанностями: |4" bei 320 px', () => {

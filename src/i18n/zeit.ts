@@ -27,6 +27,7 @@
  */
 
 import { LOCALES } from './langs'
+import { zahlBinden } from './zahl-binden'
 import type { Lang } from '../data/types'
 
 /**
@@ -54,13 +55,18 @@ function fuer(lang: Lang): Intl.RelativeTimeFormat {
  * und nicht „vor 1 Stunde".
  *
  * Ein unlesbarer Zeitstempel ergibt einen leeren Text. Er stünde sonst als
- * „Invalid Date" in der Glocke.
+ * „Invalid Date" in der Glocke. Zahl und Wort bleiben zusammen („vor 3 Tagen",
+ * `zahlBinden`, T128) — die Glocke zeigt den Text, ohne dass `fill` ihn bindet.
  */
 export function relativeZeit(iso: string, lang: Lang, jetzt: number = Date.now()): string {
   const ms = Date.parse(iso)
   if (Number.isNaN(ms)) return ''
   const min = Math.round((jetzt - ms) / 60000)
-  const rtf = fuer(lang)
+  return zahlBinden(relativ(fuer(lang), min))
+}
+
+/** Die Stufe der Dauer: jetzt, Minuten, Stunden, Tage. */
+function relativ(rtf: Intl.RelativeTimeFormat, min: number): string {
   if (min < 1) return rtf.format(0, 'second')
   if (min < 60) return rtf.format(-min, 'minute')
   const std = Math.round(min / 60)

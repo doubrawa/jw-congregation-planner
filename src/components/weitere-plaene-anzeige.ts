@@ -3,8 +3,9 @@
  * schreiben dieselben Zeilen.
  *
  * Datum und Zeitraum kommen aus `Intl`, wie bei den übrigen Plänen: Ein Plan
- * reicht weit über die importierten Wochen hinaus. Der Name ist das Wort des
- * Planers und wird nicht übersetzt; Gruppennamen gehen durch `tu`, wie überall.
+ * reicht weit über die importierten Wochen hinaus — gebunden wie jedes Datum
+ * (`gebundenesDatum`, `tageSpanne`, T128). Der Name ist das Wort des Planers und
+ * wird nicht übersetzt; Gruppennamen gehen durch `tu`, wie überall.
  */
 
 import { fromIso } from '../data/meeting-dates'
@@ -12,16 +13,16 @@ import { taktVon, type PlanStand } from '../data/weitere-plaene'
 import type { Group, Lang, WeitererPlan } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
-import { datumsFormat, wochenSpanne, zeitspanne } from './datum-anzeige'
+import { gebundenesDatum, tageSpanne, wochenSpanne, zeitspanne } from './datum-anzeige'
 
 /** Der Zeitraum: „1. Dezember 2026 – 28. Februar 2027", zusammengezogen, wo Monat oder Jahr gleich sind. */
 export function zeitraumText(plan: Pick<WeitererPlan, 'von' | 'bis'>, lang: Lang): string {
-  return datumsFormat(lang, 'tagMonatJahr').formatRange(fromIso(plan.von), fromIso(plan.bis))
+  return tageSpanne(plan.von, plan.bis, lang, 'tagMonatJahr')
 }
 
 /** Ein Tag eines Plans mit Jahr: „29. November 2026". */
 function planTagText(tag: string, lang: Lang): string {
-  return datumsFormat(lang, 'tagMonatJahr').format(fromIso(tag))
+  return gebundenesDatum(fromIso(tag), lang, 'tagMonatJahr')
 }
 
 /**
@@ -56,9 +57,7 @@ export function spannenAnzahl(plan: Pick<WeitererPlan, 'takt'>, n: number, lang:
 
 /** Eine Spanne des Plans, je nach Takt: die Woche „12.–18. Oktober" oder der Monat „Oktober 2026". */
 export function spannenText(plan: Pick<WeitererPlan, 'takt'>, spanne: string, lang: Lang): string {
-  return taktVon(plan) === 'monat'
-    ? datumsFormat(lang, 'monatJahr').format(fromIso(spanne))
-    : wochenSpanne(spanne, lang)
+  return taktVon(plan) === 'monat' ? gebundenesDatum(fromIso(spanne), lang, 'monatJahr') : wochenSpanne(spanne, lang)
 }
 
 /** Name einer Gruppe (übersetzt) — leer, wenn es sie nicht mehr gibt. */

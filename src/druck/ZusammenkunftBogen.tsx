@@ -3,7 +3,7 @@ import { anlassArt } from '../data/anlass'
 import { ersteZusammenkunftNach } from '../data/helpers'
 import { meetingDate, meetingTime } from '../data/meeting-dates'
 import { anlassName } from '../components/anlass-name'
-import { datumsFormat } from '../components/datum-anzeige'
+import { gebundenesDatum } from '../components/datum-anzeige'
 import { fill, programmSpanne, useProgWeeks, useT } from '../i18n/useT'
 import { monatsName, wochenDesMonats, wochenZeitraum } from '../programm/druck'
 import { Bogen } from './Bogen'
@@ -111,7 +111,7 @@ function KongressZeilen({ wi }: { wi: number }) {
         <p className="druck-hinweis">
           {fill(t.naechsteZusammenkunft, {
             wann: [
-              datumsFormat(state.lang, 'tag').format(meetingDate(naechste.week, naechste.tab, zeiten)),
+              gebundenesDatum(meetingDate(naechste.week, naechste.tab, zeiten), state.lang, 'tag'),
               meetingTime(naechste.week, naechste.tab, zeiten),
             ]
               .filter(Boolean)

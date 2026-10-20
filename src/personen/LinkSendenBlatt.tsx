@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { gueltigBis } from '../../supabase/functions/_shared/anmeldung.ts'
 import { useApp } from '../app/context'
 import { Spur } from '../bausteine/Spur'
-import { datumsFormat } from '../components/datum-anzeige'
+import { gebundenesDatum } from '../components/datum-anzeige'
 import { Sheet } from '../components/Sheet'
 import { displayName } from '../data/helpers'
 import type { Person } from '../data/types'
@@ -34,7 +34,7 @@ export function LinkSendenBlatt({ person, onZettel, onClose }: { person: Person;
   const hatLink = state.anmeldeLinks.some((l) => l.personId === person.id)
   const angemeldet = state.members.some((m) => m.personId === person.id)
   // Bis wann ein Link gälte, der jetzt entsteht — in der Sprache dessen, der ihn ausstellt.
-  const bis = datumsFormat(state.lang, 'tagMonat').format(new Date(gueltigBis(new Date())))
+  const bis = gebundenesDatum(new Date(gueltigBis(new Date())), state.lang, 'tagMonat')
 
   const senden = async () => {
     if (laeuft) return

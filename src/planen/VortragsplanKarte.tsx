@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../app/context'
 import { Sheet } from '../components/Sheet'
-import { datumsFormat } from '../components/datum-anzeige'
+import { gebundenesDatum } from '../components/datum-anzeige'
 import { ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import {
@@ -157,7 +157,7 @@ function VortragsplanVorschau({ gelesen, onClose }: { gelesen: Gelesen; onClose:
   const zeilen = vorschau.zeilen.filter((z) => z.art !== 'unveraendert')
   const unveraendert = vorschau.zeilen.length - zeilen.length
   const aenderungen = hatAenderungen(vorschau)
-  const datum = (tag: string): string => datumsFormat(state.lang, 'kurzerWochentag').format(fromIso(tag))
+  const datum = (tag: string): string => gebundenesDatum(fromIso(tag), state.lang, 'kurzerWochentag')
 
   return (
     <Sheet label={t.vpVorschau} title={t.vpVorschau} variante="lang" onClose={onClose}>

@@ -31,6 +31,7 @@ import type {
 import { AssignSheet } from './AssignSheet'
 import { punktKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { privSetzen } from '../data/helpers'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Das Zuteilungs-Sheet — der Ort, an dem der Planer wirklich arbeitet.**
@@ -181,7 +182,7 @@ describe('Kopf und Schließen', () => {
     expect(container.querySelector('.zuteilen-abschnitt')?.getAttribute('data-farbe')).toBe('gold')
     expect(container.querySelector('.sheet-title')?.textContent).toBe('4 Gespräche beginnen')
     // Die Woche beginnt Montag, 7.9.; die Zusammenkunft ist am Dienstag.
-    expect(container.querySelector('.sheet-sub')?.textContent).toBe('Dienstag, 8. September · 3 Min.')
+    expect(container.querySelector('.sheet-sub')?.textContent).toBe(zahlBinden('Dienstag, 8. September · 3 Min.'))
   })
 
   it('Punkt und Abschnitt tragen die Sprache des Programms, die Rolle dahinter nicht (T128)', () => {

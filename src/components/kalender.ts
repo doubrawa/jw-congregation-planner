@@ -81,9 +81,25 @@ export function imZeitraum(tag: string, von: string, bis: string): boolean {
   return Boolean(von && bis && tag >= von && tag <= bis)
 }
 
-/** Die Kürzel der Wochentage ab Montag, in der Sprache des Lesers. */
+const kuerzel = new Map<string, string[]>()
+
+/**
+ * Die Kürzel der Wochentage ab Montag, in der Sprache des Lesers — je Sprache
+ * einmal gebaut. Ist eine Kurzform länger als drei Zeichen, stehen alle sieben
+ * als Anfangsbuchstaben: Bei 320 px ragten „چهارشنبه" bis 29 px aus seinem
+ * Siebtel (Arabisch und Persisch schreiben auch „kurz" den ganzen Namen),
+ * „niedz." 13 px und „dum." 3 px (T128). Drei Zeichen („Wed", „Çar") passten.
+ */
 export function wochentagKuerzel(locale: string): string[] {
-  const fmt = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' })
+  const gemerkt = kuerzel.get(locale)
+  if (gemerkt) return gemerkt
   const montag = Date.UTC(2024, 0, 1) // 1. Januar 2024 war ein Montag
-  return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(montag + i * TAG)))
+  const tage = (weekday: 'short' | 'narrow') => {
+    const fmt = new Intl.DateTimeFormat(locale, { weekday, timeZone: 'UTC' })
+    return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(montag + i * TAG)))
+  }
+  const kurz = tage('short')
+  const ergebnis = kurz.some((k) => [...k].length > 3) ? tage('narrow') : kurz
+  kuerzel.set(locale, ergebnis)
+  return ergebnis
 }

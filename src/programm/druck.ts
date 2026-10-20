@@ -1,7 +1,7 @@
 import { zusammenkunftName } from '../components/anlass-name'
-import { datumsFormat } from '../components/datum-anzeige'
+import { gebundenesDatum, tageSpanne } from '../components/datum-anzeige'
 import { mtab } from '../data/helpers'
-import { fromIso } from '../data/meeting-dates'
+import { fromIso, tagNach } from '../data/meeting-dates'
 import type { Lang, MeetingTab, Week } from '../data/types'
 import type { Dict } from '../i18n/ui'
 
@@ -63,7 +63,7 @@ export function druckThema(
  */
 export function monatsName(monat: string, lang: Lang): string {
   // Eine unbekannte Sprache fängt `datumsFormat` ab.
-  return datumsFormat(lang, 'monatJahr').format(fromIso(`${monat}-01`))
+  return gebundenesDatum(fromIso(`${monat}-01`), lang, 'monatJahr')
 }
 
 /**
@@ -74,8 +74,5 @@ export function monatsName(monat: string, lang: Lang): string {
  */
 export function wochenZeitraum(week: Pick<Week, 'start'>, lang: Lang, ersatz: string): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(week.start ?? '')) return ersatz
-  const montag = fromIso(week.start)
-  const sonntag = new Date(montag)
-  sonntag.setDate(montag.getDate() + 6)
-  return datumsFormat(lang, 'tagMonatJahr').formatRange(montag, sonntag)
+  return tageSpanne(week.start, tagNach(week.start, 6), lang, 'tagMonatJahr')
 }

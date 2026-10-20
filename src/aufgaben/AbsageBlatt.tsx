@@ -3,7 +3,7 @@ import { useApp } from '../app/context'
 import { Spur, type SpurSchritt } from '../bausteine/Spur'
 import { Sheet } from '../components/Sheet'
 import { Switch } from '../components/Switch'
-import { datumsFormat } from '../components/datum-anzeige'
+import { gebundenesDatum } from '../components/datum-anzeige'
 import { fromIso } from '../data/meeting-dates'
 import type { Absence, MyTask } from '../data/types'
 import type { Dict } from '../i18n/ui'
@@ -120,7 +120,7 @@ export function AbsageBlatt({ task }: { task: MyTask }) {
           <div className="schalter-zeile">
             <span className="schalter-text">
               <span>{t.absageAbwesend}</span>
-              <span className="klein-text">{datumsFormat(state.lang, 'tag').format(fromIso(tag))}</span>
+              <span className="klein-text">{gebundenesDatum(fromIso(tag), state.lang, 'tag')}</span>
             </span>
             <Switch on={abwesend} label={t.absageAbwesend} onToggle={() => setAbwesend((a) => !a)} />
           </div>

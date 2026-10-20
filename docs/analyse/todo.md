@@ -7949,14 +7949,144 @@ Was bleibt:
   Monatsnamen an `gebundenesDatum` vorbei (`datumsFormat(…).format(…)`: der
   Kalender eines Zeitraums, der Tag unter „Link gesendet", der Vortragsplan,
   die Beschriftung eines Treffpunkts, die Weiteren Pläne, das Absage-Blatt,
-  „Woche einrichten", das Programm). Gemessen gebrochen hat keine davon —
-  binden nur mit Messung: In schmalen Feldern ragt ein gebundenes Datum sonst
-  hinaus (der Kalender hat zwei halbe Breiten).
+  „Woche einrichten", das Programm). ~~Gemessen gebrochen hat keine davon~~ —
+  gemessen hatte sie niemand; am Abend umgesetzt, siehe **Daten direkt aus
+  `Intl` gebunden** unten (am Handy allein 180 Funde).
 - **Sprachen mit Trennregeln trennen weiter, wo zwei Dinge fest nebeneinander
   stehen** (die Reiter: „воскре-сенье", „di-manche" bei 320 px) — gewollt;
   Platz gäbe es nur, wenn die Reiter untereinander stünden.
 - Messwerkzeug: Die gedrehten Spaltenköpfe der Matrix liest es weiterhin als
   Brüche (vorher wie nachher dieselben Kästen).
+
+**Daten direkt aus `Intl` gebunden (20. Oktober 2026, abends)** — Auftrag über
+die Karte „Daten direkt aus Intl binden (T128-Nachlauf)". Der Punkt oben unter
+„Was bleibt" stimmte nicht: Die Anzeigen hatte niemand gemessen, und sie
+brachen — am Handy in 180 Fällen, vor allem in Mitteilungen und Treffpunkten.
+
+- **Ein Datum mit Monatsnamen kommt nur noch aus `datum-anzeige.ts`**
+  (`gebundenesDatum`, `tageSpanne`): das Absage-Blatt, die Daten der
+  Auswertung, der Kalender eines Zeitraums (Monat, Von und Bis, die Tage für
+  Vorleseprogramme), der Datumswähler, die Beschriftung eines Treffpunkts, die
+  Weiteren Pläne (Zeitraum, Tag, Monat im Monatstakt), die Spur des Kontos und
+  „Link senden", das Zuteilen-Blatt, der Vortragsplan, „Woche einrichten", das
+  Programm (nächste Zusammenkunft, Stand), die Planungs-Karte, „Geladen bis"
+  und die Druckbögen (Stand, S-89, Zusammenkunft, Trolleys, Monat und Woche).
+  Planungs-Karte, „Geladen bis" und Datumswähler bauten ein eigenes Format mit
+  `timeZone: 'UTC'`; sie lesen den Kalendertag jetzt als ISO-Datum
+  (`isoVonKalendertag`, `fromIso`).
+- **Was nicht durch `fill` geht, bindet ausdrücklich:** die Zeit einer
+  Mitteilung („vor 3 Tagen" — `relativeZeit` bindet jetzt selbst), der
+  übersetzte Text einer Mitteilung („Sonntag, 20. |September" — 63 Funde) und
+  die Dauer im Kopf des Zuteilen-Blatts („3 Min.").
+- **Platz, wo das gebundene Datum nicht mehr schrumpft:** Der Titel einer
+  Mitteilung behält sein längstes Wort, die Zeit rückt darunter (neben „vor
+  2 Stunden" brach bei 320 px „Zuteilu|ng" in allen Sprachen); ein Tag mit
+  Treffpunkten misst sich selbst — unter 12 em (Ansehen) bzw. 16 em (Planen,
+  mit ✕) steht die Uhrzeit über dem Text („Congregati|on" bei 320 px); in
+  „Woche einrichten" rückt „Verlegen" unter den Termin; Von und Bis im
+  Kalender stehen untereinander, sobald eines sein Datum nicht fasst (in zwei
+  festen Hälften ragte „niedz., 25 października" 65 px hinaus); in einer
+  Option trennt ein langes Wort („Dienstvortrag statt
+  Versammlungsbibelstudium" ragte 39 px).
+- **Wochentage über einem Kalender:** Ist eine Kurzform länger als drei
+  Zeichen, stehen alle sieben als Anfangsbuchstaben (`wochentagKuerzel`, beide
+  Kalender). Arabisch und Persisch schreiben auch „kurz" den ganzen Namen
+  („چهارشنبه" ragte bei 320 px 29 px aus seinem Siebtel), Polnisch „niedz."
+  (13 px, dazu ein waagerechter Rollbalken im Blatt), Rumänisch „dum." (3 px).
+  Französisch („lun.") gehört damit auch dazu: „L M M J V S D", wie
+  französische Kalender es schreiben.
+- **Was schon vorher dastand:** Am Desktop ragte bei Stufe 1,45 unter dem
+  Namen einer Person das russische „Возвещатель" 2 px aus der Spalte neben
+  dem Bild — die Zeile trennt jetzt nach der Sprache.
+- **Proben:** `tests/datum-von-hand.test.ts` (neu) liest die Formate mit
+  Monatsnamen aus `FORMATE` und hält jeden eigenen Aufruf eines solchen
+  Formats an, dazu jedes eigene `Intl.DateTimeFormat` und
+  `toLocaleDateString` mit Monat in Worten; `kalender.test.ts` (neu: kein
+  Kürzel über drei Zeichen, in allen zwölf Sprachen); `kein-wortbruch.test.ts`
+  (Mitteilungen, Treffpunkte, „Woche einrichten", Von und Bis, Optionen,
+  Person); `zeit.test.ts`; die Erwartungen in 14 Testdateien gebunden.
+  Mutationskatalog: 24 neue Einträge (`umbruch-intl-…`, `umbruch-mitteilung-…`,
+  `umbruch-treff-…`, `umbruch-kal-…`, `umbruch-wochentag-kuerzel` und vier
+  weitere), dazu zwei aus dem Review (`umbruch-grundplan-stapelt`,
+  `kaskade-abfrage-nicht-ueberschrieben`), alle bewacht und gegen die gemeinte
+  Testdatei gegengeprüft.
+- **Werkzeug:** `wahl.mjs --ziele daten` — Absage, Trolley, Plan, eine Person
+  in der Auswertung, der Kalender eines Weiteren Plans, das Zuteilen eines
+  Hilfsdienstes, „Woche einrichten" einer Gedächtnismahl-Woche und dort das
+  offene Datumsfeld (`datumswaehler`).
+
+**Gemessen im echten Chrome** (vorher = HEAD `7ba2b8ef` aus einem Worktree auf
+Port 5176, nachher = der Endstand; gezählt wie oben, Trennungen mit Strich
+nicht):
+
+| Lauf | Fälle | Funde vorher | nachher |
+|---|---|---|---|
+| Handy (`breit.mjs --mobil`): Start, Mitteilungen, Person, Treffpunkte und Weitere Pläne beim Planen und Ansehen — 12 Sprachen × 320/375 × 1,15/1,45 | 336 | 180 | 0 |
+| Desktop: dieselben Seiten und die Auswertung — 12 Sprachen × 1180/1440 × 1,15/1,45, ohne die gedrehten Spaltenköpfe | 384 | 2 | 2 |
+| Personenseite am Desktop nach der Trennung unter dem Namen: die 2 von eben (ru „Возвещатель", schon vorher da) | 48 | 2 | 0 |
+| Hinter einem Klick (`wahl.mjs --ziele daten`): 12 Sprachen × 320/375/1180 × 1,15/1,45 | 480 | 142 | 8 |
+| Kalender und offenes Datumsfeld nach der Regel für die Wochentagsköpfe: die 8 von eben | 144 | 141 | 0 |
+
+Vorher am Handy: der Text einer Mitteilung (63), die Titel der Treffpunkte
+(54, „Congregati|on"), der Titel einer Mitteilung (36), die Zeile eines
+Weiteren Plans beim Planen (18, „5.–25. |Oktober 2026"), sein Zeitraum (7) und
+der Tag eines Treffpunkts (2, „понедельник, 7 |сентября"). Hinter einem Klick:
+Von und Bis im Kalender (62 getrennt, dazu bis 34 px hinaus und ein
+waagerechter Rollbalken im Blatt), der Termin in „Woche einrichten" (28), die
+Wochentagsköpfe in ar, fa, pl, ro und die Option „Dienstvortrag statt
+Versammlungsbibelstudium". Nichts kam dazu (`vergleich.mjs`, „Neu
+dazugekommen" leer — bis auf den Rollbalken bei pl 320 px/1,45, der nur seine
+Breite änderte und mit der Regel für die Köpfe ging). Im Datumswähler ragten lange
+Wochentagsköpfe nicht aus ihrem Kasten, sie machten ihre Spalte breiter: Köpfe
+und Tage standen gegeneinander versetzt, die Köpfe ragten links aus dem Feld
+(fa, 320 px, 1,45: Köpfe ab 222 px bis −47 px, Tage ab 233 px bis 27 px). Das
+Messwerkzeug sah das nicht — es misst Text gegen seinen eigenen Kasten. Mit
+höchstens drei Zeichen liegen Köpfe und Tage deckungsgleich.
+
+**`/simplify` und `/code-review max`** über alles seit `5881cb1d` („Was bleibt"
+und die Daten aus `Intl`, Betreiber: „erst wenn die Intl Änderungen durch sind
+dann simplify und code-review machen"):
+
+- `/simplify`: Die neue Probe und `bezeichnung-zahl-von-hand.test.ts` lesen die
+  Quellen über `tests/quelldateien.ts` statt über eine eigene Abschrift;
+  `justify-content: space-between` in den Köpfen der Mitteilungen und der
+  Wochenkarten war wirkungslos (der Text wächst, das Daneben hat
+  `margin-inline-start: auto`; im Browser nachgemessen: Lage gleich, einzeilig
+  wie umgebrochen) — gestrichen. Verworfen: `.kal-enden` über `.knopf-reihe`
+  (ein Baustein hängt nicht an der Regel für Blattfüße), die Regel als Typ
+  statt als Quelltext-Probe (die Mutationsprobe fährt nur vitest), eine
+  Hilfsklasse für „Platz statt Trennung" (eigener Umbau mit Nachmessung).
+- **Review, bestätigt:** Beim Planen der Treffpunkte stand im schmalen Tag der
+  Text unter der Uhrzeit, der Leiter behielt aber seinen Einzug (76 bzw.
+  105,7 px) — die gleich spezifische Grundregel `.treff-leiter-zeile` stand
+  hinter der Container-Abfrage und gewann. Der Block steht jetzt hinter den
+  Grundregeln; `tests/bedingte-regeln-kaskade.test.ts` (neu) hält in allen
+  CSS-Dateien jede Deklaration in `@container`, `@media` oder `@supports` an,
+  die eine spätere Regel gleichen Selektors wieder setzt (gefunden: genau diese
+  eine).
+- **Review, bestätigt, schon vorher da:** Der Grundplan (`.regel-zeile`) liegt
+  im selben Tag, stapelte aber nicht — bei 320 px und 1,45 brachen in allen
+  zwölf Sprachen 54 Wörter („Congreg|ation", „Königreich|ssaal"); gemessen
+  hatte ihn niemand. Er stapelt jetzt wie der Kopf eines Treffpunkts.
+- Verworfen nach Prüfung: `container-type` sperrt Blätter ein (alle gehen per
+  Portal an `document.body`), `programm.css` fehle beim Planen (`PlanenScreen`
+  lädt es), gebundene Texte gingen in gespeicherte Mitteilungen (nur Anzeige
+  und Druck), die `em`-Schwellen wanderten nicht mit der Schrift (im echten
+  Chrome wächst die Grundschrift mit der Stufe: 15,5 px × `--fs`; das
+  Browser-Pane meldet 16 px), die Medienabfrage ab 768 px hebele die Stapelung
+  aus (die Tage sind dort mindestens 441 px breit).
+
+Nachgemessen im echten Chrome (`breit.mjs --mobil`): Treffpunkte und
+Grundplan beim Planen, 12 Sprachen × 320/375 × 1/1,15/1,3/1,45 = 192 Fälle,
+0 Funde (der Grundplan vorher bei 1,15/1,45: 54 — 39 im Ort, 15 im Titel);
+nichts kam dazu. Im gestapelten Tag steht der Leiter ohne Einzug (0 px), sonst
+wie vorher (76 px bei Stufe 1). Geprüft: `tsc -b`, oxlint (nur `Spur.tsx:112`),
+vitest (326 Dateien, 6867 Tests), `vite build`.
+
+Was bleibt: Das Messwerkzeug misst Text gegen seinen eigenen Kasten — ein
+Raster, das aus seinem Feld ragt (die Köpfe des Datumswählers), sieht es nicht.
+Türkisch „8/9 Sal" (Wochentag mit Zahl, `wochentagZahl`) bindet nicht: nur
+Ziffern und Wochentag, gemessen auf dem Start ohne Bruch.
 
 ---
 
@@ -8594,11 +8724,12 @@ die Kachel der Absagen, T127, T129, die Auswertung nach der Jahresprobe und das
 Review des Tages; am 19. das Ladebild beim Start, der Offline-Start nach über
 einer Stunde, das Startbild und der Offline-Start in der ersten Stunde. Am
 20. Oktober der **Rest aus T128** (die fünf Umbrüche vom 19. Oktober und was
-die Nachmessung fand; siehe T128) und nachmittags, was davon noch blieb
+die Nachmessung fand; siehe T128), nachmittags, was davon noch blieb
 (Trolley-Listen, Füße der Blätter, „nie", Spur, Wochenspalte, Hinweise — dazu
-sieben Stellen, die erst die Messung am Handy fand). Beschlossenes ist im Code
-nichts mehr offen; was aussteht, braucht den Betreiber, ein Gerät oder eine
-Entscheidung.
+sieben Stellen, die erst die Messung am Handy fand), und abends die Daten, die
+direkt aus `Intl` kamen (gemessen: 180 Funde am Handy, 142 hinter einem Klick
+— jetzt 0). Beschlossenes ist im Code nichts mehr offen; was aussteht, braucht
+den Betreiber, ein Gerät oder eine Entscheidung.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
@@ -8612,7 +8743,6 @@ Entscheidung.
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
-| **Rest aus T128** | Umbruch bei großer Schrift | Die fünf Punkte vom 19. Oktober und die sechs, die danach blieben, sind am 20. Oktober umgesetzt; gemessen in 1 860 weiteren Fällen, 494 Funde → 0. Offen bleiben Daten, die direkt aus `Intl` kommen und nicht gebunden sind (rund ein Dutzend Anzeigen, keine davon gemessen gebrochen — binden nur mit Messung) — Einzelheiten unter T128 |
 | **Bewusst offen** | Das Blatt nach einem langsamen Start | Kommen die Daten erst nach dem Vorgriff (4 s), legt das Blatt beim Öffnen eine seither neue Zuteilung nicht vor (nach über einer Stunde ebenso seit `30a5a80d`). Betreiber am 19. Oktober: nur der eigene Hinweis — der Streifen sagt seitdem „Verbindung langsam" statt „Offline", solange die Daten noch kommen können; das Blatt bleibt so |
 | **Bewusst offen** | `sprache-fehlt` beim Wochen-Import | zählt weiter als Ende des Kalenders. Strenger gäbe es im Alltag Fehlalarme; betroffen wäre nur eine anderssprachige Versammlung mit Geschichte (Review vom 18. Oktober, `42dff943`) |
 
@@ -8625,6 +8755,9 @@ langsam · Stand von …", solange die Daten noch kommen können; scheitert das
 Laden oder meldet das Gerät kein Netz, wieder „Offline"; bei großer Schrift
 rückt „Neu laden" unter den Text). Das erneute Vorlegen des Blatts steht
 jetzt unter „Bewusst offen".
+
+Am 20. Oktober abends herausgenommen: **Rest aus T128** — mit den Daten aus
+`Intl` ist nichts mehr offen (siehe T128, „Daten direkt aus `Intl` gebunden").
 
 Am 19. Oktober in die Tabelle aufgenommen: `sprache-fehlt` und
 `auth.sessions` (bis dahin nur in einer Commit-Nachricht, `42dff943`, und bei

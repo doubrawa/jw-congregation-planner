@@ -2,7 +2,7 @@ import { fsTag } from '../data/fs'
 import type { FsInstance, Group } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import type { I18n } from '../i18n/useT'
-import { datumsFormat } from './datum-anzeige'
+import { gebundenesDatum } from './datum-anzeige'
 import { wochentagNameAusWd } from '../planen/wochentage'
 
 /**
@@ -21,7 +21,7 @@ import { wochentagNameAusWd } from '../planen/wochentage'
  */
 export function treffpunktTagLabel(kennung: string, wd: number, lang: string): string {
   const tag = fsTag(kennung, wd)
-  return tag ? datumsFormat(lang, 'tag').format(tag) : wochentagNameAusWd(wd, lang)
+  return tag ? gebundenesDatum(tag, lang, 'tag') : wochentagNameAusWd(wd, lang)
 }
 
 /** Versammlungstreffpunkt oder der Name seiner Gruppe (übersetzt). */

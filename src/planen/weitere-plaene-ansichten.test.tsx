@@ -388,7 +388,7 @@ describe('Planen: ein Plan', () => {
     const blatt = document.body.querySelector<HTMLElement>(`[role="dialog"][aria-label="${t.zeitraumLbl}"]`)!
     expect(blatt.querySelector('.kal-ende[aria-pressed="true"]')?.textContent).toContain(t.bis)
     expect(blatt.querySelector('.kal-monat')?.textContent).toBe('Oktober 2026')
-    fireEvent.click(blatt.querySelector('button[aria-label="Sonntag, 1. November"]')!)
+    fireEvent.click(blatt.querySelector(`button[aria-label="${zahlBinden('Sonntag, 1. November')}"]`)!)
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'wpPlanAendern' }))
 
     fireEvent.click(knopf(blatt, t.uebernehmenBtn)!)
@@ -403,7 +403,7 @@ describe('Planen: ein Plan', () => {
 
     fireEvent.click(container.querySelector('.wp-datum')!)
     expect(zeitraum().querySelector('.kal-ende[aria-pressed="true"]')?.textContent).toContain(t.von)
-    fireEvent.click(zeitraum().querySelector('button[aria-label="Montag, 14. September"]')!)
+    fireEvent.click(zeitraum().querySelector(`button[aria-label="${zahlBinden('Montag, 14. September')}"]`)!)
     fireEvent.click(knopf(zeitraum(), t.abbrechen)!)
     fireEvent.click(container.querySelector('.wp-datum')!)
     fireEvent.click(knopf(zeitraum(), t.uebernehmenBtn)!)

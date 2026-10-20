@@ -16,6 +16,7 @@ import { dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import type { AnmeldeLink, Member, Person } from '../data/types'
 import type { Ausgestellt, AusgestellterLink } from '../lib/links-ausstellen'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Die Konto-Karte — wie ein Verkündiger in die App kommt** (T121, Phase 8;
@@ -133,7 +134,7 @@ describe('Die Spur des Kontos', () => {
   it('ein gültiger Link: gesendet, mit Datum — als Nächstes das Anmelden', () => {
     const { container } = zeige(person(), { anmeldeLinks: [link()] })
     expect(lagen(container).map((l) => l[1])).toEqual(['spur-schritt is-voll', 'spur-schritt is-voll', 'spur-schritt is-jetzt'])
-    expect(container.querySelector('.konto-karte > .spur .spur-wert')?.textContent).toBe('4. Sept.')
+    expect(container.querySelector('.konto-karte > .spur .spur-wert')?.textContent).toBe(zahlBinden('4. Sept.'))
   })
 
   it('ein abgelaufener Link zählt wie keiner: wieder der Link als Nächstes', () => {

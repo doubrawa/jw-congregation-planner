@@ -7,10 +7,10 @@ import { useKalendertag } from '../app/useKalendertag'
 import { besuchHatKonflikt, besuchStand } from '../data/gruppenbesuche'
 import { useBesuchsLage } from '../components/useBesuchsLage'
 import { WOCHEN_SPALTE_BREITE, useMedia } from '../components/useMedia'
-import { fromIso } from '../data/meeting-dates'
+import { tageSpanne } from '../components/datum-anzeige'
+import { fromIso, isoVonKalendertag } from '../data/meeting-dates'
 import { planungsstand, type Wochenstand } from '../data/planungsstand'
 import type { FsBereich } from '../data/types'
-import { LOCALES } from '../i18n/langs'
 import { fill, programmSpanne, useProgWeeks, useT } from '../i18n/useT'
 import { HolenKnopf } from '../planen/ProgrammHolen'
 import { useWochenImport } from '../planen/useWochenImport'
@@ -110,17 +110,17 @@ export function PlanungsKarte() {
   /*
    * Wofür „Alles zugeteilt" gilt: die angesehenen Wochen, als Zeitraum in der
    * Sprache des Lesers. `formatRange` legt Monat und Jahr zusammen, wo sie gleich
-   * sind — ohne ein eigenes Wort, das in jeder Sprache zu übersetzen wäre.
+   * sind — ohne ein eigenes Wort, das in jeder Sprache zu übersetzen wäre. Die
+   * Grenzen sind Kalendertage (UTC-Mitternacht), über ISO gelesen, damit keine
+   * Zeitzone den Tag verschiebt; Zahl und Wort bleiben zusammen (T128).
    */
-  const zeitraum = useMemo(() => {
-    if (!stand.zeitraum) return null
-    return new Intl.DateTimeFormat(LOCALES[state.lang], {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      timeZone: 'UTC', // Kalendertage, keine Zeitpunkte
-    }).formatRange(stand.zeitraum.vonMs, stand.zeitraum.bisMs)
-  }, [stand.zeitraum, state.lang])
+  const zeitraum = useMemo(
+    () =>
+      stand.zeitraum
+        ? tageSpanne(isoVonKalendertag(stand.zeitraum.vonMs), isoVonKalendertag(stand.zeitraum.bisMs), state.lang, 'tagKurzJahr')
+        : null,
+    [stand.zeitraum, state.lang],
+  )
 
   /*
    * **Pläne** (T120): Konflikte der Gruppenbesuche — unabhängig vom

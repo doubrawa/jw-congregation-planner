@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { isoDay } from '../data/meeting-dates'
+import { fromIso, isoDay } from '../data/meeting-dates'
 import { Chevron } from './Chevron'
+import { gebundenesDatum } from './datum-anzeige'
 import { imMonat, monatPlus, monatsRaster, monatVon, wochentagKuerzel } from './kalender'
 import './datepicker.css'
 
@@ -49,14 +50,9 @@ export function DatePicker({ value, onChange, locale, min, max, placeholder, ari
     }
   }, [open])
 
-  const label = value
-    ? new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(
-        new Date(`${value}T12:00:00Z`),
-      )
-    : ''
-  const title = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
-    new Date(Date.UTC(view.y, view.m, 1)),
-  )
+  // Über `datum-anzeige`: einmal gebaute Formate, Zahl und Wort gebunden (T128).
+  const label = value ? gebundenesDatum(fromIso(value), locale, 'tagKurzJahr') : ''
+  const title = gebundenesDatum(new Date(view.y, view.m, 1), locale, 'monatJahr')
   // „Heute" ist ein örtlicher Begriff: `isoDay` liest die örtlichen Bestandteile
   // — der UTC-Tag wäre in Mitteleuropa nach Mitternacht noch der gestrige.
   const todayIso = isoDay(new Date())

@@ -2,9 +2,10 @@ import { useMemo } from 'react'
 import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
 import { missingVariants } from '../data/localize'
-import { fromIso, istVorbei, weekEndMs } from '../data/meeting-dates'
+import { gebundenesDatum } from '../components/datum-anzeige'
+import { fromIso, isoVonKalendertag, istVorbei, weekEndMs } from '../data/meeting-dates'
 import type { Week } from '../data/types'
-import { JW_TO_CONG, LOCALES } from '../i18n/langs'
+import { JW_TO_CONG } from '../i18n/langs'
 import { programmSpanne, useT } from '../i18n/useT'
 import { holenNach, loadedUntilMs } from '../data/holen'
 import { type ImportFehler, importNextWeek, importWeekVariants } from '../lib/import'
@@ -73,14 +74,10 @@ export function useWochenImport(): {
   const { geladenBis, geladenBisMs } = useMemo(() => {
     const bisMs = loadedUntilMs(state.weeks)
     const letzte = state.weeks[state.weeks.length - 1]
+    // week.start ist ein reines Kalenderdatum: über ISO gelesen, ohne Zeitzone.
     const text =
       bisMs !== null
-        ? new Intl.DateTimeFormat(LOCALES[state.lang], {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-            timeZone: 'UTC', // week.start ist ein reines Kalenderdatum
-          }).format(bisMs)
+        ? gebundenesDatum(fromIso(isoVonKalendertag(bisMs)), state.lang, 'tagKurzJahr')
         : letzte
           ? programmSpanne({ week: letzte, tpw: tp })
           : null

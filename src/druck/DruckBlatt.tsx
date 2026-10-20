@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useApp } from '../app/context'
 import { Logo } from '../bausteine/Logo'
-import { datumsFormat } from '../components/datum-anzeige'
+import { gebundenesDatum } from '../components/datum-anzeige'
 import { fill, useT } from '../i18n/useT'
 
 /** Ein Bogen mit eigenem Abstand zwischen seinen Blöcken (`druck-blatt--<art>`). */
@@ -37,7 +37,7 @@ export function DruckBlatt({
 }) {
   const { state } = useApp()
   const { t } = useT()
-  const stand = fill(t.stand, { datum: datumsFormat(state.lang, 'tagMonatJahr').format(new Date()) })
+  const stand = fill(t.stand, { datum: gebundenesDatum(new Date(), state.lang, 'tagMonatJahr') })
   const klassen = ['druck-blatt', art === 'monat' && 'druck-blatt--monat', ueberlang && 'druck-blatt--ueberlang'].filter(Boolean)
   return (
     <section className={klassen.join(' ')}>

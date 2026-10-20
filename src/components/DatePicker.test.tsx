@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { dict } from '../i18n/ui'
 import { DatePicker } from './DatePicker'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Der eigene Datumswähler** (statt des nativen Felds, das auf jedem Gerät
@@ -49,7 +50,7 @@ describe('Der Datumswähler', () => {
 
   it('ein gewähltes Datum steht lesbar da — nicht als ISO', () => {
     const { container } = zeigeDP('2026-10-01')
-    expect(container.querySelector('.dp-field')?.textContent).toContain('1. Okt. 2026')
+    expect(container.querySelector('.dp-field')?.textContent).toContain(zahlBinden('1. Okt. 2026'))
   })
 
   it('das Popup ist zu, bis man es öffnet', () => {

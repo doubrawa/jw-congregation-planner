@@ -5,7 +5,7 @@ import { useKalendertag } from '../app/useKalendertag'
 import { Wahl } from '../bausteine/Wahl'
 import { Zeichen, type ZeichenName } from '../bausteine/Zeichen'
 import { UnteransichtKopf } from '../components/UnteransichtKopf'
-import { datumsFormat, tageSpanne, zeitspanne } from '../components/datum-anzeige'
+import { gebundenesDatum, tageSpanne, zeitspanne } from '../components/datum-anzeige'
 import { gruppenName } from '../components/weitere-plaene-anzeige'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { DESKTOP_BREITE, TABLET_BREITE, useMedia } from '../components/useMedia'
@@ -75,7 +75,6 @@ export function AuswertungScreen() {
     const namen = new Map(persons.map((p) => [p.id, displayName(p)]))
     const zahl = new Intl.NumberFormat(LOCALES[lang] ?? lang, { maximumFractionDigits: 1 })
     const prozent = new Intl.NumberFormat(LOCALES[lang] ?? lang, { style: 'percent', maximumFractionDigits: 1 })
-    const tag = datumsFormat(lang, 'tagMonatKurz')
     return {
       a,
       t,
@@ -86,7 +85,7 @@ export function AuswertungScreen() {
       gruppe: (id) => (id === null ? t.versammlungLbl : gruppenName(id, groups, tu)),
       dauer: (wochen) => zeitspanne(wochen, 'week', lang),
       zahl: (n) => zahl.format(n),
-      datum: (iso) => tag.format(fromIso(iso)),
+      datum: (iso) => gebundenesDatum(fromIso(iso), lang, 'tagMonatKurz'),
       prozent: (anteil) => prozent.format(anteil),
       personOeffnen: setPerson,
       ansichtOeffnen: (ziel, bereich) => {

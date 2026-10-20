@@ -15,6 +15,7 @@ import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 import type { PartItem } from '../data/types'
 import { S89Bogen } from './S89Bogen'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * T71 — der Druckbogen der S-89-Zettel.
@@ -175,7 +176,7 @@ describe('S89Bogen (Bedienung)', () => {
     vi.unstubAllGlobals()
     delete document.documentElement.dataset.print
     expect(kopf).toContain('S-89')
-    expect(kopf).toContain('Dienstag, 8. September')
+    expect(kopf).toContain(zahlBinden('Dienstag, 8. September'))
     // „1 von" steht gebunden (T128) — `\s` trifft beide Leerzeichen.
     expect(kopf).toMatch(/Seite 1\svon \d/)
   })

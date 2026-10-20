@@ -17,6 +17,7 @@ import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 import { anlassArt } from '../data/anlass'
 import { dict } from '../i18n/ui'
 import { WochePanel } from './WochePanel'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * T64 — der Bearbeiten-Reiter und die Ansicht dahinter, seit T121 „Woche
@@ -344,7 +345,7 @@ describe('Der Termin des Anlasses', () => {
     const feld = [...container.querySelectorAll('.dp-field')].find(
       (b) => b.getAttribute('aria-label') === t.s89Datum,
     )!
-    expect(feld.textContent).toContain('2. Apr. 2026')
+    expect(feld.textContent).toContain(zahlBinden('2. Apr. 2026'))
     expect(container.querySelector<HTMLInputElement>('.sonder-time')?.value).toBe('19:30')
   })
 

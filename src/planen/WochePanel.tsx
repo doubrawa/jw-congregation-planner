@@ -4,7 +4,7 @@ import { Option } from '../bausteine/Option'
 import { Zeichen } from '../bausteine/Zeichen'
 import { zusammenkunftName } from '../components/anlass-name'
 import { DatePicker } from '../components/DatePicker'
-import { datumsFormat } from '../components/datum-anzeige'
+import { gebundenesDatum } from '../components/datum-anzeige'
 import { anlassArt } from '../data/anlass'
 import { istAusgefallen, MEETING_TABS, weichtAb } from '../data/helpers'
 import { meetingDate, meetingTime } from '../data/meeting-dates'
@@ -180,7 +180,7 @@ function ZusammenkunftZeile({ tab }: { tab: MeetingKey }) {
   const [offen, setOffen] = useState(() => weichtAb(week, tab))
   if (!week) return null
   const zeiten = state.congregation.times
-  const wann = `${datumsFormat(state.lang, 'tag').format(meetingDate(week, tab, zeiten))} · ${meetingTime(week, tab, zeiten)}`
+  const wann = `${gebundenesDatum(meetingDate(week, tab, zeiten), state.lang, 'tag')} · ${meetingTime(week, tab, zeiten)}`
   return (
     <div className="einrichten-zusammenkunft">
       <div className="einrichten-zeile">

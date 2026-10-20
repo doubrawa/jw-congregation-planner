@@ -110,22 +110,28 @@
   text-align: start;
 }
 
+/* Titel und Zeit nebeneinander, solange der Titel sein längstes Wort fasst —
+   sonst rückt die Zeit darunter an den Rand. Neben „vor 2 Stunden" brach bei
+   320 px und Stufe 1,45 der Titel in allen Sprachen mitten im Wort
+   („Zuteilu|ng", „Нагадуванн|я:", T128). */
 .mitteilung-kopf {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 0 10px;
 }
 
 .mitteilung-titel {
-  min-width: 0;
+  flex: 1 1 0;
+  max-width: 100%;
   font-size: calc(16px * var(--fs));
   font-weight: 600;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .mitteilung-zeit {
   flex: none;
+  margin-inline-start: auto;
   color: var(--text3);
   font-size: calc(13px * var(--fs));
 }

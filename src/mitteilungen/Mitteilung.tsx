@@ -4,6 +4,7 @@ import { rechteVon } from '../data/rechte'
 import type { Notification } from '../data/types'
 import { NOTIF_TITLE_KEY } from '../i18n/ui'
 import { useT } from '../i18n/useT'
+import { zahlBinden } from '../i18n/zahl-binden'
 import { relativeZeit } from '../i18n/zeit'
 
 /**
@@ -23,7 +24,9 @@ export function Mitteilung({ notif }: { notif: Notification }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
   const titleKey = NOTIF_TITLE_KEY[notif.title]
-  const text = tu(notif.text)
+  // Die Daten im Text („Sonntag, 20. September") kommen übersetzt, aber nicht
+  // durch `fill` — Zahl und Wort binden (T128: „20. |September" bei 320 px).
+  const text = zahlBinden(tu(notif.text))
   const handlung = notif.read ? null : handlungZu(notif, state)
 
   const gelesen = () => {

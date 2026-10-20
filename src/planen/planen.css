@@ -387,6 +387,38 @@
   color: var(--text3);
 }
 
+/* Wird der Tag für die Schrift zu schmal, steht der Text unter Uhrzeit und ✕
+   (im Grundplan unter Uhrzeit und Pfeil) und der Leiter ohne Einzug: Daneben
+   blieben bei 320 px und Stufe 1,45 rund 90 px, „Congregati|on", „Reunió|n",
+   im Grundplan „Königreich|ssaal" brachen (T128). Den Tag misst `.treff-tag`
+   (`programm.css`). Der Block steht hinter den Grundregeln: Davor setzte die
+   gleich spezifische Grundregel den Einzug des Leiters wieder ein. */
+@container (max-width: 16em) {
+  .treff-planen-kopf {
+    grid-template-areas:
+      'zeit .'
+      'text text';
+    row-gap: 8px;
+  }
+
+  .treff-planen-kopf.is-aenderbar {
+    grid-template-areas:
+      'zeit . x'
+      'text text text';
+  }
+
+  .treff-leiter-zeile {
+    padding-inline-start: 0;
+  }
+
+  .regel-zeile {
+    grid-template-areas:
+      'zeit . pfeil'
+      'text text text';
+    row-gap: 8px;
+  }
+}
+
 /* Beschriftung einer Eingabezeile (Anfangs- und Schlusslied, Grundplan). */
 .plan-helper-label {
   font-size: calc(9.5px * var(--fs));
@@ -768,15 +800,29 @@
   margin-block: 0 12px;
 }
 
+/* Termin und „Verlegen" nebeneinander, solange der Termin sein längstes Stück
+   fasst — sonst rückt „Verlegen" darunter an den Rand. Gebunden ragte
+   „Dienstag, 29. September · 19:00" bei 320 px und Stufe 1,45 hinaus (T128). */
 .einrichten-zeile {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  column-gap: 10px;
+  gap: 4px 10px;
   min-height: 60px;
 }
 
-.einrichten-zeile-text,
+.einrichten-zeile-text {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+.einrichten-zeile > .verweis-leise {
+  margin-inline-start: auto;
+}
+
 .einrichten-verweis-text {
   display: flex;
   flex-direction: column;
@@ -1438,7 +1484,6 @@ body:has(.planen-leiste) .toast {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  justify-content: space-between;
   gap: 2px 10px;
 }
 

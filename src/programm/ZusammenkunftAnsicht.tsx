@@ -7,7 +7,7 @@ import type { HelperSlot, Meeting, MeetingKey, MeetingTab, PartItem, Person, Sec
 import { abschnittZeilen, plaetzeVon } from './programm-zeilen'
 import { fill, platzName, programmTermin, useT } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
-import { datumsFormat, wochentagMitZahl } from '../components/datum-anzeige'
+import { gebundenesDatum, wochentagMitZahl } from '../components/datum-anzeige'
 import { AusfallBanner } from '../components/WeekBadges'
 import { PersonZeile } from './PersonZeile'
 
@@ -420,7 +420,7 @@ function ProgFooter({ ende }: { ende?: string }) {
   return (
     <div className="prog-footer">
       {ende && <span>{ende}</span>}
-      <span>{fill(t.stand, { datum: datumsFormat(state.lang, 'tagMonat').format(new Date()) })}</span>
+      <span>{fill(t.stand, { datum: gebundenesDatum(new Date(), state.lang, 'tagMonat') })}</span>
     </div>
   )
 }

@@ -562,8 +562,23 @@
   overflow-wrap: break-word;
 }
 
+/* Ein Tag mit seinen Treffpunkten misst sich selbst (`container-type`): Wird er
+   für die Schrift zu schmal, steht die Uhrzeit über dem Text — hier und beim
+   Planen (`planen.css`). Neben der Uhrzeit brach bei 320 px und Stufe 1,45
+   „Congregatio|n" (T128). */
 .treff-tag {
   padding-block-end: 4px;
+  container-type: inline-size;
+}
+
+@container (max-width: 12em) {
+  .treff-punkt {
+    grid-template-columns: calc(58px * var(--fs)) minmax(0, 1fr);
+    grid-template-areas:
+      'zeit zeit'
+      'text text'
+      'leiter leiter';
+  }
 }
 
 .treff-leer {

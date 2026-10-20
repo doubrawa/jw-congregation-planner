@@ -790,7 +790,7 @@ describe('Drucken im Reiter Predigtdienst', () => {
     })
     drucke(container, 0)
     expect(orte()).toEqual(['Marktplatz'])
-    expect(document.querySelector('.druck-bogen .druck-blatt-kopf')?.textContent).toContain('14.–20. September 2026')
+    expect(document.querySelector('.druck-bogen .druck-blatt-kopf')?.textContent).toContain(zahlBinden('14.–20. September 2026'))
   })
 })
 
@@ -813,8 +813,8 @@ describe('Die Treffpunkte der Woche (T121)', () => {
   it('je Tag eine Karte: Uhrzeit, wer sich trifft, wo — und der Leiter', () => {
     const { container } = zeige({ tab: 'fs', fsWeeks: [WOCHE], groups: GRUPPEN, persons: [{ ...ICH, grp: 'g1' }] })
     expect(tage(container).map((tag) => tag.querySelector('.treff-tag-name')?.textContent)).toEqual([
-      'Mittwoch, 9. September',
-      'Samstag, 12. September',
+      zahlBinden('Mittwoch, 9. September'),
+      zahlBinden('Samstag, 12. September'),
     ])
     expect(texte(container, '.treff-zeit')).toEqual(['09:30', '10:00'])
     expect(texte(container, '.treff-titel')).toEqual([t.fsVers, 'Gruppe 1'])

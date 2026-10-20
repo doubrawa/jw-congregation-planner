@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { APP_LANGS } from './langs'
+import { NBSP, zahlBinden } from './zahl-binden'
 import { relativeZeit } from './zeit'
 
 /**
@@ -29,12 +30,12 @@ describe('relativeZeit: die Stufen', () => {
   })
 
   it('Minuten', () => {
-    expect(relativeZeit(vor(5 * MINUTE), 'en', JETZT)).toBe('5 minutes ago')
+    expect(relativeZeit(vor(5 * MINUTE), 'en', JETZT)).toBe(zahlBinden('5 minutes ago'))
   })
 
   it('Stunden — **jede** Zahl, nicht nur die aus den Testdaten', () => {
     for (const h of [1, 2, 3, 7, 23]) {
-      expect(relativeZeit(vor(h * STUNDE), 'en', JETZT)).toBe(`${h} hour${h === 1 ? '' : 's'} ago`)
+      expect(relativeZeit(vor(h * STUNDE), 'en', JETZT)).toBe(zahlBinden(`${h} hour${h === 1 ? '' : 's'} ago`))
     }
   })
 
@@ -46,12 +47,16 @@ describe('relativeZeit: die Stufen', () => {
   })
 
   it('mehrere Tage', () => {
-    expect(relativeZeit(vor(3 * TAG), 'en', JETZT)).toBe('3 days ago')
+    expect(relativeZeit(vor(3 * TAG), 'en', JETZT)).toBe(zahlBinden('3 days ago'))
   })
 
   it('gerundet wird, nicht abgeschnitten', () => {
     // 90 Minuten sind „vor 2 Stunden" — wie im abgelösten Code.
-    expect(relativeZeit(vor(90 * MINUTE), 'en', JETZT)).toBe('2 hours ago')
+    expect(relativeZeit(vor(90 * MINUTE), 'en', JETZT)).toBe(zahlBinden('2 hours ago'))
+  })
+
+  it('Zahl und Wort bleiben zusammen — die Glocke zeigt den Text ohne `fill` (T128)', () => {
+    expect(relativeZeit(vor(3 * TAG), 'de', JETZT)).toBe(`vor 3${NBSP}Tagen`)
   })
 
   it('ein unlesbarer Zeitstempel ergibt nichts, kein „Invalid Date"', () => {

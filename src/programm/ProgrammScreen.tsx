@@ -7,7 +7,7 @@ import { ersteZusammenkunftNach } from '../data/helpers'
 import { meetingDate } from '../data/meeting-dates'
 import { SAAL_PLAETZE, type SaalLage } from '../data/saal'
 import { Bereichstitel } from '../components/Bereichstitel'
-import { datumsFormat } from '../components/datum-anzeige'
+import { gebundenesDatum } from '../components/datum-anzeige'
 import { MeetingTabs } from '../components/MeetingTabs'
 import { TABLET_BREITE, useMedia } from '../components/useMedia'
 import { TerminListe } from '../components/WeekBadges'
@@ -200,9 +200,7 @@ function KongressKarte({ wi }: { wi: number }) {
           >
             <span>
               {fill(t.naechsteZusammenkunft, {
-                wann: datumsFormat(state.lang, 'kurzerWochentag').format(
-                  meetingDate(naechste.week, naechste.tab, state.congregation.times),
-                ),
+                wann: gebundenesDatum(meetingDate(naechste.week, naechste.tab, state.congregation.times), state.lang, 'kurzerWochentag'),
               })}
             </span>
             <Zeichen name="weiter" />

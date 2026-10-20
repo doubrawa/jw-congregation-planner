@@ -102,7 +102,7 @@ describe('Der Wochenbogen', () => {
     const kopf = container.querySelector('.druck-blatt-kopf')?.textContent ?? ''
     expect(kopf).toContain('Versammlung Nordheim')
     expect(kopf).toContain(t.navZusammenkuenfte)
-    expect(kopf).toContain('7.–13. September 2026')
+    expect(kopf).toContain(zahlBinden('7.–13. September 2026'))
     expect(container.querySelector('.druck-blatt-fuss')?.textContent).toContain(zahlBinden('Seite 1 von 1'))
   })
 

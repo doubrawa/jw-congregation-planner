@@ -1,6 +1,6 @@
 import { Fragment } from 'react'
 import { useApp } from '../app/context'
-import { datumsFormat } from '../components/datum-anzeige'
+import { datumsFormat, tageSpanne } from '../components/datum-anzeige'
 import { fromIso, tagNach } from '../data/meeting-dates'
 import { termineSortiert, trolleysSortiert } from '../data/trolleys'
 import { fill, useT } from '../i18n/useT'
@@ -26,7 +26,7 @@ export function TrolleyBogen({ montag }: { montag: string }) {
   const termine = termineSortiert(state.trolleyTermine)
   const tage = Array.from({ length: TAGE }, (_unused, i) => tagNach(montag, i))
   const tagText = datumsFormat(state.lang, 'wochentagZahl')
-  const zeitraum = datumsFormat(state.lang, 'tagMonatJahr').formatRange(fromIso(montag), fromIso(tagNach(montag, TAGE - 1)))
+  const zeitraum = tageSpanne(montag, tagNach(montag, TAGE - 1), state.lang, 'tagMonatJahr')
   const spalten = { gridTemplateColumns: `74px repeat(${Math.max(trolleys.length, 1)}, minmax(0, 1fr))` }
   const mitHinweis = trolleys.filter((trolley) => trolley.hinweis.trim())
 

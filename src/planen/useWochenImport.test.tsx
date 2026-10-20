@@ -52,7 +52,7 @@ afterEach(cleanup)
 
 describe('„Geladen bis"', () => {
   it('nennt das Ende der spätesten Woche, nicht deren Anfang', () => {
-    expect(geladenBis([woche({ start: '2026-08-31' }), woche({ start: '2026-09-07' })])).toBe('13. Sept. 2026')
+    expect(geladenBis([woche({ start: '2026-08-31' }), woche({ start: '2026-09-07' })])).toBe(zahlBinden('13. Sept. 2026'))
   })
 
   it('ohne ISO-Datum den Wochenbereich im Klartext (Demo- und Vorlagenwochen)', () => {

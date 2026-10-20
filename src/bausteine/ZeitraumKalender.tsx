@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { datumsFormat } from '../components/datum-anzeige'
+import { gebundenesDatum } from '../components/datum-anzeige'
 import {
   imMonat,
   imZeitraum,
@@ -59,9 +59,9 @@ export function ZeitraumKalender({
   const [ende, setEnde] = useState<ZeitraumEnde>(start ?? (von ? 'bis' : 'von'))
   const [monat, setMonat] = useState<Monat>(() => monatVon(start === 'bis' && bis ? bis : von))
   const locale = LOCALES[lang] ?? lang
-  const tagLang = datumsFormat(lang, 'tag')
-  const tagKurz = datumsFormat(lang, 'kurzerWochentag')
   const heute = isoDay(new Date())
+  /** Der Tag in Worten, wie ein Vorleseprogramm ihn sagt („Sonntag, 1. November"). */
+  const tagName = (tag: string) => gebundenesDatum(fromIso(tag), lang, 'tag')
 
   const tippen = (tag: string) => {
     const neu = zeitraumTippen({ von, bis, ende }, tag)
@@ -80,7 +80,7 @@ export function ZeitraumKalender({
       }}
     >
       <span className="klein-text">{beschriftung}</span>
-      <span className="kal-ende-wert">{wert ? tagKurz.format(fromIso(wert)) : '–'}</span>
+      <span className="kal-ende-wert">{wert ? gebundenesDatum(fromIso(wert), lang, 'kurzerWochentag') : '–'}</span>
     </button>
   )
 
@@ -94,7 +94,7 @@ export function ZeitraumKalender({
         <button type="button" className="kal-blaettern" aria-label={t.a11yPrevMonth} onClick={() => setMonat(monatPlus(monat, -1))}>
           <Zeichen name="zurueck" />
         </button>
-        <span className="kal-monat">{datumsFormat(lang, 'monatJahr').format(new Date(monat.y, monat.m, 15))}</span>
+        <span className="kal-monat">{gebundenesDatum(new Date(monat.y, monat.m, 15), lang, 'monatJahr')}</span>
         <button type="button" className="kal-blaettern" aria-label={t.a11yNextMonth} onClick={() => setMonat(monatPlus(monat, 1))}>
           <Zeichen name="weiter" />
         </button>
@@ -110,7 +110,7 @@ export function ZeitraumKalender({
             key={tag}
             type="button"
             className={tagKlasse(tag, von, bis, monat, heute)}
-            aria-label={tagLang.format(fromIso(tag))}
+            aria-label={tagName(tag)}
             aria-pressed={imZeitraum(tag, von, bis)}
             onClick={() => tippen(tag)}
           >

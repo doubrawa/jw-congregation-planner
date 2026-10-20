@@ -1,8 +1,9 @@
 // Jede `Wahl` an ihrer echten Stelle im echten Chrome (Rest aus T128): Profil,
 // Erinnerungen, Auswertung, die Blätter „Person anlegen", „Person bearbeiten",
 // „Automatisch", ein Weiterer Plan und das Eintragen eines Trolleys. Dazu jedes
-// Blatt mit Knöpfen nebeneinander im Fuß (`--ziele fuss`) und die Unteransichten
-// der Auswertung am Handy (`--ziele aw`) — „Was bleibt" aus T128.
+// Blatt mit Knöpfen nebeneinander im Fuß (`--ziele fuss`), die Unteransichten
+// der Auswertung am Handy (`--ziele aw`) — „Was bleibt" aus T128 — und die
+// Stellen mit einem Datum hinter einem Klick (`--ziele daten`).
 // Blätter werden per Klick geöffnet; gemessen wird die ganze Ansicht (bzw. das
 // Blatt), `vergleich.mjs` trennt nach Element.
 //
@@ -133,10 +134,77 @@ const ZIELE_AW = {
   'aw-engpaesse': { hash: 's=auswertung&uhr=2026-10-12&pl=1', nur: 'handy', schritt: klick('.aw-kachel', 3), vorher: '.aw-kachel', warte: '.unteransicht-kopf' },
   'aw-weiteres': { hash: 's=auswertung&uhr=2026-10-12&pl=1', nur: 'handy', schritt: klick('.aw-kachel', 4), vorher: '.aw-kachel', warte: '.unteransicht-kopf' },
 }
-const ALLE = { ...ZIELE, ...ZIELE_FUSS, ...ZIELE_AW }
+/** In der angezeigten Woche: der Streifen hält die Nachbarwochen mit eigenen Knöpfen bereit. */
+const inDerWoche = (sel, i = 0) =>
+  `[...document.querySelectorAll(${JSON.stringify(sel)})].filter((a) => !a.closest('.week-page--vor, .week-page--nach'))[${i}]?.click()`
+const WEITER = inDerWoche('.week-arrow', 1)
+
+/**
+ * „Woche einrichten" öffnet das Zahnrad neben den Reitern (der Hash kennt den
+ * Reiter nicht). Ein Datumsfeld hat nur die Woche mit dem Gedächtnismahl — in
+ * den Testdaten die vierte: dreimal weiterblättern, mit dem Pfeil der
+ * angezeigten Woche (die Nachbarwochen im Streifen tragen eigene).
+ */
+const WOCHE_EINRICHTEN = [
+  ['.week-arrow', WEITER],
+  ['.week-arrow', WEITER],
+  ['.week-arrow', WEITER],
+  ['.meeting-tab--icon', inDerWoche('.meeting-tab--icon')],
+]
+
+/**
+ * Wo ein Datum mit Monatsnamen hinter einem Klick steht (`--ziele daten`, Daten
+ * aus Intl, T128-Nachlauf): eine Person in der Auswertung, der Kalender eines
+ * Weiteren Plans, das Zuteilen-Blatt eines Hilfsdienstes, „Woche einrichten"
+ * mit Datumsfeld und dieses Feld geöffnet. Dazu gehören „absage", „trolley"
+ * und „plan" oben.
+ */
+const ZIELE_DATEN = {
+  'aw-person': {
+    hash: 's=auswertung&uhr=2026-10-12&pl=1',
+    // Am Handy erst die Wartezeiten, am Desktop steht die Liste schon auf der Seite.
+    // Ein Name ist ein Knopf; in der Liste der Absagen steht als Name ein Bereich (`span`).
+    schritt: kette(
+      ['.aw-kachel, button.aw-zeile-name', `document.querySelector('.aw-kachel') && ${klick('.aw-kachel', 2)}`],
+      ['button.aw-zeile-name', klick('button.aw-zeile-name')],
+    ),
+    vorher: '.aw-kachel, button.aw-zeile-name',
+    warte: '.unteransicht-kopf',
+  },
+  kalender: {
+    hash: 's=planen&tab=wp&pl=1',
+    schritt: kette(['.wp-plan-zeile', klick('.wp-plan-zeile')], ['.wp-datum', klick('.wp-datum')]),
+    vorher: '.wp-plan-zeile',
+    warte: `${DIALOG} .kal-monat`,
+    wurzel: DIALOG,
+  },
+  'zuteilen-hilfsdienst': {
+    hash: 's=planen&tab=mid&pl=1',
+    nur: 'handy',
+    schritt: inDerWoche('.prog-abschnitt[data-farbe=neutral2] .platz'),
+    vorher: '.prog-abschnitt[data-farbe=neutral2] .platz',
+    warte: `${DIALOG} .sheet-sub`,
+    wurzel: DIALOG,
+  },
+  'woche-einrichten': {
+    hash: 's=planen&tab=mid&pl=1',
+    schritt: kette(...WOCHE_EINRICHTEN),
+    vorher: '.week-arrow',
+    warte: '.dp-field',
+  },
+  // Dort das Datumsfeld geöffnet: die Köpfe der Wochentage („niedz.", „dum.").
+  datumswaehler: {
+    hash: 's=planen&tab=mid&pl=1',
+    schritt: kette(...WOCHE_EINRICHTEN, ['.dp-field', klick('.dp-field')]),
+    vorher: '.week-arrow',
+    warte: '.dp-pop',
+  },
+}
+const ALLE = { ...ZIELE, ...ZIELE_FUSS, ...ZIELE_AW, ...ZIELE_DATEN }
 const GRUPPEN = {
   fuss: ['person-anlegen', 'automatisch', 'plan', ...Object.keys(ZIELE_FUSS)],
   aw: ['aw-verteilung', 'aw-einseitig', ...Object.keys(ZIELE_AW)],
+  daten: ['absage', 'trolley', 'plan', ...Object.keys(ZIELE_DATEN)],
 }
 const NAMEN = String(arg('ziele', Object.keys(ZIELE).join(',')))
   .split(',')

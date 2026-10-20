@@ -35,6 +35,7 @@ import { fill } from '../i18n/useT'
 import type { TrolleyTermin } from '../data/types'
 import { loadAndHydrate } from '../app/hydrate'
 import { TrolleyAnsicht } from './TrolleyAnsicht'
+import { zahlBinden } from '../i18n/zahl-binden'
 
 const t = dict('de')
 
@@ -239,9 +240,7 @@ describe('am Desktop: die Woche als Raster, das Formular rechts', () => {
     })!
     fireEvent.click(frei)
     const seite = container.querySelector('aside.trolley-seite')!
-    const zehnter = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(
-      new Date('2026-09-10T12:00:00Z'),
-    )
+    const zehnter = zahlBinden('10. Sept. 2026')
     expect(seite.querySelector('.dp-field')?.textContent).toBe(zehnter)
     expect(knopf(seite, 'Trolley 2')?.getAttribute('aria-pressed')).toBe('true')
   })
@@ -264,7 +263,7 @@ describe('Drucken', () => {
     const { container } = zeige()
     fireEvent.click(container.querySelector('.druck-knopf')!)
     expect(window.print).toHaveBeenCalledTimes(1)
-    expect(imDruck).toEqual({ kennzeichen: 'bogen', zeitraum: '7.–20. September 2026', tage: 14 })
+    expect(imDruck).toEqual({ kennzeichen: 'bogen', zeitraum: zahlBinden('7.–20. September 2026'), tage: 14 })
     delete document.documentElement.dataset.print
   })
 })

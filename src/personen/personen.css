@@ -370,8 +370,13 @@
   letter-spacing: 0;
 }
 
+/* Ein langes Wort trennt nach der Sprache — am Desktop ragte bei Stufe 1,45
+   „Возвещатель" 2 px aus der Spalte neben dem Bild (T128). */
 .person-unter {
   color: var(--text2);
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
 }
 
 .person-karte {
