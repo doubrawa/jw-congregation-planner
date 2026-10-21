@@ -107,5 +107,6 @@ export function leererZustand({ theme, fontScale, lang }: Vorlieben): AppState {
     langSearch: '',
     toast: null,
     welcomePending: false,
+    keineVersammlung: false,
   }
 }

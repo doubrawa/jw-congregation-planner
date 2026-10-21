@@ -1,13 +1,13 @@
 import { Fragment, useId, type ReactNode } from 'react'
 import { useApp } from '../app/context'
 import { hatAuxKlasse } from '../data/aux-class'
-import { dauerAbtrennen, gehoertZu, istAusgefallen, MEETING_TABS, mtab } from '../data/helpers'
+import { dauerAbtrennen, gehoertZu, MEETING_TABS, mtab } from '../data/helpers'
 import { deutschesDatum, meetingDate, meetingTime } from '../data/meeting-dates'
 import type { HelperSlot, Meeting, MeetingKey, MeetingTab, PartItem, Person, Section, Service, Week } from '../data/types'
 import { abschnittZeilen, plaetzeVon } from './programm-zeilen'
 import { fill, platzName, programmTermin, useT } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
-import { gebundenesDatum, wochentagMitZahl } from '../components/datum-anzeige'
+import { gebundenesDatum } from '../components/datum-anzeige'
 import { AusfallBanner } from '../components/WeekBadges'
 import { PersonZeile } from './PersonZeile'
 
@@ -66,7 +66,7 @@ export function ZusammenkunftAnsicht({
       </div>
 
       <Programm meeting={meeting} rawMeeting={rawMeeting} me={me} tpw={tpw} sprache={sprache} ebene="h2" />
-      <Hilfsdienste helpers={meeting.helpers} me={me} />
+      <Hilfsdienste helpers={meeting.helpers} me={me} ebene="h2" />
       <ProgFooter ende={tpw(meeting.end)} />
     </>
   )
@@ -75,12 +75,12 @@ export function ZusammenkunftAnsicht({
 /**
  * **Am Desktop beide Zusammenkünfte nebeneinander** (T121, Entwurf
  * `GDesktopWoche`): je Tag eine Spalte mit Datum und Uhrzeit, darunter das
- * Programm. Die Hilfsdienste beider Tage stehen als **eine** Tabelle unter
- * dem kürzeren Wochenende — eine Zeile je Dienst, eine Spalte je Tag.
+ * Programm und die Hilfsdienste **dieses** Tages — wie am Handy.
  *
- * Die Tabelle steht im Dokument hinter beiden Tagen, nicht im Sonntag: Sie
- * gehört zu beiden, und so liest sie auch ein Bildschirmleser. Das Gitter
- * (`programm.css`) setzt sie unter die zweite Spalte.
+ * Bis zum 21.10.2026 standen die Hilfsdienste beider Tage als eine Tabelle
+ * unter dem kürzeren Wochenende, eine Spalte je Tag. Wer den Sonntag ansah,
+ * las dort auch die Dienste unter der Woche (Betreiber: „das sollte nicht
+ * zusammen stehen").
  */
 export function BeideTage({
   week,
@@ -101,14 +101,13 @@ export function BeideTage({
         {MEETING_TABS.map((key) => (
           <Tag key={key} tab={key} week={week} rawWeek={rawWeek} me={me} tpw={tpw} sprache={sprache} />
         ))}
-        <HilfsdiensteTabelle week={week} rawWeek={rawWeek} me={me} />
       </div>
       <ProgFooter />
     </>
   )
 }
 
-/** Ein Tag in der Spalte: Datum, Uhrzeit, was ihn besonders macht, sein Programm. */
+/** Ein Tag in der Spalte: Datum, Uhrzeit, was ihn besonders macht, sein Programm und seine Hilfsdienste. */
 function Tag({
   tab,
   week,
@@ -141,6 +140,7 @@ function Tag({
       </div>
       <AusfallBanner week={rawWeek} tab={tab} />
       <Programm meeting={meeting} rawMeeting={rawWeek[tab]} me={me} tpw={tpw} sprache={sprache} ebene="h3" />
+      <Hilfsdienste helpers={meeting.helpers} me={me} ebene="h3" />
     </section>
   )
 }
@@ -325,13 +325,14 @@ function ProgramRow({
 }
 
 /** Die Hilfsdienste einer Zusammenkunft: je Dienst eine Zeile. */
-function Hilfsdienste({ helpers, me }: { helpers: Meeting['helpers']; me: Person | undefined }) {
+function Hilfsdienste({ helpers, me, ebene }: { helpers: Meeting['helpers']; me: Person | undefined; ebene: Ebene }) {
   const { state } = useApp()
   const { t, tu } = useT()
+  const Ueberschrift = ebene
   return (
     <section className="prog-abschnitt prog-helpers" data-farbe="neutral2">
       <div className="prog-abschnitt-kopf">
-        <h2 className="prog-abschnitt-name">{t.hilfsdienste}</h2>
+        <Ueberschrift className="prog-abschnitt-name">{t.hilfsdienste}</Ueberschrift>
       </div>
       {state.services.map((service) => (
         <div key={service.key} className="prog-dienst">
@@ -339,56 +340,6 @@ function Hilfsdienste({ helpers, me }: { helpers: Meeting['helpers']; me: Person
           <DienstWer helpers={helpers} service={service} me={me} />
         </div>
       ))}
-    </section>
-  )
-}
-
-/**
- * Die Hilfsdienste beider Tage als Tabelle (Desktop): eine Zeile je Dienst,
- * eine Spalte je Tag. Der Kopf nennt den Tag; fällt die Zusammenkunft aus,
- * steht er durchgestrichen da, wie auf der Karte des Tages.
- */
-function HilfsdiensteTabelle({ week, rawWeek, me }: { week: Week; rawWeek: Week; me: Person | undefined }) {
-  const { state } = useApp()
-  const { t, tu } = useT()
-  const titelId = useId()
-  return (
-    <section className="prog-abschnitt prog-helpers" data-farbe="neutral2">
-      <div className="prog-abschnitt-kopf">
-        <h2 id={titelId} className="prog-abschnitt-name">
-          {t.hilfsdienste}
-        </h2>
-      </div>
-      <table className="prog-dienste" aria-labelledby={titelId}>
-        <thead>
-          <tr>
-            <td />
-            {MEETING_TABS.map((key) => {
-              const datum = meetingDate(rawWeek, key, state.congregation.times)
-              const tag = wochentagMitZahl(datum, state.lang)
-              return (
-                <th key={key} scope="col">
-                  {istAusgefallen(rawWeek, key) ? <s>{tag}</s> : tag}
-                </th>
-              )
-            })}
-          </tr>
-        </thead>
-        <tbody>
-          {state.services.map((service) => (
-            <tr key={service.key}>
-              <th scope="row" className="prog-dienst-name">
-                {tu(service.name)}
-              </th>
-              {MEETING_TABS.map((key) => (
-                <td key={key}>
-                  <DienstWer helpers={week[key].helpers} service={service} me={me} />
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </section>
   )
 }

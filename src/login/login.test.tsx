@@ -118,6 +118,28 @@ describe('Ohne Kennwort', () => {
   })
 })
 
+/*
+ * **Abgemeldet ohne Versammlung** (21.10.2026): Das Laden fand keine
+ * Mitgliedschaft mehr, die App hat abgemeldet. Ohne den Satz stünde man ohne
+ * Erklärung vor der Anmeldung.
+ */
+describe('Nach dem Abmelden ohne Versammlung', () => {
+  it('sagt die Anmeldung, warum, und wie es weitergeht', () => {
+    const { container } = zeige({ keineVersammlung: true })
+    const satz = container.querySelector('.login-abgemeldet')
+    expect(satz?.textContent).toBe(t.stKeineVersText)
+    expect(satz?.getAttribute('role')).toBe('status')
+    // Anmelden geht weiter — mit einem neuen Link.
+    expect(knopf(container, t.linkSenden)).toBeDefined()
+  })
+
+  it('sonst steht der Satz nicht da', () => {
+    const { container } = zeige()
+    expect(container.querySelector('.login-abgemeldet')).toBeNull()
+    expect(container.textContent).not.toContain(t.stKeineVersText)
+  })
+})
+
 describe('Link senden', () => {
   it('fordert den Link für die eingegebene Adresse an — in der Sprache der Seite', async () => {
     const { container } = zeige({ lang: 'en' })

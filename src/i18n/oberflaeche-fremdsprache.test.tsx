@@ -471,7 +471,7 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
     ['nur lesend (Momentaufnahme)', { screen: 'start', staleAt: Date.now() - 3600_000 }],
     ['Versammlung noch leer', { screen: 'start', dataEmpty: true, planner: false }],
     ['keine Wochen geladen', { screen: 'programm', weeks: [], fsWeeks: [] }],
-    ['kein Mitglied', { screen: 'start', dataStatus: 'no-membership' }],
+    ['abgemeldet ohne Versammlung', { screen: 'login', congregationId: null, userId: null, keineVersammlung: true }, '.login-abgemeldet'],
     ['Ladefehler', { screen: 'start', dataStatus: 'error' }],
     // Die Wochen beim Planen (T121, Phase 10): eine Woche ab heute — sonst
     // zeigt die Seite nur „Holen", denn vergangene Wochen stehen dort nicht.

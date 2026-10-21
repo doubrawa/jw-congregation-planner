@@ -1123,18 +1123,29 @@ describe('Personen (inkl. Debounce)', () => {
     expect(data.saveGroupRow).not.toHaveBeenCalled()
   })
 
-  it('removePerson löscht die Zeile und löst Konto-Verknüpfungen', () => {
+  it('removePerson löscht die Zeile und nimmt ihr Konto mit', () => {
     persist(
       st({ members: [{ userId: 'm1', email: '', personId: 'p1', planner: false, zuteiler: false }] }),
       st(),
       { type: 'removePerson', id: 'p1' },
     )
     expect(data.deletePersonRow).toHaveBeenCalledWith('p1')
-    // Die Mitgliedschaft räumt seit T105 der Fremdschlüssel (`on delete set
-    // null`) — hier stand dafür ein Schreibvorgang von Hand. Er war die einzige
-    // Personen-Beziehung ohne Fremdschlüssel, und wer per Skript löschte,
-    // hinterließ eine Zeile, deren `my_person_id()` ins Leere zeigt.
+    // Seit dem 21.10.2026 geht die Mitgliedschaft mit — das Konto löscht die
+    // Datenbank mit ihr (`members_konto_loeschen`). Bis dahin nullte der
+    // Fremdschlüssel nur die Person (seit T105; davor ein Schreibvorgang von
+    // Hand), und das Konto sah weiter alles.
+    expect(data.deleteMemberRow).toHaveBeenCalledWith('m1')
     expect(data.saveMemberRow).not.toHaveBeenCalled()
+  })
+
+  it('removePerson der eigenen Person lässt das eigene Konto stehen — sich selbst entfernen sperrt die Datenbank', () => {
+    persist(
+      st({ members: [{ userId: 'u1', email: '', personId: 'p1', planner: true, zuteiler: false }] }),
+      st(),
+      { type: 'removePerson', id: 'p1' },
+    )
+    expect(data.deletePersonRow).toHaveBeenCalledWith('p1')
+    expect(data.deleteMemberRow).not.toHaveBeenCalled()
   })
 })
 

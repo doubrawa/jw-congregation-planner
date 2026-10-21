@@ -22,9 +22,12 @@ import { supabase } from './supabase'
  * Tablet im Saal abmeldete, flog spätestens nach einer Stunde auch am eigenen
  * Handy hinaus. Ohne Kennwort kommt man dort nur mit einem neuen Link wieder
  * hinein, und der macht den alten samt Zettel ungültig (16.10.2026).
+ *
+ * `keineVersammlung`: Nicht der Nutzer meldet ab, sondern das Laden — das Konto
+ * gehört keiner Versammlung mehr an (`hydrate.ts`). Die Anmeldung sagt es.
  */
-export function performLogout(dispatch: Dispatch<AppAction>): void {
-  dispatch({ type: 'logout' })
+export function performLogout(dispatch: Dispatch<AppAction>, { keineVersammlung = false }: { keineVersammlung?: boolean } = {}): void {
+  dispatch({ type: 'logout', ...(keineVersammlung ? { keineVersammlung: true as const } : {}) })
   void sitzungBeenden()
 }
 

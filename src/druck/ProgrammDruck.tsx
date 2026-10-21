@@ -179,7 +179,8 @@ export function TagKnapp({ tab, week, rawWeek, tpw }: DruckTag) {
 /**
  * **Die Hilfsdienste beider Tage** als Tabelle: eine Zeile je Dienst, eine
  * Spalte je Tag. Ein freier Platz steht gepunktet da; fällt ein Tag aus, ist
- * sein Kopf durchgestrichen — wie am Bildschirm (`HilfsdiensteTabelle`).
+ * sein Kopf durchgestrichen. Am Bildschirm steht seit dem 21.10.2026 jeder
+ * Tag mit seinen eigenen Diensten (`ZusammenkunftAnsicht`).
  */
 export function HilfsdiensteDruck({ week, rawWeek, knapp = false }: { week: Week; rawWeek: Week; knapp?: boolean }) {
   const { state } = useApp()

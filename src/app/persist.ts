@@ -49,6 +49,7 @@ import { helperKeyParts } from '../data/planning'
 import { supabase } from '../lib/supabase'
 import type { FsInstance, Person, Trolley, Week } from '../data/types'
 import type { AppAction, AppState } from './context'
+import { kontoGehtMit } from './eigene-person'
 
 /**
  * Auto-Speichern mit Debounce: Tipp-Änderungen (Personen-Felder, Umbenennung
@@ -730,6 +731,9 @@ function personEntfernt(prev: AppState, next: AppState, id: string): void {
   // wer eine Person per Skript löschte, hinterließ eine Mitgliedschaft,
   // deren `my_person_id()` ins Leere zeigt.
   deletePersonRow(id)
+  // Ihr Konto geht mit (21.10.2026, `kontoGehtMit`): die Mitgliedschaft hier,
+  // das Konto löscht die Datenbank mit ihr (`members_konto_loeschen`).
+  for (const m of prev.members) if (kontoGehtMit(m, id, prev.userId)) deleteMemberRow(m.userId)
   // Ihre Abwesenheiten gehen mit. Auch dort nullt die Datenbank nur die
   // Person (`absences_person_fk`): Die Zeilen blieben liegen, gehörten
   // niemandem mehr und kamen bei jedem Laden wieder mit — der Zustand hielt

@@ -1,5 +1,5 @@
 import { rechteStufe, rechteVon, type RechteQuelle } from '../data/rechte'
-import type { Person } from '../data/types'
+import type { Member, Person } from '../data/types'
 import { RECHTE_STUFE_KEY } from '../i18n/ui'
 import type { I18n } from '../i18n/useT'
 
@@ -47,4 +47,15 @@ export function rolleUndGruppe(
  */
 export function istAngemeldet(state: { userId: string | null }): boolean {
   return state.userId !== null
+}
+
+/**
+ * **Geht dieses Konto mit, wenn die Person gelöscht wird?** (21.10.2026) — ja,
+ * wenn es ihres ist, außer es ist das eigene: Sich selbst entfernen sperrt die
+ * Datenbank (`members_delete`), es bleibt dann ohne Person. Eine Antwort für
+ * den Reducer (`ohnePerson`), das Speichern (`personEntfernt`) und die Frage
+ * vor dem Löschen (`PersonDetail`).
+ */
+export function kontoGehtMit(konto: Member, personId: string, eigeneUserId: string | null): boolean {
+  return konto.personId === personId && konto.userId !== eigeneUserId
 }

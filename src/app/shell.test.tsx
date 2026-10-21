@@ -23,8 +23,8 @@ import type { Group, Notification, Person, SlotSelection } from '../data/types'
  * zurück — der Fehler wäre sichtbar, aber kein Test würde rot.
  *
  * Dazu das übrige Gerüst, das sonst nirgends geprüft war: Glocke,
- * Offline-Banner, die vier Status-Ansichten (Laden / keine Versammlung /
- * Fehler / leer), die Schublade, der Kopf
+ * Offline-Banner, die Status-Ansichten (Laden / Fehler / leer; ein Konto ohne
+ * Versammlung wird seit dem 21.10.2026 abgemeldet), die Schublade, der Kopf
  * des Planens und der Push-Deep-Link.
  */
 
@@ -516,22 +516,6 @@ describe('Die Status-Ansichten der Datenanbindung', () => {
   })
 })
 
-describe('Ein Konto ohne Versammlung', () => {
-  /*
-   * Seit dem Anmelden per Link (T121, Phase 8) gibt es keinen Code mehr zum
-   * Einlösen: Ein Konto ohne Versammlung hat der Admin entfernt, hinein kommt
-   * es nur mit einem neuen Link. Die Seite sagt das — und bietet Abmelden an.
-   */
-  const zeigeOhneVersammlung = () => zeige({ dataStatus: 'no-membership' })
-
-  it('nennt den Fall und den Weg zurück — ein Feld für einen Code gibt es nicht mehr', () => {
-    const { getByText, container } = zeigeOhneVersammlung()
-    expect(getByText(t.stKeineVers)).toBeTruthy()
-    expect(getByText(t.stKeineVersText)).toBeTruthy()
-    expect(container.querySelector('.status-view input')).toBeNull()
-  })
-})
-
 describe('Die Schublade am Handy (und am Tablet hochkant)', () => {
   const menueKnopf = (c: HTMLElement) => c.querySelector<HTMLButtonElement>('.kopfzeile .kopfzeile-menue')!
 
@@ -635,17 +619,11 @@ describe('Die Kopfzeile auf dem Handy nennt Tag und Versammlung', () => {
   })
 
   it('solange keine Versammlung geladen ist, steht der Produktname da — kein leerer Kopf', () => {
-    // Für ein Konto ohne Versammlung und nach einem Ladefehler gibt es keinen
-    // Versammlungsnamen. Ein leerer Kopf sähe aus wie ein Ladefehler. (Beim
-    // Laden selbst steht das Startbild, ohne Kopf.)
-    for (const over of [
-      { dataStatus: 'error' as const },
-      { dataStatus: 'no-membership' as const },
-    ]) {
-      const { container } = zeige({ ...over, congregation: { ...krumbach, name: '' } })
-      expect(kopfName(container)?.textContent).toBe('Versammlung.app')
-      cleanup()
-    }
+    // Nach einem Ladefehler gibt es keinen Versammlungsnamen. Ein leerer Kopf
+    // sähe aus wie ein Ladefehler. (Beim Laden selbst steht das Startbild, ohne
+    // Kopf; ein Konto ohne Versammlung wird abgemeldet.)
+    const { container } = zeige({ dataStatus: 'error', congregation: { ...krumbach, name: '' } })
+    expect(kopfName(container)?.textContent).toBe('Versammlung.app')
   })
 
   it('ein Name aus lauter Leerzeichen zählt als leer', () => {
@@ -786,7 +764,6 @@ describe('Abmelden und Rollenanzeige', () => {
    * hinaus. Wer mit dem falschen Konto angemeldet ist, säße sonst fest.
    */
   it.each([
-    ['ohne Versammlung (Code einlösen)', { dataStatus: 'no-membership' } as Partial<AppState>],
     ['nach einem Ladefehler', { dataStatus: 'error' } as Partial<AppState>],
     ['vor einer leeren Versammlung (Verkündiger)', { dataEmpty: true, planner: false } as Partial<AppState>],
   ])('%s: die Statusseite meldet selbst ab', (_was, over) => {

@@ -8300,6 +8300,28 @@ Einstellung.
 - Handbuch `planer.md` an drei Stellen. Mutationskatalog: drei Anker
   nachgezogen (sie hätten `npm test` in der CI rot gemacht), drei Einträge neu.
 
+## Aufgenommen am 21. Oktober 2026 — Motion-Beispiel (T132)
+
+### T132 · Ein Motion-Beispiel umsetzen 🔧 ☐ offen
+
+**Auftrag (21. Oktober, Betreiber):** „nimm auf die todo liste, dass man ein
+motion beispiel umsetzt. wir überlegen nochmal, was man am besten schön
+animiert."
+
+**Stand heute:** Am 12. Oktober war ein kurzer Clip zu „Plan senden" geplant,
+zurückgestellt, bis das neue Design (T121) steht — damit er nicht gleich die
+alte Oberfläche zeigt; am 19. Oktober weiter auf später. Das neue Design ist
+live. Ein Motion-Artifact ist dafür angelegt, aber noch leer.
+
+**Vor dem Umsetzen klären:**
+
+- Was gezeigt wird: „Plan senden" ist nur noch ein Kandidat, die Wahl ist
+  wieder offen.
+- Stil, Farben und Länge des Clips.
+
+**Umsetzen:** das vorhandene Artifact füllen, statt ein neues anzulegen — mit
+Platzhalterdaten, nie mit echten Namen oder Adressen (das Repo ist öffentlich).
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -8336,14 +8358,16 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 22./23. August ☑☑☑☑☑☑☑☑☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
-10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑
+10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
+21. Oktober ☐
 
-**130 der 131 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen ist eine:**
+**130 der 132 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind zwei:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
+| **T132** | Motion-Beispiel | ☐ aufgenommen am 21. Oktober; was animiert wird, überlegt der Betreiber noch |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
@@ -8777,10 +8801,11 @@ braucht den Betreiber, ein Gerät oder eine Entscheidung.
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124; am 21. Oktober: noch nicht). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
-| **Zu entscheiden** | Konto ohne Versammlung | Verliert ein Konto seine Mitgliedschaft, nachdem schon Daten geladen waren, steht oben weiter der Name der alten Versammlung (gesehen am 19. Oktober im Review von `a48f784d`, nur in der Antwort jener Sitzung festgehalten). Betreiber am 21. Oktober: Ohne Versammlung ist die App nicht zu nutzen — dann nichts mehr anzeigen und keine Anmeldung zulassen, ohne aufwendige Logik. Ein Vorschlag geht ihm vor dem Bau zur Entscheidung zu |
+| **Bewusst offen** | Der Grund nach dem Abmelden ohne Versammlung | Den Satz „Dein Konto gehört zu keiner Versammlung mehr" zeigt die Anmeldung nur, wenn das Laden die fehlende Mitgliedschaft findet — in der ersten Stunde nach dem Entfernen. Danach scheitert schon die Erneuerung des Tokens (das Konto ist gelöscht), supabase-js meldet `SIGNED_OUT` ohne Grund, und die Anmeldung steht ohne Satz da. Ihn auch dann zu zeigen, hieße erzwungenes und eigenes Abmelden zu unterscheiden — Betreiber am 21. Oktober: „wir müssen da keine komplexe logik einbauen" (Review vom 21. Oktober) |
+| **Bewusst offen** | Altes Zugangstoken nach dem Entfernen | Ein schon ausgestelltes Token gilt bis zu seinem Ablauf (höchstens eine Stunde) und sieht ohne Mitgliedschaft nichts. Wird die Person in dieser Stunde neu eingeladen, gilt es für das neue Konto: Es trägt wieder ihre Person-Id (`anmelden`). Vermerkt am Trigger in `schema.sql` (Review vom 21. Oktober) |
 | **Zurückgestellt** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт". Betreiber am 16. Oktober: „bleibt erst mal so" — wieder aufnehmen, wenn ein Muttersprachler prüft; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
-| **Wartet** | Motion-Clip „Plan senden" | am 12. Oktober zurückgestellt, bis das neue Design steht — das ist jetzt der Fall; am 19. Oktober weiter auf später (Betreiber). Das leere Motion-Artifact liegt schon bereit |
+| **T132** | Motion-Beispiel | Betreiber am 21. Oktober: ein Motion-Beispiel umsetzen; was sich am schönsten animieren lässt, überlegen wir noch. „Plan senden" (am 12. Oktober geplant, bis nach dem neuen Design zurückgestellt, am 19. Oktober weiter auf später) ist nur noch ein Kandidat. Das leere Motion-Artifact liegt bereit |
 | **Betreiber** | Mitgliedsrechte-Probe nach „Alles Planen" | `node scripts/mitgliedsrechte-probe.mjs` — die Testversammlung `edac60cb` und `.env.probe` stehen noch; umgedreht sind (35), (38)–(40), (42), (50), (53), (55), (60), neu (80) und (81). Seit dem 19. Oktober auch (82)–(85): die Leseregel der Abwesenheiten vom 17. Oktober (`absences_select`: über acht Wochen zurück nur, wer zuteilt, und die eigene) — im Skript und an der Attrappe geprüft, live noch nicht gefahren |
 | **Gerät** | Dunkle Bedienleiste am Handy | wirkt erst mit der aktualisierten WebAPK (`about://webapks` → „Update", oder neu installieren) |
 | **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
@@ -8806,7 +8831,23 @@ Am 20. Oktober abends herausgenommen: **Rest aus T128** — mit den Daten aus
 Am 21. Oktober aufgenommen: **Konto ohne Versammlung** — die dritte Frage aus
 dem Review des Offline-Starts in der ersten Stunde (19. Oktober). Die beiden
 anderen sind entschieden („Verbindung langsam", „Das Blatt nach einem langsamen
-Start"); diese stand nur am Ende jener Sitzung.
+Start"); diese stand nur am Ende jener Sitzung. Danach dazugekommen und offen:
+**T132** (ein Motion-Beispiel) — damit 132 Köpfe, offen T121 und T132. Die
+Zeile „Motion-Clip ‚Plan senden'" der Tabelle ist darin aufgegangen.
+
+Am 21. Oktober nachmittags herausgenommen: **Konto ohne Versammlung** —
+erledigt. Findet das Laden keine Mitgliedschaft, meldet die App das Gerät ab,
+und die Anmeldung sagt, warum (die Seite „Keine Versammlung" ist fort). Mit der
+Mitgliedschaft geht das Konto (Trigger `members_konto_loeschen`, vor dem Push
+eingespielt und an der Datenbank gemessen: als Admin über die Richtlinien
+gelöscht → Konto weg; Konto zuerst gelöscht → kein Fehler; die eigene
+Mitgliedschaft löscht die Richtlinie nicht). „Person löschen" nimmt ihr Konto
+mit (Betreiber: „entscheide selber"; in der App, nicht per Fremdschlüssel — das
+Zurücksetzen verknüpft die Konten nach dem Löschen der Personen neu), die Frage
+davor sagt es; nur das eigene Konto bleibt, ohne Person. Was aus dem Review
+blieb, steht oben unter „Bewusst offen". Am selben Tag (Betreiber): **am
+Desktop stehen die Hilfsdienste je Tag** unter seinem Programm statt als eine
+Tabelle beider Tage unter dem Wochenende.
 
 Am 19. Oktober in die Tabelle aufgenommen: `sprache-fehlt` und
 `auth.sessions` (bis dahin nur in einer Commit-Nachricht, `42dff943`, und bei

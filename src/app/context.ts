@@ -73,15 +73,16 @@ export interface Toast {
 export type { Congregation }
 
 /**
- * Datenquelle: `loading` = lädt aus der DB; `ready` = geladen; `no-membership`
- * = Konto keiner Versammlung zugeordnet; `error` = Ladefehler.
+ * Datenquelle: `loading` = lädt aus der DB; `ready` = geladen; `error` =
+ * Ladefehler. Ein Konto ohne Versammlung hat keinen eigenen Stand mehr: Es wird
+ * abgemeldet (`keineVersammlung`, 21.10.2026).
  *
  * Bis zum 2.10.2026 gab es dazu `demo` — erfundene Daten im Speicher, und an
  * acht Stellen verhielt sich die App dann anders als im Betrieb. Die
  * Entwicklerseite (`tests/testdaten/demo-start.ts`) startet jetzt `ready` und
  * läuft denselben Weg; was ein Konto braucht, fragt `istAngemeldet`.
  */
-export type DataStatus = 'loading' | 'ready' | 'no-membership' | 'error'
+export type DataStatus = 'loading' | 'ready' | 'error'
 
 /** Nutzdaten der Hydration (aus Supabase geladen). */
 export interface HydratePayload {
@@ -352,6 +353,13 @@ export interface AppState {
    * feststeht, wen man vor sich hat (siehe AppShell).
    */
   welcomePending: boolean
+  /**
+   * Abgemeldet, weil das Konto keiner Versammlung mehr angehört (21.10.2026):
+   * Ohne Versammlung ist die App nicht zu nutzen. Die Anmeldung sagt es, bis
+   * sich jemand anmeldet. Bis dahin stand die Seite „Keine Versammlung" da, mit
+   * dem Namen der alten Versammlung im Kopf, wenn schon Daten geladen waren.
+   */
+  keineVersammlung: boolean
 }
 
 export type LacDir = -1 | 1
@@ -380,7 +388,8 @@ export type AppAction =
   // Die Prüfung beim Start ist durch, angemeldet oder nicht (`sitzungPruefen`).
   | { type: 'sitzungGeprueft' }
   | { type: 'welcomeShown' }
-  | { type: 'logout' }
+  // `keineVersammlung`: Das Laden fand keine Mitgliedschaft mehr (`hydrate.ts`).
+  | { type: 'logout'; keineVersammlung?: true }
   /**
    * `woche`: eine bestimmte Woche und Ansicht öffnen statt der nächsten
    * Zusammenkunft — vom Start-Bildschirm aus die Woche, in der etwas zu tun ist.

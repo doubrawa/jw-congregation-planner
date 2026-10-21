@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { letztenStandZeigen, loadAndHydrate, momentaufnahmeZeigen } from './hydrate'
+import { performLogout } from '../lib/abmelden'
 import { loadCongregationData, type CongregationData, type LoadResult } from '../lib/data'
 import { verfolgterFetch } from '../lib/schreiben-unterwegs'
 import { clearSnapshot, readSnapshot, saveSnapshot } from '../lib/snapshot'
@@ -15,7 +16,9 @@ vi.mock('../lib/snapshot', () => ({
   clearSnapshot: vi.fn(),
 }))
 vi.mock('./persist', () => ({ ausstehendesSchreiben: vi.fn() }))
+vi.mock('../lib/abmelden', () => ({ performLogout: vi.fn() }))
 const mockLoad = vi.mocked(loadCongregationData)
+const mockAbmelden = vi.mocked(performLogout)
 const mockSchreiben = vi.mocked(ausstehendesSchreiben)
 const mockSave = vi.mocked(saveSnapshot)
 const mockRead = vi.mocked(readSnapshot)
@@ -63,6 +66,7 @@ describe('loadAndHydrate', () => {
     mockLoad.mockReset()
     mockSave.mockClear()
     mockClear.mockClear()
+    mockAbmelden.mockClear()
     mockRead.mockReset()
     mockRead.mockReturnValue(null)
   })
@@ -162,11 +166,18 @@ describe('loadAndHydrate', () => {
     if (actions[1]!.type === 'hydrate') expect(mockSave.mock.calls[0]![0]).toEqual(actions[1].payload)
   })
 
-  it('bei fehlender Mitgliedschaft → no-membership (mit userId für Retry), Aufnahme gelöscht', async () => {
+  /*
+   * **Ohne Versammlung abgemeldet** (21.10.2026): Bis dahin blieb das Gerät
+   * angemeldet und zeigte „Keine Versammlung", oben mit dem Namen der alten.
+   */
+  it('bei fehlender Mitgliedschaft → abgemeldet mit Grund, Aufnahme gelöscht', async () => {
     mockLoad.mockResolvedValue({ ok: false, reason: 'no-membership' })
     const { actions, dispatch } = collector()
     await loadAndHydrate(dispatch, 'u9')
-    expect(actions[1]).toEqual({ type: 'setDataStatus', status: 'no-membership', userId: 'u9' })
+    expect(mockAbmelden).toHaveBeenCalledTimes(1)
+    expect(mockAbmelden).toHaveBeenCalledWith(dispatch, { keineVersammlung: true })
+    // Nur das Startbild davor, keine Seite für ein Konto ohne Versammlung.
+    expect(actions).toEqual([{ type: 'setDataStatus', status: 'loading' }])
     // Ohne Mitgliedschaft darf der alte Stand nicht offline weiterleben.
     expect(mockClear).toHaveBeenCalled()
   })
@@ -205,11 +216,13 @@ describe('loadAndHydrate', () => {
     expect(mockRead).not.toHaveBeenCalled()
   })
 
-  it('auch still: Ohne Mitgliedschaft gilt der alte Stand nicht weiter', async () => {
+  it('auch still: Ohne Mitgliedschaft gilt der alte Stand nicht weiter — abgemeldet', async () => {
     mockLoad.mockResolvedValue({ ok: false, reason: 'no-membership' })
     const { actions, dispatch } = collector()
     await loadAndHydrate(dispatch, 'u9', { silent: true })
-    expect(actions).toEqual([{ type: 'setDataStatus', status: 'no-membership', userId: 'u9' }])
+    expect(actions).toEqual([])
+    expect(mockAbmelden).toHaveBeenCalledWith(dispatch, { keineVersammlung: true })
+    expect(mockClear).toHaveBeenCalled()
   })
 
   /*

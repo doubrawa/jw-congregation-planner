@@ -4354,18 +4354,20 @@ export const KATALOG = [
     ersetzen: '  return desktop',
   },
   {
+    // Bis zum 21.10.2026 eine Tabelle beider Tage unter dem Wochenende, mit
+    // dem ausgefallenen Tag durchgestrichen im Kopf (`desktop-ausfall-im-tabellenkopf`).
     id: 'desktop-hilfsdienste-je-tag',
     datei: 'src/programm/ZusammenkunftAnsicht.tsx',
-    regel: 'In der Tabelle der Hilfsdienste steht jeder Tag mit seinen eigenen Plätzen.',
-    suchen: '                  <DienstWer helpers={week[key].helpers} service={service} me={me} />',
-    ersetzen: '                  <DienstWer helpers={week.mid.helpers} service={service} me={me} />',
+    regel: 'Am Desktop stehen unter jedem Tag nur seine eigenen Hilfsdienste — der Sonntag zeigt nicht die unter der Woche.',
+    suchen: '      <Hilfsdienste helpers={meeting.helpers} me={me} ebene="h3" />',
+    ersetzen: '      <Hilfsdienste helpers={week.mid.helpers} me={me} ebene="h3" />',
   },
   {
-    id: 'desktop-ausfall-im-tabellenkopf',
+    id: 'desktop-hilfsdienste-unter-dem-tag',
     datei: 'src/programm/ZusammenkunftAnsicht.tsx',
-    regel: 'Fällt ein Tag aus, steht er im Kopf der Hilfsdienst-Tabelle durchgestrichen.',
-    suchen: '                  {istAusgefallen(rawWeek, key) ? <s>{tag}</s> : tag}',
-    ersetzen: '                  {tag}',
+    regel: 'Die Hilfsdienste eines Tages stehen unter seiner Überschrift (h3), nicht gleichrangig neben ihr.',
+    suchen: '      <Hilfsdienste helpers={meeting.helpers} me={me} ebene="h3" />',
+    ersetzen: '      <Hilfsdienste helpers={meeting.helpers} me={me} ebene="h2" />',
   },
   {
     id: 'druck-thema-beide-tage',
@@ -8658,8 +8660,8 @@ export const KATALOG = [
     id: 'abmelden-leert-den-bestand',
     datei: 'src/app/reducer.ts',
     regel: 'Abmelden leert den Bestand — der Nächste am Gerät sieht nichts vom Vorgänger, nicht einmal kurz.',
-    suchen: '      return leererZustand({ theme: state.theme, fontScale: state.fontScale, lang: state.lang })\n',
-    ersetzen: "      return { ...state, screen: 'login', confirmOpen: false }\n",
+    suchen: '        ...leererZustand({ theme: state.theme, fontScale: state.fontScale, lang: state.lang }),\n',
+    ersetzen: "        ...state,\n        screen: 'login',\n        confirmOpen: false,\n",
   },
   {
     id: 'laden-nach-abmelden-verworfen',
@@ -9571,13 +9573,6 @@ export const KATALOG = [
     regel: 'Gelingt die Erneuerung, lädt es, auch wenn das Gerät noch „offline" meldet — sie ging übers Netz; sonst bliebe der letzte Stand stehen, auch nach „Neu laden".',
     suchen: '      if (ersatzSteht(userId) && laedtFuer !== userId) ladenBeginnen(userId)\n',
     ersetzen: '      if (ersatzSteht(userId) && laedtFuer !== userId && navigator.onLine !== false) ladenBeginnen(userId)\n',
-  },
-  {
-    id: 'ohne-mitgliedschaft-kein-offline-stand',
-    datei: 'src/app/reducer.ts',
-    regel: 'Ohne Mitgliedschaft gilt auch der letzte Stand nicht mehr — kein „Offline · Stand von …" über der Seite „Keine Versammlung".',
-    suchen: "        staleAt: action.status === 'no-membership' ? null : state.staleAt,\n",
-    ersetzen: '        staleAt: state.staleAt,\n',
   },
   {
     id: 'offline-netz-zurueck-laedt',
@@ -10776,6 +10771,76 @@ export const KATALOG = [
     regel: 'Im Streifen des letzten Stands rückt „Neu laden" bei großer Schrift unter den Text, statt ihn in eine Spalte von drei Wörtern zu drücken.',
     suchen: '.offline-banner-inhalt {\n  flex: 1;\n  display: flex;\n  flex-wrap: wrap;\n',
     ersetzen: '.offline-banner-inhalt {\n  flex: 1;\n  display: flex;\n',
+  },
+
+  // ── Ohne Versammlung abgemeldet (Betreiber, 21.10.2026) ────────────────────
+  // Löst `ohne-mitgliedschaft-kein-offline-stand` ab: Die Seite „Keine
+  // Versammlung" gibt es nicht mehr, und das Abmelden leert den letzten Stand
+  // ohnehin (`abmelden-leert-den-bestand`).
+  {
+    id: 'ohne-versammlung-abgemeldet',
+    datei: 'src/app/hydrate.ts',
+    regel: 'Findet das Laden keine Mitgliedschaft, meldet das Gerät ab und sagt der Anmeldung, warum.',
+    suchen: '    performLogout(dispatch, { keineVersammlung: true })\n',
+    ersetzen: '    performLogout(dispatch)\n',
+  },
+  {
+    id: 'ohne-versammlung-grund-bleibt',
+    datei: 'src/app/reducer.ts',
+    regel: 'Das zweite Abmelden (`SIGNED_OUT`, ohne Grund) nimmt den Satz „keine Versammlung" nicht weg.',
+    suchen: '        keineVersammlung: action.keineVersammlung === true || state.keineVersammlung,\n',
+    ersetzen: '        keineVersammlung: action.keineVersammlung === true,\n',
+  },
+  {
+    id: 'ohne-versammlung-anmeldung-raeumt',
+    datei: 'src/app/reducer.ts',
+    regel: 'Erst eine Anmeldung nimmt den Satz „keine Versammlung" weg.',
+    suchen: '        welcomePending: action.welcome === true,\n        keineVersammlung: false,\n',
+    ersetzen: '        welcomePending: action.welcome === true,\n',
+  },
+  {
+    id: 'ohne-versammlung-satz',
+    datei: 'src/login/LoginScreen.tsx',
+    regel: 'Nach dem Abmelden ohne Versammlung sagt die Anmeldung, warum, und wie es weitergeht.',
+    suchen: '        {state.keineVersammlung && (\n',
+    ersetzen: '        {false && (\n',
+  },
+  // „Person löschen" nimmt ihr Konto mit (Betreiber: „entscheide selber", 21.10.2026).
+  {
+    id: 'person-loeschen-konto-mit',
+    datei: 'src/app/reducer.ts',
+    regel: 'Wird eine Person gelöscht, geht ihr Konto mit — nicht nur die Verknüpfung.',
+    suchen: '      .filter((m) => !kontoGehtMit(m, id, state.userId))\n',
+    ersetzen: '',
+  },
+  {
+    // Eine Stelle für Reducer, Speichern und Frage — die Mutation trifft alle drei.
+    id: 'person-loeschen-eigenes-konto-bleibt',
+    datei: 'src/app/eigene-person.ts',
+    regel: 'Löscht der Admin die eigene Person, bleibt sein Konto — ohne Person; die Frage davor nennt es nicht.',
+    suchen: '  return konto.personId === personId && konto.userId !== eigeneUserId\n',
+    ersetzen: '  return konto.personId === personId\n',
+  },
+  {
+    id: 'person-loeschen-mitgliedschaft-in-der-db',
+    datei: 'src/app/persist.ts',
+    regel: 'Wird eine Person gelöscht, löscht die App auch ihre Mitgliedschaft in der Datenbank — das Konto geht mit ihr.',
+    suchen: '  for (const m of prev.members) if (kontoGehtMit(m, id, prev.userId)) deleteMemberRow(m.userId)\n',
+    ersetzen: '',
+  },
+  {
+    id: 'schema-konto-mit-mitgliedschaft',
+    datei: 'supabase/schema.sql',
+    regel: 'Geht die Mitgliedschaft, geht das Konto — sonst käme ein entferntes Konto mit einem neuen Link samt alten Sitzungen zurück.',
+    suchen: '  delete from auth.users where id = old.user_id;\n',
+    ersetzen: '',
+  },
+  {
+    id: 'person-loeschen-frage-nennt-konto',
+    datei: 'src/personen/PersonDetail.tsx',
+    regel: 'Hat die Person ein Konto, sagt die Frage vor dem Löschen, dass es mitgeht.',
+    suchen: "          (state.members.some((m) => kontoGehtMit(m, person.id, state.userId)) ? ` ${t.confirmPersonDelKonto}` : '')\n",
+    ersetzen: "          ''\n",
   },
 ]
 

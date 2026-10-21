@@ -17,7 +17,7 @@ import {
   ohneDienstZusagen,
 } from '../data/dienste'
 import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
-import { eigenePerson } from './eigene-person'
+import { eigenePerson, kontoGehtMit } from './eigene-person'
 import { leererZustand } from './init'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsRegelAussetzen, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, regenFsWeeks } from '../data/fs'
 import { neueWocheEinordnen } from '../data/neue-woche'
@@ -254,7 +254,14 @@ function ohnePerson(state: AppState, id: string): AppState {
         .filter((t) => t.pid !== id)
         .map((t) => (t.partner === id ? { ...t, partner: null, gemeinsam: false } : t)),
     ),
-    members: state.members.map((m) => (m.personId === id ? { ...m, personId: null } : m)),
+    // Ihr Konto geht mit (21.10.2026, `kontoGehtMit`): Ohne Person sähe es
+    // weiter alles, und wer nicht mehr zur Versammlung gehört, nutzt die App
+    // nicht mehr (`persist.ts` löscht die Mitgliedschaft, die Datenbank das
+    // Konto). Gründlicher als der Fremdschlüssel (`on delete set null`) — nur
+    // das eigene bleibt, ohne Person, und steht dann unter „Konten ohne Person".
+    members: state.members
+      .filter((m) => !kontoGehtMit(m, id, state.userId))
+      .map((m) => (m.personId === id ? { ...m, personId: null } : m)),
     // Ihr Anmelde-Link geht mit ihr (`on delete cascade`).
     anmeldeLinks: state.anmeldeLinks.filter((l) => l.personId !== id),
   }
@@ -597,6 +604,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         screen: 'start',
         confirmOpen: vorzulegen(state.myTasks, state.substituteReqs),
         welcomePending: action.welcome === true,
+        keineVersammlung: false,
       }
     case 'sitzungGeprueft':
       // Zweimal gemeldet, wenn der Offline-Start vorgegriffen hat (`store.tsx`).
@@ -618,8 +626,15 @@ function baseReducer(state: AppState, action: AppAction): AppState {
        * Was bleibt, gehört dem Gerät (`Vorlieben`). Alles Übrige der Ansicht —
        * Reiter, Blätter, Sprungziel, Offline-Stand, Begrüßung — beginnt wie
        * beim Start der App.
+       *
+       * Den Grund „keine Versammlung" nimmt erst eine Anmeldung weg: Jedes
+       * Abmelden kommt zweimal, selbst und danach als `SIGNED_OUT`
+       * (`store.tsx`), das zweite ohne Grund.
        */
-      return leererZustand({ theme: state.theme, fontScale: state.fontScale, lang: state.lang })
+      return {
+        ...leererZustand({ theme: state.theme, fontScale: state.fontScale, lang: state.lang }),
+        keineVersammlung: action.keineVersammlung === true || state.keineVersammlung,
+      }
     case 'navigate': {
       // Rechteprüfung: Wer den Bildschirm nicht sehen darf, landet im Programm.
       // Dieselbe Liste bestückt die Navigation (AppShell) — eine Antwort, zwei
@@ -1753,11 +1768,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         ...state,
         dataStatus: action.status,
         userId: action.userId ?? state.userId,
-        // Ohne Mitgliedschaft gilt auch der letzte Stand nicht mehr; das Laden
-        // hat ihn eben gelöscht (`hydrate.ts`). Stand er schon da
-        // (Offline-Start), hinge sonst „Offline · Stand von …" über der Seite
-        // „Keine Versammlung".
-        staleAt: action.status === 'no-membership' ? null : state.staleAt,
       }
     case 'showToast':
       return { ...state, toast: nextToast(state, action.text) }

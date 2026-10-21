@@ -78,9 +78,16 @@
   text-align: center;
 }
 
+/* Die Karten der Anmeldung — der passende Code, der Grund nach dem Abmelden
+   ohne Versammlung, „Ohne E-Mail-Adresse?" — mit demselben Rand innen. */
+.login-code-passt,
+.login-abgemeldet,
+.login-ohne-mail {
+  padding: 16px 18px 18px;
+}
+
 .login-code-passt {
   gap: 4px;
-  padding: 16px 18px 18px;
 }
 
 .login-code-name {
@@ -92,10 +99,14 @@
   align-self: center;
 }
 
+/* Abgemeldet ohne Versammlung (21.10.2026): eine Karte über der Anmeldung. */
+.login-abgemeldet {
+  line-height: 1.4;
+}
+
 /* „Ohne E-Mail-Adresse?" — die Karte unter dem Formular. */
 .login-ohne-mail {
   gap: 4px;
-  padding: 16px 18px 18px;
 }
 
 .login-ohne-mail-titel {
@@ -234,6 +245,12 @@
     border-radius: 0;
     border-block-start: 1px solid var(--linie);
     background: none;
+  }
+
+  /* Der Grund nach dem Abmelden ohne Versammlung steht hier in der Karte — im
+     Ton der Seite abgesetzt, sonst stünde er weiß auf weiß und nur eingerückt. */
+  .login-abgemeldet {
+    background: var(--grund);
   }
 
   .login-ohne-mail-knoepfe {

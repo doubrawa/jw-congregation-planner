@@ -353,6 +353,7 @@ export const DE = {
     kontoCard: 'Konto',
     persLoeschen: 'Person entfernen',
     confirmPersonDel: '„{name}“ wirklich entfernen? Bereits geplante Zuteilungen bleiben als Text in den Wochen stehen.',
+    confirmPersonDelKonto: 'Auch das Konto wird entfernt. Anmelden geht erst wieder mit einem neuen Link.',
     toastPersonDel: 'Person entfernt',
     kontoVerknuepft: 'Konto verknüpft',
     // Der Link einer Person (T121, Phase 8; Entwürfe GPerson, GEinladen). {name}
@@ -738,7 +739,6 @@ export const DE = {
     // Konten & Mitglieder
     resetMailFehlt: 'Bitte zuerst deine E-Mail-Adresse eintragen',
     laedt: 'Lädt …',
-    stKeineVers: 'Noch keiner Versammlung zugeordnet',
     stKeineVersText: 'Dein Konto gehört zu keiner Versammlung mehr. Frag bitte die Ältesten nach einem neuen Link.',
     stFehler: 'Daten konnten nicht geladen werden', stFehlerText: 'Es gab ein Problem beim Laden aus der Datenbank.',
     // Error Boundary — Anzeigefehler, nicht Ladefehler

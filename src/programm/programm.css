@@ -266,8 +266,10 @@
 
 /* ---- Hilfsdienste -------------------------------------------------------------- */
 
-/* Ein Dienst: links sein Name — die Spalte wächst mit der Schrift wie die der
-   Tabelle am Desktop —, rechts, wer ihn hat. Mit fester Spalte brach bei 768 px
+/* Ein Dienst: links sein Name — die Spalte wächst mit der Schrift —, rechts,
+   wer ihn hat. Am Desktop steht so jeder Tag in seiner Spalte mit seinen
+   Diensten (bis zum 21.10.2026 eine Tabelle beider Tage unter dem
+   Wochenende). Mit fester Spalte brach bei 768 px
    und Stufe 1,3 „Eingangsordne|r" (T128). Die Zeile misst sich selbst: Bleibt
    neben der Spalte für die Namen zu wenig Platz (Handy, große Schrift), steht
    der Dienst darüber (`@container` unten). */
@@ -419,13 +421,10 @@
   max-width: 1200px;
 }
 
-/* Zwei Spalten, die Hilfsdienste beider Tage unter der zweiten. Die erste
-   Spalte reicht über beide Zeilen; was sie mehr Platz braucht, geht an die
-   zweite Zeile (`1fr`) — so rückt die Tabelle nicht vom Sonntag ab. */
+/* Zwei Spalten, je Tag eine — jeder mit seinen Hilfsdiensten am Ende. */
 .prog-tage {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-rows: auto 1fr;
   gap: 12px 20px;
   align-items: start;
 }
@@ -435,10 +434,6 @@
   flex-direction: column;
   gap: 12px;
   min-width: 0;
-}
-
-.prog-tag:first-child {
-  grid-row: span 2;
 }
 
 .prog-tag-kopf {
@@ -453,33 +448,6 @@
 .prog-tag-datum {
   font-size: calc(18px * var(--fs));
   font-weight: 700;
-}
-
-/* Die Hilfsdienste beider Tage: eine Zeile je Dienst, eine Spalte je Tag. */
-.prog-dienste {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.prog-dienste th,
-.prog-dienste td {
-  padding-block: 8px;
-  padding-inline: 0 12px;
-  border-block-start: 1px solid var(--linie);
-  font-weight: 400;
-  text-align: start;
-  vertical-align: middle;
-}
-
-.prog-dienste thead th {
-  color: var(--text3);
-  font-size: calc(13px * var(--fs));
-  font-weight: 600;
-}
-
-/* Die Spalte der Dienste so breit wie am Handy die Zeile davor. */
-.prog-dienste tbody th {
-  width: calc(132px * var(--fs));
 }
 
 /* ---- Predigtdienst ansehen (`GTreffpunkte`, `GGruppenbesuche`) --------------------- */

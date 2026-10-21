@@ -126,6 +126,11 @@ export interface DebugHash {
    * senden" einen Fehler.
    */
   konto?: boolean
+  /**
+   * `ohnevers=1` (mit `s=login`): die Anmeldung, wie sie nach dem Abmelden ohne
+   * Versammlung dasteht — mit dem Satz, warum (`keineVersammlung`, 21.10.2026).
+   */
+  keineVersammlung?: boolean
 }
 
 export function parseDebugHash(hash: string, jetzt = Date.now()): DebugHash | null {
@@ -162,6 +167,7 @@ export function parseDebugHash(hash: string, jetzt = Date.now()): DebugHash | nu
   if (p.get('shot') === '1') out.shot = true
   if (p.get('vorlage') === '1') out.vorlage = true
   if (p.get('konto') === '1') out.konto = true
+  if (p.get('ohnevers') === '1') out.keineVersammlung = true
   // stale=<Stunden>: Offline-Stand simulieren (ohne Netzabbruch nachstellbar)
   const stale = Number(p.get('stale'))
   if (Number.isFinite(stale) && stale > 0) out.staleAt = jetzt - stale * 3600_000
@@ -264,6 +270,7 @@ export function entwicklerStart(hash: string = location.hash): AppState {
     selectedPersonId: debug?.personId ?? null,
     staleAt: debug?.staleAt ?? null,
     staleLangsam: debug?.staleLangsam ?? false,
+    keineVersammlung: debug?.keineVersammlung ?? false,
     // Liegt nichts vor (ohne `me=` keine eigenen Aufgaben), bleibt es zu —
     // die Ableitung prüft das (`vorzulegen`).
     confirmOpen: debug?.vorlage === true,

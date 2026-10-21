@@ -80,6 +80,14 @@ export function LoginScreen() {
         {/* Wer ohne Link hierher kommt, erfährt sonst nicht, wofür die App da ist (T113). */}
         <LoginKopf untertitel={t.appZweck} />
 
+        {/* Abgemeldet, weil das Konto keiner Versammlung mehr angehört
+            (21.10.2026) — ohne den Satz stünde man ohne Erklärung hier. */}
+        {state.keineVersammlung && (
+          <p className="karte login-abgemeldet" role="status">
+            {t.stKeineVersText}
+          </p>
+        )}
+
         {ansicht.art === 'code' ? (
           <CodeEingabe
             code={ansicht.code}

@@ -21,7 +21,7 @@ describe('welcomeDecision', () => {
 
   it('ohne zugehörige Person wird nicht begrüßt, die Vormerkung aber abgeräumt', () => {
     // Sonst poppt die Begrüßung irgendwann später unvermittelt auf.
-    for (const status of ['ready', 'no-membership', 'error'] as const) {
+    for (const status of ['ready', 'error'] as const) {
       expect(welcomeDecision(true, status, undefined)).toBe('verwerfen')
     }
   })

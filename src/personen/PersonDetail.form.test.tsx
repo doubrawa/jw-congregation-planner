@@ -429,6 +429,24 @@ describe('Person entfernen braucht zwei Tipps', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'removePerson', id: 'p-a' })
   })
 
+  // Seit dem 21.10.2026 geht ihr Konto mit — die Frage sagt es, bevor es geschieht.
+  it('hat die Person ein Konto, nennt die Frage auch das', () => {
+    const konto = { userId: 'u-a', email: '', personId: 'p-a', planner: false, zuteiler: false }
+    const { container } = zeige(person(), { members: [konto] })
+    fireEvent.click(entfernen(container))
+    expect(entfernen(container).textContent).toContain(t.confirmPersonDelKonto)
+  })
+
+  it('ohne Konto — und beim eigenen, das bleibt — steht der Satz nicht da', () => {
+    const eigenes = { userId: 'u1', email: '', personId: 'p-a', planner: true, zuteiler: false }
+    for (const members of [[], [eigenes]]) {
+      const { container } = zeige(person(), { members })
+      fireEvent.click(entfernen(container))
+      expect(entfernen(container).textContent).not.toContain(t.confirmPersonDelKonto)
+      cleanup()
+    }
+  })
+
   it('geht der Fokus weg, entschärft er sich wieder', () => {
     const { container, dispatch } = zeige(person())
     fireEvent.click(entfernen(container))

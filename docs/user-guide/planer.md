@@ -1158,7 +1158,9 @@ Oben stehen Name, Gruppe und Rolle, daneben der **Stift** für
 
 Ganz unten steht **Person entfernen**. Der erste Tipp nennt die Folge, erst der
 zweite entfernt. Bereits geplante Zuteilungen bleiben als Text in den Wochen
-stehen.
+stehen. Hat die Person ein Konto, geht es mit: Ihr Gerät wird abgemeldet, und
+anmelden geht erst wieder mit einem neuen Link. Nur dein eigenes Konto bleibt –
+es steht dann unter **Konten ohne Person**.
 
 ### Zeitleiste und Abwesenheiten
 
@@ -1353,7 +1355,10 @@ angelegt ist, bleibt der Hinweis ebenfalls aus.
 Konten, die noch keinem Eintrag zugeordnet sind. Solange die
 Zuordnung fehlt, sieht dieses Konto **keine eigenen Aufgaben** — die App weiß
 ja nicht, wer dahintersteht. Über das Auswahlfeld ordnest du das Konto der
-richtigen Person zu; mit ✕ entfernst du es aus der Versammlung.
+richtigen Person zu; mit ✕ entfernst du es aus der Versammlung. Dabei wird das
+Konto gelöscht: Seine Geräte werden abgemeldet, seine Zusagen gehen mit, und
+anmelden geht erst wieder mit einem neuen Link. Dasselbe gilt für **Konto
+entfernen** in der Konto-Karte einer Person.
 
 ---
 

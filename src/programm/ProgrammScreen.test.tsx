@@ -1092,8 +1092,9 @@ describe('Ab dem Tablet', () => {
 
 /**
  * **Am Desktop beide Tage nebeneinander** (T121, `GDesktopWoche`): je Tag
- * eine Spalte mit Datum und Uhrzeit, die Hilfsdienste beider Tage als eine
- * Tabelle. Eine Wahl des Tages gibt es nicht mehr — gedruckt werden beide.
+ * eine Spalte mit Datum und Uhrzeit, darunter sein Programm und seine
+ * Hilfsdienste (seit 21.10.2026; davor eine Tabelle beider Tage unter dem
+ * Wochenende). Eine Wahl des Tages gibt es nicht mehr — gedruckt werden beide.
  */
 describe('Am Desktop', () => {
   beforeEach(() => fensterBreite(1440))
@@ -1129,36 +1130,37 @@ describe('Am Desktop', () => {
     w.we.sections = [{ label: 'ÖFFENTLICHER VORTRAG', farbe: 'petrol', items: [{ iid: 'v1', title: 'Thema', meta: '30 Min.', mins: 30, names: [{ name: 'Gast Redner' }] }] }]
     const { container } = zeige({ weeks: [w] })
     const [dienstag, sonntag] = [...seite(container).querySelectorAll('.prog-tag')]
-    expect(dienstag!.querySelectorAll('h3.prog-abschnitt-name')).toHaveLength(3)
+    expect(dienstag!.querySelectorAll('.prog-abschnitt:not(.prog-helpers) h3.prog-abschnitt-name')).toHaveLength(3)
     expect(sonntag!.querySelector('h3.prog-abschnitt-name')?.textContent).toBe('ÖFFENTLICHER VORTRAG')
     expect(sonntag!.querySelector('.prog-name')?.textContent).toBe('Gast Redner')
     expect(sonntag!.querySelector('.prog-dauer')?.textContent).toBe('30 Min.')
   })
 
-  it('die Hilfsdienste beider Tage als eine Tabelle — „Du" in der Spalte des eigenen Tages', () => {
+  it('jeder Tag mit seinen eigenen Hilfsdiensten — wer den Sonntag ansieht, liest dort nur die vom Sonntag', () => {
     const w = woche()
     w.mid.helpers.mik = [{ name: 'Wer Anders' }]
     w.we.helpers.mik = [{ name: 'Anton Alt', pid: 'p-a' }, { name: 'Noch Einer' }]
     const { container } = zeige({ weeks: [w] })
-    const tabelle = seite(container).querySelector('table.prog-dienste')!
-    expect([...tabelle.querySelectorAll('thead th')].map((th) => th.textContent)).toEqual(['Dienstag 8.9.', 'Sonntag 13.9.'])
-    const zeile = tabelle.querySelector('tbody tr')!
-    expect(zeile.querySelector('th')?.textContent).toBe('Mikrofone')
-    const [dienstag, sonntag] = [...zeile.querySelectorAll('td')]
+    const tage = [...seite(container).querySelectorAll('.prog-tag')]
+    // Je Tag eine Karte, unter der Überschrift des Tages; keine gemeinsame Tabelle.
+    expect(tage.map((tag) => tag.querySelectorAll('.prog-helpers h3.prog-abschnitt-name').length)).toEqual([1, 1])
+    expect(seite(container).querySelectorAll('.prog-helpers')).toHaveLength(2)
+    expect(seite(container).querySelector('table')).toBeNull()
+    const mikrofone = (tag: Element) =>
+      [...tag.querySelectorAll('.prog-dienst')].find((d) => d.querySelector('.prog-dienst-name')?.textContent === 'Mikrofone')!
+    const [dienstag, sonntag] = tage.map(mikrofone)
     expect(dienstag!.querySelector('.prog-du-pille')).toBeNull()
     expect(dienstag!.querySelector('.prog-dienst-namen')?.textContent).toBe('Wer Anders')
     expect(dienstag!.querySelector('.prog-dienst-offen')?.textContent).toBe(t.offenWort)
     expect(sonntag!.querySelector('.prog-du-pille')?.textContent).toBe(t.chipDu)
     expect(sonntag!.querySelector('.prog-dienst-namen')?.textContent).toBe('Noch Einer')
     expect(sonntag!.querySelector('.prog-dienst-offen')).toBeNull()
-    // Eine Tabelle für beide Tage, nicht je Tag eine Liste.
-    expect(seite(container).querySelectorAll('.prog-helpers')).toHaveLength(1)
+    expect(tage[1]!.textContent).not.toContain('Wer Anders')
+    expect(tage[0]!.textContent).not.toContain('Noch Einer')
   })
 
-  it('fällt ein Tag aus, steht er im Kopf der Tabelle durchgestrichen', () => {
+  it('fällt ein Tag aus, steht es in seiner Spalte', () => {
     const { container } = zeige({ weeks: [woche({ dev: { we: { cancelled: true } } })] })
-    const kopf = [...seite(container).querySelectorAll('table.prog-dienste thead th')]
-    expect(kopf.map((th) => th.querySelector('s') !== null)).toEqual([false, true])
     const tage = [...seite(container).querySelectorAll('.prog-tag')]
     expect(tage.map((tag) => tag.querySelector('.ausfall-banner') !== null)).toEqual([false, true])
   })

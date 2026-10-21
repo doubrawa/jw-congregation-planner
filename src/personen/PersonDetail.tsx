@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
-import { istAngemeldet } from '../app/eigene-person'
+import { istAngemeldet, kontoGehtMit } from '../app/eigene-person'
 import { useKalendertag } from '../app/useKalendertag'
 import { Zeichen } from '../bausteine/Zeichen'
 import { AbwesenheitenKarte } from '../components/AbwesenheitenKarte'
@@ -76,11 +76,15 @@ export function PersonDetail({ person, spalte = false }: { person: Person; spalt
       <AbwesenheitenKarte person={person} />
       <RechteKarte person={person} update={update} />
 
-      {/* Zwei Tipps: Der erste nennt die Folge, erst der zweite entfernt. */}
+      {/* Zwei Tipps: Der erste nennt die Folge, erst der zweite entfernt. Hat
+          die Person ein Konto, geht es mit (21.10.2026) — das eigene nicht. */}
       <EntfernenKnopf
         className="knopf-leise knopf-entfernen person-entfernen"
         text={t.persLoeschen}
-        frage={fill(t.confirmPersonDel, { name: personLabel(person) })}
+        frage={
+          fill(t.confirmPersonDel, { name: personLabel(person) }) +
+          (state.members.some((m) => kontoGehtMit(m, person.id, state.userId)) ? ` ${t.confirmPersonDelKonto}` : '')
+        }
         onEntfernen={() => dispatch({ type: 'removePerson', id: person.id })}
       />
 

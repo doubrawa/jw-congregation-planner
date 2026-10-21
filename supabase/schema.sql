@@ -281,6 +281,48 @@ alter table public.members
 create index if not exists members_congregation_idx
   on public.members (congregation_id);
 
+-- **Ohne Versammlung kein Konto** (21.10.2026): Geht die Mitgliedschaft, geht
+-- das Konto mit. Ohne Versammlung ist die App nicht zu nutzen (Betreiber), und
+-- ein Konto hat höchstens eine (`user_id` ist der Schlüssel). Damit enden seine
+-- Sitzungen auf allen Geräten. Ein schon ausgestelltes Zugangstoken gilt bis zu
+-- seinem Ablauf (höchstens eine Stunde) und sieht ohne Mitgliedschaft nichts —
+-- es sei denn, die Person wird in dieser Stunde neu eingeladen: Das neue Konto
+-- trägt wieder ihre Person-Id. Was nur dem Konto gehört — Zusagen, Glocke,
+-- Push-Abos, Erinnerungs-Tagebuch — geht per Kaskade mit. Abwesenheiten und das
+-- Zuteilungs-Tagebuch behalten ihre Zeile ohne Konto (`on delete set null`),
+-- die Absagen hängen an der Person.
+--
+-- Bis dahin blieb das Konto stehen. Bekam die Person später einen neuen Link,
+-- war es wieder dasselbe (Konto-Id = Person-Id, Function `anmelden`) — und mit
+-- ihm jede alte Sitzung, auch die eines verlorenen Handys, samt Push-Abo. Ein
+-- neuer Link legt jetzt ein frisches Konto an.
+--
+-- Eine Mitgliedschaft löschen der Admin in der App (ein Konto entfernen, seit
+-- dem 21.10.2026 auch mit seiner Person) und das Löschen einer ganzen
+-- Versammlung (Kaskade). Nicht betroffen: `neuaufbau.sql` (ein `drop table`
+-- löst keinen Trigger aus) und das Zurücksetzen, das die Mitgliedschaften
+-- behält. Löscht Supabase das Konto selbst, findet das Löschen hier keine Zeile
+-- mehr. Security definer, weil nur der Eigentümer in `auth.users` löschen darf.
+create or replace function public.konto_mit_mitgliedschaft_loeschen()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  delete from auth.users where id = old.user_id;
+  return old;
+end;
+$$;
+
+revoke all on function public.konto_mit_mitgliedschaft_loeschen() from public;
+revoke all on function public.konto_mit_mitgliedschaft_loeschen() from anon, authenticated;
+
+drop trigger if exists members_konto_loeschen on public.members;
+create trigger members_konto_loeschen
+  after delete on public.members
+  for each row execute function public.konto_mit_mitgliedschaft_loeschen();
+
 create table if not exists public.weeks (
   id              uuid primary key default gen_random_uuid(),
   congregation_id uuid not null references public.congregations (id) on delete cascade,

@@ -110,7 +110,7 @@ const STARTS: Array<[string, Partial<AppState>]> = [
   ['offline', { screen: 'start', staleAt: Date.UTC(2026, 8, 7, 7) }],
   ['versammlung-leer', { screen: 'start', dataEmpty: true, planner: false }],
   ['laedt', { screen: 'start', dataStatus: 'loading' }],
-  ['kein-mitglied', { screen: 'start', dataStatus: 'no-membership' }],
+  ['ohne-versammlung-abgemeldet', { screen: 'login', userId: null, congregationId: null, keineVersammlung: true }],
   ['ladefehler', { screen: 'start', dataStatus: 'error' }],
   ['verkuendiger', { screen: 'start', planner: false }],
   ['verkuendiger-programm', { screen: 'programm', planner: false, tab: 'mid', terminGewaehlt: true }],

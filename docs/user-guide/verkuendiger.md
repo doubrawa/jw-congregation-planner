@@ -107,7 +107,7 @@ Kopf. Neben jedem Punkt steht seine Dauer, darunter die Eingeteilten, ihre
 Aufgabe (Vorsitz, Gebet, Partner …) rechts am Rand wie das Lied – **dein
 eigener Platz** heißt dort **„Du"**. Ab dem Tablet stehen die Namen neben dem
 Punkt. **Am Computer** stehen beide Zusammenkünfte nebeneinander, jede mit
-Datum und Uhrzeit, die Hilfsdienste beider Tage in einer gemeinsamen Tabelle;
+Datum und Uhrzeit und unter ihrem Programm mit ihren eigenen Hilfsdiensten;
 die Karten zum Wählen fallen dort weg. Die Treffpunkte für den Predigtdienst
 stehen im Menü unter **Predigtdienst**:
 

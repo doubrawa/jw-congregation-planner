@@ -106,6 +106,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     langSearch: '',
     toast: null,
     welcomePending: false,
+    keineVersammlung: false,
     ...over,
   }
 }
@@ -638,18 +639,32 @@ describe('Personen', () => {
     expect(aus.members.find((m) => m.userId === 'u1')!.zuteiler).toBe(false)
   })
 
-  it('removePerson löst Gruppen- und Konto-Referenzen und nimmt den Link mit', () => {
+  it('removePerson löst Gruppen-Referenzen und nimmt Konto und Link mit', () => {
     const s = makeState({
+      userId: 'u-admin',
       groups: [{ id: 'g1', name: 'G1', overseerId: 'p1', assistantId: 'p6' }],
-      members: [{ userId: 'u1', email: 'u1@x', personId: 'p1', planner: true, zuteiler: false }],
+      members: [
+        { userId: 'u1', email: 'u1@x', personId: 'p1', planner: true, zuteiler: false },
+        { userId: 'u6', email: '', personId: 'p6', planner: false, zuteiler: false },
+      ],
       anmeldeLinks: [link('p1'), link('p6')],
     })
     const next = reducer(s, { type: 'removePerson', id: 'p1' })
     expect(next.persons.some((p) => p.id === 'p1')).toBe(false)
     expect(next.groups[0]!.overseerId).toBeNull()
-    expect(next.members[0]!.personId).toBeNull()
+    // Ihr Konto geht mit (21.10.2026) — das anderer bleibt.
+    expect(next.members.map((m) => m.userId)).toEqual(['u6'])
     // Wie in der Datenbank (`on delete cascade`): Der Link der Person geht mit, der anderer bleibt.
     expect(next.anmeldeLinks.map((l) => l.personId)).toEqual(['p6'])
+  })
+
+  it('removePerson der eigenen Person: das eigene Konto bleibt, nur ohne Person — sich selbst entfernen sperrt die Datenbank', () => {
+    const s = makeState({
+      userId: 'u1',
+      members: [{ userId: 'u1', email: '', personId: 'p1', planner: true, zuteiler: false }],
+    })
+    const next = reducer(s, { type: 'removePerson', id: 'p1' })
+    expect(next.members).toEqual([{ userId: 'u1', email: '', personId: null, planner: true, zuteiler: false }])
   })
 
   it('removePerson nimmt die Abwesenheiten der Person mit (T118)', () => {
@@ -2186,15 +2201,31 @@ describe('hydrate / setDataStatus', () => {
 
   it('setDataStatus übernimmt Status und optional userId', () => {
     expect(reducer(makeState(), { type: 'setDataStatus', status: 'error', userId: 'u9' })).toMatchObject({ dataStatus: 'error', userId: 'u9' })
-    expect(reducer(makeState({ userId: 'keep' }), { type: 'setDataStatus', status: 'no-membership' }).userId).toBe('keep')
+    expect(reducer(makeState({ userId: 'keep' }), { type: 'setDataStatus', status: 'loading' }).userId).toBe('keep')
   })
 
-  it('ohne Mitgliedschaft gilt der letzte Stand nicht mehr — kein „Offline · Stand von …" über der Seite', () => {
-    // Beim Start stand schon der letzte Stand da (Offline-Start), dann meldet
-    // das Laden: Das Konto gehört keiner Versammlung mehr.
-    const ueberDemLetztenStand = makeState({ staleAt: 1_700_000_000_000, userId: 'u9' })
-    const danach = reducer(ueberDemLetztenStand, { type: 'setDataStatus', status: 'no-membership', userId: 'u9' })
-    expect(danach).toMatchObject({ dataStatus: 'no-membership', staleAt: null })
+  /*
+   * **Ohne Versammlung abgemeldet** (21.10.2026): Nichts bleibt stehen, auch
+   * nicht der letzte Stand oder der Name der alten Versammlung, und die
+   * Anmeldung sagt, warum. Das Abmelden kommt zweimal — das zweite als
+   * `SIGNED_OUT`, ohne Grund (`store.tsx`); erst eine Anmeldung nimmt den Satz
+   * weg.
+   */
+  it('ohne Versammlung abgemeldet: leer bis auf den Grund — der bleibt bis zur nächsten Anmeldung', () => {
+    const ueberDemLetztenStand = makeState({
+      staleAt: 1_700_000_000_000,
+      userId: 'u9',
+      congregation: { name: 'Alte Versammlung', hall: '', times: STANDARD_ZEITEN },
+    })
+    const ab = reducer(ueberDemLetztenStand, { type: 'logout', keineVersammlung: true })
+    expect(ab).toMatchObject({ screen: 'login', userId: null, staleAt: null, keineVersammlung: true })
+    expect(ab.congregation.name).toBe('')
+    expect(reducer(ab, { type: 'logout' }).keineVersammlung).toBe(true)
+    expect(reducer(ab, { type: 'login' }).keineVersammlung).toBe(false)
+  })
+
+  it('wer selbst abmeldet, bekommt den Satz nicht', () => {
+    expect(reducer(makeState({ userId: 'u9' }), { type: 'logout' }).keineVersammlung).toBe(false)
   })
 })
 

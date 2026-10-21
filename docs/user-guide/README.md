@@ -49,6 +49,8 @@ dadurch bleiben Bilder und App immer konsistent. Mit Namen als Argumenten
 | `stale` | Offline‑Stand vortäuschen: Zahl = Alter in Stunden (`stale=5`). Zeigt das Offline‑Banner und schaltet auf „nur lesen" — ohne echten Netzabbruch |
 | `langsam` | `1` (mit `stale=`) = der Stand steht, weil die Daten bei bestehendem Netz auf sich warten lassen: Der Streifen sagt „Verbindung langsam" statt „Offline" |
 | `vorlage` | `1` = das Blatt beim Öffnen vorlegen, wie nach dem Anmelden (braucht `me=`, sonst liegt nichts vor) |
+| `konto` | `1` = die Seite tritt auf wie ein angemeldeter Admin, mit Konten und Anmelde‑Links: Erst dann zeigen die Personen den Stand der Anmeldung, die Konto‑Karte und „Links senden" |
+| `ohnevers` | `1` (mit `s=login`) = die Anmeldung, wie sie nach dem Abmelden ohne Versammlung dasteht — mit dem Satz, warum |
 | `uhr` | Die Uhr der Seite auf einen anderen Tag stellen, 9 Uhr (`uhr=2026-10-12`); sonst steht sie auf Montag, 7. September 2026. Für die **Auswertung**: Sie zeigt nur Vergangenes, und unter der gewöhnlichen Uhr liegt keine Testwoche zurück (siehe `tests/testdaten/uhr.ts`) |
 
 Nach der Aufnahme schneidet **`trim.mjs`** (pngjs) jedes Bild seitlich auf den Inhalt

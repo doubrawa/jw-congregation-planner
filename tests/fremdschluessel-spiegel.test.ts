@@ -78,6 +78,9 @@ const SPIEGEL: Record<string, Spiegel> = {
     spalten: { person_id: 'personId' },
     basis: { userId: 'zz', personId: null, planner: false },
     schluessel: 'userId',
+    // `persist.ts` löscht die Mitgliedschaft (21.10.2026), die Datenbank mit
+    // ihr das Konto — nur das eigene bleibt, ohne Person.
+    gruendlicher: 'ein Konto ohne Person sähe weiter alles (21.10.2026)',
   },
   absences: {
     feld: 'absences',
@@ -182,5 +185,30 @@ describe('Der Reducer tut, was die Datenbank tut', () => {
       expect(danach, `${f.tabelle}: Die Zeile bleibt (on delete set null)`).toBeDefined()
       expect(danach![eigenschaft], `${f.tabelle}.${f.spalte}: zeigt danach auf niemanden`).toBeNull()
     }
+  })
+})
+
+/**
+ * **Geht die Mitgliedschaft, geht das Konto** (21.10.2026): Der Trigger
+ * `members_konto_loeschen` löscht mit jeder `members`-Zeile ihr Konto in
+ * `auth.users`, und mit ihm enden seine Sitzungen. Was er tut, ist an der
+ * Datenbank gemessen (21.10.2026, auch als Admin über die Richtlinien); hier
+ * steht nur, dass er im Schema bleibt. Ohne ihn liefe alles weiter — nur käme
+ * ein entferntes Konto mit einem neuen Link samt seinen alten Sitzungen zurück.
+ * Gelesen wird ohne Kommentare: Der Kopf des Blocks nennt dieselben Namen.
+ */
+describe('Geht die Mitgliedschaft, geht das Konto', () => {
+  const ohneKommentare = schema.replace(/--[^\n]*/g, '')
+
+  it('der Trigger hängt am Löschen in members und löscht das Konto', () => {
+    expect(ohneKommentare).toMatch(
+      /create trigger members_konto_loeschen\s+after delete on public\.members\s+for each row execute function public\.konto_mit_mitgliedschaft_loeschen\(\);/,
+    )
+    const rumpf = ohneKommentare.match(/function public\.konto_mit_mitgliedschaft_loeschen\(\)[^$]*\$\$([^$]*)\$\$/)?.[1] ?? ''
+    expect(rumpf).toMatch(/delete from auth\.users where id = old\.user_id;/)
+  })
+
+  it('aufrufen lässt sie sich von außen nicht', () => {
+    expect(ohneKommentare).toMatch(/revoke all on function public\.konto_mit_mitgliedschaft_loeschen\(\) from anon, authenticated;/)
   })
 })

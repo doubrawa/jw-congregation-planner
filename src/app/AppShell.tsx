@@ -459,8 +459,9 @@ function OfflineBanner() {
 function Content() {
   const { state } = useApp()
 
-  // Solange die Daten kommen, steht das Startbild statt der App (oben).
-  if (state.dataStatus === 'no-membership') return <StatusView kind="no-membership" />
+  // Solange die Daten kommen, steht das Startbild statt der App (oben). Ein
+  // Konto ohne Versammlung kommt gar nicht bis hier: Es wird abgemeldet
+  // (`hydrate.ts`, 21.10.2026).
   if (state.dataStatus === 'error') return <StatusView kind="error" />
   // Die leere Versammlung ist für den Verkündiger eine Sackgasse, für den
   // Planer der Anfang: Er füllt sie über Personen und „Nächste Woche
@@ -471,7 +472,7 @@ function Content() {
 }
 
 /** Sonderfälle der Datenanbindung. */
-function StatusView({ kind }: { kind: 'no-membership' | 'error' | 'empty' }) {
+function StatusView({ kind }: { kind: 'error' | 'empty' }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
 
@@ -481,16 +482,6 @@ function StatusView({ kind }: { kind: 'no-membership' | 'error' | 'empty' }) {
 
   return (
     <section className="screen status-view">
-      {/* Ein Konto ohne Versammlung: Der Admin hat es entfernt. Hinein kommt
-          es nur über einen neuen Link — einen Code einlösen gibt es seit dem
-          Anmelden per Link (T121, Phase 8) nicht mehr. */}
-      {kind === 'no-membership' && (
-        <>
-          <h1 className="status-title">{t.stKeineVers}</h1>
-          <p className="status-text">{t.stKeineVersText}</p>
-        </>
-      )}
-
       {kind === 'error' && (
         <>
           <h1 className="status-title">{t.stFehler}</h1>

@@ -10,6 +10,7 @@
  */
 
 import type { Dispatch } from 'react'
+import { performLogout } from '../lib/abmelden'
 import { loadCongregationData } from '../lib/data'
 import { schreibenAbwarten, schreibStand } from '../lib/schreiben-unterwegs'
 import { clearSnapshot, readSnapshot, saveSnapshot } from '../lib/snapshot'
@@ -106,10 +107,13 @@ async function ladenUndEinspielen(
     return schreibStand() !== vorher
   }
 
-  // Mitgliedschaft ist weg → der alte Stand darf nicht weiterleben.
+  // Mitgliedschaft ist weg → der alte Stand darf nicht weiterleben, und ohne
+  // Versammlung gibt es nichts mehr zu zeigen (Betreiber, 21.10.2026): Das
+  // Gerät meldet sich ab, die Anmeldung sagt, warum. Bis dahin blieb es
+  // angemeldet und zeigte die Seite „Keine Versammlung".
   if (res.reason === 'no-membership') {
     clearSnapshot()
-    dispatch({ type: 'setDataStatus', status: 'no-membership', userId })
+    performLogout(dispatch, { keineVersammlung: true })
     return false
   }
 
