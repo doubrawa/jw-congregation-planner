@@ -114,7 +114,7 @@ stehen im Menü unter **Predigtdienst**:
 | Wo | Inhalt |
 | --- | --- |
 | **Zusammenkünfte** › Karte unter der Woche | Das Programm der Wochenmitte (Schätze aus Gottes Wort, Dienst, Unser Leben als Christ) mit allen Zuteilungen, darunter die Hilfsdienste. |
-| **Zusammenkünfte** › Karte Wochenende | Öffentlicher Vortrag und Wachtturm‑Studium, darunter die Hilfsdienste. |
+| **Zusammenkünfte** › Karte Wochenende | Öffentlicher Vortrag und Wachtturm‑Studium, darunter die Hilfsdienste. Neben einem Gastredner steht seine Versammlung; ist keine eingetragen, steht dort „Gastredner". |
 | **Predigtdienst** | Die „Treffpunkte" – wann und wo sich die Versammlung bzw. deine Gruppe zum Predigtdienst trifft, mit dem jeweiligen Leiter. |
 
 ![Zusammenkünfte für den Predigtdienst (Treffpunkte)](screenshots/verkuendiger-treffpunkte.png)

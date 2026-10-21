@@ -454,7 +454,14 @@ Woche — im Zuteilungs-Blatt, ohne einen zusätzlichen Schalter:
 Beides steht im selben Blatt untereinander, jeder Weg führt also auch wieder
 zurück. **Entfernen** und **Leeren** setzen den Platz auf „Gastredner" zurück —
 den Redner des öffentlichen Vortrags vereinbart man, deshalb besetzt die
-Automatik ihn nie von sich aus.
+Automatik ihn nie von sich aus. Mit dem Gastredner geht beim Entfernen auch
+seine Versammlung, ebenso, wenn du statt seiner eine Person aus der Liste
+antippst.
+
+Im Programm und im Ausdruck **Diese Woche** steht neben dem Gastredner seine
+**Versammlung** statt des Worts „Gastredner" – trag sie also mit ein, wenn du
+sie weißt. Übernimmst du den Vortragsplan, kommt sie aus der Datei mit. Ohne
+Versammlung steht dort weiter „Gastredner".
 
 Ein auswärtiger Redner muss dafür **nicht** als Person angelegt werden.
 
@@ -1798,7 +1805,8 @@ der Woche. Ein Tipp darauf öffnet das Blatt **Drucken** mit der Wahl; erst
 
 - **Diese Woche** (vorgewählt) – beide Zusammenkünfte auf einem Blatt: links
   unter der Woche, rechts das Wochenende, je Programmpunkt die Personen mit
-  ihrer Rolle, darunter die **Hilfsdienste** beider Tage. Fällt ein Tag aus,
+  ihrer Rolle (beim Gastredner seine Versammlung), darunter die
+  **Hilfsdienste** beider Tage. Fällt ein Tag aus,
   steht er durchgestrichen da, mit dem Grund.
 - **Ganzer Monat · September 2026** – alle Wochen des Monats, knapp: je
   Programmpunkt eine Zeile, die Namen rechts, Schüler und Partner in einer.

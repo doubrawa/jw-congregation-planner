@@ -116,6 +116,24 @@ describe('Der Wochenbogen', () => {
     expect(eroeffnung.querySelector('.druck-offen')?.getAttribute('aria-label')).toBe(t.offenWort)
   })
 
+  it('beim Gastredner steht seine Versammlung, wie am Bildschirm — ohne sie das Wort', () => {
+    const redner = (herkunft?: string) => {
+      const w = woche()
+      w.we.sections = [{
+        label: 'ÖFFENTLICHER VORTRAG', farbe: 'petrol',
+        items: [{
+          iid: 'v1', title: 'Ein Vortragsthema', meta: '30 Min.',
+          names: [{ name: 'Gustav Gast', rolle: 'Gastredner', bereichsKey: 'vortrag', ...(herkunft ? { herkunft } : {}) }],
+        }],
+      }]
+      const { container } = zeige(<WochenBogen wi={0} />, { weeks: [w] })
+      const punkt = [...container.querySelectorAll('.druck-punkt')].find((p) => p.textContent?.includes('Ein Vortragsthema'))
+      return punkt?.querySelector('.druck-personen')?.textContent
+    }
+    expect(redner('Vers. Südfeld')).toBe('Gustav Gast Vers. Südfeld')
+    expect(redner()).toBe('Gustav Gast Gastredner')
+  })
+
   it('auf Papier steht der eigene Name, kein „Du" — der Aushang gilt allen', () => {
     const { container } = zeige(<WochenBogen wi={0} />, { personId: 'p-a' })
     expect(container.textContent).not.toContain(t.chipDu)

@@ -8847,7 +8847,15 @@ Zurücksetzen verknüpft die Konten nach dem Löschen der Personen neu), die Fra
 davor sagt es; nur das eigene Konto bleibt, ohne Person. Was aus dem Review
 blieb, steht oben unter „Bewusst offen". Am selben Tag (Betreiber): **am
 Desktop stehen die Hilfsdienste je Tag** unter seinem Programm statt als eine
-Tabelle beider Tage unter dem Wochenende.
+Tabelle beider Tage unter dem Wochenende. Danach (Betreiber): **neben dem
+Gastredner steht seine Versammlung** statt des Worts „Gastredner", im Programm
+und auf dem Wochenbogen; ohne eingetragene Versammlung bleibt das Wort. Dabei
+behoben: Wählte der Planer am Redner-Platz eine Person oder entfernte er den
+Gastredner, blieb dessen Versammlung am Platz stehen („Meine Aufgaben":
+„Redner · <Versammlung>"), auch über „Leeren" hinweg. Im
+Betrieb am 21. Oktober gezählt: eingetragen ist sie bei 1 von 55 Gastrednern,
+kein Platz trug eine verwaiste. Der NWS-Import (`wochenplanung-importieren.mjs`)
+liest sie (`a.d`), schreibt sie aber nicht in den Platz (`setSlotObj`).
 
 Am 19. Oktober in die Tabelle aufgenommen: `sprache-fehlt` und
 `auth.sessions` (bis dahin nur in einer Commit-Nachricht, `42dff943`, und bei

@@ -243,6 +243,16 @@ describe('Der Weg zurück zum Gastredner', () => {
     expect(vortragsSlot(weeks[0]!).pid).toBeUndefined()
   })
 
+  it('„Leeren" lässt am eigenen Redner keine fremde Versammlung zurück', () => {
+    // So konnte eine Woche von vor dem 21.10.2026 dastehen (im Betrieb am
+    // selben Tag gezählt: keine): Das Zuteilungsblatt ließ die Versammlung des
+    // Gastredners davor am eigenen Redner hängen. Der Ausgangszustand aus dem
+    // Import hat keine.
+    const eigen = assignSlot([makeWeek()], REDNER, 'M. Hartmann', ROLE_OWN_SPEAKER, person.id, 'Vers. Südfeld')
+    const { weeks } = clearAssignments(eigen, 0, 'we', 'parts')
+    expect(vortragsSlot(weeks[0]!)).not.toHaveProperty('herkunft')
+  })
+
   it('„Leeren" lässt einen echten Gastredner unangetastet', () => {
     const gast = assignSlot([makeWeek()], REDNER, 'M. Hartmann', 'Gastredner · Vers. Nordheim')
     const { weeks, count } = clearAssignments(gast, 0, 'we', 'parts')

@@ -1213,8 +1213,12 @@ export function clearAssignments(
       // Ausgangszustand aus dem Import. Bliebe er auf „Redner" stehen, wäre er
       // ein offener Slot, den die Auto-Zuteilung besetzt; den Redner des
       // öffentlichen Vortrags vereinbart man aber, man verlost ihn nicht.
-      // Derselbe Rückfall wie beim „Entfernen".
-      if (rolleBasis(slot.rolle) === ROLE_OWN_SPEAKER) slot.rolle = ROLE_GUEST_SPEAKER
+      // Derselbe Rückfall wie beim „Entfernen" — ohne Versammlung: Bis zum
+      // 21.10.2026 blieb die eines Gastredners davor am eigenen Redner hängen.
+      if (rolleBasis(slot.rolle) === ROLE_OWN_SPEAKER) {
+        slot.rolle = ROLE_GUEST_SPEAKER
+        delete slot.herkunft
+      }
       count++
     }
   }

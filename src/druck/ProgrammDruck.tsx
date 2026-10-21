@@ -7,7 +7,7 @@ import type { MeetingKey, SlotAssignment, Week } from '../data/types'
 import { zusammenkunftName } from '../components/anlass-name'
 import { wochentagMitZahl } from '../components/datum-anzeige'
 import { fill, platzName, useT } from '../i18n/useT'
-import { abschnittZeilen, plaetzeVon } from '../programm/programm-zeilen'
+import { abschnittZeilen, plaetzeVon, rolleNebenDemNamen } from '../programm/programm-zeilen'
 import { Balken, Offen } from './DruckBlatt'
 
 type Uebersetzer = (s: string) => string
@@ -254,23 +254,29 @@ function TagDatum({ ausgefallen, children }: { ausgefallen: boolean; children: s
   return ausgefallen ? <s>{children}</s> : <>{children}</>
 }
 
-/** Die Personen eines Punkts, ausführlich: Name und Rolle, frei = gepunktet. */
+/**
+ * Die Personen eines Punkts, ausführlich: Name und Rolle — beim Gastredner
+ * seine Versammlung, wie am Bildschirm (`rolleNebenDemNamen`) —, frei = gepunktet.
+ */
 function Personen({ slots, tu }: { slots: readonly SlotAssignment[]; tu: Uebersetzer }) {
   return (
     <span className="druck-personen">
-      {slots.map((slot, i) => (
-        <Fragment key={i}>
-          {i > 0 && ' · '}
-          {slot.name ? (
-            <>
-              <span className="druck-name">{slot.name}</span>
-              {slot.rolle && <span className="druck-leise"> {tu(slot.rolle)}</span>}
-            </>
-          ) : (
-            <Offen />
-          )}
-        </Fragment>
-      ))}
+      {slots.map((slot, i) => {
+        const rolle = rolleNebenDemNamen(slot, tu)
+        return (
+          <Fragment key={i}>
+            {i > 0 && ' · '}
+            {slot.name ? (
+              <>
+                <span className="druck-name">{slot.name}</span>
+                {rolle && <span className="druck-leise"> {rolle}</span>}
+              </>
+            ) : (
+              <Offen />
+            )}
+          </Fragment>
+        )
+      })}
     </span>
   )
 }

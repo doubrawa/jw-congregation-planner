@@ -387,11 +387,16 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
     expect(dispatch.mock.calls.some((c) => c[0].type === 'assign')).toBe(false)
   })
 
-  it('eine Person aus der Liste macht ihn zum EIGENEN Redner — mit Rolle und Id', () => {
-    const { container, dispatch } = zeige(SEL_REDNER())
+  it('eine Person aus der Liste macht ihn zum EIGENEN Redner — mit Rolle und Id, ohne fremde Versammlung', () => {
+    // Stand vorher ein Gastredner, blieb seine Versammlung bis zum 21.10.2026
+    // am Platz, und „Meine Aufgaben" nannte den eigenen Redner
+    // „Redner · Nordheim". `herkunft: ''` löscht sie (`assignSlot`).
+    const { container, dispatch } = zeige(SEL_REDNER(), {
+      weeks: [woche('2026-09-07', 'Gustav Gast', ROLE_GUEST_SPEAKER, 'Nordheim')],
+    })
     fireEvent.click(zeile(container, 'Anton Alt'))
     expect(dispatch).toHaveBeenCalledWith({
-      type: 'assign', name: 'Anton Alt', rolle: ROLE_OWN_SPEAKER, pid: 'p-a',
+      type: 'assign', name: 'Anton Alt', rolle: ROLE_OWN_SPEAKER, pid: 'p-a', herkunft: '',
     })
   })
 
@@ -430,7 +435,18 @@ describe('Der Redner-Platz ist Gastredner und eigener Redner zugleich (T29)', ()
     })
     fireEvent.click(knopf(container, t.entfernen))
     bestaetigen(knopf(container, t.entfernenSicher))
-    expect(dispatch).toHaveBeenCalledWith({ type: 'assign', name: '', rolle: ROLE_GUEST_SPEAKER })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'assign', name: '', rolle: ROLE_GUEST_SPEAKER, herkunft: '' })
+  })
+
+  it('mit dem Gastredner geht seine Versammlung — der leere Platz nennt keine', () => {
+    // Bis zum 21.10.2026 blieb sie stehen: Planen nannte den leeren Platz
+    // „Gastredner · Nordheim", und das Blatt bot sie dem nächsten Gast an.
+    const { container, dispatch } = zeige(SEL_REDNER(), {
+      weeks: [woche('2026-09-07', 'Gustav Gast', ROLE_GUEST_SPEAKER, 'Nordheim')],
+    })
+    fireEvent.click(knopf(container, t.entfernen))
+    bestaetigen(knopf(container, t.entfernenSicher))
+    expect(dispatch).toHaveBeenCalledWith({ type: 'assign', name: '', rolle: ROLE_GUEST_SPEAKER, herkunft: '' })
   })
 
   it('an einem gewöhnlichen Platz entfernt „Entfernen" ohne Rollenwechsel', () => {

@@ -14,7 +14,7 @@ import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
 import { emptyQualifications } from '../data/helpers'
 import { bibelbuecherLaden, makeTr } from '../i18n/translate'
 import { dict } from '../i18n/ui'
-import type { FsInstance, PartItem, Person, Section, Service, Week } from '../data/types'
+import type { FsInstance, PartItem, Person, Section, Service, SlotAssignment, Week } from '../data/types'
 import { ProgrammScreen } from './ProgrammScreen'
 import { zahlBinden } from '../i18n/zahl-binden'
 
@@ -311,6 +311,46 @@ describe('Das Programm selbst', () => {
     const kopf = seite(container).querySelector('.prog-print-head')!
     expect(kopf.textContent).toContain('Nordheim')
     expect(kopf.textContent).toContain(t.tabMid)
+  })
+})
+
+describe('Beim Gastredner steht seine Versammlung (21.10.2026)', () => {
+  /*
+   * Betreiber: „woher der gastredner am sonntag, sollte auch dastehen …
+   * einfach den versammlungsnamen, wenn es einen gibt. wenn nicht, dann das
+   * wort ‚Gastredner' anzeigen." Gespeichert steht sie in ihrem eigenen Feld
+   * (`herkunft`); über die Rolle entscheiden die Regeln.
+   */
+  const amSonntag = (platz: SlotAssignment): string[] => {
+    const vortrag: Section = {
+      label: 'ÖFFENTLICHER VORTRAG', farbe: 'petrol',
+      items: [{ iid: 'i58', title: 'Ein Vortragsthema', meta: '30 Min.', names: [{ ...platz, bereichsKey: 'vortrag' }] }],
+    }
+    const { container } = zeige({
+      tab: 'we',
+      weeks: [woche({ we: { date: '7.–13. September', end: '11:45', sections: [vortrag], helpers: { mik: [] } } })],
+    })
+    return texte(container, '.prog-abschnitt[data-farbe="petrol"] .prog-role')
+  }
+
+  it('statt des Worts „Gastredner" steht die Versammlung, aus der er kommt', () => {
+    expect(amSonntag({ name: 'Gustav Gast', rolle: 'Gastredner', herkunft: 'Vers. Südfeld' })).toEqual(['Vers. Südfeld'])
+  })
+
+  it('ohne eingetragene Versammlung bleibt es beim Wort', () => {
+    expect(amSonntag({ name: 'Gustav Gast', rolle: 'Gastredner' })).toEqual(['Gastredner'])
+  })
+
+  it('ein freier Platz hat keinen Redner, der von irgendwo käme', () => {
+    // So stand er bis zum 21.10.2026 nach „Entfernen" da: Die Versammlung des
+    // gegangenen Redners blieb am leeren Platz.
+    expect(amSonntag({ name: '', rolle: 'Gastredner', herkunft: 'Vers. Südfeld' })).toEqual(['Gastredner'])
+  })
+
+  it('beim eigenen Redner und beim Kreisaufseher sagt die Aufgabe mehr — auch mit einer Versammlung am Platz', () => {
+    // Am eigenen Redner blieb sie bis zum 21.10.2026 vom Gastredner davor stehen.
+    expect(amSonntag({ name: 'Wer Anders', pid: 'p-x', rolle: 'Redner', herkunft: 'Vers. Südfeld' })).toEqual(['Redner'])
+    expect(amSonntag({ name: 'Kurt Kreis', rolle: 'Kreisaufseher', herkunft: 'Vers. Südfeld' })).toEqual(['Kreisaufseher'])
   })
 })
 

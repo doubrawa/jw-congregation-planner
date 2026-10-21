@@ -2628,8 +2628,8 @@ export const KATALOG = [
     id: 'druck-personen-offen',
     datei: 'src/druck/ProgrammDruck.tsx',
     regel: 'Ein freier Platz steht auf dem Bogen gepunktet da, zum Eintragen von Hand.',
-    suchen: '          ) : (\n            <Offen />\n          )}\n',
-    ersetzen: '          ) : null}\n',
+    suchen: '            ) : (\n              <Offen />\n            )}\n',
+    ersetzen: '            ) : null}\n',
   },
   {
     id: 'druck-namen-knapp-ganz-frei',
@@ -10841,6 +10841,64 @@ export const KATALOG = [
     regel: 'Hat die Person ein Konto, sagt die Frage vor dem Löschen, dass es mitgeht.',
     suchen: "          (state.members.some((m) => kontoGehtMit(m, person.id, state.userId)) ? ` ${t.confirmPersonDelKonto}` : '')\n",
     ersetzen: "          ''\n",
+  },
+  // Beim Gastredner steht seine Versammlung (Betreiber am 21.10.2026: „einfach
+  // den versammlungsnamen, wenn es einen gibt").
+  {
+    id: 'gastredner-versammlung-statt-rolle',
+    datei: 'src/programm/programm-zeilen.ts',
+    regel: 'Neben einem eingetragenen Gastredner steht seine Versammlung statt des Worts „Gastredner".',
+    suchen: '  if (slot.name && versammlung && rolleBasis(slot.rolle) === ROLE_GUEST_SPEAKER) return versammlung\n',
+    ersetzen: '',
+  },
+  {
+    id: 'gastredner-versammlung-nur-mit-namen',
+    datei: 'src/programm/programm-zeilen.ts',
+    regel: 'Ein freier Gastredner-Platz nennt keine Versammlung, auch wenn noch eine am Platz hängt.',
+    suchen: '  if (slot.name && versammlung && ',
+    ersetzen: '  if (versammlung && ',
+  },
+  {
+    id: 'gastredner-versammlung-nur-beim-gast',
+    datei: 'src/programm/programm-zeilen.ts',
+    regel: 'Beim eigenen Redner und beim Kreisaufseher steht die Aufgabe, keine Versammlung.',
+    suchen: ' && rolleBasis(slot.rolle) === ROLE_GUEST_SPEAKER) return versammlung\n',
+    ersetzen: ') return versammlung\n',
+  },
+  {
+    id: 'programm-versammlung-am-redner',
+    datei: 'src/programm/ZusammenkunftAnsicht.tsx',
+    regel: 'Das Programm zeigt neben dem Gastredner seine Versammlung.',
+    suchen: '                rolle={rolleNebenDemNamen(slot, tu)}\n',
+    ersetzen: '                rolle={slot.rolle && tu(slot.rolle)}\n',
+  },
+  {
+    id: 'wochenbogen-versammlung-am-redner',
+    datei: 'src/druck/ProgrammDruck.tsx',
+    regel: 'Der Wochenbogen zeigt neben dem Gastredner seine Versammlung, wie der Bildschirm.',
+    suchen: '        const rolle = rolleNebenDemNamen(slot, tu)\n',
+    ersetzen: '        const rolle = slot.rolle && tu(slot.rolle)\n',
+  },
+  {
+    id: 'eigener-redner-ohne-fremde-versammlung',
+    datei: 'src/planen/AssignSheet.tsx',
+    regel: 'Wer am Redner-Platz eine Person wählt, nimmt die Versammlung des Gastredners davor weg.',
+    suchen: "rolle: ROLE_OWN_SPEAKER, pid: cand.key, herkunft: '' }",
+    ersetzen: 'rolle: ROLE_OWN_SPEAKER, pid: cand.key }',
+  },
+  {
+    id: 'gastredner-entfernen-ohne-versammlung',
+    datei: 'src/planen/AssignSheet.tsx',
+    regel: '„Entfernen" am Redner-Platz nimmt mit dem Gastredner seine Versammlung weg.',
+    suchen: "{ type: 'assign', name: '', rolle: guestBase, herkunft: '' }",
+    ersetzen: "{ type: 'assign', name: '', rolle: guestBase }",
+  },
+  {
+    id: 'leeren-eigener-redner-ohne-versammlung',
+    datei: 'src/data/planning.ts',
+    regel: '„Leeren" lässt am eigenen Redner keine fremde Versammlung zurück.',
+    suchen: '        slot.rolle = ROLE_GUEST_SPEAKER\n        delete slot.herkunft\n',
+    ersetzen: '        slot.rolle = ROLE_GUEST_SPEAKER\n',
   },
 ]
 

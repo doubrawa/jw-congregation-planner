@@ -1,5 +1,5 @@
-import { isSong, istBlockSektion, liedImKopf, splitOpeningSong } from '../data/helpers'
-import type { HelperSlot, Meeting, PartItem, Section, Service } from '../data/types'
+import { herkunftVon, isSong, istBlockSektion, liedImKopf, ROLE_GUEST_SPEAKER, rolleBasis, splitOpeningSong } from '../data/helpers'
+import type { HelperSlot, Meeting, PartItem, Section, Service, SlotAssignment } from '../data/types'
 
 /** Ein Punkt, wie er dasteht — mit überschriebenem Titel, wenn das Lied herausgezogen ist. */
 export interface AbschnittsZeile {
@@ -36,6 +36,27 @@ export function abschnittZeilen(
     zeilen.push(song ? { item, title: rest } : { item })
   }
   return { lieder, zeilen }
+}
+
+/**
+ * **Was neben dem Namen steht**: die Aufgabe in der Sprache des Lesers — beim
+ * Gastredner seine Versammlung, wenn sie eingetragen ist (Betreiber am
+ * 21.10.2026: „einfach den versammlungsnamen, wenn es einen gibt"). Für den
+ * Bildschirm und den Wochenbogen, damit beide dasselbe zeigen.
+ *
+ * Die Versammlung nur bei einem **eingetragenen** Gastredner: Ein freier Platz
+ * hat keinen Redner, der von irgendwo käme, und beim eigenen Redner wie beim
+ * Kreisaufseher sagt die Aufgabe mehr. Bis zum 21.10.2026 blieb die Versammlung
+ * eines Gastredners nach „Entfernen" am leeren Platz stehen und nach der Wahl
+ * eines eigenen Redners an dessen Platz (im Betrieb am selben Tag gezählt: kein
+ * solcher Platz); am Platz des Kreisaufsehers nimmt das Blatt sie bis heute an.
+ *
+ * Sie geht nicht durch den Übersetzer: Ein Ortsname ist kein Programmbegriff.
+ */
+export function rolleNebenDemNamen(slot: SlotAssignment, tu: (s: string) => string): string | undefined {
+  const versammlung = herkunftVon(slot)
+  if (slot.name && versammlung && rolleBasis(slot.rolle) === ROLE_GUEST_SPEAKER) return versammlung
+  return slot.rolle ? tu(slot.rolle) : undefined
 }
 
 /**

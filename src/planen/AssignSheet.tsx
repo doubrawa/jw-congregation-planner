@@ -282,9 +282,14 @@ function ZuteilenInhalt({
    *
    * **Mit Rückfrage** (4.10.2026): Wer zugesagt hatte, bekommt sofort
    * „Zuteilung zurückgezogen" — ein Fehltipp ließe sich nicht zurückholen.
+   *
+   * **Mit dem Redner geht seine Versammlung** (`herkunft: ''`). Bis zum
+   * 21.10.2026 blieb sie am leeren Platz stehen: Planen nannte ihn
+   * „Gastredner · <Versammlung des Gegangenen>", und das Blatt bot sie dem
+   * nächsten Gastredner an.
    */
   const freimachen = () =>
-    dispatch(guest ? { type: 'assign', name: '', rolle: guestBase } : { type: 'assign', name: '' })
+    dispatch(guest ? { type: 'assign', name: '', rolle: guestBase, herkunft: '' } : { type: 'assign', name: '' })
 
   const pick = (cand: Candidate) => {
     if (cand.absent) {
@@ -293,14 +298,16 @@ function ZuteilenInhalt({
     }
     // Redner-Platz: eine Person aus dieser Liste ist per Definition eine der
     // eigenen Versammlung — die Zuteilung wird damit zum **eigenen Redner**.
-    // Rolle „Redner" und `pid`; die fremde Herkunftsversammlung fällt weg.
+    // Rolle „Redner" und `pid`; die fremde Herkunftsversammlung fällt weg
+    // (`herkunft: ''` — bis zum 21.10.2026 fehlte es, und „Meine Aufgaben"
+    // nannte den eigenen Redner „Redner · <Versammlung des Gastredners davor>").
     // Alles Weitere folgt daraus von selbst, weil „Redner" nicht in
     // `SKIP_ROLE` steht: Aufgabe, Bestätigung, Erinnerung, Auslastung.
     //
     // pid nur für echte Personen (nicht für die Gruppen-Rotation).
     dispatch(
       guest
-        ? { type: 'assign', name: cand.assignName, rolle: ROLE_OWN_SPEAKER, pid: cand.key }
+        ? { type: 'assign', name: cand.assignName, rolle: ROLE_OWN_SPEAKER, pid: cand.key, herkunft: '' }
         : { type: 'assign', name: cand.assignName, pid: sel.groups ? undefined : cand.key },
     )
   }

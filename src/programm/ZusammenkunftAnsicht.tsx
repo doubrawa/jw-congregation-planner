@@ -4,7 +4,7 @@ import { hatAuxKlasse } from '../data/aux-class'
 import { dauerAbtrennen, gehoertZu, MEETING_TABS, mtab } from '../data/helpers'
 import { deutschesDatum, meetingDate, meetingTime } from '../data/meeting-dates'
 import type { HelperSlot, Meeting, MeetingKey, MeetingTab, PartItem, Person, Section, Service, Week } from '../data/types'
-import { abschnittZeilen, plaetzeVon } from './programm-zeilen'
+import { abschnittZeilen, plaetzeVon, rolleNebenDemNamen } from './programm-zeilen'
 import { fill, platzName, programmTermin, useT } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
 import { gebundenesDatum } from '../components/datum-anzeige'
@@ -313,7 +313,7 @@ function ProgramRow({
               <PersonZeile
                 key={index}
                 name={slot.name}
-                rolle={slot.rolle && tu(slot.rolle)}
+                rolle={rolleNebenDemNamen(slot, tu)}
                 du={me != null && gehoertZu(slot, me)}
               />
             ))}
