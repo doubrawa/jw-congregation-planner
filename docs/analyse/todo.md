@@ -8302,25 +8302,37 @@ Einstellung.
 
 ## Aufgenommen am 21. Oktober 2026 — Motion-Beispiel (T132)
 
-### T132 · Ein Motion-Beispiel umsetzen 🔧 ☐ offen
+### T132 · Ein Motion-Beispiel umsetzen 🔧 ✅ erledigt (21. Oktober 2026)
 
 **Auftrag (21. Oktober, Betreiber):** „nimm auf die todo liste, dass man ein
 motion beispiel umsetzt. wir überlegen nochmal, was man am besten schön
 animiert."
 
-**Stand heute:** Am 12. Oktober war ein kurzer Clip zu „Plan senden" geplant,
-zurückgestellt, bis das neue Design (T121) steht — damit er nicht gleich die
-alte Oberfläche zeigt; am 19. Oktober weiter auf später. Das neue Design ist
-live. Ein Motion-Artifact ist dafür angelegt, aber noch leer.
+**Vorgeschichte:** Am 12. Oktober war ein kurzer Clip zu „Plan senden"
+geplant, zurückgestellt, bis das neue Design (T121) steht — damit er nicht
+gleich die alte Oberfläche zeigt; am 19. Oktober weiter auf später. Ein
+Motion-Artifact war dafür angelegt, aber leer.
 
-**Vor dem Umsetzen klären:**
+**Entschieden am selben Abend:** Von drei Vorschlägen („Eine Woche, bis alles
+steht", „Erste Schritte für Verkündiger", nur „Ersatz gesucht") wählte der
+Betreiber die **ersten Schritte für Verkündiger**: Motion lohnt sich dort, wo
+etwas zwischen Personen und Geräten passiert, und dieser Clip lässt sich mit
+der Einladung verschicken. Stil „Punkte des Saals" (die Punkte des Logos
+wandern von Schritt zu Schritt und füllen sich), Farben wie die helle
+Darstellung der App, 30 Sekunden.
 
-- Was gezeigt wird: „Plan senden" ist nur noch ein Kandidat, die Wahl ist
-  wieder offen.
-- Stil, Farben und Länge des Clips.
-
-**Umsetzen:** das vorhandene Artifact füllen, statt ein neues anzulegen — mit
-Platzhalterdaten, nie mit echten Namen oder Adressen (das Repo ist öffentlich).
+**Umgesetzt:** sechs Szenen im vorhandenen Artifact — das Logo; ein Tipp auf
+den Link aus der E-Mail, angemeldet; die nächste Aufgabe bestätigen; die App
+auf den Startbildschirm legen (mit dem Hinweis, dass man sich am iPhone danach
+in der App mit „Code eintippen" anmeldet); über die Glocke „Aktivieren" und die
+erste Erinnerung als Benachrichtigung; das Logo mit „Fragen? Sprich die
+Ältesten an." Startseite, Mitteilungen und Logo sind aus dem Quelltext gehoben
+(die Entwicklerseite bei 390 px, gekürztes CSS unter einem eigenen Wrapper);
+Mail-Ansicht, Browser-Menü und Startbildschirm des Handys sind schlichte
+Eigenentwürfe, keine Oberflächen von Android oder iPhone. Die Namen sind die
+der Entwicklerseite. Der Link zum Artifact steht bewusst nicht hier (das Repo
+ist öffentlich); der Clip lässt sich dort als MP4 exportieren. Betreiber nach
+dem Ansehen: „sieht super aus".
 
 ## Was bewusst offen bleibt
 
@@ -8359,15 +8371,14 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
-21. Oktober ☐
+21. Oktober ☑
 
-**130 der 132 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind zwei:**
+**131 der 132 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
-| **T132** | Motion-Beispiel | ☐ aufgenommen am 21. Oktober; was animiert wird, überlegt der Betreiber noch |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
@@ -8805,7 +8816,6 @@ braucht den Betreiber, ein Gerät oder eine Entscheidung.
 | **Bewusst offen** | Altes Zugangstoken nach dem Entfernen | Ein schon ausgestelltes Token gilt bis zu seinem Ablauf (höchstens eine Stunde) und sieht ohne Mitgliedschaft nichts. Wird die Person in dieser Stunde neu eingeladen, gilt es für das neue Konto: Es trägt wieder ihre Person-Id (`anmelden`). Vermerkt am Trigger in `schema.sql` (Review vom 21. Oktober) |
 | **Zurückgestellt** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт". Betreiber am 16. Oktober: „bleibt erst mal so" — wieder aufnehmen, wenn ein Muttersprachler prüft; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
-| **T132** | Motion-Beispiel | Betreiber am 21. Oktober: ein Motion-Beispiel umsetzen; was sich am schönsten animieren lässt, überlegen wir noch. „Plan senden" (am 12. Oktober geplant, bis nach dem neuen Design zurückgestellt, am 19. Oktober weiter auf später) ist nur noch ein Kandidat. Das leere Motion-Artifact liegt bereit |
 | **Betreiber** | Mitgliedsrechte-Probe nach „Alles Planen" | `node scripts/mitgliedsrechte-probe.mjs` — die Testversammlung `edac60cb` und `.env.probe` stehen noch; umgedreht sind (35), (38)–(40), (42), (50), (53), (55), (60), neu (80) und (81). Seit dem 19. Oktober auch (82)–(85): die Leseregel der Abwesenheiten vom 17. Oktober (`absences_select`: über acht Wochen zurück nur, wer zuteilt, und die eigene) — im Skript und an der Attrappe geprüft, live noch nicht gefahren |
 | **Gerät** | Dunkle Bedienleiste am Handy | wirkt erst mit der aktualisierten WebAPK (`about://webapks` → „Update", oder neu installieren) |
 | **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
@@ -8856,6 +8866,10 @@ Gastredner, blieb dessen Versammlung am Platz stehen („Meine Aufgaben":
 Betrieb am 21. Oktober gezählt: eingetragen ist sie bei 1 von 55 Gastrednern,
 kein Platz trug eine verwaiste. Der NWS-Import (`wochenplanung-importieren.mjs`)
 liest sie (`a.d`), schreibt sie aber nicht in den Platz (`setSlotObj`).
+
+Am 21. Oktober abends herausgenommen: **T132** — der Motion-Clip „Erste
+Schritte für Verkündiger" ist fertig und vom Betreiber abgenommen (siehe
+T132). Damit ist von den 132 Köpfen nur noch T121 offen.
 
 Am 19. Oktober in die Tabelle aufgenommen: `sprache-fehlt` und
 `auth.sessions` (bis dahin nur in einer Commit-Nachricht, `42dff943`, und bei
