@@ -8327,7 +8327,7 @@ Einstellung.
 
 ## Fortschritt
 
-Stand 19. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 21. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -8367,25 +8367,29 @@ Zeichenzeile.
 > `grep -E '^### T[0-9]+ ' docs/analyse/todo.md | grep -vE '✅|⛔'` lässt die
 > offenen übrig.
 
-**Der Betrieb steht auf dem Stand von `main` (nachgesehen am 19. Oktober
-2026, nachmittags):** Das Frontend geht mit jedem Push hinaus; vor diesem
-Eintrag lief `bc848a3` (`sw.js` nannte `shell-bc848a3`), der Kopf von `main`,
-der letzte Pages-Lauf grün. Die sieben Edge Functions tragen die Versionen
-ihrer letzten Deploys: `import-week` 53 (18. Oktober, 11:57 Uhr, nach
-`207ad6eb`), `send-reminders` 61 (16. Oktober, 20:32 Uhr), `send-plan` 35,
-`substitute` 44, `trolley` 8, `anmelden` 11 und `send-invite` 24 (16. Oktober,
-15:46 Uhr); seither haben Commits in ihren Ordnern nur Tests geändert.
-`zuteilen` ist seit dem 15. Oktober gelöscht. Im Schema kam zuletzt
-`groups.ohne_reinigung` dazu (T127), in der Datenbank da. Die Zeitpläne laufen:
-das Aufräumen aus T125 (montags 03:30 UTC) am 19. Oktober zum ersten Mal,
-erfolgreich, die Erinnerungen (täglich 08:00 UTC) ebenso. Auf GitHub steht nur
-`main`, ohne offene PRs und Issues.
+**Der Betrieb steht auf dem Stand von `main` (nachgesehen am 21. Oktober
+2026, mittags):** Das Frontend geht mit jedem Push hinaus; vor diesem Eintrag
+lief `bccfe06` (`sw.js` nannte `shell-bccfe06`), der Kopf von `main`, der
+letzte Pages-Lauf grün. Die sieben Edge Functions tragen die Versionen ihrer
+letzten Deploys: `send-plan` 36, `send-reminders` 62 und `import-week` 54
+(19. Oktober, 22:12 Uhr, der Rest von T42 aus der Arbeitskopie, committet eine
+Minute später als `35538531`), `substitute` 44, `trolley` 8, `anmelden` 11 und
+`send-invite` 24 (16. Oktober, 15:46 Uhr). Danach hat nur T131 (`7e5a09c3`)
+Code der Functions geändert, `_shared/planung.ts` — ohne Folge: Keine Function
+ruft `folgtDemVorsitz` auf (nachgesehen), und `istEroeffnung` entscheidet wie
+vorher. `zuteilen` ist seit dem 15. Oktober gelöscht. Im Schema kam zuletzt das
+Aufräumen von `auth.sessions` dazu (`c5979343`), in der Datenbank da
+(`alte_daten_loeschen` nennt die Tabelle), davor `groups.ohne_reinigung`
+(T127), ebenfalls da. Die Zeitpläne laufen: das Aufräumen aus T125 (montags
+03:30 UTC) zuletzt am 19. Oktober, die Erinnerungen (täglich 08:00 UTC) zuletzt
+am 21. Oktober, beide erfolgreich und ohne Fehlschlag in den sieben Tagen
+davor. Auf GitHub steht nur `main`, ohne offene PRs und Issues.
 
 **Beim Betreiber liegen, außerhalb des Repos:** Resend mit dem Secret
-`INVITE_FROM` (am 19. Oktober weiter nicht gesetzt) und das Abschalten der
-Registrierung (`disable_signup` noch `false`). Einen eigenen SMTP-Server
-braucht es nicht mehr: Ohne Kennwort und Registrieren verschickt Supabase Auth
-selbst keine Mails (siehe „Was offen ist und warum").
+`INVITE_FROM` (am 21. Oktober weiter nicht gesetzt) und das Abschalten der
+Registrierung (`disable_signup` am 21. Oktober noch `false`). Einen eigenen
+SMTP-Server braucht es nicht mehr: Ohne Kennwort und Registrieren verschickt
+Supabase Auth selbst keine Mails (siehe „Was offen ist und warum").
 
 **Stand vom 10. Oktober** (`main` vom 5. Oktober): Das Frontend ging mit jedem
 Push hinaus; vor jenem Eintrag lief `02094be` (`sw.js` nannte `shell-02094be`), der Kopf von `main`. Die
@@ -8742,15 +8746,17 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 ### Was offen ist und warum
 
-**Stand 19. Oktober 2026 spät, alles Offene an einer Stelle** (gemessen: 131
-Köpfe, offen nur noch T121; keine PR, kein Issue, außer `main` nur der lokale
-Zweig `claude/reverent-mcnulty-649811` samt Worktree aus einer früheren
-Sitzung — ohne eigenen Commit, sauber; `sw.js` = HEAD; am 19. Oktober
-ausgerollt: `send-plan` v36, `send-reminders` v62 und `import-week` v54 (T42,
-ohne Folge für das Verhalten) und die Aufräumfunktion mit `auth.sessions`, die
-übrigen vier Functions am 16. Oktober; Secrets ohne `INVITE_FROM`,
-`disable_signup` noch `false`; das Aufräumen aus T125 lief am 19. Oktober zum
-ersten Mal, erfolgreich). **Am 19. Oktober abends umgesetzt** (Betreiber: „wir
+**Stand 21. Oktober 2026, alles Offene an einer Stelle** (gemessen: 131
+Köpfe, offen nur noch T121; keine PR, kein Issue, außer `main` kein Zweig mehr,
+auch lokal nicht — der Zweig `claude/reverent-mcnulty-649811` samt Worktree ist
+fort; `sw.js` = HEAD (`shell-bccfe06`); die Functions seit dem 19. Oktober,
+22:12 Uhr, unverändert: `send-plan` v36, `send-reminders` v62 und
+`import-week` v54, die übrigen vier vom 16. Oktober; die Aufräumfunktion mit
+`auth.sessions` in der Datenbank; Secrets ohne `INVITE_FROM`, `disable_signup`
+noch `false`; die Erinnerungen am 21. Oktober und das Aufräumen am 19. Oktober
+erfolgreich, kein Fehlschlag in sieben Tagen). Neu in der Tabelle: das **Konto
+ohne Versammlung** — bis dahin nur als Frage am Ende einer Sitzung vom
+19. Oktober. **Am 19. Oktober abends umgesetzt** (Betreiber: „wir
 setzen so viele punkte wie möglich um"): T128 (`38f27002`), der Rest von T42
 (`35538531`), die Fälle (82)–(85) der Mitgliedsrechte-Probe (`7c106850`), T131
 (`7e5a09c3`), T130 (`535707c1`), `auth.sessions` nach einem Jahr
@@ -8764,12 +8770,14 @@ die Nachmessung fand; siehe T128), nachmittags, was davon noch blieb
 (Trolley-Listen, Füße der Blätter, „nie", Spur, Wochenspalte, Hinweise — dazu
 sieben Stellen, die erst die Messung am Handy fand), und abends die Daten, die
 direkt aus `Intl` kamen (gemessen: 180 Funde am Handy, 142 hinter einem Klick
-— jetzt 0). Beschlossenes ist im Code nichts mehr offen; was aussteht, braucht
-den Betreiber, ein Gerät oder eine Entscheidung.
+— jetzt 0), danach die Kennzahlen der Auswertung, die wieder nebeneinander
+stehen (`bccfe064`). Beschlossenes ist im Code nichts mehr offen; was aussteht,
+braucht den Betreiber, ein Gerät oder eine Entscheidung.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124; am 19. Oktober: noch nicht). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
+| **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124; am 21. Oktober: noch nicht). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
+| **Zu entscheiden** | Konto ohne Versammlung | Verliert ein Konto seine Mitgliedschaft, nachdem schon Daten geladen waren, steht oben weiter der Name der alten Versammlung (gesehen am 19. Oktober im Review von `a48f784d`, nur in der Antwort jener Sitzung festgehalten). Betreiber am 21. Oktober: Ohne Versammlung ist die App nicht zu nutzen — dann nichts mehr anzeigen und keine Anmeldung zulassen, ohne aufwendige Logik. Ein Vorschlag geht ihm vor dem Bau zur Entscheidung zu |
 | **Zurückgestellt** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт". Betreiber am 16. Oktober: „bleibt erst mal so" — wieder aufnehmen, wenn ein Muttersprachler prüft; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
 | **Wartet** | Motion-Clip „Plan senden" | am 12. Oktober zurückgestellt, bis das neue Design steht — das ist jetzt der Fall; am 19. Oktober weiter auf später (Betreiber). Das leere Motion-Artifact liegt schon bereit |
@@ -8794,6 +8802,11 @@ jetzt unter „Bewusst offen".
 
 Am 20. Oktober abends herausgenommen: **Rest aus T128** — mit den Daten aus
 `Intl` ist nichts mehr offen (siehe T128, „Daten direkt aus `Intl` gebunden").
+
+Am 21. Oktober aufgenommen: **Konto ohne Versammlung** — die dritte Frage aus
+dem Review des Offline-Starts in der ersten Stunde (19. Oktober). Die beiden
+anderen sind entschieden („Verbindung langsam", „Das Blatt nach einem langsamen
+Start"); diese stand nur am Ende jener Sitzung.
 
 Am 19. Oktober in die Tabelle aufgenommen: `sprache-fehlt` und
 `auth.sessions` (bis dahin nur in einer Commit-Nachricht, `42dff943`, und bei
