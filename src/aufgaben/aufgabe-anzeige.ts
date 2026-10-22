@@ -15,13 +15,21 @@ import { aufgabenTermin, type I18n } from '../i18n/useT'
  * 19:00". Ohne Kalendertag (Vorlagen) nur der Termin.
  */
 export function aufgabeWann(task: MyTask, lang: Lang, i18n: Pick<I18n, 'tp' | 'tu'>): string {
-  const datum = aufgabenTermin(task, i18n)
-  const abstand = relativeDayLabel(task.at, lang)
-  if (!abstand) return datum
+  return mitAbstand(aufgabenTermin(task, i18n), task.at, lang)
+}
+
+/**
+ * Der Abstand in Worten vor einem Termin — „Morgen · <Termin>"; ohne
+ * Kalendertag nur der Termin. Auch für den Film „Erste Schritte", der dieselbe
+ * Zeile zeigt.
+ */
+export function mitAbstand(termin: string, at: number | null | undefined, lang: Lang, jetzt?: number): string {
+  const abstand = relativeDayLabel(at, lang, jetzt)
+  if (!abstand) return termin
   // „morgen" steht hier am Satzanfang. Wo eine Schrift keine Großbuchstaben
   // kennt, ändert das nichts.
   const gross = abstand.charAt(0).toLocaleUpperCase(LOCALES[lang]) + abstand.slice(1)
-  return `${gross} · ${datum}`
+  return `${gross} · ${termin}`
 }
 
 /**

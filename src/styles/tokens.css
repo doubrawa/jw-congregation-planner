@@ -144,6 +144,12 @@
      und hier drei Werte, die niemand nahm. */
   --sh-sheet: 0 24px 60px rgba(var(--shade), 0.35);
   --sh-popover: 0 14px 34px rgba(var(--shade), 0.2);
+
+  /* Das Symbol der App, wie `public/logo.svg` es zeichnet: Kachel in Graphit,
+     Plätze hell — in beiden Darstellungen gleich, wie auf dem Startbildschirm
+     des Handys. Der Film „Erste Schritte" zeigt es dort (erste-schritte.css). */
+  --symbol-grund: #1c1e20;
+  --symbol-platz: #f4f4f1;
 }
 
 /* ---- Startbild ---------------------------------------------------------------

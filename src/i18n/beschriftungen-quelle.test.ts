@@ -109,6 +109,9 @@ function festeTexte(quelltext: string): string[] {
 const ERLAUBTER_TEXT: Record<string, Grund> = {
   Versammlung: 'produktname',
   '.app': 'produktname',
+  // Am Stück: der Absender der Mail, der Name unter dem Symbol und das Ende
+  // des Films „Erste Schritte".
+  'Versammlung.app': 'produktname',
   Aktualisieren: 'diagnose',
   Leeren: 'diagnose',
 }

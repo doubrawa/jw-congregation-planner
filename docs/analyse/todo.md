@@ -8878,6 +8878,18 @@ einer halben Sekunde, damit ein schneller Start ruhig bleibt. **„Lädt …" st
 nicht mehr im Startbild**, auch ohne Bewegung nicht; Vorleseprogramme hören es
 weiter.
 
+Am selben Tag (Betreiber: „bau den Clip in die App ein: als Hochformat-Fassung
+fürs Handy, für neue Verkündiger als Karte auf Start und dauerhaft im
+Profil"): **Erste Schritte in der App** — dieselben sechs Szenen wie der Clip
+aus T132, im Hochformat und in der App gezeichnet statt als Video
+(`src/erste-schritte/`). So spricht der Film alle zwölf App-Sprachen, auch von
+rechts nach links, folgt Hell und Dunkel und braucht keinen Download; die Musik
+des Clips fehlt. Die Karte „Erste Schritte" steht oben auf Start, bis der Film
+einmal ganz gesehen oder die Karte weggeklickt ist (je Gerät); im Profil bleibt
+er abrufbar. Ohne Bewegung (Einstellung des Geräts) blättert man Schritt für
+Schritt. Am Desktop steht er als Fenster in der Mitte, quer liegen die Worte
+neben dem Bild. Handbuch für Verkündiger und drei Bilder nachgezogen.
+
 Am 19. Oktober in die Tabelle aufgenommen: `sprache-fehlt` und
 `auth.sessions` (bis dahin nur in einer Commit-Nachricht, `42dff943`, und bei
 T125; `auth.sessions` am selben Abend erledigt) und am Abend aus dem Review des

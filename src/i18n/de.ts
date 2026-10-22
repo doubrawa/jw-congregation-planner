@@ -402,6 +402,32 @@ export const DE = {
     pushKarteWeg: 'Nicht mehr anzeigen',
     appInstallieren: 'App installieren',
     pushIosHint: 'Für Benachrichtigungen die App installieren: Teilen → „Zum Home-Bildschirm“.',
+    // Der Film „Erste Schritte" (22.10.2026, src/erste-schritte): die Karte auf
+    // Start, der Knopf im Profil, die Worte der sechs Szenen und die Knöpfe zum
+    // Abspielen. {knopf} ist jeweils der Knopf, den der Satz zitiert
+    // (`bestaetigen`, `kannNicht`, `appInstallieren`, `codeEintippen`,
+    // `pushAktivieren`) — so steht im Film wörtlich, was in der App steht.
+    // „Teilen" und „Zum Home-Bildschirm" sind die Wörter des iPhones wie in
+    // `pushIosHint`.
+    ersteSchritte: 'Erste Schritte',
+    ersteSchritteKarte: 'Neu hier? Der kurze Film zeigt dir, wie es losgeht.',
+    ersteSchritteAnsehen: 'Ansehen',
+    ersteSchritteFuer: 'Versammlung.app für Verkündiger',
+    ersteSchritteSchritt: 'Schritt {n} von {m}',
+    ersteSchritteLinkTitel: 'Tippe auf den Link in der E-Mail.',
+    ersteSchritteLinkText: 'Oder scanne den QR-Code auf dem Zettel. Ein Passwort gibt es nicht.',
+    ersteSchritteLinkNotiz: 'Du bist angemeldet.',
+    ersteSchritteAufgabeTitel: 'Deine nächste Aufgabe steht ganz oben.',
+    ersteSchritteAufgabeText: 'Tippe auf „{knopf}“, dann weiß der Planer Bescheid.',
+    ersteSchritteAufgabeNotiz: 'Verhindert? Dann tippe auf „{knopf}“.',
+    ersteSchritteInstallTitel: 'Leg die App auf den Startbildschirm.',
+    ersteSchritteInstallText: 'Android: Menü ⋮, dann „{knopf}“. iPhone: in Safari „Teilen“, dann „Zum Home-Bildschirm“.',
+    ersteSchritteInstallNotiz: 'iPhone: Tippe danach in der App auf „{knopf}“.',
+    ersteSchritteErinnernTitel: 'Schalte die Erinnerungen ein.',
+    ersteSchritteErinnernText: 'Tippe auf die Glocke, dann auf „{knopf}“. So kommen Zuteilungen und Erinnerungen aufs Handy.',
+    ersteSchritteFragen: 'Fragen? Sprich die Ältesten an.',
+    ersteSchrittePause: 'Pause', ersteSchritteAbspielen: 'Abspielen', ersteSchritteNochmal: 'Nochmal ansehen',
+    ersteSchritteZurueck: 'Zurück', ersteSchritteWeiter: 'Weiter',
     familieLabel: 'Familie',
     // Amtlicher Wortlaut aus Absatz 7 der jw.org-„Anweisungen" — in jeder
     // Sprache der dortige Satz, statt einer eigenen Umschreibung. Zuletzt

@@ -13,6 +13,7 @@ import { fromIso } from '../data/meeting-dates'
 import { rechteVon } from '../data/rechte'
 import { eigeneTermine } from '../data/trolleys'
 import type { MyTask, TrolleyTermin } from '../data/types'
+import { ErsteSchritteKarte } from '../erste-schritte/ErsteSchritteKarte'
 import { aufgabenLabel, useT } from '../i18n/useT'
 import { zeitSpanne, zuDenTrolleys } from '../trolleys/trolley-anzeige'
 import { termineDieserWoche, type Termin } from './diese-woche'
@@ -26,7 +27,8 @@ const WEITERE_AUFGABEN = 3
  * **Start** (T121): was einen selbst angeht, in der Reihenfolge, in der man
  * fragt.
  *
- *  1. **Der Gruß** — mit Vornamen.
+ *  1. **Der Gruß** — mit Vornamen. Darunter, bis man ihn gesehen oder
+ *     weggeklickt hat, der Film **Erste Schritte** (22.10.2026).
  *  2. **Die nächste eigene Aufgabe, groß**, mit Bestätigen und Absagen gleich
  *     darunter. Liegt sie in einer Zusammenkunft, steht der Saal darüber: wie
  *     weit der Abend besetzt ist, und wo man selbst sitzt.
@@ -66,6 +68,7 @@ export function DashboardScreen() {
 
       <div className={zuteilen ? 'start-spalten is-planer' : 'start-spalten'}>
         <div className="start-spalte">
+          <ErsteSchritteKarte />
           {naechste ? (
             <AufgabeKarte task={naechste} saal />
           ) : (

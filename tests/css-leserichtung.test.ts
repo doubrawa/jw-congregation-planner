@@ -44,6 +44,8 @@ const ERLAUBT: Record<string, Record<string, Grund>> = {
   'app/shell.css': { 'left: 50%': 'zentriert' },
   'components/components.css': { 'left: 50%': 'zentriert' },
   'components/overlays.css': { 'left: 50%': 'zentriert' },
+  // Das Handy im Film „Erste Schritte", mit `translateX(-50%)` (film-szenen.ts).
+  'erste-schritte/erste-schritte.css': { 'left: 50%': 'zentriert' },
 }
 
 /** Jede physische Richtungsangabe einer Datei, normiert als „prop: wert". */

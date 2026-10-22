@@ -196,6 +196,23 @@ describe('App installieren', () => {
   })
 })
 
+describe('Erste Schritte (22.10.2026)', () => {
+  it('der Film ist im Profil immer zu finden — auch wenn die Karte auf Start schon fort ist', () => {
+    // Der Film fragt nach „Bewegung reduzieren"; jsdom kennt matchMedia nicht.
+    // Nur für diese Probe — die übrigen laufen wie bisher ohne.
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }))
+    localStorage.setItem('ersteSchritteWeg', '1')
+    try {
+      const { container } = zeige()
+      fireEvent.click(knopf(container, t.ersteSchritte)!)
+      expect(document.querySelector(`[role="dialog"][aria-label="${t.ersteSchritte}"]`)).not.toBeNull()
+    } finally {
+      localStorage.removeItem('ersteSchritteWeg')
+      vi.unstubAllGlobals()
+    }
+  })
+})
+
 describe('Darstellung (T121): Dunkel, Hell, Automatisch', () => {
   /** Die Knöpfe der Wahl „Darstellung", in ihrer Reihenfolge. */
   const knoepfe = (container: HTMLElement) =>

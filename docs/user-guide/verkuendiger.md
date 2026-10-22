@@ -64,6 +64,15 @@ Wichtigste zusammen.
 
 ![Startseite eines Verkündigers](screenshots/verkuendiger-start.png)
 
+- **Erste Schritte** – ganz oben, solange du neu bist: ein Film von einer
+  halben Minute, der die ersten Schritte zeigt – den Link antippen, die erste
+  Aufgabe bestätigen, die App auf den Startbildschirm legen, die Erinnerungen
+  einschalten. **Ansehen** startet ihn; er lässt sich anhalten und nochmal
+  ansehen. Hast du ihn ganz gesehen oder die Karte mit **✕** weggeklickt,
+  kommt sie auf diesem Gerät nicht wieder; ansehen kannst du den Film weiter im
+  [Profil](#7-profil-darstellung-schriftgröße--sprache). Hast du am Gerät
+  „Bewegung reduzieren" eingestellt, läuft er nicht von selbst – dann blätterst
+  du mit **Weiter** Schritt für Schritt.
 - **Deine nächste Aufgabe, groß** – wann („Morgen · Dienstag, 8. September ·
   19:00"), was, deine Rolle und bei Schulungsaufgaben dein Partner. Gleich
   darunter **Bestätigen** und **Ich kann nicht**, daneben das **S‑89**.
@@ -542,7 +551,7 @@ dich ab. Admins finden am Handy hier auch **Personen** und **Einstellungen**.
     eingestellt war. Hast du die App auf zwei Geräten mit verschiedenen
     Sprachen, bekommt jedes seine eigene. Die Mitteilungen in der App folgen
     dagegen immer der Sprache, die du gerade eingestellt hast.
-  - **Rechts nach links.** Bei Arabisch, Hebräisch, Persisch und Urdu läuft die
+  - **Rechts nach links.** Bei Arabisch und Persisch läuft die
     ganze Oberfläche von rechts nach links – auch das Blättern zwischen den
     Wochen: Dort liegt die **vorige** Woche rechts.
   - **Die E‑Mail mit dem Link ist die Ausnahme**: Die erste kommt in der
@@ -551,6 +560,8 @@ dich ab. Admins finden am Handy hier auch **Personen** und **Einstellungen**.
     anforderst, schreibt die App in der Sprache, die du dort gewählt hast.
 - **Push‑Mitteilungen** – Erinnerungen an anstehende Aufgaben ein‑ oder
   ausschalten (siehe [Abschnitt 8](#8-app-installieren--erinnerungen)).
+- **Erste Schritte** – der kurze Film von der Startseite (Abschnitt 2), hier
+  jederzeit wieder.
 - **Abmelden** – meldet dich auf diesem Gerät ab. Der erste Tipp fragt
   „Wirklich abmelden?", erst der zweite meldet ab.
 

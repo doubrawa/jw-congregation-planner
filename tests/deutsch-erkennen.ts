@@ -42,6 +42,11 @@ const LATEIN_ERLAUBT: Record<string, string> = {
   PDF: 'Dateiformat',
   XML: 'Dateiformat (Vortragsplan)',
   QR: 'QR-Code',
+  // Film „Erste Schritte" (22.10.2026): Gerät und Browser, wie Google und Apple
+  // sie auch auf Russisch und Ukrainisch schreiben (wie `pushPromptIos`).
+  Android: 'Name des Betriebssystems',
+  iPhone: 'Name des Geräts',
+  Safari: 'Name des Browsers',
   S: 'Formularnummer „S-89"',
   Zoom: 'Name des Dienstes (Zoom-Ordner)',
   // Die Kürzel der Publikationen schreibt das Arbeitsheft auch auf Ukrainisch

@@ -9,6 +9,7 @@ import { FONT_SCALES, THEME_LIST, type FontScale } from '../data/constants'
 import { displayName, initials } from '../data/helpers'
 import { erlaubteScreens, rechteVon } from '../data/rechte'
 import type { Lang } from '../data/types'
+import { ErsteSchritteKnopf } from '../erste-schritte/ErsteSchritteKarte'
 import { APP_LANGS_SORTED } from '../i18n/langs'
 import type { Dict } from '../i18n/ui'
 import { useT } from '../i18n/useT'
@@ -40,7 +41,7 @@ const FS_LABELS = {
  *    Push-Mitteilungen (auf dem iPhone erst als App, dann steht dort der Hinweis).
  *  - **Abwesenheiten**: die eigenen, die anstehen — und „Abwesenheit eintragen".
  *  - **Verwaltung** (Admins, nur am Handy — ab dem Tablet steht sie im Menü).
- *  - App installieren, Abmelden und der Stand der App.
+ *  - App installieren, der Film „Erste Schritte", Abmelden und der Stand der App.
  */
 export function ProfilScreen() {
   const { state, dispatch } = useApp()
@@ -178,6 +179,7 @@ export function ProfilScreen() {
                 {t.appInstallieren}
               </button>
             )}
+            <ErsteSchritteKnopf />
             <AbmeldenKnopf className="knopf-umriss" />
           </div>
           {/*

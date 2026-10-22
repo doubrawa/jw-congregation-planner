@@ -1,0 +1,815 @@
+/*
+ * Erste Schritte (22.10.2026): die Karte auf Start und der Film im Hochformat
+ * (`ErsteSchritteFilm.tsx`). Farben nur aus tokens.css, Schriftgrößen als
+ * calc(<px> * var(--fs)), Richtungen logisch. Was sich im Film bewegt, setzt
+ * film-szenen.ts als `transform` und `opacity`; hier steht das ruhige Bild.
+ */
+
+/* ---- Die Karte auf Start ------------------------------------------------- */
+
+/* Titel und ✕ oben, darunter der Satz und „Ansehen" — untereinander, damit
+   bei großer Schrift und 320 px nichts eng wird. */
+.erste-schritte-karte {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'titel weg'
+    'text text'
+    'knopf knopf';
+  row-gap: 4px;
+  padding-block: 14px 16px;
+}
+
+.erste-schritte-titel {
+  grid-area: titel;
+  align-self: center;
+  font-size: calc(17px * var(--fs));
+  font-weight: 600;
+}
+
+.erste-schritte-weg {
+  grid-area: weg;
+  margin-block: -8px;
+  margin-inline-end: -8px;
+  color: var(--text3);
+}
+
+.erste-schritte-text {
+  grid-area: text;
+}
+
+.erste-schritte-knopf {
+  grid-area: knopf;
+  justify-self: start;
+  margin-block-start: 8px;
+}
+
+/* ---- Der Film ------------------------------------------------------------- */
+
+.film-schleier {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-sheet);
+  background: var(--schleier);
+}
+
+/* Am Handy der ganze Schirm. Das ✕ steht fest in der Ecke, darunter rollt,
+   wenn es eng wird, der Film (`.film-rolle`). */
+.film {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-sheet) + 1);
+  overflow: hidden;
+  background: var(--grund);
+  color: var(--text);
+}
+
+/* Oben die Bühne, darunter die Worte und der Knopf. Das Bild behält eine
+   Mindesthöhe: Wird es mit großer Schrift auf einem kleinen Handy eng, rollt
+   der Film, statt das Handy auf einen Streifen zu drücken (320 × 568 bei
+   Stufe 1,45: sonst 43 px). */
+.film-rolle {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: minmax(min(300px, 62svh), 1fr) auto auto;
+  grid-template-areas:
+    'buehne'
+    'worte'
+    'steuer';
+  height: 100%;
+  padding-block: env(safe-area-inset-top) env(safe-area-inset-bottom);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Am Desktop ein Fenster in der Mitte, hochkant wie ein Handy — nur, wo es
+   hoch genug ist: Ein großes Handy quer (932 × 430) bekam sonst ein Fenster von
+   440 × 396, in dem das Handy auf ein Drittel schrumpfte und „Pause" herausrollte
+   (Review vom 22.10.2026). Dort gilt der ganze Schirm mit den Worten daneben. */
+@media (min-width: 920px) and (min-height: 700px) {
+  .film {
+    width: 440px;
+    height: min(880px, 92svh);
+    margin: auto;
+    border-radius: var(--r-sheet);
+    box-shadow: var(--sh-sheet);
+  }
+
+  .film-rolle {
+    padding-block: 0;
+  }
+}
+
+/* Liegt das Handy quer, stehen die Worte neben dem Bild. */
+.film--quer .film-rolle {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto auto minmax(0, 1fr);
+  grid-template-areas:
+    'buehne .'
+    'buehne worte'
+    'buehne steuer'
+    'buehne .';
+}
+
+.film-schliessen {
+  position: absolute;
+  inset-block-start: calc(env(safe-area-inset-top) + 10px);
+  inset-inline-end: 12px;
+  z-index: 2;
+}
+
+/* Die Bühne: das Bild, darüber die Punkte und das ✕. */
+.film-buehne {
+  grid-area: buehne;
+  position: relative;
+}
+
+/* Das Bild schneidet das Handy unten ab und blendet es in den Grund aus —
+   darunter stehen die Punkte der Schritte. */
+.film-bild {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, var(--text) calc(100% - 118px), transparent calc(100% - 74px));
+  mask-image: linear-gradient(to bottom, var(--text) calc(100% - 118px), transparent calc(100% - 74px));
+}
+
+.film-ebene {
+  position: absolute;
+  inset: 0;
+}
+
+/* Bis die Bewegung eine Szene zeigt, ist keine zu sehen. */
+.film [data-szene] {
+  visibility: hidden;
+}
+
+/* Das Handy: 390 × 844 wie das echte, gemittelt und vermessen in
+   film-szenen.ts (`translateX(-50%)` gehört zu `left: 50%`). */
+.film-handy {
+  position: absolute;
+  inset-block-start: 0;
+  left: 50%;
+  width: 414px;
+  height: 868px;
+  padding: 12px;
+  border-radius: 58px;
+  background: var(--leiste);
+  box-shadow: 0 30px 60px rgba(var(--shade), 0.22);
+  transform: translateX(-50%) scale(0.5);
+  transform-origin: 50% 0;
+}
+
+/* Ein Bild, kein Text zum Lesen: Die Schrift im Handy wächst nicht mit. */
+.film-schirm {
+  --fs: 1;
+  position: relative;
+  width: 390px;
+  height: 844px;
+  overflow: hidden;
+  border-radius: 46px;
+  background: var(--grund);
+  font-size: calc(15.5px * var(--fs));
+  line-height: 1.35;
+}
+
+/* Die Worte aller Szenen liegen in derselben Zelle: Die höchste bestimmt die
+   Höhe, und das Bild darüber springt beim Wechsel nicht. */
+.film-worte {
+  grid-area: worte;
+  display: grid;
+  padding-inline: 24px;
+  text-align: center;
+  container-type: inline-size;
+}
+
+.film-text {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Gemittelt nimmt eine Zeile nur so viel Breite, wie ihr längstes Wort braucht —
+   ohne Deckel ragte ein langes über den Rand, statt umzubrechen. */
+.film-text > * {
+  max-width: 100%;
+}
+
+.film-schritt {
+  margin: 0;
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.film-titel {
+  margin: 0;
+  font-size: calc(24px * var(--fs));
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -0.01em;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+/* „Versammlung.app" ist ein Wort ohne Trennstelle: groß, aber nie breiter als
+   die Spalte (bei Stufe 1,45 und 320 px ragte es sonst hinaus). */
+.film-titel--gross {
+  font-size: min(calc(32px * var(--fs)), 12cqi);
+}
+
+.film-sub {
+  margin: 0;
+  color: var(--text2);
+  font-size: calc(16px * var(--fs));
+  line-height: 1.4;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+.film-notiz {
+  margin: 0;
+  padding: 7px 16px;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--akzent) 45%, var(--grund));
+  color: var(--text);
+  font-size: calc(14.5px * var(--fs));
+  font-weight: 700;
+}
+
+.film-steuer {
+  grid-area: steuer;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 24px 20px;
+}
+
+/* Die Punkte über dem Bild: das Logo am Anfang und am Ende, dazwischen die
+   vier Schritte unten in der Bühne. Koordinaten in Pixeln der Bühne. */
+.film-punkte {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.film-pult {
+  fill: var(--akzent);
+}
+
+.film-sitz {
+  fill: var(--text);
+}
+
+.film-sitz-leer {
+  fill: color-mix(in srgb, var(--text) 18%, var(--grund));
+}
+
+.film-ring {
+  fill: none;
+  stroke: var(--akzent);
+  stroke-width: 4;
+}
+
+/* ---- Das Bild im Handy (FilmBilder.tsx) -------------------------------------
+   Eigene Klassen, gezeichnet nach den Ansichten der App bei 390 px. */
+
+.fm-app {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--grund);
+  color: var(--text);
+  transform-origin: 0 0;
+}
+
+.fm-kopf {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 8px 16px;
+}
+
+.fm-kopf--unter {
+  justify-content: space-between;
+}
+
+.fm-rund {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--karte);
+}
+
+.fm-mitte {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.fm-datum {
+  color: var(--text3);
+  font-size: calc(13px * var(--fs));
+}
+
+.fm-versammlung {
+  overflow: hidden;
+  color: var(--text2);
+  font-size: calc(14.5px * var(--fs));
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fm-neu {
+  position: absolute;
+  inset-block-start: 7px;
+  inset-inline-end: 7px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--karte);
+  border-radius: 50%;
+  background: var(--akzent);
+}
+
+.fm-aktion {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 8px;
+  color: var(--akzent-text);
+  font-weight: 600;
+}
+
+.fm-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 20px;
+}
+
+.fm-seitentitel {
+  margin: 0;
+  font-size: calc(29px * var(--fs));
+  font-weight: 300;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.fm-karte {
+  display: flex;
+  flex-direction: column;
+  padding-block: 4px;
+  padding-inline: 18px 14px;
+  border-radius: 24px;
+  background: var(--karte);
+}
+
+.fm-karte--held {
+  padding: 12px 20px 20px;
+  border-radius: var(--r-sheet);
+}
+
+.fm-saal {
+  align-self: center;
+  width: 186px;
+  height: auto;
+  margin-block-end: 10px;
+}
+
+.fm-pult,
+.fm-du {
+  fill: var(--akzent);
+}
+
+.fm-du-ring {
+  fill: none;
+  stroke: var(--akzent);
+  stroke-width: 3.5;
+}
+
+.fm-platz.is-voll {
+  fill: var(--text);
+}
+
+.fm-platz.is-wartet {
+  fill: var(--wartet);
+}
+
+.fm-platz.is-problem {
+  fill: var(--problem);
+}
+
+.fm-platz.is-offen {
+  fill: none;
+  stroke: var(--ring);
+  stroke-width: 3.5;
+  stroke-dasharray: 7 6;
+}
+
+.fm-wann {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--akzent-text);
+  font-size: calc(14px * var(--fs));
+  font-weight: 600;
+}
+
+.fm-punkt {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--akzent);
+}
+
+.fm-held-titel {
+  padding-block-start: 3px;
+  font-size: calc(25px * var(--fs));
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.fm-handlungen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 64px;
+  padding-block-start: 16px;
+}
+
+.fm-knopf-haupt,
+.fm-knopf-umriss,
+.fm-stand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding-block: 6px;
+  padding-inline: 24px;
+  border-radius: 24px;
+  font-weight: 600;
+}
+
+.fm-knopf-haupt {
+  background: var(--akzent);
+  color: var(--auf-akzent);
+  font-weight: 700;
+}
+
+.fm-knopf-umriss {
+  padding-inline: 16px;
+  border: 1.5px solid var(--umriss);
+}
+
+.fm-stand {
+  padding-inline: 4px 12px;
+  color: var(--akzent-text);
+}
+
+.fm-liste {
+  padding-block: 4px;
+}
+
+.fm-zeile {
+  display: grid;
+  grid-template-columns: minmax(66px, auto) minmax(0, 1fr) 20px;
+  align-items: center;
+  column-gap: 10px;
+  min-height: 48px;
+}
+
+.fm-zeile + .fm-zeile {
+  border-block-start: 1px solid var(--linie);
+}
+
+.fm-zeile .zeichen {
+  width: 20px;
+  height: 20px;
+  color: var(--text3);
+}
+
+.fm-tag {
+  color: var(--text3);
+  font-size: calc(14px * var(--fs));
+  white-space: nowrap;
+}
+
+/* Wo im Bild Text stünde, der nichts zur Sache tut: ein Balken. */
+.fm-balken {
+  display: block;
+  inline-size: 96px;
+  height: 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--text) 14%, var(--karte));
+}
+
+.fm-balken--lang {
+  inline-size: 136px;
+}
+
+.fm-balken--kurz {
+  inline-size: 72px;
+}
+
+/* Die E-Mail (Eigenentwurf eines Mail-Programms). */
+.fm-mail {
+  background: var(--karte);
+}
+
+.fm-mail-kopf {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding-inline: 14px;
+  border-block-end: 1px solid var(--linie);
+  color: var(--text2);
+}
+
+.fm-mail-inhalt {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+}
+
+.fm-mail-betreff {
+  font-size: calc(21px * var(--fs));
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.fm-mail-von {
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
+}
+
+.fm-mail-text {
+  color: var(--text2);
+  white-space: pre-line;
+}
+
+.fm-mail-url {
+  align-self: flex-start;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Das Menü des Browsers über der App (Eigenentwurf). */
+.fm-ueber {
+  background: none;
+}
+
+.fm-menue {
+  position: absolute;
+  inset-block-start: 8px;
+  inset-inline-end: 8px;
+  width: 232px;
+  padding-block: 8px;
+  border-radius: 14px;
+  background: var(--hoch);
+  box-shadow: var(--sh-popover);
+  transform-origin: 100% 0;
+}
+
+[dir='rtl'] .fm-menue {
+  transform-origin: 0 0;
+}
+
+.fm-menue-zeile {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 16px;
+}
+
+.fm-wahl {
+  font-weight: 600;
+}
+
+.fm-wahl.is-gewaehlt {
+  background: color-mix(in srgb, var(--akzent) 35%, var(--hoch));
+}
+
+/* Der Startbildschirm des Handys (Eigenentwurf): vier Spalten Kacheln. */
+.fm-home {
+  background: color-mix(in srgb, var(--text) 10%, var(--grund));
+}
+
+.fm-raster {
+  display: grid;
+  grid-template-columns: repeat(4, 60px);
+  justify-content: space-between;
+  row-gap: 40px;
+  padding: 90px 30px 0;
+}
+
+.fm-kachel,
+.fm-app-platz {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 15px;
+}
+
+.fm-kachel {
+  background: color-mix(in srgb, var(--text) 16%, var(--grund));
+}
+
+.fm-app-name {
+  position: absolute;
+  inset-block-start: 66px;
+  inset-inline-start: -20px;
+  width: 100px;
+  font-size: calc(11px * var(--fs));
+  font-weight: 600;
+  text-align: center;
+}
+
+.fm-flug {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  width: 60px;
+  height: 60px;
+  opacity: 0;
+}
+
+.fm-symbol {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.fm-symbol-grund {
+  fill: var(--symbol-grund);
+}
+
+.fm-symbol-platz {
+  fill: var(--symbol-platz);
+}
+
+.fm-symbol-pult {
+  fill: var(--akzent);
+}
+
+/* Die Mitteilungen. */
+.fm-push {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding-block: 12px;
+  border-radius: 20px;
+}
+
+.fm-push-text {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.fm-push-titel {
+  font-weight: 600;
+}
+
+.fm-klein {
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
+}
+
+.fm-pille {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding-block: 4px;
+  padding-inline: 16px;
+  border: 1.5px solid var(--umriss);
+  border-radius: 22px;
+  font-size: calc(14.5px * var(--fs));
+  font-weight: 600;
+}
+
+.fm-abschnitt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-block-start: 6px;
+}
+
+.fm-abschnitt-titel {
+  color: var(--text2);
+  font-size: calc(14px * var(--fs));
+  font-weight: 600;
+}
+
+.fm-mitteilung {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  column-gap: 14px;
+  padding-block: 14px;
+}
+
+.fm-mitteilung-punkt {
+  width: 10px;
+  height: 10px;
+  margin-block-start: 7px;
+  border-radius: 50%;
+  background: var(--akzent);
+}
+
+.fm-mitteilung-inhalt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fm-mitteilung-kopf {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 10px;
+}
+
+.fm-mitteilung-titel {
+  flex: 1 1 0;
+  font-size: calc(16px * var(--fs));
+  font-weight: 600;
+}
+
+.fm-mitteilung-zeit {
+  flex: none;
+  margin-inline-start: auto;
+  color: var(--text3);
+  font-size: calc(13px * var(--fs));
+}
+
+.fm-mitteilung-text {
+  color: var(--text2);
+}
+
+/* Die Erinnerung, wie das Handy sie oben zeigt (Eigenentwurf). */
+.fm-banner {
+  position: absolute;
+  inset-block-start: 8px;
+  inset-inline: 8px;
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--hoch);
+  box-shadow: var(--sh-popover);
+  opacity: 0;
+}
+
+.fm-banner-symbol {
+  flex: none;
+  width: 36px;
+  height: 36px;
+}
+
+.fm-banner-app {
+  color: var(--text3);
+  font-size: calc(12.5px * var(--fs));
+}
+
+/* Ein Tipp: der Kreis, der kommt, drückt und geht (film-szenen.ts). */
+.fm-tipp {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  width: 58px;
+  height: 58px;
+  border: 2px solid color-mix(in srgb, var(--text) 45%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 16%, transparent);
+  opacity: 0;
+  pointer-events: none;
+}
