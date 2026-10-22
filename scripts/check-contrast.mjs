@@ -97,7 +97,7 @@ const TEXT = [
   ['akzent-text', 'grund', 4.5, 'Akzenttext auf Grund'],
   ['akzent-text', 'karte', 4.5, 'Akzenttext auf Karte („Fertig")'],
   ['auf-akzent', 'akzent', 4.5, 'Text auf der Hauptaktion'],
-  ['grund', 'text', 4.5, 'gedrückter Knopf der Wahl'],
+  ['grund', 'text', 4.5, 'gedrückter Knopf der Wahl, gewählter Bereich und Tag'],
   ['problem', 'grund', 4.5, 'Problem als Text auf Grund'],
   ['problem', 'karte', 4.5, 'Problem als Text auf Karte'],
   ['sek1', 'karte', 4.5, 'Abschnitt 1 auf Karte'],

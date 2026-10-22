@@ -109,7 +109,8 @@ Bibellesen der Woche. Auf dem Handy oder Tablet kannst du stattdessen auch
 Federt die Ansicht zurück, gibt es in der Richtung keine Woche mehr.
 
 Darunter stehen die beiden Zusammenkünfte als Karten, je mit Tag, Datum und
-Uhrzeit; die gewählte hat einen Rand. Fällt eine aus, ist ihr Tag
+Uhrzeit; die gewählte ist dunkel hinterlegt (in der dunklen Darstellung hell).
+Fällt eine aus, ist ihr Tag
 durchgestrichen, und im Programm steht der Grund. Im Programm hat jeder
 Abschnitt seine Karte mit der Farbe des Arbeitshefts, das Lied steht rechts im
 Kopf. Neben jedem Punkt steht seine Dauer, darunter die Eingeteilten, ihre

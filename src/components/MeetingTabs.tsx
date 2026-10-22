@@ -37,8 +37,8 @@ interface MeetingTabsProps {
 /**
  * **Die beiden Zusammenkünfte der Woche als Karten** (T121, `GAnsehenWoche`):
  * je Karte der Wochentag, darunter Datum und Uhrzeit — „Dienstag · 8.9. ·
- * 19:00". Die gewählte trägt einen Rand. Eine ausgefallene steht
- * durchgestrichen da (T30).
+ * 19:00". Die gewählte ist in der Textfarbe hinterlegt, wie der gedrückte
+ * Knopf der `Wahl`. Eine ausgefallene steht durchgestrichen da (T30).
  *
  * Vorgelesen wird „Versammlung Dienstag, 8.9. · 19:00" (`versammlungTag`): Der
  * Wochentag allein unterschiede die Karten, sagte aber nicht, wofür sie stehen.

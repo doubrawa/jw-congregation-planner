@@ -10570,6 +10570,20 @@ export const KATALOG = [
     ersetzen: '  hyphens: auto;\n  overflow-wrap: anywhere;\n}\n\n.meeting-tab.is-active .meeting-tab-name {',
   },
   {
+    id: 'tag-wahl-hinterlegt',
+    datei: 'src/components/components.css',
+    regel: 'Der gewählte Tag ist in der Textfarbe hinterlegt — ein schmaler Rand allein war dem Betreiber zu undeutlich.',
+    suchen: '.meeting-tab.is-active {\n  background: var(--text);\n  color: var(--grund);\n}',
+    ersetzen: '.meeting-tab.is-active {\n  border-color: var(--text);\n  color: var(--text);\n}',
+  },
+  {
+    id: 'tag-wahl-zeit-lesbar',
+    datei: 'src/components/components.css',
+    regel: 'Datum und Uhrzeit auf dem gewählten Tag stehen in der Farbe des Grunds — blass wären sie auf der dunklen Fläche kaum zu lesen.',
+    suchen: '.meeting-tab.is-active .meeting-tab-wann {\n  color: var(--grund);\n}',
+    ersetzen: '.meeting-tab.is-active .meeting-tab-wann {\n}',
+  },
+  {
     id: 'umbruch-wochenkarte-umbruch',
     datei: 'src/planen/planen.css',
     regel: 'In der Planung rückt die Lage einer Woche unter die Spanne, wenn beide nicht nebeneinander passen.',

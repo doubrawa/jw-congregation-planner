@@ -210,9 +210,13 @@
   text-align: start;
 }
 
+/* Der gewählte Tag ist in der Textfarbe hinterlegt, wie der gedrückte Knopf
+   der `Wahl` und der gewählte Bereich des Predigtdienstes. Bis zum 22.10.2026
+   trug er nur einen Rand (Betreiber: „die darstellung muss deutlicher sein als
+   nur so ein schmaler rand"). */
 .meeting-tab.is-active {
-  border-color: var(--text);
-  color: var(--text);
+  background: var(--text);
+  color: var(--grund);
 }
 
 /* Reicht der Platz nicht, trennt der Wochentag nach den Regeln der Sprache
@@ -233,6 +237,10 @@
 .meeting-tab-wann {
   color: var(--text3);
   font-size: calc(13px * var(--fs));
+}
+
+.meeting-tab.is-active .meeting-tab-wann {
+  color: var(--grund);
 }
 
 /* ---- Bereichs-Panels ------------------------------------------------------
