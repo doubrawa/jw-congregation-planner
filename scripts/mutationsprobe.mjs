@@ -9864,6 +9864,27 @@ export const KATALOG = [
     ersetzen: '@media (min-width: 920px) {\n',
   },
   {
+    id: 'erste-schritte-zeit-zum-lesen',
+    datei: 'src/erste-schritte/film-zeit.ts',
+    regel: 'Jede Szene des Films steht so lange, wie man ihre Worte liest — der Betreiber fand ihn ohne die Halte „etwas zu schnell".',
+    suchen: "  { id: 'installieren', dauer: 5.5, standbild: 4.5, halte: [[1.44, 3], [4.45, 3.9]] },\n",
+    ersetzen: "  { id: 'installieren', dauer: 5.5, standbild: 4.5, halte: [[1.44, 1], [4.45, 1]] },\n",
+  },
+  {
+    id: 'erste-schritte-halt-ohne-sprung',
+    datei: 'src/erste-schritte/film-zeit.ts',
+    regel: 'Nach einem Halt läuft die Szene dort weiter, wo sie stand — sie springt nicht um die Dauer des Halts nach vorn.',
+    suchen: '    t = Math.max(bei, t - dauer)\n',
+    ersetzen: '    t = Math.max(bei, t)\n',
+  },
+  {
+    id: 'erste-schritte-handy-steigt-im-halt',
+    datei: 'src/erste-schritte/film-szenen.ts',
+    regel: 'In einem Halt zum Lesen ruht das Bild nicht ganz: Das Handy steigt mit der Zeit des Films weiter.',
+    suchen: '      handySetzen(handy, m, zeit)\n',
+    ersetzen: '      handySetzen(handy, m, t)\n',
+  },
+  {
     id: 'erste-schritte-termin-wie-karte',
     datei: 'src/erste-schritte/film-inhalt.ts',
     regel: 'Der Film zeigt den Termin der Aufgabe so, wie die echte Karte ihn zeigt — in jeder Sprache dieselbe Uhrzeit.',

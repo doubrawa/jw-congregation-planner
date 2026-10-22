@@ -8888,7 +8888,11 @@ des Clips fehlt. Die Karte „Erste Schritte" steht oben auf Start, bis der Film
 einmal ganz gesehen oder die Karte weggeklickt ist (je Gerät); im Profil bleibt
 er abrufbar. Ohne Bewegung (Einstellung des Geräts) blättert man Schritt für
 Schritt. Am Desktop steht er als Fenster in der Mitte, quer liegen die Worte
-neben dem Bild. Handbuch für Verkündiger und drei Bilder nachgezogen.
+neben dem Bild. Handbuch für Verkündiger und drei Bilder nachgezogen. Danach
+(Betreiber: „das geht etwas zu schnell. bitte langsamer"): **Halte zum Lesen**
+— nach den letzten Worten jeder Szene und vor einem Tipp bleibt das Bild
+stehen, bemessen nach Untertiteln (20 Zeichen je Sekunde) für die längste der
+zwölf Sprachen; die Bewegungen laufen wie im Clip. Knapp 50 statt 30 Sekunden.
 
 Am 19. Oktober in die Tabelle aufgenommen: `sprache-fehlt` und
 `auth.sessions` (bis dahin nur in einer Commit-Nachricht, `42dff943`, und bei

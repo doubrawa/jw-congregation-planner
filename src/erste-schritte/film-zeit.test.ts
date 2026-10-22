@@ -17,8 +17,14 @@ describe('Die Szenen', () => {
     expect(SZENEN.map((s) => s.id)).toEqual(['punkte', 'link', 'aufgabe', 'installieren', 'erinnern', 'ende'])
   })
 
-  it('dauern zusammen eine halbe Minute — wie der Clip, den der Betreiber abgenommen hat', () => {
-    expect(GESAMT).toBe(30)
+  it('bewegen sich so lange wie der Clip — eine halbe Minute; dazu kommen die Halte zum Lesen', () => {
+    // Der Betreiber nahm den Clip ab („sieht super aus") und fand den Film in
+    // der App dann „etwas zu schnell": Die Bewegung blieb, die Zeit zum Lesen
+    // kam dazu (22.10.2026).
+    expect(SZENEN.reduce((summe, s) => summe + s.dauer, 0)).toBe(30)
+    const halte = SZENEN.flatMap((s) => s.halte as ReadonlyArray<readonly [number, number]>)
+    expect(GESAMT).toBeCloseTo(30 + halte.reduce((summe, [, dauer]) => summe + dauer, 0))
+    expect(GESAMT).toBeGreaterThan(40)
   })
 
   it('jedes Standbild liegt in seiner Szene — ohne Bewegung zeigt „Weiter" sonst die falsche', () => {
@@ -42,6 +48,52 @@ describe('Welche Szene zu welcher Zeit', () => {
     expect(szeneBei(-5)).toEqual({ index: 0, t: 0 })
     const letzte = SZENEN.length - 1
     expect(szeneBei(GESAMT + 10)).toEqual({ index: letzte, t: SZENEN[letzte]?.dauer })
+  })
+})
+
+describe('Die Halte zum Lesen', () => {
+  it('die Zeit einer Szene geht nie zurück und springt nie — auch nicht an einem Halt', () => {
+    SZENEN.forEach((szene, i) => {
+      const beginn = szenenBeginn(i)
+      const ende = i + 1 < SZENEN.length ? szenenBeginn(i + 1) : GESAMT
+      let vorher = szeneBei(beginn).t
+      // In Schritten von 0,05 s durch die Szene.
+      for (let k = 1; beginn + k * 0.05 < ende - 1e-9; k++) {
+        const f = beginn + k * 0.05
+        const { index, t } = szeneBei(f)
+        expect(index, `${szene.id} bei ${f.toFixed(2)} s`).toBe(i)
+        expect(t, `${szene.id} bei ${f.toFixed(2)} s`).toBeGreaterThanOrEqual(vorher - 1e-9)
+        expect(t - vorher, `${szene.id} bei ${f.toFixed(2)} s`).toBeLessThanOrEqual(0.05 + 1e-9)
+        vorher = t
+      }
+    })
+  })
+
+  it('in einem Halt steht die Szene still, so lange er dauert — davor und danach läuft sie', () => {
+    SZENEN.forEach((szene, i) => {
+      let davor = 0
+      for (const [bei, dauer] of szene.halte as ReadonlyArray<readonly [number, number]>) {
+        // Im Film beginnt der Halt nach der Bewegung bis `bei` und den Halten davor.
+        const ab = szenenBeginn(i) + bei + davor
+        expect(szeneBei(ab - 0.05).t, `${szene.id} vor ${bei}`).toBeCloseTo(bei - 0.05, 9)
+        expect(szeneBei(ab + dauer / 2).t, `${szene.id} in ${bei}`).toBeCloseTo(bei, 9)
+        expect(szeneBei(ab + dauer - 1e-6).t, `${szene.id} am Ende von ${bei}`).toBeCloseTo(bei, 5)
+        expect(szeneBei(ab + dauer + 0.05).t, `${szene.id} nach ${bei}`).toBeCloseTo(bei + 0.05, 9)
+        davor += dauer
+      }
+    })
+  })
+
+  it('jeder Halt liegt mitten in seiner Szene, einer nach dem anderen', () => {
+    for (const szene of SZENEN) {
+      let zuvor = 0
+      for (const [bei, dauer] of szene.halte as ReadonlyArray<readonly [number, number]>) {
+        expect(bei, szene.id).toBeGreaterThan(zuvor)
+        expect(bei, szene.id).toBeLessThan(szene.dauer)
+        expect(dauer, szene.id).toBeGreaterThan(0)
+        zuvor = bei
+      }
+    }
   })
 })
 

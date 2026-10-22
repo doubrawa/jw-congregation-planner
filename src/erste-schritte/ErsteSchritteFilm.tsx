@@ -36,8 +36,9 @@ interface Steuerung {
  * folgt Hell und Dunkel, wächst mit der Schrift und braucht keinen Download.
  * Die Musik des Clips fehlt — in der App klingt nichts von selbst.
  *
- * Er läuft einmal, 30 Sekunden, mit Pause und „Nochmal ansehen". **Ohne
- * Bewegung** (Einstellung des Geräts) läuft nichts von selbst: Dann stehen die
+ * Er läuft einmal, knapp 50 Sekunden (mit Halten zum Lesen, `film-zeit.ts`),
+ * mit Pause und „Nochmal ansehen". **Ohne Bewegung** (Einstellung des
+ * Geräts) läuft nichts von selbst: Dann stehen die
  * Szenen als Bilder da, und „Weiter" blättert. Am Handy füllt er den Schirm, am
  * Desktop steht er als Fenster in der Mitte; liegt das Handy quer, stehen die
  * Worte neben dem Bild. Schließen wie ein Blatt: ✕, Zurück, Escape.
@@ -103,7 +104,7 @@ export function ErsteSchritteFilm({ onClose, onEnde }: { onClose: () => void; on
         // für Zeile, sonst stießen „Schritt 1 von 4“ und der Satz danach zusammen.
         ansage.textContent = [...finde(film, `worte-${szene.id}`).children].map((zeile) => zeile.textContent ?? '').join(' ')
       }
-      bewegung.zeigen(szene.id, szenenZeit)
+      bewegung.zeigen(szene.id, szenenZeit, zeit)
     }
 
     const messen = () => {

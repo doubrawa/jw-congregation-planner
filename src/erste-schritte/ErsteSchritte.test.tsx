@@ -12,13 +12,14 @@ import { dict, loadOverlay } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import { ErsteSchritteFilm } from './ErsteSchritteFilm'
 import { ErsteSchritteKarte, ErsteSchritteKnopf, WEG_KEY } from './ErsteSchritteKarte'
+import { WORTE } from './film-szenen'
 import { GESAMT, SZENEN, szenenBeginn, type SzenenId } from './film-zeit'
 
 /**
  * **Erste Schritte: die Karte auf Start und der Film** (22.10.2026).
  *
- * Wer neu ist, findet oben auf Start eine Karte, die einen halbminütigen Film
- * zeigt: Link antippen, Aufgabe bestätigen, die App aufs Handy holen,
+ * Wer neu ist, findet oben auf Start eine Karte, die einen Film von knapp einer
+ * Minute zeigt: Link antippen, Aufgabe bestätigen, die App aufs Handy holen,
  * Erinnerungen einschalten. Verteidigt wird hier, was ein Verkündiger davon
  * merkt:
  *
@@ -221,6 +222,20 @@ describe('Der Film', () => {
     expect(onEnde).toHaveBeenCalledTimes(1)
   })
 
+  it('in einem Halt zum Lesen steht die Szene, aber das Bild ruht nicht ganz — das Handy steigt weiter', () => {
+    zeige(<ErsteSchritteFilm onClose={() => {}} />)
+    const i = SZENEN.findIndex((s) => s.id === 'installieren')
+    const [halt] = (SZENEN[i]?.halte ?? []) as ReadonlyArray<readonly [number, number]>
+    const handy = () => document.querySelector<HTMLElement>('[data-f="ebene-installieren"] [data-f="handy"]')?.style.transform ?? ''
+    const menue = () => document.querySelector<HTMLElement>('[data-f="ebene-installieren"] [data-f="menue"]')?.style.opacity ?? ''
+    // Mitten in den ersten Halt der Szene: das Menü des Browsers ist offen.
+    vorspulen(szenenBeginn(i) + (halt?.[0] ?? 0) + 0.3)
+    const [handyVorher, menueVorher] = [handy(), menue()]
+    vorspulen(1)
+    expect(menue(), 'die Szene steht').toBe(menueVorher)
+    expect(handy(), 'das Handy steigt').not.toBe(handyVorher)
+  })
+
   it('ohne Bewegung läuft nichts von selbst: Schritt für Schritt, am Ende „Fertig"', () => {
     wenigerBewegung = true
     const onEnde = vi.fn()
@@ -229,7 +244,7 @@ describe('Der Film', () => {
     expect(knopf(de.ersteSchrittePause)).toBeUndefined()
     expect(knopf(de.ersteSchritteZurueck)?.hasAttribute('disabled')).toBe(true)
     vorspulen(GESAMT + 1)
-    expect(ansage(), 'nach 30 Sekunden noch beim Titel').toContain(de.ersteSchritte)
+    expect(ansage(), 'nach der ganzen Länge des Films noch beim Titel').toContain(de.ersteSchritte)
     for (const szene of SZENEN.slice(1)) {
       fireEvent.click(knopf(de.ersteSchritteWeiter)!)
       expect(ansage(), szene.id).toContain(worte(szene.id).slice(0, 12))
@@ -278,6 +293,25 @@ describe('In jeder Sprache', () => {
     expect(bild?.textContent).toBe(d.bestaetigen)
     expect(document.querySelector('[data-szene="installieren"] [data-f="wahl"]')?.textContent).toBe(d.appInstallieren)
     expect(document.querySelector('[data-szene="erinnern"] [data-f="aktivieren"]')?.textContent).toBe(d.pushAktivieren)
+  })
+
+  it.each(APP_LANGS.map((l) => l.code))('%s: jede Szene steht so lange, wie man ihre Worte liest', (lang) => {
+    // Betreiber am 22.10.2026: „das geht etwas zu schnell. bitte langsamer".
+    // Gemessen wie bei Untertiteln: 20 Zeichen je Sekunde. Zum Lesen bleibt
+    // die Zeit vom ersten Wort bis zum Ende des letzten Halts der Szene — mit
+    // den Halten dazwischen, in denen das Bild stillsteht. Der letzte Halt
+    // liegt nach allen Worten (film-szenen.test.ts); danach gehen sie.
+    const ZEICHEN_JE_SEKUNDE = 20
+    zeige(<ErsteSchritteFilm onClose={() => {}} />, { lang })
+    for (const szene of SZENEN) {
+      const z = WORTE[szene.id]
+      const halte = szene.halte as ReadonlyArray<readonly [number, number]>
+      const letzter = halte.at(-1)
+      if (!letzter) continue // das Ende: Es bleibt stehen, bis man den Film schließt
+      const zeit = letzter[0] - z.titel + halte.reduce((s, [, d]) => s + d, 0)
+      const zeichen = worte(szene.id).length
+      expect(zeit, `${lang} ${szene.id}: ${zeichen} Zeichen`).toBeGreaterThanOrEqual(zeichen / ZEICHEN_JE_SEKUNDE)
+    }
   })
 
   it.each(FREMD)('%s: kein deutsches Wort im Film', (lang) => {

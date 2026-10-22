@@ -1,12 +1,12 @@
 import { LOGO_GROSS, REIHEN_DECKKRAFT } from '../bausteine/logo-form'
-import { GESAMT, SZENEN, eio, ei, eo, eob, lerp, seg, szenenBeginn, type SzenenId } from './film-zeit'
+import { GESAMT, eio, ei, eo, eob, lerp, seg, type SzenenId } from './film-zeit'
 
 /**
  * **Die sechs Szenen des Films „Erste Schritte" als Bewegung** (22.10.2026).
  *
  * Das Bild selbst zeichnet React (`ErsteSchritteFilm.tsx`): das Handy mit den
  * Ansichten der App, die Worte, die Punkte. Hier wird nur bewegt — jede Szene
- * ist `zeigen(t, m)`, eine reine Funktion ihrer Zeit. Was sie greift, trägt ein
+ * ist `zeigen(t, m, zeit)`, eine reine Funktion ihrer Zeit. Was sie greift, trägt ein
  * `data-f`; was sie misst, misst `messen()` aus dem Layout (`offsetLeft`, ohne
  * die laufenden Verschiebungen). So stimmen die Tipps auch in jeder Sprache,
  * in großer Schrift und von rechts nach links: Ziel ist immer das Element
@@ -21,8 +21,8 @@ const HANDY = { breite: 414, rand: 12, schirm: 390 } as const
 /** Abstand des Handys zum oberen Rand der Bühne, wenn das ✕ nicht darüber steht. */
 const RAND_OBEN = 14
 
-/** So viel steigt das Handy über den ganzen Film, in Pixeln: Das Bild ruht nie ganz. */
-const STEIGEN = 0.6 * GESAMT
+/** So viel steigt das Handy über den ganzen Film, in Pixeln: Das Bild ruht nie ganz — auch nicht in den Halten zum Lesen. */
+const STEIGEN = 18
 
 /** So viel vom Schirm des Handys bleibt sichtbar, bevor die Bühne es unten ausblendet. */
 const SICHTBAR = 580
@@ -127,24 +127,41 @@ function mitte(el: HTMLElement, bezug: HTMLElement): readonly [number, number] {
 /* ---- Worte ------------------------------------------------------------------ */
 
 /** Wann die Worte einer Szene kommen; `titel` gleitet von der Seite herein, zu der die Zeile läuft (rechts, auf Arabisch links). */
-interface WortZeiten {
+export interface WortZeiten {
   schritt?: number
   titel: number
   sub: number
   notiz?: number
 }
 
+/** Wie lange ein Teil der Worte zum Erscheinen braucht (`worteZeigen`). */
+export const ERSCHEINEN = { schritt: 0.4, titel: 0.6, sub: 0.5, notiz: 0.45 } as const
+
+/**
+ * Die Worte jeder Szene, in Sekunden ihrer Zeit. Die Halte zum Lesen in
+ * `film-zeit.ts` liegen danach — `film-szenen.test.ts` hält beide zusammen.
+ */
+export const WORTE: Record<SzenenId, WortZeiten> = {
+  punkte: { titel: 0.1, sub: 0.5 },
+  link: { schritt: 0.3, titel: 0.5, sub: 1.3, notiz: 3.4 },
+  aufgabe: { schritt: 0.2, titel: 0.4, sub: 1.2, notiz: 3.6 },
+  // Der lange Satz zu Android und iPhone steht da, solange das Menü offen ist.
+  installieren: { schritt: 0.2, titel: 0.4, sub: 0.9, notiz: 3.9 },
+  erinnern: { schritt: 0.2, titel: 0.35, sub: 1.0 },
+  ende: { titel: 0.3, sub: 0.6 },
+}
+
 function worteZeigen(worte: HTMLElement, m: Masse, t: number, z: WortZeiten): void {
   const schritt = worte.querySelector<HTMLElement>('[data-f="schritt"]')
-  if (schritt && z.schritt !== undefined) schritt.style.opacity = String(eo(seg(t, z.schritt, z.schritt + 0.4)))
+  if (schritt && z.schritt !== undefined) schritt.style.opacity = String(eo(seg(t, z.schritt, z.schritt + ERSCHEINEN.schritt)))
   const titel = finde(worte, 'titel')
-  const p = eo(seg(t, z.titel, z.titel + 0.6))
+  const p = eo(seg(t, z.titel, z.titel + ERSCHEINEN.titel))
   titel.style.opacity = String(p)
   titel.style.transform = `translateX(${m.richtung * 28 * (1 - p)}px)`
-  finde(worte, 'sub').style.opacity = String(eo(seg(t, z.sub, z.sub + 0.5)))
+  finde(worte, 'sub').style.opacity = String(eo(seg(t, z.sub, z.sub + ERSCHEINEN.sub)))
   const notiz = worte.querySelector<HTMLElement>('[data-f="notiz"]')
   if (notiz && z.notiz !== undefined) {
-    const n = eo(seg(t, z.notiz, z.notiz + 0.45))
+    const n = eo(seg(t, z.notiz, z.notiz + ERSCHEINEN.notiz))
     notiz.style.opacity = String(n)
     notiz.style.transform = `translateY(${18 * (1 - n)}px)`
   }
@@ -196,8 +213,9 @@ function baueStufen(svg: SVGElement): Stufen {
 
 /**
  * Das Handy steht oben in der Mitte der Bühne und steigt über den ganzen Film
- * langsam — so ruht das Bild nie ganz, auch über die Schnitte hinweg. Am Ende
- * steht es bei `m.oben`, nie darüber.
+ * langsam — so ruht das Bild nie ganz, auch über die Schnitte und die Halte
+ * hinweg: `zeit` ist die des Films, nicht die der Szene. Am Ende steht es bei
+ * `m.oben`, nie darüber.
  */
 function handySetzen(handy: HTMLElement, m: Masse, zeit: number, versatz = 0, zoom = 1, zoomY = 0): void {
   const y = m.oben + STEIGEN * (1 - zeit / GESAMT) + versatz - zoomY * m.k * (zoom - 1)
@@ -237,14 +255,15 @@ function baueTipp(kreis: HTMLElement, ziel: () => HTMLElement, schirm: HTMLEleme
 interface Szene {
   /** Was die Szene aus dem Layout braucht — nach jeder Größenänderung. */
   messen?(m: Masse): void
-  zeigen(t: number, m: Masse): void
+  /** `t`: die Zeit der Szene (steht in einem Halt still); `zeit`: die des Films. */
+  zeigen(t: number, m: Masse, zeit: number): void
 }
 
 export interface Film {
   /** Nach jeder Größenänderung: alles neu vermessen. */
   messen(m: Masse): void
-  /** Das Bild der Szene `id` zu ihrer Zeit `t`. */
-  zeigen(id: SzenenId, t: number): void
+  /** Das Bild der Szene `id` zu ihrer Zeit `t`, im Film bei `zeit`. */
+  zeigen(id: SzenenId, t: number, zeit: number): void
 }
 
 /**
@@ -257,13 +276,12 @@ export function baueFilm(teile: {
   svg: SVGElement
 }): Film {
   const stufen = baueStufen(teile.svg)
-  const beginn = (id: SzenenId) => szenenBeginn(SZENEN.findIndex((s) => s.id === id))
   const szenen: Record<SzenenId, Szene> = {
     punkte: szenePunkte(teile.svg, teile.worte('punkte'), stufen),
-    link: szeneLink(teile.ebene('link'), teile.worte('link'), stufen, beginn('link')),
-    aufgabe: szeneAufgabe(teile.ebene('aufgabe'), teile.worte('aufgabe'), stufen, beginn('aufgabe')),
-    installieren: szeneInstallieren(teile.ebene('installieren'), teile.worte('installieren'), stufen, beginn('installieren')),
-    erinnern: szeneErinnern(teile.ebene('erinnern'), teile.worte('erinnern'), stufen, beginn('erinnern')),
+    link: szeneLink(teile.ebene('link'), teile.worte('link'), stufen),
+    aufgabe: szeneAufgabe(teile.ebene('aufgabe'), teile.worte('aufgabe'), stufen),
+    installieren: szeneInstallieren(teile.ebene('installieren'), teile.worte('installieren'), stufen),
+    erinnern: szeneErinnern(teile.ebene('erinnern'), teile.worte('erinnern'), stufen),
     ende: szeneEnde(teile.svg, teile.worte('ende'), stufen),
   }
   let masse: Masse | null = null
@@ -273,8 +291,8 @@ export function baueFilm(teile: {
       stufen.messen(m)
       for (const szene of Object.values(szenen)) szene.messen?.(m)
     },
-    zeigen(id, t) {
-      if (masse) szenen[id].zeigen(t, masse)
+    zeigen(id, t, zeit) {
+      if (masse) szenen[id].zeigen(t, masse, zeit)
     },
   }
 }
@@ -318,7 +336,7 @@ function szenePunkte(svg: SVGElement, worte: HTMLElement, stufen: Stufen): Szene
       const weg = eio(seg(t, 2.3, 3.0))
       hinten.setAttribute('transform', umPunkt(cx, cy, schub * (1 - 0.06 * weg)))
       hinten.style.opacity = String(1 - weg)
-      worteZeigen(worte, m, t, { titel: 0.1, sub: 0.5 })
+      worteZeigen(worte, m, t, WORTE.punkte)
       worte.style.opacity = String(1 - eio(seg(t, 2.1, 2.7)))
       // Die erste Reihe wandert hinunter zu den Schritten: vier Plätze, vier Schritte — noch leer.
       vorn.forEach((p, i) => {
@@ -339,7 +357,7 @@ function szenePunkte(svg: SVGElement, worte: HTMLElement, stufen: Stufen): Szene
 }
 
 /** Schritt 1: ein Tipp auf den Link in der E-Mail — die App öffnet sich, angemeldet. */
-function szeneLink(ebene: HTMLElement, worte: HTMLElement, stufen: Stufen, ab: number): Szene {
+function szeneLink(ebene: HTMLElement, worte: HTMLElement, stufen: Stufen): Szene {
   const handy = finde(ebene, 'handy')
   const schirm = finde(ebene, 'schirm')
   const mail = finde(ebene, 'mail')
@@ -347,12 +365,12 @@ function szeneLink(ebene: HTMLElement, worte: HTMLElement, stufen: Stufen, ab: n
   const tipp = baueTipp(finde(ebene, 'tipp'), () => finde(mail, 'url'), schirm, 2.3)
   return {
     messen: () => tipp.messen(),
-    zeigen(t, m) {
+    zeigen(t, m, zeit) {
       stufen.sichtbar(true)
       // Das Handy kommt von unten herauf; die Mail zeigt den Link.
-      handySetzen(handy, m, ab + t, m.buehne.hoehe * (1 - eo(seg(t, 0, 0.9))))
+      handySetzen(handy, m, zeit, m.buehne.hoehe * (1 - eo(seg(t, 0, 0.9))))
       stufen.zeigen(0, eo(seg(t, 3.2, 3.7)), eo(seg(t, 0.3, 0.8)) * (1 - eio(seg(t, 4.9, 5.5))))
-      worteZeigen(worte, m, t, { schritt: 0.3, titel: 0.5, sub: 1.3, notiz: 3.4 })
+      worteZeigen(worte, m, t, WORTE.link)
       tipp.zeigen(t)
       const w = eio(seg(t, 2.5, 3.1))
       mail.style.transform = `translateX(${-m.richtung * 170 * w}px)`
@@ -363,7 +381,7 @@ function szeneLink(ebene: HTMLElement, worte: HTMLElement, stufen: Stufen, ab: n
 }
 
 /** Schritt 2: die nächste Aufgabe ganz oben — ein Tipp auf Bestätigen. */
-function szeneAufgabe(ebene: HTMLElement, worte: HTMLElement, stufen: Stufen, ab: number): Szene {
+function szeneAufgabe(ebene: HTMLElement, worte: HTMLElement, stufen: Stufen): Szene {
   const handy = finde(ebene, 'handy')
   const schirm = finde(ebene, 'schirm')
   const karte = finde(ebene, 'karte')
@@ -380,13 +398,13 @@ function szeneAufgabe(ebene: HTMLElement, worte: HTMLElement, stufen: Stufen, ab
       const [, y] = mitte(karte, schirm)
       karteY = HANDY.rand + y
     },
-    zeigen(t, m) {
+    zeigen(t, m, zeit) {
       stufen.sichtbar(true)
       // Näher an die Karte, zum Schluss wieder zurück — die nächste Szene beginnt so.
       const zoom = 1 + 0.15 * eio(seg(t, 0.3, 1.4)) * (1 - eio(seg(t, 4.9, 5.9)))
-      handySetzen(handy, m, ab + t, 0, zoom, karteY)
+      handySetzen(handy, m, zeit, 0, zoom, karteY)
       stufen.zeigen(1, eo(seg(t, 3.0, 3.5)), eo(seg(t, 0.2, 0.7)) * (1 - eio(seg(t, 4.8, 5.4))))
-      worteZeigen(worte, m, t, { schritt: 0.2, titel: 0.4, sub: 1.2, notiz: 3.6 })
+      worteZeigen(worte, m, t, WORTE.aufgabe)
       // Bestätigen: Der Knopf gibt kurz nach, dann steht der Stand an seiner Stelle.
       tipp.zeigen(t)
       const weg = t >= 2.9
@@ -399,7 +417,7 @@ function szeneAufgabe(ebene: HTMLElement, worte: HTMLElement, stufen: Stufen, ab
 }
 
 /** Schritt 3: über das Menü des Browsers auf den Startbildschirm des Handys. */
-function szeneInstallieren(ebene: HTMLElement, worte: HTMLElement, stufen: Stufen, ab: number): Szene {
+function szeneInstallieren(ebene: HTMLElement, worte: HTMLElement, stufen: Stufen): Szene {
   const handy = finde(ebene, 'handy')
   const schirm = finde(ebene, 'schirm')
   const start = finde(ebene, 'start')
@@ -424,11 +442,11 @@ function szeneInstallieren(ebene: HTMLElement, worte: HTMLElement, stufen: Stufe
       von = [wx - eigen.x - eigen.breite / 2, wy - eigen.y - eigen.hoehe / 2]
       nach = [platz.x - eigen.x + (platz.breite - eigen.breite) / 2, platz.y - eigen.y]
     },
-    zeigen(t, m) {
+    zeigen(t, m, zeit) {
       stufen.sichtbar(true)
-      handySetzen(handy, m, ab + t)
+      handySetzen(handy, m, zeit)
       stufen.zeigen(2, eo(seg(t, 3.5, 3.95)), eo(seg(t, 0.2, 0.7)) * (1 - eio(seg(t, 4.6, 5.2))))
-      worteZeigen(worte, m, t, { schritt: 0.2, titel: 0.4, sub: 1.1, notiz: 3.9 })
+      worteZeigen(worte, m, t, WORTE.installieren)
       // Das Menü des Browsers klappt auf; ein Tipp auf „App installieren".
       const auf = eo(seg(t, 0.8, 1.0)) * (1 - eo(seg(t, 1.95, 2.15)))
       menue.style.opacity = String(auf)
@@ -452,7 +470,7 @@ function szeneInstallieren(ebene: HTMLElement, worte: HTMLElement, stufen: Stufe
 }
 
 /** Schritt 4: Glocke, „Aktivieren" — und die erste Erinnerung gleitet herein. */
-function szeneErinnern(ebene: HTMLElement, worte: HTMLElement, stufen: Stufen, ab: number): Szene {
+function szeneErinnern(ebene: HTMLElement, worte: HTMLElement, stufen: Stufen): Szene {
   const handy = finde(ebene, 'handy')
   const schirm = finde(ebene, 'schirm')
   // Das Symbol steht auf seinem Platz: gemessen wird der Platz (ein SVG kennt kein offsetLeft).
@@ -477,12 +495,12 @@ function szeneErinnern(ebene: HTMLElement, worte: HTMLElement, stufen: Stufen, a
       start.style.transformOrigin = `${ox}px ${oy}px`
       hoch = karte.offsetHeight + 12
     },
-    zeigen(t, m) {
+    zeigen(t, m, zeit) {
       stufen.sichtbar(true)
       // Zum Schluss sinkt das Handy aus dem Bild, die Worte gehen: Platz für das Logo.
-      handySetzen(handy, m, ab + t, 1.1 * (m.buehne.hoehe + 40) * ei(seg(t, 4.45, 5.0)))
+      handySetzen(handy, m, zeit, 1.1 * (m.buehne.hoehe + 40) * ei(seg(t, 4.45, 5.0)))
       stufen.zeigen(3, eo(seg(t, 3.45, 3.9)), eo(seg(t, 0.2, 0.7)) * (1 - eio(seg(t, 4.4, 4.9))))
-      worteZeigen(worte, m, t, { schritt: 0.2, titel: 0.35, sub: 1.0 })
+      worteZeigen(worte, m, t, WORTE.erinnern)
       worte.style.opacity = String(1 - eio(seg(t, 4.5, 4.95)))
       // Das Symbol öffnet die App, die Glocke die Mitteilungen.
       for (const tipp of tipps) tipp.zeigen(t)
@@ -525,7 +543,7 @@ function szeneEnde(svg: SVGElement, worte: HTMLElement, stufen: Stufen): Szene {
         const platz = HINTEN[j]
         if (platz) kreis(c, m.logo.x(platz.x), m.logo.y(platz.y), LOGO_GROSS.r * m.logo.l * Math.max(0, eob(seg(t, 0.2 + 0.025 * j, 0.5 + 0.025 * j), 1.6)))
       })
-      worteZeigen(worte, m, t, { titel: 0.3, sub: 0.6 })
+      worteZeigen(worte, m, t, WORTE.ende)
     },
   }
 }

@@ -64,8 +64,8 @@ Wichtigste zusammen.
 
 ![Startseite eines Verkündigers](screenshots/verkuendiger-start.png)
 
-- **Erste Schritte** – ganz oben, solange du neu bist: ein Film von einer
-  halben Minute, der die ersten Schritte zeigt – den Link antippen, die erste
+- **Erste Schritte** – ganz oben, solange du neu bist: ein Film von knapp
+  einer Minute, der die ersten Schritte zeigt – den Link antippen, die erste
   Aufgabe bestätigen, die App auf den Startbildschirm legen, die Erinnerungen
   einschalten. **Ansehen** startet ihn; er lässt sich anhalten und nochmal
   ansehen. Hast du ihn ganz gesehen oder die Karte mit **✕** weggeklickt,

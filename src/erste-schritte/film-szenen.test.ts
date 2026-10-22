@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it } from 'vitest'
-import { vermessen } from './film-szenen'
+import { ERSCHEINEN, WORTE, vermessen } from './film-szenen'
+import { SZENEN, type SzenenId } from './film-zeit'
 
 /**
  * **Das Handy steht nie unter dem ✕** (Review vom 22.10.2026).
@@ -51,5 +52,37 @@ describe('Wo das Handy oben beginnt', () => {
     const mitKreuz = vermessen(film({ left: 0, top: 0, width: 390, height: 535 }, { left: 334, top: 10, width: 44, height: 44 }))
     const ohneKreuz = vermessen(film({ left: 0, top: 0, width: 390, height: 535 }, { left: 500, top: 10, width: 44, height: 44 }))
     expect(mitKreuz.k).toBeLessThan(ohneKreuz.k)
+  })
+})
+
+/**
+ * **Zeit zum Lesen** (Betreiber am 22.10.2026: „das geht etwas zu schnell.
+ * bitte langsamer").
+ *
+ * In jeder Szene mit einem Schritt bleibt das Bild stehen, sobald ihre Worte
+ * ganz da sind. Ob der Halt lang genug ist, misst `ErsteSchritte.test.tsx`
+ * an den Worten, wie der Film sie in jeder Sprache schreibt.
+ */
+const SCHRITTE: readonly SzenenId[] = ['link', 'aufgabe', 'installieren', 'erinnern']
+
+describe('Zeit zum Lesen', () => {
+  it.each(SCHRITTE)('%s: Stehen die letzten Worte da, hält das Bild mindestens zwei Sekunden an', (id) => {
+    const szene = SZENEN.find((s) => s.id === id)
+    const z = WORTE[id]
+    const da = Math.max(z.sub + ERSCHEINEN.sub, z.notiz === undefined ? 0 : z.notiz + ERSCHEINEN.notiz)
+    // Der letzte Halt der Szene: nach allen Worten, und lang genug, sie zu Ende zu lesen.
+    const halt = (szene?.halte as ReadonlyArray<readonly [number, number]> | undefined)?.at(-1)
+    expect(halt, `${id}: kein Halt`).toBeDefined()
+    expect(halt?.[0] ?? 0, `${id}: die letzten Worte sind erst bei ${da.toFixed(2)} s da`).toBeGreaterThanOrEqual(da)
+    expect(halt?.[1] ?? 0).toBeGreaterThanOrEqual(2)
+  })
+
+  it('der lange Satz zu Android und iPhone ist ganz da, bevor der Tipp ins Menü kommt — und dort steht das Bild', () => {
+    const szene = SZENEN.find((s) => s.id === 'installieren')
+    const [erster] = (szene?.halte ?? []) as ReadonlyArray<readonly [number, number]>
+    expect(erster).toBeDefined()
+    // Der Kreis des Tipps auf „App installieren" erscheint ab 1,45 s (film-szenen.ts).
+    expect(WORTE.installieren.sub + ERSCHEINEN.sub).toBeLessThanOrEqual(erster?.[0] ?? 0)
+    expect(erster?.[0] ?? 0).toBeLessThan(1.45)
   })
 })
