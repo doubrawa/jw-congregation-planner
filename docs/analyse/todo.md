@@ -8871,6 +8871,13 @@ Am 21. Oktober abends herausgenommen: **T132** — der Motion-Clip „Erste
 Schritte für Verkündiger" ist fertig und vom Betreiber abgenommen (siehe
 T132). Damit ist von den 132 Köpfen nur noch T121 offen.
 
+Am 22. Oktober (Betreiber, nach dem Clip aus T132): **Im Startbild füllen sich
+die Plätze** statt der Welle. Der Saal wird blass, dann füllt er sich Reihe für
+Reihe vom Pult nach hinten, in jeder Reihe von der Mitte nach außen — erst nach
+einer halben Sekunde, damit ein schneller Start ruhig bleibt. **„Lädt …" steht
+nicht mehr im Startbild**, auch ohne Bewegung nicht; Vorleseprogramme hören es
+weiter.
+
 Am 19. Oktober in die Tabelle aufgenommen: `sprache-fehlt` und
 `auth.sessions` (bis dahin nur in einer Commit-Nachricht, `42dff943`, und bei
 T125; `auth.sessions` am selben Abend erledigt) und am Abend aus dem Review des

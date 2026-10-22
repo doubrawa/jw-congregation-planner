@@ -1,11 +1,12 @@
 /** @vitest-environment jsdom */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { cleanup, render } from '@testing-library/react'
+import { act, cleanup, render } from '@testing-library/react'
 import type { ReactNode } from 'react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AppDispatchContext, AppStateContext, AppStoreContext, type AppState, useStaticStore } from '../src/app/context'
 import { Startbild } from '../src/app/Startbild'
+import { DE } from '../src/i18n/de'
 import { demoZustand } from './testdaten/demo-start'
 
 /**
@@ -17,9 +18,10 @@ import { demoZustand } from './testdaten/demo-start'
  * und React löst es ab, sobald es läuft (`Startbild.tsx`).
  *
  * Damit dabei nichts springt, muss das Logo hier **dasselbe** sein wie dort:
- * dieselbe Größe, dieselben Plätze, dieselbe Deckkraft je Reihe, dieselben
- * Klassen (über sie kommen Farben und Welle aus dem CSS). Zwei Abschriften
- * derselben Form laufen sonst auseinander, und erst ein Handy zeigt es.
+ * dieselbe Größe, dieselben Plätze, die leeren darunter, dieselbe Deckkraft je
+ * Reihe, dieselben Klassen (über sie kommen Farben und das Füllen aus dem CSS).
+ * Zwei Abschriften derselben Form laufen sonst auseinander, und erst ein Handy
+ * zeigt es.
  */
 
 // Über das Arbeitsverzeichnis: Unter jsdom ist `import.meta.url` keine Datei-Adresse.
@@ -52,20 +54,32 @@ function vorab(): Element | null {
   return new DOMParser().parseFromString(INDEX, 'text/html').querySelector('#root > .startbild')
 }
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.useRealTimers()
+})
 
 describe('Das Startbild in index.html', () => {
   it('steht als einziges in der Wurzel der App — React ersetzt es beim ersten Zeichnen', () => {
     const wurzel = new DOMParser().parseFromString(INDEX, 'text/html').querySelector('#root')
-    // Ohne `startbild-welle`: Bis React übernimmt, steht es still wie das Bild
-    // von Android. Liefe die Welle schon hier, begänne sie beim Wechsel mit
+    // Ohne `startbild-fuellen`: Bis React übernimmt, steht es still wie das
+    // Bild von Android. Füllte es sich schon hier, begänne es beim Wechsel mit
     // einem Ruck von vorn.
     expect([...(wurzel?.children ?? [])].map((k) => k.className)).toEqual(['startbild'])
   })
 
-  it('das Startbild der App trägt die Welle — das aus index.html nicht', () => {
+  it('in der App füllen sich die Plätze erst nach einer halben Sekunde — bis dahin steht das Logo wie aus index.html', () => {
+    // Ist die App vorher da, bewegt sich nichts. Und erst mit der Klasse hängt
+    // die Animation am Logo: Schon während einer Verzögerung im CSS glättete
+    // Chrome die Ränder anders, und beim Wechsel zuckten die Kanten.
+    vi.useFakeTimers()
     const { container } = render(<Buehne><Startbild /></Buehne>)
-    expect(container.querySelector('.startbild')?.classList.contains('startbild-welle')).toBe(true)
+    const bild = () => container.querySelector('.startbild')
+    expect(bild()?.className, 'beim ersten Zeichnen').toBe('startbild')
+    act(() => vi.advanceTimersByTime(499))
+    expect(bild()?.classList.contains('startbild-fuellen'), 'nach 499 ms').toBe(false)
+    act(() => vi.advanceTimersByTime(1))
+    expect(bild()?.classList.contains('startbild-fuellen'), 'nach 500 ms').toBe(true)
   })
 
   it('solange es steht, ist es am Dokument vermerkt — die Statusleiste der installierten App bleibt Graphit', () => {
@@ -78,13 +92,14 @@ describe('Das Startbild in index.html', () => {
     expect(wurzel.hasAttribute('data-startbild')).toBe(false)
   })
 
-  it('„Lädt …" hören Vorleseprogramme; zu sehen ist es nur ohne Bewegung (shell.css)', () => {
-    // Mit Bewegung zeigt die Welle, dass es lädt — ein Wort allein darunter
-    // wäre genau das, was der Betreiber nicht mehr sehen wollte.
+  it('„Lädt …" hören nur Vorleseprogramme — zu sehen ist es nie, auch ohne Bewegung nicht', () => {
+    // Der Betreiber am 22.10.2026: Das Wort „Lädt" soll aus dem Startbild weg.
+    // Bis dahin stand es ohne Bewegung unter dem Logo. Dass keine Regel es
+    // hervorholt, prüft startbild-fuellen.test.ts.
     const { container } = render(<Buehne><Startbild /></Buehne>)
-    const wort = container.querySelector('.startbild-text')
-    expect(wort?.classList.contains('sr-only')).toBe(true)
-    expect(container.querySelector('.startbild')?.getAttribute('role')).toBe('status')
+    const status = container.querySelector('.startbild[role="status"]')
+    expect(status?.textContent).toBe(DE.laedt)
+    expect([...(status?.querySelectorAll('p') ?? [])].map((p) => p.className)).toEqual(['sr-only'])
   })
 
   it('zeigt dasselbe Logo wie das Startbild der App — Größe, Plätze, Deckkraft, Klassen', () => {

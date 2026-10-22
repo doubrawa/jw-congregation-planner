@@ -33,6 +33,13 @@
   fill: var(--text);
 }
 
+/* Die leeren Plätze unter den vollen (`leerePlaetze`) zeigt nur das Füllen im
+   Startbild (shell.css). Ruhig sind sie fort: Die hinteren Reihen sind
+   durchscheinend, ein leerer Platz darunter machte sie kräftiger als im Logo. */
+.logo-leer circle {
+  opacity: 0;
+}
+
 /* ---- Runde Knöpfe (Menü, Glocke, Kreuz, Wochen) -------------------------------- */
 
 .rund-knopf {

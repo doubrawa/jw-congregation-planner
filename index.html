@@ -74,34 +74,66 @@
          das Android beim Start zeigt, stand sonst eine leere Fläche. Dasselbe
          Logo wie src/app/Startbild.tsx, damit React es ohne Sprung ablöst —
          tests/startbild-vorab.test.tsx hält beide gleich. Die Farben kommen
-         aus dem CSS (shell.css, tokens.css). Die Welle läuft erst im Bild der
-         App: Hier begonnen, finge sie beim Wechsel mit einem Ruck von vorn an. -->
+         aus dem CSS (shell.css, tokens.css). Unter jedem Platz liegt ein leerer
+         (ruhig unsichtbar); die Plätze füllen sich erst im Bild der App, nach
+         einer halben Sekunde: Hier begonnen, finge es beim Wechsel mit einem
+         Ruck von vorn an. -->
     <div id="root"><div class="startbild">
       <svg class="logo startbild-logo" width="170" height="102" viewBox="46 125.5 420 251" aria-hidden="true">
         <circle class="logo-pult" cx="256" cy="157.5" r="30"></circle>
         <g class="logo-platz" fill-opacity="1">
-          <circle cx="171.33" cy="195.82" r="15"></circle>
-          <circle cx="224.43" cy="229.96" r="15"></circle>
-          <circle cx="287.57" cy="229.96" r="15"></circle>
-          <circle cx="340.67" cy="195.82" r="15"></circle>
+          <g class="logo-leer">
+            <circle cx="171.33" cy="195.82" r="15"></circle>
+            <circle cx="224.43" cy="229.96" r="15"></circle>
+            <circle cx="287.57" cy="229.96" r="15"></circle>
+            <circle cx="340.67" cy="195.82" r="15"></circle>
+          </g>
+          <g class="logo-voll">
+            <circle cx="171.33" cy="195.82" r="15"></circle>
+            <circle cx="224.43" cy="229.96" r="15"></circle>
+            <circle cx="287.57" cy="229.96" r="15"></circle>
+            <circle cx="340.67" cy="195.82" r="15"></circle>
+          </g>
         </g>
         <g class="logo-platz" fill-opacity="0.76">
-          <circle cx="117.15" cy="230.65" r="15"></circle>
-          <circle cx="164.69" cy="272.96" r="15"></circle>
-          <circle cx="224.18" cy="295.6" r="15"></circle>
-          <circle cx="287.82" cy="295.6" r="15"></circle>
-          <circle cx="347.31" cy="272.96" r="15"></circle>
-          <circle cx="394.85" cy="230.65" r="15"></circle>
+          <g class="logo-leer">
+            <circle cx="117.15" cy="230.65" r="15"></circle>
+            <circle cx="164.69" cy="272.96" r="15"></circle>
+            <circle cx="224.18" cy="295.6" r="15"></circle>
+            <circle cx="287.82" cy="295.6" r="15"></circle>
+            <circle cx="347.31" cy="272.96" r="15"></circle>
+            <circle cx="394.85" cy="230.65" r="15"></circle>
+          </g>
+          <g class="logo-voll">
+            <circle cx="117.15" cy="230.65" r="15"></circle>
+            <circle cx="164.69" cy="272.96" r="15"></circle>
+            <circle cx="224.18" cy="295.6" r="15"></circle>
+            <circle cx="287.82" cy="295.6" r="15"></circle>
+            <circle cx="347.31" cy="272.96" r="15"></circle>
+            <circle cx="394.85" cy="230.65" r="15"></circle>
+          </g>
         </g>
         <g class="logo-platz" fill-opacity="0.52">
-          <circle cx="63.13" cy="265.34" r="15"></circle>
-          <circle cx="107.59" cy="311.11" r="15"></circle>
-          <circle cx="162.54" cy="343.56" r="15"></circle>
-          <circle cx="224.09" cy="360.37" r="15"></circle>
-          <circle cx="287.91" cy="360.37" r="15"></circle>
-          <circle cx="349.46" cy="343.56" r="15"></circle>
-          <circle cx="404.41" cy="311.11" r="15"></circle>
-          <circle cx="448.87" cy="265.34" r="15"></circle>
+          <g class="logo-leer">
+            <circle cx="63.13" cy="265.34" r="15"></circle>
+            <circle cx="107.59" cy="311.11" r="15"></circle>
+            <circle cx="162.54" cy="343.56" r="15"></circle>
+            <circle cx="224.09" cy="360.37" r="15"></circle>
+            <circle cx="287.91" cy="360.37" r="15"></circle>
+            <circle cx="349.46" cy="343.56" r="15"></circle>
+            <circle cx="404.41" cy="311.11" r="15"></circle>
+            <circle cx="448.87" cy="265.34" r="15"></circle>
+          </g>
+          <g class="logo-voll">
+            <circle cx="63.13" cy="265.34" r="15"></circle>
+            <circle cx="107.59" cy="311.11" r="15"></circle>
+            <circle cx="162.54" cy="343.56" r="15"></circle>
+            <circle cx="224.09" cy="360.37" r="15"></circle>
+            <circle cx="287.91" cy="360.37" r="15"></circle>
+            <circle cx="349.46" cy="343.56" r="15"></circle>
+            <circle cx="404.41" cy="311.11" r="15"></circle>
+            <circle cx="448.87" cy="265.34" r="15"></circle>
+          </g>
         </g>
       </svg>
     </div></div>

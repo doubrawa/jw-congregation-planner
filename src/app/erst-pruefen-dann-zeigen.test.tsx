@@ -16,7 +16,7 @@ import { DE } from '../i18n/de'
  * womit sie startet: die Anmeldung.
  *
  * Jetzt steht bis zur Antwort das Startbild da — und weiter, bis die Daten
- * kommen (Entwurf „B · Welle durch die Reihen"). Danach die Anmeldung oder die
+ * kommen (Entwurf „B" der Leinwand, `Startbild.tsx`). Danach die Anmeldung oder die
  * App, nie beides nacheinander und nie eine App ohne Inhalt. Gezeichnet wird
  * die ganze App, Provider und Gerüst; Supabase ist eine Attrappe, deren Antwort
  * der Test zurückhält, bis er sie gibt, ebenso die Daten.

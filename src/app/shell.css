@@ -164,8 +164,7 @@
   box-sizing: border-box;
   display: grid;
   /* Drei Zeilen: das Logo in der mittleren, die beiden anderen gleich hoch —
-     so steht es genau in der Mitte, und „Lädt …" (ohne Bewegung) darunter
-     verschiebt es nicht. */
+     so steht es genau in der Mitte zwischen den sicheren Rändern. */
   grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
   justify-items: center;
   min-height: 100svh;
@@ -186,68 +185,222 @@
   fill: var(--start-platz);
 }
 
-/* Die Welle: Minze läuft vom Pult durch die drei Reihen, wie das Wort vom Pult
-   in den Saal, dann Ruhe, dann wieder. Erst nach einer halben Sekunde: Ist die
-   App bis dahin da, bleibt es beim ruhigen Bild, und nichts zuckt. Nur im
-   Startbild der App, nicht in dem aus index.html — löst React es ab, fängt
-   eine laufende Welle sonst mit einem Ruck von vorn an. Ohne Bewegung kürzt
-   die Regel unten in dieser Datei jede Animation auf einen Augenblick — dann
-   bleibt das Bild ruhig, und das Wort steht darunter. */
-.startbild-welle .logo-platz {
-  animation: startbild-welle 1.8s ease-in-out 0.5s infinite;
+/* Die Plätze füllen sich (22.10.2026, im Stil des Clips „Erste Schritte"; bis
+   dahin lief Minze als Welle durch die Reihen): Der Saal wird blass, dann
+   füllt er sich Reihe für Reihe vom Pult nach hinten, in jeder Reihe von der
+   Mitte nach außen — und wieder, solange geladen wird. Die Klasse kommt erst
+   nach einer halben Sekunde (`Startbild.tsx`): Ist die App bis dahin da,
+   bleibt es beim ruhigen Bild, und nichts zuckt. Unter jedem vollen Platz
+   liegt ein leerer (`Logo` mit `leerePlaetze`).
+
+   Nur mit Bewegung (`no-preference`): Ohne hängt gar keine Animation am Logo.
+   Die Regel „Bewegung sparsam" unten kürzte sie zwar auf einen Augenblick,
+   doch schon das Anhängen glättete die Kanten der Kreise anders (bis 47/255
+   am Rand, gemessen am 22.10.2026) — das ruhige Bild hätte einmal gezuckt.
+
+   Ein Takt dauert 2,5 s, 4 % sind 0,1 s. Bis 0,3 s werden alle vollen Plätze
+   zugleich blass, dann schrumpfen sie unsichtbar auf nichts. Ab 0,4 s wächst
+   die erste Reihe in 0,35 s heraus (etwas über das Ziel hinaus, wie im Clip),
+   die zweite ab 0,6 s, die dritte ab 0,8 s. Der leere Platz geht in der
+   zweiten Hälfte, wenn der volle ihn schon deckt. Weil die Reihen zugleich
+   blass werden, aber nacheinander wachsen, hat jede ihre eigenen Abläufe. */
+@media (prefers-reduced-motion: no-preference) {
+  .startbild-fuellen .logo-platz circle {
+    animation-duration: 2.5s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  .startbild-fuellen .logo-voll circle {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .startbild-fuellen .logo-platz:nth-of-type(1) .logo-leer circle {
+    animation-name: startbild-leer-1;
+  }
+
+  .startbild-fuellen .logo-platz:nth-of-type(1) .logo-voll circle {
+    animation-name: startbild-voll-1;
+  }
+
+  .startbild-fuellen .logo-platz:nth-of-type(2) .logo-leer circle {
+    animation-name: startbild-leer-2;
+  }
+
+  .startbild-fuellen .logo-platz:nth-of-type(2) .logo-voll circle {
+    animation-name: startbild-voll-2;
+  }
+
+  .startbild-fuellen .logo-platz:nth-of-type(3) .logo-leer circle {
+    animation-name: startbild-leer-3;
+  }
+
+  .startbild-fuellen .logo-platz:nth-of-type(3) .logo-voll circle {
+    animation-name: startbild-voll-3;
+  }
+
+  /* Von der Mitte nach außen: je Platz weiter außen 35 ms später. */
+  .startbild-fuellen .logo-platz:nth-of-type(1) circle:is(:first-child, :last-child),
+  .startbild-fuellen .logo-platz:nth-of-type(2) circle:is(:nth-child(2), :nth-last-child(2)),
+  .startbild-fuellen .logo-platz:nth-of-type(3) circle:is(:nth-child(3), :nth-last-child(3)) {
+    animation-delay: 35ms;
+  }
+
+  .startbild-fuellen .logo-platz:nth-of-type(2) circle:is(:first-child, :last-child),
+  .startbild-fuellen .logo-platz:nth-of-type(3) circle:is(:nth-child(2), :nth-last-child(2)) {
+    animation-delay: 70ms;
+  }
+
+  .startbild-fuellen .logo-platz:nth-of-type(3) circle:is(:first-child, :last-child) {
+    animation-delay: 105ms;
+  }
 }
 
-.startbild-welle .logo-platz:nth-of-type(2) {
-  animation-delay: 0.68s;
-}
-
-.startbild-welle .logo-platz:nth-of-type(3) {
-  animation-delay: 0.86s;
-}
-
-@keyframes startbild-welle {
-  0%,
-  30%,
-  100% {
-    fill: var(--start-platz);
+@keyframes startbild-voll-1 {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    animation-timing-function: ease-in-out;
   }
 
   12% {
-    fill: var(--start-pult);
+    opacity: 0;
+    transform: scale(1);
+  }
+
+  12.4% {
+    opacity: 0;
+    transform: scale(0);
+  }
+
+  12.8%,
+  16% {
+    opacity: 1;
+    transform: scale(0);
+    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  30%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
-/* „Lädt …" hören Vorleseprogramme immer (`sr-only`); zu sehen ist es nur ohne
-   Bewegung — dann zeigt keine Welle, dass etwas geschieht. In der Zeile unter
-   dem Logo, oben an ihr. Zwei Klassen im Selektor: Er hebt `.sr-only` auf,
-   gleich in welcher Reihenfolge die Dateien laden. */
-.startbild-text {
-  font-size: calc(13.5px * var(--fs));
-}
+@keyframes startbild-voll-2 {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    animation-timing-function: ease-in-out;
+  }
 
-@media (prefers-reduced-motion: reduce) {
-  .startbild .startbild-text {
-    position: static;
-    grid-row: 3;
-    align-self: start;
-    width: auto;
-    height: auto;
-    margin: 18px 0 0;
-    overflow: visible;
-    clip: auto;
-    white-space: normal;
-    text-align: center;
-    animation: startbild-wort 1ms 1s both;
+  12% {
+    opacity: 0;
+    transform: scale(1);
+  }
+
+  12.4% {
+    opacity: 0;
+    transform: scale(0);
+  }
+
+  12.8%,
+  24% {
+    opacity: 1;
+    transform: scale(0);
+    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  38%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
-@keyframes startbild-wort {
-  from {
+@keyframes startbild-voll-3 {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    animation-timing-function: ease-in-out;
+  }
+
+  12% {
+    opacity: 0;
+    transform: scale(1);
+  }
+
+  12.4% {
+    opacity: 0;
+    transform: scale(0);
+  }
+
+  12.8%,
+  32% {
+    opacity: 1;
+    transform: scale(0);
+    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  46%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes startbild-leer-1 {
+  0% {
+    opacity: 0;
+    animation-timing-function: ease-in-out;
+  }
+
+  12%,
+  23% {
+    opacity: 0.26;
+    animation-timing-function: ease-in-out;
+  }
+
+  30%,
+  100% {
     opacity: 0;
   }
+}
 
-  to {
-    opacity: 1;
+@keyframes startbild-leer-2 {
+  0% {
+    opacity: 0;
+    animation-timing-function: ease-in-out;
+  }
+
+  12%,
+  31% {
+    opacity: 0.26;
+    animation-timing-function: ease-in-out;
+  }
+
+  38%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes startbild-leer-3 {
+  0% {
+    opacity: 0;
+    animation-timing-function: ease-in-out;
+  }
+
+  12%,
+  39% {
+    opacity: 0.26;
+    animation-timing-function: ease-in-out;
+  }
+
+  46%,
+  100% {
+    opacity: 0;
   }
 }
 
