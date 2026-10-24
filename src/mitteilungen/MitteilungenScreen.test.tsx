@@ -13,6 +13,7 @@ import type { MyTask, Notification, SubstituteReq } from '../data/types'
 import { dict } from '../i18n/ui'
 import { MitteilungenScreen } from './MitteilungenScreen'
 import { zahlBinden } from '../i18n/zahl-binden'
+import { bestaetigen } from '../../tests/zwei-tipps'
 
 /**
  * **Die Mitteilungen als Seite** (T121) — bis zum Umbau die Glocke, die sich
@@ -110,6 +111,19 @@ describe('Die Seite', () => {
     const { container, dispatch } = zeige({ notifs: [notif()] })
     fireEvent.click(knopf(container, t.alleGelesen)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'markAllRead' })
+  })
+
+  it('„Alle löschen" steht da, solange es Mitteilungen gibt — gelöscht wird erst beim zweiten Tipp (T140)', () => {
+    // Am 12.10.2026 mit dem neuen Design gegangen; der Betreiber vermisste es beim Testen.
+    expect(knopf(zeige().container, t.alleLoeschen)).toBeUndefined()
+    cleanup()
+    const { container, dispatch } = zeige({ notifs: [notif({ read: true })] })
+    const loeschen = knopf(container, t.alleLoeschen)!
+    fireEvent.click(loeschen)
+    expect(loeschen.textContent).toBe(t.loeschenSicher)
+    expect(dispatch).not.toHaveBeenCalled()
+    bestaetigen(loeschen)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'clearNotifs' })
   })
 
   it('die eigene, lokal entstandene Absage-Meldung sieht ein Verkündiger nicht — sie gilt den Admins', () => {

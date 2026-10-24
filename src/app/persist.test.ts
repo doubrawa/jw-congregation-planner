@@ -41,6 +41,7 @@ vi.mock('../lib/data', async (importActual) => ({
   deletePersonRow: vi.fn(),
   deleteAnmeldeLink: vi.fn(),
   deleteMemberRow: vi.fn(),
+  deleteNotifications: vi.fn(),
   deleteServiceRow: vi.fn(),
   markNotificationRead: vi.fn(),
   markNotificationsRead: vi.fn(),
@@ -1489,6 +1490,12 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
   it('markAllRead', () => {
     persist(st(), st(), { type: 'markAllRead' })
     expect(data.markNotificationsRead).toHaveBeenCalledWith('c1', 'u1')
+  })
+
+  it('clearNotifs löscht die eigenen Mitteilungen dieser Versammlung (T140)', () => {
+    persist(st(), st({ notifs: [] }), { type: 'clearNotifs' })
+    expect(data.deleteNotifications).toHaveBeenCalledWith('c1', 'u1')
+    expect(data.markNotificationsRead).not.toHaveBeenCalled()
   })
 
   describe('mitteilungGelesen — die angetippte Zeile (4.10.2026)', () => {

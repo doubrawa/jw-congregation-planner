@@ -472,6 +472,8 @@ export type AppAction =
    */
   | { type: 'setNotifs'; notifs: Notification[] }
   | { type: 'markAllRead' }
+  // „Alle löschen" (T140): die eigenen Mitteilungen, nach zwei Tipps.
+  | { type: 'clearNotifs' }
   // Eine Mitteilung ist gelesen, weil sie angetippt oder beantwortet wurde.
   | { type: 'mitteilungGelesen'; id: string }
   | { type: 'openSlot'; sel: SlotSelection }

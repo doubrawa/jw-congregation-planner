@@ -1855,6 +1855,23 @@ export function markNotificationsRead(congregationId: string, userId: string): v
 }
 
 /**
+ * „Alle löschen" (T140): die eigenen Mitteilungen in dieser Versammlung — auch
+ * die, die über die geladenen hinausgehen. Mehr lässt `notifications_delete`
+ * ohnehin nicht zu; `user_id` steht trotzdem da, damit die Absicht im Aufruf
+ * steht und nicht erst in der Datenbankregel.
+ */
+export function deleteNotifications(congregationId: string, userId: string): void {
+  if (!supabase) return
+  void run(
+    supabase
+      .from('notifications')
+      .delete()
+      .eq('congregation_id', congregationId)
+      .eq('user_id', userId),
+  )
+}
+
+/**
  * Stammdaten der Versammlung — **nur, was sich geändert hat** (15.10.2026).
  *
  * Hier gingen Name, Saal und alle vier Zeit-Spalten bei jeder Änderung

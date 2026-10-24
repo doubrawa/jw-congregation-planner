@@ -35,6 +35,7 @@ export default {
   "mitteilungenFrueher": "Ранее",
   "neuN": "Новых: {n}",
   "alleGelesen": "Отметить все как прочитанные",
+  "alleLoeschen": "Удалить все",
   "aktuelleWoche": "Текущая неделя",
   "tabMid": "Встреча в будние дни",
   "tabWe": "Встреча в выходные дни",

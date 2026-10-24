@@ -35,6 +35,7 @@ export default {
   "mitteilungenFrueher": "Precedenti",
   "neuN": "Nuove: {n}",
   "alleGelesen": "Segna tutto come letto",
+  "alleLoeschen": "Elimina tutto",
   "aktuelleWoche": "Questa settimana",
   "tabMid": "Adunanza infrasettimanale",
   "tabWe": "Adunanza del fine settimana",

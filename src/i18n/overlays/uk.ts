@@ -35,6 +35,7 @@ export default {
   "mitteilungenFrueher": "Раніше",
   "neuN": "Нових: {n}",
   "alleGelesen": "Позначити всі як прочитані",
+  "alleLoeschen": "Видалити всі",
   "aktuelleWoche": "Поточний тиждень",
   "tabMid": "Зібрання серед тижня",
   "tabWe": "Зібрання у вихідні",

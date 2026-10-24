@@ -28,6 +28,7 @@ import {
   deleteGroupRow,
   deleteAnmeldeLink,
   deleteMemberRow,
+  deleteNotifications,
   deletePersonRow,
   deletePushSubscription,
   deleteServiceRow,
@@ -269,6 +270,13 @@ describe('Update-Schreiber', () => {
   it('markNotificationsRead → notifications update(read).eq.eq', () => {
     markNotificationsRead('c1', 'u1')
     expect(chain.update).toHaveBeenCalledWith({ read: true })
+    expect(chain.eq).toHaveBeenCalledWith('congregation_id', 'c1')
+    expect(chain.eq).toHaveBeenCalledWith('user_id', 'u1')
+  })
+  it('deleteNotifications → notifications delete, nur die eigenen dieser Versammlung (T140)', () => {
+    deleteNotifications('c1', 'u1')
+    expect(chain.from).toHaveBeenCalledWith('notifications')
+    expect(chain.delete).toHaveBeenCalled()
     expect(chain.eq).toHaveBeenCalledWith('congregation_id', 'c1')
     expect(chain.eq).toHaveBeenCalledWith('user_id', 'u1')
   })

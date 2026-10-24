@@ -1,8 +1,8 @@
 /*
  * Mitteilungen (T121, Entwürfe `GMitteilungen` und `GDesktopMitteilungen`):
- * Titel mit „Alle gelesen", die Karte für Benachrichtigungen, „Neu" und
- * „Früher". Am Handy stehen die Knöpfe einer Mitteilung unter ihrem Text, ab
- * dem Tablet daneben.
+ * Titel mit „Alle gelesen" und „Alle löschen", die Karte für
+ * Benachrichtigungen, „Neu" und „Früher". Am Handy stehen die Knöpfe einer
+ * Mitteilung unter ihrem Text, ab dem Tablet daneben.
  */
 
 .screen.mitteilungen {
@@ -17,6 +17,14 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px 16px;
+}
+
+/* „Alle gelesen" und „Alle löschen" (T140) — passen sie nicht neben den Titel,
+   rücken sie darunter, und reicht die Zeile nicht für beide, untereinander. */
+.mitteilungen-aktionen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 /* Am Handy steht „Alle gelesen" im Kopf der Seite (`UnterseiteKopf`). */

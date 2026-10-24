@@ -346,6 +346,9 @@ Mauszeiger den ganzen Text).
 - Was du angetippt, bestätigt oder übernommen hast, gilt als gelesen und steht
   danach unter **Früher**. **Alle gelesen** (am Handy oben rechts) räumt „Neu"
   auf einmal ab.
+- **Alle löschen** neben der Überschrift entfernt alle deine Mitteilungen.
+  Der erste Tipp fragt **Wirklich löschen?**, erst der zweite löscht. Ohne
+  Verbindung geht das nicht.
 - Solange Benachrichtigungen auf diesem Gerät aus sind, steht ganz oben die
   Karte **Keine Zuteilung verpassen** mit **Aktivieren** (siehe
   [Abschnitt 8](#8-app-installieren--erinnerungen)). Brauchst du sie nicht,

@@ -16,6 +16,7 @@ import {
   deletePersonRow,
   deleteAnmeldeLink,
   deleteMemberRow,
+  deleteNotifications,
   deleteServiceRow,
   markNotificationRead,
   markNotificationsRead,
@@ -1019,6 +1020,9 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       break
     case 'markAllRead':
       markNotificationsRead(congId, userId)
+      break
+    case 'clearNotifs':
+      deleteNotifications(congId, userId)
       break
     case 'mitteilungGelesen': {
       // Nur, was der Reducer wirklich umgestellt hat. Eine hier entstandene

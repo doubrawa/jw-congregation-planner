@@ -68,7 +68,7 @@ export const DE = {
     // eine neue Versammlung. Die Adresse selbst steht in login/kontakt.ts.
     appZweck: 'Zusammenkünfte planen, Aufgaben verteilen, die Versammlung verwalten.',
     versammlungAnfragen: 'Neue Versammlung anfragen:', anfrageBetreff: 'Neue Versammlung: Versammlung.app',
-    mitteilungen: 'Mitteilungen', neuN: 'Neu: {n}', alleGelesen: 'Alle gelesen',
+    mitteilungen: 'Mitteilungen', neuN: 'Neu: {n}', alleGelesen: 'Alle gelesen', alleLoeschen: 'Alle löschen',
     keineMitteilungen: 'Keine Mitteilungen',
     // Die beiden Abschnitte der Mitteilungen (T121): ungelesen, schon gelesen.
     mitteilungenNeu: 'Neu', mitteilungenFrueher: 'Früher',

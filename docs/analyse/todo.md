@@ -8533,10 +8533,21 @@ zuerst — als Zeilen, nicht wie angeboten als Tabelle: Neben einer Spalte mit
 Zahlen bräche „Schulungsaufgaben" bei 320 px und Stufe 1,45 mitten im Wort
 (derselbe Fehler wie T137); in der Zeile rückt die Zahl darunter.
 
-### T140 · Mitteilungen löschen ⚡ ☐ offen
+### T140 · Mitteilungen löschen ⚡ ✅ erledigt (24. Oktober 2026)
 
 „Mitteilungen löschen gibt's nicht mehr." (Am 13. Oktober war nur „Alle
 löschen" gestrichen, siehe T121.)
+
+**Entschieden** (Betreiber, 24. Oktober): „Alle löschen" wie vor dem neuen
+Design, mit zwei Tipps — gezeigt waren daneben „Einzeln löschen" und „Beides".
+
+**Umgesetzt:** „Alle löschen" steht auf jeder Breite neben der Überschrift
+(`EntfernenKnopf`: der erste Tipp fragt „Wirklich löschen?", erst der zweite
+löscht); ab dem Tablet daneben „Alle gelesen". Am Handy nicht im Kopf neben
+„Alle gelesen": Dort fehlt in vielen Sprachen der Platz, „Oznacz wszystkie
+jako przeczytane" steht schon zweizeilig. Gelöscht werden die eigenen Zeilen
+der Versammlung (`deleteNotifications`, die Regel `notifications_delete` gab
+es noch); offline ist es gesperrt. Übersetzungen wie vor T121.
 
 ## Was bewusst offen bleibt
 
@@ -9015,7 +9026,7 @@ braucht den Betreiber, ein Gerät oder eine Entscheidung.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **T133–T140** | Punkte vom Testen (24. Oktober) | aufgenommen am 24. Oktober, werden der Reihe nach bearbeitet |
+| **T133–T140** | Punkte vom Testen (24. Oktober) | alle acht am 24. Oktober umgesetzt und lokal committet — offen: Review, Push und die Function `substitute` ausrollen (T133, nur der Angebots-Check) |
 | **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124; am 21. Oktober: noch nicht). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
 | **Bewusst offen** | Der Grund nach dem Abmelden ohne Versammlung | Den Satz „Dein Konto gehört zu keiner Versammlung mehr" zeigt die Anmeldung nur, wenn das Laden die fehlende Mitgliedschaft findet — in der ersten Stunde nach dem Entfernen. Danach scheitert schon die Erneuerung des Tokens (das Konto ist gelöscht), supabase-js meldet `SIGNED_OUT` ohne Grund, und die Anmeldung steht ohne Satz da. Ihn auch dann zu zeigen, hieße erzwungenes und eigenes Abmelden zu unterscheiden — Betreiber am 21. Oktober: „wir müssen da keine komplexe logik einbauen" (Review vom 21. Oktober) |
 | **Bewusst offen** | Altes Zugangstoken nach dem Entfernen | Ein schon ausgestelltes Token gilt bis zu seinem Ablauf (höchstens eine Stunde) und sieht ohne Mitgliedschaft nichts. Wird die Person in dieser Stunde neu eingeladen, gilt es für das neue Konto: Es trägt wieder ihre Person-Id (`anmelden`). Vermerkt am Trigger in `schema.sql` (Review vom 21. Oktober) |

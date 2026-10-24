@@ -48,6 +48,8 @@ describe('isViewAction', () => {
     'addAbsence',
     'removeAbsence',
     'markAllRead',
+    // „Alle löschen" (T140) — offline verschwänden sie und kämen beim nächsten Laden wieder.
+    'clearNotifs',
     // Eine einzelne Zeile gelesen (Tipp auf die Mitteilung) — schreibt in die
     // Datenbank. Offline schickt die Seite sie gar nicht erst (4.10.2026).
     'mitteilungGelesen',

@@ -35,6 +35,7 @@ export default {
   "mitteilungenFrueher": "Wcześniejsze",
   "neuN": "Nowe: {n}",
   "alleGelesen": "Oznacz wszystkie jako przeczytane",
+  "alleLoeschen": "Usuń wszystkie",
   "aktuelleWoche": "Bieżący tydzień",
   "tabMid": "Zebranie w tygodniu",
   "tabWe": "Zebranie w weekend",

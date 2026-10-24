@@ -42,6 +42,7 @@ export default {
   "mitteilungenFrueher": "Earlier",
   "neuN": "New: {n}",
   "alleGelesen": "Mark all read",
+  "alleLoeschen": "Delete all",
   "aktuelleWoche": "This week",
   "tabMid": "Midweek Meeting",
   "tabWe": "Weekend Meeting",

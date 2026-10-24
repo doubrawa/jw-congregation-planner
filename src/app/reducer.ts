@@ -766,6 +766,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, notifs: gelesenBehalten(action.notifs, state.notifs) }
     case 'markAllRead':
       return { ...state, notifs: state.notifs.map((n) => ({ ...n, read: true })) }
+    case 'clearNotifs':
+      return state.notifs.length > 0 ? { ...state, notifs: [] } : state
     case 'mitteilungGelesen':
       return state.notifs.some((n) => n.id === action.id && !n.read)
         ? { ...state, notifs: state.notifs.map((n) => (n.id === action.id ? { ...n, read: true } : n)) }

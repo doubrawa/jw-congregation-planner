@@ -176,6 +176,7 @@ function schreibfolge(s: AppState): AppAction[] {
     { type: 'removeAbsence', id: 'a-probe' },
     { type: 'mitteilungGelesen', id: DEMO_NOTIFICATIONS[0]!.id },
     { type: 'markAllRead' },
+    { type: 'clearNotifs' },
     { type: 'changeReminder', key: 'first', delta: 1 },
     { type: 'toggleReminderRepeat' },
     // Sprachen

@@ -35,6 +35,7 @@ export default {
   "mitteilungenFrueher": "Daha önce",
   "neuN": "Yeni: {n}",
   "alleGelesen": "Tümünü okundu olarak işaretle",
+  "alleLoeschen": "Tümünü sil",
   "aktuelleWoche": "Bu hafta",
   "tabMid": "Hafta içi ibadeti",
   "tabWe": "Hafta sonu ibadeti",

@@ -35,6 +35,7 @@ export default {
   "mitteilungenFrueher": "Mai vechi",
   "neuN": "Noi: {n}",
   "alleGelesen": "Marchează tot ca citit",
+  "alleLoeschen": "Șterge tot",
   "aktuelleWoche": "Săptămâna curentă",
   "tabMid": "Întrunirea din timpul săptămânii",
   "tabWe": "Întrunirea de la sfârșitul săptămânii",

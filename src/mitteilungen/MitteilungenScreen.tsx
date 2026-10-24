@@ -1,5 +1,6 @@
 import { useApp } from '../app/context'
 import { sichtbareMitteilungen } from '../app/mitteilungen'
+import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { rechteVon } from '../data/rechte'
 import type { Notification } from '../data/types'
 import { useT } from '../i18n/useT'
@@ -17,11 +18,16 @@ import './mitteilungen.css'
  *
  * Am Handy steht statt der Kopfzeile Zurück und „Alle gelesen"
  * (`UnterseiteKopf`); ab dem Tablet steht „Alle gelesen" hier neben dem Titel.
- * „Alle löschen" gibt es nicht mehr (Entwurf): Was vorbei ist, fällt ohnehin
- * heraus (`notificationsAus`), und geladen werden nur die neuesten.
+ *
+ * „Alle löschen" (T140) steht auf jeder Breite neben dem Titel, mit zwei Tipps
+ * wie jedes Löschen. Mit dem Entwurf war es am 12.10.2026 gegangen — was
+ * vorbei ist, fällt ohnehin heraus (`notificationsAus`) —, der Betreiber
+ * vermisste es beim Testen: „Mitteilungen löschen gibt's nicht mehr."
+ * Am Handy nicht im Kopf: Neben „Alle gelesen" fehlt dort in vielen Sprachen
+ * der Platz („Oznacz wszystkie jako przeczytane").
  */
 export function MitteilungenScreen() {
-  const { state } = useApp()
+  const { state, dispatch } = useApp()
   const { t } = useT()
   useMitteilungenNachladen()
   const sichtbar = sichtbareMitteilungen(state.notifs, rechteVon(state).zuteilen)
@@ -32,7 +38,12 @@ export function MitteilungenScreen() {
     <section className="screen mitteilungen">
       <div className="mitteilungen-kopf">
         <h1 className="seitentitel seitentitel--gross">{t.mitteilungen}</h1>
-        {neu.length > 0 && <AlleGelesen className="knopf-umriss mitteilungen-alle" />}
+        {sichtbar.length > 0 && (
+          <div className="mitteilungen-aktionen">
+            {neu.length > 0 && <AlleGelesen className="knopf-umriss mitteilungen-alle" />}
+            <EntfernenKnopf className="knopf-umriss knopf-entfernen" text={t.alleLoeschen} onEntfernen={() => dispatch({ type: 'clearNotifs' })} />
+          </div>
+        )}
       </div>
       <PushKarte />
       {sichtbar.length === 0 && <p className="karte mitteilungen-leer">{t.keineMitteilungen}</p>}

@@ -32,6 +32,7 @@ export default {
   "mitteilungenFrueher": "السابقة",
   "neuN": "جديد: {n}",
   "alleGelesen": "تحديد الكل كمقروء",
+  "alleLoeschen": "حذف الكل",
   "aktuelleWoche": "هذا الأسبوع",
   "tabMid": "اجتماع وسط الأسبوع",
   "tabWe": "اجتماع نهاية الأسبوع",

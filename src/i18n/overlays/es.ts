@@ -35,6 +35,7 @@ export default {
   "mitteilungenFrueher": "Anteriores",
   "neuN": "Nuevas: {n}",
   "alleGelesen": "Marcar todo como leído",
+  "alleLoeschen": "Eliminar todo",
   "aktuelleWoche": "Semana actual",
   "tabMid": "Reunión de entre semana",
   "tabWe": "Reunión del fin de semana",

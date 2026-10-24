@@ -36,6 +36,7 @@ export default {
   "mitteilungenFrueher": "قدیمی‌تر",
   "neuN": "جدید: {n}",
   "alleGelesen": "علامت‌گذاری همه به‌عنوان خوانده‌شده",
+  "alleLoeschen": "حذف همه",
   "aktuelleWoche": "این هفته",
   "tabMid": "جلسهٔ میان‌هفته",
   "tabWe": "جلسهٔ آخر هفته",

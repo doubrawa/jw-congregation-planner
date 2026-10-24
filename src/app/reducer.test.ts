@@ -512,6 +512,14 @@ describe('einfache UI-Setter', () => {
     expect(read.notifs.every((n) => n.read)).toBe(true)
   })
 
+  it('clearNotifs: alle Mitteilungen fort — ohne welche derselbe Zustand (T140)', () => {
+    const s = makeState()
+    expect(s.notifs.length).toBeGreaterThan(0)
+    const leer = reducer(s, { type: 'clearNotifs' })
+    expect(leer.notifs).toEqual([])
+    expect(reducer(leer, { type: 'clearNotifs' })).toBe(leer)
+  })
+
   it('mitteilungGelesen: nur die angetippte Zeile; eine gelesene oder unbekannte ändert nichts', () => {
     const notifs = [
       { id: 'a', type: 'zuteilung' as const, title: 'Neue Zuteilung', text: '', at: '', read: false },
