@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render } from '@testing-library/react'
 import { AppDispatchContext, AppStateContext, AppStoreContext, type AppState, useStaticStore } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
+import { ENTWICKLER_HEUTE } from '../../tests/testdaten/uhr'
 import { displayName } from '../data/helpers'
 import type { FsInstance } from '../data/types'
 import { dict } from '../i18n/ui'
@@ -55,6 +56,9 @@ describe('PersonTimeline', () => {
 
   it('ein geleiteter Treffpunkt ohne Ort heißt nur „Treffpunkte leiten" — ohne Punkt am Ende', () => {
     // Gemeldet am 18.10.2026 am Blatt der Gruppe; die Zeitleiste hatte dieselbe Lücke.
+    // Die Uhr der Entwicklerseite: Die Leiste reicht nur acht Wochen zurück, die Treffpunkte liegen im September 2026.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(ENTWICKLER_HEUTE)
     const t = dict('de')
     const demo: AppState = { ...demoZustand(), dataStatus: 'ready' }
     const p1 = demo.persons.find((p) => p.id === 'p1')!

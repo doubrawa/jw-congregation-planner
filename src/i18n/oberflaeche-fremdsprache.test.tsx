@@ -590,6 +590,9 @@ describe('Kanonisch deutsche Datenwerte erscheinen übersetzt', () => {
 /* ---- 3. Jeder Bildschirm in jeder Sprache -------------------------------- */
 
 describe('Jeder Bildschirm rendert in jeder Sprache', () => {
+  // Wer die Uhr stellt (die `Intl`-Stellen), bekommt die echte danach zurück.
+  afterEach(() => vi.useRealTimers())
+
   /*
    * Der breite, billige Durchgang. Er sucht keinen bestimmten Fehler, sondern
    * die Sorte, die ganze Sprachen unbrauchbar macht: eine `Intl`-Locale, die
@@ -646,6 +649,9 @@ describe('Jeder Bildschirm rendert in jeder Sprache', () => {
   ]
 
   it.each(INTL_STELLEN)('%s steht in der Sprache des Lesers', (name, over, marke) => {
+    // Die Uhr der Testwoche: Die Zeitleiste reicht nur acht Wochen zurück (23.10.2026).
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9, 0))
     const deutsch = (() => {
       const { container } = zeige({ ...over, lang: 'de', congLang: 'de' })
       const el = container.querySelector(marke)

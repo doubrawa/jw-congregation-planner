@@ -10,7 +10,8 @@ import { aufgabenLabel, useT } from '../i18n/useT'
 import { personTimeline, type TimelineEntry } from './person-timeline'
 
 /**
- * Zeitleiste einer Person: je Eintrag Datum und Art, vergangene blasser.
+ * Zeitleiste einer Person: je Eintrag Datum und Art, die neuesten zuerst,
+ * vergangene blasser und höchstens acht Wochen zurück (`personTimeline`).
  *
  * Sie führt **beide Richtungen** zusammen — wann jemand dran ist (Zuteilungen,
  * geleitete Treffpunkte, Trolley-Termine, vorgemerkte Gruppenbesuche) und

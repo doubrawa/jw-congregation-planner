@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   buildDemoFsWeeks,
   buildDemoWeeks,
@@ -10,6 +10,7 @@ import {
   DEMO_TROLLEY_TERMINE,
   DEMO_TROLLEYS,
 } from '../../tests/testdaten/testdaten'
+import { ENTWICKLER_HEUTE } from '../../tests/testdaten/uhr'
 import { displayName } from '../data/helpers'
 import { fromIso, isoDay, tageZwischen } from '../data/meeting-dates'
 import type { Absence } from '../data/types'
@@ -36,6 +37,9 @@ const MONTAG_0 = fromIso(buildDemoWeeks()[0]!.start)
 /** Tage seit dem Montag der Woche 0 — so lesen sich die Positionen in der Leiste. */
 const tag = (e: { datum: Date }): number => tageZwischen(MONTAG_0, e.datum)
 
+/** Nur die Abwesenheits-Ränder, in der Reihenfolge der Leiste. */
+const raender = (e: TimelineEntry[]) => e.filter((x) => x.kind === 'abw').map((x) => (x.kind === 'abw' ? x.rand : ''))
+
 /** Abwesenheit dieser Person, so wie sie aus der Datenbank käme. */
 const abwesenheit = (id: string, from: string, to: string, reason = ''): Absence => ({
   id, personId: person.id, userId: null, from, to, reason,
@@ -44,11 +48,24 @@ const abwesenheit = (id: string, from: string, to: string, reason = ''): Absence
 /** Erste Person, die in den Demo-Wochen überhaupt zugeteilt ist. */
 const person = DEMO_PERSONS.find((p) => p.id === 'p1')!
 
+/*
+ * Die Uhr der Entwicklerseite (Mo 7.9.2026, 9 Uhr), wo ein Fall keine eigene
+ * nennt: Seit die Leiste höchstens acht Wochen zurückreicht (23.10.2026), hinge
+ * sonst jeder Fall vom Tag des Laufs ab — ab November fielen die Testwochen
+ * heraus.
+ */
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(ENTWICKLER_HEUTE)
+})
+afterEach(() => vi.useRealTimers())
+
 describe('Zeitleiste einer Person', () => {
   it('listet die Zuteilungen der Zusammenkünfte mit Datum und Art', () => {
     const eintraege = personTimeline(person, daten())
     expect(eintraege.length).toBeGreaterThan(0)
-    const meeting = eintraege.find((e) => e.kind === 'meeting')
+    // Die älteste steht unten — die Demo beginnt mit ihr.
+    const meeting = eintraege.findLast((e) => e.kind === 'meeting')
     expect(meeting).toBeDefined()
     if (meeting?.kind !== 'meeting') throw new Error('kein Zusammenkunfts-Eintrag')
     // Titel und Rolle stehen getrennt (die Anzeige übersetzt sie verschieden);
@@ -149,25 +166,56 @@ describe('Zeitleiste einer Person', () => {
     expect(tag(fs[0]!)).toBe(14 + versatz)
   })
 
-  it('ordnet Zusammenkünfte und Treffpunkte chronologisch ineinander', () => {
+  it('ordnet Zusammenkünfte und Treffpunkte ineinander — die neuesten zuerst', () => {
     const fsWeeks = buildDemoFsWeeks().map((week, wi) =>
       week.map((inst) => (wi === 0 ? { ...inst, leader: displayName(person) } : inst)),
     )
     const eintraege = personTimeline(person, daten({ fsWeeks }))
     const tage = eintraege.map(tag)
-    expect([...tage].sort((a, b) => a - b)).toEqual(tage)
-    // Treffpunkte der Woche 0 dürfen nicht hinter Zusammenkünfte späterer
+    expect([...tage].sort((a, b) => b - a)).toEqual(tage)
+    // Treffpunkte der Woche 0 dürfen nicht über Zusammenkünfte späterer
     // Wochen rutschen — genau das ginge ohne gemeinsamen Kalendertag schief.
     expect(eintraege.filter((e) => tag(e) < 7).some((e) => e.kind === 'fs')).toBe(true)
   })
 
   it('ordnet auch innerhalb einer Woche nach Wochentag', () => {
-    // Demo: Zusammenkunft Di, Treffpunkt der Gruppe 1 am Sa (Woche 0), dann
-    // der Versammlungstreffpunkt am Mo der Woche 1. Zählte der Treffpunkt nur
-    // die Woche und nicht den Tag, stünde der Samstag vor dem Dienstag.
-    const anfang = personTimeline(person, daten()).slice(0, 3)
-    expect(anfang.map((e) => e.kind)).toEqual(['meeting', 'fs', 'fs'])
-    expect(anfang.map(tag)).toEqual([1, 5, 7])
+    // Demo, von unten gelesen: Zusammenkunft Di, Treffpunkt der Gruppe 1 am Sa
+    // (Woche 0), dann der Versammlungstreffpunkt am Mo der Woche 1. Zählte der
+    // Treffpunkt nur die Woche und nicht den Tag, stünde der Samstag unter dem
+    // Dienstag.
+    const ende = personTimeline(person, daten()).slice(-3)
+    expect(ende.map((e) => e.kind)).toEqual(['fs', 'fs', 'meeting'])
+    expect(ende.map(tag)).toEqual([7, 5, 1])
+  })
+
+  it('die neuesten zuerst — ein Tag behält dabei die Reihenfolge des Programms', () => {
+    /*
+     * Betreiber 23.10.2026: „neue Zuteilungen zuerst … und dann absteigend".
+     * Absteigend gehen die Tage; zwei Aufgaben derselben Zusammenkunft stehen
+     * weiter so, wie das Programm sie bringt, nicht rückwärts. Demo: p1 hat am
+     * Di 15.9. erst „Nach geistigen Schätzen graben", dann „Aktuelles", und als
+     * letzte Aufgabe am Sa 3.10. den Vorsitz.
+     */
+    const eintraege = personTimeline(person, daten())
+    expect(isoDay(eintraege[0]!.datum)).toBe('2026-10-03')
+    const amTag = eintraege.filter((e) => isoDay(e.datum) === '2026-09-15')
+    expect(amTag.map((e) => (e.kind === 'meeting' ? e.titel : e.kind))).toEqual([
+      'Nach geistigen Schätzen graben',
+      'Aktuelles',
+    ])
+  })
+
+  it('am selben Tag steht das Spätere oben — auch zwischen verschiedenen Arten', () => {
+    /*
+     * Gefunden im Review vom 24.10.2026: Am selben Tag entschied die Art, in der
+     * die Einträge gesammelt werden, nicht die Uhrzeit. Zwei Treffpunkte am
+     * Sa 12.9. standen mit 09:30 über 14:00 — mitten in einer Leiste, die sonst
+     * absteigend läuft.
+     */
+    const samstag = (id: string, time: string) => ({ ...buildDemoFsWeeks()[0]!.find((i) => i.wd === 6)!, id, time, leader: displayName(person), lpid: person.id })
+    const fsWeeks = buildDemoFsWeeks().map((w, wi) => (wi === 0 ? [...w.filter((i) => i.wd !== 6), samstag('frueh', '09:30'), samstag('spaet', '14:00')] : w))
+    const amTag = personTimeline(person, daten({ fsWeeks })).filter((e) => isoDay(e.datum) === '2026-09-12')
+    expect(amTag.map((e) => e.zeit)).toEqual(['14:00', '09:30'])
   })
 
   it('markiert am echten Kalendertag, was schon vorbei ist', () => {
@@ -201,16 +249,12 @@ describe('Zeitleiste einer Person', () => {
  * Anzeige die Strecke einfärbt.
  */
 describe('Abwesenheiten in der Zeitleiste', () => {
-  /** Nur die Abwesenheits-Ränder, in der Reihenfolge der Leiste. */
-  const raender = (e: ReturnType<typeof personTimeline>) =>
-    e.filter((x) => x.kind === 'abw').map((x) => (x.kind === 'abw' ? x.rand : ''))
-
-  it('macht aus einem Zeitraum zwei Punkte — Beginn und Ende', () => {
+  it('macht aus einem Zeitraum zwei Punkte — Ende und Beginn, die neuesten zuerst', () => {
     const eintraege = personTimeline(person, daten({ absences: [abwesenheit('a', '2026-09-14', '2026-09-20', 'Urlaub')] }))
-    expect(raender(eintraege)).toEqual(['start', 'ende'])
-    const [beginn, ende] = eintraege.filter((e) => e.kind === 'abw')
-    expect(beginn?.datum.getDate()).toBe(14)
+    expect(raender(eintraege)).toEqual(['ende', 'start'])
+    const [ende, beginn] = eintraege.filter((e) => e.kind === 'abw')
     expect(ende?.datum.getDate()).toBe(20)
+    expect(beginn?.datum.getDate()).toBe(14)
   })
 
   it('macht aus einem einzelnen Tag einen einzigen Punkt', () => {
@@ -222,17 +266,18 @@ describe('Abwesenheiten in der Zeitleiste', () => {
   it('färbt die Strecke zwischen Beginn und Ende — und nur sie', () => {
     /*
      * Die Markierung ist nach oben und unten getrennt, weil der Punkt die
-     * **Grenze** ist: Beim Beginn gehört nur das Stück darunter zum Zeitraum,
-     * beim Ende nur das darüber. Ohne diese Trennung liefe die Farbe über den
-     * Rand hinaus, und der Zeitraum sähe größer aus, als er ist.
+     * **Grenze** ist: Die neuesten stehen oben — beim Ende gehört nur das Stück
+     * darunter zum Zeitraum, beim Beginn nur das darüber. Ohne diese Trennung
+     * liefe die Farbe über den Rand hinaus, und der Zeitraum sähe größer aus,
+     * als er ist.
      */
     const eintraege = personTimeline(person, daten({ absences: [abwesenheit('a', '2026-09-08', '2026-09-27')] }))
     const beginn = eintraege.find((e) => e.kind === 'abw' && e.rand === 'start')
     const ende = eintraege.find((e) => e.kind === 'abw' && e.rand === 'ende')
-    expect([beginn?.abwOben, beginn?.abwUnten]).toEqual([false, true])
-    expect([ende?.abwOben, ende?.abwUnten]).toEqual([true, false])
-    // Der letzte Eintrag liegt hinter dem Ende — dort ist nichts mehr gefärbt.
-    expect(eintraege[eintraege.length - 1]?.abwUnten).toBe(false)
+    expect([ende?.abwOben, ende?.abwUnten]).toEqual([false, true])
+    expect([beginn?.abwOben, beginn?.abwUnten]).toEqual([true, false])
+    // Der erste Eintrag (Sa 3.10.) liegt hinter dem Ende — dort ist nichts gefärbt.
+    expect([eintraege[0]?.abwOben, eintraege[0]?.abwUnten]).toEqual([false, false])
   })
 
   it('markiert die Zuteilungen, die IN den Zeitraum fallen', () => {
@@ -247,23 +292,39 @@ describe('Abwesenheiten in der Zeitleiste', () => {
     }
   })
 
-  it('fasst den Tag ein: Beginn vor den Zuteilungen des Tages, Ende dahinter', () => {
+  it('fasst den Tag ein: von oben gelesen das Ende vor den Zuteilungen des Tages, der Beginn dahinter', () => {
     /*
      * Am selben Kalendertag entscheidet die Reihenfolge über die Färbung. Stünde
-     * der Beginn hinter der Zuteilung dieses Tages, liefe die Strecke an ihr
-     * vorbei — obwohl sie sehr wohl in den Zeitraum fällt.
+     * ein Rand auf der falschen Seite der Zuteilung dieses Tages, liefe die
+     * Strecke an ihr vorbei — obwohl sie sehr wohl in den Zeitraum fällt.
+     * Demo: p1 hat am Di 8.9. den Vorsitz; der erste Zeitraum beginnt an dem
+     * Tag, der zweite endet an ihm.
+     */
+    for (const [von, bis] of [['2026-09-08', '2026-09-13'], ['2026-09-01', '2026-09-08']] as const) {
+      const eintraege = personTimeline(person, daten({ absences: [abwesenheit('a', von, bis)] }))
+      const vorsitz = eintraege.find((e) => e.kind === 'meeting' && isoDay(e.datum) === '2026-09-08')
+      expect([vorsitz?.abwOben, vorsitz?.abwUnten], `${von} bis ${bis}`).toEqual([true, true])
+    }
+  })
+
+  it('ein einzelner Tag steht über den Aufgaben seines Tages — wie vor der Umstellung', () => {
+    /*
+     * Er hat keine Strecke, die Reihenfolge färbt also nichts; sie entscheidet
+     * nur, was man zuerst liest. Bis zum 23.10.2026 (aufsteigend) stand die
+     * Abwesenheit vor den Aufgaben ihres Tages, und dabei bleibt es — das Review
+     * vom 24.10. fand sie nach der Umstellung darunter.
      */
     const eintraege = personTimeline(person, daten({ absences: [abwesenheit('a', '2026-09-08', '2026-09-08')] }))
-    const amTag = eintraege.filter((e) => e.datum.getDate() === 8)
-    expect(amTag[0]?.kind).toBe('abw')
+    const amTag = eintraege.filter((e) => isoDay(e.datum) === '2026-09-08')
+    expect(amTag.map((e) => e.kind)).toEqual(['abw', 'meeting'])
   })
 
   it('zeigt auch, was jenseits der geladenen Wochen liegt', () => {
     // Die Demo-Wochen enden Anfang Oktober; eine Abwesenheit im Dezember
-    // gehört trotzdem hierher — geplant ist sie ja.
+    // gehört trotzdem hierher — geplant ist sie ja. Als neueste steht sie oben.
     const eintraege = personTimeline(person, daten({ absences: [abwesenheit('a', '2026-12-24', '2026-12-28')] }))
-    expect(raender(eintraege)).toEqual(['start', 'ende'])
-    expect(eintraege[eintraege.length - 1]?.datum.getMonth()).toBe(11)
+    expect(raender(eintraege)).toEqual(['ende', 'start'])
+    expect(eintraege[0]?.datum.getMonth()).toBe(11)
   })
 
   it('nimmt nur die Abwesenheiten dieser Person', () => {
@@ -274,16 +335,49 @@ describe('Abwesenheiten in der Zeitleiste', () => {
   it('trägt auch bei überlappenden Zeiträumen durchgehend', () => {
     /*
      * Der Import fasst Überlappendes zwar zusammen, von Hand lässt sich aber
-     * beides eintragen. Ein Vergleich je Paar hätte die Farbe am ersten Ende
-     * abgeschaltet, obwohl der zweite Zeitraum noch läuft — deshalb zählt die
-     * Markierung offene Zeiträume, statt sie zu paaren.
+     * beides eintragen. Ein Vergleich je Paar hätte die Farbe am ersten Beginn
+     * von oben abgeschaltet — dem des späteren Zeitraums —, obwohl der frühere
+     * darunter noch läuft. Deshalb zählt die Markierung offene Zeiträume,
+     * statt sie zu paaren.
      */
     const eintraege = personTimeline(
       person,
       daten({ absences: [abwesenheit('a', '2026-09-08', '2026-09-20'), abwesenheit('b', '2026-09-14', '2026-09-27')] }),
     )
-    const ersteEnde = eintraege.find((e) => e.kind === 'abw' && e.rand === 'ende')
-    expect(ersteEnde?.abwUnten).toBe(true) // der zweite Zeitraum läuft weiter
+    const ersterBeginn = eintraege.find((e) => e.kind === 'abw' && e.rand === 'start')
+    expect(ersterBeginn?.datum.getDate()).toBe(14)
+    expect(ersterBeginn?.abwUnten).toBe(true) // der frühere Zeitraum läuft weiter
+  })
+})
+
+/**
+ * **Höchstens acht Wochen zurück** (Betreiber 23.10.2026). Die Leiste zeigt,
+ * was ansteht, und dazu, was die Person zuletzt hatte — nicht ein Jahr
+ * Vergangenheit, durch das man erst rollen müsste, bis das Kommende kommt.
+ * Nach vorn bleibt alles (Dezember-Fall oben).
+ */
+describe('Höchstens acht Wochen zurück', () => {
+  /** Mo 9.11.2026: acht Wochen davor ist Mo 14.9. — mitten in den Testwochen (7.9.–4.10.). */
+  const SPAETER = new Date(2026, 10, 9, 9, 0)
+
+  it('lässt weg, was älter ist als acht Wochen — der Tag genau acht Wochen zurück bleibt', () => {
+    const alle = personTimeline(person, daten())
+    // Unter der Uhr der Entwicklerseite steht Woche 0 noch da: Sa 12.9. und Di 8.9.
+    expect(alle.filter((e) => tag(e) < 7).map(tag)).toEqual([5, 1])
+    // Am 9.11. sind beide älter als acht Wochen; der Mo 14.9. ist es genau und bleibt.
+    const spaeter = personTimeline(person, daten(), SPAETER)
+    expect(spaeter.map(tag)).toEqual(alle.map(tag).filter((t) => t >= 7))
+    expect(tag(spaeter.at(-1)!)).toBe(7)
+  })
+
+  it('eine Abwesenheit, die davor beginnt, steht mit ihrem Ende da und färbt bis an den Rand', () => {
+    // Weg vom 1. bis 20.9.: Am 9.11. liegt der Beginn vor dem Rand (14.9.).
+    const eintraege = personTimeline(person, daten({ absences: [abwesenheit('a', '2026-09-01', '2026-09-20')] }), SPAETER)
+    expect(raender(eintraege)).toEqual(['ende'])
+    // Der älteste Eintrag, der noch dasteht (Mo 14.9.), liegt mitten im Zeitraum.
+    const unten = eintraege.at(-1)!
+    expect(tag(unten)).toBe(7)
+    expect([unten.abwOben, unten.abwUnten]).toEqual([true, true])
   })
 })
 
@@ -298,7 +392,7 @@ describe('Abwesenheiten in der Zeitleiste', () => {
  */
 describe('Trolley-Termine und vorgemerkte Gruppenbesuche', () => {
   /** Mo 7.9.2026, 9 Uhr — die Uhr der Entwicklerseite; alles hier liegt danach. */
-  const HEUTE = new Date(2026, 8, 7, 9, 0)
+  const HEUTE = ENTWICKLER_HEUTE
   const JONAS = DEMO_PERSONS.find((p) => p.id === 'p6')!
   const KONRAD = DEMO_PERSONS.find((p) => p.id === 'p5')!
   const zeile = (e: TimelineEntry) => [isoDay(e.datum), e.zeit, e.kind === 'trolley' ? e.trolley : e.kind === 'besuch' ? e.grp : '']
@@ -307,10 +401,10 @@ describe('Trolley-Termine und vorgemerkte Gruppenbesuche', () => {
 
   it('nennt die Termine der Person mit Tag, Beginn und Trolley — eingetragen oder als Partner', () => {
     const eintraege = personTimeline(JONAS, daten(TROLLEY), HEUTE)
-    // r2: Jonas sucht am 9.9. einen Partner; r6: er hat Simon und sich am 19.9. eingetragen.
+    // r6: er hat Simon und sich am 19.9. eingetragen; r2: Jonas sucht am 9.9. einen Partner.
     expect(nur('trolley', eintraege)).toEqual([
-      ['2026-09-09', '15:00', 'Trolley 3'],
       ['2026-09-19', '09:00', 'Trolley 3'],
+      ['2026-09-09', '15:00', 'Trolley 3'],
     ])
     const simon = DEMO_PERSONS.find((p) => p.id === 'p9')!
     expect(nur('trolley', personTimeline(simon, daten(TROLLEY), HEUTE))).toEqual([['2026-09-19', '09:00', 'Trolley 3']])
@@ -322,10 +416,10 @@ describe('Trolley-Termine und vorgemerkte Gruppenbesuche', () => {
     // Samstagstreffpunkt ihrer Gruppe (der Versammlungstreffpunkt am ersten
     // Samstag fällt in keine dieser Wochen).
     expect(nur('besuch', eintraege)).toEqual([
-      ['2026-10-17', '09:15', 'g2'],
-      ['2026-11-14', '10:00', 'g3'],
-      ['2026-12-12', '09:30', 'g4'],
       ['2027-01-09', '09:30', 'g1'],
+      ['2026-12-12', '09:30', 'g4'],
+      ['2026-11-14', '10:00', 'g3'],
+      ['2026-10-17', '09:15', 'g2'],
     ])
   })
 

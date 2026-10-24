@@ -1171,13 +1171,16 @@ es steht dann unter **Konten ohne Person**.
 
 ### Zeitleiste und Abwesenheiten
 
-Die **Zeitleiste** zeigt alle Aufgaben dieser Person aus den geladenen Wochen,
-chronologisch, jeweils mit Wochentag, Datum und Uhrzeit – Programmpunkte,
+Die **Zeitleiste** zeigt die Aufgaben dieser Person aus den geladenen Wochen,
+die neuesten zuerst, jeweils mit Wochentag, Datum und Uhrzeit – Programmpunkte,
 Hilfsdienste, geleitete Treffpunkte und Trolley-Termine (diese ab der
 laufenden Woche). Beim Dienstaufseher stehen auch seine **vorgemerkten
 Gruppenbesuche** darin – Besuche in Wochen, deren Programm noch nicht geholt ist, an
-den Tagen laut Grundplan. Vergangenes wird blasser dargestellt. Hat jemand
-weder Zuteilung noch Abwesenheit, entfällt die Karte.
+den Tagen laut Grundplan. Am selben Tag steht das Spätere oben, Aufgaben
+derselben Zusammenkunft in der Reihenfolge des Programms. Vergangenes wird
+blasser dargestellt und reicht höchstens acht Wochen zurück; was ansteht,
+steht ganz da. Hat jemand in dieser Zeit weder Zuteilung noch Abwesenheit,
+entfällt die Karte.
 
 Den genauen Tag rechnet die App aus: Das Arbeitsheft kennt nur die Woche, der
 Wochentag und die Uhrzeit stehen in den [Einstellungen](#7-einstellungen)
@@ -1189,7 +1192,7 @@ Zuteilungen: wann diese Person **nicht** da ist. Ein Zeitraum bekommt zwei
 Punkte, für Beginn und Ende, und die Strecke dazwischen ist eingefärbt. So ist
 auf einen Blick zu sehen, was in einen Zeitraum hineinfällt – eine Zuteilung
 mitten in einer Abwesenheit sitzt sichtbar in der farbigen Strecke. Ein
-einzelner Tag ergibt einen Punkt.
+einzelner Tag ergibt einen Punkt, über den Aufgaben dieses Tages.
 
 Die Karte **Abwesenheiten** darunter nennt, was ansteht oder gerade läuft; was
 vorbei ist, fällt heraus. Eingetragen wird dort mit **Abwesenheit eintragen**:

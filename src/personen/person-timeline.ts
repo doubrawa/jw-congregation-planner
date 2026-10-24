@@ -3,10 +3,10 @@ import { abwesenheitsRaender, abwRang, markiereAbwesenheiten, type AbwRand } fro
 import { fsLeiterZuteilung, fsTag } from '../data/fs'
 import { besuchsLage, besuchStand } from '../data/gruppenbesuche'
 import { displayName, gehoertZu } from '../data/helpers'
-import { fromIso, kalendertagMs, meetingDate, meetingTime } from '../data/meeting-dates'
+import { fromIso, kalendertagMs, meetingDate, meetingTime, tageZwischen } from '../data/meeting-dates'
 import { deriveMyTasks, taskKeyWeek, wochenIndex } from '../data/planning'
 import type { Person } from '../data/types'
-import { istDabei } from '../data/trolleys'
+import { istDabei, minuten } from '../data/trolleys'
 
 /**
  * Ein Eintrag der Zeitleiste im Personen-Detail — für beide Arten gleich
@@ -25,7 +25,8 @@ export type TimelineEntry = {
    * Läuft an dieser Stelle eine Abwesenheit — oberhalb bzw. unterhalb des
    * Punktes? Daraus färbt die Anzeige die Linie **zwischen** Beginn und Ende
    * ein. Getrennt nach oben und unten, weil der Punkt selbst die Grenze ist:
-   * Beim Beginn ist nur das Stück darunter drin, beim Ende nur das darüber.
+   * Die neuesten stehen oben — beim Ende ist nur das Stück darunter drin, beim
+   * Beginn nur das darüber.
    */
   abwOben?: boolean
   abwUnten?: boolean
@@ -70,11 +71,15 @@ export type TimelineDaten = Pick<
   | 'gruppenbesuche'
 >
 
+/** So weit reicht die Zeitleiste zurück (Betreiber 23.10.2026); nach vorn reicht sie, so weit es Einträge gibt. */
+const WOCHEN_ZURUECK = 8
+
 /**
- * Alle Zuteilungen einer Person in zeitlicher Reihenfolge: Programmpunkte,
- * Ratgeber und Hilfsdienste der Zusammenkünfte (deriveMyTasks — dieselbe
- * Quelle wie „Meine Aufgaben") plus die geleiteten Treffpunkte, die
- * Trolley-Termine und vorgemerkte Gruppenbesuche.
+ * Die Zuteilungen einer Person, die neuesten zuerst und höchstens
+ * `WOCHEN_ZURUECK` Wochen zurück: Programmpunkte, Ratgeber und Hilfsdienste der
+ * Zusammenkünfte (deriveMyTasks — dieselbe Quelle wie „Meine Aufgaben") plus
+ * die geleiteten Treffpunkte, die Trolley-Termine und vorgemerkte
+ * Gruppenbesuche.
  *
  * Datum und Uhrzeit werden gerechnet: importierte Wochen tragen im `date`-Feld
  * nur die Wochenspanne („7.–13. September"). Der Tag ergibt sich aus dem Montag
@@ -227,14 +232,25 @@ export function personTimeline(
   }
 
   /*
-   * Stabil sortiert: bei gleichem Tag bleibt die Programmreihenfolge erhalten.
-   * Die Ränder einer Abwesenheit fassen den Tag ein — der Beginn steht vor den
-   * Zuteilungen dieses Tages, das Ende dahinter. Sonst liefe die Färbung an
-   * einer Zuteilung vorbei, die sehr wohl in den Zeitraum fällt.
+   * Die neuesten zuerst, dann absteigend (Betreiber 23.10.2026) — am selben
+   * Tag das Spätere oben. Stabil sortiert: Aufgaben derselben Zusammenkunft
+   * (eine Uhrzeit) bleiben in der Reihenfolge des Programms. Die Ränder einer
+   * Abwesenheit fassen den Tag ein — von oben gelesen steht das Ende vor den
+   * Zuteilungen dieses Tages, der Beginn dahinter (`abwRang`).
    */
   const randVon = (e: TimelineEntry): AbwRand | null => (e.kind === 'abw' ? e.rand : null)
   entries.sort(
-    (a, b) => kalendertagMs(a.datum) - kalendertagMs(b.datum) || abwRang(randVon(a)) - abwRang(randVon(b)),
+    (a, b) =>
+      kalendertagMs(b.datum) - kalendertagMs(a.datum) ||
+      abwRang(randVon(a)) - abwRang(randVon(b)) ||
+      minuten(b.zeit) - minuten(a.zeit),
   )
-  return markiereAbwesenheiten(entries, randVon)
+  /*
+   * Gefärbt wird an der ganzen Liste (`markiereAbwesenheiten` will sie
+   * vollständig), beschnitten danach: Eine Abwesenheit, die vor dem Ausschnitt
+   * beginnt, steht mit ihrem Ende da, und ihre Strecke läuft bis an den Rand.
+   * Der Rand ist der Tag genau `WOCHEN_ZURUECK` Wochen vor heute — er gehört
+   * noch dazu.
+   */
+  return markiereAbwesenheiten(entries, randVon).filter((e) => tageZwischen(e.datum, grenze) <= WOCHEN_ZURUECK * 7)
 }

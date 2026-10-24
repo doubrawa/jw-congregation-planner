@@ -2,14 +2,13 @@ import type { Lang } from '../data/types'
 import { gebundenesDatum } from './datum-anzeige'
 
 /**
- * **Was beide Zeitleisten gemeinsam rechnen.**
+ * **Wie die Zeitleiste einer Person Abwesenheiten fasst** — zwei Ränder, eine
+ * eingefärbte Strecke dazwischen — und wie sie das Datum schreibt.
  *
- * Die Leiste gibt es zweimal: im Personen-Detail (alle Einträge einer Person)
- * und auf dem Start (die eigenen Aufgaben der nächsten zwei Wochen). Sie holen
- * ihre Einträge aus verschiedenen Quellen — `personTimeline` aus den Wochen,
- * `dashTimeline` aus `state.myTasks` —, aber sie fassen Abwesenheiten gleich:
- * zwei Ränder, eine eingefärbte Strecke dazwischen, und dieselbe Schreibweise
- * des Datums. Das stand eine Zeit lang Zeichen für Zeichen zweimal da.
+ * Bis zur Phase 3a gab es die Leiste zweimal (auch auf dem Start, aus
+ * `state.myTasks`); daher der eigene Ort. Seit dem 23.10.2026 stehen ihre
+ * Einträge **die neuesten zuerst**, und `abwRang` und `markiereAbwesenheiten`
+ * rechnen genau damit: Eine aufsteigende Liste färbten sie falsch.
  */
 
 /** Welches Ende eines Abwesenheits-Zeitraums eine Zeile ist. */
@@ -24,13 +23,15 @@ export function abwesenheitsRaender(von: string, bis: string): AbwRand[] {
 }
 
 /**
- * Rang innerhalb **eines** Tages: Der Beginn steht vor den Aufgaben dieses
- * Tages, das Ende dahinter. Sonst liefe die Färbung an einer Zuteilung vorbei,
- * die sehr wohl in den Zeitraum fällt. `null` = keine Abwesenheit.
+ * Rang innerhalb **eines** Tages, die neuesten zuerst (seit 23.10.2026): Von
+ * oben gelesen steht das Ende vor den Aufgaben dieses Tages, der Beginn
+ * dahinter. Sonst liefe die Färbung an einer Zuteilung vorbei, die sehr wohl in
+ * den Zeitraum fällt. Ein einzelner Tag hat keine Strecke; er steht wie vor
+ * der Umstellung über den Aufgaben seines Tages. `null` = keine Abwesenheit.
  */
 export function abwRang(rand: AbwRand | null): number {
   if (rand === null) return 0
-  return rand === 'ende' ? 1 : -1
+  return rand === 'start' ? 1 : -1
 }
 
 /** Eine Zeile, die sagen kann, ob über und unter ihr eine Abwesenheit läuft. */
@@ -40,8 +41,10 @@ export interface BandZeile {
 }
 
 /**
- * Färbt die Strecken zwischen Beginn und Ende: Jede Zeile bekommt gesagt, ob
- * ober- bzw. unterhalb ihres Punktes gerade eine Abwesenheit läuft.
+ * Färbt die Strecken zwischen Ende und Beginn: Jede Zeile bekommt gesagt, ob
+ * ober- bzw. unterhalb ihres Punktes gerade eine Abwesenheit läuft. Die Zeilen
+ * stehen wie in der Leiste, die neuesten zuerst — von oben gelesen öffnet das
+ * Ende eine Strecke, der Beginn schließt sie.
  *
  * Ein Durchlauf mit Zähler statt eines Vergleichs je Paar — so tragen auch
  * **überlappende** Zeiträume (zwei offene gleichzeitig) durchgehend, statt sich
@@ -49,7 +52,7 @@ export interface BandZeile {
  * Aufrufer haben sie gerade erst gebaut.
  *
  * Die Liste muss dafür **vollständig** sein: Wer erst beschneidet und dann
- * färbt, verliert den Beginn eines Zeitraums, der vor dem Ausschnitt liegt, und
+ * färbt, verliert das Ende eines Zeitraums, das über dem Ausschnitt liegt, und
  * mit ihm die Strecke.
  */
 export function markiereAbwesenheiten<T extends BandZeile>(
@@ -60,8 +63,8 @@ export function markiereAbwesenheiten<T extends BandZeile>(
   for (const zeile of zeilen) {
     const vorher = offen
     const rand = randVon(zeile)
-    if (rand === 'start') offen++
-    else if (rand === 'ende') offen--
+    if (rand === 'ende') offen++
+    else if (rand === 'start') offen--
     zeile.abwOben = vorher > 0
     zeile.abwUnten = offen > 0
   }

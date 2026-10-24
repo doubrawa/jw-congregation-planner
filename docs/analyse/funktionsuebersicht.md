@@ -166,7 +166,7 @@ Navigation auf einen gesperrten Screen landet im Programm.
 | 74a | Freigabe je Hilfsdienst: alle Personen mit Schalter, Zahl am Dienst | Einstellungen | Planer | `einstellungen/ServicePersonsSheet.tsx` |
 | 74b | S-89-Druckbogen der Woche, 6 je A4, Partner-Zettel schaltbar | Planen | Planer | `planen/S89Bogen.tsx`, `alleS89DerWoche`, `planen/print-s89.css` |
 | 75 | Feste Wachtturm-Rollen (Leiter, Vertreter) | Detail | Planer | `WT_ROLE_ORDER` |
-| 76 | Zeitleiste der Zuteilungen (Datum + Art, Vergangenes blasser) — dieselbe Leiste wie auf dem Start | Detail | Planer | `personen/PersonTimeline.tsx`, `person-timeline.ts`, `components/Zeitleiste.tsx` |
+| 76 | Zeitleiste der Zuteilungen (Datum + Art, die neuesten zuerst, Vergangenes blasser und höchstens acht Wochen zurück) | Detail | Planer | `personen/PersonTimeline.tsx`, `person-timeline.ts`, `components/Zeitleiste.tsx` |
 | 77 | Konto-Karte (Status App-Zugang, einladen) | Detail | Planer | `personen/KontoCard.tsx` |
 | 78 | Auto-Speichern (debounced), leere Neuanlagen fallen weg | Detail | Planer | `persist.ts`, `isNameless` |
 
