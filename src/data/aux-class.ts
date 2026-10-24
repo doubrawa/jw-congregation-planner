@@ -15,16 +15,26 @@
 
 import type { Meeting, PartItem, ProgramItem, SlotAssignment, Week } from './types'
 import { hatAuxKlasse, isSong, programmPlaetze, raeume, slotsOf } from './helpers'
-import { SCHUELER_BEREICHE } from '../../supabase/functions/_shared/freie-plaetze.ts'
+
+/**
+ * Bereiche der **Schulungsaufgaben** — dieselbe Menge macht einen Punkt zum
+ * Schülerteil (S-89, Zusätzliche Klasse). Vom 4. bis 25.10.2026 stand sie im
+ * geteilten Edge-Ordner, weil „Freie Plätze" Schulungsaufgaben aussparte; seit
+ * dort nur noch Hilfsdienste angeboten werden, fragt sie nur der Client.
+ */
+const SCHUELER_BEREICHE: ReadonlySet<string> = new Set([
+  'bibellesung',
+  'schulung',
+  'schulungPartner',
+  'schulungVortrag',
+])
 
 /**
  * Ist das der Bereich eines Schülerteils (S-89-Zettel, Zusätzliche Klasse)?
  *
  * Über die Slot-Bereiche und nicht über den Titel: Titel kommen in der Sprache
  * der Versammlung aus dem Arbeitsheft, die Bereiche sind kanonisch. Der Vortrag
- * eines Schülers (`schulungVortrag`) hat seit dem 4.10.2026 einen eigenen. Die
- * Menge steht im geteilten Edge-Ordner, weil auch die Edge Function
- * `substitute` sie braucht: Schulungsaufgaben bietet „Freie Plätze" nicht an.
+ * eines Schülers (`schulungVortrag`) hat seit dem 4.10.2026 einen eigenen.
  */
 export function istSchuelerBereich(bereichsKey: string | null | undefined): boolean {
   return bereichsKey != null && SCHUELER_BEREICHE.has(bereichsKey)

@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { buildDemoWeeks, DEMO_GROUPS, DEMO_PERSONS, DEMO_SERVICES } from '../../tests/testdaten/testdaten'
-import { buildAbsences } from './absence'
 import { bedarfJeBereich } from './bedarf'
 import { istArt } from './helpers'
-import { offenePlaetze } from './offene-plaetze'
 import { allePlaetze, platzMitZusage } from './plaetze'
-import { autoAssignMeeting, countOpenSlots, openSlotLabels, punktKey, rangfolgeFuer, sentKey, zuteilbarePlaetze } from './planning'
+import { autoAssignMeeting, countOpenSlots, openSlotLabels, rangfolgeFuer, zuteilbarePlaetze } from './planning'
 import { besetzung } from './saal'
 import type { MeetingKey, MeetingSlotSelection, PartItem, Week } from './types'
 import { schlussgebetVorOrt } from '../../supabase/functions/_shared/planung.ts'
@@ -107,23 +105,6 @@ describe('Niemand wird dafür eingeteilt', () => {
     // Das Anfangsgebet folgt dem Vorsitz, das Schlussgebet übernimmt der Redner oder wer vor Ort gebeten wird.
     expect(bedarfJeBereich(buildDemoWeeks()[0]!.we, DEMO_SERVICES).get('gebet')).toBeUndefined()
     expect(bedarfJeBereich(buildDemoWeeks()[0]!.mid, DEMO_SERVICES).get('gebet')).toBeGreaterThan(0)
-  })
-})
-
-describe('Es wird nicht als freier Platz angeboten', () => {
-  it('nach „Plan senden" bietet die App das Schlussgebet am Wochenende niemandem an', () => {
-    const weeks = ohneSchlussgebet('we')
-    const mid = ohneSchlussgebet('mid')
-    weeks[0]!.mid = mid[0]!.mid
-    const zeiten = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
-    // Gesendet ist der Plan, sobald irgendein Platz der Woche im Tagebuch steht.
-    const gesendet = { [sentKey(punktKey('2026-09-07', 'mid', 'x', 0), 'Irgendwer')]: '2026-09-01T10:00:00Z' }
-    const beter = DEMO_PERSONS.find((p) => p.priv.gebet && !p.female)!
-    const angebote = offenePlaetze(weeks, DEMO_SERVICES, gesendet, beter, zeiten, buildAbsences([], weeks, zeiten), new Date('2026-09-07T09:00:00Z'))
-    const iid = (tab: MeetingKey) => abschluss(weeks[0]![tab]).item.iid
-    const keys = angebote.map((a) => a.key)
-    expect(keys).not.toContain(punktKey('2026-09-07', 'we', iid('we'), 0))
-    expect(keys).toContain(punktKey('2026-09-07', 'mid', iid('mid'), 0))
   })
 })
 

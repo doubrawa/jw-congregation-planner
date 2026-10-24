@@ -1041,20 +1041,20 @@ export const KATALOG = [
   },
   {
     id: 's89-bibellesung-am-bereich',
-    datei: 'supabase/functions/_shared/freie-plaetze.ts',
+    datei: 'src/data/aux-class.ts',
     regel: 'Die Bibellesung wird am Bereich erkannt, nicht am deutschen Titel — sonst fehlt der S-89-Zettel in jeder anderen Sprache.',
     // Der Titel-Rückfall (`item.title.startsWith('Bibellesung')`) ist am
     // 25.9.2026 entfallen — er stand nur für Bestandswochen ohne Bereich, die
     // es seit dem Neuaufbau (T105) nicht mehr gibt. Seit dem 4.10.2026 fragen
-    // S-89 und Zusätzliche Klasse dieselbe Menge (`istSchuelerBereich`); sie
-    // steht seither im geteilten Edge-Ordner, weil auch „Freie Plätze" (Client
-    // und Server) sie fragt.
+    // S-89 und Zusätzliche Klasse dieselbe Menge (`istSchuelerBereich`); bis
+    // zum 25.10.2026 stand sie im geteilten Edge-Ordner, weil auch „Freie
+    // Plätze" (Client und Server) sie fragte.
     suchen: "  'bibellesung',\n  'schulung',\n",
     ersetzen: "  'schulung',\n",
   },
   {
     id: 's89-schuelervortrag',
-    datei: 'supabase/functions/_shared/freie-plaetze.ts',
+    datei: 'src/data/aux-class.ts',
     regel: 'Der Vortrag eines Schülers bleibt Schülerteil, obwohl er einen eigenen Bereich hat — Zusätzliche Klasse und S-89-Zettel.',
     suchen: "  'schulungVortrag',\n])",
     ersetzen: '])',
@@ -5583,40 +5583,30 @@ export const KATALOG = [
     suchen: '      if (istAbwesend(abwesend, me.id, wi, tab)) continue\n',
     ersetzen: '',
   },
+  // `frei-brueder-platz`, `frei-nicht-neben-eigenem`, `frei-kein-rednerplatz`
+  // und `frei-eigener-redner-nicht` gestrichen (25.10.2026): „Freie Plätze"
+  // bietet nur noch Hilfsdienste an (Betreiber: „aufgaben weist der planer zu");
+  // Brüder-, Programm- und Rednerplätze kommen gar nicht erst in Frage.
   {
-    id: 'frei-brueder-platz',
+    id: 'frei-nur-hilfsdienste',
     datei: 'src/data/offene-plaetze.ts',
-    regel: 'Einen Brüder-Platz bekommt keine Schwester angeboten.',
-    suchen: "        if (platz.art !== 'helper' && platz.slot.male && me.female) continue\n",
-    ersetzen: '',
-  },
-  {
-    id: 'frei-nicht-neben-eigenem',
-    datei: 'src/data/offene-plaetze.ts',
-    regel: 'Wer im Programmpunkt schon eingeteilt ist, bekommt den zweiten Platz darin nicht angeboten.',
-    suchen: "        if (platz.art === 'programm' && slotsOf(platz.item, platz.aux).some((s) => gehoertZu(s, me))) continue\n",
+    regel: 'Angeboten werden nur Hilfsdienste — Programmpunkte und den Ratgeber teilt der Planer zu.',
+    suchen: "        if (platz.art !== 'helper') continue\n",
     ersetzen: '',
   },
   {
     id: 'frei-reinigung-nicht',
-    datei: 'src/data/offene-plaetze.ts',
+    datei: 'supabase/functions/_shared/freie-plaetze.ts',
     regel: 'Die Reinigung (eine Gruppe, keine Person) wird nicht angeboten.',
-    suchen: "  if (platz.art === 'helper') return platz.svc.groups ? null : serviceQualKey(platz.svc.key)",
-    ersetzen: "  if (platz.art === 'helper') return serviceQualKey(platz.svc.key)",
+    suchen: '  return svc.groups ? null : `svc:${svc.key}`\n',
+    ersetzen: '  return `svc:${svc.key}`\n',
   },
   {
-    id: 'frei-kein-rednerplatz',
-    datei: 'supabase/functions/_shared/freie-plaetze.ts',
-    regel: 'Rednerplätze (Gastredner, eigener Redner, Kreisaufseher) werden nicht angeboten — wer redet, entscheidet der Planer.',
-    suchen: "  if (SKIP_ROLE.test(rolle) || rolle.split(' · ')[0] === EIGENER_REDNER) return null\n",
-    ersetzen: '',
-  },
-  {
-    id: 'frei-eigener-redner-nicht',
-    datei: 'supabase/functions/_shared/freie-plaetze.ts',
-    regel: 'Auch der eigene Redner (Rolle „Redner") ist ein Rednerplatz — wie `isSpeakerRole` im Client.',
-    suchen: " || rolle.split(' · ')[0] === EIGENER_REDNER",
-    ersetzen: '',
+    id: 'frei-reinigung-app',
+    datei: 'src/data/offene-plaetze.ts',
+    regel: 'Die App fragt die geteilte Regel — sonst böte sie die Reinigung an, die der Server abweist.',
+    suchen: '        const bereich = angebotsBereich(platz.svc)\n',
+    ersetzen: '        const bereich = `svc:${platz.svc.key}`\n',
   },
   {
     id: 'frei-nur-angebotenes',
@@ -5635,9 +5625,16 @@ export const KATALOG = [
   {
     id: 'fill-weiche',
     datei: 'supabase/functions/substitute/index.ts',
-    regel: 'Der Aufruf „fill" geht seinen eigenen Weg — Programmpunkte laufen nicht über die Hilfsdienst-Prüfung.',
+    regel: 'Der Aufruf „fill" geht seinen eigenen Weg — ein freier Platz braucht kein Ersatzgesuch.',
     suchen: "    if (payload?.action === 'fill') {\n",
     ersetzen: '    if (false) {\n',
+  },
+  {
+    id: 'fill-nur-hilfsdienste',
+    datei: 'supabase/functions/substitute/fuellen.ts',
+    regel: 'Der Server trägt nur in Hilfsdienste ein — Programmpunkte und den Ratgeber teilt der Planer zu (25.10.2026).',
+    suchen: "  if (teile.art !== 'helper') return json({ error: 'not-offered' }, 403)\n",
+    ersetzen: '',
   },
   {
     id: 'fill-nach-plan-senden',
@@ -5656,7 +5653,7 @@ export const KATALOG = [
   {
     id: 'fill-angebot',
     datei: 'supabase/functions/substitute/fuellen.ts',
-    regel: 'Was nicht angeboten wird (Schulung, Redner, Reinigung), trägt der Server nicht ein.',
+    regel: 'Was nicht angeboten wird (die Reinigung), trägt der Server nicht ein.',
     suchen: "  if (!fund.bereich) return json({ error: 'not-offered' }, 403)\n",
     ersetzen: '',
   },
@@ -5664,16 +5661,11 @@ export const KATALOG = [
     id: 'fill-bereich',
     datei: 'supabase/functions/substitute/fuellen.ts',
     regel: 'Der Server verlangt den Aufgabenbereich des Platzes.',
-    suchen: '!person.priv?.[fund.bereich] || ',
-    ersetzen: '',
+    suchen: ' || !person.priv?.[fund.bereich]) return',
+    ersetzen: ') return',
   },
-  {
-    id: 'fill-brueder',
-    datei: 'supabase/functions/substitute/fuellen.ts',
-    regel: 'Einen Brüder-Platz trägt der Server keiner Schwester ein.',
-    suchen: '(fund.nurBrueder && person.female)',
-    ersetzen: 'false',
-  },
+  // `fill-brueder` gestrichen (25.10.2026): Brüder-Plätze gibt es nur im
+  // Programm, und das übernimmt niemand mehr selbst.
   {
     id: 'fill-ausfall',
     datei: 'supabase/functions/substitute/fuellen.ts',
@@ -5703,26 +5695,21 @@ export const KATALOG = [
     suchen: '    `&updated_at=eq.${wert(stand)}&select=updated_at`\n',
     ersetzen: "    '&select=updated_at'\n",
   },
-  {
-    id: 'fill-klasse-nur-wenn-besteht',
-    datei: 'supabase/functions/substitute/fuellen.ts',
-    regel: 'Plätze der Zusätzlichen Klasse gibt es nur, solange sie besteht.',
-    suchen: "      if (teile.art === 'aux' && !meeting.auxRatgeber) return null\n",
-    ersetzen: '',
-  },
+  // `fill-klasse-nur-wenn-besteht` gestrichen (25.10.2026): Plätze der
+  // Zusätzlichen Klasse sind Programmpunkte — die weist der Server ab.
   {
     id: 'fill-platzzahl',
     datei: 'supabase/functions/substitute/fuellen.ts',
     regel: 'Ein Hilfsdienst-Platz jenseits der eingestellten Platzzahl wird nicht besetzt.',
-    suchen: '    if (!svc || teile.pos >= svc.count) return null\n',
-    ersetzen: '    if (!svc) return null\n',
+    suchen: '  if (!svc || teile.pos >= svc.count) return null\n',
+    ersetzen: '  if (!svc) return null\n',
   },
   {
     id: 'fill-reinigung',
     datei: 'supabase/functions/substitute/fuellen.ts',
-    regel: 'Die Reinigung trägt der Server niemandem ein.',
-    suchen: '      bereich: svc.groups ? null : `svc:${svc.key}`,\n',
-    ersetzen: '      bereich: `svc:${svc.key}`,\n',
+    regel: 'Die Reinigung trägt der Server niemandem ein — er fragt dieselbe Regel wie die App.',
+    suchen: '    bereich: angebotsBereich(svc),\n',
+    ersetzen: '    bereich: `svc:${svc.key}`,\n',
   },
   {
     id: 'vortrag-schaetze-beschriftung',
@@ -6029,20 +6016,8 @@ export const KATALOG = [
     suchen: "    if (platz.art === 'programm' && schlussgebetVorOrt(meeting.sections, platz.section, platz.slot)) continue\n",
     ersetzen: '',
   },
-  {
-    id: 'schlussgebet-kein-angebot',
-    datei: 'supabase/functions/_shared/freie-plaetze.ts',
-    regel: 'Das Schlussgebet am Wochenende wird nicht als freier Platz angeboten (T133).',
-    suchen: 'vortragDesVorsitzenden(abschnitt, slot) || schlussgebetVorOrt(abschnitte, abschnitt, slot)',
-    ersetzen: 'vortragDesVorsitzenden(abschnitt, slot)',
-  },
-  {
-    id: 'schlussgebet-angebot-app',
-    datei: 'src/data/offene-plaetze.ts',
-    regel: 'Die App fragt das Angebot mit allen Abschnitten der Zusammenkunft — sonst böte sie das Schlussgebet am Wochenende an (T133).',
-    suchen: '  return programmAngebot(platz.slot, platz.section, meeting.sections)\n',
-    ersetzen: '  return programmAngebot(platz.slot, platz.section)\n',
-  },
+  // `schlussgebet-kein-angebot` und `schlussgebet-angebot-app` gestrichen
+  // (25.10.2026): „Freie Plätze" bietet kein Gebet mehr an — nur Hilfsdienste.
   {
     id: 'schlussgebet-anzeige-programm',
     datei: 'src/programm/ZusammenkunftAnsicht.tsx',
@@ -9167,13 +9142,8 @@ export const KATALOG = [
     suchen: '    const eigener = lang && Object.hasOwn(tabelle, lang) ? tabelle[lang] : undefined\n',
     ersetzen: "    const eigener = tabelle[lang ?? '']\n",
   },
-  {
-    id: 'fuellen-nicht-im-selben-punkt',
-    datei: 'supabase/functions/substitute/fuellen.ts',
-    regel: 'Wer im selben Programmpunkt schon steht, übernimmt den zweiten Platz nicht — auch nicht an der App vorbei.',
-    suchen: '  if (fund.nebenan.some((s) => (s?.pid ? s.pid === person.id : s?.name === name))) {\n',
-    ersetzen: '  if (false) {\n',
-  },
+  // `fuellen-nicht-im-selben-punkt` gestrichen (25.10.2026): Programmpunkte
+  // übernimmt niemand mehr selbst.
   /* ---- Abmelden und Kontowechsel am geteilten Gerät (Review, 16.10.2026) ---- */
   {
     id: 'abmelden-leert-den-bestand',
@@ -9606,27 +9576,8 @@ export const KATALOG = [
     suchen: "      if (exclude?.kind === 'ratgeber') continue\n",
     ersetzen: '',
   },
-  {
-    id: 'angebot-vortrag-des-vorsitzenden',
-    datei: 'supabase/functions/_shared/freie-plaetze.ts',
-    regel: 'Der Vortrag des Vorsitzenden wird nicht als freier Platz angeboten — er gehört dem, der den Vorsitz hat.',
-    suchen: 'vortragDesVorsitzenden(abschnitt, slot) || schlussgebetVorOrt(abschnitte, abschnitt, slot)',
-    ersetzen: 'schlussgebetVorOrt(abschnitte, abschnitt, slot)',
-  },
-  {
-    id: 'angebot-vortrag-des-vorsitzenden-app',
-    datei: 'src/data/offene-plaetze.ts',
-    regel: 'Die App fragt das Angebot eines Programmpunkts mit seinem Abschnitt — sonst böte sie den Vortrag des Vorsitzenden an.',
-    suchen: '  return programmAngebot(platz.slot, platz.section, meeting.sections)\n',
-    ersetzen: '  return programmAngebot(platz.slot)\n',
-  },
-  {
-    id: 'angebot-vortrag-des-vorsitzenden-server',
-    datei: 'supabase/functions/substitute/fuellen.ts',
-    regel: 'Der Server prüft das Angebot eines Programmpunkts mit seinem Abschnitt — sonst nähme er den Vortrag des Vorsitzenden an.',
-    suchen: '        bereich: programmAngebot(slot, section, meeting.sections ?? []),\n',
-    ersetzen: '        bereich: programmAngebot(slot),\n',
-  },
+  // `angebot-vortrag-des-vorsitzenden` (-app, -server) gestrichen (25.10.2026):
+  // „Freie Plätze" bietet keinen Programmpunkt mehr an, auch diesen nicht.
   {
     id: 'zuteilung-wt-leiter-einmal-offen',
     datei: 'src/data/planning.ts',

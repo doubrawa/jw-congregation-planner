@@ -22,9 +22,10 @@
 //     Glocken aller Angepingten. Auslösen darf, wer auch suchen darf.
 //
 //   { action: 'fill', taskKey, heute? }  (seit 4.10.2026, `fuellen.ts`)
-//     Einen freien Platz selbst übernehmen — Programmpunkt, Ratgeber oder
-//     Hilfsdienst einer Woche, deren Plan gesendet ist. Trägt den Aufrufer ein
-//     und setzt seine Zusage; keine Mitteilung (Betreiber). `heute` ist der
+//     Einen freien Hilfsdienst-Platz selbst übernehmen, in einer Woche, deren
+//     Plan gesendet ist — Programmpunkte und den Ratgeber teilt seit dem
+//     25.10.2026 nur der Planer zu (Betreiber). Trägt den Aufrufer ein und
+//     setzt seine Zusage; keine Mitteilung (Betreiber). `heute` ist der
 //     Kalendertag des Geräts — was davor liegt, ist vorbei.
 //
 // Alle vier Aktionen weisen eine **ausgefallene** Zusammenkunft ab (T30, 409
@@ -300,7 +301,7 @@ Deno.serve(async (req: Request) => {
       heute?: string
     } | null
     // Einen freien Platz selbst übernehmen (4.10.2026) — ein eigener Weg mit
-    // eigenen Regeln für jede Platzsorte, nicht nur Hilfsdienste (`fuellen.ts`).
+    // eigenen Regeln (`fuellen.ts`): kein Ersatzgesuch, aber ein gesendeter Plan.
     // „Heute" ist der Tag des Geräts, soweit glaubhaft: In UTC wäre zwischen
     // Mitternacht und 02:00 noch der Vortag, und eine Zusammenkunft vom Abend
     // ließe sich noch übernehmen (5.10.2026).

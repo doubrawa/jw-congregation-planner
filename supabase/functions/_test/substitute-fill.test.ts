@@ -1,6 +1,7 @@
 /*
  * Die Edge Function `substitute`, Aufruf 'fill' (`fuellen.ts`): einen freien
- * Platz selbst übernehmen (4.10.2026).
+ * Platz selbst übernehmen (4.10.2026) — seit dem 25.10.2026 nur einen
+ * Hilfsdienst (Betreiber: „aufgaben weist der planer zu").
  *
  * Die Function schreibt mit der Service-Role Wochen und Zusagen — an RLS
  * vorbei. Geprüft wird deshalb vor allem, was **nicht** gehen darf, und dass
@@ -11,7 +12,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Rest } from '../_shared/rest.ts'
 import { helferKey, punktKey, ratgeberKey } from '../_shared/aufgaben-schluessel.ts'
-import type { PartItem, Week } from '../_shared/zuteilungen.ts'
+import type { HelperEntry, Week } from '../_shared/zuteilungen.ts'
 import { platzFuellen } from '../substitute/fuellen.ts'
 import { filterWert, likeMuster, passtAufMuster } from './attrappe.ts'
 
@@ -20,21 +21,17 @@ const MONTAG = '2026-09-07' // Dienstag 8.9., Sonntag 13.9.
 const HEUTE = '2026-09-07'
 
 const U_ICH = 'user-ich'
-const U_SCHWESTER = 'user-schwester'
 const U_OHNE = 'user-ohne-person'
 const U_FREMD = 'user-fremd'
 
 const MEMBERS = [
   { user_id: U_ICH, person_id: 'p-ich', congregation_id: CONG },
-  { user_id: U_SCHWESTER, person_id: 'p-schwester', congregation_id: CONG },
   { user_id: U_OHNE, person_id: null, congregation_id: CONG },
 ]
 
+// Jeder Bereich der Probe-Woche — auch die der Programmpunkte, die trotzdem niemand selbst übernimmt.
 const PRIV: Record<string, boolean> = { gebet: true, vortrag: true, bibellesung: true, ratgeber: true, 'svc:mik': true, 'svc:rein': true }
-const PERSONS = [
-  { id: 'p-ich', fn: 'Ich', ln: 'Selbst', priv: PRIV, female: false },
-  { id: 'p-schwester', fn: 'Eine', ln: 'Schwester', priv: PRIV, female: true },
-]
+const PERSONS = [{ id: 'p-ich', fn: 'Ich', ln: 'Selbst', priv: PRIV }]
 
 const SERVICES = [
   { key: 'mik', name: 'Mikrofone', count: 2, groups: false },
@@ -173,23 +170,23 @@ const fuellen = (taskKey: string, wer = U_ICH, heute = HEUTE) => platzFuellen(re
 const antwort = async (res: Response) => ({ status: res.status, body: await res.json() })
 const geschrieben = () => aufrufe.filter((a) => a.method !== 'GET')
 
-/** Name im Gebet-Platz, wie er gespeichert wurde. */
-const gespeichert = () => woche.mid?.sections?.[0]?.items?.[0] as { names: { name: string; pid?: string }[] }
+/** Die Mikrofon-Plätze am Dienstag, wie sie gespeichert wurden — der zweite ist frei. */
+const mikrofone = (): HelperEntry[] => woche.mid?.helpers?.mik ?? []
 
 /* ---- Fälle --------------------------------------------------------------- */
 
 describe('fill: der Weg, der gehen soll', () => {
-  it('trägt in den Programmpunkt ein — Name und Person-Id — und setzt die Zusage', async () => {
+  it('trägt in den Hilfsdienst ein — Name und Person-Id — und setzt die Zusage', async () => {
     const vorher = stand
     // Mit beiden Ständen: Der Client übernimmt den neuen, wenn der alte seiner
     // war — sonst meldete seine nächste Änderung derselben Woche einen Konflikt.
-    expect(await antwort(await fuellen(K_GEBET))).toEqual({
+    expect(await antwort(await fuellen(K_MIK))).toEqual({
       status: 200,
       body: { ok: true, filled: true, woche: MONTAG, vorher, stand: `${vorher}+1` },
     })
-    expect(gespeichert().names[0]).toMatchObject({ name: 'Ich Selbst', pid: 'p-ich', rolle: 'Gebet', bereichsKey: 'gebet' })
+    expect(mikrofone()).toEqual([{ name: 'Andere Person', pid: 'p-x' }, { name: 'Ich Selbst', pid: 'p-ich' }])
     const zusage = aufrufe.find((a) => a.method === 'POST' && a.path === 'confirmations')
-    expect(zusage?.body).toEqual([{ congregation_id: CONG, user_id: U_ICH, task_key: K_GEBET, status: 'bestätigt' }])
+    expect(zusage?.body).toEqual([{ congregation_id: CONG, user_id: U_ICH, task_key: K_MIK, status: 'bestätigt' }])
     // Erst die alte Zeile weg (eine Absage dessen, der ihn vorher hatte), dann die neue.
     const loeschen = aufrufe.findIndex((a) => a.method === 'DELETE' && a.path.startsWith('confirmations'))
     expect(loeschen).toBeGreaterThanOrEqual(0)
@@ -197,7 +194,7 @@ describe('fill: der Weg, der gehen soll', () => {
   })
 
   it('schreibt nur mit dem gelesenen Stand — Vergleiche-und-Tausche auf updated_at', async () => {
-    await fuellen(K_GEBET)
+    await fuellen(K_MIK)
     const patch = aufrufe.find((a) => a.method === 'PATCH')
     expect(filterWert(patch?.path ?? '', 'updated_at')).toBe('2026-09-01T10:00:00.000000+00:00')
     expect(filterWert(patch?.path ?? '', 'congregation_id')).toBe(CONG)
@@ -209,21 +206,15 @@ describe('fill: der Weg, der gehen soll', () => {
     expect(woche.mid?.helpers?.mik).toEqual([{ name: '' }, { name: 'Ich Selbst', pid: 'p-ich' }])
   })
 
-  it('den Ratgeber der Zusätzlichen Klasse', async () => {
-    woche.mid!.auxRatgeber = { name: '', rolle: 'Ratgeber', bereichsKey: 'ratgeber', male: true }
-    expect((await fuellen(K_RATGEBER)).status).toBe(200)
-    expect(woche.mid?.auxRatgeber).toMatchObject({ name: 'Ich Selbst', pid: 'p-ich', bereichsKey: 'ratgeber' })
-  })
-
   it('schickt keine Mitteilung (Betreiber, 4.10.2026)', async () => {
-    await fuellen(K_GEBET)
+    await fuellen(K_MIK)
     expect(aufrufe.some((a) => a.path.startsWith('notifications'))).toBe(false)
   })
 
   it('ein Aussetzer beim ersten Schreiben verwirft den Tipp nicht — der zweite Versuch trägt dieselbe Bedingung', async () => {
     aussetzer = 1
-    expect((await fuellen(K_GEBET)).status).toBe(200)
-    expect(gespeichert().names[0]?.name).toBe('Ich Selbst')
+    expect((await fuellen(K_MIK)).status).toBe(200)
+    expect(mikrofone()[1]?.name).toBe('Ich Selbst')
     const patches = aufrufe.filter((a) => a.method === 'PATCH')
     expect(patches).toHaveLength(2)
     expect(patches.every((p) => filterWert(p.path, 'updated_at') === '2026-09-01T10:00:00.000000+00:00')).toBe(true)
@@ -241,81 +232,56 @@ describe('fill: was abgewiesen wird — und dann nichts schreibt', () => {
   })
 
   it('kein Mitglied → 403 forbidden', async () => {
-    expect(await antwort(await fuellen(K_GEBET, U_FREMD))).toEqual({ status: 403, body: { error: 'forbidden' } })
+    expect(await antwort(await fuellen(K_MIK, U_FREMD))).toEqual({ status: 403, body: { error: 'forbidden' } })
     expect(geschrieben()).toEqual([])
   })
 
   it('ein Konto ohne Person → 403', async () => {
-    expect(await antwort(await fuellen(K_GEBET, U_OHNE))).toEqual({ status: 403, body: { error: 'not-qualified' } })
+    expect(await antwort(await fuellen(K_MIK, U_OHNE))).toEqual({ status: 403, body: { error: 'not-qualified' } })
     expect(geschrieben()).toEqual([])
   })
 
-  it('ohne den Aufgabenbereich → 403', async () => {
-    PERSONS[0]!.priv = { ...PRIV, gebet: false }
+  it('ohne den Bereich des Dienstes → 403', async () => {
+    PERSONS[0]!.priv = { ...PRIV, 'svc:mik': false }
     try {
-      expect((await fuellen(K_GEBET)).status).toBe(403)
+      expect(await antwort(await fuellen(K_MIK))).toEqual({ status: 403, body: { error: 'not-qualified' } })
       expect(geschrieben()).toEqual([])
     } finally {
       PERSONS[0]!.priv = PRIV
     }
   })
 
-  it('einen Brüder-Platz keiner Schwester → 403', async () => {
-    expect(await antwort(await fuellen(K_VORTRAG, U_SCHWESTER))).toEqual({ status: 403, body: { error: 'not-qualified' } })
-    expect(geschrieben()).toEqual([])
-  })
-
   it.each([
+    ['ein Programmpunkt', K_GEBET],
+    ['ein Brüder-Platz', K_VORTRAG],
     ['eine Schulungsaufgabe', K_BIBELLESUNG],
-    ['den Rednerplatz', K_REDNER],
-    ['die Reinigung', K_REIN],
-  ])('%s wird nicht angeboten → 403 not-offered', async (_name, key) => {
+    ['ein Platz der Zusätzlichen Klasse', punktKey(MONTAG, 'mid', 'k3', 0, true)],
+    ['der Rednerplatz', K_REDNER],
+    ['der Ratgeber der Zusätzlichen Klasse', K_RATGEBER],
+  ])('%s: teilt der Planer zu → 403 not-offered (25.10.2026)', async (_name, key) => {
+    // Mit jedem Bereich dazu, und der Platz ist leer — bis dahin trug die
+    // Function hier ein. Der Ratgeber auch dann nicht, wenn es die Klasse gibt.
+    woche.mid!.auxRatgeber = { name: '', rolle: 'Ratgeber', bereichsKey: 'ratgeber', male: true }
     expect(await antwort(await fuellen(key))).toEqual({ status: 403, body: { error: 'not-offered' } })
     expect(geschrieben()).toEqual([])
   })
 
-  it('den Vortrag des Vorsitzenden → 403 not-offered — der Vorsitz in der Eröffnung bleibt frei (16.10.2026)', async () => {
-    // Arbeitsheft ab Januar 2027: ein Platz „Vorsitz" unter „Uns im Dienst
-    // verbessern". Er gehört dem Vorsitzenden; bis dahin übernahm ihn, wer den
-    // Vorsitz kann — als zweiter Vorsitzender.
-    const eroeffnung = woche.mid!.sections![0]!.items![0] as PartItem
-    eroeffnung.names!.push({ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' })
-    woche.mid!.sections!.push({ label: 'UNS IM DIENST VERBESSERN', kind: 'dienst', items: [
-      { iid: 'k5', title: 'Platzhalter-Dienst', names: [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' }] },
-    ] })
-    PERSONS[0]!.priv = { ...PRIV, vorsitzMid: true }
-    try {
-      expect(await antwort(await fuellen(punktKey(MONTAG, 'mid', 'k5', 0)))).toEqual({ status: 403, body: { error: 'not-offered' } })
-      expect(geschrieben()).toEqual([])
-      expect((await fuellen(punktKey(MONTAG, 'mid', 'k1', 1))).status).toBe(200)
-    } finally {
-      PERSONS[0]!.priv = PRIV
-    }
+  it('die Reinigung wird nicht angeboten → 403 not-offered', async () => {
+    expect(await antwort(await fuellen(K_REIN))).toEqual({ status: 403, body: { error: 'not-offered' } })
+    expect(geschrieben()).toEqual([])
   })
 
   it('vor „Plan senden" → 409 — ein gesendeter Treffpunkt zählt nicht', async () => {
     versand = []
-    expect(await antwort(await fuellen(K_GEBET))).toEqual({ status: 409, body: { error: 'not-published' } })
+    expect(await antwort(await fuellen(K_MIK))).toEqual({ status: 409, body: { error: 'not-published' } })
     versand = [`fs|${MONTAG}|i1`]
-    expect((await fuellen(K_GEBET)).status).toBe(409)
-    expect(geschrieben()).toEqual([])
-  })
-
-  it.each([
-    ['über die Person-Id', { name: 'Ich Selbst', pid: 'p-ich' }],
-    ['über den Namen, wo der Platz keine Id trägt', { name: 'Ich Selbst' }],
-  ])('wer im selben Programmpunkt schon steht, übernimmt den zweiten Platz nicht (%s) → 403', async (_wie, eigener) => {
-    // So bietet es auch die App nicht an (`offenePlaetze`): der Leiter des
-    // Studiums, und der Leser fehlt. Bis zum 16.10.2026 nahm der Server es an.
-    const punkt = woche.mid!.sections![0]!.items![0] as PartItem
-    punkt.names = [{ ...eigener, rolle: 'Gebet', bereichsKey: 'gebet' }, { name: '', bereichsKey: 'gebet' }]
-    expect(await antwort(await fuellen(punktKey(MONTAG, 'mid', 'k1', 1)))).toEqual({ status: 403, body: { error: 'not-offered' } })
+    expect((await fuellen(K_MIK)).status).toBe(409)
     expect(geschrieben()).toEqual([])
   })
 
   it('ein schon besetzter Platz → 409 slot-taken', async () => {
-    gespeichert().names[0] = { name: 'Andere Person', pid: 'p-x' }
-    expect(await antwort(await fuellen(K_GEBET))).toEqual({ status: 409, body: { error: 'slot-taken' } })
+    woche.mid!.helpers!.mik = [{ name: 'Andere Person', pid: 'p-x' }, { name: 'Noch Jemand', pid: 'p-y' }]
+    expect(await antwort(await fuellen(K_MIK))).toEqual({ status: 409, body: { error: 'slot-taken' } })
     expect(geschrieben()).toEqual([])
   })
 
@@ -323,7 +289,7 @@ describe('fill: was abgewiesen wird — und dann nichts schreibt', () => {
     konkurrent = () => {
       stand = '2026-09-07T08:00:00.000000+00:00' // ein Planer hat gespeichert
     }
-    expect(await antwort(await fuellen(K_GEBET))).toEqual({ status: 409, body: { error: 'slot-taken' } })
+    expect(await antwort(await fuellen(K_MIK))).toEqual({ status: 409, body: { error: 'slot-taken' } })
     expect(aufrufe.some((a) => a.path.startsWith('confirmations'))).toBe(false)
   })
 
@@ -334,39 +300,37 @@ describe('fill: was abgewiesen wird — und dann nichts schreibt', () => {
     aussetzer = 1
     zwischendurch = () => {
       const fremd = frischeWoche()
-      ;(fremd.mid!.sections![0]!.items![0] as { names: { name: string }[] }).names[0] = { name: 'Andere Person' }
+      fremd.mid!.helpers!.mik = [{ name: 'Andere Person', pid: 'p-x' }, { name: 'Noch Jemand' }]
       woche = fremd
       stand = '2026-09-07T08:00:00.000000+00:00'
     }
-    expect(await antwort(await fuellen(K_GEBET))).toEqual({ status: 409, body: { error: 'slot-taken' } })
-    expect(gespeichert().names[0]?.name).toBe('Andere Person')
+    expect(await antwort(await fuellen(K_MIK))).toEqual({ status: 409, body: { error: 'slot-taken' } })
+    expect(mikrofone()[1]?.name).toBe('Noch Jemand')
     expect(aufrufe.some((a) => a.path.startsWith('confirmations'))).toBe(false)
   })
 
   it('eine ausgefallene Zusammenkunft → 409', async () => {
     woche.dev = { mid: { cancelled: true } }
-    expect(await antwort(await fuellen(K_GEBET))).toEqual({ status: 409, body: { error: 'meeting-cancelled' } })
+    expect(await antwort(await fuellen(K_MIK))).toEqual({ status: 409, body: { error: 'meeting-cancelled' } })
     expect(geschrieben()).toEqual([])
   })
 
   it('eine vergangene Zusammenkunft → 409 — am Tag selbst geht es noch', async () => {
-    expect(await antwort(await fuellen(K_GEBET, U_ICH, '2026-09-09'))).toEqual({ status: 409, body: { error: 'past' } })
+    expect(await antwort(await fuellen(K_MIK, U_ICH, '2026-09-09'))).toEqual({ status: 409, body: { error: 'past' } })
     expect(geschrieben()).toEqual([])
-    expect((await fuellen(K_GEBET, U_ICH, '2026-09-08')).status).toBe(200)
+    expect((await fuellen(K_MIK, U_ICH, '2026-09-08')).status).toBe(200)
   })
 
   it('an dem Tag abwesend → 409', async () => {
     abwesend = [{ person_id: 'p-ich', from_date: '2026-09-08', to_date: '2026-09-08' }]
-    expect(await antwort(await fuellen(K_GEBET))).toEqual({ status: 409, body: { error: 'absent' } })
+    expect(await antwort(await fuellen(K_MIK))).toEqual({ status: 409, body: { error: 'absent' } })
     expect(geschrieben()).toEqual([])
   })
 
   it.each([
     ['ein Hilfsdienst-Platz jenseits der Platzzahl', helferKey(MONTAG, 'mid', 'mik', 2)],
-    ['ein Punkt, den es nicht gibt', punktKey(MONTAG, 'mid', 'weg', 0)],
-    ['eine Woche, die es nicht gibt', punktKey('2027-01-04', 'mid', 'k1', 0)],
-    ['ein Platz der Zusätzlichen Klasse, wenn es keine gibt', punktKey(MONTAG, 'mid', 'k3', 0, true)],
-    ['ein Ratgeber ohne Zusätzliche Klasse', K_RATGEBER],
+    ['ein Dienst, den es nicht gibt', helferKey(MONTAG, 'mid', 'weg', 0)],
+    ['eine Woche, die es nicht gibt', helferKey('2027-01-04', 'mid', 'mik', 1)],
   ])('%s → 404', async (_name, key) => {
     expect((await fuellen(key)).status).toBe(404)
     expect(geschrieben()).toEqual([])

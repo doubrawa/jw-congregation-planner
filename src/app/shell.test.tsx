@@ -301,7 +301,7 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
 
   it('an „Freie Plätze" steht, wie viel man übernehmen kann — Ersatzgesuche und freie Plätze zusammen (T134)', () => {
     const gesuch = { key: '2026-09-07|mid|helper|mik|0', svc: 'mik', title: 'Mikrofone', date: '', declinedBy: 'Bernd Brand', schonHeute: [] }
-    const frei = { key: '2026-09-07|mid|part|k1|0', title: '', rolle: 'Gebet', date: '', at: null, schonHeute: [] }
+    const frei = { key: '2026-09-07|mid|helper|mik|1', title: '', rolle: 'Mikrofone', date: '', at: null, schonHeute: [] }
     const eintrag = (c: HTMLElement) =>
       [...c.querySelectorAll(`${LEISTE} .menue-eintrag`)].find((b) => b.querySelector('.menue-eintrag-text')?.textContent === t.freiePlaetzeTitle)!
     const { container } = zeige({ substituteReqs: [gesuch], offenePlaetze: [frei, { ...frei, key: 'k2' }] })

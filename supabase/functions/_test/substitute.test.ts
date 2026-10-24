@@ -320,10 +320,10 @@ describe('substitute: Authentifizierung', () => {
 })
 
 describe('substitute: der Aufruf „fill" hat seinen eigenen Weg (4.10.2026)', () => {
-  it('ein Programmpunkt-Schlüssel kommt dort an — und ein Fremder wird abgewiesen, ohne zu schreiben', async () => {
-    // Über den Weg der drei Hilfsdienst-Aufrufe endete derselbe Schlüssel mit
-    // 400 (siehe unten). Ein 403 heißt: `fuellen.ts` hat ihn bekommen.
-    const res = await call({ action: 'fill', taskKey: `${WI}|mid|part|k1|0` }, { auth: U_FOREIGN })
+  it('der Schlüssel kommt dort an — und ein Fremder wird abgewiesen, ohne zu schreiben', async () => {
+    // Über den Weg der drei Einspring-Aufrufe endete derselbe Aufruf mit 400:
+    // Die Aktion kennen sie nicht. Ein 403 heißt: `fuellen.ts` hat ihn bekommen.
+    const res = await call({ action: 'fill', taskKey: `${WI}|mid|helper|${SVC}|1` }, { auth: U_FOREIGN })
     expect(res.status).toBe(403)
     await expect(res.json()).resolves.toEqual({ error: 'forbidden' })
     expect(writes).toEqual([])

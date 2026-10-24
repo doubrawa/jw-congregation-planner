@@ -8605,6 +8605,38 @@ sind die Probe-Konten der Testversammlung mit Kennwort (Werkzeug, nicht App).
 - Das Feld E-Mail der Person ganz streichen (weniger Daten) — dann ginge kein
   Link mehr per Mail, auch keine Einladung.
 
+## Aufgenommen am 25. Oktober 2026 (T142)
+
+### T142 · Freie Plätze nur für Hilfsdienste 🔧 ✅ umgesetzt (25. Oktober 2026)
+
+„freie plätze dürfen nur hilfsdienste betreffen. aufgaben weist der planer zu"
+(Betreiber, 25. Oktober).
+
+Seit dem 4. Oktober bot „Freie Plätze" auch leere **Programmpunkte** und den
+**Ratgeber** der Zusätzlichen Klasse an (Zuschnitt damals: „Hilfsdienste und
+Programmpunkte") — ohne Redner- und Schulungsplätze, den Vortrag des
+Vorsitzenden und das Schlussgebet am Wochenende. Jetzt nur noch Hilfsdienste,
+ohne die Reinigung:
+
+- **App** (`offenePlaetze`): nur Plätze mit `art: 'helper'`.
+- **Server** (`substitute`, Aufruf `fill`): Ein Schlüssel, der kein Hilfsdienst
+  ist, endet mit 403 `not-offered`, bevor die Function etwas liest — auch an der
+  App vorbei.
+- **Eine Regel für beide:** `angebotsBereich` in `_shared/freie-plaetze.ts` (der
+  Bereich des Dienstes; die Reinigung hat keinen). Entfallen sind
+  `programmAngebot` und `vortragDesVorsitzenden`; `SCHUELER_BEREICHE` steht
+  wieder in `aux-class.ts` (S-89, Zusätzliche Klasse).
+- **Einspringen** (Ersatz nach einer Absage) galt schon immer nur für
+  Hilfsdienste — unverändert.
+- **Nicht angefasst:** Programmpunkte, die seit dem 4. Oktober jemand selbst
+  übernommen hat, bleiben eingetragen.
+- Handbuch für Verkündiger, „Freie Plätze übernehmen": nennt die Regel. Das
+  Bild dort zeigte schon nur Ordner.
+
+Ausrollen: erst die Function `substitute`, dann das Frontend. Eine ältere App
+bietet Programmpunkte noch an, bis sie die neue Fassung lädt; die Function weist
+sie ab, und die App lädt nach.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -8632,7 +8664,7 @@ sind die Probe-Konten der Testversammlung mit Kennwort (Werkzeug, nicht App).
 
 ## Fortschritt
 
-Stand 24. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 25. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -8642,9 +8674,9 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
-21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑
+21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑
 
-**140 der 141 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+**141 der 142 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |
@@ -9175,6 +9207,9 @@ Angebot), das Frontend mit `40a36f7a` gepusht.
 
 Am selben Abend aufgenommen und beantwortet: **T141** — ein Konto kommt ganz
 ohne E-Mail aus, schon heute (Zettel mit QR-Code und Code; siehe T141).
+
+Am 25. Oktober aufgenommen und umgesetzt: **T142** — „Freie Plätze" bietet nur
+noch Hilfsdienste an; Programmpunkte und den Ratgeber teilt der Planer zu.
 
 Am 19. Oktober in die Tabelle aufgenommen: `sprache-fehlt` und
 `auth.sessions` (bis dahin nur in einer Commit-Nachricht, `42dff943`, und bei

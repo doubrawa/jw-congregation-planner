@@ -3,7 +3,7 @@
 // =============================================================================
 //   { action: 'fill', taskKey, heute? }
 //
-// Unter „Meine Aufgaben" bietet die App unbesetzte Plätze an, für die der
+// Unter „Freie Plätze" bietet die App unbesetzte Hilfsdienste an, für die der
 // Leser den Aufgabenbereich hat (`src/data/offene-plaetze.ts`). Ein Tipp trägt
 // ihn ein — **direkt**, ohne Rückfrage beim Planer (Betreiber, 4.10.2026),
 // und mit Zusage, wie beim Einspringen.
@@ -13,9 +13,10 @@
 // nach der die App anbietet, steht hier noch einmal — und was hier abgewiesen
 // wird, schreibt nichts.
 //
-//  - Mitglied, mit eigener Person, und für den Bereich freigegeben (ein
-//    Brüder-Platz: ein Bruder);
-//  - der Platz ist leer und wird überhaupt angeboten (`programmAngebot`, keine
+//  - der Platz ist ein **Hilfsdienst** (Betreiber, 25.10.2026: „aufgaben weist
+//    der planer zu") — bis dahin auch Programmpunkte und der Ratgeber;
+//  - Mitglied, mit eigener Person, und für den Dienst freigegeben;
+//  - der Platz ist leer und wird überhaupt angeboten (`angebotsBereich`, keine
 //    Reinigung);
 //  - der Plan der Woche ist gesendet, die Zusammenkunft fällt nicht aus, liegt
 //    nicht zurück, und die Person ist an dem Tag nicht abwesend.
@@ -29,7 +30,7 @@
 import { json, type Rest, wert } from '../_shared/rest.ts'
 import { wocheSchreiben } from '../_shared/woche-schreiben.ts'
 import { schluesselTeile, type SchluesselTeile } from '../_shared/aufgaben-schluessel.ts'
-import { programmAngebot } from '../_shared/freie-plaetze.ts'
+import { angebotsBereich } from '../_shared/freie-plaetze.ts'
 import { istAusgefallenFuer, personDisplayName, versatzMitAbweichung, zeitenAus, type ZeitenRow } from '../_shared/planung.ts'
 import type { Meeting, ServiceRow, Slot, Week } from '../_shared/zuteilungen.ts'
 
@@ -38,7 +39,6 @@ interface Person {
   fn: string
   ln: string
   priv: Record<string, boolean> | null
-  female?: boolean
 }
 
 interface Absence {
@@ -52,73 +52,30 @@ interface Fund {
   setzen: (neu: { name: string; pid: string }) => void
   /** Aufgabenbereich, unter dem er angeboten wird — `null`: gar nicht. */
   bereich: string | null
-  nurBrueder: boolean
-  /** Die Plätze desselben Programmpunkts im selben Raum — leer bei Ratgeber und Hilfsdienst. */
-  nebenan: readonly (Slot | null | undefined)[]
 }
 
-type Zusammenkunft = Extract<SchluesselTeile, { tab: 'mid' | 'we' }>
+type Hilfsdienst = Extract<SchluesselTeile, { art: 'helper' }>
 
 /**
- * Den Platz zu einem Schlüssel in der gelesenen Woche finden — `null`, wenn es
- * ihn nicht gibt. Punkt über seine Kennung (wie `punktKey`), Hilfsdienst nur
- * bis zur eingestellten Platzzahl (wie `allePlaetze` im Client).
+ * Den Hilfsdienst-Platz zu einem Schlüssel in der gelesenen Woche finden —
+ * `null`, wenn es ihn nicht gibt: nur bis zur eingestellten Platzzahl (wie
+ * `allePlaetze` im Client).
  */
-function platzFinden(meeting: Meeting, teile: Zusammenkunft, services: ServiceRow[]): Fund | null {
-  if (teile.art === 'ratgeber') {
-    const slot = meeting.auxRatgeber
-    if (!slot) return null // keine Zusätzliche Klasse, kein Ratgeber
-    return {
-      slot,
-      setzen: (neu) => {
-        meeting.auxRatgeber = { ...slot, ...neu }
-      },
-      bereich: programmAngebot(slot),
-      nurBrueder: slot.male === true,
-      nebenan: [],
-    }
+function platzFinden(meeting: Meeting, teile: Hilfsdienst, services: ServiceRow[]): Fund | null {
+  const svc = services.find((s) => s.key === teile.svc)
+  if (!svc || teile.pos >= svc.count) return null
+  const helpers = (meeting.helpers ??= {})
+  const reihe = helpers[teile.svc] ?? []
+  return {
+    slot: reihe[teile.pos],
+    setzen: (neu) => {
+      // Wie `assignSlot` im Client: Lücken davor als leere Plätze auffüllen.
+      while (reihe.length <= teile.pos) reihe.push({ name: '' })
+      reihe[teile.pos] = neu
+      helpers[teile.svc] = reihe
+    },
+    bereich: angebotsBereich(svc),
   }
-  if (teile.art === 'helper') {
-    const svc = services.find((s) => s.key === teile.svc)
-    if (!svc || teile.pos >= svc.count) return null
-    const helpers = (meeting.helpers ??= {})
-    const reihe = helpers[teile.svc] ?? []
-    return {
-      slot: reihe[teile.pos],
-      setzen: (neu) => {
-        // Wie `assignSlot` im Client: Lücken davor als leere Plätze auffüllen.
-        while (reihe.length <= teile.pos) reihe.push({ name: '' })
-        reihe[teile.pos] = neu
-        helpers[teile.svc] = reihe
-      },
-      bereich: svc.groups ? null : `svc:${svc.key}`,
-      nurBrueder: false,
-      nebenan: [],
-    }
-  }
-  for (const section of meeting.sections ?? []) {
-    for (const item of section.items ?? []) {
-      if ('song' in item || item.iid !== teile.iid) continue
-      // Die Plätze der Zusätzlichen Klasse gibt es nur, solange sie besteht —
-      // dieselbe Grenze wie `raeume()` im Client.
-      if (teile.art === 'aux' && !meeting.auxRatgeber) return null
-      const reihe = teile.art === 'aux' ? item.aux : item.names
-      const slot = reihe?.[teile.ni]
-      if (!reihe || !slot) return null
-      return {
-        slot,
-        setzen: (neu) => {
-          reihe[teile.ni] = { ...slot, ...neu }
-        },
-        // Mit dem Abschnitt: Den Vortrag des Vorsitzenden bietet die App nicht
-        // an, mit allen Abschnitten das Schlussgebet am Wochenende nicht (T133).
-        bereich: programmAngebot(slot, section, meeting.sections ?? []),
-        nurBrueder: slot.male === true,
-        nebenan: reihe,
-      }
-    }
-  }
-  return null
 }
 
 /** ISO-Tag der Zusammenkunft aus dem Wochenstart; null ohne Startdatum. */
@@ -137,6 +94,8 @@ function tagDerZusammenkunft(start: string, offset: number): string | null {
 export async function platzFuellen(rest: Rest, userId: string, taskKey: string, heute: string): Promise<Response> {
   const teile = schluesselTeile(taskKey)
   if (!teile || !('tab' in teile)) return json({ error: 'bad-request' }, 400)
+  // Nur Hilfsdienste — Programmpunkte und den Ratgeber teilt der Planer zu (25.10.2026).
+  if (teile.art !== 'helper') return json({ error: 'not-offered' }, 403)
 
   // Die Versammlung aus der eigenen Mitgliedszeile, nie aus dem Rumpf.
   const eigene = await rest.get<{ person_id: string | null; congregation_id: string }[]>(
@@ -153,7 +112,7 @@ export async function platzFuellen(rest: Rest, userId: string, taskKey: string, 
     ),
     rest.get<ServiceRow[]>(`services?select=key,name,count,groups&congregation_id=eq.${wert(cong)}`),
     rest.get<Person[]>(
-      `persons?select=id,fn,ln,priv,female&congregation_id=eq.${wert(cong)}&id=eq.${wert(caller.person_id)}`,
+      `persons?select=id,fn,ln,priv&congregation_id=eq.${wert(cong)}&id=eq.${wert(caller.person_id)}`,
     ),
     rest.get<ZeitenRow[]>(`congregations?select=mid_wd,mid_time,we_wd,we_time&id=eq.${wert(cong)}`),
     rest.get<Absence[]>(
@@ -178,26 +137,14 @@ export async function platzFuellen(rest: Rest, userId: string, taskKey: string, 
   if (!fund.bereich) return json({ error: 'not-offered' }, 403)
 
   const person = persons[0]
-  if (!person || !person.priv?.[fund.bereich] || (fund.nurBrueder && person.female)) {
-    return json({ error: 'not-qualified' }, 403)
-  }
-  /*
-   * **Im selben Programmpunkt schon eingeteilt** (Leiter des Studiums, und der
-   * Leser fehlt): Das übernimmt man nicht zusätzlich — dieselbe Regel wie
-   * `offenePlaetze` im Client, Id vor Name. Bis zum 16.10.2026 stand sie nur
-   * dort; ein Aufruf an der App vorbei trug den Leiter auch als Leser ein.
-   */
-  const name = personDisplayName(person.fn, person.ln)
-  if (fund.nebenan.some((s) => (s?.pid ? s.pid === person.id : s?.name === name))) {
-    return json({ error: 'not-offered' }, 403)
-  }
+  if (!person || !person.priv?.[fund.bereich]) return json({ error: 'not-qualified' }, 403)
 
   const zeiten = zeitenAus(congRows[0])
   const tag = tagDerZusammenkunft(row.start, versatzMitAbweichung(row.data.dev, teile.tab, zeiten[teile.tab].wd))
   if (tag && tag < heute) return json({ error: 'past' }, 409)
   if (tag && absences.some((a) => a.from_date <= tag && tag <= a.to_date)) return json({ error: 'absent' }, 409)
 
-  fund.setzen({ name, pid: person.id })
+  fund.setzen({ name: personDisplayName(person.fn, person.ln), pid: person.id })
   const neuerStand = await wocheSchreiben(rest, cong, teile.woche, row.updated_at, row.data)
   if (!neuerStand) return json({ error: 'slot-taken' }, 409)
 

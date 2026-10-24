@@ -67,10 +67,6 @@ function artVon(abschnitt: AbschnittsKopf): string | undefined {
   return abschnitt.kind ?? ART_IM_ALTBESTAND[abschnitt.label ?? '']
 }
 
-function istEroeffnung(abschnitt: AbschnittsKopf): boolean {
-  return artVon(abschnitt) === 'eroeffnung'
-}
-
 /**
  * **Plätze, die dem Vorsitz folgen** — das Anfangsgebet in der Eröffnung, am
  * Wochenende der Leser des Wachtturm-Studiums und jeder Platz „Vorsitz"
@@ -107,8 +103,9 @@ export function folgtDemVorsitz(abschnitt: AbschnittsKopf, slot: { rolle?: strin
  * 24.10.2026): „Es spricht in der Regel der Vortragsredner, wenn er bleibt …
  * Ansonsten sucht sich der Wachtturm-Studienleiter jemand aus, der betet, vor
  * der Versammlung spontan." Ein leerer Platz ist deshalb nicht offen: Die
- * Automatik lässt ihn aus, er zählt nicht als offen und wird nicht als freier
- * Platz angeboten. Wer es vorher weiß, trägt trotzdem jemanden ein — dann ist
+ * Automatik lässt ihn aus, und er zählt nicht als offen. Als freier Platz
+ * erscheint er ohnehin nicht: Seit dem 25.10.2026 bietet die App dort nur
+ * Hilfsdienste an. Wer es vorher weiß, trägt trotzdem jemanden ein — dann ist
  * es ein Platz wie jeder.
  *
  * Das Wochenende erkennt man am Wachtturm-Studium (`abschnitte`); unter der
@@ -126,15 +123,6 @@ export function schlussgebetVorOrt(
     artVon(abschnitt) === 'abschluss' &&
     abschnitte.some((a) => artVon(a) === 'wtStudium')
   )
-}
-
-/**
- * Der **Vortrag des Vorsitzenden** — er gehört dem Vorsitzenden und wird keinem
- * anderen angeboten (`programmAngebot`). Das Anfangsgebet dagegen darf auch ein
- * anderer sprechen; es folgt dem Vorsitz nur, wenn niemand es anders einteilt.
- */
-export function vortragDesVorsitzenden(abschnitt: AbschnittsKopf, slot: { rolle?: string } | undefined): boolean {
-  return !istEroeffnung(abschnitt) && slot?.rolle === 'Vorsitz'
 }
 
 /**

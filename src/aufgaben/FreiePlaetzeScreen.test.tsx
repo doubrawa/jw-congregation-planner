@@ -146,14 +146,14 @@ describe('Einspringen', () => {
 })
 
 /**
- * **Freie Plätze** (4.10.2026): unbesetzte Plätze gesendeter Wochen, für die
- * ich den Aufgabenbereich habe — gebaut wie das Einspringen, ein Tipp trägt
- * direkt ein. Welche Plätze es sind, entscheidet `offenePlaetze`
+ * **Freie Plätze** (4.10.2026): unbesetzte Hilfsdienste gesendeter Wochen, für
+ * die ich den Aufgabenbereich habe — gebaut wie das Einspringen, ein Tipp
+ * trägt direkt ein. Welche Plätze es sind, entscheidet `offenePlaetze`
  * (`offene-plaetze.test.ts`); hier geht es um den Bereich.
  */
 describe('Freie Plätze', () => {
   const frei = (over: Partial<AppState['offenePlaetze'][number]> = {}): AppState['offenePlaetze'][number] => ({
-    key: '2026-09-07|mid|part|k1|0', title: '', rolle: 'Gebet',
+    key: '2026-09-07|mid|helper|mik|1', title: '', rolle: 'Mikrofone',
     date: 'Dienstag, 8. September · 19:00', at: null, schonHeute: [], ...over,
   })
   const karte = (c: HTMLElement) => c.querySelector('[data-bereich="freie-plaetze"]')
@@ -162,13 +162,13 @@ describe('Freie Plätze', () => {
     expect(karte(zeige().container)).toBeNull()
   })
 
-  it('ein Platz nennt Aufgabe und Termin, der Bereich erklärt die Regel', () => {
-    const { container } = zeige({ offenePlaetze: [frei(), frei({ key: 'k2', title: 'Platzhalter-Thema', rolle: undefined })] })
+  it('ein Platz nennt Dienst und Termin, der Bereich erklärt die Regel', () => {
+    const { container } = zeige({ offenePlaetze: [frei(), frei({ key: 'k2', rolle: 'Saalordner' })] })
     const k = karte(container)!
     expect(k.querySelector('h2')?.textContent).toBe(t.freiePlaetzeNochFrei)
     expect(k.querySelector('.aufgaben-angebote > .klein-text')?.textContent).toBe(t.freiePlaetzeHint)
     const titel = [...k.querySelectorAll('.angebot-titel')].map((e) => e.textContent)
-    expect(titel).toEqual(['Gebet', 'Platzhalter-Thema'])
+    expect(titel).toEqual(['Mikrofone', 'Saalordner'])
     expect(k.querySelector('.angebot-text .klein-text')?.textContent).toContain(zahlBinden('8. September'))
   })
 
@@ -180,7 +180,7 @@ describe('Freie Plätze', () => {
   it('„Übernehmen" trägt mich in genau diesen Platz ein', () => {
     const { container, dispatch } = zeige({ offenePlaetze: [frei()] })
     fireEvent.click(knopf(karte(container), t.uebernehmen)!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'platzUebernehmen', key: '2026-09-07|mid|part|k1|0' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'platzUebernehmen', key: '2026-09-07|mid|helper|mik|1' })
   })
 
   it('steht unter dem Einspringen — ein Gesuch drängt mehr als ein freier Platz', () => {

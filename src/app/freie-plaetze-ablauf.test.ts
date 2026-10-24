@@ -27,15 +27,16 @@ const { persist } = await import('./persist')
 const { aufgabenAbgeleitet, reducer } = await import('./reducer')
 const { initialState } = await import('./init')
 const { emptyQualifications } = await import('../data/helpers')
-const { punktKey, sentKey } = await import('../data/planning')
+const { helferKey, punktKey, sentKey } = await import('../data/planning')
 
 const MONTAG = '2026-09-07'
-const KEY = punktKey(MONTAG, 'mid', 'k1', 0)
+const KEY = helferKey(MONTAG, 'mid', 'mik', 0)
 
 function start(over: Partial<AppState> = {}): AppState {
+  // Mit dem Bereich für das Gebet: Den leeren Gebet-Platz bietet die App trotzdem nicht an — Aufgaben teilt der Planer zu.
   const ich = {
     id: 'p-ich', fn: 'Ich', ln: 'Selbst', role: 'verkuendiger' as const, tel: '', mail: '',
-    priv: { ...emptyQualifications(), gebet: true },
+    priv: { ...emptyQualifications(), gebet: true, 'svc:mik': true },
   }
   return aufgabenAbgeleitet({
     ...initialState(),
@@ -45,7 +46,7 @@ function start(over: Partial<AppState> = {}): AppState {
     personId: ich.id,
     planner: false,
     persons: [ich],
-    services: [],
+    services: [{ key: 'mik', name: 'Mikrofone', count: 1, groups: false }],
     congregation: { name: 'Nordheim', hall: '', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     weeks: [
       {
@@ -57,7 +58,8 @@ function start(over: Partial<AppState> = {}): AppState {
           ],
           helpers: {},
         },
-        we: { date: '', end: '', sections: [], helpers: {} },
+        // Am Sonntag ist das Mikrofon besetzt — frei bleibt nur das am Dienstag.
+        we: { date: '', end: '', sections: [], helpers: { mik: [{ name: 'Andere Person', pid: 'p-x' }] } },
       },
     ] as AppState['weeks'],
     fsWeeks: [],
@@ -95,8 +97,7 @@ describe('Freie Plätze — vom Angebot zum Eintrag', () => {
   it('„Übernehmen": eingetragen, zugesagt, bedankt — und der Server schreibt, nicht der Client', () => {
     const vorher = start()
     const nachher = reducer(vorher, { type: 'platzUebernehmen', key: KEY })
-    const slot = nachher.weeks[0]!.mid.sections[0]!.items[0] as { names: { name: string; pid?: string }[] }
-    expect(slot.names[0]).toMatchObject({ name: 'Ich Selbst', pid: 'p-ich' })
+    expect(nachher.weeks[0]!.mid.helpers.mik?.[0]).toMatchObject({ name: 'Ich Selbst', pid: 'p-ich' })
     expect(nachher.confirmations[KEY]).toBe('bestätigt')
     expect(nachher.toast?.text).toBe('Danke! Du bist eingetragen')
     // Angeboten wird er danach nicht mehr — er gehört jetzt mir.
@@ -109,9 +110,10 @@ describe('Freie Plätze — vom Angebot zum Eintrag', () => {
     expect(data.saveConfirmation).not.toHaveBeenCalled()
   })
 
-  it('was nicht angeboten ist, ändert nichts — ein veralteter Tipp', () => {
+  it('was nicht angeboten ist, ändert nichts — ein veralteter Tipp, ein Programmpunkt', () => {
     const s = start()
     expect(reducer(s, { type: 'platzUebernehmen', key: punktKey(MONTAG, 'mid', 'weg', 0) })).toBe(s)
+    expect(reducer(s, { type: 'platzUebernehmen', key: punktKey(MONTAG, 'mid', 'k1', 0) })).toBe(s)
     const ohneAngebot = start({ sentLog: {} })
     expect(reducer(ohneAngebot, { type: 'platzUebernehmen', key: KEY })).toBe(ohneAngebot)
   })

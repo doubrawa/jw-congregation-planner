@@ -1,56 +1,26 @@
 // =============================================================================
 // Geteilt: welche freien Plätze man selbst übernehmen kann (4.10.2026)
 // =============================================================================
-// Eine Regel, zwei Fragesteller: Der Client zeigt die Plätze unter „Meine
-// Aufgaben" an (`src/data/offene-plaetze.ts`), die Edge Function `substitute`
+// Eine Regel, zwei Fragesteller: Der Client zeigt die Plätze unter „Freie
+// Plätze" an (`src/data/offene-plaetze.ts`), die Edge Function `substitute`
 // trägt ein (Aufruf 'fill', `substitute/fuellen.ts`). Liefen beide
 // auseinander, böte die App einen Platz an, den der Server abweist — oder der
 // Server nähme einen, den die App nie angeboten hätte.
+//
+// **Nur Hilfsdienste** (Betreiber, 25.10.2026: „freie plätze dürfen nur
+// hilfsdienste betreffen. aufgaben weist der planer zu"). Bis dahin bot die App
+// auch Programmpunkte und den Ratgeber der Zusätzlichen Klasse an — ohne
+// Redner- und Schulungsplätze, den Vortrag des Vorsitzenden und das
+// Schlussgebet am Wochenende. Dass ein Platz ein Hilfsdienst ist, steht im
+// Schlüssel (`art: 'helper'`); beide Seiten prüfen das zuerst.
 // =============================================================================
 
-import { SKIP_ROLE, schlussgebetVorOrt, vortragDesVorsitzenden } from './planung.ts'
-
 /**
- * Bereiche der **Schulungsaufgaben** — die werden nicht angeboten (Betreiber,
- * 4.10.2026): Der Aufseher teilt sie bewusst zu, mit Lektion, Partner und Raum.
- * Dieselbe Menge macht im Client einen Punkt zum Schülerteil
- * (`istSchuelerBereich`, S-89, Zusätzliche Klasse).
+ * Unter welchem Aufgabenbereich ein freier Platz dieses Hilfsdienstes
+ * angeboten wird — `null`: gar nicht. Die Reinigung nicht: Sie übernimmt eine
+ * Gruppe, keine Person (`groups`). Der Bereich ist der des Dienstes, wie ihn
+ * die Personen tragen (`serviceQualKey` im Client).
  */
-export const SCHUELER_BEREICHE: ReadonlySet<string> = new Set([
-  'bibellesung',
-  'schulung',
-  'schulungPartner',
-  'schulungVortrag',
-])
-
-/** Der eigene Redner des öffentlichen Vortrags (`ROLE_OWN_SPEAKER` im Client). */
-const EIGENER_REDNER = 'Redner'
-
-/**
- * Unter welchem Aufgabenbereich ein Platz eines **Programmpunkts** (Hauptsaal,
- * Zusätzliche Klasse, Ratgeber) angeboten wird — `null`: gar nicht.
- *
- * Ohne Bereich nicht, Schulungsaufgaben nicht, und **Rednerplätze** nicht: Der
- * öffentliche Vortrag trägt zwar den Bereich `vortrag`, aber die Rolle
- * „Gastredner" (oder „Redner", „Kreisaufseher") — wer ihn hält, entscheidet der
- * Planer, nicht der schnellste Tipp.
- *
- * **Auch nicht der Vortrag des Vorsitzenden** (`abschnitt`, 16.10.2026): Er
- * trägt den Bereich des Vorsitzes, gehört aber dem, der den Vorsitz hat. Bot
- * ihn die App an, übernahm ihn ein zweiter Vorsitzender.
- *
- * **Und nicht das Schlussgebet am Wochenende** (`abschnitte`, T133): Es spricht
- * der Redner oder wer vor Ort gebeten wird (`schlussgebetVorOrt`).
- */
-export function programmAngebot(
-  slot: { bereichsKey?: string; rolle?: string } | undefined,
-  abschnitt?: { kind?: string; label?: string },
-  abschnitte: readonly { kind?: string; label?: string }[] = [],
-): string | null {
-  const bereich = slot?.bereichsKey
-  if (!bereich || SCHUELER_BEREICHE.has(bereich)) return null
-  const rolle = slot?.rolle ?? ''
-  if (SKIP_ROLE.test(rolle) || rolle.split(' · ')[0] === EIGENER_REDNER) return null
-  if (abschnitt && (vortragDesVorsitzenden(abschnitt, slot) || schlussgebetVorOrt(abschnitte, abschnitt, slot))) return null
-  return bereich
+export function angebotsBereich(svc: { key: string; groups?: boolean }): string | null {
+  return svc.groups ? null : `svc:${svc.key}`
 }

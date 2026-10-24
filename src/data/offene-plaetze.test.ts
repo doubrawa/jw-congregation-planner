@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { buildAbsences } from './absence'
-import { emptyQualifications, isSpeakerRole } from './helpers'
-import { angebotsBereich, offenePlaetze, planGesendet, platzAuswahl } from './offene-plaetze'
+import { emptyQualifications, serviceQualKey } from './helpers'
+import { offenePlaetze, planGesendet, platzAuswahl } from './offene-plaetze'
 import { montagNach } from './meeting-dates'
-import { allePlaetze } from './plaetze'
 import { helferKey, punktKey, ratgeberKey, sentKey } from './planning'
-import { programmAngebot, SCHUELER_BEREICHE } from '../../supabase/functions/_shared/freie-plaetze.ts'
-import type { Absence, Meeting, PartItem, Person, SentLog, Service, Week } from './types'
+import { angebotsBereich } from '../../supabase/functions/_shared/freie-plaetze.ts'
+import type { Absence, Meeting, Person, SentLog, Service, Week } from './types'
 
 /**
  * **Freie Plätze, die man selbst übernehmen kann** (4.10.2026) — wann einer
  * angeboten wird und wann nicht. Zuschnitt des Betreibers: erst nach „Plan
- * senden", Hilfsdienste und Programmpunkte, keine Schulungsaufgaben, direkt
- * eintragen.
+ * senden", direkt eintragen — und seit dem 25.10.2026 **nur Hilfsdienste**:
+ * „freie plätze dürfen nur hilfsdienste betreffen. aufgaben weist der planer
+ * zu". Bis dahin auch Programmpunkte und der Ratgeber.
  */
 
 const MONTAG = '2026-09-07' // Zusammenkünfte Dienstag 8.9. und Sonntag 13.9.
@@ -48,7 +48,7 @@ function dienstag(): Meeting {
         { iid: 'k3', title: 'Bibellesung', names: [{ name: '', bereichsKey: 'bibellesung' }] },
       ] },
       { label: 'UNSER LEBEN ALS CHRIST', farbe: 'wein', items: [
-        // Ich leite das Studium — den offenen Leser-Platz daneben übernehme ich nicht zusätzlich.
+        // Ich leite das Studium (`schonHeute`); der Leser daneben ist leer.
         { iid: 'k4', title: 'Versammlungsbibelstudium', names: [
           { name: 'Ich Selbst', pid: 'ich', rolle: 'Leiter', bereichsKey: 'studium' },
           { name: '', rolle: 'Leser', bereichsKey: 'leser' },
@@ -70,19 +70,6 @@ function sonntag(): Meeting {
     // Am Sonntag sind die Mikrofone besetzt — dort bleibt nur der Rednerplatz offen.
     helpers: { mik: [{ name: 'Andere Person', pid: 'x' }, { name: 'Noch Jemand', pid: 'y' }] },
   } as Meeting
-}
-
-/**
- * Das Arbeitsheft ab Januar 2027: Der Vorsitz steht in der Eröffnung, und unter
- * „Uns im Dienst verbessern" hält er den „Vortrag des Vorsitzenden" — ein
- * Platz „Vorsitz" außerhalb der Eröffnung.
- */
-function mitVortragDesVorsitzenden(mid: Meeting): Meeting {
-  ;(mid.sections[0]!.items[0] as PartItem).names.push({ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' })
-  mid.sections.push({ label: 'UNS IM DIENST VERBESSERN', kind: 'dienst', farbe: 'gold', items: [
-    { iid: 'k5', title: 'Platzhalter-Dienst', names: [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' }] },
-  ] })
-  return mid
 }
 
 function woche(over: Partial<Week> = {}): Week {
@@ -107,38 +94,43 @@ const angebot = (opts: { weeks?: Week[]; sentLog?: SentLog; me?: Person; absence
 const keys = (liste: { key: string }[]) => liste.map((p) => p.key)
 
 describe('offenePlaetze — was angeboten wird', () => {
-  it('der leere Platz mit meinem Bereich: Gebet, Vortrag, ein Mikrofon', () => {
-    expect(keys(angebot())).toEqual([
-      punktKey(MONTAG, 'mid', 'k1', 0),
-      punktKey(MONTAG, 'mid', 'k2', 0),
-      helferKey(MONTAG, 'mid', 'mik', 1),
-    ])
+  it('der leere Hilfsdienst mit meinem Bereich: ein Mikrofon', () => {
+    expect(keys(angebot())).toEqual([helferKey(MONTAG, 'mid', 'mik', 1)])
   })
 
-  it('beschriftet wie eine Aufgabe: in Eröffnung und Abschluss trägt die Rolle allein', () => {
-    const [gebet, vortrag, mik] = angebot()
-    expect(gebet).toMatchObject({ title: '', rolle: 'Gebet' })
-    expect(vortrag).toMatchObject({ title: 'Platzhalter-Thema' })
-    expect(vortrag?.rolle).toBeUndefined()
-    expect(mik).toMatchObject({ title: '', rolle: 'Mikrofone' })
+  it('kein Programmpunkt und kein Ratgeber — die teilt der Planer zu (25.10.2026)', () => {
+    // Ich habe jeden Bereich dazu, und alle diese Plätze sind leer: Gebet,
+    // Vortrag, Bibellesung, der Leser, der Gastredner, der Ratgeber.
+    const mid = dienstag()
+    mid.auxRatgeber = { name: '', rolle: 'Ratgeber', bereichsKey: 'ratgeber', male: true }
+    const angeboten = keys(angebot({ weeks: [woche({ mid })] }))
+    for (const key of [
+      punktKey(MONTAG, 'mid', 'k1', 0),
+      punktKey(MONTAG, 'mid', 'k2', 0),
+      punktKey(MONTAG, 'mid', 'k3', 0),
+      punktKey(MONTAG, 'mid', 'k4', 1),
+      punktKey(MONTAG, 'we', 'v1', 0),
+      ratgeberKey(MONTAG, 'mid'),
+    ]) {
+      expect(angeboten, key).not.toContain(key)
+    }
+    expect(angeboten).toEqual([helferKey(MONTAG, 'mid', 'mik', 1)])
+  })
+
+  it('beschriftet wie eine Aufgabe: Der Dienst trägt allein', () => {
+    expect(angebot()[0]).toMatchObject({ title: '', rolle: 'Mikrofone' })
   })
 
   it('nennt, was ich an dem Tag schon habe — vor dem Übernehmen', () => {
-    const [gebet] = angebot()
-    expect(gebet?.schonHeute).toEqual([{ text: 'Leiter', lang: 'u' }])
+    expect(angebot()[0]?.schonHeute).toEqual([{ text: 'Leiter', lang: 'u' }])
   })
 
-  it('nicht: Schulungsaufgaben, Rednerplatz, Reinigung, der Leser neben meinem Studium', () => {
-    const angeboten = keys(angebot())
-    expect(angeboten).not.toContain(punktKey(MONTAG, 'mid', 'k3', 0)) // Bibellesung
-    expect(angeboten).not.toContain(punktKey(MONTAG, 'we', 'v1', 0)) // Gastredner
-    expect(angeboten).not.toContain(helferKey(MONTAG, 'mid', 'rein', 0))
-    expect(angeboten).not.toContain(punktKey(MONTAG, 'mid', 'k4', 1)) // Leser
+  it('nicht die Reinigung — sie übernimmt eine Gruppe, keine Person', () => {
+    expect(keys(angebot())).not.toContain(helferKey(MONTAG, 'mid', 'rein', 0))
   })
 
-  it('nicht ohne den Bereich — und einen Brüder-Platz keiner Schwester', () => {
-    expect(keys(angebot({ me: ich({}, 'gebet') }))).toEqual([punktKey(MONTAG, 'mid', 'k1', 0)])
-    expect(keys(angebot({ me: ich({ female: true }) }))).not.toContain(punktKey(MONTAG, 'mid', 'k2', 0))
+  it('nicht ohne den Bereich des Dienstes — ein Programmbereich zählt dafür nicht', () => {
+    expect(angebot({ me: ich({}, 'gebet', 'vortrag') })).toEqual([])
   })
 
   it('erst nach „Plan senden" — und ein gesendeter Treffpunkt zählt dafür nicht', () => {
@@ -153,19 +145,6 @@ describe('offenePlaetze — was angeboten wird', () => {
     expect(angebot({ heute: new Date('2026-09-09T09:00:00Z') })).toEqual([])
     const weg: Absence = { id: 'a', personId: 'ich', userId: null, from: '2026-09-08', to: '2026-09-08', reason: '' }
     expect(angebot({ absences: [weg] })).toEqual([])
-  })
-
-  it('nicht den Vortrag des Vorsitzenden — der gehört dem, der den Vorsitz hat (16.10.2026)', () => {
-    // Bis dahin bekam ihn angeboten, wer den Vorsitz kann, und hielt ihn als
-    // zweiter Vorsitzender. Gegenprobe: Der Vorsitz in der Eröffnung bleibt frei.
-    const weeks = [woche({ mid: mitVortragDesVorsitzenden(dienstag()) })]
-    expect(keys(angebot({ weeks, me: ich({}, 'vorsitzMid') }))).toEqual([punktKey(MONTAG, 'mid', 'k1', 1)])
-  })
-
-  it('die Zusätzliche Klasse: ihr Ratgeber und ihre Plätze nur, solange sie besteht', () => {
-    const mid = dienstag()
-    mid.auxRatgeber = { name: '', rolle: 'Ratgeber', bereichsKey: 'ratgeber', male: true }
-    expect(keys(angebot({ weeks: [woche({ mid })] }))).toContain(ratgeberKey(MONTAG, 'mid'))
   })
 
   it('die nächste Zusammenkunft zuerst', () => {
@@ -224,28 +203,10 @@ describe('platzAuswahl — vom Schlüssel zur Stelle im Programm', () => {
   })
 })
 
-describe('Eine Regel für App und Server (`programmAngebot`)', () => {
-  it('Rednerplätze gelten hier wie in `isSpeakerRole` — eigener, auswärtiger, Kreisaufseher', () => {
-    for (const rolle of ['Gastredner', 'Redner', 'Redner · Vers. Nordheim', 'Kreisaufseher', 'Leser', 'Gebet', '']) {
-      const slot = { name: '', rolle, bereichsKey: 'vortrag' }
-      expect(programmAngebot(slot) === null, rolle).toBe(isSpeakerRole(rolle))
-    }
-  })
-
-  it('jeder Schülerbereich fällt heraus, jeder andere Bereich bleibt', () => {
-    for (const b of SCHUELER_BEREICHE) expect(programmAngebot({ bereichsKey: b }), b).toBeNull()
-    expect(programmAngebot({ bereichsKey: 'besprechung' })).toBe('besprechung')
-    expect(programmAngebot({})).toBeNull()
-  })
-
-  it('der Client fragt genau sie — für jeden Platz der Probe-Woche, mit seinem Abschnitt', () => {
-    const mid = mitVortragDesVorsitzenden(dienstag())
-    mid.auxRatgeber = { name: '', rolle: 'Ratgeber', bereichsKey: 'ratgeber', male: true }
-    for (const platz of allePlaetze(mid, DIENSTE)) {
-      if (platz.art === 'helper') continue
-      expect(angebotsBereich(platz, mid)).toBe(
-        programmAngebot(platz.slot, platz.art === 'programm' ? platz.section : undefined, mid.sections),
-      )
-    }
+describe('Eine Regel für App und Server (`angebotsBereich`)', () => {
+  it('der Bereich eines Dienstes ist der, den die Personen tragen — die Reinigung hat keinen', () => {
+    const [mik, rein] = DIENSTE
+    expect(angebotsBereich(mik!)).toBe(serviceQualKey('mik'))
+    expect(angebotsBereich(rein!)).toBeNull()
   })
 })

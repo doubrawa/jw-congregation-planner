@@ -90,7 +90,7 @@ afterEach(cleanup)
 describe('Was man übernehmen kann, steht nicht mehr hier (T134)', () => {
   it('weder Einspringen noch freie Plätze — sie haben einen eigenen Menüpunkt', () => {
     const frei: AppState['offenePlaetze'][number] = {
-      key: '2026-09-07|mid|part|k1|0', title: '', rolle: 'Gebet', date: 'Dienstag, 8. September · 19:00', at: null, schonHeute: [],
+      key: '2026-09-07|mid|helper|mik|1', title: '', rolle: 'Mikrofone', date: 'Dienstag, 8. September · 19:00', at: null, schonHeute: [],
     }
     const { container } = zeige({ substituteReqs: [gesuch()], offenePlaetze: [frei] })
     expect(container.querySelector('[data-bereich="einspringen"]')).toBeNull()

@@ -11,10 +11,11 @@
  *  - der Plan seiner Woche gesendet ist — vorher plant der Planer noch, und ein
  *    leerer Platz hieße nichts;
  *  - seine Zusammenkunft noch kommt und nicht ausfällt;
- *  - er leer ist und weder ein Rednerplatz noch eine Schulungsaufgabe — die
- *    teilt der Aufseher bewusst zu (Lektion, Partner, Raum);
- *  - der Leser den Aufgabenbereich hat (ein Brüder-Platz: ein Bruder ist), an
- *    dem Tag nicht abwesend ist und im selben Programmpunkt nicht schon steht.
+ *  - er ein leerer **Hilfsdienst** ist (25.10.2026, Betreiber: „freie plätze
+ *    dürfen nur hilfsdienste betreffen. aufgaben weist der planer zu") — bis
+ *    dahin auch Programmpunkte und der Ratgeber, ohne Redner- und
+ *    Schulungsplätze;
+ *  - der Leser den Aufgabenbereich hat und an dem Tag nicht abwesend ist.
  *
  * Übernommen wird **direkt**, ohne Rückfrage beim Planer — wie beim
  * Einspringen. Dieselben Regeln prüft der Server (Edge Function `substitute`,
@@ -22,24 +23,13 @@
  */
 
 import { istAbwesend, KEINE_ABWESENHEIT, type AbsenceSet } from './absence'
-import { RATGEBER_ROLLE } from './aux-class'
-import {
-  gehoertZu,
-  isQualified,
-  istAusgefallen,
-  istBlockSektion,
-  MEETING_TABS,
-  rolleMitHerkunft,
-  serviceQualKey,
-  slotsOf,
-} from './helpers'
-import { programmAngebot } from '../../supabase/functions/_shared/freie-plaetze.ts'
+import { isQualified, istAusgefallen, MEETING_TABS } from './helpers'
+import { angebotsBereich } from '../../supabase/functions/_shared/freie-plaetze.ts'
 import { istVorbei, meetingDateMs, meetingDateText } from './meeting-dates'
-import { allePlaetze, platzKey, type Platz } from './plaetze'
+import { allePlaetze, platzKey } from './plaetze'
 import { assignmentsInMeeting, wochenIndex } from './planning'
 import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import type {
-  Meeting,
   MeetingAssignment,
   MeetingSlotSelection,
   MeetingTimes,
@@ -53,9 +43,9 @@ import type {
 export interface OffenerPlatz {
   /** Der `task_key` des Platzes — damit übernimmt ihn der Server. */
   key: string
-  /** Programmpunkt, **Versammlungssprache**; leer, wo die Rolle allein trägt. */
+  /** Leer: Ein Hilfsdienst trägt sich über seinen Namen (`rolle`), wie bei den Aufgaben. */
   title: string
-  /** Rolle oder Dienstname, **App-Sprache** (wie `MyTask.rolle`). */
+  /** Der Name des Dienstes, **App-Sprache** (wie `MyTask.rolle`). */
   rolle?: string
   date: string
   /** UTC-Mitternacht des Zusammenkunftstags — Countdown und Reihenfolge. */
@@ -97,32 +87,6 @@ export function gesendeteWochen(sentLog: SentLog): Set<string> {
 }
 
 /**
- * Unter welchem Aufgabenbereich ein Platz angeboten wird — `null`: gar nicht.
- *
- * Die Regel für Programmpunkt und Ratgeber steht im geteilten Edge-Ordner
- * (`programmAngebot`): Rednerplätze nicht, Schulungsaufgaben nicht, der Vortrag
- * des Vorsitzenden nicht — den Abschnitt gibt es nur beim Programmpunkt. Dieselbe
- * Prüfung macht der Server beim Eintragen. Bei den Hilfsdiensten fällt nur die
- * Reinigung heraus — eine Gruppe, keine Person.
- */
-export function angebotsBereich(platz: Platz, meeting: Meeting): string | null {
-  if (platz.art === 'helper') return platz.svc.groups ? null : serviceQualKey(platz.svc.key)
-  if (platz.art === 'ratgeber') return programmAngebot(platz.slot)
-  return programmAngebot(platz.slot, platz.section, meeting.sections)
-}
-
-/** Titel und Rolle eines Platzes — dieselbe Teilung wie bei den Aufgaben (`eachAssignedSlot`). */
-function beschriftung(platz: Platz): Pick<OffenerPlatz, 'title' | 'rolle'> {
-  if (platz.art === 'ratgeber') return { title: '', rolle: RATGEBER_ROLLE }
-  if (platz.art === 'helper') return { title: '', rolle: platz.svc.name }
-  const rolle = rolleMitHerkunft(platz.slot) ?? ''
-  return {
-    title: rolle && istBlockSektion(platz.section) ? '' : platz.item.title,
-    ...(rolle ? { rolle } : {}),
-  }
-}
-
-/**
  * Die offenen Plätze, die `me` übernehmen kann — nächste zuerst.
  *
  * `heute` steht als Parameter da, damit Tests und Entwicklerseite eine Uhr
@@ -148,16 +112,16 @@ export function offenePlaetze(
       if (istAbwesend(abwesend, me.id, wi, tab)) continue
       const meeting = week[tab]
       for (const platz of allePlaetze(meeting, services)) {
+        // Nur Hilfsdienste — Programmpunkte und den Ratgeber teilt der Planer zu.
+        if (platz.art !== 'helper') continue
         if (platz.slot?.name) continue
-        const bereich = angebotsBereich(platz, meeting)
+        const bereich = angebotsBereich(platz.svc)
         if (!bereich || !isQualified(me, bereich)) continue
-        if (platz.art !== 'helper' && platz.slot.male && me.female) continue
-        // Im selben Programmpunkt schon eingeteilt (Leiter des Studiums, und
-        // der Leser fehlt): Das übernimmt man nicht zusätzlich.
-        if (platz.art === 'programm' && slotsOf(platz.item, platz.aux).some((s) => gehoertZu(s, me))) continue
         out.push({
           key: platzKey(platz, week.start, tab),
-          ...beschriftung(platz),
+          // Wie bei den Aufgaben (`eachAssignedSlot`): Der Dienst trägt allein.
+          title: '',
+          rolle: platz.svc.name,
           date: meetingDateText(week, tab, zeiten),
           at,
           schonHeute: assignmentsInMeeting(meeting, me, services),

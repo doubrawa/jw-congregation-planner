@@ -441,8 +441,8 @@ dann ist der Dienst schon besetzt.
 
 ### Freie Plätze übernehmen
 
-Ist im Programm ein Platz **noch gar nicht besetzt**, den du übernehmen
-könntest, steht er unter **Freie Plätze** im Bereich **Noch niemand
+Ist ein **Hilfsdienst** – etwa Ordner oder Mikrofon – **noch gar nicht
+besetzt**, steht er unter **Freie Plätze** im Bereich **Noch niemand
 eingeteilt** – aber erst, wenn der Koordinator den Plan der Woche gesendet hat.
 Vorher plant er noch, und ein leerer Platz hieße nichts. Gibt es gerade nichts
 zu übernehmen, sagt die Seite das.
@@ -450,10 +450,9 @@ zu übernehmen, sagt die Seite das.
 ![Freie Plätze](screenshots/verkuendiger-freie-plaetze.png)
 
 Angeboten wird nur, wofür du einen **Aufgabenbereich** hast, was noch kommt und
-wo du an dem Tag nicht abwesend bist. **Nicht** dabei sind Schulungsaufgaben
-(die teilt der Koordinator mit Lektion und Partner zu), der öffentliche Vortrag,
-das Schlussgebet am Wochenende (es spricht der Redner oder wer vor Ort gebeten
-wird) und die Reinigung.
+wo du an dem Tag nicht abwesend bist. **Programmpunkte** – Vorträge, Gebete,
+Leser, Schulungsaufgaben – übernimmst du hier nicht: Die teilt der Planer zu.
+Auch die Reinigung steht nicht dabei; sie übernimmt eine Gruppe.
 
 Wie beim Einspringen steht vorher darunter, was du an dem Tag schon hast. Ein
 Tipp auf **Übernehmen** trägt dich ein und bestätigt gleich mit. Auch hier gilt:
