@@ -16,6 +16,7 @@ import { AbsageBlatt } from '../aufgaben/AbsageBlatt'
 import { AuswertungScreen } from '../auswertung/AuswertungScreen'
 import { AufgabeBlatt } from '../aufgaben/AufgabeBlatt'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
+import { FreiePlaetzeScreen } from '../aufgaben/FreiePlaetzeScreen'
 import { OeffnenBlatt } from '../aufgaben/OeffnenBlatt'
 import { AbmeldenKnopf } from '../components/AbmeldenKnopf'
 import { ErrorBoundary } from '../components/ErrorBoundary'
@@ -249,9 +250,15 @@ export function AppShell() {
     kurz: t.navAufgaben,
     zahl: state.myTasks.filter((a) => a.status === 'offen').length,
   }
+  // Was man übernehmen kann, gleich unter den eigenen Aufgaben (T134) — die
+  // Zahl nennt Ersatzgesuche und freie Plätze zusammen.
+  const freie: MenueEintrag = {
+    ...eintrag('freie', t.freiePlaetzeTitle, 'frei'),
+    zahl: state.substituteReqs.length + state.offenePlaetze.length,
+  }
   const ungelesen = sichtbareMitteilungen(state.notifs, rechte.zuteilen).filter((n) => !n.read).length
   const abschnitte = (mitteilungen: MenueEintrag[]): MenueAbschnitt[] => [
-    { key: 'eigenes', titel: null, eintraege: [eintrag('start', t.navStart, 'start'), aufgaben, ...mitteilungen] },
+    { key: 'eigenes', titel: null, eintraege: [eintrag('start', t.navStart, 'start'), aufgaben, freie, ...mitteilungen] },
     {
       key: 'versammlung',
       titel: t.versammlungLbl,
@@ -525,6 +532,8 @@ function ActiveScreen({ screen }: { screen: Screen }) {
       return <ProgrammScreen />
     case 'aufgaben':
       return <AufgabenScreen />
+    case 'freie':
+      return <FreiePlaetzeScreen />
     case 'mitteilungen':
       return <MitteilungenScreen />
     case 'planen':

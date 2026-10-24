@@ -569,6 +569,8 @@ export default {
   "uebernehmen": "Podejmij się",
   "freiePlaetzeTitle": "Wolne miejsca",
   "freiePlaetzeHint": "Nikt nie jest tu jeszcze przydzielony, a ty masz odpowiednie uprawnienia. Pierwsza osoba, która się tego podejmie, zostaje zapisana i tym samym potwierdza udział.",
+  "freiePlaetzeNochFrei": "Jeszcze nikt nie jest przydzielony",
+  "freiePlaetzeLeer": "Teraz nikt nie szuka zastępstwa i nie ma dla ciebie wolnych miejsc.",
   "toastPlatzUebernommen": "Dziękujemy! Zapisaliśmy cię",
   "toastErsatzGesucht": "Odwołano · szukamy zastępstwa",
   "toastUebernommen": "Dziękujemy! To zadanie pomocnicze jest teraz twoje",

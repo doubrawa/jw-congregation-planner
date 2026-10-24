@@ -569,6 +569,8 @@ export default {
   "uebernehmen": "Ben yaparım",
   "freiePlaetzeTitle": "Boş yerler",
   "freiePlaetzeHint": "Burada henüz kimse görevlendirilmedi ve bunun için görev alanına sahipsin. İlk üstlenen yazılır ve böylece onaylamış olur.",
+  "freiePlaetzeNochFrei": "Henüz kimse görevlendirilmedi",
+  "freiePlaetzeLeer": "Şu anda kimse yedek aramıyor ve üstlenebileceğin boş bir yer yok.",
   "toastPlatzUebernommen": "Teşekkürler! Kaydın yapıldı",
   "toastErsatzGesucht": "Görevden çekildin · yerine biri aranıyor",
   "toastUebernommen": "Teşekkürler! Yardımcı görevi üstlendin",

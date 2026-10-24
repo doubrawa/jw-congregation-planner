@@ -86,7 +86,8 @@ export interface ZielLage {
  * Die Aktionen gehen der Reihe nach hinaus; `navigate` verlässt dabei die
  * Mitteilungen. Gefragt wird in dieser Reihenfolge:
  *
- * 1. „Ersatz gesucht" → zum Einspringen auf „Meine Aufgaben", wie der Push.
+ * 1. „Ersatz gesucht" → zum Einspringen auf „Freie Plätze" (T134), wie der
+ *    Push (der nennt noch „Meine Aufgaben"; `deeplink.ts` führt ihn weiter).
  * 2. Eine Meldung an die Planer → ins Planen, in die Woche ihrer Aufgabe,
  *    soweit sie eine nennt (die Absage seit dem 4.10.2026). Vor der eigenen
  *    Aufgabe gefragt: Sagt ein Planer selbst ab, sucht er als Planer Ersatz.
@@ -99,7 +100,7 @@ export interface ZielLage {
  *    Mitteilungen führt (Zuteilung, Entzug, Erinnerung an mehrere Aufgaben).
  */
 export function mitteilungsZiel(n: Notification, lage: ZielLage): AppAction[] {
-  if (n.title === ERSATZ_GESUCHT) return [{ type: 'navigate', screen: 'aufgaben', abschnitt: 'einspringen' }]
+  if (n.title === ERSATZ_GESUCHT) return [{ type: 'navigate', screen: 'freie', abschnitt: 'einspringen' }]
   const teile = n.taskId ? schluesselTeile(n.taskId) : null
   if (lage.zuteilen && AN_DIE_PLANER.has(n.title)) return wocheZeigen('planen', teile, lage.weeks)
   if (n.taskId && lage.myTasks.some((t) => t.id === n.taskId)) {

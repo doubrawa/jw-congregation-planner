@@ -963,12 +963,14 @@ describe('substitute: der Klick auf „Ersatz gesucht" landet beim Einspringen',
     await neuLaden()
   })
 
-  it('„Ersatz gesucht" führt zum Bereich Einspringen auf „Meine Aufgaben"', async () => {
+  it('„Ersatz gesucht" führt zum Bereich Einspringen auf „Freie Plätze"', async () => {
+    // Der Push nennt noch „Meine Aufgaben", wo das Einspringen bis zum
+    // 24.10.2026 stand (T134); die App führt ihn weiter (`deeplink.ts`).
     const res = await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
     expect(res.status).toBe(200)
     expect(ziele()).toHaveLength(1) // nur ich habe ein Abo unter den Gefragten
     const [ziel] = ziele()
-    expect(parseGoTarget(ziel!)).toBe('aufgaben')
+    expect(parseGoTarget(ziel!)).toBe('freie')
     expect(parseGoAbschnitt(ziel!)).toBe('einspringen')
   })
 

@@ -67,6 +67,7 @@ Ende automatisch auf; du musst nichts extra tun.
 | `programm-treffpunkte.png` | `s=programm&tab=fs` | planer |
 | `verkuendiger-start.png` | `s=start&pl=0&me=p9` | verkuendiger |
 | `verkuendiger-aufgaben.png` | `s=aufgaben&pl=0&me=p9` | verkuendiger |
+| `verkuendiger-freie-plaetze.png` | `s=freie&pl=0&me=p7` | verkuendiger |
 | `verkuendiger-profil.png` | `s=profil&pl=0&me=p9` | verkuendiger |
 | `verkuendiger-treffpunkte.png` | `s=programm&tab=fs&pl=0&me=p9` | verkuendiger |
 | `verkuendiger-gruppenaufseher.png` | `s=planen&tab=fs&pl=0&me=p1` | verkuendiger |

@@ -92,7 +92,8 @@ Neue **Mitteilungen** zeigt die **Glocke** oben rechts mit einem Punkt; ein
 Tipp darauf öffnet sie (siehe Abschnitt 4).
 
 Über das Menü an der Seite (auf dem Handy hinter dem Menüknopf oben links)
-erreichst du **Start** und **Meine Aufgaben**, darunter unter **Versammlung** die
+erreichst du **Start**, **Meine Aufgaben** und **Freie Plätze** (was du für
+andere übernehmen kannst), darunter unter **Versammlung** die
 **Zusammenkünfte** und den **Predigtdienst**. Dein **Profil** öffnest du mit
 einem Tipp auf deinen Namen ganz unten.
 
@@ -302,7 +303,10 @@ die **Gruppenbesuche**, die **Trolleys** und die **Weiteren Pläne** haben einen
 Unter **Meine Aufgaben** siehst du alle Zuteilungen, die dich betreffen, in
 zeitlicher Reihenfolge. **Vergangenes fällt heraus** – ab dem Tag nach der
 Zusammenkunft. Es wird dir also nicht mehr zum Bestätigen vorgelegt und zählt
-auf der Startseite nicht mehr mit.
+auf der Startseite nicht mehr mit. Was du für andere übernehmen kannst, steht
+gleich darunter im Menü unter **Freie Plätze** (siehe
+[Einspringen](#einspringen-für-jemand-anderen) und
+[Freie Plätze übernehmen](#freie-plätze-übernehmen)).
 
 ### Wie du von einer Zuteilung erfährst
 
@@ -337,7 +341,8 @@ Mauszeiger den ganzen Text).
   gesucht" steht **Übernehmen**, solange noch niemand eingesprungen ist.
 - **Ein Tipp auf die Mitteilung führt dorthin, wo sie herkommt:** zu deiner
   Aufgabe, gleich mit Bestätigen und Absagen; bei „Ersatz gesucht" zum
-  Einspringen; ohne bestimmte Aufgabe zu **Meine Aufgaben**.
+  Einspringen unter **Freie Plätze**; ohne bestimmte Aufgabe zu **Meine
+  Aufgaben**.
 - Was du angetippt, bestätigt oder übernommen hast, gilt als gelesen und steht
   danach unter **Früher**. **Alle gelesen** (am Handy oben rechts) räumt „Neu"
   auf einmal ab.
@@ -406,18 +411,19 @@ passt.
 Du bekommst es auf drei Wegen zu sehen, und dafür musst du nichts suchen:
 
 - **Über die Push-Nachricht oder die Mitteilungen** – dort übernimmst du
-  gleich mit **Übernehmen**; ein Tipp auf die Mitteilung selbst öffnet **Meine
-  Aufgaben** und springt direkt zum Bereich **Einspringen**, statt oben auf der
+  gleich mit **Übernehmen**; ein Tipp auf die Mitteilung selbst öffnet **Freie
+  Plätze** und springt direkt zum Bereich **Einspringen**, statt oben auf der
   Seite zu landen.
 - **Beim Öffnen der App** – dasselbe Blatt, das dich an unbestätigte
   Zuteilungen erinnert, zeigt darunter den Bereich **Einspringen**. Mit
   **Später** legst du das Blatt weg: Einspringen kannst du, müssen tust du es
   nicht.
-- Unter **Meine Aufgaben** – dort steht der Bereich **Einspringen** dauerhaft,
-  solange die Anfrage offen ist. Eine eigene Seite dafür gibt es bewusst nicht:
-  Sie wäre fast immer leer.
+- Unter **Freie Plätze** im Menü, gleich unter **Meine Aufgaben** – dort steht
+  der Bereich **Einspringen** ganz oben, solange die Anfrage offen ist. Die
+  Zahl am Menüpunkt sagt, wie viel du gerade übernehmen könntest (Gesuche und
+  freie Plätze zusammen).
 
-Beide zeigen dasselbe: den gesuchten Dienst, den Termin und den Namen dessen,
+Alle zeigen dasselbe: den gesuchten Dienst, den Termin und den Namen dessen,
 der abgesagt hat. Hast du an dem Tag **schon etwas anderes**, steht es rot
 darunter („An diesem Tag schon: …") – du siehst es also, bevor du zusagst. Ein
 Tipp auf **Übernehmen** trägt dich ein und bestätigt die Aufgabe gleich mit.
@@ -428,16 +434,18 @@ dann ist der Dienst schon besetzt.
 ### Freie Plätze übernehmen
 
 Ist im Programm ein Platz **noch gar nicht besetzt**, den du übernehmen
-könntest, steht er unter **Meine Aufgaben** im Bereich **Freie Plätze** – aber
-erst, wenn der Koordinator den Plan der Woche gesendet hat. Vorher plant er
-noch, und ein leerer Platz hieße nichts.
+könntest, steht er unter **Freie Plätze** im Bereich **Noch niemand
+eingeteilt** – aber erst, wenn der Koordinator den Plan der Woche gesendet hat.
+Vorher plant er noch, und ein leerer Platz hieße nichts. Gibt es gerade nichts
+zu übernehmen, sagt die Seite das.
 
-![Freie Plätze unter Meine Aufgaben](screenshots/verkuendiger-freie-plaetze.png)
+![Freie Plätze](screenshots/verkuendiger-freie-plaetze.png)
 
 Angeboten wird nur, wofür du einen **Aufgabenbereich** hast, was noch kommt und
 wo du an dem Tag nicht abwesend bist. **Nicht** dabei sind Schulungsaufgaben
-(die teilt der Koordinator mit Lektion und Partner zu), der öffentliche Vortrag
-und die Reinigung.
+(die teilt der Koordinator mit Lektion und Partner zu), der öffentliche Vortrag,
+das Schlussgebet am Wochenende (es spricht der Redner oder wer vor Ort gebeten
+wird) und die Reinigung.
 
 Wie beim Einspringen steht vorher darunter, was du an dem Tag schon hast. Ein
 Tipp auf **Übernehmen** trägt dich ein und bestätigt gleich mit. Auch hier gilt:

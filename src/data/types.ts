@@ -44,6 +44,7 @@ export type Screen =
   | 'start'
   | 'programm'
   | 'aufgaben'
+  | 'freie'
   | 'mitteilungen'
   | 'planen'
   | 'planung'

@@ -569,6 +569,8 @@ export default {
   "uebernehmen": "Preiau eu",
   "freiePlaetzeTitle": "Locuri libere",
   "freiePlaetzeHint": "Aici încă nu e repartizat nimeni, iar tu ai domeniul necesar. Prima persoană care preia locul este înscrisă și astfel confirmă.",
+  "freiePlaetzeNochFrei": "Încă nu e repartizat nimeni",
+  "freiePlaetzeLeer": "Acum nu caută nimeni un înlocuitor și nu e nimic liber pe care să-l poți prelua.",
   "toastPlatzUebernommen": "Mulțumim! Sarcina este a ta",
   "toastErsatzGesucht": "Anulat · se caută un înlocuitor",
   "toastUebernommen": "Mulțumim! Ai preluat sarcina de sprijin",

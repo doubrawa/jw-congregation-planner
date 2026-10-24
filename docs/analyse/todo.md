@@ -8416,13 +8416,29 @@ bleibt es ein Platz wie jeder, mit Zusage und Erinnerung. Ausrollen:
 `substitute` (nur der Angebots-Check); ohne Ausrollen nähme der Server eine
 Übernahme an, die die App nie anbietet — harmlos.
 
-### T134 · Einspringen prominenter 🔧 ☐ offen
+### T134 · Einspringen prominenter 🔧 ✅ erledigt (24. Oktober 2026)
 
 „Die Möglichkeit einzuspringen soll prominenter sein. … es gibt oft den fall
 dass getauscht wird. momentan findet das über eine whatsapp gruppe statt, wo
 jemand nach ersatz fragt, aber es wäre natürlich schöner, wenn das über die app
 geht und zwar so, dass man schneller sieht, was für ersatz gesucht wird.
 vielleicht hilft schon das schneller zu finden, was schon da ist."
+
+**Entschieden (24. Oktober, Betreiber):** „momentan ist es ja unter ‚meine
+aufgaben' - ‚Freie Plätze'. verschieb freie plätze doch in einen eigenen
+menüeintrag unter ‚meine aufgaben'" — statt einer Karte auf Start, Gesuchen für
+Programmpunkte oder „Ersatz suchen ohne Absage".
+
+**Umgesetzt:** Bildschirm `freie` (`FreiePlaetzeScreen`): oben das Einspringen
+(Ersatzgesuche), darunter „Noch niemand eingeteilt" (die freien Plätze), ohne
+beides ein Satz statt einer leeren Seite. Menüpunkt gleich unter „Meine
+Aufgaben" mit Zeichen (gestrichelter Kreis mit Plus) und der Zahl aus Gesuchen
+und freien Plätzen. „Meine Aufgaben" trägt beides nicht mehr. Der Tipp auf
+„Ersatz gesucht" führt dorthin; Pushes mit dem alten Ziel
+(`#go=aufgaben&abschnitt=einspringen`, so schickt es `substitute` weiter) leitet
+`deeplink.ts` um (`FRUEHER_AUF`) — die Function bleibt unverändert. Die frühere
+Absage an eine eigene Seite („sie wäre fast immer leer", T109) ist damit
+überholt. Zwei Schlüssel neu in zwölf Sprachen.
 
 ### T135 · Planung: Wahl zwischen Zusammenkünften, Dienst und weiteren Plänen 🔧 ☐ offen
 

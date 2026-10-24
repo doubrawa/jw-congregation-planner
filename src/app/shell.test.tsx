@@ -134,7 +134,7 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
     // „Weitere Pläne" (T120, Phase 5) immer — dort legt er den ersten an.
     const { container } = zeige({ planner: true })
     expect(navPunkte(container)).toEqual([
-      t.navStart, t.navAufgabenLong, t.mitteilungen,
+      t.navStart, t.navAufgabenLong, t.freiePlaetzeTitle, t.mitteilungen,
       t.navZusammenkuenfte, t.tabFs, t.navWeiterePlaene,
       t.dashPlanung, t.navAuswertung, t.navPersonen, t.navEinstellungen,
     ])
@@ -144,7 +144,7 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
   it('der Planer sieht die Auswertung wie der Admin — Personen und Einstellungen nicht (T126)', () => {
     const { container, dispatch } = zeige({ planner: false, zuteiler: true })
     expect(navPunkte(container)).toEqual([
-      t.navStart, t.navAufgabenLong, t.mitteilungen,
+      t.navStart, t.navAufgabenLong, t.freiePlaetzeTitle, t.mitteilungen,
       t.navZusammenkuenfte, t.tabFs, t.navWeiterePlaene,
       t.dashPlanung, t.navAuswertung,
     ])
@@ -154,7 +154,7 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
 
   it('der Verkündiger sieht dieselben Bereiche — ohne Planen und Verwalten, ohne leere Weitere Pläne', () => {
     const { container } = zeige({ planner: false, personId: VERKUENDIGER.id })
-    expect(navPunkte(container)).toEqual([t.navStart, t.navAufgabenLong, t.mitteilungen, t.navZusammenkuenfte, t.tabFs])
+    expect(navPunkte(container)).toEqual([t.navStart, t.navAufgabenLong, t.freiePlaetzeTitle, t.mitteilungen, t.navZusammenkuenfte, t.tabFs])
     expect(abschnittTitel(container)).toEqual([t.versammlungLbl])
   })
 
@@ -173,7 +173,7 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
     // steht seit T120 im Predigtdienst. Personen bleiben ohnehin zu.
     const { container, dispatch } = zeige({ planner: false, personId: AUFSEHER.id })
     expect(navPunkte(container)).toEqual([
-      t.navStart, t.navAufgabenLong, t.mitteilungen, t.navZusammenkuenfte, t.tabFs, t.dashPlanung,
+      t.navStart, t.navAufgabenLong, t.freiePlaetzeTitle, t.mitteilungen, t.navZusammenkuenfte, t.tabFs, t.dashPlanung,
     ])
     tippe(container, t.dashPlanung)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
@@ -279,6 +279,7 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
       [{ screen: 'planen', tab: 'fs' }, t.dashPlanung],
       [{ screen: 'planung' }, t.dashPlanung],
       [{ screen: 'aufgaben' }, t.navAufgabenLong],
+      [{ screen: 'freie' }, t.freiePlaetzeTitle],
       [{ screen: 'mitteilungen' }, t.mitteilungen],
     ] as const) {
       const { container } = zeige(over)
@@ -296,6 +297,19 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
       (b) => b.querySelector('.menue-eintrag-text')?.textContent === t.navAufgabenLong,
     )!
     expect(aufgaben.querySelector('.menue-zahl')?.textContent).toBe('2')
+  })
+
+  it('an „Freie Plätze" steht, wie viel man übernehmen kann — Ersatzgesuche und freie Plätze zusammen (T134)', () => {
+    const gesuch = { key: '2026-09-07|mid|helper|mik|0', svc: 'mik', title: 'Mikrofone', date: '', declinedBy: 'Bernd Brand', schonHeute: [] }
+    const frei = { key: '2026-09-07|mid|part|k1|0', title: '', rolle: 'Gebet', date: '', at: null, schonHeute: [] }
+    const eintrag = (c: HTMLElement) =>
+      [...c.querySelectorAll(`${LEISTE} .menue-eintrag`)].find((b) => b.querySelector('.menue-eintrag-text')?.textContent === t.freiePlaetzeTitle)!
+    const { container } = zeige({ substituteReqs: [gesuch], offenePlaetze: [frei, { ...frei, key: 'k2' }] })
+    expect(eintrag(container).querySelector('.menue-zahl')?.textContent).toBe('3')
+    cleanup()
+    // Gibt es nichts, steht der Punkt trotzdem da — nur ohne Zahl.
+    const leer = zeige({ substituteReqs: [], offenePlaetze: [] }).container
+    expect(eintrag(leer).querySelector('.menue-zahl')).toBeNull()
   })
 })
 
@@ -874,12 +888,14 @@ describe('Der Push-Deep-Link führt in den erlaubten Bereich', () => {
 
   /*
    * „Ersatz gesucht" nennt zusätzlich den Bereich (T109). Die Navigation nimmt
-   * ihn mit; springen tut dann „Meine Aufgaben", sobald das Gesuch dasteht.
+   * ihn mit; springen tut dann „Freie Plätze", sobald das Gesuch dasteht. Der
+   * Push nennt noch „Meine Aufgaben", wo das Einspringen bis zum 24.10.2026
+   * stand (T134) — `deeplink.ts` führt ihn weiter.
    */
-  it('„Ersatz gesucht" nimmt den Bereich Einspringen mit', () => {
+  it('„Ersatz gesucht" nimmt den Bereich Einspringen mit — auf „Freie Plätze"', () => {
     history.replaceState(null, '', '/#go=aufgaben&abschnitt=einspringen')
     const { dispatch } = zeige({ planner: false, personId: VERKUENDIGER.id })
-    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'aufgaben', abschnitt: 'einspringen' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'freie', abschnitt: 'einspringen' })
     expect(location.hash).toBe('')
   })
 
@@ -887,10 +903,10 @@ describe('Der Push-Deep-Link führt in den erlaubten Bereich', () => {
     const { dispatch } = zeige({ planner: false, personId: VERKUENDIGER.id })
     dispatch.mockClear()
     act(() => {
-      history.replaceState(null, '', '/#go=aufgaben&abschnitt=einspringen')
+      history.replaceState(null, '', '/#go=freie&abschnitt=einspringen')
       window.dispatchEvent(new HashChangeEvent('hashchange'))
     })
-    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'aufgaben', abschnitt: 'einspringen' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'freie', abschnitt: 'einspringen' })
   })
 
   it('ein Link ohne Bereich springt nirgendwohin — wie alle Pushes bisher', () => {

@@ -543,6 +543,8 @@ export default {
   "uebernehmen": "أتولاها",
   "freiePlaetzeTitle": "أماكن شاغرة",
   "freiePlaetzeHint": "لم يُعيَّن أحد هنا بعد، ولديك مجال التعيين المطلوب. من يتولّاها أولًا يُسجَّل ويكون قد أكَّد.",
+  "freiePlaetzeNochFrei": "لم يُعيَّن أحد بعد",
+  "freiePlaetzeLeer": "لا أحد يبحث عن بديل الآن، ولا يوجد مكان شاغر يمكنك تولّيه.",
   "toastPlatzUebernommen": "شكرًا! تم تسجيلك",
   "toastErsatzGesucht": "تم الاعتذار · يُبحث عن بديل",
   "toastUebernommen": "شكرًا! توليت خدمة المساندة",

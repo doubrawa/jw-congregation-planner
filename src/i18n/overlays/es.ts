@@ -569,6 +569,8 @@ export default {
   "uebernehmen": "Me encargo",
   "freiePlaetzeTitle": "Plazas libres",
   "freiePlaetzeHint": "Aquí aún no hay nadie asignado, y tú tienes el área de asignación necesaria. La primera persona que se encargue queda anotada y con eso ya ha confirmado.",
+  "freiePlaetzeNochFrei": "Aún sin asignar",
+  "freiePlaetzeLeer": "Ahora nadie busca sustituto y no hay nada libre que puedas asumir.",
   "toastPlatzUebernommen": "¡Gracias! Ya tienes la asignación",
   "toastErsatzGesucht": "Cancelado · se busca un sustituto",
   "toastUebernommen": "¡Gracias! Te has encargado del servicio de apoyo",

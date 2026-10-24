@@ -65,6 +65,13 @@ const PFADE = {
       <path d="m3.8 7 1.3 1.3L7.4 6M3.8 12l1.3 1.3L7.4 11M3.8 17l1.3 1.3L7.4 16" />
     </>
   ),
+  // Freie Plätze (T134): der offene Platz der App — gestrichelt — mit einem Plus.
+  frei: (
+    <>
+      <circle cx="12" cy="12" r="8" strokeDasharray="2.6 2.4" />
+      <path d="M12 8.5v7M8.5 12h7" />
+    </>
+  ),
   zusammenkuenfte: (
     <>
       <rect x="4" y="5.5" width="16" height="14.5" rx="2" />

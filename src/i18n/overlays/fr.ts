@@ -569,6 +569,8 @@ export default {
   "uebernehmen": "Je m’en charge",
   "freiePlaetzeTitle": "Places libres",
   "freiePlaetzeHint": "Personne n’est encore désigné ici, et tu as le domaine d’attribution nécessaire. La première personne qui s’en charge est inscrite, ce qui vaut confirmation.",
+  "freiePlaetzeNochFrei": "Personne n’est encore désigné",
+  "freiePlaetzeLeer": "Personne ne cherche de remplaçant pour l’instant, et rien n’est libre que tu puisses prendre.",
   "toastPlatzUebernommen": "Merci\u00a0! Ton inscription est faite",
   "toastErsatzGesucht": "Annulé · un remplaçant est recherché",
   "toastUebernommen": "Merci\u00a0! Tu te charges de ce service auxiliaire",

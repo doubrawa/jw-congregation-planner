@@ -3469,7 +3469,7 @@ export const KATALOG = [
   },
   {
     id: 'sprung-wartet-auf-bereich',
-    datei: 'src/aufgaben/AufgabenScreen.tsx',
+    datei: 'src/aufgaben/FreiePlaetzeScreen.tsx',
     regel: 'Der Sprung zum Einspringen wartet, bis das Gesuch nach dem Nachladen dasteht (T109).',
     suchen: '  }, [state.sprungZiel, gesucheOffen, dispatch])',
     ersetzen: '  }, [state.sprungZiel, dispatch])',
@@ -4072,8 +4072,36 @@ export const KATALOG = [
   {
     id: 'mitteilung-ersatz-einspringen',
     datei: 'src/app/mitteilungen.ts',
-    regel: '„Ersatz gesucht" führt zum Einspringen auf „Meine Aufgaben" — wie der Push.',
-    suchen: "  if (n.title === ERSATZ_GESUCHT) return [{ type: 'navigate', screen: 'aufgaben', abschnitt: 'einspringen' }]\n",
+    regel: '„Ersatz gesucht" führt zum Einspringen auf „Freie Plätze" — wie der Push.',
+    suchen: "  if (n.title === ERSATZ_GESUCHT) return [{ type: 'navigate', screen: 'freie', abschnitt: 'einspringen' }]\n",
+    ersetzen: '',
+  },
+  {
+    id: 'freie-plaetze-alter-push',
+    datei: 'src/app/deeplink.ts',
+    regel: 'Ein Push „Ersatz gesucht" mit dem alten Ziel „Meine Aufgaben" führt zum Einspringen auf „Freie Plätze" (T134).',
+    suchen: '  return abschnitt && FRUEHER_AUF[abschnitt] === go ? ABSCHNITT_AUF[abschnitt] : (go as Screen)\n',
+    ersetzen: '  return go as Screen\n',
+  },
+  {
+    id: 'freie-plaetze-im-menue',
+    datei: 'src/app/AppShell.tsx',
+    regel: '„Freie Plätze" ist ein eigener Menüpunkt gleich unter „Meine Aufgaben" (T134).',
+    suchen: "eintraege: [eintrag('start', t.navStart, 'start'), aufgaben, freie, ...mitteilungen] }",
+    ersetzen: "eintraege: [eintrag('start', t.navStart, 'start'), aufgaben, ...mitteilungen] }",
+  },
+  {
+    id: 'freie-plaetze-zahl',
+    datei: 'src/app/AppShell.tsx',
+    regel: 'Am Menüpunkt „Freie Plätze" steht, wie viel man übernehmen kann — Ersatzgesuche und freie Plätze zusammen (T134).',
+    suchen: '    zahl: state.substituteReqs.length + state.offenePlaetze.length,\n',
+    ersetzen: '    zahl: state.offenePlaetze.length,\n',
+  },
+  {
+    id: 'freie-plaetze-leer',
+    datei: 'src/aufgaben/FreiePlaetzeScreen.tsx',
+    regel: 'Ohne Gesuch und ohne freien Platz sagt „Freie Plätze" das, statt leer dazustehen (T134).',
+    suchen: '      {!gesucheOffen && state.offenePlaetze.length === 0 && <p className="karte aufgaben-leer">{t.freiePlaetzeLeer}</p>}\n',
     ersetzen: '',
   },
   {

@@ -19,8 +19,13 @@ describe('parseGoTarget (Push-Deep-Link)', () => {
     expect(parseGoTarget('')).toBeNull()
   })
 
-  it('ein Bereich im Link ändert den Screen nicht', () => {
-    expect(parseGoTarget('#go=aufgaben&abschnitt=einspringen')).toBe('aufgaben')
+  it('ein Bereich im Link ändert den Screen nicht — außer er stand früher woanders', () => {
+    expect(parseGoTarget('#go=freie&abschnitt=einspringen')).toBe('freie')
+    // Bis zum 24.10.2026 stand das Einspringen auf „Meine Aufgaben" (T134);
+    // Pushes auf den Geräten tragen noch dieses Ziel.
+    expect(parseGoTarget('#go=aufgaben&abschnitt=einspringen')).toBe('freie')
+    expect(parseGoTarget('#go=programm&abschnitt=einspringen')).toBe('programm')
+    expect(parseGoTarget('#go=aufgaben&abschnitt=quatsch')).toBe('aufgaben')
   })
 
   it('jeder Bildschirm außer der Anmeldung ist ein Ziel — auch ein neuer', () => {
@@ -37,8 +42,8 @@ describe('parseGoTarget (Push-Deep-Link)', () => {
  * alles andere muss so bleiben, wie es war.
  */
 describe('parseGoAbschnitt (Bereich innerhalb des Screens)', () => {
-  it('„Ersatz gesucht" nennt den Bereich Einspringen', () => {
-    expect(parseGoAbschnitt('https://versammlung.app/#go=aufgaben&abschnitt=einspringen')).toBe('einspringen')
+  it('„Ersatz gesucht" nennt den Bereich Einspringen — im neuen Ziel wie im alten', () => {
+    expect(parseGoAbschnitt('https://versammlung.app/#go=freie&abschnitt=einspringen')).toBe('einspringen')
     expect(parseGoAbschnitt('#go=aufgaben&abschnitt=einspringen')).toBe('einspringen')
   })
 
@@ -52,7 +57,7 @@ describe('parseGoAbschnitt (Bereich innerhalb des Screens)', () => {
   })
 
   it('der Bereich gilt nur auf seinem eigenen Screen', () => {
-    // Einspringen steht auf „Meine Aufgaben". Im Programm gibt es ihn nicht —
+    // Einspringen steht auf „Freie Plätze". Im Programm gibt es ihn nicht —
     // dort nach ihm zu suchen hieße, auf etwas zu warten, das nie kommt.
     expect(parseGoAbschnitt('#go=programm&abschnitt=einspringen')).toBeNull()
     expect(parseGoAbschnitt('#abschnitt=einspringen')).toBeNull()

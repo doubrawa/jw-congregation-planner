@@ -641,6 +641,9 @@ export const DE = {
     // Freie Plätze unter „Meine Aufgaben" (4.10.2026): unbesetzte Plätze
     // gesendeter Wochen, für die man den Aufgabenbereich hat.
     freiePlaetzeTitle: 'Freie Plätze',
+    // Seit T134 eine eigene Seite: der Abschnitt der freien Plätze und die leere Seite.
+    freiePlaetzeNochFrei: 'Noch niemand eingeteilt',
+    freiePlaetzeLeer: 'Gerade sucht niemand Ersatz, und es ist nichts frei, was du übernehmen kannst.',
     freiePlaetzeHint: 'Hier ist noch niemand eingeteilt, und du hast den Aufgabenbereich dafür. Wer zuerst übernimmt, ist eingetragen und hat damit zugesagt.',
     toastPlatzUebernommen: 'Danke! Du bist eingetragen',
     // Die drei Stufen des Ampel-Punkts im Planen — Legende und Screenreader

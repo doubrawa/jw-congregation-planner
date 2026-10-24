@@ -568,6 +568,8 @@ export default {
   "uebernehmen": "قبول می‌کنم",
   "freiePlaetzeTitle": "جاهای خالی",
   "freiePlaetzeHint": "هنوز کسی برای این‌ها تعیین نشده و شما حوزهٔ وظیفهٔ لازم را دارید. هر کس زودتر قبول کند، ثبت می‌شود و تأیید کرده است.",
+  "freiePlaetzeNochFrei": "هنوز کسی تعیین نشده",
+  "freiePlaetzeLeer": "اکنون کسی دنبال جایگزین نیست و جای خالی برای شما نیست.",
   "toastPlatzUebernommen": "متشکریم! ثبت شدید",
   "toastErsatzGesucht": "انصراف ثبت شد · جایگزین جستجو می‌شود",
   "toastUebernommen": "متشکریم! وظیفهٔ کمکی را پذیرفتید",

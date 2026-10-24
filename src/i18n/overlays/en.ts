@@ -335,6 +335,8 @@ export default {
   "uebernehmen": "Take over",
   "freiePlaetzeTitle": "Free places",
   "freiePlaetzeHint": "No one is assigned here yet, and you have the assignment area for it. Whoever takes it first is signed up and has thereby confirmed.",
+  "freiePlaetzeNochFrei": "Nobody assigned yet",
+  "freiePlaetzeLeer": "No one needs a substitute right now, and nothing is free that you could take on.",
   "toastPlatzUebernommen": "Thanks! You’re signed up",
   "zusageBestaetigt": "confirmed",
   "zusageWartet": "awaiting confirmation",

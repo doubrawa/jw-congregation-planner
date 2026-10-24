@@ -58,9 +58,9 @@ describe('mitteilungsZiel — ein Tipp führt dorthin, wo die Mitteilung herkomm
     ])
   })
 
-  it('„Ersatz gesucht" springt zum Einspringen — wie der Push, auch beim Planer', () => {
+  it('„Ersatz gesucht" springt zum Einspringen auf „Freie Plätze" — wie der Push, auch beim Planer', () => {
     const n = zeile({ type: 'zuteilung', title: ERSATZ_GESUCHT, taskId: HILFSDIENST })
-    const ziel = [{ type: 'navigate', screen: 'aufgaben', abschnitt: 'einspringen' }]
+    const ziel = [{ type: 'navigate', screen: 'freie', abschnitt: 'einspringen' }]
     expect(mitteilungsZiel(n, lage())).toEqual(ziel)
     expect(mitteilungsZiel(n, lage({ zuteilen: true }))).toEqual(ziel)
   })
@@ -241,7 +241,7 @@ describe('Ablauf: Mitteilungen offen → Tipp → angekommen', () => {
 
   it('… beim Ersatzgesuch am Einspringen', () => {
     const nach = tippen(offen({ planner: false }), zeile({ type: 'zuteilung', title: ERSATZ_GESUCHT }))
-    expect(nach).toMatchObject({ screen: 'aufgaben', sprungZiel: 'einspringen' })
+    expect(nach).toMatchObject({ screen: 'freie', sprungZiel: 'einspringen' })
   })
 
   it('… und eine Woche, die er nur ansehen darf, im Programm — nie im Planen', () => {

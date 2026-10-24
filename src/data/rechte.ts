@@ -128,6 +128,7 @@ const ZUGANG = {
   start: 'alle',
   programm: 'alle',
   aufgaben: 'alle',
+  freie: 'alle',
   mitteilungen: 'alle',
   planen: 'gruppe',
   planung: 'planer',

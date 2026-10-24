@@ -37,6 +37,7 @@ const ALLE_SCREENS = Object.keys({
   start: true,
   programm: true,
   aufgaben: true,
+  freie: true,
   mitteilungen: true,
   planen: true,
   planung: true,
@@ -97,7 +98,7 @@ describe('Wer welchen Bildschirm sehen darf', () => {
     expect(erlaubt).not.toContain('personen')
     expect(erlaubt).not.toContain('einstellungen')
     // Und das Übrige sehr wohl — sonst prüfte der Test bloß eine leere Menge.
-    expect([...erlaubt]).toEqual(['start', 'programm', 'aufgaben', 'mitteilungen', 'profil'])
+    expect([...erlaubt]).toEqual(['start', 'programm', 'aufgaben', 'freie', 'mitteilungen', 'profil'])
   })
 
   it('Planer und Gruppenaufseher bekommen Planen dazu — Personen und Einstellungen nicht', () => {
@@ -107,7 +108,7 @@ describe('Wer welchen Bildschirm sehen darf', () => {
     // Versammlung — die Datenbank hielte sie zwar noch auf, aber die
     // Oberfläche böte es an.
     for (const r of [PLANER, PLANER_UND_AUFSEHER]) {
-      expect([...erlaubteScreens(r)]).toEqual(['start', 'programm', 'aufgaben', 'mitteilungen', 'planen', 'planung', 'auswertung', 'profil'])
+      expect([...erlaubteScreens(r)]).toEqual(['start', 'programm', 'aufgaben', 'freie', 'mitteilungen', 'planen', 'planung', 'auswertung', 'profil'])
     }
   })
 
@@ -115,7 +116,7 @@ describe('Wer welchen Bildschirm sehen darf', () => {
     // Die Wochen gelten den Zusammenkünften (T121, Phase 10); der
     // Gruppenaufseher kommt über „Planung" gleich zu den Treffpunkten. Die
     // Auswertung (T126): „admin und planer" (Betreiber, 16.10.2026).
-    expect([...erlaubteScreens(AUFSEHER)]).toEqual(['start', 'programm', 'aufgaben', 'mitteilungen', 'planen', 'profil'])
+    expect([...erlaubteScreens(AUFSEHER)]).toEqual(['start', 'programm', 'aufgaben', 'freie', 'mitteilungen', 'planen', 'profil'])
   })
 
   it('die Reihenfolge ist die der Navigation und für alle dieselbe', () => {

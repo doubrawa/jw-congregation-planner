@@ -569,6 +569,8 @@ export default {
   "uebernehmen": "Me ne occupo",
   "freiePlaetzeTitle": "Posti liberi",
   "freiePlaetzeHint": "Qui non è ancora assegnato nessuno, e tu hai la mansione richiesta. La prima persona che se ne occupa viene iscritta e ha così confermato.",
+  "freiePlaetzeNochFrei": "Ancora nessuno assegnato",
+  "freiePlaetzeLeer": "Al momento nessuno cerca un sostituto e non c’è niente di libero che tu possa assumere.",
   "toastPlatzUebernommen": "Grazie! L’incarico è tuo",
   "toastErsatzGesucht": "Annullato · si cerca un sostituto",
   "toastUebernommen": "Grazie! Ora il servizio di supporto è tuo",
