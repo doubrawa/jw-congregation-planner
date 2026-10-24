@@ -6,10 +6,12 @@ import { describe, expect, it } from 'vitest'
  * **Jedes Muster der Legende hat die Farbe seiner Felder** (Auswertung, T126).
  *
  * Muster und Feld sind getrennte CSS-Regeln: `.aw-muster.is-hilfsdienst` in der
- * Legende, `.aw-woche.is-hilfsdienst` in den Wochen einer Person. Bis zum
- * 17.10.2026 trug das eine `--text3`, das andere `--umriss`, und das „nie" im
- * Wartebalken `--text2` statt `--text3` wie seine Legende (Review). Die Legende
- * erklärte damit eine Farbe, die im Diagramm nicht vorkam.
+ * Legende, `.aw-wert.is-hilfsdienst` im Balken. Bis zum 17.10.2026 trugen die
+ * Wochen einer Person `--umriss` neben einer Legende in `--text3`, und das
+ * „nie" im Wartebalken `--text2` statt `--text3` wie seine Legende (Review).
+ * Die Legende erklärte damit eine Farbe, die im Diagramm nicht vorkam. Seit dem
+ * Kalender (24.10.2026) teilen sich die Felder einer Person und ihre Muster je
+ * eine Regel — die Probe hält auch das fest.
  *
  * Gelesen wird die Datei selbst — unter vitest ist CSS leer.
  */
@@ -41,13 +43,18 @@ const PAARE: Array<[string, string[]]> = [
   ['.aw-muster.is-strich', ['.aw-strich']],
   ['.aw-muster.is-ueber', ['.aw-wert.is-ueber']],
   ['.aw-muster.is-unter', ['.aw-luecke']],
-  ['.aw-muster.is-hilfsdienst', ['.aw-wert.is-hilfsdienst', '.aw-woche.is-hilfsdienst']],
+  ['.aw-muster.is-hilfsdienst', ['.aw-wert.is-hilfsdienst']],
   ['.aw-muster.is-stufe1', ['.aw-zelle.is-stufe1']],
   ['.aw-muster.is-stufe2', ['.aw-zelle.is-stufe2']],
   ['.aw-muster.is-stufe3', ['.aw-zelle.is-stufe3']],
   ['.aw-muster.is-ohne', ['.aw-zelle.is-ohne-bereich']],
-  ['.aw-muster.is-aufgabe', ['.aw-woche.is-aufgabe']],
-  ['.aw-muster.is-abwesend', ['.aw-woche.is-abwesend']],
+  ['.aw-muster.is-aufgabe', ['.aw-halb.is-aufgabe']],
+  ['.aw-muster.is-dienst', ['.aw-halb.is-dienst']],
+  ['.aw-muster.is-beides', ['.aw-halb.is-beides']],
+  ['.aw-muster.is-abgesagt', ['.aw-halb.is-abgesagt']],
+  ['.aw-muster.is-abwesend', ['.aw-halb.is-abwesend']],
+  ['.aw-muster.is-ausgefallen', ['.aw-halb.is-ausgefallen']],
+  ['.aw-muster.is-geplant', ['.aw-halb.is-geplant.is-aufgabe', '.aw-halb.is-geplant.is-beides']],
 ]
 
 describe('Legende und Diagramm der Auswertung sprechen dieselbe Farbe', () => {

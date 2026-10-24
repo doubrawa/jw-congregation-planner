@@ -823,11 +823,22 @@ die Hilfsdienste oft nur wenige Monate zurück.
 ### Eine Person
 
 Ein Tipp auf einen Namen zeigt die Person: ihre Aufgaben gegen die Erwartung,
-ihre Hilfsdienste, wie oft sie abwesend war und wie oft sie abgesagt hat, die
-Wochen des Zeitraums als Felder (Aufgabe, Hilfsdienst, abwesend) und je
-Bereich, wie oft und wann zuletzt – hinten die Bereiche, in denen sie
-eingeteilt war, ohne sie zu haben (**Bereich nicht vorhanden**, ohne
+ihre Hilfsdienste, wie oft sie abwesend war und wie oft sie abgesagt hat, ihre
+Wochen und je Bereich, wie oft und wann zuletzt – hinten die Bereiche, in denen
+sie eingeteilt war, ohne sie zu haben (**Bereich nicht vorhanden**, ohne
 Erwartung).
+
+Die **Wochen** stehen als Kalender da: je Monat eine Zeile, der neueste oben.
+Jede Woche hat zwei Felder – zuerst die Zusammenkunft unter der Woche, dann die
+am Wochenende. Grün ist eine Aufgabe, grau ein Hilfsdienst, halb und halb
+beides in derselben Zusammenkunft; schraffiert war die Person abwesend, rot
+umrandet hat sie abgesagt, durchgestrichen fand die Zusammenkunft nicht statt.
+Zu jedem Monat steht da, welche Aufgaben es waren (kam dieselbe öfter, mit der
+Zahl) und was abgesagt wurde – am Handy unter den Feldern, auf größeren
+Bildschirmen daneben. Was ab dieser Woche schon geplant ist, steht gestrichelt
+oben – bis zur letzten Woche, in der die Person eingeteilt oder abwesend ist;
+mitgezählt wird es nicht. Die laufende Woche zählt dabei ganz als geplant, wie
+überall in der Auswertung: auch eine Zusammenkunft dieser Woche, die schon war.
 
 ### Was die Auswertung nicht weiß
 

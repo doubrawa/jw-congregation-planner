@@ -28,6 +28,9 @@ export interface Kontext {
   zahl: (n: number) => string
   /** Ein Tag kurz („17. Feb."). */
   datum: (iso: string) => string
+  /** Der Monat eines Tages allein, kurz („Feb"), und sein Jahr („2026"). */
+  monat: (iso: string) => string
+  jahr: (iso: string) => string
   /** Ein Anteil (0 bis 1) als Prozent der Sprache („4,2 %"). */
   prozent: (anteil: number) => string
   personOeffnen: (pid: string) => void

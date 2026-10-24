@@ -1,18 +1,84 @@
 import { useMemo } from 'react'
-import { OBERE_GRENZE, personBild, lageVon } from '../data/auswertung'
+import { OBERE_GRENZE, personBild, lageVon, type FeldArt, type PersonWoche } from '../data/auswertung'
 import type { AbsenceSet } from '../data/absence'
 import type { Person, Week } from '../data/types'
+import { monatsErster } from '../data/weitere-plaene'
 import { fill } from '../i18n/useT'
-import { Legende, VergleichsBalken, WochenFelder } from './Diagramme'
+import { Legende, VergleichsBalken, WochenKalender, type KalenderMonat, type MusterArt } from './Diagramme'
 import { gerundet, type Kontext } from './kontext'
 
-/** In Reihen zu je dreizehn Wochen — ein Vierteljahr je Reihe. */
-const REIHE = 13
+/**
+ * Die Wochen je Monat (der seines Montags), der neueste oben, die Monate je
+ * Jahr. Neben dem Monat jede Aufgabe und Absage einmal — kam derselbe Eintrag
+ * öfter, mit der Zahl („Gebete: 2"). Die Bereiche kurz wie im Kopf der Tabelle
+ * („Vorsitz · unter der Woche"): Die Spalte neben den Feldern ist schmal.
+ * Geordnet wird nach dem Datum, nicht nach der Folge in `weeks` — kam eine
+ * Woche außer der Reihe dazu, stünde ihr Monat sonst an falscher Stelle und ein
+ * Jahr zweimal da (Review 24.10.2026).
+ */
+function kalender(wochen: readonly PersonWoche[], k: Kontext): { jahr: string; monate: KalenderMonat[] }[] {
+  const { t } = k
+  const monate = new Map<string, PersonWoche[]>()
+  for (const w of [...wochen].sort((a, b) => a.start.localeCompare(b.start))) {
+    const erster = monatsErster(w.start)
+    const liste = monate.get(erster)
+    if (liste) liste.push(w)
+    else monate.set(erster, [w])
+  }
+  const jahre: { jahr: string; monate: KalenderMonat[] }[] = []
+  for (const [erster, hier] of [...monate].reverse()) {
+    const eintraege = new Map<string, { text: string; absage: boolean; n: number }>()
+    for (const w of hier) {
+      for (const e of w.eintraege) {
+        const name = e.bereich === null ? t.awAufgabe : k.bereichKurz(e.bereich).join(' · ')
+        const stand = e.art === 'absage' ? t.awAbgesagt : w.geplant ? t.awGeplantKurz : null
+        const text = stand ? fill(t.awEintragStand, { bereich: name, stand }) : name
+        const da = eintraege.get(text)
+        if (da) da.n++
+        else eintraege.set(text, { text, absage: e.art === 'absage', n: 1 })
+      }
+    }
+    const monat: KalenderMonat = {
+      erster,
+      name: k.monat(erster),
+      wochen: hier,
+      eintraege: [...eintraege.values()].map((e) => ({ text: e.n > 1 ? fill(t.awBereichZahl, { bereich: e.text, n: k.zahl(e.n) }) : e.text, absage: e.absage })),
+    }
+    const jahr = k.jahr(erster)
+    const letztes = jahre[jahre.length - 1]
+    if (letztes?.jahr === jahr) letztes.monate.push(monat)
+    else jahre.push({ jahr, monate: [monat] })
+  }
+  return jahre
+}
+
+/**
+ * Die Legende nennt Aufgabe und Hilfsdienst immer, die übrigen Felder nur, wo
+ * sie vorkommen. Geplante Aufgaben und Hilfsdienste sind gestrichelt — sie
+ * zeigt „geplant"; abwesend und ohne Zusammenkunft sehen vorher wie nachher
+ * gleich aus.
+ */
+function legende(wochen: readonly PersonWoche[], k: Kontext): [MusterArt, string][] {
+  const { t } = k
+  const kommt = (arten: readonly FeldArt[], geplant?: boolean) =>
+    wochen.some((w) => (geplant === undefined || w.geplant === geplant) && (arten.includes(w.felder.mid) || arten.includes(w.felder.we)))
+  const eintraege: [MusterArt, string, boolean][] = [
+    ['aufgabe', t.awAufgabe, true],
+    ['dienst', t.awHilfsdienst, true],
+    ['beides', t.awBeides, kommt(['beides'], false)],
+    ['abwesend', t.awAbwesendKurz, kommt(['abwesend'])],
+    ['abgesagt', t.awAbgesagt, kommt(['abgesagt'], false)],
+    ['ausgefallen', t.awAusgefallen, kommt(['ausgefallen'])],
+    ['geplant', t.awGeplantKurz, kommt(['aufgabe', 'hilfsdienst', 'beides'], true)],
+  ]
+  return eintraege.filter(([, , zeigen]) => zeigen).map(([art, text]) => [art, text])
+}
 
 /**
  * **Eine Person** (Entwurf `HandyPerson`): ihre Zuteilungen gegen die Erwartung,
- * die Wochen des Zeitraums als Felder und je Bereich, wie oft und wann zuletzt —
- * hinten die Bereiche, in denen sie eingeteilt war, ohne sie zu haben.
+ * ihre Wochen als Kalender (Entwurf `GWochenbildKalender`, 23.10.2026) und je
+ * Bereich, wie oft und wann zuletzt — hinten die Bereiche, in denen sie
+ * eingeteilt war, ohne sie zu haben.
  */
 export function PersonAnsicht({
   k,
@@ -30,13 +96,6 @@ export function PersonAnsicht({
   const { t } = k
   const bild = useMemo(() => personBild(k.a.grundlage, weeks, persons, abwesend, pid), [k.a.grundlage, weeks, persons, abwesend, pid])
   if (!bild) return null
-  const starts = k.a.grundlage.fenster.montage
-  const reihen = []
-  for (let von = 0; von < bild.wochen.length; von += REIHE) {
-    const erste = starts[von] ?? ''
-    const letzte = starts[Math.min(von + REIHE, bild.wochen.length) - 1] ?? erste
-    reihen.push({ von, label: erste === letzte ? k.datum(erste) : `${k.datum(erste)} – ${k.datum(letzte)}` })
-  }
   const wochenAria = fill(t.awWochenBild, {
     name: k.name(pid),
     a: k.zahl(bild.aufgaben),
@@ -66,16 +125,11 @@ export function PersonAnsicht({
       </section>
 
       <section className="karte aw-gruppe" aria-label={wochenAria}>
-        {/* So viele Wochen, wie Felder dastehen — die App kennt nicht immer den ganzen Zeitraum. */}
-        <h2 className="aw-gruppe-kopf">{fill(t.awLetzte, { dauer: k.dauer(bild.wochen.length) })}</h2>
-        <WochenFelder wochen={bild.wochen} reihen={reihen} />
-        <Legende
-          eintraege={[
-            ['aufgabe', t.awAufgabe],
-            ['hilfsdienst', t.awHilfsdienst],
-            ['abwesend', t.awAbwesendKurz],
-          ]}
-        />
+        {/* So viele Wochen, wie die App vom Zeitraum kennt — nicht die 52 des Zeitraums, und ohne das Geplante. */}
+        <h2 className="aw-gruppe-kopf">{fill(t.awLetzte, { dauer: k.dauer(k.a.grundlage.fenster.wochen.length) })}</h2>
+        <WochenKalender jahre={kalender(bild.wochen, k)} />
+        <p className="klein-text aw-wochen-erklaerung">{t.awZweiFelder}</p>
+        <Legende eintraege={legende(bild.wochen, k)} />
       </section>
 
       <section className="karte aw-gruppe" aria-label={t.awJeBereich}>

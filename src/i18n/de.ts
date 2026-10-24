@@ -870,6 +870,10 @@ export const DE = {
     awAufgabenErwartet: 'Aufgaben, erwartet {e}', awAbwesend: 'Zusammenkünfte abwesend',
     awLetzte: 'Die letzten {dauer}', awAufgabe: 'Aufgabe', awHilfsdienst: 'Hilfsdienst', awAbwesendKurz: 'abwesend',
     awWochenBild: '{name}: Aufgaben {a}, Hilfsdienste {h}, abwesend {w}',
+    // Die Wochen einer Person als Kalender (Entwurf `GWochenbildKalender`, 23.10.2026).
+    awBeides: 'beides', awAbgesagt: 'abgesagt', awAusgefallen: 'ohne Zusammenkunft', awGeplantKurz: 'geplant',
+    awEintragStand: '{bereich} · {stand}',
+    awZweiFelder: 'Je Woche zwei Felder: erst die Zusammenkunft unter der Woche, dann die am Wochenende.',
     awJeBereich: 'Je Bereich', awZuletztVor: 'zuletzt vor {dauer}',
     // Wartezeiten (Review 17.10.2026): Wer im Bereich schon eingeteilt ist, wartet nicht.
     awGeplant: 'geplant: {datum}',

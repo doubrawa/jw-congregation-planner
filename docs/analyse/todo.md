@@ -7449,6 +7449,43 @@ Fälle), Bildschirm (Engpässe, Hinweis je Bereich am Handy und Tablet, Wartezei
 Mutationskatalog: 8 Einträge nachgezogen, einer gestrichen
 (`last-zehn-oben-erst-ab-elf`), 20 neu.
 
+**Die Wochen einer Person als Kalender (24. Oktober 2026) — umgesetzt.**
+Betreiber am 23. Oktober zum Bild einer Person: *„die darstellung der wochen
+sollte anders gemacht werden"*; Entwurf in der Arbeitskopie der Leinwand (Zeile
+`wochenbild`, heute und vier Varianten), am 24. Oktober gewählt: *„Nimm
+Variante B (Monate als Zeilen) und setz sie in der App um."* Statt vier Reihen
+zu dreizehn Feldern je Monat eine Zeile, der neueste oben, je Woche zwei Felder
+(unter der Woche, Wochenende), dazu die Aufgaben und Absagen mit Bereich.
+
+| Vorher | Jetzt |
+| --- | --- |
+| Ein Feld je Woche, „Aufgabe vor Hilfsdienst": Im Beispiel des Betreibers 32 Hilfsdienste in der Kachel, 27 graue Felder | je Zusammenkunft ein Feld; Aufgabe und Hilfsdienst zugleich „beides" (`personBild`, `FeldArt`) |
+| Hilfsdienst `--text3` wog in Hell schwerer als die Aufgabe in Minze | Aufgabe `--akzent-text`, Hilfsdienst `--umriss`; Feld und Legende in einer Regel |
+| Spannen der Montage über den Reihen | Monat und Jahr aus `Intl` (`monatsName`, `jahrZahl`) |
+| Bereich, Ausfall, Absage und Geplantes fehlten | Bereich kurz beim Monat, fließend mit Komma (gleiche Einträge mit Zahl), Ausfall durchgestrichen, Absage rot (`AbsageEinteilung` trägt dafür Woche und Zusammenkunft), Geplantes gestrichelt bis zur letzten Woche, in der die Person eingeteilt oder abwesend ist |
+
+Am Handy steht der Text unter den Feldern (Container-Abfrage 32 em), ab dem
+Tablet daneben. Im echten Chrome gemessen mit drei Personen (wenige Bereiche,
+ein Ältester mit sechs, Schulung und Mikrofon) über zwölf Sprachen × 320–1280 px
+× Stufen 1/1,3/1,45 — 0 Überläufe, gebrochen nur am eigenen Trennzeichen
+(„week-end", „Звук/видео"). Texte: sechs neu in zwölf Sprachen. Proben:
+Rechnung (je Zusammenkunft, ausgefallen, Geplantes, Absage am Platz),
+Bildschirm (fünf Fälle, auch Wochen außer der Reihe), Legende.
+Mutationskatalog: zwei nachgezogen, acht neu.
+
+**Review (`/simplify`, `/code-review max`, 24. Oktober 2026).** Behoben: ein
+neuer Test rechnete die Auswertung im Sortiervergleich je Person neu (32 s, mit
+der 5-s-Frist der CI rot — lokal grün nur mit `--testTimeout=60000`); die
+Monate ordnen nach dem Datum statt nach der Folge in `weeks`; eine Zeile je
+Eintrag machte den Monat eines Ältesten acht Zeilen hoch (jetzt fließend, am
+Handy unter den Feldern); `hyphens: auto` trennte Wörter, die in die nächste
+Zeile passten. Vereinfacht: `monatsErster`, `PersonWoche` direkt in der
+Ansicht, ein Helfer für „abwesend, wo die Zusammenkunft stattfindet“. So
+gelassen, Entscheidung beim Betreiber: die laufende Woche gilt ganz als geplant, wie
+die Wartezeiten sie zählen; ein abgesagter Treffpunkt steht beim Monat, ein
+geleiteter nicht (die Kachel zählt die Absage); zwei Hilfsdienste in einer
+Zusammenkunft sind ein Feld; die Überschrift nennt nur den Zeitraum.
+
 ---
 
 ## Aufgenommen am 18. Oktober 2026 — Gruppen aus der Reinigung nehmen (T127)

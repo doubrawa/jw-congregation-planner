@@ -7907,12 +7907,71 @@ export const KATALOG = [
   // „last-zehn-oben-erst-ab-elf" ist am 18.10.2026 gegangen: Die Karte „Wie sich
   // die Last verteilt" ist mit der Jahresprobe fort (sie zeigte Struktur, keinen
   // Befund), an ihrer Stelle stehen die Engpässe.
+  // „legende-farbe-hilfsdienst-woche" ist am 24.10.2026 gegangen: Die Felder einer
+  // Person und ihre Muster teilen sich seit dem Kalender je eine Regel, auseinander
+  // laufen können sie nicht mehr. An ihrer Stelle der Balken, der eigene Regeln hat.
   {
-    id: "legende-farbe-hilfsdienst-woche",
+    id: "legende-farbe-hilfsdienst-balken",
     datei: "src/auswertung/auswertung.css",
-    regel: "Die Hilfsdienst-Wochen einer Person haben die Farbe ihres Legendenmusters (Review 17.10.2026).",
-    suchen: ".aw-woche.is-hilfsdienst {\n  background: var(--text3);\n",
-    ersetzen: ".aw-woche.is-hilfsdienst {\n  background: var(--umriss);\n",
+    regel: "Der Hilfsdienst im Balken „Mit Hilfsdiensten“ hat die Farbe seines Legendenmusters (Review 17.10.2026).",
+    suchen: ".aw-wert.is-hilfsdienst {\n  background: var(--text3);\n",
+    ersetzen: ".aw-wert.is-hilfsdienst {\n  background: var(--umriss);\n",
+  },
+  {
+    id: "wochen-person-beides",
+    datei: "src/data/auswertung.ts",
+    regel: "Aufgabe und Hilfsdienst in derselben Zusammenkunft sind „beides“ — die Aufgabe verdeckt den Hilfsdienst nicht (Kalender, 24.10.2026).",
+    suchen: "  if (aufgabe && hilfsdienst) return 'beides'\n",
+    ersetzen: "",
+  },
+  {
+    id: "wochen-person-je-zusammenkunft",
+    datei: "src/data/auswertung.ts",
+    regel: "Je Zusammenkunft ein Feld: Der Hilfsdienst am Wochenende steht in seinem Feld, nicht in dem unter der Woche (Kalender, 24.10.2026).",
+    suchen: "      const hier = einteilungen.filter((e) => e.wi === wi && e.tab === tab)\n",
+    ersetzen: "      const hier = einteilungen.filter((e) => e.wi === wi)\n",
+  },
+  {
+    id: "wochen-person-ausgefallen",
+    datei: "src/data/auswertung.ts",
+    regel: "Eine Zusammenkunft, die ausfiel, sagt es — leer sähe ein Kongress aus wie eine Woche ohne Aufgabe (Kalender, 24.10.2026).",
+    suchen: "        felder[tab] = 'ausgefallen'\n",
+    ersetzen: "",
+  },
+  {
+    id: "wochen-person-absage-am-platz",
+    datei: "src/data/auswertung.ts",
+    regel: "Eine Absage steht im Feld ihrer Zusammenkunft — ein abgesagter Treffpunkt nur neben dem Monat (Kalender, 24.10.2026).",
+    suchen: "      const abgesagt = absagen.filter((a) => a.wi === wi && a.tab === tab)\n",
+    ersetzen: "      const abgesagt = absagen.filter((a) => a.wi === wi)\n",
+  },
+  {
+    id: "wochen-person-geplant-bis",
+    datei: "src/data/auswertung.ts",
+    regel: "Was ansteht, reicht bis zur letzten Woche, in der die Person eingeteilt oder abwesend ist — dahinter nichts (Kalender, 24.10.2026).",
+    suchen: "    if (geplant.some((e) => e.wi === wi) || MEETING_TABS.some((tab) => weg(week, wi, tab))) kommendBis = kommend.length\n",
+    ersetzen: "    kommendBis = kommend.length\n",
+  },
+  {
+    id: "wochen-person-nach-datum",
+    datei: "src/auswertung/PersonAnsicht.tsx",
+    regel: "Die Monate stehen nach dem Datum, nicht nach der Folge in `weeks` — sonst stünde ein Jahr zweimal da (Review 24.10.2026).",
+    suchen: "  for (const w of [...wochen].sort((a, b) => a.start.localeCompare(b.start))) {\n",
+    ersetzen: "  for (const w of wochen) {\n",
+  },
+  {
+    id: "wochen-person-neueste-oben",
+    datei: "src/auswertung/PersonAnsicht.tsx",
+    regel: "Der neueste Monat steht oben (Kalender, 24.10.2026).",
+    suchen: "  for (const [erster, hier] of [...monate].reverse()) {\n",
+    ersetzen: "  for (const [erster, hier] of [...monate]) {\n",
+  },
+  {
+    id: "wochen-person-absage-rot",
+    datei: "src/auswertung/Diagramme.tsx",
+    regel: "Eine Absage steht neben dem Monat in der Problemfarbe (Kalender, 24.10.2026).",
+    suchen: "                        <span className={e.absage ? 'is-absage' : undefined}>{e.text}</span>\n",
+    ersetzen: "                        <span>{e.text}</span>\n",
   },
   {
     id: "legende-farbe-nie-im-wartebalken",
@@ -8036,9 +8095,9 @@ export const KATALOG = [
   {
     id: "absagen-der-person",
     datei: "src/data/auswertung.ts",
-    regel: "Die Person zählt nur ihre eigenen Absagen (T126).",
-    suchen: "    absagen: g.absagen.filter((a) => a.pid === pid).length,\n",
-    ersetzen: "    absagen: g.absagen.length,\n",
+    regel: "Die Person zählt nur ihre eigenen Absagen (T126) — und zeigt nur sie in ihren Wochen (Kalender, 24.10.2026).",
+    suchen: "  const absagen = g.absagen.filter((a) => a.pid === pid)\n",
+    ersetzen: "  const absagen = g.absagen\n",
   },
   {
     id: "absagen-kachel-wie-liste",

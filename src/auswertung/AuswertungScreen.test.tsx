@@ -11,9 +11,9 @@ import {
 import { deutschFinder, sichtbareTexte } from '../../tests/deutsch-erkennen'
 import { fremdsprachigerBestand, type FremdBestand } from '../../tests/fremdsprachiger-bestand'
 import { demoZustand } from '../../tests/testdaten/demo-start'
-import { datumsFormat, zeitspanne } from '../components/datum-anzeige'
+import { datumsFormat, monatsName, zeitspanne } from '../components/datum-anzeige'
 import { abwesenheitenVon } from '../data/absence'
-import { auswerten, ZEITRAEUME, type Zeitraum } from '../data/auswertung'
+import { auswerten, ZEITRAEUME, type Einteilung, type Zeitraum } from '../data/auswertung'
 import { displayName } from '../data/helpers'
 import { fromIso, tagNach } from '../data/meeting-dates'
 import { allePlaetze, platzKey } from '../data/plaetze'
@@ -22,7 +22,7 @@ import type { Absage, FsInstance, Lang, Week } from '../data/types'
 import { LOCALES } from '../i18n/langs'
 import { dict, loadOverlay } from '../i18n/ui'
 import { fill } from '../i18n/useT'
-import { bereichsName } from '../personen/priv-label'
+import { bereichsName, bereichsTeile } from '../personen/priv-label'
 import { AuswertungScreen } from './AuswertungScreen'
 import { WarteBalken } from './Diagramme'
 import { HINWEISE_SICHTBAR } from './Hinweise'
@@ -201,10 +201,14 @@ describe('Am Handy: der Überblick', () => {
     expect(hinweis.querySelector('.aw-hinweis-titel')?.textContent).toContain(displayName(erste))
     fireEvent.click(hinweis)
     expect(titel(container)).toBe(displayName(erste))
-    // Die Wochen des Zeitraums als Felder: zwanzig, in Reihen zu dreizehn — und
-    // die Überschrift nennt so viele, wie dastehen, nicht die 52 des Zeitraums.
+    // Die Wochen des Zeitraums je Monat, der neueste oben: zwanzig, vom 25. Mai
+    // bis zum 5. Oktober — und die Überschrift nennt so viele, wie dastehen,
+    // nicht die 52 des Zeitraums.
     expect(container.querySelectorAll('.aw-woche')).toHaveLength(20)
-    expect(container.querySelectorAll('.aw-wochen-reihe')).toHaveLength(2)
+    expect([...container.querySelectorAll('.aw-monat-name')].map((m) => m.textContent)).toEqual(
+      ['2026-10', '2026-09', '2026-08', '2026-07', '2026-06', '2026-05'].map((m) => monatsName(`${m}-01`, 'de')),
+    )
+    expect([...container.querySelectorAll('.aw-jahr')].map((j) => j.textContent)).toEqual(['2026'])
     expect(container.textContent).toContain(zahlBinden(`Die letzten ${zeitspanne(20, 'week', 'de')}`))
     zurueck(container)
     expect(titel(container)).toBe(t.navAuswertung)
@@ -320,6 +324,132 @@ function absagenIn(bereich: string, n: number, pid: string): Absage[] {
     return { personId: pid, taskKey: platzKey(platz, w.start, 'mid') }
   })
 }
+
+/* ---- Die Wochen einer Person ------------------------------------------------- */
+
+/**
+ * **Die Wochen einer Person als Kalender** (Entwurf `GWochenbildKalender`,
+ * 23.10.2026): je Monat eine Zeile, der neueste oben, je Woche zwei Felder,
+ * daneben die Aufgaben. Bis dahin stand je Woche ein Feld — eine Aufgabe
+ * verdeckte den Hilfsdienst, und von zwei Zusammenkünften einer Woche zeigte
+ * das Bild eine. Was gezählt wird, prüft `data/auswertung.test.ts`; hier, dass
+ * jede Zusammenkunft ihr Feld bekommt und neben dem Monat steht, was sie brachte.
+ */
+describe('Die Wochen einer Person', () => {
+  /** Öffnet die Person am Desktop über ihren Namen in der Tabelle — so ist jede zu erreichen, nicht nur die mit Hinweis. */
+  function oeffnen(s: AppState, pid: string): HTMLElement {
+    breite('desktop')
+    const { container } = zeige(s)
+    const name = displayName(s.persons.find((p) => p.id === pid)!)
+    const knopf = [...container.querySelectorAll<HTMLElement>('.aw-matrix .aw-zeile-name')].find((b) => b.textContent === name)
+    if (!knopf) throw new Error(`${name} steht nicht in der Tabelle`)
+    fireEvent.click(knopf)
+    expect(titel(container)).toBe(name)
+    return container
+  }
+  /**
+   * Die Zusammenkünfte („Montag|mid"), in denen `pid` einen Hilfsdienst bzw. eine
+   * Aufgabe hatte. Die Einteilungen einmal gerechnet hereingeben: Eine Rechnung je
+   * Aufruf kostete im Sortieren 32 s — über der Frist der CI (Review 24.10.2026).
+   */
+  const zusammenkuenfte = (einteilungen: readonly Einteilung[], pid: string, hilfsdienst: boolean) =>
+    new Set(einteilungen.filter((e) => e.pid === pid && e.hilfsdienst === hilfsdienst).map((e) => `${e.start}|${e.tab}`))
+  /** Ein Bereich, wie er neben dem Monat steht: kurz wie im Kopf der Tabelle. */
+  const kurz = (bereich: string) => bereichsTeile(bereich, DEMO.services, t, (x) => x, true).join(' · ')
+  const gebet = kurz('gebet')
+  /** Ohne die Zahl dahinter („Gebete: 2" — der Doppelpunkt bindet sie, `zahlBinden`). */
+  const ohneZahl = (text: string | null | undefined) => (text ?? '').replace(/:\s\d+$/u, '')
+  /** Die Einträge neben den Monaten, der neueste zuerst: [Monat, Texte, abgesagt ja/nein]. */
+  const monatsTexte = (c: HTMLElement) =>
+    [...c.querySelectorAll('.aw-monat')].map((m) => [
+      m.querySelector('.aw-monat-name')?.textContent,
+      [...m.querySelectorAll('.aw-monat-text > span')].map((e) => [e.textContent, e.classList.contains('is-absage')]),
+    ])
+
+  it('jede Zusammenkunft mit Hilfsdienst ist grau oder „beides" — auch in einer Woche mit Aufgabe', () => {
+    const s = zustand()
+    const einteilungen = rechnung(s).grundlage.einteilungen
+    // An dem, der am öftesten beides in einer Woche hatte, verdeckte das alte Bild am meisten.
+    const woche = (z: string) => z.slice(0, 10)
+    const beides = (pid: string) => {
+      const aufgaben = new Set([...zusammenkuenfte(einteilungen, pid, false)].map(woche))
+      return [...zusammenkuenfte(einteilungen, pid, true)].filter((z) => aufgaben.has(woche(z))).length
+    }
+    const pid = [...DEMO.persons].sort((a, b) => beides(b.id) - beides(a.id))[0]!.id
+    expect(beides(pid), 'im Verlauf hat niemand Aufgabe und Hilfsdienst in einer Woche').toBeGreaterThan(0)
+    const mitDienst = zusammenkuenfte(einteilungen, pid, true)
+    const mitAufgabe = zusammenkuenfte(einteilungen, pid, false)
+    const c = oeffnen(s, pid)
+    expect(c.querySelectorAll('.aw-halb')).toHaveLength(2 * 20)
+    expect(c.querySelectorAll('.aw-halb.is-dienst, .aw-halb.is-beides')).toHaveLength(mitDienst.size)
+    expect(c.querySelectorAll('.aw-halb.is-aufgabe, .aw-halb.is-beides')).toHaveLength(mitAufgabe.size)
+    expect(c.querySelectorAll('.aw-halb.is-beides')).toHaveLength([...mitDienst].filter((z) => mitAufgabe.has(z)).length)
+  })
+
+  it('neben dem Monat steht jede Aufgabe mit ihrem Bereich — die Hilfsdienste nicht', () => {
+    const s = zustand()
+    const a = rechnung(s)
+    const pid = a.grundlage.einteilungen.find((e) => !e.hilfsdienst && e.bereich)!.pid
+    const c = oeffnen(s, pid)
+    const eigene = a.grundlage.einteilungen.filter((e) => e.pid === pid)
+    for (const [name, texte] of monatsTexte(c)) {
+      const monat = eigene.filter((e) => monatsName(`${e.start.slice(0, 7)}-01`, 'de') === name)
+      const erwartet = [...new Set(monat.filter((e) => !e.hilfsdienst).map((e) => (e.bereich ? kurz(e.bereich) : t.awAufgabe)))]
+      const gelesen = (texte as [string, boolean][]).map(([text]) => ohneZahl(text))
+      expect(gelesen, String(name)).toEqual(erwartet)
+    }
+  })
+
+  it('eine Absage steht im Feld und daneben in der Problemfarbe — zwei im selben Monat mit der Zahl', () => {
+    // Wer das Gebet hat und in den letzten drei Wochen unter der Woche nirgends stand.
+    const einteilungen = rechnung(zustand()).grundlage.einteilungen
+    const letzte = new Set(VERLAUF.weeks.slice(-3).map((w) => w.start))
+    const frei = (pid: string) => !einteilungen.some((e) => e.pid === pid && e.tab === 'mid' && letzte.has(e.start))
+    const pid = DEMO.persons.find((p) => p.priv.gebet && frei(p.id))!.id
+    // Drei Absagen: 21. und 28. September, 5. Oktober.
+    const s = zustand({ absagen: absagenIn('gebet', 3, pid) })
+    const c = oeffnen(s, pid)
+    expect(c.querySelectorAll('.aw-halb.is-abgesagt')).toHaveLength(3)
+    const stand = fill(t.awEintragStand, { bereich: gebet, stand: t.awAbgesagt })
+    const absagen = monatsTexte(c).flatMap(([monat, texte]) => (texte as [string, boolean][]).filter(([, rot]) => rot).map(([text]) => [monat, text]))
+    expect(absagen).toEqual([
+      [monatsName('2026-10-01', 'de'), stand],
+      [monatsName('2026-09-01', 'de'), fill(t.awBereichZahl, { bereich: stand, n: '2' })],
+    ])
+    expect([...c.querySelectorAll('.aw-legende-eintrag')].map((e) => e.textContent)).toContain(t.awAbgesagt)
+  })
+
+  it('kommen die Wochen außer der Reihe, stehen die Monate trotzdem nach dem Datum — jedes Jahr einmal', () => {
+    // Umgekehrt geladen; Treffpunkte laufen parallel zu den Wochen mit.
+    const s = zustand({ weeks: [...VERLAUF.weeks].reverse(), fsWeeks: [...VERLAUF.fsWeeks].reverse() })
+    const pid = rechnung(s).grundlage.einteilungen[0]!.pid
+    const c = oeffnen(s, pid)
+    expect([...c.querySelectorAll('.aw-monat-name')].map((m) => m.textContent)).toEqual(
+      ['2026-10', '2026-09', '2026-08', '2026-07', '2026-06', '2026-05'].map((m) => monatsName(`${m}-01`, 'de')),
+    )
+    expect([...c.querySelectorAll('.aw-jahr')].map((j) => j.textContent)).toEqual(['2026'])
+    // Alle zwanzig Wochen stehen da, keine doppelt.
+    expect(c.querySelectorAll('.aw-woche')).toHaveLength(20)
+  })
+
+  it('was ansteht, steht gestrichelt oben — die Überschrift zählt nur den Zeitraum', () => {
+    // Die laufende und die nächste Woche: Testwoche 1 und 2 auf den 12. und 19. Oktober.
+    const kommend = [0, 1].map((i) => ({ ...structuredClone(DEMO.weeks[i]!), start: tagNach(MONTAG, 7 * i) }))
+    const s = zustand({ weeks: [...VERLAUF.weeks, ...kommend], fsWeeks: [...VERLAUF.fsWeeks, [], []] })
+    const geplant = rechnung(s).grundlage.geplant.find((e) => !e.hilfsdienst && e.bereich && e.start === MONTAG)!
+    const c = oeffnen(s, geplant.pid)
+    expect(c.textContent).toContain(zahlBinden(`Die letzten ${zeitspanne(20, 'week', 'de')}`))
+    const oben = c.querySelector('.aw-monat')!
+    expect(oben.querySelector('.aw-monat-name')?.textContent).toBe(monatsName('2026-10-01', 'de'))
+    expect(oben.querySelectorAll('.aw-halb.is-geplant.is-aufgabe, .aw-halb.is-geplant.is-beides').length).toBeGreaterThan(0)
+    const texte = [...oben.querySelectorAll('.aw-monat-text > span')].map((e) => ohneZahl(e.textContent))
+    expect(texte).toContain(fill(t.awEintragStand, { bereich: kurz(geplant.bereich!), stand: t.awGeplantKurz }))
+    expect([...c.querySelectorAll('.aw-legende-eintrag')].map((e) => e.textContent)).toContain(t.awGeplantKurz)
+    // Gegenprobe: Ohne die kommenden Wochen steht nichts Gestricheltes da.
+    cleanup()
+    expect(oeffnen(zustand(), geplant.pid).querySelector('.aw-halb.is-geplant')).toBeNull()
+  })
+})
 
 describe('Absagen (T126)', () => {
   /**

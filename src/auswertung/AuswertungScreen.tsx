@@ -5,7 +5,7 @@ import { useKalendertag } from '../app/useKalendertag'
 import { Wahl } from '../bausteine/Wahl'
 import { Zeichen, type ZeichenName } from '../bausteine/Zeichen'
 import { UnteransichtKopf } from '../components/UnteransichtKopf'
-import { gebundenesDatum, tageSpanne, zeitspanne } from '../components/datum-anzeige'
+import { gebundenesDatum, jahrZahl, monatsName, tageSpanne, zeitspanne } from '../components/datum-anzeige'
 import { gruppenName } from '../components/weitere-plaene-anzeige'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { DESKTOP_BREITE, TABLET_BREITE, useMedia } from '../components/useMedia'
@@ -86,6 +86,8 @@ export function AuswertungScreen() {
       dauer: (wochen) => zeitspanne(wochen, 'week', lang),
       zahl: (n) => zahl.format(n),
       datum: (iso) => gebundenesDatum(fromIso(iso), lang, 'tagMonatKurz'),
+      monat: (iso) => monatsName(iso, lang),
+      jahr: (iso) => jahrZahl(iso, lang),
       prozent: (anteil) => prozent.format(anteil),
       personOeffnen: setPerson,
       ansichtOeffnen: (ziel, bereich) => {

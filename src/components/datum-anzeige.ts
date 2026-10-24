@@ -40,6 +40,10 @@ const FORMATE = {
   tagKurzJahr: { day: 'numeric', month: 'short', year: 'numeric' },
   /** „Oktober 2026" — auch die Monate eines weiteren Plans im Monatstakt */
   monatJahr: { month: 'long', year: 'numeric' },
+  /** „Okt" — der Monat vor seinen Wochen in der Auswertung einer Person */
+  monatKurz: { month: 'short' },
+  /** „2026" — über den Monaten eines Jahres in der Auswertung einer Person */
+  jahr: { year: 'numeric' },
 } as const satisfies Record<string, Intl.DateTimeFormatOptions>
 
 export type DatumsFormat = keyof typeof FORMATE
@@ -123,6 +127,19 @@ export function wochentagMitZahl(datum: Date, lang: string): string {
  */
 export function wochenSpanne(montag: string, lang: string): string {
   return zahlBinden(datumsFormat(lang, 'tagMonat').formatRange(fromIso(montag), fromIso(tagNach(montag, 6))))
+}
+
+/**
+ * Der Monat eines Tages (ISO) allein, kurz: „Okt", „сент.", „سبتمبر" — die
+ * Form, die `Intl` ohne Tag daneben wählt. Eine Zahl, die er binden müsste,
+ * hat er nicht. Dazu das Jahr allein, in den Ziffern der Sprache.
+ */
+export function monatsName(iso: string, lang: string): string {
+  return datumsFormat(lang, 'monatKurz').format(fromIso(iso))
+}
+
+export function jahrZahl(iso: string, lang: string): string {
+  return datumsFormat(lang, 'jahr').format(fromIso(iso))
 }
 
 /**

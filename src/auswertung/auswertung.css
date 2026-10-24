@@ -237,10 +237,6 @@
   border-radius: 4px;
 }
 
-.aw-muster.is-aufgabe {
-  background: var(--akzent);
-}
-
 .aw-muster.is-andere {
   background: var(--umriss);
 }
@@ -294,9 +290,7 @@
   background: var(--stufe3);
 }
 
-.aw-muster.is-abwesend {
-  background: repeating-linear-gradient(135deg, var(--punkt-leer) 0 2px, transparent 2px 5px);
-}
+/* Die Muster der Wochen einer Person stehen bei ihren Feldern (unten). */
 
 .aw-muster.is-ohne {
   width: 16px;
@@ -736,42 +730,161 @@
   background: var(--akzent-text);
 }
 
+/* ---- Die Wochen einer Person als Kalender --------------------------------
+   Entwurf `GWochenbildKalender` (23.10.2026): je Monat eine Zeile, der
+   neueste oben — Name, je Woche zwei Felder, daneben die Aufgaben. Ein Gitter
+   für alle Monate, damit die Felder untereinander stehen; die Zeile eines
+   Monats ist `display: contents`. Die Schrift des Behälters macht das `em` der
+   Abfrage unten: Die Schwelle wandert mit der Schriftstufe. */
+
 .aw-wochen {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  container-type: inline-size;
+  font-size: calc(13px * var(--fs));
 }
 
-.aw-wochen-reihe {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.aw-wochen-felder {
+.aw-kalender {
   display: grid;
-  grid-template-columns: repeat(13, minmax(0, 1fr));
-  gap: 4px;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px 12px;
 }
 
+.aw-jahr {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--text3);
+  font-size: calc(12px * var(--fs));
+  font-weight: 700;
+}
+
+.aw-jahr:not(:first-child) {
+  margin-block-start: 8px;
+}
+
+.aw-monat {
+  display: contents;
+}
+
+/* Feste Spalten: Fehlt einem Monat der Text, beginnt der nächste trotzdem vorn. */
+.aw-monat-name {
+  grid-column: 1;
+  color: var(--text2);
+}
+
+.aw-monat-felder {
+  grid-column: 2;
+  display: flex;
+  gap: 6px;
+}
+
+/* Ohne `hyphens: auto`: Chrome trennte so spät wie möglich — auch Wörter, die in
+   die nächste Zeile gepasst hätten („Wo-che", „Discor-si"). Ein Wort, das allein
+   nicht passt, bricht über `overflow-wrap` (gemessen 24.10.2026: kommt nicht vor). */
+.aw-monat-text {
+  grid-column: 3;
+  margin: 0;
+  color: var(--text);
+  font-size: calc(12.5px * var(--fs));
+  line-height: 1.3;
+  overflow-wrap: break-word;
+}
+
+.aw-monat-text > .is-absage {
+  color: var(--problem);
+}
+
+/* Die zwei Felder einer Woche als ein Stück: außen rund, innen fast eckig. */
 .aw-woche {
-  height: 20px;
-  border-radius: 4px;
+  display: flex;
+  gap: 1px;
+}
+
+.aw-halb {
+  box-sizing: border-box;
+  width: 10px;
+  height: 18px;
+  border-radius: 1.5px;
   background: var(--feld);
 }
 
-.aw-woche.is-aufgabe {
-  background: var(--akzent);
+.aw-halb:first-child {
+  border-start-start-radius: 4px;
+  border-end-start-radius: 4px;
 }
 
-/* Wie der Hilfsdienst im Balken und in der Legende (`.aw-muster.is-hilfsdienst`) —
-   bis zum 17.10.2026 stand hier `--umriss`, die Legende zeigte `--text3`. */
-.aw-woche.is-hilfsdienst {
-  background: var(--text3);
+.aw-halb:last-child {
+  border-start-end-radius: 4px;
+  border-end-end-radius: 4px;
 }
 
-.aw-woche.is-abwesend {
+/* Feld und Legende in einer Regel — so haben sie dieselbe Farbe. Die Aufgabe
+   im dunklen Grün des Akzents: In Hell wäre Minze kaum dunkler als das leere
+   Feld, und das Grau des Hilfsdienstes wöge schwerer (Entwurf 23.10.2026). */
+.aw-halb.is-aufgabe,
+.aw-muster.is-aufgabe {
+  background: var(--akzent-text);
+}
+
+.aw-halb.is-dienst,
+.aw-muster.is-dienst {
+  background: var(--umriss);
+}
+
+.aw-halb.is-beides,
+.aw-muster.is-beides {
+  background: linear-gradient(to top, var(--umriss) 0 35%, var(--akzent-text) 35%);
+}
+
+.aw-halb.is-abwesend,
+.aw-muster.is-abwesend {
   background: repeating-linear-gradient(135deg, var(--punkt-leer) 0 2px, transparent 2px 5px);
+}
+
+.aw-halb.is-abgesagt,
+.aw-muster.is-abgesagt {
+  background: var(--feld);
+  box-shadow: inset 0 0 0 1.5px var(--problem);
+}
+
+/* Ohne Zusammenkunft (Kongress, Gedächtnismahl): durchgestrichen statt leer. */
+.aw-halb.is-ausgefallen,
+.aw-muster.is-ausgefallen {
+  background: linear-gradient(transparent calc(50% - 1px), var(--umriss) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px));
+}
+
+/* Geplant: gestrichelt in der Farbe dessen, was ansteht. */
+.aw-halb.is-geplant.is-aufgabe,
+.aw-halb.is-geplant.is-beides,
+.aw-muster.is-geplant {
+  box-sizing: border-box;
+  border: 1.5px dashed var(--akzent-text);
+  background: none;
+}
+
+.aw-halb.is-geplant.is-dienst {
+  border: 1.5px dashed var(--umriss);
+  background: none;
+}
+
+/* Am Handy steht der Text unter den Feldern, über die ganze Breite, näher an
+   seinen Feldern als am nächsten Monat. Gemessen im echten Chrome (24.10.2026):
+   Daneben blieben bei 390 px 141 px — der Monat eines Ältesten mit sechs
+   Bereichen stand dort sieben Zeilen hoch, bei 360 px brach „Schulungsaufgaben"
+   (in pl, ro, tr, ar, fa ohne Strich). 32 em trennt Handy und Tablet: am Handy
+   höchstens 354 px, am Tablet ab 565 px (Stufe 1). */
+@container (max-width: 32em) {
+  .aw-kalender {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .aw-monat-text {
+    grid-column: 2;
+    margin-block: -2px 6px;
+  }
+}
+
+.aw-wochen-erklaerung {
+  margin: 0;
 }
 
 /* ---- Ballungen ----------------------------------------------------------- */
