@@ -503,6 +503,19 @@
   overflow-wrap: anywhere;
 }
 
+/* „Teilen" und „Kopieren" nebeneinander, jeder halb so breit; reicht die Zeile
+   nicht (große Schrift, „Поделиться"), steht der zweite darunter. */
+.link-weg-knoepfe {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.link-weg-knoepfe > * {
+  flex: 1 1 auto;
+}
+
 .link-spaeter {
   align-self: center;
 }

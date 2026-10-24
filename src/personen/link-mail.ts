@@ -1,4 +1,6 @@
-import type { Person } from '../data/types'
+import { fuellen } from '../../supabase/functions/_shared/texte.ts'
+import type { Lang, Person } from '../data/types'
+import { dict, loadOverlay } from '../i18n/ui'
 import type { AusgestellterLink } from '../lib/links-ausstellen'
 
 /**
@@ -22,4 +24,25 @@ export async function linkMailEntwurf(
   // und `%40` verwirrt manche Mail-Programme.
   const an = encodeURIComponent(person.mail.trim()).replace(/%40/g, '@')
   return `mailto:${an}?subject=${encodeURIComponent(mail.betreff)}&body=${encodeURIComponent(mail.text)}`
+}
+
+/**
+ * **Link und Code als Nachricht** — für WhatsApp, Signal oder SMS über
+ * „Teilen" (24.10.2026). Derselbe Text wie die E-Mail ohne das, was nur zu ihr
+ * gehört: Wer keine Adresse hat, bekommt einen abgelaufenen Link von den
+ * Ältesten wieder, nicht über „Link senden" (`linkNachrichtText`). In der
+ * Sprache der Versammlung wie die E-Mail — ihr Wörterbuch wird dafür
+ * nachgeladen; `fuellen` setzt nur ein, ohne Zahlen zu binden: Der Code muss
+ * sich so kopieren lassen, wie er dasteht.
+ */
+export async function linkNachricht(
+  person: Pick<Person, 'fn'>,
+  link: AusgestellterLink,
+  { lang, versammlung }: { lang: Lang; versammlung: string },
+): Promise<{ titel: string; text: string }> {
+  await loadOverlay(lang)
+  const d = dict(lang)
+  const { linkDatum } = await import('../../supabase/functions/_shared/anmelde-mail.ts')
+  const werte = { name: person.fn, versammlung, url: link.url, code: link.code, datum: linkDatum(link.gueltigBis, lang) }
+  return { titel: fuellen(d.linkMailBetreff, werte), text: `${fuellen(d.linkNachrichtText, werte)}\n` }
 }

@@ -1170,9 +1170,15 @@ Oben stehen Name, Gruppe und Rolle, daneben der **Stift** für
 - **Konto** – wie weit die Person mit der App ist, als Spur mit drei
   Schritten: **Angelegt**, **Link gesendet** (mit dem Tag), **Angemeldet**.
   Darunter steht, was als Nächstes geht. **Link senden** öffnet ein Blatt mit
-  zwei Wegen: **Per E‑Mail** an die Adresse der Person – kann die App gerade
-  nicht senden, öffnet sich dieselbe E‑Mail in deinem Mail‑Programm – oder
-  **Auf einem Zettel** mit QR‑Code und Code zum Eintippen. Ein Konto anlegen
+  drei Wegen: **Per E‑Mail** an die Adresse der Person – kann die App gerade
+  nicht senden, öffnet sich dieselbe E‑Mail in deinem Mail‑Programm –,
+  **Per Nachricht** oder **Auf einem Zettel** mit QR‑Code und Code zum
+  Eintippen. **Per Nachricht** geht auch ohne Adresse: **Teilen** öffnet das
+  Teilen deines Handys (WhatsApp, Signal, SMS …), **Kopieren** legt den Text
+  in die Zwischenablage, etwa für WhatsApp am Computer. Der Text ist der der
+  E‑Mail mit Link und Code; ist er abgelaufen, verweist er an die Ältesten.
+  **Schick ihn nur in den persönlichen Chat der Person, nie in eine Gruppe:**
+  Wer den Text hat, kann sich als diese Person anmelden. Ein Konto anlegen
   oder ein Passwort wählen muss niemand: Das Konto entsteht bei der ersten
   Anmeldung. Hat die Person einen Link, steht daneben **Zettel drucken**; ein
   neuer Link ersetzt den alten, auch den auf einem Zettel. Ist die Person

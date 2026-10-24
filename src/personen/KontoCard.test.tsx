@@ -37,6 +37,9 @@ vi.mock('../lib/links-ausstellen', async (echt) => ({
   ...(await echt<typeof import('../lib/links-ausstellen')>()),
   linksAusstellen: (ids: readonly string[], wie: { senden: boolean; lang: string }) => linksAusstellen(ids, wie),
 }))
+// Die Zwischenablage — jsdom kennt sie nicht.
+const kopiert = vi.fn((_text: string) => Promise.resolve(true))
+vi.mock('../lib/clipboard', () => ({ copyText: (text: string) => kopiert(text) }))
 
 const { KontoCard } = await import('./KontoCard')
 
@@ -288,6 +291,110 @@ describe('Das Blatt „Link senden"', () => {
     expect(oeffnen(zeige(person()).container).textContent).not.toContain(t.neuerLinkErsetzt)
     cleanup()
     expect(oeffnen(zeige(person(), { anmeldeLinks: [link()] }).container).textContent).toContain(t.neuerLinkErsetzt)
+  })
+})
+
+/**
+ * **Per Nachricht** (24.10.2026, Betreiber: „kann man den code auch ohne email
+ * senden"): Link und Code als Text über das Teilen des Geräts — WhatsApp,
+ * Signal, SMS — oder kopiert. Der Text meldet an; der Hinweis sagt, dass er
+ * nur in den persönlichen Chat gehört.
+ */
+describe('Per Nachricht', () => {
+  const teilen = vi.fn((_daten: ShareData) => Promise.resolve())
+  const mitTeilen = () => Object.defineProperty(navigator, 'share', { configurable: true, value: teilen })
+  const abschnitt = (b: HTMLElement) => b.querySelector<HTMLElement>('[aria-labelledby="link-per-nachricht"]')!
+  const geteilt = () => teilen.mock.calls.map((c) => c[0])
+  beforeEach(() => {
+    teilen.mockReset().mockResolvedValue(undefined)
+    kopiert.mockReset().mockResolvedValue(true)
+    linksAusstellen.mockResolvedValue({ links: [ausgestellt(false)], mailBereit: false, fehler: false })
+  })
+  afterEach(() => {
+    delete (navigator as { share?: unknown }).share
+  })
+
+  it('steht da, auch ohne Adresse — mit dem Hinweis, dass der Text nur in den persönlichen Chat gehört', () => {
+    mitTeilen()
+    const a = abschnitt(oeffnen(zeige(person()).container))
+    expect(a.querySelector('h3')?.textContent).toBe(t.perNachricht)
+    expect(a.textContent).toContain(fill(t.perNachrichtHint, { name: 'Anton' }))
+    expect([...a.querySelectorAll('button')].map((b) => b.textContent)).toEqual([t.teilenBtn, t.kopierenBtn])
+  })
+
+  it('ohne Teilen im Gerät (Firefox am Computer) bleibt Kopieren', () => {
+    const a = abschnitt(oeffnen(zeige(person()).container))
+    expect([...a.querySelectorAll('button')].map((b) => b.textContent)).toEqual([t.kopierenBtn])
+  })
+
+  it('Teilen stellt einen Link ohne Versand aus und teilt Link und Code — das Blatt geht zu', async () => {
+    mitTeilen()
+    const { container, dispatch } = zeige(person())
+    fireEvent.click(knopf(abschnitt(oeffnen(container)), t.teilenBtn)!)
+    await waitFor(() => expect(teilen).toHaveBeenCalledTimes(1))
+    expect(linksAusstellen).toHaveBeenCalledWith(['p-a'], { senden: false, lang: 'de' })
+    const { title, text } = geteilt()[0]!
+    expect(title).toBe('Dein Zugang zur Versammlung Musterstadt')
+    expect(text).toContain(`#anmelden=${'T'.repeat(43)}`)
+    expect(text).toContain('\nK7RD-2QWM\n')
+    expect(text).toContain('frag die Ältesten nach einem neuen Link')
+    expect(text).not.toContain('E-Mail')
+    expect(aktionen(dispatch).some((a) => a.type === 'linksAusgestellt')).toBe(true)
+    await waitFor(() => expect(blatt()).toBeNull())
+  })
+
+  it('ließ Safari das Teilen nach dem Warten nicht zu: Der nächste Tipp teilt denselben Text — ohne neuen Link', async () => {
+    mitTeilen()
+    teilen.mockRejectedValueOnce(new DOMException('zu spät', 'NotAllowedError'))
+    const { container, dispatch } = zeige(person())
+    const a = abschnitt(oeffnen(container))
+    fireEvent.click(knopf(a, t.teilenBtn)!)
+    await waitFor(() => expect(toasts(dispatch)).toContain(t.nochmalTippen))
+    expect(blatt()).not.toBeNull()
+    fireEvent.click(knopf(a, t.teilenBtn)!)
+    await waitFor(() => expect(teilen).toHaveBeenCalledTimes(2))
+    // Ein zweiter Link hätte den eben geteilten ersetzt.
+    expect(linksAusstellen).toHaveBeenCalledTimes(1)
+    expect(geteilt()[1]).toEqual(geteilt()[0])
+  })
+
+  it('abgebrochen: keine Meldung, das Blatt bleibt — und der nächste Tipp teilt wieder denselben Text', async () => {
+    mitTeilen()
+    teilen.mockRejectedValueOnce(new DOMException('abgebrochen', 'AbortError'))
+    const { container, dispatch } = zeige(person())
+    const a = abschnitt(oeffnen(container))
+    fireEvent.click(knopf(a, t.teilenBtn)!)
+    await waitFor(() => expect(teilen).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(knopf(a, t.teilenBtn)?.getAttribute('aria-disabled')).toBeNull())
+    expect(toasts(dispatch)).toEqual([])
+    expect(blatt()).not.toBeNull()
+    fireEvent.click(knopf(a, t.kopierenBtn)!)
+    await waitFor(() => expect(kopiert).toHaveBeenCalledWith(geteilt()[0]!.text))
+    expect(linksAusstellen).toHaveBeenCalledTimes(1)
+  })
+
+  it('Kopieren legt denselben Text in die Zwischenablage — die Meldung erinnert an den persönlichen Chat', async () => {
+    const { container, dispatch } = zeige(person())
+    fireEvent.click(knopf(abschnitt(oeffnen(container)), t.kopierenBtn)!)
+    await waitFor(() => expect(toasts(dispatch)).toContain(fill(t.toastNachrichtKopiert, { name: 'Anton' })))
+    expect(kopiert.mock.calls[0]![0]).toContain('\nK7RD-2QWM\n')
+    await waitFor(() => expect(blatt()).toBeNull())
+  })
+
+  it('ein neuer Link per E-Mail macht den Text ungültig — Teilen stellt danach neu aus', async () => {
+    mitTeilen()
+    teilen.mockRejectedValueOnce(new DOMException('abgebrochen', 'AbortError'))
+    const { container, dispatch } = zeige(person({ mail: 'anton@example.org' }))
+    const b = oeffnen(container)
+    fireEvent.click(knopf(abschnitt(b), t.teilenBtn)!)
+    await waitFor(() => expect(teilen).toHaveBeenCalledTimes(1))
+    // Die E-Mail geht nicht hinaus — das Blatt bleibt, der Link ist trotzdem neu.
+    linksAusstellen.mockResolvedValue({ links: [ausgestellt(false)], mailBereit: true, fehler: false })
+    fireEvent.click(knopf(b, t.linkSenden)!)
+    await waitFor(() => expect(toasts(dispatch)).toContain(fill(t.toastMailFehler, { name: 'Anton' })))
+    fireEvent.click(knopf(abschnitt(b), t.teilenBtn)!)
+    await waitFor(() => expect(teilen).toHaveBeenCalledTimes(2))
+    expect(linksAusstellen.mock.calls.map((c) => c[1].senden)).toEqual([false, true, false])
   })
 })
 

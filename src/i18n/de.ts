@@ -63,6 +63,10 @@ export const DE = {
     // Safari, nie die App vom Home-Bildschirm — dort hilft nur der Code.
     linkMailBetreff: 'Dein Zugang zur Versammlung {versammlung}',
     linkMailText: 'Hallo {name},\n\ndie Versammlung {versammlung} plant die Zusammenkünfte und den Predigtdienst mit Versammlung.app. Dein Zugang ist eingerichtet.\n\nJetzt anmelden:\n{url}\n\nHast du die App auf dem Home-Bildschirm? Dann öffne sie dort, tippe auf „Code eintippen“ und gib diesen Code ein:\n{code}\n\nLink und Code gelten bis {datum} und melden nur dich an. Ein Passwort brauchst du nicht. Sind sie abgelaufen, öffne die App und tippe auf „Link senden“.\n\nDu bekommst diese E-Mail, weil du in der Versammlung {versammlung} eingetragen bist. Bei Fragen sprich die Ältesten an.',
+    // Derselbe Text als Nachricht („Teilen", 24.10.2026): die Absätze 1–4 wörtlich
+    // wie die E-Mail (ein Test hält sie gleich), dann statt „Link senden" die
+    // Ältesten — wer per Nachricht kommt, hat oft keine Adresse —, ohne den Satz zur E-Mail.
+    linkNachrichtText: 'Hallo {name},\n\ndie Versammlung {versammlung} plant die Zusammenkünfte und den Predigtdienst mit Versammlung.app. Dein Zugang ist eingerichtet.\n\nJetzt anmelden:\n{url}\n\nHast du die App auf dem Home-Bildschirm? Dann öffne sie dort, tippe auf „Code eintippen“ und gib diesen Code ein:\n{code}\n\nLink und Code gelten bis {datum} und melden nur dich an. Ein Passwort brauchst du nicht. Sind sie abgelaufen, frag die Ältesten nach einem neuen Link.',
     nurMitglieder: 'Zugang nur für Mitglieder der Versammlung',
     // Anmeldeseite (T113): wofür die App da ist, und der Weg zum Betreiber für
     // eine neue Versammlung. Die Adresse selbst steht in login/kontakt.ts.
@@ -365,9 +369,16 @@ export const DE = {
     linkOffenHint: 'Der Link ist noch nicht geöffnet. Bis dahin gibst du {name} persönlich Bescheid.',
     linkAbgelaufenHint: 'Der Link ist abgelaufen, ohne dass {name} sich angemeldet hat. Ein neuer gilt wieder 30 Tage.',
     ohneLinkHintMail: 'Ein Tipp auf den Link in der E-Mail, und {name} ist angemeldet — ein Passwort braucht es nicht.',
-    ohneLinkHintZettel: 'Ohne E-Mail-Adresse bekommt {name} den Link auf einem Zettel mit QR-Code.',
+    ohneLinkHintZettel: 'Ohne E-Mail-Adresse bekommt {name} den Link per Nachricht oder auf einem Zettel mit QR-Code.',
     perEmail: 'Per E-Mail', perEmailHint: 'Ein Tipp auf den Link, und {name} ist angemeldet.',
     keineAdresseHint: 'Bei {name} ist keine E-Mail-Adresse eingetragen.',
+    // Per Nachricht (24.10.2026): Link und Code als Text über das Teilen des
+    // Geräts oder kopiert. Der Text meldet an — der Hinweis sagt, wohin er gehört.
+    perNachricht: 'Per Nachricht',
+    perNachrichtHint: 'Link und Code als Text, etwa für WhatsApp, Signal oder SMS. Nur in den persönlichen Chat mit {name}, nie in eine Gruppe: Wer den Text hat, kann sich als diese Person anmelden.',
+    teilenBtn: 'Teilen', kopierenBtn: 'Kopieren',
+    toastNachrichtKopiert: 'Kopiert — nur für den persönlichen Chat mit {name}.',
+    nochmalTippen: 'Der Text ist bereit — tipp noch einmal.',
     aufZettel: 'Auf einem Zettel', aufZettelHint: 'Mit QR-Code und Code zum Eintippen. Gültig bis {datum}.',
     neuerLinkErsetzt: 'Ein neuer Link ersetzt den alten — auch den auf einem Zettel.',
     ohneKontoHint: 'Ein Konto anlegen oder ein Passwort wählen muss {name} nicht. Nach der Anmeldung bleibt das Gerät angemeldet.',

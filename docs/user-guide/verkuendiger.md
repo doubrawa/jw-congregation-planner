@@ -27,7 +27,9 @@ die App auf deinem Gerät einrichtest.
 ## 1. Anmelden
 
 Ein Passwort gibt es nicht. Du meldest dich mit einem **Link** an: Er kommt per
-E‑Mail, oder du bekommst ihn von den Ältesten auf einem **Zettel** mit QR‑Code.
+E‑Mail oder als Nachricht (etwa per WhatsApp), oder du bekommst ihn von den
+Ältesten auf einem **Zettel** mit QR‑Code. Mit Link und Code meldet sich jeder
+als du an – gib sie nicht weiter.
 Unter dem Namen der App steht in einem Satz, wofür sie da ist.
 
 ![Anmeldebildschirm](screenshots/login.png)
@@ -42,6 +44,9 @@ Unter dem Namen der App steht in einem Satz, wofür sie da ist.
   nie die App vom Home‑Bildschirm – und dort wärst du nicht angemeldet (siehe
   [Abschnitt 8](#8-app-installieren--erinnerungen)). Jede neue E‑Mail bringt
   einen neuen Code; ein Zettel von früher gilt dann nicht mehr.
+- **Mit Link und Code aus einer Nachricht** (etwa per WhatsApp): genauso wie aus
+  der E‑Mail – ein Tipp auf den Link, auf dem iPhone der Code. Ist beides
+  abgelaufen, bekommst du von den Ältesten einen neuen Link.
 - **Mit dem Zettel:** Scanne den QR‑Code mit der Kamera deines Handys – oder
   tippe auf der Anmeldeseite unter **Ohne E‑Mail‑Adresse?** auf **Zettel
   scannen**. Geht das nicht, tippst du über **Code eintippen** den Code unter dem

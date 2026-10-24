@@ -8579,9 +8579,16 @@ es noch); offline ist es gesperrt. Übersetzungen wie vor T121.
   ohnehin nur per mailto). Pflicht ist sie nirgends.
 
 **Was ohne Adresse fehlt:** Wer nach 30 Tagen ein weiteres Gerät anmelden will
-oder ein Jahr nicht in der App war, braucht einen neuen Zettel von den
-Ältesten — der neue ersetzt den alten. Mit Adresse ginge das per „Link senden"
-selbst.
+oder ein Jahr nicht in der App war, braucht einen neuen Link von den Ältesten —
+der neue ersetzt den alten. Mit Adresse ginge das per „Link senden" selbst.
+
+**Am selben Abend gebaut** (Betreiber: „kann man den code auch ohne email
+senden - also auf anderem wege"; „Ja, bau ‚Teilen' … mit dem Hinweis, dass der
+Text nur in den persönlichen Chat gehört"): Das Blatt „Link senden" hat den
+Weg **Per Nachricht** — „Teilen" über das Teilen des Geräts (WhatsApp, Signal,
+SMS), „Kopieren" für den Computer. Der Text ist der der E-Mail, verweist bei
+Ablauf aber an die Ältesten statt an „Link senden"; daneben steht, dass er nur
+in den persönlichen Chat gehört. Ein neuer Zettel ist damit nicht mehr nötig.
 
 **Nicht gemessen:** Ob im Betrieb noch ein Konto eine echte Adresse trägt
 (Zählung über `members` und `auth.users`, nur Zahlen) — der Auto-Modus sperrte

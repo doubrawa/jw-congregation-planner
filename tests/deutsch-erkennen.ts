@@ -49,6 +49,11 @@ const LATEIN_ERLAUBT: Record<string, string> = {
   Safari: 'Name des Browsers',
   S: 'Formularnummer „S-89"',
   Zoom: 'Name des Dienstes (Zoom-Ordner)',
+  // „Per Nachricht" im Blatt „Link senden" (24.10.2026): die Dienste, wie sie
+  // sich auch auf Russisch und Ukrainisch schreiben.
+  WhatsApp: 'Name des Dienstes',
+  Signal: 'Name des Dienstes',
+  SMS: 'Kurznachricht — so steht es auf jedem Handy',
   // Die Kürzel der Publikationen schreibt das Arbeitsheft auch auf Ukrainisch
   // und Russisch lateinisch („th урок 2") — gemessen, siehe REF in translate-data.ts.
   th: 'Kürzel einer Publikation, wie das Arbeitsheft es schreibt',
