@@ -869,6 +869,8 @@ export const DE = {
     awKeineBallungen: 'Keine Ballungen im Zeitraum.',
     awAufgabenErwartet: 'Aufgaben, erwartet {e}', awAbwesend: 'Zusammenkünfte abwesend',
     awLetzte: 'Die letzten {dauer}', awAufgabe: 'Aufgabe', awHilfsdienst: 'Hilfsdienst', awAbwesendKurz: 'abwesend',
+    // Über den Wochen einer Person, wenn oben Geplantes steht (Betreiber 24.10.2026: „Ergänzen").
+    awLetzteUndKommend: 'Die letzten {dauer} und was ansteht',
     awWochenBild: '{name}: Aufgaben {a}, Hilfsdienste {h}, abwesend {w}',
     // Die Wochen einer Person als Kalender (Entwurf `GWochenbildKalender`, 23.10.2026).
     awBeides: 'beides', awAbgesagt: 'abgesagt', awAusgefallen: 'ohne Zusammenkunft', awGeplantKurz: 'geplant',

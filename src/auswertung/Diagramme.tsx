@@ -166,7 +166,7 @@ export function WochenKalender({ jahre }: { jahre: readonly { jahr: string; mona
                   {m.wochen.map((w) => (
                     <span key={w.start} className="aw-woche">
                       {MEETING_TABS.map((tab) => (
-                        <span key={tab} className={feldKlasse(w.felder[tab], w.geplant)} />
+                        <span key={tab} className={feldKlasse(w.felder[tab], w.geplant[tab])} />
                       ))}
                     </span>
                   ))}

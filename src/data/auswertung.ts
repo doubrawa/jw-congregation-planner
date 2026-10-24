@@ -54,10 +54,10 @@
 import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { istAbwesend, type AbsenceSet } from './absence'
 import { idAufloeser, isQualified, isSpeakerRole, istArt, istAusgefallen, MEETING_TABS } from './helpers'
-import { montagVon, tagNach, wochenZwischen } from './meeting-dates'
+import { meetingOffset, montagVon, tagNach, versatzAbMontag, wochenZwischen } from './meeting-dates'
 import { allePlaetze, platzKey, platzMitZusage, type Platz } from './plaetze'
 import { bereichVon, folgtDemVorsitzIn, vorsitzPlatz } from './planning'
-import type { Absage, FsInstance, Group, MeetingKey, Person, Service, Week } from './types'
+import type { Absage, FsInstance, Group, MeetingKey, MeetingTimes, Person, Service, Week } from './types'
 
 /** Die Zeiträume zur Wahl, in Monaten — und wie viele Wochen jeder umfasst. */
 export const ZEITRAEUME = [12, 6, 3] as const
@@ -122,6 +122,8 @@ export interface Zeitfenster {
   wochen: number[]
   /** Ihre Montage (ISO), in derselben Reihenfolge — für die Felder je Woche. */
   montage: string[]
+  /** Der Tag, für den gerechnet wird (ISO) — die Wochen einer Person trennen daran Gehaltenes von Geplantem. */
+  heute: string
 }
 
 /**
@@ -138,7 +140,7 @@ export function zeitfenster(weeks: readonly Week[], anzahlWochen: number, heute:
     wochen.push(wi)
     montage.push(w.start)
   })
-  return { von, bis, wochen, montage }
+  return { von, bis, wochen, montage, heute }
 }
 
 /** Eine gezählte Absage: wer und in welchem Bereich — `null`, wenn es den Platz nicht mehr gibt. */
@@ -1117,20 +1119,31 @@ export function hinweise(
  */
 export type FeldArt = 'aufgabe' | 'hilfsdienst' | 'beides' | 'abgesagt' | 'abwesend' | 'ausgefallen' | null
 
-/** Was neben dem Monat steht: eine Aufgabe oder eine Absage mit ihrem Bereich — `null`, wo keiner zu sagen ist. */
+/**
+ * Was beim Monat steht: eine Aufgabe oder eine Absage mit ihrem Bereich —
+ * `null`, wo keiner zu sagen ist. Ein geleiteter Treffpunkt ist eine Aufgabe
+ * im Bereich `TREFFPUNKT_BEREICH` (Betreiber 24.10.2026: „Geleitete dazu").
+ */
 export interface WochenEintrag {
   art: 'aufgabe' | 'absage'
   bereich: string | null
+  /** Steht der Tag noch aus? */
+  geplant: boolean
 }
 
 /** Eine Woche einer Person: ihre beiden Zusammenkünfte als Felder und was sie darin hatte. */
 export interface PersonWoche {
   /** Montag (ISO). */
   start: string
-  /** Ab der laufenden Woche: noch nicht gehalten, sondern geplant. */
-  geplant: boolean
   felder: Record<MeetingKey, FeldArt>
-  /** Aufgaben und Absagen in der Folge der Zusammenkünfte — ein abgesagter Treffpunkt zuletzt. */
+  /**
+   * Je Zusammenkunft: Steht sie noch aus? Nach dem Tag, nicht nach der Woche
+   * (Betreiber 24.10.2026): Am Donnerstag ist der Dienstag der laufenden Woche
+   * gehalten — gezählt wird er in den Kacheln trotzdem erst ab Montag, wie in
+   * der ganzen Auswertung. Vorbei ist ein Tag ab dem Tag danach (`istVorbei`).
+   */
+  geplant: Record<MeetingKey, boolean>
+  /** Aufgaben und Absagen in der Folge der Zusammenkünfte, dahinter die Treffpunkte. */
   eintraege: WochenEintrag[]
 }
 
@@ -1163,12 +1176,26 @@ export interface PersonBild {
   bereiche: { bereich: string; hat: boolean; n: number; erwartet: number; zuletzt: string | null; vorWochen: number | null }[]
   /**
    * Die Wochen des Zeitraums, die älteste zuerst — dahinter die ab der
-   * laufenden, bis zur letzten, in der die Person eingeteilt oder abwesend ist.
+   * laufenden, bis zur letzten, in der die Person eingeteilt oder abwesend ist
+   * oder einen Treffpunkt leitet.
    */
   wochen: PersonWoche[]
 }
 
-export function personBild(g: Grundlage, weeks: readonly Week[], persons: readonly Person[], abwesend: AbsenceSet, pid: string): PersonBild | null {
+/** Was die Wochen einer Person außer der Grundlage brauchen: die Treffpunkte (parallel zu `weeks`) und die Tage der Zusammenkünfte. */
+export interface PersonUmfeld {
+  fsWeeks: readonly (readonly FsInstance[])[]
+  zeiten: MeetingTimes
+}
+
+export function personBild(
+  g: Grundlage,
+  weeks: readonly Week[],
+  persons: readonly Person[],
+  abwesend: AbsenceSet,
+  pid: string,
+  { fsWeeks, zeiten }: PersonUmfeld,
+): PersonBild | null {
   const p = persons.find((x) => x.id === pid)
   if (!p) return null
   const eigene = g.einteilungen.filter((e) => e.pid === pid)
@@ -1192,34 +1219,41 @@ export function personBild(g: Grundlage, weeks: readonly Week[], persons: readon
   const geplant = g.geplant.filter((e) => e.pid === pid)
   /** Abwesend in einer Zusammenkunft, die stattfindet — nur die zählt. */
   const weg = (week: Week, wi: number, tab: MeetingKey): boolean => !istAusgefallen(week, tab) && istAbwesend(abwesend, pid, wi, tab)
-  const wocheVon = (wi: number, istGeplant: boolean, einteilungen: readonly Einteilung[]): PersonWoche[] => {
+  /** Die Treffpunkte, die die Person leitet — ohne Freitext-Leiter, wie `treffpunkte` sie zählt. */
+  const geleitet = (wi: number): FsInstance[] => (fsWeeks[wi] ?? []).filter((inst) => inst.lpid === pid && !inst.lext)
+  /** Steht der Tag noch aus? In den Wochen des Zeitraums nie; danach ab heute. */
+  const steht = (kommendeWoche: boolean, week: Week, versatz: number): boolean => kommendeWoche && tagNach(week.start, versatz) >= g.fenster.heute
+  const wocheVon = (wi: number, kommendeWoche: boolean, einteilungen: readonly Einteilung[]): PersonWoche[] => {
     const week = weeks[wi]
     if (!week) return []
     const felder: Record<MeetingKey, FeldArt> = { mid: null, we: null }
+    const offen: Record<MeetingKey, boolean> = { mid: false, we: false }
     const eintraege: WochenEintrag[] = []
     for (const tab of MEETING_TABS) {
       if (istAusgefallen(week, tab)) {
         felder[tab] = 'ausgefallen'
         continue
       }
+      offen[tab] = steht(kommendeWoche, week, meetingOffset(week, tab, zeiten))
       const hier = einteilungen.filter((e) => e.wi === wi && e.tab === tab)
       const abgesagt = absagen.filter((a) => a.wi === wi && a.tab === tab)
-      for (const e of hier) if (!e.hilfsdienst) eintraege.push({ art: 'aufgabe', bereich: e.bereich })
-      for (const a of abgesagt) eintraege.push({ art: 'absage', bereich: a.bereich })
+      for (const e of hier) if (!e.hilfsdienst) eintraege.push({ art: 'aufgabe', bereich: e.bereich, geplant: offen[tab] })
+      for (const a of abgesagt) eintraege.push({ art: 'absage', bereich: a.bereich, geplant: false })
       felder[tab] = feldArt(hier, abgesagt.length > 0, weg(week, wi, tab))
     }
-    // Ein abgesagter Treffpunkt ist keine Zusammenkunft: Er steht nur neben dem Monat.
-    for (const a of absagen) if (a.wi === wi && a.tab === null) eintraege.push({ art: 'absage', bereich: a.bereich })
-    return [{ start: week.start, geplant: istGeplant, felder, eintraege }]
+    // Ein Treffpunkt ist keine Zusammenkunft: Geleitet oder abgesagt steht er nur beim Monat.
+    for (const inst of geleitet(wi)) eintraege.push({ art: 'aufgabe', bereich: TREFFPUNKT_BEREICH, geplant: steht(kommendeWoche, week, versatzAbMontag(inst.wd)) })
+    for (const a of absagen) if (a.wi === wi && a.tab === null) eintraege.push({ art: 'absage', bereich: a.bereich, geplant: false })
+    return [{ start: week.start, felder, geplant: offen, eintraege }]
   }
   // Was ansteht: ab der laufenden Woche bis zur letzten, in der die Person
-  // eingeteilt oder abwesend ist — dahinter steht für sie nichts.
+  // eingeteilt oder abwesend ist oder einen Treffpunkt leitet — dahinter steht für sie nichts.
   const kommend: number[] = []
   let kommendBis = 0
   weeks.forEach((week, wi) => {
     if (week.start < g.fenster.bis) return
     kommend.push(wi)
-    if (geplant.some((e) => e.wi === wi) || MEETING_TABS.some((tab) => weg(week, wi, tab))) kommendBis = kommend.length
+    if (geplant.some((e) => e.wi === wi) || geleitet(wi).length > 0 || MEETING_TABS.some((tab) => weg(week, wi, tab))) kommendBis = kommend.length
   })
   let abwesendMal = 0
   for (const wi of g.fenster.wochen) {

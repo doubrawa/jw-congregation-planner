@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import { OBERE_GRENZE, personBild, lageVon, type FeldArt, type PersonWoche } from '../data/auswertung'
 import type { AbsenceSet } from '../data/absence'
-import type { Person, Week } from '../data/types'
+import { MEETING_TABS } from '../data/helpers'
+import type { FsInstance, MeetingTimes, Person, Week } from '../data/types'
 import { monatsErster } from '../data/weitere-plaene'
 import { fill } from '../i18n/useT'
 import { Legende, VergleichsBalken, WochenKalender, type KalenderMonat, type MusterArt } from './Diagramme'
@@ -31,7 +32,7 @@ function kalender(wochen: readonly PersonWoche[], k: Kontext): { jahr: string; m
     for (const w of hier) {
       for (const e of w.eintraege) {
         const name = e.bereich === null ? t.awAufgabe : k.bereichKurz(e.bereich).join(' · ')
-        const stand = e.art === 'absage' ? t.awAbgesagt : w.geplant ? t.awGeplantKurz : null
+        const stand = e.art === 'absage' ? t.awAbgesagt : e.geplant ? t.awGeplantKurz : null
         const text = stand ? fill(t.awEintragStand, { bereich: name, stand }) : name
         const da = eintraege.get(text)
         if (da) da.n++
@@ -61,7 +62,7 @@ function kalender(wochen: readonly PersonWoche[], k: Kontext): { jahr: string; m
 function legende(wochen: readonly PersonWoche[], k: Kontext): [MusterArt, string][] {
   const { t } = k
   const kommt = (arten: readonly FeldArt[], geplant?: boolean) =>
-    wochen.some((w) => (geplant === undefined || w.geplant === geplant) && (arten.includes(w.felder.mid) || arten.includes(w.felder.we)))
+    wochen.some((w) => MEETING_TABS.some((tab) => (geplant === undefined || w.geplant[tab] === geplant) && arten.includes(w.felder[tab])))
   const eintraege: [MusterArt, string, boolean][] = [
     ['aufgabe', t.awAufgabe, true],
     ['dienst', t.awHilfsdienst, true],
@@ -74,6 +75,17 @@ function legende(wochen: readonly PersonWoche[], k: Kontext): [MusterArt, string
   return eintraege.filter(([, , zeigen]) => zeigen).map(([art, text]) => [art, text])
 }
 
+/** Was in einer Zusammenkunft, die noch aussteht, „ansteht" — eine leere oder ausgefallene nicht. */
+const ANSTEHEND: readonly FeldArt[] = ['aufgabe', 'hilfsdienst', 'beides', 'abwesend']
+
+/**
+ * Steht etwas an? Dann sagt es die Überschrift (Betreiber 24.10.2026:
+ * „Ergänzen") — sonst stünde über dem Gestrichelten nur „Die letzten … Wochen".
+ */
+function stehtAn(wochen: readonly PersonWoche[]): boolean {
+  return wochen.some((w) => w.eintraege.some((e) => e.geplant) || MEETING_TABS.some((tab) => w.geplant[tab] && ANSTEHEND.includes(w.felder[tab])))
+}
+
 /**
  * **Eine Person** (Entwurf `HandyPerson`): ihre Zuteilungen gegen die Erwartung,
  * ihre Wochen als Kalender (Entwurf `GWochenbildKalender`, 23.10.2026) und je
@@ -84,17 +96,24 @@ export function PersonAnsicht({
   k,
   pid,
   weeks,
+  fsWeeks,
+  zeiten,
   persons,
   abwesend,
 }: {
   k: Kontext
   pid: string
   weeks: readonly Week[]
+  fsWeeks: readonly (readonly FsInstance[])[]
+  zeiten: MeetingTimes
   persons: readonly Person[]
   abwesend: AbsenceSet
 }) {
   const { t } = k
-  const bild = useMemo(() => personBild(k.a.grundlage, weeks, persons, abwesend, pid), [k.a.grundlage, weeks, persons, abwesend, pid])
+  const bild = useMemo(
+    () => personBild(k.a.grundlage, weeks, persons, abwesend, pid, { fsWeeks, zeiten }),
+    [k.a.grundlage, weeks, fsWeeks, zeiten, persons, abwesend, pid],
+  )
   if (!bild) return null
   const wochenAria = fill(t.awWochenBild, {
     name: k.name(pid),
@@ -126,7 +145,9 @@ export function PersonAnsicht({
 
       <section className="karte aw-gruppe" aria-label={wochenAria}>
         {/* So viele Wochen, wie die App vom Zeitraum kennt — nicht die 52 des Zeitraums, und ohne das Geplante. */}
-        <h2 className="aw-gruppe-kopf">{fill(t.awLetzte, { dauer: k.dauer(k.a.grundlage.fenster.wochen.length) })}</h2>
+        <h2 className="aw-gruppe-kopf">
+          {fill(stehtAn(bild.wochen) ? t.awLetzteUndKommend : t.awLetzte, { dauer: k.dauer(k.a.grundlage.fenster.wochen.length) })}
+        </h2>
         <WochenKalender jahre={kalender(bild.wochen, k)} />
         <p className="klein-text aw-wochen-erklaerung">{t.awZweiFelder}</p>
         <Legende eintraege={legende(bild.wochen, k)} />

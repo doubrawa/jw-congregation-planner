@@ -7480,11 +7480,24 @@ Monate ordnen nach dem Datum statt nach der Folge in `weeks`; eine Zeile je
 Eintrag machte den Monat eines Ältesten acht Zeilen hoch (jetzt fließend, am
 Handy unter den Feldern); `hyphens: auto` trennte Wörter, die in die nächste
 Zeile passten. Vereinfacht: `monatsErster`, `PersonWoche` direkt in der
-Ansicht, ein Helfer für „abwesend, wo die Zusammenkunft stattfindet“. So
-gelassen, Entscheidung beim Betreiber: die laufende Woche gilt ganz als geplant, wie
-die Wartezeiten sie zählen; ein abgesagter Treffpunkt steht beim Monat, ein
-geleiteter nicht (die Kachel zählt die Absage); zwei Hilfsdienste in einer
-Zusammenkunft sind ein Feld; die Überschrift nennt nur den Zeitraum.
+Ansicht, ein Helfer für „abwesend, wo die Zusammenkunft stattfindet“.
+
+**Nachentschieden am 24. Oktober 2026 (per Abfrage, „frag mich alles ab im
+interview modus“), umgesetzt:**
+
+| Frage | Antwort | Umsetzung |
+| --- | --- | --- |
+| Eine Zusammenkunft der laufenden Woche, die schon vorbei ist | „Nach dem Tag" | `PersonWoche.geplant` je Zusammenkunft, Tag über `meetingOffset` (verlegte nach ihrem Tag), vorbei ab dem Tag danach; `Zeitfenster.heute`. Gezählt wird weiter erst ab Montag |
+| Treffpunkte beim Monat | „Geleitete dazu" | `personBild(…, { fsWeeks, zeiten })`: geleitete (ohne Freitext-Leiter, wie `treffpunkte`) als Aufgabe im Bereich `treffpunkt`; ein künftiger hält das Kommende offen |
+| Zwei Hilfsdienste in einer Zusammenkunft | „So lassen" | ein Feld je Zusammenkunft, die Kachel zählt Plätze |
+| Überschrift über Geplantem | „Ergänzen" | `awLetzteUndKommend` („Die letzten {dauer} und was ansteht") in zwölf Sprachen, nur wenn etwas aussteht |
+
+Proben: Rechnung (nach dem Tag samt verlegter Zusammenkunft, Treffpunkte mit
+Freitext-Leiter und offenem Kommenden), Bildschirm (Überschrift mit
+Gegenprobe, Donnerstag gegen Montag, Treffpunkte beim Monat).
+Mutationskatalog: einer nachgezogen, sechs neu. Im echten Chrome nachgemessen
+(Ältester mit Treffpunkten, zwölf Sprachen, 320–1280 px, drei Stufen): 0
+Überläufe.
 
 ---
 

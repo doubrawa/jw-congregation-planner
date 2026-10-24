@@ -877,6 +877,7 @@ export default {
   "awAufgabenErwartet": "Părți din program, așteptate {e}",
   "awAbwesend": "Absențe la întruniri",
   "awLetzte": "Ultimele {dauer}",
+  "awLetzteUndKommend": "Ultimele {dauer} și ce e planificat",
   "awAufgabe": "Parte din program",
   "awHilfsdienst": "Sarcină de sprijin",
   "awAbwesendKurz": "absent",

@@ -877,6 +877,7 @@ export default {
   "awAufgabenErwartet": "Program bölümleri, beklenen {e}",
   "awAbwesend": "Bulunmadığı ibadetler",
   "awLetzte": "Son {dauer}",
+  "awLetzteUndKommend": "Son {dauer} ve planlananlar",
   "awAufgabe": "Program bölümü",
   "awHilfsdienst": "Yardımcı görev",
   "awAbwesendKurz": "yok",

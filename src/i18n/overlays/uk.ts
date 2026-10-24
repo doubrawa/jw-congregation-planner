@@ -877,6 +877,7 @@ export default {
   "awAufgabenErwartet": "Пункти програми, очікувалося {e}",
   "awAbwesend": "Відсутність на зібраннях",
   "awLetzte": "Останні {dauer}",
+  "awLetzteUndKommend": "Останні {dauer} і те, що заплановано",
   "awAufgabe": "Пункт програми",
   "awHilfsdienst": "Допоміжний обов’язок",
   "awAbwesendKurz": "відсутність",

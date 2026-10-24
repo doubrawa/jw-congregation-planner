@@ -105,7 +105,7 @@ export function AuswertungScreen() {
       <section className="screen auswertung">
         <UnteransichtKopf titel={k.name(person)} onZurueck={() => setPerson(null)} />
         <ZeitraumZeile a={a} k={k} />
-        <PersonAnsicht k={k} pid={person} weeks={weeks} persons={persons} abwesend={abwesend} />
+        <PersonAnsicht k={k} pid={person} weeks={weeks} fsWeeks={fsWeeks} zeiten={state.congregation.times} persons={persons} abwesend={abwesend} />
       </section>
     )
   }

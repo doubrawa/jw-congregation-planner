@@ -31,7 +31,7 @@ import { emptyQualifications, isSong, privSetzen, ROLE_OWN_SPEAKER, serviceQualK
 import { tagNach } from './meeting-dates'
 import { allePlaetze, platzKey } from './plaetze'
 import { bereichVon } from './planning'
-import type { Absage, FsInstance, Group, Meeting, Person, Week } from './types'
+import type { Absage, FsInstance, Group, Meeting, MeetingTimes, Person, Week } from './types'
 
 /**
  * **Die Auswertung rechnet so, wie die Automatik verteilt** (T126). Jeder Fall
@@ -833,6 +833,15 @@ describe('Was auffällt', () => {
 /** Je Woche die Felder ihrer Zusammenkünfte — unter der Woche, Wochenende. */
 const felderVon = (bild: { wochen: readonly { felder: { mid: unknown; we: unknown } }[] }) => bild.wochen.map((w) => [w.felder.mid, w.felder.we])
 
+/** Dienstag 19 Uhr und Sonntag 10 Uhr — die Testwoche hat keine Abweichung. */
+const ZEITEN: MeetingTimes = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
+const OHNE_TREFFPUNKTE = { fsWeeks: [], zeiten: ZEITEN }
+
+/** Ein Treffpunkt am Wochentag `wd` (0 = Sonntag), geleitet von `lpid`. */
+function treffpunkt(wd: number, lpid: string, extra: Partial<FsInstance> = {}): FsInstance {
+  return { id: `tp-${wd}-${lpid}`, ruleId: null, grp: null, wd, time: '09:30', place: 'Saal', leader: lpid, lpid, ...extra }
+}
+
 /**
  * **Die Wochen einer Person** (Entwurf `GWochenbildKalender`, 23.10.2026): je
  * Zusammenkunft ein Feld. Bis dahin stand je Woche eines — „Aufgabe" verdeckte
@@ -850,7 +859,7 @@ describe('Eine Person', () => {
     hilfsdienst(weeks[1]!.we, 'mik', p)
     setze(weeks[3]!.mid, 'gebet', q, 1)
     const abwesend = new Set(['p|2|mid', 'p|2|we'])
-    const bild = personBild(g(weeks, [p, q], 13, abwesend), weeks, [p, q], abwesend, 'p')!
+    const bild = personBild(g(weeks, [p, q], 13, abwesend), weeks, [p, q], abwesend, 'p', OHNE_TREFFPUNKTE)!
     expect(felderVon(bild)).toEqual([
       ['beides', 'hilfsdienst'],
       [null, 'hilfsdienst'],
@@ -858,8 +867,8 @@ describe('Eine Person', () => {
       [null, null],
     ])
     // Die älteste zuerst, nichts davon geplant; neben dem Monat steht das Gebet — die Hilfsdienste nicht.
-    expect(bild.wochen.map((w) => [w.start, w.geplant])).toEqual([start(4), start(3), start(2), start(1)].map((s) => [s, false]))
-    expect(bild.wochen.map((w) => w.eintraege)).toEqual([[{ art: 'aufgabe', bereich: 'gebet' }], [], [], []])
+    expect(bild.wochen.map((w) => [w.start, w.geplant.mid, w.geplant.we])).toEqual([start(4), start(3), start(2), start(1)].map((s) => [s, false, false]))
+    expect(bild.wochen.map((w) => w.eintraege)).toEqual([[{ art: 'aufgabe', bereich: 'gebet', geplant: false }], [], [], []])
     expect(bild).toMatchObject({ aufgaben: 1, hilfsdienste: 3, abwesend: 2 })
     expect(bild.bereiche.find((b) => b.bereich === 'gebet')).toMatchObject({ hat: true, n: 1, zuletzt: start(4), vorWochen: 4 })
     // Zwei Gebete: das erste ganz auf p — q kam erst in der letzten Woche
@@ -872,7 +881,7 @@ describe('Eine Person', () => {
     const weeks = wochen(2)
     for (const w of weeks) setze(w.mid, 'leser', p)
     setze(weeks[1]!.mid, 'gebet', p, 1)
-    const bild = personBild(g(weeks, [p]), weeks, [p], KEINE_ABWESENHEIT, 'p')!
+    const bild = personBild(g(weeks, [p]), weeks, [p], KEINE_ABWESENHEIT, 'p', OHNE_TREFFPUNKTE)!
     expect(bild.bereiche.map((b) => [b.bereich, b.hat, b.n, b.erwartet])).toEqual([
       ['gebet', true, 1, 1],
       ['leser', false, 2, 0],
@@ -881,7 +890,7 @@ describe('Eine Person', () => {
   })
 
   it('eine unbekannte Person hat kein Bild', () => {
-    expect(personBild(g([], []), [], [], KEINE_ABWESENHEIT, 'x')).toBeNull()
+    expect(personBild(g([], []), [], [], KEINE_ABWESENHEIT, 'x', OHNE_TREFFPUNKTE)).toBeNull()
   })
 
   it('eine Zusammenkunft, die ausfiel, sagt es — leer sähe ein Kongress aus wie eine Woche ohne Aufgabe', () => {
@@ -892,7 +901,7 @@ describe('Eine Person', () => {
     setze(weeks[1]!.we, 'gebet', p, 1)
     // Abwesend in der Kongresswoche: Die Zusammenkünfte fanden nicht statt, gezählt wird nichts.
     const abwesend = new Set(['p|0|mid', 'p|0|we'])
-    const bild = personBild(g(weeks, [p], 13, abwesend), weeks, [p], abwesend, 'p')!
+    const bild = personBild(g(weeks, [p], 13, abwesend), weeks, [p], abwesend, 'p', OHNE_TREFFPUNKTE)!
     expect(felderVon(bild)).toEqual([
       ['ausgefallen', 'ausgefallen'],
       ['ausgefallen', 'aufgabe'],
@@ -907,26 +916,68 @@ describe('Eine Person', () => {
     setze(weeks[2]!.mid, 'gebet', p, 1)
     hilfsdienst(weeks[3]!.we, 'mik', p)
     const abwesend = new Set(['p|4|mid'])
-    const bild = personBild(g(weeks, [p], 13, abwesend), weeks, [p], abwesend, 'p')!
-    expect(bild.wochen.map((w) => [w.start, w.geplant])).toEqual([
-      [start(2), false],
-      [start(1), false],
-      [start(0), true],
-      [start(-1), true],
-      [start(-2), true],
+    const bild = personBild(g(weeks, [p], 13, abwesend), weeks, [p], abwesend, 'p', OHNE_TREFFPUNKTE)!
+    expect(bild.wochen.map((w) => [w.start, w.geplant.mid, w.geplant.we])).toEqual([
+      [start(2), false, false],
+      [start(1), false, false],
+      // Die laufende Woche nach dem Tag (Betreiber 24.10.2026): Am Mittwoch ist
+      // der Dienstag gehalten, der Sonntag steht aus.
+      [start(0), false, true],
+      [start(-1), true, true],
+      [start(-2), true, true],
     ])
     expect(felderVon(bild).slice(2)).toEqual([
       ['aufgabe', null],
       [null, 'hilfsdienst'],
       ['abwesend', null],
     ])
-    expect(bild.wochen[2]!.eintraege).toEqual([{ art: 'aufgabe', bereich: 'gebet' }])
-    // Die Kacheln zählen den Zeitraum — was ansteht, gehört nicht dazu.
+    expect(bild.wochen[2]!.eintraege).toEqual([{ art: 'aufgabe', bereich: 'gebet', geplant: false }])
+    // Die Kacheln zählen den Zeitraum — was ansteht, gehört nicht dazu, auch der gehaltene Dienstag nicht.
     expect(bild).toMatchObject({ aufgaben: 0, hilfsdienste: 0, abwesend: 0 })
 
     // Gegenprobe: Steht für jemanden nichts an, endet das Bild mit dem Zeitraum.
     const q = person('q', ['gebet'])
-    expect(personBild(g(weeks, [p, q], 13, abwesend), weeks, [p, q], abwesend, 'q')!.wochen.map((w) => w.start)).toEqual([start(2), start(1)])
+    expect(personBild(g(weeks, [p, q], 13, abwesend), weeks, [p, q], abwesend, 'q', OHNE_TREFFPUNKTE)!.wochen.map((w) => w.start)).toEqual([start(2), start(1)])
+  })
+
+  it('nach dem Tag der Zusammenkunft: am Dienstag selbst steht er noch aus, eine verlegte nach ihrem Tag', () => {
+    const p = person('p', ['gebet'])
+    const weeks = [woche(1), woche(0)]
+    setze(weeks[1]!.mid, 'gebet', p, 1)
+    const amTag = (heute: string, w: Week[]) =>
+      personBild(grundlage({ weeks: w, persons: [p], services: DEMO_SERVICES, abwesend: KEINE_ABWESENHEIT, fenster: zeitfenster(w, 13, heute) }), w, [p], KEINE_ABWESENHEIT, 'p', OHNE_TREFFPUNKTE)!
+        .wochen.at(-1)!
+    // Vorbei ist ein Tag ab dem Tag danach — wie in „Meine Aufgaben" (`istVorbei`).
+    expect(amTag('2026-09-08', weeks).geplant.mid).toBe(true)
+    expect(amTag('2026-09-09', weeks).geplant.mid).toBe(false)
+    // Auf Donnerstag verlegt: am Mittwoch steht sie noch aus.
+    const verlegt = structuredClone(weeks)
+    verlegt[1]!.dev = { mid: { wd: 4 } }
+    expect(amTag('2026-09-09', verlegt).geplant.mid).toBe(true)
+  })
+
+  it('geleitete Treffpunkte stehen beim Monat — ohne Feld, ohne Freitext-Leiter, und sie halten das Kommende offen', () => {
+    // Betreiber 24.10.2026: „Geleitete dazu" — sonst stand eine Absage allein da.
+    const p = person('p', ['treffpunkt'])
+    const weeks = [woche(1), woche(0), woche(-1), woche(-2)]
+    const fsWeeks: FsInstance[][] = [
+      // Letzte Woche: einer von p, einer von q, und ein Freitext-Leiter, der zufällig p's Id trägt.
+      [treffpunkt(3, 'p'), treffpunkt(6, 'q'), treffpunkt(5, 'p', { lext: true })],
+      // Die laufende: Montag (gehalten), Mittwoch — heute, steht also aus.
+      [treffpunkt(1, 'p'), treffpunkt(3, 'p')],
+      [],
+      // Die übernächste: Ihretwegen reicht das Bild bis dorthin.
+      [treffpunkt(6, 'p')],
+    ]
+    const bild = personBild(g(weeks, [p]), weeks, [p], KEINE_ABWESENHEIT, 'p', { fsWeeks, zeiten: ZEITEN })!
+    const geleitet = (geplant: boolean) => ({ art: 'aufgabe', bereich: TREFFPUNKT_BEREICH, geplant })
+    expect(bild.wochen.map((w) => w.eintraege)).toEqual([[geleitet(false)], [geleitet(false), geleitet(true)], [], [geleitet(true)]])
+    expect(felderVon(bild)).toEqual([[null, null], [null, null], [null, null], [null, null]])
+    // Die Kacheln zählen keine Treffpunkte — wie „Zu oft, zu selten".
+    expect(bild.aufgaben).toBe(0)
+
+    // Gegenprobe ohne Treffpunkte: Das Bild endet mit dem Zeitraum.
+    expect(personBild(g(weeks, [p]), weeks, [p], KEINE_ABWESENHEIT, 'p', OHNE_TREFFPUNKTE)!.wochen.map((w) => w.start)).toEqual([start(1)])
   })
 })
 
@@ -1081,7 +1132,7 @@ describe('Absagen', () => {
     const weeks = wochen(2)
     const absagen = weeks.map((w) => absage('beter', w, schluessel(w, 'mid', 'gebet')))
     absagen.push(absage('mik', weeks[0]!, schluessel(weeks[0]!, 'mid', serviceQualKey('mik'))))
-    const bild = personBild(grund(weeks, absagen), weeks, [mik, beter, andere], KEINE_ABWESENHEIT, 'beter')
+    const bild = personBild(grund(weeks, absagen), weeks, [mik, beter, andere], KEINE_ABWESENHEIT, 'beter', OHNE_TREFFPUNKTE)
     expect(bild?.absagen).toBe(2)
   })
 
@@ -1092,12 +1143,15 @@ describe('Absagen', () => {
     // Er sagte ab, weil er weg war: Das Feld sagt „abgesagt", die Kachel zählt beides.
     const abwesend = new Set(['beter|0|mid'])
     const g0 = grundlage({ weeks, persons: [mik, beter, andere], services: DEMO_SERVICES, abwesend, fenster: zeitfenster(weeks, 13, HEUTE), absagen })
-    const bild = personBild(g0, weeks, [mik, beter, andere], abwesend, 'beter')!
+    const bild = personBild(g0, weeks, [mik, beter, andere], abwesend, 'beter', OHNE_TREFFPUNKTE)!
     expect(felderVon(bild)).toEqual([
       ['abgesagt', null],
       [null, null],
     ])
-    expect(bild.wochen.map((w) => w.eintraege)).toEqual([[{ art: 'absage', bereich: 'gebet' }], [{ art: 'absage', bereich: TREFFPUNKT_BEREICH }]])
+    expect(bild.wochen.map((w) => w.eintraege)).toEqual([
+      [{ art: 'absage', bereich: 'gebet', geplant: false }],
+      [{ art: 'absage', bereich: TREFFPUNKT_BEREICH, geplant: false }],
+    ])
     expect(bild).toMatchObject({ absagen: 2, abwesend: 1 })
   })
 })

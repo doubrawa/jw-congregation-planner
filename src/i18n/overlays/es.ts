@@ -877,6 +877,7 @@ export default {
   "awAufgabenErwartet": "Partes del programa, esperadas {e}",
   "awAbwesend": "Reuniones con ausencia",
   "awLetzte": "Las últimas {dauer}",
+  "awLetzteUndKommend": "Las últimas {dauer} y lo previsto",
   "awAufgabe": "Parte del programa",
   "awHilfsdienst": "Servicio de apoyo",
   "awAbwesendKurz": "ausente",

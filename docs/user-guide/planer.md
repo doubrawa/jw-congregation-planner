@@ -834,11 +834,16 @@ am Wochenende. Grün ist eine Aufgabe, grau ein Hilfsdienst, halb und halb
 beides in derselben Zusammenkunft; schraffiert war die Person abwesend, rot
 umrandet hat sie abgesagt, durchgestrichen fand die Zusammenkunft nicht statt.
 Zu jedem Monat steht da, welche Aufgaben es waren (kam dieselbe öfter, mit der
-Zahl) und was abgesagt wurde – am Handy unter den Feldern, auf größeren
-Bildschirmen daneben. Was ab dieser Woche schon geplant ist, steht gestrichelt
-oben – bis zur letzten Woche, in der die Person eingeteilt oder abwesend ist;
-mitgezählt wird es nicht. Die laufende Woche zählt dabei ganz als geplant, wie
-überall in der Auswertung: auch eine Zusammenkunft dieser Woche, die schon war.
+Zahl), welche Treffpunkte die Person geleitet hat und was abgesagt wurde – am
+Handy unter den Feldern, auf größeren Bildschirmen daneben. Treffpunkte haben
+kein Feld: Sie sind keine Zusammenkunft.
+
+Was noch aussteht, steht gestrichelt oben – bis zur letzten Woche, in der die
+Person eingeteilt oder abwesend ist oder einen Treffpunkt leitet; dann heißt die
+Überschrift „Die letzten … Wochen und was ansteht“. Entscheidend ist der Tag:
+Am Donnerstag ist die Zusammenkunft vom Dienstag gehalten und steht gefüllt da,
+die am Sonntag gestrichelt. Gezählt wird die laufende Woche trotzdem erst ab
+Montag, wie überall in der Auswertung.
 
 ### Was die Auswertung nicht weiß
 

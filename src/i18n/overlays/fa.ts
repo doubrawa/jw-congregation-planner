@@ -876,6 +876,7 @@ export default {
   "awAufgabenErwartet": "بخش‌های برنامه، مورد انتظار {e}",
   "awAbwesend": "غیبت در جلسات",
   "awLetzte": "{dauer} اخیر",
+  "awLetzteUndKommend": "{dauer} اخیر و آنچه تعیین شده",
   "awAufgabe": "بخش برنامه",
   "awHilfsdienst": "وظیفهٔ کمکی",
   "awAbwesendKurz": "غایب",

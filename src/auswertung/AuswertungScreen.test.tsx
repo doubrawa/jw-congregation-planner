@@ -13,7 +13,7 @@ import { fremdsprachigerBestand, type FremdBestand } from '../../tests/fremdspra
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { datumsFormat, monatsName, zeitspanne } from '../components/datum-anzeige'
 import { abwesenheitenVon } from '../data/absence'
-import { auswerten, ZEITRAEUME, type Einteilung, type Zeitraum } from '../data/auswertung'
+import { auswerten, TREFFPUNKT_BEREICH, ZEITRAEUME, type Einteilung, type Zeitraum } from '../data/auswertung'
 import { displayName } from '../data/helpers'
 import { fromIso, tagNach } from '../data/meeting-dates'
 import { allePlaetze, platzKey } from '../data/plaetze'
@@ -386,18 +386,25 @@ describe('Die Wochen einer Person', () => {
     expect(c.querySelectorAll('.aw-halb.is-beides')).toHaveLength([...mitDienst].filter((z) => mitAufgabe.has(z)).length)
   })
 
-  it('neben dem Monat steht jede Aufgabe mit ihrem Bereich — die Hilfsdienste nicht', () => {
+  it('beim Monat steht jede Aufgabe mit ihrem Bereich und jeder geleitete Treffpunkt — die Hilfsdienste nicht', () => {
     const s = zustand()
     const a = rechnung(s)
-    const pid = a.grundlage.einteilungen.find((e) => !e.hilfsdienst && e.bereich)!.pid
+    // Betreiber 24.10.2026: „Geleitete dazu" — also jemand, der auch Treffpunkte leitet.
+    const leitet = (pid: string, wi: number) => (VERLAUF.fsWeeks[wi] ?? []).some((inst) => inst.lpid === pid && !inst.lext)
+    const pid = a.grundlage.einteilungen.find((e) => !e.hilfsdienst && e.bereich && VERLAUF.weeks.some((_, wi) => leitet(e.pid, wi)))?.pid
+    if (!pid) throw new Error('im Verlauf leitet niemand mit Aufgaben einen Treffpunkt')
     const c = oeffnen(s, pid)
     const eigene = a.grundlage.einteilungen.filter((e) => e.pid === pid)
+    const monatVon = (montag: string) => monatsName(`${montag.slice(0, 7)}-01`, 'de')
+    const alle: string[] = []
     for (const [name, texte] of monatsTexte(c)) {
-      const monat = eigene.filter((e) => monatsName(`${e.start.slice(0, 7)}-01`, 'de') === name)
-      const erwartet = [...new Set(monat.filter((e) => !e.hilfsdienst).map((e) => (e.bereich ? kurz(e.bereich) : t.awAufgabe)))]
+      const aufgaben = eigene.filter((e) => !e.hilfsdienst && monatVon(e.start) === name).map((e) => (e.bereich ? kurz(e.bereich) : t.awAufgabe))
+      const treffpunkte = VERLAUF.weeks.some((w, wi) => monatVon(w.start) === name && leitet(pid, wi)) ? [kurz(TREFFPUNKT_BEREICH)] : []
       const gelesen = (texte as [string, boolean][]).map(([text]) => ohneZahl(text))
-      expect(gelesen, String(name)).toEqual(erwartet)
+      expect([...gelesen].sort(), String(name)).toEqual([...new Set([...aufgaben, ...treffpunkte])].sort())
+      alle.push(...gelesen)
     }
+    expect(alle, 'kein Treffpunkt beim Monat').toContain(kurz(TREFFPUNKT_BEREICH))
   })
 
   it('eine Absage steht im Feld und daneben in der Problemfarbe — zwei im selben Monat mit der Zahl', () => {
@@ -432,22 +439,42 @@ describe('Die Wochen einer Person', () => {
     expect(c.querySelectorAll('.aw-woche')).toHaveLength(20)
   })
 
-  it('was ansteht, steht gestrichelt oben — die Überschrift zählt nur den Zeitraum', () => {
+  it('was ansteht, steht gestrichelt oben — die Überschrift sagt es und zählt nur den Zeitraum', () => {
     // Die laufende und die nächste Woche: Testwoche 1 und 2 auf den 12. und 19. Oktober.
     const kommend = [0, 1].map((i) => ({ ...structuredClone(DEMO.weeks[i]!), start: tagNach(MONTAG, 7 * i) }))
     const s = zustand({ weeks: [...VERLAUF.weeks, ...kommend], fsWeeks: [...VERLAUF.fsWeeks, [], []] })
     const geplant = rechnung(s).grundlage.geplant.find((e) => !e.hilfsdienst && e.bereich && e.start === MONTAG)!
     const c = oeffnen(s, geplant.pid)
-    expect(c.textContent).toContain(zahlBinden(`Die letzten ${zeitspanne(20, 'week', 'de')}`))
+    // Betreiber 24.10.2026: „Ergänzen" — die Zahl bleibt die des Zeitraums.
+    const kopf = (x: HTMLElement) => x.querySelector('.aw-wochen')?.closest('section')?.querySelector('h2')?.textContent
+    expect(kopf(c)).toBe(fill(t.awLetzteUndKommend, { dauer: zeitspanne(20, 'week', 'de') }))
     const oben = c.querySelector('.aw-monat')!
     expect(oben.querySelector('.aw-monat-name')?.textContent).toBe(monatsName('2026-10-01', 'de'))
     expect(oben.querySelectorAll('.aw-halb.is-geplant.is-aufgabe, .aw-halb.is-geplant.is-beides').length).toBeGreaterThan(0)
     const texte = [...oben.querySelectorAll('.aw-monat-text > span')].map((e) => ohneZahl(e.textContent))
     expect(texte).toContain(fill(t.awEintragStand, { bereich: kurz(geplant.bereich!), stand: t.awGeplantKurz }))
     expect([...c.querySelectorAll('.aw-legende-eintrag')].map((e) => e.textContent)).toContain(t.awGeplantKurz)
-    // Gegenprobe: Ohne die kommenden Wochen steht nichts Gestricheltes da.
+    // Gegenprobe: Ohne die kommenden Wochen steht nichts Gestricheltes da, und die Überschrift bleibt kurz.
     cleanup()
-    expect(oeffnen(zustand(), geplant.pid).querySelector('.aw-halb.is-geplant')).toBeNull()
+    const ohne = oeffnen(zustand(), geplant.pid)
+    expect(ohne.querySelector('.aw-halb.is-geplant')).toBeNull()
+    expect(kopf(ohne)).toBe(fill(t.awLetzte, { dauer: zeitspanne(20, 'week', 'de') }))
+  })
+
+  it('die laufende Woche nach dem Tag: am Donnerstag ist der Dienstag gehalten, am Montag steht er aus', () => {
+    // Betreiber 24.10.2026: „Nach dem Tag". Gezählt wird der Dienstag trotzdem erst ab Montag.
+    const kommend = [0, 1].map((i) => ({ ...structuredClone(DEMO.weeks[i]!), start: tagNach(MONTAG, 7 * i) }))
+    const s = zustand({ weeks: [...VERLAUF.weeks, ...kommend], fsWeeks: [...VERLAUF.fsWeeks, [], []] })
+    const dienstag = rechnung(s).grundlage.geplant.find((e) => !e.hilfsdienst && e.start === MONTAG && e.tab === 'mid')!
+    /** Das Feld unter der Woche in der laufenden Woche (Oktober: 5., 12., 19.). */
+    const feld = (c: HTMLElement) => c.querySelector('.aw-monat')!.querySelectorAll('.aw-woche')[1]!.querySelector('.aw-halb')!.className
+    vi.setSystemTime(new Date(2026, 9, 15, 9, 0))
+    const donnerstag = feld(oeffnen(s, dienstag.pid))
+    expect(donnerstag).toMatch(/is-(aufgabe|beides)/)
+    expect(donnerstag).not.toContain('is-geplant')
+    cleanup()
+    vi.setSystemTime(UHR)
+    expect(feld(oeffnen(s, dienstag.pid))).toContain('is-geplant')
   })
 })
 

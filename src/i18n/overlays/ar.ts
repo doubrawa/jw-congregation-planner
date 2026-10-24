@@ -877,6 +877,7 @@ export default {
   "awAufgabenErwartet": "فقرات البرنامج، المتوقع {e}",
   "awAbwesend": "الغياب عن الاجتماعات",
   "awLetzte": "آخر {dauer}",
+  "awLetzteUndKommend": "آخر {dauer} وما هو مقرر",
   "awAufgabe": "فقرة برنامج",
   "awHilfsdienst": "خدمة مساندة",
   "awAbwesendKurz": "غائب",
