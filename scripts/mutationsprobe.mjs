@@ -2394,7 +2394,7 @@ export const KATALOG = [
     id: 'link-senden-mailprogramm',
     datei: 'src/personen/LinkSendenBlatt.tsx',
     regel: 'Kann der Server nicht senden, öffnet sich dieselbe E-Mail im eigenen Mail-Programm.',
-    suchen: '      if (ohneVersand) r = await ausstellen([person.id], false)\n',
+    suchen: '        r = await ausstellen([person.id], false)\n',
     ersetzen: '',
   },
   // Per Nachricht (24.10.2026): Link und Code über das Teilen des Geräts oder kopiert.
@@ -2439,6 +2439,35 @@ export const KATALOG = [
     regel: 'Die Nachricht steht in der Sprache der Versammlung — ihr Wörterbuch lädt die App dafür nach.',
     suchen: "import('../../supabase/functions/_shared/anmelde-mail.ts'), loadOverlay(lang)])",
     ersetzen: "import('../../supabase/functions/_shared/anmelde-mail.ts')])",
+  },
+  // Review 24.10.2026: erst die Texte, dann der Link — und der Zettel nicht dazwischen.
+  {
+    id: 'nachricht-texte-vor-dem-link',
+    datei: 'src/personen/LinkSendenBlatt.tsx',
+    regel: 'Fehlt nach einem Deploy der Teil mit den Texten, stellt „Teilen" keinen Link aus — er ersetzte den alten, ohne dass jemand ihn bekommt.',
+    suchen: '    if (!(await texteGeladen())) return null\n',
+    ersetzen: '',
+  },
+  {
+    id: 'mail-entwurf-texte-vor-dem-link',
+    datei: 'src/personen/LinkSendenBlatt.tsx',
+    regel: 'Fehlt nach einem Deploy der Teil mit dem Entwurf, stellt der Rückfall der E-Mail keinen Link aus.',
+    suchen: '        if (!(await texteGeladen())) return\n',
+    ersetzen: '',
+  },
+  {
+    id: 'nachricht-kopieren-gescheitert',
+    datei: 'src/personen/LinkSendenBlatt.tsx',
+    regel: 'Scheitert das Kopieren, heißt es nicht „Kopiert" — in der Zwischenablage steht noch, was vorher darin war.',
+    suchen: 'if (!(await copyText(n.text))) {',
+    ersetzen: 'if (!(await copyText(n.text)) && false) {',
+  },
+  {
+    id: 'zettel-nicht-waehrend-link',
+    datei: 'src/personen/LinkSendenBlatt.tsx',
+    regel: 'Während ein Link entsteht, druckt „Zettel drucken" nicht — sein Link ersetzte den eben geteilten.',
+    suchen: 'onClick={laeuft ? undefined : onZettel}',
+    ersetzen: 'onClick={onZettel}',
   },
   {
     id: 'links-ausstellen-offline',

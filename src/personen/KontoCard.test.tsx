@@ -14,7 +14,7 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import { dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
-import type { AnmeldeLink, Member, Person } from '../data/types'
+import type { AnmeldeLink, Lang, Member, Person } from '../data/types'
 import type { Ausgestellt, AusgestellterLink } from '../lib/links-ausstellen'
 import { zahlBinden } from '../i18n/zahl-binden'
 
@@ -40,6 +40,14 @@ vi.mock('../lib/links-ausstellen', async (echt) => ({
 // Die Zwischenablage — jsdom kennt sie nicht.
 const kopiert = vi.fn((_text: string) => Promise.resolve(true))
 vi.mock('../lib/clipboard', () => ({ copyText: (text: string) => kopiert(text) }))
+// Die Texte für E-Mail und Nachricht lädt die App nach. Nach einem Deploy kann
+// der alte Teil fehlen — `ladefehler` stellt das nach; ohne ihn lädt es echt.
+let ladefehler: Error | null = null
+vi.mock('./link-mail', async (echt) => {
+  const modul = await echt<typeof import('./link-mail')>()
+  return { ...modul, linkTexteLaden: (lang: Lang) => (ladefehler ? Promise.reject(ladefehler) : modul.linkTexteLaden(lang)) }
+})
+const fehlenderTeil = () => new TypeError('Failed to fetch dynamically imported module')
 
 const { KontoCard } = await import('./KontoCard')
 
@@ -106,6 +114,7 @@ beforeEach(() => {
   // Das Blatt fragt nach der Breite (Wischen am Handy) — jsdom kennt `matchMedia` nicht.
   window.matchMedia = vi.fn(() => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} })) as unknown as typeof window.matchMedia
   linksAusstellen.mockReset().mockResolvedValue({ links: [ausgestellt(true)], mailBereit: true, fehler: false })
+  ladefehler = null
   // `location.href` wird beim mailto:-Rückfall gesetzt — in jsdom nicht
   // schreibbar, deshalb ein Ersatzobjekt mit allen Feldern, die die App liest.
   Object.defineProperty(window, 'location', {
@@ -279,6 +288,17 @@ describe('Das Blatt „Link senden"', () => {
     expect(window.location.href.split('?')[0]).toBe('mailto:anton@example.org%3Fbcc%3Dfremd@example.org')
   })
 
+  it('fehlt nach einem Deploy der Teil mit dem Entwurf: kein Link ausgestellt, eine Meldung', async () => {
+    ladefehler = fehlenderTeil()
+    linksAusstellen.mockResolvedValue({ links: [], mailBereit: false, fehler: false })
+    const { container, dispatch } = zeige(person({ mail: 'anton@example.org' }))
+    fireEvent.click(knopf(oeffnen(container), t.linkSenden)!)
+    await waitFor(() => expect(toasts(dispatch)).toContain(t.linkFehler))
+    // Nur die Frage nach dem Versand — ein Link ohne Versand hätte den alten ersetzt, auch einen Zettel.
+    expect(linksAusstellen.mock.calls.map((c) => c[1].senden)).toEqual([true])
+    expect(window.location.href).toBe('')
+  })
+
   it('antwortet der Server nicht, sagt es das', async () => {
     linksAusstellen.mockResolvedValue({ links: [], mailBereit: false, fehler: true })
     const { container, dispatch } = zeige(person({ mail: 'anton@example.org' }))
@@ -379,6 +399,49 @@ describe('Per Nachricht', () => {
     await waitFor(() => expect(toasts(dispatch)).toContain(fill(t.toastNachrichtKopiert, { name: 'Anton' })))
     expect(kopiert.mock.calls[0]![0]).toContain('\nK7RD-2QWM\n')
     await waitFor(() => expect(blatt()).toBeNull())
+  })
+
+  it('scheitert das Kopieren, heißt es nicht „Kopiert" — der nächste Tipp kopiert denselben Text, ohne neuen Link', async () => {
+    kopiert.mockResolvedValueOnce(false)
+    const { container, dispatch } = zeige(person())
+    const a = abschnitt(oeffnen(container))
+    fireEvent.click(knopf(a, t.kopierenBtn)!)
+    await waitFor(() => expect(toasts(dispatch)).toContain(t.nochmalTippen))
+    // In der Zwischenablage steht noch, was vorher darin war.
+    expect(toasts(dispatch)).not.toContain(fill(t.toastNachrichtKopiert, { name: 'Anton' }))
+    expect(blatt()).not.toBeNull()
+    await waitFor(() => expect(knopf(a, t.kopierenBtn)?.getAttribute('aria-disabled')).toBeNull())
+    fireEvent.click(knopf(a, t.kopierenBtn)!)
+    await waitFor(() => expect(toasts(dispatch)).toContain(fill(t.toastNachrichtKopiert, { name: 'Anton' })))
+    expect(kopiert.mock.calls[1]![0]).toBe(kopiert.mock.calls[0]![0])
+    expect(linksAusstellen).toHaveBeenCalledTimes(1)
+  })
+
+  it('fehlt nach einem Deploy der Teil mit den Texten: kein Link ausgestellt, eine Meldung', async () => {
+    mitTeilen()
+    ladefehler = fehlenderTeil()
+    const { container, dispatch } = zeige(person())
+    fireEvent.click(knopf(abschnitt(oeffnen(container)), t.teilenBtn)!)
+    await waitFor(() => expect(toasts(dispatch)).toContain(t.linkFehler))
+    // Ein Link hätte den alten ersetzt — auch einen ausgegebenen Zettel —, ohne dass jemand ihn bekommt.
+    expect(linksAusstellen).not.toHaveBeenCalled()
+    expect(teilen).not.toHaveBeenCalled()
+    expect(blatt()).not.toBeNull()
+  })
+
+  it('während der Link entsteht, druckt „Zettel drucken" nicht — sein Link ersetzte den eben geteilten', async () => {
+    mitTeilen()
+    let antworten = (_a: Ausgestellt) => {}
+    linksAusstellen.mockReturnValueOnce(new Promise<Ausgestellt>((r) => (antworten = r)))
+    const { container } = zeige(person())
+    const b = oeffnen(container)
+    fireEvent.click(knopf(abschnitt(b), t.teilenBtn)!)
+    await waitFor(() => expect(linksAusstellen).toHaveBeenCalledTimes(1))
+    fireEvent.click(knopf(b, t.zettelDrucken)!)
+    expect(blatt()).not.toBeNull()
+    antworten({ links: [ausgestellt(false)], mailBereit: false, fehler: false })
+    await waitFor(() => expect(teilen).toHaveBeenCalledTimes(1))
+    expect(linksAusstellen).toHaveBeenCalledTimes(1)
   })
 
   it('ein neuer Link per E-Mail macht den Text ungültig — Teilen stellt danach neu aus', async () => {

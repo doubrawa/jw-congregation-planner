@@ -32,6 +32,16 @@ export interface LinkNachricht {
   text: string
 }
 
+/**
+ * **Was E-Mail-Entwurf und Nachricht nachladen**: die E-Mail mit allen
+ * Sprachen und das Wörterbuch der Versammlung. Das Blatt „Link senden" ruft es
+ * **vor** dem Ausstellen auf: Fehlt nach einem Deploy der alte Teil der App,
+ * scheitert es hier — und noch ist kein Link ersetzt (Review 24.10.2026).
+ */
+export function linkTexteLaden(lang: Lang) {
+  return Promise.all([import('../../supabase/functions/_shared/anmelde-mail.ts'), loadOverlay(lang)])
+}
+
 const ABSATZ = '\n\n'
 /**
  * Die letzten Absätze der E-Mail, die nur zu ihr gehören: wie lange Link und
@@ -55,7 +65,7 @@ export async function linkNachricht(
   link: AusgestellterLink,
   { lang, versammlung }: { lang: Lang; versammlung: string },
 ): Promise<LinkNachricht> {
-  const [{ linkDatum }] = await Promise.all([import('../../supabase/functions/_shared/anmelde-mail.ts'), loadOverlay(lang)])
+  const [{ linkDatum }] = await linkTexteLaden(lang)
   const d = dict(lang)
   const werte = { name: person.fn, versammlung, url: link.url, code: link.code, datum: linkDatum(link.gueltigBis, lang) }
   const absaetze = [...d.linkMailText.split(ABSATZ).slice(0, -NUR_IN_DER_MAIL), d.linkNachrichtSchluss]

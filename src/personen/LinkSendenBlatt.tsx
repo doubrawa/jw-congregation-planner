@@ -9,7 +9,7 @@ import { displayName } from '../data/helpers'
 import type { Person } from '../data/types'
 import { fill, useT } from '../i18n/useT'
 import { copyText } from '../lib/clipboard'
-import { linkMailEntwurf, linkNachricht, type LinkNachricht } from './link-mail'
+import { linkMailEntwurf, linkNachricht, linkTexteLaden, type LinkNachricht } from './link-mail'
 import { sprachDerVersammlung, useLinksAusstellen } from './useLinksAusstellen'
 
 /**
@@ -47,11 +47,28 @@ export function LinkSendenBlatt({ person, onZettel, onClose }: { person: Person;
   const [nachricht, setNachricht] = useState<LinkNachricht | null>(null)
   const teilbar = typeof navigator.share === 'function'
   const name = person.fn || displayName(person)
+  const lang = sprachDerVersammlung(state.congLang)
   const adresse = person.mail.trim()
   const hatLink = state.anmeldeLinks.some((l) => l.personId === person.id)
   const angemeldet = state.members.some((m) => m.personId === person.id)
   // Bis wann ein Link gälte, der jetzt entsteht — in der Sprache dessen, der ihn ausstellt.
   const bis = gebundenesDatum(new Date(gueltigBis(new Date())), state.lang, 'tagMonat')
+
+  /**
+   * Die Texte für E-Mail-Entwurf und Nachricht laden — **vor** dem Ausstellen.
+   * Fehlt nach einem Deploy der alte Teil der App, scheitert es hier, und noch
+   * ist kein Link ersetzt. Danach liefe der Fehler ohne Meldung ins Leere, und
+   * jeder weitere Tipp ersetzte den Link erneut (Review 24.10.2026).
+   */
+  const texteGeladen = async () => {
+    try {
+      await linkTexteLaden(lang)
+      return true
+    } catch {
+      dispatch({ type: 'showToast', text: t.linkFehler })
+      return false
+    }
+  }
 
   const senden = async () => {
     if (laeuft) return
@@ -62,7 +79,10 @@ export function LinkSendenBlatt({ person, onZettel, onClose }: { person: Person;
       // Ohne Versand stellt der Server auf `senden` hin nichts aus — dann den
       // Link ohne Versand und die E-Mail aus dem eigenen Mail-Programm.
       const ohneVersand = !r.fehler && !r.mailBereit
-      if (ohneVersand) r = await ausstellen([person.id], false)
+      if (ohneVersand) {
+        if (!(await texteGeladen())) return
+        r = await ausstellen([person.id], false)
+      }
       const neu = r?.links[0]
       if (!neu) {
         dispatch({ type: 'showToast', text: t.linkFehler })
@@ -71,7 +91,6 @@ export function LinkSendenBlatt({ person, onZettel, onClose }: { person: Person;
       // Der neue Link ersetzt den der Nachricht — sie gälte nicht mehr.
       setNachricht(null)
       if (ohneVersand) {
-        const lang = sprachDerVersammlung(state.congLang)
         window.location.href = await linkMailEntwurf(person, neu, { lang, versammlung: state.congregation.name })
         onClose()
         return
@@ -86,6 +105,7 @@ export function LinkSendenBlatt({ person, onZettel, onClose }: { person: Person;
   /** Der Text mit Link und Code — beim ersten Tipp ausgestellt, danach derselbe (siehe `nachricht`). */
   const nachrichtHolen = async (): Promise<LinkNachricht | null> => {
     if (nachricht) return nachricht
+    if (!(await texteGeladen())) return null
     const r = await ausstellen([person.id], false)
     if (!r) return null
     const neu = r.links[0]
@@ -93,7 +113,7 @@ export function LinkSendenBlatt({ person, onZettel, onClose }: { person: Person;
       dispatch({ type: 'showToast', text: t.linkFehler })
       return null
     }
-    const n = await linkNachricht(person, neu, { lang: sprachDerVersammlung(state.congLang), versammlung: state.congregation.name })
+    const n = await linkNachricht(person, neu, { lang, versammlung: state.congregation.name })
     setNachricht(n)
     return n
   }
@@ -185,7 +205,8 @@ export function LinkSendenBlatt({ person, onZettel, onClose }: { person: Person;
             {t.aufZettel}
           </h3>
           <p className="klein-text">{fill(t.aufZettelHint, { datum: bis })}</p>
-          <button type="button" className="knopf-umriss" onClick={onZettel}>
+          {/* Nicht, während ein Link entsteht: Der Zettel stellte einen zweiten aus, der den ersten ersetzt. */}
+          <button type="button" className="knopf-umriss" aria-disabled={laeuft || undefined} onClick={laeuft ? undefined : onZettel}>
             {t.zettelDrucken}
           </button>
         </section>
