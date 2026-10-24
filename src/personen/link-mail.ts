@@ -26,23 +26,38 @@ export async function linkMailEntwurf(
   return `mailto:${an}?subject=${encodeURIComponent(mail.betreff)}&body=${encodeURIComponent(mail.text)}`
 }
 
+/** Link und Code als Nachricht: der Betreff der E-Mail (für das Teilen des Geräts) und der Text. */
+export interface LinkNachricht {
+  titel: string
+  text: string
+}
+
+const ABSATZ = '\n\n'
+/**
+ * Die letzten Absätze der E-Mail, die nur zu ihr gehören: wie lange Link und
+ * Code gelten — mit „tippe auf ‚Link senden'" — und „Du bekommst diese E-Mail,
+ * weil …". In der Nachricht steht statt ihrer `linkNachrichtSchluss`.
+ */
+const NUR_IN_DER_MAIL = 2
+
 /**
  * **Link und Code als Nachricht** — für WhatsApp, Signal oder SMS über
- * „Teilen" (24.10.2026). Derselbe Text wie die E-Mail ohne das, was nur zu ihr
- * gehört: Wer keine Adresse hat, bekommt einen abgelaufenen Link von den
- * Ältesten wieder, nicht über „Link senden" (`linkNachrichtText`). In der
+ * „Teilen" (24.10.2026). Die Absätze der E-Mail ohne die, die nur zu ihr
+ * gehören: Wer keine Adresse hat, bekommt einen abgelaufenen Link von den
+ * Ältesten wieder, nicht über „Link senden" (`linkNachrichtSchluss`). In der
  * Sprache der Versammlung wie die E-Mail — ihr Wörterbuch wird dafür
- * nachgeladen; `fuellen` setzt nur ein, ohne Zahlen zu binden: Der Code muss
- * sich so kopieren lassen, wie er dasteht.
+ * nachgeladen, parallel zum Datum, wie beim Zettel: Safari lässt das Teilen nur
+ * kurz nach dem Tipp zu. `fuellen` setzt nur ein, ohne Zahlen zu binden: Der
+ * Code muss sich so kopieren lassen, wie er dasteht.
  */
 export async function linkNachricht(
   person: Pick<Person, 'fn'>,
   link: AusgestellterLink,
   { lang, versammlung }: { lang: Lang; versammlung: string },
-): Promise<{ titel: string; text: string }> {
-  await loadOverlay(lang)
+): Promise<LinkNachricht> {
+  const [{ linkDatum }] = await Promise.all([import('../../supabase/functions/_shared/anmelde-mail.ts'), loadOverlay(lang)])
   const d = dict(lang)
-  const { linkDatum } = await import('../../supabase/functions/_shared/anmelde-mail.ts')
   const werte = { name: person.fn, versammlung, url: link.url, code: link.code, datum: linkDatum(link.gueltigBis, lang) }
-  return { titel: fuellen(d.linkMailBetreff, werte), text: `${fuellen(d.linkNachrichtText, werte)}\n` }
+  const absaetze = [...d.linkMailText.split(ABSATZ).slice(0, -NUR_IN_DER_MAIL), d.linkNachrichtSchluss]
+  return { titel: fuellen(d.linkMailBetreff, werte), text: `${fuellen(absaetze.join(ABSATZ), werte)}\n` }
 }

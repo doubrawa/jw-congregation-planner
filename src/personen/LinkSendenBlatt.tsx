@@ -9,7 +9,7 @@ import { displayName } from '../data/helpers'
 import type { Person } from '../data/types'
 import { fill, useT } from '../i18n/useT'
 import { copyText } from '../lib/clipboard'
-import { linkMailEntwurf, linkNachricht } from './link-mail'
+import { linkMailEntwurf, linkNachricht, type LinkNachricht } from './link-mail'
 import { sprachDerVersammlung, useLinksAusstellen } from './useLinksAusstellen'
 
 /**
@@ -44,7 +44,7 @@ export function LinkSendenBlatt({ person, onZettel, onClose }: { person: Person;
    * Safari lässt das Teilen nur kurz nach dem Tipp zu: Dauerte das Ausstellen
    * zu lange, teilt erst der nächste Tipp — mit diesem Text.
    */
-  const [nachricht, setNachricht] = useState<{ titel: string; text: string } | null>(null)
+  const [nachricht, setNachricht] = useState<LinkNachricht | null>(null)
   const teilbar = typeof navigator.share === 'function'
   const name = person.fn || displayName(person)
   const adresse = person.mail.trim()
@@ -84,7 +84,7 @@ export function LinkSendenBlatt({ person, onZettel, onClose }: { person: Person;
   }
 
   /** Der Text mit Link und Code — beim ersten Tipp ausgestellt, danach derselbe (siehe `nachricht`). */
-  const nachrichtHolen = async (): Promise<{ titel: string; text: string } | null> => {
+  const nachrichtHolen = async (): Promise<LinkNachricht | null> => {
     if (nachricht) return nachricht
     const r = await ausstellen([person.id], false)
     if (!r) return null

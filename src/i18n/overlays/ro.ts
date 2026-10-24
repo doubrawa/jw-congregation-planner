@@ -697,7 +697,7 @@ export default {
   "scanFremd": "Acesta nu este un bilețel de autentificare al acestei aplicații.",
   "linkMailBetreff": "Accesul tău la congregația {versammlung}",
   "linkMailText": "Bună, {name},\n\ncongregația {versammlung} planifică întrunirile și serviciul de teren cu Versammlung.app. Accesul tău este pregătit.\n\nAutentifică-te acum:\n{url}\n\nAi aplicația pe ecranul principal? Atunci deschide-o de acolo, atinge „Introdu codul” și scrie acest cod:\n{code}\n\nLinkul și codul sunt valabile până la {datum} și te autentifică doar pe tine. Nu ai nevoie de parolă. Dacă au expirat, deschide aplicația și atinge „Trimite linkul”.\n\nPrimești acest e-mail pentru că faci parte din congregația {versammlung}. Dacă ai întrebări, vorbește cu bătrânii.",
-  "linkNachrichtText": "Bună, {name},\n\ncongregația {versammlung} planifică întrunirile și serviciul de teren cu Versammlung.app. Accesul tău este pregătit.\n\nAutentifică-te acum:\n{url}\n\nAi aplicația pe ecranul principal? Atunci deschide-o de acolo, atinge „Introdu codul” și scrie acest cod:\n{code}\n\nLinkul și codul sunt valabile până la {datum} și te autentifică doar pe tine. Nu ai nevoie de parolă. Dacă au expirat, cere-le bătrânilor un link nou.",
+  "linkNachrichtSchluss": "Linkul și codul sunt valabile până la {datum} și te autentifică doar pe tine. Nu ai nevoie de parolă. Dacă au expirat, cere-le bătrânilor un link nou.",
   "ohneMailHinweisTippen": "Introdu codul de pe bilețelul tău. Dacă ai pierdut bilețelul, bătrânii îți vor da altul. Pe telefon e suficient să scanezi codul QR.",
   "standLink": "Link trimis",
   "standOhneLink": "Fără link",

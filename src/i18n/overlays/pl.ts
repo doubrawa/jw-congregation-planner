@@ -697,7 +697,7 @@ export default {
   "scanFremd": "To nie jest karteczka logowania do tej aplikacji.",
   "linkMailBetreff": "Twój dostęp do zboru {versammlung}",
   "linkMailText": "Cześć {name},\n\nzbór {versammlung} planuje zebrania i służbę za pomocą Versammlung.app. Twój dostęp jest gotowy.\n\nZaloguj się teraz:\n{url}\n\nMasz aplikację na ekranie początkowym? Otwórz ją tam, stuknij „Wpisz kod” i wprowadź ten kod:\n{code}\n\nLink i kod są ważne do {datum} i logują tylko ciebie. Hasło nie jest potrzebne. Jeśli wygasły, otwórz aplikację i stuknij „Wyślij link”.\n\nOtrzymujesz tego e-maila, ponieważ należysz do zboru {versammlung}. Jeśli masz pytania, porozmawiaj ze starszymi.",
-  "linkNachrichtText": "Cześć {name},\n\nzbór {versammlung} planuje zebrania i służbę za pomocą Versammlung.app. Twój dostęp jest gotowy.\n\nZaloguj się teraz:\n{url}\n\nMasz aplikację na ekranie początkowym? Otwórz ją tam, stuknij „Wpisz kod” i wprowadź ten kod:\n{code}\n\nLink i kod są ważne do {datum} i logują tylko ciebie. Hasło nie jest potrzebne. Jeśli wygasły, poproś starszych o nowy link.",
+  "linkNachrichtSchluss": "Link i kod są ważne do {datum} i logują tylko ciebie. Hasło nie jest potrzebne. Jeśli wygasły, poproś starszych o nowy link.",
   "ohneMailHinweisTippen": "Wpisz kod z karteczki. Jeśli karteczka zginęła, starsi dadzą ci nową. Na telefonie wystarczy zeskanować kod QR.",
   "standLink": "Link wysłany",
   "standOhneLink": "Bez linku",

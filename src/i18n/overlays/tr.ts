@@ -697,7 +697,7 @@ export default {
   "scanFremd": "Bu, bu uygulamanın giriş kartı değil.",
   "linkMailBetreff": "{versammlung} Cemaatine erişimin",
   "linkMailText": "Merhaba {name},\n\n{versammlung} Cemaati ibadetleri ve tarla hizmetini Versammlung.app ile planlıyor. Erişimin hazır.\n\nŞimdi giriş yap:\n{url}\n\nUygulama ana ekranında mı? O zaman oradan aç, “Kodu yaz” düğmesine dokun ve bu kodu gir:\n{code}\n\nBağlantı ve kod {datum} tarihine kadar geçerli ve yalnızca senin içindir. Şifreye ihtiyacın yok. Süreleri dolduysa uygulamayı aç ve “Bağlantı gönder” düğmesine dokun.\n\nBu e-postayı, {versammlung} Cemaatine bağlı olduğun için alıyorsun. Soruların varsa ihtiyarlarla konuş.",
-  "linkNachrichtText": "Merhaba {name},\n\n{versammlung} Cemaati ibadetleri ve tarla hizmetini Versammlung.app ile planlıyor. Erişimin hazır.\n\nŞimdi giriş yap:\n{url}\n\nUygulama ana ekranında mı? O zaman oradan aç, “Kodu yaz” düğmesine dokun ve bu kodu gir:\n{code}\n\nBağlantı ve kod {datum} tarihine kadar geçerli ve yalnızca senin içindir. Şifreye ihtiyacın yok. Süreleri dolduysa ihtiyarlardan yeni bir bağlantı iste.",
+  "linkNachrichtSchluss": "Bağlantı ve kod {datum} tarihine kadar geçerli ve yalnızca senin içindir. Şifreye ihtiyacın yok. Süreleri dolduysa ihtiyarlardan yeni bir bağlantı iste.",
   "ohneMailHinweisTippen": "Kartındaki kodu yaz. Kartı kaybettiysen ihtiyarlar sana yenisini verir. Telefonda QR kodunu taraman yeterli.",
   "standLink": "Bağlantı gönderildi",
   "standOhneLink": "Bağlantı yok",

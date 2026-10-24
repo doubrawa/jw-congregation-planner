@@ -697,7 +697,7 @@ export default {
   "scanFremd": "Questo non è un foglietto di accesso di questa app.",
   "linkMailBetreff": "Il tuo accesso alla congregazione di {versammlung}",
   "linkMailText": "Ciao {name},\n\nla congregazione di {versammlung} pianifica le adunanze e il servizio di campo con Versammlung.app. Il tuo accesso è pronto.\n\nAccedi ora:\n{url}\n\nHai l’app nella schermata Home? Allora aprila da lì, tocca “Digita codice” e inserisci questo codice:\n{code}\n\nIl link e il codice sono validi fino al {datum} e fanno accedere solo te. Non ti serve una password. Se sono scaduti, apri l’app e tocca “Invia link”.\n\nRicevi questa email perché fai parte della congregazione di {versammlung}. Se hai domande, parlane con gli anziani.",
-  "linkNachrichtText": "Ciao {name},\n\nla congregazione di {versammlung} pianifica le adunanze e il servizio di campo con Versammlung.app. Il tuo accesso è pronto.\n\nAccedi ora:\n{url}\n\nHai l’app nella schermata Home? Allora aprila da lì, tocca “Digita codice” e inserisci questo codice:\n{code}\n\nIl link e il codice sono validi fino al {datum} e fanno accedere solo te. Non ti serve una password. Se sono scaduti, chiedi agli anziani un nuovo link.",
+  "linkNachrichtSchluss": "Il link e il codice sono validi fino al {datum} e fanno accedere solo te. Non ti serve una password. Se sono scaduti, chiedi agli anziani un nuovo link.",
   "ohneMailHinweisTippen": "Digita il codice del tuo foglietto. Se hai perso il foglietto, gli anziani te ne daranno uno nuovo. Sul telefono basta scansionare il codice QR.",
   "standLink": "Link inviato",
   "standOhneLink": "Senza link",

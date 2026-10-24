@@ -503,8 +503,8 @@
   overflow-wrap: anywhere;
 }
 
-/* „Teilen" und „Kopieren" nebeneinander, jeder halb so breit; reicht die Zeile
-   nicht (große Schrift, „Поделиться"), steht der zweite darunter. */
+/* „Teilen" und „Kopieren" nebeneinander, den freien Platz teilen sie sich;
+   reicht die Zeile nicht (große Schrift, „Поделиться"), steht der zweite darunter. */
 .link-weg-knoepfe {
   display: flex;
   flex-direction: row;

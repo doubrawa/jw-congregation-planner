@@ -63,10 +63,11 @@ export const DE = {
     // Safari, nie die App vom Home-Bildschirm — dort hilft nur der Code.
     linkMailBetreff: 'Dein Zugang zur Versammlung {versammlung}',
     linkMailText: 'Hallo {name},\n\ndie Versammlung {versammlung} plant die Zusammenkünfte und den Predigtdienst mit Versammlung.app. Dein Zugang ist eingerichtet.\n\nJetzt anmelden:\n{url}\n\nHast du die App auf dem Home-Bildschirm? Dann öffne sie dort, tippe auf „Code eintippen“ und gib diesen Code ein:\n{code}\n\nLink und Code gelten bis {datum} und melden nur dich an. Ein Passwort brauchst du nicht. Sind sie abgelaufen, öffne die App und tippe auf „Link senden“.\n\nDu bekommst diese E-Mail, weil du in der Versammlung {versammlung} eingetragen bist. Bei Fragen sprich die Ältesten an.',
-    // Derselbe Text als Nachricht („Teilen", 24.10.2026): die Absätze 1–4 wörtlich
-    // wie die E-Mail (ein Test hält sie gleich), dann statt „Link senden" die
-    // Ältesten — wer per Nachricht kommt, hat oft keine Adresse —, ohne den Satz zur E-Mail.
-    linkNachrichtText: 'Hallo {name},\n\ndie Versammlung {versammlung} plant die Zusammenkünfte und den Predigtdienst mit Versammlung.app. Dein Zugang ist eingerichtet.\n\nJetzt anmelden:\n{url}\n\nHast du die App auf dem Home-Bildschirm? Dann öffne sie dort, tippe auf „Code eintippen“ und gib diesen Code ein:\n{code}\n\nLink und Code gelten bis {datum} und melden nur dich an. Ein Passwort brauchst du nicht. Sind sie abgelaufen, frag die Ältesten nach einem neuen Link.',
+    // Derselbe Text als Nachricht („Teilen", 24.10.2026): die Absätze der E-Mail
+    // ohne ihre letzten zwei, dann dieser Schluss — statt „Link senden" die
+    // Ältesten (wer per Nachricht kommt, hat oft keine Adresse), ohne den Satz zur
+    // E-Mail (`linkNachricht` in personen/link-mail.ts).
+    linkNachrichtSchluss: 'Link und Code gelten bis {datum} und melden nur dich an. Ein Passwort brauchst du nicht. Sind sie abgelaufen, frag die Ältesten nach einem neuen Link.',
     nurMitglieder: 'Zugang nur für Mitglieder der Versammlung',
     // Anmeldeseite (T113): wofür die App da ist, und der Weg zum Betreiber für
     // eine neue Versammlung. Die Adresse selbst steht in login/kontakt.ts.

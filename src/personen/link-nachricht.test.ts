@@ -41,18 +41,20 @@ describe('Der Text der Nachricht', () => {
     }
   })
 
-  it('in jeder Sprache: die Absätze 1–4 wörtlich wie die E-Mail, dann die Ältesten statt „Link senden" — ohne den Absatz zur E-Mail', async () => {
+  it('in jeder Sprache: die E-Mail ohne ihre letzten zwei Absätze, dann die Ältesten statt „Link senden"', async () => {
     await Promise.all(APP_LANGS.map(({ code }) => loadOverlay(code)))
     for (const { code } of APP_LANGS) {
       const d = dict(code)
       const mail = d.linkMailText.split(ABSATZ)
-      const nachricht = d.linkNachrichtText.split(ABSATZ)
-      expect(nachricht.slice(0, 4), `${code}: Absätze 1–4`).toEqual(mail.slice(0, 4))
-      expect(nachricht, `${code}: ein Absatz weniger als die E-Mail`).toHaveLength(mail.length - 1)
-      // Der fünfte beginnt wie der der E-Mail und endet anders: ohne den Knopf, den man ohne Adresse nicht nutzen kann.
-      expect(mail[4]!.startsWith(nachricht[4]!.slice(0, 20)), `${code}: fünfter Absatz`).toBe(true)
-      expect(d.linkNachrichtText, `${code}: zitiert „${d.linkSenden}"`).not.toContain(d.linkSenden)
-      expect(d.linkNachrichtText, `${code}: Code nicht auf eigener Zeile`).toContain('\n{code}\n')
+      const n = await linkNachricht({ fn: 'Anton' }, link, { lang: code, versammlung: 'Musterstadt' })
+      const absaetze = n.text.trimEnd().split(ABSATZ)
+      // Ein Absatz weniger als die E-Mail: Der vorletzte wird ersetzt, der letzte („Du bekommst diese E-Mail …") fällt weg.
+      expect(absaetze, `${code}: Absätze`).toHaveLength(mail.length - 1)
+      // Der Schluss beginnt wie der vorletzte der E-Mail (wie lange Link und Code gelten) und endet anders.
+      expect(mail[mail.length - 2]!.startsWith(d.linkNachrichtSchluss.slice(0, 20)), `${code}: Schluss`).toBe(true)
+      expect(n.text, `${code}: zitiert „${d.linkSenden}"`).not.toContain(d.linkSenden)
+      expect(n.text, `${code}: Code nicht auf eigener Zeile`).toContain('\nK7RD-2QWM\n')
+      expect(n.text, `${code}: Platzhalter`).not.toMatch(/\{\w+\}/)
     }
   })
 })

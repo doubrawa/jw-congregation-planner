@@ -697,7 +697,7 @@ export default {
   "scanFremd": "This isn’t a login slip for this app.",
   "linkMailBetreff": "Your access to the {versammlung} Congregation",
   "linkMailText": "Hello {name},\n\nThe {versammlung} Congregation plans its meetings and field service with Versammlung.app. Your access is ready.\n\nLog in now:\n{url}\n\nIs the app on your Home Screen? Then open it there, tap “Type in code” and enter this code:\n{code}\n\nThe link and code are valid until {datum} and log only you in. You don’t need a password. If they have expired, open the app and tap “Send link”.\n\nYou are receiving this email because you are listed in the {versammlung} Congregation. If you have questions, please speak to the elders.",
-  "linkNachrichtText": "Hello {name},\n\nThe {versammlung} Congregation plans its meetings and field service with Versammlung.app. Your access is ready.\n\nLog in now:\n{url}\n\nIs the app on your Home Screen? Then open it there, tap “Type in code” and enter this code:\n{code}\n\nThe link and code are valid until {datum} and log only you in. You don’t need a password. If they have expired, ask the elders for a new link.",
+  "linkNachrichtSchluss": "The link and code are valid until {datum} and log only you in. You don’t need a password. If they have expired, ask the elders for a new link.",
   "ohneMailHinweisTippen": "Type in the code from your slip. If the slip is lost, the elders will give you a new one. On a phone, just scan the QR code.",
   "standLink": "Link sent",
   "standOhneLink": "No link",

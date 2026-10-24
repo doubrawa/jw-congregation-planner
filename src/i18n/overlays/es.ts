@@ -697,7 +697,7 @@ export default {
   "scanFremd": "Esta no es una tarjeta de acceso de esta aplicación.",
   "linkMailBetreff": "Tu acceso a la congregación {versammlung}",
   "linkMailText": "Hola, {name}:\n\nLa congregación {versammlung} organiza las reuniones y el servicio del campo con Versammlung.app. Tu acceso ya está listo.\n\nInicia sesión ahora:\n{url}\n\n¿Tienes la aplicación en la pantalla de inicio? Entonces ábrela desde allí, toca “Escribir código” e introduce este código:\n{code}\n\nEl enlace y el código son válidos hasta el {datum} y solo te dan acceso a ti. No necesitas contraseña. Si han caducado, abre la aplicación y toca “Enviar enlace”.\n\nRecibes este correo porque figuras en la congregación {versammlung}. Si tienes preguntas, habla con los ancianos.",
-  "linkNachrichtText": "Hola, {name}:\n\nLa congregación {versammlung} organiza las reuniones y el servicio del campo con Versammlung.app. Tu acceso ya está listo.\n\nInicia sesión ahora:\n{url}\n\n¿Tienes la aplicación en la pantalla de inicio? Entonces ábrela desde allí, toca “Escribir código” e introduce este código:\n{code}\n\nEl enlace y el código son válidos hasta el {datum} y solo te dan acceso a ti. No necesitas contraseña. Si han caducado, pide a los ancianos un enlace nuevo.",
+  "linkNachrichtSchluss": "El enlace y el código son válidos hasta el {datum} y solo te dan acceso a ti. No necesitas contraseña. Si han caducado, pide a los ancianos un enlace nuevo.",
   "ohneMailHinweisTippen": "Escribe el código de tu tarjeta. Si perdiste la tarjeta, los ancianos te darán otra. En el teléfono, basta con escanear el código QR.",
   "standLink": "Enlace enviado",
   "standOhneLink": "Sin enlace",
