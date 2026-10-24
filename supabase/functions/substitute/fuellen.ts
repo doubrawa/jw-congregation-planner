@@ -110,8 +110,9 @@ function platzFinden(meeting: Meeting, teile: Zusammenkunft, services: ServiceRo
         setzen: (neu) => {
           reihe[teile.ni] = { ...slot, ...neu }
         },
-        // Mit dem Abschnitt: Den Vortrag des Vorsitzenden bietet die App nicht an.
-        bereich: programmAngebot(slot, section),
+        // Mit dem Abschnitt: Den Vortrag des Vorsitzenden bietet die App nicht
+        // an, mit allen Abschnitten das Schlussgebet am Wochenende nicht (T133).
+        bereich: programmAngebot(slot, section, meeting.sections ?? []),
         nurBrueder: slot.male === true,
         nebenan: reihe,
       }

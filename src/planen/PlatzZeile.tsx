@@ -20,6 +20,7 @@ export function PlatzZeile({
   hinweis,
   status,
   gewaehlt = false,
+  leer,
   onClick,
 }: {
   name: string
@@ -31,20 +32,19 @@ export function PlatzZeile({
   status?: string
   /** Am Desktop: Die Spalte daneben teilt gerade diesen Platz zu (`istGewaehlt`). */
   gewaehlt?: boolean
+  /** Was ein leerer Platz sagt, den niemand planen muss (T133) — statt „Zuteilen". */
+  leer?: string
   onClick: () => void
 }) {
   const { t } = useT()
   const rolleText = [rolle, lage === 'wartet' ? status : undefined].filter(Boolean).join(' · ')
   const stufeSichtbar = lage === 'wartet' || status === hinweis
+  const vorOrt = lage === 'offen' && leer !== undefined
+  const klassen = ['platz', LAGE_KLASSE[lage], vorOrt && 'is-vor-ort', gewaehlt && 'is-gewaehlt'].filter(Boolean).join(' ')
   return (
-    <button
-      type="button"
-      className={gewaehlt ? `platz ${LAGE_KLASSE[lage]} is-gewaehlt` : `platz ${LAGE_KLASSE[lage]}`}
-      aria-current={gewaehlt || undefined}
-      onClick={onClick}
-    >
+    <button type="button" className={klassen} aria-current={gewaehlt || undefined} onClick={onClick}>
       <span className="platz-punkt" aria-hidden="true" />
-      <span className="platz-name">{lage === 'offen' ? t.spurZuteilen : name}</span>
+      <span className="platz-name">{lage === 'offen' ? (leer ?? t.spurZuteilen) : name}</span>
       {rolleText && <span className="platz-rolle">{rolleText}</span>}
       {hinweis && <span className="platz-hinweis">{hinweis}</span>}
       {status && !stufeSichtbar && <span className="sr-only">{status}</span>}

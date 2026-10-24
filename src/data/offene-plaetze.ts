@@ -39,6 +39,7 @@ import { allePlaetze, platzKey, type Platz } from './plaetze'
 import { assignmentsInMeeting, wochenIndex } from './planning'
 import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import type {
+  Meeting,
   MeetingAssignment,
   MeetingSlotSelection,
   MeetingTimes,
@@ -104,10 +105,10 @@ export function gesendeteWochen(sentLog: SentLog): Set<string> {
  * Prüfung macht der Server beim Eintragen. Bei den Hilfsdiensten fällt nur die
  * Reinigung heraus — eine Gruppe, keine Person.
  */
-export function angebotsBereich(platz: Platz): string | null {
+export function angebotsBereich(platz: Platz, meeting: Meeting): string | null {
   if (platz.art === 'helper') return platz.svc.groups ? null : serviceQualKey(platz.svc.key)
   if (platz.art === 'ratgeber') return programmAngebot(platz.slot)
-  return programmAngebot(platz.slot, platz.section)
+  return programmAngebot(platz.slot, platz.section, meeting.sections)
 }
 
 /** Titel und Rolle eines Platzes — dieselbe Teilung wie bei den Aufgaben (`eachAssignedSlot`). */
@@ -148,7 +149,7 @@ export function offenePlaetze(
       const meeting = week[tab]
       for (const platz of allePlaetze(meeting, services)) {
         if (platz.slot?.name) continue
-        const bereich = angebotsBereich(platz)
+        const bereich = angebotsBereich(platz, meeting)
         if (!bereich || !isQualified(me, bereich)) continue
         if (platz.art !== 'helper' && platz.slot.male && me.female) continue
         // Im selben Programmpunkt schon eingeteilt (Leiter des Studiums, und

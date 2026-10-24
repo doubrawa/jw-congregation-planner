@@ -139,6 +139,19 @@ describe('Plätze als Zeilen (T121)', () => {
     expect(plaetze(container).map(lage)).toEqual(['is-wartet', 'is-offen'])
   })
 
+  it('das Schlussgebet am Wochenende fordert nicht zum Zuteilen auf — es sagt, wer es übernimmt (T133)', () => {
+    // Erkannt am Wachtturm-Studium der Woche: Unter der Woche heißt derselbe Platz „Zuteilen".
+    const wt: Section = { label: 'WACHTTURM-STUDIUM', farbe: 'wein', items: [{ iid: 'w1', title: 'Studium', names: [{ name: '', rolle: 'Leiter', bereichsKey: 'studium' }] }] }
+    const schluss: Section = { label: LABEL_ABSCHLUSS, farbe: 'neutral', items: [{ iid: 's1', title: 'Schlussworte · Lied 1 · Gebet', names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] }
+    const sonntag = zeige(schluss, { tab: 'we', weeks: [woche([], [wt, schluss])] }).container
+    expect(namen(sonntag)).toEqual([t.schlussgebetVorOrt])
+    expect(plaetze(sonntag)[0]?.classList.contains('is-vor-ort')).toBe(true)
+    cleanup()
+    const dienstag = zeige(schluss, { tab: 'mid', weeks: [woche([schluss], [wt])] }).container
+    expect(namen(dienstag)).toEqual([t.spurZuteilen])
+    expect(plaetze(dienstag)[0]?.classList.contains('is-vor-ort')).toBe(false)
+  })
+
   it('auch der offene Platz nennt seine Rolle', () => {
     /*
       Vorher stand dort nur „— zuteilen". Beim Versammlungsbibelstudium sah

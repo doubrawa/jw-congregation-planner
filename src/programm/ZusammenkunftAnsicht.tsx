@@ -3,7 +3,8 @@ import { useApp } from '../app/context'
 import { hatAuxKlasse } from '../data/aux-class'
 import { dauerAbtrennen, gehoertZu, MEETING_TABS, mtab } from '../data/helpers'
 import { deutschesDatum, meetingDate, meetingTime } from '../data/meeting-dates'
-import type { HelperSlot, Meeting, MeetingKey, MeetingTab, PartItem, Person, Section, Service, Week } from '../data/types'
+import type { HelperSlot, Meeting, MeetingKey, MeetingTab, PartItem, Person, Section, Service, SlotAssignment, Week } from '../data/types'
+import { schlussgebetVorOrt } from '../../supabase/functions/_shared/planung.ts'
 import { abschnittZeilen, plaetzeVon, rolleNebenDemNamen } from './programm-zeilen'
 import { fill, platzName, programmTermin, useT } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
@@ -178,6 +179,7 @@ function Programm({
           key={section.label}
           section={section}
           rawSection={rawMeeting.sections[si]}
+          abschnitte={rawMeeting.sections}
           mitAux={mitAux}
           me={me}
           tpw={tpw}
@@ -225,6 +227,7 @@ function Programm({
 function Abschnitt({
   section,
   rawSection,
+  abschnitte,
   mitAux,
   me,
   tpw,
@@ -233,6 +236,8 @@ function Abschnitt({
 }: {
   section: Section
   rawSection: Section | undefined
+  /** Alle kanonischen Abschnitte — an ihnen erkennt `schlussgebetVorOrt` das Wochenende. */
+  abschnitte: readonly Section[]
   mitAux: boolean
   me: Person | undefined
   tpw: Uebersetzer
@@ -240,6 +245,7 @@ function Abschnitt({
   ebene: Ebene
 }) {
   const { lieder, zeilen } = abschnittZeilen(section, rawSection, tpw)
+  const vorOrt = (slot: SlotAssignment): boolean => rawSection !== undefined && schlussgebetVorOrt(abschnitte, rawSection, slot)
   const Ueberschrift = ebene
   return (
     <section className="prog-abschnitt" data-farbe={section.farbe}>
@@ -250,7 +256,7 @@ function Abschnitt({
         {lieder.length > 0 && <span className="prog-lied">{lieder.join(' · ')}</span>}
       </div>
       {zeilen.map(({ item, title }) => (
-        <ProgramRow key={item.iid} item={item} title={title} mitAux={mitAux} me={me} tpw={tpw} sprache={sprache} />
+        <ProgramRow key={item.iid} item={item} title={title} mitAux={mitAux} me={me} tpw={tpw} sprache={sprache} vorOrt={vorOrt} />
       ))}
     </section>
   )
@@ -267,6 +273,7 @@ function ProgramRow({
   me,
   tpw,
   sprache,
+  vorOrt,
 }: {
   /**
    * Der Programmpunkt — **ohne seine Kennung**, denn diese Zeile liest sie
@@ -283,6 +290,8 @@ function ProgramRow({
   tpw: Uebersetzer
   /** `lang` von Titel, Zusatz und Dauer — fehlt bei der Ratgeber-Zeile, die in der Sprache des Lesers steht. */
   sprache?: string
+  /** Ein leerer Platz, den niemand planen muss (T133) — er sagt, wer ihn übernimmt. */
+  vorOrt?: (slot: SlotAssignment) => boolean
 }) {
   const { t, tu } = useT()
   const zweiRaeume = mitAux && item.aux != null
@@ -315,6 +324,7 @@ function ProgramRow({
                 name={slot.name}
                 rolle={rolleNebenDemNamen(slot, tu)}
                 du={me != null && gehoertZu(slot, me)}
+                leer={vorOrt?.(slot) ? t.schlussgebetVorOrt : undefined}
               />
             ))}
           </Fragment>

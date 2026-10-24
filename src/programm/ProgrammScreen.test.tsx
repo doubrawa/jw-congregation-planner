@@ -256,6 +256,19 @@ describe('Das Programm selbst', () => {
     expect(texte(container, '.prog-name')).toContain(t.offenDash)
   })
 
+  it('das Schlussgebet am Wochenende sagt, wer es übernimmt — es ist nicht „offen" (T133)', () => {
+    // Unter der Woche wird es geplant: Leer heißt es dort „offen".
+    const wt: Section = { label: 'WACHTTURM-STUDIUM', kind: 'wtStudium', farbe: 'wein', items: [{ iid: 'i104', title: 'Studienartikel', names: [{ name: 'Wer Anders', pid: 'p-x', rolle: 'Leiter' }] }] }
+    const schluss: Section = { label: LABEL_ABSCHLUSS, kind: 'abschluss', farbe: 'neutral', items: [{ iid: 'i103', title: 'Schlussworte · Lied 1 · Gebet', names: [{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }] }] }
+    const w = woche({ we: { date: '7.–13. September', end: '11:45', sections: [wt, schluss], helpers: { mik: [] } } })
+    const sonntag = zeige({ tab: 'we', weeks: [w] }).container
+    expect(texte(sonntag, '.prog-name')).toContain(t.schlussgebetVorOrt)
+    expect(texte(sonntag, '.prog-name')).not.toContain(t.offenDash)
+    cleanup()
+    const dienstag = zeige({ tab: 'mid', weeks: [w] }).container
+    expect(texte(dienstag, '.prog-name')).not.toContain(t.schlussgebetVorOrt)
+  })
+
   it('das Lied wird aus dem Eröffnungs-Sammeltitel herausgezogen — es steht rechts im Kopf', () => {
     const { container } = zeige()
     const lieder = texte(container, '.prog-abschnitt-kopf .prog-lied')

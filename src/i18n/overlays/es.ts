@@ -45,6 +45,7 @@ export default {
   "zuteilenChip": "— asignar",
   "offenWort": "pendiente",
   "offenDash": "— pendiente —",
+  "schlussgebetVorOrt": "Orador o elegido en el momento",
   "abwesenheiten": "Ausencias",
   "von": "Desde",
   "bis": "Hasta",

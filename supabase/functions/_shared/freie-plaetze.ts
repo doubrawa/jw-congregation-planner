@@ -8,7 +8,7 @@
 // Server nähme einen, den die App nie angeboten hätte.
 // =============================================================================
 
-import { SKIP_ROLE, vortragDesVorsitzenden } from './planung.ts'
+import { SKIP_ROLE, schlussgebetVorOrt, vortragDesVorsitzenden } from './planung.ts'
 
 /**
  * Bereiche der **Schulungsaufgaben** — die werden nicht angeboten (Betreiber,
@@ -38,15 +38,19 @@ const EIGENER_REDNER = 'Redner'
  * **Auch nicht der Vortrag des Vorsitzenden** (`abschnitt`, 16.10.2026): Er
  * trägt den Bereich des Vorsitzes, gehört aber dem, der den Vorsitz hat. Bot
  * ihn die App an, übernahm ihn ein zweiter Vorsitzender.
+ *
+ * **Und nicht das Schlussgebet am Wochenende** (`abschnitte`, T133): Es spricht
+ * der Redner oder wer vor Ort gebeten wird (`schlussgebetVorOrt`).
  */
 export function programmAngebot(
   slot: { bereichsKey?: string; rolle?: string } | undefined,
   abschnitt?: { kind?: string; label?: string },
+  abschnitte: readonly { kind?: string; label?: string }[] = [],
 ): string | null {
   const bereich = slot?.bereichsKey
   if (!bereich || SCHUELER_BEREICHE.has(bereich)) return null
   const rolle = slot?.rolle ?? ''
   if (SKIP_ROLE.test(rolle) || rolle.split(' · ')[0] === EIGENER_REDNER) return null
-  if (abschnitt && vortragDesVorsitzenden(abschnitt, slot)) return null
+  if (abschnitt && (vortragDesVorsitzenden(abschnitt, slot) || schlussgebetVorOrt(abschnitte, abschnitt, slot))) return null
   return bereich
 }

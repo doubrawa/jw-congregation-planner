@@ -10,7 +10,7 @@
  */
 
 import { buildAbsences, istAbwesend, KEINE_ABWESENHEIT, type AbsenceSet } from './absence'
-import { allePlaetze, gespeicherteHelfer, platzKey, platzMitZusage, type Platz } from './plaetze'
+import { allePlaetze, gespeicherteHelfer, leerVorOrt, platzKey, platzMitZusage, type Platz } from './plaetze'
 import { istSchuelerBereich, programmPlaetze, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
 import {
   dieselbePerson,
@@ -46,7 +46,7 @@ import {
   schluesselTeile,
 } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { ersteZahl } from './ziffern'
-import { folgtDemVorsitz } from '../../supabase/functions/_shared/planung.ts'
+import { folgtDemVorsitz, schlussgebetVorOrt } from '../../supabase/functions/_shared/planung.ts'
 import type {
   Absence,
   ConfirmationMap,
@@ -343,7 +343,7 @@ export function assignSlot(
  */
 export function countOpenSlots(meeting: Meeting, services: Service[]): number {
   let count = 0
-  for (const platz of allePlaetze(meeting, services)) if (!platz.slot?.name) count++
+  for (const platz of allePlaetze(meeting, services)) if (!platz.slot?.name && !leerVorOrt(meeting, platz)) count++
   return count
 }
 
@@ -895,6 +895,7 @@ function programmpunkteBesetzen(meeting: Meeting, w: Waehler, persons: Person[])
   for (const { slot, section, item, aux } of programmPlaetze(meeting)) {
     if (slot.name || isGuestRole(slot.rolle)) continue
     if (folgtDemVorsitzIn(meeting, section, slot) || istWtLeiter(section, slot)) continue
+    if (schlussgebetVorOrt(meeting.sections, section, slot)) continue
     // Schülerteile (gold): Geschlecht/Partner/Verteilung berücksichtigen.
     const person = w.pick('part', slot.bereichsKey, schuelerteilOpts(item, slot, aux, persons))
     if (person) w.vergeben('part', person, slot)
@@ -1091,6 +1092,8 @@ export function rangfolgeFuer(
   if (!section || !item || isSong(item)) return []
   const slot = slotsOf(item, sel.aux === true)[sel.ni]
   if (!slot || isGuestRole(slot.rolle)) return []
+  // Das Schlussgebet am Wochenende besetzt die Automatik nicht, also schlägt das Blatt niemanden vor (T133).
+  if (schlussgebetVorOrt(meeting.sections, section, slot)) return []
   if (folgtDemVorsitzIn(meeting, section, slot)) {
     // Was dem Vorsitz folgt, schlägt die App dem Vorsitzenden vor (16.10.2026) —
     // bis dahin schlug sie niemanden vor und listete ihn als „heute schon dran".
@@ -1168,6 +1171,7 @@ export function zuteilbarePlaetze(
   for (const platz of allePlaetze(meeting, services)) {
     if ((platz.art === 'helper') !== (bereich === 'helpers')) continue
     if (platz.art !== 'helper' && isGuestRole(platz.slot.rolle)) continue
+    if (leerVorOrt(meeting, platz)) continue
     gesamt++
     if (platz.slot?.name) besetzt++
   }

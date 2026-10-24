@@ -45,6 +45,7 @@ export default {
   "zuteilenChip": "— ata",
   "offenWort": "boş",
   "offenDash": "— boş —",
+  "schlussgebetVorOrt": "Konuşmacı ya da yerinde seçilen biri",
   "abwesenheiten": "Yokluklar",
   "von": "Başlangıç",
   "bis": "Bitiş",

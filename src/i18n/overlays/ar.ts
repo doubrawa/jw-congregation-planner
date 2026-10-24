@@ -42,6 +42,7 @@ export default {
   "zuteilenChip": "— تعيين",
   "offenWort": "شاغر",
   "offenDash": "— شاغر —",
+  "schlussgebetVorOrt": "الخطيب أو أخ يُختار في حينه",
   "abwesenheiten": "الغيابات",
   "von": "من",
   "bis": "إلى",

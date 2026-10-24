@@ -40,6 +40,7 @@ import {
   punktKey,
   ratgeberKey,
 } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
+import { schlussgebetVorOrt } from '../../supabase/functions/_shared/planung.ts'
 import type { Meeting, MeetingKey, MeetingSlotSelection, Service, SlotAssignment } from './types'
 
 export { isSong, programmPlaetze, raeume, slotsOf }
@@ -114,6 +115,15 @@ export function platzMitZusage(platz: Platz): boolean {
   const slot = platz.slot
   if (!slot?.name || isGuestRole(slot.rolle)) return false
   return !(platz.art === 'helper' && platz.svc.groups)
+}
+
+/**
+ * **Ein leerer Platz, den niemand planen muss** — das Schlussgebet am
+ * Wochenende (`schlussgebetVorOrt`, T133). Er zählt nicht als offen; ist er
+ * besetzt, ist er ein Platz wie jeder.
+ */
+export function leerVorOrt(meeting: Meeting, platz: Platz): boolean {
+  return platz.art === 'programm' && !platz.slot.name && schlussgebetVorOrt(meeting.sections, platz.section, platz.slot)
 }
 
 /**

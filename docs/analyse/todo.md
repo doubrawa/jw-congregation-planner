@@ -8384,6 +8384,80 @@ der Entwicklerseite. Der Link zum Artifact steht bewusst nicht hier (das Repo
 ist öffentlich); der Clip lässt sich dort als MP4 exportieren. Betreiber nach
 dem Ansehen: „sieht super aus".
 
+## Aufgenommen am 24. Oktober 2026 — Punkte vom Testen (T133–T140)
+
+**Auftrag (24. Oktober, Betreiber):** „ich hab hier ein paar punkte, die man
+bearbeiten sollte, die mir beim testen aufgefallen sind. die punkte sollen
+hintereinander in dieser session bearbeitet werden. frag mich ruhig, wenn
+dinge unklar sind oder entschieden werden müssen."
+
+### T133 · Das Schlussgebet am Sonntag planen 🔧 ✅ erledigt (24. Oktober 2026)
+
+„Das Schlussgebet am Sonntag ist etwas speziell. Es spricht in der Regel der
+Vortragsredner wenn er bleibt und nicht nach dem Vortrag schon geht. Ansonsten
+sucht sich der Wachtturm Studienleiter jemand aus, der betet, vor der
+Versammlung spontan. Hast du eine Idee wie wir das berücksichtigen bei der
+Planung?"
+
+**Entschieden (24. Oktober, Betreiber):** „Nicht planen" — von drei Wegen
+(nicht planen, folgt dem Redner, Platz streichen). In NWS war es nie geplant.
+
+**Umgesetzt:** Eine geteilte Regel `schlussgebetVorOrt` (`_shared/planung.ts`):
+das Gebet im Abschluss einer Zusammenkunft mit Wachtturm-Studium; im
+Altbestand an der Überschrift erkannt (`ART_IM_ALTBESTAND` kennt jetzt auch
+ABSCHLUSS). Leer zählt der Platz nicht als offen (`countOpenSlots`,
+`besetzung`, „Automatisch" über `zuteilbarePlaetze`; `leerVorOrt` in
+`plaetze.ts`), die Automatik lässt ihn aus, das Zuteilen-Blatt schlägt
+niemanden vor, er ist kein Bedarf und wird nicht als freier Platz angeboten
+(`programmAngebot` mit allen Abschnitten — App und Function `substitute`).
+Programm, Planen und beide Druckbögen zeigen „Redner oder vor Ort" statt
+„offen"/„Zuteilen"/Linie (neuer Schlüssel in zwölf Sprachen). Eingetragen
+bleibt es ein Platz wie jeder, mit Zusage und Erinnerung. Ausrollen:
+`substitute` (nur der Angebots-Check); ohne Ausrollen nähme der Server eine
+Übernahme an, die die App nie anbietet — harmlos.
+
+### T134 · Einspringen prominenter 🔧 ☐ offen
+
+„Die Möglichkeit einzuspringen soll prominenter sein. … es gibt oft den fall
+dass getauscht wird. momentan findet das über eine whatsapp gruppe statt, wo
+jemand nach ersatz fragt, aber es wäre natürlich schöner, wenn das über die app
+geht und zwar so, dass man schneller sieht, was für ersatz gesucht wird.
+vielleicht hilft schon das schneller zu finden, was schon da ist."
+
+### T135 · Planung: Wahl zwischen Zusammenkünften, Dienst und weiteren Plänen 🔧 ☐ offen
+
+„Unter Menüpunkt Planung soll die Auswahl zwischen Zusammenkünfte, Dienst und
+weitere Pläne sein. Damit man das findet, denn nur Zusammenkünfte sind leicht zu
+finden beim planen und der rest ist ganz unten im zusammenkunftsdialog."
+
+### T136 · Auslastung einer Person: Zahl und Kreise passen nicht zusammen 🔧 ☐ offen
+
+„Person Auslastung in den letzten 8 Wochen zeigt nicht korrekt an scheinbar,
+wenn die zahl widerspricht sich mit der anzahl der gefüllten kreise. und die
+kreise sagen deshalb nicht viel aus, weil man nicht weiß auf was es sich
+bezieht - sind damit vergangene aufgaben gemeint oder auch kommende? das sollte
+man von der darstellung nochmal überarbeiten."
+
+### T137 · Einstellungen: „Königreichssaal" und „Programmsprachen" zerbrochen ⚡ ☐ offen
+
+Am Handy des Betreibers (24. Oktober) stehen die Bezeichnungen in Zeilen mit
+langem Wert silbenweise untereinander: „König-/reichs-/saal",
+„Pro-/gramm-/spra-/chen".
+
+### T138 · Auswertung: Diagramme, die jeder lesen kann 🔧 ☐ offen
+
+„Die Auswertung Diagramme. gibt es eine Bessere Darstellung? das erschließt
+sich nicht jedem so einfach, wie das zu lesen ist"
+
+### T139 · Auswertung: die Engpässe prüfen ⚡ ☐ offen
+
+„Auswertung Engpassanalyse -macht das eventuell sinn."
+
+### T140 · Mitteilungen löschen ⚡ ☐ offen
+
+„Mitteilungen löschen gibt's nicht mehr." (Am 13. Oktober war nur „Alle
+löschen" gestrichen, siehe T121.)
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -8421,7 +8495,7 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
-21. Oktober ☑
+21. Oktober ☑ · 24. Oktober ☐☐☐☐☐☐☐☐
 
 **131 der 132 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen ist eine:**
@@ -8861,6 +8935,7 @@ braucht den Betreiber, ein Gerät oder eine Entscheidung.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
+| **T133–T140** | Punkte vom Testen (24. Oktober) | aufgenommen am 24. Oktober, werden der Reihe nach bearbeitet |
 | **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124; am 21. Oktober: noch nicht). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
 | **Bewusst offen** | Der Grund nach dem Abmelden ohne Versammlung | Den Satz „Dein Konto gehört zu keiner Versammlung mehr" zeigt die Anmeldung nur, wenn das Laden die fehlende Mitgliedschaft findet — in der ersten Stunde nach dem Entfernen. Danach scheitert schon die Erneuerung des Tokens (das Konto ist gelöscht), supabase-js meldet `SIGNED_OUT` ohne Grund, und die Anmeldung steht ohne Satz da. Ihn auch dann zu zeigen, hieße erzwungenes und eigenes Abmelden zu unterscheiden — Betreiber am 21. Oktober: „wir müssen da keine komplexe logik einbauen" (Review vom 21. Oktober) |
 | **Bewusst offen** | Altes Zugangstoken nach dem Entfernen | Ein schon ausgestelltes Token gilt bis zu seinem Ablauf (höchstens eine Stunde) und sieht ohne Mitgliedschaft nichts. Wird die Person in dieser Stunde neu eingeladen, gilt es für das neue Konto: Es trägt wieder ihre Person-Id (`anmelden`). Vermerkt am Trigger in `schema.sql` (Review vom 21. Oktober) |

@@ -1,4 +1,5 @@
 import { allePlaetze } from './plaetze'
+import { schlussgebetVorOrt } from '../../supabase/functions/_shared/planung.ts'
 import { isQualified, isSpeakerRole, serviceQualKey } from './helpers'
 import { folgtDemVorsitzIn } from './planning'
 import { istAbwesend, type AbsenceSet } from './absence'
@@ -78,6 +79,9 @@ export interface Engpass {
  * „Vorsitz" — und wo nur einer den Vorsitz kann, stand jede Woche „nicht
  * besetzbar: 1". Leitet der Vorsitzende das Studium selbst, liest ein anderer —
  * dann zählt der Leser wie jeder Platz.
+ *
+ * **Das Schlussgebet am Wochenende ebenso nicht** (T133): Es spricht der Redner
+ * oder wer vor Ort gebeten wird (`schlussgebetVorOrt`).
  */
 export function bedarfJeBereich(meeting: Meeting, services: readonly Service[]): Map<string, number> {
   const out = new Map<string, number>()
@@ -97,6 +101,7 @@ export function bedarfJeBereich(meeting: Meeting, services: readonly Service[]):
     }
     if (isSpeakerRole(platz.slot.rolle)) continue
     if (platz.art === 'programm' && folgtDemVorsitzIn(meeting, platz.section, platz.slot)) continue
+    if (platz.art === 'programm' && schlussgebetVorOrt(meeting.sections, platz.section, platz.slot)) continue
     zaehl(platz.slot.bereichsKey)
   }
   return out

@@ -9,6 +9,7 @@ import { wochentagMitZahl } from '../components/datum-anzeige'
 import { fill, platzName, useT } from '../i18n/useT'
 import { abschnittZeilen, plaetzeVon, rolleNebenDemNamen } from '../programm/programm-zeilen'
 import { Balken, Offen } from './DruckBlatt'
+import { schlussgebetVorOrt } from '../../supabase/functions/_shared/planung.ts'
 
 type Uebersetzer = (s: string) => string
 
@@ -51,7 +52,10 @@ export function TagVoll({ tab, week, rawWeek, tpw }: DruckTag) {
       ) : (
         <>
           {meeting.sections.map((section, si) => {
-            const { lieder, zeilen } = abschnittZeilen(section, rawMeeting.sections[si], tpw)
+            const rawSection = rawMeeting.sections[si]
+            const { lieder, zeilen } = abschnittZeilen(section, rawSection, tpw)
+            const vorOrt = (slot: SlotAssignment): boolean =>
+              rawSection !== undefined && schlussgebetVorOrt(rawMeeting.sections, rawSection, slot)
             return (
               <div key={section.label} data-farbe={section.farbe}>
                 <AbschnittKopf name={tpw(section.label)} lieder={lieder} />
@@ -75,7 +79,7 @@ export function TagVoll({ tab, week, rawWeek, tpw }: DruckTag) {
                             <Personen slots={item.aux ?? []} tu={tu} />
                           </>
                         ) : (
-                          <Personen slots={item.names} tu={tu} />
+                          <Personen slots={item.names} tu={tu} vorOrt={vorOrt} />
                         )}
                       </span>
                     </div>
@@ -144,7 +148,12 @@ export function TagKnapp({ tab, week, rawWeek, tpw }: DruckTag) {
                   // Eröffnung und Abschluss: eine Zeile je Person, die Rolle als Punkt.
                   item.names.map((slot, i) => (
                     <KnappZeile key={`${item.iid}|${i}`} nr="" punkt={slot.rolle ? tu(slot.rolle) : (title ?? tpw(item.title))}>
-                      {slot.name || <Offen breite={84} />}
+                      {slot.name ||
+                        (rawSection && schlussgebetVorOrt(rawMeeting.sections, rawSection, slot) ? (
+                          t.schlussgebetVorOrt
+                        ) : (
+                          <Offen breite={84} />
+                        ))}
                     </KnappZeile>
                   ))
                 ) : (
@@ -257,8 +266,19 @@ function TagDatum({ ausgefallen, children }: { ausgefallen: boolean; children: s
 /**
  * Die Personen eines Punkts, ausführlich: Name und Rolle — beim Gastredner
  * seine Versammlung, wie am Bildschirm (`rolleNebenDemNamen`) —, frei = gepunktet.
+ * Das Schlussgebet am Wochenende plant niemand (`vorOrt`, T133): Leer sagt es,
+ * wer es übernimmt.
  */
-function Personen({ slots, tu }: { slots: readonly SlotAssignment[]; tu: Uebersetzer }) {
+function Personen({
+  slots,
+  tu,
+  vorOrt,
+}: {
+  slots: readonly SlotAssignment[]
+  tu: Uebersetzer
+  vorOrt?: (slot: SlotAssignment) => boolean
+}) {
+  const { t } = useT()
   return (
     <span className="druck-personen">
       {slots.map((slot, i) => {
@@ -271,6 +291,8 @@ function Personen({ slots, tu }: { slots: readonly SlotAssignment[]; tu: Ueberse
                 <span className="druck-name">{slot.name}</span>
                 {rolle && <span className="druck-leise"> {rolle}</span>}
               </>
+            ) : vorOrt?.(slot) ? (
+              <span className="druck-leise">{t.schlussgebetVorOrt}</span>
             ) : (
               <Offen />
             )}

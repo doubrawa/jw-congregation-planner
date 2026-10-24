@@ -45,6 +45,7 @@ export default {
   "zuteilenChip": "— assegna",
   "offenWort": "da assegnare",
   "offenDash": "— da assegnare —",
+  "schlussgebetVorOrt": "Oratore o scelto sul posto",
   "abwesenheiten": "Assenze",
   "von": "Dal",
   "bis": "Al",

@@ -45,6 +45,7 @@ export default {
   "zuteilenChip": "— attribuer",
   "offenWort": "à pourvoir",
   "offenDash": "— à pourvoir —",
+  "schlussgebetVorOrt": "Orateur ou choisi sur place",
   "abwesenheiten": "Absences",
   "von": "Du",
   "bis": "Au",

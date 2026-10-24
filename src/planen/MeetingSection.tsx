@@ -9,6 +9,7 @@ import { nurZiffern } from '../data/ziffern'
 import { useKonflikte } from './useKonflikte'
 import { useZusage } from './useZusage'
 import { SONG_WORD } from '../../supabase/functions/_shared/i18n/translate-data.ts'
+import { schlussgebetVorOrt } from '../../supabase/functions/_shared/planung.ts'
 import { useT } from '../i18n/useT'
 import type { PartItem, Section, SlotAssignment } from '../data/types'
 import { platzAnzeige } from './platz-anzeige'
@@ -100,6 +101,8 @@ export function MeetingSection({
   // Die Zusage je Platz — dieselben Schlüssel, unter denen bestätigt wird.
   const zusage = useZusage()
   const tab = mtab(state.tab)
+  // Die Abschnitte der kanonischen Woche — an ihnen erkennt `schlussgebetVorOrt` das Wochenende.
+  const abschnitte = state.weeks[state.week]?.[tab].sections ?? []
 
   // Wer oben unter „Zu klären" steht, wird hier an seinem Platz rot.
   const konflikte = useKonflikte(tab)
@@ -300,6 +303,7 @@ export function MeetingSection({
                         name={slot.name}
                         rolle={rolle ? tu(rolle) : undefined}
                         {...platzAnzeige(slot, stand, konflikte.von(slot), t)}
+                        leer={schlussgebetVorOrt(abschnitte, rawSection, slot) ? t.schlussgebetVorOrt : undefined}
                         gewaehlt={istGewaehlt(state.slotSel, { kind: 'part', wi: state.week, tab, si, ii, ni, aux })}
                         onClick={() => openPartSlot(ii, ni, item, slot, aux)}
                       />

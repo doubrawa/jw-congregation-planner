@@ -53,7 +53,11 @@ interface AbschnittsKopf {
  * fragen — wie `ART_JE_LABEL` im Client (`constants.ts`), das die Functions
  * nicht einbinden können; den Gleichlauf prüft `edge-parity.test.ts`.
  */
-const ART_IM_ALTBESTAND: Record<string, string> = { 'ERÖFFNUNG': 'eroeffnung', 'WACHTTURM-STUDIUM': 'wtStudium' }
+const ART_IM_ALTBESTAND: Record<string, string> = {
+  'ERÖFFNUNG': 'eroeffnung',
+  'WACHTTURM-STUDIUM': 'wtStudium',
+  'ABSCHLUSS': 'abschluss',
+}
 
 /**
  * Die Art eines Abschnitts — gespeichert, im Altbestand ohne Art an der
@@ -96,6 +100,26 @@ export function folgtDemVorsitz(abschnitt: AbschnittsKopf, slot: { rolle?: strin
     default:
       return slot?.rolle === 'Vorsitz'
   }
+}
+
+/**
+ * **Das Schlussgebet am Wochenende plant niemand** (T133, Betreiber
+ * 24.10.2026): „Es spricht in der Regel der Vortragsredner, wenn er bleibt …
+ * Ansonsten sucht sich der Wachtturm-Studienleiter jemand aus, der betet, vor
+ * der Versammlung spontan." Ein leerer Platz ist deshalb nicht offen: Die
+ * Automatik lässt ihn aus, er zählt nicht als offen und wird nicht als freier
+ * Platz angeboten. Wer es vorher weiß, trägt trotzdem jemanden ein — dann ist
+ * es ein Platz wie jeder.
+ *
+ * Das Wochenende erkennt man am Wachtturm-Studium (`abschnitte`); unter der
+ * Woche wird das Schlussgebet geplant.
+ */
+export function schlussgebetVorOrt(
+  abschnitte: readonly AbschnittsKopf[],
+  abschnitt: AbschnittsKopf,
+  slot: { rolle?: string } | undefined,
+): boolean {
+  return artVon(abschnitt) === 'abschluss' && slot?.rolle === 'Gebet' && abschnitte.some((a) => artVon(a) === 'wtStudium')
 }
 
 /**

@@ -243,7 +243,9 @@ describe('Eine Regel für App und Server (`programmAngebot`)', () => {
     mid.auxRatgeber = { name: '', rolle: 'Ratgeber', bereichsKey: 'ratgeber', male: true }
     for (const platz of allePlaetze(mid, DIENSTE)) {
       if (platz.art === 'helper') continue
-      expect(angebotsBereich(platz)).toBe(programmAngebot(platz.slot, platz.art === 'programm' ? platz.section : undefined))
+      expect(angebotsBereich(platz, mid)).toBe(
+        programmAngebot(platz.slot, platz.art === 'programm' ? platz.section : undefined, mid.sections),
+      )
     }
   })
 })

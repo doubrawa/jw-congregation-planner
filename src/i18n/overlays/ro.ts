@@ -45,6 +45,7 @@ export default {
   "zuteilenChip": "— atribuie",
   "offenWort": "liber",
   "offenDash": "— liber —",
+  "schlussgebetVorOrt": "Vorbitorul sau cineva ales pe loc",
   "abwesenheiten": "Absențe",
   "von": "De la",
   "bis": "Până la",

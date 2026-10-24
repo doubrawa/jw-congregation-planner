@@ -16,7 +16,7 @@
  * (`zusageStatus`), die Plätze aus demselben Durchlauf (`allePlaetze`).
  */
 
-import { platzKey, allePlaetze, platzMitZusage } from './plaetze'
+import { platzKey, allePlaetze, leerVorOrt, platzMitZusage } from './plaetze'
 import { sentKey, zusageStatus } from './planning'
 import type { ConfirmationMap, Meeting, MeetingKey, PersoenlichLog, Service, SlotAssignment, TaskStatus } from './types'
 
@@ -81,6 +81,8 @@ export function besetzung(
 ): Besetzung {
   const b: Besetzung = { voll: 0, wartet: 0, problem: 0, offen: 0, du: false }
   for (const platz of allePlaetze(meeting, services)) {
+    // Das Schlussgebet am Wochenende ist leer nicht offen (T133).
+    if (leerVorOrt(meeting, platz)) continue
     const slot = platz.slot
     const key = slot?.name ? platzKey(platz, woche, tab) : null
     if (key !== null && key === meinKey) {

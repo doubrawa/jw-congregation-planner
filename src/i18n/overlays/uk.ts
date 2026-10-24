@@ -45,6 +45,7 @@ export default {
   "zuteilenChip": "— призначити",
   "offenWort": "вільно",
   "offenDash": "— вільно —",
+  "schlussgebetVorOrt": "Промовець або хтось на місці",
   "abwesenheiten": "Відсутності",
   "von": "З",
   "bis": "По",

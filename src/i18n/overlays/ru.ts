@@ -45,6 +45,7 @@ export default {
   "zuteilenChip": "— назначить",
   "offenWort": "свободно",
   "offenDash": "— свободно —",
+  "schlussgebetVorOrt": "Докладчик или кто-то на месте",
   "abwesenheiten": "Отсутствия",
   "von": "С",
   "bis": "По",

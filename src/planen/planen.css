@@ -59,6 +59,12 @@
   font-weight: 700;
 }
 
+/* Das Schlussgebet am Wochenende (T133): leer, aber nichts zu tun. */
+.platz.is-vor-ort .platz-name {
+  color: var(--text3);
+  font-weight: 500;
+}
+
 /* Die Rolle steht am Ende der Zeile — auch dann, wenn sie umgebrochen ist. */
 .platz-rolle {
   margin-inline-start: auto;

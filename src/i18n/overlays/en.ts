@@ -52,6 +52,7 @@ export default {
   "zuteilenChip": "— assign",
   "offenWort": "open",
   "offenDash": "— open —",
+  "schlussgebetVorOrt": "Speaker or chosen on site",
   "abwesenheiten": "Absences",
   "von": "From",
   "bis": "To",

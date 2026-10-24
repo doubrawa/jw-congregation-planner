@@ -46,6 +46,7 @@ export default {
   "zuteilenChip": "— تعیین",
   "offenWort": "خالی",
   "offenDash": "— خالی —",
+  "schlussgebetVorOrt": "سخنران یا یک برادر در محل",
   "abwesenheiten": "غیبت‌ها",
   "von": "از",
   "bis": "تا",

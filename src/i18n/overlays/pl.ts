@@ -45,6 +45,7 @@ export default {
   "zuteilenChip": "— przydziel",
   "offenWort": "wolne",
   "offenDash": "— wolne —",
+  "schlussgebetVorOrt": "Mówca lub ktoś wybrany na miejscu",
   "abwesenheiten": "Nieobecności",
   "von": "Od",
   "bis": "Do",

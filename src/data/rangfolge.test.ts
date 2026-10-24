@@ -3,7 +3,8 @@ import { buildDemoWeeks, DEMO_GROUPS, DEMO_PERSONS, DEMO_SERVICES } from '../../
 import { emptyQualifications, idAufloeser, isGuestRole, MEETING_TABS, partnerGenderOk, privSetzen } from './helpers'
 import { allePlaetze, platzDerAuswahl, type Platz } from './plaetze'
 import { autoAssignMeeting, rangfolgeFuer, zuletztImBereich } from './planning'
-import type { MeetingKey, MeetingSlotSelection, PartItem, Person, Week } from './types'
+import type { Meeting, MeetingKey, MeetingSlotSelection, PartItem, Person, Week } from './types'
+import { schlussgebetVorOrt } from '../../supabase/functions/_shared/planung.ts'
 
 /**
  * **Der Vorschlag im Zuteilen-Blatt ist, wen „Automatisch" nähme** (T121,
@@ -42,12 +43,13 @@ function mitLeeremPlatz(weeks: Week[], sel: MeetingSlotSelection): Week[] {
  * Wo die Automatik nicht wählt — dort gibt es keinen Vorschlag (`rangfolgeFuer`).
  * Das Anfangsgebet gehört seit dem 16.10.2026 nicht mehr dazu: Die Automatik
  * setzt dort den Vorsitzenden ein (`anVorsitzKoppeln`), und genau ihn schlägt
- * das Blatt jetzt vor — bis dahin niemanden.
+ * das Blatt jetzt vor — bis dahin niemanden. Das Schlussgebet am Wochenende
+ * dagegen seit dem 24.10.2026 (T133): Es plant niemand.
  */
-function ohneWahl(platz: Platz): boolean {
+function ohneWahl(platz: Platz, meeting: Meeting): boolean {
   if (platz.art === 'helper') return platz.svc.groups === true
   if (platz.art === 'ratgeber') return false
-  return isGuestRole(platz.slot.rolle)
+  return isGuestRole(platz.slot.rolle) || schlussgebetVorOrt(meeting.sections, platz.section, platz.slot)
 }
 
 /** Die Wochen 0–2 des Bestands, beide Zusammenkünfte (Woche 3 hat das Gedächtnismahl). */
@@ -69,7 +71,7 @@ describe('Der Vorschlag ist, wen „Automatisch" nähme', () => {
       const sel = auswahl(platz, wi, tab)
       const leer = mitLeeremPlatz(voll.weeks, sel)
       const rang = rangfolgeFuer(leer, sel, DEMO_PERSONS, DEMO_SERVICES, DEMO_GROUPS, new Set())
-      if (ohneWahl(platz)) {
+      if (ohneWahl(platz, voll.weeks[wi]![tab])) {
         expect(rang, JSON.stringify(sel)).toEqual([])
         continue
       }
@@ -118,7 +120,7 @@ describe('Der Vorschlag ist, wen „Automatisch" nähme', () => {
 
   it('wer in der Zusammenkunft schon eingeteilt ist, steht nicht in der Rangfolge — gefragt ist, wer käme', () => {
     const voll = besetzt(wi, 'mid').weeks
-    const [platz] = [...allePlaetze(voll[wi]!.mid, DEMO_SERVICES)].filter((p) => !ohneWahl(p) && p.slot?.pid)
+    const [platz] = [...allePlaetze(voll[wi]!.mid, DEMO_SERVICES)].filter((p) => !ohneWahl(p, voll[wi]!.mid) && p.slot?.pid)
     const sel = auswahl(platz!, wi, 'mid')
     const rang = rangfolgeFuer(voll, sel, DEMO_PERSONS, DEMO_SERVICES, DEMO_GROUPS, new Set())
     const eingeteilt = new Set([...allePlaetze(voll[wi]!.mid, DEMO_SERVICES)].map((p) => p.slot?.pid).filter(Boolean))
@@ -129,7 +131,7 @@ describe('Der Vorschlag ist, wen „Automatisch" nähme', () => {
   it('eine ausgefallene Zusammenkunft hat keinen Vorschlag', () => {
     const weeks = buildDemoWeeks()
     weeks[wi]!.dev = { mid: { cancelled: true } }
-    const [platz] = [...allePlaetze(weeks[wi]!.mid, DEMO_SERVICES)].filter((p) => !ohneWahl(p))
+    const [platz] = [...allePlaetze(weeks[wi]!.mid, DEMO_SERVICES)].filter((p) => !ohneWahl(p, weeks[wi]!.mid))
     expect(rangfolgeFuer(weeks, auswahl(platz!, wi, 'mid'), DEMO_PERSONS, DEMO_SERVICES, DEMO_GROUPS, new Set())).toEqual([])
   })
 })

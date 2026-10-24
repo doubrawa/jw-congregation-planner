@@ -8,7 +8,7 @@ import { syncAuxSlots } from '../data/aux-class'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
 import { genFsWeek } from '../data/fs'
 import { isSong } from '../data/helpers'
-import type { FsInstance, FsRule, PlanEintrag, Section, Service, Week, WeitererPlan } from '../data/types'
+import type { FsInstance, FsRule, PartItem, PlanEintrag, Section, Service, Week, WeitererPlan } from '../data/types'
 import { spannenText, zeitraumText } from '../components/weitere-plaene-anzeige'
 import { dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
@@ -157,6 +157,36 @@ describe('Der Wochenbogen', () => {
     const { container } = zeige(<WochenBogen wi={0} />, { weeks: [w] })
     expect(container.querySelector('.druck-tag-datum s')?.textContent).toBe('Dienstag, 8. September')
     expect(container.querySelector('.druck-ausfall')?.textContent).toBe('Saal belegt')
+  })
+})
+
+describe('Das Schlussgebet am Wochenende auf dem Aushang (T133)', () => {
+  // Es plant niemand: Leer steht dort, wer es übernimmt, statt einer Linie zum Eintragen.
+  const sonntag = (): Week =>
+    woche({
+      we: {
+        date: '', end: 'Ende ca. 11:45', helpers: {},
+        sections: [
+          { label: 'WACHTTURM-STUDIUM', farbe: 'wein', items: [{ iid: 'w1', title: 'Studienartikel', meta: '60 Min.', names: [{ name: 'Leo Leiter', rolle: 'Leiter' }] }] },
+          { label: LABEL_ABSCHLUSS, farbe: 'neutral', items: [{ iid: 'a2', title: 'Schlussworte · Lied 5 · Gebet', names: [{ name: '', rolle: 'Gebet' }] }] },
+        ],
+      },
+    })
+
+  it('auf dem Wochenbogen', () => {
+    const { container } = zeige(<WochenBogen wi={0} />, { weeks: [sonntag()] })
+    const schluss = [...container.querySelectorAll('.druck-punkt')].find((p) => p.textContent?.includes('Schlussworte'))!
+    expect(schluss.textContent).toContain(t.schlussgebetVorOrt)
+    expect(schluss.querySelector('.druck-offen')).toBeNull()
+  })
+
+  it('auf dem Monatsbogen — unter der Woche bleibt das freie Schlussgebet gepunktet', () => {
+    const w = sonntag()
+    ;(w.mid.sections[3]!.items[0] as PartItem).names[0]!.name = ''
+    const { container } = zeige(<MonatsBogen monat="2026-09" />, { weeks: [w] })
+    const gebete = [...container.querySelectorAll('.druck-knapp-zeile')].filter((z) => z.children[1]?.textContent === 'Gebet')
+    const letzte = gebete.slice(-2).map((z) => [z.children[2]?.textContent, z.querySelector('.druck-offen') !== null])
+    expect(letzte).toEqual([['', true], [t.schlussgebetVorOrt, false]])
   })
 })
 

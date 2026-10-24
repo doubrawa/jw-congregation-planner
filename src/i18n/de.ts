@@ -286,6 +286,9 @@ export const DE = {
     planen: 'Planen', offeneZut: 'Offene Zuteilungen: {n}',
     leeren: 'Leeren', leerenSicher: 'Wirklich leeren?',
     zuteilenChip: '— zuteilen', offenWort: 'offen', offenDash: '— offen —',
+    // Das Schlussgebet am Wochenende plant niemand (T133): Es spricht der Redner,
+    // wenn er bleibt, sonst bittet der Studienleiter vor Ort jemanden.
+    schlussgebetVorOrt: 'Redner oder vor Ort',
     // Start / Dashboard
     grussMorgen: 'Guten Morgen', grussTag: 'Guten Tag', grussAbend: 'Guten Abend',
     dashKeineAufgabe: 'Keine anstehende Aufgabe',

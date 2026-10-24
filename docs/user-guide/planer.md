@@ -304,6 +304,13 @@ welche vergeben sind – meist steht er schon seit dem Holen in der Woche (siehe
 (Gastredner, Kreisaufseher) bleiben offen und werden manuell eingetragen. Nach dem
 Zuteilen kannst du einzelne Slots wie gewohnt noch von Hand anpassen.
 
+Das **Schlussgebet am Wochenende** plant niemand: Es spricht der Redner, wenn
+er bleibt, sonst bittet der Leiter des Wachtturm-Studiums vor Ort jemanden.
+Leer steht dort „Redner oder vor Ort“ statt „Zuteilen“; die Automatik lässt
+den Platz aus, er zählt nicht als offen und wird nicht als freier Platz
+angeboten. Weißt du vorher, wer betet, trägst du ihn wie sonst ein – dann ist
+es eine Zuteilung mit Zusage und Erinnerung.
+
 ### Woche einrichten
 
 Was der ganzen Woche gehört, stellst du unter **Woche einrichten** ein:
