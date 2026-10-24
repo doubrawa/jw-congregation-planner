@@ -8549,6 +8549,36 @@ jako przeczytane" steht schon zweizeilig. Gelöscht werden die eigenen Zeilen
 der Versammlung (`deleteNotifications`, die Regel `notifications_delete` gab
 es noch); offline ist es gesperrt. Übersetzungen wie vor T121.
 
+## Aufgenommen am 24. Oktober 2026 abends (T141)
+
+### T141 · Kommt ein Konto ganz ohne E-Mail aus? 🔧 ☐ offen
+
+„kann man ganz ohne email auskommen bei einem konto" (Betreiber, 24. Oktober).
+
+**Stand heute** (aus Code und Notizen gelesen, noch nicht gemessen): Das Konto
+selbst braucht keine echte Adresse. Seit T121 Phase 8 (15. Oktober) heißt es
+`<person-id>@konten.invalid`, angemeldet wird per Link oder Code (Function
+`anmelden`), und der Zettel lässt sich ohne Adresse drucken. Die Adresse der
+Person (`Person.mail`, nicht die des Kontos, `members.email`) braucht es bisher
+nur, um einen Link zu schicken:
+
+- „Link senden" auf der Anmeldeseite (Selbstbedienung, `anmelden` mit
+  `aktion: 'mail'`) — ohne Adresse kommt dort nichts an;
+- „Link senden" auf der Konto-Karte und „Links senden" unter Personen › Ohne
+  Link (`send-invite`; solange `INVITE_FROM` fehlt, ohnehin nur der Rückfall
+  per mailto).
+
+**Zu klären:**
+
+- Wie kommt jemand ohne Adresse wieder hinein, wenn sein Link nach 30 Tagen
+  abläuft oder ein neues Gerät dazukommt — reicht ein neuer Zettel vom Admin,
+  und weiß man das in der App?
+- Ist die Adresse irgendwo Pflicht oder wird sie vorausgesetzt (Person anlegen,
+  Filter „Ohne Link", Konto-Karte, Profil)?
+- Was Profil und Konto-Karte bei einem Konto ohne Adresse zeigen (`members.email`).
+- Ob die Adresse ganz entfallen kann (weniger Daten) oder als freiwilliger Weg
+  für „Link senden" bleibt.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -8586,14 +8616,15 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
-21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑
+21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☐
 
-**139 der 140 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen ist eine:**
+**139 der 141 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind zwei:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
+| **T141** | Konto ganz ohne E-Mail? | ☐ aufgenommen am 24. Oktober abends, noch nicht untersucht — das Konto braucht schon keine echte Adresse, nur „Link senden" die der Person |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
@@ -9026,6 +9057,7 @@ braucht den Betreiber, ein Gerät oder eine Entscheidung.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
+| **T141** | Kommt ein Konto ganz ohne E-Mail aus? | aufgenommen am 24. Oktober abends — zu klären, wie man ohne Adresse nach 30 Tagen oder auf einem neuen Gerät wieder hineinkommt (siehe T141) |
 | **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124; am 21. Oktober: noch nicht). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
 | **Bewusst offen** | Der Grund nach dem Abmelden ohne Versammlung | Den Satz „Dein Konto gehört zu keiner Versammlung mehr" zeigt die Anmeldung nur, wenn das Laden die fehlende Mitgliedschaft findet — in der ersten Stunde nach dem Entfernen. Danach scheitert schon die Erneuerung des Tokens (das Konto ist gelöscht), supabase-js meldet `SIGNED_OUT` ohne Grund, und die Anmeldung steht ohne Satz da. Ihn auch dann zu zeigen, hieße erzwungenes und eigenes Abmelden zu unterscheiden — Betreiber am 21. Oktober: „wir müssen da keine komplexe logik einbauen" (Review vom 21. Oktober) |
 | **Bewusst offen** | Altes Zugangstoken nach dem Entfernen | Ein schon ausgestelltes Token gilt bis zu seinem Ablauf (höchstens eine Stunde) und sieht ohne Mitgliedschaft nichts. Wird die Person in dieser Stunde neu eingeladen, gilt es für das neue Konto: Es trägt wieder ihre Person-Id (`anmelden`). Vermerkt am Trigger in `schema.sql` (Review vom 21. Oktober) |
@@ -9116,6 +9148,8 @@ das leere Schlussgebet am Wochenende, und ein langsames Nachladen brachte
 gelöschte Mitteilungen zurück; zwei Randfälle bewusst gelassen, siehe Commit
 `40a36f7a`). Die Function `substitute` ist als v45 ausgerollt (T133, das
 Angebot), das Frontend mit `40a36f7a` gepusht.
+
+Am selben Abend aufgenommen: **T141** — kommt ein Konto ganz ohne E-Mail aus?
 
 Am 19. Oktober in die Tabelle aufgenommen: `sprache-fehlt` und
 `auth.sessions` (bis dahin nur in einer Commit-Nachricht, `42dff943`, und bei
