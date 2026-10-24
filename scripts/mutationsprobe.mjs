@@ -4077,6 +4077,20 @@ export const KATALOG = [
     ersetzen: '',
   },
   {
+    id: 'einstellung-name-nie-schmaler-als-sein-wort',
+    datei: 'src/einstellungen/einstellungen.css',
+    regel: 'Der Name einer Einstellung wird nie schmaler als sein längstes Wort — neben einem langen Wert gibt der Wert nach (T137).',
+    suchen: '  grid-template-columns: minmax(min-content, 1fr) minmax(0, auto) 20px;\n',
+    ersetzen: '  grid-template-columns: minmax(0, 1fr) auto 20px;\n',
+  },
+  {
+    id: 'einstellung-name-neben-wert-trennt-nicht',
+    datei: 'src/einstellungen/einstellungen.css',
+    regel: 'Neben einem Wert trennt der Name einer Einstellung nicht — sonst schrumpft seine Spalte bis auf eine Silbe (T137).',
+    suchen: '.einst-zeile .einst-zeile-name {\n  -webkit-hyphens: manual;\n  hyphens: manual;\n}\n',
+    ersetzen: '',
+  },
+  {
     id: 'zeitleiste-zahl-steht-da',
     datei: 'src/personen/PersonTimeline.tsx',
     regel: 'Unter dem Titel der Zeitleiste steht, wie viel die Person in den letzten acht Wochen hatte (T136, statt der Karte „Auslastung").',

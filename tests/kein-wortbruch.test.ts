@@ -98,6 +98,25 @@ describe('Bei großer Schrift bekommt ein langes Wort Platz oder trennt', () => 
     expect(deklarationen(EINSTELLUNGEN, '.hd-zeile', SCHMAL)).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\);/)
   })
 
+  it('neben einem langen Wert bleibt der Name einer Einstellung ganz — der Wert gibt nach (T137)', () => {
+    /*
+     * Am Handy des Betreibers (24.10.2026) stand neben „Rohrbachring 59
+     * Ichenhausen" „König-/reichs-/saal" in drei Zeilen: Die Spalte des Namens
+     * durfte bis auf null schrumpfen, und Chrome rechnet die Trennstellen zur
+     * Mindestbreite. Gemessen im echten Chrome, zwölf Sprachen, 320–768 px,
+     * Stufe 1–1,45: vorher in 14 von 288 Lagen ein Bruch im Wort, danach in
+     * keiner (Werkzeug aus T128).
+     */
+    expect(deklarationen(EINSTELLUNGEN, '.einst-zeile')).toMatch(
+      /grid-template-columns:\s*minmax\(min-content, 1fr\) minmax\(0, auto\) 20px/,
+    )
+    const name = deklarationen(EINSTELLUNGEN, '.einst-zeile .einst-zeile-name')
+    expect(name).toMatch(/^\s*hyphens:\s*manual/m)
+    expect(name).toMatch(/-webkit-hyphens:\s*manual/)
+    // Der Wert endet mit „…", statt die Zeile zu sprengen.
+    expect(deklarationen(EINSTELLUNGEN, '.einst-zeile-wert')).toMatch(/text-overflow:\s*ellipsis/)
+  })
+
   it('passen zwei Knöpfe im Fuß eines Blatts nicht nebeneinander, rückt der letzte nach unten', () => {
     expect(deklarationen('components/overlays.css', '.sheet-fuss-ende')).toMatch(/flex-wrap:\s*wrap/)
   })

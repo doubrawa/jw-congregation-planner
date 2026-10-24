@@ -8475,11 +8475,22 @@ dem Schlüssel `auslastung` in zwölf Sprachen). Unter dem Titel der Zeitleiste
 steht „Aufgaben in den letzten 8 Wochen: n" — n ist, was in der Leiste blass
 dasteht, ohne Abwesenheiten (`WOCHEN_ZURUECK` aus `person-timeline.ts`).
 
-### T137 · Einstellungen: „Königreichssaal" und „Programmsprachen" zerbrochen ⚡ ☐ offen
+### T137 · Einstellungen: „Königreichssaal" und „Programmsprachen" zerbrochen ⚡ ✅ erledigt (24. Oktober 2026)
 
 Am Handy des Betreibers (24. Oktober) stehen die Bezeichnungen in Zeilen mit
 langem Wert silbenweise untereinander: „König-/reichs-/saal",
 „Pro-/gramm-/spra-/chen".
+
+**Ursache:** Die Spalte des Namens war `minmax(0, 1fr)`, der Wert `auto` —
+neben einer langen Anschrift nahm der Wert den Platz, und weil Chrome die
+Trennstellen zur Mindestbreite zählt, schrumpfte der Name bis auf eine Silbe.
+
+**Umgesetzt:** Name `minmax(min-content, 1fr)`, Wert `minmax(0, auto)` (er
+endet wie vorgesehen mit „…"), und neben einem Wert trennt der Name nicht
+(`hyphens: manual`); die Hilfsdienste mit − und + trennen weiter. Gemessen im
+echten Chrome mit Trennwörterbüchern (eigenes Skript auf dem T128-Werkzeug,
+die Werte wie beim Betreiber gesetzt), zwölf Sprachen, 320–768 px, Stufe
+1–1,45: vorher in 14 von 288 Lagen ein Bruch im Wort, danach in keiner.
 
 ### T138 · Auswertung: Diagramme, die jeder lesen kann 🔧 ☐ offen
 

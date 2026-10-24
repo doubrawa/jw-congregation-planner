@@ -26,10 +26,13 @@
   color: var(--text2);
 }
 
-/* Eine Zeile: was eingestellt wird, rechts der Wert, dann der Winkel. */
+/* Eine Zeile: was eingestellt wird, rechts der Wert, dann der Winkel.
+   Der Name wird nie schmaler als sein längstes Wort, der Wert gibt nach und
+   endet mit „…" (T137): Neben „Rohrbachring 59 Ichenhausen" stand am Handy
+   „König-/reichs-/saal" in drei Zeilen. */
 .einst-zeile {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto 20px;
+  grid-template-columns: minmax(min-content, 1fr) minmax(0, auto) 20px;
   align-items: center;
   column-gap: 8px;
   width: 100%;
@@ -58,6 +61,13 @@
   -webkit-hyphens: auto;
   hyphens: auto;
   overflow-wrap: break-word;
+}
+
+/* Neben einem Wert nicht trennen: Chrome zählt die Trennstellen zur
+   Mindestbreite, und die Spalte schrumpfte bis auf eine Silbe (T137). */
+.einst-zeile .einst-zeile-name {
+  -webkit-hyphens: manual;
+  hyphens: manual;
 }
 
 /* Der Wert bleibt auf seiner Zeile; eine lange Anschrift endet mit „…". */
