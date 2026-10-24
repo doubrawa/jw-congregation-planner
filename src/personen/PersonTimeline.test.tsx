@@ -8,7 +8,6 @@ import { displayName } from '../data/helpers'
 import type { FsInstance } from '../data/types'
 import { dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
-import { zahlBinden } from '../i18n/zahl-binden'
 import { PersonTimeline } from './PersonTimeline'
 
 /**
@@ -74,7 +73,7 @@ describe('PersonTimeline', () => {
     })
     const blass = container.querySelectorAll('.zeit li.is-past:not(:has(.zeit-dot--abw))').length
     expect(blass).toBe(5)
-    expect(container.querySelector('.zeit-zusatz')?.textContent).toBe(zahlBinden(fill(t.aufgabenLetzteW, { w: 8, n: 5 })))
+    expect(container.querySelector('.zeit-zusatz')?.textContent).toBe(fill(t.aufgabenLetzteW, { w: 8, n: 5 }))
   })
 
   it('ein geleiteter Treffpunkt ohne Ort heißt nur „Treffpunkte leiten" — ohne Punkt am Ende', () => {

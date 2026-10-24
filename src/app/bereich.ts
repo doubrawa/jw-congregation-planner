@@ -1,3 +1,4 @@
+import type { ZeichenName } from '../bausteine/Zeichen'
 import type { Thema } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import type { AppAction } from './context'
@@ -6,6 +7,13 @@ import type { AppAction } from './context'
 export function bereichsTitel(t: Dict, thema: Thema): string {
   if (thema === 'predigtdienst') return t.tabFs
   return thema === 'weitere' ? t.navWeiterePlaene : t.navZusammenkuenfte
+}
+
+/** Das Zeichen eines Bereichs — im Menü und in der Wahl oben auf „Planung" (T135). */
+export const BEREICHS_ZEICHEN: Record<Thema, ZeichenName> = {
+  zusammenkuenfte: 'zusammenkuenfte',
+  predigtdienst: 'predigtdienst',
+  weitere: 'plaene',
 }
 
 /** Einen Bereich ansehen — aus dem Menü, mit „Fertig" und dem Kreuz beim Planen. */

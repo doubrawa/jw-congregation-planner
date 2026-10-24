@@ -7,7 +7,6 @@ import { Zeitleiste, type ZeitZeile } from '../components/Zeitleiste'
 import { abwesenheitsArt, zeitleisteDatum } from '../components/zeitleiste-gemeinsam'
 import type { Person } from '../data/types'
 import { aufgabenLabel, fill, useT } from '../i18n/useT'
-import { zahlBinden } from '../i18n/zahl-binden'
 import { personTimeline, WOCHEN_ZURUECK, type TimelineEntry } from './person-timeline'
 
 /**
@@ -67,7 +66,7 @@ export function PersonTimeline({ person }: { person: Person }) {
    * zusammen, und ob Kommendes mitzählte, sah man nicht (Betreiber, 24.10.2026).
    */
   const zuletzt = entries.filter((e) => e.vergangen && e.kind !== 'abw').length
-  const zusatz = zahlBinden(fill(t.aufgabenLetzteW, { w: WOCHEN_ZURUECK, n: zuletzt }))
+  const zusatz = fill(t.aufgabenLetzteW, { w: WOCHEN_ZURUECK, n: zuletzt })
 
   return <Zeitleiste label={t.zeitleiste} zusatz={zusatz} zeilen={zeilen} />
 }

@@ -261,7 +261,8 @@ describe('Am Handy: der Überblick', () => {
       return { ...p, priv }
     })
     const s = zustand({ persons })
-    const knappe = rechnung(s).engpaesse.filter(istKnapp)
+    const { engpaesse } = rechnung(s)
+    const knappe = engpaesse.filter(istKnapp)
     expect(knappe.map((z) => z.bereich)).toEqual([niemand, zwei])
     expect(knappe[0]!.abstand).toBeNull()
 
@@ -276,7 +277,7 @@ describe('Am Handy: der Überblick', () => {
     expect(karte.textContent).toContain(t.awMehrFreigeben)
     expect(container.querySelector('.aw-leer')).toBeNull()
     // Die ganze Liste bleibt darunter.
-    expect(container.querySelectorAll('.aw-engpaesse .aw-zeile')).toHaveLength(rechnung(s).engpaesse.length)
+    expect(container.querySelectorAll('.aw-engpaesse .aw-zeile')).toHaveLength(engpaesse.length)
   })
 
   it.each([

@@ -32,7 +32,7 @@ export interface DruckTag {
  */
 export function TagVoll({ tab, week, rawWeek, tpw }: DruckTag) {
   const { state } = useApp()
-  const { t, tu } = useT()
+  const { t } = useT()
   const meeting = week[tab]
   const rawMeeting = rawWeek[tab]
   const zeiten = state.congregation.times
@@ -54,8 +54,7 @@ export function TagVoll({ tab, week, rawWeek, tpw }: DruckTag) {
           {meeting.sections.map((section, si) => {
             const rawSection = rawMeeting.sections[si]
             const { lieder, zeilen } = abschnittZeilen(section, rawSection, tpw)
-            const vorOrt = (slot: SlotAssignment): boolean =>
-              rawSection !== undefined && schlussgebetVorOrt(rawMeeting.sections, rawSection, slot)
+            const vorOrt = (slot: SlotAssignment): boolean => schlussgebetVorOrt(rawMeeting.sections, rawSection, slot)
             return (
               <div key={section.label} data-farbe={section.farbe}>
                 <AbschnittKopf name={tpw(section.label)} lieder={lieder} />
@@ -74,12 +73,12 @@ export function TagVoll({ tab, week, rawWeek, tpw }: DruckTag) {
                         {zweiRaeume ? (
                           <>
                             <span className="druck-raum">{t.auxHauptsaal}</span>
-                            <Personen slots={item.names} tu={tu} />
+                            <Personen slots={item.names} />
                             <span className="druck-raum">{t.auxKlasse}</span>
-                            <Personen slots={item.aux ?? []} tu={tu} />
+                            <Personen slots={item.aux ?? []} />
                           </>
                         ) : (
-                          <Personen slots={item.names} tu={tu} vorOrt={vorOrt} />
+                          <Personen slots={item.names} vorOrt={vorOrt} />
                         )}
                       </span>
                     </div>
@@ -95,7 +94,7 @@ export function TagVoll({ tab, week, rawWeek, tpw }: DruckTag) {
                 <span className="druck-punkt-nr" />
                 <span className="druck-punkt-text">
                   <span className="druck-punkt-titel">{t.auxRatgeber}</span>
-                  <Personen slots={[rawMeeting.auxRatgeber]} tu={tu} />
+                  <Personen slots={[rawMeeting.auxRatgeber]} />
                 </span>
               </div>
             </div>
@@ -149,11 +148,7 @@ export function TagKnapp({ tab, week, rawWeek, tpw }: DruckTag) {
                   item.names.map((slot, i) => (
                     <KnappZeile key={`${item.iid}|${i}`} nr="" punkt={slot.rolle ? tu(slot.rolle) : (title ?? tpw(item.title))}>
                       {slot.name ||
-                        (rawSection && schlussgebetVorOrt(rawMeeting.sections, rawSection, slot) ? (
-                          t.schlussgebetVorOrt
-                        ) : (
-                          <Offen breite={84} />
-                        ))}
+                        (schlussgebetVorOrt(rawMeeting.sections, rawSection, slot) ? t.schlussgebetVorOrt : <Offen breite={84} />)}
                     </KnappZeile>
                   ))
                 ) : (
@@ -269,16 +264,8 @@ function TagDatum({ ausgefallen, children }: { ausgefallen: boolean; children: s
  * Das Schlussgebet am Wochenende plant niemand (`vorOrt`, T133): Leer sagt es,
  * wer es übernimmt.
  */
-function Personen({
-  slots,
-  tu,
-  vorOrt,
-}: {
-  slots: readonly SlotAssignment[]
-  tu: Uebersetzer
-  vorOrt?: (slot: SlotAssignment) => boolean
-}) {
-  const { t } = useT()
+function Personen({ slots, vorOrt }: { slots: readonly SlotAssignment[]; vorOrt?: (slot: SlotAssignment) => boolean }) {
+  const { t, tu } = useT()
   return (
     <span className="druck-personen">
       {slots.map((slot, i) => {

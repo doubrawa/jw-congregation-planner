@@ -1,16 +1,12 @@
 import { useApp } from '../app/context'
-import { bereichsTitel, zumPlanen } from '../app/bereich'
-import { Zeichen, type ZeichenName } from '../bausteine/Zeichen'
+import { BEREICHS_ZEICHEN, bereichsTitel, zumPlanen } from '../app/bereich'
+import { Zeichen } from '../bausteine/Zeichen'
 import { darfPlanen, rechteVon } from '../data/rechte'
 import type { Thema } from '../data/types'
 import { useT } from '../i18n/useT'
 
-/** Die Bereiche in der Reihenfolge des Menüs, mit ihrem Zeichen von dort. */
-const BEREICHE: ReadonlyArray<readonly [Thema, ZeichenName]> = [
-  ['zusammenkuenfte', 'zusammenkuenfte'],
-  ['predigtdienst', 'predigtdienst'],
-  ['weitere', 'plaene'],
-]
+/** Die Bereiche in der Reihenfolge des Menüs. */
+const BEREICHE: readonly Thema[] = ['zusammenkuenfte', 'predigtdienst', 'weitere']
 
 /**
  * **Was man planen kann, oben auf „Planung"** (T135, Betreiber 24.10.2026):
@@ -27,11 +23,11 @@ export function PlanungsBereiche({ aktiv }: { aktiv: Thema }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
   const rechte = rechteVon(state)
-  const bereiche = BEREICHE.filter(([thema]) => darfPlanen(rechte, thema))
+  const bereiche = BEREICHE.filter((thema) => darfPlanen(rechte, thema))
   if (bereiche.length < 2) return null
   return (
     <nav className="bereich-tabs" aria-label={t.dashPlanung}>
-      {bereiche.map(([thema, zeichen]) => (
+      {bereiche.map((thema) => (
         <button
           key={thema}
           type="button"
@@ -39,7 +35,7 @@ export function PlanungsBereiche({ aktiv }: { aktiv: Thema }) {
           aria-pressed={aktiv === thema}
           onClick={() => aktiv !== thema && dispatch(zumPlanen(thema))}
         >
-          <Zeichen name={zeichen} />
+          <Zeichen name={BEREICHS_ZEICHEN[thema]} />
           {bereichsTitel(t, thema)}
         </button>
       ))}

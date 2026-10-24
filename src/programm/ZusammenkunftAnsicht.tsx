@@ -245,7 +245,7 @@ function Abschnitt({
   ebene: Ebene
 }) {
   const { lieder, zeilen } = abschnittZeilen(section, rawSection, tpw)
-  const vorOrt = (slot: SlotAssignment): boolean => rawSection !== undefined && schlussgebetVorOrt(abschnitte, rawSection, slot)
+  const vorOrt = (slot: SlotAssignment): boolean => schlussgebetVorOrt(abschnitte, rawSection, slot)
   const Ueberschrift = ebene
   return (
     <section className="prog-abschnitt" data-farbe={section.farbe}>

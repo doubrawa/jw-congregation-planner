@@ -112,14 +112,20 @@ export function folgtDemVorsitz(abschnitt: AbschnittsKopf, slot: { rolle?: strin
  * es ein Platz wie jeder.
  *
  * Das Wochenende erkennt man am Wachtturm-Studium (`abschnitte`); unter der
- * Woche wird das Schlussgebet geplant.
+ * Woche wird das Schlussgebet geplant. Ohne Abschnitt (die Anzeige fand keinen
+ * kanonischen) ist es kein solcher Platz.
  */
 export function schlussgebetVorOrt(
   abschnitte: readonly AbschnittsKopf[],
-  abschnitt: AbschnittsKopf,
+  abschnitt: AbschnittsKopf | undefined,
   slot: { rolle?: string } | undefined,
 ): boolean {
-  return artVon(abschnitt) === 'abschluss' && slot?.rolle === 'Gebet' && abschnitte.some((a) => artVon(a) === 'wtStudium')
+  return (
+    slot?.rolle === 'Gebet' &&
+    abschnitt !== undefined &&
+    artVon(abschnitt) === 'abschluss' &&
+    abschnitte.some((a) => artVon(a) === 'wtStudium')
+  )
 }
 
 /**

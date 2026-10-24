@@ -41,7 +41,7 @@ import { parseGoAbschnitt, parseGoTarget, type Abschnitt } from './deeplink'
 import { loadAndHydrate } from './hydrate'
 import { sichtbareMitteilungen } from './mitteilungen'
 import { useKalendertag } from './useKalendertag'
-import { bereichsTitel, zumAnsehen, zumPlanen, zurPlanung } from './bereich'
+import { BEREICHS_ZEICHEN, bereichsTitel, zumAnsehen, zumPlanen, zurPlanung } from './bereich'
 import { Kopfzeile, PlanenKopf, UnterseiteKopf } from './Kopfzeile'
 import { SchmaleLeiste, Schublade, Seitenmenue, type MenueAbschnitt, type MenueEintrag, type ProfilFuss } from './Menue'
 import { Startbild } from './Startbild'
@@ -210,10 +210,10 @@ export function AppShell() {
     aktiv: state.screen === screen,
     onClick: () => navigate(screen),
   })
-  const themaEintrag = (thema: Thema, zeichen: ZeichenName): MenueEintrag => ({
+  const themaEintrag = (thema: Thema): MenueEintrag => ({
     key: thema,
     label: bereichsTitel(t, thema),
-    zeichen,
+    zeichen: BEREICHS_ZEICHEN[thema],
     aktiv: ansehenThema === thema,
     onClick: () => zuThema(thema),
   })
@@ -263,12 +263,12 @@ export function AppShell() {
       key: 'versammlung',
       titel: t.versammlungLbl,
       eintraege: [
-        themaEintrag('zusammenkuenfte', 'zusammenkuenfte'),
-        themaEintrag('predigtdienst', 'predigtdienst'),
+        themaEintrag('zusammenkuenfte'),
+        themaEintrag('predigtdienst'),
         // Weitere Pläne (T120, Phase 5): für Admin und Planer immer, sonst
         // erst, wenn es etwas anzusehen gibt — ein leerer Bereich wäre nur eine
         // Sackgasse.
-        ...(weiterePlaeneSichtbar ? [themaEintrag('weitere', 'plaene')] : []),
+        ...(weiterePlaeneSichtbar ? [themaEintrag('weitere')] : []),
       ],
     },
     ...(planung.length + auswertung.length + verwaltung.length > 0
