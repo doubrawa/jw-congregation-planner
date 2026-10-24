@@ -771,8 +771,6 @@ export default {
   "holenHinweis": "La adăugare, conducătorul fix al Studiului Turnului de veghe este trecut imediat, iar în caz de absență, înlocuitorul său. Absențele sunt luate în considerare la atribuire.",
   "uebernehmenZuteilen": "Adaugă și atribuie",
   "nurUebernehmen": "Doar adaugă",
-  "auchZuPlanen": "Alte planificări",
-  "treffpunkteBesuche": "Întruniri și vizite la grupe",
   "lageSenden": "De trimis: {n}",
   "holenSpracheFehlt": "Această săptămână nu este încă pe jw.org în limba congregației",
   "personNameLbl": "Nume",

@@ -771,8 +771,6 @@ export default {
   "holenHinweis": "Dès l’ajout, le conducteur fixe de l’Étude de La Tour de Garde est inscrit, ou son remplaçant en cas d’absence. Les absences sont prises en compte lors de l’attribution.",
   "uebernehmenZuteilen": "Ajouter et attribuer",
   "nurUebernehmen": "Ajouter seulement",
-  "auchZuPlanen": "À planifier également",
-  "treffpunkteBesuche": "Réunions et visites des groupes",
   "lageSenden": "À envoyer\u00a0: {n}",
   "holenSpracheFehlt": "Cette semaine n’est pas encore sur jw.org dans la langue de l’assemblée",
   "personNameLbl": "Nom",

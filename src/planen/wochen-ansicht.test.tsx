@@ -141,14 +141,34 @@ describe('Die Seite „Planung" (`GWochen`)', () => {
     expect(holen.querySelector('button')?.textContent).toBe(t.holen)
   })
 
-  it('„Auch zu planen": der Predigtdienst und die Weiteren Pläne', () => {
+  it('oben die Wahl, was man plant — die Zusammenkünfte gewählt, die übrigen einen Tipp entfernt (T135)', () => {
+    /*
+     * Betreiber 24.10.2026: „nur Zusammenkünfte sind leicht zu finden beim
+     * planen und der rest ist ganz unten". Bis dahin standen Predigtdienst und
+     * Weitere Pläne als „Auch zu planen" unter allen Wochen.
+     */
     const { container, dispatch } = zeige(<PlanungScreen />)
-    const zeilen = [...container.querySelectorAll('.einst-zeile')]
-    expect(zeilen.map((z) => z.querySelector('.einst-zeile-name')?.textContent)).toEqual([t.tabFs, t.navWeiterePlaene])
-    fireEvent.click(zeilen[0]!)
+    const wahl = container.querySelector('.bereich-tabs')!
+    expect(wahl.compareDocumentPosition(container.querySelector('.planung-wochen')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const knoepfe = [...wahl.querySelectorAll('button')]
+    expect(knoepfe.map((k) => [k.textContent, k.getAttribute('aria-pressed')])).toEqual([
+      [t.navZusammenkuenfte, 'true'],
+      [t.tabFs, 'false'],
+      [t.navWeiterePlaene, 'false'],
+    ])
+    fireEvent.click(knoepfe[1]!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
-    fireEvent.click(zeilen[1]!)
+    fireEvent.click(knoepfe[2]!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'weitere' })
+    // Die gewählte führt nirgendwohin — man ist schon da.
+    dispatch.mockClear()
+    fireEvent.click(knoepfe[0]!)
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('der Gruppenaufseher plant nur die Treffpunkte — er bekommt keine Wahl', () => {
+    const { container } = zeige(<PlanungScreen />, { planner: false, personId: 'p-ov' })
+    expect(container.querySelector('.bereich-tabs')).toBeNull()
   })
 
   it('ohne geladene Woche steht nur „Holen" da — ab der laufenden', () => {
@@ -169,6 +189,18 @@ describe('Die Spalte neben dem Plan (`GDesktopPlanen`)', () => {
   it('fehlt darunter — dann führt „Planung" auf die Seite', () => {
     const { container } = zeige(<PlanenScreen />, { screen: 'planen' })
     expect(container.querySelector('.wochen-spalte')).toBeNull()
+  })
+
+  it('trägt oben dieselbe Wahl wie die Seite — gewählt ist, was daneben geplant wird (T135)', () => {
+    breite(true)
+    const gewaehlt = (tab: 'mid' | 'fs') => {
+      const { container } = zeige(<PlanenScreen />, { screen: 'planen', tab })
+      const knopf = container.querySelector('.wochen-spalte .bereich-tabs [aria-pressed="true"]')?.textContent
+      cleanup()
+      return knopf
+    }
+    expect(gewaehlt('mid')).toBe(t.navZusammenkuenfte)
+    expect(gewaehlt('fs')).toBe(t.tabFs)
   })
 
   it('der Gruppenaufseher bekommt sie nicht — er plant allein die Treffpunkte seiner Gruppe', () => {

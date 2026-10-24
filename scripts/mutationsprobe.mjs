@@ -4077,6 +4077,27 @@ export const KATALOG = [
     ersetzen: '',
   },
   {
+    id: 'planung-bereiche-oben',
+    datei: 'src/planen/PlanungScreen.tsx',
+    regel: 'Oben auf „Planung" steht die Wahl Zusammenkünfte, Predigtdienst, Weitere Pläne (T135).',
+    suchen: '      <PlanungsBereiche aktiv="zusammenkuenfte" />\n',
+    ersetzen: '',
+  },
+  {
+    id: 'planung-bereiche-spalte',
+    datei: 'src/planen/WochenUebersicht.tsx',
+    regel: 'Die Wochenspalte am Desktop trägt dieselbe Wahl — gewählt ist, was daneben geplant wird (T135).',
+    suchen: '      <PlanungsBereiche aktiv={themaVon(state.tab)} />\n',
+    ersetzen: "      <PlanungsBereiche aktiv=\"zusammenkuenfte\" />\n",
+  },
+  {
+    id: 'planung-bereiche-nur-erlaubte',
+    datei: 'src/planen/PlanungsBereiche.tsx',
+    regel: 'Die Wahl nennt nur, was man planen darf — der Gruppenaufseher bekommt keine (T135).',
+    suchen: '  const bereiche = BEREICHE.filter(([thema]) => darfPlanen(rechte, thema))\n',
+    ersetzen: '  const bereiche = BEREICHE\n',
+  },
+  {
     id: 'freie-plaetze-alter-push',
     datei: 'src/app/deeplink.ts',
     regel: 'Ein Push „Ersatz gesucht" mit dem alten Ziel „Meine Aufgaben" führt zum Einspringen auf „Freie Plätze" (T134).',

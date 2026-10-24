@@ -525,7 +525,6 @@ export const DE = {
     programmpunkteN: 'Programmpunkte: {n}', punkteN: 'Punkte: {n}',
     holenHinweis: 'Beim Übernehmen kommt der feste Leiter des Wachtturm-Studiums gleich mit, bei Abwesenheit sein Vertreter. Abwesenheiten werden beim Zuteilen beachtet.',
     uebernehmenZuteilen: 'Übernehmen und zuteilen', nurUebernehmen: 'Nur übernehmen',
-    auchZuPlanen: 'Auch zu planen', treffpunkteBesuche: 'Treffpunkte und Gruppenbesuche',
     aktuellLbl: 'Aktuell:', entfernen: 'Entfernen', abwesendChip: 'Abwesend',
     sheetSchonHeute: 'An diesem Tag schon',
     // {w} = Breite des Auslastungs-Fensters (LOAD_WEEKS in data/auslastung.ts).

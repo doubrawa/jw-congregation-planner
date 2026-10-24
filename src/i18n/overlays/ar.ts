@@ -771,8 +771,6 @@ export default {
   "holenHinweis": "عند الإضافة يُسجَّل مدير درس برج المراقبة الثابت فورًا، وعند غيابه يُسجَّل البديل. تُراعى الغيابات عند التعيين.",
   "uebernehmenZuteilen": "إضافة وتعيين",
   "nurUebernehmen": "إضافة فقط",
-  "auchZuPlanen": "مزيد من التخطيط",
-  "treffpunkteBesuche": "الاجتماعات وزيارات الفرق",
   "lageSenden": "للإرسال: {n}",
   "holenSpracheFehlt": "هذا الأسبوع غير متوفر بعد على jw.org بلغة الجماعة",
   "personNameLbl": "الاسم",

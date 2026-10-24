@@ -771,8 +771,6 @@ export default {
   "holenHinweis": "Aggiungendo, il conduttore fisso dello studio Torre di Guardia viene inserito subito, oppure il sostituto in caso di assenza. Le assenze vengono considerate durante l’assegnazione.",
   "uebernehmenZuteilen": "Aggiungi e assegna",
   "nurUebernehmen": "Solo aggiungi",
-  "auchZuPlanen": "Altro da pianificare",
-  "treffpunkteBesuche": "Adunanze e visite ai gruppi",
   "lageSenden": "Da inviare: {n}",
   "holenSpracheFehlt": "Questa settimana non è ancora su jw.org nella lingua della congregazione",
   "personNameLbl": "Nome",

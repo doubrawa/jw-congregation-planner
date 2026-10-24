@@ -7,10 +7,12 @@ import { anlassName } from '../components/anlass-name'
 import { wochenSpanne } from '../components/datum-anzeige'
 import { anlassArt } from '../data/anlass'
 import { fromIso, montagNach, montagVon } from '../data/meeting-dates'
+import { themaVon } from '../data/rechte'
 import type { Week } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import { fill, programmSpanne, useProgWeeks, useT } from '../i18n/useT'
 import { spurDerWoche } from './plan-spur'
+import { PlanungsBereiche } from './PlanungsBereiche'
 import { HolenKnopf } from './ProgrammHolen'
 import { VortragsplanKarte } from './VortragsplanKarte'
 import { naechsteHolWoche, wochenKarten, type WochenKarte, type WochenLage } from './wochen-uebersicht'
@@ -151,10 +153,13 @@ function HolenKarte({ montag }: { montag: string }) {
 
 /** Die Spalte links neben dem Plan am Desktop (Entwurf `GDesktopPlanen`). */
 export function WochenSpalte() {
+  const { state } = useApp()
   const { t } = useT()
   return (
     <aside className="wochen-spalte" aria-label={t.wochenLbl}>
       <h2 className="wochen-spalte-titel">{t.dashPlanung}</h2>
+      {/* Was man planen kann (T135) — wie oben auf der Seite „Planung". */}
+      <PlanungsBereiche aktiv={themaVon(state.tab)} />
       <WochenListe spalte />
     </aside>
   )

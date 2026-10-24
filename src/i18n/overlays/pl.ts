@@ -771,8 +771,6 @@ export default {
   "holenHinweis": "Przy dodawaniu od razu wpisuje się stałego prowadzącego studium Strażnicy, a w razie jego nieobecności zastępcę. Nieobecności są uwzględniane przy przydzielaniu.",
   "uebernehmenZuteilen": "Dodaj i przydziel",
   "nurUebernehmen": "Tylko dodaj",
-  "auchZuPlanen": "Do zaplanowania także",
-  "treffpunkteBesuche": "Zbiórki i wizyty w grupach",
   "lageSenden": "Do wysłania: {n}",
   "holenSpracheFehlt": "Tego tygodnia nie ma jeszcze na jw.org w języku zboru",
   "personNameLbl": "Imię i nazwisko",

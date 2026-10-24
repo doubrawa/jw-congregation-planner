@@ -85,7 +85,8 @@ SHOTS=(
   "planer-start|s=start&me=p9|${W}x1300"
   "planer-aufgaben|s=aufgaben&me=p9"
   # Die Wochen beim Planen (T121, Phase 10): die Seite „Planung" mit den vier
-  # Wochen der Entwicklerseite, „Holen", dem Vortragsplan und „Auch zu planen".
+  # Wochen der Entwicklerseite, oben der Wahl, was man plant (T135), „Holen"
+  # und dem Vortragsplan.
   "planer-wochen|s=planung&me=p6|${W}x1300"
   "planer-planen-woche|s=planen&tab=mid"
   "planer-planen-treffpunkte|s=planen&tab=fs"

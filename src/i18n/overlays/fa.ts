@@ -770,8 +770,6 @@ export default {
   "holenHinweis": "هنگام افزودن، اداره‌کنندهٔ ثابت مطالعهٔ برج دیده‌بانی بی‌درنگ ثبت می‌شود و در غیاب او جانشینش. غیبت‌ها هنگام تعیین در نظر گرفته می‌شوند.",
   "uebernehmenZuteilen": "افزودن و تعیین",
   "nurUebernehmen": "فقط افزودن",
-  "auchZuPlanen": "برنامه‌ریزی‌های دیگر",
-  "treffpunkteBesuche": "جلسات و بازدید از گروه‌ها",
   "lageSenden": "{n} برای ارسال",
   "holenSpracheFehlt": "این هفته هنوز در jw.org به زبان جماعت موجود نیست",
   "personNameLbl": "نام",

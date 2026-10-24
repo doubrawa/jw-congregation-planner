@@ -771,8 +771,6 @@ export default {
   "holenHinweis": "Eklerken sabit Gözcü Kulesi İncelemesi idarecisi hemen işlenir, yokluğunda ise yedeği. Yokluklar atama sırasında dikkate alınır.",
   "uebernehmenZuteilen": "Ekle ve ata",
   "nurUebernehmen": "Yalnızca ekle",
-  "auchZuPlanen": "Diğer planlamalar",
-  "treffpunkteBesuche": "Buluşmalar ve grup ziyaretleri",
   "lageSenden": "{n} gönderilecek",
   "holenSpracheFehlt": "Bu hafta jw.org’da henüz cemaat dilinde yok",
   "personNameLbl": "Ad",

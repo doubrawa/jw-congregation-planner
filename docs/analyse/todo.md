@@ -8440,11 +8440,21 @@ und freien Plätzen. „Meine Aufgaben" trägt beides nicht mehr. Der Tipp auf
 Absage an eine eigene Seite („sie wäre fast immer leer", T109) ist damit
 überholt. Zwei Schlüssel neu in zwölf Sprachen.
 
-### T135 · Planung: Wahl zwischen Zusammenkünften, Dienst und weiteren Plänen 🔧 ☐ offen
+### T135 · Planung: Wahl zwischen Zusammenkünften, Dienst und weiteren Plänen 🔧 ✅ erledigt (24. Oktober 2026)
 
 „Unter Menüpunkt Planung soll die Auswahl zwischen Zusammenkünfte, Dienst und
 weitere Pläne sein. Damit man das findet, denn nur Zusammenkünfte sind leicht zu
 finden beim planen und der rest ist ganz unten im zusammenkunftsdialog."
+
+**Umgesetzt:** `PlanungsBereiche` — dieselbe große Wahl wie bei den Bereichen
+des Predigtdienstes (`bereich-tabs`), mit den Zeichen des Menüs. Oben auf der
+Seite „Planung" (gewählt: Zusammenkünfte, darunter die Wochen) und oben in der
+Wochenspalte neben dem Plan am Desktop (gewählt: was daneben geplant wird). Nur,
+was man planen darf; der Gruppenaufseher bekommt keine Wahl. Die Karte „Auch zu
+planen" am Ende der Seite ist fort, mit ihren zwei Schlüsseln in zwölf Sprachen.
+Im echten Chrome gemessen (T128-Werkzeug `breit.mjs`): Handy 320–430 px und
+Desktop 1400–1920 px, je zwölf Sprachen und Schriftstufen 1–1,45 — kein Bruch
+ohne Strich; Deutsch trennt „Zusammen-künfte".
 
 ### T136 · Auslastung einer Person: Zahl und Kreise passen nicht zusammen 🔧 ☐ offen
 

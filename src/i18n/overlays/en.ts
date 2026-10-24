@@ -771,8 +771,6 @@ export default {
   "holenHinweis": "Adding enters the fixed Watchtower Study conductor right away, or his substitute if he is absent. Absences are taken into account when assigning.",
   "uebernehmenZuteilen": "Add and assign",
   "nurUebernehmen": "Add only",
-  "auchZuPlanen": "More to plan",
-  "treffpunkteBesuche": "Meetings and group visits",
   "lageSenden": "To send: {n}",
   "holenSpracheFehlt": "This week isn’t on jw.org in the congregation language yet",
   "personNameLbl": "Name",

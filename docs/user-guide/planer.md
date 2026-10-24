@@ -1769,7 +1769,9 @@ dürfen Planer und Admin.
 
 **Die Wochen** stehen unter **Planung** im Menü. Am Handy und am Tablet ist das
 eine eigene Seite mit allen Wochen ab der laufenden; am breiten Bildschirm
-stehen sie links neben dem Plan, die gezeigte Woche umrandet. Jede Woche nennt
+stehen sie links neben dem Plan, die gezeigte Woche umrandet. Ganz oben wählst
+du, was du planst: **Zusammenkünfte** (die Wochen darunter), **Predigtdienst**
+oder **Weitere Pläne** – ein Tipp öffnet deren Planen. Jede Woche nennt
 rechts, was zu tun ist – **Probleme**, **Offen** oder **Bereit zum Senden** –,
 darunter, wann sie ist oder was sie besonders macht, und unten, wie weit sie
 ist: **Zuteilen**, **Senden**, **Zusagen** – am breiten Bildschirm als Punkte,
@@ -1777,8 +1779,7 @@ darunter der Schritt, an dem die Woche steht. Ein Tipp öffnet ihren Plan; am
 breiten Bildschirm wechselt er nur die Woche. Unter den Wochen steht
 gestrichelt die nächste, deren Programm noch fehlt, mit **Holen**, darunter der
 **Vortragsplan** mit **XML-Datei wählen** für die Datei aus eurem
-Planungsprogramm ([Vortragsplan übernehmen](#vortragsplan-übernehmen)). Am Handy
-folgt **Auch zu planen** mit dem Predigtdienst und den Weiteren Plänen.
+Planungsprogramm ([Vortragsplan übernehmen](#vortragsplan-übernehmen)).
 
 **Holen** öffnet das Blatt **Programm holen**. Es zeigt erst, was aus dem
 Arbeitsheft kam: die Woche, ihre Abschnitte mit der Zahl der Programmpunkte
