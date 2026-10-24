@@ -882,11 +882,15 @@ export const DE = {
     // Wartezeiten (Review 17.10.2026): Wer im Bereich schon eingeteilt ist, wartet nicht.
     awGeplant: 'geplant: {datum}',
     // Engpässe (Jahresprobe 18.10.2026): je Bereich Plätze je Woche gegen die
-    // Personen, die ihn haben. Die Zahlen stehen als „Bezeichnung: {n}".
-    awEngpaesseTitel: 'Engpässe', awEngpassStat: 'Am knappsten: {bereich}',
-    awEngpaesseText: 'Je Bereich über das ganze Jahr: wie viele Plätze je Woche anfallen und wie viele Personen den Bereich haben – daraus, alle wie viele Wochen jeder dran wäre. Die knappsten zuerst.',
+    // Personen, die ihn haben. Die Zahlen stehen als „Bezeichnung: {n}". Seit
+    // T139 oben nur die knappen; {dauer} ist die Grenze („4 Wochen").
+    awEngpaesseTitel: 'Engpässe',
+    awEngpaesseText: 'Knapp ist ein Bereich, in dem jeder öfter als alle {dauer} dran wäre – oder den niemand hat. Gerechnet über das ganze Jahr: die Plätze je Woche gegen die Personen, die den Bereich haben.',
     awPlaetzeJeWoche: 'Plätze je Woche: {n}', awJePersonJahr: 'je Person im Jahr: {n}',
     awNiemandHatIhn: 'niemand hat den Bereich',
+    awKnappeBereiche: 'Knappe Bereiche', awKnappeZahl: 'Knappe Bereiche: {n}', awAlleBereiche: 'Alle Bereiche',
+    awKeinEngpass: 'Kein Bereich ist knapp: Niemand wäre öfter als alle {dauer} dran.',
+    awMehrFreigeben: 'Mehr Personen freigeben: Aufgabenbereiche vergibst du bei der Person.',
     // Absagen (T126, seit 17.10.2026 aufgezeichnet). {anteil}/{sonst} sind Prozente aus `Intl`.
     awAbsagenTitel: 'Absagen je Bereich', awAbsagenZahl: 'Absagen: {n}', awAnteilVon: '{anteil} von {m}',
     awAbsagenText: 'Gezählt wird, wer seine Zuteilung abgesagt hat – auch wenn der Platz danach neu besetzt wurde. Der Anteil bezieht sich auf alle Zuteilungen des Bereichs.',

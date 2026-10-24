@@ -10,7 +10,9 @@ import {
   grundlage,
   hinweise,
   istEinseitig,
+  istKnapp,
   kennzahlen,
+  KNAPP_UNTER,
   lageVon,
   matrix,
   nieGenutzt,
@@ -582,6 +584,19 @@ describe('Engpässe', () => {
 
   it('einen Bereich, den niemand hat, steht ganz vorn — ohne Abstand', () => {
     expect(liste[0]).toMatchObject({ bereich: 'bibellesung', personen: 0, abstand: null, jePersonJahr: null })
+  })
+
+  it('knapp ist, wo jeder öfter als alle vier Wochen dran wäre oder niemand den Bereich hat (T139)', () => {
+    // Der Leser mit fünf Personen ist es nicht: jeder alle fünf Wochen.
+    expect(KNAPP_UNTER).toBe(4)
+    expect(liste.filter(istKnapp).map((z) => z.bereich)).toEqual(['bibellesung', serviceQualKey('mik'), 'gebet'])
+  })
+
+  it('gerundet wie der Abstand daneben — „Abstand: 4 Wochen" ist nicht knapp', () => {
+    const leser = liste.find((z) => z.bereich === 'leser')!
+    expect(istKnapp({ ...leser, abstand: 3.49 })).toBe(true)
+    expect(istKnapp({ ...leser, abstand: 3.5 })).toBe(false)
+    expect(istKnapp({ ...leser, abstand: 0.3 })).toBe(true)
   })
 })
 

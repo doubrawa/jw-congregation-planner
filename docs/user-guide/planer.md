@@ -708,7 +708,7 @@ nicht.
   Wartezeiten mit diesem Bereich, bei vielen Absagen die Absagen;
   **Alle Hinweise** zeigt den Rest.
 - Am Handy führen fünf Kacheln weiter – **Zu oft, zu selten**, **Einseitig
-  verteilt**, **Wartezeiten**, **Engpässe** (mit dem knappsten Bereich),
+  verteilt**, **Wartezeiten**, **Engpässe** (mit der Zahl der knappen Bereiche),
   **Treffpunkte, Absagen, Ballungen**; Zurück führt wieder in den Überblick. Am
   Tablet steht alles auf einer Seite, die Engpässe unter **Was auffällt**, am
   Computer dazu die Tabelle **Wer bekommt was** (Person × Bereich).
@@ -798,10 +798,15 @@ höchstens halb so viel Abstand wie üblich – je Woche ein Feld.
 
 Je Bereich über das ganze Jahr: die **Plätze je Woche**, die **Personen**, die
 den Bereich haben, daraus der **Abstand** – alle wie viele Wochen jeder dran
-wäre – und wie oft **je Person im Jahr**. Die knappsten stehen oben, ein
-Bereich, den niemand hat, ganz vorn in Rot. Gezählt werden die Wochen ab der
+wäre – und wie oft **je Person im Jahr**. Gezählt werden die Wochen ab der
 ersten, in der der Bereich einen Platz hatte: Aus New World Scheduler kommen
 die Hilfsdienste oft nur wenige Monate zurück.
+
+Oben stehen nur die **knappen Bereiche**: die, in denen jeder öfter als alle
+vier Wochen dran wäre, und die, die niemand hat – mit dem Rat, mehr Personen
+freizugeben (den Aufgabenbereich vergibst du bei der Person). Ist keiner knapp,
+steht das in einem Satz da. Darunter stehen **Alle Bereiche**, die knappsten
+zuerst. Die Kachel am Handy zählt die knappen Bereiche.
 
 ### Pflege der Bereiche
 

@@ -13,8 +13,8 @@ import { fremdsprachigerBestand, type FremdBestand } from '../../tests/fremdspra
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { datumsFormat, monatsName, zeitspanne } from '../components/datum-anzeige'
 import { abwesenheitenVon } from '../data/absence'
-import { auswerten, lageVon, personBild, TREFFPUNKT_BEREICH, ZEITRAEUME, type Einteilung, type Zeitraum } from '../data/auswertung'
-import { displayName } from '../data/helpers'
+import { auswerten, istKnapp, lageVon, personBild, TREFFPUNKT_BEREICH, ZEITRAEUME, type Einteilung, type Zeitraum } from '../data/auswertung'
+import { displayName, privSetzen, privWert } from '../data/helpers'
 import { fromIso, tagNach } from '../data/meeting-dates'
 import { allePlaetze, platzKey } from '../data/plaetze'
 import { bereichVon } from '../data/planning'
@@ -220,19 +220,63 @@ describe('Am Handy: der Überblick', () => {
     expect(container.querySelector('.aw-last-balken')).toBeNull()
   })
 
-  it('die Kachel „Engpässe" nennt den knappsten Bereich — die Unteransicht je Bereich Plätze, Personen und Abstand', () => {
-    const { container } = zeige(zustand())
-    const a = rechnung(zustand())
-    const erster = a.engpaesse[0]!
-    const kachel = [...container.querySelectorAll<HTMLElement>('.aw-kachel')].find((k) => k.querySelector('.aw-kachel-titel')?.textContent === t.awEngpaesseTitel)!
-    const name = bereichsName(erster.bereich, DEMO.services, t, (s) => s)
-    expect(kachel.textContent).toContain(fill(t.awEngpassStat, { bereich: name }))
+  /** Öffnet die Engpässe über ihre Kachel — und gibt die Kachel zurück, wie sie davor dastand. */
+  function engpaesseOeffnen(c: HTMLElement): string {
+    const kachel = [...c.querySelectorAll<HTMLElement>('.aw-kachel')].find((k) => k.querySelector('.aw-kachel-titel')?.textContent === t.awEngpaesseTitel)!
+    const text = kachel.textContent ?? ''
     fireEvent.click(kachel)
+    return text
+  }
+  const knappeKarte = (c: HTMLElement) => c.querySelector(`section[aria-label="${t.awKnappeBereiche}"]`)
+  const vierWochen = zeitspanne(4, 'week', 'de')
+
+  it('kein Bereich knapp: Die Kachel zählt null, die Unteransicht sagt es in einem Satz — darunter alle Bereiche (T139)', () => {
+    // In den Testwochen ist jeder höchstens alle vierzehn Wochen dran. Bis zum
+    // 24.10.2026 stand trotzdem „Am knappsten: Gebete" auf der Kachel.
+    const a = rechnung(zustand())
+    expect(a.engpaesse.filter(istKnapp)).toEqual([])
+    const { container } = zeige(zustand())
+    expect(engpaesseOeffnen(container)).toContain(fill(t.awKnappeZahl, { n: '0' }))
+    expect(knappeKarte(container)).toBeNull()
+    expect(container.querySelector('.aw-leer')?.textContent).toBe(fill(t.awKeinEngpass, { dauer: vierWochen }))
+    expect(container.querySelector('.aw-erklaerung')?.textContent).toBe(fill(t.awEngpaesseText, { dauer: vierWochen }))
+    // Alle Bereiche, die knappsten zuerst — je Bereich Abstand und Personen.
     const zeilen = [...container.querySelectorAll('.aw-engpaesse .aw-zeile')]
     expect(zeilen).toHaveLength(a.engpaesse.length)
-    expect(zeilen[0]!.querySelector('.aw-zeile-name')?.textContent).toBe(name)
+    const erster = a.engpaesse[0]!
+    expect(zeilen[0]!.querySelector('.aw-zeile-name')?.textContent).toBe(bereichsName(erster.bereich, DEMO.services, t, (s) => s))
     expect(zeilen[0]!.querySelector('.aw-zeile-zahl')?.textContent).toBe(fill(t.awAlleDauer, { dauer: zeitspanne(Math.round(erster.abstand!), 'week', 'de') }))
     expect(zeilen[0]!.querySelector('.klein-text')?.textContent).toContain(fill(t.awPersonenZahl, { n: String(erster.personen) }))
+  })
+
+  it('knappe Bereiche stehen oben, mit dem Rat, mehr Personen freizugeben — einer, den niemand hat, und einer mit zwei Personen', () => {
+    const a0 = rechnung(zustand())
+    // Den knappsten Bereich nimmt man allen, den zweiten allen bis auf zwei.
+    const [niemand, zwei] = [a0.engpaesse[0]!.bereich, a0.engpaesse[1]!.bereich]
+    const mitZwei = DEMO.persons.filter((p) => privWert(p.priv, zwei)).slice(0, 2).map((p) => p.id)
+    const persons = DEMO.persons.map((p) => {
+      const priv = { ...p.priv }
+      privSetzen(priv, niemand, false)
+      if (!mitZwei.includes(p.id)) privSetzen(priv, zwei, false)
+      return { ...p, priv }
+    })
+    const s = zustand({ persons })
+    const knappe = rechnung(s).engpaesse.filter(istKnapp)
+    expect(knappe.map((z) => z.bereich)).toEqual([niemand, zwei])
+    expect(knappe[0]!.abstand).toBeNull()
+
+    const { container } = zeige(s)
+    expect(engpaesseOeffnen(container)).toContain(fill(t.awKnappeZahl, { n: '2' }))
+    const karte = knappeKarte(container)!
+    const name = (b: string) => bereichsName(b, DEMO.services, t, (x) => x)
+    expect([...karte.querySelectorAll('.aw-zeile')].map((z) => [z.querySelector('.aw-zeile-name')?.textContent, z.querySelector('.aw-zeile-zahl')?.textContent])).toEqual([
+      [name(niemand), t.awNiemandHatIhn],
+      [name(zwei), fill(t.awAlleDauer, { dauer: zeitspanne(Math.max(1, Math.round(knappe[1]!.abstand!)), 'week', 'de') })],
+    ])
+    expect(karte.textContent).toContain(t.awMehrFreigeben)
+    expect(container.querySelector('.aw-leer')).toBeNull()
+    // Die ganze Liste bleibt darunter.
+    expect(container.querySelectorAll('.aw-engpaesse .aw-zeile')).toHaveLength(rechnung(s).engpaesse.length)
   })
 
   it.each([

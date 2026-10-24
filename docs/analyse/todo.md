@@ -8512,9 +8512,26 @@ Die Streifen unter „Schnell wieder dran" und die kleinen Balken je Bereich
 (Einseitig, Absagen) bleiben: Neben ihnen steht die Zahl. Die Engpässe ordnet
 T139 neu.
 
-### T139 · Auswertung: die Engpässe prüfen ⚡ ☐ offen
+### T139 · Auswertung: die Engpässe prüfen ⚡ ✅ erledigt (24. Oktober 2026)
 
 „Auswertung Engpassanalyse -macht das eventuell sinn."
+
+**Befund:** Es standen alle Bereiche da, und die Kachel nannte „Am knappsten:
+Gebete" — in den Testwochen bei einem Abstand von vierzehn Wochen. Ein echter
+Engpass war das nicht.
+
+**Entschieden** (Betreiber, 24. Oktober): „Nur echte Engpässe" — gezeigt waren
+daneben „Streichen" und „So lassen".
+
+**Umgesetzt:** Knapp ist ein Bereich, in dem jeder öfter als alle vier Wochen
+dran wäre (gerundet wie der Abstand daneben), oder den niemand hat
+(`istKnapp`, `KNAPP_UNTER`). Oben stehen nur diese, mit „Mehr Personen
+freigeben: Aufgabenbereiche vergibst du bei der Person."; ist keiner knapp,
+steht „Kein Bereich ist knapp: Niemand wäre öfter als alle 4 Wochen dran." Die
+Kachel zählt „Knappe Bereiche: n". Darunter **Alle Bereiche**, die knappsten
+zuerst — als Zeilen, nicht wie angeboten als Tabelle: Neben einer Spalte mit
+Zahlen bräche „Schulungsaufgaben" bei 320 px und Stufe 1,45 mitten im Wort
+(derselbe Fehler wie T137); in der Zeile rückt die Zahl darunter.
 
 ### T140 · Mitteilungen löschen ⚡ ☐ offen
 

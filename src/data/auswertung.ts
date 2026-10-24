@@ -706,6 +706,21 @@ export function engpass(g: Grundlage, bereich: string): Engpass | null {
   }
 }
 
+/** Knapp ist ein Bereich, in dem jeder öfter als alle so viele Wochen dran wäre (T139). */
+export const KNAPP_UNTER = 4
+
+/**
+ * **Ein echter Engpass** (T139): Jeder wäre öfter als alle `KNAPP_UNTER` Wochen
+ * dran, oder niemand hat den Bereich. Gerundet wie der Abstand, der daneben
+ * steht — sonst stünde „Abstand: 4 Wochen" unter den knappen. Bis zum
+ * 24.10.2026 standen alle Bereiche da, auch einer, in dem jeder nur alle
+ * vierzehn Wochen dran ist („Engpassanalyse – macht das eventuell sinn",
+ * Betreiber).
+ */
+export function istKnapp(e: Engpass): boolean {
+  return e.abstand === null || Math.round(e.abstand) < KNAPP_UNTER
+}
+
 /** Alle Bereiche mit Plätzen, die knappsten zuerst — ohne Personen ganz vorn. */
 export function engpaesse(g: Grundlage): Engpass[] {
   return [...g.plaetze.keys()]

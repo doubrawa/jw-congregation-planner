@@ -9,7 +9,7 @@ import { gebundenesDatum, jahrZahl, monatsName, tageSpanne, zeitspanne } from '.
 import { gruppenName } from '../components/weitere-plaene-anzeige'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { DESKTOP_BREITE, TABLET_BREITE, useMedia } from '../components/useMedia'
-import { auswerten, istEinseitig, ZEITRAEUME, type Auswertung, type Zeitraum } from '../data/auswertung'
+import { auswerten, istEinseitig, istKnapp, ZEITRAEUME, type Auswertung, type Zeitraum } from '../data/auswertung'
 import { displayName } from '../data/helpers'
 import { fromIso, tagNach } from '../data/meeting-dates'
 import { LOCALES } from '../i18n/langs'
@@ -267,17 +267,12 @@ function Kacheln({ k, zu }: { k: Kontext; zu: (ansicht: Ansicht) => void }) {
   const selten = v.filter((h) => h.art === 'selten').length
   // Wer in zwei Bereichen lange wartet, zählt einmal.
   const wartende = new Set(v.flatMap((h) => (h.art === 'wartet' ? h.pids : [])))
-  const engster = a.engpaesse[0]
   const kacheln: { ansicht: Exclude<Ansicht, 'ueberblick'>; zeichen: ZeichenName; titel: string; zahl: string }[] = [
     { ansicht: 'verteilung', zeichen: 'auswertung', titel: t.awVerteilungTitel, zahl: fill(t.awVerteilungStat, { n: k.zahl(oft), m: k.zahl(selten) }) },
     { ansicht: 'einseitig', zeichen: 'halb', titel: t.awEinseitigTitel, zahl: fill(t.awPersonenZahl, { n: k.zahl(a.einseitig.filter(istEinseitig).length) }) },
     { ansicht: 'wartezeiten', zeichen: 'uhr', titel: t.awWartezeitenTitel, zahl: fill(t.awWartenLangeZahl, { n: k.zahl(wartende.size) }) },
-    {
-      ansicht: 'engpaesse',
-      zeichen: 'personen',
-      titel: t.awEngpaesseTitel,
-      zahl: engster ? fill(t.awEngpassStat, { bereich: k.bereich(engster.bereich) }) : '',
-    },
+    // Die knappen Bereiche, nicht der knappste aller (T139): „Am knappsten: Gebete" stand auch bei vierzehn Wochen Abstand da.
+    { ansicht: 'engpaesse', zeichen: 'personen', titel: t.awEngpaesseTitel, zahl: fill(t.awKnappeZahl, { n: k.zahl(a.engpaesse.filter(istKnapp).length) }) },
     {
       ansicht: 'weiteres',
       zeichen: 'predigtdienst',
