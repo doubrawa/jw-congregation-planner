@@ -8551,33 +8551,52 @@ es noch); offline ist es gesperrt. Übersetzungen wie vor T121.
 
 ## Aufgenommen am 24. Oktober 2026 abends (T141)
 
-### T141 · Kommt ein Konto ganz ohne E-Mail aus? 🔧 ☐ offen
+### T141 · Kommt ein Konto ganz ohne E-Mail aus? 🔧 ✅ beantwortet (24. Oktober 2026)
 
 „kann man ganz ohne email auskommen bei einem konto" (Betreiber, 24. Oktober).
 
-**Stand heute** (aus Code und Notizen gelesen, noch nicht gemessen): Das Konto
-selbst braucht keine echte Adresse. Seit T121 Phase 8 (15. Oktober) heißt es
-`<person-id>@konten.invalid`, angemeldet wird per Link oder Code (Function
-`anmelden`), und der Zettel lässt sich ohne Adresse drucken. Die Adresse der
-Person (`Person.mail`, nicht die des Kontos, `members.email`) braucht es bisher
-nur, um einen Link zu schicken:
+**Antwort: Ja, schon heute — ohne Änderung.** Nachgelesen in Code und Tests:
 
-- „Link senden" auf der Anmeldeseite (Selbstbedienung, `anmelden` mit
-  `aktion: 'mail'`) — ohne Adresse kommt dort nichts an;
-- „Link senden" auf der Konto-Karte und „Links senden" unter Personen › Ohne
-  Link (`send-invite`; solange `INVITE_FROM` fehlt, ohnehin nur der Rückfall
-  per mailto).
+- **Das Konto hat keine echte Adresse.** `anmelden` legt es bei der ersten
+  Anmeldung an: Konto-Id = Person-Id, Adresse intern
+  `<person-id>@konten.invalid` (`interneAdresse`), in `members.email` steht
+  nichts. Profil und Konto-Karte zeigen dann keine Adresse („Konto verknüpft").
+  Mails an diese Adresse gibt es nicht: Kein Kennwort, kein Zurücksetzen,
+  Erinnerungen nie per E-Mail.
+- **Hinein kommt man mit dem Zettel.** QR-Code scannen oder den Code eintippen
+  (am iPhone in der App vom Home-Bildschirm nur der Code). Der Code gilt
+  30 Tage (`LINK_TAGE`) und mehrfach — so auch für ein zweites Gerät in dieser
+  Zeit. Ist eine Person ohne Adresse, rät die Konto-Karte zum Zettel
+  (`ohneLinkHintZettel`), „Links senden" führt sie unter „Ohne E-Mail" zum
+  Drucken; die Anmeldeseite sagt, wo der Code steht und dass es bei den
+  Ältesten einen neuen Zettel gibt (`ohneMailHinweis`, `codeAbgelaufen`).
+  Getestet in `login.test.tsx` und `KontoCard.test.tsx`.
+- **Angemeldet bleibt ein Gerät**, bis es ein Jahr ungenutzt war (das Aufräumen
+  löscht dann `auth.sessions`, T125).
+- **Die Adresse der Person (`Person.mail`) ist freiwillig.** Sie dient nur dem
+  Versand eines Links: „Link senden" auf der Anmeldeseite (Selbstbedienung) und
+  die Einladungs-Mail des Admins (`send-invite`, solange `INVITE_FROM` fehlt
+  ohnehin nur per mailto). Pflicht ist sie nirgends.
 
-**Zu klären:**
+**Was ohne Adresse fehlt:** Wer nach 30 Tagen ein weiteres Gerät anmelden will
+oder ein Jahr nicht in der App war, braucht einen neuen Zettel von den
+Ältesten — der neue ersetzt den alten. Mit Adresse ginge das per „Link senden"
+selbst.
 
-- Wie kommt jemand ohne Adresse wieder hinein, wenn sein Link nach 30 Tagen
-  abläuft oder ein neues Gerät dazukommt — reicht ein neuer Zettel vom Admin,
-  und weiß man das in der App?
-- Ist die Adresse irgendwo Pflicht oder wird sie vorausgesetzt (Person anlegen,
-  Filter „Ohne Link", Konto-Karte, Profil)?
-- Was Profil und Konto-Karte bei einem Konto ohne Adresse zeigen (`members.email`).
-- Ob die Adresse ganz entfallen kann (weniger Daten) oder als freiwilliger Weg
-  für „Link senden" bleibt.
+**Nicht gemessen:** Ob im Betrieb noch ein Konto eine echte Adresse trägt
+(Zählung über `members` und `auth.users`, nur Zahlen) — der Auto-Modus sperrte
+die lesende Abfrage als „Production Reads". Nach dem Code entsteht seit dem
+15. Oktober keins mehr; die alten Konten wurden an dem Tag gelöscht. Ausnahme
+sind die Probe-Konten der Testversammlung mit Kennwort (Werkzeug, nicht App).
+
+**Möglich, wenn gewünscht** (nicht beauftragt):
+
+- Ein Code für ein weiteres Gerät im Profil — ein angemeldetes Gerät zeigt einen
+  frischen Code oder QR-Code, und ein zweites meldet sich ohne Zettel und ohne
+  Adresse an. Am 15. Oktober gegen „Code im Profil für ein weiteres Gerät"
+  entschieden (damals beim iPhone-Mail-Link, siehe T121 Phase 10).
+- Das Feld E-Mail der Person ganz streichen (weniger Daten) — dann ginge kein
+  Link mehr per Mail, auch keine Einladung.
 
 ## Was bewusst offen bleibt
 
@@ -8616,15 +8635,14 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
-21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☐
+21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑
 
-**139 der 141 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind zwei:**
+**140 der 141 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
-| **T141** | Konto ganz ohne E-Mail? | ☐ aufgenommen am 24. Oktober abends, noch nicht untersucht — das Konto braucht schon keine echte Adresse, nur „Link senden" die der Person |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
@@ -9057,7 +9075,6 @@ braucht den Betreiber, ein Gerät oder eine Entscheidung.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **T141** | Kommt ein Konto ganz ohne E-Mail aus? | aufgenommen am 24. Oktober abends — zu klären, wie man ohne Adresse nach 30 Tagen oder auf einem neuen Gerät wieder hineinkommt (siehe T141) |
 | **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124; am 21. Oktober: noch nicht). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
 | **Bewusst offen** | Der Grund nach dem Abmelden ohne Versammlung | Den Satz „Dein Konto gehört zu keiner Versammlung mehr" zeigt die Anmeldung nur, wenn das Laden die fehlende Mitgliedschaft findet — in der ersten Stunde nach dem Entfernen. Danach scheitert schon die Erneuerung des Tokens (das Konto ist gelöscht), supabase-js meldet `SIGNED_OUT` ohne Grund, und die Anmeldung steht ohne Satz da. Ihn auch dann zu zeigen, hieße erzwungenes und eigenes Abmelden zu unterscheiden — Betreiber am 21. Oktober: „wir müssen da keine komplexe logik einbauen" (Review vom 21. Oktober) |
 | **Bewusst offen** | Altes Zugangstoken nach dem Entfernen | Ein schon ausgestelltes Token gilt bis zu seinem Ablauf (höchstens eine Stunde) und sieht ohne Mitgliedschaft nichts. Wird die Person in dieser Stunde neu eingeladen, gilt es für das neue Konto: Es trägt wieder ihre Person-Id (`anmelden`). Vermerkt am Trigger in `schema.sql` (Review vom 21. Oktober) |
@@ -9149,7 +9166,8 @@ gelöschte Mitteilungen zurück; zwei Randfälle bewusst gelassen, siehe Commit
 `40a36f7a`). Die Function `substitute` ist als v45 ausgerollt (T133, das
 Angebot), das Frontend mit `40a36f7a` gepusht.
 
-Am selben Abend aufgenommen: **T141** — kommt ein Konto ganz ohne E-Mail aus?
+Am selben Abend aufgenommen und beantwortet: **T141** — ein Konto kommt ganz
+ohne E-Mail aus, schon heute (Zettel mit QR-Code und Code; siehe T141).
 
 Am 19. Oktober in die Tabelle aufgenommen: `sprache-fehlt` und
 `auth.sessions` (bis dahin nur in einer Commit-Nachricht, `42dff943`, und bei
