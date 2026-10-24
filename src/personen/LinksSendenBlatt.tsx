@@ -61,7 +61,7 @@ export function LinksSendenBlatt({ personen, zahlen, onClose }: { personen: read
     const lang = sprachDerVersammlung(state.congLang)
     // Link und Code gibt es erst beim Senden — je Person ein eigener.
     const code = '····-····'
-    setVorschau(linkMail(lang, { name: perMail[0].fn, versammlung: state.congregation.name, url, code, gueltigBis: gueltigBis(new Date()) }))
+    setVorschau(linkMail(lang, { person: perMail[0], versammlung: state.congregation.name, url, code, gueltigBis: gueltigBis(new Date()) }))
   }
 
   const senden = async () => {

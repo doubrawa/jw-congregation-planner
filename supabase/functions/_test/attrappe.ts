@@ -105,6 +105,24 @@ export function passtAufMuster(wert: string, muster: string): boolean {
 export const ohneFragment = (input: unknown): string => String(input).split('#')[0] ?? ''
 
 /**
+ * Nur die Spalten, die `select=` verlangt — wie PostgREST. Ohne `select=`
+ * (oder mit `*`) die ganze Zeile.
+ *
+ * Aus demselben Grund wie `filterWert`: Gäbe die Attrappe ganze Zeilen zurück,
+ * sähe eine im `select` vergessene Spalte hier aus wie eine mitgeholte — im
+ * Test stünde der Wert da, im Betrieb `undefined`. Seit die Anmelde-Mail ohne
+ * Vornamen mit dem Nachnamen grüßt (24.10.2026), hängt sie an `ln` im
+ * `select`; fehlte es, stünde wieder „Hallo ," da. Nur einfache Spaltenlisten,
+ * keine eingebetteten Tabellen.
+ */
+export function nurSpalten<Z extends object>(zeilen: readonly Z[], path: string): Partial<Z>[] {
+  const select = /[?&]select=([^&]*)/.exec(path)?.[1]
+  if (!select || select === '*') return [...zeilen]
+  const spalten = decodeURIComponent(select).split(',')
+  return zeilen.map((z) => Object.fromEntries(Object.entries(z).filter(([spalte]) => spalten.includes(spalte))) as Partial<Z>)
+}
+
+/**
  * Lesezugriff auf die mitgeschriebenen Schreib-Aufrufe.
  *
  * Die Liste wird je Fall neu gesetzt (`beforeEach`), deshalb kommt sie als

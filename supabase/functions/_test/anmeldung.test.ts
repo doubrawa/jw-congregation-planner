@@ -6,7 +6,7 @@
  * Wort für Wort die des eigenen Mail-Programms ist.
  */
 import { describe, expect, it } from 'vitest'
-import { linkDatum, linkMail } from '../_shared/anmelde-mail.ts'
+import { anrede, linkDatum, linkMail } from '../_shared/anmelde-mail.ts'
 import { linkMailTexte } from '../_shared/anmelde-texte.ts'
 import {
   anmeldeUrl,
@@ -93,7 +93,7 @@ describe('Token und Adressen', () => {
 
 describe('Die E-Mail mit dem Link', () => {
   const werte = {
-    name: 'Anna',
+    person: { fn: 'Anna', ln: 'Alt' },
     versammlung: 'Musterstadt',
     url: 'https://app.test/#anmelden=T',
     code: 'K7RD-2QWM',
@@ -111,6 +111,16 @@ describe('Die E-Mail mit dem Link', () => {
     expect(de.text).toContain('\nK7RD-2QWM\n')
     expect(linkMail('en', werte).text).toContain('until November 14')
     for (const lang of ['de', 'en', 'fr', 'ja', 'ar', 'fa']) expect(linkMail(lang, werte).text, lang).not.toMatch(/\{\w+\}/)
+  })
+
+  it('ohne Vornamen grüßt sie mit dem Nachnamen, in jeder Sprache — bis zum 24.10.2026 stand „Hallo ," da', async () => {
+    const { APP_LANGS } = await import('../../../src/i18n/langs')
+    const ohneVorname = { ...werte, person: { fn: '', ln: 'Krüger' } }
+    expect(linkMail('de', ohneVorname).text).toMatch(/^Hallo Krüger,\n/)
+    for (const { code } of APP_LANGS) expect(linkMail(code, ohneVorname).text.split('\n')[0], code).toContain('Krüger')
+    // Mit Vornamen bleibt es beim Vornamen; Leerzeichen sind kein Name.
+    expect(anrede({ fn: ' Anna ', ln: 'Alt' })).toBe('Anna')
+    expect(anrede({ fn: '  ', ln: ' Krüger ' })).toBe('Krüger')
   })
 
   it('eine unbekannte Sprache fällt auf Deutsch zurück — Text und Datum', () => {

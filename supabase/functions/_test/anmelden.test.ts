@@ -10,7 +10,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { pruefsumme } from '../_shared/anmeldung.ts'
-import { filterWert, jsonRes } from './attrappe.ts'
+import { filterWert, jsonRes, nurSpalten } from './attrappe.ts'
 
 const SUPABASE_URL = 'https://test.supabase.co'
 const CONG = 'cong-1'
@@ -20,6 +20,7 @@ const P_BERT = '22222222-2222-4222-8222-222222222222' // hat ein Konto, keinen L
 const P_CARL = '33333333-3333-4333-8333-333333333333' // weder noch
 const P_DORA = '44444444-4444-4444-8444-444444444444' // teilt die Adresse mit Anna, hat einen Link
 const P_ERIK = '55555555-5555-4555-8555-555555555555' // eine Adresse, die Carls nur im Platzhalter gleicht
+const P_KRUEGER = '66666666-6666-4666-8666-666666666666' // nur mit Nachnamen angelegt
 
 const TOKEN_ANNA = 'A'.repeat(43)
 const CODE_ANNA = 'K7RD2QWM'
@@ -145,9 +146,9 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
       // Wie Postgres: `_` ist ein Platzhalter, `\_` ein wörtlicher Unterstrich.
       const muster = decodeURIComponent(ilike)
       const re = new RegExp(`^${muster.replace(/\\_|_|[.+?^${}()|[\]\\]/g, (z) => (z === '\\_' ? '_' : z === '_' ? '.' : `\\${z}`))}$`, 'i')
-      return jsonRes(PERSONS.filter((p) => re.test(p.mail)))
+      return jsonRes(nurSpalten(PERSONS.filter((p) => re.test(p.mail)), path))
     }
-    return jsonRes(PERSONS.filter((p) => p.id === id && p.congregation_id === filterWert(path, 'congregation_id')))
+    return jsonRes(nurSpalten(PERSONS.filter((p) => p.id === id && p.congregation_id === filterWert(path, 'congregation_id')), path))
   }
   if (path.startsWith('congregations')) return jsonRes([{ name: 'Musterstadt' }])
   if (path.startsWith('members')) {
@@ -487,6 +488,17 @@ describe('anmelden: „Link senden" auf der Anmeldeseite', () => {
       links.push(await linkZeile(P_CARL, 'C'.repeat(43), 'M3ZE7KQR'), await linkZeile(P_ERIK, 'E'.repeat(43), 'W8NB4TGC'))
       await call({ aktion: 'mail', email: 'carl_c@example.org' })
       expect(mails.map((m) => m.text.split('\n')[0])).toEqual(['Hallo Carl,'])
+    } finally {
+      PERSONS.pop()
+    }
+  })
+
+  it('ohne Vornamen grüßt sie mit dem Nachnamen — bis zum 24.10.2026 stand „Hallo ," da', async () => {
+    PERSONS.push({ id: P_KRUEGER, fn: '', ln: 'Krüger', mail: 'krueger@example.org', congregation_id: CONG, planner_vorgemerkt: false, zuteiler_vorgemerkt: false })
+    try {
+      links.push(await linkZeile(P_KRUEGER, 'K'.repeat(43), 'R4WT9HXP'))
+      await call({ aktion: 'mail', email: 'krueger@example.org' })
+      expect(mails.map((m) => m.text.split('\n')[0])).toEqual(['Hallo Krüger,'])
     } finally {
       PERSONS.pop()
     }

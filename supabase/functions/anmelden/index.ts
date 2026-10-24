@@ -240,8 +240,8 @@ async function linksPerMail(adresse: string, sprache: string | null, jetzt: numb
   // ein Platzhalter für ein Zeichen und wird deshalb maskiert; `%` und `*`
   // lässt `adresseVon` gar nicht erst durch.
   const muster = adresse.replace(/_/g, '\\_')
-  const kandidaten = await rest.get<{ id: string; fn: string; mail: string; congregation_id: string }[]>(
-    `persons?select=id,fn,mail,congregation_id&mail=ilike.${wert(muster)}&limit=10`,
+  const kandidaten = await rest.get<{ id: string; fn: string; ln: string; mail: string; congregation_id: string }[]>(
+    `persons?select=id,fn,ln,mail,congregation_id&mail=ilike.${wert(muster)}&limit=10`,
   )
   if (kandidaten.length === 0) return
 
@@ -273,7 +273,7 @@ async function linksPerMail(adresse: string, sprache: string | null, jetzt: numb
      */
     const neu = linkErzeugen(new Date(jetzt))
     const mail = linkMail(sprache, {
-      name: person.fn,
+      person,
       versammlung: await versammlungVon(person.congregation_id),
       url: anmeldeUrl(APP_URL, neu.token),
       code: codeAnzeige(neu.code),

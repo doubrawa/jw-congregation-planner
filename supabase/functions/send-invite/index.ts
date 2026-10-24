@@ -74,8 +74,8 @@ Deno.serve(async (req: Request) => {
     if (senden && !bereit) return json({ links: [], mailBereit: false })
 
     const [persons, versammlung] = await Promise.all([
-      rest.get<{ id: string; fn: string; mail: string }[]>(
-        `persons?select=id,fn,mail&congregation_id=eq.${wert(cong)}&id=in.(${ids.map(wert).join(',')})`,
+      rest.get<{ id: string; fn: string; ln: string; mail: string }[]>(
+        `persons?select=id,fn,ln,mail&congregation_id=eq.${wert(cong)}&id=in.(${ids.map(wert).join(',')})`,
       ),
       rest.get<{ name: string }[]>(`congregations?select=name&id=eq.${wert(cong)}`),
     ])
@@ -97,7 +97,7 @@ Deno.serve(async (req: Request) => {
       if (senden && adresse) {
         if (!ersteMail) await pause(MAIL_ABSTAND_MS)
         ersteMail = false
-        const mail = linkMail(lang, { name: person.fn, versammlung: versammlungName, url, code, gueltigBis: neu.gueltigBis })
+        const mail = linkMail(lang, { person, versammlung: versammlungName, url, code, gueltigBis: neu.gueltigBis })
         gesendet = await mailSenden(MAIL, adresse, mail)
         if (gesendet) await alsGesendet(rest, person.id)
       }

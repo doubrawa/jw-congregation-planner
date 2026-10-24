@@ -21,12 +21,13 @@ const link: AusgestellterLink = {
   gesendet: false,
 }
 const ABSATZ = '\n\n'
+const anton = { fn: 'Anton', ln: 'Alt' }
 
 describe('Der Text der Nachricht', () => {
   it('kommt in der Sprache der Versammlung — ihr Wörterbuch lädt die App selbst nach', async () => {
     // Zuerst, solange das polnische Overlay noch nicht geladen ist: Sonst stünde
     // still der englische Rückfall da.
-    const n = await linkNachricht({ fn: 'Anton' }, link, { lang: 'pl', versammlung: 'Musterstadt' })
+    const n = await linkNachricht(anton, link, { lang: 'pl', versammlung: 'Musterstadt' })
     expect(n.titel).toBe('Twój dostęp do zboru Musterstadt')
     expect(n.text).toContain('Cześć Anton')
     expect(n.text).toContain('14 listopada')
@@ -34,11 +35,16 @@ describe('Der Text der Nachricht', () => {
 
   it('trägt Link und Code unverändert — der Code auf eigener Zeile, so wie man ihn abtippt', async () => {
     for (const lang of ['de', 'fr', 'ar'] as const) {
-      const n = await linkNachricht({ fn: 'Anton' }, link, { lang, versammlung: 'Musterstadt' })
+      const n = await linkNachricht(anton, link, { lang, versammlung: 'Musterstadt' })
       expect(n.text, lang).toContain(link.url)
       expect(n.text, lang).toContain('\nK7RD-2QWM\n')
       expect(n.text, lang).not.toMatch(/\{\w+\}/)
     }
+  })
+
+  it('grüßt wie die E-Mail: ohne Vornamen mit dem Nachnamen — bis zum 24.10.2026 stand „Hallo ," da', async () => {
+    const n = await linkNachricht({ fn: '', ln: 'Krüger' }, link, { lang: 'de', versammlung: 'Musterstadt' })
+    expect(n.text).toMatch(/^Hallo Krüger,\n/)
   })
 
   it('in jeder Sprache: die E-Mail ohne ihre letzten zwei Absätze, dann die Ältesten statt „Link senden"', async () => {
@@ -46,7 +52,7 @@ describe('Der Text der Nachricht', () => {
     for (const { code } of APP_LANGS) {
       const d = dict(code)
       const mail = d.linkMailText.split(ABSATZ)
-      const n = await linkNachricht({ fn: 'Anton' }, link, { lang: code, versammlung: 'Musterstadt' })
+      const n = await linkNachricht(anton, link, { lang: code, versammlung: 'Musterstadt' })
       const absaetze = n.text.trimEnd().split(ABSATZ)
       // Ein Absatz weniger als die E-Mail: Der vorletzte wird ersetzt, der letzte („Du bekommst diese E-Mail …") fällt weg.
       expect(absaetze, `${code}: Absätze`).toHaveLength(mail.length - 1)

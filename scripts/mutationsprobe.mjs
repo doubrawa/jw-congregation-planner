@@ -1201,8 +1201,8 @@ export const KATALOG = [
     id: 'einladung-eigene-versammlung',
     datei: 'supabase/functions/send-invite/index.ts',
     regel: 'Links und Mails nur für Personen der eigenen Versammlung — kein offenes Mail-Relay.',
-    suchen: '        `persons?select=id,fn,mail&congregation_id=eq.${wert(cong)}&id=in.(${ids.map(wert).join(\',\')})`,',
-    ersetzen: '        `persons?select=id,fn,mail&id=in.(${ids.map(wert).join(\',\')})`,',
+    suchen: '        `persons?select=id,fn,ln,mail&congregation_id=eq.${wert(cong)}&id=in.(${ids.map(wert).join(\',\')})`,',
+    ersetzen: '        `persons?select=id,fn,ln,mail&id=in.(${ids.map(wert).join(\',\')})`,',
   },
   {
     id: 'einladung-ohne-absender',
@@ -8806,8 +8806,30 @@ export const KATALOG = [
     id: 'send-invite-mail-code',
     datei: 'supabase/functions/send-invite/index.ts',
     regel: 'Die Mail des Admins trägt denselben Code wie der Zettel.',
-    suchen: '        const mail = linkMail(lang, { name: person.fn, versammlung: versammlungName, url, code, gueltigBis: neu.gueltigBis })\n',
-    ersetzen: "        const mail = linkMail(lang, { name: person.fn, versammlung: versammlungName, url, code: '', gueltigBis: neu.gueltigBis })\n",
+    suchen: '        const mail = linkMail(lang, { person, versammlung: versammlungName, url, code, gueltigBis: neu.gueltigBis })\n',
+    ersetzen: "        const mail = linkMail(lang, { person, versammlung: versammlungName, url, code: '', gueltigBis: neu.gueltigBis })\n",
+  },
+  // Gruß ohne Vornamen (24.10.2026): mit dem Nachnamen — und der muss mitgeholt werden.
+  {
+    id: 'anrede-ohne-vorname',
+    datei: 'supabase/functions/_shared/anmelde-mail.ts',
+    regel: 'Ohne Vornamen grüßt die Anmelde-Mail mit dem Nachnamen — nicht „Hallo ,".',
+    suchen: '  return fn.trim() || ln.trim()\n',
+    ersetzen: '  return fn.trim()\n',
+  },
+  {
+    id: 'send-invite-nachname-geholt',
+    datei: 'supabase/functions/send-invite/index.ts',
+    regel: 'send-invite holt den Nachnamen mit — ohne ihn grüßte die Mail einer Person ohne Vornamen mit „Hallo ,".',
+    suchen: 'persons?select=id,fn,ln,mail&congregation_id',
+    ersetzen: 'persons?select=id,fn,mail&congregation_id',
+  },
+  {
+    id: 'anmelden-nachname-geholt',
+    datei: 'supabase/functions/anmelden/index.ts',
+    regel: '„Link senden" auf der Anmeldeseite holt den Nachnamen mit — ohne ihn grüßte die Mail einer Person ohne Vornamen mit „Hallo ,".',
+    suchen: 'persons?select=id,fn,ln,mail,congregation_id&mail=ilike',
+    ersetzen: 'persons?select=id,fn,mail,congregation_id&mail=ilike',
   },
   {
     id: 'mailentwurf-code',

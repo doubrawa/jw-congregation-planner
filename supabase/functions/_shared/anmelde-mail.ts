@@ -12,8 +12,8 @@ import { fuellen } from './texte.ts'
 
 /** Was in die E-Mail eingesetzt wird. */
 export interface LinkMailWerte {
-  /** Vorname der Person. */
-  name: string
+  /** Die Person — gegrüßt mit dem Vornamen, sonst mit dem Nachnamen (`anrede`). */
+  person: { fn: string; ln: string }
   /** Name der Versammlung (`congregations.name`). */
   versammlung: string
   /** Der Anmelde-Link (`anmeldeUrl`). */
@@ -44,16 +44,34 @@ export function linkDatum(gueltigBis: string, lang: string | null | undefined): 
   }
 }
 
-/** Betreff und Text der E-Mail in der Sprache der Versammlung. */
-export function linkMail(lang: string | null | undefined, werte: LinkMailWerte): { betreff: string; text: string } {
-  const texte = linkMailTexte(lang)
-  const einsetzen = {
-    name: werte.name,
+/**
+ * **Mit welchem Namen die E-Mail grüßt:** mit dem Vornamen, sonst mit dem
+ * Nachnamen — eine Person braucht nur einen der beiden. Bis zum 24.10.2026
+ * stand ohne Vornamen „Hallo ," da (Review). Das Blatt „Link senden" nennt sie
+ * genauso.
+ */
+export function anrede({ fn, ln }: { fn: string; ln: string }): string {
+  return fn.trim() || ln.trim()
+}
+
+/**
+ * Was in die Platzhalter kommt — in der E-Mail und in der Nachricht, die der
+ * Admin teilt (`linkNachricht` in der App): Beide grüßen und datieren gleich.
+ */
+export function linkMailEinsetzen(lang: string | null | undefined, werte: LinkMailWerte): Record<string, string> {
+  return {
+    name: anrede(werte.person),
     versammlung: werte.versammlung,
     url: werte.url,
     code: werte.code,
     datum: linkDatum(werte.gueltigBis, lang),
   }
+}
+
+/** Betreff und Text der E-Mail in der Sprache der Versammlung. */
+export function linkMail(lang: string | null | undefined, werte: LinkMailWerte): { betreff: string; text: string } {
+  const texte = linkMailTexte(lang)
+  const einsetzen = linkMailEinsetzen(lang, werte)
   return { betreff: fuellen(texte.betreff, einsetzen), text: `${fuellen(texte.text, einsetzen)}\n` }
 }
 

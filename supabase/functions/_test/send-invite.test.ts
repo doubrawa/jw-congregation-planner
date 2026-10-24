@@ -15,7 +15,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { pruefsumme } from '../_shared/anmeldung.ts'
-import { filterWert, jsonRes } from './attrappe.ts'
+import { filterWert, jsonRes, nurSpalten } from './attrappe.ts'
 
 /* ---- Fixture ------------------------------------------------------------- */
 
@@ -36,12 +36,14 @@ const P_ANNA = '11111111-1111-4111-8111-111111111111'
 const P_BERT = '22222222-2222-4222-8222-222222222222'
 const P_OHNE = '33333333-3333-4333-8333-333333333333'
 const P_FREMD = '44444444-4444-4444-8444-444444444444' // gehört einer anderen Versammlung
+const P_KRUEGER = '55555555-5555-4555-8555-555555555555' // nur mit Nachnamen angelegt
 
 /** Die Versammlung des Aufrufers — und nur sie. */
 const PERSONS = [
-  { id: P_ANNA, fn: 'Anna', mail: 'anna@example.org' },
-  { id: P_BERT, fn: 'Bert', mail: ' bert@example.org ' },
-  { id: P_OHNE, fn: 'Ohne', mail: '' }, // keine Adresse → Zettel
+  { id: P_ANNA, fn: 'Anna', ln: 'Alt', mail: 'anna@example.org' },
+  { id: P_BERT, fn: 'Bert', ln: 'Brand', mail: ' bert@example.org ' },
+  { id: P_OHNE, fn: 'Ohne', ln: 'Adresse', mail: '' }, // keine Adresse → Zettel
+  { id: P_KRUEGER, fn: '', ln: 'Krüger', mail: 'krueger@example.org' },
 ]
 
 interface Mail {
@@ -77,10 +79,10 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   aufrufe.push({ method, path, body: init?.body === undefined ? undefined : JSON.parse(String(init.body)) })
   if (path.startsWith('members')) return jsonRes(MEMBERS[authUser ?? ''] ?? [])
   if (path.startsWith('persons')) {
-    // Die Attrappe wertet den Filter aus: nur die eigene Versammlung, nur die Ids.
+    // Die Attrappe wertet den Filter aus: nur die eigene Versammlung, nur die Ids, nur die verlangten Spalten.
     if (filterWert(path, 'congregation_id') !== CONG) return jsonRes([])
     const ids = /[?&]id=in\.\(([^)]*)\)/.exec(path)?.[1]?.split(',').map(decodeURIComponent) ?? []
-    return jsonRes(PERSONS.filter((p) => ids.includes(p.id)))
+    return jsonRes(nurSpalten(PERSONS.filter((p) => ids.includes(p.id)), path))
   }
   if (path.startsWith('congregations')) return jsonRes([{ name: 'Musterstadt' }])
   if (path.startsWith('anmelde_links')) {
@@ -297,6 +299,12 @@ describe('send-invite: die E-Mail', () => {
   it('ohne Sprachangabe oder mit unbekannter deutsch', async () => {
     await call({ ...fuerAnna, lang: 'gibt-es-nicht' })
     expect(mails[0]?.text).toMatch(/^Hallo Anna,/)
+  })
+
+  it('ohne Vornamen grüßt sie mit dem Nachnamen — bis zum 24.10.2026 stand „Hallo ," da', async () => {
+    await call({ personIds: [P_KRUEGER], senden: true })
+    expect(mails[0]?.to).toBe('krueger@example.org')
+    expect(mails[0]?.text).toMatch(/^Hallo Krüger,\n/)
   })
 
   it('gesendet heißt: vermerkt (gesendet_at) — ein abgelehnter Versand nicht', async () => {

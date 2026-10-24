@@ -1,7 +1,13 @@
+import type { LinkMailWerte } from '../../supabase/functions/_shared/anmelde-mail.ts'
 import { fuellen } from '../../supabase/functions/_shared/texte.ts'
 import type { Lang, Person } from '../data/types'
 import { dict, loadOverlay } from '../i18n/ui'
 import type { AusgestellterLink } from '../lib/links-ausstellen'
+
+/** Was E-Mail und Nachricht einsetzen: wen sie grüßen, Link und Code, bis wann sie gelten. */
+function mailWerte(person: Pick<Person, 'fn' | 'ln'>, link: AusgestellterLink, versammlung: string): LinkMailWerte {
+  return { person, versammlung, url: link.url, code: link.code, gueltigBis: link.gueltigBis }
+}
 
 /**
  * **Die E-Mail mit dem Link als Entwurf im eigenen Mail-Programm**
@@ -10,12 +16,12 @@ import type { AusgestellterLink } from '../lib/links-ausstellen'
  * nachgeladen, weil er alle Sprachen der E-Mail mitbringt.
  */
 export async function linkMailEntwurf(
-  person: Pick<Person, 'fn' | 'mail'>,
+  person: Pick<Person, 'fn' | 'ln' | 'mail'>,
   link: AusgestellterLink,
   { lang, versammlung }: { lang: string; versammlung: string },
 ): Promise<string> {
   const { linkMail } = await import('../../supabase/functions/_shared/anmelde-mail.ts')
-  const mail = linkMail(lang, { name: person.fn, versammlung, url: link.url, code: link.code, gueltigBis: link.gueltigBis })
+  const mail = linkMail(lang, mailWerte(person, link, versammlung))
   // Auch die Adresse kodieren, nicht nur Betreff und Text: Ein `?` oder `&`
   // darin hängt sonst eigene Kopfzeilen an den Entwurf — `a@b.de?bcc=…` setzt
   // beim Öffnen eine stille Kopie. Die Adresse ist ein Feld, das ein anderer
@@ -61,13 +67,13 @@ const NUR_IN_DER_MAIL = 2
  * Code muss sich so kopieren lassen, wie er dasteht.
  */
 export async function linkNachricht(
-  person: Pick<Person, 'fn'>,
+  person: Pick<Person, 'fn' | 'ln'>,
   link: AusgestellterLink,
   { lang, versammlung }: { lang: Lang; versammlung: string },
 ): Promise<LinkNachricht> {
-  const [{ linkDatum }] = await linkTexteLaden(lang)
+  const [{ linkMailEinsetzen }] = await linkTexteLaden(lang)
   const d = dict(lang)
-  const werte = { name: person.fn, versammlung, url: link.url, code: link.code, datum: linkDatum(link.gueltigBis, lang) }
+  const werte = linkMailEinsetzen(lang, mailWerte(person, link, versammlung))
   const absaetze = [...d.linkMailText.split(ABSATZ).slice(0, -NUR_IN_DER_MAIL), d.linkNachrichtSchluss]
   return { titel: fuellen(d.linkMailBetreff, werte), text: `${fuellen(absaetze.join(ABSATZ), werte)}\n` }
 }
