@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest'
 /**
  * **Jedes Muster der Legende hat die Farbe seiner Felder** (Auswertung, T126).
  *
- * Muster und Feld sind getrennte CSS-Regeln: `.aw-muster.is-hilfsdienst` in der
- * Legende, `.aw-wert.is-hilfsdienst` im Balken. Bis zum 17.10.2026 trugen die
+ * Muster und Feld sind getrennte CSS-Regeln: `.aw-muster.is-leer` in der
+ * Legende, `.aw-zelle.is-nie` in der Tabelle. Bis zum 17.10.2026 trugen die
  * Wochen einer Person `--umriss` neben einer Legende in `--text3`, und das
  * „nie" im Wartebalken `--text2` statt `--text3` wie seine Legende (Review).
  * Die Legende erklärte damit eine Farbe, die im Diagramm nicht vorkam. Seit dem
@@ -35,15 +35,12 @@ function farben(): Map<string, Set<string>> {
   return out
 }
 
-/** Jedes Legendenmuster mit den Feldern, die es erklärt. */
+/**
+ * Jedes Legendenmuster mit den Feldern, die es erklärt. Die Muster der Balken
+ * (Zahl, Feld, Strich, darüber, darunter) sind mit den Balken gegangen (T138).
+ */
 const PAARE: Array<[string, string[]]> = [
-  ['.aw-muster.is-andere', ['.aw-wert']],
-  ['.aw-muster.is-leer', ['.aw-nie', '.aw-mini.is-nie', '.aw-zelle.is-nie']],
-  ['.aw-muster.is-band', ['.aw-band']],
-  ['.aw-muster.is-strich', ['.aw-strich']],
-  ['.aw-muster.is-ueber', ['.aw-wert.is-ueber']],
-  ['.aw-muster.is-unter', ['.aw-luecke']],
-  ['.aw-muster.is-hilfsdienst', ['.aw-wert.is-hilfsdienst']],
+  ['.aw-muster.is-leer', ['.aw-mini.is-nie', '.aw-zelle.is-nie']],
   ['.aw-muster.is-stufe1', ['.aw-zelle.is-stufe1']],
   ['.aw-muster.is-stufe2', ['.aw-zelle.is-stufe2']],
   ['.aw-muster.is-stufe3', ['.aw-zelle.is-stufe3']],

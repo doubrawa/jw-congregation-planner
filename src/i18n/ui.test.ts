@@ -66,9 +66,10 @@ describe('UI-Wörterbücher (Fallback-Kette DE ← EN ← Sprache)', () => {
      */
     const MINDESTENS_ZWEI = new Set(['dublettenRow']) // zählt Dubletten, also nie 1
     // „Seite {n} von {m}", „Schritt {n} von {m}" (Film „Erste Schritte"), „{n}
-    // und mehr" (Legende der Auswertung): Auf die Zahl folgt eine Präposition
-    // oder ein „und", kein Nomen — es gibt nichts zu beugen.
-    const KEIN_NOMEN = new Set(['seiteVon', 'ersteSchritteSchritt', 'awUndMehr'])
+    // und mehr" (Legende der Auswertung), „{n} mehr", „{n} weniger" (Marken der
+    // Auswertung, T138): Auf die Zahl folgt eine Präposition, ein „und" oder
+    // ein Vergleichswort, kein Nomen — es gibt nichts zu beugen.
+    const KEIN_NOMEN = new Set(['seiteVon', 'ersteSchritteSchritt', 'awUndMehr', 'awMehrN', 'awWenigerN'])
     const falsch = Object.entries(DE as Record<string, string>)
       .filter(([key, text]) => /\{n\} \p{L}/u.test(text) && !MINDESTENS_ZWEI.has(key) && !KEIN_NOMEN.has(key))
       .map(([key]) => key)

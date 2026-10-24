@@ -1,11 +1,11 @@
 import { useMemo } from 'react'
-import { OBERE_GRENZE, personBild, lageVon, type FeldArt, type PersonWoche } from '../data/auswertung'
+import { personBild, lageVon, type FeldArt, type PersonWoche } from '../data/auswertung'
 import type { AbsenceSet } from '../data/absence'
 import { MEETING_TABS } from '../data/helpers'
 import type { FsInstance, MeetingTimes, Person, Week } from '../data/types'
 import { monatsErster } from '../data/weitere-plaene'
 import { fill } from '../i18n/useT'
-import { Legende, VergleichsBalken, WochenKalender, type KalenderMonat, type MusterArt } from './Diagramme'
+import { LageMarke, Legende, WochenKalender, type KalenderMonat, type MusterArt } from './Diagramme'
 import { gerundet, type Kontext } from './kontext'
 
 /**
@@ -157,7 +157,6 @@ export function PersonAnsicht({
         <h2 className="aw-gruppe-kopf">{t.awJeBereich}</h2>
         <ul className="aw-zeilen">
           {bild.bereiche.map((b) => {
-            const lage = lageVon(b.n, b.erwartet)
             const wann = b.vorWochen === null ? t.awNieImZeitraum : fill(t.awZuletztVor, { dauer: k.dauer(b.vorWochen) })
             // Ohne den Bereich eingeteilt: keine Erwartung, kein Vergleich — nur wie oft.
             if (!b.hat) {
@@ -175,16 +174,9 @@ export function PersonAnsicht({
               <li key={b.bereich} className="aw-zeile">
                 <div className="aw-zeile-kopf">
                   <span className="aw-zeile-name">{k.bereich(b.bereich)}</span>
-                  <span className="aw-zeile-zahl">{fill(t.awNErwartet, { n: k.zahl(b.n), e: k.zahl(gerundet(b.erwartet)) })}</span>
+                  <LageMarke lage={lageVon(b.n, b.erwartet)} n={b.n} erwartet={b.erwartet} k={k} />
                 </div>
-                <span className="klein-text">{wann}</span>
-                <VergleichsBalken
-                  n={b.n}
-                  erwartet={b.erwartet}
-                  lage={lage}
-                  max={Math.max(1, b.n, OBERE_GRENZE * b.erwartet) * 1.1}
-                  aria={`${k.bereich(b.bereich)}: ${fill(t.awNErwartet, { n: k.zahl(b.n), e: k.zahl(gerundet(b.erwartet)) })}`}
-                />
+                <span className="aw-zeile-zahl">{`${fill(t.awNErwartet, { n: k.zahl(b.n), e: k.zahl(gerundet(b.erwartet)) })} · ${wann}`}</span>
               </li>
             )
           })}

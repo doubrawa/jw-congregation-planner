@@ -8075,26 +8075,50 @@ export const KATALOG = [
     suchen: "    const lange = w.warten.filter((z) => z.lange).sort((a, b) => b.wartend - a.wartend || a.pid.localeCompare(b.pid))\n",
     ersetzen: "    const lange = w.warten.filter((z) => z.lange).sort((a, b) => a.pid.localeCompare(b.pid))\n",
   },
+  // „warte-balken-rot-nur-wer-lange-wartet" ist am 24.10.2026 gegangen (T138): Den
+  // Balken gibt es nicht mehr. Dieselbe Regel bewacht jetzt die Marke „wartet lange".
   {
-    id: "warte-balken-rot-nur-wer-lange-wartet",
-    datei: "src/auswertung/Diagramme.tsx",
-    regel: "Rot im Wartebalken ist nur, wer wirklich lange wartet — wer schon geplant ist, bleibt grau (17.10.2026).",
-    suchen: "  const darueber = lange ? wochen - grenze : 0\n",
-    ersetzen: "  const darueber = wochen - grenze\n",
+    id: 'wartezeit-marke-nur-wer-lange-wartet',
+    datei: 'src/auswertung/WartezeitenAnsicht.tsx',
+    regel: '„wartet lange" steht nur, wer wirklich lange wartet — wer schon geplant ist, nicht (17.10.2026; seit T138 als Marke statt Rot im Balken).',
+    suchen: '                    {z.lange && <Marke art="problem" text={t.awWartetLange} />}\n',
+    ersetzen: '                    {z.wartend > 2 * (w.ueblich ?? 0) && <Marke art="problem" text={t.awWartetLange} />}\n',
+  },
+  {
+    id: 'wartezeit-zeile-nennt-ueblich',
+    datei: 'src/auswertung/WartezeitenAnsicht.tsx',
+    regel: 'Jede Zeile der Wartezeiten nennt den üblichen Abstand: „seit 14 Wochen · üblich: 6 Wochen" (T138).',
+    suchen: '                ueblich,\n',
+    ersetzen: '',
+  },
+  {
+    id: 'marke-gegen-gerundete-erwartung',
+    datei: 'src/auswertung/Diagramme.tsx',
+    regel: '„6 mehr" zählt gegen die gerundete Erwartung, die daneben steht — nicht „5,6 mehr" (T138).',
+    suchen: '  const abstand = k.zahl(Math.abs(n - gerundet(erwartet)))\n',
+    ersetzen: '  const abstand = k.zahl(Math.abs(n - erwartet))\n',
+  },
+  {
+    id: 'verteilung-zeile-zaehlt-mit-hilfsdiensten',
+    datei: 'src/auswertung/VerteilungAnsicht.tsx',
+    regel: 'Im Vergleich mit den Hilfsdiensten heißt die Zahl der Zeile „Mit Hilfsdiensten", nicht „Aufgaben" (T138).',
+    suchen: '                      fill(t[TEXT_DES_VERGLEICHS[vergleich]], { n: k.zahl(z.n), e: k.zahl(gerundet(z.erwartet)) }),\n',
+    ersetzen: '                      fill(t.awTextAufgaben, { n: k.zahl(z.n), e: k.zahl(gerundet(z.erwartet)) }),\n',
+  },
+  {
+    id: 'person-bereich-marke-nach-lage',
+    datei: 'src/auswertung/PersonAnsicht.tsx',
+    regel: 'Bei der Person sagt jeder eigene Bereich, wie er steht — „mehr" und „weniger", nicht überall „passt" (T138).',
+    suchen: 'lage={lageVon(b.n, b.erwartet)}',
+    ersetzen: 'lage="rahmen"',
   },
   // „last-zehn-oben-erst-ab-elf" ist am 18.10.2026 gegangen: Die Karte „Wie sich
   // die Last verteilt" ist mit der Jahresprobe fort (sie zeigte Struktur, keinen
   // Befund), an ihrer Stelle stehen die Engpässe.
   // „legende-farbe-hilfsdienst-woche" ist am 24.10.2026 gegangen: Die Felder einer
   // Person und ihre Muster teilen sich seit dem Kalender je eine Regel, auseinander
-  // laufen können sie nicht mehr. An ihrer Stelle der Balken, der eigene Regeln hat.
-  {
-    id: "legende-farbe-hilfsdienst-balken",
-    datei: "src/auswertung/auswertung.css",
-    regel: "Der Hilfsdienst im Balken „Mit Hilfsdiensten“ hat die Farbe seines Legendenmusters (Review 17.10.2026).",
-    suchen: ".aw-wert.is-hilfsdienst {\n  background: var(--text3);\n",
-    ersetzen: ".aw-wert.is-hilfsdienst {\n  background: var(--umriss);\n",
-  },
+  // laufen können sie nicht mehr. „legende-farbe-hilfsdienst-balken", die an ihre
+  // Stelle trat, ging am selben Tag mit dem Balken „Mit Hilfsdiensten" (T138).
   {
     id: "wochen-person-beides",
     datei: "src/data/auswertung.ts",
@@ -8193,13 +8217,8 @@ export const KATALOG = [
     suchen: "                        <span className={e.absage ? 'is-absage' : undefined}>{e.text}</span>\n",
     ersetzen: "                        <span>{e.text}</span>\n",
   },
-  {
-    id: "legende-farbe-nie-im-wartebalken",
-    datei: "src/auswertung/auswertung.css",
-    regel: "„Nie im Jahr“ im Wartebalken hat die Farbe des Musters „nie“ der Legende (Review 17.10.2026).",
-    suchen: "  inset-inline-start: 0;\n  border: 1.5px dashed var(--text3);\n",
-    ersetzen: "  inset-inline-start: 0;\n  border: 1.5px dashed var(--text2);\n",
-  },
+  // „legende-farbe-nie-im-wartebalken" ist am 24.10.2026 mit dem Wartebalken
+  // gegangen (T138): „nie im Jahr" steht jetzt als Wort in der Zeile.
   {
     id: "matrix-legende-ziffern-der-sprache",
     datei: "src/auswertung/EinseitigAnsicht.tsx",

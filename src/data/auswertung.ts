@@ -502,8 +502,6 @@ export interface Verteilung {
   oft: VerteilungsZeile[]
   rahmen: VerteilungsZeile[]
   selten: VerteilungsZeile[]
-  /** Das Ende der Achse: die größte Zahl oder die obere Grenze, wer darüber liegt. */
-  max: number
 }
 
 /** Liegt `n` bei dieser Erwartung über, in oder unter dem Üblichen? */
@@ -545,7 +543,6 @@ export function verteilung(g: Grundlage, persons: readonly Person[], vergleich: 
     oft: nach('oft').sort((a, b) => verhaeltnis(b) - verhaeltnis(a)),
     rahmen: nach('rahmen').sort((a, b) => b.n - a.n || b.erwartet - a.erwartet),
     selten: nach('selten').sort((a, b) => verhaeltnis(a) - verhaeltnis(b)),
-    max: Math.max(1, ...zeilen.map((z) => Math.max(z.n, OBERE_GRENZE * z.erwartet))),
   }
 }
 

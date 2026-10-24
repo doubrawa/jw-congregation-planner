@@ -1,92 +1,51 @@
 import { Fragment } from 'react'
-import { LANGE_AB, OBERE_GRENZE, UNTERE_GRENZE, type FeldArt, type Lage, type PersonWoche } from '../data/auswertung'
+import type { FeldArt, Lage, PersonWoche } from '../data/auswertung'
 import { MEETING_TABS } from '../data/helpers'
+import { fill } from '../i18n/useT'
+import { gerundet, type Kontext } from './kontext'
 
 /**
  * **Die Diagramme der Auswertung** (T126) — aus Kästchen gebaut, nicht aus einer
  * Bibliothek: So gehen sie offline, kippen von rechts nach links, wachsen mit
  * der Schriftstufe und nehmen die Farben von Hell und Dunkel aus den Tokens.
+ * Gestrichelt heißt überall „nie" oder „fehlt" (wie „offen" in der App), rot
+ * „zu viel".
  *
- * **Eine Sprache für alle**, wie auf der Leinwand: grauer Balken = Zahl, Strich
- * = erwartet, Feld dahinter = üblich, rot = darüber, gestrichelt = darunter
- * oder nie (wie „offen" in der App). Jedes Diagramm hat einen Satz für
- * Vorleseprogramme (`aria`), und jede Ansicht hat eine Tabelle daneben.
+ * Zuteilungen gegen die Erwartung und Wartezeiten stehen seit dem 24.10.2026
+ * in Worten da (`Marke`), nicht mehr als Balken mit Feld und Strich: „Das
+ * erschließt sich nicht jedem so einfach, wie das zu lesen ist" (Betreiber,
+ * T138).
  */
 
 const anteil = (x: number, max: number): string => `${Math.max(0, Math.min(100, (x / max) * 100))}%`
 
-/**
- * Zuteilungen gegen die Erwartung. `zweiteilig`: Aufgaben und Hilfsdienste als
- * zwei Stücke eines Balkens (der Vergleich mit den Hilfsdiensten).
- */
-export function VergleichsBalken({
-  n,
-  erwartet,
-  hilfsdienste = 0,
-  zweiteilig = false,
-  lage,
-  max,
-  aria,
-}: {
-  n: number
-  erwartet: number
-  hilfsdienste?: number
-  zweiteilig?: boolean
-  lage: Lage
-  max: number
-  aria: string
-}) {
-  const unten = UNTERE_GRENZE * erwartet
-  const oben = OBERE_GRENZE * erwartet
-  const aufgaben = zweiteilig ? n - hilfsdienste : n
-  return (
-    <div className="aw-balken" role="img" aria-label={aria}>
-      <span className="aw-band" style={{ insetInlineStart: anteil(unten, max), width: anteil(oben - unten, max) }} />
-      <span className="aw-wert" style={{ width: anteil(aufgaben, max) }} />
-      {zweiteilig && hilfsdienste > 0 && (
-        <span className="aw-wert is-hilfsdienst" style={{ insetInlineStart: anteil(aufgaben, max), width: anteil(hilfsdienste, max) }} />
-      )}
-      {lage === 'oft' && <span className="aw-wert is-ueber" style={{ insetInlineStart: anteil(oben, max), width: anteil(n - oben, max) }} />}
-      {lage === 'selten' && <span className="aw-luecke" style={{ insetInlineStart: anteil(n, max), width: anteil(unten - n, max) }} />}
-      <span className="aw-strich" style={{ insetInlineStart: anteil(erwartet, max) }} />
-    </div>
-  )
+/** Rot, wenn etwas zu viel ist; gestrichelt, wenn etwas fehlt; sonst grau. */
+export type MarkenArt = 'problem' | 'fehlt' | 'ruhig'
+
+const MARKEN_KLASSE: Record<MarkenArt, string> = {
+  problem: 'aw-marke is-problem',
+  fehlt: 'aw-marke is-fehlt',
+  ruhig: 'aw-marke is-ruhig',
 }
 
+/** Ein Befund in einem Wort, rechts neben dem Namen: „6 mehr", „passt", „wartet lange". */
+export function Marke({ art, text }: { art: MarkenArt; text: string }) {
+  return <span className={MARKEN_KLASSE[art]}>{text}</span>
+}
+
+const MARKE_DER_LAGE = { oft: 'problem', rahmen: 'ruhig', selten: 'fehlt' } as const satisfies Record<Lage, MarkenArt>
+
 /**
- * Die Wartezeit (Wochen seit dem letzten Mal, nur die, in denen die Person
- * hätte drankommen können): das Feld reicht bis `LANGE_AB`-mal so lange wie
- * üblich, was darüber liegt, ist rot — aber nur, wenn die Person wirklich lange
- * wartet: Wer schon geplant ist oder insgesamt über seiner Erwartung liegt,
- * wartet nicht, sein Balken bleibt grau. Wer im Jahr nie dran war (`nie`),
- * dessen Balken ist gestrichelt.
+ * Zuteilungen gegen die Erwartung: „6 mehr", „passt", „3 weniger". Gezählt
+ * wird gegen die gerundete Erwartung, die daneben steht — „7 · erwartet 1"
+ * und „6 mehr" gehen zusammen auf. Auffällig ist erst, wer drei daneben liegt
+ * (`MINDESTABSTAND`); gegen die gerundete Erwartung bleiben es mindestens drei,
+ * ein „0 mehr" gibt es nicht.
  */
-export function WarteBalken({
-  wochen,
-  nie = false,
-  ueblich,
-  lange,
-  max,
-  aria,
-}: {
-  wochen: number
-  nie?: boolean
-  ueblich: number
-  lange: boolean
-  max: number
-  aria: string
-}) {
-  const grenze = LANGE_AB * ueblich
-  const darueber = lange ? wochen - grenze : 0
-  const bis = anteil(darueber > 0 ? grenze : wochen, max)
-  return (
-    <div className="aw-balken" role="img" aria-label={aria}>
-      <span className="aw-band" style={{ width: anteil(grenze, max) }} />
-      {nie ? <span className="aw-nie" style={{ width: bis }} /> : <span className="aw-wert" style={{ width: bis }} />}
-      {darueber > 0 && <span className="aw-wert is-ueber" style={{ insetInlineStart: anteil(grenze, max), width: anteil(darueber, max) }} />}
-      <span className="aw-strich" style={{ insetInlineStart: anteil(ueblich, max) }} />
-    </div>
-  )
+export function LageMarke({ lage, n, erwartet, k }: { lage: Lage; n: number; erwartet: number; k: Kontext }) {
+  const abstand = k.zahl(Math.abs(n - gerundet(erwartet)))
+  const text = lage === 'oft' ? fill(k.t.awMehrN, { n: abstand }) : lage === 'selten' ? fill(k.t.awWenigerN, { n: abstand }) : k.t.awPasst
+  return <Marke art={MARKE_DER_LAGE[lage]} text={text} />
 }
 
 /**
@@ -127,9 +86,7 @@ export interface KalenderMonat {
 
 /**
  * Feld und Legende tragen dieselbe Klasse — so haben sie dieselbe Farbe
- * (`auswertung-legende.test.ts`). Der Hilfsdienst heißt hier `is-dienst`:
- * `is-hilfsdienst` ist das Muster des Balkens „Mit Hilfsdiensten", in einem
- * anderen Grau.
+ * (`auswertung-legende.test.ts`).
  */
 const FELD_KLASSE: Record<Exclude<FeldArt, null>, string> = {
   aufgabe: 'is-aufgabe',
@@ -194,13 +151,7 @@ export function WochenKalender({ jahre }: { jahre: readonly { jahr: string; mona
 
 /** Ein Muster in der Legende — dieselbe Form wie im Diagramm. */
 export type MusterArt =
-  | 'andere'
   | 'leer'
-  | 'band'
-  | 'strich'
-  | 'ueber'
-  | 'unter'
-  | 'hilfsdienst'
   | 'stufe1'
   | 'stufe2'
   | 'stufe3'
@@ -214,13 +165,7 @@ export type MusterArt =
   | 'geplant'
 
 const MUSTER_KLASSE: Record<MusterArt, string> = {
-  andere: 'aw-muster is-andere',
   leer: 'aw-muster is-leer',
-  band: 'aw-muster is-band',
-  strich: 'aw-muster is-strich',
-  ueber: 'aw-muster is-ueber',
-  unter: 'aw-muster is-unter',
-  hilfsdienst: 'aw-muster is-hilfsdienst',
   stufe1: 'aw-muster is-stufe1',
   stufe2: 'aw-muster is-stufe2',
   stufe3: 'aw-muster is-stufe3',

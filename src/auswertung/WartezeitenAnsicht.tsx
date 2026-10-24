@@ -1,8 +1,7 @@
 import { useId, useState } from 'react'
-import { JAHR, ZEITRAUM_WOCHEN } from '../data/auswertung'
 import { fill } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
-import { Legende, Streifen, WarteBalken } from './Diagramme'
+import { Marke, Streifen } from './Diagramme'
 import { gerundet, type Kontext } from './kontext'
 
 /** So viele stehen unter „Wartet am längsten", bevor „Alle zeigen" den Rest bringt. */
@@ -12,6 +11,8 @@ const WARTEN_SICHTBAR = 8
  * **Wartezeiten** (Entwurf `HandyWartezeiten`): je Bereich, wer am längsten nicht
  * dran war — gegen den üblichen Abstand —, und wer schnell wieder dran ist.
  * Der Bereich steht in einer Auswahl: Eine Versammlung hat leicht ein Dutzend.
+ * In Worten statt als Balken (T138): „seit 14 Wochen · üblich: 6 Wochen", und
+ * wer wirklich lange wartet, mit „wartet lange".
  *
  * Immer über das ganze Jahr, gleich welcher Zeitraum oben gewählt ist
  * (Jahresprobe 18.10.2026): Gewartet wird seit dem letzten Mal. `bereich` hält
@@ -28,8 +29,9 @@ export function WartezeitenAnsicht({ k, bereich, onBereich }: { k: Kontext; bere
   const w = bereiche.find((b) => b.bereich === (bereich ?? (vorwahl?.art === 'wartet' ? vorwahl.bereich : null))) ?? bereiche[0]
   if (!w) return <p className="karte aw-leer">{t.awKeineDaten}</p>
   const alle = alleIn === w.bereich
-  const max = ZEITRAUM_WOCHEN[JAHR]
   const warten = alle ? w.warten : w.warten.slice(0, WARTEN_SICHTBAR)
+  // In jeder Zeile: So steht sie für sich, auch vorgelesen.
+  const ueblich = w.ueblich !== null && zahlBinden(`${t.awUeblich}: ${k.dauer(gerundet(w.ueblich))}`)
 
   return (
     <div className="aw-ansicht">
@@ -52,16 +54,12 @@ export function WartezeitenAnsicht({ k, bereich, onBereich }: { k: Kontext; bere
       {w.ueblich !== null && (
         <section className="karte aw-gruppe" aria-label={t.awWartetLaengsten}>
           <h2 className="aw-gruppe-kopf">{t.awWartetLaengsten}</h2>
-          <div className="aw-achse" aria-hidden="true">
-            <span>{k.zahl(0)}</span>
-            <span>{k.zahl(max / 2)}</span>
-            <span>{k.dauer(max)}</span>
-          </div>
           <ul className="aw-zeilen">
             {warten.map((z) => {
-              // „seit 20 Wochen · 2. Mai · davon nicht einteilbar: 4 Wochen · geplant: 26. Okt."
+              // „seit 20 Wochen · üblich: 6 Wochen · 2. Mai · davon nicht einteilbar: 4 Wochen · geplant: 26. Okt."
               const zeile = [
                 z.wochen === null ? t.awNieImJahr : fill(t.awSeit, { dauer: k.dauer(z.wochen) }),
+                ueblich,
                 z.zuletzt && k.datum(z.zuletzt),
                 z.wochen !== null && z.nichtEinteilbar > 0 && fill(t.awDavonNichtEinteilbar, { dauer: k.dauer(z.nichtEinteilbar) }),
                 z.ueber && t.awUeberErwartung,
@@ -75,16 +73,10 @@ export function WartezeitenAnsicht({ k, bereich, onBereich }: { k: Kontext; bere
                     <button type="button" className="aw-zeile-name" onClick={() => k.personOeffnen(z.pid)}>
                       {k.name(z.pid)}
                     </button>
-                    <span className="aw-zeile-zahl">{zeile}</span>
+                    {/* Nur wer wirklich lange wartet: Wer schon geplant ist oder insgesamt über seiner Erwartung liegt, wartet nicht (17.10.2026). */}
+                    {z.lange && <Marke art="problem" text={t.awWartetLange} />}
                   </div>
-                  <WarteBalken
-                    wochen={z.wartend}
-                    nie={z.wochen === null}
-                    ueblich={w.ueblich ?? 0}
-                    lange={z.lange}
-                    max={max}
-                    aria={`${k.name(z.pid)}: ${zeile}`}
-                  />
+                  <span className="aw-zeile-zahl">{zeile}</span>
                 </li>
               )
             })}
@@ -94,14 +86,6 @@ export function WartezeitenAnsicht({ k, bereich, onBereich }: { k: Kontext; bere
               {alle ? t.awWeniger : t.awAlleZeigen}
             </button>
           )}
-          <Legende
-            eintraege={[
-              ['strich', zahlBinden(`${t.awUeblich}: ${k.dauer(gerundet(w.ueblich))}`)],
-              ['band', t.awBisDoppelt],
-              ['ueber', t.awLaenger],
-              ['leer', t.awNieImJahr],
-            ]}
-          />
         </section>
       )}
 

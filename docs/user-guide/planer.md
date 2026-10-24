@@ -746,9 +746,10 @@ nicht.
   Hilfsdiensten**. Den zweiten Vergleich gibt es, weil „Automatisch" die
   Hilfsdienste nach der Gesamtlast verteilt: Wer viele Aufgaben hat, bekommt
   weniger Hilfsdienste.
-- Im **Diagramm** ist der graue Balken die Zahl, der Strich die Erwartung, das
-  Feld dahinter der übliche Bereich; rot ist, was darüber liegt, gestrichelt,
-  was darunter fehlt. Die **Tabelle** daneben zeigt dieselben Zahlen.
+- Jede Zeile nennt die Zahl gegen die Erwartung („Aufgaben: 7 · erwartet: 1“)
+  und sagt rechts neben dem Namen in einem Wort, wie es steht: **6 mehr** (rot),
+  **passt** (grau) oder **3 weniger** (gestrichelt). Gezählt wird gegen die
+  gerundete Erwartung, die in der Zeile steht.
 
 ### Einseitig verteilt
 
@@ -781,10 +782,15 @@ drankommen können: nicht abwesend, eine Zusammenkunft mit Plätzen des Bereichs
 fand statt, kein fester Platz wie die Leitung des Wachtturm-Studiums, schon
 dabei. Die übrigen stehen als **davon nicht einteilbar: …** dabei.
 
+Jede Zeile nennt die Wartezeit gegen den üblichen Abstand („seit 14 Wochen ·
+üblich: 6 Wochen“), dazu das letzte Mal; wer eine lange Wartezeit hat, trägt
+neben dem Namen rot **wartet lange**.
+
 Nicht lange wartet, wer im Bereich schon für diese oder eine kommende Woche
 eingeteilt ist (**geplant: …** – diese Zeilen stehen hinten) und wer übers Jahr
 insgesamt über der eigenen Erwartung liegt (**insgesamt über der Erwartung**):
-Wer viel zu tun hat, wartet nicht auf ein Gebet. Der Balken bleibt dann grau.
+Wer viel zu tun hat, wartet nicht auf ein Gebet. Bei ihnen steht dann kein
+**wartet lange**.
 Darunter **Schnell wieder dran**: wer mindestens dreimal dran war, mit
 höchstens halb so viel Abstand wie üblich – je Woche ein Feld.
 
@@ -831,8 +837,9 @@ die Hilfsdienste oft nur wenige Monate zurück.
 
 Ein Tipp auf einen Namen zeigt die Person: ihre Aufgaben gegen die Erwartung,
 ihre Hilfsdienste, wie oft sie abwesend war und wie oft sie abgesagt hat, ihre
-Wochen und je Bereich, wie oft und wann zuletzt – hinten die Bereiche, in denen
-sie eingeteilt war, ohne sie zu haben (**Bereich nicht vorhanden**, ohne
+Wochen und je Bereich, wie oft und wann zuletzt – mit **mehr**, **passt** oder
+**weniger** wie unter **Zu oft, zu selten**. Hinten stehen die Bereiche, in
+denen sie eingeteilt war, ohne sie zu haben (**Bereich nicht vorhanden**, ohne
 Erwartung).
 
 Die **Wochen** stehen als Kalender da: je Monat eine Zeile, der neueste oben.

@@ -8492,10 +8492,25 @@ echten Chrome mit Trennwörterbüchern (eigenes Skript auf dem T128-Werkzeug,
 die Werte wie beim Betreiber gesetzt), zwölf Sprachen, 320–768 px, Stufe
 1–1,45: vorher in 14 von 288 Lagen ein Bruch im Wort, danach in keiner.
 
-### T138 · Auswertung: Diagramme, die jeder lesen kann 🔧 ☐ offen
+### T138 · Auswertung: Diagramme, die jeder lesen kann 🔧 ✅ erledigt (24. Oktober 2026)
 
 „Die Auswertung Diagramme. gibt es eine Bessere Darstellung? das erschließt
 sich nicht jedem so einfach, wie das zu lesen ist"
+
+**Entschieden** (Betreiber, 24. Oktober): „A · Klartext" — keine Balken mehr,
+je Zeile die Zahl gegen die Erwartung und ein Wort; gezeigt waren daneben ein
+Balken von der Mitte aus und eine Lesehilfe über den alten Balken.
+
+**Umgesetzt:** In **Zu oft, zu selten** und bei den Bereichen einer Person steht
+rechts neben dem Namen „6 mehr" (rot), „passt" (grau) oder „3 weniger"
+(gestrichelt), gezählt gegen die gerundete Erwartung; darunter „Aufgaben: 7 ·
+erwartet: 1" wie im Hinweis. Die Wahl Diagramm/Tabelle und die Legende sind
+fort — die Zeilen sagen dieselben Zahlen, auch vorgelesen. In den
+**Wartezeiten** nennt jede Zeile „seit 14 Wochen · üblich: 6 Wochen", wer
+wirklich lange wartet, trägt rot „wartet lange"; Achse und Legende sind fort.
+Die Streifen unter „Schnell wieder dran" und die kleinen Balken je Bereich
+(Einseitig, Absagen) bleiben: Neben ihnen steht die Zahl. Die Engpässe ordnet
+T139 neu.
 
 ### T139 · Auswertung: die Engpässe prüfen ⚡ ☐ offen
 

@@ -237,38 +237,8 @@
   border-radius: 4px;
 }
 
-.aw-muster.is-andere {
-  background: var(--umriss);
-}
-
-.aw-muster.is-hilfsdienst {
-  background: var(--text3);
-}
-
 .aw-muster.is-leer {
   border: 1.5px dashed var(--text3);
-}
-
-.aw-muster.is-band {
-  height: 12px;
-  background: var(--band);
-}
-
-.aw-muster.is-strich {
-  width: 2px;
-  height: 14px;
-  border-radius: 0;
-  background: var(--text);
-}
-
-.aw-muster.is-ueber {
-  background: var(--problem);
-}
-
-.aw-muster.is-unter {
-  height: 0;
-  border-block-start: 2px dashed var(--text2);
-  border-radius: 0;
 }
 
 .aw-muster.is-stufe1,
@@ -392,76 +362,37 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ---- Balken gegen die Erwartung ------------------------------------------ */
+/* ---- Befund in einem Wort (T138) ----------------------------------------- */
 
-.aw-balken {
-  position: relative;
-  height: 14px;
-}
-
-.aw-band,
-.aw-wert,
-.aw-luecke,
-.aw-strich,
-.aw-nie {
-  position: absolute;
-}
-
-.aw-band {
-  inset-block: 0;
-  inset-inline-start: 0;
-  border-radius: 4px;
-  background: var(--band);
-}
-
-.aw-wert {
-  inset-block-start: 3px;
-  inset-inline-start: 0;
-  height: 8px;
-  border-radius: 4px;
-  background: var(--umriss);
-}
-
-.aw-wert.is-hilfsdienst {
-  background: var(--text3);
-}
-
-.aw-wert.is-ueber {
-  background: var(--problem);
-}
-
-/* „Darunter": das fehlende Stück als gestrichelte Linie — kein Kästchen, das
-   wie eine Kette aussähe (gesehen auf den Tafeln, 16.10.2026). */
-.aw-luecke {
-  inset-block-start: 6px;
-  height: 0;
-  border-block-start: 2px dashed var(--text2);
-}
-
-.aw-strich {
-  inset-block: -2px;
-  width: 2px;
-  margin-inline-start: -1px;
-  background: var(--text);
-}
-
-/* Im Jahr nie dran: der Balken gestrichelt, so lang, wie die Person gewartet
-   hat (`WarteBalken` setzt die Breite). Dieselbe Farbe wie das Muster „nie"
-   der Legende und jedes andere „nie" der Auswertung (Review 17.10.2026: hier
-   stand `--text2`). */
-.aw-nie {
-  inset-block: 2px;
-  inset-inline-start: 0;
-  border: 1.5px dashed var(--text3);
-  border-radius: 5px;
-}
-
-.aw-achse {
-  display: flex;
-  justify-content: space-between;
-  color: var(--text3);
-  font-size: calc(12px * var(--fs));
+/* „6 mehr", „passt", „3 weniger", „wartet lange" — rechts neben dem Namen,
+   wie die Marken der Vortragsplanung. Rot ist zu viel, gestrichelt fehlt etwas
+   (wie jedes „nie" der Auswertung), grau passt es. */
+/* Passt sie nicht neben den Namen, rückt sie darunter (`.aw-zeile-kopf` bricht
+   um); breiter als die Zeile wird sie nie. */
+.aw-marke {
+  flex: none;
+  max-width: 100%;
+  padding: 2px 9px;
+  border: 1.5px solid transparent;
+  border-radius: var(--r-pill);
+  font-size: calc(12.5px * var(--fs));
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+.aw-marke.is-problem {
+  background: var(--problem-flaeche);
+  color: var(--problem);
+}
+
+.aw-marke.is-fehlt {
+  border: 1.5px dashed var(--text3);
+  color: var(--text2);
+}
+
+.aw-marke.is-ruhig {
+  background: var(--feld);
+  color: var(--text2);
 }
 
 /* ---- Bereiche einer Person ----------------------------------------------- */
@@ -662,51 +593,6 @@
 .aw-zelle.is-ohne-bereich {
   border: 1.5px solid var(--text2);
   color: var(--text);
-}
-
-/* ---- Tabellen statt Diagramm --------------------------------------------- */
-
-/* Feste Spalten: Die Namen bekommen den meisten Platz, die Zahlen teilen sich
-   den Rest, und ein langer Kopf („Hilfsdienste", „Вспомогательные
-   обязанности") bricht um, statt die Tabelle über den Rand zu schieben — so
-   rollte die Seite am Handy waagerecht (gemessen 16.10.2026: 394 px auf 375). */
-.aw-tabelle {
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
-  font-size: calc(14px * var(--fs));
-  font-variant-numeric: tabular-nums;
-}
-
-.aw-tabelle thead th:first-child {
-  width: 40%;
-}
-
-.aw-tabelle th,
-.aw-tabelle td {
-  padding-block: 8px;
-  padding-inline-start: 8px;
-  border-block-start: 1px solid var(--linie);
-  -webkit-hyphens: auto;
-  hyphens: auto;
-  overflow-wrap: anywhere;
-  text-align: end;
-}
-
-.aw-tabelle thead th {
-  border-block-start: none;
-  color: var(--text3);
-  font-size: calc(12.5px * var(--fs));
-  font-weight: 700;
-}
-
-.aw-tabelle th:first-child {
-  padding-inline-start: 0;
-  text-align: start;
-}
-
-.aw-tabelle tbody th {
-  font-weight: 600;
 }
 
 /* ---- Streifen und Wochenfelder ------------------------------------------- */

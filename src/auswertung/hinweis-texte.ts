@@ -2,7 +2,8 @@ import type { EinseitigZeile, Hinweis, Vergleich } from '../data/auswertung'
 import { fill } from '../i18n/useT'
 import { gerundet, type Kontext } from './kontext'
 
-const TEXT_DES_VERGLEICHS = {
+/** Was eine Zeile zählt, im Hinweis wie in „Zu oft, zu selten": „Aufgaben: 7 · erwartet: 1". */
+export const TEXT_DES_VERGLEICHS = {
   aufgaben: 'awTextAufgaben',
   hilfsdienste: 'awTextGesamt',
 } as const satisfies Record<Vergleich, string>

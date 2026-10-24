@@ -13,7 +13,7 @@ import { fremdsprachigerBestand, type FremdBestand } from '../../tests/fremdspra
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { datumsFormat, monatsName, zeitspanne } from '../components/datum-anzeige'
 import { abwesenheitenVon } from '../data/absence'
-import { auswerten, TREFFPUNKT_BEREICH, ZEITRAEUME, type Einteilung, type Zeitraum } from '../data/auswertung'
+import { auswerten, lageVon, personBild, TREFFPUNKT_BEREICH, ZEITRAEUME, type Einteilung, type Zeitraum } from '../data/auswertung'
 import { displayName } from '../data/helpers'
 import { fromIso, tagNach } from '../data/meeting-dates'
 import { allePlaetze, platzKey } from '../data/plaetze'
@@ -24,7 +24,6 @@ import { dict, loadOverlay } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import { bereichsName, bereichsTeile } from '../personen/priv-label'
 import { AuswertungScreen } from './AuswertungScreen'
-import { WarteBalken } from './Diagramme'
 import { HINWEISE_SICHTBAR } from './Hinweise'
 import { zahlBinden } from '../i18n/zahl-binden'
 
@@ -619,9 +618,11 @@ describe('Wartezeiten: geplant und abwesend', () => {
     return [...abschnitt.querySelectorAll<HTMLElement>('.aw-zeile')]
   }
 
-  it('wer schon geplant ist, steht mit „geplant: …" hinten und wartet nicht mehr lange', () => {
-    // Der, der am längsten wartet, bekommt in der kommenden Woche einen Platz
-    // dieses Bereichs.
+  /**
+   * Der, der am längsten wartet, bekommt in der kommenden Woche einen Platz
+   * seines Bereichs — mit den Wartezeiten des Bereichs danach.
+   */
+  function wartenderGeplant() {
     const vorher = rechnung(zustand(JAHR)).wartezeiten
     const w = vorher.find((x) => x.ueblich !== null && x.warten.some((z) => z.lange))
     if (!w) throw new Error('niemand wartet lange')
@@ -633,11 +634,15 @@ describe('Wartezeiten: geplant und abwesend', () => {
     if (platz.art === 'helper') (kommend.mid.helpers[platz.svc.key] ??= [])[platz.pos] = zuteilung
     else Object.assign(platz.slot, zuteilung)
     const s = zustand({ weeks: [...JAHR.weeks, kommend], fsWeeks: [...JAHR.fsWeeks, []] })
-    const nachher = rechnung(s).wartezeiten.find((x) => x.bereich === w.bereich)!
-    expect(nachher.warten.find((z) => z.pid === wartet.pid)).toMatchObject({ geplant: tagNach(MONTAG, 7), lange: false })
+    return { s, pid: wartet.pid, nachher: rechnung(s).wartezeiten.find((x) => x.bereich === w.bereich)! }
+  }
+
+  it('wer schon geplant ist, steht mit „geplant: …" hinten und wartet nicht mehr lange', () => {
+    const { s, pid, nachher } = wartenderGeplant()
+    expect(nachher.warten.find((z) => z.pid === pid)).toMatchObject({ geplant: tagNach(MONTAG, 7), lange: false })
 
     const { container } = zeige(s)
-    const zeilen = wartezeitenZeilen(container, w.bereich)
+    const zeilen = wartezeitenZeilen(container, nachher.bereich)
     const geplant = fill(t.awGeplant, { datum: datumsFormat('de', 'tagMonatKurz').format(fromIso(tagNach(MONTAG, 7))) })
     const mitPlan = zeilen.filter((z) => z.querySelector('.aw-zeile-zahl')?.textContent?.includes(geplant))
     expect(mitPlan.length).toBe(nachher.warten.filter((z) => z.geplant !== null).length)
@@ -645,14 +650,28 @@ describe('Wartezeiten: geplant und abwesend', () => {
     expect(zeilen.slice(-mitPlan.length)).toEqual(mitPlan)
   })
 
-  it('rot ist nur, wer wirklich lange wartet — derselbe Abstand ohne „lange" bleibt grau', () => {
-    const balken = (lange: boolean) => render(<WarteBalken wochen={10} ueblich={2} lange={lange} max={52} aria="" />).container
-    expect(balken(true).querySelector('.aw-wert.is-ueber')).not.toBeNull()
-    cleanup()
-    const grau = balken(false)
-    expect(grau.querySelector('.aw-wert.is-ueber')).toBeNull()
-    // Der graue Balken reicht trotzdem bis zu den zehn Wochen.
-    expect((grau.querySelector('.aw-wert') as HTMLElement).style.width).toBe(`${(10 / 52) * 100}%`)
+  it('„wartet lange" steht nur, wer wirklich lange wartet — wer schon geplant ist, nicht (T138)', () => {
+    // Bis zum 24.10.2026 war das der rote Teil eines Balkens; der Geplante
+    // wartete so lange wie die anderen, sein Balken blieb grau.
+    const { s, pid, nachher } = wartenderGeplant()
+    const { container } = zeige(s)
+    const zeilen = wartezeitenZeilen(container, nachher.bereich)
+    const marke = (z: HTMLElement) => z.querySelector('.aw-marke.is-problem')?.textContent ?? null
+    expect(zeilen.map(marke)).toEqual(nachher.warten.map((z) => (z.lange ? t.awWartetLange : null)))
+    expect(nachher.warten.some((z) => z.lange)).toBe(true)
+    const name = displayName(DEMO.persons.find((p) => p.id === pid)!)
+    expect(marke(zeilen.find((z) => z.querySelector('.aw-zeile-name')?.textContent === name)!)).toBeNull()
+  })
+
+  it('jede Zeile nennt Wartezeit und üblichen Abstand — „seit 14 Wochen · üblich: 6 Wochen" (T138)', () => {
+    const w = rechnung(zustand(JAHR)).wartezeiten.find((x) => x.ueblich !== null && x.warten.some((z) => z.wochen !== null))!
+    const { container } = zeige(zustand(JAHR))
+    const zeilen = wartezeitenZeilen(container, w.bereich)
+    const dauer = (wochen: number) => zeitspanne(wochen, 'week', 'de')
+    const ueblich = zahlBinden(`${t.awUeblich}: ${dauer(Math.round(w.ueblich!))}`)
+    expect(zeilen.map((z) => z.querySelector('.aw-zeile-zahl')?.textContent?.split(' · ').slice(0, 2))).toEqual(
+      w.warten.map((z) => [z.wochen === null ? t.awNieImJahr : fill(t.awSeit, { dauer: dauer(z.wochen) }), ueblich]),
+    )
   })
 
   it('wer nach dem letzten Mal ganz fehlte, dem steht „davon nicht einteilbar: …" da', () => {
@@ -757,8 +776,9 @@ describe('Ohne Bereich eingeteilt (Jahresprobe)', () => {
     expect(ohneZeilen.map((z) => z.querySelector('.aw-zeile-name')?.textContent)).toEqual(
       expect.arrayContaining(h.bereiche.map((b) => bereichsName(b.bereich, DEMO.services, t, (x) => x))),
     )
-    // Ohne Erwartung, ohne Vergleichsbalken — und hinter den eigenen Bereichen.
-    for (const z of ohneZeilen) expect(z.querySelector('.aw-balken')).toBeNull()
+    // Ohne Erwartung, ohne „mehr" oder „weniger" — und hinter den eigenen Bereichen, die es tragen.
+    for (const z of ohneZeilen) expect(z.querySelector('.aw-marke')).toBeNull()
+    for (const z of zeilen.slice(0, zeilen.indexOf(ohneZeilen[0]!))) expect(z.querySelector('.aw-marke')).not.toBeNull()
     expect(zeilen.indexOf(ohneZeilen[0]!)).toBeGreaterThan(0)
     expect(zeilen.slice(zeilen.indexOf(ohneZeilen[0]!))).toEqual(ohneZeilen)
   })
@@ -779,6 +799,80 @@ describe('Ohne Bereich eingeteilt (Jahresprobe)', () => {
     const wahl = container.querySelector(`[role="group"][aria-label="${t.awVergleich}"]`)!
     expect([...wahl.querySelectorAll('button')].map((b) => b.textContent)).toEqual([t.awAufgaben, t.awHilfsdienste])
     expect(container.querySelector('.aw-erklaerung')?.textContent).toContain(t.awErklaerungOhneBereich)
+  })
+})
+
+/* ---- In Worten statt als Balken (T138) ---------------------------------------- */
+
+describe('„Zu oft, zu selten" in Worten (T138)', () => {
+  /** Was neben dem Namen steht — gegen die gerundete Erwartung, wie sie in der Zeile steht. */
+  function marke(z: { n: number; erwartet: number; lage: string }): string {
+    const abstand = String(Math.abs(z.n - Math.round(z.erwartet)))
+    return z.lage === 'oft' ? fill(t.awMehrN, { n: abstand }) : z.lage === 'selten' ? fill(t.awWenigerN, { n: abstand }) : t.awPasst
+  }
+
+  /** Die Unteransicht, alle Zeilen offen — je Zeile die Marke und die Zahlen. */
+  function zeilenLesen(c: HTMLElement): [string | null | undefined, string | null | undefined][] {
+    c.querySelectorAll<HTMLElement>('.aw-mehr').forEach((m) => fireEvent.click(m))
+    return [...c.querySelectorAll<HTMLElement>('.aw-zeile')].map((z) => [
+      z.querySelector('.aw-marke')?.textContent,
+      z.querySelector('.aw-zeile-zahl')?.textContent,
+    ])
+  }
+
+  it('je Person „6 mehr", „passt" oder „3 weniger" — darunter die Zahl gegen die Erwartung', () => {
+    // Bis zum 24.10.2026 ein Balken mit Feld, Strich und Rot: „Das erschließt
+    // sich nicht jedem so einfach, wie das zu lesen ist" (Betreiber).
+    const s = zustand(JAHR)
+    const v = rechnung(s).verteilungen.aufgaben
+    const { container } = zeige(s)
+    fireEvent.click([...container.querySelectorAll<HTMLElement>('.aw-kachel')][0]!)
+    expect(zeilenLesen(container)).toEqual(
+      [...v.oft, ...v.rahmen, ...v.selten].map((z) => [marke(z), fill(t.awTextAufgaben, { n: String(z.n), e: String(Math.round(z.erwartet)) })]),
+    )
+    // Alle drei Lagen kommen vor — und eine Erwartung, die erst gerundet aufgeht.
+    expect(v.oft.length * v.rahmen.length * v.selten.length).toBeGreaterThan(0)
+    expect([...v.oft, ...v.selten].some((z) => !Number.isInteger(z.erwartet))).toBe(true)
+  })
+
+  it('mit den Hilfsdiensten zählt die Zeile alles und nennt die Hilfsdienste darin', () => {
+    const s = zustand(JAHR)
+    const v = rechnung(s).verteilungen.hilfsdienste
+    const { container } = zeige(s)
+    fireEvent.click([...container.querySelectorAll<HTMLElement>('.aw-kachel')][0]!)
+    fireEvent.click(knopf(container, t.awHilfsdienste))
+    expect(zeilenLesen(container)).toEqual(
+      [...v.oft, ...v.rahmen, ...v.selten].map((z) => [
+        marke(z),
+        `${fill(t.awTextGesamt, { n: String(z.n), e: String(Math.round(z.erwartet)) })} · ${fill(t.awDavonHilfsdienste, { n: String(z.hilfsdienste) })}`,
+      ]),
+    )
+  })
+
+  it('bei der Person trägt jeder eigene Bereich seine Marke — auch „mehr" und „weniger"', () => {
+    const s = zustand(JAHR)
+    const a = rechnung(s)
+    const abwesend = abwesenheitenVon(s.absences, s.weeks, s.congregation.times)
+    const bildVon = (pid: string) => personBild(a.grundlage, s.weeks, s.persons, abwesend, pid, { fsWeeks: s.fsWeeks, zeiten: s.congregation.times })!
+    // Eine Person mit einem eigenen Bereich, der daneben liegt — sonst stünde überall „passt".
+    const bild = s.persons.map((p) => bildVon(p.id)).find((b) => b?.bereiche.some((x) => x.hat && lageVon(x.n, x.erwartet) !== 'rahmen'))
+    if (!bild) throw new Error('niemand liegt in einem Bereich daneben')
+    breite('desktop')
+    const { container } = zeige(s)
+    const name = displayName(s.persons.find((p) => p.id === bild.pid)!)
+    fireEvent.click([...container.querySelectorAll<HTMLElement>('.aw-matrix .aw-zeile-name')].find((b) => b.textContent === name)!)
+    const zeilen = [...container.querySelectorAll<HTMLElement>(`section[aria-label="${t.awJeBereich}"] .aw-zeile`)]
+    const eigene = bild.bereiche.filter((b) => b.hat)
+    expect(zeilen.slice(0, eigene.length).map((z) => z.querySelector('.aw-marke')?.textContent)).toEqual(
+      eigene.map((b) => marke({ ...b, lage: lageVon(b.n, b.erwartet) })),
+    )
+  })
+
+  it('weder Diagramm noch Tabelle zur Wahl — die Zeilen sagen dieselben Zahlen', () => {
+    const { container } = zeige(zustand())
+    fireEvent.click([...container.querySelectorAll<HTMLElement>('.aw-kachel')][0]!)
+    expect([...container.querySelectorAll('[role="group"]')].map((g) => g.getAttribute('aria-label'))).toEqual([t.awVergleich])
+    expect(container.querySelector('.aw-ansicht table')).toBeNull()
   })
 })
 
@@ -874,7 +968,7 @@ describe('In einer fremden Sprache steht nichts Deutsches da', () => {
     expect(reste).toEqual([])
   })
 
-  it('die Ziffern der Legende und der Achse kommen aus der Sprache — auf Persisch', async () => {
+  it('die Ziffern der Legende und der Marken kommen aus der Sprache — auf Persisch', async () => {
     // Bis zum 17.10.2026 standen „1–3", „4–9", „10" und „0" fest da, daneben „۱۲" aus Intl.
     await loadOverlay('fa')
     const fa = dict('fa')
@@ -888,8 +982,10 @@ describe('In einer fremden Sprache steht nichts Deutsches da', () => {
       fill(fa.awUndMehr, { n: zahl.format(10) }),
     ])
     expect(legende.join(' ')).not.toMatch(/[0-9]/)
-    const achse = container.querySelector(`section[aria-label="${fa.awWartetLaengsten}"] .aw-achse span`)
-    expect(achse?.textContent).toBe(zahl.format(0))
+    // Die Achse der Wartezeiten ist mit den Balken gegangen (T138); gezählt wird jetzt in den Marken.
+    const marken = [...container.querySelectorAll('.aw-marke')].map((e) => e.textContent ?? '')
+    expect(marken.filter((m) => /\p{Nd}/u.test(m)).length).toBeGreaterThan(0)
+    expect(marken.join(' ')).not.toMatch(/[0-9]/)
   })
 
   it('die Probe findet Deutsch, wo es steht', () => {
