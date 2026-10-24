@@ -93,26 +93,6 @@ export function workloadOf(weeks: Week[], person: Person, services?: Service[]):
 }
 
 /**
- * **Die Aufgaben einer Person je Woche** — die `anzahl` Wochen bis
- * einschließlich der mit dem Montag `montag`, die älteste zuerst (T121, die
- * Auslastung bei der Person). Gezählt wie beim Zuteilen (`workloadOf`). Eine
- * Woche, die nicht geladen ist, zählt null: Von ihr weiß die App nichts.
- */
-export function aufgabenJeWoche(
-  weeks: readonly Week[],
-  person: Person,
-  services: Service[],
-  montag: string,
-  anzahl: number,
-): number[] {
-  const nachStart = new Map(weeks.map((w) => [w.start, w]))
-  return Array.from({ length: anzahl }, (_, i) => {
-    const woche = nachStart.get(montagNach(montag, i - anzahl + 1))
-    return woche ? workloadOf([woche], person, services) : 0
-  })
-}
-
-/**
  * Radius des Auslastungs-Fensters: so viele Wochen vor und nach der geplanten
  * zählen mit.
  *

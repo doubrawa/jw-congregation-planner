@@ -95,7 +95,6 @@ export default {
   "personBearbeiten": "Editează persoana",
   "aendern": "Modifică",
   "spurAngelegt": "În listă",
-  "auslastung": "Volum de lucru",
   "aufgabenLetzteW": "Însărcinări în ultimele {w} săptămâni: {n}",
   "keineAbwesenheiten": "Nicio absență înregistrată.",
   "keineBereiche": "Încă niciun domeniu.",

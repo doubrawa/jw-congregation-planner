@@ -72,7 +72,7 @@ export type TimelineDaten = Pick<
 >
 
 /** So weit reicht die Zeitleiste zurück (Betreiber 23.10.2026); nach vorn reicht sie, so weit es Einträge gibt. */
-const WOCHEN_ZURUECK = 8
+export const WOCHEN_ZURUECK = 8
 
 /**
  * Die Zuteilungen einer Person, die neuesten zuerst und höchstens

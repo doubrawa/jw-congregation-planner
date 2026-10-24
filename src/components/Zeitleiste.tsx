@@ -36,11 +36,13 @@ export interface ZeitZeile {
  * Abwesenheit in ihrer eigenen Karte (`AbwesenheitenKarte`). Ohne Zeile bleibt
  * die Karte ganz weg.
  */
-export function Zeitleiste({ label, zeilen }: { label: string; zeilen: readonly ZeitZeile[] }) {
+export function Zeitleiste({ label, zusatz, zeilen }: { label: string; zusatz?: string; zeilen: readonly ZeitZeile[] }) {
   if (zeilen.length === 0) return null
   return (
     <section className="karte zeit-karte">
       <h2 className="abschnitt-titel karte-titel">{label}</h2>
+      {/* Eine Zeile unter dem Titel — bei der Person, wie viel sie zuletzt hatte (T136). */}
+      {zusatz && <p className="klein-text zeit-zusatz">{zusatz}</p>}
       <ol className="zeit">
         {zeilen.map((z) => (
           <li key={z.key} className={zeilenKlassen(z)}>

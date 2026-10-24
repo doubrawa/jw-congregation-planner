@@ -97,7 +97,6 @@ export default {
   "personBearbeiten": "ویرایش فرد",
   "aendern": "تغییر",
   "spurAngelegt": "در فهرست",
-  "auslastung": "میزان کار",
   "aufgabenLetzteW": "{n} وظیفه در {w} هفتهٔ اخیر",
   "keineAbwesenheiten": "موردی ثبت نشده است.",
   "keineBereiche": "هنوز هیچ حوزهٔ وظیفه‌ای نیست.",

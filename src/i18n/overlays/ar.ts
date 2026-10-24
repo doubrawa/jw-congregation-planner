@@ -93,7 +93,6 @@ export default {
   "personBearbeiten": "تعديل الشخص",
   "aendern": "تغيير",
   "spurAngelegt": "في القائمة",
-  "auslastung": "عبء المهام",
   "aufgabenLetzteW": "التعيينات خلال آخر {w} أسابيع: {n}",
   "keineAbwesenheiten": "لا توجد غيابات مسجّلة.",
   "keineBereiche": "لا توجد مجالات تعيين بعد.",

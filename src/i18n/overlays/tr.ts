@@ -95,7 +95,6 @@ export default {
   "personBearbeiten": "Kişiyi düzenle",
   "aendern": "Değiştir",
   "spurAngelegt": "Eklendi",
-  "auslastung": "İş yükü",
   "aufgabenLetzteW": "Son {w} haftada {n} görev",
   "keineAbwesenheiten": "Henüz kayıt yok.",
   "keineBereiche": "Henüz görev alanı yok.",

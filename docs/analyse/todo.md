@@ -8456,13 +8456,24 @@ Im echten Chrome gemessen (T128-Werkzeug `breit.mjs`): Handy 320–430 px und
 Desktop 1400–1920 px, je zwölf Sprachen und Schriftstufen 1–1,45 — kein Bruch
 ohne Strich; Deutsch trennt „Zusammen-künfte".
 
-### T136 · Auslastung einer Person: Zahl und Kreise passen nicht zusammen 🔧 ☐ offen
+### T136 · Auslastung einer Person: Zahl und Kreise passen nicht zusammen 🔧 ✅ erledigt (24. Oktober 2026)
 
 „Person Auslastung in den letzten 8 Wochen zeigt nicht korrekt an scheinbar,
 wenn die zahl widerspricht sich mit der anzahl der gefüllten kreise. und die
 kreise sagen deshalb nicht viel aus, weil man nicht weiß auf was es sich
 bezieht - sind damit vergangene aufgaben gemeint oder auch kommende? das sollte
 man von der darstellung nochmal überarbeiten."
+
+**Ursache:** Die Zahl zählte Aufgaben, ein Kreis nur, dass die Woche eine
+hatte; und die laufende Woche zählte mit, auch was in ihr noch kommt.
+
+**Entschieden (24. Oktober, Betreiber):** „Karte streichen" — die Zeitleiste
+darunter zeigt seit T-„Zeitleiste" (23. Oktober) genau diese acht Wochen.
+
+**Umgesetzt:** Karte „Auslastung" fort (mit `aufgabenJeWoche`, ihren Stilen und
+dem Schlüssel `auslastung` in zwölf Sprachen). Unter dem Titel der Zeitleiste
+steht „Aufgaben in den letzten 8 Wochen: n" — n ist, was in der Leiste blass
+dasteht, ohne Abwesenheiten (`WOCHEN_ZURUECK` aus `person-timeline.ts`).
 
 ### T137 · Einstellungen: „Königreichssaal" und „Programmsprachen" zerbrochen ⚡ ☐ offen
 

@@ -1,14 +1,11 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
 import { istAngemeldet, kontoGehtMit } from '../app/eigene-person'
-import { useKalendertag } from '../app/useKalendertag'
 import { Zeichen } from '../bausteine/Zeichen'
 import { AbwesenheitenKarte } from '../components/AbwesenheitenKarte'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { UnteransichtKopf } from '../components/UnteransichtKopf'
-import { aufgabenJeWoche } from '../data/auslastung'
 import { initials, personLabel } from '../data/helpers'
-import { montagVon } from '../data/meeting-dates'
 import type { Person } from '../data/types'
 import { LOCALES } from '../i18n/langs'
 import { ROLE_KEY } from '../i18n/ui'
@@ -20,15 +17,12 @@ import { PersonBearbeitenBlatt } from './PersonBearbeitenBlatt'
 import { PersonTimeline } from './PersonTimeline'
 import { RechteKarte } from './PrivToggle'
 
-/** Über wie viele Wochen die Auslastung zurückblickt (Entwurf `GPerson`). */
-const AUSLASTUNG_WOCHEN = 8
-
 /**
  * **Eine Person** (T121, Entwurf `GPerson`): oben Name, Gruppe und Rolle, der
  * Stift öffnet „Person bearbeiten". Darunter das Konto als Spur, die
- * Aufgabenbereiche als Chips („Ändern" öffnet die Schalter), die Auslastung
- * der letzten Wochen, die Zeitleiste, die Abwesenheiten und die Rechte — zuletzt
- * „Person entfernen".
+ * Aufgabenbereiche als Chips („Ändern" öffnet die Schalter), die Zeitleiste
+ * (mit der Zahl der letzten Wochen, seit T136 statt der Karte „Auslastung"),
+ * die Abwesenheiten und die Rechte — zuletzt „Person entfernen".
  *
  * Am Handy eine Unteransicht der Liste mit Zurück; am Desktop steht sie rechts
  * neben der Liste (`spalte`), dann ohne Zurück.
@@ -71,7 +65,6 @@ export function PersonDetail({ person, spalte = false }: { person: Person; spalt
 
       {istAngemeldet(state) && <KontoCard person={person} />}
       <BereicheKarte person={person} onAendern={() => setBlatt('bereiche')} />
-      <AuslastungKarte person={person} />
       <PersonTimeline person={person} />
       <AbwesenheitenKarte person={person} />
       <RechteKarte person={person} update={update} />
@@ -123,30 +116,6 @@ function BereicheKarte({ person, onAendern }: { person: Person; onAendern: () =>
           </ul>
         </div>
       ))}
-    </section>
-  )
-}
-
-/**
- * **Auslastung**: wie viele Aufgaben in den letzten Wochen, je Woche ein Punkt —
- * voll, wo die Person dran war (gezählt wie beim Zuteilen). Die Punkte sind
- * ein Bild der Zahl darüber; vorgelesen wird die Zahl.
- */
-function AuslastungKarte({ person }: { person: Person }) {
-  const { state } = useApp()
-  const { t } = useT()
-  const heute = useKalendertag()
-  const jeWoche = aufgabenJeWoche(state.weeks, person, state.services, montagVon(heute), AUSLASTUNG_WOCHEN)
-  const summe = jeWoche.reduce((a, b) => a + b, 0)
-  return (
-    <section className="karte person-karte">
-      <h2 className="abschnitt-titel karte-titel">{t.auslastung}</h2>
-      <p>{fill(t.aufgabenLetzteW, { w: AUSLASTUNG_WOCHEN, n: summe })}</p>
-      <span className="person-wochen" aria-hidden="true">
-        {jeWoche.map((n, i) => (
-          <span key={i} className={n > 0 ? 'person-woche is-voll' : 'person-woche'} />
-        ))}
-      </span>
     </section>
   )
 }

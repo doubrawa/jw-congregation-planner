@@ -95,7 +95,6 @@ export default {
   "personBearbeiten": "Editar persona",
   "aendern": "Cambiar",
   "spurAngelegt": "En la lista",
-  "auslastung": "Carga de trabajo",
   "aufgabenLetzteW": "Asignaciones en las últimas {w} semanas: {n}",
   "keineAbwesenheiten": "No hay ausencias registradas.",
   "keineBereiche": "Aún no hay áreas de asignación.",

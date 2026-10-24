@@ -8,6 +8,11 @@
   padding: 6px 18px 10px;
 }
 
+/* Unter dem Titel, wie viel die Person zuletzt hatte (T136) — dicht am Titel. */
+.zeit-zusatz {
+  margin-block: -6px 4px;
+}
+
 .zeit {
   padding-inline-start: 22px;
   list-style: none; /* die Markierung ist der Punkt der Zeitleiste */

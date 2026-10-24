@@ -4077,6 +4077,27 @@ export const KATALOG = [
     ersetzen: '',
   },
   {
+    id: 'zeitleiste-zahl-steht-da',
+    datei: 'src/personen/PersonTimeline.tsx',
+    regel: 'Unter dem Titel der Zeitleiste steht, wie viel die Person in den letzten acht Wochen hatte (T136, statt der Karte „Auslastung").',
+    suchen: '  return <Zeitleiste label={t.zeitleiste} zusatz={zusatz} zeilen={zeilen} />\n',
+    ersetzen: '  return <Zeitleiste label={t.zeitleiste} zeilen={zeilen} />\n',
+  },
+  {
+    id: 'zeitleiste-zahl-nur-vergangenes',
+    datei: 'src/personen/PersonTimeline.tsx',
+    regel: 'Die Zahl in der Zeitleiste zählt nur, was vorbei ist — so viele, wie blass dastehen (T136).',
+    suchen: "  const zuletzt = entries.filter((e) => e.vergangen && e.kind !== 'abw').length\n",
+    ersetzen: "  const zuletzt = entries.filter((e) => e.kind !== 'abw').length\n",
+  },
+  {
+    id: 'zeitleiste-zahl-ohne-abwesenheit',
+    datei: 'src/personen/PersonTimeline.tsx',
+    regel: 'Eine Abwesenheit zählt in der Zahl der Zeitleiste nicht als Aufgabe (T136).',
+    suchen: "  const zuletzt = entries.filter((e) => e.vergangen && e.kind !== 'abw').length\n",
+    ersetzen: '  const zuletzt = entries.filter((e) => e.vergangen).length\n',
+  },
+  {
     id: 'planung-bereiche-oben',
     datei: 'src/planen/PlanungScreen.tsx',
     regel: 'Oben auf „Planung" steht die Wahl Zusammenkünfte, Predigtdienst, Weitere Pläne (T135).',
@@ -6787,13 +6808,9 @@ export const KATALOG = [
     suchen: "lage: member || offen ? 'voll' : 'jetzt' },",
     ersetzen: "lage: member ? 'voll' : 'jetzt' },",
   },
-  {
-    id: 'auslastung-bis-zur-laufenden-woche',
-    datei: 'src/data/auslastung.ts',
-    regel: 'Die Auslastung bei der Person blickt zurück: die Wochen bis einschließlich der laufenden.',
-    suchen: '    const woche = nachStart.get(montagNach(montag, i - anzahl + 1))',
-    ersetzen: '    const woche = nachStart.get(montagNach(montag, i))',
-  },
+  // „auslastung-bis-zur-laufenden-woche" gestrichen (24.10.2026, T136): Die Karte
+  // „Auslastung" und `aufgabenJeWoche` sind fort; die Zahl steht in der
+  // Zeitleiste (`zeitleiste-zahl-*`).
   {
     id: 'abwesenheiten-nur-der-person',
     datei: 'src/components/abwesenheiten.ts',

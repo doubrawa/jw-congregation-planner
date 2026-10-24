@@ -95,7 +95,6 @@ export default {
   "personBearbeiten": "Edytuj osobę",
   "aendern": "Zmień",
   "spurAngelegt": "Na liście",
-  "auslastung": "Obciążenie",
   "aufgabenLetzteW": "Zadania w ostatnich {w} tygodniach: {n}",
   "keineAbwesenheiten": "Brak wpisanych nieobecności.",
   "keineBereiche": "Jeszcze brak uprawnień.",

@@ -432,26 +432,6 @@
   overflow-wrap: anywhere;
 }
 
-/* ---- Auslastung: je Woche ein Punkt --------------------------------------------- */
-
-.person-wochen {
-  display: flex;
-  gap: 8px;
-  padding-block-start: 10px;
-}
-
-.person-woche {
-  width: 12px;
-  height: 12px;
-  border: 1.5px solid var(--umriss);
-  border-radius: 50%;
-}
-
-.person-woche.is-voll {
-  border-color: var(--text);
-  background: var(--text);
-}
-
 /* ---- Person entfernen ------------------------------------------------------------ */
 
 /* Geschärft trägt der Knopf die ganze Rückfrage — sie bricht um, statt hinauszuragen. */

@@ -343,7 +343,6 @@ export const DE = {
     // (8): Für sie stimmt die Mehrzahl in jeder Sprache.
     person: 'Person', personBearbeiten: 'Person bearbeiten', aendern: 'Ändern',
     spurAngelegt: 'Angelegt',
-    auslastung: 'Auslastung',
     aufgabenLetzteW: 'Aufgaben in den letzten {w} Wochen: {n}',
     keineAbwesenheiten: 'Keine eingetragen.',
     keineBereiche: 'Noch keine Aufgabenbereiche.',

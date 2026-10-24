@@ -1179,11 +1179,9 @@ Oben stehen Name, Gruppe und Rolle, daneben der **Stift** für
 - **Aufgabenbereiche** – als Chips, was die Person übernehmen darf, nach
   Gruppen geordnet. **Ändern** öffnet die Schalter (siehe
   [Aufgabenbereiche](#aufgabenbereiche)).
-- **Auslastung** – wie viele Aufgaben die Person in den letzten acht Wochen
-  hatte, die laufende eingeschlossen. Darunter steht je Woche ein Punkt, voll in
-  den Wochen, in denen sie dran war. So siehst du vor dem Zuteilen, wer zuletzt
-  viel hatte.
-- **Zeitleiste** und **Abwesenheiten** – siehe unten.
+- **Zeitleiste** und **Abwesenheiten** – siehe unten. Unter dem Titel der
+  Zeitleiste steht, wie viele Aufgaben die Person in den letzten acht Wochen
+  hatte; so siehst du vor dem Zuteilen, wer zuletzt viel hatte.
 - **Rechte** – siehe [Rechte](#rechte).
 
 Ganz unten steht **Person entfernen**. Der erste Tipp nennt die Folge, erst der
@@ -1202,8 +1200,9 @@ Gruppenbesuche** darin – Besuche in Wochen, deren Programm noch nicht geholt i
 den Tagen laut Grundplan. Am selben Tag steht das Spätere oben, Aufgaben
 derselben Zusammenkunft in der Reihenfolge des Programms. Vergangenes wird
 blasser dargestellt und reicht höchstens acht Wochen zurück; was ansteht,
-steht ganz da. Hat jemand in dieser Zeit weder Zuteilung noch Abwesenheit,
-entfällt die Karte.
+steht ganz da. Unter dem Titel steht „Aufgaben in den letzten 8 Wochen: …“ –
+gezählt wird, was blass dasteht, ohne die Abwesenheiten. Hat jemand in dieser
+Zeit weder Zuteilung noch Abwesenheit, entfällt die Karte.
 
 Den genauen Tag rechnet die App aus: Das Arbeitsheft kennt nur die Woche, der
 Wochentag und die Uhrzeit stehen in den [Einstellungen](#7-einstellungen)

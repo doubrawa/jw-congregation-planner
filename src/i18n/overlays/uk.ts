@@ -95,7 +95,6 @@ export default {
   "personBearbeiten": "Редагувати дані людини",
   "aendern": "Змінити",
   "spurAngelegt": "У списку",
-  "auslastung": "Завантаженість",
   "aufgabenLetzteW": "Завдань за останні {w} тижнів: {n}",
   "keineAbwesenheiten": "Відсутностей не внесено.",
   "keineBereiche": "Обов’язків поки немає.",

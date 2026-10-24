@@ -95,7 +95,6 @@ export default {
   "personBearbeiten": "Изменить данные человека",
   "aendern": "Изменить",
   "spurAngelegt": "В списке",
-  "auslastung": "Загруженность",
   "aufgabenLetzteW": "Заданий за последние {w} недель: {n}",
   "keineAbwesenheiten": "Отсутствий не внесено.",
   "keineBereiche": "Обязанностей пока нет.",

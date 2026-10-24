@@ -6,8 +6,9 @@ import { besuchsGruppe } from '../components/gruppenbesuch-anzeige'
 import { Zeitleiste, type ZeitZeile } from '../components/Zeitleiste'
 import { abwesenheitsArt, zeitleisteDatum } from '../components/zeitleiste-gemeinsam'
 import type { Person } from '../data/types'
-import { aufgabenLabel, useT } from '../i18n/useT'
-import { personTimeline, type TimelineEntry } from './person-timeline'
+import { aufgabenLabel, fill, useT } from '../i18n/useT'
+import { zahlBinden } from '../i18n/zahl-binden'
+import { personTimeline, WOCHEN_ZURUECK, type TimelineEntry } from './person-timeline'
 
 /**
  * Zeitleiste einer Person: je Eintrag Datum und Art, die neuesten zuerst,
@@ -58,5 +59,15 @@ export function PersonTimeline({ person }: { person: Person }) {
     vergangen: e.vergangen,
   }))
 
-  return <Zeitleiste label={t.zeitleiste} zeilen={zeilen} />
+  /*
+   * **Wie viel die Person zuletzt hatte** (T136, statt der Karte „Auslastung"):
+   * gezählt wird, was in der Leiste blass dasteht, ohne die Abwesenheiten — die
+   * Zahl lässt sich an der Liste nachzählen. Die Karte zählte die laufende
+   * Woche mit und je Woche einen Kreis; Zahl und Kreise passten nicht
+   * zusammen, und ob Kommendes mitzählte, sah man nicht (Betreiber, 24.10.2026).
+   */
+  const zuletzt = entries.filter((e) => e.vergangen && e.kind !== 'abw').length
+  const zusatz = zahlBinden(fill(t.aufgabenLetzteW, { w: WOCHEN_ZURUECK, n: zuletzt }))
+
+  return <Zeitleiste label={t.zeitleiste} zusatz={zusatz} zeilen={zeilen} />
 }

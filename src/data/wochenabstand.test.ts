@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { emptyQualifications } from './helpers'
-import { aufgabenJeWoche, lastFenster, wochenAbstand, workloadOf } from './auslastung'
+import { lastFenster, wochenAbstand, workloadOf } from './auslastung'
 import type { Meeting, Person, Week } from './types'
 
 /**
@@ -86,32 +86,6 @@ describe('lastFenster: das eine Fenster der Auslastung', () => {
     expect(lastFenster(dicht, 1, 1).map((w) => w.start)).toEqual([
       '2026-06-01', '2026-06-08', '2026-06-15',
     ])
-  })
-})
-
-/*
- * **Die Auslastung bei der Person** (T121, Phase 6b): die Aufgaben je Woche
- * über die letzten Wochen bis einschließlich der laufenden — nach Datum wie das
- * Fenster oben. Eine Woche, die nicht geladen ist, zählt null.
- */
-describe('aufgabenJeWoche', () => {
-  const wochen = [
-    woche('2026-06-01', true),
-    woche('2026-06-08', false),
-    woche('2026-06-22', true), // der 15. Juni fehlt
-    woche('2026-06-29', true), // nach der gezählten Woche — zählt nicht
-  ]
-
-  it('die letzten Wochen bis zur laufenden, die älteste zuerst — die fehlende zählt null', () => {
-    expect(aufgabenJeWoche(wochen, PERSON, [], '2026-06-22', 4)).toEqual([1, 0, 0, 1])
-  })
-
-  it('reicht weiter zurück als der Bestand, stehen dort Nullen', () => {
-    expect(aufgabenJeWoche(wochen, PERSON, [], '2026-06-08', 4)).toEqual([0, 0, 1, 0])
-  })
-
-  it('eine andere Person hat ihre eigenen Wochen', () => {
-    expect(aufgabenJeWoche(wochen, { ...PERSON, id: 'p2', fn: 'C.' }, [], '2026-06-22', 4)).toEqual([0, 0, 0, 0])
   })
 })
 

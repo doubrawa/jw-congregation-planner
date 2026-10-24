@@ -95,7 +95,6 @@ export default {
   "personBearbeiten": "Modifier la personne",
   "aendern": "Modifier",
   "spurAngelegt": "Fiche créée",
-  "auslastung": "Charge de travail",
   "aufgabenLetzteW": "Attributions sur les {w} dernières semaines\u00a0: {n}",
   "keineAbwesenheiten": "Aucune absence enregistrée.",
   "keineBereiche": "Pas encore de domaines d’attribution.",

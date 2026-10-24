@@ -95,7 +95,6 @@ export default {
   "personBearbeiten": "Modifica persona",
   "aendern": "Modifica",
   "spurAngelegt": "Scheda creata",
-  "auslastung": "Carico di lavoro",
   "aufgabenLetzteW": "Incarichi nelle ultime {w} settimane: {n}",
   "keineAbwesenheiten": "Nessuna assenza registrata.",
   "keineBereiche": "Ancora nessuna mansione.",

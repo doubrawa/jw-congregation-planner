@@ -103,7 +103,6 @@ export default {
   "personBearbeiten": "Edit person",
   "aendern": "Change",
   "spurAngelegt": "Added",
-  "auslastung": "Workload",
   "aufgabenLetzteW": "Assignments in the last {w} weeks: {n}",
   "keineAbwesenheiten": "No absences entered.",
   "keineBereiche": "No assignment areas yet.",

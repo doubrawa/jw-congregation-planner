@@ -400,13 +400,13 @@ describe('Aufgabenbereiche', () => {
   })
 })
 
-describe('Auslastung', () => {
-  it('nennt die Aufgaben der letzten acht Wochen und zeigt je Woche einen Punkt', () => {
+describe('Keine Karte „Auslastung" mehr (T136)', () => {
+  it('die Zahl der letzten Wochen steht in der Zeitleiste — die Karte mit den Kreisen ist fort', () => {
+    // Betreiber 24.10.2026: Zahl und Kreise widersprachen sich, und ob Kommendes
+    // mitzählte, sah man nicht. Die Zeitleiste zeigt dieselben acht Wochen.
     const { container } = zeige(person())
-    expect(container.textContent).toContain(fill(t.aufgabenLetzteW, { w: 8, n: 0 }))
-    const punkte = container.querySelector('.person-wochen')!
-    expect(punkte.querySelectorAll('.person-woche')).toHaveLength(8)
-    expect(punkte.querySelectorAll('.person-woche.is-voll')).toHaveLength(0)
+    expect(container.querySelector('.person-wochen')).toBeNull()
+    expect([...container.querySelectorAll('h2')].map((h) => h.textContent)).not.toContain('Auslastung')
   })
 })
 

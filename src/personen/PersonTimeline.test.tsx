@@ -7,6 +7,8 @@ import { ENTWICKLER_HEUTE } from '../../tests/testdaten/uhr'
 import { displayName } from '../data/helpers'
 import type { FsInstance } from '../data/types'
 import { dict } from '../i18n/ui'
+import { fill } from '../i18n/useT'
+import { zahlBinden } from '../i18n/zahl-binden'
 import { PersonTimeline } from './PersonTimeline'
 
 /**
@@ -52,6 +54,27 @@ describe('PersonTimeline', () => {
       vi.advanceTimersByTime(2 * 60 * 1000)
     })
     expect(vergangen()).toBeGreaterThan(vorher)
+  })
+
+  it('unter dem Titel steht, wie viel die Person zuletzt hatte — so viele, wie blass in der Leiste stehen (T136)', () => {
+    /*
+     * Statt der Karte „Auslastung": Die Zahl muss sich an der Liste nachzählen
+     * lassen. Die Karte zählte die laufende Woche mit und zeigte je Woche einen
+     * Kreis — Zahl und Kreise widersprachen sich (Betreiber 24.10.2026).
+     * Mittwoch, 16. September: Vorbei sind Di 8.9., Sa 12.9., Mo 14.9. und Di
+     * 15.9. (zwei Aufgaben); die Abwesenheit davor zählt nicht.
+     */
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 16, 9, 0))
+    const t = dict('de')
+    const demo: AppState = { ...demoZustand(), dataStatus: 'ready' }
+    const { container } = zeige({
+      ...demo,
+      absences: [{ id: 'a', personId: 'p1', userId: null, from: '2026-09-02', to: '2026-09-02', reason: '' }],
+    })
+    const blass = container.querySelectorAll('.zeit li.is-past:not(:has(.zeit-dot--abw))').length
+    expect(blass).toBe(5)
+    expect(container.querySelector('.zeit-zusatz')?.textContent).toBe(zahlBinden(fill(t.aufgabenLetzteW, { w: 8, n: 5 })))
   })
 
   it('ein geleiteter Treffpunkt ohne Ort heißt nur „Treffpunkte leiten" — ohne Punkt am Ende', () => {
