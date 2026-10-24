@@ -5,7 +5,7 @@ import { bedarfJeBereich } from './bedarf'
 import { istArt } from './helpers'
 import { offenePlaetze } from './offene-plaetze'
 import { allePlaetze, platzMitZusage } from './plaetze'
-import { autoAssignMeeting, countOpenSlots, punktKey, rangfolgeFuer, sentKey, zuteilbarePlaetze } from './planning'
+import { autoAssignMeeting, countOpenSlots, openSlotLabels, punktKey, rangfolgeFuer, sentKey, zuteilbarePlaetze } from './planning'
 import { besetzung } from './saal'
 import type { MeetingKey, MeetingSlotSelection, PartItem, Week } from './types'
 import { schlussgebetVorOrt } from '../../supabase/functions/_shared/planung.ts'
@@ -61,6 +61,17 @@ describe('Ein leeres Schlussgebet am Wochenende ist nicht offen', () => {
     expect(nachher.offen).toBe(vorher.offen)
     // Vorher war es besetzt und wartete auf die Zusage — jetzt fehlt es ganz.
     expect(nachher.voll + nachher.wartet + nachher.problem).toBe(vorher.voll + vorher.wartet + vorher.problem - 1)
+  })
+
+  it('„Zu klären" beim Planen listet es nicht — dieselbe Zahl wie der Kopf (Review 24.10.2026)', () => {
+    // Das Banner (`WochenStand`) liest `openSlotLabels`, Kopf und Spur `countOpenSlots`. Gemessen
+    // vor dem Review: 3 gezählt, 4 gelistet, darunter „Gebet".
+    const we = ohneSchlussgebet('we')[0]!.we
+    const gelistet = openSlotLabels(we, DEMO_SERVICES)
+    expect(gelistet.map((o) => o.text)).not.toContain('Gebet')
+    expect(gelistet.reduce((s, o) => s + o.n, 0)).toBe(countOpenSlots(we, DEMO_SERVICES))
+    // Unter der Woche steht es da, wie jeder offene Platz.
+    expect(openSlotLabels(ohneSchlussgebet('mid')[0]!.mid, DEMO_SERVICES).map((o) => o.text)).toContain('Gebet')
   })
 
   it('„Automatisch" findet es nicht als zu besetzenden Platz vor', () => {

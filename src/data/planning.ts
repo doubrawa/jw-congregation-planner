@@ -433,11 +433,13 @@ export interface OpenSlot {
 export function openSlotLabels(meeting: Meeting, services: Service[]): OpenSlot[] {
   const out: OpenSlot[] = []
   // Derselbe Durchlauf, den `countOpenSlots` zählt — vorher nannte der
-  // Planen-Kopf eine höhere Zahl, als das Banner darunter auflistete.
+  // Planen-Kopf eine höhere Zahl, als das Banner darunter auflistete. Ebenso
+  // ohne das leere Schlussgebet am Wochenende (`leerVorOrt`, T133; im Review
+  // vom 24.10.2026 stand es hier noch als offen).
   // Hilfsdienste werden gebündelt: ein Eintrag je Dienst mit seiner Anzahl.
   const offenJeDienst = new Map<Service, number>()
   for (const platz of allePlaetze(meeting, services)) {
-    if (platz.slot?.name) continue
+    if (platz.slot?.name || leerVorOrt(meeting, platz)) continue
     if (platz.art === 'helper') {
       offenJeDienst.set(platz.svc, (offenJeDienst.get(platz.svc) ?? 0) + 1)
       continue

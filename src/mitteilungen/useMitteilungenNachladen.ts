@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useApp } from '../app/context'
+import { useContext, useEffect, useState } from 'react'
+import { AppStoreContext, useApp } from '../app/context'
 import { loadAndHydrate } from '../app/hydrate'
 import { loadNotifications } from '../lib/data'
 
@@ -35,6 +35,8 @@ import { loadNotifications } from '../lib/data'
  */
 export function useMitteilungenNachladen(): void {
   const { state, dispatch } = useApp()
+  // Der Stand, wenn die Antwort kommt — nicht der beim Öffnen (siehe unten).
+  const store = useContext(AppStoreContext)
   const userId = state.userId
   const congId = state.congregationId
   // Einmal gemerkt, nicht bei jedem Render neu gebaut: Die Seite rendert mit
@@ -47,6 +49,9 @@ export function useMitteilungenNachladen(): void {
       const frisch = await loadNotifications(congId, state.weeks, state.congregation.times)
       // Nicht gelesen (kein Netz, Fehler) → der bisherige Stand bleibt stehen.
       if (!frisch) return
+      // „Alle löschen" (T140), während die Abfrage lief: Ihr Stand ist älter als
+      // das Löschen und brächte die Liste zurück (Review 24.10.2026).
+      if (bekannt.size > 0 && store?.holen().notifs.length === 0) return
       if (frisch.some((n) => !bekannt.has(n.id))) {
         await loadAndHydrate(dispatch, userId, { silent: true })
         return

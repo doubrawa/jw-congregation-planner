@@ -158,6 +158,47 @@ describe('Die Mitteilungen laden beim Öffnen nach — so wenig wie möglich', (
     expect(ladeAlles).not.toHaveBeenCalled()
   })
 
+  it('„Alle löschen", während das Nachladen noch läuft: Die alte Liste kommt nicht zurück (T140)', async () => {
+    // Review 24.10.2026: Die Abfrage beim Öffnen kann länger dauern als zwei
+    // Tipps auf „Alle löschen" (Token-Erneuerung nach über einer Stunde). Kam
+    // sie danach an, setzte sie den Stand von vor dem Löschen wieder ein.
+    let liefern: (n: Notification[]) => void = () => {}
+    ladeMitteilungen.mockReturnValue(new Promise<Notification[]>((r) => (liefern = r)))
+    const dispatch = vi.fn()
+    const vorher: AppState = {
+      ...demoZustand(),
+      dataStatus: 'ready',
+      congregationId: 'c1',
+      userId: 'u1',
+      planner: false,
+      notifs: [notif('n1'), notif('n2', { read: true })],
+      myTasks: [],
+      persons: [],
+      weeks: [],
+      fsWeeks: [],
+    }
+    function Buehne({ state }: { state: AppState }) {
+      const store = useStaticStore(state)
+      return (
+        <AppDispatchContext.Provider value={dispatch}>
+          <AppStoreContext.Provider value={store}>
+            <AppStateContext.Provider value={state}>
+              <MitteilungenScreen />
+            </AppStateContext.Provider>
+          </AppStoreContext.Provider>
+        </AppDispatchContext.Provider>
+      )
+    }
+    const { rerender } = render(<Buehne state={vorher} />)
+    await waitFor(() => expect(ladeMitteilungen).toHaveBeenCalledTimes(1))
+    // Gelöscht (`clearNotifs`), bevor die Abfrage zurückkommt — mit einer neuen Zeile darin.
+    rerender(<Buehne state={{ ...vorher, notifs: [] }} />)
+    liefern([notif('n3'), notif('n1'), notif('n2', { read: true })])
+    await new Promise((r) => setTimeout(r, 0))
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'setNotifs' }))
+    expect(ladeAlles).not.toHaveBeenCalled()
+  })
+
   it('im Demo-Modus wird gar nichts geladen', async () => {
     oeffneMitteilungen({ congregationId: null, userId: null, notifs: [notif('n1')] })
     await Promise.resolve()

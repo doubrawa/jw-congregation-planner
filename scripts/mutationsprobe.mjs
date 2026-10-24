@@ -7957,6 +7957,20 @@ export const KATALOG = [
     ersetzen: "    abstand: personen > 0 ? 1 / jeWoche : null,\n",
   },
   {
+    id: 'mitteilungen-nachladen-nach-loeschen',
+    datei: 'src/mitteilungen/useMitteilungenNachladen.ts',
+    regel: 'Kommt die Abfrage beim Öffnen erst nach „Alle löschen" an, bringt sie die alte Liste nicht zurück (T140, Review 24.10.2026).',
+    suchen: '      if (bekannt.size > 0 && store?.holen().notifs.length === 0) return\n',
+    ersetzen: '',
+  },
+  {
+    id: 'schlussgebet-zu-klaeren',
+    datei: 'src/data/planning.ts',
+    regel: '„Zu klären" beim Planen listet das leere Schlussgebet am Wochenende nicht als offen — wie der Kopf (T133, Review 24.10.2026).',
+    suchen: '    if (platz.slot?.name || leerVorOrt(meeting, platz)) continue\n',
+    ersetzen: '    if (platz.slot?.name) continue\n',
+  },
+  {
     id: 'mitteilungen-alle-loeschen-schreibt',
     datei: 'src/app/persist.ts',
     regel: '„Alle löschen" löscht die Mitteilungen auch in der Datenbank — sonst kämen sie beim nächsten Laden wieder (T140).',
