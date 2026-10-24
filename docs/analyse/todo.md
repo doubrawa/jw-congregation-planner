@@ -8576,7 +8576,7 @@ es noch); offline ist es gesperrt. Übersetzungen wie vor T121.
 
 ## Fortschritt
 
-Stand 21. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 24. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -8586,9 +8586,9 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
-21. Oktober ☑ · 24. Oktober ☐☐☐☐☐☐☐☐
+21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑
 
-**131 der 132 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+**139 der 140 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |
@@ -9026,7 +9026,6 @@ braucht den Betreiber, ein Gerät oder eine Entscheidung.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **T133–T140** | Punkte vom Testen (24. Oktober) | alle acht am 24. Oktober umgesetzt und lokal committet — offen: Review, Push und die Function `substitute` ausrollen (T133, nur der Angebots-Check) |
 | **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124; am 21. Oktober: noch nicht). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
 | **Bewusst offen** | Der Grund nach dem Abmelden ohne Versammlung | Den Satz „Dein Konto gehört zu keiner Versammlung mehr" zeigt die Anmeldung nur, wenn das Laden die fehlende Mitgliedschaft findet — in der ersten Stunde nach dem Entfernen. Danach scheitert schon die Erneuerung des Tokens (das Konto ist gelöscht), supabase-js meldet `SIGNED_OUT` ohne Grund, und die Anmeldung steht ohne Satz da. Ihn auch dann zu zeigen, hieße erzwungenes und eigenes Abmelden zu unterscheiden — Betreiber am 21. Oktober: „wir müssen da keine komplexe logik einbauen" (Review vom 21. Oktober) |
 | **Bewusst offen** | Altes Zugangstoken nach dem Entfernen | Ein schon ausgestelltes Token gilt bis zu seinem Ablauf (höchstens eine Stunde) und sieht ohne Mitgliedschaft nichts. Wird die Person in dieser Stunde neu eingeladen, gilt es für das neue Konto: Es trägt wieder ihre Person-Id (`anmelden`). Vermerkt am Trigger in `schema.sql` (Review vom 21. Oktober) |
@@ -9109,6 +9108,14 @@ neben dem Bild. Handbuch für Verkündiger und drei Bilder nachgezogen. Danach
 — nach den letzten Worten jeder Szene und vor einem Tipp bleibt das Bild
 stehen, bemessen nach Untertiteln (20 Zeichen je Sekunde) für die längste der
 zwölf Sprachen; die Bewegungen laufen wie im Clip. Knapp 50 statt 30 Sekunden.
+
+Am 24. Oktober aufgenommen und am Abend herausgenommen: **T133–T140**, die
+Punkte vom Testen — alle acht umgesetzt (siehe dort), danach `/simplify` und
+`/code-review max` über alle acht (zwei Befunde behoben: „Zu klären" listete
+das leere Schlussgebet am Wochenende, und ein langsames Nachladen brachte
+gelöschte Mitteilungen zurück; zwei Randfälle bewusst gelassen, siehe Commit
+`40a36f7a`). Die Function `substitute` ist als v45 ausgerollt (T133, das
+Angebot), das Frontend mit `40a36f7a` gepusht.
 
 Am 19. Oktober in die Tabelle aufgenommen: `sprache-fehlt` und
 `auth.sessions` (bis dahin nur in einer Commit-Nachricht, `42dff943`, und bei
