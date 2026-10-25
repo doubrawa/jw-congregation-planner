@@ -8605,7 +8605,7 @@ sind die Probe-Konten der Testversammlung mit Kennwort (Werkzeug, nicht App).
 - Das Feld E-Mail der Person ganz streichen (weniger Daten) — dann ginge kein
   Link mehr per Mail, auch keine Einladung.
 
-## Aufgenommen am 25. Oktober 2026 (T142, T143)
+## Aufgenommen am 25. Oktober 2026 (T142–T144)
 
 ### T142 · Freie Plätze nur für Hilfsdienste 🔧 ✅ umgesetzt (25. Oktober 2026)
 
@@ -8670,6 +8670,41 @@ acht Zettel, S-89 — Seiten = Blätter, alles A4; mit vorgegebenem A4 oder
 Letter ebenso. Probe `tests/druck-seiten.test.ts`, drei Regeln in der
 Mutationsprobe.
 
+### T144 · „Planung" zeigt erst nur die Wahl, die Wochen erst bei „Zusammenkünfte" 🏗 ☐ offen (Entwurf)
+
+„wenn man planung öffnet soll nur die auswahl kommen, was man plant und nicht
+zusätzlich die zusammenkunftswochen. diese wollen erst erscheinen, wenn man auf
+zusammenkünfte klickt. momentan ist die erste seite eine mischung aus auswahl
+der planung und zusammenkunftsplanung. das ist verwirrend. /design. wie könnte
+das besser aussehen von der programmführung? ist da noch ein genereller
+ablauffehler?" (Betreiber, 25. Oktober).
+
+**Heute** (am Handy nachgegangen, Entwicklerseite): „Planung" zeigt oben die
+Wahl aus T135 (Zusammenkünfte · Predigtdienst · Weitere Pläne, als Umschalter
+gezeichnet), darunter die Wochen der Zusammenkünfte, „Holen" und den
+Vortragsplan. Ab 1400 px führt „Planung" gleich in den Plan, Wahl und Wochen
+stehen dann als Spalte daneben.
+
+**Gefundene Ablauffehler:**
+
+- **„Fertig" führt nicht dorthin zurück, woher man kam.** Planung → Woche →
+  „Fertig" landet in der *Ansicht* der Zusammenkünfte, Planung → Predigtdienst →
+  „Fertig" in der Ansicht des Predigtdienstes; das Menü springt mit. Planen ist
+  als Modus gebaut (Ansehen ⇄ Planen, `zumAnsehen`), „Planung" als Ort — beide
+  Eingänge teilen sich einen Ausgang.
+- **Die Wahl sieht aus wie ein Umschalter, führt aber weg.** Ein Tipp auf
+  „Predigtdienst" wechselt nicht den Inhalt darunter, sondern die Seite — mit
+  anderem Kopf (✕ und „Fertig") und einer zweiten, gleich aussehenden
+  Reiterreihe (Treffpunkte · Gruppenbesuche · Grundplan). Zurück zur Wahl geht
+  es nur über das Menü.
+- **Ein Menüpunkt mit Zurück-Pfeil:** „Planung" ist im Menü ein Ziel, die Seite
+  trägt aber den Kopf einer Unterseite von Start (← führt zu Start).
+- **Die Breite entscheidet über den Weg:** ab 1400 px gibt es die Seite
+  „Planung" gar nicht, die Mischung steht dann in der Spalte.
+
+**Entwurf:** in der Arbeitskopie der Leinwand (`bauen-planung.mjs`,
+`GPlanungAblauf`), Varianten und Entscheidung siehe dort und unten.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -8707,13 +8742,14 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
-21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑
+21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☐
 
-**142 der 143 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen ist eine:**
+**142 der 144 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind zwei:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
+| **T144** | „Planung" erst nur die Wahl | ☐ Entwurf in der Arbeitskopie (`GPlanungAblauf`), Entscheidung des Betreibers offen |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
