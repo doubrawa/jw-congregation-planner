@@ -88,8 +88,16 @@ describe('Bei großer Schrift bekommt ein langes Wort Platz oder trennt', () => 
   it('was die Leiste am Desktop dazugewinnt, gibt die Person neben der Personenliste ab — die Liste bleibt so breit', () => {
     // Dieselbe Rechnung wie die Leiste: 124 px je Stufe über 1.
     expect(deklarationen('personen/personen.css', '.personen-raster')).toMatch(
-      /grid-template-columns:\s*minmax\(0, 1fr\) calc\(420px - 124px \* max\(0, var\(--fs\) - 1\)\)/,
+      /grid-template-columns:[^;]* minmax\(calc\(420px - 124px \* max\(0, var\(--fs\) - 1\)\), 1fr\)/,
     )
+  })
+
+  it('am breiten Fenster wird die Personenliste nicht breiter als ein Bildschirm — den Platz bekommt die Person', () => {
+    // Am Bildschirm des Betreibers (25.10.2026) war die Liste über 2000 px breit, die Person 420.
+    const raster = deklarationen('personen/personen.css', '.personen-raster')
+    expect(raster).toMatch(/grid-template-columns:\s*minmax\(0, 760px\) /)
+    // Darüber wächst die Person, bis sie ebenso breit ist.
+    expect(raster).toMatch(/max-width:\s*1520px/)
   })
 
   it('wird eine Karte der Einstellungen für die Schrift zu schmal, steht der Wert unter dem Namen', () => {
