@@ -45,9 +45,10 @@ export function WochenListe({ spalte = false }: { spalte?: boolean }) {
   const unterzeile = (week: Week, tpw: (s: string) => string): string =>
     anlassName(anlassArt(week), t) ??
     (week.start === diese ? t.aktuelleWoche : week.start === naechste ? t.naechsteWoche : tpw(week.book))
-  // Die Seite der Wochen liegt unter „Planung"; in der Spalte wechselt ein Tipp
-  // nur die Woche, und woher das Planen kam, bleibt (T144).
-  const von = spalte ? state.planenVon : 'planung'
+  // Von der Seite der Wochen führt Zurück wieder hierher — auch, wenn der Plan
+  // bei den Treffpunkten aufgeht. In der Spalte wechselt ein Tipp nur die
+  // Woche, und woher das Planen kam, bleibt (T144).
+  const von = spalte ? state.planenVon : 'wochen'
   const oeffnen = (k: WochenKarte): void =>
     dispatch({
       type: 'navigate',

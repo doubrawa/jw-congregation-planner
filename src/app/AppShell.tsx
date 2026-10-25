@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Zeichen, type ZeichenName } from '../bausteine/Zeichen'
 import { kopfzeilenTag } from '../components/datum-anzeige'
-import { useBackDismiss } from '../components/useBackDismiss'
+import { useBackDismiss, zurueckWieDieTaste } from '../components/useBackDismiss'
 import { DESKTOP_BREITE, WOCHEN_SPALTE_BREITE, useMedia } from '../components/useMedia'
 import { displayName, initials } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
@@ -110,10 +110,10 @@ export function AppShell() {
    * eine Ebene hinauf — von der Woche zu den Wochen, von dort zur Wahl, dann zu
    * Start —, aus der Ansicht („Planen" neben dem Titel) wieder in die Ansicht;
    * von außen (Start, Mitteilung, Push) wie bisher zu Start. Jede Ebene bringt
-   * ihren eigenen Eintrag mit (`useBackDismiss`) — der Kopf am Bildschirm führt
-   * dorthin, wohin auch die Zurück-Taste führt (`zurueckInDerPlanung`).
+   * ihren eigenen Eintrag mit (`useBackDismiss`); der Pfeil im Kopf am Handy
+   * schließt, was die Zurück-Taste schlösse (`zurueckWieDieTaste`).
    */
-  const zurueck = zurueckInDerPlanung(state.screen, state.planenVon, geplant, rechte, wochenSpalte)
+  const zurueck = zurueckInDerPlanung(state.screen, state.planenVon, rechte, wochenSpalte)
   useBackDismiss(zurueck !== null, () => navigate('planung'), 'unteransicht')
   useBackDismiss(zurueck === 'wochen', () => navigate('wochen'), 'unteransicht')
   useBackDismiss(state.screen === 'planen' && state.planenVon === 'ansicht', () => dispatch(zumAnsehen(geplant)), 'unteransicht')
@@ -305,7 +305,6 @@ export function AppShell() {
   const planenKopf = state.screen === 'planen' && zurueck === null
   // Unterseiten mit Zurück am Handy: die Mitteilungen und was unter „Planung" liegt.
   const unterseite = state.screen === 'mitteilungen' || zurueck !== null
-  const unterseiteZurueck = (): void => navigate(zurueck ?? 'start')
   const menue = abschnitte([])
   // Texte für die Error Boundaries: die Klasse kann useT() nicht aufrufen.
   const fehlerTexte = { titel: t.errTitel, text: t.errText, aktion: t.offlineRetry }
@@ -342,7 +341,7 @@ export function AppShell() {
                 <PlanenKopf titel={bereichsTitel(t, geplant)} onBeenden={() => dispatch(zumAnsehen(geplant))} />
               )}
               {unterseite && (
-                <UnterseiteKopf onZurueck={unterseiteZurueck}>
+                <UnterseiteKopf onZurueck={zurueckWieDieTaste}>
                   {state.screen === 'mitteilungen' && ungelesen > 0 && <AlleGelesen className="unterseitenkopf-aktion" />}
                 </UnterseiteKopf>
               )}

@@ -32,7 +32,7 @@ export function Bereichstitel({ thema: vorgegeben }: { thema?: Thema }) {
   const thema = vorgegeben ?? themaVon(state.tab)
   const rechte = rechteVon(state)
   const planen = state.screen === 'planen'
-  const zurueck = zurueckInDerPlanung(state.screen, state.planenVon, thema, rechte, mitSpalte)
+  const zurueck = zurueckInDerPlanung(state.screen, state.planenVon, rechte, mitSpalte)
   if (zurueck) {
     return (
       <div className="bereichstitel">

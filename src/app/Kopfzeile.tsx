@@ -81,10 +81,10 @@ export function PlanenKopf({ titel, onBeenden }: { titel: string; onBeenden: () 
 }
 
 /**
- * Der Kopf einer Unterseite am Handy (Entwurf `GMitteilungen`): Zurück führt
- * zu Start — wie die Zurück-Taste, die von jedem Bildschirm dorthin führt —,
- * rechts steht, was die Seite anbietet. Ab dem Tablet steht wieder die
- * Kopfzeile da.
+ * Der Kopf einer Unterseite am Handy (Entwurf `GMitteilungen`): Zurück wie die
+ * Zurück-Taste (`zurueckWieDieTaste`) — von den Mitteilungen zu Start, unter
+ * „Planung" eine Ebene hinauf (T144) —, rechts steht, was die Seite anbietet.
+ * Ab dem Tablet steht wieder die Kopfzeile da.
  */
 export function UnterseiteKopf({ onZurueck, children }: { onZurueck: () => void; children?: ReactNode }) {
   const { t } = useT()

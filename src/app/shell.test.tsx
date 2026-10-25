@@ -695,14 +695,24 @@ describe('Aus der Wahl auf „Planung" geplant: am Handy der Kopf mit Zurück, e
     }
   })
 
-  it('eine Woche der Zusammenkünfte: Zurück zu den Wochen — von dort zur Wahl', () => {
-    const plan = zeige({ screen: 'planen', tab: 'mid', planenVon: 'planung' })
-    fireEvent.click(zurueckImKopf(plan.container)!)
-    expect(plan.dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'wochen' })
-    cleanup()
+  it('eine Woche von der Seite der Wochen: Zurück dorthin — auch bei den Treffpunkten; von dort zur Wahl', () => {
+    // Ist nur bei den Treffpunkten etwas zu tun, öffnet die Woche dort
+    // (`zielReiter`). Bis zum Review von T144 führte Zurück dann zur Wahl.
+    for (const tab of ['mid', 'fs'] as const) {
+      const plan = zeige({ screen: 'planen', tab, planenVon: 'wochen' })
+      fireEvent.click(zurueckImKopf(plan.container)!)
+      expect(plan.dispatch, tab).toHaveBeenCalledWith({ type: 'navigate', screen: 'wochen' })
+      cleanup()
+    }
     const wochen = zeige({ screen: 'wochen' })
     fireEvent.click(zurueckImKopf(wochen.container)!)
     expect(wochen.dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planung' })
+  })
+
+  it('direkt von der Wahl in die Zusammenkünfte (breiter Bildschirm): Zurück zur Wahl', () => {
+    const { container, dispatch } = zeige({ screen: 'planen', tab: 'mid', planenVon: 'planung' })
+    fireEvent.click(zurueckImKopf(container)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planung' })
   })
 
   it('aus der Ansicht oder von außen (Start, Push) bleibt es bei „Fertig"', () => {

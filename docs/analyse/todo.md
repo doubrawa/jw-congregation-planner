@@ -8727,7 +8727,8 @@ darunter je Bereich eine Ebene) und B · Wahl im Menü. **Entschieden: A**
   statt ✕ und „Fertig" steht dann ein Pfeil vor dem Titel (am Handy im Kopf).
   Aus der Ansicht („Planen" neben dem Titel) führt auch die Zurück-Taste wieder
   in die Ansicht. Von außen (Start, Mitteilung, Push) bleibt es bei ✕ und
-  „Fertig". Kopf, Pfeil und Zurück-Taste rechnen mit derselben Funktion.
+  „Fertig". Pfeil und Zurück-Taste rechnen mit derselben Funktion; der Pfeil
+  im Kopf am Handy schließt, was die Taste schlösse (`zurueckWieDieTaste`).
 - Bei der Laufzeitprüfung gefunden und gleich behoben: Am Tablet fehlte auf der
   Seite der Wochen ein sichtbares Zurück (der Kopf der App steht dort nicht);
   in acht Sprachen begann der Hinweis unter „Predigtdienst" mit demselben Wort
@@ -8738,6 +8739,18 @@ Texte in allen zwölf Sprachen; Tests für Wahl, Wege und Zurück (auch mit der
 echten Zurück-Taste), acht Regeln in der Mutationsprobe neu, vier umgehängt,
 drei mit der alten Wahl gestrichen;
 Handbuch (`planer.md`) und die Bilder `planer-planung` und `planer-wochen` neu.
+
+**Review** (`/simplify`, `/code-review max`, 25. Oktober): zwei Fehler im Ablauf
+behoben. Eine Woche, die von der Seite der Wochen bei den Treffpunkten aufging
+(dort war das Erste zu tun), führte mit Zurück zur Wahl statt zu den Wochen —
+die Herkunft heißt jetzt eigens `'wochen'`. Und am Handy standen in den Zusagen
+der Woche, in „Woche einrichten" und in einem offenen Weiteren Plan zwei Pfeile
+übereinander mit zwei Zielen: Der Kopf sprang gleich hinauf, Pfeil darunter
+und Taste schlossen erst die Ansicht; jetzt schließt auch der Kopf, was die
+Taste schlösse. Dazu: „Probleme" an einer Stelle (`problemeDerWoche`), die
+Liste der Bildschirme in `docs/user-guide/README.md` ergänzt. Bewusst gelassen:
+„Alle Wochen" auf Start führt mit Zurück zur Wahl, nicht zu Start — die Wochen
+liegen unter „Planung", so steht es im Handbuch.
 
 ### T145 · Auswertung, Engpässe: nur die problematischen Bereiche ⚡ ☐ offen
 

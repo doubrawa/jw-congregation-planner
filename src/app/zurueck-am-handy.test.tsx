@@ -268,6 +268,68 @@ describe('Zurück am Handy', () => {
     }
   })
 
+  it('eine Woche von der Seite der Wochen, bei den Treffpunkten geöffnet: Zurück führt zu den Wochen (T144, Review)', async () => {
+    // Ist in einer Woche nur bei den Treffpunkten etwas zu tun, öffnet sie dort
+    // (`zielReiter`) — die Seite der Wochen gibt dann `von: 'wochen'` mit.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9, 0))
+    try {
+      const { container } = zeige({ screen: 'planen', tab: 'fs', planenVon: 'wochen' })
+      await ausklingen()
+      expect(container.querySelector('.bereichstitel h1')?.textContent).toBe(t.tabFs)
+
+      await zurueck()
+      expect(container.querySelector('.wochen-karte'), 'nicht zurück bei den Wochen').not.toBeNull()
+      await zurueck()
+      expect(container.querySelectorAll('.planung-karte').length, 'nicht zurück bei der Wahl').toBe(3)
+      await zurueck()
+      expect(aktiv(container)).toBe(t.navStart)
+      expect(amGrund(), 'ein Eintrag zu viel oder zu wenig').toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('der Pfeil im Kopf schließt, was die Taste schlösse — erst die Zusagen, dann hinauf (T144, Review)', async () => {
+    // Bis zum Review führte der Pfeil im Kopf aus den Zusagen gleich zu den
+    // Wochen, der Pfeil darunter und die Taste aber in den Plan.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9, 0))
+    try {
+      const { container } = zeige()
+      const kopfZurueck = () =>
+        fireEvent.click(container.querySelector(`.unterseitenkopf [aria-label="${t.a11yZurueck}"]`)!)
+      klickMenue(container, t.dashPlanung)
+      fireEvent.click(
+        [...container.querySelectorAll('.planung-karte')].find((k) => k.textContent?.includes(t.navZusammenkuenfte))!,
+      )
+      await ausklingen()
+      fireEvent.click(container.querySelector('.wochen-karte-knopf')!)
+      await ausklingen()
+      fireEvent.click([...container.querySelectorAll('.spur-ziel')].find((b) => b.textContent?.startsWith(t.spurZusagen))!)
+      await ausklingen()
+      expect(container.querySelector('.screen.zusagen'), 'die Zusagen sind nicht offen').not.toBeNull()
+
+      kopfZurueck()
+      await ausklingen()
+      expect(container.querySelector('.screen.zusagen'), 'die Zusagen blieben offen').toBeNull()
+      expect(container.querySelector('.spur-ziel'), 'nicht zurück im Plan').not.toBeNull()
+
+      kopfZurueck()
+      await ausklingen()
+      expect(container.querySelector('.wochen-karte'), 'nicht zurück bei den Wochen').not.toBeNull()
+
+      // Die Taste geht von hier denselben Weg weiter — kein Eintrag blieb liegen.
+      await zurueck()
+      expect(container.querySelectorAll('.planung-karte').length, 'nicht zurück bei der Wahl').toBe(3)
+      await zurueck()
+      expect(aktiv(container)).toBe(t.navStart)
+      expect(amGrund(), 'ein Eintrag zu viel oder zu wenig').toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('Wahl → Predigtdienst: Zurück führt zur Wahl, dann zu Start (T144)', async () => {
     const { container } = zeige()
     klickMenue(container, t.dashPlanung)

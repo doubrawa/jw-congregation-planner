@@ -36,7 +36,7 @@ dadurch bleiben Bilder und App immer konsistent. Mit Namen als Argumenten
 
 | Parameter | Bedeutung |
 | --- | --- |
-| `s`   | Bildschirm: `login`, `start`, `programm`, `aufgaben`, `mitteilungen`, `planen`, `planung`, `auswertung`, `personen`, `einstellungen`, `profil` |
+| `s`   | Bildschirm: `login`, `start`, `programm`, `aufgaben`, `freie`, `mitteilungen`, `planen`, `planung` (die Wahl, was man plant), `wochen` (die Wochen der Zusammenkünfte), `auswertung`, `personen`, `einstellungen`, `profil` |
 | `tab` | Reiter in Programm/Planen: `mid` (unter der Woche), `we` (Wochenende), `fs` (Predigtdienst), `wp` (Weitere Pläne; Pläne bringt nur die Entwicklerseite mit), `zusagen` (die Zusagen der Woche; nur beim Planen) |
 | `fb`  | Reiter im Predigtdienst: `treffpunkte`, `gruppenbesuche` (Besuche des Dienstaufsehers; nur die Entwicklerseite bringt welche mit), `trolleys` (Trolleys; nur beim Ansehen; die Entwicklerseite bringt drei Trolleys und sechs Termine mit), `grundplan` (nur beim Planen) |
 | `pl`  | Rechte erzwingen: `0` = Verkündiger‑Ansicht, `1` = Admin, `2` = Planer (plant alles wie der Admin, nur Personen und Einstellungen nicht) |
@@ -76,6 +76,8 @@ Ende automatisch auf; du musst nichts extra tun.
 | `verkuendiger-weitere-plaene.png` | `s=programm&tab=wp&pl=0&me=p9` (Höhe 1400) | verkuendiger |
 | `planer-start.png` | `s=start&me=p9` (Höhe 1300) | planer |
 | `planer-aufgaben.png` | `s=aufgaben&me=p9` | (Reserve) |
+| `planer-planung.png` | `s=planung&me=p6` | planer |
+| `planer-wochen.png` | `s=wochen&me=p6` (Höhe 1300) | planer |
 | `planer-planen-woche.png` | `s=planen&tab=mid` | planer |
 | `planer-planen-treffpunkte.png` | `s=planen&tab=fs` | (Reserve) |
 | `planer-plan-senden.png` | `s=planen&tab=fs` (Höhe 2100) | planer |

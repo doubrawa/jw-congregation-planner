@@ -4212,15 +4212,15 @@ export const KATALOG = [
   {
     id: 'planung-woche-zurueck-zu-den-wochen',
     datei: 'src/app/bereich.ts',
-    regel: 'Aus „Planung" führt Zurück aus dem Plan einer Woche zu den Wochen, nicht in die Ansicht (T144).',
-    suchen: "  if (thema === 'zusammenkuenfte' && !mitSpalte) return 'wochen'\n",
-    ersetzen: '',
+    regel: 'Ein Plan von der Seite der Wochen führt mit Zurück dorthin — auch bei den Treffpunkten geöffnet, nicht zur Wahl (T144).',
+    suchen: "  return von === 'wochen' && !mitSpalte ? 'wochen' : 'planung'\n",
+    ersetzen: "  return 'planung'\n",
   },
   {
     id: 'planung-nur-aus-planung',
     datei: 'src/app/bereich.ts',
     regel: 'Nur aus „Planung" geht Zurück eine Ebene hinauf — aus der Ansicht beenden ✕ und „Fertig" das Planen wie bisher.',
-    suchen: "  if (screen !== 'planen' || von !== 'planung' || !hatPlanungsWahl(r)) return null\n",
+    suchen: "  if (screen !== 'planen' || (von !== 'planung' && von !== 'wochen') || !hatPlanungsWahl(r)) return null\n",
     ersetzen: "  if (screen !== 'planen' || !hatPlanungsWahl(r)) return null\n",
   },
   {
@@ -4233,9 +4233,11 @@ export const KATALOG = [
   {
     id: 'planung-wochenliste-merkt-herkunft',
     datei: 'src/planen/WochenUebersicht.tsx',
-    regel: 'Eine Woche von der Seite der Wochen öffnet das Planen „aus Planung" — Zurück führt zu den Wochen.',
-    suchen: "  const von = spalte ? state.planenVon : 'planung'\n",
-    ersetzen: '  const von = spalte ? state.planenVon : null\n',
+    // Ersetzt durch den Stand vor dem Review von T144: Mit „von der Wahl" führte
+    // Zurück aus einer Woche, die bei den Treffpunkten aufging, zur Wahl.
+    regel: 'Eine Woche von der Seite der Wochen merkt sich, dass sie von dort kam — Zurück führt zu den Wochen.',
+    suchen: "  const von = spalte ? state.planenVon : 'wochen'\n",
+    ersetzen: "  const von = spalte ? state.planenVon : 'planung'\n",
   },
   {
     id: 'planung-zuruecktaste-zu-den-wochen',
@@ -4359,11 +4361,15 @@ export const KATALOG = [
     ersetzen: '              onGlocke={() => undefined}',
   },
   {
-    id: 'unterseite-zurueck-zu-start',
+    // Bis zum Review von T144 `unterseite-zurueck-zu-start`: Der Kopf der
+    // Mitteilungen führte selbst zu Start. Seitdem schließt er, was die Taste
+    // schlösse; dass das von den Mitteilungen Start ist, bewacht
+    // `zurueck-bildschirm-zu-start`.
+    id: 'kopf-zurueck-wie-taste',
     datei: 'src/app/AppShell.tsx',
-    regel: 'Zurück im Kopf der Mitteilungen führt zu Start — wie die Zurück-Taste.',
-    suchen: "  const unterseiteZurueck = (): void => navigate(zurueck ?? 'start')\n",
-    ersetzen: "  const unterseiteZurueck = (): void => navigate(zurueck ?? 'aufgaben')\n",
+    regel: 'Der Pfeil im Kopf am Handy schließt, was die Zurück-Taste schlösse — aus den Zusagen erst die Zusagen, nicht gleich hinauf (T144).',
+    suchen: '                <UnterseiteKopf onZurueck={zurueckWieDieTaste}>',
+    ersetzen: "                <UnterseiteKopf onZurueck={() => navigate(zurueck ?? 'start')}>",
   },
   /* ---- Die Versammlung ansehen (T121, Phase 4a) ---- */
   {

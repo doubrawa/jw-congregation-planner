@@ -186,7 +186,7 @@ describe('Die Seite der Wochen (`GWochen`, bis T144 „Planung")', () => {
   it('ein Tipp öffnet den Plan der Woche dort, wo das Erste zu tun ist — Zurück führt hierher (T144)', () => {
     const { container, dispatch } = zeige(<PlanungWochenScreen />)
     fireEvent.click(karten(container)[1]!.querySelector('.wochen-karte-knopf')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', woche: { wi: 2, tab: 'mid' }, von: 'planung' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', woche: { wi: 2, tab: 'mid' }, von: 'wochen' })
   })
 
   it('unten die nächste Woche ohne Programm, mit „Holen"', () => {

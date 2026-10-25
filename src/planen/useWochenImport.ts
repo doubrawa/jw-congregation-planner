@@ -194,8 +194,8 @@ export function useWochenImport(): {
     if (!zuteilen || !neu) return
     // Der Reducer arbeitet die Aktionen der Reihe nach ab: Der Sprung sieht die
     // neue Woche schon, das Zuteilen den Sprung. Woher das Planen kommt (T144):
-    // von der Seite der Wochen aus „Planung", aus dem Plan wie gehabt.
-    const von = state.screen === 'wochen' ? 'planung' : state.screen === 'planen' ? state.planenVon : null
+    // von der Seite der Wochen, aus dem Plan wie gehabt.
+    const von = state.screen === 'wochen' ? 'wochen' : state.screen === 'planen' ? state.planenVon : null
     dispatch({ type: 'navigate', screen: 'planen', woche: { wi, tab: 'mid' }, ...(von ? { von } : {}) })
     dispatch({ type: 'autoAssign', scope: 'all', umfang: 'woche' })
   }

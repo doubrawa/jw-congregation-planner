@@ -186,7 +186,7 @@ describe('Holen in der Produktion', () => {
   it('von der Seite der Wochen geholt, führt Zurück aus der neuen Woche dorthin — aus dem Plan, wohin es vorher führte (T144)', async () => {
     const neue = woche('2026-09-14')
     for (const [over, von] of [
-      [{ screen: 'wochen' }, 'planung'],
+      [{ screen: 'wochen' }, 'wochen'],
       [{ screen: 'planen', planenVon: 'ansicht' }, 'ansicht'],
     ] as const) {
       importNextWeek.mockResolvedValue({ ok: true, week: neue })

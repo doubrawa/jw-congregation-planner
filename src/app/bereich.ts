@@ -35,7 +35,8 @@ export const zumAnsehen = (thema: Thema): AppAction => ({ type: 'navigate', scre
 
 /**
  * Einen Bereich planen. `von` sagt, woher (T144, `planenVon`): „Planen" neben
- * dem Titel gibt `'ansicht'`, die Wahl auf „Planung" `'planung'`.
+ * dem Titel gibt `'ansicht'`, die Wahl auf „Planung" `'planung'` (die Seite
+ * der Wochen gibt `'wochen'`, `WochenListe`).
  */
 export const zumPlanen = (thema: Thema, von?: NonNullable<AppState['planenVon']>): AppAction => ({
   type: 'navigate',
@@ -56,8 +57,10 @@ export const zuDenWochen = (mitSpalte: boolean): AppAction =>
 /**
  * **Wohin Zurück unter „Planung" führt** (T144, Betreiber: „ist da noch ein
  * genereller ablauffehler?") — eine Ebene hinauf, dorthin, woher man kam: die
- * Seite der Wochen zur Wahl, der Plan einer Woche zu den Wochen (am breiten
- * Bildschirm stehen sie daneben, dann zur Wahl), jeder andere Bereich zur Wahl.
+ * Seite der Wochen zur Wahl, ein Plan von dort zu den Wochen — auch wenn er bei
+ * den Treffpunkten aufging, weil dort das Erste zu tun ist —, jeder andere zur
+ * Wahl. Am breiten Bildschirm stehen die Wochen neben dem Plan; dann geht es
+ * gleich zur Wahl.
  *
  * `null`: kein Bildschirm unter „Planung", oder das Planen kam nicht von dort
  * (aus der Ansicht, von Start, aus einer Mitteilung), oder es gibt keine Wahl —
@@ -68,13 +71,11 @@ export const zuDenWochen = (mitSpalte: boolean): AppAction =>
 export function zurueckInDerPlanung(
   screen: Screen,
   von: AppState['planenVon'],
-  thema: Thema,
   r: Rechte,
   mitSpalte: boolean,
 ): 'planung' | 'wochen' | null {
   // Die Wochen sehen nur Planer — und die haben immer die Wahl.
   if (screen === 'wochen') return 'planung'
-  if (screen !== 'planen' || von !== 'planung' || !hatPlanungsWahl(r)) return null
-  if (thema === 'zusammenkuenfte' && !mitSpalte) return 'wochen'
-  return 'planung'
+  if (screen !== 'planen' || (von !== 'planung' && von !== 'wochen') || !hatPlanungsWahl(r)) return null
+  return von === 'wochen' && !mitSpalte ? 'wochen' : 'planung'
 }

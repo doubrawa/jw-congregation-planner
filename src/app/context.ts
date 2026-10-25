@@ -345,14 +345,14 @@ export interface AppState {
    */
   sprungZiel: Abschnitt | null
   /**
-   * Woher das Planen kam (T144): aus „Planung" (die Wahl, die Wochen) — dann
-   * führt Zurück eine Ebene hinauf, die Woche zu den Wochen, alles andere zur
-   * Wahl (`zurueckInDerPlanung`) —, aus der Ansicht („Planen" neben dem Titel)
-   * — dann führt auch die Zurück-Taste in die Ansicht —, oder von außen
-   * (`null`: Start, Mitteilung, Push). In beiden letzten Fällen beenden ✕ und
-   * „Fertig" das Planen wie bisher.
+   * Woher das Planen kam (T144): von der Wahl auf „Planung" oder von der Seite
+   * der Wochen — dann führt Zurück eine Ebene hinauf, dorthin zurück
+   * (`zurueckInDerPlanung`) —, aus der Ansicht („Planen" neben dem Titel) —
+   * dann führt auch die Zurück-Taste in die Ansicht —, oder von außen (`null`:
+   * Start, Mitteilung, Push). In beiden letzten Fällen beenden ✕ und „Fertig"
+   * das Planen wie bisher.
    */
-  planenVon: 'ansicht' | 'planung' | null
+  planenVon: 'ansicht' | 'planung' | 'wochen' | null
   toast: Toast | null
   /**
    * Es wurde sich gerade angemeldet und die Begrüßung steht noch aus.

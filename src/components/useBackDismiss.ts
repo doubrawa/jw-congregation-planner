@@ -271,6 +271,20 @@ function feldVerlassen(): void {
 }
 
 /**
+ * **Zurück im Kopf wie die Zurück-Taste** (T144): schließt die Ebene, die ein
+ * Druck jetzt träfe (`oberste`). Sie ist dabei nicht `verbraucht` — ihr Eintrag
+ * geht wie bei jedem Schließen ohne Druck (`austragen`).
+ *
+ * Bis zum Review von T144 führte der Kopf am Handy unter „Planung" stur eine
+ * Ebene hinauf: Standen die Zusagen der Woche offen, sprang er zu den Wochen,
+ * während die Taste erst die Zusagen schloss — zwei Pfeile übereinander mit
+ * zwei Zielen.
+ */
+export function zurueckWieDieTaste(): void {
+  oberste()?.schliessen()
+}
+
+/**
  * @param ebene Wo die Ebene liegt — ein Blatt (Standard) über einer
  *   Unteransicht über einem Bildschirm.
  */
