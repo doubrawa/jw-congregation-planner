@@ -622,13 +622,14 @@ Drei Dinge, auf die du dich verlassen kannst:
 
 Darunter steht, wann für diese Woche zuletzt etwas hinausging.
 
-**Nach dem Senden können sich Verkündiger selbst eintragen.** Was in der Woche
-noch unbesetzt ist, sehen sie unter „Meine Aufgaben" im Bereich **FREIE
-PLÄTZE** – jeder nur, wofür er einen Aufgabenbereich hat und an dem Tag nicht
-abwesend ist. Schulungsaufgaben, den öffentlichen Vortrag und die Reinigung
-bietet die App nicht an. Wer zuerst tippt, ist eingetragen und hat damit
-zugesagt; eine Mitteilung bekommst du dafür nicht, im Plan steht sein Name mit
-vollem Punkt. Willst du einen Platz selbst besetzen, tu es vor dem Senden.
+**Nach dem Senden können sich Verkündiger für Hilfsdienste selbst eintragen.**
+Welche Hilfsdienste der Woche noch unbesetzt sind, sehen sie im Menü unter
+**Freie Plätze** – jeder nur, wofür er einen Aufgabenbereich hat, an dem Tag
+nicht abwesend ist und im selben Dienst noch keinen Platz hat. **Programmpunkte
+bietet die App dort nicht an:** Die teilst du zu. Die Reinigung auch nicht. Wer
+zuerst tippt, ist eingetragen und hat damit zugesagt; eine Mitteilung bekommst
+du dafür nicht, im Plan steht sein Name mit vollem Punkt. Willst du einen Platz
+selbst besetzen, tu es vor dem Senden.
 
 > **Eine Ausnahme wartet nicht auf den Knopf.** Nimmst du jemandem eine Aufgabe
 > weg, von der er **schon weiß** – er hat sie bestätigt, oder sie wurde ihm mit

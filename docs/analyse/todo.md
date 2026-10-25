@@ -8632,6 +8632,12 @@ ohne die Reinigung:
   übernommen hat, bleiben eingetragen.
 - Handbuch für Verkündiger, „Freie Plätze übernehmen": nennt die Regel. Das
   Bild dort zeigte schon nur Ordner.
+- **Aus dem Review am selben Tag:** Wer in einem Dienst an dem Tag schon einen
+  Platz hat, bekommt dessen zweiten nicht angeboten, und `fill` weist ihn ab
+  (Id vor Name) — ein zweiter Platz brächte dem Dienst niemanden dazu. Das
+  Handbuch für Planer beschrieb noch das alte Angebot (und „Meine Aufgaben").
+  Der Hinweis auf dem Wochenbogen („noch frei – …") sagt jetzt in allen zwölf
+  Sprachen, dass man in der App nur Hilfsdienste übernimmt.
 
 Ausrollen: erst die Function `substitute`, dann das Frontend. Eine ältere App
 bietet Programmpunkte noch an, bis sie die neue Fassung lädt; die Function weist

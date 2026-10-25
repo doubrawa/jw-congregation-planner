@@ -744,7 +744,7 @@ export default {
   "gueltigBisDatum": "valido fino al {datum}",
   "zettelAnleitung": "Scansionalo con la fotocamera del telefono e hai accesso. Se non funziona: apri {adresse} e digita il codice sotto “{frage}”.",
   "aenderungenInDerApp": "Le modifiche compaiono nell’app",
-  "druckNochFrei": "ancora libero – chi può occuparsene lo segnali nell’app o agli anziani.",
+  "druckNochFrei": "ancora libero – i servizi di supporto puoi prenderli nell’app, altrimenti parla con gli anziani.",
   "druckMit": "{a} con {b}",
   "s89DieserZettel": "Stampa questo foglietto",
   "druckVersammlungstreffpunkte": "Adunanze per il servizio della congregazione",

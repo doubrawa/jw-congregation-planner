@@ -271,7 +271,8 @@ export const DE = {
     // Hilfsdiensten, was die gepunktete Linie heißt; auf dem Monatsbogen
     // Schüler und Partner in einer Zeile.
     aenderungenInDerApp: 'Änderungen stehen in der App',
-    druckNochFrei: 'noch frei – wer übernehmen kann, meldet sich in der App oder bei den Ältesten.',
+    // Seit T142 (25.10.2026) übernimmt man in der App nur Hilfsdienste — gepunktet sind auch Programmpunkte.
+    druckNochFrei: 'noch frei – Hilfsdienste übernimmst du in der App, sonst sprich die Ältesten an.',
     druckMit: '{a} mit {b}',
     // Bogen der Treffpunkte (Entwurf GDruckTreffpunkte): Überschriften, Spalten
     // und was gegenüber dem Grundplan anders ist — „statt {alt}" nennt Zeit und
@@ -648,7 +649,7 @@ export const DE = {
     ersatzHint: 'Wenn du einen Hilfsdienst absagst, wird automatisch ein Ersatz aus dem Kreis der Qualifizierten gesucht.',
     einspringenTitle: 'Einspringen', einspringenHint: 'Für diese Hilfsdienste wird ein Ersatz gesucht — kannst du übernehmen?',
     uebernehmen: 'Übernehmen',
-    // Freie Plätze unter „Meine Aufgaben" (4.10.2026): unbesetzte Plätze
+    // Freie Plätze (4.10.2026, seit T142 nur Hilfsdienste): unbesetzte Plätze
     // gesendeter Wochen, für die man den Aufgabenbereich hat.
     freiePlaetzeTitle: 'Freie Plätze',
     // Seit T134 eine eigene Seite: der Abschnitt der freien Plätze und die leere Seite.

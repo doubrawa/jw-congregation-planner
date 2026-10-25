@@ -266,6 +266,17 @@ describe('fill: was abgewiesen wird — und dann nichts schreibt', () => {
     expect(geschrieben()).toEqual([])
   })
 
+  it.each([
+    ['über die Person-Id', { name: 'Ich Selbst', pid: 'p-ich' }],
+    ['über den Namen, wo der Platz keine Id trägt', { name: 'Ich Selbst' }],
+  ])('wer im Dienst schon einen Platz hat, bekommt den zweiten nicht (%s) → 403', async (_wie, eigener) => {
+    // So bietet es auch die App nicht an (`offenePlaetze`): Ein zweiter Platz
+    // desselben Dienstes brächte niemanden dazu (Review 25.10.2026).
+    woche.mid!.helpers!.mik = [eigener]
+    expect(await antwort(await fuellen(K_MIK))).toEqual({ status: 403, body: { error: 'not-offered' } })
+    expect(geschrieben()).toEqual([])
+  })
+
   it('die Reinigung wird nicht angeboten → 403 not-offered', async () => {
     expect(await antwort(await fuellen(K_REIN))).toEqual({ status: 403, body: { error: 'not-offered' } })
     expect(geschrieben()).toEqual([])

@@ -744,7 +744,7 @@ export default {
   "gueltigBisDatum": "ważny do {datum}",
   "zettelAnleitung": "Zeskanuj aparatem w telefonie i masz dostęp. Jeśli to nie działa: otwórz {adresse} i wpisz kod w części „{frage}”.",
   "aenderungenInDerApp": "Zmiany są widoczne w aplikacji",
-  "druckNochFrei": "jeszcze wolne – kto może się tym zająć, niech zgłosi się w aplikacji lub u starszych.",
+  "druckNochFrei": "jeszcze wolne – zadania pomocnicze możesz przejąć w aplikacji, w pozostałych sprawach zwróć się do starszych.",
   "druckMit": "{a} i {b}",
   "s89DieserZettel": "Wydrukuj tę karteczkę",
   "druckVersammlungstreffpunkte": "Zbiórki dla całego zboru",

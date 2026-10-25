@@ -15,7 +15,8 @@
 //
 //  - der Platz ist ein **Hilfsdienst** (Betreiber, 25.10.2026: „aufgaben weist
 //    der planer zu") — bis dahin auch Programmpunkte und der Ratgeber;
-//  - Mitglied, mit eigener Person, und für den Dienst freigegeben;
+//  - Mitglied, mit eigener Person, für den Dienst freigegeben und dort nicht
+//    schon auf einem anderen Platz;
 //  - der Platz ist leer und wird überhaupt angeboten (`angebotsBereich`, keine
 //    Reinigung);
 //  - der Plan der Woche ist gesendet, die Zusammenkunft fällt nicht aus, liegt
@@ -109,6 +110,10 @@ export async function platzFuellen(rest: Rest, userId: string, taskKey: string, 
 
   const person = persons[0]
   if (!person || !person.priv?.[bereich]) return json({ error: 'not-qualified' }, 403)
+  // Schon auf einem anderen Platz desselben Dienstes — dieselbe Regel wie
+  // `offenePlaetze` im Client, Id vor Name: Ein zweiter Platz brächte niemanden dazu.
+  const name = personDisplayName(person.fn, person.ln)
+  if (reihe.some((s) => (s?.pid ? s.pid === person.id : s?.name === name))) return json({ error: 'not-offered' }, 403)
 
   const zeiten = zeitenAus(congRows[0])
   const tag = tagDerZusammenkunft(row.start, versatzMitAbweichung(row.data.dev, teile.tab, zeiten[teile.tab].wd))
@@ -117,7 +122,7 @@ export async function platzFuellen(rest: Rest, userId: string, taskKey: string, 
 
   // Wie `assignSlot` im Client: Lücken davor als leere Plätze auffüllen.
   while (reihe.length <= teile.pos) reihe.push({ name: '' })
-  reihe[teile.pos] = { name: personDisplayName(person.fn, person.ln), pid: person.id }
+  reihe[teile.pos] = { name, pid: person.id }
   const neuerStand = await wocheSchreiben(rest, cong, teile.woche, row.updated_at, row.data)
   if (!neuerStand) return json({ error: 'slot-taken' }, 409)
 

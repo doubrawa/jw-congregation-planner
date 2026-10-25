@@ -15,7 +15,8 @@
  *    dürfen nur hilfsdienste betreffen. aufgaben weist der planer zu") — bis
  *    dahin auch Programmpunkte und der Ratgeber, ohne Redner- und
  *    Schulungsplätze;
- *  - der Leser den Aufgabenbereich hat und an dem Tag nicht abwesend ist.
+ *  - der Leser den Aufgabenbereich hat, an dem Tag nicht abwesend ist und im
+ *    selben Dienst nicht schon einen Platz hat (Review 25.10.2026).
  *
  * Übernommen wird **direkt**, ohne Rückfrage beim Planer — wie beim
  * Einspringen. Dieselben Regeln prüft der Server (Edge Function `substitute`,
@@ -23,7 +24,7 @@
  */
 
 import { istAbwesend, KEINE_ABWESENHEIT, type AbsenceSet } from './absence'
-import { isQualified, istAusgefallen, MEETING_TABS } from './helpers'
+import { gehoertZu, isQualified, istAusgefallen, MEETING_TABS } from './helpers'
 import { angebotsBereich } from '../../supabase/functions/_shared/freie-plaetze.ts'
 import { istVorbei, meetingDateMs, meetingDateText } from './meeting-dates'
 import { allePlaetze, platzKey } from './plaetze'
@@ -115,6 +116,9 @@ export function offenePlaetze(
         // Nur Hilfsdienste — Programmpunkte und den Ratgeber teilt der Planer zu.
         if (platz.art !== 'helper') continue
         if (platz.slot?.name) continue
+        // Schon auf einem anderen Platz desselben Dienstes (Mikrofon 1, und
+        // Mikrofon 2 ist frei): Ein zweiter Platz brächte dem Dienst niemanden dazu.
+        if (meeting.helpers[platz.svc.key]?.some((s) => gehoertZu(s, me))) continue
         const bereich = angebotsBereich(platz.svc)
         if (!bereich || !isQualified(me, bereich)) continue
         out.push({

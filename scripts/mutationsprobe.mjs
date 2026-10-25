@@ -5595,6 +5595,13 @@ export const KATALOG = [
     ersetzen: '',
   },
   {
+    id: 'frei-nicht-zweimal-im-dienst',
+    datei: 'src/data/offene-plaetze.ts',
+    regel: 'Wer im Dienst schon einen Platz hat, bekommt den zweiten nicht angeboten — er brächte niemanden dazu.',
+    suchen: '        if (meeting.helpers[platz.svc.key]?.some((s) => gehoertZu(s, me))) continue\n',
+    ersetzen: '',
+  },
+  {
     id: 'frei-reinigung-nicht',
     datei: 'supabase/functions/_shared/freie-plaetze.ts',
     regel: 'Die Reinigung (eine Gruppe, keine Person) wird nicht angeboten.',
@@ -5634,6 +5641,13 @@ export const KATALOG = [
     datei: 'supabase/functions/substitute/fuellen.ts',
     regel: 'Der Server trägt nur in Hilfsdienste ein — Programmpunkte und den Ratgeber teilt der Planer zu (25.10.2026).',
     suchen: "  if (teile.art !== 'helper') return json({ error: 'not-offered' }, 403)\n",
+    ersetzen: '',
+  },
+  {
+    id: 'fill-nicht-zweimal-im-dienst',
+    datei: 'supabase/functions/substitute/fuellen.ts',
+    regel: 'Wer im Dienst schon einen Platz hat, bekommt den zweiten nicht — auch nicht an der App vorbei.',
+    suchen: "  if (reihe.some((s) => (s?.pid ? s.pid === person.id : s?.name === name))) return json({ error: 'not-offered' }, 403)\n",
     ersetzen: '',
   },
   {

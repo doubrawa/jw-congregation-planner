@@ -744,7 +744,7 @@ export default {
   "gueltigBisDatum": "valid until {datum}",
   "zettelAnleitung": "Scan it with your phone camera, and you’re in. If that doesn’t work: open {adresse} and type in the code under “{frage}”.",
   "aenderungenInDerApp": "Changes appear in the app",
-  "druckNochFrei": "still open – whoever can take it, please say so in the app or tell the elders.",
+  "druckNochFrei": "still open – you can take on support duties in the app; otherwise, speak to the elders.",
   "druckMit": "{a} with {b}",
   "s89DieserZettel": "Print this slip",
   "druckVersammlungstreffpunkte": "Congregation field service meetings",

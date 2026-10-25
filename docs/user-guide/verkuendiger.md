@@ -450,7 +450,8 @@ zu übernehmen, sagt die Seite das.
 ![Freie Plätze](screenshots/verkuendiger-freie-plaetze.png)
 
 Angeboten wird nur, wofür du einen **Aufgabenbereich** hast, was noch kommt und
-wo du an dem Tag nicht abwesend bist. **Programmpunkte** – Vorträge, Gebete,
+wo du an dem Tag nicht abwesend bist – und kein zweiter Platz in einem Dienst,
+in dem du an dem Tag schon stehst. **Programmpunkte** – Vorträge, Gebete,
 Leser, Schulungsaufgaben – übernimmst du hier nicht: Die teilt der Planer zu.
 Auch die Reinigung steht nicht dabei; sie übernimmt eine Gruppe.
 

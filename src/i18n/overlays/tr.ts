@@ -744,7 +744,7 @@ export default {
   "gueltigBisDatum": "son geçerlilik: {datum}",
   "zettelAnleitung": "Telefonun kamerasıyla tara, hemen giriş yapmış olursun. Olmazsa: {adresse} adresini aç ve “{frage}” bölümünde kodu yaz.",
   "aenderungenInDerApp": "Değişiklikler uygulamada görünür",
-  "druckNochFrei": "henüz boş – üstlenebilecek olan uygulamadan ya da ihtiyarlara bildirsin.",
+  "druckNochFrei": "henüz boş – yardımcı görevleri uygulamadan üstlenebilirsin, diğerleri için ihtiyarlarla konuş.",
   "druckMit": "{a} ile {b}",
   "s89DieserZettel": "Bu kartı yazdır",
   "druckVersammlungstreffpunkte": "Tüm cemaat için tarla hizmeti buluşmaları",

@@ -125,6 +125,15 @@ describe('offenePlaetze — was angeboten wird', () => {
     expect(angebot()[0]?.schonHeute).toEqual([{ text: 'Leiter', lang: 'u' }])
   })
 
+  it.each([
+    ['über die Person-Id', { name: 'Ich Selbst', pid: 'ich' }],
+    ['über den Namen, wo der Platz keine Id trägt', { name: 'Ich Selbst' }],
+  ])('nicht der zweite Platz eines Dienstes, in dem ich schon stehe (%s) — er brächte niemanden dazu', (_wie, eigener) => {
+    const mid = dienstag()
+    mid.helpers.mik = [eigener]
+    expect(angebot({ weeks: [woche({ mid })] })).toEqual([])
+  })
+
   it('nicht die Reinigung — sie übernimmt eine Gruppe, keine Person', () => {
     expect(keys(angebot())).not.toContain(helferKey(MONTAG, 'mid', 'rein', 0))
   })

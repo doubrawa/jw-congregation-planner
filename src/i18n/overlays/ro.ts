@@ -744,7 +744,7 @@ export default {
   "gueltigBisDatum": "valabil până la {datum}",
   "zettelAnleitung": "Scanează-l cu camera telefonului și ai acces. Dacă nu merge: deschide {adresse} și introdu codul la „{frage}”.",
   "aenderungenInDerApp": "Modificările apar în aplicație",
-  "druckNochFrei": "încă liber – cine poate prelua să anunțe în aplicație sau bătrânilor.",
+  "druckNochFrei": "încă liber – sarcinile de sprijin le poți prelua în aplicație, altfel vorbește cu bătrânii.",
   "druckMit": "{a} cu {b}",
   "s89DieserZettel": "Tipărește acest bilețel",
   "druckVersammlungstreffpunkte": "Întrunirile congregației pentru serviciu",

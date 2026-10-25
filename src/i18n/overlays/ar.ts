@@ -744,7 +744,7 @@ export default {
   "gueltigBisDatum": "صالح حتى {datum}",
   "zettelAnleitung": "امسحها بكاميرا الهاتف فتدخل مباشرة. إذا لم ينجح ذلك: افتح {adresse} واكتب الرمز تحت «{frage}».",
   "aenderungenInDerApp": "التغييرات تظهر في التطبيق",
-  "druckNochFrei": "لا يزال شاغرًا – من يستطيع توليه فليُبلغ عبر التطبيق أو الشيوخ.",
+  "druckNochFrei": "لا يزال شاغرًا – يمكنك تولّي خدمات المساندة عبر التطبيق، وفي غير ذلك تحدَّث إلى الشيوخ.",
   "druckMit": "{a} مع {b}",
   "s89DieserZettel": "طباعة هذه البطاقة",
   "druckVersammlungstreffpunkte": "اجتماعات خدمة الحقل للجماعة",
