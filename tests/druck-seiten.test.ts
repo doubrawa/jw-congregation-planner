@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cssDateien, cssRegeln } from './css-quellen'
+import { cssDateien, cssRegeln, deklarationen } from './css-quellen'
 
 /**
  * **Jeder Druck auf sein Papier** (25.10.2026).
@@ -20,6 +20,8 @@ import { cssDateien, cssRegeln } from './css-quellen'
  * Liest das CSS als Text (ohne Kommentare); jsdom kennt weder Seiten noch Druck.
  */
 
+const DATEIEN = cssDateien()
+
 interface SeitenRegel {
   datei: string
   /** Leer bei einer Seite ohne Namen — die gilt für jeden Druck. */
@@ -29,7 +31,7 @@ interface SeitenRegel {
 
 /** Alle `@page`-Regeln der App, auch die in `@media print`. */
 function seitenRegeln(): SeitenRegel[] {
-  return cssDateien().flatMap(([datei, css]) =>
+  return DATEIEN.flatMap(([datei, css]) =>
     [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/@page\s*([\w-]*)[^{]*\{([^}]*)\}/g)].map((m) => ({
       datei,
       name: m[1] ?? '',
@@ -42,7 +44,7 @@ const hatPapier = (rumpf: string) => /(^|;)\s*size\s*:/.test(rumpf)
 
 /** Der Wert einer Eigenschaft in den Regeln mit genau diesem Selektor, über alle Dateien. */
 function wert(selektor: string, eigenschaft: string): string[] {
-  return cssDateien().flatMap(([, css]) =>
+  return DATEIEN.flatMap(([, css]) =>
     cssRegeln(css)
       .filter((r) => r.selektoren.includes(selektor))
       .flatMap((r) => r.deklarationen.filter(([e]) => e === eigenschaft).map(([, w]) => w)),
@@ -74,8 +76,7 @@ describe('Papier kommt nur aus benannten Seiten', () => {
 describe('Rechts-nach-links: der Behälter der Blätter nicht, die Blätter schon', () => {
   it('der Behälter läuft links-nach-rechts, jedes Blatt in seiner Sprache', () => {
     expect(wert('.druck-bogen', 'direction')).toEqual(['ltr'])
-    // Als Text: `cssRegeln` blendet Zeichenketten aus, auch das `'rtl'` im Selektor.
-    const bogenCss = (cssDateien().find(([datei]) => datei === 'druck/druck-bogen.css')?.[1] ?? '').replace(/\/\*[\s\S]*?\*\//g, '')
-    expect(bogenCss).toMatch(/\.druck-bogen\[dir='rtl'\]\s*>\s*\*\s*\{[^}]*\bdirection:\s*rtl\s*;/)
+    // Über den Rohtext: `cssRegeln` blendet Zeichenketten aus, auch das `'rtl'` im Selektor.
+    expect(deklarationen('druck/druck-bogen.css', ".druck-bogen[dir='rtl'] > *")).toMatch(/^\s*direction:\s*rtl;/m)
   })
 })
