@@ -29,10 +29,10 @@
 
 import { json, type Rest, wert } from '../_shared/rest.ts'
 import { wocheSchreiben } from '../_shared/woche-schreiben.ts'
-import { schluesselTeile, type SchluesselTeile } from '../_shared/aufgaben-schluessel.ts'
+import { schluesselTeile } from '../_shared/aufgaben-schluessel.ts'
 import { angebotsBereich } from '../_shared/freie-plaetze.ts'
 import { istAusgefallenFuer, personDisplayName, versatzMitAbweichung, zeitenAus, type ZeitenRow } from '../_shared/planung.ts'
-import type { Meeting, ServiceRow, Slot, Week } from '../_shared/zuteilungen.ts'
+import type { ServiceRow, Week } from '../_shared/zuteilungen.ts'
 
 interface Person {
   id: string
@@ -44,38 +44,6 @@ interface Person {
 interface Absence {
   from_date: string
   to_date: string
-}
-
-/** Ein gefundener Platz: was dort steht, wie man ihn setzt und wer ihn übernehmen darf. */
-interface Fund {
-  slot: Slot | null | undefined
-  setzen: (neu: { name: string; pid: string }) => void
-  /** Aufgabenbereich, unter dem er angeboten wird — `null`: gar nicht. */
-  bereich: string | null
-}
-
-type Hilfsdienst = Extract<SchluesselTeile, { art: 'helper' }>
-
-/**
- * Den Hilfsdienst-Platz zu einem Schlüssel in der gelesenen Woche finden —
- * `null`, wenn es ihn nicht gibt: nur bis zur eingestellten Platzzahl (wie
- * `allePlaetze` im Client).
- */
-function platzFinden(meeting: Meeting, teile: Hilfsdienst, services: ServiceRow[]): Fund | null {
-  const svc = services.find((s) => s.key === teile.svc)
-  if (!svc || teile.pos >= svc.count) return null
-  const helpers = (meeting.helpers ??= {})
-  const reihe = helpers[teile.svc] ?? []
-  return {
-    slot: reihe[teile.pos],
-    setzen: (neu) => {
-      // Wie `assignSlot` im Client: Lücken davor als leere Plätze auffüllen.
-      while (reihe.length <= teile.pos) reihe.push({ name: '' })
-      reihe[teile.pos] = neu
-      helpers[teile.svc] = reihe
-    },
-    bereich: angebotsBereich(svc),
-  }
 }
 
 /** ISO-Tag der Zusammenkunft aus dem Wochenstart; null ohne Startdatum. */
@@ -131,20 +99,25 @@ export async function platzFuellen(rest: Rest, userId: string, taskKey: string, 
   if (istAusgefallenFuer(row.data.dev, teile.tab)) return json({ error: 'meeting-cancelled' }, 409)
   if (versand.length === 0) return json({ error: 'not-published' }, 409)
 
-  const fund = platzFinden(meeting, teile, services)
-  if (!fund) return json({ error: 'slot-not-found' }, 404)
-  if (fund.slot?.name) return json({ error: 'slot-taken' }, 409)
-  if (!fund.bereich) return json({ error: 'not-offered' }, 403)
+  // Den Platz gibt es nur bis zur eingestellten Platzzahl (wie `allePlaetze` im Client).
+  const svc = services.find((s) => s.key === teile.svc)
+  if (!svc || teile.pos >= svc.count) return json({ error: 'slot-not-found' }, 404)
+  const reihe = ((meeting.helpers ??= {})[teile.svc] ??= [])
+  if (reihe[teile.pos]?.name) return json({ error: 'slot-taken' }, 409)
+  const bereich = angebotsBereich(svc)
+  if (!bereich) return json({ error: 'not-offered' }, 403)
 
   const person = persons[0]
-  if (!person || !person.priv?.[fund.bereich]) return json({ error: 'not-qualified' }, 403)
+  if (!person || !person.priv?.[bereich]) return json({ error: 'not-qualified' }, 403)
 
   const zeiten = zeitenAus(congRows[0])
   const tag = tagDerZusammenkunft(row.start, versatzMitAbweichung(row.data.dev, teile.tab, zeiten[teile.tab].wd))
   if (tag && tag < heute) return json({ error: 'past' }, 409)
   if (tag && absences.some((a) => a.from_date <= tag && tag <= a.to_date)) return json({ error: 'absent' }, 409)
 
-  fund.setzen({ name: personDisplayName(person.fn, person.ln), pid: person.id })
+  // Wie `assignSlot` im Client: Lücken davor als leere Plätze auffüllen.
+  while (reihe.length <= teile.pos) reihe.push({ name: '' })
+  reihe[teile.pos] = { name: personDisplayName(person.fn, person.ln), pid: person.id }
   const neuerStand = await wocheSchreiben(rest, cong, teile.woche, row.updated_at, row.data)
   if (!neuerStand) return json({ error: 'slot-taken' }, 409)
 

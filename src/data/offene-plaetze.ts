@@ -46,7 +46,7 @@ export interface OffenerPlatz {
   /** Leer: Ein Hilfsdienst trägt sich über seinen Namen (`rolle`), wie bei den Aufgaben. */
   title: string
   /** Der Name des Dienstes, **App-Sprache** (wie `MyTask.rolle`). */
-  rolle?: string
+  rolle: string
   date: string
   /** UTC-Mitternacht des Zusammenkunftstags — Countdown und Reihenfolge. */
   at: number | null
