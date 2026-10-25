@@ -45,7 +45,7 @@ const TRENNT = [
   ['personen/personen.css', '.person-unter'],
   // Die Titel im Kopf am Handy (T144): „Zusammenkünfte" wurde bei 320 px und
   // 1,45 mit „…" abgeschnitten. Dieselbe Regel gilt für den Kopf des Planens
-  // (`.planenkopf-titel`); dessen eigene Regel danach prüft `kopf-titel.test.ts`.
+  // (`.planenkopf-titel`); dass „Fertig" dort umrückt, prüft `kopf-titel.test.ts`.
   ['app/menue.css', '.unterseitenkopf-titel'],
 ] as const
 
