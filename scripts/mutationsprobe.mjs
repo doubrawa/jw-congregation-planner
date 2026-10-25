@@ -4756,6 +4756,28 @@ export const KATALOG = [
     suchen: "  :root[data-print='bogen'] body > :not(.druck-bogen) {\n",
     ersetzen: "  :root[data-print='bogen'] body > .gibt-es-nicht {\n",
   },
+  // Papier und Seiten (25.10.2026): Wochenbogen als Letter auf zwei Seiten, RTL mit leerer Seite.
+  {
+    id: 'druck-papier-nur-benannt',
+    datei: 'src/programm/print.css',
+    regel: 'Der Bildschirmdruck gibt kein Papier vor — seine Seite ohne Namen gälte für jeden Druck und nähme den Bögen ihr A4.',
+    suchen: '    margin: 12mm 14mm;\n',
+    ersetzen: '    size: portrait;\n    margin: 12mm 14mm;\n',
+  },
+  {
+    id: 'zettel-eigene-seite',
+    datei: 'src/personen/print-anmeldezettel.css',
+    regel: 'Die Anmeldezettel liegen auf ihrer eigenen A4-Seite mit 9 mm Rand.',
+    suchen: '    page: zettel;\n',
+    ersetzen: '',
+  },
+  {
+    id: 'druck-behaelter-ltr',
+    datei: 'src/druck/druck-bogen.css',
+    regel: 'Der Behälter der Blätter läuft links-nach-rechts — rechts-nach-links hängte Chrome eine leere Seite an.',
+    suchen: '  direction: ltr;\n',
+    ersetzen: '',
+  },
   {
     id: 'fs-abweichung-entfaellt',
     datei: 'src/data/fs.ts',

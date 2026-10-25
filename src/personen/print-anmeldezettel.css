@@ -18,6 +18,16 @@
   display: none;
 }
 
+/* Eine eigene, benannte Seite wie die Druckbögen (`@page bogen`). Bis zum
+   25.10.2026 stand hier eine Seite ohne Namen — die gilt für jeden Druck, und
+   die des Bildschirmdrucks (`programm/print.css`, später im Bündel) überschrieb
+   Rand und Format: Der Zettel bekam 12/14 mm Rand statt 9 mm und das Papier
+   des Dialogs. */
+@page zettel {
+  size: A4 portrait;
+  margin: 9mm;
+}
+
 @media print {
   :root[data-print='anmeldezettel'] body > :not(.anmelde-bogen) {
     display: none !important;
@@ -44,6 +54,7 @@
 
   /* Je Blatt eine Tabelle mit erzwungenem Umbruch dahinter (siehe `seiten`). */
   .anmelde-seite {
+    page: zettel;
     break-after: page;
     page-break-after: always;
   }
@@ -141,10 +152,5 @@
     margin-top: auto;
     font-size: 8pt;
     line-height: 1.35;
-  }
-
-  @page {
-    size: A4 portrait;
-    margin: 9mm;
   }
 }

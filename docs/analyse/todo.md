@@ -8605,7 +8605,7 @@ sind die Probe-Konten der Testversammlung mit Kennwort (Werkzeug, nicht App).
 - Das Feld E-Mail der Person ganz streichen (weniger Daten) — dann ginge kein
   Link mehr per Mail, auch keine Einladung.
 
-## Aufgenommen am 25. Oktober 2026 (T142)
+## Aufgenommen am 25. Oktober 2026 (T142, T143)
 
 ### T142 · Freie Plätze nur für Hilfsdienste 🔧 ✅ umgesetzt (25. Oktober 2026)
 
@@ -8642,6 +8642,33 @@ ohne die Reinigung:
 Ausrollen: erst die Function `substitute`, dann das Frontend. Eine ältere App
 bietet Programmpunkte noch an, bis sie die neue Fassung lädt; die Function weist
 sie ab, und die App lädt nach.
+
+### T143 · Der Wochenbogen druckt eine zweite Seite 🔧 ✅ behoben (25. Oktober 2026)
+
+Beim Prüfen von T142 aufgefallen: Der Wochenbogen kam als PDF auf zwei Seiten
+heraus, in jeder Sprache. Betreiber: „untersuche hier, warum … und behebe es".
+
+**Zwei Ursachen, gemessen per `Page.printToPDF` (Seiten und Papier je Druck):**
+
+- **Das Papier kam aus einer fremden Regel.** Eine `@page` ohne Namen gilt für
+  jeden Druck. Zwei standen mit `size` im Bündel — die der Anmeldezettel (A4)
+  und die des Bildschirmdrucks (`programm/print.css`, `size: portrait`, seit
+  Juli) —, und die letzte gewann. Chrome nahm das Papier aus ihr statt aus der
+  A4-Seite der Bögen: Letter, 1056 px hoch, das Blatt aber 1122 px. Woche 2
+  Seiten statt 1, Monat 6 statt 3, sechs Anmeldezettel 2 statt 1. Am 15.10.
+  stand die Zettel-Regel noch zuletzt — deshalb stimmte die Messung damals.
+- **Rechts-nach-links hängte Chrome eine leere Seite an**, sobald der
+  Behälter der Blätter (`.druck-bogen`, `dir="rtl"`) rechts-nach-links lief —
+  auch mit leerem Blatt. Arabisch und Persisch druckten die Woche dadurch auch
+  auf A4 auf zwei Seiten.
+
+**Behoben:** Der Bildschirmdruck gibt nur noch den Rand vor, kein Papier; die
+Anmeldezettel haben eine eigene benannte Seite (`@page zettel`, A4, 9 mm). Der
+Behälter der Blätter läuft immer links-nach-rechts, jedes Blatt in der
+Richtung der Sprache. Gemessen danach: 12 Sprachen × Woche, Monat, sechs und
+acht Zettel, S-89 — Seiten = Blätter, alles A4; mit vorgegebenem A4 oder
+Letter ebenso. Probe `tests/druck-seiten.test.ts`, drei Regeln in der
+Mutationsprobe.
 
 ## Was bewusst offen bleibt
 
@@ -8680,9 +8707,9 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
-21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑
+21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑
 
-**141 der 142 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+**142 der 143 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |
@@ -9215,7 +9242,9 @@ Am selben Abend aufgenommen und beantwortet: **T141** — ein Konto kommt ganz
 ohne E-Mail aus, schon heute (Zettel mit QR-Code und Code; siehe T141).
 
 Am 25. Oktober aufgenommen und umgesetzt: **T142** — „Freie Plätze" bietet nur
-noch Hilfsdienste an; Programmpunkte und den Ratgeber teilt der Planer zu.
+noch Hilfsdienste an; Programmpunkte und den Ratgeber teilt der Planer zu. Am
+selben Tag **T143** — Wochenbogen, Monat und Anmeldezettel druckten auf Letter
+(zu viele Seiten), RTL mit leerer Seite; behoben.
 
 Am 19. Oktober in die Tabelle aufgenommen: `sprache-fehlt` und
 `auth.sessions` (bis dahin nur in einer Commit-Nachricht, `42dff943`, und bei

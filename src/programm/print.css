@@ -16,9 +16,13 @@
 
 @media print {
   @page {
-    /* Nur Hochformat vorgeben — die Größe kommt aus dem Druckdialog (A4,
-       Letter …), der Inhalt füllt sie dank der Breiten-Resets unten aus. */
-    size: portrait;
+    /* Die Größe kommt aus dem Druckdialog (A4, Letter …), der Inhalt füllt
+       sie dank der Breiten-Resets unten aus. **Kein `size`, auch nicht
+       `portrait`:** Diese Seite ohne Namen gilt für jeden Druck, und mit
+       `size` nahm Chrome das Papier aus ihr statt aus den A4-Seiten der Bögen
+       (`@page bogen`, `@page zettel`) — der Wochenbogen kam als Letter auf
+       zwei Seiten heraus, der Monat auf sechs statt drei (25.10.2026). Eine
+       Quelltext-Probe hält das fest (`tests/druck-seiten.test.ts`). */
     margin: 12mm 14mm;
   }
 

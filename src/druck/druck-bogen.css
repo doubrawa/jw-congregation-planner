@@ -17,6 +17,16 @@
 
 .druck-bogen {
   display: none;
+  /* Der Behälter der Blätter läuft immer links-nach-rechts, die Blätter in der
+     Richtung der Sprache (`dir` am Behälter, `useDruckBogen`). Stand der
+     Behälter rechts-nach-links, hängte Chrome im Druck hinter jedes Blatt eine
+     leere Seite — Arabisch und Persisch druckten die Woche auf zwei Seiten,
+     den Monat auf sechs statt drei, auch mit leerem Blatt (25.10.2026). */
+  direction: ltr;
+}
+
+.druck-bogen[dir='rtl'] > * {
+  direction: rtl;
 }
 
 @page bogen {
