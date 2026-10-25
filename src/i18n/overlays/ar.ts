@@ -901,7 +901,6 @@ export default {
   "awNiemandHatIhn": "لا أحد لديه المجال",
   "awKnappeBereiche": "مجالات ضيقة",
   "awKnappeZahl": "مجالات ضيقة: {n}",
-  "awAlleBereiche": "كل المجالات",
   "awKeinEngpass": "لا يوجد مجال ضيق: لن يأتي دور أحد أكثر من مرة كل {dauer}.",
   "awMehrFreigeben": "يساعد منح المجال لأشخاص أكثر: تُحدَّد مجالات التعيين في صفحة الشخص.",
   "ansichtTitel": "عرض للاختبار",

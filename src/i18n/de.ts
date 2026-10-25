@@ -909,7 +909,7 @@ export const DE = {
     awEngpaesseText: 'Knapp ist ein Bereich, in dem jeder öfter als alle {dauer} dran wäre – oder den niemand hat. Gerechnet über das ganze Jahr: die Plätze je Woche gegen die Personen, die den Bereich haben.',
     awPlaetzeJeWoche: 'Plätze je Woche: {n}', awJePersonJahr: 'je Person im Jahr: {n}',
     awNiemandHatIhn: 'niemand hat den Bereich',
-    awKnappeBereiche: 'Knappe Bereiche', awKnappeZahl: 'Knappe Bereiche: {n}', awAlleBereiche: 'Alle Bereiche',
+    awKnappeBereiche: 'Knappe Bereiche', awKnappeZahl: 'Knappe Bereiche: {n}',
     awKeinEngpass: 'Kein Bereich ist knapp: Niemand wäre öfter als alle {dauer} dran.',
     awMehrFreigeben: 'Mehr Personen freigeben: Aufgabenbereiche vergibst du bei der Person.',
     // Absagen (T126, seit 17.10.2026 aufgezeichnet). {anteil}/{sonst} sind Prozente aus `Intl`.

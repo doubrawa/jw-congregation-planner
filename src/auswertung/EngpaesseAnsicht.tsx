@@ -7,13 +7,14 @@ import { gerundet, type Kontext } from './kontext'
  * Woche anfallen und wie viele Personen ihn haben — daraus, alle wie viele
  * Wochen jeder dran wäre. Immer über das ganze Jahr.
  *
- * Oben stehen nur die knappen Bereiche (`istKnapp`) mit dem Rat, mehr Personen
- * freizugeben; ist keiner knapp, sagt es ein Satz. Darunter alle Bereiche, die
- * knappsten zuerst — als Zeilen, nicht als Tabelle: Neben einer Spalte mit
- * Zahlen bräche „Schulungsaufgaben" bei 320 px und Stufe 1,45 mitten im Wort,
- * hier rückt die Zahl darunter. Bis zum 24.10.2026 stand jeder Bereich mit
- * Balken da, und die Kachel nannte „Am knappsten: Gebete" — bei einem Abstand
- * von vierzehn Wochen.
+ * Es stehen nur die knappen Bereiche da (`istKnapp`), mit dem Rat, mehr
+ * Personen freizugeben; ist keiner knapp, sagt es ein Satz. Als Zeilen, nicht
+ * als Tabelle: Neben einer Spalte mit Zahlen bräche „Schulungsaufgaben" bei
+ * 320 px und Stufe 1,45 mitten im Wort, hier rückt die Zahl darunter. Bis zum
+ * 24.10.2026 stand jeder Bereich mit Balken da, und die Kachel nannte „Am
+ * knappsten: Gebete" — bei einem Abstand von vierzehn Wochen. Bis zum
+ * 25.10.2026 folgten unter den knappen noch alle Bereiche („es reichen
+ * problematische Bereiche", Betreiber; T145).
  */
 export function EngpaesseAnsicht({ k }: { k: Kontext }) {
   const { t } = k
@@ -36,10 +37,6 @@ export function EngpaesseAnsicht({ k }: { k: Kontext }) {
           <p className="klein-text">{t.awMehrFreigeben}</p>
         </section>
       )}
-      <section className="karte aw-gruppe aw-engpaesse" aria-label={t.awAlleBereiche}>
-        <h2 className="aw-gruppe-kopf">{t.awAlleBereiche}</h2>
-        <Zeilen liste={liste} k={k} />
-      </section>
     </div>
   )
 }

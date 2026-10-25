@@ -8768,15 +8768,24 @@ Titel trennt nur, wenn er auch neben dem Kreuz allein nicht passt. Gemessen
 in zwölf Sprachen, 320/375/390 px, Stufe 1 und 1,45: nichts abgeschnitten,
 kein Bruch ohne Strich, Kopf dann 116 px (Titel zweizeilig: 145 px).
 
-### T145 · Auswertung, Engpässe: nur die problematischen Bereiche ⚡ ☐ offen
+### T145 · Auswertung, Engpässe: nur die problematischen Bereiche ⚡ ✅ umgesetzt (25. Oktober 2026)
 
 „Bei Auswertung Engpässen müssen nicht alle Bereiche aufgeführt werden..es
 reichen problematische Bereiche." (Betreiber, 25. Oktober).
 
-**Heute** (seit T139, `EngpaesseAnsicht`): oben die knappen Bereiche
+**Bis dahin** (seit T139, `EngpaesseAnsicht`): oben die knappen Bereiche
 (`istKnapp`) mit „Mehr Personen freigeben …", darunter **Alle Bereiche**, die
-knappsten zuerst. Zu tun: die Liste „Alle Bereiche" streichen — oder klären,
-ob „problematisch" mehr meint als knapp (etwa Bereiche, die kaum jemand hat).
+knappsten zuerst.
+
+**Umgesetzt** (Betreiber: „Liste ‚Alle Bereiche' in den Engpässen streichen,
+nur die knappen zeigen"): Die Engpässe zeigen nur noch die knappen Bereiche —
+öfter als alle vier Wochen dran oder niemand hat ihn; ist keiner knapp, steht
+der Satz da. „Problematisch" heißt damit knapp, die Regel `istKnapp` bleibt
+unverändert. Der Schlüssel `awAlleBereiche` ist aus allen zwölf Sprachen
+entfernt, die Marke `aw-engpaesse` aus der Liste der Klassen ohne Regel. Tests:
+ohne knappen Bereich keine Zeile, mit zwei knappen genau zwei (Sabotage mit der
+alten Liste: beide rot); die Mutationsregel heißt jetzt `engpass-nur-knappe`.
+Handbuch (`planer.md`, „Engpässe") und das Bild `planer-auswertung` neu.
 
 ## Was bewusst offen bleibt
 
@@ -8815,14 +8824,13 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
-21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☐
+21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑
 
-**143 der 145 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind zwei:**
+**144 der 145 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
-| **T145** | Engpässe: nur die problematischen Bereiche | ☐ aufgenommen |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
@@ -9355,8 +9363,9 @@ noch Hilfsdienste an; Programmpunkte und den Ratgeber teilt der Planer zu. Am
 selben Tag **T143** — Wochenbogen, Monat und Anmeldezettel druckten auf Letter
 (zu viele Seiten), RTL mit leerer Seite; behoben — und **T144**: „Planung"
 zeigt erst nur die Wahl, die Wochen haben eine eigene Seite, und Zurück führt
-dorthin, woher man kam. Aufgenommen: **T145** (Engpässe nur mit den
-problematischen Bereichen).
+dorthin, woher man kam. Aufgenommen und am Abend umgesetzt: **T145** — die
+Engpässe zeigen nur noch die knappen Bereiche, die Liste „Alle Bereiche" ist
+fort.
 
 Am 19. Oktober in die Tabelle aufgenommen: `sprache-fehlt` und
 `auth.sessions` (bis dahin nur in einer Commit-Nachricht, `42dff943`, und bei

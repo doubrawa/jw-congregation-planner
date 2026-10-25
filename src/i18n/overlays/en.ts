@@ -901,7 +901,6 @@ export default {
   "awNiemandHatIhn": "nobody holds the area",
   "awKnappeBereiche": "Tight areas",
   "awKnappeZahl": "Tight areas: {n}",
-  "awAlleBereiche": "All areas",
   "awKeinEngpass": "No area is tight: nobody would have a turn more often than every {dauer}.",
   "awMehrFreigeben": "Give more people the area: you set assignment areas on the person’s page.",
   "ansichtTitel": "View for testing",

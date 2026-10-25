@@ -785,7 +785,7 @@ einen Namen öffnet die Person.
 
 Je Bereich – oben auszuwählen – steht da, wer am längsten nicht dran war,
 über das ganze Jahr. **Üblicher Abstand** ist der des Bereichs: die Personen,
-die ihn haben, geteilt durch seine Plätze je Woche (wie unter **Engpässe**).
+die ihn haben, geteilt durch seine Plätze je Woche (gerechnet wie unter **Engpässe**).
 Eine **lange Wartezeit** hat, wer mehr als doppelt so lange wartet; wer im Jahr
 nie dran war, wartet seit der ersten Woche, in der der Bereich in der App
 vorkommt. Zur Wartezeit zählen nur Wochen, in denen die Person hätte
@@ -813,11 +813,10 @@ wäre – und wie oft **je Person im Jahr**. Gezählt werden die Wochen ab der
 ersten, in der der Bereich einen Platz hatte: Aus New World Scheduler kommen
 die Hilfsdienste oft nur wenige Monate zurück.
 
-Oben stehen nur die **knappen Bereiche**: die, in denen jeder öfter als alle
+Es stehen nur die **knappen Bereiche** da: die, in denen jeder öfter als alle
 vier Wochen dran wäre, und die, die niemand hat – mit dem Rat, mehr Personen
 freizugeben (den Aufgabenbereich vergibst du bei der Person). Ist keiner knapp,
-steht das in einem Satz da. Darunter stehen **Alle Bereiche**, die knappsten
-zuerst. Die Kachel am Handy zählt die knappen Bereiche.
+steht das in einem Satz da. Die Kachel am Handy zählt die knappen Bereiche.
 
 ### Pflege der Bereiche
 

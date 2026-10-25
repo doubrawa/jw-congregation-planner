@@ -901,7 +901,6 @@ export default {
   "awNiemandHatIhn": "nikt nie ma tego uprawnienia",
   "awKnappeBereiche": "Obciążone uprawnienia",
   "awKnappeZahl": "Obciążone uprawnienia: {n}",
-  "awAlleBereiche": "Wszystkie uprawnienia",
   "awKeinEngpass": "Żadne uprawnienie nie jest obciążone: niczyja kolej nie przypadałaby częściej niż co {dauer}.",
   "awMehrFreigeben": "Nadaj to uprawnienie większej liczbie osób: uprawnienia nadajesz w danych osoby.",
   "ansichtTitel": "Widok testowy",

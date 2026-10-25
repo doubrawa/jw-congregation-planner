@@ -901,7 +901,6 @@ export default {
   "awNiemandHatIhn": "alan kimsede yok",
   "awKnappeBereiche": "Sıkışık alanlar",
   "awKnappeZahl": "Sıkışık alanlar: {n}",
-  "awAlleBereiche": "Tüm alanlar",
   "awKeinEngpass": "Hiçbir alan sıkışık değil: kimsenin sırası {dauer}da birden sık gelmez.",
   "awMehrFreigeben": "Alanı daha fazla kişiye ver: görev alanlarını kişinin sayfasında belirlersin.",
   "ansichtTitel": "Test görünümü",

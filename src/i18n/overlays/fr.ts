@@ -901,7 +901,6 @@ export default {
   "awNiemandHatIhn": "personne n’a le domaine",
   "awKnappeBereiche": "Domaines tendus",
   "awKnappeZahl": "Domaines tendus\u00a0: {n}",
-  "awAlleBereiche": "Tous les domaines",
   "awKeinEngpass": "Aucun domaine n’est tendu\u00a0: personne n’aurait son tour plus souvent que toutes les {dauer}.",
   "awMehrFreigeben": "Attribue le domaine à plus de personnes\u00a0: tu définis les domaines d’attribution dans la fiche de la personne.",
   "ansichtTitel": "Vue de test",

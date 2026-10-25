@@ -901,7 +901,6 @@ export default {
   "awNiemandHatIhn": "nadie tiene el área",
   "awKnappeBereiche": "Áreas con escasez",
   "awKnappeZahl": "Áreas con escasez: {n}",
-  "awAlleBereiche": "Todas las áreas",
   "awKeinEngpass": "Ninguna área tiene escasez: a nadie le tocaría con más frecuencia que cada {dauer}.",
   "awMehrFreigeben": "Da el área a más personas: las áreas de asignación las indicas en los datos de la persona.",
   "ansichtTitel": "Vista de prueba",

@@ -901,7 +901,6 @@ export default {
   "awNiemandHatIhn": "nimeni nu are domeniul",
   "awKnappeBereiche": "Domenii critice",
   "awKnappeZahl": "Domenii critice: {n}",
-  "awAlleBereiche": "Toate domeniile",
   "awKeinEngpass": "Niciun domeniu nu este critic: rândul nimănui nu ar veni mai des decât o dată la {dauer}.",
   "awMehrFreigeben": "Dă domeniul mai multor persoane: domeniile le stabilești în datele persoanei.",
   "ansichtTitel": "Vizualizare de test",

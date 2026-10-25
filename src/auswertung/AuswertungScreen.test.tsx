@@ -230,7 +230,7 @@ describe('Am Handy: der Überblick', () => {
   const knappeKarte = (c: HTMLElement) => c.querySelector(`section[aria-label="${t.awKnappeBereiche}"]`)
   const vierWochen = zeitspanne(4, 'week', 'de')
 
-  it('kein Bereich knapp: Die Kachel zählt null, die Unteransicht sagt es in einem Satz — darunter alle Bereiche (T139)', () => {
+  it('kein Bereich knapp: Die Kachel zählt null, die Unteransicht sagt es in einem Satz — und nennt keinen Bereich (T139, T145)', () => {
     // In den Testwochen ist jeder höchstens alle vierzehn Wochen dran. Bis zum
     // 24.10.2026 stand trotzdem „Am knappsten: Gebete" auf der Kachel.
     const a = rechnung(zustand())
@@ -240,16 +240,12 @@ describe('Am Handy: der Überblick', () => {
     expect(knappeKarte(container)).toBeNull()
     expect(container.querySelector('.aw-leer')?.textContent).toBe(fill(t.awKeinEngpass, { dauer: vierWochen }))
     expect(container.querySelector('.aw-erklaerung')?.textContent).toBe(fill(t.awEngpaesseText, { dauer: vierWochen }))
-    // Alle Bereiche, die knappsten zuerst — je Bereich Abstand und Personen.
-    const zeilen = [...container.querySelectorAll('.aw-engpaesse .aw-zeile')]
-    expect(zeilen).toHaveLength(a.engpaesse.length)
-    const erster = a.engpaesse[0]!
-    expect(zeilen[0]!.querySelector('.aw-zeile-name')?.textContent).toBe(bereichsName(erster.bereich, DEMO.services, t, (s) => s))
-    expect(zeilen[0]!.querySelector('.aw-zeile-zahl')?.textContent).toBe(fill(t.awAlleDauer, { dauer: zeitspanne(Math.round(erster.abstand!), 'week', 'de') }))
-    expect(zeilen[0]!.querySelector('.klein-text')?.textContent).toContain(fill(t.awPersonenZahl, { n: String(erster.personen) }))
+    // Bis zum 25.10.2026 standen darunter alle Bereiche — „es reichen
+    // problematische Bereiche" (Betreiber).
+    expect(container.querySelectorAll('.aw-zeile')).toHaveLength(0)
   })
 
-  it('knappe Bereiche stehen oben, mit dem Rat, mehr Personen freizugeben — einer, den niemand hat, und einer mit zwei Personen', () => {
+  it('nur die knappen Bereiche stehen da, mit dem Rat, mehr Personen freizugeben — einer, den niemand hat, und einer mit zwei Personen', () => {
     const a0 = rechnung(zustand())
     // Den knappsten Bereich nimmt man allen, den zweiten allen bis auf zwei.
     const [niemand, zwei] = [a0.engpaesse[0]!.bereich, a0.engpaesse[1]!.bereich]
@@ -274,17 +270,19 @@ describe('Am Handy: der Überblick', () => {
       [name(niemand), t.awNiemandHatIhn],
       [name(zwei), fill(t.awAlleDauer, { dauer: zeitspanne(Math.max(1, Math.round(knappe[1]!.abstand!)), 'week', 'de') })],
     ])
+    expect(karte.querySelectorAll('.aw-zeile')[1]!.querySelector('.klein-text')?.textContent).toContain(fill(t.awPersonenZahl, { n: '2' }))
     expect(karte.textContent).toContain(t.awMehrFreigeben)
     expect(container.querySelector('.aw-leer')).toBeNull()
-    // Die ganze Liste bleibt darunter.
-    expect(container.querySelectorAll('.aw-engpaesse .aw-zeile')).toHaveLength(engpaesse.length)
+    // Nur die knappen — die übrigen Bereiche stehen nicht darunter (T145).
+    expect(engpaesse.length).toBeGreaterThan(2)
+    expect(container.querySelectorAll('.aw-zeile')).toHaveLength(2)
   })
 
   it.each([
     [t.awVerteilungTitel, '.aw-gruppe'],
     [t.awEinseitigTitel, '.aw-person-karte'],
     [t.awWartezeitenTitel, '.feld-wahl'],
-    [t.awEngpaesseTitel, '.aw-engpaesse'],
+    [t.awEngpaesseTitel, '.aw-erklaerung'],
     [t.awWeiteresTitel, '.aw-treffpunkt-gruppe'],
   ])('die Kachel „%s" öffnet ihre Unteransicht — Zurück führt in den Überblick', (name, marke) => {
     const { container } = zeige(zustand())

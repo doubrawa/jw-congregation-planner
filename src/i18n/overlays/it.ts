@@ -901,7 +901,6 @@ export default {
   "awNiemandHatIhn": "nessuno ha la mansione",
   "awKnappeBereiche": "Mansioni critiche",
   "awKnappeZahl": "Mansioni critiche: {n}",
-  "awAlleBereiche": "Tutte le mansioni",
   "awKeinEngpass": "Nessuna mansione è critica: a nessuno toccherebbe più spesso che ogni {dauer}.",
   "awMehrFreigeben": "Assegna la mansione a più persone: le mansioni le assegni nella scheda della persona.",
   "ansichtTitel": "Vista di prova",

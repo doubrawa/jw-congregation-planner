@@ -8184,9 +8184,9 @@ export const KATALOG = [
     ersetzen: '  return e.abstand !== null && Math.round(e.abstand) < KNAPP_UNTER\n',
   },
   {
-    id: 'engpass-oben-nur-knappe',
+    id: 'engpass-nur-knappe',
     datei: 'src/auswertung/EngpaesseAnsicht.tsx',
-    regel: 'Oben stehen nur die knappen Bereiche — nicht einer, in dem jeder alle vierzehn Wochen dran ist (T139).',
+    regel: 'Es stehen nur die knappen Bereiche da — nicht einer, in dem jeder alle vierzehn Wochen dran ist (T139, T145).',
     suchen: '  const knappe = liste.filter(istKnapp)\n',
     ersetzen: '  const knappe = liste\n',
   },

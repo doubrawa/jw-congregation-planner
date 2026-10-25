@@ -900,7 +900,6 @@ export default {
   "awNiemandHatIhn": "هیچ‌کس این حوزه را ندارد",
   "awKnappeBereiche": "حوزه‌های تنگ",
   "awKnappeZahl": "حوزه‌های تنگ: {n}",
-  "awAlleBereiche": "همهٔ حوزه‌ها",
   "awKeinEngpass": "هیچ حوزه‌ای تنگ نیست: نوبت هیچ‌کس بیش از یک بار در هر {dauer} نمی‌رسد.",
   "awMehrFreigeben": "این حوزه را به افراد بیشتری بدهید: حوزه‌های وظیفه را در صفحهٔ فرد تعیین می‌کنید.",
   "ansichtTitel": "نمای آزمایشی",
