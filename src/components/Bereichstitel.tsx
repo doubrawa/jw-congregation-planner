@@ -18,8 +18,8 @@ import '../bausteine/bausteine.css'
  *
  * **Unter „Planung"** (T144) — die Seite der Wochen und das Planen, das von
  * dort kam — gibt es nichts zu beenden: Dann steht vor dem Titel Zurück, eine
- * Ebene hinauf (`zurueckInDerPlanung`) — am Handy im Kopf darüber
- * (`UnterseiteKopf`), ab Tablet-Breite hier.
+ * Ebene hinauf (`zurueckInDerPlanung`) — ab Tablet-Breite hier, am Handy
+ * beides im Kopf darüber (`UnterseiteKopf`).
  *
  * `thema` gibt der Bildschirm mit, wenn er es selbst entscheidet: Den
  * Gruppenaufseher führt `PlanenScreen` auch mit einem Reiter von früher zu den
@@ -35,11 +35,11 @@ export function Bereichstitel({ thema: vorgegeben }: { thema?: Thema }) {
   const zurueck = zurueckInDerPlanung(state.screen, state.planenVon, rechte, mitSpalte)
   if (zurueck) {
     return (
-      <div className="bereichstitel">
-        <div className="bereichstitel-zeile bereichstitel-zeile--zurueck">
+      <div className="bereichstitel bereichstitel--zurueck">
+        <div className="bereichstitel-zeile">
           <button
             type="button"
-            className="rund-knopf bereichstitel-zurueck"
+            className="rund-knopf"
             aria-label={t.a11yZurueck}
             onClick={() => dispatch({ type: 'navigate', screen: zurueck })}
           >

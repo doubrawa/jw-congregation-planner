@@ -695,6 +695,26 @@ describe('Aus der Wahl auf „Planung" geplant: am Handy der Kopf mit Zurück, e
     }
   })
 
+  it('neben Zurück steht der Titel des Bereichs — nicht erst eine Zeile darunter', () => {
+    // Betreiber 25.10.2026: „auf dem handy sollte die überschrift
+    // ‚Zusammenkünfte' oben rechts vom zurück button sein". Die Zeile des
+    // Bereichstitels blendet das CSS am Handy dafür aus (`kopf-titel.test.ts`).
+    for (const [over, titel] of [
+      [{ screen: 'wochen' }, t.navZusammenkuenfte],
+      [{ screen: 'planen', tab: 'mid', planenVon: 'wochen' }, t.navZusammenkuenfte],
+      [{ screen: 'planen', tab: 'fs', planenVon: 'wochen' }, t.tabFs],
+      [{ screen: 'planen', tab: 'fs', planenVon: 'planung' }, t.tabFs],
+      [{ screen: 'planen', tab: 'wp', planenVon: 'planung' }, t.navWeiterePlaene],
+    ] as const) {
+      const { container } = zeige(over)
+      const kopf = container.querySelector('.unterseitenkopf')!
+      expect(kopf.querySelector('h1')?.textContent, JSON.stringify(over)).toBe(titel)
+      // In der Reihenfolge: Zurück, dann der Titel.
+      expect(kopf.firstElementChild?.getAttribute('aria-label')).toBe(t.a11yZurueck)
+      cleanup()
+    }
+  })
+
   it('eine Woche von der Seite der Wochen: Zurück dorthin — auch bei den Treffpunkten; von dort zur Wahl', () => {
     // Ist nur bei den Treffpunkten etwas zu tun, öffnet die Woche dort
     // (`zielReiter`). Bis zum Review von T144 führte Zurück dann zur Wahl.
@@ -740,6 +760,8 @@ describe('Auf den Mitteilungen steht am Handy der Kopf mit Zurück (T121)', () =
   it('statt der Kopfzeile — Zurück führt zu Start, wie die Zurück-Taste', () => {
     const { container, dispatch } = zeige({ screen: 'mitteilungen' })
     expect(container.querySelector('.kopfzeile')?.classList.contains('kopfzeile--ersetzt')).toBe(true)
+    // Ihren Titel tragen die Mitteilungen groß auf der Seite, nicht im Kopf.
+    expect(kopf(container)!.querySelector('h1')).toBeNull()
     fireEvent.click(kopf(container)!.querySelector(`[aria-label="${t.a11yZurueck}"]`)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'start' })
   })

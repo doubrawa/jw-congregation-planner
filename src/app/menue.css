@@ -70,7 +70,8 @@
   background: var(--akzent);
 }
 
-.planenkopf-titel {
+.planenkopf-titel,
+.unterseitenkopf-titel {
   flex: 1;
   min-width: 0;
   overflow: hidden;

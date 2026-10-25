@@ -8752,6 +8752,13 @@ Liste der Bildschirme in `docs/user-guide/README.md` ergänzt. Bewusst gelassen:
 „Alle Wochen" auf Start führt mit Zurück zur Wahl, nicht zu Start — die Wochen
 liegen unter „Planung", so steht es im Handbuch.
 
+**Nach dem Ausrollen am Handy** (Betreiber, 25. Oktober: „auf dem handy sollte
+die überschrift ‚Zusammenkünfte' oben rechts vom zurück button sein und nicht
+eine zeile darunter"): Unter „Planung" trägt der Kopf am Handy jetzt Zurück und
+den Titel des Bereichs in einer Zeile, wie der Kopf des Planens und der Entwurf
+(`kopfZurueck`); die Zeile des Bereichstitels ist am Handy aus. Tablet und
+Desktop unverändert. Probe `tests/kopf-titel.test.ts`.
+
 ### T145 · Auswertung, Engpässe: nur die problematischen Bereiche ⚡ ☐ offen
 
 „Bei Auswertung Engpässen müssen nicht alle Bereiche aufgeführt werden..es

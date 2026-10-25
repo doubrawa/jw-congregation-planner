@@ -85,14 +85,28 @@ export function PlanenKopf({ titel, onBeenden }: { titel: string; onBeenden: () 
  * Zurück-Taste (`zurueckWieDieTaste`) — von den Mitteilungen zu Start, unter
  * „Planung" eine Ebene hinauf (T144) —, rechts steht, was die Seite anbietet.
  * Ab dem Tablet steht wieder die Kopfzeile da.
+ *
+ * `titel` steht neben Zurück (Entwurf `kopfZurueck`): unter „Planung" der
+ * Bereich, dessen Titelzeile am Handy fehlt (`Bereichstitel`; Betreiber
+ * 25.10.2026: „die überschrift … sollte oben rechts vom zurück button sein").
+ * Die Mitteilungen tragen ihren Titel groß auf der Seite.
  */
-export function UnterseiteKopf({ onZurueck, children }: { onZurueck: () => void; children?: ReactNode }) {
+export function UnterseiteKopf({
+  titel,
+  onZurueck,
+  children,
+}: {
+  titel?: string
+  onZurueck: () => void
+  children?: ReactNode
+}) {
   const { t } = useT()
   return (
     <header className="unterseitenkopf">
       <button type="button" className="rund-knopf" aria-label={t.a11yZurueck} onClick={onZurueck}>
         <Zeichen name="zurueck" />
       </button>
+      {titel && <h1 className="unterseitenkopf-titel">{titel}</h1>}
       {children}
     </header>
   )

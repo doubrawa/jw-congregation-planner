@@ -371,13 +371,11 @@ describe('Der Kopf nennt das Thema (T120)', () => {
   })
 
   it('aus der Wahl auf „Planung" geplant: statt „Fertig" Zurück vor dem Titel — zur Wahl (T144)', () => {
-    // Am Handy blendet das CSS den Knopf aus; dort trägt der Kopf der App ihn.
+    // Am Handy blendet das CSS die Zeile aus; dort trägt der Kopf der App Zurück und Titel.
     const { container, dispatch } = zeige({ tab: 'fs', planenVon: 'planung' })
     expect(seite(container).querySelector('.bereichstitel .planen-knopf')).toBeNull()
     expect(titel(container)).toBe(t.tabFs)
-    const zurueck = seite(container).querySelector<HTMLButtonElement>('.bereichstitel .bereichstitel-zurueck')!
-    expect(zurueck.getAttribute('aria-label')).toBe(t.a11yZurueck)
-    fireEvent.click(zurueck)
+    fireEvent.click(seite(container).querySelector(`.bereichstitel [aria-label="${t.a11yZurueck}"]`)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planung' })
   })
 })

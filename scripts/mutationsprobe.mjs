@@ -4368,8 +4368,22 @@ export const KATALOG = [
     id: 'kopf-zurueck-wie-taste',
     datei: 'src/app/AppShell.tsx',
     regel: 'Der Pfeil im Kopf am Handy schließt, was die Zurück-Taste schlösse — aus den Zusagen erst die Zusagen, nicht gleich hinauf (T144).',
-    suchen: '                <UnterseiteKopf onZurueck={zurueckWieDieTaste}>',
-    ersetzen: "                <UnterseiteKopf onZurueck={() => navigate(zurueck ?? 'start')}>",
+    suchen: '                <UnterseiteKopf titel={unterseiteTitel} onZurueck={zurueckWieDieTaste}>',
+    ersetzen: "                <UnterseiteKopf titel={unterseiteTitel} onZurueck={() => navigate(zurueck ?? 'start')}>",
+  },
+  {
+    id: 'kopf-titel-neben-zurueck',
+    datei: 'src/app/AppShell.tsx',
+    regel: 'Unter „Planung" steht am Handy der Titel des Bereichs im Kopf neben Zurück — nicht eine Zeile darunter (T144, Betreiber 25.10.2026).',
+    suchen: '                <UnterseiteKopf titel={unterseiteTitel} onZurueck={zurueckWieDieTaste}>',
+    ersetzen: '                <UnterseiteKopf onZurueck={zurueckWieDieTaste}>',
+  },
+  {
+    id: 'bereichstitel-am-handy-im-kopf',
+    datei: 'src/bausteine/bausteine.css',
+    regel: 'Unter „Planung" ist am Handy die Zeile des Bereichstitels aus — sonst stünde der Titel zweimal da (T144).',
+    suchen: '  .bereichstitel--planen .bereichstitel-zeile,\n  .bereichstitel--zurueck .bereichstitel-zeile {\n',
+    ersetzen: '  .bereichstitel--planen .bereichstitel-zeile {\n',
   },
   /* ---- Die Versammlung ansehen (T121, Phase 4a) ---- */
   {

@@ -303,8 +303,10 @@ export function AppShell() {
   // Am Handy trägt beim Planen aus der Ansicht der Kopf des Planens ✕ und
   // „Fertig"; aus „Planung" ist das Planen eine Unterseite mit Zurück (T144).
   const planenKopf = state.screen === 'planen' && zurueck === null
-  // Unterseiten mit Zurück am Handy: die Mitteilungen und was unter „Planung" liegt.
+  // Unterseiten mit Zurück am Handy: die Mitteilungen und was unter „Planung" liegt
+  // — dort mit dem Titel des Bereichs neben Zurück, wie im Kopf des Planens.
   const unterseite = state.screen === 'mitteilungen' || zurueck !== null
+  const unterseiteTitel = zurueck ? bereichsTitel(t, state.screen === 'wochen' ? 'zusammenkuenfte' : geplant) : undefined
   const menue = abschnitte([])
   // Texte für die Error Boundaries: die Klasse kann useT() nicht aufrufen.
   const fehlerTexte = { titel: t.errTitel, text: t.errText, aktion: t.offlineRetry }
@@ -341,7 +343,7 @@ export function AppShell() {
                 <PlanenKopf titel={bereichsTitel(t, geplant)} onBeenden={() => dispatch(zumAnsehen(geplant))} />
               )}
               {unterseite && (
-                <UnterseiteKopf onZurueck={zurueckWieDieTaste}>
+                <UnterseiteKopf titel={unterseiteTitel} onZurueck={zurueckWieDieTaste}>
                   {state.screen === 'mitteilungen' && ungelesen > 0 && <AlleGelesen className="unterseitenkopf-aktion" />}
                 </UnterseiteKopf>
               )}

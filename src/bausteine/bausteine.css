@@ -127,28 +127,18 @@
   font-weight: 700;
 }
 
-/* Am Handy trägt beim Planen der Kopf des Planens Titel und „Fertig". */
+/* Am Handy trägt der Kopf darüber den Titel: beim Planen der Kopf des Planens
+   mit „Fertig", unter „Planung" der Kopf der Unterseite mit Zurück (T144). */
 @media (max-width: 767.98px) {
-  .bereichstitel--planen .bereichstitel-zeile {
+  .bereichstitel--planen .bereichstitel-zeile,
+  .bereichstitel--zurueck .bereichstitel-zeile {
     display: none;
   }
 }
 
-/* Planen aus „Planung" (T144): Zurück vor dem Titel statt „Fertig" dahinter —
-   am Handy steht Zurück im Kopf darüber (`UnterseiteKopf`), hier erst ab
-   Tablet-Breite. */
-.bereichstitel-zeile--zurueck {
+/* Unter „Planung" (T144): Zurück vor dem Titel statt „Fertig" dahinter. */
+.bereichstitel--zurueck .bereichstitel-zeile {
   justify-content: flex-start;
-}
-
-.bereichstitel-zurueck {
-  display: none;
-}
-
-@media (min-width: 768px) {
-  .bereichstitel-zurueck {
-    display: flex;
-  }
 }
 
 /* Statt des Bereichstitels in einer Unteransicht (`UnteransichtKopf`): zurück,

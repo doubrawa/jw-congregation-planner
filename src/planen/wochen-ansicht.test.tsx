@@ -204,14 +204,12 @@ describe('Die Seite der Wochen (`GWochen`, bis T144 „Planung")', () => {
     expect(container.querySelector('h1')?.textContent).toBe(t.navZusammenkuenfte)
   })
 
-  it('vor dem Titel Zurück zur Wahl — ab Tablet-Breite; am Handy trägt es der Kopf der App (T144)', () => {
+  it('vor dem Titel Zurück zur Wahl — ab Tablet-Breite; am Handy tragen beides der Kopf der App (T144)', () => {
     // Bis zur Laufzeitprüfung am 25.10.2026 fehlte es am Tablet: Der Kopf der
     // App steht dort nicht, und die Seite hatte keinen eigenen Knopf.
     const { container, dispatch } = zeige(<PlanungWochenScreen />)
     expect(container.querySelector('.planen-knopf'), 'kein „Planen" auf der Seite der Wochen').toBeNull()
-    const zurueck = container.querySelector<HTMLButtonElement>('.bereichstitel .bereichstitel-zurueck')!
-    expect(zurueck.getAttribute('aria-label')).toBe(t.a11yZurueck)
-    fireEvent.click(zurueck)
+    fireEvent.click(container.querySelector(`.bereichstitel [aria-label="${t.a11yZurueck}"]`)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planung' })
   })
 
