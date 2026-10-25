@@ -108,7 +108,6 @@ export default {
   "suchen": "Szukaj…",
   "vorname": "Imię",
   "nachname": "Nazwisko",
-  "telefon": "Telefon",
   "emailLbl": "E-mail",
   "rolle": "Rola",
   "aufgabenbereiche": "Uprawnienia",

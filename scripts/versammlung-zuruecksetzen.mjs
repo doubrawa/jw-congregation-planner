@@ -134,7 +134,7 @@ export function parseKuratiert(sql) {
       const o = ins.obj
       persons.push({
         id: o.id, fn: o.fn, ln: o.ln, role: o.role, female: o.female,
-        tel: o.tel, mail: o.mail, priv: JSON.parse(o.priv), grp: o.grp ?? null, fam: o.fam ?? null,
+        mail: o.mail, priv: JSON.parse(o.priv), grp: o.grp ?? null, fam: o.fam ?? null,
       })
     } else {
       const ov = /update public\.groups set overseer_id = '([^']+)', assistant_id = '([^']+)' where id = '([^']+)'/.exec(zeile.trim())
@@ -467,7 +467,7 @@ export async function main(argv = process.argv.slice(2)) {
     method: 'POST', headers: { Prefer: 'return=minimal' },
     body: JSON.stringify(kuratiert.persons.map((p) => ({
       id: p.id, congregation_id: cong, fn: p.fn, ln: p.ln, role: p.role,
-      female: p.female, tel: p.tel, mail: p.mail, priv: p.priv, grp: p.grp, fam: p.fam,
+      female: p.female, mail: p.mail, priv: p.priv, grp: p.grp, fam: p.fam,
     }))),
   })
   // 4) Aufseher/Gehilfe setzen

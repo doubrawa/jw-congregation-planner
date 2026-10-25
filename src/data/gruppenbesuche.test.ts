@@ -45,7 +45,7 @@ const RULES: FsRule[] = [
 const GRUPPEN: Group[] = ['g1', 'g2', 'g3', 'g4'].map((id) => ({ id, name: id, overseerId: null, assistantId: null }))
 
 function person(id: string, fn: string, ln: string): Person {
-  return { id, fn, ln, role: 'aeltester', tel: '', mail: '', priv: { ...emptyQualifications(), treffpunkt: true } }
+  return { id, fn, ln, role: 'aeltester', mail: '', priv: { ...emptyQualifications(), treffpunkt: true } }
 }
 const KONRAD = person('p5', 'Konrad', 'Sommer')
 const JONAS = person('p6', 'Jonas', 'Berger')

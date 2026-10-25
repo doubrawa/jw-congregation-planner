@@ -98,7 +98,7 @@ function PersonenSchalter({ svcKey }: { svcKey: string }) {
     [state.persons, state.lang],
   )
   // Dieselbe Suche wie über der Personenliste: „Simon Krüger" wie „Krüger,
-  // Simon", „kruger" findet „Krüger", Telefonnummern ziffernweise.
+  // Simon", „kruger" findet „Krüger".
   const gefiltert = personen.filter((p) => passtOhneAuswahl(p, { ...KEIN_FILTER, q: suche }))
   return (
     <>

@@ -55,7 +55,7 @@ const t = dict('de')
 
 const person = (over: Partial<Person> = {}): Person => ({
   id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger', female: false,
-  tel: '', mail: '', priv: emptyQualifications(), ...over,
+  mail: '', priv: emptyQualifications(), ...over,
 })
 const konto = (over: Partial<Member> = {}): Member => ({ userId: 'u-a', email: 'anton@example.org', personId: 'p-a', planner: false, zuteiler: false, ...over })
 /** Ein Link, der noch `tage` Tage gilt (negativ: abgelaufen) — gerechnet von heute, wie die Karte. */

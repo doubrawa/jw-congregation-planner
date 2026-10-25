@@ -108,7 +108,6 @@ export default {
   "suchen": "Buscar…",
   "vorname": "Nombre",
   "nachname": "Apellido",
-  "telefon": "Teléfono",
   "emailLbl": "Correo",
   "rolle": "Función",
   "aufgabenbereiche": "Áreas de asignación",

@@ -58,7 +58,7 @@ const MONTAG = '2026-09-07'
 const DIENSTE: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 1, groups: false }]
 
 const person = (id: string, fn: string, ln: string): Person => ({
-  id, fn, ln, role: 'aeltester', female: false, tel: '', mail: '', priv: emptyQualifications(),
+  id, fn, ln, role: 'aeltester', female: false, mail: '', priv: emptyQualifications(),
 })
 const AUFSEHER = person('p-ov', 'Olaf', 'Overseer')
 const GRUPPEN: Group[] = [

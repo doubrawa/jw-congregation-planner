@@ -4,8 +4,10 @@
  * Die Bündelwache (`scripts/testdaten-grenze.mjs`, eingehängt in
  * `vite.config.ts`) sucht im gebauten Bündel nach genau diesen Zeichenketten.
  * Treffen kann sie nur, wenn die Testdaten sie auch tragen: jede erfundene
- * Person eine Adresse unter der Domain und eine Nummer aus dem Block hier,
- * jede erfundene Woche einen der Platzhalter. `tests/testdaten-grenze.test.ts`
+ * Person eine Adresse unter der Domain, jede erfundene Woche einen der
+ * Platzhalter. (Bis zum 25.10.2026 trug jede Person auch eine Nummer aus dem
+ * Block `+49 30 23125`, den die Bundesnetzagentur für Film und Fernsehen
+ * freihält — das Feld ist entfallen.) `tests/testdaten-grenze.test.ts`
  * hält das fest.
  *
  * **Gesucht wird, was der Bündler schreibt — nicht, was im Quelltext steht.**
@@ -27,15 +29,8 @@
  */
 export const TESTDATEN_DOMAIN = 'musterstadt.example'
 
-/**
- * Berlin, `030 23125 000` bis `999`: Den Block hält die Bundesnetzagentur für
- * Film und Fernsehen frei, er ist niemandem zugeteilt.
- */
-export const TESTDATEN_RUFNUMMERN = '+49 30 23125'
-
 export const TESTDATEN_KENNZEICHEN: readonly string[] = [
   TESTDATEN_DOMAIN,
-  TESTDATEN_RUFNUMMERN,
   'Demoaufgabe',
   'Demo-Studienartikel',
   'Demo-Vortragsthema',

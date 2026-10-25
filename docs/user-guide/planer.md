@@ -1148,9 +1148,8 @@ Unter **Personen** pflegst du alle Mitglieder der Versammlung.
 - Kann die App gerade keine E‑Mails senden, sagt **Links senden** es und
   ersetzt keinen Link. Dann druckst du die Zettel, oder du schickst den Link bei
   der Person aus deinem eigenen Mail‑Programm (siehe unten).
-- Über **Name suchen** findest du schnell eine Person – gesucht wird in **Name,
-  Telefonnummer und E‑Mail‑Adresse**. Bei Telefonnummern ist die Schreibweise
-  egal: „01701234567" findet auch „0170 123 4567".
+- Über **Name suchen** findest du schnell eine Person – gesucht wird in **Name
+  und E‑Mail‑Adresse**.
 - **Filter** öffnet ein Blatt, in dem du die Liste nach **Geschlecht**,
   **Rolle**, **Predigtdienstgruppe** und **Aufgabenbereich** einschränkst
   (jeweils alphabetisch sortiert). Die Felder wirken zusammen (z. B. alle Brüder
@@ -1263,7 +1262,7 @@ zählt dabei der Wochentag des jeweiligen Treffpunkts, nicht die ganze Woche.
 
 Der **Stift** öffnet das Blatt **Person bearbeiten**:
 
-- **Vorname** und **Nachname**, **Telefon**, **E‑Mail**, **Geschlecht**.
+- **Vorname** und **Nachname**, **E‑Mail**, **Geschlecht**.
 - **Predigtdienstgruppe** – Zuordnung zur Gruppe. Jeder Verkündiger braucht
   eine; fehlt sie, warnt die Personenliste. Jeder gehört genau einer Gruppe
   an. Ist die Person **Aufseher** oder **Gehilfe** ihrer Gruppe, steht darunter
@@ -1362,7 +1361,7 @@ Schließt du das Blatt, während der Hinweis noch steht, behält die Person ihre
 bisherigen Namen – in der Liste und in den bereits geplanten Wochen. Unten am
 Bildschirm erscheint dazu kurz „Name nicht geändert: Paul Beispiel gibt es
 schon". Ebenso bei einem leeren Namen: „Name nicht geändert: Ohne Namen geht es
-nicht". Was du sonst im Blatt geändert hast, etwa Telefon oder Gruppe, bleibt
+nicht". Was du sonst im Blatt geändert hast, etwa E‑Mail oder Gruppe, bleibt
 gespeichert. Beim **Anlegen** nimmt das Blatt einen solchen Namen gar nicht
 erst an.
 

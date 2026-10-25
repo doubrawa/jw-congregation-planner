@@ -484,6 +484,13 @@ describe('kein Altbestand mehr im Schema', () => {
     expect(tabelle('persons')).not.toMatch(/^\s*dn\s/m)
   })
 
+  it('keine Telefonnummer an der Person (25.10.2026)', () => {
+    // Angezeigt wurde sie nirgends, und gebraucht hat sie niemand.
+    expect(tabelle('persons')).not.toMatch(/^\s*tel\s/m)
+    // Eine bestehende Datenbank verliert die Spalte beim nächsten Einspielen.
+    expect(normiert(schema)).toContain('alter table public.persons drop column if exists tel;')
+  })
+
   it('mein_anzeigename nimmt schlicht Vor- und Nachname', () => {
     // Vorher schob ein `coalesce` einen Kurznamen davor. Der Rückfall über den
     // Namen war die Lücke in der Bestätigungs-Richtlinie, solange Namen

@@ -108,7 +108,6 @@ export default {
   "suchen": "Поиск…",
   "vorname": "Имя",
   "nachname": "Фамилия",
-  "telefon": "Телефон",
   "emailLbl": "Эл. почта",
   "rolle": "Роль",
   "aufgabenbereiche": "Обязанности",

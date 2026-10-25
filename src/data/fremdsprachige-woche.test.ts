@@ -551,7 +551,7 @@ describe('Beschriftung einer Zuteilung', () => {
 describe('Konflikte finden auch fremdsprachige Wochen', () => {
   const NIKLAS: Person = {
     id: 'p-niklas', fn: 'Niklas', ln: 'Feld', role: 'verkuendiger',
-    tel: '', mail: '', priv: emptyQualifications(),
+    mail: '', priv: emptyQualifications(),
   }
 
   it.each(FREMD)('%s: Programmpunkt und Hilfsdienst am selben Tag fallen auf', (code) => {
@@ -626,9 +626,9 @@ describe('S-89-Bogen der ganzen Woche', () => {
 
 describe('Auto-Zuteilung arbeitet auf jeder Sprachfassung gleich', () => {
   const KANDIDATEN: Person[] = [
-    { id: 'p-1', fn: 'Aa', ln: 'Bb', role: 'aeltester', tel: '', mail: '', priv: { ...emptyQualifications(), vorsitzMid: true, gebet: true, studium: true, leser: true, bibellesung: true, schulung: true } },
-    { id: 'p-2', fn: 'Cc', ln: 'Dd', role: 'aeltester', tel: '', mail: '', priv: { ...emptyQualifications(), vorsitzMid: true, gebet: true, studium: true, leser: true, bibellesung: true, schulung: true } },
-    { id: 'p-3', fn: 'Ee', ln: 'Ff', role: 'dienstamtgehilfe', tel: '', mail: '', priv: { ...emptyQualifications(), gebet: true, leser: true, [serviceQualKey('mik')]: true } },
+    { id: 'p-1', fn: 'Aa', ln: 'Bb', role: 'aeltester', mail: '', priv: { ...emptyQualifications(), vorsitzMid: true, gebet: true, studium: true, leser: true, bibellesung: true, schulung: true } },
+    { id: 'p-2', fn: 'Cc', ln: 'Dd', role: 'aeltester', mail: '', priv: { ...emptyQualifications(), vorsitzMid: true, gebet: true, studium: true, leser: true, bibellesung: true, schulung: true } },
+    { id: 'p-3', fn: 'Ee', ln: 'Ff', role: 'dienstamtgehilfe', mail: '', priv: { ...emptyQualifications(), gebet: true, leser: true, [serviceQualKey('mik')]: true } },
   ]
 
   /*

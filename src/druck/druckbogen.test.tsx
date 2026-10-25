@@ -285,7 +285,7 @@ describe('Der Bogen der Treffpunkte', () => {
   const STARTS = ['2026-09-07', '2026-09-14']
   const fsWeeks = (): FsInstance[][] =>
     STARTS.map((start) => genFsWeek(start, REGELN).map((inst) => (inst.id === 'rv' ? { ...inst, leader: 'Leo Leiter' } : inst)))
-  const ICH_IN_G1 = { id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger' as const, female: false, tel: '', mail: '', priv: demoZustand().persons[0]!.priv, grp: 'g1' }
+  const ICH_IN_G1 = { id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger' as const, female: false, mail: '', priv: demoZustand().persons[0]!.priv, grp: 'g1' }
 
   const zeigeBogen = (over: Partial<AppState>) =>
     zeige(<TreffpunktBogen wochen={[0, 1]} zeitraum="September 2026" />, {

@@ -48,7 +48,7 @@ const GRUPPEN: Group[] = [
 ]
 
 const person = (id: string, name: string, grp: string | null): Person => ({
-  id, fn: name, ln: '', role: 'verkuendiger', tel: '', mail: '', priv: emptyQualifications(), grp,
+  id, fn: name, ln: '', role: 'verkuendiger', mail: '', priv: emptyQualifications(), grp,
 })
 
 const PERSONEN: Person[] = [

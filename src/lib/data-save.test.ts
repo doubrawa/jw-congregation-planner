@@ -63,7 +63,7 @@ import type { Group, Person, Service, Week } from '../data/types'
 import { isoDay } from '../data/meeting-dates'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
 
-const person = { id: 'p1', fn: 'A', ln: 'B', role: 'verkuendiger', tel: '', mail: '', priv: {} as Person['priv'], grp: null } as Person
+const person = { id: 'p1', fn: 'A', ln: 'B', role: 'verkuendiger', mail: '', priv: {} as Person['priv'], grp: null } as Person
 const group: Group = { id: 'g1', name: 'G', overseerId: null, assistantId: null }
 const service: Service = { key: 'mik', name: 'Mikrofone', count: 2, groups: false }
 

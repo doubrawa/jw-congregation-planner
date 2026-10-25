@@ -91,7 +91,7 @@ describe('Der Vorschlag ist, wen „Automatisch" nähme', () => {
     const person = (id: string, female: boolean, role: Person['role'] = 'verkuendiger'): Person => {
       const priv = emptyQualifications()
       privSetzen(priv, 'schulungPartner', true)
-      return { id, fn: id, ln: 'Test', role, female, tel: '', mail: '', priv, grp: null }
+      return { id, fn: id, ln: 'Test', role, female, mail: '', priv, grp: null }
     }
     const SCHWESTER = person('sw1', true)
     const BRUDER = person('br1', false)

@@ -88,7 +88,7 @@ describe('Personen-Id-Bindung (pid)', () => {
     we: emptyMid(),
   })
   const p = (id: string, fn: string): Person => ({
-    id, fn, ln: '', role: 'verkuendiger', tel: '', mail: '', priv: priv(),
+    id, fn, ln: '', role: 'verkuendiger', mail: '', priv: priv(),
   })
   const partNames = (w: Week): PartItem['names'] => (w.mid.sections[0]!.items[0] as PartItem).names
 
@@ -147,7 +147,7 @@ describe('Hilfsdienst-Id-Bindung (helpers)', () => {
     we: emptyMid(),
   })
   const p = (id: string, fn: string): Person => ({
-    id, fn, ln: '', role: 'verkuendiger', tel: '', mail: '', priv: priv(),
+    id, fn, ln: '', role: 'verkuendiger', mail: '', priv: priv(),
   })
 
   it('pidsNachtragen trägt pid an Hilfsdiensten nach (Gruppe bleibt ohne)', () => {

@@ -134,7 +134,6 @@ create table if not exists public.persons (
   role            text not null default 'verkuendiger'
                   check (role in ('aeltester', 'dienstamtgehilfe', 'verkuendiger', 'keine')),
   female          boolean not null default false,   -- Schwester (Partner-Zuordnung, Brüder-Bereiche)
-  tel             text not null default '',
   mail            text not null default '',
   -- Qualifications: feste Programm-Bereiche (vorsitzMid/vorsitzWe/vortrag/gebet/
   -- bibellesung/leser/schulung/schulungPartner/studium/treffpunkt + wtLeiter/
@@ -168,6 +167,12 @@ create table if not exists public.persons (
 -- Nachträglich (4.10.2026), wie `members.zuteiler`.
 alter table public.persons
   add column if not exists zuteiler_vorgemerkt boolean not null default false;
+
+-- Entfernt (25.10.2026): die Telefonnummer. Angezeigt wurde sie nirgends,
+-- New World Scheduler liefert keine, und gebraucht hat sie niemand. Ein
+-- zweiter Lauf findet nichts mehr; die Zeile kann fort, sobald sie überall
+-- eingespielt ist.
+alter table public.persons drop column if exists tel;
 
 create index if not exists persons_congregation_idx
   on public.persons (congregation_id);

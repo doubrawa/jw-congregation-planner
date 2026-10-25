@@ -55,7 +55,7 @@ const DIENSTE: Service[] = [
 ]
 
 const person = (id: string, name: string): Person => ({
-  id, fn: name, ln: '', role: 'verkuendiger', tel: '', mail: '', priv: emptyQualifications(),
+  id, fn: name, ln: '', role: 'verkuendiger', mail: '', priv: emptyQualifications(),
 })
 
 /** Zusammenkunft mit einem Programmpunkt (die genannten Namen) und Hilfsdiensten. */

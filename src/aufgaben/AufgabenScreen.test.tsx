@@ -31,7 +31,7 @@ const t = dict('de')
 
 const ICH: Person = {
   id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger', female: false,
-  tel: '', mail: '', priv: emptyQualifications(),
+  mail: '', priv: emptyQualifications(),
 }
 
 const S89: S89Payload = {

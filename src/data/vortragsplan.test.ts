@@ -64,7 +64,7 @@ function woche(start: string, extra: Partial<Week> = {}): Week {
 }
 
 function person(id: string, fn: string, ln: string): Person {
-  return { id, fn, ln, role: 'aeltester', tel: '', mail: '', priv: { ...emptyQualifications(), vortrag: true } }
+  return { id, fn, ln, role: 'aeltester', mail: '', priv: { ...emptyQualifications(), vortrag: true } }
 }
 
 const PERSONEN = [person('p1', 'Peter', 'Beispiel'), person('p2', 'Paul', 'Muster')]

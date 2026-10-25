@@ -32,9 +32,10 @@
  *  - **Der Abwesenheitsgrund bleibt draußen.** Er ist der einzige Freitext im
  *    ganzen Bestand, der Gesundheitsangaben enthalten kann („Reha",
  *    „Krankenhaus") — also das, was am wenigsten hier liegen sollte, und
- *    zugleich das, was offline niemand braucht. Telefon und E-Mail bleiben
- *    dagegen drin: Offline ist die Nummer oft genau das, wofür man die App
- *    aufmacht.
+ *    zugleich das, was offline niemand braucht. Die E-Mail-Adresse bleibt
+ *    dagegen drin. (Hier stand bis zum 25.10.2026 auch die Telefonnummer —
+ *    „offline ist sie oft der Grund für die App"; angezeigt wurde sie aber
+ *    nirgends, und das Feld ist entfallen.)
  *
  * Verschlüsselung löst das ausdrücklich **nicht** — der Schlüssel müsste auf
  * demselben Gerät liegen und wäre genauso lesbar.

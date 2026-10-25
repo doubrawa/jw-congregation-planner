@@ -40,7 +40,7 @@ import { privSetzen } from './helpers'
 function alsPerson(name: string): Person {
   return {
     id: `test-${name}`, fn: name, ln: '', role: 'verkuendiger', female: false,
-    tel: '', mail: '', priv: emptyQualifications(),
+    mail: '', priv: emptyQualifications(),
   }
 }
 
@@ -495,7 +495,7 @@ describe('Auslastung', () => {
 describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
   const qualified = (svc: string): Person => ({
     id: 'meX', fn: 'Ersatz', ln: 'Person', role: 'dienstamtgehilfe', female: false,
-    tel: '', mail: '', priv: { ...emptyQualifications(), [`svc:${svc}`]: true },
+    mail: '', priv: { ...emptyQualifications(), [`svc:${svc}`]: true },
   })
 
   it('listet einen verhinderten Hilfsdienst, für den ich qualifiziert bin', () => {
@@ -663,7 +663,7 @@ describe('Auto-Zuteilung Schülerteile (Partner + Geschlecht)', () => {
       ...o,
     }) as Person['priv']
   const p = (id: string, fn: string, female: boolean, role: Person['role'], priv: Person['priv']): Person => ({
-    id, fn, ln: 'T', role, female, tel: '', mail: '', priv, grp: null,
+    id, fn, ln: 'T', role, female, mail: '', priv, grp: null,
   })
 
   function scenario() {
@@ -858,7 +858,7 @@ describe('Auto-Zuteilung: jeder Platz eines Hilfsdienstes', () => {
   function helfer(n: number): Person[] {
     return Array.from({ length: n }, (_unused, i) => ({
       id: `h${i}`, fn: `H${i}`, ln: 'Helfer', role: 'verkuendiger' as const, female: false,
-      tel: '', mail: '',
+      mail: '',
       priv: { ...emptyQualifications(), 'svc:mik': true, 'svc:ton': true } as Person['priv'],
     }))
   }
@@ -923,7 +923,7 @@ describe('Konfliktprüfungen (Planen)', () => {
     */
     const person: Person = {
       id: 'p-zwei', fn: 'Kim', ln: 'Sommer', role: 'verkuendiger',
-      tel: '', mail: '', priv: emptyQualifications(),
+      mail: '', priv: emptyQualifications(),
     }
     const item = {
       iid: 'i1',
@@ -959,7 +959,7 @@ describe('Konfliktprüfungen (Planen)', () => {
     */
     const person: Person = {
       id: 'p-rat', fn: 'Rat', ln: 'Geber', role: 'aeltester',
-      tel: '', mail: '', priv: emptyQualifications(),
+      mail: '', priv: emptyQualifications(),
     }
     const item = {
       iid: 'i1',
@@ -986,7 +986,7 @@ describe('Konfliktprüfungen (Planen)', () => {
   it('… und ebenso wenig zugleich im Hauptsaal stehen', () => {
     const person: Person = {
       id: 'p-rat', fn: 'Rat', ln: 'Geber', role: 'aeltester',
-      tel: '', mail: '', priv: emptyQualifications(),
+      mail: '', priv: emptyQualifications(),
     }
     const item = {
       iid: 'i1',
@@ -1013,7 +1013,7 @@ describe('Konfliktprüfungen (Planen)', () => {
     */
     const person: Person = {
       id: 'p-zwei', fn: 'Kim', ln: 'Sommer', role: 'verkuendiger',
-      tel: '', mail: '', priv: emptyQualifications(),
+      mail: '', priv: emptyQualifications(),
     }
     const item = {
       iid: 'i1',
@@ -1045,7 +1045,7 @@ describe('Konfliktprüfungen (Planen)', () => {
     // Die Gegenprobe: Der neue Hinweis darf nicht zum Dauerbrenner werden.
     const person: Person = {
       id: 'p-eins', fn: 'Vor', ln: 'Sitz', role: 'verkuendiger',
-      tel: '', mail: '', priv: emptyQualifications(),
+      mail: '', priv: emptyQualifications(),
     }
     const item = {
       iid: 'i1',
@@ -1269,7 +1269,7 @@ describe('Auto-Zuteilung unterscheidet Namensgleiche', () => {
     // Namen geführt galten zwei verschiedene Personen als eine: der zweite
     // Platz blieb offen, obwohl jemand da war.
     const schueler = (id: string): Person => ({
-      id, fn: 'Anton', ln: 'Muster', role: 'verkuendiger', female: false, tel: '', mail: '',
+      id, fn: 'Anton', ln: 'Muster', role: 'verkuendiger', female: false, mail: '',
       priv: { ...emptyQualifications(), schulung: true },
     })
     const zwillinge = [schueler('p-eins'), schueler('p-zwei')]
@@ -1292,7 +1292,7 @@ describe('Auto-Zuteilung unterscheidet Namensgleiche', () => {
     // falsche der beiden Personen darin — die schon Eingeteilte gilt als frei
     // und bekommt einen zweiten Platz, die andere bleibt außen vor.
     const schueler = (id: string): Person => ({
-      id, fn: 'Anton', ln: 'Muster', role: 'verkuendiger', female: false, tel: '', mail: '',
+      id, fn: 'Anton', ln: 'Muster', role: 'verkuendiger', female: false, mail: '',
       priv: { ...emptyQualifications(), schulung: true },
     })
     const zwillinge = [schueler('p-eins'), schueler('p-zwei')]
@@ -1336,7 +1336,7 @@ describe('Auto-Zuteilung: beide Räume teilen sich die belegten Personen', () =>
     for (const k of Object.keys(priv)) privSetzen(priv, k, true)
     priv.ratgeber = true
     return {
-      id, fn: 'V' + id, ln: 'N' + id, role: 'verkuendiger', female: false, tel: '', mail: '',
+      id, fn: 'V' + id, ln: 'N' + id, role: 'verkuendiger', female: false, mail: '',
       priv: priv as unknown as Person['priv'],
     }
   }

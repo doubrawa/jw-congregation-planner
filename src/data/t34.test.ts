@@ -23,7 +23,7 @@ const KEINE: Qualifications = {
 }
 
 function person(id: string, patch: Partial<Person> = {}): Person {
-  return { id, fn: id, ln: id.toUpperCase(), role: 'verkuendiger', tel: '', mail: '', priv: { ...KEINE }, ...patch }
+  return { id, fn: id, ln: id.toUpperCase(), role: 'verkuendiger', mail: '', priv: { ...KEINE }, ...patch }
 }
 
 /* ---- F4 ------------------------------------------------------------------ */

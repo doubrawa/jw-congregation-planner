@@ -43,7 +43,7 @@ const { AppShell } = await import('./AppShell')
 const t = dict('de')
 
 const person = (id: string, fn: string, ln: string): Person => ({
-  id, fn, ln, role: 'verkuendiger', tel: '', mail: '', priv: emptyQualifications(),
+  id, fn, ln, role: 'verkuendiger', mail: '', priv: emptyQualifications(),
 })
 
 const PLANER = person('p-planer', 'Paula', 'Planer')

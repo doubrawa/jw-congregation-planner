@@ -108,7 +108,6 @@ export default {
   "suchen": "Ara…",
   "vorname": "Ad",
   "nachname": "Soyad",
-  "telefon": "Telefon",
   "emailLbl": "E-posta",
   "rolle": "Rol",
   "aufgabenbereiche": "Görev alanları",

@@ -365,7 +365,7 @@ export const DE = {
     rechtPlanenUnter: 'Holt das Programm, richtet die Pläne ein, teilt zu und sendet.',
     rechtAdminUnter: 'Verwaltet auch Personen und Einstellungen.',
     toastNameLeer: 'Name nicht geändert: Ohne Namen geht es nicht',
-    vorname: 'Vorname', nachname: 'Nachname', telefon: 'Telefon', emailLbl: 'E-Mail',
+    vorname: 'Vorname', nachname: 'Nachname', emailLbl: 'E-Mail',
     kontoCard: 'Konto',
     persLoeschen: 'Person entfernen',
     confirmPersonDel: '„{name}“ wirklich entfernen? Bereits geplante Zuteilungen bleiben als Text in den Wochen stehen.',

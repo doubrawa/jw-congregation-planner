@@ -14,9 +14,10 @@
  * Prüfungen halten sie draußen: `tests/testdaten-grenze.test.ts` am
  * Quelltext, die Bündelwache in `vite.config.ts` am gebauten Bündel.
  *
- * Wer etwas hinzufügt: Personen bekommen Adresse und Nummer über `adresse()`
- * und `telefon()`, Wochen einen Platzhalter aus `TESTDATEN_KENNZEICHEN` —
- * daran erkennt die Wache sie (siehe `kennzeichen.ts`).
+ * Wer etwas hinzufügt: Personen bekommen ihre Adresse über `adresse()`,
+ * Wochen einen Platzhalter aus `TESTDATEN_KENNZEICHEN` — daran erkennt die
+ * Wache sie (siehe `kennzeichen.ts`). Telefonnummern gibt es seit dem
+ * 25.10.2026 nicht mehr.
  */
 
 import { buildFsWeeks } from '../../src/data/fs'
@@ -24,7 +25,7 @@ import { normalizeChairKeys, ROLE_GUEST_SPEAKER, serviceQualKey } from '../../sr
 import { montagNach } from '../../src/data/meeting-dates'
 import { STANDARD_ZEITEN } from '../../src/data/vorgaben'
 import { ersteZahl } from '../../src/data/ziffern'
-import { TESTDATEN_DOMAIN, TESTDATEN_RUFNUMMERN } from './kennzeichen'
+import { TESTDATEN_DOMAIN } from './kennzeichen'
 import type {
   Absence,
   FsInstance,
@@ -118,14 +119,6 @@ const q = (
  */
 const adresse = (lokal: string): string => `${lokal}@${TESTDATEN_DOMAIN}`
 
-/**
- * Nummer einer erfundenen Person — aus dem Block, den die Bundesnetzagentur
- * für Film und Fernsehen freihält. Die Nummern davor (`+49 171 …`,
- * `+49 160 …`) hatten das Format echter Mobilnummern und konnten jemandem
- * gehören.
- */
-const telefon = (n: number): string => `${TESTDATEN_RUFNUMMERN} ${String(n).padStart(3, '0')}`
-
 /* ---- Größere Demo-Versammlung (~100 Personen) ---------------------------
  * Zusätzliche Personen mit eindeutigen Anzeigenamen — die Nachnamen kollidieren
  * weder mit den 16 Stammpersonen noch mit externen Namen in den Wochen. So lässt
@@ -170,7 +163,6 @@ function buildExtraPersons(): Person[] {
       fn,
       ln,
       role,
-      tel: '',
       mail: adresse(`${fn}.${ln}`.toLowerCase()),
       priv,
     }
@@ -190,22 +182,22 @@ const CORE_GRP: Record<string, string> = {
 }
 
 const CORE_PERSONS: Person[] = [
-  { id: 'p1', fn: 'Manfred', ln: 'Albrecht', role: 'aeltester', tel: telefon(1), mail: adresse('m.albrecht'), priv: { ...q(['treffpunkt', 'vorsitz', 'vortrag', 'besprechung', 'gebet', 'studium']), wtLeiter: true } },
-  { id: 'p2', fn: 'Thomas', ln: 'Lindner', role: 'aeltester', tel: telefon(2), mail: adresse('t.lindner'), priv: { ...q(['treffpunkt', 'vorsitz', 'vortrag', 'besprechung', 'gebet', 'studium']), wtVertreter: true } },
-  { id: 'p3', fn: 'Friedrich', ln: 'Neumann', role: 'aeltester', tel: telefon(3), mail: adresse('f.neumann'), priv: q(['treffpunkt', 'vorsitz', 'vortrag', 'besprechung', 'gebet', 'studium']) },
-  { id: 'p4', fn: 'Helmut', ln: 'Vogel', role: 'aeltester', tel: telefon(4), mail: adresse('h.vogel'), priv: q(['treffpunkt', 'vortrag', 'besprechung', 'gebet', 'studium']) },
-  { id: 'p5', fn: 'Konrad', ln: 'Sommer', role: 'aeltester', tel: telefon(5), mail: adresse('k.sommer'), priv: q(['treffpunkt', 'vortrag', 'besprechung', 'gebet']) },
-  { id: 'p6', fn: 'Jonas', ln: 'Berger', role: 'dienstamtgehilfe', tel: telefon(6), mail: adresse('j.berger'), priv: q(['treffpunkt', 'vortrag', 'besprechung', 'gebet', 'lesen', 'schulung', 'schulungVortrag', 'mikrofon']) },
-  { id: 'p7', fn: 'Paul', ln: 'Schröder', role: 'dienstamtgehilfe', tel: telefon(7), mail: adresse('p.schroeder'), priv: q(['treffpunkt', 'vortrag', 'besprechung', 'gebet', 'lesen', 'schulung', 'schulungVortrag', 'mikrofon', 'ordner']) },
-  { id: 'p8', fn: 'Claus', ln: 'Maier', role: 'dienstamtgehilfe', tel: telefon(8), mail: adresse('c.maier'), priv: q(['treffpunkt', 'mikrofon', 'ton', 'ordner']) },
-  { id: 'p9', fn: 'Simon', ln: 'Krüger', role: 'verkuendiger', tel: telefon(9), mail: adresse('s.krueger'), priv: q(['treffpunkt', 'lesen', 'schulung', 'schulungVortrag', 'mikrofon', 'ton']) },
-  { id: 'p10', fn: 'Niklas', ln: 'Feld', role: 'verkuendiger', tel: telefon(10), mail: adresse('n.feld'), priv: q(['lesen', 'schulung', 'schulungVortrag', 'mikrofon']) },
-  { id: 'p11', fn: 'Jörg', ln: 'Roth', role: 'verkuendiger', tel: telefon(11), mail: adresse('j.roth'), priv: q(['lesen', 'mikrofon']) },
-  { id: 'p12', fn: 'Bernd', ln: 'Klein', role: 'verkuendiger', tel: telefon(12), mail: adresse('b.klein'), priv: q(['gebet', 'mikrofon']) },
-  { id: 'p13', fn: 'Georg', ln: 'Peters', role: 'verkuendiger', tel: telefon(13), mail: adresse('g.peters'), priv: q(['treffpunkt', 'gebet', 'ordner']) },
-  { id: 'p14', fn: 'Ulrich', ln: 'Lang', role: 'verkuendiger', tel: telefon(14), mail: adresse('u.lang'), priv: q(['gebet', 'ordner']) },
-  { id: 'p15', fn: 'Lena', ln: 'Hoffmann', role: 'verkuendiger', female: true, tel: telefon(15), mail: adresse('l.hoffmann'), priv: q(['schulung']) },
-  { id: 'p16', fn: 'Elke', ln: 'Brandt', role: 'verkuendiger', female: true, tel: telefon(16), mail: adresse('e.brandt'), priv: q(['schulung']) },
+  { id: 'p1', fn: 'Manfred', ln: 'Albrecht', role: 'aeltester', mail: adresse('m.albrecht'), priv: { ...q(['treffpunkt', 'vorsitz', 'vortrag', 'besprechung', 'gebet', 'studium']), wtLeiter: true } },
+  { id: 'p2', fn: 'Thomas', ln: 'Lindner', role: 'aeltester', mail: adresse('t.lindner'), priv: { ...q(['treffpunkt', 'vorsitz', 'vortrag', 'besprechung', 'gebet', 'studium']), wtVertreter: true } },
+  { id: 'p3', fn: 'Friedrich', ln: 'Neumann', role: 'aeltester', mail: adresse('f.neumann'), priv: q(['treffpunkt', 'vorsitz', 'vortrag', 'besprechung', 'gebet', 'studium']) },
+  { id: 'p4', fn: 'Helmut', ln: 'Vogel', role: 'aeltester', mail: adresse('h.vogel'), priv: q(['treffpunkt', 'vortrag', 'besprechung', 'gebet', 'studium']) },
+  { id: 'p5', fn: 'Konrad', ln: 'Sommer', role: 'aeltester', mail: adresse('k.sommer'), priv: q(['treffpunkt', 'vortrag', 'besprechung', 'gebet']) },
+  { id: 'p6', fn: 'Jonas', ln: 'Berger', role: 'dienstamtgehilfe', mail: adresse('j.berger'), priv: q(['treffpunkt', 'vortrag', 'besprechung', 'gebet', 'lesen', 'schulung', 'schulungVortrag', 'mikrofon']) },
+  { id: 'p7', fn: 'Paul', ln: 'Schröder', role: 'dienstamtgehilfe', mail: adresse('p.schroeder'), priv: q(['treffpunkt', 'vortrag', 'besprechung', 'gebet', 'lesen', 'schulung', 'schulungVortrag', 'mikrofon', 'ordner']) },
+  { id: 'p8', fn: 'Claus', ln: 'Maier', role: 'dienstamtgehilfe', mail: adresse('c.maier'), priv: q(['treffpunkt', 'mikrofon', 'ton', 'ordner']) },
+  { id: 'p9', fn: 'Simon', ln: 'Krüger', role: 'verkuendiger', mail: adresse('s.krueger'), priv: q(['treffpunkt', 'lesen', 'schulung', 'schulungVortrag', 'mikrofon', 'ton']) },
+  { id: 'p10', fn: 'Niklas', ln: 'Feld', role: 'verkuendiger', mail: adresse('n.feld'), priv: q(['lesen', 'schulung', 'schulungVortrag', 'mikrofon']) },
+  { id: 'p11', fn: 'Jörg', ln: 'Roth', role: 'verkuendiger', mail: adresse('j.roth'), priv: q(['lesen', 'mikrofon']) },
+  { id: 'p12', fn: 'Bernd', ln: 'Klein', role: 'verkuendiger', mail: adresse('b.klein'), priv: q(['gebet', 'mikrofon']) },
+  { id: 'p13', fn: 'Georg', ln: 'Peters', role: 'verkuendiger', mail: adresse('g.peters'), priv: q(['treffpunkt', 'gebet', 'ordner']) },
+  { id: 'p14', fn: 'Ulrich', ln: 'Lang', role: 'verkuendiger', mail: adresse('u.lang'), priv: q(['gebet', 'ordner']) },
+  { id: 'p15', fn: 'Lena', ln: 'Hoffmann', role: 'verkuendiger', female: true, mail: adresse('l.hoffmann'), priv: q(['schulung']) },
+  { id: 'p16', fn: 'Elke', ln: 'Brandt', role: 'verkuendiger', female: true, mail: adresse('e.brandt'), priv: q(['schulung']) },
   ...buildExtraPersons(),
 ]
 

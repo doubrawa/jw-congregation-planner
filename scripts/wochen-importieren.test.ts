@@ -186,7 +186,7 @@ describe('main: eingeordnet wie beim Import in der App', () => {
   const BESUCH: GruppenbesuchRow & Zeile = { id: '00000000-0000-4000-8000-000000000071', congregation_id: C, woche: '2026-08-24', grp: G1, person_id: P1 }
   const PERSON: PersonRow & Zeile = {
     id: P1, congregation_id: C, fn: 'Probe', ln: 'Besuch', planner_vorgemerkt: false, role: 'aeltester', female: false,
-    tel: '', mail: '', priv: {}, grp: null, fam: null, created_at: '2026-01-01T00:00:00Z',
+    mail: '', priv: {}, grp: null, fam: null, created_at: '2026-01-01T00:00:00Z',
   }
 
   /** Eine Woche, wie `import-week` sie liefert — ein Schülerteil, feste Endzeiten. */

@@ -81,8 +81,8 @@ lesbar:
   sondern gelöscht. Wer so lange ohne Netz war, dem nützt der alte Stand nicht.
 - **Der Abwesenheitsgrund bleibt draußen** — der einzige Freitext, der
   Gesundheitsangaben tragen kann, und der einzige, den offline niemand braucht.
-  Telefon und E-Mail bleiben: Offline ist die Nummer oft der Grund, die App
-  überhaupt zu öffnen.
+  Die E-Mail-Adresse bleibt. Eine Telefonnummer führt die App seit dem
+  25.10.2026 nicht mehr.
 
 Solange `staleAt` gesetzt ist, ist die App **nur lesend**:
 
@@ -221,7 +221,7 @@ wird allein `index.html`. **Die App selbst kennt keine Testdaten:** Eine neue
 Versammlung ist leer und wird von Hand oder per NWS-Import gefüllt. Damit das so
 bleibt, bricht jeder Build ab, in dem ein Modul aus `tests/testdaten/` steckt
 oder eines ihrer Kennzeichen im Ergebnis steht — Adressen unter
-`musterstadt.example`, Nummern `+49 30 23125 …`, Platzhalter wie „Demoaufgabe".
+`musterstadt.example`, Platzhalter wie „Demoaufgabe".
 Bis zum 2.10.2026 lag die erfundene Personenliste trotz `import.meta.env.DEV`
 im ausgelieferten Bündel.
 

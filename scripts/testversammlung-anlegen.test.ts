@@ -376,7 +376,6 @@ describe('Die App selbst findet nichts zu beanstanden', () => {
     ln: p.ln,
     role: p.rolle as Person['role'],
     female: Boolean(p.w),
-    tel: '',
     mail: '',
     fam: p.haus ?? null,
     priv: bereiche(p) as Person['priv'],

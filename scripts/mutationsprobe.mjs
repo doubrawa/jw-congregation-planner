@@ -1104,9 +1104,9 @@ export const KATALOG = [
   {
     id: 'bidi-eigene-texte',
     datei: 'src/personen/PersonBearbeitenBlatt.tsx',
-    regel: 'Personenfelder tragen ihre eigene Schreibrichtung — eine Telefonnummer dreht sich sonst in einer RTL-Oberfläche um.',
-    suchen: '            type="tel"\n            dir="auto"\n',
-    ersetzen: '            type="tel"\n',
+    regel: 'Personenfelder tragen ihre eigene Schreibrichtung — ein arabischer Name steht von rechts nach links, ein lateinischer von links nach rechts, gleich in welcher Oberfläche.',
+    suchen: '        type="text"\n        dir="auto"\n',
+    ersetzen: '        type="text"\n',
   },
   {
     id: 'datumswaehler-montag',

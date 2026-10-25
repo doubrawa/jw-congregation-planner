@@ -12,8 +12,9 @@ import { ROLE_KEY } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 
 /**
- * **Person bearbeiten** (T121, der Stift bei der Person): Name, Telefon,
- * E-Mail, Geschlecht, Gruppe, Rolle und Familie.
+ * **Person bearbeiten** (T121, der Stift bei der Person): Name, E-Mail,
+ * Geschlecht, Gruppe, Rolle und Familie. Eine Telefonnummer stand bis zum
+ * 25.10.2026 dabei — gebraucht hat sie niemand, gezeigt wurde sie nirgends.
  *
  * **Der Name gilt erst beim Schließen** — und nur, wenn er geht. Bis zur Phase
  * 6b schrieb jeder Tastendruck den Namen in Zustand und Wochen; dafür brauchte
@@ -91,21 +92,6 @@ export function PersonBearbeitenBlatt({ person, onClose }: { person: Person; onC
             {dublette ? fill(t.nameDoppelt, { name: personLabel(dublette) }) : t.toastNameLeer}
           </p>
         )}
-        <BlattFeld marke={t.telefon}>
-          {/* `dir="auto"` auch hier: Eine Telefonnummer hat kein Zeichen mit
-              starker Richtung und läuft damit links nach rechts. Mit der
-              Richtung der Oberfläche drehte der Bidi-Algorithmus
-              „+49 30 23125 009" an den Leerzeichen zu „009 23125 30 49+". */}
-          <input
-            id="pers-tel"
-            className="feld"
-            type="tel"
-            dir="auto"
-            autoComplete="off"
-            value={person.tel ?? ''}
-            onChange={(e) => update({ tel: e.target.value })}
-          />
-        </BlattFeld>
         <BlattFeld marke={t.emailLbl}>
           <input
             id="pers-mail"

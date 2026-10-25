@@ -63,7 +63,7 @@ const priv = (...keys: string[]): Qualifications => {
 }
 
 const person = (id: string, fn: string, ln: string, ...q: string[]): Person => ({
-  id, fn, ln, role: 'verkuendiger', female: false, tel: '', mail: '', priv: priv(...q), grp: null,
+  id, fn, ln, role: 'verkuendiger', female: false, mail: '', priv: priv(...q), grp: null,
 })
 
 // Ältester und Dienstamtgehilfe: Den öffentlichen Vortrag kann jeder von ihnen

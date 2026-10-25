@@ -309,7 +309,7 @@ const personSaves = createDebouncedWriter<string, { congId: string; person: Pers
 
 /**
  * Eine Person **sofort** schreiben — über den Bündler, wie die Wochen
- * (`sofort`): Wartete von ihr noch eine ältere Fassung (die Telefonnummer, eben
+ * (`sofort`): Wartete von ihr noch eine ältere Fassung (die E-Mail-Adresse, eben
  * getippt), ginge sie sonst hinterher und nähme zurück, was jetzt dazukam (den
  * Haushalt, gleich danach gewählt).
  */

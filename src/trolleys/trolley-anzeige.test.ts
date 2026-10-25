@@ -72,7 +72,7 @@ describe('Woche und Namen', () => {
   })
 
   it('Namen über die Kennung — leer, wenn es niemanden mehr gibt', () => {
-    const p: Person = { id: 'p1', fn: 'Jonas', ln: 'Berger', role: 'verkuendiger', female: false, tel: '', mail: '', priv: emptyQualifications() }
+    const p: Person = { id: 'p1', fn: 'Jonas', ln: 'Berger', role: 'verkuendiger', female: false, mail: '', priv: emptyQualifications() }
     expect(nameVon([p], 'p1')).toBe('Jonas Berger')
     expect(vornameVon([p], 'p1')).toBe('Jonas')
     expect(nameVon([p], null)).toBe('')
@@ -81,7 +81,7 @@ describe('Woche und Namen', () => {
 
   it('wer im Termin steht, für Vorleseprogramme — zu zweit oder allein', () => {
     const t = dict('de')
-    const p = (id: string, fn: string): Person => ({ id, fn, ln: 'Berger', role: 'verkuendiger', female: false, tel: '', mail: '', priv: emptyQualifications() })
+    const p = (id: string, fn: string): Person => ({ id, fn, ln: 'Berger', role: 'verkuendiger', female: false, mail: '', priv: emptyQualifications() })
     const leute = [p('p1', 'Jonas'), p('p2', 'Lena')]
     expect(werImTermin({ pid: 'p1', partner: 'p2' }, leute, t)).toBe('Jonas Berger und Lena Berger')
     expect(werImTermin({ pid: 'p1', partner: null }, leute, t)).toBe('Jonas Berger sucht einen Partner')

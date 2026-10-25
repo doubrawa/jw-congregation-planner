@@ -279,7 +279,7 @@ describe('Die Ansicht einer anderen Stufe (T124)', () => {
   it('die gespielte Gruppe: nur die eigene — ohne eigene keine, auch nicht die erste (17.10.2026)', () => {
     // Ein echter Aufseher gehört der Gruppe an, die er leitet; Programm und Start
     // fragen die eigene Gruppe. Eine fremde wirkte nur beim Planen.
-    const person = (id: string, grp: string | null): Person => ({ id, fn: id, ln: 'Test', role: 'aeltester', tel: '', mail: '', priv: emptyQualifications(), grp })
+    const person = (id: string, grp: string | null): Person => ({ id, fn: id, ln: 'Test', role: 'aeltester', mail: '', priv: emptyQualifications(), grp })
     expect(ansichtsGruppe(GRUPPEN, [person('p-admin', 'g2')], 'p-admin')).toBe('g2')
     expect(ansichtsGruppe(GRUPPEN, [person('p-admin', null)], 'p-admin')).toBeNull()
     expect(ansichtsGruppe(GRUPPEN, [person('p-admin', 'g-weg')], 'p-admin')).toBeNull()

@@ -43,7 +43,7 @@ const priv = (...keys: string[]): Qualifications => {
 }
 
 const person = (id: string, ln: string, ...q: string[]): Person => ({
-  id, fn: 'Max', ln, role: 'verkuendiger', female: false, tel: '', mail: '', priv: priv(...q), grp: null,
+  id, fn: 'Max', ln, role: 'verkuendiger', female: false, mail: '', priv: priv(...q), grp: null,
 })
 
 const DIENSTE: Service[] = [

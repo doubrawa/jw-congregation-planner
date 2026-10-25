@@ -151,7 +151,7 @@ function schreibfolge(s: AppState): AppAction[] {
     { type: 'terminAdd' },
     { type: 'terminAdd' },
     // Personen und Stammdaten
-    { type: 'updatePerson', id: person.id, patch: { tel: '0123' } },
+    { type: 'updatePerson', id: person.id, patch: { mail: 'neu@musterstadt.example' } },
     { type: 'setFamily', id: person.id, memberId: zweite.id, add: true },
     { type: 'setFamily', id: person.id, memberId: zweite.id, add: false },
     { type: 'changeServiceCount', key: svc.key, delta: 1 },

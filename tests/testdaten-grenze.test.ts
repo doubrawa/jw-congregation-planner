@@ -8,7 +8,7 @@ import {
   testdatenBefunde,
   testdatenWache,
 } from '../scripts/testdaten-grenze.mjs'
-import { TESTDATEN_DOMAIN, TESTDATEN_KENNZEICHEN, TESTDATEN_RUFNUMMERN } from './testdaten/kennzeichen'
+import { TESTDATEN_DOMAIN, TESTDATEN_KENNZEICHEN } from './testdaten/kennzeichen'
 import { buildDemoWeeks, buildImportWeek, DEMO_PERSONS } from './testdaten/testdaten'
 
 /**
@@ -63,11 +63,6 @@ describe('Die Testdaten tragen ihre Kennzeichen', () => {
   it('jede erfundene Person hat eine Adresse unter der Testdaten-Domain', () => {
     const ohne = DEMO_PERSONS.filter((p) => !p.mail.endsWith(`@${TESTDATEN_DOMAIN}`)).map((p) => p.id)
     expect(ohne).toEqual([])
-  })
-
-  it('jede erfundene Nummer liegt im freigehaltenen Block für Film und Fernsehen', () => {
-    const fremd = DEMO_PERSONS.filter((p) => p.tel && !p.tel.startsWith(`${TESTDATEN_RUFNUMMERN} `)).map((p) => p.id)
-    expect(fremd).toEqual([])
   })
 
   it('jede erfundene Woche trägt einen Platzhalter', () => {

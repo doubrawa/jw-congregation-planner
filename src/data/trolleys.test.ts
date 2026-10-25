@@ -28,7 +28,6 @@ const person = (id: string, ln: string, zeugnis = true): Person => ({
   ln,
   role: 'verkuendiger',
   female: false,
-  tel: '',
   mail: '',
   priv: { ...emptyQualifications(), zeugnis },
 })

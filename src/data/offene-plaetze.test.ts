@@ -26,7 +26,7 @@ const DIENSTE: Service[] = [
 ]
 
 const ich = (over: Partial<Person> = {}, ...bereiche: string[]): Person => ({
-  id: 'ich', fn: 'Ich', ln: 'Selbst', role: 'dienstamtgehilfe', tel: '', mail: '',
+  id: 'ich', fn: 'Ich', ln: 'Selbst', role: 'dienstamtgehilfe', mail: '',
   priv: {
     ...emptyQualifications(),
     ...Object.fromEntries(

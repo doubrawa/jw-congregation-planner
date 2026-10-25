@@ -30,7 +30,7 @@ const ZEITEN = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
 
 const person: Person = {
   id: 'p1', fn: 'A.', ln: 'Beispiel',
-  role: 'verkuendiger', tel: '', mail: '', priv: { ...emptyQualifications(), gebet: true },
+  role: 'verkuendiger', mail: '', priv: { ...emptyQualifications(), gebet: true },
 }
 
 /** Woche mit je einer besetzten Aufgabe und einem Hilfsdienst-Platz. */
@@ -133,7 +133,7 @@ describe('Ausfall: es kommt niemand zusammen', () => {
     // Regeln wie im Betrieb (Qualifikation, Geschlecht, Doppelbelegung).
     const kandidaten = ['vorsitzMid', 'gebet', 'bibellesung', 'leser', 'studium', 'schulung'].map(
       (q, i): Person => ({
-        id: `k${i}`, fn: `V${i}`, ln: `N${i}`, role: 'aeltester', female: false, tel: '', mail: '',
+        id: `k${i}`, fn: `V${i}`, ln: `N${i}`, role: 'aeltester', female: false, mail: '',
         priv: { ...emptyQualifications(), [q]: true },
       }),
     )
@@ -160,7 +160,7 @@ describe('Ausfall: es kommt niemand zusammen', () => {
   it('sucht keinen Ersatz mehr — für einen Abend, an dem niemand kommt', () => {
     const dienste = [{ key: 'mik', name: 'Mikrofone', count: 1, groups: false }]
     const einspringer: Person = {
-      id: 'p2', fn: 'Bernd', ln: 'Bereit', role: 'verkuendiger', tel: '', mail: '',
+      id: 'p2', fn: 'Bernd', ln: 'Bereit', role: 'verkuendiger', mail: '',
       priv: { ...emptyQualifications(), [serviceQualKey('mik')]: true },
     }
     const abgesagt = { [helferKey('2026-09-07', 'mid', 'mik', 0)]: 'verhindert' as const }

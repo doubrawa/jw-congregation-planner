@@ -35,7 +35,7 @@ const KEY = helferKey(MONTAG, 'mid', 'mik', 0)
 function start(over: Partial<AppState> = {}): AppState {
   // Mit dem Bereich für das Gebet: Den leeren Gebet-Platz bietet die App trotzdem nicht an — Aufgaben teilt der Planer zu.
   const ich = {
-    id: 'p-ich', fn: 'Ich', ln: 'Selbst', role: 'verkuendiger' as const, tel: '', mail: '',
+    id: 'p-ich', fn: 'Ich', ln: 'Selbst', role: 'verkuendiger' as const, mail: '',
     priv: { ...emptyQualifications(), gebet: true, 'svc:mik': true },
   }
   return aufgabenAbgeleitet({

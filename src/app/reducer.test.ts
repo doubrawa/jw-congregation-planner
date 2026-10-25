@@ -584,7 +584,7 @@ describe('Abwesenheiten', () => {
 })
 
 describe('Personen', () => {
-  const fresh: Person = { id: 'pNeu', fn: 'Neu', ln: 'Person', role: 'verkuendiger', tel: '', mail: '', priv: {} as Person['priv'], grp: null }
+  const fresh: Person = { id: 'pNeu', fn: 'Neu', ln: 'Person', role: 'verkuendiger', mail: '', priv: {} as Person['priv'], grp: null }
 
   it('addPerson hängt an, öffnet das Detail', () => {
     const next = reducer(makeState(), { type: 'addPerson', person: fresh })
@@ -2661,7 +2661,7 @@ describe('Index außerhalb des Fensters', () => {
 describe('Toasts in der Sprache des Nutzers', () => {
   /** Aktionen, die eine Meldung erzeugen — je eine je Bauart. */
   const AKTIONEN: Array<[string, AppAction, Partial<AppState>?]> = [
-    ['Person angelegt', { type: 'addPerson', person: { id: 'pX', fn: 'Neu', ln: 'Person', role: 'verkuendiger', tel: '', mail: '', priv: {} as Person['priv'], grp: null } }],
+    ['Person angelegt', { type: 'addPerson', person: { id: 'pX', fn: 'Neu', ln: 'Person', role: 'verkuendiger', mail: '', priv: {} as Person['priv'], grp: null } }],
     ['Abwesenheit angelegt', { type: 'addAbsence', absence: { id: 'aX', personId: 'p1', userId: 'u1', from: '2026-09-01', to: '2026-09-05', reason: '' } }],
     ['Gruppe angelegt', { type: 'addGroup', group: { id: 'gX', name: 'Gruppe 9', overseerId: null, assistantId: null } }],
     ['Dienst angelegt', { type: 'addService', service: { key: 'svcX', name: 'Neuer Dienst', count: 1 } }],

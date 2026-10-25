@@ -35,7 +35,7 @@ const KS = 'K. Steiner' // Name des Bruders — und Name des Kreisaufsehers
 function person(patch: Partial<Person> = {}): Person {
   return {
     id: 'p1', fn: 'K.', ln: 'Steiner', role: 'aeltester', female: false,
-    tel: '', mail: '',
+    mail: '',
     priv: { ...emptyQualifications(), treffpunkt: true },
     ...patch,
   }

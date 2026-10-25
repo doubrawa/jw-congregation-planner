@@ -51,7 +51,7 @@ beforeEach(() => {
 afterEach(cleanup)
 
 const person = (id: string, fn: string): Person => ({
-  id, fn, ln: 'Muster', role: 'verkuendiger', tel: '', mail: '', priv: emptyQualifications(),
+  id, fn, ln: 'Muster', role: 'verkuendiger', mail: '', priv: emptyQualifications(),
 })
 
 const ICH = person('p-ich', 'Ich')

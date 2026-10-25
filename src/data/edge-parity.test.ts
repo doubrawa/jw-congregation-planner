@@ -55,7 +55,7 @@ import { STANDARD_ZEITEN } from './vorgaben'
 const VOR_DER_WOCHE = new Date(2026, 8, 1, 9, 0)
 
 const person = (fn: string, ln: string): Person => ({
-  id: 'p', fn, ln, role: 'verkuendiger', tel: '', mail: '', priv: emptyQualifications(),
+  id: 'p', fn, ln, role: 'verkuendiger', mail: '', priv: emptyQualifications(),
 })
 
 describe('Name einer Person', () => {

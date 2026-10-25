@@ -108,7 +108,6 @@ export default {
   "suchen": "Caută…",
   "vorname": "Prenume",
   "nachname": "Nume",
-  "telefon": "Telefon",
   "emailLbl": "E-mail",
   "rolle": "Rol",
   "aufgabenbereiche": "Domenii",

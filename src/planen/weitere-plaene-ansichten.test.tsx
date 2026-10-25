@@ -33,7 +33,6 @@ const person = (id: string, fn: string, grp: string | null): Person => ({
   ln: 'Test',
   role: 'verkuendiger',
   female: false,
-  tel: '',
   mail: '',
   priv: emptyQualifications(),
   grp,

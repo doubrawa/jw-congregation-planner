@@ -22,7 +22,7 @@ import type { Meeting, PartSlotSelection, Person, RatgeberSlotSelection, Week } 
 const person = (id: string, female: boolean, ...bereiche: string[]): Person => {
   const priv = emptyQualifications()
   for (const b of bereiche) privSetzen(priv, b, true)
-  return { id, fn: id, ln: 'Test', role: female ? 'verkuendiger' : 'aeltester', female, tel: '', mail: '', priv }
+  return { id, fn: id, ln: 'Test', role: female ? 'verkuendiger' : 'aeltester', female, mail: '', priv }
 }
 
 const VORSITZ = person('vorsitz', false, 'vorsitzMid')

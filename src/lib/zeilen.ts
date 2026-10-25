@@ -27,7 +27,6 @@ export interface PersonRow {
   zuteiler_vorgemerkt?: boolean
   role: string
   female: boolean
-  tel: string
   mail: string
   priv: Qualifications
   grp: string | null
@@ -93,7 +92,6 @@ export function personFromRow(r: PersonRow): Person {
     zuteilerVorgemerkt: r.zuteiler_vorgemerkt || undefined,
     role: asRole(r.role),
     female: r.female || undefined,
-    tel: r.tel,
     mail: r.mail,
     priv: normalizePriv(r.priv),
     grp: r.grp ?? null,
@@ -111,7 +109,6 @@ export function personToRow(p: Person, congregationId: string) {
     zuteiler_vorgemerkt: Boolean(p.zuteilerVorgemerkt),
     role: p.role,
     female: Boolean(p.female),
-    tel: p.tel,
     mail: p.mail,
     priv: p.priv,
     grp: p.grp ?? null,

@@ -9,7 +9,6 @@ function person(patch: Partial<Person> = {}): Person {
     fn: 'Simon',
     ln: 'Krüger',
     role: 'verkuendiger',
-    tel: '0170 123 4567',
     mail: 'simon.krueger@example.org',
     priv: emptyQualifications(),
     ...patch,
@@ -32,17 +31,6 @@ describe('Volltextsuche', () => {
 
   it('findet über die E-Mail-Adresse', () => {
     expect(passtOhneAuswahl(p, filter({ q: 'example.org' }))).toBe(true)
-  })
-
-  it('findet über die Telefonnummer, auch mit anderer Schreibweise', () => {
-    expect(passtOhneAuswahl(p, filter({ q: '0170 123' }))).toBe(true)
-    // Ohne den Ziffernvergleich fände diese Eingabe „0170 123 4567" nicht.
-    expect(passtOhneAuswahl(p, filter({ q: '01701234567' }))).toBe(true)
-    expect(passtOhneAuswahl(p, filter({ q: '+49 170 1234567' }))).toBe(false)
-  })
-
-  it('eine reine Ziffer im Namen macht nicht jeden zum Treffer', () => {
-    expect(passtOhneAuswahl(person({ tel: '0555 999' }), filter({ q: '7' }))).toBe(false)
   })
 
   it('findet auch so, wie die Liste den Namen zeigt — Nachname zuerst', () => {

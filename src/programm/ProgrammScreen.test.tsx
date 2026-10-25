@@ -40,7 +40,7 @@ const t = dict('de')
 
 const ICH: Person = {
   id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger', female: false,
-  tel: '', mail: '', priv: emptyQualifications(),
+  mail: '', priv: emptyQualifications(),
 }
 const NAMENSVETTER: Person = { ...ICH, id: 'p-z' }
 

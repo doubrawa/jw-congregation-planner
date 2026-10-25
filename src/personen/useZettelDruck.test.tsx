@@ -38,7 +38,7 @@ vi.mock('../lib/links-ausstellen', async (echt) => ({
 
 const { useZettelDruck } = await import('./useZettelDruck')
 
-const ANTON: Person = { id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger', female: false, tel: '', mail: '', priv: emptyQualifications() }
+const ANTON: Person = { id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger', female: false, mail: '', priv: emptyQualifications() }
 
 /** Eine Stelle mit dem Hook — mit Knopf zum Drucken, wenn `knopf` gesetzt ist. */
 function Stelle({ knopf }: { knopf?: string }) {

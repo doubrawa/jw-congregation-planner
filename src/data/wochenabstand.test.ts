@@ -18,7 +18,7 @@ import type { Meeting, Person, Week } from './types'
 
 const PERSON: Person = {
   id: 'p1', fn: 'A.', ln: 'B.', role: 'verkuendiger',
-  tel: '', mail: '', priv: emptyQualifications(),
+  mail: '', priv: emptyQualifications(),
 }
 
 function meeting(mitAufgabe: boolean): Meeting {

@@ -75,7 +75,7 @@ describe('Die Gruppen', () => {
 
 describe('Was die Person hat', () => {
   const person = (...keys: string[]): Person => ({
-    id: 'p1', fn: 'Simon', ln: 'Krüger', role: 'verkuendiger', tel: '', mail: '',
+    id: 'p1', fn: 'Simon', ln: 'Krüger', role: 'verkuendiger', mail: '',
     priv: { ...emptyQualifications(), ...Object.fromEntries(keys.map((k) => [k, true])) },
   })
 

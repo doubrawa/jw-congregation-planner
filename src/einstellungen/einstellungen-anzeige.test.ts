@@ -14,7 +14,7 @@ import { zahlBinden } from '../i18n/zahl-binden'
 const t = dict('de')
 
 const person = (id: string, fn: string, ln: string, over: Partial<Person> = {}): Person => ({
-  id, fn, ln, role: 'verkuendiger', female: false, tel: '', mail: '', priv: emptyQualifications(), grp: null, ...over,
+  id, fn, ln, role: 'verkuendiger', female: false, mail: '', priv: emptyQualifications(), grp: null, ...over,
 })
 const konto = (personId: string, over: Partial<Member> = {}): Member => ({
   userId: `u-${personId}`, email: '', personId, planner: false, zuteiler: false, ...over,

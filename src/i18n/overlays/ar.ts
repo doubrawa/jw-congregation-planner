@@ -120,7 +120,6 @@ export default {
   "toastPushVerweigert": "لم يتم السماح بالإشعارات الفورية",
   "keineWochenTitel": "لم يتم تحميل البرنامج",
   "keineWochenHinweis": "لم تُحمَّل أي أسابيع بعد. يجلب المخطِّطون البرنامج من «التخطيط» عبر «جلب».",
-  "telefon": "الهاتف",
   "emailLbl": "البريد الإلكتروني",
   "rolle": "الدور",
   "aufgabenbereiche": "مجالات التعيين",

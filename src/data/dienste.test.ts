@@ -34,7 +34,7 @@ import type { Person, Service, Week } from './types'
 const person = (id: string, ...bereiche: string[]): Person => {
   const priv = emptyQualifications()
   for (const b of bereiche) priv[b as `svc:${string}`] = true
-  return { id, fn: id, ln: 'Test', role: 'verkuendiger', tel: '', mail: '', priv }
+  return { id, fn: id, ln: 'Test', role: 'verkuendiger', mail: '', priv }
 }
 
 const TON = serviceQualKey('ton')

@@ -99,7 +99,7 @@ describe('Was liegen bleibt, ist beschnitten (S6)', () => {
       persons: [
         {
           id: 'p1', fn: 'Xavo', ln: 'Quintus', role: 'verkuendiger',
-          tel: '+49 170 1234567', mail: 'x@example.com',
+          mail: 'x@example.com',
           priv: {} as HydratePayload['persons'][number]['priv'],
         },
       ],
@@ -118,11 +118,9 @@ describe('Was liegen bleibt, ist beschnitten (S6)', () => {
     expect(readSnapshot('u1')?.payload.absences.map((a) => a.reason)).toEqual(['', ''])
   })
 
-  it('Telefon und E-Mail bleiben — offline ist die Nummer oft der Grund für die App', () => {
+  it('die E-Mail-Adresse bleibt', () => {
     saveSnapshot(mitGrund())
-    const person = readSnapshot('u1')?.payload.persons[0]
-    expect(person?.tel).toBe('+49 170 1234567')
-    expect(person?.mail).toBe('x@example.com')
+    expect(readSnapshot('u1')?.payload.persons[0]?.mail).toBe('x@example.com')
   })
 
   it('die Nutzlast des Aufrufers bleibt unangetastet', () => {

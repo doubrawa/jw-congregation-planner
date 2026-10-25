@@ -42,7 +42,6 @@ function mk(quals: string[], patch: Partial<Person> = {}): Person {
     ln: `N${lfd}`,
     role: 'verkuendiger',
     female: false,
-    tel: '',
     mail: '',
     priv: priv as unknown as Qualifications,
     ...patch,

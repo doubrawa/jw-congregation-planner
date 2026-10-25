@@ -61,7 +61,7 @@ const priv = (...keys: string[]): Qualifications => {
 }
 
 const person = (id: string, fn: string, ln: string, over: Partial<Person> = {}): Person => ({
-  id, fn, ln, role: 'verkuendiger', female: false, tel: '', mail: '', priv: emptyQualifications(),
+  id, fn, ln, role: 'verkuendiger', female: false, mail: '', priv: emptyQualifications(),
   grp: null, ...over,
 })
 
@@ -320,7 +320,7 @@ describe('Person anlegen', () => {
     fireEvent.click(knopf(b, t.hinzufuegenKnopf))
     const aktion = dispatch.mock.calls.find((c) => c[0].type === 'addPerson')![0]
     expect(aktion.person).toMatchObject({
-      fn: 'Dora', ln: 'Dahl', mail: 'dora@example.org', female: true, grp: 'g1', role: 'keine', tel: '',
+      fn: 'Dora', ln: 'Dahl', mail: 'dora@example.org', female: true, grp: 'g1', role: 'keine',
     })
     expect(aktion.person.priv).toEqual(emptyQualifications())
     expect(aktion.person.id).toBeTruthy()

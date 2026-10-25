@@ -23,7 +23,7 @@ import type { FsInstance, Meeting, PartItem, PartSlotSelection, Person, Week } f
 
 const person = (id: string, name: string): Person => ({
   id, fn: name.split(' ')[0] ?? '', ln: name.split(' ')[1] ?? '',
-  role: 'verkuendiger', tel: '', mail: '', priv: emptyQualifications(),
+  role: 'verkuendiger', mail: '', priv: emptyQualifications(),
 })
 
 const ANNA = person('p-anna', 'Anna Beispiel')

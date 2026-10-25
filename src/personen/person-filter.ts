@@ -15,7 +15,7 @@ export type Auswahl = '' | AnmeldeStand | 'nichtAngemeldet' | 'abwesend'
  * die Felder sind also frei kombinierbar (UND-Verknüpfung).
  */
 export interface PersonFilter {
-  q: string // Volltext über Name, Telefon, E-Mail
+  q: string // Volltext über Name und E-Mail
   auswahl: Auswahl
   sex: '' | 'm' | 'w'
   role: '' | Role
@@ -36,15 +36,9 @@ export function gesetzteBlattfilter(f: PersonFilter): number {
   return (Object.keys(OHNE_BLATTFILTER) as Array<keyof typeof OHNE_BLATTFILTER>).filter((feld) => f[feld] !== '').length
 }
 
-/** Eingabe, die nur aus Telefon-Zeichen besteht (Ziffern und deren Trenner). */
-const NUR_TELEFON = /^[\d\s+()./-]+$/
-
-const ziffern = (s: string) => s.replace(/\D+/g, '')
-
 /**
- * Volltext über Name, Telefon und E-Mail. Sieht die Eingabe nach
- * einer Telefonnummer aus, wird zusätzlich ziffernweise verglichen — sonst
- * fände „01701234" die gespeicherte „0170 1234" nicht (und umgekehrt).
+ * Volltext über Name und E-Mail. Bis zum 25.10.2026 auch über die
+ * Telefonnummer, ziffernweise — das Feld ist entfallen.
  *
  * **Der Name auch so, wie die Liste ihn zeigt.** Dort steht „Krüger, Simon";
  * gesucht wurde bis zum 1.10.2026 aber nur in „Simon Krüger". Wer abtippte, was
@@ -54,11 +48,7 @@ const ziffern = (s: string) => s.replace(/\D+/g, '')
  */
 function passtZuText(person: Person, q: string): boolean {
   const namen = [displayName(person), `${person.ln} ${person.fn}`, `${person.ln}, ${person.fn}`]
-  const heu = [...namen, person.tel, person.mail].join('\n').toLowerCase()
-  if (enthaelt(heu, q)) return true
-  if (!NUR_TELEFON.test(q)) return false
-  const nur = ziffern(q)
-  return nur.length > 0 && ziffern(person.tel).includes(nur)
+  return enthaelt([...namen, person.mail].join('\n').toLowerCase(), q)
 }
 
 /** Fällt die Person unter die Auswahl über der Liste? */

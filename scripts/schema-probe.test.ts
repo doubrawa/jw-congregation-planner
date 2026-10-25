@@ -438,6 +438,9 @@ const LAEUFE: Record<string, Lauf[]> = {
     {
       titel: 'zurücksetzen und neu einspielen',
       dateien: {
+        // So schreibt es `build-personen-sql.mjs` (nws-export): noch mit `tel`.
+        // Die Spalte gibt es seit dem 25.10.2026 nicht mehr — das Skript
+        // übernimmt sie nicht, und die Probe hält fest, dass es dabei bleibt.
         'personen.sql': [
           `insert into public.groups (id, congregation_id, name, position) values ('${G1}', (select id from public.congregations limit 1), 'Gruppe 1', 0);`,
           `insert into public.persons (id, congregation_id, fn, ln, role, female, tel, mail, priv, grp, fam) values ('${P1}', (select id from public.congregations limit 1), 'Probe', 'Eins', 'aeltester', false, '', '', '{"gebet":true}'::jsonb, '${G1}', '${H1}');`,
@@ -507,8 +510,8 @@ const LAEUFE: Record<string, Lauf[]> = {
             { user_id: U2, congregation_id: CB, planner: true, email: 'b@probe.invalid' },
           ],
           persons: [
-            { id: P1, congregation_id: C, fn: 'Probe', ln: 'A', tel: '' },
-            { id: P2, congregation_id: CB, fn: 'Probe', ln: 'B', tel: '' },
+            { id: P1, congregation_id: C, fn: 'Probe', ln: 'A', mail: '' },
+            { id: P2, congregation_id: CB, fn: 'Probe', ln: 'B', mail: '' },
           ],
         },
       },
@@ -1147,11 +1150,11 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
 
   it('mandanten-nachweis: ist der vorhandene Wert nicht lesbar, wird nichts geändert', async () => {
     const { ausgabe, aufrufe } = await fahreGestoert('mandanten-nachweis.mjs', (a) =>
-      a.method === 'GET' && a.pfad.startsWith('persons?select=tel') ? kaputt : undefined,
+      a.method === 'GET' && a.pfad.startsWith('persons?select=mail') ? kaputt : undefined,
     )
     expect(ausgabe.join('\n')).toMatch(/persons ändern +→ nicht versucht: vorhandener Wert nicht lesbar \(400\)/)
-    // Hier ging vorher `tel: ''` hinaus — bei einem Loch in der Richtlinie
-    // wäre die echte Nummer einer Person der anderen Versammlung weg gewesen.
+    // Hier ging vorher ein leerer Wert hinaus — bei einem Loch in der Richtlinie
+    // wäre die echte Angabe einer Person der anderen Versammlung weg gewesen.
     expect(aufrufe.filter((a) => a.method === 'PATCH')).toEqual([])
   })
 })

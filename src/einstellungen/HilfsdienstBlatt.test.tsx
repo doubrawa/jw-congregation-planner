@@ -32,7 +32,7 @@ const DIENSTE: Service[] = [
 ]
 
 const person = (ln: string, dienste: string[] = []): Person => ({
-  id: `p-${ln}`, fn: 'Max', ln, role: 'verkuendiger', tel: '', mail: '',
+  id: `p-${ln}`, fn: 'Max', ln, role: 'verkuendiger', mail: '',
   priv: { ...emptyQualifications(), ...Object.fromEntries(dienste.map((k) => [serviceQualKey(k), true])) },
 })
 

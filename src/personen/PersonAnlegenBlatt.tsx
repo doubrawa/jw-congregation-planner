@@ -48,7 +48,6 @@ export function PersonAnlegenBlatt({ onClose }: { onClose: () => void }) {
         ...name,
         id: crypto.randomUUID(),
         mail: mail.trim(),
-        tel: '',
         female: geschlecht === 'w',
         grp: grp || null,
         role,

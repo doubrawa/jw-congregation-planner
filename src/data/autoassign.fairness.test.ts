@@ -13,7 +13,7 @@ import { privSetzen } from './helpers'
 function alsPerson(name: string): Person {
   return {
     id: `test-${name}`, fn: name, ln: '', role: 'verkuendiger', female: false,
-    tel: '', mail: '', priv: emptyQualifications(),
+    mail: '', priv: emptyQualifications(),
   }
 }
 
@@ -55,7 +55,7 @@ function mk(
     fn: 'T',
     ln: opts.ln ?? `P${counter}`,
     role: opts.role ?? 'verkuendiger',
-    tel: '', mail: '',
+    mail: '',
     priv: priv(quals),
     ...(opts.female ? { female: true } : {}),
   }

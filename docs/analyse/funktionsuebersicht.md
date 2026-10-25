@@ -155,11 +155,11 @@ Navigation auf einen gesperrten Screen landet im Programm.
 | # | Funktion | Wo | Wer | Umsetzung |
 | --- | --- | --- | --- | --- |
 | 66 | Personenliste mit Zähler | Personen | Planer | `personen/PersonenScreen.tsx` |
-| 67 | Live-Suche über Name, Telefon, E-Mail | Personen | Planer | `personen/person-filter.ts` |
+| 67 | Live-Suche über Name, E-Mail | Personen | Planer | `personen/person-filter.ts` |
 | 68 | Vier Filter: Geschlecht, Rolle, Gruppe, Aufgabenbereich | Personen | Planer | `person-filter.ts`, `FilterSelect` |
 | 69 | Dubletten-Warnung bei gleichem Anzeigenamen | Personen | Planer | `duplicateDisplayNames` |
 | 70 | Person anlegen / löschen (löst Gruppen-/Konto-/Code-Referenzen) | Personen | Planer | `addPerson`, `removePerson` |
-| 71 | Stammdaten: Vor-/Nachname, Anzeigename, Telefon, E-Mail | Detail | Planer | `personen/PersonDetail.tsx` |
+| 71 | Stammdaten: Vor-/Nachname, Anzeigename, E-Mail | Detail | Planer | `personen/PersonDetail.tsx` |
 | 72 | Geschlecht, Rolle, Predigtdienstgruppe | Detail | Planer | `PersonDetail.tsx` |
 | 73 | Familie/Haushalt verknüpfen | Detail | Planer | `linkFamily`, `unlinkFamily` |
 | 74 | Aufgabenbereiche: 11 feste + je Hilfsdienst einer | Detail | Planer | `QUALIFICATION_ORDER`, `serviceQualKey` |

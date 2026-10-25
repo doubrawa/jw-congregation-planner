@@ -54,7 +54,7 @@ const MONTAG = '2026-09-07'
 function person(id: string, bereiche: string[], extra: Partial<Person> = {}): Person {
   const priv = emptyQualifications()
   for (const b of bereiche) privSetzen(priv, b, true)
-  return { id, fn: id, ln: 'Test', role: 'verkuendiger', tel: '', mail: '', priv, ...extra }
+  return { id, fn: id, ln: 'Test', role: 'verkuendiger', mail: '', priv, ...extra }
 }
 
 /** Die `n`-te Woche vor der laufenden (1 = letzte Woche). */

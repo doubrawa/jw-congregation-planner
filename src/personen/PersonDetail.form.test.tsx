@@ -46,7 +46,7 @@ const t = dict('de')
 
 const person = (over: Partial<Person> = {}): Person => ({
   id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger', female: false,
-  tel: '0123', mail: 'anton@example.org', priv: emptyQualifications(), grp: null, ...over,
+  mail: 'anton@example.org', priv: emptyQualifications(), grp: null, ...over,
 })
 
 const BRAND = person({ id: 'p-b', fn: 'Bernd', ln: 'Brand' })
@@ -146,25 +146,29 @@ describe('Der Kopf', () => {
 })
 
 describe('Person bearbeiten: die Felder', () => {
-  it('alle vier Felder stehen da und tragen ihren Wert', () => {
+  it('alle drei Felder stehen da und tragen ihren Wert', () => {
     const b = bearbeiten(zeige(person()).container)
     expect(feld(b, 'pers-fn').value).toBe('Anton')
     expect(feld(b, 'pers-ln').value).toBe('Alt')
-    expect(feld(b, 'pers-tel').value).toBe('0123')
     expect(feld(b, 'pers-mail').value).toBe('anton@example.org')
   })
 
-  it('Telefon und E-Mail gelten sofort, jedes nur für sich', () => {
+  it('nach einer Telefonnummer fragt das Blatt nicht — gebraucht hat sie niemand (25.10.2026)', () => {
+    const b = bearbeiten(zeige(person()).container)
+    expect(b.querySelector('input[type="tel"]')).toBeNull()
+    expect(b.textContent).not.toContain('Telefon')
+  })
+
+  it('die E-Mail gilt sofort', () => {
     const { container, dispatch } = zeige(person())
     const b = bearbeiten(container)
-    fireEvent.change(feld(b, 'pers-tel'), { target: { value: '0456' } })
     fireEvent.change(feld(b, 'pers-mail'), { target: { value: 'neu@x.de' } })
-    expect(patches(dispatch)).toEqual([{ tel: '0456' }, { mail: 'neu@x.de' }])
+    expect(patches(dispatch)).toEqual([{ mail: 'neu@x.de' }])
   })
 
   it('ein fehlender Wert ergibt ein leeres Feld, kein „undefined"', () => {
-    const b = bearbeiten(zeige(person({ tel: '' })).container)
-    expect(feld(b, 'pers-tel').value).toBe('')
+    const b = bearbeiten(zeige(person({ mail: '' })).container)
+    expect(feld(b, 'pers-mail').value).toBe('')
   })
 })
 
@@ -210,10 +214,10 @@ describe('Person bearbeiten: der Name', () => {
     const b = bearbeiten(zeige(person()).container)
     tippen(b, 'bernd  ', ' BRAND')
     expect(b.querySelector('[role="alert"]')?.textContent).toContain('Bernd Brand')
-    // Beide Felder, nicht nur eines — die Regel gilt dem Paar. Telefon ist unbeteiligt.
+    // Beide Felder, nicht nur eines — die Regel gilt dem Paar. Die E-Mail ist unbeteiligt.
     expect(feld(b, 'pers-fn').getAttribute('aria-invalid')).toBe('true')
     expect(feld(b, 'pers-ln').getAttribute('aria-invalid')).toBe('true')
-    expect(feld(b, 'pers-tel').getAttribute('aria-invalid')).toBeNull()
+    expect(feld(b, 'pers-mail').getAttribute('aria-invalid')).toBeNull()
   })
 
   it('ein doppelter Name bleibt beim Schließen draußen — der alte gilt, und ein Hinweis sagt warum', () => {

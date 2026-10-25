@@ -24,8 +24,8 @@
  *      werden, ein Ändern einer fremden Zeile null Zeilen treffen.
  *
  * **Zur Schreibprobe.** Sie fasst echte Daten an — deshalb so vorsichtig wie
- * möglich: Das Ändern schreibt den **vorhandenen** Wert zurück (`tel` auf sich
- * selbst), ist also auch bei kaputter Richtlinie folgenlos. Gelöscht wird
+ * möglich: Das Ändern schreibt den **vorhandenen** Wert zurück (`mail` auf sich
+ * selbst; bis zum 25.10.2026 `tel`), ist also auch bei kaputter Richtlinie folgenlos. Gelöscht wird
  * nichts: Ein erfolgreiches Löschen wäre nicht rückgängig zu machen, und
  * Einfügen und Ändern zeigen den Zugriff bereits. Eingefügt wird wie in der
  * App **ohne** `RETURNING`, und ob etwas ankam, sieht die Zielseite nach
@@ -406,13 +406,13 @@ export async function main(arg = process.argv.slice(2)) {
       if (marke) {
         // Den vorhandenen Wert **sicher** kennen, bevor geschrieben wird. Hier
         // stand `?? ''`: Scheiterte das Lesen, ging ein leerer Wert hinaus — und
-        // hätte die Richtlinie ein Loch, wäre die echte Nummer weg gewesen.
-        const ist = await ziel.rest(`persons?select=tel&id=eq.${marke.id}`)
+        // hätte die Richtlinie ein Loch, wäre die echte Angabe weg gewesen.
+        const ist = await ziel.rest(`persons?select=mail&id=eq.${marke.id}`)
         const vorhanden = Array.isArray(ist.daten) ? ist.daten[0] : undefined
         if (ist.status >= 400 || !vorhanden) {
           zeile(false, `persons ändern        → nicht versucht: vorhandener Wert nicht lesbar (${ist.status}) — PROBE KAPUTT`)
         } else {
-          const aend = await seite.rest(`persons?id=eq.${marke.id}`, 'PATCH', { tel: vorhanden.tel ?? '' })
+          const aend = await seite.rest(`persons?id=eq.${marke.id}`, 'PATCH', { mail: vorhanden.mail ?? '' })
           const e2 = bewerteSchreiben(aend.status, aend.daten)
           zeile(e2.ok, `persons ändern        → ${e2.wie}`)
         }

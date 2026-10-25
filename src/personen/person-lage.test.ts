@@ -9,7 +9,7 @@ import { linkGilt, mitLage } from './person-lage'
  */
 
 const person = (id: string, over: Partial<Person> = {}): Person => ({
-  id, fn: id, ln: id, role: 'verkuendiger', tel: '', mail: '', priv: emptyQualifications(), ...over,
+  id, fn: id, ln: id, role: 'verkuendiger', mail: '', priv: emptyQualifications(), ...over,
 })
 const konto = (personId: string | null, over: Partial<Member> = {}): Member => ({
   userId: `u-${personId}`, email: '', personId, planner: false, zuteiler: false, ...over,

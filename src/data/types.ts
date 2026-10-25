@@ -402,7 +402,6 @@ export interface Person {
   role: Role
   female?: boolean // Schwester — steuert Partner-Zuordnung im Schülerteil und
   //                  die Brüder-Bereiche (Vorsitz, Gebet, Vortrag …)
-  tel: string
   mail: string
   priv: Qualifications
   grp?: string | null // Predigtdienstgruppe (Group.id) oder null = keine

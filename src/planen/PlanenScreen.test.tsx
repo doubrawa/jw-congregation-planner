@@ -43,7 +43,7 @@ import { zahlBinden } from '../i18n/zahl-binden'
 const t = dict('de')
 
 const person = (id: string, fn: string, ln: string): Person => ({
-  id, fn, ln, role: 'aeltester', female: false, tel: '', mail: '', priv: emptyQualifications(),
+  id, fn, ln, role: 'aeltester', female: false, mail: '', priv: emptyQualifications(),
 })
 
 const PLANER = person('p-planer', 'Paula', 'Planer')

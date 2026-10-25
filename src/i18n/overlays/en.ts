@@ -116,7 +116,6 @@ export default {
   "suchen": "Search…",
   "vorname": "First name",
   "nachname": "Last name",
-  "telefon": "Phone",
   "emailLbl": "Email",
   "kontoCard": "Account",
   "persLoeschen": "Delete person",

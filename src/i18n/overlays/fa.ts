@@ -110,7 +110,6 @@ export default {
   "suchen": "جستجو…",
   "vorname": "نام",
   "nachname": "نام خانوادگی",
-  "telefon": "تلفن",
   "emailLbl": "ایمیل",
   "kontoCard": "حساب",
   "persLoeschen": "حذف فرد",

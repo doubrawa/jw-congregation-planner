@@ -30,7 +30,7 @@ const ZEITEN = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
 
 const person: Person = {
   id: 'p1', fn: 'A.', ln: 'Beispiel',
-  role: 'verkuendiger', tel: '', mail: '', priv: emptyQualifications(),
+  role: 'verkuendiger', mail: '', priv: emptyQualifications(),
 }
 
 const PUNKT_A = 'a1b2c3'

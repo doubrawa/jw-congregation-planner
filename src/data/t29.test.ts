@@ -71,7 +71,6 @@ const person: Person = {
   fn: 'M.',
   ln: 'Hartmann',
   role: 'aeltester',
-  tel: '',
   mail: '',
   priv: { ...emptyQualifications(), vortrag: true },
 }
