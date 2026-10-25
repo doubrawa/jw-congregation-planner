@@ -64,6 +64,8 @@ export function Kopfzeile({
 /**
  * Der Kopf des Planens am Handy (Baustein `kopfPlanen`): Kreuz und „Fertig"
  * beenden beide das Planen — das Kreuz für die Gewohnheit, „Fertig" als Wort.
+ * Passt der Titel nicht daneben, rückt „Fertig" in die nächste Zeile
+ * (`menue.css`); abgeschnitten wird der Titel nicht.
  */
 export function PlanenKopf({ titel, onBeenden }: { titel: string; onBeenden: () => void }) {
   const { t } = useT()

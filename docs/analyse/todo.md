@@ -8760,9 +8760,13 @@ den Titel des Bereichs in einer Zeile, wie der Kopf des Planens und der Entwurf
 Desktop unverändert. Probe `tests/kopf-titel.test.ts`. Im Review gefunden: Bei
 320 px und Schrift 1,45 schnitt der Kopf den Titel in fünf Sprachen mit „…" ab
 („Zusammenkünf…") — jetzt bricht er dort mit Trennstrich um („Zusammen-
-künfte"). Bleibt offen: Der Kopf des Planens (✕, Titel, „Fertig") schneidet
-schon länger ab, bei Stufe 1 auf 320 px, bei 1,45 auch auf 375/390 px
-(gemessen 25.10.2026).
+künfte"). Danach auf Wunsch des Betreibers auch der Kopf des Planens (✕,
+Titel, „Fertig"): Er schnitt schon länger ab, bei Stufe 1 auf 320 px, bei 1,45
+auch auf 375/390 px. Jetzt rückt „Fertig" in die nächste Zeile ans Ende, wenn
+der Titel daneben keinen Platz hat — wie beim Bereichstitel (T128) —, und der
+Titel trennt nur, wenn er auch neben dem Kreuz allein nicht passt. Gemessen
+in zwölf Sprachen, 320/375/390 px, Stufe 1 und 1,45: nichts abgeschnitten,
+kein Bruch ohne Strich, Kopf dann 116 px (Titel zweizeilig: 145 px).
 
 ### T145 · Auswertung, Engpässe: nur die problematischen Bereiche ⚡ ☐ offen
 

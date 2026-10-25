@@ -70,21 +70,15 @@
   background: var(--akzent);
 }
 
-.planenkopf-titel {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  font-size: calc(20px * var(--fs));
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Neben Zurück hat der Titel die Zeile für sich: Wird es eng (320 px, Stufe
-   1,45: „Zusammenkünfte", „Autres programmes"), bricht er um, statt mit „…"
-   abgeschnitten zu werden — wie vorher auf der Seite (T144, Review). */
+/* Der Titel im Kopf am Handy steht ganz da: Wird es eng, bricht er um und
+   trennt nach den Regeln der Sprache, statt mit „…" abgeschnitten zu werden.
+   Bis zum 25.10.2026 schnitt der Kopf des Planens ab — „Zusammenkün…" schon
+   bei 390 px und Stufe 1,45, „Autres progr…" bei Stufe 1 auf 375 px. */
+.planenkopf-titel,
 .unterseitenkopf-titel {
-  flex: 1;
+  /* Grundmaß der eigene Text, nicht 0: Daran entscheidet der Kopf des
+     Planens, ob „Fertig" noch daneben passt (siehe unten). */
+  flex: 1 1 auto;
   min-width: 0;
   font-size: calc(20px * var(--fs));
   font-weight: 600;
@@ -92,6 +86,22 @@
   -webkit-hyphens: auto;
   hyphens: auto;
   overflow-wrap: break-word;
+}
+
+/* Neben ✕ und „Fertig" wird es bei großer Schrift eng: Dann rückt „Fertig" in
+   die nächste Zeile, ans Ende, bevor der Titel trennt — wie beim
+   Bereichstitel (T128). Der Titel bleibt neben dem Kreuz: höchstens die Zeile
+   ohne den runden Knopf (44 px) und die Lücke (12 px). */
+.planenkopf {
+  flex-wrap: wrap;
+}
+
+.planenkopf-titel {
+  max-width: calc(100% - 56px);
+}
+
+.planenkopf > .planen-knopf {
+  margin-inline-start: auto;
 }
 
 /* Zurück links, das Angebot der Seite rechts (Mitteilungen: „Alle gelesen"). */

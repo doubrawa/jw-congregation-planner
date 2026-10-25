@@ -4385,6 +4385,27 @@ export const KATALOG = [
     suchen: '  .bereichstitel--planen .bereichstitel-zeile,\n  .bereichstitel--zurueck .bereichstitel-zeile {\n',
     ersetzen: '  .bereichstitel--planen .bereichstitel-zeile {\n',
   },
+  {
+    id: 'kopf-titel-ganz',
+    datei: 'src/app/menue.css',
+    regel: 'Der Titel im Kopf am Handy bricht um und trennt, statt mit „…" abgeschnitten zu werden (Review T144, 25.10.2026).',
+    suchen: '  line-height: 1.25;\n  -webkit-hyphens: auto;\n  hyphens: auto;\n  overflow-wrap: break-word;\n}\n\n/* Neben ✕',
+    ersetzen: '  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\n/* Neben ✕',
+  },
+  {
+    id: 'planenkopf-fertig-rueckt-um',
+    datei: 'src/app/menue.css',
+    regel: 'Beim Planen rückt „Fertig" in die nächste Zeile, wenn der Titel daneben keinen Platz hat — bevor der Titel trennt.',
+    suchen: '.planenkopf {\n  flex-wrap: wrap;\n}\n',
+    ersetzen: '.planenkopf {\n}\n',
+  },
+  {
+    id: 'planenkopf-titel-misst-sich',
+    datei: 'src/app/menue.css',
+    regel: 'Ob „Fertig" neben den Titel passt, entscheidet dessen Text (Grundmaß auto) — mit 0 trennte der Titel in einer schmalen Lücke in vier Zeilen.',
+    suchen: '  flex: 1 1 auto;\n  min-width: 0;\n  font-size: calc(20px * var(--fs));\n',
+    ersetzen: '  flex: 1;\n  min-width: 0;\n  font-size: calc(20px * var(--fs));\n',
+  },
   /* ---- Die Versammlung ansehen (T121, Phase 4a) ---- */
   {
     id: 'kongress-statt-programm',
