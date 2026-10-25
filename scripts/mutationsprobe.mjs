@@ -3943,8 +3943,8 @@ export const KATALOG = [
     id: 'menue-planung-gruppenaufseher',
     datei: 'src/app/AppShell.tsx',
     regel: '„Planung" führt den Gruppenaufseher zu den Treffpunkten, die er planen darf — nicht in die Zusammenkünfte.',
-    suchen: "const planungsThema: Thema = darfPlanen(rechte, 'zusammenkuenfte') ? 'zusammenkuenfte' : 'predigtdienst'",
-    ersetzen: "const planungsThema: Thema = 'zusammenkuenfte'",
+    suchen: "dispatch(hatPlanungsWahl(rechte) ? { type: 'navigate', screen: 'planung' } : zumPlanen('predigtdienst'))",
+    ersetzen: "dispatch(hatPlanungsWahl(rechte) ? { type: 'navigate', screen: 'planung' } : zumPlanen('zusammenkuenfte'))",
   },
 
   // ── Für mich: Start, Meine Aufgaben, Absagen (T121, Phase 3) ──────────────
@@ -4183,26 +4183,72 @@ export const KATALOG = [
     suchen: "  const zuletzt = entries.filter((e) => e.vergangen && e.kind !== 'abw').length\n",
     ersetzen: '  const zuletzt = entries.filter((e) => e.vergangen).length\n',
   },
+  // `planung-bereiche-oben`, `planung-bereiche-spalte` gestrichen (T144,
+  // 25.10.2026): „Planung" zeigt nur noch die Wahl, die Spalte nur die Wochen.
+  // Die Wahl selbst bewachen die Regeln `planung-wahl-…` weiter unten.
   {
-    id: 'planung-bereiche-oben',
-    datei: 'src/planen/PlanungScreen.tsx',
-    regel: 'Oben auf „Planung" steht die Wahl Zusammenkünfte, Predigtdienst, Weitere Pläne (T135).',
-    suchen: '      <PlanungsBereiche aktiv="zusammenkuenfte" />\n',
+    id: 'planung-bereiche-nur-erlaubte',
+    datei: 'src/app/bereich.ts',
+    regel: 'Die Wahl nennt nur, was man planen darf — der Gruppenaufseher bekommt keine (T135, T144).',
+    suchen: 'export const planbareBereiche = (r: Rechte): Thema[] => BEREICHE.filter((thema) => darfPlanen(r, thema))\n',
+    ersetzen: 'export const planbareBereiche = (r: Rechte): Thema[] => [...BEREICHE]\n',
+  },
+  // ── „Planung": erst die Wahl, Zurück dorthin, woher man kam (T144) ─────────
+  {
+    id: 'planung-wahl-ohne-wochen',
+    datei: 'src/app/AppShell.tsx',
+    regel: '„Planung" im Menü zeigt zuerst die Wahl — nicht gleich die Wochen der Zusammenkünfte (T144).',
+    suchen: "dispatch(hatPlanungsWahl(rechte) ? { type: 'navigate', screen: 'planung' } : zumPlanen('predigtdienst'))",
+    ersetzen: "dispatch(hatPlanungsWahl(rechte) ? { type: 'navigate', screen: 'wochen' } : zumPlanen('predigtdienst'))",
+  },
+  {
+    id: 'planung-wahl-zu-den-wochen',
+    datei: 'src/app/bereich.ts',
+    regel: '„Zusammenkünfte" auf der Wahl führt zu den Wochen — wo die Spalte passt, gleich in den Plan daneben.',
+    suchen: "  mitSpalte ? zumPlanen('zusammenkuenfte', 'planung') : { type: 'navigate', screen: 'wochen' }\n",
+    ersetzen: "  zumPlanen('zusammenkuenfte', 'planung')\n",
+  },
+  {
+    id: 'planung-woche-zurueck-zu-den-wochen',
+    datei: 'src/app/bereich.ts',
+    regel: 'Aus „Planung" führt Zurück aus dem Plan einer Woche zu den Wochen, nicht in die Ansicht (T144).',
+    suchen: "  if (thema === 'zusammenkuenfte' && !mitSpalte) return { type: 'navigate', screen: 'wochen' }\n",
     ersetzen: '',
   },
   {
-    id: 'planung-bereiche-spalte',
-    datei: 'src/planen/WochenUebersicht.tsx',
-    regel: 'Die Wochenspalte am Desktop trägt dieselbe Wahl — gewählt ist, was daneben geplant wird (T135).',
-    suchen: '      <PlanungsBereiche aktiv={themaVon(state.tab)} />\n',
-    ersetzen: "      <PlanungsBereiche aktiv=\"zusammenkuenfte\" />\n",
+    id: 'planung-nur-aus-planung',
+    datei: 'src/app/bereich.ts',
+    regel: 'Nur aus „Planung" geht Zurück eine Ebene hinauf — aus der Ansicht beenden ✕ und „Fertig" das Planen wie bisher.',
+    suchen: "  if (screen !== 'planen' || von !== 'planung' || !hatPlanungsWahl(r)) return null\n",
+    ersetzen: "  if (screen !== 'planen' || !hatPlanungsWahl(r)) return null\n",
   },
   {
-    id: 'planung-bereiche-nur-erlaubte',
-    datei: 'src/planen/PlanungsBereiche.tsx',
-    regel: 'Die Wahl nennt nur, was man planen darf — der Gruppenaufseher bekommt keine (T135).',
-    suchen: '  const bereiche = BEREICHE.filter((thema) => darfPlanen(rechte, thema))\n',
-    ersetzen: '  const bereiche = BEREICHE\n',
+    id: 'planung-wochen-zurueck-zur-wahl',
+    datei: 'src/app/bereich.ts',
+    regel: 'Von der Seite der Wochen führt Zurück zur Wahl — im Kopf, vor dem Titel und mit der Zurück-Taste (T144).',
+    suchen: "  if (screen === 'wochen') return { type: 'navigate', screen: 'planung' }\n",
+    ersetzen: '',
+  },
+  {
+    id: 'planung-wochenliste-merkt-herkunft',
+    datei: 'src/planen/WochenUebersicht.tsx',
+    regel: 'Eine Woche von der Seite der Wochen öffnet das Planen „aus Planung" — Zurück führt zu den Wochen.',
+    suchen: "  const von = spalte ? state.planenVon : 'planung'\n",
+    ersetzen: '  const von = spalte ? state.planenVon : null\n',
+  },
+  {
+    id: 'planung-zuruecktaste-zu-den-wochen',
+    datei: 'src/app/AppShell.tsx',
+    regel: 'Die Zurück-Taste führt aus dem Plan einer Woche zu den Wochen — dorthin, wohin auch der Kopf führt (T144).',
+    suchen: "  useBackDismiss(unterWochen, () => dispatch({ type: 'navigate', screen: 'wochen' }), 'unteransicht')\n",
+    ersetzen: '',
+  },
+  {
+    id: 'planung-zuruecktaste-zur-ansicht',
+    datei: 'src/app/AppShell.tsx',
+    regel: 'Aus der Ansicht geplant, führt die Zurück-Taste wieder in die Ansicht — nicht zu Start (T144).',
+    suchen: "  useBackDismiss(state.screen === 'planen' && state.planenVon === 'ansicht', () => dispatch(zumAnsehen(geplant)), 'unteransicht')\n",
+    ersetzen: '',
   },
   {
     id: 'freie-plaetze-alter-push',
@@ -4315,8 +4361,8 @@ export const KATALOG = [
     id: 'unterseite-zurueck-zu-start',
     datei: 'src/app/AppShell.tsx',
     regel: 'Zurück im Kopf der Mitteilungen führt zu Start — wie die Zurück-Taste.',
-    suchen: "              <UnterseiteKopf onZurueck={() => navigate('start')}>",
-    ersetzen: "              <UnterseiteKopf onZurueck={() => navigate('aufgaben')}>",
+    suchen: "  const unterseiteZurueck = (): void => (zurueck ? dispatch(zurueck) : navigate('start'))\n",
+    ersetzen: "  const unterseiteZurueck = (): void => (zurueck ? dispatch(zurueck) : navigate('aufgaben'))\n",
   },
   /* ---- Die Versammlung ansehen (T121, Phase 4a) ---- */
   {
@@ -8962,8 +9008,8 @@ export const KATALOG = [
     id: 'wochen-spalte-behaelt-reiter',
     datei: 'src/planen/WochenUebersicht.tsx',
     regel: 'In der Spalte neben dem Plan wechselt ein Tipp nur die Woche — Zusammenkunft oder Treffpunkte bleiben.',
-    suchen: '    dispatch({ type: \'navigate\', screen: \'planen\', woche: { wi: k.wi, tab: spalte ? state.tab : k.stand.tab } })\n',
-    ersetzen: "    dispatch({ type: 'navigate', screen: 'planen', woche: { wi: k.wi, tab: k.stand.tab } })\n",
+    suchen: '      woche: { wi: k.wi, tab: spalte ? state.tab : k.stand.tab },\n',
+    ersetzen: '      woche: { wi: k.wi, tab: k.stand.tab },\n',
   },
   // ── Die schmale Wochenspalte (Betreiber, 16.10.2026) ──────────────────────
   {
@@ -9050,13 +9096,9 @@ export const KATALOG = [
     suchen: '  const wochenSpalte = useMedia(WOCHEN_SPALTE_BREITE) && rechte.zuteilen\n',
     ersetzen: '  const wochenSpalte = useMedia(WOCHEN_SPALTE_BREITE)\n',
   },
-  {
-    id: 'planung-menue-nach-breite',
-    datei: 'src/app/AppShell.tsx',
-    regel: '„Planung" führt dorthin, wo die Wochen stehen: wo die Spalte passt, ins Planen, sonst auf ihre Seite.',
-    suchen: "dispatch(planungsThema === 'zusammenkuenfte' ? zurPlanung(wochenSpalte) : zumPlanen(planungsThema))",
-    ersetzen: "dispatch(planungsThema === 'zusammenkuenfte' ? zurPlanung(false) : zumPlanen(planungsThema))",
-  },
+  // `planung-menue-nach-breite` gestrichen (T144, 25.10.2026): „Planung" führt
+  // immer zur Wahl; nach der Breite entscheidet erst „Zusammenkünfte" dort
+  // (`planung-wahl-zu-den-wochen`).
   {
     id: 'leere-versammlung-beim-planer',
     datei: 'src/app/AppShell.tsx',

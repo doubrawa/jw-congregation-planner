@@ -183,6 +183,22 @@ describe('Holen in der Produktion', () => {
     ])
   })
 
+  it('von der Seite der Wochen geholt, führt Zurück aus der neuen Woche dorthin — aus dem Plan, wohin es vorher führte (T144)', async () => {
+    const neue = woche('2026-09-14')
+    for (const [over, von] of [
+      [{ screen: 'wochen' }, 'planung'],
+      [{ screen: 'planen', planenVon: 'ansicht' }, 'ansicht'],
+    ] as const) {
+      importNextWeek.mockResolvedValue({ ok: true, week: neue })
+      const { container, dispatch } = zeige({ weeks: [woche('2026-09-07')], ...over })
+      holen(container)
+      await geholt()
+      fireEvent.click(blattKnopf(t.uebernehmenZuteilen)!)
+      expect(dispatch, over.screen).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'mid' }, von })
+      cleanup()
+    }
+  })
+
   it('kam dieselbe Woche noch einmal, wird nur angehängt — der Reducer sagt dann, dass alles da ist', async () => {
     // `addImportedWeek` hängt eine schon geladene Woche nicht an. Ein Sprung
     // auf ihren Index wiese ins Leere, ein Zuteilen träfe die gezeigte Woche.

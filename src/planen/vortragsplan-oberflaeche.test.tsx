@@ -31,7 +31,7 @@ const { useApp } = await import('../app/context')
 const { demoZustand } = await import('../../tests/testdaten/demo-start')
 const { dict } = await import('../i18n/ui')
 const { PlanenScreen } = await import('./PlanenScreen')
-const { PlanungScreen } = await import('./PlanungScreen')
+const { PlanungScreen, PlanungWochenScreen } = await import('./PlanungScreen')
 
 const t = dict('de')
 
@@ -78,8 +78,8 @@ function zeige(inhalt: ReactNode, over: Partial<AppState> = {}) {
   )
 }
 
-/** Die Seite aller Wochen, wie sie am Handy über „Planung" aufgeht. */
-const planung = (over: Partial<AppState> = {}) => zeige(<PlanungScreen />, { screen: 'planung', ...over })
+/** Die Seite aller Wochen, wie sie am Handy über „Planung" → „Zusammenkünfte" aufgeht (T144). */
+const wochenSeite = (over: Partial<AppState> = {}) => zeige(<PlanungWochenScreen />, { screen: 'wochen', ...over })
 
 const toast = (c: ParentNode): string => c.querySelector('.probe-toast')?.textContent ?? ''
 
@@ -147,7 +147,7 @@ describe('Vortragsplan übernehmen', () => {
   })
 
   it('eine Datei in fremdem Format: Meldung, keine Vorschau', async () => {
-    const { container } = planung()
+    const { container } = wochenSeite()
     waehle(container, 'datum;redner;versammlung\n2026-09-13;Max Mustermann;Musterstadt')
     await waitFor(() => expect(toast(container)).toBe(t.vpKeinXml))
     expect(document.querySelector('[role="dialog"]')).toBeNull()
@@ -155,8 +155,8 @@ describe('Vortragsplan übernehmen', () => {
 })
 
 describe('Wo der Planer den Vortragsplan findet', () => {
-  it('am Handy auf der Seite „Planung", gleich unter „Holen": Titel, was kommt, der Knopf', () => {
-    const { container } = planung()
+  it('am Handy auf der Seite der Wochen, gleich unter „Holen": Titel, was kommt, der Knopf', () => {
+    const { container } = wochenSeite()
     const karte = container.querySelector('.vp-karte')
     expect(karte?.previousElementSibling?.classList.contains('holen-karte')).toBe(true)
     // Eine Überschrift: Wer von Titel zu Titel springt, findet ihn zwischen den Wochen.
@@ -165,8 +165,15 @@ describe('Wo der Planer den Vortragsplan findet', () => {
     expect(karte?.querySelector('button')?.textContent).toBe(t.vpDateiWaehlen)
   })
 
+  it('nicht auf der Wahl von „Planung" — dort steht nur, was man plant (T144)', () => {
+    const { container } = zeige(<PlanungScreen />, { screen: 'planung' })
+    expect(container.querySelector('.planung-karte')).not.toBeNull()
+    expect(container.querySelector('.vp-karte')).toBeNull()
+    expect(container.querySelector('.holen-karte')).toBeNull()
+  })
+
   it('der Knopf öffnet die Dateiauswahl des Geräts', () => {
-    const { container } = planung()
+    const { container } = wochenSeite()
     const eingabe = container.querySelector<HTMLInputElement>('.vp-karte input[type="file"]')!
     const oeffnen = vi.spyOn(eingabe, 'click').mockImplementation(() => {})
     fireEvent.click(knopf(container, t.vpDateiWaehlen)!)
@@ -199,7 +206,7 @@ describe('Wo der Planer den Vortragsplan findet', () => {
   })
 
   it('nicht im Offline-Stand — übernehmen ginge dann nicht; die Wochen und „Holen" bleiben', () => {
-    const { container } = planung({ staleAt: Date.now() })
+    const { container } = wochenSeite({ staleAt: Date.now() })
     expect(container.querySelector('.holen-karte')).not.toBeNull()
     expect(container.querySelector('.vp-karte')).toBeNull()
     expect(container.textContent).not.toContain(t.vpTitel)

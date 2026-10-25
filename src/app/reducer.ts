@@ -690,6 +690,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         // Ein Bereich zum Hinspringen (T109) gilt nur, wenn der Screen auch
         // erreicht wird; jede Navigation ohne einen räumt den alten ab.
         sprungZiel: action.abschnitt && screen === action.screen ? action.abschnitt : null,
+        // Woher das Planen kam (T144); ohne Angabe von außen (Start, Mitteilung, Push).
+        planenVon: action.von ?? null,
       }
       /*
        * **Eine bestimmte Woche** (Planungs-Karte des Start-Bildschirms, T95).

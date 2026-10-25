@@ -369,6 +369,17 @@ describe('Der Kopf nennt das Thema (T120)', () => {
     fireEvent.click(fertig)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'programm', thema: 'predigtdienst' })
   })
+
+  it('aus der Wahl auf „Planung" geplant: statt „Fertig" Zurück vor dem Titel — zur Wahl (T144)', () => {
+    // Am Handy blendet das CSS den Knopf aus; dort trägt der Kopf der App ihn.
+    const { container, dispatch } = zeige({ tab: 'fs', planenVon: 'planung' })
+    expect(seite(container).querySelector('.bereichstitel .planen-knopf')).toBeNull()
+    expect(titel(container)).toBe(t.tabFs)
+    const zurueck = seite(container).querySelector<HTMLButtonElement>('.bereichstitel .bereichstitel-zurueck')!
+    expect(zurueck.getAttribute('aria-label')).toBe(t.a11yZurueck)
+    fireEvent.click(zurueck)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planung' })
+  })
 })
 
 describe('Der Grundplan im Predigtdienst (T120)', () => {

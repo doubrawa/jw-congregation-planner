@@ -41,6 +41,7 @@ const ALLE_SCREENS = Object.keys({
   mitteilungen: true,
   planen: true,
   planung: true,
+  wochen: true,
   auswertung: true,
   personen: true,
   einstellungen: true,
@@ -94,6 +95,7 @@ describe('Wer welchen Bildschirm sehen darf', () => {
     const erlaubt = erlaubteScreens(VERKUENDIGER)
     expect(erlaubt).not.toContain('planen')
     expect(erlaubt).not.toContain('planung')
+    expect(erlaubt).not.toContain('wochen')
     expect(erlaubt).not.toContain('auswertung')
     expect(erlaubt).not.toContain('personen')
     expect(erlaubt).not.toContain('einstellungen')
@@ -108,14 +110,15 @@ describe('Wer welchen Bildschirm sehen darf', () => {
     // Versammlung — die Datenbank hielte sie zwar noch auf, aber die
     // Oberfläche böte es an.
     for (const r of [PLANER, PLANER_UND_AUFSEHER]) {
-      expect([...erlaubteScreens(r)]).toEqual(['start', 'programm', 'aufgaben', 'freie', 'mitteilungen', 'planen', 'planung', 'auswertung', 'profil'])
+      expect([...erlaubteScreens(r)]).toEqual(['start', 'programm', 'aufgaben', 'freie', 'mitteilungen', 'planen', 'planung', 'wochen', 'auswertung', 'profil'])
     }
   })
 
-  it('die Seite aller Wochen und die Auswertung sieht nur, wer zuteilt — der Gruppenaufseher plant allein Treffpunkte', () => {
-    // Die Wochen gelten den Zusammenkünften (T121, Phase 10); der
-    // Gruppenaufseher kommt über „Planung" gleich zu den Treffpunkten. Die
-    // Auswertung (T126): „admin und planer" (Betreiber, 16.10.2026).
+  it('die Wahl auf „Planung", die Wochen und die Auswertung sieht nur, wer zuteilt — der Gruppenaufseher plant allein Treffpunkte', () => {
+    // Die Wochen gelten den Zusammenkünften (T121, Phase 10), die Wahl (T144)
+    // dem, der mehr als einen Bereich plant; der Gruppenaufseher kommt über
+    // „Planung" gleich zu den Treffpunkten. Die Auswertung (T126): „admin und
+    // planer" (Betreiber, 16.10.2026).
     expect([...erlaubteScreens(AUFSEHER)]).toEqual(['start', 'programm', 'aufgaben', 'freie', 'mitteilungen', 'planen', 'profil'])
   })
 

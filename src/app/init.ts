@@ -101,6 +101,7 @@ export function leererZustand({ theme, fontScale, lang }: Vorlieben): AppState {
     svcSheet: null,
     terminGewaehlt: false,
     sprungZiel: null,
+    planenVon: null,
     auxClass: false,
     congLang: 'de',
     progLangs: [],

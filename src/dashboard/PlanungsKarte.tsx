@@ -1,5 +1,5 @@
 import { useMemo, type ReactNode } from 'react'
-import { zurPlanung } from '../app/bereich'
+import { zuDenWochen } from '../app/bereich'
 import { useApp } from '../app/context'
 import { Zeichen } from '../bausteine/Zeichen'
 import { useAbwesend } from '../app/useAbwesend'
@@ -217,7 +217,7 @@ function PlanungKopf() {
   return (
     <div className="dash-plan-titel">
       <h2 className="abschnitt-titel">{t.dashPlanung}</h2>
-      <button type="button" className="dash-plan-alle" onClick={() => dispatch(zurPlanung(mitSpalte))}>
+      <button type="button" className="dash-plan-alle" onClick={() => dispatch(zuDenWochen(mitSpalte))}>
         {t.alleWochen}
       </button>
     </div>
@@ -242,7 +242,7 @@ function BereichZeile({ titel, onClick, children }: { titel: string; onClick: ()
 }
 
 /** Was ansteht, im Kleinen — „Probleme: 2", „Offen: 3", „Zu senden: 2". */
-function Chip({ art, text }: { art: 'probleme' | 'offen' | 'senden'; text: string }) {
+export function Chip({ art, text }: { art: 'probleme' | 'offen' | 'senden'; text: string }) {
   return (
     <span className="dash-chip" data-art={art}>
       {text}

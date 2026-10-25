@@ -180,7 +180,7 @@ describe('Zurück am Handy', () => {
     expect(amGrund()).toBe(true)
   })
 
-  it('ein geöffneter Plan schließt zuerst, dann die Liste', async () => {
+  it('ein geöffneter Plan schließt zuerst, dann die Liste, dann die Ansicht (T144)', async () => {
     const { container } = zeige({ plaene: [PLAN], planEintraege: [] })
     klickMenue(container, t.navWeiterePlaene)
     fireEvent.click(container.querySelector('.bereichstitel .planen-knopf')!)
@@ -192,14 +192,19 @@ describe('Zurück am Handy', () => {
     expect(container.querySelector('.unteransicht-kopf'), 'der Plan blieb offen').toBeNull()
     expect(container.querySelector('.wp-plan-zeile')).not.toBeNull()
 
+    // Geplant wurde aus der Ansicht heraus — dorthin führt Zurück (T144).
+    await zurueck()
+    expect(aktiv(container)).toBe(t.navWeiterePlaene)
+    expect(container.querySelector('.bereichstitel .planen-knopf'), 'nicht zurück in der Ansicht').not.toBeNull()
+
     await zurueck()
     expect(aktiv(container)).toBe(t.navStart)
     expect(amGrund()).toBe(true)
   })
 
-  it('die Zusagen der Woche schließen zuerst — Zurück führt in den Plan, dann zu Start (Phase 5g)', async () => {
+  it('die Zusagen der Woche schließen zuerst — Zurück führt in den Plan, in die Ansicht, dann zu Start (Phase 5g, T144)', async () => {
     const { container } = zeige()
-    // In den Plan über „Planen" am Titel: „Planung" führt am Handy erst zu den Wochen.
+    // In den Plan über „Planen" am Titel — „Planung" führt erst zur Wahl.
     klickMenue(container, t.navZusammenkuenfte)
     fireEvent.click(container.querySelector('.bereichstitel .planen-knopf')!)
     await ausklingen()
@@ -212,16 +217,66 @@ describe('Zurück am Handy', () => {
     expect(container.querySelector('.spur-ziel'), 'nicht zurück im Plan').not.toBeNull()
 
     await zurueck()
+    expect(aktiv(container)).toBe(t.navZusammenkuenfte)
+    expect(container.querySelector('.spur-ziel'), 'noch im Plan').toBeNull()
+
+    await zurueck()
     expect(aktiv(container)).toBe(t.navStart)
     expect(amGrund()).toBe(true)
   })
 
-  it('die Seite aller Wochen: ein Druck führt zu Start (T121, Phase 10)', async () => {
+  it('„Planung" zeigt nur die Wahl — ein Druck führt zu Start (T144)', async () => {
     const { container } = zeige()
     klickMenue(container, t.dashPlanung)
     await ausklingen()
-    expect(container.querySelector('.screen.planung'), 'die Wochen sind nicht offen').not.toBeNull()
+    expect(container.querySelectorAll('.planung-karte').length, 'die Wahl fehlt').toBe(3)
+    expect(container.querySelector('.wochen-karte'), 'die Wochen stehen schon da').toBeNull()
 
+    await zurueck()
+    expect(aktiv(container)).toBe(t.navStart)
+    expect(amGrund(), 'ein Eintrag zu viel oder zu wenig').toBe(true)
+  })
+
+  it('Wahl → Wochen → Woche: Zurück geht denselben Weg hinauf, dann zu Start (T144)', async () => {
+    // Die Liste zeigt die Wochen ab der laufenden — der Tag muss in den
+    // Testwochen (7.9.–4.10.2026) liegen. Nur das Datum steht, die Zeitgeber laufen.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 9, 0))
+    try {
+      const { container } = zeige()
+      klickMenue(container, t.dashPlanung)
+      fireEvent.click(
+        [...container.querySelectorAll('.planung-karte')].find((k) => k.textContent?.includes(t.navZusammenkuenfte))!,
+      )
+      await ausklingen()
+      expect(container.querySelector('.wochen-karte'), 'die Wochen sind nicht offen').not.toBeNull()
+      expect(container.querySelector('.planung-karte'), 'die Wahl steht noch da').toBeNull()
+      fireEvent.click(container.querySelector('.wochen-karte-knopf')!)
+      await ausklingen()
+      expect(container.querySelector('.spur-ziel'), 'der Plan ist nicht offen').not.toBeNull()
+
+      await zurueck()
+      expect(container.querySelector('.wochen-karte'), 'nicht zurück bei den Wochen').not.toBeNull()
+      await zurueck()
+      expect(container.querySelectorAll('.planung-karte').length, 'nicht zurück bei der Wahl').toBe(3)
+      expect(aktiv(container)).toBe(t.dashPlanung)
+      await zurueck()
+      expect(aktiv(container)).toBe(t.navStart)
+      expect(amGrund(), 'ein Eintrag zu viel oder zu wenig').toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('Wahl → Predigtdienst: Zurück führt zur Wahl, dann zu Start (T144)', async () => {
+    const { container } = zeige()
+    klickMenue(container, t.dashPlanung)
+    fireEvent.click([...container.querySelectorAll('.planung-karte')].find((k) => k.textContent?.includes(t.tabFs))!)
+    await ausklingen()
+    expect(container.querySelector('.planung-karte'), 'die Wahl steht noch da').toBeNull()
+
+    await zurueck()
+    expect(container.querySelectorAll('.planung-karte').length, 'nicht zurück bei der Wahl').toBe(3)
     await zurueck()
     expect(aktiv(container)).toBe(t.navStart)
     expect(amGrund(), 'ein Eintrag zu viel oder zu wenig').toBe(true)
@@ -253,7 +308,7 @@ describe('Zurück am Handy', () => {
     }
   })
 
-  it('ein neuer Plan steht gleich offen da — Zurück führt zur Liste, dann zu Start', async () => {
+  it('ein neuer Plan steht gleich offen da — Zurück führt zur Liste, zur Ansicht, dann zu Start', async () => {
     const { container } = zeige({ plaene: [], planEintraege: [] })
     klickMenue(container, t.navWeiterePlaene)
     fireEvent.click(container.querySelector('.bereichstitel .planen-knopf')!)
@@ -265,6 +320,8 @@ describe('Zurück am Handy', () => {
     expect(container.querySelector('.unteransicht-kopf'), 'der Plan blieb offen').toBeNull()
     expect(container.querySelector('.wp-plan-zeile'), 'der neue Plan fehlt in der Liste').not.toBeNull()
 
+    await zurueck()
+    expect(aktiv(container)).toBe(t.navWeiterePlaene)
     await zurueck()
     expect(aktiv(container)).toBe(t.navStart)
     expect(amGrund()).toBe(true)

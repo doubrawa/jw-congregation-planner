@@ -8605,7 +8605,7 @@ sind die Probe-Konten der Testversammlung mit Kennwort (Werkzeug, nicht App).
 - Das Feld E-Mail der Person ganz streichen (weniger Daten) — dann ginge kein
   Link mehr per Mail, auch keine Einladung.
 
-## Aufgenommen am 25. Oktober 2026 (T142–T144)
+## Aufgenommen am 25. Oktober 2026 (T142–T145)
 
 ### T142 · Freie Plätze nur für Hilfsdienste 🔧 ✅ umgesetzt (25. Oktober 2026)
 
@@ -8674,7 +8674,7 @@ acht Zettel, S-89 — Seiten = Blätter, alles A4; mit vorgegebenem A4 oder
 Letter ebenso. Probe `tests/druck-seiten.test.ts`, drei Regeln in der
 Mutationsprobe.
 
-### T144 · „Planung" zeigt erst nur die Wahl, die Wochen erst bei „Zusammenkünfte" 🏗 ☐ offen (Entwurf)
+### T144 · „Planung" zeigt erst nur die Wahl, die Wochen erst bei „Zusammenkünfte" 🏗 ✅ umgesetzt (25. Oktober 2026)
 
 „wenn man planung öffnet soll nur die auswahl kommen, was man plant und nicht
 zusätzlich die zusammenkunftswochen. diese wollen erst erscheinen, wenn man auf
@@ -8707,7 +8707,47 @@ stehen dann als Spalte daneben.
   „Planung" gar nicht, die Mischung steht dann in der Spalte.
 
 **Entwurf:** in der Arbeitskopie der Leinwand (`bauen-planung.mjs`,
-`GPlanungAblauf`), Varianten und Entscheidung siehe dort und unten.
+`GPlanungAblauf`), zwei Varianten: A · Wegweiser (eine Seite mit der Wahl,
+darunter je Bereich eine Ebene) und B · Wahl im Menü. **Entschieden: A**
+(Betreiber, 25. Oktober: „A machen").
+
+**Umgesetzt:**
+
+- **„Planung" ist nur noch die Wahl** (`PlanungScreen`): je Bereich, den man
+  planen darf, eine Karte mit Titel und was dazugehört; „Zusammenkünfte" nennt
+  die Probleme und was zu senden ist, über alle Wochen. Untereinander wie ein
+  Wegweiser, auch am Desktop. Der Gruppenaufseher hat nur einen Bereich — er
+  kommt wie bisher gleich zu seinen Treffpunkten.
+- **Die Wochen haben eine eigene Seite** (Bildschirm `wochen`,
+  `PlanungWochenScreen`): Wochen, „Holen", Vortragsplan. Dorthin führen
+  „Zusammenkünfte" auf der Wahl und „Alle Wochen" auf Start; ab 1400 px gleich
+  in den Plan, die Wochen stehen dann in der Spalte daneben — ohne Wahl darüber.
+- **Zurück dorthin, woher man kam** (`planenVon`, `zurueckInDerPlanung`): Aus
+  „Planung" führt Zurück eine Ebene hinauf — Woche → Wochen → Wahl → Start;
+  statt ✕ und „Fertig" steht dann ein Pfeil vor dem Titel (am Handy im Kopf).
+  Aus der Ansicht („Planen" neben dem Titel) führt auch die Zurück-Taste wieder
+  in die Ansicht. Von außen (Start, Mitteilung, Push) bleibt es bei ✕ und
+  „Fertig". Kopf, Pfeil und Zurück-Taste rechnen mit derselben Funktion.
+- Bei der Laufzeitprüfung gefunden und gleich behoben: Am Tablet fehlte auf der
+  Seite der Wochen ein sichtbares Zurück (der Kopf der App steht dort nicht);
+  in acht Sprachen begann der Hinweis unter „Predigtdienst" mit demselben Wort
+  wie die Karte „Zusammenkünfte" darüber (en „Meetings") — dort steht jetzt
+  der längere Begriff der App (en „Meetings for field service").
+
+Texte in allen zwölf Sprachen; Tests für Wahl, Wege und Zurück (auch mit der
+echten Zurück-Taste), acht Regeln in der Mutationsprobe neu, vier umgehängt,
+drei mit der alten Wahl gestrichen;
+Handbuch (`planer.md`) und die Bilder `planer-planung` und `planer-wochen` neu.
+
+### T145 · Auswertung, Engpässe: nur die problematischen Bereiche ⚡ ☐ offen
+
+„Bei Auswertung Engpässen müssen nicht alle Bereiche aufgeführt werden..es
+reichen problematische Bereiche." (Betreiber, 25. Oktober).
+
+**Heute** (seit T139, `EngpaesseAnsicht`): oben die knappen Bereiche
+(`istKnapp`) mit „Mehr Personen freigeben …", darunter **Alle Bereiche**, die
+knappsten zuerst. Zu tun: die Liste „Alle Bereiche" streichen — oder klären,
+ob „problematisch" mehr meint als knapp (etwa Bereiche, die kaum jemand hat).
 
 ## Was bewusst offen bleibt
 
@@ -8746,14 +8786,14 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
-21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☐
+21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☐
 
-**142 der 144 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+**143 der 145 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen sind zwei:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
-| **T144** | „Planung" erst nur die Wahl | ☐ Entwurf in der Arbeitskopie (`GPlanungAblauf`), Entscheidung des Betreibers offen |
+| **T145** | Engpässe: nur die problematischen Bereiche | ☐ aufgenommen |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
@@ -9284,7 +9324,10 @@ ohne E-Mail aus, schon heute (Zettel mit QR-Code und Code; siehe T141).
 Am 25. Oktober aufgenommen und umgesetzt: **T142** — „Freie Plätze" bietet nur
 noch Hilfsdienste an; Programmpunkte und den Ratgeber teilt der Planer zu. Am
 selben Tag **T143** — Wochenbogen, Monat und Anmeldezettel druckten auf Letter
-(zu viele Seiten), RTL mit leerer Seite; behoben.
+(zu viele Seiten), RTL mit leerer Seite; behoben — und **T144**: „Planung"
+zeigt erst nur die Wahl, die Wochen haben eine eigene Seite, und Zurück führt
+dorthin, woher man kam. Aufgenommen: **T145** (Engpässe nur mit den
+problematischen Bereichen).
 
 Am 19. Oktober in die Tabelle aufgenommen: `sprache-fehlt` und
 `auth.sessions` (bis dahin nur in einer Commit-Nachricht, `42dff943`, und bei

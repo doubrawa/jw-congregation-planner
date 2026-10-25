@@ -179,22 +179,21 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
   })
 
-  it('„Planung" führt den Planer zu den Wochen — ohne Platz für die Spalte auf ihre Seite (T121, Phase 10)', () => {
-    // jsdom kennt keine Breite: Hier gilt die Fassung des Handys.
-    const { container, dispatch } = zeige({ planner: true })
-    tippe(container, t.dashPlanung)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planung' })
-  })
-
-  it('… und wo die Wochen neben den Plan passen, gleich ins Planen der Zusammenkünfte', () => {
-    // Nur die Breite der Spalte zählt (`WOCHEN_SPALTE_BREITE`), nicht schon der Desktop.
-    window.matchMedia = vi.fn((abfrage: string) => ({ matches: abfrage === '(min-width: 1400px)' })) as unknown as typeof window.matchMedia
-    try {
-      const { container, dispatch } = zeige({ planner: true })
-      tippe(container, t.dashPlanung)
-      expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte' })
-    } finally {
-      delete (window as { matchMedia?: unknown }).matchMedia
+  it('„Planung" führt den Planer zur Wahl — am Handy wie dort, wo die Wochen neben den Plan passen (T144)', () => {
+    // Bis zum 25.10.2026 führte der Punkt am breiten Bildschirm gleich ins
+    // Planen der Zusammenkünfte, sonst auf die Wochen mit der Wahl darüber.
+    for (const breit of [false, true]) {
+      window.matchMedia = vi.fn((abfrage: string) => ({
+        matches: breit && abfrage === '(min-width: 1400px)',
+      })) as unknown as typeof window.matchMedia
+      try {
+        const { container, dispatch } = zeige({ planner: true })
+        tippe(container, t.dashPlanung)
+        expect(dispatch, breit ? 'breit' : 'Handy').toHaveBeenCalledWith({ type: 'navigate', screen: 'planung' })
+      } finally {
+        delete (window as { matchMedia?: unknown }).matchMedia
+        cleanup()
+      }
     }
   })
 
@@ -278,6 +277,7 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
       [{ screen: 'planen', tab: 'edit' }, t.dashPlanung],
       [{ screen: 'planen', tab: 'fs' }, t.dashPlanung],
       [{ screen: 'planung' }, t.dashPlanung],
+      [{ screen: 'wochen' }, t.dashPlanung],
       [{ screen: 'aufgaben' }, t.navAufgabenLong],
       [{ screen: 'freie' }, t.freiePlaetzeTitle],
       [{ screen: 'mitteilungen' }, t.mitteilungen],
@@ -678,6 +678,46 @@ describe('Beim Planen trägt am Handy der Kopf des Planens Titel und „Fertig"'
     const { container } = zeige({ screen: 'programm', tab: 'mid' })
     expect(container.querySelector('.planenkopf')).toBeNull()
     expect(container.querySelector('.kopfzeile')?.classList.contains('kopfzeile--ersetzt')).toBe(false)
+  })
+})
+
+describe('Aus der Wahl auf „Planung" geplant: am Handy der Kopf mit Zurück, eine Ebene hinauf (T144)', () => {
+  const zurueckImKopf = (c: HTMLElement) => c.querySelector<HTMLElement>(`.unterseitenkopf [aria-label="${t.a11yZurueck}"]`)
+
+  it('Predigtdienst und Weitere Pläne: statt „Fertig" Zurück zur Wahl', () => {
+    for (const tab of ['fs', 'wp'] as const) {
+      const { container, dispatch } = zeige({ screen: 'planen', tab, planenVon: 'planung' })
+      expect(container.querySelector('.planenkopf'), tab).toBeNull()
+      expect(container.querySelector('.kopfzeile')?.classList.contains('kopfzeile--ersetzt'), tab).toBe(true)
+      fireEvent.click(zurueckImKopf(container)!)
+      expect(dispatch, tab).toHaveBeenCalledWith({ type: 'navigate', screen: 'planung' })
+      cleanup()
+    }
+  })
+
+  it('eine Woche der Zusammenkünfte: Zurück zu den Wochen — von dort zur Wahl', () => {
+    const plan = zeige({ screen: 'planen', tab: 'mid', planenVon: 'planung' })
+    fireEvent.click(zurueckImKopf(plan.container)!)
+    expect(plan.dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'wochen' })
+    cleanup()
+    const wochen = zeige({ screen: 'wochen' })
+    fireEvent.click(zurueckImKopf(wochen.container)!)
+    expect(wochen.dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planung' })
+  })
+
+  it('aus der Ansicht oder von außen (Start, Push) bleibt es bei „Fertig"', () => {
+    for (const planenVon of ['ansicht', null] as const) {
+      const { container } = zeige({ screen: 'planen', tab: 'fs', planenVon })
+      expect(container.querySelector('.planenkopf'), String(planenVon)).not.toBeNull()
+      expect(zurueckImKopf(container), String(planenVon)).toBeNull()
+      cleanup()
+    }
+  })
+
+  it('der Gruppenaufseher hat keine Wahl — bei ihm bleibt es bei „Fertig"', () => {
+    const { container } = zeige({ planner: false, personId: AUFSEHER.id, screen: 'planen', tab: 'fs', planenVon: 'planung' })
+    expect(container.querySelector('.planenkopf')).not.toBeNull()
+    expect(zurueckImKopf(container)).toBeNull()
   })
 })
 

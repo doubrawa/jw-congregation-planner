@@ -14,13 +14,16 @@ import { emptyQualifications, privSetzen, serviceQualKey } from '../data/helpers
 import { dict } from '../i18n/ui'
 import type { Group, Person, Service, Week } from '../data/types'
 import { PlanenScreen } from './PlanenScreen'
-import { PlanungScreen } from './PlanungScreen'
+import { PlanungScreen, PlanungWochenScreen } from './PlanungScreen'
+import { fill } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
- * **Die Wochen beim Planen, wie man sie sieht** (T121, Phase 10): am Handy die
- * Seite „Planung" (`GWochen`), wo Platz ist die Spalte links neben dem Plan
- * (`GDesktopPlanen`). Die Rechnung dahinter prüft `wochen-uebersicht.test.ts`.
+ * **Die Wochen beim Planen, wie man sie sieht** (T121, Phase 10): am Handy
+ * eine eigene Seite (`GWochen`, seit T144 unter „Planung" → „Zusammenkünfte"),
+ * wo Platz ist die Spalte links neben dem Plan (`GDesktopPlanen`). Dazu die
+ * Wahl auf „Planung" selbst (T144). Die Rechnung dahinter prüft
+ * `wochen-uebersicht.test.ts`.
  */
 
 const t = dict('de')
@@ -65,7 +68,7 @@ function zeige(inhalt: ReactNode, over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
     ...demoZustand(),
-    screen: 'planung', tab: 'mid', dataStatus: 'ready',
+    screen: 'wochen', tab: 'mid', dataStatus: 'ready',
     congregationId: 'c1', userId: 'u1', personId: 'p-pl', planner: true,
     persons: [person('p-pl'), person('p-ov')], groups: GRUPPEN, services: DIENSTE, absences: [],
     weeks: [VORIGE, DIESE, NAECHSTE, KONGRESS], fsWeeks: [[], [], [], []], fsRules: [], week: 1,
@@ -102,21 +105,74 @@ afterEach(() => {
   delete (window as { matchMedia?: unknown }).matchMedia
 })
 
-describe('Die Seite „Planung" (`GWochen`)', () => {
+describe('Die Wahl auf „Planung" (T144, `GPlanungWahl`)', () => {
+  const titel = (root: Element) =>
+    [...root.querySelectorAll('.planung-karte')].map((k) => k.querySelector('.planung-karte-titel')?.textContent)
+  const karte = (root: Element, text: string) =>
+    [...root.querySelectorAll<HTMLElement>('.planung-karte')].find((k) => k.textContent?.includes(text))!
+
+  it('nur die Wahl: je Bereich eine Karte — keine Woche, kein „Holen", kein Vortragsplan', () => {
+    /*
+     * Betreiber 25.10.2026: „wenn man planung öffnet soll nur die auswahl
+     * kommen, was man plant und nicht zusätzlich die zusammenkunftswochen".
+     * Bis dahin stand die Wahl (T135) als Umschalter über den Wochen.
+     */
+    const { container } = zeige(<PlanungScreen />, { screen: 'planung' })
+    expect(titel(container)).toEqual([t.navZusammenkuenfte, t.tabFs, t.navWeiterePlaene])
+    expect(karten(container)).toHaveLength(0)
+    expect(container.querySelector('.holen-karte')).toBeNull()
+    expect(container.querySelector('.vp-karte')).toBeNull()
+    expect(container.querySelector('.bereich-tabs')).toBeNull()
+  })
+
+  it('„Zusammenkünfte" führt zu den Wochen, die übrigen ins Planen — Zurück führt dann hierher', () => {
+    const { container, dispatch } = zeige(<PlanungScreen />, { screen: 'planung' })
+    fireEvent.click(karte(container, t.navZusammenkuenfte))
+    expect(dispatch).toHaveBeenLastCalledWith({ type: 'navigate', screen: 'wochen' })
+    fireEvent.click(karte(container, t.tabFs))
+    expect(dispatch).toHaveBeenLastCalledWith({ type: 'navigate', screen: 'planen', thema: 'predigtdienst', von: 'planung' })
+    fireEvent.click(karte(container, t.navWeiterePlaene))
+    expect(dispatch).toHaveBeenLastCalledWith({ type: 'navigate', screen: 'planen', thema: 'weitere', von: 'planung' })
+  })
+
+  it('wo die Wochen neben den Plan passen, führt „Zusammenkünfte" gleich ins Planen — die Wochen stehen dort in der Spalte', () => {
+    breite(true)
+    const { container, dispatch } = zeige(<PlanungScreen />, { screen: 'planung' })
+    fireEvent.click(karte(container, t.navZusammenkuenfte))
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte', von: 'planung' })
+  })
+
+  it('die Karte „Zusammenkünfte" nennt die Probleme aller Wochen — offene Plätze allein nicht', () => {
+    // Offen ist jede kommende Woche, bis sie zugeteilt ist; das sagt erst die Liste.
+    const ruhig = zeige(<PlanungScreen />, { screen: 'planung' })
+    expect(karte(ruhig.container, t.navZusammenkuenfte).querySelector('.dash-chip')).toBeNull()
+    cleanup()
+    // Niemand kann Mikrofone: Je zwei Plätze am Dienstag und am Sonntag, in
+    // dieser und der nächsten Woche, bleiben offen — der Kongress hat keine.
+    const ohneMik = (id: string): Person => ({ ...person(id), priv: emptyQualifications() })
+    const { container } = zeige(<PlanungScreen />, { screen: 'planung', persons: [ohneMik('p-pl'), ohneMik('p-ov')] })
+    const chips = [...karte(container, t.navZusammenkuenfte).querySelectorAll('.dash-chip')]
+    expect(chips.map((c) => [c.getAttribute('data-art'), c.textContent])).toEqual([
+      ['probleme', fill(t.lageProbleme, { n: 8 })],
+    ])
+  })
+})
+
+describe('Die Seite der Wochen (`GWochen`, bis T144 „Planung")', () => {
   it('jede Woche ab der laufenden — die vergangene nicht', () => {
-    const { container } = zeige(<PlanungScreen />)
+    const { container } = zeige(<PlanungWochenScreen />)
     expect(karten(container).map(spanne)).toEqual(['7.–13. September', '14.–20. September', '21.–27. September'].map(zahlBinden))
   })
 
   it('darunter, wann sie ist oder was sie besonders macht', () => {
-    const { container } = zeige(<PlanungScreen />)
+    const { container } = zeige(<PlanungWochenScreen />)
     expect(karten(container).map((k) => k.querySelector('.wochen-karte-unter')?.textContent)).toEqual([
       t.aktuelleWoche, t.naechsteWoche, t.kongress,
     ])
   })
 
   it('rechts, was zu tun ist — und eine Woche ohne Zusammenkünfte hat keine Spur', () => {
-    const { container } = zeige(<PlanungScreen />)
+    const { container } = zeige(<PlanungWochenScreen />)
     const [diese, , kongress] = karten(container)
     // Je zwei Mikrofone am Dienstag und am Sonntag — der Dienst zählt seine Plätze.
     expect(diese!.querySelector('.wochen-karte-lage')?.textContent).toBe(zahlBinden('Offen: 4'))
@@ -127,52 +183,40 @@ describe('Die Seite „Planung" (`GWochen`)', () => {
     expect(kongress!.querySelector('.spur')).toBeNull()
   })
 
-  it('ein Tipp öffnet den Plan der Woche dort, wo das Erste zu tun ist', () => {
-    const { container, dispatch } = zeige(<PlanungScreen />)
+  it('ein Tipp öffnet den Plan der Woche dort, wo das Erste zu tun ist — Zurück führt hierher (T144)', () => {
+    const { container, dispatch } = zeige(<PlanungWochenScreen />)
     fireEvent.click(karten(container)[1]!.querySelector('.wochen-karte-knopf')!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', woche: { wi: 2, tab: 'mid' } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', woche: { wi: 2, tab: 'mid' }, von: 'planung' })
   })
 
   it('unten die nächste Woche ohne Programm, mit „Holen"', () => {
-    const { container } = zeige(<PlanungScreen />)
+    const { container } = zeige(<PlanungWochenScreen />)
     const holen = container.querySelector('.holen-karte')!
     expect(holSpanne(container)).toBe('28. September – 4. Oktober')
     expect(holen.textContent).toContain(t.programmNichtGeholt)
     expect(holen.querySelector('button')?.textContent).toBe(t.holen)
   })
 
-  it('oben die Wahl, was man plant — die Zusammenkünfte gewählt, die übrigen einen Tipp entfernt (T135)', () => {
-    /*
-     * Betreiber 24.10.2026: „nur Zusammenkünfte sind leicht zu finden beim
-     * planen und der rest ist ganz unten". Bis dahin standen Predigtdienst und
-     * Weitere Pläne als „Auch zu planen" unter allen Wochen.
-     */
-    const { container, dispatch } = zeige(<PlanungScreen />)
-    const wahl = container.querySelector('.bereich-tabs')!
-    expect(wahl.compareDocumentPosition(container.querySelector('.planung-wochen')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    const knoepfe = [...wahl.querySelectorAll('button')]
-    expect(knoepfe.map((k) => [k.textContent, k.getAttribute('aria-pressed')])).toEqual([
-      [t.navZusammenkuenfte, 'true'],
-      [t.tabFs, 'false'],
-      [t.navWeiterePlaene, 'false'],
-    ])
-    fireEvent.click(knoepfe[1]!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
-    fireEvent.click(knoepfe[2]!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'weitere' })
-    // Die gewählte führt nirgendwohin — man ist schon da.
-    dispatch.mockClear()
-    fireEvent.click(knoepfe[0]!)
-    expect(dispatch).not.toHaveBeenCalled()
+  it('keine Wahl mehr darüber — die steht allein auf „Planung" (T144)', () => {
+    const { container } = zeige(<PlanungWochenScreen />)
+    expect(container.querySelector('.bereich-tabs')).toBeNull()
+    expect(container.querySelector('.planung-karte')).toBeNull()
+    expect(container.querySelector('h1')?.textContent).toBe(t.navZusammenkuenfte)
   })
 
-  it('der Gruppenaufseher plant nur die Treffpunkte — er bekommt keine Wahl', () => {
-    const { container } = zeige(<PlanungScreen />, { planner: false, personId: 'p-ov' })
-    expect(container.querySelector('.bereich-tabs')).toBeNull()
+  it('vor dem Titel Zurück zur Wahl — ab Tablet-Breite; am Handy trägt es der Kopf der App (T144)', () => {
+    // Bis zur Laufzeitprüfung am 25.10.2026 fehlte es am Tablet: Der Kopf der
+    // App steht dort nicht, und die Seite hatte keinen eigenen Knopf.
+    const { container, dispatch } = zeige(<PlanungWochenScreen />)
+    expect(container.querySelector('.planen-knopf'), 'kein „Planen" auf der Seite der Wochen').toBeNull()
+    const zurueck = container.querySelector<HTMLButtonElement>('.bereichstitel .bereichstitel-zurueck')!
+    expect(zurueck.getAttribute('aria-label')).toBe(t.a11yZurueck)
+    fireEvent.click(zurueck)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planung' })
   })
 
   it('ohne geladene Woche steht nur „Holen" da — ab der laufenden', () => {
-    const { container } = zeige(<PlanungScreen />, { weeks: [], fsWeeks: [] })
+    const { container } = zeige(<PlanungWochenScreen />, { weeks: [], fsWeeks: [] })
     expect(karten(container)).toHaveLength(0)
     expect(holSpanne(container)).toBe('7.–13. September')
   })
@@ -186,21 +230,21 @@ describe('Die Spalte neben dem Plan (`GDesktopPlanen`)', () => {
     expect(container.querySelector('.planen-wochen-plan .planen-raster')).not.toBeNull()
   })
 
-  it('fehlt darunter — dann führt „Planung" auf die Seite', () => {
+  it('fehlt darunter — dann führt „Zusammenkünfte" auf der Wahl auf die Seite der Wochen', () => {
     const { container } = zeige(<PlanenScreen />, { screen: 'planen' })
     expect(container.querySelector('.wochen-spalte')).toBeNull()
   })
 
-  it('trägt oben dieselbe Wahl wie die Seite — gewählt ist, was daneben geplant wird (T135)', () => {
+  it('trägt nur die Wochen — die Wahl steht seit T144 allein auf „Planung"', () => {
     breite(true)
-    const gewaehlt = (tab: 'mid' | 'fs') => {
+    for (const tab of ['mid', 'fs'] as const) {
       const { container } = zeige(<PlanenScreen />, { screen: 'planen', tab })
-      const knopf = container.querySelector('.wochen-spalte .bereich-tabs [aria-pressed="true"]')?.textContent
+      const spalte = container.querySelector('.wochen-spalte')!
+      expect(spalte.querySelector('.bereich-tabs'), tab).toBeNull()
+      expect(spalte.querySelector('.wochen-spalte-titel')?.textContent, tab).toBe(t.wochenLbl)
+      expect(karten(spalte).length, tab).toBeGreaterThan(0)
       cleanup()
-      return knopf
     }
-    expect(gewaehlt('mid')).toBe(t.navZusammenkuenfte)
-    expect(gewaehlt('fs')).toBe(t.tabFs)
   })
 
   it('der Gruppenaufseher bekommt sie nicht — er plant allein die Treffpunkte seiner Gruppe', () => {
@@ -218,6 +262,16 @@ describe('Die Spalte neben dem Plan (`GDesktopPlanen`)', () => {
     expect(gewaehlt[0]!.querySelector('[aria-current="true"]')).not.toBeNull()
     fireEvent.click(karten(spalte)[0]!.querySelector('.wochen-karte-knopf')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'we' } })
+  })
+
+  it('ein Tipp in der Spalte behält, woher das Planen kam — Zurück führt weiter dorthin (T144)', () => {
+    breite(true)
+    for (const von of ['planung', 'ansicht'] as const) {
+      const { container, dispatch } = zeige(<PlanenScreen />, { screen: 'planen', tab: 'mid', week: 2, planenVon: von })
+      fireEvent.click(karten(container.querySelector('.wochen-spalte')!)[0]!.querySelector('.wochen-karte-knopf')!)
+      expect(dispatch, von).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'mid' }, von })
+      cleanup()
+    }
   })
 
   it('ihre Spur zeigt nur Punkte, darunter den laufenden Schritt — die Namen brachen dort mitten im Wort (16.10.2026)', () => {

@@ -528,11 +528,24 @@ describe('Die Planungs-Karte gehört dem Planer — und steht bei ihm gleich dan
     expect(spalten[1]!.querySelector('.dash-planung')).not.toBeNull()
   })
 
-  it('„Alle Wochen" führt zu den Wochen — ohne Platz für die Spalte auf ihre Seite (T121, Phase 10)', () => {
-    // jsdom kennt keine Breite: Hier gilt die Fassung des Handys.
+  it('„Alle Wochen" führt zu den Wochen — ohne Platz für die Spalte auf ihre Seite (T121, Phase 10; T144)', () => {
+    // jsdom kennt keine Breite: Hier gilt die Fassung des Handys. Die Wochen
+    // haben seit T144 eine eigene Seite unter der Wahl von „Planung".
     const { container, dispatch } = planer({ weeks: [importiert(W1)] })
     fireEvent.click([...container.querySelectorAll('button')].find((b) => b.textContent === t.alleWochen)!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planung' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'wochen' })
+  })
+
+  it('… und wo die Wochen neben den Plan passen, ins Planen — Zurück führt dann zur Wahl (T144)', () => {
+    const vorher = window.matchMedia
+    window.matchMedia = vi.fn((abfrage: string) => ({ matches: abfrage === '(min-width: 1400px)' })) as unknown as typeof window.matchMedia
+    try {
+      const { container, dispatch } = planer({ weeks: [importiert(W1)] })
+      fireEvent.click([...container.querySelectorAll('button')].find((b) => b.textContent === t.alleWochen)!)
+      expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte', von: 'planung' })
+    } finally {
+      window.matchMedia = vorher
+    }
   })
 })
 

@@ -299,6 +299,14 @@ export const DE = {
     grussMorgen: 'Guten Morgen', grussTag: 'Guten Tag', grussAbend: 'Guten Abend',
     dashKeineAufgabe: 'Keine anstehende Aufgabe',
     dashZuBest: 'Zu bestätigen', dashPlanung: 'Planung',
+    // „Planung" zeigt erst nur die Wahl, je Bereich eine Karte (T144, Betreiber
+    // 25.10.2026: „wenn man planung öffnet soll nur die auswahl kommen"). Die
+    // Begriffe sind die der Bereiche: Holen, Vortragsplan, die Reiter des
+    // Predigtdienstes, der Hinweis der Weiteren Pläne (`wpHinweis`).
+    planungFrage: 'Was möchtest du planen?',
+    planungZusammenkuenfteHint: 'Wochen, Programm holen und Vortragsplan',
+    planungPredigtdienstHint: 'Treffpunkte, Gruppenbesuche und Grundplan',
+    planungWeitereHint: 'Ankündigungen ohne Zuteilung',
     dashAllesZugeteilt: 'Alles zugeteilt',
     abwesenheiten: 'Abwesenheiten',
     von: 'Von', bis: 'Bis', grundOpt: 'Grund (optional)', grundPh: 'z. B. Urlaub',

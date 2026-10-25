@@ -344,6 +344,15 @@ export interface AppState {
    * ebenfalls ab, damit nicht Minuten später ein Gesuch die Seite verschiebt.
    */
   sprungZiel: Abschnitt | null
+  /**
+   * Woher das Planen kam (T144): aus „Planung" (die Wahl, die Wochen) — dann
+   * führt Zurück eine Ebene hinauf, die Woche zu den Wochen, alles andere zur
+   * Wahl (`zurueckInDerPlanung`) —, aus der Ansicht („Planen" neben dem Titel)
+   * — dann führt auch die Zurück-Taste in die Ansicht —, oder von außen
+   * (`null`: Start, Mitteilung, Push). In beiden letzten Fällen beenden ✕ und
+   * „Fertig" das Planen wie bisher.
+   */
+  planenVon: 'ansicht' | 'planung' | null
   toast: Toast | null
   /**
    * Es wurde sich gerade angemeldet und die Begrüßung steht noch aus.
@@ -397,6 +406,8 @@ export type AppAction =
    *
    * `thema`: ein Thema des Menüs öffnen (T120) — der Reducer wählt dazu den
    * Reiter. Ohne `thema` bleibt der Reiter, wie er ist.
+   *
+   * `von`: woher das Planen kommt (T144, `planenVon`); ohne gilt es als von außen.
    */
   | {
       type: 'navigate'
@@ -404,6 +415,7 @@ export type AppAction =
       woche?: { wi: number; tab: MeetingTab }
       abschnitt?: Abschnitt
       thema?: Thema
+      von?: AppState['planenVon']
     }
   // Im Predigtdienst zwischen Treffpunkten, Gruppenbesuchen und Grundplan wechseln (T120).
   | { type: 'setFsBereich'; bereich: FsBereich }

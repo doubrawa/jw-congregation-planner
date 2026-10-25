@@ -62,9 +62,9 @@ der Stelle von „Diese Woche in der Versammlung".
   - **Zu senden** – Zuteilungen, von denen die Eingeteilten noch nichts wissen.
 
   Die Zahlen gelten für die **ganze Woche**; beim Planen verteilen sie sich auf
-  die Reiter. Ein Tipp auf die Zeile öffnet die **Planung** genau auf dieser
-  Woche – und auf dem Reiter, in dem etwas zu tun ist (ist nur noch ein
-  Treffpunkt-Leiter zu benachrichtigen, im Predigtdienst).
+  die Reiter. Ein Tipp auf die Zeile öffnet das **Planen** genau dieser Woche –
+  auf dem Reiter, in dem etwas zu tun ist (ist nur noch ein Treffpunkt-Leiter
+  zu benachrichtigen, im Predigtdienst).
 - **Was vorbei ist, zählt nicht mehr.** Am Donnerstag nennt die Karte nur noch,
   was am Wochenende offen ist; den Dienstag kann niemand mehr besetzen. Die
   Karte merkt den Tageswechsel auch, wenn die App über Nacht offen war.
@@ -87,13 +87,23 @@ der Stelle von „Diese Woche in der Versammlung".
   **Einstellungen**. Dein **Profil** erreichst du über deinen Namen ganz unten.
 - **Ansehen oder Planen.** Die Bereiche im Menü öffnen immer zum Ansehen: so,
   wie es alle sehen. Neben dem Titel steht **Planen** – damit kommst du zu den
-  Zuteilungen. **Planung** im Menü führt zu allen Wochen: am Handy und am
-  Tablet auf eine eigene Seite, am breiten Bildschirm in den Plan, mit den
-  Wochen links daneben (Abschnitt 8). Beim Planen steht am Handy oben ein Kreuz
-  und **Fertig**; beides führt zurück zum Ansehen.
+  Zuteilungen. Beim Planen steht dort **Fertig**, am Handy oben dazu ein Kreuz;
+  beides führt zurück zum Ansehen, ebenso die Zurück‑Taste des Handys.
+- **Planung** im Menü fragt zuerst, was du planen willst: **Zusammenkünfte**,
+  **Predigtdienst** oder **Weitere Pläne** – je eine Karte, bei den
+  Zusammenkünften mit den Problemen und dem, was zu senden ist, über alle
+  Wochen. **Zusammenkünfte** führt am Handy und am Tablet zu allen Wochen, am
+  breiten Bildschirm gleich in den Plan, mit den Wochen links daneben
+  (Abschnitt 8). So geplant, steht statt **Fertig** ein Pfeil **Zurück** vor
+  dem Titel (am Handy oben links); er führt eine Ebene hinauf – aus einer Woche
+  zu den Wochen, von dort zur Auswahl. Die Zurück‑Taste des Handys geht
+  denselben Weg.
+
+  ![Planung – die Auswahl](screenshots/planer-planung.png)
 - **Gruppenaufseher** planen nur den Predigtdienst ihrer Gruppe: Sie sehen
-  **Planen** nur dort, unter **Planen und verwalten** nur die **Planung**, und
-  die Startseite wie Verkündiger, ohne Planungs‑Karte.
+  **Planen** nur dort, unter **Planen und verwalten** nur die **Planung** – sie
+  führt ohne Auswahl gleich zu den Treffpunkten ihrer Gruppe –, und die
+  Startseite wie Verkündiger, ohne Planungs‑Karte.
 
 ### Wer darf was: Planer und Admin
 
@@ -494,8 +504,8 @@ Leser übernehmen können.
 
 Plant ihr die öffentlichen Vorträge in einem eigenen Programm, übernimmst du
 dessen Plan als XML-Datei. Die Karte **Vortragsplan** steht bei den Wochen,
-gleich unter der Karte mit **Holen**: am Handy und am Tablet auf der Seite
-**Planung** (im Menü unter **Planen und verwalten**), am breiten Bildschirm in
+gleich unter der Karte mit **Holen**: am Handy und am Tablet auf der Seite der
+Wochen (im Menü **Planung**, dann **Zusammenkünfte**), am breiten Bildschirm in
 der Spalte der Wochen links neben dem Plan (Abschnitt 8). Dort tippst du auf
 **XML-Datei wählen**. Offline steht die Karte nicht da — übernehmen geht nur
 mit Verbindung. Wie die Datei aufgebaut sein muss, steht in
@@ -1785,11 +1795,11 @@ dürfen Planer und Admin.
 
 ![Die Wochen beim Planen](screenshots/planer-wochen.png)
 
-**Die Wochen** stehen unter **Planung** im Menü. Am Handy und am Tablet ist das
-eine eigene Seite mit allen Wochen ab der laufenden; am breiten Bildschirm
-stehen sie links neben dem Plan, die gezeigte Woche umrandet. Ganz oben wählst
-du, was du planst: **Zusammenkünfte** (die Wochen darunter), **Predigtdienst**
-oder **Weitere Pläne** – ein Tipp öffnet deren Planen. Jede Woche nennt
+**Die Wochen** erreichst du über **Planung** im Menü und dort
+**Zusammenkünfte** (oder **Alle Wochen** auf der Startseite). Am Handy und am
+Tablet ist das eine eigene Seite mit allen Wochen ab der laufenden; Zurück
+führt von dort zur Auswahl auf **Planung**. Am breiten Bildschirm stehen die
+Wochen links neben dem Plan, die gezeigte Woche umrandet. Jede Woche nennt
 rechts, was zu tun ist – **Probleme**, **Offen** oder **Bereit zum Senden** –,
 darunter, wann sie ist oder was sie besonders macht, und unten, wie weit sie
 ist: **Zuteilen**, **Senden**, **Zusagen** – am breiten Bildschirm als Punkte,

@@ -120,8 +120,9 @@ type Zugang = 'alle' | 'gruppe' | 'planer' | 'admin'
  * Planer und Gruppenaufseher bekommen Planen — der Planer für alles, der
  * Gruppenaufseher für die Treffpunkte seiner Gruppe samt ihrem Grundplan.
  * Personen und Einstellungen hat der Betreiber dem Admin vorbehalten. Die
- * Seite aller Wochen (`planung`) gilt den Zusammenkünften — sie bleibt bei
- * dem, der zuteilt. Ebenso die Auswertung der Zuteilungen (T126, Betreiber
+ * Wahl auf „Planung" und die Seite aller Wochen (`wochen`, T144) gelten dem,
+ * der zuteilt — der Gruppenaufseher plant nur einen Bereich und kommt ohne
+ * Wahl gleich hinein. Ebenso die Auswertung der Zuteilungen (T126, Betreiber
  * 16.10.2026: „admin und planer").
  */
 const ZUGANG = {
@@ -132,6 +133,7 @@ const ZUGANG = {
   mitteilungen: 'alle',
   planen: 'gruppe',
   planung: 'planer',
+  wochen: 'planer',
   auswertung: 'planer',
   personen: 'admin',
   einstellungen: 'admin',

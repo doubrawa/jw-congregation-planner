@@ -31,7 +31,7 @@ import { MitteilungenScreen } from '../mitteilungen/MitteilungenScreen'
 import { PersonenScreen } from '../personen/PersonenScreen'
 import { AssignSheet } from '../planen/AssignSheet'
 import { PlanenScreen } from '../planen/PlanenScreen'
-import { PlanungScreen } from '../planen/PlanungScreen'
+import { PlanungScreen, PlanungWochenScreen } from '../planen/PlanungScreen'
 import { zuteilenInSpalte } from '../planen/planen-raster'
 import { ProfilScreen } from '../profil/ProfilScreen'
 import { ProgrammScreen } from '../programm/ProgrammScreen'
@@ -41,7 +41,7 @@ import { parseGoAbschnitt, parseGoTarget, type Abschnitt } from './deeplink'
 import { loadAndHydrate } from './hydrate'
 import { sichtbareMitteilungen } from './mitteilungen'
 import { useKalendertag } from './useKalendertag'
-import { BEREICHS_ZEICHEN, bereichsTitel, zumAnsehen, zumPlanen, zurPlanung } from './bereich'
+import { BEREICHS_ZEICHEN, bereichsTitel, hatPlanungsWahl, zumAnsehen, zumPlanen, zurueckInDerPlanung } from './bereich'
 import { Kopfzeile, PlanenKopf, UnterseiteKopf } from './Kopfzeile'
 import { SchmaleLeiste, Schublade, Seitenmenue, type MenueAbschnitt, type MenueEintrag, type ProfilFuss } from './Menue'
 import { Startbild } from './Startbild'
@@ -102,6 +102,22 @@ export function AppShell() {
 
   const rechte = rechteVon(state)
   const navScreens = erlaubteScreens(rechte)
+  const geplant = geplantesThema(rechte, state.tab)
+
+  /*
+   * **Zurück im Planen: dorthin, woher man kam** (T144, Betreiber 25.10.2026:
+   * „ist da noch ein genereller ablauffehler?"). Aus „Planung" führt Zurück
+   * eine Ebene hinauf — von der Woche zu den Wochen, von dort zur Wahl, dann zu
+   * Start —, aus der Ansicht („Planen" neben dem Titel) wieder in die Ansicht;
+   * von außen (Start, Mitteilung, Push) wie bisher zu Start. Jede Ebene bringt
+   * ihren eigenen Eintrag mit (`useBackDismiss`) — der Kopf am Bildschirm führt
+   * dorthin, wohin auch die Zurück-Taste führt (`zurueckInDerPlanung`).
+   */
+  const zurueck = zurueckInDerPlanung(state.screen, state.planenVon, geplant, rechte, wochenSpalte)
+  const unterWochen = zurueck?.type === 'navigate' && zurueck.screen === 'wochen'
+  useBackDismiss(zurueck !== null, () => dispatch({ type: 'navigate', screen: 'planung' }), 'unteransicht')
+  useBackDismiss(unterWochen, () => dispatch({ type: 'navigate', screen: 'wochen' }), 'unteransicht')
+  useBackDismiss(state.screen === 'planen' && state.planenVon === 'ansicht', () => dispatch(zumAnsehen(geplant)), 'unteransicht')
 
   // Deep-Link-Hash beim Start entfernen (nur wenn es einer ist), damit ein
   // Reload nicht erneut springt — Debug-Hashes (#s=…) bleiben unberührt.
@@ -217,20 +233,18 @@ export function AppShell() {
     aktiv: ansehenThema === thema,
     onClick: () => zuThema(thema),
   })
-  // Geplant wird zuerst, was man planen darf: der Gruppenaufseher allein die
-  // Treffpunkte seiner Gruppe. Wer die Zusammenkünfte plant, kommt über die
-  // Wochen hinein — als Seite oder als Spalte neben dem Plan (`zurPlanung`).
-  const planungsThema: Thema = darfPlanen(rechte, 'zusammenkuenfte') ? 'zusammenkuenfte' : 'predigtdienst'
-  const planung: MenueEintrag[] = darfPlanen(rechte, planungsThema)
+  // „Planung" zeigt zuerst die Wahl, was man plant (T144). Der Gruppenaufseher
+  // plant allein die Treffpunkte seiner Gruppe — ohne Wahl gleich hinein.
+  const planung: MenueEintrag[] = darfPlanen(rechte, 'predigtdienst')
     ? [
         {
           key: 'planung',
           label: t.dashPlanung,
           zeichen: 'planung',
-          aktiv: state.screen === 'planen' || state.screen === 'planung',
+          aktiv: state.screen === 'planen' || state.screen === 'planung' || state.screen === 'wochen',
           onClick: () => {
             setMenuOpen(false)
-            dispatch(planungsThema === 'zusammenkuenfte' ? zurPlanung(wochenSpalte) : zumPlanen(planungsThema))
+            dispatch(hatPlanungsWahl(rechte) ? { type: 'navigate', screen: 'planung' } : zumPlanen('predigtdienst'))
           },
         },
       ]
@@ -287,10 +301,12 @@ export function AppShell() {
     aktiv: state.screen === 'profil',
     onClick: () => navigate('profil'),
   }
-  const planen = state.screen === 'planen'
-  // Unterseiten mit Zurück am Handy: die Mitteilungen und die Seite aller Wochen.
-  const unterseite = state.screen === 'mitteilungen' || state.screen === 'planung'
-  const geplant = geplantesThema(rechte, state.tab)
+  // Am Handy trägt beim Planen aus der Ansicht der Kopf des Planens ✕ und
+  // „Fertig"; aus „Planung" ist das Planen eine Unterseite mit Zurück (T144).
+  const planenKopf = state.screen === 'planen' && zurueck === null
+  // Unterseiten mit Zurück am Handy: die Mitteilungen und was unter „Planung" liegt.
+  const unterseite = state.screen === 'mitteilungen' || zurueck !== null
+  const unterseiteZurueck = (): void => (zurueck ? dispatch(zurueck) : navigate('start'))
   const menue = abschnitte([])
   // Texte für die Error Boundaries: die Klasse kann useT() nicht aufrufen.
   const fehlerTexte = { titel: t.errTitel, text: t.errText, aktion: t.offlineRetry }
@@ -323,11 +339,11 @@ export function AppShell() {
             <LoginScreen />
           ) : (
             <>
-              {planen && (
+              {planenKopf && (
                 <PlanenKopf titel={bereichsTitel(t, geplant)} onBeenden={() => dispatch(zumAnsehen(geplant))} />
               )}
               {unterseite && (
-                <UnterseiteKopf onZurueck={() => navigate('start')}>
+                <UnterseiteKopf onZurueck={unterseiteZurueck}>
                   {state.screen === 'mitteilungen' && ungelesen > 0 && <AlleGelesen className="unterseitenkopf-aktion" />}
                 </UnterseiteKopf>
               )}
@@ -339,7 +355,7 @@ export function AppShell() {
                 versammlung={versammlung ? fill(t.congLabel, { name: versammlung }) : 'Versammlung.app'}
                 ungelesen={ungelesen}
                 menueOffen={menuOpen}
-                amHandyErsetzt={planen || unterseite}
+                amHandyErsetzt={planenKopf || unterseite}
                 onMenue={() => setMenuOpen(true)}
                 onGlocke={() => navigate('mitteilungen')}
               />
@@ -540,6 +556,8 @@ function ActiveScreen({ screen }: { screen: Screen }) {
       return <PlanenScreen />
     case 'planung':
       return <PlanungScreen />
+    case 'wochen':
+      return <PlanungWochenScreen />
     case 'auswertung':
       return <AuswertungScreen />
     case 'personen':

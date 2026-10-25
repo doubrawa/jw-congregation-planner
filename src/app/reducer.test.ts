@@ -101,6 +101,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     svcSheet: null,
     terminGewaehlt: true, // Tests wählen Woche/Reiter selbst — kein Springen (T82)
     sprungZiel: null,
+    planenVon: null,
     congLang: 'de',
     progLangs: [],
     langSearch: '',
@@ -183,6 +184,16 @@ describe('navigate (Rechteprüfung)', () => {
     expect(reducer(s, { type: 'navigate', screen: 'planen' }).screen).toBe('planen')
     expect(reducer(s, { type: 'navigate', screen: 'einstellungen' }).screen).toBe('programm')
     expect(reducer(s, { type: 'navigate', screen: 'personen' }).screen).toBe('programm')
+  })
+
+  it('merkt sich, woher das Planen kommt — jede Navigation ohne Angabe vergisst es (T144)', () => {
+    // Von außen (Start, Mitteilung, Push) gibt es keinen Weg zurück außer „Fertig".
+    const ausWahl = reducer(makeState({ planner: true }), { type: 'navigate', screen: 'planen', thema: 'predigtdienst', von: 'planung' })
+    expect(ausWahl.planenVon).toBe('planung')
+    expect(reducer(ausWahl, { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'mid' } }).planenVon).toBeNull()
+    expect(reducer(ausWahl, { type: 'navigate', screen: 'start' }).planenVon).toBeNull()
+    // Innerhalb des Planens (Reiter, Woche) bleibt es.
+    expect(reducer(ausWahl, { type: 'setTab', tab: 'mid' }).planenVon).toBe('planung')
   })
 
   it('setzt den fs-Tab beim Verlassen von Programm/Planen zurück', () => {

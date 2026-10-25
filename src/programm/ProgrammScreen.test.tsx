@@ -167,12 +167,13 @@ describe('Kopf und Navigation', () => {
     expect(titel(verk.container)).toBe(t.navZusammenkuenfte)
     expect(planen(verk.container)).toBeNull()
     cleanup()
-    // Planer: „Planen" führt in den Modus, beim selben Bereich.
+    // Planer: „Planen" führt in den Modus, beim selben Bereich — und merkt sich,
+    // dass Zurück hierher führt (T144).
     const planer = zeige({ planner: true, tab: 'fs' })
     expect(titel(planer.container)).toBe(t.tabFs)
     expect(planen(planer.container)?.textContent).toBe(t.planen)
     fireEvent.click(planen(planer.container)!)
-    expect(planer.dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'predigtdienst' })
+    expect(planer.dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen', thema: 'predigtdienst', von: 'ansicht' })
   })
 
   it('der Gruppenaufseher sieht „Planen" nur im Predigtdienst', () => {

@@ -1,21 +1,18 @@
-import { useMemo } from 'react'
 import { useApp } from '../app/context'
-import { useAbwesend } from '../app/useAbwesend'
 import { useKalendertag } from '../app/useKalendertag'
 import { Spur } from '../bausteine/Spur'
 import { anlassName } from '../components/anlass-name'
 import { wochenSpanne } from '../components/datum-anzeige'
 import { anlassArt } from '../data/anlass'
 import { fromIso, montagNach, montagVon } from '../data/meeting-dates'
-import { themaVon } from '../data/rechte'
 import type { Week } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import { fill, programmSpanne, useProgWeeks, useT } from '../i18n/useT'
 import { spurDerWoche } from './plan-spur'
-import { PlanungsBereiche } from './PlanungsBereiche'
 import { HolenKnopf } from './ProgrammHolen'
 import { VortragsplanKarte } from './VortragsplanKarte'
-import { naechsteHolWoche, wochenKarten, type WochenKarte, type WochenLage } from './wochen-uebersicht'
+import { useWochenKarten } from './useWochenKarten'
+import { naechsteHolWoche, type WochenKarte, type WochenLage } from './wochen-uebersicht'
 
 /** Was die Lage oben rechts sagt — die Zahl hinter dem Wort. */
 function lageText(lage: NonNullable<WochenLage>, t: Dict): string {
@@ -40,57 +37,24 @@ export function WochenListe({ spalte = false }: { spalte?: boolean }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
   const progWeek = useProgWeeks()
-  const abwesend = useAbwesend()
-  // Der Tag gehört zu den Abhängigkeiten: Am Montag rückt die Liste weiter.
   const tag = useKalendertag()
-  // Offline geht nichts hinaus — dann steht auch nirgends „Bereit zum Senden".
-  const sendenMoeglich = state.staleAt === null
-
-  /*
-   * Gemerkt, weil teuer und der Anlass häufig: je Woche Konflikte, Engpässe,
-   * Versand-Vorschau und Zusagen über alle Plätze — für jede geladene Woche.
-   */
-  const karten = useMemo(
-    () =>
-      wochenKarten(
-        {
-          weeks: state.weeks,
-          fsWeeks: state.fsWeeks,
-          persons: state.persons,
-          services: state.services,
-          absences: state.absences,
-          abwesend,
-          confirmations: state.confirmations,
-          persoenlich: state.persoenlich,
-          sentLog: state.sentLog,
-          zeiten: state.congregation.times,
-          sendenMoeglich,
-        },
-        fromIso(tag),
-      ),
-    [
-      state.weeks,
-      state.fsWeeks,
-      state.persons,
-      state.services,
-      state.absences,
-      abwesend,
-      state.confirmations,
-      state.persoenlich,
-      state.sentLog,
-      state.congregation.times,
-      sendenMoeglich,
-      tag,
-    ],
-  )
+  const karten = useWochenKarten()
 
   const diese = montagVon(tag)
   const naechste = montagNach(diese, 1)
   const unterzeile = (week: Week, tpw: (s: string) => string): string =>
     anlassName(anlassArt(week), t) ??
     (week.start === diese ? t.aktuelleWoche : week.start === naechste ? t.naechsteWoche : tpw(week.book))
+  // Die Seite der Wochen liegt unter „Planung"; in der Spalte wechselt ein Tipp
+  // nur die Woche, und woher das Planen kam, bleibt (T144).
+  const von = spalte ? state.planenVon : 'planung'
   const oeffnen = (k: WochenKarte): void =>
-    dispatch({ type: 'navigate', screen: 'planen', woche: { wi: k.wi, tab: spalte ? state.tab : k.stand.tab } })
+    dispatch({
+      type: 'navigate',
+      screen: 'planen',
+      woche: { wi: k.wi, tab: spalte ? state.tab : k.stand.tab },
+      ...(von ? { von } : {}),
+    })
 
   return (
     <div className="wochen-liste">
@@ -151,15 +115,16 @@ function HolenKarte({ montag }: { montag: string }) {
   )
 }
 
-/** Die Spalte links neben dem Plan am Desktop (Entwurf `GDesktopPlanen`). */
+/**
+ * Die Spalte links neben dem Plan am Desktop (Entwurf `GDesktopPlanen`) — nur
+ * die Wochen. Die Wahl, was man plant, steht seit T144 allein auf „Planung";
+ * dorthin führt Zurück über dem Plan (`Bereichstitel`).
+ */
 export function WochenSpalte() {
-  const { state } = useApp()
   const { t } = useT()
   return (
     <aside className="wochen-spalte" aria-label={t.wochenLbl}>
-      <h2 className="wochen-spalte-titel">{t.dashPlanung}</h2>
-      {/* Was man planen kann (T135) — wie oben auf der Seite „Planung". */}
-      <PlanungsBereiche aktiv={themaVon(state.tab)} />
+      <h2 className="wochen-spalte-titel">{t.wochenLbl}</h2>
       <WochenListe spalte />
     </aside>
   )

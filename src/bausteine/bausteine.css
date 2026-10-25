@@ -134,6 +134,23 @@
   }
 }
 
+/* Planen aus „Planung" (T144): Zurück vor dem Titel statt „Fertig" dahinter —
+   am Handy steht Zurück im Kopf darüber (`UnterseiteKopf`), hier erst ab
+   Tablet-Breite. */
+.bereichstitel-zeile--zurueck {
+  justify-content: flex-start;
+}
+
+.bereichstitel-zurueck {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .bereichstitel-zurueck {
+    display: flex;
+  }
+}
+
 /* Statt des Bereichstitels in einer Unteransicht (`UnteransichtKopf`): zurück,
    daneben der Titel; was die Ansicht anbietet, steht am Ende der Zeile. */
 .unteransicht-kopf {

@@ -1459,6 +1459,79 @@ body:has(.planen-leiste) .toast {
   gap: 14px;
 }
 
+/* Die Wahl auf „Planung" (T144, Entwurf `GPlanungWahl`): je Bereich eine Karte
+   mit Zeichen, Titel, was er umfasst, und dem Pfeil — sie führt weg, sie
+   schaltet nichts um. Am breiten Bildschirm nebeneinander. */
+.planung-frage {
+  margin: 0;
+  color: var(--text2);
+}
+
+/* Untereinander wie ein Wegweiser, auch am Desktop: Nebeneinander brachen die
+   drei Karten dort zwei und eine um. */
+.planung-wahl {
+  display: grid;
+  gap: 10px;
+}
+
+.planung-karte {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 14px;
+  padding: 16px 16px 16px 18px;
+  border: 1.5px solid transparent;
+  border-radius: 24px;
+  background: var(--karte);
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.planung-karte:hover {
+  border-color: var(--linie);
+}
+
+.planung-karte:focus-visible {
+  outline: 2px solid var(--akzent-text);
+  outline-offset: 2px;
+}
+
+.planung-karte-zeichen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--feld);
+}
+
+.planung-karte-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.planung-karte-titel {
+  font-size: calc(17px * var(--fs));
+  font-weight: 700;
+}
+
+/* Was bei den Zusammenkünften ansteht — mit den Wörtern der Wochen. */
+.planung-karte-stand {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  padding-top: 6px;
+}
+
+.planung-karte > .zeichen {
+  color: var(--text3);
+}
+
 .planung-wochen,
 .wochen-liste {
   display: flex;
