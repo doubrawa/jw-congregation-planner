@@ -1,5 +1,5 @@
 import { kalendertagMs, montagNach, weekEndMs } from '../data/meeting-dates'
-import { wochenstand, type PlanungsQuellen, type Wochenstand } from '../data/planungsstand'
+import { problemeDerWoche, wochenstand, type PlanungsQuellen, type Wochenstand } from '../data/planungsstand'
 import type { PersoenlichLog, Week } from '../data/types'
 import { holenNach } from '../data/holen'
 import { zahlenDerWoche, type WochenZahlen } from './plan-spur'
@@ -49,7 +49,7 @@ export function wochenKarten(q: UebersichtQuellen, heute: Date): WochenKarte[] {
 
 /** Probleme (Konflikte und Engpässe), sonst offene Plätze, sonst „bereit zum Senden". */
 export function lageDerWoche(stand: Wochenstand): WochenLage {
-  const probleme = stand.konflikte + stand.nichtBesetzbar
+  const probleme = problemeDerWoche(stand)
   if (probleme > 0) return { art: 'probleme', n: probleme }
   if (stand.offen > 0) return { art: 'offen', n: stand.offen }
   return stand.nichtGesendet > 0 ? { art: 'bereit' } : null

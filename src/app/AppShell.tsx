@@ -114,9 +114,8 @@ export function AppShell() {
    * dorthin, wohin auch die Zurück-Taste führt (`zurueckInDerPlanung`).
    */
   const zurueck = zurueckInDerPlanung(state.screen, state.planenVon, geplant, rechte, wochenSpalte)
-  const unterWochen = zurueck?.type === 'navigate' && zurueck.screen === 'wochen'
-  useBackDismiss(zurueck !== null, () => dispatch({ type: 'navigate', screen: 'planung' }), 'unteransicht')
-  useBackDismiss(unterWochen, () => dispatch({ type: 'navigate', screen: 'wochen' }), 'unteransicht')
+  useBackDismiss(zurueck !== null, () => navigate('planung'), 'unteransicht')
+  useBackDismiss(zurueck === 'wochen', () => navigate('wochen'), 'unteransicht')
   useBackDismiss(state.screen === 'planen' && state.planenVon === 'ansicht', () => dispatch(zumAnsehen(geplant)), 'unteransicht')
 
   // Deep-Link-Hash beim Start entfernen (nur wenn es einer ist), damit ein
@@ -306,7 +305,7 @@ export function AppShell() {
   const planenKopf = state.screen === 'planen' && zurueck === null
   // Unterseiten mit Zurück am Handy: die Mitteilungen und was unter „Planung" liegt.
   const unterseite = state.screen === 'mitteilungen' || zurueck !== null
-  const unterseiteZurueck = (): void => (zurueck ? dispatch(zurueck) : navigate('start'))
+  const unterseiteZurueck = (): void => navigate(zurueck ?? 'start')
   const menue = abschnitte([])
   // Texte für die Error Boundaries: die Klasse kann useT() nicht aufrufen.
   const fehlerTexte = { titel: t.errTitel, text: t.errText, aktion: t.offlineRetry }

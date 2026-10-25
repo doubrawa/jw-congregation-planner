@@ -71,10 +71,10 @@ export function zurueckInDerPlanung(
   thema: Thema,
   r: Rechte,
   mitSpalte: boolean,
-): AppAction | null {
+): 'planung' | 'wochen' | null {
   // Die Wochen sehen nur Planer — und die haben immer die Wahl.
-  if (screen === 'wochen') return { type: 'navigate', screen: 'planung' }
+  if (screen === 'wochen') return 'planung'
   if (screen !== 'planen' || von !== 'planung' || !hatPlanungsWahl(r)) return null
-  if (thema === 'zusammenkuenfte' && !mitSpalte) return { type: 'navigate', screen: 'wochen' }
-  return { type: 'navigate', screen: 'planung' }
+  if (thema === 'zusammenkuenfte' && !mitSpalte) return 'wochen'
+  return 'planung'
 }

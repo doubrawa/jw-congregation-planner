@@ -5,6 +5,7 @@ import { Zeichen } from '../bausteine/Zeichen'
 import { Bereichstitel } from '../components/Bereichstitel'
 import { WOCHEN_SPALTE_BREITE, useMedia } from '../components/useMedia'
 import { Chip } from '../dashboard/PlanungsKarte'
+import { problemeDerWoche } from '../data/planungsstand'
 import { rechteVon } from '../data/rechte'
 import type { Thema } from '../data/types'
 import type { Dict } from '../i18n/ui'
@@ -46,7 +47,7 @@ export function PlanungScreen() {
     () =>
       karten.reduce(
         (summe, k) => ({
-          probleme: summe.probleme + k.stand.konflikte + k.stand.nichtBesetzbar,
+          probleme: summe.probleme + problemeDerWoche(k.stand),
           senden: summe.senden + k.stand.nichtGesendet,
         }),
         { probleme: 0, senden: 0 },

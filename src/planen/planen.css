@@ -1461,7 +1461,7 @@ body:has(.planen-leiste) .toast {
 
 /* Die Wahl auf „Planung" (T144, Entwurf `GPlanungWahl`): je Bereich eine Karte
    mit Zeichen, Titel, was er umfasst, und dem Pfeil — sie führt weg, sie
-   schaltet nichts um. Am breiten Bildschirm nebeneinander. */
+   schaltet nichts um. */
 .planung-frage {
   margin: 0;
   color: var(--text2);

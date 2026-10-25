@@ -9,7 +9,7 @@ import { useBesuchsLage } from '../components/useBesuchsLage'
 import { WOCHEN_SPALTE_BREITE, useMedia } from '../components/useMedia'
 import { tageSpanne } from '../components/datum-anzeige'
 import { fromIso, isoVonKalendertag } from '../data/meeting-dates'
-import { planungsstand, type Wochenstand } from '../data/planungsstand'
+import { planungsstand, problemeDerWoche, type Wochenstand } from '../data/planungsstand'
 import type { FsBereich } from '../data/types'
 import { fill, programmSpanne, useProgWeeks, useT } from '../i18n/useT'
 import { HolenKnopf } from '../planen/ProgrammHolen'
@@ -178,8 +178,8 @@ export function PlanungsKarte() {
                   die Probleme — Konflikte und was nicht besetzbar ist —, dann
                   die offenen Plätze, zuletzt der Versand. */}
               <span className="dash-plan-chips">
-                {w.konflikte + w.nichtBesetzbar > 0 && (
-                  <Chip art="probleme" text={fill(t.lageProbleme, { n: w.konflikte + w.nichtBesetzbar })} />
+                {problemeDerWoche(w) > 0 && (
+                  <Chip art="probleme" text={fill(t.lageProbleme, { n: problemeDerWoche(w) })} />
                 )}
                 {w.offen > 0 && <Chip art="offen" text={fill(t.lageOffen, { n: w.offen })} />}
                 {w.nichtGesendet > 0 && <Chip art="senden" text={fill(t.lageSenden, { n: w.nichtGesendet })} />}

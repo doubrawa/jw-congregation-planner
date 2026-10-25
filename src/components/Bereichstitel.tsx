@@ -37,7 +37,12 @@ export function Bereichstitel({ thema: vorgegeben }: { thema?: Thema }) {
     return (
       <div className="bereichstitel">
         <div className="bereichstitel-zeile bereichstitel-zeile--zurueck">
-          <button type="button" className="rund-knopf bereichstitel-zurueck" aria-label={t.a11yZurueck} onClick={() => dispatch(zurueck)}>
+          <button
+            type="button"
+            className="rund-knopf bereichstitel-zurueck"
+            aria-label={t.a11yZurueck}
+            onClick={() => dispatch({ type: 'navigate', screen: zurueck })}
+          >
             <Zeichen name="zurueck" />
           </button>
           <h1 className="seitentitel">{bereichsTitel(t, thema)}</h1>

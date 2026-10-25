@@ -3235,12 +3235,13 @@ export const KATALOG = [
   },
   {
     id: 'planung-engpass-ist-problem',
-    datei: 'src/dashboard/PlanungsKarte.tsx',
+    datei: 'src/data/planungsstand.ts',
     // Seit Phase 10 (T121) mit den Wörtern der Wochen beim Planen: „Probleme"
-    // umfasst Konflikte und was nicht besetzbar ist (`lageDerWoche`).
+    // umfasst Konflikte und was nicht besetzbar ist — seit T144 an einer Stelle
+    // für die Karte, die Wochen und die Wahl auf „Planung" (`problemeDerWoche`).
     regel: 'Was nicht besetzbar ist, nennt die Karte als Problem — auch ohne Konflikt in der Woche.',
-    suchen: '                {w.konflikte + w.nichtBesetzbar > 0 && (\n',
-    ersetzen: '                {w.konflikte > 0 && (\n',
+    suchen: '  s.konflikte + s.nichtBesetzbar\n',
+    ersetzen: '  s.konflikte\n',
   },
   {
     id: 'planung-offline-kein-senden',
@@ -4212,7 +4213,7 @@ export const KATALOG = [
     id: 'planung-woche-zurueck-zu-den-wochen',
     datei: 'src/app/bereich.ts',
     regel: 'Aus „Planung" führt Zurück aus dem Plan einer Woche zu den Wochen, nicht in die Ansicht (T144).',
-    suchen: "  if (thema === 'zusammenkuenfte' && !mitSpalte) return { type: 'navigate', screen: 'wochen' }\n",
+    suchen: "  if (thema === 'zusammenkuenfte' && !mitSpalte) return 'wochen'\n",
     ersetzen: '',
   },
   {
@@ -4226,7 +4227,7 @@ export const KATALOG = [
     id: 'planung-wochen-zurueck-zur-wahl',
     datei: 'src/app/bereich.ts',
     regel: 'Von der Seite der Wochen führt Zurück zur Wahl — im Kopf, vor dem Titel und mit der Zurück-Taste (T144).',
-    suchen: "  if (screen === 'wochen') return { type: 'navigate', screen: 'planung' }\n",
+    suchen: "  if (screen === 'wochen') return 'planung'\n",
     ersetzen: '',
   },
   {
@@ -4240,7 +4241,7 @@ export const KATALOG = [
     id: 'planung-zuruecktaste-zu-den-wochen',
     datei: 'src/app/AppShell.tsx',
     regel: 'Die Zurück-Taste führt aus dem Plan einer Woche zu den Wochen — dorthin, wohin auch der Kopf führt (T144).',
-    suchen: "  useBackDismiss(unterWochen, () => dispatch({ type: 'navigate', screen: 'wochen' }), 'unteransicht')\n",
+    suchen: "  useBackDismiss(zurueck === 'wochen', () => navigate('wochen'), 'unteransicht')\n",
     ersetzen: '',
   },
   {
@@ -4361,8 +4362,8 @@ export const KATALOG = [
     id: 'unterseite-zurueck-zu-start',
     datei: 'src/app/AppShell.tsx',
     regel: 'Zurück im Kopf der Mitteilungen führt zu Start — wie die Zurück-Taste.',
-    suchen: "  const unterseiteZurueck = (): void => (zurueck ? dispatch(zurueck) : navigate('start'))\n",
-    ersetzen: "  const unterseiteZurueck = (): void => (zurueck ? dispatch(zurueck) : navigate('aufgaben'))\n",
+    suchen: "  const unterseiteZurueck = (): void => navigate(zurueck ?? 'start')\n",
+    ersetzen: "  const unterseiteZurueck = (): void => navigate(zurueck ?? 'aufgaben')\n",
   },
   /* ---- Die Versammlung ansehen (T121, Phase 4a) ---- */
   {

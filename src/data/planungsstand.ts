@@ -94,6 +94,14 @@ export interface Wochenstand {
   nichtGesendet: number
 }
 
+/**
+ * **Was als Problem zählt:** mögliche Konflikte und Plätze, die nicht besetzbar
+ * sind. Eine Stelle für die Karte auf Start, die Wochen beim Planen und die
+ * Wahl auf „Planung" (T144) — sie sagen dasselbe Wort.
+ */
+export const problemeDerWoche = (s: Pick<Wochenstand, 'konflikte' | 'nichtBesetzbar'>): number =>
+  s.konflikte + s.nichtBesetzbar
+
 export interface Planungsstand {
   /** Nur Wochen, in denen etwas zu tun ist — in Kalenderfolge. */
   wochen: Wochenstand[]
