@@ -64,17 +64,20 @@ export function Kopfzeile({
 /**
  * Der Kopf des Planens am Handy (Baustein `kopfPlanen`): Kreuz und „Fertig"
  * beenden beide das Planen — das Kreuz für die Gewohnheit, „Fertig" als Wort.
- * Passt der Titel nicht daneben, rückt „Fertig" in die nächste Zeile
- * (`menue.css`); abgeschnitten wird der Titel nicht.
+ * Passt der Titel nicht daneben, rückt „Fertig" in die nächste Zeile; Kreuz
+ * und Titel bleiben beisammen (`planenkopf-start`), abgeschnitten wird der
+ * Titel nicht.
  */
 export function PlanenKopf({ titel, onBeenden }: { titel: string; onBeenden: () => void }) {
   const { t } = useT()
   return (
     <header className="planenkopf">
-      <button type="button" className="rund-knopf" aria-label={t.planenBeenden} onClick={onBeenden}>
-        <Zeichen name="kreuz" />
-      </button>
-      <h1 className="planenkopf-titel">{titel}</h1>
+      <div className="planenkopf-start">
+        <button type="button" className="rund-knopf" aria-label={t.planenBeenden} onClick={onBeenden}>
+          <Zeichen name="kreuz" />
+        </button>
+        <h1 className="planenkopf-titel">{titel}</h1>
+      </div>
       <button type="button" className="planen-knopf" onClick={onBeenden}>
         {t.fertig}
       </button>

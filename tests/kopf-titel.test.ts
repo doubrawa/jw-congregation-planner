@@ -44,11 +44,11 @@ describe('Der Titel im Kopf am Handy steht ganz da (Review 25.10.2026)', () => {
 
   it('beim Planen rückt „Fertig" in die nächste Zeile, bevor der Titel neben dem Kreuz trennt', () => {
     expect(werte('.planenkopf').get('flex-wrap')).toBe('wrap')
-    // Grundmaß der eigene Text: Mit 0 passte „Fertig" immer daneben, und der
-    // Titel trennte in einer Lücke von 100 px in vier Zeilen.
-    expect(werte('.planenkopf-titel').get('flex')).toBe('1 1 auto')
-    // Neben dem Kreuz bleibt er: höchstens die Zeile ohne Kreuz und Lücke.
-    expect(werte('.planenkopf-titel').get('max-width')).toMatch(/^calc\(100% - \d+px\)$/)
+    // Kreuz und Titel sind eine Gruppe; ihr Grundmaß ist ihr Inhalt. Mit 0
+    // passte „Fertig" immer daneben, und der Titel trennte in einer Lücke von
+    // 100 px in vier Zeilen.
+    expect(werte('.planenkopf-start').get('flex')).toBe('1 1 auto')
+    expect(werte('.planenkopf-start').get('min-width')).toBe('0')
     expect(werte('.planenkopf > .planen-knopf').get('margin-inline-start')).toBe('auto')
   })
 })

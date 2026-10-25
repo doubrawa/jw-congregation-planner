@@ -76,9 +76,7 @@
    bei 390 px und Stufe 1,45, „Autres progr…" bei Stufe 1 auf 375 px. */
 .planenkopf-titel,
 .unterseitenkopf-titel {
-  /* Grundmaß der eigene Text, nicht 0: Daran entscheidet der Kopf des
-     Planens, ob „Fertig" noch daneben passt (siehe unten). */
-  flex: 1 1 auto;
+  flex: 1;
   min-width: 0;
   font-size: calc(20px * var(--fs));
   font-weight: 600;
@@ -90,14 +88,18 @@
 
 /* Neben ✕ und „Fertig" wird es bei großer Schrift eng: Dann rückt „Fertig" in
    die nächste Zeile, ans Ende, bevor der Titel trennt — wie beim
-   Bereichstitel (T128). Der Titel bleibt neben dem Kreuz: höchstens die Zeile
-   ohne den runden Knopf (44 px) und die Lücke (12 px). */
+   Bereichstitel (T128). Kreuz und Titel bleiben als Gruppe beisammen; deren
+   Grundmaß ist ihr Inhalt, daran entscheidet sich, ob „Fertig" daneben passt. */
 .planenkopf {
   flex-wrap: wrap;
 }
 
-.planenkopf-titel {
-  max-width: calc(100% - 56px);
+.planenkopf-start {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
 .planenkopf > .planen-knopf {

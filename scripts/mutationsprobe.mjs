@@ -4402,9 +4402,9 @@ export const KATALOG = [
   {
     id: 'planenkopf-titel-misst-sich',
     datei: 'src/app/menue.css',
-    regel: 'Ob „Fertig" neben den Titel passt, entscheidet dessen Text (Grundmaß auto) — mit 0 trennte der Titel in einer schmalen Lücke in vier Zeilen.',
-    suchen: '  flex: 1 1 auto;\n  min-width: 0;\n  font-size: calc(20px * var(--fs));\n',
-    ersetzen: '  flex: 1;\n  min-width: 0;\n  font-size: calc(20px * var(--fs));\n',
+    regel: 'Ob „Fertig" neben Kreuz und Titel passt, entscheidet deren Inhalt (Grundmaß auto) — mit 0 trennte der Titel in einer schmalen Lücke in vier Zeilen.',
+    suchen: '.planenkopf-start {\n  display: flex;\n  flex: 1 1 auto;\n',
+    ersetzen: '.planenkopf-start {\n  display: flex;\n  flex: 1;\n',
   },
   /* ---- Die Versammlung ansehen (T121, Phase 4a) ---- */
   {
