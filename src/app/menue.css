@@ -70,8 +70,7 @@
   background: var(--akzent);
 }
 
-.planenkopf-titel,
-.unterseitenkopf-titel {
+.planenkopf-titel {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -79,6 +78,20 @@
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Neben Zurück hat der Titel die Zeile für sich: Wird es eng (320 px, Stufe
+   1,45: „Zusammenkünfte", „Autres programmes"), bricht er um, statt mit „…"
+   abgeschnitten zu werden — wie vorher auf der Seite (T144, Review). */
+.unterseitenkopf-titel {
+  flex: 1;
+  min-width: 0;
+  font-size: calc(20px * var(--fs));
+  font-weight: 600;
+  line-height: 1.25;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
 }
 
 /* Zurück links, das Angebot der Seite rechts (Mitteilungen: „Alle gelesen"). */

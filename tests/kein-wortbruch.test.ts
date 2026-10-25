@@ -43,6 +43,9 @@ const TRENNT = [
   ['bausteine/bausteine.css', '.option-text'],
   // „Возвещатель" ragte am Desktop bei 1,45 aus der Spalte neben dem Bild einer Person.
   ['personen/personen.css', '.person-unter'],
+  // Der Titel neben Zurück im Kopf am Handy (T144): „Zusammenkünfte" wurde bei
+  // 320 px und 1,45 mit „…" abgeschnitten.
+  ['app/menue.css', '.unterseitenkopf-titel'],
 ] as const
 
 describe('Bei großer Schrift bekommt ein langes Wort Platz oder trennt', () => {

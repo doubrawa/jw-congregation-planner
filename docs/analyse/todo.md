@@ -8757,7 +8757,12 @@ die überschrift ‚Zusammenkünfte' oben rechts vom zurück button sein und nic
 eine zeile darunter"): Unter „Planung" trägt der Kopf am Handy jetzt Zurück und
 den Titel des Bereichs in einer Zeile, wie der Kopf des Planens und der Entwurf
 (`kopfZurueck`); die Zeile des Bereichstitels ist am Handy aus. Tablet und
-Desktop unverändert. Probe `tests/kopf-titel.test.ts`.
+Desktop unverändert. Probe `tests/kopf-titel.test.ts`. Im Review gefunden: Bei
+320 px und Schrift 1,45 schnitt der Kopf den Titel in fünf Sprachen mit „…" ab
+(„Zusammenkünf…") — jetzt bricht er dort mit Trennstrich um („Zusammen-
+künfte"). Bleibt offen: Der Kopf des Planens (✕, Titel, „Fertig") schneidet
+schon länger ab, bei Stufe 1 auf 320 px, bei 1,45 auch auf 375/390 px
+(gemessen 25.10.2026).
 
 ### T145 · Auswertung, Engpässe: nur die problematischen Bereiche ⚡ ☐ offen
 
