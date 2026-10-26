@@ -212,6 +212,22 @@ describe('Die nächste Aufgabe steht groß oben', () => {
     expect(container.querySelector('.aufgabe-unter')).toBeNull()
   })
 
+  it('der Titel trägt die Sprache des Programms — er trennt, und das nach ihren Regeln', () => {
+    // Russische App, deutsche Versammlung: Nach russischen Regeln trennte
+    // „Versammlungsbibelstudium" gar nicht und ragte am Handy aus der Karte.
+    const titel = (c: HTMLElement) => c.querySelector('.aufgabe-titel')
+    const { container } = zeige({ myTasks: [task({ title: 'Versammlungsbibelstudium' })], lang: 'ru', congLang: 'de' })
+    expect(titel(container)?.getAttribute('lang')).toBe('de')
+    cleanup()
+    // Mit Sprachvariante steht der Titel in der Sprache des Lesers.
+    const zwei = zeige({ myTasks: [task({ lesersprache: true })], lang: 'ru', congLang: 'de' })
+    expect(titel(zwei.container)?.getAttribute('lang')).toBe('ru')
+    cleanup()
+    // Ohne Programmpunkt steht oben die Rolle — in der Sprache des Lesers, ohne eigenes `lang`.
+    const drei = zeige({ myTasks: [task({ title: '', rolle: 'Mikrofone' })], lang: 'ru', congLang: 'de' })
+    expect(titel(drei.container)?.hasAttribute('lang')).toBe(false)
+  })
+
   it('offen: Bestätigen und „Ich kann nicht" — das öffnet das Absage-Blatt', () => {
     const { container, dispatch } = zeige({ myTasks: [task()] })
     fireEvent.click(knopf(karte(container), t.bestaetigen)!)

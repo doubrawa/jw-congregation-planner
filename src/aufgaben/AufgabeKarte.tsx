@@ -2,7 +2,7 @@ import { useApp } from '../app/context'
 import { Punkt } from '../bausteine/Punkt'
 import { Saal } from '../bausteine/Saal'
 import type { MyTask } from '../data/types'
-import { aufgabenZeilen, useT } from '../i18n/useT'
+import { aufgabenSprache, aufgabenZeilen, useT } from '../i18n/useT'
 import { aufgabeWann } from './aufgabe-anzeige'
 import { useSaal } from './useSaal'
 import './aufgaben.css'
@@ -17,7 +17,10 @@ export function AufgabeKarte({ task, saal = false }: { task: MyTask; saal?: bool
   const { state } = useApp()
   const i18n = useT()
   const besetzung = useSaal(saal ? task : undefined)
-  const { titel, unter } = aufgabenZeilen(task, i18n)
+  const { titel, unter, titelIstPunkt } = aufgabenZeilen(task, i18n)
+  // Der Titel trennt (`.aufgabe-titel`): Steht oben der Programmpunkt, nach der
+  // Sprache des Programms, sonst trägt die Rolle die des Lesers — wie im Blatt.
+  const titelSprache = titelIstPunkt ? aufgabenSprache(task, state.lang, state.congLang) : undefined
   return (
     <section className={besetzung ? 'karte karte--held aufgabe-karte mit-saal' : 'karte karte--held aufgabe-karte'}>
       {besetzung && <Saal lagen={besetzung.lagen} label={besetzung.label} />}
@@ -25,7 +28,7 @@ export function AufgabeKarte({ task, saal = false }: { task: MyTask; saal?: bool
         <Punkt art="du" />
         <span>{aufgabeWann(task, state.lang, i18n)}</span>
       </div>
-      <h2 className="aufgabe-titel">{titel}</h2>
+      <h2 className="aufgabe-titel" lang={titelSprache}>{titel}</h2>
       {unter && <div className="aufgabe-unter">{unter}</div>}
       <AufgabeHandlungen task={task} />
     </section>

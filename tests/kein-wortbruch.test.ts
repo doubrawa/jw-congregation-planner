@@ -47,6 +47,10 @@ const TRENNT = [
   // 1,45 mit „…" abgeschnitten. Dieselbe Regel gilt für den Kopf des Planens
   // (`.planenkopf-titel`); dass „Fertig" dort umrückt, prüft `kopf-titel.test.ts`.
   ['app/menue.css', '.unterseitenkopf-titel'],
+  // Die große Karte der nächsten Aufgabe (Start, Meine Aufgaben): „Versammlungsbibelstudium"
+  // stand am Handy des Betreibers (393 px, Stufe 1,15) über den Rand hinaus, bei 412 px und
+  // Stufe 1,45 um 142 px (26.10.2026).
+  ['aufgaben/aufgaben.css', '.aufgabe-titel'],
 ] as const
 
 describe('Bei großer Schrift bekommt ein langes Wort Platz oder trennt', () => {
@@ -59,6 +63,12 @@ describe('Bei großer Schrift bekommt ein langes Wort Platz oder trennt', () => 
 
   it.each(TRENNT)('%s %s bricht ohne Trennregeln der Sprache notfalls um, statt hinauszuragen', (datei, selektor) => {
     expect(deklarationen(datei, selektor)).toMatch(/overflow-wrap:\s*(break-word|anywhere)/)
+  })
+
+  it('in der großen Karte bleiben nach dem Trennstrich fünf Buchstaben — „Versammlungsbibel-studium", nicht „…bibelstu-dium"', () => {
+    // Chrome trennt so spät wie möglich; ein Programmpunkt kommt aus den Daten
+    // und kann keine weiche Trennstelle an der Fuge tragen (26.10.2026).
+    expect(deklarationen('aufgaben/aufgaben.css', '.aufgabe-titel')).toMatch(/hyphenate-limit-chars:\s*auto auto 5;/)
   })
 
   it('steht ein Knopf neben dem Seitentitel, rückt der Knopf in die nächste Zeile, bevor der Titel trennt', () => {
