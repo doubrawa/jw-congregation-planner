@@ -21,9 +21,9 @@ BASE="http://localhost:5173"
 OUT_DIR="$(cd "$(dirname "$0")" && pwd)/screenshots"
 PROFILE="${TEMP:-/tmp}/jw-doc-chrome"
 # `--window-size` meint hier das FENSTER, nicht den Sichtbereich: Chrome unter
-# Windows zieht den Rahmen ab, aus 920 werden rund 904 px Sichtbereich. Der
-# ganze Bestand ist deshalb in der schmalen Spalte aufgenommen — Sidebar 232 +
-# App-Spalte 430 = 662 px breit, der 920er-Umbruch auf 660 px greift nicht.
+# Windows zieht den Rahmen ab, aus 920 werden rund 904 px Sichtbereich. Die
+# Seite steht damit wie am Tablet (ab 768 px): Leiste und Seite, zugeschnitten
+# rund 880 px breit (26.10.2026).
 # Ein Chromium unter Linux (headless=new) zieht anders ab: die Breite bleibt,
 # von der Höhe gehen 87 px weg, und --screenshot nimmt nur den Sichtbereich auf
 # statt der ganzen Seite. Damit fallen die Bilder kürzer aus als die abgelegten.
@@ -55,6 +55,21 @@ seite="$(curl -s "$BASE/demo.html" || true)"
 if [[ "$seite" != *tests/testdaten/demo.tsx* ]]; then
   echo "FEHLER: $BASE/demo.html ist nicht die Entwicklerseite — Dev-Server neu starten." >&2
   exit 1
+fi
+
+# Die Trennwörterbücher: Ohne sie trennt Chrome nicht, und ein langes Wort
+# bricht ohne Strich um — in der Leiste stand „Zusammenk|ünfte",
+# „Predigtdiens|t" (26.10.2026), während die App beim Nutzer trennt. Chrome lädt
+# sie als Komponente in sein eigenes Profil, ins Profil der Aufnahmen nicht.
+# Darum eine Kopie, wie in docs/analyse/t128-umbruch/umbruch-werkzeug/chrome.mjs.
+WOERTERBUCH="$(cygpath -u "${LOCALAPPDATA:-}" 2>/dev/null || true)/Google/Chrome/User Data/hyphen-data"
+if [ ! -d "$PROFILE/hyphen-data" ]; then
+  if [ ! -d "$WOERTERBUCH" ]; then
+    echo "FEHLER: keine Trennwörterbücher in $WOERTERBUCH — ohne sie bräche jedes lange Wort ohne Strich um." >&2
+    exit 1
+  fi
+  mkdir -p "$PROFILE"
+  cp -r "$WOERTERBUCH" "$PROFILE/hyphen-data"
 fi
 
 # name|hash[|BxH]  (hash ohne führendes #; optionale Größe überschreibt W×H —

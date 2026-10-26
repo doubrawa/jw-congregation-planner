@@ -27,7 +27,9 @@ bash docs/user-guide/capture-screenshots.sh
 
 Das Skript fährt per **Chrome (headless)** jeden dokumentierten Zustand an und legt
 die PNGs in `screenshots/` ab. Es ist die *einzige* Quelle der Screenshots –
-dadurch bleiben Bilder und App immer konsistent. Mit Namen als Argumenten
+dadurch bleiben Bilder und App immer konsistent. Die Trennwörterbücher kopiert
+es aus dem Profil des installierten Chrome, damit lange Wörter getrennt werden
+wie beim Nutzer. Mit Namen als Argumenten
 (`… capture-screenshots.sh planer-person-detail`) entstehen nur diese Bilder neu.
 
 ### Hash der Entwicklerseite (siehe `tests/testdaten/demo-start.ts` → `parseDebugHash`)
@@ -91,10 +93,10 @@ Ende automatisch auf; du musst nichts extra tun.
 
 Alle Screenshots entstehen in der hellen Darstellung (`t=hell`) und im Screenshot‑Modus
 (`shot=1`) und werden anschließend seitlich auf den Inhalt zugeschnitten:
-App‑Screens → **662px** (Sidebar 232 + App‑Spalte 430), der Login → **430px**
-(nur die App‑Spalte). Das Fenster ist 920px breit, der Sichtbereich unter
-Windows aber etwas schmaler — deshalb greift der 920er‑Umbruch auf die breite
-Spalte (660px) nicht, und der ganze Bestand steht in der schmalen. Wer mit einem
+App‑Screens → rund **880px** (Leiste und Seite wie am Tablet), der Login →
+**372px** (Stand 26.10.2026; maßgeblich ist, was das Skript beim Zuschneiden
+meldet). Das Fenster ist 920px breit, der Sichtbereich unter Windows etwas
+schmaler. Wer mit einem
 Chromium aufnimmt, für das `--window-size` den Sichtbereich meint (Linux,
 `--headless=new`), setzt im Skript `W=900` und `H=931`; sonst kommen breitere
 Bilder heraus als die abgelegten. Über das dritte Feld im `SHOTS`‑Eintrag
