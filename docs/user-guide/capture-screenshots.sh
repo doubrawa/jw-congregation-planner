@@ -68,8 +68,12 @@ if [ ! -d "$PROFILE/hyphen-data" ]; then
     echo "FEHLER: keine Trennwörterbücher in $WOERTERBUCH — ohne sie bräche jedes lange Wort ohne Strich um." >&2
     exit 1
   fi
+  # Erst daneben, dann umbenennen: Eine abgebrochene Kopie stünde sonst als
+  # vollständig da, und kein späterer Lauf kopierte sie neu.
   mkdir -p "$PROFILE"
-  cp -r "$WOERTERBUCH" "$PROFILE/hyphen-data"
+  rm -rf "$PROFILE/hyphen-data.neu"
+  cp -r "$WOERTERBUCH" "$PROFILE/hyphen-data.neu"
+  mv "$PROFILE/hyphen-data.neu" "$PROFILE/hyphen-data"
 fi
 
 # name|hash[|BxH]  (hash ohne führendes #; optionale Größe überschreibt W×H —

@@ -28,7 +28,7 @@ const TRENNT = [
   ['bausteine/bausteine.css', '.schalter-text'],
   ['components/overlays.css', '.sheet-title'],
   ['app/menue.css', '.menue-eintrag-text'],
-  // Die schmale Leiste am Tablet: unter dem Zeichen 76 px für „Zusammenkünfte".
+  // Die schmale Leiste am Tablet: Unter dem Zeichen bleiben bei Stufe 1 75 px für den Namen.
   ['app/menue.css', '.leisten-text'],
   [EINSTELLUNGEN, '.einst-zeile-name'],
   ['bausteine/bausteine.css', '.spur-name'],

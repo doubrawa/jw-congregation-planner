@@ -196,7 +196,7 @@
    lief unter den Zähler (T128). Seit die Leiste mit der Schrift wächst, passen
    die Namen; was dennoch nicht passt, trennt oder bricht, statt hinauszuragen.
    Nach dem Strich bleiben fünf Buchstaben wie in der schmalen Leiste: In der
-   Schublade bei 320 px und Stufe 1,45 stand sonst „asignacio-nes". */
+   Schublade bei 320 px und Stufe 1,45 stand sonst fett „asignacio-nes". */
 .menue-eintrag-text {
   flex: 1;
   min-width: 0;
