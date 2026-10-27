@@ -151,6 +151,10 @@
 .trolley-spaltenkopf > * {
   -webkit-hyphens: auto;
   hyphens: auto;
+  /* Ohne die fünf Buchstaben nach dem Strich (index.css): Der Ort heißt meist
+     „Königreichssaal", und „saal" hat nur vier. Mit ihnen brach er bei 320 px
+     ab Stufe 1,3 „König-reichssa|al" — hier passt „Königreichs-saal". */
+  hyphenate-limit-chars: auto;
   overflow-wrap: anywhere;
 }
 

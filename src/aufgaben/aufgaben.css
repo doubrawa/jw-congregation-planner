@@ -32,12 +32,10 @@
 
 /* Ein langer Programmpunkt trennt, statt über die Karte hinauszuragen: Am Handy
    (393 px, Stufe 1,15) stand „Versammlungsbibelstudium" über den Rand hinaus
-   (26.10.2026). Getrennt wird nach der Sprache, die der Titel trägt.
-   Chrome trennt so spät wie möglich — bei Stufe 1 „Versammlungsbibelstu-dium",
-   „Eingangsord-ner". Mit mindestens fünf Buchstaben nach dem Strich trennt es
-   davor, hier an der Fuge. Gemessen in zwölf Sprachen, 320–412 px, Stufe 1–1,45:
-   kein Bruch ohne Strich kam hinzu; von den Titeln trennt nur
-   „Gedächt-nismahl-Ansprache" schlechter (320/360 px ab Stufe 1,3). */
+   (26.10.2026). Getrennt wird nach der Sprache, die der Titel trägt, mit fünf
+   Buchstaben nach dem Strich (index.css): „Versammlungsbibel-studium". Von den
+   Titeln trennt so nur „Gedächt-nismahl-Ansprache" schlechter (320/360 px ab
+   Stufe 1,3). */
 .aufgabe-titel {
   padding-block-start: 3px;
   font-size: calc(25px * var(--fs));
@@ -46,7 +44,6 @@
   letter-spacing: -0.01em;
   -webkit-hyphens: auto;
   hyphens: auto;
-  hyphenate-limit-chars: auto auto 5;
   overflow-wrap: break-word;
 }
 

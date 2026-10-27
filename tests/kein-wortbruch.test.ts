@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { dict, loadOverlay } from '../src/i18n/ui'
-import { cssDateien, deklarationen } from './css-quellen'
+import { cssDateien, cssRegeln, deklarationen } from './css-quellen'
 
 /**
  * **Kein Bruch mitten im Wort, auch bei großer Schrift** (T128).
@@ -68,14 +68,24 @@ describe('Bei großer Schrift bekommt ein langes Wort Platz oder trennt', () => 
   })
 
   // Chrome trennt so spät wie möglich. Ein Programmpunkt kommt aus den Daten und
-  // kann keine weiche Trennstelle an der Fuge tragen (26.10.2026); ein Name im
-  // Menü steht auch als Seitentitel, wo eine feste Stelle nicht passen muss (27.10.2026).
-  it.each([
-    ['aufgaben/aufgaben.css', '.aufgabe-titel', '„Versammlungsbibel-studium", nicht „…bibelstu-dium"'],
-    ['app/menue.css', '.leisten-text', '„Einstel-lungen", nicht „Einstellun-gen"'],
-    ['app/menue.css', '.menue-eintrag-text', '„asigna-ciones", nicht „asignacio-nes"'],
-  ] as const)('%s %s: nach dem Trennstrich bleiben fünf Buchstaben — %s', (datei, selektor, _beispiel) => {
-    expect(deklarationen(datei, selektor)).toMatch(/hyphenate-limit-chars:\s*auto auto 5;/)
+  // kann keine weiche Trennstelle an der Fuge tragen (26.10.2026). Gemessen am
+  // 27.10.2026 mit `ab.mjs` (29 Ansichten, acht Sprachen, 320–1440 px, Stufe
+  // 1–1,45): 683 späte Trennungen weniger, kein Bruch ohne Strich dazu.
+  it('nach dem Trennstrich bleiben fünf Buchstaben — „Versammlungsbibel-studium", „Einstel-lungen", nicht „…bibelstu-dium"', () => {
+    // An der Wurzel: Die Eigenschaft erbt, jede Stelle mit `hyphens: auto` bekommt sie.
+    expect(deklarationen('index.css', 'html')).toMatch(/hyphenate-limit-chars:\s*auto auto 5;/)
+  })
+
+  it('in der Trolley-Spalte nicht — dort passt „Königreichs-saal", mit der Grenze brach es „König-reichssa|al"', () => {
+    expect(deklarationen('trolleys/trolleys.css', '.trolley-spaltenkopf > *')).toMatch(/hyphenate-limit-chars:\s*auto;/)
+  })
+
+  it('die Grenze steht nur an der Wurzel und an der gemessenen Ausnahme', () => {
+    // Weitere Ausnahmen erst nach einer Messung — `ab.mjs` vergleicht jede Ansicht mit und ohne Regel.
+    const stellen = cssDateien().flatMap(([datei, css]) =>
+      cssRegeln(css).flatMap((r) => r.deklarationen.filter(([e]) => e === 'hyphenate-limit-chars').map(([, w]) => `${datei} ${r.selektoren.join(', ')}: ${w}`)),
+    )
+    expect(stellen).toEqual(['index.css html: auto auto 5', 'trolleys/trolleys.css .trolley-spaltenkopf > *: auto'])
   })
 
   it('steht ein Knopf neben dem Seitentitel, rückt der Knopf in die nächste Zeile, bevor der Titel trennt', () => {
@@ -439,7 +449,7 @@ describe('Ein Wort ohne Trennregeln seiner Sprache bekommt eine Trennstelle', ()
   const SHY = String.fromCharCode(0xad)
 
   beforeAll(async () => {
-    await Promise.all([loadOverlay('tr'), loadOverlay('pl'), loadOverlay('en'), loadOverlay('ro'), loadOverlay('ru')])
+    await Promise.all([loadOverlay('tr'), loadOverlay('pl'), loadOverlay('en'), loadOverlay('ro'), loadOverlay('ru'), loadOverlay('es')])
   })
 
   it('Türkisch: „Değerlendirme" passt in keiner Stufe in die schmale Leiste — es trennt nach „Değerlen"', () => {
@@ -473,6 +483,9 @@ describe('Ein Wort ohne Trennregeln seiner Sprache bekommt eine Trennstelle', ()
     ['en', 'spurAbgeschlossen', 'Complete|d', `Com${SHY}pleted`],
     ['en', 'spurNeuZugeteilt', 'Reassign|ed', `Reas${SHY}signed`],
     ['en', 'spurZusagen', 'Confirmatio|ns', `Confir${SHY}mations`],
+    // Spanisch trennt, mit fünf Buchstaben nach dem Strich (index.css) aber nur
+    // noch „Rea-signado" — zu lang fürs Drittel ab Stufe 1,3 (27.10.2026).
+    ['es', 'spurNeuZugeteilt', 'Reasignad|o', `Reasig${SHY}nado`],
   ] as const)('Spur, %s %s: brach bei 320 px „%s" — es trennt an seiner Trennstelle', (lang, schluessel, _bruch, wert) => {
     expect(dict(lang)[schluessel]).toBe(wert)
   })

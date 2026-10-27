@@ -3,6 +3,7 @@
 // per eingehängtem <style> bzw. Textknoten, nur im Tab).
 (() => {
   const NBSP = String.fromCharCode(0xa0)
+  const SHY = String.fromCharCode(0xad)
   const schlaf = (ms) => new Promise((r) => setTimeout(r, ms))
   const BUCHSTABE = /[\p{L}\p{M}\p{N}]/u
 
@@ -28,6 +29,10 @@
   }
 
   // Zeilen eines Elements: Zeichen für Zeichen die Oberkante, nur eigene Textknoten.
+  // Das erste Zeichen nach einem Trennstrich liefert zwei Rechtecke, eins davon
+  // (den Strich) am Ende der Zeile davor. Es zählt das der späteren Zeile — bis
+  // zum 27.10.2026 stand die Stelle um ein Zeichen daneben („Einstell|ungen",
+  // im Bild „Einstel-lungen").
   function zeilen(el) {
     const out = []
     let cur = ''
@@ -38,7 +43,7 @@
         const r = document.createRange()
         r.setStart(n, i)
         r.setEnd(n, i + 1)
-        const rc = [...r.getClientRects()].find((x) => x.width > 0 || x.height > 0)
+        const rc = [...r.getClientRects()].filter((x) => x.width > 0 || x.height > 0).reduce((a, x) => (a && a.top >= x.top ? a : x), null)
         if (!rc) {
           cur += n.data[i]
           continue
@@ -98,7 +103,9 @@
       if (BUCHSTABE.test(a.slice(-1)) && BUCHSTABE.test(b.slice(0, 1))) {
         const ohne = zeilenOhneNotumbruch(el)
         const gleich = JSON.stringify(ohne.z) === JSON.stringify(z)
-        out.push({ art: gleich ? 'getrennt' : 'im-wort', stelle })
+        // Buchstaben nach der Stelle bis zum Wortende — „Einstellun-gen": 3.
+        const nach = (bT.split(SHY).join('').match(/^[\p{L}\p{M}]+/u) ?? [''])[0].length
+        out.push({ art: gleich ? 'getrennt' : 'im-wort', stelle, nach })
       }
       if (/[:：]$/u.test(aT) && /^\p{Nd}/u.test(bT)) out.push({ art: 'zahl-getrennt', stelle })
       // „3 kişi", aber auch das Datum „7. September" / „7 września"

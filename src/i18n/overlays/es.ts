@@ -75,7 +75,7 @@ export default {
   "spurErsatzGesucht": "Se busca sustituto",
   "spurUebernommen": "Sustituido",
   "spurPlanerErfaehrt": "El planificador se entera",
-  "spurNeuZugeteilt": "Reasignado",
+  "spurNeuZugeteilt": "Reasig\u00adnado",
   "absageErklaerung": "El planificador se entera enseguida y asigna la tarea a otra persona.",
   "absageNachricht": "Mensaje al planificador (opcional)",
   "absageNachrichtBeispiel": "p. ej., ese día estoy de viaje",

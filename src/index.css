@@ -11,6 +11,16 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Wo getrennt wird (`hyphens: auto`), bleiben nach dem Strich fünf
+     Buchstaben — es erbt. Chrome trennt sonst so spät wie möglich:
+     „Versammlungsbibelstu-dium", „Einstellun-gen", „Подтвержде-ния"; so
+     „Versammlungsbibel-studium", „Einstel-lungen", „Подтвер-ждения".
+     Gemessen am 27.10.2026 (`ab.mjs` in docs/analyse/t128-umbruch): 29
+     Ansichten, acht Sprachen, 320–1440 px, Stufe 1–1,45 — 683 späte Trennungen
+     weniger, kein Bruch ohne Strich dazu. Weiche Trennstellen zählen nicht mit
+     („Confir|mări" bleibt). Kehrseite: Ist das letzte Glied kurz, trennt es
+     früher („Wo-chenende", „as-signment"). Ausgenommen: die Trolley-Spalte. */
+  hyphenate-limit-chars: auto auto 5;
 }
 
 /* Grundmaße der Leinwand (T121): Manrope 15,5 px, Zeilenhöhe 1,35. */

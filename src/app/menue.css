@@ -194,15 +194,12 @@
 
 /* „Zusammenkünfte" ragte bei Stufe 1,45 aus der Leiste am Desktop, „Notifications"
    lief unter den Zähler (T128). Seit die Leiste mit der Schrift wächst, passen
-   die Namen; was dennoch nicht passt, trennt oder bricht, statt hinauszuragen.
-   Nach dem Strich bleiben fünf Buchstaben wie in der schmalen Leiste: In der
-   Schublade bei 320 px und Stufe 1,45 stand sonst fett „asignacio-nes". */
+   die Namen; was dennoch nicht passt, trennt oder bricht, statt hinauszuragen. */
 .menue-eintrag-text {
   flex: 1;
   min-width: 0;
   -webkit-hyphens: auto;
   hyphens: auto;
-  hyphenate-limit-chars: auto auto 5;
   overflow-wrap: break-word;
 }
 
@@ -388,11 +385,8 @@
    großgeschriebenes englisches Wort — dort bricht `overflow-wrap` notfalls
    mitten im Wort. Für „Değerlendirme" steht deshalb ein weiches Trennzeichen
    im Wörterbuch (T128), ebenso für „Assignments" (fett „Assignment|s").
-   Chrome trennt so spät wie möglich: „Einstellun-gen", „Asignacio-nes",
-   „Налаштува-ння". Mit mindestens fünf Buchstaben nach dem Strich trennt es
-   davor — „Einstel-lungen", „Asigna-ciones", „Налашту-вання". Gemessen in zwölf
-   Sprachen, Stufe 0,9–1,45, normal und fett: kein Bruch ohne Strich kam hinzu,
-   nichts ragt hinaus (27.10.2026). */
+   Mit fünf Buchstaben nach dem Strich (index.css) steht „Einstel-lungen" statt
+   „Einstellun-gen". */
 .leisten-text {
   max-width: 100%;
   font-size: calc(12px * var(--fs));
@@ -401,7 +395,6 @@
   text-align: center;
   -webkit-hyphens: auto;
   hyphens: auto;
-  hyphenate-limit-chars: auto auto 5;
   overflow-wrap: anywhere;
 }
 
