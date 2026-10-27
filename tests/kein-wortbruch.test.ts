@@ -28,6 +28,8 @@ const TRENNT = [
   ['bausteine/bausteine.css', '.schalter-text'],
   ['components/overlays.css', '.sheet-title'],
   ['app/menue.css', '.menue-eintrag-text'],
+  // Die schmale Leiste am Tablet: unter dem Zeichen 76 px für „Zusammenkünfte".
+  ['app/menue.css', '.leisten-text'],
   [EINSTELLUNGEN, '.einst-zeile-name'],
   ['bausteine/bausteine.css', '.spur-name'],
   // Die Spalte ist so breit wie die des Plans darunter: „Königreichssaal" ragte bei 320 px hinaus.
@@ -65,10 +67,15 @@ describe('Bei großer Schrift bekommt ein langes Wort Platz oder trennt', () => 
     expect(deklarationen(datei, selektor)).toMatch(/overflow-wrap:\s*(break-word|anywhere)/)
   })
 
-  it('in der großen Karte bleiben nach dem Trennstrich fünf Buchstaben — „Versammlungsbibel-studium", nicht „…bibelstu-dium"', () => {
-    // Chrome trennt so spät wie möglich; ein Programmpunkt kommt aus den Daten
-    // und kann keine weiche Trennstelle an der Fuge tragen (26.10.2026).
-    expect(deklarationen('aufgaben/aufgaben.css', '.aufgabe-titel')).toMatch(/hyphenate-limit-chars:\s*auto auto 5;/)
+  // Chrome trennt so spät wie möglich. Ein Programmpunkt kommt aus den Daten und
+  // kann keine weiche Trennstelle an der Fuge tragen (26.10.2026); ein Name im
+  // Menü steht auch als Seitentitel, wo eine feste Stelle nicht passen muss (27.10.2026).
+  it.each([
+    ['aufgaben/aufgaben.css', '.aufgabe-titel', '„Versammlungsbibel-studium", nicht „…bibelstu-dium"'],
+    ['app/menue.css', '.leisten-text', '„Einstel-lungen", nicht „Einstellun-gen"'],
+    ['app/menue.css', '.menue-eintrag-text', '„asigna-ciones", nicht „asignacio-nes"'],
+  ] as const)('%s %s: nach dem Trennstrich bleiben fünf Buchstaben — %s', (datei, selektor, _beispiel) => {
+    expect(deklarationen(datei, selektor)).toMatch(/hyphenate-limit-chars:\s*auto auto 5;/)
   })
 
   it('steht ein Knopf neben dem Seitentitel, rückt der Knopf in die nächste Zeile, bevor der Titel trennt', () => {
@@ -468,6 +475,13 @@ describe('Ein Wort ohne Trennregeln seiner Sprache bekommt eine Trennstelle', ()
     ['en', 'spurZusagen', 'Confirmatio|ns', `Confir${SHY}mations`],
   ] as const)('Spur, %s %s: brach bei 320 px „%s" — es trennt an seiner Trennstelle', (lang, schluessel, _bruch, wert) => {
     expect(dict(lang)[schluessel]).toBe(wert)
+  })
+
+  it('Englisch: „Assignments" brach fett in der schmalen Leiste „Assignment|s" — es trennt nach „Assign"', () => {
+    expect(dict('en').navAufgaben).toBe(`Assign${SHY}ments`)
+    // Nicht in „My Assignments": Dort zog Chrome „My Assign-ments" dem Umbruch am
+    // Leerzeichen vor — in der Leiste am Desktop schon bei Stufe 1 (27.10.2026).
+    expect(dict('en').navAufgabenLong).toBe('My Assignments')
   })
 
   it('Russisch: Chrome trennt „Планирование" so spät wie möglich („Планирован-ие") — die Trennstelle steht an der Silbe', () => {

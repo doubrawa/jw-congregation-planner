@@ -8,7 +8,7 @@ import type { Dict } from '../ui'
 
 export default {
   "congLabel": "{name} Congregation",
-  "navAufgaben": "Assignments",
+  "navAufgaben": "Assign\u00adments",
   "navAufgabenLong": "My Assignments",
   "navPersonen": "People",
   "navEinstellungen": "Settings",
