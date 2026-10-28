@@ -30,6 +30,36 @@ export function arg(name, vorgabe) {
 }
 
 /**
+ * Bis die Seite in Sprache und Schriftstufe dasteht und die Schriften geladen
+ * sind — ein Ausdruck für `werte`. Aus ab.mjs (27.10.2026), gemeinsam seit
+ * menue.mjs; breit.mjs und wahl.mjs warten noch mit eigenen Zeiten.
+ */
+export const bereit = (lang, fs) => `(async () => {
+  const t0 = performance.now()
+  while (performance.now() - t0 < 10000) {
+    const fsJetzt = getComputedStyle(document.documentElement).getPropertyValue('--fs').trim()
+    if (document.documentElement.lang === ${JSON.stringify(lang)} && fsJetzt === ${JSON.stringify(fs)} && document.querySelector('.app-main')) break
+    await new Promise((r) => setTimeout(r, 100))
+  }
+  await document.fonts.ready
+  await new Promise((r) => setTimeout(r, 800))
+})()`
+
+/** Bis `sel` dasteht (oder die Zeit um ist) — `true`, wenn es dasteht. Ein Ausdruck für `werte`. */
+export const warteAuf = (sel, ms = 8000) => `(async () => {
+  const t0 = performance.now()
+  while (performance.now() - t0 < ${ms}) {
+    if (document.querySelector(${JSON.stringify(sel)})) {
+      await document.fonts.ready
+      await new Promise((r) => setTimeout(r, 600))
+      return true
+    }
+    await new Promise((r) => setTimeout(r, 100))
+  }
+  return false
+})()`
+
+/**
  * Chrome starten und verbinden. Parallele Läufe brauchen je eigenen `port` und
  * eigenes `profil` (Chrome sperrt es). `ohneWoerterbuch` misst ohne
  * Trennregeln — und ohne dass der Komponenten-Updater sie nachlädt.

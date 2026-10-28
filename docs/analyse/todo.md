@@ -8174,6 +8174,58 @@ Messung sucht gebrochene Wörter und Überstände — untereinander bricht nicht
   gemeinte Testdatei gegengeprüft. Geprüft: `tsc -b`, oxlint (nur
   `Spur.tsx:112`), vitest (327 Dateien, 6870 Tests), `vite build`.
 
+**Nachtrag 26. bis 28. Oktober 2026 — Trennen in Text aus Daten, im Menü und
+app-weit.** Die Commits stehen hier, weil bis zum 28. Oktober keiner von ihnen
+todo.md berührte:
+
+- **26. Oktober** (Betreiber, mit Bild vom Start am Handy: „wenn der name zu
+  zuteilung zu lang ist, sollte umgebrochen werden"): Der Titel der großen
+  Aufgabenkarte trennt (`332f2f1d`), mit fünf Buchstaben nach dem Strich
+  („Versammlungsbibel-studium") und in der Sprache des Programms. Die
+  Handbuchbilder trennen seitdem wie die App (`53758293`): Dem Chrome-Profil
+  der Aufnahmen fehlten die Trennwörterbücher.
+- **27. Oktober:** Die Namen im Menü trennen nicht mehr kurz vor dem Ende
+  (`a2e578d5`), „Assign-ments" in der schmalen Leiste mit weicher
+  Trennstelle; das Review dazu (`38710e98`); danach die Grenze von fünf
+  Buchstaben einmal an `html` statt an drei Stellen (`f427e8fb`; 3 648 Fälle
+  gemessen, 683 späte Trennungen weniger, in keinem Fall mehr). Hingenommen:
+  „Wo-chenende" (Auswertung, 320 px), „as-signment" (Film, en). Offen blieb
+  laut `a2e578d5`: in der Schublade bei 320 px und Stufe 1,45 fett
+  „My / Assignment|s".
+- **28. Oktober — der Zähler rückt um.** Neben dem Zähler blieben dem Namen in
+  der Schublade bei 320 px und Stufe 1,45 142 px, ohne ihn 181 px. „Assignments"
+  passt in 181 px, und ein großgeschriebenes englisches Wort trennt Chrome nie.
+  Eine weiche Trennstelle schied aus: In „My Assignments" zieht Chrome
+  „My Assign-ments" dem Umbruch am Leerzeichen vor (`a2e578d5`). Jetzt rückt der
+  Zähler in die nächste Zeile, wenn der Name neben ihm nicht ganz passt — das
+  Muster vom Planen (`.platz`): `.menue-eintrag` bricht um, der Name ist
+  `flex: 1 1 0` ohne `min-width: 0` und höchstens so breit wie die Zeile neben
+  dem Zeichen, der Zähler steht mit `margin-inline-start: auto` am Ende der
+  Zeile. Wo die Sprache Trennregeln hat, trennt der Name, bevor der Zähler
+  rückt („Zusammen-künfte", „asigna-ciones" wie vorher). Die Notbremse rechnet
+  mit dem Abstand der Zeile (`--eintrag-abstand`, in der Leiste am Desktop 12
+  statt 14 px): Fest gerechnet war jeder Name dort 2 px schmaler als vorher —
+  kein Bruch, keine Höhe änderte sich, gefunden hat es erst der Vergleich der
+  Spaltenbreiten. Gemessen im echten Chrome mit Trennwörterbüchern, zwölf
+  Sprachen, Stufe 0,9–1,45, normal und fett, je Fall vorher und nachher: In
+  der Schublade bei 320 und 360 px (240 Fälle) ist der Bruch ohne Strich fort
+  (en, 320 px, Stufe 1,45, normal wie fett) — der Zähler rückt nur dort um und
+  steht dann am Ende der Zeile, der Eintrag ist 74 statt 100 px hoch. In den
+  übrigen 238 Fällen und in allen 240 der Leiste am Desktop (1180 und 1440 px)
+  hat jeder Eintrag dieselbe Höhe und Spaltenbreite wie vorher. Nur nachher
+  gemessen: die Schublade bei 768 px (120 Fälle) ohne Bruch und ohne
+  umgerückten Zähler; von rechts nach links steht ein umgerückter Zähler am
+  linken Ende (ar, Bild mit erzwungenem Umbruch). Nebenbefund: Im Kopf der
+  Schublade ragt „Versammlung" (aus „Versammlung.app") bei 320 px und Stufe
+  1,45 in allen Sprachen 11 px aus seinem Kasten — steht in „Was offen ist und
+  warum". Werkzeug: `menue.mjs` (neu) misst Schublade und Leiste (`--leiste`)
+  samt Anordnung, mit `--css` A gegen B im selben Laden wie `ab.mjs`; das
+  Warten auf Sprache, Schriftstufe und Ansicht (`bereit`, `warteAuf`) teilen
+  sich beide jetzt aus `chrome.mjs`. Proben: `kein-wortbruch.test.ts` (der
+  Zähler rückt um); Mutationsprobe fünf Einträge neu,
+  `umbruch-menue-eintrag-trennt` mit neuem Anker, alle sechs bewacht. Geprüft:
+  `tsc -b`, oxlint (nur `Spur.tsx:112`), vitest (341 Dateien, 7112 Tests).
+
 ---
 
 ## Aufgenommen am 18. Oktober 2026 — Fester Leiter des Wachtturm-Studiums (T129)
@@ -8814,7 +8866,7 @@ Handbuch (`planer.md`, „Engpässe") und das Bild `planer-auswertung` neu.
 
 ## Fortschritt
 
-Stand 25. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 28. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -8855,29 +8907,41 @@ Zeichenzeile.
 > `grep -E '^### T[0-9]+ ' docs/analyse/todo.md | grep -vE '✅|⛔'` lässt die
 > offenen übrig.
 
-**Der Betrieb steht auf dem Stand von `main` (nachgesehen am 21. Oktober
-2026, mittags):** Das Frontend geht mit jedem Push hinaus; vor diesem Eintrag
-lief `bccfe06` (`sw.js` nannte `shell-bccfe06`), der Kopf von `main`, der
-letzte Pages-Lauf grün. Die sieben Edge Functions tragen die Versionen ihrer
-letzten Deploys: `send-plan` 36, `send-reminders` 62 und `import-week` 54
-(19. Oktober, 22:12 Uhr, der Rest von T42 aus der Arbeitskopie, committet eine
-Minute später als `35538531`), `substitute` 44, `trolley` 8, `anmelden` 11 und
-`send-invite` 24 (16. Oktober, 15:46 Uhr). Danach hat nur T131 (`7e5a09c3`)
-Code der Functions geändert, `_shared/planung.ts` — ohne Folge: Keine Function
-ruft `folgtDemVorsitz` auf (nachgesehen), und `istEroeffnung` entscheidet wie
-vorher. `zuteilen` ist seit dem 15. Oktober gelöscht. Im Schema kam zuletzt das
-Aufräumen von `auth.sessions` dazu (`c5979343`), in der Datenbank da
-(`alte_daten_loeschen` nennt die Tabelle), davor `groups.ohne_reinigung`
-(T127), ebenfalls da. Die Zeitpläne laufen: das Aufräumen aus T125 (montags
-03:30 UTC) zuletzt am 19. Oktober, die Erinnerungen (täglich 08:00 UTC) zuletzt
-am 21. Oktober, beide erfolgreich und ohne Fehlschlag in den sieben Tagen
-davor. Auf GitHub steht nur `main`, ohne offene PRs und Issues.
+**Der Betrieb steht auf dem Stand von `main` (nachgesehen am 28. Oktober
+2026, abends):** Das Frontend geht mit jedem Push hinaus; vor diesem Eintrag
+lief `f427e8f` (`sw.js` nannte `shell-f427e8f`), der Kopf von `main`, die
+letzten Pages-Läufe grün. Die sieben Edge Functions tragen die Versionen ihrer
+letzten Deploys: `substitute` 46 (25. Oktober, 08:17 Uhr, T142 mit Review),
+`anmelden` 12 und `send-invite` 25 (25. Oktober, 00:01 Uhr, der Gruß mit dem
+Nachnamen), `send-plan` 36, `send-reminders` 62 und `import-week` 54
+(19. Oktober, 22:12 Uhr) und `trolley` 8 (16. Oktober). Seither hat sich im
+Code der älteren nur `_shared/planung.ts` geändert (T131, T133, T142), und
+zwar allein `folgtDemVorsitz` und `schlussgebetVorOrt` (dafür ist
+`vortragDesVorsitzenden` fort) — keine Function ruft sie auf, nur der Client
+(nachgesehen über alle Importe, auch die mittelbaren). Am laufenden Code
+nachgemessen (`functions download`): In den vier Functions sind 62 Dateien
+gleich `HEAD`, abweichend nur `_shared/planung.ts`, überall der Stand vom
+16. Oktober. Ein Deploy ist dafür nicht nötig. Im Schema kam zuletzt das Entfernen von `persons.tel` dazu
+(`9865981e`, am 25. Oktober nach dem Push eingespielt). Die Zeitpläne laufen:
+die Erinnerungen (täglich 08:00 UTC) zuletzt am 28. Oktober, das Aufräumen aus
+T125 (montags 03:30 UTC) zuletzt am 26. Oktober, beide ohne Fehlschlag in den
+acht Tagen davor. Auf GitHub steht nur `main`, ohne offene PRs und Issues.
 
 **Beim Betreiber liegen, außerhalb des Repos:** Resend mit dem Secret
-`INVITE_FROM` (am 21. Oktober weiter nicht gesetzt) und das Abschalten der
-Registrierung (`disable_signup` am 21. Oktober noch `false`). Einen eigenen
-SMTP-Server braucht es nicht mehr: Ohne Kennwort und Registrieren verschickt
-Supabase Auth selbst keine Mails (siehe „Was offen ist und warum").
+`INVITE_FROM` (am 28. Oktober weiter nicht gesetzt; `RESEND_API_KEY` steht)
+und das Abschalten der Registrierung (`disable_signup` am 28. Oktober noch
+`false`). Einen eigenen SMTP-Server braucht es nicht mehr: Ohne Kennwort und
+Registrieren verschickt Supabase Auth selbst keine Mails (siehe „Was offen ist
+und warum").
+
+**Stand vom 21. Oktober** (`main` vom 21. Oktober, mittags): Vor jenem Eintrag
+lief `bccfe06`. `send-plan` 36, `send-reminders` 62 und `import-week` 54
+(19. Oktober, 22:12 Uhr, der Rest von T42 aus der Arbeitskopie, committet eine
+Minute später als `35538531`), `substitute` 44, `trolley` 8, `anmelden` 11 und
+`send-invite` 24 (16. Oktober, 15:46 Uhr). Danach hatte nur T131 (`7e5a09c3`)
+Code der Functions geändert, `_shared/planung.ts` — ohne Folge. `zuteilen` ist
+seit dem 15. Oktober gelöscht. Im Schema kam damals zuletzt das Aufräumen von
+`auth.sessions` dazu (`c5979343`), davor `groups.ohne_reinigung` (T127).
 
 **Stand vom 10. Oktober** (`main` vom 5. Oktober): Das Frontend ging mit jedem
 Push hinaus; vor jenem Eintrag lief `02094be` (`sw.js` nannte `shell-02094be`), der Kopf von `main`. Die
@@ -9234,7 +9298,39 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 ### Was offen ist und warum
 
-**Stand 21. Oktober 2026, alles Offene an einer Stelle** (gemessen: 131
+**Stand 28. Oktober 2026, alles Offene an einer Stelle** (gemessen: 145 Köpfe,
+offen nur noch T121; keine PR, kein Issue, außer `main` kein Zweig, auch lokal
+nicht; `sw.js` = HEAD (`shell-f427e8f`); die Functions passen zu `main` — siehe
+„Der Betrieb steht auf dem Stand von `main`" unter „Fortschritt"; Secrets ohne
+`INVITE_FROM`, `disable_signup` noch `false`; die Erinnerungen am 28. Oktober
+und das Aufräumen am 26. Oktober erfolgreich, kein Fehlschlag in acht Tagen).
+Neu in der Tabelle: der **Umzug weg von Supabase** (erwogen am 25. Oktober, bis
+dahin nur im Memory) und der **App-Name im Kopf der Schublade** (gefunden bei
+der Messung vom 28. Oktober). Das „Offen:" aus `a2e578d5` — in der Schublade
+brach bei 320 px und Stufe 1,45 „My / Assignment|s" — stand nur in der
+Commit-Nachricht; am 28. Oktober behoben (unten und bei T128). Beschlossenes ist
+im Code nichts mehr offen; was aussteht, braucht den Betreiber, ein Gerät oder
+eine Entscheidung.
+
+| | Punkt | Warum offen |
+| --- | --- | --- |
+| **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124; am 28. Oktober: noch nicht). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
+| **Bewusst offen** | Der Grund nach dem Abmelden ohne Versammlung | Den Satz „Dein Konto gehört zu keiner Versammlung mehr" zeigt die Anmeldung nur, wenn das Laden die fehlende Mitgliedschaft findet — in der ersten Stunde nach dem Entfernen. Danach scheitert schon die Erneuerung des Tokens (das Konto ist gelöscht), supabase-js meldet `SIGNED_OUT` ohne Grund, und die Anmeldung steht ohne Satz da. Ihn auch dann zu zeigen, hieße erzwungenes und eigenes Abmelden zu unterscheiden — Betreiber am 21. Oktober: „wir müssen da keine komplexe logik einbauen" (Review vom 21. Oktober) |
+| **Bewusst offen** | Altes Zugangstoken nach dem Entfernen | Ein schon ausgestelltes Token gilt bis zu seinem Ablauf (höchstens eine Stunde) und sieht ohne Mitgliedschaft nichts. Wird die Person in dieser Stunde neu eingeladen, gilt es für das neue Konto: Es trägt wieder ihre Person-Id (`anmelden`). Vermerkt am Trigger in `schema.sql` (Review vom 21. Oktober) |
+| **Zurückgestellt** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт". Betreiber am 16. Oktober: „bleibt erst mal so" — wieder aufnehmen, wenn ein Muttersprachler prüft; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
+| **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
+| **Betreiber** | Mitgliedsrechte-Probe nach „Alles Planen" | `node scripts/mitgliedsrechte-probe.mjs` — die Testversammlung `edac60cb` und `.env.probe` stehen noch; umgedreht sind (35), (38)–(40), (42), (50), (53), (55), (60), neu (80) und (81). Seit dem 19. Oktober auch (82)–(85): die Leseregel der Abwesenheiten vom 17. Oktober (`absences_select`: über acht Wochen zurück nur, wer zuteilt, und die eigene) — im Skript und an der Attrappe geprüft, live noch nicht gefahren |
+| **Gerät** | Dunkle Bedienleiste am Handy | wirkt erst mit der aktualisierten WebAPK (`about://webapks` → „Update", oder neu installieren) |
+| **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
+| **Betreiber** | Umzug weg von Supabase | Am 25. Oktober erwogen: Supabase ist eine US-Firma, und die Daten zeigen die Religionszugehörigkeit (Art. 9 DSGVO). Empfohlen: die quelloffene Supabase-Software selbst auf einem Server in Deutschland. Betreiber: „Nicht jetzt, ich überlege noch." Fällt die Entscheidung dafür, legt der Betreiber Konto, Server und Vertrag an; Einrichten und Umziehen per Skript macht Claude |
+| **Offen** | Der App-Name im Kopf der Schublade | Bei 320 px und Stufe 1,45 ragt „Versammlung" (aus „Versammlung.app") in allen zwölf Sprachen 11 px aus seinem Kasten, bis an den Knopf ✕ heran — gemessen am 28. Oktober im echten Chrome; bei 360 px und bis Stufe 1,3 nicht. Ein Markenname trennt schlecht: ob er trennt, kleiner wird oder der Knopf umrückt, ist zu entscheiden |
+| **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
+| **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
+| **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
+| **Bewusst offen** | Das Blatt nach einem langsamen Start | Kommen die Daten erst nach dem Vorgriff (4 s), legt das Blatt beim Öffnen eine seither neue Zuteilung nicht vor (nach über einer Stunde ebenso seit `30a5a80d`). Betreiber am 19. Oktober: nur der eigene Hinweis — der Streifen sagt seitdem „Verbindung langsam" statt „Offline", solange die Daten noch kommen können; das Blatt bleibt so |
+| **Bewusst offen** | `sprache-fehlt` beim Wochen-Import | zählt weiter als Ende des Kalenders. Strenger gäbe es im Alltag Fehlalarme; betroffen wäre nur eine anderssprachige Versammlung mit Geschichte (Review vom 18. Oktober, `42dff943`) |
+
+**Der Stand vom 21. Oktober 2026** (gemessen: 131
 Köpfe, offen nur noch T121; keine PR, kein Issue, außer `main` kein Zweig mehr,
 auch lokal nicht — der Zweig `claude/reverent-mcnulty-649811` samt Worktree ist
 fort; `sw.js` = HEAD (`shell-bccfe06`); die Functions seit dem 19. Oktober,
@@ -9261,22 +9357,6 @@ direkt aus `Intl` kamen (gemessen: 180 Funde am Handy, 142 hinter einem Klick
 — jetzt 0), danach die Kennzahlen der Auswertung, die wieder nebeneinander
 stehen (`bccfe064`). Beschlossenes ist im Code nichts mehr offen; was aussteht,
 braucht den Betreiber, ein Gerät oder eine Entscheidung.
-
-| | Punkt | Warum offen |
-| --- | --- | --- |
-| **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124; am 21. Oktober: noch nicht). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
-| **Bewusst offen** | Der Grund nach dem Abmelden ohne Versammlung | Den Satz „Dein Konto gehört zu keiner Versammlung mehr" zeigt die Anmeldung nur, wenn das Laden die fehlende Mitgliedschaft findet — in der ersten Stunde nach dem Entfernen. Danach scheitert schon die Erneuerung des Tokens (das Konto ist gelöscht), supabase-js meldet `SIGNED_OUT` ohne Grund, und die Anmeldung steht ohne Satz da. Ihn auch dann zu zeigen, hieße erzwungenes und eigenes Abmelden zu unterscheiden — Betreiber am 21. Oktober: „wir müssen da keine komplexe logik einbauen" (Review vom 21. Oktober) |
-| **Bewusst offen** | Altes Zugangstoken nach dem Entfernen | Ein schon ausgestelltes Token gilt bis zu seinem Ablauf (höchstens eine Stunde) und sieht ohne Mitgliedschaft nichts. Wird die Person in dieser Stunde neu eingeladen, gilt es für das neue Konto: Es trägt wieder ihre Person-Id (`anmelden`). Vermerkt am Trigger in `schema.sql` (Review vom 21. Oktober) |
-| **Zurückgestellt** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт". Betreiber am 16. Oktober: „bleibt erst mal so" — wieder aufnehmen, wenn ein Muttersprachler prüft; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
-| **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
-| **Betreiber** | Mitgliedsrechte-Probe nach „Alles Planen" | `node scripts/mitgliedsrechte-probe.mjs` — die Testversammlung `edac60cb` und `.env.probe` stehen noch; umgedreht sind (35), (38)–(40), (42), (50), (53), (55), (60), neu (80) und (81). Seit dem 19. Oktober auch (82)–(85): die Leseregel der Abwesenheiten vom 17. Oktober (`absences_select`: über acht Wochen zurück nur, wer zuteilt, und die eigene) — im Skript und an der Attrappe geprüft, live noch nicht gefahren |
-| **Gerät** | Dunkle Bedienleiste am Handy | wirkt erst mit der aktualisierten WebAPK (`about://webapks` → „Update", oder neu installieren) |
-| **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
-| **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
-| **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
-| **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
-| **Bewusst offen** | Das Blatt nach einem langsamen Start | Kommen die Daten erst nach dem Vorgriff (4 s), legt das Blatt beim Öffnen eine seither neue Zuteilung nicht vor (nach über einer Stunde ebenso seit `30a5a80d`). Betreiber am 19. Oktober: nur der eigene Hinweis — der Streifen sagt seitdem „Verbindung langsam" statt „Offline", solange die Daten noch kommen können; das Blatt bleibt so |
-| **Bewusst offen** | `sprache-fehlt` beim Wochen-Import | zählt weiter als Ende des Kalenders. Strenger gäbe es im Alltag Fehlalarme; betroffen wäre nur eine anderssprachige Versammlung mit Geschichte (Review vom 18. Oktober, `42dff943`) |
 
 Am 19. Oktober spät herausgenommen: **Phase 7** (T42, der Rest), **T131**
 (der Leser folgt am Wochenende dem Vorsitz), **T130** (den Reiter
@@ -9366,6 +9446,14 @@ zeigt erst nur die Wahl, die Wochen haben eine eigene Seite, und Zurück führt
 dorthin, woher man kam. Aufgenommen und am Abend umgesetzt: **T145** — die
 Engpässe zeigen nur noch die knappen Bereiche, die Liste „Alle Bereiche" ist
 fort.
+
+Am 26. bis 28. Oktober (Betreiber, mit Bild vom Start am Handy: „wenn der name
+zu zuteilung zu lang ist, sollte umgebrochen werden"): **Trennen in Text aus
+Daten, im Menü und app-weit** — der Titel der großen Aufgabenkarte trennt, nach
+dem Strich bleiben überall fünf Buchstaben, und im Menü rückt der Zähler unter
+einen Namen, der neben ihm nicht ganz passt. Einzeln bei T128 („Nachtrag 26.
+bis 28. Oktober"); bis zum 28. Oktober hatte keiner dieser Commits todo.md
+berührt.
 
 Am 19. Oktober in die Tabelle aufgenommen: `sprache-fehlt` und
 `auth.sessions` (bis dahin nur in einer Commit-Nachricht, `42dff943`, und bei

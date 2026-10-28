@@ -220,6 +220,23 @@ describe('Was neben einem Namen steht, rückt darunter, statt ihn zu zerbrechen'
     expect(deklarationen('planen/planen.css', '.platz-rolle')).toMatch(/margin-inline-start:\s*auto/)
   })
 
+  it('im Menü rückt der Zähler unter den Namen — „My / Assignment|s" brach in der Schublade bei 320 px und Stufe 1,45', () => {
+    // Ein großgeschriebenes englisches Wort trennt Chrome nie (28.10.2026).
+    const M = 'app/menue.css'
+    expect(deklarationen(M, '.menue-eintrag')).toMatch(/flex-wrap:\s*wrap/)
+    const name = deklarationen(M, '.menue-eintrag-text')
+    expect(name).toMatch(/flex:\s*1 1 0/)
+    expect(name).not.toMatch(/min-width:\s*0/)
+    // Notbremse: höchstens so breit wie die Zeile neben dem Zeichen (24 px und der Abstand).
+    expect(name).toMatch(/max-width:\s*calc\(100% - 24px - var\(--eintrag-abstand\)\)/)
+    // Mit dem Abstand der Zeile — mit festen 14 px war der Name in der Leiste am
+    // Desktop (12 px) 2 px schmaler als vorher.
+    expect(deklarationen(M, '.menue-eintrag')).toMatch(/gap:\s*4px var\(--eintrag-abstand\)/)
+    expect(deklarationen(M, '.leiste .menue-eintrag')).toMatch(/--eintrag-abstand:\s*12px/)
+    // Der Zähler bleibt am Ende der Zeile, auch darunter.
+    expect(deklarationen(M, '.menue-zahl')).toMatch(/margin-inline-start:\s*auto/)
+  })
+
   it('in den Erinnerungen rückt die Einstellung unter den Text — „Pierwsz|e przypo|mnienie" brach bei 320 px', () => {
     expect(deklarationen('einstellungen/erinnerungen.css', '.erin-inhalt')).toMatch(/flex-wrap:\s*wrap/)
     const text = deklarationen('einstellungen/erinnerungen.css', '.erin-text')
@@ -494,6 +511,7 @@ describe('Ein Wort ohne Trennregeln seiner Sprache bekommt eine Trennstelle', ()
     expect(dict('en').navAufgaben).toBe(`Assign${SHY}ments`)
     // Nicht in „My Assignments": Dort zog Chrome „My Assign-ments" dem Umbruch am
     // Leerzeichen vor — in der Leiste am Desktop schon bei Stufe 1 (27.10.2026).
+    // Dort rückt stattdessen der Zähler um (28.10.2026, oben).
     expect(dict('en').navAufgabenLong).toBe('My Assignments')
   })
 

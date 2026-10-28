@@ -14,7 +14,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { arg, profilOrdner, schlaf, starteChrome } from './chrome.mjs'
+import { arg, bereit, profilOrdner, schlaf, starteChrome, warteAuf } from './chrome.mjs'
 
 const HIER = dirname(fileURLToPath(import.meta.url))
 const BASIS = `http://localhost:${arg('port', '5173')}/demo.html`
@@ -95,32 +95,6 @@ const ZIELE = {
   druck: { hash: 's=programm&tab=mid&pl=1', warte: '.prog-title', medium: 'print', extra: true },
 }
 const NAMEN = arg('ziele', null) ? String(arg('ziele')).split(',') : Object.keys(ZIELE).filter((n) => !ZIELE[n].extra)
-
-/** Bis die Seite in Sprache und Schriftstufe dasteht und die Schriften geladen sind. */
-const bereit = (lang, fs) => `(async () => {
-  const t0 = performance.now()
-  while (performance.now() - t0 < 10000) {
-    const fsJetzt = getComputedStyle(document.documentElement).getPropertyValue('--fs').trim()
-    if (document.documentElement.lang === ${JSON.stringify(lang)} && fsJetzt === ${JSON.stringify(fs)} && document.querySelector('.app-main')) break
-    await new Promise((r) => setTimeout(r, 100))
-  }
-  await document.fonts.ready
-  await new Promise((r) => setTimeout(r, 800))
-})()`
-
-/** Bis `sel` dasteht (oder die Zeit um ist) — `true`, wenn es dasteht. */
-const warteAuf = (sel, ms = 8000) => `(async () => {
-  const t0 = performance.now()
-  while (performance.now() - t0 < ${ms}) {
-    if (document.querySelector(${JSON.stringify(sel)})) {
-      await document.fonts.ready
-      await new Promise((r) => setTimeout(r, 600))
-      return true
-    }
-    await new Promise((r) => setTimeout(r, 100))
-  }
-  return false
-})()`
 
 /**
  * Sperrt die Regel auch eine weiche Trennstelle? Je ein Wort mit vier
