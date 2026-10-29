@@ -2184,9 +2184,11 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
    * der Antwort der Function `trolley`, die schon geschrieben hat, ebenso die
    * Anmelde-Links aus der Antwort von `send-invite` (Phase 8). Das Entfernen
    * eines Trolleys steht seit dem 15.10.2026 nicht mehr hier: Es räumt ein
-   * wartendes Schreiben ab (`persist.ts`).
+   * wartendes Schreiben ab (`persist.ts`). Ebenso die drei Schritte des
+   * Tauschens (T153) aus den Antworten der Function `tauschen`: die Anfrage,
+   * ihr Ende und der Tausch selbst — samt Wochen und beiden Zusagen.
    */
-  const AUS_DER_DATENBANK = new Set(['hydrate', 'setNotifs', 'trolleyTermin', 'linksAusgestellt'])
+  const AUS_DER_DATENBANK = new Set(['hydrate', 'setNotifs', 'trolleyTermin', 'linksAusgestellt', 'tauschAngefragt', 'tauschWeg', 'getauscht'])
 
   const faelle = (): Array<[string, string]> => reducerFaelle(roh(REDUCER))
 
@@ -2222,12 +2224,13 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
    * Beide Einträge haben in `persist.ts` einen Grund; ein dritter soll nicht
    * nebenbei entstehen.
    */
-  it('nur die drei begründeten Aktionen umgehen den Wochen-Schreibweg', () => {
+  it('nur die vier begründeten Aktionen umgehen den Wochen-Schreibweg', () => {
     // Seit dem 4.10.2026 auch `platzUebernehmen`: Den offenen Platz trägt wie
-    // beim Einspringen die Edge Function ein.
+    // beim Einspringen die Edge Function ein. Seit dem 29.10.2026 `getauscht`
+    // (T153): Beide Wochen hat die Function `tauschen` schon geschrieben.
     const liste = /const OHNE_WOCHENSCHREIBEN[^=]*=[^[]*\[([^\]]*)\]/.exec(roh(PERSIST))?.[1]
     const namen = (liste ?? '').split(',').map((n) => n.trim().replace(/'/g, '')).filter(Boolean)
-    expect(namen).toEqual(['hydrate', 'takeSubstitute', 'platzUebernehmen'])
+    expect(namen).toEqual(['hydrate', 'takeSubstitute', 'platzUebernehmen', 'getauscht'])
   })
 
   it('und die Ausnahmen sind wirklich welche', () => {

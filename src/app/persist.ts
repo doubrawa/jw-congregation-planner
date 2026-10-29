@@ -50,7 +50,7 @@ import {
 import { helperKeyParts } from '../data/planning'
 import { supabase } from '../lib/supabase'
 import type { FsInstance, Person, Trolley, Week } from '../data/types'
-import type { AppAction, AppState } from './context'
+import { type AppAction, type AppState, OHNE_ENTZUG } from './context'
 import { kontoGehtMit } from './eigene-person'
 
 /**
@@ -570,8 +570,10 @@ const GEBUENDELT: readonly AppAction['type'][] = [
  *   planer-only, der Einspringende dürfte es selbst gar nicht.
  * - `platzUebernehmen` aus demselben Grund (4.10.2026): Einen offenen Platz
  *   trägt die Edge Function ein, nicht der Verkündiger selbst.
+ * - `getauscht` ebenso (T153): Beide Wochen hat die Function `tauschen`
+ *   schon geschrieben, bevor der Bildschirm davon erfährt.
  */
-const OHNE_WOCHENSCHREIBEN: readonly AppAction['type'][] = ['hydrate', 'takeSubstitute', 'platzUebernehmen']
+const OHNE_WOCHENSCHREIBEN: readonly AppAction['type'][] = ['hydrate', 'takeSubstitute', 'platzUebernehmen', 'getauscht']
 
 /**
  * **Was sich in einer Liste geändert hat, in die Datenbank** — jeder Eintrag,
@@ -849,9 +851,9 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   // Vor jedem Schreiben vormerken, was an den Wochen hängt (`nachDemSchreiben`)
   // — das Schreiben einer Woche nimmt mit, was bis dahin vorgemerkt ist.
   if (wochenSchreiben) zusagenNachDemSchreiben(congId, verfallen.meeting)
-  // `hydrate` ersetzt den ganzen Bestand: Ein Neuladen nach einem Konflikt
-  // brächte sonst Wochen voller vermeintlicher Entzüge hervor (siehe unten).
-  if (action.type !== 'hydrate') entzugNachDemSchreiben(entzogeneAller(prev, next))
+  // Nicht nach `hydrate` und nicht nach einem Tausch — warum, steht an
+  // `OHNE_ENTZUG`; der Reducer fragt dieselbe Liste (siehe unten).
+  if (!OHNE_ENTZUG.has(action.type)) entzugNachDemSchreiben(entzogeneAller(prev, next))
 
   // Die Treffpunkt-Wochen schreibt keiner dieser Fälle selbst — das tut der
   // Block unter dem Switch, für jede, die sich geändert hat.

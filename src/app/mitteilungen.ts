@@ -38,6 +38,7 @@ export const AN_DIE_PLANER: ReadonlySet<string> = new Set([
   'Programm importiert', // der Import einer Woche
   'Unbestätigte Zuteilungen (nicht erreichbar)', // send-reminders
   'Ersatz gefunden', // substitute — geht auch an die Ursprungsperson
+  'Getauscht', // tauschen (T153) — geht auch an den, der gefragt hat
 ])
 
 /** Das Ersatzgesuch (substitute): Sein Ziel ist das Einspringen. */

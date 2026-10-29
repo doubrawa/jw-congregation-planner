@@ -621,6 +621,36 @@ create table if not exists public.anwesenheit (
     references public.persons (id, congregation_id) on delete set null (person_id)
 );
 
+-- Tauschen statt absagen (T153, 29.10.2026): Wer einen Hilfsdienst hat, fragt
+-- jemanden, der denselben Dienst an einem anderen Tag hat, ob sie tauschen.
+-- Eine Zeile je **offener** Anfrage: Mit der Antwort — tauschen, ablehnen,
+-- zurückziehen — ist sie weg. Geschrieben wird sie nur von der Edge Function
+-- `tauschen`, die jede Regel prüft und beide Plätze auf einmal umschreibt.
+--
+-- `gibt_ab` und `nimmt` sind Aufgaben-Schlüssel (`helferKey`): der Platz, den
+-- der Fragende abgibt, und der, den er dafür übernimmt. Je abgegebenem Platz
+-- eine Anfrage — wer jemand anderen fragen will, zieht die erste zurück. `bis`
+-- ist der frühere der beiden Tage; danach gibt es nichts mehr zu tauschen.
+create table if not exists public.tausch_anfragen (
+  id              uuid primary key default gen_random_uuid(),
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  -- Das Konto des Fragenden: Ihm gilt nach dem Tausch die Zusage des neuen Platzes.
+  von_user        uuid not null references auth.users (id) on delete cascade,
+  von_person      uuid not null,
+  an_person       uuid not null,
+  gibt_ab         text not null check (gibt_ab <> ''),
+  nimmt           text not null check (nimmt <> '' and nimmt <> gibt_ab),
+  bis             date not null,
+  created_at      timestamptz not null default now(),
+
+  unique (congregation_id, gibt_ab),
+  -- Geht eine der beiden Personen, geht die Anfrage mit: Sie hat dann niemanden mehr.
+  constraint tausch_anfragen_von_fk foreign key (von_person, congregation_id)
+    references public.persons (id, congregation_id) on delete cascade,
+  constraint tausch_anfragen_an_fk foreign key (an_person, congregation_id)
+    references public.persons (id, congregation_id) on delete cascade
+);
+
 -- Trolleys (T121, Phase 7 — seit 14.10.2026; davor Stand und Schicht, siehe
 -- „Entfernt" unten). „Man steht mit dem Trolley ja nur 15 Minuten an einem
 -- Platz … was man eigentlich braucht, ist ein Terminplan, wo man sich
@@ -1749,6 +1779,71 @@ drop policy if exists anwesenheit_delete on public.anwesenheit;
 create policy anwesenheit_delete on public.anwesenheit
   for delete using (congregation_id = public.my_congregation_id() and public.darf_zuteilen());
 
+-- Tausch-Anfragen (T153): Lesen dürfen die beiden, um die es geht — der
+-- Fragende (über sein Konto oder seine Person) und der Gefragte. Sonst
+-- niemand, auch der Planer nicht: Er erfährt den Tausch, wenn er geschehen
+-- ist. **Geschrieben wird nur über die Edge Function `tauschen`** (Dienstrolle),
+-- deshalb gibt es für die Versammlung kein Schreibrecht und keine Richtlinie dafür.
+alter table public.tausch_anfragen enable row level security;
+
+revoke all on public.tausch_anfragen from anon, authenticated;
+grant select on public.tausch_anfragen to authenticated;
+
+drop policy if exists tausch_anfragen_select on public.tausch_anfragen;
+create policy tausch_anfragen_select on public.tausch_anfragen
+  for select using (
+    congregation_id = public.my_congregation_id()
+    and (
+      von_user = auth.uid()
+      or von_person = public.my_person_id()
+      or an_person = public.my_person_id()
+    )
+  );
+
+-- **Zwei Wochen auf einmal schreiben** (T153): Liegen die beiden getauschten
+-- Plätze in verschiedenen Wochen, ändert die Function `tauschen` beide — und
+-- zwar ganz oder gar nicht. Jede nur, solange sie auf dem gelesenen Stand ist
+-- (`updated_at`, wie `wocheSchreiben`); trifft eine nicht, bricht die ganze
+-- Anweisung ab, und keine ist geändert. Zwei einzelne Schreibvorgänge ließen
+-- sonst einen Platz getauscht und den anderen nicht, wenn dazwischen ein
+-- Planer die zweite Woche speichert.
+--
+-- Nur für die Dienstrolle: Ein Mitglied schreibt Wochen nie selbst.
+create or replace function public.wochen_tauschen(
+  p_congregation uuid,
+  p_woche_a date, p_stand_a timestamptz, p_data_a jsonb,
+  p_woche_b date, p_stand_b timestamptz, p_data_b jsonb
+)
+returns table (woche date, stand timestamptz)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  n integer;
+begin
+  if p_woche_a = p_woche_b then
+    raise exception 'wochen_tauschen: zwei verschiedene Wochen erwartet' using errcode = '22023';
+  end if;
+  update public.weeks w set data = p_data_a
+   where w.congregation_id = p_congregation and w.start = p_woche_a and w.updated_at = p_stand_a;
+  get diagnostics n = row_count;
+  if n = 0 then raise exception 'wochen_tauschen: Stand verfehlt' using errcode = '40001'; end if;
+  update public.weeks w set data = p_data_b
+   where w.congregation_id = p_congregation and w.start = p_woche_b and w.updated_at = p_stand_b;
+  get diagnostics n = row_count;
+  if n = 0 then raise exception 'wochen_tauschen: Stand verfehlt' using errcode = '40001'; end if;
+  return query
+    select w.start, w.updated_at from public.weeks w
+     where w.congregation_id = p_congregation and w.start in (p_woche_a, p_woche_b);
+end $$;
+
+revoke all on function public.wochen_tauschen(uuid, date, timestamptz, jsonb, date, timestamptz, jsonb) from public;
+revoke all on function public.wochen_tauschen(uuid, date, timestamptz, jsonb, date, timestamptz, jsonb) from anon, authenticated;
+-- Ausdrücklich, nicht über die Vorgaben des Projekts: Sie ist die erste
+-- Funktion, die eine Edge Function über `rpc/` ruft.
+grant execute on function public.wochen_tauschen(uuid, date, timestamptz, jsonb, date, timestamptz, jsonb) to service_role;
+
 -- Trolleys (T121, Phase 7): Die Trolleys pflegt der Admin; Trolleys und
 -- Termine sieht die ganze Versammlung — so sehen alle, wann einer unterwegs
 -- ist. **Termine schreibt kein Mitglied selbst**: Eintragen, Dazukommen und
@@ -2047,6 +2142,9 @@ begin
         ('gruppenbesuche', 'woche < $1', ein_jahr),
         ('vortraege', 'woche < $1', ein_jahr),
         ('anwesenheit', 'woche < $1', ein_jahr),
+        -- Eine Tausch-Anfrage, deren früherer Tag vorbei ist, beantwortet
+        -- niemand mehr (T153). Die App zeigt sie ab dem Tag danach nicht mehr.
+        ('tausch_anfragen', 'bis < $1', montag::timestamptz),
         ('plaene', 'bis < $1', ein_jahr),
         ('plan_eintraege', 'datum < $1', ein_jahr),
         ('absagen', 'woche < $1', ein_jahr),

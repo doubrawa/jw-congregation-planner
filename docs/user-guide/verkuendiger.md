@@ -69,7 +69,9 @@ Wichtigste zusammen.
 
 ![Startseite eines Verkündigers](screenshots/verkuendiger-start.png)
 
-- **Erste Schritte** – ganz oben, solange du neu bist: ein Film von knapp
+- **Tausch angefragt** – zuoberst, wenn dich jemand fragt, ob ihr einen
+  Hilfsdienst tauscht (siehe [Tauschen statt absagen](#tauschen-statt-absagen)).
+- **Erste Schritte** – oben, solange du neu bist: ein Film von knapp
   einer Minute, der die ersten Schritte zeigt – den Link antippen, die erste
   Aufgabe bestätigen, die App auf den Startbildschirm legen, die Erinnerungen
   einschalten. **Ansehen** startet ihn; er lässt sich anhalten und nochmal
@@ -80,7 +82,8 @@ Wichtigste zusammen.
   du mit **Weiter** Schritt für Schritt.
 - **Deine nächste Aufgabe, groß** – wann („Morgen · Dienstag, 8. September ·
   19:00"), was, deine Rolle und bei Schulungsaufgaben dein Partner. Gleich
-  darunter **Bestätigen** und **Ich kann nicht**, daneben das **S‑89**.
+  darunter **Bestätigen** und **Ich kann nicht**, bei einem Hilfsdienst auch
+  **Tauschen**, daneben das **S‑89**.
 - **Der Saal** darüber zeigt, wie weit die Zusammenkunft besetzt ist: ein Punkt
   je Platz, **voll** heißt zugesagt, **blass** wartet noch auf Zusage, **rot**
   ist abgesagt, **gestrichelt** noch offen. Dein eigener Platz trägt einen Ring;
@@ -409,6 +412,41 @@ Schalter dafür steht aus; ist der Tag schon eingetragen, fehlt er. Erst
 Hast du dich vertan, öffne die Aufgabe erneut und wähle **„Doch bestätigen"**.
 Bei einem Hilfsdienst endet damit auch die Ersatzsuche: Die Mitteilung
 „Ersatz gesucht" verschwindet bei den anderen wieder.
+
+### Tauschen statt absagen
+
+Bei einem **Hilfsdienst** – Mikrofone, Ton, Ordner … – steht neben „Ich kann
+nicht" auch **Tauschen**, sobald der Koordinator den Plan der Woche gesendet
+hat. Damit gibst du deinen Platz ab und übernimmst dafür denselben Dienst an
+einem anderen Tag, den jetzt jemand anderes hat.
+
+Ein Tipp auf **Tauschen** öffnet ein Blatt: oben **Du gibst ab** mit deiner
+Aufgabe, darunter **Du übernimmst dafür** – wer denselben Dienst an einem
+anderen Tag hat, mit Name und Termin. Dort steht nur, wer an deinem Tag kann
+und an dessen Tag du kannst, wer für den Dienst freigegeben ist, an seinem
+neuen Tag nicht schon eingeteilt ist und ein Konto hat, um zu antworten. Kann
+gerade niemand, sagt das Blatt es.
+
+**Anfragen** fragt die Person: Sie bekommt **„Tausch angefragt"** in den
+Mitteilungen und – falls aktiviert – als Push. Je Aufgabe läuft eine Anfrage;
+solange sie läuft, steht unter deiner Aufgabe **Angefragt bei …**, und im Blatt
+kannst du sie **zurückziehen**, etwa um jemand anderen zu fragen. Tauschen
+geht auch, wenn du schon **„Ich kann nicht"** gesagt hast: Kommt der Tausch
+zustande, ist die Ersatzsuche erledigt.
+
+**Wirst du gefragt**, steht ganz oben auf dem Start und unter **Meine
+Aufgaben** die Karte **Tausch angefragt**: wer fragt, was du abgibst, was du
+dafür übernimmst.
+
+![Eine Anfrage zum Tauschen auf dem Start](screenshots/verkuendiger-tausch.png)
+ **Tauschen** tauscht beide Plätze auf einmal; beide gelten
+als zugesagt, und dein Koordinator bekommt eine Mitteilung – zustimmen muss er
+nicht. **Nein, danke** lehnt ab; wer gefragt hat, erfährt es. Antwortet
+niemand, verfällt die Anfrage mit dem früheren der beiden Tage.
+
+Erst die Zusage ändert den Plan. Hat sich bis dahin etwas geändert – der
+Koordinator hat umgeteilt, jemand ist inzwischen abwesend –, sagt die App
+„Das geht so nicht mehr" und zeigt den neuen Stand.
 
 ### Einspringen für jemand anderen
 

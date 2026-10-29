@@ -552,6 +552,23 @@ describe('Adressen und Gründe (Sicherheits-Review 29.10.2026)', () => {
     expect(res).toEqual({ ok: false, reason: 'error', message: 'kaputt' })
   })
 
+  it('die offenen Tausch-Anfragen (T153): was noch gilt, in der Form des Zustands — scheitern sie, lädt die App trotzdem', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const zeile = { id: 'a1', von_person: 'p9', an_person: 'p1', gibt_ab: '2026-09-07|we|helper|mik|0', nimmt: '2026-09-14|we|helper|mik|0', bis: '2026-09-13' }
+    seedResponses({ tausch_anfragen: [{ data: [zeile], error: null }] })
+    const res = await loadCongregationData('u1')
+    if (!res.ok) throw new Error('nicht geladen')
+    expect(res.data.tauschAnfragen).toEqual([{ id: 'a1', von: 'p9', an: 'p1', gibtAb: zeile.gibt_ab, nimmt: zeile.nimmt, bis: '2026-09-13' }])
+    expect(ausgewaehlt('tausch_anfragen')).toEqual(['id, von_person, an_person, gibt_ab, nimmt, bis'])
+    expect(store.filter).toContainEqual(['tausch_anfragen', 'gte', 'bis', expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)])
+
+    seedResponses({ tausch_anfragen: [{ data: null, error: { message: 'kaputt' } }] })
+    const ohne = await loadCongregationData('u1')
+    expect(ohne.ok && ohne.data.tauschAnfragen).toEqual([])
+    expect(err).toHaveBeenCalledWith('[tausch_anfragen]', 'kaputt')
+    err.mockRestore()
+  })
+
   it('scheitern die Gründe, lädt sie trotzdem — es fehlt nur der Satz in der Liste', async () => {
     const err = vi.spyOn(console, 'error').mockImplementation(() => {})
     seedResponses({

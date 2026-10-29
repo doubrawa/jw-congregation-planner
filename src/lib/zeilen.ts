@@ -14,6 +14,7 @@ import { ROLE_ORDER } from '../data/constants'
 import { normalizePriv } from '../data/namensbindung'
 import { kurzeZeit } from '../../supabase/functions/_shared/planung.ts'
 import type { Anwesenheit } from '../data/anwesenheit'
+import type { TauschAnfrage } from '../data/tausch'
 import type { Absence, FsRule, Gruppenbesuch, MeetingKey, Person, Qualifications, Role } from '../data/types'
 import type { VorgemerkterVortrag } from '../data/vortragsplan'
 
@@ -192,6 +193,20 @@ export interface AnwesenheitRow {
 
 export function anwesenheitFromRow(r: AnwesenheitRow): Anwesenheit {
   return { woche: r.woche, tab: r.zusammenkunft, saal: r.saal, video: r.video, pid: r.person_id }
+}
+
+/** Eine offene Tausch-Anfrage (T153) — geschrieben nur von der Edge Function `tauschen`. */
+export interface TauschAnfrageRow {
+  id: string
+  von_person: string
+  an_person: string
+  gibt_ab: string
+  nimmt: string
+  bis: string
+}
+
+export function tauschAnfrageFromRow(r: TauschAnfrageRow): TauschAnfrage {
+  return { id: r.id, von: r.von_person, an: r.an_person, gibtAb: r.gibt_ab, nimmt: r.nimmt, bis: r.bis }
 }
 
 /** Ohne `person_id`: Wer einträgt, setzt die Datenbank (`anwesenheit_vermerken`). */

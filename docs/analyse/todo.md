@@ -8988,14 +8988,69 @@ Reducer (5), Speichern (2), Schema-Abgleich; Mutationsprobe 8 von 8 bewacht.
 Die Karte auf dem Start ist im Browser nicht angesehen: Die Testwochen haben
 keinen Saalordner; geprüft ist sie in `anwesenheit.test.tsx`.
 
-### T153 · Tauschen statt absagen 🏗 ☐ offen — Entwurf gezeigt (29. Oktober 2026)
+### T153 · Tauschen statt absagen 🏗 ✅ umgesetzt, nicht ausgerollt (29. Oktober 2026)
 
 Entwurf im Gespräch: „Tauschen" neben „Ich kann nicht"; die App bietet an, wer
 denselben Dienst an einem anderen Tag hat und an beiden Tagen kann; der
 Partner bekommt die Anfrage als Glocke und Push und nimmt an oder lehnt ab;
 erst dann ändern sich beide Plätze auf einmal, beide zugesagt, der Planer
-bekommt eine Mitteilung. Offen: nur Hilfsdienste (wie die freien Plätze, T142)
-oder auch Programmpunkte, und ob der Planer zustimmen muss.
+bekommt eine Mitteilung. Die beiden offenen Fragen habe ich so entschieden,
+wie der Entwurf sie zeigte und wie die freien Plätze es halten (T142, „aufgaben
+weist der planer zu"): **nur Hilfsdienste**, und **der Planer stimmt nicht
+zu**, er bekommt „Getauscht".
+
+- **Regeln** (`supabase/functions/tauschen/regeln.ts`, eine Fassung für Server
+  und Entwicklerseite): derselbe Dienst, eine andere Zusammenkunft, keine
+  Reinigung; der abgegebene Platz gehört dem Fragenden über die Kennung; beide
+  Wochen gesendet, keine fällt aus oder liegt zurück; beide für den Dienst
+  freigegeben, am **neuen** Tag nicht abwesend und dort nicht schon
+  eingeteilt. Angeboten wird dazu nur, wer ein Konto hat — sonst könnte er
+  nicht antworten; das weiß nur der Server, deshalb rechnet er die Angebote.
+- **Ablauf** (Edge Function `tauschen`): angebote, anfragen (je Platz eine
+  Anfrage, Glocke und Push „Tausch angefragt"), zurückziehen, ablehnen
+  („Tausch abgelehnt" an den Fragenden), annehmen — prüft mit frischen Daten
+  noch einmal und schreibt beide Plätze auf einmal: eine Woche über
+  `wocheSchreiben`, zwei über die neue SQL-Funktion `wochen_tauschen` (ganz
+  oder gar nicht, nur Dienstrolle). Danach beide zugesagt, beide im
+  Versand-Tagebuch (sonst zählte „Plan senden" sie neu), andere Anfragen und
+  ein Ersatzgesuch zu den Plätzen erledigt; „Getauscht" an den Fragenden und
+  die Planer. Geht der Tausch beim Annehmen nicht mehr (der Planer hat
+  umgeteilt, jemand ist abwesend), ist die Anfrage erledigt, statt als Karte
+  stehen zu bleiben; die Anfrage eines vorigen Platzinhabers sperrt den neuen
+  nicht. Beides fand die Mutationsprobe: Eine Regel blieb unbewacht, weil eine
+  zweite dieselben Fälle abwies — gesucht war der Fall, in dem nur sie greift.
+- **Tabelle** `tausch_anfragen`: lesen nur die beiden, um die es geht;
+  schreiben nur die Function. Verfällt mit dem früheren der beiden Tage
+  (`alte_daten_loeschen`).
+- **App:** „Tauschen" neben „Ich kann nicht" (nicht offline, nicht vor „Plan
+  senden"), das Blatt mit „Du gibst ab" und „Du übernimmst dafür", „Angefragt
+  bei …" unter der Aufgabe; beim Gefragten die Karte „Tausch angefragt" oben
+  auf dem Start und unter „Meine Aufgaben" — nur, solange beide Plätze noch
+  die Beteiligten haben. 20 Texte in zwölf Sprachen, Handbücher (Verkündiger,
+  Planer), README, `config.toml`, ein neues Handbuch-Bild
+  (`verkuendiger-tausch.png`). Die Entwicklerseite zeigt mit `me=p12` eine
+  Anfrage von Simon Krüger an Bernd Klein; das Blatt öffnet „Tauschen" an
+  einer Aufgabe der ersten Woche (`me=p11`, `me=p12`).
+- **Durchsicht vom 30.10.2026:** Nach dem Annehmen hielt die App beide Plätze
+  für „entzogen" — der Reducer räumte die eben gesetzten Zusagen ab, und
+  `persist` schickte beiden „Zuteilung zurückgezogen" (bei einem Planer, der
+  annimmt). Die Proben sahen es nicht: Ihre Zusagen und ihr Tagebuch waren
+  leer, niemand wusste von seinem Platz. Behoben mit `OHNE_ENTZUG`
+  (`context.ts`), das Reducer und `persist` gemeinsam fragen; geprüft mit
+  echten Zusagen in `tausch-ablauf.test.ts`.
+
+Tests: Regeln und Function (38), Datenmodul (9), Reducer (6), Ablauf mit
+`persist` (3), Aufrufe (10), Oberfläche (9), Schema (6), Laden (1);
+Mutationsprobe 33 Regeln bewacht. Gemessen im echten Chrome (T128-Werkzeug,
+zwölf Sprachen, 320 bis 768 px, Stufe 1 und 1,45): die Karte auf Start und
+„Meine Aufgaben" samt der Aufgabe mit drei Knöpfen, das Blatt mit laufender
+Anfrage und ohne Angebot — 0 Befunde. **Nicht gemessen:** das Blatt mit
+Angeboten — die Testwochen haben niemanden, mit dem getauscht werden könnte
+(nur Woche 1 ist gesendet); die Zeilen sind die der freien Plätze. **Nie gegen
+eine echte Datenbank gelaufen:** die Function und `wochen_tauschen` — geprüft
+nur gegen Attrappen; nach dem Ausrollen einmal in der Testversammlung tauschen. **Nicht ausgerollt:** `schema.sql` einspielen, die Function
+deployen (`npx supabase functions deploy tauschen --project-ref …`), dann
+pushen.
 
 ### T154 · Adressen und Gründe nur für den, dem die App sie zeigt 🔧 ✅ umgesetzt, nicht ausgerollt (29. Oktober 2026)
 
@@ -9074,16 +9129,18 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
-29. Oktober ☑☑☑☑☑☑☐☐
+29. Oktober ☑☑☑☑☑☑☐☐☐
 
-**150 der 153 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind drei:**
+**150 der 154 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind vier** — drei davon fertig gebaut,
+aber noch nicht ausgerollt:
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
 | **T152** | Besucherzahl erfassen | ✅ umgesetzt am 29. Oktober; **Schema noch nicht eingespielt** (Freigabe des Betreibers) |
-| **T153** | Tauschen statt absagen | ☐ Entwurf am 29. Oktober gezeigt; wartet auf die Entscheidung des Betreibers (nur Hilfsdienste?, Zustimmung des Planers?) |
+| **T153** | Tauschen statt absagen | ✅ umgesetzt am 29. Oktober (nur Hilfsdienste, ohne Zustimmung des Planers); **Schema und Function `tauschen` noch nicht ausgerollt** |
+| **T154** | Adressen und Gründe nur für Berechtigte | ✅ umgesetzt am 29. Oktober (Sicherheits-Review); **Schema noch nicht eingespielt** — gleich danach pushen |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
@@ -9523,8 +9580,7 @@ eine Entscheidung.
 | **Gerät** | Dunkle Bedienleiste am Handy | wirkt erst mit der aktualisierten WebAPK (`about://webapks` → „Update", oder neu installieren) |
 | **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
 | **Betreiber** | Umzug weg von Supabase | Am 25. Oktober erwogen: Supabase ist eine US-Firma, und die Daten zeigen die Religionszugehörigkeit (Art. 9 DSGVO). Empfohlen: die quelloffene Supabase-Software selbst auf einem Server in Deutschland. Betreiber: „Nicht jetzt, ich überlege noch." Fällt die Entscheidung dafür, legt der Betreiber Konto, Server und Vertrag an; Einrichten und Umziehen per Skript macht Claude |
-| **Betreiber** | T152 Besucherzahl: Schema einspielen | umgesetzt am 29. Oktober; die Tabelle `anwesenheit` samt Richtlinien steht in `schema.sql`, eingespielt wird mit Freigabe — erst danach pushen |
-| **T153** | Tauschen statt absagen | Entwurf am 29. Oktober gezeigt — die Entscheidung liegt beim Betreiber |
+| **Betreiber** | T152, T153, T154 ausrollen | alle drei am 29. Oktober umgesetzt, lokal committet. Mit Freigabe: `schema.sql` einspielen (Anwesenheit, Tausch-Anfragen samt `wochen_tauschen`, Spaltenrechte für Adresse und Grund), die Function `tauschen` deployen, **gleich danach** pushen — zwischen Schema und Push scheitert bei der alten App das Laden der Personen (`select=*`). Danach die Mitgliedsrechte-Probe fahren (Fälle 86–92) |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |

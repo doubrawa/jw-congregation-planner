@@ -1,8 +1,11 @@
 import { useApp } from '../app/context'
+import { useKalendertag } from '../app/useKalendertag'
 import { Punkt } from '../bausteine/Punkt'
 import { Saal } from '../bausteine/Saal'
+import { displayName } from '../data/helpers'
+import { anfrageZu, tauschbar } from '../data/tausch'
 import type { MyTask } from '../data/types'
-import { aufgabenTitelSprache, aufgabenZeilen, useT } from '../i18n/useT'
+import { aufgabenTitelSprache, aufgabenZeilen, fill, useT } from '../i18n/useT'
 import { aufgabeWann } from './aufgabe-anzeige'
 import { useSaal } from './useSaal'
 import './aufgaben.css'
@@ -41,13 +44,18 @@ export function AufgabeKarte({ task, saal = false }: { task: MyTask; saal?: bool
 /**
  * Was man mit einer eigenen Aufgabe tun kann, je nach Stand: bestätigen oder
  * absagen; ist sie bestätigt, doch absagen; ist sie abgesagt, doch bestätigen.
+ * Bei einem Hilfsdienst daneben „Tauschen" (T153), wo es geht — offline nicht.
  * Daneben der S-89, wo es einen gibt.
  */
 export function AufgabeHandlungen({ task }: { task: MyTask }) {
-  const { dispatch } = useApp()
+  const { state, dispatch } = useApp()
   const { t } = useT()
+  const heute = useKalendertag()
   const bestaetigen = () => dispatch({ type: 'confirmTask', id: task.id })
   const s89 = task.s89
+  const kannTauschen = state.staleAt === null && tauschbar(task, state.services, state.sentLog)
+  const angefragt = anfrageZu(state.tauschAnfragen, task.id, heute, state.weeks)
+  const gefragt = angefragt && state.persons.find((p) => p.id === angefragt.an)
   return (
     <div className="aufgabe-handlungen">
       {task.status === 'offen' && (
@@ -66,11 +74,17 @@ export function AufgabeHandlungen({ task }: { task: MyTask }) {
           {t.kannNicht}
         </button>
       )}
+      {kannTauschen && (
+        <button type="button" className="knopf-umriss" onClick={() => dispatch({ type: 'openTausch', id: task.id })}>
+          {t.tauschAktion}
+        </button>
+      )}
       {s89 && (
         <button type="button" className="verweis-leise aufgabe-s89" onClick={() => dispatch({ type: 'openS89', payload: s89 })}>
           S-89
         </button>
       )}
+      {gefragt && <span className="klein-text aufgabe-tausch">{fill(t.tauschAngefragtBei, { name: displayName(gefragt) })}</span>}
     </div>
   )
 }

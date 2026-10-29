@@ -15,6 +15,7 @@ import {
 } from 'react'
 import type { Ansicht } from '../data/ansicht'
 import type { Anwesenheit } from '../data/anwesenheit'
+import type { TauschAnfrage } from '../data/tausch'
 import type { FontScale } from '../data/constants'
 import type { OffenerPlatz } from '../data/offene-plaetze'
 import type { AssignScope, Umfang } from '../data/planning'
@@ -112,6 +113,8 @@ export interface HydratePayload {
   absagen?: Absage[]
   /** Anwesende je Zusammenkunft (T152). Fehlt in einer Momentaufnahme von davor. */
   anwesenheit?: Anwesenheit[]
+  /** Offene Tausch-Anfragen von und an mich (T153). Fehlt in einer Momentaufnahme von davor. */
+  tauschAnfragen?: TauschAnfrage[]
   notifications: Notification[]
   confirmations: ConfirmationMap
   sentLog: SentLog
@@ -262,6 +265,11 @@ export interface AppState {
    * von Saalordner, Zoom-Ordner oder wer zuteilt. Ein Jahr wie die Wochen.
    */
   anwesenheit: Anwesenheit[]
+  /**
+   * Offene Tausch-Anfragen (T153) — die eigenen und die an mich, sonst keine
+   * (RLS). Geschrieben nur von der Edge Function `tauschen`.
+   */
+  tauschAnfragen: TauschAnfrage[]
   notifs: Notification[]
   confirmations: ConfirmationMap // Slot-Pfad → Status (nur Produktionsmodus)
   /**
@@ -318,6 +326,7 @@ export interface AppState {
   confirmOpen: boolean // Bestätigungs-Modal beim Öffnen der App
   myTaskId: string | null // eigene Aufgabe im Aktions-Sheet (bestätigen/absagen)
   absageId: string | null // eigene Aufgabe im Absage-Blatt („Du kannst nicht?", T121)
+  tauschId: string | null // eigene Aufgabe im Tausch-Blatt (T153)
   s89: S89Payload | null // offenes S-89-Formular
   langSheetOpen: boolean // Sprach-Sheet offen
   langSheetFor: 'cong' | 'alt' // Auswahl-Ziel: Versammlungssprache | weitere Programmsprache
@@ -554,6 +563,13 @@ export type AppAction =
   | { type: 'declineTask'; id: string; nachricht?: string }
   | { type: 'openAbsage'; id: string } // Absage-Blatt öffnen
   | { type: 'closeAbsage' }
+  // Tauschen (T153): Was die Function `tauschen` geschrieben hat, legt der
+  // Bildschirm nach ihrer Antwort hierher — geschrieben wird hier nichts.
+  | { type: 'openTausch'; id: string } // Tausch-Blatt öffnen
+  | { type: 'closeTausch' }
+  | { type: 'tauschAngefragt'; anfrage: TauschAnfrage }
+  | { type: 'tauschWeg'; id: string } // zurückgezogen, abgelehnt oder nicht mehr gültig
+  | { type: 'getauscht'; anfrage: TauschAnfrage }
   | { type: 'openMyTask'; id: string } // eigenes Aufgaben-Aktions-Sheet öffnen
   | { type: 'closeMyTask' }
   | { type: 'takeSubstitute'; key: string } // Hilfsdienst-Ersatz übernehmen
@@ -630,6 +646,21 @@ export type AppAction =
   | { type: 'setDataStatus'; status: DataStatus; userId?: string } // userId: für Retry/Code-Einlösen ohne Hydration
   | { type: 'showToast'; text: string }
   | { type: 'hideToast' }
+
+/**
+ * **Aktionen, nach denen niemandem ein Platz „entzogen" ist**, obwohl Plätze den
+ * Inhaber wechseln. Der Reducer räumt sonst Zusage und Tagebuch-Eintrag ab
+ * (`ohneEntzogene`), und `persist.ts` schickt „Zuteilung zurückgezogen" — beide
+ * fragen hier, damit sie es nicht für verschiedene Aktionen tun.
+ *
+ * - `hydrate` ersetzt den ganzen Bestand; ein Neuladen nach einem Konflikt
+ *   brächte sonst Wochen voller vermeintlicher Entzüge hervor.
+ * - `getauscht` (T153): Beide haben ihren Platz selbst gegen den des anderen
+ *   getauscht, beide haben zugesagt, und Bescheid gab die Function `tauschen`.
+ *   Ohne die Ausnahme verlor, wer eben getauscht hatte, die neue Zusage wieder,
+ *   und beide bekamen „Zuteilung zurückgezogen".
+ */
+export const OHNE_ENTZUG: ReadonlySet<AppAction['type']> = new Set(['hydrate', 'getauscht'])
 
 export interface AppContextValue {
   state: AppState

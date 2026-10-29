@@ -166,6 +166,11 @@ export const NOTIF_TITLE_KEY: Record<string, keyof Dict> = {
   // wird dort vom Fragment-Übersetzer erledigt.
   'Ersatz gesucht': 'notifErsatzGesucht',
   'Ersatz gefunden': 'notifErsatzGefunden',
+  // Tauschen (Edge Function `tauschen`, T153): die Anfrage an den Gefragten,
+  // der Tausch an den Fragenden und die Planer, die Absage an den Fragenden.
+  'Tausch angefragt': 'notifTauschAngefragt',
+  Getauscht: 'notifGetauscht',
+  'Tausch abgelehnt': 'notifTauschAbgelehnt',
   // Abgelegt wie die vier oben: An die Eingetragenen einer Zeugnis-Schicht
   // (5. bis 14.10.2026, Stand und Schicht) — sie fiel aus, oder Uhrzeit bzw.
   // Ort hatten sich geändert. Seit den Trolleys gibt es keine Schichten mehr.

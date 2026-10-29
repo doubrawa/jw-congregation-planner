@@ -874,6 +874,16 @@ export const DE = {
     awAnwesenheitDrucken: 'Für den Bericht drucken',
     druckAnwesenheitTitel: 'Anwesende bei den Zusammenkünften', druckAnwesendZusammenkuenfte: 'Zusammenkünfte',
     druckAnwesendeZusammen: 'Anwesende zusammen', druckSchnitt: 'Durchschnitt',
+    // Tauschen statt absagen (T153, 29.10.2026): ein Hilfsdienst gegen denselben
+    // Dienst an einem anderen Tag. Wer fragt, wählt aus, wen die App anbietet;
+    // wer gefragt ist, sagt zu oder ab — erst dann ändert sich der Plan.
+    tauschAktion: 'Tauschen', tauschGibstAb: 'Du gibst ab', tauschUebernimmstDafuer: 'Du übernimmst dafür',
+    tauschUebernimmst: 'Du übernimmst', tauschAnfragen: 'Anfragen', tauschAngefragtBei: 'Angefragt bei {name}',
+    tauschZurueckziehen: 'Zurückziehen', tauschSucht: 'Einen Moment …', tauschNiemand: 'Gerade kann niemand mit dir tauschen.',
+    tauschHinweis: 'Hier steht nur, wer an deinem Tag kann und an dessen Tag du kannst — und wer für den Dienst freigegeben ist. Erst wenn dein Gegenüber zusagt, ändert sich der Plan, für beide auf einmal.', tauschFragtDich: '{name} fragt dich', tauschNeinDanke: 'Nein, danke',
+    tauschToastAngefragt: 'Anfrage geschickt', tauschToastGetauscht: 'Getauscht — beide Plätze sind zugesagt', tauschFehlerWeg: 'Diese Anfrage gibt es nicht mehr.',
+    tauschFehlerGeaendert: 'Das geht so nicht mehr — inzwischen hat sich der Plan geändert.', tauschFehlerSchonGefragt: 'Für diese Aufgabe läuft schon eine Anfrage.', notifTauschAngefragt: 'Tausch angefragt',
+    notifGetauscht: 'Getauscht', notifTauschAbgelehnt: 'Tausch abgelehnt',
     awVergleich: 'Vergleich', awAufgaben: 'Aufgaben', awHilfsdienste: 'Hilfsdienste',
     awErklaerungAufgaben: 'Verglichen wird mit dem, was auf jede Person käme, wenn die Plätze ihrer Bereiche gleich verteilt wären. Auffällig ist, wer um mehr als die Hälfte darüber oder darunter liegt.',
     awErklaerungHilfsdienste: 'Hilfsdienste verteilt die App nach der Gesamtlast: Wer viele Aufgaben hat, bekommt weniger Hilfsdienste. Verglichen wird deshalb alles zusammen.',

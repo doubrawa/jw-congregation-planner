@@ -358,7 +358,8 @@ Migrationskette daneben soll es nicht wieder geben, siehe Kopf der Datei):
    **löscht alle Daten**, aber keine Konten (`auth.users` bleibt).
 2. `supabase/schema.sql` ausführen.
 3. Alle Edge Functions deployen (`import-week`, `send-plan`,
-   `send-reminders`, `send-invite`, `anmelden`, `substitute`, `trolley`).
+   `send-reminders`, `send-invite`, `anmelden`, `substitute`, `trolley`,
+   `tauschen`).
 Den ganzen Rest — Versammlung, Personen, Wochen, Zuteilungen, Abwesenheiten,
 Treffpunkte — fährt **ein** Aufruf:
 
@@ -741,7 +742,11 @@ Und drei Takte:
    abgesagt und ein Ersatz gesucht, jemand springt ein — oder der Absagende
    kann doch, dann verschwindet das Gesuch wieder aus allen Glocken
    ([`substitute`](supabase/functions/substitute/)), eine Verhinderung wird an
-   die Planer gemeldet. Im **Zeugnisgeben** (5.10.2026) heißt ein Entzug
+   die Planer gemeldet. Ebenso das **Tauschen** (T153,
+   [`tauschen`](supabase/functions/tauschen/)): die Anfrage an den Gefragten,
+   seine Absage an den Fragenden, der Tausch an den Fragenden und die Planer —
+   beide gelten danach als benachrichtigt (`assignment_log`). Im
+   **Zeugnisgeben** (5.10.2026) heißt ein Entzug
    „Schicht fällt aus", wenn die Schicht wegfällt (`entzug` mit `grund`), und
    eine neue Uhrzeit oder ein neuer Ort geht als „Schicht geändert" hinaus
    (Aktion `zeugnis-geaendert`) — beides an jeden, der von seinem Eintrag weiß,

@@ -89,6 +89,9 @@ SHOTS=(
   # leitet auch die Entwicklerseite „Meine Aufgaben" ab, statt feste zu zeigen —
   # ohne angemeldete Person gibt es keine.
   "verkuendiger-start|s=start&pl=0&me=p9"
+  # Bernd Klein (p12) wird gefragt, ob er tauscht (T153): oben die Anfrage,
+  # darunter seine nächste Aufgabe — ein Hilfsdienst, also mit „Tauschen".
+  "verkuendiger-tausch|s=start&pl=0&me=p12|${W}x1200"
   "verkuendiger-aufgaben|s=aufgaben&pl=0&me=p9"
   # Freie Plätze (4.10.2026; seit T134 eine eigene Seite): als p7 — er hat
   # den Ordner-Bereich, und die Ordner-Plätze der ersten Woche sind offen;

@@ -323,3 +323,9 @@
 .oeffnen-gesuche.is-nach {
   padding-block-start: 8px;
 }
+
+/* „Angefragt bei …" (T153): eine eigene Zeile unter den Knöpfen, solange eine
+   Tausch-Anfrage läuft. */
+.aufgabe-tausch {
+  flex-basis: 100%;
+}

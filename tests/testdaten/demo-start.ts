@@ -47,6 +47,7 @@ import {
   demoPlanEintraege,
   DEMO_PLANNER,
   DEMO_SERVICES,
+  DEMO_TAUSCH_ANFRAGEN,
   DEMO_UNBESTAETIGT,
 } from './testdaten'
 
@@ -259,6 +260,9 @@ export function entwicklerStart(hash: string = location.hash): AppState {
     // Und die Weiteren Pläne (Phase 5).
     plaene: DEMO_PLAENE,
     planEintraege: demoPlanEintraege(),
+    // Eine Tausch-Anfrage an Bernd Klein (T153) — gilt bis Dienstag, 15.9.,
+    // also nur mit der gestellten Uhr der Seite.
+    tauschAnfragen: DEMO_TAUSCH_ANFRAGEN,
     sentLog: versand,
     persoenlich: demoPersoenlich(versand),
     screen: debug?.screen ?? 'start',

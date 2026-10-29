@@ -11,6 +11,7 @@ import { zahlBinden } from '../i18n/zahl-binden'
 import { mitWem, tagKurz, trolleyNameVon, zeitSpanne, zuDenTrolleys } from '../trolleys/trolley-anzeige'
 import { aufgabeWann } from './aufgabe-anzeige'
 import { AufgabeKarte } from './AufgabeKarte'
+import { TauschAnfragen } from '../tauschen/TauschAnfragen'
 import './aufgaben.css'
 
 /**
@@ -46,6 +47,8 @@ export function AufgabenScreen() {
         )}
       </div>
 
+      {/* Anfragen zum Tauschen an mich (T153) — dorthin führt „Tausch angefragt". */}
+      <TauschAnfragen />
       {naechste ? <AufgabeKarte task={naechste} /> : <p className="karte karte--held aufgaben-leer">{t.dashKeineAufgabe}</p>}
 
       {weitere.length > 0 && (

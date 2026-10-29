@@ -77,6 +77,13 @@ const VIEW_ACTIONS: ReadonlySet<AppAction['type']> = new Set([
   // Ebenso das Absage-Blatt (T121): Erst „Absagen" darin schreibt.
   'openAbsage',
   'closeAbsage',
+  // Ebenso das Tausch-Blatt (T153): Erst „Anfragen" darin schreibt — über
+  // die Function `tauschen`, die offline gar nicht erst gerufen wird. Was sie
+  // geschrieben hat, legt der Bildschirm danach nur ab.
+  'openTausch',
+  'closeTausch',
+  'tauschAngefragt',
+  'tauschWeg',
   // Vermerk, dass die Begrüßung gezeigt wurde. Rein lokal; fehlte sie hier,
   // begrüßte der Offline-Start mit einem „nur lesend"-Hinweis.
   'welcomeShown',

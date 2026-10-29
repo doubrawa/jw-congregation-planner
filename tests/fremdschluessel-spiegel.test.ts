@@ -122,6 +122,13 @@ const SPIEGEL: Record<string, Spiegel> = {
     basis: { woche: 'zz', tab: 'mid', saal: 80, video: 20, pid: null },
     schluessel: 'woche',
   },
+  // Eine Tausch-Anfrage geht mit jeder der beiden Personen (T153): Sie hat dann
+  // niemanden mehr, der fragt oder antwortet.
+  tausch_anfragen: {
+    feld: 'tauschAnfragen',
+    spalten: { von_person: 'von', an_person: 'an' },
+    basis: { id: 'zz', von: 'p-x', an: 'p-y', gibtAb: '2026-09-07|we|helper|mik|0', nimmt: '2026-09-14|we|helper|mik|0', bis: '2026-09-13' },
+  },
   // Wer eingetragen hat, nimmt seinen Termin mit; als Partner fehlt er nur — der
   // andere sucht wieder einen (T121).
   trolley_termine: {

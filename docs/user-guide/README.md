@@ -68,6 +68,7 @@ Ende automatisch auf; du musst nichts extra tun.
 | `programm-wochenende.png` | `s=programm&tab=we` | (Reserve) |
 | `programm-treffpunkte.png` | `s=programm&tab=fs` | planer |
 | `verkuendiger-start.png` | `s=start&pl=0&me=p9` | verkuendiger |
+| `verkuendiger-tausch.png` | `s=start&pl=0&me=p12` (Höhe 1200) | verkuendiger |
 | `verkuendiger-aufgaben.png` | `s=aufgaben&pl=0&me=p9` | verkuendiger |
 | `verkuendiger-freie-plaetze.png` | `s=freie&pl=0&me=p7` | verkuendiger |
 | `verkuendiger-profil.png` | `s=profil&pl=0&me=p9` | verkuendiger |

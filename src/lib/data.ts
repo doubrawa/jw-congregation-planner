@@ -54,6 +54,8 @@ import {
   type AnwesenheitRow,
   anwesenheitFromRow,
   anwesenheitToRow,
+  type TauschAnfrageRow,
+  tauschAnfrageFromRow,
   type FsRuleRow,
   fsRuleFromRow,
   fsRuleToRow,
@@ -69,6 +71,7 @@ import {
 } from './zeilen'
 import type { VorgemerkterVortrag } from '../data/vortragsplan'
 import type { Anwesenheit } from '../data/anwesenheit'
+import type { TauschAnfrage } from '../data/tausch'
 
 /* ---- Row-Typen (Spalten aus supabase/schema.sql) ------------------------ */
 // Personen, Abwesenheiten, Grundplan-Regeln, Gruppenbesuche und vorgemerkte
@@ -573,6 +576,8 @@ export interface CongregationData {
   absagen: Absage[]
   /** Die Anwesenden je Zusammenkunft (T152), ein Jahr wie die Wochen. */
   anwesenheit: Anwesenheit[]
+  /** Offene Tausch-Anfragen (T153) — nur die, um die es den Angemeldeten geht (RLS). */
+  tauschAnfragen: TauschAnfrage[]
   notifications: Notification[]
   confirmations: ConfirmationMap
   reminders: Reminders
@@ -641,7 +646,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .gte('start', verteilungAb)
     .order('start', { ascending: false })
 
-  const [cong, persons, mails, services, groups, weeks, absences, gruende, notifs, confs, members, linkRows, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, vortragRows, trolleyRows, trolleyTerminRows, planRows, planEintragRows, absageRows, anwesenheitRows] = await Promise.all([
+  const [cong, persons, mails, services, groups, weeks, absences, gruende, notifs, confs, members, linkRows, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, vortragRows, trolleyRows, trolleyTerminRows, planRows, planEintragRows, absageRows, anwesenheitRows, tauschRows] = await Promise.all([
     supabase.from('congregations').select(CONG_SPALTEN.join(', ')).eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select(PERSON_SPALTEN).eq('congregation_id', congregationId).order('created_at'),
     // Die Adressen nur für den Admin — jedem anderen liefert die Funktion
@@ -798,6 +803,14 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       .eq('congregation_id', congregationId)
       .gte('woche', verteilungAb)
       .order('woche'),
+    // Offene Tausch-Anfragen (T153): von mir und an mich, sonst sieht niemand
+    // eine (RLS). Was vorbei ist, beantwortet niemand mehr.
+    supabase
+      .from('tausch_anfragen')
+      .select('id, von_person, an_person, gibt_ab, nimmt, bis')
+      .eq('congregation_id', congregationId)
+      .gte('bis', isoDay(new Date()))
+      .order('bis'),
   ])
 
   // Alle dreizehn Abfragen prüfen, nicht zehn: fehlten fs_rules/fs_weeks in der
@@ -841,6 +854,8 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // Ebenso die Anwesenden (T152) — und solange `schema.sql` nicht lief, gibt es
   // die Tabelle noch nicht.
   if (anwesenheitRows.error) console.error('[anwesenheit]', anwesenheitRows.error.message)
+  // Ebenso die Tausch-Anfragen (T153): Ohne sie fehlen nur die Karten dazu.
+  if (tauschRows.error) console.error('[tausch_anfragen]', tauschRows.error.message)
 
   const serviceList = (services.data ?? []).map((r) => serviceFromRow(r as ServiceRow))
   const mailVon = new Map(((mails.data ?? []) as { id: string; mail: string }[]).map((m) => [m.id, m.mail]))
@@ -947,6 +962,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     absences: (absences.data ?? []).map((r) => absenceFromRow({ ...r, reason: grundVon.get(r.id) ?? '' })),
     absagen: absageRows.data.map(absageFromRow),
     anwesenheit: ((anwesenheitRows.data ?? []) as AnwesenheitRow[]).map(anwesenheitFromRow),
+    tauschAnfragen: ((tauschRows.data ?? []) as TauschAnfrageRow[]).map(tauschAnfrageFromRow),
     notifications: notificationsAus((notifs.data ?? []) as NotificationRow[], weekList, zeiten),
     confirmations,
     reminders,
@@ -1105,6 +1121,9 @@ async function loeschenDannSchreiben<T>(
  * hinweg.
  */
 let ladung = 0
+
+/** Die Ladung, aus der ein Aufruf kommt — damit seine Antwort weiß, ob sie noch gilt (`tauschStaendeUebernehmen`). */
+export const ladungJetzt = (): number => ladung
 
 /** Den Stand nach einem Schreibvorgang merken — nur, wenn seither nicht neu geladen wurde (`ladung`). */
 function standMerken(staende: Map<string, string>, woche: string, stand: string, geladen: number): void {
@@ -1735,6 +1754,15 @@ function standDerFunctionUebernehmen(antwort: unknown, geladen: number): void {
   if (typeof woche !== 'string' || typeof stand !== 'string') return
   if (wochen.staende.get(woche) !== vorher) return
   standMerken(wochen.staende, woche, stand, geladen)
+}
+
+/**
+ * **Die Stände nach einem Tausch übernehmen** (T153) — wie nach dem
+ * Einspringen, für jede der bis zu zwei Wochen, die die Function `tauschen`
+ * geschrieben hat. `geladen` ist die Ladung, aus der der Aufruf kam.
+ */
+export function tauschStaendeUebernehmen(staende: readonly unknown[], geladen: number): void {
+  for (const s of staende) standDerFunctionUebernehmen(s, geladen)
 }
 
 /**

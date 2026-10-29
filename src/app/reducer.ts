@@ -27,6 +27,7 @@ import { besuchAustragen, besuchEintragen, besuchsLage, besuchStand, nachWoche }
 import { vortragsplanAnwenden, vortragsplanVorschau } from '../data/vortragsplan'
 import { termineSortiert } from '../data/trolleys'
 import { ANWESENDE_HOECHSTENS, anwesenheitDer, type Anwesenheit } from '../data/anwesenheit'
+import { tauschLokal } from '../data/tausch'
 import { FS_LEITER } from '../../supabase/functions/_shared/zuteilungen.ts'
 import { dropPersonPid, renameInWeeks } from '../data/namensbindung'
 import { localizedWeeks } from '../data/localize'
@@ -82,7 +83,7 @@ import type {
   SubstituteReq,
   Week,
 } from '../data/types'
-import { type AppAction, type AppState, ERINNERUNG_GRENZEN } from './context'
+import { type AppAction, type AppState, ERINNERUNG_GRENZEN, OHNE_ENTZUG } from './context'
 
 /**
  * **Bleibt die Auswahl beim Reiterwechsel?** Nur in ihrem eigenen Reiter — dort
@@ -251,6 +252,12 @@ function ohnePerson(state: AppState, id: string): AppState {
     anwesenheit: neuWennGeaendert(
       state.anwesenheit,
       state.anwesenheit.map((a) => (a.pid === id ? { ...a, pid: null } : a)),
+    ),
+    // Eine Tausch-Anfrage (T153) geht mit jeder der beiden Personen — wie in
+    // der Datenbank (`on delete cascade`): Sie hat dann niemanden mehr.
+    tauschAnfragen: neuWennGeaendert(
+      state.tauschAnfragen,
+      state.tauschAnfragen.filter((a) => a.von !== id && a.an !== id),
     ),
     // Trolley-Termine wie in der Datenbank: Wer eingetragen hat, nimmt seinen
     // Termin mit (`on delete cascade`); als Partner fehlt er nur — der andere
@@ -533,7 +540,8 @@ export function reducer(state: AppState, action: AppAction): AppState {
    * (`useKalendertag`).
    */
   if (action.type === 'neuerTag') return withDerivedTasks(state, false)
-  const next = ohneEntzogene(state, ohneVerwaisteTreffpunktZusagen(state, baseReducer(state, action)))
+  const gebaut = ohneVerwaisteTreffpunktZusagen(state, baseReducer(state, action))
+  const next = OHNE_ENTZUG.has(action.type) ? gebaut : ohneEntzogene(state, gebaut)
   return quellenGeaendert(state, next) ? withDerivedTasks(next, false) : next
 }
 
@@ -1416,6 +1424,44 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return { ...state, absageId: action.id, myTaskId: null }
     case 'closeAbsage':
       return { ...state, absageId: null }
+    // Wie das Absage-Blatt ersetzt das Tausch-Blatt das der Aufgabe (T153).
+    case 'openTausch':
+      return { ...state, tauschId: action.id, myTaskId: null }
+    case 'closeTausch':
+      return { ...state, tauschId: null }
+    case 'tauschAngefragt':
+      // Je Platz eine Anfrage — eine frühere zu diesem Platz ersetzt sie.
+      return {
+        ...state,
+        tauschAnfragen: [...state.tauschAnfragen.filter((a) => a.gibtAb !== action.anfrage.gibtAb), action.anfrage],
+        toast: toastKey(state, 'tauschToastAngefragt'),
+      }
+    case 'tauschWeg': {
+      const tauschAnfragen = state.tauschAnfragen.filter((a) => a.id !== action.id)
+      return tauschAnfragen.length === state.tauschAnfragen.length ? state : { ...state, tauschAnfragen }
+    }
+    case 'getauscht': {
+      // Was die Function geschrieben hat, hier nachgezogen: beide Plätze
+      // getauscht, beide zugesagt, beide im Versand-Tagebuch — sonst zählte
+      // „Plan senden" sie bis zum nächsten Laden als ungemeldet. Jede andere
+      // Anfrage zu einem der beiden Plätze ist damit erledigt — die Function
+      // hat sie gelöscht. Ein Entzug ist es nicht (`OHNE_ENTZUG`).
+      const { gibtAb, nimmt, von, an } = action.anfrage
+      const beide = new Set([gibtAb, nimmt])
+      const name = (pid: string) => {
+        const p = state.persons.find((x) => x.id === pid)
+        return p ? displayName(p) : ''
+      }
+      const jetzt = new Date().toISOString()
+      return {
+        ...state,
+        weeks: tauschLokal(state.weeks, state.services, state.persons, action.anfrage),
+        confirmations: { ...state.confirmations, [gibtAb]: 'bestätigt', [nimmt]: 'bestätigt' },
+        sentLog: { ...state.sentLog, [sentKey(gibtAb, name(an))]: jetzt, [sentKey(nimmt, name(von))]: jetzt },
+        tauschAnfragen: state.tauschAnfragen.filter((a) => !beide.has(a.gibtAb) && !beide.has(a.nimmt)),
+        toast: toastKey(state, 'tauschToastGetauscht'),
+      }
+    }
     case 'confirmAll': {
       // Alle offenen auf einmal (T121) — dieselbe Zusage wie einzeln, je Aufgabe.
       const offen = state.myTasks.filter((t) => t.status === 'offen')
@@ -1766,8 +1812,9 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         absences: p.absences,
         // Momentaufnahmen von vor dem 17.10.2026 kennen die Absagen nicht (T126).
         absagen: p.absagen ?? [],
-        // Und von vor dem 29.10.2026 die Anwesenden (T152).
+        // Und von vor dem 29.10.2026 die Anwesenden (T152) und die Tausch-Anfragen (T153).
         anwesenheit: p.anwesenheit ?? [],
+        tauschAnfragen: p.tauschAnfragen ?? [],
         notifs: gelesenBehalten(p.notifications, state.notifs),
         confirmations: p.confirmations,
         // Aus einer alten Momentaufnahme (lib/snapshot.ts) fehlt das Feld — sie

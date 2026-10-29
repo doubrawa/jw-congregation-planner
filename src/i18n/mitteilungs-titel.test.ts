@@ -85,6 +85,7 @@ function titelAusKonstanten(datei: string): string[] {
 const titelAusErsatz = (): string[] => titelAusKonstanten('substitute/texte.ts')
 const titelAusPlan = (): string[] => titelAusKonstanten('send-plan/texte.ts')
 const titelAusTrolley = (): string[] => titelAusKonstanten('trolley/texte.ts')
+const titelAusTausch = (): string[] => titelAusKonstanten('tauschen/texte.ts')
 /**
  * Beide Titel der Erinnerungs-Function: die persönliche Erinnerung und die
  * Sammelmeldung an die Planer, die seit T99 ebenfalls in die Glocke geht.
@@ -97,6 +98,7 @@ const ALLE_ERZEUGTEN = [
   ...titelAusErsatz(),
   ...titelAusPlan(),
   ...titelAusTrolley(),
+  ...titelAusTausch(),
   ...DEMO_NOTIFICATIONS.map((n) => n.title),
 ]
 
@@ -142,6 +144,8 @@ describe('Jeder erzeugte Mitteilungs-Titel steht in der Zuordnung', () => {
     // Zuteilung und Entzug.
     expect(titelAusPlan().length, 'send-plan/texte.ts').toBe(2)
     expect(titelAusTrolley().length, 'trolley/texte.ts').toBe(4)
+    // Angefragt, getauscht, abgelehnt (T153).
+    expect(titelAusTausch().length, 'tauschen/texte.ts').toBe(3)
     expect(DEMO_NOTIFICATIONS.length, 'Demo-Bestand').toBeGreaterThan(0)
   })
 

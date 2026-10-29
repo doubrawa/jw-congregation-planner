@@ -180,6 +180,8 @@ export const LEEREN = [
   'absagen',
   // Und die Anwesenden (T152) — gezählt in Wochen, die hier gehen.
   'anwesenheit',
+  // Und offene Tausch-Anfragen (T153) — zu Plätzen in Wochen, die hier gehen.
+  'tausch_anfragen',
 ]
 
 /** Gelöscht **und** im selben Lauf aus dem SQL neu angelegt (feste IDs). */

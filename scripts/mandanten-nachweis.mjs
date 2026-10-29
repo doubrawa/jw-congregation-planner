@@ -95,6 +95,7 @@ export const RLS_TABELLEN = [
   // Die Anwesenden (T152): Die Versammlung liest, eintragen dürfen Saalordner,
   // Zoom-Ordner und wer zuteilt.
   { name: 'anwesenheit', spalte: 'congregation_id' },
+  { name: 'tausch_anfragen', spalte: 'congregation_id' },
   { name: 'absences', spalte: 'congregation_id' },
   { name: 'notifications', spalte: 'congregation_id' },
   { name: 'confirmations', spalte: 'congregation_id' },

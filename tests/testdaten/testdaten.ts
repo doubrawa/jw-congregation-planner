@@ -21,6 +21,7 @@
  */
 
 import type { Anwesenheit } from '../../src/data/anwesenheit'
+import type { TauschAnfrage } from '../../src/data/tausch'
 import { buildFsWeeks } from '../../src/data/fs'
 import { normalizeChairKeys, ROLE_GUEST_SPEAKER, serviceQualKey } from '../../src/data/helpers'
 import { montagNach } from '../../src/data/meeting-dates'
@@ -375,6 +376,23 @@ export const DEMO_ANWESENHEIT: Anwesenheit[] = [
   { woche: '2026-09-21', tab: 'we', saal: 90, video: 20, pid: null },
   { woche: '2026-09-28', tab: 'mid', saal: 58, video: 22, pid: null },
   { woche: '2026-09-28', tab: 'we', saal: 100, video: 20, pid: null },
+]
+
+/**
+ * Eine Tausch-Anfrage (T153) für die Entwicklerseite: Simon Krüger hat am
+ * Sonntag, 20.9., die Mikrofone und fragt Bernd Klein (`me=p12`), ob sie gegen
+ * dessen Dienstag, 15.9., tauschen. Mit `me=p12` steht die Karte oben auf dem
+ * Start und unter „Meine Aufgaben" — darunter Bernds nächste Aufgabe, ein
+ * Hilfsdienst der gesendeten Woche, also mit „Tauschen". Gefragt ist Bernd,
+ * nicht Simon (`me=p9`): Die Handbuch-Bilder mit Simon bleiben, wie sie sind.
+ *
+ * Nach den Regeln ginge der Tausch — beide können den Dienst, keiner fehlt,
+ * keiner ist am neuen Tag schon eingeteilt —, bis auf „Plan senden": Gesendet
+ * ist in den Testdaten nur die erste Woche. Die Seite prüft das beim Annehmen
+ * nicht; sie hat keinen Server.
+ */
+export const DEMO_TAUSCH_ANFRAGEN: TauschAnfrage[] = [
+  { id: 'demo-tausch-1', von: 'p9', an: 'p12', gibtAb: '2026-09-14|we|helper|mik|0', nimmt: '2026-09-14|mid|helper|mik|0', bis: '2026-09-15' },
 ]
 
 /**

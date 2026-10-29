@@ -1,0 +1,64 @@
+/*
+ * Tauschen (T153): das Blatt mit den Angeboten und die Karte mit der Anfrage
+ * an mich. Die Zeilen der Angebote sind die der freien Plätze
+ * (`.aufgaben-zeile`), die Knöpfe die der Aufgaben (`.aufgabe-handlungen`).
+ */
+
+.tausch-blatt {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.tausch-abschnitt {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* „Du gibst ab", „Du übernimmst dafür" — wie die Überschrift eines Abschnitts. */
+.tausch-kopf {
+  color: var(--text2);
+  font-size: calc(14px * var(--fs));
+  font-weight: 600;
+}
+
+.tausch-platz,
+.tausch-angefragt {
+  font-size: calc(16px * var(--fs));
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
+.tausch-angefragt + .aufgabe-handlungen {
+  padding-block-start: 4px;
+}
+
+.tausch-karte {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tausch-karte-titel {
+  font-size: calc(22px * var(--fs));
+  font-weight: 600;
+  line-height: 1.2;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+.tausch-paar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.tausch-paar-zeile dd {
+  margin: 0;
+  font-size: calc(16px * var(--fs));
+  font-weight: 600;
+  overflow-wrap: break-word;
+}

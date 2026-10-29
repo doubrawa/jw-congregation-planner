@@ -14,6 +14,7 @@ import { rechteVon } from '../data/rechte'
 import { eigeneTermine } from '../data/trolleys'
 import type { MyTask, TrolleyTermin } from '../data/types'
 import { AnwesenheitKarte } from '../anwesenheit/AnwesenheitKarte'
+import { TauschAnfragen } from '../tauschen/TauschAnfragen'
 import { ErsteSchritteKarte } from '../erste-schritte/ErsteSchritteKarte'
 import { aufgabenHaelften, aufgabenTitelSprache, useT } from '../i18n/useT'
 import { zeitSpanne, zuDenTrolleys } from '../trolleys/trolley-anzeige'
@@ -79,6 +80,8 @@ export function DashboardScreen() {
           {/* Während der eigenen Zusammenkunft als Saalordner oder Zoom-Ordner
               zuoberst: die Anwesenden eintragen (T152). */}
           <AnwesenheitKarte />
+          {/* Wer gefragt wird, ob er tauscht, sieht es hier zuerst (T153). */}
+          <TauschAnfragen />
           <ErsteSchritteKarte />
           {naechste ? (
             <AufgabeKarte task={naechste} saal />

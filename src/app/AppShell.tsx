@@ -13,6 +13,7 @@ import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import type { Screen, Thema } from '../data/types'
 import { AbsageBlatt } from '../aufgaben/AbsageBlatt'
+import { TauschenBlatt } from '../tauschen/TauschenBlatt'
 import { AuswertungScreen } from '../auswertung/AuswertungScreen'
 import { AufgabeBlatt } from '../aufgaben/AufgabeBlatt'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
@@ -312,6 +313,7 @@ export function AppShell() {
   const fehlerTexte = { titel: t.errTitel, text: t.errText, aktion: t.offlineRetry }
   const meineAufgabe = state.myTasks.find((task) => task.id === state.myTaskId)
   const abzusagen = state.myTasks.find((task) => task.id === state.absageId)
+  const zuTauschen = state.myTasks.find((task) => task.id === state.tauschId)
   // Am Desktop teilt die Spalte neben dem Plan zu — dafür kein Blatt darüber.
   const zuteilenBlatt = state.slotSel && !zuteilenInSpalte(state, desktop) ? state.slotSel : null
   /** Ein Blatt in seiner eigenen Fehlergrenze (siehe unten). */
@@ -399,6 +401,7 @@ export function AppShell() {
           {state.confirmOpen && vorzulegen(state.myTasks, state.substituteReqs) && blatt(<OeffnenBlatt />)}
           {/* Nach dem Blatt beim Öffnen: „Ich kann nicht" darin legt sich darüber. */}
           {abzusagen && blatt(<AbsageBlatt key={abzusagen.id} task={abzusagen} />)}
+          {zuTauschen && blatt(<TauschenBlatt key={zuTauschen.id} task={zuTauschen} />)}
         </main>
       </div>
       {meldung}

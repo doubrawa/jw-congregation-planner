@@ -144,8 +144,8 @@ jeder höchstens eine – „seine Gruppe" in der Tabelle ist die, der er
 angehört.
 
 Die Meldungen an die Planer – eine **Verhinderung**, **Ersatz gefunden**,
-**unbestätigte Zuteilungen** – bekommen Admins und Planer: Wer zuteilt, sucht
-auch den Ersatz. Personen und Einstellungen zeigt die App einem Planer gar
+**Getauscht**, **unbestätigte Zuteilungen** – bekommen Admins und Planer: Wer
+zuteilt, sucht auch den Ersatz. Personen und Einstellungen zeigt die App einem Planer gar
 nicht erst an; die Datenbank weist sie zusätzlich ab. Bis zum 15. Oktober 2026
 teilte der Planer nur zu – die Pläne selbst änderte der Admin.
 
@@ -607,6 +607,20 @@ bestätigen"), verschwindet das Gesuch bei allen wieder.
 Bei **Programmpunkten** gibt es keine automatische Suche — dort teilst du neu
 zu. Der Name des Absagenden bleibt rot an seinem Platz stehen, rechts
 „abgesagt", damit du siehst, worum es geht.
+
+### Wenn zwei tauschen
+
+Statt abzusagen kann ein Verkündiger einen **Hilfsdienst tauschen**: Er fragt
+jemanden, der denselben Dienst an einem anderen Tag hat, und gibt seinen Platz
+gegen dessen ab. Angeboten bekommt er nur, wer an beiden Tagen kann, für den
+Dienst freigegeben ist, am neuen Tag nicht schon eingeteilt ist und ein Konto
+hat – und das erst, wenn der Plan der Woche gesendet ist. Sagt der Gefragte zu,
+tauschen beide Plätze auf einmal, beide gelten als zugesagt und als
+benachrichtigt (der Knopf **Plan senden** zählt sie nicht noch einmal). Deine
+Zustimmung braucht es nicht: Du bekommst die Mitteilung **„Getauscht"** mit
+beiden Tagen und wer jetzt wo steht; ein Tipp darauf öffnet die Woche im
+Planen. Teilst du vorher selbst um, geht der Tausch nicht mehr – die App sagt
+es dem, der zusagen wollte. Programmpunkte tauscht niemand; die teilst du zu.
 
 ### Den Plan senden
 
@@ -1999,6 +2013,7 @@ Montag der laufenden Woche, nicht auf den Tag genau:
 | Wochenpläne mit allen Zuteilungen, Treffpunkte, Zusagen und Absagen, wer benachrichtigt wurde, Gruppenbesuche, vorgemerkte Vorträge, Weitere Pläne, Anwesende, Abwesenheiten (ab ihrem Ende) | **ein Jahr** |
 | Mitteilungen in der Glocke, Erinnerungen, der Grund einer Abwesenheit (ab ihrem Ende), Trolley-Termine, abgelaufene Anmelde-Links | **acht Wochen** |
 | Die Anmeldung eines Geräts, das ein Jahr nicht in der App war | **ein Jahr** – danach braucht es einen neuen Link |
+| Eine Anfrage zum Tauschen, die niemand beantwortet hat | bis zum früheren der beiden Tage |
 
 **Warum ein Jahr für die Pläne:** „Automatisch" und die Vorschläge beim
 Zuteilen fragen, wer am längsten nicht dran war. Wer nur alle paar Monate eine
@@ -2012,7 +2027,10 @@ und wie oft abgesagt wurde, zählt sie über den ganzen Zeitraum. Warum jemand w
 war, braucht sie nicht: Den Grund löscht die App schon nach acht Wochen. Und
 sehen müssen das Jahr nur, die die Auswertung sehen: Abwesenheiten, die mehr als
 acht Wochen vorbei sind, zeigt die App nur Admins und Planern – jedem anderen
-nur die eigenen.
+nur die eigenen. Den **Grund** einer Abwesenheit sieht nur, wem sie gehört,
+und der Admin; Planer brauchen für die Planung nur den Zeitraum. Ebenso sieht
+die **E-Mail-Adressen** der Personen nur der Admin (beides seit dem
+29. Oktober 2026).
 
 Personen, Gruppen, Dienste, der Grundplan der Treffpunkte, die Trolleys und die
 Konten haben kein Alter. Sie bleiben, bis du sie änderst oder entfernst.

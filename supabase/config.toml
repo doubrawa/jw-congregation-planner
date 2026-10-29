@@ -72,3 +72,9 @@ verify_jwt = true
 # Trolleys das Admin-Recht. Die Versammlung kommt aus der Mitgliedszeile.
 [functions.trolley]
 verify_jwt = true
+
+# Tauschen (T153): prüft selbst über /auth/v1/user, wer da ruft; tauschen kann
+# nur, wer den Platz hat, annehmen nur, wer gefragt ist. Die Versammlung und die
+# eigene Person kommen aus der Mitgliedszeile.
+[functions.tauschen]
+verify_jwt = true
