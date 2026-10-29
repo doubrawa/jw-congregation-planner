@@ -313,6 +313,16 @@ interface AnmeldeLinkRow {
  */
 const ANMELDE_LINK_SPALTEN = 'person_id, gueltig_bis, erstellt_at, gesendet_at, benutzt_at'
 
+/**
+ * Die Spalten von `persons` und `absences`, die die App lädt — ebenso
+ * **ausdrücklich** (Sicherheits-Review 29.10.2026): Adresse und Grund sind für
+ * die Versammlung gesperrt und kommen über `personen_mails` und
+ * `abwesenheit_gruende`, nur zu dem, dem die App sie zeigt.
+ * `spaltenrechte.test.ts` misst beide Listen an den Mappern und am Schema.
+ */
+export const PERSON_SPALTEN = 'id, fn, ln, planner_vorgemerkt, zuteiler_vorgemerkt, role, female, priv, grp, fam'
+export const ABWESENHEIT_SPALTEN = 'id, person_id, user_id, from_date, to_date'
+
 export function anmeldeLinkAusZeile(r: AnmeldeLinkRow): AnmeldeLink {
   return { personId: r.person_id, gueltigBis: r.gueltig_bis, erstelltAt: r.erstellt_at, gesendetAt: r.gesendet_at, benutztAt: r.benutzt_at }
 }
@@ -631,9 +641,12 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .gte('start', verteilungAb)
     .order('start', { ascending: false })
 
-  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, linkRows, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, vortragRows, trolleyRows, trolleyTerminRows, planRows, planEintragRows, absageRows, anwesenheitRows] = await Promise.all([
+  const [cong, persons, mails, services, groups, weeks, absences, gruende, notifs, confs, members, linkRows, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, vortragRows, trolleyRows, trolleyTerminRows, planRows, planEintragRows, absageRows, anwesenheitRows] = await Promise.all([
     supabase.from('congregations').select(CONG_SPALTEN.join(', ')).eq('id', congregationId).maybeSingle(),
-    supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
+    supabase.from('persons').select(PERSON_SPALTEN).eq('congregation_id', congregationId).order('created_at'),
+    // Die Adressen nur für den Admin — jedem anderen liefert die Funktion
+    // ohnehin nichts.
+    member.planner ? supabase.rpc('personen_mails') : Promise.resolve({ data: [], error: null }),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
     supabase.from('groups').select('*').eq('congregation_id', congregationId).order('position'),
     wochenAbfrage,
@@ -644,16 +657,19 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     // bekäme der Planer nicht zu sehen. Ein Jahr nach ihrem Ende, wie die
     // Wochen: Die Auswertung rechnet über das ganze Jahr damit, wer fehlte
     // (T126, 17.10.2026). Den Grund leert die Datenbank nach acht Wochen.
-    alleSeiten<AbsenceRow>((von, bis) =>
+    alleSeiten<Omit<AbsenceRow, 'reason'>>((von, bis) =>
       db
         .from('absences')
-        .select('*', { count: 'exact' })
+        .select(ABWESENHEIT_SPALTEN, { count: 'exact' })
         .eq('congregation_id', congregationId)
         .gte('to_date', verteilungAb)
         .order('from_date')
         .order('id')
         .range(von, bis),
     ),
+    // Die Gründe: dem Admin alle, sonst die eigenen. Es sind wenige — die
+    // Datenbank leert sie nach acht Wochen.
+    supabase.rpc('abwesenheit_gruende'),
     // Dieselbe Abfrage, die auch das Nachladen beim Öffnen der Glocke benutzt.
     notifAbfrage(supabase, congregationId),
     // Seitenweise (`alleSeiten`): Die Zusagen wachsen ohne Grenze.
@@ -797,9 +813,15 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // Datenbank, in der `schema.sql` seitdem nicht neu lief, hat sie noch nicht.
   // Die App bleibt dann benutzbar, nur ohne Besuche — gespeichert werden
   // können sie erst nach dem Schema (dann meldet der Schreibfehler-Toast).
-  const firstErr = [cong, persons, services, groups, weeks, absences, notifs, confs, members, fsRulesRows, fsWeeksRows]
+  //
+  // Die Adressen stehen in der Liste: Fehlten sie dem Admin, schriebe er beim
+  // nächsten Speichern einer Person eine leere zurück (`personToRow`).
+  const firstErr = [cong, persons, mails, services, groups, weeks, absences, notifs, confs, members, fsRulesRows, fsWeeksRows]
     .find((r) => r.error)?.error
   if (firstErr) return { ok: false, reason: 'error', message: firstErr.message }
+  // Die Gründe nicht: Geschrieben wird eine Abwesenheit nur neu, nie
+  // zurück — ohne sie fehlt bloß ein Satz in der Liste.
+  if (gruende.error) console.error('[abwesenheit_gruende]', gruende.error.message)
   // Ohne die Links fehlt nur der Stand der Anmeldung an den Personen — kein
   // Grund, dem Admin die ganze App zu verweigern.
   if (linkRows.error) console.error('[anmelde_links]', linkRows.error.message)
@@ -821,7 +843,10 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   if (anwesenheitRows.error) console.error('[anwesenheit]', anwesenheitRows.error.message)
 
   const serviceList = (services.data ?? []).map((r) => serviceFromRow(r as ServiceRow))
-  const personList = (persons.data ?? []).map((r) => personFromRow(r as PersonRow))
+  const mailVon = new Map(((mails.data ?? []) as { id: string; mail: string }[]).map((m) => [m.id, m.mail]))
+  const personList = ((persons.data ?? []) as unknown as Omit<PersonRow, 'mail'>[]).map((r) =>
+    personFromRow({ ...r, mail: mailVon.get(r.id) ?? '' }),
+  )
   // Absteigend geholt, aufsteigend gebraucht (`CongregationData.weeks`).
   const wochenAbsteigend = (weeks.data ?? []) as WeekRow[]
   // Dieselbe Grenze noch einmal am Ergebnis. Sie schneidet nichts weg, was die
@@ -898,6 +923,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   const fsWeeks = fsLeiterBinden(ausgerichtet, personList)
   const planListe = ((planRows.data ?? []) as PlanRow[]).map(planFromRow)
   const geladenePlaene = new Set(planListe.map((p) => p.id))
+  const grundVon = new Map(((gruende.data ?? []) as { id: string; reason: string }[]).map((g) => [g.id, g.reason]))
 
   const data: CongregationData = {
     congregation: { name: c?.name ?? '', hall: c?.hall ?? '', times: zeiten },
@@ -918,7 +944,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     planEintraege: ((planEintragRows.data ?? []) as PlanEintragRow[])
       .map(planEintragFromRow)
       .filter((e) => geladenePlaene.has(e.planId)),
-    absences: (absences.data ?? []).map((r) => absenceFromRow(r as AbsenceRow)),
+    absences: (absences.data ?? []).map((r) => absenceFromRow({ ...r, reason: grundVon.get(r.id) ?? '' })),
     absagen: absageRows.data.map(absageFromRow),
     anwesenheit: ((anwesenheitRows.data ?? []) as AnwesenheitRow[]).map(anwesenheitFromRow),
     notifications: notificationsAus((notifs.data ?? []) as NotificationRow[], weekList, zeiten),

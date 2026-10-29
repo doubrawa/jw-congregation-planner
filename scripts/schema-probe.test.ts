@@ -546,7 +546,8 @@ const LAEUFE: Record<string, Lauf[]> = {
             { user_id: U4, congregation_id: C, person_id: P4, planner: false, zuteiler: false },
           ],
           persons: [
-            { id: P1, congregation_id: C, fn: 'Probe', ln: 'Planer', priv: {} },
+            // Mit Adresse: Ohne sie blieben (88) und (89) ungemessen.
+            { id: P1, congregation_id: C, fn: 'Probe', ln: 'Planer', mail: 'planer@probe.invalid', priv: {} },
             { id: P2, congregation_id: C, fn: 'Probe', ln: 'Mitglied', priv: { 'svc:mik': true } },
             { id: P3, congregation_id: C, fn: 'Probe', ln: 'Zuteiler', priv: {} },
             { id: P4, congregation_id: C, fn: 'Probe', ln: 'Aufseher', priv: {} },
@@ -1150,7 +1151,7 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
 
   it('mandanten-nachweis: ist der vorhandene Wert nicht lesbar, wird nichts geändert', async () => {
     const { ausgabe, aufrufe } = await fahreGestoert('mandanten-nachweis.mjs', (a) =>
-      a.method === 'GET' && a.pfad.startsWith('persons?select=mail') ? kaputt : undefined,
+      a.method === 'GET' && a.pfad.startsWith('persons?select=fn') ? kaputt : undefined,
     )
     expect(ausgabe.join('\n')).toMatch(/persons ändern +→ nicht versucht: vorhandener Wert nicht lesbar \(400\)/)
     // Hier ging vorher ein leerer Wert hinaus — bei einem Loch in der Richtlinie

@@ -13,15 +13,19 @@ const store = vi.hoisted(() => ({
   filter: [] as Array<[string, string, string, unknown]>,
 }))
 const fromMock = vi.hoisted(() => vi.fn())
+/** Die Datenbank-Funktionen: je Name eine Warteschlange wie bei den Tabellen, unter `rpc/<name>`. */
+const rpcMock = vi.hoisted(() => vi.fn())
 /** Die Edge Functions — nur für die Fälle, in denen eine Function die Woche schreibt. */
 const invokeMock = vi.hoisted(() => vi.fn())
 
 vi.mock('./supabase', () => ({
-  supabase: { from: fromMock, functions: { invoke: invokeMock } },
+  supabase: { from: fromMock, rpc: rpcMock, functions: { invoke: invokeMock } },
 }))
 
 import {
+  ABWESENHEIT_SPALTEN,
   loadCongregationData,
+  PERSON_SPALTEN,
   platzFuellen,
   saveFsWeek,
   saveWeek,
@@ -73,6 +77,12 @@ function chainFor(table: string) {
   return chain
 }
 
+/** Ein Funktionsaufruf: die nächste hinterlegte Antwort, sonst eine leere Liste. Mitgeschrieben als `rpc/<name>`. */
+function rpcFor(name: string) {
+  store.filter.push([`rpc/${name}`, 'rpc', '', null])
+  return Promise.resolve((store.responses[`rpc/${name}`] ?? []).shift() ?? { data: [], error: null })
+}
+
 /** Obergrenze, mit der `table` abgefragt wurde (undefined: keine). */
 const grenze = (table: string): unknown =>
   store.filter.find(([t, m]) => t === table && m === 'limit')?.[3]
@@ -108,6 +118,8 @@ function seedResponses(over: Partial<Record<string, Array<{ data: unknown; error
 beforeEach(() => {
   fromMock.mockReset()
   fromMock.mockImplementation(chainFor)
+  rpcMock.mockReset()
+  rpcMock.mockImplementation(rpcFor)
   store.responses = {}
   store.filter = []
 })
@@ -482,6 +494,74 @@ describe('Die Anmelde-Links (T121, Phase 8)', () => {
     const res = await loadCongregationData('u1')
     expect(res.ok && res.data.anmeldeLinks).toEqual([])
     expect(err).toHaveBeenCalledWith('[anmelde_links]', 'kaputt')
+    err.mockRestore()
+  })
+})
+
+/**
+ * **Adressen und Gründe nur, wem die App sie zeigt** (Sicherheits-Review
+ * 29.10.2026). Die Spalten `persons.mail` und `absences.reason` sind für die
+ * Versammlung gesperrt; ein `*` scheiterte an ihnen als Ganzes. Beides kommt
+ * über eine Funktion, die nur liefert, was der Angemeldete sehen darf.
+ */
+describe('Adressen und Gründe (Sicherheits-Review 29.10.2026)', () => {
+  const ausgewaehlt = (table: string): string[] =>
+    store.filter.filter(([t, m]) => t === table && m === 'select').map(([, , spalten]) => spalten)
+  const aufgerufen = (name: string): boolean => store.filter.some(([t]) => t === `rpc/${name}`)
+  const abwesenheit = (id: string) => ({ id, person_id: 'p1', user_id: null, from_date: '2026-09-07', to_date: '2026-09-10' })
+
+  it('Personen und Abwesenheiten kommen mit ausdrücklichen Spalten — ohne Adresse, ohne Grund', async () => {
+    seedResponses()
+    await loadCongregationData('u1')
+    expect(ausgewaehlt('persons')).toEqual([PERSON_SPALTEN])
+    expect(ausgewaehlt('absences')).toEqual([ABWESENHEIT_SPALTEN])
+    expect(PERSON_SPALTEN).not.toMatch(/\*|\bmail\b/)
+    expect(ABWESENHEIT_SPALTEN).not.toMatch(/\*|\breason\b/)
+  })
+
+  it('der Admin bekommt Adressen und Gründe über die Funktionen — jede an ihrer Zeile', async () => {
+    seedResponses({
+      // Brächte die Tabelle doch eine Adresse mit, zählte sie nicht: Die eine Quelle ist die Funktion.
+      persons: [{ data: [{ ...personRow, mail: 'aus-der-tabelle@example.org' }, { ...personRow, id: 'p2', fn: 'Bert' }], error: null }],
+      absences: [{ data: [abwesenheit('a1'), abwesenheit('a2')], error: null, count: 2 }],
+      'rpc/personen_mails': [{ data: [{ id: 'p2', mail: 'bert@example.org' }], error: null }],
+      'rpc/abwesenheit_gruende': [{ data: [{ id: 'a2', reason: 'Urlaub' }], error: null }],
+    })
+    const res = await loadCongregationData('u1')
+    if (!res.ok) throw new Error('nicht geladen')
+    expect(res.data.persons.map((p) => [p.id, p.mail])).toEqual([['p1', ''], ['p2', 'bert@example.org']])
+    expect(res.data.absences.map((a) => [a.id, a.reason])).toEqual([['a1', ''], ['a2', 'Urlaub']])
+  })
+
+  it('ein Mitglied ohne Admin-Recht fragt nach den Gründen, nicht nach den Adressen', async () => {
+    seedResponses({
+      members: [
+        { data: { congregation_id: 'c1', person_id: 'p9', planner: false, zuteiler: true }, error: null },
+        { data: [], error: null },
+      ],
+    })
+    const res = await loadCongregationData('u1')
+    expect(res.ok).toBe(true)
+    expect(aufgerufen('personen_mails')).toBe(false)
+    expect(aufgerufen('abwesenheit_gruende')).toBe(true)
+  })
+
+  it('scheitern die Adressen, lädt die App nicht — der Admin schriebe beim Speichern einer Person eine leere zurück', async () => {
+    seedResponses({ 'rpc/personen_mails': [{ data: null, error: { message: 'kaputt' } }] })
+    const res = await loadCongregationData('u1')
+    expect(res).toEqual({ ok: false, reason: 'error', message: 'kaputt' })
+  })
+
+  it('scheitern die Gründe, lädt sie trotzdem — es fehlt nur der Satz in der Liste', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    seedResponses({
+      absences: [{ data: [abwesenheit('a1')], error: null, count: 1 }],
+      'rpc/abwesenheit_gruende': [{ data: null, error: { message: 'kaputt' } }],
+    })
+    const res = await loadCongregationData('u1')
+    if (!res.ok) throw new Error('nicht geladen')
+    expect(res.data.absences.map((a) => a.reason)).toEqual([''])
+    expect(err).toHaveBeenCalledWith('[abwesenheit_gruende]', 'kaputt')
     err.mockRestore()
   })
 })

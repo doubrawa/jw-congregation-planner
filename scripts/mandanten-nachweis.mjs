@@ -392,9 +392,11 @@ export async function main(arg = process.argv.slice(2)) {
       // Aufgeräumt wird vom Ziel: Es sieht die Zeile und darf sie als Planer
       // löschen. Auch nach einer kaputten Probe — scheiterte nur das
       // Nachsehen, kann sie trotzdem angekommen sein. Mit `RETURNING`, damit
-      // „gelöscht" heißt, dass wirklich eine Zeile weg ist.
+      // „gelöscht" heißt, dass wirklich eine Zeile weg ist — nur der Kennung:
+      // `RETURNING *` verlangte die gesperrte Adresse und ließe das ganze
+      // Löschen scheitern.
       if (!e1.ok) {
-        const weg = await ziel.rest(`persons?id=eq.${probeId}`, 'DELETE', undefined, 'return=representation')
+        const weg = await ziel.rest(`persons?id=eq.${probeId}&select=id`, 'DELETE', undefined, 'return=representation')
         const geloescht = weg.status < 400 && Array.isArray(weg.daten) && weg.daten.length > 0
         if (geloescht) {
           console.log(`    (die eingefügte Zeile ${probeId} wurde sofort wieder gelöscht)`)
@@ -410,12 +412,18 @@ export async function main(arg = process.argv.slice(2)) {
         // Den vorhandenen Wert **sicher** kennen, bevor geschrieben wird. Hier
         // stand `?? ''`: Scheiterte das Lesen, ging ein leerer Wert hinaus — und
         // hätte die Richtlinie ein Loch, wäre die echte Angabe weg gewesen.
-        const ist = await ziel.rest(`persons?select=mail&id=eq.${marke.id}`)
+        //
+        // Der Vorname, nicht die Adresse: Die liest seit dem 29.10.2026 niemand
+        // mehr über die Tabelle (Spaltenrechte), auch der Admin nicht. Zurück
+        // kommt nur die Kennung — ein `RETURNING *` scheiterte an derselben
+        // Sperre, und ein 403 hieße dann „abgewiesen", ohne dass die Richtlinie
+        // gefragt worden wäre.
+        const ist = await ziel.rest(`persons?select=fn&id=eq.${marke.id}`)
         const vorhanden = Array.isArray(ist.daten) ? ist.daten[0] : undefined
         if (ist.status >= 400 || !vorhanden) {
           zeile(false, `persons ändern        → nicht versucht: vorhandener Wert nicht lesbar (${ist.status}) — PROBE KAPUTT`)
         } else {
-          const aend = await seite.rest(`persons?id=eq.${marke.id}`, 'PATCH', { mail: vorhanden.mail ?? '' })
+          const aend = await seite.rest(`persons?id=eq.${marke.id}&select=id`, 'PATCH', { fn: vorhanden.fn })
           const e2 = bewerteSchreiben(aend.status, aend.daten)
           zeile(e2.ok, `persons ändern        → ${e2.wie}`)
         }

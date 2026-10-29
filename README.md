@@ -336,6 +336,16 @@ Der `anon`-Key ist für den Browser gedacht und darf öffentlich sein — der
 Schutz der Daten kommt aus den RLS-Policies (Mitglieder sehen nur die eigene
 Versammlung, schreiben dürfen im Wesentlichen nur Planer).
 
+Eine Richtlinie wählt Zeilen, keine Spalten. Was innerhalb einer sichtbaren
+Zeile nicht jeder lesen soll, sperren **Spaltenrechte** (`grant select (…)`):
+die Prüfsummen der Anmelde-Links, seit dem 29.10.2026 auch die E-Mail-Adressen
+der Personen und der Grund einer Abwesenheit. Ein `select=*` auf diese
+Tabellen scheitert deshalb, die App nennt ihre Spalten ausdrücklich. Adressen
+und Gründe kommen über `personen_mails` (nur der Admin) und
+`abwesenheit_gruende` (der Admin alle, sonst die eigenen). Eine neue Spalte in
+`persons` oder `absences` gehört in die Freigabe — `tests/spaltenrechte.test.ts`
+meldet, wenn sie fehlt.
+
 ### Neuaufbau: wenn sich das Schema ändert
 
 [`supabase/schema.sql`](supabase/schema.sql) ist mit `create table if not

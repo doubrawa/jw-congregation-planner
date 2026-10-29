@@ -1500,6 +1500,70 @@ create policy absences_write on public.absences
     )
   );
 
+-- **Was nicht jeder lesen soll** (Sicherheits-Review 29.10.2026): die
+-- E-Mail-Adressen der Personen und die Gründe der Abwesenheiten. Die Zeilen
+-- liest die ganze Versammlung — die Planung braucht Namen und Zeiträume —,
+-- aber eine Richtlinie wählt Zeilen, keine Spalten: Über die REST-Schnittstelle
+-- las jedes Mitglied alle Adressen und jeden Grund („Krankenhaus"), obwohl die
+-- App beides nur dem Admin zeigt und den Grund dazu dem, dem er gehört.
+--
+-- Deshalb Spaltenrechte wie bei `anmelde_links`: Die übrigen Spalten bleiben
+-- lesbar, `select=*` scheitert. Adressen und Gründe liefern die beiden
+-- Funktionen darunter, und zwar genau dem, dem die App sie zeigt. Schreiben
+-- bleibt, wie es war (`persons_write`, `absences_write`) — ohne `RETURNING`,
+-- wie die App schreibt.
+--
+-- Eine neue Spalte gehört in die Liste, sonst liest sie niemand, und die App
+-- lädt nicht mehr: `tests/spaltenrechte.test.ts` hält Liste, Tabelle und App
+-- beisammen.
+revoke select on public.persons from anon, authenticated;
+grant select (id, congregation_id, fn, ln, role, female, priv, planner_vorgemerkt,
+              zuteiler_vorgemerkt, fam, grp, created_at)
+  on public.persons to authenticated;
+
+revoke select on public.absences from anon, authenticated;
+grant select (id, congregation_id, user_id, person_id, from_date, to_date, created_at)
+  on public.absences to authenticated;
+
+-- Die Adressen — nur für den Admin: Er lädt Personen ein und verschickt die
+-- Anmelde-Links (`send-invite` liest sie selbst, mit der Dienstrolle).
+create or replace function public.personen_mails()
+returns table (id uuid, mail text)
+language sql stable security definer
+set search_path = public
+as $$
+  select p.id, p.mail
+    from public.persons p
+   where p.congregation_id = public.my_congregation_id()
+     and public.is_planner()
+     and p.mail <> ''
+$$;
+
+revoke all on function public.personen_mails() from public, anon;
+grant execute on function public.personen_mails() to authenticated;
+
+-- Die Gründe — dem Admin alle, sonst die eigenen: wem die Abwesenheit gehört
+-- oder wer sie eingetragen hat, wie im `using` von `absences_write`. Der Planer
+-- braucht für die Planung nur den Zeitraum.
+create or replace function public.abwesenheit_gruende()
+returns table (id uuid, reason text)
+language sql stable security definer
+set search_path = public
+as $$
+  select a.id, a.reason
+    from public.absences a
+   where a.congregation_id = public.my_congregation_id()
+     and a.reason <> ''
+     and (
+       public.is_planner()
+       or a.user_id = auth.uid()
+       or (a.person_id is not null and a.person_id = public.my_person_id())
+     )
+$$;
+
+revoke all on function public.abwesenheit_gruende() from public, anon;
+grant execute on function public.abwesenheit_gruende() to authenticated;
+
 -- Mitteilungen sind personalisiert (je Empfänger eine Zeile): jeder sieht/ändert/
 -- löscht nur die eigenen. Unmittelbar schreibt nur der Admin — und die App
 -- nie: Was sie meldet (eine Verhinderung, ein geholtes Programm), geht über

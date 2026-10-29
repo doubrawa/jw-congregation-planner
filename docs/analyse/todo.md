@@ -8997,6 +8997,45 @@ erst dann ändern sich beide Plätze auf einmal, beide zugesagt, der Planer
 bekommt eine Mitteilung. Offen: nur Hilfsdienste (wie die freien Plätze, T142)
 oder auch Programmpunkte, und ob der Planer zustimmen muss.
 
+### T154 · Adressen und Gründe nur für den, dem die App sie zeigt 🔧 ✅ umgesetzt, nicht ausgerollt (29. Oktober 2026)
+
+Aus dem Sicherheits-Review über die ganze App (29. Oktober 2026, Betreiber:
+„wenn es was zu fixen gibt im security review dann mach das"). Zwei Befunde,
+beide derselbe Mechanismus: Eine Richtlinie wählt Zeilen, keine Spalten.
+
+1. **Der Grund einer Abwesenheit** (`absences.reason`) — die App zeigt ihn dem
+   Betroffenen und dem Admin. Über die REST-Schnittstelle las ihn jedes
+   Mitglied der Versammlung, mit dem öffentlichen Schlüssel aus dem Bündel und
+   dem eigenen Token: `absences?select=person_id,reason`. Ein Grund ist
+   Freitext, und „Krankenhaus" ist eine Gesundheitsangabe.
+2. **Die E-Mail-Adressen** (`persons.mail`) — die App zeigt sie nur dem Admin.
+   Über die Schnittstelle las jedes Mitglied alle, an die 95.
+
+**Behoben** mit Spaltenrechten wie bei den Anmelde-Links: Leserecht an der
+ganzen Tabelle entzogen, alle übrigen Spalten einzeln gegeben. Adresse und
+Grund liefern zwei Funktionen (`security definer`): `personen_mails` dem Admin,
+`abwesenheit_gruende` dem Admin alle, sonst die eigenen (wem sie gehört oder
+wer sie eintrug — wie das `using` von `absences_write`). Entschieden ohne den
+Betreiber, weil es nichts wegnimmt, was die App heute zeigt: Den Grund sah der
+Planer nirgends (das Personen-Detail ist Sache des Admins), die Adressen
+ebenso. Die App lädt beide Tabellen mit ausdrücklichen Spalten; scheitern die
+Adressen, lädt sie gar nicht — sonst schriebe der Admin beim Speichern einer
+Person eine leere zurück. Scheitern die Gründe, fehlt nur der Satz.
+
+Proben: `tests/spaltenrechte.test.ts` (Freigabe = Tabelle ohne die gesperrte
+Spalte = was die Mapper lesen; die beiden Funktionen), vier Fälle in
+`data-load.test.ts`, Mutationsprobe 10 von 10 bewacht. Die Mitgliedsrechte-Probe
+misst es live mit den Fällen (86)–(92); ihr Aufräumen der alten Abwesenheiten
+ging bis dahin über den Grund und geht jetzt über die Kennungen. Der
+Mandanten-Nachweis ändert zum Schreibversuch den Vornamen statt der Adresse und
+liest nur die Kennung zurück — ein `RETURNING *` scheiterte an der Sperre, und
+sein 403 hätte „abgewiesen" geheißen, ohne dass die Richtlinie gefragt war.
+
+**Ausrollen:** `schema.sql` einspielen und **gleich danach** pushen. Dazwischen
+scheitert das Laden bei der alten App (`select=*` auf `persons`), umgekehrt
+bekäme die neue App ohne die Funktionen keine Adressen und lüde beim Admin
+nicht. Danach die Mitgliedsrechte-Probe fahren.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
