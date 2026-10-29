@@ -45,8 +45,11 @@ export interface Besetzung {
   du: boolean
 }
 
+/** Der Stand des eigenen Platzes: Wer dort sitzt, ist eingeteilt — offen ist er nie. */
+export type DuLage = Exclude<PlatzLage, 'offen'>
+
 /** Die Lage, die eine Zusage zeigt — im Saal, an der Zeile beim Planen und unter „Meine Aufgaben". */
-export const LAGE_DER_ZUSAGE: Record<TaskStatus, 'voll' | 'wartet' | 'problem'> = {
+export const LAGE_DER_ZUSAGE: Record<TaskStatus, DuLage> = {
   bestätigt: 'voll',
   offen: 'wartet',
   verhindert: 'problem',
@@ -134,9 +137,12 @@ export function besetztVon(b: Besetzung): { besetzt: number; gesamt: number } {
   return { besetzt, gesamt: besetzt + b.offen }
 }
 
-/** Die Lagen in der Reihenfolge, in der sie Plätze bekommen und bei Gleichstand gewinnen. */
-const ORDNUNG = ['voll', 'wartet', 'problem', 'offen'] as const
-type Verteilt = (typeof ORDNUNG)[number]
+/**
+ * Die Lagen eines Platzes in der Reihenfolge des Saals: So bekommen sie Plätze
+ * und gewinnen bei Gleichstand, und so stehen sie im Balken der Planung
+ * nebeneinander (`SaalBalken`) — offen sitzt hinten.
+ */
+export const PLATZ_LAGEN = ['voll', 'wartet', 'problem', 'offen'] as const satisfies readonly PlatzLage[]
 
 /**
  * Die 18 Plätze des Bilds, von vorn nach hinten.
@@ -156,8 +162,8 @@ export function saalLagen(b: Besetzung): SaalLage[] {
   const anzahl = verteilen({ voll: b.voll, wartet: b.wartet, problem: b.problem, offen: b.offen }, frei)
 
   const vorn = frei - anzahl.offen
-  const wunsch: Array<{ lage: Verteilt; stelle: number; rang: number }> = []
-  for (const [rang, lage] of ORDNUNG.entries()) {
+  const wunsch: Array<{ lage: PlatzLage; stelle: number; rang: number }> = []
+  for (const [rang, lage] of PLATZ_LAGEN.entries()) {
     if (lage === 'offen') continue
     for (let j = 0; j < anzahl[lage]; j++) wunsch.push({ lage, stelle: (j + 0.5) / anzahl[lage], rang })
   }
@@ -168,23 +174,23 @@ export function saalLagen(b: Besetzung): SaalLage[] {
 }
 
 /** `n` Plätze nach dem größten Rest auf die Lagen — keine vorhandene geht leer aus. */
-function verteilen(zahlen: Record<Verteilt, number>, n: number): Record<Verteilt, number> {
-  const summe = ORDNUNG.reduce((s, lage) => s + zahlen[lage], 0)
+function verteilen(zahlen: Record<PlatzLage, number>, n: number): Record<PlatzLage, number> {
+  const summe = PLATZ_LAGEN.reduce((s, lage) => s + zahlen[lage], 0)
   // Nichts gezählt (keine Plätze, oder nur der eigene): Der Rest des Saals ist offen.
   if (summe === 0) return { voll: 0, wartet: 0, problem: 0, offen: n }
 
-  const anteil = ORDNUNG.map((lage) => ({ lage, genau: (zahlen[lage] * n) / summe }))
-  const out = Object.fromEntries(anteil.map((a) => [a.lage, Math.floor(a.genau)])) as Record<Verteilt, number>
-  let rest = n - ORDNUNG.reduce((s, lage) => s + out[lage], 0)
+  const anteil = PLATZ_LAGEN.map((lage) => ({ lage, genau: (zahlen[lage] * n) / summe }))
+  const out = Object.fromEntries(anteil.map((a) => [a.lage, Math.floor(a.genau)])) as Record<PlatzLage, number>
+  let rest = n - PLATZ_LAGEN.reduce((s, lage) => s + out[lage], 0)
   for (const a of [...anteil].sort((x, y) => (y.genau % 1) - (x.genau % 1))) {
     if (rest === 0) break
     out[a.lage]++
     rest--
   }
 
-  for (const lage of ORDNUNG) {
+  for (const lage of PLATZ_LAGEN) {
     if (zahlen[lage] === 0 || out[lage] > 0) continue
-    const groesste = ORDNUNG.reduce((g, l) => (out[l] > out[g] ? l : g))
+    const groesste = PLATZ_LAGEN.reduce((g, l) => (out[l] > out[g] ? l : g))
     out[groesste]--
     out[lage]++
   }

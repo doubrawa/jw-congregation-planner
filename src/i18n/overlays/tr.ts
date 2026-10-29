@@ -750,6 +750,8 @@ export default {
   "druckNochFrei": "henüz boş – yardımcı görevleri uygulamadan üstlenebilirsin, diğerleri için ihtiyarlarla konuş.",
   "druckMit": "{a} ile {b}",
   "s89DieserZettel": "Bu kartı yazdır",
+  "s89ZettelN": "{n} kart",
+  "s89AuchPartner": "Yardımcılar için de",
   "druckVersammlungstreffpunkte": "Tüm cemaat için tarla hizmeti buluşmaları",
   "druckGruppentreffpunkte": "Grupların tarla hizmeti buluşmaları",
   "druckAndersAlsSonst": "Normalden farklı",

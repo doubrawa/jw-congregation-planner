@@ -650,6 +650,10 @@ export const DE = {
     s89Open: 'S-89 anzeigen',
     // Im S-89-Blatt ab dem Tablet (Entwurf GDesktopAufgaben): druckt den einen Zettel.
     s89DieserZettel: 'Diesen Zettel drucken',
+    // Die Leiste „S-89 drucken" beim Planen (29.10.2026): wie viele Zettel
+    // herauskommen, und der Schalter, der jedem Partner eines Gesprächs einen
+    // eigenen mitdruckt. Bis dahin stand neben dem Schalter nur „Partner".
+    s89ZettelN: 'Zettel: {n}', s89AuchPartner: 'Auch für Partner',
     s89Note: 'Hinweis: Quelle und Schulungspunkt für deine Aufgabe findest du im Arbeitsheft.',
     confirmTitle: 'Bitte bestätige deine Zuteilungen',
     bestaetigen: 'Bestätigen', bestaetigt: 'Bestätigt', verhindert: 'Ich bin verhindert', verhindertChip: 'Verhindert',

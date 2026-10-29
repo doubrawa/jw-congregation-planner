@@ -15,7 +15,11 @@ import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 import type { PartItem } from '../data/types'
 import { S89Bogen } from './S89Bogen'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
+import { dict } from '../i18n/ui'
+import { fill } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
+
+const t = dict('de')
 
 /**
  * T71 — der Druckbogen der S-89-Zettel.
@@ -129,6 +133,26 @@ describe('S89Bogen (Bedienung)', () => {
     expect(ohne).toBeLessThan(mit)
     // Genau die Gespräche fallen weg — nicht mehr und nicht weniger.
     expect(mit - ohne).toBe(alleS89DerWoche(buildDemoWeeks(), 0, STANDARD_ZEITEN, false).filter((z) => z.partner).length)
+  })
+
+  it('die Leiste sagt, wie viele Zettel herauskommen — und die Zahl folgt dem Schalter (29.10.2026)', () => {
+    // Bis dahin stand neben dem Schalter nur „Partner", und keine Zahl: Wer
+    // Papier einlegte, wusste nicht, wie viele Blätter es werden.
+    const { container } = render(<Buehne state={state()} />)
+    const zahl = () => container.querySelector('.s89-druck-zahl')?.textContent
+    const mit = alleS89DerWoche(buildDemoWeeks(), 0, STANDARD_ZEITEN).length
+    const ohne = alleS89DerWoche(buildDemoWeeks(), 0, STANDARD_ZEITEN, false).length
+    expect(zahl()).toBe(fill(t.s89ZettelN, { n: mit }))
+    expect(drucke(container).zettel).toBe(mit)
+    fireEvent.click(container.querySelector('[role="switch"]')!)
+    expect(zahl()).toBe(fill(t.s89ZettelN, { n: ohne }))
+    expect(drucke(container).zettel).toBe(ohne)
+  })
+
+  it('neben dem Schalter steht, was er tut — als sichtbarer Text und als sein Name', () => {
+    const { container } = render(<Buehne state={state()} />)
+    expect(container.querySelector('.s89-druck-text')?.textContent).toBe(t.s89AuchPartner)
+    expect(container.querySelector('[role="switch"]')?.getAttribute('aria-label')).toBe(t.s89AuchPartner)
   })
 
   it('ohne Partner-Zettel bleibt je Aufgabe einer', () => {

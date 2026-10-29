@@ -750,6 +750,8 @@ export default {
   "druckNochFrei": "encore libre – tu peux prendre les services auxiliaires dans l’application, sinon parle aux anciens.",
   "druckMit": "{a} avec {b}",
   "s89DieserZettel": "Imprimer cette fiche",
+  "s89ZettelN": "Fiches\u00a0: {n}",
+  "s89AuchPartner": "Aussi pour les interlocuteurs",
   "druckVersammlungstreffpunkte": "Réunions pour la prédication de l’assemblée",
   "druckGruppentreffpunkte": "Réunions pour la prédication des groupes",
   "druckAndersAlsSonst": "Différent de d’habitude",

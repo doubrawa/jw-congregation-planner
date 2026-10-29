@@ -750,6 +750,8 @@ export default {
   "druckNochFrei": "jeszcze wolne – zadania pomocnicze możesz przejąć w aplikacji, w pozostałych sprawach zwróć się do starszych.",
   "druckMit": "{a} i {b}",
   "s89DieserZettel": "Wydrukuj tę karteczkę",
+  "s89ZettelN": "Karteczki: {n}",
+  "s89AuchPartner": "Także dla pomocników",
   "druckVersammlungstreffpunkte": "Zbiórki dla całego zboru",
   "druckGruppentreffpunkte": "Zbiórki grup",
   "druckAndersAlsSonst": "Inaczej niż zwykle",

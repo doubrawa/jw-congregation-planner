@@ -18,7 +18,8 @@
 }
 
 /* Am Handy steht beim Planer die Planung an der Stelle der Woche (wie im
-   Entwurf): Die Termine sieht er dort, wo er sie plant. */
+   Entwurf): Die Termine sieht er dort, wo er sie plant. Ab dem Tablet steht
+   die Woche in seiner zweiten Spalte unter der Planung. */
 @media (max-width: 767.98px) {
   .start-spalten.is-planer .start-woche {
     display: none;
@@ -52,10 +53,11 @@
 
 .start-zeile {
   display: grid;
-  grid-template-columns: minmax(66px, auto) minmax(0, 1fr) 20px;
+  grid-template-columns: minmax(0, 1fr) 20px;
   align-items: center;
   column-gap: 10px;
   min-height: 48px;
+  padding-block: 8px;
   width: 100%;
   text-align: start;
 }
@@ -71,21 +73,41 @@
 }
 
 .start-termin {
-  grid-template-columns: minmax(66px, auto) minmax(48px, auto) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   min-height: 44px;
 }
 
+/* Tag (und Uhrzeit), daneben der Text. Passt sein längstes Wort nicht mehr
+   daneben, steht der Text darunter — Platz statt Bruch mitten im Wort: Bei
+   320 px und Stufe 1,45 brach „Microphon|es", „Mikrofo|ny", „Microfoa|ne",
+   „الميكروفونا|ت" (gemessen am 29.10.2026). Englisch trennt Chrome in großen
+   Wörtern nie, Polnisch, Rumänisch, Türkisch, Arabisch und Persisch gar nicht. */
+.start-zeile-inhalt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+}
+
 .start-zeile-tag {
+  flex: none;
+  min-width: 66px;
   color: var(--text3);
   font-size: calc(14px * var(--fs));
   white-space: nowrap;
 }
 
+.start-zeile-zeit {
+  min-width: 48px;
+}
+
+/* Umbrechen statt „…": Bis zum 29.10.2026 endete ein langer Text abgeschnitten. */
 .start-zeile-text {
-  overflow: hidden;
+  flex: 1 1 0;
   font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
 }
 
 .start-termin .start-zeile-text {
@@ -158,6 +180,20 @@
 .dash-plan-zeitraum {
   color: var(--text3);
   font-size: calc(13.5px * var(--fs));
+}
+
+/* Der Saal als Balken, rechts die Zahl der Spur („31/37"). */
+.dash-plan-besetzung {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dash-plan-zahl {
+  color: var(--text3);
+  font-size: calc(13.5px * var(--fs));
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .dash-plan-chips {

@@ -67,7 +67,12 @@ export function AppSymbol() {
   )
 }
 
-function Saal() {
+/**
+ * Der Saal über der Karte. Der eigene Platz wie in der App (`bausteine/Saal`):
+ * blass, solange die Zusage aussteht, mit ihr in Minze gefüllt. Beim Wechsel
+ * wächst die Füllung in der Szene „Aufgabe" (film-szenen.ts, `du`).
+ */
+function Saal({ zugesagt }: { zugesagt: boolean }) {
   const [pultX, pultY] = LOGO_GROSS.pult.mitte
   return (
     <svg className="fm-saal" viewBox={LOGO_GROSS.viewBox}>
@@ -77,7 +82,8 @@ function Saal() {
         if (lage === 'du') {
           return (
             <g key={i}>
-              <circle className="fm-du" cx={x} cy={y} r={LOGO_GROSS.r} />
+              <circle className="fm-du-grund" cx={x} cy={y} r={LOGO_GROSS.r} />
+              <circle className="fm-du" data-f="du" cx={x} cy={y} r={LOGO_GROSS.r} style={zugesagt ? undefined : { transform: 'scale(0)' }} />
               <circle className="fm-du-ring" cx={x} cy={y} r="25" />
             </g>
           )
@@ -115,7 +121,7 @@ export function MockStart({ inhalt, t, knopf }: { inhalt: FilmInhalt; t: Dict; k
           {inhalt.gruss}
         </p>
         <div className="fm-karte fm-karte--held" data-f="karte">
-          <Saal />
+          <Saal zugesagt={knopf === 'bestaetigt'} />
           <span className="fm-wann">
             <span className="fm-punkt" />
             <span>{inhalt.wann}</span>

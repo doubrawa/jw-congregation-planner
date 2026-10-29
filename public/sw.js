@@ -165,7 +165,9 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(data.title || 'Versammlung.app', {
       body: data.body || '',
       icon: 'icon-192.png',
-      badge: 'icon-192.png',
+      // Android liest vom Badge nur den Alphakanal: nur Plätze und Pult, ohne
+      // Kachel — mit `icon-192.png` stand dort ein weißer Klotz (make-icons.mjs).
+      badge: 'badge-96.png',
       /*
        * **Gleiche Art ersetzt, statt zu stapeln** (V10). Ohne `tag` legt jede
        * Erinnerung eine weitere Meldung auf den Sperrbildschirm; bei täglicher

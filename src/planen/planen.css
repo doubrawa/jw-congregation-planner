@@ -1411,11 +1411,27 @@ body:has(.planen-leiste) .toast {
 
 /* ---- S-89 drucken (T71) ----------------------------------------------- */
 
-/* Leiste im Planen: Schalter für die Partner-Zettel links, Druckknopf rechts.
-   Wie viele auf ein Blatt kommen, steht nicht zur Wahl — sechs, siehe
-   `S89_JE_BLATT` (druck/S89Druck.tsx). Passen Schalter und Knopf nicht neben
-   die Beschriftung, rücken sie darunter an den Rand — „Interlocuteur" ragte
-   bei 320 px und Stufe 1,15 hinaus (T128). */
+/* Leiste im Planen: oben der Titel und rechts, wie viele Zettel herauskommen;
+   darunter der Schalter für die Partner-Zettel mit seiner Beschriftung und der
+   Druckknopf. Wie viele auf ein Blatt kommen, steht nicht zur Wahl — sechs,
+   siehe `S89_JE_BLATT` (druck/S89Druck.tsx). Passen Schalter und Knopf nicht
+   neben die Beschriftung, rücken sie darunter an den Rand — „Interlocuteur"
+   ragte bei 320 px und Stufe 1,15 hinaus (T128). */
+.s89-druck-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 12px;
+}
+
+.s89-druck-zahl {
+  color: var(--text2);
+  font-size: calc(12.5px * var(--fs));
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .s89-druck-row {
   display: flex;
   flex-wrap: wrap;
@@ -1424,7 +1440,7 @@ body:has(.planen-leiste) .toast {
   padding-top: 6px;
 }
 
-.s89-druck-count {
+.s89-druck-text {
   flex: 1 1 0;
   max-width: 100%;
   font-size: calc(12.5px * var(--fs));

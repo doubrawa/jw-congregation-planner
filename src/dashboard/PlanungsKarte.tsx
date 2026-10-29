@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from 'react'
 import { zuDenWochen } from '../app/bereich'
 import { useApp } from '../app/context'
+import { SaalBalken } from '../bausteine/Saal'
 import { Zeichen } from '../bausteine/Zeichen'
 import { useAbwesend } from '../app/useAbwesend'
 import { useKalendertag } from '../app/useKalendertag'
@@ -10,15 +11,18 @@ import { WOCHEN_SPALTE_BREITE, useMedia } from '../components/useMedia'
 import { tageSpanne } from '../components/datum-anzeige'
 import { fromIso, isoVonKalendertag } from '../data/meeting-dates'
 import { planungsstand, problemeDerWoche, type Wochenstand } from '../data/planungsstand'
+import { besetztVon, type Besetzung } from '../data/saal'
 import type { FsBereich } from '../data/types'
-import { fill, programmSpanne, useProgWeeks, useT } from '../i18n/useT'
+import { besetzungText, fill, programmSpanne, useProgWeeks, useT } from '../i18n/useT'
+import { besetzungDerWoche } from '../planen/plan-spur'
 import { HolenKnopf } from '../planen/ProgrammHolen'
+import { konflikteVon } from '../planen/useKonflikte'
 import { useWochenImport } from '../planen/useWochenImport'
 
 /**
  * **Die Planungs-Karte** — was der Planer in den kommenden Wochen noch zu tun
- * hat (T95). Nur für Planer; der Start-Bildschirm stellt sie ihm an die erste
- * Stelle.
+ * hat (T95). Nur für Planer; der Start-Bildschirm stellt sie ihm neben die
+ * eigenen Aufgaben, am Handy darunter.
  *
  * **Eine Zeile je Woche, und nur, wo etwas zu tun ist.** Ein Tipp öffnet Planen
  * auf genau dieser Woche. Die Chips darin sagen es mit den Wörtern der Wochen
@@ -30,6 +34,11 @@ import { useWochenImport } from '../planen/useWochenImport'
  * „Wort: Zahl" hat dabei kein Pluralproblem: „1 Konflikte" stand bis T95 auf
  * der alten Kachel, und in Sprachen mit drei Pluralformen wäre jede feste
  * Wendung irgendwo falsch (siehe T96).
+ *
+ * **Darüber der Saal als Balken** (29.10.2026): wie weit die Zusammenkünfte der
+ * Woche besetzt und zugesagt sind, daneben die Zahl der Spur bei den Wochen
+ * („31/37", `besetzungDerWoche`). Die Chips bleiben: Sie sagen, was zu tun ist —
+ * den Versand zeigt der Balken gar nicht, ein Engpass hat keinen Platz darin.
  *
  * **Reichen die Programme nicht mehr weit genug**, steht „Holen" gleich hier.
  * Der Hinweis verschwindet, sobald der Vorrat wieder reicht — der Knopf ist
@@ -95,16 +104,36 @@ export function PlanungsKarte() {
   /*
    * Die Wochenspanne in der Programm-Anzeigesprache — dieselbe Regel wie der Kopf
    * in Planen (`useProgWeek`), sonst stünde dieselbe Woche vor und nach dem
-   * Tippen in zwei Sprachen da.
+   * Tippen in zwei Sprachen da. Dazu die Besetzung für den Balken, mit den
+   * Konflikten, die auch der Saal beim Planen rot zeigt (`konflikteVon`, einmal
+   * je Zustand gerechnet).
    */
   const zeilen = useMemo(
     () =>
       stand.wochen.map((w) => {
         const week = state.weeks[w.wi]
         const p = week ? progWeek(week) : null
-        return { ...w, spanne: p ? programmSpanne(p) : '' }
+        const besetzung = week
+          ? besetzungDerWoche(
+              week,
+              { services: state.services, confirmations: state.confirmations, zeiten: state.congregation.times },
+              fromIso(tag),
+              (tab) => konflikteVon(state.weeks, w.wi, state.persons, state.services, tab, abwesend).betrifft,
+            )
+          : null
+        return { ...w, spanne: p ? programmSpanne(p) : '', besetzung }
       }),
-    [stand.wochen, state.weeks, progWeek],
+    [
+      stand.wochen,
+      state.weeks,
+      progWeek,
+      state.services,
+      state.confirmations,
+      state.congregation.times,
+      state.persons,
+      abwesend,
+      tag,
+    ],
   )
 
   /*
@@ -174,6 +203,7 @@ export function PlanungsKarte() {
           <button key={w.wi} type="button" className="dash-plan-woche" onClick={() => oeffnen(w)}>
             <span className="dash-plan-kopf">
               <span className="dash-plan-range">{w.spanne}</span>
+              {w.besetzung && <WochenBalken besetzung={w.besetzung} />}
               {/* Mit den Wörtern der Wochen beim Planen (`lageDerWoche`): erst
                   die Probleme — Konflikte und was nicht besetzbar ist —, dann
                   die offenen Plätze, zuletzt der Versand. */}
@@ -238,6 +268,26 @@ function BereichZeile({ titel, onClick, children }: { titel: string; onClick: ()
       </span>
       <Zeichen name="weiter" />
     </button>
+  )
+}
+
+/**
+ * Der Balken einer Woche und rechts daneben ihre Zahl — „31/37" wie an der
+ * Spur der Wochen. Vorgelesen wird die Beschriftung des Balkens, die Zahl
+ * daneben nicht noch einmal. Ist nichts mehr zu besetzen (alles vorbei oder
+ * ausgefallen), steht kein Balken da.
+ */
+function WochenBalken({ besetzung }: { besetzung: Besetzung }) {
+  const { t } = useT()
+  const { besetzt, gesamt } = besetztVon(besetzung)
+  if (gesamt === 0) return null
+  return (
+    <span className="dash-plan-besetzung">
+      <SaalBalken besetzung={besetzung} label={besetzungText(t, besetzt, gesamt)} />
+      <span className="dash-plan-zahl" aria-hidden="true">
+        {besetzt}/{gesamt}
+      </span>
+    </span>
   )
 }
 

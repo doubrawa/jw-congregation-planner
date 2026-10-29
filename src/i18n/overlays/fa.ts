@@ -749,6 +749,8 @@ export default {
   "druckNochFrei": "هنوز خالی است – وظایف کمکی را در برنامه می‌توانید بر عهده بگیرید، در غیر این صورت با پیران جماعت صحبت کنید.",
   "druckMit": "{a} با {b}",
   "s89DieserZettel": "چاپ این کارت",
+  "s89ZettelN": "{n} کارت",
+  "s89AuchPartner": "برای دستیارها هم",
   "druckVersammlungstreffpunkte": "جلسات خدمت موعظهٔ جماعت",
   "druckGruppentreffpunkte": "جلسات خدمت موعظهٔ گروه‌ها",
   "druckAndersAlsSonst": "متفاوت با همیشه",

@@ -53,6 +53,9 @@ const TRENNT = [
   // stand am Handy des Betreibers (393 px, Stufe 1,15) über den Rand hinaus, bei 412 px und
   // Stufe 1,45 um 142 px (26.10.2026).
   ['aufgaben/aufgaben.css', '.aufgabe-titel'],
+  // Die Zeilen darunter und die Woche der Versammlung auf dem Start: Bis zum 29.10.2026 endeten
+  // sie mit „…" — beim Planer am Tablet „Zusammenkunft unter …". Jetzt brechen sie um.
+  ['dashboard/dashboard.css', '.start-zeile-text'],
 ] as const
 
 describe('Bei großer Schrift bekommt ein langes Wort Platz oder trennt', () => {
@@ -65,6 +68,35 @@ describe('Bei großer Schrift bekommt ein langes Wort Platz oder trennt', () => 
 
   it.each(TRENNT)('%s %s bricht ohne Trennregeln der Sprache notfalls um, statt hinauszuragen', (datei, selektor) => {
     expect(deklarationen(datei, selektor)).toMatch(/overflow-wrap:\s*(break-word|anywhere)/)
+  })
+
+  it('der Name der App im Menü schrumpft, statt hinauszuragen — ein Markenname trennt nicht', () => {
+    // In der Schublade ragte „Versammlung" bei 320 px und Stufe 1,45 11 px aus
+    // seinem Kasten, bis an das Kreuz (28.10.2026). „Versammlung" misst 6,5 em
+    // (Manrope 600): Mit 15 % der Spalte je em passt es immer.
+    expect(deklarationen('app/menue.css', '.seitenmenue-name')).toMatch(/container-type:\s*inline-size/)
+    const app = deklarationen('app/menue.css', '.seitenmenue-app')
+    expect(app).toMatch(/font-size:\s*min\(calc\(15\.5px \* var\(--fs\)\), 15cqi\)/)
+    expect(app).not.toMatch(/hyphens/)
+  })
+
+  it('die Zeilen auf dem Start brechen um, statt mit „…" abzuschneiden', () => {
+    // Trennregeln nützen nichts, solange die Zeile nicht umbrechen darf.
+    const text = deklarationen('dashboard/dashboard.css', '.start-zeile-text')
+    expect(text).not.toMatch(/white-space:\s*nowrap/)
+    expect(text).not.toMatch(/text-overflow:\s*ellipsis/)
+  })
+
+  it('passt das längste Wort einer Zeile auf dem Start nicht neben den Tag, rückt der Text darunter', () => {
+    // Gemessen am 29.10.2026 bei 320 px und Stufe 1,45: „Microphon|es", „Mikrofo|ny",
+    // „Microfoa|ne", „الميكروفونا|ت" brachen neben dem Tag mitten im Wort.
+    const D = 'dashboard/dashboard.css'
+    expect(deklarationen(D, '.start-zeile-inhalt')).toMatch(/flex-wrap:\s*wrap/)
+    expect(deklarationen(D, '.start-zeile-tag')).toMatch(/flex:\s*none/)
+    const text = deklarationen(D, '.start-zeile-text')
+    expect(text).toMatch(/flex:\s*1 1 0/)
+    // Ohne Mindestbreite rückte er nie um, sondern bräche wieder im Wort.
+    expect(text).not.toMatch(/min-width:\s*0/)
   })
 
   // Chrome trennt so spät wie möglich. Ein Programmpunkt kommt aus den Daten und
@@ -321,7 +353,8 @@ describe('Was neben einem Namen steht, rückt darunter, statt ihn zu zerbrechen'
     // Bei den Zusagen ragte neben „Enviar recordatorio" der Satz zur Erinnerung bis 87 px hinaus (320 px).
     ['planen/planen.css', '.zusagen-erinnern', '.zusagen-erinnern > .klein-text', '.zusagen-erinnern > .knopf-pille'],
     // Neben Schalter und Knopf ragte „Interlocuteur" bei 320 px und Stufe 1,15 hinaus.
-    ['planen/planen.css', '.s89-druck-row', '.s89-druck-count', '.s89-druck-row > .switch'],
+    // Seit dem 29.10.2026 steht dort „Aussi pour les interlocuteurs".
+    ['planen/planen.css', '.s89-druck-row', '.s89-druck-text', '.s89-druck-row > .switch'],
     // Neben der Lage ragte in der Planung die gebundene Spanne bei 320 px bis 38 px aus ihrem Knopf.
     ['planen/planen.css', '.wochen-karte-kopf', '.wochen-karte-knopf', '.wochen-karte-lage'],
     // Neben „vor 2 Stunden" brach der Titel einer Mitteilung bei 320 px in allen Sprachen.

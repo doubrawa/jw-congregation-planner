@@ -400,6 +400,16 @@
   fill: var(--akzent);
 }
 
+/* Der eigene Platz: blass bis zur Zusage, dann wächst die Füllung aus der Mitte. */
+.fm-du-grund {
+  fill: var(--wartet);
+}
+
+.fm-du {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 .fm-du-ring {
   fill: none;
   stroke: var(--akzent);

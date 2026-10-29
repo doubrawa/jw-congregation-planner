@@ -6,7 +6,7 @@ import { meetingDate } from '../data/meeting-dates'
 import { alleS89DerWoche } from '../data/planning'
 import { S89Druck } from '../druck/S89Druck'
 import { useDruckBogen } from '../druck/useDruckBogen'
-import { useT } from '../i18n/useT'
+import { fill, useT } from '../i18n/useT'
 
 /**
  * **Die S-89-Zettel einer Woche drucken** (T71; T121, Phase 9): die Leiste im
@@ -47,15 +47,20 @@ export function S89Bogen() {
     <>
       {/*
         Die Überschrift sagt, worum es geht — zusammengesetzt aus dem
-        Formularnamen und `drucken`, also ohne neuen Wörterbuch-Schlüssel.
-        Darunter steht nur noch die **Zahl**: „S-89" ein zweites Mal wäre
-        dieselbe Auskunft zweimal.
+        Formularnamen und `drucken`. Rechts daneben, wie viele Zettel
+        herauskommen; sie folgt dem Schalter. Neben dem Schalter steht, was er
+        tut: Er druckt jedem Partner eines Gesprächs einen eigenen Zettel. Bis
+        zum 29.10.2026 stand dort nur „Partner", und die Zahl fehlte seit dem
+        Entwurf der Leiste (Phase 9b).
       */}
       <div className="panel panel--pb14 s89-druck" data-farbe="neutral2">
-        <h2 className="panel-label">S-89 {t.drucken}</h2>
+        <div className="s89-druck-kopf">
+          <h2 className="panel-label">S-89 {t.drucken}</h2>
+          <span className="s89-druck-zahl">{fill(t.s89ZettelN, { n: zettel.length })}</span>
+        </div>
         <div className="s89-druck-row">
-          <span className="s89-druck-count">{t.s89Partner}</span>
-          <Switch on={mitPartner} label={t.s89Partner} onToggle={() => setMitPartner((v) => !v)} />
+          <span className="s89-druck-text">{t.s89AuchPartner}</span>
+          <Switch on={mitPartner} label={t.s89AuchPartner} onToggle={() => setMitPartner((v) => !v)} />
           <button type="button" className="s89-druck-btn" onClick={() => drucken(<S89Druck zettel={zettel} datum={datum} />)}>
             {t.drucken}
           </button>

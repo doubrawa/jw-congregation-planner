@@ -750,6 +750,8 @@ export default {
   "druckNochFrei": "aún libre – los servicios de apoyo puedes asumirlos en la aplicación; si no, habla con los ancianos.",
   "druckMit": "{a} con {b}",
   "s89DieserZettel": "Imprimir esta tarjeta",
+  "s89ZettelN": "Tarjetas: {n}",
+  "s89AuchPartner": "También para cada ayudante",
   "druckVersammlungstreffpunkte": "Reuniones para el servicio de la congregación",
   "druckGruppentreffpunkte": "Reuniones para el servicio de los grupos",
   "druckAndersAlsSonst": "Distinto de lo habitual",

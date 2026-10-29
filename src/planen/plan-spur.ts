@@ -1,7 +1,7 @@
 import type { SpurLage, SpurSchritt } from '../bausteine/Spur'
 import { istAusgefallen, MEETING_TABS } from '../data/helpers'
 import { offeneMeldungen, vergangeneZusammenkuenfte } from '../data/plan-versand'
-import { besetztVon, besetzung, zusagenStand } from '../data/saal'
+import { besetztVon, besetzung, PLATZ_LAGEN, zusagenStand, type Besetzung } from '../data/saal'
 import type {
   ConfirmationMap,
   FsInstance,
@@ -10,6 +10,7 @@ import type {
   PersoenlichLog,
   SentLog,
   Service,
+  SlotAssignment,
   Week,
   WeitererPlan,
 } from '../data/types'
@@ -73,6 +74,12 @@ export function wochenZahlen(
   return { ...zahlenDerZusammenkunft(week, tab, q), neu: neuDerWoche(week, fsWeek, q, heute) }
 }
 
+/** Die Zusammenkünfte einer Woche, die noch zählen: weder ausgefallen noch vorbei. */
+function anstehende(week: Week, zeiten: MeetingTimes, heute: Date): MeetingKey[] {
+  const vorbei = vergangeneZusammenkuenfte(week, zeiten, heute)
+  return MEETING_TABS.filter((tab) => !istAusgefallen(week, tab) && !vorbei.has(tab))
+}
+
 /**
  * Dieselben Zahlen für die **Zusagen der Woche** (Phase 5g): beide
  * Zusammenkünfte zusammen, ohne die ausgefallenen und ohne die, die vorbei
@@ -84,10 +91,8 @@ export function zahlenDerWoche(
   q: SpurQuellen,
   heute: Date,
 ): WochenZahlen {
-  const vorbei = vergangeneZusammenkuenfte(week, q.zeiten, heute)
   const summe = { besetzt: 0, gesamt: 0, bestaetigt: 0, zuBestaetigen: 0 }
-  for (const tab of MEETING_TABS) {
-    if (istAusgefallen(week, tab) || vorbei.has(tab)) continue
+  for (const tab of anstehende(week, q.zeiten, heute)) {
     const z = zahlenDerZusammenkunft(week, tab, q)
     summe.besetzt += z.besetzt
     summe.gesamt += z.gesamt
@@ -95,6 +100,28 @@ export function zahlenDerWoche(
     summe.zuBestaetigen += z.zuBestaetigen
   }
   return { ...summe, neu: neuDerWoche(week, fsWeek, q, heute) }
+}
+
+/**
+ * **Die Besetzung einer Woche** für den Balken der Planungs-Karte
+ * (29.10.2026): die Lagen des Saals (`besetzung`) über dieselben
+ * Zusammenkünfte wie `zahlenDerWoche` — so steht neben dem Balken dieselbe
+ * Zahl wie an der Spur der Wochen („Zuteilen 31/37"). Rot ist, wie im Saal
+ * beim Planen, auch ein Platz, dessen Person in einem Konflikt steht
+ * (`imKonflikt` je Zusammenkunft).
+ */
+export function besetzungDerWoche(
+  week: Week,
+  q: Pick<SpurQuellen, 'services' | 'confirmations' | 'zeiten'>,
+  heute: Date,
+  imKonflikt: (tab: MeetingKey) => (slot: SlotAssignment) => boolean,
+): Besetzung {
+  const summe: Besetzung = { voll: 0, wartet: 0, problem: 0, offen: 0, du: false }
+  for (const tab of anstehende(week, q.zeiten, heute)) {
+    const b = besetzung(week[tab], q.services, q.confirmations, week.start, tab, null, imKonflikt(tab))
+    for (const lage of PLATZ_LAGEN) summe[lage] += b[lage]
+  }
+  return summe
 }
 
 /** Wohin ein Tipp auf einen Schritt der Spur führt — wo es einen Weg gibt. */

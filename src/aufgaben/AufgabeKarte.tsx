@@ -2,7 +2,7 @@ import { useApp } from '../app/context'
 import { Punkt } from '../bausteine/Punkt'
 import { Saal } from '../bausteine/Saal'
 import type { MyTask } from '../data/types'
-import { aufgabenSprache, aufgabenZeilen, useT } from '../i18n/useT'
+import { aufgabenTitelSprache, aufgabenZeilen, useT } from '../i18n/useT'
 import { aufgabeWann } from './aufgabe-anzeige'
 import { useSaal } from './useSaal'
 import './aufgaben.css'
@@ -17,13 +17,16 @@ export function AufgabeKarte({ task, saal = false }: { task: MyTask; saal?: bool
   const { state } = useApp()
   const i18n = useT()
   const besetzung = useSaal(saal ? task : undefined)
-  const { titel, unter, titelIstPunkt } = aufgabenZeilen(task, i18n)
+  const { titel, unter } = aufgabenZeilen(task, i18n)
   // Der Titel trennt (`.aufgabe-titel`): Steht oben der Programmpunkt, nach der
   // Sprache des Programms, sonst trägt die Rolle die des Lesers — wie im Blatt.
-  const titelSprache = titelIstPunkt ? aufgabenSprache(task, state.lang, state.congLang) : undefined
+  const titelSprache = aufgabenTitelSprache(task, state.lang, state.congLang)
   return (
     <section className={besetzung ? 'karte karte--held aufgabe-karte mit-saal' : 'karte karte--held aufgabe-karte'}>
-      {besetzung && <Saal lagen={besetzung.lagen} label={besetzung.label} />}
+      {/* Je Aufgabe ein eigener Saal: Wechselt die Aufgabe (die nächste ist über
+          Nacht eine andere), füllt sich ihr Platz nicht, als hätte man eben
+          bestätigt — der Übergang gehört nur zum Bestätigen. */}
+      {besetzung && <Saal key={task.id} lagen={besetzung.lagen} label={besetzung.label} du={besetzung.du} />}
       <div className="aufgabe-wann">
         <Punkt art="du" />
         <span>{aufgabeWann(task, state.lang, i18n)}</span>

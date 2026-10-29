@@ -750,6 +750,8 @@ export default {
   "druckNochFrei": "ще вільно — допоміжні обов’язки можна взяти в застосунку, щодо іншого звертайтеся до старійшин.",
   "druckMit": "{a} і {b}",
   "s89DieserZettel": "Надрукувати цю картку",
+  "s89ZettelN": "Картки: {n}",
+  "s89AuchPartner": "Також для напарників",
   "druckVersammlungstreffpunkte": "Спільні зустрічі для служіння",
   "druckGruppentreffpunkte": "Зустрічі груп для служіння",
   "druckAndersAlsSonst": "Не так, як завжди",

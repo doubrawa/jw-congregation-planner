@@ -146,9 +146,17 @@
   flex-direction: column;
   min-width: 0;
   line-height: 1.25;
+  container-type: inline-size;
 }
 
+/* „Versammlung.app" ist ein Markenname: Er trennt nicht, er schrumpft, bis
+   „Versammlung" neben Zeichen und Kreuz passt — 6,5 em in Manrope 600
+   (gemessen am 29.10.2026), also höchstens 15 % der Spalte je em. In der
+   Schublade ragte es bei 320 px und Stufe 1,45 in allen zwölf Sprachen 11 px
+   hinaus, bis an den Knopf ✕ (28.10.2026). Wo Platz ist, bleibt die Schrift
+   der Stufe; „.app" bricht weiter dahinter um (`wbr`). */
 .seitenmenue-app {
+  font-size: min(calc(15.5px * var(--fs)), 15cqi);
   font-weight: 600;
 }
 

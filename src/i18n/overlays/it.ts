@@ -750,6 +750,8 @@ export default {
   "druckNochFrei": "ancora libero – i servizi di supporto puoi prenderli nell’app, altrimenti parla con gli anziani.",
   "druckMit": "{a} con {b}",
   "s89DieserZettel": "Stampa questo foglietto",
+  "s89ZettelN": "Foglietti: {n}",
+  "s89AuchPartner": "Anche per ogni assistente",
   "druckVersammlungstreffpunkte": "Adunanze per il servizio della congregazione",
   "druckGruppentreffpunkte": "Adunanze per il servizio dei gruppi",
   "druckAndersAlsSonst": "Diverso dal solito",

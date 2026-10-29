@@ -41,9 +41,23 @@ export function aufgabenLabel(
   task: { title: string; rolle?: string; lesersprache?: boolean },
   i18n: Pick<I18n, 'tp' | 'tu'>,
 ): string {
-  const links = task.title ? aufgabenTp(task, i18n)(task.title) : ''
-  const rechts = task.rolle ? i18n.tu(task.rolle) : ''
-  return links && rechts ? `${links} · ${rechts}` : links || rechts
+  const { punkt, rolle } = aufgabenHaelften(task, i18n)
+  return punkt && rolle ? `${punkt} · ${rolle}` : punkt || rolle
+}
+
+/**
+ * Die zwei Hälften einer Aufgabe, jede mit ihrem Übersetzer — für Stellen, die
+ * sie getrennt setzen, weil jede nach ihrer Sprache trennt (die Zeilen auf dem
+ * Start: der Punkt mit `aufgabenTitelSprache`, die Rolle in der des Lesers).
+ */
+export function aufgabenHaelften(
+  task: { title: string; rolle?: string; lesersprache?: boolean },
+  i18n: Pick<I18n, 'tp' | 'tu'>,
+): { punkt: string; rolle: string } {
+  return {
+    punkt: task.title ? aufgabenTp(task, i18n)(task.title) : '',
+    rolle: task.rolle ? i18n.tu(task.rolle) : '',
+  }
 }
 
 /**
@@ -57,17 +71,11 @@ export function aufgabenLabel(
 export function aufgabenZeilen(
   task: { title: string; rolle?: string; lesersprache?: boolean; s89?: { partner: string } | null },
   i18n: Pick<I18n, 't' | 'tp' | 'tu'>,
-): {
-  titel: string
-  unter: string
-  /** Steht oben der Programmpunkt (Sprache des Programms, `aufgabenSprache`) — nicht die Rolle? */
-  titelIstPunkt: boolean
-} {
-  const punkt = task.title ? aufgabenTp(task, i18n)(task.title) : ''
-  const rolle = task.rolle ? i18n.tu(task.rolle) : ''
+): { titel: string; unter: string } {
+  const { punkt, rolle } = aufgabenHaelften(task, i18n)
   const partner = task.s89?.partner ? `${i18n.t.s89Partner}: ${task.s89.partner}` : ''
-  if (!punkt) return { titel: rolle, unter: partner, titelIstPunkt: false }
-  return { titel: punkt, unter: [rolle, partner].filter(Boolean).join(' · '), titelIstPunkt: true }
+  if (!punkt) return { titel: rolle, unter: partner }
+  return { titel: punkt, unter: [rolle, partner].filter(Boolean).join(' · ') }
 }
 
 /**
@@ -102,6 +110,27 @@ export function aufgabenTermin(task: { date: string; lesersprache?: boolean }, i
  */
 export function aufgabenSprache(task: { lesersprache?: boolean }, lang: string, congLang: string): string {
   return task.lesersprache ? lang : versammlungsSprache(congLang)
+}
+
+/**
+ * `lang` einer Beschriftung, die vorn den Programmpunkt trägt: die Sprache des
+ * Programms (`aufgabenSprache`), nach deren Regeln sie trennt. Ohne
+ * Programmpunkt steht vorn die Rolle in der Sprache des Lesers — `undefined`,
+ * kein eigenes `lang`. Eine Stelle für die große Karte, das Blatt und die
+ * Zeilen auf dem Start.
+ */
+export function aufgabenTitelSprache(task: { title: string; lesersprache?: boolean }, lang: string, congLang: string): string | undefined {
+  return task.title ? aufgabenSprache(task, lang, congLang) : undefined
+}
+
+/**
+ * „Besetzung: 20/23" — die Zahl an ihr Wort gebunden (T128). Eine Stelle für
+ * den Saal, die Karte der Woche, den Balken der Planung und die Blätter der
+ * automatischen Zuteilung; bis zum 29.10.2026 stand die Zeile an fünf Stellen
+ * ausgeschrieben.
+ */
+export function besetzungText(t: Pick<Dict, 'saalBesetzung'>, besetzt: number, gesamt: number): string {
+  return zahlBinden(`${t.saalBesetzung}: ${besetzt}/${gesamt}`)
 }
 
 /**

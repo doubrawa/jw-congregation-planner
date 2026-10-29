@@ -750,6 +750,8 @@ export default {
   "druckNochFrei": "still open – you can take on support duties in the app; otherwise, speak to the elders.",
   "druckMit": "{a} with {b}",
   "s89DieserZettel": "Print this slip",
+  "s89ZettelN": "Slips: {n}",
+  "s89AuchPartner": "Also for assistants",
   "druckVersammlungstreffpunkte": "Congregation field service meetings",
   "druckGruppentreffpunkte": "Group field service meetings",
   "druckAndersAlsSonst": "Different from usual",

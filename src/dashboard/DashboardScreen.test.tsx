@@ -114,9 +114,8 @@ const platz = (w: Week) => (w.mid.sections[0]!.items[0] as PartItem).names[0]!
 /** Sein Aufgaben-Schlüssel — über die Kennung des Punkts. */
 const platzKey = (w: Week) => punktKey(w.start, 'mid', (w.mid.sections[0]!.items[0] as PartItem).iid, 0)
 
-function zeige(over: Partial<AppState> = {}) {
-  const dispatch = vi.fn()
-  const state: AppState = {
+function zustand(over: Partial<AppState> = {}): AppState {
+  return {
     ...demoZustand(),
     screen: 'start', dataStatus: 'ready',
     congregationId: 'c1', userId: 'u1', personId: 'p-a', planner: false,
@@ -126,19 +125,25 @@ function zeige(over: Partial<AppState> = {}) {
     congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
   }
-  function Buehne() {
-    const store = useStaticStore(state)
-    return (
-      <AppDispatchContext.Provider value={dispatch}>
-        <AppStoreContext.Provider value={store}>
-          <AppStateContext.Provider value={state}>
-            <DashboardScreen />
-          </AppStateContext.Provider>
-        </AppStoreContext.Provider>
-      </AppDispatchContext.Provider>
-    )
-  }
-  return { dispatch, ...render(<Buehne />) }
+}
+
+/** Der Start mit diesem Zustand — eine Bühne für alle Tests, damit ein `rerender` denselben Baum behält. */
+function Buehne({ state, dispatch }: { state: AppState; dispatch: () => void }) {
+  const store = useStaticStore(state)
+  return (
+    <AppDispatchContext.Provider value={dispatch}>
+      <AppStoreContext.Provider value={store}>
+        <AppStateContext.Provider value={state}>
+          <DashboardScreen />
+        </AppStateContext.Provider>
+      </AppStoreContext.Provider>
+    </AppDispatchContext.Provider>
+  )
+}
+
+function zeige(over: Partial<AppState> = {}) {
+  const dispatch = vi.fn()
+  return { dispatch, ...render(<Buehne state={zustand(over)} dispatch={dispatch} />) }
 }
 
 afterEach(cleanup)
@@ -290,6 +295,44 @@ describe('Über einer Aufgabe in einer Zusammenkunft steht der Saal', () => {
     expect(container.querySelectorAll('.saal-platz.is-problem').length).toBeGreaterThan(0)
   })
 
+  it('der eigene Platz zeigt den Stand der eigenen Zusage — blass, gefüllt, rot (29.10.2026)', () => {
+    // Bis dahin war er immer in Minze, ob zugesagt oder nicht.
+    const { woche, meine } = meinAbend()
+    for (const [status, klasse] of [['offen', 'saal-du is-wartet'], ['bestätigt', 'saal-du is-voll'], ['verhindert', 'saal-du is-problem']] as const) {
+      const { container } = zeige({ weeks: [woche], myTasks: [{ ...meine, status }] })
+      expect(container.querySelector('.saal-du')?.getAttribute('class'), status).toBe(klasse)
+      cleanup()
+    }
+  })
+
+  it('mit dem Bestätigen füllt sich derselbe Platz — er wird nicht neu gezeichnet, sonst liefe kein Übergang', () => {
+    // Die Füllung wächst per CSS-Übergang (bausteine.css). Der läuft nur, wenn
+    // dasselbe Element die Klasse wechselt; ein neu eingesetztes stünde gleich voll da.
+    const { woche, meine } = meinAbend()
+    const dispatch = vi.fn()
+    const { container, rerender } = render(<Buehne state={zustand({ weeks: [woche], myTasks: [meine] })} dispatch={dispatch} />)
+    const platz = container.querySelector('.saal-du')
+    expect(platz?.getAttribute('class')).toBe('saal-du is-wartet')
+    rerender(<Buehne state={zustand({ weeks: [woche], myTasks: [{ ...meine, status: 'bestätigt' }] })} dispatch={dispatch} />)
+    expect(container.querySelector('.saal-du')).toBe(platz)
+    expect(platz?.getAttribute('class')).toBe('saal-du is-voll')
+  })
+
+  it('wird eine andere Aufgabe die nächste, steht ein neuer Saal da — ihr Platz füllt sich nicht, als hätte man eben bestätigt', () => {
+    // Über Nacht fällt die gestrige Aufgabe weg; ist die nächste schon zugesagt,
+    // liefe am selben Knoten der Übergang der Zusage (Review 29.10.2026).
+    const { woche, meine } = meinAbend()
+    const andere: MyTask = { ...meine, id: helferKey(woche.start, 'mid', 'mik', 0), status: 'bestätigt' }
+    woche.mid.helpers.mik = [{ name: 'Anton Alt', pid: 'p-a' }]
+    const dispatch = vi.fn()
+    const { container, rerender } = render(<Buehne state={zustand({ weeks: [woche], myTasks: [meine] })} dispatch={dispatch} />)
+    const vorher = container.querySelector('.saal-du')
+    rerender(<Buehne state={zustand({ weeks: [woche], myTasks: [andere] })} dispatch={dispatch} />)
+    const nachher = container.querySelector('.saal-du')
+    expect(nachher?.getAttribute('class')).toBe('saal-du is-voll')
+    expect(nachher).not.toBe(vorher)
+  })
+
   it('ein Treffpunkt hat keinen Saal', () => {
     const { container } = zeige({ myTasks: [task({ id: `fs|${laufendeWoche().start}|r1`, title: '', rolle: t.fsLeiterLbl })] })
     expect(container.querySelector('svg.saal')).toBeNull()
@@ -339,6 +382,30 @@ describe('Die nächsten Aufgaben danach, je eine Zeile', () => {
     const { container } = zeige(trolley(2))
     expect(container.querySelector('.start-leer')).not.toBeNull()
     expect(zeilen(container).map((e) => e.querySelector('.start-zeile-text')?.textContent)).toEqual([`${t.privZeugnis} · 09:00–11:00`])
+  })
+
+  it('die Zeile trennt wie der Titel der großen Karte — der Programmpunkt nach der Sprache des Programms, die Rolle nach der des Lesers', () => {
+    // Seit dem 29.10.2026 bricht die Zeile um, statt mit „…" zu enden. Russische
+    // App, deutsche Versammlung: „Versammlungsbibelstudium" trennte nach
+    // russischen Regeln gar nicht — und die russische Rolle daneben darf nicht
+    // nach deutschen Regeln trennen (Review 29.10.2026).
+    const aufgaben = [
+      task({ id: 'T1', at: inTagen(1) }),
+      task({ id: 'T2', title: 'Versammlungsbibelstudium', rolle: 'Leser', at: inTagen(2) }),
+      task({ id: 'T3', title: '', rolle: 'Mikrofone', at: inTagen(3) }),
+    ]
+    const { container } = zeige({ myTasks: aufgaben, lang: 'ru', congLang: 'de' })
+    const texte = zeilen(container).map((z) => z.querySelector('.start-zeile-text')!)
+    const punktUndRolle = texte[0]!
+    const nurRolle = texte[1]!
+    const punkt = punktUndRolle.querySelector('[lang]')
+    expect(punkt?.getAttribute('lang')).toBe('de')
+    expect(punkt?.textContent).toBe('Versammlungsbibelstudium')
+    // Die Rolle steht hinter dem Punkt, außerhalb seiner Sprache.
+    expect(punktUndRolle.textContent).toBe(`Versammlungsbibelstudium · ${makeTr('ru')('Leser')}`)
+    expect(punktUndRolle.hasAttribute('lang')).toBe(false)
+    // Ohne Programmpunkt gar kein eigenes `lang`, wie oben auf der Karte.
+    expect(nurRolle.querySelector('[lang]')).toBeNull()
   })
 })
 
@@ -544,6 +611,21 @@ describe('Die Planungs-Karte gehört dem Planer — und steht bei ihm gleich dan
     expect(spalten[1]!.querySelector('.dash-planung')).not.toBeNull()
   })
 
+  it('… und unter ihr die Woche der Versammlung — links war die Spalte lang, rechts halb leer (29.10.2026)', () => {
+    const { container } = planer({ weeks: [importiert(W1)], myTasks: [task()] })
+    const [links, rechts] = [...container.querySelectorAll('.start-spalten.is-planer > .start-spalte')]
+    expect(links!.querySelector('.start-woche')).toBeNull()
+    // Unter der Planung, nicht davor: Sie ist die Arbeit, die Woche die Auskunft.
+    expect([...rechts!.children].map((k) => k.className)).toEqual(['dash-planung', 'start-woche'])
+  })
+
+  it('wer nicht plant, hat die Woche in seiner einen Spalte unter den eigenen Aufgaben', () => {
+    const { container } = zeige({ planner: false, weeks: [importiert(W1)], myTasks: [task()] })
+    const spalten = [...container.querySelectorAll('.start-spalten > .start-spalte')]
+    expect(spalten).toHaveLength(1)
+    expect(spalten[0]!.lastElementChild?.className).toBe('start-woche')
+  })
+
   it('„Alle Wochen" führt zu den Wochen — ohne Platz für die Spalte auf ihre Seite (T121, Phase 10; T144)', () => {
     // jsdom kennt keine Breite: Hier gilt die Fassung des Handys. Die Wochen
     // haben seit T144 eine eigene Seite unter der Wahl von „Planung".
@@ -585,6 +667,34 @@ describe('Eine Zeile je Woche, in der etwas zu tun ist', () => {
     // Nur, was zutrifft: keine Probleme, nichts zu senden.
     expect(chip(zeilen[0]!, 'probleme')).toBeNull()
     expect(chip(zeilen[0]!, 'senden')).toBeNull()
+  })
+
+  it('über den Chips der Saal als Balken, daneben die Zahl der Spur bei den Wochen (29.10.2026)', () => {
+    // Die erste Woche frisch importiert: fünf Plätze, keiner besetzt.
+    const weeks = ersteOffen()
+    const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks) })
+    const zeile = container.querySelector('.dash-plan-woche')!
+    const balken = zeile.querySelector('.saal-balken')
+    expect(balken?.getAttribute('role')).toBe('img')
+    expect(balken?.getAttribute('aria-label')).toBe(zahlBinden(`${t.saalBesetzung}: 0/5`))
+    // Alles offen: ein einziger gestrichelter Teil, keine leeren Teile daneben.
+    expect([...balken!.children].map((k) => k.className)).toEqual(['saal-balken-teil is-offen'])
+    // Die Zahl steht sichtbar daneben; vorgelesen wird sie schon mit dem Balken.
+    const zahl = zeile.querySelector('.dash-plan-zahl')
+    expect(zahl?.textContent).toBe('0/5')
+    expect(zahl?.getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('der Balken zeigt, was zugesagt ist, was wartet und wo ein Problem steht — jede Lage nach ihrem Anteil', () => {
+    const weeks = WOCHEN.map(besetzt)
+    // Woche 1: Anton hat zugesagt, die Mikrofone warten; Bruno ist am Sonntag weg.
+    const confirmations: ConfirmationMap = { ...allesBestaetigt(weeks.slice(1)), [platzKey(weeks[0]!)]: 'bestätigt' }
+    const absences: Absence[] = [{ id: 'a1', personId: 'p-b', userId: null, from: '2026-09-13', to: '2026-09-13', reason: '' }]
+    const { container } = planer({ weeks, confirmations, absences })
+    const balken = container.querySelector('.dash-plan-woche .saal-balken')!
+    const teile = Object.fromEntries([...balken.children].map((k) => [k.className.replace('saal-balken-teil is-', ''), Number((k as HTMLElement).style.flexGrow)]))
+    expect(teile).toEqual({ voll: 1, wartet: 3, problem: 1 })
+    expect(balken.getAttribute('aria-label')).toBe(zahlBinden(`${t.saalBesetzung}: 5/5`))
   })
 
   it('Konflikt und Engpass zählen zusammen als Probleme — „Probleme: 2", nicht „1 Konflikte"', () => {

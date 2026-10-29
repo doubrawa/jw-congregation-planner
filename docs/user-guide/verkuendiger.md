@@ -83,7 +83,9 @@ Wichtigste zusammen.
   darunter **Bestätigen** und **Ich kann nicht**, daneben das **S‑89**.
 - **Der Saal** darüber zeigt, wie weit die Zusammenkunft besetzt ist: ein Punkt
   je Platz, **voll** heißt zugesagt, **blass** wartet noch auf Zusage, **rot**
-  ist abgesagt, **gestrichelt** noch offen. Dein eigener Platz trägt einen Ring.
+  ist abgesagt, **gestrichelt** noch offen. Dein eigener Platz trägt einen Ring;
+  der Punkt darin ist blass, bis du bestätigst – dann füllt er sich in Minze.
+  Hast du abgesagt, ist er rot.
 - Darunter **deine nächsten Aufgaben** danach, je eine Zeile; ein Tipp öffnet
   die Aufgabe. Nach dem Tag einsortiert stehen dort auch deine
   [Trolley-Termine](#trolleys) („Trolley · 09:00–11:00"); ein Tipp darauf

@@ -44,8 +44,9 @@ Versammlungseinstellungen pflegen.
 Als Planer siehst du auf der Startseite neben deiner persönlichen Übersicht –
 deiner nächsten Aufgabe und den Aufgaben danach, wie bei jedem Verkündiger – die
 **Planung**: was in den kommenden Wochen noch zu tun ist. Am Tablet und am
-Computer steht sie in einer eigenen Spalte daneben, am Handy darunter, dort an
-der Stelle von „Diese Woche in der Versammlung".
+Computer steht sie in einer eigenen Spalte daneben, darunter „Diese Woche in
+der Versammlung". Am Handy steht sie unter deinen Aufgaben, dort an der Stelle
+von „Diese Woche in der Versammlung".
 
 ![Planer‑Dashboard](screenshots/planer-start.png)
 
@@ -53,6 +54,12 @@ der Stelle von „Diese Woche in der Versammlung".
   höchstens vier Wochen voraus. Fertig geplante und gesendete Wochen erscheinen
   nicht. Auch eine Kongresswoche erscheint, wenn dort ein Treffpunkt noch einen
   Leiter braucht.
+- Unter dem Datum zeigt ein **Balken** in den Farben des Saals, wie weit die
+  Zusammenkünfte der Woche sind: **voll** zugesagt, **blass** wartet auf Zusage,
+  **rot** ein Problem (abgesagt oder in einem Konflikt), **gestrichelt** noch
+  offen. Rechts daneben steht die Zahl der besetzten Plätze, etwa „31/37" –
+  dieselbe wie unter **Zuteilen** bei den Wochen. Eine Zusammenkunft, die
+  vorbei ist oder ausfällt, zählt nicht mehr mit.
 - Die Zeile nennt, was ansteht – mit denselben Wörtern wie die Wochen unter
   **Planung** (Abschnitt 8); was dahintersteht, zeigt beim **Planen** die Liste
   **Zu klären** (Abschnitt 4):
@@ -201,10 +208,12 @@ Zusammenkunft aus, stehen beide nicht da – es gibt nichts zu besetzen.
 
 Unter der Karte **Besetzung** steht **S‑89 DRUCKEN**: ein Tipp auf **Drucken**
 legt alle Schülerzettel der offenen Woche als DIN‑A4‑Bogen an, **sechs je
-Blatt**. Der Schalter **Gesprächspartner/in** bestimmt, ob der Zettel eines
-Gesprächs **zweimal** kommt – einer für den Schüler, einer für die Partnerin
-oder den Partner. Beide tragen dieselben Angaben, so wie das Formular es
-vorsieht. Die Zettel der Zusätzlichen Klasse sind dabei und tragen ihren Raum.
+Blatt**. Rechts neben dem Titel steht, wie viele Zettel es werden („Zettel: 9").
+Der Schalter **Auch für Partner** bestimmt, ob der Zettel eines Gesprächs
+**zweimal** kommt – einer für den Schüler, einer für die Partnerin oder den
+Partner; die Zahl folgt ihm. Beide tragen dieselben Angaben, so wie das
+Formular es vorsieht. Die Zettel der Zusätzlichen Klasse sind dabei und tragen
+ihren Raum.
 
 - **Auf einen Platz tippen**, um ihn zu besetzen oder umzuteilen. Es öffnet
   sich das Blatt **Zuteilen**: oben der Abschnitt, der Punkt mit Nummer, Tag und

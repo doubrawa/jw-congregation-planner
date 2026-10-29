@@ -82,13 +82,16 @@ describe('Aufgaben-Beschriftung entsteht an einer Stelle', () => {
   it('und beide setzen sie auch wirklich zusammen', () => {
     expect(QUELLEN.get('i18n/useT.ts')).toContain('export function aufgabenLabel')
     expect(QUELLEN.get('i18n/useT.ts')).toContain('export function aufgabenZeilen')
+    expect(QUELLEN.get('i18n/useT.ts')).toContain('export function aufgabenHaelften')
     expect(QUELLEN.get('data/planning.ts')).toContain('export function aufgabenBezeichnung')
   })
 
   it('jede Anzeige einer Aufgabe nimmt eine der Formen', () => {
     // Wer eine Aufgabe beschriftet — an den Klassen ihrer Titelzeilen zu
     // erkennen —, muss über die Helfer gehen: `aufgabenLabel` für eine Zeile,
-    // `aufgabenZeilen` für die große Karte mit Titel und Unterzeile.
+    // `aufgabenZeilen` für die große Karte mit Titel und Unterzeile,
+    // `aufgabenHaelften` für eine Zeile, deren Hälften je nach ihrer Sprache
+    // trennen (die Zeilen auf dem Start, seit dem 29.10.2026).
     const beschriftet = [...QUELLEN]
       .filter(([pfad]) => pfad.endsWith('.tsx') && !/\.test\.tsx$/.test(pfad))
       .filter(([, text]) => /aufgabe-titel|aufgaben-zeile-titel|oeffnen-titel|start-zeile-text/.test(text))
@@ -104,7 +107,7 @@ describe('Aufgaben-Beschriftung entsteht an einer Stelle', () => {
       'dashboard/DashboardScreen.tsx',
     ])
     for (const datei of beschriftet) {
-      expect(QUELLEN.get(datei), datei).toMatch(/aufgabenLabel|aufgabenZeilen/)
+      expect(QUELLEN.get(datei), datei).toMatch(/aufgabenLabel|aufgabenZeilen|aufgabenHaelften/)
     }
   })
 })

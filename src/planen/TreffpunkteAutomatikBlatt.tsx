@@ -3,8 +3,7 @@ import { Sheet } from '../components/Sheet'
 import { useZweiTipp } from '../components/useZweiTipp'
 import { fsInGruppe } from '../data/fs'
 import { rechteVon, treffpunktGruppe } from '../data/rechte'
-import { useT } from '../i18n/useT'
-import { zahlBinden } from '../i18n/zahl-binden'
+import { besetzungText, useT } from '../i18n/useT'
 import { AutomatikFuss } from './AutomatischBlatt'
 
 /**
@@ -32,7 +31,7 @@ export function TreffpunkteAutomatikBlatt({ onClose }: { onClose: () => void }) 
           <div className="auto-bereich">
             <span className="auto-bereich-text">
               <span className="auto-bereich-name">{t.fsLeiterLbl}</span>
-              <span className="klein-text">{zahlBinden(`${t.saalBesetzung}: ${besetzt}/${treffpunkte.length}`)}</span>
+              <span className="klein-text">{besetzungText(t, besetzt, treffpunkte.length)}</span>
             </span>
           </div>
         </div>

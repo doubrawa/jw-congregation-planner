@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { PNG } from 'pngjs'
 import { antwort, ladeServiceWorker, swQuelle } from './sw-umgebung'
 import { alsCacheName, SW_PLATZHALTER, swMitKennung } from '../scripts/sw-kennung.mjs'
 
@@ -239,6 +240,25 @@ describe('Service Worker: Benachrichtigungen (V10)', () => {
     const sw = ladeServiceWorker()
     await sw.feuere('push', { data: null })
     expect(sw.meldungen[0]?.[0]).toBe('Versammlung.app')
+  })
+
+  it('in der Statusleiste stehen die Sitzreihen, kein weißer Klotz', async () => {
+    /*
+      Android liest vom Badge nur den Alphakanal und färbt jede deckende Stelle
+      ein. Bis zum 29.10.2026 zeigte es auf `icon-192.png`, deckend bis auf die
+      runden Ecken — in der Statusleiste stand ein weißer Klotz. Das Badge muss
+      darum größtenteils durchsichtig sein: nur Plätze und Pult. `icon-192.png`
+      deckt 78 % (gemessen am 29.10.2026), ein leeres Bild nichts.
+    */
+    const sw = ladeServiceWorker()
+    await sw.feuere('push', push({ title: 'Erinnerung', body: 'Montag' }))
+    const badge = String(sw.meldungen[0]?.[1].badge)
+    const png = PNG.sync.read(readFileSync(new URL(`../public/${badge}`, import.meta.url)))
+    let deckend = 0
+    for (let i = 3; i < png.data.length; i += 4) if (png.data[i]! > 0) deckend++
+    const anteil = deckend / (png.width * png.height)
+    expect(anteil, `${badge} deckt ${Math.round(anteil * 100)} % — eine Kachel statt der Plätze`).toBeLessThan(0.4)
+    expect(anteil, `${badge} ist leer`).toBeGreaterThan(0.05)
   })
 })
 

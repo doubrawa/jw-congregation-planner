@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
 import { useKalendertag } from '../app/useKalendertag'
@@ -14,7 +14,7 @@ import { rechteVon } from '../data/rechte'
 import { eigeneTermine } from '../data/trolleys'
 import type { MyTask, TrolleyTermin } from '../data/types'
 import { ErsteSchritteKarte } from '../erste-schritte/ErsteSchritteKarte'
-import { aufgabenLabel, useT } from '../i18n/useT'
+import { aufgabenHaelften, aufgabenTitelSprache, useT } from '../i18n/useT'
 import { zeitSpanne, zuDenTrolleys } from '../trolleys/trolley-anzeige'
 import { termineDieserWoche, type Termin } from './diese-woche'
 import { PlanungsKarte } from './PlanungsKarte'
@@ -37,7 +37,14 @@ const WEITERE_AUFGABEN = 3
  *  4. **Diese Woche in der Versammlung** — die Zusammenkünfte und Treffpunkte,
  *     die noch kommen.
  *  5. Für Planer: **die Planung** der kommenden Wochen (T95), ab dem Tablet
- *     in einer zweiten Spalte daneben.
+ *     in einer zweiten Spalte daneben. Die Woche der Versammlung steht dann
+ *     dort unter der Planung (29.10.2026): Links war die Spalte lang, rechts
+ *     blieb sie halb leer. Am Handy hat der Planer die Woche gar nicht — dort
+ *     steht die Planung an ihrer Stelle.
+ *
+ * Keine Zeile schneidet ihren Text ab: Wo er nicht passt, bricht er um. Bis
+ * zum 29.10.2026 endete er mit „…" — beim Planer am Tablet „Zusammenkunft
+ * unter …", „Gruppe 1 · Bei Familie Al…".
  *
  * Die Abwesenheiten standen hier bis zum Umbau in einer Zeitleiste mit den
  * Aufgaben; sie gehören jetzt ins Profil, wo man sie auch einträgt.
@@ -75,14 +82,15 @@ export function DashboardScreen() {
             <p className="karte karte--held start-leer">{t.dashKeineAufgabe}</p>
           )}
           {(danach.length > 0 || trolley.length > 0) && <WeitereAufgaben aufgaben={danach} trolley={trolley} />}
-          {termine.length > 0 && <DieseWoche termine={termine} />}
+          {!zuteilen && termine.length > 0 && <DieseWoche termine={termine} />}
         </div>
         {/* Wer zuteilt — Admin oder Planer —, sieht seine Arbeit gleich daneben
-            (T95). Wer nicht plant, dürfte den Bildschirm dahinter gar nicht
-            betreten. */}
+            (T95), darunter die Woche der Versammlung. Wer nicht plant, dürfte
+            den Bildschirm dahinter gar nicht betreten. */}
         {zuteilen && (
           <div className="start-spalte">
             <PlanungsKarte />
+            {termine.length > 0 && <DieseWoche termine={termine} />}
           </div>
         )}
       </div>
@@ -94,7 +102,7 @@ export function DashboardScreen() {
 interface StartZeile {
   key: string
   tag: string | null
-  text: string
+  text: ReactNode
   onTipp: () => void
 }
 
@@ -112,7 +120,7 @@ function WeitereAufgaben({ aufgaben, trolley }: { aufgaben: readonly MyTask[]; t
     ...aufgaben.map((task) => ({
       key: task.id,
       tag: aufgabeTag(task),
-      text: aufgabenLabel(task, i18n),
+      text: <AufgabeText task={task} />,
       onTipp: () => dispatch({ type: 'openMyTask', id: task.id }),
     })),
     ...trolley.map((termin) => ({
@@ -128,12 +136,33 @@ function WeitereAufgaben({ aufgaben, trolley }: { aufgaben: readonly MyTask[]; t
     <div className="karte start-liste">
       {zeilen.slice(0, WEITERE_AUFGABEN).map((zeile) => (
         <button key={zeile.key} type="button" className="start-zeile" onClick={zeile.onTipp}>
-          <span className="start-zeile-tag">{zeile.tag ? kurz.format(fromIso(zeile.tag)) : ''}</span>
-          <span className="start-zeile-text">{zeile.text}</span>
+          <span className="start-zeile-inhalt">
+            <span className="start-zeile-tag">{zeile.tag ? kurz.format(fromIso(zeile.tag)) : ''}</span>
+            <span className="start-zeile-text">{zeile.text}</span>
+          </span>
           <Zeichen name="weiter" />
         </button>
       ))}
     </div>
+  )
+}
+
+/**
+ * Programmpunkt und Rolle einer Aufgabe in einer Zeile, jede Hälfte in ihrer
+ * Sprache: Der Punkt trennt nach den Regeln des Programms wie der Titel der
+ * großen Karte, die Rolle nach denen des Lesers. Ein `lang` für beide trennte
+ * bei englischer App und deutscher Versammlung „Student" nach deutschen Regeln.
+ */
+function AufgabeText({ task }: { task: MyTask }) {
+  const { state } = useApp()
+  const i18n = useT()
+  const { punkt, rolle } = aufgabenHaelften(task, i18n)
+  return (
+    <>
+      {punkt && <span lang={aufgabenTitelSprache(task, state.lang, state.congLang)}>{punkt}</span>}
+      {punkt && rolle && ' · '}
+      {rolle}
+    </>
   )
 }
 
@@ -156,9 +185,11 @@ function DieseWoche({ termine }: { termine: readonly Termin[] }) {
       <div className="karte start-liste">
         {termine.map((termin) => (
           <div key={termin.key} className="start-zeile start-termin">
-            <span className="start-zeile-tag">{kurz.format(termin.tag)}</span>
-            <span className="start-zeile-tag">{termin.zeit}</span>
-            <span className="start-zeile-text">{was(termin)}</span>
+            <span className="start-zeile-inhalt">
+              <span className="start-zeile-tag">{kurz.format(termin.tag)}</span>
+              <span className="start-zeile-tag start-zeile-zeit">{termin.zeit}</span>
+              <span className="start-zeile-text">{was(termin)}</span>
+            </span>
           </div>
         ))}
       </div>

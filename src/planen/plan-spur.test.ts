@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { allePlaetze, platzKey } from '../data/plaetze'
+import { besetztVon } from '../data/saal'
 import type { FsInstance, MeetingTimes, Service, Week } from '../data/types'
 import type { PlanStand } from '../data/weitere-plaene'
 import { dict } from '../i18n/ui'
 import { zahlBinden } from '../i18n/zahl-binden'
-import { spurDerWoche, spurDesPlans, wochenZahlen, zahlenDerWoche, type WochenZahlen } from './plan-spur'
+import { besetzungDerWoche, spurDerWoche, spurDesPlans, wochenZahlen, zahlenDerWoche, type WochenZahlen } from './plan-spur'
 
 /**
  * **Die Spur beim Planen** (T121, `GPlanen`): Zuteilen, Senden, Zusagen —
@@ -96,6 +97,45 @@ describe('zahlenDerWoche: beide Zusammenkünfte, ohne was vorbei ist', () => {
     const w = woche()
     const mittwoch = new Date(2026, 8, 9, 12, 0)
     expect(zahlenDerWoche(w, [TREFFPUNKT], q(w), mittwoch)).toMatchObject({ besetzt: 1, gesamt: 3, bestaetigt: 0, zuBestaetigen: 0 })
+  })
+})
+
+/**
+ * **Der Balken der Planungs-Karte** (29.10.2026) zeigt die Lagen des Saals über
+ * dieselben Zusammenkünfte wie die Spur der Wochen. Sonst stünde auf dem Start
+ * „30/37" und bei den Wochen „31/37" — der Planer sucht dann den Platz, den es
+ * nicht gibt (wie bei T136: Zahl und Kreise passten nicht zusammen).
+ */
+describe('besetzungDerWoche: der Saal als Balken, über die Zusammenkünfte der Spur', () => {
+  const q = (w: Week) => ({ services: SERVICES, confirmations: { [keyVon(w, 'Anna Alt')]: 'bestätigt' as const }, zeiten: ZEITEN })
+  const keinKonflikt = () => () => false
+
+  it('Dienstag und Sonntag: Anna zugesagt, Bert wartet, der Gastredner hat nichts zu bestätigen — vier offen', () => {
+    const w = woche()
+    expect(besetzungDerWoche(w, q(w), HEUTE, keinKonflikt)).toEqual({ voll: 2, wartet: 1, problem: 0, offen: 4, du: false })
+  })
+
+  it('besetzt und gesamt sind die Zahlen der Spur — auch, wenn der Dienstag vorbei ist', () => {
+    const w = woche()
+    const quellen = { ...q(w), persoenlich: {}, sentLog: {} }
+    for (const tag of [HEUTE, new Date(2026, 8, 9, 12, 0)]) {
+      const spur = zahlenDerWoche(w, [TREFFPUNKT], quellen, tag)
+      expect(besetztVon(besetzungDerWoche(w, q(w), tag, keinKonflikt))).toEqual({ besetzt: spur.besetzt, gesamt: spur.gesamt })
+    }
+  })
+
+  it('eine ausgefallene Zusammenkunft hat nichts zu besetzen (T30)', () => {
+    const w: Week = { ...woche(), dev: { we: { cancelled: true } } }
+    const b = besetzungDerWoche(w, q(w), HEUTE, keinKonflikt)
+    expect(b).toEqual({ voll: 1, wartet: 1, problem: 0, offen: 2, du: false })
+  })
+
+  it('wer in einem Konflikt steht, ist rot — wie im Saal beim Planen; der Platz bleibt besetzt', () => {
+    const w = woche()
+    const bertAbwesend = (tab: string) => (slot: { name?: string }) => tab === 'mid' && slot.name === 'Bert Bau'
+    const b = besetzungDerWoche(w, q(w), HEUTE, bertAbwesend)
+    expect(b).toEqual({ voll: 2, wartet: 0, problem: 1, offen: 4, du: false })
+    expect(besetztVon(b)).toEqual({ besetzt: 3, gesamt: 7 })
   })
 })
 

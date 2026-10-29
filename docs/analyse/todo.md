@@ -8839,6 +8839,142 @@ ohne knappen Bereich keine Zeile, mit zwei knappen genau zwei (Sabotage mit der
 alten Liste: beide rot); die Mutationsregel heißt jetzt `engpass-nur-knappe`.
 Handbuch (`planer.md`, „Engpässe") und das Bild `planer-auswertung` neu.
 
+## Aufgenommen am 29. Oktober 2026 — Ideen zum Verschönern und Erweitern (T146–T153)
+
+Der Betreiber fragte nach Ideen, was sich an der App erweitern, verbessern oder
+schöner machen ließe. Vierzehn Vorschläge, jeder am Code, an dieser Liste und
+an den Handbuchbildern vom 27. Oktober geprüft; Betreiber: „1-6 umsetzen. 12
+und 13 klingen gut. mach mal einen vorschlag wie das aussehn könnte". Die
+übrigen (Verknüpfungen am App-Symbol, Knöpfe in der Push-Meldung, Bibeltexte
+zum Antippen, Kalender, Zeitnehmer, Seite zum Datenschutz) sind nicht
+beauftragt und stehen deshalb hier nicht als Aufgabe.
+
+### T146 · In der Statusleiste stand bei einer Push-Meldung ein weißer Klotz ⚡ ✅ umgesetzt (29. Oktober 2026)
+
+`sw.js` gab als `badge` die volle Kachel `icon-192.png` mit, deckend bis auf
+die runden Ecken (gemessen: 78 % des Bilds). Android liest vom Badge nur den
+Alphakanal und färbt jede deckende Stelle ein — in der Statusleiste und im
+Kopf der Meldung stand ein Klotz statt der Sitzreihen.
+
+**Umgesetzt:** `badge-96.png` — nur Plätze und Pult der kleinen Fassung
+(`logo-klein.svg`, 3-5-7), ohne Kachel, jede Reihe voll deckend, weiß auf
+durchsichtig. Erzeugt von `npm run icons` (`maske` in `make-icons.mjs`, mit
+eigener Prüfung: Ecke durchsichtig, 10 % voll deckend); die übrigen Icons
+blieben byteweise gleich. Probe in `tests/service-worker.test.ts`: Das Badge der
+Meldung deckt höchstens 40 % (Sabotage mit `icon-192.png`: rot, 78 %). Am Handy
+selbst nicht gesehen — wirkt mit dem nächsten Deploy.
+
+### T147 · Start des Planers: „Diese Woche" unter die Planung, nichts mehr abschneiden 🔧 ✅ umgesetzt (29. Oktober 2026)
+
+Ab dem Tablet stand beim Planer links eine lange Spalte (Erste Schritte,
+Aufgabe, Zeilen, Woche der Versammlung), rechts nur die Planung, darunter leer.
+Die Zeilen schnitten ihren Text mit „…" ab: „Zusammenkunft unter …",
+„Gruppe 1 · Bei Familie Al…".
+
+**Umgesetzt:** Die Woche der Versammlung steht beim Planer in der zweiten Spalte
+unter der Planung; am Handy bleibt sie aus (dort steht die Planung an ihrer
+Stelle), beim Verkündiger unverändert unter den eigenen Aufgaben. Keine Zeile
+auf dem Start schneidet mehr ab — auch nicht die Aufgaben unter der großen
+Karte: Der Text bricht um und trennt nach den Regeln seiner Sprache, ein
+Programmpunkt nach der des Programms (`lang` wie der Titel der großen Karte).
+
+**Gemessen im echten Chrome** (Werkzeug aus T128, `seite.js`): Mit dem Umbruch
+brach bei 320 px und Stufe 1,45 ein Wort neben dem Tag mitten im Wort —
+„Microphon|es", „Mikrofo|ny", „Microfoa|ne", „الميكروفونا|ت". Seither rückt der
+Text unter den Tag, wenn sein längstes Wort daneben nicht passt
+(`.start-zeile-inhalt`, Platz statt Bruch). Danach: Start des Planers und des
+Verkündigers, zwölf Sprachen, 320/360/393 px als Handy und 768/1024/1440 px,
+Stufe 1 bis 1,45 — 312 Lagen, kein Bruch ohne Strich, nichts ragt hinaus, keine
+Seite zu breit; 241 Trennungen mit Strich.
+
+### T148 · Planung auf Start: der Saal als Balken je Woche 🔧 ✅ umgesetzt (29. Oktober 2026)
+
+Unter jeder Woche der Planungs-Karte ein schmaler Balken in den Farben des
+Saals — voll zugesagt, blass wartend, rot ein Problem (abgesagt oder im
+Konflikt, wie im Saal beim Planen), gestrichelt offen —, rechts daneben die
+Zahl „31/37". Gerechnet über dieselben Zusammenkünfte wie die Spur der Wochen
+(`besetzungDerWoche` neben `zahlenDerWoche`, gemeinsam `anstehende`: ohne die
+ausgefallenen und ohne die, die vorbei sind), damit Start und Wochen dieselbe
+Zahl nennen (vgl. T136). Jede Lage mindestens 4 px breit: Eine einzige Absage ist die Nachricht.
+
+**Abweichung vom Vorschlag:** Der Vorschlag hieß „Balken statt der Chips".
+Die Chips bleiben — sie sagen, was zu tun ist; den Versand zeigt der Balken gar
+nicht, ein Engpass hat keinen Platz darin. Und ein Balken ohne Zahl erschließt
+sich nicht jedem (T138), deshalb die Zahl daneben. Tests: Summe beider
+Zusammenkünfte, Mittwoch ohne Dienstag, Ausfall, Konflikt rot, dieselbe Zahl wie
+die Spur, Beschriftung und Anteile auf dem Start (Sabotage: drei rot).
+
+### T149 · Bestätigen mit sichtbarer Wirkung: der eigene Platz füllt sich 🔧 ✅ umgesetzt (29. Oktober 2026)
+
+Der eigene Platz im Saal war immer in Minze, ob zugesagt oder nicht. Jetzt
+trägt er den Stand der eigenen Zusage: blass, solange sie aussteht, rot nach
+einer Absage — und mit „Bestätigen" wächst die Füllung in Minze aus der Mitte,
+mit dem Schwung des Startbilds (Übergang, keine Animation: Er läuft nur beim
+Wechsel; ohne Bewegung springt der Punkt um). Auf der großen Karte und im Blatt
+einer Aufgabe; der Film „Erste Schritte" zeigt es in der Szene „Aufgabe"
+genauso. Tests: Klasse je Stand, derselbe Knoten wechselt die Klasse (ein neu
+gezeichneter liefe ohne Übergang), Quelltext-Probe `tests/eigener-platz.test.ts`
+für beide Aufrufer und die Regel des Übergangs.
+
+### T150 · S-89-Leiste: wie viele Zettel, und was der Schalter tut ⚡ ✅ umgesetzt (29. Oktober 2026)
+
+Neben dem Schalter stand nur „Partner", eine Zahl fehlte seit Phase 9b — der
+Kommentar versprach sie noch. Jetzt: rechts neben dem Titel „Zettel: 9", die
+Zahl folgt dem Schalter; der Schalter heißt sichtbar und vorgelesen „Auch für
+Partner". Zwei neue Schlüssel in allen zwölf Sprachen (`s89ZettelN`,
+`s89AuchPartner`; das Wort für den Zettel wie in `s89DieserZettel`, die Rolle
+wie in `s89Partner`, tr und fa mit der Zahl vorn wie `lageOffen`, fr mit
+geschütztem Leerzeichen als Escape). Wo das Wort für die Rolle beide
+Geschlechter trägt, auch ohne männlichen Artikel: es „cada ayudante", it „ogni
+assistente"; die übrigen stehen in der Mehrzahl des Fachworts der App.
+
+### T151 · Der App-Name im Kopf der Schublade ⚡ ✅ umgesetzt (29. Oktober 2026)
+
+Bei 320 px und Stufe 1,45 ragte „Versammlung" 11 px aus seinem Kasten, bis an
+das Kreuz (gemessen am 28. Oktober, bis dahin in der Tabelle „Was offen ist").
+Entschieden: Ein Markenname trennt nicht, er schrumpft. „Versammlung" misst
+6,5 em (Manrope 600), die Schrift ist höchstens 15 % der Spalte
+(`min(calc(15.5px * var(--fs)), 15cqi)`, wie der große Name im Film); wo Platz
+ist, bleibt die Schrift der Stufe.
+
+**Gemessen im echten Chrome:** Schublade, zwölf Sprachen, 320/360/393 px,
+Stufe 1 bis 1,45 — 144 Lagen, der Name ragt nirgends hinaus und berührt das
+Kreuz nicht. Bei 320 px und 1,45 steht er mit 20,3 statt 22,5 px, bei 393 px
+und Stufe 1 unverändert mit 15,5 px. Die S-89-Leiste (T150) im selben Lauf:
+320/360 px, Stufe 1 bis 1,45, 96 Lagen ohne Befund.
+
+**`/simplify` und `/code-review max` über T146–T151** (29. Oktober 2026, Winkel
+nacheinander): „Besetzung: a/b" stand an fünf Stellen ausgeschrieben
+(`besetzungText`), die Sprache des Titels an drei (`aufgabenTitelSprache`), die
+Reihenfolge der Lagen doppelt (`PLATZ_LAGEN`); der offene Teil des Balkens ist
+eine Strichlinie wie die Spur, `make-icons.mjs` hat wieder eine Prüffunktion.
+Verworfen: die zweite Konfliktrechnung für den Balken (nur bei Änderung an
+Wochen, Personen, Diensten oder Abwesenheiten, über den Speicher von
+`konflikteVon`). Das Review fand drei Befunde, alle behoben: Die Zeile auf dem
+Start trug ein `lang` für Programmpunkt und Rolle — jetzt trennt jede Hälfte nach
+ihrer Sprache (`aufgabenHaelften`); ein Wechsel der nächsten Aufgabe lief als
+Zusage (der Saal ist jetzt je Aufgabe geschlüsselt); der Übergang lief auch
+rückwärts und schwang dabei unter null (er steht nur noch am gefüllten Stand).
+
+### T152 · Besucherzahl erfassen 🏗 ☐ offen — Entwurf gezeigt (29. Oktober 2026)
+
+Entwurf im Gespräch (drei Handy-Ansichten): Der Saalordner der Zusammenkunft
+tippt ab ihrem Beginn auf dem Start „Im Saal" und „Per Video" ein (den
+Video-Wert kann auch der Zoom-Ordner tippen); im Programm steht danach
+„Anwesend: 87"; die Auswertung zeigt je Monat Anzahl und Schnitt, getrennt nach
+Woche und Wochenende, für den Bericht. Offen: wer eintragen darf, ob ein
+Ausdruck für den Bericht gebraucht wird, wie lange die Zahlen bleiben (T125:
+ein Jahr). Vor dem Bau gegen das Formular messen, nicht raten.
+
+### T153 · Tauschen statt absagen 🏗 ☐ offen — Entwurf gezeigt (29. Oktober 2026)
+
+Entwurf im Gespräch: „Tauschen" neben „Ich kann nicht"; die App bietet an, wer
+denselben Dienst an einem anderen Tag hat und an beiden Tagen kann; der
+Partner bekommt die Anfrage als Glocke und Push und nimmt an oder lehnt ab;
+erst dann ändern sich beide Plätze auf einmal, beide zugesagt, der Planer
+bekommt eine Mitteilung. Offen: nur Hilfsdienste (wie die freien Plätze, T142)
+oder auch Programmpunkte, und ob der Planer zustimmen muss.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -8866,7 +9002,7 @@ Handbuch (`planer.md`, „Engpässe") und das Bild `planer-auswertung` neu.
 
 ## Fortschritt
 
-Stand 28. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 29. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -8876,14 +9012,17 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
-21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑
+21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
+29. Oktober ☑☑☑☑☑☑☐☐
 
-**144 der 145 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen ist eine:**
+**150 der 153 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind drei:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
+| **T152** | Besucherzahl erfassen | ☐ Entwurf am 29. Oktober gezeigt; wartet auf die Entscheidung des Betreibers (wer einträgt, Ausdruck, Aufbewahrung) |
+| **T153** | Tauschen statt absagen | ☐ Entwurf am 29. Oktober gezeigt; wartet auf die Entscheidung des Betreibers (nur Hilfsdienste?, Zustimmung des Planers?) |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
@@ -9323,12 +9462,19 @@ eine Entscheidung.
 | **Gerät** | Dunkle Bedienleiste am Handy | wirkt erst mit der aktualisierten WebAPK (`about://webapks` → „Update", oder neu installieren) |
 | **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
 | **Betreiber** | Umzug weg von Supabase | Am 25. Oktober erwogen: Supabase ist eine US-Firma, und die Daten zeigen die Religionszugehörigkeit (Art. 9 DSGVO). Empfohlen: die quelloffene Supabase-Software selbst auf einem Server in Deutschland. Betreiber: „Nicht jetzt, ich überlege noch." Fällt die Entscheidung dafür, legt der Betreiber Konto, Server und Vertrag an; Einrichten und Umziehen per Skript macht Claude |
-| **Offen** | Der App-Name im Kopf der Schublade | Bei 320 px und Stufe 1,45 ragt „Versammlung" (aus „Versammlung.app") in allen zwölf Sprachen 11 px aus seinem Kasten, bis an den Knopf ✕ heran — gemessen am 28. Oktober im echten Chrome; bei 360 px und bis Stufe 1,3 nicht. Ein Markenname trennt schlecht: ob er trennt, kleiner wird oder der Knopf umrückt, ist zu entscheiden |
+| **T152** | Besucherzahl erfassen | Entwurf am 29. Oktober gezeigt — die Entscheidung liegt beim Betreiber |
+| **T153** | Tauschen statt absagen | Entwurf am 29. Oktober gezeigt — die Entscheidung liegt beim Betreiber |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
 | **Bewusst offen** | Das Blatt nach einem langsamen Start | Kommen die Daten erst nach dem Vorgriff (4 s), legt das Blatt beim Öffnen eine seither neue Zuteilung nicht vor (nach über einer Stunde ebenso seit `30a5a80d`). Betreiber am 19. Oktober: nur der eigene Hinweis — der Streifen sagt seitdem „Verbindung langsam" statt „Offline", solange die Daten noch kommen können; das Blatt bleibt so |
 | **Bewusst offen** | `sprache-fehlt` beim Wochen-Import | zählt weiter als Ende des Kalenders. Strenger gäbe es im Alltag Fehlalarme; betroffen wäre nur eine anderssprachige Versammlung mit Geschichte (Review vom 18. Oktober, `42dff943`) |
+
+Am 29. Oktober herausgenommen: **der App-Name im Kopf der Schublade** — er
+schrumpft jetzt, statt hinauszuragen (T151). Aufgenommen: **T152** und
+**T153**, die beiden Entwürfe aus den Ideen des Tages (T146–T153); die
+Entscheidung liegt beim Betreiber. Der Stand des Betriebs darüber ist der vom
+28. Oktober, nicht neu gemessen.
 
 **Der Stand vom 21. Oktober 2026** (gemessen: 131
 Köpfe, offen nur noch T121; keine PR, kein Issue, außer `main` kein Zweig mehr,

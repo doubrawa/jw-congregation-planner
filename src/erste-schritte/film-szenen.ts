@@ -387,6 +387,7 @@ function szeneAufgabe(ebene: HTMLElement, worte: HTMLElement, stufen: Stufen): S
   const karte = finde(ebene, 'karte')
   const knopf = finde(ebene, 'bestaetigen')
   const stand = finde(ebene, 'bestaetigt')
+  const du = finde<SVGElement>(ebene, 'du')
   const tipp = baueTipp(finde(ebene, 'tipp'), () => knopf, schirm, 2.6)
   let karteY = 0
   return {
@@ -412,6 +413,8 @@ function szeneAufgabe(ebene: HTMLElement, worte: HTMLElement, stufen: Stufen): S
       knopf.style.opacity = String(1 - 0.3 * eo(seg(t, 2.55, 2.75)))
       stand.style.display = weg ? '' : 'none'
       stand.style.opacity = String(eo(seg(t, 2.9, 3.15)))
+      // Mit dem Stand füllt sich der eigene Platz im Saal — wie in der App.
+      du.style.transform = `scale(${eob(seg(t, 2.9, 3.35))})`
     },
   }
 }

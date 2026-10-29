@@ -141,6 +141,7 @@ npm run icons    # scripts/make-icons.mjs, rendert mit Chrome (headless)
 | `icon-512.png` | 512² | Manifest `any` |
 | `icon-512-maskable.png` | 512² | Manifest `maskable` (Motiv in der Safe-Zone) |
 | `apple-touch-icon.png` | 180² | iOS-Home-Bildschirm (kein SVG, keine Transparenz) |
+| `badge-96.png` | 96² | Badge der Push-Meldung (Android-Statusleiste): nur Plätze und Pult aus `logo-klein.svg`, weiß auf durchsichtig — Android nimmt davon nur den Alphakanal |
 
 Das Zeichen (seit dem 4.10.2026): drei Sitzreihen mit 4, 6 und 8 Plätzen um ein
 goldenes Rednerpult, von oben gesehen, auf einer dunklen Petrol-Kachel — flach.

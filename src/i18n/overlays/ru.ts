@@ -750,6 +750,8 @@ export default {
   "druckNochFrei": "ещё свободно — вспомогательные обязанности можно взять в приложении, в остальном обращайтесь к старейшинам.",
   "druckMit": "{a} и {b}",
   "s89DieserZettel": "Распечатать эту карточку",
+  "s89ZettelN": "Карточки: {n}",
+  "s89AuchPartner": "Также для помощников",
   "druckVersammlungstreffpunkte": "Общие встречи для проповеди",
   "druckGruppentreffpunkte": "Встречи групп для проповеди",
   "druckAndersAlsSonst": "Не так, как обычно",

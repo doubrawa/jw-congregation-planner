@@ -750,6 +750,8 @@ export default {
   "druckNochFrei": "încă liber – sarcinile de sprijin le poți prelua în aplicație, altfel vorbește cu bătrânii.",
   "druckMit": "{a} cu {b}",
   "s89DieserZettel": "Tipărește acest bilețel",
+  "s89ZettelN": "Bilețele: {n}",
+  "s89AuchPartner": "Și pentru parteneri",
   "druckVersammlungstreffpunkte": "Întrunirile congregației pentru serviciu",
   "druckGruppentreffpunkte": "Întrunirile grupelor pentru serviciu",
   "druckAndersAlsSonst": "Altfel decât de obicei",

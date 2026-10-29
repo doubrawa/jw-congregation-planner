@@ -750,6 +750,8 @@ export default {
   "druckNochFrei": "لا يزال شاغرًا – يمكنك تولّي خدمات المساندة عبر التطبيق، وفي غير ذلك تحدَّث إلى الشيوخ.",
   "druckMit": "{a} مع {b}",
   "s89DieserZettel": "طباعة هذه البطاقة",
+  "s89ZettelN": "البطاقات: {n}",
+  "s89AuchPartner": "للمعاونين أيضًا",
   "druckVersammlungstreffpunkte": "اجتماعات خدمة الحقل للجماعة",
   "druckGruppentreffpunkte": "اجتماعات خدمة الحقل للفرق",
   "druckAndersAlsSonst": "على غير المعتاد",
