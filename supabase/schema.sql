@@ -600,6 +600,27 @@ create table if not exists public.vortraege (
     references public.persons (id, congregation_id) on delete set null (person_id)
 );
 
+-- Die Anwesenden einer Zusammenkunft (T152, 29.10.2026): im Saal gezählt und
+-- per Video zugeschaltet. Eintragen dürfen, wer in dieser Zusammenkunft
+-- Saalordner oder Zoom-Ordner ist, und wer zuteilt (`darf_anwesenheit`).
+-- `null` heißt: noch nicht eingetragen — eine Zeile entsteht mit der ersten
+-- Zahl. Wer zuletzt eingetragen hat, setzt der Trigger
+-- (`anwesenheit_vermerken`), nicht der Client.
+create table if not exists public.anwesenheit (
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  woche           date not null check (extract(isodow from woche) = 1),
+  zusammenkunft   text not null check (zusammenkunft in ('mid', 'we')),
+  saal            integer check (saal between 0 and 9999),
+  video           integer check (video between 0 and 9999),
+  person_id       uuid,
+  updated_at      timestamptz not null default now(),
+
+  -- Eine Zeile je Zusammenkunft — zugleich der Index fürs Laden.
+  primary key (congregation_id, woche, zusammenkunft),
+  constraint anwesenheit_person_fk foreign key (person_id, congregation_id)
+    references public.persons (id, congregation_id) on delete set null (person_id)
+);
+
 -- Trolleys (T121, Phase 7 — seit 14.10.2026; davor Stand und Schicht, siehe
 -- „Entfernt" unten). „Man steht mit dem Trolley ja nur 15 Minuten an einem
 -- Platz … was man eigentlich braucht, ist ein Terminplan, wo man sich
@@ -1276,6 +1297,59 @@ begin
       or (slot->>'pid' is null and slot->>'name' = public.mein_anzeigename());
 end $$;
 
+-- Darf der angemeldete Nutzer die Anwesenden dieser Zusammenkunft eintragen
+-- (T152)? Wer zuteilt, immer; sonst, wer in ihr als Saalordner (`saal`) oder
+-- Zoom-Ordner (`zoom`) eingeteilt ist — dieselben Dienste wie
+-- `ANWESENHEIT_DIENSTE` in src/data/anwesenheit.ts (`anwesenheit.test.ts` hält
+-- beide gleich). Ein Platz gehört der Person über ihre Id, beim Altbestand über
+-- den Namen — wie in `task_gehoert_mir`.
+create or replace function public.darf_anwesenheit(p_woche date, p_zusammenkunft text)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  helfer jsonb;
+  meine  uuid := public.my_person_id();
+begin
+  if public.darf_zuteilen() then return true; end if;
+  if meine is null or p_zusammenkunft not in ('mid', 'we') then return false; end if;
+  select w.data -> p_zusammenkunft -> 'helpers' into helfer
+    from public.weeks w
+   where w.congregation_id = public.my_congregation_id() and w.start = p_woche;
+  if helfer is null or jsonb_typeof(helfer) <> 'object' then return false; end if;
+  return exists (
+    select 1
+      from unnest(array['saal', 'zoom']) as dienst,
+           jsonb_array_elements(case when jsonb_typeof(helfer -> dienst) = 'array' then helfer -> dienst else '[]'::jsonb end) as platz
+     where platz->>'pid' = meine::text
+        or (platz->>'pid' is null and platz->>'name' = public.mein_anzeigename())
+  );
+end $$;
+
+-- Wer zuletzt eingetragen hat und wann — von der Datenbank gesetzt, damit kein
+-- Client einen anderen Namen daruntersetzt. Ohne angemeldeten Nutzer (Skripte)
+-- bleibt, was mitkam.
+create or replace function public.anwesenheit_vermerken()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if auth.uid() is not null then
+    new.person_id := public.my_person_id();
+  end if;
+  new.updated_at := now();
+  return new;
+end $$;
+
+drop trigger if exists anwesenheit_vermerken on public.anwesenheit;
+create trigger anwesenheit_vermerken
+  before insert or update on public.anwesenheit
+  for each row execute function public.anwesenheit_vermerken();
+
 -- ---------------------------------------------------------------------------
 -- Row-Level-Security
 -- ---------------------------------------------------------------------------
@@ -1579,6 +1653,38 @@ create policy vortraege_zuteilen on public.vortraege
   using (congregation_id = public.my_congregation_id() and public.darf_zuteilen())
   with check (congregation_id = public.my_congregation_id() and public.darf_zuteilen());
 
+-- Anwesende (T152): Die Versammlung liest — im Programm steht die Zahl nach der
+-- Zusammenkunft. Eintragen und ändern dürfen Saalordner und Zoom-Ordner dieser
+-- Zusammenkunft und wer zuteilt, und das erst ab ihrer Woche: Für eine Woche,
+-- die noch kommt, gibt es nichts zu zählen. Löschen dürfen nur Admin und Planer.
+alter table public.anwesenheit enable row level security;
+
+drop policy if exists anwesenheit_select on public.anwesenheit;
+create policy anwesenheit_select on public.anwesenheit
+  for select using (congregation_id = public.my_congregation_id());
+
+drop policy if exists anwesenheit_insert on public.anwesenheit;
+create policy anwesenheit_insert on public.anwesenheit
+  for insert with check (
+    congregation_id = public.my_congregation_id()
+    and woche <= current_date
+    and public.darf_anwesenheit(woche, zusammenkunft)
+  );
+
+drop policy if exists anwesenheit_update on public.anwesenheit;
+create policy anwesenheit_update on public.anwesenheit
+  for update
+  using (congregation_id = public.my_congregation_id() and public.darf_anwesenheit(woche, zusammenkunft))
+  with check (
+    congregation_id = public.my_congregation_id()
+    and woche <= current_date
+    and public.darf_anwesenheit(woche, zusammenkunft)
+  );
+
+drop policy if exists anwesenheit_delete on public.anwesenheit;
+create policy anwesenheit_delete on public.anwesenheit
+  for delete using (congregation_id = public.my_congregation_id() and public.darf_zuteilen());
+
 -- Trolleys (T121, Phase 7): Die Trolleys pflegt der Admin; Trolleys und
 -- Termine sieht die ganze Versammlung — so sehen alle, wann einer unterwegs
 -- ist. **Termine schreibt kein Mitglied selbst**: Eintragen, Dazukommen und
@@ -1876,6 +1982,7 @@ begin
         ('assignment_log', 'coalesce(woche_im_schluessel(task_key), to_char(sent_at, ''YYYY-MM-DD'')) < to_char($1, ''YYYY-MM-DD'')', ein_jahr),
         ('gruppenbesuche', 'woche < $1', ein_jahr),
         ('vortraege', 'woche < $1', ein_jahr),
+        ('anwesenheit', 'woche < $1', ein_jahr),
         ('plaene', 'bis < $1', ein_jahr),
         ('plan_eintraege', 'datum < $1', ein_jahr),
         ('absagen', 'woche < $1', ein_jahr),

@@ -26,6 +26,7 @@ import { darfPlanen, erlaubteScreens, rechteVon, themaVon } from '../data/rechte
 import { besuchAustragen, besuchEintragen, besuchsLage, besuchStand, nachWoche } from '../data/gruppenbesuche'
 import { vortragsplanAnwenden, vortragsplanVorschau } from '../data/vortragsplan'
 import { termineSortiert } from '../data/trolleys'
+import { ANWESENDE_HOECHSTENS, anwesenheitDer, type Anwesenheit } from '../data/anwesenheit'
 import { FS_LEITER } from '../../supabase/functions/_shared/zuteilungen.ts'
 import { dropPersonPid, renameInWeeks } from '../data/namensbindung'
 import { localizedWeeks } from '../data/localize'
@@ -244,6 +245,12 @@ function ohnePerson(state: AppState, id: string): AppState {
     vortraege: neuWennGeaendert(
       state.vortraege,
       state.vortraege.map((v) => (v.pid === id ? { ...v, pid: null } : v)),
+    ),
+    // Die Anwesenden (T152) bleiben, nur wer eingetragen hat, fehlt danach —
+    // wie die Datenbank (`on delete set null`).
+    anwesenheit: neuWennGeaendert(
+      state.anwesenheit,
+      state.anwesenheit.map((a) => (a.pid === id ? { ...a, pid: null } : a)),
     ),
     // Trolley-Termine wie in der Datenbank: Wer eingetragen hat, nimmt seinen
     // Termin mit (`on delete cascade`); als Partner fehlt er nur — der andere
@@ -1247,6 +1254,21 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       const fsWeeks = besuchEintragen(state.fsWeeks, wochenKennungen(state), besuch, state.persons, true)
       return fsWeeks === state.fsWeeks ? state : { ...state, fsWeeks, toast: toastKey(state, 'toastZugeteilt') }
     }
+    case 'anwesenheitSetzen': {
+      // Eine Zeile je Zusammenkunft; leer heißt „nicht eingetragen" (`null`).
+      // Ungültiges kommt nicht an — das Formular prüft (`anwesendeAusEingabe`),
+      // die Datenbank ebenso (0 bis 9999).
+      const { woche, tab, saal, video } = action
+      const gueltig = (n: number | null) => n === null || (Number.isInteger(n) && n >= 0 && n <= ANWESENDE_HOECHSTENS)
+      if (!gueltig(saal) || !gueltig(video)) return state
+      const alt = anwesenheitDer(state.anwesenheit, woche, tab)
+      if (alt && alt.saal === saal && alt.video === video) return state
+      const neu: Anwesenheit = { woche, tab, saal, video, pid: state.personId }
+      const anwesenheit = alt
+        ? state.anwesenheit.map((a) => (a === alt ? neu : a))
+        : [...state.anwesenheit, neu].sort((a, b) => a.woche.localeCompare(b.woche) || a.tab.localeCompare(b.tab))
+      return { ...state, anwesenheit, toast: toastKey(state, 'anwesendGespeichert') }
+    }
     case 'vortragsplanUebernehmen': {
       // Neu gerechnet mit dem Stand von jetzt — die Vorschau kann ein anderer
       // Planer inzwischen überholt haben (`data/vortragsplan.ts`).
@@ -1744,6 +1766,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         absences: p.absences,
         // Momentaufnahmen von vor dem 17.10.2026 kennen die Absagen nicht (T126).
         absagen: p.absagen ?? [],
+        // Und von vor dem 29.10.2026 die Anwesenden (T152).
+        anwesenheit: p.anwesenheit ?? [],
         notifs: gelesenBehalten(p.notifications, state.notifs),
         confirmations: p.confirmations,
         // Aus einer alten Momentaufnahme (lib/snapshot.ts) fehlt das Feld — sie

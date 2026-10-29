@@ -115,6 +115,13 @@ const SPIEGEL: Record<string, Spiegel> = {
     spalten: { person_id: 'pid' },
     basis: { id: 'zz', woche: '2026-11-09', redner: 'Z', versammlung: '', eigener: true, pid: null, thema: '', lied: '' },
   },
+  // Die Anwesenden bleiben; wer eingetragen hat, fehlt danach (T152).
+  anwesenheit: {
+    feld: 'anwesenheit',
+    spalten: { person_id: 'pid' },
+    basis: { woche: 'zz', tab: 'mid', saal: 80, video: 20, pid: null },
+    schluessel: 'woche',
+  },
   // Wer eingetragen hat, nimmt seinen Termin mit; als Partner fehlt er nur — der
   // andere sucht wieder einen (T121).
   trolley_termine: {

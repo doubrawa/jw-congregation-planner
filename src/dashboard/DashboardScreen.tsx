@@ -13,6 +13,7 @@ import { fromIso } from '../data/meeting-dates'
 import { rechteVon } from '../data/rechte'
 import { eigeneTermine } from '../data/trolleys'
 import type { MyTask, TrolleyTermin } from '../data/types'
+import { AnwesenheitKarte } from '../anwesenheit/AnwesenheitKarte'
 import { ErsteSchritteKarte } from '../erste-schritte/ErsteSchritteKarte'
 import { aufgabenHaelften, aufgabenTitelSprache, useT } from '../i18n/useT'
 import { zeitSpanne, zuDenTrolleys } from '../trolleys/trolley-anzeige'
@@ -75,6 +76,9 @@ export function DashboardScreen() {
 
       <div className={zuteilen ? 'start-spalten is-planer' : 'start-spalten'}>
         <div className="start-spalte">
+          {/* Während der eigenen Zusammenkunft als Saalordner oder Zoom-Ordner
+              zuoberst: die Anwesenden eintragen (T152). */}
+          <AnwesenheitKarte />
           <ErsteSchritteKarte />
           {naechste ? (
             <AufgabeKarte task={naechste} saal />

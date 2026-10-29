@@ -178,6 +178,8 @@ export const LEEREN = [
   'plaene',
   // Die Absagen (T126) gehören zu den Wochen, die hier gehen.
   'absagen',
+  // Und die Anwesenden (T152) — gezählt in Wochen, die hier gehen.
+  'anwesenheit',
 ]
 
 /** Gelöscht **und** im selben Lauf aus dem SQL neu angelegt (feste IDs). */

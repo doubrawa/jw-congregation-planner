@@ -80,6 +80,7 @@ export function leererZustand({ theme, fontScale, lang }: Vorlieben): AppState {
     planEintraege: [],
     absences: [],
     absagen: [],
+    anwesenheit: [],
     notifs: [],
     slotSel: null,
     selectedPersonId: null,

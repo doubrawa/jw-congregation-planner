@@ -1,0 +1,211 @@
+/*
+ * Die Anwesenden (T152): das Formular auf dem Start und im Blatt, die Zeile im
+ * Programm, die Monate in der Auswertung.
+ */
+
+.anwesend-karte {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.anwesend-karte-titel {
+  font-size: calc(22px * var(--fs));
+  font-weight: 600;
+  line-height: 1.2;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+.anwesend-formular {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Die zwei Felder nebeneinander, solange jedes seine Marke fasst — sonst
+   untereinander (Platz statt Bruch, T128). */
+.anwesend-felder {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.anwesend-feld {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 6px;
+  min-inline-size: calc(120px * var(--fs));
+}
+
+.anwesend-zahl {
+  font-size: calc(22px * var(--fs));
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.anwesend-zahl[aria-invalid='true'] {
+  border-color: var(--problem);
+}
+
+.anwesend-fehler {
+  color: var(--problem);
+  font-size: calc(13.5px * var(--fs));
+}
+
+/* „Zusammen: 87" links, „Speichern" rechts; passt beides nicht, rückt der Knopf darunter. */
+.anwesend-fuss {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.anwesend-zusammen {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.anwesend-fuss > .knopf-haupt {
+  margin-inline-start: auto;
+}
+
+/* Im Programm: die Zahl links, „Ändern" oder „Eintragen" rechts. Die Karte ist
+   eine Spalte — die Zeile nennt ihre Richtung (`flex-richtung.test.ts`). */
+.anwesend-zeile {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-block-end: 12px;
+}
+
+.anwesend-zeile-text {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.anwesend-gesamt {
+  font-weight: 600;
+}
+
+.anwesend-gesamt.is-fehlt {
+  color: var(--text2);
+}
+
+.anwesend-zeile > .knopf-pille {
+  margin-inline-start: auto;
+}
+
+/* ---- Auswertung --------------------------------------------------------------- */
+
+.aw-anwesend {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Je Monat ein Balkenpaar: unter der Woche dunkel, am Wochenende in Minze. */
+.aw-anwesend-balken {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 10px;
+  min-block-size: 120px;
+}
+
+.aw-anwesend-monat {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-inline-size: 0;
+}
+
+.aw-anwesend-paar {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  inline-size: 100%;
+  block-size: 90px;
+}
+
+.aw-anwesend-saeule {
+  flex: 1 1 0;
+  min-block-size: 2px;
+  border-radius: 3px 3px 0 0;
+}
+
+.aw-anwesend-saeule.is-mid,
+.aw-anwesend-legende .is-mid .aw-anwesend-punkt {
+  background: var(--text2);
+}
+
+.aw-anwesend-saeule.is-we,
+.aw-anwesend-legende .is-we .aw-anwesend-punkt {
+  background: var(--akzent);
+}
+
+.aw-anwesend-legende {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 0;
+  list-style: none;
+  color: var(--text2);
+  font-size: calc(13.5px * var(--fs));
+}
+
+.aw-anwesend-legende > li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.aw-anwesend-punkt {
+  inline-size: 10px;
+  block-size: 10px;
+  border-radius: 3px;
+}
+
+.aw-anwesend-karte {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aw-anwesend-titel {
+  font-size: calc(15.5px * var(--fs));
+  font-weight: 600;
+}
+
+.aw-anwesend-reihe {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.aw-anwesend-name {
+  font-weight: 600;
+}
+
+.aw-anwesend-fehlt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  color: var(--problem);
+  font-size: calc(13.5px * var(--fs));
+}
+
+.aw-anwesend-drucken {
+  align-self: flex-start;
+}

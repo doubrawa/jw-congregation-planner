@@ -20,6 +20,7 @@
  * 25.10.2026 nicht mehr.
  */
 
+import type { Anwesenheit } from '../../src/data/anwesenheit'
 import { buildFsWeeks } from '../../src/data/fs'
 import { normalizeChairKeys, ROLE_GUEST_SPEAKER, serviceQualKey } from '../../src/data/helpers'
 import { montagNach } from '../../src/data/meeting-dates'
@@ -359,6 +360,21 @@ export const DEMO_ABSENCES: Absence[] = [
   // zum Konflikt zu machen. Die Wochen davor prüfen die Planungsregeln, und die
   // sollen von einer Anzeige nicht abhängen.
   { id: 'a6', personId: 'p1', userId: '', from: '2026-11-02', to: '2026-11-06', reason: 'Besuch' },
+]
+
+/**
+ * Die Anwesenden der Demo-Wochen (T152) — runde, erkennbar ausgedachte Zahlen.
+ * Am Dienstag, 22.9., fehlt die Zahl: Die Auswertung zeigt ihn unter
+ * „Ohne Zahl" (mit `uhr=2026-10-12` liegen alle vier Wochen zurück).
+ */
+export const DEMO_ANWESENHEIT: Anwesenheit[] = [
+  { woche: '2026-09-07', tab: 'mid', saal: 60, video: 20, pid: null },
+  { woche: '2026-09-07', tab: 'we', saal: 80, video: 20, pid: null },
+  { woche: '2026-09-14', tab: 'mid', saal: 62, video: 18, pid: null },
+  { woche: '2026-09-14', tab: 'we', saal: 84, video: 16, pid: null },
+  { woche: '2026-09-21', tab: 'we', saal: 90, video: 20, pid: null },
+  { woche: '2026-09-28', tab: 'mid', saal: 58, video: 22, pid: null },
+  { woche: '2026-09-28', tab: 'we', saal: 100, video: 20, pid: null },
 ]
 
 /**

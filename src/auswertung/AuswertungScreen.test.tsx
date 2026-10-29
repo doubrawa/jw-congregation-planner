@@ -284,9 +284,11 @@ describe('Am Handy: der Überblick', () => {
     [t.awWartezeitenTitel, '.feld-wahl'],
     [t.awEngpaesseTitel, '.aw-erklaerung'],
     [t.awWeiteresTitel, '.aw-treffpunkt-gruppe'],
+    // Die Anwesenden (T152): ohne eingetragene Zahl der Satz, dass noch keine da sind.
+    [t.awAnwesenheitTitel, '.aw-anwesend'],
   ])('die Kachel „%s" öffnet ihre Unteransicht — Zurück führt in den Überblick', (name, marke) => {
     const { container } = zeige(zustand())
-    expect(container.querySelectorAll('.aw-kachel')).toHaveLength(5)
+    expect(container.querySelectorAll('.aw-kachel')).toHaveLength(6)
     fireEvent.click([...container.querySelectorAll('.aw-kachel')].find((k) => k.querySelector('.aw-kachel-titel')?.textContent === name)!)
     expect(titel(container)).toBe(name)
     expect(container.querySelector(marke), `${name}: ohne Inhalt`).not.toBeNull()

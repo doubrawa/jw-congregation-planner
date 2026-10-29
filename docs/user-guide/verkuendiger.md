@@ -462,6 +462,20 @@ Tipp auf **Übernehmen** trägt dich ein und bestätigt gleich mit. Auch hier gi
 **wer zuerst tippt.** War jemand schneller, lädt die App neu, und der Platz ist
 weg.
 
+### Anwesende eintragen (Saalordner und Zoom-Ordner)
+
+Bist du in einer Zusammenkunft **Saalordner** oder **Zoom-Ordner**, steht ab
+ihrem Beginn ganz oben auf dem Start die Karte **Anwesende eintragen** – bis
+zum Ende des Tages. Trag ein, wie viele **im Saal** sitzen und wie viele **per
+Video** zugeschaltet sind; darunter steht beides **zusammen**. Ein Feld darf
+leer bleiben: Der Saalordner zählt den Saal, der Zoom-Ordner das Video, jeder
+für sich. **Speichern** schickt die Zahlen ab; ändern kannst du sie danach im
+Programm der Zusammenkunft (**Ändern**).
+
+Im Programm steht nach Beginn der Zusammenkunft für alle **Anwesend: 87**, mit
+Saal und Video darunter. Fehlt die Zahl, siehst du als Saalordner oder
+Zoom-Ordner dort **Anwesende fehlen** mit **Eintragen**.
+
 ### Das S‑89-Formular
 
 Bei Schulungsaufgaben (Bibellesung, Gespräche beginnen, Interesse fördern …)

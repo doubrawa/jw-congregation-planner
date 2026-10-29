@@ -14,6 +14,7 @@ import {
   type Dispatch,
 } from 'react'
 import type { Ansicht } from '../data/ansicht'
+import type { Anwesenheit } from '../data/anwesenheit'
 import type { FontScale } from '../data/constants'
 import type { OffenerPlatz } from '../data/offene-plaetze'
 import type { AssignScope, Umfang } from '../data/planning'
@@ -109,6 +110,8 @@ export interface HydratePayload {
   absences: Absence[]
   /** Absagen (T126) — nur Admin und Planer bekommen Zeilen. Fehlt in einer Momentaufnahme von davor. */
   absagen?: Absage[]
+  /** Anwesende je Zusammenkunft (T152). Fehlt in einer Momentaufnahme von davor. */
+  anwesenheit?: Anwesenheit[]
   notifications: Notification[]
   confirmations: ConfirmationMap
   sentLog: SentLog
@@ -254,6 +257,11 @@ export interface AppState {
    * Zuteilungsrecht bekommt keine Zeile (RLS).
    */
   absagen: Absage[]
+  /**
+   * Die Anwesenden je Zusammenkunft (T152): im Saal und per Video, eingetragen
+   * von Saalordner, Zoom-Ordner oder wer zuteilt. Ein Jahr wie die Wochen.
+   */
+  anwesenheit: Anwesenheit[]
   notifs: Notification[]
   confirmations: ConfirmationMap // Slot-Pfad → Status (nur Produktionsmodus)
   /**
@@ -440,6 +448,12 @@ export type AppAction =
   // angelegten Wochen, für die übrigen als Vormerkung. Der Reducer rechnet die
   // Vorschau mit dem dann gültigen Stand neu (`data/vortragsplan.ts`).
   | { type: 'vortragsplanUebernehmen'; plan: Vortragsplan }
+  /**
+   * Die Anwesenden einer Zusammenkunft eintragen oder berichtigen (T152). Wer
+   * es darf, entscheidet die Datenbank (`darf_anwesenheit`); der Bildschirm
+   * bietet es nur an, wo es gilt (`darfAnwesenheit`).
+   */
+  | { type: 'anwesenheitSetzen'; woche: string; tab: MeetingKey; saal: number | null; video: number | null }
   /*
    * Trolleys (T121, Phase 7). Die Trolleys pflegt der Admin; den neuen legt
    * der Bildschirm mit seiner Kennung an, damit er ihn gleich öffnen kann.

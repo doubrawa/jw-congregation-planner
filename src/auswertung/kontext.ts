@@ -3,7 +3,7 @@ import type { Lang } from '../data/types'
 import type { Dict } from '../i18n/ui'
 
 /** Die Unteransichten der Auswertung am Handy — ab dem Tablet steht alles auf einer Seite. */
-export type Ansicht = 'ueberblick' | 'verteilung' | 'einseitig' | 'wartezeiten' | 'engpaesse' | 'weiteres'
+export type Ansicht = 'ueberblick' | 'verteilung' | 'einseitig' | 'wartezeiten' | 'engpaesse' | 'weiteres' | 'anwesenheit'
 
 /**
  * **Was jede Ansicht der Auswertung braucht**: die Zahlen und wie sie zu Wörtern

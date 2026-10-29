@@ -10,6 +10,7 @@ import { fill, platzName, programmTermin, useT } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
 import { gebundenesDatum } from '../components/datum-anzeige'
 import { AusfallBanner } from '../components/WeekBadges'
+import { AnwesenheitZeile } from '../anwesenheit/AnwesenheitZeile'
 import { PersonZeile } from './PersonZeile'
 
 type Uebersetzer = (s: string) => string
@@ -65,6 +66,9 @@ export function ZusammenkunftAnsicht({
         </p>
         {druck}
       </div>
+
+      {/* Nach Beginn der Zusammenkunft: die Anwesenden (T152). */}
+      {(tab === 'mid' || tab === 'we') && <AnwesenheitZeile week={rawWeek} tab={tab} />}
 
       <Programm meeting={meeting} rawMeeting={rawMeeting} me={me} tpw={tpw} sprache={sprache} ebene="h2" />
       <Hilfsdienste helpers={meeting.helpers} me={me} ebene="h2" />

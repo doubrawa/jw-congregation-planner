@@ -206,6 +206,9 @@ describe('uhrStellen – die Uhr der Entwicklerseite', () => {
     expect(uhrAusHash('#s=auswertung')).toBeNull()
     expect(uhrAusHash('#uhr=12.10.2026')).toBeNull()
     expect(uhrAusHash('#uhr=2026-10-45')).toBeNull()
+    // Mit Uhrzeit — für die Anwesenden, die erst ab Beginn der Zusammenkunft zählen (T152).
+    expect(uhrAusHash('#uhr=2026-09-08T19:30')).toEqual(new Date(2026, 8, 8, 19, 30))
+    expect(uhrAusHash('#uhr=2026-09-08T25:00')).toBeNull()
   })
 
   it('die Zeit läuft von dort weiter — sonst stünden Toasts und Zähler still', async () => {

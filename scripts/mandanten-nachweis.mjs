@@ -92,6 +92,9 @@ export const RLS_TABELLEN = [
   { name: 'trolley_termine', spalte: 'congregation_id' },
   { name: 'plaene', spalte: 'congregation_id' },
   { name: 'plan_eintraege', spalte: 'congregation_id' },
+  // Die Anwesenden (T152): Die Versammlung liest, eintragen dürfen Saalordner,
+  // Zoom-Ordner und wer zuteilt.
+  { name: 'anwesenheit', spalte: 'congregation_id' },
   { name: 'absences', spalte: 'congregation_id' },
   { name: 'notifications', spalte: 'congregation_id' },
   { name: 'confirmations', spalte: 'congregation_id' },

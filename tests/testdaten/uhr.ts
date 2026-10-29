@@ -23,10 +23,14 @@ export const ENTWICKLER_HEUTE = new Date(2026, 8, 7, 9, 0)
  */
 export function uhrAusHash(hash: string): Date | null {
   const tag = new URLSearchParams(hash.replace(/^#/, '')).get('uhr')
-  const teile = tag?.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  // Mit Uhrzeit (`uhr=2026-09-08T19:30`) für das, was erst ab einer Uhrzeit
+  // gilt: die Anwesenden eintragen ab Beginn der Zusammenkunft (T152).
+  const teile = tag?.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/)
   if (!teile) return null
   const [jahr, monat, tagImMonat] = [Number(teile[1]), Number(teile[2]) - 1, Number(teile[3])]
-  const datum = new Date(jahr, monat, tagImMonat, 9, 0)
+  const [stunde, minute] = teile[4] !== undefined ? [Number(teile[4]), Number(teile[5])] : [9, 0]
+  if (stunde > 23 || minute > 59) return null
+  const datum = new Date(jahr, monat, tagImMonat, stunde, minute)
   // Ein 45. Oktober rollte sonst still in den November.
   return datum.getMonth() === monat && datum.getDate() === tagImMonat ? datum : null
 }

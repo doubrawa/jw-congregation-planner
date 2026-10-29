@@ -8956,15 +8956,37 @@ ihrer Sprache (`aufgabenHaelften`); ein Wechsel der nächsten Aufgabe lief als
 Zusage (der Saal ist jetzt je Aufgabe geschlüsselt); der Übergang lief auch
 rückwärts und schwang dabei unter null (er steht nur noch am gefüllten Stand).
 
-### T152 · Besucherzahl erfassen 🏗 ☐ offen — Entwurf gezeigt (29. Oktober 2026)
+### T152 · Besucherzahl erfassen 🏗 ✅ umgesetzt, nicht ausgerollt (29. Oktober 2026)
 
-Entwurf im Gespräch (drei Handy-Ansichten): Der Saalordner der Zusammenkunft
-tippt ab ihrem Beginn auf dem Start „Im Saal" und „Per Video" ein (den
-Video-Wert kann auch der Zoom-Ordner tippen); im Programm steht danach
-„Anwesend: 87"; die Auswertung zeigt je Monat Anzahl und Schnitt, getrennt nach
-Woche und Wochenende, für den Bericht. Offen: wer eintragen darf, ob ein
-Ausdruck für den Bericht gebraucht wird, wie lange die Zahlen bleiben (T125:
-ein Jahr). Vor dem Bau gegen das Formular messen, nicht raten.
+Entwurf im Gespräch (drei Handy-Ansichten), danach Betreiber: „setze die
+vorschläge für tauschen und anwesendenzahlen um". Die offenen Fragen des
+Entwurfs habe ich so entschieden, wie er gezeigt war:
+
+- **Wer einträgt:** wer in der Zusammenkunft Saalordner (`saal`) oder
+  Zoom-Ordner (`zoom`) ist, dazu Admin und Planer (`darfAnwesenheit` in
+  `src/data/anwesenheit.ts`, `darf_anwesenheit` in `schema.sql`;
+  `tests/anwesenheit-schema.test.ts` hält Dienste und Grenze gleich). Wer
+  zuletzt eingetragen hat, setzt ein Trigger. Eintragen erst ab der Woche der
+  Zusammenkunft (Richtlinie), angeboten erst ab ihrem Beginn (App).
+- **Wo:** Saalordner und Zoom-Ordner auf dem Start zuoberst, ab Beginn bis
+  Tagesende, mit dem Formular in der Karte; im Programm nach Beginn
+  „Anwesend: 87" mit Saal und Video, Ändern/Eintragen für die, die dürfen;
+  die Auswertung je Monat mit Balkenpaar, Zahl und Durchschnitt (ganz
+  gerundet), „Ohne Zahl" mit den Tagen zum Nachtragen, „Für den Bericht
+  drucken" (je Monat und Art: Zusammenkünfte, alle Anwesenden, Durchschnitt).
+  Gezählt wird nach dem **Tag** der Zusammenkunft, nicht nach dem Montag.
+- **Aufbewahrung:** ein Jahr wie die Wochen (`alte_daten_loeschen`).
+- **Nicht gemessen am Formular:** Das Berichtsformular der Versammlung ist
+  nicht öffentlich; der Ausdruck heißt deshalb nur „Anwesende bei den
+  Zusammenkünften" und behauptet keine Formularnummer.
+
+Neue Tabelle `anwesenheit` (eine Zeile je Zusammenkunft, `null` = nicht
+eingetragen), Richtlinien und Trigger in `schema.sql` — **noch nicht
+eingespielt**; bis dahin lädt die App ohne Anwesende, Speichern meldet einen
+Fehler. 23 Texte in zwölf Sprachen. Tests: Regeln (23), Oberfläche (18),
+Reducer (5), Speichern (2), Schema-Abgleich; Mutationsprobe 8 von 8 bewacht.
+Die Karte auf dem Start ist im Browser nicht angesehen: Die Testwochen haben
+keinen Saalordner; geprüft ist sie in `anwesenheit.test.tsx`.
 
 ### T153 · Tauschen statt absagen 🏗 ☐ offen — Entwurf gezeigt (29. Oktober 2026)
 
@@ -9021,7 +9043,7 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
-| **T152** | Besucherzahl erfassen | ☐ Entwurf am 29. Oktober gezeigt; wartet auf die Entscheidung des Betreibers (wer einträgt, Ausdruck, Aufbewahrung) |
+| **T152** | Besucherzahl erfassen | ✅ umgesetzt am 29. Oktober; **Schema noch nicht eingespielt** (Freigabe des Betreibers) |
 | **T153** | Tauschen statt absagen | ☐ Entwurf am 29. Oktober gezeigt; wartet auf die Entscheidung des Betreibers (nur Hilfsdienste?, Zustimmung des Planers?) |
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
@@ -9462,7 +9484,7 @@ eine Entscheidung.
 | **Gerät** | Dunkle Bedienleiste am Handy | wirkt erst mit der aktualisierten WebAPK (`about://webapks` → „Update", oder neu installieren) |
 | **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
 | **Betreiber** | Umzug weg von Supabase | Am 25. Oktober erwogen: Supabase ist eine US-Firma, und die Daten zeigen die Religionszugehörigkeit (Art. 9 DSGVO). Empfohlen: die quelloffene Supabase-Software selbst auf einem Server in Deutschland. Betreiber: „Nicht jetzt, ich überlege noch." Fällt die Entscheidung dafür, legt der Betreiber Konto, Server und Vertrag an; Einrichten und Umziehen per Skript macht Claude |
-| **T152** | Besucherzahl erfassen | Entwurf am 29. Oktober gezeigt — die Entscheidung liegt beim Betreiber |
+| **Betreiber** | T152 Besucherzahl: Schema einspielen | umgesetzt am 29. Oktober; die Tabelle `anwesenheit` samt Richtlinien steht in `schema.sql`, eingespielt wird mit Freigabe — erst danach pushen |
 | **T153** | Tauschen statt absagen | Entwurf am 29. Oktober gezeigt — die Entscheidung liegt beim Betreiber |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |

@@ -43,6 +43,7 @@ const emptyData: CongregationData = {
   planEintraege: [],
   absences: [],
   absagen: [],
+  anwesenheit: [],
   notifications: [],
   confirmations: {},
   sentLog: {},

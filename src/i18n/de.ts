@@ -860,6 +860,20 @@ export const DE = {
     awWeiteresTitel: 'Treffpunkte, Absagen, Ballungen', awBallungenZahl: 'Ballungen: {n}',
     awFussnote: 'Gerechnet aus den Wochen in der App, gespeichert wird nichts. Wer abwesend war oder noch nicht dabei, von dem wird für diese Zeit nichts erwartet. Der öffentliche Vortrag, feste Rollen und was dem Vorsitz folgt, zählen nicht mit. Wartezeiten und Engpässe rechnen immer über das ganze Jahr.',
     awKeineDaten: 'Im gewählten Zeitraum fand noch keine Zusammenkunft statt, die die App kennt.',
+    // Die Anwesenden (T152, 29.10.2026): Saalordner und Zoom-Ordner zählen, wer
+    // im Saal sitzt und wer per Video zugeschaltet ist; die Auswertung rechnet
+    // daraus je Monat. „Ohne Zahl" steht vor den Tagen, an denen eine
+    // Zusammenkunft stattfand, aber niemand gezählt hat.
+    anwesendTitel: 'Anwesende eintragen', anwesendSaal: 'Im Saal', anwesendVideo: 'Per Video',
+    anwesendZusammenN: 'Zusammen: {n}', anwesendSpeichern: 'Speichern', anwesendGespeichert: 'Anwesende gespeichert',
+    anwesendUngueltig: 'Nur ganze Zahlen bis {max}.',
+    anwesendZahl: 'Anwesend: {n}', anwesendSaalN: 'Im Saal: {n}', anwesendVideoN: 'Per Video: {n}',
+    anwesendFehlt: 'Anwesende fehlen', anwesendEintragen: 'Eintragen', anwesendVon: 'Eingetragen von {name}',
+    awAnwesenheitTitel: 'Anwesenheit', awAnwesenheitKeine: 'Im gewählten Zeitraum sind noch keine Anwesenden eingetragen.',
+    awAnwesenheitSchnitt: 'Durchschnitt: {n}', awAnwesenheitOhne: 'Ohne Zahl:', awAnwesenheitOhneN: 'Ohne Zahl: {n}',
+    awAnwesenheitDrucken: 'Für den Bericht drucken',
+    druckAnwesenheitTitel: 'Anwesende bei den Zusammenkünften', druckAnwesendZusammenkuenfte: 'Zusammenkünfte',
+    druckAnwesendeZusammen: 'Anwesende zusammen', druckSchnitt: 'Durchschnitt',
     awVergleich: 'Vergleich', awAufgaben: 'Aufgaben', awHilfsdienste: 'Hilfsdienste',
     awErklaerungAufgaben: 'Verglichen wird mit dem, was auf jede Person käme, wenn die Plätze ihrer Bereiche gleich verteilt wären. Auffällig ist, wer um mehr als die Hälfte darüber oder darunter liegt.',
     awErklaerungHilfsdienste: 'Hilfsdienste verteilt die App nach der Gesamtlast: Wer viele Aufgaben hat, bekommt weniger Hilfsdienste. Verglichen wird deshalb alles zusammen.',

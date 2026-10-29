@@ -39,6 +39,7 @@ import {
   saveSettings,
   saveTrolleys,
   saveVortraege,
+  saveAnwesenheit,
   saveWeek,
   substituteSeek,
   substituteTake,
@@ -791,6 +792,17 @@ function vortraegeSpeichern(congId: string, prev: AppState, next: AppState): voi
 }
 
 /**
+ * Die Anwesenden (T152): geschrieben wird nur die Zeile, die sich geändert hat
+ * (neue Referenz). Gelöscht wird hier nie — leer heißt `null`, die Zeile bleibt.
+ */
+function anwesenheitSpeichern(congId: string, prev: AppState, next: AppState): void {
+  if (next.anwesenheit === prev.anwesenheit) return
+  const vorher = new Set(prev.anwesenheit)
+  const geaendert = next.anwesenheit.filter((a) => !vorher.has(a))
+  if (geaendert.length) saveAnwesenheit(congId, geaendert)
+}
+
+/**
  * Weitere Pläne (T120, Phase 5): Pläne gebündelt, Einträge sofort — und vor
  * einem Eintrag immer erst der Plan, auf den er zeigt (die Schreibschicht hält
  * die Reihenfolge in `planNacheinander`).
@@ -863,6 +875,9 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       break
     case 'vortragsplanUebernehmen':
       vortraegeSpeichern(congId, prev, next)
+      break
+    case 'anwesenheitSetzen':
+      anwesenheitSpeichern(congId, prev, next)
       break
     case 'trolleyAnlegen':
     case 'trolleyAendern':

@@ -51,6 +51,9 @@ import { supabase } from './supabase'
 import {
   type AbsenceRow,
   absenceFromRow,
+  type AnwesenheitRow,
+  anwesenheitFromRow,
+  anwesenheitToRow,
   type FsRuleRow,
   fsRuleFromRow,
   fsRuleToRow,
@@ -65,6 +68,7 @@ import {
   vortragToRow,
 } from './zeilen'
 import type { VorgemerkterVortrag } from '../data/vortragsplan'
+import type { Anwesenheit } from '../data/anwesenheit'
 
 /* ---- Row-Typen (Spalten aus supabase/schema.sql) ------------------------ */
 // Personen, Abwesenheiten, Grundplan-Regeln, Gruppenbesuche und vorgemerkte
@@ -557,6 +561,8 @@ export interface CongregationData {
   absences: Absence[]
   /** Absagen des letzten Jahres (T126) — nur Admin und Planer bekommen Zeilen (RLS). */
   absagen: Absage[]
+  /** Die Anwesenden je Zusammenkunft (T152), ein Jahr wie die Wochen. */
+  anwesenheit: Anwesenheit[]
   notifications: Notification[]
   confirmations: ConfirmationMap
   reminders: Reminders
@@ -625,7 +631,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .gte('start', verteilungAb)
     .order('start', { ascending: false })
 
-  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, linkRows, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, vortragRows, trolleyRows, trolleyTerminRows, planRows, planEintragRows, absageRows] = await Promise.all([
+  const [cong, persons, services, groups, weeks, absences, notifs, confs, members, linkRows, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, vortragRows, trolleyRows, trolleyTerminRows, planRows, planEintragRows, absageRows, anwesenheitRows] = await Promise.all([
     supabase.from('congregations').select(CONG_SPALTEN.join(', ')).eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select('*').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
@@ -768,6 +774,14 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
         .order('person_id')
         .range(von, bis),
     ),
+    // Die Anwesenden (T152): ein Jahr wie ihre Wochen, für die Auswertung. Zwei
+    // Zeilen je Woche — im Jahr gut hundert, weit unter der Zeilengrenze.
+    supabase
+      .from('anwesenheit')
+      .select('woche, zusammenkunft, saal, video, person_id')
+      .eq('congregation_id', congregationId)
+      .gte('woche', verteilungAb)
+      .order('woche'),
   ])
 
   // Alle dreizehn Abfragen prüfen, nicht zehn: fehlten fs_rules/fs_weeks in der
@@ -802,6 +816,9 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   if (planEintragRows.error) console.error('[plan_eintraege]', planEintragRows.error.message)
   // Und die Absagen (T126): Ohne sie fehlt nur ein Abschnitt der Auswertung.
   if (absageRows.error) console.error('[absagen]', absageRows.error.message)
+  // Ebenso die Anwesenden (T152) — und solange `schema.sql` nicht lief, gibt es
+  // die Tabelle noch nicht.
+  if (anwesenheitRows.error) console.error('[anwesenheit]', anwesenheitRows.error.message)
 
   const serviceList = (services.data ?? []).map((r) => serviceFromRow(r as ServiceRow))
   const personList = (persons.data ?? []).map((r) => personFromRow(r as PersonRow))
@@ -903,6 +920,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       .filter((e) => geladenePlaene.has(e.planId)),
     absences: (absences.data ?? []).map((r) => absenceFromRow(r as AbsenceRow)),
     absagen: absageRows.data.map(absageFromRow),
+    anwesenheit: ((anwesenheitRows.data ?? []) as AnwesenheitRow[]).map(anwesenheitFromRow),
     notifications: notificationsAus((notifs.data ?? []) as NotificationRow[], weekList, zeiten),
     confirmations,
     reminders,
@@ -1308,6 +1326,30 @@ export function saveVortraege(congregationId: string, vortraege: VorgemerkterVor
   if (!supabase) return
   const client = supabase
   vortraegeNacheinander(() => loeschenDannSchreiben(client, 'vortraege', congregationId, vortraege, entfernt, vortragToRow))
+}
+
+const anwesenheitNacheinander = schreibSchlange()
+
+/**
+ * **Die Anwesenden einer Zusammenkunft** (T152) — eine Zeile je
+ * Zusammenkunft, geschrieben über ihren natürlichen Schlüssel: Tragen
+ * Saalordner und Zoom-Ordner zugleich ein, gilt, was zuletzt kam — beide sehen
+ * dieselbe Zusammenkunft und berichtigen sich höchstens. Wer eintragen darf,
+ * prüft die Datenbank (`darf_anwesenheit`); weist sie ab, lädt die App nach
+ * (`zeilenRun`).
+ */
+export function saveAnwesenheit(congregationId: string, eintraege: Anwesenheit[]): void {
+  if (!supabase || eintraege.length === 0) return
+  const client = supabase
+  anwesenheitNacheinander(async () => {
+    const { error } = await client
+      .from('anwesenheit')
+      .upsert(
+        eintraege.map((a) => anwesenheitToRow(a, congregationId)),
+        { onConflict: 'congregation_id,woche,zusammenkunft' },
+      )
+    return { error }
+  })
 }
 
 /**

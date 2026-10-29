@@ -22,6 +22,8 @@ import { PersonAnsicht } from './PersonAnsicht'
 import { VerteilungAnsicht } from './VerteilungAnsicht'
 import { WartezeitenAnsicht } from './WartezeitenAnsicht'
 import { WeiteresAnsicht } from './WeiteresAnsicht'
+import { AnwesenheitAnsicht } from '../anwesenheit/AnwesenheitAnsicht'
+import { useAnwesenheitMonate } from '../anwesenheit/useAnwesenheitMonate'
 import type { Ansicht, Kontext } from './kontext'
 import './auswertung.css'
 
@@ -46,6 +48,7 @@ const ANKER = {
   wartezeiten: 'aw-wartezeiten',
   engpaesse: 'aw-engpaesse',
   weiteres: 'aw-weiteres',
+  anwesenheit: 'aw-anwesenheit',
 } as const satisfies Record<Exclude<Ansicht, 'ueberblick'>, string>
 
 export function AuswertungScreen() {
@@ -99,6 +102,9 @@ export function AuswertungScreen() {
     }
   }, [a, persons, services, groups, lang, t, tu, breit])
   const wartezeiten = <WartezeitenAnsicht k={k} bereich={warteBereich} onBereich={setWarteBereich} />
+  // Die Zusammenkünfte ohne Anwesende im Zeitraum (T152) — die Zahl der Kachel.
+  const anwesenheitMonate = useAnwesenheitMonate(zeitraum)
+  const ohneZahl = anwesenheitMonate.reduce((n, m) => n + m.je.mid.fehlt.length + m.je.we.fehlt.length, 0)
 
   if (person !== null) {
     return (
@@ -117,6 +123,7 @@ export function AuswertungScreen() {
       wartezeiten: t.awWartezeitenTitel,
       engpaesse: t.awEngpaesseTitel,
       weiteres: t.awWeiteresTitel,
+      anwesenheit: t.awAnwesenheitTitel,
     }
     return (
       <section className="screen auswertung">
@@ -127,6 +134,7 @@ export function AuswertungScreen() {
         {ansicht === 'wartezeiten' && wartezeiten}
         {ansicht === 'engpaesse' && <EngpaesseAnsicht k={k} />}
         {ansicht === 'weiteres' && <WeiteresAnsicht k={k} />}
+        {ansicht === 'anwesenheit' && <AnwesenheitAnsicht zeitraum={zeitraum} />}
       </section>
     )
   }
@@ -161,7 +169,7 @@ export function AuswertungScreen() {
         {kopf}
         <Kennzahlen k={k} />
         <WasAuffaellt k={k} />
-        <Kacheln k={k} zu={setAnsicht} />
+        <Kacheln k={k} zu={setAnsicht} ohneZahl={ohneZahl} />
         <p className="klein-text aw-fussnote">{t.awFussnote}</p>
       </section>
     )
@@ -204,6 +212,10 @@ export function AuswertungScreen() {
           <WeiteresAnsicht k={k} />
         </section>
       </div>
+      <section id={ANKER.anwesenheit} className="aw-abschnitt" aria-label={t.awAnwesenheitTitel}>
+        <h2 className="abschnitt-titel">{t.awAnwesenheitTitel}</h2>
+        <AnwesenheitAnsicht zeitraum={zeitraum} />
+      </section>
       <p className="klein-text aw-fussnote">{t.awFussnote}</p>
     </section>
   )
@@ -259,8 +271,8 @@ function WasAuffaellt({ k }: { k: Kontext }) {
   )
 }
 
-/** Die fünf Kacheln zu den Unteransichten — nur am Handy. */
-function Kacheln({ k, zu }: { k: Kontext; zu: (ansicht: Ansicht) => void }) {
+/** Die sechs Kacheln zu den Unteransichten — nur am Handy. */
+function Kacheln({ k, zu, ohneZahl }: { k: Kontext; zu: (ansicht: Ansicht) => void; ohneZahl: number }) {
   const { t, a } = k
   const v = a.hinweise
   const oft = v.filter((h) => h.art === 'oft').length
@@ -284,6 +296,8 @@ function Kacheln({ k, zu }: { k: Kontext; zu: (ansicht: Ansicht) => void }) {
         fill(t.awBallungenZahl, { n: k.zahl(a.ballungen.zweimal.length + a.ballungen.folge.length) }),
       ].join(' · '),
     },
+    // Die Anwesenden (T152): wie viele Zusammenkünfte im Zeitraum noch keine Zahl haben.
+    { ansicht: 'anwesenheit', zeichen: 'personen', titel: t.awAnwesenheitTitel, zahl: fill(t.awAnwesenheitOhneN, { n: k.zahl(ohneZahl) }) },
   ]
   return (
     <section className="aw-abschnitt" aria-label={t.awGenauer}>

@@ -126,7 +126,7 @@ describe('Aufräumen in der Datenbank', () => {
 
   it('die Wochen und was zu ihnen gehört, Absagen und Abwesenheiten: ein Jahr — Mitteilungen und Termine: acht Wochen', () => {
     const frist = Object.fromEntries(REGELN.map((r) => [r.tabelle, r.grenze]))
-    for (const t of ['weeks', 'fs_weeks', 'confirmations', 'assignment_log', 'gruppenbesuche', 'vortraege', 'plaene', 'plan_eintraege', 'absagen', 'absences']) {
+    for (const t of ['weeks', 'fs_weeks', 'confirmations', 'assignment_log', 'gruppenbesuche', 'vortraege', 'anwesenheit', 'plaene', 'plan_eintraege', 'absagen', 'absences']) {
       expect(frist[t], t).toBe('ein_jahr')
     }
     for (const t of ['notifications', 'reminder_log', 'trolley_termine', 'anmelde_links']) {

@@ -54,6 +54,7 @@ vi.mock('../lib/data', async (importActual) => ({
   saveFsRules: vi.fn(),
   saveGruppenbesuche: vi.fn(),
   saveVortraege: vi.fn(),
+  saveAnwesenheit: vi.fn(),
   saveFsWeek: vi.fn(),
   saveGroupRow: vi.fn(),
   saveMemberRow: vi.fn(),
@@ -672,6 +673,28 @@ describe('Vortragsplan (T122)', () => {
     expect(data.saveWeek).toHaveBeenCalledTimes(1)
     expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
     expect(data.saveVortraege).not.toHaveBeenCalled()
+  })
+})
+
+describe('Die Anwesenden (T152)', () => {
+  /*
+   * Eine Zeile je Zusammenkunft: hinaus geht nur die eine, die sich geändert
+   * hat — gelöscht wird hier nie, leer heißt `null`.
+   */
+  const MID = { woche: '2026-09-07', tab: 'mid' as const, saal: 60, video: 20, pid: 'p1' }
+  const WE = { woche: '2026-09-07', tab: 'we' as const, saal: 80, video: null, pid: 'p1' }
+  const SETZEN: AppAction = { type: 'anwesenheitSetzen', woche: '2026-09-07', tab: 'we', saal: 81, video: null }
+
+  it('nur die geänderte Zusammenkunft geht hinaus', () => {
+    const neu = { ...WE, saal: 81 }
+    persist(st({ anwesenheit: [MID, WE] }), st({ anwesenheit: [MID, neu] }), SETZEN)
+    expect(data.saveAnwesenheit).toHaveBeenCalledWith('c1', [neu])
+  })
+
+  it('unverändert geht nichts hinaus', () => {
+    const anwesenheit = [MID, WE]
+    persist(st({ anwesenheit }), st({ anwesenheit }), SETZEN)
+    expect(data.saveAnwesenheit).not.toHaveBeenCalled()
   })
 })
 

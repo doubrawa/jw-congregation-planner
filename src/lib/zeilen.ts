@@ -13,7 +13,8 @@
 import { ROLE_ORDER } from '../data/constants'
 import { normalizePriv } from '../data/namensbindung'
 import { kurzeZeit } from '../../supabase/functions/_shared/planung.ts'
-import type { Absence, FsRule, Gruppenbesuch, Person, Qualifications, Role } from '../data/types'
+import type { Anwesenheit } from '../data/anwesenheit'
+import type { Absence, FsRule, Gruppenbesuch, MeetingKey, Person, Qualifications, Role } from '../data/types'
 import type { VorgemerkterVortrag } from '../data/vortragsplan'
 
 /* ---- Row-Typen (Spalten aus supabase/schema.sql) ------------------------ */
@@ -178,6 +179,24 @@ export function vortragFromRow(r: VortragRow): VorgemerkterVortrag {
     thema: r.thema,
     lied: r.lied,
   }
+}
+
+/** Die Anwesenden einer Zusammenkunft (T152) — Spalten wie in `anwesenheit`. */
+export interface AnwesenheitRow {
+  woche: string
+  zusammenkunft: MeetingKey
+  saal: number | null
+  video: number | null
+  person_id: string | null
+}
+
+export function anwesenheitFromRow(r: AnwesenheitRow): Anwesenheit {
+  return { woche: r.woche, tab: r.zusammenkunft, saal: r.saal, video: r.video, pid: r.person_id }
+}
+
+/** Ohne `person_id`: Wer einträgt, setzt die Datenbank (`anwesenheit_vermerken`). */
+export function anwesenheitToRow(a: Anwesenheit, congregationId: string) {
+  return { congregation_id: congregationId, woche: a.woche, zusammenkunft: a.tab, saal: a.saal, video: a.video }
 }
 
 export function vortragToRow(v: VorgemerkterVortrag, congregationId: string) {

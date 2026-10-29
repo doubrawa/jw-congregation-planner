@@ -883,6 +883,26 @@ Am Donnerstag ist die Zusammenkunft vom Dienstag gehalten und steht gefüllt da,
 die am Sonntag gestrichelt. Gezählt wird die laufende Woche trotzdem erst ab
 Montag, wie überall in der Auswertung.
 
+### Anwesenheit
+
+Die Anwesenden trägt der **Saalordner** oder **Zoom-Ordner** der Zusammenkunft
+ab ihrem Beginn auf dem Start ein – im Saal und per Video (siehe das Handbuch
+für Verkündiger). Du als Admin oder Planer kannst sie in jeder Zusammenkunft
+eintragen oder berichtigen: im **Programm** nach ihrem Beginn (**Anwesende
+fehlen** · **Eintragen**, sonst **Ändern**, mit „Eingetragen von …").
+
+Die Auswertung zeigt unter **Anwesenheit** je Monat ein Balkenpaar (unter der
+Woche, am Wochenende) und darunter je Monat die Zahl der Zusammenkünfte und den
+**Durchschnitt**, ganz gerundet. Gezählt wird nach dem **Tag** der
+Zusammenkunft: Der Sonntag einer Woche, die am 28. September beginnt, gehört
+zum Oktober. Hat eine Zusammenkunft stattgefunden, aber keine Zahl, steht ihr
+Tag unter **Ohne Zahl** – ein Tipp darauf öffnet das Eintragen. Ausgefallene
+Zusammenkünfte fehlen dort nicht. **Für den Bericht drucken** legt die Monate
+des Zeitraums auf einen Bogen: je Monat und Art die Zusammenkünfte, alle
+Anwesenden zusammen und den Durchschnitt.
+
+Die Zahlen bleiben ein Jahr wie die Wochen (Abschnitt 11).
+
 ### Was die Auswertung nicht weiß
 
 - Sie kennt nur die Wochen, die die App aufbewahrt – ein Jahr (Abschnitt 11).
@@ -1976,7 +1996,7 @@ Montag der laufenden Woche, nicht auf den Tag genau:
 
 | Was | Wie lange |
 | --- | --- |
-| Wochenpläne mit allen Zuteilungen, Treffpunkte, Zusagen und Absagen, wer benachrichtigt wurde, Gruppenbesuche, vorgemerkte Vorträge, Weitere Pläne, Abwesenheiten (ab ihrem Ende) | **ein Jahr** |
+| Wochenpläne mit allen Zuteilungen, Treffpunkte, Zusagen und Absagen, wer benachrichtigt wurde, Gruppenbesuche, vorgemerkte Vorträge, Weitere Pläne, Anwesende, Abwesenheiten (ab ihrem Ende) | **ein Jahr** |
 | Mitteilungen in der Glocke, Erinnerungen, der Grund einer Abwesenheit (ab ihrem Ende), Trolley-Termine, abgelaufene Anmelde-Links | **acht Wochen** |
 | Die Anmeldung eines Geräts, das ein Jahr nicht in der App war | **ein Jahr** – danach braucht es einen neuen Link |
 
