@@ -13,7 +13,7 @@
 import { ROLE_ORDER } from '../data/constants'
 import { normalizePriv } from '../data/namensbindung'
 import { kurzeZeit } from '../../supabase/functions/_shared/planung.ts'
-import type { Anwesenheit } from '../data/anwesenheit'
+import type { AnwesendFeld, Anwesenheit } from '../data/anwesenheit'
 import type { TauschAnfrage } from '../data/tausch'
 import type { Absence, FsRule, Gruppenbesuch, MeetingKey, Person, Qualifications, Role } from '../data/types'
 import type { VorgemerkterVortrag } from '../data/vortragsplan'
@@ -209,9 +209,18 @@ export function tauschAnfrageFromRow(r: TauschAnfrageRow): TauschAnfrage {
   return { id: r.id, von: r.von_person, an: r.an_person, gibtAb: r.gibt_ab, nimmt: r.nimmt, bis: r.bis }
 }
 
-/** Ohne `person_id`: Wer einträgt, setzt die Datenbank (`anwesenheit_vermerken`). */
-export function anwesenheitToRow(a: Anwesenheit, congregationId: string) {
-  return { congregation_id: congregationId, woche: a.woche, zusammenkunft: a.tab, saal: a.saal, video: a.video }
+/**
+ * Nur die genannten Zahlen: Was nicht mitgeht, lässt das Upsert in der
+ * Datenbank stehen, und eine neue Zeile bekommt dort `null`. Ohne `person_id`:
+ * Wer einträgt, setzt die Datenbank (`anwesenheit_vermerken`).
+ */
+export function anwesenheitToRow(a: Anwesenheit, congregationId: string, felder: readonly AnwesendFeld[]) {
+  return {
+    congregation_id: congregationId,
+    woche: a.woche,
+    zusammenkunft: a.tab,
+    ...Object.fromEntries(felder.map((f) => [f, a[f]])),
+  }
 }
 
 export function vortragToRow(v: VorgemerkterVortrag, congregationId: string) {

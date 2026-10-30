@@ -277,6 +277,16 @@ export function displayName(p: Pick<Person, 'fn' | 'ln'>): string {
 }
 
 /**
+ * Der Name einer Person nach ihrer Kennung — leer, wenn es sie nicht (mehr)
+ * gibt. Bis zum 30.10.2026 lag er bei den Trolleys, und Anwesenheit und
+ * Tauschen schrieben ihn je für sich noch viermal ab.
+ */
+export function nameVon(persons: readonly Pick<Person, 'id' | 'fn' | 'ln'>[], pid: string | null): string {
+  const p = pid ? persons.find((x) => x.id === pid) : undefined
+  return p ? displayName(p) : ''
+}
+
+/**
  * **Wann zwei Namen derselbe sind** — der Vergleichsschlüssel hinter der
  * Eindeutigkeit (T110). Leer heißt „zählt nicht mit": Eine frisch angelegte
  * Person hat noch keinen Namen, und zwei Namenlose sind keine Dublette.

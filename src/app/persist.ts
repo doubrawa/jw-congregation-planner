@@ -47,6 +47,7 @@ import {
   sendPlanEntzug,
   platzFuellen,
 } from '../lib/data'
+import { ANWESENDE_FELDER, anwesenheitDer } from '../data/anwesenheit'
 import { helperKeyParts } from '../data/planning'
 import { supabase } from '../lib/supabase'
 import type { FsInstance, Person, Trolley, Week } from '../data/types'
@@ -795,13 +796,21 @@ function vortraegeSpeichern(congId: string, prev: AppState, next: AppState): voi
 
 /**
  * Die Anwesenden (T152): geschrieben wird nur die Zeile, die sich geändert hat
- * (neue Referenz). Gelöscht wird hier nie — leer heißt `null`, die Zeile bleibt.
+ * (neue Referenz), und in ihr **nur die Zahl, die sich geändert hat**.
+ * Saalordner und Zoom-Ordner tragen jeder für sich ein, oft zur selben Zeit,
+ * und keiner sieht die Zahl des anderen, bevor die App neu lädt — mit der
+ * ganzen Zeile löschte der zweite die des ersten (Review 30.10.2026).
+ * Gelöscht wird hier nie — leer heißt `null`, die Zeile bleibt.
  */
 function anwesenheitSpeichern(congId: string, prev: AppState, next: AppState): void {
   if (next.anwesenheit === prev.anwesenheit) return
   const vorher = new Set(prev.anwesenheit)
-  const geaendert = next.anwesenheit.filter((a) => !vorher.has(a))
-  if (geaendert.length) saveAnwesenheit(congId, geaendert)
+  for (const a of next.anwesenheit) {
+    if (vorher.has(a)) continue
+    const alt = anwesenheitDer(prev.anwesenheit, a.woche, a.tab)
+    const felder = ANWESENDE_FELDER.filter((f) => a[f] !== (alt?.[f] ?? null))
+    if (felder.length) saveAnwesenheit(congId, a, felder)
+  }
 }
 
 /**

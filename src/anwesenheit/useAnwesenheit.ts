@@ -5,12 +5,6 @@ import { displayName } from '../data/helpers'
 import { rechteVon } from '../data/rechte'
 import type { MeetingKey, Week } from '../data/types'
 
-/** Wer eingetragen hat — der Name, oder leer, wenn die Person fehlt. */
-export function eingetragenVon(a: Anwesenheit | undefined, persons: readonly { id: string; fn: string; ln: string }[]): string {
-  const p = a?.pid ? persons.find((x) => x.id === a.pid) : undefined
-  return p ? displayName(p) : ''
-}
-
 /**
  * Die Anwesenden einer Zusammenkunft und ob der Leser sie eintragen darf —
  * für das Programm, den Start und die Auswertung (T152).

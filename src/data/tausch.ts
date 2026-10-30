@@ -38,16 +38,28 @@ export interface TauschAnfrage {
   bis: string
 }
 
+/** Was `tauschbar` vom Bestand der App braucht. */
+interface TauschBasis {
+  services: readonly Service[]
+  sentLog: SentLog
+  weeks: readonly Week[]
+}
+
 /**
  * **Bietet die App „Tauschen" an dieser Aufgabe an?** Ein Hilfsdienst, den
- * keine Gruppe übernimmt, in einer Woche, deren Plan hinausging, und noch nicht
- * vorbei. Ob es jemanden gibt, mit dem es geht, sagt erst der Server.
+ * keine Gruppe übernimmt, auf dem die eigene Kennung steht, in einer Woche,
+ * deren Plan hinausging, und noch nicht vorbei. Ob es jemanden gibt, mit dem
+ * es geht, sagt erst der Server.
  */
-export function tauschbar(task: MyTask, services: readonly Service[], sentLog: SentLog, heute = new Date()): boolean {
+export function tauschbar(task: MyTask, ich: string | null, { services, sentLog, weeks }: TauschBasis, heute = new Date()): boolean {
   const teile = schluesselTeile(task.id)
   if (teile?.art !== 'helper') return false
   const svc = services.find((s) => s.key === teile.svc)
   if (!svc || !angebotsBereich(svc)) return false
+  // Id vor Name, wie der Server (`not-yours`): Einen Platz, der nur den Namen
+  // trägt, tauscht er nicht — das Blatt meldete sonst „mit niemandem möglich",
+  // obwohl es an etwas anderem liegt (Review 30.10.2026).
+  if (!ich || inhaber(weeks, task.id) !== ich) return false
   return gesendeteWochen(sentLog).has(teile.woche) && !istVorbei(task.at, heute)
 }
 

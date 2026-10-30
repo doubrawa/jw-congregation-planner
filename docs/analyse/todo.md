@@ -8988,6 +8988,15 @@ Reducer (5), Speichern (2), Schema-Abgleich; Mutationsprobe 8 von 8 bewacht.
 Die Karte auf dem Start ist im Browser nicht angesehen: Die Testwochen haben
 keinen Saalordner; geprüft ist sie in `anwesenheit.test.tsx`.
 
+**Review vom 30.10.2026** (`/simplify`, `/code-review max`): Saalordner und
+Zoom-Ordner überschrieben sich gegenseitig. Jeder schrieb die ganze Zeile, und
+wessen App die Zahl des anderen noch nicht kannte, löschte sie mit seinem
+leeren Feld — der gewöhnliche Fall, denn beide zählen zur selben Zeit. Jetzt
+geht nur die geänderte Zahl hinaus (`anwesenheitSpeichern` in `persist.ts`,
+`anwesenheitToRow`). Dazu: Die Ziffern der Tastaturen in ar und fa gelten wie
+0–9, und die Auswertung schreibt ihre Zahlen wie die übrige Auswertung (in fa
+mit persischen Ziffern).
+
 ### T153 · Tauschen statt absagen 🏗 ✅ umgesetzt, nicht ausgerollt (29. Oktober 2026)
 
 Entwurf im Gespräch: „Tauschen" neben „Ich kann nicht"; die App bietet an, wer
@@ -9038,6 +9047,14 @@ zu**, er bekommt „Getauscht".
   leer, niemand wusste von seinem Platz. Behoben mit `OHNE_ENTZUG`
   (`context.ts`), das Reducer und `persist` gemeinsam fragen; geprüft mit
   echten Zusagen in `tausch-ablauf.test.ts`.
+- **Review vom 30.10.2026** (`/simplify`, `/code-review max`): Eine
+  unbeantwortete Anfrage ließ ihre Glocken-Zeile „Tausch angefragt" acht
+  Wochen stehen. Das Aufräumen am Montag löschte nur die Anfrage, und die Zeile
+  trägt `tausch|<id>` statt eines Platzes, an dem die App sähe, dass sie
+  vorbei ist. Jetzt nimmt ein Trigger sie mit (`tausch_glocke_loeschen`),
+  gleich wer die Anfrage löscht — die Function löscht nur noch die Anfrage.
+  „Tauschen" steht nur noch an Plätzen mit der eigenen Kennung, wie der Server
+  es verlangt; der Verfallstag steht einmal in den Regeln (`urteil.bis`).
 
 Tests: Regeln und Function (38), Datenmodul (9), Reducer (6), Ablauf mit
 `persist` (3), Aufrufe (10), Oberfläche (9), Schema (6), Laden (1);
@@ -9580,7 +9597,7 @@ eine Entscheidung.
 | **Gerät** | Dunkle Bedienleiste am Handy | wirkt erst mit der aktualisierten WebAPK (`about://webapks` → „Update", oder neu installieren) |
 | **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
 | **Betreiber** | Umzug weg von Supabase | Am 25. Oktober erwogen: Supabase ist eine US-Firma, und die Daten zeigen die Religionszugehörigkeit (Art. 9 DSGVO). Empfohlen: die quelloffene Supabase-Software selbst auf einem Server in Deutschland. Betreiber: „Nicht jetzt, ich überlege noch." Fällt die Entscheidung dafür, legt der Betreiber Konto, Server und Vertrag an; Einrichten und Umziehen per Skript macht Claude |
-| **Betreiber** | T152, T153, T154 ausrollen | alle drei am 29. Oktober umgesetzt, lokal committet. Mit Freigabe: `schema.sql` einspielen (Anwesenheit, Tausch-Anfragen samt `wochen_tauschen`, Spaltenrechte für Adresse und Grund), die Function `tauschen` deployen, **gleich danach** pushen — zwischen Schema und Push scheitert bei der alten App das Laden der Personen (`select=*`). Danach die Mitgliedsrechte-Probe fahren (Fälle 86–92) |
+| **Betreiber** | T152, T153, T154 ausrollen | alle drei am 29. Oktober umgesetzt, lokal committet. Mit Freigabe: `schema.sql` einspielen (Anwesenheit, Tausch-Anfragen samt `wochen_tauschen` und Glocken-Trigger, Spaltenrechte für Adresse und Grund), die Function `tauschen` deployen, **gleich danach** pushen — zwischen Schema und Push scheitert bei der alten App das Laden der Personen (`select=*`). Danach die Mitgliedsrechte-Probe fahren (Fälle 86–92) |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |

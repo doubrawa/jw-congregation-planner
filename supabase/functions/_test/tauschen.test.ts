@@ -519,12 +519,14 @@ describe('Function: annehmen', () => {
     expect(sentPush.map((p) => p.endpoint)).toEqual(['https://push.test/simon'])
   })
 
-  it('die Glocken-Zeilen der Anfrage und ein Ersatzgesuch zu den Plätzen gehen mit', async () => {
+  it('die Anfragen zu beiden Plätzen und ein Ersatzgesuch dafür gehen mit', async () => {
+    // Die Glocken-Zeile einer Anfrage nimmt der Trigger mit
+    // (`tausch_glocke_loeschen`, tests/tausch-schema.test.ts).
     const id = await simonFragtJonas()
     await ruf({ aktion: 'annehmen', id }, U_JONAS)
+    expect(anfragen).toEqual([])
     const geloescht = geschrieben.filter((w) => w.method === 'DELETE' && w.path.startsWith('notifications')).map((w) => w.path)
-    expect(geloescht).toContainEqual(expect.stringContaining(`task_key=in.(${encodeURIComponent(`tausch|${id}`)})`))
-    expect(geloescht).toContainEqual(expect.stringContaining(`title=eq.${encodeURIComponent(TITEL_GESUCHT)}`))
+    expect(geloescht).toEqual([expect.stringContaining(`title=eq.${encodeURIComponent(TITEL_GESUCHT)}`)])
   })
 
   it('liegen beide Plätze in einer Woche, schreibt eine Bedingung auf ihren Stand', async () => {
@@ -549,8 +551,9 @@ describe('Function: annehmen', () => {
     const id = await simonFragtJonas()
     bestand.get(W1)!.data.we!.helpers!.mik![0] = slot('p-lena')
     expect(await ruf({ aktion: 'annehmen', id }, U_JONAS)).toEqual({ status: 403, body: { error: 'not-yours' } })
-    // Nichts getauscht, nichts zugesagt; fort ist nur die Anfrage samt ihrer Glocken-Zeile.
-    expect(geschrieben.map((w) => `${w.method} ${w.path.split('?')[0]}`)).toEqual(['DELETE tausch_anfragen', 'DELETE notifications'])
+    // Nichts getauscht, nichts zugesagt; fort ist nur die Anfrage (ihre
+    // Glocken-Zeile nimmt der Trigger mit).
+    expect(geschrieben.map((w) => `${w.method} ${w.path.split('?')[0]}`)).toEqual(['DELETE tausch_anfragen'])
     expect(anfragen).toEqual([])
   })
 
@@ -591,8 +594,7 @@ describe('Function: ablehnen und zurückziehen', () => {
     expect(anfragen).toHaveLength(1)
     expect(await ruf({ aktion: 'zurueckziehen', id }, U_SIMON)).toEqual({ status: 200, body: { ok: true } })
     expect(anfragen).toEqual([])
-    // Jonas' Glocken-Zeile geht mit — ohne neue Mitteilung.
-    expect(geschrieben.some((w) => w.method === 'DELETE' && w.path.startsWith('notifications'))).toBe(true)
+    // Ohne neue Mitteilung; Jonas' Glocken-Zeile nimmt der Trigger mit.
     expect(glocke()).toEqual([])
   })
 })

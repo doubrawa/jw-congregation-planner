@@ -1,7 +1,7 @@
 import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
 import { Punkt } from '../bausteine/Punkt'
-import { displayName } from '../data/helpers'
+import { nameVon } from '../data/helpers'
 import { anfragenAn, type TauschAnfrage } from '../data/tausch'
 import { fill, useT } from '../i18n/useT'
 import { usePlatzZeile } from './usePlatzZeile'
@@ -41,13 +41,12 @@ function TauschAnfrageKarte({ anfrage }: { anfrage: TauschAnfrage }) {
   const meiner = platzZeile(anfrage.nimmt)
   const seiner = platzZeile(anfrage.gibtAb)
   if (!meiner || !seiner) return null
-  const von = state.persons.find((p) => p.id === anfrage.von)
 
   return (
     <section className="karte karte--held tausch-karte" aria-label={t.notifTauschAngefragt}>
       <div className="aufgabe-wann">
         <Punkt art="du" />
-        <span>{fill(t.tauschFragtDich, { name: von ? displayName(von) : '' })}</span>
+        <span>{fill(t.tauschFragtDich, { name: nameVon(state.persons, anfrage.von) })}</span>
       </div>
       <h2 className="tausch-karte-titel">{t.notifTauschAngefragt}</h2>
       <dl className="tausch-paar">

@@ -5,7 +5,7 @@ import { AngebotText } from '../aufgaben/Angebot'
 import { aufgabeWann } from '../aufgaben/aufgabe-anzeige'
 import { Punkt } from '../bausteine/Punkt'
 import { Sheet } from '../components/Sheet'
-import { displayName } from '../data/helpers'
+import { nameVon } from '../data/helpers'
 import { anfrageZu } from '../data/tausch'
 import type { MyTask } from '../data/types'
 import { aufgabenLabel, fill, useT } from '../i18n/useT'
@@ -49,11 +49,6 @@ export function TauschenBlatt({ task }: { task: MyTask }) {
     }
   }, [angeboteLaden, task.id, offen, t, setFehler])
 
-  const nameVon = (pid: string): string => {
-    const p = state.persons.find((x) => x.id === pid)
-    return p ? displayName(p) : ''
-  }
-
   return (
     <Sheet
       label={t.tauschAktion}
@@ -67,7 +62,7 @@ export function TauschenBlatt({ task }: { task: MyTask }) {
         </section>
         {offen ? (
           <section className="tausch-abschnitt">
-            <p className="tausch-angefragt">{fill(t.tauschAngefragtBei, { name: nameVon(offen.an) })}</p>
+            <p className="tausch-angefragt">{fill(t.tauschAngefragtBei, { name: nameVon(state.persons, offen.an) })}</p>
             <div className="aufgabe-handlungen">
               <button type="button" className="knopf-umriss" disabled={tausch.laeuft} onClick={() => ausfuehren(() => tausch.zurueckziehen(offen))}>
                 {t.tauschZurueckziehen}
@@ -85,7 +80,7 @@ export function TauschenBlatt({ task }: { task: MyTask }) {
               return (
                 <div key={a.nimmt} className="aufgaben-zeile">
                   <Punkt art="offen" />
-                  <AngebotText titel={nameVon(a.personId)} wann={zeile} schonHeute={[]} />
+                  <AngebotText titel={nameVon(state.persons, a.personId)} wann={zeile} schonHeute={[]} />
                   <button type="button" className="knopf-pille" disabled={tausch.laeuft} onClick={() => ausfuehren(() => tausch.anfragen(task.id, a))}>
                     {t.tauschAnfragen}
                   </button>

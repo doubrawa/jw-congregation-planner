@@ -6,6 +6,7 @@ import { fromIso } from '../data/meeting-dates'
 import { rechteVon } from '../data/rechte'
 import type { MeetingKey, Week } from '../data/types'
 import { useDruckBogen } from '../druck/useDruckBogen'
+import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
 import { AnwesenheitBlatt } from './AnwesenheitBlatt'
@@ -33,6 +34,9 @@ export function AnwesenheitAnsicht({ zeitraum }: { zeitraum: number }) {
   const darfNachtragen = rechteVon(state).zuteilen && state.staleAt === null
   const mitZahl = monate.filter((m) => MEETING_TABS.some((tab) => m.je[tab].anzahl > 0))
   const hoechster = Math.max(1, ...monate.flatMap((m) => MEETING_TABS.map((tab) => m.je[tab].schnitt ?? 0)))
+  // Die Zahlen wie in der übrigen Auswertung (`k.zahl`) und im Druck — in fa
+  // mit persischen Ziffern, nicht als einziger Abschnitt mit 0–9.
+  const zahl = new Intl.NumberFormat(LOCALES[state.lang] ?? state.lang)
   const monatsName = (iso: string) => gebundenesDatum(fromIso(iso), state.lang, 'monatJahr')
   const tagText = (iso: string) => gebundenesDatum(fromIso(iso), state.lang, 'wochentagZahl')
   const name = { mid: t.unterDerWoche, we: t.amWochenende } as const satisfies Record<MeetingKey, string>
@@ -86,8 +90,8 @@ export function AnwesenheitAnsicht({ zeitraum }: { zeitraum: number }) {
                 <span className="aw-anwesend-name">{name[tab]}</span>
                 <span className="klein-text">
                   {[
-                    zahlBinden(fill(t.awZusammenkuenfte, { n: z.anzahl })),
-                    z.schnitt !== null ? zahlBinden(fill(t.awAnwesenheitSchnitt, { n: z.schnitt })) : '',
+                    zahlBinden(fill(t.awZusammenkuenfte, { n: zahl.format(z.anzahl) })),
+                    z.schnitt !== null ? zahlBinden(fill(t.awAnwesenheitSchnitt, { n: zahl.format(z.schnitt) })) : '',
                   ]
                     .filter(Boolean)
                     .join(' · ')}

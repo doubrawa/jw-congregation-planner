@@ -12245,6 +12245,56 @@ export const KATALOG = [
     suchen: '   where w.congregation_id = p_congregation and w.start = p_woche_b and w.updated_at = p_stand_b;',
     ersetzen: '   where w.congregation_id = p_congregation and w.start = p_woche_b;',
   },
+  // Review vom 30.10.2026 (T152–T154).
+  {
+    id: 'anwesenheit-nur-geaenderte-zahl',
+    datei: 'src/app/persist.ts',
+    regel: 'Hinaus geht nur die geänderte Zahl — sonst löscht der Zoom-Ordner mit seinem leeren Feld den Saal des Saalordners.',
+    suchen: '    const felder = ANWESENDE_FELDER.filter((f) => a[f] !== (alt?.[f] ?? null))\n',
+    ersetzen: '    const felder = [...ANWESENDE_FELDER]\n',
+  },
+  {
+    id: 'anwesenheit-zeile-nur-felder',
+    datei: 'src/lib/zeilen.ts',
+    regel: 'Die Zeile trägt nur die genannten Zahlen — eine mitgeschickte null löschte die des anderen.',
+    suchen: '    ...Object.fromEntries(felder.map((f) => [f, a[f]])),\n',
+    ersetzen: '    saal: a.saal,\n    video: a.video,\n',
+  },
+  {
+    id: 'anwesenheit-ziffern-ar-fa',
+    datei: 'src/data/anwesenheit.ts',
+    regel: 'Arabisch-indische und persische Ziffern zählen wie 0–9.',
+    suchen: '  const roh = westlicheZiffern(text.trim())\n',
+    ersetzen: '  const roh = text.trim()\n',
+  },
+  {
+    id: 'anwesenheit-auswertung-zahlformat',
+    datei: 'src/anwesenheit/AnwesenheitAnsicht.tsx',
+    regel: 'Die Anwesenheit in der Auswertung schreibt ihre Zahlen wie die übrige Auswertung (in fa persisch).',
+    suchen: '{ n: zahl.format(z.schnitt) }',
+    ersetzen: '{ n: z.schnitt }',
+  },
+  {
+    id: 'tausch-glocke-geht-mit',
+    datei: 'supabase/schema.sql',
+    regel: 'Mit einer Tausch-Anfrage geht genau ihre Glocken-Zeile — nicht die übrigen der Versammlung.',
+    suchen: "   where congregation_id = old.congregation_id and task_key = 'tausch|' || old.id;",
+    ersetzen: '   where congregation_id = old.congregation_id;',
+  },
+  {
+    id: 'tausch-nur-mit-kennung',
+    datei: 'src/data/tausch.ts',
+    regel: '„Tauschen" nur an einem Platz, der die eigene Kennung trägt — wie der Server (not-yours).',
+    suchen: '  if (!ich || inhaber(weeks, task.id) !== ich) return false\n',
+    ersetzen: '',
+  },
+  {
+    id: 'tausch-bis-frueherer-tag',
+    datei: 'supabase/functions/tauschen/regeln.ts',
+    regel: 'Eine Anfrage gilt bis zum früheren der beiden Tage.',
+    suchen: '    bis: tagA < tagB ? tagA : tagB,\n',
+    ersetzen: '    bis: tagB,\n',
+  },
 ]
 
 /**

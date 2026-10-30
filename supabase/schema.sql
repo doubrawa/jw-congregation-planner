@@ -1800,6 +1800,32 @@ create policy tausch_anfragen_select on public.tausch_anfragen
     )
   );
 
+-- Die Glocken-Zeile „Tausch angefragt" geht mit ihrer Anfrage (Review
+-- 30.10.2026) — gleich, wer die Anfrage löscht: die Function nach einer
+-- Antwort, das Aufräumen am Montag nach ihrem Tag oder eine Person, die geht
+-- (`on delete cascade`). Die Zeile trägt die Kennung der Anfrage
+-- (`tausch|<id>`), keinen Platz: Die App erkennt an ihr nicht, wann sie vorbei
+-- ist, und ohne den Trigger stünde eine unbeantwortete acht Wochen in der Glocke.
+create or replace function public.tausch_glocke_loeschen()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  delete from public.notifications
+   where congregation_id = old.congregation_id and task_key = 'tausch|' || old.id;
+  return old;
+end $$;
+
+revoke all on function public.tausch_glocke_loeschen() from public;
+revoke all on function public.tausch_glocke_loeschen() from anon, authenticated;
+
+drop trigger if exists tausch_anfragen_glocke on public.tausch_anfragen;
+create trigger tausch_anfragen_glocke
+  after delete on public.tausch_anfragen
+  for each row execute function public.tausch_glocke_loeschen();
+
 -- **Zwei Wochen auf einmal schreiben** (T153): Liegen die beiden getauschten
 -- Plätze in verschiedenen Wochen, ändert die Function `tauschen` beide — und
 -- zwar ganz oder gar nicht. Jede nur, solange sie auf dem gelesenen Stand ist

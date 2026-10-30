@@ -12,6 +12,7 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import type { Anwesenheit } from '../data/anwesenheit'
 import type { Person, Week } from '../data/types'
+import { LOCALES } from '../i18n/langs'
 import { dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
@@ -205,6 +206,16 @@ describe('Die Anwesenheit in der Auswertung', () => {
       [fill(t.awZusammenkuenfte, { n: 1 }), fill(t.awAnwesenheitSchnitt, { n: 80 })].map(zahlBinden).join(' · '),
       [fill(t.awZusammenkuenfte, { n: 2 }), fill(t.awAnwesenheitSchnitt, { n: 95 })].map(zahlBinden).join(' · '),
     ])
+  })
+
+  it('die Zahlen in der Schrift der Sprache, wie die übrige Auswertung — persisch mit persischen Ziffern (Review 30.10.2026)', () => {
+    vi.setSystemTime(HEUTE)
+    const { container } = zeige(<AnwesenheitAnsicht zeitraum={3} />, zustand({ planner: true, weeks, anwesenheit, lang: 'fa' }))
+    const fa = dict('fa')
+    const zahl = new Intl.NumberFormat(LOCALES.fa)
+    const text = [...container.querySelectorAll('.aw-anwesend-reihe .klein-text')].map((r) => r.textContent).join('\n')
+    expect(text).toContain(zahlBinden(fill(fa.awAnwesenheitSchnitt, { n: zahl.format(95) })))
+    expect(text).not.toContain('95')
   })
 
   it('wo eine Zahl fehlt, steht der Tag — der Planer trägt sie per Tipp nach', () => {

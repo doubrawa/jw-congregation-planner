@@ -259,17 +259,13 @@ async function anfrageLesen(k: Aufrufer, id: string): Promise<Anfrage | undefine
   return zeilen[0]
 }
 
-/** Anfragen löschen, samt ihrer Glocken-Zeilen beim Gefragten. */
+/**
+ * Anfragen löschen. Ihre Glocken-Zeilen beim Gefragten nimmt die Datenbank mit
+ * (`tausch_glocke_loeschen`) — wie bei jeder anderen Löschung auch, etwa durch
+ * das Aufräumen am Montag.
+ */
 async function anfragenLoeschen(k: Aufrufer, filter: string): Promise<void> {
-  const weg = await rest.zeilenSchreiben<{ id: string }>(
-    'DELETE',
-    `tausch_anfragen?congregation_id=eq.${wert(k.cong)}&${filter}&select=id`,
-  )
-  if (!weg?.length) return
-  await rest.send(
-    'DELETE',
-    `notifications?congregation_id=eq.${wert(k.cong)}&task_key=in.${liste(weg.map((a) => anfrageSchluessel(a.id)))}`,
-  )
+  await rest.send('DELETE', `tausch_anfragen?congregation_id=eq.${wert(k.cong)}&${filter}`)
 }
 
 /* ---- Die Aktionen -------------------------------------------------------- */
@@ -303,7 +299,6 @@ async function anfragen(k: Aufrufer, gibtAb: string, nimmt: string): Promise<Res
     `tausch_anfragen?select=id&congregation_id=eq.${wert(k.cong)}&gibt_ab=eq.${wert(gibtAb)}`,
   )
   if (offen.length > 0) return fehler('already-asked')
-  const bis = urteil.a.tag < urteil.b.tag ? urteil.a.tag : urteil.b.tag
   const angelegt = await rest.zeilenSchreiben<Anfrage>('POST', `tausch_anfragen?select=${ANFRAGE_SPALTEN}`, [
     {
       congregation_id: k.cong,
@@ -312,7 +307,7 @@ async function anfragen(k: Aufrufer, gibtAb: string, nimmt: string): Promise<Res
       an_person: urteil.b.person.id,
       gibt_ab: gibtAb,
       nimmt,
-      bis,
+      bis: urteil.bis,
     },
   ])
   // Scheitert das Anlegen, war fast sicher eine zweite Anfrage zu diesem Platz

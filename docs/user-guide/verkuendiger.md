@@ -507,8 +507,9 @@ ihrem Beginn ganz oben auf dem Start die Karte **Anwesende eintragen** – bis
 zum Ende des Tages. Trag ein, wie viele **im Saal** sitzen und wie viele **per
 Video** zugeschaltet sind; darunter steht beides **zusammen**. Ein Feld darf
 leer bleiben: Der Saalordner zählt den Saal, der Zoom-Ordner das Video, jeder
-für sich. **Speichern** schickt die Zahlen ab; ändern kannst du sie danach im
-Programm der Zusammenkunft (**Ändern**).
+für sich – ein leeres Feld lässt die Zahl des anderen stehen. **Speichern**
+schickt die Zahlen ab; ändern kannst du sie danach im Programm der
+Zusammenkunft (**Ändern**).
 
 Im Programm steht nach Beginn der Zusammenkunft für alle **Anwesend: 87**, mit
 Saal und Video darunter. Fehlt die Zahl, siehst du als Saalordner oder

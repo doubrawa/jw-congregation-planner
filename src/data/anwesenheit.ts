@@ -37,6 +37,14 @@ export interface Anwesenheit {
   pid: string | null
 }
 
+/**
+ * Die beiden Zahlen einer Zusammenkunft. Jede trägt ein anderer ein — den Saal
+ * der Saalordner, das Video der Zoom-Ordner —, deshalb geht beim Speichern nur
+ * die hinaus, die sich geändert hat (`anwesenheitSpeichern` in persist.ts).
+ */
+export const ANWESENDE_FELDER = ['saal', 'video'] as const
+export type AnwesendFeld = (typeof ANWESENDE_FELDER)[number]
+
 /** Höchstens so viele Anwesende je Feld — die Datenbank prüft dieselbe Grenze. */
 export const ANWESENDE_HOECHSTENS = 9999
 
@@ -197,9 +205,23 @@ export function anwesenheitJeMonat(
   return [...monate.values()].sort((a, b) => b.monat.localeCompare(a.monat))
 }
 
+/**
+ * Arabisch-indische (ab U+0660) und persische Ziffern (ab U+06F0) als 0–9 — so
+ * tippen die Ziffernblöcke der Tastaturen in ar und fa, und `\d` kennt nur
+ * 0–9 (Review 30.10.2026).
+ */
+function westlicheZiffern(text: string): string {
+  return [...text]
+    .map((z) => {
+      const c = z.charCodeAt(0)
+      return (c >= 0x660 && c <= 0x669) || (c >= 0x6f0 && c <= 0x6f9) ? String(c & 0xf) : z
+    })
+    .join('')
+}
+
 /** Eine Zahl aus einem Eingabefeld: leer heißt „nicht eingetragen", sonst nur Ziffern bis zur Grenze. */
 export function anwesendeAusEingabe(text: string): number | null | 'ungueltig' {
-  const roh = text.trim()
+  const roh = westlicheZiffern(text.trim())
   if (roh === '') return null
   if (!/^\d{1,4}$/.test(roh)) return 'ungueltig'
   const n = Number(roh)

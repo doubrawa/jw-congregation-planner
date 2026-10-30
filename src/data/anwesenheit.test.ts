@@ -21,6 +21,7 @@ import {
   type Anwesenheit,
 } from './anwesenheit'
 import type { MeetingTimes, Week } from './types'
+import { anwesenheitToRow } from '../lib/zeilen'
 
 const ZEITEN: MeetingTimes = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
 const SIMON = { id: 'p9', name: 'Simon Krüger' }
@@ -168,9 +169,33 @@ describe('Was im Feld steht', () => {
     for (const falsch of ['-3', '8,5', '1e3', '10000', 'acht']) expect(anwesendeAusEingabe(falsch), falsch).toBe('ungueltig')
   })
 
+  it('arabisch-indische und persische Ziffern zählen wie 0–9 — so tippen die Tastaturen in ar und fa (Review 30.10.2026)', () => {
+    // Als Zeichencodes: Die Ziffern selbst im Quelltext läse niemand nach.
+    expect(anwesendeAusEingabe(String.fromCharCode(0x668, 0x667))).toBe(87)
+    expect(anwesendeAusEingabe(String.fromCharCode(0x6f1, 0x6f2, 0x6f0))).toBe(120)
+    expect(anwesendeAusEingabe(String.fromCharCode(0x6f1, 0x6f0, 0x6f0, 0x6f0, 0x6f0))).toBe('ungueltig')
+  })
+
   it('zusammen nur, wenn eine der beiden Zahlen da ist', () => {
     expect(anwesendGesamt({ saal: null, video: null })).toBeNull()
     expect(anwesendGesamt({ saal: 0, video: null })).toBe(0)
     expect(anwesendGesamt({ saal: 64, video: 23 })).toBe(87)
+  })
+})
+
+describe('Was in die Datenbank geht', () => {
+  /*
+   * Nur die genannten Zahlen: Eine fehlende Spalte lässt das Upsert stehen,
+   * eine mitgeschickte `null` löscht. Schickte der Zoom-Ordner den Saal mit,
+   * löschte sein leeres Feld die Zahl des Saalordners.
+   */
+  const EINTRAG: Anwesenheit = { woche: '2026-09-07', tab: 'we', saal: null, video: 23, pid: 'p2' }
+
+  it('nur das Video — der Saal fehlt in der Zeile, statt als null mitzugehen', () => {
+    expect(anwesenheitToRow(EINTRAG, 'c1', ['video'])).toEqual({ congregation_id: 'c1', woche: '2026-09-07', zusammenkunft: 'we', video: 23 })
+  })
+
+  it('beide, wenn beide sich geändert haben — eine geleerte als null', () => {
+    expect(anwesenheitToRow(EINTRAG, 'c1', ['saal', 'video'])).toEqual({ congregation_id: 'c1', woche: '2026-09-07', zusammenkunft: 'we', saal: null, video: 23 })
   })
 })

@@ -679,16 +679,41 @@ describe('Vortragsplan (T122)', () => {
 describe('Die Anwesenden (T152)', () => {
   /*
    * Eine Zeile je Zusammenkunft: hinaus geht nur die eine, die sich geändert
-   * hat — gelöscht wird hier nie, leer heißt `null`.
+   * hat, und in ihr nur die geänderte Zahl — gelöscht wird hier nie, leer
+   * heißt `null`.
    */
   const MID = { woche: '2026-09-07', tab: 'mid' as const, saal: 60, video: 20, pid: 'p1' }
   const WE = { woche: '2026-09-07', tab: 'we' as const, saal: 80, video: null, pid: 'p1' }
   const SETZEN: AppAction = { type: 'anwesenheitSetzen', woche: '2026-09-07', tab: 'we', saal: 81, video: null }
 
-  it('nur die geänderte Zusammenkunft geht hinaus', () => {
+  it('nur die geänderte Zusammenkunft geht hinaus — und in ihr nur die geänderte Zahl', () => {
     const neu = { ...WE, saal: 81 }
     persist(st({ anwesenheit: [MID, WE] }), st({ anwesenheit: [MID, neu] }), SETZEN)
-    expect(data.saveAnwesenheit).toHaveBeenCalledWith('c1', [neu])
+    expect(data.saveAnwesenheit).toHaveBeenCalledTimes(1)
+    expect(data.saveAnwesenheit).toHaveBeenCalledWith('c1', neu, ['saal'])
+  })
+
+  it('Saalordner und Zoom-Ordner zugleich: wer nur das Video einträgt, löscht den Saal des anderen nicht (Review 30.10.2026)', () => {
+    // Das Gerät des Zoom-Ordners hat die Zahl des Saalordners noch nicht
+    // geladen, sein Saal-Feld ist leer. Hinaus geht nur das Video — mit der
+    // ganzen Zeile stünde in der Datenbank danach kein Saal mehr.
+    const neu = { woche: '2026-09-07', tab: 'we' as const, saal: null, video: 23, pid: 'p2' }
+    const aktion: AppAction = { type: 'anwesenheitSetzen', woche: '2026-09-07', tab: 'we', saal: null, video: 23 }
+    persist(st({ anwesenheit: [MID] }), st({ anwesenheit: [MID, neu] }), aktion)
+    expect(data.saveAnwesenheit).toHaveBeenCalledWith('c1', neu, ['video'])
+  })
+
+  it('wer eine Zahl leert, schickt sie als null — nur sie', () => {
+    const neu = { ...WE, saal: null }
+    persist(st({ anwesenheit: [MID, WE] }), st({ anwesenheit: [MID, neu] }), SETZEN)
+    expect(data.saveAnwesenheit).toHaveBeenCalledWith('c1', neu, ['saal'])
+  })
+
+  it('ein leer gespeichertes Formular, wo nichts stand, schickt nichts', () => {
+    const neu = { woche: '2026-09-07', tab: 'we' as const, saal: null, video: null, pid: 'p2' }
+    const aktion: AppAction = { type: 'anwesenheitSetzen', woche: '2026-09-07', tab: 'we', saal: null, video: null }
+    persist(st({ anwesenheit: [MID] }), st({ anwesenheit: [MID, neu] }), aktion)
+    expect(data.saveAnwesenheit).not.toHaveBeenCalled()
   })
 
   it('unverändert geht nichts hinaus', () => {

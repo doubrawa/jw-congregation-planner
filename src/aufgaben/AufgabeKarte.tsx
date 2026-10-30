@@ -2,7 +2,7 @@ import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
 import { Punkt } from '../bausteine/Punkt'
 import { Saal } from '../bausteine/Saal'
-import { displayName } from '../data/helpers'
+import { nameVon } from '../data/helpers'
 import { anfrageZu, tauschbar } from '../data/tausch'
 import type { MyTask } from '../data/types'
 import { aufgabenTitelSprache, aufgabenZeilen, fill, useT } from '../i18n/useT'
@@ -53,9 +53,8 @@ export function AufgabeHandlungen({ task }: { task: MyTask }) {
   const heute = useKalendertag()
   const bestaetigen = () => dispatch({ type: 'confirmTask', id: task.id })
   const s89 = task.s89
-  const kannTauschen = state.staleAt === null && tauschbar(task, state.services, state.sentLog)
-  const angefragt = anfrageZu(state.tauschAnfragen, task.id, heute, state.weeks)
-  const gefragt = angefragt && state.persons.find((p) => p.id === angefragt.an)
+  const kannTauschen = state.staleAt === null && tauschbar(task, state.personId, state)
+  const gefragt = nameVon(state.persons, anfrageZu(state.tauschAnfragen, task.id, heute, state.weeks)?.an ?? null)
   return (
     <div className="aufgabe-handlungen">
       {task.status === 'offen' && (
@@ -84,7 +83,7 @@ export function AufgabeHandlungen({ task }: { task: MyTask }) {
           S-89
         </button>
       )}
-      {gefragt && <span className="klein-text aufgabe-tausch">{fill(t.tauschAngefragtBei, { name: displayName(gefragt) })}</span>}
+      {gefragt && <span className="klein-text aufgabe-tausch">{fill(t.tauschAngefragtBei, { name: gefragt })}</span>}
     </div>
   )
 }

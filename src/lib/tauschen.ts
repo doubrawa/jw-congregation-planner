@@ -113,8 +113,7 @@ export async function tauschAnfragen(
   // anlegte — bis zum früheren der beiden Tage.
   const urteil = tauschPruefen(lageAus(bestand), gibtAb, angebot.nimmt, bestand.ich)
   if (!urteil.ok) return { ok: false, fehler: 'stand' }
-  const bis = urteil.a.tag < urteil.b.tag ? urteil.a.tag : urteil.b.tag
-  return { ok: true, wert: { id: crypto.randomUUID(), von: bestand.ich, an: urteil.b.person.id, gibtAb, nimmt: angebot.nimmt, bis } }
+  return { ok: true, wert: { id: crypto.randomUUID(), von: bestand.ich, an: urteil.b.person.id, gibtAb, nimmt: angebot.nimmt, bis: urteil.bis } }
 }
 
 /** Die eigene Anfrage zurückziehen. */

@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
 import { anwesendGesamt, zaehltSchon } from '../data/anwesenheit'
+import { nameVon } from '../data/helpers'
 import type { MeetingKey, Week } from '../data/types'
 import { fill, useT } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
 import { AnwesenheitBlatt } from './AnwesenheitBlatt'
-import { eingetragenVon, useAnwesenheit } from './useAnwesenheit'
+import { useAnwesenheit } from './useAnwesenheit'
 import './anwesenheit.css'
 
 /**
@@ -27,7 +28,7 @@ export function AnwesenheitZeile({ week, tab }: { week: Week; tab: MeetingKey })
     eintrag?.saal != null ? zahlBinden(fill(t.anwesendSaalN, { n: eintrag.saal })) : '',
     eintrag?.video != null ? zahlBinden(fill(t.anwesendVideoN, { n: eintrag.video })) : '',
   ].filter(Boolean)
-  const von = darf ? eingetragenVon(eintrag, state.persons) : ''
+  const von = darf ? nameVon(state.persons, eintrag?.pid ?? null) : ''
   return (
     <section className="karte anwesend-zeile" aria-label={t.anwesendTitel}>
       <div className="anwesend-zeile-text">

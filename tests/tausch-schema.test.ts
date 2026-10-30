@@ -40,6 +40,22 @@ describe('tausch_anfragen', () => {
   it('was vorbei ist, räumt das Aufräumen ab', () => {
     expect(schema).toMatch(/\('tausch_anfragen', 'bis < \$1', montag::timestamptz\)/)
   })
+
+  it('die Glocken-Zeile „Tausch angefragt" geht mit ihrer Anfrage — gleich, wer sie löscht (Review 30.10.2026)', () => {
+    // Die Zeile trägt `tausch|<id>`, keinen Platz: Die App sieht ihr nicht an,
+    // wann sie vorbei ist. Ohne den Trigger blieb sie nach dem Aufräumen am
+    // Montag oder dem Löschen einer Person acht Wochen in der Glocke.
+    expect(schema).toMatch(/create trigger tausch_anfragen_glocke\s+after delete on public\.tausch_anfragen\s+for each row execute function public\.tausch_glocke_loeschen\(\);/)
+    const funktion = /create or replace function public\.tausch_glocke_loeschen\(\)[\s\S]*?end \$\$;/.exec(schema)?.[0] ?? ''
+    // Die Dienstrolle des Eigentümers: Löscht der Admin eine Person, stünde die
+    // Zeile des Gefragten sonst hinter der Richtlinie der Mitteilungen.
+    expect(funktion).toContain('security definer')
+    expect(funktion).toContain('set search_path = public')
+    expect(funktion).toMatch(/delete from public\.notifications\s+where congregation_id = old\.congregation_id and task_key = 'tausch\|' \|\| old\.id;/)
+    expect(schema).toContain('revoke all on function public.tausch_glocke_loeschen() from anon, authenticated;')
+    // Dass die Function genau diese Kennung in die Glocke schreibt, prüft
+    // `supabase/functions/_test/tauschen.test.ts` („… Jonas bekommt Glocke und Push").
+  })
 })
 
 describe('wochen_tauschen', () => {

@@ -7,7 +7,7 @@
 
 import type { AppAction } from '../app/context'
 import { gebundenesDatum } from '../components/datum-anzeige'
-import { displayName } from '../data/helpers'
+import { displayName, nameVon } from '../data/helpers'
 import { fromIso, tagNach } from '../data/meeting-dates'
 import { minuten, uhrzeit } from '../data/trolleys'
 import type { Lang, Person, Trolley, TrolleyTermin } from '../data/types'
@@ -78,11 +78,8 @@ export function trolleyNameVon(trolleys: readonly Trolley[], id: string): string
   return trolleys.find((t) => t.id === id)?.name ?? ''
 }
 
-/** Der Name einer Person — leer, wenn es sie nicht (mehr) gibt. */
-export function nameVon(persons: readonly Person[], pid: string | null): string {
-  const p = pid ? persons.find((x) => x.id === pid) : undefined
-  return p ? displayName(p) : ''
-}
+/** Der Name einer Person — leer, wenn es sie nicht (mehr) gibt. Liegt seit dem 30.10.2026 bei `displayName`. */
+export { nameVon }
 
 /** Der Vorname — „Jonas hat euch beide eingetragen". */
 export function vornameVon(persons: readonly Person[], pid: string | null): string {

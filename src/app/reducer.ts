@@ -21,7 +21,7 @@ import { eigenePerson, kontoGehtMit } from './eigene-person'
 import { leererZustand } from './init'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsRegelAussetzen, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, regenFsWeeks } from '../data/fs'
 import { neueWocheEinordnen } from '../data/neue-woche'
-import { aemterBeenden, displayName, isSong, linkFamily, mtab, neuWennGeaendert, unlinkFamily } from '../data/helpers'
+import { aemterBeenden, displayName, isSong, linkFamily, mtab, nameVon, neuWennGeaendert, unlinkFamily } from '../data/helpers'
 import { darfPlanen, erlaubteScreens, rechteVon, themaVon } from '../data/rechte'
 import { besuchAustragen, besuchEintragen, besuchsLage, besuchStand, nachWoche } from '../data/gruppenbesuche'
 import { vortragsplanAnwenden, vortragsplanVorschau } from '../data/vortragsplan'
@@ -1448,10 +1448,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // hat sie gelöscht. Ein Entzug ist es nicht (`OHNE_ENTZUG`).
       const { gibtAb, nimmt, von, an } = action.anfrage
       const beide = new Set([gibtAb, nimmt])
-      const name = (pid: string) => {
-        const p = state.persons.find((x) => x.id === pid)
-        return p ? displayName(p) : ''
-      }
+      const name = (pid: string) => nameVon(state.persons, pid)
       const jetzt = new Date().toISOString()
       return {
         ...state,

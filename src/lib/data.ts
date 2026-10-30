@@ -70,7 +70,7 @@ import {
   vortragToRow,
 } from './zeilen'
 import type { VorgemerkterVortrag } from '../data/vortragsplan'
-import type { Anwesenheit } from '../data/anwesenheit'
+import type { AnwesendFeld, Anwesenheit } from '../data/anwesenheit'
 import type { TauschAnfrage } from '../data/tausch'
 
 /* ---- Row-Typen (Spalten aus supabase/schema.sql) ------------------------ */
@@ -1377,22 +1377,20 @@ const anwesenheitNacheinander = schreibSchlange()
 
 /**
  * **Die Anwesenden einer Zusammenkunft** (T152) — eine Zeile je
- * Zusammenkunft, geschrieben über ihren natürlichen Schlüssel: Tragen
- * Saalordner und Zoom-Ordner zugleich ein, gilt, was zuletzt kam — beide sehen
- * dieselbe Zusammenkunft und berichtigen sich höchstens. Wer eintragen darf,
- * prüft die Datenbank (`darf_anwesenheit`); weist sie ab, lädt die App nach
- * (`zeilenRun`).
+ * Zusammenkunft, geschrieben über ihren natürlichen Schlüssel, und in ihr nur
+ * die genannten Zahlen (`felder`). Den Saal trägt der Saalordner ein, das
+ * Video der Zoom-Ordner, oft zur selben Zeit: Ginge die ganze Zeile hinaus,
+ * löschte der zweite mit seinem leeren Feld die Zahl des ersten. Berichtigen
+ * beide dieselbe Zahl, gilt, was zuletzt kam. Wer eintragen darf, prüft die
+ * Datenbank (`darf_anwesenheit`); weist sie ab, lädt die App nach (`zeilenRun`).
  */
-export function saveAnwesenheit(congregationId: string, eintraege: Anwesenheit[]): void {
-  if (!supabase || eintraege.length === 0) return
+export function saveAnwesenheit(congregationId: string, eintrag: Anwesenheit, felder: readonly AnwesendFeld[]): void {
+  if (!supabase || felder.length === 0) return
   const client = supabase
   anwesenheitNacheinander(async () => {
     const { error } = await client
       .from('anwesenheit')
-      .upsert(
-        eintraege.map((a) => anwesenheitToRow(a, congregationId)),
-        { onConflict: 'congregation_id,woche,zusammenkunft' },
-      )
+      .upsert(anwesenheitToRow(eintrag, congregationId, felder), { onConflict: 'congregation_id,woche,zusammenkunft' })
     return { error }
   })
 }

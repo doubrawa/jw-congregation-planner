@@ -82,7 +82,11 @@ export interface TauschPlatz {
   person: TauschPerson
 }
 
-export type TauschUrteil = { ok: true; a: TauschPlatz; b: TauschPlatz } | { ok: false; fehler: TauschFehler }
+/**
+ * Ja mit beiden Plätzen und `bis`, dem früheren der beiden Tage: So lange gilt
+ * eine Anfrage — danach ist einer der Plätze vorbei.
+ */
+export type TauschUrteil = { ok: true; a: TauschPlatz; b: TauschPlatz; bis: string } | { ok: false; fehler: TauschFehler }
 
 /** Der Kalendertag einer Zusammenkunft — Wochenstart und Versatz, eine Abweichung vor dem Rhythmus. */
 export function tagDerZusammenkunft(woche: TauschWoche, tab: Tab, zeiten: MeetingTimes): string {
@@ -148,6 +152,7 @@ export function tauschPruefen(lage: Lage, gibtAb: string, nimmt: string, fragend
     ok: true,
     a: { key: gibtAb, woche: ta.woche, tab: ta.tab, svc: ta.svc, pos: ta.pos, tag: tagA, person: ich },
     b: { key: nimmt, woche: tb.woche, tab: tb.tab, svc: tb.svc, pos: tb.pos, tag: tagB, person: partner },
+    bis: tagA < tagB ? tagA : tagB,
   }
 }
 

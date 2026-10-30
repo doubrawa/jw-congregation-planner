@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { helferKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { anfrageZu, anfragenAn, platzTermin, tauschbar, tauschLokal, type TauschAnfrage } from './tausch'
-import type { MeetingTimes, MyTask, Person, Service, Week } from './types'
+import type { MeetingTimes, MyTask, Person, SentLog, Service, Week } from './types'
 
 /**
  * **Tauschen in der App** (T153): wann sie „Tauschen" anbietet, welche
@@ -45,19 +45,31 @@ const anfrage = (patch: Partial<TauschAnfrage> = {}): TauschAnfrage => ({
 })
 
 describe('Wann die App „Tauschen" anbietet', () => {
+  const basis = (sentLog: SentLog, weeks: Week[] = WOCHEN) => ({ services: SERVICES, sentLog, weeks })
+
   it('an einem Hilfsdienst in einer Woche, deren Plan hinausging, solange er kommt', () => {
-    expect(tauschbar(aufgabe(A, '2026-09-13'), SERVICES, gesendet(W1), HEUTE)).toBe(true)
+    expect(tauschbar(aufgabe(A, '2026-09-13'), 'p-simon', basis(gesendet(W1)), HEUTE)).toBe(true)
   })
 
   it('nicht vor „Plan senden" — dann plant der Planer noch', () => {
-    expect(tauschbar(aufgabe(A, '2026-09-13'), SERVICES, gesendet(W2), HEUTE)).toBe(false)
-    expect(tauschbar(aufgabe(A, '2026-09-13'), SERVICES, {}, HEUTE)).toBe(false)
+    expect(tauschbar(aufgabe(A, '2026-09-13'), 'p-simon', basis(gesendet(W2)), HEUTE)).toBe(false)
+    expect(tauschbar(aufgabe(A, '2026-09-13'), 'p-simon', basis({}), HEUTE)).toBe(false)
   })
 
   it('nicht an einem Programmpunkt, nicht an der Reinigung, nicht im Nachhinein', () => {
-    expect(tauschbar(aufgabe(`${W1}|we|part|v1|0`, '2026-09-13'), SERVICES, gesendet(W1), HEUTE)).toBe(false)
-    expect(tauschbar(aufgabe(helferKey(W1, 'we', 'rein', 0), '2026-09-13'), SERVICES, gesendet(W1), HEUTE)).toBe(false)
-    expect(tauschbar(aufgabe(A, '2026-09-13'), SERVICES, gesendet(W1), new Date('2026-09-14T09:00:00'))).toBe(false)
+    expect(tauschbar(aufgabe(`${W1}|we|part|v1|0`, '2026-09-13'), 'p-simon', basis(gesendet(W1)), HEUTE)).toBe(false)
+    expect(tauschbar(aufgabe(helferKey(W1, 'we', 'rein', 0), '2026-09-13'), 'p-simon', basis(gesendet(W1)), HEUTE)).toBe(false)
+    expect(tauschbar(aufgabe(A, '2026-09-13'), 'p-simon', basis(gesendet(W1)), new Date('2026-09-14T09:00:00'))).toBe(false)
+  })
+
+  it('nicht an einem Platz, der nur den Namen trägt — den tauscht der Server nicht (Review 30.10.2026)', () => {
+    // Die Aufgabe gehört Simon über den Namen (`gehoertZu`), der Platz trägt
+    // aber keine Kennung: Der Server sagte `not-yours`, das Blatt „mit
+    // niemandem möglich". Und ohne eigene Person gibt es nichts zu tauschen.
+    const nurName = [woche(W1, { mik: [{ name: 'Simon Krüger' }] }), WOCHEN[1]!]
+    expect(tauschbar(aufgabe(A, '2026-09-13'), 'p-simon', basis(gesendet(W1), nurName), HEUTE)).toBe(false)
+    expect(tauschbar(aufgabe(A, '2026-09-13'), 'p-jonas', basis(gesendet(W1)), HEUTE)).toBe(false)
+    expect(tauschbar(aufgabe(A, '2026-09-13'), null, basis(gesendet(W1)), HEUTE)).toBe(false)
   })
 })
 
