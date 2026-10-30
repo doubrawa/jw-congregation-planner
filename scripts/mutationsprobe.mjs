@@ -12370,6 +12370,16 @@ export const KATALOG = [
     suchen: '        persoenlich: action.ohneKonto ? { ...state.persoenlich, [sentKey(gibtAb, name(an))]: jetzt } : state.persoenlich,\n',
     ersetzen: '',
   },
+  // ── Gruppenbesuche ganz rechts (30.10.2026) ──────────────────────────────
+  {
+    id: 'gruppenbesuche-reiter-rechts',
+    datei: 'src/planen/fs-bereiche.ts',
+    regel: 'Gruppenbesuche stehen in der Leiste des Predigtdienstes ganz rechts — beim Ansehen wie beim Planen.',
+    suchen:
+      "    'treffpunkte',\n    ...(trolleys ? (['trolleys'] as const) : []),\n    ...(grundplan ? (['grundplan'] as const) : []),\n    ...(besuche ? (['gruppenbesuche'] as const) : []),\n",
+    ersetzen:
+      "    'treffpunkte',\n    ...(besuche ? (['gruppenbesuche'] as const) : []),\n    ...(trolleys ? (['trolleys'] as const) : []),\n    ...(grundplan ? (['grundplan'] as const) : []),\n",
+  },
 ]
 
 /**

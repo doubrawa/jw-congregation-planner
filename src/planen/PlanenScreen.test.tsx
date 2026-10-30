@@ -320,9 +320,9 @@ describe('Die Reiter', () => {
     expect(reiter(container)).toEqual(['Dienstag', 'Sonntag', t.wocheEinrichten])
   })
 
-  it('der Predigtdienst hat drei: Treffpunkte der Woche, Gruppenbesuche und Grundplan — die Trolleys plant niemand', () => {
+  it('der Predigtdienst hat drei: Treffpunkte der Woche, Grundplan und Gruppenbesuche — die Trolleys plant niemand', () => {
     const { container } = zeige({ tab: 'fs', trolleys: [{ id: 'tr1', name: 'Trolley 1', ort: '', hinweis: '' }] })
-    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.fsGrundplan])
+    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGrundplan, t.fsGruppenbesucheTab])
   })
 
   it('ein Reiterwechsel schlägt durch', () => {
@@ -407,7 +407,7 @@ describe('Der Grundplan im Predigtdienst (T120)', () => {
   it('auch, solange noch keine Woche geladen ist — eine neue Versammlung richtet ihn vorher ein', () => {
     const leer = zeige({ tab: 'fs', weeks: [], fsWeeks: [] })
     expect(leer.container.textContent).toContain(t.keineWochenTitel)
-    expect(reiter(leer.container)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.fsGrundplan])
+    expect(reiter(leer.container)).toEqual([t.fsTreffpunkteTab, t.fsGrundplan, t.fsGruppenbesucheTab])
     cleanup()
     const { container } = zeige({ tab: 'fs', weeks: [], fsWeeks: [], fsBereich: 'grundplan' })
     expect(container.textContent).not.toContain(t.keineWochenTitel)
@@ -708,7 +708,7 @@ describe('Der Planer plant alles wie der Admin (15.10.2026)', () => {
 
   it('im Predigtdienst auch der Grundplan — er pflegt ihn ganz', () => {
     const { container } = zeige({ ...ALS_PLANER, tab: 'fs' })
-    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.fsGrundplan])
+    expect(reiter(container)).toEqual([t.fsTreffpunkteTab, t.fsGrundplan, t.fsGruppenbesucheTab])
   })
 
   it('ist er zugleich Gruppenaufseher, pflegt er den Grundplan aller Gruppen — nicht nur seiner', () => {

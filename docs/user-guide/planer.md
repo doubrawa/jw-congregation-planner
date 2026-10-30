@@ -943,8 +943,8 @@ Die Zahlen bleiben ein Jahr wie die Wochen (Abschnitt 11).
 
 Die **Zusammenkünfte für den Predigtdienst** („Treffpunkte") sind ein eigenes
 Thema im Menü: **Predigtdienst**. Schalte oben rechts auf **Planen**; darunter
-wählst du den Bereich: **Treffpunkte**, **Gruppenbesuche** (siehe unten) und
-**Grundplan** – drei große Felder über die ganze Breite, jedes mit seinem
+wählst du den Bereich: **Treffpunkte**, **Grundplan** und **Gruppenbesuche**
+(siehe unten) – drei große Felder über die ganze Breite, jedes mit seinem
 Zeichen, das gewählte kräftig hinterlegt. Bei großer Schrift und auf sehr
 schmalen Handys stehen sie untereinander. Die **Trolleys** stehen nur beim
 **Ansehen** (siehe [Trolleys](#trolleys)).

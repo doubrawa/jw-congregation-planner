@@ -140,9 +140,9 @@ stehen im Menü unter **Predigtdienst**:
 
 ![Zusammenkünfte für den Predigtdienst (Treffpunkte)](screenshots/verkuendiger-treffpunkte.png)
 
-Oben im Predigtdienst wählst du den Bereich: **Treffpunkte** und – sobald es
-sie gibt – **Gruppenbesuche** und, wenn du mit dem Trolley gehen darfst,
-**Trolleys**. Jeder Bereich hat ein großes
+Oben im Predigtdienst wählst du den Bereich: **Treffpunkte**, wenn du mit dem
+Trolley gehen darfst, **Trolleys** und – sobald es sie gibt –
+**Gruppenbesuche**. Jeder Bereich hat ein großes
 Feld mit seinem Zeichen, das gewählte ist kräftig hinterlegt; bei großer
 Schrift stehen die Felder untereinander.
 

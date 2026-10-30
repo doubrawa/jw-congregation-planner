@@ -103,7 +103,7 @@ afterEach(() => {
 describe('Die Bereiche des Predigtdienstes als große Wahl', () => {
   it('jeder Bereich zeigt ein eigenes Zeichen und seinen Namen', () => {
     const { container } = zeige(ProgrammScreen, { screen: 'programm' })
-    expect(knoepfe(container).map((b) => b.textContent)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.fsTrolleysTab])
+    expect(knoepfe(container).map((b) => b.textContent)).toEqual([t.fsTreffpunkteTab, t.fsTrolleysTab, t.fsGruppenbesucheTab])
     const zeichen = knoepfe(container).map((b) => {
       const svg = b.querySelectorAll('svg.zeichen')
       expect(svg, b.textContent ?? '').toHaveLength(1)
@@ -118,7 +118,7 @@ describe('Die Bereiche des Predigtdienstes als große Wahl', () => {
     expect(leiste(container).getAttribute('aria-label')).toBe(t.tabFs)
     // Das Zeichen schweigt; den Namen trägt der Knopf.
     for (const b of knoepfe(container)) expect(b.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true')
-    expect(knoepfe(container).map((b) => b.textContent)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.fsTrolleysTab])
+    expect(knoepfe(container).map((b) => b.textContent)).toEqual([t.fsTreffpunkteTab, t.fsTrolleysTab, t.fsGruppenbesucheTab])
   })
 
   it('genau der gewählte Bereich ist gedrückt — ein Bereich von anderswo zählt als „Treffpunkte"', () => {
@@ -150,15 +150,24 @@ describe('Die Bereiche des Predigtdienstes als große Wahl', () => {
     expect(gedrueckt(container)).toEqual([t.fsTreffpunkteTab])
   })
 
-  it('beim Planen: Treffpunkte, Gruppenbesuche und Grundplan — ein Tipp öffnet den Grundplan, Trolleys gibt es dort nicht', () => {
+  it('beim Planen: Treffpunkte, Grundplan und Gruppenbesuche — ein Tipp öffnet den Grundplan, Trolleys gibt es dort nicht', () => {
     const { container } = zeige(PlanenScreen, { screen: 'planen', planner: true })
-    expect(knoepfe(container).map((b) => b.textContent)).toEqual([t.fsTreffpunkteTab, t.fsGruppenbesucheTab, t.fsGrundplan])
+    expect(knoepfe(container).map((b) => b.textContent)).toEqual([t.fsTreffpunkteTab, t.fsGrundplan, t.fsGruppenbesucheTab])
 
     fireEvent.click(knopf(container, t.fsGrundplan))
 
     expect(container.querySelector('.regel-zeile')).not.toBeNull()
     expect(container.querySelector('.week-strip')).toBeNull()
     expect(gedrueckt(container)).toEqual([t.fsGrundplan])
+  })
+
+  it('„Gruppenbesuche" steht ganz rechts — beim Ansehen wie beim Planen an derselben Stelle (Betreiber, 30.10.2026)', () => {
+    const ansehen = zeige(ProgrammScreen, { screen: 'programm', fsBereich: 'gruppenbesuche' }).container
+    expect(knoepfe(ansehen).at(-1)?.textContent).toBe(t.fsGruppenbesucheTab)
+    cleanup()
+    const planen = zeige(PlanenScreen, { screen: 'planen', planner: true, fsBereich: 'gruppenbesuche' }).container
+    expect(knoepfe(planen).at(-1)?.textContent).toBe(t.fsGruppenbesucheTab)
+    expect(gedrueckt(planen)).toEqual([t.fsGruppenbesucheTab])
   })
 })
 

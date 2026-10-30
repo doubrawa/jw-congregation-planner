@@ -9129,6 +9129,23 @@ keine Adressen und lüde beim Admin nicht. Nachgesehen per
 `absences.reason` nicht mehr, die übrigen Spalten schon; `anon` liest nichts.
 Offen: die Mitgliedsrechte-Probe (fährt der Betreiber).
 
+## Aufgenommen am 30. Oktober 2026 (T155)
+
+### T155 · Gruppenbesuche ganz rechts in der Leiste des Predigtdienstes ⚡ ✅ umgesetzt (30. Oktober 2026)
+
+Betreiber, mit einem Bild der Leiste beim Ansehen (Treffpunkte, Gruppenbesuche,
+Trolleys): „im tabreiter oben soll gruppenbesuche rechts sein und nicht in der
+mitte". Umgesetzt in `fsBereiche`: Die Gruppenbesuche stehen zuletzt — beim
+Ansehen Treffpunkte, Trolleys, Gruppenbesuche, beim Planen Treffpunkte,
+Grundplan, Gruppenbesuche. Das Planen ist ohne eigene Vorgabe mitgezogen, damit
+der Reiter beim Wechsel zwischen Ansehen und Planen an derselben Stelle steht.
+Nur Oberfläche, live mit dem Push.
+
+Tests: die Reihenfolge in `fs-bereich-tabs.test.tsx` und
+`PlanenScreen.test.tsx`, dazu ein Fall für die Regel; Mutationsprobe 1 von 1
+bewacht (`gruppenbesuche-reiter-rechts`). Handbücher (Verkündiger, Planer) und
+die sieben Bilder mit der Leiste neu, Maße unverändert.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -9156,7 +9173,7 @@ Offen: die Mitgliedsrechte-Probe (fährt der Betreiber).
 
 ## Fortschritt
 
-Stand 29. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 30. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -9167,9 +9184,9 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
-29. Oktober ☑☑☑☑☑☑☑☑☑
+29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑
 
-**153 der 154 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+**154 der 155 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |

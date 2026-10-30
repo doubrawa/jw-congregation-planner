@@ -54,6 +54,11 @@ function trolleyReiter(state: AppState, zuteilen: boolean, heute = new Date()): 
  *   geheim, er gehört nur nicht in jede Ansicht.
  * - **Grundplan** nur beim Planen, und nur für den, der ihn ändern darf: Admin
  *   und Planer ganz, der Gruppenaufseher seine Gruppe.
+ *
+ * Die Leiste ordnet sie anders als diese Liste: Die Gruppenbesuche stehen ganz
+ * rechts, beim Ansehen wie beim Planen (Betreiber, 30.10.2026: „Gruppenbesuche
+ * soll rechts sein und nicht in der Mitte"). Wer zwischen Ansehen und Planen
+ * wechselt, findet sie so an derselben Stelle.
  */
 export function fsBereiche(state: AppState): FsBereich[] {
   const planen = state.screen === 'planen'
@@ -63,9 +68,9 @@ export function fsBereiche(state: AppState): FsBereich[] {
   const grundplan = planen && (rechte.zuteilen || rechte.gruppe !== null)
   return [
     'treffpunkte',
-    ...(besuche ? (['gruppenbesuche'] as const) : []),
     ...(trolleys ? (['trolleys'] as const) : []),
     ...(grundplan ? (['grundplan'] as const) : []),
+    ...(besuche ? (['gruppenbesuche'] as const) : []),
   ]
 }
 
