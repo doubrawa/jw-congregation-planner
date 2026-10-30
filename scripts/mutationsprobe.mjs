@@ -12078,11 +12078,14 @@ export const KATALOG = [
     ersetzen: '',
   },
   {
-    id: 'tausch-angebote-nur-mit-konto',
+    // Bis zum 30.10.2026 „angeboten wird nur, wer ein Konto hat"
+    // (`tausch-angebote-nur-mit-konto`). Seitdem steht jeder da; das Merkmal
+    // entscheidet zwischen Anfragen und gleich Tauschen.
+    id: 'tausch-angebote-konto-merkmal',
     datei: 'supabase/functions/tauschen/index.ts',
-    regel: 'Angeboten wird nur, wer ein Konto hat — sonst könnte er nicht antworten.',
-    suchen: '  const angebote = tauschAngebote(lage, gibtAb, k.personId).filter((b) => kontoVon(b.person.id))',
-    ersetzen: '  const angebote = tauschAngebote(lage, gibtAb, k.personId)',
+    regel: 'Die Angebote sagen, ob der andere ein Konto hat — sonst fragte die App jemanden an, der die Anfrage nie sieht.',
+    suchen: 'konto: kontoVon(b.person.id) !== undefined })),',
+    ersetzen: 'konto: true })),',
   },
   {
     id: 'tausch-anfrage-nur-mit-konto',
@@ -12137,7 +12140,7 @@ export const KATALOG = [
     id: 'tausch-stand-schreibt-nichts-weiter',
     datei: 'supabase/functions/tauschen/index.ts',
     regel: 'Scheitert das Schreiben der Wochen, folgt nichts: keine Zusage, kein Tagebuch, keine Mitteilung.',
-    suchen: "  if (!staende) return fehler('stand')\n",
+    suchen: '  if (!staende) return null\n',
     ersetzen: '',
   },
   {
@@ -12151,8 +12154,8 @@ export const KATALOG = [
     id: 'tausch-planer-erfahren',
     datei: 'supabase/functions/tauschen/index.ts',
     regel: 'Den Tausch erfahren Admin und Planer.',
-    suchen: '    .filter((m) => (m.planner || m.zuteiler) && m.user_id !== k.userId && m.user_id !== anfrage.von_user)',
-    ersetzen: '    .filter((m) => m.zuteiler && m.user_id !== k.userId && m.user_id !== anfrage.von_user)',
+    suchen: '  const planer = members.filter((m) => (m.planner || m.zuteiler) && !beteiligt.includes(m.user_id))',
+    ersetzen: '  const planer = members.filter((m) => m.zuteiler && !beteiligt.includes(m.user_id))',
   },
   {
     id: 'tausch-knopf-nur-gesendet',
@@ -12208,7 +12211,7 @@ export const KATALOG = [
     datei: 'src/app/reducer.ts',
     regel: 'Nach dem Tausch ist jede andere Anfrage zu einem der beiden Plätze erledigt.',
     suchen: '        tauschAnfragen: state.tauschAnfragen.filter((a) => !beide.has(a.gibtAb) && !beide.has(a.nimmt)),',
-    ersetzen: '        tauschAnfragen: state.tauschAnfragen.filter((a) => a.id !== action.anfrage.id),',
+    ersetzen: '        tauschAnfragen: state.tauschAnfragen.filter((a) => !(a.gibtAb === gibtAb && a.nimmt === nimmt)),',
   },
   {
     id: 'tausch-kein-entzug-reducer',
@@ -12294,6 +12297,63 @@ export const KATALOG = [
     regel: 'Eine Anfrage gilt bis zum früheren der beiden Tage.',
     suchen: '    bis: tagA < tagB ? tagA : tagB,\n',
     ersetzen: '    bis: tagB,\n',
+  },
+  // Tauschen ohne Konto (30.10.2026): mündlich absprechen, dann gleich tauschen.
+  {
+    id: 'tausch-direkt-nur-ohne-konto',
+    datei: 'supabase/functions/tauschen/index.ts',
+    regel: 'Gleich getauscht wird nur mit jemandem ohne Konto — wer eines hat, sagt selbst zu.',
+    suchen: "  if (kontoVon(urteil.b.person.id) !== undefined) return fehler('has-account')\n",
+    ersetzen: '',
+  },
+  {
+    id: 'tausch-direkt-keine-fremde-zusage',
+    datei: 'supabase/functions/tauschen/index.ts',
+    regel: 'Ohne Konto hat der andere nicht zugesagt — für seinen neuen Platz steht keine Zusage da.',
+    suchen: "    ...(konten.partner ? [{ congregation_id: k.cong, user_id: konten.partner, task_key: a.key, status: 'bestätigt' }] : []),",
+    ersetzen: "    { congregation_id: k.cong, user_id: konten.partner, task_key: a.key, status: 'bestätigt' },",
+  },
+  {
+    id: 'tausch-direkt-planer-erfahren',
+    datei: 'supabase/functions/tauschen/index.ts',
+    regel: 'Auch den Tausch mit jemandem ohne Konto erfahren die Planer.',
+    suchen: '  await planerBenachrichtigen(k, lage, members, urteil.a, urteil.b, [k.userId])\n',
+    ersetzen: '',
+  },
+  {
+    id: 'tausch-direkt-zusage-lokal',
+    datei: 'src/app/reducer.ts',
+    regel: 'Nach dem Tausch ohne Konto steht in der App nur die Zusage des Fragenden — nicht seine alte am abgegebenen Platz.',
+    suchen: "          ? { ...dropConfirmations(state.confirmations, [gibtAb]), [nimmt]: 'bestätigt' }",
+    ersetzen: "          ? { ...state.confirmations, [gibtAb]: 'bestätigt', [nimmt]: 'bestätigt' }",
+  },
+  {
+    id: 'tausch-direkt-zwei-tipps',
+    datei: 'src/tauschen/TauschenBlatt.tsx',
+    regel: 'Gleich getauscht wird erst mit dem zweiten Tipp — der erste fragt „Abgesprochen?".',
+    suchen: '  const knopf = useZweiTipp(onTauschen)',
+    ersetzen: '  const knopf = { armed: false, onClick: onTauschen, onBlur: () => {} }',
+  },
+  {
+    id: 'tausch-direkt-statt-anfrage',
+    datei: 'src/tauschen/TauschenBlatt.tsx',
+    regel: 'Wer kein Konto hat, wird nicht angefragt — mit ihm tauscht man nach Absprache gleich.',
+    suchen: '                  {a.konto ? (',
+    ersetzen: '                  {a.konto || true ? (',
+  },
+  {
+    id: 'tausch-konto-alte-function',
+    datei: 'src/lib/tauschen.ts',
+    regel: 'Ohne Konto-Merkmal (Function von davor) hat der andere ein Konto — sie bot nur solche an.',
+    suchen: '.map((a) => ({ ...a, konto: a.konto !== false }))',
+    ersetzen: '.map((a) => ({ ...a, konto: a.konto === true }))',
+  },
+  {
+    id: 'tausch-konto-ohne-datenbank',
+    datei: 'src/lib/tauschen.ts',
+    regel: 'Ohne Datenbank kommen die Konten aus den geladenen Mitgliedern.',
+    suchen: '      konto: bestand.konten.has(b.person.id),\n',
+    ersetzen: '      konto: true,\n',
   },
 ]
 

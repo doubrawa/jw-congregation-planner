@@ -8,8 +8,11 @@
 import { describe, expect, it } from 'vitest'
 import { helferKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { demoZustand } from '../../tests/testdaten/demo-start'
+import { sentKey } from '../data/planning'
 import type { TauschAnfrage } from '../data/tausch'
 import type { Person, Week } from '../data/types'
+import { dict } from '../i18n/ui'
+import { fill } from '../i18n/useT'
 import type { AppState } from './context'
 import { reducer } from './reducer'
 
@@ -82,11 +85,25 @@ describe('Der Tausch', () => {
   it('beide Plätze getauscht, beide zugesagt, die Anfrage und jede andere zu den Plätzen fort', () => {
     const andere = anfrage({ id: 'a2', von: 'p-lena', gibtAb: helferKey(W2, 'mid', 'mik', 0), nimmt: A })
     const fremd = anfrage({ id: 'a3', gibtAb: helferKey('2026-09-21', 'we', 'mik', 0), nimmt: helferKey('2026-09-28', 'we', 'mik', 0) })
-    const s = reducer(start({ tauschAnfragen: [anfrage(), andere, fremd] }), { type: 'getauscht', anfrage: anfrage() })
+    const s = reducer(start({ tauschAnfragen: [anfrage(), andere, fremd], tauschId: A }), { type: 'getauscht', tausch: anfrage() })
     expect(s.weeks[0]?.we.helpers.mik?.[0]).toEqual({ name: 'Jonas Berger', pid: 'p-jonas' })
     expect(s.weeks[1]?.we.helpers.mik?.[0]).toEqual({ name: 'Simon Krüger', pid: 'p-simon' })
     expect(s.confirmations).toMatchObject({ [A]: 'bestätigt', [B]: 'bestätigt' })
     expect(s.tauschAnfragen.map((a) => a.id)).toEqual(['a3'])
-    expect(s.toast?.text).toBeTruthy()
+    expect(s.toast?.text).toBe(dict('de').tauschToastGetauscht)
+    // Das Tausch-Blatt ist zu: Sein Platz gehört jetzt dem anderen.
+    expect(s.tauschId).toBeNull()
+  })
+
+  it('mit jemandem ohne Konto (30.10.2026): zugesagt hat nur der Fragende — die alte Zusage des abgegebenen Platzes ist fort', () => {
+    const vorher = start({ confirmations: { [A]: 'bestätigt' } })
+    const s = reducer(vorher, { type: 'getauscht', tausch: { von: 'p-simon', an: 'p-jonas', gibtAb: A, nimmt: B }, ohneKonto: true })
+    expect(s.weeks[0]?.we.helpers.mik?.[0]).toEqual({ name: 'Jonas Berger', pid: 'p-jonas' })
+    expect(s.weeks[1]?.we.helpers.mik?.[0]).toEqual({ name: 'Simon Krüger', pid: 'p-simon' })
+    expect(s.confirmations[B]).toBe('bestätigt')
+    expect(A in s.confirmations).toBe(false)
+    // Beide im Tagebuch: Bescheid gab der Fragende mündlich.
+    expect(Object.keys(s.sentLog)).toEqual(expect.arrayContaining([sentKey(A, 'Jonas Berger'), sentKey(B, 'Simon Krüger')]))
+    expect(s.toast?.text).toBe(fill(dict('de').tauschToastDirekt, { name: 'Jonas Berger' }))
   })
 })

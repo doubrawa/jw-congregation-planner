@@ -884,6 +884,10 @@ export const DE = {
     tauschToastAngefragt: 'Anfrage geschickt', tauschToastGetauscht: 'Getauscht — beide Plätze sind zugesagt', tauschFehlerWeg: 'Diese Anfrage gibt es nicht mehr.',
     tauschFehlerGeaendert: 'Das geht so nicht mehr — inzwischen hat sich der Plan geändert.', tauschFehlerSchonGefragt: 'Für diese Aufgabe läuft schon eine Anfrage.', notifTauschAngefragt: 'Tausch angefragt',
     notifGetauscht: 'Getauscht', notifTauschAbgelehnt: 'Tausch abgelehnt',
+    // Ohne App-Konto (30.10.2026): mündlich absprechen, dann gleich tauschen.
+    tauschOhneKonto: 'Ohne App-Konto — vorher persönlich absprechen', tauschDirektSicher: 'Abgesprochen? Tauschen',
+    tauschHinweisOhneKonto: 'Wer kein App-Konto hat, sieht keine Anfrage. Sprecht euch persönlich ab — dann tauschst du gleich selbst.',
+    tauschToastDirekt: 'Getauscht — {name} übernimmt deinen Platz',
     awVergleich: 'Vergleich', awAufgaben: 'Aufgaben', awHilfsdienste: 'Hilfsdienste',
     awErklaerungAufgaben: 'Verglichen wird mit dem, was auf jede Person käme, wenn die Plätze ihrer Bereiche gleich verteilt wären. Auffällig ist, wer um mehr als die Hälfte darüber oder darunter liegt.',
     awErklaerungHilfsdienste: 'Hilfsdienste verteilt die App nach der Gesamtlast: Wer viele Aufgaben hat, bekommt weniger Hilfsdienste. Verglichen wird deshalb alles zusammen.',

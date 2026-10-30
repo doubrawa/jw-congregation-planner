@@ -45,6 +45,9 @@ interface TauschBasis {
   weeks: readonly Week[]
 }
 
+/** Ein Tausch, wie er geschehen ist: wer was abgab und wer was dafür nahm — mit oder ohne Anfrage davor. */
+export type Tausch = Pick<TauschAnfrage, 'von' | 'an' | 'gibtAb' | 'nimmt'>
+
 /**
  * **Bietet die App „Tauschen" an dieser Aufgabe an?** Ein Hilfsdienst, den
  * keine Gruppe übernimmt, auf dem die eigene Kennung steht, in einer Woche,
@@ -131,11 +134,11 @@ export function anfrageZu(
  * eine Person oder ein Platz im geladenen Bestand, bleibt alles, wie es ist;
  * das nächste Laden bringt den Stand.
  */
-export function tauschLokal(weeks: Week[], services: Service[], persons: readonly Person[], anfrage: TauschAnfrage): Week[] {
-  const von = persons.find((p) => p.id === anfrage.von)
-  const an = persons.find((p) => p.id === anfrage.an)
-  const abgegeben = platzAuswahl(weeks, services, anfrage.gibtAb)
-  const genommen = platzAuswahl(weeks, services, anfrage.nimmt)
+export function tauschLokal(weeks: Week[], services: Service[], persons: readonly Person[], tausch: Tausch): Week[] {
+  const von = persons.find((p) => p.id === tausch.von)
+  const an = persons.find((p) => p.id === tausch.an)
+  const abgegeben = platzAuswahl(weeks, services, tausch.gibtAb)
+  const genommen = platzAuswahl(weeks, services, tausch.nimmt)
   if (!von || !an || !abgegeben || !genommen) return weeks
   const eins = assignSlot(weeks, abgegeben, displayName(an), undefined, an.id)
   return assignSlot(eins, genommen, displayName(von), undefined, von.id)

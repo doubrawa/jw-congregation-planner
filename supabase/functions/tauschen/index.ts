@@ -1,13 +1,21 @@
 // =============================================================================
 // Supabase Edge Function: tauschen — Hilfsdienste tauschen (T153, 29.10.2026)
 // =============================================================================
-// Fünf Aktionen (Aufruf mit Nutzer-JWT, supabase.functions.invoke):
+// Sechs Aktionen (Aufruf mit Nutzer-JWT, supabase.functions.invoke):
 //
 //   { aktion: 'angebote', gibtAb, heute? }
 //     Mit wem der Aufrufer seinen Platz `gibtAb` tauschen könnte: jeder Platz
 //     desselben Dienstes an einem anderen Tag, für den die Regeln Ja sagen
-//     (`regeln.ts`) und dessen Inhaber ein Konto hat — ohne Konto könnte er
-//     nicht antworten. Antwort `{ ok, angebote: [{ nimmt, personId }] }`.
+//     (`regeln.ts`). Antwort `{ ok, angebote: [{ nimmt, personId, konto }] }`
+//     — `konto`: Hat der Inhaber ein Konto, fragt die App ihn an; ohne Konto
+//     sieht er keine Anfrage, dann tauscht der Fragende gleich (`direkt`).
+//
+//   { aktion: 'direkt', gibtAb, nimmt, heute? }
+//     Tauscht sofort mit jemandem ohne Konto: Bescheid gibt der Fragende
+//     mündlich (Betreiber, 30.10.2026). Dieselben Regeln wie beim Annehmen;
+//     wer ein Konto hat, sagt selbst zu (`has-account`). Zugesagt ist nur der
+//     neue Platz des Fragenden — der andere sagt nicht in der App zu. Die
+//     Planer bekommen „Getauscht". Antwort wie bei `annehmen`.
 //
 //   { aktion: 'anfragen', gibtAb, nimmt, heute? }
 //     Fragt den, der `nimmt` hat. Legt die Anfrage an; er bekommt „Tausch
@@ -31,7 +39,8 @@
 // Bei einem Fehler `{ error }`, der Grund, den die App nennt: die
 // `TauschFehler` aus `regeln.ts`, dazu
 //   unauthorized / forbidden  nicht angemeldet; kein Mitglied oder ohne Person
-//   no-account                der Gefragte hat kein Konto
+//   no-account                der Gefragte hat kein Konto (anfragen)
+//   has-account               der andere hat ein Konto — ihn fragen (direkt)
 //   already-asked             für diesen Platz läuft schon eine Anfrage
 //   gone                      die Anfrage gibt es nicht (mehr), oder sie gilt
 //                             einem anderen
@@ -71,6 +80,7 @@ import { TITEL_GESUCHT } from '../substitute/texte.ts'
 import {
   type Lage,
   type TauschPerson,
+  type TauschPlatz,
   type TauschWoche,
   tauschAngebote,
   tauschAnwenden,
@@ -276,8 +286,13 @@ async function angebote(k: Aufrufer, gibtAb: string): Promise<Response> {
   // begonnen hat, kann noch kommen. Was vorbei ist, sortiert `tauschPruefen` aus.
   const ab = new Date(Date.parse(k.heute) - 6 * 864e5).toISOString().slice(0, 10)
   const { lage, kontoVon } = await lesen(k, { ab })
-  const angebote = tauschAngebote(lage, gibtAb, k.personId).filter((b) => kontoVon(b.person.id))
-  return json({ ok: true, angebote: angebote.map((b) => ({ nimmt: b.key, personId: b.person.id })) })
+  // Auch wer kein Konto hat: Mit ihm tauscht der Fragende gleich, nachdem sie
+  // es mündlich abgesprochen haben (Betreiber, 30.10.2026).
+  const angebote = tauschAngebote(lage, gibtAb, k.personId)
+  return json({
+    ok: true,
+    angebote: angebote.map((b) => ({ nimmt: b.key, personId: b.person.id, konto: kontoVon(b.person.id) !== undefined })),
+  })
 }
 
 async function anfragen(k: Aufrufer, gibtAb: string, nimmt: string): Promise<Response> {
@@ -359,16 +374,15 @@ async function ablehnen(k: Aufrufer, id: string): Promise<Response> {
   return json({ ok: true })
 }
 
+/** Je geschriebener Woche der alte und der neue Stand — die App übernimmt sie (`tauschStaendeUebernehmen`). */
+type Staende = { woche: string; vorher: string; stand: string }[]
+
 /**
  * Die geänderten Wochen schreiben — eine über `wocheSchreiben`, zwei über
  * `wochen_tauschen`, ganz oder gar nicht. Zurück kommen je Woche der alte und
  * der neue Stand; `null`, wenn eine sich inzwischen geändert hat.
  */
-async function schreiben(
-  k: Aufrufer,
-  lage: Lage,
-  neu: Map<string, Week>,
-): Promise<{ woche: string; vorher: string; stand: string }[] | null> {
+async function schreiben(k: Aufrufer, lage: Lage, neu: Map<string, Week>): Promise<Staende | null> {
   const eintraege = [...neu.entries()].map(([woche, data]) => ({ woche, data, vorher: lage.wochen.get(woche)!.updated_at }))
   const [a, b] = eintraege
   if (!a) return null
@@ -389,6 +403,71 @@ async function schreiben(
   return eintraege.map((e) => ({ woche: e.woche, vorher: e.vorher, stand: zeilen.find((z) => z.woche === e.woche)?.stand ?? '' }))
 }
 
+/**
+ * **Den Tausch vollziehen**, nachdem die Regeln Ja gesagt haben: beide Plätze
+ * schreiben (ganz oder gar nicht), die Zusagen der neuen Inhaber, das
+ * Versand-Tagebuch, und was zu den beiden Plätzen offen war, ist erledigt.
+ * `null`, wenn eine Woche sich inzwischen geändert hat — dann ist nichts
+ * geschrieben. `konten`: wer jetzt `b` hat (der Fragende) und wer `a` hat —
+ * ohne Konto (`direkt`) sagt er nicht in der App zu.
+ */
+async function vollziehen(
+  k: Aufrufer,
+  lage: Lage,
+  a: TauschPlatz,
+  b: TauschPlatz,
+  konten: { fragender: string; partner: string | undefined },
+): Promise<Staende | null> {
+  const staende = await schreiben(k, lage, tauschAnwenden(lage, a, b))
+  if (!staende) return null
+
+  const c = wert(k.cong)
+  const beide = liste([a.key, b.key])
+  // Zugesagt haben der Fragende für `b` und der andere für `a`, wenn er ein
+  // Konto hat. Was zu den beiden Plätzen vorher dastand (Zusagen, Absagen),
+  // gehörte den alten Inhabern.
+  await rest.send('DELETE', `confirmations?congregation_id=eq.${c}&task_key=in.${beide}`)
+  await rest.insert('confirmations', [
+    { congregation_id: k.cong, user_id: konten.fragender, task_key: b.key, status: 'bestätigt' },
+    ...(konten.partner ? [{ congregation_id: k.cong, user_id: konten.partner, task_key: a.key, status: 'bestätigt' }] : []),
+  ])
+  // Beide wissen Bescheid — „Plan senden" soll sie nicht noch einmal melden.
+  await rest.insert(
+    'assignment_log',
+    [
+      { congregation_id: k.cong, task_key: a.key, name: personDisplayName(b.person.fn, b.person.ln), person_id: b.person.id, user_id: konten.partner ?? null },
+      { congregation_id: k.cong, task_key: b.key, name: personDisplayName(a.person.fn, a.person.ln), person_id: a.person.id, user_id: konten.fragender },
+    ],
+    { ignoreDuplicates: true },
+  )
+  // Was zu einem der beiden Plätze noch offen war, ist erledigt: jede Anfrage,
+  // und ein Ersatzgesuch samt seinen Glocken-Zeilen.
+  await anfragenLoeschen(k, `gibt_ab=in.${beide}`)
+  await anfragenLoeschen(k, `nimmt=in.${beide}`)
+  await rest.send('DELETE', `notifications?congregation_id=eq.${c}&task_key=in.${beide}&title=eq.${wert(TITEL_GESUCHT)}`)
+  return staende
+}
+
+/** „Getauscht" an die Planer, mit beiden Plätzen — außer an die, die getauscht haben: Sie wissen es. */
+async function planerBenachrichtigen(
+  k: Aufrufer,
+  lage: Lage,
+  members: readonly Mitglied[],
+  a: TauschPlatz,
+  b: TauschPlatz,
+  beteiligt: readonly string[],
+): Promise<void> {
+  const planer = members.filter((m) => (m.planner || m.zuteiler) && !beteiligt.includes(m.user_id)).map((m) => m.user_id)
+  await benachrichtigen(
+    k.cong,
+    planer,
+    TITEL_GETAUSCHT,
+    (t) => t.getauscht,
+    `${dienst(lage, a.svc)} · ${termin(lage, a)} · ${nameVon(b.person)} · ${termin(lage, b)} · ${nameVon(a.person)}`,
+    a.key,
+  )
+}
+
 async function annehmen(k: Aufrufer, id: string): Promise<Response> {
   const anfrage = await anfrageLesen(k, id)
   if (!anfrage || anfrage.an_person !== k.personId) return fehler('gone')
@@ -406,48 +485,32 @@ async function annehmen(k: Aufrufer, id: string): Promise<Response> {
   }
   const { a, b } = urteil
 
-  const staende = await schreiben(k, lage, tauschAnwenden(lage, a, b))
+  const staende = await vollziehen(k, lage, a, b, { fragender: anfrage.von_user, partner: k.userId })
   if (!staende) return fehler('stand')
-
-  const c = wert(k.cong)
-  const beide = liste([a.key, b.key])
-  // Beide haben zugesagt: der Fragende für `b`, wer annimmt für `a`. Was zu den
-  // beiden Plätzen vorher dastand (Zusagen, Absagen), gehörte den alten Inhabern.
-  await rest.send('DELETE', `confirmations?congregation_id=eq.${c}&task_key=in.${beide}`)
-  await rest.insert('confirmations', [
-    { congregation_id: k.cong, user_id: anfrage.von_user, task_key: b.key, status: 'bestätigt' },
-    { congregation_id: k.cong, user_id: k.userId, task_key: a.key, status: 'bestätigt' },
-  ])
-  // Beide wissen Bescheid — „Plan senden" soll sie nicht noch einmal melden.
-  await rest.insert(
-    'assignment_log',
-    [
-      { congregation_id: k.cong, task_key: a.key, name: personDisplayName(b.person.fn, b.person.ln), person_id: b.person.id, user_id: k.userId },
-      { congregation_id: k.cong, task_key: b.key, name: personDisplayName(a.person.fn, a.person.ln), person_id: a.person.id, user_id: anfrage.von_user },
-    ],
-    { ignoreDuplicates: true },
-  )
-  // Was zu einem der beiden Plätze noch offen war, ist erledigt: diese und
-  // jede andere Anfrage, und ein Ersatzgesuch samt seinen Glocken-Zeilen.
-  await anfragenLoeschen(k, `gibt_ab=in.${beide}`)
-  await anfragenLoeschen(k, `nimmt=in.${beide}`)
-  await rest.send('DELETE', `notifications?congregation_id=eq.${c}&task_key=in.${beide}&title=eq.${wert(TITEL_GESUCHT)}`)
 
   // Dem Fragenden: sein alter Platz und wer ihn jetzt hat (wie „Ersatz
   // gefunden"); den neuen sieht er unter seinen Aufgaben. Den Planern beide.
-  const planer = members
-    .filter((m) => (m.planner || m.zuteiler) && m.user_id !== k.userId && m.user_id !== anfrage.von_user)
-    .map((m) => m.user_id)
-  const name = dienst(lage, a.svc)
-  await benachrichtigen(k.cong, [anfrage.von_user], TITEL_GETAUSCHT, (t) => t.getauscht, `${name} · ${termin(lage, a)} · ${nameVon(b.person)}`, b.key)
-  await benachrichtigen(
-    k.cong,
-    planer,
-    TITEL_GETAUSCHT,
-    (t) => t.getauscht,
-    `${name} · ${termin(lage, a)} · ${nameVon(b.person)} · ${termin(lage, b)} · ${nameVon(a.person)}`,
-    a.key,
-  )
+  await benachrichtigen(k.cong, [anfrage.von_user], TITEL_GETAUSCHT, (t) => t.getauscht, `${dienst(lage, a.svc)} · ${termin(lage, a)} · ${nameVon(b.person)}`, b.key)
+  await planerBenachrichtigen(k, lage, members, a, b, [k.userId, anfrage.von_user])
+  return json({ ok: true, wochen: staende })
+}
+
+/**
+ * **Gleich tauschen, mit jemandem ohne Konto** (30.10.2026): Er sieht keine
+ * Anfrage und kann nicht zusagen — die beiden sprechen sich mündlich ab, dann
+ * tauscht der Fragende. Wer ein Konto hat, sagt selbst zu: ihn fragt die App
+ * an, statt über ihn zu entscheiden.
+ */
+async function direkt(k: Aufrufer, gibtAb: string, nimmt: string): Promise<Response> {
+  const wochen = wochenVon(gibtAb, nimmt)
+  if (!wochen) return fehler('bad-request')
+  const { lage, members, kontoVon } = await lesen(k, wochen)
+  const urteil = tauschPruefen(lage, gibtAb, nimmt, k.personId)
+  if (!urteil.ok) return fehler(urteil.fehler)
+  if (kontoVon(urteil.b.person.id) !== undefined) return fehler('has-account')
+  const staende = await vollziehen(k, lage, urteil.a, urteil.b, { fragender: k.userId, partner: undefined })
+  if (!staende) return fehler('stand')
+  await planerBenachrichtigen(k, lage, members, urteil.a, urteil.b, [k.userId])
   return json({ ok: true, wochen: staende })
 }
 
@@ -490,6 +553,8 @@ Deno.serve(async (req: Request) => {
         return await ablehnen(k, String(rumpf.id ?? ''))
       case 'annehmen':
         return await annehmen(k, String(rumpf.id ?? ''))
+      case 'direkt':
+        return await direkt(k, String(rumpf.gibtAb ?? ''), String(rumpf.nimmt ?? ''))
       default:
         return fehler('bad-request')
     }

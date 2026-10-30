@@ -8,8 +8,9 @@
  * Trolleys: Ob der Tausch noch geht, weiß erst der Server.
  *
  * **Ohne Datenbank** (Entwicklerseite, Tests) rechnet die App mit denselben
- * Regeln (`supabase/functions/tauschen/regeln.ts`) und nimmt jeden Wunsch an —
- * nur, wer ein Konto hat, weiß sie nicht; dort fragt sie also jeden, der passt.
+ * Regeln (`supabase/functions/tauschen/regeln.ts`) und nimmt jeden Wunsch an;
+ * wer ein Konto hat, liest sie aus den geladenen Mitgliedern (Entwicklerseite:
+ * `konto=1`).
  */
 
 import type { ServiceRow, Week as EdgeWeek } from '../../supabase/functions/_shared/zuteilungen.ts'
@@ -39,6 +40,12 @@ export type TauschErgebnis<T> = { ok: true; wert: T } | { ok: false; fehler: Tau
 export interface TauschAngebot {
   nimmt: string
   personId: string
+  /**
+   * Hat er ein Konto? Dann fragt die App ihn an. Ohne Konto sieht er keine
+   * Anfrage: Die beiden sprechen sich mündlich ab, und der Fragende tauscht
+   * gleich (`tauschDirekt`, Betreiber 30.10.2026).
+   */
+  konto: boolean
 }
 
 /**
@@ -54,6 +61,8 @@ export interface TauschBestand {
   zeiten: MeetingTimes
   ich: string
   heute: string
+  /** Die Personen mit Konto — aus den geladenen Mitgliedern, nur ohne Datenbank gebraucht. */
+  konten: ReadonlySet<string>
 }
 
 /**
@@ -91,12 +100,17 @@ function lageAus(b: TauschBestand): Lage {
 
 /** Mit wem der eigene Platz `gibtAb` getauscht werden könnte — der früheste zuerst. */
 export async function tauschAngebote(gibtAb: string, bestand: TauschBestand): Promise<TauschErgebnis<TauschAngebot[]>> {
-  const antwort = await aufrufen<{ angebote?: TauschAngebot[] }>({ aktion: 'angebote', gibtAb, heute: bestand.heute })
+  const antwort = await aufrufen<{ angebote?: (Omit<TauschAngebot, 'konto'> & { konto?: boolean })[] }>({ aktion: 'angebote', gibtAb, heute: bestand.heute })
   if (!antwort.ok) return antwort
-  if (antwort.wert) return { ok: true, wert: antwort.wert.angebote ?? [] }
+  // Ohne `konto` (Function von vor dem 30.10.2026) kamen nur Inhaber mit Konto.
+  if (antwort.wert) return { ok: true, wert: (antwort.wert.angebote ?? []).map((a) => ({ ...a, konto: a.konto !== false })) }
   return {
     ok: true,
-    wert: angeboteNachRegeln(lageAus(bestand), gibtAb, bestand.ich).map((b) => ({ nimmt: b.key, personId: b.person.id })),
+    wert: angeboteNachRegeln(lageAus(bestand), gibtAb, bestand.ich).map((b) => ({
+      nimmt: b.key,
+      personId: b.person.id,
+      konto: bestand.konten.has(b.person.id),
+    })),
   }
 }
 
@@ -126,6 +140,24 @@ export async function tauschZurueckziehen(id: string): Promise<TauschErgebnis<vo
 export async function tauschAblehnen(id: string): Promise<TauschErgebnis<void>> {
   const antwort = await aufrufen({ aktion: 'ablehnen', id })
   return antwort.ok ? { ok: true, wert: undefined } : antwort
+}
+
+/**
+ * **Gleich tauschen** mit jemandem ohne Konto — abgesprochen haben es die
+ * beiden mündlich. Die App übernimmt die neuen Stände wie beim Annehmen.
+ */
+export async function tauschDirekt(gibtAb: string, angebot: TauschAngebot, bestand: TauschBestand): Promise<TauschErgebnis<void>> {
+  const geladen = ladungJetzt()
+  const antwort = await aufrufen<{ wochen?: unknown[] }>({ aktion: 'direkt', gibtAb, nimmt: angebot.nimmt, heute: bestand.heute })
+  if (!antwort.ok) return antwort
+  if (antwort.wert) {
+    tauschStaendeUebernehmen(antwort.wert.wochen ?? [], geladen)
+    return { ok: true, wert: undefined }
+  }
+  // Ohne Datenbank: dieselbe Prüfung wie der Server.
+  return tauschPruefen(lageAus(bestand), gibtAb, angebot.nimmt, bestand.ich).ok
+    ? { ok: true, wert: undefined }
+    : { ok: false, fehler: 'stand' }
 }
 
 /**

@@ -745,7 +745,9 @@ Und drei Takte:
    die Planer gemeldet. Ebenso das **Tauschen** (T153,
    [`tauschen`](supabase/functions/tauschen/)): die Anfrage an den Gefragten,
    seine Absage an den Fragenden, der Tausch an den Fragenden und die Planer —
-   beide gelten danach als benachrichtigt (`assignment_log`). Im
+   beide gelten danach als benachrichtigt (`assignment_log`). Mit jemandem ohne
+   Konto tauscht der Fragende nach mündlicher Absprache gleich (Aktion
+   `direkt`, 30.10.2026); Bescheid bekommen nur die Planer. Im
    **Zeugnisgeben** (5.10.2026) heißt ein Entzug
    „Schicht fällt aus", wenn die Schicht wegfällt (`entzug` mit `grund`), und
    eine neue Uhrzeit oder ein neuer Ort geht als „Schicht geändert" hinaus

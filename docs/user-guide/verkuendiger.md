@@ -423,16 +423,22 @@ einem anderen Tag, den jetzt jemand anderes hat.
 Ein Tipp auf **Tauschen** öffnet ein Blatt: oben **Du gibst ab** mit deiner
 Aufgabe, darunter **Du übernimmst dafür** – wer denselben Dienst an einem
 anderen Tag hat, mit Name und Termin. Dort steht nur, wer an deinem Tag kann
-und an dessen Tag du kannst, wer für den Dienst freigegeben ist, an seinem
-neuen Tag nicht schon eingeteilt ist und ein Konto hat, um zu antworten. Kann
-gerade niemand, sagt das Blatt es.
+und an dessen Tag du kannst, wer für den Dienst freigegeben ist und an seinem
+neuen Tag nicht schon eingeteilt ist. Kann gerade niemand, sagt das Blatt es.
 
-**Anfragen** fragt die Person: Sie bekommt **„Tausch angefragt"** in den
-Mitteilungen und – falls aktiviert – als Push. Je Aufgabe läuft eine Anfrage;
-solange sie läuft, steht unter deiner Aufgabe **Angefragt bei …**, und im Blatt
-kannst du sie **zurückziehen**, etwa um jemand anderen zu fragen. Tauschen
-geht auch, wenn du schon **„Ich kann nicht"** gesagt hast: Kommt der Tausch
-zustande, ist die Ersatzsuche erledigt.
+**Hat die Person kein App-Konto**, steht darunter **Ohne App-Konto – vorher
+persönlich absprechen**: Sie sähe keine Anfrage. Sprecht euch ab; dann tippst
+du **Tauschen** und bestätigst mit **Abgesprochen? Tauschen** – getauscht ist
+sofort, ohne Anfrage. Zugesagt hast damit du für deinen neuen Platz; Bescheid
+gibst du der Person selbst, dein Koordinator bekommt die Mitteilung
+„Getauscht".
+
+**Mit App-Konto** fragst du mit **Anfragen**: Die Person bekommt **„Tausch
+angefragt"** in den Mitteilungen und – falls aktiviert – als Push. Je Aufgabe
+läuft eine Anfrage; solange sie läuft, steht unter deiner Aufgabe **Angefragt
+bei …**, und im Blatt kannst du sie **zurückziehen**, etwa um jemand anderen
+zu fragen. Tauschen geht auch, wenn du schon **„Ich kann nicht"** gesagt hast:
+Kommt der Tausch zustande, ist die Ersatzsuche erledigt.
 
 **Wirst du gefragt**, steht ganz oben auf dem Start und unter **Meine
 Aufgaben** die Karte **Tausch angefragt**: wer fragt, was du abgibst, was du

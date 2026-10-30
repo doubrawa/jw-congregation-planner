@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
 import { loadAndHydrate } from '../app/hydrate'
@@ -14,6 +14,7 @@ import {
   tauschAnnehmen,
   type TauschBestand,
   type TauschErgebnis,
+  tauschDirekt,
   type TauschFehler,
   tauschZurueckziehen,
 } from '../lib/tauschen'
@@ -73,15 +74,17 @@ export function useTauschen() {
   const [laeuft, setLaeuft] = useState(false)
   const ich = eigenePerson(state)
 
-  const { weeks, services, persons, absences, sentLog, staleAt } = state
+  const { weeks, services, persons, absences, sentLog, staleAt, members } = state
   const zeiten = state.congregation.times
   const ichId = ich?.id
+  // Wer ein Konto hat — nur ohne Datenbank gebraucht, sonst sagt es der Server.
+  const konten = useMemo(() => new Set(members.flatMap((m) => (m.personId ? [m.personId] : []))), [members])
   // Gemerkt, damit `angebote` dieselbe Funktion bleibt, solange sich der
   // Bestand nicht ändert — das Blatt lädt sie in einem Effekt.
   const bestand = useCallback(
     (): TauschBestand | null =>
-      ichId ? { weeks, services, persons, absences, sentLog, zeiten, ich: ichId, heute } : null,
-    [weeks, services, persons, absences, sentLog, zeiten, ichId, heute],
+      ichId ? { weeks, services, persons, absences, sentLog, zeiten, ich: ichId, heute, konten } : null,
+    [weeks, services, persons, absences, sentLog, zeiten, ichId, heute, konten],
   )
 
   const rufen = async <T>(aufruf: () => Promise<TauschErgebnis<T>>): Promise<TauschErgebnis<T> | { ok: false; fehler: 'offline' }> => {
@@ -126,11 +129,20 @@ export function useTauschen() {
       dispatch({ type: 'tauschAngefragt', anfrage: erg.wert })
       return null
     },
+    /** Mit jemandem ohne Konto gleich tauschen — abgesprochen ist es mündlich. */
+    direkt: async (gibtAb: string, angebot: TauschAngebot): Promise<TauschAktionsFehler | null> => {
+      const b = bestand()
+      if (!b) return 'offline'
+      const erg = await rufen(() => tauschDirekt(gibtAb, angebot, b))
+      if (!erg.ok) return erg.fehler
+      dispatch({ type: 'getauscht', tausch: { von: b.ich, an: angebot.personId, gibtAb, nimmt: angebot.nimmt }, ohneKonto: true })
+      return null
+    },
     zurueckziehen: (anfrage: TauschAnfrage) => beenden(anfrage, () => tauschZurueckziehen(anfrage.id)),
     ablehnen: (anfrage: TauschAnfrage) => beenden(anfrage, () => tauschAblehnen(anfrage.id)),
     annehmen: async (anfrage: TauschAnfrage): Promise<TauschAktionsFehler | null> => {
       const erg = await rufen(() => tauschAnnehmen(anfrage.id, heute))
-      if (erg.ok) dispatch({ type: 'getauscht', anfrage })
+      if (erg.ok) dispatch({ type: 'getauscht', tausch: anfrage })
       else if (erg.fehler === 'gone') dispatch({ type: 'tauschWeg', id: anfrage.id })
       return erg.ok ? null : erg.fehler
     },

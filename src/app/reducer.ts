@@ -1442,21 +1442,30 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     }
     case 'getauscht': {
       // Was die Function geschrieben hat, hier nachgezogen: beide Plätze
-      // getauscht, beide zugesagt, beide im Versand-Tagebuch — sonst zählte
+      // getauscht, zugesagt, beide im Versand-Tagebuch — sonst zählte
       // „Plan senden" sie bis zum nächsten Laden als ungemeldet. Jede andere
       // Anfrage zu einem der beiden Plätze ist damit erledigt — die Function
       // hat sie gelöscht. Ein Entzug ist es nicht (`OHNE_ENTZUG`).
-      const { gibtAb, nimmt, von, an } = action.anfrage
+      //
+      // Ohne Konto (`direkt`) hat der andere nicht zugesagt: Für seinen neuen
+      // Platz steht keine Zusage da, auch nicht die alte des Fragenden.
+      const { gibtAb, nimmt, von, an } = action.tausch
       const beide = new Set([gibtAb, nimmt])
       const name = (pid: string) => nameVon(state.persons, pid)
       const jetzt = new Date().toISOString()
       return {
         ...state,
-        weeks: tauschLokal(state.weeks, state.services, state.persons, action.anfrage),
-        confirmations: { ...state.confirmations, [gibtAb]: 'bestätigt', [nimmt]: 'bestätigt' },
+        weeks: tauschLokal(state.weeks, state.services, state.persons, action.tausch),
+        confirmations: action.ohneKonto
+          ? { ...dropConfirmations(state.confirmations, [gibtAb]), [nimmt]: 'bestätigt' }
+          : { ...state.confirmations, [gibtAb]: 'bestätigt', [nimmt]: 'bestätigt' },
         sentLog: { ...state.sentLog, [sentKey(gibtAb, name(an))]: jetzt, [sentKey(nimmt, name(von))]: jetzt },
         tauschAnfragen: state.tauschAnfragen.filter((a) => !beide.has(a.gibtAb) && !beide.has(a.nimmt)),
-        toast: toastKey(state, 'tauschToastGetauscht'),
+        // Das Blatt, aus dem getauscht wurde, ist fertig: Sein Platz gehört jetzt dem anderen.
+        tauschId: null,
+        toast: action.ohneKonto
+          ? toastKey(state, 'tauschToastDirekt', { name: name(an) })
+          : toastKey(state, 'tauschToastGetauscht'),
       }
     }
     case 'confirmAll': {

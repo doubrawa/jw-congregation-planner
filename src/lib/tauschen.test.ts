@@ -22,7 +22,15 @@ vi.mock('./data', () => ({
   tauschStaendeUebernehmen: (staende: unknown[], geladen: number) => store.staende.push({ staende, geladen }),
 }))
 
-import { tauschAblehnen, tauschAngebote, tauschAnfragen, tauschAnnehmen, type TauschBestand, tauschZurueckziehen } from './tauschen'
+import {
+  tauschAblehnen,
+  tauschAngebote,
+  tauschAnfragen,
+  tauschAnnehmen,
+  type TauschBestand,
+  tauschDirekt,
+  tauschZurueckziehen,
+} from './tauschen'
 
 const W1 = '2026-09-07' // Sonntag 13.9.
 const W2 = '2026-09-14' // Sonntag 20.9.
@@ -48,7 +56,10 @@ const BESTAND: TauschBestand = {
   zeiten: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } },
   ich: 'p-simon',
   heute: HEUTE,
+  konten: new Set(['p-simon', 'p-jonas']),
 }
+/** Jonas, wie ihn die Angebote nennen — mit Konto. */
+const JONAS = { nimmt: B, personId: 'p-jonas', konto: true }
 
 /** Eine Abweisung der Function, wie supabase-js sie meldet: der Grund hinter `context`. */
 const abweisung = (body: unknown) => ({
@@ -68,16 +79,35 @@ describe('Mit Datenbank', () => {
     store.client = { functions: { invoke } }
   })
 
-  it('die Angebote kommen vom Server — mit dem Tag des Geräts', async () => {
-    invoke.mockResolvedValue({ data: { ok: true, angebote: [{ nimmt: B, personId: 'p-jonas' }] }, error: null })
-    expect(await tauschAngebote(A, BESTAND)).toEqual({ ok: true, wert: [{ nimmt: B, personId: 'p-jonas' }] })
+  it('die Angebote kommen vom Server — mit dem Tag des Geräts und ob der andere ein Konto hat', async () => {
+    invoke.mockResolvedValue({ data: { ok: true, angebote: [{ ...JONAS, konto: false }] }, error: null })
+    expect(await tauschAngebote(A, BESTAND)).toEqual({ ok: true, wert: [{ ...JONAS, konto: false }] })
     expect(invoke).toHaveBeenCalledWith('tauschen', { body: { aktion: 'angebote', gibtAb: A, heute: HEUTE } })
+  })
+
+  it('sagt der Server nichts zum Konto (Function von davor), hat der andere eines — sie bot nur solche an', async () => {
+    invoke.mockResolvedValue({ data: { ok: true, angebote: [{ nimmt: B, personId: 'p-jonas' }] }, error: null })
+    expect(await tauschAngebote(A, BESTAND)).toEqual({ ok: true, wert: [JONAS] })
+  })
+
+  it('gleich tauschen mit jemandem ohne Konto: die Function tauscht, die App übernimmt die Stände', async () => {
+    const wochen = [{ woche: W1, vorher: 's1', stand: 's1+' }, { woche: W2, vorher: 's2', stand: 's2+' }]
+    invoke.mockResolvedValue({ data: { ok: true, wochen }, error: null })
+    expect(await tauschDirekt(A, { ...JONAS, konto: false }, BESTAND)).toEqual({ ok: true, wert: undefined })
+    expect(invoke).toHaveBeenCalledWith('tauschen', { body: { aktion: 'direkt', gibtAb: A, nimmt: B, heute: HEUTE } })
+    expect(store.staende).toEqual([{ staende: wochen, geladen: 7 }])
+  })
+
+  it('hat der andere inzwischen ein Konto, heißt das für die App „geändert" — sie lädt nach und fragt ihn an', async () => {
+    invoke.mockResolvedValueOnce(abweisung({ error: 'has-account' }))
+    expect(await tauschDirekt(A, { ...JONAS, konto: false }, BESTAND)).toEqual({ ok: false, fehler: 'stand' })
+    expect(store.staende).toEqual([])
   })
 
   it('die Anfrage, wie der Server sie anlegte, in der Form des Zustands', async () => {
     const zeile = { id: 'a1', von_user: 'u1', von_person: 'p-simon', an_person: 'p-jonas', gibt_ab: A, nimmt: B, bis: '2026-09-13' }
     invoke.mockResolvedValue({ data: { ok: true, anfrage: zeile }, error: null })
-    expect(await tauschAnfragen(A, { nimmt: B, personId: 'p-jonas' }, BESTAND)).toEqual({
+    expect(await tauschAnfragen(A, JONAS, BESTAND)).toEqual({
       ok: true,
       wert: { id: 'a1', von: 'p-simon', an: 'p-jonas', gibtAb: A, nimmt: B, bis: '2026-09-13' },
     })
@@ -103,7 +133,7 @@ describe('Mit Datenbank', () => {
     invoke.mockResolvedValueOnce(abweisung({ error: 'gone' }))
     expect(await tauschAblehnen('a1')).toEqual({ ok: false, fehler: 'gone' })
     invoke.mockResolvedValueOnce(abweisung({ error: 'already-asked' }))
-    expect(await tauschAnfragen(A, { nimmt: B, personId: 'p-jonas' }, BESTAND)).toEqual({ ok: false, fehler: 'already-asked' })
+    expect(await tauschAnfragen(A, JONAS, BESTAND)).toEqual({ ok: false, fehler: 'already-asked' })
     invoke.mockResolvedValueOnce(abweisung({ error: 'busy' }))
     expect(await tauschAnnehmen('a1', HEUTE)).toEqual({ ok: false, fehler: 'stand' })
     expect(store.staende).toEqual([])
@@ -119,17 +149,23 @@ describe('Mit Datenbank', () => {
 
 describe('Ohne Datenbank (Entwicklerseite)', () => {
   it('die Angebote rechnet die App nach den Regeln des Servers', async () => {
-    expect(await tauschAngebote(A, BESTAND)).toEqual({ ok: true, wert: [{ nimmt: B, personId: 'p-jonas' }] })
+    expect(await tauschAngebote(A, BESTAND)).toEqual({ ok: true, wert: [JONAS] })
     expect(await tauschAngebote(A, { ...BESTAND, ich: 'p-jonas' })).toEqual({ ok: true, wert: [] })
   })
 
+  it('wer ein Konto hat, liest sie aus den geladenen Mitgliedern (Entwicklerseite: konto=1)', async () => {
+    expect(await tauschAngebote(A, { ...BESTAND, konten: new Set(['p-simon']) })).toEqual({ ok: true, wert: [{ ...JONAS, konto: false }] })
+  })
+
   it('die Anfrage gilt bis zum früheren der beiden Tage — dem Tag der Zusammenkunft, nicht dem Montag', async () => {
-    const erg = await tauschAnfragen(A, { nimmt: B, personId: 'p-jonas' }, BESTAND)
+    const erg = await tauschAnfragen(A, JONAS, BESTAND)
     expect(erg).toMatchObject({ ok: true, wert: { von: 'p-simon', an: 'p-jonas', gibtAb: A, nimmt: B, bis: '2026-09-13' } })
   })
 
-  it('was nach den Regeln nicht geht, nimmt sie auch hier nicht an', async () => {
-    expect(await tauschAnfragen(A, { nimmt: B, personId: 'p-jonas' }, { ...BESTAND, ich: 'p-jonas' })).toEqual({ ok: false, fehler: 'stand' })
+  it('was nach den Regeln nicht geht, nimmt sie auch hier nicht an — auch nicht gleich getauscht', async () => {
+    expect(await tauschAnfragen(A, JONAS, { ...BESTAND, ich: 'p-jonas' })).toEqual({ ok: false, fehler: 'stand' })
+    expect(await tauschDirekt(A, JONAS, { ...BESTAND, ich: 'p-jonas' })).toEqual({ ok: false, fehler: 'stand' })
+    expect(await tauschDirekt(A, JONAS, BESTAND)).toEqual({ ok: true, wert: undefined })
   })
 
   it('die übrigen Schritte gelten als angenommen', async () => {

@@ -613,10 +613,13 @@ zu. Der Name des Absagenden bleibt rot an seinem Platz stehen, rechts
 Statt abzusagen kann ein Verkündiger einen **Hilfsdienst tauschen**: Er fragt
 jemanden, der denselben Dienst an einem anderen Tag hat, und gibt seinen Platz
 gegen dessen ab. Angeboten bekommt er nur, wer an beiden Tagen kann, für den
-Dienst freigegeben ist, am neuen Tag nicht schon eingeteilt ist und ein Konto
-hat – und das erst, wenn der Plan der Woche gesendet ist. Sagt der Gefragte zu,
-tauschen beide Plätze auf einmal, beide gelten als zugesagt und als
-benachrichtigt (der Knopf **Plan senden** zählt sie nicht noch einmal). Deine
+Dienst freigegeben ist und am neuen Tag nicht schon eingeteilt ist – und das
+erst, wenn der Plan der Woche gesendet ist. Sagt der Gefragte zu, tauschen
+beide Plätze auf einmal, beide gelten als zugesagt und als benachrichtigt (der
+Knopf **Plan senden** zählt sie nicht noch einmal). Hat der andere **kein
+App-Konto**, sähe er keine Anfrage: Die beiden sprechen sich persönlich ab, und
+der Verkündiger tauscht gleich. Zugesagt hat dann nur er; der andere gilt als
+benachrichtigt, sein neuer Platz steht aber ohne Zusage da. Deine
 Zustimmung braucht es nicht: Du bekommst die Mitteilung **„Getauscht"** mit
 beiden Tagen und wer jetzt wo steht; ein Tipp darauf öffnet die Woche im
 Planen. Teilst du vorher selbst um, geht der Tausch nicht mehr – die App sagt

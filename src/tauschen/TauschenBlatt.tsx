@@ -5,6 +5,7 @@ import { AngebotText } from '../aufgaben/Angebot'
 import { aufgabeWann } from '../aufgaben/aufgabe-anzeige'
 import { Punkt } from '../bausteine/Punkt'
 import { Sheet } from '../components/Sheet'
+import { useZweiTipp } from '../components/useZweiTipp'
 import { nameVon } from '../data/helpers'
 import { anfrageZu } from '../data/tausch'
 import type { MyTask } from '../data/types'
@@ -16,10 +17,12 @@ import './tauschen.css'
 
 /**
  * **Tauschen** (T153): der eigene Hilfsdienst, und darunter, mit wem er
- * getauscht werden könnte — wer denselben Dienst an einem anderen Tag hat, an
- * beiden Tagen kann und antworten kann (das rechnet der Server). „Anfragen"
- * schickt die Anfrage; solange sie läuft, steht hier, bei wem, und sie lässt
- * sich zurückziehen. Erst die Zusage des Gefragten ändert den Plan.
+ * getauscht werden könnte — wer denselben Dienst an einem anderen Tag hat und
+ * an beiden Tagen kann (das rechnet der Server). „Anfragen" schickt die
+ * Anfrage; solange sie läuft, steht hier, bei wem, und sie lässt sich
+ * zurückziehen. Erst die Zusage des Gefragten ändert den Plan. Wer kein Konto
+ * hat, sieht keine Anfrage: Mit ihm tauscht man nach mündlicher Absprache
+ * gleich (`DirektKnopf`, 30.10.2026).
  */
 export function TauschenBlatt({ task }: { task: MyTask }) {
   const { state, dispatch } = useApp()
@@ -80,10 +83,19 @@ export function TauschenBlatt({ task }: { task: MyTask }) {
               return (
                 <div key={a.nimmt} className="aufgaben-zeile">
                   <Punkt art="offen" />
-                  <AngebotText titel={nameVon(state.persons, a.personId)} wann={zeile} schonHeute={[]} />
-                  <button type="button" className="knopf-pille" disabled={tausch.laeuft} onClick={() => ausfuehren(() => tausch.anfragen(task.id, a))}>
-                    {t.tauschAnfragen}
-                  </button>
+                  <AngebotText
+                    titel={nameVon(state.persons, a.personId)}
+                    wann={zeile}
+                    schonHeute={[]}
+                    hinweis={a.konto ? undefined : t.tauschOhneKonto}
+                  />
+                  {a.konto ? (
+                    <button type="button" className="knopf-pille" disabled={tausch.laeuft} onClick={() => ausfuehren(() => tausch.anfragen(task.id, a))}>
+                      {t.tauschAnfragen}
+                    </button>
+                  ) : (
+                    <DirektKnopf gesperrt={tausch.laeuft} onTauschen={() => ausfuehren(() => tausch.direkt(task.id, a))} />
+                  )}
                 </div>
               )
             })}
@@ -95,7 +107,31 @@ export function TauschenBlatt({ task }: { task: MyTask }) {
           </p>
         )}
         <p className="klein-text">{t.tauschHinweis}</p>
+        {!offen && angebote?.some((a) => !a.konto) && <p className="klein-text">{t.tauschHinweisOhneKonto}</p>}
       </div>
     </Sheet>
+  )
+}
+
+/**
+ * „Tauschen" mit jemandem ohne Konto (30.10.2026): Er sieht keine Anfrage, die
+ * beiden sprechen sich mündlich ab. Der erste Tipp fragt „Abgesprochen?", erst
+ * der zweite tauscht — wie beim Löschen (`useZweiTipp`), aber in Minze statt
+ * Rot: Es geht nichts verloren. Eigener Baustein, weil jede Zeile ihren
+ * eigenen Zustand braucht.
+ */
+function DirektKnopf({ gesperrt, onTauschen }: { gesperrt: boolean; onTauschen: () => void }) {
+  const { t } = useT()
+  const knopf = useZweiTipp(onTauschen)
+  return (
+    <button
+      type="button"
+      className={knopf.armed ? 'knopf-pille knopf-pille--akzent' : 'knopf-pille'}
+      disabled={gesperrt}
+      onClick={knopf.onClick}
+      onBlur={knopf.onBlur}
+    >
+      {knopf.armed ? t.tauschDirektSicher : t.tauschAktion}
+    </button>
   )
 }

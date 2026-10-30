@@ -15,16 +15,20 @@ export function AngebotText({
   titel,
   wann,
   schonHeute,
+  hinweis,
 }: {
   titel: string
   wann: string
   schonHeute: readonly MeetingAssignment[]
+  /** Eine Zeile darunter — beim Tauschen: „Ohne App-Konto — vorher persönlich absprechen". */
+  hinweis?: string
 }) {
   const i18n = useT()
   return (
     <span className="angebot-text">
       <span className="angebot-titel">{titel}</span>
       <span className="klein-text">{wann}</span>
+      {hinweis && <span className="klein-text">{hinweis}</span>}
       {schonHeute.length > 0 && (
         <span className="hinweis-schon">
           {i18n.t.sheetSchonHeute}: {zuteilungenText(schonHeute, i18n)}

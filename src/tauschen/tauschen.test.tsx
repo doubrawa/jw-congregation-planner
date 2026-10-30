@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { helferKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { AppDispatchContext, AppStateContext, AppStoreContext, type AppState, useStaticStore } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
+import { bestaetigen } from '../../tests/zwei-tipps'
 import { AufgabeHandlungen } from '../aufgaben/AufgabeKarte'
 import type { TauschAnfrage } from '../data/tausch'
 import type { MyTask, Person, Week } from '../data/types'
@@ -119,7 +120,8 @@ describe('„Tauschen" an der eigenen Aufgabe', () => {
 
 describe('Das Tausch-Blatt', () => {
   it('nennt, was man abgibt, und wen man fragen kann — „Anfragen" legt die Anfrage an', async () => {
-    const { dispatch } = zeige(<TauschenBlatt task={AUFGABE} />, zustand())
+    const konto = { userId: 'u-jonas', email: '', personId: 'p-jonas', planner: false, zuteiler: false }
+    const { dispatch } = zeige(<TauschenBlatt task={AUFGABE} />, zustand({ members: [konto] }))
     expect(screen.getByText(t.tauschGibstAb)).toBeTruthy()
     expect(await screen.findByText('Jonas Berger')).toBeTruthy()
     expect(screen.getByText(/Mikrofone · .*20\.\sSeptember · 10:00/)).toBeTruthy()
@@ -137,6 +139,36 @@ describe('Das Tausch-Blatt', () => {
     zeige(<TauschenBlatt task={AUFGABE} />, zustand({ absences: fehlt }))
     expect(await screen.findByText(t.tauschNiemand)).toBeTruthy()
     expect(screen.queryByText('Jonas Berger')).toBeNull()
+  })
+
+  it('wer kein Konto hat, steht auch da — „Tauschen" fragt erst „Abgesprochen?", dann wird gleich getauscht (30.10.2026)', async () => {
+    // Ohne Datenbank kennt die App die Konten aus den geladenen Mitgliedern: Jonas hat keines.
+    const { dispatch } = zeige(<TauschenBlatt task={AUFGABE} />, zustand({ members: [] }))
+    expect(await screen.findByText('Jonas Berger')).toBeTruthy()
+    expect(screen.getByText(t.tauschOhneKonto)).toBeTruthy()
+    expect(screen.getByText(t.tauschHinweisOhneKonto)).toBeTruthy()
+    expect(knopf(t.tauschAnfragen)).toBeUndefined()
+    // Der erste Tipp schärft nur — getauscht ist noch nichts.
+    fireEvent.click(knopf(t.tauschAktion)!)
+    expect(knopf(t.tauschDirektSicher)).toBeTruthy()
+    expect(dispatch).not.toHaveBeenCalled()
+    bestaetigen(knopf(t.tauschDirektSicher))
+    await vi.waitFor(() =>
+      expect(dispatch).toHaveBeenCalledWith({
+        type: 'getauscht',
+        tausch: { von: 'p-simon', an: 'p-jonas', gibtAb: A, nimmt: B },
+        ohneKonto: true,
+      }),
+    )
+  })
+
+  it('wer ein Konto hat, wird angefragt — ohne den Hinweis', async () => {
+    const konto = { userId: 'u-jonas', email: '', personId: 'p-jonas', planner: false, zuteiler: false }
+    zeige(<TauschenBlatt task={AUFGABE} />, zustand({ members: [konto] }))
+    expect(await screen.findByText('Jonas Berger')).toBeTruthy()
+    expect(knopf(t.tauschAnfragen)).toBeTruthy()
+    expect(screen.queryByText(t.tauschOhneKonto)).toBeNull()
+    expect(screen.queryByText(t.tauschHinweisOhneKonto)).toBeNull()
   })
 
   it('läuft eine Anfrage, steht dort, bei wem — und „Zurückziehen" beendet sie', async () => {
@@ -163,7 +195,7 @@ describe('Die Anfrage beim Gefragten', () => {
   it('„Tauschen" tauscht, „Nein, danke" beendet die Anfrage', async () => {
     const { dispatch } = zeige(<TauschAnfragen />, beiJonas())
     fireEvent.click(knopf(t.tauschAktion)!)
-    await vi.waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'getauscht', anfrage: ANFRAGE }))
+    await vi.waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'getauscht', tausch: ANFRAGE }))
     fireEvent.click(knopf(t.tauschNeinDanke)!)
     await vi.waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'tauschWeg', id: 'a1' }))
   })

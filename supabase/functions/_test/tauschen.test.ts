@@ -423,12 +423,84 @@ describe('Function: angemeldet und mit eigener Person', () => {
 })
 
 describe('Function: angebote', () => {
-  it('nur, wer ein Konto hat — Lena könnte nicht antworten', async () => {
+  it('auch wer kein Konto hat — Lena; die App fragt sie nicht an, sondern tauscht nach Absprache gleich (30.10.2026)', async () => {
     expect(await ruf({ aktion: 'angebote', gibtAb: A })).toEqual({
       status: 200,
-      body: { ok: true, angebote: [{ nimmt: helferKey(W1, 'mid', 'mik', 0), personId: 'p-jonas' }, { nimmt: B, personId: 'p-jonas' }] },
+      body: {
+        ok: true,
+        angebote: [
+          { nimmt: helferKey(W1, 'mid', 'mik', 0), personId: 'p-jonas', konto: true },
+          { nimmt: C, personId: 'p-lena', konto: false },
+          { nimmt: B, personId: 'p-jonas', konto: true },
+        ],
+      },
     })
     expect(geschrieben).toEqual([])
+  })
+})
+
+describe('Function: direkt — mit jemandem ohne Konto (30.10.2026)', () => {
+  it('Simon tauscht gleich mit Lena: beide Plätze, nur Simon hat zugesagt, das Tagebuch führt beide', async () => {
+    const { status, body } = await ruf({ aktion: 'direkt', gibtAb: A, nimmt: C })
+    expect(status).toBe(200)
+    expect(body.wochen).toEqual([
+      { woche: W1, vorher: `S-${W1}`, stand: `S-${W1}+` },
+      { woche: W2, vorher: `S-${W2}`, stand: `S-${W2}+` },
+    ])
+    expect(bestand.get(W1)?.data.we?.helpers?.mik?.[0]).toEqual({ name: 'Lena Hoffmann', pid: 'p-lena' })
+    expect(bestand.get(W2)?.data.mid?.helpers?.mik?.[0]).toEqual({ name: 'Simon Krüger', pid: 'p-simon' })
+    // Lena hat kein Konto: Zusagen kann nur Simon — für seinen neuen Platz.
+    expect(geschrieben.find((w) => w.method === 'DELETE' && w.path.startsWith('confirmations'))?.path).toContain(
+      `task_key=in.(${encodeURIComponent(A)},${encodeURIComponent(C)})`,
+    )
+    expect(zeilenIn('confirmations')).toEqual([expect.objectContaining({ user_id: U_SIMON, task_key: C, status: 'bestätigt' })])
+    expect(zeilenIn('assignment_log')).toEqual([
+      expect.objectContaining({ task_key: A, name: 'Lena Hoffmann', person_id: 'p-lena', user_id: null }),
+      expect.objectContaining({ task_key: C, name: 'Simon Krüger', person_id: 'p-simon', user_id: U_SIMON }),
+    ])
+  })
+
+  it('die Planer erfahren es — Lena nicht, sie hat kein Konto; Simon nicht, er hat es eben getan', async () => {
+    await ruf({ aktion: 'direkt', gibtAb: A, nimmt: C })
+    expect(glocke()).toEqual([
+      expect.objectContaining({
+        user_id: U_ADMIN,
+        title: TITEL_GETAUSCHT,
+        task_key: A,
+        body: `Mikrofone · Sonntag, 13. September · 10:00 · ${alsFreitext('Lena Hoffmann')} · Dienstag, 15. September · 19:00 · ${alsFreitext('Simon Krüger')}`,
+      }),
+    ])
+    expect(sentPush).toEqual([])
+  })
+
+  it('wer ein Konto hat, sagt selbst zu: mit Jonas tauscht niemand an ihm vorbei', async () => {
+    expect(await ruf({ aktion: 'direkt', gibtAb: A, nimmt: B })).toEqual({ status: 409, body: { error: 'has-account' } })
+    expect(geschrieben).toEqual([])
+    expect(bestand.get(W2)?.data.we?.helpers?.mik?.[0]?.pid).toBe('p-jonas')
+  })
+
+  it('dieselben Regeln: nur den eigenen Platz, nur wer den Dienst kann', async () => {
+    expect(await ruf({ aktion: 'direkt', gibtAb: A, nimmt: C }, U_OTTO)).toEqual({ status: 403, body: { error: 'not-yours' } })
+    // Otto hat den Dienst nicht — dass er ein Konto hat, fragt die Function gar nicht erst.
+    bestand.get(W2)!.data.mid!.helpers!.mik![0] = slot('p-otto')
+    expect(await ruf({ aktion: 'direkt', gibtAb: A, nimmt: C }, U_SIMON)).toEqual({ status: 403, body: { error: 'not-qualified' } })
+    expect(geschrieben).toEqual([])
+  })
+
+  it('offene Anfragen zu einem der beiden Plätze und ein Ersatzgesuch dafür sind danach erledigt', async () => {
+    await ruf({ aktion: 'anfragen', gibtAb: A, nimmt: B })
+    expect(anfragen).toHaveLength(1)
+    geschrieben = []
+    await ruf({ aktion: 'direkt', gibtAb: A, nimmt: C })
+    expect(anfragen).toEqual([])
+    const geloescht = geschrieben.filter((w) => w.method === 'DELETE' && w.path.startsWith('notifications')).map((w) => w.path)
+    expect(geloescht).toEqual([expect.stringContaining(`title=eq.${encodeURIComponent(TITEL_GESUCHT)}`)])
+  })
+
+  it('schreibt ein anderer dazwischen, bleibt alles, wie es war', async () => {
+    wochenAbweisen = true
+    expect(await ruf({ aktion: 'direkt', gibtAb: A, nimmt: C })).toEqual({ status: 409, body: { error: 'stand' } })
+    expect(geschrieben.map((w) => w.path.split('?')[0])).toEqual(['rpc/wochen_tauschen'])
   })
 })
 

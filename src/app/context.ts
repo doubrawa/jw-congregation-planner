@@ -15,7 +15,7 @@ import {
 } from 'react'
 import type { Ansicht } from '../data/ansicht'
 import type { Anwesenheit } from '../data/anwesenheit'
-import type { TauschAnfrage } from '../data/tausch'
+import type { Tausch, TauschAnfrage } from '../data/tausch'
 import type { FontScale } from '../data/constants'
 import type { OffenerPlatz } from '../data/offene-plaetze'
 import type { AssignScope, Umfang } from '../data/planning'
@@ -569,7 +569,11 @@ export type AppAction =
   | { type: 'closeTausch' }
   | { type: 'tauschAngefragt'; anfrage: TauschAnfrage }
   | { type: 'tauschWeg'; id: string } // zurückgezogen, abgelehnt oder nicht mehr gültig
-  | { type: 'getauscht'; anfrage: TauschAnfrage }
+  /**
+   * Getauscht — angenommen oder, mit jemandem ohne Konto, gleich (`direkt`).
+   * `ohneKonto`: Der andere (`an`) hat kein Konto und also nicht zugesagt.
+   */
+  | { type: 'getauscht'; tausch: Tausch; ohneKonto?: boolean }
   | { type: 'openMyTask'; id: string } // eigenes Aufgaben-Aktions-Sheet öffnen
   | { type: 'closeMyTask' }
   | { type: 'takeSubstitute'; key: string } // Hilfsdienst-Ersatz übernehmen

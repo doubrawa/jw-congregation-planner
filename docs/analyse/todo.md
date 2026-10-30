@@ -9054,6 +9054,18 @@ zu**, er bekommt „Getauscht".
   gleich wer die Anfrage löscht — die Function löscht nur noch die Anfrage.
   „Tauschen" steht nur noch an Plätzen mit der eigenen Kennung, wie der Server
   es verlangt; der Verfallstag steht einmal in den Regeln (`urteil.bis`).
+- **Ohne Konto tauschen (30.10.2026)** — Betreiber nach dem ersten Versuch im
+  Betrieb (1 Konto bei 112 Personen, kein Angebot): „das tauschen soll auch
+  gehen, wenn die andere person kein konto hat. dann macht man die
+  benachrichtigung mündlich". Die Angebote nennen jetzt jeden, mit `konto` je
+  Partner. Mit Konto bleibt es beim Anfragen; ohne Konto steht im Blatt „Ohne
+  App-Konto — vorher persönlich absprechen", und „Tauschen" fragt erst
+  „Abgesprochen? Tauschen" (`useZweiTipp`), dann tauscht die Function sofort
+  (Aktion `direkt`): dieselben Regeln, beide Plätze ganz oder gar nicht,
+  zugesagt nur der Fragende, beide im Versand-Tagebuch, „Getauscht" an die
+  Planer. Wer ein Konto hat, wird so nicht übergangen (`has-account`). Der
+  Ablauf nach dem Schreiben steht für Annehmen und Direkt einmal
+  (`vollziehen`). Vier Texte in zwölf Sprachen, beide Handbücher.
 
 Tests: Regeln und Function (38), Datenmodul (9), Reducer (6), Ablauf mit
 `persist` (3), Aufrufe (10), Oberfläche (9), Schema (6), Laden (1);

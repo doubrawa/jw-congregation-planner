@@ -75,7 +75,7 @@ afterEach(() => vi.useRealTimers())
 describe('Getauscht', () => {
   const tauschen = () => {
     const prev = start()
-    const action = { type: 'getauscht' as const, anfrage: prev.tauschAnfragen[0]! }
+    const action = { type: 'getauscht' as const, tausch: prev.tauschAnfragen[0]! }
     const next = reducer(prev, action)
     persist(prev, next, action)
     return next
