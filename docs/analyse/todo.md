@@ -8956,7 +8956,7 @@ ihrer Sprache (`aufgabenHaelften`); ein Wechsel der nächsten Aufgabe lief als
 Zusage (der Saal ist jetzt je Aufgabe geschlüsselt); der Übergang lief auch
 rückwärts und schwang dabei unter null (er steht nur noch am gefüllten Stand).
 
-### T152 · Besucherzahl erfassen 🏗 ✅ umgesetzt, nicht ausgerollt (29. Oktober 2026)
+### T152 · Besucherzahl erfassen 🏗 ✅ umgesetzt (29. Oktober 2026), ausgerollt am 30. Oktober
 
 Entwurf im Gespräch (drei Handy-Ansichten), danach Betreiber: „setze die
 vorschläge für tauschen und anwesendenzahlen um". Die offenen Fragen des
@@ -8981,9 +8981,8 @@ Entwurfs habe ich so entschieden, wie er gezeigt war:
   Zusammenkünften" und behauptet keine Formularnummer.
 
 Neue Tabelle `anwesenheit` (eine Zeile je Zusammenkunft, `null` = nicht
-eingetragen), Richtlinien und Trigger in `schema.sql` — **noch nicht
-eingespielt**; bis dahin lädt die App ohne Anwesende, Speichern meldet einen
-Fehler. 23 Texte in zwölf Sprachen. Tests: Regeln (23), Oberfläche (18),
+eingetragen), Richtlinien und Trigger in `schema.sql` — eingespielt am
+30.10.2026. 23 Texte in zwölf Sprachen. Tests: Regeln (23), Oberfläche (18),
 Reducer (5), Speichern (2), Schema-Abgleich; Mutationsprobe 8 von 8 bewacht.
 Die Karte auf dem Start ist im Browser nicht angesehen: Die Testwochen haben
 keinen Saalordner; geprüft ist sie in `anwesenheit.test.tsx`.
@@ -8997,7 +8996,7 @@ geht nur die geänderte Zahl hinaus (`anwesenheitSpeichern` in `persist.ts`,
 0–9, und die Auswertung schreibt ihre Zahlen wie die übrige Auswertung (in fa
 mit persischen Ziffern).
 
-### T153 · Tauschen statt absagen 🏗 ✅ umgesetzt, nicht ausgerollt (29. Oktober 2026)
+### T153 · Tauschen statt absagen 🏗 ✅ umgesetzt (29. Oktober 2026), ausgerollt am 30. Oktober
 
 Entwurf im Gespräch: „Tauschen" neben „Ich kann nicht"; die App bietet an, wer
 denselben Dienst an einem anderen Tag hat und an beiden Tagen kann; der
@@ -9065,11 +9064,11 @@ Anfrage und ohne Angebot — 0 Befunde. **Nicht gemessen:** das Blatt mit
 Angeboten — die Testwochen haben niemanden, mit dem getauscht werden könnte
 (nur Woche 1 ist gesendet); die Zeilen sind die der freien Plätze. **Nie gegen
 eine echte Datenbank gelaufen:** die Function und `wochen_tauschen` — geprüft
-nur gegen Attrappen; nach dem Ausrollen einmal in der Testversammlung tauschen. **Nicht ausgerollt:** `schema.sql` einspielen, die Function
-deployen (`npx supabase functions deploy tauschen --project-ref …`), dann
-pushen.
+nur gegen Attrappen; einmal in der Testversammlung tauschen. **Ausgerollt am
+30.10.2026:** die Function `tauschen` (v1, `verify_jwt` an, ohne Anmeldung
+401), `schema.sql` eingespielt und nachgesehen, dann gepusht (`c83df1d7`).
 
-### T154 · Adressen und Gründe nur für den, dem die App sie zeigt 🔧 ✅ umgesetzt, nicht ausgerollt (29. Oktober 2026)
+### T154 · Adressen und Gründe nur für den, dem die App sie zeigt 🔧 ✅ umgesetzt (29. Oktober 2026), ausgerollt am 30. Oktober
 
 Aus dem Sicherheits-Review über die ganze App (29. Oktober 2026, Betreiber:
 „wenn es was zu fixen gibt im security review dann mach das"). Zwei Befunde,
@@ -9103,10 +9102,13 @@ Mandanten-Nachweis ändert zum Schreibversuch den Vornamen statt der Adresse und
 liest nur die Kennung zurück — ein `RETURNING *` scheiterte an der Sperre, und
 sein 403 hätte „abgewiesen" geheißen, ohne dass die Richtlinie gefragt war.
 
-**Ausrollen:** `schema.sql` einspielen und **gleich danach** pushen. Dazwischen
-scheitert das Laden bei der alten App (`select=*` auf `persons`), umgekehrt
-bekäme die neue App ohne die Funktionen keine Adressen und lüde beim Admin
-nicht. Danach die Mitgliedsrechte-Probe fahren.
+**Ausgerollt am 30.10.2026:** `schema.sql` eingespielt und gleich danach
+gepusht (`c83df1d7`). Dazwischen scheitert das Laden bei der alten App
+(`select=*` auf `persons`), umgekehrt bekäme die neue App ohne die Funktionen
+keine Adressen und lüde beim Admin nicht. Nachgesehen per
+`has_column_privilege`: `authenticated` liest `persons.mail` und
+`absences.reason` nicht mehr, die übrigen Spalten schon; `anon` liest nichts.
+Offen: die Mitgliedsrechte-Probe (fährt der Betreiber).
 
 ## Was bewusst offen bleibt
 
@@ -9146,18 +9148,21 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
-29. Oktober ☑☑☑☑☑☑☐☐☐
+29. Oktober ☑☑☑☑☑☑☑☑☑
 
-**150 der 154 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind vier** — drei davon fertig gebaut,
-aber noch nicht ausgerollt:
+**153 der 154 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |
 | --- | --- | --- |
 | **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
-| **T152** | Besucherzahl erfassen | ✅ umgesetzt am 29. Oktober; **Schema noch nicht eingespielt** (Freigabe des Betreibers) |
-| **T153** | Tauschen statt absagen | ✅ umgesetzt am 29. Oktober (nur Hilfsdienste, ohne Zustimmung des Planers); **Schema und Function `tauschen` noch nicht ausgerollt** |
-| **T154** | Adressen und Gründe nur für Berechtigte | ✅ umgesetzt am 29. Oktober (Sicherheits-Review); **Schema noch nicht eingespielt** — gleich danach pushen |
+
+Am 30. Oktober ausgerollt: **T152** (Anwesende), **T153** (Tauschen) und
+**T154** (Adressen und Gründe) — nach `/simplify` und `/code-review max`
+(`c83df1d7`): die Function `tauschen` (v1), `schema.sql` eingespielt und
+nachgesehen (Tabellen, Funktionen, Trigger, Richtlinien, Spaltenrechte),
+gleich danach gepusht. Offen beim Betreiber: die Mitgliedsrechte-Probe (Fälle
+86–92) und ein Tausch in der Testversammlung.
 
 Am 13. Oktober geschlossen: **T106** (alle auf einmal benachrichtigen — geht in
 T121 Phase 8 auf), **T114** (entschieden: ein Konto je Versammlung, neue
@@ -9597,7 +9602,7 @@ eine Entscheidung.
 | **Gerät** | Dunkle Bedienleiste am Handy | wirkt erst mit der aktualisierten WebAPK (`about://webapks` → „Update", oder neu installieren) |
 | **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
 | **Betreiber** | Umzug weg von Supabase | Am 25. Oktober erwogen: Supabase ist eine US-Firma, und die Daten zeigen die Religionszugehörigkeit (Art. 9 DSGVO). Empfohlen: die quelloffene Supabase-Software selbst auf einem Server in Deutschland. Betreiber: „Nicht jetzt, ich überlege noch." Fällt die Entscheidung dafür, legt der Betreiber Konto, Server und Vertrag an; Einrichten und Umziehen per Skript macht Claude |
-| **Betreiber** | T152, T153, T154 ausrollen | alle drei am 29. Oktober umgesetzt, lokal committet. Mit Freigabe: `schema.sql` einspielen (Anwesenheit, Tausch-Anfragen samt `wochen_tauschen` und Glocken-Trigger, Spaltenrechte für Adresse und Grund), die Function `tauschen` deployen, **gleich danach** pushen — zwischen Schema und Push scheitert bei der alten App das Laden der Personen (`select=*`). Danach die Mitgliedsrechte-Probe fahren (Fälle 86–92) |
+| **Betreiber** | Nach T152–T154 messen | alle drei am 30. Oktober ausgerollt (Function `tauschen` v1, Schema, Push `c83df1d7`). Offen: die Mitgliedsrechte-Probe fahren (Fälle 86–92: Adressen und Gründe per REST gesperrt) und einmal in der Testversammlung tauschen — Function und `wochen_tauschen` liefen bis dahin nur gegen Attrappen |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
