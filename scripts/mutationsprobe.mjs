@@ -12355,6 +12355,21 @@ export const KATALOG = [
     suchen: '      konto: bestand.konten.has(b.person.id),\n',
     ersetzen: '      konto: true,\n',
   },
+  // Review vom 30.10.2026 (Tauschen ohne Konto).
+  {
+    id: 'tausch-direkt-weiss-bescheid',
+    datei: 'supabase/functions/tauschen/index.ts',
+    regel: 'Wer ohne Konto getauscht hat, steht in den Zusagen als „weiß Bescheid" — er hat es mündlich abgesprochen.',
+    suchen: '        persoenlich_at: konten.partner ? null : jetzt,\n',
+    ersetzen: '        persoenlich_at: null,\n',
+  },
+  {
+    id: 'tausch-direkt-weiss-bescheid-lokal',
+    datei: 'src/app/reducer.ts',
+    regel: 'Auch in der App steht nach dem Tausch ohne Konto „weiß Bescheid" — wie die Function es schreibt.',
+    suchen: '        persoenlich: action.ohneKonto ? { ...state.persoenlich, [sentKey(gibtAb, name(an))]: jetzt } : state.persoenlich,\n',
+    ersetzen: '',
+  },
 ]
 
 /**

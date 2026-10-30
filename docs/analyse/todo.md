@@ -9065,7 +9065,10 @@ zu**, er bekommt „Getauscht".
   zugesagt nur der Fragende, beide im Versand-Tagebuch, „Getauscht" an die
   Planer. Wer ein Konto hat, wird so nicht übergangen (`has-account`). Der
   Ablauf nach dem Schreiben steht für Annehmen und Direkt einmal
-  (`vollziehen`). Vier Texte in zwölf Sprachen, beide Handbücher.
+  (`vollziehen`). Vier Texte in zwölf Sprachen, beide Handbücher. Review
+  (`/simplify`, `/code-review max`): Der andere steht in den Zusagen gleich
+  als „weiß Bescheid" (`persoenlich_at`) — sonst zählte sein Platz beim
+  Planer als ungeklärt, obwohl es abgesprochen ist.
 
 Tests: Regeln und Function (38), Datenmodul (9), Reducer (6), Ablauf mit
 `persist` (3), Aufrufe (10), Oberfläche (9), Schema (6), Laden (1);

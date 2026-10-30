@@ -454,10 +454,16 @@ describe('Function: direkt — mit jemandem ohne Konto (30.10.2026)', () => {
       `task_key=in.(${encodeURIComponent(A)},${encodeURIComponent(C)})`,
     )
     expect(zeilenIn('confirmations')).toEqual([expect.objectContaining({ user_id: U_SIMON, task_key: C, status: 'bestätigt' })])
-    expect(zeilenIn('assignment_log')).toEqual([
-      expect.objectContaining({ task_key: A, name: 'Lena Hoffmann', person_id: 'p-lena', user_id: null }),
-      expect.objectContaining({ task_key: C, name: 'Simon Krüger', person_id: 'p-simon', user_id: U_SIMON }),
+    // Lena hat es mündlich abgesprochen: In den Zusagen ist sie gleich als
+    // „weiß Bescheid" abgehakt (Review 30.10.2026) — sonst stünde ihr Platz
+    // beim Planer als ungeklärt da.
+    const log = zeilenIn('assignment_log')
+    expect(log).toEqual([
+      expect.objectContaining({ task_key: A, name: 'Lena Hoffmann', person_id: 'p-lena', user_id: null, persoenlich_at: new Date().toISOString() }),
+      expect.objectContaining({ task_key: C, name: 'Simon Krüger', person_id: 'p-simon', user_id: U_SIMON, persoenlich_at: null }),
     ])
+    // Ein Stapel mit verschiedenen Schlüsseln weist PostgREST ab (PGRST102).
+    expect(Object.keys(log[0]!).sort()).toEqual(Object.keys(log[1]!).sort())
   })
 
   it('die Planer erfahren es — Lena nicht, sie hat kein Konto; Simon nicht, er hat es eben getan', async () => {
@@ -570,8 +576,8 @@ describe('Function: annehmen', () => {
       expect.objectContaining({ user_id: U_JONAS, task_key: A, status: 'bestätigt' }),
     ])
     expect(zeilenIn('assignment_log')).toEqual([
-      expect.objectContaining({ task_key: A, name: 'Jonas Berger', person_id: 'p-jonas', user_id: U_JONAS }),
-      expect.objectContaining({ task_key: B, name: 'Simon Krüger', person_id: 'p-simon', user_id: U_SIMON }),
+      expect.objectContaining({ task_key: A, name: 'Jonas Berger', person_id: 'p-jonas', user_id: U_JONAS, persoenlich_at: null }),
+      expect.objectContaining({ task_key: B, name: 'Simon Krüger', person_id: 'p-simon', user_id: U_SIMON, persoenlich_at: null }),
     ])
     expect(anfragen).toEqual([])
   })

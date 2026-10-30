@@ -432,11 +432,31 @@ async function vollziehen(
     ...(konten.partner ? [{ congregation_id: k.cong, user_id: konten.partner, task_key: a.key, status: 'bestätigt' }] : []),
   ])
   // Beide wissen Bescheid — „Plan senden" soll sie nicht noch einmal melden.
+  // Ohne Konto hat der andere es mündlich abgesprochen: In den Zusagen der
+  // Woche ist er gleich als „weiß Bescheid" abgehakt (`persoenlich_at`, wie
+  // nach dem Haken des Planers) — sonst stünde sein Platz als ungeklärt da.
+  // Beide Zeilen tragen dieselben Spalten: Bei einem Stapel weist PostgREST
+  // verschiedene Schlüssel ab (PGRST102).
+  const jetzt = new Date().toISOString()
   await rest.insert(
     'assignment_log',
     [
-      { congregation_id: k.cong, task_key: a.key, name: personDisplayName(b.person.fn, b.person.ln), person_id: b.person.id, user_id: konten.partner ?? null },
-      { congregation_id: k.cong, task_key: b.key, name: personDisplayName(a.person.fn, a.person.ln), person_id: a.person.id, user_id: konten.fragender },
+      {
+        congregation_id: k.cong,
+        task_key: a.key,
+        name: personDisplayName(b.person.fn, b.person.ln),
+        person_id: b.person.id,
+        user_id: konten.partner ?? null,
+        persoenlich_at: konten.partner ? null : jetzt,
+      },
+      {
+        congregation_id: k.cong,
+        task_key: b.key,
+        name: personDisplayName(a.person.fn, a.person.ln),
+        person_id: a.person.id,
+        user_id: konten.fragender,
+        persoenlich_at: null,
+      },
     ],
     { ignoreDuplicates: true },
   )

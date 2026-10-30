@@ -619,7 +619,8 @@ beide Plätze auf einmal, beide gelten als zugesagt und als benachrichtigt (der
 Knopf **Plan senden** zählt sie nicht noch einmal). Hat der andere **kein
 App-Konto**, sähe er keine Anfrage: Die beiden sprechen sich persönlich ab, und
 der Verkündiger tauscht gleich. Zugesagt hat dann nur er; der andere gilt als
-benachrichtigt, sein neuer Platz steht aber ohne Zusage da. Deine
+benachrichtigt und steht in den Zusagen der Woche schon als **weiß Bescheid**
+abgehakt – abgesprochen ist es ja. Deine
 Zustimmung braucht es nicht: Du bekommst die Mitteilung **„Getauscht"** mit
 beiden Tagen und wer jetzt wo steht; ein Tipp darauf öffnet die Woche im
 Planen. Teilst du vorher selbst um, geht der Tausch nicht mehr – die App sagt

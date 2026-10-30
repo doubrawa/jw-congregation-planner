@@ -1448,7 +1448,9 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // hat sie gelöscht. Ein Entzug ist es nicht (`OHNE_ENTZUG`).
       //
       // Ohne Konto (`direkt`) hat der andere nicht zugesagt: Für seinen neuen
-      // Platz steht keine Zusage da, auch nicht die alte des Fragenden.
+      // Platz steht keine Zusage da, auch nicht die alte des Fragenden. Er
+      // weiß aber Bescheid — abgesprochen ist es mündlich (`persoenlich`, wie
+      // die Function).
       const { gibtAb, nimmt, von, an } = action.tausch
       const beide = new Set([gibtAb, nimmt])
       const name = (pid: string) => nameVon(state.persons, pid)
@@ -1460,6 +1462,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
           ? { ...dropConfirmations(state.confirmations, [gibtAb]), [nimmt]: 'bestätigt' }
           : { ...state.confirmations, [gibtAb]: 'bestätigt', [nimmt]: 'bestätigt' },
         sentLog: { ...state.sentLog, [sentKey(gibtAb, name(an))]: jetzt, [sentKey(nimmt, name(von))]: jetzt },
+        persoenlich: action.ohneKonto ? { ...state.persoenlich, [sentKey(gibtAb, name(an))]: jetzt } : state.persoenlich,
         tauschAnfragen: state.tauschAnfragen.filter((a) => !beide.has(a.gibtAb) && !beide.has(a.nimmt)),
         // Das Blatt, aus dem getauscht wurde, ist fertig: Sein Platz gehört jetzt dem anderen.
         tauschId: null,

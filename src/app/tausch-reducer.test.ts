@@ -102,8 +102,16 @@ describe('Der Tausch', () => {
     expect(s.weeks[1]?.we.helpers.mik?.[0]).toEqual({ name: 'Simon Krüger', pid: 'p-simon' })
     expect(s.confirmations[B]).toBe('bestätigt')
     expect(A in s.confirmations).toBe(false)
-    // Beide im Tagebuch: Bescheid gab der Fragende mündlich.
+    // Beide im Tagebuch: Bescheid gab der Fragende mündlich — Jonas ist in den
+    // Zusagen gleich als „weiß Bescheid" abgehakt, wie die Function es schreibt.
     expect(Object.keys(s.sentLog)).toEqual(expect.arrayContaining([sentKey(A, 'Jonas Berger'), sentKey(B, 'Simon Krüger')]))
+    expect(s.persoenlich[sentKey(A, 'Jonas Berger')]).toBeTruthy()
+    expect(sentKey(B, 'Simon Krüger') in s.persoenlich).toBe(false)
     expect(s.toast?.text).toBe(fill(dict('de').tauschToastDirekt, { name: 'Jonas Berger' }))
+  })
+
+  it('mit Konto bleibt der Haken „weiß Bescheid" außen vor — beide haben in der App zugesagt', () => {
+    const s = reducer(start({ persoenlich: {} }), { type: 'getauscht', tausch: anfrage() })
+    expect(s.persoenlich).toEqual({})
   })
 })
