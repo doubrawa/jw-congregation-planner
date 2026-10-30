@@ -9068,7 +9068,11 @@ zu**, er bekommt „Getauscht".
   (`vollziehen`). Vier Texte in zwölf Sprachen, beide Handbücher. Review
   (`/simplify`, `/code-review max`): Der andere steht in den Zusagen gleich
   als „weiß Bescheid" (`persoenlich_at`) — sonst zählte sein Platz beim
-  Planer als ungeklärt, obwohl es abgesprochen ist.
+  Planer als ungeklärt, obwohl es abgesprochen ist. **Ausgerollt am
+  30.10.2026:** erst gepusht (`399e9e43`, live als `shell-399e9e4`), dann die
+  Function `tauschen` v2 — der deployte Quelltext ist gleich dem Commit
+  (`functions download`). Umgekehrt böte die alte App „Anfragen" bei
+  Personen ohne Konto an.
 
 Tests: Regeln und Function (38), Datenmodul (9), Reducer (6), Ablauf mit
 `persist` (3), Aufrufe (10), Oberfläche (9), Schema (6), Laden (1);
