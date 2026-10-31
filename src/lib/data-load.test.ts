@@ -840,9 +840,9 @@ describe('loadCongregationData: die Pläne aus T120', () => {
       plan_eintraege: [
         {
           data: [
-            { id: 'pe1', plan_id: 'pl1', datum: '2026-09-07', grp: 'g1' },
+            { id: 'pe1', plan_id: 'pl1', datum: '2026-09-07', grp: 'g1', person_id: null, aus: false },
             // Zu einem Plan, der vor dem Rückblick endete und deshalb nicht geladen ist.
-            { id: 'pe-alt', plan_id: 'pl-alt', datum: '2026-03-02', grp: 'g1' },
+            { id: 'pe-alt', plan_id: 'pl-alt', datum: '2026-03-02', grp: 'g1', person_id: null, aus: false },
           ],
           error: null,
         },
@@ -872,6 +872,30 @@ describe('loadCongregationData: die Pläne aus T120', () => {
     expect(d.plaene).toEqual([{ id: 'pl1', name: 'Winterdienst', von: '2026-09-07', bis: '2026-11-29', entwurf: false, takt: 'monat' }])
     // Der Eintrag eines nicht geladenen Plans fällt heraus — er gehörte zu nichts, was die App zeigt.
     expect(d.planEintraege).toEqual([{ id: 'pe1', planId: 'pl1', datum: '2026-09-07', grp: 'g1' }])
+  })
+
+  it('eine Woche mit Person und eine ausgelassene kommen mit — beides nur, wo es gilt (31.10.2026)', async () => {
+    mitPlaenen({
+      plan_eintraege: [
+        {
+          data: [
+            { id: 'pe2', plan_id: 'pl1', datum: '2026-09-14', grp: null, person_id: 'p1', aus: false },
+            { id: 'pe3', plan_id: 'pl1', datum: '2026-09-21', grp: null, person_id: null, aus: true },
+          ],
+          error: null,
+        },
+      ],
+    })
+    const res = await loadCongregationData('u1')
+    if (!res.ok) throw new Error('nicht geladen')
+    // Abgefragt werden sie auch — die Attrappe lieferte sie sonst trotzdem.
+    const spalten = store.filter.find(([t, m]) => t === 'plan_eintraege' && m === 'select')?.[2] ?? ''
+    expect(spalten.split(',').map((s) => s.trim())).toEqual(expect.arrayContaining(['grp', 'person_id', 'aus']))
+    // So, wie `eintragSetzen` sie anlegt — sonst sähe der Speicherweg nach dem Laden Änderungen, wo keine sind.
+    expect(res.data.planEintraege).toEqual([
+      { id: 'pe2', planId: 'pl1', datum: '2026-09-14', grp: null, pid: 'p1' },
+      { id: 'pe3', planId: 'pl1', datum: '2026-09-21', grp: null, aus: true },
+    ])
   })
 
   it('die Trolley-Termine kommen über die Zeilengrenze hinweg vollständig an (15.10.2026)', async () => {

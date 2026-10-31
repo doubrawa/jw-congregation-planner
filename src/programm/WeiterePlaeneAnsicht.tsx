@@ -3,9 +3,17 @@ import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
 import { useKalendertag } from '../app/useKalendertag'
 import { PlanTitel } from '../components/PlanTitel'
-import { gruppenName, spannenText } from '../components/weitere-plaene-anzeige'
+import { spannenText, werName } from '../components/weitere-plaene-anzeige'
 import { fromIso } from '../data/meeting-dates'
-import { eintraegeVon, plaeneZumAnsehen, planSpannen, spanneVon, spannenDerGruppe, taktVon } from '../data/weitere-plaene'
+import {
+  eintraegeJeSpanne,
+  plaeneZumAnsehen,
+  spanneVon,
+  spannenDerGruppe,
+  spannenDerPerson,
+  spannenImPlan,
+  taktVon,
+} from '../data/weitere-plaene'
 import { useT } from '../i18n/useT'
 import type { WeitererPlan } from '../data/types'
 import { PlanBogen } from '../druck/PlanBogen'
@@ -62,54 +70,58 @@ export function WeiterePlaeneAnsicht() {
 }
 
 /**
- * Ein Plan: Ort, Name, Zeitraum; wann die eigene Gruppe dran ist — und die
- * Wochen oder Monate ab der laufenden (`tag` ist der Kalendertag), die der
- * eigenen Gruppe hervorgehoben.
+ * Ein Plan: Ort, Name, Zeitraum; wann die eigene Gruppe dran ist und wann man
+ * selbst (31.10.2026) — und die Wochen oder Monate ab der laufenden (`tag` ist
+ * der Kalendertag), die eigenen hervorgehoben. Ausgelassene gehören nicht mehr
+ * zum Plan und fehlen.
  */
 function PlanAnsicht({ plan, tag }: { plan: WeitererPlan; tag: string }) {
   const { state } = useApp()
   const { t, tu } = useT()
-  const meineGruppe = eigenePerson(state)?.grp
-  const eintraege = eintraegeVon(state.planEintraege, plan.id)
+  const ich = eigenePerson(state)
+  const meineGruppe = ich?.grp
   const jetzt = spanneVon(taktVon(plan), tag)
   // Jede Spanne des Plans, wie im Ausdruck (`PlanBogen`) — auch die, für die
-  // keine Gruppe eingetragen ist: Sie steht mit „—" da. Bis zum 16.10.2026
-  // liefen hier die Einträge, und eine Woche ohne Gruppe fehlte einfach.
-  const gruppeVon = new Map(eintraege.map((e) => [e.datum, e.grp]))
+  // niemand eingetragen ist: Sie steht mit „—" da. Bis zum 16.10.2026 liefen
+  // hier die Einträge, und eine Woche ohne Gruppe fehlte einfach.
+  const jeSpanne = eintraegeJeSpanne(state.planEintraege, plan.id)
+  const kommend = (spannen: string[]): string[] => spannen.filter((s) => s >= jetzt)
 
   return (
     <section className="karte wp-plan">
       <PlanTitel plan={plan} />
       {meineGruppe && (
-        <DeineGruppe plan={plan} spannen={spannenDerGruppe(eintraege, plan.id, meineGruppe).filter((s) => s >= jetzt)} />
+        <DranMarken plan={plan} titel={t.wpDeineGruppe} spannen={kommend(spannenDerGruppe(state.planEintraege, plan.id, meineGruppe))} />
       )}
+      {ich && <DranMarken plan={plan} titel={t.wpDuBistDran} spannen={kommend(spannenDerPerson(state.planEintraege, plan.id, ich.id))} />}
       <div className="wp-liste">
-        {planSpannen(plan)
-          .filter((spanne) => spanne >= jetzt)
-          .map((spanne) => {
-            const grp = gruppeVon.get(spanne) ?? null
-            return (
-              <div key={spanne} className={meineGruppe && grp === meineGruppe ? 'wp-liste-zeile is-eigen' : 'wp-liste-zeile'}>
-                <span className="wp-liste-punkt" aria-hidden="true" />
-                <span className="wp-liste-woche">{spannenText(plan, spanne, state.lang)}</span>
-                <span className="wp-liste-wer">{gruppenName(grp, state.groups, tu) || t.offenDash}</span>
-              </div>
-            )
-          })}
+        {kommend(spannenImPlan(plan, state.planEintraege)).map((spanne) => {
+          const eintrag = jeSpanne.get(spanne)
+          const eigen = Boolean(eintrag && ((meineGruppe && eintrag.grp === meineGruppe) || (ich && eintrag.pid === ich.id)))
+          return (
+            <div key={spanne} className={eigen ? 'wp-liste-zeile is-eigen' : 'wp-liste-zeile'}>
+              <span className="wp-liste-punkt" aria-hidden="true" />
+              <span className="wp-liste-woche">{spannenText(plan, spanne, state.lang)}</span>
+              <span className="wp-liste-wer">{werName(eintrag, state, tu) || t.offenDash}</span>
+            </div>
+          )
+        })}
       </div>
       <p className="wp-info">{t.wpNurInfo}</p>
     </section>
   )
 }
 
-/** „Deine Gruppe ist dran:" — die kommenden Wochen oder Monate der eigenen Gruppe als Marken. */
-function DeineGruppe({ plan, spannen }: { plan: WeitererPlan; spannen: string[] }) {
+/**
+ * „Deine Gruppe ist dran:" oder „Du bist dran:" — die kommenden Wochen oder
+ * Monate als Marken.
+ */
+function DranMarken({ plan, titel, spannen }: { plan: WeitererPlan; titel: string; spannen: string[] }) {
   const { state } = useApp()
-  const { t } = useT()
   if (spannen.length === 0) return null
   return (
     <div className="wp-dran">
-      <p className="wp-dran-titel">{t.wpDeineGruppe}</p>
+      <p className="wp-dran-titel">{titel}</p>
       <div className="wp-chips">
         {spannen.map((s) => (
           <span key={s} className="wp-chip">

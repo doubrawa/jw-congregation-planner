@@ -1128,8 +1128,8 @@ muss etwas bestätigen, niemand wird erinnert, und einen „Plan senden" gibt es
 dafür nicht. Jeder Plan gilt dem **Königreichssaal** – Reinigung und
 Instandhaltung. „Im Allgemeinen wechseln sich die Predigtdienstgruppen mit der
 Saalreinigung ab" (*Organisiert, Jehovas Willen zu tun*, Kap. 11 Abs. 10): je
-Woche oder je Monat eine Gruppe. Was zu tun ist, sagt der Name des Plans, etwa
-„Winterdienst" oder „Grundreinigung".
+Woche oder je Monat eine Gruppe – oder eine einzelne Person. Was zu tun ist,
+sagt der Name des Plans, etwa „Winterdienst" oder „Grundreinigung".
 
 ![Weitere Pläne planen](screenshots/planer-weitere-plaene.png)
 
@@ -1154,7 +1154,9 @@ Veröffentlicht, Abgeschlossen), und Zurück führt wieder zur Liste.
 - **Beginnen mit** verteilt mit einem Tipp: Die Wochen (bzw. Monate) ab der
   laufenden bis zum Ende bekommen die Gruppen der Reihe nach, beginnend mit der
   gewählten. Gedrückt steht die Gruppe, mit der die Reihe gerade beginnt; ein
-  Tipp darauf ändert nichts. Vergangene Wochen bleiben, wie sie sind.
+  Tipp darauf ändert nichts. Vergangene Wochen bleiben, wie sie sind, ebenso
+  ausgelassene und solche mit einer Person: Die Reihe geht an ihnen vorbei, und
+  die Gruppe, die dort dran gewesen wäre, ist es in der nächsten Woche.
 - Reihum gehen nur die Gruppen, die **reinigen**: Hast du eine im Blatt der
   Reinigung abgeschaltet (siehe [Hilfsdienste](#hilfsdienste)), steht sie
   weder bei **Beginnen mit** noch in der Vorschau zur Wahl, und auch beim
@@ -1162,7 +1164,13 @@ Veröffentlicht, Abgeschlossen), und Zurück führt wieder zur Liste.
   bleibt sie stehen, bis du die Zeile umstellst oder neu verteilst.
 - Die **Vorschau** zeigt die nächsten fünf Wochen oder Monate, **Alle anzeigen**
   auch die übrigen und die vergangenen. Jede kommende Zeile stellst du einzeln
-  um.
+  um: Zur Wahl stehen die **Gruppen** und darunter alle **Personen** – so
+  übernimmt eine einzelne Person eine Woche statt einer Gruppe.
+- Das **✕** neben einer Zeile löscht die Woche (bzw. den Monat) aus dem Plan,
+  nach einer Rückfrage – etwa die Kongresswoche. Sie steht dann
+  durchgestrichen als **Ausgelassen** da und zählt nicht mehr mit; die
+  Versammlung sieht sie nicht, und auf dem Bogen fehlt sie. **Wiederherstellen**
+  holt sie zurück, zunächst ohne Gruppe.
 - **Veröffentlichen** macht den Plan sichtbar, **Zurück zum Entwurf** nimmt
   ihn wieder zurück. Einen Entwurf sehen nur Admins und Planer. Am Handy steht
   der Knopf unten in der Leiste, ab dem Tablet neben dem Titel.
@@ -1178,7 +1186,8 @@ einen Plan gleich.
 
 **Wer was sieht**: Einen Plan sieht nach dem Veröffentlichen die ganze
 Versammlung, und jeder findet oben unter „Deine Gruppe ist dran" die Wochen
-(bzw. Monate) seiner Gruppe. Für Verkündiger steht „Weitere Pläne" erst im Menü, wenn es für
+(bzw. Monate) seiner Gruppe, unter „Du bist dran" die, die er selbst
+übernimmt. Für Verkündiger steht „Weitere Pläne" erst im Menü, wenn es für
 sie etwas zu sehen gibt.
 
 ---
@@ -1971,7 +1980,8 @@ beim **Ansehen** einen **Drucken**‑Knopf. Gedruckt wird ohne Auswahl:
   Zeile, je Trolley eine Spalte. Gestrichelt steht, wo jemand einen Partner
   sucht; darunter die Hinweise der Trolleys.
 - **Weitere Pläne** – je Woche oder Monat des Zeitraums die Gruppe, die dran
-  ist, und ihr Gruppenaufseher; eine Woche ohne Gruppe steht gepunktet da. Bei
+  ist, und ihr Gruppenaufseher, oder die Person (dann heißt die Spalte „Wer");
+  eine Woche ohne Gruppe steht gepunktet da, eine ausgelassene fehlt. Bei
   mehreren Plänen kommt der aufs Blatt, den du oben gewählt hast. Aus **Plan
   bearbeiten** druckst du ihn auch als Entwurf, zum Durchsehen vor dem
   Veröffentlichen (siehe [Weitere Pläne](#5a-weitere-pläne)).

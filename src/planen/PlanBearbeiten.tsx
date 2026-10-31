@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp, type AppAction } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
@@ -13,19 +13,21 @@ import { Sheet } from '../components/Sheet'
 import { UnteransichtKopf } from '../components/UnteransichtKopf'
 import { TABLET_BREITE, useMedia } from '../components/useMedia'
 import { gebundenesDatum } from '../components/datum-anzeige'
-import { gruppenName, spannenAnzahl, spannenText } from '../components/weitere-plaene-anzeige'
-import { reinigungsGruppen } from '../data/helpers'
+import { spannenAnzahl, spannenText, werName } from '../components/weitere-plaene-anzeige'
+import { displayName, personCompare, reinigungsGruppen } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import {
   beginntMit,
-  eintraegeVon,
+  eintraegeJeSpanne,
   planSpannen,
   planStand,
   spanneVon,
+  spannenImPlan,
   taktVon,
   vorschauSpannen,
+  type Belegung,
 } from '../data/weitere-plaene'
-import type { PlanTakt, WeitererPlan } from '../data/types'
+import type { PlanEintrag, PlanTakt, WeitererPlan } from '../data/types'
 import { PlanBogen } from '../druck/PlanBogen'
 import { useDruckBogen } from '../druck/useDruckBogen'
 import { useT } from '../i18n/useT'
@@ -43,7 +45,7 @@ const WAHL_GRUPPEN = 4
  * **Plan bearbeiten** (T121, Entwurf `GPlaenePlanen`) — die Unteransicht der
  * Weiteren Pläne beim Planen: oben die Spur vom Entwurf bis zum Abschluss,
  * darunter der Plan mit „Beginnen mit", dann die Vorschau seiner Wochen oder
- * Monate, je mit ihrer Gruppe.
+ * Monate, je mit ihrer Gruppe oder Person.
  *
  * Name, Zeitraum, Takt, Veröffentlichen und Löschen sind der Plan selbst. Sie
  * ändern Admin und Planer — der Planer seit dem 15.10.2026; davor sah er sie
@@ -228,7 +230,8 @@ function ZeitraumBlatt({ plan, start, onClose }: { plan: WeitererPlan; start: Ze
  * (`gruppenVerteilen`). Gedrückt ist, womit die Reihe jetzt beginnt
  * (`beginntMit`); ein Tipp darauf lässt alles, wie es ist — auch Gruppen, die
  * von Hand gesetzt sind. Zur Wahl stehen die Gruppen, die reinigen — nur unter
- * ihnen geht die Reihe um (18.10.2026).
+ * ihnen geht die Reihe um (18.10.2026). Ausgelassene Spannen und solche mit
+ * einer Person überspringt sie (31.10.2026).
  */
 function BeginnenMit({ plan }: { plan: WeitererPlan }) {
   const { state, dispatch } = useApp()
@@ -267,8 +270,10 @@ function BeginnenMit({ plan }: { plan: WeitererPlan }) {
 
 /**
  * **Die Vorschau** (`GPlaenePlanen`): die Wochen oder Monate des Plans, je mit
- * ihrer Gruppe — zugeklappt die nächsten ab der laufenden (`vorschauSpannen`).
- * Kommende setzt man einzeln um; vergangene bleiben, wie sie waren.
+ * ihrer Gruppe oder Person — zugeklappt die nächsten ab der laufenden
+ * (`vorschauSpannen`). Kommende setzt man einzeln um oder löscht sie aus dem
+ * Plan; vergangene bleiben, wie sie waren. Gezählt wird, was zum Plan gehört —
+ * ohne die ausgelassenen.
  */
 function PlanVorschau({ plan }: { plan: WeitererPlan }) {
   const { state } = useApp()
@@ -278,17 +283,36 @@ function PlanVorschau({ plan }: { plan: WeitererPlan }) {
   const spannen = planSpannen(plan)
   const jetzt = spanneVon(taktVon(plan), tag)
   const gezeigt = alle ? spannen : vorschauSpannen(spannen, jetzt)
-  const gruppeVon = new Map(eintraegeVon(state.planEintraege, plan.id).map((e) => [e.datum, e.grp]))
+  const jeSpanne = eintraegeJeSpanne(state.planEintraege, plan.id)
+  const anzahl = spannenImPlan(plan, state.planEintraege).length
+  // Die Personen zur Wahl, einmal für alle Zeilen: Dasselbe Element zeichnet
+  // React nicht neu — bei hundert Personen und „Alle anzeigen" über ein Jahr
+  // wären es sonst gut 5000 Einträge je Zeichnen, auch für jeden Toast.
+  const personenWahl = useMemo(
+    () => (
+      <optgroup label={t.personen}>
+        {[...state.persons]
+          .sort((a, b) => personCompare(a, b, state.lang))
+          .map((p) => (
+            <option key={p.id} value={`p:${p.id}`}>
+              {displayName(p)}
+            </option>
+          ))}
+      </optgroup>
+    ),
+    [state.persons, state.lang, t.personen],
+  )
 
   return (
     <section className="karte wp-vorschau">
-      <h2 className="abschnitt-titel karte-titel">{`${t.wpVorschau} · ${spannenAnzahl(plan, spannen.length, state.lang)}`}</h2>
+      <h2 className="abschnitt-titel karte-titel">{`${t.wpVorschau} · ${spannenAnzahl(plan, anzahl, state.lang)}`}</h2>
       {gezeigt.map((spanne) => (
         <VorschauZeile
           key={spanne}
           plan={plan}
           spanne={spanne}
-          grp={gruppeVon.get(spanne) ?? null}
+          eintrag={jeSpanne.get(spanne)}
+          personenWahl={personenWahl}
           vorbei={spanne < jetzt}
         />
       ))}
@@ -301,50 +325,102 @@ function PlanVorschau({ plan }: { plan: WeitererPlan }) {
   )
 }
 
+/** Der Wert einer Spanne in der Auswahl: `g:<Gruppe>`, `p:<Person>` — leer, wenn sie offen ist. */
+function auswahlWert(eintrag: PlanEintrag | undefined): string {
+  if (eintrag?.pid) return `p:${eintrag.pid}`
+  return eintrag?.grp ? `g:${eintrag.grp}` : ''
+}
+
+/** Die Belegung zu einem Wert der Auswahl (`auswahlWert` rückwärts). */
+function belegungVon(wert: string): Belegung {
+  if (wert.startsWith('g:')) return { grp: wert.slice(2) }
+  if (wert.startsWith('p:')) return { pid: wert.slice(2) }
+  return null
+}
+
 /**
- * Eine Woche oder ein Monat der Vorschau: wann, und die Gruppe — kommend zur
- * Wahl, vergangen als Text. Zur Wahl stehen die Gruppen, die reinigen, dazu
- * die eingetragene, auch wenn sie inzwischen herausgenommen ist — sonst stünde
- * „offen" da, wo eine Gruppe eingetragen ist.
+ * Eine Woche oder ein Monat der Vorschau: wann, und wer — kommend zur Wahl,
+ * vergangen als Text. Zur Wahl stehen die Gruppen, die reinigen, dazu die
+ * eingetragene, auch wenn sie inzwischen herausgenommen ist — sonst stünde
+ * „offen" da, wo eine Gruppe eingetragen ist —, und darunter jede Person
+ * (31.10.2026).
+ *
+ * Daneben das ✕: Es löscht die Spanne aus dem Plan, mit Rückfrage wie jedes
+ * Löschen — so wie man einen Gruppenbesuch entfernt. Sie steht dann
+ * durchgestrichen da, und „Wiederherstellen" holt sie offen zurück.
  */
 function VorschauZeile({
   plan,
   spanne,
-  grp,
+  eintrag,
+  personenWahl,
   vorbei,
 }: {
   plan: WeitererPlan
   spanne: string
-  grp: string | null
+  eintrag: PlanEintrag | undefined
+  personenWahl: ReactNode
   vorbei: boolean
 }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
   const wann = spannenText(plan, spanne, state.lang)
+  const setzen = (belegung: Belegung): void => dispatch({ type: 'wpEintragSetzen', planId: plan.id, datum: spanne, belegung })
+
+  if (eintrag?.aus) {
+    const ausgelassen = <span className="wp-vorschau-wer">{t.wpAusgelassen}</span>
+    return (
+      <div className={vorbei ? 'wp-vorschau-zeile is-aus is-vorbei' : 'wp-vorschau-zeile is-aus'}>
+        <span className="wp-vorschau-wann">{wann}</span>
+        {vorbei ? (
+          ausgelassen
+        ) : (
+          <span className="wp-vorschau-wahl">
+            {ausgelassen}
+            <button type="button" className="knopf-pille" onClick={() => setzen(null)}>
+              {t.wpWiederherstellen}
+            </button>
+          </span>
+        )}
+      </div>
+    )
+  }
+  if (vorbei) {
+    return (
+      <div className="wp-vorschau-zeile is-vorbei">
+        <span className="wp-vorschau-wann">{wann}</span>
+        <span className="wp-vorschau-wer">{werName(eintrag, state, tu) || t.offenDash}</span>
+      </div>
+    )
+  }
   const reihe = reinigungsGruppen(state.groups)
-  const zurWahl = state.groups.filter((g) => g.id === grp || reihe.includes(g))
+  const gruppen = state.groups.filter((g) => g.id === eintrag?.grp || reihe.includes(g))
   return (
-    <div className={vorbei ? 'wp-vorschau-zeile is-vorbei' : 'wp-vorschau-zeile'}>
+    <div className="wp-vorschau-zeile">
       <span className="wp-vorschau-wann">{wann}</span>
-      {vorbei ? (
-        <span className="wp-vorschau-wer">{gruppenName(grp, state.groups, tu) || t.offenDash}</span>
-      ) : (
+      <span className="wp-vorschau-wahl">
         <select
           className="wp-gruppe-wahl"
-          aria-label={`${wann}: ${t.gbGruppe}`}
-          value={grp ?? ''}
-          onChange={(e) =>
-            dispatch({ type: 'wpEintragSetzen', planId: plan.id, datum: spanne, grp: e.target.value || null })
-          }
+          aria-label={`${wann}: ${t.wpWer}`}
+          value={auswahlWert(eintrag)}
+          onChange={(e) => setzen(belegungVon(e.target.value))}
         >
           <option value="">{t.offenDash}</option>
-          {zurWahl.map((g) => (
-            <option key={g.id} value={g.id}>
-              {tu(g.name)}
-            </option>
-          ))}
+          <optgroup label={t.gruppenTitel}>
+            {gruppen.map((g) => (
+              <option key={g.id} value={`g:${g.id}`}>
+                {tu(g.name)}
+              </option>
+            ))}
+          </optgroup>
+          {personenWahl}
         </select>
-      )}
+        <EntfernenKnopf
+          className="rund-knopf rund-knopf--feld wp-auslassen"
+          label={`${wann}: ${t.a11yRemove}`}
+          onEntfernen={() => setzen({ aus: true })}
+        />
+      </span>
     </div>
   )
 }

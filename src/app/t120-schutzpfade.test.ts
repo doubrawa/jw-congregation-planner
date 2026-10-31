@@ -100,7 +100,7 @@ afterEach(() => {
 })
 
 it('Gegenprobe: das Gerüst sieht ein Schreiben — sonst hieße „nichts geschrieben" nichts', () => {
-  tue(zustand(), { type: 'wpEintragSetzen', planId: SAAL.id, datum: '2026-09-21', grp: 'g2' })
+  tue(zustand(), { type: 'wpEintragSetzen', planId: SAAL.id, datum: '2026-09-21', belegung: { grp: 'g2' } })
   expect(geschrieben()).toEqual(['savePlanEintraege'])
 })
 
@@ -128,9 +128,9 @@ describe('Abgelehnt: derselbe Zustand, nichts geschrieben', () => {
     ['einen Zeitraum setzen, der vor seinem Anfang endet', {}, { type: 'wpPlanAendern', id: SAAL.id, patch: { bis: '2026-09-01' } }],
     ['einen Plan löschen, den es nicht gibt', {}, { type: 'wpPlanLoeschen', id: 'pl-weg' }],
     ['Gruppen verteilen in einem Plan, den es nicht gibt', {}, { type: 'wpGruppenVerteilen', planId: 'pl-weg', abGruppe: 'g1' }],
-    ['eine Gruppe setzen in einem Plan, den es nicht gibt', {}, { type: 'wpEintragSetzen', planId: 'pl-weg', datum: '2026-09-21', grp: 'g2' }],
-    ['dieselbe Gruppe noch einmal setzen', {}, { type: 'wpEintragSetzen', planId: SAAL.id, datum: WOCHE.datum, grp: 'g1' }],
-    ['eine leere Woche räumen', {}, { type: 'wpEintragSetzen', planId: SAAL.id, datum: '2026-09-21', grp: null }],
+    ['eine Gruppe setzen in einem Plan, den es nicht gibt', {}, { type: 'wpEintragSetzen', planId: 'pl-weg', datum: '2026-09-21', belegung: { grp: 'g2' } }],
+    ['dieselbe Gruppe noch einmal setzen', {}, { type: 'wpEintragSetzen', planId: SAAL.id, datum: WOCHE.datum, belegung: { grp: 'g1' } }],
+    ['eine leere Woche räumen', {}, { type: 'wpEintragSetzen', planId: SAAL.id, datum: '2026-09-21', belegung: null }],
     // Gruppenbesuche
     ['dieselbe Gruppe in derselben Woche ein zweites Mal besuchen', {}, { type: 'besuchHinzufuegen', woche: BESUCH.woche, grp: BESUCH.grp, pid: 'p6' }],
     ['einen Besuch entfernen, den es nicht gibt', {}, { type: 'besuchEntfernen', id: 'b-weg' }],

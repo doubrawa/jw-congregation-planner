@@ -135,6 +135,43 @@ describe('Ansehen', () => {
     expect(knopf(container, t.bestaetigen)).toBeUndefined()
   })
 
+  it('eine Person statt einer Gruppe: ihr Name steht da, und für sie heißt es „Du bist dran" (31.10.2026)', () => {
+    const { container } = zeige(ProgrammScreen, {
+      screen: 'programm',
+      planEintraege: [EINTRAEGE[0]!, EINTRAEGE[1]!, { id: 'w3', planId: 'pl-s', datum: '2026-09-21', grp: null, pid: ANNA.id }],
+    })
+    expect([...container.querySelectorAll('.wp-dran-titel')].map((d) => d.textContent)).toEqual([t.wpDeineGruppe, t.wpDuBistDran])
+    expect([...container.querySelectorAll('.wp-chip')].map((c) => c.textContent)).toEqual([
+      zahlBinden('14.–20. September'),
+      zahlBinden('21.–27. September'),
+    ])
+    expect([...container.querySelectorAll('.wp-liste-zeile.is-eigen .wp-liste-wer')].map((z) => z.textContent)).toEqual([
+      'Gruppe 1',
+      'Anna Test',
+    ])
+    cleanup()
+    // Carl ist in Gruppe 2: Er sieht Annas Namen, aber nicht „Du bist dran".
+    const carl = zeige(ProgrammScreen, {
+      screen: 'programm',
+      personId: CARL.id,
+      planEintraege: [{ id: 'w3', planId: 'pl-s', datum: '2026-09-21', grp: null, pid: ANNA.id }],
+    }).container
+    expect(carl.textContent).toContain('Anna Test')
+    expect(carl.textContent).not.toContain(t.wpDuBistDran)
+  })
+
+  it('eine ausgelassene Woche gehört nicht mehr zum Plan und fehlt (31.10.2026)', () => {
+    const { container } = zeige(ProgrammScreen, {
+      screen: 'programm',
+      planEintraege: [EINTRAEGE[0]!, { id: 'w2', planId: 'pl-s', datum: '2026-09-14', grp: null, aus: true }, EINTRAEGE[2]!],
+    })
+    expect([...container.querySelectorAll('.wp-liste-woche')].map((z) => z.textContent)).toEqual([
+      zahlBinden('7.–13. September'),
+      zahlBinden('21.–27. September'),
+    ])
+    expect(container.textContent).not.toContain(t.wpAusgelassen)
+  })
+
   it('ohne sichtbaren Plan nur der Hinweis', () => {
     const { container } = zeige(ProgrammScreen, { screen: 'programm', plaene: [ENTWURF] })
     expect(container.textContent).toContain(t.wpKeine)
@@ -231,9 +268,9 @@ describe('Planen: ein Plan', () => {
     fireEvent.change(container.querySelector('input[type="text"]')!, { target: { value: 'Winterdienst 2026' } })
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpPlanAendern', id: 'pl-s', patch: { name: 'Winterdienst 2026' } })
 
-    expect(vorschau(container).map((w) => w.value)).toEqual(['g2', 'g1', 'g2'])
+    expect(vorschau(container).map((w) => w.value)).toEqual(['g:g2', 'g:g1', 'g:g2'])
     fireEvent.change(vorschau(container)[1]!, { target: { value: '' } })
-    expect(dispatch).toHaveBeenCalledWith({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-09-14', grp: null })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-09-14', belegung: null })
 
     fireEvent.click(knopf(container.querySelector('.planen-leiste')!, t.wpZurueckziehen)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpPlanAendern', id: 'pl-s', patch: { entwurf: true } })
@@ -312,11 +349,93 @@ describe('Planen: ein Plan', () => {
     expect(beginnen.map((b) => b.textContent)).toEqual(['Gruppe 1', 'Gruppe 3'])
     expect(gedrueckt(container, t.wpAbGruppe), 'die Reihe beginnt bei keiner, die reinigt').toBeUndefined()
 
-    const optionen = (s: HTMLSelectElement) => [...s.options].map((o) => o.value)
+    const gruppen = (s: HTMLSelectElement) => [...s.options].map((o) => o.value).filter((v) => !v.startsWith('p:'))
     const [diese, naechste] = vorschau(container)
-    expect(diese!.value).toBe('g2')
-    expect(optionen(diese!)).toEqual(['', 'g1', 'g2', 'g3'])
-    expect(optionen(naechste!)).toEqual(['', 'g1', 'g3'])
+    expect(diese!.value).toBe('g:g2')
+    expect(gruppen(diese!)).toEqual(['', 'g:g1', 'g:g2', 'g:g3'])
+    expect(gruppen(naechste!)).toEqual(['', 'g:g1', 'g:g3'])
+  })
+
+  /**
+   * **Eine Person statt einer Gruppe** (31.10.2026, Betreiber: „einzelne
+   * Personen einzuplanen und nicht nur Gruppen").
+   */
+  it('eine Woche einer Person geben: unter den Gruppen stehen die Personen, nach Namen', () => {
+    const { container, dispatch } = planen({ persons: [CARL, { ...ANNA, ln: 'Zeta' }] })
+    oeffnen(container, 'Winterdienst')
+    const wahl = vorschau(container)[1]!
+    expect([...wahl.querySelectorAll('optgroup')].map((g) => g.label)).toEqual([t.gruppenTitel, t.personen])
+    expect([...wahl.querySelectorAll(`optgroup[label="${t.personen}"] option`)].map((o) => o.textContent)).toEqual([
+      'Carl Test',
+      'Anna Zeta',
+    ])
+    fireEvent.change(wahl, { target: { value: 'p:p-c' } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-09-14', belegung: { pid: 'p-c' } })
+  })
+
+  it('… und so steht sie dann da — kommend gewählt, vergangen als Name', () => {
+    const lang: WeitererPlan = { ...SAAL, von: '2026-08-31' }
+    const { container } = planen({
+      plaene: [lang],
+      planEintraege: [
+        { id: 'a', planId: 'pl-s', datum: '2026-08-31', grp: null, pid: 'p-c' },
+        { id: 'b', planId: 'pl-s', datum: '2026-09-07', grp: null, pid: 'p-a' },
+      ],
+    })
+    oeffnen(container, 'Winterdienst')
+    expect(vorschau(container)[0]!.value).toBe('p:p-a')
+    fireEvent.click(knopf(container, t.alleAnzeigen)!)
+    expect(container.querySelector('.wp-vorschau-zeile.is-vorbei')?.textContent).toContain('Carl Test')
+  })
+
+  /**
+   * **Auslassen durch Löschen** (31.10.2026, „so wie es auch bei der Planung
+   * von Gruppenbesuchen ist"): das ✕ einer Woche, mit Rückfrage.
+   */
+  it('eine Woche löschen braucht zwei Tipps — dann ist sie ausgelassen', () => {
+    const { container, dispatch } = planen()
+    oeffnen(container, 'Winterdienst')
+    const zeile = container.querySelectorAll('.wp-vorschau-zeile')[1]!
+    // Unter vielen ✕ sagt der Name, welche Woche gemeint ist.
+    const wann = zeile.querySelector('.wp-vorschau-wann')!.textContent
+    expect(zeile.querySelector('.wp-auslassen')?.getAttribute('aria-label')).toBe(`${wann}: ${t.a11yRemove}`)
+    fireEvent.click(zeile.querySelector('.wp-auslassen')!)
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'wpEintragSetzen' }))
+    bestaetigen(knopf(zeile, t.loeschenSicher)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-09-14', belegung: { aus: true } })
+  })
+
+  it('eine ausgelassene Woche steht durchgestrichen da, zählt nicht mit — und „Wiederherstellen" holt sie zurück', () => {
+    const { container, dispatch } = planen({
+      planEintraege: [EINTRAEGE[0]!, { id: 'w2', planId: 'pl-s', datum: '2026-09-14', grp: null, aus: true }, EINTRAEGE[2]!],
+    })
+    oeffnen(container, 'Winterdienst')
+    expect(container.querySelector('.wp-vorschau .karte-titel')?.textContent).toBe(`${t.wpVorschau} · ${zahlBinden('2 Wochen')}`)
+    const aus = container.querySelector('.wp-vorschau-zeile.is-aus')!
+    expect(aus.textContent).toContain(t.wpAusgelassen)
+    expect(aus.querySelector('select'), 'nichts zu wählen').toBeNull()
+    expect(vorschau(container)).toHaveLength(2)
+    fireEvent.click(knopf(aus, t.wpWiederherstellen)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-09-14', belegung: null })
+  })
+
+  it('was vorbei ist, bleibt: kein ✕ an vergangenen Wochen, kein „Wiederherstellen" an einer vergangenen ausgelassenen', () => {
+    const lang: WeitererPlan = { ...SAAL, von: '2026-08-24' }
+    const { container } = planen({
+      plaene: [lang],
+      planEintraege: [
+        { id: 'a', planId: 'pl-s', datum: '2026-08-24', grp: null, aus: true },
+        { id: 'b', planId: 'pl-s', datum: '2026-08-31', grp: 'g1' },
+      ],
+    })
+    oeffnen(container, 'Winterdienst')
+    fireEvent.click(knopf(container, t.alleAnzeigen)!)
+    const vorbei = [...container.querySelectorAll('.wp-vorschau-zeile.is-vorbei')]
+    expect(vorbei.map((z) => z.querySelector('.wp-vorschau-wer')?.textContent)).toEqual([t.wpAusgelassen, 'Gruppe 1'])
+    expect(vorbei[0]!.classList.contains('is-aus')).toBe(true)
+    expect(vorbei.some((z) => z.querySelector('button'))).toBe(false)
+    // Gegenprobe: Die kommenden Wochen haben ihr ✕.
+    expect(container.querySelectorAll('.wp-vorschau-zeile:not(.is-vorbei) .wp-auslassen')).toHaveLength(3)
   })
 
   it('der Takt ist wählbar — wöchentlich ist vorgegeben', () => {
@@ -343,10 +462,10 @@ describe('Planen: ein Plan', () => {
     ])
     expect(container.querySelector('.wp-vorschau .karte-titel')?.textContent).toBe(`${t.wpVorschau} · ${zahlBinden('3 Monate')}`)
     expect(container.textContent).toContain(t.wpVerteilenHintMonat)
-    expect(vorschau(container).map((z) => z.value)).toEqual(['', 'g2', ''])
+    expect(vorschau(container).map((z) => z.value)).toEqual(['', 'g:g2', ''])
     // Eine Zeile meint ihren Monat: gesetzt wird der Monatserste.
-    fireEvent.change(vorschau(container)[2]!, { target: { value: 'g1' } })
-    expect(dispatch).toHaveBeenCalledWith({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-11-01', grp: 'g1' })
+    fireEvent.change(vorschau(container)[2]!, { target: { value: 'g:g1' } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-11-01', belegung: { grp: 'g1' } })
   })
 
   it('die Vorschau zeigt die nächsten fünf Wochen — „Alle anzeigen" auch die vergangenen, als Text', () => {
@@ -458,7 +577,7 @@ describe('Der Planer in den Weiteren Plänen (15.10.2026)', () => {
 
     fireEvent.click(wahlKnopf(container, t.wpAbGruppe, 'Gruppe 1'))
     expect(dispatch).toHaveBeenCalledWith({ type: 'wpGruppenVerteilen', planId: 'pl-s', abGruppe: 'g1' })
-    fireEvent.change(vorschau(container)[0]!, { target: { value: 'g1' } })
-    expect(dispatch).toHaveBeenCalledWith({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-09-07', grp: 'g1' })
+    fireEvent.change(vorschau(container)[0]!, { target: { value: 'g:g1' } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-09-07', belegung: { grp: 'g1' } })
   })
 })

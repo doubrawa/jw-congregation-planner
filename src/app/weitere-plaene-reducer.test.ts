@@ -4,6 +4,7 @@ import { reducer } from './reducer'
 import type { AppState } from './context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import type { PlanEintrag, WeitererPlan } from '../data/types'
+import type { Belegung } from '../data/weitere-plaene'
 import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
@@ -14,7 +15,7 @@ import { zahlBinden } from '../i18n/zahl-binden'
 
 const SAAL: WeitererPlan = { id: 'pl-s', name: 'Winterdienst', von: '2026-09-07', bis: '2026-10-04', entwurf: true }
 const SPAETER: WeitererPlan = { id: 'pl-w', name: '', von: '2026-11-30', bis: '2027-02-28', entwurf: false }
-const woche = (datum: string, grp: string): PlanEintrag => ({ id: `e-${datum}`, planId: 'pl-s', datum, grp })
+const woche = (datum: string, grp: string | null): PlanEintrag => ({ id: `e-${datum}`, planId: 'pl-s', datum, grp })
 
 function zustand(over: Partial<AppState> = {}): AppState {
   return { ...demoZustand(), planner: true, personId: 'p6', plaene: [], planEintraege: [], terminGewaehlt: true, ...over }
@@ -104,13 +105,33 @@ describe('Plätze', () => {
   })
 
   it('die Gruppe einer Woche setzen, ändern, räumen', () => {
-    const setzen = (grp: string | null) => ({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-09-14', grp }) as const
+    const setzen = (grp: string | null) =>
+      ({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-09-14', belegung: grp ? { grp } : null }) as const
     let s = reducer(zustand({ plaene: [SAAL] }), setzen('g1'))
     const id = s.planEintraege[0]!.id
     s = reducer(s, setzen('g2'))
     expect(s.planEintraege).toEqual([expect.objectContaining({ id, grp: 'g2' })])
     s = reducer(s, setzen(null))
     expect(s.planEintraege).toEqual([])
+  })
+
+  it('eine Woche einer Person geben, auslassen und wiederherstellen (31.10.2026)', () => {
+    const belegen = (belegung: Belegung) => ({ type: 'wpEintragSetzen', planId: 'pl-s', datum: '2026-09-14', belegung }) as const
+    let s = reducer(zustand({ plaene: [SAAL] }), belegen({ pid: 'p1' }))
+    const id = s.planEintraege[0]!.id
+    expect(s.planEintraege).toEqual([{ id, planId: 'pl-s', datum: '2026-09-14', grp: null, pid: 'p1' }])
+    s = reducer(s, belegen({ aus: true }))
+    expect(s.planEintraege).toEqual([{ id, planId: 'pl-s', datum: '2026-09-14', grp: null, aus: true }])
+    s = reducer(s, belegen(null))
+    expect(s.planEintraege).toEqual([])
+  })
+
+  it('eine gelöschte Person verlässt ihre Woche — die Woche bleibt offen (wie `on delete set null`)', () => {
+    const w: PlanEintrag = { ...woche('2026-09-14', null), pid: 'p1' }
+    const andere = woche('2026-09-21', 'g1')
+    const s = reducer(zustand({ plaene: [SAAL], planEintraege: [w, andere] }), { type: 'removePerson', id: 'p1' })
+    expect(s.planEintraege).toEqual([{ ...w, pid: null }, andere])
+    expect(s.planEintraege[1]).toBe(andere)
   })
 
   it('eine gelöschte Gruppe verlässt ihre Woche — die Woche bleibt (wie `on delete set null`)', () => {

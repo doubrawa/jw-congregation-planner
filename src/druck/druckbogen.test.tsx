@@ -612,6 +612,28 @@ describe('Der Bogen eines Weiteren Plans', () => {
     expect(texte(container, '.druck-titel')).toEqual([t.wpOhneName])
   })
 
+  it('eine Person statt einer Gruppe: ihr Name, kein Aufseher — Spalte und Satz sprechen nicht nur von Gruppen (31.10.2026)', () => {
+    const { container } = zeigePlan(PLAN, [eintrag('2026-09-07', 'g1'), { ...eintrag('2026-09-14', null), pid: 'p-auf' }])
+    expect(texte(container, '.druck-plan-intro')).toEqual([t.druckPlanJeWocheWer])
+    expect(texte(container, '.druck-tabelle-zeile--kopf > span')).toEqual([t.gbWoche, t.wpWer, t.rolleGruppenaufseher])
+    // Ein Name braucht mehr Platz als „Gruppe 1".
+    expect(container.querySelector<HTMLElement>('.druck-tabelle-zeile--kopf')?.style.gridTemplateColumns).toBe('minmax(0, 1fr) 170px 170px')
+    expect(zellen(container).slice(0, 2)).toEqual([
+      [spannenText(PLAN, '2026-09-07', 'de'), 'Gruppe 1', 'Otto Ober'],
+      [spannenText(PLAN, '2026-09-14', 'de'), 'Otto Ober', ''],
+    ])
+    cleanup()
+    const monate = zeigePlan({ ...PLAN, takt: 'monat' }, [{ ...eintrag('2026-09-01', null), pid: 'p-auf' }]).container
+    expect(texte(monate, '.druck-plan-intro')).toEqual([t.druckPlanJeMonatWer])
+  })
+
+  it('eine ausgelassene Woche steht nicht auf dem Bogen (31.10.2026)', () => {
+    const { container } = zeigePlan(PLAN, [eintrag('2026-09-07', 'g1'), { ...eintrag('2026-09-14', null), aus: true }])
+    expect(zellen(container).map((z) => z[0])).toEqual([spannenText(PLAN, '2026-09-07', 'de'), spannenText(PLAN, '2026-09-21', 'de')])
+    // Ohne Person bleibt es bei der Gruppe.
+    expect(texte(container, '.druck-tabelle-zeile--kopf > span')[1]).toBe(t.gbGruppe)
+  })
+
   it('ein Plan über ein Jahr läuft auf dem nächsten Blatt weiter — und die Seitenzahlen stimmen', () => {
     // 52 Wochen zu je 40 px, Platz 1010: 25, 25 und 2.
     const { container } = zeigePlan({ ...PLAN, bis: '2027-09-05' })

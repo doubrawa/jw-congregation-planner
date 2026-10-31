@@ -9146,7 +9146,7 @@ Tests: die Reihenfolge in `fs-bereich-tabs.test.tsx` und
 bewacht (`gruppenbesuche-reiter-rechts`). Handbücher (Verkündiger, Planer) und
 die sieben Bilder mit der Leiste neu, Maße unverändert.
 
-## Aufgenommen am 31. Oktober 2026 (T156–T161)
+## Aufgenommen am 31. Oktober 2026 (T156–T162)
 
 ### T156 · Mutationsprobe abgeschafft, Unit-Tests mit Gegenprobe stattdessen 🔧 ✅ umgesetzt (31. Oktober 2026)
 
@@ -9463,6 +9463,84 @@ Desktop (15 → 100 Zeilen, nach Zurück weiter „Alle") und am Handy in ar.
 **Live seit 31.10.2026** mit dem Push von `4c74a57e` (Pages, `sw.js` →
 `shell-4c74a57`). Datenbank und Functions unverändert.
 
+### T162 · Weitere Pläne: Personen einplanen, Wochen und Monate auslassen 🔧 ✅ umgesetzt (31. Oktober 2026)
+
+„'weitere pläne' soll auch möglich sein einzelne personen einzuplanen und nicht
+nur gruppen. und man soll auch wochen/monate auslassen können durch löschen —
+so wie es auch bei der planung von gruppenbesuchen ist".
+
+- **Person statt Gruppe:** Die Auswahl je Woche (bzw. Monat) zeigt unter den
+  Gruppen alle Personen, nach Namen (`<optgroup>`, Werte `g:`/`p:`). Ein
+  Eintrag hat eine Gruppe **oder** eine Person (`PlanEintrag.pid`, Spalte
+  `plan_eintraege.person_id`, Prüfung `plan_eintraege_wer`). Wird die Person
+  gelöscht, bleibt die Woche offen (`on delete set null`, im Reducer
+  gespiegelt). Beim Ansehen steht ihr Name da, für sie selbst „Du bist dran"
+  (`spannenDerPerson`) neben „Deine Gruppe ist dran"; der Bogen heißt die
+  Spalte dann „Wer" und sagt „eine Gruppe oder eine Person".
+- **Auslassen durch Löschen:** das ✕ je kommender Zeile, mit zwei Tipps wie
+  jedes Löschen. Die Spanne bleibt als Eintrag (`aus`, Spalte
+  `plan_eintraege.aus`) und steht beim Planen durchgestrichen als
+  „Ausgelassen" da, mit **Wiederherstellen** (räumt den Eintrag, die Woche ist
+  wieder offen). Ansehen und Druck zeigen sie nicht (`spannenImPlan`), die
+  Vorschau zählt sie nicht mit.
+- **Die Reihe** („Beginnen mit", `gruppenVerteilen`) geht an ausgelassenen
+  Spannen und an Personen vorbei; „Beginnen mit" zeigt die Gruppe der ersten
+  Spanne, durch die sie geht. Ein Wechsel des Takts nimmt Vergangenes samt
+  Person und Auslassen ins neue Raster mit; ab jetzt zählt nur die Reihe.
+- Eine Aktion für alles: `wpEintragSetzen` mit `belegung` (`{grp}`, `{pid}`,
+  `{aus: true}` oder `null`).
+- Die Auswahl ist so breit wie das Gewählte (`field-sizing: content`), sonst
+  stand sie wegen der langen Namen in jeder Zeile unter der Woche; sie und ihr
+  ✕ rücken gemeinsam um (`.wp-vorschau-wahl`).
+- Texte in 12 Sprachen: 6 neu (`wpDuBistDran`, `wpWer`, `wpAusgelassen`,
+  `wpWiederherstellen`, `druckPlanJeWocheWer`, `druckPlanJeMonatWer`), 2
+  geändert (`wpVerteilenHint`, `wpVerteilenHintMonat`).
+- Schema: `person_id` und `aus` (auch nachträglich per `add column if not
+  exists`), Fremdschlüssel und Prüfung; das Aufräumen von „Familien reihum"
+  lässt `person_id` nicht mehr fallen.
+- Handbücher (Planer, Verkündiger, Druck). Die Bilder zeigen die Liste und die
+  Ansicht mit Demodaten ohne Person oder Lücke — sie ändern sich nicht.
+
+Gegenproben (9, alle rot): Reihe ohne Überspringen, nichts ausgelassen,
+„Beginnen mit" ohne Überspringen, gelöschte Person bleibt, Person geht beim
+Speichern bzw. „aus" beim Laden verloren, Person ersetzt die Gruppe nicht, „Du
+bist dran" fehlt, Druckkopf bleibt „Gruppe". Suite 7565/7565 (vor dem Review), tsc, Lint,
+Laufzeitprüfung auf `/demo.html` (375 px de, 320 px ar bei Stufe 1,45: kein
+Überlauf; Reihe g1 · Person · ausgelassen · g2 · g3, „Verteilte Wochen: 11").
+
+**/simplify** (Winkel nacheinander): Das ✕ ist der runde Knopf wie bei den
+Abwesenheiten (`rund-knopf rund-knopf--feld`) statt eigener Maße; „wer ist
+dran" beim Taktwechsel ohne den Umweg über die belegten Einträge (ausgelassene
+haben nie eine Gruppe). Verworfen: eine gemeinsame Sortierung der Personen
+(zehn Stellen, kein Helfer da), `eintraegeJeSpanne` doppelt je Zeichnen (≤ 60
+Einträge).
+
+**/code-review max** (Winkel nacheinander, 11 Befunde, 10 behoben):
+
+| Nr. | Status | Befund |
+| --- | --- | --- |
+| 1 | behoben | Auswahl und ✕ brachen nicht um: bei 320 px und Stufe 1,45 ragte „Wiederherstellen" 96 px aus der Karte, die Rückfrage 17 px, die Auswahl schrumpfte auf ihren Pfeil — jetzt `flex-wrap`, die Auswahl kürzt neben dem ✕; in allen 12 Sprachen nachgemessen |
+| 2 | behoben | Taktwechsel Woche → Monat: Ein vergangener Monat mit lauter ausgelassenen Wochen wurde offen und stand wieder auf dem Bogen — jetzt ausgelassen (`monatAusWochen`) |
+| 3 | behoben | Die Ladeattrappe lieferte `person_id`/`aus` auch ohne Abfrage — der Test prüft jetzt die Spaltenliste |
+| 4 | behoben | Druck: „Christian Schneider" brach in der 120-px-Spalte „Wer" um, der Aufseher daneben blieb leer — mit Personen 170/170 px |
+| 5 | behoben | Je Zeile 100 Personen neu gebaut, mit „Alle anzeigen" über ein Jahr gut 5000 Einträge je Zeichnen — jetzt einmal (`personenWahl`) |
+| 6 | behoben | Jedes ✕ hieß nur „Entfernen" — jetzt „{Woche}: Entfernen" (`EntfernenKnopf` mit `label`) |
+| 7 | behoben | Kein Test, dass vergangene Wochen kein ✕ und kein „Wiederherstellen" haben |
+| 8 | behoben | Kein Test für den inneren Umbruch (Gegenprobe blieb grün) — Probe in `kein-wortbruch.test.ts` |
+| 9 | behoben | Handbuch: „übernimmt etwa eine Familie" — gewählt wird eine Person |
+| 10 | behoben | Schema-Test verbot `drop column if exists person_id` für jede Tabelle, nicht nur `plan_eintraege` |
+| 11 | offen | Ohne `field-sizing` (etwa Firefox) ist die Auswahl so breit wie der längste Name und steht in jeder Zeile unter der Woche — bedienbar, nur höher; kein einfacher allgemeiner Ersatz |
+
+Gegenproben zu 2–8 rot. Suite 7568/7568, tsc, Lint, Druck nachgemessen (die
+Personenzeile 32 px hoch wie die übrigen).
+
+**Schema eingespielt am 31.10.2026 um 21:14**, vor dem Push (nur der neue
+Block per `db query -f`, vorher an PGlite zweimal hintereinander gefahren).
+Nachgesehen: `person_id` und `aus` (`default false`, `not null`),
+`plan_eintraege_person_fk` (`on delete set null (person_id)`) und
+`plan_eintraege_wer` da; per anon-REST `select=…,person_id,aus` → `200 []`,
+Gegenprobe mit erfundener Spalte → `400 42703`. Functions unverändert.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -9501,9 +9579,9 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
-29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑
+29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑
 
-**160 der 161 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+**161 der 162 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |

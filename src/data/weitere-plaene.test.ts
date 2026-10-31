@@ -10,11 +10,14 @@ import {
   planStand,
   plaeneZumAnsehen,
   spannenDerGruppe,
+  spannenDerPerson,
+  spannenImPlan,
   spanneVon,
   taktVon,
   taktWechseln,
   vorschauSpannen,
   weiterePlaeneImMenue,
+  type Belegung,
 } from './weitere-plaene'
 import type { Group, PlanEintrag, WeitererPlan } from './types'
 
@@ -337,29 +340,159 @@ describe('Die Vorschau eines Plans', () => {
   })
 })
 
-describe('Die Gruppe einer Woche setzen', () => {
+describe('Eine Woche belegen', () => {
   const basis = [woche('2026-09-07', 'g1')]
+  const setzen = (eintraege: PlanEintrag[], datum: string, belegung: Belegung) =>
+    eintragSetzen({ eintraege, planId: 'pl-s', datum, belegung, neueId })
 
   it('neu, geändert (mit derselben Kennung) oder geräumt', () => {
-    const neu = eintragSetzen({ eintraege: basis, planId: 'pl-s', datum: '2026-09-14', grp: 'g2', neueId })
+    const neu = setzen(basis, '2026-09-14', { grp: 'g2' })
     expect(neu).toHaveLength(2)
-    const anders = eintragSetzen({ eintraege: basis, planId: 'pl-s', datum: '2026-09-07', grp: 'g3', neueId })
+    const anders = setzen(basis, '2026-09-07', { grp: 'g3' })
     expect(anders).toEqual([{ ...basis[0], grp: 'g3' }])
-    const weg = eintragSetzen({ eintraege: basis, planId: 'pl-s', datum: '2026-09-07', grp: null, neueId })
+    const weg = setzen(basis, '2026-09-07', null)
     expect(weg).toEqual([])
   })
 
   it('bleibt alles, wie es war, kommt dieselbe Liste zurück — es geht nichts hinaus', () => {
-    expect(eintragSetzen({ eintraege: basis, planId: 'pl-s', datum: '2026-09-07', grp: 'g1', neueId })).toBe(basis)
-    expect(eintragSetzen({ eintraege: basis, planId: 'pl-s', datum: '2026-09-14', grp: null, neueId })).toBe(basis)
+    expect(setzen(basis, '2026-09-07', { grp: 'g1' })).toBe(basis)
+    expect(setzen(basis, '2026-09-14', null)).toBe(basis)
+    const person = [{ ...woche('2026-09-07', null), pid: 'p1' }]
+    expect(setzen(person, '2026-09-07', { pid: 'p1' })).toBe(person)
+    const aus = [{ ...woche('2026-09-07', null), aus: true }]
+    expect(setzen(aus, '2026-09-07', { aus: true })).toBe(aus)
   })
 
   it('dieselbe Woche eines anderen Plans bleibt unberührt', () => {
     const fremd: PlanEintrag = { ...basis[0]!, id: 'fremd', planId: 'anderer' }
     const liste = [fremd]
-    const neu = eintragSetzen({ eintraege: liste, planId: 'pl-s', datum: '2026-09-07', grp: 'g2', neueId })
+    const neu = setzen(liste, '2026-09-07', { grp: 'g2' })
     expect(neu).toHaveLength(2)
     expect(neu[0]).toBe(fremd)
+  })
+
+  /**
+   * **Eine Person statt einer Gruppe** (31.10.2026, Betreiber: „einzelne
+   * Personen einzuplanen und nicht nur Gruppen"): Gruppe und Person schließen
+   * einander aus, wie in der Datenbank (`plan_eintraege_wer`).
+   */
+  it('eine Person ersetzt die Gruppe und umgekehrt — mit derselben Kennung', () => {
+    const person = setzen(basis, '2026-09-07', { pid: 'p1' })
+    expect(person).toEqual([{ id: 'e-2026-09-07', planId: 'pl-s', datum: '2026-09-07', grp: null, pid: 'p1' }])
+    expect(setzen(person, '2026-09-07', { grp: 'g2' })).toEqual([{ id: 'e-2026-09-07', planId: 'pl-s', datum: '2026-09-07', grp: 'g2' }])
+    expect(setzen(person, '2026-09-07', { pid: 'p2' })[0]).toMatchObject({ grp: null, pid: 'p2' })
+  })
+
+  /**
+   * **Auslassen** (31.10.2026, „Wochen/Monate auslassen können durch Löschen —
+   * so wie es auch bei der Planung von Gruppenbesuchen ist"): Die Woche bleibt
+   * als Eintrag, ohne Gruppe und Person; räumen holt sie offen zurück.
+   */
+  it('ausgelassen hat weder Gruppe noch Person — und räumen holt die Woche zurück', () => {
+    const person = setzen(basis, '2026-09-07', { pid: 'p1' })
+    const aus = setzen(person, '2026-09-07', { aus: true })
+    expect(aus).toEqual([{ id: 'e-2026-09-07', planId: 'pl-s', datum: '2026-09-07', grp: null, aus: true }])
+    expect(setzen(aus, '2026-09-07', null)).toEqual([])
+    // Auch eine Woche ohne Eintrag lässt sich auslassen.
+    expect(setzen([], '2026-09-14', { aus: true })[0]).toMatchObject({ datum: '2026-09-14', grp: null, aus: true })
+  })
+})
+
+/**
+ * **Was zum Plan gehört**: Ausgelassene Wochen fehlen beim Ansehen und im
+ * Druck; beim Planen stehen sie weiter da (`planSpannen`).
+ */
+describe('Ausgelassene Wochen', () => {
+  const aus = (datum: string): PlanEintrag => ({ ...woche(datum, null), aus: true })
+
+  it('fehlen in den Spannen des Plans — die übrigen bleiben, auch offene', () => {
+    expect(spannenImPlan(saal(), [woche('2026-09-07', 'g1'), aus('2026-09-14')])).toEqual(['2026-09-07', '2026-09-21', '2026-09-28'])
+    // Gegenprobe: dieselbe Woche eines anderen Plans lässt nichts aus.
+    expect(spannenImPlan(saal(), [{ ...aus('2026-09-14'), planId: 'anderer' }])).toEqual(planSpannen(saal()))
+  })
+
+  it('reihum verteilen geht an ihnen und an Personen vorbei — die nächste Gruppe ist eine Woche später dran', () => {
+    const ausgelassen = aus('2026-09-14')
+    const person = { ...woche('2026-09-21', null), pid: 'p1' }
+    const { eintraege, verteilt } = gruppenVerteilen({
+      plan: saal(),
+      eintraege: [ausgelassen, person],
+      groups: G,
+      abGruppe: 'g1',
+      heute: HEUTE,
+      neueId,
+    })
+    expect(verteilt).toBe(2)
+    expect(eintraege.map((e) => `${e.datum} ${e.grp ?? e.pid ?? (e.aus ? 'aus' : '-')}`)).toEqual([
+      '2026-09-07 g1',
+      '2026-09-14 aus',
+      '2026-09-21 p1',
+      '2026-09-28 g2',
+    ])
+    expect(eintraege).toContain(ausgelassen)
+    expect(eintraege).toContain(person)
+  })
+
+  it('„Beginnen mit" zeigt die Gruppe der ersten Woche, durch die die Reihe geht', () => {
+    const eintraege = [aus('2026-09-07'), { ...woche('2026-09-14', null), pid: 'p1' }, woche('2026-09-21', 'g3')]
+    expect(beginntMit(saal(), eintraege, '2026-09-09')).toBe('g3')
+    // Gegenprobe: ohne die beiden ist die laufende Woche die erste — und leer.
+    expect(beginntMit(saal(), [woche('2026-09-21', 'g3')], '2026-09-09')).toBeNull()
+  })
+})
+
+/**
+ * **Den Takt wechseln mit Personen und Auslassen**: Was vorbei ist, geht mit
+ * ins neue Raster; ab jetzt zählt die Reihe — eine Person oder eine
+ * ausgelassene Spanne meinte das alte Raster.
+ */
+describe('Den Takt wechseln mit Personen und ausgelassenen Spannen', () => {
+  const zeilen = (liste: readonly PlanEintrag[]) =>
+    liste.map((e) => `${e.datum} ${e.grp ?? e.pid ?? (e.aus ? 'aus' : '-')}`)
+
+  it('Monat → Woche: ein vergangener Monat mit Person oder ausgelassen gibt das seinen Wochen weiter', () => {
+    const plan = saal({ takt: 'woche', von: '2026-07-06', bis: '2026-09-13' })
+    const alt = [{ ...woche('2026-07-01', null), pid: 'p1' }, { ...woche('2026-08-01', null), aus: true }, woche('2026-09-01', 'g4')]
+    expect(zeilen(taktWechseln({ plan, eintraege: alt, groups: G, heute: HEUTE, neueId }).eintraege)).toEqual([
+      '2026-07-06 p1',
+      '2026-07-13 p1',
+      '2026-07-20 p1',
+      '2026-07-27 p1',
+      '2026-08-03 aus',
+      '2026-08-10 aus',
+      '2026-08-17 aus',
+      '2026-08-24 aus',
+      '2026-08-31 aus',
+      '2026-09-07 g4',
+    ])
+  })
+
+  it('Woche → Monat: ein vergangener Monat nimmt seine erste Woche mit Gruppe oder Person — nicht die ausgelassene', () => {
+    const plan = saal({ takt: 'monat', von: '2026-08-03', bis: '2026-09-27' })
+    const alt = [{ ...woche('2026-08-03', null), aus: true }, { ...woche('2026-08-10', null), pid: 'p1' }, woche('2026-09-07', 'g2')]
+    expect(zeilen(taktWechseln({ plan, eintraege: alt, groups: G, heute: HEUTE, neueId }).eintraege)).toEqual([
+      '2026-08-01 p1',
+      '2026-09-01 g2',
+    ])
+  })
+
+  it('Woche → Monat: ein vergangener Monat, dessen Wochen alle ausgelassen waren, bleibt ausgelassen', () => {
+    // Sonst stünde der Sommer, den der Planer gestrichen hat, wieder als offene Zeile auf dem Bogen.
+    const plan = saal({ takt: 'monat', von: '2026-08-03', bis: '2026-09-27' })
+    const august = ['2026-08-03', '2026-08-10', '2026-08-17', '2026-08-24', '2026-08-31'].map((d) => ({ ...woche(d, null), aus: true }))
+    const wechseln = (alt: PlanEintrag[]) => zeilen(taktWechseln({ plan, eintraege: alt, groups: G, heute: HEUTE, neueId }).eintraege)
+    expect(wechseln([...august, woche('2026-09-07', 'g2')])).toEqual(['2026-08-01 aus', '2026-09-01 g2'])
+    // Gegenprobe: Ist eine Woche nur offen, ist es der Monat auch — ausgelassen hat ihn niemand.
+    expect(wechseln([...august.slice(1), woche('2026-09-07', 'g2')])).toEqual(['2026-09-01 g2'])
+  })
+
+  it('ab jetzt nur die Reihe: Person und Auslassen auf einem Tag des neuen Rasters gehen, die Kennung bleibt', () => {
+    // Montag, 1. Juni 2026 — Wochenanfang und Monatserster zugleich.
+    const plan = saal({ takt: 'monat', von: '2026-06-01', bis: '2026-07-31' })
+    const alt = [woche('2026-05-25', 'g1'), { ...woche('2026-06-01', null, 'juni'), pid: 'p1' }]
+    // Heute ist Mittwoch, der 27. Mai: Diese Woche ist g1 dran, also beginnt der Juni mit ihr.
+    const { eintraege } = taktWechseln({ plan, eintraege: alt, groups: G, heute: new Date(2026, 4, 27, 9), neueId })
+    expect(eintraege.find((e) => e.datum === '2026-06-01')).toEqual({ id: 'juni', planId: 'pl-s', datum: '2026-06-01', grp: 'g1' })
   })
 })
 
@@ -397,5 +530,11 @@ describe('Deine Gruppe ist dran', () => {
       '2026-09-07',
       '2026-09-21',
     ])
+  })
+
+  it('du bist dran: die Wochen einer Person, nach Datum — nicht die ihrer Gruppe', () => {
+    const eintraege = [{ ...woche('2026-09-21', null), pid: 'p1' }, woche('2026-09-07', 'g1'), { ...woche('2026-09-14', null), pid: 'p1' }]
+    expect(spannenDerPerson(eintraege, 'pl-s', 'p1')).toEqual(['2026-09-14', '2026-09-21'])
+    expect(spannenDerPerson(eintraege, 'anderer', 'p1')).toEqual([])
   })
 })

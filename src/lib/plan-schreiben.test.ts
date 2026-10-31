@@ -88,6 +88,16 @@ describe('Pläne und Einträge in einer Schlange', () => {
     expect(db.zustand.zeilen.plaene?.map((z) => `${String(z.id)} ${String(z.takt)}`)).toEqual(['p1 woche', 'p2 monat'])
   })
 
+  it('Person und „ausgelassen" gehen mit in die Zeile — ohne sie als leer und nicht ausgelassen (31.10.2026)', async () => {
+    savePlanEintraege('c1', [eintrag, { ...eintrag, id: 'e2', grp: null, pid: 'p7' }, { ...eintrag, id: 'e3', grp: null, aus: true }])
+    await ruhe()
+    expect(db.zustand.zeilen.plan_eintraege?.map((z) => [z.id, z.grp, z.person_id, z.aus])).toEqual([
+      ['e1', 'x1', null, false],
+      ['e2', null, 'p7', false],
+      ['e3', null, null, true],
+    ])
+  })
+
   it('erst gelöscht, dann geschrieben — gelöscht nur, was entfernt wurde', async () => {
     savePlanEintraege('c1', [eintrag], ['e9'])
     await ruhe()

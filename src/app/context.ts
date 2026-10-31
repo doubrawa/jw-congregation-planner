@@ -20,6 +20,7 @@ import type { FontScale } from '../data/constants'
 import type { OffenerPlatz } from '../data/offene-plaetze'
 import type { AssignScope, Umfang } from '../data/planning'
 import type { VorgemerkterVortrag, Vortragsplan } from '../data/vortragsplan'
+import type { Belegung } from '../data/weitere-plaene'
 import type { Abschnitt } from './deeplink'
 import type {
   Anlass,
@@ -485,8 +486,9 @@ export type AppAction =
   | { type: 'wpPlanLoeschen'; id: string }
   // Die Wochen des Zeitraums reihum an die Gruppen, ab dieser.
   | { type: 'wpGruppenVerteilen'; planId: string; abGruppe: string }
-  // Die Gruppe einer Woche setzen — null räumt den Platz.
-  | { type: 'wpEintragSetzen'; planId: string; datum: string; grp: string | null }
+  // Eine Woche mit einer Gruppe oder Person belegen oder auslassen — null räumt
+  // den Platz (und holt eine ausgelassene zurück).
+  | { type: 'wpEintragSetzen'; planId: string; datum: string; belegung: Belegung }
   /** Jemandem ohne Konto selbst Bescheid gesagt — oder doch nicht (Zusagen der Woche, Phase 5g). */
   | { type: 'persoenlichBescheid'; key: string; name: string; ja: boolean }
   // Der Screen ist beim vorgemerkten Bereich angekommen (siehe `sprungZiel`).

@@ -136,9 +136,10 @@ const SPIEGEL: Record<string, Spiegel> = {
     spalten: { person_id: 'pid', partner_id: 'partner' },
     basis: { id: 'zz', trolleyId: 'tr1', datum: '2026-09-09', von: '10:00', bis: '12:00', pid: 'p-x', partner: null, gemeinsam: false },
   },
+  // Eine Woche bleibt, nur offen — ob ihre Gruppe geht oder ihre Person (31.10.2026).
   plan_eintraege: {
     feld: 'planEintraege',
-    spalten: { grp: 'grp' },
+    spalten: { grp: 'grp', person_id: 'pid' },
     basis: { id: 'zz', planId: 'p1', datum: '2026-09-07', grp: null },
   },
   // Geht die Person, gehen ihre Absagen mit (T126) — gezählt werden sie für sie.

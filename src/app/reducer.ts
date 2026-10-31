@@ -241,6 +241,11 @@ function ohnePerson(state: AppState, id: string): AppState {
       state.gruppenbesuche,
       state.gruppenbesuche.map((b) => (b.pid === id ? { ...b, pid: null } : b)),
     ),
+    // Ebenso eine Woche eines weiteren Plans: Sie bleibt, nur offen.
+    planEintraege: neuWennGeaendert(
+      state.planEintraege,
+      state.planEintraege.map((e) => (e.pid === id ? { ...e, pid: null } : e)),
+    ),
     // Ebenso ein vorgemerkter Vortrag (T122): Es bleibt der Name, den die
     // Woche beim Anlegen erneut einer Person zuzuordnen versucht.
     vortraege: neuWennGeaendert(

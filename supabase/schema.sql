@@ -755,14 +755,18 @@ alter table public.plaene
 create index if not exists plaene_congregation_idx
   on public.plaene (congregation_id, bis);
 
--- Ein Eintrag je Woche oder je Monat, nach dem Takt des Plans: die Gruppe,
--- `datum` ist der Montag bzw. der Monatserste.
+-- Ein Eintrag je Woche oder je Monat, nach dem Takt des Plans: die Gruppe
+-- oder eine Person, `datum` ist der Montag bzw. der Monatserste. `aus`: Die
+-- Spanne ist ausgelassen und gehört nicht mehr zum Plan. Fremdschlüssel und
+-- Prüfung der Person stehen unter dem Aufräumen darunter.
 create table if not exists public.plan_eintraege (
   id              text primary key check (id <> ''),
   congregation_id uuid not null references public.congregations (id) on delete cascade,
   plan_id         text not null,
   datum           date not null,
   grp             uuid,
+  person_id       uuid,
+  aus             boolean not null default false,
   created_at      timestamptz not null default now(),
 
   constraint plan_eintraege_plan_fk foreign key (plan_id, congregation_id)
@@ -778,6 +782,10 @@ create table if not exists public.plan_eintraege (
 -- zwei Einträge, und der eindeutige Index ließe sich nicht anlegen. Ein
 -- zweiter Lauf findet nichts mehr; der Block kann fort, sobald er überall
 -- eingespielt ist.
+--
+-- Die Gastgeber-Spalte `person_id` ließ er bis zum 31.10.2026 ebenfalls
+-- fallen — eingespielt seit dem 4.10.2026. Seitdem heißt so wieder eine
+-- Spalte: die Person einer Woche (darunter).
 do $$
 begin
   if exists (select 1 from information_schema.columns
@@ -788,12 +796,29 @@ end
 $$;
 alter table public.plaene drop column if exists vorlage;
 drop index if exists public.plan_eintraege_platz;
-alter table public.plan_eintraege drop column if exists person_id;   -- nimmt plan_eintraege_person_fk mit
 alter table public.plan_eintraege drop column if exists mahlzeit;
 
 -- Ein Platz je Woche — zugleich der Index fürs Laden.
 create unique index if not exists plan_eintraege_woche
   on public.plan_eintraege (plan_id, datum);
+
+-- Personen und Auslassen (31.10.2026, Betreiber: „einzelne Personen einzuplanen
+-- und nicht nur Gruppen … Wochen/Monate auslassen können durch Löschen"). Eine
+-- schon angelegte Tabelle bekommt die Spalten hier.
+alter table public.plan_eintraege add column if not exists person_id uuid;
+alter table public.plan_eintraege add column if not exists aus boolean not null default false;
+-- Die Person; null, wenn sie gelöscht wurde — die Woche bleibt dann, offen,
+-- wie bei einer gelöschten Gruppe.
+alter table public.plan_eintraege drop constraint if exists plan_eintraege_person_fk;
+alter table public.plan_eintraege
+  add constraint plan_eintraege_person_fk foreign key (person_id, congregation_id)
+    references public.persons (id, congregation_id) on delete set null (person_id);
+-- Eine Gruppe oder eine Person, nicht beide; ausgelassen keins von beiden.
+alter table public.plan_eintraege drop constraint if exists plan_eintraege_wer;
+alter table public.plan_eintraege
+  add constraint plan_eintraege_wer check (
+    (grp is null or person_id is null) and (not aus or (grp is null and person_id is null))
+  );
 
 -- Versand-Tagebuch der Erinnerungen: send-reminders trägt ein, wem es an
 -- welchem Tag welche Art geschickt hat, und überspringt beim zweiten Lauf am

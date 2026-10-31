@@ -21,6 +21,9 @@ import './components.css'
  * für Screenreader. Bis zum 5.10.2026 baute jede dieser Stellen ihre
  * Rückfrage selbst.
  *
+ * `label` ist der Name des ✕, wo viele untereinander stehen und „Entfernen"
+ * allein nicht sagt, welches gemeint ist (die Wochen eines Plans, 31.10.2026).
+ *
  * Ein eigener Baustein, weil jede Zeile ihren eigenen Zustand braucht.
  */
 export function EntfernenKnopf({
@@ -28,11 +31,13 @@ export function EntfernenKnopf({
   onEntfernen,
   frage,
   text,
+  label,
 }: {
   className: string
   onEntfernen: () => void
   frage?: string
   text?: string
+  label?: string
 }) {
   const { t } = useT()
   const entfernen = useZweiTipp(onEntfernen)
@@ -41,7 +46,7 @@ export function EntfernenKnopf({
       type="button"
       className={entfernen.armed ? `${className} entfernen is-armed` : `${className} entfernen`}
       // Geschärft sagt der Text selbst, was geschieht; das ✕ davor braucht den Namen.
-      aria-label={entfernen.armed || text ? undefined : t.a11yRemove}
+      aria-label={entfernen.armed || text ? undefined : (label ?? t.a11yRemove)}
       onClick={entfernen.onClick}
       onBlur={entfernen.onBlur}
     >

@@ -344,7 +344,8 @@ describe('Was neben einem Namen steht, rückt darunter, statt ihn zu zerbrechen'
     ['components/gruppenbesuche.css', '.gb-zeile-inhalt', '.gb-zeile-text', '.gb-zeile-inhalt > .gb-gruppe-pille'],
     ['programm/programm.css', '.gb-liste-zeile', '.gb-liste-woche', '.gb-liste-gruppe'],
     ['components/components.css', '.abw-zeile', '.abw-zeile-text', '.abw-entfernen'],
-    ['components/weitere-plaene.css', '.wp-vorschau-zeile', '.wp-vorschau-wann', '.wp-vorschau-zeile > .wp-gruppe-wahl'],
+    // Seit dem 31.10.2026 rückt die Auswahl samt ✕ um (Personen haben lange Namen).
+    ['components/weitere-plaene.css', '.wp-vorschau-zeile', '.wp-vorschau-wann', '.wp-vorschau-zeile > .wp-vorschau-wahl'],
     ['components/weitere-plaene.css', '.wp-liste-zeile', '.wp-liste-woche', '.wp-liste-wer'],
     // Neben „Присоединиться" blieben bei 320 px rund 60 px für Tag und Zeit.
     ['trolleys/trolleys.css', '.trolley-zeile', '.trolley-zeile-text', '.trolley-zeile > .zeichen'],
@@ -367,6 +368,18 @@ describe('Was neben einem Namen steht, rückt darunter, statt ihn zu zerbrechen'
     expect(spanne).toMatch(/flex:\s*1 1 0/)
     expect(spanne).not.toMatch(/min-width:\s*0/)
     expect(deklarationen(datei, daneben)).toMatch(/margin-inline-start:\s*auto/)
+  })
+
+  it('in der Vorschau eines Plans bricht auch das Daneben selbst um — „Wiederherstellen" ragte bei 320 px 96 px hinaus', () => {
+    // Gemessen am 31.10.2026 bei Stufe 1,45: „Ausgelassen" und „Wiederherstellen"
+    // standen ohne Umbruch nebeneinander, und die Rückfrage des ✕ drückte die
+    // Auswahl auf ihren Pfeil zusammen.
+    const W = 'components/weitere-plaene.css'
+    const daneben = deklarationen(W, '.wp-vorschau-zeile > .wp-vorschau-wahl')
+    expect(daneben).toMatch(/flex-wrap:\s*wrap/)
+    expect(daneben).toMatch(/justify-content:\s*flex-end/)
+    // Neben dem ✕ kürzt die Auswahl ihren Namen, statt das ✕ verwaist darunter zu schieben.
+    expect(deklarationen(W, '.wp-gruppe-wahl')).toMatch(/max-width:\s*calc\(100% - 54px\)/)
   })
 
   it('bei den Zusagen gelten dieselben Regeln für jede Zeile — „Zuteilen" und der Haken rücken ebenso um', () => {

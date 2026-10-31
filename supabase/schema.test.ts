@@ -510,13 +510,30 @@ describe('kein Altbestand mehr im Schema', () => {
 
   it('„Familien reihum" ist weg — Vorlage, Gastgeber und Mahlzeit (4.10.2026)', () => {
     expect(tabelle('plaene')).not.toMatch(/^\s*vorlage\s/m)
-    expect(tabelle('plan_eintraege')).not.toMatch(/^\s*(person_id|mahlzeit)\s/m)
+    expect(tabelle('plan_eintraege')).not.toMatch(/^\s*mahlzeit\s/m)
     // Eine bestehende Datenbank verliert die Spalten beim nächsten Einspielen.
     const sql = normiert(schema)
     expect(sql).toContain('alter table public.plaene drop column if exists vorlage;')
-    expect(sql).toContain('alter table public.plan_eintraege drop column if exists person_id;')
     expect(sql).toContain('alter table public.plan_eintraege drop column if exists mahlzeit;')
+    // Die Gastgeber-Spalte fällt nicht mehr: Seit dem 31.10.2026 heißt so die
+    // Person einer Woche, und jedes Einspielen nähme sie sonst mit.
+    expect(sql).not.toContain('alter table public.plan_eintraege drop column if exists person_id')
     expect(funktionsRuempfe(schema).get('plan_sichtbar') ?? '').not.toMatch(/vorlage|person_id|fam/)
+  })
+
+  it('eine Woche eines Plans: eine Gruppe oder eine Person, ausgelassen keins von beiden (31.10.2026)', () => {
+    const t = tabelle('plan_eintraege')
+    expect(t).toMatch(/^\s*person_id\s+uuid,/m)
+    expect(t).toMatch(/^\s*aus\s+boolean not null default false,/m)
+    const sql = normiert(schema)
+    // Eine schon angelegte Tabelle bekommt die Spalten beim nächsten Einspielen.
+    expect(sql).toContain('alter table public.plan_eintraege add column if not exists person_id uuid;')
+    expect(sql).toContain('alter table public.plan_eintraege add column if not exists aus boolean not null default false;')
+    expect(sql).toContain('check ( (grp is null or person_id is null) and (not aus or (grp is null and person_id is null)) );')
+    // Die Person ist ein Verweis, der beim Löschen nur leert — die Woche bleibt.
+    expect(sql).toContain(
+      'foreign key (person_id, congregation_id) references public.persons (id, congregation_id) on delete set null (person_id);',
+    )
   })
 
   it('je Plan und Woche ein Eintrag — der Index entsteht erst, wenn die Familienpläne weg sind', () => {

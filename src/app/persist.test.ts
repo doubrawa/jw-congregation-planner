@@ -830,7 +830,7 @@ describe('Weitere Pläne (T120, Phase 5)', () => {
       type: 'wpEintragSetzen',
       planId: 'pl',
       datum: '2026-09-14',
-      grp: 'g3',
+      belegung: { grp: 'g3' },
     })
     expect(data.savePlanEintraege).toHaveBeenCalledWith('c1', [neu], ['e-2026-09-21'])
   })

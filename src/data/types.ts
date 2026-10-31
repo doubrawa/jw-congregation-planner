@@ -123,14 +123,24 @@ export interface WeitererPlan {
 export type PlanTakt = 'woche' | 'monat'
 
 /**
- * Ein Eintrag eines weiteren Plans: die Gruppe einer Woche oder eines Monats,
- * je nach Takt des Plans — `datum` ist der Montag bzw. der Monatserste.
+ * Ein Eintrag eines weiteren Plans: wer in einer Woche oder einem Monat dran
+ * ist, je nach Takt des Plans — `datum` ist der Montag bzw. der Monatserste.
+ * Eine Gruppe **oder** eine Person; ohne beide ist die Spanne offen.
+ *
+ * Person und „ausgelassen" kamen am 31.10.2026 dazu (Betreiber: „einzelne
+ * Personen einzuplanen und nicht nur Gruppen … Wochen/Monate auslassen können
+ * durch Löschen"). Fehlen sie — eine Momentaufnahme von davor —, gilt keine
+ * Person und nicht ausgelassen, wie bei `WeitererPlan.takt`.
  */
 export interface PlanEintrag {
   id: string
   planId: string
   datum: string
   grp: string | null
+  /** Statt einer Gruppe eine Person (`Person.id`); `null`, wenn sie gelöscht wurde. */
+  pid?: string | null
+  /** Ausgelassen: Die Spanne gehört nicht mehr zum Plan — weder Gruppe noch Person. */
+  aus?: boolean
 }
 
 /**

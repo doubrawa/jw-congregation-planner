@@ -243,10 +243,14 @@ export const DE = {
     wpVeroeffentlichen: 'Veröffentlichen', wpZurueckziehen: 'Zurück zum Entwurf',
     wpSichtSaal: 'Veröffentlicht sieht ihn die ganze Versammlung.',
     wpAbGruppe: 'Beginnen mit',
-    wpVerteilenHint: 'Die Wochen ab dieser bis zum Ende, die Gruppen der Reihe nach. Vergangene Wochen bleiben, wie sie sind.',
-    wpVerteilenHintMonat: 'Die Monate ab diesem bis zum Ende, die Gruppen der Reihe nach. Vergangene Monate bleiben, wie sie sind.',
+    wpVerteilenHint: 'Die Wochen ab dieser bis zum Ende, die Gruppen der Reihe nach. Vergangene und ausgelassene Wochen bleiben, wie sie sind, ebenso Wochen mit einer Person.',
+    wpVerteilenHintMonat: 'Die Monate ab diesem bis zum Ende, die Gruppen der Reihe nach. Vergangene und ausgelassene Monate bleiben, wie sie sind, ebenso Monate mit einer Person.',
     wpLoeschen: 'Plan löschen',
     wpDeineGruppe: 'Deine Gruppe ist dran:',
+    // Personen und Auslassen (31.10.2026): Statt einer Gruppe kann eine Person
+    // dran sein, und eine Woche oder ein Monat lässt sich aus dem Plan löschen.
+    wpDuBistDran: 'Du bist dran:', wpWer: 'Wer',
+    wpAusgelassen: 'Ausgelassen', wpWiederherstellen: 'Wiederherstellen',
     wpNurInfo: 'Nur zur Info – nichts zu bestätigen.',
     // Plan bearbeiten (T121, Phase 5f): die Unteransicht mit Spur, Zeitraum im
     // Kalender und Vorschau; in der Liste je nach Stand, ab oder bis wann er gilt.
@@ -277,6 +281,9 @@ export const DE = {
     // Bogen eines Weiteren Plans (Entwurf GDruckPlaene), je nach Takt.
     druckPlanJeWoche: 'Jede Woche ist eine Gruppe dran, von Montag bis Sonntag.',
     druckPlanJeMonat: 'Jeden Monat ist eine Gruppe dran.', druckMonatSpalte: 'Monat',
+    // Steht im Plan auch eine Person (31.10.2026).
+    druckPlanJeWocheWer: 'Jede Woche ist eine Gruppe oder eine Person dran, von Montag bis Sonntag.',
+    druckPlanJeMonatWer: 'Jeden Monat ist eine Gruppe oder eine Person dran.',
     // Bogen der Trolleys (Entwurf GDruckTrolleys); {weg} ist „Predigtdienst · Trolleys".
     druckTrolleyIntro: 'Verabredet euch und tragt euch in der App ein, unter {weg}. Gestrichelt: Hier sucht jemand einen Partner – wer mitgehen möchte, trägt sich dazu.',
     // Kongresswoche (T121): statt des Programms der leere Saal und zwei Wege.

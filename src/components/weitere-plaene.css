@@ -84,7 +84,19 @@
   overflow-wrap: break-word;
 }
 
-.wp-vorschau-zeile > .wp-gruppe-wahl {
+/* Die Auswahl und ihr ✕ — oder „Ausgelassen" und „Wiederherstellen" — rücken
+   gemeinsam um, rechtsbündig: Allein umgebrochen stand das ✕ verwaist unter
+   einem langen Namen (31.10.2026). Innen brechen sie selbst um: Ohne das ragte
+   bei 320 px und Stufe 1,45 „Wiederherstellen" 96 px aus der Karte, und die
+   Rückfrage des ✕ drückte die Auswahl auf ihren Pfeil zusammen. Neben dem ✕
+   kürzt die Auswahl lieber ihren Namen (`.wp-gruppe-wahl`). */
+.wp-vorschau-zeile > .wp-vorschau-wahl {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px 10px;
+  max-width: 100%;
   margin-inline-start: auto;
 }
 
@@ -98,10 +110,29 @@
   padding-inline-end: 8px;
 }
 
-/* Die Gruppe einer kommenden Woche als Pille (Baustein `pille`). Das Chevron
-   kommt app-weit aus `components.css` — deshalb `background-color` statt der
-   Kurzschreibweise und kein `padding:` (tests/auswahlfeld-chevron.test.ts). */
+/* Gelöscht (31.10.2026): Die Spanne steht durchgestrichen da, mit
+   „Ausgelassen" und — solange sie kommt — „Wiederherstellen". */
+.wp-vorschau-zeile.is-aus {
+  color: var(--text3);
+}
+
+.wp-vorschau-zeile.is-aus .wp-vorschau-wann {
+  text-decoration: line-through;
+}
+
+/* Wer in einer kommenden Woche dran ist, als Pille (Baustein `pille`). Das
+   Chevron kommt app-weit aus `components.css` — deshalb `background-color`
+   statt der Kurzschreibweise und kein `padding:`
+   (tests/auswahlfeld-chevron.test.ts).
+
+   So breit wie das Gewählte, nicht wie der längste Name unter hundert
+   Personen — sonst rückte sie in jeder Zeile unter die Woche (31.10.2026). Wo
+   `field-sizing` fehlt, tut sie das eben; neben dem ✕ wird sie nie breiter als
+   die Zeile. */
 .wp-gruppe-wahl {
+  field-sizing: content;
+  min-width: 0;
+  max-width: calc(100% - 54px);
   min-height: 44px;
   padding-inline-start: 16px;
   border: 1.5px solid var(--umriss);
@@ -110,6 +141,11 @@
   color: var(--text);
   font-size: calc(14.5px * var(--fs));
   font-weight: 600;
+}
+
+/* Die Spanne aus dem Plan löschen — der runde Knopf wie das ✕ einer Abwesenheit. */
+.wp-auslassen {
+  color: var(--text2);
 }
 
 /* „Alle anzeigen" unter den nächsten Wochen oder Monaten. */
@@ -190,6 +226,11 @@
   flex-direction: column;
   gap: 8px;
   padding: 16px 0 14px;
+}
+
+/* „Du bist dran" gleich unter „Deine Gruppe ist dran" (31.10.2026). */
+.wp-dran + .wp-dran {
+  padding-block-start: 0;
 }
 
 /* Der Punkt der eigenen Gruppe — wie an den Treffpunkten und bei den Besuchen. */

@@ -164,16 +164,26 @@ function planToRow(p: WeitererPlan, congregationId: string) {
   }
 }
 
-/** Ein Eintrag eines weiteren Plans: die Woche und ihre Gruppe. */
+/** Ein Eintrag eines weiteren Plans: die Woche und ihre Gruppe, Person oder „ausgelassen". */
 interface PlanEintragRow {
   id: string
   plan_id: string
   datum: string
   grp: string | null
+  person_id: string | null
+  aus: boolean
 }
 
 function planEintragFromRow(r: PlanEintragRow): PlanEintrag {
-  return { id: r.id, planId: r.plan_id, datum: r.datum, grp: r.grp }
+  return {
+    id: r.id,
+    planId: r.plan_id,
+    datum: r.datum,
+    grp: r.grp,
+    // Person und „ausgelassen" nur, wo sie gelten — wie `eintragSetzen` sie anlegt.
+    ...(r.person_id ? { pid: r.person_id } : {}),
+    ...(r.aus ? { aus: true } : {}),
+  }
 }
 
 function planEintragToRow(e: PlanEintrag, congregationId: string) {
@@ -183,6 +193,8 @@ function planEintragToRow(e: PlanEintrag, congregationId: string) {
     plan_id: e.planId,
     datum: e.datum,
     grp: e.grp,
+    person_id: e.pid ?? null,
+    aus: e.aus ?? false,
   }
 }
 
@@ -772,7 +784,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     alleSeiten<PlanEintragRow>((von, bis) =>
       db
         .from('plan_eintraege')
-        .select('id, plan_id, datum, grp', { count: 'exact' })
+        .select('id, plan_id, datum, grp, person_id, aus', { count: 'exact' })
         .eq('congregation_id', congregationId)
         .gte('datum', verteilungAb)
         .order('datum')
