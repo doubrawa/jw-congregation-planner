@@ -93,6 +93,17 @@ export function schemaSpalten(tabelle: string, schema = SCHEMA_SQL): Map<string,
   return spalten
 }
 
+/**
+ * Die Tabellen mit **Stand**: Ihr `updated_at` setzt ein Trigger bei jeder
+ * Änderung neu (`touch_updated_at`), und wer schreibt, nennt den Stand, auf dem
+ * er beruht — `wocheSchreiben`, `wochen_tauschen`. Ohne ihn fände ein solches
+ * Schreiben in der Attrappe nie seine Zeile.
+ */
+export function standTabellen(schema = SCHEMA_SQL): Set<string> {
+  const trigger = /create trigger \w+\s+before update on public\.(\w+)\s+for each row execute function public\.touch_updated_at\(\)/g
+  return new Set([...schema.matchAll(trigger)].map((m) => m[1]!))
+}
+
 /** Ein Parameter einer Funktion: sein Typ, und ob ihn jeder Aufruf mitbringen muss. */
 export interface SchemaParameter {
   typ: string
@@ -251,11 +262,14 @@ export interface FunktionsAntwort {
 /**
  * Was eine nachgestellte Edge Function außer dem Rumpf sieht: die Tabellen —
  * eine Function schreibt mit Service-Role, also an jeder Richtlinie vorbei —
- * und das Konto, mit dessen Anmeldung sie gerufen wurde.
+ * und das Konto, mit dessen Anmeldung sie gerufen wurde. Eine echte Function
+ * liest das Token selbst aus den Kopfzeilen (`kopf`) und fragt nach, wem es
+ * gehört (`/auth/v1/user`).
  */
 export interface FunktionsKontext {
   tabellen: Bestand
   wer?: Konto
+  kopf: Headers
 }
 
 export interface Umgebung {
@@ -263,8 +277,8 @@ export interface Umgebung {
   bestand?: Bestand
   /** Konten für die Auth-API und die Anmeldung per Kennwort. */
   konten?: Konto[]
-  /** Edge Functions nach Name. */
-  funktionen?: Record<string, (rumpf: Record<string, unknown>, kontext: FunktionsKontext) => FunktionsAntwort>
+  /** Edge Functions nach Name — nachgestellt oder echt (dann mit Promise). */
+  funktionen?: Record<string, (rumpf: Record<string, unknown>, kontext: FunktionsKontext) => FunktionsAntwort | Promise<FunktionsAntwort>>
   /** Weitere Umgebungsvariablen (die RLS-Proben lesen ihre Konten daraus). */
   env?: Record<string, string>
   /**
@@ -321,12 +335,23 @@ function passtFilter(wert: unknown, ausdruck: string): boolean {
  *
  * Ein Upsert (`Prefer: resolution=merge-duplicates`) führt wie PostgREST mit
  * der bestehenden Zeile zusammen — über `on_conflict` oder den Schlüssel `id`.
+ *
+ * **Was die Datenbank selbst tut**, steht hier nur, wo eine Probe darauf baut
+ * (seit dem Tauschen, 31.10.2026, das die echten Functions fährt): der Stand
+ * der Tabellen aus `standTabellen`, die Funktion `wochen_tauschen` und der
+ * Trigger `tausch_glocke_loeschen` — jedes so streng wie in `schema.sql`.
  */
 export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung }: Umgebung = {}) {
   const tabellen: Bestand = structuredClone(bestand)
   const alleKonten = [...konten]
   const aufrufe: Aufruf[] = []
   const angemeldet = new Map<string, Konto>()
+  // Der Stand einer Zeile: beim Anlegen gesetzt (`default now()`), bei jeder
+  // Änderung neu. Jede Änderung bekommt einen eigenen Zeitpunkt, auch unter
+  // einer angehaltenen Uhr — sonst sähe sie aus wie keine.
+  const mitStand = standTabellen()
+  let uhr = 0
+  const neuerStand = (): string => new Date(Date.now() + ++uhr).toISOString()
 
   const antwort = (status: number, json?: unknown): Response =>
     new Response(json === undefined ? null : JSON.stringify(json), {
@@ -364,6 +389,21 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
             task_key: task || null,
           })
         }
+      }
+      // Zwei Wochen auf einmal (T153), wie `wochen_tauschen`: jede nur auf dem
+      // genannten Stand, und trifft eine nicht, ist keine geändert. Welcher
+      // Status, fragt die Function nicht — nur, ob es glückte.
+      if (tabelle === 'rpc/wochen_tauschen') {
+        const r = rumpf as Record<string, unknown>
+        if (r.p_woche_a === r.p_woche_b) return antwort(400, { code: '22023', message: 'wochen_tauschen: zwei verschiedene Wochen erwartet' })
+        const woche = (start: unknown, stand: unknown): Zeile | undefined =>
+          (tabellen.weeks ?? []).find((w) => w.congregation_id === r.p_congregation && w.start === start && w.updated_at === stand)
+        const a = woche(r.p_woche_a, r.p_stand_a)
+        const b = woche(r.p_woche_b, r.p_stand_b)
+        if (!a || !b) return antwort(400, { code: '40001', message: 'wochen_tauschen: Stand verfehlt' })
+        Object.assign(a, { data: r.p_data_a, updated_at: neuerStand() })
+        Object.assign(b, { data: r.p_data_b, updated_at: neuerStand() })
+        return antwort(200, [a, b].map((w) => ({ woche: w.start, stand: w.updated_at })))
       }
       // Adressen und Gründe (29.10.2026): was die Funktion aus der eigenen
       // Versammlung liefert — ohne ihre Prüfung, wem sie es liefert.
@@ -404,11 +444,12 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
       // bekommt nur eine neue Zeile, wie unter dem `default` der Datenbank.
       const bestehend = (z: Zeile): Zeile | undefined =>
         zusammenfuehren ? zeilen.find((x) => konflikt.every((s) => z[s] !== undefined && x[s] === z[s])) : undefined
+      const stand = (): Zeile => (mitStand.has(tabelle) ? { updated_at: neuerStand() } : {})
       const neu: Zeile[] = (Array.isArray(rumpf) ? rumpf : [rumpf]).map((roh) => {
         const z = roh as Zeile
         const da = bestehend(z)
-        if (da) return Object.assign(da, z)
-        const zeile = { ...(mitId ? { id: randomUUID() } : {}), ...z }
+        if (da) return Object.assign(da, z, stand())
+        const zeile = { ...(mitId ? { id: randomUUID() } : {}), ...stand(), ...z }
         zeilen.push(zeile)
         return zeile
       })
@@ -416,12 +457,18 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
     }
     if (method === 'PATCH') {
       const getroffen = zeilen.filter(trifft)
-      for (const z of getroffen) Object.assign(z, rumpf)
+      for (const z of getroffen) Object.assign(z, rumpf, mitStand.has(tabelle) ? { updated_at: neuerStand() } : {})
       return zeigen ? antwort(200, getroffen) : antwort(204)
     }
     if (method === 'DELETE') {
       const weg = zeilen.filter(trifft)
       tabellen[tabelle] = zeilen.filter((z) => !trifft(z))
+      // `tausch_glocke_loeschen` (T153): Mit einer Tausch-Anfrage geht ihre
+      // Glocken-Zeile beim Gefragten — gleich, wer die Anfrage löscht.
+      if (tabelle === 'tausch_anfragen') {
+        const glocken = new Set(weg.map((z) => `${String(z.congregation_id)} tausch|${String(z.id)}`))
+        tabellen.notifications = (tabellen.notifications ?? []).filter((n) => !glocken.has(`${String(n.congregation_id)} ${String(n.task_key)}`))
+      }
       return zeigen ? antwort(200, weg) : antwort(204)
     }
     throw new Error(`Attrappe: Methode ${method} kennt sie nicht`)
@@ -448,6 +495,13 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
       angemeldet.set(token, konto)
       return antwort(200, { access_token: token, user: { id: konto.id, email: konto.email } })
     }
+    // Wem ein Token gehört — so prüft eine Function ihren Aufrufer
+    // (`rest.userId`). Ohne Anmeldung, etwa mit dem öffentlichen Schlüssel als
+    // Token, gehört es niemandem.
+    if (url.pathname === '/auth/v1/user') {
+      const konto = angemeldet.get((kopf.get('Authorization') ?? '').replace(/^Bearer /, ''))
+      return konto ? antwort(200, { id: konto.id, email: konto.email }) : antwort(401, { msg: 'invalid JWT' })
+    }
     if (url.pathname.startsWith('/auth/v1/admin/users')) {
       if (method === 'GET') return antwort(200, { users: alleKonten })
       if (method === 'POST') {
@@ -462,7 +516,7 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
       const funktion = funktionen[name]
       if (!funktion) throw new Error(`Attrappe: keine Function ${name}`)
       const wer = angemeldet.get((kopf.get('Authorization') ?? '').replace(/^Bearer /, ''))
-      const { status = 200, json = {} } = funktion((rumpf ?? {}) as Record<string, unknown>, { tabellen, wer })
+      const { status = 200, json = {} } = await funktion((rumpf ?? {}) as Record<string, unknown>, { tabellen, wer, kopf })
       return antwort(status, json)
     }
     throw new Error(`Attrappe: unbekannte Adresse ${method} ${url.pathname}`)

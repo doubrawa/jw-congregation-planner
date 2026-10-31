@@ -17,6 +17,10 @@
  * `@type`); sie wird nicht gegen den Rumpf geprüft, nur gegen die Aufrufer.
  * Neun ältere Tests waren deshalb bis zum 27.9.2026 ausgenommen, mit 83
  * Meldungen. Jetzt läuft jede Datei mit.
+ *
+ * Seit dem 31.10.2026 lädt `schema-probe.test.ts` die echten Functions
+ * `tauschen` und `send-plan` — mit ihnen kommt ins Programm, was die
+ * Edge-Laufzeit mitbringt (`deno.d.ts`: `Deno` und `npm:web-push`).
  */
 {
   "extends": "./tsconfig.app.json",
@@ -28,5 +32,5 @@
     // `noUncheckedIndexedAccess` gilt wie in der App (T42, seit 19.10.2026
     // auch hier).
   },
-  "include": ["scripts/**/*.ts"]
+  "include": ["scripts/**/*.ts", "supabase/functions/deno.d.ts"]
 }

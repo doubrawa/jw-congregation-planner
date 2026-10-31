@@ -12,6 +12,7 @@ import {
   fremdeSlots,
   gruppenWahl,
   helferSchluessel,
+  montagVon,
   planAenderung,
   PROBE_KONTEN,
   qualifiziertFuer,
@@ -19,8 +20,11 @@ import {
   stufenAnlage,
   t120Anlage,
   tagPlus,
+  TAUSCH_TITEL,
+  tauschAnlage,
   trolleyAnlage,
   verwaltungAnlage,
+  vorbeiKandidaten,
   vortragAnlage,
   wochentag,
   zugangAus,
@@ -31,7 +35,11 @@ import { helferKey, punktKey } from '../src/data/planning'
 import { isQualified, serviceQualKey } from '../src/data/helpers'
 import type { PartItem, Person } from '../src/data/types'
 import { pidsNachtragen } from '../src/data/namensbindung'
+import { heuteUtc, STANDARD_ZEITEN } from '../supabase/functions/_shared/planung.ts'
 import { ueberschneiden, zeitraumGueltig } from '../supabase/functions/_shared/trolley.ts'
+import { offeneDerWoche, type Week } from '../supabase/functions/_shared/zuteilungen.ts'
+import { type Lage, tagDerZusammenkunft, tauschAngebote, tauschPruefen } from '../supabase/functions/tauschen/regeln.ts'
+import { TITEL_ABGELEHNT, TITEL_ANGEFRAGT, TITEL_GETAUSCHT } from '../supabase/functions/tauschen/texte.ts'
 import { buildDemoWeeks, DEMO_PERSONS } from '../tests/testdaten/testdaten'
 
 /**
@@ -727,5 +735,128 @@ describe('Trolleys: die Anlage erfüllt die Regeln, die mit den Rechten nichts z
     const ids = [a.trolley, ...Object.values(a.versuche), a.direkt, a.ohneRecht, a.eigener].map((z) => z.id)
     expect(ids.every((id) => id.startsWith(`${marke}-`))).toBe(true)
     expect(new Set(ids).size).toBe(ids.length)
+  })
+})
+
+describe('Tauschen (93)–(110): jeder Versuch trifft genau die Regel, die er messen soll', () => {
+  /*
+    Die Probe misst die Function `tauschen` an einer Anlage, die sie selbst
+    anlegt. Träfe ein Versuch eine Regel davor — ein Platz, den es nicht gibt,
+    eine Woche ohne „Plan senden", jemand, der den Dienst nicht kann —, wiese
+    die Function aus dem falschen Grund ab, und die Probe hielte es für die
+    Grenze, die greift. Gehalten an den Regeln der Function selbst
+    (`tauschen/regeln.ts`), nicht an einer Abschrift.
+  */
+  const heute = '2026-11-03' // ein Dienstag: gestern und heute liegen in derselben Woche
+  const [vorbei] = vorbeiKandidaten(heute)
+  const svc = 'mik'
+  const tag0 = ersterMontagAb('2099-01-01')
+  const mitglied = { id: 'p-mitglied', uid: 'u-mitglied', name: 'Probe Mitglied' }
+  const aufseher = { id: 'p-aufseher', name: 'Probe Aufseher' }
+  const a = tauschAnlage({ marke: 'PROBE-1', versammlung: 'c', tag0, svc, vorbei: vorbei!, mitglied, aufseher, ohneKontoId: 'p-ohne', anfrageId: 'a-1' })
+  const p = a.plaetze
+  const wochen = Object.values(a.wochen).filter((w) => w !== null)
+  const frei = { [`svc:${svc}`]: true }
+  const personen = [
+    { id: mitglied.id, fn: 'Probe', ln: 'Mitglied', priv: frei },
+    { id: aufseher.id, fn: 'Probe', ln: 'Aufseher', priv: frei },
+    a.person,
+  ]
+  /** Die Lage, wie die Function sie läse — gesendet ist, wofür die Probe „Plan senden" drückt; freigeschaltet sind alle. */
+  const lage = (patch: Partial<Lage> = {}): Lage => ({
+    wochen: new Map(wochen.map((w) => [w.start, { start: w.start, data: w.data as Week, updated_at: '' }])),
+    services: [{ key: svc, name: 'Mikrofone', count: 2, groups: false }],
+    personen: new Map(personen.map((x) => [x.id, x])),
+    abwesend: () => false,
+    gesendet: new Set(a.senden.map((w) => w.start)),
+    zeiten: STANDARD_ZEITEN,
+    heute,
+    ...patch,
+  })
+
+  it('die Wochen: Montage, jede für sich, die Probewochen hinter allem anderen der Probe — mit dem Kennzeichen als Zeitraum', () => {
+    for (const w of wochen) expect(wochentag(w.start), w.start).toBe(1)
+    expect(new Set(wochen.map((w) => w.start)).size).toBe(wochen.length)
+    for (const w of wochen) expect(w.data.range, w.start).toBe('PROBE-1')
+    // Die andere Woche, die die Probe anlegt, ist die aus (40).
+    const verwaltung = verwaltungAnlage({ marke: 'PROBE-1', versammlung: 'c', tag0, personId: 'x' }).woche.start
+    for (const w of [a.wochen.abgeben, a.wochen.nehmen, a.wochen.direkt, a.wochen.ungesendet]) expect(w.start > verwaltung, w.start).toBe(true)
+  })
+
+  it('jeder Schlüssel nennt einen Platz, auf dem die genannte Person steht', () => {
+    const steht = (key: string) => {
+      const [start, tab, , dienst, pos] = key.split('|')
+      return (wochen.find((w) => w.start === start)!.data as Week)[tab as 'mid' | 'we']?.helpers?.[dienst!]?.[Number(pos)]?.pid
+    }
+    expect([p.a, p.b, p.eigenMitte, p.ohneKonto, p.ungesendet, p.vorbei].map((key) => steht(key!))).toEqual([
+      mitglied.id, aufseher.id, mitglied.id, a.person.id, aufseher.id, mitglied.id,
+    ])
+    for (const [key, pid] of Object.entries(a.inhaber)) expect(steht(key), key).toBe(pid)
+  })
+
+  it('(95) einen fremden Platz weggeben: not-yours — vor jeder anderen Regel', () => {
+    expect(tauschPruefen(lage(), p.b, p.ohneKonto, mitglied.id)).toEqual({ ok: false, fehler: 'not-yours' })
+  })
+
+  it('(96) um einen Platz ohne „Plan senden" bitten: not-published', () => {
+    expect(tauschPruefen(lage(), p.a, p.ungesendet, mitglied.id)).toEqual({ ok: false, fehler: 'not-published' })
+  })
+
+  it('(97) eine Zusammenkunft, die schon war: past — am Tag selbst ginge es noch', () => {
+    expect(tagDerZusammenkunft({ start: a.wochen.vorbei!.start, data: a.wochen.vorbei!.data as Week, updated_at: '' }, 'we', STANDARD_ZEITEN)).toBe(vorbei)
+    expect(tauschPruefen(lage({ heute: a.heuteVorbei!.tauschen }), p.vorbei!, p.b, mitglied.id)).toEqual({ ok: false, fehler: 'past' })
+    expect(tauschPruefen(lage({ heute: a.heuteVorbei!.senden }), p.vorbei!, p.b, mitglied.id).ok).toBe(true)
+  })
+
+  it('(97) beide Tage glaubt der Server, und „Plan senden" nimmt die Zusammenkunft noch mit — für gestern wie für heute', () => {
+    const server = Date.parse(heute)
+    for (const tag of vorbeiKandidaten(heute)) {
+      const b = tauschAnlage({ marke: 'PROBE-1', versammlung: 'c', tag0, svc, vorbei: tag, mitglied, aufseher, ohneKontoId: 'p-ohne', anfrageId: 'a-1' })
+      expect(heuteUtc(b.heuteVorbei!.senden, server), tag).toBe(Date.parse(b.heuteVorbei!.senden))
+      expect(heuteUtc(b.heuteVorbei!.tauschen, server), tag).toBe(Date.parse(b.heuteVorbei!.tauschen))
+      const w = b.wochen.vorbei!
+      const offen = offeneDerWoche(w.start, w.data as Week, [], [...lage().services], new Map(), STANDARD_ZEITEN, heuteUtc(b.heuteVorbei!.senden, server))
+      expect(offen.map((o) => o.key), tag).toEqual([b.plaetze.vorbei])
+      expect(montagVon(tag)).toBe(w.start)
+    }
+  })
+
+  it('(98), (100), (106): der Tausch selbst geht — ob der andere ein Konto hat, fragt erst die Function', () => {
+    expect(tauschPruefen(lage(), p.a, p.b, mitglied.id)).toMatchObject({ ok: true, a: { person: { id: mitglied.id } }, b: { person: { id: aufseher.id } } })
+  })
+
+  it('(109) mit der Person ohne Konto: in einer einzigen Woche, unter der Woche gegen das Wochenende', () => {
+    expect(tauschPruefen(lage(), p.eigenMitte, p.ohneKonto, mitglied.id)).toMatchObject({ ok: true, b: { person: { id: a.person.id } } })
+    expect(p.eigenMitte!.split('|')[0]).toBe(p.ohneKonto!.split('|')[0])
+  })
+
+  it('(99) angeboten werden der Gruppenaufseher und die Person ohne Konto — nicht die Woche ohne „Plan senden"', () => {
+    expect(tauschAngebote(lage(), p.a, mitglied.id).map((b) => b.key)).toEqual([p.b, p.ohneKonto])
+  })
+
+  it('ohne Freischaltung wiese die Function aus einem anderen Grund ab — deshalb schaltet die Probe frei', () => {
+    const ohne = new Map(personen.map((x) => [x.id, { ...x, priv: {} }]))
+    expect(tauschPruefen(lage({ personen: ohne }), p.a, p.b, mitglied.id)).toEqual({ ok: false, fehler: 'not-qualified' })
+  })
+
+  it('(94) die Anfrage an der Function vorbei erfüllt die Regeln der Tabelle — abweisen kann allein das fehlende Schreibrecht', () => {
+    const z = a.anfrageVersuch
+    expect(z).toMatchObject({ id: 'a-1', congregation_id: 'c', von_user: mitglied.uid, von_person: mitglied.id, an_person: aufseher.id, gibt_ab: p.a, nimmt: p.b })
+    expect(z.gibt_ab).not.toBe(z.nimmt)
+    expect(wochentag(z.bis)).toBe(0)
+  })
+
+  it('die Person ohne Konto trägt das Kennzeichen im Vornamen und kann den Dienst', () => {
+    expect(a.person).toEqual({ id: 'p-ohne', congregation_id: 'c', fn: 'PROBE-1', ln: 'Tauschpartner', priv: frei })
+  })
+
+  it('ohne freie Woche um heute gibt es keine vergangene Zusammenkunft — und keinen Platz dafür', () => {
+    const ohne = tauschAnlage({ marke: 'PROBE-1', versammlung: 'c', tag0, svc, vorbei: null, mitglied, aufseher, ohneKontoId: 'p-ohne', anfrageId: 'a-1' })
+    expect([ohne.wochen.vorbei, ohne.plaetze.vorbei, ohne.heuteVorbei]).toEqual([null, null, null])
+    expect(ohne.senden).toHaveLength(3)
+  })
+
+  it('die Titel der Glocke sind die der Function', () => {
+    expect(TAUSCH_TITEL).toEqual({ angefragt: TITEL_ANGEFRAGT, getauscht: TITEL_GETAUSCHT, abgelehnt: TITEL_ABGELEHNT })
   })
 })
