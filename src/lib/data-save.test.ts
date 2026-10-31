@@ -51,6 +51,14 @@ import {
   saveSettings,
   saveTrolleys,
   saveWeek,
+  saveAnwesenheit,
+  saveVortraege,
+  saveFamily,
+  deleteHouseholdRow,
+  savePushLanguage,
+  pushAboEigen,
+  pushAboEintragen,
+  sendPlan,
   setKonfliktMelder,
   setSchreibfehlerMelder,
   substituteSeek,
@@ -523,5 +531,132 @@ describe('send-plan: Jetzt erinnern', () => {
   it('scheitert der Aufruf, kommt `null` zurück', async () => {
     chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: null, error: { message: 'boom' } }))
     expect(await erinnerungSenden('2026-09-07', '2026-09-08')).toBeNull()
+  })
+})
+
+/**
+ * Schreiber, die bis zum 31.10.2026 kein Test aufrief — je Weg auch der
+ * Gegenfall: was nicht hinausgehen darf, wenn der erste Schritt scheitert oder
+ * nichts zu schreiben ist.
+ */
+describe('Weitere Schreiber mit Gegenfall', () => {
+  const geschrieben = () => new Promise((r) => setTimeout(r, 0))
+  const OHNE_FEHLER = chain.then
+  afterEach(() => {
+    chain.then = OHNE_FEHLER
+  })
+  /** Die nächsten Antworten der Kette der Reihe nach; danach wieder leer und ohne Fehler. */
+  function antworten(...folge: Array<{ data?: unknown; error?: unknown }>) {
+    chain.then = (resolve: (v: unknown) => void) => resolve({ data: null, error: null, ...folge.shift() })
+  }
+
+  const ANWESEND = { woche: '2026-09-07', tab: 'mid' as const, saal: 42, video: 7, pid: 'p1' }
+
+  it('saveAnwesenheit schreibt nur die genannten Zahlen — ohne Feld gar nichts (T152)', async () => {
+    saveAnwesenheit('c1', ANWESEND, ['saal'])
+    await geschrieben()
+    expect(chain.from).toHaveBeenCalledWith('anwesenheit')
+    expect(chain.upsert).toHaveBeenCalledWith(
+      { congregation_id: 'c1', woche: '2026-09-07', zusammenkunft: 'mid', saal: 42 },
+      { onConflict: 'congregation_id,woche,zusammenkunft' },
+    )
+    vi.clearAllMocks()
+    saveAnwesenheit('c1', ANWESEND, [])
+    await geschrieben()
+    expect(chain.from).not.toHaveBeenCalled()
+  })
+
+  const VORTRAG = { id: 'v1', woche: '2026-09-13', redner: 'R', versammlung: 'V', eigener: false, pid: null, thema: 'T', lied: '' }
+
+  it('saveVortraege löscht erst die gestrichenen, dann schreibt es die übrigen', async () => {
+    saveVortraege('c1', [VORTRAG], ['v7'])
+    await geschrieben()
+    expect(chain.delete).toHaveBeenCalled()
+    expect(chain.in).toHaveBeenCalledWith('id', ['v7'])
+    expect(chain.upsert).toHaveBeenCalledWith([expect.objectContaining({ id: 'v1', congregation_id: 'c1', woche: '2026-09-13' })])
+  })
+
+  it('saveVortraege: scheitert das Löschen, wird nichts geschrieben — und der Fehler gemeldet', async () => {
+    const fehler = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const melder = vi.fn()
+    setSchreibfehlerMelder(melder)
+    antworten({ error: { message: 'abgewiesen' } })
+    saveVortraege('c1', [VORTRAG], ['v7'])
+    await geschrieben()
+    expect(chain.delete).toHaveBeenCalled()
+    expect(chain.upsert).not.toHaveBeenCalled()
+    expect(melder).toHaveBeenCalledTimes(1)
+    setSchreibfehlerMelder(null)
+    fehler.mockRestore()
+  })
+
+  it('saveFamily legt erst den Haushalt an, dann die Personen — scheitert der Haushalt, keine Person', async () => {
+    saveFamily('c1', 'h1', [person])
+    await geschrieben()
+    expect(chain.upsert).toHaveBeenNthCalledWith(1, { id: 'h1', congregation_id: 'c1' })
+    expect(chain.upsert).toHaveBeenNthCalledWith(2, [expect.objectContaining({ id: 'p1', congregation_id: 'c1' })])
+
+    vi.clearAllMocks()
+    const fehler = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const melder = vi.fn()
+    setSchreibfehlerMelder(melder)
+    antworten({ error: { message: 'Haushalt abgewiesen' } })
+    saveFamily('c1', 'h1', [person])
+    await geschrieben()
+    expect(chain.upsert).toHaveBeenCalledTimes(1)
+    expect(chain.from).not.toHaveBeenCalledWith('persons')
+    expect(melder).toHaveBeenCalledTimes(1)
+    setSchreibfehlerMelder(null)
+    fehler.mockRestore()
+  })
+
+  it('deleteHouseholdRow löscht nur den Haushalt — die Personen verlieren ihn über den Fremdschlüssel', () => {
+    deleteHouseholdRow('h1')
+    expect(chain.from).toHaveBeenCalledWith('households')
+    expect(chain.delete).toHaveBeenCalled()
+    expect(chain.eq).toHaveBeenCalledWith('id', 'h1')
+    expect(chain.from).not.toHaveBeenCalledWith('persons')
+  })
+
+  it('savePushLanguage zieht nur die Sprache des einen Abos nach', () => {
+    savePushLanguage('e1', 'uk')
+    expect(chain.from).toHaveBeenCalledWith('push_subscriptions')
+    expect(chain.update).toHaveBeenCalledWith({ lang: 'uk' })
+    expect(chain.eq).toHaveBeenCalledWith('endpoint', 'e1')
+  })
+
+  it('pushAboEigen: eigene Zeile ja, keine nein, gescheiterte Frage null', async () => {
+    antworten({ data: { endpoint: 'e1' } })
+    expect(await pushAboEigen('e1')).toBe(true)
+    antworten({ data: null })
+    expect(await pushAboEigen('e1')).toBe(false)
+    antworten({ error: { message: 'Netz' } })
+    expect(await pushAboEigen('e1')).toBeNull()
+  })
+
+  it('pushAboEintragen: eingetragen, fremd (Endpoint schon vergeben) oder Fehler — und nie ein Upsert', async () => {
+    const abo = { endpoint: 'e1', p256dh: 'p', auth: 'a' }
+    expect(await pushAboEintragen('c1', 'u1', abo, 'de')).toBe('eingetragen')
+    expect(chain.insert).toHaveBeenCalledWith({ congregation_id: 'c1', user_id: 'u1', endpoint: 'e1', p256dh: 'p', auth: 'a', lang: 'de' })
+    antworten({ error: { message: 'doppelt', code: '23505' } })
+    expect(await pushAboEintragen('c1', 'u1', abo, 'de')).toBe('fremd')
+    antworten({ error: { message: 'Netz', code: '' } })
+    expect(await pushAboEintragen('c1', 'u1', abo, 'de')).toBe('fehler')
+    expect(chain.upsert).not.toHaveBeenCalled()
+  })
+
+  it('sendPlan: Antwort der Function, fehlende Zahlen als null bzw. leer — gescheitert null', async () => {
+    chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: { personen: 3, ohneKonto: ['Person ohne Konto'] }, error: null }))
+    expect(await sendPlan('2026-09-07', '2026-09-08')).toEqual({ personen: 3, ohneKonto: ['Person ohne Konto'] })
+    expect(chain.functions.invoke).toHaveBeenCalledWith('send-plan', {
+      body: { action: 'plan', weekStart: '2026-09-07', heute: '2026-09-08' },
+    })
+    chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: null, error: null }))
+    expect(await sendPlan('2026-09-07', '2026-09-08')).toEqual({ personen: 0, ohneKonto: [] })
+    const fehler = vi.spyOn(console, 'error').mockImplementation(() => {})
+    chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: null, error: { message: 'boom' } }))
+    expect(await sendPlan('2026-09-07', '2026-09-08')).toBeNull()
+    expect(fehler).toHaveBeenCalledWith('[send-plan/plan]', 'boom')
+    fehler.mockRestore()
   })
 })

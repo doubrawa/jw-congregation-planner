@@ -2602,6 +2602,75 @@ describe('ableitungsQuellen deckt ab, was withDerivedTasks liest', () => {
   })
 })
 
+/**
+ * **Einspringen und freie Plätze im Reducer** (31.10.2026). Die Knöpfe dazu
+ * prüfen ihre Oberflächen-Tests mit einer Attrappe für `dispatch` — was der
+ * Reducer daraus macht, prüfte bis hierher nur ein Test mit einer Woche, die
+ * es nicht gibt.
+ */
+describe('Einspringen: takeSubstitute und platzUebernehmen', () => {
+  const woche = buildDemoWeeks()[0]!
+  const KEY = `${woche.start}|mid|helper|mik|0`
+  /** Steht der Name unter der Woche — im Programm oder in einem Hilfsdienst? */
+  const unterDerWoche = (name: string) => weeksContainName([{ ...woche, we: { ...woche.we, sections: [], helpers: {} } }], name)
+  const frei = DEMO_PERSONS.find((p) => !unterDerWoche(displayName(p)))!
+
+  it('wer einspringt, steht mit Kennung auf dem Platz, hat zugesagt — und die Karte ist zu', () => {
+    const s = makeState({ personId: frei.id, myTaskId: KEY })
+    const next = reducer(s, { type: 'takeSubstitute', key: KEY })
+    expect(next.weeks[0]!.mid.helpers.mik![0]).toMatchObject({ name: displayName(frei), pid: frei.id })
+    expect(next.confirmations[KEY]).toBe('bestätigt')
+    expect(next.myTaskId).toBeNull()
+    expect(next.toast?.text).toBe(t.toastUebernommen)
+  })
+
+  it('wer an dem Abend schon eingeteilt ist, springt trotzdem ein — mit Hinweis', () => {
+    const vorsitz = person('Manfred Albrecht')
+    expect(unterDerWoche('Manfred Albrecht')).toBe(true)
+    const next = reducer(makeState({ personId: vorsitz.id }), { type: 'takeSubstitute', key: KEY })
+    expect(next.weeks[0]!.mid.helpers.mik![0]).toMatchObject({ pid: vorsitz.id })
+    expect(next.toast?.text).toBe(t.toastUebernommenKonflikt)
+  })
+
+  it('ohne eigene Person und mit einem Schlüssel, der kein Hilfsdienst ist, ändert sich nichts', () => {
+    const ohne = makeState({ personId: null })
+    expect(reducer(ohne, { type: 'takeSubstitute', key: KEY })).toBe(ohne)
+    const mit = makeState({ personId: frei.id })
+    expect(reducer(mit, { type: 'takeSubstitute', key: `${woche.start}|mid|part|x|0` })).toBe(mit)
+  })
+
+  it('platzUebernehmen: nur ein angebotener Platz — wer an dem Tag schon etwas hat, bekommt den Hinweis', () => {
+    const s = makeState({ personId: frei.id })
+    expect(reducer(s, { type: 'platzUebernehmen', key: KEY })).toBe(s)
+    const angeboten = makeState({
+      personId: frei.id,
+      // Was der Leser an dem Tag schon hat, zählt hier nur als „etwas".
+      offenePlaetze: [{ key: KEY, title: '', rolle: 'Mikrofone', date: '', at: null, schonHeute: [{} as never] }],
+    })
+    const next = reducer(angeboten, { type: 'platzUebernehmen', key: KEY })
+    expect(next.weeks[0]!.mid.helpers.mik![0]).toMatchObject({ pid: frei.id })
+    expect(next.confirmations[KEY]).toBe('bestätigt')
+    expect(next.toast?.text).toBe(t.toastUebernommenKonflikt)
+  })
+})
+
+describe('Woche einrichten ohne geladene Woche', () => {
+  it('Abweichung, Anlass, sein Termin und ein weiterer Termin ändern nichts, solange keine Woche da ist', () => {
+    const s = makeState({ weeks: [], week: 0 })
+    expect(reducer(s, { type: 'setAbweichung', tab: 'mid', patch: { time: '19:30' } })).toBe(s)
+    expect(reducer(s, { type: 'setAnlass', art: null })).toBe(s)
+    expect(reducer(s, { type: 'setAnlassTermin', patch: {} })).toBe(s)
+    expect(reducer(s, { type: 'terminAdd' })).toBe(s)
+  })
+
+  it('ein weiterer Termin lässt sich wieder entfernen — die übrigen bleiben', () => {
+    const zwei = reducer(reducer(makeState(), { type: 'terminAdd' }), { type: 'terminAdd' })
+    const [erster, zweiter] = zwei.weeks[0]!.termine!
+    const einer = reducer(zwei, { type: 'terminRemove', id: erster!.id })
+    expect(einer.weeks[0]!.termine).toEqual([zweiter])
+  })
+})
+
 describe('Index außerhalb des Fensters', () => {
   const WEIT_DRAUSSEN = 99
 

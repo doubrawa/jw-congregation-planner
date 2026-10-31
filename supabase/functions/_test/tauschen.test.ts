@@ -252,6 +252,12 @@ let geschrieben: { method: string; path: string; body: unknown }[]
 let naechsteId: number
 /** Die Datenbank weist das Schreiben der beiden Wochen ab — ein anderer war schneller. */
 let wochenAbweisen: boolean
+/** Abwesenheiten, wie `absences` sie liefert. */
+let abwesenheiten: { person_id: string; from_date: string; to_date: string }[]
+/** Eine zweite Anfrage zum selben Platz kam zwischen Prüfen und Anlegen an (unique). */
+let anfrageAbweisen: boolean
+/** Jeder Lesezugriff scheitert am Netz. */
+let netzWeg: boolean
 
 /** Werte eines `spalte=in.(…)`-Filters, dekodiert — oder null. */
 const inWerte = (path: string, spalte: string): string[] | null => {
@@ -280,6 +286,7 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   if (url.includes('/auth/v1/user')) {
     return authUser ? jsonRes({ id: authUser }) : new Response('unauthorized', { status: 401 })
   }
+  if (netzWeg) throw new Error('Netz weg: rest/v1')
   const path = url.slice(url.indexOf('/rest/v1/') + '/rest/v1/'.length)
   const body = init?.body ? JSON.parse(String(init.body)) : undefined
   if (method !== 'GET') geschrieben.push({ method, path, body })
@@ -320,7 +327,7 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     const spalten = ['id', 'gibt_ab', 'nimmt', 'bis', 'von_person']
     if (method === 'POST') {
       const neu = (body as Omit<Anfrage, 'id'>[]).map((z) => ({ ...z, id: `a${++naechsteId}` }))
-      if (neu.some((n) => anfragen.some((x) => x.gibt_ab === n.gibt_ab))) return jsonRes({ code: '23505' }, 409)
+      if (anfrageAbweisen || neu.some((n) => anfragen.some((x) => x.gibt_ab === n.gibt_ab))) return jsonRes({ code: '23505' }, 409)
       anfragen.push(...neu)
       return jsonRes(neu)
     }
@@ -337,7 +344,7 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   if (path.startsWith('services')) return jsonRes(SERVICES)
   if (path.startsWith('persons')) return jsonRes(PERSONEN)
   if (path.startsWith('congregations')) return jsonRes([{ mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00' }])
-  if (path.startsWith('absences')) return jsonRes([])
+  if (path.startsWith('absences')) return jsonRes(abwesenheiten)
   if (path.startsWith('assignment_log')) {
     const muster = likeMuster(path, 'task_key')
     return jsonRes([W1, W2].filter((w) => muster.every((m) => passtAufMuster(`${w}|we|helper|mik|0`, m))).map((w) => ({ task_key: `${w}|we|helper|mik|0` })))
@@ -377,6 +384,9 @@ beforeEach(() => {
   geschrieben = []
   naechsteId = 0
   wochenAbweisen = false
+  abwesenheiten = []
+  anfrageAbweisen = false
+  netzWeg = false
   resetPush()
 })
 
@@ -419,6 +429,60 @@ describe('Function: angemeldet und mit eigener Person', () => {
 
   it('eine unbekannte Aktion ist 400', async () => {
     expect(await ruf({ aktion: 'tauschen' })).toEqual({ status: 400, body: { error: 'bad-request' } })
+  })
+})
+
+describe('Function: am Rand (31.10.2026)', () => {
+  /** Ein Schlüssel, der kein Hilfsdienst ist — ein Programmpunkt. */
+  const PUNKT = `${W1}|mid|part|abc|0`
+  const BAD = { status: 400, body: { error: 'bad-request' } }
+
+  it('OPTIONS antwortet dem Browser, ohne etwas zu lesen', async () => {
+    const res = await handler(new Request('https://test.functions/tauschen', { method: 'OPTIONS' }))
+    expect(res.status).toBe(200)
+    expect(await res.text()).toBe('ok')
+    expect(geschrieben).toEqual([])
+  })
+
+  it('ein Schlüssel, der kein Hilfsdienst ist, ist 400 — bei jeder Aktion, die Plätze nimmt', async () => {
+    expect(await ruf({ aktion: 'angebote', gibtAb: PUNKT })).toEqual(BAD)
+    expect(await ruf({ aktion: 'anfragen', gibtAb: A, nimmt: PUNKT })).toEqual(BAD)
+    expect(await ruf({ aktion: 'direkt', gibtAb: PUNKT, nimmt: C })).toEqual(BAD)
+    expect(geschrieben).toEqual([])
+  })
+
+  it('annehmen: eine Anfrage mit kaputten Schlüsseln ist 400, ohne Kennung ist sie fort', async () => {
+    anfragen.push({ id: 'x1', congregation_id: CONG, von_user: U_SIMON, von_person: 'p-simon', an_person: 'p-jonas', gibt_ab: 'kaputt', nimmt: 'auch', bis: '2026-09-13' })
+    expect(await ruf({ aktion: 'annehmen', id: 'x1' }, U_JONAS)).toEqual(BAD)
+    expect(await ruf({ aktion: 'annehmen' }, U_JONAS)).toEqual({ status: 404, body: { error: 'gone' } })
+    expect(zeilenIn('weeks', 'PATCH')).toEqual([])
+  })
+
+  it('kam eine zweite Anfrage zum selben Platz zwischen Prüfen und Anlegen an, heißt es „schon angefragt" — ohne Glocke', async () => {
+    anfrageAbweisen = true
+    const fehler = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(await ruf({ aktion: 'anfragen', gibtAb: A, nimmt: B })).toEqual({ status: 409, body: { error: 'already-asked' } })
+    expect(glocke()).toEqual([])
+    expect(sentPush).toEqual([])
+    fehler.mockRestore()
+  })
+
+  it('wer an seinem neuen Tag fehlt, steht nicht unter den Angeboten — der Tag davor zählt nicht', async () => {
+    const personen = async () => ((await ruf({ aktion: 'angebote', gibtAb: A })).body.angebote as { personId: string }[]).map((a) => a.personId)
+    // Lena nähme Simons Sonntag, den 13.9.
+    abwesenheiten = [{ person_id: 'p-lena', from_date: '2026-09-13', to_date: '2026-09-13' }]
+    expect(await personen()).toEqual(['p-jonas', 'p-jonas'])
+    abwesenheiten = [{ person_id: 'p-lena', from_date: '2026-09-10', to_date: '2026-09-12' }]
+    expect(await personen()).toEqual(['p-jonas', 'p-lena', 'p-jonas'])
+  })
+
+  it('scheitert das Netz, antwortet sie 500 — die Einzelheiten stehen nur im Log', async () => {
+    netzWeg = true
+    const fehler = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const antwort = await ruf({ aktion: 'angebote', gibtAb: A })
+    expect(antwort).toEqual({ status: 500, body: { error: 'server-error' } })
+    expect(fehler).toHaveBeenCalledWith('tauschen:', expect.stringContaining('Netz weg'))
+    fehler.mockRestore()
   })
 })
 

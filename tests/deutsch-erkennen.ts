@@ -150,24 +150,38 @@ const ATTRIBUTE = ['aria-label', 'title', 'placeholder', 'alt', 'aria-descriptio
 /**
  * Alles, was sichtbar ist oder vorgelesen wird — unter `body`, denn Blätter,
  * Toasts und Druckbögen hängen sich dort an, nicht im Container der App.
+ *
+ * **Ein Gang für Texte und Attribute**, der einen ausgenommenen Teilbaum als
+ * Ganzes überspringt (`FILTER_REJECT`). Bis zum 31.10.2026 fragte jeder
+ * Textknoten und jedes Element mit Attribut seine ganze Ahnenreihe gegen die
+ * Selektoren von `NICHT_ABLESEN` ab — in jsdom ein großer Posten der
+ * langsamsten Proben. Reihenfolge und Auswahl sind dieselben geblieben: erst
+ * die Texte, dann die Attribute, dann die Felder.
  */
 export function sichtbareTexte(wurzel: ParentNode = document.body): string[] {
-  const out: string[] = []
-  const gang = document.createTreeWalker(wurzel as Node, NodeFilter.SHOW_TEXT)
-  for (let n = gang.nextNode(); n; n = gang.nextNode()) {
-    const text = n.nodeValue?.trim()
-    if (text && !n.parentElement?.closest(NICHT_ABLESEN)) out.push(text)
-  }
-  for (const el of wurzel.querySelectorAll(ATTRIBUTE.map((a) => `[${a}]`).join(', '))) {
-    if (el.closest(NICHT_ABLESEN)) continue
-    for (const attr of ATTRIBUTE) {
-      const wert = el.getAttribute(attr)?.trim()
-      if (wert) out.push(wert)
+  const texte: string[] = []
+  const attribute: string[] = []
+  if (!(wurzel as Element).closest?.(NICHT_ABLESEN)) {
+    const gang = document.createTreeWalker(wurzel as Node, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
+      acceptNode: (n) =>
+        n.nodeType === Node.ELEMENT_NODE && (n as Element).matches(NICHT_ABLESEN) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+    })
+    for (let n = gang.nextNode(); n; n = gang.nextNode()) {
+      if (n.nodeType === Node.TEXT_NODE) {
+        const text = n.nodeValue?.trim()
+        if (text) texte.push(text)
+        continue
+      }
+      for (const attr of ATTRIBUTE) {
+        const wert = (n as Element).getAttribute(attr)?.trim()
+        if (wert) attribute.push(wert)
+      }
     }
   }
+  const felder: string[] = []
   for (const feld of wurzel.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input[type="text"], input:not([type]), input[type="search"], textarea')) {
     const wert = feld.value.trim()
-    if (wert) out.push(wert)
+    if (wert) felder.push(wert)
   }
-  return out
+  return [...texte, ...attribute, ...felder]
 }

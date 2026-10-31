@@ -571,6 +571,33 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
     expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN)).toHaveLength(0)
   })
+
+  // Gegenfälle vom 31.10.2026 — jeder neben dem Fall, in dem das Gesuch kommt.
+  it('nicht für einen Gruppendienst: Die Reinigung übernimmt eine Gruppe, keine Person', () => {
+    const weeks = buildDemoWeeks()
+    const conf = { [helferKey('2026-09-07', 'mid', 'rein', 0)]: 'verhindert' as const }
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('rein'), STANDARD_ZEITEN)).toEqual([])
+  })
+
+  it('nicht für eine Woche, die nicht geladen ist — und nicht für einen Dienst, den es nicht mehr gibt', () => {
+    const weeks = buildDemoWeeks()
+    const conf = {
+      [helferKey('2099-01-05', 'mid', 'ton', 0)]: 'verhindert' as const,
+      [helferKey('2026-09-07', 'mid', 'gibt-es-nicht', 0)]: 'verhindert' as const,
+    }
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN)).toEqual([])
+  })
+
+  it('nicht für den, der in der Woche abwesend ist — am Tag danach schon', () => {
+    const weeks = buildDemoWeeks()
+    weeks[0]!.mid.helpers.ton = [{ name: 'A. Absager' }]
+    const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
+    const ich = qualified('ton')
+    const am = (from: string, to: string) => buildAbsences([{ id: 'a1', personId: ich.id, userId: null, from, to, reason: '' }], weeks, STANDARD_ZEITEN)
+    // Die Zusammenkunft unter der Woche liegt am Dienstag, 8. September.
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich, STANDARD_ZEITEN, am('2026-09-08', '2026-09-08'))).toEqual([])
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich, STANDARD_ZEITEN, am('2026-09-09', '2026-09-10'))).toHaveLength(1)
+  })
 })
 
 describe('Aufgaben-Ableitung (Produktionsmodus)', () => {
@@ -1556,5 +1583,27 @@ describe('zuteilbarePlaetze und tabsImUmfang', () => {
     const w: Week = { ...buildDemoWeeks()[0]!, dev: { we: { cancelled: true } } }
     expect(tabsImUmfang(w, 'mid', 'woche')).toEqual(['mid'])
     expect(tabsImUmfang(w, 'we', 'tag')).toEqual([])
+  })
+})
+
+describe('Der Ratgeber-Platz beim Zuteilen (31.10.2026)', () => {
+  const RATGEBER: MeetingSlotSelection = { kind: 'ratgeber', wi: 0, tab: 'mid', priv: 'ratgeber', groups: false, label: '' }
+
+  it('zugeteilt mit Kennung, dieselbe Besetzung gibt die Eingabe zurück, Austragen nimmt die Kennung mit', () => {
+    const weeks = buildDemoWeeks()
+    const mit = assignSlot(weeks, RATGEBER, 'Rat Geber', undefined, 'p-rat')
+    expect(mit[0]!.mid.auxRatgeber).toMatchObject({ name: 'Rat Geber', pid: 'p-rat' })
+    expect(slotValue(mit, RATGEBER)).toBe('Rat Geber')
+    expect(assignSlot(mit, RATGEBER, 'Rat Geber', undefined, 'p-rat')).toBe(mit)
+    const ohne = assignSlot(mit, RATGEBER, '', undefined, 'p-rat')
+    expect(ohne[0]!.mid.auxRatgeber?.name).toBe('')
+    expect(ohne[0]!.mid.auxRatgeber).not.toHaveProperty('pid')
+    expect(slotValue(ohne, RATGEBER)).toBe('')
+  })
+
+  it('in einer Woche, die es nicht gibt, ändert sich nichts', () => {
+    const weeks = buildDemoWeeks()
+    expect(assignSlot(weeks, { ...RATGEBER, wi: 99 }, 'Rat Geber', undefined, 'p-rat')).toBe(weeks)
+    expect(slotValue(weeks, { ...RATGEBER, wi: 99 })).toBe('')
   })
 })

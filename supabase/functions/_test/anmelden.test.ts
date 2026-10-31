@@ -9,7 +9,7 @@
  * REST und Resend; die Attrappe wertet Filter aus und hält ihren Stand.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { pruefsumme } from '../_shared/anmeldung.ts'
+import { codeVollstaendig, pruefsumme } from '../_shared/anmeldung.ts'
 import { filterWert, jsonRes, nurSpalten } from './attrappe.ts'
 
 const SUPABASE_URL = 'https://test.supabase.co'
@@ -64,6 +64,10 @@ let verifyKaputt: boolean
 let wettlauf: boolean
 /** Resend lehnt ab — die Mail geht nicht hinaus. */
 let mailKaputt: boolean
+/** Auth legt kein Konto an. */
+let kontoKaputt: boolean
+/** Die Datenbank nimmt einen neuen Link nicht an. */
+let linkKaputt: boolean
 
 const zukunft = () => new Date(Date.now() + 10 * 864e5).toISOString()
 
@@ -106,6 +110,7 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     return konten.has(id) ? jsonRes({ id, email: konten.get(id) }) : new Response('{"msg":"User not found"}', { status: 404 })
   }
   if (url.endsWith('/auth/v1/admin/users') && method === 'POST') {
+    if (kontoKaputt) return new Response('{"msg":"kaputt"}', { status: 500 })
     angelegt.push(body)
     konten.set(body.id, body.email)
     return jsonRes({ id: body.id, email: body.email })
@@ -129,6 +134,7 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
       return jsonRes(treffer.map(sichtbar))
     }
     if (method === 'POST') {
+      if (linkKaputt) return new Response('{"message":"kaputt"}', { status: 500 })
       for (const z of body as LinkRow[]) links = [...links.filter((l) => l.person_id !== z.person_id), z]
       return new Response(null, { status: 201 })
     }
@@ -227,6 +233,8 @@ beforeEach(async () => {
   verifyKaputt = false
   wettlauf = false
   mailKaputt = false
+  kontoKaputt = false
+  linkKaputt = false
 })
 
 describe('anmelden: mit dem Link aus der E-Mail', () => {
@@ -588,5 +596,90 @@ describe('anmelden: sonst', () => {
   it('eine unbekannte Aktion → 400', async () => {
     expect((await call({ aktion: 'loeschen' })).status).toBe(400)
     expect((await call(null)).status).toBe(400)
+  })
+})
+
+describe('anmelden: am Rand (31.10.2026)', () => {
+  const P_WEG = '77777777-7777-4777-8777-777777777777' // hat einen Link, die Person ist gelöscht
+  const TOKEN_WEG = 'W'.repeat(43)
+  const CODE_WEG = 'M3ZE7KQR'
+
+  it('OPTIONS antwortet dem Browser, ohne etwas zu lesen', async () => {
+    const handler = await loadFn()
+    const res = await handler(new Request('https://fn.test/anmelden', { method: 'OPTIONS' }))
+    expect(res.status).toBe(200)
+    expect(await res.text()).toBe('ok')
+  })
+
+  it('der Link einer gelöschten Person meldet niemanden an — weder per Link noch per Code, auch nicht beim Prüfen', async () => {
+    // Gegenprobe der Voraussetzung: Ein unvollständiger Code ergäbe dieselbe 404, ohne nach der Person zu fragen.
+    expect(codeVollstaendig(CODE_WEG)).toBe(true)
+    links.push(await linkZeile(P_WEG, TOKEN_WEG, CODE_WEG))
+    expect(await call({ aktion: 'link', token: TOKEN_WEG })).toEqual({ status: 404, body: { error: 'ungueltig' } })
+    expect(await call({ aktion: 'code', code: CODE_WEG, pruefen: true })).toEqual({ status: 404, body: { error: 'ungueltig' } })
+    expect(await call({ aktion: 'code', code: CODE_WEG })).toEqual({ status: 404, body: { error: 'ungueltig' } })
+    expect(angelegt).toEqual([])
+    expect(members.map((m) => m.person_id)).toEqual([P_BERT])
+  })
+
+  it('legt Auth kein Konto an, gibt es keine Sitzung und keine Mitgliedschaft (500)', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      kontoKaputt = true
+      expect(await call({ aktion: 'link', token: TOKEN_ANNA })).toEqual({ status: 500, body: { error: 'server-error' } })
+      expect(members.map((m) => m.person_id)).toEqual([P_BERT])
+      expect(links.find((l) => l.person_id === P_ANNA)?.benutzt_at).toBeNull()
+      expect(err).toHaveBeenCalledWith(expect.stringContaining('admin/users anlegen 500'))
+    } finally {
+      err.mockRestore()
+    }
+  })
+
+  it('ist das Konto eines Mitglieds bei Auth verschwunden, gibt es keine Sitzung — und kein zweites Konto', async () => {
+    links.push(await linkZeile(P_BERT, 'B'.repeat(43), 'HX4P9VTB'))
+    konten.delete('konto-bert')
+    expect(await call({ aktion: 'link', token: 'B'.repeat(43) })).toEqual({ status: 500, body: { error: 'server-error' } })
+    expect(angelegt).toEqual([])
+  })
+
+  it('geht die Mail hinaus, aber der Link nicht in die Datenbank, steht es im Log — der alte Link gilt weiter', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      linkKaputt = true
+      const vorher = JSON.stringify(links)
+      expect((await call({ aktion: 'mail', email: 'bert@example.org' })).body).toEqual({ ok: true })
+      expect(mails).toHaveLength(1)
+      expect(JSON.stringify(links)).toBe(vorher)
+      expect(err).toHaveBeenCalledWith('anmelden (mail): Link gesendet, aber nicht gespeichert')
+    } finally {
+      err.mockRestore()
+    }
+  })
+
+  it('ohne Weiterleitungs-Kopf zählt der Fehlversuch unter cf-connecting-ip — ohne beide unter „unbekannt"', async () => {
+    const handler = await loadFn()
+    const versuch = (headers: Record<string, string>) =>
+      handler(new Request('https://fn.test/anmelden', { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify({ aktion: 'code', code: 'ZZZZ9999' }) }))
+    expect((await versuch({ 'cf-connecting-ip': '198.51.100.4' })).status).toBe(404)
+    expect((await versuch({})).status).toBe(404)
+    expect(fehlversuche.map((f) => f.ip)).toEqual(['198.51.100.4', 'unbekannt'])
+  })
+
+  it('wirft das Netz, antwortet sie 500 — die Einzelheiten stehen nur im Log', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const handler = await loadFn()
+      ;(globalThis as Record<string, unknown>).fetch = async () => {
+        throw new Error('Netz weg')
+      }
+      const res = await handler(
+        new Request('https://fn.test/anmelden', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ aktion: 'link', token: TOKEN_ANNA }) }),
+      )
+      expect(res.status).toBe(500)
+      expect(await res.json()).toEqual({ error: 'server-error' })
+      expect(err).toHaveBeenCalledWith('anmelden:', 'Netz weg')
+    } finally {
+      err.mockRestore()
+    }
   })
 })

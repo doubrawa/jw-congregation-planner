@@ -25,6 +25,7 @@ vi.mock('./supabase', () => ({
 import {
   ABWESENHEIT_SPALTEN,
   loadCongregationData,
+  loadNotifications,
   PERSON_SPALTEN,
   platzFuellen,
   saveFsWeek,
@@ -36,6 +37,7 @@ import {
 } from './data'
 import { aufbewahrtAb, VERTEILUNG_WOCHEN } from '../data/aufbewahrung'
 import type { Week } from '../data/types'
+import { STANDARD_ZEITEN } from '../data/vorgaben'
 import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 
 function chainFor(table: string) {
@@ -867,6 +869,59 @@ describe('loadCongregationData: die Pläne aus T120', () => {
     }
     expect(fehler).toHaveBeenCalledWith(`[${tabelle}]`, 'relation does not exist')
     fehler.mockRestore()
+  })
+})
+
+/**
+ * **Die Glocke: aus Zeilen werden Mitteilungen** — beim vollen Laden und beim
+ * Nachladen über denselben Weg (`notificationsAus`). Abgelaufenes fällt heraus
+ * (T77), eine unbekannte Art liest sich als „gesendet", und den Schlüssel der
+ * Aufgabe trägt nur, wer einen hat.
+ */
+describe('Glocke: Zeilen werden zu Mitteilungen', () => {
+  const zeile = (over: Record<string, unknown>) => ({
+    id: 'n1',
+    type: 'zuteilung',
+    title: 'Titel',
+    body: 'Text',
+    created_at: '2026-09-01T10:00:00Z',
+    read: false,
+    task_key: null,
+    ...over,
+  })
+  const ZEILEN = [
+    zeile({ id: 'vorbei', task_key: '2026-01-05|mid|ratgeber' }),
+    zeile({ id: 'kommt', task_key: '2099-01-05|mid|ratgeber' }),
+    zeile({ id: 'ohne', type: 'neuartig', read: true }),
+  ]
+
+  it('Nachladen: der vergangene Platz fällt heraus, der kommende und der ohne Platz bleiben', async () => {
+    store.responses = { notifications: [{ data: ZEILEN, error: null }] }
+    const glocke = await loadNotifications('c1', [], STANDARD_ZEITEN)
+    expect(glocke?.map((n) => n.id)).toEqual(['kommt', 'ohne'])
+    expect(glocke?.[0]).toMatchObject({ type: 'zuteilung', title: 'Titel', text: 'Text', taskId: '2099-01-05|mid|ratgeber', read: false })
+    // Eine Art, die die App nicht kennt, steht als „gesendet" da — nicht als leeres Zeichen.
+    expect(glocke?.[1]).toMatchObject({ type: 'gesendet', read: true })
+    expect(glocke?.[1]).not.toHaveProperty('taskId')
+    expect(grenze('notifications')).toBe(50)
+  })
+
+  it('Nachladen: ohne Zeilen eine leere Glocke, bei einem Fehler bleibt der alte Stand (null)', async () => {
+    store.responses = { notifications: [{ data: null, error: null }] }
+    expect(await loadNotifications('c1', [], STANDARD_ZEITEN)).toEqual([])
+    const fehler = vi.spyOn(console, 'error').mockImplementation(() => {})
+    store.responses = { notifications: [{ data: null, error: { message: 'kaputt' } }] }
+    expect(await loadNotifications('c1', [], STANDARD_ZEITEN)).toBeNull()
+    expect(fehler).toHaveBeenCalledWith('[notifications]', 'kaputt')
+    fehler.mockRestore()
+  })
+
+  it('volles Laden: dieselbe Auswahl wie beim Nachladen', async () => {
+    seedResponses({ notifications: [{ data: ZEILEN, error: null }] })
+    const res = await loadCongregationData('u1')
+    expect(res.ok).toBe(true)
+    if (!res.ok) return
+    expect(res.data.notifications.map((n) => n.id)).toEqual(['kommt', 'ohne'])
   })
 })
 

@@ -9146,6 +9146,71 @@ Tests: die Reihenfolge in `fs-bereich-tabs.test.tsx` und
 bewacht (`gruppenbesuche-reiter-rechts`). Handbücher (Verkündiger, Planer) und
 die sieben Bilder mit der Leiste neu, Maße unverändert.
 
+## Aufgenommen am 31. Oktober 2026 (T156)
+
+### T156 · Mutationsprobe abgeschafft, Unit-Tests mit Gegenprobe stattdessen 🔧 ✅ umgesetzt (31. Oktober 2026)
+
+Betreiber: „ich will den katalog abschaffen. versuch das durch unit tests zu
+ersetzen. man kann ja auch das gegenteil testen, um eine große abdeckung zu
+bekommen … aber ich will gern, dass die tests sehr schnell durchlaufen. diese
+proben dauern mir viel zu lange." Vorher gemessen: Die Probe startete je
+Eintrag den ganzen Testlauf (354 Dateien) mit 15 Workern und blockierte den
+Rechner; 1666 Einträge hießen grob einen Tag. Ausbeute in den Protokollen und
+Commits: 19 unbewachte Regeln in rund 1.700 Messungen — 17 beim Anlegen, 2 nach
+Umbauten —, einmal echte Fehler (Tauschen, 29.10.).
+
+**Entfernt:** `scripts/mutationsprobe.mjs` (12.700 Zeilen) und
+`scripts/mutationsprobe.test.ts`, `npm run mutationsprobe`, die nur dort
+gebrauchten `werkzeugPfad` und `auszug` (`gemeinsam.mjs`) samt
+`werkzeug-pfad.test.ts`, die `MUTATIONSPROBE`-Weiche in `css-klassen.test.ts`.
+Vor dem Löschen ein letzter Abgleich des Katalogs mit der Abdeckung: keine
+Regel in Zeilen, die kein Test ausführt; bei 51 Regeln ein Zweig, den nie ein
+Test nahm (meist Rückfallwerte wie `?? ''`).
+
+**Stattdessen** Gegenproben im Test (beide Richtungen, dazu eine
+Positivkontrolle der Voraussetzung) und die Abdeckung als Suchwerkzeug
+(`npm run test:coverage`, `--coverage.all` gibt es in vitest 4 nicht mehr).
+Neue Tests, nach ungerufenen Funktionen und offenen Zweigen ausgesucht — alles
+Lücken in den Tests, der Code war richtig:
+
+- **Glocke:** Abgelaufenes fiel heraus (T77), aber kein Test lud je Zeilen —
+  Nachladen und volles Laden mit vergangenem, kommendem Platz und ohne Platz.
+- **Einspringen:** `takeSubstitute` prüfte der Reducer nur mit einer Woche, die
+  es nicht gibt — jetzt Platz mit Kennung, Zusage, Hinweis bei einer
+  Überschneidung; `platzUebernehmen` mit Hinweis.
+- **Ohne Datenbank** (Entwicklerseite): jeder der 47 Wege in `lib/data.ts`
+  geht nicht hinaus und bricht nicht — vollständig, ein neuer Schreiber fehlt
+  sonst in der Liste.
+- **Schreiber ohne Test:** Anwesende (nur die genannten Zahlen), Vortragsplan
+  (scheitert das Löschen, wird nicht geschrieben), Haushalt (erst er, dann die
+  Personen), Push-Abo (eigen, fremd, Fehler), „Plan senden".
+- **Functions:** `tauschen` (Abwesenheit am neuen Tag, eine zweite Anfrage
+  zwischen Prüfen und Anlegen, kaputte Schlüssel, Netz), `anmelden` (gelöschte
+  Person, Konto lässt sich nicht anlegen, Link gesendet aber nicht gespeichert,
+  Absender ohne Weiterleitung), `trolley` (Wettläufe beim Dazukommen,
+  Austragen und Entfernen, gelöschte Person) — jeweils auch OPTIONS und 500.
+- **Daten:** Bearbeitung an einem Lied, Sprachvarianten beim Thema,
+  Kreisaufseher-Woche ohne Bibelstudium und Wachtturm-Studium,
+  Ersatzgesuche (nicht für die Reinigung, nicht abwesend, nicht außerhalb des
+  Fensters), Ratgeber-Platz; der Hook `useTauschen` (offline, ohne Person,
+  wann nachgeladen wird).
+
+**Gemessen:** Abdeckung Zweige 90,30 % → 91,84 % (+175), Anweisungen 96,31 % →
+97,40 %, Zeilen 98,35 % → 98,83 %, Funktionen 97,40 % → 97,86 %; 7410 Tests.
+Die Suite: 117,5 s mit sieben Zeitüberschreitungen (5 s) → 99,4 s ohne einen
+Ausfall. Dafür in `vite.config.ts` lokal halb so viele Worker wie Kerne
+(`maxWorkers: '50%'`, mehr Worker bauten jsdom nur langsamer auf) und
+„Niedriger als normal" für jeden Testlauf; `sichtbareTexte`
+(`tests/deutsch-erkennen.ts`) geht den Baum einmal, statt je Knoten die
+Ahnenreihe abzufragen — die Sprachproben der Auswertung 1,3 s → 0,9 s.
+
+**Offen, nicht beauftragt:** schneller ginge es noch mit happy-dom statt jsdom
+(der Aufbau ist der größte Posten: 315 von gut 700 s Rechenzeit) und mit einem
+schnellen Teillauf ohne die Oberflächen-Tests (ohne `*.test.tsx`: 44,6 s). Die
+Zweige der Sitzungen vom 31.10. (Review, Tausch-Fälle) tragen noch neue
+Katalogeinträge: beim Zusammenführen `scripts/mutationsprobe.mjs` gelöscht
+lassen.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -9173,7 +9238,7 @@ die sieben Bilder mit der Leiste neu, Maße unverändert.
 
 ## Fortschritt
 
-Stand 30. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 31. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -9184,9 +9249,9 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
-29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑
+29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑
 
-**154 der 155 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+**155 der 156 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |

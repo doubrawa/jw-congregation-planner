@@ -106,6 +106,12 @@ let trolleys: typeof TROLLEYS
 let geschrieben: Schreiben[]
 /** Die Datenbank weist das nächste Anlegen ab (der Trigger: jemand war schneller). */
 let abweisen: boolean
+/** Ein bedingtes Ändern oder Löschen trifft keine Zeile mehr — jemand war dazwischen. */
+let nichtsGetroffen: boolean
+/** Ändern scheitert an der Datenbank. */
+let aendernScheitert: boolean
+/** Jeder Zugriff nach der Anmeldung scheitert am Netz. */
+let netzWeg: boolean
 
 /** Trifft eine Zeile alle `spalte=eq.…`/`is.null`-Filter des Pfads? */
 function passt(path: string, z: Record<string, unknown>): boolean {
@@ -127,10 +133,15 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   if (url.includes('/auth/v1/user')) {
     return authUser ? jsonRes({ id: authUser }) : new Response('unauthorized', { status: 401 })
   }
+  if (netzWeg) throw new Error('Netz weg: rest/v1')
   const path = url.slice(url.indexOf('/rest/v1/') + '/rest/v1/'.length)
   const body = init?.body ? JSON.parse(String(init.body)) : undefined
   if (method !== 'GET') geschrieben.push({ method, path, body })
 
+  if ((path.startsWith('trolley_termine') || path.startsWith('trolleys')) && (method === 'PATCH' || method === 'DELETE')) {
+    if (aendernScheitert) return new Response('{"message":"kaputt"}', { status: 500 })
+    if (nichtsGetroffen) return jsonRes([])
+  }
   if (path.startsWith('trolley_termine')) {
     if (method === 'POST') {
       if (abweisen) return new Response('{"message":"trolley_belegt"}', { status: 400 })
@@ -200,6 +211,9 @@ beforeEach(() => {
   trolleys = [...TROLLEYS]
   geschrieben = []
   abweisen = false
+  nichtsGetroffen = false
+  aendernScheitert = false
+  netzWeg = false
   resetPush()
 })
 
@@ -455,5 +469,76 @@ describe('ohne eigene Person', () => {
 describe('was kein Auftrag ist', () => {
   it('unbekannte Aktion → 400', async () => {
     expect((await ruf({ aktion: 'loeschen', id: 'r1' })).status).toBe(400)
+  })
+})
+
+describe('am Rand (31.10.2026)', () => {
+  const fehler = async (body: unknown, wer = authUser) => (await antwort(await ruf(body, wer))).body
+
+  it('OPTIONS antwortet dem Browser; ohne Aktion 400, ohne Versammlung 403 — und nichts geschrieben', async () => {
+    const res = await handler(new Request('https://test.functions/trolley', { method: 'OPTIONS' }))
+    expect(res.status).toBe(200)
+    expect(await res.text()).toBe('ok')
+    expect((await ruf({})).status).toBe(400)
+    expect(await antwort(await ruf({ aktion: 'eintragen' }, 'user-unbekannt'))).toEqual({ status: 403, body: { error: 'no-congregation' } })
+    expect(geschrieben).toEqual([])
+  })
+
+  it('ist die eigene Person gelöscht, trägt man sich nicht ein', async () => {
+    MEMBERS.push({ user_id: 'user-geloescht', person_id: 'p-geloescht', planner: false, congregation_id: CONG })
+    try {
+      expect(await antwort(await ruf(eintrag(), 'user-geloescht'))).toEqual({ status: 403, body: { error: 'no-person' } })
+    } finally {
+      MEMBERS.pop()
+    }
+  })
+
+  it('eintragen: ein Partner, den es in der Versammlung nicht gibt, ist „weg"', async () => {
+    expect(await fehler(eintrag({ partner: 'p-fremd' }))).toEqual({ error: 'weg' })
+    expect(termine).toEqual([])
+  })
+
+  it('dazukommen: ungültige Kennung, kein Termin, vorbei', async () => {
+    termine = [zeile({ datum: '2026-09-05' })]
+    expect((await ruf({ aktion: 'dazukommen', id: 42 }, U_SIMON)).status).toBe(400)
+    expect(await fehler({ aktion: 'dazukommen', id: 'r-gibt-es-nicht' }, U_SIMON)).toEqual({ error: 'weg' })
+    expect(await fehler({ aktion: 'dazukommen', id: 'r1' }, U_SIMON)).toEqual({ error: 'vorbei' })
+  })
+
+  it('dazukommen: kam einer zwischen Lesen und Schreiben dazu, heißt es „schon-partner" — scheitert das Schreiben, „stand"', async () => {
+    termine = [zeile()]
+    nichtsGetroffen = true
+    expect(await fehler({ aktion: 'dazukommen', id: 'r1' }, U_SIMON)).toEqual({ error: 'schon-partner' })
+    nichtsGetroffen = false
+    aendernScheitert = true
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(await fehler({ aktion: 'dazukommen', id: 'r1' }, U_SIMON)).toEqual({ error: 'stand' })
+    log.mockRestore()
+    expect(glocke()).toEqual([])
+  })
+
+  it('austragen: ungültige Kennung, kein Termin — und hat sich der Termin inzwischen geändert, „stand"', async () => {
+    expect((await ruf({ aktion: 'austragen', id: 42 }, U_JONAS)).status).toBe(400)
+    expect(await fehler({ aktion: 'austragen', id: 'r-gibt-es-nicht' }, U_JONAS)).toEqual({ error: 'weg' })
+    termine = [zeile({ partner_id: 'p-simon' })]
+    nichtsGetroffen = true
+    expect(await fehler({ aktion: 'austragen', id: 'r1' }, U_SIMON)).toEqual({ error: 'stand' })
+    expect(glocke()).toEqual([])
+  })
+
+  it('entfernen: ungültige Kennung — und hat ihn inzwischen ein anderer entfernt, „stand", niemand erfährt etwas', async () => {
+    expect((await ruf({ aktion: 'entfernen', trolleyId: 42 }, U_ADMIN)).status).toBe(400)
+    termine = [zeile()]
+    nichtsGetroffen = true
+    expect(await fehler({ aktion: 'entfernen', trolleyId: 'tr3' }, U_ADMIN)).toEqual({ error: 'stand' })
+    expect(glocke()).toEqual([])
+  })
+
+  it('wirft das Netz, antwortet sie 500 — die Einzelheiten stehen nur im Log', async () => {
+    netzWeg = true
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(await antwort(await ruf(eintrag()))).toEqual({ status: 500, body: { error: 'server-error' } })
+    expect(log).toHaveBeenCalledWith('trolley:', expect.stringContaining('Netz weg'))
+    log.mockRestore()
   })
 })

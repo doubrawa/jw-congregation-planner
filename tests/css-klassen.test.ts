@@ -255,14 +255,6 @@ function klassenAusCss(text: string): Set<string> {
 }
 
 describe('Alle Bausteine gegen alle Stylesheets', () => {
-  /**
-   * **Innerhalb der Mutationsprobe tritt die Probe zurück** — wie die
-   * Ankerprüfung in `scripts/mutationsprobe.test.ts`: Eine Mutation, die ein
-   * `className` mitnimmt, färbte sonst zuerst diesen Test rot, und die Probe
-   * schriebe der Regel „bewacht" gut, ohne dass ihr eigener Wächter je lief.
-   */
-  const imProbelauf = Boolean(process.env.MUTATIONSPROBE)
-
   const regeln = new Set<string>()
   for (const [, text] of dateien('src', ['.css'])) for (const k of klassenAusCss(text)) regeln.add(k)
 
@@ -284,7 +276,7 @@ describe('Alle Bausteine gegen alle Stylesheets', () => {
     expect(regeln.has('feld-fehler')).toBe(true)
   })
 
-  it.skipIf(imProbelauf)('jede Klasse eines Bausteins hat eine Regel — oder steht als Marke in der Liste', () => {
+  it('jede Klasse eines Bausteins hat eine Regel — oder steht als Marke in der Liste', () => {
     const ohneRegel: string[] = []
     for (const [pfad, text] of bausteine) {
       for (const k of klassenAusCode(text)) {
@@ -297,7 +289,7 @@ describe('Alle Bausteine gegen alle Stylesheets', () => {
     ).toEqual([])
   })
 
-  it.skipIf(imProbelauf)('jede Regel hat einen Leser', () => {
+  it('jede Regel hat einen Leser', () => {
     const ohneLeser = [...regeln].filter((k) => !woerter.has(k)).sort()
     expect(
       ohneLeser,

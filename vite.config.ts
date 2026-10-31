@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
+import { constants, setPriority } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { configDefaults, defineConfig, type Plugin } from 'vitest/config'
@@ -73,6 +74,22 @@ function serviceWorkerKennung(): Plugin {
   }
 }
 
+/**
+ * **Ein Testlauf lässt den Rechner bedienbar** (Betreiber, 31.10.2026: „das
+ * dauert lange und blockiert den rechner in der zeit, weil die prozessorlast
+ * extrem hoch ist"). vitest setzt `VITEST`, bevor es diese Datei lädt; dann
+ * läuft es mit „Niedriger als normal", und unter Windows erben die Worker das.
+ * Dev-Server und Build bleiben unberührt, die CI ebenso — dort drängelt
+ * niemand.
+ */
+if (process.env.VITEST && !process.env.CI) {
+  try {
+    setPriority(constants.priority.PRIORITY_BELOW_NORMAL)
+  } catch {
+    // Ohne das Recht dazu läuft der Test eben mit normaler Priorität.
+  }
+}
+
 // https://vite.dev/config/
 //
 // Die App läuft unter der eigenen Domain https://versammlung.app/ und liegt
@@ -102,6 +119,14 @@ export default defineConfig(({ command }) => ({
     // Das Muster gilt relativ zur Wurzel, trifft im Worktree selbst also
     // nichts — und sonst liegt unter `.claude/` kein Test.
     exclude: [...configDefaults.exclude, '.claude/**'],
+    // Halb so viele Worker wie Kerne statt aller bis auf einen — und trotzdem
+    // schneller: Gemessen am 31.10.2026 auf 16 logischen Kernen lief die Suite
+    // mit 15 Workern 117,5 s (sieben Tests rissen die 5 s Frist), mit 8 Workern
+    // 106,7 s ohne einen Ausfall. Die Kerne teilen sich Rechenwerke und
+    // Speicherbus; mehr Worker bauten jsdom nur langsamer auf (Umgebung
+    // 700 s gegen 311 s, über alle Worker gezählt). Die CI behält ihre
+    // Vorgabe — dort gibt es zwei bis vier Kerne.
+    maxWorkers: process.env.CI ? undefined : '50%',
     // Die CI hat beim Testen keine Supabase-Variablen. Lokal läse Vite
     // `.env.local` mit — ein Test, der davon abhing, war dann lokal grün und
     // in der CI rot (15.9.2026, der Deploy blieb stehen). Leer gilt hier

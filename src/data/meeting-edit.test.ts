@@ -10,11 +10,15 @@ import {
   lacRemove,
   lacTitel,
   MEETING_MINUTES,
+  setAbweichung,
   setClosingSong,
+  setDienstwoche,
   setOpeningSong,
+  setPartThema,
   togglePartner,
 } from './meeting-edit'
-import type { Week } from './types'
+import { isSong, istArt } from './helpers'
+import type { Meeting, PartItem, Week } from './types'
 
 describe('endeAusStartzeit — Endzeit aus den Zusammenkunftszeiten', () => {
   // Der Import trug feste Werte ein (20:45 / 11:45), unabhängig von den
@@ -204,5 +208,143 @@ describe('Bearbeitung mit einem Index, den es nicht gibt', () => {
     expect(westlich).not.toEqual(weeks[0]!.we)
     expect(setOpeningSong(weeks, 0, '٢٥')[0]!.we).toEqual(westlich)
     expect(setOpeningSong(weeks, 0, '۲۵')[0]!.we).toEqual(westlich)
+  })
+})
+
+/** Erste Stelle eines Lieds in der Zusammenkunft (Abschnitt, Punkt). */
+function liedStelle(m: Meeting): [number, number] {
+  for (const [si, s] of m.sections.entries()) {
+    const ii = s.items.findIndex((it) => isSong(it))
+    if (ii >= 0) return [si, ii]
+  }
+  throw new Error('kein Lied in der Zusammenkunft')
+}
+
+/** Der Punkt mit dem Leser in einem Abschnitt — Bibelstudium bzw. Wachtturm-Studium. */
+function leserPunkt(m: Meeting, art: 'lac' | 'wtStudium'): [number, number] {
+  const si = m.sections.findIndex((s) => istArt(s, art))
+  const ii = m.sections[si]?.items.findIndex((it) => !isSong(it) && it.names.some((n) => n.bereichsKey === 'leser')) ?? -1
+  if (si < 0 || ii < 0) throw new Error(`kein Punkt mit Leser in ${art}`)
+  return [si, ii]
+}
+
+describe('Gegenfälle: ein Lied, eine fehlende Woche, nichts zu tun (31.10.2026)', () => {
+  it('ein Lied ist kein Punkt — Partner, Thema, Minuten und Vortragstitel lassen es in Ruhe', () => {
+    const weeks = buildDemoWeeks()
+    const [si, ii] = liedStelle(weeks[0]!.mid)
+    expect(togglePartner(weeks, 0, 'mid', si, ii)).toBe(weeks)
+    expect(setPartThema(weeks, 0, 'mid', si, ii, 'Dienstvortrag', 'Thema')).toBe(weeks)
+    expect(lacMinuten(weeks, 0, 'mid', si, ii, 20)).toBe(weeks)
+    const [wsi, wii] = liedStelle(weeks[0]!.we)
+    expect(editTalkTheme(weeks, 0, wsi, wii, 'Thema')).toBe(weeks)
+  })
+
+  it('setPartThema: fehlender Punkt oder dasselbe Thema — dieselben Wochen', () => {
+    const weeks = buildDemoWeeks()
+    expect(setPartThema(weeks, 0, 'mid', 99, 0, 'Dienstvortrag', 'Thema')).toBe(weeks)
+    expect(setPartThema(weeks, 99, 'mid', 0, 0, 'Dienstvortrag', 'Thema')).toBe(weeks)
+    const mit = setPartThema(weeks, 0, 'mid', 1, 1, 'Dienstvortrag', 'Thema')
+    expect(mit).not.toBe(weeks)
+    expect(setPartThema(mit, 0, 'mid', 1, 1, 'Dienstvortrag', ' Thema ')).toBe(mit)
+  })
+
+  it('setAbweichung und setDienstwoche auf eine Woche, die es nicht gibt — und Dienstwoche ohne Wechsel', () => {
+    const weeks = buildDemoWeeks()
+    expect(setAbweichung(weeks, 99, 'mid', { time: '19:30' })).toBe(weeks)
+    expect(setDienstwoche(weeks, 99, true)).toBe(weeks)
+    // Schon ausgeschaltet: Ausschalten ändert nichts.
+    expect(setDienstwoche(weeks, 0, false)).toBe(weeks)
+    const ein = setDienstwoche(weeks, 0, true)
+    expect(setDienstwoche(ein, 0, true)).toBe(ein)
+  })
+
+  it('endenNachziehen: ein Ende ohne Uhrzeit bleibt stehen, und die Wochen behalten ihre Referenz', () => {
+    const weeks = buildDemoWeeks().slice(0, 1)
+    weeks[0]!.mid.end = 'Ende offen'
+    weeks[0]!.we.end = 'Ende offen'
+    const zeiten = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
+    expect(endenNachziehen(weeks, zeiten, { mid: { wd: 2, time: '18:30' }, we: { wd: 0, time: '09:30' } })).toBe(weeks)
+  })
+})
+
+describe('Sprachvarianten ziehen mit (Week.alt)', () => {
+  it('setPartThema schreibt das Thema in jede Variante und vermerkt dort den Umbau — ein Lied an der Stelle bleibt Lied', () => {
+    const weeks = buildDemoWeeks()
+    const woche = weeks[0]!
+    const fr = structuredClone(woche.mid)
+    fr.sections[1]!.items[1] = { song: 'Lied 7' }
+    const kopf = { range: woche.range, book: woche.book }
+    woche.alt = { en: { ...kopf, mid: structuredClone(woche.mid), we: structuredClone(woche.we) }, fr: { ...kopf, mid: fr, we: structuredClone(woche.we) } }
+
+    const next = setPartThema(weeks, 0, 'mid', 1, 1, 'Dienstvortrag', 'Mein Thema')
+    const titel = (m: Meeting | undefined) => (m?.sections[1]?.items[1] as PartItem | undefined)?.title
+    expect(titel(next[0]!.mid)).toBe('Dienstvortrag · Mein Thema')
+    expect(titel(next[0]!.alt!.en!.mid)).toBe('Dienstvortrag · Mein Thema')
+    expect(next[0]!.alt!.en!.mid!.umgebaut).toBe(true)
+    expect(next[0]!.alt!.fr!.mid!.sections[1]!.items[1]).toEqual({ song: 'Lied 7' })
+    // Geklont, nicht im Bestand geändert.
+    expect(titel(weeks[0]!.alt!.en!.mid)).not.toBe('Dienstvortrag · Mein Thema')
+  })
+})
+
+describe('Kreisaufseher-Woche, wo die umzubauenden Punkte fehlen (T62)', () => {
+  it('ohne Bibelstudium und ohne Wachtturm-Studium: Ein- und Ausschalten setzen nur den Vermerk', () => {
+    const weeks = buildDemoWeeks()
+    const woche = weeks[0]!
+    const [lac, vbs] = leserPunkt(woche.mid, 'lac')
+    woche.mid.sections[lac]!.items.splice(vbs, 1)
+    woche.we.sections = woche.we.sections.filter((s) => !istArt(s, 'wtStudium'))
+    const vorher = structuredClone(woche)
+
+    const ein = setDienstwoche(weeks, 0, true)
+    expect(ein[0]!.co).toBe(true)
+    expect(ein[0]!.coData).toEqual({})
+    expect(ein[0]!.mid.sections).toEqual(vorher.mid.sections)
+    expect(ein[0]!.we.sections).toEqual(vorher.we.sections)
+
+    const aus = setDienstwoche(ein, 0, false)
+    expect(aus[0]!.co).toBe(false)
+    expect(aus[0]!.coData).toBeUndefined()
+    expect(aus[0]!.mid.sections).toEqual(vorher.mid.sections)
+    expect(aus[0]!.we.sections).toEqual(vorher.we.sections)
+  })
+
+  it('eine Variante ohne den Punkt bleibt, wie sie ist — die Zusammenkunft selbst wird umgebaut und kommt zurück', () => {
+    const weeks = buildDemoWeeks()
+    const woche = weeks[0]!
+    const [lac, vbs] = leserPunkt(woche.mid, 'lac')
+    const [wt, stud] = leserPunkt(woche.we, 'wtStudium')
+    const en = { range: woche.range, book: woche.book, mid: structuredClone(woche.mid), we: structuredClone(woche.we) }
+    en.mid.sections[lac]!.items.splice(vbs, 1)
+    expect(en.mid.sections[lac]!.items[vbs], 'Bibelstudium ist der letzte Punkt').toBeUndefined()
+    delete (en.we.sections[wt]!.items[stud] as PartItem).meta
+    woche.alt = { en }
+    const vbsTitel = (woche.mid.sections[lac]!.items[vbs] as PartItem).title
+
+    const ein = setDienstwoche(weeks, 0, true)
+    expect((ein[0]!.mid.sections[lac]!.items[vbs] as PartItem).title).not.toBe(vbsTitel)
+    expect(ein[0]!.coData?.midOrigAlt).toEqual({})
+    expect(ein[0]!.coData?.weOrigAlt).toEqual({})
+    expect(ein[0]!.alt!.en!.mid!.sections[lac]!.items).toEqual(en.mid.sections[lac]!.items)
+
+    const aus = setDienstwoche(ein, 0, false)
+    expect((aus[0]!.mid.sections[lac]!.items[vbs] as PartItem).title).toBe(vbsTitel)
+    expect(aus[0]!.alt!.en!.mid!.sections[lac]!.items).toEqual(en.mid.sections[lac]!.items)
+  })
+
+  it('wurde das Wachtturm-Studium zwischendurch entfernt, nimmt das Ausschalten den Rest trotzdem zurück', () => {
+    const weeks = buildDemoWeeks()
+    const [lac, vbs] = leserPunkt(weeks[0]!.mid, 'lac')
+    const vbsTitel = (weeks[0]!.mid.sections[lac]!.items[vbs] as PartItem).title
+    const ein = setDienstwoche(weeks, 0, true)
+    const wt = ein[0]!.we.sections.findIndex((s) => istArt(s, 'wtStudium'))
+    const ohne = structuredClone(ein)
+    ohne[0]!.we.sections[wt]!.items = ohne[0]!.we.sections[wt]!.items.filter((it) => isSong(it))
+
+    const aus = setDienstwoche(ohne, 0, false)
+    expect(aus[0]!.co).toBe(false)
+    expect((aus[0]!.mid.sections[lac]!.items[vbs] as PartItem).title).toBe(vbsTitel)
+    // Der Schlussvortrag ist fort, auch ohne das Studium davor.
+    expect(aus[0]!.we.sections.some((s) => istArt(s, 'dienstvortrag'))).toBe(false)
   })
 })

@@ -11,8 +11,7 @@
     "icons": "node scripts/make-icons.mjs",
     "contrast": "node scripts/check-contrast.mjs",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.all --coverage.include=src/**/*.ts --coverage.include=src/**/*.tsx --coverage.include=supabase/functions/**/*.ts --coverage.exclude=**/*.test.ts --coverage.exclude=**/*.test.tsx --coverage.exclude=supabase/functions/_test/**",
-    "mutationsprobe": "node scripts/mutationsprobe.mjs",
+    "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.include=src/**/*.ts --coverage.include=src/**/*.tsx --coverage.include=supabase/functions/**/*.ts --coverage.exclude=**/*.test.ts --coverage.exclude=**/*.test.tsx --coverage.exclude=supabase/functions/_test/** --testTimeout=30000",
     "preview": "vite preview"
   },
   "dependencies": {
