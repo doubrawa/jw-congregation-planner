@@ -9275,6 +9275,12 @@ Review `8ede124d`):
   `_shared/i18n/translate.ts`; `send-plan` und `send-reminders` laden die
   Datei, verhalten sich aber gleich.
 
+**Ausgerollt am 31.10.2026:** erst `send-plan` (v37) und `send-reminders`
+(v63), damit sie wieder main entsprechen — heruntergeladen und Datei für
+Datei gleich HEAD (15 und 16 Dateien); `send-plan` antwortet auf OPTIONS mit
+200 und ohne Anmeldung mit 401, `send-reminders` beidem mit 401 (nur mit
+`CRON_SECRET`, wie bisher). Dann gepusht.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
