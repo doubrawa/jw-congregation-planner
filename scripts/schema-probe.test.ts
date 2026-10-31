@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   ATTRAPPE_SCHLUESSEL,
   ATTRAPPE_URL,
@@ -15,12 +15,13 @@ import {
   schemaFehler,
   schemaFunktion,
   schemaSpalten,
+  standTabellen,
   tabelleVon,
   type Umgebung,
   type Zeile,
 } from './schema-attrappe'
 import { probeDateiText, wertAusEnvText } from './gemeinsam.mjs'
-import { eigeneSlots, ersterMontagAb, fremdeSlots, stufenAnlage } from './mitgliedsrechte-probe.mjs'
+import { eigeneSlots, ersterMontagAb, fremdeSlots, montagVon, stufenAnlage, tagPlus, vorbeiKandidaten } from './mitgliedsrechte-probe.mjs'
 import { uuid5 } from './wochenplanung-importieren.mjs'
 import { LABEL_WT_STUDIUM } from '../src/data/constants'
 import { wasBleibt, zeitraumGueltig } from '../supabase/functions/_shared/trolley.ts'
@@ -215,6 +216,46 @@ function trolleyFunktion(
   }
   throw new Error(`Attrappe: die Aktion ${String(rumpf.aktion)} kennt die nachgestellte Function nicht`)
 }
+
+/**
+ * **Die echten Edge Functions** `tauschen` und `send-plan` (seit 31.10.2026):
+ * Die Probe misst das Tauschen an der Function selbst, und was sie dort
+ * erwartet, soll an genau deren Code hängen — eine nachgestellte liefe davon,
+ * sobald die echte sich ändert. Geladen wie in `supabase/functions/_test`
+ * (`Deno` als Global, nur für den Import); jede redet über `fetch` mit derselben
+ * Attrappe — nach dem Aufrufer fragt sie `/auth/v1/user`, die Tabellen schreibt
+ * sie mit der Dienstrolle. Ihre REST-Aufrufe stehen damit ebenfalls unter der
+ * Prüfung gegen schema.sql. Ohne VAPID-Schlüssel geht kein Push hinaus.
+ */
+const ECHTE_FUNCTIONS = {
+  tauschen: () => import('../supabase/functions/tauschen/index.ts'),
+  'send-plan': () => import('../supabase/functions/send-plan/index.ts'),
+}
+const echteHandler = new Map<string, (req: Request) => Promise<Response>>()
+beforeAll(async () => {
+  const g = globalThis as Record<string, unknown>
+  const umgebung: Record<string, string> = { SUPABASE_URL: ATTRAPPE_URL, SUPABASE_SERVICE_ROLE_KEY: ATTRAPPE_SCHLUESSEL }
+  for (const [name, laden] of Object.entries(ECHTE_FUNCTIONS)) {
+    g.Deno = {
+      env: { get: (schluessel: string) => umgebung[schluessel] },
+      serve: (handler: (req: Request) => Promise<Response>) => echteHandler.set(name, handler),
+    }
+    try {
+      await laden()
+    } finally {
+      delete g.Deno
+    }
+  }
+})
+
+/** Eine echte Function als Function der Attrappe: derselbe Rumpf, dieselben Kopfzeilen. */
+const echt =
+  (name: keyof typeof ECHTE_FUNCTIONS) =>
+  async (rumpf: Record<string, unknown>, { kopf }: FunktionsKontext): Promise<FunktionsAntwort> => {
+    const anfrage = new Request(`${ATTRAPPE_URL}/functions/v1/${name}`, { method: 'POST', headers: kopf, body: JSON.stringify(rumpf) })
+    const antwort = await echteHandler.get(name)!(anfrage)
+    return { status: antwort.status, json: await antwort.json() }
+  }
 
 const LAEUFE: Record<string, Lauf[]> = {
   'testversammlung-anlegen.mjs': [
@@ -558,6 +599,12 @@ const LAEUFE: Record<string, Lauf[]> = {
             { id: G1, congregation_id: C, name: 'Probe', position: 0, overseer_id: P4 },
             { id: G2, congregation_id: C, name: 'Probe Zwei', position: 1 },
           ],
+          // Ohne einen Dienst, den eine Person übernimmt, blieben (94)–(110)
+          // ungemessen; die Reinigung davor übernimmt eine Gruppe.
+          services: [
+            { congregation_id: C, key: 'rein', name: 'Reinigung', count: 1, groups: true, position: 0 },
+            { congregation_id: C, key: 'mik', name: 'Mikrofone', count: 2, groups: false, position: 1 },
+          ],
           weeks: [
             {
               congregation_id: C,
@@ -576,17 +623,11 @@ const LAEUFE: Record<string, Lauf[]> = {
         },
         funktionen: {
           substitute: () => ({ status: 403, json: { error: 'nicht erlaubt' } }),
-          // Die Tür wie in `send-plan/index.ts`: Senden darf, wer zuteilt. Den
-          // Zweig des Gruppenaufsehers für die Treffpunkte seiner Gruppe kennt
-          // die Attrappe nicht — die Probe misst ihn nicht. Dahinter ins Leere:
-          // keine Woche im Jahr 2100. Eine andere Aktion kennt die Function
-          // nicht (mehr), etwa die des Zeugnisgebens bis zum 14.10.2026.
-          'send-plan': (rumpf, { tabellen, wer }) => {
-            const ich = (tabellen.members ?? []).find((m) => m.user_id === wer?.id)
-            if (!ich?.planner && !ich?.zuteiler) return { status: 403, json: { error: 'forbidden' } }
-            if (rumpf.action === 'plan') return { status: 404, json: { error: 'no-week' } }
-            return { status: 400, json: { error: 'bad-request' } }
-          },
+          // Echt, seit das Tauschen gesendete Wochen braucht (31.10.2026): die
+          // Tür aus (36), „Plan senden" für die Probewochen, der Entzug beim
+          // Aufräumen. Bis dahin stand hier nur die Tür nachgestellt.
+          'send-plan': echt('send-plan'),
+          tauschen: echt('tauschen'),
           trolley: trolleyFunktion,
         },
       },
@@ -608,6 +649,11 @@ const LAEUFE: Record<string, Lauf[]> = {
         // Die Trolleys (T121, Phase 7): der Trolley des Admins, das Trolley-Recht
         // des Mitglieds, der Termin an der Function vorbei, das Aufräumen.
         'POST trolleys', 'GET trolleys', 'DELETE trolleys', 'PATCH persons', 'POST trolley_termine', 'GET trolley_termine',
+        // Das Tauschen (T153): der Versuch an der Function vorbei, das
+        // Nachsehen, der Tausch über zwei Wochen und das Aufräumen — die
+        // Anfragen über `tauschen`, das Tagebuch über den Entzug von `send-plan`.
+        'GET services', 'POST tausch_anfragen', 'GET tausch_anfragen', 'DELETE tausch_anfragen', 'GET assignment_log',
+        'POST rpc/wochen_tauschen', 'DELETE assignment_log', 'GET confirmations', 'DELETE persons',
       ],
     },
   ],
@@ -677,6 +723,100 @@ describe('Jeder REST-Aufruf der Wartungsskripte passt zu schema.sql', () => {
     } finally {
       fs.rmSync(eingaben, { recursive: true, force: true })
     }
+  })
+})
+
+describe('Die Attrappe tut, was die Datenbank selbst tut — so streng wie schema.sql (31.10.2026)', () => {
+  /*
+    Seit dem Tauschen fährt die Mitgliedsrechte-Probe echte Functions, und die
+    bauen darauf, was die Datenbank selbst tut: der Stand einer Woche,
+    `wochen_tauschen`, der Trigger an den Anfragen, die Frage nach dem Konto
+    hinter einem Token. Wäre die Attrappe dort nachgiebiger als die Datenbank,
+    bestünde die Probe in ihr, was in der Datenbank scheitert.
+  */
+  const rest = (pfad: string, method = 'GET', body?: unknown) =>
+    fetch(`${ATTRAPPE_URL}/rest/v1/${pfad}`, {
+      method,
+      headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  const woche = (start: string, data: unknown) => ({ congregation_id: C, start, updated_at: `${start}T00:00:00.000Z`, data })
+
+  it('einen Stand haben Wochen und Treffpunkt-Wochen — gesetzt beim Anlegen, neu bei jeder Änderung, auch gegen den Aufrufer', async () => {
+    expect(standTabellen()).toEqual(new Set(['weeks', 'fs_weeks']))
+    const staende: unknown[] = []
+    const stand = async () => staende.push(((await (await rest('weeks?select=updated_at&start=eq.2099-01-05')).json()) as Zeile[])[0]?.updated_at)
+    await fahre(async () => {
+      await rest('weeks', 'POST', { congregation_id: C, start: '2099-01-05', data: {} })
+      await stand()
+      // Den Stand setzt der Trigger, nicht der Aufrufer — sonst schriebe man sich an ihm vorbei.
+      await rest('weeks?start=eq.2099-01-05', 'PATCH', { data: { geaendert: true }, updated_at: '2000-01-01T00:00:00.000Z' })
+      await stand()
+    })
+    expect(staende[0]).toEqual(expect.any(String))
+    expect(staende[1]).not.toBe(staende[0])
+    expect(staende[1]).not.toBe('2000-01-01T00:00:00.000Z')
+  })
+
+  it('wochen_tauschen schreibt beide Wochen nur auf ihrem Stand — verfehlt einer, ist keine geändert', async () => {
+    const bestand = { weeks: [woche('2099-01-05', { v: 'a' }), woche('2099-01-12', { v: 'b' })] }
+    const tauschen = (standB: string) =>
+      rest('rpc/wochen_tauschen', 'POST', {
+        p_congregation: C, p_woche_a: '2099-01-05', p_stand_a: '2099-01-05T00:00:00.000Z', p_data_a: { v: 'b' },
+        p_woche_b: '2099-01-12', p_stand_b: standB, p_data_b: { v: 'a' },
+      })
+    let status = 0
+    const verfehlt = await fahre(async () => {
+      status = (await tauschen('2000-01-01T00:00:00.000Z')).status
+    }, { bestand })
+    expect(status).toBeGreaterThanOrEqual(400)
+    expect(verfehlt.tabellen.weeks).toEqual(bestand.weeks)
+
+    let zeilen: Zeile[] = []
+    const getroffen = await fahre(async () => {
+      zeilen = (await (await tauschen('2099-01-12T00:00:00.000Z')).json()) as Zeile[]
+    }, { bestand })
+    expect(getroffen.tabellen.weeks!.map((w) => w.data)).toEqual([{ v: 'b' }, { v: 'a' }])
+    // Zurück kommen die neuen Stände — die App übernimmt sie.
+    expect(zeilen).toEqual(getroffen.tabellen.weeks!.map((w) => ({ woche: w.start, stand: w.updated_at })))
+    expect(zeilen.map((z) => z.stand)).not.toContain('2099-01-05T00:00:00.000Z')
+  })
+
+  it('wochen_tauschen nimmt keine Woche zweimal', async () => {
+    let status = 0
+    const { tabellen } = await fahre(async () => {
+      status = (await rest('rpc/wochen_tauschen', 'POST', {
+        p_congregation: C, p_woche_a: '2099-01-05', p_stand_a: '2099-01-05T00:00:00.000Z', p_data_a: { v: 'x' },
+        p_woche_b: '2099-01-05', p_stand_b: '2099-01-05T00:00:00.000Z', p_data_b: { v: 'y' },
+      })).status
+    }, { bestand: { weeks: [woche('2099-01-05', { v: 'a' })] } })
+    expect(status).toBeGreaterThanOrEqual(400)
+    expect(tabellen.weeks![0]!.data).toEqual({ v: 'a' })
+  })
+
+  it('mit einer Tausch-Anfrage geht ihre Glocke beim Gefragten — nur ihre', async () => {
+    const bestand = {
+      tausch_anfragen: [{ id: k(91), congregation_id: C }, { id: k(92), congregation_id: C }],
+      notifications: [
+        { id: k(93), congregation_id: C, task_key: `tausch|${k(91)}` },
+        { id: k(94), congregation_id: C, task_key: `tausch|${k(92)}` },
+        { id: k(95), congregation_id: C, task_key: '2099-01-05|we|helper|mik|0' },
+        { id: k(96), congregation_id: CB, task_key: `tausch|${k(91)}` },
+      ],
+    }
+    const { tabellen } = await fahre(() => rest(`tausch_anfragen?id=eq.${k(91)}`, 'DELETE'), { bestand })
+    expect(tabellen.notifications!.map((n) => n.id)).toEqual([k(94), k(95), k(96)])
+  })
+
+  it('wem ein Token gehört, sagt /auth/v1/user — ohne Anmeldung niemandem', async () => {
+    const antworten: number[] = []
+    const ich = async (token: string) => antworten.push((await fetch(`${ATTRAPPE_URL}/auth/v1/user`, { headers: { Authorization: `Bearer ${token}` } })).status)
+    await fahre(async () => {
+      const anmeldung = await fetch(`${ATTRAPPE_URL}/auth/v1/token?grant_type=password`, { method: 'POST', body: JSON.stringify({ email: 'probe@probe.invalid' }) })
+      await ich(((await anmeldung.json()) as { access_token: string }).access_token)
+      await ich(ANON.SUPABASE_ANON_KEY)
+    }, { konten: [{ id: U1, email: 'probe@probe.invalid' }] })
+    expect(antworten).toEqual([200, 401])
   })
 })
 
@@ -1008,16 +1148,14 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
   })
 
   /**
-   * **Die Richtlinien der Trolleys**, wie `schema.sql` sie setzt: Trolleys
-   * schreibt nur der Admin (`trolleys_write`), Termine niemand — eine
-   * Schreib-Richtlinie für `trolley_termine` gibt es nicht, nur die Function
-   * schreibt, mit der Dienstrolle. Die Attrappe kennt keine Richtlinien; diese
-   * steht vor ihr wie RLS vor der Tabelle. Nachgestellt ist das Einfügen —
-   * anderes schreibt die Probe an diesen Tabellen nicht, gelöscht wird nur der
-   * Trolley, vom Admin. Wer einfügt, sagt das Token der Anfrage; zu welchem
-   * Konto es gehört, liest die Wache bei der Anmeldung mit.
+   * **Richtlinien vor der Attrappe.** Sie selbst kennt keine; diese Wache steht
+   * vor ihr wie RLS vor der Tabelle. `verbot` sagt zu einem Aufruf und dem
+   * Konto, das ihn schickt, was die Datenbank stattdessen antwortet. Wer
+   * schickt, sagt das Token der Anfrage; zu welchem Konto es gehört, liest die
+   * Wache bei der Anmeldung mit. Eine Function schreibt mit der Dienstrolle —
+   * für sie gibt es kein Konto, und keine Richtlinie hält sie auf.
    */
-  const trolleyRichtlinien = (admins: readonly string[]) => {
+  const richtlinien = (verbot: (a: Aufruf, wer: string | undefined) => FunktionsAntwort | undefined) => {
     const konten = new Map<string, string>()
     let wer: string | undefined
     const mitWache = (holen: (adresse: string | URL, init?: RequestInit) => Promise<Response>) =>
@@ -1031,12 +1169,7 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
         return antwort
       }
     return {
-      /** Was die Datenbank auf ein Einfügen antwortet, das keine Richtlinie zulässt. */
-      stoerung: (a: Aufruf): FunktionsAntwort | undefined => {
-        const tabelle = tabelleVon(a)
-        const verboten = a.method === 'POST' && (tabelle === 'trolley_termine' || (tabelle === 'trolleys' && !admins.includes(wer ?? '')))
-        return verboten ? { status: 403, json: { code: '42501', message: `new row violates row-level security policy for table "${tabelle}"` } } : undefined
-      },
+      stoerung: (a: Aufruf): FunktionsAntwort | undefined => verbot(a, wer),
       /** Einen Lauf fahren, mit der Wache vor der Attrappe. */
       fahren: (lauf: () => Promise<unknown>) => () => {
         vi.stubGlobal('fetch', mitWache(globalThis.fetch))
@@ -1044,6 +1177,21 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
       },
     }
   }
+
+  /**
+   * **Die Richtlinien der Trolleys**, wie `schema.sql` sie setzt: Trolleys
+   * schreibt nur der Admin (`trolleys_write`), Termine niemand — eine
+   * Schreib-Richtlinie für `trolley_termine` gibt es nicht, nur die Function
+   * schreibt, mit der Dienstrolle. Nachgestellt ist das Einfügen — anderes
+   * schreibt die Probe an diesen Tabellen nicht, gelöscht wird nur der
+   * Trolley, vom Admin.
+   */
+  const trolleyRichtlinien = (admins: readonly string[]) =>
+    richtlinien((a, wer) => {
+      const tabelle = tabelleVon(a)
+      const verboten = a.method === 'POST' && (tabelle === 'trolley_termine' || (tabelle === 'trolleys' && !admins.includes(wer ?? '')))
+      return verboten ? { status: 403, json: { code: '42501', message: `new row violates row-level security policy for table "${tabelle}"` } } : undefined
+    })
 
   it('mitgliedsrechte-probe (Trolleys): unter den Richtlinien aus schema.sql kommt jeder Fall zu seinem Urteil', async () => {
     const l = lauf('mitgliedsrechte-probe.mjs')
@@ -1096,6 +1244,161 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     const { ausgabe, tabellen } = await mitTrolley((rumpf, kontext) => trolleyFunktion(rumpf, kontext, () => true))
     expect(ausgabe.join('\n')).toMatch(/! \(74\) .*\n.*EINGETRAGEN \(HTTP 200\) — AUCH DAS!\n.*Die Function antwortete: .*\n.*\(wieder ausgetragen\)/)
     expect((tabellen.trolley_termine ?? []).filter(istProbe)).toEqual([])
+  })
+
+  /*
+    Das Tauschen (seit 31.10.2026): Gemessen wird die echte Function
+    `tauschen`, gesendet mit der echten `send-plan` — nachgestellt ist nur die
+    Datenbank. Die Abweisungen der Function stimmen deshalb schon hier; was RLS
+    entscheidet, (94) und (102), erst unter den Richtlinien.
+  */
+  /** Der Tag der Proben (siehe `beforeEach` oben) — die vergangene Zusammenkunft für (97) liegt am Tag davor. */
+  const HEUTE = '2026-09-07'
+  /** Ein Schlüssel der Probe: in den Probewochen — 2099 und die Woche von gestern — oder die Glocke einer Anfrage. */
+  const probeSchluessel = (key: unknown): boolean =>
+    ['2099-', `${montagVon(vorbeiKandidaten(HEUTE)[0]!)}|`, 'tausch|'].some((anfang) => String(key).startsWith(anfang))
+
+  it('mitgliedsrechte-probe (Tauschen): misst (93)–(110) an der echten Function und räumt alles weg', async () => {
+    const vorher = lauf('mitgliedsrechte-probe.mjs').umgebung!.bestand!
+    const { tabellen, ausgabe, aufrufe } = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
+    const text = ausgabe.join('\n')
+    // Jede Abweisung kommt von der Function selbst, an genau ihrer Regel.
+    expect(text).toMatch(/· \(93\) .*\n.*abgewiesen \(HTTP 401\) — tauschen kann nur, wer angemeldet ist \(unauthorized\)/)
+    expect(text).toMatch(/· \(95\) .*\n.*nicht getauscht \(HTTP 403\) — abgewiesen — tauschen kann nur, wer den Platz hat \(not-yours\)/)
+    expect(text).toMatch(/· \(96\) .*\n.*nicht angefragt \(HTTP 409\) — abgewiesen — getauscht wird erst nach „Plan senden" \(not-published\)/)
+    expect(text).toMatch(/· \(97\) .*\(2026-09-06, getauscht am Tag danach\)\n.*nicht angefragt \(HTTP 409\) — abgewiesen — was vorbei ist, tauscht niemand mehr \(past\)/)
+    expect(text).toMatch(/· \(98\) .*\n.*nicht getauscht \(HTTP 409\) — abgewiesen — wer ein Konto hat, sagt selbst zu \(has-account\)/)
+    expect(text).toMatch(/· \(103\) .*\n.*nicht angenommen \(HTTP 404\) — abgewiesen — annehmen kann nur der Gefragte \(gone\)/)
+    expect(text).toMatch(/· \(99\) .*\n.*SICHTBAR \(HTTP 200; Gruppenaufseher mit Konto, Tauschpartner ohne Konto\)/)
+    for (const [nr, wort] of [[100, 'ANGEFRAGT'], [104, 'ABGELEHNT'], [105, 'ZURÜCKGEZOGEN'], [106, 'GETAUSCHT'], [109, 'GETAUSCHT']] as const) {
+      expect(text, `(${nr})`).toMatch(new RegExp(`· \\(${nr}\\) .*\\n.*${wort} \\(HTTP 200\\)`))
+    }
+    for (const nr of [101, 107, 108, 110]) expect(text, `(${nr})`).toMatch(new RegExp(`· \\(${nr}\\) .*\\n.*SICHTBAR \\(HTTP 200; [^)]*\\)`))
+    // Ohne Richtlinien kommt (94) durch — und geht über die Function wieder.
+    expect(text).toMatch(/! \(94\) .*\n.*ANGEKOMMEN \(HTTP 201\) — AUCH DAS!\n.*\(Zeile wieder gelöscht\)/)
+    // Zwei Wochen auf einmal über `wochen_tauschen`, eine allein über `wocheSchreiben`.
+    expect(aufrufe.filter((a) => tabelleVon(a) === 'rpc/wochen_tauschen')).toHaveLength(1)
+
+    // Was niemand direkt löschen darf, ging den Weg der App: zurückgezogen, entzogen.
+    expect(tabellen.tausch_anfragen ?? []).toEqual([])
+    expect((tabellen.assignment_log ?? []).filter((z) => probeSchluessel(z.task_key))).toEqual([])
+    expect((tabellen.confirmations ?? []).filter((z) => probeSchluessel(z.task_key))).toEqual([])
+    expect((tabellen.notifications ?? []).filter((z) => probeSchluessel(z.task_key) || String(z.body).includes('PROBE-'))).toEqual([])
+    expect(tabellen.weeks).toEqual([expect.objectContaining({ start: vorher.weeks![0]!.start })])
+    expect(tabellen.persons!.filter((p) => String(p.fn).startsWith('PROBE-'))).toEqual([])
+    // Die Freischaltungen wie vorher — das Mitglied hatte den Dienst schon, der Gruppenaufseher nicht.
+    expect(tabellen.persons!.find((p) => p.id === P2)!.priv).toEqual({ 'svc:mik': true })
+    expect(tabellen.persons!.find((p) => p.id === P4)!.priv).toEqual({})
+    expect(text).toMatch(/alles mit Kennzeichen PROBE-\d+ wieder entfernt, das Versand-Tagebuch der Probewochen geleert, die Freischaltungen wie vorher/)
+  })
+
+  /**
+   * **Die Richtlinien der Tausch-Anfragen** (T153): Schreiben darf sie kein
+   * Konto — die Versammlung bekommt an der Tabelle nur `select` —, lesen nur
+   * die beiden, um die es geht (`tausch_anfragen_select`). Admin und Planer sind
+   * an keiner Anfrage der Probe beteiligt; ihnen zeigt sie keine.
+   * `einfuegenOffen` stellt ein Loch nach: Das Einfügen kommt durch, gelöscht
+   * wird trotzdem nur über die Function.
+   */
+  const tauschRichtlinien = ({ einfuegenOffen = false } = {}) =>
+    richtlinien((a, wer) => {
+      if (tabelleVon(a) !== 'tausch_anfragen' || !wer) return undefined
+      if (a.method === 'GET') return [U1, U3].includes(wer) ? { status: 200, json: [] } : undefined
+      if (a.method === 'POST' && einfuegenOffen) return undefined
+      return { status: 403, json: { code: '42501', message: 'permission denied for table tausch_anfragen' } }
+    })
+
+  it('mitgliedsrechte-probe (Tauschen): unter den Richtlinien aus schema.sql kommt jeder Fall zu seinem Urteil', async () => {
+    const l = lauf('mitgliedsrechte-probe.mjs')
+    const modul = (await MODULE['./mitgliedsrechte-probe.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const wache = tauschRichtlinien()
+    const { ausgabe, tabellen } = await fahre(wache.fahren(() => l.fahren(modul, '')), { ...l.umgebung, stoerung: wache.stoerung })
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/· \(94\) .*\n.*nicht angekommen \(HTTP 403\) — abgewiesen — Anfragen schreibt nur die Function/)
+    expect(text).toMatch(/· \(102\) Planer: die Anfrage sehen\n.*nicht sichtbar \(HTTP 200\) — unsichtbar — sie sehen nur die beiden, um die es geht/)
+    for (let nr = 93; nr <= 110; nr++) expect(text, `(${nr})`).toMatch(new RegExp(`^ {2}· \\(${nr}\\) `, 'm'))
+    expect(tabellen.tausch_anfragen ?? []).toEqual([])
+  })
+
+  it('mitgliedsrechte-probe (Tauschen): kommt (94) doch an, geht die Anfrage über die Function wieder — direkt löschen darf sie niemand', async () => {
+    const l = lauf('mitgliedsrechte-probe.mjs')
+    const modul = (await MODULE['./mitgliedsrechte-probe.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const wache = tauschRichtlinien({ einfuegenOffen: true })
+    const { ausgabe, tabellen } = await fahre(wache.fahren(() => l.fahren(modul, '')), { ...l.umgebung, stoerung: wache.stoerung })
+    expect(ausgabe.join('\n')).toMatch(/! \(94\) .*\n.*ANGEKOMMEN \(HTTP 201\) — AUCH DAS!\n.*\(Zeile wieder gelöscht\)/)
+    expect(tabellen.tausch_anfragen ?? []).toEqual([])
+  })
+
+  /** Die Probe mit einer anderen Function `tauschen` — für die Gegenproben ihres Urteils. */
+  const mitTauschen = async (tauschen: NonNullable<Umgebung['funktionen']>[string]) => {
+    const l = lauf('mitgliedsrechte-probe.mjs')
+    const modul = (await MODULE['./mitgliedsrechte-probe.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    return fahre(() => l.fahren(modul, ''), { ...l.umgebung, funktionen: { ...l.umgebung!.funktionen, tauschen } })
+  }
+
+  it('mitgliedsrechte-probe (Tauschen): tauscht die Function, ohne nach dem Platz zu fragen, fallen (95) und (98) auf — und die Wochen gehen zurück', async () => {
+    // Ein `direkt`, das die beiden Plätze einfach vertauscht — ohne jede Regel.
+    const { ausgabe, tabellen } = await mitTauschen((rumpf, kontext) => {
+      if (rumpf.aktion !== 'direkt') return echt('tauschen')(rumpf, kontext)
+      const platz = (key: unknown) => {
+        const [start, tab, , svc, pos] = String(key).split('|')
+        const woche = kontext.tabellen.weeks!.find((w) => w.start === start)!.data as Record<string, { helpers: Record<string, unknown[]> }>
+        return { reihe: woche[tab!]!.helpers[svc!]!, pos: Number(pos) }
+      }
+      const a = platz(rumpf.gibtAb)
+      const b = platz(rumpf.nimmt)
+      ;[a.reihe[a.pos], b.reihe[b.pos]] = [b.reihe[b.pos], a.reihe[a.pos]]
+      return { json: { ok: true } }
+    })
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/! \(95\) .*\n.*GETAUSCHT \(HTTP 200\) — AUCH DAS!\n(?:.*\n)*?.*\(wieder zurückgestellt\)/)
+    expect(text).toMatch(/! \(98\) .*\n.*GETAUSCHT \(HTTP 200\) — AUCH DAS!\n(?:.*\n)*?.*\(wieder zurückgestellt\)/)
+    // Zurückgestellt: Die Anfrage danach tauscht wie gewohnt, und am Ende ist alles weg.
+    expect(text).toMatch(/· \(106\) .*\n.*GETAUSCHT \(HTTP 200\)/)
+    expect(tabellen.weeks).toHaveLength(1)
+  })
+
+  it('mitgliedsrechte-probe (Tauschen): eine Abweisung aus einem anderen Grund ist kein Urteil', async () => {
+    // `not-qualified` hieße, die Freischaltung fehlt: Der Versuch träfe nicht
+    // die Regel, die er messen soll, und sähe doch aus wie die Grenze, die greift.
+    const { ausgabe } = await mitTauschen((rumpf, kontext) =>
+      ['direkt', 'anfragen', 'annehmen'].includes(String(rumpf.aktion)) ? { status: 403, json: { error: 'not-qualified' } } : echt('tauschen')(rumpf, kontext),
+    )
+    const text = ausgabe.join('\n')
+    for (const nr of [95, 96, 97, 98]) expect(text, `(${nr})`).toMatch(new RegExp(`\\(${nr}\\) .*\\n.*PROBE KAPUTT — Schreiben scheiterte \\(HTTP 403\\)`))
+    expect(text).not.toMatch(/abgewiesen — tauschen kann nur, wer den Platz hat/)
+    expect(text).toMatch(/Nicht gemessen — die Probe selbst scheiterte: .*\(95\), \(96\), \(97\), \(98\)/)
+  })
+
+  it('mitgliedsrechte-probe (Tauschen): sind die Wochen um heute belegt, bleibt (97) ungemessen — die übrigen messen', async () => {
+    // Montags sind es zwei: die von gestern und die von heute.
+    const belegt = [...new Set(vorbeiKandidaten(HEUTE).map(montagVon))].map((start) => ({
+      congregation_id: C, start, updated_at: '2026-08-20T10:00:00+00:00', data: probeWoche(start),
+    }))
+    expect(belegt).toHaveLength(2)
+    const { ausgabe, tabellen } = await mitBestand({ weeks: [...lauf('mitgliedsrechte-probe.mjs').umgebung!.bestand!.weeks!, ...belegt] })
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/\? \(97\) .* — die Wochen um heute sind belegt — die vergangene Zusammenkunft braucht eine eigene, nicht gemessen/)
+    for (const nr of [95, 96, 98, 106, 109]) expect(text, `(${nr})`).toMatch(new RegExp(`· \\(${nr}\\) `))
+    for (const w of belegt) expect(tabellen.weeks!.find((x) => x.start === w.start)).toEqual(w)
+  })
+
+  const tauschWoche = tagPlus(ersterMontagAb('2099-01-01'), 7 * 30)
+
+  it('mitgliedsrechte-probe (Tauschen): eine Woche, die nicht von der Probe ist, bleibt unberührt — dann misst das Tauschen nicht', async () => {
+    const echtWoche = { congregation_id: C, start: tauschWoche, updated_at: '2026-08-20T10:00:00+00:00', data: probeWoche(tauschWoche) }
+    const { ausgabe, tabellen } = await mitBestand({ weeks: [...lauf('mitgliedsrechte-probe.mjs').umgebung!.bestand!.weeks!, echtWoche] })
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/\? \(94–110\) das Tauschen — in der Woche 2099-\d{2}-\d{2} steht eine, die nicht von der Probe ist — nicht überschrieben, nicht gemessen/)
+    expect(text).toMatch(/· \(93\) /)
+    expect(tabellen.weeks!.find((w) => w.start === tauschWoche)).toEqual(echtWoche)
+  })
+
+  it('mitgliedsrechte-probe (Tauschen): eine Woche, die ein abgebrochener Lauf hinterließ, wird übernommen und entfernt', async () => {
+    const liegengeblieben = { congregation_id: C, start: tauschWoche, updated_at: '2026-08-20T10:00:00+00:00', data: { ...probeWoche(tauschWoche), range: 'PROBE-1' } }
+    const { ausgabe, tabellen } = await mitBestand({ weeks: [...lauf('mitgliedsrechte-probe.mjs').umgebung!.bestand!.weeks!, liegengeblieben] })
+    expect(ausgabe.join('\n')).toMatch(/· \(106\) .*\n.*GETAUSCHT \(HTTP 200\)/)
+    expect(tabellen.weeks!.find((w) => w.start === tauschWoche)).toBeUndefined()
   })
 
   it('mitgliedsrechte-probe: jede Nummer der Tabelle im Kopf misst der Lauf genau einmal — und keine andere', async () => {

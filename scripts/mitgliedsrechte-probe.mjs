@@ -72,10 +72,12 @@
  * Gruppenbesuche und Pläne gibt es in der Probeversammlung nicht von selbst.
  * Der Admin legt sie an — im Jahr 2099, jede Kennung mit dem Kennzeichen des
  * Laufs —, und am Ende räumt die Probe genau diese Zeilen wieder weg, auch
- * nach einem Fehler mittendrin. **Zwei Dinge ändert sie vorübergehend an der
- * Person des Mitglieds** und stellt sie danach wieder her: die Freischaltung
- * für den Hilfsdienst aus (9), wenn sie fehlt, und das Trolley-Recht für
- * (71)–(79) in beiden Stellungen (siehe unten).
+ * nach einem Fehler mittendrin. **Vorübergehend ändert sie die Rechte von
+ * Personen** und stellt sie danach wieder her: beim Mitglied die
+ * Freischaltung für den Hilfsdienst aus (9), wenn sie fehlt, und das
+ * Trolley-Recht für (71)–(79) in beiden Stellungen, bei Mitglied und
+ * Gruppenaufseher die Freischaltung für den Dienst, den sie in (93)–(110)
+ * tauschen (siehe unten).
  *
  * **Jede durchgekommene Zeile wird sofort wieder gelöscht.** Wer aufräumen darf,
  * hängt am Empfänger: `notifications_delete` verlangt `user_id = auth.uid()`,
@@ -193,6 +195,56 @@
  * hinaus. Ob ein Versuch an der Function etwas bewirkt hat, sieht der Admin
  * danach in der Tabelle nach; ein Urteil ist neben dem Erfolg allein die
  * Abweisung über das Recht (`kein-recht`, `forbidden`).
+ *
+ * **Seit dem 31. Oktober 2026 misst sie das Tauschen** (T153). Die Function
+ * `tauschen` und die Datenbankfunktion `wochen_tauschen` liefen bis dahin nur
+ * gegen Attrappen. Getauscht wird über die Function, wie die App
+ * (`src/lib/tauschen.ts`); was sie schreibt — Wochen, Zusagen,
+ * Versand-Tagebuch, Mitteilungen —, sieht die Probe danach in den Tabellen
+ * nach. Anfragen schreibt nur die Function, lesen dürfen sie die beiden, um
+ * die es geht (`tausch_anfragen_select`).
+ *
+ *  93.  Ohne Anmeldung: die Function tauschen rufen              → abgewiesen
+ *  94.  Mitglied: eine Anfrage an der Function vorbei schreiben  → abgewiesen
+ *  95.  Mitglied: einen fremden Platz gleich weggeben            → abgewiesen
+ *  96.  Mitglied: um einen Platz ohne „Plan senden" bitten       → abgewiesen
+ *  97.  Mitglied: eine Zusammenkunft tauschen, die schon war     → abgewiesen
+ *  98.  Mitglied: gleich tauschen mit jemandem mit Konto         → abgewiesen
+ *  99.  Mitglied: die Angebote für den eigenen Platz holen       → sichtbar
+ *  100. Mitglied: den Gruppenaufseher um einen Tausch bitten     → durch
+ *  101. Gruppenaufseher: die Anfrage an ihn sehen, samt Glocke   → sichtbar
+ *  102. Planer: die Anfrage sehen                                → unsichtbar
+ *  103. Planer: die Anfrage annehmen                             → abgewiesen
+ *  104. Gruppenaufseher: die Anfrage ablehnen                    → durch
+ *  105. Mitglied: eine neue Anfrage zurückziehen                 → durch
+ *  106. Gruppenaufseher: annehmen — beide Wochen auf einmal      → durch
+ *  107. … Zusagen und Versand-Tagebuch der beiden                → sichtbar
+ *  108. … „Getauscht" an Mitglied, Admin und Planer              → sichtbar
+ *  109. Mitglied: mit einer Person ohne Konto gleich tauschen    → durch
+ *  110. … sie „weiß Bescheid", „Getauscht" an Admin und Planer   → sichtbar
+ *
+ * Die Anlage legt der Admin an (`tauschAnlage`): vier Wochen im Jahr 2099 mit
+ * je einem Platz eines Dienstes und eine Person ohne Konto, das Kennzeichen
+ * im Vornamen. Mitglied und Gruppenaufseher schaltet die Probe für den Dienst
+ * frei. Getauscht wird erst, wenn der Plan einer Woche hinausging — also
+ * drückt der Admin „Plan senden" für die Probewochen, bis auf die eine für
+ * (96). Das schreibt Mitteilungen an Mitglied und Gruppenaufseher; hat eines
+ * der Konten ein Push-Abo, kommt dort auch die Nachricht an, wie bei jedem
+ * Fall mit Bescheid.
+ *
+ * (97) braucht eine Zusammenkunft, die schon war und deren Plan doch
+ * hinausging. „Plan senden" nimmt nur, was noch ansteht, und den Tag des
+ * Geräts glaubt der Server nur, wenn er höchstens einen neben dem eigenen
+ * liegt (`heuteUtc`). Also legt die Probe die Woche von gestern an, ihr
+ * Wochenende auf gestern verlegt, sendet sie mit dem Tag von gestern und
+ * tauscht mit dem von heute — ist die Woche belegt, montags ersatzweise mit
+ * der Zusammenkunft von heute und dem Tag von morgen. Steht in beiden Wochen
+ * schon eine, bleibt (97) ungemessen.
+ *
+ * Was niemand direkt löschen darf, räumt die Probe auf dem Weg der App weg:
+ * offene Anfragen zieht das Mitglied zurück, das Versand-Tagebuch der
+ * Probewochen nimmt der Admin per „Entzug" heraus (`send-plan`). Die
+ * Mitteilungen, die dabei und vorher entstanden, löscht jeder Empfänger selbst.
  *
  * ---------------------------------------------------------------- Aufruf ----
  *
@@ -564,24 +616,17 @@ async function zugang(z) {
   return z
 }
 
-async function anmelden(url, anon, mail, pass) {
-  const res = await fetch(`${url}/auth/v1/token?grant_type=password`, {
-    method: 'POST',
-    headers: { apikey: anon, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: mail, password: pass }),
-  })
-  if (!res.ok) throw new Error(`Anmeldung ${mail} fehlgeschlagen (${res.status}): ${await res.text()}`)
-  const { access_token: token, user } = await res.json()
-
-  const rest = pruefKlient(url, anon, token)
-
-  /**
-   * Eine Edge Function aufrufen — mit dem **Nutzer-Token**, wie die App es tut.
-   * Die Function arbeitet intern mit Service-Role; ihre Rechteprüfung hängt
-   * also allein daran, wen dieses Token ausweist. Genau das ist die Grenze,
-   * die (9) und (10) messen.
-   */
-  const funktion = async (name, rumpf) => {
+/**
+ * Eine Edge Function aufrufen — mit dem **Nutzer-Token**, wie die App es tut.
+ * Die Function arbeitet intern mit Service-Role; ihre Rechteprüfung hängt
+ * also allein daran, wen dieses Token ausweist. Genau das ist die Grenze,
+ * die (9) und (10) messen.
+ *
+ * Ohne Sitzung schickt die App den öffentlichen Schlüssel als Token mit —
+ * `token` ist dann `anon`, so ruft (93).
+ */
+function funktionsKlient(url, anon, token) {
+  return async (name, rumpf) => {
     const antwort = await fetch(`${url}/functions/v1/${name}`, {
       method: 'POST',
       headers: { apikey: anon, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -596,6 +641,19 @@ async function anmelden(url, anon, mail, pass) {
     }
     return { status: antwort.status, daten }
   }
+}
+
+async function anmelden(url, anon, mail, pass) {
+  const res = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { apikey: anon, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: mail, password: pass }),
+  })
+  if (!res.ok) throw new Error(`Anmeldung ${mail} fehlgeschlagen (${res.status}): ${await res.text()}`)
+  const { access_token: token, user } = await res.json()
+
+  const rest = pruefKlient(url, anon, token)
+  const funktion = funktionsKlient(url, anon, token)
 
   // Die **eigene** Zeile, nach dem Konto gefiltert: Einem Admin zeigt
   // `members_select` alle Zeilen seiner Versammlung, und welche davon vorne
@@ -647,11 +705,12 @@ const UPSERT = 'resolution=merge-duplicates,return=minimal'
  * Ein Schreibversuch: ohne RETURNING schreiben, beim Admin nachsehen,
  * Angekommenes wegräumen. Es schreibt das Mitglied, wenn `wer` nichts anderes
  * sagt; `prefer` ist für den Upsert (`UPSERT`), `loeschen` für eine Zeile, die
- * auch der Admin nicht selbst löschen darf (71).
+ * auch der Admin nicht selbst löschen darf (71), `leser` für eine, die er gar
+ * nicht sieht (94).
  */
-async function schreibVersuch(k, nr, was, tabelle, zeile, erwartet, folge, { wer = k.mitglied, prefer = 'return=minimal', loeschen } = {}) {
+async function schreibVersuch(k, nr, was, tabelle, zeile, erwartet, folge, { wer = k.mitglied, prefer = 'return=minimal', loeschen, leser = k.planer } = {}) {
   const s = await wer.rest(tabelle, 'POST', zeile, prefer)
-  const l = await k.planer.rest(`${tabelle}?select=id&id=eq.${zeile.id}`)
+  const l = await leser.rest(`${tabelle}?select=id&id=eq.${zeile.id}`)
   const e = bewerteVersuch(s.status, zeilenVon(l).length > 0, erwartet, { leseStatus: l.status })
   k.ergebnis(nr, was, e, e.durch ? folge[0] : folge[1])
   await k.aufraeumen(e, loeschen ?? (() => k.planer.rest(`${tabelle}?id=eq.${zeile.id}`, 'DELETE', undefined, 'return=minimal')))
@@ -737,13 +796,15 @@ async function plaeneProben(k, a) {
 /**
  * Die Schritte eines Aufräumens, einer nach dem anderen — einer, der
  * scheitert, hält die übrigen nicht auf. Am Ende ein Satz, was blieb;
- * `nachsatz` nennt, was außer den Zeilen mit Kennzeichen wieder stimmt.
+ * `nachsatz` nennt, was außer den Zeilen mit Kennzeichen wieder stimmt. Ein
+ * Schritt aus mehreren Aufrufen sieht danach nach und nennt mit `grund`, was
+ * stehen blieb.
  */
 async function nacheinanderAufraeumen(marke, schritte, nachsatz = '') {
   const offen = []
   for (const [was, tun] of schritte) {
     const r = await tun()
-    if (r.status >= 400) offen.push(`${was} (HTTP ${r.status})`)
+    if (r.status >= 400 || r.grund) offen.push(`${was} (${r.grund ?? `HTTP ${r.status}`})`)
   }
   console.log(
     offen.length
@@ -1076,17 +1137,18 @@ async function aenderVersuch(k, { nr, was, schreiben, nachsehen, zurueck, erwart
 }
 
 /**
- * Ein Versuch an der Tür einer Edge Function — (36). Gezielt wird ins Leere,
- * damit eine offene Tür nichts verschickt und nichts schreibt. Deshalb
+ * Ein Versuch an der Tür einer Edge Function — (36), (93). Gezielt wird ins
+ * Leere, damit eine offene Tür nichts verschickt und nichts schreibt. Deshalb
  * heißt nicht nur ein 2xx „durchgelassen", sondern auch eine Antwort, die erst
  * **hinter** der Rechteprüfung kommt (`nachDerTuer`, etwa „keine Woche"). Ein
- * Urteil über die Tür ist sonst allein `forbidden`.
+ * Urteil über die Tür ist sonst allein ihre Abweisung — `forbidden`, ohne
+ * Anmeldung `unauthorized` (`tuer`).
  */
-async function tuerVersuch(k, nr, was, wer, name, rumpf, nachDerTuer, folge) {
+async function tuerVersuch(k, nr, was, wer, name, rumpf, nachDerTuer, folge, tuer = 'forbidden') {
   const a = await wer.funktion(name, rumpf)
   const fehler = a.daten?.error
   const durch = a.status < 400 || nachDerTuer.includes(fehler)
-  const e = bewerteVersuch(a.status, durch, false, { urteil: durch || fehler === 'forbidden', woerter: ['DURCHGELASSEN', 'abgewiesen'] })
+  const e = bewerteVersuch(a.status, durch, false, { urteil: durch || fehler === tuer, woerter: ['DURCHGELASSEN', 'abgewiesen'] })
   k.ergebnis(nr, was, e, e.durch ? 'AUCH DAS!' : `${folge} (${fehler ?? '—'})`)
   if (e.kaputt || e.durch) console.log(`      Die Function antwortete: ${JSON.stringify(a.daten)}`)
 }
@@ -1626,33 +1688,46 @@ function trolleyRecht(k, privVorher) {
   }
 }
 
+/**
+ * Ein Versuch an einer Edge Function, die etwas bewirkt — die Trolleys und das
+ * Tauschen. Anders als die Türen aus (35) und (36) zielt er nicht ins Leere:
+ * Was er trifft, gibt es (2099, mit Kennzeichen), und ob etwas geschah, steht
+ * danach in den Tabellen — `nachsehen` liefert `{ status, geschehen }`, dazu
+ * `detail`, was im Einzelnen dastand. Ein Urteil ist neben dem Erfolg allein
+ * eine Abweisung aus `urteile`: Jede andere hieße, der Versuch traf eine
+ * andere Regel als die, die er messen soll.
+ *
+ * Gemessen wird nur, wenn die Voraussetzung steht (`voraus`, wie die Anlage
+ * bei `leseVersuch`). Kam ein verbotener Versuch durch, nimmt ihn `zurueck`
+ * wieder heraus. Zurück kommen das Ergebnis und die Antwort der Function.
+ */
+async function funktionsVersuch(k, { funktion, urteile, nr, was, voraus, wer, rumpf, nachsehen, woerter, erwartet, folge, zurueck, zurueckWoerter }) {
+  if (!voraus.ok) return k.kaputt(nr, was, voraus.grund, erwartet)
+  const a = await wer.funktion(funktion, rumpf)
+  const l = await nachsehen()
+  const fehler = a.daten?.error
+  const e = bewerteVersuch(a.status, l.geschehen, erwartet, { leseStatus: l.status, urteil: a.status < 400 || urteile.includes(fehler), woerter })
+  k.ergebnis(nr, was, e, e.durch ? folge[0] : `${folge[1]} (${fehler ?? '—'})`)
+  if (e.kaputt || e.durch !== erwartet) {
+    console.log(`      Die Function antwortete: ${JSON.stringify(a.daten)}`)
+    if (l.detail) console.log(`      Nachgesehen: ${l.detail}`)
+  }
+  if (zurueck) await k.aufraeumen(e, zurueck, zurueckWoerter)
+  return { ...e, antwort: a }
+}
+
 /** Die Abweisungen der Function `trolley`, die ein Urteil über das Recht sind — beide mit 403. */
 const TROLLEY_RECHT = ['kein-recht', 'forbidden']
 
 /**
- * Ein Versuch an der Function `trolley` — (74), (75), (77)–(79). Anders als
- * die Türen aus (35) und (36) zielt er nicht ins Leere: Trolley und Termin
- * gibt es (2099, mit Kennzeichen), und ob etwas geschah, steht danach in der
- * Tabelle — `nachsehen` fragt den Admin und liefert `{ status, geschehen }`.
- * Ein Urteil ist neben dem Erfolg allein die Abweisung über das Recht
- * (`TROLLEY_RECHT`): `belegt` oder `weg` hießen, der Versuch traf eine andere
- * Regel, `no-person` (ebenfalls 403), dass dem Konto die Person fehlt.
- *
- * Gemessen wird nur, wenn die Voraussetzung steht (`voraus`, wie die Anlage
- * bei `leseVersuch`). Kam ein verbotener Versuch durch, nimmt ihn `zurueck`
- * wieder heraus.
+ * Ein Versuch an der Function `trolley` — (74), (75), (77)–(79). Trolley und
+ * Termin gibt es, nachgesehen wird beim Admin. Ein Urteil ist neben dem Erfolg
+ * allein die Abweisung über das Recht (`TROLLEY_RECHT`): `belegt` oder `weg`
+ * hießen, der Versuch traf eine andere Regel, `no-person` (ebenfalls 403), dass
+ * dem Konto die Person fehlt.
  */
-async function trolleyVersuch(k, { nr, was, voraus, wer, rumpf, nachsehen, woerter, erwartet, folge, zurueck }) {
-  if (!voraus.ok) return k.kaputt(nr, was, voraus.grund, erwartet)
-  const a = await wer.funktion('trolley', rumpf)
-  const l = await nachsehen()
-  const fehler = a.daten?.error
-  const e = bewerteVersuch(a.status, l.geschehen, erwartet, { leseStatus: l.status, urteil: a.status < 400 || TROLLEY_RECHT.includes(fehler), woerter })
-  k.ergebnis(nr, was, e, e.durch ? folge[0] : `${folge[1]} (${fehler ?? '—'})`)
-  if (e.kaputt || e.durch !== erwartet) console.log(`      Die Function antwortete: ${JSON.stringify(a.daten)}`)
-  if (zurueck) await k.aufraeumen(e, zurueck, ['wieder ausgetragen', 'vorsorglich ausgetragen'])
-  return e
-}
+const trolleyVersuch = (k, versuch) =>
+  funktionsVersuch(k, { funktion: 'trolley', urteile: TROLLEY_RECHT, zurueckWoerter: ['wieder ausgetragen', 'vorsorglich ausgetragen'], ...versuch })
 
 /**
  * (71)–(73) An der Function vorbei: Termine schreibt niemand direkt, Trolleys
@@ -1795,6 +1870,544 @@ async function trolleyProben(k) {
     await trolleyFunktionProben(k, a, anlage, recht)
   } finally {
     await trolleyAufraeumen(k, privVorher)
+  }
+}
+
+/* ===================== Tauschen: die Fälle 93–110 ========================= */
+
+/**
+ * Die Titel der Tausch-Mitteilungen, wie sie in der Glocke stehen — Spiegel von
+ * `supabase/functions/tauschen/texte.ts` (`mitgliedsrechte-probe.test.ts` hält
+ * beide aneinander). Erkannt wird eine Mitteilung an Schlüssel **und** Titel:
+ * Auf demselben Platz steht meist schon die Nachricht von „Plan senden".
+ */
+export const TAUSCH_TITEL = { angefragt: 'Tausch angefragt', getauscht: 'Getauscht', abgelehnt: 'Tausch abgelehnt' }
+
+/** Der Montag der Woche, in der ein Tag liegt. */
+export const montagVon = (tag) => ersterMontagAb(tagPlus(tag, -6))
+
+/**
+ * Die Tage, an denen die Zusammenkunft für (97) liegen kann — eine, die schon
+ * war, deren Plan aber hinausging. „Plan senden" nimmt nur, was noch ansteht,
+ * und den Tag des Geräts glaubt der Server nur einen neben dem eigenen
+ * (`heuteUtc`): Gesendet wird am Tag der Zusammenkunft, getauscht am Tag
+ * danach — das geht nur für gestern und heute. Gestern zuerst: Dann ist der Tag
+ * danach der wirkliche.
+ */
+export const vorbeiKandidaten = (heute) => [tagPlus(heute, -1), heute]
+
+/**
+ * **Was die Probe fürs Tauschen anlegt** (T153) — und welchen Platz jeder Fall
+ * nennt. Rein, damit der Test jeden Versuch an die Regeln der Function halten
+ * kann (`tauschen/regeln.ts`): Jeder trifft genau die Regel, die er messen
+ * soll, und keine davor.
+ *
+ * Vier Wochen im Jahr 2099 (30 bis 33 Wochen nach `tag0`, hinter allem anderen
+ * der Probe), jede mit dem Dienst `svc` an Platz 0:
+ *
+ *  - `abgeben`: am Wochenende das Mitglied — der Platz, den es abgibt (`a`);
+ *  - `nehmen`: am Wochenende der Gruppenaufseher — den will es dafür (`b`);
+ *  - `direkt`: unter der Woche das Mitglied, am Wochenende die Person ohne
+ *    Konto — der Tausch ohne Anfrage, in einer einzigen Woche;
+ *  - `ungesendet`: am Wochenende der Gruppenaufseher, ohne „Plan senden".
+ *
+ * Nennt `vorbei` einen Tag, kommt dessen Woche dazu: ihr Wochenende auf diesen
+ * Tag verlegt, mit dem Mitglied — gesendet an diesem Tag, getauscht am Tag
+ * danach. Jede Woche trägt das Kennzeichen als Zeitraum, die Person ohne Konto
+ * im Vornamen. `anfrageVersuch` ist die Zeile, die (94) an der Function vorbei
+ * schreibt — eine Anfrage wie die aus (100).
+ *
+ * @param {{
+ *   marke: string, versammlung: string, tag0: string, svc: string, vorbei: string | null,
+ *   mitglied: { id: string, uid: string, name: string }, aufseher: { id: string, name: string },
+ *   ohneKontoId: string, anfrageId: string
+ * }} auftrag
+ */
+export function tauschAnlage({ marke, versammlung: c, tag0, svc, vorbei, mitglied, aufseher, ohneKontoId, anfrageId }) {
+  const ohneKonto = { id: ohneKontoId, name: `${marke} Tauschpartner` }
+  const zusammenkunft = (p) => ({ date: '', end: '', sections: [], helpers: p ? { [svc]: [{ name: p.name, pid: p.id }] } : {} })
+  const woche = (start, { mid, we }, dev) => ({
+    congregation_id: c,
+    start,
+    data: { range: marke, book: '', start, mid: zusammenkunft(mid), we: zusammenkunft(we), ...(dev ? { dev } : {}) },
+  })
+  const montag = (wochen) => tagPlus(tag0, 7 * wochen)
+  const wochen = {
+    abgeben: woche(montag(30), { we: mitglied }),
+    nehmen: woche(montag(31), { we: aufseher }),
+    direkt: woche(montag(32), { mid: mitglied, we: ohneKonto }),
+    ungesendet: woche(montag(33), { we: aufseher }),
+    vorbei: vorbei ? woche(montagVon(vorbei), { we: mitglied }, { we: { wd: wochentag(vorbei) } }) : null,
+  }
+  const platz = (w, tab) => helferSchluessel(w.start, tab, svc, 0)
+  const plaetze = {
+    a: platz(wochen.abgeben, 'we'),
+    b: platz(wochen.nehmen, 'we'),
+    eigenMitte: platz(wochen.direkt, 'mid'),
+    ohneKonto: platz(wochen.direkt, 'we'),
+    ungesendet: platz(wochen.ungesendet, 'we'),
+    vorbei: wochen.vorbei ? platz(wochen.vorbei, 'we') : null,
+  }
+  return {
+    svc,
+    wochen,
+    plaetze,
+    // Wer vorher wo steht — daran sieht die Probe, ob ein abgewiesener Tausch doch geschah.
+    inhaber: { [plaetze.a]: mitglied.id, [plaetze.b]: aufseher.id, [plaetze.eigenMitte]: mitglied.id, [plaetze.ohneKonto]: ohneKonto.id },
+    senden: [wochen.abgeben, wochen.nehmen, wochen.direkt, wochen.vorbei].filter((w) => w !== null),
+    heuteVorbei: vorbei ? { senden: vorbei, tauschen: tagPlus(vorbei, 1) } : null,
+    person: { id: ohneKonto.id, congregation_id: c, fn: marke, ln: 'Tauschpartner', priv: { [`svc:${svc}`]: true } },
+    anfrageVersuch: {
+      id: anfrageId, congregation_id: c, von_user: mitglied.uid, von_person: mitglied.id, an_person: aufseher.id,
+      // Den Tag prüft die Tabelle nicht; der Sonntag der früheren Woche.
+      gibt_ab: plaetze.a, nimmt: plaetze.b, bis: tagPlus(montag(30), 6),
+    },
+  }
+}
+
+/** Werte für einen `in.(…)`-Filter, jeder für sich kodiert — Aufgaben-Schlüssel tragen `|`. */
+const liste = (werte) => `(${werte.map(encodeURIComponent).join(',')})`
+
+/** Was ein Versuch am Tauschen bewirkt hat — oder nicht. */
+const ANGEFRAGT = ['ANGEFRAGT', 'nicht angefragt']
+const GETAUSCHT = ['GETAUSCHT', 'nicht getauscht']
+const ZURUECKGEZOGEN = ['wieder zurückgezogen', 'vorsorglich zurückgezogen']
+
+/**
+ * Stehen auf den Plätzen die genannten Personen? `soll`: Schlüssel → Person.
+ * Nachgesehen beim Admin, an den Wochen selbst; `anders` nennt die Plätze, auf
+ * denen jemand anderes steht.
+ */
+async function plaetzeBeimAdmin(planer, soll) {
+  const wochen = [...new Set(Object.keys(soll).map((key) => key.split('|')[0]))]
+  const r = await planer.rest(`weeks?select=start,data&start=in.(${wochen.join(',')})`)
+  const daten = new Map(zeilenVon(r).map((w) => [w.start, w.data]))
+  const anders = Object.entries(soll)
+    .filter(([key, pid]) => {
+      const [woche, tab, , svc, pos] = key.split('|')
+      return daten.get(woche)?.[tab]?.helpers?.[svc]?.[Number(pos)]?.pid !== pid
+    })
+    .map(([key]) => key)
+  return { status: r.status, anders }
+}
+
+/**
+ * Mehrere Dinge nachsehen, die zusammen ein Ergebnis sind — `[was, lesen,
+ * gilt]`, etwa „die Anfrage fort, ihre Glocke fort, der Bescheid da". Ein
+ * Lesen, das scheitert, zählt nicht als „fort": Sein Status macht das Ganze
+ * unlesbar. Das Ergebnis passt zu `funktionsVersuch` (`geschehen`) wie zu
+ * `leseVersuch` (`sichtbar`).
+ */
+async function zusammen(teile) {
+  const gelesen = await Promise.all(
+    teile.map(async ([was, lesen, gilt]) => {
+      const r = await lesen()
+      return { was, status: r.status, ok: r.status < 400 && gilt(zeilenVon(r)) }
+    }),
+  )
+  const ok = gelesen.every((g) => g.ok)
+  return {
+    status: Math.max(...gelesen.map((g) => g.status)),
+    geschehen: ok,
+    sichtbar: ok,
+    detail: gelesen.map((g) => `${g.was}: ${g.ok ? 'ja' : 'NEIN'}`).join(', '),
+  }
+}
+
+/** Anfragen zurückziehen, wie die App — über die Function; direkt löschen darf sie niemand. */
+async function anfragenZurueckziehen(mitglied, ids) {
+  let status = 204
+  for (const id of ids) status = Math.max(status, (await mitglied.funktion('tauschen', { aktion: 'zurueckziehen', id })).status)
+  return { status }
+}
+
+/**
+ * Die Anlage herstellen, als Admin: Mitglied und Gruppenaufseher für den Dienst
+ * freischalten, die Person ohne Konto und die Wochen anlegen, „Plan senden"
+ * für alle bis auf die eine. Was davon steht, sagt je eine Voraussetzung —
+ * `alles` für die Fälle, die die ganze Anlage brauchen, `ungesendet` für (96),
+ * `vorbei` für (97). `merker` sagt dem Aufräumen, was der Probe gehört.
+ */
+async function tauschVorbereiten(k, a, personen, merker, heute) {
+  const { planer } = k
+  const nein = (grund) => ({ ok: false, grund })
+  const gescheitert = (grund) => ({ alles: nein(grund), ungesendet: nein(grund), vorbei: nein(grund) })
+
+  for (const p of personen) {
+    merker.priv.push(p)
+    const s = await planer.rest(`persons?id=eq.${p.id}`, 'PATCH', { priv: { ...p.priv, [`svc:${a.svc}`]: true } }, 'return=minimal')
+    if (s.status >= 400) return gescheitert(`Freischalten ${p.wer} für „${a.svc}" scheiterte (HTTP ${s.status})`)
+  }
+  merker.person = a.person.id
+  const person = await anlegen(planer, 'persons', [a.person])
+  if (!person.ok) return gescheitert(person.grund)
+
+  // Als Upsert: Eine Woche, die ein abgebrochener Lauf hinterließ, wird überschrieben.
+  const wochen = Object.values(a.wochen).filter(Boolean)
+  merker.wochen = wochen.map((w) => w.start)
+  const s = await planer.rest('weeks?on_conflict=congregation_id,start', 'POST', wochen, UPSERT)
+  const l = await planer.rest(`weeks?select=start&start=in.(${merker.wochen.join(',')})`)
+  if (s.status >= 400 || zeilenVon(l).length !== wochen.length) return gescheitert(`Anlage der Wochen scheiterte (HTTP ${s.status}/${l.status})`)
+
+  // „Plan senden", wie der Admin in der App — die vergangene Woche am Tag ihrer Zusammenkunft.
+  for (const w of a.senden) {
+    const tag = w === a.wochen.vorbei ? a.heuteVorbei.senden : heute
+    const r = await planer.funktion('send-plan', { action: 'plan', weekStart: w.start, heute: tag })
+    if (r.status >= 400) console.log(`      „Plan senden" für ${w.start} scheiterte: ${JSON.stringify(r.daten)}`)
+  }
+  // Hinausgegangen ist, was im Versand-Tagebuch steht — daran misst die Function „gesendet".
+  const log = await planer.rest(`assignment_log?select=task_key&task_key=in.${liste(Object.values(a.plaetze).filter(Boolean))}`)
+  if (log.status >= 400) return gescheitert(`das Versand-Tagebuch ist nicht lesbar (HTTP ${log.status})`)
+  const gesendet = new Set(zeilenVon(log).map((z) => z.task_key.split('|')[0]))
+  const fehlt = [a.wochen.abgeben, a.wochen.nehmen, a.wochen.direkt].find((w) => !gesendet.has(w.start))
+  const alles = fehlt ? nein(`der Plan der Woche ${fehlt.start} ging nicht hinaus`) : { ok: true }
+  const { ungesendet: u, vorbei: v } = a.wochen
+  return {
+    alles,
+    // Steht sie schon im Tagebuch, hinterließ es ein früherer Lauf — dann misst (96) nichts.
+    ungesendet: !alles.ok ? alles : gesendet.has(u.start) ? nein(`die Woche ${u.start} steht schon im Versand-Tagebuch`) : { ok: true },
+    vorbei: !alles.ok || !v ? alles : gesendet.has(v.start) ? { ok: true } : nein(`der Plan der Woche ${v.start} ging nicht hinaus`),
+  }
+}
+
+/**
+ * Die Versuche (94)–(110) an der Anlage — siehe Kopf. Erst die Abweisungen, an
+ * den Wochen, wie sie angelegt sind; kam eine doch durch, stellt der Admin
+ * zurück. Dann der Weg einer Anfrage: anfragen, sehen, ablehnen, zurückziehen,
+ * annehmen — und zuletzt der Tausch ohne Anfrage.
+ */
+async function tauschVersuche(k, a, voraus, merker, heute) {
+  const { planer, mitglied, zuteiler, aufseher, versammlung } = k
+  const p = a.plaetze
+  const tauschen = (versuch) => funktionsVersuch(k, { funktion: 'tauschen', urteile: [], ...versuch })
+
+  /** Die Anfragen des Mitglieds zu einem Platz, den es abgibt — es sieht die eigenen. */
+  const anfragenZu = async (gibtAb) => {
+    const r = await mitglied.rest(`tausch_anfragen?select=id&gibt_ab=eq.${encodeURIComponent(gibtAb)}`)
+    const ids = zeilenVon(r).map((z) => z.id)
+    for (const id of ids) merker.anfragen.add(id)
+    return { status: r.status, ids }
+  }
+  const angefragt = (gibtAb) => async () => {
+    const r = await anfragenZu(gibtAb)
+    return { status: r.status, geschehen: r.ids.length > 0 }
+  }
+  const zurueckziehen = (gibtAb) => async () => anfragenZurueckziehen(mitglied, (await anfragenZu(gibtAb)).ids)
+  /** Hat ein abgewiesener Versuch doch getauscht? Jeder Platz zählt, auf dem nicht mehr steht, wer vorher dort stand. */
+  const unveraendert = (...plaetze) => async () => {
+    const n = await plaetzeBeimAdmin(planer, Object.fromEntries(plaetze.map((key) => [key, a.inhaber[key]])))
+    return { status: n.status, geschehen: n.anders.length > 0, detail: `anders als vorher: ${n.anders.join(', ') || '—'}` }
+  }
+  /** Steht der Tausch — auf jedem Platz der neue Inhaber? */
+  const getauscht = (soll) => async () => {
+    const n = await plaetzeBeimAdmin(planer, soll)
+    return { status: n.status, geschehen: n.anders.length === 0, detail: `noch nicht getauscht: ${n.anders.join(', ') || '—'}` }
+  }
+  /** Die Wochen wieder, wie die Probe sie anlegte. */
+  const wochenZurueck = (...wochen) => async () => {
+    let status = 204
+    for (const w of wochen) {
+      status = Math.max(status, (await planer.rest(`weeks?congregation_id=eq.${versammlung}&start=eq.${w.start}`, 'PATCH', { data: w.data }, 'return=minimal')).status)
+    }
+    return { status }
+  }
+  const glocke = (wer, taskKey, titel) => () =>
+    wer.rest(`notifications?select=id&task_key=eq.${encodeURIComponent(taskKey)}&title=eq.${encodeURIComponent(titel)}`)
+  const zusage = (wer, taskKey) => () => planer.rest(`confirmations?select=status&task_key=eq.${encodeURIComponent(taskKey)}&user_id=eq.${wer.uid}`)
+  const tagebuch = (taskKey, pid, uid) => () =>
+    planer.rest(`assignment_log?select=persoenlich_at&task_key=eq.${encodeURIComponent(taskKey)}&person_id=eq.${pid}&user_id=${uid ? `eq.${uid}` : 'is.null'}`)
+  const da = (zeilen) => zeilen.length > 0
+  const fort = (zeilen) => zeilen.length === 0
+  const bestaetigt = (zeilen) => zeilen[0]?.status === 'bestätigt'
+  /** Ist eine Anfrage erledigt — fort beim Fragenden, ihre Glocke fort beim Gefragten —, und steht da, was dazukommt? */
+  const erledigt = (id, dazu = []) => () =>
+    zusammen([
+      ['die Anfrage fort', () => mitglied.rest(`tausch_anfragen?select=id&id=eq.${id}`), fort],
+      ['ihre Glocke beim Gruppenaufseher fort', glocke(aufseher, `tausch|${id}`, TAUSCH_TITEL.angefragt), fort],
+      ...dazu,
+    ])
+
+  // (94) An der Function vorbei. Der Admin sieht die Zeile nicht, löschen darf
+  // sie niemand — angekommen, zieht das Mitglied sie zurück.
+  await schreibVersuch(k, 94, 'Mitglied: eine Tausch-Anfrage an der Function vorbei schreiben', 'tausch_anfragen', a.anfrageVersuch, false, [
+    'AUCH DAS!',
+    'abgewiesen — Anfragen schreibt nur die Function',
+  ], { leser: mitglied, loeschen: () => anfragenZurueckziehen(mitglied, [a.anfrageVersuch.id]) })
+
+  await tauschen({
+    nr: 95, was: 'Mitglied: den Platz des Gruppenaufsehers gleich weggeben, ohne ihn zu fragen', voraus: voraus.alles, urteile: ['not-yours'],
+    wer: mitglied, rumpf: { aktion: 'direkt', gibtAb: p.b, nimmt: p.ohneKonto, heute }, nachsehen: unveraendert(p.b, p.ohneKonto), woerter: GETAUSCHT,
+    erwartet: false, folge: ['AUCH DAS!', 'abgewiesen — tauschen kann nur, wer den Platz hat'],
+    zurueck: wochenZurueck(a.wochen.nehmen, a.wochen.direkt), zurueckWoerter: ZURUECK,
+  })
+  await tauschen({
+    nr: 96, was: 'Mitglied: um einen Platz bitten, dessen Plan nicht hinausging', voraus: voraus.ungesendet, urteile: ['not-published'],
+    wer: mitglied, rumpf: { aktion: 'anfragen', gibtAb: p.a, nimmt: p.ungesendet, heute }, nachsehen: angefragt(p.a), woerter: ANGEFRAGT,
+    erwartet: false, folge: ['AUCH DAS!', 'abgewiesen — getauscht wird erst nach „Plan senden"'],
+    zurueck: zurueckziehen(p.a), zurueckWoerter: ZURUECKGEZOGEN,
+  })
+  const was97 = 'Mitglied: eine Zusammenkunft tauschen, die schon war'
+  if (!a.wochen.vorbei) {
+    k.ungemessen(97, was97, 'die Wochen um heute sind belegt — die vergangene Zusammenkunft braucht eine eigene')
+  } else {
+    await tauschen({
+      nr: 97, was: `${was97} (${a.heuteVorbei.senden}, getauscht am Tag danach)`, voraus: voraus.vorbei, urteile: ['past'],
+      wer: mitglied, rumpf: { aktion: 'anfragen', gibtAb: p.vorbei, nimmt: p.b, heute: a.heuteVorbei.tauschen }, nachsehen: angefragt(p.vorbei), woerter: ANGEFRAGT,
+      erwartet: false, folge: ['AUCH DAS!', 'abgewiesen — was vorbei ist, tauscht niemand mehr'],
+      zurueck: zurueckziehen(p.vorbei), zurueckWoerter: ZURUECKGEZOGEN,
+    })
+  }
+  await tauschen({
+    nr: 98, was: 'Mitglied: gleich tauschen mit jemandem, der ein Konto hat', voraus: voraus.alles, urteile: ['has-account'],
+    wer: mitglied, rumpf: { aktion: 'direkt', gibtAb: p.a, nimmt: p.b, heute }, nachsehen: unveraendert(p.a, p.b), woerter: GETAUSCHT,
+    erwartet: false, folge: ['AUCH DAS!', 'abgewiesen — wer ein Konto hat, sagt selbst zu'],
+    zurueck: wochenZurueck(a.wochen.abgeben, a.wochen.nehmen), zurueckWoerter: ZURUECK,
+  })
+
+  // (99) Was die App als Erstes holt: mit wem es ginge, und wer davon ein Konto hat.
+  await leseVersuch(k, 99, 'Mitglied: die Angebote für den eigenen Platz holen', voraus.alles, async () => {
+    const r = await mitglied.funktion('tauschen', { aktion: 'angebote', gibtAb: p.a, heute })
+    const angebote = Array.isArray(r.daten?.angebote) ? r.daten.angebote : []
+    const konto = (nimmt) => angebote.find((x) => x.nimmt === nimmt)?.konto
+    const wie = (nimmt) => (konto(nimmt) === undefined ? 'fehlt' : konto(nimmt) ? 'mit Konto' : 'ohne Konto')
+    return {
+      status: r.status,
+      sichtbar: konto(p.b) === true && konto(p.ohneKonto) === false,
+      detail: `Gruppenaufseher ${wie(p.b)}, Tauschpartner ${wie(p.ohneKonto)}`,
+    }
+  }, true, ['den einen fragt die App an, mit dem anderen tauscht man nach Absprache', 'ZU STRENG — die App böte nicht an, was ginge'])
+
+  // (100)–(103) Eine Anfrage an den Gruppenaufseher: wer sie sieht, wer sie annehmen kann.
+  let erste = null
+  await tauschen({
+    nr: 100, was: 'Mitglied: den Gruppenaufseher um einen Tausch bitten', voraus: voraus.alles,
+    wer: mitglied, rumpf: { aktion: 'anfragen', gibtAb: p.a, nimmt: p.b, heute },
+    nachsehen: async () => {
+      const r = await anfragenZu(p.a)
+      erste = r.ids[0] ?? null
+      return { status: r.status, geschehen: Boolean(erste) }
+    },
+    woerter: ANGEFRAGT, erwartet: true, folge: ['der Weg steht offen', 'ZU STRENG — niemand kann mehr um einen Tausch bitten'],
+  })
+  const anfrage = erste ? { ok: true } : { ok: false, grund: 'keine Anfrage aus (100)' }
+  await leseVersuch(k, 101, 'Gruppenaufseher: die Anfrage an ihn sehen, samt Glocke „Tausch angefragt"', anfrage, () => zusammen([
+    ['die Anfrage', () => aufseher.rest(`tausch_anfragen?select=id&id=eq.${erste}`), da],
+    ['die Glocke', glocke(aufseher, `tausch|${erste}`, TAUSCH_TITEL.angefragt), da],
+  ]), true, ['er erfährt es und sieht sie in der App', 'ZU STRENG — der Gefragte erfährt nichts'])
+  await leseVersuch(k, 102, 'Planer: die Anfrage sehen', anfrage, zeileSicht(zuteiler, 'tausch_anfragen', erste), false, [
+    'AUCH DAS!',
+    'unsichtbar — sie sehen nur die beiden, um die es geht',
+  ])
+  await tauschen({
+    nr: 103, was: 'Planer: die Anfrage an den Gruppenaufseher annehmen', voraus: anfrage, urteile: ['gone'],
+    wer: zuteiler, rumpf: { aktion: 'annehmen', id: erste, heute },
+    // Durch wäre auch, wenn die Anfrage dabei verschwände: Dann hätte er sie für den Gefragten erledigt.
+    nachsehen: async () => {
+      const [w, r] = await Promise.all([unveraendert(p.a, p.b)(), anfragenZu(p.a)])
+      const weg = !r.ids.includes(erste)
+      return { status: Math.max(w.status, r.status), geschehen: w.geschehen || weg, detail: `${w.detail}; die Anfrage ${weg ? 'fort' : 'noch da'}` }
+    },
+    woerter: ['ANGENOMMEN', 'nicht angenommen'], erwartet: false, folge: ['AUCH DAS!', 'abgewiesen — annehmen kann nur der Gefragte'],
+    zurueck: wochenZurueck(a.wochen.abgeben, a.wochen.nehmen), zurueckWoerter: ZURUECK,
+  })
+
+  // (104) Ablehnen braucht die Anfrage aus (100) — (103) durfte sie nicht erledigen.
+  const offen = !anfrage.ok ? anfrage : (await anfragenZu(p.a)).ids.includes(erste) ? { ok: true } : { ok: false, grund: 'die Anfrage aus (100) ist fort' }
+  await tauschen({
+    nr: 104, was: 'Gruppenaufseher: die Anfrage ablehnen', voraus: offen,
+    wer: aufseher, rumpf: { aktion: 'ablehnen', id: erste },
+    nachsehen: erledigt(erste, [['„Tausch abgelehnt" beim Mitglied', glocke(mitglied, p.a, TAUSCH_TITEL.abgelehnt), da]]),
+    woerter: ['ABGELEHNT', 'nicht abgelehnt'], erwartet: true,
+    folge: ['die Anfrage ist erledigt, das Mitglied erfährt es', 'ZU STRENG — der Gefragte kann nicht ablehnen'],
+  })
+
+  /** Eine neue Anfrage des Mitglieds an den Gruppenaufseher — für (105) und (106). */
+  const neueAnfrage = async () => {
+    if (!voraus.alles.ok) return voraus.alles
+    const r = await mitglied.funktion('tauschen', { aktion: 'anfragen', gibtAb: p.a, nimmt: p.b, heute })
+    const id = r.daten?.anfrage?.id
+    if (!id) return { ok: false, grund: `die Anfrage dafür kam nicht zustande (HTTP ${r.status}: ${r.daten?.error ?? '—'})` }
+    merker.anfragen.add(id)
+    return { ok: true, id }
+  }
+  const zweite = await neueAnfrage()
+  await tauschen({
+    nr: 105, was: 'Mitglied: eine neue Anfrage zurückziehen', voraus: zweite,
+    wer: mitglied, rumpf: { aktion: 'zurueckziehen', id: zweite.id }, nachsehen: erledigt(zweite.id),
+    woerter: ['ZURÜCKGEZOGEN', 'nicht zurückgezogen'], erwartet: true,
+    folge: ['die Anfrage ist erledigt, die Glocke des Gefragten mit ihr', 'ZU STRENG — eine Anfrage lässt sich nicht zurückziehen'],
+  })
+
+  // (106)–(108) Angenommen: zwei Wochen auf einmal, und alles, was dazugehört.
+  const dritte = await neueAnfrage()
+  const e106 = await tauschen({
+    nr: 106, was: 'Gruppenaufseher: die Anfrage annehmen — beide Wochen auf einmal (wochen_tauschen)', voraus: dritte,
+    wer: aufseher, rumpf: { aktion: 'annehmen', id: dritte.id, heute },
+    nachsehen: getauscht({ [p.a]: aufseher.pid, [p.b]: mitglied.pid }), woerter: GETAUSCHT, erwartet: true,
+    folge: ['der Tausch steht in beiden Wochen', 'ZU STRENG — angenommen, aber nicht getauscht'],
+  })
+  const tausch = e106?.durch ? { ok: true } : { ok: false, grund: 'kein Tausch aus (106)' }
+  await leseVersuch(k, 107, '… Zusagen und Versand-Tagebuch der beiden stehen um', tausch, () => zusammen([
+    ['Zusage des Mitglieds', zusage(mitglied, p.b), bestaetigt],
+    ['Zusage des Gruppenaufsehers', zusage(aufseher, p.a), bestaetigt],
+    ['Tagebuch des Mitglieds', tagebuch(p.b, mitglied.pid, mitglied.uid), da],
+    ['Tagebuch des Gruppenaufsehers', tagebuch(p.a, aufseher.pid, aufseher.uid), da],
+  ]), true, ['beide haben zugesagt und gelten als benachrichtigt', 'FEHLT — die Function schrieb nicht alles (ihre Logs ansehen)'])
+  await leseVersuch(k, 108, '… „Getauscht" an Mitglied, Admin und Planer, die Anfrage ist erledigt', tausch, erledigt(dritte.id, [
+    ['„Getauscht" beim Mitglied', glocke(mitglied, p.b, TAUSCH_TITEL.getauscht), da],
+    ['beim Admin', glocke(planer, p.a, TAUSCH_TITEL.getauscht), da],
+    ['beim Planer', glocke(zuteiler, p.a, TAUSCH_TITEL.getauscht), da],
+  ]), true, ['alle wissen es, zustimmen muss der Planer nicht', 'FEHLT — nicht jeder erfährt vom Tausch'])
+
+  // (109)–(110) Ohne Anfrage, mit jemandem ohne Konto: in einer Woche (`wocheSchreiben`).
+  const e109 = await tauschen({
+    nr: 109, was: 'Mitglied: mit einer Person ohne Konto gleich tauschen, nach Absprache (eine Woche)', voraus: voraus.alles,
+    wer: mitglied, rumpf: { aktion: 'direkt', gibtAb: p.eigenMitte, nimmt: p.ohneKonto, heute },
+    nachsehen: getauscht({ [p.eigenMitte]: a.person.id, [p.ohneKonto]: mitglied.pid }), woerter: GETAUSCHT, erwartet: true,
+    folge: ['der Tausch steht in der Woche', 'ZU STRENG — mit jemandem ohne Konto lässt sich nicht tauschen'],
+  })
+  const direkt = e109?.durch ? { ok: true } : { ok: false, grund: 'kein Tausch aus (109)' }
+  await leseVersuch(k, 110, '… die Person ohne Konto „weiß Bescheid", „Getauscht" an Admin und Planer', direkt, () => zusammen([
+    ['„weiß Bescheid" im Tagebuch', tagebuch(p.eigenMitte, a.person.id, null), (zeilen) => Boolean(zeilen[0]?.persoenlich_at)],
+    ['Tagebuch des Mitglieds', tagebuch(p.ohneKonto, mitglied.pid, mitglied.uid), da],
+    ['Zusage des Mitglieds', zusage(mitglied, p.ohneKonto), bestaetigt],
+    ['„Getauscht" beim Admin', glocke(planer, p.eigenMitte, TAUSCH_TITEL.getauscht), da],
+    ['beim Planer', glocke(zuteiler, p.eigenMitte, TAUSCH_TITEL.getauscht), da],
+  ]), true, ['ihr Platz steht nicht als ungeklärt da, und die Planer wissen es', 'FEHLT — die Function schrieb nicht alles (ihre Logs ansehen)'])
+}
+
+/**
+ * Alles wieder weg, was die Probe fürs Tauschen anlegte — und was die
+ * Functions dazu schrieben. Was niemand direkt löschen darf, geht den Weg der
+ * App: offene Anfragen zieht das Mitglied zurück (`tauschen`), das
+ * Versand-Tagebuch nimmt der Admin per „Entzug" heraus (`send-plan`). Beide
+ * schreiben dabei Mitteilungen, die zuletzt mit allen übrigen gehen; danach
+ * stehen die Freischaltungen von Mitglied und Gruppenaufseher wieder wie
+ * vorher.
+ */
+async function tauschAufraeumen(k, a, merker) {
+  const { planer, mitglied, zuteiler, aufseher, versammlung, marke } = k
+  const plaetze = Object.values(a.plaetze).filter(Boolean)
+  /** Tun und nachsehen: `grund`, wenn danach noch etwas dasteht. */
+  const bisLeer = async (tun, nachsehen) => {
+    const r = await tun()
+    if (r.status >= 400) return r
+    const danach = await nachsehen()
+    const n = zeilenVon(danach).length
+    return danach.status >= 400 || !n ? danach : { status: danach.status, grund: `${n} blieben stehen` }
+  }
+  const offeneAnfragen = () => mitglied.rest(`tausch_anfragen?select=id&gibt_ab=in.${liste(plaetze)}`)
+  const tagebuch = () => planer.rest(`assignment_log?select=task_key,name,person_id&task_key=in.${liste(plaetze)}`)
+  /** Die Glocke eines Kontos: alles auf den Plätzen und Anfragen der Probe, dazu die Entzüge mit dem Kennzeichen. */
+  const mitteilungen = (wer) => async () => {
+    const schluessel = [...plaetze, ...[...merker.anfragen].map((id) => `tausch|${id}`)]
+    const r = await wer.rest(`notifications?task_key=in.${liste(schluessel)}`, 'DELETE', undefined, 'return=minimal')
+    const s = await wer.rest(`notifications?body=like.*${marke}*`, 'DELETE', undefined, 'return=minimal')
+    return { status: Math.max(r.status, s.status) }
+  }
+  await nacheinanderAufraeumen(
+    marke,
+    [
+      ['die offenen Anfragen', () => bisLeer(async () => {
+        const offen = await offeneAnfragen()
+        if (offen.status >= 400) return offen
+        const ids = zeilenVon(offen).map((z) => z.id)
+        for (const id of ids) merker.anfragen.add(id)
+        return anfragenZurueckziehen(mitglied, ids)
+      }, offeneAnfragen)],
+      ['das Versand-Tagebuch der Probewochen', () => bisLeer(async () => {
+        const log = await tagebuch()
+        if (log.status >= 400 || !zeilenVon(log).length) return log
+        // Wie die App, wenn sie eine Zuteilung zurücknimmt; der Text trägt das Kennzeichen.
+        return planer.funktion('send-plan', {
+          action: 'entzug',
+          entzuege: zeilenVon(log).map((z) => ({ taskKey: z.task_key, name: z.name, ...(z.person_id ? { pid: z.person_id } : {}), datum: 'Probe', label: marke })),
+        })
+      }, tagebuch)],
+      ['die Zusagen', () => planer.rest(`confirmations?task_key=in.${liste(plaetze)}`, 'DELETE', undefined, 'return=minimal')],
+      ...(merker.wochen.length
+        ? [['die Wochen', () => planer.rest(`weeks?congregation_id=eq.${versammlung}&start=in.(${merker.wochen.join(',')})`, 'DELETE', undefined, 'return=minimal')]]
+        : []),
+      ...(merker.person ? [['die Person ohne Konto', () => planer.rest(`persons?id=eq.${merker.person}`, 'DELETE', undefined, 'return=minimal')]] : []),
+      ...merker.priv.map((p) => [`die Freischaltung ${p.wer}`, () => planer.rest(`persons?id=eq.${p.id}`, 'PATCH', { priv: p.priv }, 'return=minimal')]),
+      ...[planer, mitglied, zuteiler, aufseher].map((wer) => [`die Mitteilungen an ${wer.mail}`, mitteilungen(wer)]),
+    ],
+    ', das Versand-Tagebuch der Probewochen geleert, die Freischaltungen wie vorher',
+  )
+}
+
+/**
+ * Die Fälle (93)–(110) — siehe Kopf. (93) braucht nichts; für die übrigen legt
+ * der Admin die Anlage an. Aufgeräumt wird in jedem Fall, auch wenn ein Fall
+ * mittendrin wirft.
+ */
+async function tauschProben(k) {
+  const { planer, mitglied, zuteiler, aufseher, anonym, versammlung, marke } = k
+  console.log('\nDas Tauschen (seit 29.10.2026; angelegt als Admin, im Jahr 2099):')
+  // Der Kalendertag, wie die App ihn mitschickt — der Server glaubt ihn,
+  // solange er höchstens einen neben dem eigenen liegt.
+  const heute = new Date().toISOString().slice(0, 10)
+  const tag0 = ersterMontagAb('2099-01-01')
+  // Welcher Platz, ist gleich: Ohne Anmeldung kommt niemand bis zu einem.
+  const irgendeiner = helferSchluessel(tagPlus(tag0, 7 * 30), 'we', 'probe', 0)
+  await tuerVersuch(k, 93, 'Ohne Anmeldung: die Function tauschen rufen', anonym, 'tauschen', { aktion: 'angebote', gibtAb: irgendeiner, heute }, ['forbidden'], 'tauschen kann nur, wer angemeldet ist', 'unauthorized')
+
+  // Gefragt wird der Gruppenaufseher, zusehen muss der Planer: drei eigene Personen.
+  const personen = [mitglied.pid, zuteiler.pid, aufseher.pid]
+  if (personen.some((pid) => !pid) || new Set(personen).size < personen.length) {
+    k.ungemessen('94–110', 'das Tauschen', 'Mitglied, Planer und Gruppenaufseher brauchen je eine eigene Person')
+    return
+  }
+  const [dienste, gelesen] = await Promise.all([
+    planer.rest('services?select=key,count,groups&order=position'),
+    planer.rest(`persons?select=id,fn,ln,priv&id=in.(${mitglied.pid},${aufseher.pid})`),
+  ])
+  // Getauscht wird ein Dienst, den eine Person übernimmt — nicht die Reinigung einer Gruppe.
+  const svc = zeilenVon(dienste).find((s) => !s.groups && s.count >= 1)?.key
+  const person = (pid) => zeilenVon(gelesen).find((x) => x.id === pid)
+  if (!svc || !person(mitglied.pid) || !person(aufseher.pid)) {
+    const grund = !svc
+      ? `kein Dienst, den eine Person übernimmt (HTTP ${dienste.status})`
+      : `die Personen von Mitglied und Gruppenaufseher sind nicht lesbar (HTTP ${gelesen.status})`
+    k.ungemessen('94–110', 'das Tauschen', grund)
+    return
+  }
+  const name = (pid) => `${person(pid).fn} ${person(pid).ln}`.trim()
+  const ohneKontoId = crypto.randomUUID()
+  const anfrageId = crypto.randomUUID()
+  const anlage = (vorbei) =>
+    tauschAnlage({
+      marke, versammlung, tag0, svc, vorbei, ohneKontoId, anfrageId,
+      mitglied: { id: mitglied.pid, uid: mitglied.uid, name: name(mitglied.pid) },
+      aufseher: { id: aufseher.pid, name: name(aufseher.pid) },
+    })
+
+  // Wo schon eine Woche steht, die nicht von der Probe ist, wird nichts überschrieben.
+  const kandidaten = vorbeiKandidaten(heute)
+  const starts = [...Object.values(anlage(null).wochen).filter(Boolean).map((w) => w.start), ...kandidaten.map(montagVon)]
+  const vorhanden = await planer.rest(`weeks?select=start,data&start=in.(${[...new Set(starts)].join(',')})`)
+  if (vorhanden.status >= 400) {
+    k.ungemessen('94–110', 'das Tauschen', `die Wochen sind nicht lesbar (HTTP ${vorhanden.status})`)
+    return
+  }
+  const belegt = new Set(zeilenVon(vorhanden).filter((w) => !String(w.data?.range ?? '').startsWith('PROBE-')).map((w) => w.start))
+  const a = anlage(kandidaten.find((tag) => !belegt.has(montagVon(tag))) ?? null)
+  const fremd = [a.wochen.abgeben, a.wochen.nehmen, a.wochen.direkt, a.wochen.ungesendet].find((w) => belegt.has(w.start))
+  if (fremd) {
+    k.ungemessen('94–110', 'das Tauschen', `in der Woche ${fremd.start} steht eine, die nicht von der Probe ist — nicht überschrieben`)
+    return
+  }
+
+  const merker = { wochen: [], person: null, priv: [], anfragen: new Set([a.anfrageVersuch.id]) }
+  try {
+    const freizuschalten = [
+      { ...person(mitglied.pid), priv: person(mitglied.pid).priv ?? {}, wer: 'des Mitglieds' },
+      { ...person(aufseher.pid), priv: person(aufseher.pid).priv ?? {}, wer: 'des Gruppenaufsehers' },
+    ]
+    const voraus = await tauschVorbereiten(k, a, freizuschalten, merker, heute)
+    await tauschVersuche(k, a, voraus, merker, heute)
+  } finally {
+    await tauschAufraeumen(k, a, merker)
   }
 }
 
@@ -2205,7 +2818,9 @@ export async function main(arg = process.argv.slice(2)) {
   }
 
   // ---- 11) bis 34) Die Rechte aus T120 -----------------------------------
-  const k = { planer, mitglied, zuteiler, aufseher, versammlung, marke, ergebnis, aufraeumen, ungemessen, kaputt }
+  // `anonym` ruft eine Function wie die App ohne Sitzung — für (93).
+  const anonym = { mail: 'ohne Anmeldung', funktion: funktionsKlient(z.url, z.anon, z.anon) }
+  const k = { planer, mitglied, zuteiler, aufseher, anonym, versammlung, marke, ergebnis, aufraeumen, ungemessen, kaputt }
   await t120Proben(k)
 
   // ---- 35) bis 70) Die Rechte-Stufen (4.10.2026), Vormerkungen (12.10.) ---
@@ -2213,6 +2828,9 @@ export async function main(arg = process.argv.slice(2)) {
 
   // ---- 71) bis 79) Die Trolleys (14.10.2026) ------------------------------
   await trolleyProben(k)
+
+  // ---- 93) bis 110) Das Tauschen (31.10.2026) -----------------------------
+  await tauschProben(k)
 
   // Verboten ist, was nicht durchkommen soll; die übrigen sind die Gegenproben.
   // Bis zum 3.10.2026 standen deren Nummern hier fest (5, 6, 8).
@@ -2224,8 +2842,9 @@ export async function main(arg = process.argv.slice(2)) {
   console.log(`\n${durch} von ${verboten.length} verbotenen Versuchen kamen durch.`)
   if (ueberraschungen.length === 0 && kaputte.length === 0) {
     console.log('Genau die erwarteten: S2, S3, S10, S11, S13, die Rechte aus T120, die Rechte-Stufen, die Vormerkungen der')
-    console.log(`Vorträge und die Trolleys sind damit nicht mehr gelesen, sondern gemessen — und die ${gegenproben.length} Gegenproben zeigen,`)
-    console.log('dass die Regeln nicht zu streng geraten sind: Bestätigen, Abmelden, Absagen, Ein- und Austragen, Zuteilen und Sehen gehen weiter.')
+    console.log(`Vorträge, die Trolleys und das Tauschen sind damit nicht mehr gelesen, sondern gemessen — und die ${gegenproben.length} Gegenproben`)
+    console.log('zeigen, dass die Regeln nicht zu streng geraten sind: Bestätigen, Abmelden, Absagen, Ein- und Austragen, Zuteilen,')
+    console.log('Tauschen und Sehen gehen weiter.')
     if (nichtGemessen.length) {
       console.log(`Ohne Messung blieben ${nichtGemessen.map((n) => `(${n})`).join(', ')} — die Voraussetzung fehlte.`)
     }
