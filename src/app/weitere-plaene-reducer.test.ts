@@ -118,6 +118,14 @@ describe('Plätze', () => {
     const s = reducer(zustand({ plaene: [SAAL], planEintraege: [w] }), { type: 'removeGroup', id: 'g4' })
     expect(s.planEintraege).toEqual([{ ...w, grp: null }])
   })
+
+  it('… die Wochen der anderen Gruppen behalten ihre Gruppe', () => {
+    const geloescht = woche('2026-09-14', 'g4')
+    const andere = woche('2026-09-21', 'g1')
+    const s = reducer(zustand({ plaene: [SAAL], planEintraege: [geloescht, andere] }), { type: 'removeGroup', id: 'g4' })
+    expect(s.planEintraege).toEqual([{ ...geloescht, grp: null }, andere])
+    expect(s.planEintraege[1]).toBe(andere)
+  })
 })
 
 describe('Das dritte Thema', () => {

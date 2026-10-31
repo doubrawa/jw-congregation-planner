@@ -81,6 +81,16 @@ describe('Einzelne Besuche', () => {
     expect(leiter(neu, '2026-09-14', 'g2')).toBe('Jonas Berger')
   })
 
+  it('… nur an diesem Besuch: der Besuch einer anderen Gruppe behält seinen Besucher', () => {
+    let s = reducer(zustand(), { type: 'besuchHinzufuegen', woche: '2026-09-14', grp: 'g2', pid: 'p5' })
+    s = reducer(s, { type: 'besuchHinzufuegen', woche: '2026-09-21', grp: 'g1', pid: 'p5' })
+    const anderer = s.gruppenbesuche.find((b) => b.grp === 'g1')!
+    const neu = reducer(s, { type: 'besuchBesucher', id: s.gruppenbesuche.find((b) => b.grp === 'g2')!.id, pid: 'p6' })
+    expect(neu.gruppenbesuche.map((b) => [b.grp, b.pid])).toEqual([['g2', 'p6'], ['g1', 'p5']])
+    expect(neu.gruppenbesuche.find((b) => b.grp === 'g1')).toBe(anderer)
+    expect(leiter(neu, '2026-09-21', 'g1')).toBe('Konrad Sommer')
+  })
+
   it('„Übernehmen" ersetzt einen anderen Leiter — und dessen Zusage verfällt', () => {
     // Jonas leitet Gruppe 1 am 19. September und hat zugesagt.
     let s = zustand()
@@ -129,6 +139,15 @@ describe('Einen Besuch verlegen', () => {
     expect(leiter(next, '2026-09-14', 'g2')).toBe('')
     expect(leiter(next, '2026-09-14', 'g1')).toBe('Konrad Sommer')
     expect(next.confirmations[alt]).toBeUndefined()
+  })
+
+  it('verlegt wird nur dieser Besuch — ein zweiter bleibt, wo er war', () => {
+    let s = mit()
+    s = reducer(s, { type: 'besuchHinzufuegen', woche: '2026-09-21', grp: 'g3', pid: 'p5' })
+    const zweiter = s.gruppenbesuche.find((b) => b.grp === 'g3')!
+    const next = reducer(s, { type: 'besuchAendern', id: s.gruppenbesuche.find((b) => b.grp === 'g2')!.id, patch: { woche: '2026-09-28' } })
+    expect(next.gruppenbesuche.map((b) => [b.woche, b.grp])).toEqual([['2026-09-21', 'g3'], ['2026-09-28', 'g2']])
+    expect(next.gruppenbesuche.find((b) => b.grp === 'g3')).toBe(zweiter)
   })
 
   it('wo die Gruppe in der Woche schon besucht wird: nichts — so auch die Datenbank', () => {

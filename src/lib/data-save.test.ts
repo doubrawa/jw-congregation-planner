@@ -510,6 +510,27 @@ describe('send-plan: der Entzug', () => {
       { taskKey: '2026-09-07|mid|helper|mik|1', name: 'A B', pid: 'p1', label: 'Mikrofone', datum: 'Di' },
     ])
   })
+
+  it('scheitert der Aufruf, steht es nur im Log — keine Meldung „nicht gespeichert": Gespeichert ist ja alles', async () => {
+    // Die Änderung des Planers steht längst in der Datenbank; eine Warnung
+    // über einen Verlust, den es nicht gab, wäre falsch (deshalb kein `run()`).
+    const fehler = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const melder = vi.fn()
+    setSchreibfehlerMelder(melder)
+    const ENTZUG = { key: '2026-09-07|mid|helper|mik|0', name: 'A B', pid: 'p1', label: 'Mikrofone', datum: 'Di' }
+    chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: null, error: { message: 'boom' } }))
+    sendPlanEntzug([ENTZUG])
+    await abwarten()
+    expect(fehler).toHaveBeenCalledWith('[send-plan/entzug]', 'boom')
+    expect(melder).not.toHaveBeenCalled()
+    // Gegenprobe: Geht er durch, steht auch nichts im Log.
+    fehler.mockClear()
+    sendPlanEntzug([ENTZUG])
+    await abwarten()
+    expect(fehler).not.toHaveBeenCalled()
+    setSchreibfehlerMelder(null)
+    fehler.mockRestore()
+  })
 })
 
 /**
@@ -531,6 +552,13 @@ describe('send-plan: Jetzt erinnern', () => {
   it('scheitert der Aufruf, kommt `null` zurück', async () => {
     chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: null, error: { message: 'boom' } }))
     expect(await erinnerungSenden('2026-09-07', '2026-09-08')).toBeNull()
+  })
+
+  it('eine Antwort ohne Zahlen heißt: niemand erinnert — der Hinweis zeigt 0, nicht „undefined"', async () => {
+    chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: { ok: true }, error: null }))
+    expect(await erinnerungSenden('2026-09-07', '2026-09-08')).toEqual({ personen: 0, schonHeute: 0 })
+    chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: null, error: null }))
+    expect(await erinnerungSenden('2026-09-07', '2026-09-08')).toEqual({ personen: 0, schonHeute: 0 })
   })
 })
 
