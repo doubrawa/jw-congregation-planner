@@ -20,6 +20,7 @@
 import { gehoertZuKennung, istAusgefallen, MEETING_TABS } from './helpers'
 import { fromIso, isoDay, meetingDate, meetingTime, versatzAbMontag } from './meeting-dates'
 import type { MeetingKey, MeetingTimes, Week } from './types'
+import { monatsErster } from './weitere-plaene'
 
 /** Die Hilfsdienste, deren Eingeteilte die Anwesenden zählen — im Saal und zugeschaltet. */
 export const ANWESENHEIT_DIENSTE = ['saal', 'zoom'] as const
@@ -164,7 +165,7 @@ export function anwesenheitJeMonat(
   const wochen = new Map(weeks.map((w) => [w.start, w]))
   const monate = new Map<string, AnwesenheitMonat>()
   const monat = (tag: string): AnwesenheitMonat | undefined => {
-    const key = `${tag.slice(0, 7)}-01`
+    const key = monatsErster(tag)
     if (key < vonMonat || key > bisMonat) return undefined
     let m = monate.get(key)
     if (!m) {

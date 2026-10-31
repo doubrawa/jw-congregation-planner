@@ -23,15 +23,13 @@ import { fehlerAntwort } from './function-antwort'
 import { supabase } from './supabase'
 import { tauschAnfrageFromRow, type TauschAnfrageRow } from './zeilen'
 
-/** Warum ein Tausch nicht ging — was der Server nennt, und `netz`, wenn keine Antwort kam. */
-export type TauschFehler =
-  | 'not-yours'
-  | 'no-partner'
-  | 'no-account'
-  | 'already-asked'
-  | 'gone'
-  | 'stand'
-  | 'netz'
+/**
+ * Warum ein Tausch nicht ging, so weit die App es unterscheidet: Für diesen
+ * Platz läuft schon eine Anfrage, die Anfrage gibt es nicht mehr, der Stand
+ * hat sich geändert (jeder andere Grund des Servers) — oder es kam keine
+ * Antwort (`netz`).
+ */
+export type TauschFehler = 'already-asked' | 'gone' | 'stand' | 'netz'
 
 /** Ein Aufruf und sein Ergebnis — oder der Grund, warum es nicht ging. */
 export type TauschErgebnis<T> = { ok: true; wert: T } | { ok: false; fehler: TauschFehler }
@@ -67,10 +65,11 @@ export interface TauschBestand {
 
 /**
  * Gründe, die der Server nennt und die App unterscheidet. Jeder andere —
- * `past`, `busy`, `absent` … — heißt für sie dasselbe: Seit dem Laden hat sich
- * etwas geändert, und der Tausch geht so nicht mehr.
+ * `past`, `busy`, `absent`, `not-yours`, `no-account` … — heißt für sie
+ * dasselbe: Seit dem Laden hat sich etwas geändert, und der Tausch geht so
+ * nicht mehr (`stand`).
  */
-const BEKANNT: ReadonlySet<string> = new Set<TauschFehler>(['not-yours', 'no-partner', 'no-account', 'already-asked', 'gone'])
+const BEKANNT: ReadonlySet<string> = new Set<TauschFehler>(['already-asked', 'gone'])
 
 async function aufrufen<T>(body: object): Promise<TauschErgebnis<T | undefined>> {
   if (!supabase) return { ok: true, wert: undefined }

@@ -55,6 +55,7 @@ import {
   heuteUtc,
   istAusgefallenFuer,
   personDisplayName,
+  terminTag,
   terminText,
   versatzMitAbweichung,
   zeitMitAbweichung,
@@ -116,16 +117,9 @@ interface Person {
  * Zusammenkunft, prüfte die Ersatzsuche die Abwesenheit am regulären Tag und
  * bot jemanden an, der am echten fehlt. Jetzt gilt `versatzMitAbweichung` aus
  * `_shared/planung.ts`, dieselbe Rangfolge wie im Client und in
- * send-reminders: Abweichung vor Rhythmus.
+ * send-reminders: Abweichung vor Rhythmus. Den Kalendertag daraus rechnet
+ * `terminTag`, wie beim Übernehmen eines freien Platzes und beim Tauschen.
  */
-
-/** ISO-Tag der Zusammenkunft aus dem Wochenstart; null ohne Startdatum. */
-function meetingISO(startISO: string | undefined, offset: number): string | null {
-  if (!startISO) return null
-  const ms = Date.parse(startISO)
-  if (Number.isNaN(ms)) return null
-  return new Date(ms + offset * 864e5).toISOString().slice(0, 10)
-}
 
 /**
  * Wer an diesem Tag fehlt — gelesen werden nur die Abwesenheiten, die ihn
@@ -384,7 +378,7 @@ Deno.serve(async (req: Request) => {
     )
     // Kalendertag dieser Zusammenkunft — Grundlage der Abwesenheitsprüfung.
     // Ohne ISO-Startdatum (Vorlagenwochen) bleibt sie aus, statt zu raten.
-    const tagISO = meetingISO(weekRows[0]?.start, versatz)
+    const tagISO = terminTag(weekRows[0]?.start ?? '', versatz)
     const qualKey = `svc:${parts.svc}`
     const personById = new Map(persons.map((p) => [p.id, p]))
     const kontoFuer = kontoAufloeser(members, persons)

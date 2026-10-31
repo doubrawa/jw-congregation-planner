@@ -12274,7 +12274,7 @@ export const KATALOG = [
     id: 'anwesenheit-auswertung-zahlformat',
     datei: 'src/anwesenheit/AnwesenheitAnsicht.tsx',
     regel: 'Die Anwesenheit in der Auswertung schreibt ihre Zahlen wie die übrige Auswertung (in fa persisch).',
-    suchen: '{ n: zahl.format(z.schnitt) }',
+    suchen: '{ n: zahl(z.schnitt) }',
     ersetzen: '{ n: z.schnitt }',
   },
   {

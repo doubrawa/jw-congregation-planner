@@ -7,6 +7,7 @@ import {
   AppStateContext,
   AppStoreContext,
   type AppState,
+  useApp,
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
@@ -16,10 +17,11 @@ import { LOCALES } from '../i18n/langs'
 import { dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
-import { AnwesenheitAnsicht } from './AnwesenheitAnsicht'
+import { AnwesenheitAnsicht as AnwesenheitInDerAuswertung } from './AnwesenheitAnsicht'
 import { AnwesenheitFormular } from './AnwesenheitFormular'
 import { AnwesenheitKarte } from './AnwesenheitKarte'
 import { AnwesenheitZeile } from './AnwesenheitZeile'
+import { useAnwesenheitMonate } from './useAnwesenheitMonate'
 
 /**
  * **Die Anwesenden in der Oberfläche** (T152): Der Saalordner trägt während
@@ -189,6 +191,17 @@ describe('Die Zeile im Programm', () => {
 })
 
 describe('Die Anwesenheit in der Auswertung', () => {
+  /**
+   * Wie die Auswertung die Ansicht einbindet: die Monate des Zeitraums
+   * (`useAnwesenheitMonate`) und die Zahlen in der Schrift der Sprache, wie
+   * `k.zahl` sie schreibt.
+   */
+  function AnwesenheitAnsicht({ zeitraum }: { zeitraum: number }) {
+    const { state } = useApp()
+    const monate = useAnwesenheitMonate(zeitraum)
+    const zahl = new Intl.NumberFormat(LOCALES[state.lang])
+    return <AnwesenheitInDerAuswertung monate={monate} zahl={(n) => zahl.format(n)} />
+  }
   const HEUTE = new Date(2026, 9, 12, 9, 0)
   const weeks = ['2026-09-07', '2026-09-14'].map(woche)
   const anwesenheit: Anwesenheit[] = [

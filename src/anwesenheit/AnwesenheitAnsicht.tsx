@@ -1,17 +1,15 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
 import { gebundenesDatum } from '../components/datum-anzeige'
+import type { AnwesenheitMonat } from '../data/anwesenheit'
 import { MEETING_TABS } from '../data/helpers'
 import { fromIso } from '../data/meeting-dates'
 import { rechteVon } from '../data/rechte'
 import type { MeetingKey, Week } from '../data/types'
 import { useDruckBogen } from '../druck/useDruckBogen'
-import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
-import { zahlBinden } from '../i18n/zahl-binden'
 import { AnwesenheitBlatt } from './AnwesenheitBlatt'
 import { AnwesenheitDruck } from './AnwesenheitDruck'
-import { useAnwesenheitMonate } from './useAnwesenheitMonate'
 import './anwesenheit.css'
 
 /** Ganze Klassennamen je Zusammenkunftsart, damit eine Textsuche sie findet (`klassennamen.test.ts`). */
@@ -24,19 +22,19 @@ const LEGENDE: Record<MeetingKey, string> = { mid: 'is-mid', we: 'is-we' }
  * Wochenende getrennt. Darüber je Monat ein Balkenpaar. Wo eine Zusammenkunft
  * stattfand, aber keine Zahl hat, steht ihr Tag; ein Tipp darauf öffnet das
  * Eintragen. Unten „Für den Bericht drucken".
+ *
+ * Die Monate rechnet die Auswertung (`useAnwesenheitMonate`), die mit ihnen auch
+ * ihre Kachel zählt; die Zahlen schreibt sie wie überall (`k.zahl`) — in fa mit
+ * persischen Ziffern, nicht als einziger Abschnitt mit 0–9.
  */
-export function AnwesenheitAnsicht({ zeitraum }: { zeitraum: number }) {
+export function AnwesenheitAnsicht({ monate, zahl }: { monate: readonly AnwesenheitMonat[]; zahl: (n: number) => string }) {
   const { state } = useApp()
   const { t } = useT()
-  const monate = useAnwesenheitMonate(zeitraum)
   const { drucken, bogen } = useDruckBogen()
   const [nachtragen, setNachtragen] = useState<{ week: Week; tab: MeetingKey } | null>(null)
   const darfNachtragen = rechteVon(state).zuteilen && state.staleAt === null
   const mitZahl = monate.filter((m) => MEETING_TABS.some((tab) => m.je[tab].anzahl > 0))
   const hoechster = Math.max(1, ...monate.flatMap((m) => MEETING_TABS.map((tab) => m.je[tab].schnitt ?? 0)))
-  // Die Zahlen wie in der übrigen Auswertung (`k.zahl`) und im Druck — in fa
-  // mit persischen Ziffern, nicht als einziger Abschnitt mit 0–9.
-  const zahl = new Intl.NumberFormat(LOCALES[state.lang] ?? state.lang)
   const monatsName = (iso: string) => gebundenesDatum(fromIso(iso), state.lang, 'monatJahr')
   const tagText = (iso: string) => gebundenesDatum(fromIso(iso), state.lang, 'wochentagZahl')
   const name = { mid: t.unterDerWoche, we: t.amWochenende } as const satisfies Record<MeetingKey, string>
@@ -90,8 +88,8 @@ export function AnwesenheitAnsicht({ zeitraum }: { zeitraum: number }) {
                 <span className="aw-anwesend-name">{name[tab]}</span>
                 <span className="klein-text">
                   {[
-                    zahlBinden(fill(t.awZusammenkuenfte, { n: zahl.format(z.anzahl) })),
-                    z.schnitt !== null ? zahlBinden(fill(t.awAnwesenheitSchnitt, { n: zahl.format(z.schnitt) })) : '',
+                    fill(t.awZusammenkuenfte, { n: zahl(z.anzahl) }),
+                    z.schnitt !== null ? fill(t.awAnwesenheitSchnitt, { n: zahl(z.schnitt) }) : '',
                   ]
                     .filter(Boolean)
                     .join(' · ')}
