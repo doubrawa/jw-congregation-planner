@@ -69,7 +69,7 @@ import { STANDARD_ZEITEN } from './vorgaben'
 
 const ANNA: Person = {
   id: 'p-anna', fn: 'Anna', ln: 'Beispiel', role: 'verkuendiger',
-  mail: '', priv: emptyQualifications(),
+  priv: emptyQualifications(),
 }
 const NAME = 'Anna Beispiel'
 const SERVICES: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 1, groups: false }]
@@ -326,7 +326,7 @@ describe('Wer weiß, dass die Person schon eingeteilt ist?', () => {
     // Gegenprobe: ohne sie bliebe offen, ob der Platz nur deshalb leer ist,
     // weil die Auto-Zuteilung ihn gar nicht erst sieht.
     const bernd: Person = {
-      id: 'p-bernd', fn: 'Bernd', ln: 'Anders', role: 'verkuendiger', mail: '',
+      id: 'p-bernd', fn: 'Bernd', ln: 'Anders', role: 'verkuendiger', 
       priv: { ...emptyQualifications(), vortrag: true },
     }
     const w = woche()

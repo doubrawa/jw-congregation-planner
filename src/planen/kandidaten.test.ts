@@ -22,7 +22,7 @@ const priv = (...keys: string[]): Qualifications => {
 }
 
 function person(id: string, fn: string, ln: string, female: boolean, ...q: string[]): Person {
-  return { id, fn, ln, role: 'verkuendiger', female, mail: '', priv: priv(...q), grp: null }
+  return { id, fn, ln, role: 'verkuendiger', female, priv: priv(...q), grp: null }
 }
 
 const BRUDER_A = person('b1', 'Anton', 'Alt', false, 'schulung', 'schulungPartner')

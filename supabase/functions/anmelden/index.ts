@@ -1,9 +1,11 @@
 // =============================================================================
-// Supabase Edge Function: anmelden — mit Link, mit Code, oder Link per E-Mail
+// Supabase Edge Function: anmelden — mit Link oder mit Code
 // =============================================================================
 // Ein Kennwort gibt es nicht (T121, Phase 8). Wer in die App soll, bekommt vom
-// Admin einen Link — per E-Mail oder auf einem Zettel mit QR-Code und einem
-// Code zum Eintippen (`send-invite`). Diese Function löst ihn ein.
+// Admin einen Link — per Nachricht oder auf einem Zettel mit QR-Code und einem
+// Code zum Eintippen (`send-invite`). Diese Function löst ihn ein. Einen Link
+// per E-Mail anfordern (`aktion: 'mail'`) ging bis zum 31.10.2026; seitdem
+// speichert die App keine Adressen mehr, und die Aktion ist ein `bad-request`.
 //
 // **Öffentlich**: Wer sich anmelden will, hat noch keine Sitzung. Das Gateway
 // lässt den öffentlichen Schlüssel aus dem Bündel durch (`verify_jwt` ist keine
@@ -11,16 +13,14 @@
 // Code **sind** der Ausweis, und Raten wird gebremst.
 //
 // Request (supabase.functions.invoke, ohne Sitzung):
-//   { aktion: 'link', token }                  Link aus der E-Mail
+//   { aktion: 'link', token }                  Anmelde-Link (Nachricht)
 //   { aktion: 'code', code, pruefen? }         Code vom Zettel (QR oder getippt);
 //                                              `pruefen`: nur Name und Versammlung
-//   { aktion: 'mail', email, lang? }           Selbstbedienung „Link senden"
 // Response:
 //   200 { ok: true, sitzung: { access_token, refresh_token } }   angemeldet
 //   200 { ok: true, name, versammlung }                          geprüft
-//   200 { ok: true }                                             Mail (immer gleich)
-//   200 { error: 'not-configured' }                              Mail ohne Versand
 //   404 { error: 'ungueltig' } · 410 { error: 'abgelaufen' } · 429 { error: 'zu-viele' }
+//   400 { error: 'bad-request' }                                 sonst
 //
 // **Das Konto entsteht bei der ersten Anmeldung**, mit der Person-Id als Konto-Id
 // und einer internen Adresse (`interneAdresse`), ohne Kennwort. „Angemeldet"
@@ -28,9 +28,8 @@
 // Vormerkung an der Person (Admin, Planer), wie früher über den Einladungscode.
 // =============================================================================
 
-import { LINK_SPALTEN, linkErzeugen, linkSpeichern, type LinkZeile } from '../_shared/anmelde-links.ts'
-import { linkMail, mailBereit, mailSenden } from '../_shared/anmelde-mail.ts'
-import { anmeldeUrl, codeAnzeige, codeNormal, codeVollstaendig, interneAdresse, pruefsumme } from '../_shared/anmeldung.ts'
+import { LINK_SPALTEN, type LinkZeile } from '../_shared/anmelde-links.ts'
+import { codeNormal, codeVollstaendig, interneAdresse, pruefsumme } from '../_shared/anmeldung.ts'
 import { kontoAdmin } from '../_shared/konto-admin.ts'
 import { personDisplayName } from '../_shared/planung.ts'
 import { CORS, json, restKlient, wert } from '../_shared/rest.ts'
@@ -39,13 +38,9 @@ declare const Deno: {
   serve: (handler: (req: Request) => Promise<Response> | Response) => void
   env: { get: (key: string) => string | undefined }
 }
-/** Arbeit nach der Antwort zu Ende bringen — gibt es auf der Plattform, nicht in den Tests. */
-declare const EdgeRuntime: { waitUntil(arbeit: Promise<unknown>): void } | undefined
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-const APP_URL = Deno.env.get('APP_URL') ?? 'https://versammlung.app/'
-const MAIL = { apiKey: Deno.env.get('RESEND_API_KEY') ?? '', von: Deno.env.get('INVITE_FROM') ?? '' }
 
 const rest = restKlient(SUPABASE_URL, SERVICE_KEY)
 const konten = kontoAdmin(SUPABASE_URL, SERVICE_KEY)
@@ -55,14 +50,11 @@ const konten = kontoAdmin(SUPABASE_URL, SERVICE_KEY)
  * viele Male fragen. Je Absender 20 Fehlversuche in der Stunde, über alle 500 —
  * damit kommt in einem Jahr keiner auch nur in die Nähe eines Treffers. Der Preis:
  * Wer die Grenze für alle ausschöpft, sperrt eine Stunde lang das Anmelden mit
- * Code; Link und E-Mail gehen weiter.
+ * Code; der Link geht weiter.
  */
 const GRENZE_JE_ABSENDER = 20
 const GRENZE_GESAMT = 500
 const STUNDE = 3600e3
-
-/** So oft geht höchstens eine Mail je Person hinaus (Selbstbedienung). */
-const MAIL_PAUSE = 10 * 60e3
 
 interface PersonZeile {
   id: string
@@ -191,102 +183,6 @@ async function mitCode(req: Request, roh: unknown, pruefen: boolean, jetzt: numb
   return json({ ok: true, name: personDisplayName(person.fn, person.ln), versammlung: await versammlungsName(link.congregation_id) })
 }
 
-/** Eine Adresse, wie sie in `persons.mail` steht — nur in der Form geprüft. */
-function adresseVon(roh: unknown): string | null {
-  if (typeof roh !== 'string') return null
-  const adresse = roh.trim().toLowerCase()
-  // `*` und `%` wären Platzhalter in der Abfrage unten — keine Adresse enthält sie.
-  return adresse.length <= 254 && /^[^\s@*%]+@[^\s@*%]+\.[^\s@*%]+$/.test(adresse) ? adresse : null
-}
-
-/**
- * **„Link senden" auf der Anmeldeseite.** Jede Person mit dieser Adresse, die
- * schon ein Konto oder einen Link hat, bekommt ihren eigenen Link — zwei, die
- * sich eine Adresse teilen, also zwei Mails. Wen der Admin noch nicht
- * hereingelassen hat, der bekommt nichts: Den ersten Link stellt er aus.
- *
- * Die Antwort ist immer dieselbe, gleich ob es die Adresse gibt — sonst ließe
- * sich hier nachsehen, wer zu einer Versammlung gehört. **Und sie kommt gleich
- * schnell:** Gesucht und gesendet wird erst nach der Antwort
- * (`EdgeRuntime.waitUntil`). Bis zum 15.10.2026 wartete sie auf beides, und
- * eine Adresse, an die eine Mail hinausging, brauchte merklich länger als eine
- * unbekannte — die Dauer verriet, was der Text verschwieg.
- */
-async function perMail(roh: unknown, lang: unknown, jetzt: number): Promise<Response> {
-  if (!mailBereit(MAIL)) return json({ error: 'not-configured' })
-  const adresse = adresseVon(roh)
-  if (!adresse) return json({ error: 'bad-request' }, 400)
-  const arbeit = linksPerMail(adresse, typeof lang === 'string' ? lang : null, jetzt).catch((err: unknown) => {
-    console.error('anmelden (mail):', err instanceof Error ? err.message : String(err))
-  })
-  if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(arbeit)
-  else await arbeit
-  return json({ ok: true })
-}
-
-/**
- * Den Personen mit dieser Adresse je einen neuen Link schicken (siehe
- * `perMail`) — **mit neuem Code**, denn die Mail trägt ihn: Auf dem iPhone
- * öffnet der Link Safari, nie die App vom Home-Bildschirm, und dort meldet nur
- * der Code an. Der Code steht nur als Prüfsumme in der Datenbank; ihn in die
- * Mail zu schreiben heißt, einen neuen auszustellen. Damit gilt der Zettel der
- * Person nicht mehr, sobald jemand mit ihrer Adresse „Link senden" drückt und
- * die Mail hinausgeht — vom Betreiber so entschieden (15.10.2026). Bis dahin
- * erneuerte die Seite nur das Token (`tokenErneuern`), und der Zettel galt
- * weiter.
- */
-async function linksPerMail(adresse: string, sprache: string | null, jetzt: number): Promise<void> {
-  // Groß und klein egal (`ilike`), sonst genau diese Adresse: `_` ist im Muster
-  // ein Platzhalter für ein Zeichen und wird deshalb maskiert; `%` und `*`
-  // lässt `adresseVon` gar nicht erst durch.
-  const muster = adresse.replace(/_/g, '\\_')
-  const kandidaten = await rest.get<{ id: string; fn: string; ln: string; mail: string; congregation_id: string }[]>(
-    `persons?select=id,fn,ln,mail,congregation_id&mail=ilike.${wert(muster)}&limit=10`,
-  )
-  if (kandidaten.length === 0) return
-
-  const ids = kandidaten.map((p) => wert(p.id)).join(',')
-  const [links, mitglieder] = await Promise.all([
-    rest.get<LinkZeile[]>(`anmelde_links?select=${LINK_SPALTEN}&person_id=in.(${ids})`),
-    rest.get<{ person_id: string }[]>(`members?select=person_id&person_id=in.(${ids})`),
-  ])
-  const linkVon = new Map(links.map((l) => [l.person_id, l]))
-  const mitKonto = new Set(mitglieder.map((m) => m.person_id))
-  // Teilen sich zwei eine Adresse, sind sie meist in derselben Versammlung — ihr Name einmal geholt.
-  const namen = new Map<string, Promise<string>>()
-  const versammlungVon = (id: string): Promise<string> => {
-    const name = namen.get(id) ?? versammlungsName(id)
-    namen.set(id, name)
-    return name
-  }
-
-  for (const person of kandidaten) {
-    const link = linkVon.get(person.id)
-    if (!link && !mitKonto.has(person.id)) continue
-    if (link?.gesendet_at && jetzt - new Date(link.gesendet_at).getTime() < MAIL_PAUSE) continue
-    /*
-     * **Erst gesendet, dann gespeichert.** Der neue Link ersetzt den alten samt
-     * Zettel — das darf er erst, wenn die Mail mit ihm hinausging (Betreiber,
-     * 16.10.2026). Bis dahin stand er vorher in der Datenbank: Scheiterte der
-     * Versand, galt der Zettel nicht mehr, ohne dass ein neuer Link angekommen
-     * war, und weil `gesendet_at` leer blieb, griff auch die Pause nicht.
-     */
-    const neu = linkErzeugen(new Date(jetzt))
-    const mail = linkMail(sprache, {
-      person,
-      versammlung: await versammlungVon(person.congregation_id),
-      url: anmeldeUrl(APP_URL, neu.token),
-      code: codeAnzeige(neu.code),
-      gueltigBis: neu.gueltigBis,
-    })
-    if (!(await mailSenden(MAIL, adresse, mail))) continue
-    if (!(await linkSpeichern(rest, person.id, person.congregation_id, neu, { jetzt: new Date(jetzt), gesendet: true }))) {
-      // Die Mail trägt dann einen Link, den es nicht gibt; der alte gilt weiter.
-      console.error('anmelden (mail): Link gesendet, aber nicht gespeichert')
-    }
-  }
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   try {
@@ -297,8 +193,6 @@ Deno.serve(async (req: Request) => {
         return await mitToken(anfrage.token, jetzt)
       case 'code':
         return await mitCode(req, anfrage.code, anfrage.pruefen === true, jetzt)
-      case 'mail':
-        return await perMail(anfrage.email, anfrage.lang, jetzt)
       default:
         return json({ error: 'bad-request' }, 400)
     }

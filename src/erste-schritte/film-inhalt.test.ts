@@ -38,9 +38,8 @@ describe('Das Handy im Film', () => {
     const i = inhalt('de')
     expect(i.gruss).toBe('Guten Morgen, Anton')
     expect(i.kopfVersammlung).toBe('Versammlung Krumbach')
-    expect(i.mailBetreff).toBe('Dein Zugang zur Versammlung Krumbach')
-    expect(i.mailText.startsWith('Hallo Anton,')).toBe(true)
-    expect(i.mailText).toContain('die Versammlung Krumbach plant')
+    expect(i.nachrichtText.startsWith('Hallo Anton,')).toBe(true)
+    expect(i.nachrichtText).toContain('die Versammlung Krumbach plant')
   })
 
   it('der Gruß folgt der Tageszeit, wie auf Start', () => {
@@ -51,7 +50,7 @@ describe('Das Handy im Film', () => {
   it('ohne Person steht kein Name und kein „undefined" da', () => {
     const i = inhalt('de', '')
     expect(i.gruss).toBe('Guten Morgen, …')
-    expect(i.mailText.startsWith('Hallo …,')).toBe(true)
+    expect(i.nachrichtText.startsWith('Hallo …,')).toBe(true)
   })
 
   it('die Aufgabe ist morgen — in der Sprache der App, am Satzanfang groß', () => {
@@ -75,14 +74,13 @@ describe('Das Handy im Film', () => {
     expect(inhalt(lang).wann).toBe(karte)
   })
 
-  it.each(APP_LANGS.map((l) => l.code))('%s: die E-Mail steht bis zum Link im Bild, ohne einen Platzhalter', (lang) => {
+  it.each(APP_LANGS.map((l) => l.code))('%s: die Nachricht steht bis zum Link im Bild, ohne einen Platzhalter', (lang) => {
     const i = inhalt(lang)
-    expect(i.mailText.length).toBeGreaterThan(20)
-    expect(i.mailText).not.toMatch(/\{\w+\}/)
-    expect(i.mailText).toContain('Anton')
-    expect(i.mailBetreff).not.toMatch(/\{\w+\}/)
+    expect(i.nachrichtText.length).toBeGreaterThan(20)
+    expect(i.nachrichtText).not.toMatch(/\{\w+\}/)
+    expect(i.nachrichtText).toContain('Anton')
     // Der Code steht erst hinter dem Link — im Bild also nicht.
-    const [, dahinter = ''] = dict(lang).linkMailText.split('{url}')
+    const [, dahinter = ''] = dict(lang).linkNachrichtText.split('{url}')
     expect(dahinter).toContain('{code}')
   })
 })

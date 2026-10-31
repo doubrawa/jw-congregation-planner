@@ -39,16 +39,17 @@ import { zahlBinden } from '../i18n/zahl-binden'
  * - Der **Zähler** nennt die *sichtbaren* Personen, nicht alle.
  */
 
-const linksAusstellen = vi.fn((_ids: readonly string[], _wie: { senden: boolean; lang: string }) =>
-  Promise.resolve<Ausgestellt>({ links: [], mailBereit: true, fehler: false }),
-)
+const linksAusstellen = vi.fn((_ids: readonly string[]) => Promise.resolve<Ausgestellt>({ links: [], fehler: false }))
 
 // Nur der Aufruf der Function ist nachgestellt — was der Zustand daraus macht, ist echt.
 vi.mock('../lib/links-ausstellen', async (echt) => ({
   ...(await echt<typeof import('../lib/links-ausstellen')>()),
-  linksAusstellen: (ids: readonly string[], wie: { senden: boolean; lang: string }) => linksAusstellen(ids, wie),
+  linksAusstellen: (ids: readonly string[]) => linksAusstellen(ids),
 }))
 vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false }))
+// Die Zwischenablage — happy-dom kennt sie nicht.
+const kopiert = vi.fn((_text: string) => Promise.resolve(true))
+vi.mock('../lib/clipboard', () => ({ copyText: (text: string) => kopiert(text) }))
 
 const { PersonenScreen } = await import('./PersonenScreen')
 
@@ -61,11 +62,11 @@ const priv = (...keys: string[]): Qualifications => {
 }
 
 const person = (id: string, fn: string, ln: string, over: Partial<Person> = {}): Person => ({
-  id, fn, ln, role: 'verkuendiger', female: false, mail: '', priv: emptyQualifications(),
+  id, fn, ln, role: 'verkuendiger', female: false, priv: emptyQualifications(),
   grp: null, ...over,
 })
 
-const ALT = person('p-a', 'Anton', 'Alt', { mail: 'anton@example.org' })
+const ALT = person('p-a', 'Anton', 'Alt', { })
 const BRAND = person('p-b', 'Bernd', 'Brand', { role: 'aeltester', grp: 'g1' })
 const COHN = person('p-c', 'Clara', 'Cohn', { female: true, priv: priv('schulung') })
 const PERSONEN = [BRAND, COHN, ALT] // absichtlich unsortiert
@@ -88,13 +89,12 @@ const link = (personId: string, tage = 10): AnmeldeLink => ({
   benutztAt: null,
 })
 /** Was die Function für eine Person zurückgibt. */
-const ausgestellt = (personId: string, gesendet = false): AusgestellterLink => ({
+const ausgestellt = (personId: string): AusgestellterLink => ({
   personId,
   url: `https://versammlung.app/#anmelden=${'T'.repeat(43)}`,
   zettelUrl: 'https://versammlung.app/#code=K7RD2QWM',
   code: 'K7RD-2QWM',
   gueltigBis: '2026-11-14T09:00:00.000Z',
-  gesendet,
 })
 // Bernd hat ein Konto, Clara einen gültigen Link, Anton nichts.
 const BRAND_KONTO: Member[] = [konto('p-b')]
@@ -168,7 +168,7 @@ const hinweis = (c: HTMLElement, titel: string) =>
 
 beforeEach(() => {
   breite(false)
-  linksAusstellen.mockClear().mockResolvedValue({ links: [], mailBereit: true, fehler: false })
+  linksAusstellen.mockClear().mockResolvedValue({ links: [], fehler: false })
 })
 afterEach(() => {
   cleanup()
@@ -313,14 +313,13 @@ describe('Person anlegen', () => {
     expect(dispatch).not.toHaveBeenCalled()
     fireEvent.change(eingabe(b, t.vorname), { target: { value: ' Dora ' } })
     fireEvent.change(eingabe(b, t.nachname), { target: { value: 'Dahl' } })
-    fireEvent.change(eingabe(b, t.emailFreiwillig), { target: { value: 'dora@example.org' } })
     fireEvent.click(knopf(b, t.schwester))
     fireEvent.change(feld(b, t.gruppeLbl), { target: { value: 'g1' } })
     fireEvent.change(feld(b, t.rolle), { target: { value: 'keine' } })
     fireEvent.click(knopf(b, t.hinzufuegenKnopf))
     const aktion = dispatch.mock.calls.find((c) => c[0].type === 'addPerson')![0]
     expect(aktion.person).toMatchObject({
-      fn: 'Dora', ln: 'Dahl', mail: 'dora@example.org', female: true, grp: 'g1', role: 'keine',
+      fn: 'Dora', ln: 'Dahl', female: true, grp: 'g1', role: 'keine',
     })
     expect(aktion.person.priv).toEqual(emptyQualifications())
     expect(aktion.person.id).toBeTruthy()
@@ -381,12 +380,6 @@ describe('Der Zähler nennt die sichtbaren, nicht alle', () => {
     fireEvent.change(suche(container), { target: { value: 'alt' } })
     expect(namen(container)).toEqual(['Alt, Anton'])
     expect(zaehler(container)).toBe(zahlBinden('Personen: 1'))
-  })
-
-  it('die Suche findet auch über die E-Mail-Adresse', () => {
-    const { container } = zeige()
-    fireEvent.change(suche(container), { target: { value: 'anton@' } })
-    expect(namen(container)).toEqual(['Alt, Anton'])
   })
 
   it('findet nichts, sagt der Zähler 0 — die Liste ist leer, nicht kaputt', () => {
@@ -706,13 +699,14 @@ describe('Hinweis: ohne Predigtdienstgruppe', () => {
 
 /**
  * **Links senden** (T121, Phase 8; Entwurf `GAlleEinladen`): allen, die die
- * Liste in der Auswahl „Ohne Link" zeigt, auf einmal ihren Zugang — wer eine
- * Adresse hat, per E-Mail, die übrigen auf einem Zettel. Wer schon einen
- * gültigen Link hat, bekommt keinen neuen: Er ersetzte den alten samt Zettel.
+ * Liste in der Auswahl „Ohne Link" zeigt, ihren Zugang — seit dem 31.10.2026
+ * per Nachricht, Person für Person, oder auf Zetteln für die übrigen. Wer
+ * schon einen gültigen Link hat, bekommt keinen neuen: Er ersetzte den alten
+ * samt Zettel. Bis dahin gingen die Links von hier per E-Mail hinaus.
  */
 describe('Links senden', () => {
   const MIT_STAENDEN: Partial<AppState> = { members: BRAND_KONTO, anmeldeLinks: COHN_LINK }
-  const DAHL = person('p-d', 'Dora', 'Dahl', { mail: 'dora@example.org' })
+  const DAHL = person('p-d', 'Dora', 'Dahl')
   const ERNST = person('p-e', 'Emil', 'Ernst')
   const dialog = () => document.querySelector<HTMLElement>(`[role="dialog"][aria-label="${t.linksSenden}"]`)
   /** In die Auswahl „Ohne Link" und das Blatt öffnen. */
@@ -723,6 +717,18 @@ describe('Links senden', () => {
   }
   const toasts = (dispatch: ReturnType<typeof vi.fn>) =>
     dispatch.mock.calls.map((c) => c[0] as AppAction).flatMap((a) => (a.type === 'showToast' ? [a.text] : []))
+  /** Die Zeilen der Liste: Name, Marke (leer, solange nichts geschehen ist) und Knöpfe. */
+  const listenZeilen = (b: HTMLElement) =>
+    [...b.querySelectorAll('.link-zeile')].map((z) => [
+      z.querySelector('.link-zeile-name')?.textContent,
+      z.querySelector('.link-marke')?.textContent ?? '',
+      [...z.querySelectorAll('button')].map((k) => k.textContent).join('+'),
+    ])
+  const kopieren = (b: HTMLElement, name: string) => fireEvent.click(b.querySelector(`button[aria-label="${name}: ${t.kopierenBtn}"]`)!)
+
+  beforeEach(() => {
+    kopiert.mockReset().mockResolvedValue(true)
+  })
 
   it('steht nur in der Auswahl „Ohne Link" — „alle" sind dort genau die', () => {
     const { container } = zeige(MIT_STAENDEN)
@@ -750,92 +756,129 @@ describe('Links senden', () => {
     expect(namen(container)).toEqual(['Alt, Anton', 'Cohn, Clara'])
   })
 
-  it('teilt in „Per E-Mail" und „Ohne E-Mail-Adresse", jeweils mit Zahl', () => {
+  it('zwei Wege, jeweils mit Zahl: per Nachricht mit einer Zeile je Person, und auf Zetteln — keine E-Mail mehr', () => {
     const b = blatt(zeige({ ...MIT_STAENDEN, persons: [...PERSONEN, DAHL, ERNST] }).container)
     const titel = [...b.querySelectorAll('.link-weg-titel')].map((x) => x.textContent)
-    expect(titel).toEqual([`${t.perEmail} · 2`, `${t.ohneEmail} · 1`])
+    expect(titel).toEqual([`${t.perNachricht} · 3`, `${t.aufZetteln} · 3`])
+    // Ohne Teilen im Gerät (happy-dom) bleibt je Zeile Kopieren.
+    expect(listenZeilen(b)).toEqual([
+      ['Anton Alt', '', t.kopierenBtn],
+      ['Dora Dahl', '', t.kopierenBtn],
+      ['Emil Ernst', '', t.kopierenBtn],
+    ])
+    expect(b.querySelector('input')).toBeNull()
   })
 
-  it('„Links senden" schickt die mit Adresse — mit Versand, in der Sprache der Versammlung', async () => {
-    const b = blatt(zeige({ ...MIT_STAENDEN, persons: [...PERSONEN, DAHL, ERNST] }).container)
-    fireEvent.click(knopf(b, t.linksSenden))
-    await waitFor(() => expect(linksAusstellen).toHaveBeenCalledWith(['p-a', 'p-d'], { senden: true, lang: 'de' }))
+  it('Kopieren stellt genau für diese Person einen Link aus und kopiert ihren Text — danach steht dort „Kopiert", und der Knopf bleibt', async () => {
+    linksAusstellen.mockResolvedValue({ links: [ausgestellt('p-d')], fehler: false })
+    const { container, dispatch } = zeige({ ...MIT_STAENDEN, persons: [...PERSONEN, DAHL, ERNST] })
+    const b = blatt(container)
+    kopieren(b, 'Dora Dahl')
+    await waitFor(() => expect(kopiert).toHaveBeenCalledTimes(1))
+    expect(linksAusstellen).toHaveBeenCalledWith(['p-d'])
+    expect(kopiert.mock.calls[0]![0]).toMatch(/^Hallo Dora,\n/)
+    expect(kopiert.mock.calls[0]![0]).toContain('\nK7RD-2QWM\n')
+    expect(toasts(dispatch)).toContain(fill(t.toastNachrichtKopiert, { name: 'Dora' }))
+    await waitFor(() => expect(listenZeilen(b)[1]).toEqual(['Dora Dahl', t.markeKopiert, t.kopierenBtn]))
+    // Die übrigen bleiben, wie sie waren — und auf Zetteln stehen nur noch sie.
+    expect(listenZeilen(b)[0]).toEqual(['Anton Alt', '', t.kopierenBtn])
+    expect([...b.querySelectorAll('.link-weg-titel')].map((x) => x.textContent)[1]).toBe(`${t.aufZetteln} · 2`)
   })
 
-  it('genau die, die die Liste zeigt — die Suche grenzt mit ein', async () => {
+  it('der ausgestellte Link kommt in den Zustand — ohne „gesendet", die App schickt nichts selbst', async () => {
+    linksAusstellen.mockResolvedValue({ links: [ausgestellt('p-a')], fehler: false })
+    const { container, dispatch } = zeige(MIT_STAENDEN)
+    kopieren(blatt(container), 'Anton Alt')
+    await waitFor(() => expect(dispatch.mock.calls.some((c) => c[0].type === 'linksAusgestellt')).toBe(true))
+    const aktion = dispatch.mock.calls.find((c) => c[0].type === 'linksAusgestellt')![0]
+    expect(aktion.links).toEqual([expect.objectContaining({ personId: 'p-a', gueltigBis: '2026-11-14T09:00:00.000Z', gesendetAt: null, benutztAt: null })])
+  })
+
+  it('scheitert das Kopieren, bleibt die Zeile offen', async () => {
+    linksAusstellen.mockResolvedValue({ links: [ausgestellt('p-a')], fehler: false })
+    kopiert.mockResolvedValueOnce(false)
+    const { container, dispatch } = zeige(MIT_STAENDEN)
+    const b = blatt(container)
+    kopieren(b, 'Anton Alt')
+    await waitFor(() => expect(toasts(dispatch)).toContain(t.nochmalTippen))
+    expect(listenZeilen(b)[0]).toEqual(['Anton Alt', '', t.kopierenBtn])
+  })
+
+  it('ein zweites Kopieren nimmt denselben Text — ohne neuen Link, der den eben kopierten ersetzte', async () => {
+    // Etwa, wenn vor dem Einfügen schon der Text der nächsten Person in der Zwischenablage stand.
+    linksAusstellen.mockResolvedValue({ links: [ausgestellt('p-a')], fehler: false })
+    const b = blatt(zeige(MIT_STAENDEN).container)
+    kopieren(b, 'Anton Alt')
+    await waitFor(() => expect(listenZeilen(b)[0]).toEqual(['Anton Alt', t.markeKopiert, t.kopierenBtn]))
+    kopieren(b, 'Anton Alt')
+    await waitFor(() => expect(kopiert).toHaveBeenCalledTimes(2))
+    expect(kopiert.mock.calls[1]![0]).toBe(kopiert.mock.calls[0]![0])
+    expect(linksAusstellen).toHaveBeenCalledTimes(1)
+  })
+
+  it('genau die, die die Liste zeigt — die Suche grenzt mit ein', () => {
     const { container } = zeige({ ...MIT_STAENDEN, persons: [...PERSONEN, DAHL] })
     fireEvent.click(stand(container, t.standOhneLink))
     fireEvent.change(suche(container), { target: { value: 'dahl' } })
     fireEvent.click(knopf(container, t.linksSenden))
-    fireEvent.click(knopf(dialog()!, t.linksSenden))
     // Anton hat ebenso keinen Link, steht aber nicht in der Liste.
-    await waitFor(() => expect(linksAusstellen).toHaveBeenCalledWith(['p-d'], { senden: true, lang: 'de' }))
+    expect(listenZeilen(dialog()!).map(([name]) => name)).toEqual(['Dora Dahl'])
   })
 
-  it('die ausgestellten Links kommen in den Zustand — der Stand stimmt gleich', async () => {
-    linksAusstellen.mockResolvedValue({ links: [ausgestellt('p-a', true)], mailBereit: true, fehler: false })
-    const { container, dispatch } = zeige(MIT_STAENDEN)
-    fireEvent.click(knopf(blatt(container), t.linksSenden))
-    await waitFor(() => expect(dispatch.mock.calls.some((c) => c[0].type === 'linksAusgestellt')).toBe(true))
-    const aktion = dispatch.mock.calls.find((c) => c[0].type === 'linksAusgestellt')![0]
-    expect(aktion.links).toEqual([expect.objectContaining({ personId: 'p-a', gueltigBis: '2026-11-14T09:00:00.000Z', benutztAt: null })])
-    expect(aktion.links[0].gesendetAt).not.toBeNull()
-  })
-
-  it('sind alle angekommen, sagt es das und schließt', async () => {
-    linksAusstellen.mockResolvedValue({ links: [ausgestellt('p-a', true)], mailBereit: true, fehler: false })
-    const { container, dispatch } = zeige(MIT_STAENDEN)
-    fireEvent.click(knopf(blatt(container), t.linksSenden))
-    await waitFor(() => expect(toasts(dispatch)).toContain(fill(t.toastLinksGesendet, { n: 1 })))
-    await waitFor(() => expect(dialog()).toBeNull())
-  })
-
-  it('kam eine nicht an, sagt es wie viele — und bleibt offen, für die Zettel', async () => {
-    linksAusstellen.mockResolvedValue({ links: [ausgestellt('p-a', true), ausgestellt('p-d', false)], mailBereit: true, fehler: false })
-    const { container, dispatch } = zeige({ ...MIT_STAENDEN, persons: [...PERSONEN, DAHL] })
-    fireEvent.click(knopf(blatt(container), t.linksSenden))
-    await waitFor(() => expect(toasts(dispatch)).toContain(fill(t.toastLinksTeils, { n: 1, m: 1 })))
-    expect(dialog()).not.toBeNull()
-  })
-
-  it('kann die App nicht senden, sagt sie es — und kein Link wurde ersetzt', async () => {
-    linksAusstellen.mockResolvedValue({ links: [], mailBereit: false, fehler: false })
-    const { container, dispatch } = zeige(MIT_STAENDEN)
-    fireEvent.click(knopf(blatt(container), t.linksSenden))
-    await waitFor(() => expect(toasts(dispatch)).toContain(t.mailNichtBereit))
-    expect(dispatch.mock.calls.some((c) => c[0].type === 'linksAusgestellt')).toBe(false)
-  })
-
-  it('zwei an derselben Adresse: Jeder bekommt seinen eigenen Link, und das Blatt sagt es', () => {
-    const lena = person('p-l', 'Lena', 'Hoffmann', { mail: 'familie@example.org' })
-    const andrea = person('p-n', 'Andrea', 'Hoffmann', { mail: ' Familie@example.org' })
-    const b = blatt(zeige({ persons: [lena, andrea, ALT] }).container)
-    expect(b.querySelector('.link-geteilt')?.textContent).toBe(
-      t.eineAdresseMehrere + fill(t.eineAdresseMehrereHint, { namen: 'Andrea Hoffmann und Lena Hoffmann' }),
-    )
-  })
-
-  it('„Zettel drucken" stellt für die ohne Adresse Links aus, ohne Versand — und druckt sie', async () => {
+  it('„Zettel drucken" nimmt nur die, deren Text noch nicht hinaus ist — und vermerkt sie', async () => {
     const drucken = vi.fn()
     window.print = drucken
-    linksAusstellen.mockResolvedValue({ links: [ausgestellt('p-e')], mailBereit: true, fehler: false })
-    const b = blatt(zeige({ ...MIT_STAENDEN, persons: [...PERSONEN, ERNST] }).container)
+    linksAusstellen.mockResolvedValueOnce({ links: [ausgestellt('p-d')], fehler: false })
+    linksAusstellen.mockResolvedValueOnce({ links: [ausgestellt('p-a'), ausgestellt('p-e')], fehler: false })
+    const b = blatt(zeige({ ...MIT_STAENDEN, persons: [...PERSONEN, DAHL, ERNST] }).container)
+    kopieren(b, 'Dora Dahl')
+    await waitFor(() => expect(listenZeilen(b)[1]).toEqual(['Dora Dahl', t.markeKopiert, t.kopierenBtn]))
     fireEvent.click(knopf(b, t.zettelDrucken))
     await waitFor(() => expect(drucken).toHaveBeenCalled())
-    expect(linksAusstellen).toHaveBeenCalledWith(['p-e'], { senden: false, lang: 'de' })
-    expect([...document.querySelectorAll('.anmelde-zettel .anmelde-name')].map((n) => n.textContent)).toEqual(['Emil Ernst'])
-    expect(document.documentElement.dataset.print).toBe('anmeldezettel')
+    // Doras Text ist hinaus: Ein Zettel stellte einen neuen Link aus, und der verschickte gälte nicht mehr.
+    expect(linksAusstellen).toHaveBeenLastCalledWith(['p-a', 'p-e'])
+    expect([...document.querySelectorAll('.anmelde-zettel .anmelde-name')].map((n) => n.textContent)).toEqual(['Anton Alt', 'Emil Ernst'])
+    await waitFor(() =>
+      expect(listenZeilen(b)).toEqual([
+        ['Anton Alt', t.aufZettel, ''],
+        ['Dora Dahl', t.markeKopiert, t.kopierenBtn],
+        ['Emil Ernst', t.aufZettel, ''],
+      ]),
+    )
+    // Niemand mehr ohne Text oder Zettel — der Abschnitt ist fort.
+    expect(b.querySelector('[aria-labelledby="links-auf-zetteln"]')).toBeNull()
     // Nach dem Druckdialog ist der Bogen wieder fort — die Codes darauf melden an.
     fireEvent(window, new Event('afterprint'))
     await waitFor(() => expect(document.querySelector('.anmelde-bogen')).toBeNull())
     expect(document.documentElement.dataset.print).toBeUndefined()
   })
 
-  it('im Offline-Stand stellt es nichts aus und verschickt nichts', async () => {
+  it('kommt nur ein Teil der Links zurück, steht nur bei ihm „Auf einem Zettel" — die übrigen bleiben offen', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    window.print = vi.fn()
+    // Der zweite Teil scheiterte: Für Emil gibt es keinen Link und keinen Zettel.
+    linksAusstellen.mockResolvedValue({ links: [ausgestellt('p-a')], fehler: true })
+    const { container, dispatch } = zeige({ ...MIT_STAENDEN, persons: [...PERSONEN, ERNST] })
+    const b = blatt(container)
+    fireEvent.click(knopf(b, t.zettelDrucken))
+    await waitFor(() => expect(window.print).toHaveBeenCalled())
+    await waitFor(() =>
+      expect(listenZeilen(b)).toEqual([
+        ['Anton Alt', t.aufZettel, ''],
+        ['Emil Ernst', '', t.kopierenBtn],
+      ]),
+    )
+    expect(toasts(dispatch)).toContain(t.linkFehler)
+    fireEvent(window, new Event('afterprint'))
+    err.mockRestore()
+  })
+
+  it('im Offline-Stand stellt es nichts aus', async () => {
     const { container, dispatch } = zeige({ ...MIT_STAENDEN, staleAt: Date.now() - 3600_000 })
-    fireEvent.click(knopf(blatt(container), t.linksSenden))
+    kopieren(blatt(container), 'Anton Alt')
     await waitFor(() => expect(toasts(dispatch)).toContain(t.offlineReadOnly))
     expect(linksAusstellen).not.toHaveBeenCalled()
+    expect(kopiert).not.toHaveBeenCalled()
   })
 })
 

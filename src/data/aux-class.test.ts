@@ -25,7 +25,7 @@ import type { Person } from './types'
 function alsPerson(name: string): Person {
   return {
     id: `test-${name}`, fn: name, ln: '', role: 'verkuendiger', female: false,
-    mail: '', priv: emptyQualifications(),
+    priv: emptyQualifications(),
   }
 }
 

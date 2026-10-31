@@ -484,7 +484,7 @@
   gap: 14px;
 }
 
-/* Ein Weg zum Link: per E-Mail oder auf einem Zettel — im Blatt als Feld, wie im Entwurf. */
+/* Ein Weg zum Link: per Nachricht oder auf einem Zettel — im Blatt als Feld, wie im Entwurf. */
 .link-weg {
   display: flex;
   flex-direction: column;
@@ -497,11 +497,6 @@
 .link-weg-titel {
   font-size: calc(15.5px * var(--fs));
   font-weight: 600;
-}
-
-.link-adresse {
-  font-weight: 600;
-  overflow-wrap: anywhere;
 }
 
 /* „Teilen" und „Kopieren" nebeneinander, den freien Platz teilen sie sich;
@@ -521,37 +516,53 @@
   align-self: center;
 }
 
-/* „So sieht die E-Mail aus", „Wer ist das?": aufgeklappt erst auf einen Tipp. */
-.link-vorschau summary {
-  min-height: 44px;
+/* „Links senden" per Nachricht (31.10.2026): je Person eine Zeile — der Name,
+   daneben Teilen und Kopieren, danach die Marke. Reicht die Breite nicht (Handy,
+   große Schrift), rücken die Knöpfe unter den Namen. */
+.link-liste {
   display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.link-zeile {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
+  gap: 6px 10px;
+  min-height: 52px;
+  padding-block: 6px;
+  border-block-start: 1px solid var(--linie);
+}
+
+.link-zeile:first-child {
+  border-block-start: none;
+}
+
+.link-zeile-name {
+  flex: 1 1 10em;
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.link-zeile-knoepfe {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.link-marke {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
   color: var(--akzent-text);
   font-weight: 600;
-  cursor: pointer;
-}
-
-.link-vorschau-mail {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px 14px;
-  border-radius: 16px;
-  background: var(--karte);
-}
-
-/* Der Text der E-Mail mit seinen Absätzen, wie er ankommt. */
-.link-vorschau-text {
-  white-space: pre-line;
-  overflow-wrap: anywhere;
-  font-size: calc(13.5px * var(--fs));
-}
-
-.link-geteilt {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-block-start: 6px;
 }
 
 /* ---- Blatt „Aufgabenbereiche": die Schalter je Gruppe --------------------------- */

@@ -44,7 +44,7 @@ import { MeetingSection } from './MeetingSection'
 const t = dict('de')
 
 const person = (id: string, fn: string, ln: string): Person => ({
-  id, fn, ln, role: 'verkuendiger', female: false, mail: '', priv: emptyQualifications(),
+  id, fn, ln, role: 'verkuendiger', female: false, priv: emptyQualifications(),
 })
 
 const PERSONEN = [person('p-a', 'Anton', 'Alt'), person('p-b', 'Bernd', 'Brand')]

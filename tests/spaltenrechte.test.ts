@@ -3,16 +3,15 @@ import { describe, expect, it, vi } from 'vitest'
 vi.mock('../src/lib/supabase', () => ({ supabase: null }))
 
 import { schemaSpalten, SCHEMA_SQL } from '../scripts/schema-attrappe'
-import { ABWESENHEIT_SPALTEN, PERSON_SPALTEN } from '../src/lib/data'
-import { absenceFromRow, personFromRow } from '../src/lib/zeilen'
+import { ABWESENHEIT_SPALTEN } from '../src/lib/data'
+import { absenceFromRow } from '../src/lib/zeilen'
 
 /**
- * **Spaltenrechte an `persons` und `absences`** (Sicherheits-Review 29.10.2026).
+ * **Spaltenrechte an `absences`** (Sicherheits-Review 29.10.2026).
  *
- * Die Versammlung liest beide Tabellen, aber nicht jede Spalte: Die
- * E-Mail-Adresse und der Grund einer Abwesenheit sind gesperrt und kommen über
- * `personen_mails` und `abwesenheit_gruende`. Drei Listen müssen dafür
- * zusammenpassen, und jede steht an einem anderen Ort:
+ * Die Versammlung liest die Tabelle, aber nicht jede Spalte: Der Grund einer
+ * Abwesenheit ist gesperrt und kommt über `abwesenheit_gruende`. Drei Listen
+ * müssen dafür zusammenpassen, und jede steht an einem anderen Ort:
  *
  * - die Spalten der Tabelle (`schema.sql`, samt späterer `add column`),
  * - die freigegebenen (`grant select (…)`) — alle außer der gesperrten,
@@ -21,6 +20,10 @@ import { absenceFromRow, personFromRow } from '../src/lib/zeilen'
  *
  * Fehlt eine neue Spalte in der Freigabe, liest sie niemand; lädt die App eine
  * nicht freigegebene, scheitert das ganze Laden — bei jedem.
+ *
+ * `persons` war vom 29. bis 31.10.2026 ebenso gesperrt (die E-Mail-Adresse).
+ * Seit die Spalte fort ist, liest die Versammlung die Tabelle wieder ganz —
+ * das hält der letzte Block fest.
  */
 
 const freigabe = (tabelle: string): string[] => {
@@ -47,7 +50,6 @@ const gelesen = (mapper: (zeile: never) => unknown): string[] => {
 const nachName = (spalten: string[]): string[] => [...spalten].sort()
 
 describe.each([
-  { tabelle: 'persons', gesperrt: 'mail', app: PERSON_SPALTEN, mapper: personFromRow as (zeile: never) => unknown },
   { tabelle: 'absences', gesperrt: 'reason', app: ABWESENHEIT_SPALTEN, mapper: absenceFromRow as (zeile: never) => unknown },
 ])('$tabelle: „$gesperrt" liest die Versammlung nicht', ({ tabelle, gesperrt, app, mapper }) => {
   it('erst wird das Leserecht an der ganzen Tabelle entzogen, dann Spalte für Spalte gegeben', () => {
@@ -76,22 +78,14 @@ describe.each([
   })
 })
 
-describe('Die Funktionen für Adresse und Grund', () => {
+describe('Die Funktion für den Grund', () => {
   const rumpf = (name: string): string =>
     new RegExp(`create or replace function public\\.${name}\\(\\)[\\s\\S]*?\\n\\$\\$;`).exec(SCHEMA_SQL)?.[0] ?? ''
 
-  it('beide lesen mit eigenen Rechten — und nur in der eigenen Versammlung', () => {
-    for (const name of ['personen_mails', 'abwesenheit_gruende']) {
-      const r = rumpf(name)
-      expect(r, name).toMatch(/security definer\s+set search_path = public/)
-      expect(r, name).toMatch(/\.congregation_id = public\.my_congregation_id\(\)/)
-    }
-  })
-
-  it('die Adressen bekommt nur der Admin', () => {
-    const r = rumpf('personen_mails')
-    expect(r).toMatch(/and public\.is_planner\(\)/)
-    expect(r).not.toMatch(/darf_zuteilen|auth\.uid/)
+  it('liest mit eigenen Rechten — und nur in der eigenen Versammlung', () => {
+    const r = rumpf('abwesenheit_gruende')
+    expect(r).toMatch(/security definer\s+set search_path = public/)
+    expect(r).toMatch(/\.congregation_id = public\.my_congregation_id\(\)/)
   })
 
   it('die Gründe der Admin — sonst nur, wem die Abwesenheit gehört oder wer sie eintrug; der Planer nicht', () => {
@@ -101,9 +95,29 @@ describe('Die Funktionen für Adresse und Grund', () => {
   })
 
   it('aufrufen dürfen sie nur Angemeldete', () => {
-    for (const name of ['personen_mails', 'abwesenheit_gruende']) {
-      expect(SCHEMA_SQL).toContain(`revoke all on function public.${name}() from public, anon;`)
-      expect(SCHEMA_SQL).toContain(`grant execute on function public.${name}() to authenticated;`)
-    }
+    expect(SCHEMA_SQL).toContain('revoke all on function public.abwesenheit_gruende() from public, anon;')
+    expect(SCHEMA_SQL).toContain('grant execute on function public.abwesenheit_gruende() to authenticated;')
+  })
+})
+
+/**
+ * **Keine E-Mail-Adresse mehr** (31.10.2026): Die Spalte geht beim Einspielen,
+ * vorher die Funktion, die sie las — und die Versammlung liest `persons`
+ * wieder ganz, denn dort ist nichts mehr gesperrt.
+ */
+describe('persons ohne Adresse', () => {
+  it('die Tabelle hat keine Spalte `mail` mehr — und das Schema räumt sie ab, nach der Funktion', () => {
+    expect([...schemaSpalten('persons').keys()]).not.toContain('mail')
+    const funktion = SCHEMA_SQL.indexOf('drop function if exists public.personen_mails();')
+    const spalte = SCHEMA_SQL.indexOf('alter table public.persons drop column if exists mail;')
+    expect(funktion).toBeGreaterThan(-1)
+    expect(spalte).toBeGreaterThan(funktion)
+    expect(SCHEMA_SQL).not.toContain('create or replace function public.personen_mails')
+  })
+
+  it('das Leserecht gilt wieder der ganzen Tabelle — anon bekommt keins', () => {
+    expect(SCHEMA_SQL).toContain('grant select on public.persons to authenticated;')
+    expect(SCHEMA_SQL).not.toMatch(/grant select \([^)]*\)\s+on public\.persons/)
+    expect(SCHEMA_SQL).toContain('revoke select on public.persons from anon;')
   })
 })

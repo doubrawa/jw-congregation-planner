@@ -587,7 +587,7 @@ describe('Abwesenheiten', () => {
 })
 
 describe('Personen', () => {
-  const fresh: Person = { id: 'pNeu', fn: 'Neu', ln: 'Person', role: 'verkuendiger', mail: '', priv: {} as Person['priv'], grp: null }
+  const fresh: Person = { id: 'pNeu', fn: 'Neu', ln: 'Person', role: 'verkuendiger', priv: {} as Person['priv'], grp: null }
 
   it('addPerson hängt an, öffnet das Detail', () => {
     const next = reducer(makeState(), { type: 'addPerson', person: fresh })
@@ -628,14 +628,13 @@ describe('Personen', () => {
   })
 
   it('updatePerson mit unverändertem Namen lässt Wochen und Treffpunkte, wie sie sind — es gibt nichts zu schreiben', () => {
-    // „Person bearbeiten" schickt Vor- und Nachname mit, auch wenn nur die
-    // Adresse neu ist. Die Gegenprobe (neuer Name) steht darüber.
+    // „Person bearbeiten" schickt Vor- und Nachname mit, auch wenn sich nur
+    // etwas anderes ändert. Die Gegenprobe (neuer Name) steht darüber.
     const target = person('Manfred Albrecht')
     const s = makeState({
       fsWeeks: [[{ id: '0|r1', ruleId: 'r1', grp: null, wd: 6, time: '09:30', place: 'Saal', leader: 'Manfred Albrecht', lpid: target.id }]],
     })
-    const next = reducer(s, { type: 'updatePerson', id: target.id, patch: { fn: 'Manfred', ln: 'Albrecht', mail: 'manfred@musterstadt.example' } })
-    expect(next.persons.find((p) => p.id === target.id)?.mail).toBe('manfred@musterstadt.example')
+    const next = reducer(s, { type: 'updatePerson', id: target.id, patch: { fn: 'Manfred', ln: 'Albrecht', } })
     expect(next.weeks).toBe(s.weeks)
     expect(next.fsWeeks).toBe(s.fsWeeks)
   })
@@ -2795,7 +2794,7 @@ describe('Index außerhalb des Fensters', () => {
 describe('Toasts in der Sprache des Nutzers', () => {
   /** Aktionen, die eine Meldung erzeugen — je eine je Bauart. */
   const AKTIONEN: Array<[string, AppAction, Partial<AppState>?]> = [
-    ['Person angelegt', { type: 'addPerson', person: { id: 'pX', fn: 'Neu', ln: 'Person', role: 'verkuendiger', mail: '', priv: {} as Person['priv'], grp: null } }],
+    ['Person angelegt', { type: 'addPerson', person: { id: 'pX', fn: 'Neu', ln: 'Person', role: 'verkuendiger', priv: {} as Person['priv'], grp: null } }],
     ['Abwesenheit angelegt', { type: 'addAbsence', absence: { id: 'aX', personId: 'p1', userId: 'u1', from: '2026-09-01', to: '2026-09-05', reason: '' } }],
     ['Gruppe angelegt', { type: 'addGroup', group: { id: 'gX', name: 'Gruppe 9', overseerId: null, assistantId: null } }],
     ['Dienst angelegt', { type: 'addService', service: { key: 'svcX', name: 'Neuer Dienst', count: 1 } }],

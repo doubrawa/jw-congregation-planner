@@ -9,7 +9,6 @@ function person(patch: Partial<Person> = {}): Person {
     fn: 'Simon',
     ln: 'Krüger',
     role: 'verkuendiger',
-    mail: 'simon.krueger@example.org',
     priv: emptyQualifications(),
     ...patch,
   }
@@ -29,10 +28,6 @@ describe('Volltextsuche', () => {
     expect(passtOhneAuswahl(p, filter({ q: 'Meier' }))).toBe(false)
   })
 
-  it('findet über die E-Mail-Adresse', () => {
-    expect(passtOhneAuswahl(p, filter({ q: 'example.org' }))).toBe(true)
-  })
-
   it('findet auch so, wie die Liste den Namen zeigt — Nachname zuerst', () => {
     // Die Liste schreibt „Krüger, Simon". Bis zum 1.10.2026 fand genau das
     // nichts, ebenso wenig „krüger s" zum Eingrenzen unter Namensvettern.
@@ -43,15 +38,13 @@ describe('Volltextsuche', () => {
   })
 
   it('Umlaute und ß: mit Umlaut, ohne und in Umschrift', () => {
-    // Ohne E-Mail-Adresse — sonst träfe „krueger" zufällig dort.
-    const ohneMail = person({ mail: '' })
     for (const q of ['krüger', 'kruger', 'krueger', 'KRUGER']) {
-      expect(passtOhneAuswahl(ohneMail, filter({ q })), q).toBe(true)
+      expect(passtOhneAuswahl(p, filter({ q })), q).toBe(true)
     }
-    const weiss = person({ fn: 'Sven', ln: 'Weiß', mail: '' })
+    const weiss = person({ fn: 'Sven', ln: 'Weiß', })
     expect(passtOhneAuswahl(weiss, filter({ q: 'weiss' }))).toBe(true)
     expect(passtOhneAuswahl(weiss, filter({ q: 'weiß' }))).toBe(true)
-    const boehm = person({ fn: 'Frank', ln: 'Böhm', mail: '' })
+    const boehm = person({ fn: 'Frank', ln: 'Böhm', })
     for (const q of ['böhm', 'bohm', 'boehm']) {
       expect(passtOhneAuswahl(boehm, filter({ q })), q).toBe(true)
     }
@@ -59,7 +52,7 @@ describe('Volltextsuche', () => {
   })
 
   it('auch Akzente anderer Sprachen fallen weg — „jose" findet „José"', () => {
-    expect(passtOhneAuswahl(person({ fn: 'José', ln: 'Núñez', mail: '' }), filter({ q: 'jose nunez' }))).toBe(true)
+    expect(passtOhneAuswahl(person({ fn: 'José', ln: 'Núñez', }), filter({ q: 'jose nunez' }))).toBe(true)
   })
 
   /*

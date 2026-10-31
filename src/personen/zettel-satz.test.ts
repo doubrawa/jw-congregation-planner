@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import jsQR from 'jsqr'
 import { encode } from 'uqr'
 import { dict } from '../i18n/ui'
+import { zahlBinden } from '../i18n/zahl-binden'
 import type { AusgestellterLink } from '../lib/links-ausstellen'
 import { qrBild, zettelSatz } from './zettel-satz'
 
@@ -72,7 +73,6 @@ describe('Die Zettel zu ausgestellten Links', () => {
     zettelUrl: `https://versammlung.app/#code=${code.replace('-', '')}`,
     code,
     gueltigBis: '2026-11-14T09:00:00.000Z',
-    gesendet: false,
   })
 
   it('je Link ein Zettel mit Name, Code und Datum — in der Folge der Links', () => {
@@ -83,14 +83,14 @@ describe('Die Zettel zu ausgestellten Links', () => {
       versammlung: 'Musterstadt',
     })
     expect(satz.zettel.map((z) => [z.name, z.code, z.bis])).toEqual([
-      ['Bernd Brand', 'K7RD-2QWM', '14. November 2026'],
-      ['Anton Alt', 'HX4P-9VTA', '14. November 2026'],
+      ['Bernd Brand', 'K7RD-2QWM', zahlBinden('14. November 2026')],
+      ['Anton Alt', 'HX4P-9VTA', zahlBinden('14. November 2026')],
     ])
     expect(satz.adresse).toBe('versammlung.app')
   })
 
-  it('das Datum steht in der Sprache des Zettels — derselbe Tag wie in der E-Mail', () => {
+  it('das Datum steht in der Sprache des Zettels, mit Jahr — gebunden, damit es auf dem schmalen Zettel nicht bricht', () => {
     const satz = zettelSatz([link('p-a', 'K7RD-2QWM')], { namen: new Map(), lang: 'en', t: dict('en'), versammlung: 'Musterstadt' })
-    expect(satz.zettel[0]!.bis).toBe('November 14, 2026')
+    expect(satz.zettel[0]!.bis).toBe(zahlBinden('November 14, 2026'))
   })
 })

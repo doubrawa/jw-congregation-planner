@@ -9146,7 +9146,7 @@ Tests: die Reihenfolge in `fs-bereich-tabs.test.tsx` und
 bewacht (`gruppenbesuche-reiter-rechts`). Handbücher (Verkündiger, Planer) und
 die sieben Bilder mit der Leiste neu, Maße unverändert.
 
-## Aufgenommen am 31. Oktober 2026 (T156–T159)
+## Aufgenommen am 31. Oktober 2026 (T156–T160)
 
 ### T156 · Mutationsprobe abgeschafft, Unit-Tests mit Gegenprobe stattdessen 🔧 ✅ umgesetzt (31. Oktober 2026)
 
@@ -9318,6 +9318,73 @@ gleich HEAD (11 Dateien); `send-invite` ohne Anmeldung 401, `anmelden` OPTIONS
 (Krumbach, bis 16.11.2026) — das Schreiben in die Datenbank hat der Auto-Modus
 abgelehnt. Ein neuer Link gilt ein Jahr.
 
+### T160 · Keine E-Mail-Adressen mehr — Links per Nachricht, Person für Person 🏗 ✅ umgesetzt (31. Oktober 2026)
+
+Betreiber beim Planen der Live-Tests: Die Zettel „am Desktop einmalig für alle
+versenden", per WhatsApp (ohne WhatsApp Business) — und „am liebsten würde ich
+nämlich auch keine email speichern". Auf die Frage, ob dafür die Adressen
+fallen und eine Nachrichtenliste unter „Links senden" kommt: **„Ja, umbauen".**
+Mit T159 (ein Jahr Gültigkeit) ersetzt der Zettel die Selbsthilfe „Link
+senden" auf der Anmeldeseite.
+
+- **Keine Adresse mehr:** `persons.mail` fällt (Schema: erst
+  `personen_mails()`, dann die Spalte), samt Feld in „Person anlegen" und
+  „Person bearbeiten", Suche über die Adresse, `personen_mails` beim Laden.
+  `persons` liest die Versammlung wieder ganz (`grant select on public.persons`);
+  gesperrt war dort nur die Adresse (T154). `personenSchreiben` schreibt wieder
+  in einem Upsert (der Umweg vom Mittag, `d7ebf57d`, ist fort).
+- **Keine E-Mail mehr:** `send-invite` stellt nur noch aus (kein Resend, kein
+  `senden`, kein `mailBereit`); `anmelden` kennt `aktion: 'mail'` nicht mehr
+  (400). `_shared/anmelde-mail.ts`, `_shared/anmelde-texte.ts` und
+  `scripts/anmelde-texte-erzeugen.mjs` sind gelöscht, `alsGesendet` ebenso;
+  `gesendet_at` bleibt als Spalte, aber leer.
+- **Anmeldeseite:** kein Adressfeld, kein „Link senden"; „Zettel scannen" ist
+  der Hauptweg (am Desktop „Code eintippen"). Der Zettel nennt den Knopf
+  „Code eintippen" statt der Überschrift „Ohne E-Mail-Adresse?".
+- **„Links senden" (Personen › Ohne Link):** je Person eine Zeile mit
+  „Kopieren" (am Handy auch „Teilen") — stellt genau ihren Link aus, kopiert
+  ihren Text, danach steht „Kopiert"/„Geteilt" da. „Zettel drucken" nimmt nur,
+  wessen Text noch nicht hinaus ist, und vermerkt sie. Die Liste bleibt, wie sie
+  beim Öffnen war. Gemeinsamer Baustein mit dem Blatt einer Person:
+  `useNachrichtWeitergeben`; der Text kommt aus `link-nachricht.ts`
+  (`linkNachrichtTitel`/`linkNachrichtText`, aus E-Mail-Text und Schluss
+  zusammengesetzt, Wort für Wort wie vorher).
+- **Film „Erste Schritte":** statt der E-Mail eine Chat-Nachricht mit dem Link.
+- **Texte in 12 Sprachen:** 22 Schlüssel fort, 3 umbenannt, 11 neu oder neu
+  gefasst (`ohnePasswort`, `ohneLinkHint`, `zettelAnleitung`, `erinMailNur`,
+  `ersteSchritteLinkTitel`, `linkUngueltig`, `linksNachrichtHint`,
+  `markeKopiert`, `markeGeteilt`, `aufZetteln`, `zettelListeHint`).
+- **Testdaten:** ohne Adressen; die Bündelwache erkennt die erfundenen Personen
+  über die Wochen im selben Modul (`kennzeichen.ts` ohne Domain).
+- **Mitgliedsrechte-Probe:** (86), (88), (89) entfallen (Nummern frei), (87)
+  bleibt. `nws-export/build-personen-sql.mjs` schreibt weder `tel` noch `mail`.
+- Handbücher (Anmelden, Personen, Link senden, Links senden), README; das Bild
+  der Anmeldeseite neu, das der Person mit der Zeitleiste vom Mittag.
+
+Bewusst geblieben: `members.email` (bei Link-Konten leer; die Kennwort-Konten
+der Testversammlung tragen dort ihre Probe-Adresse) und `gesendet_at`.
+
+**/simplify:** `send-invite` speichert alle Links eines Aufrufs in **einem**
+Upsert (`linksAusstellen` in `_shared/anmelde-links.ts`; bis dahin je Person
+nacheinander, wegen der Pause zwischen zwei E-Mails), der App-Teil schickt 100
+statt 40 je Aufruf; ein veralteter Kommentar in `data.ts` fort.
+
+**/code-review max** (Winkel nacheinander, 9 Befunde, 7 behoben):
+
+| Nr. | Status | Befund |
+| --- | --- | --- |
+| 1 | behoben | „Zettel drucken" vermerkte alle als „Auf einem Zettel", auch wenn nur ein Teil gedruckt wurde — `drucken` gibt jetzt die Gedruckten zurück |
+| 2 | behoben | `send-invite` antwortete auf ein abgelehntes Schreiben mit 200 und leerem `links` — jetzt 500, die App meldet es |
+| 3 | behoben | nach „Kopiert" kein zweites Kopieren — die Knöpfe bleiben, ein zweiter Tipp nimmt denselben Text |
+| 4 | behoben | das Aufräumskript hatte sieben `updatePerson`-Patches in Tests geleert — wieder mit echten Feldern |
+| 5 | Reihenfolge | eine alte App (`senden: true`) gegen die neue Function ersetzte Links still — ausgerollt wird deshalb: Push, Pages abwarten, dann Functions |
+| 6 | behoben | Handbuch: „die Nachricht trägt denselben Code wie der Zettel" — jeder neue Link ersetzt den vorigen |
+| 7 | behoben | `laeuft` hielt eine Id, gebraucht wird ja/nein |
+| 8 | behoben | veraltete Kommentare (`mandanten-nachweis.mjs`, README, eine Probe) |
+| 9 | übersprungen | die Testpersonen tragen kein Kennzeichen der Bündelwache mehr — ein natürliches gibt es nicht, Namen sind bewusst keins |
+
+Gegenproben zu 1–3 rot. Suite 7526/7526, tsc, Lint.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -9356,9 +9423,9 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
-29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑
+29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑
 
-**158 der 159 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+**159 der 160 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |
@@ -9808,9 +9875,9 @@ eine Entscheidung.
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
 | **Betreiber** | Mitgliedsrechte-Probe nach „Alles Planen" | `node scripts/mitgliedsrechte-probe.mjs` — die Testversammlung `edac60cb` und `.env.probe` stehen noch; umgedreht sind (35), (38)–(40), (42), (50), (53), (55), (60), neu (80) und (81). Seit dem 19. Oktober auch (82)–(85): die Leseregel der Abwesenheiten vom 17. Oktober (`absences_select`: über acht Wochen zurück nur, wer zuteilt, und die eigene) — im Skript und an der Attrappe geprüft, live noch nicht gefahren |
 | **Gerät** | Dunkle Bedienleiste am Handy | wirkt erst mit der aktualisierten WebAPK (`about://webapks` → „Update", oder neu installieren) |
-| **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
+| **Betreiber** | Registrieren aus | in Supabase den Schalter für neue Nutzer abstellen (`disable_signup`). Resend und `INVITE_FROM` braucht es seit T160 (31. Oktober) nicht mehr: Die App schickt keine E-Mails; `RESEND_API_KEY` kann aus den Secrets |
 | **Betreiber** | Umzug weg von Supabase | Am 25. Oktober erwogen: Supabase ist eine US-Firma, und die Daten zeigen die Religionszugehörigkeit (Art. 9 DSGVO). Empfohlen: die quelloffene Supabase-Software selbst auf einem Server in Deutschland. Betreiber: „Nicht jetzt, ich überlege noch." Fällt die Entscheidung dafür, legt der Betreiber Konto, Server und Vertrag an; Einrichten und Umziehen per Skript macht Claude |
-| **Betreiber** | Nach T152–T154 messen | alle drei am 30. Oktober ausgerollt (Function `tauschen` v1, Schema, Push `c83df1d7`; seit dem 31.10. `tauschen` v3). Offen: die Mitgliedsrechte-Probe fahren — Fälle 86–92 (Adressen und Gründe per REST gesperrt) und seit dem 31. Oktober (93)–(110), die das Tauschen gegen die Testversammlung messen (T157); Function und `wochen_tauschen` liefen bis dahin nur gegen Attrappen |
+| **Betreiber** | Nach T152–T154 messen | alle drei am 30. Oktober ausgerollt (Function `tauschen` v1, Schema, Push `c83df1d7`; seit dem 31.10. `tauschen` v3). Offen: die Mitgliedsrechte-Probe fahren — Fälle 87 und 90–92 (Gründe per REST gesperrt; 86, 88 und 89 maßen die Adressen und sind mit T160 entfallen) und seit dem 31. Oktober (93)–(110), die das Tauschen gegen die Testversammlung messen (T157); Function und `wochen_tauschen` liefen bis dahin nur gegen Attrappen |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |

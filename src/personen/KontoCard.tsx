@@ -14,7 +14,7 @@ import { useZettelDruck } from './useZettelDruck'
 /**
  * **Das Konto einer Person** (T121, Phase 8; Entwurf `GPerson`): oben die
  * Spur Angelegt · Link gesendet · Angemeldet, darunter, was als Nächstes geht —
- * einen Link senden (per E-Mail oder auf einem Zettel), einen neuen, oder das
+ * einen Link senden (per Nachricht oder auf einem Zettel), einen neuen, oder das
  * verknüpfte Konto lösen.
  *
  * Angemeldet heißt: Ein Konto ist mit ihr verknüpft. Das entsteht bei der
@@ -63,7 +63,7 @@ export function KontoCard({ person }: { person: Person }) {
         </div>
       ) : (
         <p className="klein-text konto-hinweis">
-          {fill(offen ? t.linkOffenHint : link ? t.linkAbgelaufenHint : person.mail.trim() ? t.ohneLinkHintMail : t.ohneLinkHintZettel, { name })}
+          {fill(offen ? t.linkOffenHint : link ? t.linkAbgelaufenHint : t.ohneLinkHint, { name })}
         </p>
       )}
       <div className="konto-knoepfe">

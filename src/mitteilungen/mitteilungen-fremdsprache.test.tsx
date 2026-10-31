@@ -54,7 +54,7 @@ const ANDERER = 'Xumabo Xolevo'
 const ERFUNDEN = new Set(['Xabebo', 'Xidavo', 'Xumabo', 'Xolevo', 'Xagobo', 'Xezavo', 'Xilubo', 'XX'])
 
 const person = (id: string, fn: string, ln: string): Person => ({
-  id, fn, ln, role: 'aeltester', female: false, mail: '', priv: emptyQualifications(),
+  id, fn, ln, role: 'aeltester', female: false, priv: emptyQualifications(),
 })
 
 /** Eine kanonisch deutsche Woche — Vorlagen-Texte, die der Übersetzer in jeder Sprache kennt. */

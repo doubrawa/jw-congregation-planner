@@ -58,7 +58,7 @@ const ausRegel = (id: string, wd: number, time: string, grp: string | null = nul
 
 /** Ein Verkündiger ohne Gruppe — sieht nur, was der ganzen Versammlung gilt. */
 const VERKUENDIGER: Person = {
-  id: 'p-verk', fn: 'Vera', ln: 'Beispiel', role: 'verkuendiger', mail: '',
+  id: 'p-verk', fn: 'Vera', ln: 'Beispiel', role: 'verkuendiger', 
   priv: emptyQualifications(), grp: null,
 }
 

@@ -16,7 +16,7 @@ vi.mock('./supabase', () => ({
   },
 }))
 
-const { codePruefen, linkAnfordern, mitCodeAnmelden, mitLinkAnmelden } = await import('./anmelden')
+const { codePruefen, mitCodeAnmelden, mitLinkAnmelden } = await import('./anmelden')
 
 /** Eine Antwort ≠ 2xx, wie `functions.invoke` sie liefert: der Rumpf hinter `error.context`. */
 const abgewiesen = (body: unknown) => ({
@@ -88,19 +88,6 @@ describe('mit dem Code anmelden', () => {
   it('ein abgewiesener Code meldet den Grund', async () => {
     invoke.mockResolvedValue(abgewiesen({ error: 'abgelaufen' }))
     expect(await codePruefen('K7RD2QWM')).toEqual({ ok: false, fehler: 'abgelaufen' })
-  })
-})
-
-describe('einen Link per E-Mail anfordern', () => {
-  it('schickt Adresse und Sprache; die Antwort sagt nur „unterwegs"', async () => {
-    invoke.mockResolvedValue({ data: { ok: true }, error: null })
-    expect(await linkAnfordern('wer@example.org', 'en')).toBe('unterwegs')
-    expect(invoke).toHaveBeenCalledWith('anmelden', { body: { aktion: 'mail', email: 'wer@example.org', lang: 'en' } })
-  })
-
-  it('ohne eingerichteten Versand sagt sie es', async () => {
-    invoke.mockResolvedValue({ data: { error: 'not-configured' }, error: null })
-    expect(await linkAnfordern('wer@example.org', 'de')).toBe('nicht-eingerichtet')
   })
 })
 

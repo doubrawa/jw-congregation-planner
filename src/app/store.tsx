@@ -237,7 +237,7 @@ export function AppProvider({
   // hieß bei jedem Fokus „Lädt …", eine neu aufgebaute Ansicht und ein erneut
   // vorgelegtes Bestätigungsblatt.
   //
-  // **Kommt die App mit einem Link aus der E-Mail** (`#anmelden=…`, T121
+  // **Kommt die App mit einem Anmelde-Link** (`#anmelden=…`, T121
   // Phase 8), meldet sie zuerst damit an — auch, wenn auf dem Gerät schon
   // jemand angemeldet ist: Der Link gehört dem, der ihn öffnet. Gilt er nicht
   // mehr, sagt sie es, und es bleibt bei der Sitzung, die da war.

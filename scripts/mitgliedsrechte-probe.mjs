@@ -133,18 +133,16 @@
  *  83. Gruppenaufseher: dieselbe Abwesenheit                    → unsichtbar
  *  84. Planer: dieselbe Abwesenheit                             → sichtbar
  *  85. Mitglied: die eigene Abwesenheit, neun Wochen vorbei     → sichtbar
- *  86. Mitglied: die E-Mail-Adressen über die Tabelle           → abgewiesen
  *  87. Mitglied: die Gründe der Abwesenheiten über die Tabelle  → abgewiesen
- *  88. Admin: die Adressen über personen_mails                  → sichtbar
- *  89. Mitglied: die Adressen über personen_mails               → leer
  *  90. Planer: den Grund einer fremden Abwesenheit              → unsichtbar
  *  91. Mitglied: den Grund der eigenen Abwesenheit              → sichtbar
  *  92. Admin: den Grund der Abwesenheit des Mitglieds           → sichtbar
  *
  * (86)–(92) kamen am 29.10.2026 dazu, mit dem Sicherheits-Review: Adressen und
  * Gründe las bis dahin jedes Mitglied über die REST-Schnittstelle. Seither
- * sperren Spaltenrechte beide Spalten, und zwei Funktionen liefern sie nur,
- * wem die App sie zeigt.
+ * sperren Spaltenrechte die Gründe, und eine Funktion liefert sie nur, wem die
+ * App sie zeigt. (86), (88) und (89) maßen dasselbe für die E-Mail-Adressen —
+ * die gibt es seit dem 31.10.2026 nicht mehr; die Nummern bleiben frei.
  *
  * (82)–(85) kamen am 19.10.2026 dazu: die Leseregel der Abwesenheiten vom
  * 17.10.2026 (`absences_select`). Seit die Auswertung ein Jahr zurückblickt,
@@ -1444,38 +1442,17 @@ async function abwesenheitProben(k, a) {
 }
 
 /**
- * (86)–(89) Adresse und Grund (Sicherheits-Review 29.10.2026): Die Spalten
- * `persons.mail` und `absences.reason` liest die Versammlung nicht mehr über
- * die Tabelle — ein Mitglied, das sie dort verlangt, bekommt 403 statt der
- * Daten. Die Adressen liefert `personen_mails` allein dem Admin; ob ein
- * Mitglied dort leer ausgeht, sagt nur etwas, wenn der Admin etwas bekommt.
+ * (87) Der Grund (Sicherheits-Review 29.10.2026): Die Spalte `absences.reason`
+ * liest die Versammlung nicht mehr über die Tabelle — ein Mitglied, das sie
+ * dort verlangt, bekommt 403 statt der Daten. (86), (88) und (89) maßen bis zum
+ * 31.10.2026 dasselbe für `persons.mail` und `personen_mails`; die Spalte und
+ * die Funktion gibt es nicht mehr.
  */
 async function spaltenProben(k) {
-  const { planer, mitglied } = k
-  const spalte = async (nr, was, pfad) => {
-    const r = await mitglied.rest(pfad)
-    const e = bewerteVersuch(r.status, r.status < 400, false, { woerter: ['GELESEN', 'abgewiesen'] })
-    k.ergebnis(nr, was, e, e.durch ? 'AUCH DAS!' : 'die Spalte ist gesperrt')
-  }
-  await spalte(86, 'Mitglied: die E-Mail-Adressen über die Tabelle', 'persons?select=id,mail&limit=1')
-  await spalte(87, 'Mitglied: die Gründe der Abwesenheiten über die Tabelle', 'absences?select=id,reason&limit=1')
-
-  const mails = (wer) => wer.rest('rpc/personen_mails', 'POST', {})
-  const beimAdmin = await mails(planer)
-  if (beimAdmin.status >= 400) {
-    for (const [nr, was] of [[88, 'Admin: die Adressen über personen_mails'], [89, 'Mitglied: die Adressen über personen_mails']]) {
-      k.kaputt(nr, was, `der Admin bekam keine Antwort (HTTP ${beimAdmin.status})`, nr === 88)
-    }
-    return
-  }
-  if (zeilenVon(beimAdmin).length === 0) {
-    for (const nr of [88, 89]) k.ungemessen(nr, 'Adressen über personen_mails', 'keine Person der Versammlung hat eine Adresse')
-    return
-  }
-  k.ergebnis(88, 'Admin: die Adressen über personen_mails', bewerteSicht(beimAdmin.status, true, true), 'er lädt ein und verschickt die Links')
-  const beimMitglied = await mails(mitglied)
-  const e = bewerteSicht(beimMitglied.status, zeilenVon(beimMitglied).length > 0, false)
-  k.ergebnis(89, 'Mitglied: die Adressen über personen_mails', e, e.durch ? 'AUCH DAS!' : 'leer — nur der Admin bekommt sie')
+  const { mitglied } = k
+  const r = await mitglied.rest('absences?select=id,reason&limit=1')
+  const e = bewerteVersuch(r.status, r.status < 400, false, { woerter: ['GELESEN', 'abgewiesen'] })
+  k.ergebnis(87, 'Mitglied: die Gründe der Abwesenheiten über die Tabelle', e, e.durch ? 'AUCH DAS!' : 'die Spalte ist gesperrt')
 }
 
 /**

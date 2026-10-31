@@ -79,10 +79,10 @@
 }
 
 /* Die Karten der Anmeldung — der passende Code, der Grund nach dem Abmelden
-   ohne Versammlung, „Ohne E-Mail-Adresse?" — mit demselben Rand innen. */
+   ohne Versammlung, der Zettel — mit demselben Rand innen. */
 .login-code-passt,
 .login-abgemeldet,
-.login-ohne-mail {
+.login-zettel {
   padding: 16px 18px 18px;
 }
 
@@ -104,17 +104,14 @@
   line-height: 1.4;
 }
 
-/* „Ohne E-Mail-Adresse?" — die Karte unter dem Formular. */
-.login-ohne-mail {
+/* Der Zettel — die Karte unter dem Hinweis: scannen oder den Code eintippen.
+   Bis zum 31.10.2026 hieß sie „Ohne E-Mail-Adresse?" und stand unter dem
+   Formular für den Link per E-Mail. */
+.login-zettel {
   gap: 4px;
 }
 
-.login-ohne-mail-titel {
-  font-size: calc(15.5px * var(--fs));
-  font-weight: 600;
-}
-
-.login-ohne-mail-knoepfe {
+.login-zettel-knoepfe {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
   gap: 8px;
@@ -122,7 +119,7 @@
 }
 
 /* Zwei Knöpfe auf 142 px: Mit dem üblichen Rand bräche „Zettel scannen" um. */
-.login-ohne-mail-knoepfe .knopf-umriss {
+.login-zettel-knoepfe > button {
   padding-inline: 12px;
 }
 
@@ -239,7 +236,7 @@
     font-size: calc(15.5px * var(--fs));
   }
 
-  .login-ohne-mail {
+  .login-zettel {
     margin-top: 10px;
     padding: 18px 0 0;
     border-radius: 0;
@@ -253,7 +250,7 @@
     background: var(--grund);
   }
 
-  .login-ohne-mail-knoepfe {
+  .login-zettel-knoepfe {
     display: flex;
   }
 }

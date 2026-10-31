@@ -215,7 +215,7 @@ describe('Eine Predigtdienstgruppe löschen', () => {
 describe('Wer keiner Predigtdienstgruppe zugeordnet ist (ohneGruppe)', () => {
   const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null }]
   const person = (id: string, over: Partial<Person> = {}): Person => ({
-    id, fn: id, ln: id, role: 'verkuendiger', mail: '', priv: emptyQualifications(), ...over,
+    id, fn: id, ln: id, role: 'verkuendiger', priv: emptyQualifications(), ...over,
   })
 
   it('nennt jeden ohne Gruppe, in der übergebenen Reihenfolge — und niemanden mit', () => {

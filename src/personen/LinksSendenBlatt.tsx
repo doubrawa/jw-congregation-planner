@@ -1,15 +1,12 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { gueltigBis } from '../../supabase/functions/_shared/anmeldung.ts'
-import { useApp } from '../app/context'
 import { Spur } from '../bausteine/Spur'
+import { Zeichen } from '../bausteine/Zeichen'
 import { Sheet } from '../components/Sheet'
 import { displayName } from '../data/helpers'
 import type { Person } from '../data/types'
-import { LOCALES } from '../i18n/langs'
-import { fill, useT } from '../i18n/useT'
-import { NamenKnoepfe } from './NamenKnoepfe'
-import { sprachDerVersammlung, useLinksAusstellen } from './useLinksAusstellen'
+import { useT } from '../i18n/useT'
+import { useNachrichtWeitergeben, type Weitergabe } from './useNachrichtWeitergeben'
 import { useZettelDruck } from './useZettelDruck'
 
 /** Wie viele Personen wie weit sind — die Spur oben im Blatt. */
@@ -19,75 +16,70 @@ export interface AnmeldeZahlen {
   angemeldet: number
 }
 
-/** Adressen, die sich mehrere teilen, mit ihren Namen — in der Folge der Liste. */
-function geteilteAdressen(personen: readonly Person[]): string[][] {
-  const je = new Map<string, Person[]>()
-  for (const p of personen) {
-    const adresse = p.mail.trim().toLowerCase()
-    je.set(adresse, [...(je.get(adresse) ?? []), p])
-  }
-  return [...je.values()].filter((liste) => liste.length > 1).map((liste) => liste.map(displayName))
-}
+/** Was mit einer Person der Liste schon geschehen ist. */
+type Erledigt = 'kopiert' | 'geteilt' | 'zettel'
 
 /**
  * **Links senden** (T121, Phase 8; Entwurf `GAlleEinladen`): allen, die die
- * Liste in der Auswahl „Ohne Link" gerade zeigt, auf einmal ihren Zugang
- * geben — Suche und Filter grenzen weiter ein, etwa auf eine Gruppe. Wer eine
- * Adresse hat, bekommt die E-Mail, die übrigen einen Zettel.
+ * Liste in der Auswahl „Ohne Link" gerade zeigt, ihren Zugang geben — Suche
+ * und Filter grenzen weiter ein, etwa auf eine Gruppe.
+ *
+ * **Per Nachricht, Person für Person** (31.10.2026, Betreiber: die Zettel „am
+ * Desktop einmalig für alle versenden", per WhatsApp): Jede Zeile kopiert oder
+ * teilt den Text mit Link und Code dieser einen Person, danach steht dort, was
+ * geschehen ist. Die Knöpfe bleiben: Ein zweiter Tipp nimmt denselben Text —
+ * etwa, wenn die Zwischenablage vor dem Einfügen schon den nächsten trug.
+ * Mehr geht nicht auf einmal — jeder Text meldet genau eine Person an und
+ * gehört in ihren persönlichen Chat. Bis zum 31.10.2026 gingen die Links von
+ * hier per E-Mail hinaus; seitdem speichert die App keine Adressen mehr.
+ *
+ * **Oder auf Zetteln:** alle, deren Text noch nicht hinaus ist. Wer seinen Text
+ * schon hat, bekommt keinen Zettel — der stellte einen neuen Link aus, und der
+ * eben verschickte gälte nicht mehr. Umgekehrt bietet eine Zeile mit Zettel
+ * kein Kopieren mehr an. Vermerkt wird nur, wessen Zettel gedruckt ist: Scheitert
+ * ein Teil, bleiben die übrigen offen.
+ *
+ * Die Liste bleibt, wie sie beim Öffnen war: Wer seinen Text hat, hat jetzt
+ * einen Link und fiele sonst aus „Ohne Link" heraus — samt seiner Marke.
  *
  * **Nur Links.** Den Plan sendet der Planer wie gewohnt („Plan senden"), und
  * wer noch nicht angemeldet ist, steht dort eigens da.
- *
- * Kann die App gerade keine E-Mails senden, stellt der Server nichts aus und
- * das Blatt sagt es — kein Link geht dabei verloren. Der Weg über das eigene
- * Mail-Programm steht dann bei jeder Person einzeln („Link senden").
  */
 export function LinksSendenBlatt({ personen, zahlen, onClose }: { personen: readonly Person[]; zahlen: AnmeldeZahlen; onClose: () => void }) {
-  const { state, dispatch } = useApp()
   const { t } = useT()
-  const ausstellen = useLinksAusstellen()
+  const weitergeben = useNachrichtWeitergeben()
   const druck = useZettelDruck()
+  const [liste] = useState(personen)
+  const [erledigt, setErledigt] = useState<ReadonlyMap<string, Erledigt>>(new Map())
+  /** Entsteht gerade ein Link? Solange wartet jeder andere Tipp. */
   const [laeuft, setLaeuft] = useState(false)
-  const [vorschau, setVorschau] = useState<{ betreff: string; text: string } | null>(null)
-  const perMail = personen.filter((p) => p.mail.trim())
-  const ohneMail = personen.filter((p) => !p.mail.trim())
-  const liste = new Intl.ListFormat(LOCALES[state.lang], { type: 'conjunction' })
+  const teilbar = typeof navigator.share === 'function'
+  const offen = liste.filter((p) => !erledigt.has(p.id))
+  const beschaeftigt = laeuft || druck.laeuft
 
-  // Die E-Mail, wie die erste Person sie bekäme — erst beim Aufklappen geladen.
-  const vorschauLaden = async () => {
-    if (vorschau || !perMail[0]) return
-    const { linkMail } = await import('../../supabase/functions/_shared/anmelde-mail.ts')
-    const url = `${new URL(import.meta.env.BASE_URL, window.location.origin).href}#anmelden=…`
-    const lang = sprachDerVersammlung(state.congLang)
-    // Link und Code gibt es erst beim Senden — je Person ein eigener.
-    const code = '····-····'
-    setVorschau(linkMail(lang, { person: perMail[0], versammlung: state.congregation.name, url, code, gueltigBis: gueltigBis(new Date()) }))
-  }
+  const vermerken = (ids: readonly string[], wie: Erledigt) =>
+    setErledigt((alt) => {
+      const neu = new Map(alt)
+      for (const id of ids) neu.set(id, wie)
+      return neu
+    })
 
-  const senden = async () => {
-    if (laeuft || perMail.length === 0) return
+  const geben = async (person: Person, art: Weitergabe) => {
+    if (beschaeftigt) return
     setLaeuft(true)
     try {
-      const r = await ausstellen(
-        perMail.map((p) => p.id),
-        true,
-      )
-      if (!r) return
-      if (!r.fehler && !r.mailBereit) {
-        dispatch({ type: 'showToast', text: t.mailNichtBereit })
-        return
-      }
-      const gesendet = r.links.filter((l) => l.gesendet).length
-      const nicht = perMail.length - gesendet
-      dispatch({
-        type: 'showToast',
-        text: nicht > 0 ? fill(t.toastLinksTeils, { n: gesendet, m: nicht }) : fill(t.toastLinksGesendet, { n: gesendet }),
-      })
-      if (nicht === 0) onClose()
+      if (await weitergeben(person, art)) vermerken([person.id], art === 'kopieren' ? 'kopiert' : 'geteilt')
     } finally {
       setLaeuft(false)
     }
   }
+
+  const zettel = async () => {
+    if (beschaeftigt) return
+    vermerken(await druck.drucken(offen), 'zettel')
+  }
+
+  const marke: Record<Erledigt, string> = { kopiert: t.markeKopiert, geteilt: t.markeGeteilt, zettel: t.aufZettel }
 
   return createPortal(
     <Sheet label={t.linksSenden} title={t.linksSenden} variante="lang" onClose={onClose}>
@@ -102,57 +94,70 @@ export function LinksSendenBlatt({ personen, zahlen, onClose }: { personen: read
         />
         <p className="klein-text">{t.linksSendenIntro}</p>
 
-        {perMail.length > 0 && (
-          <section className="link-weg" aria-labelledby="links-per-mail">
-            <h3 id="links-per-mail" className="link-weg-titel">
-              {t.perEmail} · {perMail.length}
-            </h3>
-            <details className="link-vorschau" onToggle={(e) => e.currentTarget.open && void vorschauLaden()}>
-              <summary>{t.mailVorschau}</summary>
-              {vorschau && (
-                <div className="link-vorschau-mail">
-                  <p className="klein-text" dir="auto">
-                    {fill(t.betreffLbl, { betreff: vorschau.betreff })}
-                  </p>
-                  <p className="link-vorschau-text" dir="auto">
-                    {vorschau.text}
-                  </p>
-                </div>
-              )}
-            </details>
-            {geteilteAdressen(perMail).map((namen) => (
-              <div key={namen.join('|')} className="link-geteilt">
-                <span className="link-weg-titel">{t.eineAdresseMehrere}</span>
-                <span className="klein-text">{fill(t.eineAdresseMehrereHint, { namen: liste.format(namen) })}</span>
-              </div>
-            ))}
-          </section>
-        )}
+        <section className="link-weg" aria-labelledby="links-per-nachricht">
+          <h3 id="links-per-nachricht" className="link-weg-titel">
+            {t.perNachricht} · {liste.length}
+          </h3>
+          <p className="klein-text">{t.linksNachrichtHint}</p>
+          <ul className="link-liste">
+            {liste.map((p) => {
+              const wie = erledigt.get(p.id)
+              return (
+                <li key={p.id} className="link-zeile">
+                  <span className="link-zeile-name" dir="auto">
+                    {displayName(p)}
+                  </span>
+                  {wie && (
+                    <span className="link-marke">
+                      <Zeichen name="haken" />
+                      {marke[wie]}
+                    </span>
+                  )}
+                  {wie !== 'zettel' && (
+                    <span className="link-zeile-knoepfe">
+                      {teilbar && (
+                        <button
+                          type="button"
+                          className="knopf-umriss"
+                          aria-label={`${displayName(p)}: ${t.teilenBtn}`}
+                          aria-disabled={beschaeftigt || undefined}
+                          onClick={() => void geben(p, 'teilen')}
+                        >
+                          {t.teilenBtn}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="knopf-umriss"
+                        aria-label={`${displayName(p)}: ${t.kopierenBtn}`}
+                        aria-disabled={beschaeftigt || undefined}
+                        onClick={() => void geben(p, 'kopieren')}
+                      >
+                        {t.kopierenBtn}
+                      </button>
+                    </span>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </section>
 
-        {ohneMail.length > 0 && (
-          <section className="link-weg" aria-labelledby="links-ohne-mail">
-            <h3 id="links-ohne-mail" className="link-weg-titel">
-              {t.ohneEmail} · {ohneMail.length}
+        {offen.length > 0 && (
+          <section className="link-weg" aria-labelledby="links-auf-zetteln">
+            <h3 id="links-auf-zetteln" className="link-weg-titel">
+              {t.aufZetteln} · {offen.length}
             </h3>
-            <p className="klein-text">{t.ohneEmailListeHint}</p>
-            <p className="klein-text">{t.ohneAppHint}</p>
+            <p className="klein-text">{t.zettelListeHint}</p>
             <div className="konto-knoepfe">
-              <button type="button" className="knopf-umriss" aria-disabled={druck.laeuft || undefined} onClick={() => void druck.drucken(ohneMail)}>
+              <button type="button" className="knopf-umriss" aria-disabled={beschaeftigt || undefined} onClick={() => void zettel()}>
                 {t.zettelDrucken}
               </button>
             </div>
-            <details className="link-vorschau">
-              <summary>{t.werIstDas}</summary>
-              <NamenKnoepfe personen={ohneMail} onGewaehlt={onClose} />
-            </details>
           </section>
         )}
 
-        {perMail.length > 0 && (
-          <button type="button" className="knopf-haupt" aria-disabled={laeuft || undefined} onClick={() => void senden()}>
-            {laeuft ? t.wirdGesendet : t.linksSenden}
-          </button>
-        )}
+        <p className="klein-text">{t.ohneAppHint}</p>
       </div>
       {druck.bogen}
     </Sheet>,

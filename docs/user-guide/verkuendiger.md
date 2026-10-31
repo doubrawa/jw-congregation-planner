@@ -26,36 +26,30 @@ die App auf deinem Gerät einrichtest.
 
 ## 1. Anmelden
 
-Ein Passwort gibt es nicht. Du meldest dich mit einem **Link** an: Er kommt per
-E‑Mail oder als Nachricht (etwa per WhatsApp), oder du bekommst ihn von den
-Ältesten auf einem **Zettel** mit QR‑Code. Mit Link und Code meldet sich jeder
-als du an – gib sie nicht weiter.
+Ein Passwort gibt es nicht. Du meldest dich mit einem **Link** an: Die Ältesten
+schicken ihn dir als Nachricht (etwa per WhatsApp) oder geben ihn dir auf einem
+**Zettel** mit QR‑Code. Mit Link und Code meldet sich jeder als du an – gib sie
+nicht weiter. E‑Mails schickt die App keine.
 Unter dem Namen der App steht in einem Satz, wofür sie da ist.
 
 ![Anmeldebildschirm](screenshots/login.png)
 
-- **Mit dem Link aus der E‑Mail:** ein Tipp darauf, und du bist angemeldet.
-  Ist er abgelaufen oder die E‑Mail weg, gib auf der Anmeldeseite deine
-  Adresse ein und tippe auf **Link senden** – du bekommst einen neuen. Das geht,
-  sobald die Ältesten dir einmal einen Link gegeben haben.
-- **Mit dem Code aus der E‑Mail:** Unter dem Link steht ein Code. Hast du die
-  App auf dem Home‑Bildschirm, öffne sie dort, tippe auf **Code eintippen** und
-  gib ihn ein. Auf dem **iPhone** geht es nur so: Der Link öffnet immer Safari,
-  nie die App vom Home‑Bildschirm – und dort wärst du nicht angemeldet (siehe
-  [Abschnitt 8](#8-app-installieren--erinnerungen)). Jede neue E‑Mail bringt
-  einen neuen Code; ein Zettel von früher gilt dann nicht mehr.
-- **Mit Link und Code aus einer Nachricht** (etwa per WhatsApp): genauso wie aus
-  der E‑Mail – ein Tipp auf den Link, auf dem iPhone der Code. Ist beides
-  abgelaufen, bekommst du von den Ältesten einen neuen Link.
+- **Mit dem Link aus der Nachricht:** ein Tipp darauf, und du bist angemeldet.
+- **Mit dem Code aus der Nachricht:** Unter dem Link steht ein Code. Hast du
+  die App auf dem Home‑Bildschirm, öffne sie dort, tippe auf **Code eintippen**
+  und gib ihn ein. Auf dem **iPhone** geht es nur so: Der Link öffnet immer
+  Safari, nie die App vom Home‑Bildschirm – und dort wärst du nicht angemeldet
+  (siehe [Abschnitt 8](#8-app-installieren--erinnerungen)).
 - **Mit dem Zettel:** Scanne den QR‑Code mit der Kamera deines Handys – oder
-  tippe auf der Anmeldeseite unter **Ohne E‑Mail‑Adresse?** auf **Zettel
-  scannen**. Geht das nicht, tippst du über **Code eintippen** den Code unter dem
-  QR‑Code ein. Die App zeigt dir dann, wem der Code gehört; erst **Anmelden**
-  meldet an. So merkst du es, wenn du den Zettel eines anderen erwischt hast.
+  tippe auf der Anmeldeseite auf **Zettel scannen**. Geht das nicht, tippst du
+  über **Code eintippen** den Code unter dem QR‑Code ein. Die App zeigt dir
+  dann, wem der Code gehört; erst **Anmelden** meldet an. So merkst du es, wenn
+  du den Zettel eines anderen erwischt hast.
 - Ein Link gilt **ein Jahr** und lässt sich mehrmals benutzen: auf Handy und
-  Tablet, und auch, wenn du einmal abgemeldet bist. Heb den Zettel deshalb auf.
-  Ein angemeldetes Gerät bleibt angemeldet. Ist der Zettel weg, bekommst du von
-  den Ältesten einen neuen – der alte gilt dann nicht mehr.
+  Tablet, und auch, wenn du einmal abgemeldet bist. Heb Zettel oder Nachricht
+  deshalb auf. Ein angemeldetes Gerät bleibt angemeldet. Ist beides weg oder
+  abgelaufen, bekommst du von den Ältesten einen neuen Link – der alte gilt dann
+  nicht mehr.
 - Unten kannst du die **Sprache der App** wählen.
 - Ganz unten steht die Adresse, an die man schreibt, wenn eine **neue
   Versammlung** die App nutzen möchte. Ein Tipp darauf öffnet eine fertige
@@ -645,10 +639,9 @@ dich ab. Admins finden am Handy hier auch **Personen** und **Einstellungen**.
   - **Rechts nach links.** Bei Arabisch und Persisch läuft die
     ganze Oberfläche von rechts nach links – auch das Blättern zwischen den
     Wochen: Dort liegt die **vorige** Woche rechts.
-  - **Die E‑Mail mit dem Link ist die Ausnahme**: Die erste kommt in der
-    Sprache der Versammlung, ebenso der Zettel – wer sie bekommt, hat noch
-    keine Sprache eingestellt. Einen neuen Link, den du auf der Anmeldeseite
-    anforderst, schreibt die App in der Sprache, die du dort gewählt hast.
+  - **Die Nachricht mit dem Link ist die Ausnahme**: Sie kommt in der Sprache
+    der Versammlung, ebenso der Zettel – wer sie bekommt, hat noch keine
+    Sprache eingestellt.
 - **Push‑Mitteilungen** – Erinnerungen an anstehende Aufgaben ein‑ oder
   ausschalten (siehe [Abschnitt 8](#8-app-installieren--erinnerungen)).
 - **App installieren** – steht da, solange dein Browser das Installieren
@@ -689,7 +682,7 @@ Store zu laden. Du öffnest die Adresse im Browser und legst sie dir als App ab.
 
 ### Wenn kein Installieren angeboten wird
 
-- Hast du den Link **aus WhatsApp, Telegram oder einer E‑Mail** geöffnet? Diese
+- Hast du den Link **aus WhatsApp, Telegram oder einer anderen App** geöffnet? Diese
   Apps zeigen die Seite in einem eingebauten Browser, der nicht installieren kann
   – erkennbar an der fehlenden Adresszeile. Über das Menü der App
   **In Chrome öffnen** bzw. **In Safari öffnen** wählen und es dort erneut
@@ -703,8 +696,8 @@ Melde dich nach dem Installieren einmal **mit Internetverbindung** an und sieh d
 Programm und Aufgaben an. Auf dem **iPhone** meldest du dich **in der App vom
 Home‑Bildschirm** an, nicht vorher in Safari: Die App hat dort einen eigenen
 Speicher, eine Anmeldung in Safari gilt in ihr nicht. Öffne sie, tippe auf
-**Code eintippen** und gib den Code aus der E‑Mail oder vom Zettel ein – der
-Link aus der E‑Mail öffnet nur Safari. Erst dadurch legt die App den Stand ab, den sie dir
+**Code eintippen** und gib den Code aus der Nachricht oder vom Zettel ein – der
+Link aus der Nachricht öffnet nur Safari. Erst dadurch legt die App den Stand ab, den sie dir
 später [ohne Internet](#9-ohne-internet-offline) zeigen kann. Direkt nach dem
 Installieren ist offline noch nichts vorhanden.
 

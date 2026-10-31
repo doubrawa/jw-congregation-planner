@@ -12,15 +12,17 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { APP_LANGS } from '../i18n/langs'
 import { dict, loadOverlay } from '../i18n/ui'
 import { fill } from '../i18n/useT'
-import type { AnmeldeFehler, CodeGeprueft, LinkAngefordert } from '../lib/anmelden'
+import type { AnmeldeFehler, CodeGeprueft } from '../lib/anmelden'
 import { KONTAKT_MAIL } from './kontakt'
 
 /**
  * **Der Login — die einzige Tür der App, ohne Kennwort** (T121, Phase 8).
  *
- * Drei Wege hinein: einen Link per E-Mail anfordern, den Zettel scannen, den
- * Code vom Zettel eintippen. Registrieren gibt es nicht — Konten legt der Admin
- * an. Zweierlei Betriebsarten muss die Seite auseinanderhalten:
+ * Zwei Wege hinein: den Zettel scannen, den Code vom Zettel eintippen. (Wer
+ * einen Link hat, tippt darauf und kommt gar nicht hierher; einen Link per
+ * E-Mail anfordern ging bis zum 31.10.2026.) Registrieren gibt es nicht —
+ * Konten legt der Admin an. Zweierlei Betriebsarten muss die Seite
+ * auseinanderhalten:
  *
  * - **Mit Supabase** geht jeder Weg über die Function `anmelden`, und jeder
  *   Fehler kommt in der Sprache des Lesers an.
@@ -28,7 +30,6 @@ import { KONTAKT_MAIL } from './kontakt'
  *   sieht trotzdem aus wie im Betrieb (dort entsteht die Handbuch-Aufnahme).
  */
 
-const linkAnfordern = vi.fn((_mail: string, _lang: string) => Promise.resolve<LinkAngefordert>('unterwegs'))
 const codePruefen = vi.fn((_code: string) => Promise.resolve<CodeGeprueft>({ ok: true, name: 'Anna Alt', versammlung: 'Musterstadt' }))
 const mitCodeAnmelden = vi.fn((_code: string) => Promise.resolve<AnmeldeFehler | null>(null))
 const mitLinkAnmelden = vi.fn((_token: string) => Promise.resolve<AnmeldeFehler | null>(null))
@@ -41,7 +42,6 @@ vi.mock('../lib/supabase', () => ({
   supabase: null,
 }))
 vi.mock('../lib/anmelden', () => ({
-  linkAnfordern: (m: string, l: string) => linkAnfordern(m, l),
   codePruefen: (c: string) => codePruefen(c),
   mitCodeAnmelden: (c: string) => mitCodeAnmelden(c),
   mitLinkAnmelden: (t: string) => mitLinkAnmelden(t),
@@ -80,13 +80,10 @@ function zeige(over: Partial<AppState> = {}) {
 }
 
 const knopf = (c: HTMLElement, text: string) => [...c.querySelectorAll('button')].find((b) => b.textContent?.trim() === text)
-const mailFeld = (c: HTMLElement) => c.querySelector<HTMLInputElement>('input[type="email"]')!
 const codeFeld = (c: HTMLElement) => c.querySelector<HTMLInputElement>('.login-code')!
-const absenden = (c: HTMLElement) => fireEvent.submit(c.querySelector('.login-form')!)
 
 beforeEach(() => {
   konfiguriert.wert = true
-  linkAnfordern.mockClear().mockResolvedValue('unterwegs')
   codePruefen.mockClear().mockResolvedValue({ ok: true, name: 'Anna Alt', versammlung: 'Musterstadt' })
   mitCodeAnmelden.mockClear().mockResolvedValue(null)
   mitLinkAnmelden.mockClear().mockResolvedValue(null)
@@ -99,11 +96,12 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('Ohne Kennwort', () => {
-  it('es gibt kein Passwortfeld und kein Registrieren', () => {
+  it('es gibt kein Passwortfeld, kein Registrieren und kein Feld für eine Adresse', () => {
     const { container } = zeige()
     expect(container.querySelector('input[type="password"]')).toBeNull()
+    expect(container.querySelector('input')).toBeNull()
     expect(container.textContent).toContain(t.ohnePasswort)
-    expect(knopf(container, t.linkSenden)).toBeDefined()
+    expect([...container.querySelectorAll('h1')].map((h) => h.textContent)).toEqual([t.anmeldenTitel])
   })
 
   it('oben das Logo groß, mit 4, 6 und 8 Plätzen, ohne Kachel — in den Farben der Darstellung', () => {
@@ -129,8 +127,8 @@ describe('Nach dem Abmelden ohne Versammlung', () => {
     const satz = container.querySelector('.login-abgemeldet')
     expect(satz?.textContent).toBe(t.stKeineVersText)
     expect(satz?.getAttribute('role')).toBe('status')
-    // Anmelden geht weiter — mit einem neuen Link.
-    expect(knopf(container, t.linkSenden)).toBeDefined()
+    // Anmelden geht weiter — mit einem neuen Zettel.
+    expect(knopf(container, t.codeEintippen)).toBeDefined()
   })
 
   it('sonst steht der Satz nicht da', () => {
@@ -140,43 +138,8 @@ describe('Nach dem Abmelden ohne Versammlung', () => {
   })
 })
 
-describe('Link senden', () => {
-  it('fordert den Link für die eingegebene Adresse an — in der Sprache der Seite', async () => {
-    const { container } = zeige({ lang: 'en' })
-    fireEvent.change(mailFeld(container), { target: { value: '  wer@example.org ' } })
-    absenden(container)
-    await waitFor(() => expect(linkAnfordern).toHaveBeenCalledWith('wer@example.org', 'en'))
-  })
-
-  it('danach steht derselbe Satz da, gleich ob es die Adresse gibt', async () => {
-    const { container } = zeige()
-    fireEvent.change(mailFeld(container), { target: { value: 'wer@example.org' } })
-    absenden(container)
-    await waitFor(() => expect(container.querySelector('.login-meldung')?.textContent).toBe(t.linkUnterwegs))
-  })
-
-  it('kann die App nicht senden, sagt sie, was stattdessen geht', async () => {
-    linkAnfordern.mockResolvedValue('nicht-eingerichtet')
-    const { container } = zeige()
-    fireEvent.change(mailFeld(container), { target: { value: 'wer@example.org' } })
-    absenden(container)
-    await waitFor(() => expect(container.querySelector('.login-meldung')?.textContent).toBe(t.mailNichtEingerichtet))
-  })
-
-  it('ohne Adresse fragt es zuerst danach — statt die Function leer zu rufen', () => {
-    const { container } = zeige()
-    absenden(container)
-    expect(linkAnfordern).not.toHaveBeenCalled()
-    expect(container.querySelector('.login-meldung')?.textContent).toBe(t.resetMailFehlt)
-  })
-
-  it('die Adresse steht links-nach-rechts, auch in einer RTL-Oberfläche', () => {
-    expect(mailFeld(zeige({ lang: 'ar' }).container).getAttribute('dir')).toBe('ltr')
-  })
-})
-
-describe('Ohne E-Mail-Adresse', () => {
-  const karte = (c: HTMLElement) => c.querySelector<HTMLElement>('.login-ohne-mail')!
+describe('Der Zettel', () => {
+  const karte = (c: HTMLElement) => c.querySelector<HTMLElement>('.login-zettel')!
   const amDesktop = (ja: boolean) => {
     window.matchMedia = vi.fn().mockReturnValue({ matches: ja }) as unknown as typeof window.matchMedia
   }
@@ -184,30 +147,29 @@ describe('Ohne E-Mail-Adresse', () => {
     delete (window as { matchMedia?: unknown }).matchMedia
   })
 
-  it('Zettel scannen und Code eintippen stehen in der Karte — der Hinweis nennt beides', () => {
+  it('Zettel scannen und Code eintippen stehen in der Karte — der Hinweis nennt beides, Scannen ist der Hauptweg', () => {
     const k = karte(zeige().container)
-    expect(k.textContent).toContain(t.ohneMailFrage)
-    expect(k.textContent).toContain(t.ohneMailHinweis)
-    expect(knopf(k, t.zettelScannen)?.className).toBe('knopf-umriss')
-    expect(knopf(k, t.codeEintippen)?.className).toBe('knopf-leise')
+    expect(k.textContent).toContain(t.zettelHinweis)
+    expect(knopf(k, t.zettelScannen)?.className).toBe('knopf-haupt')
+    expect(knopf(k, t.codeEintippen)?.className).toBe('knopf-umriss')
   })
 
   it('ohne Kamera-Schnittstelle kein „Zettel scannen" — nur der Code, und der Hinweis sagt es so', () => {
     Object.defineProperty(navigator, 'mediaDevices', { value: undefined, configurable: true })
     const k = karte(zeige().container)
     expect(knopf(k, t.zettelScannen)).toBeUndefined()
-    expect(k.textContent).toContain(t.ohneMailHinweisTippen)
-    expect(k.textContent).not.toContain(t.ohneMailHinweis)
+    expect(k.textContent).toContain(t.zettelHinweisTippen)
+    expect(k.textContent).not.toContain(t.zettelHinweis)
     // Allein ist der Code der Weg — so deutlich wie sonst „Zettel scannen".
-    expect(knopf(k, t.codeEintippen)?.className).toBe('knopf-umriss')
+    expect(knopf(k, t.codeEintippen)?.className).toBe('knopf-haupt')
   })
 
   it('am Desktop ebenso: Dort hält man keinen Zettel vor die Kamera', () => {
     amDesktop(true)
     const k = karte(zeige().container)
     expect(knopf(k, t.zettelScannen)).toBeUndefined()
-    expect(k.textContent).toContain(t.ohneMailHinweisTippen)
-    expect(knopf(k, t.codeEintippen)?.className).toBe('knopf-umriss')
+    expect(k.textContent).toContain(t.zettelHinweisTippen)
+    expect(knopf(k, t.codeEintippen)?.className).toBe('knopf-haupt')
   })
 
   it('Gegenprobe: am Handy mit derselben Attrappe steht „Zettel scannen" da', () => {
@@ -296,7 +258,7 @@ describe('Mit Code anmelden', () => {
     erst.unmount()
     const danach = zeige().container
     expect(danach.querySelector('.login-code')).toBeNull()
-    expect(mailFeld(danach)).toBeTruthy()
+    expect(knopf(danach, t.codeEintippen)).toBeTruthy()
   })
 
   it('ebenso nach „Zurück"', () => {
@@ -310,7 +272,8 @@ describe('Mit Code anmelden', () => {
   it('„Zurück" führt zur Anmeldung', () => {
     const { container } = zumCode()
     fireEvent.click(knopf(container, t.a11yZurueck)!)
-    expect(mailFeld(container)).toBeTruthy()
+    expect(container.querySelector('.login-code')).toBeNull()
+    expect(knopf(container, t.codeEintippen)).toBeTruthy()
   })
 })
 
@@ -339,7 +302,7 @@ describe('Zettel scannen', () => {
     expect(mitCodeAnmelden).not.toHaveBeenCalled()
   })
 
-  it('ein Link aus einer E-Mail meldet gleich an', async () => {
+  it('ein Anmelde-Link im QR-Code meldet gleich an', async () => {
     const token = 'T'.repeat(43)
     const { dispatch } = await scannen(`https://versammlung.app/#anmelden=${token}`)
     await waitFor(() => expect(mitLinkAnmelden).toHaveBeenCalledWith(token))
@@ -360,14 +323,6 @@ describe('Ohne Datenbank: Anmeldung nachgestellt', () => {
 
   it('sagt es unten deutlich', () => {
     expect(zeige().container.querySelector('.login-note')?.textContent).toBe(t.anmeldungOhneDb)
-  })
-
-  it('„Link senden" meldet gleich an, ohne Netzaufruf', () => {
-    const { container, dispatch } = zeige()
-    fireEvent.change(mailFeld(container), { target: { value: 'wer@example.org' } })
-    absenden(container)
-    expect(linkAnfordern).not.toHaveBeenCalled()
-    expect(dispatch).toHaveBeenCalledWith({ type: 'login', welcome: true })
   })
 
   it('der Kontakt für eine neue Versammlung öffnet auch hier eine Mail (T113)', () => {

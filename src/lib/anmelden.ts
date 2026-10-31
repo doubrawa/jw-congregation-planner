@@ -1,7 +1,8 @@
 /**
  * **Anmelden ohne Kennwort** (T121, Phase 8) — die App-Seite der Function
- * `anmelden`: mit dem Link aus der E-Mail, mit dem Code vom Zettel, oder einen
- * Link per E-Mail anfordern.
+ * `anmelden`: mit dem Link aus der Nachricht oder mit dem Code vom Zettel. Einen
+ * Link per E-Mail anfordern ging bis zum 31.10.2026; seitdem speichert die App
+ * keine Adressen mehr, einen neuen Link geben die Ältesten.
  *
  * Die Function prüft Link oder Code, legt beim ersten Mal das Konto an und
  * gibt eine Sitzung zurück; hier wird sie übernommen (`setSession`). Danach
@@ -41,7 +42,7 @@ async function sitzungUebernehmen(daten: Antwort): Promise<AnmeldeFehler | null>
   return error ? 'fehler' : null
 }
 
-/** Mit dem Link aus der E-Mail anmelden (`#anmelden=<token>`). `null` heißt: angemeldet. */
+/** Mit dem Link aus der Nachricht anmelden (`#anmelden=<token>`). `null` heißt: angemeldet. */
 export async function mitLinkAnmelden(token: string): Promise<AnmeldeFehler | null> {
   const r = await rufen({ aktion: 'link', token })
   return r.ok ? sitzungUebernehmen(r.daten) : r.fehler
@@ -60,17 +61,4 @@ export async function codePruefen(code: string): Promise<CodeGeprueft> {
 export async function mitCodeAnmelden(code: string): Promise<AnmeldeFehler | null> {
   const r = await rufen({ aktion: 'code', code })
   return r.ok ? sitzungUebernehmen(r.daten) : r.fehler
-}
-
-/** Was „Link senden" ergab: unterwegs (oder nicht — das sagt der Server nie), ohne Versand, oder ein Fehler. */
-export type LinkAngefordert = 'unterwegs' | 'nicht-eingerichtet' | AnmeldeFehler
-
-/**
- * Einen Link per E-Mail anfordern. `lang` ist die Sprache der Anmeldeseite —
- * wer sich anmeldet, hat sie eben selbst gewählt.
- */
-export async function linkAnfordern(email: string, lang: string): Promise<LinkAngefordert> {
-  const r = await rufen({ aktion: 'mail', email, lang })
-  if (!r.ok) return r.fehler
-  return r.daten.error === 'not-configured' ? 'nicht-eingerichtet' : 'unterwegs'
 }

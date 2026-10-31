@@ -55,7 +55,7 @@ const t = dict('de')
 
 const ICH: Person = {
   id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger', female: false,
-  mail: '', priv: emptyQualifications(),
+  priv: emptyQualifications(),
 }
 const MITGLIED: Member[] = [{ userId: 'u1', personId: 'p-a', email: 'anton@example.org', planner: false, zuteiler: false }]
 

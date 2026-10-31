@@ -36,7 +36,7 @@ const SAMSTAG = '2026-10-10'
 const SONNTAG = '2026-10-11'
 
 function person(id: string, fn: string, ln: string, rollen: Partial<Qualifications> = {}): Person {
-  return { id, fn, ln, role: 'aeltester', mail: '', priv: { ...emptyQualifications(), studium: true, ...rollen } }
+  return { id, fn, ln, role: 'aeltester', priv: { ...emptyQualifications(), studium: true, ...rollen } }
 }
 const LEITER = person('p-leiter', 'Lars', 'Leiter', { wtLeiter: true })
 const VERTRETER = person('p-vertreter', 'Volker', 'Vertreter', { wtVertreter: true })

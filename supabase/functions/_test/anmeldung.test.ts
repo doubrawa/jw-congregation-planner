@@ -1,13 +1,11 @@
 /*
- * Die reinen Bausteine des Anmeldens per Link (`_shared/anmeldung.ts`) und die
- * E-Mail dazu (`_shared/anmelde-mail.ts`, `_shared/anmelde-texte.ts`). Was die
+ * Die reinen Bausteine des Anmeldens per Link (`_shared/anmeldung.ts`). Was die
  * App und die Functions gleich rechnen müssen: Form von Code und Token, wo sie
- * in der Adresse stehen, die Prüfsumme — und dass die E-Mail des Servers
- * Wort für Wort die des eigenen Mail-Programms ist.
+ * in der Adresse stehen, die Prüfsumme. (Die E-Mail mit dem Link gab es bis zum
+ * 31.10.2026; ihren Text prüft jetzt `src/personen/link-nachricht.test.ts` als
+ * Nachricht.)
  */
 import { describe, expect, it } from 'vitest'
-import { anrede, linkDatum, linkMail } from '../_shared/anmelde-mail.ts'
-import { linkMailTexte } from '../_shared/anmelde-texte.ts'
 import {
   anmeldeUrl,
   CODE_LAENGE,
@@ -88,77 +86,5 @@ describe('Token und Adressen', () => {
 
   it('die interne Adresse liegt unter .invalid — dorthin geht nie etwas', () => {
     expect(interneAdresse('p-1')).toBe('p-1@konten.invalid')
-  })
-})
-
-describe('Die E-Mail mit dem Link', () => {
-  const werte = {
-    person: { fn: 'Anna', ln: 'Alt' },
-    versammlung: 'Musterstadt',
-    url: 'https://app.test/#anmelden=T',
-    code: 'K7RD-2QWM',
-    gueltigBis: '2026-11-14T08:00:00.000Z',
-  }
-
-  it('alle Platzhalter eingesetzt, das Datum in der Sprache der Mail', () => {
-    const de = linkMail('de', werte)
-    expect(de.betreff).toBe('Dein Zugang zur Versammlung Musterstadt')
-    expect(de.text).toContain('Hallo Anna,')
-    expect(de.text).toContain('https://app.test/#anmelden=T')
-    // Mit Jahr: Der Link gilt ein Jahr, ohne stünde auf einem frischen Zettel der Tag von heute.
-    expect(de.text).toContain('bis 14. November 2026')
-    // Der Code auf einer eigenen Zeile: Auf dem iPhone öffnet der Link nur
-    // Safari, in der App vom Home-Bildschirm meldet allein der Code an.
-    expect(de.text).toContain('\nK7RD-2QWM\n')
-    expect(linkMail('en', werte).text).toContain('until November 14, 2026')
-    for (const lang of ['de', 'en', 'fr', 'ja', 'ar', 'fa']) expect(linkMail(lang, werte).text, lang).not.toMatch(/\{\w+\}/)
-  })
-
-  it('ohne Vornamen grüßt sie mit dem Nachnamen, in jeder Sprache — bis zum 24.10.2026 stand „Hallo ," da', async () => {
-    const { APP_LANGS } = await import('../../../src/i18n/langs')
-    const ohneVorname = { ...werte, person: { fn: '', ln: 'Krüger' } }
-    expect(linkMail('de', ohneVorname).text).toMatch(/^Hallo Krüger,\n/)
-    for (const { code } of APP_LANGS) expect(linkMail(code, ohneVorname).text.split('\n')[0], code).toContain('Krüger')
-    // Mit Vornamen bleibt es beim Vornamen; Leerzeichen sind kein Name.
-    expect(anrede({ fn: ' Anna ', ln: 'Alt' })).toBe('Anna')
-    expect(anrede({ fn: '  ', ln: ' Krüger ' })).toBe('Krüger')
-  })
-
-  it('eine unbekannte Sprache fällt auf Deutsch zurück — Text und Datum', () => {
-    expect(linkMail('xx', werte).betreff).toBe('Dein Zugang zur Versammlung Musterstadt')
-    expect(linkDatum(werte.gueltigBis, 'xx')).toBe('14. November 2026')
-  })
-
-  it('jede Sprache trägt alle fünf Platzhalter und zitiert „Code eintippen" und „Link senden", wie die Knöpfe heißen', async () => {
-    const { APP_LANGS } = await import('../../../src/i18n/langs')
-    const { dict, loadOverlay } = await import('../../../src/i18n/ui')
-    await Promise.all(APP_LANGS.map(({ code }) => loadOverlay(code)))
-    for (const { code } of APP_LANGS) {
-      const t = linkMailTexte(code)
-      for (const platz of ['{name}', '{versammlung}', '{url}', '{code}', '{datum}']) expect(t.text, `${code}: ${platz}`).toContain(platz)
-      expect(t.betreff, `${code}: Betreff ohne Versammlung`).toContain('{versammlung}')
-      // Die Mail zitiert die Knöpfe der Anmeldeseite — wörtlich, sonst sucht sie niemand.
-      for (const knopf of [dict(code).codeEintippen, dict(code).linkSenden]) {
-        expect(t.text, `${code}: zitiert „${knopf}" nicht`).toContain(knopf)
-      }
-      // Der Code steht für sich auf einer Zeile — so liest und tippt man ihn ab.
-      expect(t.text, `${code}: {code} nicht auf eigener Zeile`).toContain('\n{code}\n')
-    }
-  })
-
-  it('die Tabelle ist die Abschrift des Wörterbuchs — Zeichen für Zeichen', async () => {
-    /*
-      Zwei Fassungen derselben E-Mail: die des Servers (`anmelde-texte.ts`) und
-      die des eigenen Mail-Programms (Wörterbuch). Laufen sie auseinander,
-      bekommt derselbe Empfänger je nach Weg einen anderen Wortlaut.
-      Neu erzeugen: node scripts/anmelde-texte-erzeugen.mjs.
-    */
-    const { APP_LANGS } = await import('../../../src/i18n/langs')
-    const { dict, loadOverlay } = await import('../../../src/i18n/ui')
-    await Promise.all(APP_LANGS.map(({ code }) => loadOverlay(code)))
-    for (const { code } of APP_LANGS) {
-      expect(linkMailTexte(code).betreff, `${code}: Betreff`).toBe(dict(code).linkMailBetreff)
-      expect(linkMailTexte(code).text, `${code}: Text`).toBe(dict(code).linkMailText)
-    }
   })
 })

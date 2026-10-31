@@ -405,9 +405,10 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
         Object.assign(b, { data: r.p_data_b, updated_at: neuerStand() })
         return antwort(200, [a, b].map((w) => ({ woche: w.start, stand: w.updated_at })))
       }
-      // Adressen und Gründe (29.10.2026): was die Funktion aus der eigenen
-      // Versammlung liefert — ohne ihre Prüfung, wem sie es liefert.
-      const lieferung = { 'rpc/personen_mails': ['persons', 'mail'], 'rpc/abwesenheit_gruende': ['absences', 'reason'] }[tabelle]
+      // Gründe (29.10.2026): was die Funktion aus der eigenen Versammlung
+      // liefert — ohne ihre Prüfung, wem sie es liefert. (Die Adressen kamen
+      // bis zum 31.10.2026 ebenso, über `personen_mails`.)
+      const lieferung = { 'rpc/abwesenheit_gruende': ['absences', 'reason'] }[tabelle]
       if (lieferung && wer) {
         const [quelle = '', spalte = ''] = lieferung
         const cong = (tabellen.members ?? []).find((m) => m.user_id === wer.id)?.congregation_id

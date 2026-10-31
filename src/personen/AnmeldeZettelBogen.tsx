@@ -84,7 +84,7 @@ function AnmeldeZettel({ zettel, satz, versammlung }: { zettel: Zettel; satz: Ze
           <span className="anmelde-klein">{fill(t.gueltigBisDatum, { datum: zettel.bis })}</span>
         </span>
       </div>
-      <p className="anmelde-anleitung">{fill(t.zettelAnleitung, { adresse: satz.adresse, frage: t.ohneMailFrage })}</p>
+      <p className="anmelde-anleitung">{fill(t.zettelAnleitung, { adresse: satz.adresse, knopf: t.codeEintippen })}</p>
     </div>
   )
 }

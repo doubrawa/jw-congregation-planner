@@ -2,8 +2,8 @@ import type { Dict } from '../i18n/ui'
 import type { AnmeldeFehler } from '../lib/anmelden'
 
 /**
- * Der Satz zu jedem Grund, an dem eine Anmeldung scheitert — beim Link aus der
- * E-Mail (`store.tsx`) wie beim Code vom Zettel (Anmeldeseite). Ein unbekannter
+ * Der Satz zu jedem Grund, an dem eine Anmeldung scheitert — beim
+ * Anmelde-Link (`store.tsx`) wie beim Code vom Zettel (Anmeldeseite). Ein unbekannter
  * und ein abgelaufener Link heißen gleich: Für den, der ihn öffnet, ist beides
  * dasselbe, er braucht einen neuen.
  */

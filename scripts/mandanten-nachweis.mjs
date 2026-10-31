@@ -24,8 +24,8 @@
  *      werden, ein Ändern einer fremden Zeile null Zeilen treffen.
  *
  * **Zur Schreibprobe.** Sie fasst echte Daten an — deshalb so vorsichtig wie
- * möglich: Das Ändern schreibt den **vorhandenen** Wert zurück (`mail` auf sich
- * selbst; bis zum 25.10.2026 `tel`), ist also auch bei kaputter Richtlinie folgenlos. Gelöscht wird
+ * möglich: Das Ändern schreibt den **vorhandenen** Wert zurück (`fn` auf sich
+ * selbst; früher `tel`, dann `mail`), ist also auch bei kaputter Richtlinie folgenlos. Gelöscht wird
  * nichts: Ein erfolgreiches Löschen wäre nicht rückgängig zu machen, und
  * Einfügen und Ändern zeigen den Zugriff bereits. Eingefügt wird wie in der
  * App **ohne** `RETURNING`, und ob etwas ankam, sieht die Zielseite nach

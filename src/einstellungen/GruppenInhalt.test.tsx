@@ -36,7 +36,7 @@ vi.mock('../lib/supabase', () => ({ supabase: null, isSupabaseConfigured: false 
 const t = dict('de')
 
 const person = (id: string, fn: string, ln: string, over: Partial<Person> = {}): Person => ({
-  id, fn, ln, role: 'verkuendiger', female: false, mail: '', priv: emptyQualifications(), grp: null, ...over,
+  id, fn, ln, role: 'verkuendiger', female: false, priv: emptyQualifications(), grp: null, ...over,
 })
 
 const AELTESTER = person('p-ae', 'Anton', 'Alt', { role: 'aeltester' })

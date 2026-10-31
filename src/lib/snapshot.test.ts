@@ -101,7 +101,6 @@ describe('Was liegen bleibt, ist beschnitten (S6)', () => {
       persons: [
         {
           id: 'p1', fn: 'Xavo', ln: 'Quintus', role: 'verkuendiger',
-          mail: 'x@example.com',
           priv: {} as HydratePayload['persons'][number]['priv'],
         },
       ],
@@ -118,11 +117,6 @@ describe('Was liegen bleibt, ist beschnitten (S6)', () => {
     const roh = localStorage.getItem('snapshot') as string
     expect(roh, 'der Grund steht im Klartext im localStorage').not.toContain('Reha')
     expect(readSnapshot('u1')?.payload.absences.map((a) => a.reason)).toEqual(['', ''])
-  })
-
-  it('die E-Mail-Adresse bleibt', () => {
-    saveSnapshot(mitGrund())
-    expect(readSnapshot('u1')?.payload.persons[0]?.mail).toBe('x@example.com')
   })
 
   it('die Nutzlast des Aufrufers bleibt unangetastet', () => {

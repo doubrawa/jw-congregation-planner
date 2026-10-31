@@ -2,11 +2,11 @@
  * Tests der Edge Function `anmelden` (T121, Phase 8) — die Tür ohne Kennwort.
  * Wer einen gültigen Link oder Code vorzeigt, bekommt eine Sitzung; das Konto
  * entsteht dabei beim ersten Mal. Öffentlich erreichbar, also vor allem: was
- * NICHT gehen darf — ein falscher, ein abgelaufener Link, Raten, eine Adresse
- * ausforschen, jemanden hereinholen, den der Admin noch nicht hereingelassen hat.
+ * NICHT gehen darf — ein falscher, ein abgelaufener Link, Raten. (Einen Link
+ * per E-Mail anfordern ging bis zum 31.10.2026.)
  *
- * Aufbau wie send-invite.test.ts: die echte index.ts, `fetch` simuliert Auth,
- * REST und Resend; die Attrappe wertet Filter aus und hält ihren Stand.
+ * Aufbau wie send-invite.test.ts: die echte index.ts, `fetch` simuliert Auth
+ * und REST; die Attrappe wertet Filter aus und hält ihren Stand.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { codeVollstaendig, pruefsumme } from '../_shared/anmeldung.ts'
@@ -18,14 +18,9 @@ const CONG = 'cong-1'
 const P_ANNA = '11111111-1111-4111-8111-111111111111' // hat einen Link
 const P_BERT = '22222222-2222-4222-8222-222222222222' // hat ein Konto, keinen Link
 const P_CARL = '33333333-3333-4333-8333-333333333333' // weder noch
-const P_DORA = '44444444-4444-4444-8444-444444444444' // teilt die Adresse mit Anna, hat einen Link
-const P_ERIK = '55555555-5555-4555-8555-555555555555' // eine Adresse, die Carls nur im Platzhalter gleicht
-const P_KRUEGER = '66666666-6666-4666-8666-666666666666' // nur mit Nachnamen angelegt
 
 const TOKEN_ANNA = 'A'.repeat(43)
 const CODE_ANNA = 'K7RD2QWM'
-const TOKEN_DORA = 'D'.repeat(43)
-const CODE_DORA = 'HX4P9VTA'
 
 interface LinkRow {
   person_id: string
@@ -37,17 +32,10 @@ interface LinkRow {
   benutzt_at: string | null
 }
 
-interface Mail {
-  to: string
-  subject: string
-  text: string
-}
-
 const PERSONS = [
-  { id: P_ANNA, fn: 'Anna', ln: 'Alt', mail: 'anna@example.org', congregation_id: CONG, planner_vorgemerkt: true, zuteiler_vorgemerkt: false },
-  { id: P_BERT, fn: 'Bert', ln: 'Brand', mail: 'bert@example.org', congregation_id: CONG, planner_vorgemerkt: false, zuteiler_vorgemerkt: true },
-  { id: P_CARL, fn: 'Carl', ln: 'Cohn', mail: 'carl_c@example.org', congregation_id: CONG, planner_vorgemerkt: false, zuteiler_vorgemerkt: false },
-  { id: P_DORA, fn: 'Dora', ln: 'Alt', mail: 'Anna@Example.org', congregation_id: CONG, planner_vorgemerkt: false, zuteiler_vorgemerkt: false },
+  { id: P_ANNA, fn: 'Anna', ln: 'Alt', congregation_id: CONG, planner_vorgemerkt: true, zuteiler_vorgemerkt: false },
+  { id: P_BERT, fn: 'Bert', ln: 'Brand', congregation_id: CONG, planner_vorgemerkt: false, zuteiler_vorgemerkt: true },
+  { id: P_CARL, fn: 'Carl', ln: 'Cohn', congregation_id: CONG, planner_vorgemerkt: false, zuteiler_vorgemerkt: false },
 ]
 
 let links: LinkRow[]
@@ -55,19 +43,14 @@ let members: Array<{ user_id: string; congregation_id: string; person_id: string
 /** Konten bei Supabase Auth: Id → Adresse. */
 let konten: Map<string, string>
 let fehlversuche: Array<{ ip: string; at: string }>
-let mails: Mail[]
 let angelegt: Array<{ id: string; email: string; email_confirm: boolean }>
 /** Welcher `type` beim Einlösen gilt — neuere Fassungen von Auth nennen ihn „email". */
 let verifyTyp: 'magiclink' | 'email'
 let verifyKaputt: boolean
 /** Eine zweite erste Anmeldung derselben Person schreibt ihre `members`-Zeile kurz vor dieser. */
 let wettlauf: boolean
-/** Resend lehnt ab — die Mail geht nicht hinaus. */
-let mailKaputt: boolean
 /** Auth legt kein Konto an. */
 let kontoKaputt: boolean
-/** Die Datenbank nimmt einen neuen Link nicht an. */
-let linkKaputt: boolean
 
 const zukunft = () => new Date(Date.now() + 10 * 864e5).toISOString()
 
@@ -100,11 +83,6 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   const method = init?.method ?? 'GET'
   const body = init?.body === undefined ? undefined : JSON.parse(String(init.body))
 
-  if (url.startsWith('https://api.resend.com/')) {
-    if (mailKaputt) return new Response('{"message":"abgelehnt"}', { status: 500 })
-    mails.push({ to: body.to, subject: body.subject, text: body.text })
-    return jsonRes({ id: 'mail' })
-  }
   if (url.includes('/auth/v1/admin/users/')) {
     const id = decodeURIComponent(url.split('/auth/v1/admin/users/')[1] ?? '')
     return konten.has(id) ? jsonRes({ id, email: konten.get(id) }) : new Response('{"msg":"User not found"}', { status: 404 })
@@ -133,11 +111,6 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
       const treffer = links.filter((l) => (t ? l.token_hash === t : c ? l.code_hash === c : ids.includes(l.person_id)))
       return jsonRes(treffer.map(sichtbar))
     }
-    if (method === 'POST') {
-      if (linkKaputt) return new Response('{"message":"kaputt"}', { status: 500 })
-      for (const z of body as LinkRow[]) links = [...links.filter((l) => l.person_id !== z.person_id), z]
-      return new Response(null, { status: 201 })
-    }
     if (method === 'PATCH') {
       const pid = filterWert(path, 'person_id')
       const getroffen = links.filter((l) => l.person_id === pid)
@@ -147,13 +120,6 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   }
   if (path.startsWith('persons')) {
     const id = filterWert(path, 'id')
-    const ilike = /[?&]mail=ilike\.([^&]*)/.exec(path)?.[1]
-    if (ilike) {
-      // Wie Postgres: `_` ist ein Platzhalter, `\_` ein wörtlicher Unterstrich.
-      const muster = decodeURIComponent(ilike)
-      const re = new RegExp(`^${muster.replace(/\\_|_|[.+?^${}()|[\]\\]/g, (z) => (z === '\\_' ? '_' : z === '_' ? '.' : `\\${z}`))}$`, 'i')
-      return jsonRes(nurSpalten(PERSONS.filter((p) => re.test(p.mail)), path))
-    }
     return jsonRes(nurSpalten(PERSONS.filter((p) => p.id === id && p.congregation_id === filterWert(path, 'congregation_id')), path))
   }
   if (path.startsWith('congregations')) return jsonRes([{ name: 'Musterstadt' }])
@@ -188,8 +154,6 @@ async function loadFn(extraEnv: Record<string, string> = {}): Promise<(req: Requ
   const env: Record<string, string> = {
     SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY: 'service-key',
-    RESEND_API_KEY: 'resend-key',
-    INVITE_FROM: 'Versammlung.app <anmelden@example.org>',
     APP_URL: 'https://app.test/',
     ...extraEnv,
   }
@@ -223,21 +187,18 @@ async function call(body: unknown, opts: { ip?: string; env?: Record<string, str
 }
 
 beforeEach(async () => {
-  links = [await linkZeile(P_ANNA, TOKEN_ANNA, CODE_ANNA), await linkZeile(P_DORA, TOKEN_DORA, CODE_DORA)]
+  links = [await linkZeile(P_ANNA, TOKEN_ANNA, CODE_ANNA)]
   members = [{ user_id: 'konto-bert', congregation_id: CONG, person_id: P_BERT, planner: false, zuteiler: true, email: '' }]
   konten = new Map([['konto-bert', 'bert-alt@example.org']])
   fehlversuche = []
-  mails = []
   angelegt = []
   verifyTyp = 'magiclink'
   verifyKaputt = false
   wettlauf = false
-  mailKaputt = false
   kontoKaputt = false
-  linkKaputt = false
 })
 
-describe('anmelden: mit dem Link aus der E-Mail', () => {
+describe('anmelden: mit dem Link aus der Nachricht', () => {
   it('ein gültiger Link gibt eine Sitzung — und legt beim ersten Mal das Konto an', async () => {
     const r = await call({ aktion: 'link', token: TOKEN_ANNA })
     expect(r.status).toBe(200)
@@ -370,232 +331,16 @@ describe('anmelden: mit dem Code vom Zettel', () => {
   })
 })
 
-describe('anmelden: „Link senden" auf der Anmeldeseite', () => {
-  it('ohne eingerichteten Versand → not-configured, nichts verändert', async () => {
-    const vorher = JSON.stringify(links)
-    const r = await call({ aktion: 'mail', email: 'anna@example.org' }, { env: { INVITE_FROM: '' } })
-    expect(r.body.error).toBe('not-configured')
-    expect(JSON.stringify(links)).toBe(vorher)
-    expect(mails).toEqual([])
-  })
-
-  it('eine unbekannte Adresse → dieselbe Antwort, keine Mail', async () => {
-    const r = await call({ aktion: 'mail', email: 'niemand@example.org' })
-    expect(r.body).toEqual({ ok: true })
-    expect(mails).toEqual([])
-  })
-
-  it('zwei, die sich eine Adresse teilen, bekommen je ihren eigenen Link — Groß und klein egal', async () => {
-    const r = await call({ aktion: 'mail', email: ' ANNA@example.org ' })
-    expect(r.body).toEqual({ ok: true })
-    expect(mails.map((m) => m.text.split('\n')[0])).toEqual(['Hallo Anna,', 'Hallo Dora,'])
-    expect(mails.every((m) => m.to === 'anna@example.org')).toBe(true)
-    const [a, d] = mails.map((m) => /#anmelden=([A-Za-z0-9_-]+)/.exec(m.text)?.[1])
-    expect(a).not.toBe(d)
-  })
-
-  /*
-    Die Mail trägt den Code (T121, Phase 10): Auf dem iPhone öffnet der Link
-    Safari, nie die App vom Home-Bildschirm — dort meldet nur der Code an. Den
-    Code gibt es nur beim Ausstellen im Klartext, also stellt „Link senden"
-    einen neuen Link aus, und der Zettel gilt nicht mehr (Betreiber, 15.10.2026).
-  */
-  it('stellt einen neuen Link aus — Token und Code; der Code steht in der Mail', async () => {
-    await call({ aktion: 'mail', email: 'anna@example.org' })
-    const link = links.find((l) => l.person_id === P_ANNA)!
-    const text = mails[0]?.text ?? ''
-    const token = /#anmelden=([A-Za-z0-9_-]+)/.exec(text)?.[1] ?? ''
-    const code = /\n([0-9A-Z]{4}-[0-9A-Z]{4})\n/.exec(text)?.[1] ?? ''
-    expect(link.token_hash).toBe(await pruefsumme(token))
-    expect(link.code_hash).toBe(await pruefsumme(code.replace('-', '')))
-    expect(link.gesendet_at).toBeTruthy()
-  })
-
-  it('mit dem Code aus der Mail meldet man sich an — mit dem vom Zettel nicht mehr', async () => {
-    await call({ aktion: 'mail', email: 'anna@example.org' })
-    const code = /\n([0-9A-Z]{4}-[0-9A-Z]{4})\n/.exec(mails[0]?.text ?? '')?.[1] ?? ''
-    expect((await call({ aktion: 'code', code: CODE_ANNA })).status).toBe(404)
-    expect((await call({ aktion: 'code', code })).body.sitzung).toBeDefined()
-  })
-
-  it('ein abgelaufener Link gilt danach wieder ein Jahr', async () => {
-    links[0]!.gueltig_bis = new Date(Date.now() - 1000).toISOString()
-    await call({ aktion: 'mail', email: 'anna@example.org' })
-    const bis = new Date(links.find((l) => l.person_id === P_ANNA)!.gueltig_bis).getTime()
-    expect(bis - Date.now()).toBeGreaterThan(364 * 864e5)
-  })
-
-  it('ein abgelaufener Zettel lebt dabei nicht wieder auf — wer ihn gefunden hat, kommt nicht herein', async () => {
-    // Der Angriff: einen alten Zettel aufheben, die Adresse seines Besitzers
-    // kennen, „Link senden" drücken — und mit dem Code vom Zettel anmelden.
-    links[0]!.gueltig_bis = new Date(Date.now() - 1000).toISOString()
-    await call({ aktion: 'mail', email: 'anna@example.org' })
-    const link = links.find((l) => l.person_id === P_ANNA)!
-    expect(link.code_hash).not.toBe(await pruefsumme(CODE_ANNA))
-    const r = await call({ aktion: 'code', code: CODE_ANNA })
-    expect(r.status).toBe(404)
-    expect(r.body.sitzung).toBeUndefined()
-  })
-
-  it('wer ein Konto hat, aber keinen Link, bekommt einen neuen', async () => {
-    await call({ aktion: 'mail', email: 'bert@example.org' })
-    expect(mails).toHaveLength(1)
-    expect(links.some((l) => l.person_id === P_BERT)).toBe(true)
-  })
-
-  it('wen der Admin noch nicht hereingelassen hat (kein Konto, kein Link), bekommt nichts', async () => {
-    const r = await call({ aktion: 'mail', email: 'carl_c@example.org' })
-    expect(r.body).toEqual({ ok: true })
-    expect(mails).toEqual([])
-    expect(links.some((l) => l.person_id === P_CARL)).toBe(false)
-  })
-
-  it('höchstens eine Mail in zehn Minuten je Person', async () => {
-    await call({ aktion: 'mail', email: 'bert@example.org' })
-    await call({ aktion: 'mail', email: 'bert@example.org' })
-    expect(mails).toHaveLength(1)
-  })
-
-  /*
-    Erst gesendet, dann gespeichert (Betreiber, 16.10.2026): Bis dahin stand
-    der neue Link vor dem Versand in der Datenbank. Scheiterte die Mail, galt
-    der Zettel nicht mehr, ohne dass ein neuer Link angekommen war.
-  */
-  it('scheitert die Mail, gilt der alte Link samt Zettel weiter (16.10.2026)', async () => {
-    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
-    try {
-      mailKaputt = true
-      const vorher = JSON.stringify(links)
-      expect((await call({ aktion: 'mail', email: 'anna@example.org' })).body).toEqual({ ok: true })
-      expect(JSON.stringify(links)).toBe(vorher)
-      expect((await call({ aktion: 'code', code: CODE_ANNA })).body.sitzung).toBeDefined()
-    } finally {
-      err.mockRestore()
-    }
-  })
-
-  it('… und ohne Mail keine Pause: der nächste Versuch geht hinaus', async () => {
-    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
-    try {
-      mailKaputt = true
-      await call({ aktion: 'mail', email: 'bert@example.org' })
-      mailKaputt = false
-      await call({ aktion: 'mail', email: 'bert@example.org' })
-      expect(mails).toHaveLength(1)
-      expect(links.find((l) => l.person_id === P_BERT)?.gesendet_at).toBeTruthy()
-    } finally {
-      err.mockRestore()
-    }
-  })
-
-  it('der Unterstrich ist kein Platzhalter: carl_c@… trifft nicht auch carlxc@…', async () => {
-    // Im Muster von `ilike` steht `_` für ein beliebiges Zeichen. Unmaskiert
-    // bekäme Erik (carlxc@…) eine Mail, die für Carl (carl_c@…) bestimmt war.
-    PERSONS.push({ id: P_ERIK, fn: 'Erik', ln: 'Ernst', mail: 'carlxc@example.org', congregation_id: CONG, planner_vorgemerkt: false, zuteiler_vorgemerkt: false })
-    try {
-      links.push(await linkZeile(P_CARL, 'C'.repeat(43), 'M3ZE7KQR'), await linkZeile(P_ERIK, 'E'.repeat(43), 'W8NB4TGC'))
-      await call({ aktion: 'mail', email: 'carl_c@example.org' })
-      expect(mails.map((m) => m.text.split('\n')[0])).toEqual(['Hallo Carl,'])
-    } finally {
-      PERSONS.pop()
-    }
-  })
-
-  it('ohne Vornamen grüßt sie mit dem Nachnamen — bis zum 24.10.2026 stand „Hallo ," da', async () => {
-    PERSONS.push({ id: P_KRUEGER, fn: '', ln: 'Krüger', mail: 'krueger@example.org', congregation_id: CONG, planner_vorgemerkt: false, zuteiler_vorgemerkt: false })
-    try {
-      links.push(await linkZeile(P_KRUEGER, 'K'.repeat(43), 'R4WT9HXP'))
-      await call({ aktion: 'mail', email: 'krueger@example.org' })
-      expect(mails.map((m) => m.text.split('\n')[0])).toEqual(['Hallo Krüger,'])
-    } finally {
-      PERSONS.pop()
-    }
-  })
-
-  it.each([['*@*'], ['%@example.org'], ['keine-adresse'], ['']])('„%s" → 400, keine Abfrage nach Mustern', async (email) => {
-    const r = await call({ aktion: 'mail', email })
-    expect(r.status).toBe(400)
-    expect(mails).toEqual([])
-  })
-
-  it('in der Sprache, die auf der Anmeldeseite eingestellt ist', async () => {
-    await call({ aktion: 'mail', email: 'bert@example.org', lang: 'en' })
-    expect(mails[0]?.text).toMatch(/^Hello Bert,/)
-  })
-
-  it('eine Sprache, die wie eine Eigenschaft heißt, ergibt die deutsche Mail — keinen Absturz (16.10.2026)', async () => {
-    // `lang` kommt ungeprüft aus dem Aufruf. `TEXTE["constructor"]` war die
-    // Funktion `Object`, und das Zusammensetzen der Mail warf.
-    await call({ aktion: 'mail', email: 'bert@example.org', lang: 'constructor' })
-    expect(mails[0]?.text).toMatch(/^Hallo Bert,/)
-  })
-
-  /*
-    Die Antwort verrät nicht, ob es die Adresse gibt — auch nicht über ihre
-    Dauer. Auf der Plattform kommt sie, bevor gesucht und gesendet wird
-    (`EdgeRuntime.waitUntil`); hier hängt der Versand, und die Antwort ist
-    trotzdem da.
-  */
-  it('die Antwort wartet nicht auf Suche und Versand — ihre Dauer verrät nichts', async () => {
-    const g = globalThis as Record<string, unknown>
-    const arbeiten: Promise<unknown>[] = []
-    g.EdgeRuntime = { waitUntil: (arbeit: Promise<unknown>) => arbeiten.push(arbeit) }
-    let freigeben: () => void = () => {}
-    const gesperrt = new Promise<void>((r) => (freigeben = r))
-    try {
-      const handler = await loadFn()
-      // Erst nach `loadFn` — das setzt `fetch` neu: Jede Abfrage hängt, bis die Antwort da ist.
-      g.fetch = async (...a: Parameters<typeof fetch>) => {
-        await gesperrt
-        return (fakeFetch as unknown as typeof fetch)(...a)
-      }
-      const res = await Promise.race([
-        handler(
-          new Request('https://fn.test/anmelden', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-forwarded-for': '203.0.113.7' },
-            body: JSON.stringify({ aktion: 'mail', email: 'anna@example.org' }),
-          }),
-        ),
-        new Promise<never>((_, nein) => setTimeout(() => nein(new Error('die Antwort wartet auf den Versand')), 2000)),
-      ])
-      expect(await res.json()).toEqual({ ok: true })
-      expect(mails).toEqual([])
-      expect(arbeiten).toHaveLength(1)
-      freigeben()
-      await arbeiten[0]
-      expect(mails.map((m) => m.text.split('\n')[0])).toEqual(['Hallo Anna,', 'Hallo Dora,'])
-    } finally {
-      freigeben()
-      delete g.EdgeRuntime
-    }
-  })
-
-  it('scheitert die Suche, bleibt die Antwort dieselbe — der Fehler geht nur in die Logs', async () => {
-    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
-    try {
-      const handler = await loadFn()
-      ;(globalThis as Record<string, unknown>).fetch = async () => new Response('{"message":"kaputt"}', { status: 500 })
-      const res = await handler(
-        new Request('https://fn.test/anmelden', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ aktion: 'mail', email: 'anna@example.org' }),
-        }),
-      )
-      expect(res.status).toBe(200)
-      expect(await res.json()).toEqual({ ok: true })
-      expect(err).toHaveBeenCalledWith('anmelden (mail):', expect.stringContaining('500'))
-    } finally {
-      err.mockRestore()
-    }
-  })
-})
-
 describe('anmelden: sonst', () => {
   it('eine unbekannte Aktion → 400', async () => {
     expect((await call({ aktion: 'loeschen' })).status).toBe(400)
     expect((await call(null)).status).toBe(400)
+  })
+
+  it('„Link senden" per E-Mail gibt es seit dem 31.10.2026 nicht mehr → 400, nichts ausgestellt', async () => {
+    const vorher = JSON.stringify(links)
+    expect(await call({ aktion: 'mail', email: 'anna@example.org' })).toEqual({ status: 400, body: { error: 'bad-request' } })
+    expect(JSON.stringify(links)).toBe(vorher)
   })
 })
 
@@ -640,20 +385,6 @@ describe('anmelden: am Rand (31.10.2026)', () => {
     konten.delete('konto-bert')
     expect(await call({ aktion: 'link', token: 'B'.repeat(43) })).toEqual({ status: 500, body: { error: 'server-error' } })
     expect(angelegt).toEqual([])
-  })
-
-  it('geht die Mail hinaus, aber der Link nicht in die Datenbank, steht es im Log — der alte Link gilt weiter', async () => {
-    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
-    try {
-      linkKaputt = true
-      const vorher = JSON.stringify(links)
-      expect((await call({ aktion: 'mail', email: 'bert@example.org' })).body).toEqual({ ok: true })
-      expect(mails).toHaveLength(1)
-      expect(JSON.stringify(links)).toBe(vorher)
-      expect(err).toHaveBeenCalledWith('anmelden (mail): Link gesendet, aber nicht gespeichert')
-    } finally {
-      err.mockRestore()
-    }
   })
 
   it('ohne Weiterleitungs-Kopf zählt der Fehlversuch unter cf-connecting-ip — ohne beide unter „unbekannt"', async () => {

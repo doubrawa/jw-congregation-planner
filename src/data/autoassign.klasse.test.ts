@@ -43,7 +43,7 @@ const priv = (keys: string[]): Qualifications => {
 }
 const mk = (quals: string[], female = false): Person => {
   n += 1
-  return { id: `a${n}`, fn: 'T', ln: `P${n}`, role: 'verkuendiger', female, mail: '', priv: priv(quals) }
+  return { id: `a${n}`, fn: 'T', ln: `P${n}`, role: 'verkuendiger', female, priv: priv(quals) }
 }
 
 /** Bereiche, die ein Bruder mit allen Programm-Rechten hat. */

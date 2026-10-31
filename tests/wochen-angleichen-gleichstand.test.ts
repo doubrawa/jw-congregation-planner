@@ -23,7 +23,7 @@ vi.mock('../src/lib/supabase', () => ({
       kette.then = (fertig: (v: unknown) => void) => fertig({ data: (antworten.je[tabelle] ?? []).shift() ?? null, error: null })
       return kette
     },
-    // Adressen und Gründe (`personen_mails`, `abwesenheit_gruende`) — für die Wochen ohne Belang.
+    // Die Gründe der Abwesenheiten (`abwesenheit_gruende`) — für die Wochen ohne Belang.
     rpc: async () => ({ data: [], error: null }),
   },
 }))

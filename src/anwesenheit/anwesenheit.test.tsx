@@ -35,8 +35,8 @@ import { useAnwesenheitMonate } from './useAnwesenheitMonate'
 
 const t = dict('de')
 
-const ICH: Person = { id: 'p9', fn: 'Simon', ln: 'Krüger', role: 'verkuendiger', female: false, mail: '', priv: {} as Person['priv'] }
-const LENA: Person = { id: 'p4', fn: 'Lena', ln: 'Hoffmann', role: 'verkuendiger', female: true, mail: '', priv: {} as Person['priv'] }
+const ICH: Person = { id: 'p9', fn: 'Simon', ln: 'Krüger', role: 'verkuendiger', female: false, priv: {} as Person['priv'] }
+const LENA: Person = { id: 'p4', fn: 'Lena', ln: 'Hoffmann', role: 'verkuendiger', female: true, priv: {} as Person['priv'] }
 
 /** Dienstag 19:00 und Sonntag 10:00; Simon ist unter der Woche Saalordner. */
 function woche(start: string): Week {

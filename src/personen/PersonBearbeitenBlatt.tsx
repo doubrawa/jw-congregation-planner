@@ -92,17 +92,6 @@ export function PersonBearbeitenBlatt({ person, onClose }: { person: Person; onC
             {dublette ? fill(t.nameDoppelt, { name: personLabel(dublette) }) : t.toastNameLeer}
           </p>
         )}
-        <BlattFeld marke={t.emailLbl}>
-          <input
-            id="pers-mail"
-            className="feld"
-            type="email"
-            dir="auto"
-            autoComplete="off"
-            value={person.mail ?? ''}
-            onChange={(e) => update({ mail: e.target.value })}
-          />
-        </BlattFeld>
         {/* Keine `BlattFeld`: Ein `<label>` um die Knöpfe drückte beim Tipp auf
             die Marke den ersten davon. */}
         <div className="blatt-feld">

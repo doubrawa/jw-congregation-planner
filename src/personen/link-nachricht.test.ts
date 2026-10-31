@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { APP_LANGS } from '../i18n/langs'
 import { dict, loadOverlay } from '../i18n/ui'
+import { zahlBinden } from '../i18n/zahl-binden'
 import type { AusgestellterLink } from '../lib/links-ausstellen'
-import { linkNachricht } from './link-mail'
+import { linkNachricht } from './link-nachricht'
 
 /**
- * **Link und Code als Nachricht** (24.10.2026, „Teilen" im Blatt „Link
- * senden"): derselbe Text wie die E-Mail, ohne das, was nur zu ihr gehört. Wer
- * per Nachricht kommt, hat oft keine Adresse — „Link senden" auf der
- * Anmeldeseite hülfe ihm nicht, einen neuen Link bekommt er von den Ältesten.
- * Und der Satz „Du bekommst diese E-Mail, weil …" stünde in einem Chat falsch.
+ * **Link und Code als Nachricht** (24.10.2026, „Teilen" und „Kopieren" im
+ * Blatt „Link senden"; seit dem 31.10.2026 auch in der Liste unter „Links
+ * senden"). E-Mails schickt die App keine mehr — einen abgelaufenen Link gibt
+ * es von den Ältesten, nicht über „Link senden" auf der Anmeldeseite.
  */
 
 const link: AusgestellterLink = {
@@ -18,9 +18,7 @@ const link: AusgestellterLink = {
   zettelUrl: 'https://versammlung.app/#code=K7RD2QWM',
   code: 'K7RD-2QWM',
   gueltigBis: '2026-11-14T09:00:00.000Z',
-  gesendet: false,
 }
-const ABSATZ = '\n\n'
 const anton = { fn: 'Anton', ln: 'Alt' }
 
 describe('Der Text der Nachricht', () => {
@@ -30,7 +28,7 @@ describe('Der Text der Nachricht', () => {
     const n = await linkNachricht(anton, link, { lang: 'pl', versammlung: 'Musterstadt' })
     expect(n.titel).toBe('Twój dostęp do zboru Musterstadt')
     expect(n.text).toContain('Cześć Anton')
-    expect(n.text).toContain('14 listopada')
+    expect(n.text).toContain(zahlBinden('14 listopada 2026'))
   })
 
   it('trägt Link und Code unverändert — der Code auf eigener Zeile, so wie man ihn abtippt', async () => {
@@ -42,25 +40,39 @@ describe('Der Text der Nachricht', () => {
     }
   })
 
-  it('grüßt wie die E-Mail: ohne Vornamen mit dem Nachnamen — bis zum 24.10.2026 stand „Hallo ," da', async () => {
+  it('das Datum mit Jahr — der Link gilt ein Jahr, ohne stünde der Tag von heute da', async () => {
+    const n = await linkNachricht(anton, link, { lang: 'de', versammlung: 'Musterstadt' })
+    expect(n.text).toContain(`bis ${zahlBinden('14. November 2026')}`)
+  })
+
+  it('grüßt ohne Vornamen mit dem Nachnamen — bis zum 24.10.2026 stand „Hallo ," da', async () => {
     const n = await linkNachricht({ fn: '', ln: 'Krüger' }, link, { lang: 'de', versammlung: 'Musterstadt' })
     expect(n.text).toMatch(/^Hallo Krüger,\n/)
   })
 
-  it('in jeder Sprache: die E-Mail ohne ihre letzten zwei Absätze, dann die Ältesten statt „Link senden"', async () => {
+  it('jede Sprache trägt alle fünf Platzhalter, der Titel die Versammlung, der Code steht auf eigener Zeile', async () => {
     await Promise.all(APP_LANGS.map(({ code }) => loadOverlay(code)))
     for (const { code } of APP_LANGS) {
       const d = dict(code)
-      const mail = d.linkMailText.split(ABSATZ)
+      for (const platz of ['{name}', '{versammlung}', '{url}', '{code}', '{datum}']) expect(d.linkNachrichtText, `${code}: ${platz}`).toContain(platz)
+      expect(d.linkNachrichtTitel, `${code}: Titel ohne Versammlung`).toContain('{versammlung}')
+      expect(d.linkNachrichtText, `${code}: {code} nicht auf eigener Zeile`).toContain('\n{code}\n')
+      // Ohne Vornamen grüßt sie mit dem Nachnamen, in jeder Sprache.
+      const n = await linkNachricht({ fn: '', ln: 'Krüger' }, link, { lang: code, versammlung: 'Musterstadt' })
+      expect(n.text.split('\n')[0], code).toContain('Krüger')
+    }
+  })
+
+  it('in jeder Sprache: ohne E-Mail, die Ältesten statt „Link senden"', async () => {
+    await Promise.all(APP_LANGS.map(({ code }) => loadOverlay(code)))
+    for (const { code } of APP_LANGS) {
+      const d = dict(code)
       const n = await linkNachricht(anton, link, { lang: code, versammlung: 'Musterstadt' })
-      const absaetze = n.text.trimEnd().split(ABSATZ)
-      // Ein Absatz weniger als die E-Mail: Der vorletzte wird ersetzt, der letzte („Du bekommst diese E-Mail …") fällt weg.
-      expect(absaetze, `${code}: Absätze`).toHaveLength(mail.length - 1)
-      // Der Schluss beginnt wie der vorletzte der E-Mail (wie lange Link und Code gelten) und endet anders.
-      expect(mail[mail.length - 2]!.startsWith(d.linkNachrichtSchluss.slice(0, 20)), `${code}: Schluss`).toBe(true)
       expect(n.text, `${code}: zitiert „${d.linkSenden}"`).not.toContain(d.linkSenden)
       expect(n.text, `${code}: Code nicht auf eigener Zeile`).toContain('\nK7RD-2QWM\n')
       expect(n.text, `${code}: Platzhalter`).not.toMatch(/\{\w+\}/)
+      // Der zitierte Knopf heißt wie auf der Anmeldeseite.
+      expect(n.text, `${code}: zitiert „${d.codeEintippen}"`).toContain(d.codeEintippen)
     }
   })
 })

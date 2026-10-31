@@ -155,25 +155,28 @@ export function MockStart({ inhalt, t, knopf }: { inhalt: FilmInhalt; t: Dict; k
   )
 }
 
-/** Die Anmelde-E-Mail bis zum Link (Eigenentwurf eines Mail-Programms). */
-export function MockMail({ inhalt }: { inhalt: FilmInhalt }) {
+/**
+ * Die Nachricht mit dem Anmelde-Link, bis zum Link (Eigenentwurf eines
+ * Messengers: Kopf mit Bild und Namen als Platzhalter, eine Sprechblase). Bis
+ * zum 31.10.2026 stand hier eine E-Mail — seitdem schickt die App keine mehr.
+ */
+export function MockNachricht({ inhalt }: { inhalt: FilmInhalt }) {
   return (
-    <div className="fm-app fm-mail" data-f="mail">
-      <div className="fm-mail-kopf">
+    <div className="fm-app fm-chat" data-f="nachricht">
+      <div className="fm-chat-kopf">
         <Zeichen name="zurueck" />
+        <span className="fm-chat-bild" />
         <span className="fm-balken" />
       </div>
-      <div className="fm-mail-inhalt">
-        <span className="fm-mail-betreff" dir="auto">
-          {inhalt.mailBetreff}
-        </span>
-        <span className="fm-mail-von">Versammlung.app</span>
-        <span className="fm-mail-text" dir="auto">
-          {inhalt.mailText}
-        </span>
-        <span className="fm-mail-url" dir="ltr" data-f="url">
-          https://versammlung.app/#…
-        </span>
+      <div className="fm-chat-verlauf">
+        <div className="fm-chat-blase">
+          <span className="fm-chat-text" dir="auto">
+            {inhalt.nachrichtText}
+          </span>
+          <span className="fm-chat-url" dir="ltr" data-f="url">
+            https://versammlung.app/#…
+          </span>
+        </div>
       </div>
     </div>
   )

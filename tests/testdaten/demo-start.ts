@@ -209,13 +209,13 @@ function demoPersoenlich(versand: SentLog): PersoenlichLog {
 /**
  * **Konten und Links für `konto=1`**, nach der gestellten Uhr (7.9.2026): jede
  * dritte Person angemeldet — die erste als Admin —, jede dritte mit Link, der
- * erste davon abgelaufen, jeder zweite per E-Mail. Mit `me=` ist das Konto
+ * erste davon abgelaufen, jeder zweite als gesendet vermerkt. Mit `me=` ist das Konto
  * dieser Person das eigene.
  */
 function demoKonten(persons: readonly Person[], me: string | undefined): Pick<AppState, 'userId' | 'members' | 'anmeldeLinks'> {
   const members = persons
     .filter((_, i) => i % 3 === 0)
-    .map((p, j) => ({ userId: p.id === me ? 'demo-konto' : `konto-${p.id}`, email: p.mail, personId: p.id, planner: j === 0, zuteiler: false }))
+    .map((p, j) => ({ userId: p.id === me ? 'demo-konto' : `konto-${p.id}`, email: '', personId: p.id, planner: j === 0, zuteiler: false }))
   const anmeldeLinks = persons
     .filter((_, i) => i % 3 === 1)
     .map((p, j) => ({

@@ -29,9 +29,8 @@ export interface FilmInhalt {
   vorKurzem: string
   /** Die Tage der zwei Zeilen unter der großen Karte. */
   zeilen: readonly string[]
-  /** Betreff und Anfang der Anmelde-E-Mail, bis zum Link. */
-  mailBetreff: string
-  mailText: string
+  /** Der Anfang der Nachricht mit dem Anmelde-Link, bis zum Link. */
+  nachrichtText: string
 }
 
 /** Der Platz eines Namens, wenn das Konto keine Person hat. */
@@ -55,8 +54,8 @@ export function filmInhalt(
   const datum = gebundenesDatum(morgen, lang, 'tag')
   // Ein Kalendertag als UTC-Mitternacht, wie `MyTask.at`.
   const morgenAt = Date.UTC(morgen.getFullYear(), morgen.getMonth(), morgen.getDate())
-  // Die E-Mail bis zum Link — dahinter steht der Link selbst, auf den getippt wird.
-  const [vorDemLink = ''] = t.linkMailText.split('{url}')
+  // Die Nachricht bis zum Link — dahinter steht der Link selbst, auf den getippt wird.
+  const [vorDemLink = ''] = t.linkNachrichtText.split('{url}')
   return {
     kopfDatum: kopfzeilenTag(jetzt, lang),
     kopfVersammlung: versammlung ? fill(t.congLabel, { name: versammlung }) : 'Versammlung.app',
@@ -65,7 +64,6 @@ export function filmInhalt(
     aufgabeZeile: `${t.privBibellesung} · ${datum}`,
     vorKurzem: relativeZeit(new Date(jetzt.getTime() - 12 * 60_000).toISOString(), lang, jetzt.getTime()),
     zeilen: [5, 12].map((n) => gebundenesDatum(tag(n), lang, 'wochentagZahl')),
-    mailBetreff: fill(t.linkMailBetreff, { versammlung: versammlung || 'Versammlung.app' }),
-    mailText: fill(vorDemLink, { name, versammlung: versammlung || 'Versammlung.app' }).trimEnd(),
+    nachrichtText: fill(vorDemLink, { name, versammlung: versammlung || 'Versammlung.app' }).trimEnd(),
   }
 }

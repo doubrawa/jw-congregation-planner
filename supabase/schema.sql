@@ -134,7 +134,6 @@ create table if not exists public.persons (
   role            text not null default 'verkuendiger'
                   check (role in ('aeltester', 'dienstamtgehilfe', 'verkuendiger', 'keine')),
   female          boolean not null default false,   -- Schwester (Partner-Zuordnung, Brüder-Bereiche)
-  mail            text not null default '',
   -- Qualifications: feste Programm-Bereiche (vorsitzMid/vorsitzWe/vortrag/gebet/
   -- bibellesung/leser/schulung/schulungPartner/studium/treffpunkt + wtLeiter/
   -- wtVertreter) plus je Hilfsdienst ein dynamischer Schlüssel `svc:<key>`.
@@ -173,6 +172,13 @@ alter table public.persons
 -- zweiter Lauf findet nichts mehr; die Zeile kann fort, sobald sie überall
 -- eingespielt ist.
 alter table public.persons drop column if exists tel;
+
+-- Entfernt (31.10.2026): die E-Mail-Adresse. Die App schickt keine E-Mails
+-- mehr — den Anmelde-Link gibt der Admin per Nachricht oder auf dem Zettel
+-- weiter, und der Code darauf gilt ein Jahr. Mit der Spalte gehen die Adressen
+-- aus der Datenbank; vorher die Funktion, die sie las.
+drop function if exists public.personen_mails();
+alter table public.persons drop column if exists mail;
 
 create index if not exists persons_congregation_idx
   on public.persons (congregation_id);
@@ -1531,50 +1537,32 @@ create policy absences_write on public.absences
     )
   );
 
--- **Was nicht jeder lesen soll** (Sicherheits-Review 29.10.2026): die
--- E-Mail-Adressen der Personen und die Gründe der Abwesenheiten. Die Zeilen
--- liest die ganze Versammlung — die Planung braucht Namen und Zeiträume —,
--- aber eine Richtlinie wählt Zeilen, keine Spalten: Über die REST-Schnittstelle
--- las jedes Mitglied alle Adressen und jeden Grund („Krankenhaus"), obwohl die
--- App beides nur dem Admin zeigt und den Grund dazu dem, dem er gehört.
+-- **Was nicht jeder lesen soll** (Sicherheits-Review 29.10.2026): die Gründe
+-- der Abwesenheiten. Die Zeilen liest die ganze Versammlung — die Planung
+-- braucht die Zeiträume —, aber eine Richtlinie wählt Zeilen, keine Spalten:
+-- Über die REST-Schnittstelle las jedes Mitglied jeden Grund („Krankenhaus"),
+-- obwohl die App ihn nur dem Admin zeigt und dem, dem er gehört.
 --
 -- Deshalb Spaltenrechte wie bei `anmelde_links`: Die übrigen Spalten bleiben
--- lesbar, `select=*` scheitert. Adressen und Gründe liefern die beiden
--- Funktionen darunter, und zwar genau dem, dem die App sie zeigt. Schreiben
--- bleibt, wie es war (`persons_write`, `absences_write`) — ohne `RETURNING`,
--- wie die App schreibt, und **ohne Upsert über die gesperrte Spalte**:
--- `on conflict … do update set mail = excluded.mail` liest sie und scheitert
--- (42501). Die App schreibt die Adresse deshalb per `update` hinterher
--- (`personenSchreiben` in `src/lib/data.ts`, seit 31.10.2026).
+-- lesbar, `select=*` scheitert. Den Grund liefert die Funktion darunter, und
+-- zwar genau dem, dem die App ihn zeigt. Schreiben bleibt, wie es war
+-- (`absences_write`) — ohne `RETURNING`, wie die App schreibt, und ohne Upsert
+-- über die gesperrte Spalte: `on conflict … do update set x = excluded.x`
+-- liest sie und scheitert (42501).
 --
 -- Eine neue Spalte gehört in die Liste, sonst liest sie niemand, und die App
 -- lädt nicht mehr: `tests/spaltenrechte.test.ts` hält Liste, Tabelle und App
 -- beisammen.
-revoke select on public.persons from anon, authenticated;
-grant select (id, congregation_id, fn, ln, role, female, priv, planner_vorgemerkt,
-              zuteiler_vorgemerkt, fam, grp, created_at)
-  on public.persons to authenticated;
+--
+-- `persons` war vom 29. bis 31.10.2026 ebenso gesperrt, wegen der
+-- E-Mail-Adresse. Seit die Spalte fort ist, liest die Versammlung die Tabelle
+-- wieder ganz: Dort gibt es nichts mehr, was sie nicht sehen dürfte.
+revoke select on public.persons from anon;
+grant select on public.persons to authenticated;
 
 revoke select on public.absences from anon, authenticated;
 grant select (id, congregation_id, user_id, person_id, from_date, to_date, created_at)
   on public.absences to authenticated;
-
--- Die Adressen — nur für den Admin: Er lädt Personen ein und verschickt die
--- Anmelde-Links (`send-invite` liest sie selbst, mit der Dienstrolle).
-create or replace function public.personen_mails()
-returns table (id uuid, mail text)
-language sql stable security definer
-set search_path = public
-as $$
-  select p.id, p.mail
-    from public.persons p
-   where p.congregation_id = public.my_congregation_id()
-     and public.is_planner()
-     and p.mail <> ''
-$$;
-
-revoke all on function public.personen_mails() from public, anon;
-grant execute on function public.personen_mails() to authenticated;
 
 -- Die Gründe — dem Admin alle, sonst die eigenen: wem die Abwesenheit gehört
 -- oder wer sie eingetragen hat, wie im `using` von `absences_write`. Der Planer

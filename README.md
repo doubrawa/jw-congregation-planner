@@ -81,8 +81,8 @@ lesbar:
   sondern gelöscht. Wer so lange ohne Netz war, dem nützt der alte Stand nicht.
 - **Der Abwesenheitsgrund bleibt draußen** — der einzige Freitext, der
   Gesundheitsangaben tragen kann, und der einzige, den offline niemand braucht.
-  Die E-Mail-Adresse bleibt. Eine Telefonnummer führt die App seit dem
-  25.10.2026 nicht mehr.
+  Eine Telefonnummer führt die App seit dem 25.10.2026 nicht mehr, eine
+  E-Mail-Adresse seit dem 31.10.2026.
 
 Solange `staleAt` gesetzt ist, ist die App **nur lesend**:
 
@@ -221,8 +221,8 @@ Die Seite gibt es nur im Dev-Server (`scripts/testdaten-grenze.mjs`), gebaut
 wird allein `index.html`. **Die App selbst kennt keine Testdaten:** Eine neue
 Versammlung ist leer und wird von Hand oder per NWS-Import gefüllt. Damit das so
 bleibt, bricht jeder Build ab, in dem ein Modul aus `tests/testdaten/` steckt
-oder eines ihrer Kennzeichen im Ergebnis steht — Adressen unter
-`musterstadt.example`, Platzhalter wie „Demoaufgabe".
+oder eines ihrer Kennzeichen im Ergebnis steht — Platzhalter wie
+„Demoaufgabe" in den erfundenen Wochen.
 Bis zum 2.10.2026 lag die erfundene Personenliste trotz `import.meta.env.DEV`
 im ausgelieferten Bündel.
 
@@ -327,10 +327,9 @@ Entwicklerseite. Für echtes Login mit geschützten Daten:
    App-Adressen erlauben (`https://versammlung.app/**` sowie für lokale
    Entwicklung `http://localhost:5173/**`). Sonst führen Links aus Mails von
    Supabase ins Leere (localhost:3000).
-8. **E-Mails mit dem Anmelde-Link** schickt die App über Resend: die Secrets
-   `RESEND_API_KEY` und `INVITE_FROM` (Absender mit verifizierter Domain) in
-   den Edge Functions setzen. Ohne sie geht es trotzdem — der Admin druckt
-   Zettel oder schickt den Link aus seinem eigenen Mail-Programm.
+8. **E-Mails schickt die App keine** (seit dem 31.10.2026): Den Anmelde-Link
+   gibt der Admin per Nachricht oder auf einem Zettel weiter. Ein Mail-Dienst
+   (Resend, `INVITE_FROM`) wird nicht gebraucht.
 
 Der `anon`-Key ist für den Browser gedacht und darf öffentlich sein — der
 Schutz der Daten kommt aus den RLS-Policies (Mitglieder sehen nur die eigene
@@ -338,11 +337,11 @@ Versammlung, schreiben dürfen im Wesentlichen nur Planer).
 
 Eine Richtlinie wählt Zeilen, keine Spalten. Was innerhalb einer sichtbaren
 Zeile nicht jeder lesen soll, sperren **Spaltenrechte** (`grant select (…)`):
-die Prüfsummen der Anmelde-Links, seit dem 29.10.2026 auch die E-Mail-Adressen
-der Personen und der Grund einer Abwesenheit. Ein `select=*` auf diese
-Tabellen scheitert deshalb, die App nennt ihre Spalten ausdrücklich. Adressen
-und Gründe kommen über `personen_mails` (nur der Admin) und
-`abwesenheit_gruende` (der Admin alle, sonst die eigenen). Eine neue Spalte in
+die Prüfsummen der Anmelde-Links und seit dem 29.10.2026 der Grund einer
+Abwesenheit. Ein `select=*` auf diese Tabellen scheitert deshalb, die App
+nennt ihre Spalten ausdrücklich. Die Gründe kommen über `abwesenheit_gruende`
+(der Admin alle, sonst die eigenen). (Vom 29. bis 31.10.2026 waren ebenso die
+E-Mail-Adressen gesperrt; seitdem speichert die App keine mehr.) Eine neue Spalte in
 `persons` oder `absences` gehört in die Freigabe — `tests/spaltenrechte.test.ts`
 meldet, wenn sie fehlt.
 
@@ -620,7 +619,7 @@ Zusammenkunfts-Planung deiner Versammlung; es werden keine Inhalte öffentlich
 weiterverbreitet. Beachte die Nutzungsbedingungen von jw.org.
 
 **Stand:** Angemeldet wird ohne Kennwort (T121, Phase 8): mit einem Link per
-E-Mail oder einem Zettel mit QR-Code und Code (Function `anmelden`); eine
+Nachricht oder einem Zettel mit QR-Code und Code (Function `anmelden`); eine
 bestehende Session überspringt den Login. Nach dem Login werden alle Versammlungsdaten geladen (Rolle/
 Versammlung aus `members`), Änderungen sofort zurückgeschrieben; eine leere
 Versammlung zeigt Verkündigern den Hinweis auf den Koordinator, Planer füllen
@@ -632,10 +631,10 @@ nicht mehr, in der App seit dem 2.10.2026 gar keine). „Meine Aufgaben" entsteh
 `congregations`. **Konten & Anmelde-Links laufen
 personenzentriert im Personen-Screen:** Admin-Recht als feste Rolle im
 Personen-Detail (gespiegelt in `members.planner`, vorgemerkt an der Person),
-Konto-Karte mit „Link senden" (E-Mail über die Edge Function
-`send-invite`/Resend, sobald das Secret `INVITE_FROM` mit verifizierter
-eigener Domain gesetzt ist — sonst dieselbe E-Mail im eigenen Mail-Programm per
-`mailto:`; oder ein Zettel mit QR-Code) und „Links senden" in der Liste. Das
+Konto-Karte mit „Link senden" (Link und Code als Nachricht über Teilen oder
+Kopieren, ausgestellt von der Edge Function `send-invite`; oder ein Zettel mit
+QR-Code) und „Links senden" in der Liste — je Person eine Zeile zum Kopieren,
+dazu die Zettel für die übrigen. Das
 Konto entsteht bei der ersten Anmeldung (Konto-Id = Person-Id, eine interne
 Adresse unter `.invalid`, kein Kennwort), mit den vorgemerkten Rechten. Die
 erste Versammlung samt erstem Admin legt `scripts/versammlung-anlegen.mjs` an;
@@ -695,20 +694,19 @@ wählbar. Neue App-Sprache hinzufügen: Code in `Lang` ([types.ts](src/data/type
 [locales.ts](supabase/functions/_shared/i18n/locales.ts) + Overlay in
 [ui.ts](src/i18n/ui.ts) und optional `FRAG`/`EXTRA` in
 [translate-data.ts](supabase/functions/_shared/i18n/translate-data.ts)
-(Rollen/Dienste/Phrasen). Die E-Mail mit dem Anmelde-Link steht im Overlay
-(`linkMailBetreff`, `linkMailText`); für die Functions wird sie daraus nach
-[_shared/anmelde-texte.ts](supabase/functions/_shared/anmelde-texte.ts)
-abgeschrieben, und ein Test hält beide gleich.
+(Rollen/Dienste/Phrasen). Die Nachricht mit dem Anmelde-Link steht im Overlay
+(`linkNachrichtTitel`, `linkNachrichtText`). E-Mails schickt die App seit dem
+31.10.2026 keine mehr; die Abschrift für die Functions
+(`_shared/anmelde-texte.ts`) ist mit ihnen entfallen.
 
 Der Fragment-Übersetzer und die Locale-Tabelle liegen in
 `supabase/functions/_shared/i18n/`, weil **beide Seiten** sie brauchen: der
 Client beim Anzeigen, `send-reminders` beim Verschicken. `src/i18n/translate.ts`
 reicht sie nur durch. Ausgehende Texte tragen ihre Sprache selbst — eine
 verschickte Nachricht lässt sich beim Lesen nicht mehr übersetzen: die
-Push-Erinnerung die des Geräts, die E-Mail mit dem Anmelde-Link und der Zettel
-die der Versammlung (der Empfänger hat noch kein Konto und also auch keine
-eingestellte Sprache) — außer beim Link, den jemand auf der Anmeldeseite selbst
-anfordert: Der kommt in der Sprache, die er dort gewählt hat.
+Push-Erinnerung die des Geräts, die Nachricht mit dem Anmelde-Link und der
+Zettel die der Versammlung (der Empfänger hat noch kein Konto und also auch
+keine eingestellte Sprache).
 
 ## Mitteilungen: wer wann was erfährt
 

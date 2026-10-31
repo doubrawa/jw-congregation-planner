@@ -35,7 +35,7 @@ const t = dict('de')
 
 const ICH: Person = {
   id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger', female: false,
-  mail: '', priv: emptyQualifications(),
+  priv: emptyQualifications(),
 }
 
 const gesuch = (over: Partial<SubstituteReq> = {}): SubstituteReq => ({

@@ -356,25 +356,25 @@ function szenePunkte(svg: SVGElement, worte: HTMLElement, stufen: Stufen): Szene
   }
 }
 
-/** Schritt 1: ein Tipp auf den Link in der E-Mail — die App öffnet sich, angemeldet. */
+/** Schritt 1: ein Tipp auf den Link in der Nachricht — die App öffnet sich, angemeldet. */
 function szeneLink(ebene: HTMLElement, worte: HTMLElement, stufen: Stufen): Szene {
   const handy = finde(ebene, 'handy')
   const schirm = finde(ebene, 'schirm')
-  const mail = finde(ebene, 'mail')
+  const nachricht = finde(ebene, 'nachricht')
   const start = finde(ebene, 'start')
-  const tipp = baueTipp(finde(ebene, 'tipp'), () => finde(mail, 'url'), schirm, 2.3)
+  const tipp = baueTipp(finde(ebene, 'tipp'), () => finde(nachricht, 'url'), schirm, 2.3)
   return {
     messen: () => tipp.messen(),
     zeigen(t, m, zeit) {
       stufen.sichtbar(true)
-      // Das Handy kommt von unten herauf; die Mail zeigt den Link.
+      // Das Handy kommt von unten herauf; die Nachricht zeigt den Link.
       handySetzen(handy, m, zeit, m.buehne.hoehe * (1 - eo(seg(t, 0, 0.9))))
       stufen.zeigen(0, eo(seg(t, 3.2, 3.7)), eo(seg(t, 0.3, 0.8)) * (1 - eio(seg(t, 4.9, 5.5))))
       worteZeigen(worte, m, t, WORTE.link)
       tipp.zeigen(t)
       const w = eio(seg(t, 2.5, 3.1))
-      mail.style.transform = `translateX(${-m.richtung * 170 * w}px)`
-      mail.style.opacity = String(1 - 0.6 * w)
+      nachricht.style.transform = `translateX(${-m.richtung * 170 * w}px)`
+      nachricht.style.opacity = String(1 - 0.6 * w)
       start.style.transform = `translateX(${m.richtung * HANDY.schirm * (1 - w)}px)`
     },
   }

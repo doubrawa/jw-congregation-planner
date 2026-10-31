@@ -13,9 +13,10 @@ import { fill, useT } from '../i18n/useT'
 type Geschlecht = 'm' | 'w'
 
 /**
- * **Person anlegen** (T121, Entwurf `GPersonNeu`): Name, E-Mail (freiwillig),
- * Geschlecht, Gruppe und Rolle — erst „Hinzufügen" legt sie an und öffnet sie.
- * Aufgabenbereiche und Rechte stehen danach bei der Person.
+ * **Person anlegen** (T121, Entwurf `GPersonNeu`): Name, Geschlecht, Gruppe
+ * und Rolle — erst „Hinzufügen" legt sie an und öffnet sie. Aufgabenbereiche
+ * und Rechte stehen danach bei der Person. Eine E-Mail-Adresse fragt das Blatt
+ * seit dem 31.10.2026 nicht mehr ab: Die App speichert keine.
  *
  * Bis dahin legte „Neue Person" sofort eine leere an, die selbst speicherte:
  * Wer es sich anders überlegte, hatte eine namenlose Person in der Liste.
@@ -29,7 +30,6 @@ export function PersonAnlegenBlatt({ onClose }: { onClose: () => void }) {
   const { t, tu } = useT()
   const [fn, setFn] = useState('')
   const [ln, setLn] = useState('')
-  const [mail, setMail] = useState('')
   const [geschlecht, setGeschlecht] = useState<Geschlecht>('m')
   const [grp, setGrp] = useState('')
   const [role, setRole] = useState<Role>('verkuendiger')
@@ -47,7 +47,6 @@ export function PersonAnlegenBlatt({ onClose }: { onClose: () => void }) {
       person: {
         ...name,
         id: crypto.randomUUID(),
-        mail: mail.trim(),
         female: geschlecht === 'w',
         grp: grp || null,
         role,
@@ -89,16 +88,6 @@ export function PersonAnlegenBlatt({ onClose }: { onClose: () => void }) {
               {fill(t.nameDoppelt, { name: personLabel(dublette) })}
             </p>
           )}
-          <BlattFeld marke={t.emailFreiwillig}>
-            <input
-              className="feld"
-              type="email"
-              dir="auto"
-              autoComplete="off"
-              value={mail}
-              onChange={(e) => setMail(e.target.value)}
-            />
-          </BlattFeld>
           {/* Keine `BlattFeld`: Ein `<label>` um die Knöpfe drückte beim Tipp
               auf die Marke den ersten davon. */}
           <div className="blatt-feld">

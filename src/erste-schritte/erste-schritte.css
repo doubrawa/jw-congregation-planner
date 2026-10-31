@@ -543,45 +543,59 @@
   inline-size: 72px;
 }
 
-/* Die E-Mail (Eigenentwurf eines Mail-Programms). */
-.fm-mail {
-  background: var(--karte);
+/* Die Nachricht (Eigenentwurf eines Messengers): Kopf mit Bild und Namen als
+   Platzhalter, darunter der Verlauf mit einer Sprechblase. Bis zum 31.10.2026
+   stand hier eine E-Mail. */
+.fm-chat {
+  display: flex;
+  flex-direction: column;
+  background: var(--grund);
 }
 
-.fm-mail-kopf {
+.fm-chat-kopf {
   display: flex;
   align-items: center;
   gap: 10px;
   min-height: 56px;
   padding-inline: 14px;
   border-block-end: 1px solid var(--linie);
+  background: var(--karte);
   color: var(--text2);
 }
 
-.fm-mail-inhalt {
+.fm-chat-bild {
+  flex: none;
+  inline-size: 32px;
+  block-size: 32px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--akzent) 45%, var(--grund));
+}
+
+.fm-chat-verlauf {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 18px 20px;
+  padding: 18px 14px;
 }
 
-.fm-mail-betreff {
-  font-size: calc(21px * var(--fs));
-  font-weight: 700;
-  line-height: 1.2;
+/* Die Blase einer eingegangenen Nachricht: an der Anfangsseite, eine Ecke spitz. */
+.fm-chat-blase {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-inline-size: 88%;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border-start-start-radius: 4px;
+  background: var(--karte);
+  box-shadow: 0 1px 2px rgba(var(--shade), 0.12);
 }
 
-.fm-mail-von {
-  color: var(--text3);
-  font-size: calc(13.5px * var(--fs));
-}
-
-.fm-mail-text {
+.fm-chat-text {
   color: var(--text2);
   white-space: pre-line;
 }
 
-.fm-mail-url {
+.fm-chat-url {
   align-self: flex-start;
   font-weight: 600;
   text-decoration: underline;

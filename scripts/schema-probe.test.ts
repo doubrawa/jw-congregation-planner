@@ -551,8 +551,8 @@ const LAEUFE: Record<string, Lauf[]> = {
             { user_id: U2, congregation_id: CB, planner: true, email: 'b@probe.invalid' },
           ],
           persons: [
-            { id: P1, congregation_id: C, fn: 'Probe', ln: 'A', mail: '' },
-            { id: P2, congregation_id: CB, fn: 'Probe', ln: 'B', mail: '' },
+            { id: P1, congregation_id: C, fn: 'Probe', ln: 'A' },
+            { id: P2, congregation_id: CB, fn: 'Probe', ln: 'B' },
           ],
         },
       },
@@ -588,7 +588,7 @@ const LAEUFE: Record<string, Lauf[]> = {
           ],
           persons: [
             // Mit Adresse: Ohne sie blieben (88) und (89) ungemessen.
-            { id: P1, congregation_id: C, fn: 'Probe', ln: 'Planer', mail: 'planer@probe.invalid', priv: {} },
+            { id: P1, congregation_id: C, fn: 'Probe', ln: 'Planer', priv: {} },
             { id: P2, congregation_id: C, fn: 'Probe', ln: 'Mitglied', priv: { 'svc:mik': true } },
             { id: P3, congregation_id: C, fn: 'Probe', ln: 'Zuteiler', priv: {} },
             { id: P4, congregation_id: C, fn: 'Probe', ln: 'Aufseher', priv: {} },

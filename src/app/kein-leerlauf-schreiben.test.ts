@@ -180,7 +180,7 @@ function folge(s: AppState): AppAction[] {
     { type: 'lacTitel', si: p.si, ii: p.ii, title: 'Probetitel' },
     { type: 'setAbweichung', tab: 'mid', patch: { wd: 3 } },
     { type: 'setAnlass', art: null }, // ist ohnehin keiner gesetzt
-    { type: 'updatePerson', id: person.id, patch: { mail: person.mail } },
+    { type: 'updatePerson', id: person.id, patch: { fn: person.fn } },
     { type: 'updateCongregation', patch: { hall: CONGREGATION.hall } },
     { type: 'changeServiceCount', key: svc.key, delta: 1 },
     { type: 'moveService', key: svc.key, dir: -1 }, // steht schon ganz oben

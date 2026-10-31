@@ -64,7 +64,7 @@ const am = (tag: number, stunde = 9, monat = 8): Date => new Date(2026, monat, t
 const person = (id: string, ...bereiche: string[]): Person => {
   const priv = emptyQualifications()
   for (const b of bereiche) privSetzen(priv, b, true)
-  return { id, fn: id, ln: 'Test', role: 'verkuendiger', female: false, mail: '', priv }
+  return { id, fn: id, ln: 'Test', role: 'verkuendiger', female: false, priv }
 }
 
 /**

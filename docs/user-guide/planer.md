@@ -1188,8 +1188,8 @@ Unter **Personen** pflegst du alle Mitglieder der Versammlung.
   „abwesend 7.–11. September".
 - Der **Punkt** vor dem Namen zeigt, wie weit die Person mit der App ist:
   voll – **angemeldet** (ein Konto ist mit ihr verknüpft), blass – **Link
-  gesendet** (sie hat einen gültigen Link, per E‑Mail oder auf einem Zettel,
-  aber noch kein Konto), gestrichelt – **ohne Link**. Ein abgelaufener Link zählt
+  gesendet** (sie hat einen gültigen Link, per Nachricht oder auf einem
+  Zettel, aber noch kein Konto), gestrichelt – **ohne Link**. Ein abgelaufener Link zählt
   wie keiner. Wer nicht angemeldet ist, steht statt mit der Rolle mit seinem
   Stand da: Er erfährt nichts von selbst, weder „Plan senden" noch die
   Erinnerungen erreichen ihn.
@@ -1198,18 +1198,22 @@ Unter **Personen** pflegst du alle Mitglieder der Versammlung.
   **Alle**, **Noch nicht angemeldet** (mit Link oder ohne) und
   **Abwesend** (wer heute fehlt), jeweils mit ihrer Zahl. Am Desktop stehen die
   drei Stände gleich in dieser Reihe.
-- In der Auswahl **Ohne Link** steht **Links senden**. Das Blatt teilt die
-  Personen, die die Liste gerade zeigt: **Per E‑Mail** bekommt jede mit
-  Adresse ihren eigenen Link (**So sieht die E‑Mail aus** zeigt sie vorher),
-  **Ohne E‑Mail‑Adresse** druckst du die Zettel. Teilen sich mehrere eine
-  Adresse, bekommt trotzdem jede ihren eigenen Link. Suche und Filter grenzen
-  dabei mit ein – so gibst du etwa einer Gruppe nach der anderen ihren Zugang.
-  Es gehen nur die Links hinaus; den Plan sendest du wie gewohnt.
-- Kann die App gerade keine E‑Mails senden, sagt **Links senden** es und
-  ersetzt keinen Link. Dann druckst du die Zettel, oder du schickst den Link bei
-  der Person aus deinem eigenen Mail‑Programm (siehe unten).
-- Über **Name suchen** findest du schnell eine Person – gesucht wird in **Name
-  und E‑Mail‑Adresse**.
+- In der Auswahl **Ohne Link** steht **Links senden**. Das Blatt listet die
+  Personen, die die Liste gerade zeigt, **Per Nachricht** untereinander: Je
+  Person stellt **Kopieren** ihren Link aus und legt den Text mit Link und Code
+  in die Zwischenablage – in WhatsApp (am Computer oder am Handy) in den
+  persönlichen Chat einfügen, senden, dann die nächste. Am Handy steht daneben
+  **Teilen**. Danach steht bei der Person **Kopiert** oder **Geteilt**. Wer
+  übrig ist, bekommt mit **Zettel drucken** unter **Auf Zetteln** seinen
+  Zettel; wessen Text schon hinaus ist, bekommt keinen, denn ein Zettel stellte
+  einen neuen Link aus. Suche und Filter grenzen dabei mit ein – so gibst du
+  etwa einer Gruppe nach der anderen ihren Zugang. Es gehen nur die Links
+  hinaus; den Plan sendest du wie gewohnt.
+- **E‑Mails schickt die App keine**, und eine E‑Mail‑Adresse speichert sie
+  nicht (seit dem 31. Oktober 2026). Für alle auf einmal geht es nicht: Jeder
+  Text meldet genau eine Person an und gehört in ihren persönlichen Chat.
+- Über **Name suchen** findest du schnell eine Person – gesucht wird im
+  **Namen**, auch so, wie die Liste ihn zeigt („krüger s").
 - **Filter** öffnet ein Blatt, in dem du die Liste nach **Geschlecht**,
   **Rolle**, **Predigtdienstgruppe** und **Aufgabenbereich** einschränkst
   (jeweils alphabetisch sortiert). Die Felder wirken zusammen (z. B. alle Brüder
@@ -1223,8 +1227,7 @@ Unter **Personen** pflegst du alle Mitglieder der Versammlung.
   zurückkommst – so lassen sich die Gefundenen nacheinander bearbeiten. Erst ein
   anderer Bildschirm setzt sie zurück.
 - **Person anlegen** (der runde Knopf mit dem Plus, am Desktop mit dem Wort)
-  öffnet ein Blatt: Vorname, Nachname, E‑Mail (freiwillig), Geschlecht, Gruppe
-  und Rolle. Angelegt wird erst mit **Hinzufügen**; danach öffnet sich die neue
+  öffnet ein Blatt: Vorname, Nachname, Geschlecht, Gruppe und Rolle. Angelegt wird erst mit **Hinzufügen**; danach öffnet sich die neue
   Person, und du legst ihre Aufgabenbereiche fest. Einen Namen, den es schon
   gibt, nimmt das Blatt nicht an – es nennt, wer ihn trägt.
 - Ein Tippen auf eine Person öffnet sie. Am Desktop steht sie rechts neben der
@@ -1240,30 +1243,28 @@ Oben stehen Name, Gruppe und Rolle, daneben der **Stift** für
 - **Konto** – wie weit die Person mit der App ist, als Spur mit drei
   Schritten: **Angelegt**, **Link gesendet** (mit dem Tag), **Angemeldet**.
   Darunter steht, was als Nächstes geht. **Link senden** öffnet ein Blatt mit
-  drei Wegen: **Per E‑Mail** an die Adresse der Person – kann die App gerade
-  nicht senden, öffnet sich dieselbe E‑Mail in deinem Mail‑Programm –,
-  **Per Nachricht** oder **Auf einem Zettel** mit QR‑Code und Code zum
-  Eintippen. **Per Nachricht** geht auch ohne Adresse: **Teilen** öffnet das
-  Teilen deines Handys (WhatsApp, Signal, SMS …), **Kopieren** legt den Text
-  in die Zwischenablage, etwa für WhatsApp am Computer. Der Text ist der der
-  E‑Mail mit Link und Code; ist er abgelaufen, verweist er an die Ältesten.
+  zwei Wegen: **Per Nachricht** oder **Auf einem Zettel** mit QR‑Code und Code
+  zum Eintippen. **Teilen** öffnet das Teilen deines Handys (WhatsApp, Signal,
+  SMS …), **Kopieren** legt den Text in die Zwischenablage, etwa für WhatsApp
+  am Computer. Der Text trägt Link und Code und sagt, bis wann sie gelten; ist
+  er abgelaufen, verweist er an die Ältesten.
   **Schick ihn nur in den persönlichen Chat der Person, nie in eine Gruppe:**
   Wer den Text hat, kann sich als diese Person anmelden. Ein Konto anlegen
   oder ein Passwort wählen muss niemand: Das Konto entsteht bei der ersten
   Anmeldung. Hat die Person einen Link, steht daneben **Zettel drucken**; ein
   neuer Link ersetzt den alten, auch den auf einem Zettel. Ist die Person
-  angemeldet, steht die Adresse ihres Kontos da, und das ✕ nimmt das Konto aus
-  der Versammlung – mit ihm geht ihr Link. Beim eigenen fehlt es.
+  angemeldet, steht **Konto verknüpft** da, und das ✕ nimmt das Konto aus der
+  Versammlung – mit ihm geht ihr Link. Beim eigenen fehlt es.
 - **Zettel** druckt die App auf A4, sechs je Blatt zum Ausschneiden, in der
   Sprache der Versammlung: Name, QR‑Code, Code und bis wann er gilt. Der
   Zettel meldet an – gib ihn nur der Person selbst.
-- **Die E‑Mail trägt denselben Code** wie der Zettel, unter dem Link. Auf dem
+- **Die Nachricht trägt wie der Zettel einen Code**, unter dem Link. Auf dem
   iPhone braucht man ihn: Der Link öffnet dort immer Safari, nie die App vom
   Home‑Bildschirm, und angemeldet wird man in der App nur über
-  **Code eintippen**. Lässt sich jemand auf der Anmeldeseite mit **Link
-  senden** einen neuen Link schicken, kommt auch ein neuer Code – sein Zettel
-  gilt danach nicht mehr. Teilen sich mehrere eine Adresse, gilt das für jeden
-  von ihnen.
+  **Code eintippen**. Link und Code gelten **ein Jahr** – so lange meldet sich
+  die Person damit jederzeit selbst wieder an. **Jeder neue Link ersetzt den
+  vorigen:** Druckst du nach der Nachricht noch einen Zettel, gilt der Text in
+  der Nachricht nicht mehr – und umgekehrt.
 - **Aufgabenbereiche** – als Chips, was die Person übernehmen darf, nach
   Gruppen geordnet. **Ändern** öffnet die Schalter (siehe
   [Aufgabenbereiche](#aufgabenbereiche)).
@@ -1322,7 +1323,8 @@ zählt dabei der Wochentag des jeweiligen Treffpunkts, nicht die ganze Woche.
 
 Der **Stift** öffnet das Blatt **Person bearbeiten**:
 
-- **Vorname** und **Nachname**, **E‑Mail**, **Geschlecht**.
+- **Vorname** und **Nachname**, **Geschlecht**. Nach Telefon oder E‑Mail fragt
+  das Blatt nicht – die App speichert beides nicht.
 - **Predigtdienstgruppe** – Zuordnung zur Gruppe. Jeder Verkündiger braucht
   eine; fehlt sie, warnt die Personenliste. Jeder gehört genau einer Gruppe
   an. Ist die Person **Aufseher** oder **Gehilfe** ihrer Gruppe, steht darunter
@@ -1421,7 +1423,7 @@ Schließt du das Blatt, während der Hinweis noch steht, behält die Person ihre
 bisherigen Namen – in der Liste und in den bereits geplanten Wochen. Unten am
 Bildschirm erscheint dazu kurz „Name nicht geändert: Paul Beispiel gibt es
 schon". Ebenso bei einem leeren Namen: „Name nicht geändert: Ohne Namen geht es
-nicht". Was du sonst im Blatt geändert hast, etwa E‑Mail oder Gruppe, bleibt
+nicht". Was du sonst im Blatt geändert hast, etwa Geschlecht oder Gruppe, bleibt
 gespeichert. Beim **Anlegen** nimmt das Blatt einen solchen Namen gar nicht
 erst an.
 
@@ -1555,7 +1557,7 @@ Englisch".
   vergangene Wochen bleiben ohne sie. Eine entfernte holen neue Importe nicht
   mehr; was schon geladen ist, bleibt.
 
-Die Versammlungssprache ist auch die Sprache der **E‑Mail mit dem Link** an
+Die Versammlungssprache ist auch die Sprache der **Nachricht mit dem Link** an
 ein neues Mitglied und der **Zettel**: Wer sie bekommt, hat noch kein Konto und
 damit keine eigene Spracheinstellung. Jede andere Nachricht kommt in der Sprache des Empfängers –
 Push-Erinnerungen in der Sprache, die auf seinem Gerät eingestellt ist, die
@@ -1791,8 +1793,7 @@ entfernt, an alle Eingetragenen (siehe [Trolleys](#trolleys)).
 
 Unter der Karte steht: „Am Vortag eines Trolley-Termins erinnert die App alle,
 die eingetragen sind." Diese Erinnerung kommt einmal, ohne Bitte um Zusage, und
-hängt nicht an den Einstellungen oben. E‑Mails verschickt die App nur für
-Einladungen und die Anmeldung.
+hängt nicht an den Einstellungen oben. E‑Mails verschickt die App keine.
 
 ### Wer plant
 
@@ -2052,9 +2053,9 @@ war, braucht sie nicht: Den Grund löscht die App schon nach acht Wochen. Und
 sehen müssen das Jahr nur, die die Auswertung sehen: Abwesenheiten, die mehr als
 acht Wochen vorbei sind, zeigt die App nur Admins und Planern – jedem anderen
 nur die eigenen. Den **Grund** einer Abwesenheit sieht nur, wem sie gehört,
-und der Admin; Planer brauchen für die Planung nur den Zeitraum. Ebenso sieht
-die **E-Mail-Adressen** der Personen nur der Admin (beides seit dem
-29. Oktober 2026).
+und der Admin; Planer brauchen für die Planung nur den Zeitraum (seit dem
+29. Oktober 2026). E‑Mail‑Adressen speichert die App seit dem 31. Oktober 2026
+gar nicht mehr.
 
 Personen, Gruppen, Dienste, der Grundplan der Treffpunkte, die Trolleys und die
 Konten haben kein Alter. Sie bleiben, bis du sie änderst oder entfernst.

@@ -1,17 +1,16 @@
 // =============================================================================
 // Geteilt: Anmelde-Links ausstellen (T121, Phase 8)
 // =============================================================================
-// Eine Zeile je Person in `anmelde_links` (siehe `schema.sql`). Zwei Wege
-// schreiben sie — neuer Link, neuer Code, der alte Zettel gilt nicht mehr: Der
-// Admin stellt aus (`send-invite`, `linkAusstellen`), oder jemand lässt sich
-// auf der Anmeldeseite einen neuen Link schicken (`anmelden`: erst erzeugt und
-// gesendet, dann gespeichert). Seit T121 Phase 10 trägt die Mail den Code, und
-// den gibt es nur beim Ausstellen im Klartext; bis dahin erneuerte die
-// Anmeldeseite nur das Token.
+// Eine Zeile je Person in `anmelde_links` (siehe `schema.sql`). Geschrieben
+// wird sie beim Ausstellen — neuer Link, neuer Code, der alte Zettel gilt nicht
+// mehr: vom Admin (`send-invite`) oder vom Notzugang
+// (`scripts/zugang-ausstellen.mjs`). Bis zum 31.10.2026 ließ man sich auch auf
+// der Anmeldeseite einen neuen Link per E-Mail schicken; `gesendet_at` stammt
+// aus dieser Zeit und bleibt seitdem leer.
 // =============================================================================
 
 import { gueltigBis, neuerCode, neuesToken, pruefsumme } from './anmeldung.ts'
-import { type Rest, wert } from './rest.ts'
+import type { Rest } from './rest.ts'
 
 /** Was die App von einem Link sehen darf — ohne Prüfsummen. */
 export interface LinkZeile {
@@ -31,56 +30,45 @@ export interface NeuerLink {
   gueltigBis: string
 }
 
-/** Token, Code und Gültigkeit eines neuen Links — erzeugt, noch nicht gespeichert. */
-export function linkErzeugen(jetzt = new Date()): NeuerLink {
-  return { token: neuesToken(), code: neuerCode(), gueltigBis: gueltigBis(jetzt) }
-}
-
 /**
- * Einen erzeugten Link speichern. Ersetzt den alten ganz: Token, Code,
- * Gültigkeit — der alte Zettel gilt danach nicht mehr. Mit `gesendet` steht
- * gleich dabei, dass er eben per E-Mail hinausging. `false`, wenn die
- * Datenbank ablehnt.
+ * Neue Links für diese Personen ausstellen — je Person Token und Code, alle in
+ * **einem** Schreiben gespeichert. Jeder ersetzt den alten ganz: Token, Code,
+ * Gültigkeit — der alte Zettel gilt danach nicht mehr. Bis zum 31.10.2026 ging
+ * je Person ein Schreiben hinaus, nacheinander, weil zwischen zwei E-Mails eine
+ * Pause lag; ohne E-Mail braucht es die nicht.
+ *
+ * `null`, wenn die Datenbank ablehnt — dann gilt keiner der neuen. Verlangt vom
+ * Klienten nur `upsert`, so stellt auch der Notzugang
+ * (`scripts/zugang-ausstellen.mjs`) mit seinem Node-Klienten aus.
  */
-export async function linkSpeichern(
+export async function linksAusstellen(
   rest: Pick<Rest, 'upsert'>,
-  personId: string,
+  personIds: readonly string[],
   congregationId: string,
-  link: NeuerLink,
-  { jetzt = new Date(), gesendet = false }: { jetzt?: Date; gesendet?: boolean } = {},
-): Promise<boolean> {
-  return rest.upsert('anmelde_links?on_conflict=person_id', [
-    {
+  jetzt = new Date(),
+): Promise<Array<{ personId: string; link: NeuerLink }> | null> {
+  const neu = personIds.map((personId) => ({ personId, link: { token: neuesToken(), code: neuerCode(), gueltigBis: gueltigBis(jetzt) } }))
+  const zeilen = await Promise.all(
+    neu.map(async ({ personId, link }) => ({
       person_id: personId,
       congregation_id: congregationId,
       token_hash: await pruefsumme(link.token),
       code_hash: await pruefsumme(link.code),
       gueltig_bis: link.gueltigBis,
       erstellt_at: jetzt.toISOString(),
-      gesendet_at: gesendet ? jetzt.toISOString() : null,
+      gesendet_at: null,
       benutzt_at: null,
-    },
-  ])
+    })),
+  )
+  return (await rest.upsert('anmelde_links?on_conflict=person_id', zeilen)) ? neu : null
 }
 
-/**
- * Einen neuen Link für eine Person ausstellen — erzeugen und gleich speichern.
- * `null`, wenn die Datenbank ablehnt.
- *
- * Verlangt vom Klienten nur `upsert` — so stellt auch der Notzugang
- * (`scripts/zugang-ausstellen.mjs`) mit seinem Node-Klienten aus.
- */
+/** Einen neuen Link für eine Person ausstellen (siehe `linksAusstellen`). `null`, wenn die Datenbank ablehnt. */
 export async function linkAusstellen(
   rest: Pick<Rest, 'upsert'>,
   personId: string,
   congregationId: string,
   jetzt = new Date(),
 ): Promise<NeuerLink | null> {
-  const link = linkErzeugen(jetzt)
-  return (await linkSpeichern(rest, personId, congregationId, link, { jetzt })) ? link : null
-}
-
-/** Vermerken, dass der Link eben per E-Mail hinausging. */
-export async function alsGesendet(rest: Pick<Rest, 'send'>, personId: string, jetzt = new Date()): Promise<void> {
-  await rest.send('PATCH', `anmelde_links?person_id=eq.${wert(personId)}`, { gesendet_at: jetzt.toISOString() })
+  return (await linksAusstellen(rest, [personId], congregationId, jetzt))?.[0]?.link ?? null
 }

@@ -71,7 +71,7 @@ import type { Group, Person, Service, Week } from '../data/types'
 import { isoDay } from '../data/meeting-dates'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
 
-const person = { id: 'p1', fn: 'A', ln: 'B', role: 'verkuendiger', mail: '', priv: {} as Person['priv'], grp: null } as Person
+const person = { id: 'p1', fn: 'A', ln: 'B', role: 'verkuendiger', priv: {} as Person['priv'], grp: null } as Person
 const group: Group = { id: 'g1', name: 'G', overseerId: null, assistantId: null }
 const service: Service = { key: 'mik', name: 'Mikrofone', count: 2, groups: false }
 
@@ -112,26 +112,22 @@ describe('Upsert-Schreiber (onConflict)', () => {
     expect(chain.upsert).toHaveBeenCalledWith([expect.objectContaining({ id: 'p1', congregation_id: 'c1' })])
   })
   /*
-    Die Adresse liest die Versammlung seit T154 (30.10.2026) nicht mehr — auch
-    der Admin nicht über ein Upsert: `on conflict … do update set mail =
-    excluded.mail` verlangt das Leserecht an der Spalte. Die Datenbank wies
-    darauf jedes Speichern einer Person ab, neu wie bestehend (42501), und
-    gemeldet hat es nur der Toast. Die Adresse geht deshalb per `update` hinterher.
+    Ein Upsert liest jede Spalte, die es schreibt: `on conflict … do update set
+    x = excluded.x` verlangt das Leserecht. Vom 30. bis 31.10.2026 lag
+    `persons.mail` außerhalb der Freigabe, und die Datenbank wies jedes
+    Speichern einer Person ab, neu wie bestehend (42501). Seit dem 31.10.2026
+    gibt es die Spalte nicht mehr — die Person geht in einem Upsert hinaus.
   */
   it.each([
-    ['savePerson', () => savePerson('c1', { ...person, mail: 'anna@musterstadt.example' })],
-    ['saveFamily', () => saveFamily('c1', 'h1', [{ ...person, mail: 'anna@musterstadt.example' }])],
-  ])('%s: kein Upsert nennt die Adresse — sie geht danach per update (Spaltenrechte)', async (_name, schreiben) => {
+    ['savePerson', () => savePerson('c1', { ...person, })],
+    ['saveFamily', () => saveFamily('c1', 'h1', [{ ...person, }])],
+  ])('%s: ein Upsert ohne Adresse — und nichts schreibt hinterher', async (_name, schreiben) => {
     schreiben()
     await geschrieben()
-    const upsert = chain.upsert!.mock
-    const personenZeilen = upsert.calls.map(([z]) => z as unknown).filter(Array.isArray).flat()
+    const personenZeilen = chain.upsert!.mock.calls.map(([z]) => z as unknown).filter(Array.isArray).flat()
     expect(personenZeilen).toEqual([expect.objectContaining({ id: 'p1', fn: 'A', congregation_id: 'c1' })])
     expect(personenZeilen[0]).not.toHaveProperty('mail')
-    expect(chain.update).toHaveBeenCalledWith({ mail: 'anna@musterstadt.example' })
-    expect(chain.eq).toHaveBeenCalledWith('id', 'p1')
-    // Erst die Person, dann die Adresse — eine neue Person gibt es vorher nicht.
-    expect(Math.max(...upsert.invocationCallOrder)).toBeLessThan(chain.update!.mock.invocationCallOrder[0]!)
+    expect(chain.update).not.toHaveBeenCalled()
   })
   it('saveFsRules → eine Zeile je Regel', async () => {
     // Der Grundplan war bis T105 ein JSONB-Blob je Versammlung (samt einer

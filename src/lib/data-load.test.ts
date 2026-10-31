@@ -89,7 +89,7 @@ function rpcFor(name: string) {
 const grenze = (table: string): unknown =>
   store.filter.find(([t, m]) => t === table && m === 'limit')?.[3]
 
-const personRow = { id: 'p1', fn: 'Anna', ln: 'Beispiel', planner: false, role: 'verkuendiger', female: true, mail: '', priv: {}, grp: null }
+const personRow = { id: 'p1', fn: 'Anna', ln: 'Beispiel', planner: false, role: 'verkuendiger', female: true, priv: {}, grp: null }
 const serviceRow = { key: 'mik', name: 'Mikrofone', count: 2, priv: null, groups: false, position: 0 }
 const groupRow = { id: 'g1', name: 'Gruppe 1', overseer_id: null, assistant_id: null, position: 0, ohne_reinigung: false }
 
@@ -578,18 +578,19 @@ describe('Die Anmelde-Links (T121, Phase 8)', () => {
 })
 
 /**
- * **Adressen und Gründe nur, wem die App sie zeigt** (Sicherheits-Review
- * 29.10.2026). Die Spalten `persons.mail` und `absences.reason` sind für die
- * Versammlung gesperrt; ein `*` scheiterte an ihnen als Ganzes. Beides kommt
- * über eine Funktion, die nur liefert, was der Angemeldete sehen darf.
+ * **Gründe nur, wem die App sie zeigt** (Sicherheits-Review 29.10.2026). Die
+ * Spalte `absences.reason` ist für die Versammlung gesperrt; ein `*`
+ * scheiterte an ihr als Ganzes. Der Grund kommt über eine Funktion, die nur
+ * liefert, was der Angemeldete sehen darf. (Bis zum 31.10.2026 ebenso
+ * `persons.mail` — die Spalte gibt es nicht mehr.)
  */
-describe('Adressen und Gründe (Sicherheits-Review 29.10.2026)', () => {
+describe('Gründe (Sicherheits-Review 29.10.2026)', () => {
   const ausgewaehlt = (table: string): string[] =>
     store.filter.filter(([t, m]) => t === table && m === 'select').map(([, , spalten]) => spalten)
   const aufgerufen = (name: string): boolean => store.filter.some(([t]) => t === `rpc/${name}`)
   const abwesenheit = (id: string) => ({ id, person_id: 'p1', user_id: null, from_date: '2026-09-07', to_date: '2026-09-10' })
 
-  it('Personen und Abwesenheiten kommen mit ausdrücklichen Spalten — ohne Adresse, ohne Grund', async () => {
+  it('Personen und Abwesenheiten kommen mit ausdrücklichen Spalten — ohne Grund', async () => {
     seedResponses()
     await loadCongregationData('u1')
     expect(ausgewaehlt('persons')).toEqual([PERSON_SPALTEN])
@@ -598,21 +599,19 @@ describe('Adressen und Gründe (Sicherheits-Review 29.10.2026)', () => {
     expect(ABWESENHEIT_SPALTEN).not.toMatch(/\*|\breason\b/)
   })
 
-  it('der Admin bekommt Adressen und Gründe über die Funktionen — jede an ihrer Zeile', async () => {
+  it('der Admin bekommt die Gründe über die Funktion — jeden an seiner Zeile', async () => {
     seedResponses({
-      // Brächte die Tabelle doch eine Adresse mit, zählte sie nicht: Die eine Quelle ist die Funktion.
-      persons: [{ data: [{ ...personRow, mail: 'aus-der-tabelle@example.org' }, { ...personRow, id: 'p2', fn: 'Bert' }], error: null }],
       absences: [{ data: [abwesenheit('a1'), abwesenheit('a2')], error: null, count: 2 }],
-      'rpc/personen_mails': [{ data: [{ id: 'p2', mail: 'bert@example.org' }], error: null }],
       'rpc/abwesenheit_gruende': [{ data: [{ id: 'a2', reason: 'Urlaub' }], error: null }],
     })
     const res = await loadCongregationData('u1')
     if (!res.ok) throw new Error('nicht geladen')
-    expect(res.data.persons.map((p) => [p.id, p.mail])).toEqual([['p1', ''], ['p2', 'bert@example.org']])
     expect(res.data.absences.map((a) => [a.id, a.reason])).toEqual([['a1', ''], ['a2', 'Urlaub']])
+    // Nach Adressen fragt die App seit dem 31.10.2026 nicht mehr.
+    expect(aufgerufen('personen_mails')).toBe(false)
   })
 
-  it('ein Mitglied ohne Admin-Recht fragt nach den Gründen, nicht nach den Adressen', async () => {
+  it('auch ein Mitglied ohne Admin-Recht fragt nach den Gründen — die eigenen bekommt es', async () => {
     seedResponses({
       members: [
         { data: { congregation_id: 'c1', person_id: 'p9', planner: false, zuteiler: true }, error: null },
@@ -621,14 +620,7 @@ describe('Adressen und Gründe (Sicherheits-Review 29.10.2026)', () => {
     })
     const res = await loadCongregationData('u1')
     expect(res.ok).toBe(true)
-    expect(aufgerufen('personen_mails')).toBe(false)
     expect(aufgerufen('abwesenheit_gruende')).toBe(true)
-  })
-
-  it('scheitern die Adressen, lädt die App nicht — der Admin schriebe beim Speichern einer Person eine leere zurück', async () => {
-    seedResponses({ 'rpc/personen_mails': [{ data: null, error: { message: 'kaputt' } }] })
-    const res = await loadCongregationData('u1')
-    expect(res).toEqual({ ok: false, reason: 'error', message: 'kaputt' })
   })
 
   it('die offenen Tausch-Anfragen (T153): was noch gilt, in der Form des Zustands — scheitern sie, lädt die App trotzdem', async () => {

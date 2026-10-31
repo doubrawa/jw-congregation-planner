@@ -69,7 +69,7 @@ window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as ty
 
 const ICH: Person = {
   id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger', female: false,
-  mail: '', priv: emptyQualifications(),
+  priv: emptyQualifications(),
 }
 
 const S89: S89Payload = {
@@ -504,7 +504,7 @@ const [W1, W2] = WOCHEN
 const qualifiziert = (id: string, fn: string, ...bereiche: string[]): Person => {
   const priv = emptyQualifications()
   for (const b of bereiche) privSetzen(priv, b, true)
-  return { id, fn, ln: 'Test', role: 'verkuendiger', female: false, mail: '', priv }
+  return { id, fn, ln: 'Test', role: 'verkuendiger', female: false, priv }
 }
 const LEUTE: Person[] = [
   { ...ICH, priv: { ...emptyQualifications(), bibellesung: true, [serviceQualKey('mik')]: true } },

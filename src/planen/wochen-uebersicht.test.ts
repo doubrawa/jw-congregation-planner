@@ -28,7 +28,7 @@ const am = (tag: number, stunde = 9): Date => new Date(2026, 8, tag, stunde, 0)
 const person = (id: string, ...bereiche: string[]): Person => {
   const priv = emptyQualifications()
   for (const b of bereiche) privSetzen(priv, b, true)
-  return { id, fn: id, ln: 'Test', role: 'verkuendiger', female: false, mail: '', priv }
+  return { id, fn: id, ln: 'Test', role: 'verkuendiger', female: false, priv }
 }
 const GENUG = ['p1', 'p2', 'p3', 'p4'].map((id) => person(id, 'bibellesung', serviceQualKey('mik')))
 

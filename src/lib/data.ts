@@ -318,9 +318,10 @@ const ANMELDE_LINK_SPALTEN = 'person_id, gueltig_bis, erstellt_at, gesendet_at, 
 
 /**
  * Die Spalten von `persons` und `absences`, die die App lädt — ebenso
- * **ausdrücklich** (Sicherheits-Review 29.10.2026): Adresse und Grund sind für
- * die Versammlung gesperrt und kommen über `personen_mails` und
- * `abwesenheit_gruende`, nur zu dem, dem die App sie zeigt.
+ * **ausdrücklich** (Sicherheits-Review 29.10.2026): Der Grund einer
+ * Abwesenheit ist für die Versammlung gesperrt und kommt über
+ * `abwesenheit_gruende`, nur zu dem, dem die App ihn zeigt. (Eine Adresse
+ * speichert die App seit dem 31.10.2026 nicht mehr.)
  * `spaltenrechte.test.ts` misst beide Listen an den Mappern und am Schema.
  */
 export const PERSON_SPALTEN = 'id, fn, ln, planner_vorgemerkt, zuteiler_vorgemerkt, role, female, priv, grp, fam'
@@ -646,12 +647,9 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .gte('start', verteilungAb)
     .order('start', { ascending: false })
 
-  const [cong, persons, mails, services, groups, weeks, absences, gruende, notifs, confs, members, linkRows, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, vortragRows, trolleyRows, trolleyTerminRows, planRows, planEintragRows, absageRows, anwesenheitRows, tauschRows] = await Promise.all([
+  const [cong, persons, services, groups, weeks, absences, gruende, notifs, confs, members, linkRows, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, vortragRows, trolleyRows, trolleyTerminRows, planRows, planEintragRows, absageRows, anwesenheitRows, tauschRows] = await Promise.all([
     supabase.from('congregations').select(CONG_SPALTEN.join(', ')).eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select(PERSON_SPALTEN).eq('congregation_id', congregationId).order('created_at'),
-    // Die Adressen nur für den Admin — jedem anderen liefert die Funktion
-    // ohnehin nichts.
-    member.planner ? supabase.rpc('personen_mails') : Promise.resolve({ data: [], error: null }),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
     supabase.from('groups').select('*').eq('congregation_id', congregationId).order('position'),
     wochenAbfrage,
@@ -826,10 +824,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // Datenbank, in der `schema.sql` seitdem nicht neu lief, hat sie noch nicht.
   // Die App bleibt dann benutzbar, nur ohne Besuche — gespeichert werden
   // können sie erst nach dem Schema (dann meldet der Schreibfehler-Toast).
-  //
-  // Die Adressen stehen in der Liste: Fehlten sie dem Admin, schriebe er beim
-  // nächsten Speichern einer Person eine leere zurück (`personToRow`).
-  const firstErr = [cong, persons, mails, services, groups, weeks, absences, notifs, confs, members, fsRulesRows, fsWeeksRows]
+  const firstErr = [cong, persons, services, groups, weeks, absences, notifs, confs, members, fsRulesRows, fsWeeksRows]
     .find((r) => r.error)?.error
   if (firstErr) return { ok: false, reason: 'error', message: firstErr.message }
   // Die Gründe nicht: Geschrieben wird eine Abwesenheit nur neu, nie
@@ -858,10 +853,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   if (tauschRows.error) console.error('[tausch_anfragen]', tauschRows.error.message)
 
   const serviceList = (services.data ?? []).map((r) => serviceFromRow(r as ServiceRow))
-  const mailVon = new Map(((mails.data ?? []) as { id: string; mail: string }[]).map((m) => [m.id, m.mail]))
-  const personList = ((persons.data ?? []) as unknown as Omit<PersonRow, 'mail'>[]).map((r) =>
-    personFromRow({ ...r, mail: mailVon.get(r.id) ?? '' }),
-  )
+  const personList = ((persons.data ?? []) as unknown as PersonRow[]).map(personFromRow)
   // Absteigend geholt, aufsteigend gebraucht (`CongregationData.weeks`).
   const wochenAbsteigend = (weeks.data ?? []) as WeekRow[]
   // Dieselbe Grenze noch einmal am Ergebnis. Sie schneidet nichts weg, was die
@@ -1301,33 +1293,21 @@ export function savePerson(congregationId: string, person: Person): void {
 }
 
 /**
- * **Personen schreiben, ohne die Adresse zu lesen** (31.10.2026).
- *
- * Seit dem 30.10.2026 liest die Versammlung `persons.mail` nicht mehr (T154).
- * Ein Upsert liest sie aber: PostgREST macht daraus `on conflict (id) do update
- * set mail = excluded.mail`, und für jeden Wert, den `excluded` liefert,
- * verlangt Postgres das Leserecht an der Spalte — auch beim Admin. Seitdem wies
- * die Datenbank jedes Speichern einer Person ab (42501, gemessen an Postgres
- * 16). Aufgefallen ist es am Admin-Schalter: Das Recht im Konto ging durch, die
- * Meldung kam von der Person daneben.
- *
- * Deshalb zwei Schritte, nacheinander: das Upsert ohne Adresse (legt eine neue
- * Person an, ändert eine bestehende), dann die Adresse per `update` — das
- * braucht nur das Schreibrecht an ihr.
+ * **Personen schreiben.** Ein Upsert liest jede Spalte, die es schreibt:
+ * PostgREST macht daraus `on conflict (id) do update set x = excluded.x`, und
+ * dafür verlangt Postgres das Leserecht an der Spalte — auch beim Admin.
+ * `personToRow` schreibt deshalb nur Spalten der Freigabe in `schema.sql`.
+ * Vom 30. bis 31.10.2026 lag `persons.mail` außerhalb, und die Datenbank wies
+ * jedes Speichern einer Person ab (42501); seit dem 31.10.2026 gibt es die
+ * Spalte nicht mehr.
  */
 async function personenSchreiben(
   client: NonNullable<typeof supabase>,
   congregationId: string,
   personen: readonly Person[],
 ): Promise<{ error: { message: string } | null }> {
-  const zeilen = personen.map((p) => personToRow(p, congregationId))
-  const { error } = await client.from('persons').upsert(zeilen.map(({ mail: _weg, ...ohne }) => ohne))
-  if (error) return { error }
-  for (const { id, mail } of zeilen) {
-    const { error: fehler } = await client.from('persons').update({ mail }).eq('id', id)
-    if (fehler) return { error: fehler }
-  }
-  return { error: null }
+  const { error } = await client.from('persons').upsert(personen.map((p) => personToRow(p, congregationId)))
+  return { error }
 }
 
 /**

@@ -1,5 +1,5 @@
 import { encode } from 'uqr'
-import { linkDatum } from '../../supabase/functions/_shared/anmelde-mail.ts'
+import { gebundenesDatum } from '../components/datum-anzeige'
 import type { Lang } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import type { AusgestellterLink } from '../lib/links-ausstellen'
@@ -16,7 +16,7 @@ export interface Zettel {
   name: string
   /** Der Code zum Eintippen („K7RD-2QWM"). */
   code: string
-  /** Bis wann er gilt — derselbe Tag in derselben Form wie in der E-Mail. */
+  /** Bis wann er gilt — derselbe Tag in derselben Form wie in der Nachricht, mit Jahr. */
   bis: string
   qr: QrBild
 }
@@ -55,8 +55,9 @@ export function qrBild(text: string): QrBild {
 
 /**
  * **Die Zettel zu eben ausgestellten Links** (T121, Phase 8). Eigene Datei,
- * erst beim Drucken nachgeladen: Sie zieht `uqr` und die Texte der E-Mail
- * (wegen des Datums) mit — wer nie druckt, lädt beides nicht.
+ * erst beim Drucken nachgeladen: Sie zieht `uqr` mit — wer nie druckt, lädt es
+ * nicht. Das Datum steht gebunden da (`zahlBinden`): Auf dem schmalen Zettel
+ * bricht es sonst zwischen Tag und Monat um.
  */
 export function zettelSatz(
   links: readonly AusgestellterLink[],
@@ -71,7 +72,7 @@ export function zettelSatz(
       personId: l.personId,
       name: namen.get(l.personId) ?? '',
       code: l.code,
-      bis: linkDatum(l.gueltigBis, lang),
+      bis: gebundenesDatum(new Date(l.gueltigBis), lang, 'tagMonatJahr'),
       qr: qrBild(l.zettelUrl),
     })),
   }

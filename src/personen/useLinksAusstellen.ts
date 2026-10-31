@@ -4,7 +4,7 @@ import { congAppCode } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import { alsAnmeldeLink, type Ausgestellt, linksAusstellen } from '../lib/links-ausstellen'
 
-/** Die Sprache, in der E-Mail und Zettel hinausgehen: die der Versammlung — die Empfänger haben noch keine gewählt. */
+/** Die Sprache, in der Nachricht und Zettel hinausgehen: die der Versammlung — die Empfänger haben noch keine gewählt. */
 export const sprachDerVersammlung = (congLang: string): Lang => congAppCode(congLang) ?? 'de'
 
 /**
@@ -17,10 +17,10 @@ export const sprachDerVersammlung = (congLang: string): Lang => congAppCode(cong
  *
  * `null`: offline, nichts versucht (der Hinweis steht schon da).
  */
-export function useLinksAusstellen(): (personIds: readonly string[], senden: boolean) => Promise<Ausgestellt | null> {
+export function useLinksAusstellen(): (personIds: readonly string[]) => Promise<Ausgestellt | null> {
   const { state, dispatch } = useApp()
   const { t } = useT()
-  return async (personIds, senden) => {
+  return async (personIds) => {
     // Die Function ruft man am Reducer vorbei — offline also gar nicht erst:
     // Ein Link, der dabei entstünde, ersetzte den alten, und der Zustand
     // erführe es nie.
@@ -28,7 +28,7 @@ export function useLinksAusstellen(): (personIds: readonly string[], senden: boo
       dispatch({ type: 'showToast', text: t.offlineReadOnly })
       return null
     }
-    const r = await linksAusstellen(personIds, { senden, lang: sprachDerVersammlung(state.congLang) })
+    const r = await linksAusstellen(personIds)
     if (r.links.length > 0) dispatch({ type: 'linksAusgestellt', links: r.links.map((l) => alsAnmeldeLink(l, new Date())) })
     return r
   }

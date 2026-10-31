@@ -3,7 +3,7 @@ import type { DataStatus } from './context'
 /**
  * Soll nach dem Anmelden begrüßt werden — und mit welchem Namen?
  *
- * Beim Anmelden ist nur die E-Mail bekannt; der Name kommt erst mit den
+ * Beim Anmelden ist nur das Konto bekannt; der Name kommt erst mit den
  * Personendaten. Deshalb wird die Begrüßung vorgemerkt (`welcomePending`) und
  * diese Entscheidung erst getroffen, wenn das Laden durch ist.
  *

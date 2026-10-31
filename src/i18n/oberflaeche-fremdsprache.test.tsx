@@ -83,7 +83,7 @@ window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as ty
  * Der Demo-Bestand ist aus genau diesem Grund hier nicht brauchbar.
  */
 const person = (id: string, fn: string, ln: string, planner = false): Person => ({
-  id, fn, ln, role: 'aeltester', female: false, mail: '',
+  id, fn, ln, role: 'aeltester', female: false, 
   priv: emptyQualifications(), ...(planner ? { planner: true } : {}),
 })
 

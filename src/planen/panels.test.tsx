@@ -39,7 +39,7 @@ const t = dict('de')
 window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
 
 const person = (id: string, fn: string, ln: string): Person => ({
-  id, fn, ln, role: 'aeltester', female: false, mail: '', priv: emptyQualifications(),
+  id, fn, ln, role: 'aeltester', female: false, priv: emptyQualifications(),
 })
 
 const ANTON = person('p-a', 'Anton', 'Alt')

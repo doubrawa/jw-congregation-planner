@@ -20,7 +20,7 @@ import { STANDARD_ZEITEN } from './vorgaben'
  */
 
 const person = (id: string, o: Partial<Person>): Person => ({
-  id, fn: id, ln: 'Test', role: 'verkuendiger', mail: '', priv: emptyQualifications(), ...o,
+  id, fn: id, ln: 'Test', role: 'verkuendiger', priv: emptyQualifications(), ...o,
 })
 
 const PERSONEN: Person[] = [

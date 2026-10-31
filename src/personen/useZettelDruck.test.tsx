@@ -25,9 +25,7 @@ const linksAusstellen = vi.fn((ids: readonly string[]) =>
       zettelUrl: 'https://versammlung.app/#code=K7RD2QWM',
       code: 'K7RD-2QWM',
       gueltigBis: '2026-11-14T09:00:00.000Z',
-      gesendet: false,
     })),
-    mailBereit: false,
     fehler: false,
   }),
 )
@@ -38,7 +36,7 @@ vi.mock('../lib/links-ausstellen', async (echt) => ({
 
 const { useZettelDruck } = await import('./useZettelDruck')
 
-const ANTON: Person = { id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger', female: false, mail: '', priv: emptyQualifications() }
+const ANTON: Person = { id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger', female: false, priv: emptyQualifications() }
 
 /** Eine Stelle mit dem Hook — mit Knopf zum Drucken, wenn `knopf` gesetzt ist. */
 function Stelle({ knopf }: { knopf?: string }) {
@@ -111,9 +109,7 @@ describe('Zettel drucken neben einer zweiten Stelle', () => {
                 zettelUrl: 'https://versammlung.app/#code=K7RD2QWM',
                 code: 'K7RD-2QWM',
                 gueltigBis: '2026-11-14T09:00:00.000Z',
-                gesendet: false,
               })),
-              mailBereit: false,
               fehler: false,
             })
         }),

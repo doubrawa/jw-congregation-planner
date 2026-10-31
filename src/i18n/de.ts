@@ -27,22 +27,19 @@ export const DE = {
     offlineBanner: 'Offline · Stand von {m}', offlineBannerHint: 'Nur lesen — keine Änderungen möglich', offlineLangsam: 'Verbindung langsam · Stand von {m}',
     offlineReadOnly: 'Offline — Änderungen sind erst wieder online möglich',
     offlineRetry: 'Neu laden',
-    emailPh: 'name@beispiel.de',
     anmeldungOhneDb: 'Ohne Datenbank · Anmelden ist nur nachgestellt',
-    // Anmelden per Link (T121, Phase 8): kein Kennwort, ein Link per E-Mail
-    // oder ein Zettel mit QR-Code und Code. `anmeldenTitel` ist die Überschrift,
+    // Anmelden per Link (T121, Phase 8): kein Kennwort, ein Link per Nachricht
+    // oder ein Zettel mit QR-Code und Code — E-Mail-Adressen speichert die App
+    // seit dem 31.10.2026 nicht mehr. `anmeldenTitel` ist die Überschrift,
     // `anmeldenKnopf` der Knopf — in manchen Sprachen zwei Wortformen.
-    // „Link senden" steht in der E-Mail (`linkMailText`) und auf dem Zettel
-    // als zitierter Knopf: Beide müssen ihn wörtlich so nennen.
+    // „Code eintippen" steht in der Nachricht (`linkNachrichtText`) und auf dem
+    // Zettel als zitierter Knopf: Beide müssen ihn wörtlich so nennen.
     anmeldenTitel: 'Anmelden', anmeldenKnopf: 'Anmelden',
-    ohnePasswort: 'Ein Passwort gibt es nicht. Du bekommst einen Link per E-Mail.',
+    ohnePasswort: 'Ein Passwort gibt es nicht. Hast du einen Link von den Ältesten bekommen, tippe einfach darauf.',
     linkSenden: 'Link senden',
-    linkUnterwegs: 'Ist die Adresse in einer Versammlung eingetragen, kommt gleich eine E-Mail mit deinem Link.',
-    mailNichtEingerichtet: 'Die App kann gerade keine E-Mails senden. Nimm den Code von deinem Zettel oder frag die Ältesten.',
-    ohneMailFrage: 'Ohne E-Mail-Adresse?',
-    ohneMailHinweis: 'Scanne den QR-Code auf deinem Zettel oder tippe den Code darunter ein. Ist der Zettel weg, bekommst du von den Ältesten einen neuen.',
+    zettelHinweis: 'Scanne den QR-Code auf deinem Zettel oder tippe den Code darunter ein. Ist der Zettel weg, bekommst du von den Ältesten einen neuen.',
     // Wo die App nicht scannt (Desktop, ohne Kamera): nur das Eintippen, das Scannen geht mit dem Handy.
-    ohneMailHinweisTippen: 'Tippe den Code von deinem Zettel ein. Ist der Zettel weg, bekommst du von den Ältesten einen neuen. Am Handy scannst du einfach den QR-Code.',
+    zettelHinweisTippen: 'Tippe den Code von deinem Zettel ein. Ist der Zettel weg, bekommst du von den Ältesten einen neuen. Am Handy scannst du einfach den QR-Code.',
     zettelScannen: 'Zettel scannen', codeEintippen: 'Code eintippen', mitCodeAnmelden: 'Mit Code anmelden',
     codeLbl: 'Code', codeHinweis: 'Der Code steht auf deinem Zettel unter dem QR-Code.',
     codePasst: 'Der Code passt',
@@ -50,24 +47,21 @@ export const DE = {
     codeUnbekannt: 'Diesen Code gibt es nicht. Prüfe ihn bitte noch einmal.',
     codeAbgelaufen: 'Dieser Code gilt nicht mehr. Frag die Ältesten nach einem neuen Zettel.',
     angemeldetBleiben: 'Danach bleibst du auf diesem Gerät angemeldet.',
-    linkUngueltig: 'Dieser Link gilt nicht mehr. Lass dir einen neuen schicken oder frag die Ältesten.',
+    linkUngueltig: 'Dieser Link gilt nicht mehr. Frag die Ältesten nach einem neuen.',
     anmeldenFehler: 'Die Anmeldung hat nicht geklappt. Versuche es bitte noch einmal.',
     zuVieleVersuche: 'Zu viele Versuche. Versuche es in einer Stunde noch einmal.',
     scannenHinweis: 'Halte den QR-Code auf deinem Zettel vor die Kamera.',
     kameraFehlt: 'Die Kamera lässt sich nicht öffnen. Tippe den Code stattdessen ein.',
     scanFremd: 'Das ist kein Anmelde-Zettel dieser App.',
-    // Die E-Mail mit dem Link — vom Server (`send-invite`, `anmelden`) wie aus
-    // dem eigenen Mail-Programm. {versammlung} ist der Name der Versammlung,
-    // {datum} der letzte Tag, an dem der Link gilt (aus `Intl`), {code} der
-    // Code zum Eintippen (T121, Phase 10): Auf dem iPhone öffnet der Link
-    // Safari, nie die App vom Home-Bildschirm — dort hilft nur der Code.
-    linkMailBetreff: 'Dein Zugang zur Versammlung {versammlung}',
-    linkMailText: 'Hallo {name},\n\ndie Versammlung {versammlung} plant die Zusammenkünfte und den Predigtdienst mit Versammlung.app. Dein Zugang ist eingerichtet.\n\nJetzt anmelden:\n{url}\n\nHast du die App auf dem Home-Bildschirm? Dann öffne sie dort, tippe auf „Code eintippen“ und gib diesen Code ein:\n{code}\n\nLink und Code gelten bis {datum} und melden nur dich an. Ein Passwort brauchst du nicht. Sind sie abgelaufen, öffne die App und tippe auf „Link senden“.\n\nDu bekommst diese E-Mail, weil du in der Versammlung {versammlung} eingetragen bist. Bei Fragen sprich die Ältesten an.',
-    // Derselbe Text als Nachricht („Teilen", 24.10.2026): die Absätze der E-Mail
-    // ohne ihre letzten zwei, dann dieser Schluss — statt „Link senden" die
-    // Ältesten (wer per Nachricht kommt, hat oft keine Adresse), ohne den Satz zur
-    // E-Mail (`linkNachricht` in personen/link-mail.ts).
-    linkNachrichtSchluss: 'Link und Code gelten bis {datum} und melden nur dich an. Ein Passwort brauchst du nicht. Sind sie abgelaufen, frag die Ältesten nach einem neuen Link.',
+    // Link und Code als Nachricht („Teilen"/„Kopieren", seit 24.10.2026; bis
+    // zum 31.10.2026 auch als E-Mail). {versammlung} ist der Name der
+    // Versammlung, {datum} der letzte Tag, an dem der Link gilt (aus `Intl`),
+    // {code} der Code zum Eintippen (T121, Phase 10): Auf dem iPhone öffnet der
+    // Link Safari, nie die App vom Home-Bildschirm — dort hilft nur der Code.
+    // Der Titel geht mit dem Teilen des Geräts (`linkNachricht` in
+    // personen/link-nachricht.ts).
+    linkNachrichtTitel: 'Dein Zugang zur Versammlung {versammlung}',
+    linkNachrichtText: 'Hallo {name},\n\ndie Versammlung {versammlung} plant die Zusammenkünfte und den Predigtdienst mit Versammlung.app. Dein Zugang ist eingerichtet.\n\nJetzt anmelden:\n{url}\n\nHast du die App auf dem Home-Bildschirm? Dann öffne sie dort, tippe auf „Code eintippen“ und gib diesen Code ein:\n{code}\n\nLink und Code gelten bis {datum} und melden nur dich an. Ein Passwort brauchst du nicht. Sind sie abgelaufen, frag die Ältesten nach einem neuen Link.',
     nurMitglieder: 'Zugang nur für Mitglieder der Versammlung',
     // Anmeldeseite (T113): wofür die App da ist, und der Weg zum Betreiber für
     // eine neue Versammlung. Die Adresse selbst steht in login/kontakt.ts.
@@ -346,7 +340,6 @@ export const DE = {
     // Zettel ausgegeben; ein abgelaufener Link zählt als „Ohne Link".
     personAnlegen: 'Person anlegen',
     personAnlegenHinweis: 'Aufgabenbereiche legst du danach bei der Person fest.',
-    emailFreiwillig: 'E-Mail (freiwillig)',
     standDerAnmeldung: 'Stand der Anmeldung',
     standAngemeldet: 'Angemeldet', standLink: 'Link gesendet', standOhneLink: 'Ohne Link',
     filterAlle: 'Alle', filterWeitere: 'Filter', filterZuruecksetzen: 'Zurücksetzen',
@@ -365,7 +358,7 @@ export const DE = {
     rechtPlanenUnter: 'Holt das Programm, richtet die Pläne ein, teilt zu und sendet.',
     rechtAdminUnter: 'Verwaltet auch Personen und Einstellungen.',
     toastNameLeer: 'Name nicht geändert: Ohne Namen geht es nicht',
-    vorname: 'Vorname', nachname: 'Nachname', emailLbl: 'E-Mail',
+    vorname: 'Vorname', nachname: 'Nachname',
     kontoCard: 'Konto',
     persLoeschen: 'Person entfernen',
     confirmPersonDel: '„{name}“ wirklich entfernen? Bereits geplante Zuteilungen bleiben als Text in den Wochen stehen.',
@@ -373,15 +366,11 @@ export const DE = {
     toastPersonDel: 'Person entfernt',
     kontoVerknuepft: 'Konto verknüpft',
     // Der Link einer Person (T121, Phase 8; Entwürfe GPerson, GEinladen). {name}
-    // ist ihr Vorname. „Link senden" heißt der Knopf auf der Anmeldeseite
-    // (`linkSenden`) wie hier: Es ist derselbe Link.
+    // ist ihr Vorname.
     neuerLinkBtn: 'Neuen Link senden', zettelDrucken: 'Zettel drucken',
     linkOffenHint: 'Der Link ist noch nicht geöffnet. Bis dahin gibst du {name} persönlich Bescheid.',
     linkAbgelaufenHint: 'Der Link ist abgelaufen, ohne dass {name} sich angemeldet hat. Ein neuer gilt wieder ein Jahr.',
-    ohneLinkHintMail: 'Ein Tipp auf den Link in der E-Mail, und {name} ist angemeldet — ein Passwort braucht es nicht.',
-    ohneLinkHintZettel: 'Ohne E-Mail-Adresse bekommt {name} den Link per Nachricht oder auf einem Zettel mit QR-Code.',
-    perEmail: 'Per E-Mail', perEmailHint: 'Ein Tipp auf den Link, und {name} ist angemeldet.',
-    keineAdresseHint: 'Bei {name} ist keine E-Mail-Adresse eingetragen.',
+    ohneLinkHint: 'Den Link bekommt {name} per Nachricht oder auf einem Zettel mit QR-Code. Ein Passwort braucht es nicht.',
     // Per Nachricht (24.10.2026): Link und Code als Text über das Teilen des
     // Geräts oder kopiert. Der Text meldet an — der Hinweis sagt, wohin er gehört.
     perNachricht: 'Per Nachricht',
@@ -393,27 +382,24 @@ export const DE = {
     neuerLinkErsetzt: 'Ein neuer Link ersetzt den alten — auch den auf einem Zettel.',
     ohneKontoHint: 'Ein Konto anlegen oder ein Passwort wählen muss {name} nicht. Nach der Anmeldung bleibt das Gerät angemeldet.',
     wirdGesendet: 'Wird gesendet …',
-    toastLinkGesendet: 'Link an {name} gesendet', toastMailFehler: 'Die E-Mail an {name} ging nicht hinaus',
     linkFehler: 'Nicht jeder Link ließ sich ausstellen. Versuche es später noch einmal.',
     // „Links senden" für alle, die die Liste „Ohne Link" zeigt (Entwurf
-    // GAlleEinladen). Nur Links — den Plan sendet der Planer wie gewohnt.
+    // GAlleEinladen; seit 31.10.2026 per Nachricht statt E-Mail). Nur Links —
+    // den Plan sendet der Planer wie gewohnt. Die Marken stehen an der Person,
+    // sobald ihr Text kopiert oder geteilt ist.
     linksSenden: 'Links senden',
     linksSendenIntro: 'Jede Person bekommt ihren eigenen Link: ein Tipp darauf, und sie ist angemeldet. Ein Passwort braucht niemand.',
-    mailVorschau: 'So sieht die E-Mail aus', betreffLbl: 'Betreff: {betreff}',
-    eineAdresseMehrere: 'Eine Adresse für mehrere',
-    eineAdresseMehrereHint: '{namen} bekommen je ihren eigenen Link an dieselbe Adresse. Jeder Link meldet genau eine Person an.',
-    ohneEmail: 'Ohne E-Mail-Adresse',
-    ohneEmailListeHint: 'Sie bekommen ihren Link auf einem Zettel mit QR-Code. Scannen, und sie sind angemeldet.',
+    linksNachrichtHint: 'Jede Person bekommt ihren eigenen Text mit Link und Code. Kopieren, in den persönlichen Chat einfügen, senden, dann die nächste. Nie in eine Gruppe: Wer den Text hat, kann sich als diese Person anmelden.',
+    markeKopiert: 'Kopiert', markeGeteilt: 'Geteilt',
+    aufZetteln: 'Auf Zetteln',
+    zettelListeHint: 'Oder alle, die noch keinen Text bekommen haben, auf Zetteln mit QR-Code. Scannen, und sie sind angemeldet.',
     ohneAppHint: 'Ohne App geht es auch: Beim Senden und bei den Zusagen steht eigens da, wem du die Aufgaben persönlich sagst.',
-    werIstDas: 'Wer ist das?',
-    toastLinksGesendet: 'Links gesendet: {n}', toastLinksTeils: 'Links gesendet: {n} · nicht angekommen: {m}',
-    mailNichtBereit: 'Die App kann gerade keine E-Mails senden. Druck die Zettel, oder schick den Link bei der Person aus deinem Mail-Programm.',
     // Der Bogen der Anmelde-Zettel (Entwurf GEinladungsZettel), gedruckt in der
     // Sprache der Versammlung. {adresse} ist die der App („versammlung.app"),
-    // {frage} die Überschrift auf der Anmeldeseite (`ohneMailFrage`).
+    // {knopf} der Knopf auf der Anmeldeseite (`codeEintippen`).
     anmeldeZettel: 'Anmelde-Zettel', zumAusschneiden: 'zum Ausschneiden', seiteVon: 'Seite {n} von {m}',
     anmeldungFuer: 'Anmeldung für', gueltigBisDatum: 'gültig bis {datum}',
-    zettelAnleitung: 'Mit der Handy-Kamera scannen, und du bist angemeldet. Geht es nicht: {adresse} öffnen und unter „{frage}“ den Code eintippen.',
+    zettelAnleitung: 'Mit der Handy-Kamera scannen, und du bist angemeldet. Geht es nicht: {adresse} öffnen und auf „{knopf}“ tippen.',
     kontenOhnePerson: 'Konten ohne Person',
     kontenOhnePersonHint: 'Diese Konten sind noch keiner Person zugeordnet.',
     pushLbl: 'Push-Mitteilungen',
@@ -437,7 +423,7 @@ export const DE = {
     ersteSchritteAnsehen: 'Ansehen',
     ersteSchritteFuer: 'Versammlung.app für Verkündiger',
     ersteSchritteSchritt: 'Schritt {n} von {m}',
-    ersteSchritteLinkTitel: 'Tippe auf den Link in der E-Mail.',
+    ersteSchritteLinkTitel: 'Tippe auf den Link in der Nachricht.',
     ersteSchritteLinkText: 'Oder scanne den QR-Code auf dem Zettel. Ein Passwort gibt es nicht.',
     ersteSchritteLinkNotiz: 'Du bist angemeldet.',
     ersteSchritteAufgabeTitel: 'Deine nächste Aufgabe steht ganz oben.',
@@ -775,7 +761,7 @@ export const DE = {
     erinTrolleyVortag: 'Am Vortag eines Trolley-Termins erinnert die App alle, die eingetragen sind.',
     // Auch das Anmelden verschickt welche (Supabase: Bestätigung, neues Kennwort;
     // ab Phase 8 der Link) — erinnert wird dagegen nie per E-Mail.
-    erinMailNur: 'E-Mails verschickt die App nur für Einladungen und die Anmeldung.',
+    erinMailNur: 'Die App verschickt keine E-Mails.',
     coWoche: 'Besuch des Kreisaufsehers',
     memWoche: 'Gedächtnismahl',
     kongress: 'Kongress',
@@ -792,7 +778,6 @@ export const DE = {
     toastUebernommenKonflikt: 'Übernommen · Achtung: du bist an dem Tag schon eingeteilt',
     notifVerhindert: 'Verhinderung gemeldet',
     // Konten & Mitglieder
-    resetMailFehlt: 'Bitte zuerst deine E-Mail-Adresse eintragen',
     laedt: 'Lädt …',
     stKeineVersText: 'Dein Konto gehört zu keiner Versammlung mehr. Frag bitte die Ältesten nach einem neuen Link.',
     stFehler: 'Daten konnten nicht geladen werden', stFehlerText: 'Es gab ein Problem beim Laden aus der Datenbank.',

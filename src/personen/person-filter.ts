@@ -15,7 +15,7 @@ export type Auswahl = '' | AnmeldeStand | 'nichtAngemeldet' | 'abwesend'
  * die Felder sind also frei kombinierbar (UND-Verknüpfung).
  */
 export interface PersonFilter {
-  q: string // Volltext über Name und E-Mail
+  q: string // Volltext über den Namen
   auswahl: Auswahl
   sex: '' | 'm' | 'w'
   role: '' | Role
@@ -44,11 +44,12 @@ export function gesetzteBlattfilter(f: PersonFilter): number {
  * gesucht wurde bis zum 1.10.2026 aber nur in „Simon Krüger". Wer abtippte, was
  * er sah, oder „krüger s" eingab, um unter Namensvettern zu wählen, fand
  * niemanden. Und ohne Faltung fand „kruger" keinen „Krüger" — „kru" traf nur,
- * wenn zufällig die E-Mail-Adresse `…krueger@…` lautete.
+ * wenn zufällig die E-Mail-Adresse `…krueger@…` lautete (die gibt es seit dem
+ * 31.10.2026 nicht mehr).
  */
 function passtZuText(person: Person, q: string): boolean {
   const namen = [displayName(person), `${person.ln} ${person.fn}`, `${person.ln}, ${person.fn}`]
-  return enthaelt([...namen, person.mail].join('\n').toLowerCase(), q)
+  return enthaelt(namen.join('\n').toLowerCase(), q)
 }
 
 /** Fällt die Person unter die Auswahl über der Liste? */

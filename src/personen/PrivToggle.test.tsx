@@ -27,7 +27,7 @@ import type { Member, Person } from '../data/types'
  }
 
 const person = (patch: Partial<Person['priv']> = {}): Person => ({
-  id: 'p', fn: 'A', ln: 'B', role: 'verkuendiger', mail: '',
+  id: 'p', fn: 'A', ln: 'B', role: 'verkuendiger', 
   priv: { ...emptyQualifications(), ...patch },
 })
 

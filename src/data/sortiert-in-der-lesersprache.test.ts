@@ -25,7 +25,6 @@ const person = (ln: string, fn = 'A'): Person => ({
   fn,
   ln,
   role: 'verkuendiger',
-  mail: '',
   priv: emptyQualifications(),
 })
 

@@ -31,10 +31,10 @@ import { DE, dict, loadOverlay } from './ui'
  * im Deutschen den Namen enthält — eine neue Beschriftung mit dem Produktnamen
  * ist damit vom ersten Tag an mitgeprüft, ohne sich hier eintragen zu müssen.
  *
- * **Die Serverseite braucht keine eigene Zeile.** `_shared/anmelde-texte.ts`
- * ist eine Abschrift des Wörterbuchs, und `_test/anmeldung.test.ts` hält beide
- * zeichengenau zusammen — zusammen mit der Probe hier trägt also auch die Mail
- * in jeder Sprache den Namen. Und dass jedes Overlay jeden Schlüssel selbst
+ * **Die Serverseite braucht keine eigene Zeile.** Bis zum 31.10.2026 lag dort
+ * eine Abschrift der Anmelde-Mail (`_shared/anmelde-texte.ts`); seitdem gibt
+ * es die Mail nicht mehr, und die Nachricht mit dem Link kommt aus dem
+ * Wörterbuch selbst. Und dass jedes Overlay jeden Schlüssel selbst
  * übersetzt (statt still auf Deutsch zurückzufallen), sichert `ui.test.ts`;
  * sonst prüfte `dict()` hier stellenweise nur das Deutsche.
  */
@@ -55,10 +55,10 @@ describe('Der Name der App steht in jeder Sprache (T115)', () => {
   it('findet überhaupt Schlüssel, die ihn tragen — sonst prüft die Probe nichts', () => {
     // Ohne diese Zusicherung wäre eine künftige Umbenennung, die `NAME` hier zu
     // ändern vergisst, eine grüne Prüfung über null Schlüssel. Seit dem
-    // Anmelden per Link (T121, Phase 8) tragen ihn nur noch zwei: die E-Mail
-    // mit dem Link und der Betreff der Anfrage — die Texte der Einladungscodes
-    // sind fort.
-    expect(TRAEGER, `kein deutscher Wert enthält „${NAME}"`).toEqual(expect.arrayContaining(['linkMailText', 'anfrageBetreff']))
+    // Anmelden per Link (T121, Phase 8) tragen ihn nur noch zwei: die Nachricht
+    // mit dem Link (bis zum 31.10.2026 die E-Mail) und der Betreff der Anfrage —
+    // die Texte der Einladungscodes sind fort.
+    expect(TRAEGER, `kein deutscher Wert enthält „${NAME}"`).toEqual(expect.arrayContaining(['linkNachrichtText', 'anfrageBetreff']))
   })
 
   it('jede Sprache nennt ihn — unübersetzt, wie einen Markennamen', () => {

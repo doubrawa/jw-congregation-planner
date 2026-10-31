@@ -34,7 +34,7 @@ import { emptyQualifications } from './helpers'
 function alsPerson(name: string): Person {
   return {
     id: `test-${name}`, fn: name, ln: '', role: 'verkuendiger', female: false,
-    mail: '', priv: emptyQualifications(),
+    priv: emptyQualifications(),
   }
 }
 
@@ -61,7 +61,6 @@ function person(patch: Partial<Person>): Person {
     fn: 'Simon',
     ln: 'Krüger',
     role: 'verkuendiger',
-    mail: '',
     priv: priv(),
     ...patch,
   }

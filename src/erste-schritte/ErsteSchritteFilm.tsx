@@ -11,7 +11,7 @@ import { fill, useT } from '../i18n/useT'
 import { HINTEN, VORN, baueFilm, finde, vermessen } from './film-szenen'
 import { filmInhalt } from './film-inhalt'
 import { GESAMT, SZENEN, standbildZeit, szeneBei, type SzenenId } from './film-zeit'
-import { Handy, MockBanner, MockHome, MockMail, MockMenue, MockMitteilungen, MockStart, Tipp } from './FilmBilder'
+import { Handy, MockBanner, MockHome, MockNachricht, MockMenue, MockMitteilungen, MockStart, Tipp } from './FilmBilder'
 import './erste-schritte.css'
 
 /** Ohne Bewegung (Einstellung des Geräts) steht der Film Schritt für Schritt still. */
@@ -221,7 +221,7 @@ export function ErsteSchritteFilm({ onClose, onEnde }: { onClose: () => void; on
             <div className="film-bild" aria-hidden="true">
               <div className="film-ebene" data-szene="link" data-f="ebene-link">
                 <Handy>
-                  <MockMail inhalt={inhalt} />
+                  <MockNachricht inhalt={inhalt} />
                   <MockStart inhalt={inhalt} t={t} knopf="offen" />
                   <Tipp />
                 </Handy>

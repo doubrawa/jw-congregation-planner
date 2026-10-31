@@ -2,7 +2,7 @@ import { codeAus, tokenAus } from '../../supabase/functions/_shared/anmeldung.ts
 
 /**
  * **Was die Adresse zum Anmelden mitbringt** (T121, Phase 8): das Token aus dem
- * Link der E-Mail (`#anmelden=…`) oder den Code aus dem QR-Code des Zettels
+ * Anmelde-Link (`#anmelden=…`) oder den Code aus dem QR-Code des Zettels
  * (`#code=…`), gescannt mit der Kamera des Handys.
  *
  * Einmal gelesen, beim ersten Fragen — und dann aus der Adresse genommen: Ein

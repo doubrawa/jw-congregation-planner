@@ -30,7 +30,6 @@ import type { Absence, FsInstance, FsRule, Person } from './types'
 function tpLeader(patch: Partial<Person>): Person {
   return {
     id: 'x', fn: 'Max', ln: 'Muster', role: 'verkuendiger', female: false,
-    mail: '',
     priv: { ...emptyQualifications(), treffpunkt: true },
     ...patch,
   }

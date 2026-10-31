@@ -92,7 +92,7 @@ describe('Der Vorschlag ist, wen „Automatisch" nähme', () => {
     const person = (id: string, female: boolean, role: Person['role'] = 'verkuendiger'): Person => {
       const priv = emptyQualifications()
       privSetzen(priv, 'schulungPartner', true)
-      return { id, fn: id, ln: 'Test', role, female, mail: '', priv, grp: null }
+      return { id, fn: id, ln: 'Test', role, female, priv, grp: null }
     }
     const SCHWESTER = person('sw1', true)
     const BRUDER = person('br1', false)
@@ -195,7 +195,7 @@ describe('Der Abstand der Automatik übergeht ausgefallene Zusammenkünfte', () 
   const bruder = (id: string, fn: string): Person => {
     const priv = emptyQualifications()
     privSetzen(priv, 'bibellesung', true)
-    return { id, fn, ln: 'Beispiel', role: 'verkuendiger', mail: '', priv }
+    return { id, fn, ln: 'Beispiel', role: 'verkuendiger', priv }
   }
   const bernd = bruder('pb', 'Bernd')
   const paul = bruder('pp', 'Paul')

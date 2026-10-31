@@ -13,7 +13,7 @@ import { privSetzen } from './helpers'
 function alsPerson(name: string): Person {
   return {
     id: `test-${name}`, fn: name, ln: '', role: 'verkuendiger', female: false,
-    mail: '', priv: emptyQualifications(),
+    priv: emptyQualifications(),
   }
 }
 
@@ -54,7 +54,6 @@ function mk(
     fn: 'Test',
     ln: `P${counter}`, // eindeutiger Anzeigename "T. P<n>"
     role: 'verkuendiger',
-    mail: '',
     priv: pv,
     ...(opts.female ? { female: true } : {}),
   }
@@ -306,7 +305,7 @@ describe('Auto-Zuteilung — Simulation (~100 Personen, 12 Wochen)', () => {
 /* ---- Hilfsbauten für Fenster-/Asymmetrie-Tests -------------------------- */
 
 function named(fn: string, ln: string, quals: string[]): Person {
-  return { id: `n-${ln}`, fn, ln, role: 'verkuendiger', mail: '', priv: priv(quals) }
+  return { id: `n-${ln}`, fn, ln, role: 'verkuendiger', priv: priv(quals) }
 }
 function emptyMeeting(): Meeting {
   return { date: '', end: '', sections: [], helpers: {} }
@@ -450,7 +449,7 @@ describe('Predigtdienstgruppen (Reinigung)', () => {
     // Woche 0 → Gruppe 1 reinigt. Aufseher (Otto) und ein freier Bruder können
     // beide Mikrofon; der Aufseher soll den Mikro-Dienst NICHT bekommen.
     const overseer: Person = {
-      id: 'ov1', fn: 'Otto', ln: 'Overseer', role: 'aeltester', mail: '', priv: priv([MIK]),
+      id: 'ov1', fn: 'Otto', ln: 'Overseer', role: 'aeltester', priv: priv([MIK]),
     }
     const free = named('Frank', 'Frei', [MIK])
     const groups: Group[] = [{ id: 'g1', name: 'Gruppe 1', overseerId: 'ov1', assistantId: null }]
@@ -515,7 +514,7 @@ describe('Gruppen aus der Reinigung genommen', () => {
   })
 
   const mik = (id: string, fn: string, ln: string): Person => ({
-    id, fn, ln, role: 'aeltester', mail: '', priv: priv([MIK]),
+    id, fn, ln, role: 'aeltester', priv: priv([MIK]),
   })
   const otto = mik('ov1', 'Otto', 'Overseer')
   const paul = mik('ov2', 'Paul', 'Putz')

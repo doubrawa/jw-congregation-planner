@@ -38,7 +38,7 @@ import { PersonDetail } from './PersonDetail'
 
 vi.mock('../lib/clipboard', () => ({ copyText: vi.fn(() => Promise.resolve(true)) }))
 vi.mock('../lib/links-ausstellen', () => ({
-  linksAusstellen: vi.fn(() => Promise.resolve({ links: [], mailBereit: true, fehler: false })),
+  linksAusstellen: vi.fn(() => Promise.resolve({ links: [], fehler: false })),
   alsAnmeldeLink: vi.fn(),
 }))
 
@@ -46,7 +46,7 @@ const t = dict('de')
 
 const person = (over: Partial<Person> = {}): Person => ({
   id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger', female: false,
-  mail: 'anton@example.org', priv: emptyQualifications(), grp: null, ...over,
+  priv: emptyQualifications(), grp: null, ...over,
 })
 
 const BRAND = person({ id: 'p-b', fn: 'Bernd', ln: 'Brand' })
@@ -146,29 +146,17 @@ describe('Der Kopf', () => {
 })
 
 describe('Person bearbeiten: die Felder', () => {
-  it('alle drei Felder stehen da und tragen ihren Wert', () => {
+  it('beide Namensfelder stehen da und tragen ihren Wert', () => {
     const b = bearbeiten(zeige(person()).container)
     expect(feld(b, 'pers-fn').value).toBe('Anton')
     expect(feld(b, 'pers-ln').value).toBe('Alt')
-    expect(feld(b, 'pers-mail').value).toBe('anton@example.org')
   })
 
-  it('nach einer Telefonnummer fragt das Blatt nicht — gebraucht hat sie niemand (25.10.2026)', () => {
+  it('nach Telefon und E-Mail fragt das Blatt nicht — die App speichert beides nicht (25. und 31.10.2026)', () => {
     const b = bearbeiten(zeige(person()).container)
-    expect(b.querySelector('input[type="tel"]')).toBeNull()
+    expect(b.querySelector('input[type="tel"], input[type="email"]')).toBeNull()
     expect(b.textContent).not.toContain('Telefon')
-  })
-
-  it('die E-Mail gilt sofort', () => {
-    const { container, dispatch } = zeige(person())
-    const b = bearbeiten(container)
-    fireEvent.change(feld(b, 'pers-mail'), { target: { value: 'neu@x.de' } })
-    expect(patches(dispatch)).toEqual([{ mail: 'neu@x.de' }])
-  })
-
-  it('ein fehlender Wert ergibt ein leeres Feld, kein „undefined"', () => {
-    const b = bearbeiten(zeige(person({ mail: '' })).container)
-    expect(feld(b, 'pers-mail').value).toBe('')
+    expect(b.textContent).not.toContain('E-Mail')
   })
 })
 
@@ -214,10 +202,9 @@ describe('Person bearbeiten: der Name', () => {
     const b = bearbeiten(zeige(person()).container)
     tippen(b, 'bernd  ', ' BRAND')
     expect(b.querySelector('[role="alert"]')?.textContent).toContain('Bernd Brand')
-    // Beide Felder, nicht nur eines — die Regel gilt dem Paar. Die E-Mail ist unbeteiligt.
+    // Beide Felder, nicht nur eines — die Regel gilt dem Paar.
     expect(feld(b, 'pers-fn').getAttribute('aria-invalid')).toBe('true')
     expect(feld(b, 'pers-ln').getAttribute('aria-invalid')).toBe('true')
-    expect(feld(b, 'pers-mail').getAttribute('aria-invalid')).toBeNull()
   })
 
   it('ein doppelter Name bleibt beim Schließen draußen — der alte gilt, und ein Hinweis sagt warum', () => {

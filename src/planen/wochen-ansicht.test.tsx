@@ -35,7 +35,7 @@ const MONTAG = new Date(2026, 8, 7, 9, 0)
 const person = (id: string): Person => {
   const priv = emptyQualifications()
   privSetzen(priv, serviceQualKey('mik'), true)
-  return { id, fn: id, ln: 'Test', role: 'aeltester', female: false, mail: '', priv }
+  return { id, fn: id, ln: 'Test', role: 'aeltester', female: false, priv }
 }
 const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-ov', assistantId: null }]
 const DIENSTE: Service[] = [{ key: 'mik', name: 'Mikrofone', count: 2, groups: false }]

@@ -43,7 +43,7 @@ import { STANDARD_ZEITEN } from '../data/vorgaben'
 const t = dict('de')
 
 const person = (id: string, fn: string, ln: string): Person => ({
-  id, fn, ln, role: 'aeltester', female: false, mail: '', priv: emptyQualifications(),
+  id, fn, ln, role: 'aeltester', female: false, priv: emptyQualifications(),
 })
 
 const ANNA = person('p-anna', 'Anna', 'Beispiel')

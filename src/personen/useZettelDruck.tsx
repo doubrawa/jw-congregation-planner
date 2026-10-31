@@ -13,8 +13,12 @@ import type { ZettelSatz } from './zettel-satz'
 const DRUCK = 'anmeldezettel'
 
 export interface ZettelDruck {
-  /** Für diese Personen Links ausstellen und ihre Zettel drucken. */
-  drucken(personen: readonly Person[]): Promise<void>
+  /**
+   * Für diese Personen Links ausstellen und ihre Zettel drucken. Zurück kommen
+   * die Personen, deren Zettel gedruckt wurde — scheitert ein Teil, sind es
+   * weniger als verlangt, und kommt kein Druck, ist die Liste leer.
+   */
+  drucken(personen: readonly Person[]): Promise<readonly string[]>
   /** Wird gerade ausgestellt? Dann wartet ein zweiter Tipp. */
   laeuft: boolean
   /** Der Bogen — wer den Hook nutzt, setzt ihn irgendwo ein (er hängt sich selbst unter `body`). */
@@ -68,17 +72,14 @@ export function useZettelDruck(): ZettelDruck {
   }, [])
 
   const drucken = async (personen: readonly Person[]) => {
-    if (laeuft || personen.length === 0) return
+    if (laeuft || personen.length === 0) return []
     setLaeuft(true)
     try {
-      const r = await ausstellen(
-        personen.map((p) => p.id),
-        false,
-      )
-      if (!r) return
+      const r = await ausstellen(personen.map((p) => p.id))
+      if (!r) return []
       if (r.links.length === 0) {
         dispatch({ type: 'showToast', text: t.linkFehler })
-        return
+        return []
       }
       const lang = sprachDerVersammlung(state.congLang)
       const [{ zettelSatz }] = await Promise.all([import('./zettel-satz'), loadOverlay(lang)])
@@ -93,11 +94,12 @@ export function useZettelDruck(): ZettelDruck {
       // wird nicht gedruckt. Bis zum 16.10.2026 kam der Druckdialog trotzdem —
       // ohne Bogen —, und das Kennzeichen blieb am Wurzelelement stehen, weil
       // das Aufräumen schon gelaufen war: Jeder spätere Druck blieb leer.
-      if (!eingehaengt.current) return
+      if (!eingehaengt.current) return []
       flushSync(() => setSatz(neu))
       meiner.current = true
       document.documentElement.dataset.print = DRUCK
       window.print()
+      return r.links.map((l) => l.personId)
     } finally {
       setLaeuft(false)
     }

@@ -1034,7 +1034,7 @@ describe('Personen (inkl. Debounce)', () => {
 
   it('updatePerson schreibt gebündelt (Debounce, nach 600 ms)', () => {
     const p = DEMO_PERSONS[0]!
-    persist(st(), st({ persons: [p, ...DEMO_PERSONS.slice(1)] }), { type: 'updatePerson', id: p.id, patch: { mail: 'neu@musterstadt.example' } })
+    persist(st(), st({ persons: [p, ...DEMO_PERSONS.slice(1)] }), { type: 'updatePerson', id: p.id, patch: { female: true } })
     expect(data.savePerson).not.toHaveBeenCalled() // noch nicht
     vi.advanceTimersByTime(600)
     expect(data.savePerson).toHaveBeenCalledWith('c1', p)
@@ -1117,7 +1117,7 @@ describe('Personen (inkl. Debounce)', () => {
 
   it('beim Verlassen der App geht hinaus, was wartet (`ausstehendesSchreiben`)', () => {
     const p = DEMO_PERSONS[0]!
-    persist(st(), st({ persons: [p, ...DEMO_PERSONS.slice(1)] }), { type: 'updatePerson', id: p.id, patch: { mail: 'neu@musterstadt.example' } })
+    persist(st(), st({ persons: [p, ...DEMO_PERSONS.slice(1)] }), { type: 'updatePerson', id: p.id, patch: { female: true } })
     ausstehendesSchreiben()
     expect(data.savePerson).toHaveBeenCalledWith('c1', p)
     vi.advanceTimersByTime(600)
@@ -1144,7 +1144,7 @@ describe('Personen (inkl. Debounce)', () => {
 
   it('Verlassen der Ansicht holt die gebündelten Saves sofort nach', () => {
     const p = DEMO_PERSONS[0]!
-    persist(st(), st(), { type: 'updatePerson', id: p.id, patch: { mail: 'neu@musterstadt.example' } })
+    persist(st(), st(), { type: 'updatePerson', id: p.id, patch: { female: true } })
     expect(data.savePerson).not.toHaveBeenCalled()
     persist(st(), st(), { type: 'navigate', screen: 'programm' })
     expect(data.savePerson).toHaveBeenCalledTimes(1)
@@ -1167,7 +1167,7 @@ describe('Personen (inkl. Debounce)', () => {
 
   it('jede andere Änderung an der Person schreibt keine Gruppe', () => {
     const vorher = st({ groups: [...DEMO_GROUPS] })
-    const aktion = { type: 'updatePerson', id: 'p1', patch: { mail: 'neu@musterstadt.example' } } as const
+    const aktion = { type: 'updatePerson', id: 'p1', patch: { female: true } } as const
     persist(vorher, reducer(vorher, aktion), aktion)
     expect(data.saveGroupRow).not.toHaveBeenCalled()
   })
@@ -1274,34 +1274,35 @@ describe('Haushalte: erst die Zeile, dann die Person', () => {
   })
 
   /*
-   * **Sofort neben gebündelt** (15.10.2026): Die E-Mail-Adresse, eben getippt,
-   * wartet gebündelt — mit dem alten Haushalt. Wird gleich danach eine Familie
+   * **Sofort neben gebündelt** (15.10.2026): Eine Änderung an der Person (bis
+   * zum 31.10.2026 hier die E-Mail-Adresse, eben getippt) wartet gebündelt — mit
+   * dem alten Haushalt. Wird gleich danach eine Familie
    * gewählt, schreibt das die Person sofort; die wartende Fassung ging bis
    * dahin 600 ms später hinterher und nahm den Haushalt in der Datenbank
    * zurück.
    */
   it('was von der Person gebündelt wartete, geht nicht hinter dem Haushalt her', () => {
     const p1 = st().persons.find((p) => p.id === 'p1')!
-    const mitMail = st({ persons: st().persons.map((p) => (p.id === 'p1' ? { ...p, mail: 'neu@musterstadt.example' } : p)) })
-    persist(st(), mitMail, { type: 'updatePerson', id: 'p1', patch: { mail: 'neu@musterstadt.example' } })
+    const geaendert = st({ persons: st().persons.map((p) => (p.id === 'p1' ? { ...p, female: true } : p)) })
+    persist(st(), geaendert, { type: 'updatePerson', id: 'p1', patch: { female: true } })
     const verbunden = st({
-      persons: mitMail.persons.map((p) => (p.id === 'p1' || p.id === 'p2' ? { ...p, fam: 'h1' } : p)),
+      persons: geaendert.persons.map((p) => (p.id === 'p1' || p.id === 'p2' ? { ...p, fam: 'h1' } : p)),
     })
-    persist(mitMail, verbunden, { type: 'setFamily', id: 'p1', memberId: 'p2', add: true })
+    persist(geaendert, verbunden, { type: 'setFamily', id: 'p1', memberId: 'p2', add: true })
     vi.advanceTimersByTime(600)
-    expect(data.saveFamily).toHaveBeenCalledWith('c1', 'h1', expect.arrayContaining([{ ...p1, mail: 'neu@musterstadt.example', fam: 'h1' }]))
+    expect(data.saveFamily).toHaveBeenCalledWith('c1', 'h1', expect.arrayContaining([{ ...p1, female: true, fam: 'h1' }]))
     expect(data.savePerson).not.toHaveBeenCalled()
   })
 
   it('ohne neuen Haushalt dasselbe — die Person geht einmal hinaus, mit beidem', () => {
     const beide = st().persons.map((p) => (p.id === 'p1' || p.id === 'p2' ? { ...p, fam: 'h1' } : p))
-    const mitMail = st({ persons: beide.map((p) => (p.id === 'p1' ? { ...p, mail: 'neu@musterstadt.example' } : p)) })
-    persist(st({ persons: beide }), mitMail, { type: 'updatePerson', id: 'p1', patch: { mail: 'neu@musterstadt.example' } })
-    const getrennt = st({ persons: mitMail.persons.map((p) => (p.id === 'p1' ? { ...p, fam: null } : p)) })
-    persist(mitMail, getrennt, { type: 'setFamily', id: 'p1', memberId: 'p1', add: false })
+    const geaendert = st({ persons: beide.map((p) => (p.id === 'p1' ? { ...p, female: true } : p)) })
+    persist(st({ persons: beide }), geaendert, { type: 'updatePerson', id: 'p1', patch: { female: true } })
+    const getrennt = st({ persons: geaendert.persons.map((p) => (p.id === 'p1' ? { ...p, fam: null } : p)) })
+    persist(geaendert, getrennt, { type: 'setFamily', id: 'p1', memberId: 'p1', add: false })
     vi.advanceTimersByTime(600)
     expect(data.savePerson).toHaveBeenCalledTimes(1)
-    expect(data.savePerson).toHaveBeenCalledWith('c1', expect.objectContaining({ id: 'p1', mail: 'neu@musterstadt.example', fam: null }))
+    expect(data.savePerson).toHaveBeenCalledWith('c1', expect.objectContaining({ id: 'p1', female: true, fam: null }))
   })
 
   it('wohnt noch jemand darin, bleibt die Zeile stehen', () => {

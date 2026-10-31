@@ -1,11 +1,11 @@
-import { lazy, Suspense, useEffect, useId, useState, type FormEvent } from 'react'
+import { lazy, Suspense, useEffect, useId, useState } from 'react'
 import { codeAnzeige, codeAus, codeNormal, codeVollstaendig, tokenAus } from '../../supabase/functions/_shared/anmeldung.ts'
 import { useApp } from '../app/context'
 import { DESKTOP_BREITE, useMedia } from '../components/useMedia'
 import type { Lang } from '../data/types'
 import { APP_LANGS_SORTED } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
-import { codePruefen, linkAnfordern, mitCodeAnmelden, mitLinkAnmelden } from '../lib/anmelden'
+import { codePruefen, mitCodeAnmelden, mitLinkAnmelden } from '../lib/anmelden'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { anmeldeAdresse, anmeldeCodeVerbraucht } from './anmelde-adresse'
 import { anmeldeFehlerText } from './anmelde-fehler'
@@ -22,16 +22,18 @@ type Ansicht = { art: 'start' } | { art: 'code'; code: string } | { art: 'scanne
 
 /**
  * **Anmelden** (T121, Phase 8; Entwürfe `GAnmeldung`, `GCode`,
- * `GDesktopAnmeldung`). Ein Kennwort gibt es nicht: Wer eine E-Mail-Adresse
- * hat, lässt sich einen Link schicken; wer keine hat, scannt seinen Zettel oder
- * tippt den Code darauf ein. Konten legt der Admin an — registrieren kann man
- * sich hier nicht.
+ * `GDesktopAnmeldung`). Ein Kennwort gibt es nicht: Wer einen Link von den
+ * Ältesten hat, tippt darauf und kommt gar nicht erst hierher; alle anderen
+ * scannen ihren Zettel oder tippen den Code darauf ein. Konten legt der Admin
+ * an — registrieren kann man sich hier nicht. Bis zum 31.10.2026 ließ man sich
+ * hier auch einen Link per E-Mail schicken; seitdem speichert die App keine
+ * Adressen mehr.
  *
  * Unter dem Namen steht, wofür die App da ist, ganz unten der Kontakt für eine
  * neue Versammlung (T113).
  *
- * **Ohne Datenbank** (Entwicklerseite) ist Anmelden nachgestellt: „Link senden"
- * und der Code melden gleich an — die Maske sieht trotzdem aus wie im Betrieb,
+ * **Ohne Datenbank** (Entwicklerseite) ist Anmelden nachgestellt: Jeder
+ * vollständige Code meldet an — die Maske sieht trotzdem aus wie im Betrieb,
  * denn hier entsteht die Aufnahme fürs Handbuch.
  */
 export function LoginScreen() {
@@ -46,7 +48,7 @@ export function LoginScreen() {
 
   const angemeldet = () => dispatch({ type: 'login', welcome: true })
 
-  /** Was der Scanner liest: der Link aus einer E-Mail meldet an, ein Zettel füllt den Code. */
+  /** Was der Scanner liest: ein Anmelde-Link meldet an, ein Zettel füllt den Code. */
   const gescannt = async (text: string) => {
     const hash = (() => {
       try {
@@ -106,31 +108,29 @@ export function LoginScreen() {
             </Suspense>
           </>
         ) : (
-          <>
-            <LinkAnfordern onNachgestellt={angemeldet} />
-            <section className="karte login-ohne-mail" aria-labelledby="login-ohne-mail">
-              <h2 id="login-ohne-mail" className="login-ohne-mail-titel">
-                {t.ohneMailFrage}
-              </h2>
+          <div className="login-form">
+            <h1 className="seitentitel seitentitel--gross login-titel">{t.anmeldenTitel}</h1>
+            <p className="login-hinweis">{t.ohnePasswort}</p>
+            <div className="karte login-zettel">
               {/* Der Hinweis nennt nur, was hier geht: ohne Scanner das Eintippen. */}
-              <p className="klein-text">{scannen ? t.ohneMailHinweis : t.ohneMailHinweisTippen}</p>
-              <div className="login-ohne-mail-knoepfe">
+              <p className="klein-text">{scannen ? t.zettelHinweis : t.zettelHinweisTippen}</p>
+              <div className="login-zettel-knoepfe">
                 {scannen && (
-                  <button type="button" className="knopf-umriss" onClick={() => setAnsicht({ art: 'scannen' })}>
+                  <button type="button" className="knopf-haupt" onClick={() => setAnsicht({ art: 'scannen' })}>
                     {t.zettelScannen}
                   </button>
                 )}
                 {/* Allein ist „Code eintippen" der Weg und so deutlich wie sonst „Zettel scannen". */}
                 <button
                   type="button"
-                  className={scannen ? 'knopf-leise' : 'knopf-umriss'}
+                  className={scannen ? 'knopf-umriss' : 'knopf-haupt'}
                   onClick={() => setAnsicht({ art: 'code', code: '' })}
                 >
                   {t.codeEintippen}
                 </button>
               </div>
-            </section>
-          </>
+            </div>
+          </div>
         )}
       </div>
 
@@ -162,73 +162,6 @@ export function LoginScreen() {
         </a>
       </p>
     </div>
-  )
-}
-
-/**
- * „Anmelden": die Adresse und „Link senden". Was danach kommt, steht darunter —
- * und ist absichtlich derselbe Satz, gleich ob es die Adresse gibt: Sonst ließe
- * sich hier nachsehen, wer zu einer Versammlung gehört.
- */
-function LinkAnfordern({ onNachgestellt }: { onNachgestellt: () => void }) {
-  const { state, dispatch } = useApp()
-  const { t } = useT()
-  const feldId = useId()
-  const [email, setEmail] = useState('')
-  const [laeuft, setLaeuft] = useState(false)
-  const [meldung, setMeldung] = useState<string | null>(null)
-
-  const senden = async (event: FormEvent) => {
-    event.preventDefault()
-    if (laeuft) return
-    const adresse = email.trim()
-    if (!adresse) {
-      setMeldung(t.resetMailFehlt)
-      return
-    }
-    if (!isSupabaseConfigured) {
-      onNachgestellt()
-      return
-    }
-    setLaeuft(true)
-    const ergebnis = await linkAnfordern(adresse, state.lang)
-    setLaeuft(false)
-    if (ergebnis === 'unterwegs') setMeldung(t.linkUnterwegs)
-    else if (ergebnis === 'nicht-eingerichtet') setMeldung(t.mailNichtEingerichtet)
-    else dispatch({ type: 'showToast', text: anmeldeFehlerText(ergebnis, t, 'link') })
-  }
-
-  return (
-    <form className="login-form" onSubmit={(e) => void senden(e)}>
-      <h1 className="seitentitel seitentitel--gross login-titel">{t.anmeldenTitel}</h1>
-      <p className="login-hinweis">{t.ohnePasswort}</p>
-      <div className="blatt-feld">
-        <label className="feld-marke" htmlFor={feldId}>
-          {t.emailLbl}
-        </label>
-        <input
-          id={feldId}
-          className="feld"
-          type="email"
-          dir="ltr"
-          placeholder={t.emailPh}
-          autoComplete="email"
-          value={email}
-          onChange={(e) => {
-            setEmail(e.target.value)
-            setMeldung(null)
-          }}
-        />
-      </div>
-      <button type="submit" className="knopf-haupt login-senden" aria-disabled={laeuft || undefined}>
-        {t.linkSenden}
-      </button>
-      {meldung && (
-        <p className="klein-text login-meldung" role="status">
-          {meldung}
-        </p>
-      )}
-    </form>
   )
 }
 

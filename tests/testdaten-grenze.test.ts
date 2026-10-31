@@ -8,8 +8,8 @@ import {
   testdatenBefunde,
   testdatenWache,
 } from '../scripts/testdaten-grenze.mjs'
-import { TESTDATEN_DOMAIN, TESTDATEN_KENNZEICHEN } from './testdaten/kennzeichen'
-import { buildDemoWeeks, buildImportWeek, DEMO_PERSONS } from './testdaten/testdaten'
+import { TESTDATEN_KENNZEICHEN } from './testdaten/kennzeichen'
+import { buildDemoWeeks, buildImportWeek } from './testdaten/testdaten'
 
 /**
  * **Die Testdaten gehören nicht in die App** — weder in ihren Quelltext noch
@@ -60,11 +60,8 @@ describe('Quelltext: keine App-Datei greift auf tests/ zu', () => {
 })
 
 describe('Die Testdaten tragen ihre Kennzeichen', () => {
-  it('jede erfundene Person hat eine Adresse unter der Testdaten-Domain', () => {
-    const ohne = DEMO_PERSONS.filter((p) => !p.mail.endsWith(`@${TESTDATEN_DOMAIN}`)).map((p) => p.id)
-    expect(ohne).toEqual([])
-  })
-
+  // Die Personen tragen seit dem 31.10.2026 keins mehr (keine Adresse): Sie
+  // liegen im selben Modul wie die Wochen, und deren Platzhalter findet die Wache.
   it('jede erfundene Woche trägt einen Platzhalter', () => {
     for (const woche of [...buildDemoWeeks(), buildImportWeek()]) {
       const text = JSON.stringify(woche)
@@ -85,18 +82,17 @@ describe('Bündelwache', () => {
 
   it('findet ein Kennzeichen im Ergebnis — so, wie der Bündler es schreibt', () => {
     /*
-     * Wörtlich aus der Gegenprobe vom 2.10.2026 (Testdaten absichtlich wieder
-     * ins Bündel gezogen): Die Domain steht als eigene Konstante da, die
-     * Adresse entsteht erst zur Laufzeit. Ein Kennzeichen „@musterstadt.example"
-     * hätte das nicht gefunden — deshalb sucht die Wache die Domain allein.
+     * Nach dem Muster der Gegenprobe vom 2.10.2026 (Testdaten absichtlich
+     * wieder ins Bündel gezogen): Der Platzhalter steht als eigene Konstante
+     * da, der Titel entsteht erst zur Laufzeit — die Wache findet ihn trotzdem.
      */
-    const text = `var lp=\`${TESTDATEN_DOMAIN}\`;var Q=e=>\`\${e}@\${lp}\`,up=[{fn:\`Manfred\`,ln:\`Albrecht\`,mail:Q(\`m.albrecht\`)}]`
+    const text = 'var dq=`Demoaufgabe`;var T=e=>`${dq} ${e}`,wk=[{titel:T(3)}]'
     const befunde = testdatenBefunde({
       module: [],
       dateien: [sauber, { name: 'assets/index-b2.js', text }],
       kennzeichen: TESTDATEN_KENNZEICHEN,
     })
-    expect(befunde).toEqual([`assets/index-b2.js enthält „${TESTDATEN_DOMAIN}" — ein Kennzeichen der Testdaten`])
+    expect(befunde).toEqual(['assets/index-b2.js enthält „Demoaufgabe" — ein Kennzeichen der Testdaten'])
   })
 
   it('ein sauberes Bündel ergibt nichts', () => {
