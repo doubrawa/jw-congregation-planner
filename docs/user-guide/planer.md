@@ -55,7 +55,8 @@ von „Diese Woche in der Versammlung".
   nicht. Auch eine Kongresswoche erscheint, wenn dort ein Treffpunkt noch einen
   Leiter braucht.
 - Unter dem Datum zeigt ein **Balken** in den Farben des Saals, wie weit die
-  Zusammenkünfte der Woche sind: **voll** zugesagt, **blass** wartet auf Zusage,
+  Zusammenkünfte der Woche sind: **voll** zugesagt oder als **weiß Bescheid**
+  abgehakt, **blass** wartet auf Zusage,
   **rot** ein Problem (abgesagt oder in einem Konflikt), **gestrichelt** noch
   offen. Rechts daneben steht die Zahl der besetzten Plätze, etwa „31/37" –
   dieselbe wie unter **Zuteilen** bei den Wochen. Eine Zusammenkunft, die
@@ -251,7 +252,8 @@ ihren Raum.
   was dort zu tun ist. Ab dem Tablet stehen die Plätze rechts neben ihrem
   Programmpunkt. Der Punkt zeigt, wie der Platz steht; die Legende in der Karte
   **Besetzung** nennt die vier Lagen:
-  - **voll** – bestätigt, oder es gibt nichts zu bestätigen
+  - **voll** – bestätigt oder in den Zusagen der Woche als **weiß Bescheid**
+    abgehakt (wer kein Konto hat), oder es gibt nichts zu bestätigen
   - **blass** – wartet auf Bestätigung; das steht auch hinter der Rolle
   - **rot** – ein Problem: abgesagt, abwesend oder an dem Tag schon
     eingeteilt. Den Grund nennt die Zeile rechts – bei einem Hilfsdienst nach

@@ -116,7 +116,12 @@ export function PlanungsKarte() {
         const besetzung = week
           ? besetzungDerWoche(
               week,
-              { services: state.services, confirmations: state.confirmations, zeiten: state.congregation.times },
+              {
+                services: state.services,
+                confirmations: state.confirmations,
+                persoenlich: state.persoenlich,
+                zeiten: state.congregation.times,
+              },
               fromIso(tag),
               (tab) => konflikteVon(state.weeks, w.wi, state.persons, state.services, tab, abwesend).betrifft,
             )
@@ -129,6 +134,7 @@ export function PlanungsKarte() {
       progWeek,
       state.services,
       state.confirmations,
+      state.persoenlich,
       state.congregation.times,
       state.persons,
       abwesend,

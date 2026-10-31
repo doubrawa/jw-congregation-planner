@@ -12,7 +12,7 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { reducer } from '../app/reducer'
 import { deriveMyFsTasks } from '../data/fs'
 import { emptyQualifications } from '../data/helpers'
-import { deriveMyTasks } from '../data/planning'
+import { deriveMyTasks, sentKey } from '../data/planning'
 import { dict } from '../i18n/ui'
 import type { FsInstance, Person, Service, Week } from '../data/types'
 import { PlanenScreen } from './PlanenScreen'
@@ -185,6 +185,30 @@ describe('Die Ampel zeigt an allen Plätzen, was zugesagt ist', () => {
     s = reducer(s, { type: 'declineTask', id: mikrofon })
     const c = zeige(s)
     expect(stufenVon(c, 'Anna Beispiel')).toEqual(['is-bestaetigt', 'is-bestaetigt', 'is-bestaetigt', 'is-verhindert'])
+  })
+})
+
+/*
+ * Betreiber 31.10.2026: Der Haken „weiß Bescheid" zählt am Punkt der Plätze wie
+ * eine Zusage, wie in der Spur. Er hängt an Platz **und** Name — jede
+ * Platzsorte muss den Namen ihres Platzes mitgeben, sonst bliebe ihr Punkt gelb.
+ */
+describe('Der Haken „weiß Bescheid" zählt am Punkt wie eine Zusage (31.10.2026)', () => {
+  /** Anna hat kein Konto; der Planer hat ihr jede ihrer Aufgaben persönlich gesagt. */
+  const annaWeissBescheid = (s: AppState): AppState => ({
+    ...s,
+    persoenlich: Object.fromEntries(annasAufgaben(s).map((id) => [sentKey(id, 'Anna Beispiel'), '2026-09-14T10:00:00Z'])),
+  })
+
+  it('an jedem ihrer Plätze — Hauptsaal, Klasse, Ratgeber, Mikrofon; Bernd daneben bleibt gelb', () => {
+    const c = zeige(annaWeissBescheid(stand()))
+    expect(stufenVon(c, 'Anna Beispiel')).toEqual(['is-bestaetigt', 'is-bestaetigt', 'is-bestaetigt', 'is-bestaetigt'])
+    expect(stufenVon(c, 'Bernd Anders')).toEqual(['is-offen'])
+  })
+
+  it('… und an ihrem Treffpunkt', () => {
+    const c = zeige(annaWeissBescheid(stand({ tab: 'fs' })))
+    expect(stufenVon(c, 'Anna Beispiel')).toEqual(['is-bestaetigt'])
   })
 })
 

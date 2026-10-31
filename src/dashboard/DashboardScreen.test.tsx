@@ -295,6 +295,21 @@ describe('Über einer Aufgabe in einer Zusammenkunft steht der Saal', () => {
     expect(container.querySelectorAll('.saal-platz.is-problem').length).toBeGreaterThan(0)
   })
 
+  /*
+   * Betreiber 31.10.2026: Der Haken „weiß Bescheid" zählt im Saal wie eine
+   * Zusage. Bruno hat kein Konto, der Planer hat es ihm gesagt.
+   */
+  it('wem der Planer ohne Konto Bescheid gegeben hat, sitzt im Saal voll — nicht blass', () => {
+    const { woche, meine } = meinAbend()
+    const lagen = (c: HTMLElement) => [...c.querySelectorAll('.saal-platz')].map((p) => p.getAttribute('class'))
+    expect(lagen(zeige({ weeks: [woche], myTasks: [meine] }).container)).toContain('saal-platz is-wartet')
+    cleanup()
+    const persoenlich = { [sentKey(helferKey(woche.start, 'mid', 'mik', 0), 'Bruno Test')]: '2026-09-07T10:00:00Z' }
+    const mit = lagen(zeige({ weeks: [woche], myTasks: [meine], persoenlich }).container)
+    expect(mit).toContain('saal-platz is-voll')
+    expect(mit).not.toContain('saal-platz is-wartet')
+  })
+
   it('der eigene Platz zeigt den Stand der eigenen Zusage — blass, gefüllt, rot (29.10.2026)', () => {
     // Bis dahin war er immer in Minze, ob zugesagt oder nicht.
     const { woche, meine } = meinAbend()
@@ -695,6 +710,26 @@ describe('Eine Zeile je Woche, in der etwas zu tun ist', () => {
     const teile = Object.fromEntries([...balken.children].map((k) => [k.className.replace('saal-balken-teil is-', ''), Number((k as HTMLElement).style.flexGrow)]))
     expect(teile).toEqual({ voll: 1, wartet: 3, problem: 1 })
     expect(balken.getAttribute('aria-label')).toBe(zahlBinden(`${t.saalBesetzung}: 5/5`))
+  })
+
+  /*
+   * Betreiber 31.10.2026: Der Haken „weiß Bescheid" füllt den Balken wie eine
+   * Zusage — bei 111 von 112 Personen ohne Konto bliebe er sonst blass, obwohl
+   * alle Bescheid wissen. Bruno und Carl haben kein Konto.
+   */
+  it('wem der Planer ohne Konto Bescheid gegeben hat, füllt den Balken wie eine Zusage', () => {
+    const weeks = WOCHEN.map(besetzt)
+    const confirmations: ConfirmationMap = { ...allesBestaetigt(weeks.slice(1)), [platzKey(weeks[0]!)]: 'bestätigt' }
+    const persoenlich = Object.fromEntries(
+      (['mid', 'we'] as const).flatMap((tab) => [
+        [sentKey(helferKey(W1, tab, 'mik', 0), 'Bruno Test'), '2026-09-07T10:00:00Z'],
+        [sentKey(helferKey(W1, tab, 'mik', 1), 'Carl Test'), '2026-09-07T10:00:00Z'],
+      ]),
+    )
+    const { container } = planer({ weeks, confirmations, persoenlich })
+    const balken = container.querySelector('.dash-plan-woche .saal-balken')!
+    const teile = Object.fromEntries([...balken.children].map((k) => [k.className.replace('saal-balken-teil is-', ''), Number((k as HTMLElement).style.flexGrow)]))
+    expect(teile).toEqual({ voll: 5 })
   })
 
   it('Konflikt und Engpass zählen zusammen als Probleme — „Probleme: 2", nicht „1 Konflikte"', () => {
