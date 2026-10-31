@@ -51,8 +51,9 @@ export function LinkSendenBlatt({ person, onZettel, onClose }: { person: Person;
   const adresse = person.mail.trim()
   const hatLink = state.anmeldeLinks.some((l) => l.personId === person.id)
   const angemeldet = state.members.some((m) => m.personId === person.id)
-  // Bis wann ein Link gälte, der jetzt entsteht — in der Sprache dessen, der ihn ausstellt.
-  const bis = gebundenesDatum(new Date(gueltigBis(new Date())), state.lang, 'tagMonat')
+  // Bis wann ein Link gälte, der jetzt entsteht — in der Sprache dessen, der ihn
+  // ausstellt. Mit Jahr: Er gilt ein Jahr, ohne stünde der Tag von heute da.
+  const bis = gebundenesDatum(new Date(gueltigBis(new Date())), state.lang, 'tagMonatJahr')
 
   /**
    * Die Texte für E-Mail-Entwurf und Nachricht laden — **vor** dem Ausstellen.

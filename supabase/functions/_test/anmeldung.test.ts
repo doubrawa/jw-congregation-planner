@@ -80,10 +80,10 @@ describe('Token und Adressen', () => {
     expect(await pruefsumme('abc')).toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad')
   })
 
-  it('gilt dreißig Tage', () => {
+  it('gilt ein Jahr — mit dem Zettel meldet man sich so lange selbst wieder an', () => {
     const jetzt = new Date('2026-10-15T08:00:00Z')
-    expect(LINK_TAGE).toBe(30)
-    expect(gueltigBis(jetzt)).toBe('2026-11-14T08:00:00.000Z')
+    expect(LINK_TAGE).toBe(365)
+    expect(gueltigBis(jetzt)).toBe('2027-10-15T08:00:00.000Z')
   })
 
   it('die interne Adresse liegt unter .invalid — dorthin geht nie etwas', () => {
@@ -105,11 +105,12 @@ describe('Die E-Mail mit dem Link', () => {
     expect(de.betreff).toBe('Dein Zugang zur Versammlung Musterstadt')
     expect(de.text).toContain('Hallo Anna,')
     expect(de.text).toContain('https://app.test/#anmelden=T')
-    expect(de.text).toContain('bis 14. November')
+    // Mit Jahr: Der Link gilt ein Jahr, ohne stünde auf einem frischen Zettel der Tag von heute.
+    expect(de.text).toContain('bis 14. November 2026')
     // Der Code auf einer eigenen Zeile: Auf dem iPhone öffnet der Link nur
     // Safari, in der App vom Home-Bildschirm meldet allein der Code an.
     expect(de.text).toContain('\nK7RD-2QWM\n')
-    expect(linkMail('en', werte).text).toContain('until November 14')
+    expect(linkMail('en', werte).text).toContain('until November 14, 2026')
     for (const lang of ['de', 'en', 'fr', 'ja', 'ar', 'fa']) expect(linkMail(lang, werte).text, lang).not.toMatch(/\{\w+\}/)
   })
 
@@ -125,7 +126,7 @@ describe('Die E-Mail mit dem Link', () => {
 
   it('eine unbekannte Sprache fällt auf Deutsch zurück — Text und Datum', () => {
     expect(linkMail('xx', werte).betreff).toBe('Dein Zugang zur Versammlung Musterstadt')
-    expect(linkDatum(werte.gueltigBis, 'xx')).toBe('14. November')
+    expect(linkDatum(werte.gueltigBis, 'xx')).toBe('14. November 2026')
   })
 
   it('jede Sprache trägt alle fünf Platzhalter und zitiert „Code eintippen" und „Link senden", wie die Knöpfe heißen', async () => {

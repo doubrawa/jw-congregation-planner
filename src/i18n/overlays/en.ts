@@ -707,7 +707,7 @@ export default {
   "neuerLinkBtn": "Send new link",
   "zettelDrucken": "Print slip",
   "linkOffenHint": "The link hasn’t been opened yet. Until then, let {name} know in person.",
-  "linkAbgelaufenHint": "The link expired before {name} logged in. A new one is valid for another 30 days.",
+  "linkAbgelaufenHint": "The link expired before {name} logged in. A new one is valid for another year.",
   "ohneLinkHintMail": "One tap on the link in the email, and {name} is in — no password needed.",
   "ohneLinkHintZettel": "Without an email address, {name} gets the link by message or on a slip with a QR code.",
   "perEmail": "By email",

@@ -52,9 +52,10 @@ Unter dem Namen der App steht in einem Satz, wofür sie da ist.
   scannen**. Geht das nicht, tippst du über **Code eintippen** den Code unter dem
   QR‑Code ein. Die App zeigt dir dann, wem der Code gehört; erst **Anmelden**
   meldet an. So merkst du es, wenn du den Zettel eines anderen erwischt hast.
-- Ein Link gilt **30 Tage** und lässt sich mehrmals benutzen, etwa auf Handy und
-  Tablet. Danach bleibt das Gerät angemeldet. Ist der Zettel weg, bekommst du
-  von den Ältesten einen neuen – der alte gilt dann nicht mehr.
+- Ein Link gilt **ein Jahr** und lässt sich mehrmals benutzen: auf Handy und
+  Tablet, und auch, wenn du einmal abgemeldet bist. Heb den Zettel deshalb auf.
+  Ein angemeldetes Gerät bleibt angemeldet. Ist der Zettel weg, bekommst du von
+  den Ältesten einen neuen – der alte gilt dann nicht mehr.
 - Unten kannst du die **Sprache der App** wählen.
 - Ganz unten steht die Adresse, an die man schreibt, wenn eine **neue
   Versammlung** die App nutzen möchte. Ein Tipp darauf öffnet eine fertige

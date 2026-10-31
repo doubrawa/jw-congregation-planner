@@ -83,14 +83,14 @@ describe('Die Zettel zu ausgestellten Links', () => {
       versammlung: 'Musterstadt',
     })
     expect(satz.zettel.map((z) => [z.name, z.code, z.bis])).toEqual([
-      ['Bernd Brand', 'K7RD-2QWM', '14. November'],
-      ['Anton Alt', 'HX4P-9VTA', '14. November'],
+      ['Bernd Brand', 'K7RD-2QWM', '14. November 2026'],
+      ['Anton Alt', 'HX4P-9VTA', '14. November 2026'],
     ])
     expect(satz.adresse).toBe('versammlung.app')
   })
 
   it('das Datum steht in der Sprache des Zettels — derselbe Tag wie in der E-Mail', () => {
     const satz = zettelSatz([link('p-a', 'K7RD-2QWM')], { namen: new Map(), lang: 'en', t: dict('en'), versammlung: 'Musterstadt' })
-    expect(satz.zettel[0]!.bis).toBe('November 14')
+    expect(satz.zettel[0]!.bis).toBe('November 14, 2026')
   })
 })

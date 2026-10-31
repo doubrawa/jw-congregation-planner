@@ -201,7 +201,7 @@ describe('Mit Link, noch nicht angemeldet', () => {
     expect(container.querySelector('.konto-hinweis')?.textContent).toBe(fill(t.linkOffenHint, { name: 'Anton' }))
   })
 
-  it('abgelaufen sagt es das — und dass ein neuer wieder 30 Tage gilt', () => {
+  it('abgelaufen sagt es das — und dass ein neuer wieder ein Jahr gilt', () => {
     const { container } = zeige(person(), { anmeldeLinks: [link(-1)] })
     expect(container.querySelector('.konto-hinweis')?.textContent).toBe(fill(t.linkAbgelaufenHint, { name: 'Anton' }))
   })
@@ -243,6 +243,17 @@ describe('Das Blatt „Link senden"', () => {
     const b = oeffnen(zeige(person()).container)
     expect(knopf(b, t.linkSenden)).toBeUndefined()
     expect(b.textContent).toContain(fill(t.keineAdresseHint, { name: 'Anton' }))
+  })
+
+  it('der Zettel gilt ein Jahr — das Datum steht mit Jahr, sonst stünde der Tag von heute da', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-31T10:00:00Z'))
+    try {
+      const b = oeffnen(zeige(person()).container)
+      expect(b.textContent).toContain(fill(t.aufZettelHint, { datum: zahlBinden('31. Oktober 2027') }))
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('gesendet: Meldung, der Link kommt in den Zustand, das Blatt geht zu', async () => {
@@ -478,7 +489,7 @@ describe('Zettel drucken', () => {
     const zettel = document.querySelector('.anmelde-zettel')!
     expect(zettel.querySelector('.anmelde-name')?.textContent).toBe('Anton Alt')
     expect(zettel.querySelector('.anmelde-code')?.textContent).toBe('K7RD-2QWM')
-    expect(zettel.textContent).toContain(fill(t.gueltigBisDatum, { datum: '14. November' }))
+    expect(zettel.textContent).toContain(fill(t.gueltigBisDatum, { datum: '14. November 2026' }))
     expect(zettel.querySelector('.anmelde-qr path')?.getAttribute('d')).toMatch(/^M\d+ \d+h\d+v1h-\d+z/)
     expect(zettel.textContent).toContain(fill(t.zettelAnleitung, { adresse: 'versammlung.app', frage: t.ohneMailFrage }))
   })

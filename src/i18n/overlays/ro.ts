@@ -707,7 +707,7 @@ export default {
   "neuerLinkBtn": "Trimite un link nou",
   "zettelDrucken": "Tipărește bilețelul",
   "linkOffenHint": "Linkul nu a fost încă deschis. Până atunci, ține legătura personal cu {name}.",
-  "linkAbgelaufenHint": "Linkul a expirat înainte ca {name} să se autentifice. Un link nou va fi valabil 30 de zile.",
+  "linkAbgelaufenHint": "Linkul a expirat înainte ca {name} să se autentifice. Un link nou va fi valabil un an.",
   "ohneLinkHintMail": "O atingere pe linkul din e-mail și {name} are acces — fără parolă.",
   "ohneLinkHintZettel": "Fără adresă de e-mail, {name} primește linkul prin mesaj sau pe un bilețel cu cod QR.",
   "perEmail": "Prin e-mail",

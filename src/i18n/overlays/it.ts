@@ -707,7 +707,7 @@ export default {
   "neuerLinkBtn": "Invia nuovo link",
   "zettelDrucken": "Stampa foglietto",
   "linkOffenHint": "Il link non è ancora stato aperto. Fino ad allora, avvisa {name} di persona.",
-  "linkAbgelaufenHint": "Il link è scaduto prima che {name} accedesse. Un nuovo link vale 30 giorni.",
+  "linkAbgelaufenHint": "Il link è scaduto prima che {name} accedesse. Un nuovo link vale un anno.",
   "ohneLinkHintMail": "Un tocco sul link dell’email e {name} ha accesso, senza bisogno di password.",
   "ohneLinkHintZettel": "Senza indirizzo email, {name} riceve il link via messaggio o su un foglietto con codice QR.",
   "perEmail": "Via email",

@@ -17,8 +17,13 @@
 // auf die Prüfsumme nicht lange stand.
 // =============================================================================
 
-/** So lange gilt ein Link (Entscheid des Betreibers, 15.10.2026). Ein neuer ersetzt ihn sofort. */
-export const LINK_TAGE = 30
+/**
+ * So lange gilt ein Link: ein Jahr (Entscheid des Betreibers, 31.10.2026; bis
+ * dahin 30 Tage). Mit dem Zettel meldet man sich in dieser Zeit jederzeit selbst
+ * wieder an — ein Kennwort gibt es nicht, und ohne E-Mail-Adresse auch kein
+ * „Link senden" auf der Anmeldeseite. Ein neuer Link ersetzt ihn sofort.
+ */
+export const LINK_TAGE = 365
 
 /** Der Name, unter dem der Link sein Token in der Adresse trägt: `…/#anmelden=<token>`. */
 export const LINK_PARAMETER = 'anmelden'

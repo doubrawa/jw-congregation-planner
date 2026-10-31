@@ -418,11 +418,11 @@ describe('anmelden: „Link senden" auf der Anmeldeseite', () => {
     expect((await call({ aktion: 'code', code })).body.sitzung).toBeDefined()
   })
 
-  it('ein abgelaufener Link gilt danach wieder dreißig Tage', async () => {
+  it('ein abgelaufener Link gilt danach wieder ein Jahr', async () => {
     links[0]!.gueltig_bis = new Date(Date.now() - 1000).toISOString()
     await call({ aktion: 'mail', email: 'anna@example.org' })
     const bis = new Date(links.find((l) => l.person_id === P_ANNA)!.gueltig_bis).getTime()
-    expect(bis - Date.now()).toBeGreaterThan(29 * 864e5)
+    expect(bis - Date.now()).toBeGreaterThan(364 * 864e5)
   })
 
   it('ein abgelaufener Zettel lebt dabei nicht wieder auf — wer ihn gefunden hat, kommt nicht herein', async () => {

@@ -275,7 +275,7 @@ export async function main(argv = process.argv.slice(2)) {
 
   console.log('\nWas jetzt noch von Hand kommt:')
   if (!nachher.konten && nachher.links) {
-    console.log('  · Mit dem Link aus Schritt 1 anmelden — er gilt 30 Tage. Verloren?')
+    console.log('  · Mit dem Link aus Schritt 1 anmelden — er gilt ein Jahr. Verloren?')
     console.log('    node scripts/zugang-ausstellen.mjs --person "Vorname Nachname"')
   }
   console.log('  · Den übrigen ihre Links geben: in der App unter Personen › Ohne Link › Links senden.')

@@ -707,7 +707,7 @@ export default {
   "neuerLinkBtn": "Envoyer un nouveau lien",
   "zettelDrucken": "Imprimer la fiche",
   "linkOffenHint": "Le lien n’a pas encore été ouvert. D’ici là, préviens {name} en personne.",
-  "linkAbgelaufenHint": "Le lien a expiré avant que {name} se connecte. Un nouveau lien sera valable 30\u00a0jours.",
+  "linkAbgelaufenHint": "Le lien a expiré avant que {name} se connecte. Un nouveau lien sera valable un an.",
   "ohneLinkHintMail": "Un appui sur le lien de l’e-mail, et {name} a accès à l’application — pas besoin de mot de passe.",
   "ohneLinkHintZettel": "Sans adresse e-mail, {name} reçoit le lien par message ou sur une fiche avec un code QR.",
   "perEmail": "Par e-mail",

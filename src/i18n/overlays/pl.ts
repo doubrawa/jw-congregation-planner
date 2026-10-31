@@ -707,7 +707,7 @@ export default {
   "neuerLinkBtn": "Wyślij nowy link",
   "zettelDrucken": "Wydrukuj karteczkę",
   "linkOffenHint": "Link nie został jeszcze otwarty. Do tego czasu informuj tę osobę osobiście: {name}.",
-  "linkAbgelaufenHint": "Link wygasł, zanim doszło do logowania ({name}). Nowy będzie ważny przez 30 dni.",
+  "linkAbgelaufenHint": "Link wygasł, zanim doszło do logowania ({name}). Nowy będzie ważny przez rok.",
   "ohneLinkHintMail": "Jedno dotknięcie linku w e-mailu i {name} ma dostęp — hasło nie jest potrzebne.",
   "ohneLinkHintZettel": "Bez adresu e-mail {name} dostaje link wiadomością albo na karteczce z kodem QR.",
   "perEmail": "E-mailem",

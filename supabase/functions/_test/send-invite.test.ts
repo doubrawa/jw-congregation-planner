@@ -244,12 +244,12 @@ describe('send-invite: der Link', () => {
     expect(zeile?.benutzt_at).toBeNull()
   })
 
-  it('gilt dreißig Tage', async () => {
+  it('gilt ein Jahr', async () => {
     const vorher = Date.now()
     const r = await call(fuerAnna)
     const bis = new Date(r.body.links?.[0]?.gueltigBis ?? 0).getTime()
-    expect(bis - vorher).toBeGreaterThanOrEqual(30 * 864e5 - 5000)
-    expect(bis - vorher).toBeLessThanOrEqual(30 * 864e5 + 5000)
+    expect(bis - vorher).toBeGreaterThanOrEqual(365 * 864e5 - 5000)
+    expect(bis - vorher).toBeLessThanOrEqual(365 * 864e5 + 5000)
   })
 
   it('der Link trägt das Token hinter #, der Zettel den Code — beide in der App', async () => {

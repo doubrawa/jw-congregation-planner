@@ -377,7 +377,7 @@ export const DE = {
     // (`linkSenden`) wie hier: Es ist derselbe Link.
     neuerLinkBtn: 'Neuen Link senden', zettelDrucken: 'Zettel drucken',
     linkOffenHint: 'Der Link ist noch nicht geöffnet. Bis dahin gibst du {name} persönlich Bescheid.',
-    linkAbgelaufenHint: 'Der Link ist abgelaufen, ohne dass {name} sich angemeldet hat. Ein neuer gilt wieder 30 Tage.',
+    linkAbgelaufenHint: 'Der Link ist abgelaufen, ohne dass {name} sich angemeldet hat. Ein neuer gilt wieder ein Jahr.',
     ohneLinkHintMail: 'Ein Tipp auf den Link in der E-Mail, und {name} ist angemeldet — ein Passwort braucht es nicht.',
     ohneLinkHintZettel: 'Ohne E-Mail-Adresse bekommt {name} den Link per Nachricht oder auf einem Zettel mit QR-Code.',
     perEmail: 'Per E-Mail', perEmailHint: 'Ein Tipp auf den Link, und {name} ist angemeldet.',

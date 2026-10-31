@@ -707,7 +707,7 @@ export default {
   "neuerLinkBtn": "Yeni bağlantı gönder",
   "zettelDrucken": "Kartı yazdır",
   "linkOffenHint": "Bağlantı henüz açılmadı. O zamana kadar şahsen haber ver: {name}.",
-  "linkAbgelaufenHint": "Bağlantının süresi, giriş yapılmadan doldu ({name}). Yeni bağlantı 30 gün geçerli olacak.",
+  "linkAbgelaufenHint": "Bağlantının süresi, giriş yapılmadan doldu ({name}). Yeni bağlantı bir yıl geçerli olacak.",
   "ohneLinkHintMail": "E-postadaki bağlantıya bir dokunuş yeter, {name} giriş yapmış olur — şifre gerekmez.",
   "ohneLinkHintZettel": "E-posta adresi olmadığında {name} bağlantıyı mesajla ya da QR kodlu bir kartla alır.",
   "perEmail": "E-postayla",

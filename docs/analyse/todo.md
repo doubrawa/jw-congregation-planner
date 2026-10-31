@@ -9146,7 +9146,7 @@ Tests: die Reihenfolge in `fs-bereich-tabs.test.tsx` und
 bewacht (`gruppenbesuche-reiter-rechts`). Handbücher (Verkündiger, Planer) und
 die sieben Bilder mit der Leiste neu, Maße unverändert.
 
-## Aufgenommen am 31. Oktober 2026 (T156)
+## Aufgenommen am 31. Oktober 2026 (T156–T159)
 
 ### T156 · Mutationsprobe abgeschafft, Unit-Tests mit Gegenprobe stattdessen 🔧 ✅ umgesetzt (31. Oktober 2026)
 
@@ -9281,6 +9281,43 @@ Datei gleich HEAD (15 und 16 Dateien); `send-plan` antwortet auf OPTIONS mit
 200 und ohne Anmeldung mit 401, `send-reminders` beidem mit 401 (nur mit
 `CRON_SECRET`, wie bisher). Dann gepusht.
 
+### T159 · Ein Anmelde-Link gilt ein Jahr 🔧 ✅ umgesetzt und ausgerollt (31. Oktober 2026)
+
+Frage des Betreibers beim Planen der Live-Tests: Wann braucht jemand, der sich
+mit dem Zettel angemeldet hat, wieder einen? Die Sitzung liegt im Speicher des
+Browsers und läuft nicht ab (live nachgesehen: keine der 12 Sitzungen mit
+`not_after`). Hinaus fällt man durch Abmelden, gelöschte Browserdaten, ein
+neues Gerät, die installierte App auf dem iPhone (eigener Speicher), ein Jahr
+ohne Nutzung (T125) — und in Safari, das den Speicher einer Seite nach sieben
+Tagen Safari-Nutzung ohne Besuch löscht (WebKit-Regel, für installierte Apps
+nicht; nicht selbst gemessen). Mit dem Zettel meldet man sich dann wieder an,
+aber nur 30 Tage lang.
+
+Ein Kennwort zum selbst Wiederanmelden verworfen (31.10.2026): Ohne E-Mail
+bräuchte es einen Anmeldenamen dazu, „Kennwort vergessen" ginge doch wieder
+über den Admin, und selbst gewählte Kennwörter wären schwächer als der Code.
+Der Code auf dem Zettel ist schon eines, ohne Namen. **Entscheid: „Code ein
+Jahr gültig".**
+
+- `LINK_TAGE` 30 → 365 (`_shared/anmeldung.ts`). Ein Jahr passt zur
+  Aufbewahrung: Ein vergessener Zettel verfällt von selbst.
+- Das Ablaufdatum steht jetzt **mit Jahr** da — auf dem Zettel, in E-Mail und
+  Nachricht (`linkDatum`) und im Blatt „Link senden" (`tagMonatJahr`). Ohne
+  stünde auf einem frischen Zettel der Tag von heute.
+- „Ein neuer gilt wieder ein Jahr" in allen 12 Sprachen
+  (`linkAbgelaufenHint`), Handbuch für Verkündiger („Heb den Zettel deshalb
+  auf"), Kommentar in `schema.sql`, `neuaufbau-fahren.mjs`.
+- Tests auf ein Jahr gezogen, die Datumsproben aufs Jahr geschärft, neu: das
+  Datum im Blatt „Link senden" (Gegenprobe mit `tagMonat` rot). Suite
+  7591/7591, tsc, Lint.
+
+**Ausgerollt:** `anmelden` und `send-invite` (die beiden einzigen, die
+`anmeldung.ts`/`anmelde-mail.ts` laden), heruntergeladen und Datei für Datei
+gleich HEAD (11 Dateien); `send-invite` ohne Anmeldung 401, `anmelden` OPTIONS
+200. Dann gepusht. **Nicht verlängert:** der eine schon ausgestellte Link
+(Krumbach, bis 16.11.2026) — das Schreiben in die Datenbank hat der Auto-Modus
+abgelehnt. Ein neuer Link gilt ein Jahr.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -9319,9 +9356,9 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
-29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑
+29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑
 
-**157 der 158 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+**158 der 159 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |

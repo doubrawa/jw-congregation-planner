@@ -707,7 +707,7 @@ export default {
   "neuerLinkBtn": "Enviar nuevo enlace",
   "zettelDrucken": "Imprimir tarjeta",
   "linkOffenHint": "Todavía no se ha abierto el enlace. Mientras tanto, avisa a {name} en persona.",
-  "linkAbgelaufenHint": "El enlace caducó sin que {name} iniciara sesión. Uno nuevo vuelve a valer 30 días.",
+  "linkAbgelaufenHint": "El enlace caducó sin que {name} iniciara sesión. Uno nuevo vuelve a valer un año.",
   "ohneLinkHintMail": "Un toque en el enlace del correo y {name} ya tiene acceso; no hace falta contraseña.",
   "ohneLinkHintZettel": "Sin dirección de correo, {name} recibe el enlace por mensaje o en una tarjeta con código QR.",
   "perEmail": "Por correo",

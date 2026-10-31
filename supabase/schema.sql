@@ -848,7 +848,8 @@ alter table public.assignment_log
 -- App soll, bekommt vom Admin einen Link — per E-Mail oder auf einem Zettel mit
 -- QR-Code und einem Code zum Eintippen (`send-invite` stellt aus, `anmelden`
 -- löst ein). **Eine Zeile je Person**: Ein neuer Link ersetzt den alten sofort.
--- Er gilt mehrfach (Handy und Tablet), bis `gueltig_bis` (30 Tage).
+-- Er gilt mehrfach (Handy und Tablet), bis `gueltig_bis` (ein Jahr, bis zum
+-- 31.10.2026 waren es 30 Tage — `LINK_TAGE`).
 --
 -- Token und Code stehen nur als SHA-256 da (`_shared/anmeldung.ts`), und auch
 -- die sieht kein Client: Die Spalten sind für die App gesperrt (unten). Die

@@ -30,13 +30,14 @@ export interface LinkMailWerte {
 
 /**
  * Der letzte Tag, an dem der Link gilt, in der Sprache der E-Mail („14.
- * November"). Ohne Jahr: Er liegt höchstens dreißig Tage voraus. Kennt `Intl`
- * die Sprache nicht, steht er deutsch da — ein Datum in einer Sprache, die
- * niemand gewählt hat, wäre schlechter.
+ * November 2026"). Mit Jahr, seit der Link ein Jahr gilt: Ohne stünde auf einem
+ * frischen Zettel der Tag von heute. Kennt `Intl` die Sprache nicht, steht er
+ * deutsch da — ein Datum in einer Sprache, die niemand gewählt hat, wäre
+ * schlechter.
  */
 export function linkDatum(gueltigBis: string, lang: string | null | undefined): string {
   const tag = new Date(gueltigBis)
-  const optionen: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', timeZone: 'UTC' }
+  const optionen: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }
   try {
     return new Intl.DateTimeFormat(LOCALE_JE_CODE[lang ?? ''] ?? 'de-DE', optionen).format(tag)
   } catch {
