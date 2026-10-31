@@ -12380,6 +12380,35 @@ export const KATALOG = [
     ersetzen:
       "    'treffpunkte',\n    ...(besuche ? (['gruppenbesuche'] as const) : []),\n    ...(trolleys ? (['trolleys'] as const) : []),\n    ...(grundplan ? (['grundplan'] as const) : []),\n",
   },
+  // ── Review vom 31.10.2026 (alles seit dem 16.10.) ────────────────────────
+  {
+    id: 'tausch-eigene-ungueltige-anfrage-sperrt-nicht',
+    datei: 'supabase/functions/tauschen/index.ts',
+    regel: 'Die eigene Anfrage, deren anderer Platz inzwischen jemand anderem gehört, sperrt keine neue zu demselben Platz.',
+    suchen: '  return woche?.[teile.tab]?.helpers?.[teile.svc]?.[teile.pos]?.pid === a.an_person\n',
+    ersetzen: '  return Boolean(woche)\n',
+  },
+  {
+    id: 'tausch-eigene-gueltige-anfrage-sperrt',
+    datei: 'supabase/functions/tauschen/index.ts',
+    regel: 'Eine je Platz: Hat der Gefragte den Platz noch, gilt die Anfrage weiter und sperrt eine zweite.',
+    suchen: '    if (await gefragterHatDenPlatz(k, lage, alt)) return fehler(\'already-asked\')\n',
+    ersetzen: '',
+  },
+  {
+    id: 'anwesenheit-formular-schluessel-mit-zahlen',
+    datei: 'src/anwesenheit/AnwesenheitFormular.tsx',
+    regel: 'Kommt die Zahl des anderen nach dem Öffnen herein, beginnt das Formular neu — Speichern löscht sie nicht.',
+    suchen: "  return <Formular key={`${eintrag?.saal ?? ''}|${eintrag?.video ?? ''}`} {...props} />\n",
+    ersetzen: '  return <Formular {...props} />\n',
+  },
+  {
+    id: 'anwesenheit-auch-am-desktop',
+    datei: 'src/programm/ZusammenkunftAnsicht.tsx',
+    regel: 'Auch am Desktop (beide Tage nebeneinander) steht unter jedem Tag „Anwesend" — samt „Eintragen", wo die Zahl fehlt.',
+    suchen: '      <AnwesenheitZeile week={rawWeek} tab={tab} />\n',
+    ersetzen: '',
+  },
 ]
 
 /**

@@ -126,6 +126,35 @@ describe('Das Formular', () => {
     expect(feld(container, t.anwesendSaal).value).toBe('70')
     expect(feld(container, t.anwesendVideo).value).toBe('')
   })
+
+  /*
+   * Review 31.10.2026: Der Saalordner hat die Karte auf dem Start offen, der
+   * Zoom-Ordner trägt das Video ein, und die App des Saalordners lädt nach. Bis
+   * dahin stand im Formular weiter das leere Video-Feld — Speichern schickte es
+   * als `null` und löschte die Zahl des Zoom-Ordners.
+   */
+  it('kommt die Zahl des anderen erst nach dem Öffnen herein, steht sie im Feld — und Speichern löscht sie nicht', () => {
+    const state = zustand()
+    const dispatch = vi.fn()
+    function Buehne({ eintrag }: { eintrag: Anwesenheit | undefined }) {
+      const store = useStaticStore(state)
+      return (
+        <AppDispatchContext.Provider value={dispatch}>
+          <AppStoreContext.Provider value={store}>
+            <AppStateContext.Provider value={state}>
+              <AnwesenheitFormular woche="2026-09-07" tab="mid" eintrag={eintrag} />
+            </AppStateContext.Provider>
+          </AppStoreContext.Provider>
+        </AppDispatchContext.Provider>
+      )
+    }
+    const { container, rerender } = render(<Buehne eintrag={undefined} />)
+    rerender(<Buehne eintrag={{ woche: '2026-09-07', tab: 'mid', saal: null, video: 12, pid: 'p4' }} />)
+    expect(feld(container, t.anwesendVideo).value).toBe('12')
+    fireEvent.change(feld(container, t.anwesendSaal), { target: { value: '80' } })
+    fireEvent.click(knopf(t.anwesendSpeichern)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'anwesenheitSetzen', woche: '2026-09-07', tab: 'mid', saal: 80, video: 12 })
+  })
 })
 
 describe('Die Karte auf dem Start', () => {
