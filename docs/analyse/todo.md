@@ -9389,10 +9389,15 @@ Gegenproben zu 1–3 rot. Suite 7526/7526, tsc, Lint.
 `shell-9dae98d`), dann `anmelden` (v14) und `send-invite` (v27) —
 heruntergeladen und Datei für Datei gleich HEAD (7 Dateien); `send-invite` ohne
 Anmeldung 401, `anmelden` OPTIONS 200, `aktion: 'mail'` 400, ein Code 404.
-**Offen beim Betreiber:** `schema.sql` einspielen — `drop function
-personen_mails`, `drop column persons.mail`, das Leserecht an `persons` —, das
-die 94 Adressen endgültig löscht. Bis dahin liest niemand die Spalte; die App
-läuft mit und ohne sie.
+**Schema eingespielt vom Betreiber (31.10.2026):** Nachgesehen per
+`db query` — `persons.mail` und `personen_mails()` gibt es nicht mehr;
+`authenticated` liest `persons` ganz, `anon` nicht; `absences.reason` bleibt
+gesperrt, `to_date` lesbar. Als Admin (Rolle `authenticated`, in einer
+zurückgerollten Sitzung) liest die App 112 Personen, mit den Spalten der App
+wie mit `*`, und 177 Abwesenheiten. Das ausgelieferte Bündel nennt weder
+`personen_mails` noch `aktion: 'mail'`. Nebenbei: Live hat `persons` noch die
+Spalte `dn` (seit T110 aus `schema.sql`, nie entfernt, leer) — nicht
+angefasst.
 
 ## Was bewusst offen bleibt
 
