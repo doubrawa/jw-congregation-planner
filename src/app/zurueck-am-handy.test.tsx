@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import type { AppState } from './context'
+import { isoDay, montagVon, tagNach } from '../data/meeting-dates'
 import type { WeitererPlan } from '../data/types'
 import {
   WaechterAttrappe,
@@ -48,8 +49,13 @@ const t = dict('de')
 // jsdom kennt `matchMedia` nicht; die Wisch-Gesten fragen danach.
 window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
 
-/** Ein Plan, der läuft — damit die Liste der Weiteren Pläne etwas zum Öffnen hat. */
-const PLAN: WeitererPlan = { id: 'pl-x', name: 'Winterdienst', von: '2026-01-05', bis: '2099-12-27', entwurf: false }
+/**
+ * Ein Plan, der läuft — damit die Liste der Weiteren Pläne etwas zum Öffnen
+ * hat. Ein knappes Jahr um heute, nicht bis 2099: Geöffnet steht jede seiner
+ * Wochen da, und 3900 Zeilen kosteten den Test 2,5 s (31.10.2026).
+ */
+const DIESE_WOCHE = montagVon(isoDay(new Date()))
+const PLAN: WeitererPlan = { id: 'pl-x', name: 'Winterdienst', von: tagNach(DIESE_WOCHE, -7 * 8), bis: tagNach(DIESE_WOCHE, 7 * 44 + 6), entwurf: false }
 
 let basis = ''
 
