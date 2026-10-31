@@ -9463,7 +9463,7 @@ Desktop (15 → 100 Zeilen, nach Zurück weiter „Alle") und am Handy in ar.
 **Live seit 31.10.2026** mit dem Push von `4c74a57e` (Pages, `sw.js` →
 `shell-4c74a57`). Datenbank und Functions unverändert.
 
-### T162 · Weitere Pläne: Personen einplanen, Wochen und Monate auslassen 🔧 ✅ umgesetzt (31. Oktober 2026)
+### T162 · Weitere Pläne: Personen einplanen, Wochen und Monate auslassen 🔧 ✅ umgesetzt und ausgerollt (31. Oktober 2026)
 
 „'weitere pläne' soll auch möglich sein einzelne personen einzuplanen und nicht
 nur gruppen. und man soll auch wochen/monate auslassen können durch löschen —
@@ -9540,6 +9540,9 @@ Nachgesehen: `person_id` und `aus` (`default false`, `not null`),
 `plan_eintraege_person_fk` (`on delete set null (person_id)`) und
 `plan_eintraege_wer` da; per anon-REST `select=…,person_id,aus` → `200 []`,
 Gegenprobe mit erfundener Spalte → `400 42703`. Functions unverändert.
+
+**Live seit 31.10.2026 21:18** mit dem Push von `85e2898f` (Pages grün,
+`sw.js` → `shell-85e2898`).
 
 ## Was bewusst offen bleibt
 
