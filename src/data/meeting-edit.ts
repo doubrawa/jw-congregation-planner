@@ -174,11 +174,20 @@ function forEachAltMeeting(week: Week, tab: MeetingKey, fn: (meeting: Meeting) =
  *
  * Wer hier eine Zeile vergisst, merkt nichts: Die Woche sieht richtig aus, und
  * erst eine Sprache, die Monate später dazukommt, legt fremde Titel darüber.
+ *
+ * **Die Marke bekommt nur eine Variante, die den bisherigen Ablauf mitgetragen
+ * hat.** War die Zusammenkunft schon umgebaut und die Variante nicht, kam sie
+ * erst danach dazu (nachgeholt) und kennt den Umbau nicht. Bis zum 31.10.2026
+ * bekam sie die Marke beim nächsten Umbau trotzdem — und galt damit wieder:
+ * Ihre Titel lagen über einem anderen Ablauf, in der Kreisaufseher-Woche nach
+ * dem Zurücknehmen sogar das Thema des Schlussvortrags über dem Abschluss
+ * (Befund A1).
  */
 function umbauMerken(week: Week, tab: MeetingKey): void {
+  const schonUmgebaut = week[tab].umgebaut === true
   week[tab].umgebaut = true
   forEachAltMeeting(week, tab, (m) => {
-    m.umgebaut = true
+    if (!schonUmgebaut || m.umgebaut) m.umgebaut = true
   })
 }
 
@@ -690,13 +699,17 @@ function midBibelstudiumZurueck(w: Week, coData: Dienstwoche): void {
     idx = lacItems.length - 1
   }
   lacItems[idx] = structuredClone(orig)
-  // Jede Variante bekommt ihren eigenen Titel zurück; fehlt einer (Variante
-  // erst später dazugeholt), bleibt der kanonische — besser als
-  // „Dienstvortrag" in einer Woche ohne Kreisaufseher.
+  // Jede Variante bekommt ihren eigenen Titel zurück — den gemerkten. Ohne
+  // gemerkten Titel war sie beim Einschalten nicht da: Sie wurde nachgeholt,
+  // während die Woche umgebaut war, und trägt noch ihren Titel von jw.org. Den
+  // überschrieb hier bis zum 31.10.2026 der kanonische (Befund A1); gedacht
+  // war der Rückfall für eine Variante mit „Dienstvortrag", und die hat
+  // immer einen gemerkten Titel (`midDienstvortrag`).
   for (const [code, variant] of Object.entries(w.alt ?? {})) {
     const it = variant.mid?.sections[lacIdx]?.items[idx]
-    if (!it || isSong(it)) continue
-    it.title = coData.midOrigAlt?.[code] ?? orig.title
+    const gemerkt = coData.midOrigAlt?.[code]
+    if (!it || isSong(it) || gemerkt === undefined) continue
+    it.title = gemerkt
   }
 }
 
