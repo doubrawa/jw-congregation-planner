@@ -1,4 +1,4 @@
-/** @vitest-environment jsdom */
+/** @vitest-environment happy-dom */
 import { describe, expect, it } from 'vitest'
 import type { AppState } from '../app/context'
 import type { TrolleyTermin } from '../data/types'

@@ -1,4 +1,4 @@
-/** @vitest-environment jsdom */
+/** @vitest-environment happy-dom */
 /**
  * **Die Anwesenden im Zustand** (T152): Eintragen legt die Zeile einer
  * Zusammenkunft an oder ersetzt sie — eine je Zusammenkunft —, merkt sich, wer

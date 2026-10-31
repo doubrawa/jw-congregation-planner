@@ -1,4 +1,4 @@
-/** @vitest-environment jsdom */
+/** @vitest-environment happy-dom */
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import {
@@ -342,10 +342,20 @@ function sichtbarerText(container: HTMLElement): string {
   return sichtbareTexte(container.ownerDocument.body).join('\n')
 }
 
+/** Je Wort sein Ausdruck, einmal gebaut — die Proben fragen jedes Wort auf jedem Bildschirm ab. */
+const WORTGRENZEN = new Map<string, RegExp>()
+
 /** Kommt `wort` als eigenes Wort im Text vor (nicht als Teil eines längeren)? */
 function stehtDrin(text: string, wort: string): boolean {
-  const escaped = wort.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return new RegExp(`(?<!\\p{L})${escaped}(?!\\p{L})`, 'u').test(text)
+  // Steht es nicht einmal als Teil da, braucht es den Ausdruck nicht.
+  if (!text.includes(wort)) return false
+  let muster = WORTGRENZEN.get(wort)
+  if (!muster) {
+    const escaped = wort.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    muster = new RegExp(`(?<!\\p{L})${escaped}(?!\\p{L})`, 'u')
+    WORTGRENZEN.set(wort, muster)
+  }
+  return muster.test(text)
 }
 
 describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {

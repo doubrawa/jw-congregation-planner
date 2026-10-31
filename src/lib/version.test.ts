@@ -1,4 +1,4 @@
-/** @vitest-environment jsdom */
+/** @vitest-environment happy-dom */
 /*
  * Schwerpunkt liegt auf dem, was NICHT passieren darf: ein Neuladen zur
  * falschen Zeit reißt dem Nutzer die App unter den Fingern weg — schlimmer als

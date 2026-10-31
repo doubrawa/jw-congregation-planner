@@ -1,15 +1,16 @@
-/** @vitest-environment jsdom */
+/** @vitest-environment happy-dom */
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { useRef, type ReactNode } from 'react'
 import { useDialogFocus } from './useDialogFocus'
 
 /**
- * jsdom rechnet kein Layout und liefert `offsetParent` deshalb **immer** null.
- * Der Haken benutzt genau das, um unsichtbare Elemente zu überspringen — ohne
- * Ersatz hielte er hier jedes Element für unsichtbar und die Falle liefe ins
- * Leere, ohne dass ein Test es merkte. Der Ersatz bildet die Browser-Regel
- * nach, soweit sie hier zählt: sichtbar ist, was im Dokument hängt.
+ * Die Proben-Umgebung rechnet kein Layout: jsdom liefert `offsetParent`
+ * **immer** null, happy-dom gar nichts (`undefined`). Der Haken benutzt genau
+ * das, um unsichtbare Elemente zu überspringen — ohne Ersatz hielte er hier
+ * jedes Element für unsichtbar (jsdom: die Falle liefe ins Leere) oder jedes
+ * für sichtbar (happy-dom), ohne dass ein Test es merkte. Der Ersatz bildet die
+ * Browser-Regel nach, soweit sie hier zählt: sichtbar ist, was im Dokument hängt.
  */
 beforeAll(() => {
   Object.defineProperty(HTMLElement.prototype, 'offsetParent', {

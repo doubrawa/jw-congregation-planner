@@ -1,4 +1,5 @@
 /** @vitest-environment jsdom */
+// jsdom statt happy-dom: Hier zählt der echte Verlauf — sein `popstate` kommt wie im Browser erst nach `history.back()` (tests/dom-umgebung.ts).
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { useState } from 'react'

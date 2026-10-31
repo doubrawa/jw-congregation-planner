@@ -1,7 +1,8 @@
-/** @vitest-environment jsdom */
+/** @vitest-environment happy-dom */
 import { createClient } from '@supabase/supabase-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { gespeicherteSitzung, sitzungsSchluessel } from './gespeicherte-sitzung'
+import { speicherSpion } from '../../tests/speicher-spion'
 
 /**
  * **Die abgelegte Sitzung lesen, ohne auf Supabase zu warten** (19.10.2026).
@@ -57,9 +58,12 @@ describe('Die abgelegte Sitzung', () => {
   })
 
   it('ohne Datenbank (leerer Schlüssel) wird gar nicht erst gelesen', () => {
-    const lesen = vi.spyOn(Storage.prototype, 'getItem')
+    const lesen = speicherSpion('getItem')
     expect(gespeicherteSitzung('')).toBeNull()
     expect(lesen).not.toHaveBeenCalled()
+    // Die Gegenprobe zum Spion: Mit Schlüssel liest sie, und er sieht es.
+    gespeicherteSitzung(SCHLUESSEL)
+    expect(lesen).toHaveBeenCalledWith(SCHLUESSEL)
   })
 
   it.each([
@@ -81,10 +85,13 @@ describe('Die abgelegte Sitzung', () => {
   })
 
   it('ist der Speicher gesperrt (privater Modus), gibt es keine — und keinen Absturz', () => {
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    // Eine gültige Sitzung liegt da — `null` kommt also vom gesperrten Speicher, nicht vom leeren.
+    ablegen(SITZUNG)
+    const lesen = speicherSpion('getItem').mockImplementation(() => {
       throw new DOMException('gesperrt', 'SecurityError')
     })
     expect(gespeicherteSitzung(SCHLUESSEL)).toBeNull()
+    expect(lesen).toHaveBeenCalled()
   })
 
   it('gelöscht wird hier nichts — das bleibt auth-js überlassen', () => {

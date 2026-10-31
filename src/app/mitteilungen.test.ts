@@ -1,4 +1,4 @@
-/** @vitest-environment jsdom */
+/** @vitest-environment happy-dom */
 import { describe, expect, it } from 'vitest'
 import { fsKey, helferKey, punktKey, ratgeberKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { rechteVon } from '../data/rechte'

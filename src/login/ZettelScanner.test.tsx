@@ -1,4 +1,4 @@
-/** @vitest-environment jsdom */
+/** @vitest-environment happy-dom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { AppStoreContext, useStaticStore } from '../app/context'
@@ -33,10 +33,15 @@ function zeige({ onGefunden = vi.fn(), onAbbrechen = vi.fn() }: { onGefunden?: (
   return render(<Buehne />)
 }
 
-/** Ein Kamerabild, das „läuft", und eine Spur, deren Ausschalten man sieht. */
+/**
+ * Ein Kamerabild, das „läuft", und eine Spur, deren Ausschalten man sieht. Wo
+ * es ihn gibt, ein echter `MediaStream`: Als `srcObject` nimmt das Video nichts
+ * anderes an — der Browser nicht und happy-dom auch nicht (jsdom kennt ihn nicht).
+ */
 function kamera() {
   const spur = { stop: vi.fn() }
-  return { spur, strom: { getTracks: () => [spur] } as unknown as MediaStream }
+  const strom = Object.assign(typeof MediaStream === 'function' ? new MediaStream() : {}, { getTracks: () => [spur] })
+  return { spur, strom: strom as unknown as MediaStream }
 }
 
 function kameraFrage(antwort: Promise<MediaStream>) {
@@ -49,7 +54,7 @@ beforeEach(() => {
   gelesen.length = 0
   leser.mockClear()
   leserLaden.mockReset().mockImplementation(() => Promise.resolve(leser))
-  // jsdom spielt kein Video ab und hat nie ein Bild — beides nachgestellt.
+  // Die Probe spielt kein Video ab und hat nie ein Bild — beides nachgestellt.
   vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
   Object.defineProperty(HTMLMediaElement.prototype, 'readyState', { get: () => 4, configurable: true })
 })
