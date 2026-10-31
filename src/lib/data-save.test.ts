@@ -495,6 +495,11 @@ describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
  */
 describe('send-plan: der Entzug', () => {
   const abwarten = () => new Promise((r) => setTimeout(r, 0))
+  // Auch wenn eine Erwartung scheitert: Melder und Konsolen-Spion gelten nur für den einen Fall.
+  afterEach(() => {
+    setSchreibfehlerMelder(null)
+    vi.restoreAllMocks()
+  })
 
   it('je Entzug Schlüssel, Name, Person, Bezeichnung und Termin — in einem Aufruf', async () => {
     chain.functions.invoke.mockClear()
@@ -528,8 +533,6 @@ describe('send-plan: der Entzug', () => {
     sendPlanEntzug([ENTZUG])
     await abwarten()
     expect(fehler).not.toHaveBeenCalled()
-    setSchreibfehlerMelder(null)
-    fehler.mockRestore()
   })
 })
 
@@ -570,8 +573,11 @@ describe('send-plan: Jetzt erinnern', () => {
 describe('Weitere Schreiber mit Gegenfall', () => {
   const geschrieben = () => new Promise((r) => setTimeout(r, 0))
   const OHNE_FEHLER = chain.then
+  // Auch wenn eine Erwartung scheitert: Antworten, Melder und Konsolen-Spion gelten nur für den einen Fall.
   afterEach(() => {
     chain.then = OHNE_FEHLER
+    setSchreibfehlerMelder(null)
+    vi.restoreAllMocks()
   })
   /** Die nächsten Antworten der Kette der Reihe nach; danach wieder leer und ohne Fehler. */
   function antworten(...folge: Array<{ data?: unknown; error?: unknown }>) {
@@ -614,8 +620,7 @@ describe('Weitere Schreiber mit Gegenfall', () => {
     expect(chain.delete).toHaveBeenCalled()
     expect(chain.upsert).not.toHaveBeenCalled()
     expect(melder).toHaveBeenCalledTimes(1)
-    setSchreibfehlerMelder(null)
-    fehler.mockRestore()
+    expect(fehler).toHaveBeenCalled()
   })
 
   it('saveFamily legt erst den Haushalt an, dann die Personen — scheitert der Haushalt, keine Person', async () => {
@@ -634,8 +639,7 @@ describe('Weitere Schreiber mit Gegenfall', () => {
     expect(chain.upsert).toHaveBeenCalledTimes(1)
     expect(chain.from).not.toHaveBeenCalledWith('persons')
     expect(melder).toHaveBeenCalledTimes(1)
-    setSchreibfehlerMelder(null)
-    fehler.mockRestore()
+    expect(fehler).toHaveBeenCalled()
   })
 
   it('deleteHouseholdRow löscht nur den Haushalt — die Personen verlieren ihn über den Fremdschlüssel', () => {
@@ -685,6 +689,5 @@ describe('Weitere Schreiber mit Gegenfall', () => {
     chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: null, error: { message: 'boom' } }))
     expect(await sendPlan('2026-09-07', '2026-09-08')).toBeNull()
     expect(fehler).toHaveBeenCalledWith('[send-plan/plan]', 'boom')
-    fehler.mockRestore()
   })
 })
