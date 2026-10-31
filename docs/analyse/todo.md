@@ -9460,6 +9460,9 @@ der Monatsnamen (nötig wegen der Spezifität), zwei Konstanten fürs Jahr
 Gegenproben zu 1 und 2 rot. Suite 7541/7541, tsc, Lint, Laufzeitprüfung am
 Desktop (15 → 100 Zeilen, nach Zurück weiter „Alle") und am Handy in ar.
 
+**Live seit 31.10.2026** mit dem Push von `4c74a57e` (Pages, `sw.js` →
+`shell-4c74a57`). Datenbank und Functions unverändert.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
