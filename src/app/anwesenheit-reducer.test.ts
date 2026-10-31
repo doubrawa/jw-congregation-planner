@@ -32,6 +32,20 @@ describe('anwesenheitSetzen', () => {
     expect(s.anwesenheit.map((a) => `${a.woche}|${a.tab}`)).toEqual(['2026-09-07|we', '2026-09-14|mid'])
   })
 
+  it('in derselben Woche steht die Wochenmitte vor dem Wochenende — auch wenn das Wochenende zuerst eingetragen war', () => {
+    const vorher = start({ anwesenheit: [{ woche: '2026-09-07', tab: 'we', saal: 80, video: 10, pid: null }] })
+    const s = reducer(vorher, { type: 'anwesenheitSetzen', woche: '2026-09-07', tab: 'mid', saal: 64, video: 23 })
+    expect(s.anwesenheit.map((a) => `${a.woche}|${a.tab}`)).toEqual(['2026-09-07|mid', '2026-09-07|we'])
+  })
+
+  it('ersetzt wird nur die eine Zusammenkunft — die andere bleibt, wie sie war', () => {
+    const wochenende = { woche: '2026-09-07', tab: 'we' as const, saal: 80, video: 10, pid: 'p4' }
+    const vorher = start({ anwesenheit: [{ woche: '2026-09-07', tab: 'mid', saal: 64, video: null, pid: 'p4' }, wochenende] })
+    const s = reducer(vorher, { type: 'anwesenheitSetzen', woche: '2026-09-07', tab: 'mid', saal: 65, video: 20 })
+    expect(s.anwesenheit).toEqual([{ woche: '2026-09-07', tab: 'mid', saal: 65, video: 20, pid: 'p9' }, wochenende])
+    expect(s.anwesenheit[1]).toBe(wochenende)
+  })
+
   it('Ungültiges kommt nicht hinein: negativ, gebrochen, über 9999', () => {
     const vorher = start()
     for (const saal of [-1, 8.5, 10000]) {

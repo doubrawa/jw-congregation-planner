@@ -46,4 +46,17 @@ describe('fsAbweichungen', () => {
       expect.objectContaining({ art: 'anders', regel: regeln[0], inst: expect.objectContaining({ place: 'Per Video' }) }),
     ])
   })
+
+  it('mehrere Abweichungen stehen in der Folge der Woche — Mittwoch vor Samstag, früh vor spät, gleich welcher Art', () => {
+    // Der Kasten „Anders als sonst" liest sie vor, wie die Woche verläuft.
+    // Gesammelt werden sie nach Art (erst was entfällt, dann der Rest).
+    const regeln = [regel({ aus: [WOCHE] }), regel({ id: 'r2', grp: null, wd: 3, time: '18:00', place: 'Saal' })]
+    const ist = genFsWeek(WOCHE, regeln).map((i) => (i.ruleId === 'r2' ? { ...i, place: 'Per Video' } : i))
+    const frueh = { id: 'x0700', ruleId: null, grp: null, wd: 3, time: '07:00', place: 'Marktplatz', leader: '' }
+    expect(fsAbweichungen(WOCHE, regeln, [...ist, frueh]).map((a) => [a.art, a.inst.wd, a.inst.time])).toEqual([
+      ['zusaetzlich', 3, '07:00'],
+      ['anders', 3, '18:00'],
+      ['entfaellt', 6, '09:30'],
+    ])
+  })
 })

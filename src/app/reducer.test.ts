@@ -627,6 +627,19 @@ describe('Personen', () => {
     expect(next.fsWeeks[0]![1]!.leader).toBe('Jemand Anders')
   })
 
+  it('updatePerson mit unverändertem Namen lässt Wochen und Treffpunkte, wie sie sind — es gibt nichts zu schreiben', () => {
+    // „Person bearbeiten" schickt Vor- und Nachname mit, auch wenn nur die
+    // Adresse neu ist. Die Gegenprobe (neuer Name) steht darüber.
+    const target = person('Manfred Albrecht')
+    const s = makeState({
+      fsWeeks: [[{ id: '0|r1', ruleId: 'r1', grp: null, wd: 6, time: '09:30', place: 'Saal', leader: 'Manfred Albrecht', lpid: target.id }]],
+    })
+    const next = reducer(s, { type: 'updatePerson', id: target.id, patch: { fn: 'Manfred', ln: 'Albrecht', mail: 'manfred@musterstadt.example' } })
+    expect(next.persons.find((p) => p.id === target.id)?.mail).toBe('manfred@musterstadt.example')
+    expect(next.weeks).toBe(s.weeks)
+    expect(next.fsWeeks).toBe(s.fsWeeks)
+  })
+
   it('updatePerson spiegelt das Admin-Recht in die Konten (eigenes Konto ausgenommen)', () => {
     const target = person('Manfred Albrecht')
     const s = makeState({
@@ -1269,6 +1282,19 @@ describe('autoAssign / clearAssignments', () => {
     expect(reducer(s, { type: 'autoAssign' })).toBe(s)
   })
 
+  it('nichts zugeteilt: „keine passende Person", wenn etwas offen blieb — „keine offenen Plätze", wenn alles besetzt ist', () => {
+    // Wie bei den Treffpunkten (16.10.2026): Der Planer soll wissen, ob er
+    // jemanden freigeben muss oder ob es schlicht nichts zu tun gab.
+    const weeks = buildDemoWeeks()
+    const closeSi = weeks[0]!.mid.sections.length - 1
+    ;(weeks[0]!.mid.sections[closeSi]!.items[0] as PartItem).names[0]!.name = ''
+    const niemand = makeState({ weeks, week: 0, tab: 'mid', persons: [] })
+    expect(reducer(niemand, { type: 'autoAssign', scope: 'parts' }).toast?.text).toBe(t.toastKeinePassende)
+    const voll = reducer(makeState({ weeks, week: 0, tab: 'mid' }), { type: 'autoAssign', scope: 'parts' })
+    expect(voll.toast?.text).toMatch(/\d/)
+    expect(reducer(voll, { type: 'autoAssign', scope: 'parts' }).toast?.text).toBe(t.toastKeineOffen)
+  })
+
   it('clearAssignments leert und zählt; erneut geleert → 0', () => {
     const s = makeState({ week: 0, tab: 'mid' })
     const cleared = reducer(s, { type: 'clearAssignments', scope: 'parts' })
@@ -1741,6 +1767,14 @@ describe('„Automatisch" bei den Treffpunkten sagt, warum nichts geschah (16.10
     const voll = reducer(makeState({ fsWeeks: offen(), week: 0 }), { type: 'fsAutoAssign', onlyGroup: null })
     expect(reducer(voll, { type: 'fsAutoAssign', onlyGroup: null }).toast?.text).toBe(t.toastKeineOffen)
   })
+
+  it('in einer leeren Versammlung (noch keine Woche geholt) geschieht nichts — kein Absturz, „keine offenen Plätze"', () => {
+    const leer = makeState({ weeks: [], fsWeeks: [], week: 0 })
+    const auto = reducer(leer, { type: 'fsAutoAssign', onlyGroup: null })
+    expect(auto.fsWeeks).toBe(leer.fsWeeks)
+    expect(auto.toast?.text).toBe(t.toastKeineOffen)
+    expect(reducer(leer, { type: 'fsClear', onlyGroup: null }).fsWeeks).toBe(leer.fsWeeks)
+  })
 })
 
 describe('Sprache', () => {
@@ -2007,6 +2041,27 @@ describe('hydrate / setDataStatus', () => {
       payload: { ...payload, fsWeeks: mitLeiter(person('Jonas Berger')), confirmations: { [key]: 'bestätigt' } },
     })
     expect(next.confirmations).toEqual({ [key]: 'bestätigt' })
+  })
+
+  it('eine Momentaufnahme von vor T121 (ohne Trolleys, Pläne und Versand-Tagebuch) lädt — die Felder stehen leer da, nicht mit dem alten Stand', () => {
+    // Gegenprobe zuerst: Mit den Feldern kommen sie an.
+    const mit = reducer(makeState(), {
+      type: 'hydrate',
+      payload: {
+        ...payload,
+        trolleys: [{ id: 'tr1', name: 'Trolley 1', ort: 'Saal', hinweis: '' }],
+        trolleyTermine: [{ id: 'r1', trolleyId: 'tr1', datum: '2026-09-19', von: '09:00', bis: '11:00', pid: 'p2', partner: null, gemeinsam: false }],
+        plaene: [{ id: 'pl1', name: 'Demoplan 1', von: '2026-09-01', bis: '2026-12-31', entwurf: false }],
+        planEintraege: [{ id: 'e1', planId: 'pl1', datum: '2026-09-14', grp: 'g1' }],
+        sentLog: { '2026-09-07|mid|helper|mik|0|Anna Beispiel': '2026-09-01T10:00:00Z' },
+      },
+    })
+    expect([mit.trolleys, mit.trolleyTermine, mit.plaene, mit.planEintraege].map((l) => l.length)).toEqual([1, 1, 1, 1])
+    expect(Object.keys(mit.sentLog)).toHaveLength(1)
+
+    const { trolleys: _t, trolleyTermine: _tt, plaene: _p, planEintraege: _pe, sentLog: _s, ...alt } = payload
+    const next = reducer(mit, { type: 'hydrate', payload: alt as unknown as HydratePayload })
+    expect([next.trolleys, next.trolleyTermine, next.plaene, next.planEintraege, next.sentLog]).toEqual([[], [], [], [], {}])
   })
 
   it('ein stilles Nachladen macht eine eben gelesene Mitteilung nicht wieder neu', () => {
@@ -2639,6 +2694,13 @@ describe('Einspringen: takeSubstitute und platzUebernehmen', () => {
     expect(reducer(mit, { type: 'takeSubstitute', key: `${woche.start}|mid|part|x|0` })).toBe(mit)
   })
 
+  it('ein Gesuch aus einer Woche, die hier nicht geladen ist, ändert nichts — weder Platz noch Zusage, auch keine fremde Woche', () => {
+    // Eingetragen wird ohnehin serverseitig (`substituteTake`); zeigen kann
+    // der Bildschirm nur, was er hat.
+    const s = makeState({ personId: frei.id })
+    expect(reducer(s, { type: 'takeSubstitute', key: '2027-01-04|mid|helper|mik|0' })).toBe(s)
+  })
+
   it('platzUebernehmen: nur ein angebotener Platz — wer an dem Tag schon etwas hat, bekommt den Hinweis', () => {
     const s = makeState({ personId: frei.id })
     expect(reducer(s, { type: 'platzUebernehmen', key: KEY })).toBe(s)
@@ -2768,5 +2830,42 @@ describe('Toasts in der Sprache des Nutzers', () => {
       const text = reducer(makeState({ lang: 'uk', ...over }), action).toast?.text ?? ''
       expect(text, `${name}: ${text}`).not.toMatch(/\{\w+\}/)
     }
+  })
+})
+
+/**
+ * **Was eine Aktion nicht meint, bleibt dasselbe Objekt** (31.10.2026). Die
+ * Gegenproben zu „die gemeinte Zeile ändert sich": Eine Vormerkung, ein
+ * Trolley-Termin, ein Konto oder ein Trolley, der nicht gemeint ist, behält
+ * seinen Inhalt — und seine Referenz, an der `persist.ts` abliest, was zu
+ * schreiben ist.
+ */
+describe('Was eine Aktion nicht meint, bleibt dasselbe', () => {
+  it('removePerson: die Vormerkung und der Trolley-Termin anderer bleiben, wie sie sind', () => {
+    // Die Gegenstücke: „mit einer Person geht nur ihre Id" (vortragsplan-reducer)
+    // und „als Partner fehlt sie nur" (t120-ablauf).
+    const vortrag = { id: 'v1', woche: '2026-10-12', redner: 'Bernd Beispiel', versammlung: '', eigener: true, pid: 'p2', thema: 'Demothema 1', lied: '' }
+    const termin = { id: 'r1', trolleyId: 'tr1', datum: '2026-09-19', von: '09:00', bis: '11:00', pid: 'p2', partner: 'p3', gemeinsam: true }
+    const s = makeState({ vortraege: [vortrag], trolleyTermine: [termin] })
+    const next = reducer(s, { type: 'removePerson', id: 'p1' })
+    expect(next.vortraege).toEqual([vortrag])
+    expect(next.vortraege[0]).toBe(vortrag)
+    expect(next.trolleyTermine[0]).toBe(termin)
+  })
+
+  it('updateMember ändert nur dieses Konto', () => {
+    const anderes = { userId: 'u2', email: 'u2@x', personId: 'p2', planner: false, zuteiler: false }
+    const s = makeState({ members: [{ userId: 'u1', email: 'u1@x', personId: null, planner: false, zuteiler: false }, anderes] })
+    const next = reducer(s, { type: 'updateMember', userId: 'u1', patch: { zuteiler: true } })
+    expect(next.members.map((m) => [m.userId, m.zuteiler])).toEqual([['u1', true], ['u2', false]])
+    expect(next.members[1]).toBe(anderes)
+  })
+
+  it('trolleyAendern ändert nur diesen Trolley', () => {
+    const erster = { id: 'tr1', name: 'Trolley 1', ort: 'Saal', hinweis: '' }
+    const zweiter = { id: 'tr2', name: 'Trolley 2', ort: 'Depot', hinweis: '' }
+    const next = reducer(makeState({ trolleys: [erster, zweiter] }), { type: 'trolleyAendern', id: 'tr1', patch: { ort: 'Bühne' } })
+    expect(next.trolleys).toEqual([{ ...erster, ort: 'Bühne' }, zweiter])
+    expect(next.trolleys[1]).toBe(zweiter)
   })
 })

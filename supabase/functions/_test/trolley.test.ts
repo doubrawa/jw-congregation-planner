@@ -17,7 +17,7 @@
  * REST-Attrappe führt die Termine als Tabelle und wertet die Filter der
  * schreibenden Aufrufe aus — die bedingten Änderungen sind der Kern.
  */
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reset as resetPush, sent as sentPush } from './web-push.stub'
 import { TITEL_ABGESAGT, TITEL_DAZU, TITEL_EINGETRAGEN, TITEL_ENTFAELLT } from '../trolley/texte.ts'
 import { alsFreitext } from '../_shared/i18n/freitext.ts'
@@ -323,6 +323,26 @@ describe('eintragen', () => {
     expect((await antwort(await ruf(eintrag()))).body).toEqual({ error: 'weg' })
   })
 
+  it('ein Partner ohne Konto steht im Termin, bekommt aber nichts — ihm sagt es Jonas persönlich', async () => {
+    const { status, body } = await antwort(await ruf(eintrag({ partner: 'p-karl' })))
+    expect(status).toBe(200)
+    expect(body.termin).toMatchObject({ person_id: 'p-jonas', partner_id: 'p-karl', gemeinsam: true })
+    expect(geschrieben.filter((w) => w.path.startsWith('notifications'))).toEqual([])
+    expect(sentPush).toEqual([])
+  })
+
+  it('ein Partner mit Konto, aber ohne Push-Abo, bekommt die Glocke — und keinen Push', async () => {
+    // Die Gegenprobe mit Push ist Simon (ganz oben): Er hat ein Abo.
+    expect((await ruf(eintrag({ partner: 'p-lena' }))).status).toBe(200)
+    expect(glocke()).toEqual([expect.objectContaining({ user_id: U_LENA, title: TITEL_EINGETRAGEN })])
+    expect(sentPush).toEqual([])
+  })
+
+  it('ohne Termin im Rumpf: 400, nichts geschrieben', async () => {
+    expect(await antwort(await ruf({ aktion: 'eintragen' }))).toEqual({ status: 400, body: { error: 'bad-request' } })
+    expect(geschrieben).toEqual([])
+  })
+
   it('ohne Anmeldung 401', async () => {
     expect((await ruf(eintrag(), null)).status).toBe(401)
   })
@@ -457,6 +477,14 @@ describe('entfernen', () => {
     expect(trolleys).toEqual([])
     expect(glocke().map((z) => z.user_id).sort()).toEqual([U_JONAS, U_SIMON].sort())
   })
+
+  it('hat der Trolley nur Vergangenes, ist er entfernt — gezählt wird nichts, und niemand erfährt etwas', async () => {
+    termine = [zeile({ id: 'r-vorbei', datum: '2026-09-01', partner_id: 'p-simon' })]
+    expect(await antwort(await ruf({ aktion: 'entfernen', trolleyId: 'tr3' }, U_ADMIN))).toEqual({ status: 200, body: { ok: true, termine: 0 } })
+    expect(trolleys).toEqual([])
+    expect(geschrieben.filter((w) => w.path.startsWith('notifications'))).toEqual([])
+    expect(sentPush).toEqual([])
+  })
 })
 
 describe('ohne eigene Person', () => {
@@ -540,5 +568,48 @@ describe('am Rand (31.10.2026)', () => {
     expect(await antwort(await ruf(eintrag()))).toEqual({ status: 500, body: { error: 'server-error' } })
     expect(log).toHaveBeenCalledWith('trolley:', expect.stringContaining('Netz weg'))
     log.mockRestore()
+  })
+
+  it('ein Rumpf, der kein JSON ist, ist 400 — kein Serverfehler, und nichts geschrieben', async () => {
+    const res = await handler(
+      new Request('https://test.functions/trolley', { method: 'POST', headers: { Authorization: 'Bearer token' }, body: '{kaputt' }),
+    )
+    expect(await antwort(res)).toEqual({ status: 400, body: { error: 'bad-request' } })
+    expect(geschrieben).toEqual([])
+  })
+})
+
+/**
+ * **Ohne VAPID-Schlüssel bleibt es bei der Glocke** (wie in `send-plan`):
+ * Fehlen die Schlüssel (neues Projekt, Secret verloren), lässt sich kein Push
+ * signieren — der Partner soll trotzdem in der Glocke erfahren, dass er
+ * eingetragen ist, statt dass das Eintragen mit einem Fehler endet. Die
+ * Schlüssel liest die Function beim Laden; deshalb wird sie hier ohne sie neu
+ * geladen und danach wieder mit.
+ */
+describe('Ohne VAPID-Schlüssel bleibt es bei der Glocke', () => {
+  const g = globalThis as Record<string, unknown>
+  let mitSchluesseln: unknown
+
+  beforeAll(async () => {
+    mitSchluesseln = g.Deno
+    const vorher = mitSchluesseln as { env: { get: (k: string) => string | undefined } }
+    g.Deno = { ...vorher, env: { get: (k: string) => (k.startsWith('VAPID_') ? undefined : vorher.env.get(k)) } }
+    vi.resetModules()
+    await import('../trolley/index.ts')
+  })
+
+  afterAll(async () => {
+    g.Deno = mitSchluesseln
+    vi.resetModules()
+    await import('../trolley/index.ts')
+  })
+
+  it('Simon erfährt es in der Glocke, einen Push gibt es nicht — und das Eintragen gelingt', async () => {
+    const { status } = await antwort(await ruf(eintrag()))
+    expect(status).toBe(200)
+    expect(termine).toHaveLength(1)
+    expect(glocke()).toEqual([expect.objectContaining({ user_id: U_SIMON, title: TITEL_EINGETRAGEN })])
+    expect(sentPush).toEqual([])
   })
 })

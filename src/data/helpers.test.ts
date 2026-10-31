@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   dauerAbtrennen,
   displayName,
+  ersteZusammenkunftNach,
   namensDublette,
   namensSchluessel,
   familyMembers,
@@ -16,6 +17,7 @@ import {
   linkFamily,
   listName,
   neuWennGeaendert,
+  normalizeChairKeys,
   partnerGenderOk,
   personCompare,
   personLabel,
@@ -24,7 +26,7 @@ import {
 } from './helpers'
 import { partWorkload, tieHash, workloadOf } from './auslastung'
 import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
-import type { PartItem, Person, Qualifications } from './types'
+import type { PartItem, Person, Qualifications, SongItem, Week } from './types'
 
 import { emptyQualifications } from './helpers'
 
@@ -157,6 +159,19 @@ describe('Familien-/Haushaltszugehörigkeit', () => {
     expect(next.find((p) => p.id === 'b')!.fam).toBeNull()
     // Nur noch a im Haushalt → auch a wird gelöst (Haushalt mit 1 ist sinnlos)
     expect(next.find((p) => p.id === 'a')!.fam).toBeNull()
+  })
+
+  it('linkFamily mit sich selbst oder mit einer Person, die es nicht (mehr) gibt: alles bleibt — kein Haushalt aus einer Person', () => {
+    const personen = ps()
+    expect(linkFamily(personen, 'a', 'a')).toBe(personen)
+    expect(linkFamily(personen, 'a', 'weg')).toBe(personen)
+    expect(linkFamily(personen, 'weg', 'a')).toBe(personen)
+  })
+
+  it('unlinkFamily für jemanden ohne Haushalt (oder ohne Person): dieselbe Liste — es gibt nichts zu speichern', () => {
+    const personen = ps()
+    expect(unlinkFamily(personen, 'a')).toBe(personen)
+    expect(unlinkFamily(personen, 'weg')).toBe(personen)
   })
 
   it('isPlainPublisher: Verkündiger und Rolle „keine", nicht Ältester/DAG', () => {
@@ -540,5 +555,72 @@ describe('neuWennGeaendert', () => {
     expect(neuWennGeaendert(alt, geaendert)).toBe(geaendert)
     const kuerzer = alt.filter((x) => x.pid !== 'p1')
     expect(neuWennGeaendert(alt, kuerzer)).toBe(kuerzer)
+  })
+})
+
+/**
+ * **Der Vorsitz verlangt die Qualifikation seiner Zusammenkunft** — unter der
+ * Woche `vorsitzMid`, am Wochenende `vorsitzWe` (läuft bei jedem Laden). Eine
+ * verlegte Zusammenkunft bringt ihre Plätze mit; ohne Umschlüsseln verlangte
+ * der Vorsitz danach die falsche, und die Automatik nähme jemanden, der nur den
+ * anderen Vorsitz führt. Bis zum 31.10.2026 lief nur der Fall, in dem schon
+ * alles stimmte.
+ */
+describe('normalizeChairKeys', () => {
+  const lied: SongItem = { song: 'Lied 1' } as SongItem
+  const lesung: PartItem = { iid: 'i2', title: 'Demoaufgabe 2', names: [{ name: 'Bernd Beispiel', bereichsKey: 'bibellesung' }] }
+  const woche = (midKey: string | undefined, weKey: string | undefined): Week => ({
+    range: '', book: '', start: '2026-09-07',
+    mid: {
+      date: '', end: '', helpers: {},
+      sections: [{ label: 'X', farbe: 'gold', items: [lied, { iid: 'i1', title: 'Einleitende Worte', names: [{ name: 'Anna Beispiel', rolle: 'Vorsitz', ...(midKey ? { bereichsKey: midKey } : {}) }] }, lesung] }],
+    },
+    we: {
+      date: '', end: '', helpers: {},
+      sections: [{ label: 'Y', farbe: 'petrol', items: [{ iid: 'i3', title: 'Demoaufgabe 3', names: [{ name: 'Max Mustermann', ...(weKey ? { bereichsKey: weKey } : { rolle: 'Vorsitz' }) }] }] }],
+    },
+  })
+  const schluessel = (w: Week) => [
+    (w.mid.sections[0]!.items[1] as PartItem).names[0]!.bereichsKey,
+    (w.we.sections[0]!.items[0] as PartItem).names[0]!.bereichsKey,
+  ]
+
+  it('der verlegte Vorsitz bekommt den Schlüssel seiner Zusammenkunft — auch einer ohne Schlüssel', () => {
+    // Unter der Woche steht der Vorsitz vom Wochenende, am Wochenende einer ohne Bereich.
+    const [neu] = normalizeChairKeys([woche('vorsitzWe', undefined)])
+    expect(schluessel(neu!)).toEqual(['vorsitzMid', 'vorsitzWe'])
+    // Was kein Vorsitz ist, bleibt dasselbe Objekt — auch das Lied.
+    expect(neu!.mid.sections[0]!.items[0]).toBe(lied)
+    expect(neu!.mid.sections[0]!.items[2]).toBe(lesung)
+  })
+
+  it('stimmt schon alles, bleiben Woche und Liste dieselben — und eine geänderte Woche ändert die andere nicht', () => {
+    const richtig = woche('vorsitzMid', 'vorsitzWe')
+    const liste = [richtig]
+    expect(normalizeChairKeys(liste)).toBe(liste)
+    const gemischt = normalizeChairKeys([richtig, woche('vorsitzWe', 'vorsitzWe')])
+    expect(gemischt[0]).toBe(richtig)
+    expect(schluessel(gemischt[1]!)).toEqual(['vorsitzMid', 'vorsitzWe'])
+  })
+})
+
+/**
+ * **Wohin der Weg aus einer Woche ohne Zusammenkunft führt** (Kongresswoche):
+ * zur ersten, die stattfindet — unter der Woche vor dem Wochenende, über
+ * Wochen hinweg, in denen beide ausfallen.
+ */
+describe('ersteZusammenkunftNach', () => {
+  it('die nächste Woche unter der Woche — fällt die aus, ihr Wochenende', () => {
+    const weeks = buildDemoWeeks()
+    expect(ersteZusammenkunftNach(weeks, 0)).toMatchObject({ wi: 1, tab: 'mid' })
+    weeks[1]!.dev = { mid: { cancelled: true } }
+    expect(ersteZusammenkunftNach(weeks, 0)).toMatchObject({ wi: 1, tab: 'we' })
+  })
+
+  it('fallen in der Folgewoche beide aus (wieder ein Kongress), ist es die Woche danach — hinter der letzten keine', () => {
+    const weeks = buildDemoWeeks()
+    weeks[1]!.dev = { mid: { cancelled: true }, we: { cancelled: true } }
+    expect(ersteZusammenkunftNach(weeks, 0)).toMatchObject({ wi: 2, tab: 'mid', week: weeks[2] })
+    expect(ersteZusammenkunftNach(weeks, weeks.length - 1)).toBeNull()
   })
 })

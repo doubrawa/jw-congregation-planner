@@ -17,6 +17,8 @@ import {
   fsVerwaisteZusagen,
   fsVerwaisteZusagenAller,
   fsKonfliktVon,
+  fsRegelAussetzen,
+  fsTagVorbei,
   fsWeekConflicts,
 } from './fs'
 import { emptyQualifications } from './helpers'
@@ -518,6 +520,43 @@ describe('deriveMyFsTasks — Treffpunkte in „Meine Aufgaben"', () => {
   it('offene Treffpunkte gehören niemandem', () => {
     const offen = [[inst({ id: 'a', leader: '' })]]
     expect(deriveMyFsTasks(offen, KENN, 'Anton Muster', {}, 'p1', 'L')).toEqual([])
+  })
+
+  it('Id vor Name — auch eine namenlose Person (Altbestand) findet ihren Treffpunkt über die Kennung', () => {
+    // Eine Person ohne Namen nimmt die App seit T121 nicht mehr an; aus
+    // älterer Zeit kann eine dastehen (`isNameless`).
+    expect(deriveMyFsTasks(wochen(), KENN, '', {}, 'p1', 'L').map((t) => t.id)).toEqual(['fs|2026-09-07|a'])
+    expect(deriveMyFsTasks(wochen(), KENN, '', {}, 'p9', 'L')).toEqual([])
+  })
+})
+
+describe('fsRegelAussetzen — ein Treffpunkt des Grundplans fällt eine Woche aus', () => {
+  it('die Woche steht danach bei ihrer Regel — nur bei ihr', () => {
+    const next = fsRegelAussetzen(RULES, 'r2', MONTAG_0)
+    expect(next.find((r) => r.id === 'r2')?.aus).toEqual([MONTAG_0])
+    expect(next.filter((r) => r.id !== 'r2')).toEqual(RULES.filter((r) => r.id !== 'r2'))
+    // Damit baut `regenFsWeeks` ihn in dieser Woche nicht wieder auf.
+    expect(ids(genFsWeek(MONTAG_0, next))).not.toContain('r2')
+    expect(ids(genFsWeek(KENN[1]!, next))).toContain('r2')
+  })
+
+  it('schon ausgesetzt oder eine Regel, die es nicht (mehr) gibt: derselbe Grundplan — nichts zu schreiben', () => {
+    const einmal = fsRegelAussetzen(RULES, 'r2', MONTAG_0)
+    expect(fsRegelAussetzen(einmal, 'r2', MONTAG_0)).toBe(einmal)
+    expect(fsRegelAussetzen(RULES, 'r-weg', MONTAG_0)).toBe(RULES)
+  })
+})
+
+describe('fsTagVorbei — ist der Tag eines Treffpunkts um?', () => {
+  it('ab dem Tag danach — am Abend des Tages selbst noch nicht', () => {
+    // Der Montags-Treffpunkt der Woche 0 liegt am 7.9.2026.
+    expect(fsTagVorbei(MONTAG_0, 1, new Date(2026, 8, 7, 21, 0))).toBe(false)
+    expect(fsTagVorbei(MONTAG_0, 1, new Date(2026, 8, 8, 0, 30))).toBe(true)
+  })
+
+  it('ohne brauchbare Wochenkennung (Vorlagen) ist nichts vorbei — kein erfundener Tag', () => {
+    expect(fsTagVorbei('', 1, new Date(2030, 0, 1))).toBe(false)
+    expect(fsTagVorbei('Woche 1', 1, new Date(2030, 0, 1))).toBe(false)
   })
 })
 

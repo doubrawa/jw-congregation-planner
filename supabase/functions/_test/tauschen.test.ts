@@ -484,6 +484,32 @@ describe('Function: am Rand (31.10.2026)', () => {
     expect(fehler).toHaveBeenCalledWith('tauschen:', expect.stringContaining('Netz weg'))
     fehler.mockRestore()
   })
+
+  it('ein Rumpf, der kein JSON ist, ist 400 — kein Serverfehler, und nichts geschrieben', async () => {
+    const res = await handler(
+      new Request('https://test.functions/tauschen', { method: 'POST', headers: { Authorization: 'Bearer token' }, body: '{kaputt' }),
+    )
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'bad-request' })
+    expect(geschrieben).toEqual([])
+  })
+
+  /*
+   * Ein Rumpf ohne Platz oder Kennung (eine ältere App, ein Fehler im Aufruf):
+   * abgewiesen, ohne etwas anzufassen — auch keine bestehende Anfrage, auf die
+   * eine leere Kennung zufällig passen könnte.
+   */
+  it('fehlt dem Rumpf der Platz oder die Kennung, wird abgewiesen — und Simons offene Anfrage bleibt', async () => {
+    const id = await simonFragtJonas()
+    expect(await ruf({ aktion: 'angebote' })).toEqual(BAD)
+    expect(await ruf({ aktion: 'anfragen' })).toEqual(BAD)
+    expect(await ruf({ aktion: 'direkt' })).toEqual(BAD)
+    const fort = { status: 404, body: { error: 'gone' } }
+    expect(await ruf({ aktion: 'zurueckziehen' }, U_SIMON)).toEqual(fort)
+    expect(await ruf({ aktion: 'ablehnen' }, U_JONAS)).toEqual(fort)
+    expect(geschrieben).toEqual([])
+    expect(anfragen.map((a) => a.id)).toEqual([id])
+  })
 })
 
 describe('Function: angebote', () => {
@@ -572,6 +598,24 @@ describe('Function: direkt — mit jemandem ohne Konto (30.10.2026)', () => {
     expect(await ruf({ aktion: 'direkt', gibtAb: A, nimmt: C })).toEqual({ status: 409, body: { error: 'stand' } })
     expect(geschrieben.map((w) => w.path.split('?')[0])).toEqual(['rpc/wochen_tauschen'])
   })
+
+  it('tauscht der einzige Planer selbst, geht keine Planer-Mitteilung hinaus — auch keine leere', async () => {
+    // Simon ist hier der Admin, Ada nicht mehr: Außer ihm gibt es niemanden,
+    // dem „Getauscht" etwas sagte. Die Gegenprobe mit Ada steht oben.
+    const simon = MEMBERS[0]!
+    const ada = MEMBERS[3]!
+    simon.planner = true
+    ada.planner = false
+    try {
+      expect((await ruf({ aktion: 'direkt', gibtAb: A, nimmt: C })).status).toBe(200)
+      expect(bestand.get(W2)?.data.mid?.helpers?.mik?.[0]?.pid).toBe('p-simon')
+      expect(geschrieben.filter((w) => w.method === 'POST' && w.path.startsWith('notifications'))).toEqual([])
+      expect(sentPush).toEqual([])
+    } finally {
+      simon.planner = false
+      ada.planner = true
+    }
+  })
 })
 
 describe('Function: anfragen', () => {
@@ -639,6 +683,15 @@ describe('Function: anfragen', () => {
     const zweiter = helferKey(W1, 'mid', 'mik', 0) // auch Jonas
     expect(await ruf({ aktion: 'anfragen', gibtAb: A, nimmt: zweiter }, U_SIMON)).toEqual({ status: 409, body: { error: 'already-asked' } })
     expect(anfragen.map((a) => a.nimmt)).toEqual([B])
+  })
+
+  it('eine alte Anfrage, deren gefragter Platz kein Schlüssel mehr ist (Altbestand), sperrt nicht — sie geht', async () => {
+    // Niemand kann diesen Platz haben; bliebe sie stehen, scheiterte jede neue
+    // Anfrage zu Simons Platz bis zu ihrem Tag an „already-asked".
+    anfragen.push({ id: 'x1', congregation_id: CONG, von_user: U_SIMON, von_person: 'p-simon', an_person: 'p-jonas', gibt_ab: A, nimmt: 'kaputt', bis: '2026-09-13' })
+    const r = await ruf({ aktion: 'anfragen', gibtAb: A, nimmt: B })
+    expect(r.status).toBe(200)
+    expect(anfragen.map((a) => [a.id, a.nimmt])).toEqual([['a1', B]])
   })
 })
 
@@ -742,6 +795,32 @@ describe('Function: annehmen', () => {
     expect(geschrieben.map((w) => w.path.split('?')[0])).toEqual(['rpc/wochen_tauschen'])
     expect(anfragen).toHaveLength(1)
   })
+
+  it('… ebenso, wenn beide Plätze in einer Woche liegen: zwei Versuche auf den alten Stand, sonst nichts', async () => {
+    bestand.get(W1)!.data.mid!.helpers!.mik = [slot('p-jonas')]
+    const r = await ruf({ aktion: 'anfragen', gibtAb: A, nimmt: helferKey(W1, 'mid', 'mik', 0) })
+    geschrieben = []
+    wochenAbweisen = true
+    expect(await ruf({ aktion: 'annehmen', id: (r.body.anfrage as Anfrage).id }, U_JONAS)).toEqual({ status: 409, body: { error: 'stand' } })
+    expect(geschrieben.map((w) => `${w.method} ${w.path.split('?')[0]}`)).toEqual(['PATCH weeks', 'PATCH weeks'])
+    expect(bestand.get(W1)?.data.we?.helpers?.mik?.[0]?.pid).toBe('p-simon')
+    expect(anfragen).toHaveLength(1)
+  })
+
+  it('die Planer bekommen „Getauscht" auch als Push — in der Sprache ihres Geräts, nicht in der des Fragenden', async () => {
+    // Bis zum 31.10.2026 hatte im Test kein Planer ein Push-Abo: Welcher Titel
+    // an sie hinausgeht, prüfte niemand.
+    SUBS.push({ id: 's3', user_id: U_ADMIN, endpoint: 'https://push.test/admin', p256dh: 'k', auth: 'a', lang: 'fr' })
+    try {
+      const id = await simonFragtJonas()
+      await ruf({ aktion: 'annehmen', id }, U_JONAS)
+      const titel = Object.fromEntries(sentPush.map((p) => [p.endpoint, (JSON.parse(p.payload) as { title: string }).title]))
+      expect(titel).toEqual({ 'https://push.test/simon': 'Swapped', 'https://push.test/admin': 'Échange effectué' })
+      expect(JSON.parse(sentPush.find((p) => p.endpoint === 'https://push.test/admin')!.payload)).toMatchObject({ tag: A, url: 'https://app.test/#go=aufgaben' })
+    } finally {
+      SUBS.pop()
+    }
+  })
 })
 
 describe('Function: ablehnen und zurückziehen', () => {
@@ -762,6 +841,36 @@ describe('Function: ablehnen und zurückziehen', () => {
     expect(await ruf({ aktion: 'zurueckziehen', id }, U_SIMON)).toEqual({ status: 200, body: { ok: true } })
     expect(anfragen).toEqual([])
     // Ohne neue Mitteilung; Jonas' Glocken-Zeile nimmt der Trigger mit.
+    expect(glocke()).toEqual([])
+  })
+
+  /** Eine Anfrage von Simon an Jonas, wie sie in der Datenbank steht. */
+  const anfrage = (gibtAb: string, nimmt: string): Anfrage => ({
+    id: 'x1', congregation_id: CONG, von_user: U_SIMON, von_person: 'p-simon', an_person: 'p-jonas', gibt_ab: gibtAb, nimmt, bis: '2026-09-13',
+  })
+
+  it('ist der Dienst inzwischen gelöscht, erfährt Simon die Absage trotzdem — mit dem Schlüssel des Dienstes statt eines Namens', async () => {
+    anfragen.push(anfrage(helferKey(W1, 'we', 'ordner', 0), helferKey(W2, 'we', 'ordner', 0)))
+    expect(await ruf({ aktion: 'ablehnen', id: 'x1' }, U_JONAS)).toEqual({ status: 200, body: { ok: true } })
+    expect(anfragen).toEqual([])
+    expect(glocke()).toEqual([
+      expect.objectContaining({ user_id: U_SIMON, title: TITEL_ABGELEHNT, body: `ordner · Sonntag, 20. September · 10:00 · ${alsFreitext('Jonas Berger')}` }),
+    ])
+  })
+
+  it('ist die Woche des gefragten Platzes inzwischen gelöscht, ist die Anfrage nach dem Ablehnen weg — ohne Glocke, ohne Fehler', async () => {
+    // Ohne Woche gibt es keinen Termin, den die Glocke nennen könnte.
+    const id = await simonFragtJonas()
+    bestand.delete(W2)
+    expect(await ruf({ aktion: 'ablehnen', id }, U_JONAS)).toEqual({ status: 200, body: { ok: true } })
+    expect(anfragen).toEqual([])
+    expect(glocke()).toEqual([])
+  })
+
+  it('eine Anfrage mit kaputten Schlüsseln (Altbestand) lehnt Jonas trotzdem ab — sie ist weg, ohne Glocke', async () => {
+    anfragen.push(anfrage('kaputt', 'auch'))
+    expect(await ruf({ aktion: 'ablehnen', id: 'x1' }, U_JONAS)).toEqual({ status: 200, body: { ok: true } })
+    expect(anfragen).toEqual([])
     expect(glocke()).toEqual([])
   })
 })

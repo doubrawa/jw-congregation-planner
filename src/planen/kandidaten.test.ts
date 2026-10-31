@@ -193,6 +193,78 @@ describe('Kandidatenliste allgemein', () => {
 })
 
 /**
+ * **Ein Platz nur für Brüder** (Schülervortrag, `male` aus dem Import):
+ * `isQualified` prüft bewusst kein Geschlecht — welche Bereiche eine Schwester
+ * übernimmt, entscheiden die Schalter. Die Sperre ist der Platz selbst. Eine
+ * Schwester mit versehentlich gesetztem Bereich stünde sonst zur Wahl, und
+ * ein Tipp teilte sie zum Vortrag ein. Bis zum 31.10.2026 lief diese Regel der
+ * Liste in keinem Test (den Ratgeber prüft `sonderplaetze.test.ts`).
+ */
+describe('Ein Platz nur für Brüder — keine Schwester, auch nicht mit dem Bereich', () => {
+  const BRUDER = person('vb', 'Viktor', 'Vogt', false, 'schulungVortrag')
+  const SCHWESTER = person('vs', 'Vera', 'Voss', true, 'schulungVortrag')
+  const woche = (nurBrueder: boolean): Week => ({
+    range: '', book: '', start: '2026-09-07',
+    mid: {
+      date: '', end: '', helpers: {},
+      sections: [{ label: 'X', farbe: 'gold', items: [{ iid: 'i90', title: 'Demoaufgabe 4', names: [{ name: '', bereichsKey: 'schulungVortrag', ...(nurBrueder ? { male: true } : {}) }] }] }],
+    },
+    we: { date: '', end: '', sections: [], helpers: {} },
+  })
+  const vortrag: SlotSelection = { kind: 'part', wi: 0, tab: 'mid', si: 0, ii: 0, ni: 0, priv: 'schulungVortrag', groups: false, label: 'Demoaufgabe 4' }
+
+  it('der Schülervortrag bietet nur den Bruder an', () => {
+    expect(wer(vortrag, daten([woche(true)], [BRUDER, SCHWESTER]))).toEqual(['Viktor Vogt'])
+  })
+
+  it('Gegenprobe: Ohne die Marke am Platz entscheidet allein der Bereich — dann steht sie da', () => {
+    expect(wer(vortrag, daten([woche(false)], [BRUDER, SCHWESTER]))).toEqual(['Vera Voss', 'Viktor Vogt'])
+  })
+})
+
+/**
+ * **„Am anderen Tag schon dran" zählt nur, wenn der andere Tag stattfindet.**
+ * Fällt das Wochenende aus (Kongress, T30), ruhen seine Zuteilungen; sie
+ * neben der Person zu nennen, hielte den Planer von jemandem ab, der frei ist.
+ */
+describe('Der andere Tag der Woche', () => {
+  const woche = (wochenendeFaelltAus: boolean): Week => {
+    const w = wocheMitKlasse('', '')
+    w.we = {
+      date: '', end: '', helpers: {},
+      sections: [{ label: 'Y', farbe: 'petrol', items: [{ iid: 'i91', title: 'Demoaufgabe 5', names: [{ name: 'Anton Alt', pid: BRUDER_A.id, bereichsKey: 'schulung' }] }] }],
+    }
+    if (wochenendeFaelltAus) w.dev = { we: { cancelled: true } }
+    return w
+  }
+  const anton = (w: Week) => kandidaten(daten([w]), partnerSlot(false), KEINE_ABWESENHEIT, DE, (s) => s).find((c) => c.key === BRUDER_A.id)!
+
+  it('findet das Wochenende statt, steht sein Platz dort neben ihm', () => {
+    expect(anton(woche(false)).andererTag).toEqual({ tab: 'we', aufgaben: [expect.objectContaining({ text: expect.stringContaining('Demoaufgabe 5') })] })
+  })
+
+  it('fällt es aus, steht dort nichts', () => {
+    expect(anton(woche(true)).andererTag).toBeUndefined()
+  })
+})
+
+/**
+ * **Nach dem stillen Nachladen kann der Platz fort sein.** Scheitert ein
+ * Schreibvorgang an einem Konflikt, lädt die App still nach; das Blatt bleibt
+ * offen, solange seine Woche da ist (`slotSel` im Reducer). Hat ein anderer
+ * Planer den Punkt oder Treffpunkt inzwischen entfernt, zeigt die Auswahl ins
+ * Leere — die Liste darf daran nicht abstürzen (zuteilen lässt sich dort
+ * ohnehin nichts mehr, `assignSlot`).
+ */
+describe('Ein Platz, den es nach dem Nachladen nicht mehr gibt', () => {
+  it('ein entfernter Programmpunkt: die Qualifizierten stehen da — ohne Geschlechtsregel, denn es gibt keinen Führer mehr', () => {
+    const state = daten([wocheMitKlasse('Anton Alt', 'Clara Cohn')])
+    const fort: SlotSelection = { ...partnerSlot(false), ii: 5 } as SlotSelection
+    expect(wer(fort, state)).toEqual(['Anton Alt', 'Bernd Brand', 'Clara Cohn', 'Dora Dietz'])
+  })
+})
+
+/**
  * **Der Redner-Platz: nach Stellung, nicht nach Bereich** (Betreiber,
  * 4.10.2026).
  *
@@ -390,6 +462,16 @@ describe('Treffpunkt-Leiter: eigene Liste, eigene Regeln', () => {
     expect(liste('a', fsDaten(TREFFPUNKTE, emilWeg)).map((c) => c.name)).toEqual([
       'Frida Falk',
       'Emil Ernst',
+    ])
+  })
+
+  it('ist der Treffpunkt nach dem stillen Nachladen fort, stürzt die Liste nicht ab — ohne seinen Tag gibt es kein „abwesend" und kein „schon heute"', () => {
+    // Gegenprobe ist der Fall darüber: Mit Treffpunkt rutscht Emil ans Ende.
+    const belegt = TREFFPUNKTE.map((i) => (i.id === 'b' ? { ...i, leader: 'Emil Ernst' } : i))
+    const emilWeg: Absence[] = [{ id: 'u', personId: 'l1', userId: '', from: '2026-09-07', to: '2026-09-07', reason: '' }]
+    expect(liste('fort', fsDaten(belegt, emilWeg)).map((c) => [c.name, c.absent, c.today])).toEqual([
+      ['Emil Ernst', false, []],
+      ['Frida Falk', false, []],
     ])
   })
 })

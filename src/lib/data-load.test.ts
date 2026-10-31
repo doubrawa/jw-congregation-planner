@@ -37,7 +37,7 @@ import {
 } from './data'
 import { aufbewahrtAb, VERTEILUNG_WOCHEN } from '../data/aufbewahrung'
 import type { Week } from '../data/types'
-import { STANDARD_ZEITEN } from '../data/vorgaben'
+import { STANDARD_ERINNERUNGEN, STANDARD_ZEITEN } from '../data/vorgaben'
 import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 
 function chainFor(table: string) {
@@ -182,6 +182,17 @@ describe('loadCongregationData', () => {
       // Die zweite Seite beginnt hinter dem, was die erste wirklich brachte —
       // auch wenn die Grenze kleiner ist als die erbetene Seite.
       expect(seiten('confirmations')).toEqual([[0, 999], [1, 1000]])
+    })
+
+    it('scheitert eine spätere Seite der Zusagen, lädt die App nicht — statt einen bestätigten Platz als offen zu zeigen', async () => {
+      // Die Gegenprobe steht darüber: Gehen beide Seiten durch, kommt alles an.
+      seedResponses({
+        confirmations: [
+          { data: [{ task_key: 'k1', status: 'bestätigt' }], error: null, count: 2 },
+          { data: null, error: { message: 'Seite 2 abgebrochen' } },
+        ],
+      })
+      expect(await loadCongregationData('u1')).toEqual({ ok: false, reason: 'error', message: 'Seite 2 abgebrochen' })
     })
 
     it('ist alles da, folgt keine zweite Abfrage', async () => {
@@ -473,6 +484,72 @@ describe('loadCongregationData', () => {
     seedResponses({ persons: [{ data: [], error: null }], weeks: [{ data: [], error: null }] })
     const res = await loadCongregationData('u1')
     expect(res.ok && res.empty).toBe(true)
+  })
+
+  it('fehlt die Zeile der Versammlung, gelten die Vorgaben einer frisch angelegten — mit ihr ihre eigenen Werte', async () => {
+    // Nur denkbar, wenn jemand sie zwischen zwei Abfragen löscht. Die App soll
+    // dann stehen, statt an einer fehlenden Zeile zu scheitern.
+    const eigene = { name: 'Versammlung Muster', hall: 'Saal A', mid_wd: 3, mid_time: '19:30:00', we_wd: 6, we_time: '17:00:00', reminder_first: 5, reminder_last: 2, reminder_repeat: true, cong_lang: 'en', prog_langs: ['fr'], aux_class: true }
+    seedResponses({ congregations: [{ data: eigene, error: null }] })
+    const mit = await loadCongregationData('u1')
+    if (!mit.ok) throw new Error('nicht geladen')
+    expect(mit.data.congregation).toEqual({ name: 'Versammlung Muster', hall: 'Saal A', times: { mid: { wd: 3, time: '19:30' }, we: { wd: 6, time: '17:00' } } })
+    expect([mit.data.reminders, mit.data.congLang, mit.data.progLangs, mit.data.auxClass]).toEqual([{ first: 5, last: 2, repeat: true }, 'en', ['fr'], true])
+
+    seedResponses({ congregations: [{ data: null, error: null }] })
+    const ohne = await loadCongregationData('u1')
+    if (!ohne.ok) throw new Error('nicht geladen')
+    expect(ohne.data.congregation).toEqual({ name: '', hall: '', times: STANDARD_ZEITEN })
+    expect([ohne.data.reminders, ohne.data.congLang, ohne.data.progLangs, ohne.data.auxClass]).toEqual([STANDARD_ERINNERUNGEN, 'de', [], false])
+  })
+})
+
+/**
+ * **Was nur eine Auskunft fehlen lässt, hält das Laden nicht auf** — das
+ * Versand-Tagebuch („benachrichtigt am"), die vorgemerkten Vorträge (T122)
+ * und die Anwesenden (T152). Eine Datenbank, in der `schema.sql` noch nicht
+ * lief, hat die neueren Tabellen nicht; die Planung soll trotzdem gehen.
+ * Je Tabelle die Gegenprobe: Mit Zeilen kommen sie an.
+ */
+describe('Laden ohne Tagebuch, Vormerkungen oder Anwesende (31.10.2026)', () => {
+  /** Einmal mit Zeilen, einmal mit Fehler — beide Male muss die App laden. */
+  async function mitUndOhne(tabelle: string, zeilen: unknown[]) {
+    seedResponses({ [tabelle]: [{ data: zeilen, error: null, count: zeilen.length }] })
+    const mit = await loadCongregationData('u1')
+    seedResponses({ [tabelle]: [{ data: null, error: { message: `relation "public.${tabelle}" does not exist` } }] })
+    const ohne = await loadCongregationData('u1')
+    if (!mit.ok || !ohne.ok) throw new Error('nicht geladen')
+    return { mit: mit.data, ohne: ohne.data }
+  }
+  let fehler: ReturnType<typeof vi.spyOn>
+  beforeEach(() => {
+    fehler = vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+  afterEach(() => fehler.mockRestore())
+
+  it('ohne Versand-Tagebuch bleibt „benachrichtigt am" leer — die Planung lädt', async () => {
+    const zeile = { task_key: '2026-09-07|mid|helper|mik|0', name: 'Anna Beispiel', sent_at: '2026-09-01T10:00:00Z', user_id: null, persoenlich_at: null }
+    const { mit, ohne } = await mitUndOhne('assignment_log', [zeile])
+    expect(Object.values(mit.sentLog)).toEqual(['2026-09-01T10:00:00Z'])
+    expect(Object.values(mit.persoenlich)).toEqual([null])
+    expect([ohne.sentLog, ohne.persoenlich]).toEqual([{}, {}])
+    expect(fehler).toHaveBeenCalledWith('[assignment_log]', 'relation "public.assignment_log" does not exist')
+  })
+
+  it('ohne die vorgemerkten Vorträge fehlen nur sie', async () => {
+    const zeile = { id: 'v1', woche: '2026-09-07', redner: 'Max Mustermann', versammlung: 'Musterstadt', eigener: false, person_id: null, thema: 'Demothema 1', lied: '' }
+    const { mit, ohne } = await mitUndOhne('vortraege', [zeile])
+    expect(mit.vortraege.map((v) => [v.id, v.redner])).toEqual([['v1', 'Max Mustermann']])
+    expect(ohne.vortraege).toEqual([])
+    expect(fehler).toHaveBeenCalledWith('[vortraege]', 'relation "public.vortraege" does not exist')
+  })
+
+  it('ohne die Anwesenden fehlen nur sie', async () => {
+    const zeile = { woche: '2026-09-07', zusammenkunft: 'mid', saal: 42, video: 7, person_id: 'p1' }
+    const { mit, ohne } = await mitUndOhne('anwesenheit', [zeile])
+    expect(mit.anwesenheit).toEqual([{ woche: '2026-09-07', tab: 'mid', saal: 42, video: 7, pid: 'p1' }])
+    expect(ohne.anwesenheit).toEqual([])
+    expect(fehler).toHaveBeenCalledWith('[anwesenheit]', 'relation "public.anwesenheit" does not exist')
   })
 })
 
