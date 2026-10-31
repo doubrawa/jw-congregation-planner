@@ -40,12 +40,12 @@
  * fand rund ein Drittel Fehlalarme; daher stammen die feste Rolle in der
  * Erwartung, „dabei seit", die Einteilungen ohne Bereich, die Erwartung beim
  * Einseitigen, die Ballungen nur mit Hilfsdienst und dies: **Wartezeiten,
- * Engpässe und die Pflege der Bereiche rechnen immer über das ganze Jahr**
- * (`JAHR`), gleich welcher Zeitraum gewählt ist. Gewartet wird seit dem letzten
- * Mal, nicht seit Beginn eines Fensters, und der übliche Abstand ist eine
- * Eigenschaft des Bereichs — im Fenster gemessen war er zu kurz und hing von
- * dessen Länge ab (Gebet 9, 7 und 2,5 Wochen bei 12, 6 und 3 Monaten statt
- * gerechneter 18).
+ * Engpässe und die Pflege der Bereiche rechnen über das ganze Jahr.** Gewartet
+ * wird seit dem letzten Mal, nicht seit Beginn eines Fensters, und der übliche
+ * Abstand ist eine Eigenschaft des Bereichs — in kürzeren Fenstern gemessen war
+ * er zu kurz und hing von deren Länge ab (Gebet 9, 7 und 2,5 Wochen bei 12, 6
+ * und 3 Monaten statt gerechneter 18). Seit dem 31.10.2026 rechnet alles über
+ * das Jahr (`JAHR_WOCHEN`).
  *
  * Alles hier ist rein: Eingabe sind die Daten der App, Ausgabe Zahlen je
  * Person-Id und Bereichsschlüssel. Namen und Beschriftungen setzt die Ansicht.
@@ -59,12 +59,15 @@ import { allePlaetze, platzKey, platzMitZusage, type Platz } from './plaetze'
 import { bereichVon, folgtDemVorsitzIn, vorsitzPlatz } from './planning'
 import type { Absage, FsInstance, Group, MeetingKey, MeetingTimes, Person, Service, Week } from './types'
 
-/** Die Zeiträume zur Wahl, in Monaten — und wie viele Wochen jeder umfasst. */
-export const ZEITRAEUME = [12, 6, 3] as const
-export type Zeitraum = (typeof ZEITRAEUME)[number]
-export const ZEITRAUM_WOCHEN: Record<Zeitraum, number> = { 12: 52, 6: 26, 3: 13 }
-/** Über diesen Zeitraum rechnen Wartezeiten, Engpässe und die Pflege der Bereiche — immer. */
-export const JAHR: Zeitraum = 12
+/**
+ * **Die Auswertung blickt ein Jahr zurück** — immer. Bis zum 31.10.2026 gab es
+ * dazu sechs und drei Monate zur Wahl. Mit den echten Daten zeigten drei
+ * Monate niemanden zu oft oder zu selten (zu kleine Zahlen für
+ * `MINDESTABSTAND`), und 13 von 14 Hinweisen rechneten ohnehin übers Jahr:
+ * Wartezeiten, Engpässe, die Pflege der Bereiche („Zeitraum-Umschalter
+ * streichen", Betreiber).
+ */
+export const JAHR_WOCHEN = 52
 
 /** Mehr als die Hälfte über der Erwartung ist „zu oft", weniger als die Hälfte „zu selten". */
 export const OBERE_GRENZE = 1.5
@@ -702,7 +705,7 @@ export function engpass(g: Grundlage, bereich: string): Engpass | null {
     jeWoche,
     personen,
     abstand: personen > 0 ? personen / jeWoche : null,
-    jePersonJahr: personen > 0 ? (ZEITRAUM_WOCHEN[JAHR] * jeWoche) / personen : null,
+    jePersonJahr: personen > 0 ? (JAHR_WOCHEN * jeWoche) / personen : null,
   }
 }
 
@@ -719,6 +722,19 @@ export const KNAPP_UNTER = 4
  */
 export function istKnapp(e: Engpass): boolean {
   return e.abstand === null || Math.round(e.abstand) < KNAPP_UNTER
+}
+
+/** Fast knapp ist ein Bereich, in dem jeder öfter als alle so viele Wochen dran wäre. */
+export const FAST_KNAPP_UNTER = 6
+
+/**
+ * **Fast knapp** (31.10.2026): noch nicht knapp, aber jeder wäre öfter als alle
+ * `FAST_KNAPP_UNTER` Wochen dran — die Frühwarnung. Mit den echten Daten
+ * stand kein Bereich unter „knapp", Ton und Video (alle 4,4 Wochen) und die
+ * Mikrofone (4,6) aber knapp darüber, und das sah man nirgends.
+ */
+export function istFastKnapp(e: Engpass): boolean {
+  return !istKnapp(e) && e.abstand !== null && Math.round(e.abstand) < FAST_KNAPP_UNTER
 }
 
 /** Alle Bereiche mit Plätzen, die knappsten zuerst — ohne Personen ganz vorn. */
@@ -1066,6 +1082,17 @@ export type Hinweis =
   | { art: 'ohneBereich'; pid: string; bereiche: { bereich: string; n: number }[] }
   | { art: 'nieGenutzt'; pid: string; bereiche: string[] }
 
+/** Wen ein Hinweis nennt — ein Hinweis zu den Absagen nennt einen Bereich, niemanden. */
+export function personenMitHinweis(liste: readonly Hinweis[]): Set<string> {
+  return new Set(
+    liste.flatMap((h) => {
+      if (h.art === 'wartet') return h.pids
+      if (h.art === 'absagen') return []
+      return [h.pid]
+    }),
+  )
+}
+
 /**
  * **Was auffällt**, das Wichtigste zuerst: zu selten, zu oft, einseitig, wartet
  * lange, viele Absagen — dann die Pflege der Bereiche. Je Person und Art nur
@@ -1291,10 +1318,7 @@ export function personBild(
 /* ---- Alles zusammen -------------------------------------------------------- */
 
 export interface Auswertung {
-  zeitraum: Zeitraum
   grundlage: Grundlage
-  /** Die Grundlage des ganzen Jahres — dieselbe wie `grundlage`, wenn das Jahr gewählt ist. */
-  jahr: Grundlage
   kennzahlen: Kennzahlen
   verteilungen: Record<Vergleich, Verteilung>
   einseitig: EinseitigZeile[]
@@ -1320,38 +1344,31 @@ export function auswerten(eingabe: {
   abwesend: AbsenceSet
   absagen?: readonly Absage[]
   heute: string
-  zeitraum: Zeitraum
 }): Auswertung {
   const { persons } = eingabe
-  const fenster = zeitfenster(eingabe.weeks, ZEITRAUM_WOCHEN[eingabe.zeitraum], eingabe.heute)
+  const fenster = zeitfenster(eingabe.weeks, JAHR_WOCHEN, eingabe.heute)
   const g = grundlage({ ...eingabe, fenster })
-  // Wartezeiten, Engpässe und die Pflege der Bereiche über das ganze Jahr —
-  // gleich, welcher Zeitraum gewählt ist.
-  const jahr = eingabe.zeitraum === JAHR ? g : grundlage({ ...eingabe, fenster: zeitfenster(eingabe.weeks, ZEITRAUM_WOCHEN[JAHR], eingabe.heute) })
   const verteilungen = {
     aufgaben: verteilung(g, persons, 'aufgaben'),
     hilfsdienste: verteilung(g, persons, 'hilfsdienste'),
   }
-  const pflege = { ohneBereich: ohneBereich(jahr, persons), nieGenutzt: nieGenutzt(jahr, persons) }
+  const pflege = { ohneBereich: ohneBereich(g, persons), nieGenutzt: nieGenutzt(g, persons) }
   const einseitige = einseitig(g, persons, new Map(pflege.nieGenutzt.map((z) => [z.pid, z.bereiche])))
   // Wer übers Jahr insgesamt über seiner Erwartung liegt, wartet nicht — bei
   // den Hilfsdiensten gemessen an der Gesamtlast, wie die Automatik sie verteilt.
-  const imJahr = (v: Vergleich): Verteilung => (jahr === g ? verteilungen[v] : verteilung(jahr, persons, v))
-  const ueber = { aufgaben: ueberDerErwartung(imJahr('aufgaben')), hilfsdienste: ueberDerErwartung(imJahr('hilfsdienste')) }
-  const wartezeitenListe = [...jahr.plaetze.keys()].map((b) => wartezeiten(jahr, persons, b, istHilfsdienstBereich(b) ? ueber.hilfsdienste : ueber.aufgaben))
+  const ueber = { aufgaben: ueberDerErwartung(verteilungen.aufgaben), hilfsdienste: ueberDerErwartung(verteilungen.hilfsdienste) }
+  const wartezeitenListe = [...g.plaetze.keys()].map((b) => wartezeiten(g, persons, b, istHilfsdienstBereich(b) ? ueber.hilfsdienste : ueber.aufgaben))
   const treffpunktGruppen = treffpunkte(eingabe.fsWeeks, fenster, persons, eingabe.groups)
   // Die geleiteten Treffpunkte — gegen sie zählen die abgesagten.
   const geleitet = treffpunktGruppen.reduce((s, gr) => s + gr.zeilen.reduce((t, z) => t + z.n, 0), 0)
   const absagenListe = absagenJeBereich(g, geleitet)
   return {
-    zeitraum: eingabe.zeitraum,
     grundlage: g,
-    jahr,
     kennzahlen: kennzahlen(g, persons),
     verteilungen,
     einseitig: einseitige,
     wartezeiten: wartezeitenListe,
-    engpaesse: engpaesse(jahr),
+    engpaesse: engpaesse(g),
     pflege,
     treffpunkte: treffpunktGruppen,
     absagen: absagenListe,

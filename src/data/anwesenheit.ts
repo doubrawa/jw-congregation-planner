@@ -121,6 +121,8 @@ export interface AnwesenheitImMonat {
   anzahl: number
   /** Alle Anwesenden dieser Zusammenkünfte zusammen. */
   summe: number
+  /** Davon per Video zugeschaltet — für den Anteil (31.10.2026). */
+  video: number
   /** Durchschnitt je Zusammenkunft, ganz gerundet — `null` ohne eine einzige Zahl. */
   schnitt: number | null
   /**
@@ -145,7 +147,7 @@ function tagDer(a: Anwesenheit, wochen: ReadonlyMap<string, Week>, zeiten: Meeti
   return isoDay(tag)
 }
 
-const leer = (): AnwesenheitImMonat => ({ anzahl: 0, summe: 0, schnitt: null, fehlt: [] })
+const leer = (): AnwesenheitImMonat => ({ anzahl: 0, summe: 0, video: 0, schnitt: null, fehlt: [] })
 
 /**
  * **Die Anwesenheit je Monat** — die Monate von `vonMonat` bis `bisMonat`
@@ -196,6 +198,7 @@ export function anwesenheitJeMonat(
     if (!m) continue
     m.je[a.tab].anzahl++
     m.je[a.tab].summe += gesamt
+    m.je[a.tab].video += a.video ?? 0
     mitZahl.add(`${a.woche}|${a.tab}`)
   }
 
@@ -217,6 +220,45 @@ export function anwesenheitJeMonat(
     }
   }
   return [...monate.values()].sort((a, b) => b.monat.localeCompare(a.monat))
+}
+
+/** Der Anteil per Video an allen Anwesenden — `null` ohne Zahl oder ohne einen Zugeschalteten. */
+export function videoAnteil(z: Pick<AnwesenheitImMonat, 'summe' | 'video'>): number | null {
+  return z.summe > 0 && z.video > 0 ? z.video / z.summe : null
+}
+
+/** Ein Monat des Verlaufs: je Art der Durchschnitt, `null` ohne Zahl. */
+export interface VerlaufsMonat {
+  monat: string
+  schnitt: Record<MeetingKey, number | null>
+}
+
+/** Der erste Tag des Monats „JJJJ-MM-01" — `monate` Monate vor dem von `tag` (negativ: danach). */
+export function monatVor(tag: string, monate: number): string {
+  const [jahr = 0, monat = 1] = tag.split('-').map(Number)
+  const d = new Date(jahr, monat - 1 - monate, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+}
+
+/**
+ * **Der Verlauf für das Diagramm** (31.10.2026): aufsteigend, vom ersten Monat
+ * mit Zahl bis zum jüngsten der Liste — lückenlos. Ein Monat dazwischen ohne
+ * Zahl steht mit `null` da, damit die Linie dort abreißt, statt die Lücke zu
+ * überbrücken. Vor dem ersten Monat mit Zahl hat niemand gezählt; dort beginnt
+ * die Achse, sie füllt sich mit der Zeit auf ein Jahr.
+ */
+export function anwesenheitVerlauf(monate: readonly AnwesenheitMonat[]): VerlaufsMonat[] {
+  const mitZahl = monate.filter((m) => MEETING_TABS.some((tab) => m.je[tab].anzahl > 0))
+  const erster = mitZahl.at(-1)?.monat
+  const letzter = monate[0]?.monat
+  if (erster === undefined || letzter === undefined) return []
+  const je = new Map(monate.map((m) => [m.monat, m]))
+  const out: VerlaufsMonat[] = []
+  for (let monat = erster; monat <= letzter; monat = monatVor(monat, -1)) {
+    const m = je.get(monat)
+    out.push({ monat, schnitt: { mid: m?.je.mid.schnitt ?? null, we: m?.je.we.schnitt ?? null } })
+  }
+  return out
 }
 
 /**

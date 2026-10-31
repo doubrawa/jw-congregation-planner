@@ -738,12 +738,11 @@ siehe [Anwesenheit](#anwesenheit)).
 
 ![Auswertung der Zuteilungen](screenshots/planer-auswertung.png)
 
-- **Zeitraum** – 12, 6 oder 3 Monate, bis vor die laufende Woche. Darunter
-  steht, welche Tage das sind, wie viele Wochen die App davon kennt und wie
-  viele Zusammenkünfte stattfanden. Ausgefallene Zusammenkünfte zählen nicht.
-  **Wartezeiten**, **Engpässe** und die **Pflege der Bereiche** rechnen immer
-  über das ganze Jahr, gleich welcher Zeitraum gewählt ist: Gewartet wird seit
-  dem letzten Mal, nicht seit dem Beginn des Zeitraums.
+- **Zeitraum** – das letzte Jahr, bis vor die laufende Woche. Oben steht,
+  welche Tage das sind, wie viele Wochen die App davon kennt und wie viele
+  Zusammenkünfte stattfanden. Ausgefallene Zusammenkünfte zählen nicht. Eine
+  Wahl kürzerer Zeiträume gibt es nicht: In drei Monaten sind die Zahlen zu
+  klein, als dass jemand auffiele.
 - **Kennzahlen** – alle Zuteilungen im Zeitraum, wie viele derer mit einem
   Aufgabenbereich eingeteilt waren und wie viele nie dran waren. Wer den ganzen
   Zeitraum abwesend oder noch nicht dabei war, zählt hier nicht mit.
@@ -756,7 +755,8 @@ siehe [Anwesenheit](#anwesenheit)).
   **Alle Hinweise** zeigt den Rest.
 - Am Handy führen unter **Genauer ansehen** sechs Kacheln weiter – **Zu oft,
   zu selten**, **Einseitig verteilt**, **Wartezeiten**, **Engpässe** (mit der
-  Zahl der knappen Bereiche), **Treffpunkte, Absagen, Ballungen** und
+  Zahl der knappen und, wenn es sie gibt, der fast knappen Bereiche),
+  **Treffpunkte, Absagen, Ballungen** und
   **Anwesenheit** (mit der Zahl der Zusammenkünfte ohne Zahl); Zurück führt
   wieder in den Überblick. Am Tablet steht alles auf einer Seite, die Engpässe
   unter **Was auffällt**, die Anwesenheit ganz unten. Am Computer steht statt
@@ -813,12 +813,13 @@ schon unter **Bereich im Jahr ungenutzt** steht, steht hier nicht noch einmal.
 Die Karten zeigen je Person ihre Bereiche mit Balken; **Alle** zeigt auch die
 Unauffälligen.
 
-Am Computer steht statt der Karten die Tabelle **Wer bekommt was**: jede Person
-mit jedem Bereich. Je dunkler das Feld, desto öfter. Gestrichelt heißt, sie hat den
-Bereich, war dort aber nie dran; ein Strich, sie hat ihn nicht; umrandet, sie
-war dort eingeteilt, ohne den Bereich zu haben. Die Spaltenköpfe stehen
-senkrecht, damit die Tabelle ohne Rollen in die Breite passt. Ein Tipp auf
-einen Namen öffnet die Person.
+Am Computer steht statt der Karten die Tabelle **Wer bekommt was**: je Person
+jeder Bereich. Zuerst stehen nur die Personen da, die unter **Was auffällt**
+genannt sind (**Mit Hinweis**); **Alle** zeigt jede Person. Je dunkler das
+Feld, desto öfter. Gestrichelt heißt, sie hat den Bereich, war dort aber nie
+dran; ein Strich, sie hat ihn nicht; umrandet, sie war dort eingeteilt, ohne
+den Bereich zu haben. Die Spaltenköpfe stehen senkrecht, damit die Tabelle
+ohne Rollen in die Breite passt. Ein Tipp auf einen Namen öffnet die Person.
 
 ### Wartezeiten
 
@@ -855,7 +856,10 @@ die Hilfsdienste oft nur wenige Monate zurück.
 Es stehen nur die **knappen Bereiche** da: die, in denen jeder öfter als alle
 vier Wochen dran wäre, und die, die niemand hat – mit dem Rat, mehr Personen
 freizugeben (den Aufgabenbereich vergibst du bei der Person). Ist keiner knapp,
-steht das in einem Satz da. Die Kachel am Handy zählt die knappen Bereiche.
+steht das in einem Satz da. Darunter stehen als Frühwarnung die **fast
+knappen** Bereiche: Dort wäre jeder öfter als alle sechs Wochen dran. Noch
+reicht es, aber fällt jemand länger aus, wird es knapp. Die Kachel am Handy
+zählt die knappen Bereiche und, wenn es welche gibt, die fast knappen.
 
 ### Pflege der Bereiche
 
@@ -921,16 +925,21 @@ für Verkündiger). Du als Admin oder Planer kannst sie in jeder Zusammenkunft
 eintragen oder berichtigen: im **Programm** nach ihrem Beginn (**Anwesende
 fehlen** · **Eintragen**, sonst **Ändern**, mit „Eingetragen von …").
 
-Die Auswertung zeigt unter **Anwesenheit** je Monat ein Balkenpaar (unter der
-Woche, am Wochenende) und darunter je Monat die Zahl der Zusammenkünfte und den
-**Durchschnitt**, ganz gerundet. Gezählt wird nach dem **Tag** der
+Die Auswertung zeigt unter **Anwesenheit** den Verlauf: je eine Linie für die
+Zusammenkunft unter der Woche (runde Punkte) und am Wochenende (eckige Punkte),
+Monat für Monat der Durchschnitt; die Zahl oben links ist die oberste Linie.
+Ein Monat ohne Zahl unterbricht die Linie. Sie beginnt beim ersten Monat mit
+Zahl und wächst so auf ein Jahr. Darunter steht je Monat die Zahl der
+Zusammenkünfte, der **Durchschnitt**, ganz gerundet, und wie viele davon per
+Video zugeschaltet waren (**Davon per Video**, in Prozent – nur, wenn jemand
+zugeschaltet war). Gezählt wird nach dem **Tag** der
 Zusammenkunft: Der Sonntag einer Woche, die am 28. September beginnt, gehört
 zum Oktober. Hat eine Zusammenkunft stattgefunden, aber keine Zahl, steht ihr
 Tag unter **Ohne Zahl** – ein Tipp darauf öffnet das Eintragen. Ausgefallene
 Zusammenkünfte stehen dort nicht, und auch keine vor der ersten Zusammenkunft
 mit Zahl: Was davor liegt, hat niemand gezählt. Trägst du eine ältere nach,
 zählt es ab ihr. **Für den Bericht drucken** legt die Monate
-des Zeitraums auf einen Bogen: je Monat und Art die Zusammenkünfte, alle
+des Jahres auf einen Bogen: je Monat und Art die Zusammenkünfte, alle
 Anwesenden zusammen und den Durchschnitt.
 
 Die Zahlen bleiben ein Jahr wie die Wochen (Abschnitt 11).

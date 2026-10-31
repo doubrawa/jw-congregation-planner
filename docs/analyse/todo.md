@@ -9146,7 +9146,7 @@ Tests: die Reihenfolge in `fs-bereich-tabs.test.tsx` und
 bewacht (`gruppenbesuche-reiter-rechts`). Handbücher (Verkündiger, Planer) und
 die sieben Bilder mit der Leiste neu, Maße unverändert.
 
-## Aufgenommen am 31. Oktober 2026 (T156–T160)
+## Aufgenommen am 31. Oktober 2026 (T156–T161)
 
 ### T156 · Mutationsprobe abgeschafft, Unit-Tests mit Gegenprobe stattdessen 🔧 ✅ umgesetzt (31. Oktober 2026)
 
@@ -9399,6 +9399,67 @@ wie mit `*`, und 177 Abwesenheiten. Das ausgelieferte Bündel nennt weder
 Spalte `dn` (seit T110 aus `schema.sql`, nie entfernt, leer) — nicht
 angefasst.
 
+### T161 · Auswertung: ein Jahr, kürzere Tabelle, Frühwarnung, Verlauf der Anwesenheit 🔧 ✅ umgesetzt (31. Oktober 2026)
+
+„schau dir nochmal die auswertungen an – was wird aktuell angezeigt, was ist
+sinn, was ist überflüssig, was ist unübersichtlich, was könnte man durch ein
+diagramm besser darstellen, gibt es eine trendanalyse die sinn machen". Die
+Bewertung lief mit den echten Daten von Krumbach (nur gelesen, nur Zahlen):
+1353 Zuteilungen in 52 Wochen, 23 Hinweise, kein knapper Bereich, aber Ton
+und Video alle 4,4 Wochen, Mikrofone alle 4,6; bei drei Monaten niemand zu oft
+oder zu selten; die Tabelle „Wer bekommt was" 78 Zeilen für einen einzigen
+einseitigen Befund. Vorgeschlagen waren acht Punkte; **gewählt: 1, 2, 3 und 5.**
+
+- **(1) Ein Jahr, keine Wahl:** Der Umschalter 12/6/3 Monate ist fort,
+  `auswerten` rechnet über `JAHR_WOCHEN` (52). `Auswertung.zeitraum` und
+  `Auswertung.jahr` (die zweite Grundlage) sind gestrichen, die Anwesenheit
+  zählt die letzten zwölf Monate. Texte: `awZeitraum` fort, `awKeineDaten`
+  und `awAnwesenheitKeine` sagen „im letzten Jahr", die Fußnote verliert den
+  Satz „Wartezeiten und Engpässe rechnen immer über das ganze Jahr".
+- **(2) Die Tabelle zuerst mit Hinweis:** „Wer bekommt was" zeigt zuerst nur,
+  wen ein Hinweis nennt (`personenMitHinweis`); „Alle" zeigt jeden. In
+  Krumbach 18 statt 78 Zeilen, auf der Entwicklerseite 15 statt 100.
+- **(3) Fast knapp:** unter den Engpässen die Frühwarnung — jeder öfter als
+  alle sechs Wochen dran, aber nicht knapp (`istFastKnapp`,
+  `FAST_KNAPP_UNTER`). Die Kachel nennt die Zahl nur, wenn es welche gibt.
+- **(5) Verlauf der Anwesenheit:** statt der Balkenpaare je Art eine Linie,
+  vom ersten Monat mit Zahl bis zum jüngsten (`anwesenheitVerlauf`); ein Monat
+  ohne Zahl unterbricht sie. Runde Punkte unter der Woche, eckige am
+  Wochenende, in ar/fa gespiegelt. Je Monat dazu **Davon per Video** in
+  Prozent (`videoAnteil`, nur wenn jemand zugeschaltet war). `monatVor` liegt
+  jetzt in `data/anwesenheit.ts`.
+- Texte in 12 Sprachen: 6 neu (`awMitHinweis`, `awFastKnapp`,
+  `awFastKnappZahl`, `awFastKnappText`, `awAnwesenheitVerlauf`,
+  `awAnwesenheitVideo`), 3 geändert, 1 fort.
+- Handbuch (Auswertung, Engpässe, Wer bekommt was, Anwesenheit), Bild
+  `planer-auswertung` neu.
+
+Nicht gewählt: Kennzahlen ersetzen (4), Stammdaten-Hinweise abtrennen (6),
+Ballungen verdichten (7), Fairness im Verlauf (8). Vermerkt: Die Anwesenheit
+wird nach einem Jahr gelöscht — ein Vergleich mit dem Vorjahr bräuchte eine
+längere Frist.
+
+Gegenproben: Lücke in der Linie überbrückt, Tabelle ohne Filter — beide rot.
+
+**/simplify** (Winkel nacheinander): Die Legende der Anwesenheit steht in der
+Karte des Verlaufs (dreimal `mitZahl.length > 0` weniger); ein `useMemo` um
+die Personen mit Hinweis war ohne Nutzen. Verworfen: die doppelten RTL-Regeln
+der Monatsnamen (nötig wegen der Spezifität), zwei Konstanten fürs Jahr
+(Wochen und Monate), `istFastKnapp` als eigenes Prädikat statt einer Stufe.
+
+**/code-review max** (Winkel nacheinander, 5 Befunde, 2 behoben):
+
+| Nr. | Status | Befund |
+| --- | --- | --- |
+| 1 | behoben | Lag der Höchstwert im ersten Monat auf einer glatten Zahl, ragte sein Punkt in die Zahl der obersten Linie — jetzt 10 % Luft (`LUFT`), aus 120 wird 140 |
+| 2 | behoben | Nach „Alle", einer Person und Zurück stand die Tabelle wieder auf „Mit Hinweis" — die Wahl hält jetzt die Seite |
+| 3 | verworfen | ein Durchschnitt von 0 legte den Punkt halb in die Monatszeile — kommt praktisch nicht vor |
+| 4 | verworfen | „Mehr Personen freigeben" steht in beiden Karten, wenn es knappe und fast knappe gibt — jede Karte sagt, was zu tun ist |
+| 5 | verworfen | bei elf Monaten ragt der erste Monatsname ein paar Pixel vor die Fläche — innerhalb der Karte |
+
+Gegenproben zu 1 und 2 rot. Suite 7541/7541, tsc, Lint, Laufzeitprüfung am
+Desktop (15 → 100 Zeilen, nach Zurück weiter „Alle") und am Handy in ar.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -9437,9 +9498,9 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
-29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑
+29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑
 
-**159 der 160 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+**160 der 161 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |

@@ -14,8 +14,8 @@ const WARTEN_SICHTBAR = 8
  * In Worten statt als Balken (T138): „seit 14 Wochen · üblich: 6 Wochen", und
  * wer wirklich lange wartet, mit „wartet lange".
  *
- * Immer über das ganze Jahr, gleich welcher Zeitraum oben gewählt ist
- * (Jahresprobe 18.10.2026): Gewartet wird seit dem letzten Mal. `bereich` hält
+ * Über das ganze Jahr (Jahresprobe 18.10.2026): Gewartet wird seit dem
+ * letzten Mal. `bereich` hält
  * die Seite, damit ein Hinweis „Lange Wartezeit" ihn einstellen kann; ohne
  * Wahl steht der Bereich des ersten Hinweises da.
  */

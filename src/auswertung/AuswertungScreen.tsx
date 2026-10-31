@@ -2,20 +2,19 @@ import { useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { useKalendertag } from '../app/useKalendertag'
-import { Wahl } from '../bausteine/Wahl'
 import { Zeichen, type ZeichenName } from '../bausteine/Zeichen'
 import { UnteransichtKopf } from '../components/UnteransichtKopf'
 import { gebundenesDatum, jahrZahl, monatsName, tageSpanne, zeitspanne } from '../components/datum-anzeige'
 import { gruppenName } from '../components/weitere-plaene-anzeige'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { DESKTOP_BREITE, TABLET_BREITE, useMedia } from '../components/useMedia'
-import { auswerten, istEinseitig, istKnapp, ZEITRAEUME, type Auswertung, type Zeitraum } from '../data/auswertung'
+import { auswerten, istEinseitig, istFastKnapp, istKnapp, type Auswertung } from '../data/auswertung'
 import { displayName } from '../data/helpers'
 import { fromIso, tagNach } from '../data/meeting-dates'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import { bereichsName, bereichsTeile } from '../personen/priv-label'
-import { EinseitigKarten, EinseitigMatrix } from './EinseitigAnsicht'
+import { EinseitigKarten, EinseitigMatrix, type Filter } from './EinseitigAnsicht'
 import { EngpaesseAnsicht } from './EngpaesseAnsicht'
 import { HinweisListe } from './Hinweise'
 import { PersonAnsicht } from './PersonAnsicht'
@@ -60,19 +59,20 @@ export function AuswertungScreen() {
   // Die Tabelle Person × Bereich braucht die Breite des Desktops: Am Tablet
   // passten vierzehn Bereiche nur mit Rollbalken — dort stehen die Karten.
   const desktop = useMedia(DESKTOP_BREITE)
-  const [zeitraum, setZeitraum] = useState<Zeitraum>(12)
   const [ansicht, setAnsicht] = useState<Ansicht>('ueberblick')
   const [person, setPerson] = useState<string | null>(null)
   // Der Bereich der Wartezeiten — ein Hinweis „Lange Wartezeit" stellt ihn ein.
   const [warteBereich, setWarteBereich] = useState<string | null>(null)
+  // Wen die Tabelle zeigt — hier, weil sie für eine Person verschwindet.
+  const [matrixFilter, setMatrixFilter] = useState<Filter>('auffaellig')
   const unten = !breit && ansicht !== 'ueberblick'
   useBackDismiss(unten, () => setAnsicht('ueberblick'), 'unteransicht')
   useBackDismiss(person !== null, () => setPerson(null), 'unteransicht')
 
   const { weeks, fsWeeks, persons, services, groups, absagen, lang } = state
   const a = useMemo(
-    () => auswerten({ weeks, fsWeeks, persons, services, groups, abwesend, absagen, heute, zeitraum }),
-    [weeks, fsWeeks, persons, services, groups, abwesend, absagen, heute, zeitraum],
+    () => auswerten({ weeks, fsWeeks, persons, services, groups, abwesend, absagen, heute }),
+    [weeks, fsWeeks, persons, services, groups, abwesend, absagen, heute],
   )
   const k = useMemo<Kontext>(() => {
     const namen = new Map(persons.map((p) => [p.id, displayName(p)]))
@@ -103,8 +103,8 @@ export function AuswertungScreen() {
   }, [a, persons, services, groups, lang, t, tu, breit])
   const wartezeiten = <WartezeitenAnsicht k={k} bereich={warteBereich} onBereich={setWarteBereich} />
   // Die Anwesenheit je Monat (T152) — für die Ansicht und die Zahl der Kachel:
-  // die Zusammenkünfte ohne Anwesende im Zeitraum. Einmal gerechnet, für beide.
-  const anwesenheitMonate = useAnwesenheitMonate(zeitraum)
+  // die Zusammenkünfte ohne Anwesende im Jahr. Einmal gerechnet, für beide.
+  const anwesenheitMonate = useAnwesenheitMonate()
   const ohneZahl = anwesenheitMonate.reduce((n, m) => n + m.je.mid.fehlt.length + m.je.we.fehlt.length, 0)
 
   if (person !== null) {
@@ -135,7 +135,7 @@ export function AuswertungScreen() {
         {ansicht === 'wartezeiten' && wartezeiten}
         {ansicht === 'engpaesse' && <EngpaesseAnsicht k={k} />}
         {ansicht === 'weiteres' && <WeiteresAnsicht k={k} />}
-        {ansicht === 'anwesenheit' && <AnwesenheitAnsicht monate={anwesenheitMonate} zahl={k.zahl} />}
+        {ansicht === 'anwesenheit' && <AnwesenheitAnsicht monate={anwesenheitMonate} zahl={k.zahl} prozent={k.prozent} />}
       </section>
     )
   }
@@ -143,15 +143,7 @@ export function AuswertungScreen() {
   const kopf = (
     <div className="aw-kopf">
       <h1 className="seitentitel seitentitel--gross">{t.navAuswertung}</h1>
-      <div className="aw-zeitraum">
-        <Wahl
-          label={t.awZeitraum}
-          optionen={ZEITRAEUME.map((m) => ({ wert: String(m) as `${Zeitraum}`, text: zeitspanne(m, 'month', lang) }))}
-          wert={String(zeitraum) as `${Zeitraum}`}
-          onWahl={(w) => setZeitraum(Number(w) as Zeitraum)}
-        />
-        <ZeitraumZeile a={a} k={k} />
-      </div>
+      <ZeitraumZeile a={a} k={k} />
     </div>
   )
 
@@ -195,7 +187,7 @@ export function AuswertungScreen() {
       </div>
       {desktop ? (
         <div id={ANKER.einseitig}>
-          <EinseitigMatrix k={k} persons={persons} services={services} />
+          <EinseitigMatrix k={k} persons={persons} services={services} filter={matrixFilter} onFilter={setMatrixFilter} />
         </div>
       ) : (
         <section id={ANKER.einseitig} className="aw-abschnitt" aria-label={t.awEinseitigTitel}>
@@ -215,7 +207,7 @@ export function AuswertungScreen() {
       </div>
       <section id={ANKER.anwesenheit} className="aw-abschnitt" aria-label={t.awAnwesenheitTitel}>
         <h2 className="abschnitt-titel">{t.awAnwesenheitTitel}</h2>
-        <AnwesenheitAnsicht monate={anwesenheitMonate} zahl={k.zahl} />
+        <AnwesenheitAnsicht monate={anwesenheitMonate} zahl={k.zahl} prozent={k.prozent} />
       </section>
       <p className="klein-text aw-fussnote">{t.awFussnote}</p>
     </section>
@@ -280,12 +272,24 @@ function Kacheln({ k, zu, ohneZahl }: { k: Kontext; zu: (ansicht: Ansicht) => vo
   const selten = v.filter((h) => h.art === 'selten').length
   // Wer in zwei Bereichen lange wartet, zählt einmal.
   const wartende = new Set(v.flatMap((h) => (h.art === 'wartet' ? h.pids : [])))
+  const fastKnapp = a.engpaesse.filter(istFastKnapp).length
   const kacheln: { ansicht: Exclude<Ansicht, 'ueberblick'>; zeichen: ZeichenName; titel: string; zahl: string }[] = [
     { ansicht: 'verteilung', zeichen: 'auswertung', titel: t.awVerteilungTitel, zahl: fill(t.awVerteilungStat, { n: k.zahl(oft), m: k.zahl(selten) }) },
     { ansicht: 'einseitig', zeichen: 'halb', titel: t.awEinseitigTitel, zahl: fill(t.awPersonenZahl, { n: k.zahl(a.einseitig.filter(istEinseitig).length) }) },
     { ansicht: 'wartezeiten', zeichen: 'uhr', titel: t.awWartezeitenTitel, zahl: fill(t.awWartenLangeZahl, { n: k.zahl(wartende.size) }) },
-    // Die knappen Bereiche, nicht der knappste aller (T139): „Am knappsten: Gebete" stand auch bei vierzehn Wochen Abstand da.
-    { ansicht: 'engpaesse', zeichen: 'personen', titel: t.awEngpaesseTitel, zahl: fill(t.awKnappeZahl, { n: k.zahl(a.engpaesse.filter(istKnapp).length) }) },
+    // Die knappen Bereiche, nicht der knappste aller (T139): „Am knappsten: Gebete"
+    // stand auch bei vierzehn Wochen Abstand da. Die fast knappen nur, wenn es sie gibt.
+    {
+      ansicht: 'engpaesse',
+      zeichen: 'personen',
+      titel: t.awEngpaesseTitel,
+      zahl: [
+        fill(t.awKnappeZahl, { n: k.zahl(a.engpaesse.filter(istKnapp).length) }),
+        fastKnapp > 0 && fill(t.awFastKnappZahl, { n: k.zahl(fastKnapp) }),
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    },
     {
       ansicht: 'weiteres',
       zeichen: 'predigtdienst',
@@ -297,7 +301,7 @@ function Kacheln({ k, zu, ohneZahl }: { k: Kontext; zu: (ansicht: Ansicht) => vo
         fill(t.awBallungenZahl, { n: k.zahl(a.ballungen.zweimal.length + a.ballungen.folge.length) }),
       ].join(' · '),
     },
-    // Die Anwesenden (T152): wie viele Zusammenkünfte im Zeitraum noch keine Zahl haben.
+    // Die Anwesenden (T152): wie viele Zusammenkünfte im Jahr noch keine Zahl haben.
     { ansicht: 'anwesenheit', zeichen: 'personen', titel: t.awAnwesenheitTitel, zahl: fill(t.awAnwesenheitOhneN, { n: k.zahl(ohneZahl) }) },
   ]
   return (

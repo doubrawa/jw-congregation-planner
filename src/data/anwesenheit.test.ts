@@ -14,9 +14,12 @@ import {
   anwesendeAusEingabe,
   anwesendGesamt,
   anwesenheitJeMonat,
+  anwesenheitVerlauf,
   beginnVon,
   darfAnwesenheit,
   heuteZuZaehlen,
+  monatVor,
+  videoAnteil,
   zaehltSchon,
   type Anwesenheit,
 } from './anwesenheit'
@@ -183,6 +186,53 @@ describe('Die Anwesenheit je Monat', () => {
   it('Monate außerhalb des Zeitraums bleiben draußen', () => {
     const nurOktober = anwesenheitJeMonat(liste, weeks, ZEITEN, '2026-10-01', '2026-10-01', heute)
     expect(nurOktober.map((m) => m.monat)).toEqual(['2026-10-01'])
+  })
+
+  it('der Anteil per Video: zugeschaltet gegen alle Anwesenden — ohne Zugeschaltete keiner, nicht 0 % (31.10.2026)', () => {
+    const sept = monate[1]!
+    // Unter der Woche 20 + 22 von 163, am Wochenende 15 + 25 von 210.
+    expect(sept.je.mid.video).toBe(42)
+    expect(videoAnteil(sept.je.mid)).toBeCloseTo(42 / 163)
+    expect(videoAnteil(sept.je.we)).toBeCloseTo(40 / 210)
+    expect(videoAnteil({ summe: 90, video: 0 })).toBeNull()
+    expect(videoAnteil({ summe: 0, video: 0 })).toBeNull()
+  })
+})
+
+describe('Der Verlauf für das Diagramm', () => {
+  const heute = new Date(2026, 9, 12, 9, 0)
+  /** Je eine Zahl am Wochenende in diesen Wochen. */
+  const sonntage = (...wochen: string[]) => wochen.map((w) => eintrag(w, 'we', 80, 10))
+
+  it('aufsteigend vom ersten Monat mit Zahl bis zum jüngsten — ein Monat ohne Zahl dazwischen steht mit null da', () => {
+    // Juni und August mit Zahl, der Juli ohne: Die Linie reißt dort ab.
+    const monate = anwesenheitJeMonat(sonntage('2026-06-01', '2026-08-03'), [], ZEITEN, '2025-11-01', '2026-10-01', heute)
+    expect(anwesenheitVerlauf(monate)).toEqual([
+      { monat: '2026-06-01', schnitt: { mid: null, we: 90 } },
+      { monat: '2026-07-01', schnitt: { mid: null, we: null } },
+      { monat: '2026-08-01', schnitt: { mid: null, we: 90 } },
+    ])
+  })
+
+  it('reicht bis zum jüngsten Monat der Liste — auch wenn dort nur Zahlen fehlen', () => {
+    const weeks = ['2026-09-07', '2026-09-28'].map((s) => woche(s))
+    const monate = anwesenheitJeMonat(sonntage('2026-09-07'), weeks, ZEITEN, '2025-11-01', '2026-10-01', heute)
+    // Der Sonntag 4.10. hat keine Zahl: Der Oktober steht da, mit null.
+    expect(anwesenheitVerlauf(monate).map((m) => [m.monat, m.schnitt.we])).toEqual([
+      ['2026-09-01', 90],
+      ['2026-10-01', null],
+    ])
+  })
+
+  it('ohne eine einzige Zahl kein Verlauf', () => {
+    expect(anwesenheitVerlauf([])).toEqual([])
+  })
+
+  it('über den Jahreswechsel — und rückwärts wie vorwärts in Monaten', () => {
+    const monate = anwesenheitJeMonat(sonntage('2025-12-01', '2026-01-26'), [], ZEITEN, '2025-11-01', '2026-10-01', heute)
+    expect(anwesenheitVerlauf(monate).map((m) => m.monat)).toEqual(['2025-12-01', '2026-01-01', '2026-02-01'])
+    expect(monatVor('2026-01-15', 1)).toBe('2025-12-01')
+    expect(monatVor('2025-12-01', -1)).toBe('2026-01-01')
   })
 })
 

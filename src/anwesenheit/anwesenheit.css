@@ -111,46 +111,120 @@
   gap: 10px;
 }
 
-/* Je Monat ein Balkenpaar: unter der Woche dunkel, am Wochenende in Minze. */
-.aw-anwesend-balken {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-  gap: 10px;
-  min-block-size: 120px;
-}
-
-.aw-anwesend-monat {
-  display: flex;
-  flex: 1 1 0;
-  flex-direction: column;
-  align-items: center;
+/* Der Verlauf: je Art eine Linie, unter der Woche dunkel mit runden Punkten,
+   am Wochenende in Minze mit eckigen. Oben links die Zahl der obersten Linie. */
+.aw-verlauf {
   gap: 6px;
-  min-inline-size: 0;
+  padding-block: 12px;
 }
 
-.aw-anwesend-paar {
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
+.aw-verlauf-flaeche {
+  position: relative;
+  block-size: 120px;
+  margin-block-start: calc(18px * var(--fs));
+}
+
+.aw-verlauf-flaeche > svg {
+  display: block;
   inline-size: 100%;
-  block-size: 90px;
+  block-size: 100%;
+  overflow: visible;
 }
 
-.aw-anwesend-saeule {
-  flex: 1 1 0;
-  min-block-size: 2px;
-  border-radius: 3px 3px 0 0;
+/* Die Zeit läuft in der Leserichtung: von rechts nach links in ar und fa. Die
+   Punkte stehen über `inset-inline-start` und drehen von selbst mit. */
+[dir='rtl'] .aw-verlauf-flaeche > svg {
+  transform: scaleX(-1);
 }
 
-.aw-anwesend-saeule.is-mid,
+.aw-verlauf-oben {
+  position: absolute;
+  inset-block-end: 100%;
+  inset-inline-start: 0;
+  color: var(--text2);
+  font-size: calc(12px * var(--fs));
+  font-variant-numeric: tabular-nums;
+}
+
+.aw-verlauf-gitter {
+  stroke: var(--linie);
+  stroke-width: 1;
+}
+
+.aw-verlauf-linie {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.aw-verlauf-linie.is-mid {
+  stroke: var(--text2);
+}
+
+.aw-verlauf-linie.is-we {
+  stroke: var(--akzent);
+}
+
+.aw-verlauf-punkt {
+  position: absolute;
+  inline-size: 10px;
+  block-size: 10px;
+  border: 2px solid var(--karte);
+  border-radius: 50%;
+  box-sizing: content-box;
+  translate: -50% 50%;
+}
+
+[dir='rtl'] .aw-verlauf-punkt {
+  translate: 50% 50%;
+}
+
+.aw-verlauf-punkt.is-we {
+  border-radius: 2px;
+}
+
+.aw-verlauf-punkt.is-mid,
 .aw-anwesend-legende .is-mid .aw-anwesend-punkt {
   background: var(--text2);
 }
 
-.aw-anwesend-saeule.is-we,
+.aw-verlauf-punkt.is-we,
 .aw-anwesend-legende .is-we .aw-anwesend-punkt {
   background: var(--akzent);
+}
+
+/* Die Monatsnamen unter ihren Punkten, mittig — der erste und der letzte
+   bündig zum Rand, damit nichts über die Karte hinausragt. */
+.aw-verlauf-monate {
+  position: relative;
+  block-size: calc(18px * var(--fs));
+}
+
+.aw-verlauf-monate > span {
+  position: absolute;
+  white-space: nowrap;
+  translate: -50% 0;
+}
+
+.aw-verlauf-monate > .is-anfang {
+  translate: 0 0;
+}
+
+.aw-verlauf-monate > .is-ende {
+  translate: -100% 0;
+}
+
+[dir='rtl'] .aw-verlauf-monate > span {
+  translate: 50% 0;
+}
+
+[dir='rtl'] .aw-verlauf-monate > .is-anfang {
+  translate: 0 0;
+}
+
+[dir='rtl'] .aw-verlauf-monate > .is-ende {
+  translate: 100% 0;
 }
 
 .aw-anwesend-legende {
@@ -158,6 +232,7 @@
   flex-direction: row;
   flex-wrap: wrap;
   gap: 4px 16px;
+  margin-block-start: 4px;
   padding: 0;
   list-style: none;
   color: var(--text2);
@@ -173,7 +248,11 @@
 .aw-anwesend-punkt {
   inline-size: 10px;
   block-size: 10px;
-  border-radius: 3px;
+  border-radius: 2px;
+}
+
+.aw-anwesend-legende .is-mid .aw-anwesend-punkt {
+  border-radius: 50%;
 }
 
 .aw-anwesend-karte {

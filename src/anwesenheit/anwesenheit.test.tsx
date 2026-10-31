@@ -11,7 +11,9 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
+import { gebundenesDatum } from '../components/datum-anzeige'
 import type { Anwesenheit } from '../data/anwesenheit'
+import { fromIso } from '../data/meeting-dates'
 import type { Person, Week } from '../data/types'
 import { LOCALES } from '../i18n/langs'
 import { dict } from '../i18n/ui'
@@ -221,16 +223,18 @@ describe('Die Zeile im Programm', () => {
 
 describe('Die Anwesenheit in der Auswertung', () => {
   /**
-   * Wie die Auswertung die Ansicht einbindet: die Monate des Zeitraums
+   * Wie die Auswertung die Ansicht einbindet: die Monate des Jahres
    * (`useAnwesenheitMonate`) und die Zahlen in der Schrift der Sprache, wie
-   * `k.zahl` sie schreibt.
+   * `k.zahl` und `k.prozent` sie schreiben.
    */
-  function AnwesenheitAnsicht({ zeitraum }: { zeitraum: number }) {
+  function AnwesenheitAnsicht() {
     const { state } = useApp()
-    const monate = useAnwesenheitMonate(zeitraum)
+    const monate = useAnwesenheitMonate()
     const zahl = new Intl.NumberFormat(LOCALES[state.lang])
-    return <AnwesenheitInDerAuswertung monate={monate} zahl={(n) => zahl.format(n)} />
+    const prozent = new Intl.NumberFormat(LOCALES[state.lang], { style: 'percent', maximumFractionDigits: 1 })
+    return <AnwesenheitInDerAuswertung monate={monate} zahl={(n) => zahl.format(n)} prozent={(a) => prozent.format(a)} />
   }
+  const prozentDe = (anteil: number) => new Intl.NumberFormat(LOCALES.de, { style: 'percent', maximumFractionDigits: 1 }).format(anteil)
   const HEUTE = new Date(2026, 9, 12, 9, 0)
   const weeks = ['2026-09-07', '2026-09-14'].map(woche)
   const anwesenheit: Anwesenheit[] = [
@@ -239,20 +243,79 @@ describe('Die Anwesenheit in der Auswertung', () => {
     { woche: '2026-09-14', tab: 'we', saal: 80, video: 10, pid: null },
   ]
 
-  it('je Monat Zusammenkünfte und Durchschnitt, unter der Woche und am Wochenende', () => {
+  it('je Monat Zusammenkünfte, Durchschnitt und Anteil per Video, unter der Woche und am Wochenende', () => {
     vi.setSystemTime(HEUTE)
-    const { container } = zeige(<AnwesenheitAnsicht zeitraum={3} />, zustand({ planner: true, weeks, anwesenheit }))
+    const { container } = zeige(<AnwesenheitAnsicht />, zustand({ planner: true, weeks, anwesenheit }))
     const sept = [...container.querySelectorAll('.aw-anwesend-karte')].find((k) => k.querySelector('h3')?.textContent === 'September 2026')!
     const reihen = [...sept.querySelectorAll('.aw-anwesend-reihe')].map((r) => r.querySelector('.klein-text')?.textContent)
+    // Unter der Woche 20 von 80 per Video, am Wochenende 20 von 190.
     expect(reihen).toEqual([
-      [fill(t.awZusammenkuenfte, { n: 1 }), fill(t.awAnwesenheitSchnitt, { n: 80 })].map(zahlBinden).join(' · '),
-      [fill(t.awZusammenkuenfte, { n: 2 }), fill(t.awAnwesenheitSchnitt, { n: 95 })].map(zahlBinden).join(' · '),
+      [fill(t.awZusammenkuenfte, { n: 1 }), fill(t.awAnwesenheitSchnitt, { n: 80 }), fill(t.awAnwesenheitVideo, { n: prozentDe(20 / 80) })].map(zahlBinden).join(' · '),
+      [fill(t.awZusammenkuenfte, { n: 2 }), fill(t.awAnwesenheitSchnitt, { n: 95 }), fill(t.awAnwesenheitVideo, { n: prozentDe(20 / 190) })].map(zahlBinden).join(' · '),
     ])
+  })
+
+  it('ohne einen Zugeschalteten steht kein Anteil per Video da — nicht „0 %"', () => {
+    vi.setSystemTime(HEUTE)
+    const ohneVideo = anwesenheit.map((a) => ({ ...a, video: a.tab === 'mid' ? 0 : null }))
+    const { container } = zeige(<AnwesenheitAnsicht />, zustand({ planner: true, weeks, anwesenheit: ohneVideo }))
+    expect(container.textContent).not.toContain(fill(t.awAnwesenheitVideo, { n: '' }).trim())
+  })
+
+  it('darüber der Verlauf: eine Linie je Art über die Monate, ein Punkt je Monat mit Zahl (31.10.2026)', () => {
+    vi.setSystemTime(HEUTE)
+    // Am Wochenende im September und Oktober (4.10.), unter der Woche nur im September.
+    const mitOktober = [...anwesenheit, { woche: '2026-09-28', tab: 'we' as const, saal: 100, video: 20, pid: null }]
+    const { container } = zeige(<AnwesenheitAnsicht />, zustand({ planner: true, weeks: [...weeks, woche('2026-09-28')], anwesenheit: mitOktober }))
+    const flaeche = container.querySelector('.aw-verlauf-flaeche')!
+    expect(flaeche.getAttribute('role')).toBe('img')
+    expect(document.getElementById(flaeche.getAttribute('aria-labelledby')!)?.textContent).toBe(t.awAnwesenheitVerlauf)
+    // Zwei Monate: Am Wochenende verbindet eine Linie zwei Punkte; unter der Woche steht ein Punkt allein.
+    expect(flaeche.querySelectorAll('polyline.is-we')).toHaveLength(1)
+    expect(flaeche.querySelectorAll('polyline.is-mid')).toHaveLength(0)
+    expect(flaeche.querySelectorAll('.aw-verlauf-punkt.is-we')).toHaveLength(2)
+    expect(flaeche.querySelectorAll('.aw-verlauf-punkt.is-mid')).toHaveLength(1)
+    // Der Punkt sagt beim Zeigen, was er ist — in Monat, Art und Zahl.
+    const [sept, okt] = ['2026-09-01', '2026-10-01'].map((m) => gebundenesDatum(fromIso(m), 'de', 'monatKurz'))
+    expect([...flaeche.querySelectorAll('.aw-verlauf-punkt.is-we')].map((p) => p.getAttribute('title'))).toEqual([
+      `${sept} · ${t.amWochenende}: 95`,
+      `${okt} · ${t.amWochenende}: 120`,
+    ])
+    // Oben die Zahl der obersten Linie: über dem Höchsten, 120, mit Luft in Zwanzigern aufgerundet.
+    expect(flaeche.querySelector('.aw-verlauf-oben')?.textContent).toBe('140')
+    // Darunter die Monate, der jüngste immer beschriftet.
+    expect([...container.querySelectorAll('.aw-verlauf-monate > span')].map((s) => s.textContent)).toEqual([sept, okt])
+  })
+
+  it('kein Punkt stößt oben an — der höchste bleibt unter der obersten Linie, auch auf einer glatten Zahl (Review 31.10.2026)', () => {
+    vi.setSystemTime(HEUTE)
+    // Im ersten Monat der Höchste, genau 100: Er stünde sonst auf der Linie, halb in der Zahl darüber.
+    const hoch: Anwesenheit[] = [
+      { woche: '2026-08-03', tab: 'we', saal: 100, video: 0, pid: null },
+      { woche: '2026-09-07', tab: 'we', saal: 60, video: 0, pid: null },
+    ]
+    const { container } = zeige(<AnwesenheitAnsicht />, zustand({ planner: true, weeks: [], anwesenheit: hoch }))
+    const hoehen = [...container.querySelectorAll<HTMLElement>('.aw-verlauf-punkt')].map((p) => parseFloat(p.style.insetBlockEnd))
+    expect(Math.max(...hoehen)).toBeLessThanOrEqual(100 / 1.1)
+    expect(container.querySelector('.aw-verlauf-oben')?.textContent).toBe('120')
+  })
+
+  it('ein Monat ohne Zahl unterbricht die Linie — sie überbrückt die Lücke nicht', () => {
+    vi.setSystemTime(HEUTE)
+    // Am Wochenende im August (9.8.) und im Oktober (4.10.), im September nicht.
+    const mitLuecke: Anwesenheit[] = [
+      { woche: '2026-08-03', tab: 'we', saal: 90, video: 10, pid: null },
+      { woche: '2026-09-28', tab: 'we', saal: 100, video: 20, pid: null },
+    ]
+    const { container } = zeige(<AnwesenheitAnsicht />, zustand({ planner: true, weeks: [], anwesenheit: mitLuecke }))
+    const flaeche = container.querySelector('.aw-verlauf-flaeche')!
+    expect(flaeche.querySelectorAll('.aw-verlauf-punkt.is-we')).toHaveLength(2)
+    expect(flaeche.querySelectorAll('polyline')).toHaveLength(0)
   })
 
   it('die Zahlen in der Schrift der Sprache, wie die übrige Auswertung — persisch mit persischen Ziffern (Review 30.10.2026)', () => {
     vi.setSystemTime(HEUTE)
-    const { container } = zeige(<AnwesenheitAnsicht zeitraum={3} />, zustand({ planner: true, weeks, anwesenheit, lang: 'fa' }))
+    const { container } = zeige(<AnwesenheitAnsicht />, zustand({ planner: true, weeks, anwesenheit, lang: 'fa' }))
     const fa = dict('fa')
     const zahl = new Intl.NumberFormat(LOCALES.fa)
     const text = [...container.querySelectorAll('.aw-anwesend-reihe .klein-text')].map((r) => r.textContent).join('\n')
@@ -262,7 +325,7 @@ describe('Die Anwesenheit in der Auswertung', () => {
 
   it('wo eine Zahl fehlt, steht der Tag — der Planer trägt sie per Tipp nach', () => {
     vi.setSystemTime(HEUTE)
-    const { container } = zeige(<AnwesenheitAnsicht zeitraum={3} />, zustand({ planner: true, weeks, anwesenheit }))
+    const { container } = zeige(<AnwesenheitAnsicht />, zustand({ planner: true, weeks, anwesenheit }))
     const fehlt = container.querySelector('.aw-anwesend-fehlt')!
     expect(fehlt.textContent).toContain(t.awAnwesenheitOhne)
     fireEvent.click(fehlt.querySelector('button')!)
@@ -271,13 +334,13 @@ describe('Die Anwesenheit in der Auswertung', () => {
 
   it('ohne Planer-Recht steht der Tag nur da, ohne Knopf', () => {
     vi.setSystemTime(HEUTE)
-    const { container } = zeige(<AnwesenheitAnsicht zeitraum={3} />, zustand({ planner: false, weeks, anwesenheit }))
+    const { container } = zeige(<AnwesenheitAnsicht />, zustand({ planner: false, weeks, anwesenheit }))
     expect(container.querySelector('.aw-anwesend-fehlt button')).toBeNull()
   })
 
   it('„Für den Bericht drucken" legt je Monat eine Zeile auf den Bogen', () => {
     vi.setSystemTime(HEUTE)
-    const { container } = zeige(<AnwesenheitAnsicht zeitraum={3} />, zustand({ planner: true, weeks, anwesenheit }))
+    const { container } = zeige(<AnwesenheitAnsicht />, zustand({ planner: true, weeks, anwesenheit }))
     let zeilen: string[][] = []
     vi.stubGlobal('print', () => {
       zeilen = [...document.querySelectorAll('.druck-bogen .druck-tabelle-zeile:not(.druck-tabelle-zeile--kopf)')].map((z) =>
@@ -294,14 +357,14 @@ describe('Die Anwesenheit in der Auswertung', () => {
   it('eine Art ohne Zahl und ohne Lücke steht gar nicht da — nicht „Zusammenkünfte: 0"', () => {
     vi.setSystemTime(HEUTE)
     const nurWochenende: Anwesenheit[] = [{ woche: '2026-09-28', tab: 'we', saal: 100, video: 20, pid: null }]
-    const { container } = zeige(<AnwesenheitAnsicht zeitraum={1} />, zustand({ planner: true, weeks: [], anwesenheit: nurWochenende }))
+    const { container } = zeige(<AnwesenheitAnsicht />, zustand({ planner: true, weeks: [], anwesenheit: nurWochenende }))
     const okt = container.querySelector('.aw-anwesend-karte')!
     expect([...okt.querySelectorAll('.aw-anwesend-name')].map((n) => n.textContent)).toEqual([t.amWochenende])
   })
 
   it('ohne eine einzige Zahl der Satz, dass noch keine eingetragen sind — und kein Drucken', () => {
     vi.setSystemTime(HEUTE)
-    const { container } = zeige(<AnwesenheitAnsicht zeitraum={3} />, zustand({ planner: true, weeks, anwesenheit: [] }))
+    const { container } = zeige(<AnwesenheitAnsicht />, zustand({ planner: true, weeks, anwesenheit: [] }))
     expect(container.querySelector('.aw-leer')?.textContent).toBe(t.awAnwesenheitKeine)
     expect(knopf(t.awAnwesenheitDrucken)).toBeUndefined()
   })

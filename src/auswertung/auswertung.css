@@ -19,12 +19,6 @@
   gap: 12px;
 }
 
-.aw-zeitraum {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .aw-zeitraum-zeile {
   margin: 0;
 }

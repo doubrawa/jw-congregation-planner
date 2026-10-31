@@ -7,10 +7,13 @@ import {
   ballungen,
   einseitig,
   engpaesse,
+  FAST_KNAPP_UNTER,
   grundlage,
   hinweise,
   istEinseitig,
+  istFastKnapp,
   istKnapp,
+  JAHR_WOCHEN,
   kennzahlen,
   KNAPP_UNTER,
   lageVon,
@@ -18,6 +21,7 @@ import {
   nieGenutzt,
   ohneBereich,
   personBild,
+  personenMitHinweis,
   treffpunkte,
   TREFFPUNKT_BEREICH,
   VERGLEICHE,
@@ -597,6 +601,33 @@ describe('Engpässe', () => {
     expect(istKnapp({ ...leser, abstand: 3.49 })).toBe(true)
     expect(istKnapp({ ...leser, abstand: 3.5 })).toBe(false)
     expect(istKnapp({ ...leser, abstand: 0.3 })).toBe(true)
+  })
+
+  it('fast knapp ist, wer nicht knapp ist, aber öfter als alle sechs Wochen dran wäre — der Leser mit fünf Personen (31.10.2026)', () => {
+    expect(FAST_KNAPP_UNTER).toBe(6)
+    expect(liste.filter(istFastKnapp).map((z) => z.bereich)).toEqual(['leser'])
+    const leser = liste.find((z) => z.bereich === 'leser')!
+    // Gerundet wie der Abstand daneben: 3,5 ist „4 Wochen" (fast knapp), 5,49 „5 Wochen", 5,5 „6 Wochen" (nicht mehr).
+    expect(istFastKnapp({ ...leser, abstand: 3.49 })).toBe(false)
+    expect(istFastKnapp({ ...leser, abstand: 3.5 })).toBe(true)
+    expect(istFastKnapp({ ...leser, abstand: 5.49 })).toBe(true)
+    expect(istFastKnapp({ ...leser, abstand: 5.5 })).toBe(false)
+    // Ein Bereich, den niemand hat, ist knapp — nicht fast knapp.
+    expect(istFastKnapp(liste[0]!)).toBe(false)
+  })
+})
+
+describe('Wen ein Hinweis nennt', () => {
+  it('die Person eines Hinweises, alle, die lange warten — und beim Hinweis zu den Absagen niemanden', () => {
+    const liste: Hinweis[] = [
+      { art: 'oft', pid: 'a', vergleich: 'aufgaben', n: 9, erwartet: 3 },
+      { art: 'wartet', bereich: 'gebet', pids: ['b', 'c'], ueblich: 5 },
+      { art: 'absagen', bereich: 'leser', anteil: 0.5, sonst: 0.1 },
+      { art: 'nieGenutzt', pid: 'a', bereiche: ['gebet'] },
+      { art: 'ohneBereich', pid: 'd', bereiche: [{ bereich: 'leser', n: 2 }] },
+    ]
+    expect([...personenMitHinweis(liste)].sort()).toEqual(['a', 'b', 'c', 'd'])
+    expect(personenMitHinweis([])).toEqual(new Set())
   })
 })
 
@@ -1195,7 +1226,7 @@ describe('Kennzahlen', () => {
   })
 
   it('auswerten fügt alles zusammen — ohne Wochen ist alles leer, nicht kaputt', () => {
-    const a = auswerten({ weeks: [], fsWeeks: [], persons: [], services: DEMO_SERVICES, groups: [], abwesend: KEINE_ABWESENHEIT, heute: HEUTE, zeitraum: 12 })
+    const a = auswerten({ weeks: [], fsWeeks: [], persons: [], services: DEMO_SERVICES, groups: [], abwesend: KEINE_ABWESENHEIT, heute: HEUTE })
     expect(a.kennzahlen.zuteilungen).toBe(0)
     expect(a.hinweise).toEqual([])
     expect(a.wartezeiten).toEqual([])
@@ -1205,9 +1236,9 @@ describe('Kennzahlen', () => {
 })
 
 /*
- * Wartezeiten, Engpässe und die Pflege der Bereiche rechnen über das ganze Jahr
- * (Jahresprobe 18.10.2026): Wer vor einem halben Jahr zuletzt betete, wartet —
- * auch wenn oben drei Monate gewählt sind.
+ * Die Auswertung rechnet über das ganze Jahr (Jahresprobe 18.10.2026; seit
+ * dem 31.10.2026 ohne Wahl kürzerer Zeiträume): Wer vor einem halben Jahr
+ * zuletzt betete, wartet seit einem halben Jahr.
  */
 describe('auswerten: das Jahr', () => {
   const beter = ['b1', 'b2', 'b3', 'b4'].map((id) => person(id, ['gebet']))
@@ -1215,22 +1246,23 @@ describe('auswerten: das Jahr', () => {
   const persons = [...beter, lang]
   const weeks = wochen(30)
   weeks.forEach((w, i) => setze(w.mid, 'gebet', i === 0 ? lang : beter[i % 4]!, 1))
-  const rechne = (zeitraum: 12 | 3) =>
-    auswerten({ weeks, fsWeeks: [], persons, services: DEMO_SERVICES, groups: [], abwesend: KEINE_ABWESENHEIT, heute: HEUTE, zeitraum })
+  const rechne = (wochenListe: Week[] = weeks) =>
+    auswerten({ weeks: wochenListe, fsWeeks: [], persons, services: DEMO_SERVICES, groups: [], abwesend: KEINE_ABWESENHEIT, heute: HEUTE })
 
-  it('Wartezeiten, Engpässe und die Pflege sind bei drei Monaten dieselben wie beim Jahr', () => {
-    const jahr = rechne(12)
-    const quartal = rechne(3)
-    expect(quartal.wartezeiten).toEqual(jahr.wartezeiten)
-    expect(quartal.engpaesse).toEqual(jahr.engpaesse)
-    expect(quartal.pflege).toEqual(jahr.pflege)
-    // lang betete vor dreißig Wochen — im Vierteljahr nie, gewartet hat er trotzdem dreißig.
-    const zeile = quartal.wartezeiten[0]!.warten.find((z) => z.pid === 'lang')
+  it('wer vor dreißig Wochen zuletzt dran war, wartet dreißig Wochen', () => {
+    const a = rechne()
+    expect(a.kennzahlen.zuteilungen).toBe(30)
+    const zeile = a.wartezeiten[0]!.warten.find((z) => z.pid === 'lang')
     expect(zeile).toMatchObject({ wochen: 30, lange: true })
-    expect(quartal.hinweise).toContainEqual({ art: 'wartet', bereich: 'gebet', pids: ['lang'], ueblich: 5 })
-    // Der Zeitraum gilt weiter für alles andere.
-    expect(quartal.kennzahlen.zuteilungen).toBe(13)
-    expect(jahr.kennzahlen.zuteilungen).toBe(30)
+    expect(a.hinweise).toContainEqual({ art: 'wartet', bereich: 'gebet', pids: ['lang'], ueblich: 5 })
+  })
+
+  it('das Jahr sind 52 Wochen — was davor liegt, zählt nicht', () => {
+    const lange = wochen(60)
+    lange.forEach((w) => setze(w.mid, 'gebet', beter[0]!, 1))
+    const a = rechne(lange)
+    expect(a.grundlage.fenster.wochen).toHaveLength(JAHR_WOCHEN)
+    expect(a.kennzahlen.zuteilungen).toBe(JAHR_WOCHEN)
   })
 
   it('wer übers Jahr insgesamt über seiner Erwartung liegt, wartet nicht', () => {
@@ -1241,7 +1273,7 @@ describe('auswerten: das Jahr', () => {
       setze(kopie.mid, 'leser', lang)
       return kopie
     })
-    const a = auswerten({ weeks: viel, fsWeeks: [], persons: mitLeser, services: DEMO_SERVICES, groups: [], abwesend: KEINE_ABWESENHEIT, heute: HEUTE, zeitraum: 12 })
+    const a = auswerten({ weeks: viel, fsWeeks: [], persons: mitLeser, services: DEMO_SERVICES, groups: [], abwesend: KEINE_ABWESENHEIT, heute: HEUTE })
     expect(a.wartezeiten.find((w) => w.bereich === 'gebet')?.warten.find((z) => z.pid === 'lang')).toMatchObject({ ueber: true, lange: false })
     // Auf ein Gebet wartet niemand mehr — aufs Lesen die anderen, die nie dran sind.
     expect(a.hinweise.filter((h) => h.art === 'wartet').map((h) => h.art === 'wartet' && h.bereich)).toEqual(['leser'])

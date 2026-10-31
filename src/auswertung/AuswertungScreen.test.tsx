@@ -13,7 +13,7 @@ import { fremdsprachigerBestand, type FremdBestand } from '../../tests/fremdspra
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { datumsFormat, monatsName, zeitspanne } from '../components/datum-anzeige'
 import { abwesenheitenVon } from '../data/absence'
-import { auswerten, istKnapp, lageVon, personBild, TREFFPUNKT_BEREICH, ZEITRAEUME, type Einteilung, type Zeitraum } from '../data/auswertung'
+import { auswerten, FAST_KNAPP_UNTER, istFastKnapp, istKnapp, lageVon, personBild, personenMitHinweis, TREFFPUNKT_BEREICH, type Einteilung } from '../data/auswertung'
 import { displayName, privSetzen, privWert } from '../data/helpers'
 import { fromIso, tagNach } from '../data/meeting-dates'
 import { allePlaetze, platzKey } from '../data/plaetze'
@@ -44,11 +44,7 @@ const UHR = new Date(2026, 9, 12, 9, 0)
 
 const DEMO = demoZustand()
 
-/**
- * `n` abgeschlossene Wochen vor dem 12. Oktober, reihum aus den vier Testwochen
- * — so reicht der Verlauf über das Vierteljahr hinaus, und die Wahl des
- * Zeitraums ändert etwas.
- */
+/** `n` abgeschlossene Wochen vor dem 12. Oktober, reihum aus den vier Testwochen. */
 function verlauf(n: number): { weeks: Week[]; fsWeeks: FsInstance[][] } {
   const weeks: Week[] = []
   const fsWeeks: FsInstance[][] = []
@@ -104,7 +100,7 @@ function zeige(state: AppState) {
 }
 
 /** Was die Rechnung für diesen Zustand ergibt — dieselben Eingaben wie die Seite. */
-function rechnung(s: AppState, zeitraum: Zeitraum = 12) {
+function rechnung(s: AppState) {
   return auswerten({
     weeks: s.weeks,
     fsWeeks: s.fsWeeks,
@@ -114,7 +110,6 @@ function rechnung(s: AppState, zeitraum: Zeitraum = 12) {
     abwesend: abwesenheitenVon(s.absences, s.weeks, s.congregation.times),
     absagen: s.absagen,
     heute: MONTAG,
-    zeitraum,
   })
 }
 
@@ -140,12 +135,12 @@ afterEach(() => {
 })
 
 describe('Am Handy: der Überblick', () => {
-  it('oben der Zeitraum — zwölf, sechs oder drei Monate, zwölf gewählt — und was er umfasst', () => {
+  it('oben, was das Jahr umfasst — ohne Wahl des Zeitraums (31.10.2026)', () => {
     const { container } = zeige(zustand())
     expect(titel(container)).toBe(t.navAuswertung)
-    const wahl = container.querySelector(`[role="group"][aria-label="${t.awZeitraum}"]`)!
-    expect([...wahl.querySelectorAll('button')].map((b) => b.textContent)).toEqual(ZEITRAEUME.map((m) => zeitspanne(m, 'month', 'de')))
-    expect(wahl.querySelector('[aria-pressed="true"]')?.textContent).toBe(zeitspanne(12, 'month', 'de'))
+    // Bis zum 31.10.2026 standen hier zwölf, sechs und drei Monate zur Wahl.
+    expect(container.querySelector('.aw-kopf [role="group"]')).toBeNull()
+    expect(container.querySelector('[aria-pressed]')).toBeNull()
     const a = rechnung(zustand())
     expect(zeitraumZeile(container)).toContain(zeitspanne(20, 'week', 'de'))
     expect(zeitraumZeile(container)).toContain(zahlBinden(`Zusammenkünfte: ${a.grundlage.zusammenkuenfte}`))
@@ -154,14 +149,13 @@ describe('Am Handy: der Überblick', () => {
     expect(zeitraumZeile(container)).not.toMatch(/\p{Nd}\.? (?=\p{L})/u)
   })
 
-  it('drei Monate rechnen nur die letzten dreizehn Wochen', () => {
-    const { container } = zeige(zustand())
-    const vorher = container.querySelector('.aw-kennzahl-wert')?.textContent
-    fireEvent.click(knopf(container, zeitspanne(3, 'month', 'de')))
-    expect(zeitraumZeile(container)).toContain(zeitspanne(13, 'week', 'de'))
-    const a = rechnung(zustand(), 3)
-    expect(container.querySelector('.aw-kennzahl-wert')?.textContent).toBe(String(a.kennzahlen.zuteilungen))
-    expect(a.kennzahlen.zuteilungen).toBeLessThan(Number(vorher))
+  it('das Jahr reicht 52 Wochen zurück — eine ältere Woche zählt nicht mit', () => {
+    const mitAlter = verlauf(53)
+    const a = rechnung(zustand(mitAlter))
+    expect(a.grundlage.fenster.wochen).toHaveLength(52)
+    expect(a.grundlage.fenster.von).toBe(tagNach(MONTAG, -7 * 52))
+    const { container } = zeige(zustand(mitAlter))
+    expect(zeitraumZeile(container)).toContain(zeitspanne(52, 'week', 'de'))
   })
 
   it('die Kennzahlen sind die der Rechnung', () => {
@@ -278,6 +272,45 @@ describe('Am Handy: der Überblick', () => {
     expect(container.querySelectorAll('.aw-zeile')).toHaveLength(2)
   })
 
+  it('fast knapp: wo jeder öfter als alle sechs Wochen dran wäre, steht der Bereich als Frühwarnung da — die Kachel zählt ihn (31.10.2026)', () => {
+    const a0 = rechnung(zustand())
+    expect(a0.engpaesse.filter(istFastKnapp), 'die Testwochen haben schon einen fast knappen Bereich').toEqual([])
+    // Einem Bereich nur so viele Personen lassen, dass jeder alle vier bis fünf Wochen dran wäre.
+    const behalten = (e: { jeWoche: number }) => Math.ceil(4 * e.jeWoche)
+    const e = a0.engpaesse.find((x) => x.personen > behalten(x))!
+    const mit = DEMO.persons.filter((p) => privWert(p.priv, e.bereich)).slice(0, behalten(e)).map((p) => p.id)
+    const persons = DEMO.persons.map((p) => {
+      const priv = { ...p.priv }
+      if (!mit.includes(p.id)) privSetzen(priv, e.bereich, false)
+      return { ...p, priv }
+    })
+    const s = zustand({ persons })
+    const { engpaesse } = rechnung(s)
+    const fast = engpaesse.filter(istFastKnapp)
+    expect(fast.map((z) => z.bereich)).toEqual([e.bereich])
+    expect(engpaesse.filter(istKnapp)).toEqual([])
+
+    const { container } = zeige(s)
+    const kachel = engpaesseOeffnen(container)
+    expect(kachel).toContain(fill(t.awKnappeZahl, { n: '0' }))
+    expect(kachel).toContain(fill(t.awFastKnappZahl, { n: '1' }))
+    // Knapp ist keiner — der Satz bleibt, darunter die Frühwarnung.
+    expect(container.querySelector('.aw-leer')?.textContent).toBe(fill(t.awKeinEngpass, { dauer: vierWochen }))
+    const karte = container.querySelector(`section[aria-label="${t.awFastKnapp}"]`)!
+    const name = bereichsName(e.bereich, DEMO.services, t, (x) => x)
+    expect([...karte.querySelectorAll('.aw-zeile')].map((z) => [z.querySelector('.aw-zeile-name')?.textContent, z.querySelector('.aw-zeile-zahl')?.textContent])).toEqual([
+      [name, fill(t.awAlleDauer, { dauer: zeitspanne(Math.round(fast[0]!.abstand!), 'week', 'de') })],
+    ])
+    expect(karte.textContent).toContain(fill(t.awFastKnappText, { dauer: zeitspanne(FAST_KNAPP_UNTER, 'week', 'de') }))
+    expect(karte.textContent).toContain(t.awMehrFreigeben)
+  })
+
+  it('ohne fast knappen Bereich nennt die Kachel ihn nicht — „fast knapp: 0" wäre nur Lärm', () => {
+    const { container } = zeige(zustand())
+    expect(engpaesseOeffnen(container)).not.toContain(fill(t.awFastKnappZahl, { n: '0' }))
+    expect(container.querySelector(`section[aria-label="${t.awFastKnapp}"]`)).toBeNull()
+  })
+
   it.each([
     [t.awVerteilungTitel, '.aw-gruppe'],
     [t.awEinseitigTitel, '.aw-person-karte'],
@@ -343,6 +376,39 @@ describe('Ab dem Tablet: alles auf einer Seite', () => {
     const vorsitz = [...matrix.querySelectorAll('thead th')].find((th) => th.getAttribute('aria-label')?.startsWith(t.privVorsitz))!
     expect(vorsitz.getAttribute('aria-label')).toBe(`${t.privVorsitz} · ${t.tabMid}`)
     expect([...vorsitz.querySelectorAll('.aw-matrix-kopf > span')].map((s) => s.textContent)).toEqual([t.privVorsitz, t.unterDerWoche])
+  })
+
+  it('die Tabelle zeigt zuerst nur, wen ein Hinweis nennt — „Alle" zeigt jeden (31.10.2026)', () => {
+    breite('desktop')
+    const mit = personenMitHinweis(rechnung(zustand()).hinweise)
+    const { container } = zeige(zustand())
+    const namen = () => [...container.querySelectorAll('.aw-matrix tbody .aw-zeile-name')].map((b) => b.textContent)
+    const auffaellige = DEMO.persons.filter((p) => mit.has(p.id)).map((p) => displayName(p))
+    expect(auffaellige.length, 'der Verlauf braucht Personen mit Hinweis').toBeGreaterThan(0)
+    expect(namen()).toEqual(auffaellige)
+    const wahl = [...container.querySelectorAll<HTMLButtonElement>('.aw-matrix-karte button[aria-pressed]')]
+    expect(wahl.map((b) => b.textContent?.split(' · ')[0])).toEqual([t.awMitHinweis, t.awAlle])
+    expect(wahl[0]!.textContent).toBe(`${t.awMitHinweis} · ${auffaellige.length}`)
+    fireEvent.click(wahl[1]!)
+    expect(namen().length).toBeGreaterThan(auffaellige.length)
+    expect(wahl[1]!.textContent).toBe(`${t.awAlle} · ${namen().length}`)
+    expect(namen()).toEqual(expect.arrayContaining(auffaellige))
+  })
+
+  it('wer aus „Alle" eine Person öffnet, findet zurück wieder „Alle" — samt der Person (Review 31.10.2026)', () => {
+    breite('desktop')
+    const mit = personenMitHinweis(rechnung(zustand()).hinweise)
+    const { container } = zeige(zustand())
+    fireEvent.click([...container.querySelectorAll<HTMLButtonElement>('.aw-matrix-karte button[aria-pressed]')][1]!)
+    const ohneHinweis = [...container.querySelectorAll<HTMLButtonElement>('.aw-matrix tbody .aw-zeile-name')].find(
+      (b) => !DEMO.persons.some((p) => mit.has(p.id) && displayName(p) === b.textContent),
+    )!
+    const wer = ohneHinweis.textContent
+    fireEvent.click(ohneHinweis)
+    expect(titel(container)).toBe(wer)
+    zurueck(container)
+    expect(container.querySelector('.aw-matrix-karte button[aria-pressed="true"]')?.textContent?.split(' · ')[0]).toBe(t.awAlle)
+    expect([...container.querySelectorAll('.aw-matrix tbody .aw-zeile-name')].map((b) => b.textContent)).toContain(wer)
   })
 
   it('ein Name in der Tabelle öffnet die Person', () => {
@@ -780,16 +846,6 @@ describe('Wartezeiten: geplant und abwesend', () => {
       if (vorher) Element.prototype.scrollIntoView = vorher
       else delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView
     }
-  })
-
-  it('die Wartezeiten rechnen über das Jahr — bei drei Monaten steht derselbe übliche Abstand da', () => {
-    const { container } = zeige(zustand(JAHR))
-    fireEvent.click([...container.querySelectorAll<HTMLElement>('.aw-kachel')].find((k) => k.querySelector('.aw-kachel-titel')?.textContent === t.awWartezeitenTitel)!)
-    const jahr = container.querySelector('.aw-erklaerung')?.textContent
-    zurueck(container)
-    fireEvent.click(knopf(container, zeitspanne(3, 'month', 'de')))
-    fireEvent.click([...container.querySelectorAll<HTMLElement>('.aw-kachel')].find((k) => k.querySelector('.aw-kachel-titel')?.textContent === t.awWartezeitenTitel)!)
-    expect(container.querySelector('.aw-erklaerung')?.textContent).toBe(jahr)
   })
 })
 

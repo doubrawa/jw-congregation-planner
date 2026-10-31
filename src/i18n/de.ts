@@ -817,7 +817,7 @@ export const DE = {
     // Wochen ({dauer}, {ueblich}) kommen aus `zeitspanne` (Intl), Zahlen ohne
     // Einheit stehen als „Bezeichnung: {n}". Kein „er" und „sie": Wer im Bereich
     // nie dran war, heißt „Bereich vorhanden, nie dran".
-    navAuswertung: 'Auswertung', awZeitraum: 'Zeitraum', awZusammenkuenfte: 'Zusammenkünfte: {n}',
+    navAuswertung: 'Auswertung', awZusammenkuenfte: 'Zusammenkünfte: {n}',
     awZuteilungen: 'Zuteilungen', awEingeteilt: 'eingeteilt', awVonGesamt: 'von {m}', awNieDran: 'nie dran',
     awWasAuffaellt: 'Was auffällt', awHinweiseZahl: 'Hinweise: {n}',
     awNichtsAuffaellig: 'Nichts fällt auf – die Zuteilungen liegen im Rahmen.',
@@ -843,8 +843,8 @@ export const DE = {
     awEinseitigTitel: 'Einseitig verteilt', awPersonenZahl: 'Personen: {n}',
     awWartezeitenTitel: 'Wartezeiten', awWartenLangeZahl: 'Warten lange: {n}',
     awWeiteresTitel: 'Treffpunkte, Absagen, Ballungen', awBallungenZahl: 'Ballungen: {n}',
-    awFussnote: 'Gerechnet aus den Wochen in der App, gespeichert wird nichts. Wer abwesend war oder noch nicht dabei, von dem wird für diese Zeit nichts erwartet. Der öffentliche Vortrag, feste Rollen und was dem Vorsitz folgt, zählen nicht mit. Wartezeiten und Engpässe rechnen immer über das ganze Jahr.',
-    awKeineDaten: 'Im gewählten Zeitraum fand noch keine Zusammenkunft statt, die die App kennt.',
+    awFussnote: 'Gerechnet aus den Wochen in der App, gespeichert wird nichts. Wer abwesend war oder noch nicht dabei, von dem wird für diese Zeit nichts erwartet. Der öffentliche Vortrag, feste Rollen und was dem Vorsitz folgt, zählen nicht mit.',
+    awKeineDaten: 'Im letzten Jahr fand noch keine Zusammenkunft statt, die die App kennt.',
     // Die Anwesenden (T152, 29.10.2026): Saalordner und Zoom-Ordner zählen, wer
     // im Saal sitzt und wer per Video zugeschaltet ist; die Auswertung rechnet
     // daraus je Monat. „Ohne Zahl" steht vor den Tagen, an denen eine
@@ -854,8 +854,10 @@ export const DE = {
     anwesendUngueltig: 'Nur ganze Zahlen bis {max}.',
     anwesendZahl: 'Anwesend: {n}', anwesendSaalN: 'Im Saal: {n}', anwesendVideoN: 'Per Video: {n}',
     anwesendFehlt: 'Anwesende fehlen', anwesendEintragen: 'Eintragen', anwesendVon: 'Eingetragen von {name}',
-    awAnwesenheitTitel: 'Anwesenheit', awAnwesenheitKeine: 'Im gewählten Zeitraum sind noch keine Anwesenden eingetragen.',
+    awAnwesenheitTitel: 'Anwesenheit', awAnwesenheitKeine: 'Im letzten Jahr sind noch keine Anwesenden eingetragen.',
     awAnwesenheitSchnitt: 'Durchschnitt: {n}', awAnwesenheitOhne: 'Ohne Zahl:', awAnwesenheitOhneN: 'Ohne Zahl: {n}',
+    // Der Verlauf über das Jahr (31.10.2026); {n} ist ein Prozent aus `Intl`.
+    awAnwesenheitVerlauf: 'Durchschnitt je Zusammenkunft, Monat für Monat', awAnwesenheitVideo: 'Davon per Video: {n}',
     awAnwesenheitDrucken: 'Für den Bericht drucken',
     druckAnwesenheitTitel: 'Anwesende bei den Zusammenkünften', druckAnwesendZusammenkuenfte: 'Zusammenkünfte',
     druckAnwesendeZusammen: 'Anwesende zusammen', druckSchnitt: 'Durchschnitt',
@@ -883,7 +885,7 @@ export const DE = {
     // Der Befund in einem Wort neben dem Namen (T138): gegen die gerundete Erwartung.
     awMehrN: '{n} mehr', awWenigerN: '{n} weniger', awPasst: 'passt', awWartetLange: 'wartet lange',
     awEinseitigErklaerung: 'Wer zwei Drittel der Zuteilungen in einem Bereich hat und damit deutlich mehr, als dort zu erwarten ist – oder in einem eigenen Bereich nie dran war, obwohl die anderen ihn oft hatten.',
-    awAuffaellig: 'Auffällig', awAlle: 'Alle', awNie: 'nie',
+    awAuffaellig: 'Auffällig', awAlle: 'Alle', awNie: 'nie', awMitHinweis: 'Mit Hinweis',
     awNieSchnitt: '{bereich}: bei den anderen im Schnitt {n}',
     awMatrixTitel: 'Wer bekommt was',
     awMatrixText: 'Zuteilungen je Person und Bereich. Gestrichelt: Bereich vorhanden, dort aber nie dran.',
@@ -929,6 +931,9 @@ export const DE = {
     awKnappeBereiche: 'Knappe Bereiche', awKnappeZahl: 'Knappe Bereiche: {n}',
     awKeinEngpass: 'Kein Bereich ist knapp: Niemand wäre öfter als alle {dauer} dran.',
     awMehrFreigeben: 'Mehr Personen freigeben: Aufgabenbereiche vergibst du bei der Person.',
+    // Die Frühwarnung (31.10.2026); {dauer} ist ihre Grenze („6 Wochen").
+    awFastKnapp: 'Fast knapp', awFastKnappZahl: 'fast knapp: {n}',
+    awFastKnappText: 'Noch reicht es, aber jeder ist hier öfter als alle {dauer} dran. Fällt jemand länger aus, wird es knapp.',
     // Absagen (T126, seit 17.10.2026 aufgezeichnet). {anteil}/{sonst} sind Prozente aus `Intl`.
     awAbsagenTitel: 'Absagen je Bereich', awAbsagenZahl: 'Absagen: {n}', awAnteilVon: '{anteil} von {m}',
     awAbsagenText: 'Gezählt wird, wer seine Zuteilung abgesagt hat – auch wenn der Platz danach neu besetzt wurde. Der Anteil bezieht sich auf alle Zuteilungen des Bereichs.',

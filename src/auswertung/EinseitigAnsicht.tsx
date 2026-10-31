@@ -1,7 +1,7 @@
 import { useId, useMemo, useState } from 'react'
 import { Wahl } from '../bausteine/Wahl'
 import { QUALIFICATION_ORDER } from '../data/constants'
-import { istEinseitig, matrix, type EinseitigZeile, type MatrixZelle } from '../data/auswertung'
+import { istEinseitig, matrix, personenMitHinweis, type EinseitigZeile, type Matrix, type MatrixZelle } from '../data/auswertung'
 import { serviceQualKey } from '../data/helpers'
 import type { Person, Service } from '../data/types'
 import { fill } from '../i18n/useT'
@@ -9,7 +9,7 @@ import { Legende, MiniBalken } from './Diagramme'
 import { einseitigText } from './hinweis-texte'
 import type { Kontext } from './kontext'
 
-type Filter = 'auffaellig' | 'alle'
+export type Filter = 'auffaellig' | 'alle'
 
 /** Eine Karte je Person: ihre Bereiche untereinander, der überwiegende hervorgehoben. */
 function PersonKarte({ z, k }: { z: EinseitigZeile; k: Kontext }) {
@@ -111,13 +111,31 @@ function zellenText(zelle: MatrixZelle, k: Kontext): string {
 }
 
 /**
- * **Wer bekommt was** ab dem Tablet (Entwurf `TabletEinseitig`): Person × Bereich
+ * **Wer bekommt was** am Desktop (Entwurf `TabletEinseitig`): Person × Bereich
  * als Felder — gestrichelt, wo jemand den Bereich hat und nie dran war, ein
  * Strich, wo er ihn nicht hat, umrandet, wo er ohne ihn eingeteilt war. Sie
  * rollt nicht: Die Bereiche teilen sich die Breite, ihre Köpfe stehen senkrecht
  * (`auswertung.css`).
+ *
+ * Zuerst nur, wen ein Hinweis nennt (31.10.2026): Mit den echten Daten standen
+ * 78 Zeilen da, vier Bildschirmhöhen für einen einzigen einseitigen Befund —
+ * mit Hinweis waren es 18. „Alle" zeigt den Rest. Die Wahl hält die Seite:
+ * Eine Person öffnet sich an Stelle der Tabelle, und zurück stünde sonst
+ * wieder „Mit Hinweis" da (Review 31.10.2026).
  */
-export function EinseitigMatrix({ k, persons, services }: { k: Kontext; persons: readonly Person[]; services: readonly Service[] }) {
+export function EinseitigMatrix({
+  k,
+  persons,
+  services,
+  filter,
+  onFilter,
+}: {
+  k: Kontext
+  persons: readonly Person[]
+  services: readonly Service[]
+  filter: Filter
+  onFilter: (filter: Filter) => void
+}) {
   const m = useMemo(
     () => matrix(k.a.grundlage, persons, k.a.einseitig, [...QUALIFICATION_ORDER, ...services.map((s) => serviceQualKey(s.key))]),
     [k.a, persons, services],
@@ -125,56 +143,26 @@ export function EinseitigMatrix({ k, persons, services }: { k: Kontext; persons:
   const { t } = k
   const titelId = useId()
   if (m.zeilen.length === 0) return null
-  const ohneBereich = m.zeilen.some((z) => z.zellen.some((c) => !c.hat && c.n > 0))
+  const mitHinweis = personenMitHinweis(k.a.hinweise)
+  const auffaellige = m.zeilen.filter((z) => mitHinweis.has(z.pid))
+  const zeilen = filter === 'auffaellig' ? auffaellige : m.zeilen
+  const ohneBereich = zeilen.some((z) => z.zellen.some((c) => !c.hat && c.n > 0))
   return (
     <section className="karte aw-matrix-karte" aria-labelledby={titelId}>
       <h2 id={titelId} className="karte-titel">
         {t.awMatrixTitel}
       </h2>
       <p className="klein-text">{t.awMatrixText}</p>
-      <table className="aw-matrix">
-        <colgroup>
-          <col className="aw-matrix-namen" />
-        </colgroup>
-        <thead>
-          <tr>
-            <th scope="col">{t.awPerson}</th>
-            {m.bereiche.map((b) => (
-              // Je Baustein („Vorsitz · …", `privLabelTeile`) eine senkrechte
-              // Zeile, die Zusammenkunft kurz — die längste bestimmt, wie hoch
-              // der Kopf steht. Vorgelesen wird der ganze Name.
-              <th key={b} scope="col" aria-label={k.bereich(b)}>
-                <span className="aw-matrix-kopf" aria-hidden="true">
-                  {k.bereichKurz(b).map((teil, i) => (
-                    <span key={i}>{teil}</span>
-                  ))}
-                </span>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {m.zeilen.map((z) => (
-            <tr key={z.pid}>
-              <th scope="row">
-                <button type="button" className="aw-zeile-name" onClick={() => k.personOeffnen(z.pid)}>
-                  {k.name(z.pid)}
-                </button>
-                {z.einseitig && <span className="aw-marke-einseitig">{t.awEinseitigMarke}</span>}
-              </th>
-              {z.zellen.map((zelle, i) => {
-                const bereich = m.bereiche[i] ?? ''
-                const aria = fill(t.awZelle, { name: k.name(z.pid), bereich: k.bereich(bereich), wert: zellenText(zelle, k) })
-                return (
-                  <td key={bereich} aria-label={aria}>
-                    <Zelle zelle={zelle} k={k} />
-                  </td>
-                )
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <Wahl
+        label={t.awMatrixTitel}
+        optionen={[
+          { wert: 'auffaellig' as const, text: `${t.awMitHinweis} · ${k.zahl(auffaellige.length)}` },
+          { wert: 'alle' as const, text: `${t.awAlle} · ${k.zahl(m.zeilen.length)}` },
+        ]}
+        wert={filter}
+        onWahl={onFilter}
+      />
+      {zeilen.length === 0 ? <p className="aw-leer">{t.awNichtsAuffaellig}</p> : <MatrixTabelle k={k} bereiche={m.bereiche} zeilen={zeilen} />}
       {/* Die Grenzen aus denselben Zahlen wie die Felder — und in den Ziffern der Sprache. */}
       <Legende
         eintraege={[
@@ -187,5 +175,55 @@ export function EinseitigMatrix({ k, persons, services }: { k: Kontext; persons:
       />
       <p className="klein-text">– {t.awOhneBereich}</p>
     </section>
+  )
+}
+
+/** Die Tabelle selbst: Köpfe senkrecht, je Person eine Zeile, Name als Knopf zur Person. */
+function MatrixTabelle({ k, bereiche, zeilen }: { k: Kontext; bereiche: readonly string[]; zeilen: Matrix['zeilen'] }) {
+  const { t } = k
+  return (
+    <table className="aw-matrix">
+      <colgroup>
+        <col className="aw-matrix-namen" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th scope="col">{t.awPerson}</th>
+          {bereiche.map((b) => (
+            // Je Baustein („Vorsitz · …", `privLabelTeile`) eine senkrechte
+            // Zeile, die Zusammenkunft kurz — die längste bestimmt, wie hoch
+            // der Kopf steht. Vorgelesen wird der ganze Name.
+            <th key={b} scope="col" aria-label={k.bereich(b)}>
+              <span className="aw-matrix-kopf" aria-hidden="true">
+                {k.bereichKurz(b).map((teil, i) => (
+                  <span key={i}>{teil}</span>
+                ))}
+              </span>
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {zeilen.map((z) => (
+          <tr key={z.pid}>
+            <th scope="row">
+              <button type="button" className="aw-zeile-name" onClick={() => k.personOeffnen(z.pid)}>
+                {k.name(z.pid)}
+              </button>
+              {z.einseitig && <span className="aw-marke-einseitig">{t.awEinseitigMarke}</span>}
+            </th>
+            {z.zellen.map((zelle, i) => {
+              const bereich = bereiche[i] ?? ''
+              const aria = fill(t.awZelle, { name: k.name(z.pid), bereich: k.bereich(bereich), wert: zellenText(zelle, k) })
+              return (
+                <td key={bereich} aria-label={aria}>
+                  <Zelle zelle={zelle} k={k} />
+                </td>
+              )
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   )
 }

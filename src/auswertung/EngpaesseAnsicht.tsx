@@ -1,4 +1,4 @@
-import { istKnapp, KNAPP_UNTER, type Engpass } from '../data/auswertung'
+import { FAST_KNAPP_UNTER, istFastKnapp, istKnapp, KNAPP_UNTER, type Engpass } from '../data/auswertung'
 import { fill } from '../i18n/useT'
 import { gerundet, type Kontext } from './kontext'
 
@@ -8,7 +8,8 @@ import { gerundet, type Kontext } from './kontext'
  * Wochen jeder dran wäre. Immer über das ganze Jahr.
  *
  * Es stehen nur die knappen Bereiche da (`istKnapp`), mit dem Rat, mehr
- * Personen freizugeben; ist keiner knapp, sagt es ein Satz. Als Zeilen, nicht
+ * Personen freizugeben; ist keiner knapp, sagt es ein Satz. Darunter die fast
+ * knappen (`istFastKnapp`, 31.10.2026) — die Frühwarnung. Als Zeilen, nicht
  * als Tabelle: Neben einer Spalte mit Zahlen bräche „Schulungsaufgaben" bei
  * 320 px und Stufe 1,45 mitten im Wort, hier rückt die Zahl darunter. Bis zum
  * 24.10.2026 stand jeder Bereich mit Balken da, und die Kachel nannte „Am
@@ -21,6 +22,7 @@ export function EngpaesseAnsicht({ k }: { k: Kontext }) {
   const liste = k.a.engpaesse
   if (liste.length === 0) return <p className="karte aw-leer">{t.awKeineDaten}</p>
   const knappe = liste.filter(istKnapp)
+  const fastKnappe = liste.filter(istFastKnapp)
   const grenze = k.dauer(KNAPP_UNTER)
   return (
     <div className="aw-ansicht">
@@ -28,16 +30,27 @@ export function EngpaesseAnsicht({ k }: { k: Kontext }) {
       {knappe.length === 0 ? (
         <p className="karte aw-leer">{fill(t.awKeinEngpass, { dauer: grenze })}</p>
       ) : (
-        <section className="karte aw-gruppe" aria-label={t.awKnappeBereiche}>
-          <h2 className="aw-gruppe-kopf">
-            <span>{t.awKnappeBereiche}</span>
-            <span className="klein-text">{k.zahl(knappe.length)}</span>
-          </h2>
-          <Zeilen liste={knappe} k={k} />
-          <p className="klein-text">{t.awMehrFreigeben}</p>
-        </section>
+        <Gruppe titel={t.awKnappeBereiche} liste={knappe} k={k} />
+      )}
+      {fastKnappe.length > 0 && (
+        <Gruppe titel={t.awFastKnapp} text={fill(t.awFastKnappText, { dauer: k.dauer(FAST_KNAPP_UNTER) })} liste={fastKnappe} k={k} />
       )}
     </div>
+  )
+}
+
+/** Eine Karte mit Bereichen: oben Titel und Zahl, unten ein Satz, was zu tun ist. */
+function Gruppe({ titel, text, liste, k }: { titel: string; text?: string; liste: readonly Engpass[]; k: Kontext }) {
+  return (
+    <section className="karte aw-gruppe" aria-label={titel}>
+      <h2 className="aw-gruppe-kopf">
+        <span>{titel}</span>
+        <span className="klein-text">{k.zahl(liste.length)}</span>
+      </h2>
+      <Zeilen liste={liste} k={k} />
+      {text !== undefined && <p className="klein-text">{text}</p>}
+      <p className="klein-text">{k.t.awMehrFreigeben}</p>
+    </section>
   )
 }
 
