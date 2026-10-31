@@ -9385,6 +9385,15 @@ statt 40 je Aufruf; ein veralteter Kommentar in `data.ts` fort.
 
 Gegenproben zu 1–3 rot. Suite 7526/7526, tsc, Lint.
 
+**Ausgerollt am 31.10.2026:** erst gepusht (`9dae98de`, Pages live als
+`shell-9dae98d`), dann `anmelden` (v14) und `send-invite` (v27) —
+heruntergeladen und Datei für Datei gleich HEAD (7 Dateien); `send-invite` ohne
+Anmeldung 401, `anmelden` OPTIONS 200, `aktion: 'mail'` 400, ein Code 404.
+**Offen beim Betreiber:** `schema.sql` einspielen — `drop function
+personen_mails`, `drop column persons.mail`, das Leserecht an `persons` —, das
+die 94 Adressen endgültig löscht. Bis dahin liest niemand die Spalte; die App
+läuft mit und ohne sie.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
