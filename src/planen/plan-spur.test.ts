@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { allePlaetze, platzKey } from '../data/plaetze'
+import { sentKey } from '../data/planning'
 import { besetztVon } from '../data/saal'
 import type { FsInstance, MeetingTimes, Service, Week } from '../data/types'
 import type { PlanStand } from '../data/weitere-plaene'
@@ -107,7 +108,7 @@ describe('zahlenDerWoche: beide Zusammenkünfte, ohne was vorbei ist', () => {
  * nicht gibt (wie bei T136: Zahl und Kreise passten nicht zusammen).
  */
 describe('besetzungDerWoche: der Saal als Balken, über die Zusammenkünfte der Spur', () => {
-  const q = (w: Week) => ({ services: SERVICES, confirmations: { [keyVon(w, 'Anna Alt')]: 'bestätigt' as const }, zeiten: ZEITEN })
+  const q = (w: Week) => ({ services: SERVICES, confirmations: { [keyVon(w, 'Anna Alt')]: 'bestätigt' as const }, persoenlich: {}, zeiten: ZEITEN })
   const keinKonflikt = () => () => false
 
   it('Dienstag und Sonntag: Anna zugesagt, Bert wartet, der Gastredner hat nichts zu bestätigen — vier offen', () => {
@@ -115,9 +116,21 @@ describe('besetzungDerWoche: der Saal als Balken, über die Zusammenkünfte der 
     expect(besetzungDerWoche(w, q(w), HEUTE, keinKonflikt)).toEqual({ voll: 2, wartet: 1, problem: 0, offen: 4, du: false })
   })
 
+  /*
+   * Betreiber 31.10.2026: Der Haken „weiß Bescheid" zählt im Balken wie eine
+   * Zusage, wie in der Spur. Bei 111 von 112 Personen ohne Konto bliebe der
+   * Balken sonst jede Woche blass, obwohl alle Bescheid wissen.
+   */
+  it('wem der Planer ohne Konto Bescheid gegeben hat, füllt den Balken wie eine Zusage', () => {
+    const w = woche()
+    const bert = keyVon(w, 'Bert Bau')
+    const b = besetzungDerWoche(w, { ...q(w), persoenlich: { [sentKey(bert, 'Bert Bau')]: '2026-09-07T10:00:00Z' } }, HEUTE, keinKonflikt)
+    expect(b).toEqual({ voll: 3, wartet: 0, problem: 0, offen: 4, du: false })
+  })
+
   it('besetzt und gesamt sind die Zahlen der Spur — auch, wenn der Dienstag vorbei ist', () => {
     const w = woche()
-    const quellen = { ...q(w), persoenlich: {}, sentLog: {} }
+    const quellen = { ...q(w), sentLog: {} }
     for (const tag of [HEUTE, new Date(2026, 8, 9, 12, 0)]) {
       const spur = zahlenDerWoche(w, [TREFFPUNKT], quellen, tag)
       expect(besetztVon(besetzungDerWoche(w, q(w), tag, keinKonflikt))).toEqual({ besetzt: spur.besetzt, gesamt: spur.gesamt })

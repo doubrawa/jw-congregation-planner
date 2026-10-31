@@ -102,7 +102,8 @@ export function AuswertungScreen() {
     }
   }, [a, persons, services, groups, lang, t, tu, breit])
   const wartezeiten = <WartezeitenAnsicht k={k} bereich={warteBereich} onBereich={setWarteBereich} />
-  // Die Zusammenkünfte ohne Anwesende im Zeitraum (T152) — die Zahl der Kachel.
+  // Die Anwesenheit je Monat (T152) — für die Ansicht und die Zahl der Kachel:
+  // die Zusammenkünfte ohne Anwesende im Zeitraum. Einmal gerechnet, für beide.
   const anwesenheitMonate = useAnwesenheitMonate(zeitraum)
   const ohneZahl = anwesenheitMonate.reduce((n, m) => n + m.je.mid.fehlt.length + m.je.we.fehlt.length, 0)
 
@@ -134,7 +135,7 @@ export function AuswertungScreen() {
         {ansicht === 'wartezeiten' && wartezeiten}
         {ansicht === 'engpaesse' && <EngpaesseAnsicht k={k} />}
         {ansicht === 'weiteres' && <WeiteresAnsicht k={k} />}
-        {ansicht === 'anwesenheit' && <AnwesenheitAnsicht zeitraum={zeitraum} />}
+        {ansicht === 'anwesenheit' && <AnwesenheitAnsicht monate={anwesenheitMonate} zahl={k.zahl} />}
       </section>
     )
   }
@@ -214,7 +215,7 @@ export function AuswertungScreen() {
       </div>
       <section id={ANKER.anwesenheit} className="aw-abschnitt" aria-label={t.awAnwesenheitTitel}>
         <h2 className="abschnitt-titel">{t.awAnwesenheitTitel}</h2>
-        <AnwesenheitAnsicht zeitraum={zeitraum} />
+        <AnwesenheitAnsicht monate={anwesenheitMonate} zahl={k.zahl} />
       </section>
       <p className="klein-text aw-fussnote">{t.awFussnote}</p>
     </section>

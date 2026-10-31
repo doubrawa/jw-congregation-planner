@@ -406,6 +406,18 @@ export function terminText(
   return zeit ? `${text} · ${zeit}` : text
 }
 
+/**
+ * **Der Kalendertag eines Termins** („JJJJ-MM-TT") aus Wochenstart und
+ * Versatz — `null` bei unlesbarem Startdatum (Vorlagenwochen). Daran messen die
+ * Functions „vorbei" und „abwesend": beim Einspringen, beim Übernehmen eines
+ * freien Platzes und beim Tauschen. Bis zum 31.10.2026 stand die Rechnung dort
+ * dreimal, je mit eigenem Namen.
+ */
+export function terminTag(startISO: string, offset: number): string | null {
+  const ms = Date.parse(startISO)
+  return Number.isNaN(ms) ? null : new Date(ms + offset * 864e5).toISOString().slice(0, 10)
+}
+
 /* ---- Heute und „vorbei" --------------------------------------------------- */
 
 /**

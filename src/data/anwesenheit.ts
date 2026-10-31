@@ -20,6 +20,7 @@
 import { gehoertZuKennung, istAusgefallen, MEETING_TABS } from './helpers'
 import { fromIso, isoDay, meetingDate, meetingTime, versatzAbMontag } from './meeting-dates'
 import type { MeetingKey, MeetingTimes, Week } from './types'
+import { monatsErster } from './weitere-plaene'
 
 /** Die Hilfsdienste, deren Eingeteilte die Anwesenden zählen — im Saal und zugeschaltet. */
 export const ANWESENHEIT_DIENSTE = ['saal', 'zoom'] as const
@@ -122,7 +123,10 @@ export interface AnwesenheitImMonat {
   summe: number
   /** Durchschnitt je Zusammenkunft, ganz gerundet — `null` ohne eine einzige Zahl. */
   schnitt: number | null
-  /** Zusammenkünfte, die stattfanden, aber keine Zahl haben: ihr Tag und ihre Woche (beide ISO). */
+  /**
+   * Zusammenkünfte, die stattfanden, aber keine Zahl haben — seit der ersten
+   * mit Zahl (`anwesenheitJeMonat`): ihr Tag und ihre Woche (beide ISO).
+   */
   fehlt: Array<{ tag: string; woche: string }>
 }
 
@@ -152,6 +156,12 @@ const leer = (): AnwesenheitImMonat => ({ anzahl: 0, summe: 0, schnitt: null, fe
  * `fehlt` nennt die Zusammenkünfte, die stattfanden (Woche geladen, nicht
  * ausgefallen, Tag vorbei), aber keine Zahl haben — dort fehlt sie im
  * Durchschnitt, und der Planer kann sie nachtragen.
+ *
+ * **Fehlen kann eine Zahl erst ab der ersten Zusammenkunft mit Zahl**
+ * (Betreiber, 31.10.2026) — gesucht über alles Geladene, nicht nur über den
+ * Zeitraum: Vorher hat niemand gezählt. Nach einem Neuaufbau (ein Jahr Wochen,
+ * keine Anwesenden) stünde sonst jede Zusammenkunft des Jahres unter „Ohne
+ * Zahl". Ohne eine einzige Zahl fehlt nichts.
  */
 export function anwesenheitJeMonat(
   liste: readonly Anwesenheit[],
@@ -164,7 +174,7 @@ export function anwesenheitJeMonat(
   const wochen = new Map(weeks.map((w) => [w.start, w]))
   const monate = new Map<string, AnwesenheitMonat>()
   const monat = (tag: string): AnwesenheitMonat | undefined => {
-    const key = `${tag.slice(0, 7)}-01`
+    const key = monatsErster(tag)
     if (key < vonMonat || key > bisMonat) return undefined
     let m = monate.get(key)
     if (!m) {
@@ -175,10 +185,14 @@ export function anwesenheitJeMonat(
   }
 
   const mitZahl = new Set<string>()
+  /** Der Tag der ersten Zusammenkunft mit Zahl — ab ihm kann eine fehlen (siehe oben). */
+  let ab: string | null = null
   for (const a of liste) {
     const gesamt = anwesendGesamt(a)
     if (gesamt === null) continue
-    const m = monat(tagDer(a, wochen, zeiten))
+    const tag = tagDer(a, wochen, zeiten)
+    if (ab === null || tag < ab) ab = tag
+    const m = monat(tag)
     if (!m) continue
     m.je[a.tab].anzahl++
     m.je[a.tab].summe += gesamt
@@ -190,7 +204,7 @@ export function anwesenheitJeMonat(
     for (const tab of MEETING_TABS) {
       if (istAusgefallen(week, tab) || mitZahl.has(`${week.start}|${tab}`)) continue
       const tag = isoDay(meetingDate(week, tab, zeiten))
-      if (tag >= heuteIso) continue
+      if (tag >= heuteIso || ab === null || tag < ab) continue
       monat(tag)?.je[tab].fehlt.push({ tag, woche: week.start })
     }
   }

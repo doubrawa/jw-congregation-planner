@@ -4,7 +4,6 @@ import { anwesendGesamt, zaehltSchon } from '../data/anwesenheit'
 import { nameVon } from '../data/helpers'
 import type { MeetingKey, Week } from '../data/types'
 import { fill, useT } from '../i18n/useT'
-import { zahlBinden } from '../i18n/zahl-binden'
 import { AnwesenheitBlatt } from './AnwesenheitBlatt'
 import { useAnwesenheit } from './useAnwesenheit'
 import './anwesenheit.css'
@@ -24,16 +23,17 @@ export function AnwesenheitZeile({ week, tab }: { week: Week; tab: MeetingKey })
   const gesamt = anwesendGesamt(eintrag)
   if (gesamt === null && !darf) return null
 
+  // `fill` bindet jede Zahl an ihr Wort (T128).
   const teile = [
-    eintrag?.saal != null ? zahlBinden(fill(t.anwesendSaalN, { n: eintrag.saal })) : '',
-    eintrag?.video != null ? zahlBinden(fill(t.anwesendVideoN, { n: eintrag.video })) : '',
+    eintrag?.saal != null ? fill(t.anwesendSaalN, { n: eintrag.saal }) : '',
+    eintrag?.video != null ? fill(t.anwesendVideoN, { n: eintrag.video }) : '',
   ].filter(Boolean)
   const von = darf ? nameVon(state.persons, eintrag?.pid ?? null) : ''
   return (
     <section className="karte anwesend-zeile" aria-label={t.anwesendTitel}>
       <div className="anwesend-zeile-text">
         {gesamt !== null ? (
-          <span className="anwesend-gesamt">{zahlBinden(fill(t.anwesendZahl, { n: gesamt }))}</span>
+          <span className="anwesend-gesamt">{fill(t.anwesendZahl, { n: gesamt })}</span>
         ) : (
           <span className="anwesend-gesamt is-fehlt">{t.anwesendFehlt}</span>
         )}

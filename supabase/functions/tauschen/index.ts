@@ -278,6 +278,21 @@ async function anfragenLoeschen(k: Aufrufer, filter: string): Promise<void> {
   await rest.send('DELETE', `tausch_anfragen?congregation_id=eq.${wert(k.cong)}&${filter}`)
 }
 
+/**
+ * **Hat der Gefragte den Platz noch, um den es ging?** Dieselbe Frage wie `gilt`
+ * in der App (data/tausch.ts): Den abgegebenen Platz hat der Fragende — sonst
+ * fragte er nicht —, umgeteilt sein kann nur der andere. Seine Woche steht meist
+ * schon in der gelesenen Lage, sonst wird sie gelesen.
+ */
+async function gefragterHatDenPlatz(k: Aufrufer, lage: Lage, a: Anfrage): Promise<boolean> {
+  const teile = schluesselTeile(a.nimmt)
+  if (teile?.art !== 'helper') return false
+  const woche =
+    lage.wochen.get(teile.woche)?.data ??
+    (await rest.get<{ data: Week }[]>(`weeks?select=data&congregation_id=eq.${wert(k.cong)}&start=eq.${wert(teile.woche)}`))[0]?.data
+  return woche?.[teile.tab]?.helpers?.[teile.svc]?.[teile.pos]?.pid === a.an_person
+}
+
 /* ---- Die Aktionen -------------------------------------------------------- */
 
 async function angebote(k: Aufrufer, gibtAb: string): Promise<Response> {
@@ -306,14 +321,20 @@ async function anfragen(k: Aufrufer, gibtAb: string, nimmt: string): Promise<Res
 
   // Was zu diesem Platz noch dasteht, aber nicht mehr gilt, sperrte sonst eine
   // neue Anfrage (eine je Platz): eine verfallene — die räumt erst das
-  // Aufräumen am Montag weg — und eine des vorigen Inhabers, wenn der Planer
-  // den Platz inzwischen umgeteilt hat.
+  // Aufräumen am Montag weg —, eine des vorigen Inhabers, wenn der Planer
+  // den Platz inzwischen umgeteilt hat, und die eigene, deren anderer Platz
+  // inzwischen jemand anderem gehört (Review 31.10.2026). Die App zeigt sie dann
+  // nicht mehr (`gilt` in data/tausch.ts), zurückziehen ließ sie sich also
+  // nicht — und jede neue Anfrage scheiterte bis zu ihrem Tag an „already-asked".
   await anfragenLoeschen(k, `gibt_ab=eq.${wert(gibtAb)}&bis=lt.${wert(k.heute)}`)
   await anfragenLoeschen(k, `gibt_ab=eq.${wert(gibtAb)}&von_person=neq.${wert(k.personId)}`)
-  const offen = await rest.get<{ id: string }[]>(
-    `tausch_anfragen?select=id&congregation_id=eq.${wert(k.cong)}&gibt_ab=eq.${wert(gibtAb)}`,
+  const offen = await rest.get<Anfrage[]>(
+    `tausch_anfragen?select=${ANFRAGE_SPALTEN}&congregation_id=eq.${wert(k.cong)}&gibt_ab=eq.${wert(gibtAb)}`,
   )
-  if (offen.length > 0) return fehler('already-asked')
+  for (const alt of offen) {
+    if (await gefragterHatDenPlatz(k, lage, alt)) return fehler('already-asked')
+    await anfragenLoeschen(k, `id=eq.${wert(alt.id)}`)
+  }
   const angelegt = await rest.zeilenSchreiben<Anfrage>('POST', `tausch_anfragen?select=${ANFRAGE_SPALTEN}`, [
     {
       congregation_id: k.cong,

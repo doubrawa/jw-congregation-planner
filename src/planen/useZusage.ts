@@ -1,8 +1,9 @@
 import { useApp } from '../app/context'
 import { fsTaskKey } from '../data/fs'
-import { istAusgefallen } from '../data/helpers'
+import { istAusgefallen, slotsOf } from '../data/helpers'
 import { platzKey, type Platz } from '../data/plaetze'
-import { helferKey, punktKey, ratgeberKey, zusageStatus } from '../data/planning'
+import { helferKey, punktKey, ratgeberKey } from '../data/planning'
+import { zusageMitBescheid } from '../data/saal'
 import { useT } from '../i18n/useT'
 import type { Dict } from '../i18n/ui'
 import type { FsInstance, MeetingKey, PartItem, TaskStatus } from '../data/types'
@@ -44,6 +45,10 @@ export interface ZusageStand {
  * Schlüsselrechnung in einer Komponente wäre die nächste, die man vergisst.
  * Die Beschriftung kommt gleich mit: Die Übersetzung wird einmal je Abschnitt
  * geholt, nicht in jedem der gut hundert Chips des Wochenstreifens.
+ *
+ * Der Haken „weiß Bescheid" zählt wie eine Zusage (`zusageMitBescheid`,
+ * 31.10.2026) — er hängt an Platz **und** Name, deshalb geht der Name des
+ * Platzes mit.
  */
 export function useZusage(
   /**
@@ -57,8 +62,8 @@ export function useZusage(
   const { t } = useT()
   const week = state.weeks[wi ?? state.week]
   const woche = week?.start ?? ''
-  const stand = (key: string): ZusageStand => {
-    const stufe = zusageStatus(state.confirmations, key)
+  const stand = (key: string, name: string | undefined): ZusageStand => {
+    const stufe = zusageMitBescheid(state.confirmations, state.persoenlich, key, name ?? '')
     return { stufe, label: t[ZUSAGE_LABEL[stufe]] }
   }
   return {
@@ -71,11 +76,12 @@ export function useZusage(
      */
     moeglich: (tab: MeetingKey): boolean => !istAusgefallen(week, tab),
     teil: (tab: MeetingKey, item: PartItem, ni: number, aux: boolean) =>
-      stand(punktKey(woche, tab, item.iid, ni, aux)),
+      stand(punktKey(woche, tab, item.iid, ni, aux), slotsOf(item, aux)[ni]?.name),
     /** Derselbe Stand für einen Platz aus dem Durchlauf (`allePlaetze`). */
-    platz: (tab: MeetingKey, platz: Platz) => stand(platzKey(platz, woche, tab)),
-    hilfsdienst: (tab: MeetingKey, svc: string, pos: number) => stand(helferKey(woche, tab, svc, pos)),
-    ratgeber: (tab: MeetingKey) => stand(ratgeberKey(woche, tab)),
-    treffpunkt: (inst: FsInstance) => stand(fsTaskKey(woche, inst.id)),
+    platz: (tab: MeetingKey, platz: Platz) => stand(platzKey(platz, woche, tab), platz.slot?.name),
+    hilfsdienst: (tab: MeetingKey, svc: string, pos: number) =>
+      stand(helferKey(woche, tab, svc, pos), week?.[tab].helpers[svc]?.[pos]?.name),
+    ratgeber: (tab: MeetingKey) => stand(ratgeberKey(woche, tab), week?.[tab].auxRatgeber?.name),
+    treffpunkt: (inst: FsInstance) => stand(fsTaskKey(woche, inst.id), inst.leader),
   }
 }

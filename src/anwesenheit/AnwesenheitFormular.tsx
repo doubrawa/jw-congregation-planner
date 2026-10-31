@@ -15,18 +15,27 @@ import './anwesenheit.css'
  *
  * Auf dem Start steht das Formular in der Karte, im Programm und in der
  * Auswertung in einem Blatt (`AnwesenheitBlatt`).
+ *
+ * **Was gespeichert ist, steht im Feld** (Review 31.10.2026): Die Felder
+ * übernehmen die Zahlen nur beim Öffnen. Kam die des anderen erst danach herein
+ * — ein Nachladen, während die Karte auf dem Start stand —, stand hier weiter
+ * das leere Feld, und Speichern schickte es als „nicht eingetragen" (`null`)
+ * und löschte die Zahl des anderen. Mit den gespeicherten Zahlen im Schlüssel
+ * beginnt das Formular dann neu, wie die Felder im Planen (`key` mit dem Wert).
  */
-export function AnwesenheitFormular({
-  woche,
-  tab,
-  eintrag,
-  onGespeichert,
-}: {
+export function AnwesenheitFormular(props: FormularProps) {
+  const { eintrag } = props
+  return <Formular key={`${eintrag?.saal ?? ''}|${eintrag?.video ?? ''}`} {...props} />
+}
+
+interface FormularProps {
   woche: string
   tab: MeetingKey
   eintrag: Anwesenheit | undefined
   onGespeichert?: () => void
-}) {
+}
+
+function Formular({ woche, tab, eintrag, onGespeichert }: FormularProps) {
   const { state, dispatch } = useApp()
   const { t } = useT()
   const id = useId()

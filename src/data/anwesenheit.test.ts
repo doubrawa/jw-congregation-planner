@@ -146,9 +146,38 @@ describe('Die Anwesenheit je Monat', () => {
     expect(am16[0]!.je.mid.fehlt).toEqual([])
   })
 
-  it('ohne eine einzige Zahl kein Durchschnitt — nicht 0', () => {
-    const leer = anwesenheitJeMonat([], weeks, ZEITEN, '2026-09-01', '2026-09-01', heute)
-    expect(leer[0]!.je.mid.schnitt).toBeNull()
+  it('eine Art ohne eine einzige Zahl hat keinen Durchschnitt — nicht 0', () => {
+    const nurSonntag = anwesenheitJeMonat([eintrag('2026-09-07', 'we', 90, null)], weeks, ZEITEN, '2026-09-01', '2026-09-01', heute)
+    expect(nurSonntag[0]!.je.mid).toMatchObject({ anzahl: 0, schnitt: null })
+    expect(nurSonntag[0]!.je.we.schnitt).toBe(90)
+  })
+
+  /*
+   * Betreiber 31.10.2026: Fehlen kann eine Zahl erst ab der ersten
+   * Zusammenkunft mit Zahl. Ein Neuaufbau holt ein Jahr Wochen, aber keine
+   * Anwesenden — ohne diese Grenze stünde jede Zusammenkunft des Jahres unter
+   * „Ohne Zahl", und die Kachel nennte rund hundert, die niemand nachtragen kann.
+   */
+  it('vor der ersten Zusammenkunft mit Zahl fehlt nichts — danach jede ohne', () => {
+    // Die erste Zahl am Dienstag, 22.9.: 8.9., 13.9., 15.9. und 20.9. fehlen nicht.
+    const ab22 = anwesenheitJeMonat([eintrag('2026-09-21', 'mid', 61, 22)], weeks, ZEITEN, '2026-09-01', '2026-10-01', heute)
+    const [oktober, september] = ab22
+    expect(september!.je.mid.fehlt).toEqual([{ tag: '2026-09-29', woche: '2026-09-28' }])
+    expect(september!.je.we.fehlt).toEqual([{ tag: '2026-09-27', woche: '2026-09-21' }])
+    expect(oktober!.je.we.fehlt).toEqual([{ tag: '2026-10-04', woche: '2026-09-28' }])
+  })
+
+  it('die erste Zahl zählt aus allem Geladenen — nicht nur aus dem gezeigten Zeitraum', () => {
+    // Gezeigt wird nur der Oktober; gezählt wird seit dem 8.9. Der Sonntag 4.10. fehlt.
+    const nurOktober = anwesenheitJeMonat([eintrag('2026-09-07', 'mid', 60, 20)], weeks, ZEITEN, '2026-10-01', '2026-10-01', heute)
+    expect(nurOktober).toHaveLength(1)
+    expect(nurOktober[0]!.je.we.fehlt).toEqual([{ tag: '2026-10-04', woche: '2026-09-28' }])
+  })
+
+  it('ohne eine einzige Zahl fehlt nichts — kein Monat mit „Ohne Zahl"', () => {
+    expect(anwesenheitJeMonat([], weeks, ZEITEN, '2026-09-01', '2026-10-01', heute)).toEqual([])
+    // Auch nicht eine Zeile ohne Zahl (beide Felder leer): Sie zählt nicht als erste.
+    expect(anwesenheitJeMonat([eintrag('2026-09-07', 'mid', null, null)], weeks, ZEITEN, '2026-09-01', '2026-10-01', heute)).toEqual([])
   })
 
   it('Monate außerhalb des Zeitraums bleiben draußen', () => {

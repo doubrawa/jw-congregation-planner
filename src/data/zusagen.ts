@@ -6,7 +6,10 @@
  * klären (abgesagt, abwesend, doppelt eingeteilt), wer hat noch nicht
  * zugesagt, wer schon. Jeder Platz steht dabei in **derselben Lage wie im
  * Plan** (`lageVon`): rot, blass, voll. Eine eigene Einteilung hier nennte über
- * kurz oder lang einen Platz „zugesagt", den der Plan rot zeigt.
+ * kurz oder lang einen Platz „zugesagt", den der Plan rot zeigt. Einzige
+ * Ausnahme: Wer ohne Konto als „weiß Bescheid" abgehakt ist, steht im Plan
+ * voll (`zusageMitBescheid`, 31.10.2026), hier aber weiter in der Karte „Ohne
+ * Konto" — dort wird der Haken gesetzt und zurückgenommen.
  *
  * Gezählt werden die Plätze, die etwas zu bestätigen haben — dieselbe
  * Aufzählung wie bei den eigenen Aufgaben und bei „Plan senden"

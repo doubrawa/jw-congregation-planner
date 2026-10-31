@@ -15,6 +15,7 @@ import { fill } from '../i18n/useT'
 import type { Absence, Person, Qualifications, Section, Service, Week } from '../data/types'
 import { BesetzungKarte } from './WochenStand'
 import { privSetzen } from '../data/helpers'
+import { punktKey, sentKey } from '../data/planning'
 import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
@@ -110,6 +111,25 @@ const offenZeile = (c: HTMLElement) => c.querySelector('.klaeren-zeile[data-art=
 const engpass = (c: HTMLElement) => zeilen(c, '.klaeren-zeile[data-art="engpass"]')
 
 afterEach(cleanup)
+
+/*
+ * Betreiber 31.10.2026: Der Haken „weiß Bescheid" zählt im Saal beim Planen
+ * wie eine Zusage — wie in der Spur darüber. Max Alt hat kein Konto; der
+ * Planer hat es ihm gesagt.
+ */
+describe('Der Saal beim Planen', () => {
+  it('wem der Planer ohne Konto Bescheid gegeben hat, sitzt voll statt blass', () => {
+    const lagen = (c: HTMLElement) => [...c.querySelectorAll('.saal-platz')].map((p) => p.getAttribute('class'))
+    const ohne = lagen(zeige().container)
+    expect(ohne).toContain('saal-platz is-wartet')
+    expect(ohne).not.toContain('saal-platz is-voll')
+    cleanup()
+    const bescheid = { [sentKey(punktKey('2026-09-07', 'mid', 'i101', 0), 'Max Alt')]: '2026-09-07T10:00:00Z' }
+    const mit = lagen(zeige({ persoenlich: bescheid }).container)
+    expect(mit).toContain('saal-platz is-voll')
+    expect(mit).not.toContain('saal-platz is-wartet')
+  })
+})
 
 describe('Offene Zuteilungen', () => {
   it('nennen die Gesamtzahl und jede offene Stelle', () => {

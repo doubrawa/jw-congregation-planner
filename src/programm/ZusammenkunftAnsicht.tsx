@@ -144,6 +144,9 @@ function Tag({
         </span>
       </div>
       <AusfallBanner week={rawWeek} tab={tab} />
+      {/* Nach Beginn die Anwesenden (T152), wie in der Ansicht eines Tages — bis
+          zum Review vom 31.10.2026 fehlten sie hier, wo der Planer nachträgt. */}
+      <AnwesenheitZeile week={rawWeek} tab={tab} />
       <Programm meeting={meeting} rawMeeting={rawWeek[tab]} me={me} tpw={tpw} sprache={sprache} ebene="h3" />
       <Hilfsdienste helpers={meeting.helpers} me={me} ebene="h3" />
     </section>

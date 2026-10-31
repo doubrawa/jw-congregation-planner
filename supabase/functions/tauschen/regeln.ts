@@ -19,7 +19,7 @@
 
 import { helferKey, schluesselTeile, type Tab } from '../_shared/aufgaben-schluessel.ts'
 import { angebotsBereich } from '../_shared/freie-plaetze.ts'
-import { istAusgefallenFuer, type MeetingTimes, personDisplayName, versatzMitAbweichung } from '../_shared/planung.ts'
+import { istAusgefallenFuer, type MeetingTimes, personDisplayName, terminTag, versatzMitAbweichung } from '../_shared/planung.ts'
 import { pendingOfMeeting, type ServiceRow, type Week } from '../_shared/zuteilungen.ts'
 
 export interface TauschPerson {
@@ -88,10 +88,9 @@ export interface TauschPlatz {
  */
 export type TauschUrteil = { ok: true; a: TauschPlatz; b: TauschPlatz; bis: string } | { ok: false; fehler: TauschFehler }
 
-/** Der Kalendertag einer Zusammenkunft — Wochenstart und Versatz, eine Abweichung vor dem Rhythmus. */
-export function tagDerZusammenkunft(woche: TauschWoche, tab: Tab, zeiten: MeetingTimes): string {
-  const versatz = versatzMitAbweichung(woche.data.dev, tab, zeiten[tab].wd)
-  return new Date(Date.parse(woche.start) + versatz * 864e5).toISOString().slice(0, 10)
+/** Der Kalendertag einer Zusammenkunft — Wochenstart und Versatz, eine Abweichung vor dem Rhythmus (`terminTag`). */
+function tagDerZusammenkunft(woche: TauschWoche, tab: Tab, zeiten: MeetingTimes): string | null {
+  return terminTag(woche.start, versatzMitAbweichung(woche.data.dev, tab, zeiten[tab].wd))
 }
 
 /** Hat die Person in dieser Zusammenkunft schon etwas — Id vor Name, wie überall? */
@@ -142,6 +141,8 @@ export function tauschPruefen(lage: Lage, gibtAb: string, nimmt: string, fragend
   if (!lage.gesendet.has(ta.woche) || !lage.gesendet.has(tb.woche)) return { ok: false, fehler: 'not-published' }
   const tagA = tagDerZusammenkunft(wa, ta.tab, lage.zeiten)
   const tagB = tagDerZusammenkunft(wb, tb.tab, lage.zeiten)
+  // Eine Woche ohne lesbaren Montag hat keinen Tag, an dem getauscht würde.
+  if (!tagA || !tagB) return { ok: false, fehler: 'slot-not-found' }
   if (tagA < lage.heute || tagB < lage.heute) return { ok: false, fehler: 'past' }
 
   if (!ich.priv?.[bereich] || !partner.priv?.[bereich]) return { ok: false, fehler: 'not-qualified' }

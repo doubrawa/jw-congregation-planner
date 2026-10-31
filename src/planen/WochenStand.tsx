@@ -81,7 +81,7 @@ export function BesetzungKarte({ tab, tpw }: { tab: MeetingKey; tpw: (s: string)
   const abwesend = useAbwesend()
   const konflikte = useKonflikte(tab)
   const week = state.weeks[state.week]
-  const { services, confirmations, persons } = state
+  const { services, confirmations, persoenlich, persons } = state
   /*
    * Gemerkt und vor jedem Ausstieg, aus demselben Grund wie oben: `engpaesse`
    * läuft je Bereich zweimal über alle Personen. Eine ausgefallene
@@ -91,8 +91,8 @@ export function BesetzungKarte({ tab, tpw }: { tab: MeetingKey; tpw: (s: string)
   const da = week && !istAusgefallen(week, tab) ? week : null
   const b = useMemo(
     () =>
-      da ? besetzung(da[tab], services, confirmations, da.start, tab, null, konflikte.betrifft) : null,
-    [da, tab, services, confirmations, konflikte],
+      da ? besetzung(da[tab], services, confirmations, persoenlich, da.start, tab, null, konflikte.betrifft) : null,
+    [da, tab, services, confirmations, persoenlich, konflikte],
   )
   const offen = useMemo(() => (da ? openSlotLabels(da[tab], services) : []), [da, tab, services])
   const engpass = useMemo(

@@ -45,7 +45,7 @@ type SpurQuellen = {
 /** Besetzung und Zusagen **einer** Zusammenkunft — wie der Saal (`besetzung`) und `zusagenStand`. */
 function zahlenDerZusammenkunft(week: Week, tab: MeetingKey, q: SpurQuellen): Omit<WochenZahlen, 'neu'> {
   const meeting = week[tab]
-  const { besetzt, gesamt } = besetztVon(besetzung(meeting, q.services, q.confirmations, week.start, tab, null))
+  const { besetzt, gesamt } = besetztVon(besetzung(meeting, q.services, q.confirmations, q.persoenlich, week.start, tab, null))
   const zusagen = zusagenStand(meeting, q.services, q.confirmations, q.persoenlich, week.start, tab)
   return { besetzt, gesamt, bestaetigt: zusagen.bestaetigt, zuBestaetigen: zusagen.gesamt }
 }
@@ -108,17 +108,18 @@ export function zahlenDerWoche(
  * Zusammenkünfte wie `zahlenDerWoche` — so steht neben dem Balken dieselbe
  * Zahl wie an der Spur der Wochen („Zuteilen 31/37"). Rot ist, wie im Saal
  * beim Planen, auch ein Platz, dessen Person in einem Konflikt steht
- * (`imKonflikt` je Zusammenkunft).
+ * (`imKonflikt` je Zusammenkunft); voll auch einer mit dem Haken „weiß
+ * Bescheid" (`zusageMitBescheid`, 31.10.2026).
  */
 export function besetzungDerWoche(
   week: Week,
-  q: Pick<SpurQuellen, 'services' | 'confirmations' | 'zeiten'>,
+  q: Pick<SpurQuellen, 'services' | 'confirmations' | 'persoenlich' | 'zeiten'>,
   heute: Date,
   imKonflikt: (tab: MeetingKey) => (slot: SlotAssignment) => boolean,
 ): Besetzung {
   const summe: Besetzung = { voll: 0, wartet: 0, problem: 0, offen: 0, du: false }
   for (const tab of anstehende(week, q.zeiten, heute)) {
-    const b = besetzung(week[tab], q.services, q.confirmations, week.start, tab, null, imKonflikt(tab))
+    const b = besetzung(week[tab], q.services, q.confirmations, q.persoenlich, week.start, tab, null, imKonflikt(tab))
     for (const lage of PLATZ_LAGEN) summe[lage] += b[lage]
   }
   return summe

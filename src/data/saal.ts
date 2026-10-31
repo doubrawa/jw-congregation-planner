@@ -69,14 +69,41 @@ export function lageVon(slot: SlotAssignment | undefined, zusage: TaskStatus | n
 }
 
 /**
+ * **Die Zusage eines Platzes — der Haken „weiß Bescheid" zählt mit.** Wer kein
+ * Konto hat, kann nicht zusagen; der Planer sagt es ihm selbst und hakt es in
+ * den Zusagen der Woche ab (`persoenlich`, je Platz und Name wie das
+ * Versand-Tagebuch). Der Haken zählt wie eine Zusage: in der Spur seit dem
+ * 14.10.2026 (T121) — sonst würde der Schritt „Zusagen" in einer Woche mit
+ * solchen Personen nie fertig —, im Saal, im Balken der Planungs-Karte und am
+ * Punkt der Plätze seit dem 31.10.2026 (Betreiber: „ja"; bei 111 von 112
+ * Personen ohne Konto stand dort sonst jede Woche blass). Eine Absage schlägt
+ * den Haken — sie ist ein Problem, keine Zusage.
+ *
+ * Die Zusagen der Woche zeigen den Haken selbst, in einer eigenen Karte für
+ * die Plätze ohne Konto (`zusagenDerWoche`); dort fragen sie `zusageStatus`.
+ */
+export function zusageMitBescheid(
+  confirmations: ConfirmationMap,
+  persoenlich: PersoenlichLog,
+  key: string,
+  name: string,
+): TaskStatus {
+  const zusage = zusageStatus(confirmations, key)
+  const bescheid = zusage === 'offen' && persoenlich[sentKey(key, name)] != null
+  return bescheid ? 'bestätigt' : zusage
+}
+
+/**
  * Die Besetzung einer Zusammenkunft: jeder Platz einmal, der des Lesers
  * (`meinKey`) gesondert. Beim Planen fragt sie dazu, wer in einem Konflikt
- * steht (`imKonflikt`) — sein Platz ist ein Problem.
+ * steht (`imKonflikt`) — sein Platz ist ein Problem. Ein Platz mit dem Haken
+ * „weiß Bescheid" ist voll (`zusageMitBescheid`).
  */
 export function besetzung(
   meeting: Meeting,
   services: readonly Service[],
   confirmations: ConfirmationMap,
+  persoenlich: PersoenlichLog,
   woche: string,
   tab: MeetingKey,
   meinKey: string | null,
@@ -92,7 +119,7 @@ export function besetzung(
       b.du = true
       continue
     }
-    const zusage = key !== null && platzMitZusage(platz) ? zusageStatus(confirmations, key) : null
+    const zusage = key !== null && platzMitZusage(platz) ? zusageMitBescheid(confirmations, persoenlich, key, slot?.name ?? '') : null
     b[lageVon(slot, zusage, Boolean(slot && imKonflikt(slot)))]++
   }
   return b
@@ -100,14 +127,8 @@ export function besetzung(
 
 /**
  * **Wie weit die Zusagen sind**: bestätigt von allen Plätzen, die etwas zu
- * bestätigen haben (`platzMitZusage`) — die Spur beim Planen.
- *
- * **Der Haken „weiß Bescheid" zählt wie eine Zusage** (T121, entschieden am
- * 14.10.2026): Wer kein Konto hat, kann nicht zusagen; der Planer sagt es ihm
- * selbst und hakt es in den Zusagen der Woche ab (`persoenlich`, je Platz und
- * Name wie das Versand-Tagebuch). Ohne das würde der Schritt „Zusagen" in
- * einer Woche mit solchen Personen nie fertig. Eine Absage schlägt den Haken —
- * sie ist ein Problem, keine Zusage.
+ * bestätigen haben (`platzMitZusage`) — die Spur beim Planen. Der Haken
+ * „weiß Bescheid" zählt mit (`zusageMitBescheid`).
  */
 export function zusagenStand(
   meeting: Meeting,
@@ -122,10 +143,8 @@ export function zusagenStand(
   for (const platz of allePlaetze(meeting, services)) {
     if (!platzMitZusage(platz)) continue
     gesamt++
-    const key = platzKey(platz, woche, tab)
-    const zusage = zusageStatus(confirmations, key)
-    const bescheid = zusage === 'offen' && persoenlich[sentKey(key, platz.slot?.name ?? '')] != null
-    if (zusage === 'bestätigt' || bescheid) bestaetigt++
+    const zusage = zusageMitBescheid(confirmations, persoenlich, platzKey(platz, woche, tab), platz.slot?.name ?? '')
+    if (zusage === 'bestätigt') bestaetigt++
   }
   return { bestaetigt, gesamt }
 }

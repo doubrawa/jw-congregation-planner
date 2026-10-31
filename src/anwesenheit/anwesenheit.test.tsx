@@ -7,6 +7,7 @@ import {
   AppStateContext,
   AppStoreContext,
   type AppState,
+  useApp,
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
@@ -16,10 +17,11 @@ import { LOCALES } from '../i18n/langs'
 import { dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
-import { AnwesenheitAnsicht } from './AnwesenheitAnsicht'
+import { AnwesenheitAnsicht as AnwesenheitInDerAuswertung } from './AnwesenheitAnsicht'
 import { AnwesenheitFormular } from './AnwesenheitFormular'
 import { AnwesenheitKarte } from './AnwesenheitKarte'
 import { AnwesenheitZeile } from './AnwesenheitZeile'
+import { useAnwesenheitMonate } from './useAnwesenheitMonate'
 
 /**
  * **Die Anwesenden in der Oberfläche** (T152): Der Saalordner trägt während
@@ -124,6 +126,35 @@ describe('Das Formular', () => {
     expect(feld(container, t.anwesendSaal).value).toBe('70')
     expect(feld(container, t.anwesendVideo).value).toBe('')
   })
+
+  /*
+   * Review 31.10.2026: Der Saalordner hat die Karte auf dem Start offen, der
+   * Zoom-Ordner trägt das Video ein, und die App des Saalordners lädt nach. Bis
+   * dahin stand im Formular weiter das leere Video-Feld — Speichern schickte es
+   * als `null` und löschte die Zahl des Zoom-Ordners.
+   */
+  it('kommt die Zahl des anderen erst nach dem Öffnen herein, steht sie im Feld — und Speichern löscht sie nicht', () => {
+    const state = zustand()
+    const dispatch = vi.fn()
+    function Buehne({ eintrag }: { eintrag: Anwesenheit | undefined }) {
+      const store = useStaticStore(state)
+      return (
+        <AppDispatchContext.Provider value={dispatch}>
+          <AppStoreContext.Provider value={store}>
+            <AppStateContext.Provider value={state}>
+              <AnwesenheitFormular woche="2026-09-07" tab="mid" eintrag={eintrag} />
+            </AppStateContext.Provider>
+          </AppStoreContext.Provider>
+        </AppDispatchContext.Provider>
+      )
+    }
+    const { container, rerender } = render(<Buehne eintrag={undefined} />)
+    rerender(<Buehne eintrag={{ woche: '2026-09-07', tab: 'mid', saal: null, video: 12, pid: 'p4' }} />)
+    expect(feld(container, t.anwesendVideo).value).toBe('12')
+    fireEvent.change(feld(container, t.anwesendSaal), { target: { value: '80' } })
+    fireEvent.click(knopf(t.anwesendSpeichern)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'anwesenheitSetzen', woche: '2026-09-07', tab: 'mid', saal: 80, video: 12 })
+  })
 })
 
 describe('Die Karte auf dem Start', () => {
@@ -189,6 +220,17 @@ describe('Die Zeile im Programm', () => {
 })
 
 describe('Die Anwesenheit in der Auswertung', () => {
+  /**
+   * Wie die Auswertung die Ansicht einbindet: die Monate des Zeitraums
+   * (`useAnwesenheitMonate`) und die Zahlen in der Schrift der Sprache, wie
+   * `k.zahl` sie schreibt.
+   */
+  function AnwesenheitAnsicht({ zeitraum }: { zeitraum: number }) {
+    const { state } = useApp()
+    const monate = useAnwesenheitMonate(zeitraum)
+    const zahl = new Intl.NumberFormat(LOCALES[state.lang])
+    return <AnwesenheitInDerAuswertung monate={monate} zahl={(n) => zahl.format(n)} />
+  }
   const HEUTE = new Date(2026, 9, 12, 9, 0)
   const weeks = ['2026-09-07', '2026-09-14'].map(woche)
   const anwesenheit: Anwesenheit[] = [

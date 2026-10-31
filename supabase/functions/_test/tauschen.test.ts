@@ -615,6 +615,31 @@ describe('Function: anfragen', () => {
     expect((await ruf({ aktion: 'anfragen', gibtAb: A, nimmt: B }, U_KARL)).status).toBe(200)
     expect(anfragen.map((a) => a.von_person)).toEqual(['p-karl'])
   })
+
+  /*
+   * Review 31.10.2026: Simon fragt Jonas, und bevor Jonas antwortet, teilt der
+   * Planer Jonas' Platz Karl zu (oder Karl springt dort ein). Die App zeigt
+   * Simons Anfrage nicht mehr (`gilt`), zurückziehen kann er sie also nicht —
+   * und bis dahin scheiterte jede neue Anfrage zu seinem Platz an
+   * „already-asked", bis zum Tag der Anfrage.
+   */
+  it('die eigene Anfrage sperrt nicht mehr, wenn der andere Platz inzwischen jemand anderem gehört', async () => {
+    await ruf({ aktion: 'anfragen', gibtAb: A, nimmt: B }, U_SIMON)
+    bestand.get(W2)!.data.we!.helpers!.mik![0] = slot('p-karl')
+    const r = await ruf({ aktion: 'anfragen', gibtAb: A, nimmt: B }, U_SIMON)
+    expect(r.status).toBe(200)
+    expect(anfragen.map((a) => [a.von_person, a.an_person])).toEqual([['p-simon', 'p-karl']])
+    // Gelöscht wurde genau die alte — ihre Glocke bei Jonas nimmt die Datenbank mit.
+    const einzeln = geschrieben.filter((w) => w.method === 'DELETE' && w.path.startsWith('tausch_anfragen')).map((w) => filterWert(w.path, 'id'))
+    expect(einzeln.filter(Boolean)).toEqual(['a1'])
+  })
+
+  it('… hat der Gefragte ihn noch, gilt weiter: eine je Platz, auch für einen anderen Platz desselben', async () => {
+    await ruf({ aktion: 'anfragen', gibtAb: A, nimmt: B }, U_SIMON)
+    const zweiter = helferKey(W1, 'mid', 'mik', 0) // auch Jonas
+    expect(await ruf({ aktion: 'anfragen', gibtAb: A, nimmt: zweiter }, U_SIMON)).toEqual({ status: 409, body: { error: 'already-asked' } })
+    expect(anfragen.map((a) => a.nimmt)).toEqual([B])
+  })
 })
 
 describe('Function: annehmen', () => {

@@ -14,6 +14,7 @@ import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
 import { emptyQualifications } from '../data/helpers'
 import { bibelbuecherLaden, makeTr } from '../i18n/translate'
 import { dict } from '../i18n/ui'
+import { fill } from '../i18n/useT'
 import type { FsInstance, PartItem, Person, Section, Service, SlotAssignment, Week } from '../data/types'
 import { ProgrammScreen } from './ProgrammScreen'
 import { zahlBinden } from '../i18n/zahl-binden'
@@ -1217,6 +1218,29 @@ describe('Am Desktop', () => {
     const { container } = zeige({ weeks: [woche({ dev: { we: { cancelled: true } } })] })
     const tage = [...seite(container).querySelectorAll('.prog-tag')]
     expect(tage.map((tag) => tag.querySelector('.ausfall-banner') !== null)).toEqual([false, true])
+  })
+
+  /*
+   * Review 31.10.2026: Die Anwesenden (T152) standen nur in der Ansicht eines
+   * Tages. Am Desktop, wo beide Tage nebeneinander stehen, fehlte „Anwesend" —
+   * und für Admin und Planer das „Eintragen", wo eine Zahl fehlt.
+   */
+  it('nach Beginn steht unter jedem Tag, wie viele da waren — oder dass die Zahl fehlt', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 13, 12, 0))
+    try {
+      const { container } = zeige({
+        planner: true,
+        anwesenheit: [{ woche: '2026-09-07', tab: 'mid', saal: 64, video: 23, pid: null }],
+      })
+      const tage = [...seite(container).querySelectorAll('.prog-tag')]
+      expect(tage.map((tag) => tag.querySelector('.anwesend-gesamt')?.textContent)).toEqual([
+        fill(t.anwesendZahl, { n: 87 }),
+        t.anwesendFehlt,
+      ])
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('„Drucken" steht mit Wort neben der Wochenwahl, und das Blatt nennt die Zusammenkünfte', () => {

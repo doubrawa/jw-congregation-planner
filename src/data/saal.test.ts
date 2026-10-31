@@ -49,7 +49,7 @@ describe('besetzung: jeder Platz einmal, nach seiner Zusage', () => {
     const confirmations: ConfirmationMap = { [a!]: 'bestätigt', [b!]: 'verhindert', [c!]: 'bestätigt' }
     // 4 Programmplätze belegt (2 zugesagt, 1 abgesagt, 1 wartet) + Mikrofon 1
     // (wartet) + Mikrofon 2 und der fünfte Punkt offen.
-    expect(besetzung(m, SERVICES, confirmations, WOCHE, 'mid', null)).toEqual({
+    expect(besetzung(m, SERVICES, confirmations, {}, WOCHE, 'mid', null)).toEqual({
       voll: 2, wartet: 2, problem: 1, offen: 2, du: false,
     })
   })
@@ -57,7 +57,7 @@ describe('besetzung: jeder Platz einmal, nach seiner Zusage', () => {
   it('der eigene Platz zählt gesondert, gleich wie seine Zusage steht', () => {
     const m = zusammenkunft(3, 3)
     const [, mein] = schluessel(m)
-    const b = besetzung(m, SERVICES, { [mein!]: 'verhindert' }, WOCHE, 'mid', mein!)
+    const b = besetzung(m, SERVICES, { [mein!]: 'verhindert' }, {}, WOCHE, 'mid', mein!)
     expect(b.du).toBe(true)
     expect(b.problem).toBe(0)
     expect(besetztVon(b)).toEqual({ besetzt: 3, gesamt: 5 })
@@ -70,13 +70,31 @@ describe('besetzung: jeder Platz einmal, nach seiner Zusage', () => {
     ;(m.sections[0]!.items[0] as { names: unknown[] }).names = [{ name: 'Gast Redner', rolle: 'Gastredner' }]
     const gruppe: Service[] = [{ key: 'rein', name: 'Reinigung', count: 1, groups: true }]
     m.helpers = { rein: [{ name: 'Gruppe 1' }] }
-    expect(besetzung(m, gruppe, {}, WOCHE, 'mid', null)).toEqual({ voll: 2, wartet: 0, problem: 0, offen: 0, du: false })
+    expect(besetzung(m, gruppe, {}, {}, WOCHE, 'mid', null)).toEqual({ voll: 2, wartet: 0, problem: 0, offen: 0, du: false })
+  })
+
+  /*
+   * Betreiber 31.10.2026: Der Haken „weiß Bescheid" zählt im Saal wie eine
+   * Zusage, wie in der Spur. Er gilt für den Namen, der dort steht, und eine
+   * Absage schlägt ihn — wie bei `zusagenStand`.
+   */
+  it('wem der Planer ohne Konto Bescheid gegeben hat, sitzt voll — nicht für einen anderen Namen, nicht nach einer Absage', () => {
+    const m = zusammenkunft(3, 3)
+    const [a, b, c] = schluessel(m)
+    const persoenlich = {
+      [sentKey(a!, 'Person 0')]: '2026-09-07T10:00:00Z',
+      [sentKey(b!, 'Jemand anderes')]: '2026-09-07T10:00:00Z',
+      [sentKey(c!, 'Person 2')]: '2026-09-07T10:00:00Z',
+    }
+    expect(besetzung(m, SERVICES, { [c!]: 'verhindert' }, persoenlich, WOCHE, 'mid', null)).toEqual({
+      voll: 1, wartet: 1, problem: 1, offen: 2, du: false,
+    })
   })
 
   it('ein Konflikt macht den Platz zum Problem — auch wenn die Person zugesagt hat', () => {
     const m = zusammenkunft(2, 2)
     const [a] = schluessel(m)
-    const b = besetzung(m, SERVICES, { [a!]: 'bestätigt' }, WOCHE, 'mid', null, (slot) => slot.name === 'Person 0')
+    const b = besetzung(m, SERVICES, { [a!]: 'bestätigt' }, {}, WOCHE, 'mid', null, (slot) => slot.name === 'Person 0')
     expect(b).toEqual({ voll: 0, wartet: 1, problem: 1, offen: 2, du: false })
   })
 })

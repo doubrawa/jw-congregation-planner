@@ -18,9 +18,9 @@ export function useSaal(task: MyTask | undefined): { lagen: SaalLage[]; label: s
     const ort = task ? taskKeyWeek(task.id) : null
     const week = ort ? state.weeks[wochenIndex(state.weeks, ort.woche)] : undefined
     if (!task || !ort || !week) return null
-    const b = besetzung(week[ort.tab], state.services, state.confirmations, ort.woche, ort.tab, task.id)
+    const b = besetzung(week[ort.tab], state.services, state.confirmations, state.persoenlich, ort.woche, ort.tab, task.id)
     const { besetzt, gesamt } = besetztVon(b)
     const label = [besetzungText(t, besetzt, gesamt), b.du ? t.saalDeinPlatz : ''].filter(Boolean).join(' · ')
     return { lagen: saalLagen(b), label, du: LAGE_DER_ZUSAGE[task.status] }
-  }, [task, state.weeks, state.services, state.confirmations, t])
+  }, [task, state.weeks, state.services, state.confirmations, state.persoenlich, t])
 }

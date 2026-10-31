@@ -32,9 +32,6 @@ export type TauschAktionsFehler = TauschFehler | 'offline'
  * Trolleys.
  */
 const FEHLER_TEXT = {
-  'not-yours': 'tauschFehlerGeaendert',
-  'no-partner': 'tauschFehlerGeaendert',
-  'no-account': 'tauschFehlerGeaendert',
   stand: 'tauschFehlerGeaendert',
   'already-asked': 'tauschFehlerSchonGefragt',
   gone: 'tauschFehlerWeg',

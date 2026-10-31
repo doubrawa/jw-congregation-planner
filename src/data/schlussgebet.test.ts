@@ -54,8 +54,8 @@ describe('Ein leeres Schlussgebet am Wochenende ist nicht offen', () => {
   })
 
   it('im Saal und in der Spur steht es weder offen noch besetzt', () => {
-    const vorher = besetzung(buildDemoWeeks()[0]!.we, DEMO_SERVICES, {}, '2026-09-07', 'we', null)
-    const nachher = besetzung(ohneSchlussgebet('we')[0]!.we, DEMO_SERVICES, {}, '2026-09-07', 'we', null)
+    const vorher = besetzung(buildDemoWeeks()[0]!.we, DEMO_SERVICES, {}, {}, '2026-09-07', 'we', null)
+    const nachher = besetzung(ohneSchlussgebet('we')[0]!.we, DEMO_SERVICES, {}, {}, '2026-09-07', 'we', null)
     expect(nachher.offen).toBe(vorher.offen)
     // Vorher war es besetzt und wartete auf die Zusage — jetzt fehlt es ganz.
     expect(nachher.voll + nachher.wartet + nachher.problem).toBe(vorher.voll + vorher.wartet + vorher.problem - 1)

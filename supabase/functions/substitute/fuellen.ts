@@ -32,7 +32,7 @@ import { json, type Rest, wert } from '../_shared/rest.ts'
 import { wocheSchreiben } from '../_shared/woche-schreiben.ts'
 import { schluesselTeile } from '../_shared/aufgaben-schluessel.ts'
 import { angebotsBereich } from '../_shared/freie-plaetze.ts'
-import { istAusgefallenFuer, personDisplayName, versatzMitAbweichung, zeitenAus, type ZeitenRow } from '../_shared/planung.ts'
+import { istAusgefallenFuer, personDisplayName, terminTag, versatzMitAbweichung, zeitenAus, type ZeitenRow } from '../_shared/planung.ts'
 import type { ServiceRow, Week } from '../_shared/zuteilungen.ts'
 
 interface Person {
@@ -45,12 +45,6 @@ interface Person {
 interface Absence {
   from_date: string
   to_date: string
-}
-
-/** ISO-Tag der Zusammenkunft aus dem Wochenstart; null ohne Startdatum. */
-function tagDerZusammenkunft(start: string, offset: number): string | null {
-  const ms = Date.parse(start)
-  return Number.isNaN(ms) ? null : new Date(ms + offset * 864e5).toISOString().slice(0, 10)
 }
 
 /**
@@ -116,7 +110,7 @@ export async function platzFuellen(rest: Rest, userId: string, taskKey: string, 
   if (reihe.some((s) => (s?.pid ? s.pid === person.id : s?.name === name))) return json({ error: 'not-offered' }, 403)
 
   const zeiten = zeitenAus(congRows[0])
-  const tag = tagDerZusammenkunft(row.start, versatzMitAbweichung(row.data.dev, teile.tab, zeiten[teile.tab].wd))
+  const tag = terminTag(row.start, versatzMitAbweichung(row.data.dev, teile.tab, zeiten[teile.tab].wd))
   if (tag && tag < heute) return json({ error: 'past' }, 409)
   if (tag && absences.some((a) => a.from_date <= tag && tag <= a.to_date)) return json({ error: 'absent' }, 409)
 
