@@ -1541,7 +1541,10 @@ create policy absences_write on public.absences
 -- lesbar, `select=*` scheitert. Adressen und Gründe liefern die beiden
 -- Funktionen darunter, und zwar genau dem, dem die App sie zeigt. Schreiben
 -- bleibt, wie es war (`persons_write`, `absences_write`) — ohne `RETURNING`,
--- wie die App schreibt.
+-- wie die App schreibt, und **ohne Upsert über die gesperrte Spalte**:
+-- `on conflict … do update set mail = excluded.mail` liest sie und scheitert
+-- (42501). Die App schreibt die Adresse deshalb per `update` hinterher
+-- (`personenSchreiben` in `src/lib/data.ts`, seit 31.10.2026).
 --
 -- Eine neue Spalte gehört in die Liste, sonst liest sie niemand, und die App
 -- lädt nicht mehr: `tests/spaltenrechte.test.ts` hält Liste, Tabelle und App

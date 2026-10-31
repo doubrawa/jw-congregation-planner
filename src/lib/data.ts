@@ -1297,7 +1297,37 @@ export async function wocheGeschrieben(woche: string): Promise<void> {
 
 export function savePerson(congregationId: string, person: Person): void {
   if (!supabase) return
-  void run(supabase.from('persons').upsert(personToRow(person, congregationId)))
+  void run(personenSchreiben(supabase, congregationId, [person]))
+}
+
+/**
+ * **Personen schreiben, ohne die Adresse zu lesen** (31.10.2026).
+ *
+ * Seit dem 30.10.2026 liest die Versammlung `persons.mail` nicht mehr (T154).
+ * Ein Upsert liest sie aber: PostgREST macht daraus `on conflict (id) do update
+ * set mail = excluded.mail`, und für jeden Wert, den `excluded` liefert,
+ * verlangt Postgres das Leserecht an der Spalte — auch beim Admin. Seitdem wies
+ * die Datenbank jedes Speichern einer Person ab (42501, gemessen an Postgres
+ * 16). Aufgefallen ist es am Admin-Schalter: Das Recht im Konto ging durch, die
+ * Meldung kam von der Person daneben.
+ *
+ * Deshalb zwei Schritte, nacheinander: das Upsert ohne Adresse (legt eine neue
+ * Person an, ändert eine bestehende), dann die Adresse per `update` — das
+ * braucht nur das Schreibrecht an ihr.
+ */
+async function personenSchreiben(
+  client: NonNullable<typeof supabase>,
+  congregationId: string,
+  personen: readonly Person[],
+): Promise<{ error: { message: string } | null }> {
+  const zeilen = personen.map((p) => personToRow(p, congregationId))
+  const { error } = await client.from('persons').upsert(zeilen.map(({ mail: _weg, ...ohne }) => ohne))
+  if (error) return { error }
+  for (const { id, mail } of zeilen) {
+    const { error: fehler } = await client.from('persons').update({ mail }).eq('id', id)
+    if (fehler) return { error: fehler }
+  }
+  return { error: null }
 }
 
 /**
@@ -1524,9 +1554,7 @@ export function saveFamily(congregationId: string, haushalt: string, personen: P
         .from('households')
         .upsert({ id: haushalt, congregation_id: congregationId })
       if (error) return { error }
-      return await client
-        .from('persons')
-        .upsert(personen.map((p) => personToRow(p, congregationId)))
+      return await personenSchreiben(client, congregationId, personen)
     })(),
   )
 }

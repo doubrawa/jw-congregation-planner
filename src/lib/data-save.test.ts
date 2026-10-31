@@ -109,7 +109,29 @@ describe('Upsert-Schreiber (onConflict)', () => {
   it('savePerson → persons upsert (Row-Mapping)', () => {
     savePerson('c1', person)
     expect(chain.from).toHaveBeenCalledWith('persons')
-    expect(chain.upsert).toHaveBeenCalledWith(expect.objectContaining({ id: 'p1', congregation_id: 'c1' }))
+    expect(chain.upsert).toHaveBeenCalledWith([expect.objectContaining({ id: 'p1', congregation_id: 'c1' })])
+  })
+  /*
+    Die Adresse liest die Versammlung seit T154 (30.10.2026) nicht mehr — auch
+    der Admin nicht über ein Upsert: `on conflict … do update set mail =
+    excluded.mail` verlangt das Leserecht an der Spalte. Die Datenbank wies
+    darauf jedes Speichern einer Person ab, neu wie bestehend (42501), und
+    gemeldet hat es nur der Toast. Die Adresse geht deshalb per `update` hinterher.
+  */
+  it.each([
+    ['savePerson', () => savePerson('c1', { ...person, mail: 'anna@musterstadt.example' })],
+    ['saveFamily', () => saveFamily('c1', 'h1', [{ ...person, mail: 'anna@musterstadt.example' }])],
+  ])('%s: kein Upsert nennt die Adresse — sie geht danach per update (Spaltenrechte)', async (_name, schreiben) => {
+    schreiben()
+    await geschrieben()
+    const upsert = chain.upsert!.mock
+    const personenZeilen = upsert.calls.map(([z]) => z as unknown).filter(Array.isArray).flat()
+    expect(personenZeilen).toEqual([expect.objectContaining({ id: 'p1', fn: 'A', congregation_id: 'c1' })])
+    expect(personenZeilen[0]).not.toHaveProperty('mail')
+    expect(chain.update).toHaveBeenCalledWith({ mail: 'anna@musterstadt.example' })
+    expect(chain.eq).toHaveBeenCalledWith('id', 'p1')
+    // Erst die Person, dann die Adresse — eine neue Person gibt es vorher nicht.
+    expect(Math.max(...upsert.invocationCallOrder)).toBeLessThan(chain.update!.mock.invocationCallOrder[0]!)
   })
   it('saveFsRules → eine Zeile je Regel', async () => {
     // Der Grundplan war bis T105 ein JSONB-Blob je Versammlung (samt einer
