@@ -88,8 +88,11 @@ export interface TauschPlatz {
  */
 export type TauschUrteil = { ok: true; a: TauschPlatz; b: TauschPlatz; bis: string } | { ok: false; fehler: TauschFehler }
 
-/** Der Kalendertag einer Zusammenkunft — Wochenstart und Versatz, eine Abweichung vor dem Rhythmus (`terminTag`). */
-function tagDerZusammenkunft(woche: TauschWoche, tab: Tab, zeiten: MeetingTimes): string | null {
+/**
+ * Der Kalendertag einer Zusammenkunft — Wochenstart und Versatz, eine Abweichung vor dem Rhythmus (`terminTag`).
+ * Exportiert für die Mitgliedsrechte-Probe: Sie wählt ihre Wochen mit derselben Rechnung wie die Function.
+ */
+export function tagDerZusammenkunft(woche: TauschWoche, tab: Tab, zeiten: MeetingTimes): string | null {
   return terminTag(woche.start, versatzMitAbweichung(woche.data.dev, tab, zeiten[tab].wd))
 }
 
