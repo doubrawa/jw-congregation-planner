@@ -11776,7 +11776,7 @@ export const KATALOG = [
     id: 'anwesenheit-monat-nach-tag',
     datei: 'src/data/anwesenheit.ts',
     regel: 'Die Anwesenheit zählt im Monat ihres Tages, nicht im Monat des Montags ihrer Woche.',
-    suchen: '    const m = monat(tagDer(a, wochen, zeiten))\n',
+    suchen: '    const m = monat(tag)\n',
     ersetzen: '    const m = monat(a.woche)\n',
   },
   {
@@ -12473,6 +12473,21 @@ export const KATALOG = [
     regel: 'Der Haken hängt an Platz und Name: Der Ratgeber gibt seinen Namen mit.',
     suchen: 'stand(ratgeberKey(woche, tab), week?.[tab].auxRatgeber?.name),',
     ersetzen: 'stand(ratgeberKey(woche, tab), undefined),',
+  },
+  // Betreiber 31.10.2026: „Ohne Zahl" erst ab der ersten eingetragenen Zahl.
+  {
+    id: 'anwesenheit-ohne-zahl-erst-ab-der-ersten',
+    datei: 'src/data/anwesenheit.ts',
+    regel: 'Vor der ersten Zusammenkunft mit Zahl fehlt keine — nach einem Neuaufbau stünde sonst ein Jahr „Ohne Zahl" da.',
+    suchen: '      if (tag >= heuteIso || ab === null || tag < ab) continue\n',
+    ersetzen: '      if (tag >= heuteIso) continue\n',
+  },
+  {
+    id: 'anwesenheit-erste-zahl-ueber-alles-geladene',
+    datei: 'src/data/anwesenheit.ts',
+    regel: 'Die erste Zahl zählt aus allem Geladenen, nicht nur aus dem gezeigten Zeitraum.',
+    suchen: '    if (ab === null || tag < ab) ab = tag\n    const m = monat(tag)\n    if (!m) continue\n',
+    ersetzen: '    const m = monat(tag)\n    if (!m) continue\n    if (ab === null || tag < ab) ab = tag\n',
   },
 ]
 

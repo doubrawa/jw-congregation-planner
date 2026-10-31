@@ -927,7 +927,9 @@ Woche, am Wochenende) und darunter je Monat die Zahl der Zusammenkünfte und den
 Zusammenkunft: Der Sonntag einer Woche, die am 28. September beginnt, gehört
 zum Oktober. Hat eine Zusammenkunft stattgefunden, aber keine Zahl, steht ihr
 Tag unter **Ohne Zahl** – ein Tipp darauf öffnet das Eintragen. Ausgefallene
-Zusammenkünfte stehen dort nicht. **Für den Bericht drucken** legt die Monate
+Zusammenkünfte stehen dort nicht, und auch keine vor der ersten Zusammenkunft
+mit Zahl: Was davor liegt, hat niemand gezählt. Trägst du eine ältere nach,
+zählt es ab ihr. **Für den Bericht drucken** legt die Monate
 des Zeitraums auf einen Bogen: je Monat und Art die Zusammenkünfte, alle
 Anwesenden zusammen und den Durchschnitt.
 
