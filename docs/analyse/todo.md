@@ -9544,7 +9544,7 @@ Gegenprobe mit erfundener Spalte → `400 42703`. Functions unverändert.
 **Live seit 31.10.2026 21:18** mit dem Push von `85e2898f` (Pages grün,
 `sw.js` → `shell-85e2898`).
 
-### T163 · Holen warnt bei Unerwartetem im Arbeitsheft 🔧 ✅ umgesetzt (31. Oktober 2026)
+### T163 · Holen warnt bei Unerwartetem im Arbeitsheft 🔧 ✅ umgesetzt und ausgerollt (31. Oktober 2026)
 
 „was passiert eigentlich, wenn ich ein wochenprogramm importiere und dort etwas
 drin ist, was unerwartet ist, weil es einen neuen programmtyp gibt" — Antwort
@@ -9619,7 +9619,14 @@ chinesische Schlusszeile), 57 Sprachen ohne Befund. Suite 7606/7606, tsc, Lint,
 Laufzeit auf `/demo.html` (hell: Titel dunkel, `role="alert"`, unbekannte Art
 ohne Absturz).
 
-**Noch nicht ausgerollt:** `import-week` muss vor dem Push deployt werden.
+**Ausgerollt am 31.10.2026 um 22:42**, vor dem Push: `import-week` v55
+(`verify_jwt` wie `config.toml`). Rauchtest: OPTIONS → `200 ok` vom Handler,
+POST mit dem öffentlichen Schlüssel → `401 unauthorized` aus dem Handler; die
+17 deployten Dateien per `functions download` gleich dem Commit. Die übrigen
+Functions sind unverändert (kein `_shared/` geändert).
+
+**Live seit 31.10.2026 22:45** mit dem Push von `e0681b1c` (Pages grün,
+`sw.js` → `shell-e0681b1`).
 
 ## Was bewusst offen bleibt
 
