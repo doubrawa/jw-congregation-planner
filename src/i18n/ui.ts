@@ -61,6 +61,7 @@ export function loadOverlay(lang: Lang): Promise<boolean> {
     pending = loader().then((m) => {
       OVERLAY[lang as Exclude<Lang, 'de'>] = m.default
       overlayLoading.delete(lang)
+      zusammengefuehrt.clear()
       overlayGen++
       return true
     })
@@ -70,13 +71,27 @@ export function loadOverlay(lang: Lang): Promise<boolean> {
 }
 
 /**
+ * Die zusammengeführten Wörterbücher, je Sprache einmal gebaut. Jedes
+ * Einhängen eines Bausteins mit `useT` fragte danach, und jedes Mal entstand
+ * das ganze Wörterbuch neu — über tausend Schlüssel (31.10.2026: in der
+ * Oberflächenprobe 2,7 von 29 s). Ein nachgeladenes Overlay leert den Speicher.
+ */
+const zusammengefuehrt = new Map<Exclude<Lang, 'de'>, Dict>()
+
+/**
  * Vollständiges Wörterbuch für eine App-Sprache. Reihenfolge der Zusammen-
  * führung: DE (Basis) ← EN (Fallback für noch nicht übersetzte Sprachen) ←
- * sprachspezifisches Overlay, sofern schon nachgeladen (loadOverlay).
+ * sprachspezifisches Overlay, sofern schon nachgeladen (loadOverlay). Wie
+ * `DE` ein geteiltes Objekt: lesen, nicht ändern.
  */
 export function dict(lang: Lang): Dict {
   if (lang === 'de') return DE
-  return { ...DE, ...(OVERLAY.en ?? {}), ...(OVERLAY[lang] ?? {}) }
+  let d = zusammengefuehrt.get(lang)
+  if (!d) {
+    d = { ...DE, ...(OVERLAY.en ?? {}), ...(OVERLAY[lang] ?? {}) }
+    zusammengefuehrt.set(lang, d)
+  }
+  return d
 }
 
 /**

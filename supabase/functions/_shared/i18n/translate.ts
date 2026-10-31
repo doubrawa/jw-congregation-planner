@@ -49,6 +49,7 @@ export async function bibelbuecherLaden(): Promise<boolean> {
   if (buchTabelle) return false
   const m = await import('./bible-books.ts')
   buchTabelle = m.buchTabelle
+  uebersetzer.clear() // die schon gebauten kennen keine Bücher
   return true
 }
 
@@ -460,6 +461,14 @@ export function ohneMarken(s: string): string {
 }
 
 /**
+ * Die gebauten Übersetzer, je Sprache einer. Jeder Baustein mit `useT` fragt
+ * beim Einhängen nach seinem, und jedes Mal entstanden die Regeln neu — samt
+ * dem Ausdruck aus allen Bibelbüchern (31.10.2026: in der Oberflächenprobe
+ * 3,3 von 29 s). Das Laden der Bücher leert den Speicher (`bibelbuecherLaden`).
+ */
+const uebersetzer = new Map<string, (s: string) => string>()
+
+/**
  * Der Übersetzer für eine App-Sprache. **Jeder andere Code bleibt deutsch** —
  * wie bei `texteFuer`: fehlend, unbekannt oder eine der 22 Sprachen, die am
  * 15.10.2026 entfallen sind und noch an einem alten Push-Abo stehen können.
@@ -468,6 +477,15 @@ export function ohneMarken(s: string): string {
  */
 export function makeTr(code: string): (s: string) => string {
   if (!code || code === 'de' || !Object.hasOwn(LOCALES, code)) return ohneMarken
+  let tr = uebersetzer.get(code)
+  if (!tr) {
+    tr = baueTr(code)
+    uebersetzer.set(code, tr)
+  }
+  return tr
+}
+
+function baueTr(code: string): (s: string) => string {
   const L: DateDict | undefined = D[code]
   if (!L) return makeTrIntl(code) // Zusatz-Sprachen: Intl-Datum + FRAG/EXTRA
   const M: Record<string, string> = FRAG[code] ?? {}
