@@ -4,7 +4,7 @@ Dieses Handbuch richtet sich an alle Verkündiger der Versammlung. Es zeigt, wie
 das Programm einsiehst, deine Aufgaben bestätigst, Abwesenheiten einträgst und
 die App auf deinem Gerät einrichtest.
 
-> Für Koordinatoren/Planer gibt es ein eigenes Handbuch:
+> Für Planer und Admins gibt es ein eigenes Handbuch:
 > [**Handbuch für Planer**](planer.md).
 
 ---
@@ -69,7 +69,10 @@ Wichtigste zusammen.
 
 ![Startseite eines Verkündigers](screenshots/verkuendiger-start.png)
 
-- **Tausch angefragt** – zuoberst, wenn dich jemand fragt, ob ihr einen
+- **Anwesende eintragen** – zuoberst, wenn du in einer Zusammenkunft
+  Saalordner oder Zoom-Ordner bist: ab ihrem Beginn bis zum Ende des Tages
+  (siehe [Anwesende eintragen](#anwesende-eintragen-saalordner-und-zoom-ordner)).
+- **Tausch angefragt** – oben, wenn dich jemand fragt, ob ihr einen
   Hilfsdienst tauscht (siehe [Tauschen statt absagen](#tauschen-statt-absagen)).
 - **Erste Schritte** – oben, solange du neu bist: ein Film von knapp
   einer Minute, der die ersten Schritte zeigt – den Link antippen, die erste
@@ -96,7 +99,7 @@ Wichtigste zusammen.
   stehen unter **Meine Aufgaben**. Die große Karte wird ein Trolley-Termin
   nie – er hat keine Zusage.
 - **Diese Woche in der Versammlung** – die Zusammenkünfte und die Treffpunkte
-  deiner Gruppe, die in dieser Woche noch kommen.
+  der Versammlung und deiner Gruppe, die in dieser Woche noch kommen.
 
 Neue **Mitteilungen** zeigt die **Glocke** oben rechts mit einem Punkt; ein
 Tipp darauf öffnet sie (siehe Abschnitt 4).
@@ -104,8 +107,9 @@ Tipp darauf öffnet sie (siehe Abschnitt 4).
 Über das Menü an der Seite (auf dem Handy hinter dem Menüknopf oben links)
 erreichst du **Start**, **Meine Aufgaben** und **Freie Plätze** (was du für
 andere übernehmen kannst), darunter unter **Versammlung** die
-**Zusammenkünfte** und den **Predigtdienst**. Dein **Profil** öffnest du mit
-einem Tipp auf deinen Namen ganz unten.
+**Zusammenkünfte**, den **Predigtdienst** und – sobald es einen Plan gibt – die
+**Weiteren Pläne**. Dein **Profil** öffnest du mit einem Tipp auf deinen Namen
+ganz unten.
 
 ---
 
@@ -121,7 +125,8 @@ Federt die Ansicht zurück, gibt es in der Richtung keine Woche mehr.
 
 Darunter stehen die beiden Zusammenkünfte als Karten, je mit Tag, Datum und
 Uhrzeit; die gewählte ist dunkel hinterlegt (in der dunklen Darstellung hell).
-Fällt eine aus, ist ihr Tag
+Über ihrem Programm stehen Tag, Uhrzeit und das ungefähre Ende („Dienstag,
+8. September · 19:00 · Ende ca. 20:45"). Fällt eine aus, ist ihr Tag
 durchgestrichen, und im Programm steht der Grund. Im Programm hat jeder
 Abschnitt seine Karte mit der Farbe des Arbeitshefts, das Lied steht rechts im
 Kopf. Neben jedem Punkt steht seine Dauer, darunter die Eingeteilten, ihre
@@ -140,9 +145,9 @@ stehen im Menü unter **Predigtdienst**:
 
 ![Zusammenkünfte für den Predigtdienst (Treffpunkte)](screenshots/verkuendiger-treffpunkte.png)
 
-Oben im Predigtdienst wählst du den Bereich: **Treffpunkte**, wenn du mit dem
-Trolley gehen darfst, **Trolleys** und – sobald es sie gibt –
-**Gruppenbesuche**. Jeder Bereich hat ein großes
+Oben im Predigtdienst wählst du den Bereich: **Treffpunkte**, daneben
+**Trolleys**, wenn du mit dem Trolley gehen darfst, und ganz rechts
+**Gruppenbesuche**, sobald ein Besuch ansteht. Jeder Bereich hat ein großes
 Feld mit seinem Zeichen, das gewählte ist kräftig hinterlegt; bei großer
 Schrift stehen die Felder untereinander.
 
@@ -320,7 +325,7 @@ gleich darunter im Menü unter **Freie Plätze** (siehe
 
 ### Wie du von einer Zuteilung erfährst
 
-**Wenn der Koordinator die Woche freigibt**, bekommst du eine Mitteilung
+**Wenn der Planer den Plan der Woche sendet**, bekommst du eine Mitteilung
 „Neue Zuteilung" mit allen deinen Aufgaben dieser Woche auf einmal – in der App
 und, wenn du Push aktiviert hast, auch als Benachrichtigung auf dem Gerät. Beim
 nächsten Öffnen der App legt sie dir die offenen Zuteilungen zum Bestätigen vor:
@@ -333,11 +338,15 @@ Weitere Nachrichten können dich erreichen:
   einige Tage vor der Zusammenkunft und noch einmal kurz davor; der Planer kann
   dich auch selbst erinnern. Mehr als eine Erinnerung am Tag bekommst du nicht.
   Betrifft sie nur eine Aufgabe, kannst du direkt in der Mitteilung bestätigen.
-- **„Zuteilung zurückgezogen"** – der Koordinator hat dir eine Aufgabe wieder
+- **„Zuteilung zurückgezogen"** – der Planer hat dir eine Aufgabe wieder
   genommen, von der du **schon wusstest** – du hattest sie bestätigt, oder sie
   war dir mitgeteilt worden. Dann brauchst du dich nicht weiter vorzubereiten.
 - **„Für den Trolley eingetragen"**, **„Partner gefunden"** und die übrigen
   Mitteilungen zu deinen Trolley-Terminen (siehe [Trolleys](#trolleys)).
+- **„Tausch angefragt"**, **„Getauscht"** und **„Tausch abgelehnt"** – rund
+  ums Tauschen eines Hilfsdienstes (siehe
+  [Tauschen statt absagen](#tauschen-statt-absagen)). Ein Tipp darauf führt
+  zu **Meine Aufgaben**.
 
 ### Die Mitteilungen
 
@@ -365,7 +374,7 @@ Mauszeiger den ganzen Text).
   blendet das **✕** sie auf diesem Gerät für immer aus; einschalten kannst du
   Benachrichtigungen weiterhin im **Profil**.
 
-> Solange der Koordinator noch plant, erfährst du nichts – auch wenn dein Name
+> Solange der Planer noch plant, erfährst du nichts – auch wenn dein Name
 > im Programm schon steht. Das ist Absicht: Bis die Woche steht, wird oft noch
 > umsortiert.
 
@@ -375,9 +384,10 @@ Oben steht, wie viele Aufgaben noch auf deine Zusage warten. Die nächste steht
 groß da, wie auf der Startseite; die übrigen je eine Zeile mit einem Punkt für
 ihren Stand (blass: wartet, voll: zugesagt, rot: abgesagt):
 
-- **Der Haken** rechts bestätigt die Aufgabe – dein Koordinator sieht, dass du
-  sie übernimmst.
-- **Alle bestätigen** sagt alles Offene auf einmal zu.
+- **Der Haken** rechts bestätigt die Aufgabe – der Planer sieht, dass du
+  sie übernimmst. Ist sie schon bestätigt oder abgesagt, steht dort ein Pfeil.
+- **Alle bestätigen** oben sagt alles Offene auf einmal zu; der Knopf steht
+  da, sobald mindestens zwei Aufgaben auf deine Zusage warten.
 - **Antippen** öffnet die Aufgabe. Dort kannst du sie auch **absagen** – und
   eine Absage später wieder zurücknehmen.
 - **S‑89** – siehe unten.
@@ -388,7 +398,7 @@ Partner gesucht"), darunter „Sa., 19. Sept. · 09:00–11:00 · verabredet, oh
 Zusage". Einen Haken gibt es dort nicht – wer sich eingetragen hat, hat sich
 verabredet. Ein Tipp führt zu den [Trolleys](#trolleys).
 
-> **Tipp:** Bestätige zeitnah. Dein Koordinator sieht offene Bestätigungen und
+> **Tipp:** Bestätige zeitnah. Der Planer sieht offene Bestätigungen und
 > weiß dann, dass alles steht.
 
 ### Wenn du nicht kannst
@@ -400,7 +410,7 @@ zeigt, wie es danach weitergeht:
   selbst einen Ersatz und benachrichtigt alle, die für diesen Dienst
   eingetragen und an dem Tag nicht abwesend sind. Du musst niemanden
   persönlich anrufen.
-- Bei **Programmpunkten** und Treffpunkten erfährt es dein Koordinator sofort
+- Bei **Programmpunkten** und Treffpunkten erfährt es der Planer sofort
   und teilt neu zu.
 
 Freiwillig kannst du zwei Dinge mitgeben: eine **Nachricht an den Planer** (sie
@@ -416,7 +426,7 @@ Bei einem Hilfsdienst endet damit auch die Ersatzsuche: Die Mitteilung
 ### Tauschen statt absagen
 
 Bei einem **Hilfsdienst** – Mikrofone, Ton, Ordner … – steht neben „Ich kann
-nicht" auch **Tauschen**, sobald der Koordinator den Plan der Woche gesendet
+nicht" auch **Tauschen**, sobald der Planer den Plan der Woche gesendet
 hat. Damit gibst du deinen Platz ab und übernimmst dafür denselben Dienst an
 einem anderen Tag, den jetzt jemand anderes hat.
 
@@ -430,7 +440,7 @@ neuen Tag nicht schon eingeteilt ist. Kann gerade niemand, sagt das Blatt es.
 persönlich absprechen**: Sie sähe keine Anfrage. Sprecht euch ab; dann tippst
 du **Tauschen** und bestätigst mit **Abgesprochen? Tauschen** – getauscht ist
 sofort, ohne Anfrage. Zugesagt hast damit du für deinen neuen Platz; Bescheid
-gibst du der Person selbst, dein Koordinator bekommt die Mitteilung
+gibst du der Person selbst, der Planer bekommt die Mitteilung
 „Getauscht".
 
 **Mit App-Konto** fragst du mit **Anfragen**: Die Person bekommt **„Tausch
@@ -445,13 +455,15 @@ Aufgaben** die Karte **Tausch angefragt**: wer fragt, was du abgibst, was du
 dafür übernimmst.
 
 ![Eine Anfrage zum Tauschen auf dem Start](screenshots/verkuendiger-tausch.png)
- **Tauschen** tauscht beide Plätze auf einmal; beide gelten
-als zugesagt, und dein Koordinator bekommt eine Mitteilung – zustimmen muss er
-nicht. **Nein, danke** lehnt ab; wer gefragt hat, erfährt es. Antwortet
-niemand, verfällt die Anfrage mit dem früheren der beiden Tage.
+
+**Tauschen** tauscht beide Plätze auf einmal; beide gelten als zugesagt. Wer
+gefragt hat, bekommt **„Getauscht"**, ebenso der Planer – zustimmen muss er
+nicht. **Nein, danke** lehnt ab; wer gefragt hat, bekommt **„Tausch
+abgelehnt"**. Antwortet niemand, verfällt die Anfrage mit dem früheren der
+beiden Tage.
 
 Erst die Zusage ändert den Plan. Hat sich bis dahin etwas geändert – der
-Koordinator hat umgeteilt, jemand ist inzwischen abwesend –, sagt die App
+Planer hat umgeteilt, jemand ist inzwischen abwesend –, sagt die App
 „Das geht so nicht mehr" und zeigt den neuen Stand.
 
 ### Einspringen für jemand anderen
@@ -489,7 +501,7 @@ dann ist der Dienst schon besetzt.
 
 Ist ein **Hilfsdienst** – etwa Ordner oder Mikrofon – **noch gar nicht
 besetzt**, steht er unter **Freie Plätze** im Bereich **Noch niemand
-eingeteilt** – aber erst, wenn der Koordinator den Plan der Woche gesendet hat.
+eingeteilt** – aber erst, wenn der Planer den Plan der Woche gesendet hat.
 Vorher plant er noch, und ein leerer Platz hieße nichts. Gibt es gerade nichts
 zu übernehmen, sagt die Seite das.
 
@@ -524,16 +536,16 @@ Zoom-Ordner dort **Anwesende fehlen** mit **Eintragen**.
 ### Das S‑89-Formular
 
 Bei Schulungsaufgaben (Bibellesung, Gespräche beginnen, Interesse fördern …)
-steht bei der Aufgabe **S‑89 anzeigen**. Das öffnet die Aufgabenzuteilung, wie
-sie sonst auf Papier ausgeteilt wird:
+steht neben den Knöpfen der Aufgabe **S‑89**. Das öffnet die Aufgabenzuteilung,
+wie sie sonst auf Papier ausgeteilt wird:
 
-- **Name** und ggf. **Gesprächspartner/in**
+- **Name** und ggf. **Partner**
 - **Datum** der Zusammenkunft
 - **Aufgabe** und **Schulungspunkt**
 - **Durchzuführen im** – Hauptsaal oder Zusätzliche Klasse
 
 Quelle und Schulungspunkt stehen im Arbeitsheft; das Formular nennt sie, soweit
-sie beim Import mitgekommen sind. Du kannst es ansehen und deinem Gehilfen
+sie beim Import mitgekommen sind. Du kannst es ansehen und deinem Partner
 zeigen – ausdrucken musst du es nicht. Ab dem Tablet steht darunter **Diesen
 Zettel drucken**, falls du es doch auf Papier willst.
 
@@ -590,10 +602,10 @@ alles geht auch weiterhin über Knöpfe und Pfeile.
 - **Nach unten wischen** – schließt ein von unten eingeblendetes Fenster. Der
   kurze Strich am oberen Rand zeigt, dass es sich ziehen lässt.
 
-Auf einem Tablet im Hochformat steht links eine **schmale Leiste** mit Zeichen
-und kurzen Namen; der Menüknopf darin klappt das ganze Menü aus. Im Querformat
-und am Computer steht das Menü ausgeklappt links, dort auch die
-**Mitteilungen**.
+Auf einem Tablet steht links eine **schmale Leiste** mit Zeichen und kurzen
+Namen; der Menüknopf darin klappt das ganze Menü aus. Auf breiten Bildschirmen –
+am Computer, bei großen Tablets auch im Querformat – steht das Menü ausgeklappt
+links, dort auch die **Mitteilungen**.
 
 Auf dem Handy und am Tablet steht oben in der Kopfzeile der **heutige Tag** und
 deine **Versammlung**, rechts die **Glocke** für die Mitteilungen – ein Punkt
@@ -613,8 +625,8 @@ dich ab. Admins finden am Handy hier auch **Personen** und **Einstellungen**.
 - **Darstellung** – **Dunkel**, **Hell** oder **Automatisch**. „Automatisch"
   ist voreingestellt und folgt deinem Gerät: Schaltet das Handy abends auf
   dunkel, schaltet die App mit. Die Einstellung gilt nur für dein Gerät.
-- **Schriftgröße** – ein Regler von **Klein** bis **Sehr groß**. Standard ist die
-  bisherige Größe; wenn dir der Text zu klein ist, schiebe ihn nach rechts. Die
+- **Schriftgröße** – ein Regler von **Klein** bis **Sehr groß**. Voreingestellt
+  ist **Standard**; wenn dir der Text zu klein ist, schiebe ihn nach rechts. Die
   Änderung wirkt sofort in der ganzen App und gilt nur für dein Gerät.
 - **Sprache** – die Anzeigesprache der App, in 12 Sprachen. Sie gilt nur für
   dich: Deine Versammlung kann deutsch planen, während du alles auf Englisch
@@ -638,6 +650,9 @@ dich ab. Admins finden am Handy hier auch **Personen** und **Einstellungen**.
     anforderst, schreibt die App in der Sprache, die du dort gewählt hast.
 - **Push‑Mitteilungen** – Erinnerungen an anstehende Aufgaben ein‑ oder
   ausschalten (siehe [Abschnitt 8](#8-app-installieren--erinnerungen)).
+- **App installieren** – steht da, solange dein Browser das Installieren
+  anbietet (etwa Chrome auf Android) und die App noch nicht installiert ist
+  (siehe [Abschnitt 8](#8-app-installieren--erinnerungen)).
 - **Erste Schritte** – der kurze Film von der Startseite (Abschnitt 2), hier
   jederzeit wieder.
 - **Abmelden** – meldet dich auf diesem Gerät ab. Der erste Tipp fragt
@@ -647,7 +662,7 @@ dich ab. Admins finden am Handy hier auch **Personen** und **Einstellungen**.
 
 ## 8. App installieren & Erinnerungen
 
-Der Versammlung.app ist eine **Web‑App (PWA)** – du brauchst nichts aus einem
+Versammlung.app ist eine **Web‑App (PWA)** – du brauchst nichts aus einem
 Store zu laden. Du öffnest die Adresse im Browser und legst sie dir als App ab.
 
 ### Android (Chrome)
@@ -659,7 +674,9 @@ Store zu laden. Du öffnest die Adresse im Browser und legst sie dir als App ab.
    Browserleiste.
 
 > Chrome zeigt **von selbst kein Hinweisbanner** mehr an. Wenn beim Öffnen nichts
-> erscheint, ist nichts kaputt – der Eintrag steckt nur im ⋮‑Menü.
+> erscheint, ist nichts kaputt – der Eintrag steckt nur im ⋮‑Menü. Bietet
+> Chrome das Installieren an, steht im **Profil** auch der Knopf **App
+> installieren**.
 
 ### iPhone / iPad (Safari)
 
@@ -726,7 +743,9 @@ daraus wieder „Offline".
   wie zuletzt geladen sichtbar.
 - **Ändern geht nicht:** Bestätigen, Abwesenheiten eintragen oder Ähnliches ist
   gesperrt – sonst würde deine Eingabe verloren gehen, weil sie niemand
-  empfangen kann. Beim Antippen erscheint ein kurzer Hinweis.
+  empfangen kann. Beim Antippen erscheint ein kurzer Hinweis. **Tauschen**,
+  eine Anfrage zum Tauschen und das Eintragen der Anwesenden stehen dann gar
+  nicht da.
 - **Kommt das Netz zurück**, holt die App den aktuellen Stand von selbst. Zeigt
   dein Handy Empfang an, ohne dass etwas durchkommt, merkt sie das nicht – dann
   holt ihn **„Neu laden"**, sobald du wieder Netz hast.
@@ -770,8 +789,8 @@ nicht** — rechts daneben steht, was: abgesagt, abwesend oder an diesem Tag
 schon eingeteilt. Teilst du einen Treffpunkt neu zu, steht er wieder blass da —
 die Zusage gehört dem, der sie gegeben hat.
 
-Die **Personen** bleiben dem Koordinator vorbehalten, und die Zuteilungen der
-Zusammenkünfte ebenso — daran änderst du nichts. Alles Übrige siehst du wie jeder
+Die **Personen** bleiben dem Admin vorbehalten, die Zuteilungen der
+Zusammenkünfte den Planern — daran änderst du nichts. Alles Übrige siehst du wie jeder
 andere Verkündiger: eigene Aufgaben, Zusammenkünfte, Abwesenheiten, Profil.
 
 > **Wer sieht eure Gruppentreffpunkte?** Nur die Verkündiger deiner Gruppe — und
@@ -782,4 +801,4 @@ Handbuch für Planer unter [Treffpunkte planen](planer.md#5-treffpunkte-planen).
 
 ---
 
-*Fragen zur Bedienung beantwortet dein Versammlungskoordinator.*
+*Bei Fragen zur Bedienung sprich die Ältesten an.*

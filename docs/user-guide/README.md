@@ -1,11 +1,12 @@
 # Benutzerdokumentation
 
-Anwender‑Handbücher für den Versammlung.app, getrennt nach Rolle:
+Anwender‑Handbücher für Versammlung.app, getrennt nach Rolle:
 
 - **[verkuendiger.md](verkuendiger.md)** – für alle Verkündiger (Programm ansehen,
-  Aufgaben bestätigen, Abwesenheiten, Profil).
-- **[planer.md](planer.md)** – zusätzlich für Koordinatoren/Planer (Zuteilen,
-  Personen, Gruppen, Einstellungen, Import, Drucken).
+  Aufgaben bestätigen, tauschen und übernehmen, Anwesende eintragen,
+  Abwesenheiten, Profil).
+- **[planer.md](planer.md)** – zusätzlich für Planer und Admins (Zuteilen,
+  Senden, Auswertung, Personen, Gruppen, Einstellungen, Programm holen, Drucken).
 
 Die Screenshots liegen in [`screenshots/`](screenshots/) und werden **automatisch**
 erzeugt – nie von Hand.
@@ -63,7 +64,7 @@ Ende automatisch auf; du musst nichts extra tun.
 
 | Datei | Hash | verwendet in |
 | --- | --- | --- |
-| `login.png` | `s=login` | beide |
+| `login.png` | `s=login` (Höhe 860) | verkuendiger |
 | `programm-woche.png` | `s=programm&tab=mid` | (Reserve) |
 | `programm-wochenende.png` | `s=programm&tab=we` | (Reserve) |
 | `programm-treffpunkte.png` | `s=programm&tab=fs` | planer |
@@ -88,7 +89,7 @@ Ende automatisch auf; du musst nichts extra tun.
 | `planer-weitere-plaene.png` | `s=planen&tab=wp&me=p6` | planer |
 | `planer-auswertung.png` | `s=auswertung&me=p6&uhr=2026-10-12` (Höhe 1700) | planer |
 | `planer-personen.png` | `s=personen` | planer |
-| `planer-person-detail.png` | `s=personen&p=p1` | planer |
+| `planer-person-detail.png` | `s=personen&p=p1` (Höhe 3100) | planer |
 | `planer-einstellungen.png` | `s=einstellungen` | planer |
 | `offline-stand.png` | `s=programm&tab=mid&stale=5` | beide |
 

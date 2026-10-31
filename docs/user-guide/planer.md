@@ -1,6 +1,6 @@
 # Benutzerhandbuch für Planer
 
-Dieses Handbuch richtet sich an Koordinatoren und Planer der Versammlung – also an
+Dieses Handbuch richtet sich an Planer und Admins der Versammlung – also an
 alle, die Zuteilungen vornehmen, Personen und Gruppen verwalten oder die
 Versammlungseinstellungen pflegen.
 
@@ -61,8 +61,8 @@ von „Diese Woche in der Versammlung".
   dieselbe wie unter **Zuteilen** bei den Wochen. Eine Zusammenkunft, die
   vorbei ist oder ausfällt, zählt nicht mehr mit.
 - Die Zeile nennt, was ansteht – mit denselben Wörtern wie die Wochen unter
-  **Planung** (Abschnitt 8); was dahintersteht, zeigt beim **Planen** die Liste
-  **Zu klären** (Abschnitt 4):
+  **Planung** (Abschnitt 8); was dahintersteht, zeigt beim **Planen** die Karte
+  **Besetzung** unter ihrer Legende (Abschnitt 4):
   - **Probleme** – mögliche Konflikte, z. B. jemand ist eingeteilt, aber
     abwesend, und Bereiche, für die an dem Tag zu wenige Leute da sind,
   - **Offen** – noch unbesetzte Plätze, auch Treffpunkte ohne Leiter,
@@ -87,7 +87,8 @@ von „Diese Woche in der Versammlung".
 - Ist nichts zu tun, schrumpft die Karte auf eine Zeile **„Alles zugeteilt"** –
   darunter der Zeitraum, für den das gilt. Wochen dahinter hat sie nicht
   angesehen.
-- Das Menü an der Seite: oben **Start** und **Meine Aufgaben**, darunter unter
+- Das Menü an der Seite: oben **Start**, **Meine Aufgaben** und **Freie
+  Plätze** (am Computer dazu die **Mitteilungen**), darunter unter
   **Versammlung** die **Zusammenkünfte**, der **Predigtdienst** und die
   **Weiteren Pläne**, zuletzt unter **Planen und verwalten** die **Planung**,
   die **Auswertung** (Abschnitt 4a) und – nur für Admins – **Personen** und
@@ -129,6 +130,8 @@ steht der Schalter **Darf planen** an und lässt sich nicht umlegen.
 | Treffpunkt-Leiter zuteilen | – | seine Gruppe | alle | alle |
 | Treffpunkte ändern: Zeit, Ort, hinzufügen, entfernen, Grundplan | – | seine Gruppe | alle | alle |
 | Sich für den Trolley eintragen (mit dem Aufgabenbereich **Trolley**) | ✓ | ✓ | ✓ | ✓ |
+| Den eigenen Hilfsdienst **tauschen** (nach „Plan senden") | ✓ | ✓ | ✓ | ✓ |
+| **Anwesende** eintragen und berichtigen | als Saal- oder Zoom-Ordner der Zusammenkunft | als Saal- oder Zoom-Ordner der Zusammenkunft | jede Zusammenkunft | jede Zusammenkunft |
 | Gruppenbesuche planen: anlegen, verlegen, Besucher wechseln | – | – | ✓ | ✓ |
 | Weitere Pläne: anlegen, einstellen, veröffentlichen, Gruppen verteilen | – | – | ✓ | ✓ |
 | **Plan senden** | – | Treffpunkte seiner Gruppe | ✓ | ✓ |
@@ -146,8 +149,7 @@ angehört.
 Die Meldungen an die Planer – eine **Verhinderung**, **Ersatz gefunden**,
 **Getauscht**, **unbestätigte Zuteilungen** – bekommen Admins und Planer: Wer
 zuteilt, sucht auch den Ersatz. Personen und Einstellungen zeigt die App einem Planer gar
-nicht erst an; die Datenbank weist sie zusätzlich ab. Bis zum 15. Oktober 2026
-teilte der Planer nur zu – die Pläne selbst änderte der Admin.
+nicht erst an; die Datenbank weist sie zusätzlich ab.
 
 Für den Trolley trägt sich jeder selbst ein, auf Wunsch gleich mit einem
 Partner; zuteilen kann dort niemand (siehe [Trolleys](#trolleys)).
@@ -206,7 +208,7 @@ dessen Plätze die Lage der Zuteilungen zeigen, die Zahl „Besetzung: 11/14", d
 Legende und darunter, was **zu klären** ist (Abschnitt 4). Fällt die
 Zusammenkunft aus, stehen beide nicht da – es gibt nichts zu besetzen.
 
-Unter der Karte **Besetzung** steht **S‑89 DRUCKEN**: ein Tipp auf **Drucken**
+Unter der Karte **Besetzung** steht **S‑89 Drucken**: ein Tipp auf **Drucken**
 legt alle Schülerzettel der offenen Woche als DIN‑A4‑Bogen an, **sechs je
 Blatt**. Rechts neben dem Titel steht, wie viele Zettel es werden („Zettel: 9").
 Der Schalter **Auch für Partner** bestimmt, ob der Zettel eines Gesprächs
@@ -273,8 +275,9 @@ Menschen zu Jüngern machen) haben einen **Hauptteilnehmer** und einen
 haben nur einen (männlichen) Teilnehmer; für sie gibt es den eigenen Bereich
 **„Schulungsaufgaben · Vorträge"** – wer Gespräche führt, hält damit nicht
 automatisch auch Vorträge. Die App legt die passende Zahl beim Import
-automatisch an; mit **„+ / – Gesprächspartner"** unter einem Gesprächsteil
-kannst du den Partner bei Bedarf hinzufügen oder entfernen. Für den Gesprächspartner
+automatisch an; mit **+ Partner** bzw. **– Partner** unter einem
+Gesprächsteil kannst du den Partner bei Bedarf hinzufügen oder entfernen
+(entfernen mit zwei Tipps). Für den Gesprächspartner
 werden nur Personen mit demselben Geschlecht vorgeschlagen – **oder
 Familienangehörige** (siehe „Familie" im Personen‑Detail), die auch
 geschlechtsübergreifend zusammen eingeteilt werden dürfen. Wer nur als Partner
@@ -284,7 +287,8 @@ Gesprächsteile bevorzugt mit Verkündigern und Schwestern (nicht mit Ältesten/
 Dienstamtgehilfen) und achtet auf gleiches Geschlecht der beiden Partner.
 
 Beim Wochenende trägst du hier das **Vortragsthema** und die
-**Anfangslied‑Nummer** ein. Den Ablauf selbst änderst du unter **Woche
+**Anfangslied‑Nummer** ein; unter **Abschluss** steht ebenso die Nummer des
+Schlusslieds zum Ändern. Den Ablauf selbst änderst du unter **Woche
 einrichten › Programmpunkte bearbeiten** (Abschnitt 3, „Das Programm
 bearbeiten").
 
@@ -433,7 +437,7 @@ Arbeitsheft und bleibt, wie es ist.
   gehen seine Zuteilungen.
 
 Darunter fügt **Programmpunkt einfügen** einen eigenen Punkt ein: Titel
-eintragen, **Übernehmen**. Er kommt vor das Versammlungsbibelstudium und
+eintragen, **Hinzufügen**. Er kommt vor das Versammlungsbibelstudium und
 beginnt mit 10 Minuten.
 
 Zugeteilt wird im Plan, nicht im Blatt eines Punkts — und den Ablauf ändert man
@@ -548,13 +552,13 @@ Ausgabe des Programms.
 ## 4. Konflikte und offene Zuteilungen
 
 Die Planen‑Seite weist dich aktiv auf Handlungsbedarf hin: In der Karte
-**Besetzung** steht unter **Zu klären**, was vor der Zusammenkunft noch zu
-erledigen ist – eine Zeile je Punkt, in dieser Reihenfolge:
+**Besetzung** steht unter der Legende, was vor der Zusammenkunft noch zu
+klären ist – eine Zeile je Punkt, in dieser Reihenfolge:
 
 - **Konflikte** (roter Punkt) – „Person ist abwesend, aber eingeteilt",
   Doppelbelegungen und „Hilfsdienst und Aufgabe am selben Tag", die
   Abwesenheiten zuerst. Es steht nur da, was so nicht bleiben kann; dass jemand
-  mehrere Wochen hintereinander drankommt, meldet die App nicht mehr – in einer
+  mehrere Wochen hintereinander drankommt, meldet die App nicht – in einer
   kleinen Versammlung ist das der Normalfall, und die Meldung verdeckte die
   wichtigen daneben.
 - **Nicht besetzbar** (roter Punkt) – Bereiche, in denen an diesem Tag
@@ -590,7 +594,7 @@ eine Mitteilung („Verhinderung gemeldet"), und der Punkt an der Zuteilung wird
 **rot**. Ein Tipp auf die Mitteilung öffnet **Planen in der Woche der
 abgesagten Aufgabe** – bei einem Treffpunkt im Predigtdienst. Auch die übrigen
 Mitteilungen an dich als Planer („Programm importiert", „Unbestätigte
-Zuteilungen", „Ersatz gefunden") führen ins Planen; in den Mitteilungen (Glocke
+Zuteilungen", „Ersatz gefunden", „Getauscht") führen ins Planen; in den Mitteilungen (Glocke
 oben rechts, am Computer im Menü) steht jede höchstens zwei Zeilen lang.
 Trägt sich jemand von einem Trolley-Termin aus, erfährt es nur sein Partner –
 eine Absage an die Planer gibt es dort nicht (siehe [Trolleys](#trolleys)).
@@ -642,7 +646,7 @@ Tipp auf **Plan senden** im Blatt, und jede eingeteilte Person bekommt **eine**
 Nachricht mit allen ihren Aufgaben dieser Woche — in der App und, wo aktiviert,
 als Push. **Später** schließt das Blatt, ohne zu senden.
 
-Drei Dinge, auf die du dich verlassen kannst:
+Vier Dinge, auf die du dich verlassen kannst:
 
 - **Es geht nichts doppelt hinaus.** Die App merkt sich, welcher Platz mit
   welchem Namen schon gemeldet wurde. Besserst du danach einen Platz nach und
@@ -665,8 +669,10 @@ Welche Hilfsdienste der Woche noch unbesetzt sind, sehen sie im Menü unter
 nicht abwesend ist und im selben Dienst noch keinen Platz hat. **Programmpunkte
 bietet die App dort nicht an:** Die teilst du zu. Die Reinigung auch nicht. Wer
 zuerst tippt, ist eingetragen und hat damit zugesagt; eine Mitteilung bekommst
-du dafür nicht, im Plan steht sein Name mit vollem Punkt. Willst du einen Platz
-selbst besetzen, tu es vor dem Senden.
+du dafür nicht, im Plan steht sein Name mit vollem Punkt. Hat er an dem Tag
+schon eine Aufgabe, sagt ihm die App das vorher; übernimmt er trotzdem, steht
+es bei dir als Konflikt „Hilfsdienst und Aufgabe am selben Tag". Willst du
+einen Platz selbst besetzen, tu es vor dem Senden.
 
 > **Eine Ausnahme wartet nicht auf den Knopf.** Nimmst du jemandem eine Aufgabe
 > weg, von der er **schon weiß** – er hat sie bestätigt, oder sie wurde ihm mit
@@ -723,9 +729,10 @@ Schritt **Zuteilen** der Spur — führt wieder in den Plan.
 Unter **Planen und verwalten** → **Auswertung** siehst du, wie sich die
 Zuteilungen der vergangenen Wochen auf die Versammlung verteilen: wer zu oft
 oder zu selten dran ist, wer immer dasselbe macht, wer lange wartet, wo die
-Plätze knapp sind und wo oft abgesagt wird. Die Auswertung sehen nur Planer und
-Admins. Sie rechnet aus den Wochen, die die App kennt; drucken lässt sie sich
-nicht.
+Plätze knapp sind und wo oft abgesagt wird – dazu die **Anwesenden** je Monat.
+Die Auswertung sehen nur Planer und Admins. Sie rechnet aus den Wochen, die die
+App kennt; drucken lassen sich nur die Anwesenden (**Für den Bericht drucken**,
+siehe [Anwesenheit](#anwesenheit)).
 
 ![Auswertung der Zuteilungen](screenshots/planer-auswertung.png)
 
@@ -745,11 +752,14 @@ nicht.
   Namen. Ein Tipp öffnet die Person – bei einer langen Wartezeit die
   Wartezeiten mit diesem Bereich, bei vielen Absagen die Absagen;
   **Alle Hinweise** zeigt den Rest.
-- Am Handy führen fünf Kacheln weiter – **Zu oft, zu selten**, **Einseitig
-  verteilt**, **Wartezeiten**, **Engpässe** (mit der Zahl der knappen Bereiche),
-  **Treffpunkte, Absagen, Ballungen**; Zurück führt wieder in den Überblick. Am
-  Tablet steht alles auf einer Seite, die Engpässe unter **Was auffällt**, am
-  Computer dazu die Tabelle **Wer bekommt was** (Person × Bereich).
+- Am Handy führen unter **Genauer ansehen** sechs Kacheln weiter – **Zu oft,
+  zu selten**, **Einseitig verteilt**, **Wartezeiten**, **Engpässe** (mit der
+  Zahl der knappen Bereiche), **Treffpunkte, Absagen, Ballungen** und
+  **Anwesenheit** (mit der Zahl der Zusammenkünfte ohne Zahl); Zurück führt
+  wieder in den Überblick. Am Tablet steht alles auf einer Seite, die Engpässe
+  unter **Was auffällt**, die Anwesenheit ganz unten. Am Computer steht statt
+  der Karten **Einseitig verteilt** die Tabelle **Wer bekommt was** (Person ×
+  Bereich).
 
 ### Was zählt – und was erwartet wird
 
@@ -801,8 +811,8 @@ schon unter **Bereich im Jahr ungenutzt** steht, steht hier nicht noch einmal.
 Die Karten zeigen je Person ihre Bereiche mit Balken; **Alle** zeigt auch die
 Unauffälligen.
 
-Am Computer zeigt die Tabelle **Wer bekommt was** jede Person mit jedem
-Bereich: je dunkler das Feld, desto öfter. Gestrichelt heißt, sie hat den
+Am Computer steht statt der Karten die Tabelle **Wer bekommt was**: jede Person
+mit jedem Bereich. Je dunkler das Feld, desto öfter. Gestrichelt heißt, sie hat den
 Bereich, war dort aber nie dran; ein Strich, sie hat ihn nicht; umrandet, sie
 war dort eingeteilt, ohne den Bereich zu haben. Die Spaltenköpfe stehen
 senkrecht, damit die Tabelle ohne Rollen in die Breite passt. Ein Tipp auf
@@ -915,7 +925,7 @@ Woche, am Wochenende) und darunter je Monat die Zahl der Zusammenkünfte und den
 Zusammenkunft: Der Sonntag einer Woche, die am 28. September beginnt, gehört
 zum Oktober. Hat eine Zusammenkunft stattgefunden, aber keine Zahl, steht ihr
 Tag unter **Ohne Zahl** – ein Tipp darauf öffnet das Eintragen. Ausgefallene
-Zusammenkünfte fehlen dort nicht. **Für den Bericht drucken** legt die Monate
+Zusammenkünfte stehen dort nicht. **Für den Bericht drucken** legt die Monate
 des Zeitraums auf einen Bogen: je Monat und Art die Zusammenkünfte, alle
 Anwesenden zusammen und den Durchschnitt.
 
@@ -1005,7 +1015,7 @@ am Tag (dort meinte es eine von mehreren).
 **Der Leiter kann auch jemand von außerhalb sein.** In der Dienstwoche leitet
 in der Regel der **Kreisaufseher** den Treffpunkt, und der steht in keiner
 Personenliste. Tippe den Treffpunkt-Leiter an: Oben im Blatt gibst du einen
-**Namen als Freitext** ein und bestätigst mit **ÜBERNEHMEN** — darunter steht
+**Namen als Freitext** ein und bestätigst mit **Übernehmen** — darunter steht
 weiterhin die Liste der eigenen Verkündiger, falls es doch jemand von euch
 sein soll. Beide Wege führen zurück, du kannst also jederzeit wechseln.
 
@@ -1488,8 +1498,7 @@ Am Handy stehen untereinander fünf Karten:
 - **Wer plant** – alle, die planen dürfen.
 
 Das Programm der Wochen holst du nicht hier, sondern bei den Wochen unter
-**Planung** ([Abschnitt 8](#8-programm-holen)); bis zum 15. Oktober 2026 stand
-der Import als letzte Karte in den Einstellungen.
+**Planung** ([Abschnitt 8](#8-programm-holen)).
 
 Jede Zeile nennt, was eingestellt wird, und dazu, was gerade gilt – etwa
 „Dienstag 19:00". So siehst du alles auf einen Blick, ohne etwas zu öffnen. Ein
@@ -1956,12 +1965,19 @@ beim **Ansehen** einen **Drucken**‑Knopf. Gedruckt wird ohne Auswahl:
 Eine lange Tabelle – ein Plan über ein Jahr, die Treffpunkte eines Monats mit
 vielen Gruppen – läuft auf dem nächsten Blatt weiter.
 
+### Die Anwesenden für den Bericht
+
+In der **Auswertung** unter **Anwesenheit** legt **Für den Bericht drucken**
+die Monate des gewählten Zeitraums, für die Zahlen da sind, auf einen Bogen: je
+Monat und Art die Zahl der Zusammenkünfte, alle Anwesenden zusammen und den
+Durchschnitt (siehe [Anwesenheit](#anwesenheit)).
+
 ### S‑89: die Aufgabenzuteilung
 
 Für Schulungsaufgaben gibt es zusätzlich das **S‑89‑Formular** – die
 Aufgabenzuteilung, die sonst auf Papier ausgeteilt wird. Du erreichst es beim
-Zuteilen (im Sheet unter dem Titel) und der Verkündiger unter **Meine
-Aufgaben**.
+Zuteilen über **S‑89 anzeigen** unter dem Namen dessen, der den Platz hat; der
+Verkündiger über den Knopf **S‑89** an seiner Aufgabe.
 
 Es enthält Name und Gesprächspartner, Datum, Aufgabe, Schulungspunkt und den
 Raum (**Hauptsaal** oder **Zusätzliche Klasse**). Alle Angaben kommen aus der
