@@ -345,3 +345,94 @@ describe('Eine später angelegte Woche bekommt ihren vorgemerkten Vortrag', () =
     expect(vortragInNeueWoche(leer, [vorgemerkt], PERSONEN)).toBe(leer)
   })
 })
+
+/*
+ * **Eine leere Datei ist keine Absage.** Ohne Vorträge und ohne Zeitraum sagt
+ * die Datei über keine Woche etwas — was in der App steht und was vorgemerkt
+ * ist, bleibt. Ein Zeitraum aus dem Nichts (etwa „alles") ließe jeden Vortrag
+ * entfallen.
+ */
+describe('Eine leere Datei', () => {
+  it('lässt angelegte Wochen und Vormerkungen stehen — nichts zu tun, dieselben Listen', () => {
+    const weeks = vortragSetzen([woche(W0)], 0, {
+      redner: 'Max Mustermann', versammlung: 'Musterstadt', eigener: false, thema: 'Demo-Thema 1', lied: '151',
+    })
+    const vormerkungen: VorgemerkterVortrag[] = [
+      { id: 'v5', woche: W5, redner: 'Klaus Platzhalter', versammlung: 'Nord', eigener: false, pid: null, thema: '', lied: '' },
+    ]
+    const leer: Vortragsplan = { von: '', bis: '', vortraege: [] }
+    const vorschau = vortragsplanVorschau(leer, kontext(weeks, vormerkungen))
+    expect(vorschau).toEqual({ zeilen: [], vergangen: 0 })
+    expect(hatAenderungen(vorschau)).toBe(false)
+    const ergebnis = vortragsplanAnwenden({ vorschau, weeks, vormerkungen, neueId: () => 'x', heute: HEUTE })
+    expect(ergebnis.weeks).toBe(weeks)
+    expect(ergebnis.vormerkungen).toBe(vormerkungen)
+  })
+})
+
+describe('Vergangen zählt nur, was die Datei wollte', () => {
+  it('eine vergangene Woche im Zeitraum ohne Vortrag in der Datei ist kein vergangener Vortrag', () => {
+    // Gegenstück zu „vergangene Wochen fasst der Import nicht an": Dort nennt
+    // die Datei die Vorwoche und sie zählt. Hier steht die Vorwoche nur in der
+    // App — die Vorschau sagte sonst „1 Vortrag liegt zurück", den es in der
+    // Datei gar nicht gibt.
+    const vorwoche = vortragSetzen([woche(VORWOCHE)], 0, {
+      redner: 'Alt Redner', versammlung: 'Nord', eigener: false, thema: '', lied: '',
+    })
+    const v = vortragsplanVorschau(plan([gast(W0)], VORWOCHE, sonntag(W0)), kontext([...vorwoche, woche(W0)]))
+    expect(v.vergangen).toBe(0)
+    expect(v.zeilen.map((z) => [z.woche, z.art])).toEqual([[W0, 'neu']])
+  })
+})
+
+describe('Eine Vormerkung mit eigenem Redner', () => {
+  it('derselbe Redner aus der Datei ist unverändert — die Person der Vormerkung zählt mit', () => {
+    // Die Datei nennt nur den Namen; die Vorschau findet die Person (p1). Die
+    // Vormerkung trägt sie schon — verglichen ohne sie, stünde jede Woche mit
+    // eigenem Redner bei jedem Import als „geändert" da.
+    const vorgemerkt: VorgemerkterVortrag = {
+      id: 'v1', woche: W5, redner: 'Peter Beispiel', versammlung: '', eigener: true, pid: 'p1', thema: 'Demo-Thema 2', lied: '27',
+    }
+    const datei = plan([gast(W5, 'Peter Beispiel', { eigener: true, versammlung: '', thema: 'Demo-Thema 2', lied: '27' })])
+    const vorschau = vortragsplanVorschau(datei, kontext([], [vorgemerkt]))
+    expect(vorschau.zeilen.map((z) => z.art)).toEqual(['unveraendert'])
+    expect(hatAenderungen(vorschau)).toBe(false)
+  })
+})
+
+/*
+ * **Jede Änderung am Redner erreicht den Platz.** `vortragSetzen` schreibt den
+ * Platz nur, wenn sich an ihm etwas ändert — sonst bekäme die Woche bei jedem
+ * Import einen neuen Klon und ginge an die Datenbank. Geprüft wird je Feld,
+ * das allein sich ändert: Wer eines davon beim Vergleich vergisst, lässt den
+ * alten Wert im Programm stehen.
+ */
+describe('vortragSetzen: jedes Feld des Redners allein ist eine Änderung', () => {
+  const slot = (w: Week[]) => talk(w[0]!).names[0]
+
+  it('derselbe Gastredner aus einer anderen Versammlung — die Versammlung wird neu gesetzt', () => {
+    const vorher = vortragSetzen([woche(W0)], 0, { redner: 'Max Mustermann', versammlung: 'Musterstadt', eigener: false, thema: '', lied: '' })
+    const nachher = vortragSetzen(vorher, 0, { redner: 'Max Mustermann', versammlung: 'Nordstadt', eigener: false, thema: '', lied: '' })
+    expect(vortragDerWoche(nachher[0]!)?.versammlung).toBe('Nordstadt')
+  })
+
+  it('derselbe Name, jetzt als eigener Redner — Rolle „Redner", auch ohne gefundene Person', () => {
+    const vorher = vortragSetzen([woche(W0)], 0, { redner: 'Niemand Bekannt', versammlung: '', eigener: false, thema: '', lied: '' })
+    expect(slot(vorher)?.rolle).toBe(ROLE_GUEST_SPEAKER) // Positivkontrolle
+    const nachher = vortragSetzen(vorher, 0, { redner: 'Niemand Bekannt', versammlung: '', eigener: true, thema: '', lied: '' })
+    expect(slot(nachher)?.rolle).toBe(ROLE_OWN_SPEAKER)
+    expect(vortragDerWoche(nachher[0]!)?.eigener).toBe(true)
+  })
+
+  it('derselbe eigene Redner mit neuer Person (gelöscht und neu angelegt) — die neue Id gilt', () => {
+    const vorher = vortragSetzen([woche(W0)], 0, { redner: 'Peter Beispiel', versammlung: '', eigener: true, pid: 'p-alt', thema: '', lied: '' })
+    const nachher = vortragSetzen(vorher, 0, { redner: 'Peter Beispiel', versammlung: '', eigener: true, pid: 'p1', thema: '', lied: '' })
+    expect(slot(nachher)?.pid).toBe('p1')
+  })
+
+  it('Gegenprobe: alles gleich — dieselbe Referenz, nichts zu schreiben', () => {
+    const v = { redner: 'Peter Beispiel', versammlung: '', eigener: true, pid: 'p1', thema: 'Demo-Thema 1', lied: '27' }
+    const vorher = vortragSetzen([woche(W0)], 0, v)
+    expect(vortragSetzen(vorher, 0, v)).toBe(vorher)
+  })
+})

@@ -2267,3 +2267,85 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
     }
   })
 })
+
+/*
+ * **Wer einen Hilfsdienst absagt, sucht damit Ersatz.** Die Absage allein
+ * schriebe nur den Status; die Qualifizierten erführen nichts, und der Platz
+ * bliebe bis zur Zusammenkunft leer. Bei einem Programmpunkt dagegen sucht die
+ * App niemanden — den teilt der Planer neu zu.
+ */
+describe('Absage: ein Hilfsdienst sucht Ersatz, ein Programmpunkt nicht', () => {
+  it('Hilfsdienst: Status „verhindert" und die Ersatzsuche über die Function', () => {
+    const key = '2026-09-07|mid|helper|mik|0'
+    persist(st(), st(), { type: 'declineTask', id: key })
+    expect(data.saveConfirmation).toHaveBeenCalledWith('c1', 'u1', key, 'verhindert')
+    expect(data.substituteSeek).toHaveBeenCalledWith(key)
+  })
+
+  it('Programmpunkt: nur der Status — keine Ersatzsuche', () => {
+    const key = '2026-09-07|mid|part|i1|0'
+    persist(st(), st(), { type: 'declineTask', id: key })
+    expect(data.saveConfirmation).toHaveBeenCalledWith('c1', 'u1', key, 'verhindert')
+    expect(data.substituteSeek).not.toHaveBeenCalled()
+  })
+})
+
+/*
+ * **Mit der letzten Person geht ihr Haushalt.** Die Datenbank nullt beim
+ * Löschen nur `persons.fam`; die Haushaltszeile bliebe stehen, gehörte niemandem
+ * und käme bei jedem Neuaufbau wieder mit. Solange noch jemand darin wohnt,
+ * bleibt sie.
+ */
+describe('removePerson und der Haushalt', () => {
+  const mitHaushalt = (...ids: string[]) =>
+    DEMO_PERSONS.map((p) => (ids.includes(p.id) ? { ...p, fam: 'h1' } : p))
+
+  it('war sie die Letzte, wird der Haushalt gelöscht', () => {
+    const prev = st({ persons: mitHaushalt('p1') })
+    const next = st({ persons: prev.persons.filter((p) => p.id !== 'p1') })
+    persist(prev, next, { type: 'removePerson', id: 'p1' })
+    expect(data.deleteHouseholdRow).toHaveBeenCalledWith('h1')
+  })
+
+  it('wohnt noch jemand darin, bleibt er', () => {
+    const prev = st({ persons: mitHaushalt('p1', 'p6') })
+    const next = st({ persons: prev.persons.filter((p) => p.id !== 'p1') })
+    persist(prev, next, { type: 'removePerson', id: 'p1' })
+    expect(data.deletePersonRow).toHaveBeenCalledWith('p1') // Positivkontrolle: entfernt wurde
+    expect(data.deleteHouseholdRow).not.toHaveBeenCalled()
+  })
+
+  it('ohne Haushalt gibt es keinen zu löschen', () => {
+    const prev = st()
+    persist(prev, st({ persons: prev.persons.filter((p) => p.id !== 'p1') }), { type: 'removePerson', id: 'p1' })
+    expect(data.deleteHouseholdRow).not.toHaveBeenCalled()
+  })
+})
+
+/*
+ * **Eine neue Liste mit denselben Zeilen schreibt nichts** — bei den
+ * Vormerkungen des Vortragsplans wie bei den Gruppenbesuchen. Verglichen wird je
+ * Zeile, nicht die Liste: Ein Aufruf mit zwei leeren Listen wäre eine Anfrage
+ * ohne Inhalt. Fällt nur etwas weg, geht nur die Löschung hinaus.
+ */
+describe('Vormerkungen und Gruppenbesuche: je Zeile, nicht je Liste', () => {
+  const V5 = { id: 'v5', woche: '2026-10-12', redner: 'Max Mustermann', versammlung: 'Musterstadt', eigener: false, pid: null, thema: '', lied: '' }
+  const V6 = { id: 'v6', woche: '2026-10-19', redner: 'Klaus Platzhalter', versammlung: 'Nord', eigener: false, pid: null, thema: '', lied: '' }
+  const B1 = { id: 'b1', woche: '2026-09-14', grp: 'g1', pid: 'p1' }
+  const UEBERNEHMEN: AppAction = { type: 'vortragsplanUebernehmen', plan: { von: '', bis: '', vortraege: [] } }
+
+  it('Vormerkungen: dieselben Zeilen in neuer Liste — kein Schreiben', () => {
+    persist(st({ vortraege: [V5, V6] }), st({ vortraege: [V5, V6] }), UEBERNEHMEN)
+    expect(data.saveVortraege).not.toHaveBeenCalled()
+  })
+
+  it('Vormerkungen: nur eine entfallen — nur die Löschung', () => {
+    persist(st({ vortraege: [V5, V6] }), st({ vortraege: [V5] }), UEBERNEHMEN)
+    expect(data.saveVortraege).toHaveBeenCalledWith('c1', [], ['v6'])
+  })
+
+  it('Gruppenbesuche: dieselben Zeilen in neuer Liste — kein Schreiben', () => {
+    persist(st({ gruppenbesuche: [B1] }), st({ gruppenbesuche: [B1] }), { type: 'besuchUebernehmen', id: 'b1' })
+    expect(data.saveGruppenbesuche).not.toHaveBeenCalled()
+  })
+})

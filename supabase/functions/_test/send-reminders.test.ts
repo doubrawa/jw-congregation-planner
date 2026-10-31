@@ -1455,3 +1455,55 @@ describe('send-reminders: das Wochenfenster', () => {
     expect(bis >= '2026-09-28', `obere Grenze ${bis} deckt „21 Tage vorher" nicht`).toBe(true)
   })
 })
+
+/**
+ * **Ein Treffpunkt erinnert nur an seinen fälligen Tagen** — dieselbe Regel wie
+ * bei den Zusammenkünften (`dueKind`), aber an seinem eigenen Tag. Ohne
+ * Wiederholung sind das genau `first` und `last` Tage vorher; dazwischen
+ * schweigt der Lauf. Ging ein nicht fälliger Treffpunkt trotzdem durch, bekäme
+ * der Leiter jeden Morgen dieselbe Push-Nachricht.
+ */
+describe('send-reminders: ein Treffpunkt außerhalb seiner Erinnerungstage', () => {
+  const treffpunkt = (wd: number) => ({
+    start: WEEK_START,
+    data: [{ id: 'i1', grp: '', wd, time: '14:00', place: 'Saal', leader: 'Max Mustermann', lpid: 'p-max' }],
+  })
+
+  it('drei Tage vorher, ohne Wiederholung: keine Erinnerung an die Leitung', async () => {
+    reminders = { first: 7, last: 1, repeat: false }
+    fsWeeks = [treffpunkt(4)] // Donnerstag, 10.9. — heute ist Montag, 7.9.
+    const r = await run()
+    // Positivkontrolle: Der Lauf erinnert Max heute sehr wohl — an die Zusammenkunft am Dienstag.
+    expect(previewFor(r, U_MAX)?.body).toContain('Schatzgraben')
+    expect(previewFor(r, U_MAX)?.body).not.toContain('Treffpunkt-Leiter')
+  })
+
+  it('Gegenprobe: einen Tag vorher (`last`) erinnert sie', async () => {
+    reminders = { first: 7, last: 1, repeat: false }
+    fsWeeks = [treffpunkt(2)] // Dienstag, 8.9.
+    expect(previewFor(await run(), U_MAX)?.body).toContain('Dienstag, 8. September · 14:00 · Saal: Treffpunkt-Leiter')
+  })
+})
+
+describe('send-reminders: scheitert schon die Liste der Versammlungen', () => {
+  it('antwortet die Function 500 — ohne Pfad und Rumpf von PostgREST, und sendet nichts', async () => {
+    // Anders als bei einer einzelnen Versammlung gibt es hier nichts, was der
+    // Lauf auslassen könnte: Ohne die Liste weiß er von keiner.
+    fehlendeTabellen.add('congregations')
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const handler = await loadFn({ SEND_PUSH: 'true', VAPID_PUBLIC_KEY: 'pub', VAPID_PRIVATE_KEY: 'priv' })
+      const res = await handler(request())
+      expect(res.status).toBe(500)
+      const text = await res.text()
+      expect(JSON.parse(text)).toEqual({ error: 'server-error' })
+      expect(text).not.toContain('congregations')
+      expect(text).not.toContain('PGRST')
+      expect(log).toHaveBeenCalledWith('send-reminders:', expect.stringContaining('PGRST205'))
+      expect(writes).toEqual([])
+      expect(sentPush).toEqual([])
+    } finally {
+      log.mockRestore()
+    }
+  })
+})

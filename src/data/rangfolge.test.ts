@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { buildDemoWeeks, DEMO_GROUPS, DEMO_PERSONS, DEMO_SERVICES } from '../../tests/testdaten/testdaten'
+import { buildDemoWeeks, buildImportWeek, DEMO_GROUPS, DEMO_PERSONS, DEMO_SERVICES } from '../../tests/testdaten/testdaten'
 import { emptyQualifications, idAufloeser, isGuestRole, MEETING_TABS, partnerGenderOk, privSetzen } from './helpers'
+import { tagNach } from './meeting-dates'
 import { allePlaetze, platzDerAuswahl, type Platz } from './plaetze'
 import { autoAssignMeeting, rangfolgeFuer, zuletztImBereich } from './planning'
 import type { Meeting, MeetingKey, MeetingSlotSelection, PartItem, Person, Week } from './types'
@@ -170,5 +171,54 @@ describe('zuletztImBereich', () => {
     const weeks = [woche('2026-06-01', 'lesung'), woche('2026-06-08', null)]
     weeks[0]!.dev = { mid: { cancelled: true } }
     expect(zuletztImBereich(weeks, 1, 'lesung', [], wer).size).toBe(0)
+  })
+
+  it('auch für den Ratgeber der Zusätzlichen Klasse — sein Blatt nennt, wann er zuletzt riet', () => {
+    const weeks = [woche('2026-06-01', null), woche('2026-06-08', null), woche('2026-06-15', null)]
+    weeks[0]!.mid.auxRatgeber = { name: 'x', pid: PERSON.id, rolle: 'Ratgeber', bereichsKey: 'ratgeber', male: true }
+    expect(zuletztImBereich(weeks, 2, 'ratgeber', [], wer).get(PERSON.id)).toBe(2)
+    // Gegenprobe: Als Programmpunkt zählt der Ratgeber nicht.
+    expect(zuletztImBereich(weeks, 2, 'lesung', [], wer).has(PERSON.id)).toBe(false)
+  })
+})
+
+/**
+ * **Wer am längsten wartet, kommt zuerst — aber eine ausgefallene
+ * Zusammenkunft ist kein „zuletzt dran"** (T30). Bei gleicher Last im Fenster
+ * entscheidet der Abstand zur letzten Einteilung über alle geladenen Wochen.
+ * Stand jemand auf dem Platz einer Zusammenkunft, die dann ausfiel, hat er die
+ * Aufgabe nie gehabt — er wartet weiter, statt hinter einem zurückzufallen, der
+ * sie wirklich hatte.
+ */
+describe('Der Abstand der Automatik übergeht ausgefallene Zusammenkünfte', () => {
+  const START = '2026-06-01'
+  const bruder = (id: string, fn: string): Person => {
+    const priv = emptyQualifications()
+    privSetzen(priv, 'bibellesung', true)
+    return { id, fn, ln: 'Beispiel', role: 'verkuendiger', mail: '', priv }
+  }
+  const bernd = bruder('pb', 'Bernd')
+  const paul = bruder('pp', 'Paul')
+
+  /** Zehn fortlaufende Wochen ab START, alle Plätze offen. */
+  function reihe(): Week[] {
+    return Array.from({ length: 10 }, (_, i) => ({ ...structuredClone(buildImportWeek()), start: tagNach(START, 7 * i) }))
+  }
+  const lesung = (w: Week): Platz =>
+    [...allePlaetze(w.mid, DEMO_SERVICES)].find((p) => p.art === 'programm' && p.slot.bereichsKey === 'bibellesung')!
+  const besetze = (w: Week, p: Person): void => {
+    Object.assign(lesung(w).slot!, { name: `${p.fn} ${p.ln}`, pid: p.id })
+  }
+
+  it('Paul las in einer ausgefallenen Zusammenkunft — er wartet länger als Bernd und kommt zuerst', () => {
+    const weeks = reihe()
+    besetze(weeks[1]!, bernd) // acht Wochen vor der geplanten
+    besetze(weeks[3]!, paul) // sechs Wochen vor der geplanten — beide außerhalb des Last-Fensters
+    weeks[3]!.dev = { mid: { cancelled: true } }
+    const sel = auswahl(lesung(weeks[9]!), 9, 'mid')
+    expect(rangfolgeFuer(weeks, sel, [bernd, paul], DEMO_SERVICES, [], new Set()).map((p) => p.id)).toEqual(['pp', 'pb'])
+    // Gegenprobe: Findet die Zusammenkunft statt, war Paul vor kürzerer Zeit dran — Bernd zuerst.
+    delete weeks[3]!.dev
+    expect(rangfolgeFuer(weeks, sel, [bernd, paul], DEMO_SERVICES, [], new Set()).map((p) => p.id)).toEqual(['pb', 'pp'])
   })
 })

@@ -274,3 +274,33 @@ describe('Wochenspanne über den Monatswechsel — in jeder Sprache übersetzt',
     expect(makeTr('es')('27. April–3. Mai')).toBe('27 de abril al 3 de mayo')
   })
 })
+
+/*
+  Ein unbekannter Monat am **zweiten** Ende einer Spanne — ein Tippfehler in
+  einer von Hand angelegten Woche, eine Form, die das Arbeitsheft einmal
+  anders schreibt. Die Regel schlägt beide Enden nach. Fehlt das zweite, darf
+  sie den ersten Monat nicht für beide nehmen: Aus „27. April–3. Mail" würde
+  sonst „April 27 – April 3", ein Zeitraum, den niemand geschrieben hat und der
+  rückwärts läuft. Stehen bleibt der deutsche Text, wie beim unbekannten Monat
+  sonst auch (T1).
+*/
+describe('Ein unbekannter Monat am zweiten Ende einer Spanne bleibt deutsch', () => {
+  // Wörterbuch-Pfad (en) und Intl-Pfad (it, ar) — beide nutzen dieselbe Regel.
+  it.each(['en', 'it', 'ar'] as const)('%s', (code) => {
+    const tr = makeTr(code)
+    // Positivkontrolle: Mit bekanntem Monat wird dieselbe Spanne übersetzt.
+    expect(tr('27. April–3. Mai')).not.toBe('27. April–3. Mai')
+    expect(tr('28. Sep – 4. Okt')).not.toBe('28. Sep – 4. Okt')
+    expect(tr('27. April–3. Mail')).toBe('27. April–3. Mail')
+    expect(tr('28. Sep – 4. Okx')).toBe('28. Sep – 4. Okx')
+  })
+
+  it('ebenso über den Jahreswechsel — kein „Invalid Date", kein halb übersetzter Kopf', () => {
+    for (const code of ['en', 'it', 'ar'] as const) {
+      const tr = makeTr(code)
+      // Positivkontrolle wie oben.
+      expect(tr('29. Dezember 2025 – 4. Januar 2026')).not.toBe('29. Dezember 2025 – 4. Januar 2026')
+      expect(tr('29. Dezember 2025 – 4. Jänner 2026')).toBe('29. Dezember 2025 – 4. Jänner 2026')
+    }
+  })
+})

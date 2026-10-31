@@ -773,3 +773,85 @@ describe('Kennungen: jeder Punkt hat genau eine, und keine doppelt', () => {
     }
   })
 })
+
+/*
+ * **Ränder der Wochenseite.** jw.org entscheidet, wie die Seite aussieht, nicht
+ * dieses Projekt. Was der Parser nicht kennt, darf weder eine falsche Woche
+ * erzeugen (Phantom-Punkte, erfundene Quellen) noch still eine leere liefern.
+ * Grundlage ist jeweils FIXTURE_DE mit genau einer Änderung — die Gegenprobe
+ * ist FIXTURE_DE selbst (oben).
+ */
+describe('parseWorkbookWeek — Ränder der Wochenseite', () => {
+  const punkte = (wk: ImportedWeek, label: string) =>
+    (wk.mid.sections.find((s) => s.label === label)?.items ?? []).filter((i) => 'names' in i) as ImportedPart[]
+
+  it('eine Seite ohne Programm bricht mit Meldung ab — keine leere Woche', () => {
+    // Eine Fehlerseite oder eine geänderte Struktur: Eine leere Woche sähe aus
+    // wie eine gelungene und überschriebe im Client nichts Erkennbares.
+    expect(() => parseWorkbookWeek('<html><body><p>Seite nicht gefunden</p></body></html>')).toThrow(/Kein Programm gefunden/)
+    expect(() => parseWorkbookWeek(FIXTURE_DE)).not.toThrow()
+  })
+
+  it('ohne <article> wird die ganze Seite gelesen — dieselbe Woche', () => {
+    const ohne = parseWorkbookWeek(FIXTURE_DE.replace(/<\/?article>/g, ''))
+    const mit = parseWorkbookWeek(FIXTURE_DE)
+    expect(ohne.range).toBe('6.–12. Juli')
+    expect(ohne.book).toBe('MUSTERBUCH 13-15')
+    expect(ohne.mid.sections.map((s) => [s.label, s.items.length])).toEqual(mit.mid.sections.map((s) => [s.label, s.items.length]))
+  })
+
+  it('eine leere Überschrift erzeugt keinen Phantom-Programmpunkt', () => {
+    // Ein Element mit data-pid, aber ohne Text (Bildrahmen, leerer Anker) —
+    // als Punkt gelesen, stünde ein namenloser Platz im Programm, den der
+    // Planer besetzen müsste.
+    const html = FIXTURE_DE.replace(
+      '<h3 data-pid="19" class="du-color--gold-700">4. Gespräche beginnen</h3>',
+      '<h3 data-pid="18a" class="du-color--gold-700"><a href="#"></a></h3>\n  <h3 data-pid="19" class="du-color--gold-700">4. Gespräche beginnen</h3>',
+    )
+    const gold = punkte(parseWorkbookWeek(html), 'UNS IM DIENST VERBESSERN')
+    expect(gold.map((p) => p.title)).toEqual(['Gespräche beginnen'])
+  })
+
+  it('das Bibelbuch ist die erste farblose Überschrift — eine zweite überschreibt es nicht', () => {
+    const html = FIXTURE_DE.replace(
+      '<h2 data-pid="4" class="du-color--teal-700">',
+      '<h2 data-pid="3a" class="du-fontSize--base">Weitere Überschrift</h2>\n  <h2 data-pid="4" class="du-color--teal-700">',
+    )
+    expect(parseWorkbookWeek(html).book).toBe('MUSTERBUCH 13-15')
+  })
+
+  it('ein Punkt ohne Nummer bleibt ein Punkt — ohne erfundene Nummer', () => {
+    const html = FIXTURE_DE.replace('>7. Örtliche Besprechung<', '>Örtliche Besprechung<')
+    const p = punkte(parseWorkbookWeek(html), 'UNSER LEBEN ALS CHRIST').find((x) => x.title === 'Örtliche Besprechung')
+    expect(p).toBeDefined()
+    expect(p?.num).toBeUndefined()
+    // Positivkontrolle: Mit Nummer steht sie da.
+    const mit = punkte(parseWorkbookWeek(FIXTURE_DE), 'UNSER LEBEN ALS CHRIST').find((x) => x.title === 'Örtliche Besprechung')
+    expect(mit?.num).toBe(7)
+  })
+
+  it('fehlt die Schlusszeile, steht die deutsche Rückfall-Zeile da — mit dem Platz fürs Schlussgebet', () => {
+    const html = FIXTURE_DE.replace(/\s*<h3 data-pid="47"[^\n]*<\/h3>/, '')
+    const schluss = parseWorkbookWeek(html).mid.sections.find((s) => s.kind === 'abschluss')?.items[0] as ImportedPart
+    expect(schluss).toMatchObject({ title: 'Schlussworte · Gebet', meta: '3 Min.', mins: 3 })
+    expect(schluss.names).toEqual([{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }])
+  })
+
+  describe('die Quelle eines Punkts', () => {
+    const gespraech = (zeitzeile: string) =>
+      punkte(parseWorkbookWeek(FIXTURE_DE.replace(
+        '<p data-pid="20">(3 Min.) VON HAUS ZU HAUS. Irgendein Text. ( lmd Lektion 1 Punkt 5 )</p>',
+        `<p data-pid="20">${zeitzeile}</p>`,
+      )), 'UNS IM DIENST VERBESSERN')[0]
+
+    it('ist die Klammer mit dem Publikations-Kürzel — nicht eine Bemerkung dahinter', () => {
+      const p = gespraech('(3 Min.) VON HAUS ZU HAUS. Text. (lmd Lektion 1 Punkt 5) Weiter. (siehe Bild)')
+      expect(p?.meta).toBe('VON HAUS ZU HAUS · 3 Min. · lmd Lektion 1 Punkt 5')
+    })
+
+    it('ohne Kürzel die letzte Klammer', () => {
+      const p = gespraech('(3 Min.) VON HAUS ZU HAUS. Text. (Begleitheft) Weiter. (Arbeitsblatt)')
+      expect(p?.meta).toBe('VON HAUS ZU HAUS · 3 Min. · Arbeitsblatt')
+    })
+  })
+})

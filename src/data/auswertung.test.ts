@@ -1247,3 +1247,120 @@ describe('auswerten: das Jahr', () => {
     expect(a.hinweise.filter((h) => h.art === 'wartet').map((h) => h.art === 'wartet' && h.bereich)).toEqual(['leser'])
   })
 })
+
+/*
+ * **Ein Platz ohne Bereich** — Altbestand aus der Zeit vor `bereichsKey`. Die
+ * Auswertung blickt ein Jahr zurück, solche Wochen liegen also im Zeitraum.
+ * Der Platz ist eine Zuteilung (die Person war dran), aber in keinem Bereich:
+ * Er darf weder als eigene Spalte noch als „Ohne Bereich eingeteilt" noch als
+ * Folge im selben Bereich auftauchen, und gegen die Erwartung zählt er nicht.
+ */
+describe('Ein Platz ohne Bereich (Altbestand)', () => {
+  /** Setzt `p` auf den ersten Platz dieses Bereichs und nimmt dem Platz den Bereich. */
+  function ohneBereichSetzen(meeting: Meeting, bereich: string, p: Person): void {
+    setze(meeting, bereich, p)
+    const slot = meeting.sections
+      .flatMap((s) => s.items)
+      .flatMap((i) => (isSong(i) ? [] : i.names))
+      .find((n) => n.pid === p.id && n.bereichsKey === bereich)!
+    delete slot.bereichsKey
+  }
+
+  const a = person('a', ['gebet'])
+  const b = person('b', ['gebet'])
+  // Drei Wochen hintereinander — genug für eine „Folge" und für „Ohne Bereich eingeteilt".
+  const weeks = wochen(3)
+  for (const w of weeks) ohneBereichSetzen(w.mid, 'besprechung', a)
+  const grund = g(weeks, [a, b])
+
+  it('zählt als Zuteilung — a war dran, also nicht „nie"', () => {
+    expect(grund.einteilungen.filter((e) => e.pid === 'a').map((e) => e.bereich)).toEqual([null, null, null])
+    expect(kennzahlen(grund, [a, b])).toMatchObject({ zuteilungen: 3, eingeteilt: 1 })
+  })
+
+  it('ist keine Spalte und kein „Ohne Bereich eingeteilt"', () => {
+    expect([...grund.plaetze.keys()]).not.toContain(null)
+    expect(matrix(grund, [a, b], einseitig(grund, [a, b]), ['gebet']).bereiche).not.toContain(null)
+    expect(ohneBereich(grund, [a, b])).toEqual([])
+  })
+
+  it('bildet keine Folge — drei Wochen ohne Bereich sind nicht „dreimal derselbe Bereich"', () => {
+    expect(ballungen(grund).folge).toEqual([])
+  })
+
+  it('zählt nicht gegen die Erwartung — und eine Woche mit Bereich daneben schon', () => {
+    const zeile = (grundlage_: Grundlage) => zeilenVon(verteilung(grundlage_, [a, b], 'aufgaben')).find((z) => z.pid === 'a')
+    expect(zeile(grund)?.n ?? 0).toBe(0)
+    // Positivkontrolle: Derselbe Platz mit Bereich zählt.
+    const mit = wochen(3)
+    for (const w of mit) setze(w.mid, 'gebet', a, 1)
+    expect(zeile(g(mit, [a, b]))?.n).toBe(3)
+  })
+})
+
+describe('Reihenfolge bei Gleichstand — dieselbe bei jedem Aufbau', () => {
+  /** Eine Grundlage von Hand: nur die Felder, um die es geht. */
+  const von = (teile: Partial<Grundlage>): Grundlage => ({ ...g([], []), ...teile })
+
+  it('die Tabelle: Bereiche, die die Ordnung nicht kennt, stehen hinten — untereinander nach dem Alphabet', () => {
+    // Ein neuer Hilfsdienst kennt die Ordnung der Spalten noch nicht. In der
+    // Reihenfolge, in der die Einteilungen kamen, wanderten die Spalten von
+    // Aufbau zu Aufbau.
+    const grund = von({ plaetze: new Map([['svc:zett', 1], ['gebet', 2], ['svc:alpha', 1]]) })
+    expect(matrix(grund, [], [], ['gebet']).bereiche).toEqual(['gebet', 'svc:alpha', 'svc:zett'])
+  })
+
+  it('die Absagen: bei gleich vielen der höhere Anteil zuerst, bei gleichem Anteil nach dem Alphabet', () => {
+    const absage = (bereich: string) => ({ pid: 'x', bereich, wi: 0, tab: 'mid' as const })
+    const grund = von({
+      absagen: [absage('gebet'), absage('leser'), absage('bibellesung')],
+      plaetze: new Map([['gebet', 10], ['leser', 2], ['bibellesung', 2]]),
+    })
+    expect(absagenJeBereich(grund, 0).map((z) => [z.bereich, z.anteil])).toEqual([
+      ['bibellesung', 0.5],
+      ['leser', 0.5],
+      ['gebet', 0.1],
+    ])
+  })
+
+  it('„Bereich im Jahr ungenutzt": bei gleicher Erwartung nach dem Alphabet', () => {
+    const p = person('p', ['leser', 'gebet'])
+    const grund = von({
+      plaetze: new Map([['leser', 9], ['gebet', 9]]),
+      erwartet: new Map([['leser', new Map([['p', 3]])], ['gebet', new Map([['p', 3]])]]),
+    })
+    expect(nieGenutzt(grund, [p])).toEqual([{ pid: 'p', bereiche: ['gebet', 'leser'] }])
+  })
+})
+
+/*
+ * **Zu oft, ohne dass etwas erwartet war.** Wer den ganzen Zeitraum als
+ * abwesend geführt ist (die Abwesenheit kam im Nachhinein), aber dreimal
+ * eingeteilt wurde, liegt bei der Erwartung null — und dreimal darüber. Sein
+ * Verhältnis ist dann die Zahl selbst, nicht unendlich: Sonst stünde er vor
+ * jedem, der wirklich ein Vielfaches seiner Erwartung trägt.
+ */
+describe('Zu oft ohne Erwartung', () => {
+  const a = person('a', ['gebet'])
+  const b = person('b', ['gebet'])
+  const einteilung = (pid: string, wi: number) => ({ pid, wi, start: start(13 - wi), tab: 'mid' as const, bereich: 'gebet', hilfsdienst: false })
+  const grund: Grundlage = {
+    ...g([], []),
+    einteilungen: [...[0, 1, 2].map((wi) => einteilung('a', wi)), ...Array.from({ length: 12 }, (_, wi) => einteilung('b', wi))],
+    plaetze: new Map([['gebet', 15]]),
+    erwartet: new Map([['gebet', new Map([['b', 2]])]]),
+  }
+
+  it('in der Liste „zu oft": b (sechsmal die Erwartung) vor a (dreimal, ohne Erwartung)', () => {
+    const v = verteilung(grund, [a, b], 'aufgaben')
+    expect(v.oft.map((z) => [z.pid, z.n, z.erwartet])).toEqual([
+      ['b', 12, 2],
+      ['a', 3, 0],
+    ])
+  })
+
+  it('unter „Was auffällt" dieselbe Reihenfolge', () => {
+    const h = hinweise([verteilung(grund, [a, b], 'aufgaben')], [], [])
+    expect(h.map((x) => `${x.art}:${'pid' in x ? x.pid : ''}`)).toEqual(['oft:b', 'oft:a'])
+  })
+})

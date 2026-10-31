@@ -20,7 +20,7 @@
  * Aufbau wie substitute.test.ts: die echte index.ts wird geladen (`Deno` als
  * Global, `fetch` simuliert Auth und REST, web-push per Stub).
  */
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { reset as resetPush, sent as sentPush } from './web-push.stub'
 import { TITEL_ENTZUG, TITEL_ZUTEILUNG } from '../send-plan/texte.ts'
 import { pushTexte, TITEL_ERINNERUNG } from '../send-reminders/texte.ts'
@@ -49,6 +49,8 @@ const U_AUFSEHER = 'user-aufseher' // leitet Gruppe g1, kein Planer
 const U_ZUTEILER = 'user-zuteiler' // Planer (4.10.2026): teilt zu und sendet, ist nicht Admin
 const U_TIM_A = 'user-tim-a' // zwei Konten, ein Anzeigename
 const U_TIM_B = 'user-tim-b'
+/** Mitglied, dessen Konto (noch) mit keiner Person verknüpft ist — kein Planer. */
+const U_OHNE_PERSON = 'user-ohne-person'
 
 const MEMBERS = [
   { user_id: U_PLANER, person_id: 'p-planer', planner: true, congregation_id: CONG },
@@ -62,6 +64,7 @@ const MEMBERS = [
   // ZULETZT: Über den Namen gewinnt der letzte Eintrag. Am Namen allein landete
   // die Nachricht für Tim A also immer hier bei Tim B.
   { user_id: U_TIM_B, person_id: 'p-tim-b', planner: false, congregation_id: CONG },
+  { user_id: U_OHNE_PERSON, person_id: null, planner: false, congregation_id: CONG },
 ]
 
 const PERSONS = [
@@ -159,6 +162,10 @@ let fsWoche: unknown[]
 let gelesen: string[]
 /** Die Sperre der Erinnerungen (`reminder_log`): wer an welchem Tag schon erinnert wurde. */
 let erinnert: { user_id: string; kind: string; sent_on: string }[]
+/** Die Regeln des Grundplans (`fs_rules`) — dort steht die Gruppe eines gestrichenen Treffpunkts. */
+let fsRegeln: { id: string; grp: string | null }[]
+/** Tabellen, deren Lesen scheitert (PostgREST antwortet 500) — Schema fehlt, kurzer Ausfall. */
+let kaputt: ReadonlySet<string>
 
 const { writesTo, zeilenIn } = schreibZugriff(() => writes)
 
@@ -186,11 +193,19 @@ const fakeFetch = async (
     return new Response(null, { status: 204 })
   }
 
+  const tabelle = path.split('?')[0] ?? ''
+  if (kaputt.has(tabelle)) {
+    // Wie PostgREST bei einer fehlenden Tabelle — der Rumpf nennt sie, und
+    // genau der darf nie in der Antwort der Function landen.
+    return new Response(`{"message":"relation \\"public.${tabelle}\\" does not exist"}`, { status: 500 })
+  }
+
   // Die Versammlung wird an jeder Tabelle geprüft: Fällt der Filter weg oder
   // steht ein fremder Wert darin, gibt es hier nichts.
   const cong = filterWert(path, 'congregation_id')
   const fremd = cong !== null && cong !== CONG
 
+  if (path.startsWith('fs_rules')) return jsonRes(fremd ? [] : fsRegeln)
   if (path.startsWith('members')) {
     const wer = filterWert(path, 'user_id')
     if (wer !== null) return jsonRes(MEMBERS.filter((m) => m.user_id === wer))
@@ -280,6 +295,8 @@ beforeEach(() => {
   fsWoche = []
   gelesen = []
   erinnert = []
+  fsRegeln = []
+  kaputt = new Set()
   resetPush()
 })
 
@@ -975,5 +992,248 @@ describe('Jetzt erinnern', () => {
       expect((await erinnern()).status).toBe(403)
       expect(writes).toEqual([])
     }
+  })
+})
+
+/* ---- Ränder der Anfrage ----------------------------------------------------- */
+
+/**
+ * **Was ankommt, bevor überhaupt gelesen wird.** Der Browser fragt vor jedem
+ * Aufruf mit `OPTIONS` vor, ein alter Tab kann einen kaputten Rumpf schicken,
+ * ein frisch angemeldetes Konto hat noch keine Mitgliedschaft. Keiner dieser
+ * Fälle darf als Serverfehler enden — und keiner darf etwas lesen oder
+ * schreiben.
+ */
+describe('Ränder der Anfrage', () => {
+  it('der Vorabruf des Browsers (OPTIONS) bekommt die CORS-Freigabe — ohne Anmeldung', async () => {
+    // Ohne diese Antwort blockiert der Browser den eigentlichen Aufruf, bevor
+    // er die Function erreicht; „Plan senden" bliebe stumm.
+    authUser = null
+    const res = await handler(new Request('https://test.functions/send-plan', { method: 'OPTIONS' }))
+    expect(res.status).toBe(200)
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*')
+    expect(res.headers.get('Access-Control-Allow-Methods')).toContain('POST')
+    expect(writes).toEqual([])
+  })
+
+  it('ein Rumpf, der kein JSON ist, ist eine schlechte Anfrage (400) — kein Serverfehler', async () => {
+    const res = await handler(
+      new Request('https://test.functions/send-plan', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer token' },
+        body: '{"action": "plan", ',
+      }),
+    )
+    expect(res.status).toBe(400)
+    await expect(res.json()).resolves.toEqual({ error: 'bad-request' })
+    expect(writes).toEqual([])
+  })
+
+  it('ein Konto ohne Mitgliedschaft erfährt „keine Versammlung" — gelesen wird nichts', async () => {
+    authUser = 'user-ohne-mitgliedschaft'
+    const res = await plan()
+    expect(res.status).toBe(403)
+    await expect(res.json()).resolves.toEqual({ error: 'no-congregation' })
+    expect(gelesen).toEqual([])
+    expect(writes).toEqual([])
+  })
+
+  it('„Plan senden" ohne Woche ist eine schlechte Anfrage — gelesen wird nichts', async () => {
+    const res = await ruf({ action: 'plan' })
+    expect(res.status).toBe(400)
+    expect(gelesen).toEqual([])
+    expect(writes).toEqual([])
+  })
+
+  it('ein Entzug der alten Form ohne Bezeichnung und Termin geht hinaus — ohne „undefined" im Text', async () => {
+    // Ein Tab von vor der Liste schickt nur Schlüssel und Namen. Die Person soll
+    // trotzdem erfahren, dass ihr Platz weg ist — aber nicht „undefined: undefined".
+    const res = await ruf({ action: 'entzug', taskKey: KEY_ANNA, name: 'Anna Berg', pid: 'p-anna' })
+    expect(res.status).toBe(200)
+    const zeilen = zeilenIn('notifications')
+    expect(zeilen).toEqual([expect.objectContaining({ user_id: U_ANNA, title: TITEL_ENTZUG })])
+    expect(String(zeilen[0]?.body)).not.toContain('undefined')
+    expect(sentPush).toHaveLength(1)
+    expect((JSON.parse(sentPush[0]!.payload) as { body: string }).body).not.toContain('undefined')
+  })
+})
+
+/* ---- Wer Gruppenaufseher ist --------------------------------------------- */
+
+/**
+ * **Ein Konto ohne Person ist kein Gruppenaufseher.**
+ *
+ * Aufseher ist, wessen Person bei einer Gruppe als Aufseher oder Gehilfe steht.
+ * Eine Gruppe ohne Gehilfen trägt dort `null` — und ein Konto, das (noch) mit
+ * keiner Person verknüpft ist, hätte ebenfalls `null`. Verglichen ohne eigene
+ * Prüfung, wäre es Aufseher **jeder** Gruppe ohne Gehilfen und dürfte ihre
+ * Treffpunkte senden und Leitungen entziehen.
+ */
+describe('Ein Konto ohne Person ist kein Gruppenaufseher', () => {
+  beforeEach(() => {
+    // g1 hat keinen Gehilfen; Bernd leitet ihren Treffpunkt und hat ein Konto.
+    fsWoche = [{ id: 'r1', grp: 'g1', wd: 6, time: '09:30', place: 'Saal', leader: 'Bernd Cohn', lpid: 'p-bernd' }]
+  })
+
+  it('der Plan der Treffpunkte geht nicht hinaus — 403, nichts geschrieben, kein Push', async () => {
+    authUser = U_OHNE_PERSON
+    expect((await plan()).status).toBe(403)
+    expect(writes).toEqual([])
+    expect(sentPush).toEqual([])
+  })
+
+  it('und eine Treffpunkt-Leitung entzieht es auch nicht', async () => {
+    authUser = U_OHNE_PERSON
+    const res = await ruf({
+      action: 'entzug',
+      entzuege: [{ taskKey: `fs|${WOCHE}|r1`, name: 'Bernd Cohn', pid: 'p-bernd', label: 'Treffpunkt-Leiter', datum: 'Sa' }],
+    })
+    expect(res.status).toBe(403)
+    expect(writes).toEqual([])
+  })
+
+  it('Gegenprobe: der Aufseher von g1 sendet denselben Treffpunkt', async () => {
+    authUser = U_AUFSEHER
+    expect((await plan()).status).toBe(200)
+    expect(zeilenIn('notifications').map((z) => z.user_id)).toEqual([U_BERND])
+  })
+})
+
+/**
+ * **Ein gestrichener Treffpunkt gehört weiter seiner Gruppe.** Ist er in der
+ * Woche gestrichen, steht er nicht mehr in `fs_weeks` — wer ihn leitete, muss
+ * den Entzug trotzdem erfahren. Die Gruppe steht dann an seiner Regel im
+ * Grundplan. Steht er in der Woche, gilt die Gruppe dort: Der Planer kann einen
+ * Treffpunkt für eine Woche einer anderen Gruppe geben.
+ */
+describe('Ein gestrichener Treffpunkt gehört weiter seiner Gruppe', () => {
+  const entzugVon = (instId: string) =>
+    ruf({
+      action: 'entzug',
+      entzuege: [{
+        taskKey: `fs|${WOCHE}|${instId}`, name: 'Anna Berg', pid: 'p-anna',
+        label: 'Treffpunkt-Leiter', datum: 'Samstag, 12. September · 09:30',
+      }],
+    })
+
+  beforeEach(() => {
+    authUser = U_AUFSEHER // leitet g1
+    fsWoche = [] // beide Treffpunkte in dieser Woche gestrichen
+    fsRegeln = [{ id: 'r1', grp: 'g1' }, { id: 'r2', grp: 'g2' }]
+  })
+
+  it('der Aufseher meldet den Entzug — die Gruppe kommt aus der Regel', async () => {
+    expect((await entzugVon('r1')).status).toBe(200)
+    expect(zeilenIn('notifications')).toEqual([expect.objectContaining({ user_id: U_ANNA, title: TITEL_ENTZUG })])
+  })
+
+  it('nicht für die Regel einer fremden Gruppe und nicht für einen Treffpunkt ohne Regel', async () => {
+    expect((await entzugVon('r2')).status).toBe(403)
+    expect((await entzugVon('r-unbekannt')).status).toBe(403)
+    expect(writes).toEqual([])
+  })
+
+  it('steht der Treffpunkt in der Woche, zählt die Gruppe dort — nicht die der Regel', async () => {
+    fsWoche = [{ id: 'r2', grp: 'g1', wd: 6, time: '10:00', place: 'Park', leader: 'Anna Berg', lpid: 'p-anna' }]
+    expect((await entzugVon('r2')).status).toBe(200)
+    fsWoche = [{ id: 'r1', grp: 'g2', wd: 6, time: '09:30', place: 'Saal', leader: 'Anna Berg', lpid: 'p-anna' }]
+    writes = []
+    expect((await entzugVon('r1')).status).toBe(403)
+    expect(writes).toEqual([])
+  })
+})
+
+/* ---- Tagebuch und Ausfälle ------------------------------------------------ */
+
+describe('Das Tagebuch kennt die Person auch ohne Id im Platz', () => {
+  it('über den Namen, wo der Platz keine Id trägt — ein unbekannter Name bleibt ohne Person', async () => {
+    // Hilfsdienste und Altbestand tragen nur den Namen. Das Tagebuch soll die
+    // Person trotzdem führen (die Zusagen der Woche zeigen sie über die Id);
+    // ein Gast ohne Personeneintrag bekommt `null`, nicht irgendwen.
+    const w = frischeWoche() as { mid: { sections: { items: unknown[] }[] } }
+    w.mid.sections[0]!.items = [punkt('i1', 'Bibellesung', 'Anna Berg'), punkt('i3', 'Gebet', 'Gast Platzhalter')]
+    woche = w
+    await plan()
+    const eintraege = zeilenIn('assignment_log')
+    expect(eintraege.find((e) => e.task_key === KEY_ANNA)).toMatchObject({ person_id: 'p-anna', user_id: U_ANNA })
+    expect(eintraege.find((e) => e.name === 'Gast Platzhalter')).toMatchObject({ person_id: null, user_id: null })
+  })
+})
+
+describe('Fehlt eine Nebentabelle, geht der Plan trotzdem hinaus', () => {
+  let protokoll: MockInstance<typeof console.error>
+  beforeEach(() => {
+    protokoll = vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    protokoll.mockRestore()
+  })
+
+  it('ohne lesbare Treffpunkte (fs_weeks) werden die Zusammenkünfte gemeldet', async () => {
+    kaputt = new Set(['fs_weeks'])
+    expect((await plan()).status).toBe(200)
+    expect(zeilenIn('notifications').map((z) => z.user_id).sort()).toEqual([U_ANNA, U_BERND].sort())
+    expect(protokoll).toHaveBeenCalledWith(expect.stringContaining('fs_weeks nicht lesbar'))
+  })
+
+  it('ohne lesbares Tagebuch wird gesendet — lieber eine Wiederholung als ein Ausfall', async () => {
+    log = [{ task_key: KEY_ANNA, name: 'Anna Berg' }] // Anna weiß schon
+    // Positivkontrolle: Mit lesbarem Tagebuch bleibt sie draußen.
+    await plan()
+    expect(zeilenIn('notifications').map((z) => z.user_id)).toEqual([U_BERND])
+
+    writes = []
+    kaputt = new Set(['assignment_log'])
+    expect((await plan()).status).toBe(200)
+    expect(zeilenIn('notifications').map((z) => z.user_id).sort()).toEqual([U_ANNA, U_BERND].sort())
+    expect(protokoll).toHaveBeenCalledWith(expect.stringContaining('assignment_log nicht lesbar'))
+  })
+
+  it('scheitert eine tragende Abfrage, antwortet die Function 500 — ohne Pfad und Rumpf von PostgREST', async () => {
+    // Der Fehlertext nennt Tabelle und Bedingung — beim Suchen nützlich, beim
+    // Angreifen genauso. Er gehört in die Logs, nicht in die Antwort.
+    kaputt = new Set(['persons'])
+    const res = await plan()
+    expect(res.status).toBe(500)
+    const text = await res.text()
+    expect(JSON.parse(text)).toEqual({ error: 'server-error' })
+    expect(text).not.toContain('persons')
+    expect(protokoll).toHaveBeenCalledWith('send-plan:', expect.stringContaining('does not exist'))
+    expect(writes).toEqual([])
+  })
+})
+
+/**
+ * **Ohne VAPID-Schlüssel bleibt es bei der Glocke.** Fehlen die Schlüssel (neues
+ * Projekt, Secret verloren), lässt sich kein Push signieren — der Plan soll
+ * trotzdem in die Glocke und ins Tagebuch, statt mit einem Fehler zu enden.
+ * Die Schlüssel liest die Function beim Laden; deshalb wird sie hier ohne sie
+ * neu geladen und danach wieder mit.
+ */
+describe('Ohne VAPID-Schlüssel bleibt es bei der Glocke', () => {
+  const g = globalThis as Record<string, unknown>
+  let mitSchluesseln: unknown
+
+  beforeAll(async () => {
+    mitSchluesseln = g.Deno
+    const vorher = mitSchluesseln as { env: { get: (k: string) => string | undefined } }
+    g.Deno = { ...vorher, env: { get: (k: string) => (k.startsWith('VAPID_') ? undefined : vorher.env.get(k)) } }
+    vi.resetModules()
+    await import('../send-plan/index.ts')
+  })
+
+  afterAll(async () => {
+    g.Deno = mitSchluesseln
+    vi.resetModules()
+    await import('../send-plan/index.ts')
+  })
+
+  it('Glocke und Tagebuch wie sonst, kein Push und kein Fehler', async () => {
+    const res = await plan()
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ personen: 2, aufgaben: 3, push: 0 })
+    expect(zeilenIn('notifications').map((z) => z.user_id).sort()).toEqual([U_ANNA, U_BERND].sort())
+    expect(zeilenIn('assignment_log')).toHaveLength(3)
+    expect(sentPush).toEqual([])
   })
 })

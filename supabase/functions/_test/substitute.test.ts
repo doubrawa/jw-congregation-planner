@@ -141,6 +141,8 @@ let konkurrent: (() => void) | null
 let versandLog: string[]
 /** Die Abwesenheiten der Versammlung (Tabelle absences), je Fall frisch aus `ABSENCES`. */
 let absences: { person_id: string | null; from_date: string; to_date: string }[]
+/** Tabellen, deren Lesen scheitert (PostgREST antwortet 500). */
+let kaputt: ReadonlySet<string>
 
 /** Alle schreibenden REST-Aufrufe (PATCH/POST/DELETE) dieses Testlaufs. */
 const { writesTo } = schreibZugriff(() => writes)
@@ -174,6 +176,11 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
       return jsonRes([{ updated_at: stand }])
     }
     return new Response(null, { status: 204 })
+  }
+
+  const tabelle = path.split('?')[0] ?? ''
+  if (kaputt.has(tabelle)) {
+    return new Response(`{"message":"relation \\"public.${tabelle}\\" does not exist"}`, { status: 500 })
   }
 
   // Die Versammlung wird an JEDER Tabelle geprüft: Fällt der Filter weg oder
@@ -265,6 +272,7 @@ beforeEach(() => {
   konkurrent = null
   versandLog = []
   absences = [...ABSENCES]
+  kaputt = new Set()
   resetPush()
 })
 
@@ -1006,5 +1014,115 @@ describe('substitute: der Klick auf „Ersatz gesucht" landet beim Einspringen',
     const [ziel] = ziele()
     expect(parseGoTarget(ziel!)).toBe('aufgaben')
     expect(parseGoAbschnitt(ziel!)).toBeNull()
+  })
+})
+
+/* ---- Ränder ---------------------------------------------------------------- */
+
+describe('substitute: Ränder der Anfrage', () => {
+  it('der Vorabruf des Browsers (OPTIONS) bekommt die CORS-Freigabe — ohne Anmeldung', async () => {
+    // Ohne diese Antwort blockiert der Browser „Ich springe ein", bevor der
+    // Aufruf die Function erreicht.
+    const res = await handler(new Request('https://fn.test/substitute', { method: 'OPTIONS' }))
+    expect(res.status).toBe(200)
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*')
+    expect(writes).toEqual([])
+  })
+
+  it('„fill" ohne Schlüssel ist eine schlechte Anfrage — nichts geschrieben', async () => {
+    const res = await call({ action: 'fill' })
+    expect(res.status).toBe(400)
+    await expect(res.json()).resolves.toEqual({ error: 'bad-request' })
+    expect(writes).toEqual([])
+  })
+
+  it('scheitert eine Abfrage, antwortet die Function 500 — ohne Pfad und Rumpf von PostgREST', async () => {
+    kaputt = new Set(['persons'])
+    const protokoll = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const res = await call({ action: 'seek', taskKey: KEY }, { auth: U_ORIG })
+      expect(res.status).toBe(500)
+      const text = await res.text()
+      expect(JSON.parse(text)).toEqual({ error: 'server-error' })
+      expect(text).not.toContain('persons')
+      expect(protokoll).toHaveBeenCalledWith('substitute:', expect.stringContaining('does not exist'))
+      expect(writes).toEqual([])
+    } finally {
+      protokoll.mockRestore()
+    }
+  })
+})
+
+/**
+ * **Kann niemand einspringen, geht auch nichts hinaus.** Alle, die den Dienst
+ * können, fehlen an dem Tag. Dann gibt es niemanden zu fragen — und keine
+ * leere Mitteilungs-Anfrage an die Datenbank. Die Gegenprobe ohne diese
+ * Abwesenheiten steht oben („weder den Absagenden noch …": zwei Gefragte).
+ */
+describe('substitute: Gesuch ohne möglichen Vertreter', () => {
+  it('niemand gefragt, keine Mitteilung, kein Push — die Antwort sagt 0', async () => {
+    absences.push(
+      { person_id: 'p-me', from_date: '2026-09-08', to_date: '2026-09-08' },
+      { person_id: 'p-orig-zwill', from_date: '2026-09-01', to_date: '2026-09-30' },
+    )
+    const res = await call({ action: 'seek', taskKey: KEY }, { auth: U_ORIG })
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({ ok: true, notified: 0 })
+    expect(writesTo('notifications')).toEqual([])
+    expect(sentPush).toEqual([])
+  })
+})
+
+/**
+ * **Wer verdrängt wurde, wenn der Platz keine brauchbare Id trägt.**
+ *
+ * Trägt der Platz keine Id (Altbestand), ist der Name der Weg zur Person. Trägt
+ * er eine, die ins Leere führt (Person gelöscht), ist niemand zu erreichen —
+ * dann gerade **nicht** über den Namen: Der fände einen Namensvetter
+ * (`p-orig-zwill` steht vor `p-orig`) und schickte ihm „Ersatz gefunden" für
+ * einen Platz, den er nie hatte.
+ */
+describe('substitute: „Ersatz gefunden" ohne brauchbare Id im Platz', () => {
+  const rows = () => (writesTo('notifications').find((w) => w.method === 'POST')?.body ?? []) as { user_id: string }[]
+
+  it('Altbestand ohne Id: der Verdrängte wird über den Namen gefunden', async () => {
+    week = {
+      start: '2026-09-07',
+      mid: { date: '7.–13. September', helpers: { [SVC]: [{ name: 'Anna Bwesend' }] } },
+      we: { date: '7.–13. September', helpers: {} },
+    }
+    absagen = [{ user_id: U_ABSENT, task_key: KEY }]
+    const res = await call(take())
+    expect(res.status).toBe(200)
+    expect(new Set(rows().map((r) => r.user_id))).toEqual(new Set([U_ABSENT, U_PLANNER, U_ZUTEILER]))
+  })
+
+  it('Id einer gelöschten Person: nur die Planer erfahren es — nicht der Namensvetter', async () => {
+    week = {
+      start: '2026-09-07',
+      mid: { date: '7.–13. September', helpers: { [SVC]: [{ name: 'Otto Riginal', pid: 'p-geloescht' }] } },
+      we: { date: '7.–13. September', helpers: {} },
+    }
+    const res = await call(take())
+    expect(res.status).toBe(200)
+    expect(savedSlotName()).toBe('Ich Selbst')
+    expect(new Set(rows().map((r) => r.user_id))).toEqual(new Set([U_PLANNER, U_ZUTEILER]))
+  })
+})
+
+describe('substitute: ein inzwischen gelöschter Dienst', () => {
+  it('die Meldung nennt seinen Schlüssel statt nichts — Termin und Name bleiben', async () => {
+    // Zwischen Zuteilen und Absagen kann der Admin den Dienst entfernt haben;
+    // die Woche trägt den Platz noch. Ohne Rückfall fehlte das erste Atom, und
+    // die Gefragten läsen nur einen Termin und einen Namen.
+    const dienst = SERVICES.splice(0, 1)
+    try {
+      const res = await call({ action: 'seek', taskKey: KEY }, { auth: U_ORIG })
+      expect(res.status).toBe(200)
+      const zeilen = writesTo('notifications')[0]?.body as { body: string }[]
+      expect(zeilen[0]?.body.startsWith(`${SVC} · ${TERMIN} · `)).toBe(true)
+    } finally {
+      SERVICES.unshift(...dienst)
+    }
   })
 })
