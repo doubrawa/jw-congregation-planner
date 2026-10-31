@@ -1,8 +1,9 @@
-/** @vitest-environment jsdom */
+/** @vitest-environment happy-dom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearSnapshot, readSnapshot, saveSnapshot } from './snapshot'
 import type { HydratePayload } from '../app/context'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
+import { speicherSpion } from '../../tests/speicher-spion'
 
 const payload = (over: Partial<HydratePayload> = {}): HydratePayload => ({
   congregationId: 'c1',
@@ -84,10 +85,11 @@ describe('saveSnapshot / readSnapshot', () => {
   })
 
   it('übersteht ein volles Kontingent und lässt keinen Rest zurück', () => {
-    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    const setItem = speicherSpion('setItem').mockImplementation(() => {
       throw new Error('QuotaExceededError')
     })
     expect(() => saveSnapshot(payload())).not.toThrow()
+    expect(setItem, 'der volle Speicher kam gar nicht zum Zug').toHaveBeenCalled()
     setItem.mockRestore()
     expect(readSnapshot('u1')).toBeNull()
   })

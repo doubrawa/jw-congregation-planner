@@ -1,4 +1,4 @@
-/** @vitest-environment jsdom */
+/** @vitest-environment happy-dom */
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { aufgabenAbgeleitet, reducer } from './reducer'
 import type { AppState } from './context'

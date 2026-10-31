@@ -1,4 +1,4 @@
-/** @vitest-environment jsdom */
+/** @vitest-environment happy-dom */
 import { describe, expect, it } from 'vitest'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { erlaubteScreens, rechteVon } from '../data/rechte'

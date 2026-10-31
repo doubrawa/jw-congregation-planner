@@ -1,4 +1,8 @@
 /** @vitest-environment jsdom */
+// jsdom, nicht happy-dom wie die übrigen Bildschirm-Proben: happy-dom gibt den
+// Klick einer `<label>` schon beim Durchlaufen an ihr Feld weiter, bevor Reacts
+// `preventDefault` an der Wurzel ankommt — der Browser erst danach. Genau diese
+// Weitergabe misst „Der Datumswähler in einer Marke".
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { dict } from '../i18n/ui'

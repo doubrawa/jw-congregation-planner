@@ -127,6 +127,9 @@ export default defineConfig(({ command }) => ({
     // 700 s gegen 311 s, über alle Worker gezählt). Die CI behält ihre
     // Vorgabe — dort gibt es zwei bis vier Kerne.
     maxWorkers: process.env.CI ? undefined : '50%',
+    // Die Bildschirm-Proben laufen unter happy-dom (Docblock je Datei); was die
+    // App dort anders vorfände als unter jsdom, gleicht diese Datei an.
+    setupFiles: ['./tests/dom-umgebung.ts'],
     // Die CI hat beim Testen keine Supabase-Variablen. Lokal läse Vite
     // `.env.local` mit — ein Test, der davon abhing, war dann lokal grün und
     // in der CI rot (15.9.2026, der Deploy blieb stehen). Leer gilt hier

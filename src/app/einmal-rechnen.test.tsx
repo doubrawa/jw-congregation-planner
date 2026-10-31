@@ -1,4 +1,4 @@
-/** @vitest-environment jsdom */
+/** @vitest-environment happy-dom */
 /**
  * **Der Folgezustand wird einmal gerechnet, nicht zweimal.**
  *

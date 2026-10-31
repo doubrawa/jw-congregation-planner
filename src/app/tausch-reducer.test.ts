@@ -1,4 +1,4 @@
-/** @vitest-environment jsdom */
+/** @vitest-environment happy-dom */
 /**
  * **Tauschen im Zustand** (T153): Was die Function `tauschen` geschrieben hat,
  * legt der Bildschirm nach ihrer Antwort hierher — die Anfrage, ihr Ende, den

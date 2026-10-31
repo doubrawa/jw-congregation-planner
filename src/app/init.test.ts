@@ -1,4 +1,4 @@
-/** @vitest-environment jsdom */
+/** @vitest-environment happy-dom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { initialState } from './init'
 import { STANDARD_ZEITEN } from '../data/vorgaben'

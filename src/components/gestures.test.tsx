@@ -1,4 +1,4 @@
-/** @vitest-environment jsdom */
+/** @vitest-environment happy-dom */
 /*
  * Tests der drei Handy-Gesten. Schwerpunkt liegt auf dem, was NICHT passieren
  * darf: eine Geste, die versehentlich auslöst, ist schlimmer als gar keine —

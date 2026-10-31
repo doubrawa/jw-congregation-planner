@@ -1,4 +1,4 @@
-/** @vitest-environment jsdom */
+/** @vitest-environment happy-dom */
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
@@ -6,6 +6,7 @@ import { AppDispatchContext, AppStateContext, AppStoreContext, type AppState, us
 import { DashboardScreen } from '../dashboard/DashboardScreen'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { deutschFinder, sichtbareTexte } from '../../tests/deutsch-erkennen'
+import { speicherSpion } from '../../tests/speicher-spion'
 import type { Lang } from '../data/types'
 import { APP_LANGS } from '../i18n/langs'
 import { dict, loadOverlay } from '../i18n/ui'
@@ -154,12 +155,14 @@ describe('Die Karte auf Start', () => {
   })
 
   it('ohne Speicher (privates Fenster) geht sie trotzdem — bis die App neu lädt', () => {
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    const schreiben = speicherSpion('setItem').mockImplementation(() => {
       throw new Error('voll')
     })
     zeige(<ErsteSchritteKarte />)
     fireEvent.click(screen.getByRole('button', { name: de.pushKarteWeg }))
     expect(karte()).toBeNull()
+    expect(schreiben, 'der Speicher war gar nicht gefragt').toHaveBeenCalledWith(WEG_KEY, '1')
+    expect(localStorage.getItem(WEG_KEY)).toBeNull()
   })
 })
 
