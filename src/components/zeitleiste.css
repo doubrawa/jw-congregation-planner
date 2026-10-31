@@ -20,6 +20,9 @@
 
 .zeit-row {
   position: relative;
+  /* Eigener Stapel je Zeile: Der Punkt liegt vor der Linie (`.zeit-dot`), ohne
+     sich über Kopfleiste oder Blätter zu schieben. */
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   padding-block: 8px;
@@ -63,8 +66,11 @@
   background: none;
 }
 
+/* Vor der Linie: `::after` kommt nach dem Punkt und lag sonst über seiner
+   unteren Hälfte (31.10.2026). */
 .zeit-dot {
   position: absolute;
+  z-index: 1;
   inset-inline-start: -21px;
   top: 14px;
   width: 10px;
