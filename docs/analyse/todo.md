@@ -9209,7 +9209,46 @@ Ahnenreihe abzufragen — die Sprachproben der Auswertung 1,3 s → 0,9 s.
 schnellen Teillauf ohne die Oberflächen-Tests (ohne `*.test.tsx`: 44,6 s). Die
 Zweige der Sitzungen vom 31.10. (Review, Tausch-Fälle) tragen noch neue
 Katalogeinträge: beim Zusammenführen `scripts/mutationsprobe.mjs` gelöscht
-lassen.
+lassen. — Am selben Tag so geschehen (T157); happy-dom probiert eine eigene
+Sitzung, auf Wunsch des Betreibers.
+
+### T157 · Durchsicht vom 31. Oktober: Review seit dem 16.10., Handbücher, Tausch-Fälle der Probe 🏗 ✅ umgesetzt und ausgerollt (31. Oktober 2026)
+
+Drei Sitzungen nebeneinander, angestoßen mit freien Tokens des Betreibers,
+danach zusammengeführt (`5e0d3a5f`, `de8630b6`; der Konflikt war nur
+`scripts/mutationsprobe.mjs`, gelöscht gelassen):
+
+- **Review über alles seit dem 16.10.** (`/simplify`, `/code-review max`):
+  Eine eigene, nicht mehr gültige Tausch-Anfrage blieb stehen, wenn der
+  Planer den Platz des Gefragten umgeteilt hatte — unsichtbar, nicht
+  zurückzuziehen, und jede neue Anfrage zum Platz scheiterte an
+  „already-asked"; `anfragen` räumt sie jetzt weg. Das Formular der
+  Anwesenden löschte nach einem Nachladen die Zahl des anderen Ordners
+  (Werte jetzt im `key`). Am Desktop fehlte „Anwesend" in der Ansicht beider
+  Tage. Aufgeräumt: eine Tagesrechnung für die Functions (`terminTag` in
+  `_shared/planung.ts`), die Monate der Anwesenden einmal gerechnet. Auf
+  Antwort des Betreibers („ja"): „weiß Bescheid" zählt im Saal, im Balken der
+  Planungs-Karte und am Punkt der Plätze wie eine Zusage (`zusageMitBescheid`);
+  „Ohne Zahl" zählt erst ab der ersten Zusammenkunft mit Zahl.
+- **Handbücher gegen die App** (`44c21876`): 38 Befunde im Text behoben, die
+  28 Bilder neu aufgenommen und pixelweise verglichen (27 gleich). Entschieden:
+  Die Seite der Erinnerungen nennt die Tausch-Mitteilungen weiter nicht.
+- **Tausch-Fälle der Mitgliedsrechte-Probe** (93)–(110): anfragen, ablehnen,
+  zurückziehen, annehmen über zwei Wochen samt Zusagen, Tagebuch und
+  „Getauscht", `direkt` ohne Konto samt `persoenlich_at`, und die Abweisungen
+  (ohne Anmeldung, an der Function vorbei, fremder Platz, nicht gesendet,
+  vorbei, Planer). An der Attrappe grün mit den echten Functions; **live fährt
+  sie der Betreiber**.
+
+Nach dem Zusammenführen fehlte der Probe ein Export, den das Review als
+ungenutzt entfernt hatte (`tagDerZusammenkunft`, tsc TS2459) — wieder da
+(`79d861bd`). Suite 7451/7451, tsc, Lint.
+
+**Ausgerollt am 31.10.2026:** erst die Functions `tauschen` (v3) und
+`substitute` (v47), heruntergeladen und Datei für Datei gleich HEAD (18 und
+17 Dateien), OPTIONS 200, ohne Anmeldung 401; dann gepusht. Die übrigen
+Functions brauchen nichts: `terminTag` ist neu in `_shared/planung.ts`, und
+nur diese beiden rufen es auf.
 
 ## Was bewusst offen bleibt
 
@@ -9249,9 +9288,9 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
-29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑
+29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑
 
-**155 der 156 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+**156 der 157 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |
@@ -9703,7 +9742,7 @@ eine Entscheidung.
 | **Gerät** | Dunkle Bedienleiste am Handy | wirkt erst mit der aktualisierten WebAPK (`about://webapks` → „Update", oder neu installieren) |
 | **Betreiber** | Resend, `INVITE_FROM`, Registrieren aus | bis dahin gehen Links per Zettel oder aus dem eigenen Mail-Programm. Ein SMTP-Server für Supabase Auth wird nicht gebraucht: Ohne Kennwort und Registrieren verschickt Auth selbst keine Mails — die Sitzung entsteht in der Function |
 | **Betreiber** | Umzug weg von Supabase | Am 25. Oktober erwogen: Supabase ist eine US-Firma, und die Daten zeigen die Religionszugehörigkeit (Art. 9 DSGVO). Empfohlen: die quelloffene Supabase-Software selbst auf einem Server in Deutschland. Betreiber: „Nicht jetzt, ich überlege noch." Fällt die Entscheidung dafür, legt der Betreiber Konto, Server und Vertrag an; Einrichten und Umziehen per Skript macht Claude |
-| **Betreiber** | Nach T152–T154 messen | alle drei am 30. Oktober ausgerollt (Function `tauschen` v1, Schema, Push `c83df1d7`). Offen: die Mitgliedsrechte-Probe fahren (Fälle 86–92: Adressen und Gründe per REST gesperrt) und einmal in der Testversammlung tauschen — Function und `wochen_tauschen` liefen bis dahin nur gegen Attrappen |
+| **Betreiber** | Nach T152–T154 messen | alle drei am 30. Oktober ausgerollt (Function `tauschen` v1, Schema, Push `c83df1d7`; seit dem 31.10. `tauschen` v3). Offen: die Mitgliedsrechte-Probe fahren — Fälle 86–92 (Adressen und Gründe per REST gesperrt) und seit dem 31. Oktober (93)–(110), die das Tauschen gegen die Testversammlung messen (T157); Function und `wochen_tauschen` liefen bis dahin nur gegen Attrappen |
 | **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
